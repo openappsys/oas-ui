@@ -15,7 +15,7 @@ Full TypeScript types · tree-shakable · light/dark/high-contrast themes · SSR
 | Button chain (gzip) | 26.7 KB |
 | Unit tests | 10400+ |
 | Locales | 10 built-in: zh-CN / en / ja / ko / de / fr / es / pt / ru / ar (ar is RTL) |
-| Current version | v2.6.0 |
+| Current version | v2.6.1 |
 
 ## Getting Started
 

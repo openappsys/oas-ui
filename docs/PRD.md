@@ -2301,3 +2301,11 @@ group 子钮此前为宿主自填 light DOM（`slot="action"`），组件用 `::
 - 单测：group+actions 渲染 / 链接化 / 徽标 / oas-select 事件 / 键盘导航 / actions+slot 优先级与冲突告警 / 焦点保持全绿；既有用例零回归
 - e2e：vitepress 文档环境下 `.action-btn` 背景非透明（核心断言）、气泡 hover/focus 显隐与文本、键盘导航与 Esc 回焦、RTL 气泡镜像
 - 门禁：typecheck / build / api:check / llms:check 全绿
+
+## v2.6.1（未发布）— 发布汇总
+
+> 版本号由用户定。本段为发布收口记录；内容权威见 `CHANGELOG.md [2.6.1]`，各批详情见上方对应「（未发布）」批次段。
+
+- **范围**：v2.6.0 之后的全部能力批与修复——新组件 `oas-knob` / conversation 会话族五件 / `oas-questionnaire`（+ `oas-form` `validate()`/`getValues()`）/ `oas-collapsible` / workbench 工作台族（titlebar/statusbar/inspector/action-bar 及子件）；液态玻璃「动态流动感」v1；**破坏性变更**：内置图标集改 opt-in；float-button group 自渲染子钮（`actions` 通道）；专业密度 A/C 批；能力补全批（scope-bar / transport-well / music-well / attachment-group / swipe-cell 双向滑动 等）。
+- **测试与门禁**：全量单测 9767 passed；全量 e2e 3301 passed；`typecheck` / `build` / `api:check` / `llms:check` / `stats:check` / `perf:size` / `perf:bench` / `trace --all` 全绿。
+- **发布通道**：源码托管于 Gitea（非 GitHub）→ 本地通道 `pnpm release`；tag `v2.6.1` 仅作版本标记。

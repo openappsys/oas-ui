@@ -2,7 +2,7 @@
 
 所有显著变更记录于此。
 
-## [未发布]
+## [2.6.1] - 2026-10-13
 
 ### 破坏性变更（迁移）
 
@@ -76,6 +76,10 @@
 - **oas-combobox `multiple` 加固**：运行时 `name` 变化现会重新同步同名 FormData 条目键（`name` 加入 `observedAttributes`，与 oas-select 一致）；`readonly` 隐藏清除按钮并拦截 `clearValue`，`disabled` 去除每个 chip 的移除按钮，不留无作用的可见可供性；被 `max-count` 拦截的选择不再清空内部过滤查询（`valueDirty`/`query` 仅在通过上限检查后才改动），使高亮行保持在过滤集内；无 `name` 时 `getFormValue()` 返回 `null`（自建 FormData 绕过了浏览器「无 name → 不提交」兜底，此前空键条目会泄漏进表单），`required` 多选校验现直接检测选择集，无 name 的选择不再被误标 `valueMissing`。新增单测 + 真实浏览器 qa-regression。
 
 - **`@oas-ui/ui` 主入口导出补全**：顶层入口现也重新导出 `OASBottomSheet`、`OASMenuItem` / `OASMenuGroup` / `OASMenuDivider` 与 `OASMenubarItem` / `OASMenubarGroup` / `OASMenubarDivider`（此前仅能经子路径导入与 `@oas-ui/ui/ssr` 入口取得），主入口与 SSR 入口的类超集对齐。
+- **oas-float-button 拖拽 / 磁吸坐标系自适应**：`absolute` 宿主（如卡片内容器）下，拖拽与磁吸原按视口坐标写入、被包含块错位解释，按钮随容器页面偏移量「飘很远」（用户实报）；现按定位上下文（`offsetParent` 包含块 / 固定语义沿用视口）取坐标系，且拖拽后显式 `right/bottom: auto`，防止回落到 `:host` 的固定偏移而把按钮宽度由 shrink-to-fit 拉宽、磁吸目标错乱。
+- **内置图标 `star-filled` 改为实心星形**：原内容误为心形且未填充（渲染产物可见修复）。
+- **SSR 白名单补齐 `scheduler` / `gantt` / `barcode`**（v2.6.0 遗漏登记）+ `oas-barcode` 补 `hydrate()` 覆写——此前 DSD 快照在浏览器 upgrade 时被 `render()` 全量重建（DOM 引用丢失）；现跳过重建、保留引用，白名单全量对账一致。
+- **对比度修复（补充）**：`oas-toggle-button` / `oas-toggle-group` 的 `outlined` / `text` 变体选中态文字改用主色文字安全档 `--oas-color-primary-text`；选择卡描述（switch / checkbox / radio）改用 `text-secondary-strong` 以保证斑马/浅底上 AA（感知 <60 门禁不受影响）。
 
 ## [2.6.0] - 2026-10-07
 
@@ -1007,7 +1011,7 @@
 - 基础运行时 `@oas-ui/core`、主题 token、图标库
 - 新增 Button、Icon、Tag、Badge、Space、Divider、Link、Typography
 
-[未发布]: https://github.com/openappsys/oas-ui/compare/v2.6.0...HEAD
+[2.6.1]: https://github.com/openappsys/oas-ui/compare/v2.6.0...v2.6.1
 [2.6.0]: https://github.com/openappsys/oas-ui/releases/tag/v2.6.0
 [2.5.9]: https://github.com/openappsys/oas-ui/releases/tag/v2.5.9
 [2.5.8]: https://github.com/openappsys/oas-ui/releases/tag/v2.5.8
