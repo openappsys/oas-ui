@@ -1472,7 +1472,7 @@ describe('OASGantt 评审修复回归', () => {
     let fired = 0
     el.addEventListener('oas-reparent', () => fired++)
     dragRow(el, 'C', 0, 0) // 拖到 A 之上（A 处于环内）——旧实现会死循环
-    expect(fired).toBeLessThanOrEqual(1) // 不挂起即通过
+    expect(fired).toBe(1) // 完成一次重排即证明未挂起；同时锁「确实生效」而非静默吞
   })
 
   it('零变化重排（原地/顺序未变）不派发事件', () => {
@@ -1716,5 +1716,102 @@ describe('OASGantt 评审修复回归', () => {
     })
     expect(shadowOf(el).querySelector('.link-hit[data-from="b"][data-to="a"]'), '禁用后继无命中路径').toBeNull()
     expect(shadowOf(el).querySelector('.link[data-from="b"][data-to="a"]'), '可见线仍画').not.toBeNull()
+  })
+
+  it('sanitizeDeps 保留同源多型（fs + ss 各一，两条线）', () => {
+    const el = mount({
+      tasks: JSON.stringify([
+        { id: 'a', name: 'A', start: '2026-03-02', end: '2026-03-06' },
+        {
+          id: 'b',
+          name: 'B',
+          start: '2026-03-09',
+          end: '2026-03-13',
+          dependencies: [
+            { id: 'a', type: 'fs' },
+            { id: 'a', type: 'ss' },
+          ],
+        },
+      ]),
+    })
+    expect(el.tasks.find((t) => t.id === 'b')!.dependencies).toEqual([
+      { id: 'a', type: 'fs' },
+      { id: 'a', type: 'ss' },
+    ])
+    expect(shadowOf(el).querySelectorAll('.link[data-from="b"][data-to="a"]').length).toBe(2)
+  })
+
+  it('disabled 行不可作重排源（零事件）', () => {
+    const el = mount({
+      tasks: JSON.stringify([
+        { id: 'x', name: 'X', start: '2026-03-02', end: '2026-03-06', disabled: true },
+        { id: 'y', name: 'Y', start: '2026-03-09', end: '2026-03-13' },
+      ]),
+    })
+    let fired = 0
+    el.addEventListener('oas-reparent', () => fired++)
+    dragRow(el, 'x', 1, 0)
+    expect(fired).toBe(0)
+  })
+
+  function startReparent(el: OASGantt, id: string): void {
+    const row = shadowOf(el).querySelector<HTMLElement>(`.row-name[data-key="${id}"]`)!
+    const side = shadowOf(el).querySelector<HTMLElement>('.side-body')!
+    side.getBoundingClientRect = () =>
+      ({
+        top: 0,
+        left: 0,
+        right: 300,
+        bottom: 1000,
+        width: 300,
+        height: 1000,
+        x: 0,
+        y: 0,
+        toJSON: () => ({}),
+      }) as DOMRect
+    Object.defineProperty(side, 'scrollTop', { value: 0, configurable: true, writable: true })
+    row.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, composed: true, pointerId: 1, button: 0 }))
+    const move = new PointerEvent('pointermove', { bubbles: true, composed: true, pointerId: 1 })
+    Object.defineProperty(move, 'clientX', { value: 0 })
+    Object.defineProperty(move, 'clientY', { value: 9 })
+    document.dispatchEvent(move)
+  }
+
+  it('拖拽中滚动取消重排（收口零事件）', () => {
+    const el = mount({
+      tasks: JSON.stringify([
+        { id: 'x', name: 'X', start: '2026-03-02', end: '2026-03-06' },
+        { id: 'y', name: 'Y', start: '2026-03-09', end: '2026-03-13' },
+      ]),
+    })
+    let fired = 0
+    el.addEventListener('oas-reparent', () => fired++)
+    startReparent(el, 'y')
+    shadowOf(el).querySelector('.tbody')!.dispatchEvent(new Event('scroll'))
+    document.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, composed: true, pointerId: 1 }))
+    expect(fired).toBe(0)
+  })
+
+  it('scrollToTask 取消进行中的重排（收口零事件）', () => {
+    const el = mount({
+      tasks: JSON.stringify([
+        { id: 'x', name: 'X', start: '2026-03-02', end: '2026-03-06' },
+        { id: 'y', name: 'Y', start: '2026-03-09', end: '2026-03-13' },
+      ]),
+    })
+    let fired = 0
+    el.addEventListener('oas-reparent', () => fired++)
+    startReparent(el, 'y')
+    el.scrollToTask('x')
+    document.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, composed: true, pointerId: 1 }))
+    expect(fired).toBe(0)
+  })
+
+  it('disabled 条/行带 aria-disabled', () => {
+    const el = mount({
+      tasks: JSON.stringify([{ id: 'd', name: 'D', start: '2026-03-02', end: '2026-03-06', disabled: true }]),
+    })
+    expect(shadowOf(el).querySelector('.bar[data-id="d"]')!.getAttribute('aria-disabled')).toBe('true')
+    expect(shadowOf(el).querySelector('.row-name[data-key="d"]')!.getAttribute('aria-disabled')).toBe('true')
   })
 })

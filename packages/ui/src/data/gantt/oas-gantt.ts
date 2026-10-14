@@ -1631,7 +1631,10 @@ export class OASGantt extends OASElement {
       el.style.top = `${i * rowH}px`
       el.style.setProperty('--indent', `${8 + row.depth * 16}px`)
       el.setAttribute('part', 'row-name')
-      if (row.task.disabled === true) el.setAttribute('disabled', '')
+      if (row.task.disabled === true) {
+        el.setAttribute('disabled', '')
+        el.setAttribute('aria-disabled', 'true')
+      }
       if (row.hasChildren) {
         const expandedNow = expanded.has(row.task.id)
         el.setAttribute('aria-expanded', String(expandedNow))
@@ -1678,7 +1681,10 @@ export class OASGantt extends OASElement {
       bar.setAttribute('part', 'bar')
       bar.style.top = `${i * rowH + (rowH - (row.isSummary ? 8 : 22)) / 2}px`
       if (row.task.color) bar.style.setProperty('--oas-gantt-bar-color', row.task.color)
-      if (disabled) bar.setAttribute('disabled', '')
+      if (disabled) {
+        bar.setAttribute('disabled', '')
+        bar.setAttribute('aria-disabled', 'true')
+      }
 
       if (row.isMilestone) {
         bar.classList.add('milestone')
