@@ -80,7 +80,8 @@ const STYLE = `
   cursor: default;
 }
 .row-name.selected {
-  background: color-mix(in srgb, var(--oas-color-primary) 14%, transparent);
+  background: color-mix(in srgb, var(--oas-color-primary) 18%, transparent);
+  box-shadow: inset 2px 0 0 var(--oas-color-primary);
 }
 .row-name:focus-visible {
   outline: 2px solid var(--oas-color-primary);
@@ -104,6 +105,11 @@ const STYLE = `
 }
 svg.links .link-hit:focus-visible {
   outline: 2px solid var(--oas-color-primary);
+}
+/* SVG path 的 outline 在部分引擎不渲染 → 命中的可见线同时加粗高亮作焦点指示 */
+svg.links .link-hit:focus-visible + .link {
+  stroke: var(--oas-color-primary);
+  stroke-width: 2.5;
 }
 @media (pointer: coarse) {
   .bar.touch-active .link-dot {
@@ -302,7 +308,7 @@ svg.links .temp-link {
   pointer-events: auto;
   height: var(--oas-gantt-bar-height, 22px);
   border-radius: var(--oas-radius-sm);
-  background: var(--oas-gantt-bar-bg, color-mix(in srgb, var(--oas-gantt-bar-color, var(--oas-color-primary)) 22%, transparent));
+  background: var(--oas-gantt-bar-bg, color-mix(in srgb, var(--oas-gantt-bar-color, var(--oas-color-primary)) 22%, var(--oas-color-bg)));
   cursor: grab;
   box-sizing: border-box;
   overflow: visible;
@@ -352,8 +358,13 @@ svg.links .temp-link {
   font-size: var(--oas-font-size-xs);
 }
 .bar.label-inside .bar-label {
-  inset-inline-start: 6px;
-  max-width: calc(100% - 12px);
+  inset-inline-start: 8px;
+  max-width: calc(100% - 16px);
+  /* 底衬 scrim：条底（半透明色）与进度实色两种情况都保证文字可读 */
+  background: color-mix(in srgb, var(--oas-color-text-primary) 62%, transparent);
+  color: var(--oas-color-bg);
+  padding-inline: var(--oas-space-1);
+  border-radius: var(--oas-radius-xs);
 }
 .bar.label-right .bar-label {
   inset-inline-start: calc(100% + 6px);
@@ -878,6 +889,7 @@ export class OASGantt extends OASElement {
   private renaming = false
   private rowPending: { id: string; x: number; y: number; disabled: boolean; byId: Map<string, TG> } | null = null
   private activeRowId: string | null = null
+  private touchActiveId: string | null = null
   private coarse = false
   private autoScrollRaf = 0
   private autoScrolling = false
@@ -1845,8 +1857,11 @@ export class OASGantt extends OASElement {
       bar.dataset.id = row.task.id
       bar.setAttribute('part', 'bar')
       if (this.selected.has(row.task.id)) bar.classList.add('selected')
-      // 触屏：点条揭示连线点（无 hover）
-      if (this.coarse) bar.addEventListener('pointerdown', () => this.revealDots(row.task.id))
+      // 触屏：点条揭示连线点（无 hover，重建后按记录恢复）
+      if (this.coarse) {
+        if (this.touchActiveId === row.task.id) bar.classList.add('touch-active')
+        bar.addEventListener('pointerdown', () => this.revealDots(row.task.id))
+      }
       bar.style.top = `${i * rowH + (rowH - (row.isSummary ? 8 : 22)) / 2}px`
       if (row.task.color) bar.style.setProperty('--oas-gantt-bar-color', row.task.color)
       if (disabled) {
@@ -2507,6 +2522,7 @@ export class OASGantt extends OASElement {
   }
 
   private revealDots(id: string): void {
+    this.touchActiveId = id
     this.barsEl?.querySelectorAll('.bar.touch-active').forEach((el) => el.classList.remove('touch-active'))
     this.barsEl?.querySelector(`.bar[data-id="${escId(id)}"]`)?.classList.add('touch-active')
   }
