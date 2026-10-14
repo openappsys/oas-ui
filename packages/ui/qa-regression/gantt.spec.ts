@@ -1,4 +1,19 @@
 import { test, expect } from '@playwright/test'
+import type { Page } from '@playwright/test'
+
+// 冷启动竞态对策：等到自定义元素**升级并首帧渲染**（而非 waitForSelector 默认的「可见」——
+// 未升级的 <oas-gantt> 是 0 尺寸空盒子，高并发下升级被 CPU 抢占推迟 → 「可见」假失败）。
+// 渲染出 .bar 才继续，超时放宽以吸收冷加载抖动。
+async function waitGantt(page: Page, id: string): Promise<void> {
+  await page.waitForFunction(
+    (target) => {
+      const el = document.getElementById(target) as (HTMLElement & { shadowRoot?: ShadowRoot | null }) | null
+      return !!el && !!el.shadowRoot && !!el.shadowRoot.querySelector('.bar')
+    },
+    id,
+    { timeout: 30000 },
+  )
+}
 
 // gantt 浏览器回归：渲染/刻度/行树折叠/依赖连线/今日线/拖拽改期真指针操作/console 零告警/暗色
 test('gantt 浏览器回归：渲染 + 刻度切换 + 折叠 + 拖拽改期 + console 零告警', async ({ page }) => {
@@ -9,7 +24,7 @@ test('gantt 浏览器回归：渲染 + 刻度切换 + 折叠 + 拖拽改期 + co
     if (m.type() === 'error') errors.push(m.text())
   })
   await page.goto('/components/gantt.html', { waitUntil: 'domcontentloaded' })
-  await page.waitForSelector('#gantt-basic', { timeout: 15000 })
+  await waitGantt(page, 'gantt-basic')
 
   const basic = page.locator('#gantt-basic')
 
@@ -97,7 +112,7 @@ test('gantt 窗口自适应/可见性回归：首任务贴近左缘 + 今日线/
   page,
 }) => {
   await page.goto('/components/gantt.html', { waitUntil: 'domcontentloaded' })
-  await page.waitForSelector('#gantt-basic', { timeout: 15000 })
+  await waitGantt(page, 'gantt-basic')
   await page.waitForTimeout(500)
 
   const basic = page.locator('#gantt-basic')
@@ -179,7 +194,7 @@ test('gantt 窗口自适应/可见性回归：首任务贴近左缘 + 今日线/
 // 附带显式 type:"milestone" 带 end 的浏览器渲染（菱形可见，end 不渲染成条形）
 test('gantt RTL scrollToDate 负值模型 + 显式 milestone 带 end 渲染菱形', async ({ page }) => {
   await page.goto('/components/gantt.html', { waitUntil: 'domcontentloaded' })
-  await page.waitForSelector('#gantt-basic', { timeout: 15000 })
+  await waitGantt(page, 'gantt-basic')
   const result = await page.evaluate(async () => {
     await customElements.whenDefined('oas-gantt')
     const tasks = JSON.stringify([{ id: 'a', name: 'A', start: '2026-03-02', end: '2026-03-20' }])
@@ -247,7 +262,7 @@ test('gantt 行拖拽重排 oas-reparent + 基线对比渲染', async ({ page })
     if (m.type() === 'error') errors.push(m.text())
   })
   await page.goto('/components/gantt.html', { waitUntil: 'domcontentloaded' })
-  await page.waitForSelector('#gantt-reparent', { timeout: 15000 })
+  await waitGantt(page, 'gantt-reparent')
 
   // 基线对比：demo 页 show-baseline 实例渲染基线条
   await expect(page.locator('oas-gantt[show-baseline] .baseline').first()).toBeVisible()
@@ -279,7 +294,7 @@ test('gantt 连线拖拽建依赖 + 选中 Delete 删除', async ({ page }) => {
     if (m.type() === 'error') errors.push(m.text())
   })
   await page.goto('/components/gantt.html', { waitUntil: 'domcontentloaded' })
-  await page.waitForSelector('#gantt-link', { timeout: 15000 })
+  await waitGantt(page, 'gantt-link')
 
   const host = page.locator('#gantt-link')
   const l1 = host.locator('.bar[data-id="l1"]')
