@@ -1814,4 +1814,271 @@ describe('OASGantt 评审修复回归', () => {
     expect(shadowOf(el).querySelector('.bar[data-id="d"]')!.getAttribute('aria-disabled')).toBe('true')
     expect(shadowOf(el).querySelector('.row-name[data-key="d"]')!.getAttribute('aria-disabled')).toBe('true')
   })
+
+  it('拖拽到视口下缘自动滚动（rAF tick 按边缘距离滚动 tbody）', () => {
+    const el = mount({
+      tasks: JSON.stringify([{ id: 'a', name: 'A', start: '2026-03-02', end: '2026-03-06' }]),
+    })
+    const tb = shadowOf(el).querySelector('.tbody') as HTMLElement
+    tb.getBoundingClientRect = () =>
+      ({ top: 0, left: 0, right: 400, bottom: 200, width: 400, height: 200, x: 0, y: 0, toJSON: () => ({}) }) as DOMRect
+    Object.defineProperty(tb, 'scrollHeight', { value: 2000, configurable: true })
+    Object.defineProperty(tb, 'clientHeight', { value: 200, configurable: true })
+    Object.defineProperty(tb, 'scrollTop', { value: 0, configurable: true, writable: true })
+    const rafCbs: FrameRequestCallback[] = []
+    const orig = globalThis.requestAnimationFrame
+    globalThis.requestAnimationFrame = ((cb: FrameRequestCallback) => {
+      rafCbs.push(cb)
+      return rafCbs.length
+    }) as typeof requestAnimationFrame
+    try {
+      const bar = shadowOf(el).querySelector('.bar[data-id="a"]') as HTMLElement
+      const down = new PointerEvent('pointerdown', { bubbles: true, composed: true, pointerId: 1, button: 0 })
+      Object.defineProperty(down, 'clientX', { value: 100 })
+      Object.defineProperty(down, 'clientY', { value: 100 })
+      bar.dispatchEvent(down)
+      const move = new PointerEvent('pointermove', { bubbles: true, composed: true, pointerId: 1 })
+      Object.defineProperty(move, 'clientX', { value: 100 })
+      Object.defineProperty(move, 'clientY', { value: 195 }) // 贴近下缘（band 28 → 阈值 172）
+      document.dispatchEvent(move)
+      expect(rafCbs.length).toBe(1)
+      rafCbs[0]!(0)
+      expect(tb.scrollTop, '自动向底滚动').toBeGreaterThan(0)
+      document.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, composed: true, pointerId: 1 }))
+    } finally {
+      globalThis.requestAnimationFrame = orig
+    }
+  })
+
+  it('RTL 横向自动滚动：贴右缘朝 0 增（不翻号、不瞬移）', () => {
+    const el = mount({
+      dir: 'rtl',
+      tasks: JSON.stringify([{ id: 'a', name: 'A', start: '2026-03-02', end: '2026-03-06' }]),
+    })
+    const tb = shadowOf(el).querySelector('.tbody') as HTMLElement
+    tb.getBoundingClientRect = () =>
+      ({ top: 0, left: 0, right: 400, bottom: 200, width: 400, height: 200, x: 0, y: 0, toJSON: () => ({}) }) as DOMRect
+    Object.defineProperty(tb, 'scrollHeight', { value: 200, configurable: true })
+    Object.defineProperty(tb, 'clientHeight', { value: 200, configurable: true })
+    Object.defineProperty(tb, 'scrollWidth', { value: 5471, configurable: true })
+    Object.defineProperty(tb, 'clientWidth', { value: 400, configurable: true })
+    Object.defineProperty(tb, 'scrollTop', { value: 0, configurable: true, writable: true })
+    Object.defineProperty(tb, 'scrollLeft', { value: -2736, configurable: true, writable: true })
+    const rafCbs: FrameRequestCallback[] = []
+    const orig = globalThis.requestAnimationFrame
+    globalThis.requestAnimationFrame = ((cb: FrameRequestCallback) => {
+      rafCbs.push(cb)
+      return rafCbs.length
+    }) as typeof requestAnimationFrame
+    try {
+      const bar = shadowOf(el).querySelector('.bar[data-id="a"]') as HTMLElement
+      const down = new PointerEvent('pointerdown', { bubbles: true, composed: true, pointerId: 1, button: 0 })
+      Object.defineProperty(down, 'clientX', { value: 100 })
+      Object.defineProperty(down, 'clientY', { value: 100 })
+      bar.dispatchEvent(down)
+      const move = new PointerEvent('pointermove', { bubbles: true, composed: true, pointerId: 1 })
+      Object.defineProperty(move, 'clientX', { value: 398 }) // 右缘
+      Object.defineProperty(move, 'clientY', { value: 100 })
+      document.dispatchEvent(move)
+      rafCbs[0]!(0)
+      expect(tb.scrollLeft, 'RTL 贴右缘应朝 0 增').toBe(-2713)
+      document.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, composed: true, pointerId: 1 }))
+    } finally {
+      globalThis.requestAnimationFrame = orig
+    }
+  })
+
+  it('横向到边界即停（不再排新帧）', () => {
+    const el = mount({
+      tasks: JSON.stringify([{ id: 'a', name: 'A', start: '2026-03-02', end: '2026-03-06' }]),
+    })
+    const tb = shadowOf(el).querySelector('.tbody') as HTMLElement
+    tb.getBoundingClientRect = () =>
+      ({ top: 0, left: 0, right: 400, bottom: 200, width: 400, height: 200, x: 0, y: 0, toJSON: () => ({}) }) as DOMRect
+    Object.defineProperty(tb, 'scrollHeight', { value: 200, configurable: true })
+    Object.defineProperty(tb, 'clientHeight', { value: 200, configurable: true })
+    Object.defineProperty(tb, 'scrollWidth', { value: 800, configurable: true })
+    Object.defineProperty(tb, 'clientWidth', { value: 400, configurable: true })
+    Object.defineProperty(tb, 'scrollTop', { value: 0, configurable: true, writable: true })
+    Object.defineProperty(tb, 'scrollLeft', { value: 400, configurable: true, writable: true }) // LTR limit=400 已到底
+    const rafCbs: FrameRequestCallback[] = []
+    const orig = globalThis.requestAnimationFrame
+    globalThis.requestAnimationFrame = ((cb: FrameRequestCallback) => {
+      rafCbs.push(cb)
+      return rafCbs.length
+    }) as typeof requestAnimationFrame
+    try {
+      const bar = shadowOf(el).querySelector('.bar[data-id="a"]') as HTMLElement
+      const down = new PointerEvent('pointerdown', { bubbles: true, composed: true, pointerId: 1, button: 0 })
+      Object.defineProperty(down, 'clientX', { value: 100 })
+      Object.defineProperty(down, 'clientY', { value: 200 })
+      bar.dispatchEvent(down)
+      const move = new PointerEvent('pointermove', { bubbles: true, composed: true, pointerId: 1 })
+      Object.defineProperty(move, 'clientX', { value: 398 })
+      Object.defineProperty(move, 'clientY', { value: 100 })
+      document.dispatchEvent(move)
+      const before = rafCbs.length
+      rafCbs[0]!(0)
+      expect(tb.scrollLeft).toBe(400)
+      expect(rafCbs.length, '到边界不再排新帧').toBe(before)
+      document.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, composed: true, pointerId: 1 }))
+    } finally {
+      globalThis.requestAnimationFrame = orig
+    }
+  })
+
+  function stubTb(
+    el: OASGantt,
+    o: { sTop?: number; sLeft?: number; maxTop?: number; maxLeft?: number } = {},
+  ): HTMLElement {
+    const tb = shadowOf(el).querySelector('.tbody') as HTMLElement
+    tb.getBoundingClientRect = () =>
+      ({ top: 0, left: 0, right: 400, bottom: 200, width: 400, height: 200, x: 0, y: 0, toJSON: () => ({}) }) as DOMRect
+    Object.defineProperty(tb, 'clientHeight', { value: 200, configurable: true })
+    Object.defineProperty(tb, 'clientWidth', { value: 400, configurable: true })
+    Object.defineProperty(tb, 'scrollHeight', { value: 200 + (o.maxTop ?? 0), configurable: true })
+    Object.defineProperty(tb, 'scrollWidth', { value: 400 + (o.maxLeft ?? 0), configurable: true })
+    Object.defineProperty(tb, 'scrollTop', { value: o.sTop ?? 0, configurable: true, writable: true })
+    Object.defineProperty(tb, 'scrollLeft', { value: o.sLeft ?? 0, configurable: true, writable: true })
+    return tb
+  }
+
+  function withRaf(fn: (cbs: FrameRequestCallback[]) => void): void {
+    const cbs: FrameRequestCallback[] = []
+    const orig = globalThis.requestAnimationFrame
+    globalThis.requestAnimationFrame = ((cb: FrameRequestCallback) => {
+      cbs.push(cb)
+      return cbs.length
+    }) as typeof requestAnimationFrame
+    try {
+      fn(cbs)
+    } finally {
+      globalThis.requestAnimationFrame = orig
+    }
+  }
+
+  function barPointer(el: OASGantt, id: string, downX: number, moveX: number, moveY: number): void {
+    const bar = shadowOf(el).querySelector(`.bar[data-id="${id}"]`) as HTMLElement
+    const down = new PointerEvent('pointerdown', { bubbles: true, composed: true, pointerId: 1, button: 0 })
+    Object.defineProperty(down, 'clientX', { value: downX })
+    Object.defineProperty(down, 'clientY', { value: moveY })
+    bar.dispatchEvent(down)
+    const move = new PointerEvent('pointermove', { bubbles: true, composed: true, pointerId: 1 })
+    Object.defineProperty(move, 'clientX', { value: moveX })
+    Object.defineProperty(move, 'clientY', { value: moveY })
+    document.dispatchEvent(move)
+  }
+
+  const AB = JSON.stringify([
+    { id: 'a', name: 'A', start: '2026-03-02', end: '2026-03-06' },
+    { id: 'b', name: 'B', start: '2026-03-09', end: '2026-03-13' },
+  ])
+
+  it('自动滚动触发的 scroll 不取消条拖拽（重建后收口仍提交）', () => {
+    const el = mount({ tasks: AB })
+    stubTb(el, { maxTop: 1800 })
+    let changed = 0
+    el.addEventListener('oas-task-change', () => changed++)
+    withRaf((cbs) => {
+      barPointer(el, 'a', 100, 136, 195) // 右移一格（colW 36）+ 贴下缘
+      expect(cbs.length).toBe(1)
+      cbs[0]!(0) // tick：置 autoScrolling、滚 scrollTop
+      shadowOf(el).querySelector('.tbody')!.dispatchEvent(new Event('scroll')) // 浏览器随后派发
+      document.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, composed: true, pointerId: 1 }))
+    })
+    expect(changed, '自动滚动不取消，收口提交').toBe(1)
+  })
+
+  it('用户滚动取消条拖拽（零事件）', () => {
+    const el = mount({ tasks: AB })
+    stubTb(el, { maxTop: 1800 })
+    let changed = 0
+    el.addEventListener('oas-task-change', () => changed++)
+    barPointer(el, 'a', 100, 136, 100)
+    shadowOf(el).querySelector('.tbody')!.dispatchEvent(new Event('scroll')) // 无 tick → autoScrolling=false
+    document.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, composed: true, pointerId: 1 }))
+    expect(changed).toBe(0)
+  })
+
+  it('条拖拽 Esc 兜底取消（document 级）', () => {
+    const el = mount({ tasks: AB })
+    let changed = 0
+    el.addEventListener('oas-task-change', () => changed++)
+    barPointer(el, 'a', 100, 136, 100)
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+    document.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, composed: true, pointerId: 1 }))
+    expect(changed).toBe(0)
+  })
+
+  it('行重排拖拽不触发横向自动滚动（时间轴不动）', () => {
+    const el = mount({
+      tasks: JSON.stringify([
+        {
+          id: 'p',
+          name: 'P',
+          start: '2026-03-02',
+          end: '2026-03-13',
+          type: 'summary',
+          children: [{ id: 'c', name: 'C', start: '2026-03-02', end: '2026-03-06' }],
+        },
+        { id: 'x', name: 'X', start: '2026-03-09', end: '2026-03-13' },
+      ]),
+    })
+    const tb = stubTb(el, { sLeft: 500, maxLeft: 1000 })
+    const side = shadowOf(el).querySelector<HTMLElement>('.side-body')!
+    side.getBoundingClientRect = () =>
+      ({
+        top: 0,
+        left: 0,
+        right: 300,
+        bottom: 1000,
+        width: 300,
+        height: 1000,
+        x: 0,
+        y: 0,
+        toJSON: () => ({}),
+      }) as DOMRect
+    Object.defineProperty(side, 'scrollTop', { value: 0, configurable: true, writable: true })
+    withRaf((cbs) => {
+      const row = shadowOf(el).querySelector<HTMLElement>('.row-name[data-key="x"]')!
+      row.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, composed: true, pointerId: 1, button: 0 }))
+      const move = new PointerEvent('pointermove', { bubbles: true, composed: true, pointerId: 1 })
+      Object.defineProperty(move, 'clientX', { value: 10 }) // 物理左缘带内
+      Object.defineProperty(move, 'clientY', { value: 100 })
+      document.dispatchEvent(move)
+      expect(cbs.length).toBe(1)
+      cbs[0]!(0)
+      document.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, composed: true, pointerId: 1 }))
+    })
+    expect(tb.scrollLeft, '重排不改时间轴横向位置').toBe(500)
+  })
+
+  it('里程碑只渲染完成端单点连线点', () => {
+    const el = mount({ tasks: JSON.stringify([{ id: 'm', name: 'M', start: '2026-03-05' }]) })
+    const bar = shadowOf(el).querySelector('.bar[data-id="m"]')!
+    expect(bar.querySelectorAll('.link-dot').length).toBe(1)
+    expect(bar.querySelector('.link-dot.link-end')).not.toBeNull()
+    expect(bar.querySelector('.link-dot.link-start')).toBeNull()
+  })
+
+  it('横向自动滚动推进被拖条（位移叠加滚动增量）', () => {
+    const el = mount({ tasks: JSON.stringify([{ id: 'a', name: 'A', start: '2026-03-02', end: '2026-03-06' }]) })
+    const tb = stubTb(el, { maxLeft: 1000 })
+    let start = ''
+    el.addEventListener('oas-task-change', (e) => {
+      start = (e as CustomEvent).detail.start
+    })
+    const bar = shadowOf(el).querySelector('.bar[data-id="a"]') as HTMLElement
+    const down = new PointerEvent('pointerdown', { bubbles: true, composed: true, pointerId: 1, button: 0 })
+    Object.defineProperty(down, 'clientX', { value: 100 })
+    Object.defineProperty(down, 'clientY', { value: 100 })
+    bar.dispatchEvent(down)
+    tb.scrollLeft = 36 // 模拟自动滚过一格（指针未动）
+    const move = new PointerEvent('pointermove', { bubbles: true, composed: true, pointerId: 1 })
+    Object.defineProperty(move, 'clientX', { value: 100 })
+    Object.defineProperty(move, 'clientY', { value: 100 })
+    document.dispatchEvent(move)
+    document.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, composed: true, pointerId: 1 }))
+    expect(start, '滚动增量应推进被拖条日期').toBe('2026-03-03')
+  })
 })

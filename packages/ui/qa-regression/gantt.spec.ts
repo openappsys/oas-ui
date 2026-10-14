@@ -327,3 +327,30 @@ test('gantt 连线拖拽建依赖 + 选中 Delete 删除', async ({ page }) => {
 
   expect(errors).toEqual([])
 })
+
+// 拖拽自动滚动：拖条到视口下缘 → tbody 自动向底滚
+test('gantt 拖拽到视口下缘自动滚动', async ({ page }) => {
+  await page.goto('/components/gantt.html', { waitUntil: 'domcontentloaded' })
+  await waitGantt(page, 'gantt-virtual')
+  const host = page.locator('#gantt-virtual')
+  const bar = host.locator('.bar').first()
+  await bar.scrollIntoViewIfNeeded()
+  const bb = (await bar.boundingBox())!
+  const tbBox = (await host.locator('.tbody').boundingBox())!
+  await page.mouse.move(bb.x + bb.width / 2, bb.y + bb.height / 2)
+  await page.mouse.down()
+  await page.mouse.move(bb.x + bb.width / 2, tbBox.y + tbBox.height - 4, { steps: 8 })
+  await page.waitForFunction(
+    () => {
+      const t = (
+        document.getElementById('gantt-virtual') as HTMLElement & { shadowRoot: ShadowRoot }
+      ).shadowRoot.querySelector('.tbody') as HTMLElement
+      return t.scrollTop > 0
+    },
+    undefined,
+    { timeout: 8000 },
+  )
+  const st = await host.locator('.tbody').evaluate((el) => el.scrollTop)
+  expect(st, '拖到边缘应自动滚动').toBeGreaterThan(0)
+  await page.mouse.up()
+})

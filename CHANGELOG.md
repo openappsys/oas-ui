@@ -19,6 +19,9 @@
 - **依赖连线交互编辑**：悬停任务条出连线点，拖到目标任务建依赖（端点定 FS/SS/FF/SF，记在后继任务）；点已有连线选中（高亮），`Delete` / `Backspace` 删除（仅组件持有焦点时响应，不劫持宿主输入）。同源同型去重、同源多型可并存，删除按类型作用域。派发 `oas-dependencies-change { taskId, dependencies }` + `oas-tasks-change`。`readonly` 不渲染连线点与命中区。
 - `disabled` 语义：只锁自身数据（不可被拖、不可作依赖后继、不可作重排 drop-inside 目标）；可作他任务前置与重排前/后同级目标。
 - 工程：`sanitizeDeps` 同源同型去重；`barUnder`/`oas-reparent` 命中与 RTL 端点修正；`svg.links` 命中外层 `.bars` 放行（`pointer-events`）；`onReconnect` 重挂 document 监听；i18n ×10 新增 `gantt.baselineLater` / `gantt.baselineEarlier` / `gantt.baselineSame`；文档 zh/en 三节 + demo；api-manifest / api-descriptions 同步。
+- **拖拽自动滚动**：拖条 / 拉伸 / 拖连线靠近视口边缘时横向与纵向自动滚动（越靠边越快、到边界即停）；行重排仅纵向。自动滚动触发的窗口重建后自动重锚进行中的拖拽（条 / 连线临时线 / 落点线）；RTL 横向按负值 `scrollLeft` 模型分域；条拖拽位移叠加滚动增量（指针静止也能把条拖出视口）。
+- **里程碑单连线点**：里程碑 start == end，只渲染完成端单点（fs 惯例；其作为前置的 ss/sf 与 fs/ff 等价）。
+- **行重排命中缓存**：`reparentCtx` 在拖拽起点建一次 `id→task`，移动期复用（万级不再每帧 O(n)）。
 
 ## [2.6.1] - 2026-10-13
 

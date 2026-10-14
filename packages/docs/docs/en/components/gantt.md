@@ -32,7 +32,8 @@ Changing `scale` re-lays the time axis (column width adapts per tier, with a flo
 - **Drag the body** = move as a whole (duration kept); **drag edge handles** = change start/end (cannot cross the opposite side); **drag the in-bar dot** = change progress;
 - Written back on pointerup with `oas-task-change` (`detail: { id, task, oldStart, oldEnd, start, end }`) / `oas-progress-change` (`detail: { id, task, progress }`) plus `oas-tasks-change` (full list); releasing without movement dispatches nothing;
 - Esc (or pointercancel) while dragging cancels → visual rollback, zero events; rewriting `tasks` externally mid-drag aborts the drag (external data wins);
-- With a bar focused, **Shift + ←/→** reschedules by one unit (mirrored in RTL).
+- With a bar focused, **Shift + ←/→** reschedules by one unit (mirrored in RTL);
+- While dragging a bar / resizing / drawing a link, moving near a viewport edge **auto-scrolls** horizontally and vertically (faster the closer to the edge; stops at the boundary); row reorder auto-scrolls vertically only.
 
 ## Row Reparent / Reorder (reparent)
 
@@ -50,7 +51,7 @@ Drag a left-column row onto a target: the **top half** inserts before the target
   <div id="gantt-link-output" style="color:var(--oas-color-text-secondary);font-size:var(--oas-font-size-sm);margin-top:var(--oas-space-2)"></div>
 </DemoBlock>
 
-Hovering a bar reveals two **link dots**: drag the right (finish) dot onto a target bar to create a dependency; the left (start) dot works the same way. The drop side of the target — **left half** (start) / **right half** (finish) — combined with the source endpoint picks the type (FS / SS / FF / SF). The dependency is recorded on the **successor** task. Click an existing link to **select** (highlighted), then press `Delete` / `Backspace` to remove it. On settle it dispatches `oas-dependencies-change` (`detail: { taskId, dependencies }`) plus `oas-tasks-change`. With `readonly`, link dots and hit areas are not rendered and removal is disabled; `Esc` / `pointercancel` cancels with zero events. Row reorder and link editing are pointer interactions (link dots reveal on hover; no touch entry point yet).
+Hovering a bar reveals two **link dots**: drag the right (finish) dot onto a target bar to create a dependency; the left (start) dot works the same way. A **milestone** has start == end, so it shows a single finish dot (fs convention; its ss/sf as a predecessor are equivalent to fs/ff). The drop side of the target — **left half** (start) / **right half** (finish) — combined with the source endpoint picks the type (FS / SS / FF / SF). The dependency is recorded on the **successor** task. Click an existing link to **select** (highlighted), then press `Delete` / `Backspace` to remove it. On settle it dispatches `oas-dependencies-change` (`detail: { taskId, dependencies }`) plus `oas-tasks-change`. With `readonly`, link dots and hit areas are not rendered and removal is disabled; `Esc` / `pointercancel` cancels with zero events. Row reorder and link editing are pointer interactions (link dots reveal on hover; no touch entry point yet).
 
 ## Readonly Levels + Per-task Disable
 

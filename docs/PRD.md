@@ -1883,6 +1883,8 @@ OASElement 的 render 生命周期只首连一次（`rendered` 门闩），组�
 - **依赖连线交互编辑**：悬停任务条出连线点，拖到目标任务建依赖（端点决定 FS/SS/FF/SF）；点已有连线选中，`Delete` / Backspace 删除。派发 `oas-dependencies-change` detail `{ taskId, dependencies }`。
 - **行拖拽改父子 / 重排**：拖左列行到目标行，改 `parent` 与同级顺序；派发 `oas-reparent` detail `{ id, parent, index }`。
 - **基线对比**：`GanttTask` 增 `baseline?: { start: string; end?: string }`；`show-baseline` 布尔（默认关）开启后，实际条下叠浅色基线条 + 差值标注。基线数据由宿主保存，组件只读不写回。
+- **拖拽自动滚动**：拖条 / 拉伸 / 拖连线靠近视口边缘时横纵自动滚动（越靠边越快、到边界停）；行重排仅纵向；自动滚动触发的窗口重建后自动重锚进行中的拖拽。
+- **里程碑连线点单点**：里程碑 start == end，只出完成端单点（fs 惯例）。行重排命中计算加缓存（万级不生每帧 O(n)）。
 
 ### 边界
 

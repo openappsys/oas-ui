@@ -32,7 +32,8 @@
 - **拖条身** = 整体平移（保持工期）；**拖左右手柄** = 改开始/结束（不越过对侧）；**拖条内圆点** = 改进度；
 - 收口（pointerup）才写回并派发 `oas-task-change`（`detail: { id, task, oldStart, oldEnd, start, end }`）/ `oas-progress-change`（`detail: { id, task, progress }`）+ `oas-tasks-change`（全量），零位移松开零事件；
 - 拖拽中 Esc（或 pointercancel）取消 → 视觉回滚、零事件零写回；拖拽中外部重写 `tasks` 属性 → 拖拽终止回滚（外部数据为准）；
-- 聚焦任务条后 **Shift + ←/→** 键盘改期一格（RTL 方向镜像）。
+- 聚焦任务条后 **Shift + ←/→** 键盘改期一格（RTL 方向镜像）；
+- 拖条 / 拉伸 / 拖连线靠近视口边缘时，横向与纵向**自动滚动**（越靠边越快，到边界即停）；拖行重排仅纵向自动滚动。
 
 ## 行拖拽改父子 / 重排（reparent）
 
@@ -50,7 +51,7 @@
   <div id="gantt-link-output" style="color:var(--oas-color-text-secondary);font-size:var(--oas-font-size-sm);margin-top:var(--oas-space-2)"></div>
 </DemoBlock>
 
-悬停任务条出两个**连线点**：拖右侧点（完成端）到目标条 → 建依赖；拖左侧点（开始端）同理。落点取目标条的**左半**（开始端）/ **右半**（完成端），与起点端组合决定类型（FS / SS / FF / SF），依赖记在**后继任务**上。同源同型依赖不重复添加；同源多型可并存，选中删除按类型作用域只删该条。点已有连线**选中**（高亮），按 `Delete` / `Backspace` 删除（仅组件持有焦点时响应，不劫持宿主输入）。收口派发 `oas-dependencies-change`（`detail: { taskId, dependencies }`）+ `oas-tasks-change`。`readonly` 不渲染连线点与命中区、不可删；拖拽中 `Esc` / `pointercancel` 取消零事件。行重排与连线编辑为指针交互（连线点悬停显现；触屏暂无连线点入口）。
+悬停任务条出两个**连线点**：拖右侧点（完成端）到目标条 → 建依赖；拖左侧点（开始端）同理。**里程碑** start == end，只出完成端**单点**（fs 惯例；其作为前置时的 ss/sf 与 fs/ff 等价）。落点取目标条的**左半**（开始端）/ **右半**（完成端），与起点端组合决定类型（FS / SS / FF / SF），依赖记在**后继任务**上。同源同型依赖不重复添加；同源多型可并存，选中删除按类型作用域只删该条。点已有连线**选中**（高亮），按 `Delete` / `Backspace` 删除（仅组件持有焦点时响应，不劫持宿主输入）。收口派发 `oas-dependencies-change`（`detail: { taskId, dependencies }`）+ `oas-tasks-change`。`readonly` 不渲染连线点与命中区、不可删；拖拽中 `Esc` / `pointercancel` 取消零事件。行重排与连线编辑为指针交互（连线点悬停显现；触屏暂无连线点入口）。
 
 ## 只读三级 + 任务级禁用
 

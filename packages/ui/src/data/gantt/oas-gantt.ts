@@ -567,6 +567,8 @@ interface DragCtx {
   id: string
   mode: DragMode
   startX: number
+  /** 拖拽起点时的横向滚动位置：自动滚动期间指针可静止，位移须叠加滚动增量，条才会随指针走 */
+  startScrollLeft: number
   origStartMs: number
   origEndMs: number
   origProgress: number
@@ -822,7 +824,7 @@ export class OASGantt extends OASElement {
   private displayColW: number | null = null
   private resizeObs: ResizeObserver | null = null
   private dragCtx: DragCtx | null = null
-  private reparentCtx: { id: string } | null = null
+  private reparentCtx: { id: string; byId: Map<string, TG> } | null = null
   private reparentTarget: { id: string; mode: 'before' | 'after' | 'inside' } | null = null
   private dropLineEl: HTMLElement | null = null
   private linkCtx: {
@@ -833,6 +835,10 @@ export class OASGantt extends OASElement {
     temp: SVGPathElement
   } | null = null
   private selectedLink: { successor: string; predecessor: string; type: string } | null = null
+  private autoScrollRaf = 0
+  private autoScrolling = false
+  private pointerX = 0
+  private pointerY = 0
   private tbody: HTMLElement | null = null
   private theadEl: HTMLElement | null = null
   private sideBody: HTMLElement | null = null
@@ -1430,6 +1436,7 @@ export class OASGantt extends OASElement {
     // 连线：删除键 + 点空白清选中（函数引用稳定，重复 bind 幂等）
     document.addEventListener('keydown', this.docLinkKey)
     document.addEventListener('click', this.docLinkClick)
+    document.addEventListener('keydown', this.docBarDragKey)
     // 首次观测到真实视口宽后自适应列宽（custom element 首连时 clientWidth 可能仍为 0）
     if (typeof ResizeObserver !== 'undefined' && this.tbody) {
       this.resizeObs?.disconnect()
@@ -1443,8 +1450,10 @@ export class OASGantt extends OASElement {
       this.dragCtx = null
       this.cancelReparent()
       this.cancelLink()
+      this.stopAutoScroll()
       document.removeEventListener('keydown', this.docLinkKey)
       document.removeEventListener('click', this.docLinkClick)
+      document.removeEventListener('keydown', this.docBarDragKey)
     })
   }
 
@@ -1455,13 +1464,98 @@ export class OASGantt extends OASElement {
 
   private onScroll = (): void => {
     if (!this.tbody) return
-    if (this.dragCtx) this.cancelDrag()
-    this.cancelReparent()
-    this.cancelLink()
+    const auto = this.autoScrolling
+    this.autoScrolling = false
+    // 用户滚动（非自动滚动）→ 终止进行中的交互（坐标/锚点失效）；自动滚动则保持拖拽并在重建后重定位
+    if (!auto) {
+      if (this.dragCtx) this.cancelDrag()
+      this.cancelReparent()
+      this.cancelLink()
+    }
     if (this.theadEl) this.theadEl.scrollLeft = this.tbody.scrollLeft
     if (this.sideBody) this.sideBody.scrollTop = this.tbody.scrollTop
     this.hideTooltip()
     this.renderWindow()
+    if (auto) this.reconcileDrag()
+  }
+
+  // ===== 拖拽自动滚动（拖到视口边缘自动滚；窗口重建后 reconcile 保持拖拽稳定）=====
+
+  private startAutoScroll(): void {
+    if (this.autoScrollRaf) return
+    if (!this.dragCtx && !this.reparentCtx && !this.linkCtx) return
+    this.autoScrollRaf = requestAnimationFrame(this.autoScrollTick)
+  }
+
+  private stopAutoScroll(): void {
+    if (this.autoScrollRaf) {
+      cancelAnimationFrame(this.autoScrollRaf)
+      this.autoScrollRaf = 0
+    }
+    this.autoScrolling = false
+  }
+
+  private autoScrollTick = (): void => {
+    this.autoScrollRaf = 0
+    const tb = this.tbody
+    if (!tb || (!this.dragCtx && !this.reparentCtx && !this.linkCtx)) return
+    const r = tb.getBoundingClientRect()
+    if (r.height <= 0) {
+      this.stopAutoScroll()
+      return
+    }
+    const band = 28
+    const maxStep = 24
+    const clamp = (v: number): number => Math.max(-maxStep, Math.min(maxStep, Math.ceil(v)))
+    let dy = 0
+    let dx = 0
+    if (this.pointerY < r.top + band) dy = clamp(-((r.top + band - this.pointerY) / band) * maxStep)
+    else if (this.pointerY > r.bottom - band) dy = clamp(((this.pointerY - (r.bottom - band)) / band) * maxStep)
+    if (this.pointerX < r.left + band) dx = clamp(-((r.left + band - this.pointerX) / band) * maxStep)
+    else if (this.pointerX > r.right - band) dx = clamp(((this.pointerX - (r.right - band)) / band) * maxStep)
+    // 行重排拖拽发生在左侧栏（物理左缘恒在带内）→ 横向自动滚动无意义且会把时间轴误拉走
+    if (this.reparentCtx) dx = 0
+    const maxTop = tb.scrollHeight - tb.clientHeight
+    if (dy < 0 && tb.scrollTop <= 0) dy = 0
+    if (dy > 0 && tb.scrollTop >= maxTop) dy = 0
+    // 横向合法域随书写方向：LTR [0, limit]，RTL [-limit, 0]（0 = 画布最右）。
+    // 贴缘意图为「物理方向」（贴右缘→视口右移），两侧一致，**不按 RTL 翻号**。
+    const limit = tb.scrollWidth - tb.clientWidth
+    const minLeft = isRtl(this) ? -limit : 0
+    const maxLeft = isRtl(this) ? 0 : limit
+    if (dx < 0 && tb.scrollLeft <= minLeft) dx = 0
+    if (dx > 0 && tb.scrollLeft >= maxLeft) dx = 0
+    if (dy === 0 && dx === 0) {
+      this.stopAutoScroll()
+      return
+    }
+    const beforeTop = tb.scrollTop
+    const beforeLeft = tb.scrollLeft
+    this.autoScrolling = true
+    if (dy) tb.scrollTop = Math.max(0, Math.min(maxTop, beforeTop + dy))
+    if (dx) tb.scrollLeft = Math.max(minLeft, Math.min(maxLeft, beforeLeft + dx))
+    if (tb.scrollTop === beforeTop && tb.scrollLeft === beforeLeft) this.autoScrolling = false
+    this.autoScrollRaf = requestAnimationFrame(this.autoScrollTick)
+  }
+
+  /** 自动滚动触发窗口重建后，重新锚定进行中的拖拽（条 / 连线临时线 / 行落点） */
+  private reconcileDrag(): void {
+    if (this.dragCtx) {
+      const el = this.barsEl?.querySelector<HTMLElement>(`.bar[data-id="${escId(this.dragCtx.id)}"]`)
+      if (el) this.dragCtx.bar = el
+      this.applyBarDragVisual(this.pointerX)
+    } else if (this.linkCtx) {
+      const ctx = this.linkCtx
+      if (!ctx.temp.isConnected) {
+        const t = document.createElementNS('http://www.w3.org/2000/svg', 'path')
+        t.setAttribute('class', 'temp-link')
+        this.linksEl?.appendChild(t)
+        ctx.temp = t
+      }
+      this.updateLinkTemp(this.pointerX, this.pointerY)
+    } else if (this.reparentCtx) {
+      this.updateReparentTarget(this.pointerX, this.pointerY)
+    }
   }
 
   protected override render(): void {
@@ -1781,8 +1875,9 @@ export class OASGantt extends OASElement {
         }
       }
       // 连线点（拖拽建依赖）：仅非只读态渲染，悬停显现（disabled 任务可作**前置**，故仍渲染）
+      // 里程碑 start==end，两点几何重合易误判类型 → 只出「完成端」单点（fs 惯例）
       if (!this.hasAttr('readonly')) {
-        for (const ep of ['start', 'end'] as const) {
+        for (const ep of row.isMilestone ? (['end'] as const) : (['start', 'end'] as const)) {
           const dot = document.createElement('span')
           dot.className = `link-dot link-${ep}`
           dot.dataset.id = row.task.id
@@ -1893,28 +1988,36 @@ export class OASGantt extends OASElement {
     if (e.button !== 0 || this.reparentCtx || this.dragCtx || this.linkCtx) return
     if ((e.target as HTMLElement).closest('.toggle')) return
     if (this.hasAttr('readonly') || row.task.disabled === true) return
-    this.reparentCtx = { id: row.task.id }
+    // drag 起点建一次 id→task 缓存，移动期复用（万级下避免每帧 O(n)）
+    this.reparentCtx = { id: row.task.id, byId: new Map(this._tasks.map((t) => [t.id, t])) }
     this.bindDocReparent()
   }
 
   private onReparentMove(e: PointerEvent): void {
+    this.pointerX = e.clientX
+    this.pointerY = e.clientY
+    this.updateReparentTarget(e.clientX, e.clientY)
+    this.startAutoScroll()
+  }
+
+  private updateReparentTarget(clientX: number, clientY: number): void {
     const ctx = this.reparentCtx
     const side = this.sideBody
     if (!ctx || !side) return
     const rect = side.getBoundingClientRect()
     const rowH = this.rowHeight()
-    const y = e.clientY - rect.top + side.scrollTop
+    const y = clientY - rect.top + side.scrollTop
     const idx = Math.max(0, Math.min(this.rows.length - 1, Math.floor(y / rowH)))
     const target = this.rows[idx]
     if (!target) return
     const localY = y - idx * rowH
-    const x = isRtl(this) ? rect.right - e.clientX : e.clientX - rect.left
+    const x = isRtl(this) ? rect.right - clientX : clientX - rect.left
     const indent = 8 + target.depth * 16
     let mode: 'before' | 'after' | 'inside' = localY < rowH / 2 ? 'before' : 'after'
     // 指针越过目标缩进一定量 → 落为目标子级（右半区下压生效）
     if (x > indent + 24 && rowH - localY > 8) mode = 'inside'
     // disabled 目标禁止 drop-inside（改其结构归属，进而改派生聚合）；前/后同级插入只改父级子序，不动 disabled 自身
-    if (!this.canReparent(ctx.id, target.task.id) || (target.task.disabled === true && mode === 'inside')) {
+    if (!this.canReparent(ctx.id, target.task.id, ctx.byId) || (target.task.disabled === true && mode === 'inside')) {
       this.reparentTarget = null
       this.hideDropLine()
       return
@@ -1924,6 +2027,7 @@ export class OASGantt extends OASElement {
   }
 
   private onReparentUp(): void {
+    this.stopAutoScroll()
     const ctx = this.reparentCtx
     const target = this.reparentTarget
     this.reparentCtx = null
@@ -1935,6 +2039,7 @@ export class OASGantt extends OASElement {
   }
 
   private cancelReparent(): void {
+    this.stopAutoScroll()
     if (!this.reparentCtx) return
     this.reparentCtx = null
     this.reparentTarget = null
@@ -1942,10 +2047,9 @@ export class OASGantt extends OASElement {
     this.hideDropLine()
   }
 
-  /** 目标不得是拖拽件自身或其后代（防环；成环数据用访问集防死循环） */
-  private canReparent(dragId: string, targetId: string): boolean {
+  /** 目标不得是拖拽件自身或其后代（防环；成环数据用访问集防死循环；byId 由调用方缓存传入） */
+  private canReparent(dragId: string, targetId: string, byId: Map<string, TG>): boolean {
     if (dragId === targetId) return false
-    const byId = new Map(this._tasks.map((t) => [t.id, t]))
     const seen = new Set<string>()
     let cur = byId.get(targetId)
     while (cur && cur.parent && !seen.has(cur.id)) {
@@ -2053,6 +2157,10 @@ export class OASGantt extends OASElement {
     const onHit = e.composedPath().some((n) => (n as Element)?.classList?.contains?.('link-hit'))
     if (!onHit) this.clearLinkSelection()
   }
+  /** 条拖拽的 Esc 兜底（document 级）：自动滚动每帧重建条会丢焦点，条内 keydown 不再触发 */
+  private docBarDragKey = (e: KeyboardEvent): void => {
+    if (e.key === 'Escape' && this.dragCtx) this.cancelDrag()
+  }
 
   private bindDocLink(): void {
     document.addEventListener('pointermove', this.docLinkMove)
@@ -2082,14 +2190,22 @@ export class OASGantt extends OASElement {
   }
 
   private onLinkMove(e: PointerEvent): void {
+    this.pointerX = e.clientX
+    this.pointerY = e.clientY
+    this.updateLinkTemp(e.clientX, e.clientY)
+    this.startAutoScroll()
+  }
+
+  private updateLinkTemp(clientX: number, clientY: number): void {
     const ctx = this.linkCtx
     const svg = this.linksEl
     if (!ctx || !svg) return
     const r = svg.getBoundingClientRect()
-    ctx.temp.setAttribute('d', `M ${ctx.sx} ${ctx.sy} L ${e.clientX - r.left} ${e.clientY - r.top}`)
+    ctx.temp.setAttribute('d', `M ${ctx.sx} ${ctx.sy} L ${clientX - r.left} ${clientY - r.top}`)
   }
 
   private onLinkUp(e: PointerEvent): void {
+    this.stopAutoScroll()
     const ctx = this.linkCtx
     this.linkCtx = null
     this.unbindDocLink()
@@ -2117,6 +2233,7 @@ export class OASGantt extends OASElement {
   }
 
   private cancelLink(): void {
+    this.stopAutoScroll()
     if (!this.linkCtx) return
     this.linkCtx.temp.remove()
     this.linkCtx = null
@@ -2199,6 +2316,7 @@ export class OASGantt extends OASElement {
       id: row.task.id,
       mode,
       startX: e.clientX,
+      startScrollLeft: this.tbody?.scrollLeft ?? 0,
       origStartMs: row.startMs,
       origEndMs: row.endMs,
       origProgress: row.progress,
@@ -2214,11 +2332,20 @@ export class OASGantt extends OASElement {
   }
 
   private onBarPointerMove(e: PointerEvent): void {
+    this.pointerX = e.clientX
+    this.pointerY = e.clientY
+    this.applyBarDragVisual(e.clientX)
+    this.startAutoScroll()
+  }
+
+  private applyBarDragVisual(clientX: number): void {
     const ctx = this.dragCtx
     if (!ctx) return
     const colW = this.colW()
     const rtl = isRtl(this)
-    let dx = e.clientX - ctx.startX
+    // 位移 = 指针位移 + 横向滚动增量（自动滚动期间指针可静止）：条才随指针走、可拖出视口边缘
+    const scrollDelta = (this.tbody?.scrollLeft ?? 0) - ctx.startScrollLeft
+    let dx = clientX - ctx.startX + scrollDelta
     if (rtl) dx = -dx
     if (ctx.mode === 'progress') {
       const barW = Math.max(this.xOf(ctx.origEndMs) - this.xOf(ctx.origStartMs), 1)
@@ -2274,7 +2401,10 @@ export class OASGantt extends OASElement {
     if (ctx.mode === 'resize-end') {
       const x1 = this.xOf(ctx.origStartMs)
       const x2 = this.xOf(newEndMs)
-      ctx.bar.style.width = `${Math.max(x2 - x1, 2)}px`
+      const w = Math.max(x2 - x1, 2)
+      ctx.bar.style.width = `${w}px`
+      // RTL 下 left = mirrorX(起点) − 宽度：改宽须同步 left，否则被抓手柄（终点=物理左缘）不动、起点漂移
+      if (rtl) ctx.bar.style.left = `${this.mirrorX(x1) - w}px`
     }
   }
 
@@ -2289,6 +2419,7 @@ export class OASGantt extends OASElement {
   }
 
   private onBarPointerUp(_e: PointerEvent): void {
+    this.stopAutoScroll()
     const ctx = this.dragCtx
     this.dragCtx = null
     if (!ctx) return
@@ -2306,6 +2437,7 @@ export class OASGantt extends OASElement {
 
   /** 取消拖拽：视觉回滚、零事件零写回、无孤儿 ctx */
   private cancelDrag(): void {
+    this.stopAutoScroll()
     const ctx = this.dragCtx
     this.dragCtx = null
     this.unbindDocDrag()
