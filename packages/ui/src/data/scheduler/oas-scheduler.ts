@@ -12,6 +12,7 @@ import {
   toISODate,
   weekdayLabels,
 } from '../../form/calendar/date-grid.js'
+import { isRtl } from '../../shared/direction.js'
 
 const STYLE = `
 :host {
@@ -348,6 +349,149 @@ const STYLE = `
 .more:hover {
   color: var(--oas-color-primary);
 }
+.nowline {
+  position: absolute;
+  inset-inline: 0;
+  height: 2px;
+  background: var(--oas-color-danger);
+  z-index: 3;
+  pointer-events: none;
+}
+.nowline::before {
+  content: '';
+  position: absolute;
+  inset-inline-start: -4px;
+  top: -3px;
+  width: 8px;
+  height: 8px;
+  border-radius: var(--oas-radius-full);
+  background: var(--oas-color-danger);
+}
+.resourceview {
+  --res-label-w: 140px;
+  overflow: auto;
+  font-size: var(--oas-font-size-sm);
+}
+.res-head {
+  display: grid;
+  grid-template-columns: var(--res-label-w) 1fr;
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--oas-color-bg);
+  border-block-end: 1px solid var(--oas-color-border);
+}
+.res-corner { min-height: 28px; }
+.res-axis { position: relative; min-height: 28px; }
+.res-tick {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  color: var(--oas-color-text-secondary-strong);
+  font-size: var(--oas-font-size-xs);
+  white-space: nowrap;
+}
+.res-body { position: relative; }
+.res-row {
+  display: grid;
+  grid-template-columns: var(--res-label-w) 1fr;
+  border-block-end: 1px solid var(--oas-color-border);
+}
+.res-label {
+  display: flex;
+  align-items: center;
+  gap: var(--oas-space-1);
+  padding-inline: var(--oas-space-2);
+  min-height: 36px;
+  border: 0;
+  background: transparent;
+  color: var(--oas-color-text-primary);
+  font: inherit;
+  text-align: start;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.res-label::before {
+  content: '';
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: var(--oas-radius-full);
+  background: var(--chip-color, var(--oas-color-primary));
+}
+.res-lane { position: relative; min-height: 36px; }
+.res-bar {
+  position: absolute;
+  top: 6px;
+  bottom: 6px;
+  border: 0;
+  border-radius: var(--oas-radius-sm);
+  background: color-mix(in srgb, var(--chip-color, var(--oas-color-primary)) 22%, var(--oas-color-bg));
+  color: var(--oas-color-text-primary);
+  font: inherit;
+  font-size: var(--oas-font-size-xs);
+  padding-inline: var(--oas-space-1);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.res-allDayChip { position: absolute; top: 6px; inset-inline-start: 4px; }
+.res-now {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--oas-color-danger);
+  z-index: 3;
+  pointer-events: none;
+}
+.res-week .res-head { grid-template-columns: var(--res-label-w) repeat(7, 1fr); }
+.res-dayhead {
+  padding: var(--oas-space-1);
+  text-align: center;
+  color: var(--oas-color-text-secondary-strong);
+  font-size: var(--oas-font-size-xs);
+}
+.res-dayhead.today { color: var(--oas-color-primary); font-weight: 600; }
+.res-week .res-row { grid-template-columns: var(--res-label-w) repeat(7, 1fr); }
+.res-cell {
+  min-height: 36px;
+  border-inline-start: 1px solid var(--oas-color-border);
+  display: flex;
+  flex-direction: column;
+  cursor: pointer;
+}
+.res-cell.today { background: color-mix(in srgb, var(--oas-color-primary) 6%, transparent); }
+.res-cell-allday { margin: 2px; }
+.res-cell-track { position: relative; }
+.res-ev {
+  position: absolute;
+  inset-inline: 2px;
+  border: 0;
+  border-radius: var(--oas-radius-sm);
+  background: color-mix(in srgb, var(--chip-color, var(--oas-color-primary)) 22%, var(--oas-color-bg));
+  color: var(--oas-color-text-primary);
+  font: inherit;
+  font-size: var(--oas-font-size-xs);
+  padding-inline: var(--oas-space-1);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: start;
+  cursor: pointer;
+}
+.resourceview[data-rtl] { direction: rtl; }
+.create-preview {
+  position: absolute;
+  background: color-mix(in srgb, var(--oas-color-primary) 22%, transparent);
+  border: 1px dashed var(--oas-color-primary);
+  border-radius: var(--oas-radius-sm);
+  pointer-events: none;
+  z-index: 4;
+}
 `
 
 /** 日程事件：`{ id?, date: 'YYYY-MM-DD', title, color?, start?, end? }`（start/end 为 'HH:mm' 时刻，week/day 视图按时刻渲染 timed 块，缺省为全天事件） */
@@ -362,6 +506,8 @@ export interface SchedulerEvent {
   repeat?: SchedulerRepeat
   /** 提前提醒分钟数（组件到点派发 oas-remind） */
   remind?: number
+  /** 所属资源 id（资源视图分组；缺省归「未分配」行） */
+  resource?: string
 }
 
 /** 重复规则（RRULE 子集） */
@@ -391,6 +537,8 @@ export interface SchedulerEventClickDetail {
 /** day-click 事件载荷 */
 export interface SchedulerDayClickDetail {
   date: string
+  /** 资源视图下点中的资源行 id（其他视图缺省） */
+  resource?: string
 }
 
 /** view-change 事件载荷 */
@@ -398,7 +546,24 @@ export interface SchedulerViewChangeDetail {
   view: SchedulerView
 }
 
-export type SchedulerView = 'month' | 'week' | 'day' | 'agenda'
+/** create 事件载荷（时间格拖拽出时间段；组件不自动建事件，宿主接到后自行 addEvent） */
+export interface SchedulerCreateDetail {
+  date: string
+  start: string
+  end: string
+  resource?: string
+}
+
+/** 资源（资源视图的行） */
+export interface SchedulerResource {
+  id: string
+  title: string
+  color?: string
+}
+
+export type SchedulerView = 'month' | 'week' | 'day' | 'agenda' | 'resource' | 'resource-week'
+
+const SCHEDULER_VIEWS: SchedulerView[] = ['month', 'week', 'day', 'agenda', 'resource', 'resource-week']
 
 /** 'HH:mm' → 分钟数；非法或越界返回 null（h 0-24、m 0-59，且 24 点仅允许整点） */
 function parseTime(s: string | undefined): number | null {
@@ -431,18 +596,61 @@ function sanitizeEvents(v: unknown): SchedulerEvent[] {
       }
     }
     if (typeof it.remind === 'number' && Number.isFinite(it.remind) && it.remind >= 0) ev.remind = it.remind
+    if (typeof it.resource === 'string' && it.resource !== '') ev.resource = it.resource
     out.push(ev)
+  }
+  return out
+}
+
+/** 资源清洗：id 与 title 必填、id 去重；非法项丢弃 */
+function sanitizeResources(v: unknown): SchedulerResource[] {
+  if (!Array.isArray(v)) return []
+  const out: SchedulerResource[] = []
+  const seen = new Set<string>()
+  for (const item of v) {
+    if (typeof item !== 'object' || item === null) continue
+    const it = item as Record<string, unknown>
+    if (typeof it.id !== 'string' || it.id === '' || seen.has(it.id)) continue
+    if (typeof it.title !== 'string' || it.title === '') continue
+    seen.add(it.id)
+    const r: SchedulerResource = { id: it.id, title: it.title }
+    if (typeof it.color === 'string' && it.color !== '') r.color = it.color
+    out.push(r)
   }
   return out
 }
 
 export class OASScheduler extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['events', 'page-show-date', 'first-day-of-week', 'locale', 'view', 'start-hour', 'end-hour', 'timezone']
+    return [
+      'events',
+      'resources',
+      'page-show-date',
+      'first-day-of-week',
+      'locale',
+      'view',
+      'start-hour',
+      'end-hour',
+      'timezone',
+      'show-now',
+      'dir',
+    ]
+  }
+
+  private static readonly VIEW_KEY: Record<SchedulerView, string> = {
+    month: 'scheduler.viewMonth',
+    week: 'scheduler.viewWeek',
+    day: 'scheduler.viewDay',
+    agenda: 'scheduler.viewAgenda',
+    resource: 'scheduler.viewResource',
+    'resource-week': 'scheduler.viewResourceWeek',
   }
 
   private _events: Array<SchedulerEvent & { id: string }> = []
   private _eventsAttrCache = ''
+  private _resources: SchedulerResource[] = []
+  private _resourcesAttrCache = ''
+  private nowTimer = 0
   private nextId = 1
   private viewDate: Date = startOfDay(new Date())
   private lastPageAnchor = ''
@@ -460,6 +668,22 @@ export class OASScheduler extends OASElement {
     newEnd?: string
   } | null = null
   private dropCol: HTMLElement | null = null
+  private createCtx: {
+    mode: 'v' | 'h'
+    iso: string
+    resource?: string
+    anchor: number
+    cur: number
+    track: HTMLElement
+  } | null = null
+  private previewEl: HTMLElement | null = null
+  private onCreateEsc = (e: KeyboardEvent): void => {
+    if (e.key === 'Escape' && this.createCtx) {
+      this.createCtx = null
+      document.removeEventListener('keydown', this.onCreateEsc)
+      this.clearCreatePreview()
+    }
+  }
 
   /**
    * @apiProperty 日程事件（公开读/写通道）：读为数组拷贝（含自动分配的 id）；写为程序性赋值
@@ -474,6 +698,19 @@ export class OASScheduler extends OASElement {
     this.setAttribute('events', this._eventsAttrCache)
     this.update()
     this.emitEventsChange()
+  }
+
+  /**
+   * @apiProperty 资源列表（资源视图的行）：读为数组拷贝；写序列化进受控 `resources` 属性并重渲染。
+   */
+  get resources(): SchedulerResource[] {
+    return this._resources.map((r) => ({ ...r }))
+  }
+  set resources(v: SchedulerResource[]) {
+    this._resources = sanitizeResources(v)
+    this._resourcesAttrCache = JSON.stringify(this._resources)
+    this.setAttribute('resources', this._resourcesAttrCache)
+    this.update()
   }
 
   /** 新增事件：返回分配到的 id */
@@ -569,6 +806,19 @@ export class OASScheduler extends OASElement {
     this._events = this.normalizeWithIds(sanitizeEvents(parsed))
   }
 
+  private syncResources(): void {
+    const raw = this.getAttr('resources', '')
+    if (raw === this._resourcesAttrCache) return
+    this._resourcesAttrCache = raw
+    let parsed: unknown
+    try {
+      parsed = raw === '' ? [] : JSON.parse(raw)
+    } catch {
+      parsed = []
+    }
+    this._resources = sanitizeResources(parsed)
+  }
+
   private effectiveLocale(): string {
     const own = this.getAttr('locale', '')
     if (own) return own
@@ -636,13 +886,20 @@ export class OASScheduler extends OASElement {
     const monthParts = this.shadow.querySelectorAll<HTMLElement>('[part="weekdays"], [part="grid"]')
     const timeview = this.shadow.querySelector<HTMLElement>('[part="timeview"]')
     const agenda = this.shadow.querySelector<HTMLElement>('[part="agenda"]')
+    const resEl = this.shadow.querySelector<HTMLElement>('[part="resource"]')
     const isTime = this.view === 'week' || this.view === 'day'
     const isAgenda = this.view === 'agenda'
-    for (const p of monthParts) p.hidden = isTime || isAgenda
+    const isResource = this.view === 'resource' || this.view === 'resource-week'
+    for (const p of monthParts) p.hidden = isTime || isAgenda || isResource
     if (timeview) timeview.hidden = !isTime
     if (agenda) agenda.hidden = !isAgenda
-    if (isTime) this.renderTimeView()
-    else if (isAgenda) this.renderAgenda()
+    if (resEl) resEl.hidden = !isResource
+    this.stopNowTimer()
+    if (isTime) {
+      this.renderTimeView()
+      this.startNowTimer()
+    } else if (isAgenda) this.renderAgenda()
+    else if (isResource) this.renderResource()
     else {
       this.renderWeekdays()
       this.renderMonth()
@@ -663,11 +920,14 @@ export class OASScheduler extends OASElement {
             <button type="button" data-view="week"></button>
             <button type="button" data-view="day"></button>
             <button type="button" data-view="agenda"></button>
+            <button type="button" data-view="resource"></button>
+            <button type="button" data-view="resource-week"></button>
           </span>
         </div>
         <div class="weekdays" part="weekdays"></div>
         <div class="grid" part="grid" role="group"></div>
         <div class="timeview" part="timeview" hidden></div>
+        <div class="resourceview" part="resource" hidden></div>
         <div class="agenda" part="agenda" hidden></div>
       </div>
     `
@@ -705,6 +965,7 @@ export class OASScheduler extends OASElement {
 
   protected override update(): void {
     this.syncEvents()
+    this.syncResources()
     this.scheduleReminders()
     // view 属性同步（受控宿主驱动才发 oas-view-change；属性首次吸收不派发）
     const viewAttr = (this.getAttr('view', 'month') as SchedulerView) || 'month'
@@ -713,7 +974,7 @@ export class OASScheduler extends OASElement {
       this.lastView = viewAttr
       if (!first && viewAttr !== this.view)
         this.emit('view-change', { view: viewAttr } satisfies SchedulerViewChangeDetail)
-      this.view = ['month', 'week', 'day', 'agenda'].includes(viewAttr) ? viewAttr : 'month'
+      this.view = SCHEDULER_VIEWS.includes(viewAttr) ? viewAttr : 'month'
     }
     // 面板月锚点：page-show-date 变化时重锚定（受控），未变不打断浏览。
     // page-show-date 视为「目标时区的日历日」直接使用（不换算；防偏西时区差一天/整月）
@@ -741,9 +1002,7 @@ export class OASScheduler extends OASElement {
       btn.classList.toggle('on', active)
       btn.setAttribute('aria-pressed', String(active))
       const v = btn.dataset.view as SchedulerView
-      btn.textContent = this.t(
-        `scheduler.view${v === 'month' ? 'Month' : v === 'week' ? 'Week' : v === 'day' ? 'Day' : 'Agenda'}`,
-      )
+      btn.textContent = this.t(OASScheduler.VIEW_KEY[v] ?? 'scheduler.viewMonth')
     }
     const prev = this.shadow.querySelector<HTMLElement>('[part="prev"]')
     const next = this.shadow.querySelector<HTMLElement>('[part="next"]')
@@ -760,7 +1019,8 @@ export class OASScheduler extends OASElement {
 
   private navigate(delta: number): void {
     if (this.view === 'month') this.viewDate = addMonths(this.viewDate, delta)
-    else if (this.view === 'week') this.viewDate = new Date(this.viewDate.getTime() + delta * 7 * 86400_000)
+    else if (this.view === 'week' || this.view === 'resource-week')
+      this.viewDate = new Date(this.viewDate.getTime() + delta * 7 * 86400_000)
     else if (this.view === 'agenda') this.viewDate = new Date(this.viewDate.getTime() + delta * 28 * 86400_000)
     else this.viewDate = new Date(this.viewDate.getTime() + delta * 86400_000)
     this.renderCurrentView()
@@ -957,6 +1217,7 @@ export class OASScheduler extends OASElement {
   override disconnectedCallback(): void {
     for (const t of this.remindTimers.values()) clearTimeout(t)
     this.remindTimers.clear()
+    this.stopNowTimer()
     super.disconnectedCallback()
   }
 
@@ -1124,6 +1385,15 @@ export class OASScheduler extends OASElement {
       for (const { ev, s, e } of timed) {
         track.appendChild(this.renderTimedEvent(ev, s, e, startH, hourH))
       }
+      if (isSameDay(d, today) && this.getAttr('show-now', 'true') !== 'false') {
+        const now = this.nowMinutes()
+        if (now !== null && now >= startH * 60 && now <= endH * 60) {
+          const line = document.createElement('div')
+          line.className = 'nowline'
+          line.style.top = `${((now - startH * 60) / 60) * hourH}px`
+          track.appendChild(line)
+        }
+      }
       track.addEventListener('dragover', (e) => {
         if (!this.dragCtx) return
         e.preventDefault()
@@ -1136,10 +1406,14 @@ export class OASScheduler extends OASElement {
         e.preventDefault()
         this.onTrackDrop(col, iso, e as DragEvent)
       })
+      track.addEventListener('pointerdown', (e) => this.onTrackPointerDown(track, iso, e as PointerEvent))
       track.addEventListener('pointermove', (e) => this.onTrackPointerMove(track, iso, e))
       track.addEventListener('pointerup', () => this.onTrackPointerUp())
       track.addEventListener('pointercancel', () => {
         this.dragCtx = null
+        this.createCtx = null
+        document.removeEventListener('keydown', this.onCreateEsc)
+        this.clearCreatePreview()
         this.setDropCol(null)
       })
       col.appendChild(track)
@@ -1222,6 +1496,11 @@ export class OASScheduler extends OASElement {
 
   /** 缩放进行：只更新被拖块的视觉高度（不重建 DOM），把新 end 记在 dragCtx，pointerup 才一次性回写+派发 */
   private onTrackPointerMove(track: HTMLElement, _iso: string, e: PointerEvent): void {
+    if (this.createCtx) {
+      const cur = this.createCtx.mode === 'v' ? this.minuteFromY(track, e.clientY) : this.minuteFromX(track, e.clientX)
+      this.renderCreatePreview(cur)
+      return
+    }
     const ctx = this.dragCtx
     if (!ctx || ctx.mode !== 'resize') return
     const hourH = 48
@@ -1237,10 +1516,371 @@ export class OASScheduler extends OASElement {
 
   /** 缩放落定：一次性回写 end（update → 单次重建）并派发 oas-events-change */
   private onTrackPointerUp(): void {
+    if (this.finishCreate()) return
     const ctx = this.dragCtx
     this.dragCtx = null
     if (!ctx || ctx.mode !== 'resize' || !ctx.newEnd) return
     this.updateEvent(ctx.id, { end: ctx.newEnd })
+  }
+
+  /** 当前时刻分钟数（时区感知；无时区走本地） */
+  private nowMinutes(): number | null {
+    const tz = this.timezone()
+    if (!tz) {
+      const d = new Date()
+      return d.getHours() * 60 + d.getMinutes()
+    }
+    const parts = new Intl.DateTimeFormat('en-GB', {
+      timeZone: tz,
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+    }).formatToParts(new Date())
+    const get = (t: string): number => Number(parts.find((p) => p.type === t)?.value ?? 0)
+    return get('hour') * 60 + get('minute')
+  }
+
+  /** 由纵向坐标换算分钟数（15 分钟吸附，夹在 start-hour ~ end-hour） */
+  private minuteFromY(track: HTMLElement, clientY: number): number {
+    const hourH = 48
+    const rect = track.getBoundingClientRect()
+    const lo = this.startHour() * 60
+    let m = this.startHour() * 60 + ((clientY - rect.top) / hourH) * 60
+    m = Math.round(m / 15) * 15
+    return Math.max(lo, Math.min(m, this.endHour() * 60))
+  }
+
+  /** 由横向坐标换算分钟数（资源单日视图；RTL 从 inline-start 边量起） */
+  private minuteFromX(lane: HTMLElement, clientX: number): number {
+    const rect = lane.getBoundingClientRect()
+    const lo = this.startHour() * 60
+    const span = (this.endHour() - this.startHour()) * 60
+    const rel = isRtl(this) ? rect.right - clientX : clientX - rect.left
+    let m = lo + (rect.width > 0 ? rel / rect.width : 0) * span
+    m = Math.round(m / 15) * 15
+    return Math.max(lo, Math.min(m, this.endHour() * 60))
+  }
+
+  private fmtMin(m: number): string {
+    return `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`
+  }
+
+  /** 时间格空白处按下：起一个拖拽创建手势（点事件条不触发） */
+  private onTrackPointerDown(track: HTMLElement, iso: string, e: PointerEvent): void {
+    if (e.button !== 0) return
+    if ((e.target as HTMLElement).closest('.event, .res-bar, .chip')) return
+    const anchor = this.minuteFromY(track, e.clientY)
+    this.createCtx = { mode: 'v', iso, anchor, cur: anchor, track }
+    this.previewEl = null
+    track.setPointerCapture(e.pointerId)
+    document.addEventListener('keydown', this.onCreateEsc)
+    this.renderCreatePreview(anchor)
+  }
+
+  /** 资源行空白处按下：横向拖拽创建 */
+  private onLanePointerDown(lane: HTMLElement, iso: string, resource: string, e: PointerEvent): void {
+    if (e.button !== 0) return
+    if ((e.target as HTMLElement).closest('.event, .res-bar, .chip')) return
+    const anchor = this.minuteFromX(lane, e.clientX)
+    this.createCtx = { mode: 'h', iso, resource, anchor, cur: anchor, track: lane }
+    this.previewEl = null
+    lane.setPointerCapture(e.pointerId)
+    document.addEventListener('keydown', this.onCreateEsc)
+    this.renderCreatePreview(anchor)
+  }
+
+  private renderCreatePreview(cur: number): void {
+    const ctx = this.createCtx
+    if (!ctx) return
+    ctx.cur = cur
+    if (!this.previewEl) {
+      const el = document.createElement('div')
+      el.className = 'create-preview'
+      ctx.track.appendChild(el)
+      this.previewEl = el
+    }
+    const a = Math.min(ctx.anchor, cur)
+    const b = Math.max(ctx.anchor, cur)
+    if (ctx.mode === 'v') {
+      const hourH = 48
+      this.previewEl.style.top = `${((a - this.startHour() * 60) / 60) * hourH}px`
+      this.previewEl.style.height = `${Math.max(((b - a) / 60) * hourH, 4)}px`
+    } else {
+      const span = (this.endHour() - this.startHour()) * 60
+      this.previewEl.style.insetInlineStart = `${((a - this.startHour() * 60) / span) * 100}%`
+      this.previewEl.style.width = `${Math.max(((b - a) / span) * 100, 0.5)}%`
+    }
+  }
+
+  private clearCreatePreview(): void {
+    this.previewEl?.remove()
+    this.previewEl = null
+  }
+
+  /** 结束拖拽创建：>=15 分钟派发 oas-create，否则视作点击派发 oas-day-click；返回是否有手势 */
+  private finishCreate(): boolean {
+    const ctx = this.createCtx
+    if (!ctx) return false
+    this.createCtx = null
+    document.removeEventListener('keydown', this.onCreateEsc)
+    this.clearCreatePreview()
+    const a = Math.min(ctx.anchor, ctx.cur)
+    const b = Math.max(ctx.anchor, ctx.cur)
+    if (b - a >= 15) {
+      this.emit('create', {
+        date: ctx.iso,
+        start: this.fmtMin(a),
+        end: this.fmtMin(b),
+        resource: ctx.resource,
+      } satisfies SchedulerCreateDetail)
+    } else {
+      this.emit('day-click', { date: ctx.iso, resource: ctx.resource } satisfies SchedulerDayClickDetail)
+    }
+    return true
+  }
+
+  private startNowTimer(): void {
+    if (this.nowTimer || this.getAttr('show-now', 'true') === 'false') return
+    this.nowTimer = window.setInterval(() => this.renderCurrentView(), 60_000)
+  }
+
+  private stopNowTimer(): void {
+    if (this.nowTimer) {
+      window.clearInterval(this.nowTimer)
+      this.nowTimer = 0
+    }
+  }
+
+  /** 资源视图：resource = 单日横向时间轴；resource-week = 周 × 资源 */
+  private renderResource(): void {
+    if (this.view === 'resource') this.renderResourceDay()
+    else this.renderResourceWeek()
+  }
+
+  /** 资源行：显式 resources；无则单行「未分配」。事件带未知 resource 时补一行「未分配」 */
+  private resourceRows(): SchedulerResource[] {
+    const rows: SchedulerResource[] = this._resources.map((r) => ({ ...r }))
+    if (rows.length === 0) return [{ id: '', title: this.t('scheduler.unassigned') }]
+    const ids = new Set(rows.map((r) => r.id))
+    if (this._events.some((e) => !e.resource || !ids.has(e.resource)))
+      rows.push({ id: '', title: this.t('scheduler.unassigned') })
+    return rows
+  }
+
+  private eventsOnResource(iso: string, resourceId: string): Array<SchedulerEvent & { id: string }> {
+    const ids = new Set(this._resources.map((r) => r.id))
+    return this.eventsOn(iso).filter((e) => (e.resource && ids.has(e.resource) ? e.resource : '') === resourceId)
+  }
+
+  /** 单日资源视图：行 = 资源，横向 = 小时；事件按 start/end 渲染为横条，全天事件排行首 */
+  private renderResourceDay(): void {
+    const el = this.shadow.querySelector<HTMLElement>('[part="resource"]')
+    if (!el) return
+    const day = this.viewDate
+    const iso = toISODate(day)
+    if (this.titleEl) this.titleEl.textContent = this.fmtTz(day, 'yyyy-MM-dd')
+    el.innerHTML = ''
+    el.className = 'resourceview res-day'
+    el.toggleAttribute('data-rtl', isRtl(this))
+
+    const startH = this.startHour()
+    const endH = this.endHour()
+    const hours = endH - startH
+    const today = this.todayTz()
+    const showNow = this.getAttr('show-now', 'true') !== 'false'
+    const now = this.nowMinutes()
+
+    const head = document.createElement('div')
+    head.className = 'res-head'
+    const corner = document.createElement('div')
+    corner.className = 'res-corner'
+    head.appendChild(corner)
+    const axis = document.createElement('div')
+    axis.className = 'res-axis'
+    for (let h = startH; h < endH; h++) {
+      const tick = document.createElement('span')
+      tick.className = 'res-tick'
+      tick.style.insetInlineStart = `${((h - startH) / hours) * 100}%`
+      tick.textContent = `${String(h).padStart(2, '0')}:00`
+      axis.appendChild(tick)
+    }
+    head.appendChild(axis)
+    el.appendChild(head)
+
+    const body = document.createElement('div')
+    body.className = 'res-body'
+    body.setAttribute('role', 'grid')
+    for (const r of this.resourceRows()) {
+      const row = document.createElement('div')
+      row.className = 'res-row'
+      row.dataset.resource = r.id
+      row.setAttribute('role', 'row')
+      const label = document.createElement('button')
+      label.type = 'button'
+      label.className = 'res-label'
+      label.setAttribute('role', 'rowheader')
+      label.textContent = r.title
+      if (r.color) label.style.setProperty('--chip-color', r.color)
+      label.addEventListener('click', () => {
+        this.emit('day-click', { date: iso, resource: r.id } satisfies SchedulerDayClickDetail)
+      })
+      row.appendChild(label)
+
+      const lane = document.createElement('div')
+      lane.className = 'res-lane'
+      lane.dataset.resource = r.id
+      lane.setAttribute('role', 'gridcell')
+      lane.addEventListener('pointerdown', (e) => this.onLanePointerDown(lane, iso, r.id, e as PointerEvent))
+      lane.addEventListener('pointermove', (e) => this.onTrackPointerMove(lane, iso, e as PointerEvent))
+      lane.addEventListener('pointerup', () => this.onTrackPointerUp())
+      lane.addEventListener('pointercancel', () => {
+        this.createCtx = null
+        document.removeEventListener('keydown', this.onCreateEsc)
+        this.clearCreatePreview()
+      })
+      for (const ev of this.eventsOnResource(iso, r.id)) {
+        const s = parseTime(ev.start)
+        if (s === null) {
+          const chip = this.renderChip(ev)
+          chip.classList.add('res-allDayChip')
+          lane.appendChild(chip)
+        } else {
+          const en = Math.max(parseTime(ev.end) ?? s + 60, s + 15)
+          lane.appendChild(this.renderResourceBar(ev, s, en, startH, endH))
+        }
+      }
+      if (showNow && isSameDay(day, today) && now !== null && now >= startH * 60 && now <= endH * 60) {
+        const line = document.createElement('div')
+        line.className = 'res-now'
+        line.style.insetInlineStart = `${((now - startH * 60) / (hours * 60)) * 100}%`
+        lane.appendChild(line)
+      }
+      row.appendChild(lane)
+      body.appendChild(row)
+    }
+    el.appendChild(body)
+  }
+
+  /** 周 × 资源视图：行 = 资源，列 = 本周 7 天；每格纵向按时刻排布定时事件，无 start 的置格顶全天区 */
+  private renderResourceWeek(): void {
+    const el = this.shadow.querySelector<HTMLElement>('[part="resource"]')
+    if (!el) return
+    const ws = this.weekStartOf(this.viewDate)
+    const days: Date[] = []
+    for (let i = 0; i < 7; i++) days.push(new Date(ws.getFullYear(), ws.getMonth(), ws.getDate() + i))
+    if (this.titleEl)
+      this.titleEl.textContent = `${this.fmtTz(days[0]!, 'yyyy-MM-dd')} ~ ${this.fmtTz(days[6]!, 'MM-dd')}`
+    el.innerHTML = ''
+    el.className = 'resourceview res-week'
+    el.toggleAttribute('data-rtl', isRtl(this))
+    const startH = this.startHour()
+    const endH = this.endHour()
+    const hourH = 24
+    const today = this.todayTz()
+
+    const head = document.createElement('div')
+    head.className = 'res-head'
+    const corner = document.createElement('div')
+    corner.className = 'res-corner'
+    head.appendChild(corner)
+    for (const d of days) {
+      const cell = document.createElement('div')
+      cell.className = 'res-dayhead'
+      if (isSameDay(d, today)) cell.classList.add('today')
+      cell.textContent = this.fmtTz(d, 'MM-dd')
+      head.appendChild(cell)
+    }
+    el.appendChild(head)
+
+    const body = document.createElement('div')
+    body.className = 'res-body'
+    body.setAttribute('role', 'grid')
+    for (const r of this.resourceRows()) {
+      const row = document.createElement('div')
+      row.className = 'res-row'
+      row.dataset.resource = r.id
+      row.setAttribute('role', 'row')
+      const label = document.createElement('div')
+      label.className = 'res-label'
+      label.setAttribute('role', 'rowheader')
+      label.textContent = r.title
+      if (r.color) label.style.setProperty('--chip-color', r.color)
+      row.appendChild(label)
+      for (const d of days) {
+        const dIso = toISODate(d)
+        const cell = document.createElement('div')
+        cell.className = 'res-cell'
+        cell.dataset.date = dIso
+        cell.dataset.resource = r.id
+        cell.setAttribute('role', 'gridcell')
+        if (isSameDay(d, today)) cell.classList.add('today')
+        const track = document.createElement('div')
+        track.className = 'res-cell-track'
+        track.style.height = `${(endH - startH) * hourH}px`
+        for (const ev of this.eventsOnResource(dIso, r.id)) {
+          const s = parseTime(ev.start)
+          if (s === null) {
+            const chip = document.createElement('button')
+            chip.type = 'button'
+            chip.className = 'chip res-cell-allday'
+            chip.textContent = ev.title
+            if (ev.color) chip.style.setProperty('--chip-color', ev.color)
+            chip.addEventListener('click', (e) => {
+              e.stopPropagation()
+              this.emit('event-click', { id: ev.id, event: { ...ev } } satisfies SchedulerEventClickDetail)
+            })
+            cell.appendChild(chip)
+          } else {
+            const en = Math.max(parseTime(ev.end) ?? s + 60, s + 15)
+            const block = document.createElement('button')
+            block.type = 'button'
+            block.className = 'res-ev'
+            block.dataset.id = ev.id
+            block.textContent = ev.title
+            if (ev.color) block.style.setProperty('--chip-color', ev.color)
+            block.style.top = `${((s - startH * 60) / 60) * hourH}px`
+            block.style.height = `${Math.max(((en - s) / 60) * hourH, 12)}px`
+            block.addEventListener('click', (e) => {
+              e.stopPropagation()
+              this.emit('event-click', { id: ev.id, event: { ...ev } } satisfies SchedulerEventClickDetail)
+            })
+            track.appendChild(block)
+          }
+        }
+        cell.appendChild(track)
+        cell.addEventListener('click', (e) => {
+          if (e.target === cell)
+            this.emit('day-click', { date: dIso, resource: r.id } satisfies SchedulerDayClickDetail)
+        })
+        row.appendChild(cell)
+      }
+      body.appendChild(row)
+    }
+    el.appendChild(body)
+  }
+
+  /** 资源行内的横向事件条（按 start/end 百分比定位） */
+  private renderResourceBar(
+    ev: SchedulerEvent & { id: string },
+    s: number,
+    e: number,
+    startH: number,
+    endH: number,
+  ): HTMLElement {
+    const bar = document.createElement('button')
+    bar.type = 'button'
+    bar.className = 'res-bar'
+    bar.dataset.id = ev.id
+    bar.textContent = ev.title
+    if (ev.color) bar.style.setProperty('--chip-color', ev.color)
+    const span = endH * 60 - startH * 60
+    bar.style.insetInlineStart = `${((s - startH * 60) / span) * 100}%`
+    bar.style.width = `${Math.max(((e - s) / span) * 100, 2)}%`
+    bar.addEventListener('click', (evt) => {
+      evt.stopPropagation()
+      this.emit('event-click', { id: ev.id, event: { ...ev } } satisfies SchedulerEventClickDetail)
+    })
+    return bar
   }
 }
 

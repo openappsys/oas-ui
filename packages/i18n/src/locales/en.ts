@@ -144,6 +144,9 @@ export const en: LocaleMessages = {
   'scheduler.viewWeek': 'Week',
   'scheduler.viewDay': 'Day',
   'scheduler.viewAgenda': 'Agenda',
+  'scheduler.viewResource': 'Resources',
+  'scheduler.viewResourceWeek': 'Resource week',
+  'scheduler.unassigned': 'Unassigned',
   'scheduler.allDay': 'All day',
   'scheduler.noEvents': 'No events in this range',
   // gantt（甘特图）

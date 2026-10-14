@@ -53,6 +53,29 @@
 
 `timezone` 接受 IANA 时区名（如 `Asia/Shanghai` / `America/New_York` / `UTC`），影响标题/列头的日期格式化与「今天」标记（经 `Intl` timeZone）；非法时区回落本地。
 
+## 资源视图与拖拽创建
+
+<DemoBlock title="单日资源视图（view=resource：行 = 资源，横向 = 小时）">
+  <oas-scheduler id="scheduler-res-day" view="resource" page-show-date="2026-08-10" start-hour="8" end-hour="18" show-now="true" resources='[{"id":"a","title":"会议室 A","color":"#2563eb"},{"id":"b","title":"会议室 B"},{"id":"c","title":"设备间"}]' events='[{"date":"2026-08-10","title":"晨会","start":"09:00","end":"10:00","resource":"a"},{"date":"2026-08-10","title":"评审","start":"14:00","end":"15:30","resource":"b"},{"date":"2026-08-10","title":"维护","resource":"c"}]'></oas-scheduler>
+</DemoBlock>
+
+<DemoBlock title="周 × 资源矩阵（view=resource-week）">
+  <oas-scheduler id="scheduler-res-week" view="resource-week" page-show-date="2026-08-10" resources='[{"id":"a","title":"会议室 A","color":"#2563eb"},{"id":"b","title":"会议室 B"}]' events='[{"date":"2026-08-10","title":"晨会","start":"09:00","end":"10:00","resource":"a"},{"date":"2026-08-11","title":"评审","start":"13:00","end":"14:00","resource":"b"},{"date":"2026-08-12","title":"全天巡检","resource":"a"}]'></oas-scheduler>
+</DemoBlock>
+
+<DemoBlock title="拖拽创建（时间格空白处拖出区间 → oas-create）">
+  <oas-scheduler id="scheduler-create" view="day" page-show-date="2026-08-10" start-hour="8" end-hour="18" events='[{"date":"2026-08-10","title":"晨会","start":"09:00","end":"10:00"}]'></oas-scheduler>
+  <div id="scheduler-create-output" style="color:var(--oas-color-text-secondary);font-size:var(--oas-font-size-sm);margin-top:var(--oas-space-2)"></div>
+</DemoBlock>
+
+<DemoBlock title="RTL（dir=rtl：资源时间轴与资源列镜像）">
+  <div dir="rtl">
+    <oas-scheduler view="resource" page-show-date="2026-08-10" start-hour="8" end-hour="18" resources='[{"id":"a","title":"会议室 A","color":"#2563eb"},{"id":"b","title":"会议室 B"}]' events='[{"date":"2026-08-10","title":"晨会","start":"09:00","end":"10:00","resource":"a"},{"date":"2026-08-10","title":"评审","start":"14:00","end":"15:30","resource":"b"}]'></oas-scheduler>
+  </div>
+</DemoBlock>
+
+`view="resource"` 以行为资源、横向为小时渲染单日排班；`view="resource-week"` 为周 × 资源矩阵（行 = 资源、列 = 本周 7 天）。事件用 `resource` 字段归属资源行，缺省或未知 id 归「未分配」行。在时间格空白处按住拖出区间（≥15 分钟）派发 `oas-create`（`detail: { date, start, end, resource? }`），组件不自动建事件——宿主接到后调 `addEvent`；位移不足视作点击派发 `oas-day-click`。`show-now`（默认开）在当前时间处渲染 now 线。
+
 ## CRUD（方法通道）
 
 <DemoBlock title="addEvent / updateEvent / removeEvent + oas-events-change 反馈">
@@ -121,6 +144,16 @@ onMounted(async () => {
     })
     rout.textContent = `演示：约 1 分钟后此处出现 oas-remind 反馈`
   }
+
+  const create = document.getElementById('scheduler-create')
+  const crout = document.getElementById('scheduler-create-output')
+  if (create) {
+    create.addEventListener('oas-create', (e) => {
+      const { date, start, end, resource } = e.detail
+      create.addEvent({ date, title: '新建（拖拽）', start, end, resource })
+      crout.textContent = `oas-create：${date} ${start}–${end}${resource ? `（${resource}）` : ''} → 已 addEvent`
+    })
+  }
 })
 </script>
 
@@ -137,21 +170,25 @@ onMounted(async () => {
 | `first-day-of-week` | 周起始日（0-6）；缺省按 locale 推导 | `string` | — |
 | `locale` | 本地化（覆盖 config-provider 注入与全局 locale） | `string` | — |
 | `page-show-date` | 面板月锚点（受控）：yyyy-MM-dd，变化时重锚定显示月份 | `string` | — |
+| `resources` | 资源列表（JSON）：[{ id, title, color? }]——资源视图按资源分组；事件 resource 缺省或指向未知 id 时归「未分配」行 | `SchedulerResource[]` | `[]` |
+| `show-now` | 当前时间线（默认开；false 关闭）：week/day 视图与资源单日视图在今天的时间区渲染 now 线 | `string` | `true` |
 | `start-hour` | 时间轴起始小时（0-23，默认 8） | `string` | `8` |
 | `timezone` | 时区（IANA，如 Asia/Shanghai；空串=本地）：影响标题/列头日期格式化与「今天」标记（经 Intl timeZone）；非法时区回落本地 | `string` | — |
-| `view` | 视图：month（默认）/ week / day / agenda；周/日视图为时刻表 + 事件块定位，无 start 的事件进全天行；agenda 为 28 天时序清单 | `SchedulerView` | `month` |
+| `view` | 视图：month（默认）/ week / day / agenda / resource / resource-week；周/日视图为时刻表 + 事件块定位，无 start 的事件进全天行；agenda 为 28 天时序清单；resource 为单日资源横向时间轴、resource-week 为周 × 资源矩阵 | `SchedulerView` | `month` |
 
 #### Property（JS property；是否写回 attribute 见各行说明）
 
 | Property | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
 | `events` | 日程事件（`SchedulerEvent[]`）：`el.events` 读（含自动 id 的拷贝）；`el.events = [...]` 写（同步 events 属性 + 重渲染 + 派发 oas-events-change） | `SchedulerEvent[]` | `[]` |
+| `resources` | 资源列表（`SchedulerResource[]`）：`el.resources` 读（拷贝）；`el.resources = [...]` 写（同步 resources 属性 + 重渲染） | `SchedulerResource[]` | `[]` |
 
 #### 事件
 
 | 事件 | 说明 |
 | --- | --- |
-| `oas-day-click` | 点击空白日格时派发，detail: { date }——宿主接新增表单 |
+| `oas-create` | 在时间格空白处拖出 >=15 分钟区间时派发，detail: { date, start, end, resource? }——组件不自动建事件，宿主接后自行 addEvent；位移不足视作 oas-day-click |
+| `oas-day-click` | 点击空白日格时派发，detail: { date, resource? }（资源视图带资源行 id）——宿主接新增表单 |
 | `oas-event-click` | 点击事件芯片时派发，detail: { id, event }（不触发日格点击） |
 | `oas-events-change` | events 数据变化（set/addEvent/updateEvent/removeEvent）时派发，detail: { events } |
 | `oas-remind` | 事件提醒到点时派发，detail: { id, event }（start - remind 分钟，组件内置定时器） |

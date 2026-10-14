@@ -181,6 +181,9 @@ export const ja: LocaleMessages = {
   'scheduler.viewWeek': '週',
   'scheduler.viewDay': '日',
   'scheduler.viewAgenda': '予定表',
+  'scheduler.viewResource': 'リソース',
+  'scheduler.viewResourceWeek': 'リソース週',
+  'scheduler.unassigned': '未割り当て',
   'scheduler.allDay': '終日',
   'scheduler.noEvents': 'この期間に予定はありません',
   // gantt（ガントチャート）

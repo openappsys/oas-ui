@@ -615,3 +615,117 @@ describe('OASScheduler P1：view 切换 + 周/日时间轴 + 拖拽移动/缩放
     expect(dates[0]).toBe('2026-08-03')
   })
 })
+
+describe('OASScheduler 资源视图 + now 线 + 拖拽创建', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  const RES = [
+    { id: 'r1', title: '会议室 A', color: '#2563eb' },
+    { id: 'r2', title: '会议室 B' },
+  ]
+  const EVS: SchedulerEvent[] = [
+    { date: '2026-08-10', title: '评审', start: '09:00', end: '10:00', resource: 'r1' },
+    { date: '2026-08-10', title: '全天项', resource: 'r2' },
+    { date: '2026-08-11', title: '跨日项', start: '13:00', end: '14:00', resource: 'r1' },
+  ]
+
+  it('resources property 清洗：id/title 必填、id 去重、非法项丢弃', () => {
+    const el = mount({})
+    el.resources = [
+      { id: 'r1', title: 'A' },
+      { id: 'r1', title: '重复' },
+      { id: '', title: 'B' },
+      { id: 'r3', title: '' },
+    ]
+    expect(el.resources.map((r) => r.id)).toEqual(['r1'])
+  })
+
+  it('view=resource 单日：行 = 资源，事件按 start/end 渲染横条，全天事件渲染芯片', () => {
+    const el = mount({
+      view: 'resource',
+      resources: JSON.stringify(RES),
+      events: JSON.stringify(EVS),
+      'page-show-date': '2026-08-10',
+    })
+    expect(el.shadowRoot!.querySelectorAll('[part="resource"] .res-row').length).toBe(2)
+    const r1 = el.shadowRoot!.querySelector('.res-row[data-resource="r1"]')!
+    expect(r1.querySelector('.res-bar')?.textContent).toBe('评审')
+    const r2 = el.shadowRoot!.querySelector('.res-row[data-resource="r2"]')!
+    expect(r2.querySelector('.res-allDayChip')?.textContent).toBe('全天项')
+  })
+
+  it('view=resource：无 resources 时渲染单行「未分配」', () => {
+    const el = mount({
+      view: 'resource',
+      events: JSON.stringify([{ date: '2026-08-10', title: 'x' }]),
+      'page-show-date': '2026-08-10',
+    })
+    expect(el.shadowRoot!.querySelectorAll('[part="resource"] .res-row').length).toBe(1)
+  })
+
+  it('view=resource-week：行 = 资源，列 = 7 天，格内渲染当日事件', () => {
+    const el = mount({
+      view: 'resource-week',
+      resources: JSON.stringify(RES),
+      events: JSON.stringify(EVS),
+      'page-show-date': '2026-08-10',
+    })
+    expect(el.shadowRoot!.querySelectorAll('[part="resource"] .res-dayhead').length).toBe(7)
+    const cell = el.shadowRoot!.querySelector('.res-cell[data-date="2026-08-11"][data-resource="r1"]')!
+    expect(cell.querySelector('.res-ev')?.textContent).toContain('跨日项')
+  })
+
+  it('RTL：资源视图容器带 data-rtl；LTR 不带；运行时切 dir 即时重判定', () => {
+    const ltr = mount({ view: 'resource', 'page-show-date': '2026-08-10' })
+    expect(ltr.shadowRoot!.querySelector('[part="resource"]')!.hasAttribute('data-rtl')).toBe(false)
+    const rtl = mount({ view: 'resource', dir: 'rtl', 'page-show-date': '2026-08-10' })
+    expect(rtl.shadowRoot!.querySelector('[part="resource"]')!.hasAttribute('data-rtl')).toBe(true)
+    // 运行时切向：dir 在 observedAttributes，动态写入即时生效
+    rtl.setAttribute('dir', 'ltr')
+    expect(rtl.shadowRoot!.querySelector('[part="resource"]')!.hasAttribute('data-rtl')).toBe(false)
+  })
+
+  it('now 线：今天的时间视图渲染 nowline；show-now=false 不渲染', () => {
+    const t = new Date()
+    const iso = `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}-${String(t.getDate()).padStart(2, '0')}`
+    const on = mount({ view: 'day', 'page-show-date': iso, 'start-hour': '0', 'end-hour': '24' })
+    expect(on.shadowRoot!.querySelector('.nowline')).not.toBeNull()
+    const off = mount({ view: 'day', 'page-show-date': iso, 'show-now': 'false', 'start-hour': '0', 'end-hour': '24' })
+    expect(off.shadowRoot!.querySelector('.nowline')).toBeNull()
+  })
+
+  it('拖拽创建：时间格拖出 >=15 分钟派发 oas-create；短拖派发 oas-day-click', () => {
+    const el = mount({ view: 'day', 'page-show-date': '2026-08-10', 'start-hour': '8', 'end-hour': '20' })
+    const track = el.shadowRoot!.querySelector('.col .track') as HTMLElement
+    track.getBoundingClientRect = () =>
+      ({ top: 0, left: 0, width: 100, height: 576, right: 100, bottom: 576, x: 0, y: 0, toJSON: () => ({}) }) as DOMRect
+    const created: Array<Record<string, unknown>> = []
+    let dayClicks = 0
+    el.addEventListener('oas-create', (ev) => created.push((ev as CustomEvent).detail))
+    el.addEventListener('oas-day-click', () => dayClicks++)
+
+    const down = new PointerEvent('pointerdown', { bubbles: true, pointerId: 1 })
+    Object.defineProperty(down, 'clientY', { value: 48 })
+    track.dispatchEvent(down)
+    const move = new PointerEvent('pointermove', { bubbles: true, pointerId: 1 })
+    Object.defineProperty(move, 'clientY', { value: 120 })
+    track.dispatchEvent(move)
+    track.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, pointerId: 1 }))
+    expect(created.length).toBe(1)
+    expect(created[0]).toEqual({ date: '2026-08-10', start: '09:00', end: '10:30', resource: undefined })
+    expect(dayClicks).toBe(0)
+
+    // 短拖（同点）视作点击
+    const down2 = new PointerEvent('pointerdown', { bubbles: true, pointerId: 2 })
+    Object.defineProperty(down2, 'clientY', { value: 48 })
+    track.dispatchEvent(down2)
+    track.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, pointerId: 2 }))
+    expect(dayClicks).toBe(1)
+    expect(created.length).toBe(1)
+  })
+})

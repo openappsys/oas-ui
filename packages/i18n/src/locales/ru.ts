@@ -181,6 +181,9 @@ export const ru: LocaleMessages = {
   'scheduler.viewWeek': 'Неделя',
   'scheduler.viewDay': 'День',
   'scheduler.viewAgenda': 'Повестка',
+  'scheduler.viewResource': 'Ресурсы',
+  'scheduler.viewResourceWeek': 'Неделя ресурсов',
+  'scheduler.unassigned': 'Не назначено',
   'scheduler.allDay': 'Весь день',
   'scheduler.noEvents': 'Нет событий в этом диапазоне',
   // gantt (диаграмма Ганта)

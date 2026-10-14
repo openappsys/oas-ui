@@ -181,6 +181,9 @@ export const de: LocaleMessages = {
   'scheduler.viewWeek': 'Woche',
   'scheduler.viewDay': 'Tag',
   'scheduler.viewAgenda': 'Agenda',
+  'scheduler.viewResource': 'Ressourcen',
+  'scheduler.viewResourceWeek': 'Ressourcenwoche',
+  'scheduler.unassigned': 'Nicht zugewiesen',
   'scheduler.allDay': 'Ganztägig',
   'scheduler.noEvents': 'Keine Termine in diesem Zeitraum',
   // gantt (Gantt-Diagramm)

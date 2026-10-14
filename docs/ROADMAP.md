@@ -72,21 +72,14 @@
 | **v2.5.9** | **主题皮肤预设 + 默认视觉精修**：`@oas-ui/theme/skins.css` 6 套品牌色皮肤（`data-skin` 叠加 `data-theme`、仅覆盖主色、派生档自动跟随、opt-in 无副作用）+ 默认阴影改现代分层投影（default 更好看） | ✅ 已完成 |
 | **v2.5.9** | **oas-calendar `events` 排期条目通道**：声明式 `[{date,title?,color?}]` → 格内圆点 / `+N` 徽标 + 当日行内条目浮层（`oas-cell-render` 保留兜底；不含跨日/拖拽/周视图——Scheduler 另行立项） | ✅ 已完成 |
 | **v2.5.9** | **oas-scheduler 日程调度组件（L3 能力子包，四期）**：P0 月视图 + events CRUD（芯片/+N + `oas-event-click`/`oas-day-click`/`oas-events-change`）；P1 周/日视图 + 拖拽移动/缩放；P2 重复规则（RRULE 子集）+ 提醒；P3 时区 + 日程视图 | ✅ 已完成 |
-
 | **v2.5.9** | **移动原生形态批**（2026-10-04 立项评估：组件并集矩阵偏桌面，移动原生交互 5 项真缺口）：**oas-notice-bar**（通告栏：marquee 引擎复用 + 图标/可关闭/action）+ **oas-index-bar**（索引栏：字母侧栏点/拖跳转 + scrollspy 联动）+ **oas-pull-refresh**（下拉刷新：手势/滚动协调 + 阻力曲线 + 状态机 i18n）+ **oas-swipe-cell**（滑动操作：横滑露按钮 + 吸附开合 + 单开互斥 + 键盘可达）+ **oas-picker**（滚轮选择器：scroll-snap 惯性轮 + 多列联动 + listbox 语义 + form-associated） | ✅ 已完成 |
-
 | **v2.5.9** | **液态玻璃材质层**（2026-10-04 立项）：`glass.css` 玻璃皮肤包（surface token 半透明明暗双档 + border/radius/shadow 材质档，opt-in 独立文件）+ `--oas-glass-blur`/`--oas-glass-ring` 全局材质效果变量（默认零影响；立项时曾拟名 specular，实现定为 ring）+ surface 组件统一接线扫面（约 20-30 件，含移动原生批新组件）+ 感知对比度实测门禁（代表性背景 <60 零容忍）；边界：折射动态效果不做、行级/长列表不上 blur | ✅ 已完成 |
-
 | **v2.6.0**（2026-10-07） | **玻璃边缘折射 v1**（承接液态玻璃批如实口径，范围纪律=Apple 定义域：data-URI 自包含边缘环带置换滤镜（中间恒不变形；shadow DOM 内 `url(#id)` 跨树不可解析，故用内联）+ 9 组件消费（button/switch/slider/app-bar/bottom-navigation/message/toast/snackbar/notification，缺省回落 none 零副作用）+ 状态例外（button 组合书写/三类禁用守卫/app-bar 弹层自动关）+ 引擎边界如实（Chromium 生效、Firefox 无感降级）+ 画廊 controls 展示；内容面板与动态流动感不进本批） | ✅ 已完成 |
-
 | **v2.6.0**（2026-10-07） | **oas-gantt 甘特图组件**（新组件，data 族；项目排期语义与 scheduler 约会语义互补）：行树 WBS（摘要条 = 子级并集 + 折叠展开集合）+ 任务条/里程碑/摘要条三形态 + 进度；依赖连线 FS/SS/FF/SF（SVG 单画布）；时间刻度六档双层表头（列宽压窄时辅刻度按 N 抽稀，防日号堆叠）+ 拖拽吸附；拖拽三件套（改期/拉伸/进度，pointerup 收口 + Esc 取消 + 键盘改期）；只读三级 + 任务级禁用；今日线/周末/假日底色；行虚拟滚动 + scrollToTask/updateTask 方法；扁平 parent 数据契约（children 拍平兼容）+ i18n ×10 | ✅ 已完成 |
-
 | **v2.6.0**（2026-10-07） | **oas-barcode 一维条码（data 族新组件）**：第一期 6 码制——CODE128（auto A/B/C 子集自动切换）/ EAN-13 / EAN-8 / UPC-A / CODE39 / ITF-14，编码器纯函数层零依赖原创实现（GS1 mod10 校验位自动补算与合法性校验）；非法输入三类（charset/length/checksum）错误占位 + `oas-invalid` 事件接管；可扫性内建（margin 静区下限护栏 + warn 一次、bar-width clamp、EAN/UPC 护条延伸、默认深条白底 dark 可扫）；HRI 人读文字（display-value/text-position/font-size/text-margin）；SVG-only 输出 + role=img + download() 离屏 4× 栅格化；宽度由内容决定（不设 size/width）；i18n ×10 + qa-regression 固化。后续期边界：force A/B/C、GS1-128、UPC-E、MSI/Codabar、EAN addon、bearer bar | ✅ 已完成 |
-
 | **v2.6.0**（2026-10-07） | **chart 图型扩展**（场景缺口 D11 随 BI 议题翻盘立项，2026-10-06；只补四类不做全面深挖）：`type` 新值 `radar`（labels 即维度 + `options.max` 全局量程 + `radarShape` polygon/circle 网格 + 顶点 title/图例复用）与 `polar-area`（等角扇区 + 半径编码值 + 同心参考圈，tooltip 原始数值非占比）+ **combo 系列级混排**（不设 type 值：`series[].type` bar/line/area 覆盖 + band 中心对齐 + bar→area→line 固定层序）+ **双轴**（`options.yAxis` 数组 + `series.yAxisIndex` 归属 + **alignTicks 主轴档数锚定**刻度对齐 + 右轴渲染/轴名/padR 扩展）；i18n ×10 + qa-regression 四图型/RTL 固化 + 文档 zh/en | ✅ 已完成 |
 | **v2.6.1** | **液态玻璃动态流动感 v1**（承接玻璃批：静态近似 v2.5.9 + 边缘折射 v2.6.0 之后补「随交互变形」第一层）：指针跟随镜面高光（@oas-ui/theme/glass-fluid.js 运行时——单文档 pointermove + composedPath 命中 + rAF 合批 + 元素本地归一坐标变量；**高光样式表由运行时按注册表经 adoptedStyleSheets 注入对应 shadow 根，组件源码零玻璃规则体/零标记**，高光层 `isolation`+负 z-index 落在文字之下不冲淡标签）+ 按压收紧（纯 CSS 高光/阴影，不动 transform 防与 wave/拖拽语义冲突）+ 9 控件域消费（button/switch/slider/app-bar/bottom-navigation/message/toast/snackbar/notification）；**实心语义色/自定义色按钮 hover 有高光、按压走边缘内描边（不提亮，守白字对比度）**，对比度门禁玻璃面 hover ≥60 / 按压 ≥45、实心按钮 hover ≥45 / 基线 ≥60；reduced-motion / 粗指针 / HC 不启用，无 data-glass 零监听；内容面板与背景响应式实时高光不进本批 | ✅ 已完成 |
 | **v2.6.1** | **oas-float-button group 自渲染子钮**（`actions` 通道——group 复用 menu 的 actions JSON 在 shadow 内自渲染圆形子钮，根治宿主页 CSS 经 ::slotted 覆盖子钮视觉的缺陷；href 链接化 + rel 补全、label 气泡纯 CSS 显隐、oas-select 复用、键盘容器委托 + 焦点保持；slot="action" 保留为自定义子钮通道（宿主自填元素/组件/框架响应式内容，非废弃）、与 actions 二选一、并存以 actions 为准；子钮阴影 sm→md 两路同步） | ✅ 已完成 |
-
 | **v2.6.1** | **oas-knob 旋钮组件**（新组件，form 族；参数密集面板：音频/工业/3D）：三档手势 interaction（cursor 圆周方位角增量 / axis 线性拖拽 / auto 前几像素解析一次锁定）+ 相对手势（按下不写值/无移动零操作/主指针独占）+ Shift 精调 + 双击/Ctrl 复位（default-value 缺省回落 min）+ 值弧与双极零位（include-arc + start-point）+ indicator line/dot + start-angle/end-angle 扫角 + show-value/unit/format/formatValue 三通道 + wheel 滚轮（默认关）+ 键盘全键位 + role=slider ARIA + reverse/RTL 镜像 + size 三档 + 取消回滚 + SSR 双路径 + i18n ×10 | ✅ 已完成 |
 | **v2.6.1** | **conversation 会话组件族首批五件**（新族目录 conversation/，与 oas-comment 并存不合并）：oas-bubble 气泡表面（align/variant 六变体/loading 打字指示）+ oas-attachment 附件行（状态机五态/进度/缩略图/内置操作钮/href 触发器）+ oas-message-scroller 会话滚动容器（AI 式 auto-scroll 底部跟随 / IM 式 pin-to-bottom 钉底 / 跳底按钮 / scrollToEnd·scrollToStart·scrollToMessage / near-bottom 检测 / prepend 保位（首节点位移精确结算 + 异步资源保位锚 message-id 重查）/ 首屏防跳 data-pending-scroll / default-position start·end·last-anchor / 轮次锚定 turn-anchor + prev-peek / role=log ARIA；可见性追踪 v2 候选）+ oas-marker 会话标记（三变体/icon 槽/分隔线语义纪律）+ oas-message-row 消息行（四插槽/align 双向/status 五态/grouped 聚拢/头像底对齐）；i18n ×10 + RTL 逻辑属性 + 暗色 token + DSD 可水合 | ✅ 已完成 |
 | **v2.6.1** | **oas-questionnaire 多步问答组件（新，form 族）**：步骤驱动的表单流程编排层——每步面板内一个 `<oas-form>` 零侵入复用校验内核；单步门控（next 未过不放行 + `oas-step-validate`，prev 不校验）/ 可选步跳过（跳过步退出参与步集合，重新进入恢复）/ `oas-before-change` 宿主自定跳转（含分支挂点）/ 进度自渲染（「第 n / m 步」+ `role=progressbar`）/ 面板常驻不卸载（回退值保留）/ 提交重校全部参与步 + `oas-submit` 跨步汇总（取值=校验=参与步：hidden / 已跳过不计；需全量可读内部 form） / 方法 next·prev·goto·validate·submit·getValues·reset / current 受控 / hidden 步出流程 / 键盘 ARIA（aria-current + aria-live + progressbar）/ RTL 逻辑属性 / i18n ×10 + **oas-form 公开 `validate()`**（纯校验入口：同步错误态返回 Promise<boolean>，不发提交事件、不滚动——外部门控复用校验内核） | ✅ 已完成 |
@@ -121,6 +114,7 @@
 ## 后续 backlog（按需立项）
 
 - 语言包扩展：10 种内置（v2.5.2）后按社区真实需求增补
-- 能力缺口立项池：真缺口候选已甄别收敛（P1 29 项 / P2 31 组，2026-09-26），逐项立项时先进 PRD 再回本文件排期
+- 专业域纵深：scheduler 与 gantt 已立项（见 PRD「未发布」段）；媒体读数井不做
+- avatar 名字哈希自动配色：已决定不做（属业务逻辑，且与「颜色显式指定」原则冲突）
 
-> 历史 backlog 已全部落地并随版本归档：SSR/DSD 全阶段（v1.9）、grid 栅格表单（v1.9）、API 表格自动化（v1.8）、全量 RTL 视觉审计静态+交互态（v2.5.7 批次）、形状化二维码体积压缩（v2.5.7 批次）——详见上方版本表。
+> 历史 backlog 已全部落地并随版本归档：SSR/DSD 全阶段（v1.9）、grid 栅格表单（v1.9）、API 表格自动化（v1.8）、全量 RTL 视觉审计静态+交互态（v2.5.7 批次）、形状化二维码体积压缩（v2.5.7 批次）；能力缺口 P1/P2 清单（v2.5.7）与后续能力清单（2026-10 批次）亦已清零，详见上方版本表。

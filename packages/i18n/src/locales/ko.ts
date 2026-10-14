@@ -181,6 +181,9 @@ export const ko: LocaleMessages = {
   'scheduler.viewWeek': '주',
   'scheduler.viewDay': '일',
   'scheduler.viewAgenda': '일정',
+  'scheduler.viewResource': '리소스',
+  'scheduler.viewResourceWeek': '리소스 주',
+  'scheduler.unassigned': '미할당',
   'scheduler.allDay': '종일',
   'scheduler.noEvents': '이 기간에 일정이 없습니다',
   // gantt（간트 차트）

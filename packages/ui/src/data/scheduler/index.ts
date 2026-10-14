@@ -7,11 +7,13 @@ if (!customElements.get('oas-scheduler')) {
 
 export { OASScheduler }
 export type {
+  SchedulerCreateDetail,
   SchedulerDayClickDetail,
   SchedulerEvent,
   SchedulerEventClickDetail,
   SchedulerEventsChangeDetail,
   SchedulerRemindDetail,
   SchedulerRepeat,
+  SchedulerResource,
   SchedulerView,
 } from './oas-scheduler.js'

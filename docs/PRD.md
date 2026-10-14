@@ -1845,6 +1845,67 @@ OASElement 的 render 生命周期只首连一次（`rendered` 门闩），组�
 
 - 单测（渲染/CRUD/事件派发/数据变更）+ docs（zh/en）+ api-manifest + i18n ×10 + 全量 e2e 全绿。
 
+## 未发布 oas-scheduler 纵深（资源视图 + 拖拽创建 + 当前时间线）
+
+> 立项背景：scheduler 已具月/周/日/日程四视图。本批把它从「日历」升级为「排班工具」，核心是资源维度。版本号由用户定。
+
+### 特性
+
+- **资源视图（两布局）**：`SchedulerView` 联合新增 `'resource' | 'resource-week'`。
+  - `view="resource"`（单日横向时间轴）：行 = 资源，列 = 小时（复用 `start-hour` / `end-hour` 与当前日期 `page-show-date`）。事件按 `start` / `end` 渲染为横条；无 `start` 的全天事件排在资源行首的「全天」带。
+  - `view="resource-week"`（周 × 资源）：行 = 资源，列 = 本周 7 天。每格渲染该资源当日事件；有 `start` 的按纵向时刻排布，无 `start` 的置格顶「全天」带。
+  - 数据：新增 `resources` property + attribute JSON 双通道，`SchedulerResource = { id, title, color? }`；`SchedulerEvent` 增 `resource?: string`（资源 id，缺省归「未分配」行）。
+  - 交互：事件可拖拽移动（同时改 `resource` 与时刻）、可拖拽拉伸改时长；点空格派发 `oas-day-click`（detail 增 `resource`）。
+  - ARIA：网格 `role="grid"`，资源行为 `role="row"`，事件为 `role="gridcell"`；键盘可达（Tab 进网格、方向键移动、Enter 派发 `oas-event-click`）。
+- **拖拽创建 `oas-create`**：在 week / day / resource 视图的空时间格里按住拖动，拖出一个时间段；释放派发 `oas-create` detail `{ date, start, end, resource? }`。组件不自动建事件（不知标题），宿主监听后调 `addEvent`。位移不足 15 分钟视作点击（派发 `oas-day-click`）；`pointercancel` / Esc 取消且不派发。
+- **当前时间线 `show-now`**：week / day / resource 视图在今天的时间区显示一条 now 线，每分钟刷新；`show-now="false"` 关闭（默认显示）；时间在可视时窗外时不显示。
+
+### 边界（本批不做）
+
+- 跨日事件连续条（事件仍按单日渲染）。
+- 资源容量、冲突检测、超额排班（归宿主）。
+- 拖拽创建后的自动编辑表单（仍由宿主接 `oas-create`）。
+- 一事件多资源分配（`resource` 为单值）。
+
+### 验收
+
+- 单测：两种资源视图渲染（单日横向 + 周 × 资源）/ 事件按时刻定位 / 跨资源与跨日拖拽 / 拖拽创建阈值与取消 / now 线定位与刷新 / `show-now="false"` / i18n 键 / 非法 `resources` 清洗。
+- e2e：`qa-regression/scheduler.spec.ts`（资源视图真拖 / 拖拽创建真拖派发 / now 线存在 + 暗色 + console 零告警）。
+- 文档：scheduler.md zh/en 增章节；api-manifest / api-descriptions 同步（`api:check` 双向 0）；i18n ×10。
+- 全量 `pnpm test` / `typecheck` / `build` / `api:check` 全绿。
+
+## 未发布 oas-gantt 纵深（依赖连线交互编辑 + 行重排 + 基线对比）
+
+> 立项背景：gantt 已具任务树、四种依赖、拖拽三件套、六档刻度、虚拟滚动，摘要进度已按子任务工期加权汇总（`buildRows` 内 `aggregate`）。本批补三项能力。定位不变——组件是宿主数据的可视化与编辑层，不做排程引擎；关键路径等排程计算仍归宿主（见边界）。
+
+### 特性
+
+- **依赖连线交互编辑**：悬停任务条出连线点，拖到目标任务建依赖（端点决定 FS/SS/FF/SF）；点已有连线选中，`Delete` / Backspace 删除。派发 `oas-dependencies-change` detail `{ taskId, dependencies }`。
+- **行拖拽改父子 / 重排**：拖左列行到目标行，改 `parent` 与同级顺序；派发 `oas-reparent` detail `{ id, parent, index }`。
+- **基线对比**：`GanttTask` 增 `baseline?: { start: string; end?: string }`；`baseline` 布尔（默认关）开启后，实际条后叠浅色基线条 + 差值标注。基线数据由宿主保存，组件只读不写回。
+
+### 边界
+
+- 关键路径、依赖联动排程、undo/redo、编辑表单、导出：归宿主（宿主责任边界）。
+- 资源分配 / 资源泳道、资源负载视图、资源平衡：不做（组件无资源实体，另立项）。
+- 拖拽建任务：不做（组件无空白行模型，新建由宿主按钮驱动）。
+- 依赖 lag/lead：不做（组件不重排后续任务，lag 只改连线视觉会误导）。
+- 多任务框选：不做。
+
+### 验收
+
+- 单测：连线创建各型 / 连线删除 / 行重排改 parent 与 index / 基线渲染与差值 / `baseline` 关闭不渲染 / i18n 键。
+- e2e：`qa-regression/gantt.spec.ts` 增真拖断言 + 暗色 + console 零告警。
+- 文档：gantt.md zh/en 增章节；api-manifest / api-descriptions 同步（`api:check` 双向 0）；i18n ×10。
+- 全量 `pnpm test` / typecheck / build / api:check 全绿。
+
+### 验收
+
+- 单测：连线创建各型 / 连线删除 / 进度汇总（含零工期）/ 行重排改 parent 与 index / 基线渲染与差值 / `baseline` 关闭不渲染 / i18n 键。
+- e2e：`qa-regression/gantt.spec.ts` 增真拖断言 + 暗色 + console 零告警。
+- 文档：gantt.md zh/en 增章节；api-manifest / api-descriptions 同步（`api:check` 双向 0）；i18n ×10。
+- 全量 `pnpm test` / typecheck / build / api:check 全绿。
+
 ## v2.5.9 oas-calendar `events` 排期条目通道
 
 ### 特性
@@ -1964,7 +2025,7 @@ OASElement 的 render 生命周期只首连一次（`rendered` 门闩），组�
 - **只读三级 + 任务级禁用**：`readonly`（全禁）/ `dates-readonly` / `progress-readonly`；只读态不渲染拖拽手柄（视觉即语义）；数据 `disabled: true` 单条禁拖。
 - **今日线与日历底色**：`show-today`（默认开，装饰层 aria-hidden）+ `weekends` 周末列高亮（day/hour 档）+ `holidays` 假日列表。
 - **行虚拟滚动**：行数超出视口只渲染窗口行 + buffer（名称列/任务条/连线/底色全部窗口化）；方法 `scrollToTask(id)`（命名避开 DOM 内建 Element.scrollTo）/ `scrollToDate(date)` / `scrollToToday()` / `updateTask(id, patch)`。
-- **宿主责任边界**：undo/redo（组件发全量事件，宿主维护历史栈）、编辑表单（`oas-task-dblclick` 宿主接 oas-dialog）、导出（数据转换属业务层）、依赖联动排程/基线对比/关键路径（v2 候选）不做。
+- **宿主责任边界**：undo/redo（组件发全量事件，宿主维护历史栈）、编辑表单（`oas-task-dblclick` 宿主接 oas-dialog）、导出（数据转换属业务层）、关键路径与依赖联动排程（排程计算，组件不做）；基线对比改归组件（见「未发布 oas-gantt 纵深」段）。
 
 ### 验收
 

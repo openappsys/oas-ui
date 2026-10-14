@@ -4292,20 +4292,24 @@
       "page-show-date": "Panel month anchor (controlled): yyyy-MM-dd; re-anchors the shown month on change",
       "first-day-of-week": "First day of week (0-6); defaults to locale-derived",
       "locale": "Localization (overrides config-provider injection and global locale)",
-      "view": "View: month (default) / week / day / agenda; week/day views show a time axis with positioned event blocks (untimed events go to the all-day row); agenda shows a 28-day chronological list",
+      "resources": "Resources (JSON): [{ id, title, color? }] — resource views group by resource; events whose resource is absent or unknown go to the 'Unassigned' row",
+      "show-now": "Current-time line (on by default; false disables): renders a now line for today in week/day and single-day resource views",
+      "view": "View: month (default) / week / day / agenda / resource / resource-week; week/day views show a time axis with positioned event blocks (untimed events go to the all-day row); agenda shows a 28-day chronological list; resource is a single-day horizontal resource timeline, resource-week a week x resource matrix",
       "start-hour": "Time axis start hour (0-23, default 8)",
       "end-hour": "Time axis end hour (> start-hour and <= 24, default 20)",
       "timezone": "Timezone (IANA, e.g. Asia/Shanghai; empty = local): affects title/column date formatting and the today marker (via Intl timeZone); invalid values fall back to local"
     },
     "events": {
-      "oas-day-click": "Dispatched when an empty day cell is clicked, detail: { date } — host attaches an add form",
+      "oas-create": "Dispatched when an empty time cell is dragged out to a range of >=15 minutes, detail: { date, start, end, resource? } — the component does not create the event; the host calls addEvent. A shorter drag is treated as oas-day-click",
+      "oas-day-click": "Dispatched when an empty day cell is clicked, detail: { date, resource? } (resource row id in resource views) — host attaches an add form",
       "oas-event-click": "Dispatched when an event chip is clicked, detail: { id, event } (does not trigger the day click)",
       "oas-events-change": "Dispatched on any events change (set/addEvent/updateEvent/removeEvent), detail: { events }",
       "oas-view-change": "Dispatched on view switch (month/week/day/agenda), detail: { view }; not dispatched on initial attribute absorption",
       "oas-remind": "Dispatched when an event reminder is due, detail: { id, event } (fires at start - remind minutes via built-in timers)"
     },
     "props": {
-      "events": "Schedule events (`SchedulerEvent[]`): `el.events` reads (copy incl. auto ids); `el.events = [...]` writes (syncs the events attribute + re-renders + dispatches oas-events-change)"
+      "events": "Schedule events (`SchedulerEvent[]`): `el.events` reads (copy incl. auto ids); `el.events = [...]` writes (syncs the events attribute + re-renders + dispatches oas-events-change)",
+      "resources": "Resources (`SchedulerResource[]`): `el.resources` reads (copy); `el.resources = [...]` writes (syncs the resources attribute + re-renders)"
     }
   },
   "oas-gantt": {

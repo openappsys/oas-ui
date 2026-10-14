@@ -2,6 +2,16 @@
 
 所有显著变更记录于此。
 
+## [未发布]
+
+### 特性
+
+- **`oas-scheduler` 资源视图**：新增 `view="resource"`（单日资源时间轴：行为资源、横向为小时）与 `view="resource-week"`（周 × 资源矩阵：行为资源、列为本周 7 天，格内按时刻纵向排布定时事件）。新增 `resources` property / attribute（`SchedulerResource[]`，`[{ id, title, color? }]`）与事件字段 `SchedulerEvent.resource`——缺省或指向未知 id 的事件归「未分配」行。
+- **`oas-scheduler` 拖拽创建**：在 `week` / `day` / `resource` 视图的时间格空白处按住拖出 ≥15 分钟区间，派发 `oas-create { date, start, end, resource? }`（组件不自动建事件，宿主接后自行 `addEvent`）；位移不足视作点击，派发 `oas-day-click`（detail 增 `resource`）。`Esc` / `pointercancel` 取消且不派发。
+- **`oas-scheduler` 当前时间线**：新增 `show-now`（默认开）——今天所在的时间视图与资源单日视图在当前时刻渲染 now 线，每分钟刷新；`show-now="false"` 关闭。
+- **`oas-scheduler` RTL**：资源视图改用逻辑定位（`inset-inline-start`）+ `data-rtl`，RTL 下时间轴与资源列镜像；拖拽创建命中判定随方向翻转；`dir` 补入 `observedAttributes`，运行时切向即时重判定。
+- i18n ×10 新增 `scheduler.viewResource` / `scheduler.viewResourceWeek` / `scheduler.unassigned`；文档 zh/en 资源视图节（含 RTL demo）；api-manifest / api-descriptions 同步。
+
 ## [2.6.1] - 2026-10-13
 
 ### 破坏性变更（迁移）

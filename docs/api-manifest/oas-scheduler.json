@@ -8,6 +8,11 @@
       "observed": true
     },
     {
+      "name": "resources",
+      "default": "",
+      "observed": true
+    },
+    {
       "name": "page-show-date",
       "type": "string",
       "default": "",
@@ -48,12 +53,24 @@
       "type": "string",
       "default": "",
       "observed": true
+    },
+    {
+      "name": "show-now",
+      "type": "string",
+      "default": "true",
+      "observed": true
     }
   ],
   "props": [
     {
       "name": "events",
       "type": "SchedulerEvent[]",
+      "default": "[]",
+      "api": true
+    },
+    {
+      "name": "resources",
+      "type": "SchedulerResource[]",
       "default": "[]",
       "api": true
     }
@@ -69,7 +86,7 @@
     },
     {
       "name": "oas-day-click",
-      "detail": "{ date: iso } satisfies SchedulerDayClickDetail"
+      "detail": "{ date: iso } satisfies SchedulerDayClickDetail | { date: ctx.iso, resource: ctx.resource } satisfies SchedulerDayClickDetail | { date: iso, resource: r.id } satisfies SchedulerDayClickDetail | { date: dIso, resource: r.id } satisfies SchedulerDayClickDetail"
     },
     {
       "name": "oas-event-click",
@@ -78,6 +95,10 @@
     {
       "name": "oas-remind",
       "detail": "{ id, event: { ...ev } } satisfies SchedulerRemindDetail"
+    },
+    {
+      "name": "oas-create",
+      "detail": "{ date: ctx.iso, start: this.fmtMin(a), end: this.fmtMin(b), resource: ctx.resource, } satisfies SchedulerCreateDetail"
     }
   ],
   "slots": [],

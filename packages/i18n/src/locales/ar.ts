@@ -181,6 +181,9 @@ export const ar: LocaleMessages = {
   'scheduler.viewWeek': 'أسبوع',
   'scheduler.viewDay': 'يوم',
   'scheduler.viewAgenda': 'الأجندة',
+  'scheduler.viewResource': 'الموارد',
+  'scheduler.viewResourceWeek': 'أسبوع الموارد',
+  'scheduler.unassigned': 'غير معيَّن',
   'scheduler.allDay': 'طوال اليوم',
   'scheduler.noEvents': 'لا توجد أحداث في هذا النطاق',
   // gantt (مخطط جانت)

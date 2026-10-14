@@ -181,6 +181,9 @@ export const zhCN = {
   'scheduler.viewWeek': '周',
   'scheduler.viewDay': '日',
   'scheduler.viewAgenda': '日程',
+  'scheduler.viewResource': '资源',
+  'scheduler.viewResourceWeek': '资源周',
+  'scheduler.unassigned': '未分配',
   'scheduler.allDay': '全天',
   'scheduler.noEvents': '此区间无日程',
   // gantt（甘特图）
