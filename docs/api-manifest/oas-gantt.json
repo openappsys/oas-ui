@@ -87,6 +87,11 @@
       "type": "string",
       "default": "",
       "observed": true
+    },
+    {
+      "name": "show-baseline",
+      "type": "boolean",
+      "observed": true
     }
   ],
   "props": [
@@ -121,6 +126,14 @@
     {
       "name": "oas-task-dblclick",
       "detail": "{ id: row.task.id, task: this.taskSnapshot(row.task) } satisfies GanttTaskClickDetail"
+    },
+    {
+      "name": "oas-reparent",
+      "detail": "{ id: dragId, parent, index } satisfies GanttReparentDetail"
+    },
+    {
+      "name": "oas-dependencies-change",
+      "detail": "{ taskId: succ.id, dependencies: deps.map((d) => ({ ...d })), } satisfies GanttDependenciesChangeDetail"
     },
     {
       "name": "oas-task-change",
@@ -186,6 +199,10 @@
     {
       "name": "--oas-gantt-bar-bg",
       "default": "color-mix(in srgb, var(--oas-gantt-bar-color, var(--oas-color-primary)) 22%, transparent)"
+    },
+    {
+      "name": "--oas-gantt-baseline-color",
+      "default": "color-mix(in srgb, var(--oas-color-text-secondary-strong) 55%, transparent)"
     },
     {
       "name": "--oas-gantt-bar-progress-bg",

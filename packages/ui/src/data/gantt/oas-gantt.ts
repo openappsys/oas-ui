@@ -70,6 +70,29 @@ const STYLE = `
   white-space: nowrap;
   text-overflow: ellipsis;
   color: var(--oas-color-text-primary);
+  cursor: grab;
+  user-select: none;
+}
+:host([readonly]) .row-name {
+  cursor: default;
+}
+.row-name[disabled] {
+  cursor: default;
+}
+.drop-line {
+  position: absolute;
+  inset-inline-start: 0;
+  inset-inline-end: 8px;
+  height: 2px;
+  background: var(--oas-color-primary);
+  border-radius: var(--oas-radius-full, 999px);
+  pointer-events: none;
+  z-index: 5;
+}
+.drop-line[data-mode='inside'] {
+  background: color-mix(in srgb, var(--oas-color-primary) 14%, transparent);
+  border: 1px solid var(--oas-color-primary);
+  box-sizing: border-box;
 }
 .row-name .name {
   /* flex 子项默认 min-width:auto 不收缩，父级 text-overflow 对 flex 项不生效——
@@ -190,12 +213,61 @@ svg.links marker path {
   fill: var(--oas-gantt-link-color, var(--oas-color-primary));
   stroke: none;
 }
+svg.links .link {
+  pointer-events: none;
+}
+svg.links .link-hit {
+  pointer-events: stroke;
+  stroke: transparent;
+  stroke-width: 12;
+  cursor: pointer;
+}
+svg.links .link-hit.selected + .link {
+  stroke: var(--oas-color-danger);
+  stroke-width: 2.5;
+}
+svg.links .temp-link {
+  pointer-events: none;
+  stroke: var(--oas-gantt-link-color, var(--oas-color-primary));
+  stroke-width: 1.5;
+  stroke-dasharray: 4 3;
+}
+.link-dot {
+  position: absolute;
+  top: -6px;
+  width: 10px;
+  height: 10px;
+  border-radius: var(--oas-radius-full, 999px);
+  background: var(--oas-color-bg);
+  border: 2px solid var(--oas-gantt-link-color, var(--oas-color-primary));
+  box-sizing: border-box;
+  opacity: 0;
+  pointer-events: none;
+  cursor: crosshair;
+  touch-action: none;
+  transition: opacity 0.12s;
+  z-index: 2;
+}
+.bar:hover .link-dot,
+.bar:focus-within .link-dot {
+  opacity: 1;
+  pointer-events: auto;
+}
+.link-dot.link-start {
+  inset-inline-start: -6px;
+}
+.link-dot.link-end {
+  inset-inline-end: -6px;
+}
 .bars {
   position: absolute;
   inset: 0;
+  /* 整层放行命中：否则盖住下方 svg.links 里的 .link-hit，连线点选不可达（条/基线/连线点各自 auto） */
+  pointer-events: none;
 }
 .bar {
   position: absolute;
+  pointer-events: auto;
   height: var(--oas-gantt-bar-height, 22px);
   border-radius: var(--oas-radius-sm);
   background: var(--oas-gantt-bar-bg, color-mix(in srgb, var(--oas-gantt-bar-color, var(--oas-color-primary)) 22%, transparent));
@@ -204,6 +276,15 @@ svg.links marker path {
   overflow: visible;
   /* 触摸端起拖：横向手势留给拖拽（纵向仍可滚动页面），否则浏览器把手势判给滚动并发出 pointercancel */
   touch-action: pan-y;
+  user-select: none;
+}
+.baseline {
+  position: absolute;
+  height: 4px;
+  border-radius: var(--oas-radius-full, 999px);
+  background: var(--oas-gantt-baseline-color, color-mix(in srgb, var(--oas-color-text-secondary-strong) 55%, transparent));
+  pointer-events: auto;
+  z-index: 0;
 }
 .bar:active {
   cursor: grabbing;
@@ -382,10 +463,12 @@ export interface GanttTask {
   dependencies?: GanttDependency[]
   /** 条色覆盖（走 CSS 变量解析） */
   color?: string
-  /** 任务级禁拖/禁改 */
+  /** 任务级禁拖 / 禁改自身（时间/进度/顺序/被依赖写入）；可作他任务前置与重排前/后同级目标 */
   disabled?: boolean
   /** summary 初始展开（缺省全展开，显式 false 为收起例外；expanded 属性受控优先——见 effectiveExpandedSet） */
   expanded?: boolean
+  /** 基线计划（对比用；由宿主保存，组件只读）：start 必填 'YYYY-MM-DD'（hour 档可带时刻），end 缺省 = 单点 */
+  baseline?: { start: string; end?: string }
   [key: string]: unknown
 }
 
@@ -443,6 +526,19 @@ export interface GanttScaleChangeDetail {
 export interface GanttTaskRenderDetail {
   task: GanttTask
   element: HTMLElement
+}
+
+/** reparent 事件载荷（行拖拽改父子 / 重排收口）：parent 为 null 表示根级，index 为同级序号 */
+export interface GanttReparentDetail {
+  id: string
+  parent: string | null
+  index: number
+}
+
+/** dependencies-change 事件载荷（连线拖拽建依赖 / 选中删除）：taskId 为依赖变化的后继任务 */
+export interface GanttDependenciesChangeDetail {
+  taskId: string
+  dependencies: GanttDependency[]
 }
 
 type TG = GanttTask & { id: string }
@@ -555,12 +651,17 @@ function parseProgress(v: unknown): number | undefined {
 function sanitizeDeps(v: unknown): GanttDependency[] | undefined {
   if (!Array.isArray(v)) return undefined
   const out: GanttDependency[] = []
+  const seen = new Set<string>()
   for (const item of v) {
     if (typeof item !== 'object' || item === null) continue
     const it = item as Record<string, unknown>
     if (typeof it.id !== 'string' || it.id === '') continue
     const dep: GanttDependency = { id: it.id }
     if (typeof it.type === 'string' && DEP_TYPES.has(it.type)) dep.type = it.type as GanttDependency['type']
+    // 同源同型去重（重复项会渲染重合连线，且一处删除会连带删掉）
+    const key = `${dep.id}|${dep.type ?? 'fs'}`
+    if (seen.has(key)) continue
+    seen.add(key)
     out.push(dep)
   }
   return out.length > 0 ? out : undefined
@@ -657,9 +758,25 @@ function sanitizeTasks(
     if (raw.disabled === true) t.disabled = true
     if (raw.expanded === true || raw.expanded === false) t.expanded = raw.expanded
     if (raw.type === 'task' || raw.type === 'milestone' || raw.type === 'summary') t.type = raw.type
+    const base = raw.baseline
+    if (typeof base === 'object' && base !== null) {
+      const b = base as Record<string, unknown>
+      const s = typeof b.start === 'string' ? b.start.trim() : ''
+      if (s && parseTaskDate(s)) {
+        const bb: { start: string; end?: string } = { start: s }
+        const e = typeof b.end === 'string' ? b.end.trim() : ''
+        if (e && parseTaskDate(e)) bb.end = e
+        t.baseline = bb
+      }
+    }
     out.push(t)
   }
   return out
+}
+
+/** 选择器 id 转义（宿主 id 可能含引号/方括号，直接拼接会抛 DOMException） */
+function escId(s: string): string {
+  return typeof CSS !== 'undefined' && typeof CSS.escape === 'function' ? CSS.escape(s) : s.replace(/["\\\]]/g, '\\$&')
 }
 
 export class OASGantt extends OASElement {
@@ -680,6 +797,7 @@ export class OASGantt extends OASElement {
       'row-height',
       'label-position',
       'snap',
+      'show-baseline',
     ]
   }
 
@@ -704,6 +822,17 @@ export class OASGantt extends OASElement {
   private displayColW: number | null = null
   private resizeObs: ResizeObserver | null = null
   private dragCtx: DragCtx | null = null
+  private reparentCtx: { id: string } | null = null
+  private reparentTarget: { id: string; mode: 'before' | 'after' | 'inside' } | null = null
+  private dropLineEl: HTMLElement | null = null
+  private linkCtx: {
+    sourceId: string
+    endpoint: 'start' | 'end'
+    sx: number
+    sy: number
+    temp: SVGPathElement
+  } | null = null
+  private selectedLink: { successor: string; predecessor: string; type: string } | null = null
   private tbody: HTMLElement | null = null
   private theadEl: HTMLElement | null = null
   private sideBody: HTMLElement | null = null
@@ -726,6 +855,7 @@ export class OASGantt extends OASElement {
     return this._tasks.map((t) => {
       const copy: GanttTask = { ...t }
       if (copy.dependencies) copy.dependencies = copy.dependencies.map((d) => ({ ...d }))
+      if (copy.baseline) copy.baseline = { ...copy.baseline }
       delete copy.children
       return copy
     })
@@ -766,6 +896,10 @@ export class OASGantt extends OASElement {
   /** 滚动到指定任务行（虚拟滚动下委托内部视口，目标行垂直居中）；找不到为空操作。
    *  命名避开 DOM 内建 Element.scrollTo（签名不兼容会崩宿主 property 通道，同 prefix/blur 先例） */
   scrollToTask(id: string): void {
+    // 重建窗口会清 bars/links，先终止进行中的拖拽/重排/连线，防陈旧锚点
+    if (this.dragCtx) this.cancelDrag()
+    this.cancelReparent()
+    this.cancelLink()
     const idx = this.rows.findIndex((r) => r.task.id === id)
     if (idx < 0 || !this.tbody) return
     const vh = this.viewportH()
@@ -903,6 +1037,8 @@ export class OASGantt extends OASElement {
     // 列宽重排会重建 bars 层：进行中的拖拽先终止（否则 ctx.bar 悬在脱离 DOM 的旧节点上，
     // 视觉断线且回滚落在死节点上）；吸附步进基准（snap=列宽）随之失效，取消是唯一一致路径
     if (this.dragCtx) this.cancelDrag()
+    this.cancelReparent()
+    this.cancelLink()
     const before = this.displayColW
     this.computeColW()
     if (this.displayColW === before) return
@@ -931,6 +1067,17 @@ export class OASGantt extends OASElement {
 
   private snapOn(): boolean {
     return this.getAttr('snap', '') !== 'false'
+  }
+
+  private baselineOn(): boolean {
+    return this.hasAttr('show-baseline')
+  }
+
+  /** 基线差值文案（实际 end 相对基线 end：晚/早 N 天或一致） */
+  private baselineDeltaText(row: GanttRow, baselineEndMs: number): string {
+    const days = Math.round((row.endMs - baselineEndMs) / DAY_MS)
+    if (days === 0) return this.t('gantt.baselineSame')
+    return this.t(days > 0 ? 'gantt.baselineLater' : 'gantt.baselineEarlier', { count: Math.abs(days) })
   }
 
   private showToday(): boolean {
@@ -1267,6 +1414,7 @@ export class OASGantt extends OASElement {
 
   /** 缓存节点引用 + 幂等注册滚动同步（render 与水合路径共用） */
   private bind(): void {
+    if (!this.hasAttribute('tabindex')) this.tabIndex = -1
     this.tbody = this.shadow.querySelector('.tbody')
     this.theadEl = this.shadow.querySelector('.thead')
     this.sideBody = this.shadow.querySelector('.side-body')
@@ -1279,6 +1427,9 @@ export class OASGantt extends OASElement {
     this.tooltipEl = this.shadow.querySelector('.tooltip')
     this.emptyEl = this.shadow.querySelector('.empty')
     this.tbody?.addEventListener('scroll', this.onScroll, { passive: true })
+    // 连线：删除键 + 点空白清选中（函数引用稳定，重复 bind 幂等）
+    document.addEventListener('keydown', this.docLinkKey)
+    document.addEventListener('click', this.docLinkClick)
     // 首次观测到真实视口宽后自适应列宽（custom element 首连时 clientWidth 可能仍为 0）
     if (typeof ResizeObserver !== 'undefined' && this.tbody) {
       this.resizeObs?.disconnect()
@@ -1290,11 +1441,23 @@ export class OASGantt extends OASElement {
       this.resizeObs?.disconnect()
       this.resizeObs = null
       this.dragCtx = null
+      this.cancelReparent()
+      this.cancelLink()
+      document.removeEventListener('keydown', this.docLinkKey)
+      document.removeEventListener('click', this.docLinkClick)
     })
+  }
+
+  /** 断开重连：重挂一次性监听（bind 幂等），否则新加的 document 监听在路由缓存摘挂后永久失效 */
+  protected override onReconnect(): void {
+    this.bind()
   }
 
   private onScroll = (): void => {
     if (!this.tbody) return
+    if (this.dragCtx) this.cancelDrag()
+    this.cancelReparent()
+    this.cancelLink()
     if (this.theadEl) this.theadEl.scrollLeft = this.tbody.scrollLeft
     if (this.sideBody) this.sideBody.scrollTop = this.tbody.scrollTop
     this.hideTooltip()
@@ -1345,6 +1508,8 @@ export class OASGantt extends OASElement {
   protected override update(): void {
     // 拖拽中数据被外部重写 → 终止拖拽回滚（受控纪律：外部数据为准）
     if (this.dragCtx) this.cancelDrag()
+    this.cancelReparent()
+    this.cancelLink()
     this.syncTasks()
     this.syncExpanded()
     this.toggleAttribute('data-rtl', isRtl(this))
@@ -1466,6 +1631,7 @@ export class OASGantt extends OASElement {
       el.style.top = `${i * rowH}px`
       el.style.setProperty('--indent', `${8 + row.depth * 16}px`)
       el.setAttribute('part', 'row-name')
+      if (row.task.disabled === true) el.setAttribute('disabled', '')
       if (row.hasChildren) {
         const expandedNow = expanded.has(row.task.id)
         el.setAttribute('aria-expanded', String(expandedNow))
@@ -1485,6 +1651,7 @@ export class OASGantt extends OASElement {
       name.className = 'name'
       name.textContent = row.task.name
       el.appendChild(name)
+      el.addEventListener('pointerdown', (e) => this.onRowPointerDown(e as PointerEvent, row))
       frag.appendChild(el)
     }
     container.appendChild(frag)
@@ -1585,6 +1752,44 @@ export class OASGantt extends OASElement {
         }
       }
 
+      // 基线对比条（计划 vs 实际）：置于实际条之下，只读展示
+      if (this.baselineOn() && row.task.baseline && !row.isMilestone) {
+        const b = row.task.baseline
+        const bs = parseTaskDate(b.start)?.getTime()
+        const beParsed = b.end ? parseTaskDate(b.end)?.getTime() : undefined
+        if (bs !== undefined) {
+          const be = beParsed !== undefined ? (b.end!.length > 10 ? beParsed : beParsed + DAY_MS) : bs
+          const bx1 = this.xOf(bs)
+          const bEnd = Math.max(be, bs)
+          const bw = Math.max(this.xOf(bEnd) - bx1, 2)
+          const barH = row.isSummary ? 8 : 22
+          const bl = document.createElement('div')
+          bl.className = 'baseline'
+          bl.dataset.id = row.task.id
+          bl.setAttribute('part', 'baseline')
+          bl.style.top = `${i * rowH + (rowH - barH) / 2 + barH + 2}px`
+          bl.style.left = `${this.mirrorX(bx1) - (rtl ? bw : 0)}px`
+          bl.style.width = `${bw}px`
+          bl.title = this.baselineDeltaText(row, bEnd)
+          frag.appendChild(bl)
+        }
+      }
+      // 连线点（拖拽建依赖）：仅非只读态渲染，悬停显现（disabled 任务可作**前置**，故仍渲染）
+      if (!this.hasAttr('readonly')) {
+        for (const ep of ['start', 'end'] as const) {
+          const dot = document.createElement('span')
+          dot.className = `link-dot link-${ep}`
+          dot.dataset.id = row.task.id
+          dot.setAttribute('part', 'link-dot')
+          dot.setAttribute('aria-hidden', 'true')
+          dot.addEventListener('pointerdown', (e) => {
+            e.stopPropagation()
+            this.onLinkDotPointerDown(e as PointerEvent, row, i, ep)
+          })
+          dot.addEventListener('click', (e) => e.stopPropagation()) // 防冒泡到条触发 task-click
+          bar.appendChild(dot)
+        }
+      }
       this.bindBar(bar, row)
       frag.appendChild(bar)
       this.emit('task-render', { task: this.taskSnapshot(row.task), element: bar } satisfies GanttTaskRenderDetail)
@@ -1599,6 +1804,7 @@ export class OASGantt extends OASElement {
   private taskSnapshot(t: TG): GanttTask {
     const copy: GanttTask = { ...t }
     if (copy.dependencies) copy.dependencies = copy.dependencies.map((d) => ({ ...d }))
+    if (copy.baseline) copy.baseline = { ...copy.baseline }
     delete copy.children
     return copy
   }
@@ -1648,8 +1854,332 @@ export class OASGantt extends OASElement {
     document.removeEventListener('pointercancel', this.docPointerCancel)
   }
 
+  // ===== 行拖拽改父子 / 重排（左侧名称列）=====
+
+  private docReparentMove = (e: PointerEvent): void => {
+    if (this.reparentCtx) this.onReparentMove(e)
+  }
+  private docReparentUp = (): void => {
+    this.onReparentUp()
+  }
+  private docReparentCancel = (): void => {
+    this.cancelReparent()
+  }
+  private docReparentKey = (e: KeyboardEvent): void => {
+    if (e.key === 'Escape') this.cancelReparent()
+  }
+
+  private bindDocReparent(): void {
+    document.addEventListener('pointermove', this.docReparentMove)
+    document.addEventListener('pointerup', this.docReparentUp)
+    document.addEventListener('pointercancel', this.docReparentCancel)
+    document.addEventListener('keydown', this.docReparentKey)
+  }
+
+  private unbindDocReparent(): void {
+    document.removeEventListener('pointermove', this.docReparentMove)
+    document.removeEventListener('pointerup', this.docReparentUp)
+    document.removeEventListener('pointercancel', this.docReparentCancel)
+    document.removeEventListener('keydown', this.docReparentKey)
+  }
+
+  private onRowPointerDown(e: PointerEvent, row: GanttRow): void {
+    if (e.button !== 0 || this.reparentCtx || this.dragCtx || this.linkCtx) return
+    if ((e.target as HTMLElement).closest('.toggle')) return
+    if (this.hasAttr('readonly') || row.task.disabled === true) return
+    this.reparentCtx = { id: row.task.id }
+    this.bindDocReparent()
+  }
+
+  private onReparentMove(e: PointerEvent): void {
+    const ctx = this.reparentCtx
+    const side = this.sideBody
+    if (!ctx || !side) return
+    const rect = side.getBoundingClientRect()
+    const rowH = this.rowHeight()
+    const y = e.clientY - rect.top + side.scrollTop
+    const idx = Math.max(0, Math.min(this.rows.length - 1, Math.floor(y / rowH)))
+    const target = this.rows[idx]
+    if (!target) return
+    const localY = y - idx * rowH
+    const x = isRtl(this) ? rect.right - e.clientX : e.clientX - rect.left
+    const indent = 8 + target.depth * 16
+    let mode: 'before' | 'after' | 'inside' = localY < rowH / 2 ? 'before' : 'after'
+    // 指针越过目标缩进一定量 → 落为目标子级（右半区下压生效）
+    if (x > indent + 24 && rowH - localY > 8) mode = 'inside'
+    // disabled 目标禁止 drop-inside（改其结构归属，进而改派生聚合）；前/后同级插入只改父级子序，不动 disabled 自身
+    if (!this.canReparent(ctx.id, target.task.id) || (target.task.disabled === true && mode === 'inside')) {
+      this.reparentTarget = null
+      this.hideDropLine()
+      return
+    }
+    this.reparentTarget = { id: target.task.id, mode }
+    this.showDropLine(idx, target, mode, rowH)
+  }
+
+  private onReparentUp(): void {
+    const ctx = this.reparentCtx
+    const target = this.reparentTarget
+    this.reparentCtx = null
+    this.reparentTarget = null
+    this.unbindDocReparent()
+    this.hideDropLine()
+    if (!ctx || !target) return
+    this.applyReparent(ctx.id, target.id, target.mode)
+  }
+
+  private cancelReparent(): void {
+    if (!this.reparentCtx) return
+    this.reparentCtx = null
+    this.reparentTarget = null
+    this.unbindDocReparent()
+    this.hideDropLine()
+  }
+
+  /** 目标不得是拖拽件自身或其后代（防环；成环数据用访问集防死循环） */
+  private canReparent(dragId: string, targetId: string): boolean {
+    if (dragId === targetId) return false
+    const byId = new Map(this._tasks.map((t) => [t.id, t]))
+    const seen = new Set<string>()
+    let cur = byId.get(targetId)
+    while (cur && cur.parent && !seen.has(cur.id)) {
+      seen.add(cur.id)
+      if (cur.parent === dragId) return false
+      cur = byId.get(cur.parent)
+    }
+    return true
+  }
+
+  private isDescendantOf(node: TG, ancestorId: string, byId: Map<string, TG>): boolean {
+    const seen = new Set<string>()
+    let cur: TG | undefined = byId.get(node.id)
+    while (cur && cur.parent && !seen.has(cur.id)) {
+      seen.add(cur.id)
+      if (cur.parent === ancestorId) return true
+      cur = byId.get(cur.parent)
+    }
+    return false
+  }
+
+  private showDropLine(idx: number, target: GanttRow, mode: 'before' | 'after' | 'inside', rowH: number): void {
+    const container = this.sideRows
+    if (!container) return
+    if (!this.dropLineEl || !this.dropLineEl.isConnected) {
+      const el = document.createElement('div')
+      el.className = 'drop-line'
+      container.appendChild(el)
+      this.dropLineEl = el
+    }
+    const line = this.dropLineEl
+    const indent = 8 + target.depth * 16 + (mode === 'inside' ? 16 : 0)
+    line.style.top = `${(mode === 'after' ? idx + 1 : idx) * rowH}px`
+    line.style.insetInlineStart = `${indent}px`
+    line.style.height = mode === 'inside' ? `${rowH}px` : '2px'
+    line.dataset.mode = mode
+  }
+
+  private hideDropLine(): void {
+    this.dropLineEl?.remove()
+    this.dropLineEl = null
+  }
+
+  /** 应用重排：改 parent + 同级顺序，写回并派发 oas-reparent / oas-tasks-change */
+  private applyReparent(dragId: string, targetId: string, mode: 'before' | 'after' | 'inside'): void {
+    const tasks = this._tasks
+    if (!tasks.some((t) => t.id === dragId) || !tasks.some((t) => t.id === targetId)) return
+    const dragged = tasks.find((t) => t.id === dragId)!
+    const beforeSig = tasks.map((t) => `${t.id}:${t.parent ?? ''}`).join('|')
+    const rest = tasks.filter((t) => t.id !== dragId)
+    const byId = new Map(rest.map((t) => [t.id, t]))
+    const tIdx = rest.findIndex((t) => t.id === targetId)
+    const target = rest[tIdx]!
+    let parent: string | null = null
+    let insertAt: number
+    if (mode === 'inside') {
+      parent = target.id
+      let last = tIdx
+      for (let i = tIdx + 1; i < rest.length; i++) {
+        if (this.isDescendantOf(rest[i]!, target.id, byId)) last = i
+      }
+      insertAt = last + 1
+    } else {
+      parent = target.parent ?? null
+      insertAt = mode === 'before' ? tIdx : tIdx + 1
+    }
+    if (parent) dragged.parent = parent
+    else delete dragged.parent
+    rest.splice(insertAt, 0, dragged)
+    // 零变化（原地放下 / 顺序与父子均未变）不写回、不派发
+    if (rest.map((t) => `${t.id}:${t.parent ?? ''}`).join('|') === beforeSig) return
+    this._tasks = rest
+    let index = 0
+    for (const t of rest) {
+      if (t.id === dragId) break
+      if ((t.parent ?? null) === parent) index++
+    }
+    this.syncTasksAttr()
+    this.emitTasksChange()
+    this.emit('reparent', { id: dragId, parent, index } satisfies GanttReparentDetail)
+  }
+
+  // ===== 依赖连线交互编辑（拖拽建依赖 + 选中删除）=====
+
+  private docLinkMove = (e: PointerEvent): void => {
+    this.onLinkMove(e)
+  }
+  private docLinkUp = (e: PointerEvent): void => {
+    this.onLinkUp(e)
+  }
+  private docLinkCancel = (): void => {
+    this.cancelLink()
+  }
+  private docLinkEsc = (e: KeyboardEvent): void => {
+    if (e.key === 'Escape') this.cancelLink()
+  }
+  private docLinkKey = (e: KeyboardEvent): void => {
+    // 仅当组件自身持有焦点时响应，避免劫持宿主页面（含其他组件内输入）的 Backspace/Delete
+    if (document.activeElement !== this) return
+    if ((e.key === 'Delete' || e.key === 'Backspace') && this.selectedLink) {
+      if (this.removeSelectedLink()) e.preventDefault()
+    }
+  }
+  private docLinkClick = (e: MouseEvent): void => {
+    const onHit = e.composedPath().some((n) => (n as Element)?.classList?.contains?.('link-hit'))
+    if (!onHit) this.clearLinkSelection()
+  }
+
+  private bindDocLink(): void {
+    document.addEventListener('pointermove', this.docLinkMove)
+    document.addEventListener('pointerup', this.docLinkUp)
+    document.addEventListener('pointercancel', this.docLinkCancel)
+    document.addEventListener('keydown', this.docLinkEsc)
+  }
+
+  private unbindDocLink(): void {
+    document.removeEventListener('pointermove', this.docLinkMove)
+    document.removeEventListener('pointerup', this.docLinkUp)
+    document.removeEventListener('pointercancel', this.docLinkCancel)
+    document.removeEventListener('keydown', this.docLinkEsc)
+  }
+
+  private onLinkDotPointerDown(e: PointerEvent, row: GanttRow, rowIndex: number, endpoint: 'start' | 'end'): void {
+    if (e.button !== 0 || this.hasAttr('readonly') || this.linkCtx || this.dragCtx || this.reparentCtx) return
+    const rowH = this.rowHeight()
+    const sx = this.mirrorX(this.xOf(endpoint === 'end' ? row.endMs : row.startMs))
+    const sy = rowIndex * rowH + rowH / 2
+    const temp = document.createElementNS('http://www.w3.org/2000/svg', 'path')
+    temp.setAttribute('class', 'temp-link')
+    temp.setAttribute('d', `M ${sx} ${sy} L ${sx} ${sy}`)
+    this.linksEl?.appendChild(temp)
+    this.linkCtx = { sourceId: row.task.id, endpoint, sx, sy, temp }
+    this.bindDocLink()
+  }
+
+  private onLinkMove(e: PointerEvent): void {
+    const ctx = this.linkCtx
+    const svg = this.linksEl
+    if (!ctx || !svg) return
+    const r = svg.getBoundingClientRect()
+    ctx.temp.setAttribute('d', `M ${ctx.sx} ${ctx.sy} L ${e.clientX - r.left} ${e.clientY - r.top}`)
+  }
+
+  private onLinkUp(e: PointerEvent): void {
+    const ctx = this.linkCtx
+    this.linkCtx = null
+    this.unbindDocLink()
+    ctx?.temp.remove()
+    if (!ctx) return
+    const target = this.barUnder(e.clientX, e.clientY)
+    if (!target || target.row.task.id === ctx.sourceId) return
+    const type = this.linkType(ctx.endpoint, target.endpoint)
+    const succ = this._tasks.find((t) => t.id === target.row.task.id)
+    if (!succ) return
+    const existing = succ.dependencies ?? []
+    const sameKey = (d: GanttDependency): boolean => d.id === ctx.sourceId && (d.type ?? 'fs') === type
+    // 已存在同源同型依赖 → 零变化不派发
+    if (existing.some(sameKey)) return
+    // 仅替换同源同型，保留同源其它类型（同源多型可并存）
+    const deps = existing.filter((d) => !sameKey(d))
+    deps.push({ id: ctx.sourceId, type })
+    succ.dependencies = deps
+    this.syncTasksAttr()
+    this.emitTasksChange()
+    this.emit('dependencies-change', {
+      taskId: succ.id,
+      dependencies: deps.map((d) => ({ ...d })),
+    } satisfies GanttDependenciesChangeDetail)
+  }
+
+  private cancelLink(): void {
+    if (!this.linkCtx) return
+    this.linkCtx.temp.remove()
+    this.linkCtx = null
+    this.unbindDocLink()
+  }
+
+  /** 端点组合 → 依赖类型（后继 = 命中任务，前置 = 拖拽起点任务） */
+  private linkType(src: 'start' | 'end', tgt: 'start' | 'end'): GanttDependency['type'] {
+    if (src === 'end' && tgt === 'start') return 'fs'
+    if (src === 'start' && tgt === 'start') return 'ss'
+    if (src === 'end' && tgt === 'end') return 'ff'
+    return 'sf'
+  }
+
+  /** 命中指针下的任务条（就近取可视窗口内条形，回避 elementFromPoint 的 happy-dom 缺口） */
+  private barUnder(clientX: number, clientY: number): { row: GanttRow; endpoint: 'start' | 'end' } | null {
+    if (!this.barsEl) return null
+    const rtl = isRtl(this)
+    for (let i = this.winStart; i < this.winEnd; i++) {
+      const row = this.rows[i]!
+      if (row.task.disabled === true) continue
+      const el = this.barsEl.querySelector<HTMLElement>(`.bar[data-id="${escId(row.task.id)}"]`)
+      if (!el) continue
+      const r = el.getBoundingClientRect()
+      if (clientX >= r.left && clientX <= r.right && clientY >= r.top && clientY <= r.bottom) {
+        // RTL 下条起始点落在物理右侧：左半 = end
+        const leftHalf = clientX < r.left + r.width / 2
+        return { row, endpoint: leftHalf === !rtl ? 'start' : 'end' }
+      }
+    }
+    return null
+  }
+
+  private selectLink(successor: string, predecessor: string, type: string): void {
+    this.clearLinkSelection()
+    this.selectedLink = { successor, predecessor, type }
+    this.focus({ preventScroll: true })
+    this.linksEl
+      ?.querySelector<SVGPathElement>(
+        `.link-hit[data-from="${escId(successor)}"][data-to="${escId(predecessor)}"][data-type="${type}"]`,
+      )
+      ?.classList.add('selected')
+  }
+
+  private clearLinkSelection(): void {
+    if (!this.selectedLink) return
+    this.selectedLink = null
+    this.linksEl?.querySelectorAll('.link-hit.selected').forEach((el) => el.classList.remove('selected'))
+  }
+
+  private removeSelectedLink(): boolean {
+    const sel = this.selectedLink
+    if (!sel) return false
+    const succ = this._tasks.find((t) => t.id === sel.successor)
+    if (!succ || succ.disabled === true) return false
+    const deps = (succ.dependencies ?? []).filter((d) => !(d.id === sel.predecessor && (d.type ?? 'fs') === sel.type))
+    succ.dependencies = deps.length > 0 ? deps : undefined
+    this.clearLinkSelection()
+    this.syncTasksAttr()
+    this.emitTasksChange()
+    this.emit('dependencies-change', {
+      taskId: succ.id,
+      dependencies: deps.map((d) => ({ ...d })),
+    } satisfies GanttDependenciesChangeDetail)
+    return true
+  }
+
   private onBarPointerDown(e: PointerEvent, row: GanttRow, bar: HTMLElement): void {
-    if (e.button !== 0 || this.dragCtx) return
+    if (e.button !== 0 || this.dragCtx || this.reparentCtx || this.linkCtx) return
     const target = e.target as HTMLElement
     let mode: DragMode = 'move'
     if (target.classList.contains('handle-start')) mode = 'resize-start'
@@ -1891,6 +2421,7 @@ export class OASGantt extends OASElement {
     for (let i = this.winStart; i < this.winEnd; i++) rowIdx.set(this.rows[i]!.task.id, i)
     const frag = document.createDocumentFragment()
     const ns = 'http://www.w3.org/2000/svg'
+    const ro = this.hasAttr('readonly')
     for (let i = this.winStart; i < this.winEnd; i++) {
       const t = this.rows[i]!
       for (const dep of t.task.dependencies ?? []) {
@@ -1900,17 +2431,33 @@ export class OASGantt extends OASElement {
         const from = this.rows[fromIdx]!
         const to = this.rows[toIdx]!
         const type = dep.type ?? 'fs'
-        // 锚点：fs 前任务完成点→后任务开始点；ss 开始→开始；ff 完成→完成；sf 开始→完成
+        // 端点：fs 前置任务完成点→后继任务起始点；ss 起始点→起始点；ff 完成点→完成点；sf 起始点→完成点
         const fromX = type === 'fs' || type === 'ff' ? this.xOf(from.endMs) : this.xOf(from.startMs)
         const toX = type === 'fs' || type === 'ss' ? this.xOf(to.startMs) : this.xOf(to.endMs)
         const y1 = fromIdx * rowH + rowH / 2
         const y2 = toIdx * rowH + rowH / 2
         const x1 = this.mirrorX(fromX)
         const x2 = this.mirrorX(toX)
-        // 折线：水平出 14px → 垂直 → 水平进（终点带箭头）；过近时绕外侧
+        // 折线：水平出 14px → 垂直 → 水平进；终点空间不足时收在中间（箭头仍随路径）
         const out = x2 >= x1 + 28 ? x2 - 14 : Math.max(x1, x2) + 14
+        const d = `M ${x1} ${y1} L ${out} ${y1} L ${out} ${y2} L ${x2} ${y2}`
+        // 命中路径仅对非只读且**后继未禁用**者渲染（禁用任务不被依赖写入，故其入边不可选删）；可见线仍画
+        if (!ro && t.task.disabled !== true) {
+          const hit = document.createElementNS(ns, 'path')
+          hit.setAttribute('class', 'link-hit')
+          hit.setAttribute('d', d)
+          hit.setAttribute('data-from', t.task.id)
+          hit.setAttribute('data-to', dep.id)
+          hit.setAttribute('data-type', type)
+          hit.addEventListener('click', (e) => {
+            e.stopPropagation()
+            this.selectLink(t.task.id, dep.id, type)
+          })
+          frag.appendChild(hit)
+        }
         const path = document.createElementNS(ns, 'path')
-        path.setAttribute('d', `M ${x1} ${y1} L ${out} ${y1} L ${out} ${y2} L ${x2} ${y2}`)
+        path.setAttribute('class', 'link')
+        path.setAttribute('d', d)
         path.setAttribute('data-from', t.task.id)
         path.setAttribute('data-to', dep.id)
         path.setAttribute('data-type', type)
@@ -1919,6 +2466,15 @@ export class OASGantt extends OASElement {
       }
     }
     svg.appendChild(frag)
+    // 重渲染后按选中态回填高亮；目标连线已不在（过滤/数据变）则清掉武装态（防「不可见却可删」）
+    if (this.selectedLink) {
+      const sel = this.selectedLink
+      const hit = svg.querySelector(
+        `.link-hit[data-from="${escId(sel.successor)}"][data-to="${escId(sel.predecessor)}"][data-type="${sel.type}"]`,
+      )
+      if (hit) hit.classList.add('selected')
+      else this.selectedLink = null
+    }
   }
 
   /** 周末/假日列高亮（day/hour 档；week+ 档跨度大不高亮） */

@@ -197,6 +197,9 @@ export const ar: LocaleMessages = {
   'gantt.today': 'اليوم',
   'gantt.tooltipProgress': 'التقدم {progress}%',
   'gantt.tooltipRange': '{start} إلى {end}',
+  'gantt.baselineLater': 'متأخر عن الأساس بـ {count} يوم',
+  'gantt.baselineEarlier': 'مبكر عن الأساس بـ {count} يوم',
+  'gantt.baselineSame': 'مطابق للأساس',
   // kanban (لوحة كانبان)
   'kanban.emptyColumn': 'اسحب البطاقات إلى هنا',
   'kanban.moveCard': 'نقل البطاقة',

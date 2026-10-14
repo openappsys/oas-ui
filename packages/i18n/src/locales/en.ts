@@ -160,6 +160,9 @@ export const en: LocaleMessages = {
   'gantt.today': 'Today',
   'gantt.tooltipProgress': '{progress}% complete',
   'gantt.tooltipRange': '{start} to {end}',
+  'gantt.baselineLater': '{count}d later than baseline',
+  'gantt.baselineEarlier': '{count}d earlier than baseline',
+  'gantt.baselineSame': 'On baseline',
   // kanban（看板）
   'kanban.emptyColumn': 'Drag cards here',
   'kanban.moveCard': 'Move card',

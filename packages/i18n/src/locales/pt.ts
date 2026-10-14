@@ -197,6 +197,9 @@ export const pt: LocaleMessages = {
   'gantt.today': 'Hoje',
   'gantt.tooltipProgress': 'Progresso {progress}%',
   'gantt.tooltipRange': '{start} a {end}',
+  'gantt.baselineLater': '{count} d depois da linha de base',
+  'gantt.baselineEarlier': '{count} d antes da linha de base',
+  'gantt.baselineSame': 'Igual à linha de base',
   // kanban (quadro kanban)
   'kanban.emptyColumn': 'Arraste cartões para cá',
   'kanban.moveCard': 'Mover cartão',

@@ -34,6 +34,24 @@
 - 拖拽中 Esc（或 pointercancel）取消 → 视觉回滚、零事件零写回；拖拽中外部重写 `tasks` 属性 → 拖拽终止回滚（外部数据为准）；
 - 聚焦任务条后 **Shift + ←/→** 键盘改期一格（RTL 方向镜像）。
 
+## 行拖拽改父子 / 重排（reparent）
+
+<DemoBlock title="拖左侧名称行：上/下半区 = 目标前/后（同级），指针深入右侧 = 成为目标子级；收口派发 oas-reparent">
+  <oas-gantt id="gantt-reparent" tasks='[{"id":"p1","name":"阶段一","start":"2026-03-02","end":"2026-03-13","type":"summary","children":[{"id":"w1","name":"设计","start":"2026-03-02","end":"2026-03-06"},{"id":"w2","name":"编码","start":"2026-03-05","end":"2026-03-13"}]},{"id":"w3","name":"验收（拖我）","start":"2026-03-16","end":"2026-03-20"},{"id":"w4","name":"上线（拖我）","start":"2026-03-23","end":"2026-03-27"}]'></oas-gantt>
+  <div id="gantt-reparent-output" style="color:var(--oas-color-text-secondary);font-size:var(--oas-font-size-sm);margin-top:var(--oas-space-2)"></div>
+</DemoBlock>
+
+拖左侧名称行到目标：落在目标行**上半区** → 插到目标之前（同级）；**下半区** → 插到目标之后（同级）；**指针深入右侧** → 成为目标的子级。收口派发 `oas-reparent`（`detail: { id, parent, index }`，`parent` 为 `null` 表示根级）+ `oas-tasks-change`（全量）。不允许把父拖进自己的后代（防环，零事件）；`readonly` 或任务级 `disabled` 不启动；拖拽中 `Esc` / `pointercancel` 取消零事件。
+
+## 依赖连线交互编辑
+
+<DemoBlock title="悬停任务条出连线点：从左/右点拖到目标任务建依赖（端点定 FS/SS/FF/SF）；点连线选中后 Delete 删除">
+  <oas-gantt id="gantt-link" tasks='[{"id":"l1","name":"设计","start":"2026-03-02","end":"2026-03-06"},{"id":"l2","name":"开发","start":"2026-03-09","end":"2026-03-13"},{"id":"l3","name":"测试","start":"2026-03-16","end":"2026-03-20","dependencies":[{"id":"l2"}]}]'></oas-gantt>
+  <div id="gantt-link-output" style="color:var(--oas-color-text-secondary);font-size:var(--oas-font-size-sm);margin-top:var(--oas-space-2)"></div>
+</DemoBlock>
+
+悬停任务条出两个**连线点**：拖右侧点（完成端）到目标条 → 建依赖；拖左侧点（开始端）同理。落点取目标条的**左半**（开始端）/ **右半**（完成端），与起点端组合决定类型（FS / SS / FF / SF），依赖记在**后继任务**上。同源同型依赖不重复添加；同源多型可并存，选中删除按类型作用域只删该条。点已有连线**选中**（高亮），按 `Delete` / `Backspace` 删除（仅组件持有焦点时响应，不劫持宿主输入）。收口派发 `oas-dependencies-change`（`detail: { taskId, dependencies }`）+ `oas-tasks-change`。`readonly` 不渲染连线点与命中区、不可删；拖拽中 `Esc` / `pointercancel` 取消零事件。行重排与连线编辑为指针交互（连线点悬停显现；触屏暂无连线点入口）。
+
 ## 只读三级 + 任务级禁用
 
 <DemoBlock title="readonly（全禁）/ dates-readonly（禁改期）/ progress-readonly（禁进度）；只读态不渲染拖拽手柄（视觉即语义）">
@@ -53,7 +71,7 @@
   </div>
 </DemoBlock>
 
-任务数据里的 `disabled: true` 单独禁该条（其他任务不受影响）。
+任务数据里的 `disabled: true` 单独禁该条（其他任务不受影响）：**只锁自身数据**——不可被拖（作源）、不可作依赖**后继**、不可作重排 **drop-inside** 目标；但可作他任务的前置（连线源）与重排前/后同级目标。
 
 ## 今日线与周末/假日高亮
 
@@ -69,6 +87,14 @@
 </DemoBlock>
 
 今日线为装饰层（`aria-hidden`），落在时间轴范围内才渲染；周末/假日列高亮在 day/hour 档生效。
+
+## 基线对比（show-baseline）
+
+<DemoBlock title="show-baseline 开启：实际条下叠浅色基线条，title 标差值（比基线晚/早 N 天或一致）">
+  <oas-gantt show-baseline tasks='[{"id":"b1","name":"设计（实际晚基线 2 天）","start":"2026-03-02","end":"2026-03-06","progress":80,"baseline":{"start":"2026-03-02","end":"2026-03-04"}},{"id":"b2","name":"开发（与基线一致）","start":"2026-03-05","end":"2026-03-13","progress":40,"baseline":{"start":"2026-03-05","end":"2026-03-13"}},{"id":"b3","name":"测试（实际早基线 1 天）","start":"2026-03-16","end":"2026-03-18","progress":20,"baseline":{"start":"2026-03-16","end":"2026-03-19"}}]'></oas-gantt>
+</DemoBlock>
+
+`show-baseline`（默认关）开启后，任务带 `baseline: { start, end? }` 时在实际条下渲染一条浅色基线条；条的 `title` 标实际相对基线的差值（比基线晚/早 N 天、或「与基线一致」）。基线数据由宿主保存，组件只读不写回；基线条颜色走 `--oas-gantt-baseline-color`。
 
 ## 行虚拟滚动（万级任务）
 
@@ -172,6 +198,27 @@ onMounted(async () => {
     })
     basic.addEventListener('oas-tasks-change', () => show(`oas-tasks-change：当前 ${basic.tasks.length} 条任务`))
   }
+
+  // 行重排事件反馈
+  const reparent = document.getElementById('gantt-reparent')
+  const rout = document.getElementById('gantt-reparent-output')
+  if (reparent && rout) {
+    reparent.addEventListener('oas-reparent', (e) => {
+      const d = e.detail
+      rout.textContent = `oas-reparent：${d.id} → parent=${d.parent ?? '（根级）'}（同级第 ${d.index} 位）`
+    })
+  }
+
+  // 连线交互事件反馈
+  const link = document.getElementById('gantt-link')
+  const lout = document.getElementById('gantt-link-output')
+  if (link && lout) {
+    link.addEventListener('oas-dependencies-change', (e) => {
+      const d = e.detail
+      const list = d.dependencies.map((x) => `${x.id}(${x.type ?? 'fs'})`).join('、') || '（无）'
+      lout.textContent = `oas-dependencies-change：${d.taskId} 的前置 = ${list}`
+    })
+  }
 })
 </script>
 
@@ -194,9 +241,10 @@ onMounted(async () => {
 | `readonly` | 整图只读（禁改期/禁进度，不渲染拖拽手柄） | `boolean` | — |
 | `row-height` | 行高 px（默认 36，下限 20） | `string` | `36` |
 | `scale` | 时间刻度：hour / day（默认）/ week / month / quarter / year；非法值回落 day | `string` | — |
+| `show-baseline` | 基线对比（布尔，默认关）：任务带 baseline 时在实际条下渲染基线条，title 标差值（比基线晚/早 N 天或一致） | `boolean` | — |
 | `show-today` | 今日线（默认开；false 关闭） | `string` | — |
 | `snap` | 拖拽吸附当前刻度（默认开；false 按像素比例平移并保留时间精度） | `string` | — |
-| `tasks` | 甘特任务（JSON）：[{ id?, name, start, end?, type?, progress?, parent?, children?, dependencies?, color?, disabled?, expanded? }]——扁平 parent 指针为主，嵌套 children 自动拍平；type:"milestone" 显式优先（带 end 也按里程碑渲染，end 忽略），有子任务时恒为摘要；无 end 亦推导为里程碑；start 晚于 end 自动交换 | `GanttTask[]` | `[]` |
+| `tasks` | 甘特任务（JSON）：[{ id?, name, start, end?, type?, progress?, parent?, children?, dependencies?, color?, disabled?, expanded?, baseline? }]——扁平 parent 指针为主，嵌套 children 自动拍平；type:"milestone" 显式优先（带 end 也按里程碑渲染，end 忽略），有子任务时恒为摘要；无 end 亦推导为里程碑；start 晚于 end 自动交换 | `GanttTask[]` | `[]` |
 | `weekends` | 周末列高亮（默认开；day/hour 档生效；false 关闭） | `string` | — |
 
 #### Property（JS property；是否写回 attribute 见各行说明）
@@ -209,8 +257,10 @@ onMounted(async () => {
 
 | 事件 | 说明 |
 | --- | --- |
+| `oas-dependencies-change` | 连线拖拽建依赖 / 选中删除收口时派发，detail: { taskId, dependencies }（taskId 为依赖变化的后继任务） |
 | `oas-expand-change` | 行树折叠/展开时派发，detail: { id, expanded } |
 | `oas-progress-change` | 拖进度手柄收口时派发，detail: { id, task, progress } |
+| `oas-reparent` | 行拖拽改父子 / 重排收口时派发，detail: { id, parent, index }（parent 为 null 表示根级，index 为同级序号） |
 | `oas-scale-change` | scale 属性变化时派发，detail: { scale }；首次吸收不派发 |
 | `oas-task-change` | 拖拽/拉伸/键盘改期收口（pointerup）时派发，detail: { id, task, oldStart, oldEnd, start, end }；零位移不派发 |
 | `oas-task-click` | 点击任务条/里程碑时派发，detail: { id, task } |
@@ -228,20 +278,21 @@ onMounted(async () => {
 
 #### CSS 变量
 
-| CSS 变量 | 默认值 |
-| --- | --- |
-| `--oas-gantt-bar-bg` | `color-mix(in srgb, var(--oas-gantt-bar-color, var(--oas-color-primary)) 22%, transparent)` |
-| `--oas-gantt-bar-height` | `22px` |
-| `--oas-gantt-bar-progress-bg` | `var(--oas-gantt-bar-color, var(--oas-color-primary))` |
-| `--oas-gantt-grid-line-color` | `var(--oas-color-border)` |
-| `--oas-gantt-header-bg` | `var(--oas-color-bg)` |
-| `--oas-gantt-header-height` | `44px` |
-| `--oas-gantt-height` | `320px` |
-| `--oas-gantt-holiday-bg` | `color-mix(in srgb, var(--oas-color-warning) 12%, transparent)` |
-| `--oas-gantt-link-color` | `var(--oas-color-primary)` |
-| `--oas-gantt-list-width` | `220px` |
-| `--oas-gantt-milestone-color` | `var(--oas-color-warning)` |
-| `--oas-gantt-row-height` | `36px` |
-| `--oas-gantt-summary-bg` | `var(--oas-color-text-secondary-strong)` |
-| `--oas-gantt-today-color` | `var(--oas-color-danger)` |
-| `--oas-gantt-weekend-bg` | `color-mix(in srgb, var(--oas-color-bg-hover) 60%, transparent)` |
+| CSS 变量 | 说明 | 默认值 |
+| --- | --- | --- |
+| `--oas-gantt-bar-bg` | — | `color-mix(in srgb, var(--oas-gantt-bar-color, var(--oas-color-primary)) 22%, transparent)` |
+| `--oas-gantt-bar-height` | — | `22px` |
+| `--oas-gantt-bar-progress-bg` | — | `var(--oas-gantt-bar-color, var(--oas-color-primary))` |
+| `--oas-gantt-baseline-color` | 基线条颜色（默认半透明次要文字色） | `color-mix(in srgb, var(--oas-color-text-secondary-strong) 55%, transparent)` |
+| `--oas-gantt-grid-line-color` | — | `var(--oas-color-border)` |
+| `--oas-gantt-header-bg` | — | `var(--oas-color-bg)` |
+| `--oas-gantt-header-height` | — | `44px` |
+| `--oas-gantt-height` | — | `320px` |
+| `--oas-gantt-holiday-bg` | — | `color-mix(in srgb, var(--oas-color-warning) 12%, transparent)` |
+| `--oas-gantt-link-color` | — | `var(--oas-color-primary)` |
+| `--oas-gantt-list-width` | — | `220px` |
+| `--oas-gantt-milestone-color` | — | `var(--oas-color-warning)` |
+| `--oas-gantt-row-height` | — | `36px` |
+| `--oas-gantt-summary-bg` | — | `var(--oas-color-text-secondary-strong)` |
+| `--oas-gantt-today-color` | — | `var(--oas-color-danger)` |
+| `--oas-gantt-weekend-bg` | — | `color-mix(in srgb, var(--oas-color-bg-hover) 60%, transparent)` |

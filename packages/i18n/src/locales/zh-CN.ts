@@ -197,6 +197,9 @@ export const zhCN = {
   'gantt.today': '今天',
   'gantt.tooltipProgress': '进度 {progress}%',
   'gantt.tooltipRange': '{start} 至 {end}',
+  'gantt.baselineLater': '比基线晚 {count} 天',
+  'gantt.baselineEarlier': '比基线早 {count} 天',
+  'gantt.baselineSame': '与基线一致',
   // kanban（看板）
   'kanban.emptyColumn': '拖拽卡片到此处',
   'kanban.moveCard': '移动卡片',

@@ -593,7 +593,7 @@ describe('OASGantt 依赖连线（FS/SS/FF/SF）', () => {
 
   it('四种依赖类型各画一条连线（svg.links path[data-type]）', () => {
     const el = mountDeps(['fs', 'ss', 'ff', 'sf'])
-    const paths = [...shadowOf(el).querySelectorAll<SVGPathElement>('svg.links path[data-from]')]
+    const paths = [...shadowOf(el).querySelectorAll<SVGPathElement>('svg.links path.link[data-from]')]
     expect(paths.length).toBe(4)
     const types = paths.map((p) => p.dataset.type).sort()
     expect(types).toEqual(['ff', 'fs', 'sf', 'ss'])
@@ -608,7 +608,7 @@ describe('OASGantt 依赖连线（FS/SS/FF/SF）', () => {
         { id: 'b', name: 'B', start: '2026-03-05', end: '2026-03-08', dependencies: [{ id: 'a' }, { id: 'ghost' }] },
       ]),
     })
-    const paths = shadowOf(el).querySelectorAll<SVGPathElement>('svg.links path[data-from]')
+    const paths = shadowOf(el).querySelectorAll<SVGPathElement>('svg.links path.link[data-from]')
     expect(paths.length).toBe(1)
     expect(paths[0]!.dataset.type).toBe('fs')
   })
@@ -1185,5 +1185,536 @@ describe('OASGantt tasks 通道与方法', () => {
     dragSeq(barOf(el, 'h'), 44) // 1 小时
     expect(el.tasks[0]!.start).toBe('2026-03-02 09:00')
     expect(el.tasks[0]!.end).toBe('2026-03-02 13:00')
+  })
+})
+
+describe('OASGantt 基线对比（baseline）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  const TASKS = JSON.stringify([
+    {
+      id: 'a',
+      name: 'A',
+      start: '2026-03-02',
+      end: '2026-03-06',
+      baseline: { start: '2026-03-02', end: '2026-03-04' },
+    },
+    {
+      id: 'b',
+      name: 'B',
+      start: '2026-03-02',
+      end: '2026-03-06',
+      baseline: { start: '2026-03-02', end: '2026-03-06' },
+    },
+    { id: 'c', name: 'C', start: '2026-03-02', end: '2026-03-06', baseline: { start: 'bad' } },
+  ])
+
+  it('baseline 属性关闭不渲染；开启后每任务渲染基线条并标差值（非法基线丢弃）', () => {
+    const off = mount({ tasks: TASKS })
+    expect(shadowOf(off).querySelectorAll('.baseline').length).toBe(0)
+
+    const on = mount({ tasks: TASKS, 'show-baseline': '' })
+    const baselines = [...shadowOf(on).querySelectorAll<HTMLElement>('.baseline')]
+    // c 的 baseline.start 非法 → 丢弃；a、b 各一条
+    expect(baselines.length).toBe(2)
+    const a = shadowOf(on).querySelector<HTMLElement>('.baseline[data-id="a"]')!
+    expect(a.title, '实际晚基线 2 天').toBe('比基线晚 2 天')
+    const b = shadowOf(on).querySelector<HTMLElement>('.baseline[data-id="b"]')!
+    expect(b.title, '与基线一致').toBe('与基线一致')
+    expect(shadowOf(on).querySelector('.baseline[data-id="c"]'), '非法基线不渲染').toBeNull()
+    expect(parseFloat(a.style.width)).toBeGreaterThan(0)
+  })
+
+  it('baseline 数据经 taskSnapshot 透传（task-click detail 含 deep copy）', () => {
+    const el = mount({ tasks: TASKS, 'show-baseline': '' })
+    let seen: GanttTask | undefined
+    el.addEventListener('oas-task-click', (e) => {
+      seen = (e as CustomEvent).detail.task as GanttTask
+    })
+    barOf(el, 'a').click()
+    expect(seen?.baseline).toEqual({ start: '2026-03-02', end: '2026-03-04' })
+    expect(seen?.baseline).not.toBe(el.tasks[0]!.baseline)
+  })
+})
+
+describe('OASGantt 行拖拽改父子 / 重排（reparent）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  const ROWS = JSON.stringify([
+    {
+      id: 'p1',
+      name: 'P1',
+      start: '2026-03-02',
+      end: '2026-03-13',
+      type: 'summary',
+      children: [{ id: 'c1', name: 'C1', start: '2026-03-02', end: '2026-03-06' }],
+    },
+    { id: 'x', name: 'X', start: '2026-03-02', end: '2026-03-06' },
+    { id: 'y', name: 'Y', start: '2026-03-09', end: '2026-03-13' },
+  ])
+
+  function dragRow(el: OASGantt, dragId: string, targetRowIndex: number, clientX: number, rowH = 36): void {
+    const row = shadowOf(el).querySelector<HTMLElement>(`.row-name[data-key="${dragId}"]`)!
+    const side = shadowOf(el).querySelector<HTMLElement>('.side-body')!
+    side.getBoundingClientRect = () =>
+      ({
+        top: 0,
+        left: 0,
+        right: 300,
+        bottom: 1000,
+        width: 300,
+        height: 1000,
+        x: 0,
+        y: 0,
+        toJSON: () => ({}),
+      }) as DOMRect
+    Object.defineProperty(side, 'scrollTop', { value: 0, configurable: true })
+    row.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, composed: true, pointerId: 1, button: 0 }))
+    const move = new PointerEvent('pointermove', { bubbles: true, composed: true, pointerId: 1 })
+    Object.defineProperty(move, 'clientX', { value: clientX })
+    Object.defineProperty(move, 'clientY', { value: targetRowIndex * rowH + rowH / 4 })
+    document.dispatchEvent(move)
+    document.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, composed: true, pointerId: 1 }))
+  }
+
+  it('拖到目标前（before）：改同级顺序，派发 oas-reparent { id, parent:null, index }', () => {
+    const el = mount({ tasks: ROWS })
+    const seen: Array<{ id: string; parent: string | null; index: number }> = []
+    el.addEventListener('oas-reparent', (e) => seen.push((e as CustomEvent).detail))
+    // 行序：p1(0) c1(1) x(2) y(3)；把 y 拖到 x 之上
+    dragRow(el, 'y', 2, 0)
+    expect(seen).toEqual([{ id: 'y', parent: null, index: 1 }])
+    expect(el.tasks.map((t) => t.id)).toEqual(['p1', 'c1', 'y', 'x'])
+  })
+
+  it('拖到目标上（inside）：成为目标子级，派发 parent=target、index=0', () => {
+    const el = mount({ tasks: ROWS })
+    const seen: Array<{ id: string; parent: string | null; index: number }> = []
+    el.addEventListener('oas-reparent', (e) => seen.push((e as CustomEvent).detail))
+    // 指针深入右侧 → 落到 x 之下
+    dragRow(el, 'y', 2, 200)
+    expect(seen).toEqual([{ id: 'y', parent: 'x', index: 0 }])
+    expect(el.tasks.find((t) => t.id === 'y')!.parent).toBe('x')
+  })
+
+  it('防环：不允许把父拖进自己的后代，零事件', () => {
+    const el = mount({ tasks: ROWS })
+    let fired = 0
+    el.addEventListener('oas-reparent', () => fired++)
+    dragRow(el, 'p1', 1, 200) // 目标是 c1（p1 的子级）
+    expect(fired).toBe(0)
+    expect(el.tasks.find((t) => t.id === 'p1')!.parent).toBeUndefined()
+  })
+
+  it('readonly：不启动重排，零事件', () => {
+    const el = mount({ tasks: ROWS, readonly: '' })
+    let fired = 0
+    el.addEventListener('oas-reparent', () => fired++)
+    dragRow(el, 'y', 2, 0)
+    expect(fired).toBe(0)
+  })
+})
+
+describe('OASGantt 依赖连线交互编辑', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  const TASKS = JSON.stringify([
+    { id: 'a', name: 'A', start: '2026-03-02', end: '2026-03-06' },
+    { id: 'b', name: 'B', start: '2026-03-09', end: '2026-03-13' },
+  ])
+
+  function stubBar(el: OASGantt, id: string, left: number, width = 50): HTMLElement {
+    const bar = shadowOf(el).querySelector<HTMLElement>(`.bars .bar[data-id="${id}"]`)!
+    bar.getBoundingClientRect = () =>
+      ({
+        left,
+        right: left + width,
+        top: 0,
+        bottom: 22,
+        width,
+        height: 22,
+        x: left,
+        y: 0,
+        toJSON: () => ({}),
+      }) as DOMRect
+    return bar
+  }
+
+  function linkDrag(el: OASGantt, src: string, endpoint: 'start' | 'end', tgtX: number, tgtY = 11): void {
+    const from = stubBar(el, src, 100)
+    stubBar(el, src === 'a' ? 'b' : 'a', 300)
+    const dot = from.querySelector<HTMLElement>(`.link-${endpoint}`)!
+    dot.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, composed: true, pointerId: 1, button: 0 }))
+    const move = new PointerEvent('pointermove', { bubbles: true, composed: true, pointerId: 1 })
+    Object.defineProperty(move, 'clientX', { value: tgtX })
+    Object.defineProperty(move, 'clientY', { value: tgtY })
+    document.dispatchEvent(move)
+    const up = new PointerEvent('pointerup', { bubbles: true, composed: true, pointerId: 1 })
+    Object.defineProperty(up, 'clientX', { value: tgtX })
+    Object.defineProperty(up, 'clientY', { value: tgtY })
+    document.dispatchEvent(up)
+  }
+
+  it('从条 end 拖到目标条左半 → 建 fs 依赖，派发 oas-dependencies-change', () => {
+    const el = mount({ tasks: TASKS })
+    const seen: Array<{ taskId: string; dependencies: Array<{ id: string; type?: string }> }> = []
+    el.addEventListener('oas-dependencies-change', (e) => seen.push((e as CustomEvent).detail))
+    linkDrag(el, 'a', 'end', 310) // 目标 b [300,350]，左半 → start
+    expect(seen).toEqual([{ taskId: 'b', dependencies: [{ id: 'a', type: 'fs' }] }])
+    expect(el.tasks.find((t) => t.id === 'b')!.dependencies).toEqual([{ id: 'a', type: 'fs' }])
+  })
+
+  it('同源同型去重、同源多型可并存', () => {
+    const el = mount({ tasks: TASKS })
+    let fired = 0
+    el.addEventListener('oas-dependencies-change', () => fired++)
+    linkDrag(el, 'a', 'start', 310) // ss
+    expect(el.tasks.find((t) => t.id === 'b')!.dependencies).toEqual([{ id: 'a', type: 'ss' }])
+    expect(fired).toBe(1)
+    linkDrag(el, 'a', 'start', 310) // 同源同型 → 去重，零事件
+    expect(el.tasks.find((t) => t.id === 'b')!.dependencies).toEqual([{ id: 'a', type: 'ss' }])
+    expect(fired, '同源同型去重不派发').toBe(1)
+    linkDrag(el, 'a', 'end', 310) // fs → 与 ss 并存
+    expect(el.tasks.find((t) => t.id === 'b')!.dependencies).toEqual([
+      { id: 'a', type: 'ss' },
+      { id: 'a', type: 'fs' },
+    ])
+    expect(fired).toBe(2)
+  })
+
+  it('点连线选中 → Delete 删除依赖并派发 oas-dependencies-change', () => {
+    const el = mount({
+      tasks: JSON.stringify([
+        { id: 'a', name: 'A', start: '2026-03-02', end: '2026-03-06' },
+        { id: 'b', name: 'B', start: '2026-03-09', end: '2026-03-13', dependencies: [{ id: 'a' }] },
+      ]),
+    })
+    const hit = shadowOf(el).querySelector<SVGPathElement>('.link-hit[data-from="b"][data-to="a"]')!
+    expect(hit).not.toBeNull()
+    let fired = 0
+    el.addEventListener('oas-dependencies-change', () => fired++)
+    hit.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }))
+    expect(hit.classList.contains('selected')).toBe(true)
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Delete', bubbles: true }))
+    expect(fired).toBe(1)
+    expect(el.tasks.find((t) => t.id === 'b')!.dependencies).toBeUndefined()
+  })
+
+  it('readonly：不渲染连线点与命中路径', () => {
+    const el = mount({
+      tasks: JSON.stringify([
+        { id: 'a', name: 'A', start: '2026-03-02', end: '2026-03-06' },
+        { id: 'b', name: 'B', start: '2026-03-09', end: '2026-03-13', dependencies: [{ id: 'a' }] },
+      ]),
+      readonly: '',
+    })
+    expect(shadowOf(el).querySelectorAll('.link-dot').length).toBe(0)
+    expect(shadowOf(el).querySelectorAll('.link-hit').length).toBe(0)
+    expect(shadowOf(el).querySelectorAll('.link').length).toBe(1) // 可见连线仍在
+  })
+})
+
+describe('OASGantt 评审修复回归', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  function dragRow(el: OASGantt, dragId: string, targetIdx: number, clientX: number, rowH = 36): void {
+    const row = shadowOf(el).querySelector<HTMLElement>(`.row-name[data-key="${dragId}"]`)!
+    const side = shadowOf(el).querySelector<HTMLElement>('.side-body')!
+    side.getBoundingClientRect = () =>
+      ({
+        top: 0,
+        left: 0,
+        right: 300,
+        bottom: 1000,
+        width: 300,
+        height: 1000,
+        x: 0,
+        y: 0,
+        toJSON: () => ({}),
+      }) as DOMRect
+    Object.defineProperty(side, 'scrollTop', { value: 0, configurable: true })
+    row.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, composed: true, pointerId: 1, button: 0 }))
+    const move = new PointerEvent('pointermove', { bubbles: true, composed: true, pointerId: 1 })
+    Object.defineProperty(move, 'clientX', { value: clientX })
+    Object.defineProperty(move, 'clientY', { value: targetIdx * rowH + rowH / 4 })
+    document.dispatchEvent(move)
+    document.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, composed: true, pointerId: 1 }))
+  }
+
+  it('parent 成环数据下行拖拽不死循环（访问集守卫）', () => {
+    const el = mount({
+      tasks: JSON.stringify([
+        { id: 'A', name: 'A', start: '2026-03-02', end: '2026-03-06', parent: 'B' },
+        { id: 'B', name: 'B', start: '2026-03-02', end: '2026-03-06', parent: 'A' },
+        { id: 'C', name: 'C', start: '2026-03-09', end: '2026-03-13' },
+      ]),
+    })
+    let fired = 0
+    el.addEventListener('oas-reparent', () => fired++)
+    dragRow(el, 'C', 0, 0) // 拖到 A 之上（A 处于环内）——旧实现会死循环
+    expect(fired).toBeLessThanOrEqual(1) // 不挂起即通过
+  })
+
+  it('零变化重排（原地/顺序未变）不派发事件', () => {
+    const el = mount({
+      tasks: JSON.stringify([
+        { id: 'x', name: 'X', start: '2026-03-02', end: '2026-03-06' },
+        { id: 'y', name: 'Y', start: '2026-03-09', end: '2026-03-13' },
+      ]),
+    })
+    let fired = 0
+    el.addEventListener('oas-reparent', () => fired++)
+    dragRow(el, 'x', 1, 0) // x 拖到 y 之上（本就 x 在 y 前）→ 顺序不变
+    expect(fired).toBe(0)
+  })
+
+  it('RTL：目标条物理左半 = 语义 end（建 ff 而非 fs）', () => {
+    const el = mount({
+      dir: 'rtl',
+      tasks: JSON.stringify([
+        { id: 'a', name: 'A', start: '2026-03-02', end: '2026-03-06' },
+        { id: 'b', name: 'B', start: '2026-03-09', end: '2026-03-13' },
+      ]),
+    })
+    const seen: string[] = []
+    el.addEventListener('oas-dependencies-change', (e) => seen.push((e as CustomEvent).detail.dependencies[0].type))
+    const bars = shadowOf(el).querySelector('.bars')!
+    const rect = (id: string, left: number) => {
+      const b = bars.querySelector(`.bar[data-id="${id}"]`) as HTMLElement
+      b.getBoundingClientRect = () =>
+        ({
+          left,
+          right: left + 50,
+          top: 0,
+          bottom: 22,
+          width: 50,
+          height: 22,
+          x: left,
+          y: 0,
+          toJSON: () => ({}),
+        }) as DOMRect
+      return b
+    }
+    const from = rect('a', 100)
+    rect('b', 300)
+    const dot = from.querySelector<HTMLElement>('.link-end')!
+    dot.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, composed: true, pointerId: 1, button: 0 }))
+    const move = new PointerEvent('pointermove', { bubbles: true, composed: true, pointerId: 1 })
+    Object.defineProperty(move, 'clientX', { value: 310 }) // 物理左半
+    Object.defineProperty(move, 'clientY', { value: 11 })
+    document.dispatchEvent(move)
+    const up = new PointerEvent('pointerup', { bubbles: true, composed: true, pointerId: 1 })
+    Object.defineProperty(up, 'clientX', { value: 310 })
+    Object.defineProperty(up, 'clientY', { value: 11 })
+    document.dispatchEvent(up)
+    expect(seen).toEqual(['ff'])
+  })
+
+  it('同源多类型依赖：选中删除只删该类型（按 type 作用域）', () => {
+    const el = mount({
+      tasks: JSON.stringify([
+        { id: 'a', name: 'A', start: '2026-03-02', end: '2026-03-06' },
+        {
+          id: 'b',
+          name: 'B',
+          start: '2026-03-09',
+          end: '2026-03-13',
+          dependencies: [
+            { id: 'a', type: 'fs' },
+            { id: 'a', type: 'ss' },
+          ],
+        },
+      ]),
+    })
+    const hit = shadowOf(el).querySelector<SVGPathElement>('.link-hit[data-from="b"][data-to="a"][data-type="fs"]')!
+    hit.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }))
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Delete', bubbles: true }))
+    expect(el.tasks.find((t) => t.id === 'b')!.dependencies).toEqual([{ id: 'a', type: 'ss' }])
+  })
+
+  it('Delete 仅在组件持有焦点时生效：焦点移至外部输入则不删', () => {
+    const el = mount({
+      tasks: JSON.stringify([
+        { id: 'a', name: 'A', start: '2026-03-02', end: '2026-03-06' },
+        { id: 'b', name: 'B', start: '2026-03-09', end: '2026-03-13', dependencies: [{ id: 'a' }] },
+      ]),
+    })
+    const hit = shadowOf(el).querySelector<SVGPathElement>('.link-hit[data-from="b"][data-to="a"]')!
+    hit.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }))
+    const input = document.createElement('input')
+    document.body.appendChild(input)
+    input.focus()
+    let fired = 0
+    el.addEventListener('oas-dependencies-change', () => fired++)
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Delete', bubbles: true }))
+    expect(fired, '焦点在宿主输入时不劫持 Delete').toBe(0)
+    expect(el.tasks.find((t) => t.id === 'b')!.dependencies).toEqual([{ id: 'a' }])
+  })
+
+  it('行拖拽 Esc 取消：零事件', () => {
+    const el = mount({
+      tasks: JSON.stringify([
+        { id: 'x', name: 'X', start: '2026-03-02', end: '2026-03-06' },
+        { id: 'y', name: 'Y', start: '2026-03-09', end: '2026-03-13' },
+      ]),
+    })
+    let fired = 0
+    el.addEventListener('oas-reparent', () => fired++)
+    const row = shadowOf(el).querySelector<HTMLElement>('.row-name[data-key="y"]')!
+    const side = shadowOf(el).querySelector<HTMLElement>('.side-body')!
+    side.getBoundingClientRect = () =>
+      ({
+        top: 0,
+        left: 0,
+        right: 300,
+        bottom: 1000,
+        width: 300,
+        height: 1000,
+        x: 0,
+        y: 0,
+        toJSON: () => ({}),
+      }) as DOMRect
+    Object.defineProperty(side, 'scrollTop', { value: 0, configurable: true })
+    row.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, composed: true, pointerId: 1, button: 0 }))
+    const move = new PointerEvent('pointermove', { bubbles: true, composed: true, pointerId: 1 })
+    Object.defineProperty(move, 'clientX', { value: 0 })
+    Object.defineProperty(move, 'clientY', { value: 9 })
+    document.dispatchEvent(move)
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+    document.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, composed: true, pointerId: 1 }))
+    expect(fired).toBe(0)
+  })
+
+  function linkDrag(el: OASGantt, src: string, endpoint: 'start' | 'end', tgtX: number, tgtY = 11): void {
+    const bars = shadowOf(el).querySelector('.bars')!
+    const rect = (id: string, left: number) => {
+      const b = bars.querySelector(`.bar[data-id="${id}"]`) as HTMLElement
+      b.getBoundingClientRect = () =>
+        ({
+          left,
+          right: left + 50,
+          top: 0,
+          bottom: 22,
+          width: 50,
+          height: 22,
+          x: left,
+          y: 0,
+          toJSON: () => ({}),
+        }) as DOMRect
+      return b
+    }
+    const from = rect(src, 100)
+    rect(src === 'a' ? 'b' : 'a', 300)
+    const dot = from.querySelector<HTMLElement>(`.link-${endpoint}`)!
+    dot.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, composed: true, pointerId: 1, button: 0 }))
+    const move = new PointerEvent('pointermove', { bubbles: true, composed: true, pointerId: 1 })
+    Object.defineProperty(move, 'clientX', { value: tgtX })
+    Object.defineProperty(move, 'clientY', { value: tgtY })
+    document.dispatchEvent(move)
+    const up = new PointerEvent('pointerup', { bubbles: true, composed: true, pointerId: 1 })
+    Object.defineProperty(up, 'clientX', { value: tgtX })
+    Object.defineProperty(up, 'clientY', { value: tgtY })
+    document.dispatchEvent(up)
+  }
+
+  it('disabled 任务可作连线源（只写后继、不改其自身）', () => {
+    const el = mount({
+      tasks: JSON.stringify([
+        { id: 'a', name: 'A', start: '2026-03-02', end: '2026-03-06', disabled: true },
+        { id: 'b', name: 'B', start: '2026-03-09', end: '2026-03-13' },
+      ]),
+    })
+    expect(shadowOf(el).querySelector('.bar[data-id="a"] .link-dot'), 'disabled 条仍渲染连线点').not.toBeNull()
+    linkDrag(el, 'a', 'end', 310)
+    expect(el.tasks.find((t) => t.id === 'b')!.dependencies).toEqual([{ id: 'a', type: 'fs' }])
+    expect(el.tasks.find((t) => t.id === 'a')!.dependencies, 'disabled 自身未改').toBeUndefined()
+  })
+
+  it('disabled 任务不可作连线后继（拖入零依赖零事件）', () => {
+    const el = mount({
+      tasks: JSON.stringify([
+        { id: 'a', name: 'A', start: '2026-03-02', end: '2026-03-06' },
+        { id: 'b', name: 'B', start: '2026-03-09', end: '2026-03-13', disabled: true },
+      ]),
+    })
+    let fired = 0
+    el.addEventListener('oas-dependencies-change', () => fired++)
+    linkDrag(el, 'a', 'end', 310)
+    expect(fired).toBe(0)
+    expect(el.tasks.find((t) => t.id === 'b')!.dependencies).toBeUndefined()
+  })
+
+  it('sanitizeDeps 同源同型去重（只画一条线）', () => {
+    const el = mount({
+      tasks: JSON.stringify([
+        { id: 'a', name: 'A', start: '2026-03-02', end: '2026-03-06' },
+        {
+          id: 'b',
+          name: 'B',
+          start: '2026-03-09',
+          end: '2026-03-13',
+          dependencies: [{ id: 'a' }, { id: 'a' }, { id: 'a', type: 'fs' }],
+        },
+      ]),
+    })
+    expect(el.tasks.find((t) => t.id === 'b')!.dependencies).toEqual([{ id: 'a' }])
+    expect(shadowOf(el).querySelectorAll('.link[data-from="b"][data-to="a"]').length).toBe(1)
+  })
+
+  it('disabled 目标禁止 drop-inside（不改其聚合）；前/后同级仍允许', () => {
+    const el = mount({
+      tasks: JSON.stringify([
+        {
+          id: 'p',
+          name: 'P',
+          start: '2026-03-02',
+          end: '2026-03-13',
+          type: 'summary',
+          disabled: true,
+          children: [{ id: 'c', name: 'C', start: '2026-03-02', end: '2026-03-06' }],
+        },
+        { id: 'x', name: 'X', start: '2026-03-09', end: '2026-03-13' },
+      ]),
+    })
+    let fired = 0
+    el.addEventListener('oas-reparent', () => fired++)
+    dragRow(el, 'x', 0, 200) // inside onto disabled p → 拒绝
+    expect(fired).toBe(0)
+    expect(el.tasks.find((t) => t.id === 'x')!.parent).toBeUndefined()
+    // 前/后同级仍允许（不改 disabled 自身数据）
+    dragRow(el, 'x', 0, 0) // before p
+    expect(fired).toBe(1)
+    expect(el.tasks.map((t) => t.id)).toEqual(['x', 'p', 'c'])
+  })
+
+  it('disabled 后继的入边不可选删（与建链对称）；可见线仍在', () => {
+    const el = mount({
+      tasks: JSON.stringify([
+        { id: 'a', name: 'A', start: '2026-03-02', end: '2026-03-06' },
+        { id: 'b', name: 'B', start: '2026-03-09', end: '2026-03-13', disabled: true, dependencies: [{ id: 'a' }] },
+      ]),
+    })
+    expect(shadowOf(el).querySelector('.link-hit[data-from="b"][data-to="a"]'), '禁用后继无命中路径').toBeNull()
+    expect(shadowOf(el).querySelector('.link[data-from="b"][data-to="a"]'), '可见线仍画').not.toBeNull()
   })
 })

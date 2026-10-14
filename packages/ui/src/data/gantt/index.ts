@@ -17,4 +17,6 @@ export type {
   GanttExpandChangeDetail,
   GanttScaleChangeDetail,
   GanttTaskRenderDetail,
+  GanttReparentDetail,
+  GanttDependenciesChangeDetail,
 } from './oas-gantt.js'

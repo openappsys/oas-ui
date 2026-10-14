@@ -197,6 +197,9 @@ export const fr: LocaleMessages = {
   'gantt.today': "Aujourd'hui",
   'gantt.tooltipProgress': 'Progression {progress} %',
   'gantt.tooltipRange': '{start} au {end}',
+  'gantt.baselineLater': '{count} j plus tard que la référence',
+  'gantt.baselineEarlier': '{count} j plus tôt que la référence',
+  'gantt.baselineSame': 'Conforme à la référence',
   // kanban (tableau kanban)
   'kanban.emptyColumn': 'Déposez les cartes ici',
   'kanban.moveCard': 'Déplacer la carte',

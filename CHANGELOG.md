@@ -12,6 +12,14 @@
 - **`oas-scheduler` RTL**：资源视图改用逻辑定位（`inset-inline-start`）+ `data-rtl`，RTL 下时间轴与资源列镜像；拖拽创建命中判定随方向翻转；`dir` 补入 `observedAttributes`，运行时切向即时重判定。
 - i18n ×10 新增 `scheduler.viewResource` / `scheduler.viewResourceWeek` / `scheduler.unassigned`；文档 zh/en 资源视图节（含 RTL demo）；api-manifest / api-descriptions 同步。
 
+### 特性 · `oas-gantt`
+
+- **基线对比**：`GanttTask` 增 `baseline?: { start, end? }`（宿主保存，组件只读）；`show-baseline`（默认关）开启后在实际条下叠浅色基线条，条的 `title` 标差值（比基线晚/早 N 天、或「与基线一致」）。基线条颜色走 `--oas-gantt-baseline-color`。
+- **行拖拽改父子 / 重排**：拖左侧名称行到目标，改 `parent` 与同级顺序；落点三档（上半区=目标前 / 下半区=目标后 / 指针深入右侧=成为目标子级），带落点指示线；不允许拖进自身后代（防环）；`readonly` / 任务级 `disabled` 不启动；`Esc` / `pointercancel` 取消。派发 `oas-reparent { id, parent, index }` + `oas-tasks-change`。
+- **依赖连线交互编辑**：悬停任务条出连线点，拖到目标任务建依赖（端点定 FS/SS/FF/SF，记在后继任务）；点已有连线选中（高亮），`Delete` / `Backspace` 删除（仅组件持有焦点时响应，不劫持宿主输入）。同源同型去重、同源多型可并存，删除按类型作用域。派发 `oas-dependencies-change { taskId, dependencies }` + `oas-tasks-change`。`readonly` 不渲染连线点与命中区。
+- `disabled` 语义：只锁自身数据（不可被拖、不可作依赖后继、不可作重排 drop-inside 目标）；可作他任务前置与重排前/后同级目标。
+- 工程：`sanitizeDeps` 同源同型去重；`barUnder`/`oas-reparent` 命中与 RTL 端点修正；`svg.links` 命中外层 `.bars` 放行（`pointer-events`）；`onReconnect` 重挂 document 监听；i18n ×10 新增 `gantt.baselineLater` / `gantt.baselineEarlier` / `gantt.baselineSame`；文档 zh/en 三节 + demo；api-manifest / api-descriptions 同步。
+
 ## [2.6.1] - 2026-10-13
 
 ### 破坏性变更（迁移）

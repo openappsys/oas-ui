@@ -238,3 +238,77 @@ test('gantt RTL scrollToDate 负值模型 + 显式 milestone 带 end 渲染菱�
   // end 忽略：菱形容器恒 16px 宽（按 end 渲染则会是条形宽度）
   expect(result.milestoneW).toBe('16px')
 })
+
+// 行拖拽重排（真实指针）+ 基线对比渲染
+test('gantt 行拖拽重排 oas-reparent + 基线对比渲染', async ({ page }) => {
+  const errors: string[] = []
+  page.on('pageerror', (e) => errors.push(e.message))
+  page.on('console', (m) => {
+    if (m.type() === 'error') errors.push(m.text())
+  })
+  await page.goto('/components/gantt.html', { waitUntil: 'domcontentloaded' })
+  await page.waitForSelector('#gantt-reparent', { timeout: 15000 })
+
+  // 基线对比：demo 页 show-baseline 实例渲染基线条
+  await expect(page.locator('oas-gantt[show-baseline] .baseline').first()).toBeVisible()
+
+  // 行重排：把 w4 拖到 w3 上半区（before），收口派发 oas-reparent
+  const host = page.locator('#gantt-reparent')
+  const w4 = host.locator('.row-name[data-key="w4"]')
+  const w3 = host.locator('.row-name[data-key="w3"]')
+  await w4.scrollIntoViewIfNeeded()
+  const b4 = (await w4.boundingBox())!
+  const b3 = (await w3.boundingBox())!
+  await page.mouse.move(b4.x + 12, b4.y + b4.height / 2)
+  await page.mouse.down()
+  await page.mouse.move(b3.x + 12, b3.y + 4, { steps: 5 })
+  // 落点指示线可见（评审 C1：drop-line 曾零宽度不可见）
+  const dropW = await host.locator('.drop-line').evaluate((el) => el.getBoundingClientRect().width)
+  expect(dropW).toBeGreaterThan(0)
+  await page.mouse.up()
+  await expect(page.locator('#gantt-reparent-output')).toContainText('oas-reparent')
+
+  expect(errors).toEqual([])
+})
+
+// 依赖连线交互编辑：悬停出连线点 → 真拖建依赖 → 点选删除
+test('gantt 连线拖拽建依赖 + 选中 Delete 删除', async ({ page }) => {
+  const errors: string[] = []
+  page.on('pageerror', (e) => errors.push(e.message))
+  page.on('console', (m) => {
+    if (m.type() === 'error') errors.push(m.text())
+  })
+  await page.goto('/components/gantt.html', { waitUntil: 'domcontentloaded' })
+  await page.waitForSelector('#gantt-link', { timeout: 15000 })
+
+  const host = page.locator('#gantt-link')
+  const l1 = host.locator('.bar[data-id="l1"]')
+  const l2 = host.locator('.bar[data-id="l2"]')
+  await l1.scrollIntoViewIfNeeded()
+  await l1.hover()
+  const endDot = l1.locator('.link-dot.link-end')
+  await expect(endDot).toHaveCSS('opacity', '1')
+  const dRect = (await endDot.boundingBox())!
+  const b2 = (await l2.boundingBox())!
+  await page.mouse.move(dRect.x + dRect.width / 2, dRect.y + dRect.height / 2)
+  await page.mouse.down()
+  await page.mouse.move(b2.x + 4, b2.y + b2.height / 2, { steps: 5 }) // 目标左半 → 后继 l2 依赖 l1（fs）
+  await page.mouse.up()
+  await expect(page.locator('#gantt-link-output')).toContainText('l1(fs)')
+
+  // 新增连线：真实鼠标点中连线（走命中测试，防 .bars 遮挡假绿）→ 选中 → Delete 删除
+  const hit = host.locator('.link-hit[data-from="l2"][data-to="l1"]')
+  await expect(hit).toHaveCount(1)
+  const pt = await hit.evaluate((el) => {
+    const p = el as SVGPathElement
+    const c = p.getPointAtLength(p.getTotalLength() / 2)
+    const r = (p.ownerSVGElement as SVGSVGElement).getBoundingClientRect()
+    return { x: r.left + c.x, y: r.top + c.y }
+  })
+  await page.mouse.click(pt.x, pt.y)
+  await expect(hit).toHaveClass(/selected/)
+  await page.keyboard.press('Delete')
+  await expect(page.locator('#gantt-link-output')).toContainText('（无）')
+
+  expect(errors).toEqual([])
+})

@@ -34,6 +34,24 @@ Changing `scale` re-lays the time axis (column width adapts per tier, with a flo
 - Esc (or pointercancel) while dragging cancels → visual rollback, zero events; rewriting `tasks` externally mid-drag aborts the drag (external data wins);
 - With a bar focused, **Shift + ←/→** reschedules by one unit (mirrored in RTL).
 
+## Row Reparent / Reorder (reparent)
+
+<DemoBlock title="Drag a left-column row: top/bottom half = before/after the target (same level), pointer deep to the right = become a child of the target; settles with oas-reparent">
+  <oas-gantt id="gantt-reparent" tasks='[{"id":"p1","name":"Phase 1","start":"2026-03-02","end":"2026-03-13","type":"summary","children":[{"id":"w1","name":"Design","start":"2026-03-02","end":"2026-03-06"},{"id":"w2","name":"Build","start":"2026-03-05","end":"2026-03-13"}]},{"id":"w3","name":"QA (drag me)","start":"2026-03-16","end":"2026-03-20"},{"id":"w4","name":"Launch (drag me)","start":"2026-03-23","end":"2026-03-27"}]'></oas-gantt>
+  <div id="gantt-reparent-output" style="color:var(--oas-color-text-secondary);font-size:var(--oas-font-size-sm);margin-top:var(--oas-space-2)"></div>
+</DemoBlock>
+
+Drag a left-column row onto a target: the **top half** inserts before the target (same level); the **bottom half** inserts after it (same level); a pointer **deep to the right** makes it a child of the target. On settle it dispatches `oas-reparent` (`detail: { id, parent, index }`, `parent` null means root level) plus `oas-tasks-change` (full list). Dropping a parent into its own descendant is rejected (cycle guard, zero events); `readonly` or a per-task `disabled` never starts the drag; `Esc` / `pointercancel` cancels with zero events.
+
+## Dependency Link Editing
+
+<DemoBlock title="Hover a bar for link dots: drag from the left/right dot onto a target task to create a dependency (endpoints pick FS/SS/FF/SF); click a link to select, then Delete to remove">
+  <oas-gantt id="gantt-link" tasks='[{"id":"l1","name":"Design","start":"2026-03-02","end":"2026-03-06"},{"id":"l2","name":"Build","start":"2026-03-09","end":"2026-03-13"},{"id":"l3","name":"Test","start":"2026-03-16","end":"2026-03-20","dependencies":[{"id":"l2"}]}]'></oas-gantt>
+  <div id="gantt-link-output" style="color:var(--oas-color-text-secondary);font-size:var(--oas-font-size-sm);margin-top:var(--oas-space-2)"></div>
+</DemoBlock>
+
+Hovering a bar reveals two **link dots**: drag the right (finish) dot onto a target bar to create a dependency; the left (start) dot works the same way. The drop side of the target — **left half** (start) / **right half** (finish) — combined with the source endpoint picks the type (FS / SS / FF / SF). The dependency is recorded on the **successor** task. Click an existing link to **select** (highlighted), then press `Delete` / `Backspace` to remove it. On settle it dispatches `oas-dependencies-change` (`detail: { taskId, dependencies }`) plus `oas-tasks-change`. With `readonly`, link dots and hit areas are not rendered and removal is disabled; `Esc` / `pointercancel` cancels with zero events. Row reorder and link editing are pointer interactions (link dots reveal on hover; no touch entry point yet).
+
 ## Readonly Levels + Per-task Disable
 
 <DemoBlock title="readonly (all) / dates-readonly (no rescheduling) / progress-readonly (no progress drag); readonly states render no drag handles (visual = semantics)">
@@ -53,7 +71,7 @@ Changing `scale` re-lays the time axis (column width adapts per tier, with a flo
   </div>
 </DemoBlock>
 
-`disabled: true` in task data disables that single bar (others unaffected).
+`disabled: true` in task data locks only that task's own data: it cannot be dragged (as a source), cannot be a dependency **successor**, and cannot be a reparent **drop-inside** target; it can still act as another task's predecessor (link source) and as a reparent before/after sibling target.
 
 ## Today Line & Weekend/Holiday Highlights
 
@@ -69,6 +87,14 @@ Changing `scale` re-lays the time axis (column width adapts per tier, with a flo
 </DemoBlock>
 
 The today line is decorative (`aria-hidden`) and renders only when today falls inside the axis range; weekend/holiday column tints apply on the day/hour tiers.
+
+## Baseline Comparison (show-baseline)
+
+<DemoBlock title="show-baseline on: a translucent baseline bar under the actual bar, title showing the delta (N days later/earlier, or on baseline)">
+  <oas-gantt show-baseline tasks='[{"id":"b1","name":"Design (actual 2d later)","start":"2026-03-02","end":"2026-03-06","progress":80,"baseline":{"start":"2026-03-02","end":"2026-03-04"}},{"id":"b2","name":"Build (on baseline)","start":"2026-03-05","end":"2026-03-13","progress":40,"baseline":{"start":"2026-03-05","end":"2026-03-13"}},{"id":"b3","name":"Test (actual 1d earlier)","start":"2026-03-16","end":"2026-03-18","progress":20,"baseline":{"start":"2026-03-16","end":"2026-03-19"}}]'></oas-gantt>
+</DemoBlock>
+
+With `show-baseline` on (off by default), a task carrying `baseline: { start, end? }` renders a translucent baseline bar under the actual bar; the bar `title` shows the actual-vs-baseline delta (N days later/earlier, or "on baseline"). Baseline data is owned by the host; the component is read-only on it. Baseline color comes from `--oas-gantt-baseline-color`.
 
 ## Row Virtualization (10k-scale tasks)
 
@@ -172,6 +198,27 @@ onMounted(async () => {
     })
     basic.addEventListener('oas-tasks-change', () => show(`oas-tasks-change: ${basic.tasks.length} tasks now`))
   }
+
+  // Row reparent event feedback
+  const reparent = document.getElementById('gantt-reparent')
+  const rout = document.getElementById('gantt-reparent-output')
+  if (reparent && rout) {
+    reparent.addEventListener('oas-reparent', (e) => {
+      const d = e.detail
+      rout.textContent = `oas-reparent: ${d.id} → parent=${d.parent ?? '(root)'} (sibling #${d.index})`
+    })
+  }
+
+  // Link editing event feedback
+  const link = document.getElementById('gantt-link')
+  const lout = document.getElementById('gantt-link-output')
+  if (link && lout) {
+    link.addEventListener('oas-dependencies-change', (e) => {
+      const d = e.detail
+      const list = d.dependencies.map((x) => `${x.id}(${x.type ?? 'fs'})`).join(', ') || '(none)'
+      lout.textContent = `oas-dependencies-change: predecessors of ${d.taskId} = ${list}`
+    })
+  }
 })
 </script>
 
@@ -194,9 +241,10 @@ onMounted(async () => {
 | `readonly` | Whole chart read-only (no rescheduling/progress, drag handles not rendered) | `boolean` | — |
 | `row-height` | Row height in px (default 36, minimum 20) | `string` | `36` |
 | `scale` | Time scale: hour / day (default) / week / month / quarter / year; invalid values fall back to day | `string` | — |
+| `show-baseline` | Baseline comparison (boolean, off by default): tasks with a baseline render a baseline bar under the actual bar, its title showing the delta (N days later/earlier than baseline, or on baseline) | `boolean` | — |
 | `show-today` | Today line (on by default; false to disable) | `string` | — |
 | `snap` | Snap drags to the current scale unit (on by default; false shifts by pixel ratio and keeps time precision) | `string` | — |
-| `tasks` | Gantt tasks (JSON): [{ id?, name, start, end?, type?, progress?, parent?, children?, dependencies?, color?, disabled?, expanded? }] — flat parent pointers are the primary contract; nested children are flattened automatically; explicit type:"milestone" takes precedence (rendered as milestone even with end, which is ignored) but a task with children is always a summary; no end also infers milestone; start/end are swapped automatically when start is after end | `GanttTask[]` | `[]` |
+| `tasks` | Gantt tasks (JSON): [{ id?, name, start, end?, type?, progress?, parent?, children?, dependencies?, color?, disabled?, expanded?, baseline? }] — flat parent pointers are the primary contract; nested children are flattened automatically; explicit type:"milestone" takes precedence (rendered as milestone even with end, which is ignored) but a task with children is always a summary; no end also infers milestone; start/end are swapped automatically when start is after end | `GanttTask[]` | `[]` |
 | `weekends` | Weekend column highlights (on by default; applies on day/hour tiers; false to disable) | `string` | — |
 
 #### Property (JS property; see each row for attribute reflection)
@@ -209,8 +257,10 @@ onMounted(async () => {
 
 | Event | Description |
 | --- | --- |
+| `oas-dependencies-change` | Dispatched when a link drag creates a dependency or a selected link is deleted, detail: { taskId, dependencies } (taskId is the successor whose dependencies changed) |
 | `oas-expand-change` | Dispatched on row tree collapse/expand, detail: { id, expanded } |
 | `oas-progress-change` | Dispatched when a progress handle drag settles, detail: { id, task, progress } |
+| `oas-reparent` | Dispatched when a row drag reparent/reorder settles, detail: { id, parent, index } (parent null means root level; index is the sibling position) |
 | `oas-scale-change` | Dispatched when the scale attribute changes, detail: { scale }; not dispatched on initial absorption |
 | `oas-task-change` | Dispatched when a drag/resize/keyboard reschedule settles (pointerup), detail: { id, task, oldStart, oldEnd, start, end }; not dispatched on zero movement |
 | `oas-task-click` | Dispatched on task bar/milestone click, detail: { id, task } |
@@ -228,20 +278,21 @@ onMounted(async () => {
 
 #### CSS Variables
 
-| CSS Variable | Default |
-| --- | --- |
-| `--oas-gantt-bar-bg` | `color-mix(in srgb, var(--oas-gantt-bar-color, var(--oas-color-primary)) 22%, transparent)` |
-| `--oas-gantt-bar-height` | `22px` |
-| `--oas-gantt-bar-progress-bg` | `var(--oas-gantt-bar-color, var(--oas-color-primary))` |
-| `--oas-gantt-grid-line-color` | `var(--oas-color-border)` |
-| `--oas-gantt-header-bg` | `var(--oas-color-bg)` |
-| `--oas-gantt-header-height` | `44px` |
-| `--oas-gantt-height` | `320px` |
-| `--oas-gantt-holiday-bg` | `color-mix(in srgb, var(--oas-color-warning) 12%, transparent)` |
-| `--oas-gantt-link-color` | `var(--oas-color-primary)` |
-| `--oas-gantt-list-width` | `220px` |
-| `--oas-gantt-milestone-color` | `var(--oas-color-warning)` |
-| `--oas-gantt-row-height` | `36px` |
-| `--oas-gantt-summary-bg` | `var(--oas-color-text-secondary-strong)` |
-| `--oas-gantt-today-color` | `var(--oas-color-danger)` |
-| `--oas-gantt-weekend-bg` | `color-mix(in srgb, var(--oas-color-bg-hover) 60%, transparent)` |
+| CSS Variable | Description | Default |
+| --- | --- | --- |
+| `--oas-gantt-bar-bg` | — | `color-mix(in srgb, var(--oas-gantt-bar-color, var(--oas-color-primary)) 22%, transparent)` |
+| `--oas-gantt-bar-height` | — | `22px` |
+| `--oas-gantt-bar-progress-bg` | — | `var(--oas-gantt-bar-color, var(--oas-color-primary))` |
+| `--oas-gantt-baseline-color` | Baseline bar color (defaults to translucent secondary text color) | `color-mix(in srgb, var(--oas-color-text-secondary-strong) 55%, transparent)` |
+| `--oas-gantt-grid-line-color` | — | `var(--oas-color-border)` |
+| `--oas-gantt-header-bg` | — | `var(--oas-color-bg)` |
+| `--oas-gantt-header-height` | — | `44px` |
+| `--oas-gantt-height` | — | `320px` |
+| `--oas-gantt-holiday-bg` | — | `color-mix(in srgb, var(--oas-color-warning) 12%, transparent)` |
+| `--oas-gantt-link-color` | — | `var(--oas-color-primary)` |
+| `--oas-gantt-list-width` | — | `220px` |
+| `--oas-gantt-milestone-color` | — | `var(--oas-color-warning)` |
+| `--oas-gantt-row-height` | — | `36px` |
+| `--oas-gantt-summary-bg` | — | `var(--oas-color-text-secondary-strong)` |
+| `--oas-gantt-today-color` | — | `var(--oas-color-danger)` |
+| `--oas-gantt-weekend-bg` | — | `color-mix(in srgb, var(--oas-color-bg-hover) 60%, transparent)` |

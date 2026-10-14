@@ -1882,7 +1882,7 @@ OASElement 的 render 生命周期只首连一次（`rendered` 门闩），组�
 
 - **依赖连线交互编辑**：悬停任务条出连线点，拖到目标任务建依赖（端点决定 FS/SS/FF/SF）；点已有连线选中，`Delete` / Backspace 删除。派发 `oas-dependencies-change` detail `{ taskId, dependencies }`。
 - **行拖拽改父子 / 重排**：拖左列行到目标行，改 `parent` 与同级顺序；派发 `oas-reparent` detail `{ id, parent, index }`。
-- **基线对比**：`GanttTask` 增 `baseline?: { start: string; end?: string }`；`baseline` 布尔（默认关）开启后，实际条后叠浅色基线条 + 差值标注。基线数据由宿主保存，组件只读不写回。
+- **基线对比**：`GanttTask` 增 `baseline?: { start: string; end?: string }`；`show-baseline` 布尔（默认关）开启后，实际条下叠浅色基线条 + 差值标注。基线数据由宿主保存，组件只读不写回。
 
 ### 边界
 
@@ -1891,17 +1891,12 @@ OASElement 的 render 生命周期只首连一次（`rendered` 门闩），组�
 - 拖拽建任务：不做（组件无空白行模型，新建由宿主按钮驱动）。
 - 依赖 lag/lead：不做（组件不重排后续任务，lag 只改连线视觉会误导）。
 - 多任务框选：不做。
+- 连线编辑与行重排为**指针交互**（无键盘/AT 通路；连线点悬停显现，触屏暂无入口）——v1 取舍，键盘通路待后续按需补。
+- `disabled` 任务语义：**只锁自身数据**——不可被拖（作源）、不可作依赖**后继**、不可作重排 **drop-inside** 目标；但可作他任务的前置（连线源）与重排前/后同级目标（均不改其自身数据）。
 
 ### 验收
 
-- 单测：连线创建各型 / 连线删除 / 行重排改 parent 与 index / 基线渲染与差值 / `baseline` 关闭不渲染 / i18n 键。
-- e2e：`qa-regression/gantt.spec.ts` 增真拖断言 + 暗色 + console 零告警。
-- 文档：gantt.md zh/en 增章节；api-manifest / api-descriptions 同步（`api:check` 双向 0）；i18n ×10。
-- 全量 `pnpm test` / typecheck / build / api:check 全绿。
-
-### 验收
-
-- 单测：连线创建各型 / 连线删除 / 进度汇总（含零工期）/ 行重排改 parent 与 index / 基线渲染与差值 / `baseline` 关闭不渲染 / i18n 键。
+- 单测：连线创建各型 / 连线删除 / 行重排改 parent 与 index / 基线渲染与差值 / `show-baseline` 关闭不渲染 / i18n 键。
 - e2e：`qa-regression/gantt.spec.ts` 增真拖断言 + 暗色 + console 零告警。
 - 文档：gantt.md zh/en 增章节；api-manifest / api-descriptions 同步（`api:check` 双向 0）；i18n ×10。
 - 全量 `pnpm test` / typecheck / build / api:check 全绿。

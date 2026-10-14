@@ -197,6 +197,9 @@ export const ru: LocaleMessages = {
   'gantt.today': 'Сегодня',
   'gantt.tooltipProgress': 'Прогресс {progress}%',
   'gantt.tooltipRange': '{start} — {end}',
+  'gantt.baselineLater': 'На {count} дн. позже базового',
+  'gantt.baselineEarlier': 'На {count} дн. раньше базового',
+  'gantt.baselineSame': 'Совпадает с базовым',
   // kanban (канбан-доска)
   'kanban.emptyColumn': 'Перетащите карточки сюда',
   'kanban.moveCard': 'Переместить карточку',
