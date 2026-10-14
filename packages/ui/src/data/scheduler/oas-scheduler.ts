@@ -364,7 +364,7 @@ const STYLE = `
   top: -3px;
   width: 8px;
   height: 8px;
-  border-radius: var(--oas-radius-full);
+  border-radius: var(--oas-radius-full, 999px);
   background: var(--oas-color-danger);
 }
 .resourceview {
@@ -418,7 +418,7 @@ const STYLE = `
   flex: none;
   width: 8px;
   height: 8px;
-  border-radius: var(--oas-radius-full);
+  border-radius: var(--oas-radius-full, 999px);
   background: var(--chip-color, var(--oas-color-primary));
 }
 .res-lane { position: relative; min-height: 36px; }
