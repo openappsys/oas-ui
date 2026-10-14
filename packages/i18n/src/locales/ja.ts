@@ -200,6 +200,8 @@ export const ja: LocaleMessages = {
   'gantt.baselineLater': 'ベースラインより {count} 日遅れ',
   'gantt.baselineEarlier': 'ベースラインより {count} 日早い',
   'gantt.baselineSame': 'ベースラインどおり',
+  'gantt.rename': '名前を変更',
+  'gantt.linkDelete': '依存関係を削除',
   // kanban（かんばん）
   'kanban.emptyColumn': 'カードをここにドラッグ',
   'kanban.moveCard': 'カードを移動',

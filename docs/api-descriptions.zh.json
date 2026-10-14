@@ -4341,7 +4341,8 @@
       "oas-scale-change": "scale 属性变化时派发，detail: { scale }；首次吸收不派发",
       "oas-task-render": "每条任务渲染后派发，detail: { task, element }——宿主可改写条内 DOM",
       "oas-reparent": "行拖拽改父子 / 重排收口时派发，detail: { id, parent, index }（parent 为 null 表示根级，index 为同级序号）",
-      "oas-dependencies-change": "连线拖拽建依赖 / 选中删除收口时派发，detail: { taskId, dependencies }（taskId 为依赖变化的后继任务）"
+      "oas-dependencies-change": "连线拖拽建依赖 / 选中删除收口时派发，detail: { taskId, dependencies }（taskId 为依赖变化的后继任务）",
+      "oas-selection-change": "多选集合变化（点击 / 键盘 / property 写入）时派发，detail: { ids }（选中的任务 id 数组）"
     },
     "slots": {
       "template[slot=\"empty\"]": "空数据态内容（缺省「暂无任务」）",
@@ -4349,7 +4350,8 @@
       "template[slot=\"tooltip\"]": "悬停浮层模板（[data-task-name] / [data-task-range] / [data-task-progress] 绑定点）"
     },
     "props": {
-      "tasks": "甘特任务（`GanttTask[]`）：`el.tasks` 读（拷贝，嵌套输入已拍平为 parent 指针）；`el.tasks = [...]` 写（同步 tasks 属性 + 重渲染 + 派发 oas-tasks-change）"
+      "tasks": "甘特任务（`GanttTask[]`）：`el.tasks` 读（拷贝，嵌套输入已拍平为 parent 指针）；`el.tasks = [...]` 写（同步 tasks 属性 + 重渲染 + 派发 oas-tasks-change）",
+      "selection": "选中任务 id 集合（`string[]`）：`el.selection` 读（拷贝）；`el.selection = [...]` 写（重渲染选中态 + 派发 oas-selection-change）；`removeTasks(ids)` 批量删除（连同后代）"
     },
     "cssVars": {
       "--oas-gantt-baseline-color": "基线条颜色（默认半透明次要文字色）"

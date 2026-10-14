@@ -117,6 +117,7 @@ const EXEMPT_EVENTS = new Set([
   'oas-create', // scheduler：时间格拖拽创建需真指针拖出手势（通用探针不可达；qa-regression/scheduler.spec.ts 已固化真实拖拽创建链路）
   'oas-reparent', // gantt：行拖拽改父子/重排需真指针拖拽行（通用探针不可达；qa-regression/gantt.spec.ts 已固化真实行拖拽链路）
   'oas-dependencies-change', // gantt：连线建依赖/删需悬停出点后真拖与选中删除（通用探针不可达；qa-regression/gantt.spec.ts 已固化真实链路）
+  'oas-selection-change', // gantt：多选需真点行（通用探针不可达；qa-regression/gantt.spec.ts 已固化真实点选链路）
 ])
 
 // 容器托管的反射属性（由父组件按 active/受控集合写回，非宿主直驱 API）：豁免静态演示要求

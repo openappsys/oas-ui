@@ -51,7 +51,19 @@ Drag a left-column row onto a target: the **top half** inserts before the target
   <div id="gantt-link-output" style="color:var(--oas-color-text-secondary);font-size:var(--oas-font-size-sm);margin-top:var(--oas-space-2)"></div>
 </DemoBlock>
 
-Hovering a bar reveals two **link dots**: drag the right (finish) dot onto a target bar to create a dependency; the left (start) dot works the same way. A **milestone** has start == end, so it shows a single finish dot (fs convention; its ss/sf as a predecessor are equivalent to fs/ff). The drop side of the target — **left half** (start) / **right half** (finish) — combined with the source endpoint picks the type (FS / SS / FF / SF). The dependency is recorded on the **successor** task. Click an existing link to **select** (highlighted), then press `Delete` / `Backspace` to remove it. On settle it dispatches `oas-dependencies-change` (`detail: { taskId, dependencies }`) plus `oas-tasks-change`. With `readonly`, link dots and hit areas are not rendered and removal is disabled; `Esc` / `pointercancel` cancels with zero events. Row reorder and link editing are pointer interactions (link dots reveal on hover; no touch entry point yet).
+Hovering a bar reveals two **link dots**: drag the right (finish) dot onto a target bar to create a dependency; the left (start) dot works the same way. A **milestone** has start == end, so it shows a single finish dot (fs convention; its ss/sf as a predecessor are equivalent to fs/ff). The drop side of the target — **left half** (start) / **right half** (finish) — combined with the source endpoint picks the type (FS / SS / FF / SF). The dependency is recorded on the **successor** task. Click an existing link to **select** (highlighted), then press `Delete` / `Backspace` to remove it. On settle it dispatches `oas-dependencies-change` (`detail: { taskId, dependencies }`) plus `oas-tasks-change`. With `readonly`, link dots and hit areas are not rendered and removal is disabled; `Esc` / `pointercancel` cancels with zero events. On touch, tap a bar to reveal its link dots; a link hit path is focusable and Enter/Delete removes that dependency.
+
+## Multi-select, Rename & Keyboard
+
+<DemoBlock title="Click a row to select (Ctrl/Cmd adds, Shift for a range); double-click the name to rename; Delete removes the selection; Alt+↑/↓ reorder siblings, Alt+←/→ outdent/indent; focus a link and press Enter to delete">
+  <oas-gantt id="gantt-select" tasks='[{"id":"s1","name":"Requirements","start":"2026-03-02","end":"2026-03-06"},{"id":"s2","name":"Build","start":"2026-03-05","end":"2026-03-13"},{"id":"s3","name":"Test","start":"2026-03-16","end":"2026-03-20"},{"id":"s4","name":"Launch","start":"2026-03-23","end":"2026-03-27"}]'></oas-gantt>
+  <div id="gantt-select-output" style="color:var(--oas-color-text-secondary);font-size:var(--oas-font-size-sm);margin-top:var(--oas-space-2)"></div>
+</DemoBlock>
+
+- **Multi-select**: click a left row name to select (single); Ctrl/Cmd click toggles; Shift click selects a range; state is exposed via the `selection` property (id array, readable/writable) and the `oas-selection-change` event. Delete/Backspace removes the selection (with descendants), or call `removeTasks(ids)`.
+- **Inline rename**: double-click a name → input (Enter commits / Esc restores / blur commits), updates `name` and dispatches `oas-tasks-change`.
+- **Keyboard**: with a row focused, ↑/↓ move focus, Space selects, Alt+↑/↓ reorder among siblings, Alt+→ indents under the previous sibling, Alt+← outdents, F2 renames; a link hit path is focusable, Enter/Delete removes that dependency.
+- **Touch**: tap a bar to reveal its link dots (no hover).
 
 ## Readonly Levels + Per-task Disable
 
@@ -220,6 +232,20 @@ onMounted(async () => {
       lout.textContent = `oas-dependencies-change: predecessors of ${d.taskId} = ${list}`
     })
   }
+
+  // Multi-select feedback
+  const sel = document.getElementById('gantt-select')
+  const sout = document.getElementById('gantt-select-output')
+  if (sel && sout) {
+    const report = () => {
+      const ids = sel.selection
+      sout.textContent = ids.length
+        ? `${ids.length} selected: ${ids.join(', ')}`
+        : 'None selected (click a row; Ctrl adds; Shift for range; Delete removes)'
+    }
+    sel.addEventListener('oas-selection-change', report)
+    report()
+  }
 })
 </script>
 
@@ -252,6 +278,7 @@ onMounted(async () => {
 
 | Property | Description | Type | Default |
 | --- | --- | --- | --- |
+| `selection` | Selected task ids (`string[]`): `el.selection` reads (copy); `el.selection = [...]` writes (re-renders selection + dispatches oas-selection-change); `removeTasks(ids)` batch-removes (with descendants) | `string[]` | — |
 | `tasks` | Gantt tasks (`GanttTask[]`): `el.tasks` reads (copy; nested input already flattened to parent pointers); `el.tasks = [...]` writes (syncs the tasks attribute + re-renders + dispatches oas-tasks-change) | `GanttTask[]` | `[]` |
 
 #### Events
@@ -263,6 +290,7 @@ onMounted(async () => {
 | `oas-progress-change` | Dispatched when a progress handle drag settles, detail: { id, task, progress } |
 | `oas-reparent` | Dispatched when a row drag reparent/reorder settles, detail: { id, parent, index } (parent null means root level; index is the sibling position) |
 | `oas-scale-change` | Dispatched when the scale attribute changes, detail: { scale }; not dispatched on initial absorption |
+| `oas-selection-change` | Dispatched when the multi-select set changes (click / keyboard / property write), detail: { ids } (selected task ids) |
 | `oas-task-change` | Dispatched when a drag/resize/keyboard reschedule settles (pointerup), detail: { id, task, oldStart, oldEnd, start, end }; not dispatched on zero movement |
 | `oas-task-click` | Dispatched on task bar/milestone click, detail: { id, task } |
 | `oas-task-dblclick` | Dispatched on task bar double-click, detail: { id, task } — hosts attach an edit form |

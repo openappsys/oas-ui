@@ -200,6 +200,8 @@ export const ar: LocaleMessages = {
   'gantt.baselineLater': 'متأخر عن الأساس بـ {count} يوم',
   'gantt.baselineEarlier': 'مبكر عن الأساس بـ {count} يوم',
   'gantt.baselineSame': 'مطابق للأساس',
+  'gantt.rename': 'إعادة تسمية',
+  'gantt.linkDelete': 'حذف التبعية',
   // kanban (لوحة كانبان)
   'kanban.emptyColumn': 'اسحب البطاقات إلى هنا',
   'kanban.moveCard': 'نقل البطاقة',

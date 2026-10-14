@@ -22,6 +22,9 @@
 - **拖拽自动滚动**：拖条 / 拉伸 / 拖连线靠近视口边缘时横向与纵向自动滚动（越靠边越快、到边界即停）；行重排仅纵向。自动滚动触发的窗口重建后自动重锚进行中的拖拽（条 / 连线临时线 / 落点线）；RTL 横向按负值 `scrollLeft` 模型分域；条拖拽位移叠加滚动增量（指针静止也能把条拖出视口）。
 - **里程碑单连线点**：里程碑 start == end，只渲染完成端单点（fs 惯例；其作为前置的 ss/sf 与 fs/ff 等价）。
 - **行重排命中缓存**：`reparentCtx` 在拖拽起点建一次 `id→task`，移动期复用（万级不再每帧 O(n)）。
+- **多选与批量**：点击行选中（`Ctrl`/`Cmd` 加选、`Shift` 连选）；新增 `selection` property（`string[]`，可读写）与 `oas-selection-change { ids }` 事件；`removeTasks(ids)` 批量删除（连同后代），删除时清洗其他任务的悬空依赖并对受影响后继补发 `oas-dependencies-change`；`Delete`/`Backspace` 删所选（跳过 disabled）。`readonly`/`disabled` 下仍可选中（选择属查看态）。
+- **行内重命名**：双击名称就地编辑（`Enter` 提交 / `Esc` 还原 / 失焦提交），改 `name` 并派发 `oas-tasks-change`。
+- **键盘可达与触屏入口**：行聚焦后 `↑/↓` 移焦、`空格` 选择、`Alt+↑/↓` 同级移动、`Alt+→` 降级、`Alt+←` 升级、`F2` 重命名；连线命中路径改为可聚焦 `role=button`（`Enter`/`Delete` 删该依赖，`svg.links` 去 `aria-hidden`、可见线 `aria-hidden`）；触屏点任务条揭示连线点。i18n ×10 新增 `gantt.rename` / `gantt.linkDelete`。
 
 ## [2.6.1] - 2026-10-13
 

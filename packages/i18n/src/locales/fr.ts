@@ -200,6 +200,8 @@ export const fr: LocaleMessages = {
   'gantt.baselineLater': '{count} j plus tard que la référence',
   'gantt.baselineEarlier': '{count} j plus tôt que la référence',
   'gantt.baselineSame': 'Conforme à la référence',
+  'gantt.rename': 'Renommer',
+  'gantt.linkDelete': 'Supprimer la dépendance',
   // kanban (tableau kanban)
   'kanban.emptyColumn': 'Déposez les cartes ici',
   'kanban.moveCard': 'Déplacer la carte',

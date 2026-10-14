@@ -200,6 +200,8 @@ export const es: LocaleMessages = {
   'gantt.baselineLater': '{count} d más tarde que la base',
   'gantt.baselineEarlier': '{count} d antes que la base',
   'gantt.baselineSame': 'Igual que la base',
+  'gantt.rename': 'Renombrar',
+  'gantt.linkDelete': 'Eliminar dependencia',
   // kanban (tablero kanban)
   'kanban.emptyColumn': 'Arrastra tarjetas aquí',
   'kanban.moveCard': 'Mover tarjeta',

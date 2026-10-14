@@ -613,9 +613,342 @@ describe('OASGantt 依赖连线（FS/SS/FF/SF）', () => {
     expect(paths[0]!.dataset.type).toBe('fs')
   })
 
-  it('svg 覆盖层 aria-hidden（装饰层）', () => {
+  it('连线无障碍：可见线 aria-hidden、命中路径 role=button 可聚焦', () => {
     const el = mountDeps(['fs'])
-    expect(shadowOf(el).querySelector('svg.links')?.getAttribute('aria-hidden')).toBe('true')
+    const svg = shadowOf(el).querySelector('svg.links')!
+    expect(svg.getAttribute('aria-hidden')).toBeNull()
+    expect(shadowOf(el).querySelector('.link')!.getAttribute('aria-hidden')).toBe('true')
+    const hit = shadowOf(el).querySelector('.link-hit')!
+    expect(hit.getAttribute('role')).toBe('button')
+    expect(hit.getAttribute('tabindex')).toBe('0')
+    expect(hit.getAttribute('aria-label')).toBeTruthy()
+  })
+})
+
+describe('OASGantt 多选 / 行内重命名 / 键盘重排 / 连线键盘', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  const TASKS = JSON.stringify([
+    { id: 'x', name: 'X', start: '2026-03-02', end: '2026-03-06' },
+    { id: 'y', name: 'Y', start: '2026-03-09', end: '2026-03-13' },
+    { id: 'z', name: 'Z', start: '2026-03-16', end: '2026-03-20' },
+  ])
+
+  function clickRow(
+    el: OASGantt,
+    id: string,
+    mods: { shiftKey?: boolean; ctrlKey?: boolean; metaKey?: boolean } = {},
+  ): void {
+    const row = shadowOf(el).querySelector<HTMLElement>(`.row-name[data-key="${id}"]`)!
+    const down = new PointerEvent('pointerdown', { bubbles: true, composed: true, pointerId: 1, button: 0 })
+    Object.defineProperty(down, 'clientX', { value: 40 })
+    Object.defineProperty(down, 'clientY', { value: 40 })
+    row.dispatchEvent(down)
+    const up = new PointerEvent('pointerup', { bubbles: true, composed: true, pointerId: 1 })
+    Object.defineProperty(up, 'shiftKey', { value: !!mods.shiftKey })
+    Object.defineProperty(up, 'ctrlKey', { value: !!mods.ctrlKey })
+    Object.defineProperty(up, 'metaKey', { value: !!mods.metaKey })
+    document.dispatchEvent(up)
+  }
+
+  it('点击选择 / Ctrl 切换 / Shift 范围；selection property 与事件', () => {
+    const el = mount({ tasks: TASKS })
+    const seen: string[][] = []
+    el.addEventListener('oas-selection-change', (e) => seen.push((e as CustomEvent).detail.ids))
+    clickRow(el, 'x')
+    expect(el.selection).toEqual(['x'])
+    clickRow(el, 'z', { shiftKey: true })
+    expect(el.selection).toEqual(['x', 'y', 'z'])
+    clickRow(el, 'y', { ctrlKey: true })
+    expect(el.selection).toEqual(['x', 'z'])
+    expect(seen.length).toBe(3)
+    el.selection = ['y']
+    expect(shadowOf(el).querySelector('.row-name[data-key="y"]')!.classList.contains('selected')).toBe(true)
+  })
+
+  it('Delete 批量删除所选（连同后代）', () => {
+    const el = mount({
+      tasks: JSON.stringify([
+        {
+          id: 'p',
+          name: 'P',
+          start: '2026-03-02',
+          end: '2026-03-13',
+          type: 'summary',
+          children: [{ id: 'c', name: 'C', start: '2026-03-02', end: '2026-03-06' }],
+        },
+        { id: 'x', name: 'X', start: '2026-03-09', end: '2026-03-13' },
+      ]),
+    })
+    let changed = 0
+    el.addEventListener('oas-tasks-change', () => changed++)
+    clickRow(el, 'p')
+    const row = shadowOf(el).querySelector<HTMLElement>('.row-name[data-key="p"]')!
+    row.dispatchEvent(new KeyboardEvent('keydown', { key: 'Delete', bubbles: true }))
+    expect(el.tasks.length, '删 p + 后代 c').toBe(1)
+    expect(el.tasks[0]!.id).toBe('x')
+    expect(changed).toBe(1)
+  })
+
+  it('Alt+↓ 键盘同级下移（派发 oas-reparent）', () => {
+    const el = mount({ tasks: TASKS })
+    const seen: number[] = []
+    el.addEventListener('oas-reparent', (e) => seen.push((e as CustomEvent).detail.index))
+    const row = shadowOf(el).querySelector<HTMLElement>('.row-name[data-key="x"]')!
+    row.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', altKey: true, bubbles: true }))
+    expect(el.tasks.map((t) => t.id)).toEqual(['y', 'x', 'z'])
+    expect(seen.length).toBe(1)
+  })
+
+  it('行内重命名：双击 → Enter 提交；Esc 还原', () => {
+    const el = mount({ tasks: TASKS })
+    let changed = 0
+    el.addEventListener('oas-tasks-change', () => changed++)
+    const name = shadowOf(el).querySelector<HTMLElement>('.row-name[data-key="x"] .name')!
+    name.dispatchEvent(new MouseEvent('dblclick', { bubbles: true, composed: true }))
+    const input = shadowOf(el).querySelector<HTMLInputElement>('.rename-input')!
+    expect(input.value).toBe('X')
+    input.value = 'X 改名'
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
+    expect(el.tasks.find((t) => t.id === 'x')!.name).toBe('X 改名')
+    expect(changed).toBe(1)
+    // Esc 还原
+    const name2 = shadowOf(el).querySelector<HTMLElement>('.row-name[data-key="x"] .name')!
+    name2.dispatchEvent(new MouseEvent('dblclick', { bubbles: true, composed: true }))
+    const input2 = shadowOf(el).querySelector<HTMLInputElement>('.rename-input')!
+    input2.value = '不该改'
+    input2.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+    expect(el.tasks.find((t) => t.id === 'x')!.name).toBe('X 改名')
+    expect(shadowOf(el).querySelector('.rename-input')).toBeNull()
+  })
+
+  it('连线键盘：命中路径聚焦 + Enter 删除依赖', () => {
+    const el = mount({
+      tasks: JSON.stringify([
+        { id: 'a', name: 'A', start: '2026-03-02', end: '2026-03-06' },
+        { id: 'b', name: 'B', start: '2026-03-09', end: '2026-03-13', dependencies: [{ id: 'a' }] },
+      ]),
+    })
+    let fired = 0
+    el.addEventListener('oas-dependencies-change', () => fired++)
+    const hit = shadowOf(el).querySelector<SVGPathElement>('.link-hit[data-from="b"][data-to="a"]')!
+    hit.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
+    expect(fired).toBe(1)
+    expect(el.tasks.find((t) => t.id === 'b')!.dependencies).toBeUndefined()
+  })
+
+  it('readonly：行键盘不改父子 / 不删任务', () => {
+    const el = mount({ tasks: TASKS, readonly: '' })
+    let reparent = 0
+    let changed = 0
+    el.addEventListener('oas-reparent', () => reparent++)
+    el.addEventListener('oas-tasks-change', () => changed++)
+    const row = shadowOf(el).querySelector<HTMLElement>('.row-name[data-key="x"]')!
+    row.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', altKey: true, bubbles: true }))
+    row.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', bubbles: true }))
+    row.dispatchEvent(new KeyboardEvent('keydown', { key: 'Delete', bubbles: true }))
+    expect(reparent).toBe(0)
+    expect(changed).toBe(0)
+    expect(el.tasks.length).toBe(3)
+  })
+
+  it('toggle 键盘激活不被行 keydown 劫持', () => {
+    const el = mount({
+      tasks: JSON.stringify([
+        {
+          id: 'p',
+          name: 'P',
+          start: '2026-03-02',
+          end: '2026-03-13',
+          type: 'summary',
+          children: [{ id: 'c', name: 'C', start: '2026-03-02', end: '2026-03-06' }],
+        },
+      ]),
+    })
+    const toggle = shadowOf(el).querySelector<HTMLElement>('.row-name[data-key="p"] .toggle')!
+    toggle.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
+    expect(el.selection, '行未因 toggle 回车被选中').toEqual([])
+  })
+
+  it('removeTasks 派发 selection-change 并清锚点', () => {
+    const el = mount({ tasks: TASKS })
+    clickRow(el, 'x')
+    expect(el.selection).toEqual(['x'])
+    let sel = 0
+    el.addEventListener('oas-selection-change', () => sel++)
+    el.removeTasks(['x'])
+    expect(sel).toBe(1)
+    expect(el.selection).toEqual([])
+    expect(el.tasks.length).toBe(2)
+  })
+
+  it('行 Delete 不连带删除已选连线（stopPropagation）', () => {
+    const el = mount({
+      tasks: JSON.stringify([
+        { id: 'a', name: 'A', start: '2026-03-02', end: '2026-03-06' },
+        { id: 'b', name: 'B', start: '2026-03-09', end: '2026-03-13', dependencies: [{ id: 'a' }] },
+        { id: 'x', name: 'X', start: '2026-03-16', end: '2026-03-20' },
+      ]),
+    })
+    const hit = shadowOf(el).querySelector<SVGPathElement>('.link-hit[data-from="b"][data-to="a"]')!
+    hit.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true })) // 选中连线
+    clickRow(el, 'x') // 选中 x
+    const row = shadowOf(el).querySelector<HTMLElement>('.row-name[data-key="x"]')!
+    row.dispatchEvent(new KeyboardEvent('keydown', { key: 'Delete', bubbles: true }))
+    expect(el.tasks.find((t) => t.id === 'b')!.dependencies, '连线保留').toEqual([{ id: 'a' }])
+    expect(el.tasks.some((t) => t.id === 'x')).toBe(false)
+  })
+
+  it('重命名中窗口重建不卡死（可再次重命名）', () => {
+    const el = mount({ tasks: TASKS })
+    const name = shadowOf(el).querySelector<HTMLElement>('.row-name[data-key="x"] .name')!
+    name.dispatchEvent(new MouseEvent('dblclick', { bubbles: true, composed: true }))
+    expect(shadowOf(el).querySelector('.rename-input')).not.toBeNull()
+    shadowOf(el).querySelector('.tbody')!.dispatchEvent(new Event('scroll')) // 触发窗口重建
+    const name2 = shadowOf(el).querySelector<HTMLElement>('.row-name[data-key="x"] .name')!
+    name2.dispatchEvent(new MouseEvent('dblclick', { bubbles: true, composed: true }))
+    expect(shadowOf(el).querySelector('.rename-input'), '重建后仍可重命名').not.toBeNull()
+  })
+
+  it('重命名 Enter 提交后输入框移除', () => {
+    const el = mount({ tasks: TASKS })
+    const name = shadowOf(el).querySelector<HTMLElement>('.row-name[data-key="x"] .name')!
+    name.dispatchEvent(new MouseEvent('dblclick', { bubbles: true, composed: true }))
+    const input = shadowOf(el).querySelector<HTMLInputElement>('.rename-input')!
+    input.value = 'X2'
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
+    expect(shadowOf(el).querySelector('.rename-input')).toBeNull()
+    expect(el.tasks.find((t) => t.id === 'x')!.name).toBe('X2')
+  })
+
+  it('roving：仅活动行 tabIndex=0，其余 -1；点击行更新停靠点', () => {
+    const el = mount({ tasks: TASKS })
+    const rows = [...shadowOf(el).querySelectorAll<HTMLElement>('.row-name')]
+    expect(rows.filter((r) => r.tabIndex === 0).length).toBe(1)
+    clickRow(el, 'y')
+    const rows2 = [...shadowOf(el).querySelectorAll<HTMLElement>('.row-name')]
+    expect(rows2.find((r) => r.dataset.key === 'y')!.tabIndex).toBe(0)
+    expect(rows2.find((r) => r.dataset.key === 'x')!.tabIndex).toBe(-1)
+  })
+
+  it('readonly：鼠标点选与键盘空格一致（可选），但不重排/不删', () => {
+    const el = mount({ tasks: TASKS, readonly: '' })
+    clickRow(el, 'x')
+    expect(el.selection).toEqual(['x'])
+    el.selection = []
+    const row = shadowOf(el).querySelector<HTMLElement>('.row-name[data-key="y"]')!
+    row.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', bubbles: true }))
+    expect(el.selection).toEqual(['y'])
+    let changed = 0
+    el.addEventListener('oas-tasks-change', () => changed++)
+    row.dispatchEvent(new KeyboardEvent('keydown', { key: 'Delete', bubbles: true }))
+    expect(changed).toBe(0)
+  })
+
+  it('APG：已展开父行按 → 焦点进首个子级', () => {
+    const el = mount({
+      tasks: JSON.stringify([
+        {
+          id: 'p',
+          name: 'P',
+          start: '2026-03-02',
+          end: '2026-03-13',
+          type: 'summary',
+          children: [{ id: 'c', name: 'C', start: '2026-03-02', end: '2026-03-06' }],
+        },
+      ]),
+    })
+    const row = shadowOf(el).querySelector<HTMLElement>('.row-name[data-key="p"]')!
+    row.focus()
+    row.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }))
+    expect(shadowOf(el).querySelector<HTMLElement>('.row-name[data-key="c"]')!.tabIndex).toBe(0)
+  })
+
+  it('removeTasks 清洗悬空依赖并对受影响后继派 dependencies-change', () => {
+    const el = mount({
+      tasks: JSON.stringify([
+        { id: 'a', name: 'A', start: '2026-03-02', end: '2026-03-06' },
+        { id: 'b', name: 'B', start: '2026-03-09', end: '2026-03-13', dependencies: [{ id: 'a' }] },
+      ]),
+    })
+    const deps: string[] = []
+    el.addEventListener('oas-dependencies-change', (e) => deps.push((e as CustomEvent).detail.taskId))
+    el.removeTasks(['a'])
+    expect(deps).toEqual(['b'])
+    expect(el.tasks.find((t) => t.id === 'b')!.dependencies).toBeUndefined()
+  })
+
+  it('键盘批量删除跳过 disabled 任务', () => {
+    const el = mount({
+      tasks: JSON.stringify([
+        { id: 'x', name: 'X', start: '2026-03-02', end: '2026-03-06' },
+        { id: 'd', name: 'D', start: '2026-03-09', end: '2026-03-13', disabled: true },
+      ]),
+    })
+    clickRow(el, 'x')
+    clickRow(el, 'd', { ctrlKey: true })
+    expect(el.selection).toEqual(['x', 'd'])
+    const row = shadowOf(el).querySelector<HTMLElement>('.row-name[data-key="x"]')!
+    row.dispatchEvent(new KeyboardEvent('keydown', { key: 'Delete', bubbles: true }))
+    expect(
+      el.tasks.some((t) => t.id === 'x'),
+      'x 删除',
+    ).toBe(false)
+    expect(
+      el.tasks.some((t) => t.id === 'd'),
+      'disabled 保留',
+    ).toBe(true)
+  })
+
+  it('行聚焦按 Delete 不误删已选连线（不冒泡到 document）', () => {
+    const el = mount({
+      tasks: JSON.stringify([
+        { id: 'a', name: 'A', start: '2026-03-02', end: '2026-03-06' },
+        { id: 'b', name: 'B', start: '2026-03-09', end: '2026-03-13', dependencies: [{ id: 'a' }] },
+        { id: 'y', name: 'Y', start: '2026-03-16', end: '2026-03-20' },
+      ]),
+    })
+    const hit = shadowOf(el).querySelector<SVGPathElement>('.link-hit[data-from="b"][data-to="a"]')!
+    hit.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }))
+    const row = shadowOf(el).querySelector<HTMLElement>('.row-name[data-key="y"]')!
+    row.focus()
+    row.dispatchEvent(new KeyboardEvent('keydown', { key: 'Delete', bubbles: true }))
+    expect(el.tasks.find((t) => t.id === 'b')!.dependencies, '连线保留').toEqual([{ id: 'a' }])
+  })
+
+  it('removeTasks 未知 id / 空数组：不派事件、数据不变', () => {
+    const el = mount({ tasks: TASKS })
+    let changed = 0
+    el.addEventListener('oas-tasks-change', () => changed++)
+    el.removeTasks(['ghost'])
+    el.removeTasks([])
+    expect(changed).toBe(0)
+    expect(el.tasks.length).toBe(3)
+  })
+
+  it('RTL：Alt+← 缩进（方向镜像）', () => {
+    const el = mount({
+      dir: 'rtl',
+      tasks: JSON.stringify([
+        {
+          id: 'p',
+          name: 'P',
+          start: '2026-03-02',
+          end: '2026-03-13',
+          type: 'summary',
+          children: [{ id: 'c', name: 'C', start: '2026-03-02', end: '2026-03-06' }],
+        },
+        { id: 'x', name: 'X', start: '2026-03-16', end: '2026-03-20' },
+      ]),
+    })
+    const row = shadowOf(el).querySelector<HTMLElement>('.row-name[data-key="x"]')!
+    row.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', altKey: true, bubbles: true }))
+    expect(el.tasks.find((t) => t.id === 'x')!.parent).toBe('p')
   })
 })
 

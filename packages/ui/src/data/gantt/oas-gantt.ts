@@ -79,6 +79,38 @@ const STYLE = `
 .row-name[disabled] {
   cursor: default;
 }
+.row-name.selected {
+  background: color-mix(in srgb, var(--oas-color-primary) 14%, transparent);
+}
+.row-name:focus-visible {
+  outline: 2px solid var(--oas-color-primary);
+  outline-offset: -2px;
+}
+.rename-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 22px;
+  font: inherit;
+  color: inherit;
+  background: var(--oas-color-bg);
+  border: 1px solid var(--oas-color-primary);
+  border-radius: var(--oas-radius-sm);
+  padding: 0 var(--oas-space-1);
+  outline: none;
+}
+.bar.selected {
+  outline: 2px solid var(--oas-color-primary);
+  outline-offset: 1px;
+}
+svg.links .link-hit:focus-visible {
+  outline: 2px solid var(--oas-color-primary);
+}
+@media (pointer: coarse) {
+  .bar.touch-active .link-dot {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
 .drop-line {
   position: absolute;
   inset-inline-start: 0;
@@ -541,6 +573,11 @@ export interface GanttDependenciesChangeDetail {
   dependencies: GanttDependency[]
 }
 
+/** selection-change 事件载荷（多选集合变化） */
+export interface GanttSelectionChangeDetail {
+  ids: string[]
+}
+
 type TG = GanttTask & { id: string }
 
 interface GanttRow {
@@ -573,6 +610,7 @@ interface DragCtx {
   origEndMs: number
   origProgress: number
   datetime: boolean
+  touch: boolean
   bar: HTMLElement
   newStartMs?: number
   newEndMs?: number
@@ -835,6 +873,12 @@ export class OASGantt extends OASElement {
     temp: SVGPathElement
   } | null = null
   private selectedLink: { successor: string; predecessor: string; type: string } | null = null
+  private selected = new Set<string>()
+  private selectionAnchor: string | null = null
+  private renaming = false
+  private rowPending: { id: string; x: number; y: number; disabled: boolean; byId: Map<string, TG> } | null = null
+  private activeRowId: string | null = null
+  private coarse = false
   private autoScrollRaf = 0
   private autoScrolling = false
   private pointerX = 0
@@ -1421,10 +1465,12 @@ export class OASGantt extends OASElement {
   /** 缓存节点引用 + 幂等注册滚动同步（render 与水合路径共用） */
   private bind(): void {
     if (!this.hasAttribute('tabindex')) this.tabIndex = -1
+    this.coarse = typeof matchMedia !== 'undefined' && matchMedia('(pointer: coarse)').matches
     this.tbody = this.shadow.querySelector('.tbody')
     this.theadEl = this.shadow.querySelector('.thead')
     this.sideBody = this.shadow.querySelector('.side-body')
     this.sideRows = this.shadow.querySelector('.side-rows')
+    this.sideRows?.setAttribute('aria-multiselectable', 'true')
     this.barsEl = this.shadow.querySelector('.bars')
     this.linksEl = this.shadow.querySelector('svg.links')
     this.gridEl = this.shadow.querySelector('.grid-canvas')
@@ -1451,6 +1497,7 @@ export class OASGantt extends OASElement {
       this.cancelReparent()
       this.cancelLink()
       this.stopAutoScroll()
+      this.unbindRowPending()
       document.removeEventListener('keydown', this.docLinkKey)
       document.removeEventListener('click', this.docLinkClick)
       document.removeEventListener('keydown', this.docBarDragKey)
@@ -1578,7 +1625,7 @@ export class OASGantt extends OASElement {
           <div class="tbody" part="tbody">
             <div class="inner">
               <div class="grid-canvas"></div>
-              <svg class="links" aria-hidden="true"></svg>
+              <svg class="links"></svg>
               <div class="bars"></div>
               <div class="today-line" aria-hidden="true" hidden></div>
             </div>
@@ -1711,9 +1758,18 @@ export class OASGantt extends OASElement {
   private renderSideRows(): void {
     const container = this.sideRows
     if (!container) return
+    // 重建前若焦点在行上（键盘跨窗口导航等触发重建），重建后补回焦点（浏览器 scroll 事件异步、会二次重建）
+    const hadRowFocus =
+      this.shadow.activeElement instanceof HTMLElement && this.shadow.activeElement.classList.contains('row-name')
+    // 重建会销毁重命名输入框（部分引擎不触发 blur）→ 复位防卡死
+    this.renaming = false
     container.innerHTML = ''
     const rowH = this.rowHeight()
     const expanded = this.currentExpandedSet()
+    const prevActive = this.activeRowId
+    const inWindow = this.rows.slice(this.winStart, this.winEnd).some((r) => r.task.id === prevActive)
+    const activeId = inWindow ? prevActive : (this.rows[this.winStart]?.task.id ?? null)
+    this.activeRowId = activeId
     const frag = document.createDocumentFragment()
     for (let i = this.winStart; i < this.winEnd; i++) {
       const row = this.rows[i]!
@@ -1725,6 +1781,10 @@ export class OASGantt extends OASElement {
       el.style.top = `${i * rowH}px`
       el.style.setProperty('--indent', `${8 + row.depth * 16}px`)
       el.setAttribute('part', 'row-name')
+      el.tabIndex = row.task.id === activeId ? 0 : -1
+      el.setAttribute('aria-selected', String(this.selected.has(row.task.id)))
+      el.addEventListener('focus', () => this.setActiveRow(row.task.id))
+      if (this.selected.has(row.task.id)) el.classList.add('selected')
       if (row.task.disabled === true) {
         el.setAttribute('disabled', '')
         el.setAttribute('aria-disabled', 'true')
@@ -1748,10 +1808,21 @@ export class OASGantt extends OASElement {
       name.className = 'name'
       name.textContent = row.task.name
       el.appendChild(name)
+      if (!this.hasAttr('readonly') && row.task.disabled !== true) {
+        name.addEventListener('dblclick', (e) => {
+          e.stopPropagation()
+          this.startRename(row, name)
+        })
+      }
       el.addEventListener('pointerdown', (e) => this.onRowPointerDown(e as PointerEvent, row))
+      el.addEventListener('keydown', (e) => this.onRowKeyDown(e as KeyboardEvent, row))
       frag.appendChild(el)
     }
     container.appendChild(frag)
+    // 仅当原活动行仍在窗口内才补回焦点（跨窗口的键盘导航）；用户手动滚动致活动行出窗不抢焦点
+    if (hadRowFocus && prevActive && prevActive === activeId) {
+      container.querySelector<HTMLElement>(`.row-name[data-key="${escId(activeId)}"]`)?.focus({ preventScroll: true })
+    }
   }
 
   /** 任务条层（窗口行）：task / milestone / summary 三形态 + 手柄 + 标签 + task-render 通道 */
@@ -1773,6 +1844,9 @@ export class OASGantt extends OASElement {
       bar.className = 'bar'
       bar.dataset.id = row.task.id
       bar.setAttribute('part', 'bar')
+      if (this.selected.has(row.task.id)) bar.classList.add('selected')
+      // 触屏：点条揭示连线点（无 hover）
+      if (this.coarse) bar.addEventListener('pointerdown', () => this.revealDots(row.task.id))
       bar.style.top = `${i * rowH + (rowH - (row.isSummary ? 8 : 22)) / 2}px`
       if (row.task.color) bar.style.setProperty('--oas-gantt-bar-color', row.task.color)
       if (disabled) {
@@ -1986,11 +2060,16 @@ export class OASGantt extends OASElement {
 
   private onRowPointerDown(e: PointerEvent, row: GanttRow): void {
     if (e.button !== 0 || this.reparentCtx || this.dragCtx || this.linkCtx) return
-    if ((e.target as HTMLElement).closest('.toggle')) return
-    if (this.hasAttr('readonly') || row.task.disabled === true) return
-    // drag 起点建一次 id→task 缓存，移动期复用（万级下避免每帧 O(n)）
-    this.reparentCtx = { id: row.task.id, byId: new Map(this._tasks.map((t) => [t.id, t])) }
-    this.bindDocReparent()
+    if ((e.target as HTMLElement).closest('.toggle, .rename-input')) return
+    // 先待定：位移阈值才进入重排，否则收口视作点击（多选）。readonly 允许多选，仅拖拽重排被禁止。
+    this.rowPending = {
+      id: row.task.id,
+      x: e.clientX,
+      y: e.clientY,
+      disabled: row.task.disabled === true,
+      byId: new Map(this._tasks.map((t) => [t.id, t])),
+    }
+    this.bindRowPending()
   }
 
   private onReparentMove(e: PointerEvent): void {
@@ -2132,6 +2211,306 @@ export class OASGantt extends OASElement {
     this.emit('reparent', { id: dragId, parent, index } satisfies GanttReparentDetail)
   }
 
+  // ===== 多选 / 批量 / 行内重命名 / 行键盘重排 =====
+
+  /**
+   * @apiProperty 选中任务 id 集合（多选）：读为数组拷贝；写为程序性赋值（重渲染选中态 + 派发 oas-selection-change）。
+   */
+  get selection(): string[] {
+    return [...this.selected]
+  }
+  set selection(ids: string[]) {
+    const next = new Set(Array.isArray(ids) ? ids.filter((x) => typeof x === 'string') : [])
+    const same = next.size === this.selected.size && [...next].every((id) => this.selected.has(id))
+    this.selected = next
+    this.selectionAnchor = null
+    this.syncSelection()
+    if (!same) this.emitSelectionChange()
+  }
+
+  /** 批量删除任务（连同其后代）；找不到即忽略 */
+  removeTasks(ids: string[]): void {
+    const known = new Set(this._tasks.map((t) => t.id))
+    const set = new Set(ids.filter((x) => typeof x === 'string' && known.has(x)))
+    if (set.size === 0) return
+    let changed = true
+    while (changed) {
+      changed = false
+      for (const t of this._tasks) {
+        if (t.parent && set.has(t.parent) && !set.has(t.id)) {
+          set.add(t.id)
+          changed = true
+        }
+      }
+    }
+    this._tasks = this._tasks.filter((t) => !set.has(t.id))
+    // 清洗其他任务里指向被删 id 的悬空依赖（受影响后继补发 dependencies-change）
+    const affected: TG[] = []
+    for (const t of this._tasks) {
+      if (t.dependencies?.some((d) => set.has(d.id))) {
+        const next = t.dependencies.filter((d) => !set.has(d.id))
+        t.dependencies = next.length > 0 ? next : undefined
+        affected.push(t)
+      }
+    }
+    const hadSel = [...set].some((id) => this.selected.has(id))
+    for (const id of set) this.selected.delete(id)
+    this.selectionAnchor = null
+    this.syncTasksAttr()
+    this.emitTasksChange()
+    for (const t of affected) {
+      this.emit('dependencies-change', {
+        taskId: t.id,
+        dependencies: (t.dependencies ?? []).map((d) => ({ ...d })),
+      } satisfies GanttDependenciesChangeDetail)
+    }
+    if (hadSel) this.emitSelectionChange()
+  }
+
+  private emitSelectionChange(): void {
+    this.emit('selection-change', { ids: this.selection } satisfies GanttSelectionChangeDetail)
+  }
+
+  /** 轻量同步选中态 class（不整窗重建） */
+  private syncSelection(): void {
+    this.sideRows?.querySelectorAll<HTMLElement>('.row-name').forEach((el) => {
+      const on = this.selected.has(el.dataset.key ?? '')
+      el.classList.toggle('selected', on)
+      el.setAttribute('aria-selected', String(on))
+    })
+    this.barsEl?.querySelectorAll<HTMLElement>('.bar').forEach((el) => {
+      el.classList.toggle('selected', this.selected.has(el.dataset.id ?? ''))
+    })
+  }
+
+  private onRowClick(id: string, e: { shiftKey: boolean; ctrlKey: boolean; metaKey: boolean }): void {
+    const visible = this.rows.map((r) => r.task.id)
+    if (e.shiftKey && this.selectionAnchor) {
+      const a = visible.indexOf(this.selectionAnchor)
+      const b = visible.indexOf(id)
+      if (a >= 0 && b >= 0) {
+        const [s, t2] = a < b ? [a, b] : [b, a]
+        this.selected = new Set(visible.slice(s, t2 + 1))
+      }
+    } else if (e.ctrlKey || e.metaKey) {
+      if (this.selected.has(id)) this.selected.delete(id)
+      else this.selected.add(id)
+      this.selectionAnchor = id
+    } else {
+      this.selected = new Set([id])
+      this.selectionAnchor = id
+    }
+    this.syncSelection()
+    this.setActiveRow(id)
+    this.emitSelectionChange()
+  }
+
+  private focusRow(id: string): void {
+    let el = this.sideRows?.querySelector<HTMLElement>(`.row-name[data-key="${escId(id)}"]`)
+    if (!el) {
+      // 目标行未在虚拟窗口内 → 先滚到它再聚焦
+      this.scrollToTask(id)
+      el = this.sideRows?.querySelector<HTMLElement>(`.row-name[data-key="${escId(id)}"]`)
+    }
+    this.setActiveRow(id)
+    el?.focus()
+  }
+
+  /** roving：活动行是唯一 tab 停靠点 */
+  private setActiveRow(id: string): void {
+    this.activeRowId = id
+    this.sideRows?.querySelectorAll<HTMLElement>('.row-name').forEach((n) => {
+      n.tabIndex = n.dataset.key === id ? 0 : -1
+    })
+  }
+
+  private startRename(row: GanttRow, nameEl: HTMLElement): void {
+    if (this.renaming || this.hasAttr('readonly') || row.task.disabled === true) return
+    const input = document.createElement('input')
+    input.className = 'rename-input'
+    input.value = row.task.name
+    input.setAttribute('aria-label', this.t('gantt.rename'))
+    this.renaming = true
+    const finish = (commit: boolean): void => {
+      if (!this.renaming) return
+      this.renaming = false
+      const v = input.value.trim()
+      if (commit && v && v !== row.task.name) {
+        const t = this._tasks.find((x) => x.id === row.task.id)
+        if (t) {
+          t.name = v
+          input.replaceWith(nameEl)
+          this.syncTasksAttr()
+          this.emitTasksChange()
+        }
+        return
+      }
+      input.replaceWith(nameEl)
+    }
+    input.addEventListener('keydown', (e) => {
+      e.stopPropagation()
+      if (e.key === 'Enter') {
+        e.preventDefault()
+        finish(true)
+      } else if (e.key === 'Escape') {
+        e.preventDefault()
+        finish(false)
+      }
+    })
+    input.addEventListener('blur', () => finish(true))
+    nameEl.replaceWith(input)
+    input.focus()
+    input.select()
+  }
+
+  private onRowKeyDown(e: KeyboardEvent, row: GanttRow): void {
+    // toggle 按钮 / 重命名输入框自身按键不被行劫持（否则无法键盘折叠 / 输入）
+    if ((e.target as HTMLElement).closest('.toggle, .rename-input')) return
+    const id = row.task.id
+    const ro = this.hasAttr('readonly')
+    // RTL 镜像：缩进/展开在逻辑方向（与 oas-tree 一致）
+    const rtl = isRtl(this)
+    const kIndent = rtl ? 'ArrowLeft' : 'ArrowRight'
+    const kOutdent = rtl ? 'ArrowRight' : 'ArrowLeft'
+    if (e.altKey) {
+      if (ro || row.task.disabled === true) return
+      if (e.key === 'ArrowUp') return this.altReparent(e, id, 'before')
+      if (e.key === 'ArrowDown') return this.altReparent(e, id, 'after')
+      if (e.key === kIndent) return this.altReparent(e, id, 'indent')
+      if (e.key === kOutdent) return this.altReparent(e, id, 'outdent')
+      return
+    }
+    const visible = this.rows.map((r) => r.task.id)
+    const idx = visible.indexOf(id)
+    // APG tree：→ 展开或进首个子级；← 折叠或回焦父级（RTL 镜像）
+    if (e.key === kIndent && !e.shiftKey) {
+      if (row.hasChildren) {
+        e.preventDefault()
+        if (!this.currentExpandedSet().has(id)) this.toggleExpand(id)
+        // 展开后焦点保持在该项；若已展开则进入首个子级
+        const i = this.rows.findIndex((r) => r.task.id === id)
+        const child = this.rows[i + 1]
+        if (this.currentExpandedSet().has(id) && child && child.depth > row.depth) this.focusRow(child.task.id)
+        else this.focusRow(id)
+      }
+      return
+    }
+    if (e.key === kOutdent && !e.shiftKey) {
+      if (row.hasChildren && this.currentExpandedSet().has(id)) {
+        e.preventDefault()
+        this.toggleExpand(id)
+        this.focusRow(id)
+      } else if (row.task.parent) {
+        e.preventDefault()
+        this.focusRow(row.task.parent)
+      }
+      return
+    }
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      e.preventDefault()
+      const nextId = visible[idx + (e.key === 'ArrowDown' ? 1 : -1)]
+      if (nextId) {
+        if (e.shiftKey) {
+          this.selected.add(id)
+          this.selected.add(nextId)
+          this.syncSelection()
+          this.emitSelectionChange()
+        }
+        this.focusRow(nextId)
+      }
+      return
+    }
+    if (e.key === ' ' || e.key === 'Enter') {
+      e.preventDefault()
+      this.onRowClick(id, e)
+      return
+    }
+    if (e.key === 'F2') {
+      if (ro || row.task.disabled === true) return
+      e.preventDefault()
+      const nameEl = this.sideRows?.querySelector<HTMLElement>(`.row-name[data-key="${escId(id)}"] .name`)
+      if (nameEl) this.startRename(row, nameEl)
+      return
+    }
+    if (e.key === 'Delete' || e.key === 'Backspace') {
+      e.stopPropagation() // 无论是否处理，都不冒泡到 document 级连线删除
+      if (ro || row.task.disabled === true) return
+      if (this.selected.size > 0 && this.selected.has(id)) {
+        // disabled 任务不被批量删除（disabled 只锁自身数据；程序性 removeTasks 仍保留全权）
+        const targets = [...this.selected].filter((sid) => this._tasks.find((t) => t.id === sid)?.disabled !== true)
+        if (targets.length === 0) return
+        e.preventDefault()
+        this.removeTasks(targets)
+      }
+    }
+  }
+
+  private altReparent(e: KeyboardEvent, id: string, dir: 'before' | 'after' | 'indent' | 'outdent'): void {
+    e.preventDefault()
+    const byId = new Map(this._tasks.map((t) => [t.id, t]))
+    const cur = byId.get(id)
+    if (!cur) return
+    const siblings = this._tasks.filter((t) => (t.parent ?? null) === (cur.parent ?? null))
+    const si = siblings.findIndex((t) => t.id === id)
+    if (dir === 'indent') {
+      const prev = siblings[si - 1]
+      // 不缩进为 disabled 任务的子级（对齐指针路径的 drop-inside 守卫）
+      if (prev && prev.disabled !== true) this.applyReparent(id, prev.id, 'inside')
+      return
+    }
+    if (dir === 'outdent') {
+      if (cur.parent) {
+        const parent = byId.get(cur.parent)
+        if (parent) this.applyReparent(id, parent.id, 'after')
+      }
+      return
+    }
+    const target = siblings[si + (dir === 'before' ? -1 : 1)]
+    if (target) this.applyReparent(id, target.id, dir)
+  }
+
+  private docRowPendingMove = (e: PointerEvent): void => {
+    const p = this.rowPending
+    if (!p) return
+    // 触屏手指抖动大：放大判拖阈值，避免点按被误判为重排
+    const thr = e.pointerType === 'touch' ? 12 : 4
+    if (Math.abs(e.clientX - p.x) + Math.abs(e.clientY - p.y) > thr) {
+      this.unbindRowPending()
+      this.rowPending = null
+      // 只读 / 禁用：不重排（选择在 pointerup 处理；拖动的指针不移不触选择）
+      if (this.hasAttr('readonly') || p.disabled) return
+      this.reparentCtx = { id: p.id, byId: p.byId }
+      this.bindDocReparent()
+      this.onReparentMove(e)
+    }
+  }
+  private docRowPendingUp = (e: PointerEvent): void => {
+    const p = this.rowPending
+    this.unbindRowPending()
+    this.rowPending = null
+    if (p) this.onRowClick(p.id, e)
+  }
+  private docRowPendingCancel = (): void => {
+    this.unbindRowPending()
+    this.rowPending = null
+  }
+
+  private bindRowPending(): void {
+    document.addEventListener('pointermove', this.docRowPendingMove)
+    document.addEventListener('pointerup', this.docRowPendingUp)
+    document.addEventListener('pointercancel', this.docRowPendingCancel)
+  }
+  private unbindRowPending(): void {
+    document.removeEventListener('pointermove', this.docRowPendingMove)
+    document.removeEventListener('pointerup', this.docRowPendingUp)
+    document.removeEventListener('pointercancel', this.docRowPendingCancel)
+  }
+
+  private revealDots(id: string): void {
+    this.barsEl?.querySelectorAll('.bar.touch-active').forEach((el) => el.classList.remove('touch-active'))
+    this.barsEl?.querySelector(`.bar[data-id="${escId(id)}"]`)?.classList.add('touch-active')
+  }
+
   // ===== 依赖连线交互编辑（拖拽建依赖 + 选中删除）=====
 
   private docLinkMove = (e: PointerEvent): void => {
@@ -2183,6 +2562,7 @@ export class OASGantt extends OASElement {
     const sy = rowIndex * rowH + rowH / 2
     const temp = document.createElementNS('http://www.w3.org/2000/svg', 'path')
     temp.setAttribute('class', 'temp-link')
+    temp.setAttribute('aria-hidden', 'true')
     temp.setAttribute('d', `M ${sx} ${sy} L ${sx} ${sy}`)
     this.linksEl?.appendChild(temp)
     this.linkCtx = { sourceId: row.task.id, endpoint, sx, sy, temp }
@@ -2321,6 +2701,7 @@ export class OASGantt extends OASElement {
       origEndMs: row.endMs,
       origProgress: row.progress,
       datetime: row.task.start.length > 10,
+      touch: e.pointerType === 'touch',
       bar,
     }
     try {
@@ -2347,6 +2728,8 @@ export class OASGantt extends OASElement {
     const scrollDelta = (this.tbody?.scrollLeft ?? 0) - ctx.startScrollLeft
     let dx = clientX - ctx.startX + scrollDelta
     if (rtl) dx = -dx
+    // 触屏死区：手指抖动不推进（防误改期）
+    if (ctx.touch && Math.abs(clientX - ctx.startX) < 6 && Math.abs(scrollDelta) < 1) dx = 0
     if (ctx.mode === 'progress') {
       const barW = Math.max(this.xOf(ctx.origEndMs) - this.xOf(ctx.origStartMs), 1)
       const next = Math.min(100, Math.max(0, ctx.origProgress + (dx / barW) * 100))
@@ -2587,14 +2970,27 @@ export class OASGantt extends OASElement {
           hit.setAttribute('data-from', t.task.id)
           hit.setAttribute('data-to', dep.id)
           hit.setAttribute('data-type', type)
+          hit.setAttribute('role', 'button')
+          hit.setAttribute('tabindex', '0')
+          hit.setAttribute('aria-label', `${this.t('gantt.linkDelete')}: ${from.task.name} → ${to.task.name}`)
           hit.addEventListener('click', (e) => {
             e.stopPropagation()
             this.selectLink(t.task.id, dep.id, type)
+          })
+          hit.addEventListener('keydown', (e) => {
+            const k = e.key
+            if (k === 'Enter' || k === ' ' || k === 'Delete' || k === 'Backspace') {
+              e.preventDefault()
+              e.stopPropagation()
+              this.selectLink(t.task.id, dep.id, type)
+              this.removeSelectedLink()
+            }
           })
           frag.appendChild(hit)
         }
         const path = document.createElementNS(ns, 'path')
         path.setAttribute('class', 'link')
+        path.setAttribute('aria-hidden', 'true')
         path.setAttribute('d', d)
         path.setAttribute('data-from', t.task.id)
         path.setAttribute('data-to', dep.id)

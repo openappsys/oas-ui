@@ -354,3 +354,15 @@ test('gantt 拖拽到视口下缘自动滚动', async ({ page }) => {
   expect(st, '拖到边缘应自动滚动').toBeGreaterThan(0)
   await page.mouse.up()
 })
+
+// 多选：点行选中 + Shift 范围连选 → oas-selection-change 反馈
+test('gantt 多选点选与 Shift 连选派发 oas-selection-change', async ({ page }) => {
+  await page.goto('/components/gantt.html', { waitUntil: 'domcontentloaded' })
+  await waitGantt(page, 'gantt-select')
+  const host = page.locator('#gantt-select')
+  const out = page.locator('#gantt-select-output')
+  await host.locator('.row-name[data-key="s1"]').click()
+  await expect(out).toContainText('已选 1 条')
+  await host.locator('.row-name[data-key="s3"]').click({ modifiers: ['Shift'] })
+  await expect(out).toContainText('已选 3 条')
+})

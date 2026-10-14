@@ -100,6 +100,11 @@
       "type": "GanttTask[]",
       "default": "[]",
       "api": true
+    },
+    {
+      "name": "selection",
+      "type": "string[]",
+      "api": true
     }
   ],
   "events": [
@@ -133,7 +138,11 @@
     },
     {
       "name": "oas-dependencies-change",
-      "detail": "{ taskId: succ.id, dependencies: deps.map((d) => ({ ...d })), } satisfies GanttDependenciesChangeDetail"
+      "detail": "{ taskId: t.id, dependencies: (t.dependencies ?? []).map((d) => ({ ...d })), } satisfies GanttDependenciesChangeDetail | { taskId: succ.id, dependencies: deps.map((d) => ({ ...d })), } satisfies GanttDependenciesChangeDetail"
+    },
+    {
+      "name": "oas-selection-change",
+      "detail": "{ ids: this.selection } satisfies GanttSelectionChangeDetail"
     },
     {
       "name": "oas-task-change",

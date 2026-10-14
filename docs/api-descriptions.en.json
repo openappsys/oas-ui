@@ -4341,7 +4341,8 @@
       "oas-scale-change": "Dispatched when the scale attribute changes, detail: { scale }; not dispatched on initial absorption",
       "oas-task-render": "Dispatched after each task bar renders, detail: { task, element } — hosts may rewrite bar DOM",
       "oas-reparent": "Dispatched when a row drag reparent/reorder settles, detail: { id, parent, index } (parent null means root level; index is the sibling position)",
-      "oas-dependencies-change": "Dispatched when a link drag creates a dependency or a selected link is deleted, detail: { taskId, dependencies } (taskId is the successor whose dependencies changed)"
+      "oas-dependencies-change": "Dispatched when a link drag creates a dependency or a selected link is deleted, detail: { taskId, dependencies } (taskId is the successor whose dependencies changed)",
+      "oas-selection-change": "Dispatched when the multi-select set changes (click / keyboard / property write), detail: { ids } (selected task ids)"
     },
     "slots": {
       "template[slot=\"empty\"]": "Empty-state content (defaults to \"No tasks\")",
@@ -4349,7 +4350,8 @@
       "template[slot=\"tooltip\"]": "Hover tooltip template ([data-task-name] / [data-task-range] / [data-task-progress] bind points)"
     },
     "props": {
-      "tasks": "Gantt tasks (`GanttTask[]`): `el.tasks` reads (copy; nested input already flattened to parent pointers); `el.tasks = [...]` writes (syncs the tasks attribute + re-renders + dispatches oas-tasks-change)"
+      "tasks": "Gantt tasks (`GanttTask[]`): `el.tasks` reads (copy; nested input already flattened to parent pointers); `el.tasks = [...]` writes (syncs the tasks attribute + re-renders + dispatches oas-tasks-change)",
+      "selection": "Selected task ids (`string[]`): `el.selection` reads (copy); `el.selection = [...]` writes (re-renders selection + dispatches oas-selection-change); `removeTasks(ids)` batch-removes (with descendants)"
     },
     "cssVars": {
       "--oas-gantt-baseline-color": "Baseline bar color (defaults to translucent secondary text color)"

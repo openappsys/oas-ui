@@ -200,6 +200,8 @@ export const zhCN = {
   'gantt.baselineLater': '比基线晚 {count} 天',
   'gantt.baselineEarlier': '比基线早 {count} 天',
   'gantt.baselineSame': '与基线一致',
+  'gantt.rename': '重命名',
+  'gantt.linkDelete': '删除依赖',
   // kanban（看板）
   'kanban.emptyColumn': '拖拽卡片到此处',
   'kanban.moveCard': '移动卡片',

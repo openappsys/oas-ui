@@ -163,6 +163,8 @@ export const en: LocaleMessages = {
   'gantt.baselineLater': '{count}d later than baseline',
   'gantt.baselineEarlier': '{count}d earlier than baseline',
   'gantt.baselineSame': 'On baseline',
+  'gantt.rename': 'Rename',
+  'gantt.linkDelete': 'Delete dependency',
   // kanban（看板）
   'kanban.emptyColumn': 'Drag cards here',
   'kanban.moveCard': 'Move card',
