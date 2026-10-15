@@ -3003,11 +3003,11 @@ export class OASGantt extends OASElement {
         : { start }
       : { start, end: endStr }
     if (!this.applyPatch(id, patch)) return
+    // 里程碑旧区间为瞬时点：oldEnd 取旧 start（此前误用新 start）
     this.emit('task-change', {
       id,
       task: this.taskSnapshot(this._tasks.find((t) => t.id === id)!),
       oldStart: this.fmtIso(oldStartMs, datetime),
-      // 里程碑旧区间为瞬时点：oldEnd 应等于旧 start（此前误用新 start）
       oldEnd: milestone ? this.fmtIso(oldStartMs, datetime) : this.fmtEnd(oldEndMs, datetime),
       start,
       end: endStr,
