@@ -351,6 +351,10 @@ svg.links .link-label {
   fill: var(--oas-color-text-secondary);
   font-size: var(--oas-font-size-xs, 11px);
   pointer-events: none;
+  /* 底色描边：叠在连线/任务条上仍清晰可读（paint-order 先描边后填充） */
+  paint-order: stroke;
+  stroke: var(--oas-color-bg);
+  stroke-width: 2px;
 }
 svg.links .temp-link {
   pointer-events: none;
@@ -1455,14 +1459,15 @@ export class OASGantt extends OASElement {
    * 任务约束快照：mode + 约束日起点 ms + 约束日右缘 ms（fnlt 判定用；日精度 +DAY_MS 含端日）。
    * 缺省/非法（清洗层已兜底，此处再防御一次）→ null = 无约束。
    */
-  private constraintOf(t: TG): { mode: DatedConstraint; ms: number; endMs: number } | null {
+  private constraintOf(t: TG): { mode: DatedConstraint; ms: number; endMs: number; dateOnly: boolean } | null {
     const mode = t.constraint
     if (mode !== 'snet' && mode !== 'mso' && mode !== 'fnlt') return null
     const dateStr = typeof t.constraintDate === 'string' ? t.constraintDate.trim() : ''
     const d = parseTaskDate(dateStr)
     if (!d) return null
     const ms = d.getTime()
-    return { mode, ms, endMs: dateStr.length > 10 ? ms : ms + DAY_MS }
+    const dateOnly = dateStr.length <= 10
+    return { mode, ms, endMs: dateOnly ? ms + DAY_MS : ms, dateOnly }
   }
 
   private weekStart(): number {
@@ -2016,12 +2021,21 @@ export class OASGantt extends OASElement {
     this.syncExpanded()
     this.toggleAttribute('data-rtl', isRtl(this))
     this.buildRows()
-    // 关键路径（show-critical-path）：属性关闭 → 空集，渲染零影响；开启 → 以当前排期算 CPM
-    const cp = this.showCriticalPathOn()
-      ? this.criticalPathIds()
-      : { critical: new Set<string>(), conflict: new Set<string>() }
-    this.criticalIds = cp.critical
-    this.conflictIds = cp.conflict
+    // 摘要行带 constraint 无意义（日期派生）→ 告警一次
+    for (const r of this.rows) {
+      if (r.hasChildren && r.task.constraint) {
+        this.warnOnce(
+          `constraint-summary:${r.task.id}`,
+          `[oas-gantt] 摘要任务 "${r.task.id}" 的 constraint 已忽略（摘要日期由子级派生）`,
+        )
+      }
+    }
+    // 关键路径：critical 仅 show-critical-path 开启时算；conflict（违约）在 show-critical-path 或 auto-schedule 开启时都算（违约应可见）
+    const cpOn = this.showCriticalPathOn()
+    const confOn = cpOn || this.autoScheduleOn()
+    const cp = cpOn || confOn ? this.criticalPathIds() : null
+    this.criticalIds = cpOn && cp ? cp.critical : new Set()
+    this.conflictIds = confOn && cp ? cp.conflict : new Set()
     const scale = this.scale()
     if (this.lastScale === '') {
       this.lastScale = scale // 首次吸收不派发
@@ -4221,12 +4235,43 @@ export class OASGantt extends OASElement {
       const float = lf.get(t.id)! - dur.get(t.id)! - es.get(t.id)!
       if (Math.abs(float) < 1e-6) critical.add(t.id)
       else if (float < -1e-6) conflict.add(t.id) // 负总时差 = 已违反后继约束（违约）
-      // 约束违反并入违约集（与负总时差同样呈现 .conflict）
+      // 约束违反并入违约集（与负总时差同样呈现 .conflict）；日精度约束按**日历日**比较（本地时区安全）
       const con = this.constraintOf(t)
       if (!con) continue
-      if (con.mode === 'snet' && this.startMsOfTask(t) < con.ms) conflict.add(t.id)
-      else if (con.mode === 'mso' && this.startMsOfTask(t) !== con.ms) conflict.add(t.id)
-      else if (con.mode === 'fnlt' && this.endMsOfTask(t) > con.endMs) conflict.add(t.id)
+      const dayStr = (ms: number): string => toISODate(new Date(ms))
+      const startMs = this.startMsOfTask(t)
+      if (con.mode === 'snet') {
+        if (con.dateOnly ? dayStr(startMs) < dayStr(con.ms) : startMs < con.ms) conflict.add(t.id)
+      } else if (con.mode === 'mso') {
+        if (con.dateOnly ? dayStr(startMs) !== dayStr(con.ms) : startMs !== con.ms) conflict.add(t.id)
+        // mso：被依赖要求的起点晚于锚点 → 该任务自身违约
+        let required = Number.NEGATIVE_INFINITY
+        for (const [predId, list] of successors) {
+          for (const e of list) {
+            if (e.succ !== t.id) continue
+            const pS = es.get(predId)
+            const pD = dur.get(predId)
+            if (pS === undefined || pD === undefined) continue
+            const lagMs = e.lag * DAY_MS
+            const dSelf = dur.get(t.id)!
+            const need =
+              e.type === 'fs'
+                ? pS + pD + lagMs
+                : e.type === 'ss'
+                  ? pS + lagMs
+                  : e.type === 'ff'
+                    ? pS + pD + lagMs - dSelf
+                    : pS + lagMs - dSelf
+            if (need > required) required = need
+          }
+        }
+        if (required > con.ms + 1e-6) conflict.add(t.id)
+      } else if (con.mode === 'fnlt') {
+        const endInclusive = this.endMsOfTask(t) - 1
+        if (con.dateOnly ? dayStr(endInclusive) > dayStr(con.ms) : this.endMsOfTask(t) > con.endMs) {
+          conflict.add(t.id)
+        }
+      }
     }
     return { critical, conflict }
   }

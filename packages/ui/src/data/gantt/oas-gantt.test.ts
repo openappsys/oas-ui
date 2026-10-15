@@ -4874,6 +4874,88 @@ describe('OASGantt 任务约束（snet / mso / fnlt）', () => {
     expect(conflictIdsOf(el)).toEqual(['f1', 'm1', 's1'])
   })
 
+  it('约束违约在 auto-schedule 开启时即标 .conflict（无需 show-critical-path）', () => {
+    const el = mount({
+      'auto-schedule': '',
+      tasks: JSON.stringify([
+        {
+          id: 'f',
+          name: 'F',
+          start: '2026-03-02',
+          end: '2026-03-10',
+          constraint: 'fnlt',
+          constraintDate: '2026-03-05',
+        },
+      ]),
+    })
+    const conflict = [...shadowOf(el).querySelectorAll<HTMLElement>('.bar.conflict')].map((b) => b.dataset.id)
+    expect(conflict, 'auto-schedule 开即应标违约').toEqual(['f'])
+  })
+
+  it('mso 与依赖冲突：mso 任务自身标 .conflict', () => {
+    const el = mount({
+      'auto-schedule': '',
+      'show-critical-path': '',
+      tasks: JSON.stringify([
+        { id: 'p', name: 'P', start: '2026-03-20', end: '2026-03-22' },
+        {
+          id: 'm',
+          name: 'M',
+          start: '2026-03-10',
+          end: '2026-03-11',
+          dependencies: [{ id: 'p' }],
+          constraint: 'mso',
+          constraintDate: '2026-03-10',
+        },
+      ]),
+    })
+    const conflict = [...shadowOf(el).querySelectorAll<HTMLElement>('.bar.conflict')].map((b) => b.dataset.id)
+    expect(conflict).toContain('m')
+  })
+
+  it('mso 日精度约束 + 带时间 start：不误标 .conflict', () => {
+    const el = mount({
+      'auto-schedule': '',
+      'show-critical-path': '',
+      tasks: JSON.stringify([
+        {
+          id: 'm',
+          name: 'M',
+          start: '2026-03-10 08:00',
+          end: '2026-03-10 12:00',
+          constraint: 'mso',
+          constraintDate: '2026-03-10',
+        },
+      ]),
+    })
+    const conflict = [...shadowOf(el).querySelectorAll<HTMLElement>('.bar.conflict')].map((b) => b.dataset.id)
+    expect(conflict).toEqual([])
+  })
+
+  it('摘要行带 constraint：忽略 + devWarn 一次', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    try {
+      mount({
+        'show-critical-path': '',
+        tasks: JSON.stringify([
+          {
+            id: 'p',
+            name: 'P',
+            start: '2026-03-02',
+            end: '2026-03-06',
+            type: 'summary',
+            constraint: 'snet',
+            constraintDate: '2026-03-10',
+            children: [{ id: 'c', name: 'C', start: '2026-03-02', end: '2026-03-03' }],
+          },
+        ]),
+      })
+      expect(warn.mock.calls.filter((c) => String(c[0]).includes('摘要任务')).length).toBe(1)
+    } finally {
+      warn.mockRestore()
+    }
+  })
+
   it('snet/mso/fnlt 缺可解析 constraintDate → 约束整体丢弃 + 每任务告警一次（受控重写不刷屏）', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const el = mount({
