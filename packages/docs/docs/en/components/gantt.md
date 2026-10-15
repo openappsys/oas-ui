@@ -255,6 +255,8 @@ Methods: `scrollToTask(id)` to bring a task row into view, `scrollToDate(date)` 
 
 ## Controlled Expansion / Labels & Snapping / Localization
 
+- **Custom fields pass through**: `GanttTask` may carry arbitrary business fields (e.g. `assignee`, `tag`) — they are **preserved as-is** (visible in `el.tasks` / `oas-task-render` / templates) and do not affect scheduling; render them via the bar-label template or `oas-task-render`, and edit via the `oas-modal`+`oas-form` recipe or `updateTask` (per-column custom rendering awaits a row-name template capability).
+
 <DemoBlock title="expanded as a controlled set (JSON array = expanded set; explicit [] collapses all) + label-position (default none, since the row-name column already shows names; inside / right must be opted in)">
   <div style="display:flex;flex-direction:column;gap:var(--oas-space-4)">
     <oas-gantt expanded='["p1"]' label-position="inside" tasks='[{"id":"p1","name":"Phase 1","start":"2026-03-02","end":"2026-03-13","type":"summary","children":[{"id":"w1","name":"Design","start":"2026-03-02","end":"2026-03-06","progress":80},{"id":"w2","name":"Coding","start":"2026-03-04","end":"2026-03-13","progress":35}]},{"id":"p2","name":"Phase 2","start":"2026-03-16","end":"2026-03-20","type":"summary","children":[{"id":"w3","name":"Acceptance","start":"2026-03-16","end":"2026-03-20"}]}]'></oas-gantt>

@@ -1824,6 +1824,23 @@ describe('OASGantt tasks 通道与方法', () => {
     expect(read[0]!.id).toBe('a')
   })
 
+  it('自定义字段透传：assignee 等白名单外字段原样保留（读/写/克隆/增量更新）', () => {
+    const el = mount({
+      tasks: JSON.stringify([{ id: 'a', name: 'A', start: '2026-03-02', end: '2026-03-04', assignee: '张三', tag: 7 }]),
+    })
+    expect((el.tasks[0] as Record<string, unknown>).assignee).toBe('张三')
+    expect((el.tasks[0] as Record<string, unknown>).tag).toBe(7)
+    // 增量更新保留其他自定义字段
+    el.updateTask('a', { progress: 50 })
+    expect((el.tasks[0] as Record<string, unknown>).assignee).toBe('张三')
+    // 克隆保留
+    const id = el.duplicateTask('a')!
+    expect((el.tasks.find((t) => t.id === id) as Record<string, unknown>).assignee).toBe('张三')
+    // addTask 携带自定义字段
+    const newId = el.addTask({ name: 'B', start: '2026-03-05', end: '2026-03-06', assignee: '李四' })
+    expect((el.tasks.find((t) => t.id === newId) as Record<string, unknown>).assignee).toBe('李四')
+  })
+
   it('updateTask(id, patch)：合并写回 + 派发 oas-tasks-change；找不到返回 false；非法 patch 被拒', () => {
     const el = mount({ tasks: JSON.stringify(BASE_TASKS) })
     let changed = 0

@@ -784,6 +784,24 @@ const DEP_TYPES = new Set(['fs', 'ss', 'ff', 'sf'])
 
 /** 任务约束白名单（asap 等同无约束，清洗层丢弃，不落数据） */
 const CONSTRAINTS = new Set(['asap', 'snet', 'mso', 'fnlt'])
+/** 组件已知字段（清洗时按各自口径处理）；此外的键视为宿主自定义字段，原样透传 */
+const RESERVED_TASK_KEYS = new Set([
+  'id',
+  'name',
+  'start',
+  'end',
+  'type',
+  'progress',
+  'parent',
+  'children',
+  'dependencies',
+  'color',
+  'disabled',
+  'expanded',
+  'baseline',
+  'constraint',
+  'constraintDate',
+])
 
 /** 需携带 constraintDate 方能生效的约束模式 */
 type DatedConstraint = 'snet' | 'mso' | 'fnlt'
@@ -962,6 +980,11 @@ function sanitizeTasks(
     if (!id) continue
     const { raw, parent, fromNest } = flat[i]!
     const t: TG = { id, name: raw.name as string, start: (raw.start as string).trim() }
+    // 自定义字段透传（GanttTask 的 `[key: string]: unknown` 契约）：白名单之外的键原样保留，
+    // 供宿主携带 owner/assignee/tag 等业务字段（已知字段随后按校验口径覆盖或丢弃）
+    for (const [k, v] of Object.entries(raw)) {
+      if (!RESERVED_TASK_KEYS.has(k)) (t as Record<string, unknown>)[k] = v
+    }
     const endRaw = typeof raw.end === 'string' && raw.end.trim() !== '' ? raw.end.trim() : undefined
     if (endRaw && parseTaskDate(endRaw)) {
       // start 晚于 end（日期颠倒）自愈：按渲染语义交换（不静默渲染 2px 假条）。
