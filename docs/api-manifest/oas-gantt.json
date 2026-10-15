@@ -219,6 +219,10 @@
       "default": "var(--oas-color-danger)"
     },
     {
+      "name": "--oas-gantt-conflict-color",
+      "default": "var(--oas-color-danger)"
+    },
+    {
       "name": "--oas-gantt-weekend-bg",
       "default": "color-mix(in srgb, var(--oas-color-bg-hover) 60%, transparent)"
     },

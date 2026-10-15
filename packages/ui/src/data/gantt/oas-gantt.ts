@@ -93,6 +93,11 @@ const STYLE = `
 .row-name.critical {
   color: var(--oas-gantt-critical-color, var(--oas-color-danger));
 }
+/* 违约行名（总时差为负 = 已违反后继约束）：虚线强调色 */
+.row-name.conflict {
+  color: var(--oas-gantt-conflict-color, var(--oas-color-danger));
+  text-decoration: underline dashed;
+}
 /* 触屏重排手柄：整行拖与纵向滚动冲突（touch-action 手势起始即定夺），
    故粗指针下改由手柄承载重排，手柄独占 touch-action: none，其余区域仍可滚动 */
 .row-drag {
@@ -159,6 +164,11 @@ const STYLE = `
 /* 关键路径条（show-critical-path）：描边强调；置于选中态描边规则之前，选中态优先级更高 */
 .bar.critical {
   outline: 2px solid var(--oas-gantt-critical-color, var(--oas-color-danger));
+  outline-offset: 1px;
+}
+/* 违约条（总时差为负）：虚线描边与关键路径区分 */
+.bar.conflict {
+  outline: 2px dashed var(--oas-gantt-conflict-color, var(--oas-color-danger));
   outline-offset: 1px;
 }
 .bar.selected {
@@ -335,6 +345,15 @@ svg.links .link-hit {
 svg.links .link-hit.selected + .link {
   stroke: var(--oas-color-danger);
   stroke-width: 2.5;
+}
+/* 依赖 lag/lead 可见标签（非 0 时渲染在连线竖段中点） */
+svg.links .link-label {
+  fill: var(--oas-color-text-secondary);
+  font-size: var(--oas-font-size-xs, 11px);
+  pointer-events: none;
+  paint-order: stroke;
+  stroke: var(--oas-color-bg);
+  stroke-width: 2px;
 }
 svg.links .temp-link {
   pointer-events: none;
@@ -972,6 +991,7 @@ export class OASGantt extends OASElement {
   private autoScheduleApplied = false
   /** 关键路径任务 id 集合（show-critical-path 开启时计算；关闭为空集，渲染零影响） */
   private criticalIds = new Set<string>()
+  private conflictIds = new Set<string>()
   /** buildRows 产物缓存：渲染窗口（滚动每帧）复用，避免万级任务下每帧重建展开集 */
   private expandedSetCache: Set<string> | null = null
   /** 自适应列宽（px）：视口可用宽度内铺下整个窗口时收窄至恰好适配；null = 回落各档基准列宽（无布局环境） */
@@ -1876,7 +1896,11 @@ export class OASGantt extends OASElement {
     this.toggleAttribute('data-rtl', isRtl(this))
     this.buildRows()
     // 关键路径（show-critical-path）：属性关闭 → 空集，渲染零影响；开启 → 以当前排期算 CPM
-    this.criticalIds = this.showCriticalPathOn() ? this.criticalPathIds() : new Set()
+    const cp = this.showCriticalPathOn()
+      ? this.criticalPathIds()
+      : { critical: new Set<string>(), conflict: new Set<string>() }
+    this.criticalIds = cp.critical
+    this.conflictIds = cp.conflict
     const scale = this.scale()
     if (this.lastScale === '') {
       this.lastScale = scale // 首次吸收不派发
@@ -2044,6 +2068,7 @@ export class OASGantt extends OASElement {
       if (this.selected.has(row.task.id)) el.classList.add('selected')
       // 关键路径标记（show-critical-path 开启时 criticalIds 非空；关闭时空集 → 零影响）
       if (this.criticalIds.has(row.task.id)) el.classList.add('critical')
+      if (this.conflictIds.has(row.task.id)) el.classList.add('conflict')
       if (row.task.disabled === true) {
         el.setAttribute('disabled', '')
         el.setAttribute('aria-disabled', 'true')
@@ -2127,6 +2152,7 @@ export class OASGantt extends OASElement {
       bar.setAttribute('part', 'bar')
       if (this.selected.has(row.task.id)) bar.classList.add('selected')
       if (this.criticalIds.has(row.task.id)) bar.classList.add('critical')
+      if (this.conflictIds.has(row.task.id)) bar.classList.add('conflict')
       // 触屏：点条揭示连线点（无 hover，重建后按记录恢复）
       if (this.coarse) {
         if (this.touchActiveId === row.task.id) bar.classList.add('touch-active')
@@ -3952,15 +3978,16 @@ export class OASGantt extends OASElement {
    * - 摘要（有子级，日期派生）不参与；disabled 照算（不特殊处理，仅作可视化）。
    * - 依赖成环 → 排程无解，返回空集（不死循环）。
    */
-  private criticalPathIds(): Set<string> {
+  private criticalPathIds(): { critical: Set<string>; conflict: Set<string> } {
+    const empty = { critical: new Set<string>(), conflict: new Set<string>() }
     const tasks = this._tasks
-    if (tasks.length === 0) return new Set()
+    if (tasks.length === 0) return empty
     const byId = new Map<string, TG>()
     for (const t of tasks) byId.set(t.id, t)
-    if (this.dependencyHasCycle(byId)) return new Set()
+    if (this.dependencyHasCycle(byId)) return empty
     const { hasChildren } = this.childStructure(byId)
     const nodes = tasks.filter((t) => !hasChildren.has(t.id))
-    if (nodes.length === 0) return new Set()
+    if (nodes.length === 0) return empty
     const dur = new Map<string, number>()
     const es = new Map<string, number>()
     for (const t of nodes) {
@@ -4015,12 +4042,14 @@ export class OASGantt extends OASElement {
       }
       if (!changed) break
     }
-    const out = new Set<string>()
+    const critical = new Set<string>()
+    const conflict = new Set<string>()
     for (const t of nodes) {
       const float = lf.get(t.id)! - dur.get(t.id)! - es.get(t.id)!
-      if (Math.abs(float) < 1e-6) out.add(t.id)
+      if (Math.abs(float) < 1e-6) critical.add(t.id)
+      else if (float < -1e-6) conflict.add(t.id) // 负总时差 = 已违反后继约束（违约）
     }
-    return out
+    return { critical, conflict }
   }
 
   /** 连线 lag 提示文案（aria-label 末尾）：lag>0 作「滞后」、lag<0 作「提前」，0 不附 */
@@ -4203,9 +4232,9 @@ export class OASGantt extends OASElement {
         // 折线：水平出 14px → 垂直 → 水平进；终点空间不足时收在中间（箭头仍随路径）
         const out = x2 >= x1 + 28 ? x2 - 14 : Math.max(x1, x2) + 14
         const d = `M ${x1} ${y1} L ${out} ${y1} L ${out} ${y2} L ${x2} ${y2}`
+        const lag = typeof dep.lag === 'number' && Number.isFinite(dep.lag) ? dep.lag : 0
         // 命中路径仅对非只读且**后继未禁用**者渲染（禁用任务不被依赖写入，故其入边不可选删）；可见线仍画
         if (!ro && t.task.disabled !== true) {
-          const lag = typeof dep.lag === 'number' && Number.isFinite(dep.lag) ? dep.lag : 0
           const hit = document.createElementNS(ns, 'path')
           hit.setAttribute('class', 'link-hit')
           hit.setAttribute('d', d)
@@ -4246,6 +4275,17 @@ export class OASGantt extends OASElement {
         path.setAttribute('data-type', type)
         path.setAttribute('marker-end', 'url(#oas-gantt-arrow)')
         frag.appendChild(path)
+        if (lag !== 0) {
+          const label = document.createElementNS(ns, 'text')
+          label.setAttribute('class', 'link-label')
+          label.setAttribute('aria-hidden', 'true')
+          label.setAttribute('x', String(out))
+          label.setAttribute('y', String((y1 + y2) / 2))
+          label.setAttribute('text-anchor', 'middle')
+          label.setAttribute('dominant-baseline', 'middle')
+          label.textContent = `${lag > 0 ? '+' : ''}${lag}`
+          frag.appendChild(label)
+        }
       }
     }
     svg.appendChild(frag)

@@ -4360,7 +4360,8 @@
     },
     "cssVars": {
       "--oas-gantt-baseline-color": "基线条颜色（默认半透明次要文字色）",
-      "--oas-gantt-critical-color": "关键路径高亮色（默认 --oas-color-danger）"
+      "--oas-gantt-critical-color": "关键路径高亮色（默认 --oas-color-danger）",
+      "--oas-gantt-conflict-color": "违约（负总时差）高亮色（默认 --oas-color-danger）"
     }
   },
   "oas-picker": {

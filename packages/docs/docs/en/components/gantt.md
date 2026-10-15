@@ -148,9 +148,46 @@ Assemble a task detail editor with `oas-modal` + `oas-form` (the component only 
 
 - **Dependency lag/lead**: `dependencies: [{ id, type?, lag? }]` — `lag` is in **days and may be negative** (negative = lead/overlap), folded into the `auto-schedule` constraints (`fs: successor start ≥ predecessor end + lag`; `ss: successor start ≥ predecessor start + lag`; `ff`/`sf` likewise on end). Defaults to 0 (backward compatible).
 - **Critical path**: `show-critical-path` (boolean, off by default) — with the **current schedule as the baseline** (ES taken from the current start), runs a backward pass over the dependency graph + durations to compute **total float**; tasks with zero float get a `.critical` highlight on their bar (color via `--oas-gantt-critical-color`). Read-only; does not change data.
+- **Float marks**: total float **0** → `.critical` (solid outline); **negative** total float (already violating a successor constraint) → `.conflict` (dashed outline, `--oas-gantt-conflict-color`). A fractional `lag` (e.g. `0.5`) in `el.tasks` promotes that row's date strings to time precision (round as needed).
 
 <DemoBlock title="Critical path: a → b (long) and a → c (short) both follow a — b is highlighted on the critical path, c has float and is not (turn show-critical-path off to drop the highlight)">
   <oas-gantt id="gantt-critical" show-critical-path height="200"></oas-gantt>
+</DemoBlock>
+
+## Host Integration Recipes (Undo/Redo / Edit Dialog / Export)
+
+The component only guarantees a closed loop of data + interaction; the capabilities below are provided as official recipes (no changes to the component itself):
+
+### Undo / Redo (host-owned history)
+
+This is a **controlled-data model**: every change dispatches `oas-task-change` (with `oldStart/oldEnd/start/end`) plus `oas-tasks-change`. Keeping **your own** history stack from these events is the most robust approach — a built-in stack would create a second source of truth against the host `tasks`: undo writes internally then gets overwritten by the host, granularity mismatches host actions, and controlled re-renders bounce the undo back. Typical approach: listen to `oas-task-change` / `oas-reparent` / `oas-dependencies-change`, record inverse operations, and write back via `updateTask` / `moveTask` / `updateTasks`.
+
+### Edit dialog (double-click a task bar)
+
+The component only dispatches `oas-task-dblclick`; compose a detail editor with `oas-modal` + `oas-form`:
+
+<DemoBlock title="Double-click a task bar to open the edit dialog (oas-modal + oas-form); Save writes back via updateTask">
+  <oas-gantt id="gantt-edit" creatable height="200"></oas-gantt>
+  <oas-modal id="gantt-edit-modal" title="Edit task">
+    <oas-form id="gantt-edit-form">
+      <oas-form-item label="Name" name="name" required><oas-input name="name"></oas-input></oas-form-item>
+      <oas-form-item label="Start" name="start" required><oas-date-picker name="start"></oas-date-picker></oas-form-item>
+      <oas-form-item label="End" name="end"><oas-date-picker name="end"></oas-date-picker></oas-form-item>
+      <oas-form-item label="Progress" name="progress"><oas-slider name="progress" show-value></oas-slider></oas-form-item>
+    </oas-form>
+  </oas-modal>
+</DemoBlock>
+
+### Export (JSON / print / image)
+
+- **JSON**: `el.tasks` is serializable data (nested input is flattened) — `JSON.stringify(el.tasks)`.
+- **Print**: add `@media print` to expand the timeline and hide unrelated UI; or call `fit()` then `window.print()`.
+- **Image / PDF**: render on the host side (HTML→canvas or SVG serialization), e.g. `new XMLSerializer().serializeToString(el.shadowRoot.querySelector('.inner'))` then to canvas.
+
+<DemoBlock title="Export: click to output the current tasks JSON (the host can persist or download it)">
+  <oas-button id="gantt-export" size="small" variant="outline">Export JSON</oas-button>
+  <oas-gantt id="gantt-exportable" height="200"></oas-gantt>
+  <div id="gantt-export-output" style="color:var(--oas-color-text-secondary);font-size:var(--oas-font-size-sm);margin-top:var(--oas-space-2)"></div>
 </DemoBlock>
 
 ## Readonly Levels + Per-task Disable
@@ -401,6 +438,46 @@ onMounted(async () => {
       { id: 'k3', name: 'Docs (has float)', start: '2026-03-05', end: '2026-03-06', dependencies: [{ id: 'k1' }] },
     ]
   }
+
+  // Edit-dialog demo (double-click a bar)
+  const ged = document.getElementById('gantt-edit')
+  const gedModal = document.getElementById('gantt-edit-modal')
+  const gedForm = document.getElementById('gantt-edit-form')
+  if (ged && gedModal && gedForm) {
+    ged.tasks = [
+      { id: 'e1', name: 'Design', start: '2026-03-02', end: '2026-03-06', progress: 40 },
+      { id: 'e2', name: 'Build', start: '2026-03-09', end: '2026-03-13', progress: 10 },
+    ]
+    const fld = (n) => gedForm.querySelector(`[name="${n}"]`)
+    let cur = ''
+    ged.addEventListener('oas-task-dblclick', (e) => {
+      cur = e.detail.id
+      const t = e.detail.task
+      fld('name').value = t.name
+      fld('start').value = t.start
+      fld('end').value = t.end ?? ''
+      fld('progress').value = t.progress ?? 0
+      gedModal.setAttribute('visible', '')
+    })
+    gedModal.addEventListener('oas-ok', () => gedForm.submit())
+    gedForm.addEventListener('oas-submit', (e) => {
+      const v = e.detail.values
+      ged.updateTask(cur, { ...v, progress: Number(v.progress) })
+    })
+  }
+
+  // Export JSON demo
+  const gex = document.getElementById('gantt-exportable')
+  const gexOut = document.getElementById('gantt-export-output')
+  if (gex && gexOut) {
+    gex.tasks = [
+      { id: 'x1', name: 'Discovery', start: '2026-03-02', end: '2026-03-06' },
+      { id: 'x2', name: 'Build', start: '2026-03-09', end: '2026-03-13', dependencies: [{ id: 'x1' }] },
+    ]
+    document.getElementById('gantt-export')?.addEventListener('click', () => {
+      gexOut.textContent = JSON.stringify(gex.tasks)
+    })
+  }
 })
 </script>
 
@@ -426,7 +503,7 @@ onMounted(async () => {
 | `row-height` | Row height in px (default 36, minimum 20) | `string` | `36` |
 | `scale` | Time scale: hour / day (default) / week / month / quarter / year; invalid values fall back to day | `string` | — |
 | `show-baseline` | Baseline comparison (boolean, off by default): tasks with a baseline render a baseline bar under the actual bar, its title showing the delta (N days later/earlier than baseline, or on baseline) | `boolean` | — |
-| `show-critical-path` | Critical path (boolean, off by default): runs a CPM pass over the dependency graph + durations to compute total float and adds a .critical highlight to zero-float tasks (color via --oas-gantt-critical-color); read-only | `boolean` | — |
+| `show-critical-path` | Critical path (boolean, off by default): runs a CPM pass over the dependency graph + durations to compute total float and adds a .critical highlight to zero-float tasks (color via --oas-gantt-critical-color); read-only | `string` | — |
 | `show-today` | Today line (on by default; false to disable) | `string` | — |
 | `snap` | Snap drags to the current scale unit (on by default; false shifts by pixel ratio and keeps time precision) | `string` | — |
 | `tasks` | Gantt tasks (JSON): [{ id?, name, start, end?, type?, progress?, parent?, children?, dependencies?, color?, disabled?, expanded?, baseline? }] — flat parent pointers are the primary contract; nested children are flattened automatically; explicit type:"milestone" takes precedence (rendered as milestone even with end, which is ignored) but a task with children is always a summary; no end also infers milestone; start/end are swapped automatically when start is after end | `GanttTask[]` | `[]` |
@@ -473,6 +550,7 @@ onMounted(async () => {
 | `--oas-gantt-bar-height` | — | `22px` |
 | `--oas-gantt-bar-progress-bg` | — | `var(--oas-gantt-bar-color, var(--oas-color-primary))` |
 | `--oas-gantt-baseline-color` | Baseline bar color (default translucent secondary text) | `color-mix(in srgb, var(--oas-color-text-secondary-strong) 55%, transparent)` |
+| `--oas-gantt-conflict-color` | Conflict (negative-float) highlight color (default --oas-color-danger) | `var(--oas-color-danger)` |
 | `--oas-gantt-critical-color` | Critical-path highlight color (default --oas-color-danger) | `var(--oas-color-danger)` |
 | `--oas-gantt-grid-line-color` | — | `var(--oas-color-border)` |
 | `--oas-gantt-header-bg` | — | `var(--oas-color-bg)` |

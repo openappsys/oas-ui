@@ -148,9 +148,46 @@
 
 - **依赖 lag/lead**：`dependencies: [{ id, type?, lag? }]`——`lag` 单位为**天、可负**（负 = 提前/重叠），并入 `auto-schedule` 四型约束（`fs: 后继 start ≥ 前置 end + lag`、`ss: 后继 start ≥ 前置 start + lag`、`ff/sf` 同理按 end）。缺省 0，向后兼容。
 - **关键路径**：`show-critical-path`（布尔，默认关）——以**当前排期为基准**（ES 取现网 start）在依赖图 + 工期上反向推最晚时间算**总时差**，时差为 0 的任务条加 `.critical` 高亮（颜色走 `--oas-gantt-critical-color`）。只读展示，不改数据。
+- **时差标记**：总时差为 **0** → `.critical`（实线描边）；总时差为**负**（已违反后继约束）→ `.conflict`（虚线描边，`--oas-gantt-conflict-color`）。`el.tasks` 里 `lag` 为分数（如 `0.5`）时会把该条升为时间精度串（按需取整）。
 
 <DemoBlock title="关键路径：a→b（长）、a→c（短）同为 a 的后继——b 在关键路径上高亮，c 有时差不高亮（关闭 show-critical-path 即无高亮）">
   <oas-gantt id="gantt-critical" show-critical-path height="200"></oas-gantt>
+</DemoBlock>
+
+## 宿主集成配方（撤销重做 / 编辑弹窗 / 导出）
+
+组件只保证「数据 + 交互闭环」，下列能力以官方配方给出（不改组件本体）：
+
+### 撤销 / 重做（宿主自建历史栈）
+
+组件是**受控数据模型**：每次改动派发 `oas-task-change`（含 `oldStart/oldEnd/start/end`）与 `oas-tasks-change`。宿主据这些事件维护**自己的**历史栈最稳妥——组件内建历史会与宿主 `tasks` 真相形成双源：撤销写回内部再被宿主回写覆盖、粒度与宿主业务动作不一致、受控重渲染会把撤销结果弹回。典型做法：监听 `oas-task-change`/`oas-reparent`/`oas-dependencies-change` 记录逆操作，撤销/重做时用 `updateTask` / `moveTask` / `updateTasks` 回写。
+
+### 编辑弹窗（双击任务条）
+
+组件只派发 `oas-task-dblclick`；用 `oas-modal` + `oas-form` 组装详情编辑器：
+
+<DemoBlock title="双击任务条打开编辑弹窗（oas-modal + oas-form），保存经 updateTask 写回">
+  <oas-gantt id="gantt-edit" creatable height="200"></oas-gantt>
+  <oas-modal id="gantt-edit-modal" title="编辑任务">
+    <oas-form id="gantt-edit-form">
+      <oas-form-item label="名称" name="name" required><oas-input name="name"></oas-input></oas-form-item>
+      <oas-form-item label="开始" name="start" required><oas-date-picker name="start"></oas-date-picker></oas-form-item>
+      <oas-form-item label="结束" name="end"><oas-date-picker name="end"></oas-date-picker></oas-form-item>
+      <oas-form-item label="进度" name="progress"><oas-slider name="progress" show-value></oas-slider></oas-form-item>
+    </oas-form>
+  </oas-modal>
+</DemoBlock>
+
+### 导出（JSON / 打印 / 图片）
+
+- **JSON**：`el.tasks` 即为可序列化数据（嵌套输入已拍平）——`JSON.stringify(el.tasks)`。
+- **打印**：加 `@media print` 展开时间轴、隐藏无关 UI；或先 `fit()` 再 `window.print()`。
+- **图片 / PDF**：宿主侧渲染（HTML→canvas 或 SVG 序列化），示例：`new XMLSerializer().serializeToString(el.shadowRoot.querySelector('.inner'))` 后转 canvas。
+
+<DemoBlock title="导出：点按钮输出当前 tasks JSON（宿主可直接落库/下载）">
+  <oas-button id="gantt-export" size="small" variant="outline">导出 JSON</oas-button>
+  <oas-gantt id="gantt-exportable" height="200"></oas-gantt>
+  <div id="gantt-export-output" style="color:var(--oas-color-text-secondary);font-size:var(--oas-font-size-sm);margin-top:var(--oas-space-2)"></div>
 </DemoBlock>
 
 ## 只读三级 + 任务级禁用
@@ -399,6 +436,46 @@ onMounted(async () => {
       { id: 'k3', name: '文档（有时差）', start: '2026-03-05', end: '2026-03-06', dependencies: [{ id: 'k1' }] },
     ]
   }
+
+  // 编辑弹窗 demo（双击条）
+  const ged = document.getElementById('gantt-edit')
+  const gedModal = document.getElementById('gantt-edit-modal')
+  const gedForm = document.getElementById('gantt-edit-form')
+  if (ged && gedModal && gedForm) {
+    ged.tasks = [
+      { id: 'e1', name: '设计', start: '2026-03-02', end: '2026-03-06', progress: 40 },
+      { id: 'e2', name: '开发', start: '2026-03-09', end: '2026-03-13', progress: 10 },
+    ]
+    const fld = (n) => gedForm.querySelector(`[name="${n}"]`)
+    let cur = ''
+    ged.addEventListener('oas-task-dblclick', (e) => {
+      cur = e.detail.id
+      const t = e.detail.task
+      fld('name').value = t.name
+      fld('start').value = t.start
+      fld('end').value = t.end ?? ''
+      fld('progress').value = t.progress ?? 0
+      gedModal.setAttribute('visible', '')
+    })
+    gedModal.addEventListener('oas-ok', () => gedForm.submit())
+    gedForm.addEventListener('oas-submit', (e) => {
+      const v = e.detail.values
+      ged.updateTask(cur, { ...v, progress: Number(v.progress) })
+    })
+  }
+
+  // 导出 JSON demo
+  const gex = document.getElementById('gantt-exportable')
+  const gexOut = document.getElementById('gantt-export-output')
+  if (gex && gexOut) {
+    gex.tasks = [
+      { id: 'x1', name: '需求', start: '2026-03-02', end: '2026-03-06' },
+      { id: 'x2', name: '开发', start: '2026-03-09', end: '2026-03-13', dependencies: [{ id: 'x1' }] },
+    ]
+    document.getElementById('gantt-export')?.addEventListener('click', () => {
+      gexOut.textContent = JSON.stringify(gex.tasks)
+    })
+  }
 })
 </script>
 
@@ -424,7 +501,7 @@ onMounted(async () => {
 | `row-height` | 行高 px（默认 36，下限 20） | `string` | `36` |
 | `scale` | 时间刻度：hour / day（默认）/ week / month / quarter / year；非法值回落 day | `string` | — |
 | `show-baseline` | 基线对比（布尔，默认关）：任务带 baseline 时在实际条下渲染基线条，title 标差值（比基线晚/早 N 天或一致） | `boolean` | — |
-| `show-critical-path` | 关键路径（布尔，默认关）：在依赖图与工期上算总时差，时差为 0 的任务加 .critical 高亮（颜色走 --oas-gantt-critical-color）；只读展示不改数据 | `boolean` | — |
+| `show-critical-path` | 关键路径（布尔，默认关）：在依赖图与工期上算总时差，时差为 0 的任务加 .critical 高亮（颜色走 --oas-gantt-critical-color）；只读展示不改数据 | `string` | — |
 | `show-today` | 今日线（默认开；false 关闭） | `string` | — |
 | `snap` | 拖拽吸附当前刻度（默认开；false 按像素比例平移并保留时间精度） | `string` | — |
 | `tasks` | 甘特任务（JSON）：[{ id?, name, start, end?, type?, progress?, parent?, children?, dependencies?, color?, disabled?, expanded?, baseline? }]——扁平 parent 指针为主，嵌套 children 自动拍平；type:"milestone" 显式优先（带 end 也按里程碑渲染，end 忽略），有子任务时恒为摘要；无 end 亦推导为里程碑；start 晚于 end 自动交换 | `GanttTask[]` | `[]` |
@@ -471,6 +548,7 @@ onMounted(async () => {
 | `--oas-gantt-bar-height` | — | `22px` |
 | `--oas-gantt-bar-progress-bg` | — | `var(--oas-gantt-bar-color, var(--oas-color-primary))` |
 | `--oas-gantt-baseline-color` | 基线条颜色（默认半透明次要文字色） | `color-mix(in srgb, var(--oas-color-text-secondary-strong) 55%, transparent)` |
+| `--oas-gantt-conflict-color` | 违约（负总时差）高亮色（默认 --oas-color-danger） | `var(--oas-color-danger)` |
 | `--oas-gantt-critical-color` | 关键路径高亮色（默认 --oas-color-danger） | `var(--oas-color-danger)` |
 | `--oas-gantt-grid-line-color` | — | `var(--oas-color-border)` |
 | `--oas-gantt-header-bg` | — | `var(--oas-color-bg)` |

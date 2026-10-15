@@ -4493,6 +4493,18 @@ describe('OASGantt 依赖 lag/lead', () => {
     expect(el.tasks.find((x) => x.id === 't')!.dependencies![0]!.lag).toBeUndefined()
     expect(barOf(el, 't')).toBeTruthy()
   })
+
+  it('连线 lag 可见标签：非 0 渲染 .link-label（+N/−N），0 不渲染', () => {
+    const el = mount({
+      tasks: JSON.stringify([
+        { id: 'a', name: 'A', start: '2026-03-02', end: '2026-03-06' },
+        { id: 'b', name: 'B', start: '2026-03-09', end: '2026-03-13', dependencies: [{ id: 'a', lag: 2 }] },
+        { id: 'c', name: 'C', start: '2026-03-16', end: '2026-03-18', dependencies: [{ id: 'b' }] },
+      ]),
+    })
+    const labels = [...shadowOf(el).querySelectorAll('text.link-label')].map((t) => t.textContent)
+    expect(labels).toEqual(['+2'])
+  })
 })
 
 describe('OASGantt 关键路径（show-critical-path）', () => {
@@ -4616,5 +4628,19 @@ describe('OASGantt 关键路径（show-critical-path）', () => {
   it('show-critical-path="false" 视为关闭（不渲染 .critical）', () => {
     const el = mount({ 'show-critical-path': 'false', tasks: JSON.stringify(TASKS_CP) })
     expect(shadowOf(el).querySelectorAll('.bar.critical').length).toBe(0)
+  })
+
+  it('负总时差（违反后继约束）标 .conflict（与 .critical 区分）', () => {
+    const el = mount({
+      'show-critical-path': '',
+      tasks: JSON.stringify([
+        { id: 'p', name: 'P', start: '2026-03-05', end: '2026-03-06' },
+        { id: 's', name: 'S', start: '2026-03-05', end: '2026-03-06', dependencies: [{ id: 'p' }] },
+      ]),
+    })
+    const conflict = [...shadowOf(el).querySelectorAll<HTMLElement>('.bar.conflict')].map((b) => b.dataset.id)
+    expect(conflict).toEqual(['p'])
+    const crit = [...shadowOf(el).querySelectorAll<HTMLElement>('.bar.critical')].map((b) => b.dataset.id)
+    expect(crit).toEqual(['s'])
   })
 })

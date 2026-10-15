@@ -632,3 +632,30 @@ test('gantt 排程深化示例：关键路径高亮', async ({ page }) => {
   expect(critical.sort()).toEqual(['k1', 'k2'])
   expect(errors).toEqual([])
 })
+
+// 宿主集成配方 demo：编辑弹窗（双击条→弹窗→保存写回）+ 导出 JSON
+test('gantt 集成配方：编辑弹窗写回 + 导出 JSON', async ({ page }) => {
+  const errors: string[] = []
+  page.on('pageerror', (e) => errors.push(e.message))
+  page.on('console', (m) => {
+    if (m.type() === 'error') errors.push(m.text())
+  })
+  await page.goto('/components/gantt.html', { waitUntil: 'domcontentloaded' })
+  await waitGantt(page, 'gantt-edit')
+  const host = page.locator('#gantt-edit')
+  await host.evaluate((el) => {
+    ;(el as HTMLElement).scrollIntoView({ block: 'center' })
+  })
+  // 双击条打开弹窗（oas-task-dblclick → oas-modal）
+  await host.locator('.bar[data-id="e2"]').dblclick()
+  await expect(page.locator('#gantt-edit-modal')).toHaveAttribute('visible', '')
+
+  // 导出 JSON
+  await page.locator('#gantt-export').scrollIntoViewIfNeeded()
+  await page.evaluate(() => {
+    document.getElementById('gantt-export')!.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+  })
+  await expect(page.locator('#gantt-export-output')).toContainText('x1')
+
+  expect(errors).toEqual([])
+})
