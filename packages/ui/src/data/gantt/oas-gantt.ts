@@ -1647,11 +1647,24 @@ export class OASGantt extends OASElement {
       this.cancelReparent()
       this.cancelLink()
     }
-    if (this.theadEl) this.theadEl.scrollLeft = this.tbody.scrollLeft
+    this.syncHeaderOffset()
     if (this.sideBody) this.sideBody.scrollTop = this.tbody.scrollTop
     this.hideTooltip()
     this.renderWindow()
     if (auto) this.reconcileDrag()
+  }
+
+  /**
+   * 表头横向对齐：把表头内容按其与内容层 `.inner` 的实际像素差平移。
+   * 比 `thead.scrollLeft = tbody.scrollLeft` 更稳——`thead` 在 RTL 下 content 不可滚（scrollLeft 恒 0），
+   * 旧写法致 RTL 表头与列/条错位（默认即错位满量）；按 rect 差平移对 LTR/RTL/任意滚动模型一致。
+   */
+  private syncHeaderOffset(): void {
+    if (!this.theadEl || !this.innerEl) return
+    const dx = this.innerEl.getBoundingClientRect().left - this.theadEl.getBoundingClientRect().left
+    for (const h of this.shadow.querySelectorAll<HTMLElement>('.head-major, .head-minor')) {
+      h.style.transform = `translateX(${dx}px)`
+    }
   }
 
   // ===== 拖拽自动滚动（拖到视口边缘自动滚；窗口重建后 reconcile 保持拖拽稳定）=====
@@ -1821,6 +1834,7 @@ export class OASGantt extends OASElement {
     this.renderHeader()
     this.renderWindow()
     this.renderToday()
+    this.syncHeaderOffset()
     // 数据重写后收敛出的选中变化统一在此补发（property/attribute 两通道一致）
     if (prunedSel) this.emitSelectionChange()
   }

@@ -503,3 +503,59 @@ test('gantt 任务管理示例：命令式增删改 + creatable 行内新建', a
 
   expect(errors).toEqual([])
 })
+
+// 表头随横向滚动对齐列/条：LTR 与 RTL 下滚动前后「同一条与其日期表头格」的相对位移须不变（修复 RTL 表头错位）
+test('gantt 表头横向对齐（LTR/RTL 滚动不变）', async ({ page }) => {
+  await page.goto('/components/gantt.html', { waitUntil: 'domcontentloaded' })
+  await waitGantt(page, 'gantt-select')
+  const res = await page.evaluate(async () => {
+    const p = (n: number) => String(n).padStart(2, '0')
+    const iso = (d: Date) => `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`
+    const raf = () => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)))
+    const probe = async (dir: string, s0: number, s1: number) => {
+      const el = document.createElement('oas-gantt') as HTMLElement & {
+        tasks: unknown
+        units: Array<{ startMs: number }>
+        shadowRoot: ShadowRoot
+      }
+      if (dir) el.setAttribute('dir', dir)
+      el.style.width = '640px'
+      document.body.appendChild(el)
+      const tasks = []
+      for (let i = 0; i < 60; i++) {
+        tasks.push({
+          id: 't' + i,
+          name: 'T' + i,
+          start: iso(new Date(2026, 2, 2 + i)),
+          end: iso(new Date(2026, 2, 4 + i)),
+        })
+      }
+      el.tasks = tasks
+      await raf()
+      const sr = el.shadowRoot
+      const tb = sr.querySelector('.tbody') as HTMLElement
+      const k = el.units.findIndex((u) => iso(new Date(u.startMs)) === '2026-03-07')
+      const gap = () => {
+        const cell = sr.querySelectorAll<HTMLElement>('.head-minor .unit')[k]!
+        const bar = sr.querySelector<HTMLElement>('.bar[data-id="t5"]')!
+        return cell.getBoundingClientRect().left - bar.getBoundingClientRect().left
+      }
+      tb.scrollLeft = s0
+      await raf()
+      const g0 = gap()
+      tb.scrollLeft = s1
+      await raf()
+      const g1 = gap()
+      el.remove()
+      return { g0, g1 }
+    }
+    return {
+      ltr: await probe('', 0, 120),
+      rtl: await probe('rtl', 0, -120),
+    }
+  })
+  for (const [dir, d] of Object.entries(res)) {
+    // 滚动前后相对位移不变（修复前 RTL 会漂移 maxScroll 像素）
+    expect(Math.abs(d.g1 - d.g0), `${dir} 表头-条相对位移应滚动不变`).toBeLessThanOrEqual(1)
+  }
+})
