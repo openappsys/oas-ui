@@ -3916,10 +3916,13 @@ describe('OASGantt 依赖联动排程（auto-schedule）', () => {
       ]),
     })
     const seen = watchReschedule(el)
+    // 挂载即开 auto-schedule → 首次 update 已规整（t 前推到 03-07）
+    expect(taskOf(el, 't').start).toBe('2026-03-07')
     expect(el.updateTasks([{ id: 't', progress: 50 }])).toBe(1)
     expect(seen).toHaveLength(0)
-    expect(taskOf(el, 't').start).toBe('2026-03-02')
-    expect(el.updateTasks([{ id: 't', start: '2026-03-02', end: '2026-03-04' }])).toBe(1)
+    expect(taskOf(el, 't').start).toBe('2026-03-07')
+    // 再改回违约日期 → 触发联动前推
+    expect(el.updateTasks([{ id: 't', start: '2026-03-01', end: '2026-03-02' }])).toBe(1)
     expect(seen).toEqual([['t']])
     expect(taskOf(el, 't').start).toBe('2026-03-07')
   })
@@ -4003,6 +4006,37 @@ describe('OASGantt 依赖联动排程（auto-schedule）', () => {
     el.updateTasks([{ id: 'd', start: '2026-03-02 08:00', end: '2026-03-02 12:00' }])
     expect(taskOf(el, 't').start).toBe('2026-03-02 12:00')
     expect(taskOf(el, 't').end).toBe('2026-03-02 13:00')
+  })
+
+  it('摘要作前置：按后代聚合区间约束（忽略摘要自身 date 字段）', () => {
+    const el = mount({
+      'auto-schedule': '',
+      tasks: JSON.stringify([
+        {
+          id: 's',
+          name: 'S',
+          start: '2026-03-02',
+          end: '2026-03-06',
+          type: 'summary',
+          children: [{ id: 'c1', name: 'C1', start: '2026-03-02', end: '2026-03-10' }],
+        },
+        { id: 't', name: 'T', start: '2026-03-01', end: '2026-03-02', dependencies: [{ id: 's' }] },
+      ]),
+    })
+    // 聚合 end = 03-10（含端 → 右缘 03-11）→ t.start = 03-11（非摘要自身 end 03-06 的 03-07）
+    expect(taskOf(el, 't').start).toBe('2026-03-11')
+  })
+
+  it('运行期开启 auto-schedule：立即规整既存违约一次', () => {
+    const el = mount({
+      tasks: JSON.stringify([
+        { id: 'd', name: 'D', start: '2026-03-02', end: '2026-03-06' },
+        { id: 't', name: 'T', start: '2026-03-01', end: '2026-03-02', dependencies: [{ id: 'd' }] },
+      ]),
+    })
+    expect(taskOf(el, 't').start, '未开启前不动').toBe('2026-03-01')
+    el.setAttribute('auto-schedule', '')
+    expect(taskOf(el, 't').start, '开启后立即前推').toBe('2026-03-07')
   })
 })
 
@@ -4238,6 +4272,25 @@ describe('OASGantt 拖拽建任务（creatable 时间轴空白拖）', () => {
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
     document.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, composed: true, pointerId: 1 }))
     expect(added, 'Esc 后不应建任务').toBe(0)
+    expect(shadowOf(el).querySelector('.marquee')).toBeNull()
+  })
+
+  it('触屏（pointerType=touch）：时间轴空白拖不建任务、不框选（留给原生滚动）', () => {
+    const el = mount({ tasks: TASKS, creatable: '' })
+    const tbody = setupLayout(el)
+    let added = 0
+    el.addEventListener('oas-task-add', () => added++)
+    const opt = { bubbles: true, composed: true, pointerId: 1, button: 0, pointerType: 'touch' }
+    const down = new PointerEvent('pointerdown', opt)
+    Object.defineProperty(down, 'clientX', { value: 2 * 36 + 5 })
+    Object.defineProperty(down, 'clientY', { value: 10 })
+    tbody.dispatchEvent(down)
+    const move = new PointerEvent('pointermove', opt)
+    Object.defineProperty(move, 'clientX', { value: 5 * 36 + 5 })
+    Object.defineProperty(move, 'clientY', { value: 10 })
+    document.dispatchEvent(move)
+    document.dispatchEvent(new PointerEvent('pointerup', opt))
+    expect(added).toBe(0)
     expect(shadowOf(el).querySelector('.marquee')).toBeNull()
   })
 })

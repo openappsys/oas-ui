@@ -138,6 +138,8 @@ Assemble a task detail editor with `oas-modal` + `oas-form` (the component only 
 - **Marquee multi-select**: drag vertically on empty left-list space to select by row band; drag on empty timeline space (when `creatable` is off) to select by bar intersection; `Ctrl`/`Cmd` adds. The result is written to `selection` and dispatches `oas-selection-change`; marquee still works in readonly (selection is a view state).
 - **Drag-to-create**: with `creatable` on, drag a range on empty timeline space to create a task spanning that range (double-click still creates a single-day task).
 
+> Touch: a timeline-space drag conflicts with 2D scrolling, so **marquee / drag-to-create on the timeline do not claim touch gestures** (native scrolling is left alone); on touch, create via the trailing "+" or double-click, and marquee via a vertical drag on the left list. Under `auto-schedule`, when a **summary task is a predecessor**, its **aggregated descendant range** is used (the summary's own date fields are ignored).
+
 <DemoBlock title="auto-schedule: drag the “Prototype” bar right and “Implementation” follows via FS; drag empty timeline space to create a task; drag empty left-list space to marquee-select rows">
   <oas-gantt id="gantt-auto" auto-schedule creatable height="240"></oas-gantt>
 </DemoBlock>

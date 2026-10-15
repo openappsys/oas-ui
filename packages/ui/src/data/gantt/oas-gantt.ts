@@ -954,6 +954,7 @@ export class OASGantt extends OASElement {
   /** 显式 milestone 与 end/子级并存的数据矛盾告警去重（key = `${id}:${kind}`） */
   private warnedMilestones = new Set<string>()
   private warnedRescheduleCycle = false
+  private autoScheduleApplied = false
   /** buildRows 产物缓存：渲染窗口（滚动每帧）复用，避免万级任务下每帧重建展开集 */
   private expandedSetCache: Set<string> | null = null
   /** 自适应列宽（px）：视口可用宽度内铺下整个窗口时收窄至恰好适配；null = 回落各档基准列宽（无布局环境） */
@@ -1890,6 +1891,15 @@ export class OASGantt extends OASElement {
     this.syncHeaderOffset()
     // 数据重写后收敛出的选中变化统一在此补发（property/attribute 两通道一致）
     if (prunedSel) this.emitSelectionChange()
+    // auto-schedule 首次生效（挂载即开 / 运行期开启）时立即规整既存违约一次
+    if (this.autoScheduleOn()) {
+      if (!this.autoScheduleApplied) {
+        this.autoScheduleApplied = true
+        this.reschedule()
+      }
+    } else {
+      this.autoScheduleApplied = false
+    }
   }
 
   /**
@@ -3033,6 +3043,9 @@ export class OASGantt extends OASElement {
   private onTbodyPointerDown = (e: PointerEvent): void => {
     if (e.button !== 0) return
     if (this.dragCtx || this.reparentCtx || this.linkCtx || this.rowPending) return
+    // 触屏：时间轴空白拖与二维滚动冲突（touch-action 手势起始即定夺）→ 留给原生滚动；
+    // 触屏建任务走行尾「＋」/ 双击空白，框选走左侧列表（.side-body touch-action:none）
+    if (e.pointerType === 'touch' || this.coarse) return
     if (this.isInteractiveTarget(e.target)) return
     if (this.hasAttr('creatable') && !this.hasAttr('readonly')) this.beginCreate(e)
     else this.beginMarquee('bars', e)
@@ -3163,8 +3176,11 @@ export class OASGantt extends OASElement {
       this.marqueeEl = el
     }
     const r = gantt.getBoundingClientRect()
-    this.marqueeEl.style.left = `${Math.min(x0, x1) - r.left}px`
-    this.marqueeEl.style.top = `${Math.min(y0, y1) - r.top}px`
+    // 扣掉 .gantt 边框（绝对定位参照 padding box）
+    const baseX = r.left + gantt.clientLeft
+    const baseY = r.top + gantt.clientTop
+    this.marqueeEl.style.left = `${Math.min(x0, x1) - baseX}px`
+    this.marqueeEl.style.top = `${Math.min(y0, y1) - baseY}px`
     this.marqueeEl.style.width = `${Math.abs(x1 - x0)}px`
     this.marqueeEl.style.height = `${Math.abs(y1 - y0)}px`
   }
@@ -3839,6 +3855,34 @@ export class OASGantt extends OASElement {
     return t.end.length > 10 ? e.getTime() : e.getTime() + DAY_MS
   }
 
+  /** 与 buildRows 同源的树结构：childMap（有效父级且本节点非断环）与 hasChildren 集 */
+  private childStructure(byId: Map<string, TG>): { childMap: Map<string, string[]>; hasChildren: Set<string> } {
+    const tasks = this._tasks
+    const childMap = new Map<string, string[]>()
+    const color = new Map<string, 1 | 2>()
+    const broken = new Set<string>()
+    for (const t of tasks) {
+      if (color.has(t.id)) continue
+      const stack: TG[] = []
+      let cur: TG | undefined = t
+      while (cur && cur.parent && byId.has(cur.parent) && !color.has(cur.id)) {
+        color.set(cur.id, 1)
+        stack.push(cur)
+        cur = byId.get(cur.parent)
+      }
+      if (cur && cur.parent && byId.has(cur.parent) && color.get(cur.id) === 1) broken.add(cur.id)
+      for (const n of stack) color.set(n.id, 2)
+    }
+    for (const t of tasks) {
+      if (t.parent && byId.has(t.parent) && !broken.has(t.id)) {
+        const list = childMap.get(t.parent) ?? []
+        list.push(t.id)
+        childMap.set(t.parent, list)
+      }
+    }
+    return { childMap, hasChildren: new Set(childMap.keys()) }
+  }
+
   /** 依赖图是否有环（DFS 三色）：有环则排程无解，reschedule 直接跳过 */
   private dependencyHasCycle(byId: Map<string, TG>): boolean {
     const state = new Map<string, 1 | 2>()
@@ -3877,9 +3921,44 @@ export class OASGantt extends OASElement {
       }
       return []
     }
-    // 有子级者日期由子级派生（与 buildRows 摘要聚合一致）→ 跳过
-    const hasChildren = new Set<string>()
-    for (const t of tasks) if (t.parent && byId.has(t.parent)) hasChildren.add(t.parent)
+    // 与 buildRows 同源树结构：断环节点（parent 成环被归根者）不计入其原父级的子级
+    const { childMap, hasChildren } = this.childStructure(byId)
+    // 生效区间（摘要取后代聚合，与 buildRows 一致）——供前置约束用
+    const aggMemo = new Map<string, { startMs: number; endMs: number }>()
+    const visiting = new Set<string>()
+    const agg = (id: string): { startMs: number; endMs: number } => {
+      const memo = aggMemo.get(id)
+      if (memo) return memo
+      const t = byId.get(id)!
+      const kids = childMap.get(id) ?? []
+      if (kids.length === 0 || visiting.has(id)) {
+        const s = this.startMsOfTask(t)
+        const r = { startMs: s, endMs: Math.max(this.endMsOfTask(t), s) }
+        aggMemo.set(id, r)
+        return r
+      }
+      visiting.add(id)
+      let min = Number.POSITIVE_INFINITY
+      let max = Number.NEGATIVE_INFINITY
+      for (const k of kids) {
+        const a = agg(k)
+        if (a.startMs < min) min = a.startMs
+        if (a.endMs > max) max = a.endMs
+      }
+      visiting.delete(id)
+      const r = { startMs: min, endMs: max }
+      aggMemo.set(id, r)
+      return r
+    }
+    const invalidateAgg = (id: string): void => {
+      let cur: string | undefined = id
+      const seen = new Set<string>()
+      while (cur && !seen.has(cur)) {
+        seen.add(cur)
+        aggMemo.delete(cur)
+        cur = byId.get(cur)?.parent
+      }
+    }
     const changed = new Set<string>()
     const maxIter = tasks.length * 2 + 8
     for (let iter = 0; iter < maxIter; iter++) {
@@ -3895,10 +3974,15 @@ export class OASGantt extends OASElement {
           const pred = byId.get(d.id)
           if (!pred) continue
           const type = d.type ?? 'fs'
-          const pStart = this.startMsOfTask(pred)
-          const pEnd = this.endMsOfTask(pred)
+          const pa = agg(pred.id)
           const need =
-            type === 'fs' ? pEnd : type === 'ss' ? pStart : type === 'ff' ? pEnd - duration : pStart - duration
+            type === 'fs'
+              ? pa.endMs
+              : type === 'ss'
+                ? pa.startMs
+                : type === 'ff'
+                  ? pa.endMs - duration
+                  : pa.startMs - duration
           if (need > required) required = need
         }
         if (!(required > startMs)) continue // 只推不提前
@@ -3917,6 +4001,7 @@ export class OASGantt extends OASElement {
           t.end = endStr
         }
         changed.add(t.id)
+        invalidateAgg(t.id)
         dirty = true
       }
       if (!dirty) break

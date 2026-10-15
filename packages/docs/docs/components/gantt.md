@@ -138,6 +138,8 @@
 - **框选多任务**：左侧列表空白纵向拖按行带选中；时间轴空白拖（未开 `creatable` 时）按条相交选中；`Ctrl`/`Cmd` 追加。结果写入 `selection` 并派发 `oas-selection-change`；只读下仍可框选（选择属查看态）。
 - **拖拽建任务**：`creatable` 开启时，在时间轴空白**拖出区间**即建相应跨度任务（双击空白按当天建保留）。
 
+> 触屏：时间轴空白拖与二维滚动冲突，**时间轴上的框选/拖建不接管触屏手势**（留给原生滚动）；触屏建任务用行尾「＋」或双击空白，框选用左侧列表纵向拖。`auto-schedule` 下**摘要任务作前置**时按其**后代聚合区间**约束（忽略摘要自身 date 字段）。
+
 <DemoBlock title="auto-schedule：拖右侧「原型」条向右，后继「开发」按 FS 自动顺延；时间轴空白拖出区间建任务；左侧空白纵向拖框选多行">
   <oas-gantt id="gantt-auto" auto-schedule creatable height="240"></oas-gantt>
 </DemoBlock>
