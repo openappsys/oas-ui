@@ -950,6 +950,149 @@ describe('OASGantt 多选 / 行内重命名 / 键盘重排 / 连线键盘', () =
     row.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', altKey: true, bubbles: true }))
     expect(el.tasks.find((t) => t.id === 'x')!.parent).toBe('p')
   })
+
+  it('外部重写 tasks 剪枝选中/锚点（无幽灵 id，派发 selection-change）', () => {
+    const el = mount({ tasks: TASKS })
+    const seen: string[][] = []
+    el.addEventListener('oas-selection-change', (e) => seen.push((e as CustomEvent).detail.ids))
+    clickRow(el, 'x')
+    clickRow(el, 'z', { shiftKey: true })
+    expect(el.selection).toEqual(['x', 'y', 'z'])
+    el.tasks = [{ id: 'z', name: 'Z', start: '2026-03-16', end: '2026-03-20' }]
+    expect(el.selection).toEqual(['z'])
+    expect(seen.at(-1)).toEqual(['z'])
+    // 锚点被剪 → 之后 Shift 点击退化为单选，不产生空区间
+    clickRow(el, 'z', { shiftKey: true })
+    expect(el.selection).toEqual(['z'])
+  })
+
+  it('条上 Delete/Backspace 不冒泡误删已选连线', () => {
+    const el = mount({
+      tasks: JSON.stringify([
+        { id: 'a', name: 'A', start: '2026-03-02', end: '2026-03-06' },
+        { id: 'b', name: 'B', start: '2026-03-09', end: '2026-03-13', dependencies: [{ id: 'a' }] },
+      ]),
+    })
+    const hit = shadowOf(el).querySelector<HTMLElement>('.link-hit')!
+    hit.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }))
+    expect(shadowOf(el).querySelector('.link-hit.selected')).not.toBeNull()
+    const bar = barOf(el, 'b')
+    bar.focus()
+    bar.dispatchEvent(new KeyboardEvent('keydown', { key: 'Delete', bubbles: true, composed: true }))
+    expect(el.tasks.find((t) => t.id === 'b')!.dependencies?.length).toBe(1)
+  })
+
+  it('行 treeitem 暴露 aria-posinset / aria-setsize（同级全集，含折叠子级）', () => {
+    const el = mount({
+      tasks: JSON.stringify([
+        {
+          id: 'p1',
+          name: 'P1',
+          start: '2026-03-02',
+          end: '2026-03-13',
+          type: 'summary',
+          children: [
+            { id: 'c1', name: 'C1', start: '2026-03-02', end: '2026-03-06' },
+            { id: 'c2', name: 'C2', start: '2026-03-09', end: '2026-03-13' },
+          ],
+        },
+        { id: 'p2', name: 'P2', start: '2026-03-16', end: '2026-03-20' },
+      ]),
+    })
+    const rp1 = shadowOf(el).querySelector<HTMLElement>('.row-name[data-key="p1"]')!
+    expect(rp1.getAttribute('aria-posinset')).toBe('1')
+    expect(rp1.getAttribute('aria-setsize')).toBe('2')
+    const rc2 = shadowOf(el).querySelector<HTMLElement>('.row-name[data-key="c2"]')!
+    expect(rc2.getAttribute('aria-posinset')).toBe('2')
+    expect(rc2.getAttribute('aria-setsize')).toBe('2')
+  })
+
+  it('snap 平移（month 档）：日历整格平移，工期不变', () => {
+    const el = mount({
+      scale: 'month',
+      tasks: JSON.stringify([{ id: 'a', name: 'A', start: '2026-03-02', end: '2026-03-06' }]),
+    })
+    const colW = (el as unknown as { colW(): number }).colW()
+    dragSeq(barOf(el, 'a'), colW)
+    const t = el.tasks[0]!
+    // month 档：整格平移（吸附到月单元起点），但工期（天数）保持一致，不产生月末幻影日期
+    expect(t.start).not.toBe('2026-03-02')
+    expect(t.start.startsWith('2026-04')).toBe(true)
+    const days = (Date.parse(t.end!) - Date.parse(t.start)) / 86400000
+    expect(days).toBe(4)
+  })
+
+  it('coarse：渲染重排手柄，从手柄拖拽触发 reparent', () => {
+    vi.stubGlobal('matchMedia', (q: string) => ({
+      matches: q.includes('coarse'),
+      media: q,
+      onchange: null,
+      addEventListener() {},
+      removeEventListener() {},
+      addListener() {},
+      removeListener() {},
+      dispatchEvent: () => false,
+    }))
+    try {
+      const el = mount({ tasks: TASKS })
+      const handle = shadowOf(el).querySelector<HTMLElement>('.row-name[data-key="x"] .row-drag')
+      expect(handle).not.toBeNull()
+      const side = shadowOf(el).querySelector<HTMLElement>('.side-body')!
+      side.getBoundingClientRect = () =>
+        ({
+          top: 0,
+          left: 0,
+          right: 300,
+          bottom: 1000,
+          width: 300,
+          height: 1000,
+          x: 0,
+          y: 0,
+          toJSON: () => ({}),
+        }) as DOMRect
+      Object.defineProperty(side, 'scrollTop', { value: 0, configurable: true })
+      const seen: Array<{ id: string; parent: string | null; index: number }> = []
+      el.addEventListener('oas-reparent', (e) => seen.push((e as CustomEvent).detail))
+      const down = new PointerEvent('pointerdown', { bubbles: true, composed: true, pointerId: 1, button: 0 })
+      Object.defineProperty(down, 'clientX', { value: 0 })
+      Object.defineProperty(down, 'clientY', { value: 0 })
+      handle!.dispatchEvent(down)
+      const move = new PointerEvent('pointermove', { bubbles: true, composed: true, pointerId: 1 })
+      Object.defineProperty(move, 'clientX', { value: 0 })
+      Object.defineProperty(move, 'clientY', { value: 2 * 36 + 9 })
+      document.dispatchEvent(move)
+      document.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, composed: true, pointerId: 1 }))
+      expect(seen).toEqual([{ id: 'x', parent: null, index: 1 }])
+      expect(el.tasks.map((t) => t.id)).toEqual(['y', 'x', 'z'])
+    } finally {
+      vi.unstubAllGlobals()
+    }
+  })
+
+  it('coarse：点条揭示连线点、点空白收起', () => {
+    vi.stubGlobal('matchMedia', (q: string) => ({
+      matches: q.includes('coarse'),
+      media: q,
+      onchange: null,
+      addEventListener() {},
+      removeEventListener() {},
+      addListener() {},
+      removeListener() {},
+      dispatchEvent: () => false,
+    }))
+    try {
+      const el = mount({ tasks: TASKS })
+      const bar = barOf(el, 'x')
+      bar.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, composed: true, pointerId: 1 }))
+      expect(bar.classList.contains('touch-active')).toBe(true)
+      const outside = document.createElement('div')
+      document.body.appendChild(outside)
+      outside.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }))
+      expect(barOf(el, 'x').classList.contains('touch-active')).toBe(false)
+    } finally {
+      vi.unstubAllGlobals()
+    }
+  })
 })
 
 describe('OASGantt 拖拽三件套（改期/拉伸/进度）', () => {

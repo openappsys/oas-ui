@@ -366,3 +366,33 @@ test('gantt 多选点选与 Shift 连选派发 oas-selection-change', async ({ p
   await host.locator('.row-name[data-key="s3"]').click({ modifiers: ['Shift'] })
   await expect(out).toContainText('已选 3 条')
 })
+
+// 行 treeitem 暴露 aria-posinset / aria-setsize（同级全集）
+test('gantt 行 aria-posinset/aria-setsize', async ({ page }) => {
+  await page.goto('/components/gantt.html', { waitUntil: 'domcontentloaded' })
+  await waitGantt(page, 'gantt-select')
+  const host = page.locator('#gantt-select')
+  await expect(host.locator('.row-name[data-key="s1"]')).toHaveAttribute('aria-posinset', '1')
+  await expect(host.locator('.row-name[data-key="s1"]')).toHaveAttribute('aria-setsize', '4')
+  await expect(host.locator('.row-name[data-key="s4"]')).toHaveAttribute('aria-posinset', '4')
+})
+
+// 条上 Delete 不冒泡误删已选连线；连线键盘删除后焦点交回组件（非 body）
+test('gantt 条上 Delete 不误删连线 + 删连线后焦点交回组件', async ({ page }) => {
+  await page.goto('/components/gantt.html', { waitUntil: 'domcontentloaded' })
+  await waitGantt(page, 'gantt-link')
+  const host = page.locator('#gantt-link')
+  const hit = host.locator('.link-hit[data-from="l3"][data-to="l2"]')
+  await expect(hit).toHaveCount(1)
+  await hit.click()
+  await expect(hit).toHaveClass(/selected/)
+  await host.locator('.bar[data-id="l1"]').focus()
+  await page.keyboard.press('Delete')
+  await expect(hit, '条上 Delete 不应删连线').toHaveCount(1)
+  await hit.click()
+  await hit.focus()
+  await page.keyboard.press('Enter')
+  await expect(hit).toHaveCount(0)
+  const focused = await page.evaluate(() => document.activeElement?.id)
+  expect(focused, '焦点应留在组件上而非 body').toBe('gantt-link')
+})

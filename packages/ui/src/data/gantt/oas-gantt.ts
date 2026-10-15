@@ -83,6 +83,24 @@ const STYLE = `
   background: color-mix(in srgb, var(--oas-color-primary) 18%, transparent);
   box-shadow: inset 2px 0 0 var(--oas-color-primary);
 }
+/* 触屏重排手柄：整行拖与纵向滚动冲突（touch-action 手势起始即定夺），
+   故粗指针下改由手柄承载重排，手柄独占 touch-action: none，其余区域仍可滚动 */
+.row-drag {
+  display: none;
+}
+@media (pointer: coarse) {
+  .row-drag {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    touch-action: none;
+    cursor: grab;
+    color: var(--oas-color-text-secondary);
+    padding-inline: 2px;
+    letter-spacing: -3px;
+  }
+}
 .row-name:focus-visible {
   outline: 2px solid var(--oas-color-primary);
   outline-offset: -2px;
@@ -928,10 +946,18 @@ export class OASGantt extends OASElement {
       (used) => this.allocId(used),
       (key, msg) => this.warnOnce(key, msg),
     )
+    // 外部整体重写：收敛指向已不存在任务的选中/锚点/活动/揭示态，避免幽灵 id
+    const ids = new Set(this._tasks.map((t) => t.id))
+    const prunedSel = [...this.selected].some((id) => !ids.has(id))
+    if (prunedSel) this.selected = new Set([...this.selected].filter((id) => ids.has(id)))
+    if (this.selectionAnchor && !ids.has(this.selectionAnchor)) this.selectionAnchor = null
+    if (this.activeRowId && !ids.has(this.activeRowId)) this.activeRowId = null
+    if (this.touchActiveId && !ids.has(this.touchActiveId)) this.touchActiveId = null
     this.tasksAttrCache = JSON.stringify(this._tasks)
     this.setAttribute('tasks', this.tasksAttrCache)
     this.update()
     this.emitTasksChange()
+    if (prunedSel) this.emitSelectionChange()
   }
 
   /** 按 id 单条增量更新（浅合并 patch 后走 sanitize 清洗；找不到或非法 patch 返回 false） */
@@ -1777,6 +1803,14 @@ export class OASGantt extends OASElement {
     this.renaming = false
     container.innerHTML = ''
     const rowH = this.rowHeight()
+    // 同级兄弟分组（含折叠中不可见的孩子——tree 的 setsize 应为同级全集）
+    const siblingsOf = new Map<string, string[]>()
+    for (const t of this._tasks) {
+      const key = t.parent ?? ''
+      const arr = siblingsOf.get(key)
+      if (arr) arr.push(t.id)
+      else siblingsOf.set(key, [t.id])
+    }
     const expanded = this.currentExpandedSet()
     const prevActive = this.activeRowId
     const inWindow = this.rows.slice(this.winStart, this.winEnd).some((r) => r.task.id === prevActive)
@@ -1790,6 +1824,9 @@ export class OASGantt extends OASElement {
       el.dataset.key = row.task.id
       el.setAttribute('role', 'treeitem')
       el.setAttribute('aria-level', String(row.depth + 1))
+      const sib = siblingsOf.get(row.task.parent ?? '') ?? []
+      el.setAttribute('aria-posinset', String(sib.indexOf(row.task.id) + 1))
+      el.setAttribute('aria-setsize', String(sib.length))
       el.style.top = `${i * rowH}px`
       el.style.setProperty('--indent', `${8 + row.depth * 16}px`)
       el.setAttribute('part', 'row-name')
@@ -1800,6 +1837,21 @@ export class OASGantt extends OASElement {
       if (row.task.disabled === true) {
         el.setAttribute('disabled', '')
         el.setAttribute('aria-disabled', 'true')
+      }
+      if (this.coarse) {
+        const drag = document.createElement('span')
+        drag.className = 'row-drag'
+        drag.setAttribute('aria-hidden', 'true')
+        drag.textContent = '⋮⋮'
+        drag.addEventListener('pointerdown', (e) => {
+          if (row.task.disabled === true || this.hasAttr('readonly')) return
+          e.stopPropagation()
+          e.preventDefault()
+          this.reparentCtx = { id: row.task.id, byId: new Map(this._tasks.map((t) => [t.id, t])) }
+          this.bindDocReparent()
+          this.onReparentMove(e as PointerEvent)
+        })
+        el.appendChild(drag)
       }
       if (row.hasChildren) {
         const expandedNow = expanded.has(row.task.id)
@@ -2306,6 +2358,10 @@ export class OASGantt extends OASElement {
       if (a >= 0 && b >= 0) {
         const [s, t2] = a < b ? [a, b] : [b, a]
         this.selected = new Set(visible.slice(s, t2 + 1))
+      } else {
+        // 锚点已不可见（折叠/被过滤/被删）→ 退化为单选并重设锚点，避免空区间
+        this.selected = new Set([id])
+        this.selectionAnchor = id
       }
     } else if (e.ctrlKey || e.metaKey) {
       if (this.selected.has(id)) this.selected.delete(id)
@@ -2527,6 +2583,12 @@ export class OASGantt extends OASElement {
     this.barsEl?.querySelector(`.bar[data-id="${escId(id)}"]`)?.classList.add('touch-active')
   }
 
+  private clearTouchActive(): void {
+    if (!this.touchActiveId) return
+    this.touchActiveId = null
+    this.barsEl?.querySelectorAll('.bar.touch-active').forEach((el) => el.classList.remove('touch-active'))
+  }
+
   // ===== 依赖连线交互编辑（拖拽建依赖 + 选中删除）=====
 
   private docLinkMove = (e: PointerEvent): void => {
@@ -2549,8 +2611,11 @@ export class OASGantt extends OASElement {
     }
   }
   private docLinkClick = (e: MouseEvent): void => {
-    const onHit = e.composedPath().some((n) => (n as Element)?.classList?.contains?.('link-hit'))
+    const path = e.composedPath()
+    const onHit = path.some((n) => (n as Element)?.classList?.contains?.('link-hit'))
     if (!onHit) this.clearLinkSelection()
+    // 点条/连线点以外的空白 → 收起触屏揭示态
+    if (!path.some((n) => (n as Element)?.classList?.contains?.('bar'))) this.clearTouchActive()
   }
   /** 条拖拽的 Esc 兜底（document 级）：自动滚动每帧重建条会丢焦点，条内 keydown 不再触发 */
   private docBarDragKey = (e: KeyboardEvent): void => {
@@ -2922,6 +2987,11 @@ export class OASGantt extends OASElement {
   }
 
   private onBarKeyDown(e: KeyboardEvent, row: GanttRow): void {
+    if ((e.key === 'Delete' || e.key === 'Backspace') && !e.shiftKey) {
+      // 条上 Delete/Backspace 不应冒泡到 document 去删已选连线（与行内行为一致）
+      e.stopPropagation()
+      return
+    }
     if (e.key === 'Escape' && this.dragCtx) {
       e.stopPropagation()
       this.cancelDrag()
@@ -3000,6 +3070,9 @@ export class OASGantt extends OASElement {
               e.stopPropagation()
               this.selectLink(t.task.id, dep.id, type)
               this.removeSelectedLink()
+              // 命中路径随重建移除会让焦点落到 body → 交回组件，保持键盘可达
+              const bar = this.barsEl?.querySelector<HTMLElement>(`.bar[data-id="${escId(t.task.id)}"]`)
+              ;(bar ?? this).focus({ preventScroll: true })
             }
           })
           frag.appendChild(hit)
