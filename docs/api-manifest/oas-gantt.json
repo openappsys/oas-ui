@@ -92,6 +92,11 @@
       "name": "show-baseline",
       "type": "boolean",
       "observed": true
+    },
+    {
+      "name": "creatable",
+      "type": "boolean",
+      "observed": true
     }
   ],
   "props": [
@@ -134,11 +139,15 @@
     },
     {
       "name": "oas-reparent",
-      "detail": "{ id: dragId, parent, index } satisfies GanttReparentDetail"
+      "detail": "{ id: dragId, parent, index } satisfies GanttReparentDetail | { id, parent, index } satisfies GanttReparentDetail"
     },
     {
       "name": "oas-dependencies-change",
-      "detail": "{ taskId: t.id, dependencies: (t.dependencies ?? []).map((d) => ({ ...d })), } satisfies GanttDependenciesChangeDetail | { taskId: succ.id, dependencies: deps.map((d) => ({ ...d })), } satisfies GanttDependenciesChangeDetail"
+      "detail": "{ taskId: t.id, dependencies: (t.dependencies ?? []).map((d) => ({ ...d })), } satisfies GanttDependenciesChangeDetail | { taskId, dependencies: next.map((d) => ({ ...d })), } satisfies GanttDependenciesChangeDetail | { taskId: succ.id, dependencies: deps.map((d) => ({ ...d })), } satisfies GanttDependenciesChangeDetail"
+    },
+    {
+      "name": "oas-task-add",
+      "detail": "{ id, task: this.taskSnapshot(clean) } satisfies GanttTaskAddDetail | { id: newRoot.id, task: this.taskSnapshot(newRoot) } satisfies GanttTaskAddDetail"
     },
     {
       "name": "oas-selection-change",

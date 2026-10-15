@@ -202,6 +202,9 @@ export const ja: LocaleMessages = {
   'gantt.baselineSame': 'ベースラインどおり',
   'gantt.rename': '名前を変更',
   'gantt.linkDelete': '依存関係を削除',
+  'gantt.addTask': 'タスクを追加',
+  'gantt.addChild': 'サブタスクを追加',
+  'gantt.newTask': '新しいタスク',
   // kanban（かんばん）
   'kanban.emptyColumn': 'カードをここにドラッグ',
   'kanban.moveCard': 'カードを移動',

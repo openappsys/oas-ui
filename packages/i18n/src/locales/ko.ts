@@ -202,6 +202,9 @@ export const ko: LocaleMessages = {
   'gantt.baselineSame': '베이스라인과 동일',
   'gantt.rename': '이름 바꾸기',
   'gantt.linkDelete': '종속성 삭제',
+  'gantt.addTask': '작업 추가',
+  'gantt.addChild': '하위 작업 추가',
+  'gantt.newTask': '새 작업',
   // kanban（칸반）
   'kanban.emptyColumn': '카드를 여기로 끌어다 놓으세요',
   'kanban.moveCard': '카드 이동',

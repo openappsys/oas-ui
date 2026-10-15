@@ -1,7 +1,8 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { OASGantt } from './index.js'
 import { pickVisibleLabels } from './oas-gantt.js'
-import type { GanttTask } from './index.js'
+import type { GanttTask, GanttReparentDetail } from './index.js'
+import type { GanttTaskAddDetail } from './oas-gantt.js'
 
 function mount(attrs: Record<string, string> = {}): OASGantt {
   const el = new OASGantt()
@@ -2760,5 +2761,887 @@ describe('OASGantt 评审修复回归', () => {
     document.dispatchEvent(move)
     document.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, composed: true, pointerId: 1 }))
     expect(start, '滚动增量应推进被拖条日期').toBe('2026-03-03')
+  })
+})
+
+/** 本地时区今天（与组件 toISODate 同口径） */
+function todayIso(): string {
+  const d = new Date()
+  const p = (n: number): string => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`
+}
+
+/** 显式伪造元素属性（happy-dom 无布局：clientWidth/scrollLeft 默认不可写） */
+function stubProp(el: HTMLElement, key: string, value: unknown): void {
+  Object.defineProperty(el, key, { value, configurable: true, writable: true })
+}
+
+describe('OASGantt 创作：addTask', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('缺省新增：name 走 gantt.newTask、start=今天、end=start（1 天含端）、追加根级末尾、派发 oas-task-add', () => {
+    const el = mount({ tasks: JSON.stringify([{ id: 'a', name: 'A', start: '2026-03-02', end: '2026-03-03' }]) })
+    const added: GanttTaskAddDetail[] = []
+    el.addEventListener('oas-task-add', ((e: CustomEvent<GanttTaskAddDetail>) => {
+      added.push(e.detail)
+    }) as EventListener)
+    const id = el.addTask()
+    expect(id).not.toBe('')
+    const tasks = el.tasks
+    expect(tasks).toHaveLength(2)
+    expect(tasks[tasks.length - 1]!.id).toBe(id)
+    const t = tasks.find((x) => x.id === id)!
+    expect(t.name, '默认 zh-CN 文案').toBe('新任务')
+    expect(t.start).toBe(todayIso())
+    expect(t.end).toBe(todayIso())
+    expect(added).toHaveLength(1)
+    expect(added[0]!.id).toBe(id)
+    expect(added[0]!.task.name).toBe('新任务')
+  })
+
+  it('指定 id 生效；id 冲突时自动避让', () => {
+    const el = mount({ tasks: JSON.stringify([{ id: 'a', name: 'A', start: '2026-03-02' }]) })
+    const explicit = el.addTask({ id: 'custom', name: 'E', start: '2026-03-04' })
+    expect(explicit).toBe('custom')
+    const clone = el.addTask({ id: 'a', name: 'Dup', start: '2026-03-04' })
+    expect(clone).not.toBe('a')
+    expect(el.tasks.filter((t) => t.id === 'a')).toHaveLength(1)
+  })
+
+  it('parent 指定挂到该父级子级；parent 不存在按根处理', () => {
+    const el = mount({
+      tasks: JSON.stringify([
+        {
+          id: 'p',
+          name: 'P',
+          start: '2026-03-02',
+          end: '2026-03-06',
+          children: [{ id: 'c', name: 'C', start: '2026-03-02', end: '2026-03-03' }],
+        },
+      ]),
+    })
+    const child = el.addTask({ name: 'N', start: '2026-03-04', end: '2026-03-05' }, { parent: 'p' })
+    expect(el.tasks.find((t) => t.id === child)!.parent).toBe('p')
+    const orphan = el.addTask({ name: 'O', start: '2026-03-04' }, { parent: 'ghost' })
+    expect(el.tasks.find((t) => t.id === orphan)!.parent).toBeUndefined()
+  })
+
+  it('opts.before / opts.after 定位插入点', () => {
+    const el = mount({
+      tasks: JSON.stringify([
+        { id: 'a', name: 'A', start: '2026-03-02', end: '2026-03-03' },
+        { id: 'x', name: 'X', start: '2026-03-09', end: '2026-03-10' },
+      ]),
+    })
+    const before = el.addTask({ name: 'B', start: '2026-03-04' }, { before: 'x' })
+    expect(el.tasks.map((t) => t.id).indexOf(before)).toBe(el.tasks.map((t) => t.id).indexOf('x') - 1)
+    const after = el.addTask({ name: 'AF', start: '2026-03-04' }, { after: 'x' })
+    expect(el.tasks.map((t) => t.id).indexOf(after)).toBe(el.tasks.map((t) => t.id).indexOf('x') + 1)
+  })
+
+  it('type=milestone 不补 end（单点，无 end）', () => {
+    const el = mount({ tasks: '[]' })
+    const id = el.addTask({ type: 'milestone' })
+    expect(el.tasks.find((t) => t.id === id)!.end).toBeUndefined()
+  })
+
+  it('非法输入（start 非法）返回空串且零改动/零事件', () => {
+    const el = mount({ tasks: JSON.stringify([{ id: 'a', name: 'A', start: '2026-03-02' }]) })
+    let events = 0
+    el.addEventListener('oas-task-add', () => events++)
+    el.addEventListener('oas-tasks-change', () => events++)
+    const before = JSON.stringify(el.tasks)
+    expect(el.addTask({ name: 'N', start: 'nope' })).toBe('')
+    expect(JSON.stringify(el.tasks)).toBe(before)
+    expect(events).toBe(0)
+  })
+
+  it('受控 expanded 未展开 parent 时，新增子级自动展开 parent 并回写属性', () => {
+    const el = mount({
+      tasks: JSON.stringify([
+        {
+          id: 'p',
+          name: 'P',
+          start: '2026-03-02',
+          end: '2026-03-06',
+          children: [{ id: 'c', name: 'C', start: '2026-03-02' }],
+        },
+      ]),
+      expanded: '[]',
+    })
+    const id = el.addTask({ start: '2026-03-04' }, { parent: 'p' })
+    expect(id).not.toBe('')
+    expect(JSON.parse(el.getAttribute('expanded')!)).toContain('p')
+    expect(nameRows(el).some((n) => n.dataset.key === id)).toBe(true)
+  })
+})
+
+describe('OASGantt 创作：moveTask', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  const TREE = JSON.stringify([
+    {
+      id: 'p',
+      name: 'P',
+      start: '2026-03-02',
+      end: '2026-03-06',
+      children: [{ id: 'c', name: 'C', start: '2026-03-02', end: '2026-03-03' }],
+    },
+    { id: 'x', name: 'X', start: '2026-03-09', end: '2026-03-10' },
+  ])
+
+  it('改 parent 并派发 oas-reparent（含移动后同级序号）', () => {
+    const el = mount({ tasks: TREE })
+    const rep: GanttReparentDetail[] = []
+    el.addEventListener('oas-reparent', ((e: CustomEvent<GanttReparentDetail>) => {
+      rep.push(e.detail)
+    }) as EventListener)
+    expect(el.moveTask('x', { parent: 'p' })).toBe(true)
+    expect(el.tasks.find((t) => t.id === 'x')!.parent).toBe('p')
+    expect(rep).toHaveLength(1)
+    expect(rep[0]).toEqual({ id: 'x', parent: 'p', index: 1 })
+  })
+
+  it('按 index 在同一 parent 下重排（顺序改变）', () => {
+    const el = mount({
+      tasks: JSON.stringify([
+        { id: 'p', name: 'P', start: '2026-03-02', end: '2026-03-06', type: 'summary' },
+        { id: 'a', name: 'A', start: '2026-03-02', parent: 'p' },
+        { id: 'b', name: 'B', start: '2026-03-02', parent: 'p' },
+        { id: 'c', name: 'C', start: '2026-03-02', parent: 'p' },
+      ]),
+    })
+    const rep: GanttReparentDetail[] = []
+    el.addEventListener('oas-reparent', ((e: CustomEvent<GanttReparentDetail>) => {
+      rep.push(e.detail)
+    }) as EventListener)
+    expect(el.moveTask('c', { parent: 'p', index: 0 })).toBe(true)
+    expect(el.tasks.map((t) => t.id)).toEqual(['p', 'c', 'a', 'b'])
+    expect(rep[0]).toEqual({ id: 'c', parent: 'p', index: 0 })
+  })
+
+  it('index 超出范围钳制到同级末尾', () => {
+    const el = mount({
+      tasks: JSON.stringify([
+        { id: 'p', name: 'P', start: '2026-03-02', end: '2026-03-06', type: 'summary' },
+        { id: 'a', name: 'A', start: '2026-03-02', parent: 'p' },
+        { id: 'b', name: 'B', start: '2026-03-02', parent: 'p' },
+      ]),
+    })
+    expect(el.moveTask('a', { parent: 'p', index: 99 })).toBe(true)
+    expect(el.tasks.map((t) => t.id)).toEqual(['p', 'b', 'a'])
+  })
+
+  it('防环/防悬空：自身、其后代、不存在 → false 且零改动', () => {
+    const el = mount({ tasks: TREE })
+    const before = JSON.stringify(el.tasks)
+    expect(el.moveTask('p', { parent: 'p' })).toBe(false)
+    expect(el.moveTask('p', { parent: 'c' })).toBe(false)
+    expect(el.moveTask('p', { parent: 'ghost' })).toBe(false)
+    expect(el.moveTask('ghost', { parent: null })).toBe(false)
+    expect(JSON.stringify(el.tasks)).toBe(before)
+  })
+
+  it('零变化（原地放下）返回 false 且不派发', () => {
+    const el = mount({ tasks: JSON.stringify([{ id: 'a', name: 'A', start: '2026-03-02' }]) })
+    let n = 0
+    el.addEventListener('oas-reparent', () => n++)
+    expect(el.moveTask('a', { parent: null })).toBe(false)
+    expect(n).toBe(0)
+  })
+})
+
+describe('OASGantt 创作：duplicateTask', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('深拷贝子树：各自新 id、parent 映射到新 id、紧跟原子树之后', () => {
+    const el = mount({
+      tasks: JSON.stringify([
+        {
+          id: 'p',
+          name: 'P',
+          start: '2026-03-02',
+          end: '2026-03-06',
+          children: [
+            { id: 'c1', name: 'C1', start: '2026-03-02', end: '2026-03-03' },
+            { id: 'c2', name: 'C2', start: '2026-03-04', end: '2026-03-05' },
+          ],
+        },
+        { id: 'x', name: 'X', start: '2026-03-09', end: '2026-03-10' },
+      ]),
+    })
+    const added: GanttTaskAddDetail[] = []
+    el.addEventListener('oas-task-add', ((e: CustomEvent<GanttTaskAddDetail>) => {
+      added.push(e.detail)
+    }) as EventListener)
+    const newId = el.duplicateTask('p')!
+    expect(newId).not.toBe('')
+    expect(newId).not.toBe('p')
+    const tasks = el.tasks
+    const clones = tasks.filter((t) => t.id === newId || t.parent === newId)
+    expect(clones, '根 + 两个子全新 id').toHaveLength(3)
+    expect(clones.some((t) => ['p', 'c1', 'c2'].includes(t.id ?? ''))).toBe(false)
+    // DFS 序紧跟原子树（原数组 [p,c1,c2,x] → 克隆插在 index 3）
+    expect(tasks.map((t) => t.id).slice(3, 6)).toEqual([newId, clones[1]!.id, clones[2]!.id])
+    expect(clones[1]!.parent).toBe(newId)
+    expect(clones[2]!.parent).toBe(newId)
+    expect(added).toHaveLength(1)
+    expect(added[0]!.id).toBe(newId)
+  })
+
+  it('opts.id / opts.name / opts.parent 覆盖根克隆', () => {
+    const el = mount({
+      tasks: JSON.stringify([
+        {
+          id: 'p',
+          name: 'P',
+          start: '2026-03-02',
+          end: '2026-03-06',
+          children: [{ id: 'c', name: 'C', start: '2026-03-02' }],
+        },
+        { id: 'q', name: 'Q', start: '2026-03-09', end: '2026-03-10', type: 'summary' },
+        { id: 'z', name: 'Z', start: '2026-03-09', parent: 'q' },
+      ]),
+    })
+    const newId = el.duplicateTask('c', { id: 'copy', name: '副本', parent: 'q' })!
+    expect(newId).toBe('copy')
+    const t = el.tasks.find((x) => x.id === 'copy')!
+    expect(t.name).toBe('副本')
+    expect(t.parent).toBe('q')
+  })
+
+  it('id 不存在 → null', () => {
+    const el = mount({ tasks: '[]' })
+    expect(el.duplicateTask('nope')).toBeNull()
+  })
+
+  it('opts.parent 指向不存在的 id → 按根处理（不留悬空父指针）', () => {
+    const el = mount({ tasks: JSON.stringify([{ id: 'a', name: 'A', start: '2026-03-02' }]) })
+    const newId = el.duplicateTask('a', { parent: 'ghost' })!
+    expect(el.tasks.find((t) => t.id === newId)!.parent).toBeUndefined()
+  })
+})
+
+describe('OASGantt 创作：依赖命令式 API', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  const AB = JSON.stringify([
+    { id: 'a', name: 'A', start: '2026-03-02', end: '2026-03-03' },
+    { id: 'b', name: 'B', start: '2026-03-04', end: '2026-03-05' },
+  ])
+
+  it('addDependency：追加（type 缺省 fs）、同源同型去重、自身/不存在 false、事件', () => {
+    const el = mount({ tasks: AB })
+    const evs: Array<{ taskId: string; dependencies: Array<{ id: string; type?: string }> }> = []
+    el.addEventListener('oas-dependencies-change', ((e: CustomEvent) => {
+      evs.push(e.detail)
+    }) as EventListener)
+    expect(el.addDependency('b', { id: 'a' })).toBe(true)
+    expect(el.tasks.find((t) => t.id === 'b')!.dependencies).toEqual([{ id: 'a', type: 'fs' }])
+    expect(el.addDependency('b', { id: 'a', type: 'fs' }), '同源同型重复').toBe(false)
+    expect(el.addDependency('b', { id: 'a', type: 'ss' }), '同源异型可并存').toBe(true)
+    expect(el.addDependency('b', { id: 'b' }), '自身').toBe(false)
+    expect(el.addDependency('b', { id: 'ghost' }), '不存在').toBe(false)
+    expect(el.addDependency('ghost', { id: 'a' }), '宿主任务不存在').toBe(false)
+    expect(evs, '仅两次真实变更').toHaveLength(2)
+    expect(evs[1]!.taskId).toBe('b')
+    expect(evs[1]!.dependencies).toEqual([
+      { id: 'a', type: 'fs' },
+      { id: 'a', type: 'ss' },
+    ])
+  })
+
+  it('removeDependency：给 type 只删该型；未给 type 删该 id 全部；找不到 false', () => {
+    const el = mount({
+      tasks: JSON.stringify([
+        { id: 'a', name: 'A', start: '2026-03-02', end: '2026-03-03' },
+        {
+          id: 'b',
+          name: 'B',
+          start: '2026-03-04',
+          end: '2026-03-05',
+          dependencies: [
+            { id: 'a', type: 'fs' },
+            { id: 'a', type: 'ss' },
+          ],
+        },
+      ]),
+    })
+    const evs: unknown[] = []
+    el.addEventListener('oas-dependencies-change', ((e: CustomEvent) => {
+      evs.push(e.detail)
+    }) as EventListener)
+    expect(el.removeDependency('b', { id: 'a', type: 'fs' })).toBe(true)
+    expect(el.tasks.find((t) => t.id === 'b')!.dependencies).toEqual([{ id: 'a', type: 'ss' }])
+    expect(el.removeDependency('b', { id: 'a', type: 'ff' }), '无该型').toBe(false)
+    expect(el.removeDependency('b', { id: 'a' }), '删该 id 全部').toBe(true)
+    expect(el.tasks.find((t) => t.id === 'b')!.dependencies).toBeUndefined()
+    expect(el.removeDependency('ghost', { id: 'a' })).toBe(false)
+    expect(evs).toHaveLength(2)
+  })
+
+  it('updateDependency：to.type 缺省继承 from.type、重复去重、非法 false', () => {
+    const el = mount({
+      tasks: JSON.stringify([
+        { id: 'a', name: 'A', start: '2026-03-02', end: '2026-03-03' },
+        { id: 'b', name: 'B', start: '2026-03-04', end: '2026-03-05' },
+        {
+          id: 'c',
+          name: 'C',
+          start: '2026-03-06',
+          end: '2026-03-07',
+          dependencies: [{ id: 'a', type: 'ss' }],
+        },
+        {
+          id: 'd',
+          name: 'D',
+          start: '2026-03-08',
+          end: '2026-03-09',
+          dependencies: [
+            { id: 'a', type: 'fs' },
+            { id: 'b', type: 'fs' },
+          ],
+        },
+      ]),
+    })
+    const evs: Array<{ taskId: string; dependencies: Array<{ id: string; type?: string }> }> = []
+    el.addEventListener('oas-dependencies-change', ((e: CustomEvent) => {
+      evs.push(e.detail)
+    }) as EventListener)
+    // 继承 from.type=ss
+    expect(el.updateDependency('c', { id: 'a', type: 'ss' }, { id: 'b' })).toBe(true)
+    expect(el.tasks.find((t) => t.id === 'c')!.dependencies).toEqual([{ id: 'b', type: 'ss' }])
+    // 去重：a→b 后与既有 b 重复，只保留一条
+    expect(el.updateDependency('d', { id: 'a', type: 'fs' }, { id: 'b', type: 'fs' })).toBe(true)
+    expect(el.tasks.find((t) => t.id === 'd')!.dependencies).toEqual([{ id: 'b', type: 'fs' }])
+    // 非法
+    expect(el.updateDependency('c', { id: 'nope' }, { id: 'b' }), 'from 不存在').toBe(false)
+    expect(el.updateDependency('c', { id: 'b', type: 'ss' }, { id: 'ghost' }), 'to 不存在').toBe(false)
+    expect(el.updateDependency('c', { id: 'b', type: 'ss' }, { id: 'c' }), 'to 指向自身').toBe(false)
+    // 无实际变化
+    expect(el.updateDependency('c', { id: 'b', type: 'ss' }, { id: 'b', type: 'ss' })).toBe(false)
+    expect(evs).toHaveLength(2)
+  })
+})
+
+describe('OASGantt 创作：updateTasks 批量', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('批量浅合并返回生效条数，只派发一次 oas-tasks-change', () => {
+    const el = mount({
+      tasks: JSON.stringify([
+        { id: 'a', name: 'A', start: '2026-03-02', end: '2026-03-03' },
+        { id: 'b', name: 'B', start: '2026-03-04', end: '2026-03-05' },
+      ]),
+    })
+    let n = 0
+    el.addEventListener('oas-tasks-change', () => n++)
+    const applied = el.updateTasks([
+      { id: 'a', name: 'A2' },
+      { id: 'b', progress: 50 },
+      { id: 'ghost', name: 'G' },
+    ])
+    expect(applied).toBe(2)
+    expect(n, '一次提交一次事件').toBe(1)
+    expect(el.tasks.find((t) => t.id === 'a')!.name).toBe('A2')
+    expect(el.tasks.find((t) => t.id === 'b')!.progress).toBe(50)
+  })
+
+  it('非法 end 跳过该条；全非法时零事件零渲染', () => {
+    const el = mount({ tasks: JSON.stringify([{ id: 'a', name: 'A', start: '2026-03-02', end: '2026-03-03' }]) })
+    let n = 0
+    el.addEventListener('oas-tasks-change', () => n++)
+    expect(el.updateTasks([{ id: 'a', end: 'nope' }])).toBe(0)
+    expect(n).toBe(0)
+    expect(el.tasks.find((t) => t.id === 'a')!.end).toBe('2026-03-03')
+  })
+})
+
+describe('OASGantt 创作：zoomIn / zoomOut / fit', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('zoomIn 向细档、zoomOut 向粗档步进并派发 oas-scale-change；端点 no-op', () => {
+    const el = mount({ tasks: JSON.stringify([{ id: 'a', name: 'A', start: '2026-03-02' }]), scale: 'day' })
+    const scales: string[] = []
+    el.addEventListener('oas-scale-change', ((e: CustomEvent<{ scale: string }>) => {
+      scales.push(e.detail.scale)
+    }) as EventListener)
+    el.zoomIn()
+    expect(el.getAttribute('scale')).toBe('hour')
+    el.zoomIn()
+    expect(el.getAttribute('scale'), '最细档端点 no-op').toBe('hour')
+    el.zoomOut()
+    expect(el.getAttribute('scale')).toBe('day')
+    el.zoomOut()
+    expect(el.getAttribute('scale')).toBe('week')
+    expect(scales).toEqual(['hour', 'day', 'week'])
+  })
+
+  it('最粗档 zoomOut 为 no-op', () => {
+    const el = mount({ tasks: JSON.stringify([{ id: 'a', name: 'A', start: '2026-03-02' }]), scale: 'year' })
+    el.zoomOut()
+    expect(el.getAttribute('scale')).toBe('year')
+  })
+
+  it('fit：无任务 no-op（scale 不变）', () => {
+    const el = mount({ tasks: '[]', scale: 'day' })
+    el.fit()
+    expect(el.getAttribute('scale')).toBe('day')
+  })
+
+  it('fit：取最细且能容纳全部任务的档并滚动定位到最早任务', () => {
+    const el = mount({ tasks: JSON.stringify([{ id: 'a', name: 'A', start: '2026-03-02', end: '2026-03-04' }]) })
+    const spy = vi.spyOn(el, 'scrollToDate')
+    const tb = shadowOf(el).querySelector<HTMLElement>('.tbody')!
+    // 3 天跨度、可用宽 1200：hour 需 72*22=1584 放不下，day 需 3*16=48 可容纳 → day（最细可视档）
+    stubProp(tb, 'clientWidth', 1200)
+    el.fit()
+    expect(el.getAttribute('scale')).toBe('day')
+    expect(spy).toHaveBeenCalledWith('2026-03-02')
+    spy.mockRestore()
+  })
+
+  it('fit：可用宽收窄则回落更粗档，极窄回落最粗 year', () => {
+    const el = mount({ tasks: JSON.stringify([{ id: 'a', name: 'A', start: '2026-03-02', end: '2026-03-04' }]) })
+    const tb = shadowOf(el).querySelector<HTMLElement>('.tbody')!
+    stubProp(tb, 'clientWidth', 40) // day 需 48 放不下，week 需 3/7*36≈15.4 可容纳 → week
+    el.fit()
+    expect(el.getAttribute('scale')).toBe('week')
+    stubProp(tb, 'clientWidth', 1) // 逐档皆放不下 → 最粗 year
+    el.fit()
+    expect(el.getAttribute('scale')).toBe('year')
+  })
+})
+
+describe('OASGantt 创作：creatable 行内新建', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  const TREE = JSON.stringify([
+    {
+      id: 'p',
+      name: 'P',
+      start: '2026-03-02',
+      end: '2026-03-06',
+      children: [{ id: 'c', name: 'C', start: '2026-03-02', end: '2026-03-03' }],
+    },
+  ])
+
+  it('creatable 关（默认）不渲染 .row-add', () => {
+    const el = mount({ tasks: TREE })
+    expect(shadowOf(el).querySelectorAll('.row-add').length).toBe(0)
+  })
+
+  it('creatable 开：每行渲染 .row-add，摘要行 aria-label 走 gantt.addChild、叶子走 gantt.addTask', () => {
+    const el = mount({ tasks: TREE, creatable: '' })
+    expect(shadowOf(el).querySelectorAll('.row-add').length).toBe(2)
+    expect(
+      shadowOf(el).querySelector<HTMLElement>('.row-name[data-key="p"] .row-add')!.getAttribute('aria-label'),
+    ).toBe('添加子任务')
+    expect(
+      shadowOf(el).querySelector<HTMLElement>('.row-name[data-key="c"] .row-add')!.getAttribute('aria-label'),
+    ).toBe('添加任务')
+  })
+
+  it('点击摘要行「＋」加子级并聚焦/进入重命名', () => {
+    const el = mount({ tasks: TREE, creatable: '' })
+    const added: GanttTaskAddDetail[] = []
+    el.addEventListener('oas-task-add', ((e: CustomEvent<GanttTaskAddDetail>) => {
+      added.push(e.detail)
+    }) as EventListener)
+    shadowOf(el).querySelector<HTMLElement>('.row-name[data-key="p"] .row-add')!.click()
+    expect(added).toHaveLength(1)
+    expect(el.tasks.find((t) => t.id === added[0]!.id)!.parent).toBe('p')
+    expect(shadowOf(el).querySelector('.rename-input'), '进入行内重命名').not.toBeNull()
+  })
+
+  it('点击叶子行「＋」在其后加同级', () => {
+    const el = mount({
+      tasks: JSON.stringify([
+        { id: 'a', name: 'A', start: '2026-03-02', end: '2026-03-03' },
+        { id: 'b', name: 'B', start: '2026-03-04', end: '2026-03-05' },
+      ]),
+      creatable: '',
+    })
+    const added: GanttTaskAddDetail[] = []
+    el.addEventListener('oas-task-add', ((e: CustomEvent<GanttTaskAddDetail>) => {
+      added.push(e.detail)
+    }) as EventListener)
+    shadowOf(el).querySelector<HTMLElement>('.row-name[data-key="a"] .row-add')!.click()
+    expect(added).toHaveLength(1)
+    const ids = el.tasks.map((t) => t.id)
+    expect(ids.indexOf(added[0]!.id)).toBe(ids.indexOf('a') + 1)
+    expect(el.tasks.find((t) => t.id === added[0]!.id)!.parent).toBeUndefined()
+  })
+
+  it('readonly 不渲染 .row-add；disabled 行不渲染', () => {
+    const el = mount({
+      tasks: JSON.stringify([
+        { id: 'a', name: 'A', start: '2026-03-02', end: '2026-03-03' },
+        { id: 'b', name: 'B', start: '2026-03-04', end: '2026-03-05', disabled: true },
+      ]),
+      creatable: '',
+    })
+    expect(shadowOf(el).querySelector('.row-name[data-key="a"] .row-add')).not.toBeNull()
+    expect(shadowOf(el).querySelector('.row-name[data-key="b"] .row-add'), 'disabled 行').toBeNull()
+    el.setAttribute('readonly', '')
+    expect(shadowOf(el).querySelectorAll('.row-add').length, 'readonly 全不渲染').toBe(0)
+  })
+
+  it('行尾「＋」新建继承所在行开始日（不落到今天/视线外）', () => {
+    const el = mount({
+      tasks: JSON.stringify([{ id: 'a', name: 'A', start: '2026-03-02', end: '2026-03-04' }]),
+      creatable: '',
+    })
+    shadowOf(el).querySelector<HTMLElement>('.row-name[data-key="a"] .row-add')!.click()
+    const added = el.tasks.filter((t) => t.id !== 'a')
+    expect(added).toHaveLength(1)
+    expect(added[0]!.start).toBe('2026-03-02')
+    expect(added[0]!.end).toBe('2026-03-02')
+  })
+
+  it('双击 tbody 空白按落点日期建任务并进入重命名', () => {
+    const el = mount({
+      tasks: JSON.stringify([{ id: 'a', name: 'A', start: '2026-03-02', end: '2026-03-04' }]),
+      creatable: '',
+    })
+    const tbody = shadowOf(el).querySelector<HTMLElement>('.tbody')!
+    const inner = shadowOf(el).querySelector<HTMLElement>('.inner')!
+    inner.getBoundingClientRect = () =>
+      ({ left: 0, right: 400, top: 0, bottom: 200, width: 400, height: 200, x: 0, y: 0, toJSON: () => ({}) }) as DOMRect
+    stubProp(tbody, 'scrollLeft', 0)
+    const added: GanttTaskAddDetail[] = []
+    el.addEventListener('oas-task-add', ((e: CustomEvent<GanttTaskAddDetail>) => {
+      added.push(e.detail)
+    }) as EventListener)
+    const ev = new MouseEvent('dblclick', { bubbles: true })
+    // colW=36（无布局回落基准）；units[0]=03-01 → units[2]=03-03
+    Object.defineProperty(ev, 'clientX', { value: 2 * 36 + 5 })
+    Object.defineProperty(ev, 'clientY', { value: 10 })
+    tbody.dispatchEvent(ev)
+    expect(added).toHaveLength(1)
+    expect(el.tasks.find((t) => t.id === added[0]!.id)!.start).toBe('2026-03-03')
+    expect(shadowOf(el).querySelector('.rename-input')).not.toBeNull()
+  })
+
+  it('双击 side-body 空白按今天建任务', () => {
+    const el = mount({ tasks: '[]', creatable: '' })
+    const added: GanttTaskAddDetail[] = []
+    el.addEventListener('oas-task-add', ((e: CustomEvent<GanttTaskAddDetail>) => {
+      added.push(e.detail)
+    }) as EventListener)
+    shadowOf(el)
+      .querySelector<HTMLElement>('.side-body')!
+      .dispatchEvent(new MouseEvent('dblclick', { bubbles: true }))
+    expect(added).toHaveLength(1)
+    expect(el.tasks.find((t) => t.id === added[0]!.id)!.start).toBe(todayIso())
+  })
+
+  it('双击任务条不触发新建（忽略交互元素）', () => {
+    const el = mount({
+      tasks: JSON.stringify([{ id: 'a', name: 'A', start: '2026-03-02', end: '2026-03-04' }]),
+      creatable: '',
+    })
+    // 让落点解析可用（否则 dateAtClientX 因无布局恒 null，用例无法区分守卫是否有效）
+    const inner = shadowOf(el).querySelector<HTMLElement>('.inner')!
+    inner.getBoundingClientRect = () =>
+      ({
+        left: 0,
+        right: 4000,
+        top: 0,
+        bottom: 200,
+        width: 4000,
+        height: 200,
+        x: 0,
+        y: 0,
+        toJSON: () => ({}),
+      }) as DOMRect
+    let n = 0
+    el.addEventListener('oas-task-add', () => n++)
+    barOf(el, 'a').dispatchEvent(new MouseEvent('dblclick', { bubbles: true, composed: true }))
+    expect(n).toBe(0)
+  })
+
+  it('creatable 关时双击空白不新建', () => {
+    const el = mount({ tasks: JSON.stringify([{ id: 'a', name: 'A', start: '2026-03-02', end: '2026-03-04' }]) })
+    let n = 0
+    el.addEventListener('oas-task-add', () => n++)
+    shadowOf(el)
+      .querySelector<HTMLElement>('.tbody')!
+      .dispatchEvent(new MouseEvent('dblclick', { bubbles: true }))
+    expect(n).toBe(0)
+  })
+})
+
+describe('OASGantt 创作：复审修复回归（守卫 / 克隆依赖 / RTL 落点 / 非法 end）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('行尾「＋」上的 pointerdown 不触发行重排', () => {
+    const el = mount({
+      tasks: JSON.stringify([
+        { id: 'a', name: 'A', start: '2026-03-02', end: '2026-03-04' },
+        { id: 'b', name: 'B', start: '2026-03-05', end: '2026-03-07' },
+      ]),
+      creatable: '',
+    })
+    let fired = 0
+    el.addEventListener('oas-reparent', () => fired++)
+    // 给侧栏真实几何盒：若守卫失效，拖到 b 行会触发重排（否则落点恒为自身、用例无法区分）
+    const side = shadowOf(el).querySelector<HTMLElement>('.side-body')!
+    side.getBoundingClientRect = () =>
+      ({
+        top: 0,
+        left: 0,
+        right: 300,
+        bottom: 1000,
+        width: 300,
+        height: 1000,
+        x: 0,
+        y: 0,
+        toJSON: () => ({}),
+      }) as DOMRect
+    Object.defineProperty(side, 'scrollTop', { value: 0, configurable: true })
+    const add = shadowOf(el).querySelector<HTMLElement>('.row-name[data-key="a"] .row-add')!
+    const down = new PointerEvent('pointerdown', { bubbles: true, composed: true, pointerId: 1, button: 0 })
+    Object.defineProperty(down, 'clientX', { value: 0 })
+    Object.defineProperty(down, 'clientY', { value: 0 })
+    add.dispatchEvent(down)
+    const move = new PointerEvent('pointermove', { bubbles: true, composed: true, pointerId: 1 })
+    Object.defineProperty(move, 'clientX', { value: 0 })
+    Object.defineProperty(move, 'clientY', { value: 36 + 30 }) // 落到 b 行下半区（after，产生真实变更）
+    document.dispatchEvent(move)
+    document.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, composed: true, pointerId: 1 }))
+    expect(fired, '＋ 上按下不应进入行重排').toBe(0)
+    expect(el.tasks.map((t) => t.id)).toEqual(['a', 'b'])
+  })
+
+  it('未受控 + 摘要行数据 expanded:false：点「＋」加子级会自动展开并进入重命名', () => {
+    const el = mount({
+      creatable: '',
+      tasks: JSON.stringify([
+        {
+          id: 'p',
+          name: 'P',
+          start: '2026-03-02',
+          end: '2026-03-06',
+          type: 'summary',
+          expanded: false,
+          children: [{ id: 'c', name: 'C', start: '2026-03-02', end: '2026-03-03' }],
+        },
+      ]),
+    })
+    // 初始收起：子行不渲染
+    expect(shadowOf(el).querySelector('.row-name[data-key="c"]')).toBeNull()
+    shadowOf(el).querySelector<HTMLElement>('.row-name[data-key="p"] .row-add')!.click()
+    const added = el.tasks.filter((t) => t.parent === 'p' && t.id !== 'c')
+    expect(added).toHaveLength(1)
+    expect(
+      shadowOf(el).querySelector(`.row-name[data-key="${added[0]!.id}"]`),
+      '新子级应可见（自动展开）',
+    ).not.toBeNull()
+    expect(shadowOf(el).querySelector('.rename-input')).not.toBeNull()
+  })
+
+  it('行尾「＋」聚焦后 Space/Enter 不被行 keydown 抢走（不改选中）', () => {
+    const el = mount({
+      tasks: JSON.stringify([{ id: 'a', name: 'A', start: '2026-03-02', end: '2026-03-04' }]),
+      creatable: '',
+    })
+    let sel = 0
+    el.addEventListener('oas-selection-change', () => sel++)
+    const add = shadowOf(el).querySelector<HTMLElement>('.row-name[data-key="a"] .row-add')!
+    add.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', bubbles: true }))
+    add.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
+    expect(sel, '＋ 上按键不应触发行选中').toBe(0)
+  })
+
+  it('双击依赖连线命中路径不触发空白新建', () => {
+    const el = mount({
+      creatable: '',
+      tasks: JSON.stringify([
+        { id: 'a', name: 'A', start: '2026-03-02', end: '2026-03-04' },
+        { id: 'b', name: 'B', start: '2026-03-05', end: '2026-03-07', dependencies: [{ id: 'a' }] },
+      ]),
+    })
+    let n = 0
+    el.addEventListener('oas-task-add', () => n++)
+    const inner = shadowOf(el).querySelector<HTMLElement>('.inner')!
+    inner.getBoundingClientRect = () =>
+      ({
+        left: 0,
+        right: 4000,
+        top: 0,
+        bottom: 200,
+        width: 4000,
+        height: 200,
+        x: 0,
+        y: 0,
+        toJSON: () => ({}),
+      }) as DOMRect
+    const hit = shadowOf(el).querySelector<HTMLElement>('.link-hit')!
+    hit.dispatchEvent(new MouseEvent('dblclick', { bubbles: true, composed: true }))
+    expect(n, '双击连线不应新建任务').toBe(0)
+  })
+
+  it('duplicateTask：子树内部依赖映射到克隆 id（不与原体串联），外部依赖保留原 id', () => {
+    const el = mount({
+      tasks: JSON.stringify([
+        {
+          id: 'p',
+          name: 'P',
+          start: '2026-03-02',
+          end: '2026-03-10',
+          children: [
+            { id: 'c1', name: 'C1', start: '2026-03-02', end: '2026-03-04' },
+            {
+              id: 'c2',
+              name: 'C2',
+              start: '2026-03-05',
+              end: '2026-03-07',
+              dependencies: [{ id: 'c1' }, { id: 'ext' }],
+            },
+          ],
+        },
+        { id: 'ext', name: 'EXT', start: '2026-03-01', end: '2026-03-02' },
+      ]),
+    })
+    const newId = el.duplicateTask('p')!
+    const tasks = el.tasks
+    // 克隆子级 c2：parent 指向克隆根，依赖 c1 → 克隆 c1（非原 c1），ext 保留
+    const cloneC1 = tasks.find((t) => t.parent === newId && t.name === 'C1')!
+    const clonedChild2 = tasks.find((t) => t.parent === newId && t.name === 'C2')!
+    expect(clonedChild2.dependencies!.map((d) => d.id)).toEqual([cloneC1.id, 'ext'])
+    expect(
+      clonedChild2.dependencies!.some((d) => d.id === 'c1'),
+      '不应指向原 c1',
+    ).toBe(false)
+  })
+
+  it('addTask：非法 end 显式拒绝（返回空串，零改动零事件）', () => {
+    const el = mount({ tasks: '[]' })
+    let n = 0
+    el.addEventListener('oas-task-add', () => n++)
+    expect(el.addTask({ name: 'N', start: '2026-03-02', end: 'nope' })).toBe('')
+    expect(el.tasks).toHaveLength(0)
+    expect(n).toBe(0)
+  })
+
+  it('双击 tbody 空白：按 .inner 逆变换取落点日期（与 bar.left 精确互逆）', () => {
+    const el = mount({
+      creatable: '',
+      tasks: JSON.stringify([{ id: 'a', name: 'A', start: '2026-03-02', end: '2026-03-25' }]),
+    })
+    const units = (el as unknown as { units: Array<{ startMs: number }> }).units
+    const inner = shadowOf(el).querySelector<HTMLElement>('.inner')!
+    inner.getBoundingClientRect = () =>
+      ({
+        left: 0,
+        right: 4000,
+        top: 0,
+        bottom: 200,
+        width: 4000,
+        height: 200,
+        x: 0,
+        y: 0,
+        toJSON: () => ({}),
+      }) as DOMRect
+    const added: GanttTaskAddDetail[] = []
+    el.addEventListener('oas-task-add', ((e: CustomEvent<GanttTaskAddDetail>) => {
+      added.push(e.detail)
+    }) as EventListener)
+    const i = Math.min(3, units.length - 1)
+    const colW = (el as unknown as { colW(): number }).colW()
+    const ev = new MouseEvent('dblclick', { bubbles: true })
+    Object.defineProperty(ev, 'clientX', { value: i * colW + colW / 2 }) // 落在第 i 格中央
+    Object.defineProperty(ev, 'clientY', { value: 10 })
+    shadowOf(el).querySelector<HTMLElement>('.tbody')!.dispatchEvent(ev)
+    expect(added).toHaveLength(1)
+    const d = new Date(units[i]!.startMs)
+    const pad = (n: number) => String(n).padStart(2, '0')
+    expect(el.tasks.find((t) => t.id === added[0]!.id)!.start).toBe(
+      `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`,
+    )
+  })
+
+  it('RTL 双击 tbody 空白：x = canvasW − physical（镜像逆变换，含已滚动）', () => {
+    const el = mount({
+      dir: 'rtl',
+      creatable: '',
+      tasks: JSON.stringify([{ id: 'a', name: 'A', start: '2026-03-02', end: '2026-03-25' }]),
+    })
+    const units = (el as unknown as { units: Array<{ startMs: number }> }).units
+    const canvasW = (el as unknown as { canvasW: number }).canvasW
+    const colW = (el as unknown as { colW(): number }).colW()
+    const scroll = 5 * colW
+    const inner = shadowOf(el).querySelector<HTMLElement>('.inner')!
+    inner.getBoundingClientRect = () =>
+      ({
+        left: -scroll,
+        right: 4000,
+        top: 0,
+        bottom: 200,
+        width: 4000,
+        height: 200,
+        x: -scroll,
+        y: 0,
+        toJSON: () => ({}),
+      }) as DOMRect
+    stubProp(shadowOf(el).querySelector<HTMLElement>('.tbody')!, 'scrollLeft', -scroll)
+    const i = Math.min(4, units.length - 1)
+    // 期望 x = i*colW + colW/2；physical = x − ... → clientX = inner.left + canvasW − x
+    const clientX = -scroll + canvasW - (i * colW + colW / 2)
+    const added: GanttTaskAddDetail[] = []
+    el.addEventListener('oas-task-add', ((e: CustomEvent<GanttTaskAddDetail>) => {
+      added.push(e.detail)
+    }) as EventListener)
+    const ev = new MouseEvent('dblclick', { bubbles: true })
+    Object.defineProperty(ev, 'clientX', { value: clientX })
+    Object.defineProperty(ev, 'clientY', { value: 10 })
+    shadowOf(el).querySelector<HTMLElement>('.tbody')!.dispatchEvent(ev)
+    expect(added).toHaveLength(1)
+    const d = new Date(units[i]!.startMs)
+    const pad = (n: number) => String(n).padStart(2, '0')
+    expect(el.tasks.find((t) => t.id === added[0]!.id)!.start).toBe(
+      `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`,
+    )
   })
 })

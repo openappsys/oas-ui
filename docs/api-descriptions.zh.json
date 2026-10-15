@@ -4329,9 +4329,11 @@
       "row-height": "行高 px（默认 36，下限 20）",
       "label-position": "任务条标签位置：inside 条内 / right 条旁 / left 条左；缺省 none（行名列已承载名称，条旁不再重复渲染）；非法值回落 none",
       "snap": "拖拽吸附当前刻度（默认开；false 按像素比例平移并保留时间精度）",
-      "show-baseline": "基线对比（布尔，默认关）：任务带 baseline 时在实际条下渲染基线条，title 标差值（比基线晚/早 N 天或一致）"
+      "show-baseline": "基线对比（布尔，默认关）：任务带 baseline 时在实际条下渲染基线条，title 标差值（比基线晚/早 N 天或一致）",
+      "creatable": "行内新建（布尔，默认关）：开启后行尾出「＋」（摘要行加子级、叶子行加同级后继）、双击空白区按落点日期建任务，新建后进入行内重命名；只读/任务级禁用行不出按钮"
     },
     "events": {
+      "oas-task-add": "命令式新增任务后派发（addTask / duplicateTask / creatable 行内新建），detail: { id, task }（id 为新任务 id）",
       "oas-task-click": "点击任务条/里程碑时派发，detail: { id, task }",
       "oas-task-dblclick": "双击任务条时派发，detail: { id, task }——宿主接编辑表单",
       "oas-task-change": "拖拽/拉伸/键盘改期收口（pointerup）时派发，detail: { id, task, oldStart, oldEnd, start, end }；零位移不派发",

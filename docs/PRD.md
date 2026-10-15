@@ -1905,6 +1905,29 @@ OASElement 的 render 生命周期只首连一次（`rendered` 门闩），组�
 - 文档：gantt.md zh/en 增章节；api-manifest / api-descriptions 同步（`api:check` 双向 0）；i18n ×10。
 - 全量 `pnpm test` / typecheck / build / api:check 全绿。
 
+## 未发布 oas-gantt 任务管理创作能力（命令式增删改 + 行内新建 + 缩放）
+
+> 立项背景：他人用 oas-gantt 搭「任务管理甘特」时，组件只提供「编辑现有数据」，造数据只能整体重写 `tasks`。本批补「创作闭环」——命令式增删改、行内新建、视图缩放，并提供可照抄的完整示例。定位不变：不做排程引擎（关键路径/联动排程仍归宿主）。
+
+### 特性
+
+- **命令式数据操作**：新增方法 `addTask(task?, opts?)`（返回新 id）/ `moveTask(id, { parent, index })` / `duplicateTask(id, opts?)`（深拷贝子树，内部依赖重映射到克隆 id，返回新 id）/ `addDependency(taskId, dep)` / `removeDependency(taskId, dep)` / `updateDependency(taskId, from, to)` / `updateTasks(patches[])`（批量浅合并，返回生效条数）。写回统一反射 `tasks` 属性 + 重渲染（`addTask`/`updateTasks` 经清洗层，非法 `end` 显式拒绝）；派发既有 `oas-tasks-change` / `oas-reparent` / `oas-dependencies-change`，并新增 `oas-task-add`（detail `{ id, task }`）供宿主定位新建项。
+- **行内新建**：`creatable` 布尔（默认关，非破坏）开启后——行尾出「＋」（摘要行加子级、叶子行加同级后继）、双击空白区按落点日期建任务；新建后直接进入行内重命名。
+- **视图缩放**：`zoomIn()` / `zoomOut()` 沿六档刻度步进；`fit()` 取**最细且能容纳全部任务的档**（全任务可见前提下尽量保留细节）。
+- **完整示例**：gantt.md 增「任务管理」段——列表 + 甘特联动、增删改、依赖编辑、导出 JSON，并给出用 `oas-modal` + `oas-form` + `oas-date-picker` 组装任务详情编辑的官方示例。
+
+### 边界
+
+- 关键路径、依赖联动排程、undo/redo、导出、内建编辑弹窗仍归宿主/不做（任务详情编辑器以官方示例提供，不入组件本体）。
+- `creatable` 默认关；未开启时零新增交互与 DOM。
+
+### 验收
+
+- 单测：七方法各自增删改语义 + 不合法输入零副作用 + 事件派发；`creatable` 行内新建（摘要加子级/叶子加同级）+ 双击空白按日期建 + 只读/禁用守卫；`zoomIn`/`zoomOut`/`fit` 档位；i18n 键。
+- e2e：gantt.md 新示例真点（建/删/改/依赖）+ 暗色 + console 零告警。
+- 文档：gantt.md zh/en 增段；api-manifest / api-descriptions 同步（`api:check` 双向 0）；i18n ×10。
+- 全量 `pnpm test` / typecheck / build / api:check 全绿。
+
 ## v2.5.9 oas-calendar `events` 排期条目通道
 
 ### 特性

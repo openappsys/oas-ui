@@ -202,6 +202,9 @@ export const pt: LocaleMessages = {
   'gantt.baselineSame': 'Igual à linha de base',
   'gantt.rename': 'Renomear',
   'gantt.linkDelete': 'Excluir dependência',
+  'gantt.addTask': 'Adicionar tarefa',
+  'gantt.addChild': 'Adicionar subtarefa',
+  'gantt.newTask': 'Nova tarefa',
   // kanban (quadro kanban)
   'kanban.emptyColumn': 'Arraste cartões para cá',
   'kanban.moveCard': 'Mover cartão',

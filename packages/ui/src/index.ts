@@ -504,6 +504,7 @@ export {
   type GanttReparentDetail,
   type GanttDependenciesChangeDetail,
   type GanttSelectionChangeDetail,
+  type GanttTaskAddDetail,
 } from './data/gantt/index.js'
 export { OASCarousel } from './data/carousel/oas-carousel.js'
 export { OASTree, type TreeNode } from './data/tree/index.js'

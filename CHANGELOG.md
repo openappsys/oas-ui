@@ -25,6 +25,7 @@
 - **多选与批量**：点击行选中（`Ctrl`/`Cmd` 加选、`Shift` 连选）；新增 `selection` property（`string[]`，可读写）与 `oas-selection-change { ids }` 事件；`removeTasks(ids)` 批量删除（连同后代），删除时清洗其他任务的悬空依赖并对受影响后继补发 `oas-dependencies-change`；`Delete`/`Backspace` 删所选（跳过 disabled）。`readonly`/`disabled` 下仍可选中（选择属查看态）。
 - **行内重命名**：双击名称就地编辑（`Enter` 提交 / `Esc` 还原 / 失焦提交），改 `name` 并派发 `oas-tasks-change`。
 - **键盘可达与触屏入口**：行聚焦后 `↑/↓` 移焦、`空格` 选择、`Alt+↑/↓` 同级移动、`Alt+→` 降级、`Alt+←` 升级、`F2` 重命名；连线命中路径改为可聚焦 `role=button`（`Enter`/`Delete` 删该依赖，`svg.links` 去 `aria-hidden`、可见线 `aria-hidden`）；触屏点任务条揭示连线点。i18n ×10 新增 `gantt.rename` / `gantt.linkDelete`。
+- **任务管理创作能力**：命令式增删改方法 `addTask(task?, opts?)`（返回新 id）/ `moveTask(id, { parent?, index? })` / `duplicateTask(id, opts?)`（深拷贝子树）/ `addDependency` / `removeDependency` / `updateDependency` / `updateTasks(patches)`（批量浅合并，返回生效条数）——写回统一走清洗层，派发既有 `oas-tasks-change` / `oas-reparent` / `oas-dependencies-change`，新增 `oas-task-add { id, task }` 事件；属性 `creatable`（默认关）行内新建（行尾「＋」+ 双击空白按日期建，新建后进入重命名）；`zoomIn()` / `zoomOut()` / `fit()` 缩放。i18n ×10 新增 `gantt.addTask` / `gantt.addChild` / `gantt.newTask`；文档 zh/en 增「任务管理」段（含 `oas-modal` + `oas-form` 详情编辑示例）。
 
 ## [2.6.1] - 2026-10-13
 

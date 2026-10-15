@@ -20,4 +20,5 @@ export type {
   GanttReparentDetail,
   GanttDependenciesChangeDetail,
   GanttSelectionChangeDetail,
+  GanttTaskAddDetail,
 } from './oas-gantt.js'

@@ -66,6 +66,72 @@
 - **无障碍**：名称列为 `role="tree"`，每行 `treeitem` 带 `aria-level` / `aria-posinset` / `aria-setsize`（同级全集，含折叠子级；悬空/断环父级按根计）；选中态同步 `aria-selected`，展开态同步 `aria-expanded`。
 - **触屏**：点任务条揭示其连线点（无 hover）；左列行首的拖拽手柄（⋮⋮）用于触屏**行重排**（整行纵向拖与列表滚动在触屏上冲突，改由手柄承载；手柄独占手势，其余区域仍可滚动），纯点按手柄不改选中。
 
+## 任务管理（创建 / 编辑 / 依赖 / 导出）
+
+宿主用**命令式方法**驱动增删改，无需整体重写 `tasks`（写回统一走清洗层并派发 `oas-tasks-change`）：
+
+- `addTask(task?, opts?)`：新增任务，返回新 id；`opts: { parent?, before?, after? }`。缺省名走 i18n `gantt.newTask`、开始为今天、非里程碑补 1 天（含端）。
+- `moveTask(id, { parent?, index? })`：改父级 / 调同级顺序，派发 `oas-reparent` + `oas-tasks-change`。
+- `duplicateTask(id, opts?)`：深拷贝任务及其子树（各自新 id），紧跟原子树之后，返回新根 id。
+- `addDependency(taskId, dep)` / `removeDependency(taskId, dep)` / `updateDependency(taskId, from, to)`：增 / 删 / 改依赖（`dep: { id, type? }`），派发 `oas-dependencies-change`。
+- `updateTasks(patches)`：批量浅合并（`[{ id, ...patch }]`），返回生效条数，只派发一次 `oas-tasks-change`。
+- 缩放：`zoomIn()` / `zoomOut()` 沿六档刻度步进；`fit()` 取最细且能容纳全部任务的档。
+- 属性 **`creatable`**（布尔，默认关）：开启后行尾出「＋」（摘要行加子级、叶子行加同级后继）、**双击空白区按落点日期建任务**，新建后进入行内重命名；只读 / 任务级禁用行不出按钮。
+- 事件 **`oas-task-add`**（detail `{ id, task }`）：命令式或行内新建后派发，供宿主定位并打开编辑。
+
+<DemoBlock title="命令式任务管理：新建 / 复制所选 / 加依赖 / 删除所选 / 缩放 / 导出；creatable 行内新建（点行尾「＋」或双击空白）">
+  <div style="display:flex;gap:var(--oas-space-2);flex-wrap:wrap;margin-bottom:var(--oas-space-2)">
+    <oas-button id="gantt-tm-add" size="small">新建任务</oas-button>
+    <oas-button id="gantt-tm-copy" size="small">复制所选</oas-button>
+    <oas-button id="gantt-tm-dep" size="small">加依赖（所选→下一项）</oas-button>
+    <oas-button id="gantt-tm-del" size="small" variant="outline">删除所选</oas-button>
+    <oas-button id="gantt-tm-progress" size="small" variant="outline">改进度 +10</oas-button>
+    <oas-button id="gantt-tm-zoomout" size="small" variant="outline">缩小</oas-button>
+    <oas-button id="gantt-tm-zoomin" size="small" variant="outline">放大</oas-button>
+    <oas-button id="gantt-tm-fit" size="small" variant="outline">适配</oas-button>
+    <oas-button id="gantt-tm-save" size="small" variant="outline">导出 JSON</oas-button>
+  </div>
+  <oas-gantt id="gantt-tm" creatable height="260"></oas-gantt>
+  <div id="gantt-tm-output" style="color:var(--oas-color-text-secondary);font-size:var(--oas-font-size-sm);margin-top:var(--oas-space-2)"></div>
+</DemoBlock>
+
+用 `oas-modal` + `oas-form` 组装任务详情编辑器（组件只派发 `oas-task-dblclick`，不内建弹窗）：
+
+```html
+<oas-gantt id="g" creatable></oas-gantt>
+<oas-modal id="edit" title="编辑任务">
+  <oas-form id="edit-form">
+    <oas-form-item label="名称" name="name" required><oas-input name="name"></oas-input></oas-form-item>
+    <oas-form-item label="开始" name="start" required><oas-date-picker name="start"></oas-date-picker></oas-form-item>
+    <oas-form-item label="结束" name="end"><oas-date-picker name="end"></oas-date-picker></oas-form-item>
+    <oas-form-item label="进度" name="progress"><oas-slider name="progress" show-value></oas-slider></oas-form-item>
+  </oas-form>
+</oas-modal>
+<script>
+  const g = document.getElementById('g')
+  const modal = document.getElementById('edit')
+  const form = document.getElementById('edit-form')
+  const field = (name) => form.querySelector(`[name="${name}"]`)
+  let editing = ''
+  g.addEventListener('oas-task-dblclick', (e) => {
+    editing = e.detail.id
+    const t = e.detail.task
+    field('name').value = t.name
+    field('start').value = t.start
+    field('end').value = t.end ?? ''
+    field('progress').value = t.progress ?? 0
+    modal.setAttribute('visible', '') // 受控打开（弹窗点「确定」会自关）
+  })
+  modal.addEventListener('oas-ok', () => form.submit())
+  form.addEventListener('oas-submit', (e) => {
+    const v = e.detail.values // 表单值恒为字符串，数字字段按需转换
+    g.updateTask(editing, { ...v, progress: Number(v.progress) })
+  })
+</script>
+```
+
+> `oas-task-dblclick` / `oas-task-click` 与 `oas-task-render` 让宿主任意接管编辑与自定义渲染；组件本身只保证数据与交互闭环。
+
 ## 只读三级 + 任务级禁用
 
 <DemoBlock title="readonly（全禁）/ dates-readonly（禁改期）/ progress-readonly（禁进度）；只读态不渲染拖拽手柄（视觉即语义）">
@@ -245,6 +311,53 @@ onMounted(async () => {
     sel.addEventListener('oas-selection-change', report)
     report()
   }
+
+  // 任务管理示例：命令式增删改 + 缩放 + 导出
+  const tm = document.getElementById('gantt-tm')
+  const tmOut = document.getElementById('gantt-tm-output')
+  if (tm && tmOut) {
+    tm.tasks = [
+      { id: 'd1', name: '需求梳理', start: '2026-03-02', end: '2026-03-06', progress: 100 },
+      { id: 'd2', name: '原型设计', start: '2026-03-05', end: '2026-03-11', progress: 60, dependencies: [{ id: 'd1' }] },
+      { id: 'd3', name: '开发实现', start: '2026-03-10', end: '2026-03-20', progress: 20, dependencies: [{ id: 'd2' }] },
+      { id: 'd4', name: '验收上线', start: '2026-03-20' },
+    ]
+    const say = (m) => {
+      tmOut.textContent = m
+    }
+    const on = (id, fn) => document.getElementById(id)?.addEventListener('click', fn)
+    on('gantt-tm-add', () => say(`addTask → ${tm.addTask({ name: '新任务' })}`))
+    on('gantt-tm-copy', () => {
+      const id = tm.selection[0]
+      const n = id ? tm.duplicateTask(id) : null
+      say(n ? `duplicateTask(${id}) → ${n}` : '先在左侧点选一行')
+    })
+    on('gantt-tm-dep', () => {
+      const ids = tm.tasks.map((t) => t.id)
+      const i = ids.indexOf(tm.selection[0])
+      const next = ids[i + 1]
+      const ok = i >= 0 && next ? tm.addDependency(next, { id: tm.selection[0] }) : false
+      say(ok ? `依赖 ${tm.selection[0]} → ${next}` : '先点选一行且其后有任务')
+    })
+    on('gantt-tm-del', () => {
+      const sel = tm.selection
+      if (!sel.length) return say('先在左侧点选一行')
+      tm.removeTasks(sel)
+      say(`removeTasks → 删除 ${sel.length} 条`)
+    })
+    on('gantt-tm-zoomin', () => say(`zoomIn → scale=${(tm.zoomIn(), tm.getAttribute('scale'))}`))
+    on('gantt-tm-zoomout', () => say(`zoomOut → scale=${(tm.zoomOut(), tm.getAttribute('scale'))}`))
+    on('gantt-tm-fit', () => say(`fit → scale=${(tm.fit(), tm.getAttribute('scale'))}`))
+    on('gantt-tm-save', () => say(`导出 ${tm.tasks.length} 条：${JSON.stringify(tm.tasks)}`))
+    on('gantt-tm-progress', () => {
+      const id = tm.selection[0]
+      if (!id) return say('先在左侧点选一行')
+      const cur = tm.tasks.find((t) => t.id === id)?.progress ?? 0
+      const n = tm.updateTasks([{ id, progress: Math.min(100, cur + 10) }])
+      say(`updateTasks → 生效 ${n} 条`)
+    })
+    say('点「＋」或双击空白可直接建任务；点按钮试命令式 API')
+  }
 })
 </script>
 
@@ -256,6 +369,7 @@ onMounted(async () => {
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
+| `creatable` | 行内新建（布尔，默认关）：开启后行尾出「＋」（摘要行加子级、叶子行加同级后继）、双击空白区按落点日期建任务，新建后进入行内重命名；只读/任务级禁用行不出按钮 | `boolean` | — |
 | `dates-readonly` | 禁改期/拉伸（进度仍可拖） | `boolean` | — |
 | `expanded` | 已展开集合（JSON 数组，受控）：属性缺席缺省全展开；显式 [] 全收起；点折叠钮写回 | `string` | — |
 | `first-day-of-week` | 周起始日（0-6）；缺省按 locale 推导（week 档对齐用） | `string` | — |
@@ -290,6 +404,7 @@ onMounted(async () => {
 | `oas-reparent` | 行拖拽改父子 / 重排收口时派发，detail: { id, parent, index }（parent 为 null 表示根级，index 为同级序号） |
 | `oas-scale-change` | scale 属性变化时派发，detail: { scale }；首次吸收不派发 |
 | `oas-selection-change` | 多选集合变化（点击 / 键盘 / property 写入）时派发，detail: { ids }（选中的任务 id 数组） |
+| `oas-task-add` | 命令式新增任务后派发（addTask / duplicateTask / creatable 行内新建），detail: { id, task }（id 为新任务 id） |
 | `oas-task-change` | 拖拽/拉伸/键盘改期收口（pointerup）时派发，detail: { id, task, oldStart, oldEnd, start, end }；零位移不派发 |
 | `oas-task-click` | 点击任务条/里程碑时派发，detail: { id, task } |
 | `oas-task-dblclick` | 双击任务条时派发，detail: { id, task }——宿主接编辑表单 |

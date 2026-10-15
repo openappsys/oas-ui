@@ -458,3 +458,48 @@ test.describe('gantt 触屏硬指针', () => {
     await expect(out).toContainText('oas-reparent')
   })
 })
+
+// 任务管理示例：命令式增删改 + creatable 行内新建（真点 + console 零 error）
+test('gantt 任务管理示例：命令式增删改 + creatable 行内新建', async ({ page }) => {
+  const errors: string[] = []
+  page.on('pageerror', (e) => errors.push(e.message))
+  page.on('console', (m) => {
+    if (m.type() === 'error') errors.push(m.text())
+  })
+  await page.goto('/components/gantt.html', { waitUntil: 'domcontentloaded' })
+  await waitGantt(page, 'gantt-tm')
+  const host = page.locator('#gantt-tm')
+  const out = page.locator('#gantt-tm-output')
+
+  await expect(host.locator('.row-add')).toHaveCount(4)
+
+  await page.locator('#gantt-tm-add').click()
+  await expect(out).toContainText('addTask →')
+
+  await host.locator('.row-name[data-key="d2"]').click()
+  await page.locator('#gantt-tm-copy').click()
+  await expect(out).toContainText('duplicateTask(d2)')
+
+  await page.locator('#gantt-tm-dep').click()
+  await expect(out).toContainText('依赖')
+
+  await page.locator('#gantt-tm-fit').click()
+  await expect(out).toContainText('fit →')
+
+  // 行内「＋」新建 → 进入重命名
+  await host.locator('.row-name[data-key="d1"] .row-add').first().click()
+  await expect(host.locator('.rename-input')).toHaveCount(1)
+  await page.keyboard.press('Escape')
+
+  // 删除所选
+  await host.locator('.row-name[data-key="d4"]').click()
+  await page.locator('#gantt-tm-del').click()
+  await expect(out).toContainText('removeTasks →')
+
+  // 改（updateTasks 批量浅合并）
+  await host.locator('.row-name[data-key="d1"]').click()
+  await page.locator('#gantt-tm-progress').click()
+  await expect(out).toContainText('updateTasks →')
+
+  expect(errors).toEqual([])
+})

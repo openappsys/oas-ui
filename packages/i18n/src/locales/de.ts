@@ -202,6 +202,9 @@ export const de: LocaleMessages = {
   'gantt.baselineSame': 'Entspricht der Basis',
   'gantt.rename': 'Umbenennen',
   'gantt.linkDelete': 'Abhängigkeit löschen',
+  'gantt.addTask': 'Aufgabe hinzufügen',
+  'gantt.addChild': 'Teilaufgabe hinzufügen',
+  'gantt.newTask': 'Neue Aufgabe',
   // kanban (Kanban-Board)
   'kanban.emptyColumn': 'Karten hierher ziehen',
   'kanban.moveCard': 'Karte verschieben',

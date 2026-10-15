@@ -202,6 +202,9 @@ export const ru: LocaleMessages = {
   'gantt.baselineSame': 'Совпадает с базовым',
   'gantt.rename': 'Переименовать',
   'gantt.linkDelete': 'Удалить зависимость',
+  'gantt.addTask': 'Добавить задачу',
+  'gantt.addChild': 'Добавить подзадачу',
+  'gantt.newTask': 'Новая задача',
   // kanban (канбан-доска)
   'kanban.emptyColumn': 'Перетащите карточки сюда',
   'kanban.moveCard': 'Переместить карточку',

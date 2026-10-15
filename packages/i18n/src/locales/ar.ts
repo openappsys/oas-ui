@@ -202,6 +202,9 @@ export const ar: LocaleMessages = {
   'gantt.baselineSame': 'مطابق للأساس',
   'gantt.rename': 'إعادة تسمية',
   'gantt.linkDelete': 'حذف التبعية',
+  'gantt.addTask': 'إضافة مهمة',
+  'gantt.addChild': 'إضافة مهمة فرعية',
+  'gantt.newTask': 'مهمة جديدة',
   // kanban (لوحة كانبان)
   'kanban.emptyColumn': 'اسحب البطاقات إلى هنا',
   'kanban.moveCard': 'نقل البطاقة',

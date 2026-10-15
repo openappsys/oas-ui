@@ -66,6 +66,72 @@ Hovering a bar reveals two **link dots**: drag the right (finish) dot onto a tar
 - **Accessibility**: the name column is a `role="tree"`; each `treeitem` carries `aria-level` / `aria-posinset` / `aria-setsize` (full sibling set, including collapsed children; dangling/cyclic parents count as roots); selection mirrors to `aria-selected` and expansion to `aria-expanded`.
 - **Touch**: tap a bar to reveal its link dots (no hover); the drag handle (⋮⋮) at the start of a left row drives touch **row reorder** (a full-row vertical drag conflicts with list scrolling on touch, so the handle carries it; the handle owns the gesture while the rest of the row still scrolls). A plain tap on the handle does not change selection.
 
+## Task Management (Create / Edit / Dependencies / Export)
+
+Drive create/update/delete with **imperative methods** instead of rewriting `tasks` wholesale (writes go through the sanitizer and dispatch `oas-tasks-change`):
+
+- `addTask(task?, opts?)`: add a task, returns the new id; `opts: { parent?, before?, after? }`. Defaults: name from i18n `gantt.newTask`, start = today, non-milestone gets a 1-day (inclusive) end.
+- `moveTask(id, { parent?, index? })`: reparent / reorder; dispatches `oas-reparent` + `oas-tasks-change`.
+- `duplicateTask(id, opts?)`: deep-copy the task and its subtree (fresh ids), right after the original subtree; returns the new root id.
+- `addDependency(taskId, dep)` / `removeDependency(taskId, dep)` / `updateDependency(taskId, from, to)`: add / remove / rewrite a dependency (`dep: { id, type? }`); dispatches `oas-dependencies-change`.
+- `updateTasks(patches)`: batch shallow-merge (`[{ id, ...patch }]`), returns the applied count, dispatches a single `oas-tasks-change`.
+- Zoom: `zoomIn()` / `zoomOut()` step through the six scales; `fit()` picks the finest scale that still fits all tasks.
+- Attribute **`creatable`** (boolean, off by default): enables the trailing "＋" per row (adds a subtask on summary rows, a sibling after on leaf rows) and **double-click empty space to create a task at the clicked date**; the new task enters inline rename. No button on readonly / per-task-disabled rows.
+- Event **`oas-task-add`** (detail `{ id, task }`): dispatched after imperative or inline creation, so the host can locate and open an editor.
+
+<DemoBlock title="Imperative task management: add / duplicate selected / add dependency / delete selected / zoom / export; creatable inline add (click the trailing + or double-click empty space)">
+  <div style="display:flex;gap:var(--oas-space-2);flex-wrap:wrap;margin-bottom:var(--oas-space-2)">
+    <oas-button id="gantt-tm-add" size="small">Add task</oas-button>
+    <oas-button id="gantt-tm-copy" size="small">Duplicate selected</oas-button>
+    <oas-button id="gantt-tm-dep" size="small">Add dependency (selected → next)</oas-button>
+    <oas-button id="gantt-tm-del" size="small" variant="outline">Delete selected</oas-button>
+    <oas-button id="gantt-tm-progress" size="small" variant="outline">Progress +10</oas-button>
+    <oas-button id="gantt-tm-zoomout" size="small" variant="outline">Zoom out</oas-button>
+    <oas-button id="gantt-tm-zoomin" size="small" variant="outline">Zoom in</oas-button>
+    <oas-button id="gantt-tm-fit" size="small" variant="outline">Fit</oas-button>
+    <oas-button id="gantt-tm-save" size="small" variant="outline">Export JSON</oas-button>
+  </div>
+  <oas-gantt id="gantt-tm" creatable height="260"></oas-gantt>
+  <div id="gantt-tm-output" style="color:var(--oas-color-text-secondary);font-size:var(--oas-font-size-sm);margin-top:var(--oas-space-2)"></div>
+</DemoBlock>
+
+Assemble a task detail editor with `oas-modal` + `oas-form` (the component only dispatches `oas-task-dblclick`; no built-in dialog):
+
+```html
+<oas-gantt id="g" creatable></oas-gantt>
+<oas-modal id="edit" title="Edit task">
+  <oas-form id="edit-form">
+    <oas-form-item label="Name" name="name" required><oas-input name="name"></oas-input></oas-form-item>
+    <oas-form-item label="Start" name="start" required><oas-date-picker name="start"></oas-date-picker></oas-form-item>
+    <oas-form-item label="End" name="end"><oas-date-picker name="end"></oas-date-picker></oas-form-item>
+    <oas-form-item label="Progress" name="progress"><oas-slider name="progress" show-value></oas-slider></oas-form-item>
+  </oas-form>
+</oas-modal>
+<script>
+  const g = document.getElementById('g')
+  const modal = document.getElementById('edit')
+  const form = document.getElementById('edit-form')
+  const field = (name) => form.querySelector(`[name="${name}"]`)
+  let editing = ''
+  g.addEventListener('oas-task-dblclick', (e) => {
+    editing = e.detail.id
+    const t = e.detail.task
+    field('name').value = t.name
+    field('start').value = t.start
+    field('end').value = t.end ?? ''
+    field('progress').value = t.progress ?? 0
+    modal.setAttribute('visible', '') // controlled open (the modal closes itself on OK)
+  })
+  modal.addEventListener('oas-ok', () => form.submit())
+  form.addEventListener('oas-submit', (e) => {
+    const v = e.detail.values // form values are always strings; coerce numeric fields as needed
+    g.updateTask(editing, { ...v, progress: Number(v.progress) })
+  })
+</script>
+```
+
+> `oas-task-dblclick` / `oas-task-click` and `oas-task-render` let the host own editing and custom rendering; the component only guarantees a closed loop of data and interaction.
+
 ## Readonly Levels + Per-task Disable
 
 <DemoBlock title="readonly (all) / dates-readonly (no rescheduling) / progress-readonly (no progress drag); readonly states render no drag handles (visual = semantics)">
@@ -247,6 +313,53 @@ onMounted(async () => {
     sel.addEventListener('oas-selection-change', report)
     report()
   }
+
+  // Task-management demo: imperative CRUD + zoom + export
+  const tm = document.getElementById('gantt-tm')
+  const tmOut = document.getElementById('gantt-tm-output')
+  if (tm && tmOut) {
+    tm.tasks = [
+      { id: 'd1', name: 'Discovery', start: '2026-03-02', end: '2026-03-06', progress: 100 },
+      { id: 'd2', name: 'Prototype', start: '2026-03-05', end: '2026-03-11', progress: 60, dependencies: [{ id: 'd1' }] },
+      { id: 'd3', name: 'Implementation', start: '2026-03-10', end: '2026-03-20', progress: 20, dependencies: [{ id: 'd2' }] },
+      { id: 'd4', name: 'Acceptance', start: '2026-03-20' },
+    ]
+    const say = (m) => {
+      tmOut.textContent = m
+    }
+    const on = (id, fn) => document.getElementById(id)?.addEventListener('click', fn)
+    on('gantt-tm-add', () => say(`addTask → ${tm.addTask({ name: 'New task' })}`))
+    on('gantt-tm-copy', () => {
+      const id = tm.selection[0]
+      const n = id ? tm.duplicateTask(id) : null
+      say(n ? `duplicateTask(${id}) → ${n}` : 'Select a row first')
+    })
+    on('gantt-tm-dep', () => {
+      const ids = tm.tasks.map((t) => t.id)
+      const i = ids.indexOf(tm.selection[0])
+      const next = ids[i + 1]
+      const ok = i >= 0 && next ? tm.addDependency(next, { id: tm.selection[0] }) : false
+      say(ok ? `dependency ${tm.selection[0]} → ${next}` : 'Select a row with a following task')
+    })
+    on('gantt-tm-del', () => {
+      const sel = tm.selection
+      if (!sel.length) return say('Select a row first')
+      tm.removeTasks(sel)
+      say(`removeTasks → removed ${sel.length}`)
+    })
+    on('gantt-tm-zoomin', () => say(`zoomIn → scale=${(tm.zoomIn(), tm.getAttribute('scale'))}`))
+    on('gantt-tm-zoomout', () => say(`zoomOut → scale=${(tm.zoomOut(), tm.getAttribute('scale'))}`))
+    on('gantt-tm-fit', () => say(`fit → scale=${(tm.fit(), tm.getAttribute('scale'))}`))
+    on('gantt-tm-save', () => say(`export ${tm.tasks.length}: ${JSON.stringify(tm.tasks)}`))
+    on('gantt-tm-progress', () => {
+      const id = tm.selection[0]
+      if (!id) return say('Select a row first')
+      const cur = tm.tasks.find((t) => t.id === id)?.progress ?? 0
+      const n = tm.updateTasks([{ id, progress: Math.min(100, cur + 10) }])
+      say(`updateTasks → applied ${n}`)
+    })
+    say('Click the trailing + or double-click empty space to create; try the buttons for the imperative API')
+  }
 })
 </script>
 
@@ -258,6 +371,7 @@ onMounted(async () => {
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
+| `creatable` | Inline creation (boolean, off by default): when enabled, a trailing "+" appears per row (adds a subtask on summary rows, a sibling after on leaf rows) and double-clicking empty space creates a task at the clicked date; the new task enters inline rename. No button on readonly or per-task-disabled rows | `boolean` | — |
 | `dates-readonly` | No rescheduling/resizing (progress still draggable) | `boolean` | — |
 | `expanded` | Expanded set (JSON array, controlled): defaults to fully expanded when absent; explicit [] collapses all; written back on toggle | `string` | — |
 | `first-day-of-week` | Week start day (0-6); defaults to locale derivation (used for week-tier alignment) | `string` | — |
@@ -292,6 +406,7 @@ onMounted(async () => {
 | `oas-reparent` | Dispatched when a row drag reparent/reorder settles, detail: { id, parent, index } (parent null means root level; index is the sibling position) |
 | `oas-scale-change` | Dispatched when the scale attribute changes, detail: { scale }; not dispatched on initial absorption |
 | `oas-selection-change` | Dispatched when the multi-select set changes (click / keyboard / property write), detail: { ids } (selected task ids) |
+| `oas-task-add` | Dispatched after imperative creation (addTask / duplicateTask / creatable inline create), detail: { id, task } (id is the new task id) |
 | `oas-task-change` | Dispatched when a drag/resize/keyboard reschedule settles (pointerup), detail: { id, task, oldStart, oldEnd, start, end }; not dispatched on zero movement |
 | `oas-task-click` | Dispatched on task bar/milestone click, detail: { id, task } |
 | `oas-task-dblclick` | Dispatched on task bar double-click, detail: { id, task } — hosts attach an edit form |

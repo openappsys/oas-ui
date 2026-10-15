@@ -202,6 +202,9 @@ export const zhCN = {
   'gantt.baselineSame': '与基线一致',
   'gantt.rename': '重命名',
   'gantt.linkDelete': '删除依赖',
+  'gantt.addTask': '添加任务',
+  'gantt.addChild': '添加子任务',
+  'gantt.newTask': '新任务',
   // kanban（看板）
   'kanban.emptyColumn': '拖拽卡片到此处',
   'kanban.moveCard': '移动卡片',

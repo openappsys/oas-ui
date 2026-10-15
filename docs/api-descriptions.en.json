@@ -4329,9 +4329,11 @@
       "row-height": "Row height in px (default 36, minimum 20)",
       "label-position": "Bar label position: inside / right / left; default `none` (the row-name column already shows the name, so the bar does not repeat it); invalid values fall back to `none`",
       "snap": "Snap drags to the current scale unit (on by default; false shifts by pixel ratio and keeps time precision)",
-      "show-baseline": "Baseline comparison (boolean, off by default): tasks with a baseline render a baseline bar under the actual bar, its title showing the delta (N days later/earlier than baseline, or on baseline)"
+      "show-baseline": "Baseline comparison (boolean, off by default): tasks with a baseline render a baseline bar under the actual bar, its title showing the delta (N days later/earlier than baseline, or on baseline)",
+      "creatable": "Inline creation (boolean, off by default): when enabled, a trailing \"+\" appears per row (adds a subtask on summary rows, a sibling after on leaf rows) and double-clicking empty space creates a task at the clicked date; the new task enters inline rename. No button on readonly or per-task-disabled rows"
     },
     "events": {
+      "oas-task-add": "Dispatched after imperative creation (addTask / duplicateTask / creatable inline create), detail: { id, task } (id is the new task id)",
       "oas-task-click": "Dispatched on task bar/milestone click, detail: { id, task }",
       "oas-task-dblclick": "Dispatched on task bar double-click, detail: { id, task } — hosts attach an edit form",
       "oas-task-change": "Dispatched when a drag/resize/keyboard reschedule settles (pointerup), detail: { id, task, oldStart, oldEnd, start, end }; not dispatched on zero movement",

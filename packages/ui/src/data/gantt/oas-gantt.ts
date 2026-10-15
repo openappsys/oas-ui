@@ -111,6 +111,33 @@ const STYLE = `
   outline: 2px solid var(--oas-color-primary);
   outline-offset: -2px;
 }
+/* 行内新建「＋」：默认不渲染（仅 creatable 且非只读/非禁用行）；写入 DOM 的按钮靠 :host([creatable]) 显示 */
+.row-add {
+  display: none;
+}
+:host([creatable]) .row-add {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  padding-inline: 2px;
+  background: transparent;
+  border: 0;
+  border-radius: var(--oas-radius-xs);
+  color: var(--oas-color-text-secondary);
+  font: inherit;
+  font-size: var(--oas-font-size-xs);
+  line-height: 1;
+  cursor: pointer;
+}
+:host([creatable]) .row-add:hover {
+  color: var(--oas-color-text-primary);
+  background: var(--oas-color-bg-hover);
+}
+:host([creatable]) .row-add:focus-visible {
+  outline: 2px solid var(--oas-color-primary);
+  outline-offset: -2px;
+}
 .rename-input {
   flex: 1 1 auto;
   min-width: 0;
@@ -336,7 +363,9 @@ svg.links .temp-link {
   cursor: grab;
   box-sizing: border-box;
   overflow: visible;
-  /* 触摸端起拖：横向手势留给拖拽（纵向仍可滚动页面），否则浏览器把手势判给滚动并发出 pointercancel */
+  /* 短任务在粗档（1 天 vs month/quarter）下宽度趋近 0 不可见/不可点 → 视觉下限保底（数据不变） */
+  min-width: 8px;
+  /* 触屏纵向滚动优先；横向拖拽由条自身处理（拖拽中浏览器判定为滚动则触发 pointercancel） */
   touch-action: pan-y;
   user-select: none;
 }
@@ -346,6 +375,7 @@ svg.links .temp-link {
   border-radius: var(--oas-radius-full, 999px);
   background: var(--oas-gantt-baseline-color, color-mix(in srgb, var(--oas-color-text-secondary-strong) 55%, transparent));
   pointer-events: auto;
+  min-width: 8px;
   z-index: 0;
 }
 .bar:active {
@@ -615,6 +645,12 @@ export interface GanttSelectionChangeDetail {
   ids: string[]
 }
 
+/** task-add 事件载荷（命令式创作通道新增/复制任务收口）：id 为新任务 id，task 为快照 */
+export interface GanttTaskAddDetail {
+  id: string
+  task: GanttTask
+}
+
 type TG = GanttTask & { id: string }
 
 interface GanttRow {
@@ -877,6 +913,7 @@ export class OASGantt extends OASElement {
       'label-position',
       'snap',
       'show-baseline',
+      'creatable',
     ]
   }
 
@@ -1056,6 +1093,29 @@ export class OASGantt extends OASElement {
 
   private emitTasksChange(): void {
     this.emit('tasks-change', { tasks: this.tasks } satisfies GanttTasksChangeDetail)
+  }
+
+  /** 创作通道统一写回出口：反射属性 + 重渲染 + 派发 oas-tasks-change（一次提交一次事件） */
+  private commitTasks(): void {
+    this.syncTasksAttr()
+    this.update()
+    this.emitTasksChange()
+  }
+
+  /** 让 id 的父级展开以显示新增子级：受控时补入 expanded 集合并回写属性；未受控时若该父级带
+   *  数据级 `expanded:false`（显式收起）则置 true（否则新子级隐形、无重命名/聚焦反馈） */
+  private ensureExpanded(id: string): void {
+    if (this.expanded) {
+      if (this.expanded.has(id)) return
+      const next = new Set(this.expanded)
+      next.add(id)
+      this.expanded = next
+      this.expandedAttrCache = JSON.stringify([...next])
+      this.setAttribute('expanded', this.expandedAttrCache)
+      return
+    }
+    const t = this._tasks.find((x) => x.id === id)
+    if (t && t.expanded === false) t.expanded = true
   }
 
   private syncTasks(): void {
@@ -1542,6 +1602,9 @@ export class OASGantt extends OASElement {
     this.tooltipEl = this.shadow.querySelector('.tooltip')
     this.emptyEl = this.shadow.querySelector('.empty')
     this.tbody?.addEventListener('scroll', this.onScroll, { passive: true })
+    // 空白双击新建（creatable 通道）：左侧列表与时间轴各一个落点入口
+    this.sideBody?.addEventListener('dblclick', this.onSideDblClick)
+    this.tbody?.addEventListener('dblclick', this.onTbodyDblClick)
     // 连线：删除键 + 点空白清选中（函数引用稳定，重复 bind 幂等）
     document.addEventListener('keydown', this.docLinkKey)
     document.addEventListener('click', this.docLinkClick)
@@ -1554,6 +1617,8 @@ export class OASGantt extends OASElement {
     }
     this.onCleanup(() => {
       this.tbody?.removeEventListener('scroll', this.onScroll)
+      this.sideBody?.removeEventListener('dblclick', this.onSideDblClick)
+      this.tbody?.removeEventListener('dblclick', this.onTbodyDblClick)
       this.resizeObs?.disconnect()
       this.resizeObs = null
       this.dragCtx = null
@@ -1914,6 +1979,19 @@ export class OASGantt extends OASElement {
           this.startRename(row, name)
         })
       }
+      // 行内新建（creatable）：只读与任务级禁用行不出按钮
+      if (this.hasAttr('creatable') && !this.hasAttr('readonly') && row.task.disabled !== true) {
+        const add = document.createElement('button')
+        add.type = 'button'
+        add.className = 'row-add'
+        add.setAttribute('aria-label', this.t(row.hasChildren ? 'gantt.addChild' : 'gantt.addTask'))
+        add.textContent = '＋'
+        add.addEventListener('click', (e) => {
+          e.stopPropagation()
+          this.onRowAdd(row)
+        })
+        el.appendChild(add)
+      }
       el.addEventListener('pointerdown', (e) => this.onRowPointerDown(e as PointerEvent, row))
       el.addEventListener('keydown', (e) => this.onRowKeyDown(e as KeyboardEvent, row))
       frag.appendChild(el)
@@ -2163,7 +2241,7 @@ export class OASGantt extends OASElement {
 
   private onRowPointerDown(e: PointerEvent, row: GanttRow): void {
     if (e.button !== 0 || this.reparentCtx || this.dragCtx || this.linkCtx || this.rowPending) return
-    if ((e.target as HTMLElement).closest('.toggle, .rename-input')) return
+    if ((e.target as HTMLElement).closest('.toggle, .rename-input, .row-add')) return
     // 先待定：位移阈值才进入重排，否则收口视作点击（多选）。readonly 允许多选，仅拖拽重排被禁止。
     this.rowPending = {
       id: row.task.id,
@@ -2368,6 +2446,341 @@ export class OASGantt extends OASElement {
     }
   }
 
+  // ===== 命令式创作通道（新增 / 移动 / 复制 / 依赖 / 批量 / 缩放）=====
+
+  /**
+   * 新增任务（命令式创作通道）：返回新任务 id；非法输入返回 ''（零改动、零事件）。
+   * 缺省：name 走 i18n `gantt.newTask`、start 为今天、非里程碑补 end = start（1 天含端）；
+   * 显式 id 与现有冲突时自动避让；parent 不存在按根处理。
+   * 位置：opts.before 插到该 id 前、opts.after 插到其后，否则挂到 parent 子树（最后后代）之后 / 根级末尾。
+   * 写回经 sanitizeTasks 清洗；派发 oas-tasks-change 与 oas-task-add（detail { id, task }）。
+   */
+  addTask(
+    task: Partial<GanttTask> = {},
+    opts: { parent?: string | null; before?: string; after?: string } = {},
+  ): string {
+    const ids = new Set(this._tasks.map((t) => t.id))
+    const candidate: Record<string, unknown> = { ...task }
+    delete candidate.children
+    const explicitId = typeof task.id === 'string' && task.id !== '' && !ids.has(task.id) ? task.id : undefined
+    candidate.id = explicitId ?? this.allocId(new Set(ids))
+    // 非法 end（非空串且解析失败）显式拒绝（与 updateTask/updateTasks 同口径），避免静默降级为里程碑
+    if (task.end !== undefined && task.end !== '' && !parseTaskDate(task.end)) return ''
+    if (typeof candidate.name !== 'string' || candidate.name === '') candidate.name = this.t('gantt.newTask')
+    const start = typeof task.start === 'string' && task.start !== '' ? task.start : toISODate(new Date())
+    candidate.start = start
+    if (task.end === undefined && task.type !== 'milestone') candidate.end = start
+    const parentRaw = opts.parent !== undefined ? opts.parent : (task.parent ?? null)
+    const parentId = typeof parentRaw === 'string' && parentRaw !== '' && ids.has(parentRaw) ? parentRaw : undefined
+    if (parentId) candidate.parent = parentId
+    else delete candidate.parent
+    const [clean] = sanitizeTasks(
+      [candidate],
+      (used) => this.allocId(used),
+      (key, msg) => this.warnOnce(key, msg),
+    )
+    if (!clean) return ''
+    const id = clean.id
+    const idxOf = (tid: string): number => this._tasks.findIndex((t) => t.id === tid)
+    const beforeIdx = opts.before !== undefined ? idxOf(opts.before) : -1
+    const afterIdx = opts.after !== undefined ? idxOf(opts.after) : -1
+    let insertAt = this._tasks.length
+    if (beforeIdx >= 0) {
+      insertAt = beforeIdx
+    } else if (afterIdx >= 0) {
+      insertAt = afterIdx + 1
+    } else if (parentId) {
+      // 挂到 parent 子树（其最后一个后代）之后，保持同级顺序
+      const byId = new Map(this._tasks.map((t) => [t.id, t]))
+      let last = idxOf(parentId)
+      this._tasks.forEach((t, i) => {
+        if (i > last && this.isDescendantOf(t, parentId, byId)) last = i
+      })
+      insertAt = last + 1
+    }
+    this._tasks = [...this._tasks.slice(0, insertAt), clean, ...this._tasks.slice(insertAt)]
+    if (parentId) this.ensureExpanded(parentId)
+    this.commitTasks()
+    this.emit('task-add', { id, task: this.taskSnapshot(clean) } satisfies GanttTaskAddDetail)
+    return id
+  }
+
+  /**
+   * 移动任务到指定父级（opts.parent 省略保持原父级、null 移为根级）下的第 index 位
+   * （index 省略追加到该父级子级末尾，越界钳制）。
+   * 目标父级不合法（自身 / 其后代 / 不存在）或结果零变化 → false（零写回零事件）。
+   * 成功派发 oas-reparent（detail { id, parent, index }，index 为移动后同级序号）。
+   */
+  moveTask(id: string, opts: { parent?: string | null; index?: number } = {}): boolean {
+    const byId = new Map(this._tasks.map((t) => [t.id, t]))
+    const node = byId.get(id)
+    if (!node) return false
+    let parent: string | null
+    if (opts.parent === undefined) {
+      parent = node.parent ?? null
+    } else if (opts.parent === null) {
+      parent = null
+    } else {
+      const p = opts.parent
+      const pNode = byId.get(p)
+      // 防环：目标为自身，或目标落在自身子树内（会形成父指针环）
+      if (!pNode || p === id || this.isDescendantOf(pNode, id, byId)) return false
+      parent = p
+    }
+    const beforeSig = this._tasks.map((t) => `${t.id}:${t.parent ?? ''}`).join('|')
+    const rest = this._tasks.filter((t) => t.id !== id)
+    if (parent) node.parent = parent
+    else delete node.parent
+    const siblings = rest.filter((t) => (t.parent ?? null) === parent)
+    const rawIdx = opts.index === undefined ? siblings.length : Math.floor(opts.index)
+    const idx = Number.isFinite(rawIdx) ? Math.max(0, Math.min(rawIdx, siblings.length)) : siblings.length
+    let insertAt = rest.length
+    if (idx < siblings.length) {
+      const anchor = siblings[idx]!.id
+      insertAt = rest.findIndex((t) => t.id === anchor)
+    } else if (siblings.length > 0) {
+      const lastId = siblings[siblings.length - 1]!.id
+      insertAt = rest.findIndex((t) => t.id === lastId) + 1
+    }
+    rest.splice(insertAt, 0, node)
+    // 零变化（顺序与父子均未变）不写回、不派发
+    if (rest.map((t) => `${t.id}:${t.parent ?? ''}`).join('|') === beforeSig) return false
+    this._tasks = rest
+    let index = 0
+    for (const t of rest) {
+      if (t.id === id) break
+      if ((t.parent ?? null) === parent) index++
+    }
+    this.commitTasks()
+    this.emit('reparent', { id, parent, index } satisfies GanttReparentDetail)
+    return true
+  }
+
+  /**
+   * 复制任务及其全部后代（深拷贝、各自新 id，父指针映射到新 id），紧跟原子树之后插入，返回新根 id；
+   * id 不存在 → null。opts.id / opts.name 覆盖根克隆（id 冲突自动避让）；opts.parent 覆盖根父级
+   * （未给则沿用原父级）。派发 oas-tasks-change 与 oas-task-add（新根）。
+   */
+  duplicateTask(id: string, opts: { id?: string; name?: string; parent?: string | null } = {}): string | null {
+    const byId = new Map(this._tasks.map((t) => [t.id, t]))
+    const root = byId.get(id)
+    if (!root) return null
+    const childMap = new Map<string, TG[]>()
+    for (const t of this._tasks) {
+      if (t.parent) {
+        const list = childMap.get(t.parent) ?? []
+        list.push(t)
+        childMap.set(t.parent, list)
+      }
+    }
+    // DFS 收集子树（seen 守卫防 parent 成环时无限递归）
+    const subtree: TG[] = []
+    const seen = new Set<string>()
+    const collect = (t: TG): void => {
+      if (seen.has(t.id)) return
+      seen.add(t.id)
+      subtree.push(t)
+      for (const c of childMap.get(t.id) ?? []) collect(c)
+    }
+    collect(root)
+    const used = new Set(this._tasks.map((t) => t.id))
+    const idMap = new Map<string, string>()
+    for (const t of subtree) {
+      let nid: string
+      if (t === root && typeof opts.id === 'string' && opts.id !== '' && !used.has(opts.id)) nid = opts.id
+      else nid = this.allocId(used)
+      used.add(nid)
+      idMap.set(t.id, nid)
+    }
+    const parentRaw = opts.parent !== undefined ? opts.parent : (root.parent ?? null)
+    // 与 addTask 一致：父级必须存在，否则按根处理（不留悬空父指针）
+    const rootParent = typeof parentRaw === 'string' && parentRaw !== '' && byId.has(parentRaw) ? parentRaw : null
+    const clones: TG[] = subtree.map((t) => {
+      const clone: TG = { ...t, id: idMap.get(t.id)! }
+      // 依赖深拷贝：子树内的前置 id 映射到克隆 id（避免与原体串联），子树外保留原 id
+      if (clone.dependencies)
+        clone.dependencies = clone.dependencies.map((d) => ({ ...d, id: idMap.get(d.id) ?? d.id }))
+      if (clone.baseline) clone.baseline = { ...clone.baseline }
+      delete clone.children
+      if (t === root) {
+        if (rootParent) clone.parent = rootParent
+        else delete clone.parent
+        if (typeof opts.name === 'string' && opts.name !== '') clone.name = opts.name
+      } else if (t.parent && idMap.has(t.parent)) {
+        clone.parent = idMap.get(t.parent)!
+      }
+      return clone
+    })
+    let lastIdx = this._tasks.findIndex((t) => t.id === id)
+    this._tasks.forEach((t, i) => {
+      if (idMap.has(t.id) && i > lastIdx) lastIdx = i
+    })
+    const insertAt = lastIdx + 1
+    this._tasks = [...this._tasks.slice(0, insertAt), ...clones, ...this._tasks.slice(insertAt)]
+    const newRoot = clones[0]!
+    this.commitTasks()
+    this.emit('task-add', { id: newRoot.id, task: this.taskSnapshot(newRoot) } satisfies GanttTaskAddDetail)
+    return newRoot.id
+  }
+
+  /**
+   * 新增依赖（后继 taskId 依赖 dep.id）：type 缺省 fs；同源同型已存在返回 false（不重复）。
+   * 非法（任务/目标不存在、自身依赖）返回 false。成功派发 oas-tasks-change 与 oas-dependencies-change。
+   */
+  addDependency(taskId: string, dep: { id: string; type?: 'fs' | 'ss' | 'ff' | 'sf' }): boolean {
+    const task = this._tasks.find((t) => t.id === taskId)
+    if (!task) return false
+    if (!this._tasks.some((t) => t.id === dep.id) || dep.id === taskId) return false
+    const type = dep.type && DEP_TYPES.has(dep.type) ? dep.type : 'fs'
+    const deps = task.dependencies ?? []
+    if (deps.some((d) => d.id === dep.id && (d.type ?? 'fs') === type)) return false
+    const next: GanttDependency[] = [...deps.map((d) => ({ ...d })), { id: dep.id, type }]
+    task.dependencies = next
+    this.commitTasks()
+    this.emit('dependencies-change', {
+      taskId,
+      dependencies: next.map((d) => ({ ...d })),
+    } satisfies GanttDependenciesChangeDetail)
+    return true
+  }
+
+  /**
+   * 删除依赖：dep.type 给出只删该 (id,type)；未给出删该 id 的全部类型。找不到返回 false。
+   * 成功派发 oas-tasks-change 与 oas-dependencies-change。
+   */
+  removeDependency(taskId: string, dep: { id: string; type?: 'fs' | 'ss' | 'ff' | 'sf' }): boolean {
+    const task = this._tasks.find((t) => t.id === taskId)
+    if (!task) return false
+    const deps = task.dependencies ?? []
+    const hasType = dep.type !== undefined
+    const next = deps.filter((d) => (hasType ? !(d.id === dep.id && (d.type ?? 'fs') === dep.type) : d.id !== dep.id))
+    if (next.length === deps.length) return false
+    task.dependencies = next.length > 0 ? next : undefined
+    this.commitTasks()
+    this.emit('dependencies-change', {
+      taskId,
+      dependencies: next.map((d) => ({ ...d })),
+    } satisfies GanttDependenciesChangeDetail)
+    return true
+  }
+
+  /**
+   * 改写依赖：from 找不到 / to.id 不存在或指向自身 / 无实际变化 → false。
+   * to.type 缺省继承 from.type（再缺省 fs）；重写后与既有依赖重复（同 id+type）则去重（保留一条）。
+   * 成功派发 oas-tasks-change 与 oas-dependencies-change。
+   */
+  updateDependency(
+    taskId: string,
+    from: { id: string; type?: 'fs' | 'ss' | 'ff' | 'sf' },
+    to: { id: string; type?: 'fs' | 'ss' | 'ff' | 'sf' },
+  ): boolean {
+    const task = this._tasks.find((t) => t.id === taskId)
+    if (!task) return false
+    const deps = task.dependencies ?? []
+    const fromType = from.type && DEP_TYPES.has(from.type) ? from.type : 'fs'
+    const idx = deps.findIndex((d) => d.id === from.id && (d.type ?? 'fs') === fromType)
+    if (idx < 0) return false
+    if (!this._tasks.some((t) => t.id === to.id) || to.id === taskId) return false
+    const toType = to.type && DEP_TYPES.has(to.type) ? to.type : fromType
+    const replaced: GanttDependency[] = deps.map((d, i) => (i === idx ? { id: to.id, type: toType } : { ...d }))
+    const dedupSeen = new Set<string>()
+    const next = replaced.filter((d) => {
+      const key = `${d.id}|${d.type ?? 'fs'}`
+      if (dedupSeen.has(key)) return false
+      dedupSeen.add(key)
+      return true
+    })
+    const sig = (arr: GanttDependency[]): string => arr.map((d) => `${d.id}|${d.type ?? 'fs'}`).join(',')
+    if (sig(next) === sig(deps)) return false
+    task.dependencies = next
+    this.commitTasks()
+    this.emit('dependencies-change', {
+      taskId,
+      dependencies: next.map((d) => ({ ...d })),
+    } satisfies GanttDependenciesChangeDetail)
+    return true
+  }
+
+  /**
+   * 批量浅合并（逐条：id 不存在跳过；end 给非空且解析失败跳过该条；其余走 sanitize 单条清洗，
+   * 与 updateTask 同一合法性口径）。多条只做一次 update() 与一次 oas-tasks-change；
+   * 返回生效条数，0 条零事件零渲染。
+   */
+  updateTasks(patches: Array<{ id: string } & Partial<GanttTask>>): number {
+    if (!Array.isArray(patches) || patches.length === 0) return 0
+    const next = [...this._tasks]
+    let applied = 0
+    for (const patch of patches) {
+      if (!patch || typeof patch.id !== 'string') continue
+      const idx = next.findIndex((t) => t.id === patch.id)
+      if (idx < 0) continue
+      if (patch.end !== undefined && patch.end !== '' && !parseTaskDate(patch.end)) continue
+      const merged = { ...next[idx]!, ...patch, id: patch.id }
+      const [clean] = sanitizeTasks(
+        [merged],
+        (used) => this.allocId(used),
+        (key, msg) => this.warnOnce(key, msg),
+      )
+      if (!clean) continue
+      clean.id = patch.id
+      next[idx] = clean
+      applied++
+    }
+    if (applied === 0) return 0
+    this._tasks = next
+    this.commitTasks()
+    return applied
+  }
+
+  /** 向更细一档步进（写 scale 属性，既有回调派发 oas-scale-change）；最细档 no-op */
+  zoomIn(): void {
+    const i = SCALES.indexOf(this.scale())
+    if (i > 0) this.setAttribute('scale', SCALES[i - 1]!)
+  }
+
+  /** 向更粗一档步进；最粗档 no-op */
+  zoomOut(): void {
+    const i = SCALES.indexOf(this.scale())
+    if (i >= 0 && i < SCALES.length - 1) this.setAttribute('scale', SCALES[i + 1]!)
+  }
+
+  /**
+   * 缩放以容纳全部任务：取**最细且**能满足「跨度按该档单位折算的列数 × 该档最小列宽 ≤ 可用宽」的档
+   * （全任务可见前提下尽量保留细节）；都不满足取最粗档 year。写 scale 属性后滚动定位到最早任务；无任务 no-op。
+   * 可用宽取 tbody.clientWidth（无布局环境为 0 → 回落最粗档）。
+   */
+  fit(): void {
+    if (this.rows.length === 0) return
+    let minMs = Number.POSITIVE_INFINITY
+    let maxMs = Number.NEGATIVE_INFINITY
+    for (const r of this.rows) {
+      if (r.startMs < minMs) minMs = r.startMs
+      if (r.endMs > maxMs) maxMs = r.endMs
+    }
+    if (!Number.isFinite(minMs) || !Number.isFinite(maxMs)) return
+    const spanMs = Math.max(1, maxMs - minMs)
+    const avail = this.tbody?.clientWidth ?? 0
+    const unitMs: Record<GanttScale, number> = {
+      hour: DAY_MS / 24,
+      day: DAY_MS,
+      week: 7 * DAY_MS,
+      month: 30 * DAY_MS,
+      quarter: 91 * DAY_MS,
+      year: 365 * DAY_MS,
+    }
+    // 从最细档起找首个「容得下」的档（越细列越多，先满足者为最细可视档）
+    let chosen: GanttScale | null = null
+    for (let i = 0; i < SCALES.length; i++) {
+      const s = SCALES[i]!
+      if ((spanMs / unitMs[s]) * SCALE_MIN_COL[s] <= avail) {
+        chosen = s
+        break
+      }
+    }
+    this.setAttribute('scale', chosen ?? SCALES[SCALES.length - 1]!)
+    this.scrollToDate(toISODate(new Date(minMs)))
+  }
+
   private emitSelectionChange(): void {
     this.emit('selection-change', { ids: this.selection } satisfies GanttSelectionChangeDetail)
   }
@@ -2468,9 +2881,71 @@ export class OASGantt extends OASElement {
     input.select()
   }
 
+  // ===== 行内新建（creatable）=====
+
+  /** 行内「＋」：摘要行加子级、叶子行在其后加同级；新建后聚焦并进入行内重命名 */
+  private onRowAdd(row: GanttRow): void {
+    // 新任务起点继承所在行的开始日（而非「今天」），避免建在用户视线之外/数据区之外
+    const seed = typeof row.task.start === 'string' && row.task.start !== '' ? { start: row.task.start } : {}
+    const newId = row.hasChildren
+      ? this.addTask(seed, { parent: row.task.id })
+      : this.addTask(seed, { parent: row.task.parent ?? null, after: row.task.id })
+    if (newId) this.enterRename(newId)
+  }
+
+  /** 新建后聚焦目标行并进入行内重命名（目标行未在窗口内时 focusRow 先滚动重建窗口） */
+  private enterRename(id: string): void {
+    this.focusRow(id)
+    const row = this.rows.find((r) => r.task.id === id)
+    const nameEl = this.sideRows?.querySelector<HTMLElement>(`.row-name[data-key="${escId(id)}"] .name`)
+    if (row && nameEl) this.startRename(row, nameEl)
+  }
+
+  /** 命中交互元素（行名/任务条/连线点/折叠钮/重命名框/新建钮）时忽略空白双击 */
+  private isInteractiveTarget(target: EventTarget | null): boolean {
+    return (
+      target instanceof Element &&
+      target.closest('.row-name, .bar, .link-dot, .link-hit, .baseline, .toggle, .rename-input, .row-add') !== null
+    )
+  }
+
+  /** 双击左侧列表空白：按今天新建根级任务并进入重命名（仅 creatable 且非只读） */
+  private onSideDblClick = (e: MouseEvent): void => {
+    if (!this.hasAttr('creatable') || this.hasAttr('readonly')) return
+    if (this.isInteractiveTarget(e.target)) return
+    const id = this.addTask({})
+    if (id) this.enterRename(id)
+  }
+
+  /**
+   * 由客户端 x 求落点日期（ms）。用 `.inner` 容器 rect（内容层，已包含横向滚动量）做逆变换，
+   * 与 `bar.left = mirrorX(xOf(...))` 精确互逆，LTR/RTL 与任意滚动都对齐；无布局/无单位时回落 null。
+   */
+  private dateAtClientX(clientX: number): number | null {
+    const inner = this.innerEl
+    if (!inner || this.units.length === 0) return null
+    const r = inner.getBoundingClientRect()
+    if (r.width <= 0) return null
+    const physical = clientX - r.left
+    const x = isRtl(this) ? this.canvasW - physical : physical
+    const i = Math.min(Math.max(Math.floor(x / this.colW()), 0), this.units.length - 1)
+    return this.units[i]?.startMs ?? null
+  }
+
+  /** 双击时间轴空白：按落点日期新建任务并进入重命名（仅 creatable 且非只读） */
+  private onTbodyDblClick = (e: MouseEvent): void => {
+    if (!this.hasAttr('creatable') || this.hasAttr('readonly')) return
+    if (this.isInteractiveTarget(e.target)) return
+    if (!this.tbody || this.units.length === 0) return
+    const ms = this.dateAtClientX(e.clientX)
+    if (ms === null) return
+    const id = this.addTask({ start: toISODate(new Date(ms)) })
+    if (id) this.enterRename(id)
+  }
+
   private onRowKeyDown(e: KeyboardEvent, row: GanttRow): void {
-    // toggle 按钮 / 重命名输入框自身按键不被行劫持（否则无法键盘折叠 / 输入）
-    if ((e.target as HTMLElement).closest('.toggle, .rename-input')) return
+    // toggle 按钮 / 重命名输入框 / 行尾新建钮自身按键不被行劫持（否则无法键盘折叠 / 输入 / 激活新建）
+    if ((e.target as HTMLElement).closest('.toggle, .rename-input, .row-add')) return
     const id = row.task.id
     const ro = this.hasAttr('readonly')
     // RTL 镜像：缩进/展开在逻辑方向（与 oas-tree 一致）

@@ -165,6 +165,9 @@ export const en: LocaleMessages = {
   'gantt.baselineSame': 'On baseline',
   'gantt.rename': 'Rename',
   'gantt.linkDelete': 'Delete dependency',
+  'gantt.addTask': 'Add task',
+  'gantt.addChild': 'Add subtask',
+  'gantt.newTask': 'New task',
   // kanban（看板）
   'kanban.emptyColumn': 'Drag cards here',
   'kanban.moveCard': 'Move card',
