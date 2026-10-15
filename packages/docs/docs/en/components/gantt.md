@@ -111,7 +111,7 @@ Assemble a task detail editor with `oas-modal` + `oas-form` (the component only 
   const g = document.getElementById('g')
   const modal = document.getElementById('edit')
   const form = document.getElementById('edit-form')
-  const field = (name) => form.querySelector(`[name="${name}"]`)
+  const field = (name) => form.querySelector(`oas-input[name="${name}"], oas-date-picker[name="${name}"], oas-slider[name="${name}"]`)
   let editing = ''
   g.addEventListener('oas-task-dblclick', (e) => {
     editing = e.detail.id
@@ -448,7 +448,7 @@ onMounted(async () => {
       { id: 'e1', name: 'Design', start: '2026-03-02', end: '2026-03-06', progress: 40 },
       { id: 'e2', name: 'Build', start: '2026-03-09', end: '2026-03-13', progress: 10 },
     ]
-    const fld = (n) => gedForm.querySelector(`[name="${n}"]`)
+    const fld = (n) => gedForm.querySelector(`oas-input[name="${n}"], oas-date-picker[name="${n}"], oas-slider[name="${n}"]`)
     let cur = ''
     ged.addEventListener('oas-task-dblclick', (e) => {
       cur = e.detail.id

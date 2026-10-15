@@ -646,9 +646,24 @@ test('gantt 集成配方：编辑弹窗写回 + 导出 JSON', async ({ page }) =
   await host.evaluate((el) => {
     ;(el as HTMLElement).scrollIntoView({ block: 'center' })
   })
-  // 双击条打开弹窗（oas-task-dblclick → oas-modal）
+  // 双击条打开弹窗，且表单控件已回填该任务名（配方选择器须命中控件而非 form-item）
   await host.locator('.bar[data-id="e2"]').dblclick()
   await expect(page.locator('#gantt-edit-modal')).toHaveAttribute('visible', '')
+  const nameInput = page.locator('#gantt-edit-form oas-input[name="name"] input')
+  await expect(nameInput).toHaveValue('开发')
+  // 改名 → 弹窗「确定」（oas-ok → form.submit）→ updateTask 写回
+  await nameInput.fill('开发（改）')
+  await page.evaluate(() => {
+    document.getElementById('gantt-edit-modal')!.dispatchEvent(new CustomEvent('oas-ok'))
+  })
+  await expect
+    .poll(async () =>
+      host.evaluate(
+        (el) =>
+          (el as unknown as { tasks: Array<{ id: string; name: string }> }).tasks.find((t) => t.id === 'e2')!.name,
+      ),
+    )
+    .toBe('开发（改）')
 
   // 导出 JSON
   await page.locator('#gantt-export').scrollIntoViewIfNeeded()
