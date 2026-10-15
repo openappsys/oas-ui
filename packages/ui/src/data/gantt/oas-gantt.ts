@@ -2990,10 +2990,18 @@ export class OASGantt extends OASElement {
     if (!task) return
     // 里程碑只写 start（口径与渲染一致：显式 type:"milestone" 或无 end——end 数据保留不被改写）；
     // end 数据串按含端语义（endMs 为区间右缘 exclusive，日精度 -1ms 回到含端日）
-    const milestone = task.type === 'milestone' || !task.end
+    // 里程碑只写 start；契约 start == end（渲染只出单点）。显式 type:"milestone" 若携带矛盾 end，
+    // 提交时把 end 归一为 start —— 否则前移越过残留 end 会写出 start>end 的非法区间。
+    // 派生里程碑（无 type、无 end）不凭空添 end。
+    const explicitMilestone = task.type === 'milestone'
+    const milestone = explicitMilestone || !task.end
     const start = this.fmtIso(newStartMs, datetime)
     const endStr = milestone ? start : this.fmtEnd(newEndMs, datetime)
-    const patch: Partial<GanttTask> = milestone ? { start } : { start, end: endStr }
+    const patch: Partial<GanttTask> = milestone
+      ? explicitMilestone
+        ? { start, end: start }
+        : { start }
+      : { start, end: endStr }
     if (!this.applyPatch(id, patch)) return
     this.emit('task-change', {
       id,

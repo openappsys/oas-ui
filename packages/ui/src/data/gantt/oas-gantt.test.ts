@@ -182,14 +182,14 @@ describe('OASGantt 渲染基础', () => {
     }
   })
 
-  it('milestone 拖动只写 start：显式 type="milestone" 带 end 时 end 数据不被改写', () => {
+  it('milestone 拖动：显式 type="milestone" 携带的 end 归一为 start（契约 start == end）', () => {
     const el = mount({
       tasks: JSON.stringify([{ id: 'm', name: '节点', start: '2026-03-05', end: '2026-03-10', type: 'milestone' }]),
     })
     dragSeq(barOf(el, 'm'), 36)
     expect(el.tasks[0]!.start).toBe('2026-03-06')
-    // end 数据保留原值（渲染忽略，但清洗层不丢宿主数据）
-    expect(el.tasks[0]!.end).toBe('2026-03-10')
+    // 矛盾 end 归一为 start，不留 start>end 隐患（渲染只出单点，end 语义本就忽略）
+    expect(el.tasks[0]!.end).toBe('2026-03-06')
   })
 
   it('start 晚于 end（日期颠倒）：清洗层自动交换 + console.warn 一次；同日任务（1 天工期）不交换', () => {
@@ -1114,6 +1114,19 @@ describe('OASGantt 多选 / 行内重命名 / 键盘重排 / 连线键盘', () =
     expect(Date.parse(t.start), 'start 应早于 end（不得颠倒）').toBeLessThan(Date.parse(t.end!))
     const dayOf = (s: string) => Date.UTC(+s.slice(0, 4), +s.slice(5, 7) - 1, +s.slice(8, 10))
     expect((dayOf(t.end!) - dayOf(t.start)) / 86400000, '工期应保持 4 天').toBe(4)
+  })
+
+  it('显式带 end 的里程碑前移跨过残留 end 不产生 start>end（end 归一为 start）', () => {
+    const el = mount({
+      scale: 'month',
+      tasks: JSON.stringify([{ id: 'm', name: 'M', type: 'milestone', start: '2026-03-02', end: '2026-03-05' }]),
+    })
+    const bar = barOf(el, 'm')
+    bar.focus()
+    bar.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', shiftKey: true, bubbles: true }))
+    const t = el.tasks[0]!
+    expect(Date.parse(t.start), '不得颠倒 start>end').toBeLessThanOrEqual(Date.parse(t.end!))
+    expect(t.end, 'end 归一为 start').toBe(t.start)
   })
 
   it('coarse：渲染重排手柄，从手柄拖拽触发 reparent', () => {
