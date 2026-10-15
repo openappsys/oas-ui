@@ -4644,3 +4644,639 @@ describe('OASGantt 关键路径（show-critical-path）', () => {
     expect(crit).toEqual(['s'])
   })
 })
+
+// ===== 本批新增：任务约束（constraint）+ 工作日日历（workdays）+ 依赖环 SCC =====
+
+/** .bar.conflict 的 id 集合（升序，便于断言） */
+function conflictIdsOf(el: OASGantt): string[] {
+  return [...shadowOf(el).querySelectorAll<HTMLElement>('.bar.conflict')].map((b) => b.dataset.id ?? '').sort()
+}
+
+/** .bar.critical 的 id 集合（升序） */
+function criticalIdsOf(el: OASGantt): string[] {
+  return [...shadowOf(el).querySelectorAll<HTMLElement>('.bar.critical')].map((b) => b.dataset.id ?? '').sort()
+}
+
+/** 运行期开启 auto-schedule 并捕获该瞬间的 oas-reschedule ids
+ *  （mount 期首帧 reschedule 早于监听挂载，无法直接捕获） */
+function enableAuto(el: OASGantt): string[][] {
+  const seen: string[][] = []
+  el.addEventListener('oas-reschedule', (e) => seen.push((e as CustomEvent<{ ids: string[] }>).detail.ids))
+  el.setAttribute('auto-schedule', '')
+  return seen
+}
+
+describe('OASGantt 任务约束（snet / mso / fnlt）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('snet：start 早于约束日 → 前推到约束日（工期不变；无依赖也生效）', () => {
+    const el = mount({
+      'auto-schedule': '',
+      tasks: JSON.stringify([
+        {
+          id: 't',
+          name: 'T',
+          start: '2026-03-02',
+          end: '2026-03-04',
+          constraint: 'snet',
+          constraintDate: '2026-03-10',
+        },
+      ]),
+    })
+    expect(taskOf(el, 't').start).toBe('2026-03-10')
+    expect(taskOf(el, 't').end).toBe('2026-03-12')
+    // 约束字段落数据（受控读回）
+    expect(taskOf(el, 't').constraint).toBe('snet')
+    expect(taskOf(el, 't').constraintDate).toBe('2026-03-10')
+  })
+
+  it('snet：已满足约束（start 晚于约束日）→ 只推不提前，零 reschedule 事件', () => {
+    const el = mount({
+      tasks: JSON.stringify([
+        {
+          id: 't',
+          name: 'T',
+          start: '2026-03-15',
+          end: '2026-03-17',
+          constraint: 'snet',
+          constraintDate: '2026-03-10',
+        },
+      ]),
+    })
+    const seen = enableAuto(el)
+    expect(taskOf(el, 't').start).toBe('2026-03-15')
+    expect(taskOf(el, 't').end).toBe('2026-03-17')
+    expect(seen).toEqual([])
+  })
+
+  it('snet：与依赖约束取较晚者（约束更晚 → 约束胜）', () => {
+    const el = mount({
+      'auto-schedule': '',
+      tasks: JSON.stringify([
+        { id: 'd', name: 'D', start: '2026-03-02', end: '2026-03-06' }, // 右缘 03-07
+        {
+          id: 't',
+          name: 'T',
+          start: '2026-03-01',
+          end: '2026-03-02',
+          dependencies: [{ id: 'd' }],
+          constraint: 'snet',
+          constraintDate: '2026-03-10',
+        },
+      ]),
+    })
+    expect(taskOf(el, 't').start).toBe('2026-03-10')
+    expect(taskOf(el, 't').end).toBe('2026-03-11')
+  })
+
+  it('mso：固定锚点——依赖不得前推（约束日与数据一致时零改动零事件）', () => {
+    const el = mount({
+      tasks: JSON.stringify([
+        { id: 'p', name: 'P', start: '2026-03-02', end: '2026-03-20' }, // 右缘 03-21（远超约束日）
+        {
+          id: 'm',
+          name: 'M',
+          start: '2026-03-10',
+          end: '2026-03-11',
+          dependencies: [{ id: 'p' }],
+          constraint: 'mso',
+          constraintDate: '2026-03-10',
+        },
+      ]),
+    })
+    const seen = enableAuto(el)
+    expect(taskOf(el, 'm').start, '不被依赖前推').toBe('2026-03-10')
+    expect(taskOf(el, 'm').end).toBe('2026-03-11')
+    expect(seen).toEqual([])
+  })
+
+  it('mso：数据偏离约束日 → 拉回约束日（保持工期）+ reschedule 事件', () => {
+    const el = mount({
+      tasks: JSON.stringify([
+        {
+          id: 'm',
+          name: 'M',
+          start: '2026-03-20',
+          end: '2026-03-21',
+          constraint: 'mso',
+          constraintDate: '2026-03-10',
+        },
+      ]),
+    })
+    const seen = enableAuto(el)
+    expect(taskOf(el, 'm').start).toBe('2026-03-10')
+    expect(taskOf(el, 'm').end).toBe('2026-03-11') // 工期 2 天保持
+    expect(seen).toEqual([['m']])
+  })
+
+  it('mso：后继按固定值前推（以前置的固定区间为基准）', () => {
+    const el = mount({
+      'auto-schedule': '',
+      tasks: JSON.stringify([
+        {
+          id: 'm',
+          name: 'M',
+          start: '2026-03-10',
+          end: '2026-03-11',
+          constraint: 'mso',
+          constraintDate: '2026-03-10',
+        },
+        { id: 's', name: 'S', start: '2026-03-01', end: '2026-03-02', dependencies: [{ id: 'm' }] },
+      ]),
+    })
+    expect(taskOf(el, 'm').start).toBe('2026-03-10')
+    // m 右缘 03-12（日精度 end 含端）→ s 前推到 03-12（工期 2 天）
+    expect(taskOf(el, 's').start).toBe('2026-03-12')
+    expect(taskOf(el, 's').end).toBe('2026-03-13')
+  })
+
+  it('fnlt：不自动移动（数据保持原样、零 reschedule 事件）', () => {
+    const el = mount({
+      tasks: JSON.stringify([
+        {
+          id: 'f',
+          name: 'F',
+          start: '2026-03-02',
+          end: '2026-03-20',
+          constraint: 'fnlt',
+          constraintDate: '2026-03-05',
+        },
+      ]),
+    })
+    const seen = enableAuto(el)
+    expect(taskOf(el, 'f').start).toBe('2026-03-02')
+    expect(taskOf(el, 'f').end).toBe('2026-03-20')
+    expect(seen).toEqual([])
+  })
+
+  it('约束违反并入违约集 .conflict（snet 未达 / mso 未落在 / fnlt 超出；合规者不标）', () => {
+    const el = mount({
+      'show-critical-path': '',
+      tasks: JSON.stringify([
+        // snet
+        {
+          id: 's1',
+          name: 'S1',
+          start: '2026-03-02',
+          end: '2026-03-04',
+          constraint: 'snet',
+          constraintDate: '2026-03-10',
+        },
+        {
+          id: 's2',
+          name: 'S2',
+          start: '2026-03-10',
+          end: '2026-03-12',
+          constraint: 'snet',
+          constraintDate: '2026-03-10',
+        },
+        // mso
+        {
+          id: 'm1',
+          name: 'M1',
+          start: '2026-03-12',
+          end: '2026-03-13',
+          constraint: 'mso',
+          constraintDate: '2026-03-10',
+        },
+        {
+          id: 'm2',
+          name: 'M2',
+          start: '2026-03-10',
+          end: '2026-03-11',
+          constraint: 'mso',
+          constraintDate: '2026-03-10',
+        },
+        // fnlt（日精度 end 含端：右缘超过约束日右缘 03-06 即违约）
+        {
+          id: 'f1',
+          name: 'F1',
+          start: '2026-03-02',
+          end: '2026-03-10',
+          constraint: 'fnlt',
+          constraintDate: '2026-03-05',
+        },
+        {
+          id: 'f2',
+          name: 'F2',
+          start: '2026-03-02',
+          end: '2026-03-05',
+          constraint: 'fnlt',
+          constraintDate: '2026-03-05',
+        },
+      ]),
+    })
+    expect(conflictIdsOf(el)).toEqual(['f1', 'm1', 's1'])
+  })
+
+  it('snet/mso/fnlt 缺可解析 constraintDate → 约束整体丢弃 + 每任务告警一次（受控重写不刷屏）', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const el = mount({
+      tasks: JSON.stringify([
+        { id: 'x', name: 'X', start: '2026-03-02', end: '2026-03-04', constraint: 'snet' },
+        { id: 'y', name: 'Y', start: '2026-03-02', end: '2026-03-04', constraint: 'mso', constraintDate: '2026-13-45' },
+        { id: 'z', name: 'Z', start: '2026-03-02', end: '2026-03-04', constraint: 'fnlt', constraintDate: '' },
+      ]),
+    })
+    const countWarns = (): number => warn.mock.calls.filter((c) => String(c[0]).includes('constraintDate')).length
+    expect(countWarns()).toBe(3)
+    for (const id of ['x', 'y', 'z']) {
+      expect(taskOf(el, id).constraint, `${id} 约束已丢弃`).toBeUndefined()
+      expect(taskOf(el, id).constraintDate).toBeUndefined()
+    }
+    // 受控整体重写（同 id 同病因）→ warnOnce 去重，不重复刷屏
+    el.tasks = [
+      { id: 'x', name: 'X', start: '2026-03-02', end: '2026-03-04', constraint: 'snet' },
+      { id: 'y', name: 'Y', start: '2026-03-02', end: '2026-03-04', constraint: 'mso', constraintDate: '2026-13-45' },
+      { id: 'z', name: 'Z', start: '2026-03-02', end: '2026-03-04', constraint: 'fnlt', constraintDate: '' },
+    ]
+    expect(countWarns()).toBe(3)
+    warn.mockRestore()
+  })
+
+  it('updateTask / updateTasks 改 constraint 也触发联动排程（与日期变更同口径）', () => {
+    const el = mount({
+      'auto-schedule': '',
+      tasks: JSON.stringify([{ id: 't', name: 'T', start: '2026-03-02', end: '2026-03-04' }]),
+    })
+    expect(taskOf(el, 't').start).toBe('2026-03-02')
+    const seen: string[][] = []
+    el.addEventListener('oas-reschedule', (e) => seen.push((e as CustomEvent<{ ids: string[] }>).detail.ids))
+    expect(el.updateTask('t', { constraint: 'snet', constraintDate: '2026-03-10' })).toBe(true)
+    expect(taskOf(el, 't').start).toBe('2026-03-10')
+    expect(taskOf(el, 't').end).toBe('2026-03-12')
+    expect(seen).toEqual([['t']])
+    // 批量通道同口径
+    expect(el.updateTasks([{ id: 't', constraint: 'snet', constraintDate: '2026-03-20' }])).toBe(1)
+    expect(taskOf(el, 't').start).toBe('2026-03-20')
+    expect(taskOf(el, 't').end).toBe('2026-03-22')
+    expect(seen).toEqual([['t'], ['t']])
+  })
+
+  it('asap / 非法约束 / 缺省：等同无约束（不落数据、零行为、零告警）', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const el = mount({
+      'auto-schedule': '',
+      tasks: JSON.stringify([
+        { id: 'a', name: 'A', start: '2026-03-02', end: '2026-03-04', constraint: 'asap' },
+        // 非法约束 → 丢弃（白名单外不告警；constraintDate 一并丢弃）
+        {
+          id: 'b',
+          name: 'B',
+          start: '2026-03-02',
+          end: '2026-03-04',
+          constraint: 'urgent',
+          constraintDate: '2026-03-10',
+        },
+        { id: 'c', name: 'C', start: '2026-03-02', end: '2026-03-04', constraintDate: '2026-03-10' },
+      ]),
+    })
+    for (const id of ['a', 'b', 'c']) {
+      expect(taskOf(el, id).constraint, `${id} 无约束`).toBeUndefined()
+      expect(taskOf(el, id).constraintDate).toBeUndefined()
+      expect(taskOf(el, id).start, `${id} 日期零行为`).toBe('2026-03-02')
+      expect(taskOf(el, id).end).toBe('2026-03-04')
+    }
+    expect(warn.mock.calls.filter((c) => String(c[0]).includes('[oas-gantt]'))).toHaveLength(0)
+    warn.mockRestore()
+  })
+})
+
+describe('OASGantt 工作日日历（workdays）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  /** 前置 d 右缘 = 03-07（周六）；后继 t 工期 2 天（03-01..03-02） */
+  const depPair = JSON.stringify([
+    { id: 'd', name: 'D', start: '2026-03-02', end: '2026-03-06' },
+    { id: 't', name: 'T', start: '2026-03-01', end: '2026-03-02', dependencies: [{ id: 'd' }] },
+  ])
+
+  it('前推落周六 → 吸附到周一（对照组：无 workdays 落在周六不吸附）', () => {
+    const plain = mount({ 'auto-schedule': '', tasks: depPair })
+    expect(taskOf(plain, 't').start, '对照：无 workdays → 落在周六').toBe('2026-03-07')
+    expect(taskOf(plain, 't').end).toBe('2026-03-08')
+
+    const el = mount({ 'auto-schedule': '', workdays: '[1,2,3,4,5]', tasks: depPair })
+    expect(taskOf(el, 't').start, '周六 → 下周一').toBe('2026-03-09')
+    expect(taskOf(el, 't').end, '工期 2 天不变').toBe('2026-03-10')
+  })
+
+  it('前推落周日 → 吸附到周一', () => {
+    const el = mount({
+      'auto-schedule': '',
+      workdays: '[1,2,3,4,5]',
+      tasks: JSON.stringify([
+        { id: 'd', name: 'D', start: '2026-03-03', end: '2026-03-07' }, // 右缘 03-08（周日）
+        { id: 't', name: 'T', start: '2026-03-01', end: '2026-03-02', dependencies: [{ id: 'd' }] },
+      ]),
+    })
+    expect(taskOf(el, 't').start).toBe('2026-03-09')
+  })
+
+  it('holidays 恒为非工作日（叠加 workdays 与假日）', () => {
+    const el = mount({
+      'auto-schedule': '',
+      workdays: '[1,2,3,4,5]',
+      holidays: '["2026-03-09"]',
+      tasks: depPair,
+    })
+    // 03-07 周六 → 03-08 周日 → 03-09 周一（假日）→ 03-10 周二
+    expect(taskOf(el, 't').start).toBe('2026-03-10')
+    expect(taskOf(el, 't').end).toBe('2026-03-11')
+
+    const holOnly = mount({ 'auto-schedule': '', holidays: '["2026-03-07"]', tasks: depPair })
+    // 假日恒为非工作日（与 workdays 是否开启无关）：落点 03-07 为假日 → 吸附到 03-08
+    expect(taskOf(holOnly, 't').start, '假日（不依赖 workdays）触发吸附').toBe('2026-03-08')
+  })
+
+  it('workdays 缺省 / [] / 全非法 / 非数组 → 不限制（全周工作，零行为）', () => {
+    for (const wd of [undefined, '[]', '[7,-1,"x"]', 'not-json', '{}', 'null']) {
+      const attrs: Record<string, string> = { 'auto-schedule': '', tasks: depPair }
+      if (wd !== undefined) attrs.workdays = wd
+      const el = mount(attrs)
+      expect(taskOf(el, 't').start, `workdays=${String(wd)} 不吸附`).toBe('2026-03-07')
+      expect(taskOf(el, 't').end).toBe('2026-03-08')
+    }
+  })
+
+  it('ff：吸附对应 end 再派生 start（end 落周六 → 端点上移）', () => {
+    const el = mount({
+      'auto-schedule': '',
+      workdays: '[1,2,3,4,5]',
+      tasks: JSON.stringify([
+        { id: 'd', name: 'D', start: '2026-03-02', end: '2026-03-06' }, // 右缘 03-07（周六）
+        { id: 't', name: 'T', start: '2026-03-01', end: '2026-03-02', dependencies: [{ id: 'd', type: 'ff' }] },
+      ]),
+    })
+    // 吸附 end：03-07（周六）→ 03-09（周一）→ start = 03-09 − 2 天 = 03-07 → 起点再吸附到 03-09
+    expect(taskOf(el, 't').start).toBe('2026-03-09')
+    expect(taskOf(el, 't').end).toBe('2026-03-10')
+  })
+
+  it('snet 约束日落非工作日 → 吸附；mso 固定值不吸附（约束优先）', () => {
+    const snet = mount({
+      'auto-schedule': '',
+      workdays: '[1,2,3,4,5]',
+      tasks: JSON.stringify([
+        {
+          id: 't',
+          name: 'T',
+          start: '2026-03-01',
+          end: '2026-03-02',
+          constraint: 'snet',
+          constraintDate: '2026-03-07', // 周六
+        },
+      ]),
+    })
+    expect(taskOf(snet, 't').start, 'snet 取 max 后吸附').toBe('2026-03-09')
+
+    const mso = mount({
+      'auto-schedule': '',
+      workdays: '[1,2,3,4,5]',
+      tasks: JSON.stringify([
+        {
+          id: 'm',
+          name: 'M',
+          start: '2026-03-02',
+          end: '2026-03-03',
+          constraint: 'mso',
+          constraintDate: '2026-03-07', // 周六（固定值原样落位）
+        },
+      ]),
+    })
+    expect(taskOf(mso, 'm').start).toBe('2026-03-07')
+    expect(taskOf(mso, 'm').end).toBe('2026-03-08')
+  })
+
+  it('运行期设置 workdays 触发重吸附（落点由周六改到周一）', () => {
+    const el = mount({
+      'auto-schedule': '',
+      tasks: JSON.stringify([
+        { id: 'd', name: 'D', start: '2026-03-02', end: '2026-03-06' },
+        { id: 't', name: 'T', start: '2026-03-01', end: '2026-03-02', dependencies: [{ id: 'd' }] },
+      ]),
+    })
+    expect(taskOf(el, 't').start, '无 workdays：前推到周六 03-07').toBe('2026-03-07')
+    el.setAttribute('workdays', '[1,2,3,4,5]')
+    expect(taskOf(el, 't').start, '设 workdays：重吸附到周一 03-09').toBe('2026-03-09')
+  })
+
+  it('整体重写 tasks（违约）在 auto-schedule 下自动规整', () => {
+    const el = mount({
+      'auto-schedule': '',
+      tasks: JSON.stringify([{ id: 'd', name: 'D', start: '2026-03-02', end: '2026-03-06' }]),
+    })
+    el.setAttribute(
+      'tasks',
+      JSON.stringify([
+        { id: 'd', name: 'D', start: '2026-03-02', end: '2026-03-06' },
+        { id: 't', name: 'T', start: '2026-03-01', end: '2026-03-02', dependencies: [{ id: 'd' }] },
+      ]),
+    )
+    expect(taskOf(el, 't').start, '重写后自动前推到 03-07').toBe('2026-03-07')
+  })
+
+  it('约束被清（constraint: undefined）也触发重排程', () => {
+    const el = mount({
+      'auto-schedule': '',
+      tasks: JSON.stringify([
+        { id: 'd', name: 'D', start: '2026-03-10', end: '2026-03-14' },
+        {
+          id: 't',
+          name: 'T',
+          start: '2026-03-02',
+          end: '2026-03-04',
+          dependencies: [{ id: 'd' }],
+          constraint: 'mso',
+          constraintDate: '2026-03-02',
+        },
+      ]),
+    })
+    // mso 固定 03-02（与依赖冲突被钉住）
+    expect(taskOf(el, 't').start).toBe('2026-03-02')
+    // 清约束 → 依赖生效，前推到 03-15
+    el.updateTask('t', { constraint: undefined, constraintDate: undefined })
+    expect(taskOf(el, 't').start).toBe('2026-03-15')
+  })
+
+  it('oas-task-change 载荷取订正后终值（与 task 快照一致）', () => {
+    const el = mount({
+      'auto-schedule': '',
+      tasks: JSON.stringify([
+        { id: 'm', name: 'M', start: '2026-03-10', end: '2026-03-11', constraint: 'mso', constraintDate: '2026-03-10' },
+      ]),
+    })
+    const seen: Array<{ start: string; end: string }> = []
+    el.addEventListener('oas-task-change', ((e: CustomEvent<{ start: string; end: string }>) => {
+      seen.push({ start: e.detail.start, end: e.detail.end })
+    }) as EventListener)
+    // 拖动（模拟事件驱动 applyBarDragVisual 不便 → 直接用 updateTask 触发 commitDates 等价路径）
+    const bar = barOf(el, 'm')
+    const down = new PointerEvent('pointerdown', { bubbles: true, composed: true, pointerId: 1, button: 0 })
+    Object.defineProperty(down, 'clientX', { value: 100 })
+    bar.dispatchEvent(down)
+    const move = new PointerEvent('pointermove', { bubbles: true, composed: true, pointerId: 1 })
+    Object.defineProperty(move, 'clientX', { value: 172 })
+    document.dispatchEvent(move)
+    document.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, composed: true, pointerId: 1 }))
+    expect(seen).toHaveLength(1)
+    const final = taskOf(el, 'm')
+    expect(seen[0]!.start).toBe(final.start)
+    expect(seen[0]!.end).toBe(final.end)
+  })
+
+  it('duplicateTask 保留 constraint / constraintDate', () => {
+    const el = mount({
+      tasks: JSON.stringify([
+        {
+          id: 'a',
+          name: 'A',
+          start: '2026-03-02',
+          end: '2026-03-04',
+          constraint: 'snet',
+          constraintDate: '2026-03-05',
+        },
+      ]),
+    })
+    const id = el.duplicateTask('a')!
+    const c = el.tasks.find((t) => t.id === id)!
+    expect(c.constraint).toBe('snet')
+    expect(c.constraintDate).toBe('2026-03-05')
+  })
+})
+
+describe('OASGantt 依赖环 SCC（环内让位 / CP 仍算环外）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('A⇄B 环 + C 环外：环内 A/B 保持现网日期，环外 C 正常前推', () => {
+    const el = mount({
+      tasks: JSON.stringify([
+        { id: 'd', name: 'D', start: '2026-03-10', end: '2026-03-12' }, // 右缘 03-13
+        { id: 'c', name: 'C', start: '2026-03-01', end: '2026-03-02', dependencies: [{ id: 'd' }] },
+        { id: 'a', name: 'A', start: '2026-03-05', end: '2026-03-06', dependencies: [{ id: 'c' }, { id: 'b' }] },
+        { id: 'b', name: 'B', start: '2026-03-05', end: '2026-03-06', dependencies: [{ id: 'a' }] },
+      ]),
+    })
+    const seen = enableAuto(el)
+    expect(taskOf(el, 'c').start, '环外节点照常前推').toBe('2026-03-13')
+    expect(taskOf(el, 'c').end).toBe('2026-03-14')
+    expect(taskOf(el, 'a').start, '环内节点让位（不推远）').toBe('2026-03-05')
+    expect(taskOf(el, 'b').start, '环内节点让位（不推远）').toBe('2026-03-05')
+    expect(seen).toEqual([['c']])
+  })
+
+  it('自环节点让位；同图其它节点照常前推', () => {
+    const el = mount({
+      tasks: JSON.stringify([
+        { id: 'p', name: 'P', start: '2026-03-10', end: '2026-03-11' }, // 右缘 03-12
+        { id: 'a', name: 'A', start: '2026-03-01', end: '2026-03-02', dependencies: [{ id: 'a' }, { id: 'p' }] },
+        { id: 'b', name: 'B', start: '2026-03-01', end: '2026-03-02', dependencies: [{ id: 'p' }] },
+      ]),
+    })
+    const seen = enableAuto(el)
+    expect(taskOf(el, 'a').start, '自环节点让位').toBe('2026-03-01')
+    expect(taskOf(el, 'b').start, '环外节点照常前推').toBe('2026-03-12')
+    expect(taskOf(el, 'b').end).toBe('2026-03-13')
+    expect(seen).toEqual([['b']])
+  })
+
+  it('环内节点作前置：用其当前日期参与计算（best-effort，C 依赖环内 A）', () => {
+    const el = mount({
+      tasks: JSON.stringify([
+        { id: 'a', name: 'A', start: '2026-03-05', end: '2026-03-06', dependencies: [{ id: 'b' }] },
+        { id: 'b', name: 'B', start: '2026-03-05', end: '2026-03-06', dependencies: [{ id: 'a' }] },
+        { id: 'c', name: 'C', start: '2026-03-01', end: '2026-03-02', dependencies: [{ id: 'a' }] },
+      ]),
+    })
+    const seen = enableAuto(el)
+    // A 让位保持 03-05..03-06（右缘 03-07）→ C 以其现网日期前推到 03-07
+    expect(taskOf(el, 'c').start).toBe('2026-03-07')
+    expect(taskOf(el, 'c').end).toBe('2026-03-08')
+    expect(taskOf(el, 'a').start).toBe('2026-03-05')
+    expect(seen).toEqual([['c']])
+  })
+
+  it('CP：存在环时仍标出环外关键链（环内节点不参与）', () => {
+    const el = mount({
+      'show-critical-path': '',
+      tasks: JSON.stringify([
+        { id: 'a', name: 'A', start: '2026-03-02', end: '2026-03-04', dependencies: [{ id: 'b' }] },
+        { id: 'b', name: 'B', start: '2026-03-05', end: '2026-03-09', dependencies: [{ id: 'a' }] },
+        { id: 'c', name: 'C', start: '2026-03-02', end: '2026-03-04' },
+        { id: 'e', name: 'E', start: '2026-03-05', end: '2026-03-09', dependencies: [{ id: 'c' }] },
+      ]),
+    })
+    expect(criticalIdsOf(el), '环外关键链 c→e').toEqual(['c', 'e'])
+    expect(conflictIdsOf(el)).toEqual([])
+    // 环内节点两个类都不带（连不崩、不误标）
+    for (const id of ['a', 'b']) {
+      expect(barOf(el, id).classList.contains('critical'), `${id} 环内不标关键`).toBe(false)
+      expect(barOf(el, id).classList.contains('conflict'), `${id} 环内不标违约`).toBe(false)
+    }
+  })
+
+  it('CP：逆拓扑序一趟即精确（长链逆序输入，浮时判定与顺序无关）', () => {
+    const el = mount({
+      'show-critical-path': '',
+      tasks: JSON.stringify([
+        // 逆序输入：后继在前、前置在后（单趟按数组顺序松弛会欠收敛）
+        { id: 'c', name: 'C', start: '2026-03-10', end: '2026-03-12', dependencies: [{ id: 'b' }] },
+        { id: 'x', name: 'X', start: '2026-03-05', end: '2026-03-06', dependencies: [{ id: 'a' }] },
+        { id: 'b', name: 'B', start: '2026-03-05', end: '2026-03-09', dependencies: [{ id: 'a' }] },
+        { id: 'a', name: 'A', start: '2026-03-02', end: '2026-03-04' },
+      ]),
+    })
+    expect(criticalIdsOf(el), '主链 a→b→c 关键').toEqual(['a', 'b', 'c'])
+    expect(barOf(el, 'x').classList.contains('critical'), 'x 浮时 6 天非关键').toBe(false)
+    expect(barOf(el, 'x').classList.contains('conflict')).toBe(false)
+  })
+})
+
+describe('OASGantt updateDependency：lag 归零删键', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('lag 2 → 显式 0：依赖对象无 lag 键（不留 lag: 0）；缺省继承仍保留既有 lag', () => {
+    const el = mount({
+      tasks: JSON.stringify([
+        { id: 'a', name: 'A', start: '2026-03-02', end: '2026-03-03' },
+        { id: 'b', name: 'B', start: '2026-03-04', end: '2026-03-05', dependencies: [{ id: 'a', lag: 2 }] },
+      ]),
+    })
+    const depOf = (): GanttTask['dependencies'] => taskOf(el, 'b').dependencies
+
+    expect(depOf()).toEqual([{ id: 'a', lag: 2 }])
+    // 显式清零 → 删键（不是写 lag: 0）
+    expect(el.updateDependency('b', { id: 'a', lag: 2 }, { id: 'a', lag: 0 })).toBe(true)
+    expect('lag' in depOf()![0]!).toBe(false)
+    expect(depOf()).toEqual([{ id: 'a', type: 'fs' }])
+    expect(JSON.stringify(el.tasks.find((t) => t.id === 'b')!.dependencies)).not.toContain('lag')
+
+    // 缺省继承（既有 lag=2）→ 仍保留 lag 键
+    expect(el.updateDependency('b', { id: 'a' }, { id: 'a', lag: 2 })).toBe(true)
+    expect(depOf()).toEqual([{ id: 'a', type: 'fs', lag: 2 }])
+
+    // 再清零 → 再次删键
+    expect(el.updateDependency('b', { id: 'a' }, { id: 'a', lag: 0 })).toBe(true)
+    expect('lag' in depOf()![0]!).toBe(false)
+  })
+})

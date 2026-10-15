@@ -674,3 +674,63 @@ test('gantt 集成配方：编辑弹窗写回 + 导出 JSON', async ({ page }) =
 
   expect(errors).toEqual([])
 })
+
+// 工作日日历：拖前置 → 后置吸附到工作日（跳周末）；连线 lag 标签可见
+test('gantt 工作日日历：前推吸附工作日 + lag 标签', async ({ page }) => {
+  const errors: string[] = []
+  page.on('pageerror', (e) => errors.push(e.message))
+  page.on('console', (m) => {
+    if (m.type() === 'error') errors.push(m.text())
+  })
+  await page.goto('/components/gantt.html', { waitUntil: 'domcontentloaded' })
+  await waitGantt(page, 'gantt-workdays')
+  const host = page.locator('#gantt-workdays')
+  await host.evaluate((el) => {
+    ;(el as HTMLElement).scrollIntoView({ block: 'center' })
+  })
+  const colW = await host.evaluate((el) => (el as unknown as { colW(): number }).colW())
+  // 连线 lag 标签（+2）
+  await expect(host.locator('text.link-label')).toHaveCount(1)
+  // 拖 w1 右移，w2 应吸附到工作日（周一~周五）
+  const w1 = (await host.locator('.bar[data-id="w1"]').boundingBox())!
+  await page.mouse.move(w1.x + w1.width / 2, w1.y + w1.height / 2)
+  await page.mouse.down()
+  await page.mouse.move(w1.x + w1.width / 2 + 6 * colW, w1.y + w1.height / 2, { steps: 10 })
+  await page.mouse.up()
+  const res = await host.evaluate((el) => {
+    const t = (el as unknown as { tasks: Array<{ id: string; start: string }> }).tasks.find((x) => x.id === 'w2')!
+    const d = new Date(t.start)
+    return { start: t.start, day: d.getDay() }
+  })
+  expect(res.start, '后置应被前推').not.toBe('2026-03-09')
+  expect([1, 2, 3, 4, 5], `吸附到工作日（实得 ${res.start} 周${res.day}）`).toContain(res.day)
+
+  expect(errors).toEqual([])
+})
+
+// auto-schedule × show-critical-path 组合：拖前置后关键链高亮
+test('gantt auto-schedule + show-critical-path 组合高亮', async ({ page }) => {
+  await page.goto('/components/gantt.html', { waitUntil: 'domcontentloaded' })
+  await waitGantt(page, 'gantt-select')
+  const res = await page.evaluate(async () => {
+    const el = document.createElement('oas-gantt') as HTMLElement & {
+      tasks: unknown
+      shadowRoot: ShadowRoot
+    }
+    el.setAttribute('auto-schedule', '')
+    el.setAttribute('show-critical-path', '')
+    el.style.width = '600px'
+    document.body.appendChild(el)
+    el.tasks = [
+      { id: 'c1', name: 'C1', start: '2026-03-02', end: '2026-03-04' },
+      { id: 'c2', name: 'C2', start: '2026-03-05', end: '2026-03-09', dependencies: [{ id: 'c1' }] },
+      { id: 'c3', name: 'C3', start: '2026-03-05', end: '2026-03-06', dependencies: [{ id: 'c1' }] },
+    ]
+    const raf = () => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)))
+    await raf()
+    const ids = [...el.shadowRoot.querySelectorAll('.bar.critical')].map((b) => (b as HTMLElement).dataset.id)
+    el.remove()
+    return ids.sort()
+  })
+  expect(res).toEqual(['c1', 'c2'])
+})

@@ -4314,7 +4314,7 @@
   },
   "oas-gantt": {
     "attrs": {
-      "tasks": "Gantt tasks (JSON): [{ id?, name, start, end?, type?, progress?, parent?, children?, dependencies?, color?, disabled?, expanded?, baseline? }] — flat parent pointers are the primary contract; nested children are flattened automatically; explicit type:\"milestone\" takes precedence (rendered as milestone even with end, which is ignored) but a task with children is always a summary; no end also infers milestone; start/end are swapped automatically when start is after end",
+      "tasks": "Gantt tasks (JSON): [{ id?, name, start, end?, type?, progress?, parent?, children?, dependencies?, color?, disabled?, expanded?, baseline?, constraint? ('asap'|'snet'|'mso'|'fnlt'), constraintDate? }] — flat parent pointers are the primary contract; nested children are flattened automatically; explicit type:\"milestone\" takes precedence (rendered as milestone even with end, which is ignored) but a task with children is always a summary; no end also infers milestone; start/end are swapped automatically when start is after end",
       "scale": "Time scale: hour / day (default) / week / month / quarter / year; invalid values fall back to day",
       "expanded": "Expanded set (JSON array, controlled): defaults to fully expanded when absent; explicit [] collapses all; written back on toggle",
       "readonly": "Whole chart read-only (no rescheduling/progress, drag handles not rendered)",
@@ -4322,7 +4322,8 @@
       "progress-readonly": "No progress dragging (dates still draggable)",
       "show-today": "Today line (on by default; false to disable)",
       "weekends": "Weekend column highlights (on by default; applies on day/hour tiers; false to disable)",
-      "holidays": "Holiday list (JSON [\"YYYY-MM-DD\",…]): matching columns highlighted (takes precedence over weekend tint)",
+      "holidays": "Holiday list (JSON [\"YYYY-MM-DD\",…]): matching columns highlighted (takes precedence over weekend tint); holidays are always non-working (regardless of workdays) and are skipped by auto-schedule",
+      "workdays": "Working weekdays (JSON [0-6], 0=Sunday…6=Saturday; opt-in, absent/empty = unrestricted): auto-schedule results snap to the next working day (combined with holidays)",
       "first-day-of-week": "Week start day (0-6); defaults to locale derivation (used for week-tier alignment)",
       "locale": "Localization (overrides config-provider injection and the global locale)",
       "height": "Component height in px (default 320)",

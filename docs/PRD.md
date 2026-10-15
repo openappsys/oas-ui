@@ -1971,6 +1971,28 @@ OASElement 的 render 生命周期只首连一次（`rendered` 门闩），组�
 - 文档：gantt.md zh/en 增段；api-manifest / api-descriptions 同步（`api:check` 双向 0）。
 - 全量 `pnpm test` / typecheck / build / api:check 全绿。
 
+## 未发布 oas-gantt 排程约束与工作日日历
+
+> 立项背景：在「依赖 + lag + 关键路径 + 最小前推」之上补两块排程必需——任务约束与工作日日历（跳过周末/假日）。定位仍为「可视化 + 编辑层 + 轻量排程」，不做资源/平衡与完整 CPM。
+
+### 特性
+
+- **任务约束**：`GanttTask.constraint`（`'asap'` 默认 / `'snet'` 不得早于 / `'mso'` 固定开始 / `'fnlt'` 不得晚于完成）+ `GanttTask.constraintDate`。`auto-schedule` 生效：`snet` 取起始下限、`mso` 固定开始（与依赖冲突时标 `conflict`）、`fnlt` 为软截止（违反标 `conflict`，不自动移动）。
+- **工作日日历**：属性 `workdays`（JSON 周几数组，`0`=周日…`6`=周六，**opt-in**，缺省不限制）+ 复用既有 `holidays`。`auto-schedule` 前推结果**吸附到下一个工作日**（跳过非工作日与假日）。
+- **工程修正（本批一并）**：① `updateDependency` 把 lag 清为 0/缺省时**删键**而非留 `lag: 0`；② 依赖图 **SCC 分解**——仅**环内**节点让位（`auto-schedule` 与关键路径都只跳过环内、其余正常排程/判关键），替代原「一遇环整图停摆」；③ 关键路径改**按（缩点后）拓扑序**计算，O(V+E)，替代有界迭代松弛；④ 示例补 `lag` 数据以展示连线 lag 标签。
+
+### 边界
+
+- 不做：资源分配/泳道/负载/平衡、ALAP 反向排程、按小时的班次/工时日历、`fnlt` 的自动回拉（只标记违反）。
+- `workdays` 缺省不限制（非破坏）；约束缺省 `asap`（非破坏）。
+
+### 验收
+
+- 单测：四型约束各自行为（含与依赖冲突 → conflict）+ `constraintDate` 校验；工作日吸附（跨周末 + 假日）；SCC 环内让位（环外仍排程/判关键）；CP 拓扑序结果与既有用例一致；`updateDependency` 清零删键；缺省无约束/无 workdays 时零行为变化。
+- e2e：gantt.md 新示例真点（`workdays` 下拖前置、后置吸附工作日；`auto-schedule`+`show-critical-path` 组合高亮）。
+- 文档：gantt.md zh/en 增段；api-manifest / api-descriptions 同步（`api:check` 双向 0）。
+- 全量 `pnpm test` / typecheck / build / api:check 全绿。
+
 ## v2.5.9 oas-calendar `events` 排期条目通道
 
 ### 特性

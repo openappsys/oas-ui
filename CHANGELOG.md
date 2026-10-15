@@ -28,6 +28,7 @@
 - **任务管理创作能力**：命令式增删改方法 `addTask(task?, opts?)`（返回新 id）/ `moveTask(id, { parent?, index? })` / `duplicateTask(id, opts?)`（深拷贝子树）/ `addDependency` / `removeDependency` / `updateDependency` / `updateTasks(patches)`（批量浅合并，返回生效条数）——写回统一走清洗层，派发既有 `oas-tasks-change` / `oas-reparent` / `oas-dependencies-change`，新增 `oas-task-add { id, task }` 事件；属性 `creatable`（默认关）行内新建（行尾「＋」+ 双击空白按日期建，新建后进入重命名）；`zoomIn()` / `zoomOut()` / `fit()` 缩放。i18n ×10 新增 `gantt.addTask` / `gantt.addChild` / `gantt.newTask`；文档 zh/en 增「任务管理」段（含 `oas-modal` + `oas-form` 详情编辑示例）。
 - **任务管理增强**：`auto-schedule`（布尔，默认关）依赖联动排程——日期变更或依赖增改后按 FS/SS/FF/SF 沿依赖图对后继做最小前推（只推迟、保持工期、多前置取最靠后、跳过 disabled 与摘要、成环跳过并 `devWarn`），派发 `oas-reschedule { ids }`；框选多任务（左侧列表行带 / 时间轴条相交，`Ctrl`/`Cmd` 追加，只读可用）；`creatable` 下时间轴空白拖出区间建任务；`Esc` 取消框选/建任务手势。
 - **排程深化**：依赖 `lag/lead`（`GanttDependency.lag` 天、可负，并入 `auto-schedule` 四型约束）；关键路径（`show-critical-path` 默认关，以当前排期为基准反向推最晚时间算总时差，零时差任务加 `.critical` 高亮，颜色走 `--oas-gantt-critical-color`）；i18n ×10 新增 `gantt.lagSuffix` / `gantt.leadSuffix`。另：负总时差（违约）标 `.conflict`（虚线描边，`--oas-gantt-conflict-color`）；连线非 0 lag 渲染可见标签；文档新增「宿主集成配方」段（撤销重做 / 编辑弹窗 demo / 导出 demo）。
+- **排程约束与工作日日历**：任务约束 `GanttTask.constraint`（`asap`/`snet`/`mso`/`fnlt`）+ `constraintDate`（auto-schedule 生效：snet 下限 / mso 固定 / fnlt 软截止；违反在 `show-critical-path` 下标 `.conflict`）；工作日日历 `workdays`（JSON 周几，opt-in）+ `holidays`（假日恒为非工作日），前推落点吸附下一工作日。工程修正：`updateDependency` lag 归零删键；依赖图 SCC 分解——仅环内节点让位（排程与关键路径均只跳过环内），关键路径改拓扑序 O(V+E)；示例补 lag 数据。
 
 ## [2.6.1] - 2026-10-13
 

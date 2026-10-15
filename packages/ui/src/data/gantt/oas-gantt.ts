@@ -351,9 +351,6 @@ svg.links .link-label {
   fill: var(--oas-color-text-secondary);
   font-size: var(--oas-font-size-xs, 11px);
   pointer-events: none;
-  paint-order: stroke;
-  stroke: var(--oas-color-bg);
-  stroke-width: 2px;
 }
 svg.links .temp-link {
   pointer-events: none;
@@ -602,6 +599,17 @@ export interface GanttTask {
   dependencies?: GanttDependency[]
   /** 条色覆盖（走 CSS 变量解析） */
   color?: string
+  /**
+   * 排程约束模式（opt-in；缺省 = 无约束，排程行为与旧版一致）：
+   * - asap  越早越好（等同无约束，清洗层直接丢弃）
+   * - snet  不早于 constraintDate（start ≥ 约束日，只前推不提前）
+   * - mso   固定于 constraintDate（依赖不得前推；数据偏离约束日时由排程拉回）
+   * - fnlt  不晚于 constraintDate（不自动移动，仅参与违约判定 → `.conflict`）
+   * snet/mso/fnlt 必须携带合法 constraintDate，否则整体丢弃并告警一次。
+   */
+  constraint?: 'asap' | 'snet' | 'mso' | 'fnlt'
+  /** 约束日期 'YYYY-MM-DD'（hour 档可带 'HH:mm'）；缺失/非法时约束整体丢弃 */
+  constraintDate?: string
   /** 任务级禁拖 / 禁改自身（时间/进度/顺序/被依赖写入）；可作他任务前置与重排前/后同级目标 */
   disabled?: boolean
   /** summary 初始展开（缺省全展开，显式 false 为收起例外；expanded 属性受控优先——见 effectiveExpandedSet） */
@@ -770,6 +778,15 @@ const MARQUEE_THRESHOLD = 4
 
 const DEP_TYPES = new Set(['fs', 'ss', 'ff', 'sf'])
 
+/** 任务约束白名单（asap 等同无约束，清洗层丢弃，不落数据） */
+const CONSTRAINTS = new Set(['asap', 'snet', 'mso', 'fnlt'])
+
+/** 需携带 constraintDate 方能生效的约束模式 */
+type DatedConstraint = 'snet' | 'mso' | 'fnlt'
+
+/** 工作日吸附步进上限（天）：防 workdays + holidays 组合意外占满时死循环 */
+const SNAP_MAX_DAYS = 400
+
 /** 轴标签估宽（px，纯函数）：按字符数估算（刻度标签均为 ASCII，字宽近似等宽） */
 export function estimateLabelWidth(text: string): number {
   return text.length * LABEL_CHAR_W
@@ -811,6 +828,50 @@ function parseTaskDate(s: unknown): Date | null {
 function parseProgress(v: unknown): number | undefined {
   if (typeof v !== 'number' || !Number.isFinite(v)) return undefined
   return Math.min(100, Math.max(0, Math.round(v)))
+}
+
+/**
+ * 任务约束清洗（纯函数）：白名单外的 constraint 一律丢弃（→ 无约束）；
+ * `asap` 等同无约束（丢弃）；`snet`/`mso`/`fnlt` 必须携带可解析的 constraintDate，
+ * 否则整体丢弃该约束并告警一次（key `constraint:${id}` 由调用方 warnOnce 去重）。
+ */
+function sanitizeConstraint(
+  raw: Record<string, unknown>,
+  id: string,
+  onWarn?: (key: string, msg: string) => void,
+): { mode: DatedConstraint; date: string } | null {
+  const mode = raw.constraint
+  if (typeof mode !== 'string' || !CONSTRAINTS.has(mode)) return null
+  if (mode === 'asap') return null
+  const date = typeof raw.constraintDate === 'string' ? raw.constraintDate.trim() : ''
+  if (!parseTaskDate(date)) {
+    onWarn?.(
+      `constraint:${id}`,
+      `[oas-gantt] 任务 "${id}" 的 constraint="${mode}" 缺少可解析的 constraintDate，该约束已丢弃`,
+    )
+    return null
+  }
+  return { mode: mode as DatedConstraint, date }
+}
+
+/**
+ * workdays 属性解析（纯函数）：JSON 周几数组（0=周日 … 6=周六）。
+ * opt-in：属性缺省 / JSON 非法 / 非数组 / 过滤非法项后为空 → 返回 null = 不限制（全周工作）。
+ */
+function parseWorkdays(raw: string): Set<number> | null {
+  if (!raw) return null
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(raw)
+  } catch {
+    return null
+  }
+  if (!Array.isArray(parsed)) return null
+  const days = new Set<number>()
+  for (const x of parsed) {
+    if (typeof x === 'number' && Number.isInteger(x) && x >= 0 && x <= 6) days.add(x)
+  }
+  return days.size > 0 ? days : null
 }
 
 function sanitizeDeps(v: unknown): GanttDependency[] | undefined {
@@ -922,6 +983,12 @@ function sanitizeTasks(
     }
     const deps = sanitizeDeps(raw.dependencies)
     if (deps) t.dependencies = deps
+    // 排程约束（opt-in）：白名单 + snet/mso/fnlt 必须带合法 constraintDate，否则丢弃并告警一次
+    const con = sanitizeConstraint(raw, t.id, onWarn)
+    if (con) {
+      t.constraint = con.mode
+      t.constraintDate = con.date
+    }
     if (typeof raw.color === 'string' && raw.color !== '') t.color = raw.color
     if (raw.disabled === true) t.disabled = true
     if (raw.expanded === true || raw.expanded === false) t.expanded = raw.expanded
@@ -959,6 +1026,7 @@ export class OASGantt extends OASElement {
       'show-today',
       'weekends',
       'holidays',
+      'workdays',
       'first-day-of-week',
       'locale',
       'height',
@@ -988,7 +1056,8 @@ export class OASGantt extends OASElement {
   /** 显式 milestone 与 end/子级并存的数据矛盾告警去重（key = `${id}:${kind}`） */
   private warnedMilestones = new Set<string>()
   private warnedRescheduleCycle = false
-  private autoScheduleApplied = false
+  /** 工作日日历缓存（key = workdays + holidays 原文；属性变化即重建） */
+  private workCalCache: { key: string; days: Set<number> | null; holidays: Set<string> } | null = null
   /** 关键路径任务 id 集合（show-critical-path 开启时计算；关闭为空集，渲染零影响） */
   private criticalIds = new Set<string>()
   private conflictIds = new Set<string>()
@@ -1100,8 +1169,6 @@ export class OASGantt extends OASElement {
     this.syncTasksAttr()
     this.update()
     this.emitTasksChange()
-    // 仅当 patch 触及 start/end 时联动排程（其它字段零额外行为）
-    if (patch.start !== undefined || patch.end !== undefined) this.reschedule()
     return true
   }
 
@@ -1342,6 +1409,60 @@ export class OASGantt extends OASElement {
     } catch {
       return new Set()
     }
+  }
+
+  /**
+   * 工作日日历快照（workdays + holidays 原文为 key 缓存，属性不变即复用——
+   * 排程循环内逐次 JSON.parse 属性在大规模数据下开销可观）。
+   * days 为 null 表示 workdays 未开启/非法 → 不限制（全周工作）。
+   */
+  private workCalendar(): { days: Set<number> | null; holidays: Set<string> } {
+    const key = `${this.getAttr('workdays', '')}\u0000${this.getAttr('holidays', '')}`
+    const cached = this.workCalCache
+    if (cached && cached.key === key) return cached
+    const next = { key, days: parseWorkdays(this.getAttr('workdays', '')), holidays: this.holidaySet() }
+    this.workCalCache = next
+    return next
+  }
+
+  /** 工作日判定：周几 ∈ workdays 且非 holidays。workdays 缺省/非法/空 → 恒 true（零行为） */
+  private isWorkingDay(ms: number): boolean {
+    const { days, holidays } = this.workCalendar()
+    const d = new Date(ms)
+    // 假日恒为非工作日（与 workdays 是否开启无关）；workdays 缺省则不限制周几
+    if (holidays.has(toISODate(d))) return false
+    if (!days) return true
+    return days.has(d.getDay())
+  }
+
+  /**
+   * 吸附到「当天或之后」的下一个工作日（逐日前进，上限 SNAP_MAX_DAYS 天防死循环）。
+   * workdays 未开启 → 原值返回（零行为）；上限内找不到工作日（几乎不可达）→ 原值返回（宁可不移动）。
+   */
+  private snapToWorkingDay(ms: number): number {
+    const { days, holidays } = this.workCalendar()
+    // 无 workdays 且无假日 → 全周皆工作日，无需求吸附
+    if (!days && holidays.size === 0) return ms
+    let cur = ms
+    for (let i = 0; i < SNAP_MAX_DAYS; i++) {
+      if (this.isWorkingDay(cur)) return cur
+      cur += DAY_MS
+    }
+    return ms
+  }
+
+  /**
+   * 任务约束快照：mode + 约束日起点 ms + 约束日右缘 ms（fnlt 判定用；日精度 +DAY_MS 含端日）。
+   * 缺省/非法（清洗层已兜底，此处再防御一次）→ null = 无约束。
+   */
+  private constraintOf(t: TG): { mode: DatedConstraint; ms: number; endMs: number } | null {
+    const mode = t.constraint
+    if (mode !== 'snet' && mode !== 'mso' && mode !== 'fnlt') return null
+    const dateStr = typeof t.constraintDate === 'string' ? t.constraintDate.trim() : ''
+    const d = parseTaskDate(dateStr)
+    if (!d) return null
+    const ms = d.getTime()
+    return { mode, ms, endMs: dateStr.length > 10 ? ms : ms + DAY_MS }
   }
 
   private weekStart(): number {
@@ -1939,15 +2060,9 @@ export class OASGantt extends OASElement {
     this.syncHeaderOffset()
     // 数据重写后收敛出的选中变化统一在此补发（property/attribute 两通道一致）
     if (prunedSel) this.emitSelectionChange()
-    // auto-schedule 首次生效（挂载即开 / 运行期开启）时立即规整既存违约一次
-    if (this.autoScheduleOn()) {
-      if (!this.autoScheduleApplied) {
-        this.autoScheduleApplied = true
-        this.reschedule()
-      }
-    } else {
-      this.autoScheduleApplied = false
-    }
+    // auto-schedule：每次 update 后规整（幂等——无违约时零改动零事件）；
+    // 覆盖挂载即开/运行期开启，以及运行期改 workdays/holidays/整体重写 tasks 等场景
+    if (this.autoScheduleOn()) this.reschedule()
   }
 
   /**
@@ -2774,7 +2889,6 @@ export class OASGantt extends OASElement {
       taskId,
       dependencies: next.map((d) => ({ ...d })),
     } satisfies GanttDependenciesChangeDetail)
-    this.reschedule()
     return true
   }
 
@@ -2800,7 +2914,8 @@ export class OASGantt extends OASElement {
 
   /**
    * 改写依赖：from 找不到 / to.id 不存在或指向自身 / 无实际变化（含 lag）→ false。
-   * to.type 缺省继承 from.type（再缺省 fs）；to.lag 缺省继承 from.lag（缺省不写，等价 0）。
+   * to.type 缺省继承 from.type（再缺省 fs）；to.lag 缺省继承 from.lag（缺省不写，等价 0）；
+   * 归一后 lag 为 0/缺省时**不落 `lag: 0` 键**（保持依赖对象干净，读回为「无 lag」）。
    * 重写后与既有依赖重复（同 id+type，lag 不参与去重键）则去重（保留一条）。
    * 成功派发 oas-tasks-change 与 oas-dependencies-change。
    */
@@ -2821,7 +2936,8 @@ export class OASGantt extends OASElement {
     const replaced: GanttDependency[] = deps.map((d, i) => {
       if (i !== idx) return { ...d }
       const e: GanttDependency = { id: to.id, type: toType }
-      if (toLag !== undefined) e.lag = toLag
+      // lag 归一：0 或未给（继承到 0/缺省）时不落 `lag: 0` 键，保持依赖对象干净（sig/去重逻辑不变）
+      if (toLag !== undefined && toLag !== 0) e.lag = toLag
       return e
     })
     const dedupSeen = new Set<string>()
@@ -2839,7 +2955,6 @@ export class OASGantt extends OASElement {
       taskId,
       dependencies: next.map((d) => ({ ...d })),
     } satisfies GanttDependenciesChangeDetail)
-    this.reschedule()
     return true
   }
 
@@ -2852,7 +2967,6 @@ export class OASGantt extends OASElement {
     if (!Array.isArray(patches) || patches.length === 0) return 0
     const next = [...this._tasks]
     let applied = 0
-    let touchesDates = false
     for (const patch of patches) {
       if (!patch || typeof patch.id !== 'string') continue
       const idx = next.findIndex((t) => t.id === patch.id)
@@ -2868,12 +2982,10 @@ export class OASGantt extends OASElement {
       clean.id = patch.id
       next[idx] = clean
       applied++
-      if (patch.start !== undefined || patch.end !== undefined) touchesDates = true
     }
     if (applied === 0) return 0
     this._tasks = next
     this.commitTasks()
-    if (touchesDates) this.reschedule()
     return applied
   }
 
@@ -3852,17 +3964,17 @@ export class OASGantt extends OASElement {
         : { start }
       : { start, end: endStr }
     if (!this.applyPatch(id, patch)) return
-    // 里程碑旧区间为瞬时点：oldEnd 取旧 start（此前误用新 start）
+    // applyPatch 内部经 update()→reschedule() 可能已按约束/工作日订正数据 →
+    // 事件 payload 取**订正后终值**（与 task 快照一致），oldStart/oldEnd 仍为拖动前原点
+    const finalTask = this._tasks.find((t) => t.id === id)!
     this.emit('task-change', {
       id,
-      task: this.taskSnapshot(this._tasks.find((t) => t.id === id)!),
+      task: this.taskSnapshot(finalTask),
       oldStart: this.fmtIso(oldStartMs, datetime),
       oldEnd: milestone ? this.fmtIso(oldStartMs, datetime) : this.fmtEnd(oldEndMs, datetime),
-      start,
-      end: endStr,
+      start: finalTask.start,
+      end: finalTask.end ?? finalTask.start,
     } satisfies GanttTaskChangeDetail)
-    // 改期收口后联动排程（auto-schedule 开且后继违约时；直接改 _tasks，不再走 commitDates 防递归）
-    this.reschedule()
   }
 
   private commitProgress(id: string, progress: number): void {
@@ -3946,23 +4058,67 @@ export class OASGantt extends OASElement {
     return { childMap, hasChildren: new Set(childMap.keys()) }
   }
 
-  /** 依赖图是否有环（DFS 三色）：有环则排程无解，reschedule 直接跳过 */
-  private dependencyHasCycle(byId: Map<string, TG>): boolean {
-    const state = new Map<string, 1 | 2>()
-    const visit = (id: string): boolean => {
-      const st = state.get(id)
-      if (st === 1) return true
-      if (st === 2) return false
-      state.set(id, 1)
-      const t = byId.get(id)
-      for (const d of t?.dependencies ?? []) {
-        if (byId.has(d.id) && visit(d.id)) return true
+  /**
+   * 依赖图中「处于环内」的节点集合：所在强连通分量（SCC）大小 > 1，或自身成环（自环）。
+   * 实现为**迭代式 Tarjan**（显式栈；递归版在超长依赖链下会爆调用栈）。
+   *
+   * 用途：环内节点排程无解，只让位它们（保持现网日期），环外节点照常前推；
+   * 关键路径也把环内节点排除在节点集之外——替代旧版「整图有环即整体停摆/返回空集」。
+   */
+  private dependencyCyclicNodes(byId: Map<string, TG>): Set<string> {
+    const index = new Map<string, number>()
+    const low = new Map<string, number>()
+    const onStack = new Set<string>()
+    const stack: string[] = []
+    const cyclic = new Set<string>()
+    let counter = 0
+    for (const root of byId.keys()) {
+      if (index.has(root)) continue
+      index.set(root, counter)
+      low.set(root, counter)
+      counter++
+      stack.push(root)
+      onStack.add(root)
+      const work: Array<{ id: string; i: number }> = [{ id: root, i: 0 }]
+      while (work.length > 0) {
+        const frame = work[work.length - 1]!
+        const deps = byId.get(frame.id)?.dependencies ?? []
+        if (frame.i < deps.length) {
+          const depId = deps[frame.i]!.id
+          frame.i++
+          if (!byId.has(depId)) continue // 前置不存在 → 该边不参与（与排程同口径）
+          if (depId === frame.id) {
+            cyclic.add(frame.id) // 自环：自身即环内
+            continue
+          }
+          if (!index.has(depId)) {
+            index.set(depId, counter)
+            low.set(depId, counter)
+            counter++
+            stack.push(depId)
+            onStack.add(depId)
+            work.push({ id: depId, i: 0 })
+          } else if (onStack.has(depId)) {
+            low.set(frame.id, Math.min(low.get(frame.id)!, index.get(depId)!))
+          }
+          continue
+        }
+        work.pop()
+        const parent = work[work.length - 1]
+        if (parent) low.set(parent.id, Math.min(low.get(parent.id)!, low.get(frame.id)!))
+        if (low.get(frame.id) === index.get(frame.id)) {
+          const comp: string[] = []
+          for (;;) {
+            const w = stack.pop()!
+            onStack.delete(w)
+            comp.push(w)
+            if (w === frame.id) break
+          }
+          if (comp.length > 1) for (const c of comp) cyclic.add(c)
+        }
       }
-      state.set(id, 2)
-      return false
     }
-    for (const t of byId.values()) if (visit(t.id)) return true
-    return false
+    return cyclic
   }
 
   /**
@@ -3970,13 +4126,14 @@ export class OASGantt extends OASElement {
    * - 工期 dur = endMsOfTask − startMsOfTask（日精度 end 含端，与 buildRows 一致）；里程碑 dur=0。
    * - 前向 ES_i 取任务**当前排期**的 startMs（以现网数据为基准，不做重排）。
    * - 项目完成 projectEnd = max(endMsOfTask)（里程碑也算；摘要取自身 data 日期）。
-   * - 反向：无后继任务起 LF = projectEnd，按依赖约束 + lag 反推前置 LS/LF，迭代松弛至稳定
-   *   （上限 tasks.length*2+8，防不成环但链超长时欠收敛）：
-   *     fs: LF_pred = LS_succ − lag      ss: LS_pred = LS_succ − lag（LF_pred = LS_pred + dur_pred）
-   *     ff: LF_pred = LF_succ − lag      sf: LS_pred = LF_succ − lag（LF_pred = LS_pred + dur_pred）
+   * - 反向：无后继任务起 LF = projectEnd，按依赖约束 + lag 反推前置 LS/LF。**按拓扑序**：
+   *   节点集在**排除依赖环内节点**后为 DAG，故按逆拓扑序一趟即得精确 LF（O(V+E)，替代旧版迭代松弛）：
+   *     fs: LF_pred = LS_succ − lag      ss: LF_pred = LS_succ − lag（LF_pred = LS_pred + dur_pred）
+   *     ff: LF_pred = LF_succ − lag      sf: LF_pred = LS_succ − lag（LF_pred = LS_pred + dur_pred）
    * - 每个任务 LS = LF − dur、float = LS − ES；|float| < 1e-6（日精度）判为关键。
    * - 摘要（有子级，日期派生）不参与；disabled 照算（不特殊处理，仅作可视化）。
-   * - 依赖成环 → 排程无解，返回空集（不死循环）。
+   * - 依赖环内节点不参与 CP（排程端让位后无法定义 CP 序），环外节点照常计算；全为环内 → 空集。
+   * - 违约集 conflict = 负总时差 ∪ 约束违反（snet 未达约束日 / mso 未落在约束日 / fnlt 超出约束日右缘）。
    */
   private criticalPathIds(): { critical: Set<string>; conflict: Set<string> } {
     const empty = { critical: new Set<string>(), conflict: new Set<string>() }
@@ -3984,9 +4141,10 @@ export class OASGantt extends OASElement {
     if (tasks.length === 0) return empty
     const byId = new Map<string, TG>()
     for (const t of tasks) byId.set(t.id, t)
-    if (this.dependencyHasCycle(byId)) return empty
     const { hasChildren } = this.childStructure(byId)
-    const nodes = tasks.filter((t) => !hasChildren.has(t.id))
+    // 环内节点让位：不进入节点集（旧版「有环即返回空集」会让环外关键链也无从高亮）
+    const cyclic = this.dependencyCyclicNodes(byId)
+    const nodes = tasks.filter((t) => !hasChildren.has(t.id) && !cyclic.has(t.id))
     if (nodes.length === 0) return empty
     const dur = new Map<string, number>()
     const es = new Map<string, number>()
@@ -4005,42 +4163,57 @@ export class OASGantt extends OASElement {
     if (!Number.isFinite(projectEnd)) projectEnd = 0
     // 后继表：predId → 引用它的依赖（succ/type/lag）；仅连接「双方均为节点」的边
     const successors = new Map<string, Array<{ succ: string; type: string; lag: number }>>()
+    const indeg = new Map<string, number>()
+    for (const t of nodes) indeg.set(t.id, 0)
     for (const t of nodes) {
       for (const d of t.dependencies ?? []) {
-        if (!dur.has(d.id)) continue // 前置为摘要/不存在/非法 → 该边不参与
+        if (!dur.has(d.id)) continue // 前置为摘要/环内/不存在/非法 → 该边不参与
         const lag = typeof d.lag === 'number' && Number.isFinite(d.lag) ? d.lag : 0
         const list = successors.get(d.id) ?? []
         list.push({ succ: t.id, type: d.type ?? 'fs', lag })
         successors.set(d.id, list)
+        indeg.set(t.id, (indeg.get(t.id) ?? 0) + 1)
       }
     }
-    const lf = new Map<string, number>()
-    for (const t of nodes) lf.set(t.id, projectEnd)
-    const maxIter = tasks.length * 2 + 8
-    for (let iter = 0; iter < maxIter; iter++) {
-      let changed = false
-      for (const [predId, list] of successors) {
-        const durPred = dur.get(predId)!
-        let lfPred = lf.get(predId)!
-        for (const { succ, type, lag } of list) {
-          const succLs = lf.get(succ)! - dur.get(succ)!
-          const lagMs = lag * DAY_MS
-          const implied =
-            type === 'fs'
-              ? succLs - lagMs
-              : type === 'ss'
-                ? succLs - lagMs + durPred
-                : type === 'ff'
-                  ? lf.get(succ)! - lagMs
-                  : lf.get(succ)! - lagMs + durPred // sf
-          if (implied < lfPred) lfPred = implied
-        }
-        if (lfPred < lf.get(predId)!) {
-          lf.set(predId, lfPred)
-          changed = true
-        }
+    // Kahn 拓扑序（节点集为 DAG，环内节点已排除）：入度 0 起逐层出队
+    const topo: string[] = []
+    const queue: string[] = []
+    for (const t of nodes) if ((indeg.get(t.id) ?? 0) === 0) queue.push(t.id)
+    for (let qi = 0; qi < queue.length; qi++) {
+      const id = queue[qi]!
+      topo.push(id)
+      for (const { succ } of successors.get(id) ?? []) {
+        const next = (indeg.get(succ) ?? 0) - 1
+        indeg.set(succ, next)
+        if (next === 0) queue.push(succ)
       }
-      if (!changed) break
+    }
+    // 防御：DAG 下 topo 应覆盖全部节点；万一有残留（理论不可达）按剩余顺序补入，保证 LF 全部有值
+    if (topo.length < nodes.length) {
+      const seen = new Set(topo)
+      for (const t of nodes) if (!seen.has(t.id)) topo.push(t.id)
+    }
+    // 逆拓扑序反向松弛：LF_pred = min(projectEnd, 各后继约束隐含值)；后继 LF 此时已定
+    const lf = new Map<string, number>()
+    for (let i = topo.length - 1; i >= 0; i--) {
+      const id = topo[i]!
+      const durPred = dur.get(id)!
+      let value = projectEnd
+      for (const { succ, type, lag } of successors.get(id) ?? []) {
+        const lfSucc = lf.get(succ)!
+        const lsSucc = lfSucc - dur.get(succ)!
+        const lagMs = lag * DAY_MS
+        const implied =
+          type === 'fs'
+            ? lsSucc - lagMs
+            : type === 'ss'
+              ? lsSucc - lagMs + durPred
+              : type === 'ff'
+                ? lfSucc - lagMs
+                : lfSucc - lagMs + durPred // sf
+        if (implied < value) value = implied
+      }
+      lf.set(id, value)
     }
     const critical = new Set<string>()
     const conflict = new Set<string>()
@@ -4048,6 +4221,12 @@ export class OASGantt extends OASElement {
       const float = lf.get(t.id)! - dur.get(t.id)! - es.get(t.id)!
       if (Math.abs(float) < 1e-6) critical.add(t.id)
       else if (float < -1e-6) conflict.add(t.id) // 负总时差 = 已违反后继约束（违约）
+      // 约束违反并入违约集（与负总时差同样呈现 .conflict）
+      const con = this.constraintOf(t)
+      if (!con) continue
+      if (con.mode === 'snet' && this.startMsOfTask(t) < con.ms) conflict.add(t.id)
+      else if (con.mode === 'mso' && this.startMsOfTask(t) !== con.ms) conflict.add(t.id)
+      else if (con.mode === 'fnlt' && this.endMsOfTask(t) > con.endMs) conflict.add(t.id)
     }
     return { critical, conflict }
   }
@@ -4060,9 +4239,36 @@ export class OASGantt extends OASElement {
   }
 
   /**
+   * 写回任务起点（保持工期）：里程碑只写 start；显式 milestone 携带矛盾 end 时把 end 归一为 start
+   * （与 commitDates 同口径）。返回是否真的改动了数据串（未变则该次排程不算 dirty，防迭代空转）。
+   */
+  private writeStartKeepingDuration(t: TG, startMsNew: number, duration: number): boolean {
+    const datetime = typeof t.start === 'string' && t.start.length > 10
+    const startStr = this.fmtIso(startMsNew, datetime)
+    const milestone = t.type === 'milestone' || !t.end
+    if (milestone) {
+      if (t.start === startStr) return false
+      t.start = startStr
+      if (t.end) t.end = startStr
+      return true
+    }
+    const endStr = this.fmtEnd(startMsNew + duration, datetime)
+    if (t.start === startStr && t.end === endStr) return false
+    t.start = startStr
+    t.end = endStr
+    return true
+  }
+
+  /**
    * 依赖约束松弛：返回被联动改期的任务 id（未开 auto-schedule 或零改动 → []，零事件）。
    * 命中多个前置时逐条满足（取最靠后约束）；收口一次性 syncTasksAttr + update + emitTasksChange，
    * 随后派发 oas-reschedule（**先 tasks-change 后 reschedule**）。
+   *
+   * 约束（opt-in）与工作日日历（workdays，opt-in）在此生效：
+   * - snet 取约束下限（只前推）；mso 固定在约束日（依赖不得前推，数据偏离则拉回）；fnlt 不自动移动（仅违约判定）。
+   * - workdays 开启时，前推落点吸附到下一个工作日（fs/ss 吸附起点；ff/sf 吸附对应 end 再派生 start）。
+   *   工期仍按**日历日**计（本组件不压缩非工作日的工期跨度），仅起点/端点落位避开非工作日。
+   * - 依赖成环时只让位**环内**节点（保持现网日期），环外节点照常排程；环内节点作前置用其当前日期（best-effort）。
    */
   private reschedule(): string[] {
     if (!this.autoScheduleOn()) return []
@@ -4070,13 +4276,11 @@ export class OASGantt extends OASElement {
     if (tasks.length === 0) return []
     const byId = new Map<string, TG>()
     for (const t of tasks) byId.set(t.id, t)
-    // 依赖成环 → 排程无解：不动数据（否则迭代上限会把日期推远、静默损坏数据），告警一次
-    if (this.dependencyHasCycle(byId)) {
-      if (!this.warnedRescheduleCycle) {
-        this.warnedRescheduleCycle = true
-        devWarn('[oas-gantt] 依赖成环，auto-schedule 已跳过（请先修正依赖）')
-      }
-      return []
+    // 依赖环内节点让位：环内排程无解（互相前推会推远数据），保持现网日期；告警一次
+    const cyclic = this.dependencyCyclicNodes(byId)
+    if (cyclic.size > 0 && !this.warnedRescheduleCycle) {
+      this.warnedRescheduleCycle = true
+      devWarn('[oas-gantt] 依赖成环：环内任务已跳过联动排程（请先修正依赖）')
     }
     // 与 buildRows 同源树结构：断环节点（parent 成环被归根者）不计入其原父级的子级
     const { childMap, hasChildren } = this.childStructure(byId)
@@ -4121,47 +4325,49 @@ export class OASGantt extends OASElement {
     for (let iter = 0; iter < maxIter; iter++) {
       let dirty = false
       for (const t of tasks) {
-        if (t.disabled === true || hasChildren.has(t.id)) continue
-        const deps = t.dependencies
-        if (!deps || deps.length === 0) continue
+        if (t.disabled === true || hasChildren.has(t.id) || cyclic.has(t.id)) continue
         const startMs = this.startMsOfTask(t)
         const duration = this.endMsOfTask(t) - startMs
+        const con = this.constraintOf(t)
+        // mso：固定锚点——依赖不得前推；数据偏离约束日则拉回约束日（保持工期），且不再吸附
+        if (con && con.mode === 'mso') {
+          if (startMs === con.ms) continue
+          if (this.writeStartKeepingDuration(t, con.ms, duration)) {
+            changed.add(t.id)
+            invalidateAgg(t.id)
+            dirty = true
+          }
+          continue
+        }
         let required = startMs
-        for (const d of deps) {
+        for (const d of t.dependencies ?? []) {
           const pred = byId.get(d.id)
           if (!pred) continue
           const type = d.type ?? 'fs'
           const pa = agg(pred.id)
           // lag（天，可负 = 提前/允许重叠）× DAY_MS 叠加到约束端点；缺省 0
           const lagMs = (typeof d.lag === 'number' && Number.isFinite(d.lag) ? d.lag : 0) * DAY_MS
+          // 端点落在非工作日 → 吸附到下一个工作日；ff/sf 吸附对应 end 后派生 start（工期不变）
           const need =
             type === 'fs'
-              ? pa.endMs + lagMs
+              ? this.snapToWorkingDay(pa.endMs + lagMs)
               : type === 'ss'
-                ? pa.startMs + lagMs
+                ? this.snapToWorkingDay(pa.startMs + lagMs)
                 : type === 'ff'
-                  ? pa.endMs - duration + lagMs
-                  : pa.startMs - duration + lagMs
+                  ? this.snapToWorkingDay(pa.endMs + lagMs) - duration
+                  : this.snapToWorkingDay(pa.startMs + lagMs) - duration
           if (need > required) required = need
         }
-        if (!(required > startMs)) continue // 只推不提前
-        const datetime = typeof t.start === 'string' && t.start.length > 10
-        const startStr = this.fmtIso(required, datetime)
-        const milestone = t.type === 'milestone' || !t.end
-        if (milestone) {
-          if (t.start === startStr) continue
-          t.start = startStr
-          // 显式 milestone 携带矛盾 end 时把 end 归一为 start（与 commitDates 同口径）
-          if (t.end) t.end = startStr
-        } else {
-          const endStr = this.fmtEnd(required + duration, datetime)
-          if (t.start === startStr && t.end === endStr) continue
-          t.start = startStr
-          t.end = endStr
+        // snet：约束下限（只前推不提前）。约束优先：先取 max 再吸附，故吸附结果不会早于约束日
+        if (con && con.mode === 'snet' && con.ms > required) required = con.ms
+        if (!(required > startMs)) continue // 只推不提前（fnlt 不在此移动：仅参与违约判定）
+        required = this.snapToWorkingDay(required)
+        if (!(required > startMs)) continue
+        if (this.writeStartKeepingDuration(t, required, duration)) {
+          changed.add(t.id)
+          invalidateAgg(t.id)
+          dirty = true
         }
-        changed.add(t.id)
-        invalidateAgg(t.id)
-        dirty = true
       }
       if (!dirty) break
     }

@@ -154,6 +154,16 @@
   <oas-gantt id="gantt-critical" show-critical-path height="200"></oas-gantt>
 </DemoBlock>
 
+## 排程约束与工作日日历
+
+- **任务约束**：`GanttTask.constraint`（`'asap'` 默认 / `'snet'` 不得早于 / `'mso'` 固定开始 / `'fnlt'` 不得晚于完成）+ `constraintDate`。`auto-schedule` 下：`snet` 取起始下限、`mso` 固定开始（不被依赖前推）、`fnlt` 为软截止（不自动移动）。违反（`snet` 早于下限 / `mso` 偏离 / `fnlt` 超期）在 `show-critical-path` 下以 `.conflict` 标出。
+- **工作日日历**：`workdays`（JSON 周几数组 `[0..6]`，opt-in；缺省/空 = 不限周几）+ `holidays`（**假日恒为非工作日**，与是否开 `workdays` 无关）。`auto-schedule` 的前推落点**吸附到下一个工作日**（跳过假日与 `workdays` 之外的日子）。运行期改 `workdays`/`holidays` 或整体重写 `tasks` 都会触发重新规整。
+- **事件顺序**：`auto-schedule` 开启时，一次收口可能先派发 `oas-reschedule`（联动订正）与订正后的 `oas-tasks-change`，再派发 `oas-task-change`（拖动的那个任务，`start/end` 取**订正后终值**）。宿主以 `el.tasks` / `detail.task` 为准即可。
+
+<DemoBlock title="工作日日历：workdays=[工作日] 下拖前置，后置自动吸附到下一个工作日；连线 +2（lag）标签可见">
+  <oas-gantt id="gantt-workdays" auto-schedule workdays="[1,2,3,4,5]" height="200"></oas-gantt>
+</DemoBlock>
+
 ## 宿主集成配方（撤销重做 / 编辑弹窗 / 导出）
 
 组件只保证「数据 + 交互闭环」，下列能力以官方配方给出（不改组件本体）：
@@ -476,6 +486,15 @@ onMounted(async () => {
       gexOut.textContent = JSON.stringify(gex.tasks)
     })
   }
+
+  // 工作日日历 demo
+  const wd = document.getElementById('gantt-workdays')
+  if (wd) {
+    wd.tasks = [
+      { id: 'w1', name: '需求', start: '2026-03-02', end: '2026-03-06' },
+      { id: 'w2', name: '开发', start: '2026-03-09', end: '2026-03-13', dependencies: [{ id: 'w1', lag: 2 }] },
+    ]
+  }
 })
 </script>
 
@@ -493,7 +512,7 @@ onMounted(async () => {
 | `expanded` | 已展开集合（JSON 数组，受控）：属性缺席缺省全展开；显式 [] 全收起；点折叠钮写回 | `string` | — |
 | `first-day-of-week` | 周起始日（0-6）；缺省按 locale 推导（week 档对齐用） | `string` | — |
 | `height` | 组件高度 px（默认 320） | `string` | `320` |
-| `holidays` | 假日列表（JSON ["YYYY-MM-DD",…]）：对应列高亮（优先于周末底色） | `string` | — |
+| `holidays` | 假日列表（JSON ["YYYY-MM-DD",…]）：对应列高亮（优先于周末底色）；假日恒为非工作日（与 workdays 是否开启无关），auto-schedule 前推时跳过 | `string` | — |
 | `label-position` | 任务条标签位置：inside 条内 / right 条旁 / left 条左；缺省 none（行名列已承载名称，条旁不再重复渲染）；非法值回落 none | `string` | — |
 | `locale` | 本地化（覆盖 config-provider 注入与全局 locale） | `string` | — |
 | `progress-readonly` | 禁改进度（改期仍可拖） | `boolean` | — |
@@ -504,8 +523,9 @@ onMounted(async () => {
 | `show-critical-path` | 关键路径（布尔，默认关）：在依赖图与工期上算总时差，时差为 0 的任务加 .critical 高亮（颜色走 --oas-gantt-critical-color）；只读展示不改数据 | `string` | — |
 | `show-today` | 今日线（默认开；false 关闭） | `string` | — |
 | `snap` | 拖拽吸附当前刻度（默认开；false 按像素比例平移并保留时间精度） | `string` | — |
-| `tasks` | 甘特任务（JSON）：[{ id?, name, start, end?, type?, progress?, parent?, children?, dependencies?, color?, disabled?, expanded?, baseline? }]——扁平 parent 指针为主，嵌套 children 自动拍平；type:"milestone" 显式优先（带 end 也按里程碑渲染，end 忽略），有子任务时恒为摘要；无 end 亦推导为里程碑；start 晚于 end 自动交换 | `GanttTask[]` | `[]` |
+| `tasks` | 甘特任务（JSON）：[{ id?, name, start, end?, type?, progress?, parent?, children?, dependencies?, color?, disabled?, expanded?, baseline?, constraint?（asap/snet/mso/fnlt）, constraintDate? }]——扁平 parent 指针为主，嵌套 children 自动拍平；type:"milestone" 显式优先（带 end 也按里程碑渲染，end 忽略），有子任务时恒为摘要；无 end 亦推导为里程碑；start 晚于 end 自动交换 | `GanttTask[]` | `[]` |
 | `weekends` | 周末列高亮（默认开；day/hour 档生效；false 关闭） | `string` | — |
+| `workdays` | 工作日周几（JSON [0-6]，0=周日…6=周六；opt-in，缺省/空=不限制）：auto-schedule 前推结果吸附到下一个工作日（叠加 holidays） | `string` | — |
 
 #### Property（JS property；是否写回 attribute 见各行说明）
 

@@ -4314,7 +4314,7 @@
   },
   "oas-gantt": {
     "attrs": {
-      "tasks": "甘特任务（JSON）：[{ id?, name, start, end?, type?, progress?, parent?, children?, dependencies?, color?, disabled?, expanded?, baseline? }]——扁平 parent 指针为主，嵌套 children 自动拍平；type:\"milestone\" 显式优先（带 end 也按里程碑渲染，end 忽略），有子任务时恒为摘要；无 end 亦推导为里程碑；start 晚于 end 自动交换",
+      "tasks": "甘特任务（JSON）：[{ id?, name, start, end?, type?, progress?, parent?, children?, dependencies?, color?, disabled?, expanded?, baseline?, constraint?（asap/snet/mso/fnlt）, constraintDate? }]——扁平 parent 指针为主，嵌套 children 自动拍平；type:\"milestone\" 显式优先（带 end 也按里程碑渲染，end 忽略），有子任务时恒为摘要；无 end 亦推导为里程碑；start 晚于 end 自动交换",
       "scale": "时间刻度：hour / day（默认）/ week / month / quarter / year；非法值回落 day",
       "expanded": "已展开集合（JSON 数组，受控）：属性缺席缺省全展开；显式 [] 全收起；点折叠钮写回",
       "readonly": "整图只读（禁改期/禁进度，不渲染拖拽手柄）",
@@ -4322,7 +4322,8 @@
       "progress-readonly": "禁改进度（改期仍可拖）",
       "show-today": "今日线（默认开；false 关闭）",
       "weekends": "周末列高亮（默认开；day/hour 档生效；false 关闭）",
-      "holidays": "假日列表（JSON [\"YYYY-MM-DD\",…]）：对应列高亮（优先于周末底色）",
+      "holidays": "假日列表（JSON [\"YYYY-MM-DD\",…]）：对应列高亮（优先于周末底色）；假日恒为非工作日（与 workdays 是否开启无关），auto-schedule 前推时跳过",
+      "workdays": "工作日周几（JSON [0-6]，0=周日…6=周六；opt-in，缺省/空=不限制）：auto-schedule 前推结果吸附到下一个工作日（叠加 holidays）",
       "first-day-of-week": "周起始日（0-6）；缺省按 locale 推导（week 档对齐用）",
       "locale": "本地化（覆盖 config-provider 注入与全局 locale）",
       "height": "组件高度 px（默认 320）",

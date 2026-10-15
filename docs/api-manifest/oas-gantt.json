@@ -53,6 +53,12 @@
       "observed": true
     },
     {
+      "name": "workdays",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
       "name": "first-day-of-week",
       "type": "string",
       "default": "",
@@ -167,7 +173,7 @@
     },
     {
       "name": "oas-task-change",
-      "detail": "{ id, task: this.taskSnapshot(this._tasks.find((t) => t.id === id)!), oldStart: this.fmtIso(oldStartMs, datetime), oldEnd: milestone ? this.fmtIso(oldStartMs, datetime) : this.fmtEnd(oldEndMs, datetime), start, end: endStr, } satisfies GanttTaskChangeDetail"
+      "detail": "{ id, task: this.taskSnapshot(finalTask), oldStart: this.fmtIso(oldStartMs, datetime), oldEnd: milestone ? this.fmtIso(oldStartMs, datetime) : this.fmtEnd(oldEndMs, datetime), start: finalTask.start, end: finalTask.end ?? finalTask.start, } satisfies GanttTaskChangeDetail"
     },
     {
       "name": "oas-progress-change",

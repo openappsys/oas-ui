@@ -154,6 +154,16 @@ Assemble a task detail editor with `oas-modal` + `oas-form` (the component only 
   <oas-gantt id="gantt-critical" show-critical-path height="200"></oas-gantt>
 </DemoBlock>
 
+## Scheduling Constraints & Working-Days Calendar
+
+- **Task constraints**: `GanttTask.constraint` (`'asap'` default / `'snet'` start-no-earlier-than / `'mso'` must-start-on / `'fnlt'` finish-no-later-than) + `constraintDate`. Under `auto-schedule`: `snet` sets a start floor, `mso` pins the start (not pushed by dependencies), `fnlt` is a soft deadline (no auto-move). Violations (`snet` earlier than the floor / `mso` off the pin / `fnlt` over deadline) are marked `.conflict` under `show-critical-path`.
+- **Working-days calendar**: `workdays` (JSON weekday array `[0..6]`, opt-in; absent/empty = any weekday) + `holidays` (**holidays are always non-working**, regardless of `workdays`). `auto-schedule` snaps pushed landing points to the **next working day** (skipping holidays and days outside `workdays`). Changing `workdays`/`holidays` at runtime, or rewriting `tasks`, re-normalizes.
+- **Event order**: with `auto-schedule` on, one settle may dispatch `oas-reschedule` (dependent corrections) and the corrected `oas-tasks-change` **before** `oas-task-change` (the dragged task; its `start/end` carry the **corrected final values**). Hosts should read `el.tasks` / `detail.task`.
+
+<DemoBlock title="Working-days calendar: with workdays=[Mon–Fri], drag the predecessor and the successor snaps to the next working day; a +2 (lag) label is visible on the link">
+  <oas-gantt id="gantt-workdays" auto-schedule workdays="[1,2,3,4,5]" height="200"></oas-gantt>
+</DemoBlock>
+
 ## Host Integration Recipes (Undo/Redo / Edit Dialog / Export)
 
 The component only guarantees a closed loop of data + interaction; the capabilities below are provided as official recipes (no changes to the component itself):
@@ -478,6 +488,15 @@ onMounted(async () => {
       gexOut.textContent = JSON.stringify(gex.tasks)
     })
   }
+
+  // Working-days demo
+  const wd = document.getElementById('gantt-workdays')
+  if (wd) {
+    wd.tasks = [
+      { id: 'w1', name: 'Discovery', start: '2026-03-02', end: '2026-03-06' },
+      { id: 'w2', name: 'Build', start: '2026-03-09', end: '2026-03-13', dependencies: [{ id: 'w1', lag: 2 }] },
+    ]
+  }
 })
 </script>
 
@@ -495,7 +514,7 @@ onMounted(async () => {
 | `expanded` | Expanded set (JSON array, controlled): defaults to fully expanded when absent; explicit [] collapses all; written back on toggle | `string` | — |
 | `first-day-of-week` | Week start day (0-6); defaults to locale derivation (used for week-tier alignment) | `string` | — |
 | `height` | Component height in px (default 320) | `string` | `320` |
-| `holidays` | Holiday list (JSON ["YYYY-MM-DD",…]): matching columns highlighted (takes precedence over weekend tint) | `string` | — |
+| `holidays` | Holiday list (JSON ["YYYY-MM-DD",…]): matching columns highlighted (takes precedence over weekend tint); holidays are always non-working (regardless of workdays) and are skipped by auto-schedule | `string` | — |
 | `label-position` | Bar label position: inside / right / left; default `none` (the row-name column already shows the name, so the bar does not repeat it); invalid values fall back to `none` | `string` | — |
 | `locale` | Localization (overrides config-provider injection and the global locale) | `string` | — |
 | `progress-readonly` | No progress dragging (dates still draggable) | `boolean` | — |
@@ -506,8 +525,9 @@ onMounted(async () => {
 | `show-critical-path` | Critical path (boolean, off by default): runs a CPM pass over the dependency graph + durations to compute total float and adds a .critical highlight to zero-float tasks (color via --oas-gantt-critical-color); read-only | `string` | — |
 | `show-today` | Today line (on by default; false to disable) | `string` | — |
 | `snap` | Snap drags to the current scale unit (on by default; false shifts by pixel ratio and keeps time precision) | `string` | — |
-| `tasks` | Gantt tasks (JSON): [{ id?, name, start, end?, type?, progress?, parent?, children?, dependencies?, color?, disabled?, expanded?, baseline? }] — flat parent pointers are the primary contract; nested children are flattened automatically; explicit type:"milestone" takes precedence (rendered as milestone even with end, which is ignored) but a task with children is always a summary; no end also infers milestone; start/end are swapped automatically when start is after end | `GanttTask[]` | `[]` |
+| `tasks` | Gantt tasks (JSON): [{ id?, name, start, end?, type?, progress?, parent?, children?, dependencies?, color?, disabled?, expanded?, baseline?, constraint? ('asap'\|'snet'\|'mso'\|'fnlt'), constraintDate? }] — flat parent pointers are the primary contract; nested children are flattened automatically; explicit type:"milestone" takes precedence (rendered as milestone even with end, which is ignored) but a task with children is always a summary; no end also infers milestone; start/end are swapped automatically when start is after end | `GanttTask[]` | `[]` |
 | `weekends` | Weekend column highlights (on by default; applies on day/hour tiers; false to disable) | `string` | — |
+| `workdays` | Working weekdays (JSON [0-6], 0=Sunday…6=Saturday; opt-in, absent/empty = unrestricted): auto-schedule results snap to the next working day (combined with holidays) | `string` | — |
 
 #### Property (JS property; see each row for attribute reflection)
 
