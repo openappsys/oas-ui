@@ -50,6 +50,8 @@ const STYLE = `
   flex: 1;
   overflow: hidden;
   position: relative;
+  /* 左侧列表不可原生滚动 → 触屏上纵向拖用于行带框选（不交浏览器手势） */
+  touch-action: none;
 }
 .side-inner {
   position: relative;
@@ -182,6 +184,16 @@ svg.links .link-hit:focus-visible + .link {
   background: color-mix(in srgb, var(--oas-color-primary) 14%, transparent);
   border: 1px solid var(--oas-color-primary);
   box-sizing: border-box;
+}
+/* 空白拖拽覆盖层：框选多任务（B）与拖拽建任务预览（C）共用；纯装饰、不拦指针 */
+.marquee {
+  position: absolute;
+  pointer-events: none;
+  box-sizing: border-box;
+  border: 1px solid var(--oas-color-primary);
+  background: color-mix(in srgb, var(--oas-color-primary) 12%, transparent);
+  border-radius: var(--oas-radius-xs);
+  z-index: 6;
 }
 .row-name .name {
   /* flex 子项默认 min-width:auto 不收缩，父级 text-overflow 对 flex 项不生效——
@@ -505,7 +517,7 @@ svg.links .temp-link {
 }
 .tooltip {
   position: absolute;
-  z-index: 3;
+  z-index: 7;
   max-width: 280px;
   padding: var(--oas-space-2) var(--oas-space-3);
   border: 1px solid var(--oas-color-border);
@@ -651,6 +663,11 @@ export interface GanttTaskAddDetail {
   task: GanttTask
 }
 
+/** reschedule 事件载荷（auto-schedule 联动排程收口）：ids 为被联动改期的任务 id 列表 */
+export interface GanttRescheduleDetail {
+  ids: string[]
+}
+
 type TG = GanttTask & { id: string }
 
 interface GanttRow {
@@ -717,6 +734,9 @@ const SCALE_PAD_START: Record<GanttScale, number> = { hour: 1, day: 1, week: 1, 
 /** 末端留白（档位数）：给条外标签与依赖出线留余地 */
 const SCALE_PAD_END: Record<GanttScale, number> = { hour: 6, day: 3, week: 1, month: 1, quarter: 1, year: 1 }
 const DAY_MS = 86_400_000
+
+/** 空白拖拽判拖阈值（px）：低于此位移视作点按（框选清空 / 不建任务） */
+const MARQUEE_THRESHOLD = 4
 
 const DEP_TYPES = new Set(['fs', 'ss', 'ff', 'sf'])
 
@@ -914,6 +934,7 @@ export class OASGantt extends OASElement {
       'snap',
       'show-baseline',
       'creatable',
+      'auto-schedule',
     ]
   }
 
@@ -932,6 +953,7 @@ export class OASGantt extends OASElement {
   private warnedSanitize = new Set<string>()
   /** 显式 milestone 与 end/子级并存的数据矛盾告警去重（key = `${id}:${kind}`） */
   private warnedMilestones = new Set<string>()
+  private warnedRescheduleCycle = false
   /** buildRows 产物缓存：渲染窗口（滚动每帧）复用，避免万级任务下每帧重建展开集 */
   private expandedSetCache: Set<string> | null = null
   /** 自适应列宽（px）：视口可用宽度内铺下整个窗口时收窄至恰好适配；null = 回落各档基准列宽（无布局环境） */
@@ -960,6 +982,21 @@ export class OASGantt extends OASElement {
     viaHandle: boolean
     byId: Map<string, TG>
   } | null = null
+  /** 空白框选手势（行带 rows / 条相交 bars）：记录起止点与追加语义 */
+  private marqueeCtx: {
+    kind: 'rows' | 'bars'
+    x0: number
+    y0: number
+    x1: number
+    y1: number
+    moved: boolean
+    additive: boolean
+    touch: boolean
+  } | null = null
+  /** 时间轴空白拖拽建任务手势（creatable 且非只读） */
+  private createCtx: { x0: number; y0: number; x1: number; y1: number; moved: boolean; touch: boolean } | null = null
+  private marqueeEl: HTMLElement | null = null
+  private ganttEl: HTMLElement | null = null
   private activeRowId: string | null = null
   private touchActiveId: string | null = null
   private coarse = false
@@ -1025,6 +1062,8 @@ export class OASGantt extends OASElement {
     this.syncTasksAttr()
     this.update()
     this.emitTasksChange()
+    // 仅当 patch 触及 start/end 时联动排程（其它字段零额外行为）
+    if (patch.start !== undefined || patch.end !== undefined) this.reschedule()
     return true
   }
 
@@ -1229,6 +1268,11 @@ export class OASGantt extends OASElement {
 
   private baselineOn(): boolean {
     return this.hasAttr('show-baseline')
+  }
+
+  /** 依赖联动排程开关（缺省关）：属性存在即开；显式 "false" 视作关（防宿主布尔绑定取值意外开启） */
+  private autoScheduleOn(): boolean {
+    return this.hasAttr('auto-schedule') && this.getAttr('auto-schedule', '') !== 'false'
   }
 
   /** 基线差值文案（实际 end 相对基线 end：晚/早 N 天或一致） */
@@ -1589,6 +1633,7 @@ export class OASGantt extends OASElement {
   private bind(): void {
     if (!this.hasAttribute('tabindex')) this.tabIndex = -1
     this.coarse = typeof matchMedia !== 'undefined' && matchMedia('(pointer: coarse)').matches
+    this.ganttEl = this.shadow.querySelector('.gantt')
     this.tbody = this.shadow.querySelector('.tbody')
     this.theadEl = this.shadow.querySelector('.thead')
     this.sideBody = this.shadow.querySelector('.side-body')
@@ -1602,6 +1647,9 @@ export class OASGantt extends OASElement {
     this.tooltipEl = this.shadow.querySelector('.tooltip')
     this.emptyEl = this.shadow.querySelector('.empty')
     this.tbody?.addEventListener('scroll', this.onScroll, { passive: true })
+    // 空白拖拽（框选 / 建任务）：左侧列表与时间轴各一个落点入口
+    this.sideBody?.addEventListener('pointerdown', this.onSidePointerDown)
+    this.tbody?.addEventListener('pointerdown', this.onTbodyPointerDown)
     // 空白双击新建（creatable 通道）：左侧列表与时间轴各一个落点入口
     this.sideBody?.addEventListener('dblclick', this.onSideDblClick)
     this.tbody?.addEventListener('dblclick', this.onTbodyDblClick)
@@ -1617,6 +1665,8 @@ export class OASGantt extends OASElement {
     }
     this.onCleanup(() => {
       this.tbody?.removeEventListener('scroll', this.onScroll)
+      this.sideBody?.removeEventListener('pointerdown', this.onSidePointerDown)
+      this.tbody?.removeEventListener('pointerdown', this.onTbodyPointerDown)
       this.sideBody?.removeEventListener('dblclick', this.onSideDblClick)
       this.tbody?.removeEventListener('dblclick', this.onTbodyDblClick)
       this.resizeObs?.disconnect()
@@ -1624,6 +1674,7 @@ export class OASGantt extends OASElement {
       this.dragCtx = null
       this.cancelReparent()
       this.cancelLink()
+      this.cancelMarquee()
       this.stopAutoScroll()
       this.unbindRowPending()
       document.removeEventListener('keydown', this.docLinkKey)
@@ -1646,6 +1697,7 @@ export class OASGantt extends OASElement {
       if (this.dragCtx) this.cancelDrag()
       this.cancelReparent()
       this.cancelLink()
+      this.cancelMarquee()
     }
     this.syncHeaderOffset()
     if (this.sideBody) this.sideBody.scrollTop = this.tbody.scrollTop
@@ -1792,6 +1844,7 @@ export class OASGantt extends OASElement {
     if (this.dragCtx) this.cancelDrag()
     this.cancelReparent()
     this.cancelLink()
+    this.cancelMarquee()
     this.unbindRowPending()
     this.rowPending = null
     this.syncTasks()
@@ -2655,6 +2708,7 @@ export class OASGantt extends OASElement {
       taskId,
       dependencies: next.map((d) => ({ ...d })),
     } satisfies GanttDependenciesChangeDetail)
+    this.reschedule()
     return true
   }
 
@@ -2712,6 +2766,7 @@ export class OASGantt extends OASElement {
       taskId,
       dependencies: next.map((d) => ({ ...d })),
     } satisfies GanttDependenciesChangeDetail)
+    this.reschedule()
     return true
   }
 
@@ -2724,6 +2779,7 @@ export class OASGantt extends OASElement {
     if (!Array.isArray(patches) || patches.length === 0) return 0
     const next = [...this._tasks]
     let applied = 0
+    let touchesDates = false
     for (const patch of patches) {
       if (!patch || typeof patch.id !== 'string') continue
       const idx = next.findIndex((t) => t.id === patch.id)
@@ -2739,10 +2795,12 @@ export class OASGantt extends OASElement {
       clean.id = patch.id
       next[idx] = clean
       applied++
+      if (patch.start !== undefined || patch.end !== undefined) touchesDates = true
     }
     if (applied === 0) return 0
     this._tasks = next
     this.commitTasks()
+    if (touchesDates) this.reschedule()
     return applied
   }
 
@@ -2954,6 +3012,243 @@ export class OASGantt extends OASElement {
     const ms = this.dateAtClientX(e.clientX)
     if (ms === null) return
     const id = this.addTask({ start: toISODate(new Date(ms)) })
+    if (id) this.enterRename(id)
+  }
+
+  // ===== 空白拖拽：框选多任务（marquee）/ 拖拽建任务（creatable）=====
+  //
+  // 两个手势互斥且与拖条/拖行/连线点/双击建任务互斥：
+  // - `.side-body` 空白 → 行带框选
+  // - `.tbody` 空白 → creatable 且非只读时建任务（C），否则条相交框选（B）
+  // move/up/cancel 挂 document（自建 bind/unbind，与 rowPending 模式一致）；覆盖层 `.marquee` 纯装饰。
+
+  private onSidePointerDown = (e: PointerEvent): void => {
+    if (e.button !== 0) return
+    if (this.dragCtx || this.reparentCtx || this.linkCtx || this.rowPending) return
+    const target = e.target
+    if (target instanceof Element && target.closest('.row-name, .toggle, .rename-input, .row-add')) return
+    this.beginMarquee('rows', e)
+  }
+
+  private onTbodyPointerDown = (e: PointerEvent): void => {
+    if (e.button !== 0) return
+    if (this.dragCtx || this.reparentCtx || this.linkCtx || this.rowPending) return
+    if (this.isInteractiveTarget(e.target)) return
+    if (this.hasAttr('creatable') && !this.hasAttr('readonly')) this.beginCreate(e)
+    else this.beginMarquee('bars', e)
+  }
+
+  private beginMarquee(kind: 'rows' | 'bars', e: PointerEvent): void {
+    this.marqueeCtx = {
+      kind,
+      x0: e.clientX,
+      y0: e.clientY,
+      x1: e.clientX,
+      y1: e.clientY,
+      moved: false,
+      additive: e.ctrlKey || e.metaKey,
+      touch: e.pointerType === 'touch',
+    }
+    this.bindDocMarquee()
+  }
+
+  private beginCreate(e: PointerEvent): void {
+    this.createCtx = {
+      x0: e.clientX,
+      y0: e.clientY,
+      x1: e.clientX,
+      y1: e.clientY,
+      moved: false,
+      touch: e.pointerType === 'touch',
+    }
+    this.bindDocMarquee()
+  }
+
+  private docMarqueeMove = (e: PointerEvent): void => {
+    // 触屏抖动大：放大判拖阈值（与行重排一致），避免点按被误判为框选/建任务
+    const m = this.marqueeCtx
+    if (m) {
+      const thr = m.touch ? 12 : MARQUEE_THRESHOLD
+      if (!m.moved && Math.abs(e.clientX - m.x0) + Math.abs(e.clientY - m.y0) > thr) m.moved = true
+      if (!m.moved) return
+      m.x1 = e.clientX
+      m.y1 = e.clientY
+      this.updateMarqueeVisual(m.x0, m.y0, e.clientX, e.clientY)
+      return
+    }
+    const c = this.createCtx
+    if (c) {
+      const thr = c.touch ? 12 : MARQUEE_THRESHOLD
+      if (!c.moved && Math.abs(e.clientX - c.x0) + Math.abs(e.clientY - c.y0) > thr) c.moved = true
+      if (!c.moved) return
+      c.x1 = e.clientX
+      c.y1 = e.clientY
+      this.updateMarqueeVisual(c.x0, c.y0, e.clientX, e.clientY)
+    }
+  }
+
+  private docMarqueeUp = (e: PointerEvent): void => {
+    const m = this.marqueeCtx
+    const c = this.createCtx
+    this.marqueeCtx = null
+    this.createCtx = null
+    this.unbindDocMarquee()
+    this.removeMarquee()
+    if (m) {
+      const p = this.upPoint(e, m.x1, m.y1)
+      m.x1 = p.x
+      m.y1 = p.y
+      this.finishMarquee(m)
+    } else if (c) {
+      const p = this.upPoint(e, c.x1, c.y1)
+      c.x1 = p.x
+      c.y1 = p.y
+      this.finishCreate(c)
+    }
+  }
+
+  private docMarqueeCancel = (): void => {
+    this.cancelMarquee()
+  }
+
+  private docMarqueeEsc = (e: KeyboardEvent): void => {
+    if (e.key === 'Escape' && (this.marqueeCtx || this.createCtx)) {
+      e.stopPropagation()
+      this.cancelMarquee()
+    }
+  }
+
+  private bindDocMarquee(): void {
+    document.addEventListener('pointermove', this.docMarqueeMove)
+    document.addEventListener('pointerup', this.docMarqueeUp)
+    document.addEventListener('pointercancel', this.docMarqueeCancel)
+    document.addEventListener('keydown', this.docMarqueeEsc)
+  }
+
+  private unbindDocMarquee(): void {
+    document.removeEventListener('pointermove', this.docMarqueeMove)
+    document.removeEventListener('pointerup', this.docMarqueeUp)
+    document.removeEventListener('pointercancel', this.docMarqueeCancel)
+    document.removeEventListener('keydown', this.docMarqueeEsc)
+  }
+
+  /** 取消空白拖拽：移除覆盖层 + 解绑（零选择/零建任务） */
+  private cancelMarquee(): void {
+    this.marqueeCtx = null
+    this.createCtx = null
+    this.unbindDocMarquee()
+    this.removeMarquee()
+  }
+
+  private removeMarquee(): void {
+    this.marqueeEl?.remove()
+    this.marqueeEl = null
+  }
+
+  /** pointerup 落点：事件未带坐标（合成事件）时回落最后一次 move 的坐标 */
+  private upPoint(e: PointerEvent, fx: number, fy: number): { x: number; y: number } {
+    if (e.clientX === 0 && e.clientY === 0 && (fx !== 0 || fy !== 0)) return { x: fx, y: fy }
+    return { x: e.clientX, y: e.clientY }
+  }
+
+  /** 覆盖层几何：以 `.gantt`（position: relative + overflow: hidden）为参照系，纯装饰不拦指针 */
+  private updateMarqueeVisual(x0: number, y0: number, x1: number, y1: number): void {
+    const gantt = this.ganttEl
+    if (!gantt) return
+    if (!this.marqueeEl || !this.marqueeEl.isConnected) {
+      const el = document.createElement('div')
+      el.className = 'marquee'
+      el.setAttribute('aria-hidden', 'true')
+      gantt.appendChild(el)
+      this.marqueeEl = el
+    }
+    const r = gantt.getBoundingClientRect()
+    this.marqueeEl.style.left = `${Math.min(x0, x1) - r.left}px`
+    this.marqueeEl.style.top = `${Math.min(y0, y1) - r.top}px`
+    this.marqueeEl.style.width = `${Math.abs(x1 - x0)}px`
+    this.marqueeEl.style.height = `${Math.abs(y1 - y0)}px`
+  }
+
+  /** 行带框选命中：窗口内行 rowTop..rowTop+rowH 与 [y0,y1] 相交（client 坐标） */
+  private rowsInRect(y0: number, y1: number): string[] {
+    const side = this.sideBody
+    if (!side) return []
+    const rect = side.getBoundingClientRect()
+    const rowH = this.rowHeight()
+    const top = Math.min(y0, y1)
+    const bottom = Math.max(y0, y1)
+    const out: string[] = []
+    for (let i = this.winStart; i < this.winEnd; i++) {
+      const row = this.rows[i]
+      if (!row) continue
+      const rt = rect.top + i * rowH - side.scrollTop
+      if (rt + rowH > top && rt < bottom) out.push(row.task.id)
+    }
+    return out
+  }
+
+  /** 条相交框选命中：各 `.bar` 的 client rect 与矩形相交者 */
+  private barsInRect(x0: number, y0: number, x1: number, y1: number): string[] {
+    const minX = Math.min(x0, x1)
+    const maxX = Math.max(x0, x1)
+    const minY = Math.min(y0, y1)
+    const maxY = Math.max(y0, y1)
+    const out: string[] = []
+    this.barsEl?.querySelectorAll<HTMLElement>('.bar').forEach((el) => {
+      const r = el.getBoundingClientRect()
+      if (r.right > minX && r.left < maxX && r.bottom > minY && r.top < maxY) {
+        const id = el.dataset.id
+        if (id) out.push(id)
+      }
+    })
+    return out
+  }
+
+  private finishMarquee(m: {
+    kind: 'rows' | 'bars'
+    x0: number
+    y0: number
+    x1: number
+    y1: number
+    moved: boolean
+    additive: boolean
+  }): void {
+    // 未拖动 = 空白单击：普通手势清空选择（追加手势不动）
+    if (!m.moved) {
+      if (!m.additive && this.selected.size > 0) {
+        this.selected = new Set()
+        this.selectionAnchor = null
+        this.syncSelection()
+        this.emitSelectionChange()
+      }
+      return
+    }
+    const hits = m.kind === 'rows' ? this.rowsInRect(m.y0, m.y1) : this.barsInRect(m.x0, m.y0, m.x1, m.y1)
+    const next = m.additive ? new Set([...this.selected, ...hits]) : new Set(hits)
+    // 同值不派发（与 selection setter 一致）
+    const same = next.size === this.selected.size && [...next].every((id) => this.selected.has(id))
+    if (same) return
+    this.selected = next
+    this.selectionAnchor = null
+    this.syncSelection()
+    this.emitSelectionChange()
+  }
+
+  private finishCreate(c: { x0: number; y0: number; x1: number; y1: number; moved: boolean }): void {
+    // 未拖动 = 空白单击：清空选择（与左侧列表一致）
+    if (!c.moved) {
+      if (this.selected.size > 0) {
+        this.selected = new Set()
+        this.selectionAnchor = null
+        this.syncSelection()
+        this.emitSelectionChange()
+      }
+      return
+    }
+    const a = this.dateAtClientX(c.x0)
+    const b = this.dateAtClientX(c.x1)
+    if (a === null || b === null) return
+    const id = this.addTask({ start: toISODate(new Date(Math.min(a, b))), end: toISODate(new Date(Math.max(a, b))) })
     if (id) this.enterRename(id)
   }
 
@@ -3207,22 +3502,8 @@ export class OASGantt extends OASElement {
     const target = this.barUnder(e.clientX, e.clientY)
     if (!target || target.row.task.id === ctx.sourceId) return
     const type = this.linkType(ctx.endpoint, target.endpoint)
-    const succ = this._tasks.find((t) => t.id === target.row.task.id)
-    if (!succ) return
-    const existing = succ.dependencies ?? []
-    const sameKey = (d: GanttDependency): boolean => d.id === ctx.sourceId && (d.type ?? 'fs') === type
-    // 已存在同源同型依赖 → 零变化不派发
-    if (existing.some(sameKey)) return
-    // 仅替换同源同型，保留同源其它类型（同源多型可并存）
-    const deps = existing.filter((d) => !sameKey(d))
-    deps.push({ id: ctx.sourceId, type })
-    succ.dependencies = deps
-    this.syncTasksAttr()
-    this.emitTasksChange()
-    this.emit('dependencies-change', {
-      taskId: succ.id,
-      dependencies: deps.map((d) => ({ ...d })),
-    } satisfies GanttDependenciesChangeDetail)
+    // 复用 addDependency：一致的校验/去重 + tasks-change/dependencies-change + auto-schedule 联动
+    this.addDependency(target.row.task.id, { id: ctx.sourceId, type })
   }
 
   private cancelLink(): void {
@@ -3501,6 +3782,8 @@ export class OASGantt extends OASElement {
       start,
       end: endStr,
     } satisfies GanttTaskChangeDetail)
+    // 改期收口后联动排程（auto-schedule 开且后继违约时；直接改 _tasks，不再走 commitDates 防递归）
+    this.reschedule()
   }
 
   private commitProgress(id: string, progress: number): void {
@@ -3534,6 +3817,117 @@ export class OASGantt extends OASElement {
   private fmtEnd(ms: number, datetimeHint: boolean): string {
     if (datetimeHint) return formatToken(new Date(ms), 'yyyy-MM-dd HH:mm', this.effectiveLocale())
     return toISODate(new Date(ms - 1))
+  }
+
+  // ===== 依赖联动排程（auto-schedule）=====
+  //
+  // 前置 d → 后继 t（t.dependencies 含 { id: d.id, type }），约束语义：
+  //   fs: t.start ≥ d.end  /  ss: t.start ≥ d.start  /  ff: t.end ≥ d.end  /  sf: t.end ≥ d.start
+  // 仅当违反时把 t **向后推迟**（不提前），保持 t 工期不变（日精度 end 含端，口径与 buildRows 的 endMs 一致）。
+  // 迭代松弛直到无变化或达上限（成环不死循环）；跳过 disabled、有子级的摘要（日期派生）、前置不存在者。
+
+  /** 任务起点 ms（数据非法回 0，与 buildRows 同口径） */
+  private startMsOfTask(t: TG): number {
+    return parseTaskDate(t.start)?.getTime() ?? 0
+  }
+
+  /** 任务区间右缘 ms（exclusive）：里程碑 = 起点；日精度 end 含端 → +DAY_MS */
+  private endMsOfTask(t: TG): number {
+    if (t.type === 'milestone' || !t.end) return this.startMsOfTask(t)
+    const e = parseTaskDate(t.end)
+    if (!e) return this.startMsOfTask(t)
+    return t.end.length > 10 ? e.getTime() : e.getTime() + DAY_MS
+  }
+
+  /** 依赖图是否有环（DFS 三色）：有环则排程无解，reschedule 直接跳过 */
+  private dependencyHasCycle(byId: Map<string, TG>): boolean {
+    const state = new Map<string, 1 | 2>()
+    const visit = (id: string): boolean => {
+      const st = state.get(id)
+      if (st === 1) return true
+      if (st === 2) return false
+      state.set(id, 1)
+      const t = byId.get(id)
+      for (const d of t?.dependencies ?? []) {
+        if (byId.has(d.id) && visit(d.id)) return true
+      }
+      state.set(id, 2)
+      return false
+    }
+    for (const t of byId.values()) if (visit(t.id)) return true
+    return false
+  }
+
+  /**
+   * 依赖约束松弛：返回被联动改期的任务 id（未开 auto-schedule 或零改动 → []，零事件）。
+   * 命中多个前置时逐条满足（取最靠后约束）；收口一次性 syncTasksAttr + update + emitTasksChange，
+   * 随后派发 oas-reschedule（**先 tasks-change 后 reschedule**）。
+   */
+  private reschedule(): string[] {
+    if (!this.autoScheduleOn()) return []
+    const tasks = this._tasks
+    if (tasks.length === 0) return []
+    const byId = new Map<string, TG>()
+    for (const t of tasks) byId.set(t.id, t)
+    // 依赖成环 → 排程无解：不动数据（否则迭代上限会把日期推远、静默损坏数据），告警一次
+    if (this.dependencyHasCycle(byId)) {
+      if (!this.warnedRescheduleCycle) {
+        this.warnedRescheduleCycle = true
+        devWarn('[oas-gantt] 依赖成环，auto-schedule 已跳过（请先修正依赖）')
+      }
+      return []
+    }
+    // 有子级者日期由子级派生（与 buildRows 摘要聚合一致）→ 跳过
+    const hasChildren = new Set<string>()
+    for (const t of tasks) if (t.parent && byId.has(t.parent)) hasChildren.add(t.parent)
+    const changed = new Set<string>()
+    const maxIter = tasks.length * 2 + 8
+    for (let iter = 0; iter < maxIter; iter++) {
+      let dirty = false
+      for (const t of tasks) {
+        if (t.disabled === true || hasChildren.has(t.id)) continue
+        const deps = t.dependencies
+        if (!deps || deps.length === 0) continue
+        const startMs = this.startMsOfTask(t)
+        const duration = this.endMsOfTask(t) - startMs
+        let required = startMs
+        for (const d of deps) {
+          const pred = byId.get(d.id)
+          if (!pred) continue
+          const type = d.type ?? 'fs'
+          const pStart = this.startMsOfTask(pred)
+          const pEnd = this.endMsOfTask(pred)
+          const need =
+            type === 'fs' ? pEnd : type === 'ss' ? pStart : type === 'ff' ? pEnd - duration : pStart - duration
+          if (need > required) required = need
+        }
+        if (!(required > startMs)) continue // 只推不提前
+        const datetime = typeof t.start === 'string' && t.start.length > 10
+        const startStr = this.fmtIso(required, datetime)
+        const milestone = t.type === 'milestone' || !t.end
+        if (milestone) {
+          if (t.start === startStr) continue
+          t.start = startStr
+          // 显式 milestone 携带矛盾 end 时把 end 归一为 start（与 commitDates 同口径）
+          if (t.end) t.end = startStr
+        } else {
+          const endStr = this.fmtEnd(required + duration, datetime)
+          if (t.start === startStr && t.end === endStr) continue
+          t.start = startStr
+          t.end = endStr
+        }
+        changed.add(t.id)
+        dirty = true
+      }
+      if (!dirty) break
+    }
+    if (changed.size === 0) return []
+    const ids = [...changed]
+    this.syncTasksAttr()
+    this.update()
+    this.emitTasksChange()
+    this.emit('reschedule', { ids } satisfies GanttRescheduleDetail)
+    return ids
   }
 
   private onBarKeyDown(e: KeyboardEvent, row: GanttRow): void {

@@ -1928,6 +1928,28 @@ OASElement 的 render 生命周期只首连一次（`rendered` 门闩），组�
 - 文档：gantt.md zh/en 增段；api-manifest / api-descriptions 同步（`api:check` 双向 0）；i18n ×10。
 - 全量 `pnpm test` / typecheck / build / api:check 全绿。
 
+## 未发布 oas-gantt 任务管理增强（依赖联动排程 + 框选多任务 + 拖拽建任务）
+
+> 立项背景：承接「任务管理创作能力」，补齐「改前置、后置顺延」「一次选多条」「空白拖出任务」三项高频诉求，使组件从「能画」到「能用」。定位不变：不做完整排程引擎（关键路径、资源不碰）。
+
+### 特性
+
+- **依赖联动排程**（`auto-schedule` 布尔，默认关）：日期发生变更（拖拽/键盘/`updateTask`/`updateTasks`）或依赖增改后，按 FS/SS/FF/SF 沿依赖图对**后继**做**最小前推**（只推迟、不提前，保持各自工期），级联至稳定；跳过 disabled 与摘要行（摘要日期派生）；成环安全（迭代有界）。收口派发 `oas-reschedule`（detail `{ ids }`，被联动改动的任务）+ 因联动改动的 `oas-tasks-change`（若无联动改动则不发这两个事件）。关闭时不产生任何行为变化。
+- **框选多任务（marquee）**：左侧列表空白纵向拖 → 按行带选中；时间轴空白拖（未开 `creatable` 时）→ 按条相交选中。普通替换、`Ctrl`/`Cmd` 追加。结果写入既有 `selection` 并派发 `oas-selection-change`；只读下仍可框选（选择属查看态）。与拖条/拖行/连线点/行内新建互不冲突。
+- **拖拽建任务**（`creatable` 开启时，时间轴空白拖出区间）：按起止落点日期建相应跨度任务并进入重命名；双击空白按当天建（既有）保留。
+
+### 边界
+
+- 关键路径、lag/lead、资源分配/泳道/平衡、undo/redo、内建编辑弹窗、图片/打印导出仍归宿主/不做。
+- `auto-schedule` 默认关（非破坏）。
+
+### 验收
+
+- 单测：四型依赖各自最小前推 + 级联 + 环安全 + 跳过 disabled/摘要 + 关闭时零行为；框选（行带/条相交/修饰键/只读）+ 与拖拽互斥；拖拽建任务跨度与守卫。
+- e2e：gantt.md 新示例真点（开 auto-schedule 拖前置看后置顺延；框选；空白拖建）+ 暗色 + console 零告警。
+- 文档：gantt.md zh/en 增段；api-manifest / api-descriptions 同步（`api:check` 双向 0）。
+- 全量 `pnpm test` / typecheck / build / api:check 全绿。
+
 ## v2.5.9 oas-calendar `events` 排期条目通道
 
 ### 特性

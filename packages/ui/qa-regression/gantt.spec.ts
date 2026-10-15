@@ -559,3 +559,57 @@ test('gantt 表头横向对齐（LTR/RTL 滚动不变）', async ({ page }) => {
     expect(Math.abs(d.g1 - d.g0), `${dir} 表头-条相对位移应滚动不变`).toBeLessThanOrEqual(1)
   }
 })
+
+// 增强示例：auto-schedule 联动 + 框选 + 拖拽建任务（真点 + console 零 error）
+test('gantt 增强示例：auto-schedule 联动 + 框选 + 拖拽建任务', async ({ page }) => {
+  const errors: string[] = []
+  page.on('pageerror', (e) => errors.push(e.message))
+  page.on('console', (m) => {
+    if (m.type() === 'error') errors.push(m.text())
+  })
+  await page.goto('/components/gantt.html', { waitUntil: 'domcontentloaded' })
+  await waitGantt(page, 'gantt-auto')
+  const host = page.locator('#gantt-auto')
+  await host.evaluate((el) => {
+    ;(el as HTMLElement).scrollIntoView({ block: 'center' })
+  })
+  const colW = await host.evaluate((el) => (el as unknown as { colW(): number }).colW())
+
+  // 1) auto-schedule：拖 a2 右移 3 格 → a3 顺延
+  const startOf = (id: string) =>
+    host.evaluate(
+      (el, i) =>
+        (el as unknown as { tasks: Array<{ id: string; start: string }> }).tasks.find((t) => t.id === i)!.start,
+      id,
+    )
+  const before = await startOf('a3')
+  const a2 = (await host.locator('.bar[data-id="a2"]').boundingBox())!
+  await page.mouse.move(a2.x + a2.width / 2, a2.y + a2.height / 2)
+  await page.mouse.down()
+  await page.mouse.move(a2.x + a2.width / 2 + 3 * colW, a2.y + a2.height / 2, { steps: 8 })
+  await page.mouse.up()
+  const after = await startOf('a3')
+  expect(after > before, `a3 应随 a2 顺延（${before} → ${after}）`).toBe(true)
+
+  // 2) 框选：左侧列表空白纵向拖 → 选中多行
+  const side = (await host.locator('.side-body').boundingBox())!
+  await page.mouse.move(side.x + side.width / 2, side.y + side.height - 6)
+  await page.mouse.down()
+  await page.mouse.move(side.x + side.width / 2, side.y + 4, { steps: 8 })
+  await page.mouse.up()
+  const selCount = await host.evaluate((el) => (el as unknown as { selection: string[] }).selection.length)
+  expect(selCount, '框选应选中多行').toBeGreaterThanOrEqual(2)
+
+  // 3) 拖拽建任务：时间轴空白拖出区间 → 任务数 +1
+  const count = () => host.evaluate((el) => (el as unknown as { tasks: unknown[] }).tasks.length)
+  const before2 = await count()
+  const tb = (await host.locator('.tbody').boundingBox())!
+  const yEmpty = tb.y + tb.height - 8
+  await page.mouse.move(tb.x + 40, yEmpty)
+  await page.mouse.down()
+  await page.mouse.move(tb.x + 40 + 3 * colW, yEmpty, { steps: 8 })
+  await page.mouse.up()
+  expect(await count(), '空白拖出区间应新建 1 条').toBe(before2 + 1)
+
+  expect(errors).toEqual([])
+})

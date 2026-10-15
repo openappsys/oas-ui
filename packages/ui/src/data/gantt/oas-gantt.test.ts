@@ -3645,3 +3645,599 @@ describe('OASGantt 创作：复审修复回归（守卫 / 克隆依赖 / RTL 落
     )
   })
 })
+
+// ===== 本批增强：依赖联动排程 / 框选多任务 / 拖拽建任务 =====
+
+/** 按 id 取任务快照（找不到即抛，避免断言静默空转） */
+function taskOf(el: OASGantt, id: string): GanttTask {
+  const t = el.tasks.find((x) => x.id === id)
+  if (!t) throw new Error(`task not found: ${id}`)
+  return t
+}
+
+/** 伪造元素几何盒（happy-dom 无布局） */
+function stubRect(el: Element, top: number, left: number, width: number, height: number): void {
+  ;(el as HTMLElement).getBoundingClientRect = () =>
+    ({
+      top,
+      left,
+      right: left + width,
+      bottom: top + height,
+      width,
+      height,
+      x: left,
+      y: top,
+      toJSON: () => ({}),
+    }) as DOMRect
+}
+
+/** 合成指针事件（clientX/Y 用 defineProperty 兜底；Ctrl/Cmd 供追加语义） */
+function pointerAt(
+  type: string,
+  x: number,
+  y: number,
+  target: EventTarget,
+  mods: { ctrlKey?: boolean; metaKey?: boolean } = {},
+): PointerEvent {
+  const e = new PointerEvent(type, { bubbles: true, composed: true, pointerId: 1, button: 0 })
+  Object.defineProperty(e, 'clientX', { value: x })
+  Object.defineProperty(e, 'clientY', { value: y })
+  if (mods.ctrlKey) Object.defineProperty(e, 'ctrlKey', { value: true })
+  if (mods.metaKey) Object.defineProperty(e, 'metaKey', { value: true })
+  target.dispatchEvent(e)
+  return e
+}
+
+/** 完整空白拖拽手势：down 落面板，move/up 落 document（对齐组件自建 bind/unbind 模式） */
+function marqueeGesture(
+  panel: HTMLElement,
+  from: [number, number],
+  to: [number, number],
+  mods: { ctrlKey?: boolean; metaKey?: boolean } = {},
+): void {
+  pointerAt('pointerdown', from[0], from[1], panel, mods)
+  pointerAt('pointermove', to[0], to[1], document)
+  pointerAt('pointerup', to[0], to[1], document, mods)
+}
+
+describe('OASGantt 依赖联动排程（auto-schedule）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  function watchReschedule(el: OASGantt): string[][] {
+    const seen: string[][] = []
+    el.addEventListener('oas-reschedule', (e) => seen.push((e as CustomEvent<{ ids: string[] }>).detail.ids))
+    return seen
+  }
+
+  it('fs：后继起点早于前置右缘 → 最小前推，工期不变', () => {
+    const el = mount({
+      'auto-schedule': '',
+      tasks: JSON.stringify([
+        { id: 'd', name: 'D', start: '2026-03-02', end: '2026-03-06' }, // 右缘 03-07
+        { id: 't', name: 'T', start: '2026-03-02', end: '2026-03-04', dependencies: [{ id: 'd' }] }, // 工期 3 天
+      ]),
+    })
+    const seen = watchReschedule(el)
+    expect(el.updateTask('t', { name: 'T2', start: '2026-03-02', end: '2026-03-04' })).toBe(true)
+    expect(taskOf(el, 't').start).toBe('2026-03-07')
+    expect(taskOf(el, 't').end).toBe('2026-03-09')
+    expect(seen).toEqual([['t']])
+  })
+
+  it('ss：后继起点早于前置起点 → 前推到前置起点', () => {
+    const el = mount({
+      'auto-schedule': '',
+      tasks: JSON.stringify([
+        { id: 'd', name: 'D', start: '2026-03-05', end: '2026-03-06' },
+        { id: 't', name: 'T', start: '2026-03-01', end: '2026-03-02', dependencies: [{ id: 'd', type: 'ss' }] },
+      ]),
+    })
+    const seen = watchReschedule(el)
+    el.updateTask('t', { start: '2026-03-01', end: '2026-03-02' })
+    expect(taskOf(el, 't').start).toBe('2026-03-05')
+    expect(taskOf(el, 't').end).toBe('2026-03-06')
+    expect(seen).toEqual([['t']])
+  })
+
+  it('ff：后继完成早于前置完成 → 前推（保持工期）', () => {
+    const el = mount({
+      'auto-schedule': '',
+      tasks: JSON.stringify([
+        { id: 'd', name: 'D', start: '2026-03-02', end: '2026-03-06' }, // 右缘 03-07
+        { id: 't', name: 'T', start: '2026-03-01', end: '2026-03-02', dependencies: [{ id: 'd', type: 'ff' }] }, // 工期 2 天
+      ]),
+    })
+    const seen = watchReschedule(el)
+    el.updateTask('t', { start: '2026-03-01', end: '2026-03-02' })
+    expect(taskOf(el, 't').start).toBe('2026-03-05')
+    expect(taskOf(el, 't').end).toBe('2026-03-06')
+    expect(seen).toEqual([['t']])
+  })
+
+  it('sf：后继完成早于前置起点 → 前推（保持工期）', () => {
+    const el = mount({
+      'auto-schedule': '',
+      tasks: JSON.stringify([
+        { id: 'd', name: 'D', start: '2026-03-05', end: '2026-03-06' },
+        { id: 't', name: 'T', start: '2026-03-01', end: '2026-03-02', dependencies: [{ id: 'd', type: 'sf' }] },
+      ]),
+    })
+    const seen = watchReschedule(el)
+    el.updateTask('t', { start: '2026-03-01', end: '2026-03-02' })
+    expect(taskOf(el, 't').start).toBe('2026-03-03')
+    expect(taskOf(el, 't').end).toBe('2026-03-04')
+    expect(seen).toEqual([['t']])
+  })
+
+  it('级联：拖 A 后 B/C 逐级顺延；工期保持；reschedule 一次 + tasks-change（拖拽自身 + reschedule）', () => {
+    const el = mount({
+      'auto-schedule': '',
+      tasks: JSON.stringify([
+        { id: 'a', name: 'A', start: '2026-03-02', end: '2026-03-02' },
+        { id: 'b', name: 'B', start: '2026-03-02', end: '2026-03-02', dependencies: [{ id: 'a' }] },
+        { id: 'c', name: 'C', start: '2026-03-02', end: '2026-03-02', dependencies: [{ id: 'b' }] },
+      ]),
+    })
+    const seen = watchReschedule(el)
+    let tasksChanged = 0
+    el.addEventListener('oas-tasks-change', () => tasksChanged++)
+    dragSeq(barOf(el, 'a'), 72)
+    expect(taskOf(el, 'a').start).toBe('2026-03-04')
+    expect(taskOf(el, 'b').start).toBe('2026-03-05')
+    expect(taskOf(el, 'c').start).toBe('2026-03-06')
+    expect(seen).toHaveLength(1)
+    expect([...seen[0]!].sort()).toEqual(['b', 'c'])
+    // 拖拽自身的 tasks-change + reschedule 收口的一次 tasks-change
+    expect(tasksChanged).toBe(2)
+  })
+
+  it('迭代松弛：依赖链数组顺序逆序（后继在前）也能级联到稳定', () => {
+    const el = mount({
+      'auto-schedule': '',
+      tasks: JSON.stringify([
+        { id: 'c', name: 'C', start: '2026-03-02', end: '2026-03-02', dependencies: [{ id: 'b' }] },
+        { id: 'b', name: 'B', start: '2026-03-02', end: '2026-03-02', dependencies: [{ id: 'a' }] },
+        { id: 'a', name: 'A', start: '2026-03-02', end: '2026-03-02' },
+      ]),
+    })
+    const seen = watchReschedule(el)
+    el.updateTask('a', { start: '2026-03-05', end: '2026-03-05' })
+    // 单趟松弛只会把 c 推到 b 的旧值（03-03）；迭代到位应为 03-07
+    expect(taskOf(el, 'a').start).toBe('2026-03-05')
+    expect(taskOf(el, 'b').start).toBe('2026-03-06')
+    expect(taskOf(el, 'c').start).toBe('2026-03-07')
+    expect(seen).toHaveLength(1)
+    expect([...seen[0]!].sort()).toEqual(['b', 'c'])
+  })
+
+  it('只推不提前：约束已满足时零改动零 reschedule 事件', () => {
+    const el = mount({
+      'auto-schedule': '',
+      tasks: JSON.stringify([
+        { id: 'd', name: 'D', start: '2026-03-02', end: '2026-03-06' },
+        { id: 't', name: 'T', start: '2026-03-10', end: '2026-03-12', dependencies: [{ id: 'd' }] },
+      ]),
+    })
+    const seen = watchReschedule(el)
+    el.updateTask('t', { start: '2026-03-10', end: '2026-03-12' })
+    expect(taskOf(el, 't').start).toBe('2026-03-10')
+    expect(seen).toHaveLength(0)
+  })
+
+  it('跳过 disabled 任务与摘要（有子级）：仅普通后继被推', () => {
+    const el = mount({
+      'auto-schedule': '',
+      tasks: JSON.stringify([
+        { id: 'd', name: 'D', start: '2026-03-02', end: '2026-03-06' },
+        { id: 'dis', name: 'Dis', start: '2026-03-01', end: '2026-03-02', disabled: true, dependencies: [{ id: 'd' }] },
+        {
+          id: 'p',
+          name: 'P',
+          start: '2026-03-01',
+          end: '2026-03-02',
+          children: [{ id: 'pc', name: 'PC', start: '2026-03-01', end: '2026-03-02' }],
+          dependencies: [{ id: 'd' }],
+        },
+        { id: 'x', name: 'X', start: '2026-03-01', end: '2026-03-02', dependencies: [{ id: 'd' }] },
+      ]),
+    })
+    const seen = watchReschedule(el)
+    el.updateTask('x', { start: '2026-03-01', end: '2026-03-02' })
+    expect(taskOf(el, 'dis').start).toBe('2026-03-01')
+    expect(taskOf(el, 'p').start).toBe('2026-03-01')
+    expect(taskOf(el, 'x').start).toBe('2026-03-07')
+    expect(seen).toEqual([['x']])
+  })
+
+  it('成环（A→B→A）不死循环、不抛异常（迭代上限收敛）', () => {
+    const el = mount({
+      'auto-schedule': '',
+      tasks: JSON.stringify([
+        { id: 'a', name: 'A', start: '2026-03-02', end: '2026-03-02', dependencies: [{ id: 'b' }] },
+        { id: 'b', name: 'B', start: '2026-03-02', end: '2026-03-02', dependencies: [{ id: 'a' }] },
+      ]),
+    })
+    const seen = watchReschedule(el)
+    expect(() => el.updateTask('a', { start: '2026-03-02', end: '2026-03-02' })).not.toThrow()
+    // 成环 → 排程无解：跳过（不推远数据、零 reschedule 事件），不挂死
+    expect(seen).toHaveLength(0)
+    expect(taskOf(el, 'a').start).toBe('2026-03-02')
+    expect(taskOf(el, 'b').start).toBe('2026-03-02')
+    for (const t of el.tasks) {
+      expect(Number.isNaN(Date.parse(t.start))).toBe(false)
+      expect(Number.isNaN(Date.parse(t.end ?? t.start))).toBe(false)
+    }
+  })
+
+  it('auto-schedule 关（默认）：拖拽 / updateTask 零额外改动与事件', () => {
+    const el = mount({
+      tasks: JSON.stringify([
+        { id: 'a', name: 'A', start: '2026-03-02', end: '2026-03-02' },
+        { id: 'b', name: 'B', start: '2026-03-02', end: '2026-03-02', dependencies: [{ id: 'a' }] },
+      ]),
+    })
+    const seen = watchReschedule(el)
+    let tasksChanged = 0
+    el.addEventListener('oas-tasks-change', () => tasksChanged++)
+    dragSeq(barOf(el, 'a'), 72)
+    expect(taskOf(el, 'b').start).toBe('2026-03-02')
+    expect(seen).toHaveLength(0)
+    expect(tasksChanged).toBe(1)
+    el.updateTask('b', { start: '2026-03-02', end: '2026-03-02' })
+    expect(seen).toHaveLength(0)
+    expect(tasksChanged).toBe(2)
+  })
+
+  it('auto-schedule="false" 显式关：等效默认关（不改数据、零事件）', () => {
+    const el = mount({
+      'auto-schedule': 'false',
+      tasks: JSON.stringify([
+        { id: 'a', name: 'A', start: '2026-03-02', end: '2026-03-02' },
+        { id: 'b', name: 'B', start: '2026-03-02', end: '2026-03-02', dependencies: [{ id: 'a' }] },
+      ]),
+    })
+    const seen = watchReschedule(el)
+    dragSeq(barOf(el, 'a'), 72)
+    expect(taskOf(el, 'b').start).toBe('2026-03-02')
+    expect(seen).toHaveLength(0)
+  })
+
+  it('updateTasks：含 start/end 变更时触发；仅改其它字段不触发', () => {
+    const el = mount({
+      'auto-schedule': '',
+      tasks: JSON.stringify([
+        { id: 'd', name: 'D', start: '2026-03-02', end: '2026-03-06' },
+        { id: 't', name: 'T', start: '2026-03-02', end: '2026-03-04', dependencies: [{ id: 'd' }] },
+      ]),
+    })
+    const seen = watchReschedule(el)
+    expect(el.updateTasks([{ id: 't', progress: 50 }])).toBe(1)
+    expect(seen).toHaveLength(0)
+    expect(taskOf(el, 't').start).toBe('2026-03-02')
+    expect(el.updateTasks([{ id: 't', start: '2026-03-02', end: '2026-03-04' }])).toBe(1)
+    expect(seen).toEqual([['t']])
+    expect(taskOf(el, 't').start).toBe('2026-03-07')
+  })
+
+  it('addDependency 成功后触发联动前推', () => {
+    const el = mount({
+      'auto-schedule': '',
+      tasks: JSON.stringify([
+        { id: 'd', name: 'D', start: '2026-03-02', end: '2026-03-06' },
+        { id: 't', name: 'T', start: '2026-03-01', end: '2026-03-02' },
+      ]),
+    })
+    const seen = watchReschedule(el)
+    expect(el.addDependency('t', { id: 'd' })).toBe(true)
+    expect(taskOf(el, 't').start).toBe('2026-03-07')
+    expect(taskOf(el, 't').end).toBe('2026-03-08')
+    expect(seen).toEqual([['t']])
+  })
+
+  it('updateDependency 约束收紧后触发联动前推', () => {
+    const el = mount({
+      'auto-schedule': '',
+      tasks: JSON.stringify([
+        { id: 'd1', name: 'D1', start: '2026-03-02', end: '2026-03-04' },
+        { id: 'd2', name: 'D2', start: '2026-03-10', end: '2026-03-12' },
+        { id: 't', name: 'T', start: '2026-03-05', end: '2026-03-06', dependencies: [{ id: 'd1' }] },
+      ]),
+    })
+    const seen = watchReschedule(el)
+    expect(el.updateDependency('t', { id: 'd1' }, { id: 'd2' })).toBe(true)
+    expect(taskOf(el, 't').start).toBe('2026-03-13')
+    expect(taskOf(el, 't').end).toBe('2026-03-14')
+    expect(seen).toEqual([['t']])
+  })
+
+  it('多前置取最靠后约束（fs 需 03-11 vs ss 需 03-20 → 取 03-20）', () => {
+    const el = mount({
+      'auto-schedule': '',
+      tasks: JSON.stringify([
+        { id: 'p1', name: 'P1', start: '2026-03-08', end: '2026-03-10' },
+        { id: 'p2', name: 'P2', start: '2026-03-20', end: '2026-03-22' },
+        {
+          id: 't',
+          name: 'T',
+          start: '2026-03-01',
+          end: '2026-03-02',
+          dependencies: [
+            { id: 'p1', type: 'fs' },
+            { id: 'p2', type: 'ss' },
+          ],
+        },
+      ]),
+    })
+    el.updateTasks([{ id: 'p2', start: '2026-03-20', end: '2026-03-22' }])
+    expect(taskOf(el, 't').start).toBe('2026-03-20')
+  })
+
+  it('依赖成环：跳过排程（数据不推远、零 reschedule 事件）', () => {
+    const el = mount({
+      'auto-schedule': '',
+      tasks: JSON.stringify([
+        { id: 'a', name: 'A', start: '2026-03-02', end: '2026-03-02', dependencies: [{ id: 'b' }] },
+        { id: 'b', name: 'B', start: '2026-03-02', end: '2026-03-02', dependencies: [{ id: 'a' }] },
+      ]),
+    })
+    const seen = watchReschedule(el)
+    el.updateTasks([{ id: 'a', start: '2026-03-02', end: '2026-03-02' }])
+    expect(taskOf(el, 'a').start).toBe('2026-03-02')
+    expect(taskOf(el, 'b').start).toBe('2026-03-02')
+    expect(seen).toEqual([])
+  })
+
+  it('带时间精度任务参与排程时保持日期时间格式', () => {
+    const el = mount({
+      'auto-schedule': '',
+      tasks: JSON.stringify([
+        { id: 'd', name: 'D', start: '2026-03-02 08:00', end: '2026-03-02 12:00' },
+        { id: 't', name: 'T', start: '2026-03-02 06:00', end: '2026-03-02 07:00', dependencies: [{ id: 'd' }] },
+      ]),
+    })
+    el.updateTasks([{ id: 'd', start: '2026-03-02 08:00', end: '2026-03-02 12:00' }])
+    expect(taskOf(el, 't').start).toBe('2026-03-02 12:00')
+    expect(taskOf(el, 't').end).toBe('2026-03-02 13:00')
+  })
+})
+
+describe('OASGantt 框选多任务（marquee）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  const TASKS = JSON.stringify([
+    { id: 'x', name: 'X', start: '2026-03-02', end: '2026-03-06' },
+    { id: 'y', name: 'Y', start: '2026-03-09', end: '2026-03-13' },
+    { id: 'z', name: 'Z', start: '2026-03-16', end: '2026-03-20' },
+  ])
+
+  function side(el: OASGantt): HTMLElement {
+    return shadowOf(el).querySelector<HTMLElement>('.side-body')!
+  }
+  function body(el: OASGantt): HTMLElement {
+    return shadowOf(el).querySelector<HTMLElement>('.tbody')!
+  }
+  function stubSide(el: OASGantt): void {
+    const s = side(el)
+    stubRect(s, 0, 0, 300, 1000)
+    stubProp(s, 'scrollTop', 0)
+  }
+
+  it('行带框选：选中与选框纵向相交的窗口行', () => {
+    const el = mount({ tasks: TASKS })
+    stubSide(el)
+    marqueeGesture(side(el), [20, 10], [40, 50])
+    expect(el.selection).toEqual(['x', 'y'])
+    expect(shadowOf(el).querySelector('.marquee')).toBeNull()
+  })
+
+  it('拖动中渲染 .marquee 覆盖层（内联几何），松开移除', () => {
+    const el = mount({ tasks: TASKS })
+    stubSide(el)
+    pointerAt('pointerdown', 20, 10, side(el))
+    pointerAt('pointermove', 40, 50, document)
+    const overlay = shadowOf(el).querySelector<HTMLElement>('.marquee')
+    expect(overlay).not.toBeNull()
+    expect(Number.parseFloat(overlay!.style.width)).toBe(20)
+    expect(Number.parseFloat(overlay!.style.height)).toBe(40)
+    pointerAt('pointerup', 40, 50, document)
+    expect(shadowOf(el).querySelector('.marquee')).toBeNull()
+  })
+
+  it('条相交框选：命中 .bar client rect 的任务（替换语义）', () => {
+    const el = mount({ tasks: TASKS })
+    stubRect(barOf(el, 'x'), 0, 0, 100, 10)
+    stubRect(barOf(el, 'y'), 36, 0, 100, 10)
+    stubRect(barOf(el, 'z'), 72, 0, 100, 10)
+    marqueeGesture(body(el), [0, 0], [50, 40])
+    expect(el.selection).toEqual(['x', 'y'])
+  })
+
+  it('Ctrl 追加：求和而非替换', () => {
+    const el = mount({ tasks: TASKS })
+    stubSide(el)
+    el.selection = ['z']
+    marqueeGesture(side(el), [20, 10], [40, 50], { ctrlKey: true })
+    expect(el.selection.slice().sort()).toEqual(['x', 'y', 'z'])
+  })
+
+  it('空白单击（未拖动）清空选择', () => {
+    const el = mount({ tasks: TASKS })
+    stubSide(el)
+    el.selection = ['x', 'y']
+    marqueeGesture(side(el), [20, 10], [20, 10])
+    expect(el.selection).toEqual([])
+    expect(shadowOf(el).querySelector('.marquee')).toBeNull()
+  })
+
+  it('readonly：框选仍可用（查看态）', () => {
+    const el = mount({ tasks: TASKS, readonly: '' })
+    stubSide(el)
+    marqueeGesture(side(el), [20, 10], [40, 50])
+    expect(el.selection).toEqual(['x', 'y'])
+  })
+
+  it('不误触行拖拽：行上起手走重排，无 marquee 覆盖层', () => {
+    const el = mount({ tasks: TASKS })
+    stubSide(el)
+    let reparent = 0
+    el.addEventListener('oas-reparent', () => reparent++)
+    const row = shadowOf(el).querySelector<HTMLElement>('.row-name[data-key="x"]')!
+    pointerAt('pointerdown', 0, 0, row)
+    pointerAt('pointermove', 0, 80, document)
+    pointerAt('pointerup', 0, 80, document)
+    expect(reparent).toBe(1)
+    expect(shadowOf(el).querySelector('.marquee')).toBeNull()
+    expect(el.selection).toEqual([])
+  })
+
+  it('不误触条拖拽：条上起手走改期，无 marquee 覆盖层', () => {
+    const el = mount({ tasks: TASKS })
+    let changed = 0
+    el.addEventListener('oas-task-change', () => changed++)
+    dragSeq(barOf(el, 'x'), 72)
+    expect(changed).toBe(1)
+    expect(shadowOf(el).querySelector('.marquee')).toBeNull()
+    expect(el.selection).toEqual([])
+  })
+})
+
+describe('OASGantt 拖拽建任务（creatable 时间轴空白拖）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  const TASKS = JSON.stringify([{ id: 'a', name: 'A', start: '2026-03-02', end: '2026-03-04' }])
+
+  /** 让 dateAtClientX 可用：stub .inner 几何盒 + tbody.scrollLeft（day 档 colW=36，units[0]=03-01） */
+  function setupLayout(el: OASGantt): HTMLElement {
+    const tbody = shadowOf(el).querySelector<HTMLElement>('.tbody')!
+    const inner = shadowOf(el).querySelector<HTMLElement>('.inner')!
+    stubRect(inner, 0, 0, 4000, 200)
+    stubProp(tbody, 'scrollLeft', 0)
+    return tbody
+  }
+
+  it('空白拖出区间：按起止列建任务并进入重命名', () => {
+    const el = mount({ tasks: TASKS, creatable: '' })
+    const tbody = setupLayout(el)
+    const added: GanttTaskAddDetail[] = []
+    el.addEventListener('oas-task-add', ((e: CustomEvent<GanttTaskAddDetail>) => {
+      added.push(e.detail)
+    }) as EventListener)
+    marqueeGesture(tbody, [2 * 36 + 5, 10], [4 * 36 + 5, 10])
+    expect(added).toHaveLength(1)
+    const t = taskOf(el, added[0]!.id)
+    expect(t.start).toBe('2026-03-03')
+    expect(t.end).toBe('2026-03-05')
+    expect(shadowOf(el).querySelector('.rename-input')).not.toBeNull()
+  })
+
+  it('反向拖（从右向左）：起止取 min/max，跨度一致且不触发 start>end 自愈告警', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    try {
+      const el = mount({ tasks: TASKS, creatable: '' })
+      const tbody = setupLayout(el)
+      const added: string[] = []
+      el.addEventListener('oas-task-add', ((e: CustomEvent<GanttTaskAddDetail>) => {
+        added.push(e.detail.id)
+      }) as EventListener)
+      marqueeGesture(tbody, [4 * 36 + 5, 10], [2 * 36 + 5, 10])
+      expect(added).toHaveLength(1)
+      const t = taskOf(el, added[0]!)
+      expect(t.start).toBe('2026-03-03')
+      expect(t.end).toBe('2026-03-05')
+      // 若按原始落点顺序写（start > end），清洗层会自愈交换并告警一次——断言无此告警
+      expect(warn.mock.calls.filter((c) => String(c[0]).includes('颠倒')).length).toBe(0)
+    } finally {
+      warn.mockRestore()
+    }
+  })
+
+  it('同格拖 → 1 天（end = start）', () => {
+    const el = mount({ tasks: TASKS, creatable: '' })
+    const tbody = setupLayout(el)
+    const added: string[] = []
+    el.addEventListener('oas-task-add', ((e: CustomEvent<GanttTaskAddDetail>) => {
+      added.push(e.detail.id)
+    }) as EventListener)
+    marqueeGesture(tbody, [2 * 36 + 5, 10], [2 * 36 + 11, 10])
+    expect(added).toHaveLength(1)
+    const t = taskOf(el, added[0]!)
+    expect(t.start).toBe('2026-03-03')
+    expect(t.end).toBe('2026-03-03')
+  })
+
+  it('非 creatable：时间轴空白拖走框选，不建任务', () => {
+    const el = mount({ tasks: TASKS })
+    const tbody = setupLayout(el)
+    let added = 0
+    el.addEventListener('oas-task-add', () => added++)
+    marqueeGesture(tbody, [10, 10], [200, 60])
+    expect(added).toBe(0)
+    expect(el.tasks).toHaveLength(1)
+  })
+
+  it('readonly + creatable：拖拽不建任务', () => {
+    const el = mount({ tasks: TASKS, creatable: '', readonly: '' })
+    const tbody = setupLayout(el)
+    let added = 0
+    el.addEventListener('oas-task-add', () => added++)
+    marqueeGesture(tbody, [10, 10], [200, 60])
+    expect(added).toBe(0)
+    expect(el.tasks).toHaveLength(1)
+  })
+
+  it('无布局（.inner 宽 0）：拖拽不建任务', () => {
+    const el = mount({ tasks: TASKS, creatable: '' })
+    const tbody = shadowOf(el).querySelector<HTMLElement>('.tbody')!
+    let added = 0
+    el.addEventListener('oas-task-add', () => added++)
+    marqueeGesture(tbody, [10, 10], [200, 10])
+    expect(added).toBe(0)
+  })
+
+  it('creatable 下空白单击：清空已有选择（与左侧列表一致）', () => {
+    const el = mount({ tasks: TASKS, creatable: '' })
+    const tbody = setupLayout(el)
+    el.selection = ['a']
+    let changed = 0
+    el.addEventListener('oas-selection-change', () => changed++)
+    marqueeGesture(tbody, [50, 10], [50, 10])
+    expect(el.selection).toEqual([])
+    expect(changed).toBe(1)
+    expect(el.tasks).toHaveLength(1)
+  })
+
+  it('拖拽建任务中按 Esc：取消手势、不建任务、移除覆盖层', () => {
+    const el = mount({ tasks: TASKS, creatable: '' })
+    const tbody = setupLayout(el)
+    let added = 0
+    el.addEventListener('oas-task-add', () => added++)
+    const down = new PointerEvent('pointerdown', { bubbles: true, composed: true, pointerId: 1, button: 0 })
+    Object.defineProperty(down, 'clientX', { value: 2 * 36 + 5 })
+    Object.defineProperty(down, 'clientY', { value: 10 })
+    tbody.dispatchEvent(down)
+    const move = new PointerEvent('pointermove', { bubbles: true, composed: true, pointerId: 1 })
+    Object.defineProperty(move, 'clientX', { value: 5 * 36 + 5 })
+    Object.defineProperty(move, 'clientY', { value: 10 })
+    document.dispatchEvent(move)
+    expect(shadowOf(el).querySelector('.marquee')).not.toBeNull()
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+    document.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, composed: true, pointerId: 1 }))
+    expect(added, 'Esc 后不应建任务').toBe(0)
+    expect(shadowOf(el).querySelector('.marquee')).toBeNull()
+  })
+})

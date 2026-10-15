@@ -97,6 +97,12 @@
       "name": "creatable",
       "type": "boolean",
       "observed": true
+    },
+    {
+      "name": "auto-schedule",
+      "type": "string",
+      "default": "",
+      "observed": true
     }
   ],
   "props": [
@@ -160,6 +166,10 @@
     {
       "name": "oas-progress-change",
       "detail": "{ id, task: this.taskSnapshot(this._tasks.find((t) => t.id === id)!), progress, } satisfies GanttProgressChangeDetail"
+    },
+    {
+      "name": "oas-reschedule",
+      "detail": "{ ids } satisfies GanttRescheduleDetail"
     }
   ],
   "slots": [

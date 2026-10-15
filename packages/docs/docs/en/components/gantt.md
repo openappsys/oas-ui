@@ -132,6 +132,16 @@ Assemble a task detail editor with `oas-modal` + `oas-form` (the component only 
 
 > `oas-task-dblclick` / `oas-task-click` and `oas-task-render` let the host own editing and custom rendering; the component only guarantees a closed loop of data and interaction.
 
+## Task Management Extras (Auto-scheduling / Marquee / Drag-to-create)
+
+- **Dependency auto-scheduling**: `auto-schedule` (boolean, off by default) — after a date change (drag / keyboard / `updateTask` / `updateTasks`) or a dependency add/update, successors are pushed **minimally later** (duration preserved) along FS/SS/FF/SF; skips disabled and summary rows; cycle-safe; dispatches `oas-reschedule` (detail `{ ids }`) plus the resulting `oas-tasks-change`.
+- **Marquee multi-select**: drag vertically on empty left-list space to select by row band; drag on empty timeline space (when `creatable` is off) to select by bar intersection; `Ctrl`/`Cmd` adds. The result is written to `selection` and dispatches `oas-selection-change`; marquee still works in readonly (selection is a view state).
+- **Drag-to-create**: with `creatable` on, drag a range on empty timeline space to create a task spanning that range (double-click still creates a single-day task).
+
+<DemoBlock title="auto-schedule: drag the “Prototype” bar right and “Implementation” follows via FS; drag empty timeline space to create a task; drag empty left-list space to marquee-select rows">
+  <oas-gantt id="gantt-auto" auto-schedule creatable height="240"></oas-gantt>
+</DemoBlock>
+
 ## Readonly Levels + Per-task Disable
 
 <DemoBlock title="readonly (all) / dates-readonly (no rescheduling) / progress-readonly (no progress drag); readonly states render no drag handles (visual = semantics)">
@@ -360,6 +370,16 @@ onMounted(async () => {
     })
     say('Click the trailing + or double-click empty space to create; try the buttons for the imperative API')
   }
+
+  // Task-management extras demo: auto-scheduling + marquee + drag-to-create
+  const auto = document.getElementById('gantt-auto')
+  if (auto) {
+    auto.tasks = [
+      { id: 'a1', name: 'Discovery', start: '2026-03-02', end: '2026-03-06' },
+      { id: 'a2', name: 'Prototype', start: '2026-03-07', end: '2026-03-11', dependencies: [{ id: 'a1' }] },
+      { id: 'a3', name: 'Implementation', start: '2026-03-12', end: '2026-03-18', dependencies: [{ id: 'a2' }] },
+    ]
+  }
 })
 </script>
 
@@ -371,6 +391,7 @@ onMounted(async () => {
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
+| `auto-schedule` | Dependency auto-scheduling (boolean, off by default): after a date change (drag/keyboard/updateTask/updateTasks) or a dependency add/update, successors are pushed minimally (later only, duration preserved) along FS/SS/FF/SF; skips disabled and summary rows; cycle-safe. Dispatches oas-reschedule | `string` | — |
 | `creatable` | Inline creation (boolean, off by default): when enabled, a trailing "+" appears per row (adds a subtask on summary rows, a sibling after on leaf rows) and double-clicking empty space creates a task at the clicked date; the new task enters inline rename. No button on readonly or per-task-disabled rows | `boolean` | — |
 | `dates-readonly` | No rescheduling/resizing (progress still draggable) | `boolean` | — |
 | `expanded` | Expanded set (JSON array, controlled): defaults to fully expanded when absent; explicit [] collapses all; written back on toggle | `string` | — |
@@ -404,6 +425,7 @@ onMounted(async () => {
 | `oas-expand-change` | Dispatched on row tree collapse/expand, detail: { id, expanded } |
 | `oas-progress-change` | Dispatched when a progress handle drag settles, detail: { id, task, progress } |
 | `oas-reparent` | Dispatched when a row drag reparent/reorder settles, detail: { id, parent, index } (parent null means root level; index is the sibling position) |
+| `oas-reschedule` | Dispatched when auto-scheduling moved successor tasks (auto-schedule on), detail: { ids } (ids of the rescheduled tasks) |
 | `oas-scale-change` | Dispatched when the scale attribute changes, detail: { scale }; not dispatched on initial absorption |
 | `oas-selection-change` | Dispatched when the multi-select set changes (click / keyboard / property write), detail: { ids } (selected task ids) |
 | `oas-task-add` | Dispatched after imperative creation (addTask / duplicateTask / creatable inline create), detail: { id, task } (id is the new task id) |

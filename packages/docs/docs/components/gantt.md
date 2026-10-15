@@ -132,6 +132,16 @@
 
 > `oas-task-dblclick` / `oas-task-click` 与 `oas-task-render` 让宿主任意接管编辑与自定义渲染；组件本身只保证数据与交互闭环。
 
+## 任务管理增强（依赖联动排程 / 框选 / 拖拽建任务）
+
+- **依赖联动排程**：`auto-schedule`（布尔，默认关）——日期变更（拖拽 / 键盘 / `updateTask` / `updateTasks`）或依赖增改后，按 FS/SS/FF/SF 沿依赖图对**后继**做**最小前推**（只推迟、保持工期；跳过 disabled 与摘要行；成环安全），派发 `oas-reschedule`（detail `{ ids }`）与联动的 `oas-tasks-change`。
+- **框选多任务**：左侧列表空白纵向拖按行带选中；时间轴空白拖（未开 `creatable` 时）按条相交选中；`Ctrl`/`Cmd` 追加。结果写入 `selection` 并派发 `oas-selection-change`；只读下仍可框选（选择属查看态）。
+- **拖拽建任务**：`creatable` 开启时，在时间轴空白**拖出区间**即建相应跨度任务（双击空白按当天建保留）。
+
+<DemoBlock title="auto-schedule：拖右侧「原型」条向右，后继「开发」按 FS 自动顺延；时间轴空白拖出区间建任务；左侧空白纵向拖框选多行">
+  <oas-gantt id="gantt-auto" auto-schedule creatable height="240"></oas-gantt>
+</DemoBlock>
+
 ## 只读三级 + 任务级禁用
 
 <DemoBlock title="readonly（全禁）/ dates-readonly（禁改期）/ progress-readonly（禁进度）；只读态不渲染拖拽手柄（视觉即语义）">
@@ -358,6 +368,16 @@ onMounted(async () => {
     })
     say('点「＋」或双击空白可直接建任务；点按钮试命令式 API')
   }
+
+  // 任务管理增强示例：依赖联动排程 + 框选 + 拖拽建任务
+  const auto = document.getElementById('gantt-auto')
+  if (auto) {
+    auto.tasks = [
+      { id: 'a1', name: '需求', start: '2026-03-02', end: '2026-03-06' },
+      { id: 'a2', name: '原型', start: '2026-03-07', end: '2026-03-11', dependencies: [{ id: 'a1' }] },
+      { id: 'a3', name: '开发', start: '2026-03-12', end: '2026-03-18', dependencies: [{ id: 'a2' }] },
+    ]
+  }
 })
 </script>
 
@@ -369,6 +389,7 @@ onMounted(async () => {
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
+| `auto-schedule` | 依赖联动排程（布尔，默认关）：日期变更（拖拽/键盘/updateTask/updateTasks）或依赖增改后，按 FS/SS/FF/SF 沿依赖图对后继做最小前推（只推迟不提前、保持工期），跳过 disabled 与摘要行，成环安全；派发 oas-reschedule | `string` | — |
 | `creatable` | 行内新建（布尔，默认关）：开启后行尾出「＋」（摘要行加子级、叶子行加同级后继）、双击空白区按落点日期建任务，新建后进入行内重命名；只读/任务级禁用行不出按钮 | `boolean` | — |
 | `dates-readonly` | 禁改期/拉伸（进度仍可拖） | `boolean` | — |
 | `expanded` | 已展开集合（JSON 数组，受控）：属性缺席缺省全展开；显式 [] 全收起；点折叠钮写回 | `string` | — |
@@ -402,6 +423,7 @@ onMounted(async () => {
 | `oas-expand-change` | 行树折叠/展开时派发，detail: { id, expanded } |
 | `oas-progress-change` | 拖进度手柄收口时派发，detail: { id, task, progress } |
 | `oas-reparent` | 行拖拽改父子 / 重排收口时派发，detail: { id, parent, index }（parent 为 null 表示根级，index 为同级序号） |
+| `oas-reschedule` | 依赖联动排程改动了后继任务时派发（auto-schedule 开启），detail: { ids }（被联动改动的任务 id） |
 | `oas-scale-change` | scale 属性变化时派发，detail: { scale }；首次吸收不派发 |
 | `oas-selection-change` | 多选集合变化（点击 / 键盘 / property 写入）时派发，detail: { ids }（选中的任务 id 数组） |
 | `oas-task-add` | 命令式新增任务后派发（addTask / duplicateTask / creatable 行内新建），detail: { id, task }（id 为新任务 id） |
