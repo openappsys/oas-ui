@@ -51,7 +51,7 @@
   <div id="gantt-link-output" style="color:var(--oas-color-text-secondary);font-size:var(--oas-font-size-sm);margin-top:var(--oas-space-2)"></div>
 </DemoBlock>
 
-悬停任务条出两个**连线点**：拖右侧点（完成端）到目标条 → 建依赖；拖左侧点（开始端）同理。**里程碑** start == end，只出完成端**单点**（fs 惯例；其作为前置时的 ss/sf 与 fs/ff 等价）。落点取目标条的**左半**（开始端）/ **右半**（完成端），与起点端组合决定类型（FS / SS / FF / SF），依赖记在**后继任务**上。同源同型依赖不重复添加；同源多型可并存，选中删除按类型作用域只删该条。点已有连线**选中**（高亮），按 `Delete` / `Backspace` 删除（仅组件持有焦点时响应，不劫持宿主输入）。收口派发 `oas-dependencies-change`（`detail: { taskId, dependencies }`）+ `oas-tasks-change`。`readonly` 不渲染连线点与命中区、不可删；拖拽中 `Esc` / `pointercancel` 取消零事件。触屏点任务条揭示连线点；连线命中路径可聚焦，`Enter`/`Delete` 删除该依赖。
+悬停任务条出两个**连线点**：拖右侧点（完成端）到目标条 → 建依赖；拖左侧点（开始端）同理。**里程碑** start == end，只出完成端**单点**（fs 惯例；其作为前置时的 ss/sf 与 fs/ff 等价）。落点取目标条的**左半**（开始端）/ **右半**（完成端），与起点端组合决定类型（FS / SS / FF / SF），依赖记在**后继任务**上。同源同型依赖不重复添加；同源多型可并存，选中删除按类型作用域只删该条。点已有连线**选中**（高亮），按 `Delete` / `Backspace` 删除（仅组件持有焦点时响应，不劫持宿主输入；任务条聚焦时按 `Delete` 不会误删已选连线）。收口派发 `oas-dependencies-change`（`detail: { taskId, dependencies }`）+ `oas-tasks-change`。`readonly` 不渲染连线点与命中区、不可删；拖拽中 `Esc` / `pointercancel` 取消零事件。触屏点任务条揭示连线点；连线命中路径可聚焦，`Enter`/`Delete` 删除该依赖。
 
 ## 多选、重命名与键盘
 
@@ -62,8 +62,9 @@
 
 - **多选**：点击左侧名称行选中（单选）；`Ctrl`/`Cmd` 点击切换；`Shift` 点击范围连选；选中态走 `selection` property（id 数组，可读写）与 `oas-selection-change` 事件。`Delete`/`Backspace` 删除所选（连同其后代），或调用 `removeTasks(ids)`。
 - **行内重命名**：双击名称 → 输入框（`Enter` 提交 / `Esc` 还原 / 失焦提交），改 `name` 并派发 `oas-tasks-change`。
-- **键盘**：行聚焦后 `↑`/`↓` 移动焦点、`空格` 选择、`Alt+↑/↓` 同级上移/下移、`Alt+→` 降为前一项子级、`Alt+←` 升为父级同级、`F2` 重命名；连线命中路径可聚焦，`Enter`/`Delete` 删除该依赖。
-- **触屏**：点任务条揭示其连线点（无 hover）。
+- **键盘**：行聚焦后 `↑`/`↓` 移动焦点、`空格` 选择、`Alt+↑/↓` 同级上移/下移、`Alt+→` 降为前一项子级、`Alt+←` 升为父级同级、`F2` 重命名；连线命中路径可聚焦，`Enter`/`Delete` 删除该依赖（删除后焦点交回组件，键盘不落空）。
+- **无障碍**：名称列为 `role="tree"`，每行 `treeitem` 带 `aria-level` / `aria-posinset` / `aria-setsize`（同级全集，含折叠子级；悬空/断环父级按根计）；选中态同步 `aria-selected`，展开态同步 `aria-expanded`。
+- **触屏**：点任务条揭示其连线点（无 hover）；左列行首的拖拽手柄（⋮⋮）用于触屏**行重排**（整行纵向拖与列表滚动在触屏上冲突，改由手柄承载；手柄独占手势，其余区域仍可滚动），纯点按手柄不改选中。
 
 ## 只读三级 + 任务级禁用
 
@@ -307,7 +308,7 @@ onMounted(async () => {
 
 | CSS 变量 | 说明 | 默认值 |
 | --- | --- | --- |
-| `--oas-gantt-bar-bg` | — | `color-mix(in srgb, var(--oas-gantt-bar-color, var(--oas-color-primary)) 22%, transparent)` |
+| `--oas-gantt-bar-bg` | — | `color-mix(in srgb, var(--oas-gantt-bar-color, var(--oas-color-primary)) 22%, var(--oas-color-bg))` |
 | `--oas-gantt-bar-height` | — | `22px` |
 | `--oas-gantt-bar-progress-bg` | — | `var(--oas-gantt-bar-color, var(--oas-color-primary))` |
 | `--oas-gantt-baseline-color` | 基线条颜色（默认半透明次要文字色） | `color-mix(in srgb, var(--oas-color-text-secondary-strong) 55%, transparent)` |

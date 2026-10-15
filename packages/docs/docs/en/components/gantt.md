@@ -51,7 +51,7 @@ Drag a left-column row onto a target: the **top half** inserts before the target
   <div id="gantt-link-output" style="color:var(--oas-color-text-secondary);font-size:var(--oas-font-size-sm);margin-top:var(--oas-space-2)"></div>
 </DemoBlock>
 
-Hovering a bar reveals two **link dots**: drag the right (finish) dot onto a target bar to create a dependency; the left (start) dot works the same way. A **milestone** has start == end, so it shows a single finish dot (fs convention; its ss/sf as a predecessor are equivalent to fs/ff). The drop side of the target — **left half** (start) / **right half** (finish) — combined with the source endpoint picks the type (FS / SS / FF / SF). The dependency is recorded on the **successor** task. Click an existing link to **select** (highlighted), then press `Delete` / `Backspace` to remove it. On settle it dispatches `oas-dependencies-change` (`detail: { taskId, dependencies }`) plus `oas-tasks-change`. With `readonly`, link dots and hit areas are not rendered and removal is disabled; `Esc` / `pointercancel` cancels with zero events. On touch, tap a bar to reveal its link dots; a link hit path is focusable and Enter/Delete removes that dependency.
+Hovering a bar reveals two **link dots**: drag the right (finish) dot onto a target bar to create a dependency; the left (start) dot works the same way. A **milestone** has start == end, so it shows a single finish dot (fs convention; its ss/sf as a predecessor are equivalent to fs/ff). The drop side of the target — **left half** (start) / **right half** (finish) — combined with the source endpoint picks the type (FS / SS / FF / SF). The dependency is recorded on the **successor** task. Click an existing link to **select** (highlighted), then press `Delete` / `Backspace` to remove it (only while the component holds focus; host inputs are not hijacked; pressing Delete on a focused task bar does not delete a selected link). On settle it dispatches `oas-dependencies-change` (`detail: { taskId, dependencies }`) plus `oas-tasks-change`. With `readonly`, link dots and hit areas are not rendered and removal is disabled; `Esc` / `pointercancel` cancels with zero events. On touch, tap a bar to reveal its link dots; a link hit path is focusable and Enter/Delete removes that dependency.
 
 ## Multi-select, Rename & Keyboard
 
@@ -62,8 +62,9 @@ Hovering a bar reveals two **link dots**: drag the right (finish) dot onto a tar
 
 - **Multi-select**: click a left row name to select (single); Ctrl/Cmd click toggles; Shift click selects a range; state is exposed via the `selection` property (id array, readable/writable) and the `oas-selection-change` event. Delete/Backspace removes the selection (with descendants), or call `removeTasks(ids)`.
 - **Inline rename**: double-click a name → input (Enter commits / Esc restores / blur commits), updates `name` and dispatches `oas-tasks-change`.
-- **Keyboard**: with a row focused, ↑/↓ move focus, Space selects, Alt+↑/↓ reorder among siblings, Alt+→ indents under the previous sibling, Alt+← outdents, F2 renames; a link hit path is focusable, Enter/Delete removes that dependency.
-- **Touch**: tap a bar to reveal its link dots (no hover).
+- **Keyboard**: with a row focused, ↑/↓ move focus, Space selects, Alt+↑/↓ reorder among siblings, Alt+→ indents under the previous sibling, Alt+← outdents, F2 renames; a link hit path is focusable, Enter/Delete removes that dependency (focus returns to the component after removal, so the keyboard position is not lost).
+- **Accessibility**: the name column is a `role="tree"`; each `treeitem` carries `aria-level` / `aria-posinset` / `aria-setsize` (full sibling set, including collapsed children; dangling/cyclic parents count as roots); selection mirrors to `aria-selected` and expansion to `aria-expanded`.
+- **Touch**: tap a bar to reveal its link dots (no hover); the drag handle (⋮⋮) at the start of a left row drives touch **row reorder** (a full-row vertical drag conflicts with list scrolling on touch, so the handle carries it; the handle owns the gesture while the rest of the row still scrolls). A plain tap on the handle does not change selection.
 
 ## Readonly Levels + Per-task Disable
 
@@ -309,7 +310,7 @@ onMounted(async () => {
 
 | CSS Variable | Description | Default |
 | --- | --- | --- |
-| `--oas-gantt-bar-bg` | — | `color-mix(in srgb, var(--oas-gantt-bar-color, var(--oas-color-primary)) 22%, transparent)` |
+| `--oas-gantt-bar-bg` | — | `color-mix(in srgb, var(--oas-gantt-bar-color, var(--oas-color-primary)) 22%, var(--oas-color-bg))` |
 | `--oas-gantt-bar-height` | — | `22px` |
 | `--oas-gantt-bar-progress-bg` | — | `var(--oas-gantt-bar-color, var(--oas-color-primary))` |
 | `--oas-gantt-baseline-color` | Baseline bar color (defaults to translucent secondary text color) | `color-mix(in srgb, var(--oas-color-text-secondary-strong) 55%, transparent)` |

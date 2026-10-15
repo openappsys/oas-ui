@@ -83,6 +83,10 @@ const STYLE = `
   background: color-mix(in srgb, var(--oas-color-primary) 18%, transparent);
   box-shadow: inset 2px 0 0 var(--oas-color-primary);
 }
+/* RTL 下高亮条镜像到 inline-start（右缘） */
+:host([data-rtl]) .row-name.selected {
+  box-shadow: inset -2px 0 0 var(--oas-color-primary);
+}
 /* 触屏重排手柄：整行拖与纵向滚动冲突（touch-action 手势起始即定夺），
    故粗指针下改由手柄承载重排，手柄独占 touch-action: none，其余区域仍可滚动 */
 .row-drag {
@@ -98,6 +102,8 @@ const STYLE = `
     cursor: grab;
     color: var(--oas-color-text-secondary);
     padding-inline: 2px;
+    min-width: 24px;
+    min-height: 24px;
     letter-spacing: -3px;
   }
 }
@@ -378,9 +384,11 @@ svg.links .temp-link {
 .bar.label-inside .bar-label {
   inset-inline-start: 8px;
   max-width: calc(100% - 16px);
-  /* 底衬 scrim：条底（半透明色）与进度实色两种情况都保证文字可读 */
-  background: color-mix(in srgb, var(--oas-color-text-primary) 62%, transparent);
-  color: var(--oas-color-bg);
+  /* 底衬 scrim：条底（半透明色）与进度实色两种情况都保证文字可读；
+     底色混入 bg-elevated 提高不透明度（玻璃主题的 bg-elevated 亦非全不透明，故只提高衬底实度），
+     文字用 text-on-primary（各主题均为不透明 token，且与 scrim 极性相反） */
+  background: color-mix(in srgb, var(--oas-color-text-primary) 62%, var(--oas-color-bg-elevated));
+  color: var(--oas-color-text-on-primary);
   padding-inline: var(--oas-space-1);
   border-radius: var(--oas-radius-xs);
 }
@@ -618,6 +626,8 @@ interface GanttRow {
   isSummary: boolean
   isMilestone: boolean
   hasChildren: boolean
+  posinset: number
+  setsize: number
 }
 
 interface TimeUnit {
@@ -905,7 +915,14 @@ export class OASGantt extends OASElement {
   private selected = new Set<string>()
   private selectionAnchor: string | null = null
   private renaming = false
-  private rowPending: { id: string; x: number; y: number; disabled: boolean; byId: Map<string, TG> } | null = null
+  private rowPending: {
+    id: string
+    x: number
+    y: number
+    disabled: boolean
+    viaHandle: boolean
+    byId: Map<string, TG>
+  } | null = null
   private activeRowId: string | null = null
   private touchActiveId: string | null = null
   private coarse = false
@@ -946,18 +963,11 @@ export class OASGantt extends OASElement {
       (used) => this.allocId(used),
       (key, msg) => this.warnOnce(key, msg),
     )
-    // 外部整体重写：收敛指向已不存在任务的选中/锚点/活动/揭示态，避免幽灵 id
-    const ids = new Set(this._tasks.map((t) => t.id))
-    const prunedSel = [...this.selected].some((id) => !ids.has(id))
-    if (prunedSel) this.selected = new Set([...this.selected].filter((id) => ids.has(id)))
-    if (this.selectionAnchor && !ids.has(this.selectionAnchor)) this.selectionAnchor = null
-    if (this.activeRowId && !ids.has(this.activeRowId)) this.activeRowId = null
-    if (this.touchActiveId && !ids.has(this.touchActiveId)) this.touchActiveId = null
+    // 外部整体重写：收敛幽灵选中/锚点/活动/揭示态由 update() 统一处理（property 与 attribute 一致）
     this.tasksAttrCache = JSON.stringify(this._tasks)
     this.setAttribute('tasks', this.tasksAttrCache)
     this.update()
     this.emitTasksChange()
-    if (prunedSel) this.emitSelectionChange()
   }
 
   /** 按 id 单条增量更新（浅合并 patch 后走 sanitize 清洗；找不到或非法 patch 返回 false） */
@@ -1415,6 +1425,18 @@ export class OASGantt extends OASElement {
       return r
     }
 
+    // 同级全集（含折叠子级）：供 treeitem aria-posinset/setsize。用**生效父级**分组——
+    // 悬空 parent / 断环节点的任务在树里归根，其同级应为根集合，而非原始 parent 的分组。
+    const sibList = new Map<string, string[]>()
+    sibList.set(
+      '',
+      roots.map((r) => r.id),
+    )
+    for (const [pid, ids] of childMap) sibList.set(pid, ids)
+    const posIndex = new Map<string, number>()
+    for (const ids of sibList.values()) ids.forEach((id, i) => posIndex.set(id, i + 1))
+    const posKey = (t: TG, depth: number): string => (depth === 0 ? '' : (t.parent ?? ''))
+
     const expanded = this.effectiveExpandedSet(childMap)
     // 缓存：后续渲染窗口（含滚动每帧）直接复用，避免万级任务下每帧重建展开集（O(n) → O(1)）
     this.expandedSetCache = expanded
@@ -1442,6 +1464,7 @@ export class OASGantt extends OASElement {
       }
       const isSummary = hasChildren || (t.type === 'summary' && !isMilestone)
       const a = aggregate(t.id)
+      const sib = sibList.get(posKey(t, depth)) ?? [t.id]
       rows.push({
         task: t,
         depth,
@@ -1451,6 +1474,8 @@ export class OASGantt extends OASElement {
         isSummary,
         isMilestone,
         hasChildren,
+        posinset: posIndex.get(t.id) ?? 1,
+        setsize: sib.length,
       })
       if (hasChildren && expanded.has(t.id)) for (const cid of childIds) walk(byId.get(cid)!, depth + 1)
     }
@@ -1689,7 +1714,10 @@ export class OASGantt extends OASElement {
     if (this.dragCtx) this.cancelDrag()
     this.cancelReparent()
     this.cancelLink()
+    this.unbindRowPending()
+    this.rowPending = null
     this.syncTasks()
+    const prunedSel = this.pruneStateToTasks()
     this.syncExpanded()
     this.toggleAttribute('data-rtl', isRtl(this))
     this.buildRows()
@@ -1728,6 +1756,29 @@ export class OASGantt extends OASElement {
     this.renderHeader()
     this.renderWindow()
     this.renderToday()
+    // 数据重写后收敛出的选中变化统一在此补发（property/attribute 两通道一致）
+    if (prunedSel) this.emitSelectionChange()
+  }
+
+  /**
+   * 数据收敛：剪掉指向已不存在任务的选中/锚点/活动行/揭示态。
+   * 返回选中集合是否被剪（供 update() 补发 selection-change）。三通道共用：
+   * property setter、attribute（syncTasks）、removeTasks 都经 update()。
+   */
+  private pruneStateToTasks(): boolean {
+    const ids = new Set(this._tasks.map((t) => t.id))
+    let prunedSel = false
+    for (const id of this.selected) {
+      if (!ids.has(id)) {
+        prunedSel = true
+        break
+      }
+    }
+    if (prunedSel) this.selected = new Set([...this.selected].filter((id) => ids.has(id)))
+    if (this.selectionAnchor && !ids.has(this.selectionAnchor)) this.selectionAnchor = null
+    if (this.activeRowId && !ids.has(this.activeRowId)) this.activeRowId = null
+    if (this.touchActiveId && !ids.has(this.touchActiveId)) this.touchActiveId = null
+    return prunedSel
   }
 
   /** 双层刻度表头（上层主刻度相邻同标签合并 + 下层辅刻度逐格） */
@@ -1803,14 +1854,6 @@ export class OASGantt extends OASElement {
     this.renaming = false
     container.innerHTML = ''
     const rowH = this.rowHeight()
-    // 同级兄弟分组（含折叠中不可见的孩子——tree 的 setsize 应为同级全集）
-    const siblingsOf = new Map<string, string[]>()
-    for (const t of this._tasks) {
-      const key = t.parent ?? ''
-      const arr = siblingsOf.get(key)
-      if (arr) arr.push(t.id)
-      else siblingsOf.set(key, [t.id])
-    }
     const expanded = this.currentExpandedSet()
     const prevActive = this.activeRowId
     const inWindow = this.rows.slice(this.winStart, this.winEnd).some((r) => r.task.id === prevActive)
@@ -1824,9 +1867,8 @@ export class OASGantt extends OASElement {
       el.dataset.key = row.task.id
       el.setAttribute('role', 'treeitem')
       el.setAttribute('aria-level', String(row.depth + 1))
-      const sib = siblingsOf.get(row.task.parent ?? '') ?? []
-      el.setAttribute('aria-posinset', String(sib.indexOf(row.task.id) + 1))
-      el.setAttribute('aria-setsize', String(sib.length))
+      el.setAttribute('aria-posinset', String(row.posinset))
+      el.setAttribute('aria-setsize', String(row.setsize))
       el.style.top = `${i * rowH}px`
       el.style.setProperty('--indent', `${8 + row.depth * 16}px`)
       el.setAttribute('part', 'row-name')
@@ -1839,18 +1881,12 @@ export class OASGantt extends OASElement {
         el.setAttribute('aria-disabled', 'true')
       }
       if (this.coarse) {
+        // 触屏重排手柄：pointerdown 事件冒泡到行，走 onRowPointerDown 的统一入口
+        // （自带 e.button/多 ctx 互斥守卫 + 判拖阈值），避免自建 handler 漏守卫与误触发
         const drag = document.createElement('span')
         drag.className = 'row-drag'
         drag.setAttribute('aria-hidden', 'true')
         drag.textContent = '⋮⋮'
-        drag.addEventListener('pointerdown', (e) => {
-          if (row.task.disabled === true || this.hasAttr('readonly')) return
-          e.stopPropagation()
-          e.preventDefault()
-          this.reparentCtx = { id: row.task.id, byId: new Map(this._tasks.map((t) => [t.id, t])) }
-          this.bindDocReparent()
-          this.onReparentMove(e as PointerEvent)
-        })
         el.appendChild(drag)
       }
       if (row.hasChildren) {
@@ -2126,7 +2162,7 @@ export class OASGantt extends OASElement {
   }
 
   private onRowPointerDown(e: PointerEvent, row: GanttRow): void {
-    if (e.button !== 0 || this.reparentCtx || this.dragCtx || this.linkCtx) return
+    if (e.button !== 0 || this.reparentCtx || this.dragCtx || this.linkCtx || this.rowPending) return
     if ((e.target as HTMLElement).closest('.toggle, .rename-input')) return
     // 先待定：位移阈值才进入重排，否则收口视作点击（多选）。readonly 允许多选，仅拖拽重排被禁止。
     this.rowPending = {
@@ -2134,6 +2170,8 @@ export class OASGantt extends OASElement {
       x: e.clientX,
       y: e.clientY,
       disabled: row.task.disabled === true,
+      // 手柄起手：判拖阈值后进重排；纯点按（未达阈值）不进选择，避免「点手柄改了选中」
+      viaHandle: (e.target as HTMLElement).classList.contains('row-drag'),
       byId: new Map(this._tasks.map((t) => [t.id, t])),
     }
     this.bindRowPending()
@@ -2320,9 +2358,6 @@ export class OASGantt extends OASElement {
         affected.push(t)
       }
     }
-    const hadSel = [...set].some((id) => this.selected.has(id))
-    for (const id of set) this.selected.delete(id)
-    this.selectionAnchor = null
     this.syncTasksAttr()
     this.emitTasksChange()
     for (const t of affected) {
@@ -2331,7 +2366,6 @@ export class OASGantt extends OASElement {
         dependencies: (t.dependencies ?? []).map((d) => ({ ...d })),
       } satisfies GanttDependenciesChangeDetail)
     }
-    if (hadSel) this.emitSelectionChange()
   }
 
   private emitSelectionChange(): void {
@@ -2559,7 +2593,8 @@ export class OASGantt extends OASElement {
     const p = this.rowPending
     this.unbindRowPending()
     this.rowPending = null
-    if (p) this.onRowClick(p.id, e)
+    // 手柄起手或任务已被并发重写移除（幽灵 id）→ 不触发选择
+    if (p && !p.viaHandle && this._tasks.some((t) => t.id === p.id)) this.onRowClick(p.id, e)
   }
   private docRowPendingCancel = (): void => {
     this.unbindRowPending()
@@ -2637,7 +2672,15 @@ export class OASGantt extends OASElement {
   }
 
   private onLinkDotPointerDown(e: PointerEvent, row: GanttRow, rowIndex: number, endpoint: 'start' | 'end'): void {
-    if (e.button !== 0 || this.hasAttr('readonly') || this.linkCtx || this.dragCtx || this.reparentCtx) return
+    if (
+      e.button !== 0 ||
+      this.hasAttr('readonly') ||
+      this.linkCtx ||
+      this.dragCtx ||
+      this.reparentCtx ||
+      this.rowPending
+    )
+      return
     const rowH = this.rowHeight()
     const sx = this.mirrorX(this.xOf(endpoint === 'end' ? row.endMs : row.startMs))
     const sy = rowIndex * rowH + rowH / 2
@@ -2763,7 +2806,7 @@ export class OASGantt extends OASElement {
   }
 
   private onBarPointerDown(e: PointerEvent, row: GanttRow, bar: HTMLElement): void {
-    if (e.button !== 0 || this.dragCtx || this.reparentCtx || this.linkCtx) return
+    if (e.button !== 0 || this.dragCtx || this.reparentCtx || this.linkCtx || this.rowPending) return
     const target = e.target as HTMLElement
     let mode: DragMode = 'move'
     if (target.classList.contains('handle-start')) mode = 'resize-start'
@@ -2844,8 +2887,16 @@ export class OASGantt extends OASElement {
       if (ctx.mode === 'resize-end') newStartMs = ctx.origStartMs
     }
     const minSpan = this.snapOn() ? this.addUnitsMs(ctx.origStartMs, 1) - ctx.origStartMs : this.avgUnitMs()
-    if (ctx.mode === 'resize-start' && newStartMs > ctx.origEndMs - minSpan) newStartMs = ctx.origEndMs - minSpan
-    if (ctx.mode === 'resize-end' && newEndMs < ctx.origStartMs + minSpan) newEndMs = ctx.origStartMs + minSpan
+    // 最短跨度钳制的边界须夹在原跨度内：任务本身短于 1 个刻度单元时（如 month 档 4 天任务），
+    // 裸用 origEnd−minSpan / origStart+minSpan 会落到原区间之外 → 零位移也改写、真实拖拽反向跳。
+    if (ctx.mode === 'resize-start') {
+      const bound = Math.max(ctx.origEndMs - minSpan, ctx.origStartMs)
+      if (newStartMs > bound) newStartMs = bound
+    }
+    if (ctx.mode === 'resize-end') {
+      const bound = Math.min(ctx.origStartMs + minSpan, ctx.origEndMs)
+      if (newEndMs < bound) newEndMs = bound
+    }
     ctx.newStartMs = newStartMs
     ctx.newEndMs = newEndMs
     // 视觉更新（不重建 DOM）
@@ -2872,8 +2923,9 @@ export class OASGantt extends OASElement {
     }
   }
 
-  /** 按 scale 日历步进 n 个单位（snap 对齐用） */
+  /** 按 scale 日历步进 n 个单位（snap 对齐用）；n = 0 必须恒等，否则零位移点按会被锚到月首而静默改期 */
   private addUnitsMs(ms: number, n: number): number {
+    if (n === 0) return ms
     return OASGantt.addUnits(new Date(ms), this.scale(), n).getTime()
   }
 
@@ -3002,14 +3054,10 @@ export class OASGantt extends OASElement {
     e.preventDefault()
     const dir = (e.key === 'ArrowRight' ? 1 : -1) * (isRtl(this) ? -1 : 1)
     const datetime = row.task.start.length > 10
-    this.commitDates(
-      row.task.id,
-      this.addUnitsMs(row.startMs, dir),
-      this.addUnitsMs(row.endMs, dir),
-      datetime,
-      row.startMs,
-      row.endMs,
-    )
+    // 整体平移：以 start 的单元步长求位移。两端各自 addUnitsMs 在 month/quarter/year 档会各自吸附到月首，
+    // 短任务（<1 单元）会被压成 start>end 的非法值；用同一位移量则工期不变、恒合法。
+    const deltaMs = this.addUnitsMs(row.startMs, dir) - row.startMs
+    this.commitDates(row.task.id, row.startMs + deltaMs, row.endMs + deltaMs, datetime, row.startMs, row.endMs)
   }
 
   // ===== 依赖连线（SVG 单画布覆盖层，窗口行内绘制）=====

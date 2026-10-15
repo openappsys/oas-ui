@@ -207,7 +207,7 @@
     },
     {
       "name": "--oas-gantt-bar-bg",
-      "default": "color-mix(in srgb, var(--oas-gantt-bar-color, var(--oas-color-primary)) 22%, transparent)"
+      "default": "color-mix(in srgb, var(--oas-gantt-bar-color, var(--oas-color-primary)) 22%, var(--oas-color-bg))"
     },
     {
       "name": "--oas-gantt-baseline-color",

@@ -639,6 +639,43 @@ describe('OASGantt 多选 / 行内重命名 / 键盘重排 / 连线键盘', () =
     { id: 'z', name: 'Z', start: '2026-03-16', end: '2026-03-20' },
   ])
 
+  function stubCoarse(): void {
+    vi.stubGlobal('matchMedia', (q: string) => ({
+      matches: q.includes('coarse'),
+      media: q,
+      onchange: null,
+      addEventListener() {},
+      removeEventListener() {},
+      addListener() {},
+      removeListener() {},
+      dispatchEvent: () => false,
+    }))
+  }
+
+  function pointer(type: string, x: number, y: number, target: EventTarget = document): void {
+    const e = new PointerEvent(type, { bubbles: true, composed: true, pointerId: 1, button: 0 })
+    Object.defineProperty(e, 'clientX', { value: x })
+    Object.defineProperty(e, 'clientY', { value: y })
+    target.dispatchEvent(e)
+  }
+
+  function stubSideRect(el: OASGantt): void {
+    const side = shadowOf(el).querySelector<HTMLElement>('.side-body')!
+    side.getBoundingClientRect = () =>
+      ({
+        top: 0,
+        left: 0,
+        right: 300,
+        bottom: 1000,
+        width: 300,
+        height: 1000,
+        x: 0,
+        y: 0,
+        toJSON: () => ({}),
+      }) as DOMRect
+    Object.defineProperty(side, 'scrollTop', { value: 0, configurable: true })
+  }
+
   function clickRow(
     el: OASGantt,
     id: string,
@@ -1018,21 +1055,69 @@ describe('OASGantt 多选 / 行内重命名 / 键盘重排 / 连线键盘', () =
     // month 档：整格平移（吸附到月单元起点），但工期（天数）保持一致，不产生月末幻影日期
     expect(t.start).not.toBe('2026-03-02')
     expect(t.start.startsWith('2026-04')).toBe(true)
-    const days = (Date.parse(t.end!) - Date.parse(t.start)) / 86400000
-    expect(days).toBe(4)
+    // 用日历日差（UTC 构造）避免 DST 时区下 ms/86400000 出现 ±1 天抖动
+    const dayOf = (s: string) => Date.UTC(+s.slice(0, 4), +s.slice(5, 7) - 1, +s.slice(8, 10))
+    expect((dayOf(t.end!) - dayOf(t.start)) / 86400000).toBe(4)
+  })
+
+  it('month 档：零位移点按 / 微抖条不静默改期（snap n=0 恒等）', () => {
+    const el = mount({
+      scale: 'month',
+      tasks: JSON.stringify([{ id: 'a', name: 'A', start: '2026-03-02', end: '2026-03-06' }]),
+    })
+    let changed = 0
+    el.addEventListener('oas-task-change', () => changed++)
+    const bar = barOf(el, 'a')
+    dragSeq(bar, 0) // 零位移：不得把日期锚到月首
+    expect(changed, '零位移不应改期').toBe(0)
+    expect(el.tasks[0]!.start).toBe('2026-03-02')
+    dragSeq(bar, 10) // 微抖（< 半列宽，round → 0）同样不改期
+    expect(changed, '微抖不应改期').toBe(0)
+    expect(el.tasks[0]!.start).toBe('2026-03-02')
+  })
+
+  it('resize 零位移不静默改期（month/week 短任务）+ month 右拖不反向跳', () => {
+    for (const scale of ['month', 'week']) {
+      const el = mount({
+        scale,
+        tasks: JSON.stringify([{ id: 'a', name: 'A', start: '2026-03-02', end: '2026-03-06' }]),
+      })
+      let changed = 0
+      el.addEventListener('oas-task-change', () => changed++)
+      dragSeq(shadowOf(el).querySelector<HTMLElement>('.bar[data-id="a"] .handle-start')!, 0)
+      dragSeq(shadowOf(el).querySelector<HTMLElement>('.bar[data-id="a"] .handle-end')!, 0)
+      expect(changed, `${scale} 零位移不应改期`).toBe(0)
+      expect(el.tasks[0]!.start).toBe('2026-03-02')
+      expect(el.tasks[0]!.end).toBe('2026-03-06')
+    }
+    // month 档 4 天任务右拖起点：最短跨度钳制须夹在原区间内，不得跳到原 start 之前
+    const el = mount({
+      scale: 'month',
+      tasks: JSON.stringify([{ id: 'a', name: 'A', start: '2026-03-02', end: '2026-03-06' }]),
+    })
+    const colW = (el as unknown as { colW(): number }).colW()
+    dragSeq(shadowOf(el).querySelector<HTMLElement>('.bar[data-id="a"] .handle-start')!, colW)
+    expect(Date.parse(el.tasks[0]!.start)).toBeGreaterThanOrEqual(Date.parse('2026-03-02'))
+  })
+
+  it('month 档键盘 Shift+→ 整体平移，不产生 start>end（工期不变）', () => {
+    const el = mount({
+      scale: 'month',
+      tasks: JSON.stringify([{ id: 'a', name: 'A', start: '2026-03-02', end: '2026-03-06' }]),
+    })
+    // 键盘改期监听在条上（onBarKeyDown），须派发到 .bar 而非行
+    const bar = barOf(el, 'a')
+    bar.focus()
+    bar.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', shiftKey: true, bubbles: true }))
+    const t = el.tasks[0]!
+    expect(t.start, '应有实际平移（非零操作）').not.toBe('2026-03-02')
+    expect(Date.parse(t.start), 'start 应早于 end（不得颠倒）').toBeLessThan(Date.parse(t.end!))
+    const dayOf = (s: string) => Date.UTC(+s.slice(0, 4), +s.slice(5, 7) - 1, +s.slice(8, 10))
+    expect((dayOf(t.end!) - dayOf(t.start)) / 86400000, '工期应保持 4 天').toBe(4)
   })
 
   it('coarse：渲染重排手柄，从手柄拖拽触发 reparent', () => {
-    vi.stubGlobal('matchMedia', (q: string) => ({
-      matches: q.includes('coarse'),
-      media: q,
-      onchange: null,
-      addEventListener() {},
-      removeEventListener() {},
-      addListener() {},
-      removeListener() {},
-      dispatchEvent: () => false,
-    }))
+    stubCoarse()
     try {
       const el = mount({ tasks: TASKS })
       const handle = shadowOf(el).querySelector<HTMLElement>('.row-name[data-key="x"] .row-drag')
@@ -1070,16 +1155,7 @@ describe('OASGantt 多选 / 行内重命名 / 键盘重排 / 连线键盘', () =
   })
 
   it('coarse：点条揭示连线点、点空白收起', () => {
-    vi.stubGlobal('matchMedia', (q: string) => ({
-      matches: q.includes('coarse'),
-      media: q,
-      onchange: null,
-      addEventListener() {},
-      removeEventListener() {},
-      addListener() {},
-      removeListener() {},
-      dispatchEvent: () => false,
-    }))
+    stubCoarse()
     try {
       const el = mount({ tasks: TASKS })
       const bar = barOf(el, 'x')
@@ -1089,9 +1165,100 @@ describe('OASGantt 多选 / 行内重命名 / 键盘重排 / 连线键盘', () =
       document.body.appendChild(outside)
       outside.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }))
       expect(barOf(el, 'x').classList.contains('touch-active')).toBe(false)
+      pointer('pointerup', 0, 0) // 收尾：关闭条拖拽 ctx，避免 doc 监听残留到后续用例
     } finally {
       vi.unstubAllGlobals()
     }
+  })
+
+  it('coarse：点手柄（未达判拖阈值）不改变选择', () => {
+    stubCoarse()
+    try {
+      const el = mount({ tasks: TASKS })
+      stubSideRect(el)
+      const handle = shadowOf(el).querySelector<HTMLElement>('.row-name[data-key="x"] .row-drag')!
+      pointer('pointerdown', 0, 0, handle)
+      pointer('pointerup', 0, 0)
+      expect(el.selection).toEqual([])
+    } finally {
+      vi.unstubAllGlobals()
+    }
+  })
+
+  it('coarse：进行中的条拖拽存在时手柄被守卫忽略（零 reparent）', () => {
+    stubCoarse()
+    try {
+      const el = mount({ tasks: TASKS })
+      stubSideRect(el)
+      let fired = 0
+      el.addEventListener('oas-reparent', () => fired++)
+      pointer('pointerdown', 100, 100, barOf(el, 'x')) // 开始条拖拽 → dragCtx
+      const handle = shadowOf(el).querySelector<HTMLElement>('.row-name[data-key="y"] .row-drag')!
+      // 手柄同 x 起手：条拖拽 dx=0 不收口（否则收口走 update()→cancelReparent 会遮蔽守卫，造成假绿）
+      pointer('pointerdown', 100, 0, handle) // 手柄应被 dragCtx 守卫拦下
+      pointer('pointermove', 100, 10)
+      pointer('pointerup', 100, 10)
+      expect(fired).toBe(0)
+    } finally {
+      vi.unstubAllGlobals()
+    }
+  })
+
+  it('coarse：readonly 下从手柄判拖不重排', () => {
+    stubCoarse()
+    try {
+      const el = mount({ tasks: TASKS, readonly: '' })
+      stubSideRect(el)
+      let fired = 0
+      el.addEventListener('oas-reparent', () => fired++)
+      const handle = shadowOf(el).querySelector<HTMLElement>('.row-name[data-key="x"] .row-drag')!
+      pointer('pointerdown', 0, 0, handle)
+      pointer('pointermove', 0, 80)
+      pointer('pointerup', 0, 80)
+      expect(fired).toBe(0)
+    } finally {
+      vi.unstubAllGlobals()
+    }
+  })
+
+  it('attribute 通道重写 tasks 同样剪枝并补发 selection-change', () => {
+    const el = mount({ tasks: TASKS })
+    const seen: string[][] = []
+    el.addEventListener('oas-selection-change', (e) => seen.push((e as CustomEvent).detail.ids))
+    clickRow(el, 'x')
+    clickRow(el, 'z', { shiftKey: true })
+    expect(el.selection).toEqual(['x', 'y', 'z'])
+    el.setAttribute('tasks', JSON.stringify([{ id: 'z', name: 'Z', start: '2026-03-16', end: '2026-03-20' }]))
+    expect(el.selection).toEqual(['z'])
+    expect(seen.length).toBe(3)
+    expect(seen.at(-1)).toEqual(['z'])
+  })
+
+  it('coarse：揭示态在窗口重建后保持', () => {
+    stubCoarse()
+    try {
+      const el = mount({ tasks: TASKS })
+      barOf(el, 'x').dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, composed: true, pointerId: 1 }))
+      expect(barOf(el, 'x').classList.contains('touch-active')).toBe(true)
+      el.setAttribute('scale', 'week') // 触发 rebuild（renderWindow → renderBars）
+      expect(barOf(el, 'x').classList.contains('touch-active')).toBe(true)
+      pointer('pointerup', 0, 0)
+    } finally {
+      vi.unstubAllGlobals()
+    }
+  })
+
+  it('悬空 parent 的任务归根：aria-posinset/setsize 按根同级计算', () => {
+    const el = mount({
+      tasks: JSON.stringify([
+        { id: 'x', name: 'X', start: '2026-03-02', end: '2026-03-06', parent: 'ghost' },
+        { id: 'y', name: 'Y', start: '2026-03-09', end: '2026-03-13' },
+      ]),
+    })
+    const rx = shadowOf(el).querySelector<HTMLElement>('.row-name[data-key="x"]')!
+    const ry = shadowOf(el).querySelector<HTMLElement>('.row-name[data-key="y"]')!
+    expect([rx.getAttribute('aria-posinset'), rx.getAttribute('aria-setsize')]).toEqual(['1', '2'])
+    expect([ry.getAttribute('aria-posinset'), ry.getAttribute('aria-setsize')]).toEqual(['2', '2'])
   })
 })
 

@@ -396,3 +396,65 @@ test('gantt 条上 Delete 不误删连线 + 删连线后焦点交回组件', asy
   const focused = await page.evaluate(() => document.activeElement?.id)
   expect(focused, '焦点应留在组件上而非 body').toBe('gantt-link')
 })
+
+// 属性通道重写 tasks（非 property）同样剪枝选中并派发 selection-change
+test('gantt 属性通道重写 tasks 剪枝选中', async ({ page }) => {
+  await page.goto('/components/gantt.html', { waitUntil: 'domcontentloaded' })
+  await waitGantt(page, 'gantt-select')
+  const host = page.locator('#gantt-select')
+  const out = page.locator('#gantt-select-output')
+  await host.locator('.row-name[data-key="s1"]').click()
+  await host.locator('.row-name[data-key="s3"]').click({ modifiers: ['Shift'] })
+  await expect(out).toContainText('已选 3 条')
+  await page.evaluate(() => {
+    const el = document.getElementById('gantt-select') as HTMLElement
+    el.setAttribute('tasks', JSON.stringify([{ id: 's3', name: '测试', start: '2026-03-16', end: '2026-03-20' }]))
+  })
+  await expect(out).toContainText('已选 1 条')
+  await expect(out).toContainText('s3')
+})
+
+// RTL：选中行高亮条镜像到 inline-start（右缘）
+test('gantt RTL 选中行高亮条镜像', async ({ page }) => {
+  await page.goto('/components/gantt.html', { waitUntil: 'domcontentloaded' })
+  await waitGantt(page, 'gantt-select')
+  await page.evaluate(() => {
+    const el = document.createElement('oas-gantt')
+    el.id = 'gantt-rtl-probe'
+    el.setAttribute('dir', 'rtl')
+    el.setAttribute('tasks', JSON.stringify([{ id: 'r1', name: 'R1', start: '2026-03-02', end: '2026-03-06' }]))
+    document.body.appendChild(el)
+  })
+  const probe = page.locator('#gantt-rtl-probe')
+  const row = probe.locator('.row-name[data-key="r1"]')
+  await expect(row).toBeVisible()
+  await row.click()
+  await expect(row).toHaveClass(/selected/)
+  const shadow = await row.evaluate((el) => getComputedStyle(el).boxShadow)
+  expect(shadow, 'RTL 下高亮条应落在 -2px（右缘）').toContain('-2px')
+})
+
+// 触屏（coarse）：重排手柄渲染（≥24px 触达）且从手柄拖拽改序
+test.describe('gantt 触屏硬指针', () => {
+  test.use({ hasTouch: true, isMobile: true, viewport: { width: 460, height: 720 } })
+  test.skip(({ browserName }) => browserName !== 'chromium', 'coarse 触屏模拟仅 Chromium 支持')
+
+  test('gantt 触屏手柄 ≥24px 且从手柄拖拽改序', async ({ page }) => {
+    await page.goto('/components/gantt.html', { waitUntil: 'domcontentloaded' })
+    await waitGantt(page, 'gantt-reparent')
+    const host = page.locator('#gantt-reparent')
+    const out = page.locator('#gantt-reparent-output')
+    const handle = host.locator('.row-name[data-key="w4"] .row-drag')
+    await expect(handle).toBeVisible()
+    expect(await handle.evaluate((el) => getComputedStyle(el).minWidth)).toBe('24px')
+    await handle.scrollIntoViewIfNeeded()
+    const hb = (await handle.boundingBox())!
+    // 拖 w4 到 w3 之上（w4 原本已在 w3 之后 → 前移一位才是真实变更）
+    const target = (await host.locator('.row-name[data-key="w3"]').boundingBox())!
+    await page.mouse.move(hb.x + hb.width / 2, hb.y + hb.height / 2)
+    await page.mouse.down()
+    await page.mouse.move(hb.x + hb.width / 2, target.y + 4, { steps: 6 })
+    await page.mouse.up()
+    await expect(out).toContainText('oas-reparent')
+  })
+})
