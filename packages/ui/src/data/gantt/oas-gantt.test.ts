@@ -192,6 +192,30 @@ describe('OASGantt 渲染基础', () => {
     expect(el.tasks[0]!.end).toBe('2026-03-06')
   })
 
+  it('显式 type="milestone" 且无 end：拖动只写 start，不凭空添 end、无矛盾告警', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    try {
+      const el = mount({ tasks: JSON.stringify([{ id: 'm', name: '节点', start: '2026-03-05', type: 'milestone' }]) })
+      dragSeq(barOf(el, 'm'), 36)
+      expect(el.tasks[0]!.start).toBe('2026-03-06')
+      expect(el.tasks[0]!.end).toBeUndefined()
+      expect(warn.mock.calls.filter((c) => String(c[0]).includes('milestone')).length).toBe(0)
+    } finally {
+      warn.mockRestore()
+    }
+  })
+
+  it('milestone 改期事件 oldEnd 取旧 start（勿用新 start）', () => {
+    const el = mount({ tasks: JSON.stringify([{ id: 'm', name: '节点', start: '2026-03-05', type: 'milestone' }]) })
+    const seen: Array<{ oldStart: string; oldEnd: string; start: string; end: string }> = []
+    el.addEventListener('oas-task-change', (e) => seen.push((e as CustomEvent).detail))
+    dragSeq(barOf(el, 'm'), 36)
+    expect(seen).toHaveLength(1)
+    expect(seen[0]!.oldStart).toBe('2026-03-05')
+    expect(seen[0]!.start).toBe('2026-03-06')
+    expect(seen[0]!.oldEnd, 'oldEnd 应是旧 start 而非新 start').toBe('2026-03-05')
+  })
+
   it('start 晚于 end（日期颠倒）：清洗层自动交换 + console.warn 一次；同日任务（1 天工期）不交换', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     try {
