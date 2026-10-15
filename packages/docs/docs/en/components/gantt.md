@@ -144,6 +144,15 @@ Assemble a task detail editor with `oas-modal` + `oas-form` (the component only 
   <oas-gantt id="gantt-auto" auto-schedule creatable height="240"></oas-gantt>
 </DemoBlock>
 
+## Scheduling Depth (Dependency lag/lead + Critical Path)
+
+- **Dependency lag/lead**: `dependencies: [{ id, type?, lag? }]` — `lag` is in **days and may be negative** (negative = lead/overlap), folded into the `auto-schedule` constraints (`fs: successor start ≥ predecessor end + lag`; `ss: successor start ≥ predecessor start + lag`; `ff`/`sf` likewise on end). Defaults to 0 (backward compatible).
+- **Critical path**: `show-critical-path` (boolean, off by default) — with the **current schedule as the baseline** (ES taken from the current start), runs a backward pass over the dependency graph + durations to compute **total float**; tasks with zero float get a `.critical` highlight on their bar (color via `--oas-gantt-critical-color`). Read-only; does not change data.
+
+<DemoBlock title="Critical path: a → b (long) and a → c (short) both follow a — b is highlighted on the critical path, c has float and is not (turn show-critical-path off to drop the highlight)">
+  <oas-gantt id="gantt-critical" show-critical-path height="200"></oas-gantt>
+</DemoBlock>
+
 ## Readonly Levels + Per-task Disable
 
 <DemoBlock title="readonly (all) / dates-readonly (no rescheduling) / progress-readonly (no progress drag); readonly states render no drag handles (visual = semantics)">
@@ -382,6 +391,16 @@ onMounted(async () => {
       { id: 'a3', name: 'Implementation', start: '2026-03-12', end: '2026-03-18', dependencies: [{ id: 'a2' }] },
     ]
   }
+
+  // Critical path demo
+  const crit = document.getElementById('gantt-critical')
+  if (crit) {
+    crit.tasks = [
+      { id: 'k1', name: 'Discovery (critical)', start: '2026-03-02', end: '2026-03-04' },
+      { id: 'k2', name: 'Build (critical, long)', start: '2026-03-05', end: '2026-03-09', dependencies: [{ id: 'k1' }] },
+      { id: 'k3', name: 'Docs (has float)', start: '2026-03-05', end: '2026-03-06', dependencies: [{ id: 'k1' }] },
+    ]
+  }
 })
 </script>
 
@@ -407,6 +426,7 @@ onMounted(async () => {
 | `row-height` | Row height in px (default 36, minimum 20) | `string` | `36` |
 | `scale` | Time scale: hour / day (default) / week / month / quarter / year; invalid values fall back to day | `string` | — |
 | `show-baseline` | Baseline comparison (boolean, off by default): tasks with a baseline render a baseline bar under the actual bar, its title showing the delta (N days later/earlier than baseline, or on baseline) | `boolean` | — |
+| `show-critical-path` | Critical path (boolean, off by default): runs a CPM pass over the dependency graph + durations to compute total float and adds a .critical highlight to zero-float tasks (color via --oas-gantt-critical-color); read-only | `boolean` | — |
 | `show-today` | Today line (on by default; false to disable) | `string` | — |
 | `snap` | Snap drags to the current scale unit (on by default; false shifts by pixel ratio and keeps time precision) | `string` | — |
 | `tasks` | Gantt tasks (JSON): [{ id?, name, start, end?, type?, progress?, parent?, children?, dependencies?, color?, disabled?, expanded?, baseline? }] — flat parent pointers are the primary contract; nested children are flattened automatically; explicit type:"milestone" takes precedence (rendered as milestone even with end, which is ignored) but a task with children is always a summary; no end also infers milestone; start/end are swapped automatically when start is after end | `GanttTask[]` | `[]` |
@@ -452,7 +472,8 @@ onMounted(async () => {
 | `--oas-gantt-bar-bg` | — | `color-mix(in srgb, var(--oas-gantt-bar-color, var(--oas-color-primary)) 22%, var(--oas-color-bg))` |
 | `--oas-gantt-bar-height` | — | `22px` |
 | `--oas-gantt-bar-progress-bg` | — | `var(--oas-gantt-bar-color, var(--oas-color-primary))` |
-| `--oas-gantt-baseline-color` | Baseline bar color (defaults to translucent secondary text color) | `color-mix(in srgb, var(--oas-color-text-secondary-strong) 55%, transparent)` |
+| `--oas-gantt-baseline-color` | Baseline bar color (default translucent secondary text) | `color-mix(in srgb, var(--oas-color-text-secondary-strong) 55%, transparent)` |
+| `--oas-gantt-critical-color` | Critical-path highlight color (default --oas-color-danger) | `var(--oas-color-danger)` |
 | `--oas-gantt-grid-line-color` | — | `var(--oas-color-border)` |
 | `--oas-gantt-header-bg` | — | `var(--oas-color-bg)` |
 | `--oas-gantt-header-height` | — | `44px` |

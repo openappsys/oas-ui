@@ -4331,7 +4331,8 @@
       "snap": "拖拽吸附当前刻度（默认开；false 按像素比例平移并保留时间精度）",
       "show-baseline": "基线对比（布尔，默认关）：任务带 baseline 时在实际条下渲染基线条，title 标差值（比基线晚/早 N 天或一致）",
       "creatable": "行内新建（布尔，默认关）：开启后行尾出「＋」（摘要行加子级、叶子行加同级后继）、双击空白区按落点日期建任务，新建后进入行内重命名；只读/任务级禁用行不出按钮",
-      "auto-schedule": "依赖联动排程（布尔，默认关）：日期变更（拖拽/键盘/updateTask/updateTasks）或依赖增改后，按 FS/SS/FF/SF 沿依赖图对后继做最小前推（只推迟不提前、保持工期），跳过 disabled 与摘要行，成环安全；派发 oas-reschedule"
+      "auto-schedule": "依赖联动排程（布尔，默认关）：日期变更（拖拽/键盘/updateTask/updateTasks）或依赖增改后，按 FS/SS/FF/SF 沿依赖图对后继做最小前推（只推迟不提前、保持工期），跳过 disabled 与摘要行，成环安全；派发 oas-reschedule",
+      "show-critical-path": "关键路径（布尔，默认关）：在依赖图与工期上算总时差，时差为 0 的任务加 .critical 高亮（颜色走 --oas-gantt-critical-color）；只读展示不改数据"
     },
     "events": {
       "oas-reschedule": "依赖联动排程改动了后继任务时派发（auto-schedule 开启），detail: { ids }（被联动改动的任务 id）",
@@ -4358,7 +4359,8 @@
       "selection": "选中任务 id 集合（`string[]`）：`el.selection` 读（拷贝）；`el.selection = [...]` 写（重渲染选中态 + 派发 oas-selection-change）；`removeTasks(ids)` 批量删除（连同后代）"
     },
     "cssVars": {
-      "--oas-gantt-baseline-color": "基线条颜色（默认半透明次要文字色）"
+      "--oas-gantt-baseline-color": "基线条颜色（默认半透明次要文字色）",
+      "--oas-gantt-critical-color": "关键路径高亮色（默认 --oas-color-danger）"
     }
   },
   "oas-picker": {

@@ -202,6 +202,8 @@ export const zhCN = {
   'gantt.baselineSame': '与基线一致',
   'gantt.rename': '重命名',
   'gantt.linkDelete': '删除依赖',
+  'gantt.lagSuffix': '滞后 {count} 天',
+  'gantt.leadSuffix': '提前 {count} 天',
   'gantt.addTask': '添加任务',
   'gantt.addChild': '添加子任务',
   'gantt.newTask': '新任务',

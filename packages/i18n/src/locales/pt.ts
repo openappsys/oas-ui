@@ -202,6 +202,8 @@ export const pt: LocaleMessages = {
   'gantt.baselineSame': 'Igual à linha de base',
   'gantt.rename': 'Renomear',
   'gantt.linkDelete': 'Excluir dependência',
+  'gantt.lagSuffix': '{count} d de atraso',
+  'gantt.leadSuffix': '{count} d de antecedência',
   'gantt.addTask': 'Adicionar tarefa',
   'gantt.addChild': 'Adicionar subtarefa',
   'gantt.newTask': 'Nova tarefa',

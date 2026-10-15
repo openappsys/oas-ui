@@ -89,6 +89,10 @@ const STYLE = `
 :host([data-rtl]) .row-name.selected {
   box-shadow: inset -2px 0 0 var(--oas-color-primary);
 }
+/* 关键路径行名（show-critical-path）：文本强调色；不改选中态背景/描边 */
+.row-name.critical {
+  color: var(--oas-gantt-critical-color, var(--oas-color-danger));
+}
 /* 触屏重排手柄：整行拖与纵向滚动冲突（touch-action 手势起始即定夺），
    故粗指针下改由手柄承载重排，手柄独占 touch-action: none，其余区域仍可滚动 */
 .row-drag {
@@ -151,6 +155,11 @@ const STYLE = `
   border-radius: var(--oas-radius-sm);
   padding: 0 var(--oas-space-1);
   outline: none;
+}
+/* 关键路径条（show-critical-path）：描边强调；置于选中态描边规则之前，选中态优先级更高 */
+.bar.critical {
+  outline: 2px solid var(--oas-gantt-critical-color, var(--oas-color-danger));
+  outline-offset: 1px;
 }
 .bar.selected {
   outline: 2px solid var(--oas-color-primary);
@@ -589,6 +598,8 @@ export interface GanttDependency {
   id: string
   /** 依赖类型：fs 完成-开始（缺省）/ ss 开始-开始 / ff 完成-完成 / sf 开始-完成 */
   type?: 'fs' | 'ss' | 'ff' | 'sf'
+  /** 滞后/提前（天）：正值为 lag（推迟后继），负值为 lead（提前/允许重叠）；缺省 0 */
+  lag?: number
 }
 
 /** 时间刻度档 */
@@ -793,7 +804,10 @@ function sanitizeDeps(v: unknown): GanttDependency[] | undefined {
     if (typeof it.id !== 'string' || it.id === '') continue
     const dep: GanttDependency = { id: it.id }
     if (typeof it.type === 'string' && DEP_TYPES.has(it.type)) dep.type = it.type as GanttDependency['type']
-    // 同源同型去重（重复项会渲染重合连线，且一处删除会连带删掉）
+    // lag（天，可负）：仅保留有限数值，其余丢弃（不把 NaN/字符串透传进排程计算）
+    // lag（天，可负=提前/重叠）；须有限且 ×DAY_MS 不溢出（防 Invalid Date 崩溃），否则丢弃为无 lag
+    if (typeof it.lag === 'number' && Number.isFinite(it.lag) && Number.isFinite(it.lag * DAY_MS)) dep.lag = it.lag
+    // 同源同型去重（重复项会渲染重合连线，且一处删除会连带删掉）；lag 不参与去重键
     const key = `${dep.id}|${dep.type ?? 'fs'}`
     if (seen.has(key)) continue
     seen.add(key)
@@ -935,6 +949,7 @@ export class OASGantt extends OASElement {
       'show-baseline',
       'creatable',
       'auto-schedule',
+      'show-critical-path',
     ]
   }
 
@@ -955,6 +970,8 @@ export class OASGantt extends OASElement {
   private warnedMilestones = new Set<string>()
   private warnedRescheduleCycle = false
   private autoScheduleApplied = false
+  /** 关键路径任务 id 集合（show-critical-path 开启时计算；关闭为空集，渲染零影响） */
+  private criticalIds = new Set<string>()
   /** buildRows 产物缓存：渲染窗口（滚动每帧）复用，避免万级任务下每帧重建展开集 */
   private expandedSetCache: Set<string> | null = null
   /** 自适应列宽（px）：视口可用宽度内铺下整个窗口时收窄至恰好适配；null = 回落各档基准列宽（无布局环境） */
@@ -1274,6 +1291,11 @@ export class OASGantt extends OASElement {
   /** 依赖联动排程开关（缺省关）：属性存在即开；显式 "false" 视作关（防宿主布尔绑定取值意外开启） */
   private autoScheduleOn(): boolean {
     return this.hasAttr('auto-schedule') && this.getAttr('auto-schedule', '') !== 'false'
+  }
+
+  /** 关键路径开关（防宿主布尔绑定写成 show-critical-path="false" 仍开启，同 auto-schedule） */
+  private showCriticalPathOn(): boolean {
+    return this.hasAttr('show-critical-path') && this.getAttr('show-critical-path', '') !== 'false'
   }
 
   /** 基线差值文案（实际 end 相对基线 end：晚/早 N 天或一致） */
@@ -1853,6 +1875,8 @@ export class OASGantt extends OASElement {
     this.syncExpanded()
     this.toggleAttribute('data-rtl', isRtl(this))
     this.buildRows()
+    // 关键路径（show-critical-path）：属性关闭 → 空集，渲染零影响；开启 → 以当前排期算 CPM
+    this.criticalIds = this.showCriticalPathOn() ? this.criticalPathIds() : new Set()
     const scale = this.scale()
     if (this.lastScale === '') {
       this.lastScale = scale // 首次吸收不派发
@@ -2018,6 +2042,8 @@ export class OASGantt extends OASElement {
       el.setAttribute('aria-selected', String(this.selected.has(row.task.id)))
       el.addEventListener('focus', () => this.setActiveRow(row.task.id))
       if (this.selected.has(row.task.id)) el.classList.add('selected')
+      // 关键路径标记（show-critical-path 开启时 criticalIds 非空；关闭时空集 → 零影响）
+      if (this.criticalIds.has(row.task.id)) el.classList.add('critical')
       if (row.task.disabled === true) {
         el.setAttribute('disabled', '')
         el.setAttribute('aria-disabled', 'true')
@@ -2100,6 +2126,7 @@ export class OASGantt extends OASElement {
       bar.dataset.id = row.task.id
       bar.setAttribute('part', 'bar')
       if (this.selected.has(row.task.id)) bar.classList.add('selected')
+      if (this.criticalIds.has(row.task.id)) bar.classList.add('critical')
       // 触屏：点条揭示连线点（无 hover，重建后按记录恢复）
       if (this.coarse) {
         if (this.touchActiveId === row.task.id) bar.classList.add('touch-active')
@@ -2701,17 +2728,20 @@ export class OASGantt extends OASElement {
   }
 
   /**
-   * 新增依赖（后继 taskId 依赖 dep.id）：type 缺省 fs；同源同型已存在返回 false（不重复）。
+   * 新增依赖（后继 taskId 依赖 dep.id）：type 缺省 fs；lag（天，可负）可选，缺省不写（等价 0）。
+   * 同源同型已存在返回 false（不重复；lag 不参与去重键）。
    * 非法（任务/目标不存在、自身依赖）返回 false。成功派发 oas-tasks-change 与 oas-dependencies-change。
    */
-  addDependency(taskId: string, dep: { id: string; type?: 'fs' | 'ss' | 'ff' | 'sf' }): boolean {
+  addDependency(taskId: string, dep: { id: string; type?: 'fs' | 'ss' | 'ff' | 'sf'; lag?: number }): boolean {
     const task = this._tasks.find((t) => t.id === taskId)
     if (!task) return false
     if (!this._tasks.some((t) => t.id === dep.id) || dep.id === taskId) return false
     const type = dep.type && DEP_TYPES.has(dep.type) ? dep.type : 'fs'
     const deps = task.dependencies ?? []
     if (deps.some((d) => d.id === dep.id && (d.type ?? 'fs') === type)) return false
-    const next: GanttDependency[] = [...deps.map((d) => ({ ...d })), { id: dep.id, type }]
+    const entry: GanttDependency = { id: dep.id, type }
+    if (typeof dep.lag === 'number' && Number.isFinite(dep.lag)) entry.lag = dep.lag
+    const next: GanttDependency[] = [...deps.map((d) => ({ ...d })), entry]
     task.dependencies = next
     this.commitTasks()
     this.emit('dependencies-change', {
@@ -2743,14 +2773,15 @@ export class OASGantt extends OASElement {
   }
 
   /**
-   * 改写依赖：from 找不到 / to.id 不存在或指向自身 / 无实际变化 → false。
-   * to.type 缺省继承 from.type（再缺省 fs）；重写后与既有依赖重复（同 id+type）则去重（保留一条）。
+   * 改写依赖：from 找不到 / to.id 不存在或指向自身 / 无实际变化（含 lag）→ false。
+   * to.type 缺省继承 from.type（再缺省 fs）；to.lag 缺省继承 from.lag（缺省不写，等价 0）。
+   * 重写后与既有依赖重复（同 id+type，lag 不参与去重键）则去重（保留一条）。
    * 成功派发 oas-tasks-change 与 oas-dependencies-change。
    */
   updateDependency(
     taskId: string,
-    from: { id: string; type?: 'fs' | 'ss' | 'ff' | 'sf' },
-    to: { id: string; type?: 'fs' | 'ss' | 'ff' | 'sf' },
+    from: { id: string; type?: 'fs' | 'ss' | 'ff' | 'sf'; lag?: number },
+    to: { id: string; type?: 'fs' | 'ss' | 'ff' | 'sf'; lag?: number },
   ): boolean {
     const task = this._tasks.find((t) => t.id === taskId)
     if (!task) return false
@@ -2760,7 +2791,13 @@ export class OASGantt extends OASElement {
     if (idx < 0) return false
     if (!this._tasks.some((t) => t.id === to.id) || to.id === taskId) return false
     const toType = to.type && DEP_TYPES.has(to.type) ? to.type : fromType
-    const replaced: GanttDependency[] = deps.map((d, i) => (i === idx ? { id: to.id, type: toType } : { ...d }))
+    const toLag = typeof to.lag === 'number' && Number.isFinite(to.lag) ? to.lag : deps[idx]!.lag
+    const replaced: GanttDependency[] = deps.map((d, i) => {
+      if (i !== idx) return { ...d }
+      const e: GanttDependency = { id: to.id, type: toType }
+      if (toLag !== undefined) e.lag = toLag
+      return e
+    })
     const dedupSeen = new Set<string>()
     const next = replaced.filter((d) => {
       const key = `${d.id}|${d.type ?? 'fs'}`
@@ -2768,7 +2805,7 @@ export class OASGantt extends OASElement {
       dedupSeen.add(key)
       return true
     })
-    const sig = (arr: GanttDependency[]): string => arr.map((d) => `${d.id}|${d.type ?? 'fs'}`).join(',')
+    const sig = (arr: GanttDependency[]): string => arr.map((d) => `${d.id}|${d.type ?? 'fs'}|${d.lag ?? 0}`).join(',')
     if (sig(next) === sig(deps)) return false
     task.dependencies = next
     this.commitTasks()
@@ -3903,6 +3940,97 @@ export class OASGantt extends OASElement {
   }
 
   /**
+   * 关键路径任务 id 集合（CPM 前后向计算，日精度）：
+   * - 工期 dur = endMsOfTask − startMsOfTask（日精度 end 含端，与 buildRows 一致）；里程碑 dur=0。
+   * - 前向 ES_i 取任务**当前排期**的 startMs（以现网数据为基准，不做重排）。
+   * - 项目完成 projectEnd = max(endMsOfTask)（里程碑也算；摘要取自身 data 日期）。
+   * - 反向：无后继任务起 LF = projectEnd，按依赖约束 + lag 反推前置 LS/LF，迭代松弛至稳定
+   *   （上限 tasks.length*2+8，防不成环但链超长时欠收敛）：
+   *     fs: LF_pred = LS_succ − lag      ss: LS_pred = LS_succ − lag（LF_pred = LS_pred + dur_pred）
+   *     ff: LF_pred = LF_succ − lag      sf: LS_pred = LF_succ − lag（LF_pred = LS_pred + dur_pred）
+   * - 每个任务 LS = LF − dur、float = LS − ES；|float| < 1e-6（日精度）判为关键。
+   * - 摘要（有子级，日期派生）不参与；disabled 照算（不特殊处理，仅作可视化）。
+   * - 依赖成环 → 排程无解，返回空集（不死循环）。
+   */
+  private criticalPathIds(): Set<string> {
+    const tasks = this._tasks
+    if (tasks.length === 0) return new Set()
+    const byId = new Map<string, TG>()
+    for (const t of tasks) byId.set(t.id, t)
+    if (this.dependencyHasCycle(byId)) return new Set()
+    const { hasChildren } = this.childStructure(byId)
+    const nodes = tasks.filter((t) => !hasChildren.has(t.id))
+    if (nodes.length === 0) return new Set()
+    const dur = new Map<string, number>()
+    const es = new Map<string, number>()
+    for (const t of nodes) {
+      const s = this.startMsOfTask(t)
+      es.set(t.id, s)
+      dur.set(t.id, Math.max(this.endMsOfTask(t) - s, 0))
+    }
+    let projectEnd = Number.NEGATIVE_INFINITY
+    // 仅按 CP 节点（叶子/里程碑，摘要已排除）取项目完成：摘要自身 data 日期可能过期，
+    // 其派生日期由子级（节点）覆盖，故不参与（与渲染/排程的聚合口径一致）
+    for (const t of nodes) {
+      const e = this.endMsOfTask(t)
+      if (e > projectEnd) projectEnd = e
+    }
+    if (!Number.isFinite(projectEnd)) projectEnd = 0
+    // 后继表：predId → 引用它的依赖（succ/type/lag）；仅连接「双方均为节点」的边
+    const successors = new Map<string, Array<{ succ: string; type: string; lag: number }>>()
+    for (const t of nodes) {
+      for (const d of t.dependencies ?? []) {
+        if (!dur.has(d.id)) continue // 前置为摘要/不存在/非法 → 该边不参与
+        const lag = typeof d.lag === 'number' && Number.isFinite(d.lag) ? d.lag : 0
+        const list = successors.get(d.id) ?? []
+        list.push({ succ: t.id, type: d.type ?? 'fs', lag })
+        successors.set(d.id, list)
+      }
+    }
+    const lf = new Map<string, number>()
+    for (const t of nodes) lf.set(t.id, projectEnd)
+    const maxIter = tasks.length * 2 + 8
+    for (let iter = 0; iter < maxIter; iter++) {
+      let changed = false
+      for (const [predId, list] of successors) {
+        const durPred = dur.get(predId)!
+        let lfPred = lf.get(predId)!
+        for (const { succ, type, lag } of list) {
+          const succLs = lf.get(succ)! - dur.get(succ)!
+          const lagMs = lag * DAY_MS
+          const implied =
+            type === 'fs'
+              ? succLs - lagMs
+              : type === 'ss'
+                ? succLs - lagMs + durPred
+                : type === 'ff'
+                  ? lf.get(succ)! - lagMs
+                  : lf.get(succ)! - lagMs + durPred // sf
+          if (implied < lfPred) lfPred = implied
+        }
+        if (lfPred < lf.get(predId)!) {
+          lf.set(predId, lfPred)
+          changed = true
+        }
+      }
+      if (!changed) break
+    }
+    const out = new Set<string>()
+    for (const t of nodes) {
+      const float = lf.get(t.id)! - dur.get(t.id)! - es.get(t.id)!
+      if (Math.abs(float) < 1e-6) out.add(t.id)
+    }
+    return out
+  }
+
+  /** 连线 lag 提示文案（aria-label 末尾）：lag>0 作「滞后」、lag<0 作「提前」，0 不附 */
+  private lagSuffixText(lag: number): string {
+    if (lag === 0) return ''
+    const n = Math.abs(lag)
+    return `（${this.t(lag > 0 ? 'gantt.lagSuffix' : 'gantt.leadSuffix', { count: n })}）`
+  }
+
+  /**
    * 依赖约束松弛：返回被联动改期的任务 id（未开 auto-schedule 或零改动 → []，零事件）。
    * 命中多个前置时逐条满足（取最靠后约束）；收口一次性 syncTasksAttr + update + emitTasksChange，
    * 随后派发 oas-reschedule（**先 tasks-change 后 reschedule**）。
@@ -3975,14 +4103,16 @@ export class OASGantt extends OASElement {
           if (!pred) continue
           const type = d.type ?? 'fs'
           const pa = agg(pred.id)
+          // lag（天，可负 = 提前/允许重叠）× DAY_MS 叠加到约束端点；缺省 0
+          const lagMs = (typeof d.lag === 'number' && Number.isFinite(d.lag) ? d.lag : 0) * DAY_MS
           const need =
             type === 'fs'
-              ? pa.endMs
+              ? pa.endMs + lagMs
               : type === 'ss'
-                ? pa.startMs
+                ? pa.startMs + lagMs
                 : type === 'ff'
-                  ? pa.endMs - duration
-                  : pa.startMs - duration
+                  ? pa.endMs - duration + lagMs
+                  : pa.startMs - duration + lagMs
           if (need > required) required = need
         }
         if (!(required > startMs)) continue // 只推不提前
@@ -4075,15 +4205,20 @@ export class OASGantt extends OASElement {
         const d = `M ${x1} ${y1} L ${out} ${y1} L ${out} ${y2} L ${x2} ${y2}`
         // 命中路径仅对非只读且**后继未禁用**者渲染（禁用任务不被依赖写入，故其入边不可选删）；可见线仍画
         if (!ro && t.task.disabled !== true) {
+          const lag = typeof dep.lag === 'number' && Number.isFinite(dep.lag) ? dep.lag : 0
           const hit = document.createElementNS(ns, 'path')
           hit.setAttribute('class', 'link-hit')
           hit.setAttribute('d', d)
           hit.setAttribute('data-from', t.task.id)
           hit.setAttribute('data-to', dep.id)
           hit.setAttribute('data-type', type)
+          if (lag !== 0) hit.setAttribute('data-lag', String(lag))
           hit.setAttribute('role', 'button')
           hit.setAttribute('tabindex', '0')
-          hit.setAttribute('aria-label', `${this.t('gantt.linkDelete')}: ${from.task.name} → ${to.task.name}`)
+          hit.setAttribute(
+            'aria-label',
+            `${this.t('gantt.linkDelete')}: ${from.task.name} → ${to.task.name}${this.lagSuffixText(lag)}`,
+          )
           hit.addEventListener('click', (e) => {
             e.stopPropagation()
             this.selectLink(t.task.id, dep.id, type)

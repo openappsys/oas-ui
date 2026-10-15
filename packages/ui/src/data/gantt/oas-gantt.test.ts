@@ -4294,3 +4294,327 @@ describe('OASGantt 拖拽建任务（creatable 时间轴空白拖）', () => {
     expect(shadowOf(el).querySelector('.marquee')).toBeNull()
   })
 })
+
+describe('OASGantt 依赖 lag/lead', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  /** 前置 d（03-02..03-06，右缘 03-07）+ 后继 t（03-01..03-02，工期 2 天）单一依赖 */
+  const pair = (dep: Record<string, unknown>): string =>
+    JSON.stringify([
+      { id: 'd', name: 'D', start: '2026-03-02', end: '2026-03-06' },
+      { id: 't', name: 'T', start: '2026-03-01', end: '2026-03-02', dependencies: [dep] },
+    ])
+
+  it('sanitizeDeps：保留合法 lag；非法 lag 丢弃；lag 不参与去重键（同源同型不同 lag 仍去重）', () => {
+    const el = mount({
+      tasks: JSON.stringify([
+        { id: 'a', name: 'A', start: '2026-03-02' },
+        {
+          id: 'b',
+          name: 'B',
+          start: '2026-03-03',
+          end: '2026-03-04',
+          dependencies: [
+            { id: 'a', type: 'fs', lag: 2 },
+            { id: 'a', type: 'fs', lag: 3 }, // 同源同型 → 去重（lag 不参与键）
+            { id: 'a', type: 'ss', lag: 'x' }, // 非法 lag（字符串）→ 丢弃 lag 键
+          ],
+        },
+      ]),
+    })
+    expect(el.tasks.find((t) => t.id === 'b')!.dependencies).toEqual([
+      { id: 'a', type: 'fs', lag: 2 },
+      { id: 'a', type: 'ss' },
+    ])
+  })
+
+  it('sanitizeDeps：NaN / Infinity lag 经 property 通道丢弃（有限数值才保留）', () => {
+    const el = mount({})
+    el.tasks = [
+      { id: 'a', name: 'A', start: '2026-03-02' },
+      {
+        id: 'b',
+        name: 'B',
+        start: '2026-03-03',
+        end: '2026-03-04',
+        dependencies: [
+          { id: 'a', type: 'fs', lag: Number.NaN },
+          { id: 'a', type: 'ss', lag: Number.POSITIVE_INFINITY },
+          { id: 'a', type: 'ff', lag: -1.5 },
+        ],
+      },
+    ]
+    expect(el.tasks.find((t) => t.id === 'b')!.dependencies).toEqual([
+      { id: 'a', type: 'fs' },
+      { id: 'a', type: 'ss' },
+      { id: 'a', type: 'ff', lag: -1.5 },
+    ])
+  })
+
+  it('fs + 正 lag：后继起点 = 前置右缘 + lag 天（工期不变）', () => {
+    const el = mount({ 'auto-schedule': '', tasks: pair({ id: 'd', type: 'fs', lag: 2 }) })
+    // d 右缘 03-07 + 2 天 = 03-09；工期 2 天 → end 03-10
+    expect(taskOf(el, 't').start).toBe('2026-03-09')
+    expect(taskOf(el, 't').end).toBe('2026-03-10')
+  })
+
+  it('ss + 正 lag：后继起点 = 前置起点 + lag 天', () => {
+    const el = mount({ 'auto-schedule': '', tasks: pair({ id: 'd', type: 'ss', lag: 2 }) })
+    // d 起点 03-02 + 2 天 = 03-04；工期 2 天 → end 03-05
+    expect(taskOf(el, 't').start).toBe('2026-03-04')
+    expect(taskOf(el, 't').end).toBe('2026-03-05')
+  })
+
+  it('ff + 正 lag：后继右缘 = 前置右缘 + lag 天', () => {
+    const el = mount({ 'auto-schedule': '', tasks: pair({ id: 'd', type: 'ff', lag: 2 }) })
+    // d 右缘 03-07 + 2 天 = 03-09（后继右缘）→ 起点 = 03-09 − 工期 2 = 03-07；end 数据（含端）= 03-08
+    expect(taskOf(el, 't').start).toBe('2026-03-07')
+    expect(taskOf(el, 't').end).toBe('2026-03-08')
+  })
+
+  it('sf + 正 lag：后继右缘 = 前置起点 + lag 天', () => {
+    const el = mount({ 'auto-schedule': '', tasks: pair({ id: 'd', type: 'sf', lag: 2 }) })
+    // d 起点 03-02 + 2 天 = 03-04（后继右缘）→ 起点 = 03-04 − 工期 2 = 03-02；end 数据（含端）= 03-03
+    expect(taskOf(el, 't').start).toBe('2026-03-02')
+    expect(taskOf(el, 't').end).toBe('2026-03-03')
+  })
+
+  it('负 lag（lead）：约束更松（允许重叠），前推距离小于 lag=0', () => {
+    const zero = mount({ 'auto-schedule': '', tasks: pair({ id: 'd', type: 'fs', lag: 0 }) })
+    expect(taskOf(zero, 't').start, 'lag=0 → 03-07').toBe('2026-03-07')
+    const lead = mount({ 'auto-schedule': '', tasks: pair({ id: 'd', type: 'fs', lag: -2 }) })
+    // lead 2 天：右缘 03-07 − 2 天 = 03-05，早于 lag=0 的 03-07（约束更松）；工期 2 天 → end 03-06
+    expect(taskOf(lead, 't').start).toBe('2026-03-05')
+    expect(taskOf(lead, 't').end).toBe('2026-03-06')
+  })
+
+  it('addDependency：透传 lag；缺省不写 lag；同源同型不同 lag 仍视为重复', () => {
+    const el = mount({
+      tasks: JSON.stringify([
+        { id: 'a', name: 'A', start: '2026-03-02', end: '2026-03-03' },
+        { id: 'b', name: 'B', start: '2026-03-04', end: '2026-03-05' },
+      ]),
+    })
+    expect(el.addDependency('b', { id: 'a', lag: 3 })).toBe(true)
+    expect(el.tasks.find((t) => t.id === 'b')!.dependencies).toEqual([{ id: 'a', type: 'fs', lag: 3 }])
+    // 同源同型（lag 不参与去重键）→ false，不追加
+    expect(el.addDependency('b', { id: 'a', lag: 5 })).toBe(false)
+    expect(el.tasks.find((t) => t.id === 'b')!.dependencies).toHaveLength(1)
+    // 缺省 lag 不写键
+    expect(el.addDependency('b', { id: 'a', type: 'ss' })).toBe(true)
+    expect(el.tasks.find((t) => t.id === 'b')!.dependencies).toEqual([
+      { id: 'a', type: 'fs', lag: 3 },
+      { id: 'a', type: 'ss' },
+    ])
+  })
+
+  it('updateDependency：to.lag 缺省继承 from.lag；显式覆盖；无变化（含 lag）返回 false', () => {
+    const el = mount({
+      tasks: JSON.stringify([
+        { id: 'a', name: 'A', start: '2026-03-02', end: '2026-03-03' },
+        { id: 'b', name: 'B', start: '2026-03-04', end: '2026-03-05' },
+        {
+          id: 'c',
+          name: 'C',
+          start: '2026-03-06',
+          end: '2026-03-07',
+          dependencies: [{ id: 'a', type: 'ss', lag: 4 }],
+        },
+      ]),
+    })
+    // 缺省继承 from.lag=4
+    expect(el.updateDependency('c', { id: 'a', type: 'ss' }, { id: 'b' })).toBe(true)
+    expect(el.tasks.find((t) => t.id === 'c')!.dependencies).toEqual([{ id: 'b', type: 'ss', lag: 4 }])
+    // 无变化（含 lag 一致）→ false
+    expect(el.updateDependency('c', { id: 'b', type: 'ss' }, { id: 'b', type: 'ss', lag: 4 })).toBe(false)
+    // lag 变化 → true
+    expect(el.updateDependency('c', { id: 'b', type: 'ss' }, { id: 'b', type: 'ss', lag: 7 })).toBe(true)
+    expect(el.tasks.find((t) => t.id === 'c')!.dependencies).toEqual([{ id: 'b', type: 'ss', lag: 7 }])
+    // 显式 to.lag 覆盖继承
+    expect(el.updateDependency('c', { id: 'b', type: 'ss' }, { id: 'a', type: 'fs', lag: -1 })).toBe(true)
+    expect(el.tasks.find((t) => t.id === 'c')!.dependencies).toEqual([{ id: 'a', type: 'fs', lag: -1 }])
+  })
+
+  it('duplicateTask：克隆保留依赖 lag', () => {
+    const el = mount({
+      tasks: JSON.stringify([
+        { id: 'q', name: 'Q', start: '2026-02-01' },
+        { id: 'p', name: 'P', start: '2026-03-02', end: '2026-03-06', dependencies: [{ id: 'q', lag: 2 }] },
+      ]),
+    })
+    const newId = el.duplicateTask('p')!
+    expect(el.tasks.find((t) => t.id === newId)!.dependencies).toEqual([{ id: 'q', lag: 2 }])
+  })
+
+  it('连线命中路径：lag>0 附「lag N 天」+ data-lag；lag<0 附「lead N 天」；0 不附', () => {
+    const mk = (lag?: number): OASGantt =>
+      mount({
+        tasks: JSON.stringify([
+          { id: 'a', name: 'A', start: '2026-03-02', end: '2026-03-06' },
+          {
+            id: 'b',
+            name: 'B',
+            start: '2026-03-09',
+            end: '2026-03-13',
+            dependencies: [lag === undefined ? { id: 'a' } : { id: 'a', lag }],
+          },
+        ]),
+      })
+    const lag2 = mk(2)
+    const hit2 = shadowOf(lag2).querySelector<SVGPathElement>('.link-hit[data-from="b"][data-to="a"]')!
+    expect(hit2.getAttribute('data-lag')).toBe('2')
+    expect(hit2.getAttribute('aria-label')).toContain('滞后 2 天')
+
+    const lead1 = mk(-1)
+    const hitLead = shadowOf(lead1).querySelector<SVGPathElement>('.link-hit[data-from="b"][data-to="a"]')!
+    expect(hitLead.getAttribute('data-lag')).toBe('-1')
+    expect(hitLead.getAttribute('aria-label')).toContain('提前 1 天')
+
+    const none = mk()
+    const hitNone = shadowOf(none).querySelector<SVGPathElement>('.link-hit[data-from="b"][data-to="a"]')!
+    expect(hitNone.getAttribute('data-lag')).toBeNull()
+    expect(hitNone.getAttribute('aria-label') ?? '').not.toMatch(/lag|lead/)
+  })
+
+  it('极大有限 lag（×DAY_MS 溢出）被丢弃，组件不崩（无 Invalid Date）', () => {
+    const el = mount({
+      'auto-schedule': '',
+      tasks: JSON.stringify([
+        { id: 'd', name: 'D', start: '2026-03-02', end: '2026-03-06' },
+        { id: 't', name: 'T', start: '2026-03-09', end: '2026-03-10', dependencies: [{ id: 'd', lag: 1e308 }] },
+      ]),
+    })
+    // lag 被清洗丢弃 → 依赖退化为无 lag；渲染/排程均正常
+    expect(el.tasks.find((x) => x.id === 't')!.dependencies![0]!.lag).toBeUndefined()
+    expect(barOf(el, 't')).toBeTruthy()
+  })
+})
+
+describe('OASGantt 关键路径（show-critical-path）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  /** a→b、a→c 均为 fs；项目完成 = b 端（03-10 右缘）；c 有 3 天浮时 */
+  const TASKS_CP: GanttTask[] = [
+    { id: 'a', name: 'A', start: '2026-03-02', end: '2026-03-04' },
+    { id: 'b', name: 'B', start: '2026-03-05', end: '2026-03-09', dependencies: [{ id: 'a' }] },
+    { id: 'c', name: 'C', start: '2026-03-05', end: '2026-03-06', dependencies: [{ id: 'a' }] },
+  ]
+
+  it('命中关键链 a、b（float=0）；c 浮时>0 不命中；行名同步加类', () => {
+    const el = mount({ 'show-critical-path': '', tasks: JSON.stringify(TASKS_CP) })
+    expect(barOf(el, 'a').classList.contains('critical'), 'a 关键').toBe(true)
+    expect(barOf(el, 'b').classList.contains('critical'), 'b 关键').toBe(true)
+    expect(barOf(el, 'c').classList.contains('critical'), 'c 非关键（浮时 3 天）').toBe(false)
+    expect(shadowOf(el).querySelector('.row-name[data-key="a"]')!.classList.contains('critical')).toBe(true)
+    expect(shadowOf(el).querySelector('.row-name[data-key="c"]')!.classList.contains('critical')).toBe(false)
+  })
+
+  it('关闭 show-critical-path（缺省）：零 .critical（对既有渲染零影响）', () => {
+    const el = mount({ tasks: JSON.stringify(TASKS_CP) })
+    expect(shadowOf(el).querySelectorAll('.bar.critical').length).toBe(0)
+    expect(shadowOf(el).querySelectorAll('.row-name.critical').length).toBe(0)
+  })
+
+  it('运行期开关属性：即时加/去 .critical', () => {
+    const el = mount({ tasks: JSON.stringify(TASKS_CP) })
+    expect(barOf(el, 'a').classList.contains('critical')).toBe(false)
+    el.setAttribute('show-critical-path', '')
+    expect(barOf(el, 'a').classList.contains('critical')).toBe(true)
+    el.removeAttribute('show-critical-path')
+    expect(barOf(el, 'a').classList.contains('critical')).toBe(false)
+  })
+
+  it('lag 参与 float：a→b 加 1 天 lag 后 a 退出关键路径（b 仍关键）', () => {
+    const withLag: GanttTask[] = [
+      { id: 'a', name: 'A', start: '2026-03-02', end: '2026-03-04' },
+      { id: 'b', name: 'B', start: '2026-03-05', end: '2026-03-09', dependencies: [{ id: 'a', lag: 1 }] },
+      { id: 'c', name: 'C', start: '2026-03-05', end: '2026-03-06', dependencies: [{ id: 'a' }] },
+    ]
+    const el = mount({ 'show-critical-path': '', tasks: JSON.stringify(withLag) })
+    // a→b lag 1（须早 1 天完成）→ a 浮时 −1 天 → 非关键
+    expect(barOf(el, 'a').classList.contains('critical'), 'a 因 lag 退出').toBe(false)
+    expect(barOf(el, 'b').classList.contains('critical'), 'b 仍关键').toBe(true)
+  })
+
+  it('里程碑参与项目完成与关键链', () => {
+    const el = mount({
+      'show-critical-path': '',
+      tasks: JSON.stringify([
+        { id: 'a', name: 'A', start: '2026-03-02', end: '2026-03-04' },
+        { id: 'm', name: 'M', start: '2026-03-10', dependencies: [{ id: 'a' }] },
+      ]),
+    })
+    // projectEnd = 里程碑 03-10；a 浮时 5 天 → 非关键；里程碑本身 dur=0 → 关键
+    expect(barOf(el, 'm').classList.contains('critical'), '里程碑关键').toBe(true)
+    expect(barOf(el, 'a').classList.contains('critical'), 'a 非关键').toBe(false)
+  })
+
+  it('无依赖单任务：不崩，且为关键（唯一任务定义项目完成）', () => {
+    const el = mount({
+      'show-critical-path': '',
+      tasks: JSON.stringify([{ id: 'solo', name: 'S', start: '2026-03-02', end: '2026-03-04' }]),
+    })
+    expect(barOf(el, 'solo').classList.contains('critical')).toBe(true)
+  })
+
+  it('空任务：不崩、零 .critical', () => {
+    const el = mount({ 'show-critical-path': '', tasks: '[]' })
+    expect(shadowOf(el).querySelectorAll('.bar.critical').length).toBe(0)
+  })
+
+  it('依赖成环：返回空集（不死循环、不抛异常）', () => {
+    const el = mount({
+      'show-critical-path': '',
+      tasks: JSON.stringify([
+        { id: 'a', name: 'A', start: '2026-03-02', end: '2026-03-04', dependencies: [{ id: 'b' }] },
+        { id: 'b', name: 'B', start: '2026-03-05', end: '2026-03-09', dependencies: [{ id: 'a' }] },
+      ]),
+    })
+    expect(shadowOf(el).querySelectorAll('.bar.critical').length).toBe(0)
+  })
+
+  it('样式：.bar.critical 描边走 CSS 变量、.row-name.critical 用 danger 色；critical 规则在 selected 之前', () => {
+    const el = mount({ 'show-critical-path': '', tasks: JSON.stringify(TASKS_CP) })
+    const css = shadowOf(el).querySelector('style')!.textContent ?? ''
+    expect(css).toMatch(/\.bar\.critical \{[^}]*var\(--oas-gantt-critical-color, var\(--oas-color-danger\)\)/)
+    expect(css).toMatch(/\.row-name\.critical \{[^}]*var\(--oas-gantt-critical-color, var\(--oas-color-danger\)\)/)
+    // 顺序：critical 在 selected 之前（选中态优先级更高，不被覆盖）
+    expect(css.indexOf('.bar.critical')).toBeLessThan(css.indexOf('.bar.selected'))
+  })
+
+  it('摘要自身 data 日期超出子级聚合时，真关键链仍高亮（projectEnd 只看节点）', () => {
+    const el = mount({
+      'show-critical-path': '',
+      tasks: JSON.stringify([
+        {
+          id: 'p',
+          name: 'P',
+          start: '2026-03-02',
+          end: '2026-03-20', // 过期/偏晚的摘要存储日期（渲染按子级聚合到 03-09）
+          type: 'summary',
+          children: [
+            { id: 'c1', name: 'C1', start: '2026-03-02', end: '2026-03-06' },
+            { id: 'c2', name: 'C2', start: '2026-03-07', end: '2026-03-09', dependencies: [{ id: 'c1' }] },
+          ],
+        },
+      ]),
+    })
+    const ids = [...shadowOf(el).querySelectorAll<HTMLElement>('.bar.critical')].map((b) => b.dataset.id)
+    expect(ids.sort()).toEqual(['c1', 'c2'])
+  })
+
+  it('show-critical-path="false" 视为关闭（不渲染 .critical）', () => {
+    const el = mount({ 'show-critical-path': 'false', tasks: JSON.stringify(TASKS_CP) })
+    expect(shadowOf(el).querySelectorAll('.bar.critical').length).toBe(0)
+  })
+})

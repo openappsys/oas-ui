@@ -202,6 +202,8 @@ export const ru: LocaleMessages = {
   'gantt.baselineSame': 'Совпадает с базовым',
   'gantt.rename': 'Переименовать',
   'gantt.linkDelete': 'Удалить зависимость',
+  'gantt.lagSuffix': 'задержка {count} д',
+  'gantt.leadSuffix': 'опережение {count} д',
   'gantt.addTask': 'Добавить задачу',
   'gantt.addChild': 'Добавить подзадачу',
   'gantt.newTask': 'Новая задача',

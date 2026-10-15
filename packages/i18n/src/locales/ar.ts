@@ -202,6 +202,8 @@ export const ar: LocaleMessages = {
   'gantt.baselineSame': 'مطابق للأساس',
   'gantt.rename': 'إعادة تسمية',
   'gantt.linkDelete': 'حذف التبعية',
+  'gantt.lagSuffix': 'تأخير {count} ي',
+  'gantt.leadSuffix': 'تقدّم {count} ي',
   'gantt.addTask': 'إضافة مهمة',
   'gantt.addChild': 'إضافة مهمة فرعية',
   'gantt.newTask': 'مهمة جديدة',

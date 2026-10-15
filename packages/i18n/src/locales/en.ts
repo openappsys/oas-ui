@@ -165,6 +165,8 @@ export const en: LocaleMessages = {
   'gantt.baselineSame': 'On baseline',
   'gantt.rename': 'Rename',
   'gantt.linkDelete': 'Delete dependency',
+  'gantt.lagSuffix': '{count}d lag',
+  'gantt.leadSuffix': '{count}d lead',
   'gantt.addTask': 'Add task',
   'gantt.addChild': 'Add subtask',
   'gantt.newTask': 'New task',

@@ -202,6 +202,8 @@ export const ja: LocaleMessages = {
   'gantt.baselineSame': 'ベースラインどおり',
   'gantt.rename': '名前を変更',
   'gantt.linkDelete': '依存関係を削除',
+  'gantt.lagSuffix': '{count}日遅延',
+  'gantt.leadSuffix': '{count}日前倒し',
   'gantt.addTask': 'タスクを追加',
   'gantt.addChild': 'サブタスクを追加',
   'gantt.newTask': '新しいタスク',

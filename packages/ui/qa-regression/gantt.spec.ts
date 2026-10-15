@@ -613,3 +613,22 @@ test('gantt 增强示例：auto-schedule 联动 + 框选 + 拖拽建任务', asy
 
   expect(errors).toEqual([])
 })
+
+// 排程深化示例：关键路径高亮（k1/k2 关键、k3 有时差不高亮）
+test('gantt 排程深化示例：关键路径高亮', async ({ page }) => {
+  const errors: string[] = []
+  page.on('pageerror', (e) => errors.push(e.message))
+  page.on('console', (m) => {
+    if (m.type() === 'error') errors.push(m.text())
+  })
+  await page.goto('/components/gantt.html', { waitUntil: 'domcontentloaded' })
+  await waitGantt(page, 'gantt-critical')
+  const host = page.locator('#gantt-critical')
+  const critical = await host.evaluate((el) =>
+    [...(el as HTMLElement & { shadowRoot: ShadowRoot }).shadowRoot.querySelectorAll('.bar.critical')].map(
+      (b) => (b as HTMLElement).dataset.id,
+    ),
+  )
+  expect(critical.sort()).toEqual(['k1', 'k2'])
+  expect(errors).toEqual([])
+})

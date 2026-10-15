@@ -1950,6 +1950,27 @@ OASElement 的 render 生命周期只首连一次（`rendered` 门闩），组�
 - 文档：gantt.md zh/en 增段；api-manifest / api-descriptions 同步（`api:check` 双向 0）。
 - 全量 `pnpm test` / typecheck / build / api:check 全绿。
 
+## 未发布 oas-gantt 排程深化（依赖 lag/lead + 关键路径）
+
+> 立项背景：承接 `auto-schedule` 排程引擎，补齐排程的两块「能用」要素——依赖偏移（lag/lead）与关键路径，使组件能回答「谁拖了会拖累整体」。
+
+### 特性
+
+- **依赖 lag/lead**：`GanttDependency` 增 `lag?: number`（单位天，可负=提前/重叠）。`auto-schedule` 的约束改为带 lag：`fs: t.start ≥ d.end + lag`、`ss: t.start ≥ d.start + lag`、`ff: t.end ≥ d.end + lag`、`sf: t.end ≥ d.start + lag`。`addDependency` / `updateDependency` 透传 `lag`（缺省 0，向后兼容）。连线命中 `aria-label` / `data-lag` 反映 lag。
+- **关键路径**（`show-critical-path` 布尔，默认关）：在依赖图 + 工期上以**当前排期为基准**反向推最晚时间算总时差，总时差=0 的任务高亮（条加 `.critical` 类，颜色走 `--oas-gantt-critical-color`）。只读展示、不改数据；重算随 `update()`。
+
+### 边界
+
+- 仍不做：资源分配/泳道/负载/平衡、undo/redo、内建编辑弹窗、图片/打印导出、工作日日历排程、约束类型（不得早于/固定开始）。
+- 两者默认关（非破坏）。
+
+### 验收
+
+- 单测：lag 四型约束（含负 lag）+ lag 透传/deep-clone 保持 + 关键路径判定（链上全关键、并行支路非关键、lag 影响、无依赖/单任务、成环安全）+ `show-critical-path` 关闭不渲染 `.critical`。
+- e2e：gantt.md 新示例真点（开 show-critical-path 看高亮）+ 暗色 + console 零告警。
+- 文档：gantt.md zh/en 增段；api-manifest / api-descriptions 同步（`api:check` 双向 0）。
+- 全量 `pnpm test` / typecheck / build / api:check 全绿。
+
 ## v2.5.9 oas-calendar `events` 排期条目通道
 
 ### 特性

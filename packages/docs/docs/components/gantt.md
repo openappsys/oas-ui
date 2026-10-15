@@ -144,6 +144,15 @@
   <oas-gantt id="gantt-auto" auto-schedule creatable height="240"></oas-gantt>
 </DemoBlock>
 
+## 排程深化（依赖 lag/lead + 关键路径）
+
+- **依赖 lag/lead**：`dependencies: [{ id, type?, lag? }]`——`lag` 单位为**天、可负**（负 = 提前/重叠），并入 `auto-schedule` 四型约束（`fs: 后继 start ≥ 前置 end + lag`、`ss: 后继 start ≥ 前置 start + lag`、`ff/sf` 同理按 end）。缺省 0，向后兼容。
+- **关键路径**：`show-critical-path`（布尔，默认关）——以**当前排期为基准**（ES 取现网 start）在依赖图 + 工期上反向推最晚时间算**总时差**，时差为 0 的任务条加 `.critical` 高亮（颜色走 `--oas-gantt-critical-color`）。只读展示，不改数据。
+
+<DemoBlock title="关键路径：a→b（长）、a→c（短）同为 a 的后继——b 在关键路径上高亮，c 有时差不高亮（关闭 show-critical-path 即无高亮）">
+  <oas-gantt id="gantt-critical" show-critical-path height="200"></oas-gantt>
+</DemoBlock>
+
 ## 只读三级 + 任务级禁用
 
 <DemoBlock title="readonly（全禁）/ dates-readonly（禁改期）/ progress-readonly（禁进度）；只读态不渲染拖拽手柄（视觉即语义）">
@@ -380,6 +389,16 @@ onMounted(async () => {
       { id: 'a3', name: '开发', start: '2026-03-12', end: '2026-03-18', dependencies: [{ id: 'a2' }] },
     ]
   }
+
+  // 关键路径示例
+  const crit = document.getElementById('gantt-critical')
+  if (crit) {
+    crit.tasks = [
+      { id: 'k1', name: '需求（关键）', start: '2026-03-02', end: '2026-03-04' },
+      { id: 'k2', name: '开发（关键，长）', start: '2026-03-05', end: '2026-03-09', dependencies: [{ id: 'k1' }] },
+      { id: 'k3', name: '文档（有时差）', start: '2026-03-05', end: '2026-03-06', dependencies: [{ id: 'k1' }] },
+    ]
+  }
 })
 </script>
 
@@ -405,6 +424,7 @@ onMounted(async () => {
 | `row-height` | 行高 px（默认 36，下限 20） | `string` | `36` |
 | `scale` | 时间刻度：hour / day（默认）/ week / month / quarter / year；非法值回落 day | `string` | — |
 | `show-baseline` | 基线对比（布尔，默认关）：任务带 baseline 时在实际条下渲染基线条，title 标差值（比基线晚/早 N 天或一致） | `boolean` | — |
+| `show-critical-path` | 关键路径（布尔，默认关）：在依赖图与工期上算总时差，时差为 0 的任务加 .critical 高亮（颜色走 --oas-gantt-critical-color）；只读展示不改数据 | `boolean` | — |
 | `show-today` | 今日线（默认开；false 关闭） | `string` | — |
 | `snap` | 拖拽吸附当前刻度（默认开；false 按像素比例平移并保留时间精度） | `string` | — |
 | `tasks` | 甘特任务（JSON）：[{ id?, name, start, end?, type?, progress?, parent?, children?, dependencies?, color?, disabled?, expanded?, baseline? }]——扁平 parent 指针为主，嵌套 children 自动拍平；type:"milestone" 显式优先（带 end 也按里程碑渲染，end 忽略），有子任务时恒为摘要；无 end 亦推导为里程碑；start 晚于 end 自动交换 | `GanttTask[]` | `[]` |
@@ -451,6 +471,7 @@ onMounted(async () => {
 | `--oas-gantt-bar-height` | — | `22px` |
 | `--oas-gantt-bar-progress-bg` | — | `var(--oas-gantt-bar-color, var(--oas-color-primary))` |
 | `--oas-gantt-baseline-color` | 基线条颜色（默认半透明次要文字色） | `color-mix(in srgb, var(--oas-color-text-secondary-strong) 55%, transparent)` |
+| `--oas-gantt-critical-color` | 关键路径高亮色（默认 --oas-color-danger） | `var(--oas-color-danger)` |
 | `--oas-gantt-grid-line-color` | — | `var(--oas-color-border)` |
 | `--oas-gantt-header-bg` | — | `var(--oas-color-bg)` |
 | `--oas-gantt-header-height` | — | `44px` |

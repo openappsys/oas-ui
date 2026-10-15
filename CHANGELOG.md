@@ -27,6 +27,7 @@
 - **键盘可达与触屏入口**：行聚焦后 `↑/↓` 移焦、`空格` 选择、`Alt+↑/↓` 同级移动、`Alt+→` 降级、`Alt+←` 升级、`F2` 重命名；连线命中路径改为可聚焦 `role=button`（`Enter`/`Delete` 删该依赖，`svg.links` 去 `aria-hidden`、可见线 `aria-hidden`）；触屏点任务条揭示连线点。i18n ×10 新增 `gantt.rename` / `gantt.linkDelete`。
 - **任务管理创作能力**：命令式增删改方法 `addTask(task?, opts?)`（返回新 id）/ `moveTask(id, { parent?, index? })` / `duplicateTask(id, opts?)`（深拷贝子树）/ `addDependency` / `removeDependency` / `updateDependency` / `updateTasks(patches)`（批量浅合并，返回生效条数）——写回统一走清洗层，派发既有 `oas-tasks-change` / `oas-reparent` / `oas-dependencies-change`，新增 `oas-task-add { id, task }` 事件；属性 `creatable`（默认关）行内新建（行尾「＋」+ 双击空白按日期建，新建后进入重命名）；`zoomIn()` / `zoomOut()` / `fit()` 缩放。i18n ×10 新增 `gantt.addTask` / `gantt.addChild` / `gantt.newTask`；文档 zh/en 增「任务管理」段（含 `oas-modal` + `oas-form` 详情编辑示例）。
 - **任务管理增强**：`auto-schedule`（布尔，默认关）依赖联动排程——日期变更或依赖增改后按 FS/SS/FF/SF 沿依赖图对后继做最小前推（只推迟、保持工期、多前置取最靠后、跳过 disabled 与摘要、成环跳过并 `devWarn`），派发 `oas-reschedule { ids }`；框选多任务（左侧列表行带 / 时间轴条相交，`Ctrl`/`Cmd` 追加，只读可用）；`creatable` 下时间轴空白拖出区间建任务；`Esc` 取消框选/建任务手势。
+- **排程深化**：依赖 `lag/lead`（`GanttDependency.lag` 天、可负，并入 `auto-schedule` 四型约束）；关键路径（`show-critical-path` 默认关，以当前排期为基准反向推最晚时间算总时差，零时差任务加 `.critical` 高亮，颜色走 `--oas-gantt-critical-color`）；i18n ×10 新增 `gantt.lagSuffix` / `gantt.leadSuffix`。
 
 ## [2.6.1] - 2026-10-13
 

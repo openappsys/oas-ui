@@ -103,6 +103,12 @@
       "type": "string",
       "default": "",
       "observed": true
+    },
+    {
+      "name": "show-critical-path",
+      "type": "string",
+      "default": "",
+      "observed": true
     }
   ],
   "props": [
@@ -207,6 +213,10 @@
     {
       "name": "--oas-gantt-row-height",
       "default": "36px"
+    },
+    {
+      "name": "--oas-gantt-critical-color",
+      "default": "var(--oas-color-danger)"
     },
     {
       "name": "--oas-gantt-weekend-bg",
