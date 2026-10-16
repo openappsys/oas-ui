@@ -120,6 +120,16 @@ Dual axis is axis configuration, not a chart type: the right axis renders when a
 
 The object format `{labels, series:[{name, data}]}` supports multiple series; the legend is shown by default for multiple series, and `options.smooth` enables smooth curves.
 
+## Dense Categories (Automatic Label Thinning)
+
+<DemoBlock title="36 days of daily requests (x-axis labels auto-thinned)">
+  <div style="width: 100%">
+    <oas-chart type="area" data='{"labels":["09-01","09-02","09-03","09-04","09-05","09-06","09-07","09-08","09-09","09-10","09-11","09-12","09-13","09-14","09-15","09-16","09-17","09-18","09-19","09-20","09-21","09-22","09-23","09-24","09-25","09-26","09-27","09-28","09-29","09-30","10-01","10-02","10-03","10-04","10-05","10-06"],"series":[{"name":"Requests","data":[1120,1046,1012,1058,1024,998,962,1040,1082,1106,1118,1032,1044,1010,996,902,1010,1036,1092,1150,1206,1052,1030,1024,892,1124,1108,1054,946,1140,1188,1096,1114,1090,1022,1058]}]}'></oas-chart>
+  </div>
+</DemoBlock>
+
+When there are many categories and too little room (36 daily labels below), x-axis labels are **thinned automatically** based on available width: a stride k is derived from the widest label (CJK ≈ 1em, others ≈ 0.55em) versus the category band width, and every k-th label is rendered — keeping the endpoints when there is spare room — so text never piles up. Data points are still drawn one by one (never thinned) and stay individually hoverable.
+
 ## Empty Data
 
 <DemoBlock title="Empty data placeholder">
@@ -164,6 +174,7 @@ No data / invalid JSON shows an empty state placeholder without errors.
 - Data updates redraw the SVG (same pattern as qrcode), without rebuilding nodes
 - Empty / invalid data → empty state placeholder
 - Every data point carries a native `<title>` tooltip
+- When x-axis category labels are dense (spacing cannot fit the widest label) they are auto-thinned by available width, keeping the endpoints when there is spare room; only labels are thinned (no rotation, no ellipsis) — data points are never thinned
 - Animations are pure CSS (wrapped in `@media (prefers-reduced-motion: no-preference)`), auto-disabled under reduced-motion, with no JS timers; zero orphaned overlays
 - Radar uses one global scale (`options.max` or nice ticks); per-dimension scales are not supported yet — normalize your data first if needed (e.g. a 0–100 score)
 - Polar-area renders no sectors when all values are 0 (same as pie); the radius scale tops at the maximum value
