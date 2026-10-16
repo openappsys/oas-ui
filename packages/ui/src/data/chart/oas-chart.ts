@@ -852,17 +852,36 @@ export class OASChart extends OASElement {
     return out
   }
 
-  /** x 轴分类文字（折线对齐点、柱状对齐柱组中线） */
+  /**
+   * x 轴分类文字（折线对齐点、柱状对齐柱组中线）。
+   * 间距不足时按可用宽度自动抽稀（每 k 个渲染一个），与主流图表库的 autoSkip 一致，
+   * 避免密集分类（如 36 个日标签）叠加成一团；宽度按 user 单位估算——SVG 等比缩放，比例不变。
+   */
   private renderXLabels(labels: string[], plotW: number, anchor: 'top' | 'middle'): string {
-    let out = ''
     const n = labels.length
+    if (n === 0) return ''
     const bandW = plotW / n
-    for (let i = 0; i < n; i++) {
+    const spacing = anchor === 'middle' ? bandW : n > 1 ? plotW / (n - 1) : plotW
+    const need = labels.reduce((m, s) => Math.max(m, this.estimateLabelWidth(s)), 0) + 6
+    const step = spacing > 0 ? Math.max(1, Math.ceil(need / spacing)) : 1
+    const idx: number[] = []
+    for (let i = 0; i < n; i += step) idx.push(i)
+    const last = n - 1
+    if (idx[idx.length - 1] !== last && (last - idx[idx.length - 1]!) * spacing >= need) idx.push(last)
+    let out = ''
+    for (const i of idx) {
       const cx =
         anchor === 'middle' ? PAD.l + i * bandW + bandW / 2 : n > 1 ? PAD.l + (i * plotW) / (n - 1) : PAD.l + plotW / 2
       out += `<text class="axis-label" x="${cx.toFixed(1)}" y="${H - 8}">${this.escapeText(labels[i] ?? '')}</text>`
     }
     return out
+  }
+
+  /** 标签宽估算（user 单位，axis-label 12px）：CJK 约 1em、其余约 0.55em */
+  private estimateLabelWidth(s: string): number {
+    let w = 0
+    for (const ch of s) w += (ch.codePointAt(0) ?? 0) >= 0x2e80 ? 12 : 6.6
+    return w
   }
 
   private renderLegend(legend: HTMLElement, data: ChartData, options: ChartOptions): void {

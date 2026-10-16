@@ -295,6 +295,23 @@ describe('OASChart', () => {
     expect(texts.map((t) => t.textContent)).toEqual(['甲', '乙', '丙'])
   })
 
+  it('X 轴标签密集时按可用宽度自动抽稀（36 个日标签不再重叠）', () => {
+    const labels = Array.from({ length: 36 }, (_, i) => `09-${String(i + 1).padStart(2, '0')}`)
+    const el = mount({
+      type: 'line',
+      data: JSON.stringify({ labels, series: [{ name: 'S', data: labels.map((_, i) => i) }] }),
+    })
+    const xs = [...svgOf(el).querySelectorAll('text.axis-label')].map((t) => Number(t.getAttribute('x')))
+    expect(xs.length).toBeGreaterThanOrEqual(2)
+    expect(xs.length).toBeLessThan(36)
+    for (let i = 1; i < xs.length; i++) expect(xs[i]! - xs[i - 1]!).toBeGreaterThanOrEqual(30)
+  })
+
+  it('X 轴标签不密集时全量渲染（不抽稀）', () => {
+    const el = mount({ type: 'line', data: MULTI })
+    expect(svgOf(el).querySelectorAll('text.axis-label').length).toBe(3)
+  })
+
   it('type=radar aria-label 缺省走 i18n（雷达图）', () => {
     const el = mount({ type: 'radar', data: SINGLE })
     expect(wrapperOf(el).getAttribute('aria-label')).toBe('雷达图')
