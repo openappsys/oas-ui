@@ -2161,17 +2161,21 @@ describe('OASTable 行选择单选（checkable="radio"）', () => {
     expect(el.shadowRoot!.querySelector('thead input[type="checkbox"]')).toBeNull()
   })
 
-  it('radio 档：点选互斥，oas-check detail.keys 至多单值', () => {
+  it('radio 档：点选互斥，oas-check detail.keys 至多单值，勾选态同步落定（不依赖微任务）', () => {
     const el = mountRadio()
     let detail: unknown
     el.addEventListener('oas-check', (e: Event) => (detail = (e as CustomEvent).detail))
     radios(el)[0]!.click()
     expect((detail as { keys: string[] }).keys).toEqual(['张三'])
     expect(el.getAttribute('selected')).toBe('张三')
+    // 同步断言（不冲刷微任务）：点选处理器内同步写终态。回归锁定：曾用「preventDefault +
+    // 微任务重断言」写勾选态——真实浏览器在监听器之后才执行取消还原、且微任务在各监听器
+    // 之间即冲刷（重断言先于还原执行，压不住还原），实抓 checked 被抹回点击前值。
+    expect(radios(el)[0]!.checked).toBe(true)
     radios(el)[1]!.click()
     expect((detail as { keys: string[] }).keys).toEqual(['李四'])
     expect(el.getAttribute('selected')).toBe('李四')
-    // 互斥：重渲染后仅李四选中
+    // 互斥：仅李四选中（同步落定，无微任务窗口）
     expect(radios(el)[0]!.checked).toBe(false)
     expect(radios(el)[1]!.checked).toBe(true)
   })

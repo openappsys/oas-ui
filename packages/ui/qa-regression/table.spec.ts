@@ -1602,7 +1602,8 @@ test('table windowed：滚动派发 oas-window-request、宿主回填渲染绝�
   })
 
   // 1) 首帧 init 请求：期望 [0,17)，已装载 [0,5) 未覆盖 → 派发 { start:0, end:17, reason:'init' }
-  await page.waitForFunction(() => (window as any).__winReqs.length > 0)
+  // （显式 15s：满并发全量下 preview 单线程/浏览器 CPU 饱和会拉长 rAF 与解析，默认超时偶发不够）
+  await page.waitForFunction(() => (window as any).__winReqs.length > 0, null, { timeout: 15000 })
   const init = await page.evaluate(() => (window as any).__winReqs[0])
   expect(init).toEqual({ start: 0, end: 17, reason: 'init' })
 
@@ -1614,8 +1615,10 @@ test('table windowed：滚动派发 oas-window-request、宿主回填渲染绝�
     wrap.scrollTop = 400
     wrap.dispatchEvent(new Event('scroll'))
   })
-  await page.waitForFunction(() =>
-    (window as any).__winReqs.some((r: any) => r.reason === 'scroll' && r.start === 0 && r.end === 27),
+  await page.waitForFunction(
+    () => (window as any).__winReqs.some((r: any) => r.reason === 'scroll' && r.start === 0 && r.end === 27),
+    null,
+    { timeout: 15000 },
   )
   const scrollReq = await page.evaluate(() => (window as any).__winReqs.find((r: any) => r.reason === 'scroll'))
   expect(scrollReq.start, 'scroll 请求起点（含 margin 前扩）').toBe(0)
@@ -1632,12 +1635,16 @@ test('table windowed：滚动派发 oas-window-request、宿主回填渲染绝�
     wrap.scrollTop = 4040
     wrap.dispatchEvent(new Event('scroll'))
   })
-  await page.waitForFunction(() => {
-    const el = document.querySelector('#table-windowed-fixture')!
-    const first = el.shadowRoot!.querySelector('tbody tr[part="row"]')
-    const rows = el.shadowRoot!.querySelectorAll('tbody tr[part="row"]')
-    return (first?.textContent?.includes('行100') ?? false) && rows.length === 10
-  })
+  await page.waitForFunction(
+    () => {
+      const el = document.querySelector('#table-windowed-fixture')!
+      const first = el.shadowRoot!.querySelector('tbody tr[part="row"]')
+      const rows = el.shadowRoot!.querySelectorAll('tbody tr[part="row"]')
+      return (first?.textContent?.includes('行100') ?? false) && rows.length === 10
+    },
+    null,
+    { timeout: 15000 },
+  )
   const layout = await page.evaluate(() => {
     const el = document.querySelector('#table-windowed-fixture')!
     const trs = el.shadowRoot!.querySelectorAll('tbody tr')
@@ -1793,4 +1800,95 @@ test('table windowed 键盘到已装载末端越界：派发 oas-window-request�
   const req = await page.evaluate(() => (window as any).__winKbdReqs[0])
   expect(req, '越界派发请求覆盖目标绝对行 ±margin').toEqual({ start: 7, end: 24, reason: 'scroll' })
   await page.evaluate(() => document.querySelector('#qa-windowed-kbd')?.remove())
+})
+
+test('table 万行虚拟滚动：连续选择 20 次渲染行数有界、行节点身份保持、console 零告警（增量渲染回归）', async ({
+  page,
+}) => {
+  // 增量渲染优化回归：万级数据下「切换选择」走行级局部补丁——不得整表重建（行节点身份保持）、
+  // 渲染行数不随选择次数增长（虚拟窗口有界）、全程 console 零 error/warning。
+  // fixture 自建而非复用 demo #table-virtual：该 demo 无 row-key——行 key 回落 JSON.stringify(row)
+  //（含逗号），selected 的逗号分隔解析永不命中，行点击选中态无法呈现（组件 attribute 格式既有限制）；
+  // 且 demo 万行数据由页面脚本异步写入，满并发下引入额外等待竞态。高度 1600 = 40 可见 + buffer 4
+  // → 窗口 44 行：容纳「连点 20 行」且满足 <50 有界断言。
+  const consoleIssues: string[] = []
+  page.on('console', (m) => {
+    if (m.type() === 'error' || m.type() === 'warning') consoleIssues.push(`${m.type()}: ${m.text()}`)
+  })
+  page.on('pageerror', (e) => consoleIssues.push(`pageerror: ${e.message}`))
+  await page.goto('/components/table.html', { waitUntil: 'domcontentloaded' })
+  await page.waitForFunction(() => customElements.get('oas-table') != null, null, {
+    timeout: 15000,
+  })
+  await page.evaluate(() => {
+    const el = document.createElement('oas-table')
+    el.id = 'qa-virtual-select'
+    el.setAttribute('height', '1600')
+    el.setAttribute('row-height', '40')
+    el.setAttribute('row-key', 'id')
+    el.setAttribute(
+      'columns',
+      JSON.stringify([
+        { key: 'id', title: 'ID', width: '70px' },
+        { key: 'name', title: '姓名', width: '120px' },
+      ]),
+    )
+    el.setAttribute(
+      'data',
+      JSON.stringify(Array.from({ length: 10000 }, (_, i) => ({ id: i + 1, name: `用户 ${i + 1}` }))),
+    )
+    ;(document.querySelector('.vp-doc') ?? document.body).append(el)
+  })
+  // 万行首帧解析 + 扁平化（同步，大 JSON 需要时间）后虚拟窗口出数据行
+  await page.waitForFunction(
+    () => {
+      const t = document.querySelector('#qa-virtual-select')
+      return (t?.shadowRoot?.querySelectorAll('tbody tr[data-key]').length ?? 0) > 0
+    },
+    null,
+    { timeout: 15000 },
+  )
+  // 连点 20 次不同可见行（真实 click → setAttribute selected → 局部补丁路径）
+  const r = await page.evaluate(() => {
+    const t = document.querySelector('#qa-virtual-select')!
+    const body = t.shadowRoot!.querySelector('tbody')!
+    const trs = [...body.querySelectorAll('tr[data-key]')] as HTMLTableRowElement[]
+    const targets = trs.slice(0, 20)
+    const t0 = performance.now()
+    for (const tr of targets) tr.click()
+    const ms = Math.round(performance.now() - t0)
+    const after = [...body.querySelectorAll('tr[data-key]')] as HTMLTableRowElement[]
+    return {
+      rowCountBefore: trs.length,
+      rowCountAfter: after.length,
+      identityKept: targets.every((tr, i) => tr === after[i]),
+      selectedCount: after.filter((tr) => tr.getAttribute('data-selected') === 'true').length,
+      ms,
+    }
+  })
+  // 等选中态稳定（虚拟滚动/尺寸观察的 rAF 重建若在此间隙发生，重建按 selected 属性渲染，选中数不变）
+  await page.waitForFunction(
+    () => {
+      const t = document.querySelector('#qa-virtual-select')
+      return (
+        [...(t?.shadowRoot?.querySelectorAll('tbody tr[data-key]') ?? [])].filter(
+          (tr) => tr.getAttribute('data-selected') === 'true',
+        ).length === 20
+      )
+    },
+    null,
+    { timeout: 15000 },
+  )
+  // 耗时仅观测不做断言（环境相关），挂 annotation 便于趋势观察
+  await test.info().attach('selection-patch-ms.txt', {
+    body: `20 次选择切换补丁总耗时 ${r.ms}ms（含 20 次 click 派发）`,
+    contentType: 'text/plain',
+  })
+  expect(r.rowCountBefore, '虚拟窗口行数 = 可视 + buffer，须容纳 20 连点').toBeGreaterThanOrEqual(20)
+  expect(r.rowCountAfter, '渲染行数有界：不随选择次数增长').toBe(r.rowCountBefore)
+  expect(r.rowCountAfter, '虚拟窗口行数远小于总量 10000').toBeLessThan(50)
+  expect(r.identityKept, '行节点身份保持（局部补丁而非整表重建）').toBe(true)
+  expect(r.selectedCount, '20 行全部呈选中态').toBe(20)
+  expect(consoleIssues, 'console 零 error/warning').toEqual([])
+  await page.evaluate(() => document.querySelector('#qa-virtual-select')?.remove())
 })

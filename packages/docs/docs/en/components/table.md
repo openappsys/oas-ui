@@ -91,6 +91,8 @@ Each size only changes the default cell padding and font size, all via CSS varia
 
 The header checkbox selects / clears all rows at once; row checkboxes toggle individually. Selection changes emit `oas-check`.
 
+> Selection relies on `row-key`: the `selected` attribute is a comma-separated list of row keys. Without `row-key` the row key falls back to the row's JSON (which contains commas), so `selected` parsing fails and the row selected state does not apply — always set `row-key` on selectable tables.
+
 ## Row Single-Select (checkable="radio")
 
 <DemoBlock title="Row single-select (mutually exclusive radio)">

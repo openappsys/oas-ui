@@ -1220,3 +1220,155 @@ test('gantt windowed 层级切片扁平化：装载区滚动无空白 + aria 全
   expect(res.aria.setsize, 'setsize = 全量 total').toBe('1000')
   expect(res.aria.rowcount, '容器 aria-rowcount = 全量 total').toBe('1000')
 })
+
+// 万行「选择变化」增量回归：真实浏览器连点选择 20 次（Ctrl 累加/退选）——
+// ① 渲染行/条数保持窗口量级（选择不得触发整窗/全量重建扩张）；② 窗口行节点身份不变
+// （dataset.probe 是「局部 patch vs 整窗重建」的客观判据：重建会丢标记）；③ 未选中行带着
+// 显式 data-selected="false"（状态写入一致，无漏写/残留 true）；④ console 零告警。
+// 耗时只打 annotation + console.log（人工观察趋势），**不作时间断言**——CI 机器抖动会变 flaky。
+test('gantt 万行选择增量：连点 20 次选择零重建、渲染行数有界、console 零告警', async ({ page }) => {
+  const errors: string[] = []
+  const warnings: string[] = []
+  page.on('pageerror', (e) => errors.push(`pageerror: ${e.message}`))
+  page.on('console', (m) => {
+    if (m.type() === 'error') errors.push(`error: ${m.text()}`)
+    // 组件自身 devWarn（页面外壳/引擎噪音不带该前缀，不属本用例口径）
+    if (m.type() === 'warning' && m.text().includes('[oas-gantt]')) warnings.push(m.text())
+  })
+  await page.goto('/components/gantt.html', { waitUntil: 'domcontentloaded' })
+  await page.waitForFunction(
+    () => {
+      const el = document.getElementById('gantt-basic') as (HTMLElement & { shadowRoot?: ShadowRoot | null }) | null
+      return !!el && !!el.shadowRoot && !!el.shadowRoot.querySelector('.tbody')
+    },
+    undefined,
+    { timeout: 30000 },
+  )
+
+  // 万行实例：真实布局容器（有实际高度，虚拟行窗口按宿主 clientHeight 计算）
+  await page.evaluate(async () => {
+    await customElements.whenDefined('oas-gantt')
+    const el = document.createElement('oas-gantt') as HTMLElement & { tasks: unknown; shadowRoot: ShadowRoot }
+    el.id = 'gantt-10k-select'
+    el.setAttribute('height', '400')
+    el.setAttribute('row-height', '36')
+    el.style.cssText = 'width:900px'
+    document.body.appendChild(el)
+    // property 通道在连接后写入（先 append 再赋 tasks：render 骨架已就绪）
+    el.tasks = Array.from({ length: 10000 }, (_, i) => ({
+      id: `k${i}`,
+      name: `任务${i}`,
+      start: `2026-03-${String((i % 27) + 1).padStart(2, '0')}`,
+      end: `2026-03-${String((i % 27) + 2).padStart(2, '0')}`,
+    }))
+  })
+  const host = page.locator('#gantt-10k-select')
+  await host.locator('.row-name[data-key="k0"]').waitFor({ state: 'visible' })
+  // 先把宿主整体滚入页面视口：页面自身滚动会平移宿主，令「首行 top / 行数」断言失去可比基准。
+  // 后续手势在页面内派生（不触发浏览器 scrollIntoView），不会去滚内部 .tbody。
+  await host.scrollIntoViewIfNeeded()
+
+  // 探针 + 基线：窗口行/条数、首行节点标记、首行 top（滚动位置）
+  const before = await host.evaluate((el) => {
+    const sr = (el as HTMLElement & { shadowRoot: ShadowRoot }).shadowRoot
+    const rows = [...sr.querySelectorAll<HTMLElement>('.side-body .row-name')]
+    rows[0]!.dataset.probe = 'keep'
+    return {
+      rows: rows.length,
+      bars: sr.querySelectorAll('.bars .bar').length,
+      top: rows[0]!.style.top,
+    }
+  })
+  expect(before.rows, '万行下只渲染窗口行（全量 10000）').toBeLessThan(40)
+  expect(before.bars, '万行下只渲染窗口条（全量 10000）').toBeLessThan(40)
+
+  const warnBase = warnings.length
+  // 连点 20 次：Ctrl 累加/退选（同一行偶数次退选、奇数次选中）→ 期望选中 k4..k7
+  const keys = ['k2', 'k3', 'k4', 'k5', 'k6', 'k7']
+  const started = Date.now()
+  // 页面内真实手势，不用 locator.click：后者的可操作性重试会对**虚拟化行**反复
+  // scrollIntoView → 触发窗口重建换节点 → 命中目标反复失效（实测报 “subtree intercepts
+  // pointer events” 死循环至 60s 超时）。组件选择链路是「行 pointerdown 起手 + document
+  // pointerup 收口」，合成事件同样命中（与单测 clickRow 同一路径），且不引入额外滚动。
+  const clickDiag = await host.evaluate((el, ks) => {
+    const sr = (el as HTMLElement & { shadowRoot: ShadowRoot }).shadowRoot
+    const missing: string[] = []
+    let dispatched = 0
+    for (let i = 0; i < 20; i++) {
+      const key = ks[i % ks.length]!
+      const row = sr.querySelector<HTMLElement>(`.row-name[data-key="${key}"]`)
+      if (!row) {
+        missing.push(key)
+        continue
+      }
+      row.dispatchEvent(
+        new PointerEvent('pointerdown', {
+          bubbles: true,
+          composed: true,
+          pointerId: 1,
+          button: 0,
+          clientX: 40,
+          clientY: 40,
+        }),
+      )
+      document.dispatchEvent(
+        new PointerEvent('pointerup', { bubbles: true, composed: true, pointerId: 1, ctrlKey: true }),
+      )
+      dispatched++
+    }
+    return { dispatched, missing }
+  }, keys)
+  const elapsedMs = Date.now() - started
+  expect(clickDiag.missing, '连选目标行均在虚拟窗口内（否则手势落空）').toEqual([])
+  expect(clickDiag.dispatched, '20 次页面内手势全部发出').toBe(20)
+  // 选中态由同步链路写入；等公开 selection 收敛后再断言（避免读到中间态）
+  await page
+    .waitForFunction(() => {
+      const el = document.getElementById('gantt-10k-select') as (HTMLElement & { selection?: string[] }) | null
+      const sel = el?.selection ?? []
+      return sel.length === 4 && sel.slice().sort().join(',') === 'k4,k5,k6,k7'
+    })
+    .catch(() => {})
+  const metrics = `gantt 10k selection×20 ${elapsedMs}ms`
+  console.log('[gantt-select-incremental]', metrics)
+  test.info().annotations.push({ type: 'gantt-10k-selection-20x', description: metrics })
+
+  const after = await host.evaluate((el) => {
+    const sr = (el as HTMLElement & { shadowRoot: ShadowRoot }).shadowRoot
+    const rows = [...sr.querySelectorAll<HTMLElement>('.side-body .row-name')]
+    const bars = [...sr.querySelectorAll<HTMLElement>('.bars .bar')]
+    return {
+      rows: rows.length,
+      bars: bars.length,
+      probe: rows[0]?.dataset.probe ?? '',
+      top: rows[0]?.style.top ?? '',
+      selected: rows.filter((r) => r.classList.contains('selected')).map((r) => r.dataset.key ?? ''),
+      selectedBars: bars.filter((b) => b.classList.contains('selected')).map((b) => b.dataset.id ?? ''),
+      ariaTrue: rows.filter((r) => r.getAttribute('aria-selected') === 'true').length,
+      dataTrue: rows.filter((r) => r.getAttribute('data-selected') === 'true').length,
+      dataFalse: rows.filter((r) => r.getAttribute('data-selected') === 'false').length,
+      multiselectable: sr.querySelector('.side-rows')?.getAttribute('aria-multiselectable') ?? '',
+      selection: (el as HTMLElement & { selection: string[] }).selection.slice().sort(),
+    }
+  })
+
+  // 渲染规模有界：选择变化不得把窗口行/条扩成全量重建
+  expect(after.rows, '连点 20 次后窗口行数仍有界').toBeLessThan(40)
+  expect(after.bars, '连点 20 次后窗口条数仍有界').toBeLessThan(40)
+  expect(after.rows, '行数不因选择变化扩张').toBe(before.rows)
+  // 节点身份：首行仍带探针 → 窗口未被整窗重建（重建会丢 dataset.probe），滚动位置也未漂移
+  expect(after.probe, '窗口行未被整窗重建（局部 patch）').toBe('keep')
+  expect(after.top, '滚动位置不因选择变化漂移').toBe(before.top)
+  // 选择结果（感知层可见态）：行 class 与条 class 同步，公开 selection 一致
+  expect(after.selected, 'Ctrl 连点后选中 k4..k7（偶数次退选、奇数次选中）').toEqual(['k4', 'k5', 'k6', 'k7'])
+  expect(after.selectedBars, '条选中态与行同步').toEqual(['k4', 'k5', 'k6', 'k7'])
+  expect(after.selection).toEqual(['k4', 'k5', 'k6', 'k7'])
+  // 状态写入一致：aria/data 的 true 计数 = 选中数，且未选中行带显式 false
+  expect(after.ariaTrue).toBe(4)
+  expect(after.dataTrue).toBe(4)
+  expect(after.dataFalse, '未选中行仍带显式 data-selected="false"').toBeGreaterThan(0)
+  expect(after.multiselectable, '树容器声明多选语义').toBe('true')
+
+  expect(errors, 'console 零 error').toEqual([])
+  expect(warnings.slice(warnBase), '交互期间无组件告警').toEqual([])
+})

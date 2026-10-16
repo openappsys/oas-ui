@@ -31,6 +31,18 @@ import {
   type WindowRequestReason,
 } from '../../shared/window-data.js'
 
+/**
+ * 仅内部诊断计数（非公开 API，禁止进入任何公开入口/文档）：渲染热路径开销计数器，
+ * 供性能回归测试以「差值」断言缓存复用是否生效（如：仅切换 selected 不得触发
+ * 全量扁平化/汇总重算）。模块级共享（同模块所有实例累计）。
+ */
+export const tableRenderDiagnostics = {
+  /** buildFlat 全量扁平化执行次数（缓存命中不计） */
+  flatBuilds: 0,
+  /** computeSummary 汇总计算执行次数（缓存命中不计） */
+  summaryComputes: 0,
+}
+
 export interface TableColumn {
   key: string
   title: string
@@ -1182,6 +1194,20 @@ export class OASTableBase extends OASElement {
   private unsubCaps: (() => void) | undefined = undefined
   /** 合计缓存：scope=all 时全量 flat 的缓存（data/筛选/排序未变时复用，避免选中/翻页等非数据变化的重渲染重复全量 walk+sort） */
   private summaryFlatCache: { key: string; flat: FlatRow[] } | null = null
+  /** 扁平化缓存：flat 输入签名（data/sort/filter/group/expanded/分页切片/列类型轮廓）→ 结果。
+      仅选择变化时复用，免 O(总量) 的 walk+sort 重跑（增量渲染优化的核心缓存） */
+  private flatCache: { key: string; flat: FlatRow[] } | null = null
+  /** 汇总值缓存：scope + flat 来源键 + 配置签名 → computeSummary 结果。
+      数据/筛选/分组未变、仅选择变化时不重算（选择不参与 sum/avg/count 聚合） */
+  private summaryValuesCache: { key: string; values: Map<string, string> } | null = null
+  /** 上一次渲染（全量或局部补丁）落定的渲染签名与 selected 快照：update 的快路径判定依据
+      （签名一致 = 渲染输入零变化；仅 selection 不同 = 走选择局部补丁，不重建整表） */
+  private renderState: { sig: string; selection: string } | null = null
+  /** 非属性通道变更（property 赋值 / 内部状态 / 窗口重算）→ 下一轮 update 强制全量渲染 */
+  private forceFullRender = false
+  /** 非属性通道版本号：columns/rowClass/rowExpandable/spanMethod 等 property 赋值与
+      collapsedGroups 等内部状态变化时递增（进渲染签名，保证补丁路径不吞这些变更） */
+  private propChannelVersion = 0
   /** 列过滤弹层：当前打开的面板元素与其列 key（同一时刻至多一个） */
   private filterPanel: HTMLElement | null = null
   private filterPanelKey: string | null = null
@@ -1290,6 +1316,7 @@ export class OASTableBase extends OASElement {
       // 列定义含函数/模板节点（render/filterMatch/validate/cellTemplate/headerTemplate）：JSON 序列化会丢 → 直接存内存并标记，跳过 attribute 重解析
       this._columns = value.filter((c) => c && typeof c.key === 'string')
       this._columnsFromProperty = true
+      this.markRenderDirty()
       this.runUpdateAndNotify()
       return
     }
@@ -1306,6 +1333,7 @@ export class OASTableBase extends OASElement {
       return
     }
     this._columnKeys = Array.isArray(value) ? value.filter((k) => typeof k === 'string') : []
+    this.markRenderDirty()
     this.runUpdateAndNotify()
   }
   get data(): Array<Record<string, unknown>> {
@@ -1322,6 +1350,7 @@ export class OASTableBase extends OASElement {
   }
   set rowClass(fn: TableRowClass | null) {
     this._rowClass = typeof fn === 'function' ? fn : null
+    this.markRenderDirty()
     this.runUpdateAndNotify()
   }
 
@@ -1331,6 +1360,7 @@ export class OASTableBase extends OASElement {
   }
   set rowExpandable(fn: TableRowExpandable | null) {
     this._rowExpandable = typeof fn === 'function' ? fn : null
+    this.markRenderDirty()
     this.runUpdateAndNotify()
   }
 
@@ -1341,7 +1371,20 @@ export class OASTableBase extends OASElement {
   }
   set spanMethod(fn: TableSpanMethod | null) {
     this._spanMethod = typeof fn === 'function' ? fn : null
+    this.markRenderDirty()
     this.runUpdateAndNotify()
+  }
+
+  /**
+   * 属性变更入口：`data` 同值写入仍视为数据刷新信号（宿主重写 data 表达「数据已更新」，
+   * 既有语义是任意外部重渲染都取消进行中的编辑）——渲染签名对同值写入不变，需显式强制
+   * 全量渲染，防止增量快路径把它吞成 no-op。其余属性同值写入无渲染差异，照常走签名判定。
+   */
+  override attributeChangedCallback(name: string, oldValue: string | null, newValue: string | null): void {
+    if (name === 'data' && oldValue === newValue && oldValue !== null && this.hasRendered) {
+      this.markRenderDirty()
+    }
+    super.attributeChangedCallback(name, oldValue, newValue)
   }
 
   /** 行选择模式：单选档 = checkable="radio"（裸 checkable 为多选，向后兼容） */
@@ -1540,7 +1583,153 @@ export class OASTableBase extends OASElement {
     return true
   }
 
+  // ==================== 增量渲染：快路径（选择局部补丁 / 零变化 no-op） ====================
+
+  /** 非属性通道变更标记：下一轮 update 强制全量渲染（property 赋值/内部状态/窗口重算共用） */
+  private markRenderDirty(): void {
+    this.forceFullRender = true
+    this.propChannelVersion++
+  }
+
+  /**
+   * 渲染环境签名：内置文案快照。core 的 locale/config 订阅回调直调 update() 绕过属性通道，
+   * 快路径若只比对属性会吞掉文案刷新——把组件用到的全部 i18n key 快照进签名，
+   * locale / config-provider 变化必然改变签名 → 回落全量渲染。
+   */
+  private renderEnvSignature(): string {
+    return [
+      this.t('table.empty'),
+      this.t('table.loading'),
+      this.t('table.selectAll'),
+      this.t('table.selectRow', { key: '_' }),
+      this.t('table.expand'),
+      this.t('table.summary'),
+      this.t('table.filter'),
+      this.t('table.clear'),
+      this.t('table.groupEmpty'),
+      this.t('table.editCell', { column: '_', key: '_' }),
+      this.t('table.editHint'),
+      this.t('table.edit'),
+      this.t('table.cancel'),
+      tableText(this, 'table.exportCsv', 'Export CSV'),
+      tableText(this, 'table.exportExcel', 'Export Excel'),
+      tableText(this, 'table.rowDragHandle', 'Drag to reorder'),
+    ].join('\u0001')
+  }
+
+  /**
+   * 渲染签名：除 `selected` 外的全部观察属性值 + 环境文案 + 非属性通道版本。
+   * 与上次渲染一致 ⇒ 渲染输入零变化（no-op）或仅选择变化（局部补丁）；
+   * 任意其他属性 / 文案 / property 通道变化 ⇒ 签名失配 ⇒ 全量渲染。
+   */
+  private renderSignature(): string {
+    const parts: string[] = []
+    for (const name of (this.constructor as typeof OASTableBase).observedAttributes) {
+      if (name === 'selected') continue
+      // 布尔属性「缺席」与「空值」必须区分（setAttribute('x','') 是有效变更，不得与缺席同签名）
+      const v = this.getAttribute(name)
+      parts.push(v === null ? '\u0000' : `\u0001${v}`)
+    }
+    parts.push(this.renderEnvSignature())
+    parts.push(String(this.propChannelVersion))
+    return parts.join('\u0002')
+  }
+
+  /**
+   * buildFlat 输入签名（扁平化缓存键）：数据 + 排序 + 过滤 + 分组 + 展开 + 分页切片 + 列类型轮廓。
+   * 只含影响扁平行集的输入——`selected` 等纯视觉属性不进键（选择变化必须命中缓存）。
+   */
+  private flatCacheSignature(groupBy: string): string {
+    const colSig = this._columns.map((c) => `${c.key}:${c.type ?? ''}`).join(',')
+    return [
+      this.windowedOn() ? 'W' : 'F',
+      this.getAttr('data', ''),
+      this.getAttr('sort-key', ''),
+      this.getAttr('sort-order', ''),
+      this.getAttr('multi-sort', ''),
+      this.getAttr('row-key', ''),
+      this.getAttr('filter-values', ''),
+      groupBy,
+      this.getAttr('expanded', ''),
+      this.hasAttr('pagination') ? '1' : '',
+      this.getAttr('page-size', ''),
+      this.getAttr('current', ''),
+      this.getAttr('total', ''),
+      this.getAttr('window-start', ''),
+      colSig,
+    ].join('\u0003')
+  }
+
+  /**
+   * 扁平化（带缓存）：输入签名未变时复用上次结果，不重跑 O(总量) 的 buildFlat。
+   * 窗口化（windowed）走 buildWindowedFlat（切片级开销），同样入缓存统一口径。
+   */
+  private flatWithCache(
+    sorts: SortState[],
+    rowKey: string,
+    roots: Array<Record<string, unknown>>,
+    groupBy: string,
+  ): FlatRow[] {
+    const key = this.flatCacheSignature(groupBy)
+    if (this.flatCache && this.flatCache.key === key) return this.flatCache.flat
+    const flat = this.windowedOn() ? this.buildWindowedFlat() : this.buildFlat(sorts, rowKey, roots, groupBy)
+    this.flatCache = { key, flat }
+    return flat
+  }
+
+  /** 全量渲染完成后落定渲染状态（快路径判定的基准）。三个渲染出口（loading/empty/常规）都要调用 */
+  private settleRenderState(): void {
+    this.renderState = { sig: this.renderSignature(), selection: this.getAttr('selected', '') }
+  }
+
+  /**
+   * 选择局部补丁：只同步受影响行的 `data-selected` / 复选框态与表头全选态，
+   * 不重建整表——行节点身份保持（编辑器/焦点/滚动位置天然不丢），O(渲染行数) 而非 O(总量)。
+   * 仅当渲染签名一致（除 selected 外的输入零变化）时由 update() 调用。
+   */
+  private patchSelection(nextAttr: string): void {
+    const state = this.renderState
+    if (!state) return
+    const prevSet = new Set(state.selection.split(',').filter(Boolean))
+    const nextSet = new Set(nextAttr.split(',').filter(Boolean))
+    state.selection = nextAttr
+    const body = this.shadow.querySelector('tbody')
+    if (body) {
+      for (const tr of body.querySelectorAll<HTMLTableRowElement>('tr[data-key]')) {
+        const key = tr.getAttribute('data-key') ?? ''
+        const now = nextSet.has(key)
+        if (prevSet.has(key) === now) continue
+        tr.setAttribute('data-selected', String(now))
+        const box = tr.querySelector<HTMLInputElement>('.check-cell input')
+        if (box) box.checked = now
+      }
+    }
+    this.syncHeaderSelectAll(nextSet)
+  }
+
+  /** 表头全选态同步（多选档；与 buildCheckAllTh 同一口径：按当前 flat 判定） */
+  private syncHeaderSelectAll(next: Set<string>): void {
+    if (!this.hasAttr('checkable') || this.selectionSingle()) return
+    const input = this.shadow.querySelector<HTMLInputElement>('thead input[type="checkbox"]')
+    if (!input) return
+    const flat = this.flatCache?.flat ?? []
+    const rowKey = this.getAttr('row-key', 'key')
+    input.checked = flat.length > 0 && flat.every((f) => next.has(String(f.row[rowKey] ?? JSON.stringify(f.row))))
+  }
+
   protected override update(): void {
+    // 增量渲染快路径：渲染签名一致（除 selected 外的输入零变化）时免 O(总量) 扁平化/
+    // 汇总重算与整表 DOM 重建——仅 selected 变化走行级局部补丁，完全无变化直接 no-op。
+    // 万级数据下「切换选择」从 O(总量) 扁平化 + 全表重建降为 O(渲染行数) 补丁。
+    const selectedAttr = this.getAttr('selected', '')
+    if (!this.forceFullRender && this.renderState && this.renderSignature() === this.renderState.sig) {
+      this.hideCellTooltip()
+      // 与全量渲染同语义：任一轮 update 都静默取消进行中的编辑（只拆守卫与状态，不动行 DOM）
+      this.editCap?.settleEdit()
+      if (this.renderState.selection !== selectedAttr) this.patchSelection(selectedAttr)
+      return
+    }
+    this.forceFullRender = false
     // 单元格溢出提示浮层：重渲染（滚动/数据变化/排序等）时先隐藏（无孤儿浮层）
     this.hideCellTooltip()
     // 外部重渲染（data/sort/selected 等变化）时先静默取消进行中的编辑（委托 edit 能力），
@@ -1573,8 +1762,9 @@ export class OASTableBase extends OASElement {
     // 分组视图：group-by 在场且无互斥形态时生效（判定统一走 groupByEffective，
     // 与虚拟滚动重建路径同源，防孪生路径漂移）；windowed 下分组不本地执行（groupByEffective 返回 ''）
     const groupBy = this.windowedOn() ? '' : this.groupByEffective()
+    // 扁平化（带输入签名缓存）：选择等非 flat 输入变化时复用上次结果，不重跑 O(总量) walk+sort；
     // windowed：flat 直接取已装载切片（不排序/不分组/不递归 children），见 buildWindowedFlat
-    const flat = this.windowedOn() ? this.buildWindowedFlat() : this.buildFlat(sorts, rowKey, roots, groupBy)
+    const flat = this.flatWithCache(sorts, rowKey, roots, groupBy)
     const display = this.visibleFlat(flat, expanded, rowKey)
     // aria-rowcount 的展示集口径（数据行数，不含 expand/group 行）；windowed 另按 total 全量
     this._logicalRowCount = this.countDataRows(display)
@@ -1592,6 +1782,10 @@ export class OASTableBase extends OASElement {
       summaryFlat = []
     } else if (summaryScopePage) {
       summaryFlat = flat
+    } else if (summaryConfigs.length === 0) {
+      // 无任何合计配置：scope=all 的全量扁平化纯浪费（其结果只被合计行消费）——跳过，
+      // 不做 O(总量) walk+sort（此前无 summary 的表每次全量渲染都白跑一遍全量扁平化）
+      summaryFlat = []
     } else {
       // scope=all 合计是顺序无关聚合（sum/avg/count 不依赖排序），cacheKey 不含 sorts（排序变化不该失效重算）
       const cacheKey = `${this.getAttr('data', '')}||${this.getAttr('filter-values', '')}`
@@ -1601,6 +1795,22 @@ export class OASTableBase extends OASElement {
         // scope=all 合计是顺序无关的聚合（sum/avg/count 不依赖排序），传空 sorts 跳过排序——只走 O(n) 扁平化
         summaryFlat = this.buildFlat([], rowKey, fullRoots)
         this.summaryFlatCache = { key: cacheKey, flat: summaryFlat }
+      }
+    }
+    // 汇总值缓存：数据/筛选/分组/分页切片未变（flat 来源键一致）且聚合配置未变时复用 computeSummary
+    // 结果——选择不参与 sum/avg/count 聚合，仅切换 selected 不重算（scope=all/page 同理）。
+    const configsSig = summaryConfigs.map((c) => `${c.key}:${c.type}:${c.label ?? ''}`).join(',')
+    let summaryValues: Map<string, string> | null = null
+    if (summaryConfigs.length > 0 && summaryFlat.length > 0) {
+      const flatSourceKey = summaryScopePage
+        ? this.flatCacheSignature(groupBy)
+        : `${this.getAttr('data', '')}\u0001${this.getAttr('filter-values', '')}`
+      const valuesKey = `${summaryScopePage ? 'page' : 'all'}\u0001${flatSourceKey}\u0001${configsSig}`
+      if (this.summaryValuesCache && this.summaryValuesCache.key === valuesKey) {
+        summaryValues = this.summaryValuesCache.values
+      } else {
+        summaryValues = this.computeSummary(summaryConfigs, summaryFlat)
+        this.summaryValuesCache = { key: valuesKey, values: summaryValues }
       }
     }
 
@@ -1789,6 +1999,7 @@ export class OASTableBase extends OASElement {
       body.appendChild(loadingTr)
       this.applyGridSemantics()
       this.applyRowAriaSemantics()
+      this.settleRenderState()
       return
     }
 
@@ -1807,6 +2018,7 @@ export class OASTableBase extends OASElement {
       body.appendChild(emptyTr)
       this.applyGridSemantics()
       this.applyRowAriaSemantics()
+      this.settleRenderState()
       return
     }
 
@@ -1840,8 +2052,8 @@ export class OASTableBase extends OASElement {
       if (!this.windowedOn()) this.applyRowMerge(rowInfos)
     }
 
-    if (summaryConfigs.length > 0 && summaryFlat.length > 0) {
-      body.appendChild(this.buildSummaryRow(summaryConfigs, summaryFlat, layout))
+    if (summaryConfigs.length > 0 && summaryFlat.length > 0 && summaryValues) {
+      body.appendChild(this.buildSummaryRow(summaryConfigs, summaryValues, layout))
     }
     // D9 网格导航语义与 tabindex（须在行渲染后应用：editable 单元格的 tabindex=0 在此收归 -1，
     // 保证「表格单停靠点 + 方向键漫游」；重渲染后角色/tabindex 随新 DOM 重建）
@@ -1855,6 +2067,8 @@ export class OASTableBase extends OASElement {
       this.ignoreNextScroll = true
       this.wrap.scrollTop = st
     }
+    // 全量渲染完成：落定渲染状态（此后仅 selected 变化可走局部补丁快路径）
+    this.settleRenderState()
   }
 
   /**
@@ -2035,19 +2249,29 @@ export class OASTableBase extends OASElement {
       box.setAttribute('aria-label', this.t('table.selectRow', { key }))
       box.checked = selected.includes(key)
       if (single) {
-        // 单选档：全部走受控写回（click 拦截默认激活行为）——点未选行选中、再点已选行取消；
-        // 原生 radio 点击已选项不会自动取消，且各环境激活行为不一致（happy-dom 不改 checked 态）
-        box.addEventListener('click', (e) => {
-          e.preventDefault()
-          const next = selected.includes(key) ? [] : [key]
+        // 单选档：全部走受控写回——点未选行选中、再点已选行取消（原生 radio 点已选项不会自动取消）；
+        // 互斥与取消由点选处理器内同步、确定地写全部 radio 的 checked 表达（选中行 true、其余 false）。
+        // 不拦截默认激活、不依赖浏览器取消还原：真实浏览器在 click 监听器全部跑完后执行取消还原
+        //（会把监听器内写入的 checked 抹回点击前值），且微任务在各监听器之间即冲刷——「监听器内写 +
+        // 微任务重断言」压不住还原时序（真实浏览器实抓）；happy-dom 的还原时序又与之不同。
+        // 监听器内同步写终态是两环境唯一共同确定的时序。当前选中集实时读属性（不依赖构建期闭包）：
+        // 选择局部补丁不重建行，闭包会过期——补丁路径下连点/跨行切换仍按最新选中集计算
+        box.addEventListener('click', () => {
+          const current = this.getAttr('selected', '').split(',').filter(Boolean)
+          const next = current.includes(key) ? [] : [key]
           this.setAttribute('selected', next.join(','))
+          // 同步写终态：本行与其余行一次写齐（不等 update 补丁、不依赖浏览器激活/还原）
+          const want = new Set(next)
+          for (const radio of this.shadow.querySelectorAll<HTMLInputElement>('.check-cell input[type="radio"]')) {
+            radio.checked = want.has(radio.closest('tr')?.getAttribute('data-key') ?? '')
+          }
           this.emit('check', { keys: next })
           this.runUpdateAndNotify()
         })
       } else {
         box.addEventListener('change', (e) => {
           e.stopPropagation()
-          const next = new Set(selected)
+          const next = new Set(this.getAttr('selected', '').split(',').filter(Boolean))
           if (box.checked) next.add(key)
           else next.delete(key)
           this.setAttribute('selected', [...next].join(','))
@@ -2066,7 +2290,9 @@ export class OASTableBase extends OASElement {
       // （同一清单也约束双击进编辑路径，见 oas-table-interactive.js 的单一事实来源注释）
       const el = e.target as HTMLElement | null
       if (el && el.closest(ROW_INTERACTIVE_EXCLUSION)) return
-      const next = new Set(selected)
+      // 当前选中集实时读属性（不依赖构建期闭包）：选择局部补丁不重建行，闭包会过期——
+      // 补丁路径下连点不同行仍按最新选中集累积切换（全量重建路径二者等价）
+      const next = new Set(this.getAttr('selected', '').split(',').filter(Boolean))
       if (next.has(key)) next.delete(key)
       else next.add(key)
       this.setAttribute('selected', [...next].join(','))
@@ -2505,6 +2731,7 @@ export class OASTableBase extends OASElement {
       )
     if (this._columnsFromProperty) {
       this._columns = update(this._columns)
+      this.markRenderDirty()
       this.runUpdateAndNotify()
       this.emit('column-resize', { key, width })
       return
@@ -2517,10 +2744,12 @@ export class OASTableBase extends OASElement {
       const el = this.findChildColumnEl(this, key)
       if (el) {
         el.setAttribute('width', `${width}px`)
+        this.markRenderDirty()
         this.runUpdateAndNotify()
       } else {
         // 声明源找不到（不应发生）：仅改内存不回写——宁可丢持久化也不能崩表
         this._columns = update(this._columns)
+        this.markRenderDirty()
         this.runUpdateAndNotify()
       }
       this.emit('column-resize', { key, width })
@@ -2998,6 +3227,8 @@ export class OASTableBase extends OASElement {
     roots: Array<Record<string, unknown>> = this._data,
     groupBy = '',
   ): FlatRow[] {
+    // 仅内部诊断：热路径计数（性能回归测试断言缓存复用）
+    tableRenderDiagnostics.flatBuilds++
     const flat: FlatRow[] = []
     const sortTypeMap = sorts.length > 0 ? this.columnTypeMap() : null
     const walk = (nodes: Array<Record<string, unknown>>, depth: number, parent?: string): void => {
@@ -3089,6 +3320,7 @@ export class OASTableBase extends OASElement {
   private toggleGroup(groupKey: string, collapsed: boolean): void {
     if (collapsed) this.collapsedGroups.add(groupKey)
     else this.collapsedGroups.delete(groupKey)
+    this.markRenderDirty()
     this.runUpdateAndNotify()
   }
 
@@ -3227,6 +3459,8 @@ export class OASTableBase extends OASElement {
 
   /** 按类型计算各列聚合值（对完整扁平行计算，树形含隐藏子行，结果不随展开状态漂移） */
   private computeSummary(configs: SummaryConfig[], flat: FlatRow[]): Map<string, string> {
+    // 仅内部诊断：热路径计数（性能回归测试断言缓存复用）
+    tableRenderDiagnostics.summaryComputes++
     const values = new Map<string, string>()
     for (const cfg of configs) {
       let sum = 0
@@ -3250,16 +3484,15 @@ export class OASTableBase extends OASElement {
     return values
   }
 
-  /** 渲染合计行（表尾，紧随全部数据行之后） */
+  /** 渲染合计行（表尾，紧随全部数据行之后）。values 为预计算的聚合值（summaryValuesCache 通道） */
   private buildSummaryRow(
     configs: SummaryConfig[],
-    flat: FlatRow[],
+    values: Map<string, string>,
     layout: { offsets: Map<string, ColumnOffset>; hasFixed: boolean },
   ): HTMLTableRowElement {
     const tr = document.createElement('tr')
     tr.className = 'summary'
     tr.setAttribute('part', 'summary-row')
-    const values = this.computeSummary(configs, flat)
     const label = configs.find((c) => c.label)?.label ?? this.t('table.summary')
     let labelPlaced = false
     if (this.rowDragEnabled()) {
@@ -3984,7 +4217,10 @@ export class OASTableBase extends OASElement {
         this.scrollRaf = 0
         const segs = this._colSegments
         if (!segs) return
-        if (this.syncColumnWindow(segs)) this.update()
+        if (this.syncColumnWindow(segs)) {
+          this.markRenderDirty()
+          this.update()
+        }
       })
       return
     }
@@ -3999,6 +4235,7 @@ export class OASTableBase extends OASElement {
       //（含 thead 窗口序列重建；只重建 tbody 会让表头滞留旧窗口列、与表体错位）。
       // 纵向滚动帧窗口不变，仍走下方轻量 tbody 重建
       if (this._colSegments && this.syncColumnWindow(this._colSegments)) {
+        this.markRenderDirty()
         this.update()
         return
       }
@@ -4008,12 +4245,11 @@ export class OASTableBase extends OASElement {
       const expanded = new Set(this.getAttr('expanded', '').split(',').filter(Boolean))
       // 滚动帧的数据口径与 update 完全一致（统一走 groupByEffective + computeDisplayRoots——
       // 孪生路径曾漏接互斥判定与过滤/分页切片：过滤行复活、分页失效，交叉审运行时复现）；
-      // windowed：排序/分组不本地执行（groupByEffective 返回 ''），flat 取已装载切片
+      // windowed：排序/分组不本地执行（groupByEffective 返回 ''），flat 取已装载切片。
+      // 扁平化同走输入签名缓存：滚动帧 flat 输入不变，复用上次结果不重跑 O(总量) walk+sort
       const groupBy = this.groupByEffective()
       const { roots } = this.computeDisplayRoots()
-      const flat = this.windowedOn()
-        ? this.buildWindowedFlat()
-        : this.buildFlat(this.resolveSorts(), rowKey, roots, groupBy)
+      const flat = this.flatWithCache(this.resolveSorts(), rowKey, roots, groupBy)
       const display = this.visibleFlat(flat, expanded, rowKey)
       // aria-rowcount 的展示集口径（数据行数，不含 expand/group 行）；windowed 另按 total 全量
       this._logicalRowCount = this.countDataRows(display)
@@ -4097,11 +4333,13 @@ export class OASTableBase extends OASElement {
   private onWrapResize = (): void => {
     const segs = this._colSegments
     if (segs && this.syncColumnWindow(segs)) {
+      this.markRenderDirty()
       this.update()
       return
     }
     if (this.windowedOn()) {
       this.requestWindowIfNeeded('resize')
+      this.markRenderDirty()
       this.update()
     }
   }
@@ -4293,7 +4531,12 @@ export class OASTableBase extends OASElement {
   /** 子元素声明式通道观察器：light DOM <oas-table-column> 增删/属性/文本变化 → 重解析列 */
   private ensureChildColumnsObserver(): void {
     if (this.childColumnsObserver) return
-    const observer = new MutationObserver(() => this.runUpdateAndNotify())
+    // light DOM 变更不在渲染签名内（签名只快照宿主自身属性）——先强制全量再更新，
+    // 防止增量快路径把子元素列声明 / empty / filter-icon 插槽变更吞成 no-op
+    const observer = new MutationObserver(() => {
+      this.markRenderDirty()
+      this.runUpdateAndNotify()
+    })
     observer.observe(this, {
       childList: true,
       subtree: true,

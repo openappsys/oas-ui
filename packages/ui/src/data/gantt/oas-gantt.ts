@@ -835,6 +835,18 @@ const DAY_MS = 86_400_000
 /** 空白拖拽判拖阈值（px）：低于此位移视作点按（框选清空 / 不建任务） */
 const MARQUEE_THRESHOLD = 4
 
+/**
+ * 全量重算诊断计数（**仅内部诊断，非公开 API**）：模块级累加、只增不减，不参与任何渲染逻辑
+ * （整块删除不影响组件行为；`index.ts` 不导出该符号，也不进 api-manifest）。
+ * - `rowBuilds`：`buildRows` 调用次数（O(总量) 行树构建 + 摘要聚合）
+ * - `unitBuilds`：`buildUnits` 调用次数（O(轴长) 刻度构建 + 主刻度分组）
+ * - `cpComputes`：`criticalPathIds` 调用次数（O(V+E) 关键路径 / 违约判定）
+ * 用途：测试锁定增量性能契约——**仅选择变化**（tasks / 依赖 / scale / expanded 等未变）时三者
+ * 计数必须零增长（选择走局部 patch 路径，复用缓存 rows/units/criticalIds）；数据或刻度变化时
+ * 必须增长（证明缓存正确失效，计数不是恒 0 的假绿）。
+ */
+export const ganttRenderDiag = { rowBuilds: 0, unitBuilds: 0, cpComputes: 0 }
+
 const DEP_TYPES = new Set(['fs', 'ss', 'ff', 'sf'])
 
 /** 任务约束白名单（asap 等同无约束，清洗层丢弃，不落数据） */
@@ -1138,6 +1150,8 @@ export class OASGantt extends OASElement {
   /** 主刻度合并组（buildMajorGroups 产物，与 units 同生命周期重建）：renderHeader 窗口切片数据源 */
   private majorGroups: GanttMajorGroup[] = []
   private rows: GanttRow[] = []
+  /** rows 的 id → 下标索引（buildRows 末尾重建，见 rebuildRowIndex）：选择路径 O(1) 定位，替代 O(总量) 扫描 */
+  private rowIndexById = new Map<string, number>()
   private canvasW = 0
   private lastScale = ''
   private warnedParents = new Set<string>()
@@ -1323,7 +1337,7 @@ export class OASGantt extends OASElement {
     if (this.dragCtx) this.cancelDrag()
     this.cancelReparent()
     this.cancelLink()
-    const idx = this.rows.findIndex((r) => r.task.id === id)
+    const idx = this.rowIndexById.get(id) ?? -1
     if (idx < 0 || !this.tbody) return
     const vh = this.viewportH()
     this.tbody.scrollTop = Math.max(0, this.absRowTop(idx) - vh / 2 + this.rowHeight() / 2)
@@ -1767,6 +1781,7 @@ export class OASGantt extends OASElement {
     this.units = units
     this.majorGroups = buildMajorGroups(units)
     this.canvasW = units.length * this.colW()
+    ganttRenderDiag.unitBuilds++ // 仅内部诊断（见 ganttRenderDiag）
   }
 
   private majorLabel(d: Date, scale: GanttScale, locale: string): string {
@@ -1866,6 +1881,8 @@ export class OASGantt extends OASElement {
           setsize: 1,
         }
       })
+      this.rebuildRowIndex()
+      ganttRenderDiag.rowBuilds++ // 仅内部诊断（见 ganttRenderDiag）
       return
     }
     const byId = new Map<string, TG>()
@@ -1999,6 +2016,20 @@ export class OASGantt extends OASElement {
     }
     for (const r of roots) walk(r, 0)
     this.rows = rows
+    this.rebuildRowIndex()
+    ganttRenderDiag.rowBuilds++ // 仅内部诊断（见 ganttRenderDiag）
+  }
+
+  /**
+   * 行 id → rows 下标索引（buildRows 末尾一次性重建）：选择相关路径（行点选 Shift 连选、
+   * 键盘 ↑/↓ 连选、scrollToTask、windowed 键盘越界请求）原本各自 `rows.findIndex` /
+   * `rows.map(...).indexOf(...)`——万级任务下每次选择都是 O(总量) 扫描。索引只在 buildRows
+   * 重建（rows 仅在该处整体替换），选择变化不触碰它，故查询恒为 O(1)。
+   */
+  private rebuildRowIndex(): void {
+    const index = new Map<string, number>()
+    for (let i = 0; i < this.rows.length; i++) index.set(this.rows[i]!.task.id, i)
+    this.rowIndexById = index
   }
 
   /** 生效展开集合：受控属性优先；未受控时缺省全展开（数据 expanded:false 为显式收起的例外） */
@@ -2085,7 +2116,7 @@ export class OASGantt extends OASElement {
   private requestKeyboardWindow(row: GanttRow, forward: boolean): void {
     const mode = this._winMode
     if (!mode.windowed) return
-    const idx = this.rows.findIndex((r) => r.task.id === row.task.id)
+    const idx = this.rowIndexById.get(row.task.id) ?? -1
     if (idx < 0) return
     const target = mode.windowStart + idx + (forward ? 1 : -1)
     if (target < 0 || target >= mode.total) return
@@ -2705,9 +2736,9 @@ export class OASGantt extends OASElement {
       el.style.setProperty('--indent', `${8 + row.depth * 16}px`)
       el.setAttribute('part', 'row-name')
       el.tabIndex = row.task.id === activeId ? 0 : -1
-      el.setAttribute('aria-selected', String(this.selected.has(row.task.id)))
+      // 选中态：与局部 patch 同一写入函数（syncSelection），两条路径产物恒一致
+      this.writeRowSelectionState(el, this.selected.has(row.task.id))
       el.addEventListener('focus', () => this.setActiveRow(row.task.id))
-      if (this.selected.has(row.task.id)) el.classList.add('selected')
       // 关键路径标记（show-critical-path 开启时 criticalIds 非空；关闭时空集 → 零影响）
       if (this.criticalIds.has(row.task.id)) el.classList.add('critical')
       if (this.conflictIds.has(row.task.id)) el.classList.add('conflict')
@@ -2801,7 +2832,8 @@ export class OASGantt extends OASElement {
       bar.className = 'bar'
       bar.dataset.id = row.task.id
       bar.setAttribute('part', 'bar')
-      if (this.selected.has(row.task.id)) bar.classList.add('selected')
+      // 选中态：与局部 patch 同一写入函数（syncSelection），两条路径产物恒一致
+      this.writeBarSelectionState(bar, this.selected.has(row.task.id))
       if (this.criticalIds.has(row.task.id)) bar.classList.add('critical')
       if (this.conflictIds.has(row.task.id)) bar.classList.add('conflict')
       // 触屏：点条揭示连线点（无 hover，重建后按记录恢复）
@@ -3585,26 +3617,57 @@ export class OASGantt extends OASElement {
     this.emit('selection-change', { ids: this.selection } satisfies GanttSelectionChangeDetail)
   }
 
-  /** 轻量同步选中态 class（不整窗重建） */
+  /**
+   * 行名选中态写入（**建行与局部 patch 共用**，两条路径产物恒一致）：class `.selected` +
+   * `aria-selected`（role=treeitem 支持该属性）+ `data-selected`（宿主可观测的选中标记）。
+   * 值相同不写（局部 patch 每帧要对窗口内全部行求值，无谓的 setAttribute 属白工）。
+   */
+  private writeRowSelectionState(el: HTMLElement, on: boolean): void {
+    if (el.classList.contains('selected') !== on) el.classList.toggle('selected', on)
+    const v = String(on)
+    if (el.getAttribute('aria-selected') !== v) el.setAttribute('aria-selected', v)
+    if (el.getAttribute('data-selected') !== v) el.setAttribute('data-selected', v)
+  }
+
+  /**
+   * 任务条选中态写入（建条与局部 patch 共用）。条 `role=button`，`aria-selected` 对 button
+   * 非合法属性（会被 ARIA 校验判错）→ 只写 class + `data-selected`，选中语义由行名（treeitem）
+   * 的 aria-selected 承载。
+   */
+  private writeBarSelectionState(el: HTMLElement, on: boolean): void {
+    if (el.classList.contains('selected') !== on) el.classList.toggle('selected', on)
+    const v = String(on)
+    if (el.getAttribute('data-selected') !== v) el.setAttribute('data-selected', v)
+  }
+
+  /**
+   * 选择变化局部更新（**增量路径**）：只 patch 窗口内（已渲染行/条）受影响元素的选中态，
+   * 复用缓存 rows / units / criticalIds——不重跑 `buildRows`（O(总量) 行树 + 摘要聚合）、
+   * `buildUnits`（O(轴长) 刻度）、`criticalPathIds`（O(V+E) CPM），也不重建 DOM 节点。
+   * 窗口外行的选中态由建行时按 `this.selected` 写入，无需在此处理。
+   * 调用方（selection setter / 行点选 / 框选 / 键盘连选 / 删所选）改完 `this.selected` 后调用，
+   * 随后自行派发 `oas-selection-change`（事件语义与旧实现一致）。
+   */
   private syncSelection(): void {
+    const sel = this.selected
     this.sideRows?.querySelectorAll<HTMLElement>('.row-name').forEach((el) => {
-      const on = this.selected.has(el.dataset.key ?? '')
-      el.classList.toggle('selected', on)
-      el.setAttribute('aria-selected', String(on))
+      this.writeRowSelectionState(el, sel.has(el.dataset.key ?? ''))
     })
     this.barsEl?.querySelectorAll<HTMLElement>('.bar').forEach((el) => {
-      el.classList.toggle('selected', this.selected.has(el.dataset.id ?? ''))
+      this.writeBarSelectionState(el, sel.has(el.dataset.id ?? ''))
     })
   }
 
   private onRowClick(id: string, e: { shiftKey: boolean; ctrlKey: boolean; metaKey: boolean }): void {
-    const visible = this.rows.map((r) => r.task.id)
+    // 行序定位走恒定索引（rebuildRowIndex）：旧实现对每次点选做 `rows.map(...)` + `indexOf`，
+    // 万级任务下每个选择动作都是 O(总量) 分配/扫描（仅选择变化不该有这种成本）
     if (e.shiftKey && this.selectionAnchor) {
-      const a = visible.indexOf(this.selectionAnchor)
-      const b = visible.indexOf(id)
+      const a = this.rowIndexById.get(this.selectionAnchor) ?? -1
+      const b = this.rowIndexById.get(id) ?? -1
       if (a >= 0 && b >= 0) {
         const [s, t2] = a < b ? [a, b] : [b, a]
-        this.selected = new Set(visible.slice(s, t2 + 1))
+        // 区间连选：只物化区间内 id（O(区间)），不整表 map
+        this.selected = new Set(this.rows.slice(s, t2 + 1).map((r) => r.task.id))
       } else {
         // 锚点已不可见（折叠/被过滤/被删）→ 退化为单选并重设锚点，避免空区间
         this.selected = new Set([id])
@@ -4010,8 +4073,9 @@ export class OASGantt extends OASElement {
       if (e.key === kOutdent) return this.altReparent(e, id, 'outdent')
       return
     }
-    const visible = this.rows.map((r) => r.task.id)
-    const idx = visible.indexOf(id)
+    // 相邻行定位走恒定索引（rebuildRowIndex）：旧实现每次按键都 `rows.map(...)` 物化全量 id 表
+    // （万级任务下 Shift+↑/↓ 连选每按一次都是 O(总量) 分配）
+    const idx = this.rowIndexById.get(id) ?? -1
     // APG tree：→ 展开或进首个子级；← 折叠或回焦父级（RTL 镜像）
     if (e.key === kIndent && !e.shiftKey) {
       if (row.hasChildren) {
@@ -4038,7 +4102,7 @@ export class OASGantt extends OASElement {
     }
     if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
       e.preventDefault()
-      const nextId = visible[idx + (e.key === 'ArrowDown' ? 1 : -1)]
+      const nextId = this.rows[idx + (e.key === 'ArrowDown' ? 1 : -1)]?.task.id
       if (nextId) {
         if (e.shiftKey) {
           this.selected.add(id)
@@ -4699,6 +4763,7 @@ export class OASGantt extends OASElement {
    * - 违约集 conflict = 负总时差 ∪ 约束违反（snet 未达约束日 / mso 未落在约束日 / fnlt 超出约束日右缘）。
    */
   private criticalPathIds(): { critical: Set<string>; conflict: Set<string> } {
+    ganttRenderDiag.cpComputes++ // 仅内部诊断（见 ganttRenderDiag）
     const empty = { critical: new Set<string>(), conflict: new Set<string>() }
     const tasks = this._tasks
     if (tasks.length === 0) return empty

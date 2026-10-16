@@ -91,6 +91,8 @@
 
 表头复选框一键全选/取消，行复选框单独勾选；选中变化派发 `oas-check`。
 
+> 选择依赖 `row-key`：`selected` 属性为逗号分隔的行键。未配 `row-key` 时行键回落为整行 JSON（含逗号），会让 `selected` 解析失配、行选中态不生效——请务必为可选择的表格指定 `row-key`。
+
 ## 行单选（checkable="radio"）
 
 <DemoBlock title="行单选（radio 互斥）">

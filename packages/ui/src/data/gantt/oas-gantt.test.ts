@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { OASGantt } from './index.js'
-import { pickVisibleLabels } from './oas-gantt.js'
+import { pickVisibleLabels, ganttRenderDiag } from './oas-gantt.js'
 import type { GanttTask, GanttReparentDetail } from './index.js'
 import type { GanttTaskAddDetail } from './oas-gantt.js'
 
@@ -1611,6 +1611,250 @@ describe('OASGantt 行虚拟滚动', () => {
     el.scrollToTask('k55')
     // 现在窗口在尾部，k55 可见但 k0 不可见 → 仍无线
     expect(shadowOf(el).querySelectorAll('svg.links path[data-from]').length).toBe(0)
+  })
+})
+
+describe('OASGantt 选择变化增量渲染（选择不重跑全量构建）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  interface GanttSelPriv {
+    rows: Array<{ task: { id: string } }>
+    units: unknown[]
+    criticalIds: Set<string>
+    conflictIds: Set<string>
+    rowIndexById: Map<string, number>
+  }
+  const priv = (el: OASGantt): GanttSelPriv => el as unknown as GanttSelPriv
+
+  /** 万行数据（id k0..k<N-1>，日期在 3 月内滚动复用） */
+  function hugeTasks(n: number): GanttTask[] {
+    return Array.from({ length: n }, (_, i) => {
+      const d = 1 + (i % 28)
+      return {
+        id: `k${i}`,
+        name: `任务${i}`,
+        start: `2026-03-${String(d).padStart(2, '0')}`,
+        end: `2026-03-${String(Math.min(d + 2, 28)).padStart(2, '0')}`,
+      }
+    })
+  }
+
+  /** 全量重算诊断计数快照（模块级累加，取差值判定） */
+  const snap = (): { rowBuilds: number; unitBuilds: number; cpComputes: number } => ({ ...ganttRenderDiag })
+
+  /** 行点选（pointerdown 到行 + pointerup 到 document，组件的 rowPending 收口路径） */
+  function clickRow(el: OASGantt, id: string, mods: { shiftKey?: boolean; ctrlKey?: boolean } = {}): void {
+    const row = shadowOf(el).querySelector<HTMLElement>(`.row-name[data-key="${id}"]`)!
+    const down = new PointerEvent('pointerdown', { bubbles: true, composed: true, pointerId: 1, button: 0 })
+    Object.defineProperty(down, 'clientX', { value: 40 })
+    Object.defineProperty(down, 'clientY', { value: 40 })
+    row.dispatchEvent(down)
+    const up = new PointerEvent('pointerup', { bubbles: true, composed: true, pointerId: 1 })
+    Object.defineProperty(up, 'shiftKey', { value: !!mods.shiftKey })
+    Object.defineProperty(up, 'ctrlKey', { value: !!mods.ctrlKey })
+    document.dispatchEvent(up)
+  }
+
+  it('万行：仅改 selection（property 多次 + 点选）→ 行树/刻度/关键路径零重建，DOM 节点身份不变', () => {
+    const el = mount({
+      tasks: JSON.stringify(hugeTasks(10000)),
+      'show-critical-path': '',
+      height: '320',
+      'row-height': '36',
+    })
+    const g = priv(el)
+    // 挂载本身已发生一次全量构建 → 计数非恒 0（否则「不增」断言是假绿）
+    const base = snap()
+    expect(base.rowBuilds, '挂载触发 buildRows').toBeGreaterThan(0)
+    expect(base.unitBuilds, '挂载触发 buildUnits').toBeGreaterThan(0)
+    expect(base.cpComputes, '挂载触发关键路径计算').toBeGreaterThan(0)
+    // 选择集 ARIA：树容器声明多选语义（与 Ctrl/Shift/框选能力一致）
+    expect(shadowOf(el).querySelector('.side-rows')!.getAttribute('aria-multiselectable')).toBe('true')
+
+    const rowsRef = g.rows
+    const unitsRef = g.units
+    const critRef = g.criticalIds
+    const k0Row = shadowOf(el).querySelector<HTMLElement>('.row-name[data-key="k0"]')!
+    const k0Bar = barOf(el, 'k0')
+    const k1Row = shadowOf(el).querySelector<HTMLElement>('.row-name[data-key="k1"]')!
+
+    // property 通道 ×3 + 点选 ×2（单选 + Shift 区间连选）
+    el.selection = ['k0']
+    el.selection = ['k0', 'k1']
+    el.selection = []
+    clickRow(el, 'k2')
+    clickRow(el, 'k3', { shiftKey: true })
+
+    const after = snap()
+    expect(after.rowBuilds, '选择变化不得触发 buildRows（万行下 O(总量) 行树 + 摘要聚合）').toBe(base.rowBuilds)
+    expect(after.unitBuilds, '选择变化不得触发 buildUnits（O(轴长) 刻度构建）').toBe(base.unitBuilds)
+    expect(after.cpComputes, '选择变化不得触发关键路径重算（O(V+E) CPM）').toBe(base.cpComputes)
+    // 缓存复用：rows / units / criticalIds 为同一引用（未重建）
+    expect(g.rows, 'rows 缓存复用').toBe(rowsRef)
+    expect(g.units, 'units 缓存复用').toBe(unitsRef)
+    expect(g.criticalIds, 'criticalIds 缓存复用').toBe(critRef)
+    // DOM 节点身份不变（局部 patch，非整窗重建；重建会丢焦点/拖拽锚点）
+    expect(shadowOf(el).querySelector('.row-name[data-key="k0"]')).toBe(k0Row)
+    expect(shadowOf(el).querySelector('.row-name[data-key="k1"]')).toBe(k1Row)
+    expect(barOf(el, 'k0')).toBe(k0Bar)
+    // 选中态正确切换：取消选的 k0/k1 回未选中（行 class/aria/data + 条 class/data）
+    expect(k0Row.classList.contains('selected')).toBe(false)
+    expect(k0Row.getAttribute('aria-selected')).toBe('false')
+    expect(k0Row.getAttribute('data-selected')).toBe('false')
+    expect(k0Bar.classList.contains('selected')).toBe(false)
+    expect(k0Bar.getAttribute('data-selected')).toBe('false')
+    expect(k1Row.getAttribute('aria-selected')).toBe('false')
+    // 选中的 k2/k3（Shift 区间连选）行与条都上选中态
+    const k3Row = shadowOf(el).querySelector<HTMLElement>('.row-name[data-key="k3"]')!
+    expect(k3Row.classList.contains('selected')).toBe(true)
+    expect(k3Row.getAttribute('aria-selected')).toBe('true')
+    expect(k3Row.getAttribute('data-selected')).toBe('true')
+    expect(barOf(el, 'k3').classList.contains('selected')).toBe(true)
+    expect(barOf(el, 'k3').getAttribute('data-selected')).toBe('true')
+    // 公开语义未变
+    expect(el.selection.slice().sort()).toEqual(['k2', 'k3'])
+  })
+
+  it('局部 patch：选择变化只写受影响行（其余行零 setAttribute、零 class 变更）', () => {
+    const el = mount({ tasks: JSON.stringify(hugeTasks(10000)), height: '320', 'row-height': '36' })
+    const shadow = shadowOf(el)
+    const k0Row = shadow.querySelector<HTMLElement>('.row-name[data-key="k0"]')!
+    const k1Row = shadow.querySelector<HTMLElement>('.row-name[data-key="k1"]')!
+    const others = [...shadow.querySelectorAll<HTMLElement>('.row-name')].filter((r) => r.dataset.key !== 'k0')
+    const before = others.map((r) => ({
+      cls: r.className,
+      aria: r.getAttribute('aria-selected'),
+      data: r.getAttribute('data-selected'),
+    }))
+    const origSet = HTMLElement.prototype.setAttribute
+    const touched: string[] = []
+    HTMLElement.prototype.setAttribute = function (this: HTMLElement, name: string, value: string) {
+      if (this.classList?.contains('row-name')) touched.push(this.dataset.key ?? '')
+      return origSet.call(this, name, value)
+    }
+    try {
+      el.selection = ['k0']
+    } finally {
+      HTMLElement.prototype.setAttribute = origSet
+    }
+    // 只有被选中行会被写（写次数 = 该行真正变化的属性个数，含 class 重写）
+    expect([...new Set(touched)], '只有受影响行（k0）被写').toEqual(['k0'])
+    expect(touched.length, `写次数应远小于窗口行数（实得 ${touched.length}）`).toBeLessThanOrEqual(3)
+    expect(k0Row.classList.contains('selected')).toBe(true)
+    // 未受影响行：脚本写操作零次 → class / aria-selected / data-selected 逐项不变
+    expect(others.length).toBeGreaterThan(3)
+    expect(
+      others.map((r) => ({
+        cls: r.className,
+        aria: r.getAttribute('aria-selected'),
+        data: r.getAttribute('data-selected'),
+      })),
+    ).toEqual(before)
+    expect(k1Row.classList.contains('selected')).toBe(false)
+    expect(k1Row.getAttribute('data-selected')).toBe('false')
+  })
+
+  it('数据/依赖/刻度/展开变化 → 计数增（缓存正确失效，计数不是恒零假绿）', () => {
+    const tree: GanttTask[] = [
+      {
+        id: 'p',
+        name: 'P',
+        start: '2026-03-02',
+        end: '2026-03-13',
+        children: [
+          { id: 'c1', name: 'C1', start: '2026-03-02', end: '2026-03-06' },
+          { id: 'c2', name: 'C2', start: '2026-03-05', end: '2026-03-10' },
+        ],
+      },
+      { id: 'x', name: 'X', start: '2026-03-16', end: '2026-03-20', dependencies: [{ id: 'c1' }] },
+    ]
+    const el = mount({ tasks: JSON.stringify(tree), 'show-critical-path': '' })
+    let prev = snap()
+    // ① 依赖变化（updateTask 走 update → 全量重算：依赖图影响 CP 与连线）
+    el.updateTask('x', { dependencies: [{ id: 'c1', type: 'ss' }] })
+    let next = snap()
+    expect(next.rowBuilds, '依赖变化 → buildRows 增').toBeGreaterThan(prev.rowBuilds)
+    expect(next.unitBuilds, '依赖变化 → buildUnits 增').toBeGreaterThan(prev.unitBuilds)
+    expect(next.cpComputes, '依赖变化 → 关键路径增').toBeGreaterThan(prev.cpComputes)
+    // ② tasks 整体重写（attribute 通道）
+    prev = next
+    el.setAttribute('tasks', JSON.stringify(tree.map((t) => ({ ...t, name: `${t.name}改` }))))
+    next = snap()
+    expect(next.rowBuilds, 'tasks 重写 → buildRows 增').toBeGreaterThan(prev.rowBuilds)
+    expect(next.unitBuilds, 'tasks 重写 → buildUnits 增').toBeGreaterThan(prev.unitBuilds)
+    expect(next.cpComputes, 'tasks 重写 → 关键路径增').toBeGreaterThan(prev.cpComputes)
+    // ③ scale 变化（刻度与行树都随 update 重建）
+    prev = next
+    el.setAttribute('scale', 'week')
+    next = snap()
+    expect(next.rowBuilds, 'scale 变化 → buildRows 增').toBeGreaterThan(prev.rowBuilds)
+    expect(next.unitBuilds, 'scale 变化 → buildUnits 增').toBeGreaterThan(prev.unitBuilds)
+    // ④ expanded 变化（折叠改变行树）
+    prev = next
+    el.setAttribute('expanded', '[]')
+    next = snap()
+    expect(next.rowBuilds, 'expanded 变化 → buildRows 增').toBeGreaterThan(prev.rowBuilds)
+    expect(shadowOf(el).querySelectorAll('.side-body .row-name').length, '折叠后仅父行').toBe(2)
+  })
+
+  it('windowed：选择变化同样零重建，绝对行号 aria 不受影响（切片内局部 patch）', async () => {
+    const start = 12000
+    const el = new OASGantt()
+    el.setAttribute('windowed', '')
+    el.setAttribute('total', '50000')
+    el.setAttribute('window-start', String(start))
+    el.setAttribute('height', '320')
+    el.setAttribute('row-height', '36')
+    el.setAttribute(
+      'tasks',
+      JSON.stringify(
+        Array.from({ length: 20 }, (_, i) => ({
+          id: `t${start + i}`,
+          name: `T${start + i}`,
+          start: '2026-03-02',
+          end: '2026-03-06',
+        })),
+      ),
+    )
+    document.body.appendChild(el)
+    // 滚到装载切片（绝对行 12000）——可视窗口与装载区相交才会渲染行
+    const tb = tbodyOf(el)
+    tb.scrollTop = start * 36
+    tb.dispatchEvent(new Event('scroll'))
+    await flushRaf()
+    const g = priv(el)
+    const base = snap()
+    const rowsRef = g.rows
+    const first = shadowOf(el).querySelector<HTMLElement>('.row-name')!
+    expect(first.dataset.key).toBe('t12000')
+    expect(first.getAttribute('aria-posinset'), '绝对行号（1 基）').toBe('12001')
+    expect(first.getAttribute('aria-rowindex')).toBe('12001')
+    expect(first.getAttribute('aria-setsize')).toBe('50000')
+
+    el.selection = ['t12003']
+    el.selection = ['t12005']
+    clickRow(el, 't12006')
+
+    expect(snap(), 'windowed 下选择变化同样零全量重算').toEqual(base)
+    expect(g.rows).toBe(rowsRef)
+    expect(shadowOf(el).querySelector('.row-name[data-key="t12000"]')).toBe(first)
+    // 绝对行号 aria 不因选择变化漂移；容器 rowcount 仍为全量
+    expect(first.getAttribute('aria-posinset')).toBe('12001')
+    expect(first.getAttribute('aria-rowindex')).toBe('12001')
+    expect(shadowOf(el).querySelector('.side-rows')!.getAttribute('aria-rowcount')).toBe('50000')
+    // 选中态落到切片内目标行（行 aria/class/data + 条 class/data）
+    const selRow = shadowOf(el).querySelector<HTMLElement>('.row-name[data-key="t12006"]')!
+    expect(selRow.getAttribute('aria-selected')).toBe('true')
+    expect(selRow.getAttribute('data-selected')).toBe('true')
+    expect(selRow.classList.contains('selected')).toBe(true)
+    expect(barOf(el, 't12006').classList.contains('selected')).toBe(true)
+    expect(el.selection).toEqual(['t12006'])
+    el.remove()
   })
 })
 

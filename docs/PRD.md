@@ -2056,6 +2056,7 @@ OASElement 的 render 生命周期只首连一次（`rendered` 门闩），组�
 - **`oas-kanban` 卡片虚拟化**：列体按窗口渲染（动态卡片高用 `dynamic-height` 内核）、占位守恒列滚动范围、拖拽落点用绝对位次、滚动重建回焦同卡。
 - **`oas-gantt` / `oas-resource` windowed 模式**：`windowed` + `total` + `window-start`（切片绝对行号）+ `range-start` / `range-end`（宿主托管时间轴，ISO 日期；`range-end` 含当日）；事件 `oas-window-request` / `oas-range-request`。windowed 下 gantt 跳过 `auto-schedule` 与关键路径（devWarn）。
 - **`oas-scheduler` 虚拟化**：资源行窗口 + 时间轴（小时轴）窗口（DOM 有界、总高守恒、手势期间抑制重建）；修复资源视图滚动跳顶（清空 DOM 前先读 `scrollTop`，否则被钳回 0）。
+- **增量渲染**：`oas-table` 仅选择变化时复用扁平化/汇总缓存、只 patch 受影响行（行节点身份保持）；`oas-gantt` 选择变化复用 rows/units/关键路径缓存、只 patch 窗口内行/条，并把行点选/连选/键盘相邻定位改为 O(1) 索引；单选档 radio 选中态改同步写终态。
 
 ### 边界
 
