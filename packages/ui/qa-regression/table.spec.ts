@@ -1574,3 +1574,107 @@ test('table 外部数据分页（total）：data 视为当前页不内部切片�
   expect(s1.feedback, 'demo 反馈同步为 2').toBe('2')
   expect(s1.total, '翻页后 total 仍 47').toBe('47')
 })
+
+test('table windowed：滚动派发 oas-window-request、宿主回填渲染绝对行、本地排序禁用', async ({ page }) => {
+  // 服务端行窗口模式机制回归（契约见 packages/ui/src/shared/window-data.ts）：
+  // 组件只持有已装载切片，按可视行窗口派发 oas-window-request（绝对半开区间）；
+  // 宿主回填新窗口后渲染行跳变到新绝对行；本地排序禁用（行序不变，
+  // oas-sort-change 照常派发供宿主做服务端排序）。devWarn 属 dev-only 通道
+  //（生产构建被摇掉），其「禁用 + 实例级去重」由 oas-table-windowed.test.ts 单测覆盖。
+  await page.goto('/components/table.html', { waitUntil: 'domcontentloaded' })
+  // 注入 windowed fixture（组件由站点 bundle 全局注册）：height=200 / row-height=40
+  // → 视口 5 行 + buffer4 → 可视 [0,9)；±margin8 → 期望区间 = [0,17)
+  await page.evaluate(() => {
+    const el = document.createElement('oas-table')
+    el.id = 'table-windowed-fixture'
+    el.setAttribute('windowed', '')
+    el.setAttribute('total', '1000')
+    el.setAttribute('window-start', '0')
+    el.setAttribute('height', '200')
+    el.setAttribute('row-height', '40')
+    el.setAttribute('columns', JSON.stringify([{ key: 'name', title: '名称', sortable: true }]))
+    el.setAttribute('data', JSON.stringify(Array.from({ length: 5 }, (_, i) => ({ name: `行${i}` }))))
+    ;(window as any).__winReqs = []
+    el.addEventListener('oas-window-request', (e) => {
+      ;(window as any).__winReqs.push((e as CustomEvent).detail)
+    })
+    document.body.appendChild(el)
+  })
+
+  // 1) 首帧 init 请求：期望 [0,17)，已装载 [0,5) 未覆盖 → 派发 { start:0, end:17, reason:'init' }
+  await page.waitForFunction(() => (window as any).__winReqs.length > 0)
+  const init = await page.evaluate(() => (window as any).__winReqs[0])
+  expect(init).toEqual({ start: 0, end: 17, reason: 'init' })
+
+  // 2) 宿主回填覆盖 [0,17) 后滚动（scrollTop=400 → 可视 [6,19) → 期望 [0,27)）→ scroll 请求
+  await page.evaluate(() => {
+    const el = document.querySelector('#table-windowed-fixture')!
+    el.setAttribute('data', JSON.stringify(Array.from({ length: 17 }, (_, i) => ({ name: `行${i}` }))))
+    const wrap = el.shadowRoot!.querySelector('.table-scroll') as HTMLElement
+    wrap.scrollTop = 400
+    wrap.dispatchEvent(new Event('scroll'))
+  })
+  await page.waitForFunction(() =>
+    (window as any).__winReqs.some((r: any) => r.reason === 'scroll' && r.start === 0 && r.end === 27),
+  )
+  const scrollReq = await page.evaluate(() => (window as any).__winReqs.find((r: any) => r.reason === 'scroll'))
+  expect(scrollReq.start, 'scroll 请求起点（含 margin 前扩）').toBe(0)
+  expect(scrollReq.end, 'scroll 请求终点（可视 [6,19) + margin8）').toBe(27)
+  expect(scrollReq.reason).toBe('scroll')
+
+  // 3) 宿主回填新窗口 [100,140) 并滚到装载区 → 渲染行跳变到绝对行 100 起，
+  //    行 0..99 未装载 → 顶部占位 = 100 * 40 = 4000px
+  await page.evaluate(() => {
+    const el = document.querySelector('#table-windowed-fixture')!
+    el.setAttribute('window-start', '100')
+    el.setAttribute('data', JSON.stringify(Array.from({ length: 40 }, (_, i) => ({ name: `行${100 + i}` }))))
+    const wrap = el.shadowRoot!.querySelector('.table-scroll') as HTMLElement
+    wrap.scrollTop = 4040
+    wrap.dispatchEvent(new Event('scroll'))
+  })
+  await page.waitForFunction(() => {
+    const el = document.querySelector('#table-windowed-fixture')!
+    const first = el.shadowRoot!.querySelector('tbody tr[part="row"]')
+    const rows = el.shadowRoot!.querySelectorAll('tbody tr[part="row"]')
+    return (first?.textContent?.includes('行100') ?? false) && rows.length === 10
+  })
+  const layout = await page.evaluate(() => {
+    const el = document.querySelector('#table-windowed-fixture')!
+    const trs = el.shadowRoot!.querySelectorAll('tbody tr')
+    const first = trs[0] as HTMLElement
+    const rows = el.shadowRoot!.querySelectorAll('tbody tr[part="row"]')
+    return {
+      firstIsSpacer: first.classList.contains('spacer'),
+      topSpacerHeight: (first.firstElementChild as HTMLElement).style.height,
+      firstRowText: rows[0]?.textContent ?? '',
+      rowCount: rows.length,
+    }
+  })
+  expect(layout.firstIsSpacer, '首行是顶部占位（绝对行定位）').toBe(true)
+  expect(layout.topSpacerHeight, '行 0..99 未装载 → 占位 4000px').toBe('4000px')
+  expect(layout.firstRowText, '渲染行跳变到绝对行 100').toContain('行100')
+  expect(layout.rowCount, '可视 [97,110) ∩ 装载 [100,140) = 10 行').toBe(10)
+
+  // 4) 本地排序禁用：点表头 → oas-sort-change 照常派发（宿主通道）但行序不变 + devWarn
+  const sortDetail = await page.evaluate(
+    () =>
+      new Promise((resolve) => {
+        const el = document.querySelector('#table-windowed-fixture')!
+        el.addEventListener('oas-sort-change', (e) => resolve((e as CustomEvent).detail), { once: true })
+        const th = el.shadowRoot!.querySelector('th.sortable') as HTMLElement
+        th.click()
+      }),
+  )
+  expect(sortDetail).toEqual({ key: 'name', order: 'asc' })
+  const afterSort = await page.evaluate(() => {
+    const el = document.querySelector('#table-windowed-fixture')!
+    return [...el.shadowRoot!.querySelectorAll('tbody tr[part="row"]')].map((r) => r.textContent)
+  })
+  expect(afterSort.length).toBe(10)
+  expect(afterSort[0], '本地排序禁用：首行仍是行100（行序不变）').toContain('行100')
+  // devWarn 属 dev-only 通道（docs 为生产构建 → NODE_ENV=production 时被摇掉），故此 e2e 不断言告警；
+  // 「windowed 下本地操作禁用 + 告警（实例级去重）」由 oas-table-windowed.test.ts 单测覆盖
+
+  // 清理 fixture，避免污染同页其他用例
+  await page.evaluate(() => document.querySelector('#table-windowed-fixture')?.remove())
+})

@@ -1,5 +1,6 @@
 import { OASElement } from '@oas-ui/core'
 import { isRtl } from '../../shared/direction.js'
+import { HeightCache, computeDynamicWindow } from '../virtual-list/dynamic-height.js'
 
 /** 列定义：`columns` 属性（JSON）元素结构 */
 export interface KanbanColumn {
@@ -37,6 +38,19 @@ export interface KanbanColumnReorderDetail {
   to: number
   keys: string[]
 }
+
+// 列体虚拟化的阈值/取值。
+//
+// 只有「列体是真滚动视口」（宿主有高度约束 → 列体有确定高度 + 内容溢出）时才虚拟化；
+// 宿主无高度约束时列体按内容自长（既有行为），虚拟化无意义——运行期由 isScrollViewport 判定。
+/** 视口高度下限：clientHeight 低于此视为不可测/无约束（happy-dom、列体未布局），回落全量渲染 */
+const MIN_MEASURABLE_VIEWPORT = 10
+/** 卡片预估步距（卡高 + 列内 gap）：动态行高实测回写前的初值 */
+const ESTIMATED_CARD_STEP = 68
+/** 上下预渲染卡数（缓冲，滚动方向切换不出现空白） */
+const CARD_WINDOW_BUFFER = 6
+/** 列内 gap 兜底值（getComputedStyle 不可用时；等于 --oas-space-2） */
+const CARD_GAP_FALLBACK = 8
 
 const STYLE = `
 :host {
@@ -220,6 +234,17 @@ const STYLE = `
   flex-direction: column;
   gap: var(--oas-space-2);
   overflow-y: auto;
+  /* 虚拟化窗口重建（上下占位 + 卡片增删）会触发 Chrome 滚动锚定，把滚轮增量逐帧放大成
+     加速循环（滚一下直接到底），必须禁用锚定（同 oas-virtual-list 先例） */
+  overflow-anchor: none;
+}
+/* 列体虚拟化：窗口外的卡片用上下占位撑起（列内滚动范围与全量渲染一致）。
+   占位高度（该侧未渲染卡片的步距合计）与 margin-top（抵消 flex gap，使占位高恰等于真实卡片
+   偏移）由 JS 按实测行高/gap 写内联；pointer-events:none 保证点击/拖拽落点穿透到列体 */
+.column-body > .vpad {
+  flex: none;
+  width: 100%;
+  pointer-events: none;
 }
 .card {
   position: relative;
@@ -453,6 +478,19 @@ interface KanbanDropTarget {
 }
 
 /**
+ * 列体虚拟化状态（按列 key 缓存）。
+ * - cache：高度表（每项 = 卡高 + 列内 gap 的「步距」，动态行高实测回写）；
+ * - start/end：上次渲染的窗口（窗口未变则跳过 DOM 重建）；
+ * - mode：full = 全量渲染（视口不可测/内容不溢出/列体非滚动视口）；window = 窗口 + 上下占位。
+ */
+interface KanbanColumnVirtualState {
+  cache: HeightCache
+  start: number
+  end: number
+  mode: 'full' | 'window'
+}
+
+/**
  * oas-kanban —— 看板（列 + 卡片拖拽）。
  *
  * 数据通道（与 oas-table 惯例一致：attribute JSON + property 双通道，非受控回写 + attribute 反射）：
@@ -506,6 +544,8 @@ export class OASKanban extends OASElement {
 
   /** 拖拽源卡片 id 集（多选拖拽为全部选中 id；空 = 无进行中卡片拖拽；不依赖 dataTransfer——部分环境 DragEvent 不带） */
   private dragIds: string[] = []
+  /** 拖拽源卡片所在列 key 集（列体虚拟化：这些列的窗口在拖拽期间冻结，避免重建 DOM 中断拖拽） */
+  private dragSourceColumns = new Set<string>()
   /** 列拖拽起始位次（-1 = 无进行中列拖拽）与落点位次（移除后插入位） */
   private colDragFrom = -1
   private colDropTo = -1
@@ -514,6 +554,20 @@ export class OASKanban extends OASElement {
   /** 触屏移动菜单：当前打开的卡片 id 与锚点按钮（同一时刻至多一个） */
   private menuCardId = ''
   private menuAnchor: HTMLButtonElement | null = null
+
+  // ==================== 列体虚拟化（大列只渲染可视窗口） ====================
+
+  /** 各列虚拟化状态（按列 key；update() 重建整板时清空重算，防卡片顺序变化后高度表错位） */
+  private columnStates = new Map<string, KanbanColumnVirtualState>()
+  /** 滚动合帧待处理列 key（同帧多次滚动合并为一次窗口重算） */
+  private pendingVirtualColumns = new Set<string>()
+  private virtualRaf = 0
+  /** 卡片高度实测观察器（窗口内卡片；无 ResizeObserver 环境安全跳过，退回预估值） */
+  private cardResizeObserver: ResizeObserver | null = null
+  /** 板体尺寸观察器（宿主高度/窗口尺寸变化后重算各列窗口） */
+  private boardResizeObserver: ResizeObserver | null = null
+  /** 诊断计数：列体窗口实际渲染次数（窗口未变的滚动/重算不增，供测试断言「不重建」） */
+  private columnWindowPaints = 0
 
   get columns(): KanbanColumn[] {
     return this._columns
@@ -589,10 +643,29 @@ export class OASKanban extends OASElement {
     root.addEventListener('scroll', this.handleDocumentScroll, true)
     // Esc 关菜单/清多选 + 列手柄键盘换序（shadow 内 keydown 不冒泡出宿主，shadow 根监听够用）
     root.addEventListener('keydown', this.handleKeydown)
+    // 列体虚拟化：卡片高度实测 + 板体尺寸变化重算（SSR/无 ResizeObserver 环境安全跳过）
+    if (typeof ResizeObserver !== 'undefined') {
+      if (!this.cardResizeObserver) {
+        this.cardResizeObserver = new ResizeObserver((entries) => this.handleCardResize(entries))
+      }
+      if (!this.boardResizeObserver) {
+        this.boardResizeObserver = new ResizeObserver(() => this.scheduleVirtualSync([]))
+      }
+    }
+    const board = root.querySelector('.kanban')
+    if (board) this.boardResizeObserver?.observe(board)
     this.onCleanup(() => {
       // 只关菜单（closeMenu 内部顺带摘 document 级监听——监听生命周期跟菜单走，
       // openMenu 挂 / closeMenu 摘；重连后再开菜单自然重挂，无「断开摘除后重连失效」）
       this.closeMenu()
+      // 列体虚拟化：撤销合帧回调与观察器（重连由 bind 幂等重挂）
+      if (this.virtualRaf) cancelAnimationFrame(this.virtualRaf)
+      this.virtualRaf = 0
+      this.pendingVirtualColumns.clear()
+      this.cardResizeObserver?.disconnect()
+      this.cardResizeObserver = null
+      this.boardResizeObserver?.disconnect()
+      this.boardResizeObserver = null
     })
   }
 
@@ -626,17 +699,36 @@ export class OASKanban extends OASElement {
     this.parse()
     const board = this.shadow.querySelector<HTMLElement>('.kanban')
     if (!board) return
+    // 整板重建前记录各列滚动位置：数据变更（含拖拽落定回写）不该把列体滚回顶部
+    const scrollPos = new Map<string, number>()
+    for (const colEl of board.querySelectorAll<HTMLElement>('.column[data-key]')) {
+      const key = colEl.getAttribute('data-key') ?? ''
+      const prev = colEl.querySelector<HTMLElement>('.column-body')
+      if (key && prev && prev.scrollTop > 0) scrollPos.set(key, prev.scrollTop)
+    }
     board.innerHTML = ''
+    // 卡片顺序/数量可能已变：清空各列高度表与待处理列（防止实测行高错位、旧窗口残留）
+    this.columnStates.clear()
+    this.pendingVirtualColumns.clear()
     if (this.hasLanes) {
       board.classList.add('swimlane')
       this.buildWithLanes(board)
       return
     }
     board.classList.remove('swimlane')
+    const built: Array<{ col: KanbanColumn; cards: KanbanCard[]; body: HTMLElement }> = []
     for (const col of this._columns) {
       const cards = this._cards.filter((c) => String(c.column ?? '') === col.key)
-      board.appendChild(this.buildColumn(col, cards))
+      const { column, body } = this.buildColumn(col, cards.length)
+      board.appendChild(column)
+      built.push({ col, cards, body })
     }
+    // 列体填充延后到挂载后：虚拟化窗口依赖列体 clientHeight（挂载前不可测）
+    for (const { col, cards, body } of built) {
+      this.fillColumnBody(col, cards, body, scrollPos.get(col.key) ?? 0)
+    }
+    // 首帧后再校一次（宿主高度/布局在本帧内才稳定的场景：窗口过小会留空白）
+    this.scheduleVirtualSync([...this.columnStates.keys()])
   }
 
   /** 属性解析：JSON 非法/非数组回退空数组；cards 按 attribute 原文变化重解析
@@ -803,6 +895,7 @@ export class OASKanban extends OASElement {
     cell.className = 'lane-cell'
     cell.setAttribute('part', 'lane-cell')
     cell.setAttribute('data-column', col.key)
+    cell.setAttribute('data-count', String(cards.length))
     if (overLimit) cell.setAttribute('data-over-limit', '')
     if (cards.length === 0) {
       const empty = document.createElement('div')
@@ -814,7 +907,7 @@ export class OASKanban extends OASElement {
     }
     cell.setAttribute('role', 'list')
     cell.setAttribute('aria-label', `${col.title} - ${this.laneLabel(lane)}`)
-    for (const card of cards) cell.appendChild(this.buildCard(card))
+    for (const [i, card] of cards.entries()) cell.appendChild(this.buildCard(card, i))
     return cell
   }
 
@@ -872,20 +965,28 @@ export class OASKanban extends OASElement {
     return head
   }
 
-  /** 构建单列（无泳道模式）：列头 + 列体（卡片 / 空列占位）+ WIP 超限标记 */
-  private buildColumn(col: KanbanColumn, cards: KanbanCard[]): HTMLElement {
-    const overLimit = this.isOverLimit(col, cards.length)
+  /** 构建单列骨架（列头 + 空列体）：列体卡片填充延后到挂载后（虚拟化窗口需可测的列体高度） */
+  private buildColumn(col: KanbanColumn, count: number): { column: HTMLElement; body: HTMLElement } {
+    const overLimit = this.isOverLimit(col, count)
     const column = document.createElement('div')
     column.className = 'column'
     column.setAttribute('part', 'column')
     column.setAttribute('data-key', col.key)
     if (overLimit) column.setAttribute('data-over-limit', '')
 
-    const head = this.buildColumnHead(col, cards.length, overLimit)
+    const head = this.buildColumnHead(col, count, overLimit)
 
     const body = document.createElement('div')
     body.className = 'column-body'
     body.setAttribute('part', 'column-body')
+    // 容器卡片总数（虚拟化下列内只渲染窗口，拖拽落点/范围选需要绝对口径的总数）
+    body.setAttribute('data-count', String(count))
+    column.append(head, body)
+    return { column, body }
+  }
+
+  /** 填充列体（挂载后调用）：空列占位 / 全量渲染 / 虚拟化窗口渲染 */
+  private fillColumnBody(col: KanbanColumn, cards: KanbanCard[], body: HTMLElement, scrollTop = 0): void {
     if (cards.length === 0) {
       // 空列不设 role=list：axe aria-required-children 要求 list 必有 listitem 子元素，
       // 空列无卡片时 list 语义不成立（列头 aria-label 已提供列名可达性）
@@ -894,22 +995,276 @@ export class OASKanban extends OASElement {
       empty.setAttribute('part', 'empty-column')
       empty.textContent = this.emptyColumnText()
       body.appendChild(empty)
-    } else {
-      body.setAttribute('role', 'list')
-      body.setAttribute('aria-label', col.title)
-      for (const card of cards) body.appendChild(this.buildCard(card))
+      return
     }
-
-    column.append(head, body)
-    return column
+    body.setAttribute('role', 'list')
+    body.setAttribute('aria-label', col.title)
+    // 滚动监听挂在列体自身（scroll 既不冒泡也不跨 shadow 边界；列体随整板重建，节点丢弃即解绑）
+    body.addEventListener('scroll', this.handleColumnScroll, { passive: true })
+    this.renderColumnWindow(col.key, cards, body, { force: true, scrollTop })
   }
 
-  /** 构建单卡：默认渲染 title；renderCard 在场时按其返回挂载（Node 直挂 / 字符串 textContent） */
-  private buildCard(card: KanbanCard): HTMLElement {
+  // ==================== 列体虚拟化内核（窗口计算 / 渲染 / 实测回写） ====================
+
+  private ensureColumnState(key: string): KanbanColumnVirtualState {
+    let state = this.columnStates.get(key)
+    if (!state) {
+      state = { cache: new HeightCache(), start: 0, end: 0, mode: 'full' }
+      this.columnStates.set(key, state)
+    }
+    return state
+  }
+
+  /** 列内 gap（flex row-gap 实测；不可用/无 gap 时兜底 --oas-space-2） */
+  private cardGap(body: HTMLElement): number {
+    const raw = typeof getComputedStyle === 'function' ? getComputedStyle(body).rowGap : ''
+    const gap = Number.parseFloat(raw)
+    return Number.isFinite(gap) && gap >= 0 ? gap : CARD_GAP_FALLBACK
+  }
+
+  /** 高度表前缀和视图（长度 count+1，供 computeDynamicWindow 二分） */
+  private prefixOf(cache: HeightCache, count: number): number[] {
+    const arr: number[] = new Array(count + 1)
+    for (let i = 0; i <= count; i++) arr[i] = cache.offsetOf(i)
+    return arr
+  }
+
+  /**
+   * 列体是否为真滚动视口：内容溢出可视高（宿主有高度约束时列体高度确定、内容溢出）。
+   * 宿主无高度约束时列体按内容自长（内容永远等于可视高）——虚拟化无意义且会留大片占位。
+   */
+  private isScrollViewport(body: HTMLElement): boolean {
+    return body.scrollHeight > body.clientHeight + 1
+  }
+
+  /**
+   * 计算并渲染列体窗口，返回是否重建了 DOM。
+   *
+   * - 窗口覆盖全部卡片 / 视口不可测（happy-dom、列体未布局）→ 全量渲染（既有行为零变化）；
+   * - 真滚动视口 → 只渲染可视窗口 + 上下占位（滚动范围同全量渲染）；
+   * - 窗口未变且非 force → 跳过（滚动过程同窗口反复合成不重建 DOM，保焦点与节点标识）。
+   */
+  private renderColumnWindow(
+    key: string,
+    cards: KanbanCard[],
+    body: HTMLElement,
+    opts: { force?: boolean; scrollTop?: number } = {},
+  ): boolean {
+    const state = this.ensureColumnState(key)
+    state.cache.configure(cards.length, ESTIMATED_CARD_STEP)
+    const vh = body.clientHeight
+    let mode: KanbanColumnVirtualState['mode'] = 'full'
+    let start = 0
+    let end = cards.length
+    let scrollTop = 0
+    if (vh > MIN_MEASURABLE_VIEWPORT) {
+      const gap = this.cardGap(body)
+      const total = state.cache.total()
+      scrollTop = Math.min(Math.max(0, opts.scrollTop ?? body.scrollTop), Math.max(0, total - gap - vh))
+      const win = computeDynamicWindow(
+        this.prefixOf(state.cache, cards.length),
+        cards.length,
+        scrollTop,
+        vh,
+        CARD_WINDOW_BUFFER,
+      )
+      if (win.start > 0 || win.end < cards.length) {
+        mode = 'window'
+        start = win.start
+        end = win.end
+      }
+    }
+    if (!opts.force && state.mode === mode && state.start === start && state.end === end) return false
+    state.mode = mode
+    state.start = start
+    state.end = end
+    this.paintColumnWindow(body, cards, start, end, state, mode === 'window')
+    if (mode === 'window' && !this.isScrollViewport(body)) {
+      // 列体内容不溢出可视高 = 列体不是滚动视口（宿主无高度约束 → 列体按内容自长）：
+      // 占位撑高没有可滚动目标反而会留大片空白 → 回落全量渲染（与既有行为一致）
+      state.mode = 'full'
+      state.start = 0
+      state.end = cards.length
+      this.paintColumnWindow(body, cards, 0, cards.length, state, false)
+      return true
+    }
+    if (mode === 'window' && scrollTop > 0) body.scrollTop = scrollTop
+    return true
+  }
+
+  /** 渲染列体窗口：上下占位（虚拟化时）+ 窗口内卡片；重建不得把键盘焦点跌出卡片 */
+  private paintColumnWindow(
+    body: HTMLElement,
+    cards: KanbanCard[],
+    start: number,
+    end: number,
+    state: KanbanColumnVirtualState,
+    virtualized: boolean,
+  ): void {
+    // 焦点保持：同 id 新节点回焦（稳定 data-id 即复用键）；已滚出窗口则回焦该列首个渲染卡
+    const active = this.shadowActiveElement()
+    const focusId =
+      active && active.classList.contains('card') && active.closest('.column-body') === body
+        ? active.getAttribute('data-id')
+        : null
+    const gap = this.cardGap(body)
+    this.cardResizeObserver?.disconnect()
+    body.replaceChildren()
+    if (virtualized) body.appendChild(this.buildVacancy('vpad-top', state.cache.offsetOf(start), gap))
+    for (let i = start; i < end; i++) {
+      const card = cards[i]
+      if (!card) continue
+      const el = this.buildCard(card, i)
+      body.appendChild(el)
+      if (virtualized) this.cardResizeObserver?.observe(el)
+    }
+    if (virtualized) {
+      const rest = Math.max(0, state.cache.total() - state.cache.offsetOf(end))
+      body.appendChild(this.buildVacancy('vpad-bottom', rest, gap))
+    }
+    this.columnWindowPaints++
+    if (focusId != null) {
+      const els = [...body.querySelectorAll<HTMLElement>('.card')]
+      ;(els.find((c) => c.getAttribute('data-id') === focusId) ?? els[0])?.focus({ preventScroll: true })
+    }
+  }
+
+  /**
+   * 当前 shadow 根内的活动元素（焦点保持用）。
+   * 环境兜底：活动元素落在已脱离文档的 shadow 树时（happy-dom 的 detached 树 host 链断裂）读取会抛，
+   * 此时按「无焦点」处理——不影响真实浏览器（活动元素被移除时浏览器已把焦点交还 body）。
+   */
+  private shadowActiveElement(): HTMLElement | null {
+    try {
+      return this.shadow.activeElement as HTMLElement | null
+    } catch {
+      return null
+    }
+  }
+
+  /** 虚拟化占位块：height = 该侧未渲染卡片的步距合计；margin-top = -gap 抵消 flex gap（占位高即真实偏移） */
+  private buildVacancy(part: string, height: number, gap: number): HTMLElement {
+    const el = document.createElement('div')
+    el.className = `vpad ${part}`
+    el.setAttribute('part', part)
+    // 占位对读屏无意义；role=presentation 避免破坏 list/listitem 层级（axe 要求 list 只有 listitem）
+    el.setAttribute('role', 'presentation')
+    el.setAttribute('aria-hidden', 'true')
+    el.style.height = `${Math.max(0, height)}px`
+    el.style.marginTop = `${-gap}px`
+    return el
+  }
+
+  /** 列体滚动：rAF 合帧后按各列新滚动位置重算窗口（同帧多次滚动合并为一次） */
+  private handleColumnScroll = (e: Event): void => {
+    const body = e.currentTarget as HTMLElement | null
+    const key = body?.closest('.column')?.getAttribute('data-key')
+    if (!key) return
+    // 拖拽进行中冻结「拖拽源所在列」的窗口：列体边缘自动滚动会重建 DOM，拖拽源节点被移除
+    // 可能中断拖拽。目标列不受限（自动滚动继续出卡）；落点位次由卡片 data-index 绝对口径计算，
+    // 不依赖窗口外 DOM，故冻结不静默失效；拖拽结束（handleDragEnd）补做一次重算把跳过的滚动回正
+    if (this.dragIds.length > 0 && this.dragSourceColumns.has(key)) return
+    this.scheduleVirtualSync([key])
+  }
+
+  /** 合帧调度列体窗口重算：keys 为空表示「全部列」（板体尺寸变化） */
+  private scheduleVirtualSync(keys: string[]): void {
+    if (keys.length === 0) for (const key of this.columnStates.keys()) this.pendingVirtualColumns.add(key)
+    else for (const key of keys) this.pendingVirtualColumns.add(key)
+    if (this.virtualRaf) return
+    this.virtualRaf = requestAnimationFrame(() => {
+      this.virtualRaf = 0
+      const pending = [...this.pendingVirtualColumns]
+      this.pendingVirtualColumns.clear()
+      for (const key of pending) this.syncColumnWindow(key)
+    })
+  }
+
+  /** 按列 key 重算窗口（滚动合帧/尺寸变化后的实际重建入口；窗口未变则不重建 DOM） */
+  private syncColumnWindow(key: string): void {
+    if (!this.columnStates.has(key)) return
+    const column = [...this.shadow.querySelectorAll<HTMLElement>('.column[data-key]')].find(
+      (c) => c.getAttribute('data-key') === key,
+    )
+    const body = column?.querySelector<HTMLElement>('.column-body')
+    if (!body) return
+    const cards = this._cards.filter((c) => String(c.column ?? '') === key)
+    this.renderColumnWindow(key, cards, body, { force: false })
+  }
+
+  /**
+   * 键盘移动后回焦同 id 卡片（对齐 table edit 的 focusCell 先例）。
+   * 列体虚拟化下移动落点可能落在目标列渲染窗口之外（大列尾部）——此时把该列滚到卡片所在偏移
+   * 并重渲染窗口，卡片进入窗口后回焦；不做则焦点卡脱离文档、焦点跌落到宿主。
+   */
+  private focusCardById(id: string): void {
+    const find = (): HTMLElement | null =>
+      [...this.shadow.querySelectorAll<HTMLElement>('.card')].find((c) => c.getAttribute('data-id') === id) ?? null
+    const rendered = find()
+    if (rendered) {
+      rendered.focus({ preventScroll: true })
+      return
+    }
+    const card = this._cards.find((c) => String(c.id ?? '') === id)
+    const key = String(card?.column ?? '')
+    const state = this.columnStates.get(key)
+    const column = [...this.shadow.querySelectorAll<HTMLElement>('.column[data-key]')].find(
+      (c) => c.getAttribute('data-key') === key,
+    )
+    const body = column?.querySelector<HTMLElement>('.column-body')
+    if (!card || !state || !body) return
+    const cards = this._cards.filter((c) => String(c.column ?? '') === key)
+    const index = cards.findIndex((c) => String(c.id ?? '') === id)
+    if (index < 0) return
+    this.renderColumnWindow(key, cards, body, { force: true, scrollTop: state.cache.offsetOf(index) })
+    find()?.focus({ preventScroll: true })
+  }
+
+  /**
+   * 窗口内卡片高度实测回写（动态行高）：与高度表差异 ≥0.5px 才更新；
+   * 视口上方卡片变高/变矮会平移可视内容，按位移补偿列体 scrollTop（视觉锚定，滚动不跳动），
+   * 随后重渲染受影响列（占位高度依赖最新偏移）。
+   */
+  private handleCardResize = (entries: ResizeObserverEntry[]): void => {
+    const touched = new Map<string, { body: HTMLElement; deltaAbove: number }>()
+    let changed = false
+    for (const entry of entries) {
+      const el = entry.target as HTMLElement
+      const colEl = el.closest('.column')
+      const key = colEl?.getAttribute('data-key') ?? ''
+      const body = colEl?.querySelector<HTMLElement>('.column-body')
+      const index = Number(el.getAttribute('data-index'))
+      const state = this.columnStates.get(key)
+      if (!body || !state || !Number.isFinite(index)) continue
+      const height = entry.borderBoxSize?.[0]?.blockSize ?? el.offsetHeight
+      if (!Number.isFinite(height) || height <= 0) continue
+      const step = height + this.cardGap(body)
+      const old = state.cache.heightAt(index)
+      if (!state.cache.measure(index, step)) continue
+      changed = true
+      const prev = touched.get(key) ?? { body, deltaAbove: 0 }
+      if (state.cache.offsetOf(index) < body.scrollTop) prev.deltaAbove += step - old
+      touched.set(key, prev)
+    }
+    if (!changed) return
+    for (const [key, { body, deltaAbove }] of touched) {
+      if (deltaAbove !== 0) body.scrollTop += deltaAbove
+      const cards = this._cards.filter((c) => String(c.column ?? '') === key)
+      this.renderColumnWindow(key, cards, body, { force: true })
+    }
+  }
+
+  /**
+   * 构建单卡：默认渲染 title；renderCard 在场时按其返回挂载（Node 直挂 / 字符串 textContent）。
+   * `index` 为卡片在所在容器（列体 / 单元格）内的绝对位次——虚拟化下窗口外卡片不在 DOM，
+   * 拖拽落点与范围选一律以 data-index 为口径（非虚拟化时与 DOM 序等价）。
+   */
+  private buildCard(card: KanbanCard, index = -1): HTMLElement {
     const el = document.createElement('div')
     el.className = 'card'
     el.setAttribute('part', 'card')
     el.setAttribute('data-id', String(card.id ?? ''))
+    if (index >= 0) el.setAttribute('data-index', String(index))
     el.setAttribute('draggable', 'true')
     el.setAttribute('tabindex', '0')
     el.setAttribute('role', 'listitem')
@@ -1052,6 +1407,11 @@ export class OASKanban extends OASElement {
       card.hasAttribute('data-selected') && this.selectedIds.size > 1
         ? this._cards.filter((c) => this.selectedIds.has(String(c.id ?? ''))).map((c) => String(c.id ?? ''))
         : [id]
+    // 拖拽源所在列：这些列的窗口在拖拽期间冻结（重建会移除拖拽源节点、可能中断拖拽），
+    // 其它列（拖拽目标）仍可重建——跨列拖拽时列体自动滚动能继续出卡
+    this.dragSourceColumns = new Set(
+      this._cards.filter((c) => this.dragIds.includes(String(c.id ?? ''))).map((c) => String(c.column ?? '')),
+    )
     card.classList.add('drag-source')
     const de = e as DragEvent
     if (de.dataTransfer) {
@@ -1096,20 +1456,27 @@ export class OASKanban extends OASElement {
       this.dropTarget = null
       return
     }
-    const list = [...container.querySelectorAll<HTMLElement>('.card')].map((c) => c.getAttribute('data-id') ?? '')
+    const rendered = [...container.querySelectorAll<HTMLElement>('.card')]
+    // 落点口径：卡片 data-index（容器内绝对位次）+ 容器 data-count（总数）。
+    // 虚拟化下列内只渲染可视窗口，DOM 序看不到窗口外卡片——用 DOM 序推断会算出偏小的落点
+    //（把卡丢到窗口首/尾附近就会错位）；data-index 在非虚拟化时与 DOM 序严格等价。
+    const indexOf = (el: HTMLElement): number => {
+      const n = Number(el.getAttribute('data-index'))
+      return Number.isFinite(n) && n >= 0 ? n : rendered.indexOf(el)
+    }
+    const countAttr = Number(container.getAttribute('data-count'))
+    const total = Number.isFinite(countAttr) ? countAttr : rendered.length
     let index: number
     let before: boolean
     let markCard = hoverCard
     if (hoverCard) {
       const rect = hoverCard.getBoundingClientRect()
       before = de.clientY < rect.top + rect.height / 2
-      index = list.indexOf(hoverCard.getAttribute('data-id') ?? '') + (before ? 0 : 1)
+      index = indexOf(hoverCard) + (before ? 0 : 1)
     } else {
       // 悬在卡片间隙/容器空白（gap/padding 区）：按 clientY 找下方最近卡插其前，
       // 否则容器尾——旧版一律列尾会让间隙松手的卡片飞列尾（实抓）
-      const next = [...container.querySelectorAll<HTMLElement>('.card')].find(
-        (c) => c.getBoundingClientRect().top > de.clientY,
-      )
+      const next = rendered.find((c) => c.getBoundingClientRect().top > de.clientY)
       if (next && this.dragIds.includes(next.getAttribute('data-id') ?? '')) {
         // 「下方最近卡」在拖动集内（悬在源卡正上方间隙）：视同悬在自身——原位零操作、无落点指示
         this.clearDropMarks()
@@ -1118,11 +1485,11 @@ export class OASKanban extends OASElement {
       }
       if (next) {
         before = true
-        index = list.indexOf(next.getAttribute('data-id') ?? '')
+        index = indexOf(next)
         markCard = next
       } else {
         before = false
-        index = list.length
+        index = total
       }
     }
     this.dropTarget = { column, lane, index }
@@ -1135,6 +1502,7 @@ export class OASKanban extends OASElement {
       const to = this.colDropTo
       this.clearAllDragMarks()
       this.dragIds = []
+      this.dragSourceColumns.clear()
       this.colDragFrom = -1
       this.colDropTo = -1
       if (to >= 0) this.applyColumnReorder(from, to)
@@ -1146,6 +1514,7 @@ export class OASKanban extends OASElement {
     const target = this.dropTarget
     this.clearAllDragMarks()
     this.dragIds = []
+    this.dragSourceColumns.clear()
     this.dropTarget = null
     if (!target) return
     this.applyMultiMove(ids, target.column, target.index, target.lane)
@@ -1155,9 +1524,13 @@ export class OASKanban extends OASElement {
     // 取消路径（Esc/拖出窗口/无效落点）：零操作，只清指示与状态，无孤儿标记
     this.clearAllDragMarks()
     this.dragIds = []
+    this.dragSourceColumns.clear()
     this.colDragFrom = -1
     this.colDropTo = -1
     this.dropTarget = null
+    // 拖拽期间跳过的列体窗口重算在此补做（列体边缘自动滚动后窗口需回正）；
+    // 落定成功时数据已回写并整板重建，这里的重算因窗口未变而空跑（无额外 DOM 抖动）
+    if (this.columnStates.size > 0) this.scheduleVirtualSync([])
   }
 
   /** 指示线：目标卡 before/after 插入线；容器尾/空容器给尾部标记 */
@@ -1324,6 +1697,7 @@ export class OASKanban extends OASElement {
     const from = this._columns.findIndex((c) => c.key === key)
     if (from < 0) return
     this.dragIds = []
+    this.dragSourceColumns.clear()
     this.dropTarget = null
     this.colDragFrom = from
     this.colDropTo = -1
@@ -1460,10 +1834,7 @@ export class OASKanban extends OASElement {
       e.preventDefault()
       this.keyboardMove(card, key)
       const movedId = card.getAttribute('data-id') ?? ''
-      const fresh = [...this.shadow.querySelectorAll<HTMLElement>('.card')].find(
-        (c) => c.getAttribute('data-id') === movedId,
-      )
-      fresh?.focus({ preventScroll: true })
+      this.focusCardById(movedId)
       return
     }
     // 列手柄键盘换序：←/→（键盘可达；触屏按钮之外的第三条路径）——RTL 下 ←/→ 视觉方向与 DOM 序互换

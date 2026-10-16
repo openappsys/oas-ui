@@ -2403,3 +2403,196 @@ describe('OASResource 横向虚拟化（时间轴 period 列窗口）', () => {
     expect(expectCullMatchesNaive(partial, 'r2', 36), '空泳道朴素口径同为空').toEqual([])
   })
 })
+
+describe('OASResource 行虚拟化（纵向窗口，泳道/负载两区独立）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  /** 冲刷一帧 rAF：scroll handler 的窗口重渲染在下一帧执行（同横向虚拟化组口径） */
+  const flushRaf = (): Promise<void> => new Promise((resolve) => requestAnimationFrame(() => resolve(undefined)))
+
+  /** 内部诊断视图（只读）：列/行窗口索引与行高前缀模型 */
+  type RowInternals = {
+    winColStart: number
+    winColEnd: number
+    winLaneStart: number
+    winLaneEnd: number
+    winLoadStart: number
+    winLoadEnd: number
+    laneRowOffsets: number[]
+  }
+  const internals = (el: OASResource): RowInternals => el as unknown as RowInternals
+
+  /** 行虚拟化默认 token 模型高（happy-dom 读不到 token → 回落缺省）：泳道行 36+1px 框线、负载行 64+1px */
+  const LANE_ROW_H = 37
+  const LOAD_ROW_H = 65
+
+  const laneRows = (el: OASResource): HTMLElement[] => [
+    ...shadowOf(el).querySelectorAll<HTMLElement>('.lanes .row.lane'),
+  ]
+  const loadRows = (el: OASResource): HTMLElement[] => [
+    ...shadowOf(el).querySelectorAll<HTMLElement>('.loads .row.load'),
+  ]
+  const laneSpacers = (el: OASResource): HTMLElement[] => [
+    ...shadowOf(el).querySelectorAll<HTMLElement>('.lanes > .row-spacer'),
+  ]
+  const loadSpacers = (el: OASResource): HTMLElement[] => [
+    ...shadowOf(el).querySelectorAll<HTMLElement>('.loads > .row-spacer'),
+  ]
+
+  /** N 资源共用一条单日任务（时间轴 1 个 period；每资源 1 条/1 柱），stub 视口 400×180 并重算窗口 */
+  const mountMany = (n: number, vh = 180): OASResource => {
+    const resources = Array.from({ length: n }, (_, i) => ({ id: `r${i}`, name: `R${i}` }))
+    const task = { id: 't0', name: 'T', start: '2026-03-02', end: '2026-03-02', resources: resources.map((r) => r.id) }
+    const el = mount({
+      scale: 'day',
+      resources: JSON.stringify(resources),
+      tasks: JSON.stringify([task]),
+    })
+    const sc = shadowOf(el).querySelector<HTMLElement>('.scroller')!
+    Object.defineProperty(sc, 'clientWidth', { value: 400, configurable: true })
+    Object.defineProperty(sc, 'clientHeight', { value: vh, configurable: true })
+    el.requestUpdate()
+    return el
+  }
+
+  it('① 视口受限：泳道/负载行数有上界（≈窗口+缓冲），spacer 撑起总高 = 全量行数 × 行模型高', () => {
+    const N = 500
+    const el = mountMany(N)
+    const lanes = laneRows(el)
+    const loads = loadRows(el)
+    expect(lanes.length, '泳道行窗口化（远少于 500）').toBeLessThan(60)
+    expect(lanes.length, '窗口内有行（非空）').toBeGreaterThan(0)
+    expect(loads.length, '负载行同步窗口化（两区独立窗口）').toBeLessThan(60)
+    expect(lanes.length).toBeLessThan(N)
+    // 滚动总高不变：spacerTop + 窗内行 × 行模型高 + spacerBottom = 全量 N 行模型高
+    expect(laneSpacers(el).length, '泳道区恰两个 spacer（上/下占位）').toBe(2)
+    const [lTop, lBottom] = laneSpacers(el) as [HTMLElement, HTMLElement]
+    const laneSum =
+      Number.parseFloat(lTop.style.height) + lanes.length * LANE_ROW_H + Number.parseFloat(lBottom.style.height)
+    expect(Math.round(laneSum), '泳道区总高 = 500 × 37（行盒 + 1px 框线同式）').toBe(N * LANE_ROW_H)
+    expect(loadSpacers(el).length, '负载区恰两个 spacer').toBe(2)
+    const [dTop, dBottom] = loadSpacers(el) as [HTMLElement, HTMLElement]
+    const loadSum =
+      Number.parseFloat(dTop.style.height) + loads.length * LOAD_ROW_H + Number.parseFloat(dBottom.style.height)
+    expect(Math.round(loadSum), '负载区总高 = 500 × 65').toBe(N * LOAD_ROW_H)
+  })
+
+  it('② 滚到中部：窗口覆盖可视行（spacerTop > 0）、首末行被窗口化移除、列窗口不随纵向滚动变化', async () => {
+    const el = mountMany(500)
+    const sc = shadowOf(el).querySelector<HTMLElement>('.scroller')!
+    const colBefore: [number, number] = [internals(el).winColStart, internals(el).winColEnd]
+    sc.scrollTop = 200 * LANE_ROW_H
+    sc.dispatchEvent(new Event('scroll'))
+    await flushRaf()
+    // 视口顶（scrollTop 7400，扣表头偏移 ≈33）落在 r200 附近 → r200 必在窗口内
+    const ids = laneRows(el).map((r) => r.dataset['resourceId'])
+    expect(ids, '可视行 r200 在窗口内').toContain('r200')
+    expect(ids, '首行已随窗口平移移除').not.toContain('r0')
+    expect(ids, '末行不在窗口').not.toContain('r499')
+    const [lTop] = laneSpacers(el) as [HTMLElement, HTMLElement]
+    expect(Number.parseFloat(lTop.style.height), '顶部 spacer 占位 > 0').toBeGreaterThan(0)
+    expect(
+      internals(el).winLaneEnd - internals(el).winLaneStart,
+      '行窗大小有界（vh/行高 + 1 + 双侧 buffer 4）',
+    ).toBeLessThanOrEqual(20)
+    expect([internals(el).winColStart, internals(el).winColEnd], '列窗口不随纵向滚动变化（行/列正交）').toEqual(
+      colBefore,
+    )
+  })
+
+  it('③ 视口高不可测（clientHeight=0）→ 两区回落全量、无 spacer（与既有非虚拟布局一致）', () => {
+    const N = 60
+    const resources = Array.from({ length: N }, (_, i) => ({ id: `r${i}`, name: `R${i}` }))
+    const task = { id: 't0', name: 'T', start: '2026-03-02', end: '2026-03-02', resources: resources.map((r) => r.id) }
+    const el = mount({
+      scale: 'day',
+      resources: JSON.stringify(resources),
+      tasks: JSON.stringify([task]),
+    })
+    const sc = shadowOf(el).querySelector<HTMLElement>('.scroller')!
+    // 只 stub clientWidth（列虚拟化生效），clientHeight 保持 0 → 行虚拟化回落全量
+    Object.defineProperty(sc, 'clientWidth', { value: 400, configurable: true })
+    el.requestUpdate()
+    expect(laneRows(el).length, '泳道行全量渲染').toBe(N)
+    expect(loadRows(el).length, '负载行全量渲染').toBe(N)
+    expect(laneSpacers(el).length, '全量模式无 spacer（DOM 与旧实现一致）').toBe(0)
+    expect(loadSpacers(el).length, '全量模式无 spacer').toBe(0)
+  })
+
+  it('④ 纵向滚动窗口平移：窗口内存活行的条节点被复用（聚焦条不丢焦点）', async () => {
+    const el = mountMany(500)
+    const sc = shadowOf(el).querySelector<HTMLElement>('.scroller')!
+    const bar = shadowOf(el).querySelector<HTMLElement>('.lane[data-resource-id="r5"] .bar')!
+    expect(bar, 'r5 行在初始窗口内').toBeTruthy()
+    bar.focus()
+    expect(shadowOf(el).activeElement, '前置：条已聚焦').toBe(bar)
+    sc.scrollTop = LANE_ROW_H * 3 // 平移 3 行，r5 仍在窗口内（buffer 4 吸收）
+    sc.dispatchEvent(new Event('scroll'))
+    await flushRaf()
+    expect(shadowOf(el).querySelector('.lane[data-resource-id="r5"] .bar'), 'r5 行仍在窗口（行未被重建）').toBeTruthy()
+    expect(shadowOf(el).activeElement, '焦点不掉（行与条均被复用，未替换节点）').toBe(bar)
+  })
+
+  it('⑤ 滚到中部后窗口内条仍可点（oas-task-click 的 resourceId 定位正确）', async () => {
+    const el = mountMany(500)
+    const sc = shadowOf(el).querySelector<HTMLElement>('.scroller')!
+    sc.scrollTop = 250 * LANE_ROW_H
+    sc.dispatchEvent(new Event('scroll'))
+    await flushRaf()
+    const clicks: Array<{ id: string; resourceId: string }> = []
+    el.addEventListener('oas-task-click', ((e: CustomEvent<{ id: string; resourceId: string }>) => {
+      clicks.push({ id: e.detail.id, resourceId: e.detail.resourceId })
+    }) as EventListener)
+    const bar = shadowOf(el).querySelector<HTMLElement>('.lane[data-resource-id="r250"] .bar')!
+    expect(bar, 'r250 行在窗口内').toBeTruthy()
+    bar.click()
+    expect(clicks, '窗口内条点击派发（detail 双定位正确）').toEqual([{ id: 't0', resourceId: 'r250' }])
+  })
+
+  it('⑥ 资源 0 个：窗口化路径零异常、无行无 spacer', () => {
+    const el = mount({ resources: '[]', tasks: '[]' })
+    const sc = shadowOf(el).querySelector<HTMLElement>('.scroller')!
+    Object.defineProperty(sc, 'clientHeight', { value: 180, configurable: true })
+    expect(() => el.requestUpdate(), '空数据窗口化不抛').not.toThrow()
+    expect(laneRows(el).length).toBe(0)
+    expect(laneSpacers(el).length).toBe(0)
+    expect(loadRows(el).length).toBe(0)
+  })
+
+  it('⑦ 行/列窗口正交：纵向滚动不变列窗口，横向滚动不变行窗口', async () => {
+    const N = 60
+    const resources = Array.from({ length: N }, (_, i) => ({ id: `r${i}`, name: `R${i}` }))
+    // 三年 day 档（1096 列）→ 列虚拟化与行虚拟化同时生效
+    const task = {
+      id: 't0',
+      name: 'T',
+      start: '2026-01-01',
+      end: '2028-12-31',
+      resources: resources.map((r) => r.id),
+    }
+    const el = mount({ scale: 'day', resources: JSON.stringify(resources), tasks: JSON.stringify([task]) })
+    const sc = shadowOf(el).querySelector<HTMLElement>('.scroller')!
+    Object.defineProperty(sc, 'clientWidth', { value: 400, configurable: true })
+    Object.defineProperty(sc, 'clientHeight', { value: 180, configurable: true })
+    el.requestUpdate()
+    expect(internals(el).winColEnd - internals(el).winColStart, '列窗口已窗口化').toBeLessThan(1096)
+    expect(internals(el).winLaneEnd - internals(el).winLaneStart, '行窗口已窗口化').toBeLessThan(N)
+    const colBefore: [number, number] = [internals(el).winColStart, internals(el).winColEnd]
+    sc.scrollTop = 20 * LANE_ROW_H
+    sc.dispatchEvent(new Event('scroll'))
+    await flushRaf()
+    expect([internals(el).winColStart, internals(el).winColEnd], '纵向滚动不改列窗口').toEqual(colBefore)
+    const laneAfterV: [number, number] = [internals(el).winLaneStart, internals(el).winLaneEnd]
+    expect(laneAfterV[0], '纵向滚动确实平移了行窗口（断言非平凡）').toBeGreaterThan(0)
+    sc.scrollLeft = 3600
+    sc.dispatchEvent(new Event('scroll'))
+    await flushRaf()
+    expect(internals(el).winColStart, '横向滚动平移列窗口').toBeGreaterThan(colBefore[0])
+    expect([internals(el).winLaneStart, internals(el).winLaneEnd], '横向滚动不改行窗口').toEqual(laneAfterV)
+  })
+})

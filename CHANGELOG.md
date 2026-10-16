@@ -6,6 +6,11 @@
 
 ### 特性
 
+- **数据密集型组件规模化（行窗口协议）**：新增共享契约 `shared/window-data.ts`（`oas-window-request` 事件名、`{start,end,reason}` 半开绝对区间、±8 行缓冲、覆盖/去重工具）——`windowed`（布尔）+ `total`（全量行数）+ `window-start`（`data[0]` 绝对行号）三属性的统一语义，宿主只喂可视窗口切片即可支撑十万行级数据。
+- **`oas-table` 服务端行窗口模式**：`windowed` + `total` + `window-start` → 组件不持有全量数据，按可视行窗口派发 `oas-window-request` 由宿主回填；本地排序/筛选/分组/分页/树形展开交由宿主（跳过本地执行并 devWarn），行的选中/编辑/点击等按行能力在已装载切片上正常。
+- **`oas-resource` 纵向行虚拟化**：资源泳道与负载直方图行按可视窗口渲染（上下 spacer 撑起总滚动高度，滚动位置与 sticky 名列不变），行进出窗口按资源 id 键控增删（聚焦条不重建）；与既有列虚拟化正交。
+- **`oas-kanban` 列体卡片虚拟化**：单列大量卡片时按可视窗口渲染（复用 `dynamic-height` 内核支持动态卡片高），上下占位撑起列滚动范围；列头计数/WIP 按全量、拖拽落点用绝对位次、滚动重建后回焦同卡；`overflow-anchor: none` 防锚定放大。
+
 - **`oas-scheduler` 资源视图**：新增 `view="resource"`（单日资源时间轴：行为资源、横向为小时）与 `view="resource-week"`（周 × 资源矩阵：行为资源、列为本周 7 天，格内按时刻纵向排布定时事件）。新增 `resources` property / attribute（`SchedulerResource[]`，`[{ id, title, color? }]`）与事件字段 `SchedulerEvent.resource`——缺省或指向未知 id 的事件归「未分配」行。
 - **`oas-scheduler` 拖拽创建**：在 `week` / `day` / `resource` 视图的时间格空白处按住拖出 ≥15 分钟区间，派发 `oas-create { date, start, end, resource? }`（组件不自动建事件，宿主接后自行 `addEvent`）；位移不足视作点击，派发 `oas-day-click`（detail 增 `resource`）。`Esc` / `pointercancel` 取消且不派发。
 - **`oas-scheduler` 当前时间线**：新增 `show-now`（默认开）——今天所在的时间视图与资源单日视图在当前时刻渲染 now 线，每分钟刷新；`show-now="false"` 关闭。

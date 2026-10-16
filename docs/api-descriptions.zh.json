@@ -3201,7 +3201,9 @@
       "row-draggable": "行拖拽排序：渲染拖拽手柄列，拖放派发 oas-row-reorder；虚拟滚动（height）下禁用并告警一次",
       "column-virtual": "横向虚拟滚动（列窗口化）：非固定列只渲染可视窗口列，窗口外列以占位格 colSpan 归并（宽度由 colgroup 求和）。约束：建议全列显式 width；多级表头 / span-method / 合计行不兼容（告警降级）；固定列须两端布局",
       "group-by": "分组视图：按字段值分节渲染（分节头 = 字段值 + 组内计数 + 折叠箭头，点击折叠/展开该组，默认全展开）；组间按字段值首次出现序、组内排序生效；空值行归入「（空）」组；与 merge 列 / span-method / row-draggable 同用时告警一次并降级为普通渲染；可与 column-virtual / 虚拟滚动并用（分节头整行 colSpan 全宽）",
-      "cell-tooltip": "单元格溢出提示（默认开启，`\"false\"` 关闭）：纯文本单元格溢出（scrollWidth > clientWidth）时 hover 显示全文浮层——表格级单例浮层（token 反色，暗色可读），滚动/重渲染自动隐藏；富内容格与已有原生 title 的 ellipsis 列豁免（避免双重提示）"
+      "cell-tooltip": "单元格溢出提示（默认开启，`\"false\"` 关闭）：纯文本单元格溢出（scrollWidth > clientWidth）时 hover 显示全文浮层——表格级单例浮层（token 反色，暗色可读），滚动/重渲染自动隐藏；富内容格与已有原生 title 的 ellipsis 列豁免（避免双重提示）",
+      "windowed": "服务端行窗口模式（布尔，默认关）：与 total / window-start 配合，宿主只喂可视窗口切片，组件不持有全量数据。开启后按可视行窗口（前后各 8 行缓冲）计算期望区间，未被已装载区间覆盖时派发 oas-window-request 由宿主回填；本地排序/筛选/分组/分页/树形展开交由宿主负责（组件跳过本地执行并 devWarn）。缺省关闭时行为不变",
+      "window-start": "windowed 模式下 data[0] 在全量数据集中的行下标（绝对行号）：组件按绝对行渲染与占位；非 windowed 时忽略"
     },
     "events": {
       "oas-check": "复选框选中变化，`detail: { keys: string[] }`",
@@ -3218,7 +3220,8 @@
       "oas-cell-click": "点击数据单元格派发，`detail: { row, column, value, rowIndex, columnIndex }`（交互控件内不派发）",
       "oas-row-dblclick": "双击数据行派发，`detail: { row, rowIndex }`",
       "oas-export": "导出触发（按钮或 exportData），`detail: { format, fileName, rowCount }`",
-      "oas-row-reorder": "行拖拽/Alt+↑↓ 重排，`detail: { from, to, row }`（to 为移除被拖行后的插入位；组件不改 data）"
+      "oas-row-reorder": "行拖拽/Alt+↑↓ 重排，`detail: { from, to, row }`（to 为移除被拖行后的插入位；组件不改 data）",
+      "oas-window-request": "windowed 模式下期望的行窗口未被已装载区间覆盖时派发，detail: { start, end, reason }（半开区间、绝对行下标；reason 为 init / scroll / resize / data）；同一期望区间不重复派发"
     },
     "slots": {
       "template[slot=\"empty\"]": "空态富内容（优先于 empty-text 与默认空态文案）",

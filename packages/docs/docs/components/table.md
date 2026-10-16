@@ -423,6 +423,27 @@
   </div>
 </DemoBlock>
 
+## 服务端行窗口（windowed）
+
+> 大数据量场景（十万行级）：宿主只喂「可视窗口附近」的行切片，组件**不持有全量数据**——行窗口按滚动位置计算，未被已装载区间覆盖时派发 `oas-window-request`，由宿主回填，形成「滚动 → 请求 → 回填」闭环。
+
+属性 `windowed`（开启）+ `total`（全量行数）+ `window-start`（`data[0]` 的绝对行号）；事件 `oas-window-request`：`detail: { start, end, reason }`（半开区间、绝对行号；`reason` 为 `init` / `scroll` / `resize` / `data`，同一期望区间不重复派发）。
+
+```html
+<oas-table windowed total="100000" window-start="0" row-key="id" height="360" columns='[…]'></oas-table>
+<script>
+  const el = document.querySelector('oas-table[windowed]')
+  el.addEventListener('oas-window-request', (e) => {
+    const { start, end } = e.detail
+    // 真实项目在此请求后端 [start, end) 行；示例用本地数据模拟
+    el.setAttribute('window-start', String(start))
+    el.setAttribute('data', JSON.stringify(rowsOf(start, end)))
+  })
+</script>
+```
+
+windowed 模式下**本地排序 / 筛选 / 分组 / 分页 / 树形展开交由宿主负责**（组件跳过本地执行并 devWarn）——请监听既有 `oas-sort-change` / `oas-filter-change` / `oas-page-change` 等事件，在全量数据上处理后回填窗口切片。缺省关闭时行为不变。
+
 ## 列过滤
 
 <DemoBlock title="表头列过滤（filterable + filter-values 受控）">
@@ -1008,6 +1029,8 @@ onMounted(() => {
 | `summary-scope` | 合计行聚合范围：`all`（默认，全量数据）/ `page`（当前页） | `string` | `all` |
 | `table-layout` | 透传表格布局算法（fixed 时列宽严格按 width 声明） | `string` | — |
 | `total` | 外部数据分页总行数（服务端分页）：与 pagination/current/page-size 配合，`data` 只放当前页切片（组件不再内部分页），总数直通分页器；翻页派发 oas-page-change 由宿主换数据；属性缺席或非法值回落内部分页 | `string` | — |
+| `window-start` | windowed 模式下 data[0] 在全量数据集中的行下标（绝对行号）：组件按绝对行渲染与占位；非 windowed 时忽略 | `string` | `0` |
+| `windowed` | 服务端行窗口模式（布尔，默认关）：与 total / window-start 配合，宿主只喂可视窗口切片，组件不持有全量数据。开启后按可视行窗口（前后各 8 行缓冲）计算期望区间，未被已装载区间覆盖时派发 oas-window-request 由宿主回填；本地排序/筛选/分组/分页/树形展开交由宿主负责（组件跳过本地执行并 devWarn）。缺省关闭时行为不变 | `boolean` | — |
 
 #### 事件
 
@@ -1028,6 +1051,7 @@ onMounted(() => {
 | `oas-row-reorder` | 行拖拽/Alt+↑↓ 重排，`detail: { from, to, row }`（to 为移除被拖行后的插入位；组件不改 data） |
 | `oas-scroll` | 虚拟滚动滚动事件（rAF 节流），`detail: { scrollTop, start, end }` |
 | `oas-sort-change` | 排序变化，`detail: { key, order: 'asc' \| 'desc' \| '' }` |
+| `oas-window-request` | windowed 模式下期望的行窗口未被已装载区间覆盖时派发，detail: { start, end, reason }（半开区间、绝对行下标；reason 为 init / scroll / resize / data）；同一期望区间不重复派发 |
 
 #### 插槽
 

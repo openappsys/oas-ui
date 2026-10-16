@@ -120,12 +120,16 @@ const EXEMPT_EVENTS = new Set([
   'oas-selection-change', // gantt：多选需真点行（通用探针不可达；qa-regression/gantt.spec.ts 已固化真实点选链路）
   'oas-task-add', // gantt：命令式/行内新建需真点按钮或拖出区间（通用探针不可达；qa-regression/gantt.spec.ts 已固化真实链路）
   'oas-reschedule', // gantt：依赖联动排程需 auto-schedule 开启后真拖前置（通用探针不可达；qa-regression/gantt.spec.ts 已固化真实链路）
+  'oas-window-request', // table：windowed 模式需宿主只喂可视窗口切片才触发（通用探针不可达；qa-regression/table.spec.ts 已固化真实滚动→请求→回填链路）
 ])
 
 // 容器托管的反射属性（由父组件按 active/受控集合写回，非宿主直驱 API）：豁免静态演示要求
 // key = demo 页组件名，value = 豁免的属性名
 const EXEMPT_ATTRS: Record<string, string[]> = {
   collapse: ['open'], // oas-collapse-item 的 open 由容器按展开集合写回（API 表已注明「由容器托管」）
+  // windowed 模式要求宿主只喂可视窗口切片并回填（服务端行窗口协议），静态 demo 无法体现；
+  // 机制由 oas-table-windowed 单测与 qa-regression/table.spec 覆盖（API 表已注明属宿主集成模式）
+  table: ['windowed', 'window-start'],
 }
 
 // manifest 的 tag 与真实注册 tag 不一致的组件（demo 页用真实 tag 渲染）

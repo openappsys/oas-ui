@@ -274,3 +274,127 @@ test('kanban 宿主定高：板体吃满宿主不溢出 + 列体真内滚（回�
   expect(r.bodyScrolls, '列体独立纵向滚动真成立（内容超高出现内滚）').toBe(true)
   expect(r.overlap, '板体不得与宿主后续兄弟内容重叠').toBe(false)
 })
+
+// ===== 列体虚拟化（大列只渲染可视窗口）=====
+// 注入大列数据后：卡片 DOM 有上界、列头计数/WIP 仍按全量、滚动范围按全量撑开、滚到中部覆盖中部卡片。
+// 反证点：若窗口计算退回全量渲染，topCount 会等于 3000（上界断言必失败）。
+
+test('kanban 列体虚拟化：注入 3000 卡大列后卡片 DOM 有上界、列头计数仍为全量、滚到中部覆盖中部卡片', async ({
+  page,
+}) => {
+  await page.goto('/components/kanban.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#kanban-scroll')
+  const r = await page.evaluate(async () => {
+    const el = document.querySelector('#kanban-scroll')!
+    const TOTAL = 3000
+    el.setAttribute(
+      'columns',
+      JSON.stringify([
+        { key: 'backlog', title: '需求池' },
+        { key: 'sprint', title: '本迭代' },
+      ]),
+    )
+    el.setAttribute(
+      'cards',
+      JSON.stringify(
+        Array.from({ length: TOTAL }, (_, i) => ({ id: `big${i}`, column: 'backlog', title: `大列卡 ${i}` })),
+      ),
+    )
+    const bodyOf = (): HTMLElement =>
+      el.shadowRoot!.querySelector('.column[data-key="backlog"] .column-body') as HTMLElement
+    const indexes = (): number[] =>
+      [...bodyOf().querySelectorAll<HTMLElement>('.card[data-index]')].map((c) => Number(c.getAttribute('data-index')))
+    const frame = (): Promise<void> =>
+      new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())))
+    await frame()
+    const body = bodyOf()
+    const top = indexes()
+    const scrollRange = body.scrollHeight
+    const viewport = body.clientHeight
+    const pads = body.querySelectorAll('.vpad').length
+    const headCount = el.shadowRoot!.querySelector('.column[data-key="backlog"] .column-count')!.textContent
+    // 滚到中部
+    body.scrollTop = Math.floor(scrollRange / 2)
+    body.dispatchEvent(new Event('scroll'))
+    await frame()
+    const mid = indexes()
+    return {
+      total: TOTAL,
+      topCount: top.length,
+      topFirst: top[0] ?? -1,
+      pads,
+      headCount,
+      viewport,
+      scrollRange,
+      midCount: mid.length,
+      midFirst: mid[0] ?? -1,
+      midLast: mid[mid.length - 1] ?? -1,
+    }
+  })
+  expect(r.pads, '窗口外部分用上下占位撑起').toBe(2)
+  expect(r.topCount, '首屏卡片 DOM 有上界（远小于 3000）').toBeLessThanOrEqual(60)
+  expect(r.topFirst, '首屏窗口从第 0 张开始').toBe(0)
+  expect(r.headCount, '列头计数仍为全量 3000').toBe('3000')
+  expect(r.viewport, '列体是真滚动视口（可测高度）').toBeGreaterThan(10)
+  expect(r.scrollRange, '列内滚动范围按全量卡片高度撑开').toBeGreaterThan(80000)
+  expect(r.midCount, '中部窗口仍有上界').toBeLessThanOrEqual(60)
+  expect(r.midFirst, '已滚到中部（窗口不在首屏）').toBeGreaterThan(200)
+  expect(r.midLast, '窗口覆盖一段连续卡片').toBeGreaterThan(r.midFirst + 5)
+})
+
+test('kanban 虚拟化下列内拖拽落点用绝对位次：拖首张到第 4 张上方 → index 2（窗口外卡片不漏判、事件不静默失效）', async ({
+  page,
+}) => {
+  await page.goto('/components/kanban.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#kanban-scroll')
+  const r = await page.evaluate(async () => {
+    const el = document.querySelector('#kanban-scroll')!
+    el.setAttribute('columns', JSON.stringify([{ key: 'backlog', title: '需求池' }]))
+    el.setAttribute(
+      'cards',
+      JSON.stringify(
+        Array.from({ length: 500 }, (_, i) => ({ id: `virt${i}`, column: 'backlog', title: `虚拟卡 ${i}` })),
+      ),
+    )
+    const events: unknown[] = []
+    el.addEventListener('oas-change', (e) => events.push((e as CustomEvent).detail))
+    await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())))
+    const bodyOf = (): HTMLElement =>
+      el.shadowRoot!.querySelector('.column[data-key="backlog"] .column-body') as HTMLElement
+    const rendered = [...bodyOf().querySelectorAll<HTMLElement>('.card[data-index]')]
+    const src = rendered[0]!
+    const tgt = rendered[3]!
+    const dt = new DataTransfer()
+    src.dispatchEvent(new DragEvent('dragstart', { bubbles: true, composed: true, dataTransfer: dt }))
+    // 悬在目标卡上半（客户端坐标取自真实排版）→ 插到其前
+    const rect = tgt.getBoundingClientRect()
+    const clientY = rect.top + 1
+    tgt.dispatchEvent(new DragEvent('dragover', { bubbles: true, composed: true, dataTransfer: dt, clientY }))
+    tgt.dispatchEvent(new DragEvent('drop', { bubbles: true, composed: true, dataTransfer: dt }))
+    // 落定后整板重建（旧列体已脱离文档）→ 在新列体上收尾 dragend
+    bodyOf().dispatchEvent(new DragEvent('dragend', { bubbles: true, composed: true, dataTransfer: dt }))
+    const ids = (JSON.parse(el.getAttribute('cards') ?? '[]') as Array<{ id: string }>).map((c) => c.id)
+    return {
+      srcId: src.getAttribute('data-id'),
+      srcIndex: src.getAttribute('data-index'),
+      tgtIndex: tgt.getAttribute('data-index'),
+      events,
+      head: ids.slice(0, 4),
+      total: ids.length,
+      orphanMark: el.shadowRoot!.querySelector('.drop-before, .drop-after, .drop-tail') !== null,
+    }
+  })
+  expect(r.total, '数据未被窗口化影响').toBe(500)
+  expect(r.srcId, '拖拽源是首张卡').toBe('virt0')
+  expect(r.srcIndex).toBe('0')
+  expect(r.tgtIndex, '目标卡是第 4 张（data-index=3）').toBe('3')
+  expect(r.events.length, '虚拟化下拖拽照常派发 oas-change').toBe(1)
+  expect(r.events[0], '落点 index = 移除自身后的插入位 2').toEqual({
+    id: 'virt0',
+    from: 'backlog',
+    to: 'backlog',
+    index: 2,
+  })
+  expect(r.head, '源卡落到第 3 位').toEqual(['virt1', 'virt2', 'virt0', 'virt3'])
+  expect(r.orphanMark, 'dragend 后无孤儿指示线').toBe(false)
+})

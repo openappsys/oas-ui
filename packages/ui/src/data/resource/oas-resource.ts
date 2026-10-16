@@ -373,11 +373,53 @@ const SCALE_COL: Record<ResourceScale, number> = { day: 36, week: 90, month: 110
 const MIN_BAR_W = 8
 /** 横向虚拟窗口两侧预渲染列数（overscan）：滚动中提前铺好视口外一屏，避免边缘露白 */
 const COL_BUFFER = 4
+/** 纵向行虚拟窗口上下预渲染行数（overscan）：语义同 COL_BUFFER，泳道区/负载区共用 */
+const ROW_BUFFER = 4
 const DAY_MS = 86_400_000
 /** period 构建护栏（防脏数据撑爆循环） */
 const MAX_PERIODS = 5000
 /** levelResources 缺省迭代上限 */
 const DEFAULT_MAX_ITER = 500
+
+/**
+ * 变高行虚拟窗口（泳道区用；负载区行定高，直接走 computeVirtualWindow）：
+ * 与 computeVirtualWindow 同语义（scrollTop 夹取、buffer 行上下越界预渲染、行索引半开区间），
+ * 但行高可变——泳道行高随段数（segs）变化（segs×barH + (segs+1)×gap + 行框线），offsets 为
+ * n+1 前缀和（offsets[i] = 行 i 顶，offsets[n] = 总高）。定高输入下与 computeVirtualWindow 逐位等价：
+ * start = clamped 所在行 − buffer（= floor(top/ih) − buffer），end = 视口底后首行 + buffer（= ceil((top+vh)/ih) + buffer）。
+ */
+function computeRowWindowFromOffsets(
+  offsets: number[],
+  top: number,
+  viewport: number,
+  count: number,
+  buffer = 4,
+): { start: number; end: number } {
+  if (count <= 0) return { start: 0, end: 0 }
+  const vh = Math.max(0, Number.isFinite(viewport) ? viewport : 0)
+  const total = offsets[count] ?? 0
+  const clamped = Math.min(Math.max(0, Number.isFinite(top) ? top : 0), Math.max(0, total - vh))
+  // 首个「行底 offsets[i+1] > clamped」的行 = clamped 所在行
+  let lo = 0
+  let hi = count
+  while (lo < hi) {
+    const mid = (lo + hi) >> 1
+    if ((offsets[mid + 1] ?? 0) <= clamped) lo = mid + 1
+    else hi = mid
+  }
+  const start = Math.max(0, lo - buffer)
+  // 首个「行顶 offsets[i] ≥ clamped + vh」的行 = 视口底之后首行（无则 count）
+  const bottom = clamped + vh
+  let a = 0
+  let b = count
+  while (a < b) {
+    const mid = (a + b) >> 1
+    if ((offsets[mid] ?? 0) < bottom) a = mid + 1
+    else b = mid
+  }
+  const end = Math.min(count, a + buffer)
+  return { start, end }
+}
 
 /** 资源已知字段（清洗时按各自口径处理）；此外的键视为宿主自定义字段，原样透传 */
 const RESERVED_RESOURCE_KEYS = new Set(['id', 'name', 'capacity'])
@@ -902,6 +944,7 @@ const ATTR_RESOURCE_ID = 'data-resource-id'
  * - 资源泳道：时间轴由全部任务 start..end 推断，每资源一行画其被分配的任务条
  * - 负载直方图：period（按 scale 归日/周/月）柱高 ∝ 该资源该 period 被分配任务数，load > capacity 加 .over
  * - 泳道与直方图共享同一横向滚动容器与列宽（单滚动容器）
+ * - 双向虚拟化：横向 period 列窗口 + 纵向行窗口（泳道/负载两区独立，spacer 占位撑起滚动总高）
  * - MVP 不做排程/平衡引擎自动回写：levelResources 为导出的纯函数，由宿主按需调用
  */
 export class OASResource extends OASElement {
@@ -918,6 +961,16 @@ export class OASResource extends OASElement {
   /** 横向虚拟窗口（列索引半开区间 [winColStart, winColEnd)）；视口不可测时回落全量 [0, periods.length) */
   private winColStart = 0
   private winColEnd = 0
+  /**
+   * 纵向（行）虚拟窗口（行索引半开区间，泳道区/负载区**各自独立**）；视口高不可测时回落全量
+   * [0, 资源数)。泳道区行高随段数变化（computeRowWindowFromOffsets），负载区定高行（computeVirtualWindow）。
+   */
+  private winLaneStart = 0
+  private winLaneEnd = 0
+  private winLoadStart = 0
+  private winLoadEnd = 0
+  /** 泳道行高前缀和缓存（syncRowWindow 每次重算；renderLanes 写 spacer 高度复用同一份行模型） */
+  private laneRowOffsets: number[] = []
   /** 滚动重渲染的 rAF 句柄（0 = 无挂起帧）；断开连接时取消防泄漏 */
   private scrollRaf = 0
   /**
@@ -1232,6 +1285,147 @@ export class OASResource extends OASElement {
     this.winColEnd = win.end
   }
 
+  // ===== 行窗口（纵向虚拟化）=====
+
+  /**
+   * 读组件自定义属性 token 的 px 数值：纯数字或 Npx 才采信；其余形态（em/rem、calc/max 表达式、
+   * 不可解析、无值）回落缺省。happy-dom 的 getComputedStyle 不解析 var() → 单测走回落值
+   * （与视觉缺省 token 一致）；真机自定义属性计算值保留未求值 token 流（如 max(…)），同样走派生/回落。
+   */
+  private tokenPx(name: string, fallback: number): number {
+    let raw = ''
+    try {
+      raw = getComputedStyle(this).getPropertyValue(name).trim()
+    } catch {
+      return fallback
+    }
+    if (raw === '') return fallback
+    const n = Number.parseFloat(raw)
+    if (!Number.isFinite(n) || n <= 0) return fallback
+    return /^[\d.]+(px)?$/i.test(raw) ? n : fallback
+  }
+
+  /** 泳道条高（--oas-resource-bar-height，缺省 20）/ 行高（--oas-resource-row-height，缺省 36）：缺省与 CSS 一致 */
+  private barHeightPx(): number {
+    return this.tokenPx('--oas-resource-bar-height', 20)
+  }
+  private rowHeightPx(): number {
+    return this.tokenPx('--oas-resource-row-height', 36)
+  }
+  /** 泳道行间 gap：宿主以 px 字面量覆盖 --oas-resource-lane-gap 时采信；否则按 :host 同式派生
+   * （CSS gap = max(0, (rowH − barH) / 2)，用实测/回落 token 派生即与 CSS 计算结果一致） */
+  private laneGapPx(): number {
+    let raw = ''
+    try {
+      raw = getComputedStyle(this).getPropertyValue('--oas-resource-lane-gap').trim()
+    } catch {
+      raw = ''
+    }
+    const m = /^([\d.]+)px$/i.exec(raw)
+    if (m) return Number(m[1])
+    return Math.max(0, (this.rowHeightPx() - this.barHeightPx()) / 2)
+  }
+  /** 表头刻度高（--oas-resource-header-height，缺省 32）/ 负载行轨高（--oas-resource-load-height，缺省 64） */
+  private headerHeightPx(): number {
+    return this.tokenPx('--oas-resource-header-height', 32)
+  }
+  private loadHeightPx(): number {
+    return this.tokenPx('--oas-resource-load-height', 64)
+  }
+  /** 行模型高（含 .row 的 1px border-bottom）：spacer 与真实行盒同式，总滚动高不随窗口平移漂移 */
+  private laneRowHeight(segs: number): number {
+    return segs * this.barHeightPx() + (segs + 1) * this.laneGapPx() + 1
+  }
+  private loadRowHeight(): number {
+    return this.loadHeightPx() + 1
+  }
+
+  /** 泳道行高前缀和（offsets[0] = 0，offsets[n] = 总高）：行高 = segs 段轨道高 + 1px 行框线 */
+  private buildLaneRowOffsets(): number[] {
+    const n = this._resources.length
+    const out = new Array<number>(n + 1)
+    out[0] = 0
+    let acc = 0
+    for (let i = 0; i < n; i++) {
+      acc += this.laneRowHeight(this.laneLayout.get(this._resources[i]!.id)?.segs ?? 1)
+      out[i + 1] = acc
+    }
+    return out
+  }
+
+  /** 区域纵向起点：offsetTop > 0（有布局）取实测（相对滚动内容顶，RTL 不影响纵向坐标）；否则回落估算 */
+  private zoneTop(el: HTMLElement | null, estimate: number): number {
+    const top = el?.offsetTop ?? 0
+    return top > 0 ? top : estimate
+  }
+
+  /**
+   * 纵向（行）虚拟窗口同步：由 scroller 的 scrollTop / clientHeight 与两区行高模型算出行索引半开区间。
+   * 两区独立：泳道区锚 .lanes 顶（表头行之下），负载区锚 .loads 顶（泳道区 + 直方图表头行之下）——
+   * 区域起点优先实测 offsetTop（先量再算），不可测（happy-dom / 隐藏容器）回落估算值。
+   * 视口高不可测（clientHeight ≤ 10，与列虚拟化的 clientWidth 口径一致）→ 两区都回落全量。
+   */
+  private syncRowWindow(): void {
+    const count = this._resources.length
+    const vh = this.scrollerEl?.clientHeight ?? 0
+    this.laneRowOffsets = this.buildLaneRowOffsets()
+    if (count === 0 || !this.scrollerEl || vh <= 10) {
+      this.winLaneStart = 0
+      this.winLaneEnd = count
+      this.winLoadStart = 0
+      this.winLoadEnd = count
+      return
+    }
+    const scrollTop = this.scrollerEl.scrollTop
+    const laneTop = this.zoneTop(this.lanesEl, this.headerHeightPx() + 1)
+    // 直方图表头行无显式高度（估表头行同量级）；误差远小于 ROW_BUFFER 行的预渲染余量，且真机走实测
+    const loadTopEstimate = laneTop + (this.laneRowOffsets[count] ?? 0) + this.headerHeightPx() + 1
+    const loadTop = this.zoneTop(this.loadsEl, loadTopEstimate)
+    const laneWin = computeRowWindowFromOffsets(this.laneRowOffsets, scrollTop - laneTop, vh, count, ROW_BUFFER)
+    this.winLaneStart = laneWin.start
+    this.winLaneEnd = laneWin.end
+    const loadWin = computeVirtualWindow(scrollTop - loadTop, vh, this.loadRowHeight(), count, ROW_BUFFER)
+    this.winLoadStart = loadWin.start
+    this.winLoadEnd = loadWin.end
+  }
+
+  /**
+   * 行占位 spacer（纵向窗口化时撑起「全量行数 × 行高」的滚动总高）：spacer-top 在首行前、
+   * spacer-bottom 在末行后，窗内真实行盒夹在其间——容器总高 = spacerTop + 窗内行 + spacerBottom
+   * 恒等于全量行模型总高，滚动条长度与滚动位置不随窗口平移抖动；行保持正常流（sticky 名列依赖）。
+   * 非窗口化（全量渲染）时移除 spacer：DOM 与既有全量实现一致（含 .row:last-child 语义）。
+   */
+  private ensureRowSpacers(container: HTMLElement, windowed: boolean): [HTMLElement, HTMLElement] {
+    let top: HTMLElement | null = null
+    let bottom: HTMLElement | null = null
+    for (const el of [...container.children]) {
+      if (!(el instanceof HTMLElement) || !el.classList.contains('row-spacer')) continue
+      if (el === container.firstElementChild) top = el
+      else if (el === container.lastElementChild) bottom = el
+      else el.remove() // 位置漂移的残留 spacer（旧快照等），重建
+    }
+    const make = (): HTMLElement => {
+      const sp = document.createElement('div')
+      sp.className = 'row-spacer'
+      sp.setAttribute('aria-hidden', 'true')
+      return sp
+    }
+    if (!windowed) {
+      top?.remove()
+      bottom?.remove()
+      return [top ?? make(), bottom ?? make()]
+    }
+    if (!top) {
+      top = make()
+      container.insertBefore(top, container.firstChild)
+    }
+    if (!bottom) {
+      bottom = make()
+      container.appendChild(bottom)
+    }
+    return [top, bottom]
+  }
+
   /** 首个 endMs > ms 的 period 索引（= 覆盖 ms 的最早 period；periods 按时间连续有序）；越界返回 length */
   private firstPeriodEndingAfter(ms: number): number {
     const periods = this.periods
@@ -1269,7 +1463,7 @@ export class OASResource extends OASElement {
     this.emptyEl = this.shadow.querySelector('.empty')
     this.scrollerEl?.addEventListener('click', this.onScrollerClick)
     this.scrollerEl?.addEventListener('keydown', this.onScrollerKeydown)
-    // 横向虚拟：滚动只重渲染窗口内的刻度/负载/泳道（passive，不与滚动竞争主线程）
+    // 双向虚拟（横向列 + 纵向行）：滚动只重渲染窗口内的内容（passive，不与滚动竞争主线程）
     this.scrollerEl?.addEventListener('scroll', this.onScrollerScroll, { passive: true })
     // 容器尺寸变化 → 重算列窗口并重渲染窗口内容（bind 幂等重挂：先断开旧观察器再建新的）。
     // 覆盖「隐藏→显示」（首帧 clientWidth 不可测时 update() 回落全量，RO 在可见后触发即修正）、
@@ -1303,25 +1497,37 @@ export class OASResource extends OASElement {
   }
 
   /**
-   * 容器尺寸变化（ResizeObserver 回调）：列窗口可能随视口宽变化，重算并重渲染窗口内容。
-   * 窗口未变（已是全量 / 尺寸变化不足以改变窗口）则跳过重渲染，避免无谓重建。
+   * 容器尺寸变化（ResizeObserver 回调）：列/行窗口都可能随视口尺寸变化，重算并重渲染窗口内容。
+   * 窗口均未变（如亚像素滚动、尺寸变化不足以改变窗口）则跳过重渲染，避免无谓重建。
    */
   private onViewportResize(): void {
     this.renderWindow()
   }
 
   /**
-   * 窗口内重渲染：重算列窗口后重建刻度/负载列，并按稳定 key 增量 patch 泳道条。
-   * 窗口索引未变（如纵向滚动、亚列像素滚动）则整体跳过——刻度/条绝对定位在画布坐标系内，
-   * 容器自身滚动即自然平移，无需重渲染（滚动帧退化为空操作，纵向滚动不再重建泳道 → 焦点保持）。
+   * 窗口内重渲染：重算列窗口 + 行窗口（泳道区/负载区独立），重建窗口内的刻度/负载列/泳道行。
+   * 列窗口未变 → 刻度不重建；行/列窗口均未变则整体跳过——刻度/条绝对定位在画布坐标系内、行随
+   * 容器自然平移，无需重渲染（滚动帧退化为空操作）。纵向滚动只重建行窗口内的泳道/负载行：
+   * 行按资源 id 键控复用、行内条走 ensureBar 稳定 key → 已聚焦的条不因滚动被替换（焦点保持）。
    * 滚动帧与命令式滚动共用。
    */
   private renderWindow(): void {
-    const prevStart = this.winColStart
-    const prevEnd = this.winColEnd
+    const prevColStart = this.winColStart
+    const prevColEnd = this.winColEnd
+    const prevLaneStart = this.winLaneStart
+    const prevLaneEnd = this.winLaneEnd
+    const prevLoadStart = this.winLoadStart
+    const prevLoadEnd = this.winLoadEnd
     this.syncColWindow()
-    if (this.winColStart === prevStart && this.winColEnd === prevEnd) return
-    this.renderTicks()
+    this.syncRowWindow()
+    const colChanged = this.winColStart !== prevColStart || this.winColEnd !== prevColEnd
+    const rowChanged =
+      this.winLaneStart !== prevLaneStart ||
+      this.winLaneEnd !== prevLaneEnd ||
+      this.winLoadStart !== prevLoadStart ||
+      this.winLoadEnd !== prevLoadEnd
+    if (!colChanged && !rowChanged) return
+    if (colChanged) this.renderTicks()
     this.renderLanes()
     this.renderLoads(this.loadRows, this.maxLoad)
   }
@@ -1505,6 +1711,8 @@ export class OASResource extends OASElement {
     // 缓存负载结果供滚动帧复用（滚动只换窗口，不重算矩阵）
     this.loadRows = perResourceLoads
     this.maxLoad = maxLoad
+    // 行窗口同步：须在 computeLaneLayout 之后（泳道行高模型读段数）、行渲染之前
+    this.syncRowWindow()
     this.renderTicks()
     this.renderLanes()
     this.renderLoads(this.loadRows, this.maxLoad)
@@ -1618,15 +1826,16 @@ export class OASResource extends OASElement {
   /**
    * 资源泳道：每资源一行（行名 sticky），行内画其被分配的任务条（重叠条按段堆叠不互相遮挡）。
    *
-   * 横向虚拟化 + 增量 patch：行/轨道结构只在 resources 列表变化时重建；条按稳定 key
-   * （`${resId}:${taskId}:${segIndex}`）增删——窗口内既有条节点复用（只改属性/样式，不替换节点 →
-   * 焦点保持），只 add 进入窗口的、remove 离开窗口的。条几何与 aria-label 来自 update() 预算的
-   * laneLayout，本方法不做 filter/sort/贪心分段。窗口内条由 laneLayout 的
-   * 「按 xStart 升序下标 + 区间 max 段树」索引求得（见 cullLane）——帧成本随窗口内条数变化，
-   * 不做全量扫描。
+   * 双窗口正交：横向（列窗口 cull 条）+ 纵向（行窗口只渲染可视行）。
+   * - 纵向：只有 [winLaneStart, winLaneEnd) 内的行进 DOM，行按资源 id 键控复用——滚动平移行窗口
+   *   只增删进出行，窗口内存活行的节点不替换（其内条走 ensureBar 稳定 key）→ 已聚焦的条不丢焦点。
+   *   行窗外的行不进 DOM（其内条同样不可达：与横向虚拟化同类的固有取舍，见下）。
+   * - 横向：行内条按列窗口 cull（cullLane），窗口内既有条节点复用（只改属性/样式，不替换节点）。
+   *   条几何与 aria-label 来自 update() 预算的 laneLayout，本方法不做 filter/sort/贪心分段。
+   * - spacer（.row-spacer）在窗口化时撑起泳道区总高（滚动总高不缩水）；全量渲染（视口不可测 /
+   *   行全在窗口）时不插 spacer，DOM 与既有全量实现一致。
    *
-   * 边界（固有取舍，不修）：窗口外的条不进 DOM → 键盘 Tab 不可达（只能到达可视窗口内的条）。
-   * 与行虚拟化同类取舍，不为此把窗口外条建回 DOM（否则虚拟化失效）。
+   * 边界（固有取舍，不修）：窗口外的行/条不进 DOM → 键盘 Tab 不可达（只能到达可视窗口内的条）。
    */
   private renderLanes(): void {
     if (!this.lanesEl) return
@@ -1636,16 +1845,35 @@ export class OASResource extends OASElement {
     // 列窗口像素范围（两侧各多留 1 列 overscan，避免边缘条被误裁）；cull 在画布坐标系进行（RTL 同）
     const winLeft = this.winColStart * colW - colW
     const winRight = this.winColEnd * colW + colW
-    let rows = [...this.lanesEl.children] as HTMLElement[]
-    // 行结构与当前 resources 一致则复用（滚动/尺寸变化不动结构 → 条节点不被清空重建 → 焦点保持）
-    const structuralOk =
-      rows.length === this._resources.length &&
-      rows.every((row, i) => row.dataset['resourceId'] === this._resources[i]!.id)
-    if (!structuralOk) {
-      this.lanesEl.innerHTML = ''
-      rows = []
-      for (const r of this._resources) {
-        const row = document.createElement('div')
+    const count = this._resources.length
+    const windowed = this.winLaneStart > 0 || this.winLaneEnd < count
+    const [spacerTop, spacerBottom] = this.ensureRowSpacers(this.lanesEl, windowed)
+    if (windowed) {
+      // spacer 高度与行窗口共用同一份行高模型：总高恒 = 全量行模型总高（滚动范围不变）
+      const offsets = this.laneRowOffsets.length === count + 1 ? this.laneRowOffsets : this.buildLaneRowOffsets()
+      spacerTop.style.height = `${offsets[this.winLaneStart] ?? 0}px`
+      spacerBottom.style.height = `${(offsets[count] ?? 0) - (offsets[this.winLaneEnd] ?? 0)}px`
+    }
+    // 行按资源 id 键控复用（id 清洗后唯一）：窗口内既有行保留（含其条节点 → 焦点保持）；
+    // 无 id / 重复 id（旧快照）不可复用，先移除
+    const existing = new Map<string, HTMLElement>()
+    for (const el of [...this.lanesEl.children]) {
+      if (el === spacerTop || el === spacerBottom) continue
+      const row = el as HTMLElement
+      const id = row.dataset['resourceId'] ?? ''
+      if (id === '' || existing.has(id)) {
+        row.remove()
+        continue
+      }
+      existing.set(id, row)
+    }
+    const desired: HTMLElement[] = []
+    for (let i = this.winLaneStart; i < this.winLaneEnd; i++) {
+      const r = this._resources[i]!
+      let row = existing.get(r.id)
+      if (row) existing.delete(r.id)
+      else {
+        row = document.createElement('div')
         row.className = 'row lane'
         row.setAttribute(ATTR_RESOURCE_ID, r.id)
         const name = document.createElement('div')
@@ -1654,13 +1882,22 @@ export class OASResource extends OASElement {
         const track = document.createElement('div')
         track.className = 'track'
         row.appendChild(track)
-        this.lanesEl.appendChild(row)
-        rows.push(row)
       }
+      desired.push(row)
     }
-    for (let i = 0; i < this._resources.length; i++) {
-      const r = this._resources[i]!
-      const row = rows[i]!
+    // 离开行窗口的行：移除（被复用的行已从 existing 摘除）
+    for (const row of existing.values()) row.remove()
+    // 按序 reconcile：行插在 spacerTop 之后 / spacerBottom 之前（非窗口化无 spacer 时从真实首行起——
+    // 锚游离 spacer 的 nextElementSibling 会恒为 null，令每次渲染都 move 全部行、破坏焦点保持）
+    let ref = this.lanesEl.firstElementChild
+    if (ref === spacerTop) ref = ref.nextElementSibling
+    for (const node of desired) {
+      if (node !== ref) this.lanesEl.insertBefore(node, ref)
+      else ref = ref.nextElementSibling
+    }
+    for (let k = 0; k < desired.length; k++) {
+      const r = this._resources[this.winLaneStart + k]!
+      const row = desired[k]!
       const name = row.firstElementChild as HTMLElement
       name.textContent = r.name
       const track = row.lastElementChild as HTMLElement
@@ -1671,29 +1908,29 @@ export class OASResource extends OASElement {
       const segs = layout?.segs ?? 1
       track.style.height = `calc(${segs} * var(--oas-resource-bar-height, 20px) + ${segs + 1} * var(--oas-resource-lane-gap))`
       // 既有条按稳定 key 建索引（复用不重建）；无 key / 重复 key（旧快照）不可复用，先移除
-      const existing = new Map<string, HTMLElement>()
+      const existingBars = new Map<string, HTMLElement>()
       for (const bar of [...track.querySelectorAll<HTMLElement>('.bar')]) {
         const key = bar.dataset['key'] ?? ''
-        if (key === '' || existing.has(key)) {
+        if (key === '' || existingBars.has(key)) {
           bar.remove()
           continue
         }
-        existing.set(key, bar)
+        existingBars.set(key, bar)
       }
-      const desired: HTMLElement[] = []
+      const desiredBars: HTMLElement[] = []
       // 横向虚拟 cull：只求与窗口相交的条（帧成本随窗口内条数变化，见 cullLane）
       if (layout) {
         for (const pos of this.cullLane(layout, winLeft, winRight)) {
-          desired.push(this.ensureBar(existing, r, layout.entries[pos]!, locale))
+          desiredBars.push(this.ensureBar(existingBars, r, layout.entries[pos]!, locale))
         }
       }
       // 离开窗口 / 已不存在的条：移除（被复用的条已从 existing 摘除）
-      for (const bar of existing.values()) bar.remove()
+      for (const bar of existingBars.values()) bar.remove()
       // 按序 reconcile：新增条插入到正确位置，既有条保持相对顺序（无需移动则原节点不动 → 焦点保持）
-      let ref = track.firstElementChild
-      for (const node of desired) {
-        if (node !== ref) track.insertBefore(node, ref)
-        else ref = ref.nextElementSibling
+      let barRef = track.firstElementChild
+      for (const node of desiredBars) {
+        if (node !== barRef) track.insertBefore(node, barRef)
+        else barRef = barRef.nextElementSibling
       }
     }
   }
@@ -1815,18 +2052,32 @@ export class OASResource extends OASElement {
 
   /**
    * 负载直方图：每资源一行，列 = period，柱高 ∝ load / maxLoad；超载柱加 .over。
-   * 全量重建（非虚拟化）：泳道行（资源行）未做虚拟化，本方法整段 innerHTML 重建，
-   * 成本 O(资源数 × 窗口列数)——窗口列由横向列窗口决定，资源数很大时行数本身是边界
-   * （与 gantt 的行虚拟化不同，资源视图行数通常远小于任务数，暂不虚拟化）。
+   * 纵向虚拟化：只有 [winLoadStart, winLoadEnd) 内的行进 DOM；负载行无焦点/交互态，窗口平移时
+   * 窗内行整段重建即可（无键控复用需求）。.row-spacer 与泳道区同口径撑起负载区总高（滚动总高不缩水）。
+   * 横向仍按列窗口建列，成本 O(窗内行数 × 窗口列数)。
    */
   private renderLoads(
     rows: Array<{ resource: RS; capacity: number; loads: number[]; overCount: number }>,
     maxLoad: number,
   ): void {
     if (!this.loadsEl) return
-    this.loadsEl.innerHTML = ''
+    const count = this._resources.length
+    const windowed = this.winLoadStart > 0 || this.winLoadEnd < count
+    const [spacerTop, spacerBottom] = this.ensureRowSpacers(this.loadsEl, windowed)
+    if (windowed) {
+      const rowH = this.loadRowHeight()
+      spacerTop.style.height = `${this.winLoadStart * rowH}px`
+      spacerBottom.style.height = `${(count - this.winLoadEnd) * rowH}px`
+    }
+    // 窗口内行整段重建（spacer 保留）：行高 = load-height token + 1px 行框线，与 spacer 同式
+    for (const el of [...this.loadsEl.children]) {
+      if (el === spacerTop || el === spacerBottom) continue
+      el.remove()
+    }
     const colW = this.colW()
-    for (const row of rows) {
+    for (let k = this.winLoadStart; k < this.winLoadEnd; k++) {
+      const row = rows[k]
+      if (!row) continue
       const rowEl = document.createElement('div')
       rowEl.className = 'row load'
       rowEl.setAttribute(ATTR_RESOURCE_ID, row.resource.id)
@@ -1868,7 +2119,9 @@ export class OASResource extends OASElement {
         track.appendChild(col)
       }
       rowEl.appendChild(track)
-      this.loadsEl.appendChild(rowEl)
+      // 行必须插在 spacerBottom 之前（保持 spacer 恒为首/末子节点）；非窗口化无 spacer 在 DOM，直接追加
+      if (windowed) this.loadsEl.insertBefore(rowEl, spacerBottom)
+      else this.loadsEl.appendChild(rowEl)
     }
   }
 }

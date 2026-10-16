@@ -1267,3 +1267,272 @@ test('resource F2 横向滚动复用条节点：聚焦条滚动后仍在 DOM、�
   await page.evaluate(() => document.getElementById('res-keepfocus')?.remove())
   expect(errors).toEqual([])
 })
+
+// ===== 纵向（行）虚拟化收口回归（泳道/负载两区独立窗口，spacer 撑起滚动总高） =====
+
+/** 行虚拟化默认 token 模型行高（row-height 36 / load-height 64 + 1px 行框线） */
+const ROW_MODEL_H = 37
+const LOAD_MODEL_H = 65
+
+test('resource 行虚拟化：500 资源行数有上界、滚动总高不变、滚到中部覆盖可视区、窗口内条可点、console 零告警', async ({
+  page,
+}) => {
+  const errors = collectErrors(page)
+  await page.goto('/components/resource.html', { waitUntil: 'domcontentloaded' })
+  await page.waitForFunction(() => !!customElements.get('oas-resource'), undefined, { timeout: 15000 })
+  await page.evaluate(() => {
+    const N = 500
+    const resources = Array.from({ length: N }, (_, i) => ({ id: `r${i}`, name: `R${i}` }))
+    const el = document.createElement('oas-resource')
+    el.id = 'res-rowvirt'
+    el.style.cssText = 'display:block;width:600px;height:360px;margin:12px;position:relative;z-index:1'
+    el.setAttribute('scale', 'day')
+    el.setAttribute('resources', JSON.stringify(resources))
+    el.setAttribute(
+      'tasks',
+      JSON.stringify([
+        { id: 't0', name: 'T', start: '2026-03-02', end: '2026-03-02', resources: resources.map((r) => r.id) },
+      ]),
+    )
+    ;(window as unknown as { __rowvirtHits: string[] }).__rowvirtHits = []
+    el.addEventListener('oas-task-click', ((e: CustomEvent<{ id: string; resourceId: string }>) => {
+      ;(window as unknown as { __rowvirtHits: string[] }).__rowvirtHits.push(e.detail.resourceId)
+    }) as EventListener)
+    document.body.appendChild(el)
+  })
+  await page.waitForFunction(
+    () => {
+      const sr = document.getElementById('res-rowvirt')?.shadowRoot
+      if (!sr) return false
+      const n = sr.querySelectorAll('.lanes .row.lane').length
+      // 等「行窗口已生效且稳定」：仅 <500 会在首帧全量回落后立刻满足、造成后续测量抖动
+      return n > 0 && n < 60
+    },
+    undefined,
+    { timeout: 15000 },
+  )
+  const N = 500
+  const measure = (): Promise<{
+    lanes: number
+    loads: number
+    laneSum: number
+    loadSum: number
+    scrollHeight: number
+    topSpacerH: number
+  }> =>
+    page.evaluate(
+      ({ rowH, loadH }) => {
+        const sr = (document.getElementById('res-rowvirt') as HTMLElement).shadowRoot!
+        const spacerH = (zoneSel: string) => {
+          const sps = [...sr.querySelectorAll<HTMLElement>(`${zoneSel} > .row-spacer`)]
+          return sps.length === 2 ? sps.map((s) => Number.parseFloat(s.style.height)) : null
+        }
+        const lanes = sr.querySelectorAll('.lanes .row.lane').length
+        const loads = sr.querySelectorAll('.loads .row.load').length
+        const laneSp = spacerH('.lanes')
+        const loadSp = spacerH('.loads')
+        const sc = sr.querySelector('.scroller') as HTMLElement
+        return {
+          lanes,
+          loads,
+          // spacer 上 + 窗内行 × 行模型高 + spacer 下 === 全量 n 行模型高（滚动总高不变量）
+          laneSum: laneSp ? Math.round((laneSp[0] ?? 0) + lanes * rowH + (laneSp[1] ?? 0)) : -1,
+          loadSum: loadSp ? Math.round((loadSp[0] ?? 0) + loads * loadH + (loadSp[1] ?? 0)) : -1,
+          scrollHeight: sc.scrollHeight,
+          topSpacerH: laneSp ? (laneSp[0] ?? -1) : -1,
+        }
+      },
+      { rowH: ROW_MODEL_H, loadH: LOAD_MODEL_H },
+    )
+  const before = await measure()
+  expect(before.lanes, '泳道行数有上界（窗口 + 缓冲，远少于 500）').toBeLessThan(60)
+  expect(before.lanes, '窗口内有行').toBeGreaterThan(0)
+  expect(before.loads, '负载行同步窗口化').toBeLessThan(60)
+  expect(before.laneSum, '泳道区总高 = 500 × 37（spacer + 窗内行盒守恒）').toBe(N * ROW_MODEL_H)
+  expect(before.loadSum, '负载区总高 = 500 × 65').toBe(N * LOAD_MODEL_H)
+
+  // 滚到中部：r250 行进入窗口且可视、spacer 顶占位 > 0、滚动总高不变（scrollHeight 稳定）
+  await page.evaluate((rowH) => {
+    const sr = (document.getElementById('res-rowvirt') as HTMLElement).shadowRoot!
+    const sc = sr.querySelector('.scroller') as HTMLElement
+    sc.scrollTop = 250 * rowH
+  }, ROW_MODEL_H)
+  await page.waitForFunction(
+    () => {
+      const sr = document.getElementById('res-rowvirt')!.shadowRoot!
+      return !!sr.querySelector('.lane[data-resource-id="r250"]')
+    },
+    undefined,
+    { timeout: 5000 },
+  )
+  const after = await measure()
+  expect(after.topSpacerH, '滚到中部后顶部 spacer 占位 > 0').toBeGreaterThan(0)
+  expect(after.lanes, '滚动后行数仍有上界').toBeLessThan(60)
+  expect(after.laneSum, '滚动后泳道区总高仍守恒').toBe(N * ROW_MODEL_H)
+  expect(Math.abs(after.scrollHeight - before.scrollHeight), '滚动总高（scroller scrollHeight）不变').toBeLessThan(2)
+  // 可视区覆盖：r250 行盒与 scroller 可视区相交
+  const visible = await page.evaluate(() => {
+    const sr = (document.getElementById('res-rowvirt') as HTMLElement).shadowRoot!
+    const scRect = (sr.querySelector('.scroller') as HTMLElement).getBoundingClientRect()
+    const row = sr.querySelector('.lane[data-resource-id="r250"]')!.getBoundingClientRect()
+    return row.top < scRect.bottom - 1 && row.bottom > scRect.top + 1
+  })
+  expect(visible, 'r250 行滚入可视区（窗口覆盖可视区）').toBe(true)
+
+  // 窗口内条仍可点：真实点击 r250 行的条 → oas-task-click 派发
+  // 注意：虚拟化下行窗口随滚动重算，Playwright 的「自动滚动进视口 + 可操作性重试」会与窗口重建互相拉扯
+  //（元素每次尝试都被替换）→ 故在页面内直接对已解析节点派发 click（组件为事件委托，合成 click 同样冒泡命中）
+  const clicked = await page.evaluate(() => {
+    const sr = (document.getElementById('res-rowvirt') as HTMLElement).shadowRoot!
+    const bar = sr.querySelector<HTMLElement>('.lane[data-resource-id="r250"] .bar')
+    if (!bar) return false
+    bar.click()
+    return true
+  })
+  expect(clicked, 'r250 行窗口内存在可点条').toBe(true)
+  const hits = await page.evaluate(() => (window as unknown as { __rowvirtHits: string[] }).__rowvirtHits)
+  expect(hits, '窗口内条点击派发 oas-task-click（resourceId 定位正确）').toEqual(['r250'])
+  await page.evaluate(() => document.getElementById('res-rowvirt')?.remove())
+  expect(errors).toEqual([])
+})
+
+test('resource 行虚拟化资源 0 个零异常 + 行/列窗口正交（纵向滚动不变列窗口）+ console 零告警', async ({ page }) => {
+  const errors = collectErrors(page)
+  await page.goto('/components/resource.html', { waitUntil: 'domcontentloaded' })
+  await page.waitForFunction(() => !!customElements.get('oas-resource'), undefined, { timeout: 15000 })
+  await page.evaluate(() => {
+    // ① 资源 0 个：挂载 + requestUpdate 不抛、无行无 spacer
+    const empty = document.createElement('oas-resource')
+    empty.id = 'res-rowvirt-empty'
+    empty.style.cssText = 'display:block;width:600px;height:360px;margin:12px;position:relative;z-index:1'
+    empty.setAttribute('resources', '[]')
+    empty.setAttribute('tasks', '[]')
+    document.body.appendChild(empty)
+    // ② 行/列正交：三年 day 档（1096 列）× 300 资源
+    const M = 300
+    const resources = Array.from({ length: M }, (_, i) => ({ id: `r${i}`, name: `R${i}` }))
+    const el = document.createElement('oas-resource')
+    el.id = 'res-rowvirt-ortho'
+    el.style.cssText = 'display:block;width:520px;height:320px;margin:12px;position:relative;z-index:1'
+    el.setAttribute('scale', 'day')
+    el.setAttribute('resources', JSON.stringify(resources))
+    el.setAttribute(
+      'tasks',
+      JSON.stringify([
+        {
+          id: 'long',
+          name: '三年',
+          start: '2026-01-01',
+          end: '2028-12-31',
+          resources: resources.map((r) => r.id),
+        },
+      ]),
+    )
+    document.body.appendChild(el)
+  })
+  await page.waitForFunction(
+    () => {
+      const sr = document.getElementById('res-rowvirt-ortho')?.shadowRoot
+      if (!sr) return false
+      const n = sr.querySelectorAll('.lanes .row.lane').length
+      return n > 0 && n < 300
+    },
+    undefined,
+    { timeout: 15000 },
+  )
+  const res = await page.evaluate(async () => {
+    const emptySr = document.getElementById('res-rowvirt-empty')!.shadowRoot!
+    const ortho = document.getElementById('res-rowvirt-ortho') as HTMLElement
+    const sr = ortho.shadowRoot!
+    const sc = sr.querySelector('.scroller') as HTMLElement
+    const tickLefts = (): number[] =>
+      [...sr.querySelectorAll<HTMLElement>('.ticks .tick')].map((t) => Number.parseFloat(t.style.left))
+    const firstLeftBefore = tickLefts()[0] ?? 0
+    sc.scrollTop = 150 * 37 // 纵向滚动（行高模型 37）
+    await new Promise((r) => {
+      requestAnimationFrame(() => requestAnimationFrame(() => r(null)))
+    })
+    const firstLeftAfterV = tickLefts()[0] ?? 0
+    const laneRowsAfterV = sr.querySelectorAll('.lanes .row.lane').length
+    sc.scrollLeft = 3600 // 横向滚动
+    await new Promise((r) => {
+      requestAnimationFrame(() => requestAnimationFrame(() => r(null)))
+    })
+    const firstLeftAfterH = tickLefts()[0] ?? 0
+    return {
+      emptyLanes: emptySr.querySelectorAll('.lanes .row.lane').length,
+      emptySpacers: emptySr.querySelectorAll('.lanes > .row-spacer').length,
+      firstLeftBefore,
+      firstLeftAfterV,
+      firstLeftAfterH,
+      laneRowsAfterV,
+    }
+  })
+  expect(res.emptyLanes, '资源 0 个：无泳道行').toBe(0)
+  expect(res.emptySpacers, '资源 0 个：无 spacer').toBe(0)
+  expect(res.firstLeftAfterV, '纵向滚动不改列窗口（首刻度不动 → 行/列正交）').toBeCloseTo(res.firstLeftBefore, 6)
+  expect(res.firstLeftAfterH, '横向滚动平移列窗口').toBeGreaterThan(res.firstLeftAfterV)
+  expect(res.laneRowsAfterV, '纵向滚动后行数仍有上界').toBeLessThan(60)
+  await page.evaluate(() => {
+    document.getElementById('res-rowvirt-empty')?.remove()
+    document.getElementById('res-rowvirt-ortho')?.remove()
+  })
+  expect(errors).toEqual([])
+})
+
+test('resource 行虚拟化焦点保持：纵向滚动窗口平移，窗口内存活行的聚焦条不丢焦点、节点不重建', async ({ page }) => {
+  const errors = collectErrors(page)
+  await page.goto('/components/resource.html', { waitUntil: 'domcontentloaded' })
+  await page.waitForFunction(() => !!customElements.get('oas-resource'), undefined, { timeout: 15000 })
+  await page.evaluate(() => {
+    const M = 200
+    const resources = Array.from({ length: M }, (_, i) => ({ id: `r${i}`, name: `R${i}` }))
+    const el = document.createElement('oas-resource')
+    el.id = 'res-rowfocus'
+    el.style.cssText = 'display:block;width:600px;height:280px;margin:12px;position:relative;z-index:1'
+    el.setAttribute('scale', 'day')
+    el.setAttribute('resources', JSON.stringify(resources))
+    el.setAttribute(
+      'tasks',
+      JSON.stringify([
+        { id: 't0', name: 'T', start: '2026-03-02', end: '2026-03-02', resources: resources.map((r) => r.id) },
+      ]),
+    )
+    document.body.appendChild(el)
+  })
+  await page.waitForFunction(
+    () => {
+      const sr = document.getElementById('res-rowfocus')?.shadowRoot
+      if (!sr) return false
+      const n = sr.querySelectorAll('.lanes .row.lane').length
+      return n > 0 && n < 200
+    },
+    undefined,
+    { timeout: 15000 },
+  )
+  const res = await page.evaluate(async () => {
+    const sr = (document.getElementById('res-rowfocus') as HTMLElement).shadowRoot!
+    const sc = sr.querySelector('.scroller') as HTMLElement
+    const bar = sr.querySelector('.lane[data-resource-id="r2"] .bar') as HTMLElement
+    bar.focus()
+    const focusedBefore = sr.activeElement === bar
+    sc.scrollTop = 37 * 2 // 平移 2 行，r2 仍在窗口内（buffer 4 吸收）
+    await new Promise((r) => {
+      requestAnimationFrame(() => requestAnimationFrame(() => r(null)))
+    })
+    const barAfter = sr.querySelector('.lane[data-resource-id="r2"] .bar')
+    return {
+      focusedBefore,
+      connected: bar.isConnected,
+      sameNode: barAfter === bar,
+      focusedAfter: sr.activeElement === bar,
+    }
+  })
+  expect(res.focusedBefore, '前置：条已聚焦').toBe(true)
+  // 反证「行窗口平移整段重建行」实现：r2 行被重建 → bar 节点替换、焦点丢失
+  expect(res.sameNode, '存活行的条节点被复用（未重建）').toBe(true)
+  expect(res.connected, '条仍在 DOM').toBe(true)
+  expect(res.focusedAfter, '焦点保持（activeElement 仍为该条）').toBe(true)
+  await page.evaluate(() => document.getElementById('res-rowfocus')?.remove())
+  expect(errors).toEqual([])
+})

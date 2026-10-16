@@ -1317,3 +1317,286 @@ describe('RTL 触屏列移动按钮（图标/执行/读屏三者一致 + 边界�
     expect(lastNext.getAttribute('aria-disabled'), 'DOM 末位列 next 禁用（RTL 视觉最左即边界）').toBe('true')
   })
 })
+
+// 列体虚拟化：单列几千张卡时只渲染可视窗口（上下占位撑起全量高度）。
+//
+// happy-dom 无排版（clientHeight/scrollHeight 恒 0）→ 实现按「视口不可测」回落全量渲染，
+// 故这里用原型 getter stub 模拟「列体是滚动视口」：clientHeight = 可视高、scrollHeight 远大于它。
+// 预估步距 68px = 卡高 60 + 列内 gap 8（--oas-space-2）；缓冲 6 张。
+const CLIENT_HEIGHT_DESC = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'clientHeight')
+const SCROLL_HEIGHT_DESC = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'scrollHeight')
+
+/** 模拟「列体是真滚动视口」（可视高 height、内容远高） */
+function stubScrollViewport(height: number): void {
+  Object.defineProperty(HTMLElement.prototype, 'clientHeight', { configurable: true, get: () => height })
+  Object.defineProperty(HTMLElement.prototype, 'scrollHeight', {
+    configurable: true,
+    get: () => height + 1_000_000,
+  })
+}
+
+/** 还原 happy-dom 的 clientHeight/scrollHeight（stub 泄漏到其他用例会污染断言） */
+function restoreViewport(): void {
+  if (CLIENT_HEIGHT_DESC) Object.defineProperty(HTMLElement.prototype, 'clientHeight', CLIENT_HEIGHT_DESC)
+  if (SCROLL_HEIGHT_DESC) Object.defineProperty(HTMLElement.prototype, 'scrollHeight', SCROLL_HEIGHT_DESC)
+}
+
+const BIG_COLUMNS = JSON.stringify([{ key: 'todo', title: '待办' }])
+const bigCards = (n: number): Array<Record<string, unknown>> =>
+  Array.from({ length: n }, (_, i) => ({ id: `k${i}`, column: 'todo', title: `卡 ${i}` }))
+
+/** 大列看板（单列 n 张卡） */
+function mountBig(n: number, attrs: Record<string, string> = {}): OASKanban {
+  return mount({ columns: BIG_COLUMNS, cards: JSON.stringify(bigCards(n)), ...attrs })
+}
+
+function bigBody(el: OASKanban, key = 'todo'): HTMLElement {
+  return columnOf(el, key).querySelector<HTMLElement>('.column-body')!
+}
+
+/** 已渲染卡片的 data-index（升序） */
+function renderedIndexes(el: OASKanban, key = 'todo'): number[] {
+  return [...bigBody(el, key).querySelectorAll<HTMLElement>('.card[data-index]')].map((c) =>
+    Number(c.getAttribute('data-index')),
+  )
+}
+
+const flushRaf = (): Promise<void> => new Promise((resolve) => requestAnimationFrame(() => resolve(undefined)))
+
+/** 诊断计数：列体窗口实际重建次数（窗口未变的滚动不增） */
+function windowPaints(el: OASKanban): number {
+  return (el as unknown as { columnWindowPaints: number }).columnWindowPaints
+}
+
+describe('列体虚拟化（大列只渲染可视窗口）', () => {
+  beforeEach(() => {
+    stubScrollViewport(400)
+  })
+  afterEach(() => {
+    restoreViewport()
+  })
+
+  it('5000 卡列：渲染卡数有上界（≈窗口+缓冲）；上下占位撑起全量高度（滚动范围不变）', () => {
+    const el = mountBig(5000)
+    const body = bigBody(el)
+    const rendered = [...body.querySelectorAll<HTMLElement>('.card[data-index]')]
+    expect(rendered.length, '渲染卡数远小于总数（有上界）').toBeLessThanOrEqual(40)
+    expect(rendered.length).toBeLessThan(5000)
+    expect(rendered[0]!.getAttribute('data-index'), '窗口从第 0 张开始').toBe('0')
+    // 占位 + 窗口内卡片步距 = 全量卡片步距总和 → 列内滚动范围与全量渲染一致
+    const top = body.querySelector<HTMLElement>('.vpad-top')!
+    const bottom = body.querySelector<HTMLElement>('.vpad-bottom')!
+    expect(top, '有顶部占位').not.toBeNull()
+    expect(Number.parseFloat(top.style.height)).toBe(0)
+    expect(top.style.marginTop, '占位用负 margin 抵消列内 flex gap').toBe('-8px')
+    const sum = Number.parseFloat(top.style.height) + rendered.length * 68 + Number.parseFloat(bottom.style.height)
+    expect(sum, '列内容总高 = 全量 5000 张的步距总和').toBe(5000 * 68)
+  })
+
+  it('滚到中部：窗口覆盖中部卡片（data-index 连续、与数据一致），占位随滚动平移', () => {
+    const el = mountBig(5000)
+    const body = bigBody(el)
+    body.scrollTop = 100_000
+    body.dispatchEvent(new Event('scroll'))
+    return flushRaf().then(() => {
+      const rendered = [...body.querySelectorAll<HTMLElement>('.card[data-index]')]
+      const first = Number(rendered[0]!.getAttribute('data-index'))
+      const last = Number(rendered[rendered.length - 1]!.getAttribute('data-index'))
+      expect(rendered.length, '渲染卡数仍有上界').toBeLessThanOrEqual(40)
+      expect(first, '窗口已滚到中部（不再是第 0 张）').toBeGreaterThan(1000)
+      expect(last, '窗口覆盖一段连续卡片').toBeGreaterThan(first + 5)
+      // 窗口内卡片与数据一一对应（不是过期的旧窗口）
+      expect(rendered[0]!.getAttribute('data-id')).toBe(`k${first}`)
+      expect(rendered.filter((c) => Number(c.getAttribute('data-index')) !== first + rendered.indexOf(c))).toEqual([])
+      // 顶部占位高度 = 窗口首张之前的步距总和 → 滚动位置与卡片偏移一致
+      expect(Number.parseFloat(body.querySelector<HTMLElement>('.vpad-top')!.style.height)).toBe(first * 68)
+    })
+  })
+
+  it('窗口未变则跳过重渲染；窗口变化才重建（诊断计数）', async () => {
+    const el = mountBig(5000)
+    const body = bigBody(el)
+    await flushRaf() // 收尾首帧后的校正（窗口未变 → 不重建）
+    const before = windowPaints(el)
+    const domBefore = body.querySelector('.card[data-id="k0"]')
+    // 同一滚动位置的滚动事件：窗口不变 → 不重建 DOM（节点身份保持）
+    body.dispatchEvent(new Event('scroll'))
+    await flushRaf()
+    expect(windowPaints(el), '窗口未变不重建').toBe(before)
+    expect(body.querySelector('.card[data-id="k0"]'), '节点未被重建（同一节点身份）').toBe(domBefore)
+    // 滚到新位置：窗口变化 → 重建一次
+    body.scrollTop = 100_000
+    body.dispatchEvent(new Event('scroll'))
+    await flushRaf()
+    expect(windowPaints(el), '窗口变化后重建').toBe(before + 1)
+  })
+
+  it('空列/单卡零异常：窗口覆盖全部时不加占位（不破坏空列与 list 语义）', () => {
+    const el = mount({
+      columns: JSON.stringify([
+        { key: 'todo', title: '待办' },
+        { key: 'done', title: '已完成' },
+      ]),
+      cards: JSON.stringify([{ id: 'only', column: 'todo', title: '唯一' }]),
+    })
+    const body = bigBody(el)
+    expect(body.querySelectorAll('.card[data-index]').length).toBe(1)
+    expect(body.querySelector('.vpad-top'), '窗口覆盖全部 → 无占位').toBeNull()
+    expect(body.querySelector('.vpad-bottom'), '窗口覆盖全部 → 无占位').toBeNull()
+    expect(body.getAttribute('role'), 'list 语义保持').toBe('list')
+    expect(columnOf(el, 'done').querySelector('.empty-column'), '空列占位保持').not.toBeNull()
+  })
+
+  it('视口不可测（happy-dom/列体未布局）→ 回落全量渲染（既有行为零变化）', () => {
+    restoreViewport()
+    const el = mountBig(120)
+    const body = bigBody(el)
+    expect(body.querySelectorAll('.card[data-index]').length, '全量渲染').toBe(120)
+    expect(body.querySelector('.vpad-top'), '回落全量时不加占位').toBeNull()
+  })
+
+  it('列体内容不溢出（宿主无高度约束，列体按内容自长）→ 回落全量渲染，不留占位', () => {
+    // clientHeight 可测但与内容等高（滚动视口不成立）——占位撑高没有可滚动目标
+    Object.defineProperty(HTMLElement.prototype, 'scrollHeight', { configurable: true, get: () => 400 })
+    const el = mountBig(200)
+    const body = bigBody(el)
+    expect(body.querySelectorAll('.card[data-index]').length, '回落全量渲染').toBe(200)
+    expect(body.querySelector('.vpad-top')).toBeNull()
+  })
+
+  it('列头计数与 WIP 超限按全量卡数（虚拟化不影响提示语义）', () => {
+    const el = mountBig(5000, {
+      columns: JSON.stringify([{ key: 'todo', title: '待办', limit: 100 }]),
+    })
+    expect(columnOf(el, 'todo').querySelector<HTMLElement>('.column-count')!.textContent).toBe('5000')
+    expect(columnOf(el, 'todo').hasAttribute('data-over-limit'), '超限标记按全量卡数').toBe(true)
+  })
+
+  it('虚拟化下列内拖拽落点用绝对位次：拖第 0 张到第 3 张上半 → index 2（窗口外卡片不参与 DOM 序也不漏判）', () => {
+    const el = mountBig(200)
+    const events = trackChange(el)
+    const target = [...bigBody(el).querySelectorAll<HTMLElement>('.card[data-index]')][3]!
+    expect(target.getAttribute('data-index')).toBe('3')
+    dragDrop(el, 'k0', target, -10)
+    expect(events.length).toBe(1)
+    expect(events[0]!.detail).toEqual({ id: 'k0', from: 'todo', to: 'todo', index: 2 })
+    const ids = (JSON.parse(el.getAttribute('cards')!) as Array<{ id: string }>).map((c) => c.id)
+    expect(ids.slice(0, 4)).toEqual(['k1', 'k2', 'k0', 'k3'])
+  })
+
+  it('虚拟化下拖到列尾：落点 = 容器总数（data-count）而非已渲染卡数', () => {
+    const el = mountBig(200)
+    const events = trackChange(el)
+    const body = bigBody(el)
+    expect(body.getAttribute('data-count'), '容器带全量卡数').toBe('200')
+    expect(body.querySelectorAll('.card').length, '仅渲染窗口').toBeLessThan(40)
+    // 悬在列体空白（clientY 极大 → 无下方卡片）→ 落点为容器尾
+    cardOf(el, 'k0').dispatchEvent(dragEvent('dragstart'))
+    body.dispatchEvent(dragEvent('dragover', { clientY: 1e6 }))
+    body.dispatchEvent(dragEvent('drop', { clientY: 1e6 }))
+    // 落定后整板重建（旧 body 已脱离文档）→ 在新列体上收尾 dragend
+    bigBody(el).dispatchEvent(dragEvent('dragend'))
+    expect(events.length).toBe(1)
+    expect((events[0]!.detail as { index: number }).index, 'index = 总数-1（移除自身后的插入位）').toBe(199)
+    const ids = (JSON.parse(el.getAttribute('cards')!) as Array<{ id: string }>).map((c) => c.id)
+    expect(ids[ids.length - 1], '卡片落在列尾').toBe('k0')
+  })
+
+  it('滚动重渲染不丢焦点：同 data-id 卡片重建后回焦', async () => {
+    const el = mountBig(200)
+    const body = bigBody(el)
+    const first = body.querySelector<HTMLElement>('.card[data-id="k0"]')!
+    first.focus()
+    expect((el.shadowRoot!.activeElement as HTMLElement | null)?.getAttribute('data-id')).toBe('k0')
+    body.scrollTop = 40 // 小滚动：k0 仍在窗口内（缓冲 6 张）
+    body.dispatchEvent(new Event('scroll'))
+    await flushRaf()
+    const active = el.shadowRoot!.activeElement as HTMLElement | null
+    expect(active?.getAttribute('data-id'), '滚动后焦点仍在同 id 卡片上').toBe('k0')
+  })
+
+  it('拖拽期间跳过窗口重算（列体自动滚动不重建 DOM），dragend 补做回正', async () => {
+    const el = mountBig(200)
+    const body = bigBody(el)
+    await flushRaf()
+    const before = windowPaints(el)
+    cardOf(el, 'k0').dispatchEvent(dragEvent('dragstart'))
+    body.scrollTop = 5000
+    body.dispatchEvent(new Event('scroll'))
+    await flushRaf()
+    expect(windowPaints(el), '拖拽期间滚动不重建窗口').toBe(before)
+    body.dispatchEvent(dragEvent('dragend'))
+    await flushRaf()
+    expect(windowPaints(el), 'dragend 后补做一次窗口重算').toBe(before + 1)
+    expect(renderedIndexes(el)[0], '窗口已按新滚动位置回正').toBeGreaterThan(0)
+  })
+
+  it('键盘 Alt+→ 移入大列尾部：目标卡落在渲染窗口外也回焦（列体滚到该卡，不丢键盘焦点）', () => {
+    const el = mount({
+      columns: JSON.stringify([
+        { key: 'todo', title: '待办' },
+        { key: 'doing', title: '进行中' },
+      ]),
+      cards: JSON.stringify([
+        { id: 'head', column: 'todo', title: '待移动' },
+        ...Array.from({ length: 500 }, (_, i) => ({ id: `d${i}`, column: 'doing', title: `乙 ${i}` })),
+      ]),
+    })
+    const events = trackChange(el)
+    const src = cardOf(el, 'head')
+    src.focus()
+    src.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', altKey: true, bubbles: true, composed: true }))
+    const active = el.shadowRoot!.activeElement as HTMLElement | null
+    expect(active?.getAttribute('data-id'), '回焦移动后的卡（窗口外也不例外）').toBe('head')
+    expect(active?.closest('.column')?.getAttribute('data-key'), '焦点卡在目标列').toBe('doing')
+    expect(renderedIndexes(el, 'doing'), '目标列窗口已滚到该卡').toContain(500)
+    expect(bigBody(el, 'doing').scrollTop, '目标列已离开顶部').toBeGreaterThan(0)
+    expect((events[0]!.detail as { index: number }).index, '落点为目标列尾部').toBe(500)
+  })
+
+  it('拖拽期间只冻结拖拽源列：目标列自动滚动照常重建出卡', async () => {
+    const el = mount({
+      columns: JSON.stringify([
+        { key: 'todo', title: '待办' },
+        { key: 'doing', title: '进行中' },
+      ]),
+      cards: JSON.stringify([
+        ...Array.from({ length: 100 }, (_, i) => ({ id: `a${i}`, column: 'todo', title: `甲 ${i}` })),
+        ...Array.from({ length: 100 }, (_, i) => ({ id: `b${i}`, column: 'doing', title: `乙 ${i}` })),
+      ]),
+    })
+    const srcBody = bigBody(el, 'todo')
+    const tgtBody = bigBody(el, 'doing')
+    await flushRaf()
+    const before = windowPaints(el)
+    cardOf(el, 'a0').dispatchEvent(dragEvent('dragstart'))
+    // 源列滚动：冻结（不重建）；目标列滚动：重建（自动滚动继续出卡）
+    srcBody.scrollTop = 5000
+    srcBody.dispatchEvent(new Event('scroll'))
+    tgtBody.scrollTop = 5000
+    tgtBody.dispatchEvent(new Event('scroll'))
+    await flushRaf()
+    expect(windowPaints(el), '仅目标列重建一次').toBe(before + 1)
+    expect(renderedIndexes(el, 'todo')[0], '源列窗口冻结').toBe(0)
+    expect(renderedIndexes(el, 'doing')[0], '目标列窗口随滚动前移').toBeGreaterThan(0)
+    // dragend 后源列补做回正
+    srcBody.dispatchEvent(dragEvent('dragend'))
+    await flushRaf()
+    expect(renderedIndexes(el, 'todo')[0], 'dragend 后源列窗口回正').toBeGreaterThan(0)
+  })
+
+  it('数据变更后重建：滚动位置保留（拖拽落定不把列体滚回顶部）', async () => {
+    const el = mountBig(200)
+    const body = bigBody(el)
+    body.scrollTop = 5000
+    body.dispatchEvent(new Event('scroll'))
+    await flushRaf()
+    const first = renderedIndexes(el)[0]!
+    expect(first).toBeGreaterThan(0)
+    // 回写数据触发整板重建：重建后窗口仍落在滚动位置附近（不跳回顶部）
+    el.setAttribute('cards', JSON.stringify(bigCards(200)))
+    const bodyAfter = bigBody(el)
+    expect(bodyAfter, '整板重建换了列体节点').not.toBe(body)
+    expect(renderedIndexes(el)[0], '重建后窗口不在顶部（滚动位置已恢复）').toBeGreaterThan(0)
+  })
+})

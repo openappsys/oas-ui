@@ -423,6 +423,27 @@ A column with `serialNumber: true` renders the row number (starting from 1, not 
   </div>
 </DemoBlock>
 
+## Server-side row window (windowed)
+
+> For very large datasets (hundreds of thousands of rows): the host supplies only the slice near the visible window and the component **holds no full dataset** — the row window is computed from the scroll position and, when it is not covered by the loaded range, `oas-window-request` is emitted for the host to refill (scroll → request → refill).
+
+Attributes: `windowed` (enable) + `total` (full row count) + `window-start` (absolute row index of `data[0]`). Event `oas-window-request`: `detail: { start, end, reason }` (half-open, absolute row indices; `reason` is `init` / `scroll` / `resize` / `data`; the same expected window is not emitted twice).
+
+```html
+<oas-table windowed total="100000" window-start="0" row-key="id" height="360" columns='[…]'></oas-table>
+<script>
+  const el = document.querySelector('oas-table[windowed]')
+  el.addEventListener('oas-window-request', (e) => {
+    const { start, end } = e.detail
+    // Real apps fetch rows [start, end) from the server; this sample mocks it locally
+    el.setAttribute('window-start', String(start))
+    el.setAttribute('data', JSON.stringify(rowsOf(start, end)))
+  })
+</script>
+```
+
+In windowed mode **local sort / filter / group / pagination / tree-expand are the host's responsibility** (the component skips them with a devWarn) — listen to the existing `oas-sort-change` / `oas-filter-change` / `oas-page-change` events, process the full dataset, then refill the window slice. Off by default: behavior unchanged.
+
 ## Column filter
 
 <DemoBlock title="Column filter (filterable + filter-values controlled)">
@@ -1012,6 +1033,8 @@ The full endpoint URLs far exceed the column width (long unbreakable strings): h
 | `summary-scope` | Summary aggregation scope: `all` (default, full dataset) / `page` (current page) | `string` | `all` |
 | `table-layout` | Passes the table layout algorithm through (with `fixed`, column widths strictly follow `width`) | `string` | — |
 | `total` | Total row count for external (server-side) pagination: pairs with pagination/current/page-size — `data` holds only the current page slice (no internal slicing) and the total feeds the pager directly; page turns emit oas-page-change for the host to swap data; absent or invalid values fall back to internal pagination | `string` | — |
+| `window-start` | In windowed mode, the row index of data[0] within the full dataset (absolute row number): the component renders and offsets by absolute row; ignored when not windowed | `string` | `0` |
+| `windowed` | Server-side row-window mode (boolean, off by default): with total / window-start the host supplies only the visible window slice and the component holds no full dataset. When enabled the component computes the expected range from the visible row window (8-row buffer on both sides) and, if it is not covered by the loaded range, emits oas-window-request for the host to refill; local sort/filter/group/pagination/tree-expand are the host's responsibility (the component skips them with a devWarn). Off by default: behavior unchanged | `boolean` | — |
 
 #### Events
 
@@ -1032,6 +1055,7 @@ The full endpoint URLs far exceed the column width (long unbreakable strings): h
 | `oas-row-reorder` | Row reorder via drag or Alt+Arrow; `detail: { from, to, row }` (to is the insertion index after removing the dragged row; the component never mutates data) |
 | `oas-scroll` | Virtual scroll event (rAF throttled), `detail: { scrollTop, start, end }` |
 | `oas-sort-change` | Sort change, `detail: { key, order: 'asc' \| 'desc' \| '' }` |
+| `oas-window-request` | Emitted in windowed mode when the expected row window is not covered by the loaded range; detail: { start, end, reason } (half-open, absolute row indices; reason is init / scroll / resize / data). The same expected window is not emitted twice |
 
 #### Slots
 

@@ -3201,7 +3201,9 @@
       "row-draggable": "Row drag sorting: renders a drag-handle column and dispatches oas-row-reorder on drop; disabled with a warning under virtual scrolling",
       "column-virtual": "Column virtualization (column windowing): only visible-window columns render; off-window columns collapse into placeholder cells (colSpan-summed via colgroup). Constraints: explicit width on all columns recommended; grouped header / span-method / summary rows incompatible (warns and degrades)",
       "group-by": "Grouped view: render sections by field value (section header = value + row count + collapse arrow, click to collapse/expand, expanded by default); groups ordered by first occurrence, sorting applies within groups; empty values fall into the \"(empty)\" group; combined with merge columns / span-method / row-draggable it warns once and degrades to plain rendering; works with column-virtual / virtual scrolling (section header spans the full width)",
-      "cell-tooltip": "Cell overflow tooltip (on by default, `\"false\"` to disable): when a plain-text cell overflows (scrollWidth > clientWidth), hover shows the full text in a floating layer — one table-level singleton tooltip (token inverse colors, readable in dark mode), auto-hidden on scroll/re-render; rich-content cells and ellipsis columns with a native title are exempt (no double tooltip)"
+      "cell-tooltip": "Cell overflow tooltip (on by default, `\"false\"` to disable): when a plain-text cell overflows (scrollWidth > clientWidth), hover shows the full text in a floating layer — one table-level singleton tooltip (token inverse colors, readable in dark mode), auto-hidden on scroll/re-render; rich-content cells and ellipsis columns with a native title are exempt (no double tooltip)",
+      "windowed": "Server-side row-window mode (boolean, off by default): with total / window-start the host supplies only the visible window slice and the component holds no full dataset. When enabled the component computes the expected range from the visible row window (8-row buffer on both sides) and, if it is not covered by the loaded range, emits oas-window-request for the host to refill; local sort/filter/group/pagination/tree-expand are the host's responsibility (the component skips them with a devWarn). Off by default: behavior unchanged",
+      "window-start": "In windowed mode, the row index of data[0] within the full dataset (absolute row number): the component renders and offsets by absolute row; ignored when not windowed"
     },
     "events": {
       "oas-check": "Checkbox selection change, `detail: { keys: string[] }`",
@@ -3218,7 +3220,8 @@
       "oas-cell-click": "Fired on data-cell click, `detail: { row, column, value, rowIndex, columnIndex }` (suppressed inside interactive controls)",
       "oas-row-dblclick": "Fired on data-row double-click, `detail: { row, rowIndex }`",
       "oas-export": "Export triggered (button or exportData), `detail: { format, fileName, rowCount }`",
-      "oas-row-reorder": "Row reorder via drag or Alt+Arrow; `detail: { from, to, row }` (to is the insertion index after removing the dragged row; the component never mutates data)"
+      "oas-row-reorder": "Row reorder via drag or Alt+Arrow; `detail: { from, to, row }` (to is the insertion index after removing the dragged row; the component never mutates data)",
+      "oas-window-request": "Emitted in windowed mode when the expected row window is not covered by the loaded range; detail: { start, end, reason } (half-open, absolute row indices; reason is init / scroll / resize / data). The same expected window is not emitted twice"
     },
     "slots": {
       "template[slot=\"empty\"]": "Rich empty-state content (takes precedence over empty-text and the default empty text)",

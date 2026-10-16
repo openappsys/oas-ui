@@ -2044,6 +2044,27 @@ OASElement 的 render 生命周期只首连一次（`rendered` 门闩），组�
 - 文档：CHANGELOG `[未发布]`；公开 API 无变更（`api:check` 双向 0）。
 - 全量 `pnpm test` / typecheck / build / api:check 全绿。
 
+## 未发布 数据密集型组件规模化（行窗口协议 + 资源/看板虚拟化）
+
+> 立项背景：让组件库能支撑「项目管理软件」的百万级数据——此前只有 table/tree/gantt 有本地行虚拟化，且宿主必须把全量数据喂进组件（内存/传输双输）。本批补「服务端行窗口协议」（宿主只喂可视窗口）+ resource 纵向虚拟化 + kanban 卡片虚拟化。定位：纯前端契约与渲染层；后端由宿主/其他系统负责。
+
+### 特性
+
+- **共享行窗口契约** `shared/window-data.ts`：`oas-window-request` 事件 + `{ start, end, reason }`（半开区间、绝对行号；reason ∈ init/scroll/resize/data）；`windowed` + `total` + `window-start` 三属性统一语义；前后各 8 行缓冲、未被已装载区间覆盖才派发、同一期望区间去重。
+- **`oas-table` windowed 模式**：组件不持有全量数据；本地排序/筛选/分组/分页/树形展开交由宿主（跳过本地执行并 devWarn），按行能力（选中/编辑/点击）在已装载切片上正常。
+- **`oas-resource` 纵向虚拟化**：泳道与负载行按窗口渲染、spacer 守恒滚动总高、行按资源 id 键控复用（焦点保持）、与列虚拟化正交。
+- **`oas-kanban` 卡片虚拟化**：列体按窗口渲染（动态卡片高用 `dynamic-height` 内核）、占位守恒列滚动范围、拖拽落点用绝对位次、滚动重建回焦同卡。
+
+### 边界
+
+- 不做：后端/数据源本身、windowed 下的服务端排序/筛选实现（属宿主）；resource/kanban 的横向跨区虚拟化（列/泳道数通常少）。
+
+### 验收
+
+- 单测：共享契约纯函数；table windowed（请求派发/去重/绝对行/本地操作禁用）；resource 行虚拟化（窗口/守恒/焦点/正交）；kanban 卡片虚拟化（窗口/守恒/拖拽/回焦）。
+- e2e：table windowed 滚动→请求→回填渲染绝对行；resource 500 资源行数上界+总高不变+中部覆盖+条可点；kanban 3000 卡列内容有界+拖拽落点。
+- 文档：table zh/en windowed 段；api-descriptions/manifest 同步（`api:check` 双向 0）；CHANGELOG `[未发布]`。
+
 ## v2.5.9 oas-calendar `events` 排期条目通道
 
 ### 特性

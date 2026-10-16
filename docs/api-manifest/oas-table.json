@@ -141,6 +141,17 @@
       "observed": true
     },
     {
+      "name": "windowed",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "window-start",
+      "type": "string",
+      "default": "0",
+      "observed": true
+    },
+    {
       "name": "filter-values",
       "type": "string",
       "default": "",
@@ -312,6 +323,10 @@
     {
       "name": "oas-scroll",
       "detail": "{ scrollTop: st, start: win.start, end: win.end }"
+    },
+    {
+      "name": "oas-window-request",
+      "detail": "{ start: need.start, end: need.end, reason }"
     }
   ],
   "slots": [
