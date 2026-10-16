@@ -120,15 +120,26 @@ Dual axis is axis configuration, not a chart type: the right axis renders when a
 
 The object format `{labels, series:[{name, data}]}` supports multiple series; the legend is shown by default for multiple series, and `options.smooth` enables smooth curves.
 
-## Dense Categories (Automatic Label Thinning)
+## Dense Categories (Automatic Thinning / Rotation)
 
-<DemoBlock title="36 days of daily requests (x-axis labels auto-thinned)">
+<DemoBlock title="36 days of daily requests (default: horizontal, thinned)">
   <div style="width: 100%">
     <oas-chart type="area" data='{"labels":["09-01","09-02","09-03","09-04","09-05","09-06","09-07","09-08","09-09","09-10","09-11","09-12","09-13","09-14","09-15","09-16","09-17","09-18","09-19","09-20","09-21","09-22","09-23","09-24","09-25","09-26","09-27","09-28","09-29","09-30","10-01","10-02","10-03","10-04","10-05","10-06"],"series":[{"name":"Requests","data":[1120,1046,1012,1058,1024,998,962,1040,1082,1106,1118,1032,1044,1010,996,902,1010,1036,1092,1150,1206,1052,1030,1024,892,1124,1108,1054,946,1140,1188,1096,1114,1090,1022,1058]}]}'></oas-chart>
   </div>
 </DemoBlock>
 
-When there are many categories and too little room (36 daily labels below), x-axis labels are **thinned automatically** based on available width: a stride k is derived from the widest label (CJK ≈ 1em, others ≈ 0.55em) versus the category band width, and every k-th label is rendered — keeping the endpoints when there is spare room — so text never piles up. Data points are still drawn one by one (never thinned) and stay individually hoverable.
+<DemoBlock title="Same data · xLabelRotate: 90 (vertical, more labels fit)">
+  <div style="width: 100%">
+    <oas-chart type="area" options='{"xLabelRotate":90}' data='{"labels":["09-01","09-02","09-03","09-04","09-05","09-06","09-07","09-08","09-09","09-10","09-11","09-12","09-13","09-14","09-15","09-16","09-17","09-18","09-19","09-20","09-21","09-22","09-23","09-24","09-25","09-26","09-27","09-28","09-29","09-30","10-01","10-02","10-03","10-04","10-05","10-06"],"series":[{"name":"Requests","data":[1120,1046,1012,1058,1024,998,962,1040,1082,1106,1118,1032,1044,1010,996,902,1010,1036,1092,1150,1206,1052,1030,1024,892,1124,1108,1054,946,1140,1188,1096,1114,1090,1022,1058]}]}'></oas-chart>
+  </div>
+</DemoBlock>
+
+The same 36 days laid out two ways, and the trade-offs:
+
+- **Default (horizontal + thinning)**: when the spacing cannot fit the widest label, a stride k is derived from the label width plus gap versus the category spacing, and every k-th label is rendered (`autoSkip` semantics), keeping the endpoints when there is spare room. Fastest to read horizontally, but it skips (the 36 days above show 12 labels).
+- **`xLabelRotate` (slanted / vertical)**: 0–90 degrees, default 0; when > 0 each label is rotated clockwise around its tick anchor — the first character sits under the tick and the text slants down-right (90° is vertical). Rotation shrinks the horizontal footprint (≈ label width×cosθ + line height×sinθ; at 90° just one line height), so more labels fit: the 36 days above show 18 labels at 90° (~1.5× the default), and longer labels gain more.
+- **The two combine**: `xLabelRotate` only supplies the angle while thinning guarantees no pile-up — the stride is recomputed from the rotated footprint and labels keep being skipped while spacing is short. For short labels (e.g. `09-01`) a 45° slant still projects ≈0.7 of the width, so the gain is limited; 45° mainly helps long labels (e.g. `2026-09-01`).
+- **Cost**: rotation lifts the plot area — the bottom padding is `10 + widest label×sinθ + line height` (for 90° driven by the label width), and the right padding must cover the rightmost label's horizontal projection; the plot gets shorter, so fewer y ticks are readable. Non-numeric angles fall back to 0; out-of-range values are clamped to 0–90.
 
 ## Empty Data
 
@@ -164,7 +175,7 @@ No data / invalid JSON shows an empty state placeholder without errors.
 | --- | --- | --- | --- |
 | `aria-label` | Chart description (falls back to locale by type) | — | — |
 | `data` | Data. Array single-series `[{label, value}]` or object multi-series `{labels, series:[{name, data, type?, yAxisIndex?}]}` (series-level `type` / `yAxisIndex` for combo and dual-axis) | `unknown` | — |
-| `options` | Config: `smooth` (smoothing), `colors` (series palette), `showLegend`, `gradient` (area-chart vertical gradient fill, default false), `max` (radar global scale), `radarShape` (radar grid `polygon`/`circle`, default polygon), `yAxis` (dual-axis array; dual axis requires the second entry AND series bound on both sides via yAxisIndex, otherwise single axis) | `unknown` | — |
+| `options` | Config: `smooth` (smoothing), `colors` (series palette), `showLegend`, `gradient` (area-chart vertical gradient fill, default false), `max` (radar global scale), `radarShape` (radar grid `polygon`/`circle`, default polygon), `xLabelRotate` (x-axis category label rotation 0–90, default 0 = horizontal + width-based auto-thinning; >0 slants/verticals the labels, still thinned by rotated footprint as a backstop), `yAxis` (dual-axis array; dual axis requires the second entry AND series bound on both sides via yAxisIndex, otherwise single axis) | `unknown` | — |
 | `type` | Chart type: `line` / `bar` / `pie` / `area` / `donut` / `stacked-bar` / `radar` / `polar-area` (combo has no type value — override per series via `series.type`) | `ChartType` | `line` |
 
 `data` / `options` also support the property channel (JS objects, taking precedence over attributes).
@@ -174,7 +185,7 @@ No data / invalid JSON shows an empty state placeholder without errors.
 - Data updates redraw the SVG (same pattern as qrcode), without rebuilding nodes
 - Empty / invalid data → empty state placeholder
 - Every data point carries a native `<title>` tooltip
-- When x-axis category labels are dense (spacing cannot fit the widest label) they are auto-thinned by available width, keeping the endpoints when there is spare room; only labels are thinned (no rotation, no ellipsis) — data points are never thinned
+- When x-axis category labels are dense (spacing cannot fit the widest label) they are auto-thinned by available width, keeping the endpoints when there is spare room; thinning only affects labels (data points are never thinned) and never rotates or adds an ellipsis — use `options.xLabelRotate` (0–90) for slanted/vertical labels, which still thin by rotated footprint as a backstop
 - Animations are pure CSS (wrapped in `@media (prefers-reduced-motion: no-preference)`), auto-disabled under reduced-motion, with no JS timers; zero orphaned overlays
 - Radar uses one global scale (`options.max` or nice ticks); per-dimension scales are not supported yet — normalize your data first if needed (e.g. a 0–100 score)
 - Polar-area renders no sectors when all values are 0 (same as pie); the radius scale tops at the maximum value

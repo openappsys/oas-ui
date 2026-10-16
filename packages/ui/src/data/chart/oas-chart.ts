@@ -36,6 +36,12 @@ export interface ChartOptions {
   radarShape?: 'polygon' | 'circle'
   /** 双轴：y 轴数组。第 2 项存在且两侧均有 series.yAxisIndex 绑定系列才启用双轴（缺侧按单轴，不渲染空轴）；name 为轴名（渲染在轴顶） */
   yAxis?: [{ name?: string }, { name?: string }?]
+  /**
+   * x 轴分类标签旋转角度（0–90 度，默认 0）。缺省 0 时标签水平、按可用宽度自动抽稀（autoSkip）；
+   * >0 时标签绕刻度锚点顺时针旋转（列首贴刻度向右下倾斜），并按旋转后包围盒宽度继续抽稀兜底，
+   * 同时抬高绘图区为标签腾出底部留白。非法/非数字按 0，超范围夹到 0–90。
+   */
+  xLabelRotate?: number
 }
 
 /** 默认系列配色（只用 token，含暗色变体） */
@@ -214,6 +220,10 @@ const H = 280
 const PAD = { l: 42, r: 12, t: 16, b: 30 }
 /** 双轴模式右缘留白（对称左轴刻度列宽） */
 const PAD_R_DUAL = 42
+/** x 轴旋转标签：轴基线到标签锚点的间距（user 单位） */
+const X_LABEL_GAP = 10
+/** x 轴旋转标签：行高余量（font-size 12px 的布局行盒 ≈14px，用于算底留白与竖排占宽） */
+const X_LABEL_LINE = 14
 
 /**
  * oas-chart —— 自研 SVG 图表（零第三方引擎）。
@@ -222,7 +232,7 @@ const PAD_R_DUAL = 42
  * - `type`：line / bar / pie / area / donut / stacked-bar / radar / polar-area，默认 line
  * - `data`：JSON 字符串（数组单系列 `[{label,value}]` 或对象多系列
  *   `{labels:[...], series:[{name,data:[...]}]}`），property `data` 优先
- * - `options`：JSON 字符串（smooth / colors / showLegend / gradient / max / radarShape / yAxis）
+ * - `options`：JSON 字符串（smooth / colors / showLegend / gradient / max / radarShape / xLabelRotate / yAxis）
  *
  * 渲染：SVG path/rect/circle 手写折线/柱状/饼图/面积/环形/堆叠柱状/雷达/极区；坐标轴刻度 + 网格线；
  * 每个数据点带原生 `<title>` 悬停显示数值；数据更新整体重绘（qrcode 同模式）。
@@ -443,16 +453,19 @@ export class OASChart extends OASElement {
   ): {
     padR: number
     plotW: number
+    plotH: number
     dual: boolean
+    xLabel: { rot: number; padB: number; padR: number; y: number }
     ticksFor: (axis: 0 | 1) => { max: number; step: number; values: number[] }
     yAt: (axis: 0 | 1, v: number) => number
     grid: (plotH: number) => string
   } {
-    const plotH = H - PAD.t - PAD.b
+    const xLabel = this.xLabelLayout(data.labels, options)
+    const plotH = H - PAD.t - xLabel.padB
     const hasLeft = data.series.some((s) => this.axisOf(s) === 0)
     const hasRight = data.series.some((s) => this.axisOf(s) === 1)
     const dual = this.isDualAxis(options) && hasLeft && hasRight
-    const padR = dual ? PAD_R_DUAL : PAD.r
+    const padR = dual ? Math.max(PAD_R_DUAL, xLabel.padR) : xLabel.padR
     const plotW = W - PAD.l - padR
     const left = dual ? this.alignTicksTo(this.maxForAxis(data, 0), 4) : this.niceTicks(this.maxValue(data))
     // alignTicks：以主轴档数（左轴刻度数 - 1 段）为锚，副轴同档数重算 niceStep
@@ -471,17 +484,16 @@ export class OASChart extends OASElement {
             names: [options.yAxis?.[0]?.name, options.yAxis?.[1]?.name],
           })
         : this.renderGrid(left, ph)
-    return { padR, plotW, dual, ticksFor, yAt, grid }
+    return { padR, plotW, plotH, dual, xLabel, ticksFor, yAt, grid }
   }
 
   /** 折线图：网格 + y 刻度 + x 分类 + 每系列 path + 数据点 title */
   private renderLine(data: ChartData, options: ChartOptions): string {
-    const { plotW, yAt, grid } = this.axisContext(data, options)
-    const plotH = H - PAD.t - PAD.b
+    const { plotW, plotH, xLabel, yAt, grid } = this.axisContext(data, options)
     const n = data.labels.length
 
     let out = grid(plotH)
-    out += this.renderXLabels(data.labels, plotW, 'top')
+    out += this.renderXLabels(data.labels, plotW, 'top', xLabel)
 
     const stepX = n > 1 ? plotW / (n - 1) : plotW / 2
     const xAt = (i: number): number => PAD.l + (n > 1 ? i * stepX : stepX)
@@ -505,12 +517,11 @@ export class OASChart extends OASElement {
 
   /** 面积图：折线 + 闭合到基线的半透明填充（多系列叠加显示） */
   private renderArea(data: ChartData, options: ChartOptions): string {
-    const { plotW, yAt, grid } = this.axisContext(data, options)
-    const plotH = H - PAD.t - PAD.b
+    const { plotW, plotH, xLabel, yAt, grid } = this.axisContext(data, options)
     const n = data.labels.length
 
     let out = grid(plotH)
-    out += this.renderXLabels(data.labels, plotW, 'top')
+    out += this.renderXLabels(data.labels, plotW, 'top', xLabel)
 
     // 渐变填充（可选）：每系列一个垂直 linearGradient（顶部系列色 0.35 → 底部全透明），
     // id 模块级递增防同页多实例冲突；area-path 用内联 style 覆盖 CSS 的 currentColor+opacity
@@ -576,12 +587,11 @@ export class OASChart extends OASElement {
    * 原始系列下标（与图例顺序一致）。area 层为半透明纯色填充（gradient 仅纯 area 型支持）。
    */
   private renderCombo(data: ChartData, options: ChartOptions, topType: 'line' | 'bar' | 'area'): string {
-    const { plotW, ticksFor, yAt, grid } = this.axisContext(data, options)
-    const plotH = H - PAD.t - PAD.b
+    const { plotW, plotH, xLabel, ticksFor, yAt, grid } = this.axisContext(data, options)
     const n = data.labels.length
 
     let out = grid(plotH)
-    out += this.renderXLabels(data.labels, plotW, 'middle')
+    out += this.renderXLabels(data.labels, plotW, 'middle', xLabel)
 
     const bandW = plotW / n
     const xAt = (i: number): number => PAD.l + i * bandW + bandW / 2
@@ -644,13 +654,12 @@ export class OASChart extends OASElement {
 
   /** 柱状图：网格 + 分组柱 rect + x 分类 + title */
   private renderBars(data: ChartData, options: ChartOptions): string {
-    const { plotW, ticksFor, grid } = this.axisContext(data, options)
-    const plotH = H - PAD.t - PAD.b
+    const { plotW, plotH, xLabel, ticksFor, grid } = this.axisContext(data, options)
     const n = data.labels.length
     const m = data.series.length
 
     let out = grid(plotH)
-    out += this.renderXLabels(data.labels, plotW, 'middle')
+    out += this.renderXLabels(data.labels, plotW, 'middle', xLabel)
 
     const bandW = plotW / n
     const gap = m > 1 ? 1 : 0
@@ -675,8 +684,9 @@ export class OASChart extends OASElement {
 
   /** 堆叠柱状图：每分类各系列自底向上堆叠，柱高=分类合计，刻度按合计计算 */
   private renderStackedBars(data: ChartData, options: ChartOptions): string {
-    const plotW = W - PAD.l - PAD.r
-    const plotH = H - PAD.t - PAD.b
+    const xLabel = this.xLabelLayout(data.labels, options)
+    const plotW = W - PAD.l - xLabel.padR
+    const plotH = H - PAD.t - xLabel.padB
     const n = data.labels.length
     const m = data.series.length
 
@@ -690,7 +700,7 @@ export class OASChart extends OASElement {
     const barW = bandW * 0.6
 
     let out = this.renderGrid(ticks, plotH)
-    out += this.renderXLabels(data.labels, plotW, 'middle')
+    out += this.renderXLabels(data.labels, plotW, 'middle', xLabel)
 
     data.labels.forEach((_, i) => {
       let acc = 0
@@ -857,26 +867,61 @@ export class OASChart extends OASElement {
   }
 
   /**
+   * x 轴标签布局：旋转角（0 disables 旋转）与随之而变的底/右留白、标签锚点 y。
+   * 旋转时按「旋转后包围盒」估宽（宽×cos + 行高×sin），底留白 = 间隙 + 宽×sin + 行高，
+   * 绘图区随之变矮（plotH 由 axisContext/调用方按 padB 重算）；右留白至少容下最右标签的横向投影。
+   */
+  private xLabelLayout(
+    labels: string[],
+    options: ChartOptions,
+  ): { rot: number; padB: number; padR: number; y: number } {
+    const raw = options.xLabelRotate
+    const rot = typeof raw === 'number' && Number.isFinite(raw) ? Math.min(90, Math.max(0, raw)) : 0
+    if (rot === 0) return { rot: 0, padB: PAD.b, padR: PAD.r, y: H - 8 }
+    const maxW = labels.reduce((m, s) => Math.max(m, this.estimateLabelWidth(s)), 0)
+    const rad = (rot * Math.PI) / 180
+    const padB = X_LABEL_GAP + maxW * Math.sin(rad) + X_LABEL_LINE
+    return { rot, padB, padR: Math.max(PAD.r, maxW * Math.cos(rad) + 2), y: H - padB + X_LABEL_GAP }
+  }
+
+  /**
    * x 轴分类文字（折线对齐点、柱状对齐柱组中线）。
    * 间距不足时按可用宽度自动抽稀（每 k 个渲染一个），与主流图表库的 autoSkip 一致，
    * 避免密集分类（如 36 个日标签）叠加成一团；宽度按 user 单位估算——SVG 等比缩放，比例不变。
+   * `layout.rot > 0` 时标签绕锚点顺时针旋转（列首贴刻度、向右下倾斜），按旋转后横向投影继续抽稀兜底。
    */
-  private renderXLabels(labels: string[], plotW: number, anchor: 'top' | 'middle'): string {
+  private renderXLabels(
+    labels: string[],
+    plotW: number,
+    anchor: 'top' | 'middle',
+    layout: { rot: number; y: number } = { rot: 0, y: H - 8 },
+  ): string {
     const n = labels.length
     if (n === 0) return ''
     const bandW = plotW / n
     const spacing = anchor === 'middle' ? bandW : n > 1 ? plotW / (n - 1) : plotW
-    const need = labels.reduce((m, s) => Math.max(m, this.estimateLabelWidth(s)), 0) + 6
+    const maxW = labels.reduce((m, s) => Math.max(m, this.estimateLabelWidth(s)), 0)
+    const rad = (layout.rot * Math.PI) / 180
+    // 水平时占宽=文字宽；旋转后占宽=横向投影 宽×cos + 行高×sin（竖排时仅剩一个字高）
+    const footprint = layout.rot > 0 ? maxW * Math.cos(rad) + X_LABEL_LINE * Math.sin(rad) : maxW
+    const need = footprint + (layout.rot > 0 ? 2 : 6)
     const step = spacing > 0 ? Math.max(1, Math.ceil(need / spacing)) : 1
     const idx: number[] = []
     for (let i = 0; i < n; i += step) idx.push(i)
     const last = n - 1
     if (idx[idx.length - 1] !== last && (last - idx[idx.length - 1]!) * spacing >= need) idx.push(last)
+    const rotAttr =
+      layout.rot > 0
+        ? {
+            t: (cx: number): string => ` transform="rotate(${layout.rot} ${cx.toFixed(1)} ${layout.y})"`,
+            s: ' style="text-anchor:start"',
+          }
+        : { t: (): string => '', s: '' }
     let out = ''
     for (const i of idx) {
       const cx =
         anchor === 'middle' ? PAD.l + i * bandW + bandW / 2 : n > 1 ? PAD.l + (i * plotW) / (n - 1) : PAD.l + plotW / 2
-      out += `<text class="axis-label" x="${cx.toFixed(1)}" y="${H - 8}">${this.escapeText(labels[i] ?? '')}</text>`
+      out += `<text class="axis-label" x="${cx.toFixed(1)}" y="${layout.y}"${rotAttr.t(cx)}${rotAttr.s}>${this.escapeText(labels[i] ?? '')}</text>`
     }
     return out
   }
@@ -1061,6 +1106,7 @@ export class OASChart extends OASElement {
     if (typeof obj.showLegend === 'boolean') out.showLegend = obj.showLegend
     if (typeof obj.gradient === 'boolean') out.gradient = obj.gradient
     if (typeof obj.max === 'number' && Number.isFinite(obj.max)) out.max = obj.max
+    if (typeof obj.xLabelRotate === 'number' && Number.isFinite(obj.xLabelRotate)) out.xLabelRotate = obj.xLabelRotate
     if (obj.radarShape === 'circle' || obj.radarShape === 'polygon') out.radarShape = obj.radarShape
     if (Array.isArray(obj.colors)) out.colors = obj.colors.map((c) => String(c))
     if (Array.isArray(obj.yAxis)) {

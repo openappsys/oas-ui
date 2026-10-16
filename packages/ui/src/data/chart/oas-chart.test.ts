@@ -312,6 +312,76 @@ describe('OASChart', () => {
     expect(svgOf(el).querySelectorAll('text.axis-label').length).toBe(3)
   })
 
+  it('xLabelRotate=45：标签加 rotate 变换并左锚（列首在刻度下、向右下倾斜）', () => {
+    const labels = Array.from({ length: 36 }, (_, i) => `09-${String(i + 1).padStart(2, '0')}`)
+    const el = mount({
+      type: 'line',
+      options: '{"xLabelRotate":45}',
+      data: JSON.stringify({ labels, series: [{ name: 'S', data: labels.map((_, i) => i) }] }),
+    })
+    const texts = [...svgOf(el).querySelectorAll('text.axis-label')]
+    expect(texts.length).toBeGreaterThan(0)
+    for (const t of texts) {
+      expect(t.getAttribute('transform') ?? '').toMatch(/^rotate\(45 /)
+      expect(t.getAttribute('style')).toContain('text-anchor:start')
+    }
+    // 旋转后仍按「旋转后包围盒宽度」抽稀兜底：33×cos45 + 12×sin45 = 31.8（+ 间隙）
+    const xs = texts.map((t) => Number(t.getAttribute('x')))
+    expect(xs.length).toBeLessThan(36)
+    for (let i = 1; i < xs.length; i++) expect(xs[i]! - xs[i - 1]!).toBeGreaterThanOrEqual(31)
+  })
+
+  it('xLabelRotate=90：竖排标签横向仅占一个字高，同数据下渲染数显著多于默认抽稀', () => {
+    const labels = Array.from({ length: 36 }, (_, i) => `09-${String(i + 1).padStart(2, '0')}`)
+    const mk = (options: string) =>
+      mount({
+        type: 'line',
+        options,
+        data: JSON.stringify({ labels, series: [{ name: 'S', data: labels.map((_, i) => i) }] }),
+      })
+    const flat = svgOf(mk('{}')).querySelectorAll('text.axis-label').length
+    const rot = mk('{"xLabelRotate":90}')
+    const texts = [...svgOf(rot).querySelectorAll('text.axis-label')]
+    expect(texts.length).toBeGreaterThan(flat)
+    for (const t of texts) expect(t.getAttribute('transform') ?? '').toMatch(/^rotate\(90 /)
+    // 竖排不掉字：每个分类留一个标签时也不重叠（footprint ≈ 12 ≤ 相邻间距）
+    const xs = texts.map((t) => Number(t.getAttribute('x')))
+    for (let i = 1; i < xs.length; i++) expect(xs[i]! - xs[i - 1]!).toBeGreaterThanOrEqual(12)
+  })
+
+  it('xLabelRotate 旋转时给标签腾出底部留白（绘图区上移、不越出 viewBox）', () => {
+    const labels = Array.from({ length: 36 }, (_, i) => `09-${String(i + 1).padStart(2, '0')}`)
+    const data = JSON.stringify({ labels, series: [{ name: 'S', data: labels.map((_, i) => i) }] })
+    const baselineY = (options: string): number => {
+      const svg = svgOf(mount({ type: 'line', options, data }))
+      const lines = [...svg.querySelectorAll('line.axis-line')]
+      return Math.max(...lines.map((l) => Number(l.getAttribute('y1'))))
+    }
+    const flatLine = baselineY('{}') // 基线=最下一条网格线 y = PAD.t + plotH
+    const rotLine = baselineY('{"xLabelRotate":45}')
+    expect(rotLine).toBeLessThan(flatLine) // 绘图区变矮（底留白变大）
+    const labelsY = [
+      ...svgOf(mount({ type: 'line', options: '{"xLabelRotate":45}', data })).querySelectorAll('text.axis-label'),
+    ].map((t) => Number(t.getAttribute('y')))
+    // 标签基线落在基线之下，且旋转后文字底不会越出 viewBox 高度 280
+    const rad = Math.PI / 4
+    const maxDrop = Math.max(...labels.map((s) => [...s].length)) * 6.6 * Math.sin(rad)
+    expect(Math.max(...labelsY) + maxDrop).toBeLessThan(280)
+  })
+
+  it('xLabelRotate 非法/越界值：非数字按 0（无 transform），超范围夹到 0–90', () => {
+    const labels = ['a', 'b', 'c']
+    const data = JSON.stringify({ labels, series: [{ name: 'S', data: [1, 2, 3] }] })
+    const transformOf = (options: string): (string | null)[] =>
+      [...svgOf(mount({ type: 'line', options, data })).querySelectorAll('text.axis-label')].map((t) =>
+        t.getAttribute('transform'),
+      )
+    for (const bad of ['{}', '{"xLabelRotate":"45"}', '{"xLabelRotate":-10}', '{"xLabelRotate":null}']) {
+      expect(transformOf(bad), bad).toEqual([null, null, null])
+    }
+    expect(transformOf('{"xLabelRotate":200}')[0] ?? '').toMatch(/^rotate\(90 /)
+  })
+
   it('type=radar aria-label 缺省走 i18n（雷达图）', () => {
     const el = mount({ type: 'radar', data: SINGLE })
     expect(wrapperOf(el).getAttribute('aria-label')).toBe('雷达图')

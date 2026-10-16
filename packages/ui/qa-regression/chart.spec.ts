@@ -293,3 +293,55 @@ test('chart options.colors 恶意值不逃逸属性：不注入事件属性/额�
   expect(r.injectedNode, '颜色值不得闭合属性注入额外节点').toBe(false)
   expect(r.injectedRect, 'gradient stop-color 不得被逃逸注入节点').toBe(false)
 })
+
+// 密集分类：缺省水平抽稀；xLabelRotate 斜排/竖排并用真实布局（getBoundingClientRect）证明不叠字。
+test('chart 密集 x 轴标签：缺省抽稀、xLabelRotate 旋转后真实包围盒仍无重叠且不越出绘图卡片', async ({ page }) => {
+  await page.goto('/components/chart.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-chart')
+  const r = await page.evaluate(() => {
+    const labels = Array.from({ length: 36 }, (_, i) => `09-${String(i + 1).padStart(2, '0')}`)
+    const data = JSON.stringify({ labels, series: [{ name: 'S', data: labels.map((_, i) => i) }] })
+    const measure = (options: string) => {
+      const el = document.createElement('oas-chart')
+      el.setAttribute('type', 'line')
+      el.setAttribute('options', options)
+      el.setAttribute('data', data)
+      document.body.appendChild(el)
+      const svg = el.shadowRoot!.querySelector('svg')!
+      const texts = [...svg.querySelectorAll('text.axis-label')] as SVGTextElement[]
+      const rects = texts.map((t) => t.getBoundingClientRect())
+      // 相邻标签的真实屏幕矩形是否相交（旋转后为斜/竖包围盒）
+      let overlaps = 0
+      for (let i = 1; i < rects.length; i++) {
+        const a = rects[i - 1]!
+        const b = rects[i]!
+        if (a.left < b.right - 0.5 && b.left < a.right - 0.5 && a.top < b.bottom - 0.5 && b.top < a.bottom - 0.5)
+          overlaps++
+      }
+      const svgBox = svg.getBoundingClientRect()
+      const glyphBox = [
+        Math.min(...texts.map((t) => t.getBoundingClientRect().left)),
+        Math.max(...texts.map((t) => t.getBoundingClientRect().right)),
+      ]
+      const rotated = texts.filter((t) => (t.getAttribute('transform') ?? '').startsWith('rotate(')).length
+      const info = { rendered: texts.length, overlaps, rotated, firstSlot: texts.length > 0 }
+      el.remove()
+      return { ...info, svgLeft: svgBox.left, svgRight: svgBox.right, glyphBox }
+    }
+    return { flat: measure('{}'), rot45: measure('{"xLabelRotate":45}'), rot90: measure('{"xLabelRotate":90}') }
+  })
+
+  expect(r.flat.rendered, '缺省抽稀（36 → 少量）').toBeLessThan(36)
+  expect(r.flat.overlaps, '缺省水平标签不重叠').toBe(0)
+  expect(r.flat.rotated, '缺省不旋转').toBe(0)
+  expect(r.rot45.rotated, '45° 全部标签带 rotate 变换').toBe(r.rot45.rendered)
+  expect(r.rot90.rotated, '90° 全部标签带 rotate 变换').toBe(r.rot90.rendered)
+  expect(r.rot45.overlaps, '45° 斜排不叠字').toBe(0)
+  expect(r.rot90.overlaps, '90° 竖排不叠字').toBe(0)
+  expect(r.rot90.rendered, '90° 竖排能容纳更多标签（逐日可读优于缺省）').toBeGreaterThan(r.flat.rendered)
+  // 旋转后文字不得越出图表卡片（svg 左右界）
+  for (const [name, m] of Object.entries(r)) {
+    expect(m.glyphBox[0]!, `${name} 左不越界`).toBeGreaterThanOrEqual(m.svgLeft - 2)
+    expect(m.glyphBox[1]!, `${name} 右不越界`).toBeLessThanOrEqual(m.svgRight + 2)
+  }
+})
