@@ -170,6 +170,13 @@ export const en: LocaleMessages = {
   'gantt.addTask': 'Add task',
   'gantt.addChild': 'Add subtask',
   'gantt.newTask': 'New task',
+  // resource（resource load / swimlane view）
+  'resource.label': 'Resource load',
+  'resource.empty': 'No resource tasks',
+  'resource.load': 'Load histogram',
+  'resource.taskAria': '{name}: {start} to {end}, resource {resource}',
+  'resource.loadAria': '{resource}: load normal',
+  'resource.loadOverAria': '{resource}: {count} overloaded period(s)',
   // kanban（看板）
   'kanban.emptyColumn': 'Drag cards here',
   'kanban.moveCard': 'Move card',

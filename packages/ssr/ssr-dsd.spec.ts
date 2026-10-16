@@ -361,6 +361,21 @@ test.beforeAll(async () => {
       { locale: 'zh-CN' },
     ),
     renderToString('oas-barcode', { value: 'OAS-UI-2026', format: 'code128' }),
+    renderToString(
+      'oas-resource',
+      {
+        resources: JSON.stringify([
+          { id: 'r1', name: '张三', capacity: 1 },
+          { id: 'r2', name: '李四', capacity: 2 },
+        ]),
+        tasks: JSON.stringify([
+          { id: 'rt1', name: '需求评审', start: '2026-03-02', end: '2026-03-03', resources: ['r1'] },
+          { id: 'rt2', name: '后端开发', start: '2026-03-04', end: '2026-03-06', resources: ['r1', 'r2'] },
+        ]),
+      },
+      '',
+      { locale: 'zh-CN' },
+    ),
     renderToString('oas-avatar', { src: PNG_1PX, size: '40' }),
     renderToString('oas-avatar-group', { max: '3' }),
     renderToString('oas-image', { src: PNG_1PX, preview: '', alt: '示例图' }),

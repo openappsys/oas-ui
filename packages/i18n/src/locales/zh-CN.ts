@@ -207,6 +207,13 @@ export const zhCN = {
   'gantt.addTask': '添加任务',
   'gantt.addChild': '添加子任务',
   'gantt.newTask': '新任务',
+  // resource（资源负载/泳道视图）
+  'resource.label': '资源负载',
+  'resource.empty': '暂无资源任务',
+  'resource.load': '负载直方图',
+  'resource.taskAria': '{name}：{start} 至 {end}，资源 {resource}',
+  'resource.loadAria': '{resource}：负载正常',
+  'resource.loadOverAria': '{resource}：超载 {count} 档',
   // kanban（看板）
   'kanban.emptyColumn': '拖拽卡片到此处',
   'kanban.moveCard': '移动卡片',

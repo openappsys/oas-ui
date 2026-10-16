@@ -207,6 +207,13 @@ export const es: LocaleMessages = {
   'gantt.addTask': 'Añadir tarea',
   'gantt.addChild': 'Añadir subtarea',
   'gantt.newTask': 'Nueva tarea',
+  // resource (carga de recursos / vista de carriles)
+  'resource.label': 'Carga de recursos',
+  'resource.empty': 'No hay tareas de recursos',
+  'resource.load': 'Histograma de carga',
+  'resource.taskAria': '{name}: {start} a {end}, recurso {resource}',
+  'resource.loadAria': '{resource}: carga normal',
+  'resource.loadOverAria': '{resource}: {count} periodos sobrecargados',
   // kanban (tablero kanban)
   'kanban.emptyColumn': 'Arrastra tarjetas aquí',
   'kanban.moveCard': 'Mover tarjeta',

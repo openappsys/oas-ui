@@ -4678,5 +4678,24 @@
       "oas-window-action": "点击交通灯时派发；detail { action }（minimize/maximize/close）；组件只发事件，宿主接 Electron/Tauri API"
     },
     "slots": {}
+  },
+  "oas-resource": {
+    "attrs": {
+      "resources": "资源列表（JSON [{ id, name, capacity? }]）——capacity = 该资源每档（period）可并行任务数（day 档即每天；缺省回落属性 capacity，最终 1）",
+      "tasks": "资源任务（JSON [{ id, name, start, end, resources? }]）；start/end 仅日精度 YYYY-MM-DD（end 含当日；带时刻输入按当日处理），resources 为分配的资源 id 数组（指向不存在资源的分配忽略）",
+      "scale": "直方图 period 粒度与时间轴刻度：day（默认）/ week / month；非法回落 day",
+      "height": "组件高度 px（默认 320）：映射到自定义属性 --oas-resource-height（宿主自身 height 内联始终优先，组件不覆盖宿主内联）。height 属性在场期间组件接管该变量——写入宿主内联并覆盖宿主自己设置的 --oas-resource-height；属性移除后组件写入的值归零清除，高度回落 token 缺省 320 或宿主 CSS，宿主原先内联设置的值不恢复；从未设置 height 属性时组件不写该变量，宿主内联或 class 规则设置的 --oas-resource-height 完全不受影响",
+      "locale": "本地化（覆盖 config-provider 注入与全局 locale）",
+      "capacity": "资源未声明 capacity 时的缺省容量（默认 1）"
+    },
+    "events": {
+      "oas-task-click": "点击资源泳道内的任务条时派发，detail: { id, task, resourceId }",
+      "oas-overload": "超载态变化时派发（每次更新至多一次；同一超载态不重复派发），detail: { overloads: [{ resourceId, period, load, capacity }] }（period 为档起始日）；无超载不派发",
+      "oas-tasks-change": "程序写 tasks 时派发，detail: { tasks }"
+    },
+    "props": {
+      "resources": "资源列表（读为拷贝：嵌套 plain object / array 深拷贝——循环安全；同一引用在单次读取结果内保持共享；Date 按值复制（不保持共享）；类实例 / Set 等奇异对象按引用；写同步 attribute + 重渲染，含不可序列化自定义键时 attribute 仅丢弃该键，property 读回仍完整保留）",
+      "tasks": "资源任务（读为拷贝：嵌套 plain object / array 深拷贝——循环安全；同一引用在单次读取结果内保持共享；Date 按值复制（不保持共享）；类实例 / Set 等奇异对象按引用；写同步 attribute + 重渲染 + 派发 oas-tasks-change，含不可序列化自定义键时 attribute 仅丢弃该键，property 读回仍完整保留）"
+    }
   }
 }

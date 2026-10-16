@@ -414,6 +414,7 @@ import './data/list/index.js'
 import './data/kanban/index.js'
 import './data/scheduler/index.js'
 import './data/gantt/index.js'
+import './data/resource/index.js'
 import './data/carousel/index.js'
 import './data/tree/index.js'
 // 能力包必须先于组件注册（同上）
@@ -507,6 +508,18 @@ export {
   type GanttTaskAddDetail,
   type GanttRescheduleDetail,
 } from './data/gantt/index.js'
+export {
+  OASResource,
+  levelResources,
+  type ResourceItem,
+  type ResourceTask,
+  type ResourceScale,
+  type ResourceTaskClickDetail,
+  type ResourceTasksChangeDetail,
+  type ResourceOverloadEntry,
+  type ResourceOverloadDetail,
+  type LevelResourcesOptions,
+} from './data/resource/index.js'
 export { OASCarousel } from './data/carousel/oas-carousel.js'
 export { OASTree, type TreeNode } from './data/tree/index.js'
 export { OASTable, type TableColumn, type SortOrder } from './data/table/index.js'

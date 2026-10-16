@@ -1993,6 +1993,30 @@ OASElement 的 render 生命周期只首连一次（`rendered` 门闩），组�
 - 文档：gantt.md zh/en 增段；api-manifest / api-descriptions 同步（`api:check` 双向 0）。
 - 全量 `pnpm test` / typecheck / build / api:check 全绿。
 
+## 未发布 oas-resource 资源负载 / 泳道视图（新组件，data 族）
+
+> 立项背景：让「用 oas-ui 做项目管理」的人能看资源。gantt/scheduler 均不承载资源视图；本件为**纯视图层**：给定资源与任务，渲染资源泳道（共享时间轴）+ 负载直方图（超载高亮）。**不做排程/平衡引擎**（平衡以纯函数导出、由宿主决定是否回写）。定位与边界：组件库只做视图与交互；资源实体与容量由宿主提供。
+
+### 特性
+
+- **属性/property**：`resources`（JSON `[{ id, name, capacity? }]`，`capacity` = 该资源每档（period）可并行任务数，`day` 档即每天，缺省 1）、`tasks`（JSON `[{ id, name, start, end, resources?: string[] }]`；`resources` 为分配的资源 id 列表）、`scale`（day 默认 / week / month）、`height`、`locale`、`capacity`（全局缺省容量）。
+- **视图**：左侧资源名列（按资源分组），右侧**共享时间轴的资源泳道**（每资源一行，行内画其任务条——单色条，任务名/起止日期/资源名经 aria-label 可读）；下方**负载直方图**：按档（日/周/月）统计每资源「并行任务数」，`负载 > capacity` → 超载高亮（token 色）。泳道与直方图**列宽/刻度/横向滚动联动**。
+- **事件**：`oas-task-click`（`{ id, task, resourceId }`）、`oas-overload`（`{ overloads: [{ resourceId, period, load, capacity }] }`，超载态变化时派发——每次更新至多一次、同一超载态不重复派发，避免事件风暴）、`oas-tasks-change`（`{ tasks }`，程序写 tasks property 时派发）。
+- **方法**：`scrollToDate(date)`；**平衡（可选，纯函数）**：`levelResources(resources, tasks, opts)` 导出——保工期、把超载档内较晚的任务整体顺延，返回「被后移的任务数组」；组件**不自动改数据**（宿主据返回值 `tasks=` 回写）。
+- **CSS token**：`--oas-resource-*`（沿用 `--oas-color-*`），暗色/高对比有变体；无硬编码色。
+
+### 边界
+
+- 不做：排程引擎、资源成本/工时日历（capacity 仅并行数）、按资源的时间轴联动之外的复杂视图、自动回写平衡。
+- 不反向依赖 gantt/scheduler（只依赖基础 + 容器）。
+
+### 验收
+
+- 单测：`resources`/`tasks` 解析与容错（非法/缺省/未知资源 id）；泳道按资源分组与行高计算；负载统计（day/week/month）与超载判定；`levelResources` 纯函数（保工期/只延后/确定性/无超载收敛/上限）；`oas-overload` 派发；`scrollToDate`；缺省/空态零异常。
+- e2e：新增 `resource.md` 页 demo 真点（超载高亮可见、平衡按钮回写后超载消失、暗色）+ console 零告警。
+- 文档：新增 `resource.md` zh/en（进自动收集面）+ api-manifest / api-descriptions 同步（`api:check` 双向 0）+ i18n ×10（若需文案）+ CHANGELOG `[未发布]`。
+- 全量 `pnpm test` / typecheck / build / api:check 全绿。
+
 ## v2.5.9 oas-calendar `events` 排期条目通道
 
 ### 特性

@@ -49,6 +49,7 @@ export default {
           w.notification = mod.notification
           w.loadingBar = mod.loadingBar
           w.confirm = mod.confirm
+          w.levelResources = mod.levelResources
         })
         // 延迟到首帧，确保 demo 元素已渲染
         requestAnimationFrame(() => bindOnOas(document))

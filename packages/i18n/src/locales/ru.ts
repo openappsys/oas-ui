@@ -207,6 +207,13 @@ export const ru: LocaleMessages = {
   'gantt.addTask': 'Добавить задачу',
   'gantt.addChild': 'Добавить подзадачу',
   'gantt.newTask': 'Новая задача',
+  // resource (загрузка ресурсов / дорожки)
+  'resource.label': 'Загрузка ресурсов',
+  'resource.empty': 'Нет задач ресурсов',
+  'resource.load': 'Гистограмма загрузки',
+  'resource.taskAria': '{name}: {start} — {end}, ресурс {resource}',
+  'resource.loadAria': '{resource}: нагрузка в норме',
+  'resource.loadOverAria': '{resource}: перегрузка в {count} периодах',
   // kanban (канбан-доска)
   'kanban.emptyColumn': 'Перетащите карточки сюда',
   'kanban.moveCard': 'Переместить карточку',

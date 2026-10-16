@@ -207,6 +207,13 @@ export const ar: LocaleMessages = {
   'gantt.addTask': 'إضافة مهمة',
   'gantt.addChild': 'إضافة مهمة فرعية',
   'gantt.newTask': 'مهمة جديدة',
+  // resource (حمل الموارد / عرض المسارات)
+  'resource.label': 'حمل الموارد',
+  'resource.empty': 'لا توجد مهام موارد',
+  'resource.load': 'مدرج حمل الموارد',
+  'resource.taskAria': '{name}: {start} إلى {end}، المورد {resource}',
+  'resource.loadAria': '{resource}: الحمل طبيعي',
+  'resource.loadOverAria': '{resource}: {count} فترة محمّلة بشكل زائد',
   // kanban (لوحة كانبان)
   'kanban.emptyColumn': 'اسحب البطاقات إلى هنا',
   'kanban.moveCard': 'نقل البطاقة',

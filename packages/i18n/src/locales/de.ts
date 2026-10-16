@@ -207,6 +207,13 @@ export const de: LocaleMessages = {
   'gantt.addTask': 'Aufgabe hinzufügen',
   'gantt.addChild': 'Teilaufgabe hinzufügen',
   'gantt.newTask': 'Neue Aufgabe',
+  // resource (Ressourcenauslastung / Schwimmbahn-Ansicht)
+  'resource.label': 'Ressourcenauslastung',
+  'resource.empty': 'Keine Ressourcenaufgaben',
+  'resource.load': 'Auslastungshistogramm',
+  'resource.taskAria': '{name}: {start} bis {end}, Ressource {resource}',
+  'resource.loadAria': '{resource}: Auslastung normal',
+  'resource.loadOverAria': '{resource}: {count} überlastete Perioden',
   // kanban (Kanban-Board)
   'kanban.emptyColumn': 'Karten hierher ziehen',
   'kanban.moveCard': 'Karte verschieben',

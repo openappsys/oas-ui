@@ -30,6 +30,10 @@
 - **排程深化**：依赖 `lag/lead`（`GanttDependency.lag` 天、可负，并入 `auto-schedule` 四型约束）；关键路径（`show-critical-path` 默认关，以当前排期为基准反向推最晚时间算总时差，零时差任务加 `.critical` 高亮，颜色走 `--oas-gantt-critical-color`）；i18n ×10 新增 `gantt.lagSuffix` / `gantt.leadSuffix`。另：负总时差（违约）标 `.conflict`（虚线描边，`--oas-gantt-conflict-color`）；连线非 0 lag 渲染可见标签；文档新增「宿主集成配方」段（撤销重做 / 编辑弹窗 demo / 导出 demo）。
 - **排程约束与工作日日历**：任务约束 `GanttTask.constraint`（`asap`/`snet`/`mso`/`fnlt`）+ `constraintDate`（auto-schedule 生效：snet 下限 / mso 固定 / fnlt 软截止；约束违反在 `show-critical-path` 或 `auto-schedule` 开启时标 `.conflict`（日精度约束按日历日比较；mso 与依赖冲突标在 mso 自身；摘要约束忽略并告警））；工作日日历 `workdays`（JSON 周几，opt-in）+ `holidays`（假日恒为非工作日），前推落点吸附下一工作日。工程修正：`updateDependency` lag 归零删键；依赖图 SCC 分解——仅环内节点让位（排程与关键路径均只跳过环内），关键路径改拓扑序 O(V+E)；示例补 lag 数据。
 
+### 特性 · `oas-resource`
+
+- **`oas-resource` 资源负载 / 泳道视图**（新组件，data 族）：`resources`（含 `capacity`）+ `tasks`（含 `resources` 分配）→ 资源泳道（共享时间轴）+ 负载直方图（超载高亮）；事件 `oas-overload` / `oas-task-click` / `oas-tasks-change`；方法 `scrollToDate`；纯函数 `levelResources()`（保工期、只延后、不自动回写）；i18n ×10（`resource.*`）；文档 zh/en 新页。
+
 ## [2.6.1] - 2026-10-13
 
 ### 破坏性变更（迁移）

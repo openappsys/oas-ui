@@ -177,6 +177,7 @@
   "oas-kanban",
   "oas-scheduler",
   "oas-gantt",
+  "oas-resource",
   "oas-carousel",
   "oas-tree",
   "oas-table",

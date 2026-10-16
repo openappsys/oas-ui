@@ -172,6 +172,8 @@ const INTERACTIONS: Array<[string, string]> = [
   ['oas-menu [role="menuitem"]', 'click'],
   ['oas-color-picker', 'click'],
   ['oas-command input', 'fill:x'],
+  // resource：泳道任务条真点 → oas-task-click（Playwright CSS 穿透 open shadow DOM 命中 .bar）
+  ['oas-resource .row.lane .bar', 'click'],
 ]
 
 // ===== 组件级探针步骤（key = manifest 组件名）=====

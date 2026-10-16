@@ -94,6 +94,7 @@
 | **未发布** | **oas-gantt 任务管理增强**：依赖联动排程（`auto-schedule` 默认关，FS/SS/FF/SF 最小前推 + 级联 + 环安全 + 跳过 disabled/摘要，派发 `oas-reschedule`）+ 框选多任务（列表行带 / 时间轴条相交，修饰键） + 拖拽建任务（`creatable` 时间轴空白拖出区间）；边界：关键路径/lag-lead/资源/undo-redo/内建弹窗/图片导出仍归宿主 | ⏳ 未发布 |
 | **未发布** | **oas-gantt 排程深化**：依赖 lag/lead（`GanttDependency.lag` 天，可负，并入 auto-schedule 四型约束）+ 关键路径（`show-critical-path` 默认关，CPM 正/反向算总时差，时差=0 高亮 `.critical`）；边界：资源/undo-redo/内建弹窗/图片导出/工作日日历/约束类型仍归宿主 | ⏳ 未发布 |
 | **未发布** | **oas-gantt 排程约束与工作日日历**：任务约束（`constraint` asap/snet/mso/fnlt + `constraintDate`，auto-schedule 生效）+ 工作日日历（`workdays` opt-in + 复用 holidays，前推吸附工作日）+ 工程修正（lag 清零删键 / 依赖图 SCC 环内让位 / CP 拓扑序 O(V+E) / 示例补 lag）；边界：资源平衡/ALAP/工时班次不做 | ⏳ 未发布 |
+| **未发布** | **oas-resource 资源负载 / 泳道视图**（新组件，data 族）：`resources`（含 capacity）+ `tasks`（含 `resources` 分配）→ 资源泳道（共享时间轴）+ 负载直方图（超载高亮）；事件 `oas-overload`/`oas-task-click`/`oas-tasks-change`；纯函数 `levelResources()`（不自动回写）；边界：排程/平衡引擎、资源成本/工时日历、模板一律不做（模板归 oas-ui-templates） | ⏳ 未发布 |
 
 > **注（可选工具包）**：`@oas-ui/react` 桥接包**不单独发布**，降级为仓库内可选工具包——React 19 原生「`on` + 全小写字面量」写法（`<oas-button onoas-submit={...}>`）即可监听 `oas-*`；桥接 hooks（`useOasEvent`/`useOasEvents`）供需要 camelCase 惯例 / TS 类型 / React 17-18 兼容的宿主按需使用，不随版本发布、不写入发布清单（详见 PRD）。
 

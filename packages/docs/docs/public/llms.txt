@@ -177,6 +177,7 @@
 - [Kanban 看板](https://oas-ui.dev/components/kanban): 列 + 卡片的看板视图：卡片在列间拖拽换列、列内拖拽排序，支持列拖拽重排、WIP 限制、卡片多选与泳道分带，落定后派发 oas-change 供宿主同步数据。
 - [Scheduler 日程调度](https://oas-ui.dev/components/scheduler): 月视图日程组件：日格内渲染事件芯片（标题 + 色条），events 读/写通道 + addEvent / updateEvent / removeEvent CRUD 方法；点事件芯片派发 oas-event-click、点日格派发 oas-day-click（宿主接编辑器），数据经 CRUD 方法变更时派发 oas-events-change（外部 setAttribute('events'…
 - [Gantt 甘特图](https://oas-ui.dev/components/gantt): 项目排期语义的任务图表组件（data 族）：行树 WBS（父任务摘要条 = 子任务时间并集）× 横向时间轴，任务条 / 里程碑 / 摘要条三形态 + 进度填充；依赖连线（FS/SS/FF/SF 四型，SVG 单画布覆盖层）；拖拽三件套（拖条改期 / 左右手柄拉伸 / 拖改进度，pointerup 收口一次性写回并派发事件）；时间刻度六档（hour/day/week/month/quarter…
+- [Resource 资源负载](https://oas-ui.dev/components/resource): 资源负载 / 泳道视图（新组件，data 族）：给定资源与任务（任务带分配的资源），渲染资源泳道（每资源一行，行内显示其被分配的任务条，共享时间轴）与负载直方图（按刻度档统计每资源并行任务数，超过容量高亮）。
 
 ## 会话组件
 

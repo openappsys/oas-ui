@@ -1,0 +1,120 @@
+{
+  "className": "OASResource",
+  "sourceFile": "packages/ui/src/data/resource/oas-resource.ts",
+  "attrs": [
+    {
+      "name": "resources",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "tasks",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "scale",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "height",
+      "type": "string",
+      "default": "320",
+      "observed": true
+    },
+    {
+      "name": "locale",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "capacity",
+      "type": "string",
+      "default": "1",
+      "observed": true
+    }
+  ],
+  "props": [
+    {
+      "name": "resources",
+      "type": "ResourceItem[]",
+      "default": "[]",
+      "api": true
+    },
+    {
+      "name": "tasks",
+      "type": "ResourceTask[]",
+      "default": "[]",
+      "api": true
+    }
+  ],
+  "events": [
+    {
+      "name": "oas-tasks-change",
+      "detail": "{ tasks: this.tasks } satisfies ResourceTasksChangeDetail"
+    },
+    {
+      "name": "oas-task-click",
+      "detail": "{ id: taskId, task: toPublicTask(task), resourceId } satisfies ResourceTaskClickDetail"
+    },
+    {
+      "name": "oas-overload",
+      "detail": "{ overloads: overloadEntries } satisfies ResourceOverloadDetail"
+    }
+  ],
+  "slots": [],
+  "cssVars": [
+    {
+      "name": "--oas-resource-height",
+      "default": "320px"
+    },
+    {
+      "name": "--oas-resource-row-height",
+      "default": "36px"
+    },
+    {
+      "name": "--oas-resource-bar-height",
+      "default": "20px"
+    },
+    {
+      "name": "--oas-resource-name-width",
+      "default": "160px"
+    },
+    {
+      "name": "--oas-resource-header-bg",
+      "default": "var(--oas-color-bg)"
+    },
+    {
+      "name": "--oas-resource-header-height",
+      "default": "32px"
+    },
+    {
+      "name": "--oas-resource-bar-bg",
+      "default": "color-mix(in srgb, var(--oas-color-primary) 22%, var(--oas-color-bg))"
+    },
+    {
+      "name": "--oas-resource-bar-hover-bg",
+      "default": "color-mix(in srgb, var(--oas-color-primary) 34%, var(--oas-color-bg))"
+    },
+    {
+      "name": "--oas-resource-load-height",
+      "default": "64px"
+    },
+    {
+      "name": "--oas-resource-load-bg",
+      "default": "color-mix(in srgb, var(--oas-color-primary) 45%, var(--oas-color-bg))"
+    },
+    {
+      "name": "--oas-resource-load-over-bg",
+      "default": "var(--oas-color-danger)"
+    },
+    {
+      "name": "--oas-resource-lane-gap",
+      "default": "max( 0px, (var(--oas-resource-row-height, 36px) - var(--oas-resource-bar-height, 20px)) / 2 )"
+    }
+  ],
+  "unresolved": []
+}

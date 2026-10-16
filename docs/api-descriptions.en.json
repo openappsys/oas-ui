@@ -4678,5 +4678,24 @@
       "oas-window-action": "Fired on traffic-light click; detail { action } (minimize/maximize/close); the component only emits — the host wires Electron/Tauri APIs"
     },
     "slots": {}
+  },
+  "oas-resource": {
+    "attrs": {
+      "resources": "Resources (JSON [{ id, name, capacity? }]) — capacity = parallel tasks per period for that resource (per day in the day scale; falls back to the capacity attribute, ultimately 1)",
+      "tasks": "Resource tasks (JSON [{ id, name, start, end, resources? }]); start/end are day precision YYYY-MM-DD only (end inclusive; time-bearing input is treated as that day), resources is the assigned resource id array (assignments to unknown resources are ignored)",
+      "scale": "Histogram period granularity and axis labels: day (default) / week / month; invalid falls back to day",
+      "height": "Component height in px (default 320): mapped to the custom property --oas-resource-height (the host's own inline height always wins and is never overwritten by the component). While the height attribute is present the component takes over this variable — writing it inline on the host and overriding any --oas-resource-height the host set itself; after the attribute is removed the component-written value is cleared to zero, so the height falls back to the token default (320) or host CSS, and the host's previous inline value is not restored; when the height attribute was never set the component never writes the variable, and a --oas-resource-height set by the host (inline or via class rules) is left completely untouched",
+      "locale": "Localization (overrides config-provider injection and global locale)",
+      "capacity": "Default capacity when a resource declares none (default 1)"
+    },
+    "events": {
+      "oas-task-click": "Dispatched when a task bar in a resource swimlane is clicked, detail: { id, task, resourceId }",
+      "oas-overload": "Dispatched when the overload state changes (at most once per update; the same overload state is not re-dispatched), detail: { overloads: [{ resourceId, period, load, capacity }] } (period is the period start date); not dispatched when there is no overload",
+      "oas-tasks-change": "Dispatched when tasks is written programmatically, detail: { tasks }"
+    },
+    "props": {
+      "resources": "Resources (reads a copy: nested plain objects/arrays are deep-cloned — cycle-safe; shared references stay shared within a single read result; Date is copied by value (not kept shared); exotic objects such as class instances/Set are shared by reference; writing syncs the attribute + re-renders; unserializable custom keys are dropped individually from the attribute, the property read-back keeps the full data)",
+      "tasks": "Resource tasks (reads a copy: nested plain objects/arrays are deep-cloned — cycle-safe; shared references stay shared within a single read result; Date is copied by value (not kept shared); exotic objects such as class instances/Set are shared by reference; writing syncs the attribute + re-renders + dispatches oas-tasks-change; unserializable custom keys are dropped individually from the attribute, the property read-back keeps the full data)"
+    }
   }
 }

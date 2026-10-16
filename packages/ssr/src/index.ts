@@ -242,6 +242,8 @@ export const WHITELIST = [
   'oas-scheduler',
   'oas-gantt',
   'oas-barcode',
+  // —— SSR 白名单补位：resource 资源负载/泳道视图（数据走 JSON attribute 声明式通道，同 gantt/scheduler 类） ——
+  'oas-resource',
   // —— SSR 白名单补位批次 2：form 收尾（knob/questionnaire）+ conversation 五件 + workbench 构件族
   //    （titlebar/statusbar/inspector/action-bar 全部 tag；浮层与输入交互默认关闭/空态直出骨架） ——
   'oas-knob',
@@ -449,6 +451,8 @@ const TAG_ENTRY: Record<WhiteListTag, string> = {
   'oas-scheduler': '@oas-ui/ui/data/scheduler',
   'oas-gantt': '@oas-ui/ui/data/gantt',
   'oas-barcode': '@oas-ui/ui/data/barcode',
+  // —— SSR 白名单补位：resource 资源负载/泳道视图 ——
+  'oas-resource': '@oas-ui/ui/data/resource',
   // —— SSR 白名单补位批次 2：form 收尾 + conversation 五件 + workbench 构件族 ——
   'oas-knob': '@oas-ui/ui/form/knob',
   'oas-questionnaire': '@oas-ui/ui/form/questionnaire',
