@@ -491,6 +491,18 @@ interface KanbanColumnVirtualState {
 }
 
 /**
+ * 列卡片只读视图：窗口渲染只需要「列内卡数」与「按位取卡」两个能力。
+ * 滚动帧热路径用索引切片视图（columnCards：按 columnIndex 下标间接访问 _cards），
+ * 避免每帧把该列卡片全量过滤/复制成数组（单列 10 万卡 = 每帧 10 万次 filter）。
+ * 视图仅在单次同步调用栈内创建并消费（不跨帧持有——_cards 变更必经 update() 重建索引）。
+ */
+interface KanbanColumnCards {
+  readonly length: number
+  /** 第 index 张（列内绝对位次）；越界返回 undefined（与数组取值同语义） */
+  at(index: number): KanbanCard | undefined
+}
+
+/**
  * oas-kanban —— 看板（列 + 卡片拖拽）。
  *
  * 数据通道（与 oas-table 惯例一致：attribute JSON + property 双通道，非受控回写 + attribute 反射）：
@@ -512,6 +524,7 @@ interface KanbanColumnVirtualState {
  *   拖拽悬停折叠带头自动展开（只切类不重建 DOM，拖拽不中断）；
  * - WIP 限制：列 `limit` 超限 → 列头计数 warning 色 + data-over-limit 标记（提示非阻断）；
  * - 键盘可达：卡片 tabindex=0（listitem）；非空列体/单元格 role=list + aria-label（空不带 list 语义）；
+ *   卡片 aria-posinset/aria-setsize 携带「容器内绝对位次 + 全量数」（虚拟化下读屏不把渲染窗口当整列）；
  * - 空列/空单元格占位走 i18n（`kanban.emptyColumn`），`empty-column-text` 属性可覆盖；
  *   泳道空值归「（空）」带（`kanban.groupEmpty`，与 table 分组空值同语义）。
  *
@@ -568,6 +581,13 @@ export class OASKanban extends OASElement {
   private boardResizeObserver: ResizeObserver | null = null
   /** 诊断计数：列体窗口实际渲染次数（窗口未变的滚动/重算不增，供测试断言「不重建」） */
   private columnWindowPaints = 0
+  /** 诊断计数（仅内部诊断，测试断言用）：索引视图取卡次数——滚动帧窗口同步只按索引切片访问
+   *  窗口内卡片（O(窗口)），该计数不随卡总量增长（修复前 syncColumnWindow 每帧全量 filter） */
+  private columnWindowScans = 0
+  /** 按列卡片索引（列 key → _cards 下标数组，保持数据序）：update() 时一次性重建——滚动帧
+   *  窗口同步据此切片访问（O(窗口)），不再每帧对 _cards 全量 filter；列顺序/卡片顺序/
+   *  data-index 绝对位次/拖拽落点/计数/WIP 语义与实时 filter 完全一致 */
+  private columnIndex = new Map<string, number[]>()
 
   get columns(): KanbanColumn[] {
     return this._columns
@@ -697,6 +717,9 @@ export class OASKanban extends OASElement {
     // 数据重渲染前先关菜单（菜单项引用的列/卡序即将重建，防孤儿态）
     this.closeMenu()
     this.parse()
+    // 按列索引一次性重建（此时 _cards 已最新）：滚动帧窗口同步按索引切片 O(窗口)，
+    // 不再每帧对 _cards 全量 filter（F1）
+    this.rebuildColumnIndex()
     const board = this.shadow.querySelector<HTMLElement>('.kanban')
     if (!board) return
     // 整板重建前记录各列滚动位置：数据变更（含拖拽落定回写）不该把列体滚回顶部
@@ -716,9 +739,9 @@ export class OASKanban extends OASElement {
       return
     }
     board.classList.remove('swimlane')
-    const built: Array<{ col: KanbanColumn; cards: KanbanCard[]; body: HTMLElement }> = []
+    const built: Array<{ col: KanbanColumn; cards: KanbanColumnCards; body: HTMLElement }> = []
     for (const col of this._columns) {
-      const cards = this._cards.filter((c) => String(c.column ?? '') === col.key)
+      const cards = this.columnCards(col.key)
       const { column, body } = this.buildColumn(col, cards.length)
       board.appendChild(column)
       built.push({ col, cards, body })
@@ -761,6 +784,46 @@ export class OASKanban extends OASElement {
       /* 非法 JSON 忽略，保持空数组 */
       return []
     }
+  }
+
+  /** 重建按列索引：列 key → 卡片在 _cards 中的下标数组（保持数据序，与实时 filter 同序同员）。
+   *  update() 时一次构建（O(卡总量)），滚动帧据此切片（O(窗口)）而非每帧全量 filter（F1） */
+  private rebuildColumnIndex(): void {
+    this.columnIndex.clear()
+    for (let i = 0; i < this._cards.length; i++) {
+      const card = this._cards[i]
+      if (!card) continue
+      const key = String(card.column ?? '')
+      const idxs = this.columnIndex.get(key)
+      if (idxs) idxs.push(i)
+      else this.columnIndex.set(key, [i])
+    }
+  }
+
+  /**
+   * 列卡片只读视图（索引切片）：滚动帧热路径按 columnIndex 间接取卡，只触碰窗口内卡片，
+   * 与旧实现 `_cards.filter(...)` 语义严格一致（同 length / 同序 / 同成员）。
+   * 视图按单次同步调用栈消费设计（renderColumnWindow → paint 同栈完成）。
+   */
+  private columnCards(key: string): KanbanColumnCards {
+    const indices = this.columnIndex.get(key)
+    return {
+      length: indices?.length ?? 0,
+      at: (index: number) => {
+        this.columnWindowScans++ // 仅内部诊断：索引取卡计数（断言滚动帧不遍历全量）
+        const idx = indices?.[index]
+        return idx == null ? undefined : this._cards[idx]
+      },
+    }
+  }
+
+  /** 卡片在列内的绝对位次（未命中返回 -1）：键盘移动回焦等事件级路径用（非每帧热路径） */
+  private indexInColumn(key: string, id: string): number {
+    const indices = this.columnIndex.get(key) ?? []
+    for (let i = 0; i < indices.length; i++) {
+      if (String(this._cards[indices[i]!]?.id ?? '') === id) return i
+    }
+    return -1
   }
 
   /** 泳道字段 key（swimlane-by 属性，trim 后空 = 无泳道） */
@@ -907,7 +970,8 @@ export class OASKanban extends OASElement {
     }
     cell.setAttribute('role', 'list')
     cell.setAttribute('aria-label', `${col.title} - ${this.laneLabel(lane)}`)
-    for (const [i, card] of cards.entries()) cell.appendChild(this.buildCard(card, i))
+    // 单元格全量口径同列体（F2）：卡片 aria-posinset/aria-setsize 按单元格内位次/总数
+    for (const [i, card] of cards.entries()) cell.appendChild(this.buildCard(card, i, cards.length))
     return cell
   }
 
@@ -986,7 +1050,7 @@ export class OASKanban extends OASElement {
   }
 
   /** 填充列体（挂载后调用）：空列占位 / 全量渲染 / 虚拟化窗口渲染 */
-  private fillColumnBody(col: KanbanColumn, cards: KanbanCard[], body: HTMLElement, scrollTop = 0): void {
+  private fillColumnBody(col: KanbanColumn, cards: KanbanColumnCards, body: HTMLElement, scrollTop = 0): void {
     if (cards.length === 0) {
       // 空列不设 role=list：axe aria-required-children 要求 list 必有 listitem 子元素，
       // 空列无卡片时 list 语义不成立（列头 aria-label 已提供列名可达性）
@@ -999,6 +1063,9 @@ export class OASKanban extends OASElement {
     }
     body.setAttribute('role', 'list')
     body.setAttribute('aria-label', col.title)
+    // 容器级总量语义：role=list 无合法的容器级计数属性（aria-rowcount 仅 table/grid/treegrid、
+    // aria-setsize 属 listitem）——全量口径由每张卡片的 aria-posinset/aria-setsize 携带（F2），
+    // 机器可读总量走 data-count。
     // 滚动监听挂在列体自身（scroll 既不冒泡也不跨 shadow 边界；列体随整板重建，节点丢弃即解绑）
     body.addEventListener('scroll', this.handleColumnScroll, { passive: true })
     this.renderColumnWindow(col.key, cards, body, { force: true, scrollTop })
@@ -1046,7 +1113,7 @@ export class OASKanban extends OASElement {
    */
   private renderColumnWindow(
     key: string,
-    cards: KanbanCard[],
+    cards: KanbanColumnCards,
     body: HTMLElement,
     opts: { force?: boolean; scrollTop?: number } = {},
   ): boolean {
@@ -1095,7 +1162,7 @@ export class OASKanban extends OASElement {
   /** 渲染列体窗口：上下占位（虚拟化时）+ 窗口内卡片；重建不得把键盘焦点跌出卡片 */
   private paintColumnWindow(
     body: HTMLElement,
-    cards: KanbanCard[],
+    cards: KanbanColumnCards,
     start: number,
     end: number,
     state: KanbanColumnVirtualState,
@@ -1112,9 +1179,9 @@ export class OASKanban extends OASElement {
     body.replaceChildren()
     if (virtualized) body.appendChild(this.buildVacancy('vpad-top', state.cache.offsetOf(start), gap))
     for (let i = start; i < end; i++) {
-      const card = cards[i]
+      const card = cards.at(i)
       if (!card) continue
-      const el = this.buildCard(card, i)
+      const el = this.buildCard(card, i, cards.length)
       body.appendChild(el)
       if (virtualized) this.cardResizeObserver?.observe(el)
     }
@@ -1188,8 +1255,8 @@ export class OASKanban extends OASElement {
     )
     const body = column?.querySelector<HTMLElement>('.column-body')
     if (!body) return
-    const cards = this._cards.filter((c) => String(c.column ?? '') === key)
-    this.renderColumnWindow(key, cards, body, { force: false })
+    // 索引切片视图（O(窗口)）：滚动帧不再对 _cards 全量 filter（F1）
+    this.renderColumnWindow(key, this.columnCards(key), body, { force: false })
   }
 
   /**
@@ -1213,10 +1280,9 @@ export class OASKanban extends OASElement {
     )
     const body = column?.querySelector<HTMLElement>('.column-body')
     if (!card || !state || !body) return
-    const cards = this._cards.filter((c) => String(c.column ?? '') === key)
-    const index = cards.findIndex((c) => String(c.id ?? '') === id)
+    const index = this.indexInColumn(key, id)
     if (index < 0) return
-    this.renderColumnWindow(key, cards, body, { force: true, scrollTop: state.cache.offsetOf(index) })
+    this.renderColumnWindow(key, this.columnCards(key), body, { force: true, scrollTop: state.cache.offsetOf(index) })
     find()?.focus({ preventScroll: true })
   }
 
@@ -1249,22 +1315,31 @@ export class OASKanban extends OASElement {
     if (!changed) return
     for (const [key, { body, deltaAbove }] of touched) {
       if (deltaAbove !== 0) body.scrollTop += deltaAbove
-      const cards = this._cards.filter((c) => String(c.column ?? '') === key)
-      this.renderColumnWindow(key, cards, body, { force: true })
+      // 索引切片视图：实测回写发生在滚动绘制后的 RO 回调里（同样可能是每帧级频率），
+      // 不走全量 filter（F1）
+      this.renderColumnWindow(key, this.columnCards(key), body, { force: true })
     }
   }
 
   /**
    * 构建单卡：默认渲染 title；renderCard 在场时按其返回挂载（Node 直挂 / 字符串 textContent）。
    * `index` 为卡片在所在容器（列体 / 单元格）内的绝对位次——虚拟化下窗口外卡片不在 DOM，
-   * 拖拽落点与范围选一律以 data-index 为口径（非虚拟化时与 DOM 序等价）。
+   * 拖拽落点与范围选一律以 data-index 为口径（非虚拟化时与 DOM 序等价）；
+   * `total` 为所在容器全量卡数（index >= 0 时必传，供 aria-setsize 读屏总量口径）。
    */
-  private buildCard(card: KanbanCard, index = -1): HTMLElement {
+  private buildCard(card: KanbanCard, index = -1, total = 0): HTMLElement {
     const el = document.createElement('div')
     el.className = 'card'
     el.setAttribute('part', 'card')
     el.setAttribute('data-id', String(card.id ?? ''))
-    if (index >= 0) el.setAttribute('data-index', String(index))
+    if (index >= 0) {
+      el.setAttribute('data-index', String(index))
+      // 读屏总量口径（F2）：虚拟化下窗口外卡片不在 DOM，listitem 必须自报「容器内绝对位次 +
+      // 容器全量数」（aria-posinset 1 基 / aria-setsize 全量），否则读屏把渲染窗口当成整列。
+      // 下限防御：setsize 不小于 posinset（调用方均传真实全量，此处仅防误用）。
+      el.setAttribute('aria-posinset', String(index + 1))
+      el.setAttribute('aria-setsize', String(Math.max(total, index + 1)))
+    }
     el.setAttribute('draggable', 'true')
     el.setAttribute('tabindex', '0')
     el.setAttribute('role', 'listitem')

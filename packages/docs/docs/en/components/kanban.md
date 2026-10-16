@@ -139,6 +139,10 @@ Only `title` renders by default; for richer cards (tags, owners, progress) use t
 - Keyboard accessible: cards are focusable (`tabindex=0`), non-empty column bodies are `role="list"` (empty columns carry no list semantics), cards are `role="listitem"`, with readable names from column titles and card titles; column reordering also works by focusing the column handle and pressing ←/→;
 - The move menu acts on its own card only (multi-select does not change menu behavior).
 
+## Large datasets (column virtualization)
+
+With `height` set on a column body (host-constrained), each column body scrolls independently and renders cards for the visible window only — thousands of cards in one column keep the DOM bounded (cards outside the window are not in the DOM: an inherent virtualization trade-off, keyboard reach is limited to the rendered window, cross-window via scrolling and refocus). Cards carry `aria-posinset` (absolute position) and `aria-setsize` (full card count of the column) so screen readers can announce the full position. Without `height` (full content height) virtualization is off and behavior matches previous versions.
+
 ## API
 
 ### oas-kanban

@@ -1,8 +1,9 @@
 /**
  * 服务端行窗口协议（windowed 模式）——共享类型与纯工具。
  *
- * 适用：数据密集型组件（table / gantt / resource / kanban / scheduler）在宿主「只喂可视窗口」
+ * 适用：数据密集型组件（table / gantt / resource）在宿主「只喂可视窗口」
  * 时与宿主交换行区间的统一契约，避免各组件自造事件名与载荷。
+ * （时间范围请求 `oas-range-request` 目前由 gantt / resource 使用；scheduler 仅有本地虚拟化，未接入本契约。）
  *
  * 约定：
  * - 属性 `windowed`（布尔，默认关）+ `total`（全量行数）+ `window-start`（`data[0]` 在全量中的行下标）；

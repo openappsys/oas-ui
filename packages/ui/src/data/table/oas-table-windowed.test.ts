@@ -538,4 +538,46 @@ describe('OASTable windowed（服务端行窗口模式）', () => {
     expect(warn.mock.calls.some((c) => String(c[0]).includes('merge'))).toBe(true)
     warn.mockRestore()
   })
+
+  it('F3 切片越界（window-start + 装载行数 > total）：devWarn 一次（实例级去重）+ 越界行不进渲染窗口', () => {
+    // 缺陷固化：越界（宿主给的切片超出全量范围）曾完全静默——宿主误以为切片全部生效。
+    // 修复=显式提示一次（对齐 resource 同款契约）；不改渲染行为。
+    // 注：非虚拟 windowed 以「已装载行即视口内容」为准（宿主给多少渲染多少，无本地夹取，
+    // 见 requestWindowIfNeeded 注释），故越界行「不进 DOM」只在虚拟路径成立——本用例按虚拟
+    // 路径断言，并补一条「未越界不告警」（非虚拟）对照。
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    try {
+      const sliceMsgs = (): string[] =>
+        warn.mock.calls.map((c) => String(c[0])).filter((m) => m.includes('超出全量范围'))
+      const { el } = mountWindowed({
+        windowed: '',
+        total: '10',
+        'window-start': '8',
+        height: '200',
+        'row-height': '40',
+        data: slice(8, 20),
+      })
+      expect(sliceMsgs().length, '切片越界告警一次').toBe(1)
+      expect(sliceMsgs()[0], '告警含窗口起点').toContain('window-start 8')
+      expect(sliceMsgs()[0], '告警含装载行数').toContain('装载 20 行')
+      expect(sliceMsgs()[0], '告警含全量行数依据').toContain('total 10')
+      expect(sliceMsgs()[0], '告警含越界行数').toContain('越界 18 行')
+      const indexes = rowsOf(el).map((r) => Number(r.getAttribute('data-row-index')))
+      expect(indexes.length, '有渲染行（未装载区域占位留白）').toBeGreaterThan(0)
+      for (const n of indexes) {
+        expect(n, `渲染行绝对行号 ${n} 应在 total 内`).toBeLessThan(10)
+        expect(n, `渲染行绝对行号 ${n} 不应早于 window-start`).toBeGreaterThanOrEqual(8)
+      }
+      // 实例级去重：后续 update 不重复告警
+      el.setAttribute('data', slice(8, 20))
+      expect(sliceMsgs().length, '同实例只提示一次').toBe(1)
+      // 未越界（切片恰在范围内）不告警
+      warn.mockClear()
+      const { el: ok } = mountWindowed({ windowed: '', total: '10', 'window-start': '8', data: slice(8, 2) })
+      expect(sliceMsgs().length, '未越界不告警').toBe(0)
+      expect(rowsOf(ok).length).toBe(2)
+    } finally {
+      warn.mockRestore()
+    }
+  })
 })

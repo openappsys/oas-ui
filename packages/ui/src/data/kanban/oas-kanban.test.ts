@@ -210,6 +210,16 @@ describe('OASKanban', () => {
       }
     })
 
+    it('卡片 aria-posinset/aria-setsize：列内 1 基绝对位次 + 列全量卡数（读屏总量口径）', () => {
+      const el = mount()
+      const todo = cardsOf(el, 'todo')
+      expect(todo.map((c) => c.getAttribute('aria-posinset'))).toEqual(['1', '2'])
+      expect(todo.map((c) => c.getAttribute('aria-setsize'))).toEqual(['2', '2'])
+      const doing = cardsOf(el, 'doing')
+      expect(doing.map((c) => c.getAttribute('aria-posinset'))).toEqual(['1'])
+      expect(doing.map((c) => c.getAttribute('aria-setsize'))).toEqual(['1'])
+    })
+
     it('column 字段不在 columns 中的卡片忽略（不渲染）', () => {
       const el = mount({ cards: JSON.stringify([...CARDS, { id: 'cx', column: 'nope', title: '游卡' }]) })
       expect(cardOf(el, 'cx')).toBeNull()
@@ -1145,6 +1155,14 @@ describe('OASKanban', () => {
       expect(cardsInCell(el, 'high', 'doing').map((c) => c.getAttribute('data-id'))).toEqual(['s4', 's1'])
     })
 
+    it('泳道单元格卡片 aria-posinset/aria-setsize 为单元格内口径', () => {
+      const el = mountSwim()
+      const cellCards = cardsInCell(el, '', 'todo')
+      expect(cellCards.map((c) => c.getAttribute('data-id'))).toEqual(['s3', 's5'])
+      expect(cellCards.map((c) => c.getAttribute('aria-posinset'))).toEqual(['1', '2'])
+      expect(cellCards.map((c) => c.getAttribute('aria-setsize'))).toEqual(['2', '2'])
+    })
+
     it('DSD 真水合兼容泳道结构（.lane 快照接管不重建）', () => {
       const el = new OASKanban()
       el.setAttribute('swimlane-by', 'prio')
@@ -1366,6 +1384,11 @@ const flushRaf = (): Promise<void> => new Promise((resolve) => requestAnimationF
 /** 诊断计数：列体窗口实际重建次数（窗口未变的滚动不增） */
 function windowPaints(el: OASKanban): number {
   return (el as unknown as { columnWindowPaints: number }).columnWindowPaints
+}
+
+/** 诊断计数（仅内部诊断）：索引视图取卡次数（断言滚动帧 O(窗口)、不随卡总量增长） */
+function columnScans(el: OASKanban): number {
+  return (el as unknown as { columnWindowScans: number }).columnWindowScans
 }
 
 describe('列体虚拟化（大列只渲染可视窗口）', () => {
@@ -1598,5 +1621,48 @@ describe('列体虚拟化（大列只渲染可视窗口）', () => {
     const bodyAfter = bigBody(el)
     expect(bodyAfter, '整板重建换了列体节点').not.toBe(body)
     expect(renderedIndexes(el)[0], '重建后窗口不在顶部（滚动位置已恢复）').toBeGreaterThan(0)
+  })
+
+  it('滚动帧按索引切片：5 帧取卡诊断计数有上界且不随卡量增长（回归：每滚动帧对 _cards 全量 filter）', async () => {
+    // 滚 5 帧（每帧换滚动位置 → 窗口必变 → 必重建），返回这 5 帧的索引取卡增量
+    const scansAfterScrolls = async (n: number): Promise<number> => {
+      const el = mountBig(n)
+      const body = bigBody(el)
+      await flushRaf() // 收尾首帧后的校正，基线干净
+      const before = columnScans(el)
+      for (let f = 1; f <= 5; f++) {
+        body.scrollTop = 1000 * f
+        body.dispatchEvent(new Event('scroll'))
+        await flushRaf()
+      }
+      return columnScans(el) - before
+    }
+    const big = await scansAfterScrolls(5000)
+    const small = await scansAfterScrolls(500)
+    expect(big, '索引取卡确在发生（未退化回全量数组路径——反证：退化则增量为 0）').toBeGreaterThan(0)
+    // 上界与卡量无关：窗口 ≈ 可视(≈6) + 上下缓冲(6×2) ≈ 18 张，5 帧 × 上界 40 = 200，写 400 留裕度
+    expect(big, '5000 卡：5 帧取卡数有上界（旧实现每帧全量 filter = 5000×5 = 25000）').toBeLessThanOrEqual(400)
+    expect(small, '卡量降 10 倍上界不变（计数不随卡总量增长）').toBeLessThanOrEqual(400)
+  })
+
+  it('虚拟化窗口内卡片 aria-posinset 为列内绝对位次、aria-setsize 为列全量数（滚到中部不变）——回归', async () => {
+    const el = mountBig(5000)
+    const body = bigBody(el)
+    const firstCard = body.querySelector<HTMLElement>('.card[data-index="0"]')!
+    expect(firstCard.getAttribute('aria-posinset'), '首屏第 0 张 posinset=1（1 基）').toBe('1')
+    expect(firstCard.getAttribute('aria-setsize'), 'setsize=列全量 5000').toBe('5000')
+    body.scrollTop = 100_000
+    body.dispatchEvent(new Event('scroll'))
+    await flushRaf()
+    const rendered = [...body.querySelectorAll<HTMLElement>('.card[data-index]')]
+    const first = Number(rendered[0]!.getAttribute('data-index'))
+    expect(first, '已滚到中部').toBeGreaterThan(1000)
+    for (const card of rendered) {
+      const idx = Number(card.getAttribute('data-index'))
+      expect(card.getAttribute('aria-posinset'), `posinset 为列内绝对位次（data-index=${idx}，非窗口内相对序）`).toBe(
+        String(idx + 1),
+      )
+      expect(card.getAttribute('aria-setsize'), 'setsize 仍为列全量').toBe('5000')
+    }
   })
 })

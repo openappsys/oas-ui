@@ -398,3 +398,100 @@ test('kanban 虚拟化下列内拖拽落点用绝对位次：拖首张到第 4 �
   expect(r.head, '源卡落到第 3 位').toEqual(['virt1', 'virt2', 'virt0', 'virt3'])
   expect(r.orphanMark, 'dragend 后无孤儿指示线').toBe(false)
 })
+
+// ===== 终审修复回归：虚拟化滚动帧 O(窗口) + 读屏全量口径 =====
+// 反证点（F1）：若滚动帧退回每帧全量 filter，5 帧取卡诊断计数 ≈ 3000×5 = 15000，
+// 上界断言必失败；若索引路径整体退化（增量为 0），canary 断言必失败。
+
+test('kanban 虚拟化滚动帧按索引切片：滚动 5 帧取卡诊断计数有上界且不随卡量增长（回归：每滚动帧对 _cards 全量 filter）', async ({
+  page,
+}) => {
+  await page.goto('/components/kanban.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#kanban-scroll')
+  const r = await page.evaluate(async () => {
+    const el = document.querySelector('#kanban-scroll')!
+    el.setAttribute('columns', JSON.stringify([{ key: 'backlog', title: '需求池' }]))
+    const TOTAL = 3000
+    el.setAttribute(
+      'cards',
+      JSON.stringify(
+        Array.from({ length: TOTAL }, (_, i) => ({ id: `big${i}`, column: 'backlog', title: `大列卡 ${i}` })),
+      ),
+    )
+    const frame = (): Promise<void> =>
+      new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())))
+    await frame()
+    const body = el.shadowRoot!.querySelector('.column[data-key="backlog"] .column-body') as HTMLElement
+    const scans = (): number => (el as unknown as { columnWindowScans: number }).columnWindowScans
+    const before = scans()
+    for (let f = 1; f <= 5; f++) {
+      body.scrollTop = 2000 * f
+      body.dispatchEvent(new Event('scroll'))
+      await frame()
+    }
+    const rendered = [...body.querySelectorAll<HTMLElement>('.card[data-index]')].map((c) =>
+      Number(c.getAttribute('data-index')),
+    )
+    return {
+      delta: scans() - before,
+      total: TOTAL,
+      first: rendered[0] ?? -1,
+      contiguous: rendered.every((v, i) => i === 0 || v === rendered[i - 1]! + 1),
+    }
+  })
+  // 真浏览器有 ResizeObserver 实测回写（额外有限次重绘），上界放宽到 1000——仍远小于 3000×5
+  expect(r.delta, '5 帧取卡数有上界（窗口量级；旧实现每帧全量 filter = 3000×5 = 15000）').toBeLessThanOrEqual(1000)
+  expect(r.delta, '索引切片路径确在使用（未退化回全量数组路径）').toBeGreaterThan(0)
+  expect(r.first, '已滚离顶部').toBeGreaterThan(10)
+  expect(r.contiguous, '窗口 data-index 连续（滚动语义不变）').toBe(true)
+})
+
+test('kanban 虚拟化读屏全量口径：卡片 aria-posinset 绝对位次 + aria-setsize 列全量（滚到中部不变）', async ({
+  page,
+}) => {
+  await page.goto('/components/kanban.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#kanban-scroll')
+  const r = await page.evaluate(async () => {
+    const el = document.querySelector('#kanban-scroll')!
+    el.setAttribute('columns', JSON.stringify([{ key: 'backlog', title: '需求池' }]))
+    const TOTAL = 3000
+    el.setAttribute(
+      'cards',
+      JSON.stringify(
+        Array.from({ length: TOTAL }, (_, i) => ({ id: `big${i}`, column: 'backlog', title: `大列卡 ${i}` })),
+      ),
+    )
+    const frame = (): Promise<void> =>
+      new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())))
+    await frame()
+    const bodyOf = (): HTMLElement =>
+      el.shadowRoot!.querySelector('.column[data-key="backlog"] .column-body') as HTMLElement
+    const firstCard = bodyOf().querySelector<HTMLElement>('.card[data-index="0"]')!
+    const topPosinset = firstCard.getAttribute('aria-posinset')
+    const topSetsize = firstCard.getAttribute('aria-setsize')
+    // 滚到中部（无数据变化 → 列体节点不换，引用保持有效）
+    const body = bodyOf()
+    body.scrollTop = body.scrollHeight / 2
+    body.dispatchEvent(new Event('scroll'))
+    await frame()
+    const rendered = [...body.querySelectorAll<HTMLElement>('.card[data-index]')]
+    const cards = rendered.map((c) => ({
+      index: Number(c.getAttribute('data-index')),
+      posinset: Number(c.getAttribute('aria-posinset')),
+      setsize: Number(c.getAttribute('aria-setsize')),
+    }))
+    return {
+      topPosinset,
+      topSetsize,
+      total: TOTAL,
+      firstIndex: cards[0]?.index ?? -1,
+      allAbsolute: cards.every((c) => c.posinset === c.index + 1),
+      allFullSetsize: cards.every((c) => c.setsize === TOTAL),
+    }
+  })
+  expect(r.topPosinset, '首屏第 0 张 posinset=1（1 基）').toBe('1')
+  expect(r.topSetsize, '首屏 setsize=列全量 3000').toBe('3000')
+  expect(r.firstIndex, '已滚到中部（窗口不在首屏）').toBeGreaterThan(200)
+  expect(r.allAbsolute, '窗口内全部卡片 posinset=绝对位次（非窗口内相对序）').toBe(true)
+  expect(r.allFullSetsize, '窗口内全部卡片 setsize=列全量').toBe(true)
+})

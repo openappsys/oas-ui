@@ -282,6 +282,50 @@ describe('OASTable D9 grid-navigation', () => {
     expect(shadow(el).activeElement, '控件内方向键不被表格接管').toBe(embed)
     expect(activePos(el)).toBeNull()
   })
+
+  it('F2 网格语义不吞行/格手势：role=gridcell 不再命中交互排除清单，行内真实控件仍豁免', () => {
+    // 缺陷固化：行级手势排除清单曾用 `[role]` 通配，网格语义给 td 挂 role=gridcell 后
+    // 一律早退——真鼠标实测 rowClick/cellClick 恒 0、selected 恒空。修复=按交互角色白名单判定。
+    const el = mount({ 'grid-navigation': '' })
+    const cell0 = cell(el, 0, 0)
+    expect(cell0.getAttribute('role'), '前置条件：网格语义生效（td=gridcell）').toBe('gridcell')
+    let rowClicks = 0
+    let cellClicks = 0
+    el.addEventListener('oas-row-click', () => rowClicks++)
+    el.addEventListener('oas-cell-click', () => cellClicks++)
+    cell0.click()
+    expect(rowClicks, 'grid-navigation 下点格须派发 oas-row-click').toBe(1)
+    expect(cellClicks, '同时派发 oas-cell-click').toBe(1)
+    expect(el.getAttribute('selected'), '行选中写入 selected').toBe('张三')
+    // 行内真实控件仍豁免：原生按钮 / 输入框点击不连带行级手势
+    const opTd = cell(el, 1, 0)
+    const btn = document.createElement('button')
+    btn.textContent = '操作'
+    opTd.appendChild(btn)
+    const box = document.createElement('input')
+    opTd.appendChild(box)
+    btn.click()
+    box.click()
+    expect(rowClicks, '按钮/输入框点击不连带 oas-row-click').toBe(1)
+    expect(cellClicks, '按钮/输入框点击不连带 oas-cell-click').toBe(1)
+    expect(el.getAttribute('selected'), '行选中未被行内控件点击改写').toBe('张三')
+  })
+
+  it('F2 同源路径：网格语义下可编辑格双击仍能进编辑（编辑能力复用同一排除清单）', () => {
+    const el = new OASTable()
+    el.setAttribute('grid-navigation', '')
+    el.setAttribute('editable', '')
+    el.setAttribute('row-key', 'name')
+    el.setAttribute('data', JSON.stringify([{ name: '张三', age: 30 }]))
+    el.columns = [
+      { key: 'name', title: '姓名', editable: true },
+      { key: 'age', title: '年龄' },
+    ]
+    document.body.appendChild(el)
+    const td = cell(el, 0, 0)
+    td.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }))
+    expect(td.querySelector('input.cell-editor'), '双击可编辑格进编辑（未被 gridcell 拦下）').not.toBeNull()
+  })
 })
 
 describe('OASTable D15 row-draggable', () => {

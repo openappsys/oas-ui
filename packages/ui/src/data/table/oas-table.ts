@@ -1246,6 +1246,8 @@ export class OASTableBase extends OASElement {
   private winOpsWarned = false
   /** windowed × merge/span-method 禁用告警去重（实例级一次） */
   private winSpanWarned = false
+  /** windowed 切片越界（window-start + data.length > total）告警去重（实例级一次） */
+  private winSliceWarned = false
   /** 当前展示集的数据行总数（aria-rowcount 口径；windowed 走 total 全量）。render 时刷新 */
   private _logicalRowCount = 0
 
@@ -1636,8 +1638,14 @@ export class OASTableBase extends OASElement {
   }
 
   /**
-   * buildFlat 输入签名（扁平化缓存键）：数据 + 排序 + 过滤 + 分组 + 展开 + 分页切片 + 列类型轮廓。
+   * buildFlat 输入签名（扁平化缓存键）：数据 + 排序 + 过滤 + 分组 + 展开 + 分页切片 + 列类型轮廓
+   * + 非属性通道版本号（propChannelVersion）。
+   *
    * 只含影响扁平行集的输入——`selected` 等纯视觉属性不进键（选择变化必须命中缓存）。
+   * propChannelVersion 必须入键：列定义经 **property** 通道赋值（filterMatch / render 等
+   * 函数字段无法 JSON 序列化，只走内存）时可换掉过滤语义而 `key:type` 轮廓不变——只比对
+   * `key:type` 会命中旧 flat，静默渲染陈旧数据（实测：换 filterMatch 后期望 ['c'] 实得 ['b']）。
+   * 属性通道变更（含仅 selected）不 bump 该版本号，故快路径收益不受影响。
    */
   private flatCacheSignature(groupBy: string): string {
     const colSig = this._columns.map((c) => `${c.key}:${c.type ?? ''}`).join(',')
@@ -1657,6 +1665,7 @@ export class OASTableBase extends OASElement {
       this.getAttr('total', ''),
       this.getAttr('window-start', ''),
       colSig,
+      String(this.propChannelVersion),
     ].join('\u0003')
   }
 
@@ -1787,8 +1796,10 @@ export class OASTableBase extends OASElement {
       // 不做 O(总量) walk+sort（此前无 summary 的表每次全量渲染都白跑一遍全量扁平化）
       summaryFlat = []
     } else {
-      // scope=all 合计是顺序无关聚合（sum/avg/count 不依赖排序），cacheKey 不含 sorts（排序变化不该失效重算）
-      const cacheKey = `${this.getAttr('data', '')}||${this.getAttr('filter-values', '')}`
+      // scope=all 合计是顺序无关聚合（sum/avg/count 不依赖排序），cacheKey 不含 sorts（排序变化不该失效重算）；
+      // 但须含 propChannelVersion：property 通道换列定义（filterMatch 等函数字段）会改变过滤命中集，
+      // 而 data/filter-values 属性不变——不含版本号会复用陈旧全量 flat 与陈旧汇总值（同 flatCacheSignature）
+      const cacheKey = `${this.getAttr('data', '')}||${this.getAttr('filter-values', '')}||${this.propChannelVersion}`
       if (this.summaryFlatCache && this.summaryFlatCache.key === cacheKey) {
         summaryFlat = this.summaryFlatCache.flat
       } else {
@@ -1804,7 +1815,7 @@ export class OASTableBase extends OASElement {
     if (summaryConfigs.length > 0 && summaryFlat.length > 0) {
       const flatSourceKey = summaryScopePage
         ? this.flatCacheSignature(groupBy)
-        : `${this.getAttr('data', '')}\u0001${this.getAttr('filter-values', '')}`
+        : `${this.getAttr('data', '')}\u0001${this.getAttr('filter-values', '')}\u0001${this.propChannelVersion}`
       const valuesKey = `${summaryScopePage ? 'page' : 'all'}\u0001${flatSourceKey}\u0001${configsSig}`
       if (this.summaryValuesCache && this.summaryValuesCache.key === valuesKey) {
         summaryValues = this.summaryValuesCache.values
@@ -1863,6 +1874,9 @@ export class OASTableBase extends OASElement {
       if (this._spanMethod !== null || this.effectiveColumns().some((c) => c.merge)) {
         this.warnWindowedSpanOnce()
       }
+      // 切片越界（window-start + 已装载行数 > total）：宿主给的切片超出全量范围时曾完全静默，
+      // 宿主会误以为切片全部生效——显式提示一次（对齐 resource 同款契约，不改变渲染行为）。
+      this.warnWindowedSliceOnce()
     }
     // table-layout：fixed/auto 透传 table 元素（列宽定宽场景配 fixed；缺省/非法不写——浏览器 auto 基线）
     const tableLayout = this.getAttr('table-layout', '')
@@ -2284,8 +2298,8 @@ export class OASTableBase extends OASElement {
     }
     tr.addEventListener('click', (e) => {
       if (this.hasAttr('checkable')) return
-      // 交互宿主（原生控件 / [role] / 库内交互组件 / data-oas-row-click-ignore 逃生口）内的
-      // 点击不触发行选中+重渲染——否则点单元格内嵌 popconfirm 会触发 update() 全量重建 body，
+      // 交互宿主（原生控件 / ARIA 交互角色 / 库内交互组件 / data-oas-row-click-ignore 逃生口）
+      // 内的点击不触发行选中+重渲染——否则点单元格内嵌 popconfirm 会触发 update() 全量重建 body，
       // 把刚打开的 popconfirm 销毁成默认关闭；自定义组件宿主自身无 role 属性须点名排除
       // （同一清单也约束双击进编辑路径，见 oas-table-interactive.js 的单一事实来源注释）
       const el = e.target as HTMLElement | null
@@ -3410,6 +3424,23 @@ export class OASTableBase extends OASElement {
     devWarn(WINDOWED_SPAN_HINT)
   }
 
+  /**
+   * windowed 切片越界告警（window-start + 已装载行数 > total；实例级去重一次，对齐 resource 口径）。
+   * 仅提示不改行为：虚拟路径按 total 夹取（越界行不进渲染窗口），非虚拟路径以「已装载行即视口内容」
+   * 为准照常渲染——两条路径下都是宿主切片给多了，须让宿主知道。
+   * 注：devWarn 属 dev-only 通道，生产构建被摇掉——不可作为运行时契约依赖。
+   */
+  private warnWindowedSliceOnce(): void {
+    if (this.winSliceWarned) return
+    const mode = this._winMode
+    const overflow = mode.loaded.end - mode.total
+    if (overflow <= 0) return
+    this.winSliceWarned = true
+    devWarn(
+      `[oas-table] windowed 切片超出全量范围（window-start ${mode.windowStart} + 装载 ${this._data.length} 行 > total ${mode.total}），越界 ${overflow} 行不在窗口内（虚拟路径按 total 夹取不渲染；非虚拟路径按已装载切片照常渲染）`,
+    )
+  }
+
   /** 总列数（行拖拽手柄列 + 勾选列 + 数据列 + 可展开行尾列） */
   private columnCount(): number {
     return (
@@ -3883,8 +3914,8 @@ export class OASTableBase extends OASElement {
     // 编辑态/嵌入控件让位：方向键交给输入框、按钮、链接等自管
     if (target && target.closest('input, select, textarea, button, a')) return
     // 嵌入的自定义交互组件（oas-input 等）焦点会以宿主元素出现在 shadow.activeElement：
-    // 聚焦元素既非网格容器也非单元格时一律让位（td 的 role=gridcell 会命中 [role] 排除清单，
-    // 故此处用「实际聚焦元素」判定而非 selector 排除清单）
+    // 聚焦元素既非网格容器也非单元格时一律让位（用「实际聚焦元素」判定，而非 selector
+    // 排除清单——排除清单承载的是行级手势语义，网格键盘让位按焦点落点判定更精确）
     const focused = this.shadow.activeElement as HTMLElement | null
     if (focused && focused !== this.wrap && focused.tagName !== 'TD') return
     if (e.altKey && !e.ctrlKey && !e.metaKey && (key === 'ArrowUp' || key === 'ArrowDown')) {

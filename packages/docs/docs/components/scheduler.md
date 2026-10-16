@@ -157,6 +157,10 @@ onMounted(async () => {
 })
 </script>
 
+## 大数据量（虚拟化）
+
+资源视图的资源行与 `day` 视图的小时轴按可视窗口渲染：渲染行数/刻度数与 DOM 规模不随数据总量增长，占位撑起滚动范围（总高守恒）；滚动重建后按事件 id 回焦，拖拽/创建手势进行中抑制窗口重建（避免销毁 pointer capture）。资源行与时间轴均带 `aria-rowcount` 与绝对行号 `aria-rowindex`。
+
 ## API
 
 ### oas-scheduler

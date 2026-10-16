@@ -15,7 +15,13 @@
  *
  * 清单构成：
  * - 原生控件：button / a / input / select / textarea（键盘可达、自带交互语义）
- * - 通用启发兜底：[role]——命中一切带 role 的 ARIA 交互宿主（结构化弹层内部区域等）
+ * - 可编辑宿主：[contenteditable]（行内富文本/直编容器）
+ * - ARIA **交互**角色白名单：只列真正消费指针/键盘输入的角色（按钮、表单控件、选项、
+ *   菜单/树/标签页项、弹层窗口等）——不得用 `[role]` 通配：网格语义（grid-navigation）
+ *   会给 table/tr/td 挂 grid/row/gridcell，`closest('[role]')` 会命中这些**结构**角色，
+ *   把行/格点击一律早退（真实浏览器真鼠标实测：rowClick/cellClick 恒 0、selected 恒空）。
+ *   同理不得把 grid / row / gridcell / columnheader / rowheader / cell / rowgroup / table
+ *   等结构角色收入白名单。
  * - 组件库交互组件点名：自定义组件宿主自身常无 role（如 oas-button），shadow 内部点击
  *   重定向到宿主后靠点名命中；漏点会「行点击 + 控件点击」双重响应（历史缺陷）
  * - 业务逃生口：[data-oas-row-click-ignore]——行内自定义交互内容（图表、迷你挂件等）
@@ -24,7 +30,8 @@
  * ⚠️ 维护纪律：库内新增交互型组件（可被放进表格单元格/行内的表单控件、行内动作触发器、
  * 选择器、编辑类组件）必须同步追加到本清单；纯展示型组件（oas-tag / oas-progress /
  * oas-avatar 等徽章、进度、头像类）不消费指针事件，禁止加——加了会误伤「点击内容
- * 区域进编辑/选行」的合法行级手势。
+ * 区域进编辑/选行」的合法行级手势。业务侧非交互但带 role 的内容（role=img 图表等）
+ * 也不进清单：点它应当照常触发行级手势。
  */
 export const ROW_INTERACTIVE_EXCLUSION = [
   // 原生交互控件
@@ -33,8 +40,33 @@ export const ROW_INTERACTIVE_EXCLUSION = [
   'input',
   'select',
   'textarea',
-  // ARIA 交互宿主通用兜底（带 role 的元素）
-  '[role]',
+  // 可编辑宿主（行内富文本/直编容器）
+  '[contenteditable]',
+  // ARIA 交互角色白名单（widget / composite / window 三类；不含任何表格结构角色）
+  '[role="button"]',
+  '[role="link"]',
+  '[role="checkbox"]',
+  '[role="radio"]',
+  '[role="switch"]',
+  '[role="slider"]',
+  '[role="spinbutton"]',
+  '[role="textbox"]',
+  '[role="searchbox"]',
+  '[role="combobox"]',
+  '[role="listbox"]',
+  '[role="option"]',
+  '[role="menu"]',
+  '[role="menubar"]',
+  '[role="menuitem"]',
+  '[role="menuitemcheckbox"]',
+  '[role="menuitemradio"]',
+  '[role="radiogroup"]',
+  '[role="tab"]',
+  '[role="tablist"]',
+  '[role="tree"]',
+  '[role="treeitem"]',
+  '[role="dialog"]',
+  '[role="alertdialog"]',
   // OAS-UI 交互组件点名（宿主无 role，须逐一点名）
   'oas-button',
   'oas-popconfirm',

@@ -1140,6 +1140,120 @@ test('table 网格导航（D9）：单停靠点 + 方向键漫游单元格（rol
   expect(moved.row, 'ArrowDown 移动到下一行').toBe(1)
 })
 
+test('table 网格导航 × 行/格手势：grid-navigation 开启时点行/点格不被 role=gridcell 吞掉（复审回归）', async ({
+  page,
+}) => {
+  // 缺陷固化：行级手势排除清单曾用 `[role]` 通配，网格语义给 table/tr/td 挂 grid/row/gridcell 后
+  // 一律早退——真鼠标实测 rowClick/cellClick 恒 0、selected 恒空（关闭 grid-navigation 时正常）。
+  // 修复=按「交互角色白名单」判定（结构角色不入白名单）；行内真实控件仍须豁免。
+  await page.goto('/components/table.html', { waitUntil: 'domcontentloaded' })
+  await page.waitForFunction(() => customElements.get('oas-table') != null, null, { timeout: 15000 })
+
+  // ① demo 表（#table-grid-nav，grid-navigation 常开）：真鼠标点数据格 → 可见反馈更新（用户视角）
+  await up(page, '#table-grid-nav')
+  await page.evaluate(() => {
+    document.querySelector('#table-grid-nav')?.scrollIntoView({ block: 'center' })
+    const el = document.querySelector('#table-grid-nav-feedback')
+    if (el) el.textContent = ''
+  })
+  await page.locator('oas-table#table-grid-nav').locator('td[data-col="name"]').first().click()
+  await expect(page.locator('#table-grid-nav-feedback'), '点格反馈须更新（修复前恒空）').toContainText('张三 · name')
+
+  // ② 探针表：机制（oas-row-click / oas-cell-click / selected 写入）+ 行内真实控件仍豁免
+  await page.evaluate(() => {
+    const t = document.createElement('oas-table')
+    t.id = 'qa-grid-nav-clicks'
+    t.setAttribute('grid-navigation', '')
+    t.setAttribute('row-key', 'name')
+    t.setAttribute(
+      'columns',
+      JSON.stringify([
+        { key: 'name', title: '姓名' },
+        { key: 'age', title: '年龄' },
+      ]),
+    )
+    t.setAttribute(
+      'data',
+      JSON.stringify([
+        { name: '张三', age: 30 },
+        { name: '李四', age: 25 },
+      ]),
+    )
+    t.dataset.rowClick = '0'
+    t.dataset.cellClick = '0'
+    t.dataset.btnClick = '0'
+    t.addEventListener('oas-row-click', () => {
+      t.dataset.rowClick = String(Number(t.dataset.rowClick) + 1)
+    })
+    t.addEventListener('oas-cell-click', () => {
+      t.dataset.cellClick = String(Number(t.dataset.cellClick) + 1)
+    })
+    ;(document.querySelector('.vp-doc') ?? document.body).append(t)
+  })
+  await page.waitForFunction(
+    () =>
+      (document.querySelector('#qa-grid-nav-clicks')?.shadowRoot?.querySelectorAll('tbody tr.row td[role="gridcell"]')
+        .length ?? 0) > 0,
+    null,
+    { timeout: 15000 },
+  )
+  // 真鼠标点格：行点击（选中 + oas-row-click）与 oas-cell-click 都应生效
+  await page.locator('#qa-grid-nav-clicks td[data-col="age"]').first().click()
+  await page.waitForTimeout(150)
+  const r1 = await page.evaluate(() => {
+    const t = document.querySelector<HTMLElement>('#qa-grid-nav-clicks')!
+    const row = t.shadowRoot!.querySelector('tbody tr[data-key="张三"]')
+    return {
+      rowClick: Number(t.dataset.rowClick ?? '0'),
+      cellClick: Number(t.dataset.cellClick ?? '0'),
+      selected: t.getAttribute('selected'),
+      rowSelected: row?.getAttribute('data-selected') ?? null,
+    }
+  })
+  expect(r1.rowClick, 'grid-navigation 下点格须派发 oas-row-click').toBe(1)
+  expect(r1.cellClick, 'grid-navigation 下点格须派发 oas-cell-click').toBe(1)
+  expect(r1.selected, '行选中写入 selected').toBe('张三')
+  expect(r1.rowSelected, '行 DOM 呈选中态').toBe('true')
+
+  // 行内真实控件（原生按钮 / 输入框）仍豁免：点击不连带行级手势、不改选中
+  await page.evaluate(() => {
+    const t = document.querySelector<HTMLElement>('#qa-grid-nav-clicks')!
+    const td = t.shadowRoot!.querySelector('tbody tr[data-key="李四"] td[data-col="name"]')!
+    const btn = document.createElement('button')
+    btn.id = 'qa-grid-nav-inline-btn'
+    btn.textContent = '行内按钮'
+    btn.addEventListener('click', () => {
+      t.dataset.btnClick = String(Number(t.dataset.btnClick) + 1)
+    })
+    const input = document.createElement('input')
+    input.id = 'qa-grid-nav-inline-input'
+    td.append(btn, input)
+  })
+  await page.locator('#qa-grid-nav-clicks #qa-grid-nav-inline-btn').click()
+  await page.locator('#qa-grid-nav-clicks #qa-grid-nav-inline-input').click()
+  await page.waitForTimeout(150)
+  const r2 = await page.evaluate(() => {
+    const t = document.querySelector<HTMLElement>('#qa-grid-nav-clicks')!
+    const row = t.shadowRoot!.querySelector('tbody tr[data-key="李四"]')
+    return {
+      rowClick: Number(t.dataset.rowClick ?? '0'),
+      cellClick: Number(t.dataset.cellClick ?? '0'),
+      btnClick: Number(t.dataset.btnClick ?? '0'),
+      selected: t.getAttribute('selected'),
+      rowSelected: row?.getAttribute('data-selected') ?? null,
+      hasInput: !!t.shadowRoot!.querySelector('#qa-grid-nav-inline-input'),
+    }
+  })
+  expect(r2.btnClick, '行内按钮自身被真实点击').toBeGreaterThan(0)
+  expect(r2.rowClick, '行内按钮点击不连带 oas-row-click').toBe(1)
+  expect(r2.cellClick, '行内输入框/按钮点击不连带 oas-cell-click').toBe(1)
+  expect(r2.selected, '行内控件点击不改行选中').toBe('张三')
+  expect(r2.rowSelected, '行内控件所在行未被选中').toBe('false')
+  expect(r2.hasInput, '鼠标点击输入框未触发行级重建（节点留存）').toBe(true)
+
+  await page.evaluate(() => document.querySelector('#qa-grid-nav-clicks')?.remove())
+})
+
 test('table 行拖拽（D15）：拖手柄换位派发 oas-row-reorder 且宿主复现顺序', async ({ page }) => {
   await page.goto('/components/table.html', { waitUntil: 'domcontentloaded' })
   await up(page, '#table-row-drag')
@@ -1607,7 +1721,9 @@ test('table windowed：滚动派发 oas-window-request、宿主回填渲染绝�
   const init = await page.evaluate(() => (window as any).__winReqs[0])
   expect(init).toEqual({ start: 0, end: 17, reason: 'init' })
 
-  // 2) 宿主回填覆盖 [0,17) 后滚动（scrollTop=400 → 可视 [6,19) → 期望 [0,27)）→ scroll 请求
+  // 2) 宿主回填覆盖 [0,17) 后滚动（scrollTop=400 → 可视 [6,19) → 期望 [0,27)）→ 派发 [0,27) 请求。
+  //    断言「窗口区间」而非 reason：ResizeObserver（resize）可能先以同一区间到达并按 need 去重，
+  //    使后到的 scroll 路径被去重吞掉（reason 属竞态敏感值，曾致偶发红）。
   await page.evaluate(() => {
     const el = document.querySelector('#table-windowed-fixture')!
     el.setAttribute('data', JSON.stringify(Array.from({ length: 17 }, (_, i) => ({ name: `行${i}` }))))
@@ -1615,15 +1731,15 @@ test('table windowed：滚动派发 oas-window-request、宿主回填渲染绝�
     wrap.scrollTop = 400
     wrap.dispatchEvent(new Event('scroll'))
   })
-  await page.waitForFunction(
-    () => (window as any).__winReqs.some((r: any) => r.reason === 'scroll' && r.start === 0 && r.end === 27),
-    null,
-    { timeout: 15000 },
+  await page.waitForFunction(() => (window as any).__winReqs.some((r: any) => r.start === 0 && r.end === 27), null, {
+    timeout: 15000,
+  })
+  const winReq = await page.evaluate(() => (window as any).__winReqs.find((r: any) => r.start === 0 && r.end === 27))
+  expect(winReq.start, '请求起点（含 margin 前扩）').toBe(0)
+  expect(winReq.end, '请求终点（可视 [6,19) + margin8）').toBe(27)
+  expect(['scroll', 'resize', 'init', 'data'], `触发原因须为合法窗口请求原因（实得 ${winReq.reason}）`).toContain(
+    winReq.reason,
   )
-  const scrollReq = await page.evaluate(() => (window as any).__winReqs.find((r: any) => r.reason === 'scroll'))
-  expect(scrollReq.start, 'scroll 请求起点（含 margin 前扩）').toBe(0)
-  expect(scrollReq.end, 'scroll 请求终点（可视 [6,19) + margin8）').toBe(27)
-  expect(scrollReq.reason).toBe('scroll')
 
   // 3) 宿主回填新窗口 [100,140) 并滚到装载区 → 渲染行跳变到绝对行 100 起，
   //    行 0..99 未装载 → 顶部占位 = 100 * 40 = 4000px
@@ -1690,8 +1806,10 @@ test('table windowed a11y + 编辑/点击 rowIndex 同口径（复审回归）',
   // 复审补口固化：
   // ① windowed 下 aria-rowcount=total（全量）、每行 aria-rowindex=绝对行号 1 基；
   // ② oas-edit 的 rowIndex 与 oas-cell-click 同为绝对行号（曾用 DOM 内切片序号 → 宿主映射错行）。
-  // 注：本用例刻意不叠加 grid-navigation——网格语义给 td 挂 role=gridcell，会命中行级手势
-  // 排除清单的 [role] 兜底而阻断 cell-click / 双击进编辑（既有交互冲突，非本批范围）。
+  // 注：本用例不叠加 grid-navigation（保持单变量）。历史上「网格语义给 td 挂 role=gridcell 会命中
+  // 行级手势排除清单的 [role] 通配而阻断 cell-click / 双击进编辑」的交互冲突已修复（排除清单改为
+  // 交互角色白名单，grid/row/gridcell 等结构角色不入白名单）——该链路由本文件
+  // 「table 网格导航 × 行/格手势」用例 + oas-table-d-class.test.ts 的 F2 单测固化。
   await page.goto('/components/table.html', { waitUntil: 'domcontentloaded' })
   await page.waitForFunction(() => customElements.get('oas-table') != null, null, { timeout: 15000 })
   await page.evaluate(() => {

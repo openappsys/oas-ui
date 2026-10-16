@@ -669,6 +669,12 @@ export class OASScheduler extends OASElement {
   private _eventsAttrCache = ''
   private _resources: SchedulerResource[] = []
   private _resourcesAttrCache = ''
+  /** 按资源分桶的事件索引：key = 有效 resource id 或 ''（未分配行），桶内保持 _events 原序（update() 时重建） */
+  private _eventsByResource = new Map<string, Array<SchedulerEvent & { id: string }>>()
+  /** 无有效 resource 归属的事件数（update() 时重建；resourceRows 判定是否追加「未分配」行） */
+  private _unassignedCount = 0
+  /** 仅内部诊断：资源视图按桶扫描的事件累计数（性能回归断言用，不参与渲染逻辑） */
+  private _diagEventScans = 0
   private nowTimer = 0
   private nextId = 1
   private viewDate: Date = startOfDay(new Date())
@@ -846,6 +852,28 @@ export class OASScheduler extends OASElement {
     this._resources = sanitizeResources(parsed)
   }
 
+  /** 重建资源索引：事件顺序保持 _events 原序；resource 缺失或不在显式资源集 → '' 桶（未分配行）。
+   *  _events/_resources 的全部变更路径（setter/attribute 同步/CRUD）都经过 update()，此处一次性建索引；
+   *  资源视图渲染与滚动帧按索引取数（O(窗口行 × 该行事件数)），不再每可见行全量扫描事件 */
+  private rebuildResourceIndex(): void {
+    const ids = new Set<string>()
+    for (const r of this._resources) ids.add(r.id)
+    const byResource = new Map<string, Array<SchedulerEvent & { id: string }>>()
+    let unassigned = 0
+    for (const e of this._events) {
+      const key = e.resource && ids.has(e.resource) ? e.resource : ''
+      if (key === '') unassigned++
+      let bucket = byResource.get(key)
+      if (!bucket) {
+        bucket = []
+        byResource.set(key, bucket)
+      }
+      bucket.push(e)
+    }
+    this._eventsByResource = byResource
+    this._unassignedCount = unassigned
+  }
+
   private effectiveLocale(): string {
     const own = this.getAttr('locale', '')
     if (own) return own
@@ -994,6 +1022,7 @@ export class OASScheduler extends OASElement {
   protected override update(): void {
     this.syncEvents()
     this.syncResources()
+    this.rebuildResourceIndex()
     this.scheduleReminders()
     // view 属性同步（受控宿主驱动才发 oas-view-change；属性首次吸收不派发）
     const viewAttr = (this.getAttr('view', 'month') as SchedulerView) || 'month'
@@ -1724,19 +1753,20 @@ export class OASScheduler extends OASElement {
     else this.renderResourceWeek()
   }
 
-  /** 资源行：显式 resources；无则单行「未分配」。事件带未知 resource 时补一行「未分配」 */
+  /** 资源行：显式 resources；无则单行「未分配」。事件带未知 resource 时补一行「未分配」（按索引计数 O(1) 判定） */
   private resourceRows(): SchedulerResource[] {
     const rows: SchedulerResource[] = this._resources.map((r) => ({ ...r }))
     if (rows.length === 0) return [{ id: '', title: this.t('scheduler.unassigned') }]
-    const ids = new Set(rows.map((r) => r.id))
-    if (this._events.some((e) => !e.resource || !ids.has(e.resource)))
-      rows.push({ id: '', title: this.t('scheduler.unassigned') })
+    if (this._unassignedCount > 0) rows.push({ id: '', title: this.t('scheduler.unassigned') })
     return rows
   }
 
   private eventsOnResource(iso: string, resourceId: string): Array<SchedulerEvent & { id: string }> {
-    const ids = new Set(this._resources.map((r) => r.id))
-    return this.eventsOn(iso).filter((e) => (e.resource && ids.has(e.resource) ? e.resource : '') === resourceId)
+    // 桶在 update() 建索引时已按归行规则（有效 resource 或未分配）筛好，这里只做该行的日期过滤
+    const bucket = this._eventsByResource.get(resourceId)
+    if (!bucket) return []
+    this._diagEventScans += bucket.length // 仅内部诊断
+    return bucket.filter((e) => (e.repeat ? this.isOccurrence(e, iso) : e.date === iso))
   }
 
   /** 单日资源视图：行 = 资源，横向 = 小时；事件按 start/end 渲染为横条，全天事件排行首 */

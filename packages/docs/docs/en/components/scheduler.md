@@ -157,6 +157,10 @@ onMounted(async () => {
 })
 </script>
 
+## Large datasets (virtualization)
+
+In the resource view the resource rows, and in the `day` view the hour axis, render for the visible window only: the number of rendered rows/ticks does not grow with the dataset size, and spacers preserve the scroll range (total height invariant). After a scroll rebuild focus is restored by event id, and window rebuilds are suppressed while a drag/create gesture is active (so pointer capture is not destroyed). Resource rows and the timeline carry `aria-rowcount` and absolute `aria-rowindex`.
+
 ## API
 
 ### oas-scheduler

@@ -352,3 +352,85 @@ test('scheduler 虚拟化复审：band 高度偏移（多全天事件滚到中�
   await page.evaluate(() => document.getElementById('scheduler-virtual-band')?.remove())
   expect(errors, 'console 零告警').toEqual([])
 })
+
+// 虚拟化终审 F1 回归：资源视图大数据量滚动帧按资源索引取数（O(窗口行 × 该行事件数)，
+// 不随「窗口行数 × 事件总量」线性增长——性能量界由单测诊断计数断言，此处固化 DOM 机制面）：
+// - 500 资源 × 5000+ 事件：渲染行数上界 + aria-rowcount 含「未分配」行
+// - 中部滚动覆盖：r250 的 10 个事件条渲染、顶部行移出
+// - 未分配归行：无 resource 与未知 resource 事件都归末行「未分配」（定时条 + 全天芯片并存）
+test('scheduler 虚拟化终审：500 资源 × 5000+ 事件滚动覆盖 + 未分配归行 + console 零告警', async ({ page }) => {
+  const errors: string[] = []
+  page.on('pageerror', (e) => errors.push(e.message))
+  page.on('console', (m) => {
+    if (m.type() === 'error') errors.push(m.text())
+  })
+  await page.goto('/components/scheduler.html', { waitUntil: 'domcontentloaded' })
+  await page.waitForSelector('#scheduler-basic', { timeout: 15000 })
+
+  await page.evaluate(() => {
+    const el = document.createElement('oas-scheduler')
+    el.id = 'scheduler-virtual-index'
+    el.setAttribute('view', 'resource')
+    el.setAttribute('page-show-date', '2026-08-10')
+    const events: Array<{ date: string; title: string; start?: string; end?: string; resource?: string }> = []
+    for (let i = 0; i < 500; i++) {
+      for (let j = 0; j < 10; j++) {
+        const h = String(8 + j).padStart(2, '0')
+        events.push({
+          date: '2026-08-10',
+          title: `R${i}-E${j}`,
+          start: `${h}:00`,
+          end: `${h}:30`,
+          resource: `r${i}`,
+        })
+      }
+    }
+    for (let i = 0; i < 5; i++)
+      events.push({ date: '2026-08-10', title: `未分配定时${i}`, start: '09:00', end: '09:30' })
+    for (let i = 0; i < 5; i++) events.push({ date: '2026-08-10', title: `未分配全天${i}` })
+    for (let i = 0; i < 5; i++)
+      events.push({ date: '2026-08-10', title: `幽灵定时${i}`, start: '10:00', end: '10:30', resource: 'ghost' })
+    el.setAttribute(
+      'resources',
+      JSON.stringify(Array.from({ length: 500 }, (_, i) => ({ id: `r${i}`, title: `资源 ${i}` }))),
+    )
+    el.setAttribute('events', JSON.stringify(events))
+    document.body.appendChild(el)
+    const view = el.shadowRoot!.querySelector('[part="resource"]') as HTMLElement
+    view.style.maxHeight = '600px' // shadow 内元素只能内联限高（外部样式穿不进 shadow DOM）
+    ;(el as unknown as { requestUpdate(): void }).requestUpdate()
+  })
+  const idx = page.locator('#scheduler-virtual-index')
+
+  // 渲染行数上界：501 行只渲染可视窗口（600px 限高 → 可视行 ±buffer）
+  const rowCount = await idx.locator('.res-row').count()
+  expect(rowCount, '501 行只渲染窗口行').toBeLessThanOrEqual(24)
+  expect(rowCount, '窗口渲染非空').toBeGreaterThan(0)
+
+  // aria-rowcount = 500 资源 + 1 未分配（存在无 resource / 未知 resource 事件）
+  await expect(idx.locator('[role="grid"]')).toHaveAttribute('aria-rowcount', '501')
+
+  // 中部滚动覆盖：r250 的 10 个事件条按索引渲染（滚动帧路径），顶部行移出
+  await idx.evaluate((host) => {
+    const view = host.shadowRoot!.querySelector('[part="resource"]') as HTMLElement
+    view.scrollTop = 250 * 37
+    view.dispatchEvent(new Event('scroll'))
+  })
+  await expect(idx.locator('.res-row[data-resource="r250"] .res-bar')).toHaveCount(10)
+  await expect(idx.locator('.res-row[data-resource="r0"]')).toHaveCount(0)
+
+  // 未分配归行：滚到末行，无 resource（定时 5 + 全天 5）与未知 resource（定时 5）都归「未分配」
+  await idx.evaluate((host) => {
+    const view = host.shadowRoot!.querySelector('[part="resource"]') as HTMLElement
+    view.scrollTop = 500 * 37
+    view.dispatchEvent(new Event('scroll'))
+  })
+  const unassigned = idx.locator('.res-row[data-resource=""]')
+  await expect(unassigned).toHaveCount(1)
+  await expect(unassigned.locator('.res-bar')).toHaveCount(10)
+  await expect(unassigned.locator('.res-allDayChip')).toHaveCount(5)
+  await expect(unassigned).toHaveAttribute('aria-rowindex', '501')
+
+  await page.evaluate(() => document.getElementById('scheduler-virtual-index')?.remove())
+  expect(errors, 'console 零告警').toEqual([])
+})

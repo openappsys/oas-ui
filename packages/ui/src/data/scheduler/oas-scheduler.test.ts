@@ -953,3 +953,123 @@ describe('OASScheduler 虚拟化（时间轴小时窗口 + 资源行窗口）', 
     expect(parseFloat(bottom.style.height)).toBe((200 - rendered) * rowH)
   })
 })
+
+describe('OASScheduler 资源视图索引化（终审 F1：滚动帧不随事件总量线性扫描）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  const RES_COUNT = 500
+  const EV_PER_RES = 10
+  const UNASSIGNED_TIMED = 15
+  const UNASSIGNED_ALLDAY = 15
+  const GHOST_TIMED = 5
+  const TOTAL_EV = RES_COUNT * EV_PER_RES + UNASSIGNED_TIMED + UNASSIGNED_ALLDAY + GHOST_TIMED
+
+  /** 大数据夹具：500 资源 × 每资源 10 个定时事件（同日）+ 未分配事件（无 resource 与未知 resource 并存） */
+  function bigFixture(): { resources: string; events: string } {
+    const resources = Array.from({ length: RES_COUNT }, (_, i) => ({ id: `r${i}`, title: `资源 ${i}` }))
+    const events: SchedulerEvent[] = []
+    for (let i = 0; i < RES_COUNT; i++) {
+      for (let j = 0; j < EV_PER_RES; j++) {
+        const h = String(8 + j).padStart(2, '0')
+        events.push({
+          date: '2026-08-10',
+          title: `R${i}-E${j}`,
+          start: `${h}:00`,
+          end: `${h}:30`,
+          resource: `r${i}`,
+        })
+      }
+    }
+    for (let i = 0; i < UNASSIGNED_TIMED; i++)
+      events.push({ date: '2026-08-10', title: `未分配定时${i}`, start: '09:00', end: '09:30' })
+    for (let i = 0; i < UNASSIGNED_ALLDAY; i++) events.push({ date: '2026-08-10', title: `未分配全天${i}` })
+    for (let i = 0; i < GHOST_TIMED; i++)
+      events.push({ date: '2026-08-10', title: `幽灵定时${i}`, start: '10:00', end: '10:30', resource: 'ghost' })
+    return { resources: JSON.stringify(resources), events: JSON.stringify(events) }
+  }
+
+  /** happy-dom 无布局：伪造资源视口高度/滚动位置并派发 scroll，等待组件 rAF 合帧重建（同 V4 先例） */
+  async function scrollResRows(el: OASScheduler, row: number): Promise<void> {
+    const rv = el.shadowRoot!.querySelector<HTMLElement>('[part="resource"]')!
+    Object.defineProperty(rv, 'clientHeight', { value: 740, configurable: true }) // 740 / 37 = 20 行视口
+    Object.defineProperty(rv, 'scrollTop', { value: row * 37, configurable: true })
+    rv.dispatchEvent(new Event('scroll'))
+    await new Promise((resolve) => requestAnimationFrame(() => resolve(undefined)))
+  }
+
+  /** 仅内部诊断计数读取（性能回归断言用） */
+  function diagScans(el: OASScheduler): number {
+    return (el as unknown as { _diagEventScans: number })._diagEventScans
+  }
+
+  it('滚动帧扫描上界：500 资源 × 5000+ 事件滚 5 帧，按桶扫描计数 ≤ 帧数 × 事件总量', async () => {
+    const fx = bigFixture()
+    const el = mount({
+      view: 'resource',
+      'page-show-date': '2026-08-10',
+      resources: fx.resources,
+      events: fx.events,
+    })
+    const before = diagScans(el)
+    for (const row of [10, 60, 120, 200, 300]) await scrollResRows(el, row)
+    const delta = diagScans(el) - before
+    // 索引化后每个事件只属一个资源桶：每帧扫描 = Σ(窗口行桶大小) ≤ 事件总量 → 5 帧上界 5 × TOTAL_EV。
+    // 索引化前：每可见行两遍全量扫描（eventsOn + filter）≈ 24 行 × 2 × 5000 × 5 帧 ≈ 120 万次比较
+    expect(delta, '滚动帧扫描计数不得随「窗口行数 × 事件总量」增长').toBeLessThanOrEqual(5 * TOTAL_EV)
+    expect(delta, '滚动触发窗口重建，扫描计数应为正').toBeGreaterThan(0)
+  })
+
+  it('窗口行渲染结果正确：中部行事件齐全、未分配行归并（无/未知 resource 并存）+ aria-rowcount', async () => {
+    const fx = bigFixture()
+    const el = mount({
+      view: 'resource',
+      'page-show-date': '2026-08-10',
+      resources: fx.resources,
+      events: fx.events,
+    })
+    expect(el.shadowRoot!.querySelector('[role="grid"]')?.getAttribute('aria-rowcount')).toBe(String(RES_COUNT + 1))
+    await scrollResRows(el, 250)
+    const mid = el.shadowRoot!.querySelector('.res-row[data-resource="r250"]')!
+    expect(mid.querySelectorAll('.res-bar').length, 'r250 的 10 个定时事件条齐全').toBe(EV_PER_RES)
+    expect(mid.querySelector<HTMLElement>('.res-bar')?.textContent).toBe('R250-E0')
+    expect(mid.querySelector('.res-allDayChip')).toBeNull()
+    // 滚到最后一行：未分配行（id ''）归并无 resource 与未知 resource 事件
+    await scrollResRows(el, RES_COUNT)
+    const un = el.shadowRoot!.querySelector('.res-row[data-resource=""]')!
+    expect(un, '未分配行存在').not.toBeNull()
+    expect(un.getAttribute('aria-rowindex')).toBe(String(RES_COUNT + 1))
+    expect(un.querySelectorAll('.res-bar').length, '未分配定时条 = 无 resource 15 + 未知 resource 5').toBe(
+      UNASSIGNED_TIMED + GHOST_TIMED,
+    )
+    expect(un.querySelectorAll('.res-allDayChip').length, '未分配全天芯片 15').toBe(UNASSIGNED_ALLDAY)
+  })
+
+  it('repeat 事件在资源桶内照常展开；索引随 CRUD 即时重建（未分配行随事件增删出现/消失）', async () => {
+    const el = mount({
+      view: 'resource',
+      'page-show-date': '2026-08-10',
+      resources: JSON.stringify([{ id: 'a', title: 'A' }]),
+      events: JSON.stringify([
+        {
+          date: '2026-08-10',
+          title: '每日巡检',
+          start: '09:00',
+          end: '09:30',
+          resource: 'a',
+          repeat: { freq: 'daily' },
+        },
+      ]),
+    })
+    expect(el.shadowRoot!.querySelector('.res-row[data-resource="a"]')!.querySelectorAll('.res-bar').length).toBe(1)
+    expect(el.shadowRoot!.querySelectorAll('.res-row').length, '无未分配事件 → 单资源行').toBe(1)
+    const id = el.addEvent({ date: '2026-08-10', title: '新事件', resource: 'ghost' })
+    expect(el.shadowRoot!.querySelectorAll('.res-row').length, '未知 resource → 追加未分配行').toBe(2)
+    expect(el.removeEvent(id)).toBe(true)
+    expect(el.shadowRoot!.querySelectorAll('.res-row').length, '未分配事件清零 → 未分配行移除').toBe(1)
+  })
+})
