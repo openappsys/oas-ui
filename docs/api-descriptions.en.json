@@ -4353,7 +4353,8 @@
     "slots": {
       "template[slot=\"empty\"]": "Empty-state content (defaults to \"No tasks\")",
       "template[slot=\"task\"]": "Task bar label template (cloned into the bar; [data-task-name] nodes get the task name)",
-      "template[slot=\"tooltip\"]": "Hover tooltip template ([data-task-name] / [data-task-range] / [data-task-progress] bind points)"
+      "template[slot=\"tooltip\"]": "Hover tooltip template ([data-task-name] / [data-task-range] / [data-task-progress] bind points)",
+      "template[slot=\"row\"]": "Custom row-name template (cloned per row into .name; [data-task-name] gets the task name; may contain controls to render/edit custom fields such as an assignee; row drag/select does not hijack those controls)"
     },
     "props": {
       "tasks": "Gantt tasks (`GanttTask[]`): `el.tasks` reads (copy; nested input already flattened to parent pointers); `el.tasks = [...]` writes (syncs the tasks attribute + re-renders + dispatches oas-tasks-change)",

@@ -255,7 +255,32 @@
 
 ## 展开集合受控 / 标签与吸附 / 本地化
 
-- **自定义字段透传**：`GanttTask` 允许携带任意业务字段（如 `assignee`、`tag`）——组件**原样保留**（`el.tasks` / `oas-task-render` / 模板可见），不参与排程；显示走条标签模板或 `oas-task-render`，编辑走 `oas-modal`+`oas-form` 配方或 `updateTask`（列级自定义渲染可等后续行名模板能力）。
+- **自定义字段透传**：`GanttTask` 允许携带任意业务字段（如 `assignee`、`tag`）——组件**原样保留**（`el.tasks` / `oas-task-render` / 模板可见），不参与排程；显示走条标签模板或 `oas-task-render`，编辑走 `oas-modal`+`oas-form` 配方或 `updateTask`。
+- **行名列自定义模板**：`<template slot="row">` 每行克隆进 `.name`，其中 `[data-task-name]` 自动填任务名；可放任意控件——**这就是「负责人」列的落点**（负责人用自定义字段承载，模板负责显示与就地编辑）。模板内控件不会被行拖拽/选中劫持。示例：
+
+```html
+<oas-gantt id="g">
+  <template slot="row">
+    <span data-task-name></span>
+    <oas-select class="owner" size="small" options='[{"label":"张三","value":"zhang"},{"label":"李四","value":"li"}]'></oas-select>
+  </template>
+</oas-gantt>
+<script>
+  const g = document.getElementById('g')
+  const tasks = [{ id: 'a', name: '设计', start: '2026-03-02', end: '2026-03-06', owner: 'zhang' }]
+  g.tasks = tasks
+  // 克隆后按行回填控件
+  g.shadowRoot.querySelectorAll('.row-name').forEach((row) => {
+    const t = tasks.find((x) => x.id === row.dataset.key)
+    row.querySelector('.owner').value = t.owner
+  })
+  // 改负责人 → 写回自定义字段
+  g.addEventListener('oas-change', (e) => {
+    const row = e.target.closest('.row-name')
+    if (row && e.target.classList.contains('owner')) g.updateTask(row.dataset.key, { owner: e.target.value })
+  })
+</script>
+```
 
 <DemoBlock title="expanded 受控（JSON 数组 = 已展开集合；显式 [] 全收起）+ label-position 标签（缺省 none 不渲染——行名列已承载名称；inside 条内 / right 条旁需显式开启）">
   <div style="display:flex;flex-direction:column;gap:var(--oas-space-4)">
@@ -559,6 +584,7 @@ onMounted(async () => {
 | 名称 | 说明 |
 | --- | --- |
 | `template[slot="empty"]` | 空数据态内容（缺省「暂无任务」） |
+| `template[slot="row"]` | 行名列自定义模板（每行克隆进 .name；[data-task-name] 自动填任务名；可内含控件以渲染/编辑负责人等自定义字段，行拖拽与选中不会劫持其中控件） |
 | `template[slot="task"]` | 任务条标签模板（克隆进条身，[data-task-name] 节点自动填任务名） |
 | `template[slot="tooltip"]` | 悬停浮层模板（[data-task-name] / [data-task-range] / [data-task-progress] 绑定点） |
 

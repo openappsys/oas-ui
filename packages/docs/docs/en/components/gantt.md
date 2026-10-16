@@ -255,7 +255,32 @@ Methods: `scrollToTask(id)` to bring a task row into view, `scrollToDate(date)` 
 
 ## Controlled Expansion / Labels & Snapping / Localization
 
-- **Custom fields pass through**: `GanttTask` may carry arbitrary business fields (e.g. `assignee`, `tag`) — they are **preserved as-is** (visible in `el.tasks` / `oas-task-render` / templates) and do not affect scheduling; render them via the bar-label template or `oas-task-render`, and edit via the `oas-modal`+`oas-form` recipe or `updateTask` (per-column custom rendering awaits a row-name template capability).
+- **Custom fields pass through**: `GanttTask` may carry arbitrary business fields (e.g. `assignee`, `tag`) — they are **preserved as-is** (visible in `el.tasks` / `oas-task-render` / templates) and do not affect scheduling; render them via the bar-label template or `oas-task-render`, and edit via the `oas-modal`+`oas-form` recipe or `updateTask`.
+- **Custom row-name template**: `<template slot="row">` is cloned per row into `.name`, where `[data-task-name]` gets the task name; it may hold any controls — this is where an **assignee column** goes (carry the assignee as a custom field; the template renders and edits it). Controls inside the template are not hijacked by row drag/select. Example:
+
+```html
+<oas-gantt id="g">
+  <template slot="row">
+    <span data-task-name></span>
+    <oas-select class="owner" size="small" options='[{"label":"Alice","value":"alice"},{"label":"Bob","value":"bob"}]'></oas-select>
+  </template>
+</oas-gantt>
+<script>
+  const g = document.getElementById('g')
+  const tasks = [{ id: 'a', name: 'Design', start: '2026-03-02', end: '2026-03-06', owner: 'alice' }]
+  g.tasks = tasks
+  // Fill per-row controls after cloning
+  g.shadowRoot.querySelectorAll('.row-name').forEach((row) => {
+    const t = tasks.find((x) => x.id === row.dataset.key)
+    row.querySelector('.owner').value = t.owner
+  })
+  // Change owner → write back the custom field
+  g.addEventListener('oas-change', (e) => {
+    const row = e.target.closest('.row-name')
+    if (row && e.target.classList.contains('owner')) g.updateTask(row.dataset.key, { owner: e.target.value })
+  })
+</script>
+```
 
 <DemoBlock title="expanded as a controlled set (JSON array = expanded set; explicit [] collapses all) + label-position (default none, since the row-name column already shows names; inside / right must be opted in)">
   <div style="display:flex;flex-direction:column;gap:var(--oas-space-4)">
@@ -561,6 +586,7 @@ onMounted(async () => {
 | Name | Description |
 | --- | --- |
 | `template[slot="empty"]` | Empty-state content (defaults to "No tasks") |
+| `template[slot="row"]` | Custom row-name template (cloned per row into .name; [data-task-name] gets the task name; may contain controls to render/edit custom fields such as an assignee; row drag/select does not hijack those controls) |
 | `template[slot="task"]` | Task bar label template (cloned into the bar; [data-task-name] nodes get the task name) |
 | `template[slot="tooltip"]` | Hover tooltip template ([data-task-name] / [data-task-range] / [data-task-progress] bind points) |
 

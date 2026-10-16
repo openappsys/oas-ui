@@ -2197,6 +2197,7 @@ export class OASGantt extends OASElement {
     container.innerHTML = ''
     const rowH = this.rowHeight()
     const expanded = this.currentExpandedSet()
+    const rowTpl = this.querySelector('template[slot="row"]')
     const prevActive = this.activeRowId
     const inWindow = this.rows.slice(this.winStart, this.winEnd).some((r) => r.task.id === prevActive)
     const activeId = inWindow ? prevActive : (this.rows[this.winStart]?.task.id ?? null)
@@ -2251,14 +2252,22 @@ export class OASGantt extends OASElement {
       }
       const name = document.createElement('span')
       name.className = 'name'
-      name.textContent = row.task.name
-      el.appendChild(name)
-      if (!this.hasAttr('readonly') && row.task.disabled !== true) {
-        name.addEventListener('dblclick', (e) => {
-          e.stopPropagation()
-          this.startRename(row, name)
+      if (rowTpl instanceof HTMLTemplateElement) {
+        // 行名列自定义模板：宿主可渲染「负责人」等任意列/控件（[data-task-name] 自动填任务名）
+        name.appendChild(rowTpl.content.cloneNode(true))
+        name.querySelectorAll<HTMLElement>('[data-task-name]').forEach((n) => {
+          n.textContent = row.task.name
         })
+      } else {
+        name.textContent = row.task.name
+        if (!this.hasAttr('readonly') && row.task.disabled !== true) {
+          name.addEventListener('dblclick', (e) => {
+            e.stopPropagation()
+            this.startRename(row, name)
+          })
+        }
       }
+      el.appendChild(name)
       // 行内新建（creatable）：只读与任务级禁用行不出按钮
       if (this.hasAttr('creatable') && !this.hasAttr('readonly') && row.task.disabled !== true) {
         const add = document.createElement('button')
@@ -2523,7 +2532,12 @@ export class OASGantt extends OASElement {
 
   private onRowPointerDown(e: PointerEvent, row: GanttRow): void {
     if (e.button !== 0 || this.reparentCtx || this.dragCtx || this.linkCtx || this.rowPending) return
-    if ((e.target as HTMLElement).closest('.toggle, .rename-input, .row-add')) return
+    if (
+      (e.target as HTMLElement).closest(
+        '.toggle, .rename-input, .row-add, input, select, textarea, button, [contenteditable], [data-no-row-drag]',
+      )
+    )
+      return
     // 先待定：位移阈值才进入重排，否则收口视作点击（多选）。readonly 允许多选，仅拖拽重排被禁止。
     this.rowPending = {
       id: row.task.id,
@@ -3199,7 +3213,9 @@ export class OASGantt extends OASElement {
   private isInteractiveTarget(target: EventTarget | null): boolean {
     return (
       target instanceof Element &&
-      target.closest('.row-name, .bar, .link-dot, .link-hit, .baseline, .toggle, .rename-input, .row-add') !== null
+      target.closest(
+        '.row-name, .bar, .link-dot, .link-hit, .baseline, .toggle, .rename-input, .row-add, input, select, textarea, button, [contenteditable], [data-no-row-drag]',
+      ) !== null
     )
   }
 
@@ -3482,7 +3498,12 @@ export class OASGantt extends OASElement {
 
   private onRowKeyDown(e: KeyboardEvent, row: GanttRow): void {
     // toggle 按钮 / 重命名输入框 / 行尾新建钮自身按键不被行劫持（否则无法键盘折叠 / 输入 / 激活新建）
-    if ((e.target as HTMLElement).closest('.toggle, .rename-input, .row-add')) return
+    if (
+      (e.target as HTMLElement).closest(
+        '.toggle, .rename-input, .row-add, input, select, textarea, button, [contenteditable], [data-no-row-drag]',
+      )
+    )
+      return
     const id = row.task.id
     const ro = this.hasAttr('readonly')
     // RTL 镜像：缩进/展开在逻辑方向（与 oas-tree 一致）

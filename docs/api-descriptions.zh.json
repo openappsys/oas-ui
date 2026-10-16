@@ -4353,7 +4353,8 @@
     "slots": {
       "template[slot=\"empty\"]": "空数据态内容（缺省「暂无任务」）",
       "template[slot=\"task\"]": "任务条标签模板（克隆进条身，[data-task-name] 节点自动填任务名）",
-      "template[slot=\"tooltip\"]": "悬停浮层模板（[data-task-name] / [data-task-range] / [data-task-progress] 绑定点）"
+      "template[slot=\"tooltip\"]": "悬停浮层模板（[data-task-name] / [data-task-range] / [data-task-progress] 绑定点）",
+      "template[slot=\"row\"]": "行名列自定义模板（每行克隆进 .name；[data-task-name] 自动填任务名；可内含控件以渲染/编辑负责人等自定义字段，行拖拽与选中不会劫持其中控件）"
     },
     "props": {
       "tasks": "甘特任务（`GanttTask[]`）：`el.tasks` 读（拷贝，嵌套输入已拍平为 parent 指针）；`el.tasks = [...]` 写（同步 tasks 属性 + 重渲染 + 派发 oas-tasks-change）",

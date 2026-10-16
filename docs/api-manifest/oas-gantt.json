@@ -189,6 +189,9 @@
       "name": "template[slot=\"empty\"]"
     },
     {
+      "name": "template[slot=\"row\"]"
+    },
+    {
       "name": "template[slot=\"task\"]"
     },
     {

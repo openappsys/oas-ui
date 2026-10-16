@@ -5379,3 +5379,63 @@ describe('OASGantt updateDependency：lag 归零删键', () => {
     expect('lag' in depOf()![0]!).toBe(false)
   })
 })
+
+describe('OASGantt 行名列自定义模板（template[slot="row"]）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  function mountTpl(): OASGantt {
+    const el = new OASGantt()
+    const tpl = document.createElement('template')
+    tpl.setAttribute('slot', 'row')
+    tpl.innerHTML = `<span data-task-name></span><span class="owner"></span><input class="owner-edit" />`
+    el.appendChild(tpl)
+    el.setAttribute(
+      'tasks',
+      JSON.stringify([{ id: 'a', name: 'A', start: '2026-03-02', end: '2026-03-04', owner: '张三' }]),
+    )
+    document.body.appendChild(el)
+    return el
+  }
+
+  it('模板克隆进每行、[data-task-name] 自动填名、自定义字段可渲染', () => {
+    const el = mountTpl()
+    const name = shadowOf(el).querySelector<HTMLElement>('.row-name[data-key="a"] .name')!
+    expect(name.querySelector('[data-task-name]')!.textContent).toBe('A')
+    expect(name.querySelector('.owner-edit')).not.toBeNull()
+    // 宿主可读自定义字段 owner 渲染
+    const task = el.tasks.find((t) => t.id === 'a') as Record<string, unknown>
+    expect(task.owner).toBe('张三')
+  })
+
+  it('模板内交互控件不被行拖拽/选中劫持（pointerdown/keydown 守卫）', () => {
+    const el = mountTpl()
+    const input = shadowOf(el).querySelector<HTMLElement>('.row-name[data-key="a"] .owner-edit')!
+    let sel = 0
+    el.addEventListener('oas-selection-change', () => sel++)
+    let reparent = 0
+    el.addEventListener('oas-reparent', () => reparent++)
+    const down = new PointerEvent('pointerdown', { bubbles: true, composed: true, pointerId: 1, button: 0 })
+    Object.defineProperty(down, 'clientX', { value: 0 })
+    Object.defineProperty(down, 'clientY', { value: 0 })
+    input.dispatchEvent(down)
+    const move = new PointerEvent('pointermove', { bubbles: true, composed: true, pointerId: 1 })
+    Object.defineProperty(move, 'clientX', { value: 0 })
+    Object.defineProperty(move, 'clientY', { value: 40 })
+    document.dispatchEvent(move)
+    document.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, composed: true, pointerId: 1 }))
+    expect(sel, '模板控件上按下不应选行').toBe(0)
+    expect(reparent, '模板控件上拖动不应重排').toBe(0)
+  })
+
+  it('模板存在时不绑定行内重命名（宿主自管控件）', () => {
+    const el = mountTpl()
+    const name = shadowOf(el).querySelector<HTMLElement>('.row-name[data-key="a"] .name')!
+    name.dispatchEvent(new MouseEvent('dblclick', { bubbles: true, composed: true }))
+    expect(shadowOf(el).querySelector('.rename-input')).toBeNull()
+  })
+})
