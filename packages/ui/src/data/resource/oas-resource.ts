@@ -11,6 +11,7 @@ import {
 } from '../../form/calendar/date-grid.js'
 import { isRtl } from '../../shared/direction.js'
 import { devWarn } from '../../shared/dev-warn.js'
+import { computeVirtualWindow } from '../virtual-list/oas-virtual-list.js'
 
 const STYLE = `
 :host {
@@ -45,6 +46,9 @@ const STYLE = `
   height: 100%;
   overflow: auto;
   overscroll-behavior: contain;
+  /* 横向虚拟化在滚动期重建窗口内的刻度/负载列（DOM 增删）会触发浏览器滚动锚定，
+     把滚轮增量逐帧放大成加速循环；与 oas-virtual-list 同口径禁用锚定 */
+  overflow-anchor: none;
 }
 .scroller[hidden] {
   display: none !important;
@@ -124,7 +128,9 @@ const STYLE = `
   overflow: hidden;
   white-space: nowrap;
 }
-.ticks .tick:first-child {
+/* 首列去左分隔线：用 .first（= period 索引 0）而非 :first-child——横向虚拟化后
+   窗口起点可能是中部列，DOM 首元素不再等于时间轴首列，:first-child 会误去中部列的分隔线 */
+.ticks .tick.first {
   border-inline-start: none;
 }
 .bar {
@@ -186,7 +192,8 @@ const STYLE = `
   box-sizing: border-box;
   border-inline-start: 1px solid var(--oas-color-border);
 }
-.load .col:first-child {
+/* 首列去左分隔线：同 .ticks（用 .first = period 索引 0，避免窗口化后误去中部列分隔线） */
+.load .col.first {
   border-inline-start: none;
 }
 .pillar {
@@ -315,12 +322,57 @@ interface Span {
   index: number
 }
 
+/**
+ * 泳道条布局缓存单元（横向虚拟化的预计算结果）：一条任务条在画布上的几何与段序。
+ * scroll 帧只看它决定「哪些进窗口」，不再做 filter/sort/贪心分段（每帧 O(全量任务) 的开销来源）。
+ */
+interface LaneEntry {
+  /** 稳定 key：`${resId}:${taskId}:${segIndex}`（泳道内唯一，条节点增删/复用的依据） */
+  key: string
+  /** 任务 id（渲染 data-task-id 与点击定位） */
+  taskId: string
+  /** span 索引（取任务模型 this._tasks[e.index]） */
+  index: number
+  /** 段序号（决定条 top 偏移） */
+  segIndex: number
+  /** 画布坐标左缘（已并入最小宽钳制；物理 left 由 renderLanes 做 RTL 镜像） */
+  xStart: number
+  /** 条宽 px（已并入最小宽钳制） */
+  w: number
+}
+
+/** 单资源泳道布局：条几何列表（按任务序）+ 段数（轨道高算式用）+ 横向窗口查询索引 */
+interface LaneLayout {
+  entries: LaneEntry[]
+  /** 段数（≥ 1；重叠任务被分入不同段，段数决定泳道高） */
+  segs: number
+  /** 按 xStart 升序的 entries 下标（同 xStart 保原序）：窗口查询只对它二分，不再线性扫全部条 */
+  order: number[]
+  /**
+   * 按 order 序、以 xEnd（= xStart + w）为叶值的**区间最大值段树**（扁平数组；叶子在
+   * [segTreeSize, 2·segTreeSize)，补齐叶为 SEG_TREE_EMPTY）。用于枚举「xStart < winLeft
+   * 且 xEnd ≥ winLeft」的跨窗口长条：只有区间 max ≥ winLeft 的子树才下探（见 cullLane）。
+   */
+  segTree: Float64Array | null
+  /** segTree 叶子起始下标（≥ entries.length 的最小 2 的幂）；entries 为空时为 0 */
+  segTreeSize: number
+  /** 全量 max(xEnd)：< winLeft 时该泳道必无命中（快路径，无需二分） */
+  maxEnd: number
+  /** 全量 min(xStart)：> winRight 时该泳道必无命中（快路径，无需二分） */
+  minStart: number
+}
+
+/** 段树补齐叶哨兵：−Infinity 使补齐叶在任意 winLeft（含首窗负值）下都被剪枝 */
+const SEG_TREE_EMPTY = Number.NEGATIVE_INFINITY
+
 const SCALES: ResourceScale[] = ['day', 'week', 'month']
 /** 各档列宽（px）：泳道与直方图共用同一横向列宽 */
 const SCALE_COL: Record<ResourceScale, number> = { day: 36, week: 90, month: 110 }
 /** 泳道条最小宽度（px）：单日任务在 month 档按比例内插可小于此值，钳到该宽度保证可点可读。
  * renderLanes 把它并进 width 与 left（条恒在画布内），CSS min-width 仅作兜底（两处需一致） */
 const MIN_BAR_W = 8
+/** 横向虚拟窗口两侧预渲染列数（overscan）：滚动中提前铺好视口外一屏，避免边缘露白 */
+const COL_BUFFER = 4
 const DAY_MS = 86_400_000
 /** period 构建护栏（防脏数据撑爆循环） */
 const MAX_PERIODS = 5000
@@ -863,6 +915,35 @@ export class OASResource extends OASElement {
   private tasksAttrCache = ''
   private periods: Period[] = []
   private canvasW = 0
+  /** 横向虚拟窗口（列索引半开区间 [winColStart, winColEnd)）；视口不可测时回落全量 [0, periods.length) */
+  private winColStart = 0
+  private winColEnd = 0
+  /** 滚动重渲染的 rAF 句柄（0 = 无挂起帧）；断开连接时取消防泄漏 */
+  private scrollRaf = 0
+  /**
+   * scroller 的尺寸观察器：容器尺寸变化（隐藏→显示 / 窗口缩放 / 侧栏折叠 / splitter 拖动）时
+   * 重算列窗口并重渲染。断开连接时 disconnect 防泄漏（bind 幂等重挂）。
+   */
+  private resizeObs: ResizeObserver | null = null
+  /**
+   * 泳道条布局预计算缓存（update() 时算好）：资源 id → 条几何 + 段数。
+   * scroll 帧与 ResizeObserver 回调只按窗口增删 DOM，不重做 filter/sort/贪心分段。
+   */
+  private laneLayout = new Map<string, LaneLayout>()
+  /**
+   * 布局预计算次数（内部诊断计数）：回归用它证明 scroll 帧不触发布局重算/分段。
+   * 只在 update()（数据/尺寸/属性变更）里递增，滚动与纯尺寸观察回调均不得递增。
+   */
+  private laneLayoutBuilds = 0
+  /**
+   * 窗口帧候选访问计数（**内部诊断，非 API**）：本次 renderLanes 累计访问的条候选 + 段树节点数
+   * （二分与结果排序不计）。每帧重置；回归用它证明横向 cull 成本随「窗口内条数」变化、
+   * 与该资源总条数解耦（看总数而非看窗口的实现会让它线性增长）。
+   */
+  private laneCullVisits = 0
+  /** 负载统计结果缓存（滚动帧只重渲染窗口，不重算矩阵；overCount 亦随矩阵预算，避免每帧 reduce） */
+  private loadRows: Array<{ resource: RS; capacity: number; loads: number[]; overCount: number }> = []
+  private maxLoad = 0
   /** 超载签名去重：render+connect 双 update、属性链式触发下保证同一超载态只派发一次 */
   private lastOverloadKey: string | null = null
   /** MAX_PERIODS 截断告警去重（实例级：同一实例只提示一次，不跨实例/用例耦合） */
@@ -874,11 +955,12 @@ export class OASResource extends OASElement {
   /** 结构性无效条目丢弃告警去重（实例 + tag 粒度）：同一实例同一 tag 只提示一次 */
   private structuralWarnTags = new Set<string>()
   /**
-   * 本实例是否写过 `--oas-resource-height`（height 属性存在期间由组件接管该自定义属性）。
+   * 本实例是否写过 `--oas-resource-height`（height 属性在场期间由组件接管该自定义属性；与 oas-gantt 同协议）。
    * 仅布尔「是否写过」——不是旧实现那种按值猜「宿主原内联」的记忆启发式：
    * - 从未写过（宿主自己用内联 `--oas-resource-height` 设 token、且无 height 属性）→ 组件绝不动它；
    * - 写过又随属性移除 → removeProperty 归零（DSD 快照里的自写值同样只可能来自「属性当时在场」，
    *   水合首帧即 applied，移除后必清，不残留旧高）。
+   * 非法值（属性在场但非 >0 纯数字 / Npx）：不写变量、仅清本实例自写值，宿主 token 不受影响。
    */
   private heightApplied = false
   private scrollerEl: HTMLElement | null = null
@@ -1015,6 +1097,9 @@ export class OASResource extends OASElement {
     } else {
       this.scrollerEl.scrollLeft = Math.max(0, p - half)
     }
+    // 命令式滚动立即同步窗口（不等 scroll 的 rAF 帧）：调用返回时目标区已渲染，
+    // 宿主/测试可随即读取 DOM。用户滚动仍走 scroll 事件的 rAF 节流。
+    this.renderWindow()
   }
 
   // ===== 属性解析 =====
@@ -1072,8 +1157,8 @@ export class OASResource extends OASElement {
   }
 
   /** height 像素值：接受纯数字或带 `px` 后缀；非法 / 缺失回落 320（= --oas-resource-height token 缺省）。
-   *  主路径单读 heightAttrValue()（G6：原 `?? getAttr(...)` 右支在唯一调用点守卫下恒不可达，已消除）；
-   *  防御兜底分支经 getAttr 读取——其 '320' 字面量同时是 api:scan 的 attr 默认值提取锚点，
+   *  update() 仅在**合法值**分支调用本方法（此时 raw != null 且合法 → 返回解析值，兜底分支不参与）；
+   *  尾部兜底分支经 getAttr 读取——其 '320' 字面量同时是 api:scan 的 attr 默认值提取锚点，
    *  移除会使 API 表默认值列退化为 —（manifest 的 height.default 依赖该调用点字面量） */
   private heightPx(): number {
     const raw = this.heightAttrValue()
@@ -1116,6 +1201,63 @@ export class OASResource extends OASElement {
     return isRtl(this) ? this.canvasW - xStart - width : xStart
   }
 
+  /** 横向视口宽（px）：实测 clientWidth > 10 才有效，否则回落 canvasW。
+   * 回落语义 = 虚拟化自动禁用、全量渲染——无布局环境（happy-dom 单测 / 未挂载）口径与旧实现一致 */
+  private viewportW(): number {
+    const w = this.scrollerEl?.clientWidth ?? 0
+    return w > 10 ? w : this.canvasW
+  }
+
+  /**
+   * 横向虚拟窗口同步：由 scroller 的 scrollLeft / clientWidth 与列宽算出列索引半开区间
+   * [winColStart, winColEnd)。视口不可测或画布未溢出视口时回落全量（既有行为不变）；
+   * RTL 走规范负值 scrollLeft 模型，取绝对值 = 自初始端滚出距离（轴无关，与 gantt/table 同口径）。
+   */
+  private syncColWindow(): void {
+    const count = this.periods.length
+    if (count === 0) {
+      this.winColStart = 0
+      this.winColEnd = 0
+      return
+    }
+    const vp = this.viewportW()
+    const scroller = this.scrollerEl
+    if (!scroller || vp >= this.canvasW) {
+      this.winColStart = 0
+      this.winColEnd = count
+      return
+    }
+    const win = computeVirtualWindow(Math.abs(scroller.scrollLeft), vp, this.colW(), count, COL_BUFFER)
+    this.winColStart = win.start
+    this.winColEnd = win.end
+  }
+
+  /** 首个 endMs > ms 的 period 索引（= 覆盖 ms 的最早 period；periods 按时间连续有序）；越界返回 length */
+  private firstPeriodEndingAfter(ms: number): number {
+    const periods = this.periods
+    let lo = 0
+    let hi = periods.length
+    while (lo < hi) {
+      const mid = (lo + hi) >> 1
+      if (periods[mid]!.endMs > ms) hi = mid
+      else lo = mid + 1
+    }
+    return lo
+  }
+
+  /** 首个 startMs ≥ ms 的 period 索引（覆盖区间右端开界）；越界返回 length */
+  private firstPeriodStartingAtOrAfter(ms: number): number {
+    const periods = this.periods
+    let lo = 0
+    let hi = periods.length
+    while (lo < hi) {
+      const mid = (lo + hi) >> 1
+      if (periods[mid]!.startMs >= ms) hi = mid
+      else lo = mid + 1
+    }
+    return lo
+  }
+
   // ===== 生命周期 =====
 
   /** 缓存节点引用 + 幂等注册条激活监听（render 与水合路径共用；重连重挂幂等） */
@@ -1127,10 +1269,61 @@ export class OASResource extends OASElement {
     this.emptyEl = this.shadow.querySelector('.empty')
     this.scrollerEl?.addEventListener('click', this.onScrollerClick)
     this.scrollerEl?.addEventListener('keydown', this.onScrollerKeydown)
+    // 横向虚拟：滚动只重渲染窗口内的刻度/负载/泳道（passive，不与滚动竞争主线程）
+    this.scrollerEl?.addEventListener('scroll', this.onScrollerScroll, { passive: true })
+    // 容器尺寸变化 → 重算列窗口并重渲染窗口内容（bind 幂等重挂：先断开旧观察器再建新的）。
+    // 覆盖「隐藏→显示」（首帧 clientWidth 不可测时 update() 回落全量，RO 在可见后触发即修正）、
+    // 「窗口缩放」「侧栏折叠」「splitter 拖动」。无 ResizeObserver（极旧环境）时静默降级。
+    this.resizeObs?.disconnect()
+    if (typeof ResizeObserver !== 'undefined' && this.scrollerEl) {
+      this.resizeObs = new ResizeObserver(() => this.onViewportResize())
+      this.resizeObs.observe(this.scrollerEl)
+    }
     this.onCleanup(() => {
       this.scrollerEl?.removeEventListener('click', this.onScrollerClick)
       this.scrollerEl?.removeEventListener('keydown', this.onScrollerKeydown)
+      this.scrollerEl?.removeEventListener('scroll', this.onScrollerScroll)
+      this.resizeObs?.disconnect()
+      this.resizeObs = null
+      // 断开连接时取消挂起帧：避免帧回调在游离 shadow 上重渲染（泄漏与无谓开销）
+      if (this.scrollRaf) {
+        cancelAnimationFrame(this.scrollRaf)
+        this.scrollRaf = 0
+      }
     })
+  }
+
+  /** 滚动 rAF 节流：同帧多次 scroll 只重渲染一次（列窗口 + 下游 ticks/loads/lanes） */
+  private onScrollerScroll = (): void => {
+    if (this.scrollRaf) return
+    this.scrollRaf = requestAnimationFrame(() => {
+      this.scrollRaf = 0
+      this.renderWindow()
+    })
+  }
+
+  /**
+   * 容器尺寸变化（ResizeObserver 回调）：列窗口可能随视口宽变化，重算并重渲染窗口内容。
+   * 窗口未变（已是全量 / 尺寸变化不足以改变窗口）则跳过重渲染，避免无谓重建。
+   */
+  private onViewportResize(): void {
+    this.renderWindow()
+  }
+
+  /**
+   * 窗口内重渲染：重算列窗口后重建刻度/负载列，并按稳定 key 增量 patch 泳道条。
+   * 窗口索引未变（如纵向滚动、亚列像素滚动）则整体跳过——刻度/条绝对定位在画布坐标系内，
+   * 容器自身滚动即自然平移，无需重渲染（滚动帧退化为空操作，纵向滚动不再重建泳道 → 焦点保持）。
+   * 滚动帧与命令式滚动共用。
+   */
+  private renderWindow(): void {
+    const prevStart = this.winColStart
+    const prevEnd = this.winColEnd
+    this.syncColWindow()
+    if (this.winColStart === prevStart && this.winColEnd === prevEnd) return
+    this.renderTicks()
+    this.renderLanes()
+    this.renderLoads(this.loadRows, this.maxLoad)
   }
 
   protected override onReconnect(): void {
@@ -1218,23 +1411,48 @@ export class OASResource extends OASElement {
           })
         : []
     this.canvasW = this.periods.length * this.colW()
+    this.syncColWindow()
 
-    // 负载统计：每资源每 period 的重叠任务数 + 超载档（资源输入序 → period 时序）
+    // 负载统计：每资源每 period 的重叠任务数 + 超载档（资源输入序 → period 时序）。
+    // 单趟实现（旧实现是 resources × periods × assigned 三重循环）：先把 span 按资源归档（每条
+    // span 只按自身 resources 归一次），再对每资源的每条 span 二分求出其覆盖的 period 索引区间
+    // [lo, hi) 并区间累加——输出（loads 数组 / maxLoad / 超载档）与旧三重循环逐字节一致。
     const capDefault = this.defaultCapacity()
-    const maxLoadRef = { value: 0 }
+    const assignedByRes = new Map<string, Span[]>()
+    for (const s of spans) {
+      for (const rid of this._tasks[s.index]!.resources) {
+        let arr = assignedByRes.get(rid)
+        if (!arr) {
+          arr = []
+          assignedByRes.set(rid, arr)
+        }
+        arr.push(s)
+      }
+    }
+    // 泳道条布局预计算（排序 + 段堆叠 + 画布几何）：只在 update() 里算一次并缓存，
+    // scroll 帧 / 尺寸变化回调只按窗口增删 DOM（见 renderLanes），不再每帧重做 filter/sort/贪心分段。
+    this.computeLaneLayout(assignedByRes)
+    const periodCount = this.periods.length
+    let maxLoad = 0
     const perResourceLoads = this._resources.map((r) => {
       const cap = r.capacity ?? capDefault
-      const assigned = spans.filter((s) => this._tasks[s.index]!.resources.includes(r.id))
-      const loads: number[] = []
-      for (const period of this.periods) {
-        let load = 0
+      const loads = new Array<number>(periodCount).fill(0)
+      const assigned = assignedByRes.get(r.id)
+      if (assigned) {
         for (const s of assigned) {
-          if (s.startMs < period.endMs && s.endMs > period.startMs) load++
+          const lo = this.firstPeriodEndingAfter(s.startMs)
+          const hi = this.firstPeriodStartingAtOrAfter(s.endMs)
+          for (let i = lo; i < hi; i++) loads[i] = loads[i]! + 1
         }
-        loads.push(load)
-        if (load > maxLoadRef.value) maxLoadRef.value = load
       }
-      return { resource: r, capacity: cap, loads }
+      // 超载档数随负载矩阵一并预算（旧实现 renderLoads 每帧对整条 loads reduce → 每帧全量开销）
+      let overCount = 0
+      for (let i = 0; i < periodCount; i++) {
+        const load = loads[i]!
+        if (load > maxLoad) maxLoad = load
+        if (load > cap) overCount++
+      }
+      return { resource: r, capacity: cap, loads, overCount }
     })
     const overloadEntries: ResourceOverloadEntry[] = []
     for (const row of perResourceLoads) {
@@ -1252,17 +1470,27 @@ export class OASResource extends OASElement {
     }
 
     // DOM 增量同步（数据层容器整段重建，骨架与左侧列名不重建）
-    // 高度协议：仅当宿主显式提供**非空** height 属性时，把组件高度写进**组件自有自定义属性**
-    // --oas-resource-height（:host 规则高度即 var(--oas-resource-height, 320px)），并置 heightApplied。
-    // 属性为空串/空白/未提供/非法/被移除时：**只有本实例此前写过**（heightApplied）才 removeProperty
-    // 归零——确保移除属性后回落 token 缺省 / 宿主 CSS，且 DSD 快照自写值不残留；
-    // 从未写过时绝不动宿主自己内联设的 `--oas-resource-height`（① token 通道：宿主内联 token 生效）。
+    // 高度协议（与 oas-gantt 同款）：height 属性在场且为**合法长度**（纯数字或 Npx，>0）时，把高度写进
+    // **组件自有自定义属性** --oas-resource-height（:host 规则高度即 var(--oas-resource-height, 320px)），
+    // 并置 heightApplied。属性为空串/空白（SFC 空绑定）按**未设置**处理；
+    // **非法值不写变量**——仅在本实例此前写过（heightApplied）时 removeProperty 归零，宿主自己设的
+    // --oas-resource-height（内联或 class 规则）全程不受影响（非法值绝不写 320 覆盖宿主 token）。
+    // 属性被移除时同样只有本实例此前写过才 removeProperty，移除后回落 token 缺省 / 宿主 CSS，
+    // 且 DSD 快照自写值不残留；从未写过时绝不动宿主 token。
     // 关键：组件**从不触碰宿主自身的 height 内联**——宿主内联 height 优先级高于 :host 规则，天然优先；
     // 既避免「把宿主真内联误判为组件自写而清除」（DSD 回放态与纯 CSR 无法仅凭值区分），
     // 也无需「接管前快照 / 还原」逻辑。
-    if (this.heightAttrValue() != null) {
-      this.style.setProperty('--oas-resource-height', `${this.heightPx()}px`)
-      this.heightApplied = true
+    const heightRaw = this.heightAttrValue()
+    if (heightRaw != null) {
+      const n = Number(heightRaw.replace(/px$/i, '').trim())
+      if (Number.isFinite(n) && n > 0) {
+        this.style.setProperty('--oas-resource-height', `${this.heightPx()}px`)
+        this.heightApplied = true
+      } else if (this.heightApplied) {
+        // 非法值 → 仅清除本实例自写值回落（token 缺省 320 / 宿主 token 优先），不写 320
+        this.style.removeProperty('--oas-resource-height')
+        this.heightApplied = false
+      }
     } else if (this.heightApplied) {
       this.style.removeProperty('--oas-resource-height')
       this.heightApplied = false
@@ -1274,9 +1502,12 @@ export class OASResource extends OASElement {
     // 表头/刻度容器显式与泳道同宽同位（RTL 镜像定位与横向溢出覆盖都要求 容器宽 = canvasW）
     const histPad = this.shadow.querySelector<HTMLElement>('.hist-pad')
     if (histPad) histPad.style.width = `${this.canvasW}px`
+    // 缓存负载结果供滚动帧复用（滚动只换窗口，不重算矩阵）
+    this.loadRows = perResourceLoads
+    this.maxLoad = maxLoad
     this.renderTicks()
     this.renderLanes()
-    this.renderLoads(perResourceLoads, maxLoadRef.value)
+    this.renderLoads(this.loadRows, this.maxLoad)
     const isEmpty = this._resources.length === 0 || this._tasks.length === 0
     if (this.emptyEl) {
       this.emptyEl.hidden = !isEmpty
@@ -1297,41 +1528,34 @@ export class OASResource extends OASElement {
     }
   }
 
-  /** 时间轴刻度（泳道与直方图列宽一致：同一 colW 定位）；容器宽 = canvasW 以对齐泳道与 RTL 镜像 */
+  /** 时间轴刻度（泳道与直方图列宽一致：同一 colW 定位）；容器宽 = canvasW 以对齐泳道与 RTL 镜像。
+   * 只建列窗口 [winColStart, winColEnd) 内的刻度（容器宽仍 = canvasW：滚动条长度不随窗口缩水） */
   private renderTicks(): void {
     if (!this.ticksEl) return
     this.ticksEl.innerHTML = ''
     this.ticksEl.style.width = `${this.canvasW}px`
     const colW = this.colW()
-    this.periods.forEach((period, i) => {
+    for (let i = this.winColStart; i < this.winColEnd; i++) {
       const tick = document.createElement('div')
       tick.className = 'tick'
-      tick.textContent = period.label
+      if (i === 0) tick.classList.add('first')
+      tick.textContent = this.periods[i]!.label
       tick.style.left = `${this.mirrorCellLeft(i * colW, colW)}px`
       tick.style.width = `${colW}px`
-      this.ticksEl!.appendChild(tick)
-    })
+      this.ticksEl.appendChild(tick)
+    }
   }
 
-  /** 资源泳道：每资源一行（行名 sticky），行内画其被分配的任务条（重叠条按段堆叠不互相遮挡） */
-  private renderLanes(): void {
-    if (!this.lanesEl) return
-    this.lanesEl.innerHTML = ''
-    const colW = this.colW()
-    const locale = this.effectiveLocale()
-    const spans = spansOf(this._tasks)
+  /**
+   * 预计算每资源的条布局（排序 + 段堆叠 + 画布 x/宽/段序 + 稳定 key）。
+   * 只在 update() 里跑一次并缓存（laneLayout）——scroll 帧与 ResizeObserver 回调只按窗口增删 DOM。
+   * laneLayoutBuilds 为内部诊断计数：回归用它证明 scroll 帧不触发重分段。
+   */
+  private computeLaneLayout(assignedByRes: Map<string, Span[]>): void {
+    this.laneLayoutBuilds++
+    const layout = new Map<string, LaneLayout>()
     for (const r of this._resources) {
-      const row = document.createElement('div')
-      row.className = 'row lane'
-      row.setAttribute(ATTR_RESOURCE_ID, r.id)
-      const name = document.createElement('div')
-      name.className = 'name'
-      name.textContent = r.name
-      row.appendChild(name)
-      const track = document.createElement('div')
-      track.className = 'track'
-      track.style.width = `${this.canvasW}px`
-      const assigned = spans.filter((s) => this._tasks[s.index]!.resources.includes(r.id))
+      const assigned = assignedByRes.get(r.id) ?? []
       // 区间着色（贪心）：重叠区间分入不同段 → 每条给段序号（top 偏移），段数决定泳道高。
       // 保证同泳道任一点只被至多一条任务条覆盖，命中与视觉一致（此前同 y 重叠会点到后绘制条）。
       const segOf = new Map<number, number>()
@@ -1346,10 +1570,7 @@ export class OASResource extends OASElement {
         }
         segOf.set(s.index, seg)
       }
-      // 轨道高度按段数内联写算式（段数是内部量，不落 CSS 变量）；gap/条高仍走 token
-      // gap 由 :host 声明（恒有值），消费点不再挂不可达 fallback
-      const segs = Math.max(segEnd.length, 1)
-      track.style.height = `calc(${segs} * var(--oas-resource-bar-height, 20px) + ${segs + 1} * var(--oas-resource-lane-gap))`
+      const entries: LaneEntry[] = []
       for (const s of assigned) {
         const t = this._tasks[s.index]!
         // 最小宽度并进几何：单日任务在 month 档（比例内插 w 可 < 8）或 MAX_PERIODS 截断后起点落在
@@ -1360,36 +1581,248 @@ export class OASResource extends OASElement {
         const w = Math.max(this.xOf(s.endMs) - leftX, MIN_BAR_W)
         const maxX = Math.max(0, this.canvasW - w)
         const xStart = Math.min(Math.max(leftX, 0), maxX)
-        const bar = document.createElement('div')
-        bar.className = 'bar'
-        bar.style.left = `${this.mirrorCellLeft(xStart, w)}px`
-        bar.style.width = `${w}px`
-        bar.style.top = `calc(var(--oas-resource-lane-gap) + ${
-          segOf.get(s.index) ?? 0
-        } * (var(--oas-resource-bar-height, 20px) + var(--oas-resource-lane-gap)))`
-        bar.setAttribute('role', 'button')
-        bar.tabIndex = 0
-        bar.setAttribute(ATTR_TASK_ID, t.id)
-        bar.setAttribute(ATTR_RESOURCE_ID, r.id)
-        bar.setAttribute(
-          'aria-label',
-          this.t('resource.taskAria', {
-            name: t.name,
-            start: formatToken(parseTaskDate(t.start)!, 'yyyy-MM-dd', locale),
-            end: formatToken(parseTaskDate(t.end)!, 'yyyy-MM-dd', locale),
-            resource: r.name,
-          }),
-        )
-        bar.setAttribute('part', 'bar')
-        track.appendChild(bar)
+        const segIndex = segOf.get(s.index) ?? 0
+        entries.push({ key: `${r.id}:${t.id}:${segIndex}`, taskId: t.id, index: s.index, segIndex, xStart, w })
       }
-      row.appendChild(track)
-      this.lanesEl.appendChild(row)
+      // 横向窗口查询索引（随布局一并预算一次，见 cullLane / LaneLayout）：
+      // order = 按 xStart 升序的 entries 下标；segTree = 以 xEnd 为叶值的区间 max 段树。
+      // segTree 内存为 Float64Array(2·segTreeSize)：segTreeSize = 2^k（≥ 条数的最小 2 的幂），
+      // 每槽 8 字节 → 总量级约 16·2^k 字节（k = ⌈log2 条数⌉，万条约 ~160KB，可忽略）。
+      const order = entries.map((_, i) => i)
+      order.sort((a, b) => entries[a]!.xStart - entries[b]!.xStart || a - b)
+      let segTree: Float64Array | null = null
+      let segTreeSize = 0
+      let maxEnd = Number.NEGATIVE_INFINITY
+      let minStart = Number.POSITIVE_INFINITY
+      if (entries.length > 0) {
+        segTreeSize = 1
+        // 用 *= 而非 <<=：位数大到 2^30 以上时 <<= 会回绕成负数 → 死循环（*= 单调增长必停）
+        while (segTreeSize < entries.length) segTreeSize *= 2
+        segTree = new Float64Array(2 * segTreeSize).fill(SEG_TREE_EMPTY)
+        for (let i = 0; i < entries.length; i++) {
+          const e = entries[order[i]!]!
+          const end = e.xStart + e.w
+          segTree[segTreeSize + i] = end
+          if (end > maxEnd) maxEnd = end
+          if (e.xStart < minStart) minStart = e.xStart
+        }
+        for (let k = segTreeSize - 1; k >= 1; k--) {
+          segTree[k] = Math.max(segTree[2 * k]!, segTree[2 * k + 1]!)
+        }
+      }
+      layout.set(r.id, { entries, segs: Math.max(segEnd.length, 1), order, segTree, segTreeSize, maxEnd, minStart })
+    }
+    this.laneLayout = layout
+  }
+
+  /**
+   * 资源泳道：每资源一行（行名 sticky），行内画其被分配的任务条（重叠条按段堆叠不互相遮挡）。
+   *
+   * 横向虚拟化 + 增量 patch：行/轨道结构只在 resources 列表变化时重建；条按稳定 key
+   * （`${resId}:${taskId}:${segIndex}`）增删——窗口内既有条节点复用（只改属性/样式，不替换节点 →
+   * 焦点保持），只 add 进入窗口的、remove 离开窗口的。条几何与 aria-label 来自 update() 预算的
+   * laneLayout，本方法不做 filter/sort/贪心分段。窗口内条由 laneLayout 的
+   * 「按 xStart 升序下标 + 区间 max 段树」索引求得（见 cullLane）——帧成本随窗口内条数变化，
+   * 不做全量扫描。
+   *
+   * 边界（固有取舍，不修）：窗口外的条不进 DOM → 键盘 Tab 不可达（只能到达可视窗口内的条）。
+   * 与行虚拟化同类取舍，不为此把窗口外条建回 DOM（否则虚拟化失效）。
+   */
+  private renderLanes(): void {
+    if (!this.lanesEl) return
+    this.laneCullVisits = 0
+    const locale = this.effectiveLocale()
+    const colW = this.colW()
+    // 列窗口像素范围（两侧各多留 1 列 overscan，避免边缘条被误裁）；cull 在画布坐标系进行（RTL 同）
+    const winLeft = this.winColStart * colW - colW
+    const winRight = this.winColEnd * colW + colW
+    let rows = [...this.lanesEl.children] as HTMLElement[]
+    // 行结构与当前 resources 一致则复用（滚动/尺寸变化不动结构 → 条节点不被清空重建 → 焦点保持）
+    const structuralOk =
+      rows.length === this._resources.length &&
+      rows.every((row, i) => row.dataset['resourceId'] === this._resources[i]!.id)
+    if (!structuralOk) {
+      this.lanesEl.innerHTML = ''
+      rows = []
+      for (const r of this._resources) {
+        const row = document.createElement('div')
+        row.className = 'row lane'
+        row.setAttribute(ATTR_RESOURCE_ID, r.id)
+        const name = document.createElement('div')
+        name.className = 'name'
+        row.appendChild(name)
+        const track = document.createElement('div')
+        track.className = 'track'
+        row.appendChild(track)
+        this.lanesEl.appendChild(row)
+        rows.push(row)
+      }
+    }
+    for (let i = 0; i < this._resources.length; i++) {
+      const r = this._resources[i]!
+      const row = rows[i]!
+      const name = row.firstElementChild as HTMLElement
+      name.textContent = r.name
+      const track = row.lastElementChild as HTMLElement
+      track.style.width = `${this.canvasW}px`
+      const layout = this.laneLayout.get(r.id)
+      // 轨道高度按段数内联写算式（段数是内部量，不落 CSS 变量）；gap/条高仍走 token
+      // gap 由 :host 声明（恒有值），消费点不再挂不可达 fallback
+      const segs = layout?.segs ?? 1
+      track.style.height = `calc(${segs} * var(--oas-resource-bar-height, 20px) + ${segs + 1} * var(--oas-resource-lane-gap))`
+      // 既有条按稳定 key 建索引（复用不重建）；无 key / 重复 key（旧快照）不可复用，先移除
+      const existing = new Map<string, HTMLElement>()
+      for (const bar of [...track.querySelectorAll<HTMLElement>('.bar')]) {
+        const key = bar.dataset['key'] ?? ''
+        if (key === '' || existing.has(key)) {
+          bar.remove()
+          continue
+        }
+        existing.set(key, bar)
+      }
+      const desired: HTMLElement[] = []
+      // 横向虚拟 cull：只求与窗口相交的条（帧成本随窗口内条数变化，见 cullLane）
+      if (layout) {
+        for (const pos of this.cullLane(layout, winLeft, winRight)) {
+          desired.push(this.ensureBar(existing, r, layout.entries[pos]!, locale))
+        }
+      }
+      // 离开窗口 / 已不存在的条：移除（被复用的条已从 existing 摘除）
+      for (const bar of existing.values()) bar.remove()
+      // 按序 reconcile：新增条插入到正确位置，既有条保持相对顺序（无需移动则原节点不动 → 焦点保持）
+      let ref = track.firstElementChild
+      for (const node of desired) {
+        if (node !== ref) track.insertBefore(node, ref)
+        else ref = ref.nextElementSibling
+      }
     }
   }
 
-  /** 负载直方图：每资源一行，列 = period，柱高 ∝ load / maxLoad；超载柱加 .over */
-  private renderLoads(rows: Array<{ resource: RS; capacity: number; loads: number[] }>, maxLoad: number): void {
+  /**
+   * 求与像素窗口 [winLeft, winRight] 相交的条（entries 下标，升序）。
+   *
+   * 与「全量线性扫描相交判断」逐条等价，但帧成本 O(k·log n)（k = 命中窗口的条数），
+   * 不随该资源总条数线性增长：
+   *   A 段 xStart ∈ [winLeft, winRight]：在按 xStart 升序的 order 上二分出半开区间 [lo, hi)，
+   *     区间内每条都必相交（xEnd ≥ xStart ≥ winLeft），直接枚举；
+   *   B 段 xStart < winLeft 且 xEnd ≥ winLeft（跨窗口长条）：在 [0, lo) 上做 segTree 区间 max 下探，
+   *     只有区间 max ≥ winLeft 的子树才展开（其余整棵剪掉）。
+   *
+   * 为何不用「xEnd 前缀最大 + 自 hi−1 回扫」：前缀最大会被**远端个别长条整体毒化**——长条（如整趟
+   * 工期条）令所有前缀 max ≥ winLeft，回扫便一路走到 0，退化为 O(该资源全部条)，与横向虚拟化目标相反
+   *（本文件单测 ⑲ 即该反例：5000 条位于窗口左外侧 + 1 条跨窗长条）。段树的区间 max 剪枝不受这种
+   * 单点污染：只有真正可能命中的子树被下探。
+   *
+   * 命中集合等价性：条 i 相交 ⟺ xStart ≤ winRight ∧ xEnd ≥ winLeft。若 xStart ≥ winLeft 则属 A（i ∈
+   * [lo, hi) ⟺ xStart ≤ winRight）；若 xStart < winLeft 则须 xEnd ≥ winLeft，属 B。故 A ∪ B 恰为相交集。
+   *
+   * laneCullVisits 为内部诊断计数（非 API），在 renderLanes 每帧重置。
+   *
+   * 固有边界（虚拟化固有，非缺陷）：当同泳道**全部条**都与窗口相交（如整画布长条、或窗口
+   * 恰好覆盖整条时间轴）时，输出条数 = 该泳道全部条数——cull 只保证「不相交的条不进输出」，
+   * 不保证输出条数与画布总量解耦；此时帧成本退化为该泳道条数的线性，与全量扫描同阶（常数因子更小）。
+   */
+  private cullLane(layout: LaneLayout, winLeft: number, winRight: number): number[] {
+    const { entries, order, segTree, segTreeSize, maxEnd, minStart } = layout
+    const n = entries.length
+    // 快路径：全量 max(xEnd) < winLeft（无条右伸到窗口）或 min(xStart) > winRight（无条左伸到窗口）
+    if (n === 0 || maxEnd < winLeft || minStart > winRight) return []
+    // lo = 首个 xStart ≥ winLeft；hi = 首个 xStart > winRight（order 已按 xStart 升序、同值保原序）
+    let a = 0
+    let b = n
+    while (a < b) {
+      const mid = (a + b) >> 1
+      if (entries[order[mid]!]!.xStart < winLeft) a = mid + 1
+      else b = mid
+    }
+    const lo = a
+    b = n
+    while (a < b) {
+      const mid = (a + b) >> 1
+      if (entries[order[mid]!]!.xStart <= winRight) a = mid + 1
+      else b = mid
+    }
+    const hi = a
+    const out: number[] = []
+    for (let i = lo; i < hi; i++) {
+      this.laneCullVisits++
+      out.push(order[i]!)
+    }
+    if (lo > 0 && segTree) {
+      // [0, lo) 的段树规范分解（自底向上 ≤ 2·log n 个节点）；只有区间 max ≥ winLeft 的子树下探
+      const nodes: number[] = []
+      let l = segTreeSize
+      let r = segTreeSize + lo
+      while (l < r) {
+        if (l & 1) nodes.push(l++)
+        if (r & 1) nodes.push(--r)
+        l >>= 1
+        r >>= 1
+      }
+      while (nodes.length > 0) {
+        const node = nodes.pop()!
+        this.laneCullVisits++
+        if (segTree[node]! < winLeft) continue
+        const pos = node - segTreeSize
+        if (node >= segTreeSize) {
+          // 补齐叶恒为 SEG_TREE_EMPTY（< 任意有限 winLeft）→ 不会走到这里；保险起见仍按真实叶判界
+          if (pos < n) out.push(order[pos]!)
+          continue
+        }
+        nodes.push(2 * node, 2 * node + 1)
+      }
+    }
+    // A/B 两段按 xStart 序收集，DOM reconcile 需要 entries 原序（= 改造前全量扫描的产出序）
+    out.sort((x, y) => x - y)
+    return out
+  }
+
+  /**
+   * 取（复用或新建）窗口内一条任务条，并同步其几何与可访问名称。
+   * 复用路径只改属性/样式、不替换节点 → 聚焦中的条横向滚动后焦点不丢。
+   */
+  private ensureBar(existing: Map<string, HTMLElement>, r: RS, e: LaneEntry, locale: string): HTMLElement {
+    let bar = existing.get(e.key)
+    if (bar) {
+      existing.delete(e.key)
+    } else {
+      bar = document.createElement('div')
+      bar.className = 'bar'
+      bar.setAttribute('role', 'button')
+      bar.tabIndex = 0
+      bar.dataset['key'] = e.key
+      bar.setAttribute('part', 'bar')
+    }
+    bar.style.left = `${this.mirrorCellLeft(e.xStart, e.w)}px`
+    bar.style.width = `${e.w}px`
+    bar.style.top = `calc(var(--oas-resource-lane-gap) + ${
+      e.segIndex
+    } * (var(--oas-resource-bar-height, 20px) + var(--oas-resource-lane-gap)))`
+    bar.setAttribute(ATTR_TASK_ID, e.taskId)
+    bar.setAttribute(ATTR_RESOURCE_ID, r.id)
+    const t = this._tasks[e.index]!
+    bar.setAttribute(
+      'aria-label',
+      this.t('resource.taskAria', {
+        name: t.name,
+        start: formatToken(parseTaskDate(t.start)!, 'yyyy-MM-dd', locale),
+        end: formatToken(parseTaskDate(t.end)!, 'yyyy-MM-dd', locale),
+        resource: r.name,
+      }),
+    )
+    return bar
+  }
+
+  /**
+   * 负载直方图：每资源一行，列 = period，柱高 ∝ load / maxLoad；超载柱加 .over。
+   * 全量重建（非虚拟化）：泳道行（资源行）未做虚拟化，本方法整段 innerHTML 重建，
+   * 成本 O(资源数 × 窗口列数)——窗口列由横向列窗口决定，资源数很大时行数本身是边界
+   * （与 gantt 的行虚拟化不同，资源视图行数通常远小于任务数，暂不虚拟化）。
+   */
+  private renderLoads(
+    rows: Array<{ resource: RS; capacity: number; loads: number[]; overCount: number }>,
+    maxLoad: number,
+  ): void {
     if (!this.loadsEl) return
     this.loadsEl.innerHTML = ''
     const colW = this.colW()
@@ -1404,8 +1837,9 @@ export class OASResource extends OASElement {
       const track = document.createElement('div')
       track.className = 'track load-track'
       track.style.width = `${this.canvasW}px`
-      // a11y：整行作为一张图给可访问名称（柱体/列线为装饰，标 aria-hidden）；超载行说明超载档数
-      const overCount = row.loads.reduce((n, load) => n + (load > row.capacity ? 1 : 0), 0)
+      // a11y：整行作为一张图给可访问名称（柱体/列线为装饰，标 aria-hidden）；超载行说明超载档数。
+      // overCount 在 update() 里随负载矩阵预算缓存（旧实现每帧对整条 loads reduce）。
+      const overCount = row.overCount
       track.setAttribute('role', 'img')
       track.setAttribute(
         'aria-label',
@@ -1413,9 +1847,11 @@ export class OASResource extends OASElement {
           ? this.t('resource.loadOverAria', { resource: row.resource.name, count: overCount })
           : this.t('resource.loadAria', { resource: row.resource.name }),
       )
-      this.periods.forEach((period, i) => {
+      // 只建列窗口内的列（轨道宽仍 = canvasW；loads 为全量数组，按全局索引取用）
+      for (let i = this.winColStart; i < this.winColEnd; i++) {
         const col = document.createElement('div')
         col.className = 'col'
+        if (i === 0) col.classList.add('first')
         col.style.left = `${this.mirrorCellLeft(i * colW, colW)}px`
         col.style.width = `${colW}px`
         col.setAttribute('aria-hidden', 'true')
@@ -1425,12 +1861,12 @@ export class OASResource extends OASElement {
           pillar.className = load > row.capacity ? 'pillar over' : 'pillar'
           pillar.style.height = maxLoad > 0 ? `${(load / maxLoad) * 100}%` : '0'
           pillar.dataset['load'] = String(load)
-          pillar.dataset['period'] = toISODate(new Date(period.startMs))
+          pillar.dataset['period'] = toISODate(new Date(this.periods[i]!.startMs))
           pillar.setAttribute('aria-hidden', 'true')
           col.appendChild(pillar)
         }
         track.appendChild(col)
-      })
+      }
       rowEl.appendChild(track)
       this.loadsEl.appendChild(rowEl)
     }

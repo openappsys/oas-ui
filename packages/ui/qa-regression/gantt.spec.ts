@@ -67,7 +67,8 @@ test('gantt 浏览器回归：渲染 + 刻度切换 + 折叠 + 拖拽改期 + co
   )
   await page.locator('#gantt-scale-switch [part="item"]', { hasText: '周' }).click()
   expect(await scaleChanged).toBe('week')
-  await expect(page.locator('#gantt-scale .head-minor .unit').first()).toContainText('W')
+  // 列窗口切片后首个渲染格可能是 blank/非周标签 → 按文本定位目标刻度单元
+  await expect(page.locator('#gantt-scale .head-minor .unit', { hasText: /W\d/ }).first()).toContainText('W')
   // 切回 day
   await page.locator('#gantt-scale-switch [part="item"]', { hasText: '日' }).click()
 
@@ -515,7 +516,6 @@ test('gantt 表头横向对齐（LTR/RTL 滚动不变）', async ({ page }) => {
     const probe = async (dir: string, s0: number, s1: number) => {
       const el = document.createElement('oas-gantt') as HTMLElement & {
         tasks: unknown
-        units: Array<{ startMs: number }>
         shadowRoot: ShadowRoot
       }
       if (dir) el.setAttribute('dir', dir)
@@ -534,9 +534,13 @@ test('gantt 表头横向对齐（LTR/RTL 滚动不变）', async ({ page }) => {
       await raf()
       const sr = el.shadowRoot
       const tb = sr.querySelector('.tbody') as HTMLElement
-      const k = el.units.findIndex((u) => iso(new Date(u.startMs)) === '2026-03-07')
+      // 列窗口切片后 .head-minor .unit 的 DOM 序号 ≠ 全局列索引 → 按日期标签定位。
+      // 轴范围 03-01..05-03 里日号 '07' 出现两次（03-07/04-07），但两个滚动位置的列窗口
+      // 都只到 3 月段（≤26 列），渲染出的 '07' 唯一 → find 结果稳定
       const gap = () => {
-        const cell = sr.querySelectorAll<HTMLElement>('.head-minor .unit')[k]!
+        const cell = [...sr.querySelectorAll<HTMLElement>('.head-minor .unit')].find(
+          (c) => (c.textContent ?? '').trim() === '07',
+        )!
         const bar = sr.querySelector<HTMLElement>('.bar[data-id="t5"]')!
         return cell.getBoundingClientRect().left - bar.getBoundingClientRect().left
       }
@@ -558,6 +562,167 @@ test('gantt 表头横向对齐（LTR/RTL 滚动不变）', async ({ page }) => {
     // 滚动前后相对位移不变（修复前 RTL 会漂移 maxScroll 像素）
     expect(Math.abs(d.g1 - d.g0), `${dir} 表头-条相对位移应滚动不变`).toBeLessThanOrEqual(1)
   }
+})
+
+// 横向列虚拟化：3 年 day 档（≈1100 列）表头/背景格只渲染窗口列（远小于总列数），
+// 滚到时间轴中部后窗口平移且可视区仍有刻度覆盖（切片不得漏掉可视列）
+test('gantt 长跨度列虚拟化：表头格数有上界 + 滚动后窗口平移覆盖可视区', async ({ page }) => {
+  await page.goto('/components/gantt.html', { waitUntil: 'domcontentloaded' })
+  await waitGantt(page, 'gantt-basic')
+  const res = await page.evaluate(async () => {
+    const raf = () => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)))
+    const el = document.createElement('oas-gantt') as HTMLElement & {
+      tasks: unknown
+      units: Array<{ startMs: number }>
+      scrollToDate(d: string): void
+      shadowRoot: ShadowRoot
+    }
+    el.style.width = '600px'
+    el.style.position = 'fixed'
+    el.style.top = '-9999px' // 离屏挂载：有真实布局测量，不干扰页面视觉
+    document.body.appendChild(el)
+    el.tasks = [{ id: 'a', name: 'A', start: '2026-01-01', end: '2028-12-31' }]
+    await raf()
+    const sr = el.shadowRoot!
+    const tb = sr.querySelector('.tbody') as HTMLElement
+    const tbRect = () => tb.getBoundingClientRect()
+    const hasCoverage = () =>
+      [...sr.querySelectorAll<HTMLElement>('.head-minor .unit')].some((c) => {
+        const r = c.getBoundingClientRect()
+        return r.left < tbRect().right && r.right > tbRect().left
+      })
+    const before = {
+      units: el.units.length,
+      minors: sr.querySelectorAll('.head-minor .unit').length,
+      coverage: hasCoverage(),
+    }
+    el.scrollToDate('2027-06-15')
+    // scroll 事件 → onScroll → rAF 合帧重建列窗口（等待窗口追上滚动位置）
+    await raf()
+    await raf()
+    const after = {
+      scrollLeft: tb.scrollLeft,
+      minors: sr.querySelectorAll('.head-minor .unit').length,
+      coverage: hasCoverage(),
+    }
+    el.remove()
+    return { before, after }
+  })
+  expect(res.before.units, '3 年 day 档 ≈1100 列').toBeGreaterThan(1000)
+  expect(res.before.minors, '窗口列远小于总列数').toBeLessThan(200)
+  expect(res.before.coverage, '未滚动时可视区有刻度覆盖').toBe(true)
+  expect(res.after.scrollLeft, 'scrollToDate 已滚动').not.toBe(0)
+  expect(res.after.minors, '滚到中部后窗口格数仍有上界').toBeLessThan(200)
+  expect(res.after.minors).toBeGreaterThan(0)
+  expect(res.after.coverage, '滚到中部后可视区仍有刻度覆盖').toBe(true)
+})
+
+// 宿主容器变宽（无滚动）→ 列窗口必须扩展到新右缘：长跨度下自适应列宽被钳在 SCALE_MIN_COL，
+// 旧实现只比较 displayColW（不变）→ 早退跳过列窗口/表头重算 → 时间轴右侧露白
+test('gantt 容器变宽：列窗口扩展覆盖新右缘（无滚动不露白）', async ({ page }) => {
+  await page.goto('/components/gantt.html', { waitUntil: 'domcontentloaded' })
+  await waitGantt(page, 'gantt-basic')
+  const res = await page.evaluate(async () => {
+    const raf = () => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)))
+    const el = document.createElement('oas-gantt') as HTMLElement & {
+      tasks: unknown
+      shadowRoot: ShadowRoot
+    }
+    el.style.cssText = 'position:fixed;top:-9999px;left:0;width:600px' // 离屏：有真实布局测量
+    document.body.appendChild(el)
+    el.tasks = [{ id: 'a', name: 'A', start: '2026-01-01', end: '2028-12-31' }]
+    await raf()
+    const sr = el.shadowRoot!
+    const tb = sr.querySelector('.tbody') as HTMLElement
+    const probe = () => {
+      const units = [...sr.querySelectorAll<HTMLElement>('.head-minor .unit')]
+      const last = units[units.length - 1]
+      return {
+        clientW: tb.clientWidth,
+        count: units.length,
+        lastRight: last ? last.getBoundingClientRect().right : Number.NEGATIVE_INFINITY,
+        tbRight: tb.getBoundingClientRect().right,
+      }
+    }
+    const narrow = probe()
+    // 宿主容器变宽：不滚动、不改数据 → ResizeObserver 回调路径重算列窗口
+    el.style.width = '1200px'
+    await raf()
+    await raf()
+    const wide = probe()
+    el.remove()
+    return { narrow, wide }
+  })
+  expect(res.wide.clientW, '容器变宽后 tbody 视口变宽').toBeGreaterThan(res.narrow.clientW)
+  expect(
+    res.wide.lastRight,
+    `最后可见刻度右缘应覆盖变宽后的视口右缘（wide.last=${res.wide.lastRight.toFixed(0)} wide.tbRight=${res.wide.tbRight.toFixed(0)}）`,
+  ).toBeGreaterThanOrEqual(res.wide.tbRight - 1)
+  expect(res.wide.count, '可见刻度格数随窗口扩展增加').toBeGreaterThan(res.narrow.count)
+})
+
+// 宿主容器变高（无滚动）→ 行窗口必须补齐新视口：旧实现 onViewportResize 只比较
+// 「视口宽 + displayColW」，高度变化早退跳过 renderWindow → 底部露白直到滚动才重建。
+// 行窗口与列窗口同因（视口尺寸快照判据），一并兜住
+test('gantt 容器变高：行窗口扩展覆盖新视口底部（无滚动不露白）', async ({ page }) => {
+  await page.goto('/components/gantt.html', { waitUntil: 'domcontentloaded' })
+  await waitGantt(page, 'gantt-basic')
+  await page.evaluate(async () => {
+    const raf = () => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)))
+    const el = document.createElement('oas-gantt') as HTMLElement & { tasks: unknown; shadowRoot: ShadowRoot }
+    el.id = 'gantt-grow-h'
+    el.style.cssText = 'position:fixed;top:-9999px;left:0;width:600px;--oas-gantt-height:200px' // 离屏：有真实布局测量
+    document.body.appendChild(el)
+    el.tasks = Array.from({ length: 60 }, (_, i) => ({
+      id: 'g' + i,
+      name: 'G' + i,
+      start: '2026-01-01',
+      end: '2026-03-31',
+    }))
+    await raf()
+  })
+  const probe = () =>
+    page.evaluate(() => {
+      const el = document.getElementById('gantt-grow-h') as (HTMLElement & { shadowRoot: ShadowRoot }) | null
+      if (!el) return null
+      const sr = el.shadowRoot
+      const tb = sr.querySelector('.tbody') as HTMLElement
+      const names = [...sr.querySelectorAll<HTMLElement>('.side-body .row-name')]
+      const last = names[names.length - 1]
+      return {
+        scrollTop: tb.scrollTop,
+        clientH: tb.clientHeight,
+        rows: names.length,
+        lastBottom: last ? last.getBoundingClientRect().bottom : Number.NEGATIVE_INFINITY,
+        tbBottom: tb.getBoundingClientRect().bottom,
+      }
+    })
+  const before = await probe()
+  // 容器变高：零滚动、零数据变化 → ResizeObserver 回调路径（onViewportResize）补行窗口
+  await page.evaluate(() => {
+    document.getElementById('gantt-grow-h')!.style.setProperty('--oas-gantt-height', '560px')
+  })
+  await page.waitForFunction(
+    () => {
+      const el = document.getElementById('gantt-grow-h') as (HTMLElement & { shadowRoot: ShadowRoot }) | null
+      if (!el) return false
+      const tb = el.shadowRoot.querySelector('.tbody') as HTMLElement
+      const names = el.shadowRoot.querySelectorAll('.side-body .row-name')
+      const last = names[names.length - 1] as HTMLElement | undefined
+      return !!last && last.getBoundingClientRect().bottom >= tb.getBoundingClientRect().bottom - 2
+    },
+    undefined,
+    { timeout: 8000 },
+  )
+  const after = (await probe())!
+  await page.evaluate(() => document.getElementById('gantt-grow-h')?.remove())
+  expect(after.scrollTop, '零滚动（行窗口补齐不依赖滚动事件）').toBe(0)
+  expect(after.clientH, 'tbody 视口已变高').toBeGreaterThan(before!.clientH)
+  expect(after.rows, '渲染行数随视口变高增加（旧行窗口不补则此断言红）').toBeGreaterThan(before!.rows)
+  expect(
+    after.lastBottom,
+    `最后可见行底缘应覆盖变高后的视口底部（last=${after.lastBottom.toFixed(0)} tb=${after.tbBottom.toFixed(0)}）`,
+  ).toBeGreaterThanOrEqual(after.tbBottom - 2)
 })
 
 // 增强示例：auto-schedule 联动 + 框选 + 拖拽建任务（真点 + console 零 error）
@@ -733,4 +898,114 @@ test('gantt auto-schedule + show-critical-path 组合高亮', async ({ page }) =
     return ids.sort()
   })
   expect(res).toEqual(['c1', 'c2'])
+})
+
+// height 属性映射 --oas-gantt-height（与 oas-resource 同协议）：属性值生效（rect 高 = 盒高 260 +
+// 上下边框 = 262，旧行为属性完全无效恒 320）、缺省回落 320、宿主自身 height 内联始终优先（组件不
+// 触碰）、移除属性归零回落。
+// 真实布局断言（getBoundingClientRect）——happy-dom 无布局，单测只能锁「变量写入」机制
+test('gantt height 属性映射 --oas-gantt-height：属性生效/缺省 320/宿主内联优先/移除归零', async ({ page }) => {
+  await page.goto('/components/gantt.html', { waitUntil: 'domcontentloaded' })
+  await waitGantt(page, 'gantt-basic')
+  const res = await page.evaluate(async () => {
+    await customElements.whenDefined('oas-gantt')
+    const raf = () => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)))
+    const tasks = JSON.stringify([{ id: 'a', name: 'A', start: '2026-03-02', end: '2026-03-06' }])
+    const make = (heightAttr?: string, inlineHeight?: string) => {
+      const el = document.createElement('oas-gantt') as HTMLElement & { shadowRoot: ShadowRoot }
+      el.setAttribute('tasks', tasks)
+      if (heightAttr != null) el.setAttribute('height', heightAttr)
+      el.style.cssText = `position:fixed;top:-9999px;left:0;width:600px${inlineHeight ? `;height:${inlineHeight}` : ''}`
+      document.body.appendChild(el)
+      return el
+    }
+    const withAttr = make('260')
+    const noAttr = make()
+    const inlineHost = make(undefined, '400px') // 宿主内联 height、无 height 属性
+    await raf()
+    const read = (el: HTMLElement) => ({
+      v: el.style.getPropertyValue('--oas-gantt-height'),
+      h: Math.round(el.getBoundingClientRect().height),
+      inlineHeight: el.style.height,
+    })
+    const out = { withAttr: read(withAttr), noAttr: read(noAttr), inlineHost: read(inlineHost) }
+    // 移除属性 → 组件自写值归零，回落 token 缺省 320
+    withAttr.removeAttribute('height')
+    await raf()
+    const afterRemove = read(withAttr)
+    withAttr.remove()
+    noAttr.remove()
+    inlineHost.remove()
+    return { ...out, afterRemove }
+  })
+  // rect 高口径（实测 + 源码确认）：height: var(--oas-gantt-height, 320px) 设在内部 .gantt 上
+  // （content-box），上下边框（各 1px）也在 .gantt 上 → token 通道 rect = 盒高 + 2（默认 320 → 322）；
+  // 宿主自身无边框，宿主内联 height 是 border-box 高 → 内联通道 rect = 内联值。故 token 通道高度
+  // 用差值/加边框口径断言，不把 CSS 盒高直接当 rect 高。base 取无属性回落态，borderOffset 记录边框贡献。
+  const base = res.noAttr.h
+  const borderOffset = base - 320
+  expect(borderOffset, '无 height 属性 → 回落 token 缺省 320（rect = 320 + .gantt 上下边框 = 322）').toBe(2)
+  expect(res.withAttr.v, 'height="260" → 组件写 --oas-gantt-height:260px').toBe('260px')
+  expect(
+    base - res.withAttr.h,
+    'height="260" → 盒高 320−60=260，rect = 260 + 边框（旧缺陷属性无效时盒高恒 320，差值为 0）',
+  ).toBe(60)
+  expect(res.withAttr.inlineHeight, '宿主 height 内联未被组件触碰').toBe('')
+  expect(res.noAttr.v, '无 height 属性 → 组件不写变量（宿主 token 通道不受影响）').toBe('')
+  expect(res.inlineHost.v, '无 height 属性 → 组件不写变量').toBe('')
+  expect(res.inlineHost.inlineHeight, '宿主内联 height 原样保留').toBe('400px')
+  expect(
+    res.inlineHost.h,
+    '宿主内联 height:400px 优先（无属性）→ 宿主无边框、内联 height 即 border-box 高 → rect = 400（内部 .gantt 回落 322 不撑满）',
+  ).toBe(400)
+  expect(res.afterRemove.v, '移除 height 属性 → 自写值归零').toBe('')
+  expect(res.afterRemove.h, '移除后回落 token 缺省 320（rect 与默认态一致）').toBe(base)
+})
+
+// height token 通道（宿主 class 规则 --oas-gantt-height，无 height 属性）：宿主 token 生效 → height 属性
+// 接管 → 移除属性回落宿主 token。真实几何 + 边框口径（token 挂在内部 .gantt 上，rect = 盒高 + 上下边框 2）
+test('gantt height token 通道：宿主 token 500 → height="480" 接管 → 移除回落 500', async ({ page }) => {
+  await page.goto('/components/gantt.html', { waitUntil: 'domcontentloaded' })
+  await waitGantt(page, 'gantt-basic')
+  // 宿主元素级 class 规则设置 --oas-gantt-height（无 height 属性 → 组件不写该变量）
+  await page.addStyleTag({ content: '.gantt-h-token { --oas-gantt-height: 500px }' })
+  const res = await page.evaluate(async () => {
+    await customElements.whenDefined('oas-gantt')
+    const raf = () => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)))
+    const tasks = JSON.stringify([{ id: 'a', name: 'A', start: '2026-03-02', end: '2026-03-06' }])
+    const make = (cls: string | null): HTMLElement & { requestUpdate(): void; shadowRoot: ShadowRoot } => {
+      const el = document.createElement('oas-gantt') as HTMLElement & { requestUpdate(): void; shadowRoot: ShadowRoot }
+      if (cls) el.classList.add(cls)
+      el.setAttribute('tasks', tasks)
+      el.style.cssText = 'position:fixed;top:-9999px;left:0;width:600px'
+      document.body.appendChild(el)
+      return el
+    }
+    const def = make(null)
+    const el = make('gantt-h-token')
+    await raf()
+    const h = (e: HTMLElement) => Math.round(e.getBoundingClientRect().height)
+    const v = (e: HTMLElement) => e.style.getPropertyValue('--oas-gantt-height')
+    const before = { h: h(el), v: v(el) }
+    el.setAttribute('height', '480')
+    el.requestUpdate()
+    await raf()
+    const attr = { h: h(el), v: v(el) }
+    el.removeAttribute('height')
+    el.requestUpdate()
+    await raf()
+    const after = { h: h(el), v: v(el) }
+    const out = { defH: h(def), before, attr, after }
+    def.remove()
+    el.remove()
+    return out
+  })
+  const borderOffset = res.defH - 320
+  expect(borderOffset, '无 height 属性 → 回落 token 缺省 320（rect = 320 + .gantt 上下边框 = 322）').toBe(2)
+  expect(res.before.v, '无 height 属性 → 组件不写变量，宿主 class token 生效').toBe('')
+  expect(res.before.h, '宿主 token 500 → rect = 500 + 边框 2 = 502').toBe(500 + borderOffset)
+  expect(res.attr.v, 'height="480" → 组件接管变量').toBe('480px')
+  expect(res.attr.h, 'height="480" → rect = 480 + 边框 2 = 482').toBe(480 + borderOffset)
+  expect(res.after.v, '移除属性 → 自写值归零').toBe('')
+  expect(res.after.h, '回落宿主 token 500 → rect 502（不残留 480）').toBe(500 + borderOffset)
 })

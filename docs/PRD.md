@@ -2017,6 +2017,33 @@ OASElement 的 render 生命周期只首连一次（`rendered` 门闩），组�
 - 文档：新增 `resource.md` zh/en（进自动收集面）+ api-manifest / api-descriptions 同步（`api:check` 双向 0）+ i18n ×10（若需文案）+ CHANGELOG `[未发布]`。
 - 全量 `pnpm test` / typecheck / build / api:check 全绿。
 
+## 未发布 时间轴列虚拟化（oas-gantt / oas-resource 横向窗口）
+
+> 立项背景：做「能支撑百万级数据的项目管理产品」时，甘特/资源的纵向已窗口化（行），但**横向时间轴全量渲染**——长跨度（day 档跨约 10 年 ≈3650 列）时表头刻度与底色格按列数线性增长（甘特每次滚动还重建全量周末格），成为第一瓶颈。本批把「行×列」二维窗口补齐。定位：纯渲染层优化，**不改公开 API**（缓冲列数为内部常量）。
+
+### 特性
+
+- **列窗口（两组件共用内核）**：复用 `computeVirtualWindow(scrollPos, viewport, itemSize, count, buffer)`（`data/virtual-list/oas-virtual-list.ts`，轴无关）——横向传 `scrollLeft`（RTL 取绝对值，负值模型）、视口宽、列宽、列数。
+- **oas-gantt**：表头主/辅刻度与周末/假日底色格按窗口 ±overscan 渲染；主刻度保留与窗口相交的组；任务条/连线沿用行窗口（不按 x 再裁，行为不变）；`.inner` 画布宽保持 `列数×列宽`（滚动范围与 `xOf`/镜像数学不变）。
+- **oas-resource**：`scroller` 滚动驱动窗口——刻度与负载直方图列切片，泳道任务条按窗口像素相交裁剪（保留 overscan 与最小条宽）；画布宽保持 `period 数×列宽`；`scrollToDate` 同帧出窗口。
+- **滚动合帧**：滚动改 rAF 合帧（同帧多次 scroll 只渲染一次），拖拽自动滚动在合帧后重锚；组件卸载取消未决帧。
+- **容器尺寸自愈**：变宽/变高经 ResizeObserver 触发窗口重算（无需滚动即补齐新暴露区域，不露白）。
+- **`height` 修正（gantt）**：属性映射到 `--oas-gantt-height`（此前真实浏览器无效、与文档/demo 声明不符）；宿主自身 `height` 内联**只框定外盒**、不拉伸内部画布（整体调高请用 `height` 属性或 `--oas-gantt-height`）；非法/空串按未设置、仅清本实例自写值，不覆盖宿主 token。
+- **`height` 协议对齐（resource）**：与 gantt 同协议——合法值才写 `--oas-resource-height`、非法/空串不写变量（仅清本实例自写值，不覆盖宿主 token）；resource 高度在 `:host` 规则上，宿主内联 `height` 可直接拉伸。
+- **视口不可测时回落全量**：测不到 `clientWidth`（SSR / 无布局）时窗口退化为全列，行为与改动前一致。
+- **工程**：`oas-resource` 负载矩阵由「资源 × period × 任务」三重循环改单趟归档 + 二分区间累加（`O(Σspan) + O(S·log P)`），输出逐字节一致；泳道任务条裁剪由全量扫描改「升序二分 + 区间最大值段树」下探（帧成本随窗口内条数而非总量）。
+
+### 边界
+
+- 不做：列宽可变（当前同档列宽统一，故无需宽度前缀和/`WidthCache`）、横向按 x 裁剪任务条与依赖连线（避免行为变化）。
+
+### 验收
+
+- 单测：gantt/resource 各自列窗口数学（含 RTL 负 scrollLeft、回落到全量、滚动窗口平移、画布宽不变、条相交裁剪）。
+- e2e：`qa-regression/scale.spec.ts`——gantt 万行 × 约 3650 列、resource 5000 任务 × 1096 period 的渲染节点上界 + 中部可见覆盖 + 数据量翻倍对照；gantt/resource 既有 e2e 改按文本/日期定位（不再依赖 DOM 全局索引）。
+- 文档：CHANGELOG `[未发布]`；公开 API 无变更（`api:check` 双向 0）。
+- 全量 `pnpm test` / typecheck / build / api:check 全绿。
+
 ## v2.5.9 oas-calendar `events` 排期条目通道
 
 ### 特性

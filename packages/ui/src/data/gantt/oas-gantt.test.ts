@@ -81,6 +81,12 @@ describe('OASGantt 渲染基础', () => {
     expect(css).toMatch(/\.row-name \.name \{[^}]*text-overflow: ellipsis/)
   })
 
+  it('.tbody 禁用滚动锚定：overflow-anchor: none（滚动期重建 DOM 会触发 Chrome 锚定放大，同 oas-virtual-list）', () => {
+    const el = mount({ tasks: JSON.stringify(BASE_TASKS) })
+    const css = shadowOf(el).querySelector('style')!.textContent ?? ''
+    expect(css).toMatch(/\.tbody \{[^}]*overflow-anchor: none/)
+  })
+
   it('名称列渲染：行名与任务一一对应；aria-label 含名称与起止', () => {
     const el = mount({ tasks: JSON.stringify(BASE_TASKS) })
     const names = nameRows(el).map((r) => r.textContent ?? '')
@@ -322,6 +328,61 @@ describe('OASGantt 渲染基础', () => {
     } finally {
       warn.mockRestore()
     }
+  })
+})
+
+describe('OASGantt height 属性映射（--oas-gantt-height，与 oas-resource 同协议）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('① height="260" → 组件写宿主自定义属性 --oas-gantt-height:260px；宿主 height 内联不被触碰', () => {
+    const el = mount({ tasks: JSON.stringify(BASE_TASKS), height: '260' })
+    expect(el.style.getPropertyValue('--oas-gantt-height')).toBe('260px')
+    expect(el.style.height, '组件从不写宿主 height 内联').toBe('')
+    const ganttEl = shadowOf(el).querySelector<HTMLElement>('.gantt')!
+    expect(ganttEl.style.height, 'shadow 内 .gantt 也不落内联高度（高度走 token 变量）').toBe('')
+  })
+
+  it('② 宿主内联 --oas-gantt-height:500px（无 height 属性）不受影响；属性接管后移除 → 归零回落（不残留）', () => {
+    const el = mount({ tasks: JSON.stringify(BASE_TASKS) })
+    el.style.setProperty('--oas-gantt-height', '500px')
+    el.requestUpdate()
+    expect(el.style.getPropertyValue('--oas-gantt-height'), '无 height 属性 → 组件不写不清宿主 token').toBe('500px')
+    el.setAttribute('height', '480')
+    el.requestUpdate()
+    expect(el.style.getPropertyValue('--oas-gantt-height'), '属性在场：接管为 480px').toBe('480px')
+    el.removeAttribute('height')
+    el.requestUpdate()
+    expect(el.style.getPropertyValue('--oas-gantt-height'), '移除属性：归零回落 token 缺省（不残留 480）').toBe('')
+  })
+
+  it('③ 非法值/空串：从未写过不写、写过则清除；px 后缀合法', () => {
+    const el = mount({ tasks: JSON.stringify(BASE_TASKS), height: 'bad' })
+    expect(el.style.getPropertyValue('--oas-gantt-height'), '非法值不写（回落 token 缺省 320）').toBe('')
+    el.setAttribute('height', '480')
+    el.requestUpdate()
+    expect(el.style.getPropertyValue('--oas-gantt-height')).toBe('480px')
+    el.setAttribute('height', 'bad')
+    el.requestUpdate()
+    expect(el.style.getPropertyValue('--oas-gantt-height'), '非法值清除自写值（回落 320/宿主 CSS）').toBe('')
+    const el2 = mount({ tasks: JSON.stringify(BASE_TASKS), height: '' })
+    expect(el2.style.getPropertyValue('--oas-gantt-height'), '空串按未设置处理').toBe('')
+    const el3 = mount({ tasks: JSON.stringify(BASE_TASKS), height: '260px' })
+    expect(el3.style.getPropertyValue('--oas-gantt-height'), 'px 后缀合法').toBe('260px')
+  })
+
+  it('④ 宿主自带 height 内联（无 height 属性）→ 组件不清除、不覆盖、不写变量', () => {
+    const el = new OASGantt()
+    el.style.height = '400px'
+    el.setAttribute('tasks', JSON.stringify(BASE_TASKS))
+    document.body.appendChild(el)
+    expect(el.style.height, '宿主内联 height 原样保留').toBe('400px')
+    expect(el.hasAttribute('height')).toBe(false)
+    expect(el.style.getPropertyValue('--oas-gantt-height')).toBe('')
   })
 })
 
@@ -871,7 +932,19 @@ describe('OASGantt 多选 / 行内重命名 / 键盘重排 / 连线键盘', () =
     const name = shadowOf(el).querySelector<HTMLElement>('.row-name[data-key="x"] .name')!
     name.dispatchEvent(new MouseEvent('dblclick', { bubbles: true, composed: true }))
     expect(shadowOf(el).querySelector('.rename-input')).not.toBeNull()
-    shadowOf(el).querySelector('.tbody')!.dispatchEvent(new Event('scroll')) // 触发窗口重建
+    // onScroll 的窗口重建经 rAF 合帧（同帧多次 scroll 只重建一次）→ 手动 flush 触发重建
+    const cbs: FrameRequestCallback[] = []
+    const orig = globalThis.requestAnimationFrame
+    globalThis.requestAnimationFrame = ((cb: FrameRequestCallback) => {
+      cbs.push(cb)
+      return cbs.length
+    }) as typeof requestAnimationFrame
+    try {
+      shadowOf(el).querySelector('.tbody')!.dispatchEvent(new Event('scroll')) // 触发窗口重建
+      cbs[0]!(0)
+    } finally {
+      globalThis.requestAnimationFrame = orig
+    }
     const name2 = shadowOf(el).querySelector<HTMLElement>('.row-name[data-key="x"] .name')!
     name2.dispatchEvent(new MouseEvent('dblclick', { bubbles: true, composed: true }))
     expect(shadowOf(el).querySelector('.rename-input'), '重建后仍可重命名').not.toBeNull()
@@ -1541,6 +1614,360 @@ describe('OASGantt 行虚拟滚动', () => {
   })
 })
 
+describe('OASGantt 列虚拟滚动（横向时间轴窗口）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  /** 3 年跨度 day 档：units ≈ 1100 列（pad 前后各 1/4 列） */
+  const LONG_TASKS = JSON.stringify([{ id: 'a', name: 'A', start: '2026-01-01', end: '2028-12-31' }])
+
+  interface GanttPriv {
+    units: Array<{ startMs: number; endMs: number; major: string; minor: string }>
+    majorGroups: Array<{ startCol: number; endCol: number; label: string }>
+    colW(): number
+    canvasW: number
+    winStart: number
+    winEnd: number
+    winColStart: number
+    winColEnd: number
+    renderWindow(): void
+    renderHeader(): void
+    computeColWindow(): void
+    onViewportResize(): void
+  }
+  const priv = (el: OASGantt): GanttPriv => el as unknown as GanttPriv
+
+  function stubViewport(el: OASGantt, width: number): HTMLElement {
+    const tbody = shadowOf(el).querySelector<HTMLElement>('.tbody')!
+    Object.defineProperty(tbody, 'clientWidth', { value: width, configurable: true })
+    priv(el).onViewportResize()
+    return tbody
+  }
+
+  it('无测量环境回落：clientWidth=0 → 列窗口覆盖全部列（表头全量、.inner 总宽不变）', () => {
+    const el = mount({ tasks: LONG_TASKS })
+    const g = priv(el)
+    expect(g.units.length, '3 年 day 档应远超视口列数').toBeGreaterThan(1000)
+    expect(g.winColStart).toBe(0)
+    expect(g.winColEnd).toBe(g.units.length)
+    expect(shadowOf(el).querySelectorAll('.head-minor .unit').length).toBe(g.units.length)
+    expect(Number.parseFloat(shadowOf(el).querySelector<HTMLElement>('.inner')!.style.width)).toBe(
+      g.units.length * g.colW(),
+    )
+  })
+
+  it('列数远超视口：表头/周末格只渲染窗口列（主刻度为相交子集）；.inner 总宽 = 列数×列宽', () => {
+    const el = mount({ tasks: LONG_TASKS })
+    const g = priv(el)
+    stubViewport(el, 600)
+    const colW = g.colW()
+    const winSize = g.winColEnd - g.winColStart
+    expect(g.winColStart, '未滚动 → 窗口从轴首起').toBe(0)
+    expect(winSize, '窗口列数远小于总列数').toBeLessThan(100)
+    // 辅刻度：渲染格数 === 窗口列数（含抽稀 blank 格）
+    expect(shadowOf(el).querySelectorAll('.head-minor .unit').length).toBe(winSize)
+    // 主刻度：只保留与窗口相交的组；left 仍按全局索引写（组起点 ∈ 窗口起点左侧或窗口内）
+    const majors = [...shadowOf(el).querySelectorAll<HTMLElement>('.head-major .unit')]
+    expect(majors.length, '相交主刻度组数远小于跨度总月数').toBeLessThan(10)
+    expect(majors.length).toBeGreaterThanOrEqual(1)
+    for (const m of majors) {
+      const left = Number.parseFloat(m.style.left)
+      expect(left, '组起点在窗口终点之前（相交）').toBeLessThan(g.winColEnd * colW)
+      expect(left + Number.parseFloat(m.style.width), '组终点在窗口起点之后（相交）').toBeGreaterThan(
+        g.winColStart * colW,
+      )
+    }
+    // 周末/假日背景格只渲染窗口列（3 年约 470 个周末，窗口 42 列内 ≤ 窗口数）
+    expect(shadowOf(el).querySelectorAll('.grid-canvas .cell').length).toBeLessThan(winSize + 1)
+    // 画布总宽不变（滚动条长度保持）
+    expect(Number.parseFloat(shadowOf(el).querySelector<HTMLElement>('.inner')!.style.width)).toBe(
+      g.units.length * colW,
+    )
+  })
+
+  it('横向滚动合帧平移列窗口：同帧多次 scroll 只重建一次，首个渲染辅刻度 left 变大', () => {
+    const el = mount({ tasks: LONG_TASKS })
+    const g = priv(el)
+    const tbody = stubViewport(el, 600)
+    const colW = g.colW()
+    const firstBefore = Number.parseFloat(shadowOf(el).querySelector<HTMLElement>('.head-minor .unit')!.style.left)
+    const startBefore = g.winColStart
+    const cbs: FrameRequestCallback[] = []
+    const orig = globalThis.requestAnimationFrame
+    globalThis.requestAnimationFrame = ((cb: FrameRequestCallback) => {
+      cbs.push(cb)
+      return cbs.length
+    }) as typeof requestAnimationFrame
+    try {
+      // 同一帧内连续两次 scroll（happy-dom 赋值 scrollLeft 不派发事件，手动 dispatch 走 onScroll 路径）
+      Object.defineProperty(tbody, 'scrollLeft', { value: 200 * colW, configurable: true, writable: true })
+      tbody.dispatchEvent(new Event('scroll'))
+      Object.defineProperty(tbody, 'scrollLeft', { value: 300 * colW, configurable: true, writable: true })
+      tbody.dispatchEvent(new Event('scroll'))
+      expect(cbs.length, '同帧多次 scroll 只排一次 rAF').toBe(1)
+      cbs[0]!(0)
+      expect(g.winColStart, '窗口平移到滚动处（−buffer）').toBe(300 - 4)
+      const firstAfter = Number.parseFloat(shadowOf(el).querySelector<HTMLElement>('.head-minor .unit')!.style.left)
+      expect(firstAfter, '首个渲染辅刻度全局 left 变大').toBeGreaterThan(firstBefore)
+      expect(firstAfter).toBe(g.winColStart * colW)
+      expect(Number.parseFloat(shadowOf(el).querySelector<HTMLElement>('.inner')!.style.width)).toBe(
+        g.units.length * colW,
+      )
+    } finally {
+      globalThis.requestAnimationFrame = orig
+    }
+  })
+
+  it('RTL 负值 scrollLeft：取绝对值切出同一窗口；镜像 left = canvasW − k×colW − colW', () => {
+    const el = mount({ dir: 'rtl', tasks: LONG_TASKS })
+    const g = priv(el)
+    const tbody = stubViewport(el, 600)
+    const colW = g.colW()
+    Object.defineProperty(tbody, 'scrollLeft', { value: -(200 * colW), configurable: true, writable: true })
+    g.renderWindow()
+    expect(g.winColStart, '负值取绝对值后与 LTR 同窗口').toBe(200 - 4)
+    expect(g.winColEnd).toBe(Math.min(g.units.length, 200 + Math.ceil(600 / colW) + 4))
+    const minors = [...shadowOf(el).querySelectorAll<HTMLElement>('.head-minor .unit')]
+    expect(minors.length).toBe(g.winColEnd - g.winColStart)
+    expect(Number.parseFloat(minors[0]!.style.left), 'RTL 镜像：left 按全局索引取镜像').toBeCloseTo(
+      g.canvasW - g.winColStart * colW - colW,
+      5,
+    )
+  })
+
+  it('容器变宽（列宽被钳位不变）：列窗口随之扩展覆盖新右缘——零 scroll、零数据变化', () => {
+    const el = mount({ tasks: LONG_TASKS })
+    const g = priv(el)
+    stubViewport(el, 600)
+    const colW = g.colW()
+    expect(colW, '长跨度 day 档列宽被钳到下限 16（钳位是本回归的前提）').toBe(16)
+    expect(g.winColEnd * colW, '窄视口下窗口已覆盖右缘').toBeGreaterThanOrEqual(600)
+    const colsBefore = g.winColEnd - g.winColStart
+    // 容器变宽：不派发 scroll、不改数据 → ResizeObserver 回调路径（onViewportResize）。
+    // 回归点：旧实现只比较 displayColW（钳位下 16 === 16）→ 早退跳过窗口重算 → 右侧露白
+    stubViewport(el, 1200)
+    expect(g.colW(), '列宽仍被钳位（列宽不变不得作为早退依据）').toBe(16)
+    expect(g.winColEnd * colW, '窗口必须覆盖变宽后的视口右缘').toBeGreaterThanOrEqual(1200)
+    expect(g.winColEnd - g.winColStart, '可见列数增加').toBeGreaterThan(colsBefore)
+    expect(shadowOf(el).querySelectorAll('.head-minor .unit').length, '表头格随窗口重切片').toBe(
+      g.winColEnd - g.winColStart,
+    )
+    expect(el.tasks[0]!.start, '数据不变').toBe('2026-01-01')
+    expect(
+      Number.parseFloat(shadowOf(el).querySelector<HTMLElement>('.inner')!.style.width),
+      '画布总宽不变（滚动范围不随窗口变化）',
+    ).toBe(g.units.length * colW)
+  })
+
+  it('容器变窄（零滚动）：列窗口同步收缩且仍覆盖收缩后的右缘', () => {
+    const el = mount({ tasks: LONG_TASKS })
+    const g = priv(el)
+    stubViewport(el, 1200)
+    const colsWide = g.winColEnd - g.winColStart
+    stubViewport(el, 300)
+    expect(g.colW(), '列宽仍钳位 16').toBe(16)
+    expect(g.winColEnd * 16, '窗口覆盖收缩后的视口右缘').toBeGreaterThanOrEqual(300)
+    expect(g.winColEnd - g.winColStart, '可见列数减少').toBeLessThan(colsWide)
+  })
+
+  it('辅刻度抽稀决策全列锁定：窗口平移/变宽/列宽跨步进后逐格可见性与全量计算一致（缓存不漂移）', () => {
+    const el = mount({ tasks: LONG_TASKS })
+    const g = priv(el)
+    const tbody = stubViewport(el, 600)
+    const DAY_STRIDES = [1, 2, 7, 14, 28]
+    // 期望基准 = 全列标签 + 同一纯函数（旧实现逐帧全量计算的产物）
+    const expectedFor = (c: number): Set<number> =>
+      new Set(
+        pickVisibleLabels(
+          g.units.map((u) => u.minor),
+          c,
+          DAY_STRIDES,
+        ),
+      )
+    const assertWindow = (expected: Set<number>): void => {
+      const cells = [...shadowOf(el).querySelectorAll<HTMLElement>('.head-minor .unit')]
+      expect(cells.length).toBe(g.winColEnd - g.winColStart)
+      for (let k = g.winColStart; k < g.winColEnd; k++) {
+        const cell = cells[k - g.winColStart]!
+        expect((cell.textContent ?? '') !== '', `第 ${k} 列可见性应与全列抽稀决策一致`).toBe(expected.has(k))
+      }
+    }
+    const expectedNarrow = expectedFor(16)
+    assertWindow(expectedNarrow)
+    // 窗口平移（scrollLeft 变化后 renderWindow，等价 rAF 合帧下半段）：缓存命中仍逐格一致
+    Object.defineProperty(tbody, 'scrollLeft', { value: 137 * 16, configurable: true, writable: true })
+    g.renderWindow()
+    assertWindow(expectedNarrow)
+    // 视口变宽（列宽仍钳位）：窗口扩展后仍一致
+    stubViewport(el, 1200)
+    assertWindow(expectedNarrow)
+    // 列宽跨抽稀步进（16 → ≈21.7：2 字符估宽 13.2 + 间隙 6 = 19.2，1×colW 越过阈值 → 步进 2 → 1）：
+    // 缓存必须随 colW 失效重算（若缓存键漏 colW → 仍按步进 2 → 此断言红）
+    stubViewport(el, 24000)
+    expect(g.colW(), '列宽脱离钳位并跨过步进阈值').toBeGreaterThan(19.2)
+    assertWindow(expectedFor(g.colW()))
+  })
+
+  it('主刻度分组预计算逐格一致：窗口切片 === 全量相邻分组后过滤（含窗口起点落组内、组跨窗口两端）', () => {
+    const el = mount({ tasks: LONG_TASKS })
+    const g = priv(el)
+    const tbody = stubViewport(el, 600)
+    const colW = g.colW()
+    // 参照系 = 旧实现语义：全量相邻同标签分组，再按「与窗口相交」过滤（start < to && end > from）。
+    // 预计算产物（renderHeader 实际渲染序列）必须与该参照逐一相等——否则横滚动画漂移
+    const groups: Array<{ start: number; end: number; label: string }> = []
+    {
+      let i = 0
+      while (i < g.units.length) {
+        let j = i
+        while (j + 1 < g.units.length && g.units[j + 1]!.major === g.units[i]!.major) j++
+        groups.push({ start: i, end: j + 1, label: g.units[i]!.major })
+        i = j + 1
+      }
+    }
+    expect(groups.length, '3 年 day 档主刻度分组数（≈月数，预计算确实发生）').toBeGreaterThan(30)
+    const expectWindow = (from: number, to: number): void => {
+      const cells = [...shadowOf(el).querySelectorAll<HTMLElement>('.head-major .unit')]
+      const expected = groups.filter((gr) => gr.start < to && gr.end > from)
+      expect(cells.length, `窗口 [${from},${to}) 渲染主刻度组数 = 全量分组过滤结果`).toBe(expected.length)
+      for (let k = 0; k < expected.length; k++) {
+        const gr = expected[k]!
+        expect(cells[k]!.textContent, `第 ${k} 组标签`).toBe(gr.label)
+        expect(Number.parseFloat(cells[k]!.style.left), `第 ${k} 组 left 按全局列索引`).toBe(gr.start * colW)
+        expect(Number.parseFloat(cells[k]!.style.width), `第 ${k} 组 width = 组跨度×列宽`).toBe(
+          (gr.end - gr.start) * colW,
+        )
+      }
+    }
+    // ① 轴首：窗口起点 = 0（组边界与窗口起点对齐）
+    expect(g.winColStart).toBe(0)
+    expectWindow(g.winColStart, g.winColEnd)
+    // ② 窗口起点落在组内部（137 列 ≈ 月中，二分定位的首组被窗口左缘截断）
+    Object.defineProperty(tbody, 'scrollLeft', { value: 137 * colW, configurable: true, writable: true })
+    g.renderWindow()
+    expect(g.winColStart, '窗口已平移到轴中段').toBeGreaterThan(0)
+    expectWindow(g.winColStart, g.winColEnd)
+    // ③ 组跨窗口两端：视口收窄到 40px（窗口 ≤ 11 列 < 月组跨度 ~28..31 列），再滚到某大组正中
+    //    → 窗口完全落在单组内部（组同时跨窗口左右两缘）
+    Object.defineProperty(tbody, 'clientWidth', { value: 40, configurable: true })
+    ;(el as unknown as { onViewportResize(): void }).onViewportResize()
+    const winSize = g.winColEnd - g.winColStart
+    expect(winSize, '窄视口窗口列数（小于组跨度是本情形前提）').toBeLessThan(28)
+    const big = groups.find((gr) => gr.end - gr.start >= winSize)
+    expect(big, '存在跨度 ≥ 窗口的组（day 档月组）').toBeTruthy()
+    const mid = big!.start + Math.floor((big!.end - big!.start) / 2)
+    Object.defineProperty(tbody, 'scrollLeft', { value: mid * colW, configurable: true, writable: true })
+    g.renderWindow()
+    expect(g.winColStart, '窗口起点落在组内部').toBeGreaterThan(big!.start)
+    expect(g.winColEnd, '窗口终点落在组内部（组跨窗口两端）').toBeLessThan(big!.end)
+    expectWindow(g.winColStart, g.winColEnd)
+    // ④ 轴尾：窗口右缘被总列数钳制（末组被窗口右缘截断）
+    Object.defineProperty(tbody, 'scrollLeft', { value: 100000, configurable: true, writable: true })
+    g.renderWindow()
+    expect(g.winColEnd, '窗口右缘钳在总列数').toBe(g.units.length)
+    expectWindow(g.winColStart, g.winColEnd)
+  })
+
+  it('renderHeader 不随总列数线性（分组预计算 + 二分）：10 年 day 档滚动帧不再扫全列', () => {
+    const el = mount({ tasks: JSON.stringify([{ id: 'a', name: 'A', start: '2016-01-01', end: '2025-12-31' }]) })
+    const g = priv(el)
+    const tbody = stubViewport(el, 600)
+    expect(g.units.length, '10 年 day 档列数（旧实现单帧全列扫描 ≈2× 此数）').toBeGreaterThan(3500)
+    expect(g.majorGroups.length, '主刻度已预计算分组（≈月数，远小于总列数）').toBeLessThan(200)
+    g.renderWindow() // 预热辅刻度抽稀缓存（滚动稳态下缓存命中，计数只反映窗口切片路径）
+    // 计数探针：把实例的 units 数据属性换成计数 getter——renderHeader 内每一次 this.units
+    // 读取都被记录。旧实现主刻度扫描每帧读 ≈2×总列数（≈7300）；新实现只读缓存键 + 窗口内
+    // 可见辅刻度格（≈30）。若退回全列扫描，此断言必红。
+    let reads = 0
+    const raw = g.units
+    Object.defineProperty(el, 'units', {
+      get: () => {
+        reads++
+        return raw
+      },
+      configurable: true,
+    })
+    try {
+      Object.defineProperty(tbody, 'scrollLeft', { value: 1000 * g.colW(), configurable: true, writable: true })
+      g.computeColWindow()
+      g.renderHeader()
+    } finally {
+      delete (el as unknown as { units?: unknown }).units
+      ;(el as unknown as { units: unknown }).units = raw
+    }
+    expect(reads, '滚动帧 renderHeader 读 units 次数有上界（全列扫描应 ≈7300）').toBeLessThan(200)
+  })
+
+  it('容器变高（零滚动零数据变化）：行窗口扩展覆盖新视口高——底部不露白', () => {
+    const rows = Array.from({ length: 60 }, (_, i) => ({
+      id: 'r' + i,
+      name: 'R' + i,
+      start: '2026-01-01',
+      end: '2026-03-31',
+    }))
+    const el = mount({ tasks: JSON.stringify(rows) })
+    const g = priv(el)
+    const tbody = shadowOf(el).querySelector<HTMLElement>('.tbody')!
+    const rowH = 36
+    Object.defineProperty(tbody, 'clientWidth', { value: 600, configurable: true })
+    Object.defineProperty(tbody, 'clientHeight', { value: 100, configurable: true })
+    ;(el as unknown as { onViewportResize(): void }).onViewportResize()
+    expect(g.winEnd * rowH, '矮视口下行窗口已覆盖视口高（卫断言：前提成立）').toBeGreaterThanOrEqual(100)
+    const rowsBefore = g.winEnd - g.winStart
+    // 容器变高：不滚动、不改数据 → ResizeObserver 回调路径（onViewportResize）。
+    // 回归点：旧实现只比较「视口宽 + displayColW」（两者均不变）→ 早退跳过 renderWindow
+    // → 行窗口不补，底部露白直到滚动才重建
+    Object.defineProperty(tbody, 'clientHeight', { value: 800, configurable: true })
+    ;(el as unknown as { onViewportResize(): void }).onViewportResize()
+    expect(g.winEnd * rowH, '行窗口必须覆盖变高后的视口底部').toBeGreaterThanOrEqual(800)
+    expect(g.winEnd - g.winStart, '可见行数随视口变高增加').toBeGreaterThan(rowsBefore)
+    expect(nameRows(el).length, '渲染行名数 = 行窗口宽度').toBe(g.winEnd - g.winStart)
+  })
+
+  it('scrollToDate 同步出窗口：调用返回即已渲染目标列窗口 + 表头偏移已同步（与 resource 口径一致）', () => {
+    const el = mount({ tasks: LONG_TASKS })
+    const g = priv(el)
+    const tbody = stubViewport(el, 600)
+    const colW = g.colW()
+    // F2 回归：scrollToDate 末尾补 syncHeaderOffset（旧实现表头 transform 只在 onScroll 里更新，
+    // 调用返回瞬间表头 DOM 已切窗口、transform 仍指旧位 → 错位量 = 整段滚动位移，下一帧才归零）。
+    // happy-dom 无布局：stub .inner 与 .thead 的水平 rect 差 42px，断言调用返回瞬间 transform
+    // 已按最新差值重写（若漏调用，transform 停留在 mount 时的 'translateX(0px)'）
+    stubRect(shadowOf(el).querySelector<HTMLElement>('.inner')!, 0, 42, 600, 200)
+    stubRect(shadowOf(el).querySelector<HTMLElement>('.thead')!, 0, 0, 600, 44)
+    el.scrollToDate('2027-06-15')
+    // 断言窗口状态与 DOM 都已同步反映目标滚动位置（旧实现只设 scrollLeft，窗口靠异步
+    // scroll → rAF 合帧补齐 → 调用返回瞬间表头/条仍是旧窗口）
+    const sl = tbody.scrollLeft
+    expect(sl, 'scrollToDate 已滚动').toBeGreaterThan(0)
+    expect(g.winColStart, '列窗口起点与 scrollLeft 同步（max(0, floor(sl/colW) − buffer)）').toBe(
+      Math.max(0, Math.floor(sl / colW) - 4),
+    )
+    const minors = [...shadowOf(el).querySelectorAll<HTMLElement>('.head-minor .unit')]
+    expect(minors.length, '表头已按目标窗口重切片').toBe(g.winColEnd - g.winColStart)
+    expect(Number.parseFloat(minors[0]!.style.left), '首个渲染辅刻度 left = 窗口起点×列宽').toBe(g.winColStart * colW)
+    // F2 回归断言：调用返回瞬间表头两层 transform 已同步（表头与 .inner 水平 rect 差 ≈ 0）
+    expect(
+      shadowOf(el).querySelector<HTMLElement>('.head-major')!.style.transform,
+      'scrollToDate 返回瞬间主刻度层 transform 已重写',
+    ).toBe('translateX(42px)')
+    expect(
+      shadowOf(el).querySelector<HTMLElement>('.head-minor')!.style.transform,
+      'scrollToDate 返回瞬间辅刻度层 transform 已重写',
+    ).toBe('translateX(42px)')
+    // 感知层：目标日期列已落在新窗口内（命令式滚动返回即渲染目标区域）
+    const targetMs = new Date(2027, 5, 15).getTime()
+    const idx = g.units.findIndex((u) => u.startMs <= targetMs && targetMs < u.endMs)
+    expect(idx, '目标日期在轴内').toBeGreaterThanOrEqual(0)
+    expect(g.winColStart, '目标列不早于窗口起点').toBeLessThanOrEqual(idx)
+    expect(g.winColEnd, '目标列在窗口内').toBeGreaterThan(idx)
+  })
+})
+
 describe('OASGantt 只读三级与任务级禁用', () => {
   beforeEach(() => {
     document.body.innerHTML = ''
@@ -1651,6 +2078,26 @@ describe('OASGantt 今日线 / 周末与假日 / tooltip / 标签', () => {
       holidays: JSON.stringify(['2026-03-04']),
     })
     expect(shadowOf(el3).querySelector('.grid-canvas .holiday')).not.toBeNull()
+  })
+
+  it('holidaySet 缓存：同一属性原文复用同一 Set（每帧 JSON.parse 消除）；属性变更即失效，语义与逐次解析一致', () => {
+    const el = mount({
+      tasks: JSON.stringify([{ id: 'a', name: 'A', start: '2026-03-02', end: '2026-03-08' }]),
+      holidays: JSON.stringify(['2026-03-04']),
+    })
+    const api = el as unknown as { holidaySet(): Set<string> }
+    const s1 = api.holidaySet()
+    const s2 = api.holidaySet()
+    expect(s2, '同属性原文 → 复用同一实例（无缓存实现每次 new Set → 此断言红）').toBe(s1)
+    expect([...s1]).toEqual(['2026-03-04'])
+    // 属性原文变化 → 缓存失效、内容更新
+    el.setAttribute('holidays', JSON.stringify(['2026-03-05']))
+    const s3 = api.holidaySet()
+    expect(s3, '属性原文变化 → 换新缓存').not.toBe(s1)
+    expect([...s3]).toEqual(['2026-03-05'])
+    // 非法 JSON → 空集（渲染零假日格，与逐次解析语义一致）
+    el.setAttribute('holidays', '{bad')
+    expect(api.holidaySet().size).toBe(0)
   })
 
   it('tooltip：mouseenter 显示浮层（含名称），mouseleave 关闭；template[slot=tooltip] 覆盖内容', () => {

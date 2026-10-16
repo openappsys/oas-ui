@@ -159,11 +159,15 @@ test('resource 横向溢出：滚到中部表头行仍覆盖可视区', async ({
     undefined,
     { timeout: 10000 },
   )
-  const res = await page.evaluate(() => {
+  const res = await page.evaluate(async () => {
     const sr = (document.getElementById('res-wide') as HTMLElement).shadowRoot!
     const sc = sr.querySelector('.scroller') as HTMLElement
     const maxScroll = sc.scrollWidth - sc.clientWidth
     sc.scrollLeft = Math.floor(maxScroll / 2)
+    // 横向虚拟化：刻度按列窗口渲染，窗口重算在 scroll 事件的 rAF 帧执行——等帧后再量可视区覆盖
+    await new Promise((r) => {
+      requestAnimationFrame(() => requestAnimationFrame(() => r(null)))
+    })
     const scRect = sc.getBoundingClientRect()
     const headRect = sr.querySelector('.row.head')!.getBoundingClientRect()
     const centerX = scRect.left + scRect.width / 2
@@ -792,7 +796,8 @@ test('resource F1b CSR：宿主真内联 480px + height="480" → 移除属性�
   // 反证旧实现：hostHeightBefore = existing === next ? '' : existing → 宿主真内联被清
   expect(res.hInline, '移除属性后宿主真内联 480px 仍在（不被吞）').toBe('480px')
   expect(res.hAfter, '移除属性后宿主高仍 480（由宿主内联接管）').toBeCloseTo(480, 0)
-  expect(res.badVar, 'height="bad" 回落 320 写自定义属性').toBe('320px')
+  // F1 语义：非法值不写变量（反证旧实现写 320px 覆盖宿主 token）；宿主真内联 320px 全程不受影响
+  expect(res.badVar, 'height="bad" 不写自定义属性（不覆盖宿主 token）').toBe('')
   expect(res.badInline, 'height="bad" 移除后宿主真内联 320px 仍不被吞').toBe('320px')
   expect(res.badAfter, '宿主高仍 320').toBeCloseTo(320, 0)
   await page.evaluate(() => {
@@ -1039,5 +1044,226 @@ test('resource G4 height class 通道：class 规则 500px → height 属性接�
   await req()
   expect(await h(), '移除属性后回落 class 规则 500').toBeCloseTo(500, 0)
   await page.evaluate(() => document.getElementById('res-h-class')?.remove())
+  expect(errors).toEqual([])
+})
+
+// ===== 横向虚拟化（时间轴 period 列窗口）收口回归 =====
+
+test('resource 横向虚拟化：长跨度 day 档刻度数有上界、滚到中部可视区仍有刻度、滚动长度不变', async ({ page }) => {
+  const errors = collectErrors(page)
+  await page.goto('/components/resource.html', { waitUntil: 'domcontentloaded' })
+  await page.evaluate(() => {
+    const el = document.createElement('oas-resource')
+    el.id = 'res-virt'
+    el.style.cssText = 'display:block;width:520px;margin:12px;position:relative;z-index:1'
+    el.setAttribute('scale', 'day')
+    el.setAttribute('resources', JSON.stringify([{ id: 'r1', name: 'A' }]))
+    el.setAttribute(
+      'tasks',
+      JSON.stringify([{ id: 'long', name: '三年', start: '2026-01-01', end: '2028-12-31', resources: ['r1'] }]),
+    )
+    document.body.appendChild(el)
+  })
+  await waitShadowReady(page, 'res-virt')
+
+  const measure = (): Promise<{ tickCount: number; scrollWidth: number; trackW: number; tickAtCenter: boolean }> =>
+    page.evaluate(() => {
+      const sr = (document.getElementById('res-virt') as HTMLElement).shadowRoot!
+      const sc = sr.querySelector('.scroller') as HTMLElement
+      const scRect = sc.getBoundingClientRect()
+      const centerX = scRect.left + scRect.width / 2
+      let tickAtCenter = false
+      for (const t of sr.querySelectorAll('.ticks .tick')) {
+        const b = t.getBoundingClientRect()
+        if (b.left <= centerX && b.right >= centerX) tickAtCenter = true
+      }
+      return {
+        tickCount: sr.querySelectorAll('.ticks .tick').length,
+        scrollWidth: sc.scrollWidth,
+        trackW: (sr.querySelector('.lane .track') as HTMLElement).getBoundingClientRect().width,
+        tickAtCenter,
+      }
+    })
+
+  const before = await measure()
+  // 视口 520 → 窗口 + overscan 的刻度约 15+8=23，远小于 1096 个 day period
+  expect(before.tickCount, '初始窗口刻度数有上界（虚拟化生效）').toBeLessThan(200)
+  expect(before.trackW, '轨道宽仍 = 全量画布宽（1096 × 36），滚动条长度不变').toBeCloseTo(1096 * 36, 0)
+
+  // 滚到中部 → 窗口随滚动重渲染（首刻度左缘显著右移）
+  await page.evaluate(() => {
+    const sr = (document.getElementById('res-virt') as HTMLElement).shadowRoot!
+    const sc = sr.querySelector('.scroller') as HTMLElement
+    sc.scrollLeft = Math.floor((sc.scrollWidth - sc.clientWidth) / 2)
+  })
+  await page.waitForFunction(
+    () => {
+      const sr = (document.getElementById('res-virt') as HTMLElement).shadowRoot!
+      const first = sr.querySelector('.ticks .tick') as HTMLElement | null
+      return !!first && Number.parseFloat(first.style.left) > 1000
+    },
+    undefined,
+    { timeout: 5000 },
+  )
+  const after = await measure()
+  expect(after.tickCount, '滚动后窗口刻度数仍有上界').toBeLessThan(200)
+  expect(after.tickAtCenter, '滚到中部可视区仍有刻度覆盖').toBe(true)
+  expect(Math.abs(after.scrollWidth - before.scrollWidth), '滚动长度（画布宽）不变').toBeLessThanOrEqual(2)
+  await page.evaluate(() => document.getElementById('res-virt')?.remove())
+  expect(errors).toEqual([])
+})
+
+// ===== 横向虚拟化复审修复回归（F1 容器尺寸变化 / F2 滚动复用条节点不丢焦点） =====
+
+/** 长跨度 day 档任务 JSON（1096 period，锚点 2026-01-01，colW=36） */
+const LONG_TASKS_JSON = JSON.stringify([
+  { id: 'long', name: '三年', start: '2026-01-01', end: '2028-12-31', resources: ['r1'] },
+])
+
+test('resource F1 容器尺寸变化：ResizeObserver 重算列窗口，变宽后刻度覆盖新右缘（无 scroll/无数据变更）', async ({
+  page,
+}) => {
+  const errors = collectErrors(page)
+  await page.goto('/components/resource.html', { waitUntil: 'domcontentloaded' })
+  await page.evaluate((tasks) => {
+    const el = document.createElement('oas-resource')
+    el.id = 'res-resize'
+    el.style.cssText = 'display:block;width:480px;margin:12px;position:relative;z-index:1'
+    el.setAttribute('scale', 'day')
+    el.setAttribute('resources', JSON.stringify([{ id: 'r1', name: 'A' }]))
+    el.setAttribute('tasks', tasks)
+    document.body.appendChild(el)
+  }, LONG_TASKS_JSON)
+  await waitShadowReady(page, 'res-resize')
+  const measure = (): Promise<{ ticks: number; covered: boolean; maxTickRight: number; scRight: number }> =>
+    page.evaluate(() => {
+      const sr = (document.getElementById('res-resize') as HTMLElement).shadowRoot!
+      const sc = sr.querySelector('.scroller') as HTMLElement
+      const scr = sc.getBoundingClientRect()
+      let maxTickRight = -Infinity
+      const ticks = sr.querySelectorAll('.ticks .tick')
+      for (const t of ticks) {
+        const b = t.getBoundingClientRect()
+        if (b.right > maxTickRight) maxTickRight = b.right
+      }
+      return { ticks: ticks.length, covered: maxTickRight >= scr.right - 2, maxTickRight, scRight: scr.right }
+    })
+  const before = await measure()
+  expect(before.ticks, '480px 视口下已窗口化（远少于 1096）').toBeLessThan(300)
+  expect(before.covered, '初始刻度覆盖视口右缘').toBe(true)
+  // 变宽到 900（不派发 scroll、不改数据）——只有 ResizeObserver 会触发窗口重算
+  await page.evaluate(() => {
+    ;(document.getElementById('res-resize') as HTMLElement).style.width = '900px'
+  })
+  await page.waitForFunction(
+    (n) => {
+      const sr = (document.getElementById('res-resize') as HTMLElement).shadowRoot!
+      return sr.querySelectorAll('.ticks .tick').length > n
+    },
+    before.ticks,
+    { timeout: 5000 },
+  )
+  const after = await measure()
+  expect(after.ticks, '刻度数随视口变宽增加').toBeGreaterThan(before.ticks)
+  // 反证「无 ResizeObserver」实现：窗口停在 480 下铺满的列，变宽后右侧露白（covered=false）
+  expect(after.covered, '变宽后刻度仍覆盖视口右缘（无露白）').toBe(true)
+  await page.evaluate(() => document.getElementById('res-resize')?.remove())
+  expect(errors).toEqual([])
+})
+
+test('resource F1 隐藏挂载 → 显示：ResizeObserver 修正，刻度不再永久全量', async ({ page }) => {
+  const errors = collectErrors(page)
+  await page.goto('/components/resource.html', { waitUntil: 'domcontentloaded' })
+  await page.evaluate((tasks) => {
+    const box = document.createElement('div')
+    box.id = 'res-hidden-box'
+    box.style.cssText = 'display:none'
+    const el = document.createElement('oas-resource')
+    el.id = 'res-hidden'
+    el.style.cssText = 'display:block;width:520px'
+    el.setAttribute('scale', 'day')
+    el.setAttribute('resources', JSON.stringify([{ id: 'r1', name: 'A' }]))
+    el.setAttribute('tasks', tasks)
+    box.appendChild(el)
+    document.body.appendChild(box)
+  }, LONG_TASKS_JSON)
+  await page.waitForFunction(
+    () => !!document.getElementById('res-hidden')?.shadowRoot?.querySelector('.ticks .tick'),
+    undefined,
+    { timeout: 15000 },
+  )
+  const tickCount = (): Promise<number> =>
+    page.evaluate(
+      () => (document.getElementById('res-hidden') as HTMLElement).shadowRoot!.querySelectorAll('.ticks .tick').length,
+    )
+  expect(await tickCount(), '隐藏/0 宽挂载回落全量（1096 条）').toBe(1096)
+  // 显示容器 → ResizeObserver 触发 → 切回窗口渲染（反证「无 RO」实现：永久停留 1096 条）
+  await page.evaluate(() => {
+    ;(document.getElementById('res-hidden-box') as HTMLElement).style.display = 'block'
+  })
+  await page.waitForFunction(
+    () =>
+      (document.getElementById('res-hidden') as HTMLElement).shadowRoot!.querySelectorAll('.ticks .tick').length < 300,
+    undefined,
+    { timeout: 5000 },
+  )
+  expect(await tickCount(), '显示后切回窗口（不再全量）').toBeLessThan(300)
+  await page.evaluate(() => document.getElementById('res-hidden-box')?.remove())
+  expect(errors).toEqual([])
+})
+
+test('resource F2 横向滚动复用条节点：聚焦条滚动后仍在 DOM、焦点保持（不因整段重建丢焦点）', async ({ page }) => {
+  const errors = collectErrors(page)
+  await page.goto('/components/resource.html', { waitUntil: 'domcontentloaded' })
+  await page.evaluate(
+    (tasks) => {
+      const el = document.createElement('oas-resource')
+      el.id = 'res-keepfocus'
+      el.style.cssText = 'display:block;width:520px;margin:12px;position:relative;z-index:1'
+      el.setAttribute('scale', 'day')
+      el.setAttribute('resources', JSON.stringify([{ id: 'r1', name: 'A' }]))
+      // long 撑起时间轴，mid 落在初始窗口内可聚焦；横向滚动后 mid 仍在窗口内（应被复用）
+      el.setAttribute('tasks', tasks)
+      document.body.appendChild(el)
+    },
+    JSON.stringify([
+      { id: 'long', name: '三年', start: '2026-01-01', end: '2028-12-31', resources: ['r1'] },
+      { id: 'mid', name: '中', start: '2026-01-11', end: '2026-01-11', resources: ['r1'] },
+    ]),
+  )
+  await page.waitForFunction(
+    () => !!document.getElementById('res-keepfocus')?.shadowRoot?.querySelector('.bar[data-task-id="mid"]'),
+    undefined,
+    { timeout: 15000 },
+  )
+  const res = await page.evaluate(async () => {
+    const el = document.getElementById('res-keepfocus') as HTMLElement
+    const sr = el.shadowRoot!
+    const sc = sr.querySelector('.scroller') as HTMLElement
+    const bar = sr.querySelector('.bar[data-task-id="mid"]') as HTMLElement
+    bar.focus()
+    const focusedBefore = sr.activeElement === bar
+    const firstLeft0 = Number.parseFloat((sr.querySelector('.ticks .tick') as HTMLElement).style.left)
+    sc.scrollLeft = 360
+    // 等 scroll 的 rAF 窗口重渲染（双帧稳妥）
+    await new Promise((r) => {
+      requestAnimationFrame(() => requestAnimationFrame(() => r(null)))
+    })
+    const firstLeft1 = Number.parseFloat((sr.querySelector('.ticks .tick') as HTMLElement).style.left)
+    return {
+      focusedBefore,
+      focusedAfter: sr.activeElement === bar,
+      sameNode: sr.querySelector('.bar[data-task-id="mid"]') === bar,
+      connected: bar.isConnected,
+      windowMoved: firstLeft0 !== firstLeft1,
+    }
+  })
+  expect(res.focusedBefore, '前置：条已聚焦').toBe(true)
+  expect(res.windowMoved, '横向滚动确实平移了列窗口').toBe(true)
+  // 反证「scroll 整段重建泳道」实现：bar 节点被替换、activeElement 掉回 body
+  expect(res.sameNode, '条节点被复用（未重建）').toBe(true)
+  expect(res.connected, '条仍在 DOM').toBe(true)
+  expect(res.focusedAfter, '焦点保持（activeElement 仍为该条）').toBe(true)
+  await page.evaluate(() => document.getElementById('res-keepfocus')?.remove())
   expect(errors).toEqual([])
 })

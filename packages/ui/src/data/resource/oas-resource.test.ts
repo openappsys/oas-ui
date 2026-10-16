@@ -586,9 +586,9 @@ describe('OASResource 空态与语义', () => {
     expect(el.style.height).toBe('')
     const wrap = shadowOf(el).querySelector<HTMLElement>('.wrap')!
     expect(wrap.style.height).toBe('')
-    // 非法值回落 320
+    // 非法值不写变量（与 oas-gantt 同协议）：清除本实例自写值回落，不写 320 覆盖宿主 token
     el.setAttribute('height', 'bad')
-    expect(el.style.getPropertyValue('--oas-resource-height')).toBe('320px')
+    expect(el.style.getPropertyValue('--oas-resource-height')).toBe('')
     // 移除属性 → 移除自定义属性（回落 :host → token 缺省 / 宿主 CSS）
     el.removeAttribute('height')
     expect(el.style.getPropertyValue('--oas-resource-height')).toBe('')
@@ -852,7 +852,8 @@ describe('OASResource height 自定义属性接管（F1b：宿主真内联永不
     el.setAttribute('tasks', '[]')
     document.body.appendChild(el)
     el.setAttribute('height', 'bad')
-    expect(el.style.getPropertyValue('--oas-resource-height')).toBe('320px')
+    // F1 语义：非法值不写 --oas-resource-height（反证旧实现写 320px 覆盖宿主 token）
+    expect(el.style.getPropertyValue('--oas-resource-height')).toBe('')
     el.removeAttribute('height')
     expect(el.style.height, '宿主真内联 320px 不得被清').toBe('320px')
     expect(el.style.getPropertyValue('--oas-resource-height')).toBe('')
@@ -1203,15 +1204,29 @@ describe('OASResource height 协议三态（空串 / px 后缀 / 移除）', () 
     expect(el2.style.getPropertyValue('--oas-resource-height')).toBe('')
   })
 
-  it('height 接受 px 后缀与纯数字；非法仍回落 320', () => {
+  it('height 接受 px 后缀与纯数字；非法值不写变量（不覆盖宿主 token）', () => {
     const el = mount({ height: '480px', resources: '[]', tasks: '[]' })
     expect(el.style.getPropertyValue('--oas-resource-height'), '带 px 后缀生效').toBe('480px')
     el.setAttribute('height', '500')
     expect(el.style.getPropertyValue('--oas-resource-height'), '纯数字生效').toBe('500px')
     el.setAttribute('height', 'bad')
-    expect(el.style.getPropertyValue('--oas-resource-height'), '非法回落 320').toBe('320px')
+    expect(el.style.getPropertyValue('--oas-resource-height'), '非法值清除自写值、不写 320').toBe('')
     // 全程宿主 height 内联不被写入
     expect(el.style.height).toBe('')
+  })
+
+  it('F1 非法值不覆盖宿主 token：宿主内联/class 设 --oas-resource-height:500px + height="bad" → token 保留 500px', () => {
+    // 反证旧实现：heightAttrValue() != null 即写 ${heightPx()}px（非法回落 320）→ 宿主 token 被覆盖成 320px，
+    // 且移除属性后宿主原 token 丢失（组件 removeProperty 清掉的是「组件写的 320」，宿主原值已被顶掉）
+    const el = new OASResource()
+    el.style.setProperty('--oas-resource-height', '500px')
+    el.setAttribute('resources', '[]')
+    el.setAttribute('tasks', '[]')
+    document.body.appendChild(el)
+    el.setAttribute('height', 'bad')
+    expect(el.style.getPropertyValue('--oas-resource-height'), '非法值不写变量，宿主 token 500px 保留').toBe('500px')
+    el.removeAttribute('height')
+    expect(el.style.getPropertyValue('--oas-resource-height'), '移除属性后宿主 token 仍 500px').toBe('500px')
   })
 
   it('height 属性移除后回落 token：宿主原有内联 400px 始终不被吞', () => {
@@ -1702,5 +1717,689 @@ describe('OASResource 结构性操作容错（G5：revoked Proxy 不抛未捕获
     } finally {
       warn.mockRestore()
     }
+  })
+})
+
+describe('OASResource 横向虚拟化（时间轴 period 列窗口）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+    vi.unstubAllGlobals()
+  })
+
+  /** 冲刷一帧 rAF：scroll handler 的窗口重渲染在下一帧执行 */
+  const flushRaf = (): Promise<void> => new Promise((resolve) => requestAnimationFrame(() => resolve(undefined)))
+
+  /**
+   * 注入 FakeRO（happy-dom 的 ResizeObserver 是永不回调的 stub）：记录创建实例，测试手动触发回调。
+   * 必须在 mount() 前调用（bind 时决定是否建立观察器）。
+   */
+  type FakeRO = { cb: ResizeObserverCallback; observed: Element[]; disconnected: number }
+  const installFakeRO = (): FakeRO[] => {
+    const created: FakeRO[] = []
+    class RO {
+      cb: ResizeObserverCallback
+      observed: Element[] = []
+      disconnected = 0
+      constructor(cb: ResizeObserverCallback) {
+        this.cb = cb
+        created.push(this as unknown as FakeRO)
+      }
+      observe(t: Element): void {
+        this.observed.push(t)
+      }
+      unobserve(): void {}
+      disconnect(): void {
+        this.disconnected++
+      }
+    }
+    vi.stubGlobal('ResizeObserver', RO as unknown as typeof ResizeObserver)
+    return created
+  }
+
+  /** 泳道布局缓存视图（含 F1 窗口查询索引与快路径边界） */
+  type LaneCache = {
+    entries: Array<{ key: string; taskId: string; index: number; segIndex: number; xStart: number; w: number }>
+    segs: number
+    order: number[]
+    segTree: Float64Array | null
+    segTreeSize: number
+    maxEnd: number
+    minStart: number
+  }
+  /** 内部诊断视图（只读）：布局缓存 / 负载矩阵缓存 / 窗口索引 / 预计算计数 / cull 访问计数 */
+  type Internals = {
+    laneLayout: Map<string, LaneCache>
+    loadRows: Array<{ resource: { id: string }; capacity: number; loads: number[]; overCount: number }>
+    winColStart: number
+    winColEnd: number
+    laneLayoutBuilds: number
+    laneCullVisits: number
+    canvasW: number
+  }
+  const internals = (el: OASResource): Internals => el as unknown as Internals
+  /** 当前列窗口的像素范围（与 renderLanes 的 cull 口径一致） */
+  const winRange = (el: OASResource): { left: number; right: number } => {
+    const colW = 36
+    return { left: internals(el).winColStart * colW - colW, right: internals(el).winColEnd * colW + colW }
+  }
+
+  /** 2026-01-01..2028-12-31（day 档）：1096 个 period，锚点 2026-01-01，colW=36 */
+  const LONG_TOTAL = 1096
+  const LONG_TASKS = JSON.stringify([
+    { id: 'long', name: '三年', start: '2026-01-01', end: '2028-12-31', resources: ['r1'] },
+  ])
+  const longMount = (extra: Record<string, string> = {}): OASResource =>
+    mount({
+      scale: 'day',
+      resources: JSON.stringify([{ id: 'r1', name: 'A' }]),
+      tasks: LONG_TASKS,
+      ...extra,
+    })
+  const scrollerOf = (el: OASResource): HTMLElement => shadowOf(el).querySelector<HTMLElement>('.scroller')!
+  const tickLefts = (el: OASResource): number[] =>
+    [...shadowOf(el).querySelectorAll<HTMLElement>('.ticks .tick')].map((t) => Number.parseFloat(t.style.left))
+  /** 伪视口：happy-dom 无布局（clientWidth 恒 0），显式定值并触发窗口重算 */
+  const stubViewport = (el: OASResource, clientWidth: number): HTMLElement => {
+    const sc = scrollerOf(el)
+    Object.defineProperty(sc, 'clientWidth', { value: clientWidth, configurable: true })
+    el.requestUpdate()
+    return sc
+  }
+
+  it('① 视口受限：只建窗口 + overscan 的刻度与负载列（远少于全量），滚动长度仍 = periods × colW', () => {
+    const el = longMount()
+    stubViewport(el, 360)
+    const ticks = tickLefts(el)
+    expect(ticks.length, '窗口化后刻度数为正').toBeGreaterThan(0)
+    expect(ticks.length, '窗口 + overscan（360/36 + 4 = 14）左右').toBeLessThan(100)
+    expect(ticks.length, '确实发生窗口化（远少于全量）').toBeLessThan(LONG_TOTAL)
+    // 滚动长度不变：刻度容器 / 泳道轨 / 直方图表头宽仍 = canvasW（scrollbar 长度不缩水）
+    const canvasW = LONG_TOTAL * 36
+    const sr = shadowOf(el)
+    expect(sr.querySelector<HTMLElement>('.ticks')!.style.width).toBe(`${canvasW}px`)
+    expect(sr.querySelector<HTMLElement>('.lane .track')!.style.width).toBe(`${canvasW}px`)
+    expect(sr.querySelector<HTMLElement>('.hist-pad')!.style.width).toBe(`${canvasW}px`)
+    // 负载列同步窗口化：列数 == 刻度数（同一窗口），柱体只建窗口内
+    expect(sr.querySelectorAll('.load .col').length).toBe(ticks.length)
+    expect(sr.querySelectorAll('.load .pillar').length).toBeLessThan(LONG_TOTAL)
+  })
+
+  it('② 滚动平移：scrollLeft 变大 → 窗口右移（首刻度 left 前移），rAF 节流后生效', async () => {
+    const el = longMount()
+    const sc = stubViewport(el, 360)
+    expect(tickLefts(el)[0], '初始窗口自画布左缘始').toBe(0)
+    sc.scrollLeft = 3600
+    sc.dispatchEvent(new Event('scroll'))
+    await flushRaf()
+    // floor(3600/36) = 100 → 窗口起点 100 − 4 = 96 → 首刻度 left = 96 × 36
+    expect(tickLefts(el)[0], '窗口随滚动平移').toBe(96 * 36)
+  })
+
+  it('③ 视口不可测（无布局，clientWidth=0）→ 回落全量渲染（既有非虚拟口径不变）', () => {
+    const el = longMount()
+    el.requestUpdate()
+    expect(tickLefts(el).length, '回落全量：刻度数 == periods 总数').toBe(LONG_TOTAL)
+  })
+
+  it('④ RTL 负值 scrollLeft：窗口与同 |scrollLeft| 的 LTR 一致（abs 标准化）', async () => {
+    const ltr = longMount()
+    const ltrSc = stubViewport(ltr, 360)
+    ltrSc.scrollLeft = 3600
+    ltrSc.dispatchEvent(new Event('scroll'))
+    await flushRaf()
+
+    const rtl = longMount({ dir: 'rtl' })
+    const rtlSc = stubViewport(rtl, 360)
+    rtlSc.scrollLeft = -3600
+    rtlSc.dispatchEvent(new Event('scroll'))
+    await flushRaf()
+
+    expect(tickTexts(rtl), 'RTL 窗口与 LTR 同窗口同刻度序列').toEqual(tickTexts(ltr))
+    expect(tickTexts(rtl)[0], '窗口已右移（非全量首刻度）').not.toBe('01-01')
+  })
+
+  it('⑤ 泳道条按列窗口相交 cull：窗口外不建 DOM、窗口内相交（含跨边界）仍建；段堆叠仍按全部任务', () => {
+    const el = mount({
+      scale: 'day',
+      resources: JSON.stringify([{ id: 'r1', name: 'A' }]),
+      tasks: JSON.stringify([
+        { id: 'near', name: '近', start: '2026-01-02', end: '2026-01-03', resources: ['r1'] },
+        { id: 'cross', name: '跨边', start: '2026-01-10', end: '2026-01-20', resources: ['r1'] },
+        { id: 'far1', name: '远1', start: '2028-06-01', end: '2028-06-05', resources: ['r1'] },
+        { id: 'far2', name: '远2', start: '2028-06-03', end: '2028-06-07', resources: ['r1'] },
+      ]),
+    })
+    stubViewport(el, 360)
+    const ids = [...shadowOf(el).querySelectorAll<HTMLElement>('.lane .bar')].map((b) => b.dataset['taskId'])
+    expect(ids, '窗口内条保留').toContain('near')
+    expect(ids, '跨窗口边界条（相交）保留').toContain('cross')
+    expect(ids, '窗口外条被 cull（不建 DOM）').not.toContain('far1')
+    expect(ids).not.toContain('far2')
+    // 段堆叠仍按全部 assigned 计算：far2 与 far1 重叠 → 2 段（与是否建 DOM 无关）
+    const track = shadowOf(el).querySelector<HTMLElement>('.lane .track')!
+    expect(track.style.height).toContain('2 * var(--oas-resource-bar-height')
+  })
+
+  it('⑥ 负载矩阵大数据集（5 资源 × 2000 任务 × 3 年 day 档）：period 数正确且逐 period 负载与朴素重叠统计一致', () => {
+    const RES_N = 5
+    const TASK_N = 2000
+    const resources = Array.from({ length: RES_N }, (_, i) => ({ id: `r${i}`, name: `R${i}` }))
+    const START_UTC = Date.UTC(2026, 0, 1)
+    const isoAt = (dayIndex: number): string => {
+      const d = new Date(START_UTC + dayIndex * 86_400_000)
+      const p = (n: number): string => String(n).padStart(2, '0')
+      return `${d.getUTCFullYear()}-${p(d.getUTCMonth() + 1)}-${p(d.getUTCDate())}`
+    }
+    const base = Array.from({ length: TASK_N }, (_, i) => {
+      const iso = isoAt(i % LONG_TOTAL)
+      return { id: `t${i}`, name: `T${i}`, start: iso, end: iso, resources: [`r${i % RES_N}`] }
+    })
+    // 制造同资源同档叠加（maxLoad > 1）：每个资源在 2026-01-01 各压 3 条单日任务
+    const busy = Array.from({ length: RES_N * 3 }, (_, i) => ({
+      id: `b${i}`,
+      name: `B${i}`,
+      start: '2026-01-01',
+      end: '2026-01-01',
+      resources: [`r${i % RES_N}`],
+    }))
+    const tasks = [...base, ...busy]
+    const el = mount({ scale: 'day', resources: JSON.stringify(resources), tasks: JSON.stringify(tasks) })
+    // period 数未被截断到异常（1096 远小于 MAX_PERIODS = 5000）
+    expect(shadowOf(el).querySelectorAll('.ticks .tick').length).toBe(LONG_TOTAL)
+    // 逐 period 负载与朴素「任务区间 ∩ period 区间」统计一致（测试侧独立实现，不读组件内部状态）
+    const naive = new Array<number>(LONG_TOTAL).fill(0)
+    for (const t of tasks) {
+      if (t.resources[0] !== 'r0') continue
+      const [y, m, d] = t.start.split('-').map(Number)
+      const idx = Math.round((Date.UTC(y!, m! - 1, d!) - START_UTC) / 86_400_000)
+      naive[idx] = naive[idx]! + 1
+    }
+    const cols = [...shadowOf(el).querySelectorAll<HTMLElement>('.load[data-resource-id="r0"] .col')]
+    expect(cols.length, '负载列覆盖全部 period').toBe(LONG_TOTAL)
+    const got = cols.map((c) => {
+      const pillar = c.querySelector<HTMLElement>('.pillar')
+      return pillar ? Number(pillar.dataset['load']) : 0
+    })
+    expect(got, '逐 period 负载与朴素统计一致').toEqual(naive)
+    expect(Math.max(...naive), '数据集确实产生叠加负载（maxLoad > 1）').toBeGreaterThan(1)
+  }, 30_000)
+
+  it('⑦ scrollToDate 命令式滚动即时同步窗口：调用返回后目标区已渲染（不等 scroll 的 rAF 帧）', () => {
+    const el = mount({
+      scale: 'day',
+      resources: JSON.stringify([{ id: 'r1', name: 'A' }]),
+      tasks: JSON.stringify([
+        { id: 'head', name: '头', start: '2026-01-01', end: '2026-01-05', resources: ['r1'] },
+        { id: 'mid', name: '中', start: '2026-04-01', end: '2026-04-05', resources: ['r1'] },
+      ]),
+    })
+    const sc = scrollerOf(el)
+    Object.defineProperty(sc, 'clientWidth', { value: 520, configurable: true })
+    el.requestUpdate()
+    // 视口受限：滚动前远端条在窗口外（未建 DOM）
+    expect(barOf(el, 'mid', 'r1'), '窗口外远端条初始被 cull').toBeFalsy()
+    el.scrollToDate('2026-04-01')
+    expect(barOf(el, 'mid', 'r1'), '命令式滚动后目标条同步在 DOM').toBeTruthy()
+    expect(barOf(el, 'head', 'r1'), '已移出窗口的远端条被 cull').toBeFalsy()
+  })
+
+  it('⑧ 断开连接取消防泄漏：挂起的滚动帧被 cancelAnimationFrame 取消', () => {
+    const cancel = vi.spyOn(globalThis, 'cancelAnimationFrame')
+    try {
+      const el = longMount()
+      const sc = stubViewport(el, 360)
+      sc.scrollLeft = 3600
+      sc.dispatchEvent(new Event('scroll')) // 挂起一帧（rAF 节流）
+      document.body.removeChild(el) // 断开 → cleanup 取消挂起帧
+      expect(cancel, '断开时取消挂起帧（不在游离 shadow 上重渲染）').toHaveBeenCalled()
+    } finally {
+      cancel.mockRestore()
+    }
+  })
+
+  it('⑨ 容器尺寸变化（无 scroll / 无数据变更）→ ResizeObserver 重算列窗口：刻度覆盖新右缘、列数增加', () => {
+    const ros = installFakeRO()
+    const el = longMount()
+    const sc = stubViewport(el, 600)
+    const before = tickLefts(el)
+    expect(before.length, '600px 视口下已窗口化').toBeLessThan(LONG_TOTAL)
+    expect(ros.length, 'bind 时挂了 ResizeObserver').toBe(1)
+    expect(ros[0]!.observed, '观察 scroller').toContain(sc)
+    // 变宽到 1200（不派发 scroll、不改数据），仅由 ResizeObserver 触发窗口重算。
+    // 反证「无 RO」实现：窗口恒停在 600px 的 21 列（右缘 756 < 1200）→ 右缘露白
+    Object.defineProperty(sc, 'clientWidth', { value: 1200, configurable: true })
+    ros[0]!.cb([], {} as ResizeObserver)
+    const after = tickLefts(el)
+    expect(after.length, '列数随视口变宽增加').toBeGreaterThan(before.length)
+    const lastRight = after[after.length - 1]! + 36
+    expect(lastRight, '末刻度右缘覆盖新视口右缘（scrollLeft 0 + 1200）').toBeGreaterThanOrEqual(1200)
+    expect(after.length, '仍为窗口化（远少于全量）').toBeLessThan(LONG_TOTAL)
+  })
+
+  it('⑩ 隐藏/0 宽挂载回落全量；容器变宽 + ResizeObserver 回调 → 切回窗口（不再 1096 条）', () => {
+    const ros = installFakeRO()
+    const el = longMount()
+    const sc = scrollerOf(el)
+    // 挂载期不可测（happy-dom clientWidth 恒 0，等价 display:none 容器）→ 回落全量
+    el.requestUpdate()
+    expect(tickLefts(el).length, '不可测视口 → 全量渲染').toBe(LONG_TOTAL)
+    // 容器可见/变宽 → RO 触发 → 切换为窗口渲染（反证「无 RO」实现：永久停留 1096 条全量）
+    Object.defineProperty(sc, 'clientWidth', { value: 600, configurable: true })
+    ros[0]!.cb([], {} as ResizeObserver)
+    const ticks = tickLefts(el)
+    expect(ticks.length, 'RO 触发后切回窗口（不再全量）').toBeLessThan(LONG_TOTAL)
+    expect(ticks.length, '窗口内有刻度').toBeGreaterThan(0)
+  })
+
+  it('⑪ 横向滚动重渲染复用条节点：聚焦条在窗口滑动后仍在 DOM、焦点保持，事件/aria/data 不变', async () => {
+    const el = mount({
+      scale: 'day',
+      resources: JSON.stringify([{ id: 'r1', name: 'A' }]),
+      tasks: JSON.stringify([
+        { id: 'long', name: '三年', start: '2026-01-01', end: '2028-12-31', resources: ['r1'] },
+        { id: 'mid', name: '中', start: '2026-01-11', end: '2026-01-11', resources: ['r1'] },
+      ]),
+    })
+    const sc = stubViewport(el, 360)
+    const bar = barOf(el, 'mid', 'r1')
+    expect(bar, '目标条在窗口内').toBeTruthy()
+    bar.focus()
+    expect(shadowOf(el).activeElement, '前置：条已聚焦').toBe(bar)
+    const beforeFirstTick = tickLefts(el)[0]
+    // 横向滚动一屏（窗口确实平移，非空操作）
+    sc.scrollLeft = 360
+    sc.dispatchEvent(new Event('scroll'))
+    await flushRaf()
+    // 反证「整段重建」实现：renderLanes 无条件 innerHTML='' → bar 被替换、activeElement 掉回 body
+    expect(tickLefts(el)[0], '窗口已平移（确实重渲染了）').not.toBe(beforeFirstTick)
+    expect(bar.isConnected, '聚焦条节点未被重建（仍在 DOM）').toBe(true)
+    expect(barOf(el, 'mid', 'r1'), '仍是同一节点（复用而非重建）').toBe(bar)
+    expect(shadowOf(el).activeElement, '焦点不掉（activeElement 仍为该条）').toBe(bar)
+    // 复用路径下事件/几何/易读名称不退化
+    expect(bar.dataset['taskId']).toBe('mid')
+    expect(bar.dataset['resourceId']).toBe('r1')
+    expect(bar.getAttribute('aria-label') ?? '').toContain('中')
+    const clicks: string[] = []
+    el.addEventListener('oas-task-click', ((e: CustomEvent<{ id: string }>) => {
+      clicks.push(e.detail.id)
+    }) as EventListener)
+    bar.click()
+    expect(clicks, '复用条点击仍派发 oas-task-click').toEqual(['mid'])
+  })
+
+  it('⑫ 窗口滑动后无重复/泄漏条：窗口内条数 === 布局缓存相交数，key 互不重复且都能命中缓存', async () => {
+    const el = mount({
+      scale: 'day',
+      resources: JSON.stringify([{ id: 'r1', name: 'A' }]),
+      tasks: JSON.stringify([
+        { id: 't1', name: 'A', start: '2026-03-05', end: '2026-03-05', resources: ['r1'] },
+        { id: 't2', name: 'B', start: '2026-03-12', end: '2026-03-13', resources: ['r1'] },
+        { id: 't3', name: 'C', start: '2026-04-10', end: '2026-04-12', resources: ['r1'] },
+        { id: 't4', name: 'D', start: '2026-04-20', end: '2026-04-20', resources: ['r1'] },
+        { id: 't5', name: 'E', start: '2026-05-30', end: '2026-05-30', resources: ['r1'] },
+      ]),
+    })
+    const sc = stubViewport(el, 360)
+    sc.scrollLeft = 1296 // 对齐 2026-04-10（锚点 2026-03-05 后 36 天）
+    sc.dispatchEvent(new Event('scroll'))
+    await flushRaf()
+    const layout = internals(el).laneLayout.get('r1')!
+    const { left, right } = winRange(el)
+    const expected = layout.entries.filter((e) => !(e.xStart > right || e.xStart + e.w < left)).length
+    expect(expected, '窗口内有相交条（断言非平凡）').toBeGreaterThan(0)
+    expect(expected, '窗口外仍有被 cull 的条（断言非平凡）').toBeLessThan(layout.entries.length)
+    const bars = barsOf(el, 'r1')
+    expect(bars.length, '窗口内条数 === 缓存相交数').toBe(expected)
+    const keys = bars.map((b) => b.dataset['key'] ?? '')
+    expect(new Set(keys).size, 'key 无重复').toBe(keys.length)
+    const cacheKeys = new Set(layout.entries.map((e) => e.key))
+    expect(
+      keys.every((k) => cacheKeys.has(k)),
+      'DOM 条 key 都能命中缓存（无孤儿）',
+    ).toBe(true)
+  })
+
+  it('⑬ scroll 帧不重新分段：布局预计算只在 update() 跑（1500 重叠 span 亦不随全量增长）', async () => {
+    const TASK_N = 1500
+    const isoAt = (dayIndex: number): string => {
+      const d = new Date(Date.UTC(2026, 0, 1) + dayIndex * 86_400_000)
+      const p = (n: number): string => String(n).padStart(2, '0')
+      return `${d.getUTCFullYear()}-${p(d.getUTCMonth() + 1)}-${p(d.getUTCDate())}`
+    }
+    // 相邻两天任务互相重叠（跨度 2 天、起点逐日推进）→ 每资源 2 段、1500 条条几何
+    const tasks = Array.from({ length: TASK_N }, (_, i) => ({
+      id: `t${i}`,
+      name: `T${i}`,
+      start: isoAt(i),
+      end: isoAt(i + 1),
+      resources: ['r1'],
+    }))
+    const el = mount({
+      scale: 'day',
+      resources: JSON.stringify([{ id: 'r1', name: 'A' }]),
+      tasks: JSON.stringify(tasks),
+    })
+    const sc = stubViewport(el, 360)
+    const builds = internals(el).laneLayoutBuilds
+    expect(builds, 'update() 触发布局预计算').toBeGreaterThan(0)
+    for (let i = 1; i <= 5; i++) {
+      sc.scrollLeft = i * 360
+      sc.dispatchEvent(new Event('scroll'))
+      await flushRaf()
+    }
+    // 反证「scroll 帧重新 filter/sort/贪心」实现：每帧都会触发布局重算（builds 随帧递增）
+    expect(internals(el).laneLayoutBuilds, '滚动帧不触发布局重算/分段').toBe(builds)
+    expect(barsOf(el, 'r1').length, '窗口内条数有界（虚拟化生效）').toBeLessThan(100)
+  })
+
+  it('⑭ 负载超载档数随矩阵预算缓存（滚动帧不重算矩阵/不重做 reduce）+ scroller 禁用滚动锚定', async () => {
+    const el = mount({
+      scale: 'day',
+      resources: JSON.stringify([{ id: 'r1', name: 'A' }]),
+      tasks: JSON.stringify([
+        { id: 'a', name: 'A1', start: '2026-03-02', end: '2026-03-02', resources: ['r1'] },
+        { id: 'b', name: 'A2', start: '2026-03-02', end: '2026-03-02', resources: ['r1'] },
+        { id: 'c', name: 'B', start: '2026-12-31', end: '2026-12-31', resources: ['r1'] },
+      ]),
+    })
+    const sc = stubViewport(el, 360)
+    // overCount 缓存值正确（默认 capacity=1，2026-03-02 档 load=2 → 1 个超载档），a11y 名称照旧反映
+    const rows = internals(el).loadRows
+    expect(rows[0]!.overCount, '超载档数随矩阵预算').toBe(1)
+    const track = shadowOf(el).querySelector('.load .load-track')!
+    expect(track.getAttribute('aria-label') ?? '', 'a11y 名称仍读超载档数').toContain('超载')
+    // 滚动帧复用同一负载矩阵（不重算矩阵 → 不重做整条 loads 的 reduce）
+    const matrixBefore = internals(el).loadRows
+    sc.scrollLeft = 3600
+    sc.dispatchEvent(new Event('scroll'))
+    await flushRaf()
+    expect(internals(el).loadRows, '滚动帧不重建负载矩阵').toBe(matrixBefore)
+    // overflow-anchor: none（滚动期重建窗口内容会触发滚动锚定 → 滚轮增量被逐帧放大）
+    const css = shadowOf(el).querySelector('style')!.textContent ?? ''
+    const start = css.indexOf('.scroller {')
+    const block = css.slice(start, css.indexOf('}', start)).replace(/\s+/g, ' ')
+    expect(block, 'scroller 声明 overflow-anchor: none').toContain('overflow-anchor: none')
+  })
+
+  it('⑮ 断开连接 disconnect 旧观察器（防泄漏）；重连幂等重挂且尺寸变化仍生效', () => {
+    const ros = installFakeRO()
+    const el = longMount()
+    const sc = stubViewport(el, 600)
+    expect(ros.length).toBe(1)
+    document.body.removeChild(el)
+    expect(ros[0]!.disconnected, '断开连接 disconnect 旧观察器').toBeGreaterThanOrEqual(1)
+    // 重连：bind 幂等重挂新观察器（observe scroller）
+    document.body.appendChild(el)
+    expect(ros.length, '重连重挂新观察器').toBe(2)
+    expect(ros[1]!.observed, '新观察器观察 scroller').toContain(sc)
+    // 重连后尺寸变化仍驱动窗口重算（不因断连丢失观察）
+    const before = tickLefts(el).length
+    Object.defineProperty(sc, 'clientWidth', { value: 1200, configurable: true })
+    ros[1]!.cb([], {} as ResizeObserver)
+    expect(tickLefts(el).length, '重连后 RO 重算仍生效').toBeGreaterThan(before)
+  })
+
+  // ===== F1：窗口 cull 变为「窗口相关」而非「全量相关」 =====
+
+  /** 2026-01-01 起第 n 天的 ISO 日期（day 档一天一个 period） */
+  const isoDay = (n: number): string => {
+    const d = new Date(Date.UTC(2026, 0, 1) + n * 86_400_000)
+    const p = (v: number): string => String(v).padStart(2, '0')
+    return `${d.getUTCFullYear()}-${p(d.getUTCMonth() + 1)}-${p(d.getUTCDate())}`
+  }
+  /** 任意列宽下的窗口像素范围（既有 winRange 固定 day 档 colW=36，month 档需自算） */
+  const winRangeWith = (el: OASResource, colW: number): { left: number; right: number } => ({
+    left: internals(el).winColStart * colW - colW,
+    right: internals(el).winColEnd * colW + colW,
+  })
+  /** 朴素全量扫描（改造前 renderLanes 的口径）：相交条在 entries 中的下标，按 entries 原序 */
+  const naiveCull = (cache: LaneCache, left: number, right: number): number[] => {
+    const out: number[] = []
+    cache.entries.forEach((e, i) => {
+      if (!(e.xStart > right || e.xStart + e.w < left)) out.push(i)
+    })
+    return out
+  }
+  /** 断言 DOM 条与朴素全量扫描逐条一致（key 序列 + 每条 left/width 几何），返回朴素结果 */
+  const expectCullMatchesNaive = (el: OASResource, rid: string, colW: number): number[] => {
+    const cache = internals(el).laneLayout.get(rid)!
+    const { left, right } = winRangeWith(el, colW)
+    const expected = naiveCull(cache, left, right)
+    const bars = barsOf(el, rid)
+    expect(
+      bars.map((b) => b.dataset['key']),
+      `窗口 [${left},${right}] 条集合/顺序与朴素全量扫描一致`,
+    ).toEqual(expected.map((i) => cache.entries[i]!.key))
+    for (let k = 0; k < bars.length; k++) {
+      const e = cache.entries[expected[k]!]!
+      // happy-dom 把内联 px 值截到 6 位小数 → 用数值比较（5 位精度足够判定几何一致）
+      expect(Number.parseFloat(bars[k]!.style.width), '条宽与布局几何一致').toBeCloseTo(e.w, 4)
+      expect(Number.parseFloat(bars[k]!.style.left), '条左缘与布局几何一致（LTR）').toBeCloseTo(e.xStart, 4)
+    }
+    return expected
+  }
+  /** 滚到指定 scrollLeft 并冲刷渲染帧 */
+  const scrollTo = async (sc: HTMLElement, scrollLeft: number): Promise<void> => {
+    sc.scrollLeft = scrollLeft
+    sc.dispatchEvent(new Event('scroll'))
+    await flushRaf()
+  }
+
+  it('⑯ 结构等价①：day 档多窗口下「二分 + 段树下探」cull 与朴素全量扫描逐条一致（含跨窗口长条/贴边条）', async () => {
+    const tasks: Array<Record<string, unknown>> = [
+      { id: 'long', name: '跨整画布', start: '2026-01-01', end: '2028-12-31', resources: ['r1'] },
+    ]
+    for (let d = 0; d < 300; d++) {
+      tasks.push({ id: `d${d}`, name: `D${d}`, start: isoDay(d), end: isoDay(d), resources: ['r1'] })
+    }
+    const el = mount({
+      scale: 'day',
+      resources: JSON.stringify([{ id: 'r1', name: 'A' }]),
+      tasks: JSON.stringify(tasks),
+    })
+    const sc = stubViewport(el, 360)
+    const cache = internals(el).laneLayout.get('r1')!
+    expect(cache.entries.length, '全部条都在布局缓存里').toBe(tasks.length)
+    // 索引自检：order 按 xStart 升序（同值保原序）；段树根 == 全量 max(xEnd)
+    const maxEnd = Math.max(...cache.entries.map((e) => e.xStart + e.w))
+    expect(cache.order, 'order 按 xStart 升序且稳定').toEqual(
+      [...cache.order].sort((a, b) => cache.entries[a]!.xStart - cache.entries[b]!.xStart || a - b),
+    )
+    expect(cache.segTree, '段树已建').not.toBeNull()
+    expect(cache.segTree![1], '段树根 == 全量 max(xEnd)').toBe(maxEnd)
+    expect(cache.maxEnd).toBe(maxEnd)
+    expect(cache.minStart).toBe(Math.min(...cache.entries.map((e) => e.xStart)))
+
+    let longHits = 0
+    let onlyLong = 0
+    for (const sl of [0, 36, 36 * 97, 36 * 150, 36 * 299, 36 * 600, 36 * 1000]) {
+      await scrollTo(sc, sl)
+      const expected = expectCullMatchesNaive(el, 'r1', 36)
+      if (expected.some((i) => cache.entries[i]!.taskId === 'long')) longHits++
+      if (expected.length === 1) onlyLong++
+    }
+    expect(longHits, '跨窗口长条在每个窗口都命中（不丢条）').toBe(7)
+    expect(onlyLong, '确有「只剩长条」的窗口（短条已全部被 cull）').toBeGreaterThan(0)
+  })
+
+  it('⑰ 结构等价②：month 档被钳到 MIN_BAR_W 的条，多窗口下仍与朴素全量扫描逐条一致', async () => {
+    // 2026 年 month 档（12 列 × 110px）：单日条按比例内插 w ≈ 3.5 → 钳到 MIN_BAR_W = 8
+    const tasks: Array<Record<string, unknown>> = [
+      { id: 'long', name: '跨整画布', start: '2026-01-01', end: '2026-12-31', resources: ['r1'] },
+    ]
+    for (let d = 1; d <= 31; d++) {
+      const day = `2026-03-${String(d).padStart(2, '0')}`
+      tasks.push({ id: `m${d}`, name: `M${d}`, start: day, end: day, resources: ['r1'] })
+    }
+    const el = mount({
+      scale: 'month',
+      resources: JSON.stringify([{ id: 'r1', name: 'A' }]),
+      tasks: JSON.stringify(tasks),
+    })
+    const sc = stubViewport(el, 360)
+    const cache = internals(el).laneLayout.get('r1')!
+    expect(cache.entries.filter((e) => e.w === 8).length, '确有被钳到最小宽的条（断言非平凡）').toBeGreaterThan(0)
+    for (const sl of [0, 110, 110 * 2, 110 * 5, 10 ** 6]) {
+      await scrollTo(sc, sl)
+      expectCullMatchesNaive(el, 'r1', 110)
+    }
+  })
+
+  it('㉑ 随机化性质等价：200 个任意窗口位置下 cullLane 与朴素全量扫描逐条相同（含钳制/跨界/空集窗口）', () => {
+    // 确定性 LCG（不引依赖）：跨度 1..45 天的任务随机铺满三年 → 大量重叠段堆叠 + 长短混合
+    let seed = 20260101
+    const rnd = (): number => (seed = (seed * 1103515245 + 12345) % 2147483648) / 2147483648
+    const tasks: Array<Record<string, unknown>> = []
+    for (let i = 0; i < 400; i++) {
+      const s = Math.floor(rnd() * (LONG_TOTAL - 60))
+      const len = 1 + Math.floor(rnd() * 45)
+      tasks.push({ id: `r${i}`, name: `R${i}`, start: isoDay(s), end: isoDay(s + len - 1), resources: ['r1'] })
+    }
+    // 一条跨整画布长条：任意窗口都含跨界长条 → 每个窗口都应命中（漏条立刻暴露）
+    tasks.push({ id: 'span', name: '整窗', start: '2026-01-01', end: '2028-12-31', resources: ['r1'] })
+    const el = mount({
+      scale: 'day',
+      resources: JSON.stringify([{ id: 'r1', name: 'A' }]),
+      tasks: JSON.stringify(tasks),
+    })
+    // cullLane 只看画布坐标系、与视口无关，可直接喂任意像素窗口（无需滚动/建视口）
+    const cache = internals(el).laneLayout.get('r1')!
+    const view = el as unknown as { cullLane: (l: LaneCache, left: number, right: number) => number[] }
+    const canvasW = internals(el).canvasW
+    let hits = 0
+    for (let w = 0; w < 200; w++) {
+      const left = Math.floor(rnd() * (canvasW + 200)) - 100
+      const right = left + Math.floor(rnd() * 900)
+      const got = view.cullLane(cache, left, right)
+      expect(got, `窗口 [${left},${right}] 条集合/顺序与朴素全量扫描一致`).toEqual(naiveCull(cache, left, right))
+      expect(new Set(got).size, '无重复下标').toBe(got.length)
+      expect(got, '升序（entries 原序）').toEqual([...got].sort((a, b) => a - b))
+      if (got.length > 0) hits++
+    }
+    expect(hits, '每个窗口都命中跨窗长条（无漏条窗口）').toBe(200)
+  })
+
+  it('⑱ 帧成本不随总量线性：单资源 5000 条铺满三年画布，窗口内条数有界且候选访问数 << 总条数', async () => {
+    const N = 5000
+    const tasks = Array.from({ length: N }, (_, i) => {
+      const day = i % LONG_TOTAL
+      return { id: `t${i}`, name: `T${i}`, start: isoDay(day), end: isoDay(day), resources: ['r1'] }
+    })
+    const el = mount({
+      scale: 'day',
+      resources: JSON.stringify([{ id: 'r1', name: 'A' }]),
+      tasks: JSON.stringify(tasks),
+    })
+    const sc = stubViewport(el, 360)
+    const cache = internals(el).laneLayout.get('r1')!
+    expect(cache.entries.length, '全量条都在缓存').toBe(N)
+    // 反证「全量扫描」实现：每次窗口帧都遍历 5000 条 → laneCullVisits ≈ 5000，本组断言必红
+    const visitLog: number[] = []
+    for (const sl of [0, 3600, 36 * 500, 36 * 900]) {
+      await scrollTo(sc, sl)
+      const bars = barsOf(el, 'r1')
+      expect(bars.length, '窗口内条数有界（虚拟化生效）').toBeGreaterThan(0)
+      expect(bars.length, '窗口内条数远小于总条数').toBeLessThan(200)
+      const visits = internals(el).laneCullVisits
+      expect(visits, '候选访问数有界（不随 5000 条线性增长）').toBeLessThan(400)
+      expect(visits, '候选访问数远小于总条数').toBeLessThan(N / 10)
+      visitLog.push(visits)
+      expectCullMatchesNaive(el, 'r1', 36)
+    }
+    expect(visitLog.length, '逐窗口都取到访问计数（非恒真断言）').toBe(4)
+    expect(Math.max(...visitLog), '任一窗口的访问数都远小于总条数').toBeLessThan(N / 10)
+  })
+
+  it('⑲ 反向毒化回归：远端长条 + 5000 条窗口左外侧短条，候选访问数仍有界（前缀最大回扫实现会退化为全量）', async () => {
+    const SHORT = 5000
+    const tasks: Array<Record<string, unknown>> = [
+      { id: 'long', name: '三年', start: '2026-01-01', end: '2028-12-31', resources: ['r1'] },
+    ]
+    // 短条全落在前 250 天（每天 20 条 → 段数有界、贪心分段仍是 O(n·segs)）。
+    // 窗口滚到约第 900 天时它们整体位于 winLeft 左侧且与窗口不相交——正是「前缀最大被长条毒化」的反例。
+    for (let i = 0; i < SHORT; i++) {
+      const day = Math.floor(i / 20)
+      tasks.push({ id: `s${i}`, name: `S${i}`, start: isoDay(day), end: isoDay(day), resources: ['r1'] })
+    }
+    const el = mount({
+      scale: 'day',
+      resources: JSON.stringify([{ id: 'r1', name: 'A' }]),
+      tasks: JSON.stringify(tasks),
+    })
+    const sc = stubViewport(el, 360)
+    const cache = internals(el).laneLayout.get('r1')!
+    expect(cache.entries.length, '总量 5001 条（断言非平凡）').toBe(SHORT + 1)
+    await scrollTo(sc, 36 * 900)
+    expect(
+      barsOf(el, 'r1').map((b) => b.dataset['taskId']),
+      '仅跨窗口长条命中（短条全部被 cull）',
+    ).toEqual(['long'])
+    expect(expectCullMatchesNaive(el, 'r1', 36), '与朴素口径一致：窗口内仅 1 条').toHaveLength(1)
+    const visits = internals(el).laneCullVisits
+    expect(visits, '候选访问数有界（不随 5001 条线性增长）').toBeLessThan(200)
+    expect(visits, '候选访问数远小于总条数').toBeLessThan(cache.entries.length / 10)
+    // 反证：换成「xEnd 前缀最大 + 自 hi−1 回扫」实现时，跨窗长条令全部前缀 max ≥ winLeft，
+    // 回扫走满 5001 条 → 上面两条断言变红（实测该写法 visits = 5001，本实现 = 30）
+  })
+
+  it('⑳ 边界：首窗 winLeft≤0 / 末窗 winRight≥canvasW / 空 entries / 单条跨整窗', async () => {
+    // 单条跨整窗：任意窗口都恰好命中 1 条，访问数只随 log n
+    const solo = mount({
+      scale: 'day',
+      resources: JSON.stringify([{ id: 'r1', name: 'A' }]),
+      tasks: JSON.stringify([{ id: 'one', name: '整窗', start: '2026-01-01', end: '2028-12-31', resources: ['r1'] }]),
+    })
+    const soloSc = stubViewport(solo, 360)
+    for (const sl of [0, 36 * 400, 10 ** 6]) {
+      await scrollTo(soloSc, sl)
+      expect(expectCullMatchesNaive(solo, 'r1', 36), '单条跨整窗恒命中').toEqual([0])
+      expect(internals(solo).laneCullVisits, '单条时访问数极小（O(log n)）').toBeLessThan(16)
+    }
+
+    // 首窗（winLeft = −colW ≤ 0）：贴画布左缘的条不丢
+    const el = mount({
+      scale: 'day',
+      resources: JSON.stringify([{ id: 'r1', name: 'A' }]),
+      tasks: JSON.stringify([
+        { id: 'head', name: '头', start: '2026-01-01', end: '2026-01-02', resources: ['r1'] },
+        { id: 'far', name: '远', start: '2028-12-01', end: '2028-12-02', resources: ['r1'] },
+      ]),
+    })
+    const sc = stubViewport(el, 360)
+    const firstWindow = winRangeWith(el, 36)
+    expect(firstWindow.left, '首窗 winLeft ≤ 0').toBeLessThanOrEqual(0)
+    expect(expectCullMatchesNaive(el, 'r1', 36), '首窗含贴左缘条且远端条被 cull').toEqual([0])
+
+    // 末窗：scrollLeft 超界被夹到末尾 → winRight ≥ canvasW，远端条不丢
+    await scrollTo(sc, 10 ** 6)
+    expect(winRangeWith(el, 36).right, '末窗 winRight ≥ canvasW').toBeGreaterThanOrEqual(internals(el).canvasW)
+    expect(expectCullMatchesNaive(el, 'r1', 36), '末窗命中末端条').toHaveLength(1)
+
+    // 空 entries：无任务资源泳道 / 完全无任务都不崩、零访问
+    const empty = mount({
+      scale: 'day',
+      resources: JSON.stringify([
+        { id: 'r1', name: 'A' },
+        { id: 'r2', name: 'B' },
+      ]),
+      tasks: '[]',
+    })
+    expect(shadowOf(empty).querySelectorAll('.bar').length, '无任务 → 无条').toBe(0)
+    expect(internals(empty).laneCullVisits, '空 entries 不产生候选访问').toBe(0)
+
+    const partial = mount({
+      scale: 'day',
+      resources: JSON.stringify([
+        { id: 'r1', name: 'A' },
+        { id: 'r2', name: 'B' },
+      ]),
+      tasks: JSON.stringify([{ id: 't', name: 'T', start: '2026-01-01', end: '2026-01-02', resources: ['r1'] }]),
+    })
+    stubViewport(partial, 360)
+    expect(barsOf(partial, 'r2').length, '无任务资源泳道无条（空 entries 不崩）').toBe(0)
+    expect(expectCullMatchesNaive(partial, 'r2', 36), '空泳道朴素口径同为空').toEqual([])
   })
 })

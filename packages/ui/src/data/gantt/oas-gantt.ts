@@ -24,6 +24,10 @@ const STYLE = `
 .gantt {
   display: flex;
   align-items: stretch;
+  /* height 属性由 update() 映射为宿主自定义属性 --oas-gantt-height（写宿主自定义属性而非 height 内联，
+     组件从不触碰宿主 height 内联）。高度挂在**内部画布（.gantt）**上：宿主自身 height 内联只框定外盒，
+     内部画布高度仍由本规则（token / height 属性）决定，不会被宿主内联 height 拉伸；整体调高请改用
+     height 属性或 --oas-gantt-height */
   height: var(--oas-gantt-height, 320px);
   border: 1px solid var(--oas-color-border);
   border-radius: var(--oas-radius-md);
@@ -293,7 +297,8 @@ svg.links .link-hit:focus-visible + .link {
 .head-minor .unit {
   border-inline-start: 1px solid var(--oas-gantt-grid-line-color, var(--oas-color-border));
 }
-.head-minor .unit:first-child {
+/* 轴首格（全局第 0 列）不画左缘线；窗口切片后首个渲染格可能是轴中段，按类名而非 :first-child 判定 */
+.head-minor .unit.axis-start {
   border-inline-start: none;
 }
 .tbody {
@@ -301,6 +306,8 @@ svg.links .link-hit:focus-visible + .link {
   overflow: auto;
   position: relative;
   overscroll-behavior: contain;
+  /* 窗口滚动期重建 DOM 会触发 Chrome 滚动锚定，把滚轮增量逐帧放大成加速循环（同 oas-virtual-list .viewport） */
+  overflow-anchor: none;
 }
 .inner {
   position: relative;
@@ -732,6 +739,32 @@ interface TimeUnit {
   minor: string
 }
 
+/** 主刻度合并组（列区间 [startCol, endCol) 共用同一 major 标签） */
+interface GanttMajorGroup {
+  startCol: number
+  endCol: number
+  label: string
+}
+
+/**
+ * 主刻度相邻同标签分组（纯函数）：buildUnits 时对**全列**预计算一次，renderHeader 的窗口切片
+ * 只做二分定位 + 相交子集输出——旧实现逐帧对全列做相邻合并扫描，长跨度横向滚动每帧 O(总列数)；
+ * 分组语义与旧「逐帧全量相邻合并」完全一致（产物逐格一致，见 oas-gantt.test.ts 回归）。
+ */
+function buildMajorGroups(units: TimeUnit[]): GanttMajorGroup[] {
+  const groups: GanttMajorGroup[] = []
+  const n = units.length
+  let i = 0
+  while (i < n) {
+    let j = i
+    const label = units[i]!.major
+    while (j + 1 < n && units[j + 1]!.major === label) j++
+    groups.push({ startCol: i, endCol: j + 1, label })
+    i = j + 1
+  }
+  return groups
+}
+
 type DragMode = 'move' | 'resize-start' | 'resize-end' | 'progress'
 
 interface DragCtx {
@@ -1074,6 +1107,8 @@ export class OASGantt extends OASElement {
   /** 展开集合：null = 未受控（数据 expanded 初始化）；expanded 属性出现后受控 */
   private expanded: Set<string> | null = null
   private units: TimeUnit[] = []
+  /** 主刻度合并组（buildMajorGroups 产物，与 units 同生命周期重建）：renderHeader 窗口切片数据源 */
+  private majorGroups: GanttMajorGroup[] = []
   private rows: GanttRow[] = []
   private canvasW = 0
   private lastScale = ''
@@ -1085,6 +1120,14 @@ export class OASGantt extends OASElement {
   private warnedRescheduleCycle = false
   /** 工作日日历缓存（key = workdays + holidays 原文；属性变化即重建） */
   private workCalCache: { key: string; days: Set<number> | null; holidays: Set<string> } | null = null
+  /** holidays 属性解析缓存（key = 属性原文）：renderGrid 每帧读取，不落缓存会在滚动帧内反复 JSON.parse；属性原文变化即失效，语义与逐次解析一致 */
+  private holidayCache: { raw: string; set: Set<string> } | null = null
+  /**
+   * 辅刻度抽稀可见集缓存（units 引用 + scale + colW 为键）：抽稀决策依赖**全列**标签估宽
+   * （如 week 档 W1..W53 宽度不均，窗口切片可能不含最宽标签），先锁全列决策、窗口只取段——
+   * 与逐帧全量计算逐像素一致；横向滚动每帧重渲染表头时免去全列 map + 估宽扫描
+   */
+  private visibleMinorCache: { units: TimeUnit[]; scale: GanttScale; colW: number; set: Set<number> } | null = null
   /** 关键路径任务 id 集合（show-critical-path 开启时计算；关闭为空集，渲染零影响） */
   private criticalIds = new Set<string>()
   private conflictIds = new Set<string>()
@@ -1092,6 +1135,17 @@ export class OASGantt extends OASElement {
   private expandedSetCache: Set<string> | null = null
   /** 自适应列宽（px）：视口可用宽度内铺下整个窗口时收窄至恰好适配；null = 回落各档基准列宽（无布局环境） */
   private displayColW: number | null = null
+  /** 上次 onViewportResize 读到的视口宽：列窗口重算的判据之一（长跨度下列宽被钳位不变，但视口可变宽） */
+  private lastViewportW = -1
+  /** 上次 onViewportResize 读到的视口高：行窗口重算的判据之一（容器变高须补行窗口，否则底部露白到滚动才补） */
+  private lastViewportH = -1
+  /**
+   * 本实例是否写过 `--oas-gantt-height`（height 属性在场期间由组件接管该自定义属性；与 oas-resource 同协议）。
+   * 仅布尔「是否写过」：从未写过（宿主自己内联设 token、无 height 属性）→ 组件绝不动它；
+   * 写过又随属性移除 → removeProperty 归零（DSD 快照自写值同样只可能来自「属性当时在场」，移除后必清）。
+   * 非法值（属性在场但非 >0 纯数字 / Npx）：不写变量、仅清本实例自写值，宿主 token 不受影响。
+   */
+  private heightApplied = false
   private resizeObs: ResizeObserver | null = null
   private dragCtx: DragCtx | null = null
   private reparentCtx: { id: string; byId: Map<string, TG> } | null = null
@@ -1151,6 +1205,13 @@ export class OASGantt extends OASElement {
   private emptyEl: HTMLElement | null = null
   private winStart = 0
   private winEnd = 0
+  /** 横向列窗口 [winColStart, winColEnd)（时间轴列虚拟化，全局列索引；由 computeColWindow 维护） */
+  private winColStart = 0
+  private winColEnd = 0
+  /** onScroll 窗口重建合帧句柄（rAF 节流：同一帧内多次 scroll 只重建一次窗口） */
+  private scrollRaf = 0
+  /** 合帧重建后是否需 reconcile 拖拽（该帧内至少一次自动滚动触发的 scroll） */
+  private scrollRafReconcile = false
 
   /**
    * @apiProperty 甘特任务（公开读/写通道）：读为数组拷贝（含自动分配的 id，嵌套输入已拍平为
@@ -1215,7 +1276,11 @@ export class OASGantt extends OASElement {
 
   /** 滚动到指定日期（水平居中）；非法日期忽略。RTL 走真实浏览器 scrollLeft 负值模型
    *  （0 在画布最右、向左滚为负；-maxScroll 为最左）——LTR 正值公式在 RTL 下会把视口
-   *  钉在画布左端（与时间轴镜像方向相反），目标永远落不在视口内 */
+   *  钉在画布左端（与时间轴镜像方向相反），目标永远落不在视口内。
+   *  末尾同步 renderWindow() + syncHeaderOffset()：命令式滚动（含 scrollToToday）返回即已
+   *  渲染目标列窗口**且表头偏移已同步**，不等异步 scroll → rAF 合帧（与 oas-resource 同口径，
+   *  消 1 帧滞后）——表头 transform 只在 onScroll 里更新，漏同步会错位一帧（错位量 = 整段
+   *  滚动位移）；用户滚动路径仍走 onScroll 的 rAF 合帧（同帧多次滚动只重建一次，不因本改动退化） */
   scrollToDate(date: string): void {
     const d = parseTaskDate(date)
     if (!d || !this.tbody) return
@@ -1229,6 +1294,8 @@ export class OASGantt extends OASElement {
     } else {
       this.tbody.scrollLeft = Math.max(0, p - half)
     }
+    this.renderWindow()
+    this.syncHeaderOffset()
   }
 
   /** 滚动到今天 */
@@ -1360,7 +1427,14 @@ export class OASGantt extends OASElement {
     this.displayColW = Math.min(base, Math.max(SCALE_MIN_COL[scale], fit))
   }
 
-  /** 视口尺寸变化（含首次观测到真实宽）：仅当自适应列宽实际改变时重排，避免无谓重建 */
+  /**
+   * 视口尺寸变化（含首次观测到真实宽/高）：列窗口重算不得只依赖自适应列宽变化——
+   * 长跨度下 displayColW 被钳在 SCALE_MIN_COL 不动，容器变宽时列宽不变但视口变宽，
+   * 只比较列宽会早退跳过 computeColWindow/表头重切片 → 时间轴右侧露白。
+   * 容器变高同理：行窗口由视口高决定，只比较宽度会早退跳过 renderWindow → 底部露白
+   * 直到滚动才补。改比较「视口宽 + 视口高 + displayColW」三快照，任一变化才重排重渲染
+   * （RO 抖动下宽高均不变时仍零成本早退）。
+   */
   private onViewportResize(): void {
     if (!this.tbody) return
     // 列宽重排会重建 bars 层：进行中的拖拽先终止（否则 ctx.bar 悬在脱离 DOM 的旧节点上，
@@ -1368,11 +1442,18 @@ export class OASGantt extends OASElement {
     if (this.dragCtx) this.cancelDrag()
     this.cancelReparent()
     this.cancelLink()
-    const before = this.displayColW
+    const w = this.tbody.clientWidth
+    const h = this.tbody.clientHeight
+    const beforeW = this.lastViewportW
+    const beforeH = this.lastViewportH
+    const beforeColW = this.displayColW
+    this.lastViewportW = w
+    this.lastViewportH = h
     this.computeColW()
-    if (this.displayColW === before) return
+    if (w === beforeW && h === beforeH && this.displayColW === beforeColW) return
     this.canvasW = this.units.length * this.colW()
     if (this.innerEl) this.innerEl.style.width = `${this.canvasW}px`
+    this.computeColWindow()
     this.renderHeader()
     this.renderWindow()
   }
@@ -1382,9 +1463,24 @@ export class OASGantt extends OASElement {
     return Number.isFinite(n) && n >= 20 ? n : 36
   }
 
+  /** height 属性原值：空串 / 纯空白（SFC 空绑定）视为**未设置** → null；其余返回 trim 后原值 */
+  private heightAttrValue(): string | null {
+    if (!this.hasAttr('height')) return null
+    const raw = this.getAttr('height', '').trim()
+    return raw === '' ? null : raw
+  }
+
+  /** height 像素值：接受纯数字或带 `px` 后缀；非法 / 缺失回落 320（= --oas-gantt-height token 缺省）。
+   *  getAttr('height','320') 字面量同时是 api:scan 的 attr 默认值提取锚点，勿移除；
+   *  viewportH() 在无布局环境（happy-dom）靠本兜底，fallback 语义保留 */
   private heightPx(): number {
-    const n = Number(this.getAttr('height', '320'))
-    return Number.isFinite(n) && n > 0 ? n : 320
+    const raw = this.heightAttrValue()
+    if (raw != null) {
+      const n = Number(raw.replace(/px$/i, '').trim())
+      if (Number.isFinite(n) && n > 0) return n
+    }
+    const fallback = Number(this.getAttr('height', '320').replace(/px$/i, '').trim())
+    return Number.isFinite(fallback) && fallback > 0 ? fallback : 320
   }
 
   /** 条旁标签位置：缺省 none——行名列已承载名称，条旁再渲染同名文本属重复信息 */
@@ -1427,15 +1523,24 @@ export class OASGantt extends OASElement {
     return this.getAttr('weekends', '') !== 'false'
   }
 
+  /** 假日集合（按属性原文缓存；调用方只读不写——isWorkingDay/renderGrid/workCalendar 均只查询） */
   private holidaySet(): Set<string> {
     const raw = this.getAttr('holidays', '')
-    if (!raw) return new Set()
-    try {
-      const parsed: unknown = JSON.parse(raw)
-      return new Set(Array.isArray(parsed) ? parsed.filter((x): x is string => typeof x === 'string') : [])
-    } catch {
-      return new Set()
+    const cached = this.holidayCache
+    if (cached && cached.raw === raw) return cached.set
+    let set: Set<string>
+    if (!raw) {
+      set = new Set()
+    } else {
+      try {
+        const parsed: unknown = JSON.parse(raw)
+        set = new Set(Array.isArray(parsed) ? parsed.filter((x): x is string => typeof x === 'string') : [])
+      } catch {
+        set = new Set()
+      }
     }
+    this.holidayCache = { raw, set }
+    return set
   }
 
   /**
@@ -1574,6 +1679,7 @@ export class OASGantt extends OASElement {
       cursor = next
     }
     this.units = units
+    this.majorGroups = buildMajorGroups(units)
     this.canvasW = units.length * this.colW()
   }
 
@@ -1864,6 +1970,11 @@ export class OASGantt extends OASElement {
       this.resizeObs?.disconnect()
       this.resizeObs = null
       this.dragCtx = null
+      if (this.scrollRaf) {
+        cancelAnimationFrame(this.scrollRaf)
+        this.scrollRaf = 0
+      }
+      this.scrollRafReconcile = false
       this.cancelReparent()
       this.cancelLink()
       this.cancelMarquee()
@@ -1891,11 +2002,24 @@ export class OASGantt extends OASElement {
       this.cancelLink()
       this.cancelMarquee()
     }
+    // 表头平移 / 侧列纵向同步 / tooltip 隐藏保持同步时机（不依赖窗口重建）
     this.syncHeaderOffset()
     if (this.sideBody) this.sideBody.scrollTop = this.tbody.scrollTop
     this.hideTooltip()
+    // 窗口重建 rAF 合帧：同一帧内多次 scroll 只跑一次 renderWindow（回调内读最新 scroll 位置，
+    // 中间帧的滚动位置不会丢）。自动滚动帧内至少一次 auto scroll → 重建后需 reconcile 重锚拖拽
+    if (auto) this.scrollRafReconcile = true
+    if (!this.scrollRaf) this.scrollRaf = requestAnimationFrame(this.flushScrollWindow)
+  }
+
+  /** onScroll 的合帧下半段：窗口重建 + （自动滚动帧）拖拽重锚——等价于原 onScroll 的同步顺序 */
+  private flushScrollWindow = (): void => {
+    this.scrollRaf = 0
+    const reconcile = this.scrollRafReconcile
+    this.scrollRafReconcile = false
+    if (!this.tbody) return
     this.renderWindow()
-    if (auto) this.reconcileDrag()
+    if (reconcile) this.reconcileDrag()
   }
 
   /**
@@ -2042,6 +2166,27 @@ export class OASGantt extends OASElement {
     this.syncTasks()
     const prunedSel = this.pruneStateToTasks()
     this.syncExpanded()
+    // 高度协议（与 oas-resource 同协议）：height 属性在场且为合法长度（纯数字 / Npx，>0）时，
+    // 把高度写进**组件自有自定义属性** --oas-gantt-height（.gantt 规则高度即 var(--oas-gantt-height, 320px)）。
+    // 属性为空串/空白/未提供/被移除/非法时：**只有本实例此前写过**（heightApplied）才 removeProperty
+    // 归零——移除后回落 token 缺省 320 或宿主 CSS，DSD 快照自写值不残留；
+    // 从未写过时绝不动宿主自己内联设的 --oas-gantt-height（① token 通道：宿主内联 token 生效）。
+    // 关键：组件**从不触碰宿主自身的 height 内联**——宿主内联 height 优先级更高，天然优先。
+    const heightRaw = this.heightAttrValue()
+    if (heightRaw != null) {
+      const n = Number(heightRaw.replace(/px$/i, '').trim())
+      if (Number.isFinite(n) && n > 0) {
+        this.style.setProperty('--oas-gantt-height', `${n}px`)
+        this.heightApplied = true
+      } else if (this.heightApplied) {
+        // 非法值 → 清除自写值回落（token 缺省 320 / 宿主 CSS 优先）
+        this.style.removeProperty('--oas-gantt-height')
+        this.heightApplied = false
+      }
+    } else if (this.heightApplied) {
+      this.style.removeProperty('--oas-gantt-height')
+      this.heightApplied = false
+    }
     this.toggleAttribute('data-rtl', isRtl(this))
     this.buildRows()
     // 摘要行带 constraint 无意义（日期派生）→ 告警一次
@@ -2091,6 +2236,8 @@ export class OASGantt extends OASElement {
     if (this.tbody) this.tbody.style.visibility = isEmpty ? 'hidden' : ''
     const sideLabel = this.shadow.querySelector('.side-rows')
     if (sideLabel) sideLabel.setAttribute('aria-label', this.t('gantt.listLabel'))
+    // 列窗口先于表头切片计算（表头/网格都按窗口渲染；renderWindow 内会再算一次，幂等）
+    this.computeColWindow()
     this.renderHeader()
     this.renderWindow()
     this.renderToday()
@@ -2123,7 +2270,12 @@ export class OASGantt extends OASElement {
     return prunedSel
   }
 
-  /** 双层刻度表头（上层主刻度相邻同标签合并 + 下层辅刻度逐格） */
+  /**
+   * 双层刻度表头（上层主刻度相邻同标签合并 + 下层辅刻度逐格）。
+   * 横向列虚拟化：只渲染 [winColStart, winColEnd) 窗口内的格——主刻度保留「与窗口相交」的组
+   * （组跨 [gStart,gEnd)，相交判据 gStart < winColEnd && gEnd > winColStart）；
+   * left/width 仍按全局列索引写（表头容器经 syncHeaderOffset 整体平移，平移基准不变）。
+   */
   private renderHeader(): void {
     const major = this.shadow.querySelector('.head-major')
     const minor = this.shadow.querySelector('.head-minor')
@@ -2133,23 +2285,52 @@ export class OASGantt extends OASElement {
     minor.innerHTML = ''
     const frag1 = document.createDocumentFragment()
     const frag2 = document.createDocumentFragment()
-    let i = 0
-    while (i < this.units.length) {
-      let j = i
-      while (j + 1 < this.units.length && this.units[j + 1]!.major === this.units[i]!.major) j++
+    const from = this.winColStart
+    const to = this.winColEnd
+    // 主刻度取预计算分组（buildUnits 时点，见 buildMajorGroups）：组有序不相交 → endCol 单调递增，
+    // 二分定位首个与窗口相交的组（endCol > from），顺序输出直到 startCol >= to——
+    // 相交判据与旧全列扫描逐格一致（startCol < to && endCol > from），每帧成本
+    // O(log 组数 + 窗口内组数)，不再随总列数线性（1M 列目标：10 年 day 档滚动帧不再扫 3658 列）
+    const groups = this.majorGroups
+    let lo = 0
+    let hi = groups.length
+    while (lo < hi) {
+      const mid = (lo + hi) >> 1
+      if (groups[mid]!.endCol > from) hi = mid
+      else lo = mid + 1
+    }
+    for (let g = lo; g < groups.length; g++) {
+      const grp = groups[g]!
+      if (grp.startCol >= to) break
       const cell = document.createElement('div')
       cell.className = 'unit'
-      cell.textContent = this.units[i]!.major
-      cell.style.left = `${this.mirrorCellLeft(i * colW, (j - i + 1) * colW)}px`
-      cell.style.width = `${(j - i + 1) * colW}px`
+      cell.textContent = grp.label
+      cell.style.left = `${this.mirrorCellLeft(grp.startCol * colW, (grp.endCol - grp.startCol) * colW)}px`
+      cell.style.width = `${(grp.endCol - grp.startCol) * colW}px`
       frag1.appendChild(cell)
-      i = j + 1
     }
     // 辅刻度抽稀：列宽不足以容纳标签 + 间隙时按 N 取一显示（保留全部格线，只隐藏文本），
-    // 防止窄容器下双位日号/月号首尾相接成一团
-    const labels = this.units.map((u) => u.minor)
-    const visible = new Set(pickVisibleLabels(labels, colW, SCALE_STRIDES[this.scale()]))
-    for (let k = 0; k < this.units.length; k++) {
+    // 防止窄容器下双位日号/月号首尾相接成一团。决策按全列标签计算并缓存（见 visibleMinorCache），
+    // 窗口内逐格查集——与旧实现逐帧全量计算产物完全一致
+    const scale = this.scale()
+    let cache = this.visibleMinorCache
+    if (!cache || cache.units !== this.units || cache.scale !== scale || cache.colW !== colW) {
+      cache = {
+        units: this.units,
+        scale,
+        colW,
+        set: new Set(
+          pickVisibleLabels(
+            this.units.map((u) => u.minor),
+            colW,
+            SCALE_STRIDES[scale],
+          ),
+        ),
+      }
+      this.visibleMinorCache = cache
+    }
+    const visible = cache.set
+    for (let k = from; k < to; k++) {
       const cell = document.createElement('div')
       cell.className = 'unit'
       if (visible.has(k)) {
@@ -2157,6 +2338,8 @@ export class OASGantt extends OASElement {
       } else {
         cell.classList.add('blank')
       }
+      // 轴首格不画左缘线（窗口切片后首个渲染格可能是轴中段 → 按全局索引判定，不能用 :first-child）
+      if (k === 0) cell.classList.add('axis-start')
       cell.style.left = `${this.mirrorCellLeft(k * colW, colW)}px`
       cell.style.width = `${colW}px`
       frag2.appendChild(cell)
@@ -2165,7 +2348,7 @@ export class OASGantt extends OASElement {
     minor.appendChild(frag2)
   }
 
-  /** 虚拟窗口：只渲染可视行（+buffer）——名称列、任务条、依赖连线、背景列全部窗口化 */
+  /** 虚拟窗口：只渲染可视行（+buffer）与可视列（+buffer）——名称列、任务条、依赖连线、背景列/表头全部窗口化 */
   private renderWindow(): void {
     if (!this.tbody || !this.innerEl) return
     const rowH = this.rowHeight()
@@ -2173,6 +2356,11 @@ export class OASGantt extends OASElement {
     const win = computeVirtualWindow(this.tbody.scrollTop, this.viewportH(), rowH, count, 6)
     this.winStart = win.start
     this.winEnd = win.end
+    // 列窗口变化（横向滚动/视口宽变）→ 表头按新窗口重切片；纵向滚动窗口不变则跳过重建
+    const prevColStart = this.winColStart
+    const prevColEnd = this.winColEnd
+    this.computeColWindow()
+    if (this.winColStart !== prevColStart || this.winColEnd !== prevColEnd) this.renderHeader()
     this.renderSideRows()
     this.renderBars()
     this.renderGrid()
@@ -2183,6 +2371,28 @@ export class OASGantt extends OASElement {
   private viewportH(): number {
     // happy-dom 无布局：clientHeight 为 0 时回落 height 属性值
     return this.tbody && this.tbody.clientHeight > 10 ? this.tbody.clientHeight : this.heightPx()
+  }
+
+  private viewportW(): number {
+    // happy-dom 无布局：clientWidth 为 0 时回落画布全宽（窗口覆盖全部列，无测量环境行为不变）
+    return this.tbody && this.tbody.clientWidth > 10 ? this.tbody.clientWidth : this.canvasW
+  }
+
+  /**
+   * 横向列窗口：复用 computeVirtualWindow（轴无关），按 scrollLeft/clientWidth/列宽切窗口。
+   * RTL 下 scrollLeft 为负值模型（0 在画布最右、向左滚为负），取绝对值后与 LTR 的
+   * 「距画布起点距离」同构 → 同一窗口数学。
+   */
+  private computeColWindow(): void {
+    const win = computeVirtualWindow(
+      Math.abs(this.tbody?.scrollLeft ?? 0),
+      this.viewportW(),
+      this.colW(),
+      this.units.length,
+      4,
+    )
+    this.winColStart = win.start
+    this.winColEnd = win.end
   }
 
   /** 左列名称树（窗口行） */
@@ -4608,7 +4818,9 @@ export class OASGantt extends OASElement {
     const holidays = this.holidaySet()
     const weekends = this.weekendsOn()
     const frag = document.createDocumentFragment()
-    for (const u of this.units) {
+    // 横向列虚拟化：周末/假日格只渲染窗口列（left 仍按全局 x 写，滚动由容器原生位移承载）
+    for (let k = this.winColStart; k < this.winColEnd; k++) {
+      const u = this.units[k]!
       const d = new Date(u.startMs)
       const iso = toISODate(d)
       const isHoliday = holidays.has(iso)

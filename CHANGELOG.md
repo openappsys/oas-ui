@@ -29,10 +29,16 @@
 - **任务管理增强**：`auto-schedule`（布尔，默认关）依赖联动排程——日期变更或依赖增改后按 FS/SS/FF/SF 沿依赖图对后继做最小前推（只推迟、保持工期、多前置取最靠后、跳过 disabled 与摘要、成环跳过并 `devWarn`），派发 `oas-reschedule { ids }`；框选多任务（左侧列表行带 / 时间轴条相交，`Ctrl`/`Cmd` 追加，只读可用）；`creatable` 下时间轴空白拖出区间建任务；`Esc` 取消框选/建任务手势。
 - **排程深化**：依赖 `lag/lead`（`GanttDependency.lag` 天、可负，并入 `auto-schedule` 四型约束）；关键路径（`show-critical-path` 默认关，以当前排期为基准反向推最晚时间算总时差，零时差任务加 `.critical` 高亮，颜色走 `--oas-gantt-critical-color`）；i18n ×10 新增 `gantt.lagSuffix` / `gantt.leadSuffix`。另：负总时差（违约）标 `.conflict`（虚线描边，`--oas-gantt-conflict-color`）；连线非 0 lag 渲染可见标签；文档新增「宿主集成配方」段（撤销重做 / 编辑弹窗 demo / 导出 demo）。
 - **排程约束与工作日日历**：任务约束 `GanttTask.constraint`（`asap`/`snet`/`mso`/`fnlt`）+ `constraintDate`（auto-schedule 生效：snet 下限 / mso 固定 / fnlt 软截止；约束违反在 `show-critical-path` 或 `auto-schedule` 开启时标 `.conflict`（日精度约束按日历日比较；mso 与依赖冲突标在 mso 自身；摘要约束忽略并告警））；工作日日历 `workdays`（JSON 周几，opt-in）+ `holidays`（假日恒为非工作日），前推落点吸附下一工作日。工程修正：`updateDependency` lag 归零删键；依赖图 SCC 分解——仅环内节点让位（排程与关键路径均只跳过环内），关键路径改拓扑序 O(V+E)；示例补 lag 数据。
+- **时间轴列虚拟化（横向窗口）**：在既有行窗口之外新增列窗口——长跨度（day 档跨约 10 年 ≈3650 列）时表头刻度（主/辅）与周末/假日底色只渲染可视窗口 ±overscan，任务条沿用行窗口（不按 x 再裁，行为不变）；`.inner` 画布宽保持 `列数×列宽`，滚动范围与 `xOf`/镜像坐标数学不变。滚动改 rAF 合帧（同帧多次 scroll 只重渲染一次，拖拽自动滚动在合帧后重锚），卸载时取消未决帧；`syncHeaderOffset` 平移基准不变；主刻度分组预计算 + 二分渲染（不再逐帧全列扫描）；容器尺寸变化（变宽/变高）经 ResizeObserver 自动补窗口，命令式 `scrollToDate` 返回即出目标窗口并对齐表头。渲染节点与数据总量解耦（万行 × 千列下 DOM 有界）。另修 `height` 属性此前在真实浏览器无效（现映射到 `--oas-gantt-height`；宿主自身 `height` 内联只框定外盒、不拉伸内部画布；**非法值不覆盖宿主 token**——空串/空白按未设置、非法值不写变量、仅清本实例此前自写值）。`oas-resource` 的 `height` 同协议统一（非法值同样不覆盖宿主 token；resource 高度在 `:host` 规则上，宿主内联 `height` 可直接拉伸）。
 
 ### 特性 · `oas-resource`
 
 - **`oas-resource` 资源负载 / 泳道视图**（新组件，data 族）：`resources`（含 `capacity`）+ `tasks`（含 `resources` 分配）→ 资源泳道（共享时间轴）+ 负载直方图（超载高亮）；事件 `oas-overload` / `oas-task-click` / `oas-tasks-change`；方法 `scrollToDate`；纯函数 `levelResources()`（保工期、只延后、不自动回写）；i18n ×10（`resource.*`）；文档 zh/en 新页。
+- **时间轴列虚拟化（横向窗口）**：`.scroller` 滚动驱动 rAF 合帧的列窗口——刻度与负载直方图列按窗口切片，泳道内任务条按窗口像素相交裁剪（保留 overscan 与最小条宽），画布宽保持 `period 数×列宽`；`scrollToDate` 命中后同帧出窗口；首列分隔线判据由 `:first-child` 改为 period 索引 0（窗口化下 DOM 首元素未必是轴首列）。另：负载矩阵由「资源 × period × 任务」三重循环改为单趟归档 + 二分区间累加（`O(Σspan) + O(S·log P)`），输出逐字节一致。
+
+### 工程
+
+- **大数据规模回归**：新增 `qa-regression/scale.spec.ts`——gantt 万行 × 约 3650 列、resource 5000 任务 × 1096 period 的渲染节点上界 + 中部可见覆盖 + 数据量翻倍对照，锁定「节点数不随数据总量线性增长」。
 
 ## [2.6.1] - 2026-10-13
 
