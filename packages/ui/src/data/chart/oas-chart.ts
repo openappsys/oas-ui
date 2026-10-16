@@ -602,15 +602,17 @@ export class OASChart extends OASElement {
 
     // bar 层
     const m = barSeries.length
+    const gap = m > 1 ? 1 : 0
     const barW = m > 1 ? (bandW * 0.72) / m : bandW * 0.45
-    const groupGap = m > 1 ? bandW * 0.14 : 0
+    // 柱组整体居中于 band（组中心 = 折线/面积点所在的 band 中心），而非首系列贴左
+    const offset = (bandW - (m * barW + (m - 1) * gap)) / 2
     barSeries.forEach(({ series, si }, bi) => {
       const cls = SWATCH_CLASSES[si % SWATCH_CLASSES.length]!
       const color = options.colors?.[si]
       const ticks = ticksFor(this.axisOf(series))
       series.data.forEach((v, i) => {
         const h = ticks.max > 0 ? Math.max(0, (v / ticks.max) * plotH) : 0
-        const x = PAD.l + i * bandW + groupGap / 2 + bi * (barW + (m > 1 ? 1 : 0))
+        const x = PAD.l + i * bandW + offset + bi * (barW + gap)
         const y = baseY - h
         const label = this.datumLabel(data.labels[i] ?? '', v)
         out += `<rect class="bar ${cls} animate" x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${Math.max(1, barW).toFixed(1)}" height="${h.toFixed(1)}" rx="2"${this.colorStyle(color)}><title>${this.escapeAttr(label)}</title></rect>`
@@ -651,8 +653,10 @@ export class OASChart extends OASElement {
     out += this.renderXLabels(data.labels, plotW, 'middle')
 
     const bandW = plotW / n
+    const gap = m > 1 ? 1 : 0
     const barW = m > 1 ? (bandW * 0.72) / m : bandW * 0.45
-    const groupGap = m > 1 ? bandW * 0.14 : 0
+    // 柱组整体居中于 band（组中心 = 分类轴标签/折线点所在的 band 中心），而非首系列贴左
+    const offset = (bandW - (m * barW + (m - 1) * gap)) / 2
 
     data.series.forEach((series, si) => {
       const cls = SWATCH_CLASSES[si % SWATCH_CLASSES.length]!
@@ -660,7 +664,7 @@ export class OASChart extends OASElement {
       const ticks = ticksFor(this.axisOf(series))
       series.data.forEach((v, i) => {
         const h = ticks.max > 0 ? Math.max(0, (v / ticks.max) * plotH) : 0
-        const x = PAD.l + i * bandW + groupGap / 2 + si * (barW + (m > 1 ? 1 : 0))
+        const x = PAD.l + i * bandW + offset + si * (barW + gap)
         const y = PAD.t + plotH - h
         const label = this.datumLabel(data.labels[i] ?? '', v)
         out += `<rect class="bar ${cls} animate" x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${Math.max(1, barW).toFixed(1)}" height="${h.toFixed(1)}" rx="2"${this.colorStyle(color)}><title>${this.escapeAttr(label)}</title></rect>`

@@ -574,6 +574,52 @@ describe('OASChart', () => {
     expect(bar.compareDocumentPosition(line) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
   })
 
+  it('柱组在 band 内居中：柱组中心 = 分类标签/折线点所在的 band 中心', () => {
+    // rect.bar 顺序为 series-major（si×n + i）；按分类取组内各系列的极值算组中心
+    const centered = (el: OASChart, n: number, m: number): void => {
+      const bars = [...svgOf(el).querySelectorAll('rect.bar')]
+      expect(bars.length).toBe(n * m)
+      for (let i = 0; i < n; i++) {
+        const group = Array.from({ length: m }, (_, si) => bars[si * n + i]!)
+        const left = Math.min(...group.map((b) => Number(b.getAttribute('x'))))
+        const right = Math.max(...group.map((b) => Number(b.getAttribute('x')) + Number(b.getAttribute('width'))))
+        expect((left + right) / 2).toBeCloseTo([158.5, 391.5][i]!, 0)
+      }
+    }
+    // combo（1 柱 + 1 线）：折线点在 band 中心，柱组中心须与之重合
+    const combo = mount({
+      type: 'bar',
+      data: JSON.stringify({
+        labels: ['a', 'b'],
+        series: [
+          { name: '销量', data: [50, 100] },
+          { name: '增长率', data: [5, 10], type: 'line' },
+        ],
+      }),
+    })
+    centered(combo, 2, 1)
+    expect(Number(svgOf(combo).querySelector('circle.dot')!.getAttribute('cx'))).toBeCloseTo(158.5, 0)
+    centered(
+      mount({ type: 'bar', data: JSON.stringify({ labels: ['a', 'b'], series: [{ name: '销量', data: [50, 100] }] }) }),
+      2,
+      1,
+    )
+    centered(
+      mount({
+        type: 'bar',
+        data: JSON.stringify({
+          labels: ['a', 'b'],
+          series: [
+            { name: 'A', data: [50, 100] },
+            { name: 'B', data: [30, 60] },
+          ],
+        }),
+      }),
+      2,
+      2,
+    )
+  })
+
   it('combo（bar 顶层 + area 覆盖）：面积层闭合到基线', () => {
     const el = mount({
       type: 'bar',
