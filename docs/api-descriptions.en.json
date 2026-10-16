@@ -4336,7 +4336,12 @@
       "show-baseline": "Baseline comparison (boolean, off by default): tasks with a baseline render a baseline bar under the actual bar, its title showing the delta (N days later/earlier than baseline, or on baseline)",
       "creatable": "Inline creation (boolean, off by default): when enabled, a trailing \"+\" appears per row (adds a subtask on summary rows, a sibling after on leaf rows) and double-clicking empty space creates a task at the clicked date; the new task enters inline rename. No button on readonly or per-task-disabled rows",
       "auto-schedule": "Dependency auto-scheduling (boolean, off by default): after a date change (drag/keyboard/updateTask/updateTasks) or a dependency add/update, successors are pushed minimally (later only, duration preserved) along FS/SS/FF/SF; skips disabled and summary rows; cycle-safe. Dispatches oas-reschedule",
-      "show-critical-path": "Critical path (boolean, off by default): runs a CPM pass over the dependency graph + durations to compute total float and adds a .critical highlight to zero-float tasks (color via --oas-gantt-critical-color); read-only"
+      "show-critical-path": "Critical path (boolean, off by default): runs a CPM pass over the dependency graph + durations to compute total float and adds a .critical highlight to zero-float tasks (color via --oas-gantt-critical-color); read-only",
+      "windowed": "Server-side row-window mode (boolean, off by default): with total / window-start the host supplies only the visible window slice (rendered by absolute row index); when the expected row window is not covered, oas-window-request is emitted for the host to refill. Local full-dataset capabilities (auto-schedule / critical path) would be wrong on partial data and are skipped with a devWarn. Non-windowed behavior unchanged",
+      "total": "Full row (task) count in windowed mode; 0 or invalid disables windowed (falls back to local mode)",
+      "window-start": "Absolute row index (within the full dataset) of the first row in the slice (windowed mode)",
+      "range-start": "Host-managed time-axis start (ISO date YYYY-MM-DD): when provided the axis extent is no longer derived from data; use with range-end to support windowed mode (the slice may not span the full date range)",
+      "range-end": "Host-managed time-axis end (ISO date YYYY-MM-DD, inclusive); pair with range-start"
     },
     "events": {
       "oas-reschedule": "Dispatched when auto-scheduling moved successor tasks (auto-schedule on), detail: { ids } (ids of the rescheduled tasks)",
@@ -4351,7 +4356,9 @@
       "oas-task-render": "Dispatched after each task bar renders, detail: { task, element } — hosts may rewrite bar DOM",
       "oas-reparent": "Dispatched when a row drag reparent/reorder settles, detail: { id, parent, index } (parent null means root level; index is the sibling position)",
       "oas-dependencies-change": "Dispatched when a link drag creates a dependency or a selected link is deleted, detail: { taskId, dependencies } (taskId is the successor whose dependencies changed)",
-      "oas-selection-change": "Dispatched when the multi-select set changes (click / keyboard / property write), detail: { ids } (selected task ids)"
+      "oas-selection-change": "Dispatched when the multi-select set changes (click / keyboard / property write), detail: { ids } (selected task ids)",
+      "oas-window-request": "Emitted in windowed mode when the expected row window is not covered by the loaded range; detail: { start, end, reason } (half-open, absolute row indices; reason is init / scroll / resize / data). The same expected window is not emitted twice",
+      "oas-range-request": "Emitted when the time axis is host-managed (range-start/range-end) and the visible time window approaches an axis edge; detail: { startMs, endMs, reason } (the neighbouring range requested). The same expected range is not emitted twice"
     },
     "slots": {
       "template[slot=\"empty\"]": "Empty-state content (defaults to \"No tasks\")",
@@ -4689,12 +4696,19 @@
       "scale": "Histogram period granularity and axis labels: day (default) / week / month; invalid falls back to day",
       "height": "Component height in px (default 320; accepts a plain number or Npx): mapped to the custom property --oas-resource-height (the host's own inline height always wins and is never overwritten by the component). While the height attribute is present and valid (>0 plain number or Npx) the component takes over this variable — writing it inline on the host and overriding any --oas-resource-height the host set itself; an empty/whitespace value is treated as unset; an invalid value writes nothing and only clears a value this instance wrote earlier, so a host token is never affected; after the attribute is removed the component-written value is cleared to zero, so the height falls back to the token default (320) or host CSS, and the host's previous inline value is not restored; when the height attribute was never set the component never writes the variable, and a --oas-resource-height set by the host (inline or via class rules) is left completely untouched",
       "locale": "Localization (overrides config-provider injection and global locale)",
-      "capacity": "Default capacity when a resource declares none (default 1)"
+      "capacity": "Default capacity when a resource declares none (default 1)",
+      "windowed": "Server-side row-window mode (boolean, off by default): with total / window-start the host supplies only the visible window slice (rendered by absolute row index); when the expected row window is not covered, oas-window-request is emitted for the host to refill. Load/overload stats cover the loaded slice only (full-dataset stats are the host's job) with a devWarn; when range-start / range-end are absent the time axis falls back to deriving from loaded tasks with a devWarn. Non-windowed behavior unchanged",
+      "total": "Full resource row count in windowed mode; 0 or invalid disables windowed (falls back to local mode)",
+      "window-start": "Absolute row index (within the full dataset) of the first row (resource) in the slice (windowed mode)",
+      "range-start": "Host-managed time-axis start (ISO date YYYY-MM-DD): when provided the period range is no longer derived from loaded tasks",
+      "range-end": "Host-managed time-axis end (ISO date YYYY-MM-DD, inclusive); pair with range-start. If only one is given, reversed or invalid, the axis is not host-managed and a devWarn is emitted"
     },
     "events": {
       "oas-task-click": "Dispatched when a task bar in a resource swimlane is clicked, detail: { id, task, resourceId }",
       "oas-overload": "Dispatched when the overload state changes (at most once per update; the same overload state is not re-dispatched), detail: { overloads: [{ resourceId, period, load, capacity }] } (period is the period start date); not dispatched when there is no overload",
-      "oas-tasks-change": "Dispatched when tasks is written programmatically, detail: { tasks }"
+      "oas-tasks-change": "Emitted when the tasks property is written programmatically; detail: { tasks }. **In windowed mode detail.tasks is only the loaded slice**: the host must merge by id into the full dataset and must not replace it wholesale",
+      "oas-window-request": "Emitted in windowed mode when the expected row window is not covered by the loaded range; detail: { start, end, reason } (half-open, absolute row indices; reason is init / scroll / resize / data). The same expected window is not emitted twice",
+      "oas-range-request": "Emitted when the time axis is host-managed (range-start/range-end) and the visible time window approaches an axis edge; detail: { startMs, endMs, reason } (the neighbouring range requested). The same expected range is not emitted twice"
     },
     "props": {
       "resources": "Resources (reads a copy: nested plain objects/arrays are deep-cloned — cycle-safe; shared references stay shared within a single read result; Date is copied by value (not kept shared); exotic objects such as class instances/Set are shared by reference; writing syncs the attribute + re-renders; unserializable custom keys are dropped individually from the attribute, the property read-back keeps the full data)",

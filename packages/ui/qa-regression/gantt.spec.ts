@@ -1009,3 +1009,214 @@ test('gantt height token 通道：宿主 token 500 → height="480" 接管 → �
   expect(res.after.v, '移除属性 → 自写值归零').toBe('')
   expect(res.after.h, '回落宿主 token 500 → rect 502（不残留 480）').toBe(500 + borderOffset)
 })
+
+// windowed（服务端行窗口模式）+ 宿主托管时间范围（range-start/range-end）浏览器回归：
+// 真实布局路径下——① 首帧 init 派发 oas-window-request（tasks 未装载）→ 宿主按请求区间精确
+// 回填（真实宿主行为：读 detail.start/end）→ 覆盖后不再重复派发；② 滚出装载区 → 派发 scroll
+// 请求（绝对行区间）；③ 宿主回填新窗口 → 新切片按**绝对行号**渲染；④ 轴托管：首帧 need 前扩
+// 1 视口宽越出轴头派发 oas-range-request（reason=init，可视列窗贴轴起点 ±1 视口宽必越出——
+// 与 oas-resource 同设计），滚到轴端派发（reason=scroll）。happy-dom 单测只锁机制（无布局），
+// 本 spec 补真实滚动/布局感知层。
+// 事件监听必须在 appendChild **之前**挂：首帧 update() 在 connectedCallback 内同步跑完，
+// init 请求在 appendChild 返回前已派发（后挂监听会漏掉 init 请求 → coveredAfterFill 假失败）。
+test('gantt windowed：滚动派发行窗口请求 + 绝对行回填 + 轴端 range 请求', async ({ page }) => {
+  const errors: string[] = []
+  page.on('pageerror', (e) => errors.push(e.message))
+  page.on('console', (m) => {
+    if (m.type() === 'error') errors.push(m.text())
+  })
+  await page.goto('/components/gantt.html', { waitUntil: 'domcontentloaded' })
+  // 组件就绪信号：custom element 升级 + 首帧**结构性元素**（.tbody）存在——不依赖 demo 数据的
+  // 任务条（本用例 fixture 自建实例，gantt-basic 有无 .bar 与 windowed 机制无关）
+  await page.waitForFunction(
+    () => {
+      const el = document.getElementById('gantt-basic') as (HTMLElement & { shadowRoot?: ShadowRoot | null }) | null
+      return !!el && !!el.shadowRoot && !!el.shadowRoot.querySelector('.tbody')
+    },
+    undefined,
+    { timeout: 30000 },
+  )
+  const res = await page.evaluate(async () => {
+    await customElements.whenDefined('oas-gantt')
+    const raf = () => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)))
+    const el = document.createElement('oas-gantt') as HTMLElement & { shadowRoot: ShadowRoot }
+    el.setAttribute('windowed', '')
+    el.setAttribute('total', '500')
+    el.setAttribute('window-start', '0')
+    el.setAttribute('height', '200') // 视口 200/40 = 5 行
+    el.setAttribute('row-height', '40')
+    // 宽轴托管（两年）：轴头/轴尾按 need ± 1 视口宽评估
+    el.setAttribute('range-start', '2026-01-01')
+    el.setAttribute('range-end', '2027-12-31')
+    el.style.cssText = 'position:fixed;top:-9999px;left:0;width:600px' // 离屏：有真实布局测量
+    const slice = (start: number, len: number): string =>
+      JSON.stringify(
+        Array.from({ length: len }, (_, i) => ({
+          id: 't' + (start + i),
+          name: '任务' + (start + i),
+          start: `2026-03-${String((i % 27) + 1).padStart(2, '0')}`,
+          end: `2026-03-${String((i % 27) + 2).padStart(2, '0')}`,
+        })),
+      )
+    const winReqs: Array<{ start: number; end: number; reason: string }> = []
+    const rangeReqs: Array<{ startMs: number; endMs: number; reason: string }> = []
+    el.addEventListener('oas-window-request', (e) => {
+      const d = (e as CustomEvent).detail
+      winReqs.push({ start: d.start, end: d.end, reason: d.reason })
+    })
+    el.addEventListener('oas-range-request', (e) => {
+      const d = (e as CustomEvent).detail
+      rangeReqs.push({ startMs: d.startMs, endMs: d.endMs, reason: d.reason })
+    })
+    document.body.appendChild(el)
+    // 首帧 init：tasks 未装载 → 期望区间自绝对行 0 起、越出空装载区
+    const initReq = winReqs[0] ?? null
+    // 宿主喂首屏切片 [0,6)（窄于期望区间）→ 同 need 去重，不重复派发
+    el.setAttribute('tasks', slice(0, 6))
+    await raf()
+    const afterInit = winReqs.length
+    // ① 宿主按 init 请求区间精确回填（覆盖期望区间）→ 不再重复派发
+    if (initReq) el.setAttribute('tasks', slice(initReq.start, initReq.end - initReq.start))
+    await raf()
+    const coveredAfterFill = !!initReq && initReq.reason === 'init' && winReqs.length === afterInit
+    // 轴托管首帧：need 前扩越出轴头 → 派发（reason=init；与 oas-resource 同设计）
+    const rangeInit = rangeReqs[0] ?? null
+    // ② 滚出装载区 → 派发 scroll 请求（绝对行区间）
+    const tb = el.shadowRoot.querySelector('.tbody') as HTMLElement
+    tb.scrollTop = 1200 // 行 30
+    tb.dispatchEvent(new Event('scroll'))
+    await raf()
+    await raf()
+    const scrollReq = winReqs.find((r) => r.reason === 'scroll') ?? null
+    // ③ 宿主按请求回填新窗口 [100,117) + 滚到该窗口 → 绝对行号渲染（行 100 的 top = 100 × 40）
+    el.setAttribute('window-start', '100')
+    el.setAttribute('tasks', slice(100, 17))
+    tb.scrollTop = 4000 // 行 100
+    tb.dispatchEvent(new Event('scroll'))
+    await raf()
+    await raf()
+    const firstName = el.shadowRoot.querySelector('.side-body .row-name') as HTMLElement | null
+    // ④ 滚到时间轴最右端（可视时间窗贴近 range-end）→ 派发 range 请求
+    const rangeBeforeEnd = rangeReqs.length
+    tb.scrollLeft = tb.scrollWidth - tb.clientWidth
+    tb.dispatchEvent(new Event('scroll'))
+    await raf()
+    await raf()
+    const rangeAtEnd = rangeReqs.length > rangeBeforeEnd
+    const out = {
+      initReq,
+      coveredAfterFill,
+      rangeInit,
+      scrollReq,
+      absKey: firstName?.getAttribute('data-key') ?? '',
+      absTop: firstName?.style.top ?? '',
+      rangeAtEnd,
+      rangeReason: rangeReqs[rangeReqs.length - 1]?.reason ?? '',
+    }
+    el.remove()
+    return out
+  })
+  // 首帧 init 请求：reason=init、绝对半开区间自 0 起、越出首屏切片（未覆盖才派）
+  expect(res.initReq !== null && res.initReq.reason === 'init', '首帧派发 init 行窗口请求').toBe(true)
+  expect(res.initReq !== null && res.initReq.start === 0, '期望区间自绝对行 0 起').toBe(true)
+  expect(res.initReq !== null && res.initReq.end > 6, '期望区间越出首屏切片 [0,6)（未覆盖才派）').toBe(true)
+  expect(res.coveredAfterFill, '宿主回填覆盖期望区间后不再重复派发').toBe(true)
+  expect(
+    res.rangeInit !== null && res.rangeInit.reason === 'init',
+    '轴托管首帧派发 range 请求（need 前扩越出轴头，与 oas-resource 同设计）',
+  ).toBe(true)
+  expect(
+    res.rangeInit !== null && res.rangeInit.startMs < new Date(2026, 0, 1).getTime(),
+    '首帧 range need 起点越出轴起点（可视列窗贴轴头 ±1 视口宽）',
+  ).toBe(true)
+  expect(res.scrollReq, '滚出装载区派发 scroll 请求').not.toBeNull()
+  expect(
+    res.scrollReq !== null && res.scrollReq.start <= 30 && res.scrollReq.end > 30,
+    `scroll 请求应覆盖滚动行 30（实得 ${JSON.stringify(res.scrollReq)}）`,
+  ).toBe(true)
+  expect(res.absKey, '回填后渲染新切片首行').toBe('t100')
+  expect(res.absTop, '按绝对行号定位（行 100 × 40px，局部下标定位会得 0px）').toBe('4000px')
+  expect(res.rangeAtEnd, '滚到轴端派发 range 请求').toBe(true)
+  expect(res.rangeReason, 'range 请求原因为 scroll').toBe('scroll')
+  expect(errors).toEqual([])
+})
+
+// windowed × 层级切片（含折叠父级）回归：切片即行序（不递归 children / 忽略 expanded）——
+// 旧实现按树递归 rows 塌缩（1 行 ≪ 切片长度）→ 覆盖判定误吞请求 + 滚动装载区空白。
+// 真实布局下断言：装载区中部滚动有行渲染（无空白）、装载区内滚动零请求（覆盖契约）、
+// aria 坐标按全量口径（posinset/rowindex=绝对行号 1 基、setsize=total、容器 rowcount=total）。
+// 机制层（含 devWarn/反证）由单测锁定，本用例补真实布局感知层。
+test('gantt windowed 层级切片扁平化：装载区滚动无空白 + aria 全量口径', async ({ page }) => {
+  await page.goto('/components/gantt.html', { waitUntil: 'domcontentloaded' })
+  await page.waitForFunction(
+    () => {
+      const el = document.getElementById('gantt-basic') as (HTMLElement & { shadowRoot?: ShadowRoot | null }) | null
+      return !!el && !!el.shadowRoot && !!el.shadowRoot.querySelector('.tbody')
+    },
+    undefined,
+    { timeout: 30000 },
+  )
+  const res = await page.evaluate(async () => {
+    const raf = () => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)))
+    const el = document.createElement('oas-gantt') as HTMLElement & { shadowRoot: ShadowRoot }
+    el.setAttribute('windowed', '')
+    el.setAttribute('total', '1000')
+    el.setAttribute('window-start', '0')
+    el.setAttribute('height', '200') // 视口 200/40 = 5 行 + buffer
+    el.setAttribute('row-height', '40')
+    el.setAttribute('expanded', '[]') // 全收起：旧实现树递归后 rows 塌缩成 1 行的触发条件
+    // 层级切片：1 父 + 200 子（拍平后切片长度 201）——旧实现把切片当树展开 → 只渲染父级 1 行
+    el.setAttribute(
+      'tasks',
+      JSON.stringify([
+        {
+          id: 'p',
+          name: '父',
+          start: '2026-03-02',
+          end: '2026-03-05',
+          children: Array.from({ length: 200 }, (_, i) => ({
+            id: `c${i}`,
+            name: `子${i}`,
+            start: '2026-03-02',
+            end: '2026-03-05',
+          })),
+        },
+      ]),
+    )
+    const reqs: Array<{ start: number; end: number; reason: string }> = []
+    el.addEventListener('oas-window-request', (e) => {
+      const d = (e as CustomEvent).detail
+      reqs.push({ start: d.start, end: d.end, reason: d.reason })
+    })
+    document.body.appendChild(el)
+    await raf()
+    const sr = el.shadowRoot!
+    const tb = sr.querySelector('.tbody') as HTMLElement
+    const names = () => [...sr.querySelectorAll<HTMLElement>('.side-body .row-name')]
+    const initFirst = names()[0]?.dataset.key ?? ''
+    // 滚到装载区中部（行 120，仍在 [0,201) 内）→ 有行渲染（旧实现塌缩 → 空白且零请求）
+    tb.scrollTop = 120 * 40
+    tb.dispatchEvent(new Event('scroll'))
+    await raf()
+    await raf()
+    const mid = { count: names().length, first: names()[0]?.dataset.key ?? '' }
+    const reqsInLoaded = reqs.length // 装载区内滚动：期望区间被覆盖 → 零请求
+    // aria 全量口径：首渲染行 = 扁平行 114（父占 1 行）→ 绝对行号 115（1 基）
+    const aria = {
+      posinset: names()[0]?.getAttribute('aria-posinset') ?? '',
+      rowindex: names()[0]?.getAttribute('aria-rowindex') ?? '',
+      setsize: names()[0]?.getAttribute('aria-setsize') ?? '',
+      rowcount: sr.querySelector('.side-rows')?.getAttribute('aria-rowcount') ?? '',
+    }
+    el.remove()
+    return { initFirst, mid, reqsInLoaded, aria }
+  })
+  expect(res.initFirst, '切片即行序：首行 = 切片首任务（expanded 收起不塌缩）').toBe('p')
+  expect(res.mid.count, '装载区中部滚动有行渲染（旧实现塌缩 → 空白）').toBeGreaterThan(0)
+  expect(res.mid.first, '滚动后首渲染行按扁平行序（行 120 - buffer 6 → c113）').toBe('c113')
+  expect(res.reqsInLoaded, '装载区内滚动零请求（期望区间被覆盖）').toBe(0)
+  expect(res.aria.posinset, 'posinset = 绝对行号（1 基）').toBe('115')
+  expect(res.aria.rowindex, 'rowindex = 绝对行号（1 基）').toBe('115')
+  expect(res.aria.setsize, 'setsize = 全量 total').toBe('1000')
+  expect(res.aria.rowcount, '容器 aria-rowcount = 全量 total').toBe('1000')
+})

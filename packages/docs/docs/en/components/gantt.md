@@ -253,6 +253,30 @@ With `show-baseline` on (off by default), a task carrying `baseline: { start, en
 
 Methods: `scrollToTask(id)` to bring a task row into view, `scrollToDate(date)` / `scrollToToday()` for horizontal positioning, `updateTask(id, patch)` for single-task incremental updates (sanitized, dispatches `oas-tasks-change`).
 
+## Server-side row window (windowed)
+
+> For hundreds of thousands of rows: the host supplies only the slice near the visible window and the component **holds no full dataset**. The row window is computed from the scroll position and, when not covered by the loaded range, `oas-window-request` is emitted; the host refills and rows render by **absolute row index**.
+
+Attributes: `windowed` (enable) + `total` (full row count) + `window-start` (absolute row index of the slice's first row) + `range-start` / `range-end` (host-managed time-axis extent, ISO dates, `range-end` inclusive — required when the slice does not span the full date range). Events:
+
+- `oas-window-request`: `detail: { start, end, reason }` (half-open, absolute row indices; `reason` = `init` / `scroll` / `resize` / `data`); the same expected window is not emitted twice.
+- `oas-range-request`: emitted when the visible time window approaches an axis edge; `detail: { startMs, endMs, reason }` for the host to extend the range.
+
+```html
+<oas-gantt windowed total="200000" window-start="0" range-start="2026-01-01" range-end="2026-12-31"
+  height="360" scale="day"></oas-gantt>
+<script>
+  const el = document.querySelector('oas-gantt[windowed]')
+  el.addEventListener('oas-window-request', (e) => {
+    const { start, end } = e.detail
+    el.setAttribute('window-start', String(start))
+    el.setAttribute('tasks', JSON.stringify(fetchTasks(start, end))) // fetch from your backend
+  })
+</script>
+```
+
+Conventions in windowed mode: **the slice must be flat** (a hierarchical slice with `parent`/`children` triggers a devWarn and renders flat — flatten on the host side); `auto-schedule` and the critical path would be wrong on partial data and are **skipped with a devWarn**; row drag-reorder is disabled (index only makes sense within the slice); `oas-tasks-change` carries only the slice in `detail.tasks` — the host must **merge by id** into the full dataset, never replace it wholesale.
+
 ## Controlled Expansion / Labels & Snapping / Localization
 
 - **Custom fields pass through**: `GanttTask` may carry arbitrary business fields (e.g. `assignee`, `tag`) — they are **preserved as-is** (visible in `el.tasks` / `oas-task-render` / templates) and do not affect scheduling; render them via the bar-label template or `oas-task-render`, and edit via the `oas-modal`+`oas-form` recipe or `updateTask`.
@@ -545,6 +569,8 @@ onMounted(async () => {
 | `label-position` | Bar label position: inside / right / left; default `none` (the row-name column already shows the name, so the bar does not repeat it); invalid values fall back to `none` | `string` | — |
 | `locale` | Localization (overrides config-provider injection and the global locale) | `string` | — |
 | `progress-readonly` | No progress dragging (dates still draggable) | `boolean` | — |
+| `range-end` | Host-managed time-axis end (ISO date YYYY-MM-DD, inclusive); pair with range-start | `string` | — |
+| `range-start` | Host-managed time-axis start (ISO date YYYY-MM-DD): when provided the axis extent is no longer derived from data; use with range-end to support windowed mode (the slice may not span the full date range) | `string` | — |
 | `readonly` | Whole chart read-only (no rescheduling/progress, drag handles not rendered) | `boolean` | — |
 | `row-height` | Row height in px (default 36, minimum 20) | `string` | `36` |
 | `scale` | Time scale: hour / day (default) / week / month / quarter / year; invalid values fall back to day | `string` | — |
@@ -553,7 +579,10 @@ onMounted(async () => {
 | `show-today` | Today line (on by default; false to disable) | `string` | — |
 | `snap` | Snap drags to the current scale unit (on by default; false shifts by pixel ratio and keeps time precision) | `string` | — |
 | `tasks` | Gantt tasks (JSON): [{ id?, name, start, end?, type?, progress?, parent?, children?, dependencies?, color?, disabled?, expanded?, baseline?, constraint? ('asap'\|'snet'\|'mso'\|'fnlt'), constraintDate? }] — flat parent pointers are the primary contract; nested children are flattened automatically; explicit type:"milestone" takes precedence (rendered as milestone even with end, which is ignored) but a task with children is always a summary; no end also infers milestone; start/end are swapped automatically when start is after end | `GanttTask[]` | `[]` |
+| `total` | Full row (task) count in windowed mode; 0 or invalid disables windowed (falls back to local mode) | `string` | — |
 | `weekends` | Weekend column highlights (on by default; applies on day/hour tiers; false to disable) | `string` | — |
+| `window-start` | Absolute row index (within the full dataset) of the first row in the slice (windowed mode) | `string` | `0` |
+| `windowed` | Server-side row-window mode (boolean, off by default): with total / window-start the host supplies only the visible window slice (rendered by absolute row index); when the expected row window is not covered, oas-window-request is emitted for the host to refill. Local full-dataset capabilities (auto-schedule / critical path) would be wrong on partial data and are skipped with a devWarn. Non-windowed behavior unchanged | `boolean` | — |
 | `workdays` | Working weekdays (JSON [0-6], 0=Sunday…6=Saturday; opt-in, absent/empty = unrestricted): auto-schedule results snap to the next working day (combined with holidays) | `string` | — |
 
 #### Property (JS property; see each row for attribute reflection)
@@ -570,6 +599,7 @@ onMounted(async () => {
 | `oas-dependencies-change` | Dispatched when a link drag creates a dependency or a selected link is deleted, detail: { taskId, dependencies } (taskId is the successor whose dependencies changed) |
 | `oas-expand-change` | Dispatched on row tree collapse/expand, detail: { id, expanded } |
 | `oas-progress-change` | Dispatched when a progress handle drag settles, detail: { id, task, progress } |
+| `oas-range-request` | Emitted when the time axis is host-managed (range-start/range-end) and the visible time window approaches an axis edge; detail: { startMs, endMs, reason } (the neighbouring range requested). The same expected range is not emitted twice |
 | `oas-reparent` | Dispatched when a row drag reparent/reorder settles, detail: { id, parent, index } (parent null means root level; index is the sibling position) |
 | `oas-reschedule` | Dispatched when auto-scheduling moved successor tasks (auto-schedule on), detail: { ids } (ids of the rescheduled tasks) |
 | `oas-scale-change` | Dispatched when the scale attribute changes, detail: { scale }; not dispatched on initial absorption |
@@ -580,6 +610,7 @@ onMounted(async () => {
 | `oas-task-dblclick` | Dispatched on task bar double-click, detail: { id, task } — hosts attach an edit form |
 | `oas-task-render` | Dispatched after each task bar renders, detail: { task, element } — hosts may rewrite bar DOM |
 | `oas-tasks-change` | Dispatched on task data change (programmatic tasks write / updateTask / drag write-back), detail: { tasks } |
+| `oas-window-request` | Emitted in windowed mode when the expected row window is not covered by the loaded range; detail: { start, end, reason } (half-open, absolute row indices; reason is init / scroll / resize / data). The same expected window is not emitted twice |
 
 #### Slots
 

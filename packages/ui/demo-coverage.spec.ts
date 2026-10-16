@@ -121,6 +121,7 @@ const EXEMPT_EVENTS = new Set([
   'oas-task-add', // gantt：命令式/行内新建需真点按钮或拖出区间（通用探针不可达；qa-regression/gantt.spec.ts 已固化真实链路）
   'oas-reschedule', // gantt：依赖联动排程需 auto-schedule 开启后真拖前置（通用探针不可达；qa-regression/gantt.spec.ts 已固化真实链路）
   'oas-window-request', // table：windowed 模式需宿主只喂可视窗口切片才触发（通用探针不可达；qa-regression/table.spec.ts 已固化真实滚动→请求→回填链路）
+  'oas-range-request', // gantt/resource：宿主托管时间范围时滚到轴端才触发（通用探针不可达；qa-regression/gantt.spec.ts 与 resource.spec.ts 已固化真实链路）
 ])
 
 // 容器托管的反射属性（由父组件按 active/受控集合写回，非宿主直驱 API）：豁免静态演示要求
@@ -130,6 +131,10 @@ const EXEMPT_ATTRS: Record<string, string[]> = {
   // windowed 模式要求宿主只喂可视窗口切片并回填（服务端行窗口协议），静态 demo 无法体现；
   // 机制由 oas-table-windowed 单测与 qa-regression/table.spec 覆盖（API 表已注明属宿主集成模式）
   table: ['windowed', 'window-start'],
+  // 同上：windowed + 宿主托管时间轴（range-start/range-end）为宿主集成模式，静态 demo 不可体现；
+  // 机制由各自单测与 qa-regression/{gantt,resource}.spec 覆盖
+  gantt: ['windowed', 'total', 'window-start', 'range-start', 'range-end'],
+  resource: ['windowed', 'total', 'window-start', 'range-start', 'range-end'],
 }
 
 // manifest 的 tag 与真实注册 tag 不一致的组件（demo 页用真实 tag 渲染）

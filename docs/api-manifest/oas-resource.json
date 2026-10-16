@@ -35,6 +35,35 @@
       "type": "string",
       "default": "1",
       "observed": true
+    },
+    {
+      "name": "windowed",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "total",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "window-start",
+      "type": "string",
+      "default": "0",
+      "observed": true
+    },
+    {
+      "name": "range-start",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "range-end",
+      "type": "string",
+      "default": "",
+      "observed": true
     }
   ],
   "props": [
@@ -55,6 +84,14 @@
     {
       "name": "oas-tasks-change",
       "detail": "{ tasks: this.tasks } satisfies ResourceTasksChangeDetail"
+    },
+    {
+      "name": "oas-window-request",
+      "detail": "{ start: need.start, end: need.end, reason } satisfies WindowRequestDetail"
+    },
+    {
+      "name": "oas-range-request",
+      "detail": "{ startMs, endMs, reason } satisfies RangeRequestDetail"
     },
     {
       "name": "oas-task-click",

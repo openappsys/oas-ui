@@ -2564,7 +2564,9 @@ describe('OASResource 行虚拟化（纵向窗口，泳道/负载两区独立）
     expect(loadRows(el).length).toBe(0)
   })
 
-  it('⑦ 行/列窗口正交：纵向滚动不变列窗口，横向滚动不变行窗口', async () => {
+  // 该用例构造 60 资源 × 三年 day 档（1096 列）：行+列虚拟化同时生效，单次渲染/统计较重，
+  // 在 CI 并发下贴 5s 默认上限（既有基线同样紧），显式放宽超时避免偶发红
+  it('⑦ 行/列窗口正交：纵向滚动不变列窗口，横向滚动不变行窗口', { timeout: 30000 }, async () => {
     const N = 60
     const resources = Array.from({ length: N }, (_, i) => ({ id: `r${i}`, name: `R${i}` }))
     // 三年 day 档（1096 列）→ 列虚拟化与行虚拟化同时生效
@@ -2594,5 +2596,702 @@ describe('OASResource 行虚拟化（纵向窗口，泳道/负载两区独立）
     await flushRaf()
     expect(internals(el).winColStart, '横向滚动平移列窗口').toBeGreaterThan(colBefore[0])
     expect([internals(el).winLaneStart, internals(el).winLaneEnd], '横向滚动不改行窗口').toEqual(laneAfterV)
+  })
+})
+
+describe('OASResource 服务端窗口（windowed 行窗口 + 宿主托管时间轴范围）', () => {
+  // 契约见 packages/ui/src/shared/window-data.ts：
+  // - 行窗口：windowed + total + window-start，绝对行号半开区间，未覆盖派发 oas-window-request
+  // - 范围：range-start/range-end（ISO，range-end 含当日）托管时间轴，未覆盖派发 oas-range-request
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+    vi.restoreAllMocks()
+  })
+
+  /** 冲刷一帧 rAF（scroll handler 的窗口重渲染与请求在下一帧执行） */
+  const flushRaf = (): Promise<void> => new Promise((resolve) => requestAnimationFrame(() => resolve(undefined)))
+
+  /** 内部窗口视图（只读诊断） */
+  type WinInternals = {
+    winMode: { windowed: boolean; total: number; windowStart: number; loaded: { start: number; end: number } }
+    winColStart: number
+    winColEnd: number
+    winLaneStart: number
+    winLaneEnd: number
+    winLoadStart: number
+    winLoadEnd: number
+    periods: Array<{ startMs: number; endMs: number; label: string }>
+    canvasW: number
+    axisMs: { startMs: number; endMs: number } | null
+  }
+  const internals = (el: OASResource): WinInternals => el as unknown as WinInternals
+
+  const scrollerOf = (el: OASResource): HTMLElement => shadowOf(el).querySelector<HTMLElement>('.scroller')!
+  const laneRows = (el: OASResource): HTMLElement[] => [
+    ...shadowOf(el).querySelectorAll<HTMLElement>('.lanes .row.lane'),
+  ]
+  const loadRows = (el: OASResource): HTMLElement[] => [
+    ...shadowOf(el).querySelectorAll<HTMLElement>('.loads .row.load'),
+  ]
+  const laneSpacers = (el: OASResource): HTMLElement[] => [
+    ...shadowOf(el).querySelectorAll<HTMLElement>('.lanes > .row-spacer'),
+  ]
+  const loadSpacers = (el: OASResource): HTMLElement[] => [
+    ...shadowOf(el).querySelectorAll<HTMLElement>('.loads > .row-spacer'),
+  ]
+  /** 缺省 token 模型高（happy-dom 读不到 token → 回落缺省）：泳道行 36+1px、负载行 64+1px */
+  const LANE_ROW_H = 37
+  const LOAD_ROW_H = 65
+
+  type RowReq = { start: number; end: number; reason: string }
+  type RangeReq = { startMs: number; endMs: number; reason: string }
+  const record = (el: OASResource): { rows: RowReq[]; ranges: RangeReq[] } => {
+    const rows: RowReq[] = []
+    const ranges: RangeReq[] = []
+    el.addEventListener('oas-window-request', ((e: CustomEvent<RowReq>) => {
+      rows.push(e.detail)
+    }) as EventListener)
+    el.addEventListener('oas-range-request', ((e: CustomEvent<RangeReq>) => {
+      ranges.push(e.detail)
+    }) as EventListener)
+    return { rows, ranges }
+  }
+
+  /** 本地日零点（与组件 parseIsoDayMs 同构，TZ 无关地可复现期望值） */
+  const dayMs = (iso: string): number => {
+    const [y, m, d] = iso.split('-').map(Number)
+    return new Date(y!, m! - 1, d!).getTime()
+  }
+
+  /** 只定时间轴、不产生任务条的任务（resources 空）：保证时间轴来自 2026 整年、泳道行高恒为单段 37px */
+  const AXIS_TASKS = JSON.stringify([{ id: 'axis', name: 'A', start: '2026-01-01', end: '2026-12-31', resources: [] }])
+
+  /**
+   * windowed fixture：先按非 windowed 挂载（首帧无布局）→ stub 视口 → 逐条设置 windowed 相关属性。
+   * 最后一次 setAttribute 触发的 update 即「切入 windowed 的首帧」（reason=init）。
+   * 装载 n 行（id r{start}..r{start+n-1}）；tasks 只定轴不产条 → 行高恒 37px（虚拟化窗口推导可复现）。
+   */
+  const mountWindowed = (opts: {
+    total: number | string
+    loaded: number
+    start?: number
+    vw?: number
+    vh?: number
+    /** 覆盖默认 tasks（AXIS_TASKS：只定轴不产条）——用于需要真实条几何的用例 */
+    tasks?: string
+    /** 追加到宿主上的属性（如 dir=rtl / range-start / range-end），挂在 mount 之前（首帧即生效） */
+    attrs?: Record<string, string>
+  }): { el: OASResource; reqs: { rows: RowReq[]; ranges: RangeReq[] } } => {
+    const start = opts.start ?? 0
+    const resources = Array.from({ length: opts.loaded }, (_, i) => ({ id: `r${start + i}`, name: `R${start + i}` }))
+    const el = mount({
+      scale: 'day',
+      resources: JSON.stringify(resources),
+      tasks: opts.tasks ?? AXIS_TASKS,
+      ...(opts.attrs ?? {}),
+    })
+    const sc = scrollerOf(el)
+    Object.defineProperty(sc, 'clientWidth', { value: opts.vw ?? 400, configurable: true })
+    Object.defineProperty(sc, 'clientHeight', { value: opts.vh ?? 180, configurable: true })
+    const reqs = record(el)
+    el.setAttribute('total', String(opts.total))
+    el.setAttribute('window-start', String(start))
+    el.setAttribute('windowed', '')
+    return { el, reqs }
+  }
+
+  // ===== 行窗口（windowed）=====
+
+  it('⑧ windowed 首帧 init：期望区间 [0,17) 未被已装载 [0,10) 覆盖 → 派发行请求', () => {
+    const { reqs } = mountWindowed({ total: 500, loaded: 10 })
+    // 可视 [0,9)（180/37 = 4.86 → 5 行 + 两侧 buffer 4）± margin 8 → 期望 [0,17)
+    expect(reqs.rows, 'init 请求：绝对行半开区间 + reason').toEqual([{ start: 0, end: 17, reason: 'init' }])
+    expect(reqs.ranges, '未提供 range-* → 无范围请求').toEqual([])
+  })
+
+  it('⑨ 反证：已装载区间覆盖期望区间 → 不派发行请求；缺 windowed 属性 → 完全不派', () => {
+    const covered = mountWindowed({ total: 500, loaded: 20 })
+    expect(covered.reqs.rows, '已装载 [0,20) ⊇ 期望 [0,17) → 不派').toEqual([])
+
+    // 反证：windowed 属性缺失时 total / window-start 只是普通属性，回落本地全量口径
+    const plain = mount({
+      scale: 'day',
+      resources: JSON.stringify([{ id: 'r1', name: 'R1' }]),
+      tasks: AXIS_TASKS,
+      total: '500',
+      'window-start': '0',
+    })
+    const sc = scrollerOf(plain)
+    Object.defineProperty(sc, 'clientWidth', { value: 400, configurable: true })
+    Object.defineProperty(sc, 'clientHeight', { value: 180, configurable: true })
+    const plainReqs = record(plain)
+    plain.requestUpdate()
+    expect(internals(plain).winMode.windowed, '缺 windowed 属性 → 不生效').toBe(false)
+    expect(plainReqs.rows, '非 windowed 不派行请求').toEqual([])
+  })
+
+  it('⑩ 滚动 → scroll 请求；宿主回填后按绝对行号渲染且 spacer 总高守恒', async () => {
+    const { el, reqs } = mountWindowed({ total: 500, loaded: 20 })
+    expect(reqs.rows, '初装已覆盖期望区间（无 init）').toEqual([])
+    const sc = scrollerOf(el)
+
+    sc.scrollTop = 400
+    sc.dispatchEvent(new Event('scroll'))
+    await flushRaf()
+    // 可视 [5,19)（floor((400−33)/37)=9 −4）± margin 8 → 期望 [0,27)，已装载 [0,20) 不覆盖
+    expect(reqs.rows, 'scroll 请求（reason=scroll，非 init/data）').toEqual([{ start: 0, end: 27, reason: 'scroll' }])
+
+    // 宿主回填绝对行 [100,140) 并滚到该区
+    reqs.rows.length = 0
+    el.setAttribute(
+      'resources',
+      JSON.stringify(Array.from({ length: 40 }, (_, i) => ({ id: `r${100 + i}`, name: `R${100 + i}` }))),
+    )
+    el.setAttribute('window-start', '100')
+    sc.scrollTop = 3733 // (100 − 4) × 37 + 33 → 行窗口 [96,109)
+    sc.dispatchEvent(new Event('scroll'))
+    await flushRaf()
+
+    const ids = laneRows(el).map((r) => r.dataset['resourceId'])
+    expect(ids[0], '首渲染行 = 绝对行 100（按绝对行号定位，非本地 0）').toBe('r100')
+    expect(ids.length, '可视 [96,109) ∩ 装载 [100,140) = 9 行').toBe(9)
+    const [top, bottom] = laneSpacers(el) as [HTMLElement, HTMLElement]
+    expect(top.style.height, '行 0..99 未装载 → 顶部占位 = 100 × 37').toBe(`${100 * LANE_ROW_H}px`)
+    const sum = Number.parseFloat(top.style.height) + ids.length * LANE_ROW_H + Number.parseFloat(bottom.style.height)
+    expect(Math.round(sum), '泳道区总高守恒 = 500 × 37（不随窗口位置漂移）').toBe(500 * LANE_ROW_H)
+    // 画布宽守恒：轨道宽 = canvasW（365 天 × 36）
+    expect(shadowOf(el).querySelector<HTMLElement>('.lane .track')!.style.width).toBe(`${365 * 36}px`)
+    // 请求区间只取与视口相交的区（负载区此时远在下方 → 不并入，否则 need 会被拉回行 0）
+    expect(reqs.rows.at(-1), '回填/滚动后按需再派（reason=scroll，区间限可视行窗）').toEqual({
+      start: 88,
+      end: 117,
+      reason: 'scroll',
+    })
+  })
+
+  it('⑪ windowed 但视口高不可测（clientHeight=0）→ 不派请求，已装载行全量渲染且尾部占位守恒', () => {
+    const { el, reqs } = mountWindowed({ total: 500, loaded: 30, vh: 0 })
+    expect(reqs.rows, '无 virtualization 通道 → 不外扩请求（防请求发散）').toEqual([])
+    expect(laneRows(el).length, '已装载 30 行全量渲染（回落）').toBe(30)
+    const [top, bottom] = laneSpacers(el) as [HTMLElement, HTMLElement]
+    expect(Number.parseFloat(top.style.height), '切片起点 0 → 顶部无未装载占位').toBe(0)
+    expect(Number.parseFloat(bottom.style.height), '尾部未装载 470 行 → 占位 470 × 37').toBe(470 * LANE_ROW_H)
+  })
+
+  it('⑫ windowed 告警：负载统计基于部分数据 + 缺 range-* 回落（实例级各一次）', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const { el } = mountWindowed({ total: 500, loaded: 10 })
+    const msgs = warn.mock.calls.map((c) => String(c[0]))
+    expect(
+      msgs.some((m) => m.includes('负载/超载统计仅基于已装载')),
+      '负载/超载基于部分数据的告警',
+    ).toBe(true)
+    expect(
+      msgs.some((m) => m.includes('range-start/range-end')),
+      '缺轴范围回落告警',
+    ).toBe(true)
+    const n = warn.mock.calls.length
+    el.requestUpdate()
+    el.setAttribute('window-start', '0')
+    expect(warn.mock.calls.length, '实例级去重：后续 update 不重复告警').toBe(n)
+
+    // 反证：提供**两个**合法 range-* 后不再有「范围不可用」告警（该告警确由范围缺失/非法触发）。
+    // 注意属性是逐条设置的：仅 range-start 在场的中间态属「给了其一但不可用」（F4 告警），故在两条
+    // 都落定后清一次告警记录，再断言「齐备后不再告警」。
+    warn.mockClear()
+    el.setAttribute('range-start', '2026-01-01')
+    el.setAttribute('range-end', '2026-12-31')
+    warn.mockClear()
+    el.requestUpdate()
+    expect(
+      warn.mock.calls.map((c) => String(c[0])).some((m) => m.includes('range-start/range-end')),
+      '已提供完整范围 → 不再回落告警',
+    ).toBe(false)
+
+    // 反证：非 windowed 缺 range-* 不告警（回落是既有口径，非配置错误）
+    warn.mockClear()
+    mount({ scale: 'day', resources: JSON.stringify([{ id: 'r1', name: 'R1' }]), tasks: AXIS_TASKS })
+    expect(warn.mock.calls.length, '非 windowed 不产生 windowed 告警').toBe(0)
+  })
+
+  it('⑬ windowed 负载统计保留「部分数据」口径：负载行/柱只按已装载切片渲染、尾部占位按 total', () => {
+    const resources = Array.from({ length: 3 }, (_, i) => ({ id: `r${i}`, name: `R${i}` }))
+    const tasks = [{ id: 't0', name: 'T', start: '2026-01-05', end: '2026-01-05', resources: ['r0', 'r1', 'r2'] }]
+    const el = mount({ scale: 'day', resources: JSON.stringify(resources), tasks: JSON.stringify(tasks) })
+    const sc = scrollerOf(el)
+    Object.defineProperty(sc, 'clientWidth', { value: 400, configurable: true })
+    Object.defineProperty(sc, 'clientHeight', { value: 180, configurable: true })
+    el.setAttribute('total', '500')
+    el.setAttribute('window-start', '0')
+    el.setAttribute('windowed', '')
+    expect(loadRows(el).length, '负载行仅已装载 3 行（非 total 500）').toBe(3)
+    expect(
+      shadowOf(el).querySelectorAll('.load .pillar').length,
+      '柱只来自已装载任务（部分数据口径由宿主补全量）',
+    ).toBeLessThanOrEqual(3)
+    const [top, bottom] = loadSpacers(el) as [HTMLElement, HTMLElement]
+    expect(Number.parseFloat(top.style.height)).toBe(0)
+    expect(Number.parseFloat(bottom.style.height), '负载区尾部占位 (500−3) × 65').toBe(497 * LOAD_ROW_H)
+  })
+
+  it('⑭ 非 windowed 行为不变：既有全量口径下窗口化渲染仍无任何请求', () => {
+    const resources = Array.from({ length: 200 }, (_, i) => ({ id: `r${i}`, name: `R${i}` }))
+    const el = mount({ scale: 'day', resources: JSON.stringify(resources), tasks: AXIS_TASKS })
+    const sc = scrollerOf(el)
+    Object.defineProperty(sc, 'clientWidth', { value: 400, configurable: true })
+    Object.defineProperty(sc, 'clientHeight', { value: 180, configurable: true })
+    const reqs = record(el)
+    el.requestUpdate()
+    sc.scrollTop = 100 * LANE_ROW_H
+    sc.dispatchEvent(new Event('scroll'))
+    expect(reqs.rows, '200 行全在本地（装载区间覆盖一切窗口）→ 永不请求').toEqual([])
+    expect(reqs.ranges).toEqual([])
+    expect(laneRows(el).length, '本地行窗口照常生效（< 200）').toBeLessThan(200)
+  })
+
+  it('㉑ windowed 窗口完全落在装载区外：不渲染行但 spacer 总高守恒、请求区间锚定可视行窗', async () => {
+    const { el, reqs } = mountWindowed({ total: 500, loaded: 20 })
+    expect(reqs.rows, '初装已覆盖期望区间（无 init）').toEqual([])
+    const sc = scrollerOf(el)
+    // 装载 [0,20)；滚到绝对行 ~300（远超装载区）→ 行窗口 [295,308) 与装载区无交集
+    sc.scrollTop = 300 * LANE_ROW_H
+    sc.dispatchEvent(new Event('scroll'))
+    await flushRaf()
+    expect(laneRows(el).length, '窗口与装载区无交集 → 不渲染任何行').toBe(0)
+    const [top, bottom] = laneSpacers(el) as [HTMLElement, HTMLElement]
+    const sum = Number.parseFloat(top.style.height) + Number.parseFloat(bottom.style.height)
+    expect(Math.round(sum), '无行渲染时 spacer 总高仍 = 500 × 37（空交集不虚增）').toBe(500 * LANE_ROW_H)
+    // 反证：若把离屏区的夹取窗口（负载区 = [0,9)）并入，need 会被拉回行 0（这里必须是可视行窗 ±8）
+    expect(reqs.rows.at(-1), '请求区间锚定可视行窗 [295,308) ± 8').toEqual({
+      start: 287,
+      end: 316,
+      reason: 'scroll',
+    })
+  })
+
+  it('㉒ windowed 滚入负载区：离屏的泳道区不并入请求区间，负载区行窗独立生效', async () => {
+    // 装载 [200,220)；滚到负载区顶（泳道区 500×37 = 18500 之上已离屏、负载区开始可见）
+    const { el, reqs } = mountWindowed({ total: 500, loaded: 20, start: 200 })
+    expect(reqs.rows, '初装：行窗口 [0,9) 不被装载 [200,220) 覆盖 → init').toEqual([
+      { start: 0, end: 17, reason: 'init' },
+    ])
+    reqs.rows.length = 0
+    const sc = scrollerOf(el)
+    sc.scrollTop = 18600 // loadTop ≈ 33 + 18500 + 33 = 18566 → 负载区 [0,8) 可见
+    sc.dispatchEvent(new Event('scroll'))
+    await flushRaf()
+    expect(laneRows(el).length, '泳道区已整体离屏 → 不渲染泳道行').toBe(0)
+    expect(loadRows(el).length, '负载区窗口 [0,8) 与装载 [200,220) 无交集 → 也不渲染').toBe(0)
+    const [top, bottom] = loadSpacers(el) as [HTMLElement, HTMLElement]
+    const sum = Number.parseFloat(top.style.height) + Number.parseFloat(bottom.style.height)
+    expect(Math.round(sum), '负载区 spacer 总高仍 = 500 × 65（空交集不虚增）').toBe(500 * LOAD_ROW_H)
+    // 负载区此时显示绝对行 0..8（它自己的滚动坐标）→ 请求区间即为该窗 ±8（而非被泳道区抬高）
+    expect(reqs.rows.at(-1), '请求区间取负载区行窗（泳道区离屏不并入）').toEqual({
+      start: 0,
+      end: 16,
+      reason: 'scroll',
+    })
+  })
+
+  // ===== 宿主托管时间轴范围（range-start / range-end）=====
+
+  /** 任务远离轴范围：若轴被忽略（回落任务 min/max）则 period 数与刻度完全不同 */
+  const FAR_TASKS = JSON.stringify([{ id: 'far', name: 'F', start: '2027-06-01', end: '2027-06-02', resources: [] }])
+  const mountAxis = (extra: Record<string, string> = {}): OASResource =>
+    mount({ scale: 'day', resources: JSON.stringify([{ id: 'r1', name: 'R1' }]), tasks: FAR_TASKS, ...extra })
+
+  it('⑮ 轴托管：period 由 range-* 生成（非任务 min/max）+ 首帧 init 范围请求', () => {
+    const el = mountAxis()
+    const sc = scrollerOf(el)
+    Object.defineProperty(sc, 'clientWidth', { value: 400, configurable: true })
+    Object.defineProperty(sc, 'clientHeight', { value: 180, configurable: true })
+    const ranges: RangeReq[] = []
+    el.addEventListener('oas-range-request', ((e: CustomEvent<RangeReq>) => {
+      ranges.push(e.detail)
+    }) as EventListener)
+    el.setAttribute('range-start', '2026-01-01')
+    el.setAttribute('range-end', '2026-12-31')
+    // 轴 = [2026-01-01, 2027-01-01)（range-end 含当日）→ day 档 365 列
+    expect(internals(el).periods.length, 'period 覆盖宿主给定范围（365 天）而非任务 2 天').toBe(365)
+    expect(tickTexts(el)[0], '首刻度 = 轴起点').toBe('01-01')
+    expect(internals(el).canvasW).toBe(365 * 36)
+    // 可视列窗 [0,16)（400/36 = 11.1 → 12 列 + overscan 4）→ 可视时长 16 天 → need 前后各扩 16 天
+    expect(ranges, 'need 起点早于轴起点 → 未覆盖 → 派发（半开 ms）').toEqual([
+      { startMs: dayMs('2025-12-16'), endMs: dayMs('2026-02-02'), reason: 'init' },
+    ])
+  })
+
+  it('⑯ 反证：列窗位于轴中部（need ⊆ 轴）→ 不派范围请求', async () => {
+    const el = mountAxis({ 'range-start': '2026-01-01', 'range-end': '2026-12-31' })
+    const sc = scrollerOf(el)
+    Object.defineProperty(sc, 'clientWidth', { value: 400, configurable: true })
+    Object.defineProperty(sc, 'clientHeight', { value: 180, configurable: true })
+    const ranges: RangeReq[] = []
+    el.addEventListener('oas-range-request', ((e: CustomEvent<RangeReq>) => {
+      ranges.push(e.detail)
+    }) as EventListener)
+    el.requestUpdate()
+    expect(ranges.length, '前置：轴头部 need 越界 → 已派 1 次（断言非空，防下条恒真）').toBe(1)
+    sc.scrollLeft = 6624 // floor(6624/36) = 184 → 列窗 [180,200)，位于轴中部
+    sc.dispatchEvent(new Event('scroll'))
+    await flushRaf()
+    expect(internals(el).winColStart, '列窗已滚到轴中部').toBe(180)
+    expect(ranges.length, 'need ⊆ 轴 → 无新请求').toBe(1)
+  })
+
+  it('⑰ 范围请求去重与复位：同 need 不重复；被轴覆盖后复位，同一 need 可再派', async () => {
+    const el = mountAxis({ 'range-start': '2026-01-01', 'range-end': '2026-12-31' })
+    const sc = scrollerOf(el)
+    Object.defineProperty(sc, 'clientWidth', { value: 400, configurable: true })
+    Object.defineProperty(sc, 'clientHeight', { value: 180, configurable: true })
+    const ranges: RangeReq[] = []
+    el.addEventListener('oas-range-request', ((e: CustomEvent<RangeReq>) => {
+      ranges.push(e.detail)
+    }) as EventListener)
+    el.requestUpdate()
+    expect(ranges.length, '轴头部越界 → 1 次').toBe(1)
+    const headNeed = { ...ranges[0]! }
+
+    // 同列窗内微滚（不改窗口）→ need 相同 → 去重
+    sc.scrollLeft = 10
+    sc.dispatchEvent(new Event('scroll'))
+    await flushRaf()
+    expect(ranges.length, '同一 need 不重复派发').toBe(1)
+
+    // 滚到轴中部：need ⊆ 轴 → 覆盖 → 去重状态复位（仍不派）
+    sc.scrollLeft = 6624 // floor(6624/36) = 184 → 列窗 [180,200)
+    sc.dispatchEvent(new Event('scroll'))
+    await flushRaf()
+    expect(internals(el).winColStart, '列窗已到轴中部').toBe(180)
+    expect(ranges.length, 'need ⊆ 轴 → 不派').toBe(1)
+
+    // 滚回轴头部：need 与首次完全相同——若去重未被覆盖复位则应被抑制，故本条即复位证明
+    sc.scrollLeft = 0
+    sc.dispatchEvent(new Event('scroll'))
+    await flushRaf()
+    expect(ranges.length, '复位后同一 need 可再派').toBe(2)
+    // 区间逐位相同（reason 由触发路径决定：首帧 data / 本次 scroll）——同 need 能再派即复位证明
+    expect({ startMs: ranges[1]!.startMs, endMs: ranges[1]!.endMs }).toEqual({
+      startMs: headNeed.startMs,
+      endMs: headNeed.endMs,
+    })
+
+    // 滚到轴尾（列窗夹取到末端）→ need 越界 → 再派
+    sc.scrollLeft = 999999
+    sc.dispatchEvent(new Event('scroll'))
+    await flushRaf()
+    expect(ranges.length, '轴尾越界 → 再派').toBe(3)
+    expect(ranges[2]!.endMs, '轴尾 need 越过轴末（2027-01-01）').toBeGreaterThan(dayMs('2027-01-01'))
+  })
+
+  it('⑱ 轴托管但列虚拟化未生效（画布不溢出视口）→ 不派范围请求', () => {
+    const el = mountAxis({ 'range-start': '2026-01-01', 'range-end': '2026-01-05' }) // 5 天 = 180px < 视口
+    const sc = scrollerOf(el)
+    Object.defineProperty(sc, 'clientWidth', { value: 400, configurable: true })
+    Object.defineProperty(sc, 'clientHeight', { value: 180, configurable: true })
+    const ranges: RangeReq[] = []
+    el.addEventListener('oas-range-request', ((e: CustomEvent<RangeReq>) => {
+      ranges.push(e.detail)
+    }) as EventListener)
+    el.requestUpdate()
+    expect(internals(el).canvasW, '轴 5 天 × 36 = 180px').toBe(180)
+    expect(ranges, '全轴可见（列窗 = 全量）→ 无「滚出轴范围」通道 → 不派').toEqual([])
+  })
+
+  // ===== 两类窗口并存 / 失效回落 =====
+
+  it('⑲ windowed + 轴托管：行请求与范围请求各自按需派发（互不干扰）', () => {
+    const resources = Array.from({ length: 10 }, (_, i) => ({ id: `r${i}`, name: `R${i}` }))
+    const el = mount({ scale: 'day', resources: JSON.stringify(resources), tasks: '[]' })
+    const sc = scrollerOf(el)
+    Object.defineProperty(sc, 'clientWidth', { value: 400, configurable: true })
+    Object.defineProperty(sc, 'clientHeight', { value: 180, configurable: true })
+    const reqs = record(el)
+    el.setAttribute('total', '500')
+    el.setAttribute('window-start', '0')
+    el.setAttribute('windowed', '')
+    el.setAttribute('range-start', '2026-01-01')
+    el.setAttribute('range-end', '2026-12-31')
+    expect(reqs.rows, '行请求：init 一次，need [0,17)').toEqual([{ start: 0, end: 17, reason: 'init' }])
+    expect(reqs.ranges.length, '范围请求：init 一次（轴切换后仍只 init）').toBe(1)
+    expect(reqs.ranges[0]!.reason).toBe('init')
+    // 轴范围把时间轴撑到 365 天（tasks 为空也成立：轴托管不依赖任务）
+    expect(tickTexts(el).length, '刻度按列窗口渲染（非空）').toBeGreaterThan(0)
+  })
+
+  it('⑳ total 非法 / 为 0 → windowed 不生效，回落本地全量口径（无行请求、绝对行号被忽略）', () => {
+    const resources = JSON.stringify(Array.from({ length: 30 }, (_, i) => ({ id: `r${i}`, name: `R${i}` })))
+    const el = mount({
+      scale: 'day',
+      resources,
+      tasks: AXIS_TASKS,
+      windowed: '',
+      total: 'abc',
+      'window-start': '0',
+    })
+    const sc = scrollerOf(el)
+    Object.defineProperty(sc, 'clientWidth', { value: 400, configurable: true })
+    Object.defineProperty(sc, 'clientHeight', { value: 180, configurable: true })
+    const reqs = record(el)
+    el.requestUpdate()
+    expect(internals(el).winMode.windowed, 'total 非法 → windowed 不生效').toBe(false)
+    expect(reqs.rows, '非 windowed 不派行请求').toEqual([])
+    expect(laneRows(el).length, '本地全量口径：30 行按窗口渲染（< 30）').toBeLessThan(30)
+    expect(laneRows(el)[0]!.dataset['resourceId'], 'window-start 被忽略（本地第 0 行即首行）').toBe('r0')
+
+    // total=0 同样不算 windowed（readWindowedMode 契约）
+    el.setAttribute('total', '0')
+    expect(internals(el).winMode.windowed).toBe(false)
+  })
+
+  // ===== F1：a11y 行网格（aria-rowcount / aria-rowindex）=====
+
+  it('㉓ a11y：aria-rowcount = total（全量行空间），aria-rowindex = 绝对行号 1 基（经 window-start 换算）', async () => {
+    const { el } = mountWindowed({ total: 500, loaded: 40, start: 100 })
+    const sc = scrollerOf(el)
+    sc.scrollTop = 3733 // 绝对行窗 [96,109)
+    sc.dispatchEvent(new Event('scroll'))
+    await flushRaf()
+    const lanes = shadowOf(el).querySelector<HTMLElement>('.lanes')!
+    expect(lanes.getAttribute('role'), '泳道区为行网格（aria-rowcount/rowindex 的合法宿主）').toBe('grid')
+    expect(lanes.getAttribute('aria-rowcount'), '全量行数口径 = total（非已装载 40）').toBe('500')
+    const rows = laneRows(el)
+    expect(rows.map((r) => r.dataset['resourceId'])[0], '首渲染行 = 绝对行 100').toBe('r100')
+    // 可视 [96,109) ∩ 装载 [100,140) = 9 行 → 绝对行号 101..109（1 基，含 window-start 偏移）
+    expect(rows.map((r) => r.getAttribute('aria-rowindex'))).toEqual([
+      '101',
+      '102',
+      '103',
+      '104',
+      '105',
+      '106',
+      '107',
+      '108',
+      '109',
+    ])
+    expect(
+      rows.map((r) => r.getAttribute('role')),
+      '每行 role=row（否则 aria-rowindex 无合法宿主）',
+    ).toEqual(new Array(9).fill('row'))
+    expect(rows[0]!.querySelector('.name')!.getAttribute('role'), '资源名为 rowheader').toBe('rowheader')
+    expect(rows[0]!.querySelector('.track')!.getAttribute('role'), '时间轴单元格为 gridcell').toBe('gridcell')
+
+    // 视口高不可测（回落全量渲染）时同样按绝对行号；aria-rowcount 仍取 total
+    const flat = mountWindowed({ total: 500, loaded: 30, start: 10, vh: 0 })
+    const flatRows = laneRows(flat.el)
+    expect(flatRows.length, '回落全量渲染 30 行').toBe(30)
+    expect(flatRows[0]!.getAttribute('aria-rowindex'), '首行 = window-start + 1').toBe('11')
+    expect(flatRows.at(-1)!.getAttribute('aria-rowindex'), '末行 = window-start + 装载行数').toBe('40')
+    expect(shadowOf(flat.el).querySelector('.lanes')!.getAttribute('aria-rowcount')).toBe('500')
+  })
+
+  it('㉔ RTL × windowed：绝对行渲染 / aria-rowindex / spacer 与 LTR 一致；条 left 镜像（left_LTR + left_RTL + w = canvasW）', async () => {
+    // 轴任务（resources 空、不产条）+ 每行一条任务（同资源单条 → 段数 1 → 行模型高恒 37px）
+    const tasks = JSON.stringify([
+      { id: 'axis', name: 'A', start: '2026-01-01', end: '2026-12-31', resources: [] },
+      ...Array.from({ length: 40 }, (_, i) => ({
+        id: `t${100 + i}`,
+        name: `T${100 + i}`,
+        start: '2026-01-02',
+        end: '2026-01-04',
+        resources: [`r${100 + i}`],
+      })),
+    ])
+    const ltr = mountWindowed({ total: 500, loaded: 40, start: 100, tasks })
+    const rtl = mountWindowed({ total: 500, loaded: 40, start: 100, tasks, attrs: { dir: 'rtl' } })
+    expect(rtl.el.hasAttribute('data-rtl'), 'RTL 生效标记').toBe(true)
+    for (const f of [ltr, rtl]) {
+      const sc = scrollerOf(f.el)
+      sc.scrollTop = 3733 // 绝对行窗 [96,109)
+      sc.dispatchEvent(new Event('scroll'))
+    }
+    await flushRaf()
+    const lRows = laneRows(ltr.el)
+    const rRows = laneRows(rtl.el)
+    expect(
+      rRows.map((r) => r.dataset['resourceId']),
+      'RTL 同按绝对行号定位',
+    ).toEqual(lRows.map((r) => r.dataset['resourceId']))
+    expect(
+      rRows.map((r) => r.getAttribute('aria-rowindex')),
+      'RTL 绝对行号与 LTR 一致',
+    ).toEqual(lRows.map((r) => r.getAttribute('aria-rowindex')))
+    const [lTop, lBottom] = laneSpacers(ltr.el) as [HTMLElement, HTMLElement]
+    const [rTop, rBottom] = laneSpacers(rtl.el) as [HTMLElement, HTMLElement]
+    expect(rTop.style.height, 'spacer 与 LTR 同（纵向与方向无关）').toBe(lTop.style.height)
+    expect(rBottom.style.height).toBe(lBottom.style.height)
+    // 横向镜像：同一 xStart 的条 left_LTR = xStart、left_RTL = canvasW − xStart − w
+    const lBar = shadowOf(ltr.el).querySelector<HTMLElement>('.lanes .row.lane .bar')!
+    const rBar = shadowOf(rtl.el).querySelector<HTMLElement>('.lanes .row.lane .bar')!
+    const lLeft = Number.parseFloat(lBar.style.left)
+    const rLeft = Number.parseFloat(rBar.style.left)
+    const w = Number.parseFloat(lBar.style.width)
+    expect(lLeft, 'LTR 基准 left = 1 天 × 36').toBe(36)
+    expect(w, '条宽 = 3 天 × 36').toBe(3 * 36)
+    expect(rLeft, 'RTL：left = canvasW − xStart − w').toBe(internals(ltr.el).canvasW - lLeft - w)
+  })
+
+  it('㉕ RTL × 轴托管：负值 scrollLeft 模型下列窗口与范围请求机制同 LTR（轴中不派 / 轴头复位再派）', async () => {
+    const { el, reqs } = mountWindowed({
+      total: 500,
+      loaded: 10,
+      attrs: { dir: 'rtl', 'range-start': '2026-01-01', 'range-end': '2026-12-31' },
+    })
+    expect(el.hasAttribute('data-rtl'), 'RTL 生效标记').toBe(true)
+    expect(reqs.ranges.length, '首帧 init 范围请求').toBe(1)
+    const sc = scrollerOf(el)
+    // RTL 负值 scrollLeft：|scrollLeft| = 自初始端滚出距离（与 LTR 正 scrollLeft 同口径）
+    sc.scrollLeft = -6624
+    sc.dispatchEvent(new Event('scroll'))
+    await flushRaf()
+    expect(internals(el).winColStart, 'RTL 列窗与 LTR 同（|scrollLeft| 口径）').toBe(180)
+    expect(reqs.ranges.length, 'need ⊆ 轴 → 无新范围请求').toBe(1)
+    sc.scrollLeft = 0
+    sc.dispatchEvent(new Event('scroll'))
+    await flushRaf()
+    expect(reqs.ranges.length, '回到轴头（去重状态复位）→ 同一 need 可再派').toBe(2)
+  })
+
+  // ===== F3：切片越界（window-start + 装载行数 > total）=====
+
+  it('㉖ 切片越界：越界行被丢弃（不渲染）+ devWarn 一次（实例级）', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    try {
+      const { el } = mountWindowed({ total: 100, loaded: 40, start: 80 })
+      const sliceMsgs = (): string[] =>
+        warn.mock.calls.map((c) => String(c[0])).filter((m) => m.includes('超出全量范围'))
+      expect(sliceMsgs().length, '切片越界告警一次').toBe(1)
+      expect(sliceMsgs()[0], '告警含窗口起点').toContain('window-start 80')
+      expect(sliceMsgs()[0], '告警含全量行数依据').toContain('total 100')
+
+      const sc = scrollerOf(el)
+      sc.scrollTop = 95 * LANE_ROW_H // 绝对行窗 [90,100)（夹到 total 100）
+      sc.dispatchEvent(new Event('scroll'))
+      await flushRaf()
+      const ids = laneRows(el).map((r) => r.dataset['resourceId'])
+      expect(ids.length, '窗口 ∩ total = 10 行（装载的越界 20 行不渲染）').toBe(10)
+      expect(ids.at(-1), '末行 = total − 1 = r99（越界部分丢弃）').toBe('r99')
+      expect(ids.length, '远少于装载的 40 行（越界行确未进 DOM）').toBeLessThan(40)
+      expect(shadowOf(el).querySelector('.lanes')!.getAttribute('aria-rowcount'), '行数口径 = total').toBe('100')
+      const [top, bottom] = laneSpacers(el) as [HTMLElement, HTMLElement]
+      const sum = Number.parseFloat(top.style.height) + ids.length * LANE_ROW_H + Number.parseFloat(bottom.style.height)
+      expect(Math.round(sum), '滚动总高按 total 守恒（越界行不计入）').toBe(100 * LANE_ROW_H)
+
+      el.requestUpdate()
+      expect(sliceMsgs().length, '实例级去重：后续 update 不重复告警').toBe(1)
+    } finally {
+      warn.mockRestore()
+    }
+  })
+
+  // ===== F4：range-* 「给了但不可用」（只有其一 / 颠倒）=====
+
+  it('㉗ windowed × 轴非法：忽略轴托管 + devWarn 一次 + 回落数据派生（单测反证 period 数）', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    try {
+      const invalidMsgs = (): string[] => warn.mock.calls.map((c) => String(c[0])).filter((m) => m.includes('非法'))
+
+      // ① 只有 range-start
+      const onlyStart = mountWindowed({ total: 500, loaded: 10, attrs: { 'range-start': '2026-06-01' } })
+      expect(internals(onlyStart.el).axisMs, '轴被忽略（axisMs = null）').toBeNull()
+      expect(internals(onlyStart.el).periods.length, '回落数据派生：AXIS_TASKS 覆盖 2026 全年 → 365 天').toBe(365)
+      expect(invalidMsgs().length, '只有其一时告警一次').toBe(1)
+      onlyStart.el.requestUpdate()
+      expect(invalidMsgs().length, '实例级去重').toBe(1)
+
+      // ② 颠倒（range-start 晚于 range-end）
+      warn.mockClear()
+      const reversed = mountWindowed({
+        total: 500,
+        loaded: 10,
+        attrs: { 'range-start': '2026-12-31', 'range-end': '2026-01-01' },
+      })
+      expect(internals(reversed.el).axisMs).toBeNull()
+      expect(internals(reversed.el).periods.length, '颠倒同样回落数据派生（365 天而非 1 天）').toBe(365)
+      expect(invalidMsgs().length, '颠倒告警一次').toBe(1)
+
+      // 反证：合法轴 → 不产生「非法」告警
+      warn.mockClear()
+      mountWindowed({
+        total: 500,
+        loaded: 10,
+        attrs: { 'range-start': '2026-01-01', 'range-end': '2026-12-31' },
+      })
+      expect(invalidMsgs().length, '合法轴不告警').toBe(0)
+
+      // 反证：两者都不给 → 走「未提供」告警（措辞与「非法」区分，不重复报）
+      warn.mockClear()
+      mountWindowed({ total: 500, loaded: 10 })
+      const msgs = warn.mock.calls.map((c) => String(c[0]))
+      expect(
+        msgs.some((m) => m.includes('未提供 range-start/range-end')),
+        '未提供 → 缺范围告警',
+      ).toBe(true)
+      expect(invalidMsgs().length, '未提供 ≠ 非法').toBe(0)
+    } finally {
+      warn.mockRestore()
+    }
+  })
+})
+
+describe('OASResource a11y 行网格（非 windowed 全量口径）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  const flushRaf = (): Promise<void> => new Promise((resolve) => requestAnimationFrame(() => resolve(undefined)))
+  const lanesOf = (el: OASResource): HTMLElement[] => [
+    ...shadowOf(el).querySelectorAll<HTMLElement>('.lanes .row.lane'),
+  ]
+  const scrollerOfLocal = (el: OASResource): HTMLElement => shadowOf(el).querySelector<HTMLElement>('.scroller')!
+
+  it('泳道区 role=grid + aria-rowcount = 已装载行数；每行 role=row + aria-rowindex 连续 1 基；行内单元格角色就位', () => {
+    const el = mount({
+      resources: JSON.stringify([
+        { id: 'r1', name: 'A' },
+        { id: 'r2', name: 'B' },
+        { id: 'r3', name: 'C' },
+      ]),
+      tasks: JSON.stringify([{ id: 't1', name: 'T', start: '2026-03-02', end: '2026-03-03', resources: ['r1'] }]),
+    })
+    const lanes = shadowOf(el).querySelector<HTMLElement>('.lanes')!
+    expect(lanes.getAttribute('role'), '泳道区 role=grid').toBe('grid')
+    expect(lanes.getAttribute('aria-rowcount'), '非 windowed：全量 = 已装载行数').toBe('3')
+    const rows = lanesOf(el)
+    expect(rows.length).toBe(3)
+    expect(rows.map((r) => r.getAttribute('role'))).toEqual(['row', 'row', 'row'])
+    expect(rows.map((r) => r.getAttribute('aria-rowindex'))).toEqual(['1', '2', '3'])
+    expect(rows[0]!.querySelector('.name')!.getAttribute('role')).toBe('rowheader')
+    expect(rows[0]!.querySelector('.track')!.getAttribute('role')).toBe('gridcell')
+  })
+
+  it('本地行虚拟化（非 windowed）下 aria-rowcount 仍为已装载行数，窗口首行 aria-rowindex 随滚动上移', async () => {
+    const el = mount({
+      resources: JSON.stringify(Array.from({ length: 200 }, (_, i) => ({ id: `r${i}`, name: `R${i}` }))),
+      tasks: JSON.stringify([{ id: 't', name: 'T', start: '2026-03-02', end: '2026-03-03', resources: ['r0'] }]),
+    })
+    const sc = scrollerOfLocal(el)
+    Object.defineProperty(sc, 'clientWidth', { value: 400, configurable: true })
+    Object.defineProperty(sc, 'clientHeight', { value: 180, configurable: true })
+    el.requestUpdate()
+    expect(shadowOf(el).querySelector('.lanes')!.getAttribute('aria-rowcount'), '全量行数口径').toBe('200')
+    const head = lanesOf(el)
+    expect(head.length, '有行渲染').toBeGreaterThan(0)
+    expect(head.length, '窗口外行不进 DOM').toBeLessThan(200)
+    expect(head[0]!.getAttribute('aria-rowindex'), '首行绝对行号 1').toBe('1')
+    sc.scrollTop = 100 * 37
+    sc.dispatchEvent(new Event('scroll'))
+    await flushRaf()
+    const mid = lanesOf(el)
+    const midFirst = Number(mid[0]!.getAttribute('aria-rowindex'))
+    expect(mid[0]!.dataset['resourceId'], '窗口已滚到本地第 95 行附近').not.toBe('r0')
+    expect(midFirst, '窗口首行绝对行号 > 1').toBeGreaterThan(1)
+    expect(midFirst, '绝对行号不超过全量行数').toBeLessThanOrEqual(200)
   })
 })

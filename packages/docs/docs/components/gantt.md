@@ -253,6 +253,30 @@
 
 方法：`scrollToTask(id)` 定位任务行、`scrollToDate(date)` / `scrollToToday()` 水平定位、`updateTask(id, patch)` 单条增量更新（走清洗层，派发 `oas-tasks-change`）。
 
+## 服务端行窗口（windowed）
+
+> 十万行级场景：宿主只喂「可视窗口附近」的行切片，组件**不持有全量数据**。行窗口按滚动位置计算，未被已装载区间覆盖时派发 `oas-window-request`，宿主回填后按**绝对行号**渲染。
+
+属性 `windowed`（开启）+ `total`（全量行数）+ `window-start`（切片首行绝对行号）+ `range-start` / `range-end`（宿主托管时间轴范围，ISO 日期，`range-end` 含当日——切片不含完整日期跨度时必用）。事件：
+
+- `oas-window-request`：`detail: { start, end, reason }`（半开区间、绝对行号；`reason` = `init` / `scroll` / `resize` / `data`），同一期望区间不重复派发。
+- `oas-range-request`：可视时间窗接近轴端时派发，`detail: { startMs, endMs, reason }`，供宿主扩展范围。
+
+```html
+<oas-gantt windowed total="200000" window-start="0" range-start="2026-01-01" range-end="2026-12-31"
+  height="360" scale="day"></oas-gantt>
+<script>
+  const el = document.querySelector('oas-gantt[windowed]')
+  el.addEventListener('oas-window-request', (e) => {
+    const { start, end } = e.detail
+    el.setAttribute('window-start', String(start))
+    el.setAttribute('tasks', JSON.stringify(fetchTasks(start, end))) // 真实项目请求后端
+  })
+</script>
+```
+
+windowed 下的约定：**切片须为扁平行**（含 `parent`/`children` 的层级切片会 devWarn 并按扁平渲染，展开/收起请宿主侧展平）；`auto-schedule` 与关键路径在部分数据上会算错，**跳过并 devWarn**；行拖拽重排禁用（`index` 只对切片有意义）；`oas-tasks-change` 的 `detail.tasks` 仅含切片——宿主须**按 id 合并回全量**，不得整体替换。
+
 ## 展开集合受控 / 标签与吸附 / 本地化
 
 - **自定义字段透传**：`GanttTask` 允许携带任意业务字段（如 `assignee`、`tag`）——组件**原样保留**（`el.tasks` / `oas-task-render` / 模板可见），不参与排程；显示走条标签模板或 `oas-task-render`，编辑走 `oas-modal`+`oas-form` 配方或 `updateTask`。
@@ -543,6 +567,8 @@ onMounted(async () => {
 | `label-position` | 任务条标签位置：inside 条内 / right 条旁 / left 条左；缺省 none（行名列已承载名称，条旁不再重复渲染）；非法值回落 none | `string` | — |
 | `locale` | 本地化（覆盖 config-provider 注入与全局 locale） | `string` | — |
 | `progress-readonly` | 禁改进度（改期仍可拖） | `boolean` | — |
+| `range-end` | 宿主托管时间轴终点（ISO 日期 YYYY-MM-DD，含当日）：与 range-start 成对使用 | `string` | — |
+| `range-start` | 宿主托管时间轴起点（ISO 日期 YYYY-MM-DD）：提供后轴范围不再由数据推导，配合 range-end 支撑窗口化（切片不含完整日期跨度） | `string` | — |
 | `readonly` | 整图只读（禁改期/禁进度，不渲染拖拽手柄） | `boolean` | — |
 | `row-height` | 行高 px（默认 36，下限 20） | `string` | `36` |
 | `scale` | 时间刻度：hour / day（默认）/ week / month / quarter / year；非法值回落 day | `string` | — |
@@ -551,7 +577,10 @@ onMounted(async () => {
 | `show-today` | 今日线（默认开；false 关闭） | `string` | — |
 | `snap` | 拖拽吸附当前刻度（默认开；false 按像素比例平移并保留时间精度） | `string` | — |
 | `tasks` | 甘特任务（JSON）：[{ id?, name, start, end?, type?, progress?, parent?, children?, dependencies?, color?, disabled?, expanded?, baseline?, constraint?（asap/snet/mso/fnlt）, constraintDate? }]——扁平 parent 指针为主，嵌套 children 自动拍平；type:"milestone" 显式优先（带 end 也按里程碑渲染，end 忽略），有子任务时恒为摘要；无 end 亦推导为里程碑；start 晚于 end 自动交换 | `GanttTask[]` | `[]` |
+| `total` | windowed 模式下的全量行（任务）数；为 0 或非法时 windowed 不生效（回落本地模式） | `string` | — |
 | `weekends` | 周末列高亮（默认开；day/hour 档生效；false 关闭） | `string` | — |
+| `window-start` | windowed 模式下切片首行的绝对行号（相对全量） | `string` | `0` |
+| `windowed` | 服务端行窗口模式（布尔，默认关）：与 total / window-start 配合，宿主只喂可视窗口切片（按绝对行号渲染），期望行区间未被已装载覆盖时派发 oas-window-request 由宿主回填；本地跨全量能力（auto-schedule / 关键路径）在部分数据上会算错，已跳过并 devWarn。非 windowed 行为不变 | `boolean` | — |
 | `workdays` | 工作日周几（JSON [0-6]，0=周日…6=周六；opt-in，缺省/空=不限制）：auto-schedule 前推结果吸附到下一个工作日（叠加 holidays） | `string` | — |
 
 #### Property（JS property；是否写回 attribute 见各行说明）
@@ -568,6 +597,7 @@ onMounted(async () => {
 | `oas-dependencies-change` | 连线拖拽建依赖 / 选中删除收口时派发，detail: { taskId, dependencies }（taskId 为依赖变化的后继任务） |
 | `oas-expand-change` | 行树折叠/展开时派发，detail: { id, expanded } |
 | `oas-progress-change` | 拖进度手柄收口时派发，detail: { id, task, progress } |
+| `oas-range-request` | 宿主托管时间范围（range-start/range-end）且可视时间窗接近轴端点时派发，detail: { startMs, endMs, reason }（期望的相邻范围）；同一期望范围不重复派发 |
 | `oas-reparent` | 行拖拽改父子 / 重排收口时派发，detail: { id, parent, index }（parent 为 null 表示根级，index 为同级序号） |
 | `oas-reschedule` | 依赖联动排程改动了后继任务时派发（auto-schedule 开启），detail: { ids }（被联动改动的任务 id） |
 | `oas-scale-change` | scale 属性变化时派发，detail: { scale }；首次吸收不派发 |
@@ -578,6 +608,7 @@ onMounted(async () => {
 | `oas-task-dblclick` | 双击任务条时派发，detail: { id, task }——宿主接编辑表单 |
 | `oas-task-render` | 每条任务渲染后派发，detail: { task, element }——宿主可改写条内 DOM |
 | `oas-tasks-change` | 任务数据变化（程序写 tasks / updateTask / 拖拽写回）时派发，detail: { tasks } |
+| `oas-window-request` | windowed 模式下期望行窗口未被已装载区间覆盖时派发，detail: { start, end, reason }（半开区间、绝对行号；reason 为 init / scroll / resize / data）；同一期望区间不重复派发 |
 
 #### 插槽
 

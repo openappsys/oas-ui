@@ -51,6 +51,30 @@ el.tasks = tasks.map((t) => moved.find((m) => m.id === t.id) ?? t)
 
 实例方法 **`scrollToDate(date)`**：把时间轴横向滚动定位到指定日期（`YYYY-MM-DD`，在可视区内水平居中，扣除左侧 sticky 资源名列宽度）。非法日期 / 无数据为空操作；RTL 布局走负值 `scrollLeft` 模型（同 gantt）。
 
+## 服务端行窗口（windowed）
+
+> 资源上千 / 任务十万级：宿主只喂「可视窗口附近」的资源行切片，组件**不持有全量数据**。行窗口按滚动位置计算，未被已装载区间覆盖时派发 `oas-window-request`，宿主回填后按**绝对行号**渲染。
+
+属性 `windowed`（开启）+ `total`（全量资源行数）+ `window-start`（切片首行绝对行号）+ `range-start` / `range-end`（宿主托管时间轴范围，ISO 日期，`range-end` 含当日）。事件：
+
+- `oas-window-request`：`detail: { start, end, reason }`（半开区间、绝对行号），同一期望区间不重复派发。
+- `oas-range-request`：可视时间窗接近轴端时派发，`detail: { startMs, endMs, reason }`。
+
+```html
+<oas-resource windowed total="5000" window-start="0" range-start="2026-01-01" range-end="2026-12-31"
+  scale="day" height="360"></oas-resource>
+<script>
+  const el = document.querySelector('oas-resource[windowed]')
+  el.addEventListener('oas-window-request', (e) => {
+    const { start, end } = e.detail
+    el.setAttribute('window-start', String(start))
+    el.setAttribute('resources', JSON.stringify(fetchResources(start, end))) // 真实项目请求后端
+  })
+</script>
+```
+
+windowed 下的约定：负载/超载统计**仅基于已装载切片**（全量统计由宿主负责）并 devWarn；缺 `range-start` / `range-end` 时时间轴回落「已装载任务」派生并 devWarn；`oas-tasks-change` 的 `detail.tasks` 仅含切片——宿主须**按 id 合并回全量**，不得整体替换。
+
 ## API
 
 ### oas-resource
@@ -62,9 +86,14 @@ el.tasks = tasks.map((t) => moved.find((m) => m.id === t.id) ?? t)
 | `capacity` | 资源未声明 capacity 时的缺省容量（默认 1） | `string` | `1` |
 | `height` | 组件高度 px（默认 320；接受纯数字或 Npx）：映射到自定义属性 --oas-resource-height（宿主自身 height 内联始终优先，组件不覆盖宿主内联）。height 属性在场且为合法值（>0 纯数字或 Npx）时组件接管该变量，写入宿主内联并覆盖宿主自己设置的 --oas-resource-height；空串/空白按未设置处理；非法值不写该变量、仅清除本实例此前写入的值，宿主 token 不受影响；属性移除后组件写入的值归零清除，高度回落 token 缺省 320 或宿主 CSS，宿主原先内联设置的值不恢复；从未设置 height 属性时组件不写该变量，宿主内联或 class 规则设置的 --oas-resource-height 完全不受影响 | `string` | `320` |
 | `locale` | 本地化（覆盖 config-provider 注入与全局 locale） | `string` | — |
+| `range-end` | 宿主托管时间轴终点（ISO 日期 YYYY-MM-DD，含当日）：与 range-start 成对使用；只有其一 / 颠倒 / 非法时忽略托管并 devWarn | `string` | — |
+| `range-start` | 宿主托管时间轴起点（ISO 日期 YYYY-MM-DD）：提供后 period 范围不再由已装载任务推导 | `string` | — |
 | `resources` | 资源列表（JSON [{ id, name, capacity? }]）——capacity = 该资源每档（period）可并行任务数（day 档即每天；缺省回落属性 capacity，最终 1） | `ResourceItem[]` | `[]` |
 | `scale` | 直方图 period 粒度与时间轴刻度：day（默认）/ week / month；非法回落 day | `string` | — |
 | `tasks` | 资源任务（JSON [{ id, name, start, end, resources? }]）；start/end 仅日精度 YYYY-MM-DD（end 含当日；带时刻输入按当日处理），resources 为分配的资源 id 数组（指向不存在资源的分配忽略） | `ResourceTask[]` | `[]` |
+| `total` | windowed 模式下的全量资源行数；为 0 或非法时 windowed 不生效（回落本地模式） | `string` | — |
+| `window-start` | windowed 模式下切片首行（资源）的绝对行号（相对全量） | `string` | `0` |
+| `windowed` | 服务端行窗口模式（布尔，默认关）：与 total / window-start 配合，宿主只喂可视窗口切片（按绝对行号渲染），期望行区间未被已装载覆盖时派发 oas-window-request 由宿主回填；负载/超载统计仅基于已装载切片（全量统计由宿主负责）并 devWarn；缺 range-start / range-end 时时间轴回落「已装载任务」派生并 devWarn。非 windowed 行为不变 | `boolean` | — |
 
 #### Property（JS property；是否写回 attribute 见各行说明）
 
@@ -78,8 +107,10 @@ el.tasks = tasks.map((t) => moved.find((m) => m.id === t.id) ?? t)
 | 事件 | 说明 |
 | --- | --- |
 | `oas-overload` | 超载态变化时派发（每次更新至多一次；同一超载态不重复派发），detail: { overloads: [{ resourceId, period, load, capacity }] }（period 为档起始日）；无超载不派发 |
+| `oas-range-request` | 宿主托管时间范围（range-start/range-end）且可视时间窗接近轴端点时派发，detail: { startMs, endMs, reason }（期望的相邻范围）；同一期望范围不重复派发 |
 | `oas-task-click` | 点击资源泳道内的任务条时派发，detail: { id, task, resourceId } |
-| `oas-tasks-change` | 程序写 tasks 时派发，detail: { tasks } |
+| `oas-tasks-change` | 程序写 tasks property 时派发，detail: { tasks }。**windowed 下 detail.tasks 仅为已装载切片**：宿主须按 id 合并回全量，不得整体替换 |
+| `oas-window-request` | windowed 模式下期望行窗口未被已装载区间覆盖时派发，detail: { start, end, reason }（半开区间、绝对行号；reason 为 init / scroll / resize / data）；同一期望区间不重复派发 |
 
 #### CSS 变量
 

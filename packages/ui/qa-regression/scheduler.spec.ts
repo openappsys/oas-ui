@@ -141,3 +141,214 @@ test('scheduler 资源视图 + 拖拽创建 + now 线 浏览器回归', async ({
 
   expect(errors).toEqual([])
 })
+
+// 虚拟化回归（机制与量界；视觉/交互态需浏览器人工复核）：
+// - 资源行窗口：500 资源渲染行数上界 + spacer 守恒总高 + 中部滚动覆盖
+// - 时间轴（小时轴）窗口：24h 刻度 DOM 上界 + gutter/track 总高守恒 + 中部滚动覆盖
+// - 拖拽创建在虚拟化路径下仍派发 oas-create
+test('scheduler 虚拟化：资源行/时间轴窗口量界 + 滚动覆盖 + 拖拽创建回归', async ({ page }) => {
+  const errors: string[] = []
+  page.on('pageerror', (e) => errors.push(e.message))
+  page.on('console', (m) => {
+    if (m.type() === 'error') errors.push(m.text())
+  })
+  await page.goto('/components/scheduler.html', { waitUntil: 'domcontentloaded' })
+  await page.waitForSelector('#scheduler-basic', { timeout: 15000 })
+
+  // —— 资源行虚拟化：500 资源（宿主限高 600px 模拟滚动视口）——
+  await page.evaluate(() => {
+    const el = document.createElement('oas-scheduler')
+    el.id = 'scheduler-virtual-res'
+    el.setAttribute('view', 'resource')
+    el.setAttribute('page-show-date', '2026-08-10')
+    el.setAttribute(
+      'resources',
+      JSON.stringify(Array.from({ length: 500 }, (_, i) => ({ id: `r${i}`, title: `资源 ${i}` }))),
+    )
+    document.body.appendChild(el)
+    const view = el.shadowRoot!.querySelector('[part="resource"]') as HTMLElement
+    view.style.maxHeight = '600px' // shadow 内元素只能内联限高（外部样式穿不进 shadow DOM）
+    ;(el as unknown as { requestUpdate(): void }).requestUpdate()
+  })
+  const virtualRes = page.locator('#scheduler-virtual-res')
+  const rowCount = await virtualRes.locator('.res-row').count()
+  expect(rowCount, '500 资源渲染行数有上界（可视行 ±buffer，非全量 500）').toBeLessThanOrEqual(24)
+  expect(rowCount, '窗口渲染非空').toBeGreaterThan(0)
+  await expect(virtualRes.locator('.res-row[data-resource="r0"]').first()).toBeVisible()
+
+  // 总高守恒：pad-top + 渲染行 × 37 + pad-bottom === 500 × 37
+  const totalH = await virtualRes.evaluate((host) => {
+    const s = host.shadowRoot!
+    const padTop = s.querySelector<HTMLElement>('.res-pad-top')
+    const padBottom = s.querySelector<HTMLElement>('.res-pad-bottom')
+    const rows = s.querySelectorAll('.res-row').length
+    return parseFloat(padTop?.style.height ?? '0') + rows * 37 + parseFloat(padBottom?.style.height ?? '0')
+  })
+  expect(totalH, 'spacer + 渲染行守恒总高 500×37').toBe(500 * 37)
+
+  // 中部滚动覆盖：滚到第 250 行 → 中部行渲染、顶部行移出
+  await virtualRes.evaluate((host) => {
+    const view = host.shadowRoot!.querySelector('[part="resource"]') as HTMLElement
+    view.scrollTop = 250 * 37
+    view.dispatchEvent(new Event('scroll'))
+  })
+  await expect(virtualRes.locator('.res-row[data-resource="r250"]')).toHaveCount(1)
+  await expect(virtualRes.locator('.res-row[data-resource="r0"]')).toHaveCount(0)
+  // 回归：窗口平移重建不得把 scrollTop 钳回 0（清 DOM 后读 scrollTop 会强制同步布局、
+  // scrollHeight 塌陷触发浏览器钳制 → 窗口永远算回首屏、用户滚动跳回顶部）
+  const st = await virtualRes.evaluate(
+    (host) => (host.shadowRoot!.querySelector('[part="resource"]') as HTMLElement).scrollTop,
+  )
+  expect(st, '窗口平移重建后 scrollTop 应保持（视图不跳回顶部）').toBe(250 * 37)
+
+  // —— 时间轴（小时轴）虚拟化：day 视图 0-24 时（timeview 自带 max-height 640）——
+  await page.evaluate(() => {
+    const el = document.createElement('oas-scheduler')
+    el.id = 'scheduler-virtual-day'
+    el.setAttribute('view', 'day')
+    el.setAttribute('page-show-date', '2026-08-10')
+    el.setAttribute('start-hour', '0')
+    el.setAttribute('end-hour', '24')
+    document.body.appendChild(el)
+  })
+  const virtualDay = page.locator('#scheduler-virtual-day')
+  const spanCount = await virtualDay.locator('.gutter span').count()
+  expect(spanCount, '24 小时刻度按窗口渲染（DOM 上界，非全量 24）').toBeLessThanOrEqual(18)
+  expect(spanCount).toBeGreaterThan(0)
+
+  // 总高守恒：gutter 与 track 均保持 24 × 48（滚动范围不变）
+  const axisH = await virtualDay.evaluate((host) => {
+    const s = host.shadowRoot!
+    return {
+      gutter: parseFloat(s.querySelector<HTMLElement>('.gutter')!.style.height),
+      track: parseFloat(s.querySelector<HTMLElement>('.track')!.style.height),
+    }
+  })
+  expect(axisH.gutter, 'gutter 总高守恒 24×48').toBe(24 * 48)
+  expect(axisH.track, 'track 总高守恒 24×48').toBe(24 * 48)
+
+  // 中部滚动覆盖：滚到 12:00 → 中部刻度渲染
+  await virtualDay.evaluate((host) => {
+    const tv = host.shadowRoot!.querySelector('[part="timeview"]') as HTMLElement
+    tv.scrollTop = 12 * 48
+    tv.dispatchEvent(new Event('scroll'))
+  })
+  await expect(virtualDay.locator('.gutter span', { hasText: '12:00' })).toHaveCount(1)
+
+  // —— 拖拽创建在虚拟化路径下仍派发 oas-create ——
+  await virtualDay.evaluate((host) => {
+    ;(window as unknown as Record<string, unknown>).__schedCreateFired = false
+    host.addEventListener('oas-create', () => {
+      ;(window as unknown as Record<string, unknown>).__schedCreateFired = true
+    })
+  })
+  // 宿主先滚入视口（组件位于长页底部，物理鼠标事件只落在视口内）；滚到 12:00 后
+  // track（1152px）顶端在 timeview 视口上方，拖拽点取 track ∩ timeview ∩ 浏览器视口
+  // 三者交集的顶部 +8px——等同真实用户在可视区内拖拽
+  await virtualDay.scrollIntoViewIfNeeded()
+  const geo = await virtualDay.evaluate((host) => {
+    const tv = host.shadowRoot!.querySelector('[part="timeview"]') as HTMLElement
+    const track = host.shadowRoot!.querySelector('.col .track') as HTMLElement
+    const t = track.getBoundingClientRect()
+    const v = tv.getBoundingClientRect()
+    return {
+      x: t.left,
+      w: t.width,
+      top: Math.max(t.top, v.top, 0),
+      bottom: Math.min(t.bottom, v.bottom, window.innerHeight),
+    }
+  })
+  const dragY = geo.top + 8
+  await page.mouse.move(geo.x + geo.w / 2, dragY)
+  await page.mouse.down()
+  await page.mouse.move(geo.x + geo.w / 2, dragY + 96, { steps: 6 })
+  await page.mouse.up()
+  await expect
+    .poll(() => page.evaluate(() => (window as unknown as Record<string, unknown>).__schedCreateFired))
+    .toBe(true)
+
+  await page.evaluate(() => {
+    document.getElementById('scheduler-virtual-res')?.remove()
+    document.getElementById('scheduler-virtual-day')?.remove()
+  })
+
+  expect(errors, 'console 零告警').toEqual([])
+})
+
+// 虚拟化复审回归：
+// - F1 时间轴窗口原点扣 band 高：band（列头+全天行）随全天事件数增长，scrollTop 必须先扣 band
+//   再算窗口，否则滚动中部时窗口整体错位——顶部约 1 小时的刻度/事件被裁（窗口起于更晚小时）
+// - F2 窗口重建回焦：滚动触发窗口平移重建后 shadow.activeElement 仍为同一事件 id
+test('scheduler 虚拟化复审：band 高度偏移（多全天事件滚到中部顶部刻度/事件在）+ 重建回焦', async ({ page }) => {
+  const errors: string[] = []
+  page.on('pageerror', (e) => errors.push(e.message))
+  page.on('console', (m) => {
+    if (m.type() === 'error') errors.push(m.text())
+  })
+  await page.goto('/components/scheduler.html', { waitUntil: 'domcontentloaded' })
+  await page.waitForSelector('#scheduler-basic', { timeout: 15000 })
+
+  await page.evaluate(() => {
+    const el = document.createElement('oas-scheduler')
+    el.id = 'scheduler-virtual-band'
+    el.setAttribute('view', 'day')
+    el.setAttribute('page-show-date', '2026-08-10')
+    el.setAttribute('start-hour', '0')
+    el.setAttribute('end-hour', '24')
+    const allDay: Array<{ date: string; title: string; start?: string; end?: string }> = Array.from(
+      { length: 30 },
+      (_, i) => ({ date: '2026-08-10', title: `全天事项占用行高-${i}` }),
+    )
+    allDay.push({ date: '2026-08-10', title: '早班检查', start: '08:00', end: '09:00' })
+    el.setAttribute('events', JSON.stringify(allDay))
+    document.body.appendChild(el)
+  })
+  const band = page.locator('#scheduler-virtual-band')
+
+  // 前提成立：30 个全天事件换行 ≥3 行芯片（band 明显高于单行 ~33px 的基准）
+  const bandH = await band.evaluate(
+    (host) => (host.shadowRoot!.querySelector('.band') as HTMLElement).getBoundingClientRect().height,
+  )
+  expect(bandH, '30 个全天事件应撑起 band ≥90px（≥3 行芯片）').toBeGreaterThanOrEqual(90)
+
+  // 滚到 12:00：窗口原点扣 band 后起于更早小时 → 顶部附近刻度（08:00）与事件（早班检查）必须渲染
+  // （不扣 band 时窗口起于 10:00 → 08:00 刻度与 08:00-09:00 事件都被裁掉）
+  await band.evaluate(() => {
+    const el = document.getElementById('scheduler-virtual-band')!
+    const tv = el.shadowRoot!.querySelector('[part="timeview"]') as HTMLElement
+    tv.scrollTop = 12 * 48
+    tv.dispatchEvent(new Event('scroll'))
+  })
+  await expect(band.locator('.gutter span', { hasText: '08:00' })).toHaveCount(1)
+  await expect(band.locator('.col .event', { hasText: '早班检查' })).toHaveCount(1)
+
+  // F2：聚焦事件条 → 再滚动触发窗口平移重建 → shadow.activeElement 仍为同一事件 id
+  const focusId = await band.evaluate(() => {
+    const el = document.getElementById('scheduler-virtual-band')!
+    const s = el.shadowRoot!
+    const ev = s.querySelector('.col .event') as HTMLElement
+    ev.focus()
+    return (s.activeElement as HTMLElement | null)?.getAttribute('data-id') ?? null
+  })
+  expect(focusId, '前置：聚焦事件条取得 data-id').toBeTruthy()
+  await band.evaluate(() => {
+    const el = document.getElementById('scheduler-virtual-band')!
+    const tv = el.shadowRoot!.querySelector('[part="timeview"]') as HTMLElement
+    tv.scrollTop = 6 * 48
+    tv.dispatchEvent(new Event('scroll'))
+  })
+  await expect
+    .poll(() =>
+      band.evaluate(
+        () =>
+          (
+            (document.getElementById('scheduler-virtual-band')!.shadowRoot!.activeElement as HTMLElement | null) ??
+            undefined
+          )?.getAttribute('data-id') ?? null,
+      ),
+    )
+    .toBe(focusId)
+
+  await page.evaluate(() => document.getElementById('scheduler-virtual-band')?.remove())
+  expect(errors, 'console 零告警').toEqual([])
+})

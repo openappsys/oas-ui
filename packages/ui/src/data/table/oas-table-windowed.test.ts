@@ -341,4 +341,201 @@ describe('OASTable windowed（服务端行窗口模式）', () => {
     expect(warn).toHaveBeenCalled()
     warn.mockRestore()
   })
+
+  // ---- 复审补口：键盘越界请求 / rowIndex 同口径 / ARIA 行序号 / windowed×column-virtual / windowed×merge·span ----
+
+  it('F1 键盘下越界（已装载末端）派发 oas-window-request，不得静默', () => {
+    const { el, reqs } = mountWindowed({
+      windowed: '',
+      total: '100',
+      'window-start': '10',
+      data: slice(10, 5),
+      'grid-navigation': '',
+    })
+    // 非虚拟 windowed：全部已装载行渲染，且不派初始请求（初始装载由宿主自理）
+    expect(rowsOf(el).length).toBe(5)
+    expect(reqs).toEqual([])
+    const lastTd = rowsOf(el)[4]!.querySelector<HTMLElement>('td[data-col="name"]')!
+    lastTd.focus()
+    lastTd.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true, composed: true, cancelable: true }),
+    )
+    // 目标绝对行 15 超出已装载 [10,15) → 期望区间 expandWindow(15,16,100,8) = [7,24)
+    expect(reqs).toEqual([{ start: 7, end: 24, reason: 'scroll' }])
+    // 焦点未移动（请求已发出，等宿主回填后该行可达）
+    expect(el.shadowRoot!.activeElement).toBe(lastTd)
+  })
+
+  it('F1 键盘上越界派发请求；连续同键同区间去重', () => {
+    const { el, reqs } = mountWindowed({
+      windowed: '',
+      total: '100',
+      'window-start': '10',
+      data: slice(10, 5),
+      'grid-navigation': '',
+    })
+    const firstTd = rowsOf(el)[0]!.querySelector<HTMLElement>('td[data-col="name"]')!
+    firstTd.focus()
+    firstTd.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp', bubbles: true, composed: true }))
+    // 目标绝对行 9 超出已装载 [10,15) → expandWindow(9,10,100,8) = [1,18)
+    expect(reqs).toEqual([{ start: 1, end: 18, reason: 'scroll' }])
+    firstTd.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp', bubbles: true, composed: true }))
+    expect(reqs.length).toBe(1)
+  })
+
+  it('F1 非 windowed 键盘到末端不受影响（不派发窗口请求）', () => {
+    const { el, reqs } = mountWindowed({
+      total: '100',
+      'window-start': '10',
+      data: slice(10, 5),
+      'grid-navigation': '',
+    })
+    const lastTd = rowsOf(el)[4]!.querySelector<HTMLElement>('td[data-col="name"]')!
+    lastTd.focus()
+    lastTd.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true, composed: true }))
+    expect(reqs).toEqual([])
+    expect(el.shadowRoot!.activeElement).toBe(lastTd)
+  })
+
+  it('F2 oas-edit 与 oas-cell-click 的 rowIndex 同口径（windowed 绝对行号）', () => {
+    const { el } = mountWindowed({
+      windowed: '',
+      total: '100',
+      'window-start': '10',
+      data: slice(10, 5),
+      editable: '',
+      columns: JSON.stringify([
+        { key: 'name', title: '名称', editable: true },
+        { key: 'age', title: '年龄' },
+      ]),
+    })
+    let cellIdx = -1
+    let editIdx = -1
+    el.addEventListener('oas-cell-click', (e) => (cellIdx = (e as CustomEvent).detail.rowIndex))
+    el.addEventListener('oas-edit', (e) => (editIdx = (e as CustomEvent).detail.rowIndex))
+    // 第一行 = 绝对行 10：先 cell-click，再双击进编辑提交
+    rowsOf(el)[0]!.querySelector<HTMLElement>('td[data-col="age"]')!.click()
+    const nameTd = rowsOf(el)[0]!.querySelector<HTMLTableCellElement>('td[data-col="name"]')!
+    nameTd.dispatchEvent(new MouseEvent('dblclick', { bubbles: true, composed: true }))
+    const input = nameTd.querySelector<HTMLInputElement>('input.cell-editor')
+    expect(input).not.toBeNull()
+    input!.value = '改名'
+    input!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
+    expect(cellIdx, 'cell-click 绝对行号').toBe(10)
+    expect(editIdx, 'edit 与 cell-click 同口径（曾为切片内 0 基序号）').toBe(10)
+  })
+
+  it('F3 windowed：aria-rowcount=total，每行 aria-rowindex 为绝对行号 1 基', () => {
+    const { el } = mountWindowed({ windowed: '', total: '100', 'window-start': '10', data: slice(10, 5) })
+    const table = el.shadowRoot!.querySelector('table')!
+    expect(table.getAttribute('aria-rowcount')).toBe('100')
+    const idx = [...el.shadowRoot!.querySelectorAll('tbody tr.row')].map((tr) => tr.getAttribute('aria-rowindex'))
+    expect(idx).toEqual(['11', '12', '13', '14', '15'])
+  })
+
+  it('F3 非 windowed：aria-rowcount=展示集数据行数，aria-rowindex 按行序 1 基', () => {
+    const { el } = mountWindowed({ data: slice(0, 6) })
+    expect(el.shadowRoot!.querySelector('table')!.getAttribute('aria-rowcount')).toBe('6')
+    const idx = [...el.shadowRoot!.querySelectorAll('tbody tr.row')].map((tr) => tr.getAttribute('aria-rowindex'))
+    expect(idx).toEqual(['1', '2', '3', '4', '5', '6'])
+  })
+
+  it('F3 非 windowed 虚拟：aria-rowcount 为全量行数（不受渲染窗口限制）', () => {
+    const { el } = mountWindowed({ height: '200', 'row-height': '40', data: slice(0, 50) })
+    expect(el.shadowRoot!.querySelector('table')!.getAttribute('aria-rowcount')).toBe('50')
+    const trs = [...el.shadowRoot!.querySelectorAll('tbody tr.row')]
+    expect(trs.length).toBeLessThan(50)
+    expect(trs[0]!.getAttribute('aria-rowindex')).toBe('1')
+  })
+
+  it('F2/F3 windowed 虚拟（回填后绝对行渲染）：cell-click rowIndex 与 aria-rowindex 均为绝对行号', async () => {
+    const { el } = mountWindowed({
+      windowed: '',
+      total: '1000',
+      'window-start': '100',
+      height: '200',
+      'row-height': '40',
+      data: slice(100, 40),
+    })
+    // 滚到装载区内：可视 [97,110) ∩ 装载 [100,140) → 渲染 100 起
+    const wrap = wrapOf(el)
+    wrap.scrollTop = 4040
+    wrap.dispatchEvent(new Event('scroll'))
+    await flushRaf()
+    expect(el.shadowRoot!.querySelector('table')!.getAttribute('aria-rowcount')).toBe('1000')
+    expect(rowsOf(el)[0]!.getAttribute('aria-rowindex')).toBe('101')
+    let detail: { rowIndex: number } | undefined
+    el.addEventListener('oas-cell-click', (e) => (detail = (e as CustomEvent).detail))
+    rowsOf(el)[0]!.querySelector<HTMLElement>('td[data-col="name"]')!.click()
+    // 虚拟路径曾传 dataIndex=0（窗口内 0 基）→ 宿主映射错行
+    expect(detail!.rowIndex).toBe(100)
+  })
+
+  it('F4 windowed × column-virtual：降级为普通渲染（devWarn 一次）+ 行窗口照常，不崩', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const { el, reqs } = mountWindowed({
+      windowed: '',
+      total: '100',
+      'window-start': '0',
+      height: '200',
+      'row-height': '40',
+      'column-virtual': '',
+      data: slice(0, 5),
+    })
+    expect(warn.mock.calls.some((c) => String(c[0]).includes('column-virtual'))).toBe(true)
+    // 降级：不渲染列窗口占位格（全列普通渲染）
+    expect(el.shadowRoot!.querySelector('.col-virtual-placeholder')).toBeNull()
+    // 行窗口照常：首帧 init 请求 + 已装载行渲染
+    expect(reqs.length).toBeGreaterThan(0)
+    expect(rowsOf(el).length).toBeGreaterThan(0)
+    warn.mockRestore()
+  })
+
+  it('F5 windowed × span-method：跳过本地合并（无 rowspan / 不吞格）+ devWarn 一次', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const el = new OASTable()
+    el.setAttribute(
+      'columns',
+      JSON.stringify([
+        { key: 'name', title: '名称' },
+        { key: 'age', title: '年龄' },
+      ]),
+    )
+    el.setAttribute('windowed', '')
+    el.setAttribute('total', '100')
+    el.setAttribute('window-start', '0')
+    el.setAttribute('data', slice(0, 4))
+    el.spanMethod = () => [2, 1]
+    document.body.appendChild(el)
+    expect(el.shadowRoot!.querySelector('td[rowspan]')).toBeNull()
+    for (const tr of el.shadowRoot!.querySelectorAll('tbody tr.row')) {
+      expect(tr.querySelectorAll('td[data-col]').length).toBe(2)
+    }
+    expect(warn.mock.calls.filter((c) => String(c[0]).includes('merge')).length).toBe(1)
+    warn.mockRestore()
+  })
+
+  it('F5 windowed × merge 列：跳过本地合并（行数不减 / 每行保留该列 td）', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const { el } = mountWindowed({
+      windowed: '',
+      total: '100',
+      'window-start': '0',
+      columns: JSON.stringify([
+        { key: 'name', title: '名称', merge: true },
+        { key: 'age', title: '年龄' },
+      ]),
+      data: JSON.stringify([
+        { name: 'A', age: 1 },
+        { name: 'A', age: 2 },
+        { name: 'A', age: 3 },
+      ]),
+    })
+    const trs = [...el.shadowRoot!.querySelectorAll('tbody tr.row')]
+    expect(trs.length).toBe(3)
+    expect(el.shadowRoot!.querySelector('td[rowspan]')).toBeNull()
+    for (const tr of trs) expect(tr.querySelectorAll('td[data-col="name"]').length).toBe(1)
+    expect(warn.mock.calls.some((c) => String(c[0]).includes('merge'))).toBe(true)
+    warn.mockRestore()
+  })
 })

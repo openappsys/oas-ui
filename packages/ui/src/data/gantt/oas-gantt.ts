@@ -9,8 +9,30 @@ import {
   toISODate,
 } from '../../form/calendar/date-grid.js'
 import { computeVirtualWindow } from '../virtual-list/oas-virtual-list.js'
+// 服务端行窗口协议（windowed 模式）：与宿主交换行区间/时间范围的共享契约（类型 + 纯工具），
+// 与 oas-table 同源同语义；emit 用字面量 'window-request' / 'range-request'（api:scan 解析锚点）
+import {
+  expandWindow,
+  parseIsoDayMs,
+  rangeCovered,
+  readWindowedMode,
+  sameWindow,
+  windowCovered,
+  WINDOW_MARGIN,
+  ROW_WINDOW_EVENT,
+  RANGE_WINDOW_EVENT,
+  type RangeRequestDetail,
+  type WindowRequestDetail,
+  type WindowRequestReason,
+} from '../../shared/window-data.js'
 import { isRtl } from '../../shared/direction.js'
 import { devWarn } from '../../shared/dev-warn.js'
+
+/** 编译期一致性：emit 用的字面量（拼 `oas-` 前缀）须与共享契约常量一致 */
+const _ROW_WINDOW_EVENT_CHECK: typeof ROW_WINDOW_EVENT = 'oas-window-request'
+const _RANGE_WINDOW_EVENT_CHECK: typeof RANGE_WINDOW_EVENT = 'oas-range-request'
+void _ROW_WINDOW_EVENT_CHECK
+void _RANGE_WINDOW_EVENT_CHECK
 
 const STYLE = `
 :host {
@@ -1097,6 +1119,12 @@ export class OASGantt extends OASElement {
       'creatable',
       'auto-schedule',
       'show-critical-path',
+      // windowed（服务端行窗口模式）+ 宿主托管时间范围（契约见 shared/window-data.ts）
+      'windowed',
+      'total',
+      'window-start',
+      'range-start',
+      'range-end',
     ]
   }
 
@@ -1212,6 +1240,34 @@ export class OASGantt extends OASElement {
   private scrollRaf = 0
   /** 合帧重建后是否需 reconcile 拖拽（该帧内至少一次自动滚动触发的 scroll） */
   private scrollRafReconcile = false
+  /**
+   * windowed 模式解析结果（update() 内 syncTasks 之后重算）：
+   * windowed 属性在场且 total 为合法正数才生效（否则回落本地全量模式，行为不变）。
+   */
+  private _winMode: ReturnType<typeof readWindowedMode> = readWindowedMode(false, 0, 0, 0)
+  /** 行窗口请求去重状态（同一期望区间不重复派发；被已装载区间覆盖时重置，之后覆盖情况变化可对同一区间再派） */
+  private winReq: { start: number; end: number } | null = null
+  /** 首帧行请求标记（init vs data 原因区分；退出 windowed 时重置） */
+  private winInitDone = false
+  /** range 请求去重状态（语义同行窗口去重，坐标系为 epoch ms） */
+  private rangeReq: { startMs: number; endMs: number } | null = null
+  /** 首帧 range 请求标记（init vs data 原因区分） */
+  private rangeInitDone = false
+  /** windowed 下禁用的跨全量能力告警去重（auto-schedule / 关键路径 / 缺 range-* / 层级切片 / 行重排各一次） */
+  private warnedWindowedSchedule = false
+  private warnedWindowedCritical = false
+  private warnedWindowedRange = false
+  private warnedWindowedFlat = false
+  private warnedWindowedReparent = false
+
+  /** windowed 下行重排禁用告警（一次）：切片内同级 index 对全量无意义，重排由宿主在全量上处理 */
+  private warnWindowedReparent(): void {
+    if (this.warnedWindowedReparent) return
+    this.warnedWindowedReparent = true
+    devWarn(
+      '[oas-gantt] windowed 模式下行重排（拖拽 / Alt+方向键）已禁用：行序 index 是切片内同级序号，对全量无意义；重排请在宿主侧全量数据上处理',
+    )
+  }
 
   /**
    * @apiProperty 甘特任务（公开读/写通道）：读为数组拷贝（含自动分配的 id，嵌套输入已拍平为
@@ -1270,7 +1326,7 @@ export class OASGantt extends OASElement {
     const idx = this.rows.findIndex((r) => r.task.id === id)
     if (idx < 0 || !this.tbody) return
     const vh = this.viewportH()
-    this.tbody.scrollTop = Math.max(0, idx * this.rowHeight() - vh / 2 + this.rowHeight() / 2)
+    this.tbody.scrollTop = Math.max(0, this.absRowTop(idx) - vh / 2 + this.rowHeight() / 2)
     this.renderWindow()
   }
 
@@ -1456,6 +1512,8 @@ export class OASGantt extends OASElement {
     this.computeColWindow()
     this.renderHeader()
     this.renderWindow()
+    this.requestWindowIfNeeded('resize')
+    this.requestRangeIfNeeded('resize')
   }
 
   private rowHeight(): number {
@@ -1623,13 +1681,41 @@ export class OASGantt extends OASElement {
     return new Date(d.getFullYear(), d.getMonth() + months, 1)
   }
 
+  /**
+   * 宿主托管时间范围（range-start / range-end，ISO 日期）：
+   * range-end **含当日**（与任务 end / 本地 endMsOf / oas-resource 托管轴同口径），
+   * 返回半开区间 [startMs, endMs)，endMs = range-end **次日** 00:00——直接用当日 00:00 会让
+   * hour 档轴尾停在 range-end 当日 00:00 + pad（当日大半无列）。
+   * 任一缺失/非法/颠倒（end < start）→ null（回落 rows 派生口径）。
+   */
+  private hostRangeMs(): { startMs: number; endMs: number } | null {
+    const s = parseIsoDayMs(this.getAttr('range-start', ''))
+    const e = parseIsoDayMs(this.getAttr('range-end', ''))
+    if (s === null || e === null || e < s) return null
+    return { startMs: s, endMs: e + DAY_MS }
+  }
+
   private buildUnits(): void {
     const scale = this.scale()
     let minMs = Number.POSITIVE_INFINITY
     let maxMs = Number.NEGATIVE_INFINITY
-    for (const r of this.rows) {
-      if (r.startMs < minMs) minMs = r.startMs
-      if (r.endMs > maxMs) maxMs = r.endMs
+    // 宿主托管范围（range-*）优先：windowed 下组件只持有部分行，rows min/max 不是全量时间范围；
+    // 缺 range-* 时告警一次并回落 rows 派生（轴会随装载窗口重锚，文档建议宿主提供范围）
+    const host = this.hostRangeMs()
+    if (host) {
+      minMs = host.startMs
+      maxMs = host.endMs
+    } else {
+      if (this._winMode.windowed && !this.warnedWindowedRange) {
+        this.warnedWindowedRange = true
+        devWarn(
+          '[oas-gantt] windowed 模式未提供 range-start/range-end，时间轴范围回落已装载数据派生（滚动超出后会重锚）；建议宿主托管轴范围',
+        )
+      }
+      for (const r of this.rows) {
+        if (r.startMs < minMs) minMs = r.startMs
+        if (r.endMs > maxMs) maxMs = r.endMs
+      }
     }
     if (!Number.isFinite(minMs)) {
       const now = Date.now()
@@ -1741,6 +1827,47 @@ export class OASGantt extends OASElement {
 
   private buildRows(): void {
     const tasks = this._tasks
+    // 日期助手（windowed 扁平分支与树形分支共用）
+    const startMsOf = (t: TG): number => parseTaskDate(t.start)?.getTime() ?? 0
+    // 里程碑口径（全局统一）：显式 type:"milestone" 优先（带 end 也算，渲染/聚合/连线锚点一致忽略 end），
+    // 其次推导「无 end 且无子级」
+    const isMilestoneTask = (t: TG): boolean => t.type === 'milestone' || !t.end
+    const endMsOf = (t: TG): number => {
+      if (isMilestoneTask(t)) return startMsOf(t)
+      const e = parseTaskDate(t.end!)
+      if (!e) return startMsOf(t)
+      // 日精度 end 含当日（区间右缘 = 次日 00:00）；带时间精度按原值
+      return t.end!.length > 10 ? e.getTime() : e.getTime() + DAY_MS
+    }
+    // windowed 要求**扁平行切片**（与 oas-table 同式）：切片即行序——不递归 children、不受 expanded
+    // 影响，绝对行号/loaded 全按扁平行计。含层级/展开语义请在宿主侧展平后喂入：本地递归展开会让
+    // 行序（rows）与切片长度（_tasks.length）错位 → 覆盖判定误吞请求、滚动范围内空白且不派发。
+    if (this._winMode.windowed) {
+      if (!this.warnedWindowedFlat && tasks.some((t) => t.parent != null)) {
+        this.warnedWindowedFlat = true
+        devWarn(
+          '[oas-gantt] windowed 模式要求扁平行切片（tasks 即行序，不递归 children、不受 expanded 影响，绝对行号按扁平行计）；含层级/展开语义请在宿主侧展平后喂入',
+        )
+      }
+      this.expandedSetCache = new Set()
+      this.rows = tasks.map((t) => {
+        const isMilestone = isMilestoneTask(t)
+        const s = startMsOf(t)
+        return {
+          task: t,
+          depth: 0,
+          startMs: s,
+          endMs: Math.max(endMsOf(t), s),
+          progress: typeof t.progress === 'number' ? t.progress : 0,
+          isSummary: t.type === 'summary' && !isMilestone,
+          isMilestone,
+          hasChildren: false,
+          posinset: 1,
+          setsize: 1,
+        }
+      })
+      return
+    }
     const byId = new Map<string, TG>()
     for (const t of tasks) byId.set(t.id, t)
     const childMap = new Map<string, string[]>()
@@ -1783,17 +1910,6 @@ export class OASGantt extends OASElement {
       }
     }
 
-    const startMsOf = (t: TG): number => parseTaskDate(t.start)?.getTime() ?? 0
-    // 里程碑口径（全局统一）：显式 type:"milestone" 优先（带 end 也算，渲染/聚合/连线锚点一致忽略 end），
-    // 其次推导「无 end 且无子级」
-    const isMilestoneTask = (t: TG): boolean => t.type === 'milestone' || !t.end
-    const endMsOf = (t: TG): number => {
-      if (isMilestoneTask(t)) return startMsOf(t)
-      const e = parseTaskDate(t.end!)
-      if (!e) return startMsOf(t)
-      // 日精度 end 含当日（区间右缘 = 次日 00:00）；带时间精度按原值
-      return t.end!.length > 10 ? e.getTime() : e.getTime() + DAY_MS
-    }
     // 摘要聚合（递归后代 min/max + 工期加权进度；叶子 = 自身）
     const agg = new Map<string, { startMs: number; endMs: number; progress: number }>()
     const aggregate = (id: string): { startMs: number; endMs: number; progress: number } => {
@@ -1925,6 +2041,91 @@ export class OASGantt extends OASElement {
     this.emit('expand-change', { id, expanded: willExpand } satisfies GanttExpandChangeDetail)
   }
 
+  // ===== windowed：服务端行窗口协议（oas-window-request / oas-range-request） =====
+
+  /**
+   * 行 i（rows 数组下标）的画布 top（px）：windowed 下按**绝对行号**定位
+   * （rows 承载 [window-start, window-start+len) 切片，画布坐标系是全量 total 行）。
+   */
+  private absRowTop(i: number): number {
+    return (this._winMode.windowed ? this._winMode.windowStart + i : i) * this.rowHeight()
+  }
+
+  /** 画布总行数（滚动域/连线画布/网格/今日线高度基准）：windowed = 全量 total；本地 = rows 数 */
+  private layoutRows(): number {
+    return this._winMode.windowed ? this._winMode.total : this.rows.length
+  }
+
+  /**
+   * 按可视行窗口计算期望区间并按需派发 `oas-window-request`（detail `{ start, end, reason }`，
+   * 半开、绝对行下标）。去重语义：同一期望区间不重复派发；期望区间被已装载区间覆盖时
+   * 重置去重状态（之后覆盖情况变化可对同一区间再派）。
+   * 时机：update（init/data）、滚动合帧（scroll）、视口 resize（resize）。
+   */
+  private requestWindowIfNeeded(reason: WindowRequestReason): void {
+    const mode = this._winMode
+    if (!mode.windowed || !this.tbody) return
+    const vis = computeVirtualWindow(this.tbody.scrollTop, this.viewportH(), this.rowHeight(), mode.total, 6)
+    const need = expandWindow(vis.start, vis.end, mode.total, WINDOW_MARGIN)
+    if (windowCovered(need, mode.loaded)) {
+      this.winReq = null
+      return
+    }
+    if (sameWindow(need, this.winReq)) return
+    // 先记后派：监听器同步回填时去重状态已就位
+    this.winReq = { start: need.start, end: need.end }
+    this.emit('window-request', { start: need.start, end: need.end, reason } satisfies WindowRequestDetail)
+  }
+
+  /**
+   * windowed 下键盘移动越出已装载切片（切片末行 ↓ / 切片首行 ↑）：派发 `oas-window-request`
+   * （need 覆盖目标绝对行 ±margin，reason=scroll），宿主回填后目标行可达——不得静默无响应。
+   * 目标越出全量边界（<0 / ≥total）或 need 已被装载覆盖时零行为。
+   */
+  private requestKeyboardWindow(row: GanttRow, forward: boolean): void {
+    const mode = this._winMode
+    if (!mode.windowed) return
+    const idx = this.rows.findIndex((r) => r.task.id === row.task.id)
+    if (idx < 0) return
+    const target = mode.windowStart + idx + (forward ? 1 : -1)
+    if (target < 0 || target >= mode.total) return
+    const need = expandWindow(target, target + 1, mode.total, WINDOW_MARGIN)
+    if (windowCovered(need, mode.loaded)) return
+    // 已有在途请求覆盖目标 → 不重派（宿主回填后即可达，非静默）
+    const pending = this.winReq
+    if (pending !== null && pending.start <= need.start && need.end <= pending.end) return
+    if (sameWindow(need, this.winReq)) return
+    // 先记后派：监听器同步回填时去重状态已就位
+    this.winReq = { start: need.start, end: need.end }
+    this.emit('window-request', { start: need.start, end: need.end, reason: 'scroll' } satisfies WindowRequestDetail)
+  }
+
+  /**
+   * 轴由宿主托管（提供 range-start/range-end）时按需派发 `oas-range-request`
+   * （detail `{ startMs, endMs, reason }`）：可视时间窗前后各扩 1 个视口宽得到 need，
+   * `!rangeCovered(need, axis)` 时派发，同 need 去重。非托管（无 range-*）零行为。
+   * 视口时间宽 = 视口列数 × 平均单位 ms（month/quarter 不等长按均值近似，端点评估无需精确）。
+   */
+  private requestRangeIfNeeded(reason: WindowRequestReason): void {
+    const units = this.units
+    if (!this.hostRangeMs() || units.length === 0) return
+    const from = Math.min(Math.max(this.winColStart, 0), units.length - 1)
+    const to = Math.min(Math.max(this.winColEnd, from + 1), units.length)
+    const visStartMs = units[from]!.startMs
+    const visEndMs = units[to - 1]!.endMs
+    const viewportMs = (this.viewportW() / this.colW()) * this.avgUnitMs()
+    const need = { startMs: Math.floor(visStartMs - viewportMs), endMs: Math.ceil(visEndMs + viewportMs) }
+    const axis = { startMs: units[0]!.startMs, endMs: units[units.length - 1]!.endMs }
+    if (rangeCovered(need, axis)) {
+      this.rangeReq = null
+      return
+    }
+    if (this.rangeReq !== null && this.rangeReq.startMs === need.startMs && this.rangeReq.endMs === need.endMs) return
+    // 先记后派：监听器同步回填时去重状态已就位
+    this.rangeReq = { ...need }
+    this.emit('range-request', { startMs: need.startMs, endMs: need.endMs, reason } satisfies RangeRequestDetail)
+  }
+
   // ===== 生命周期 =====
 
   /** 缓存节点引用 + 幂等注册滚动同步（render 与水合路径共用） */
@@ -2012,13 +2213,15 @@ export class OASGantt extends OASElement {
     if (!this.scrollRaf) this.scrollRaf = requestAnimationFrame(this.flushScrollWindow)
   }
 
-  /** onScroll 的合帧下半段：窗口重建 + （自动滚动帧）拖拽重锚——等价于原 onScroll 的同步顺序 */
+  /** onScroll 的合帧下半段：窗口重建 + windowed/range 请求评估 + （自动滚动帧）拖拽重锚 */
   private flushScrollWindow = (): void => {
     this.scrollRaf = 0
     const reconcile = this.scrollRafReconcile
     this.scrollRafReconcile = false
     if (!this.tbody) return
     this.renderWindow()
+    this.requestWindowIfNeeded('scroll')
+    this.requestRangeIfNeeded('scroll')
     if (reconcile) this.reconcileDrag()
   }
 
@@ -2164,6 +2367,24 @@ export class OASGantt extends OASElement {
     this.unbindRowPending()
     this.rowPending = null
     this.syncTasks()
+    // windowed 模式解析：windowed 属性在场且 total 为合法正数才生效
+    //（total 为 0 / 非法 → 回落本地全量模式，行为不变）；退出 windowed 时重置去重/首帧标记
+    this._winMode = readWindowedMode(
+      this.hasAttr('windowed'),
+      Number(this.getAttr('total', '')),
+      Number(this.getAttr('window-start', '0')),
+      this._tasks.length, // windowed 扁平切片口径：切片即行序，rows.length ≡ _tasks.length
+    )
+    if (!this._winMode.windowed) {
+      // 退出 windowed：清去重态 + 首帧标记（重进同 need 必须重新 init，不得被旧去重态吞成静默）
+      this.winReq = null
+      this.winInitDone = false
+    }
+    // 无托管轴（range-* 缺失/非法/颠倒）：清 range 去重态 + 首帧标记（移除再挂回重新 init）
+    if (this.hostRangeMs() === null) {
+      this.rangeReq = null
+      this.rangeInitDone = false
+    }
     const prunedSel = this.pruneStateToTasks()
     this.syncExpanded()
     // 高度协议（与 oas-resource 同协议）：height 属性在场且为合法长度（纯数字 / Npx，>0）时，
@@ -2198,12 +2419,25 @@ export class OASGantt extends OASElement {
         )
       }
     }
-    // 关键路径：critical 仅 show-critical-path 开启时算；conflict（违约）在 show-critical-path 或 auto-schedule 开启时都算（违约应可见）
+    // 关键路径：critical 仅 show-critical-path 开启时算；conflict（违约）在 show-critical-path 或 auto-schedule 开启时都算（违约应可见）。
+    // windowed 下组件只持有已装载切片，CPM/违约判定需要完整依赖图——部分数据上计算会得到错误
+    // 结果（未装载前置/后继缺失），跳过并 devWarn 一次（宿主可在服务端计算后自行标注/过滤）。
     const cpOn = this.showCriticalPathOn()
     const confOn = cpOn || this.autoScheduleOn()
-    const cp = cpOn || confOn ? this.criticalPathIds() : null
-    this.criticalIds = cpOn && cp ? cp.critical : new Set()
-    this.conflictIds = confOn && cp ? cp.conflict : new Set()
+    if (this._winMode.windowed && confOn) {
+      if (cpOn && !this.warnedWindowedCritical) {
+        this.warnedWindowedCritical = true
+        devWarn(
+          '[oas-gantt] windowed 模式下关键路径/违约判定需要全量数据，已跳过本地计算（部分数据上会得到错误结果）；请宿主在全量数据上计算后自行标注',
+        )
+      }
+      this.criticalIds = new Set()
+      this.conflictIds = new Set()
+    } else {
+      const cp = confOn ? this.criticalPathIds() : null
+      this.criticalIds = cpOn && cp ? cp.critical : new Set()
+      this.conflictIds = confOn && cp ? cp.conflict : new Set()
+    }
     const scale = this.scale()
     if (this.lastScale === '') {
       this.lastScale = scale // 首次吸收不派发
@@ -2214,13 +2448,16 @@ export class OASGantt extends OASElement {
     this.buildUnits()
     this.computeColW()
     this.canvasW = this.units.length * this.colW()
+    // 画布高度按 layoutRows()（windowed = 全量 total，滚动域覆盖未装载行占位）
+    const layoutCount = this.layoutRows()
     if (this.innerEl) {
       this.innerEl.style.width = `${this.canvasW}px`
-      this.innerEl.style.height = `${this.rows.length * this.rowHeight()}px`
+      this.innerEl.style.height = `${layoutCount * this.rowHeight()}px`
     }
     const sideInner = this.shadow.querySelector<HTMLElement>('.side-inner')
-    if (sideInner) sideInner.style.height = `${Math.max(this.rows.length * this.rowHeight(), 1)}px`
-    const isEmpty = this._tasks.length === 0
+    if (sideInner) sideInner.style.height = `${Math.max(layoutCount * this.rowHeight(), 1)}px`
+    // 空态只按本地模式判定：windowed 下 tasks 空 = 「尚未装载」（全量意义上数据存在），不误显空态
+    const isEmpty = !this._winMode.windowed && this._tasks.length === 0
     if (this.emptyEl) {
       this.emptyEl.hidden = !isEmpty
       if (isEmpty) {
@@ -2235,7 +2472,13 @@ export class OASGantt extends OASElement {
     }
     if (this.tbody) this.tbody.style.visibility = isEmpty ? 'hidden' : ''
     const sideLabel = this.shadow.querySelector('.side-rows')
-    if (sideLabel) sideLabel.setAttribute('aria-label', this.t('gantt.listLabel'))
+    if (sideLabel) {
+      sideLabel.setAttribute('aria-label', this.t('gantt.listLabel'))
+      // windowed：容器上报全量行数（行上 aria-rowindex / posinset 同绝对口径，见 renderSideRows）；
+      // 非 windowed 不写（保持既有行为）
+      if (this._winMode.windowed) sideLabel.setAttribute('aria-rowcount', String(this._winMode.total))
+      else sideLabel.removeAttribute('aria-rowcount')
+    }
     // 列窗口先于表头切片计算（表头/网格都按窗口渲染；renderWindow 内会再算一次，幂等）
     this.computeColWindow()
     this.renderHeader()
@@ -2245,8 +2488,27 @@ export class OASGantt extends OASElement {
     // 数据重写后收敛出的选中变化统一在此补发（property/attribute 两通道一致）
     if (prunedSel) this.emitSelectionChange()
     // auto-schedule：每次 update 后规整（幂等——无违约时零改动零事件）；
-    // 覆盖挂载即开/运行期开启，以及运行期改 workdays/holidays/整体重写 tasks 等场景
-    if (this.autoScheduleOn()) this.reschedule()
+    // 覆盖挂载即开/运行期开启，以及运行期改 workdays/holidays/整体重写 tasks 等场景。
+    // windowed 下禁用（依赖图不完整，部分数据上排程会得到错误结果）→ 跳过并 devWarn 一次
+    if (this.autoScheduleOn()) {
+      if (this._winMode.windowed) {
+        if (!this.warnedWindowedSchedule) {
+          this.warnedWindowedSchedule = true
+          devWarn(
+            '[oas-gantt] windowed 模式下 auto-schedule 需要完整依赖图，已跳过联动排程（部分数据上排程会得到错误结果）；请宿主在服务端完成排程后回填数据',
+          )
+        }
+      } else {
+        this.reschedule()
+      }
+    }
+    // windowed / range 请求评估（update 触发：init / data；滚动与 resize 在各自路径评估）。
+    // init 标志只在**对应模式激活**时置位：非激活的 update 不得把它写成 true——否则退出
+    // windowed / 移除 range-* 后重进会被旧标志吞成 reason=data（首帧 init 丢失）。
+    this.requestWindowIfNeeded(this.winInitDone ? 'data' : 'init')
+    if (this._winMode.windowed) this.winInitDone = true
+    this.requestRangeIfNeeded(this.rangeInitDone ? 'data' : 'init')
+    if (this.hostRangeMs() !== null) this.rangeInitDone = true
   }
 
   /**
@@ -2352,10 +2614,18 @@ export class OASGantt extends OASElement {
   private renderWindow(): void {
     if (!this.tbody || !this.innerEl) return
     const rowH = this.rowHeight()
-    const count = this.rows.length
-    const win = computeVirtualWindow(this.tbody.scrollTop, this.viewportH(), rowH, count, 6)
-    this.winStart = win.start
-    this.winEnd = win.end
+    // 行虚拟化窗口在 layoutRows()（windowed = 全量 total）上算；windowed 再与已装载切片
+    // 求交得**局部渲染窗口**（winStart/winEnd 保持 rows 数组下标语义），定位走 absRowTop（绝对行号）
+    const win = computeVirtualWindow(this.tbody.scrollTop, this.viewportH(), rowH, this.layoutRows(), 6)
+    if (this._winMode.windowed) {
+      const ws = this._winMode.windowStart
+      const len = this.rows.length
+      this.winStart = Math.min(Math.max(win.start - ws, 0), len)
+      this.winEnd = Math.min(Math.max(win.end - ws, 0), len)
+    } else {
+      this.winStart = win.start
+      this.winEnd = win.end
+    }
     // 列窗口变化（横向滚动/视口宽变）→ 表头按新窗口重切片；纵向滚动窗口不变则跳过重建
     const prevColStart = this.winColStart
     const prevColEnd = this.winColEnd
@@ -2420,9 +2690,18 @@ export class OASGantt extends OASElement {
       el.dataset.key = row.task.id
       el.setAttribute('role', 'treeitem')
       el.setAttribute('aria-level', String(row.depth + 1))
-      el.setAttribute('aria-posinset', String(row.posinset))
-      el.setAttribute('aria-setsize', String(row.setsize))
-      el.style.top = `${i * rowH}px`
+      if (this._winMode.windowed) {
+        // windowed：aria 坐标按**全量**（total）与绝对行号（1 基）——切片局部序号会向辅助技术
+        // 报错位置；aria-rowindex 同口径补齐（容器 aria-rowcount 见 update()）
+        const abs = this._winMode.windowStart + i + 1
+        el.setAttribute('aria-posinset', String(abs))
+        el.setAttribute('aria-setsize', String(this._winMode.total))
+        el.setAttribute('aria-rowindex', String(abs))
+      } else {
+        el.setAttribute('aria-posinset', String(row.posinset))
+        el.setAttribute('aria-setsize', String(row.setsize))
+      }
+      el.style.top = `${this.absRowTop(i)}px`
       el.style.setProperty('--indent', `${8 + row.depth * 16}px`)
       el.setAttribute('part', 'row-name')
       el.tabIndex = row.task.id === activeId ? 0 : -1
@@ -2436,9 +2715,10 @@ export class OASGantt extends OASElement {
         el.setAttribute('disabled', '')
         el.setAttribute('aria-disabled', 'true')
       }
-      if (this.coarse) {
+      if (this.coarse && !this._winMode.windowed) {
         // 触屏重排手柄：pointerdown 事件冒泡到行，走 onRowPointerDown 的统一入口
-        // （自带 e.button/多 ctx 互斥守卫 + 判拖阈值），避免自建 handler 漏守卫与误触发
+        // （自带 e.button/多 ctx 互斥守卫 + 判拖阈值），避免自建 handler 漏守卫与误触发。
+        // windowed 下不出手柄：行重排已禁用（切片内 index 对全量无意义，视觉即语义）
         const drag = document.createElement('span')
         drag.className = 'row-drag'
         drag.setAttribute('aria-hidden', 'true')
@@ -2529,7 +2809,7 @@ export class OASGantt extends OASElement {
         if (this.touchActiveId === row.task.id) bar.classList.add('touch-active')
         bar.addEventListener('pointerdown', () => this.revealDots(row.task.id))
       }
-      bar.style.top = `${i * rowH + (rowH - (row.isSummary ? 8 : 22)) / 2}px`
+      bar.style.top = `${this.absRowTop(i) + (rowH - (row.isSummary ? 8 : 22)) / 2}px`
       if (row.task.color) bar.style.setProperty('--oas-gantt-bar-color', row.task.color)
       if (disabled) {
         bar.setAttribute('disabled', '')
@@ -2623,7 +2903,7 @@ export class OASGantt extends OASElement {
           bl.className = 'baseline'
           bl.dataset.id = row.task.id
           bl.setAttribute('part', 'baseline')
-          bl.style.top = `${i * rowH + (rowH - barH) / 2 + barH + 2}px`
+          bl.style.top = `${this.absRowTop(i) + (rowH - barH) / 2 + barH + 2}px`
           bl.style.left = `${this.mirrorX(bx1) - (rtl ? bw : 0)}px`
           bl.style.width = `${bw}px`
           bl.title = this.baselineDeltaText(row, bEnd)
@@ -2775,10 +3055,12 @@ export class OASGantt extends OASElement {
     const rect = side.getBoundingClientRect()
     const rowH = this.rowHeight()
     const y = clientY - rect.top + side.scrollTop
-    const idx = Math.max(0, Math.min(this.rows.length - 1, Math.floor(y / rowH)))
+    // 指针 y 对应**画布绝对行**（windowed 下含 window-start 偏移），换算回 rows 局部下标找目标行
+    const absIdx = Math.max(0, Math.min(this.layoutRows() - 1, Math.floor(y / rowH)))
+    const idx = absIdx - (this._winMode.windowed ? this._winMode.windowStart : 0)
     const target = this.rows[idx]
     if (!target) return
-    const localY = y - idx * rowH
+    const localY = y - absIdx * rowH
     const x = isRtl(this) ? rect.right - clientX : clientX - rect.left
     const indent = 8 + target.depth * 16
     let mode: 'before' | 'after' | 'inside' = localY < rowH / 2 ? 'before' : 'after'
@@ -2850,7 +3132,7 @@ export class OASGantt extends OASElement {
     }
     const line = this.dropLineEl
     const indent = 8 + target.depth * 16 + (mode === 'inside' ? 16 : 0)
-    line.style.top = `${(mode === 'after' ? idx + 1 : idx) * rowH}px`
+    line.style.top = `${this.absRowTop(mode === 'after' ? idx + 1 : idx)}px`
     line.style.insetInlineStart = `${indent}px`
     line.style.height = mode === 'inside' ? `${rowH}px` : '2px'
     line.dataset.mode = mode
@@ -3635,7 +3917,7 @@ export class OASGantt extends OASElement {
     for (let i = this.winStart; i < this.winEnd; i++) {
       const row = this.rows[i]
       if (!row) continue
-      const rt = rect.top + i * rowH - side.scrollTop
+      const rt = rect.top + this.absRowTop(i) - side.scrollTop
       if (rt + rowH > top && rt < bottom) out.push(row.task.id)
     }
     return out
@@ -3765,6 +4047,9 @@ export class OASGantt extends OASElement {
           this.emitSelectionChange()
         }
         this.focusRow(nextId)
+      } else if (this._winMode.windowed) {
+        // windowed：切片末端/首端继续走 → 请求装载相邻区间（宿主回填后焦点可达，不得静默无响应）
+        this.requestKeyboardWindow(row, e.key === 'ArrowDown')
       }
       return
     }
@@ -3795,6 +4080,11 @@ export class OASGantt extends OASElement {
 
   private altReparent(e: KeyboardEvent, id: string, dir: 'before' | 'after' | 'indent' | 'outdent'): void {
     e.preventDefault()
+    // windowed：行重排禁用（切片内同级 index 对全量无意义，宿主在全量上处理）
+    if (this._winMode.windowed) {
+      this.warnWindowedReparent()
+      return
+    }
     const byId = new Map(this._tasks.map((t) => [t.id, t]))
     const cur = byId.get(id)
     if (!cur) return
@@ -3825,6 +4115,11 @@ export class OASGantt extends OASElement {
     if (Math.abs(e.clientX - p.x) + Math.abs(e.clientY - p.y) > thr) {
       this.unbindRowPending()
       this.rowPending = null
+      // windowed：行重排禁用（切片内同级 index 对全量无意义，宿主在全量上处理）
+      if (this._winMode.windowed) {
+        this.warnWindowedReparent()
+        return
+      }
       // 只读 / 禁用：不重排（选择在 pointerup 处理；拖动的指针不移不触选择）
       if (this.hasAttr('readonly') || p.disabled) return
       this.reparentCtx = { id: p.id, byId: p.byId }
@@ -3926,7 +4221,7 @@ export class OASGantt extends OASElement {
       return
     const rowH = this.rowHeight()
     const sx = this.mirrorX(this.xOf(endpoint === 'end' ? row.endMs : row.startMs))
-    const sy = rowIndex * rowH + rowH / 2
+    const sy = this.absRowTop(rowIndex) + rowH / 2
     const temp = document.createElementNS('http://www.w3.org/2000/svg', 'path')
     temp.setAttribute('class', 'temp-link')
     temp.setAttribute('aria-hidden', 'true')
@@ -4706,7 +5001,7 @@ export class OASGantt extends OASElement {
   private renderLinks(): void {
     const svg = this.linksEl
     if (!svg) return
-    const totalH = this.rows.length * this.rowHeight()
+    const totalH = this.layoutRows() * this.rowHeight()
     svg.setAttribute('width', String(this.canvasW))
     svg.setAttribute('height', String(totalH))
     svg.innerHTML =
@@ -4730,8 +5025,8 @@ export class OASGantt extends OASElement {
         // 端点：fs 前置任务完成点→后继任务起始点；ss 起始点→起始点；ff 完成点→完成点；sf 起始点→完成点
         const fromX = type === 'fs' || type === 'ff' ? this.xOf(from.endMs) : this.xOf(from.startMs)
         const toX = type === 'fs' || type === 'ss' ? this.xOf(to.startMs) : this.xOf(to.endMs)
-        const y1 = fromIdx * rowH + rowH / 2
-        const y2 = toIdx * rowH + rowH / 2
+        const y1 = this.absRowTop(fromIdx) + rowH / 2
+        const y2 = this.absRowTop(toIdx) + rowH / 2
         const x1 = this.mirrorX(fromX)
         const x2 = this.mirrorX(toX)
         // 折线：水平出 14px → 垂直 → 水平进；终点空间不足时收在中间（箭头仍随路径）
@@ -4814,7 +5109,7 @@ export class OASGantt extends OASElement {
     if (scale !== 'day' && scale !== 'hour') return
     if (this.rows.length === 0) return
     const colW = this.colW()
-    const totalH = this.rows.length * this.rowHeight()
+    const totalH = this.layoutRows() * this.rowHeight()
     const holidays = this.holidaySet()
     const weekends = this.weekendsOn()
     const frag = document.createDocumentFragment()
@@ -4849,7 +5144,7 @@ export class OASGantt extends OASElement {
     }
     line.hidden = false
     line.style.left = `${this.mirrorX(this.xOf(todayMs))}px`
-    line.style.height = `${this.rows.length * this.rowHeight()}px`
+    line.style.height = `${this.layoutRows() * this.rowHeight()}px`
     line.setAttribute('title', this.t('gantt.today'))
   }
 

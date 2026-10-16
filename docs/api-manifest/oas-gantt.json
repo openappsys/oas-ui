@@ -115,6 +115,35 @@
       "type": "string",
       "default": "",
       "observed": true
+    },
+    {
+      "name": "windowed",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "total",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "window-start",
+      "type": "string",
+      "default": "0",
+      "observed": true
+    },
+    {
+      "name": "range-start",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "range-end",
+      "type": "string",
+      "default": "",
+      "observed": true
     }
   ],
   "props": [
@@ -138,6 +167,14 @@
     {
       "name": "oas-expand-change",
       "detail": "{ id, expanded: willExpand } satisfies GanttExpandChangeDetail"
+    },
+    {
+      "name": "oas-window-request",
+      "detail": "{ start: need.start, end: need.end, reason } satisfies WindowRequestDetail | { start: need.start, end: need.end, reason: 'scroll' } satisfies WindowRequestDetail"
+    },
+    {
+      "name": "oas-range-request",
+      "detail": "{ startMs: need.startMs, endMs: need.endMs, reason } satisfies RangeRequestDetail"
     },
     {
       "name": "oas-scale-change",

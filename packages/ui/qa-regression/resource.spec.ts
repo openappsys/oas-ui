@@ -1536,3 +1536,421 @@ test('resource 行虚拟化焦点保持：纵向滚动窗口平移，窗口内�
   await page.evaluate(() => document.getElementById('res-rowfocus')?.remove())
   expect(errors).toEqual([])
 })
+
+// ===== 服务端窗口（windowed 行窗口 + 宿主托管时间轴范围；契约见 src/shared/window-data.ts） =====
+
+interface WinFixture {
+  id: string
+  total: number
+  start: number
+  loaded: number
+  withTasks: boolean
+  /** 宿主 dir="rtl"（RTL × windowed 无回归用） */
+  rtl?: boolean
+}
+
+/**
+ * 注入「windowed + 轴托管」fixture（组件由站点 bundle 全局注册）。
+ * 固定 height=200 / width=600，并把行高/条高落成 40px/24px → 单段行模型高 = 24 + 2×8 + 1 = 41px
+ * （gap = (row-height − bar-height)/2 = 8），使 spacer 高度与总高守恒可精确断言（不依赖主题 token）。
+ * 时间轴由 range-start/range-end 托管：2 年 day 档（range-end 含当日）→ 730 列 × 36px = 26280px。
+ * 全部属性在 appendChild 之前设置 → 首帧 update() 即拿到完整行窗口（windowed/window-start/total）与
+ * 托管轴范围（range-start/range-end），避免「首帧轴由已装载任务 min/max 推导」的时序假象。
+ */
+async function injectWindowedFixture(page: Page, o: WinFixture): Promise<void> {
+  await page.evaluate((opt) => {
+    const el = document.createElement('oas-resource')
+    el.id = opt.id
+    el.style.cssText = 'display:block;width:600px;height:200px;margin:12px'
+    el.style.setProperty('--oas-resource-row-height', '40px')
+    el.style.setProperty('--oas-resource-bar-height', '24px')
+    if (opt.rtl) el.setAttribute('dir', 'rtl')
+    el.setAttribute('windowed', '')
+    el.setAttribute('scale', 'day')
+    el.setAttribute('total', String(opt.total))
+    el.setAttribute('window-start', String(opt.start))
+    el.setAttribute('range-start', '2026-01-01')
+    el.setAttribute('range-end', '2027-12-31')
+    el.setAttribute(
+      'resources',
+      JSON.stringify(
+        Array.from({ length: opt.loaded }, (_, i) => ({ id: `r${opt.start + i}`, name: `R${opt.start + i}` })),
+      ),
+    )
+    el.setAttribute(
+      'tasks',
+      JSON.stringify(
+        opt.withTasks
+          ? Array.from({ length: opt.loaded }, (_, i) => ({
+              id: `t${opt.start + i}`,
+              name: `T${opt.start + i}`,
+              start: '2026-03-02',
+              end: '2026-03-04',
+              resources: [`r${opt.start + i}`],
+            }))
+          : [],
+      ),
+    )
+    const w = window as unknown as { __resRows: unknown[]; __resRanges: unknown[] }
+    w.__resRows = []
+    w.__resRanges = []
+    el.addEventListener('oas-window-request', (e) => {
+      w.__resRows.push((e as CustomEvent).detail)
+    })
+    el.addEventListener('oas-range-request', (e) => {
+      w.__resRanges.push((e as CustomEvent).detail)
+    })
+    document.body.appendChild(el)
+  }, o)
+  // 等首帧泳道行渲染（同时意味 update()/行窗口已跑过）
+  await page.waitForFunction(
+    (id) => !!document.getElementById(id)?.shadowRoot?.querySelector('.lanes .row.lane'),
+    o.id,
+    { timeout: 15000 },
+  )
+}
+
+test('resource windowed 行窗口：滚动派发 oas-window-request、宿主回填渲染绝对行、横向滚动范围与总高守恒', async ({
+  page,
+}) => {
+  const errors = collectErrors(page)
+  await page.goto('/components/resource.html', { waitUntil: 'domcontentloaded' })
+  await injectWindowedFixture(page, { id: 'res-win-abs', total: 500, start: 0, loaded: 5, withTasks: false })
+
+  // 1) 首帧 init：已装载切片 [0,5) 不覆盖期望区间（可视行窗 ± margin 8）
+  await page.waitForFunction(() => (window as unknown as { __resRows: unknown[] }).__resRows.length > 0)
+  const init = await page.evaluate(
+    () => (window as unknown as { __resRows: Array<Record<string, number | string>> }).__resRows[0]!,
+  )
+  expect(init['reason'], 'reason=init').toBe('init')
+  expect(init['start'], '期望区间自绝对行 0 起').toBe(0)
+  expect(init['end'], '期望区间超出已装载切片（未覆盖才派）').toBeGreaterThan(5)
+  expect(init['end'], '期望区间夹在 total 内').toBeLessThanOrEqual(500)
+
+  // 2) 宿主回填绝对行 [200,240) 并滚到该区（视口顶落在绝对行 200 附近）
+  await page.evaluate(() => {
+    const el = document.getElementById('res-win-abs')!
+    const w = window as unknown as { __resRows: unknown[] }
+    w.__resRows.length = 0
+    el.setAttribute(
+      'resources',
+      JSON.stringify(Array.from({ length: 40 }, (_, i) => ({ id: `r${200 + i}`, name: `R${200 + i}` }))),
+    )
+    el.setAttribute('window-start', '200')
+    const sc = el.shadowRoot!.querySelector('.scroller') as HTMLElement
+    sc.scrollTop = 200 * 41 + 60
+    sc.dispatchEvent(new Event('scroll'))
+  })
+  await page.waitForFunction(() =>
+    (window as unknown as { __resRows: Array<{ reason: string }> }).__resRows.some((r) => r.reason === 'scroll'),
+  )
+
+  // 等稳定态再量几何：宿主切片换页（resources/window-start 变）会重跑 update() 重算轴与窗口，
+  // 过渡帧里刻度/泳道轨宽度可能是旧值 → 直接量会时序假失败。此处等到「行窗口已渲染 + 轴已撑出
+  // 横向滚动范围（刻度容器宽 > 视口宽，即列虚拟化生效的帧）」为止；具体轴宽由下方精确断言把关。
+  await page.waitForFunction(
+    (id) => {
+      const sr = document.getElementById(id)?.shadowRoot
+      const sc = sr?.querySelector('.scroller') as HTMLElement | null
+      if (!sr || !sc) return false
+      const rows = sr.querySelectorAll('.lanes .row.lane').length
+      const ticksW = Number.parseFloat((sr.querySelector('.ticks') as HTMLElement | null)?.style.width ?? '')
+      return rows > 0 && Number.isFinite(ticksW) && ticksW > sc.clientWidth && sc.scrollWidth > sc.clientWidth
+    },
+    'res-win-abs',
+    { timeout: 15000 },
+  )
+
+  const geom = await page.evaluate(() => {
+    const sr = document.getElementById('res-win-abs')!.shadowRoot!
+    const spacers = [...sr.querySelectorAll('.lanes > .row-spacer')] as HTMLElement[]
+    const rows = [...sr.querySelectorAll('.lanes .row.lane')] as HTMLElement[]
+    const reqs = (window as unknown as { __resRows: Array<Record<string, number | string>> }).__resRows
+    return {
+      spacerCount: spacers.length,
+      topH: Number.parseFloat(spacers[0]?.style.height ?? '0'),
+      botH: Number.parseFloat(spacers[1]?.style.height ?? '0'),
+      rowsH: rows.reduce((a, r) => a + r.getBoundingClientRect().height, 0),
+      rowCount: rows.length,
+      ids: rows.map((r) => r.dataset['resourceId'] ?? ''),
+      ticksW: (sr.querySelector('.ticks') as HTMLElement).style.width,
+      trackW: (sr.querySelector('.lane .track') as HTMLElement).style.width,
+      // 横向滚动范围（内容溢出宽）。注意不可用 .canvas 的 getBoundingClientRect().width：
+      // .canvas 是块级盒（父 .wrap 有 1px 边框 + overflow:hidden）→ border box 恒 = 视口宽（598px），
+      // 不反映轴宽；「滚动范围覆盖全轴」须由内容溢出宽（scroller.scrollWidth）= 轴宽 + 名称列宽 证明。
+      scrollW: (sr.querySelector('.scroller') as HTMLElement).scrollWidth,
+      scrollStarts: reqs.filter((r) => r['reason'] === 'scroll').map((r) => Number(r['start'])),
+    }
+  })
+  expect(geom.spacerCount, '泳道区上下各一 spacer（窗口化占位）').toBe(2)
+  expect(geom.topH, '行 0..199 未装载 → 顶部占位 = 200 × 41').toBe(200 * 41)
+  expect(geom.ids[0], '按绝对行号渲染：首行 = r200').toBe('r200')
+  expect(geom.rowCount, '窗口内有行（非空）').toBeGreaterThan(0)
+  expect(geom.rowCount, '窗口外行不进 DOM（远少于装载的 40 行）').toBeLessThan(40)
+  expect(geom.scrollStarts.length, '确有 scroll 行请求').toBeGreaterThan(0)
+  expect(
+    geom.scrollStarts.every((s) => s > 100),
+    'scroll 请求锚定可视行窗（离屏负载区不并入，否则起点会被拉回 0）',
+  ).toBe(true)
+  expect(
+    geom.scrollW,
+    '横向滚动范围 ≥ 轴宽（滚动范围覆盖全轴，不随窗口缩水；轴宽口径见下两条精确断言）',
+  ).toBeGreaterThanOrEqual(730 * 36)
+  expect(geom.ticksW, '轴宽守恒：刻度容器 = 730 × 36（宿主托管 2 年 day 档，range-end 含当日）').toBe(`${730 * 36}px`)
+  expect(geom.trackW, '轴宽守恒：泳道轨 = 730 × 36').toBe(`${730 * 36}px`)
+  expect(
+    Math.abs(geom.topH + geom.rowsH + geom.botH - 500 * 41),
+    '滚动总高守恒：spacer 上 + 窗内行 + spacer 下 = 500 × 41（±2px）',
+  ).toBeLessThan(2)
+
+  await page.evaluate(() => document.getElementById('res-win-abs')?.remove())
+  expect(errors).toEqual([])
+})
+
+test('resource 轴托管 range-start/range-end：period 按轴生成、轴头/轴尾按需派发 oas-range-request、轴中部不派', async ({
+  page,
+}) => {
+  const errors = collectErrors(page)
+  await page.goto('/components/resource.html', { waitUntil: 'domcontentloaded' })
+  await injectWindowedFixture(page, { id: 'res-win-range', total: 500, start: 0, loaded: 30, withTasks: true })
+
+  // 1) 轴托管：时间轴按 range-* 生成（2 年 day 档 = 730 列），而非按已装载任务推断
+  const ticksW = await page.evaluate(
+    () => (document.getElementById('res-win-range')!.shadowRoot!.querySelector('.ticks') as HTMLElement).style.width,
+  )
+  expect(ticksW, 'period 覆盖宿主给定轴（730 列）').toBe(`${730 * 36}px`)
+
+  // 首帧 init 范围请求：need 前扩越出轴头（可视列窗 ±1 个视口宽）
+  await page.waitForFunction(() => (window as unknown as { __resRanges: unknown[] }).__resRanges.length > 0)
+  const init = await page.evaluate(
+    () => (window as unknown as { __resRanges: Array<Record<string, number | string>> }).__resRanges[0]!,
+  )
+  const axis = await page.evaluate(() => ({
+    start: new Date(2026, 0, 1).getTime(),
+    end: new Date(2028, 0, 1).getTime(),
+  }))
+  expect(init['reason'], 'reason=init').toBe('init')
+  expect(Number(init['startMs']), '轴头 need 起点越出轴起点').toBeLessThan(axis.start)
+  expect(Number(init['endMs']), 'need 终点晚于轴起点（区间有意义）').toBeGreaterThan(axis.start)
+
+  // 2) 滚到轴中部：need ⊆ 轴 → 不派新范围请求（反证：无条件派发的实现会在此多派）
+  const mid = await page.evaluate(async () => {
+    const w = window as unknown as { __resRanges: unknown[] }
+    const before = w.__resRanges.length
+    const sc = document.getElementById('res-win-range')!.shadowRoot!.querySelector('.scroller') as HTMLElement
+    sc.scrollLeft = 12000 // 总宽 730 × 36 = 26280 → 中部
+    sc.dispatchEvent(new Event('scroll'))
+    await new Promise((r) => {
+      requestAnimationFrame(() => requestAnimationFrame(() => r(null)))
+    })
+    return { before, after: w.__resRanges.length }
+  })
+  expect(mid.after, '轴中部 need ⊆ 轴 → 无新请求').toBe(mid.before)
+
+  // 3) 滚到轴尾：need 后扩越出轴尾 → 再派（宿主据此扩展 range-end）
+  await page.evaluate(() => {
+    const sc = document.getElementById('res-win-range')!.shadowRoot!.querySelector('.scroller') as HTMLElement
+    sc.scrollLeft = 999999 // 浏览器夹取到最大滚动位置（轴尾）
+    sc.dispatchEvent(new Event('scroll'))
+  })
+  await page.waitForFunction(
+    () => {
+      const rs = (window as unknown as { __resRanges: Array<{ endMs: number }> }).__resRanges
+      return rs.length > 1 && rs[rs.length - 1]!.endMs > new Date(2028, 0, 1).getTime()
+    },
+    undefined,
+    { timeout: 15000 },
+  )
+  const last = await page.evaluate(
+    () => (window as unknown as { __resRanges: Array<{ reason: string; endMs: number }> }).__resRanges.at(-1)!,
+  )
+  expect(last.reason, '轴尾请求 reason=scroll').toBe('scroll')
+  expect(last.endMs, '轴尾 need 越过轴末（2028-01-01）').toBeGreaterThan(axis.end)
+
+  await page.evaluate(() => document.getElementById('res-win-range')?.remove())
+  expect(errors).toEqual([])
+})
+
+// ===== 复审收口回归：windowed 行网格 a11y（aria-rowcount / aria-rowindex）× RTL 无回归 =====
+
+test('resource windowed × RTL：行网格角色/aria-rowcount=total/aria-rowindex 绝对行号 + 条镜像几何 + 负值滚动范围请求', async ({
+  page,
+}) => {
+  const errors = collectErrors(page)
+  await page.goto('/components/resource.html', { waitUntil: 'domcontentloaded' })
+  await injectWindowedFixture(page, { id: 'res-win-mir-ltr', total: 500, start: 0, loaded: 40, withTasks: true })
+  await injectWindowedFixture(page, {
+    id: 'res-win-mir-rtl',
+    total: 500,
+    start: 0,
+    loaded: 40,
+    withTasks: true,
+    rtl: true,
+  })
+
+  // 横向滚到任务条所在列窗（fixture 任务在 2026-03-02，首帧列窗在轴头看不到它）。
+  // LTR 正 scrollLeft / RTL 负 scrollLeft：同一「自初始端滚出距离」= 2100（|scrollLeft| 口径）
+  await page.evaluate(() => {
+    for (const id of ['res-win-mir-ltr', 'res-win-mir-rtl']) {
+      const el = document.getElementById(id)!
+      const sc = el.shadowRoot!.querySelector('.scroller') as HTMLElement
+      sc.scrollLeft = el.getAttribute('dir') === 'rtl' ? -2100 : 2100
+      sc.dispatchEvent(new Event('scroll'))
+    }
+  })
+  await page.waitForFunction(
+    () => {
+      const l = document.getElementById('res-win-mir-ltr')?.shadowRoot?.querySelector('.lanes .row.lane .bar')
+      const r = document.getElementById('res-win-mir-rtl')?.shadowRoot?.querySelector('.lanes .row.lane .bar')
+      return !!l && !!r
+    },
+    undefined,
+    { timeout: 15000 },
+  )
+
+  const geo = await page.evaluate(() => {
+    const measure = (id: string) => {
+      const el = document.getElementById(id) as HTMLElement
+      const sr = el.shadowRoot!
+      const track = sr.querySelector('.lane .track') as HTMLElement
+      const bar = sr.querySelector('.lanes .row.lane .bar') as HTMLElement
+      const row = sr.querySelector('.lanes .row.lane') as HTMLElement
+      const lanes = sr.querySelector('.lanes') as HTMLElement
+      const tr = track.getBoundingClientRect()
+      const br = bar.getBoundingClientRect()
+      return {
+        rtl: el.hasAttribute('data-rtl'),
+        left: br.left - tr.left,
+        w: br.width,
+        trackW: tr.width,
+        lanesRole: lanes.getAttribute('role'),
+        rowcount: lanes.getAttribute('aria-rowcount'),
+        rowRole: row.getAttribute('role'),
+        firstIdx: row.getAttribute('aria-rowindex'),
+        firstId: row.dataset['resourceId'],
+        nameRole: (row.querySelector('.name') as HTMLElement).getAttribute('role'),
+        cellRole: (row.querySelector('.track') as HTMLElement).getAttribute('role'),
+      }
+    }
+    return { ltr: measure('res-win-mir-ltr'), rtl: measure('res-win-mir-rtl') }
+  })
+  expect(geo.ltr.rtl).toBe(false)
+  expect(geo.rtl.rtl, 'dir=rtl 生效（data-rtl）').toBe(true)
+  // a11y 行网格：role 层级是 aria-rowcount/rowindex 的合法宿主（裸 div 挂属性会被 axe 判违规）
+  for (const g of [geo.ltr, geo.rtl]) {
+    expect(g.lanesRole, '泳道区 role=grid').toBe('grid')
+    expect(g.rowcount, 'aria-rowcount = total（全量行空间）').toBe('500')
+    expect(g.rowRole, '行 role=row').toBe('row')
+    expect(g.nameRole, '资源名 role=rowheader').toBe('rowheader')
+    expect(g.cellRole, '时间轴轨道 role=gridcell').toBe('gridcell')
+    expect(g.firstIdx, '首行绝对行号 1 基（window-start=0）').toBe('1')
+    expect(g.firstId, '按绝对行号渲染').toBe('r0')
+  }
+  // 横向镜像不变量：left_LTR = xStart、left_RTL = canvasW − xStart − w，故两者之和 + w = canvasW（track 宽）
+  expect(geo.ltr.left, 'LTR 条 left = xStart（2026-03-02 距轴首 60 天 × 36）').toBeCloseTo(60 * 36, 1)
+  expect(geo.ltr.w, '条宽 = 3 天 × 36').toBeCloseTo(3 * 36, 1)
+  expect(geo.rtl.w, 'RTL 条宽与 LTR 同').toBeCloseTo(geo.ltr.w, 1)
+  expect(
+    geo.ltr.left + geo.rtl.left + geo.ltr.w,
+    '镜像不变量 left_LTR + left_RTL + w = canvasW（RTL 不整体偏移）',
+  ).toBeCloseTo(geo.ltr.trackW, 1)
+
+  // 负值 scrollLeft（RTL 规范模型）下范围请求机制同 LTR：轴中 need ⊆ 轴不派、轴尾越界再派
+  const ranges = await page.evaluate(async () => {
+    const w = window as unknown as { __resRanges: Array<{ reason: string; startMs: number; endMs: number }> }
+    const el = document.getElementById('res-win-mir-rtl')!
+    const sc = el.shadowRoot!.querySelector('.scroller') as HTMLElement
+    const before = w.__resRanges.length
+    sc.scrollLeft = -12000 // 轴中部（2 年轴上 day ≈ 370）
+    sc.dispatchEvent(new Event('scroll'))
+    await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(() => r(null))))
+    const afterMid = w.__resRanges.length
+    sc.scrollLeft = -999999 // 夹到最负 = 轴尾
+    sc.dispatchEvent(new Event('scroll'))
+    await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(() => r(null))))
+    return { before, afterMid, after: w.__resRanges.length, last: w.__resRanges.at(-1) ?? null }
+  })
+  expect(ranges.afterMid, '轴中部 need ⊆ 轴 → 不派范围请求').toBe(ranges.before)
+  expect(ranges.after, '轴尾 need 越界 → 再派（去重复位）').toBeGreaterThan(ranges.afterMid)
+  expect(ranges.last!.reason, '轴尾请求 reason=scroll').toBe('scroll')
+  const axisEnd = await page.evaluate(() => new Date(2028, 0, 1).getTime())
+  expect(ranges.last!.endMs, 'RTL 轴尾 need 越过轴末（2028-01-01）').toBeGreaterThan(axisEnd)
+
+  await page.evaluate(() => {
+    document.getElementById('res-win-mir-ltr')?.remove()
+    document.getElementById('res-win-mir-rtl')?.remove()
+  })
+  expect(errors).toEqual([])
+})
+
+test('resource windowed × RTL 绝对行号：window-start=100 回填后首行 aria-rowindex=101、spacer 总高守恒', async ({
+  page,
+}) => {
+  const errors = collectErrors(page)
+  await page.goto('/components/resource.html', { waitUntil: 'domcontentloaded' })
+  await injectWindowedFixture(page, {
+    id: 'res-win-rtl-abs',
+    total: 500,
+    start: 0,
+    loaded: 5,
+    withTasks: false,
+    rtl: true,
+  })
+
+  // 宿主回填绝对行 [100,140) 并滚到该区（与 LTR 窗口用例同机制）
+  await page.evaluate(() => {
+    const el = document.getElementById('res-win-rtl-abs')!
+    el.setAttribute(
+      'resources',
+      JSON.stringify(Array.from({ length: 40 }, (_, i) => ({ id: `r${100 + i}`, name: `R${100 + i}` }))),
+    )
+    el.setAttribute('window-start', '100')
+    const sc = el.shadowRoot!.querySelector('.scroller') as HTMLElement
+    sc.scrollTop = 100 * 41 + 60
+    sc.dispatchEvent(new Event('scroll'))
+  })
+  await page.waitForFunction(
+    (id) => !!document.getElementById(id)?.shadowRoot?.querySelector('.lanes .row.lane[data-resource-id="r100"]'),
+    'res-win-rtl-abs',
+    { timeout: 15000 },
+  )
+
+  const info = await page.evaluate(() => {
+    const el = document.getElementById('res-win-rtl-abs')!
+    const sr = el.shadowRoot!
+    const rows = [...sr.querySelectorAll<HTMLElement>('.lanes .row.lane')]
+    const spacers = [...sr.querySelectorAll('.lanes > .row-spacer')] as HTMLElement[]
+    const reqs = (window as unknown as { __resRows: Array<{ reason: string; start: number }> }).__resRows
+    return {
+      rtl: el.hasAttribute('data-rtl'),
+      role: (sr.querySelector('.lanes') as HTMLElement).getAttribute('role'),
+      rowcount: (sr.querySelector('.lanes') as HTMLElement).getAttribute('aria-rowcount'),
+      firstId: rows[0]?.dataset['resourceId'] ?? '',
+      firstIdx: rows[0]?.getAttribute('aria-rowindex') ?? '',
+      lastIdx: rows.at(-1)?.getAttribute('aria-rowindex') ?? '',
+      rowRoles: rows.every((r) => r.getAttribute('role') === 'row'),
+      rowCount: rows.length,
+      topH: Number.parseFloat(spacers[0]?.style.height ?? '0'),
+      scrollStarts: reqs.filter((r) => r.reason === 'scroll').map((r) => r.start),
+    }
+  })
+  expect(info.rtl, 'dir=rtl 生效').toBe(true)
+  expect(info.role, '泳道区 role=grid').toBe('grid')
+  expect(info.rowcount, 'aria-rowcount = total（非已装载 40）').toBe('500')
+  expect(info.firstId, 'RTL 同按绝对行号渲染（首行 = r100）').toBe('r100')
+  expect(info.firstIdx, '首行绝对行号经 window-start 换算 = 101').toBe('101')
+  expect(info.rowRoles, '每行 role=row').toBe(true)
+  expect(Number(info.lastIdx), '末行行号 = 首行 + 行数 − 1（连续绝对行号）').toBe(
+    Number(info.firstIdx) + info.rowCount - 1,
+  )
+  expect(info.topH, '行 0..99 未装载 → 顶部占位 = 100 × 41（RTL 不影响纵向）').toBe(100 * 41)
+  // 请求区间锚定可视行窗（行 ~96 ± buffer/margin → start ≈ 88）：若离屏负载区（视口上方的行 0..8）
+  // 被并入，need 起点会被拉回 0——故断言落在可视行窗附近而非 0
+  const lastScrollStart = info.scrollStarts.at(-1) ?? -1
+  expect(info.scrollStarts.length, '确有 scroll 行请求').toBeGreaterThan(0)
+  expect(lastScrollStart, 'scroll 请求锚定可视行窗（≈88），未被离屏负载区拉回 0').toBeGreaterThan(80)
+  expect(lastScrollStart).toBeLessThanOrEqual(100)
+
+  await page.evaluate(() => document.getElementById('res-win-rtl-abs')?.remove())
+  expect(errors).toEqual([])
+})

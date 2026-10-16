@@ -10,6 +10,8 @@
 - **`oas-table` 服务端行窗口模式**：`windowed` + `total` + `window-start` → 组件不持有全量数据，按可视行窗口派发 `oas-window-request` 由宿主回填；本地排序/筛选/分组/分页/树形展开交由宿主（跳过本地执行并 devWarn），行的选中/编辑/点击等按行能力在已装载切片上正常。
 - **`oas-resource` 纵向行虚拟化**：资源泳道与负载直方图行按可视窗口渲染（上下 spacer 撑起总滚动高度，滚动位置与 sticky 名列不变），行进出窗口按资源 id 键控增删（聚焦条不重建）；与既有列虚拟化正交。
 - **`oas-kanban` 列体卡片虚拟化**：单列大量卡片时按可视窗口渲染（复用 `dynamic-height` 内核支持动态卡片高），上下占位撑起列滚动范围；列头计数/WIP 按全量、拖拽落点用绝对位次、滚动重建后回焦同卡；`overflow-anchor: none` 防锚定放大。
+- **`oas-gantt` / `oas-resource` 服务端窗口模式**：`windowed` + `total` + `window-start`（切片绝对行号）→ 组件不持有全量数据，按可视行窗口派发 `oas-window-request` 由宿主回填；新增 `range-start` / `range-end`（宿主托管时间轴范围，切片不含完整日期跨度时必用）与 `oas-range-request`（可视时间窗接近轴端时派发）。windowed 下 gantt 的 `auto-schedule` / 关键路径在部分数据上会算错，跳过并 devWarn。
+- **`oas-scheduler` 虚拟化**：资源视图按可视行窗口渲染（spacer 守恒总高，`.res-row` 键控），时间轴（小时轴）刻度与事件块按窗口 ±buffer 渲染（gutter/track 总高守恒，跨窗长事件保留）；滚动 rAF 合帧、窗口未变跳过重建、手势进行中抑制重建（避免销毁 pointer capture）。修复资源视图「滚动跳回顶部」：原先在清空 DOM 后才读 `scrollTop` 被浏览器钳回 0，现改为先算窗口再重建。
 
 - **`oas-scheduler` 资源视图**：新增 `view="resource"`（单日资源时间轴：行为资源、横向为小时）与 `view="resource-week"`（周 × 资源矩阵：行为资源、列为本周 7 天，格内按时刻纵向排布定时事件）。新增 `resources` property / attribute（`SchedulerResource[]`，`[{ id, title, color? }]`）与事件字段 `SchedulerEvent.resource`——缺省或指向未知 id 的事件归「未分配」行。
 - **`oas-scheduler` 拖拽创建**：在 `week` / `day` / `resource` 视图的时间格空白处按住拖出 ≥15 分钟区间，派发 `oas-create { date, start, end, resource? }`（组件不自动建事件，宿主接后自行 `addEvent`）；位移不足视作点击，派发 `oas-day-click`（detail 增 `resource`）。`Esc` / `pointercancel` 取消且不派发。

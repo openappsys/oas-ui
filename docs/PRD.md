@@ -2054,6 +2054,8 @@ OASElement 的 render 生命周期只首连一次（`rendered` 门闩），组�
 - **`oas-table` windowed 模式**：组件不持有全量数据；本地排序/筛选/分组/分页/树形展开交由宿主（跳过本地执行并 devWarn），按行能力（选中/编辑/点击）在已装载切片上正常。
 - **`oas-resource` 纵向虚拟化**：泳道与负载行按窗口渲染、spacer 守恒滚动总高、行按资源 id 键控复用（焦点保持）、与列虚拟化正交。
 - **`oas-kanban` 卡片虚拟化**：列体按窗口渲染（动态卡片高用 `dynamic-height` 内核）、占位守恒列滚动范围、拖拽落点用绝对位次、滚动重建回焦同卡。
+- **`oas-gantt` / `oas-resource` windowed 模式**：`windowed` + `total` + `window-start`（切片绝对行号）+ `range-start` / `range-end`（宿主托管时间轴，ISO 日期；`range-end` 含当日）；事件 `oas-window-request` / `oas-range-request`。windowed 下 gantt 跳过 `auto-schedule` 与关键路径（devWarn）。
+- **`oas-scheduler` 虚拟化**：资源行窗口 + 时间轴（小时轴）窗口（DOM 有界、总高守恒、手势期间抑制重建）；修复资源视图滚动跳顶（清空 DOM 前先读 `scrollTop`，否则被钳回 0）。
 
 ### 边界
 
@@ -2061,9 +2063,9 @@ OASElement 的 render 生命周期只首连一次（`rendered` 门闩），组�
 
 ### 验收
 
-- 单测：共享契约纯函数；table windowed（请求派发/去重/绝对行/本地操作禁用）；resource 行虚拟化（窗口/守恒/焦点/正交）；kanban 卡片虚拟化（窗口/守恒/拖拽/回焦）。
-- e2e：table windowed 滚动→请求→回填渲染绝对行；resource 500 资源行数上界+总高不变+中部覆盖+条可点；kanban 3000 卡列内容有界+拖拽落点。
-- 文档：table zh/en windowed 段；api-descriptions/manifest 同步（`api:check` 双向 0）；CHANGELOG `[未发布]`。
+- 单测：共享契约纯函数；table windowed（请求派发/去重/绝对行/本地操作禁用/键盘越界请求/编辑与点击行号口径一致/aria 绝对行号）；resource 行虚拟化（窗口/守恒/焦点/正交）；kanban 卡片虚拟化（窗口/守恒/拖拽/回焦）；gantt windowed（扁平切片/轴托管/能力禁用/键盘越界/aria 绝对口径/状态复位）；resource windowed（RTL×windowed/越界告警/range 非法回落）；scheduler 虚拟化（行窗/小时窗扣 band/回焦/aria/极端行高）。
+- e2e：table windowed 滚动→请求→回填渲染绝对行；resource 500 资源行数上界+总高不变+中部覆盖+条可点（含 RTL×windowed）；kanban 3000 卡列内容有界+拖拽落点；gantt windowed 轴托管+range 请求；scheduler 资源行/小时轴窗口覆盖 + 多全天事件（band 多行）顶部刻度/事件可见 + 滚动回焦。
+- 文档：table / gantt / resource zh/en windowed 专节；api-descriptions/manifest 同步（`api:check` 双向 0）；CHANGELOG `[未发布]`。
 
 ## v2.5.9 oas-calendar `events` 排期条目通道
 

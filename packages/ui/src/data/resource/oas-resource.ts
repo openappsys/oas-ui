@@ -11,6 +11,18 @@ import {
 } from '../../form/calendar/date-grid.js'
 import { isRtl } from '../../shared/direction.js'
 import { devWarn } from '../../shared/dev-warn.js'
+// 服务端窗口协议（windowed 行窗口 + 宿主托管时间轴范围）：与宿主交换区间/范围的共享契约
+//（类型 + 纯工具），避免各组件自造事件名与载荷（见 shared/window-data.ts）。
+import {
+  WINDOW_MARGIN,
+  expandWindow,
+  parseIsoDayMs,
+  rangeCovered,
+  readWindowedMode,
+  sameWindow,
+  windowCovered,
+} from '../../shared/window-data.js'
+import type { RangeRequestDetail, WindowRequestDetail, WindowRequestReason } from '../../shared/window-data.js'
 import { computeVirtualWindow } from '../virtual-list/oas-virtual-list.js'
 
 const STYLE = `
@@ -949,7 +961,24 @@ const ATTR_RESOURCE_ID = 'data-resource-id'
  */
 export class OASResource extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['resources', 'tasks', 'scale', 'height', 'locale', 'capacity']
+    return [
+      'resources',
+      'tasks',
+      'scale',
+      'height',
+      'locale',
+      'capacity',
+      // 服务端行窗口（windowed）协议 + 宿主托管时间轴范围：
+      // - windowed：行（资源）只喂可视窗口切片，按绝对行号渲染（契约见 shared/window-data.ts）
+      // - total：全量资源数（windowed 生效前提，须为合法正数）
+      // - window-start：resources[0] 在全量资源中的绝对行下标
+      // - range-start / range-end：宿主托管的时间轴范围（ISO 日期，range-end 含当日）
+      'windowed',
+      'total',
+      'window-start',
+      'range-start',
+      'range-end',
+    ]
   }
 
   private _resources: RS[] = []
@@ -971,6 +1000,13 @@ export class OASResource extends OASElement {
   private winLoadEnd = 0
   /** 泳道行高前缀和缓存（syncRowWindow 每次重算；renderLanes 写 spacer 高度复用同一份行模型） */
   private laneRowOffsets: number[] = []
+  /**
+   * windowed 行请求区间（绝对行半开区间）：当前**可见区**（泳道/负载）行窗的并集。
+   * 与 winLaneStart/winLaneEnd 及 winLoadStart/winLoadEnd 分开维护——离屏区的行窗是 scrollTop
+   * 夹取产物（起点 0 / 终点 total），并入会把期望区间错误地拉向轴端点（宿主被迫装载无关大切片）。
+   */
+  private winReqStart = 0
+  private winReqEnd = 0
   /** 滚动重渲染的 rAF 句柄（0 = 无挂起帧）；断开连接时取消防泄漏 */
   private scrollRaf = 0
   /**
@@ -999,6 +1035,36 @@ export class OASResource extends OASElement {
   private maxLoad = 0
   /** 超载签名去重：render+connect 双 update、属性链式触发下保证同一超载态只派发一次 */
   private lastOverloadKey: string | null = null
+  /**
+   * 服务端行窗口模式解析缓存（update() 时刷新）：windowed 是否生效 + 全量行数 + 切片起点 + 已装载区间。
+   * 非 windowed 时 windowed=false（本文件其余路径按既有本地全量口径运行）。
+   */
+  private winMode: ReturnType<typeof readWindowedMode> = readWindowedMode(false, 0, 0, 0)
+  /** windowed：最近一次派发的行期望区间（同 need 去重；被已装载区间覆盖后复位允许再派） */
+  private winReq: { start: number; end: number } | null = null
+  /** windowed：首帧 init 行请求是否已派发（之后资源/总数/切片起点变更走 data 原因） */
+  private winInitDone = false
+  /** 轴托管：最近一次派发的时间范围期望区间（同 need 去重；被轴覆盖后复位允许再派） */
+  private rangeReq: { startMs: number; endMs: number } | null = null
+  /** 轴托管范围缓存（update() 时解析一次；滚动帧的范围请求复用，不在帧内重复 parse/读属性） */
+  private axisMs: { startMs: number; endMs: number } | null = null
+  /** 轴托管：首帧 init 范围请求是否已派发（之后范围变更走 data 原因） */
+  private rangeInitDone = false
+  /** windowed 下「负载/超载仅基于已装载任务切片」告警去重（实例级：同一实例只提示一次） */
+  private windowedLoadWarned = false
+  /** windowed 且缺 range-start/range-end（回落已装载任务推断时间轴）告警去重（实例级） */
+  private windowedRangeWarned = false
+  /**
+   * windowed 下 range-start/range-end「给了但不可用」（只有其一 / 日期不可解析 / range-start 晚于
+   * range-end）→ 忽略轴托管告警去重（实例级）。与「完全未提供」分开告警，避免把宿主的配置错误
+   * 说成「没给」，也避免同一原因刷屏。
+   */
+  private windowedRangeInvalidWarned = false
+  /**
+   * windowed 下切片越界（window-start + 已装载行数 > total，尾部行超出全量范围必然不渲染）告警去重
+   * （实例级）：越界行被静默丢弃会让宿主以为「数据已全部装载」，故显式提示一次。
+   */
+  private windowedSliceWarned = false
   /** MAX_PERIODS 截断告警去重（实例级：同一实例只提示一次，不跨实例/用例耦合） */
   private periodsTruncWarned = false
   /** serializePublic 降级告警去重（实例 + tag 粒度）：同一实例同一 tag 只提示一次 */
@@ -1153,6 +1219,9 @@ export class OASResource extends OASElement {
     // 命令式滚动立即同步窗口（不等 scroll 的 rAF 帧）：调用返回时目标区已渲染，
     // 宿主/测试可随即读取 DOM。用户滚动仍走 scroll 事件的 rAF 节流。
     this.renderWindow()
+    // 命令式滚动同样可能落到未装载行/范围（windowed / 轴托管），按需请求（reason=scroll）
+    this.requestRowsIfNeeded('scroll')
+    this.requestRangeIfNeeded('scroll')
   }
 
   // ===== 属性解析 =====
@@ -1366,25 +1435,57 @@ export class OASResource extends OASElement {
    * 视口高不可测（clientHeight ≤ 10，与列虚拟化的 clientWidth 口径一致）→ 两区都回落全量。
    */
   private syncRowWindow(): void {
-    const count = this._resources.length
+    const localCount = this._resources.length
+    const absCount = this.absRowCount()
     const vh = this.scrollerEl?.clientHeight ?? 0
     this.laneRowOffsets = this.buildLaneRowOffsets()
-    if (count === 0 || !this.scrollerEl || vh <= 10) {
+    if (absCount === 0 || !this.scrollerEl || vh <= 10) {
       this.winLaneStart = 0
-      this.winLaneEnd = count
+      this.winLaneEnd = absCount
       this.winLoadStart = 0
-      this.winLoadEnd = count
+      this.winLoadEnd = absCount
       return
     }
     const scrollTop = this.scrollerEl.scrollTop
     const laneTop = this.zoneTop(this.lanesEl, this.headerHeightPx() + 1)
+    if (this.winMode.windowed) {
+      // 服务端行窗口：行空间跨全量 total，未装载行的行高不可知 → 窗口索引按单段缺省行高估算
+      //（装载区内多段行的真实行高由 laneAbsTop 的混合模型精确保留；窗口索引的估算精度是本模式固有近似）
+      const unitLaneH = this.laneRowHeight(1)
+      const laneWin = computeVirtualWindow(scrollTop - laneTop, vh, unitLaneH, absCount, ROW_BUFFER)
+      this.winLaneStart = laneWin.start
+      this.winLaneEnd = laneWin.end
+      const laneZoneH = this.laneAbsTop(absCount)
+      const loadTop = this.zoneTop(this.loadsEl, laneTop + laneZoneH + this.headerHeightPx() + 1)
+      const loadWin = computeVirtualWindow(scrollTop - loadTop, vh, this.loadRowHeight(), absCount, ROW_BUFFER)
+      this.winLoadStart = loadWin.start
+      this.winLoadEnd = loadWin.end
+      // 请求区间只取「当前与视口相交」的区的行窗并集（见 winReqStart 字段说明）
+      let reqStart = Number.POSITIVE_INFINITY
+      let reqEnd = Number.NEGATIVE_INFINITY
+      const take = (top: number, h: number, win: { start: number; end: number }): void => {
+        if (top >= scrollTop + vh || top + h <= scrollTop) return
+        reqStart = Math.min(reqStart, win.start)
+        reqEnd = Math.max(reqEnd, win.end)
+      }
+      take(laneTop, laneZoneH, laneWin)
+      take(loadTop, absCount * this.loadRowHeight(), loadWin)
+      if (!Number.isFinite(reqStart)) {
+        // 两区都不相交（极端滚动位置）：退回泳道区行窗，保证请求区间始终有意义
+        reqStart = laneWin.start
+        reqEnd = laneWin.end
+      }
+      this.winReqStart = reqStart
+      this.winReqEnd = reqEnd
+      return
+    }
     // 直方图表头行无显式高度（估表头行同量级）；误差远小于 ROW_BUFFER 行的预渲染余量，且真机走实测
-    const loadTopEstimate = laneTop + (this.laneRowOffsets[count] ?? 0) + this.headerHeightPx() + 1
+    const loadTopEstimate = laneTop + (this.laneRowOffsets[localCount] ?? 0) + this.headerHeightPx() + 1
     const loadTop = this.zoneTop(this.loadsEl, loadTopEstimate)
-    const laneWin = computeRowWindowFromOffsets(this.laneRowOffsets, scrollTop - laneTop, vh, count, ROW_BUFFER)
+    const laneWin = computeRowWindowFromOffsets(this.laneRowOffsets, scrollTop - laneTop, vh, localCount, ROW_BUFFER)
     this.winLaneStart = laneWin.start
     this.winLaneEnd = laneWin.end
-    const loadWin = computeVirtualWindow(scrollTop - loadTop, vh, this.loadRowHeight(), count, ROW_BUFFER)
+    const loadWin = computeVirtualWindow(scrollTop - loadTop, vh, this.loadRowHeight(), localCount, ROW_BUFFER)
     this.winLoadStart = loadWin.start
     this.winLoadEnd = loadWin.end
   }
@@ -1452,6 +1553,100 @@ export class OASResource extends OASElement {
     return lo
   }
 
+  // ===== 服务端窗口模式（windowed 行窗口 + 宿主托管时间轴范围）=====
+
+  /**
+   * 全量资源行数：windowed 时 = total（绝对行空间），否则 = 已装载行数（既有本地口径）。
+   * 行窗口（泳道/负载）一律在「绝对行空间」上计算（windowed 时按 total 推窗口）。
+   */
+  private absRowCount(): number {
+    return this.winMode.windowed ? this.winMode.total : this._resources.length
+  }
+
+  /**
+   * 宿主托管的时间轴范围（range-start / range-end，ISO 日期）：
+   * range-end **含当日**（与任务 end 同口径），返回半开区间 [startMs, endMs)（endMs = range-end 次日 00:00）；
+   * 任一缺失/非法/颠倒（end < start）→ null（回落「按已装载任务 min/max 推断」的既有口径）。
+   * windowed 下「给了其一但不可用」属宿主配置错误：update() 会显式忽略轴托管并 devWarn 一次（见 F4）。
+   */
+  private managedAxis(): { startMs: number; endMs: number } | null {
+    const s = parseIsoDayMs(this.getAttr('range-start', ''))
+    const e = parseIsoDayMs(this.getAttr('range-end', ''))
+    if (s == null || e == null || e < s) return null
+    return { startMs: s, endMs: addDays(new Date(e), 1).getTime() }
+  }
+
+  /** 纵向行虚拟化是否生效（视口高可测）：不可测时全部已装载行即视口内容，无「滚进未装载区」通道 */
+  private rowVirtualized(): boolean {
+    return this.scrollerEl != null && (this.scrollerEl.clientHeight ?? 0) > 10
+  }
+
+  /** 横向列虚拟化是否生效（视口宽可测且画布溢出视口）：未溢出时全轴可见，无需请求扩展范围 */
+  private colVirtualized(): boolean {
+    return this.periods.length > 0 && this.scrollerEl != null && this.viewportW() < this.canvasW
+  }
+
+  /**
+   * 绝对行下标 → 泳道区内容 y（px）。windowed 的行空间跨全量 total：
+   * - 装载区之前/之后：未装载行的行高不可知，按单段缺省行高（laneRowHeight(1)）估；
+   * - 装载区内：用预算好的本地行高前缀和（laneRowOffsets），多段行的真实行高被精确保留。
+   * 非 windowed 不调用（既有 offsets 直取）。
+   */
+  private laneAbsTop(i: number): number {
+    const { start: ls, end: le } = this.winMode.loaded
+    const unit = this.laneRowHeight(1)
+    const localLen = this._resources.length
+    if (i <= ls) return i * unit
+    if (i >= le) return ls * unit + (this.laneRowOffsets[localLen] ?? 0) + (i - le) * unit
+    return ls * unit + (this.laneRowOffsets[i - ls] ?? 0)
+  }
+
+  /**
+   * 按可视行窗口计算期望区间并按需派发 `oas-window-request`（detail `{ start, end, reason }`，
+   * 半开、绝对行下标）。窗口 = 当前**可见**区（泳道/负载）行窗的并集（两区行高不同 → 窗口不同，
+   * 取并集即两者皆覆盖；离屏区的夹取窗口不并入，见 winReqStart），前后各留 WINDOW_MARGIN 行缓冲。
+   * 去重：同一期望区间不重复派发；期望区间被已装载区间覆盖时复位（之后可对同一区间再派）。
+   * 非 windowed / 视口高不可测（无 virtualization 通道）不派发——否则「请求 margin → 装载 → 更大 margin」发散。
+   */
+  private requestRowsIfNeeded(reason: WindowRequestReason): void {
+    const mode = this.winMode
+    if (!mode.windowed || !this.rowVirtualized()) return
+    const need = expandWindow(this.winReqStart, this.winReqEnd, mode.total, WINDOW_MARGIN)
+    if (windowCovered(need, mode.loaded)) {
+      this.winReq = null
+      return
+    }
+    if (sameWindow(need, this.winReq)) return
+    // 先记后派：监听器同步回填时去重状态已就位
+    this.winReq = { start: need.start, end: need.end }
+    this.emit('window-request', { start: need.start, end: need.end, reason } satisfies WindowRequestDetail)
+  }
+
+  /**
+   * 轴托管（range-start/range-end 提供）且列窗口可滚动时：把可视列窗换算为 ms 并前后各扩 1 个视口宽
+   * （即当前可视时长）得到 `need`，未被轴范围覆盖则派发 `oas-range-request`
+   * （detail `{ startMs, endMs, reason }`，半开）；同一 need 不重复派发。
+   * 非轴托管（无 range-*）或全轴可见（列虚拟化未生效）不派发。
+   */
+  private requestRangeIfNeeded(reason: WindowRequestReason): void {
+    const axis = this.axisMs
+    if (!axis || !this.colVirtualized()) return
+    const periods = this.periods
+    const first = periods[Math.min(Math.max(this.winColStart, 0), periods.length - 1)]!
+    const last = periods[Math.min(Math.max(this.winColEnd - 1, 0), periods.length - 1)]!
+    // 「1 个视口宽」在时间轴上 = 当前可视时长（列数 × 各自 period 长在内插下不等长，用可视窗实测时长）
+    const span = Math.max(1, last.endMs - first.startMs)
+    const startMs = first.startMs - span
+    const endMs = last.endMs + span
+    if (rangeCovered({ startMs, endMs }, axis)) {
+      this.rangeReq = null
+      return
+    }
+    if (this.rangeReq && this.rangeReq.startMs === startMs && this.rangeReq.endMs === endMs) return
+    this.rangeReq = { startMs, endMs }
+    this.emit('range-request', { startMs, endMs, reason } satisfies RangeRequestDetail)
+  }
+
   // ===== 生命周期 =====
 
   /** 缓存节点引用 + 幂等注册条激活监听（render 与水合路径共用；重连重挂幂等） */
@@ -1493,15 +1688,21 @@ export class OASResource extends OASElement {
     this.scrollRaf = requestAnimationFrame(() => {
       this.scrollRaf = 0
       this.renderWindow()
+      // 滚动到窗口边缘：按需请求相邻行/时间范围（契约去重；未覆盖才派）
+      this.requestRowsIfNeeded('scroll')
+      this.requestRangeIfNeeded('scroll')
     })
   }
 
   /**
    * 容器尺寸变化（ResizeObserver 回调）：列/行窗口都可能随视口尺寸变化，重算并重渲染窗口内容。
    * 窗口均未变（如亚像素滚动、尺寸变化不足以改变窗口）则跳过重渲染，避免无谓重建。
+   * 视口尺寸变化会改可见行/列数 → 期望区间随之变化，按需（reason=resize）请求。
    */
   private onViewportResize(): void {
     this.renderWindow()
+    this.requestRowsIfNeeded('resize')
+    this.requestRangeIfNeeded('resize')
   }
 
   /**
@@ -1599,8 +1800,23 @@ export class OASResource extends OASElement {
     this.syncResources()
     this.syncTasks()
     this.toggleAttribute('data-rtl', isRtl(this))
+    // 服务端行窗口模式解析：windowed 属性在场且 total 为合法正数才生效（其余回落既有本地全量口径）；
+    // 退出 windowed 时复位首帧 init 标记与去重状态（再次进入可重新 init）
+    this.winMode = readWindowedMode(
+      this.hasAttr('windowed'),
+      Number(this.getAttr('total', '')),
+      Number(this.getAttr('window-start', '0')),
+      this._resources.length,
+    )
+    if (!this.winMode.windowed) {
+      this.winInitDone = false
+      this.winReq = null
+    }
     const locale = this.effectiveLocale()
     const scale = this.scale()
+    // 宿主托管时间轴范围（range-start/range-end）：提供时优先于「按任务 min/max 推断」
+    const axis = this.managedAxis()
+    this.axisMs = axis
     const spans = spansOf(this._tasks)
     let minMs = Number.POSITIVE_INFINITY
     let maxMs = Number.NEGATIVE_INFINITY
@@ -1608,14 +1824,57 @@ export class OASResource extends OASElement {
       if (s.startMs < minMs) minMs = s.startMs
       if (s.endMs > maxMs) maxMs = s.endMs
     }
-    this.periods =
-      spans.length > 0
-        ? buildPeriods(minMs, maxMs, scale, getWeekStart(locale), locale, () => {
-            if (this.periodsTruncWarned) return
-            this.periodsTruncWarned = true
-            devWarn(`[oas-resource] period 数超过 ${MAX_PERIODS}，已截断（任务日期跨度可能异常）`)
-          })
-        : []
+    const warnTrunc = (): void => {
+      if (this.periodsTruncWarned) return
+      this.periodsTruncWarned = true
+      devWarn(`[oas-resource] period 数超过 ${MAX_PERIODS}，已截断（任务日期跨度可能异常）`)
+    }
+    if (axis) {
+      // 轴托管：period 覆盖宿主给定范围（与已装载任务多少无关 → windowed 切片换页不抖动时间轴）
+      this.periods = buildPeriods(axis.startMs, axis.endMs, scale, getWeekStart(locale), locale, warnTrunc)
+    } else {
+      this.periods = spans.length > 0 ? buildPeriods(minMs, maxMs, scale, getWeekStart(locale), locale, warnTrunc) : []
+    }
+    // windowed 模式的边界告警（实例级各一次）：
+    // ① 负载/超载统计只覆盖已装载任务切片（跨全量口径由宿主负责，组件不擅自请求全量任务）；
+    // ② 缺 range-* → 已回落按已装载任务推断时间轴（只覆盖部分时间）；
+    // ③ range-* 「给了但不可用」→ 显式忽略轴托管 + 告警（回落数据派生，口径同「未提供」）；
+    // ④ 切片越界（window-start + 装载行数 > total）→ 越界行被丢弃（不渲染），显式提示一次
+    if (this.winMode.windowed) {
+      if (!this.windowedLoadWarned) {
+        this.windowedLoadWarned = true
+        devWarn(
+          '[oas-resource] windowed 模式下负载/超载统计仅基于已装载的任务切片（部分数据），跨全量口径请由宿主自行核算',
+        )
+      }
+      const overflow = this.winMode.loaded.end - this.winMode.total
+      if (overflow > 0 && !this.windowedSliceWarned) {
+        this.windowedSliceWarned = true
+        devWarn(
+          `[oas-resource] windowed 切片超出全量范围（window-start ${this.winMode.windowStart} + 装载 ${this._resources.length} 行 > total ${this.winMode.total}），越界 ${overflow} 行已丢弃`,
+        )
+      }
+      if (!axis) {
+        if (this.hasAttr('range-start') || this.hasAttr('range-end')) {
+          // 「有其一 / 颠倒 / 不可解析」：轴托管被忽略、回落数据派生——属宿主配置错误，与未提供分开提示
+          if (!this.windowedRangeInvalidWarned) {
+            this.windowedRangeInvalidWarned = true
+            devWarn(
+              '[oas-resource] windowed 模式下 range-start/range-end 非法（只有其一 / 日期不可解析 / range-start 晚于 range-end），已忽略轴托管、回落按已装载任务推断时间轴',
+            )
+          }
+        } else if (!this.windowedRangeWarned) {
+          this.windowedRangeWarned = true
+          devWarn(
+            '[oas-resource] windowed 模式下未提供 range-start/range-end（宿主托管时间轴范围），已回落按已装载任务推断时间轴（仅覆盖部分时间）',
+          )
+        }
+      }
+    }
+    if (!axis) {
+      this.rangeInitDone = false
+      this.rangeReq = null
+    }
     this.canvasW = this.periods.length * this.colW()
     this.syncColWindow()
 
@@ -1716,7 +1975,19 @@ export class OASResource extends OASElement {
     this.renderTicks()
     this.renderLanes()
     this.renderLoads(this.loadRows, this.maxLoad)
-    const isEmpty = this._resources.length === 0 || this._tasks.length === 0
+    // 服务端窗口请求：行窗口（windowed）与时间范围（轴托管）在数据/属性变更后按需派发（首帧 init，其后 data）。
+    // 仅在对应模式生效期内标记「首帧已过」——非 windowed / 无轴的 update 不消费 init（否则切入模式的首帧会误报 data）
+    if (this.winMode.windowed) {
+      this.requestRowsIfNeeded(this.winInitDone ? 'data' : 'init')
+      this.winInitDone = true
+    }
+    if (axis) {
+      this.requestRangeIfNeeded(this.rangeInitDone ? 'data' : 'init')
+      this.rangeInitDone = true
+    }
+    // 空态：windowed 下「已装载切片为空」只说明可视窗口尚未装载（total>0 时全量意义上资源存在），
+    // 不显示空态覆盖层（否则换窗瞬间闪「无数据」）；非 windowed 口径不变（资源/任务任一为空即空态）
+    const isEmpty = this.winMode.windowed ? false : this._resources.length === 0 || this._tasks.length === 0
     if (this.emptyEl) {
       this.emptyEl.hidden = !isEmpty
       if (isEmpty) this.emptyEl.textContent = this.t('resource.empty')
@@ -1845,14 +2116,35 @@ export class OASResource extends OASElement {
     // 列窗口像素范围（两侧各多留 1 列 overscan，避免边缘条被误裁）；cull 在画布坐标系进行（RTL 同）
     const winLeft = this.winColStart * colW - colW
     const winRight = this.winColEnd * colW + colW
-    const count = this._resources.length
-    const windowed = this.winLaneStart > 0 || this.winLaneEnd < count
+    const remote = this.winMode.windowed
+    const absCount = this.absRowCount()
+    // a11y（虚拟化「数据缺失」错觉的对策）：泳道区对外是资源行网格——`aria-rowcount` 报**全量行数**
+    // （windowed = total，非 windowed = 已装载行数），每行 `aria-rowindex` 报绝对行号（1 基），
+    // 使 AT 用户知道「窗口内行少 = 虚拟化」而非「数据就这么多」。
+    // role 层级是 `aria-rowcount`/`aria-rowindex` 的合法宿主：裸 div 挂这两个属性会被 axe
+    // `aria-allowed-attr`（critical）判违规，row 内无单元格角色又会被 `aria-required-children` 判违规——
+    // 故 grid > row > rowheader/gridcell 与属性一并落（行/单元格角色在下方 reconcile 循环里同步）。
+    this.lanesEl.setAttribute('role', 'grid')
+    this.lanesEl.setAttribute('aria-rowcount', String(absCount))
+    // 实际要渲染的绝对行区间 = 绝对行窗口 ∩ 已装载区间（未装载行不在 DOM，由 spacer 占位撑高）。
+    // 空交集（窗口完全落在装载区外）退化为一点——否则 spacerTop/Bottom 会重复计入窗口与装载区之间的行，
+    // 令滚动总高虚增（spacer 守恒的是「全量行模型总高」，与窗口位置无关）
+    let visStart = remote ? Math.max(this.winLaneStart, this.winMode.loaded.start) : this.winLaneStart
+    let visEnd = remote ? Math.min(this.winLaneEnd, this.winMode.loaded.end) : this.winLaneEnd
+    if (visEnd < visStart) visEnd = visStart
+    const windowed = remote || visStart > 0 || visEnd < absCount
     const [spacerTop, spacerBottom] = this.ensureRowSpacers(this.lanesEl, windowed)
     if (windowed) {
       // spacer 高度与行窗口共用同一份行高模型：总高恒 = 全量行模型总高（滚动范围不变）
-      const offsets = this.laneRowOffsets.length === count + 1 ? this.laneRowOffsets : this.buildLaneRowOffsets()
-      spacerTop.style.height = `${offsets[this.winLaneStart] ?? 0}px`
-      spacerBottom.style.height = `${(offsets[count] ?? 0) - (offsets[this.winLaneEnd] ?? 0)}px`
+      if (remote) {
+        // windowed：装载区内行高精确（laneAbsTop 混合模型），装载区外按单段缺省行高估
+        spacerTop.style.height = `${this.laneAbsTop(visStart)}px`
+        spacerBottom.style.height = `${Math.max(0, this.laneAbsTop(absCount) - this.laneAbsTop(visEnd))}px`
+      } else {
+        const offsets = this.laneRowOffsets.length === absCount + 1 ? this.laneRowOffsets : this.buildLaneRowOffsets()
+        spacerTop.style.height = `${offsets[visStart] ?? 0}px`
+        spacerBottom.style.height = `${(offsets[absCount] ?? 0) - (offsets[visEnd] ?? 0)}px`
+      }
     }
     // 行按资源 id 键控复用（id 清洗后唯一）：窗口内既有行保留（含其条节点 → 焦点保持）；
     // 无 id / 重复 id（旧快照）不可复用，先移除
@@ -1868,8 +2160,13 @@ export class OASResource extends OASElement {
       existing.set(id, row)
     }
     const desired: HTMLElement[] = []
-    for (let i = this.winLaneStart; i < this.winLaneEnd; i++) {
-      const r = this._resources[i]!
+    // 与 desired 一一对应的资源模型（windowed 下绝对行与本地行不同轴，不能再用 visStart + k 反查）
+    const desiredRes: RS[] = []
+    // 与 desired 一一对应的**绝对行下标**（a11y 的 aria-rowindex = 绝对值 + 1；行复用后仍须逐帧同步）
+    const desiredAbs: number[] = []
+    for (let i = visStart; i < visEnd; i++) {
+      const r = this._resources[remote ? i - this.winMode.loaded.start : i]
+      if (!r) continue
       let row = existing.get(r.id)
       if (row) existing.delete(r.id)
       else {
@@ -1884,6 +2181,8 @@ export class OASResource extends OASElement {
         row.appendChild(track)
       }
       desired.push(row)
+      desiredRes.push(r)
+      desiredAbs.push(i)
     }
     // 离开行窗口的行：移除（被复用的行已从 existing 摘除）
     for (const row of existing.values()) row.remove()
@@ -1896,11 +2195,17 @@ export class OASResource extends OASElement {
       else ref = ref.nextElementSibling
     }
     for (let k = 0; k < desired.length; k++) {
-      const r = this._resources[this.winLaneStart + k]!
+      const r = desiredRes[k]!
       const row = desired[k]!
+      // a11y：行角色 + 绝对行号（1 基，windowed 下已含 window-start 偏移）。行按 id 复用后绝对行号
+      // 会随窗口平移变化，故逐帧写入而非仅建行时写；`.name`/`.track` 的单元格角色同（旧快照缺角色也补齐）
+      row.setAttribute('role', 'row')
+      row.setAttribute('aria-rowindex', String(desiredAbs[k]! + 1))
       const name = row.firstElementChild as HTMLElement
+      name.setAttribute('role', 'rowheader')
       name.textContent = r.name
       const track = row.lastElementChild as HTMLElement
+      track.setAttribute('role', 'gridcell')
       track.style.width = `${this.canvasW}px`
       const layout = this.laneLayout.get(r.id)
       // 轨道高度按段数内联写算式（段数是内部量，不落 CSS 变量）；gap/条高仍走 token
@@ -2061,13 +2366,19 @@ export class OASResource extends OASElement {
     maxLoad: number,
   ): void {
     if (!this.loadsEl) return
-    const count = this._resources.length
-    const windowed = this.winLoadStart > 0 || this.winLoadEnd < count
+    const remote = this.winMode.windowed
+    const absCount = this.absRowCount()
+    // 实际要渲染的绝对行区间 = 绝对行窗口 ∩ 已装载区间（负载行定高，spacer 占位与真实行盒同式精确）；
+    // 空交集退化为一点（同 renderLanes：防 spacer 总高虚增）
+    let visStart = remote ? Math.max(this.winLoadStart, this.winMode.loaded.start) : this.winLoadStart
+    let visEnd = remote ? Math.min(this.winLoadEnd, this.winMode.loaded.end) : this.winLoadEnd
+    if (visEnd < visStart) visEnd = visStart
+    const windowed = remote || visStart > 0 || visEnd < absCount
     const [spacerTop, spacerBottom] = this.ensureRowSpacers(this.loadsEl, windowed)
     if (windowed) {
       const rowH = this.loadRowHeight()
-      spacerTop.style.height = `${this.winLoadStart * rowH}px`
-      spacerBottom.style.height = `${(count - this.winLoadEnd) * rowH}px`
+      spacerTop.style.height = `${visStart * rowH}px`
+      spacerBottom.style.height = `${(absCount - visEnd) * rowH}px`
     }
     // 窗口内行整段重建（spacer 保留）：行高 = load-height token + 1px 行框线，与 spacer 同式
     for (const el of [...this.loadsEl.children]) {
@@ -2075,8 +2386,8 @@ export class OASResource extends OASElement {
       el.remove()
     }
     const colW = this.colW()
-    for (let k = this.winLoadStart; k < this.winLoadEnd; k++) {
-      const row = rows[k]
+    for (let k = visStart; k < visEnd; k++) {
+      const row = rows[remote ? k - this.winMode.loaded.start : k]
       if (!row) continue
       const rowEl = document.createElement('div')
       rowEl.className = 'row load'

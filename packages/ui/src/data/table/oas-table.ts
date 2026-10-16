@@ -232,6 +232,15 @@ function warnEditNotImported(): void {
 const WINDOWED_OPS_HINT =
   '[oas-table] windowed 模式下排序/筛选/分组/分页/树形展开由宿主负责，组件本地不执行（这些操作在部分数据上会得到错误结果，已跳过本地执行；宿主监听对应 oas-* 事件自行处理全量数据）'
 
+/**
+ * windowed 模式下 merge 列 / span-method 被跳过的告警文案（实例级去重一次）。
+ * 组件只持有已装载切片，rowspan 可能跨切片边界；windowed 虚拟渲染的占位 tr 会与
+ * 跨界的合并单元格相互腐蚀（占位行被误当数据格参与合并、合并格盖住占位高度）——
+ * 故 windowed 下一律跳过本地合并，合并语义由宿主负责（提供已合并数据或关闭 windowed）。
+ */
+const WINDOWED_SPAN_HINT =
+  '[oas-table] windowed 模式下 merge 列 / span-method 由宿主负责（跨切片边界的合并会与占位行相互腐蚀）：已跳过本地合并，需要合并请关闭 windowed 或由宿主提供已合并的数据'
+
 /** 编译期一致性：emit 用的字面量 `'window-request'`（拼 `oas-` 前缀）须与共享契约常量一致 */
 const _ROW_WINDOW_EVENT_CHECK: typeof ROW_WINDOW_EVENT = 'oas-window-request'
 void _ROW_WINDOW_EVENT_CHECK
@@ -1209,6 +1218,10 @@ export class OASTableBase extends OASElement {
   private winInitDone = false
   /** windowed 跨全量本地操作告警去重（实例级，同 group-by/column-virtual 的 warnOnce 先例） */
   private winOpsWarned = false
+  /** windowed × merge/span-method 禁用告警去重（实例级一次） */
+  private winSpanWarned = false
+  /** 当前展示集的数据行总数（aria-rowcount 口径；windowed 走 total 全量）。render 时刷新 */
+  private _logicalRowCount = 0
 
   /**
    * 能力注入：构造时快照已注册能力 + connected 期订阅晚加入（注册可能晚于元素构造——
@@ -1563,6 +1576,8 @@ export class OASTableBase extends OASElement {
     // windowed：flat 直接取已装载切片（不排序/不分组/不递归 children），见 buildWindowedFlat
     const flat = this.windowedOn() ? this.buildWindowedFlat() : this.buildFlat(sorts, rowKey, roots, groupBy)
     const display = this.visibleFlat(flat, expanded, rowKey)
+    // aria-rowcount 的展示集口径（数据行数，不含 expand/group 行）；windowed 另按 total 全量
+    this._logicalRowCount = this.countDataRows(display)
     // D8：导出数据集 = 当前展示的数据行（过滤 + 排序 + 分页切片后；虚拟模式取完整展示集合）
     this._exportRows = display.filter((f) => f.kind === 'data').map((f) => f.row)
     const summaryConfigs = this.buildSummaryConfigs()
@@ -1634,6 +1649,10 @@ export class OASTableBase extends OASElement {
       // 须在 loading/empty 早退分支之前派发，防止宿主等待初始窗口时组件静默不请求
       this.requestWindowIfNeeded(this.winInitDone ? 'data' : 'init')
       this.winInitDone = true
+      // merge 列 / span-method 在 windowed 下跳过（跨切片合并与占位行相互腐蚀）——配置在场告警一次
+      if (this._spanMethod !== null || this.effectiveColumns().some((c) => c.merge)) {
+        this.warnWindowedSpanOnce()
+      }
     }
     // table-layout：fixed/auto 透传 table 元素（列宽定宽场景配 fixed；缺省/非法不写——浏览器 auto 基线）
     const tableLayout = this.getAttr('table-layout', '')
@@ -1769,6 +1788,7 @@ export class OASTableBase extends OASElement {
       loadingTr.appendChild(loadingTd)
       body.appendChild(loadingTr)
       this.applyGridSemantics()
+      this.applyRowAriaSemantics()
       return
     }
 
@@ -1786,6 +1806,7 @@ export class OASTableBase extends OASElement {
       emptyTr.appendChild(emptyTd)
       body.appendChild(emptyTr)
       this.applyGridSemantics()
+      this.applyRowAriaSemantics()
       return
     }
 
@@ -1814,8 +1835,9 @@ export class OASTableBase extends OASElement {
         rowInfos.push({ tr, kind: f.kind })
         body.appendChild(tr)
       }
-      // 合并单元格：对 merge 列后处理连续相同值行（虚拟模式不合并）
-      this.applyRowMerge(rowInfos)
+      // 合并单元格：对 merge 列后处理连续相同值行（虚拟模式不合并；windowed 切片同样跳过——
+      // 跨界 rowspan 会与占位行相互腐蚀，见 WINDOWED_SPAN_HINT）
+      if (!this.windowedOn()) this.applyRowMerge(rowInfos)
     }
 
     if (summaryConfigs.length > 0 && summaryFlat.length > 0) {
@@ -1824,6 +1846,8 @@ export class OASTableBase extends OASElement {
     // D9 网格导航语义与 tabindex（须在行渲染后应用：editable 单元格的 tabindex=0 在此收归 -1，
     // 保证「表格单停靠点 + 方向键漫游」；重渲染后角色/tabindex 随新 DOM 重建）
     this.applyGridSemantics()
+    // aria-rowcount / aria-rowindex（windowed 全量口径；与行渲染后的绝对数据行号同步）
+    this.applyRowAriaSemantics()
     // 吸顶行：为前 N 行写入 data-sticky 与 top 偏移（依赖已铺好的表头/行测量高度）
     this.applyStickyRows()
     // innerHTML 清空曾触发浏览器把 scrollTop 钳回 0；内容（含占位）已铺满后恢复原滚动位置
@@ -1968,6 +1992,9 @@ export class OASTableBase extends OASElement {
     const key = String(row[rowKey] ?? JSON.stringify(row))
     tr.setAttribute('data-selected', String(selected.includes(key)))
     tr.setAttribute('data-key', key)
+    // 绝对数据行号（windowed 为全量绝对行；其余为当前展示集数据行序，0 起，不含 expand/group 行）：
+    // oas-cell-click / oas-edit 的 rowIndex 与 ARIA aria-rowindex 共用此单一口径（防两事件坐标系错位）
+    tr.setAttribute('data-row-index', String(dataIndex))
     if (this.hasAttr('stripe')) {
       tr.setAttribute('data-stripe', index % 2 === 1 ? 'odd' : 'even')
     }
@@ -2050,8 +2077,9 @@ export class OASTableBase extends OASElement {
     // windowed：树形展开属跨全量操作（子行可能不在已装载切片内）→ 不渲染展开钮、不做本地树展开
     const hasChildren = !this.windowedOn() && Array.isArray(children) && children.length > 0
     const effCols = this.effectiveColumns()
-    // 受控合并（span-method）仅在非虚拟模式生效（与 merge 同级的定高限制）
-    const useSpan = !this.isVirtual() && this._spanMethod !== null
+    // 受控合并（span-method）仅在非虚拟、非 windowed 模式生效：
+    // 虚拟模式受定高限制；windowed 下切片边界会与占位行相互腐蚀（见 WINDOWED_SPAN_HINT）
+    const useSpan = !this.isVirtual() && !this.windowedOn() && this._spanMethod !== null
     // 列序列：column-virtual 时 = [左占位 colSpan][窗口列…][右占位 colSpan]（占位项 col=null）；
     // 非 column-virtual = 全列（span 1），行为与旧版完全一致
     const colSeq = this.columnWindowSequence()
@@ -2258,6 +2286,16 @@ export class OASTableBase extends OASElement {
   ): void {
     const win = computeVirtualWindow(scrollTop, this.tableHeight(), this.rowHeight(), display.length)
     const colSpan = this.columnCount()
+    // 数据行序前缀（不含 expand/group 行）：虚拟窗口行的 rowIndex（cell-click / edit / ARIA）
+    // 须与全量展示集同口径。O(display) 一次扫描，相对本路径已做的 buildFlat 排序可忽略
+    const dataOrdinal: number[] = new Array(display.length)
+    {
+      let ord = 0
+      for (let i = 0; i < display.length; i++) {
+        dataOrdinal[i] = ord
+        if (display[i]!.kind === 'data') ord++
+      }
+    }
     // 吸顶行恒渲染在列表顶部（视口外的吸顶行也从窗口中排除，避免重复渲染）
     const sticky = this.stickyRowCount()
     const stickyEnd = Math.min(sticky, display.length)
@@ -2265,7 +2303,7 @@ export class OASTableBase extends OASElement {
     if (stickyEnd > 0) {
       for (let i = 0; i < stickyEnd; i++) {
         const f = display[i]!
-        const tr = this.buildVirtualRow(f, i, rowKey, selected, expanded, layout)
+        const tr = this.buildVirtualRow(f, i, rowKey, selected, expanded, layout, dataOrdinal[i]!)
         tr.style.height = `${this.rowHeight()}px`
         body.appendChild(tr)
       }
@@ -2282,7 +2320,7 @@ export class OASTableBase extends OASElement {
 
     for (let i = windowStart; i < win.end; i++) {
       const f = display[i]!
-      const tr = this.buildVirtualRow(f, i, rowKey, selected, expanded, layout)
+      const tr = this.buildVirtualRow(f, i, rowKey, selected, expanded, layout, dataOrdinal[i]!)
       tr.style.height = `${this.rowHeight()}px`
       body.appendChild(tr)
     }
@@ -2304,10 +2342,11 @@ export class OASTableBase extends OASElement {
     selected: string[],
     expanded: Set<string>,
     layout: { offsets: Map<string, ColumnOffset>; hasFixed: boolean },
+    dataIndex: number,
   ): HTMLTableRowElement {
     if (f.kind === 'expand') return this.buildExpandRow(f)
     if (f.kind === 'group') return this.buildGroupRow(f)
-    return this.buildRow(f, i, rowKey, selected, expanded, layout)
+    return this.buildRow(f, i, rowKey, selected, expanded, layout, dataIndex)
   }
 
   /**
@@ -2358,7 +2397,9 @@ export class OASTableBase extends OASElement {
       if (y + ih <= winTop || y >= winBottom) continue
       if (firstY < 0) firstY = y
       const tr =
-        f.kind === 'expand' ? this.buildExpandRow(f) : this.buildRow(f, absRow, rowKey, selected, expanded, layout)
+        f.kind === 'expand'
+          ? this.buildExpandRow(f)
+          : this.buildRow(f, absRow, rowKey, selected, expanded, layout, absRow)
       tr.style.height = `${ih}px`
       rendered.push(tr)
       lastEnd = y + ih
@@ -3130,6 +3171,13 @@ export class OASTableBase extends OASElement {
     devWarn(WINDOWED_OPS_HINT)
   }
 
+  /** windowed 下 merge 列 / span-method 跳过告警（实例级去重一次） */
+  private warnWindowedSpanOnce(): void {
+    if (this.winSpanWarned) return
+    this.winSpanWarned = true
+    devWarn(WINDOWED_SPAN_HINT)
+  }
+
   /** 总列数（行拖拽手柄列 + 勾选列 + 数据列 + 可展开行尾列） */
   private columnCount(): number {
     return (
@@ -3485,7 +3533,13 @@ export class OASTableBase extends OASElement {
     if (tr === null || index < 0) return
     const key = tr.getAttribute('data-key') ?? ''
     const to = up ? index - 1 : index + 1
-    if (to < 0 || to >= rows.length) return
+    if (to < 0 || to >= rows.length) {
+      // windowed：切片末端越界 → 把邻近绝对行请求给宿主（回填后可达），不静默无响应
+      if (this.windowedOn()) {
+        this.requestWindowForRow(this.absRowIndexOf(tr) + (up ? -1 : 1))
+      }
+      return
+    }
     const row = this.findDataRowByKey(key) ?? {}
     this.emit('row-reorder', { from: index, to, row })
   }
@@ -3528,6 +3582,43 @@ export class OASTableBase extends OASElement {
         el.tabIndex = -1
       }
     }
+  }
+
+  /**
+   * 行 ARIA 序号（windowed a11y 补口）：
+   * - `aria-rowcount` = 逻辑数据行总数：windowed 为 `total`（全量），其余为当前展示集的数据行数；
+   * - 每个数据行 `aria-rowindex` = 绝对数据行号 + 1（1 基，与 oas-cell-click / oas-edit 的 rowIndex 同口径）。
+   * 虚拟/windowed 下仅渲染窗口内的行带序号，读屏据此播报「第 x 行 / 共 N 行」，
+   * 不受渲染窗口切片影响。始终应用（非 grid-navigation 下亦有效——table 隐式 role 同样吃这两个属性）。
+   */
+  private applyRowAriaSemantics(): void {
+    const table = this.shadow.querySelector('table') as HTMLTableElement | null
+    if (!table) return
+    const total = this.windowedOn() ? this._winMode.total : this._logicalRowCount
+    table.setAttribute('aria-rowcount', String(total))
+    for (const tr of this.dragRows()) {
+      const abs = this.absRowIndexOf(tr)
+      if (abs >= 0) tr.setAttribute('aria-rowindex', String(abs + 1))
+      else tr.removeAttribute('aria-rowindex')
+    }
+  }
+
+  /** 行的绝对数据行号（读 buildRow 写入的 data-row-index）；缺失时回落当前渲染序 */
+  private absRowIndexOf(tr: HTMLTableRowElement | null): number {
+    if (!tr) return -1
+    const raw = tr.getAttribute('data-row-index')
+    if (raw !== null) {
+      const n = Number(raw)
+      if (Number.isFinite(n)) return n
+    }
+    return this.dragRows().indexOf(tr)
+  }
+
+  /** 展示集内的数据行数（不含 expand 内容行 / 分节头行） */
+  private countDataRows(display: FlatRow[]): number {
+    let n = 0
+    for (const f of display) if (f.kind === 'data') n++
+    return n
   }
 
   /** 可导航单元格矩阵：当前渲染的数据行 × 该行 td 列表（column-virtual 占位格不入矩阵——
@@ -3627,7 +3718,18 @@ export class OASTableBase extends OASElement {
     }
 
     const next = this.resolveGridMove(key, cur, matrix, e.ctrlKey)
-    if (!next) return
+    if (!next) {
+      // 已渲染行矩阵末端越界：windowed 下把目标绝对行附近区间请求给宿主回填（回填后可达），
+      // 不静默。非 windowed 维持原行为（虚拟滚动窗口边界同款限制，不在本次范围）。
+      if (this.windowedOn()) {
+        const curTr = this.dragRows()[cur.row] ?? null
+        const curAbs = this.absRowIndexOf(curTr)
+        const delta =
+          key === 'ArrowUp' || key === 'ArrowLeft' ? -1 : key === 'ArrowDown' || key === 'ArrowRight' ? 1 : 0
+        if (delta !== 0) this.requestWindowForRow(curAbs + delta)
+      }
+      return
+    }
     e.preventDefault()
     this.focusGridCell(next.row, next.col)
   }
@@ -3913,6 +4015,8 @@ export class OASTableBase extends OASElement {
         ? this.buildWindowedFlat()
         : this.buildFlat(this.resolveSorts(), rowKey, roots, groupBy)
       const display = this.visibleFlat(flat, expanded, rowKey)
+      // aria-rowcount 的展示集口径（数据行数，不含 expand/group 行）；windowed 另按 total 全量
+      this._logicalRowCount = this.countDataRows(display)
       // 滚动窗口重渲染前静默取消进行中的编辑（委托 edit 能力）
       this.editCap?.settleEdit()
       body.innerHTML = ''
@@ -3924,6 +4028,7 @@ export class OASTableBase extends OASElement {
         this.renderVirtualBody(body, display, rowKey, selected, expanded, this.computeLayout(), st)
       }
       this.applyGridSemantics()
+      this.applyRowAriaSemantics()
       this.applyStickyRows()
       // 清空曾把 scrollTop 钳回 0，内容铺满后恢复（窗口按 st 算，视觉不跳）
       if (this.wrap!.scrollTop !== st) {
@@ -3964,6 +4069,24 @@ export class OASTableBase extends OASElement {
     // 先记后派：监听器同步回填时去重状态已就位
     this.winReq = { start: need.start, end: need.end }
     this.emit('window-request', { start: need.start, end: need.end, reason })
+  }
+
+  /**
+   * 键盘导航越界（渲染矩阵末端 / 切片边界）：以「目标绝对行」为中心算出期望区间并派发
+   * `oas-window-request`（reason=scroll，与滚动同语义：键盘导航隐含滚动意图），使宿主回填后
+   * 该行可达；越界不得静默。去重与覆盖判定与 requestWindowIfNeeded 同源（共享 winReq）。
+   * 非 windowed / 目标越出 [0,total) / 期望区间已被装载覆盖 → 不派发（返回 false）。
+   */
+  private requestWindowForRow(absRow: number): boolean {
+    const mode = this._winMode
+    if (!mode.windowed) return false
+    if (absRow < 0 || absRow >= mode.total) return false
+    const need = expandWindow(absRow, absRow + 1, mode.total, WINDOW_MARGIN)
+    if (windowCovered(need, mode.loaded)) return false
+    if (sameWindow(need, this.winReq)) return true
+    this.winReq = { start: need.start, end: need.end }
+    this.emit('window-request', { start: need.start, end: need.end, reason: 'scroll' })
+    return true
   }
 
   /**

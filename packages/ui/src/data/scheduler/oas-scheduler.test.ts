@@ -729,3 +729,227 @@ describe('OASScheduler 资源视图 + now 线 + 拖拽创建', () => {
     expect(created.length).toBe(1)
   })
 })
+
+describe('OASScheduler 虚拟化（时间轴小时窗口 + 资源行窗口）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  const HOUR_H = 48
+  const RES_ROW_H = 37
+
+  /** happy-dom 无布局：显式伪造滚动容器的视口高度/滚动位置（同 gantt 测试 stubProp 先例） */
+  function stubBox(el: HTMLElement, box: { clientHeight?: number; scrollTop?: number }): void {
+    if (box.clientHeight !== undefined)
+      Object.defineProperty(el, 'clientHeight', { value: box.clientHeight, configurable: true })
+    if (box.scrollTop !== undefined)
+      Object.defineProperty(el, 'scrollTop', { value: box.scrollTop, configurable: true })
+  }
+
+  /** happy-dom 无布局：stub 元素几何 rect（band 行高量测路径） */
+  function stubRect(el: Element, height: number): void {
+    el.getBoundingClientRect = () =>
+      ({ height, top: 0, left: 0, width: 100, right: 100, bottom: height, x: 0, y: 0, toJSON: () => ({}) }) as DOMRect
+  }
+
+  function timeviewOf(el: OASScheduler): HTMLElement {
+    return el.shadowRoot!.querySelector<HTMLElement>('[part="timeview"]')!
+  }
+
+  function resviewOf(el: OASScheduler): HTMLElement {
+    return el.shadowRoot!.querySelector<HTMLElement>('[part="resource"]')!
+  }
+
+  /** 排在组件待决 rAF 之后（组件帧先执行），返回时窗口已按新滚动位置重建 */
+  function flushRaf(): Promise<void> {
+    return new Promise((resolve) => requestAnimationFrame(() => resolve(undefined)))
+  }
+
+  it('V1 小时轴窗口：只渲染可视小时 ±buffer 刻度；gutter 总高守恒（滚动范围不变）', () => {
+    const el = mount({ view: 'day', 'page-show-date': '2026-08-10', 'start-hour': '0', 'end-hour': '24' })
+    stubBox(timeviewOf(el), { clientHeight: 240 }) // 240 / 48 = 5 小时视口
+    el.requestUpdate()
+    const gutter = el.shadowRoot!.querySelector<HTMLElement>('.timeview .gutter')!
+    const spans = gutter.querySelectorAll('span')
+    // 窗口 = [0, 5 + buffer 2) = 7 个刻度（全量 24）
+    expect(spans.length, '24 小时刻度应按窗口渲染（上界 7）').toBe(7)
+    expect(spans.length).toBeGreaterThan(0)
+    // 容器总高守恒：gutter 高度仍为 全部小时 × 行高（滚动范围不随窗口缩水）
+    expect(parseFloat(gutter.style.height)).toBe(24 * HOUR_H)
+    // 日列不窗口化（≤7 列恒全量）：day 视图仍 1 列
+    expect(el.shadowRoot!.querySelectorAll('.timeview .col').length).toBe(1)
+  })
+
+  it('V2 事件块按可视小时窗口相交渲染（窗外跳过、跨窗长事件保留）', () => {
+    const el = mount({
+      view: 'day',
+      'page-show-date': '2026-08-10',
+      'start-hour': '0',
+      'end-hour': '24',
+      events: JSON.stringify([
+        { date: '2026-08-10', title: '窗内早', start: '02:00', end: '03:00' },
+        { date: '2026-08-10', title: '窗内上午', start: '05:00', end: '05:30' },
+        { date: '2026-08-10', title: '窗外午间', start: '09:00', end: '10:00' },
+        { date: '2026-08-10', title: '窗外晚', start: '15:00', end: '16:00' },
+        { date: '2026-08-10', title: '跨窗长会', start: '01:00', end: '23:00' },
+      ]),
+    })
+    stubBox(timeviewOf(el), { clientHeight: 240 }) // 窗口小时 [0, 7) → 分钟 [0, 420)
+    el.requestUpdate()
+    const titles = [...el.shadowRoot!.querySelectorAll<HTMLElement>('.col .event')].map((e) => e.textContent)
+    expect(titles.length, '窗外事件块跳过（5 个只渲染 3 个）').toBe(3)
+    expect(titles, '跨窗长事件必须保留').toContain('跨窗长会')
+    expect(titles).toContain('窗内早')
+    expect(titles).toContain('窗内上午')
+  })
+
+  it('V3 资源行窗口：500 资源只渲染可视行 ±buffer；spacer 守恒总高（500×37）', () => {
+    const res = Array.from({ length: 500 }, (_, i) => ({ id: `r${i}`, title: `资源 ${i}` }))
+    const el = mount({ view: 'resource', 'page-show-date': '2026-08-10', resources: JSON.stringify(res) })
+    stubBox(resviewOf(el), { clientHeight: 740 }) // 740 / 37 = 20 行视口
+    el.requestUpdate()
+    const rows = el.shadowRoot!.querySelectorAll('.res-row')
+    // 窗口 = [0, 20 + buffer 4) = 24 行（全量 500）
+    expect(rows.length, '渲染行数应有上界（500 行只渲染窗口 24 行）').toBe(24)
+    const top = el.shadowRoot!.querySelector<HTMLElement>('.res-pad-top')
+    const bottom = el.shadowRoot!.querySelector<HTMLElement>('.res-pad-bottom')
+    expect(top, '窗口上方 spacer 存在').not.toBeNull()
+    expect(bottom, '窗口下方 spacer 存在').not.toBeNull()
+    const total = parseFloat(top!.style.height) + parseFloat(bottom!.style.height) + rows.length * RES_ROW_H
+    expect(total, 'spacer + 渲染行高之和守恒总高').toBe(500 * RES_ROW_H)
+    expect(parseFloat(bottom!.style.height)).toBe((500 - 24) * RES_ROW_H)
+  })
+
+  it('V4 中部滚动：scroll 合帧驱动窗口平移覆盖可视区（中部行出现、顶部行移出）', async () => {
+    const res = Array.from({ length: 500 }, (_, i) => ({ id: `r${i}`, title: `资源 ${i}` }))
+    const el = mount({ view: 'resource', 'page-show-date': '2026-08-10', resources: JSON.stringify(res) })
+    const rv = resviewOf(el)
+    stubBox(rv, { clientHeight: 740 })
+    el.requestUpdate()
+    expect(el.shadowRoot!.querySelector('.res-row[data-resource="r0"]'), '顶部窗口首行在 DOM').not.toBeNull()
+    stubBox(rv, { scrollTop: 250 * RES_ROW_H }) // 滚到第 250 行
+    rv.dispatchEvent(new Event('scroll'))
+    await flushRaf()
+    expect(el.shadowRoot!.querySelector('.res-row[data-resource="r250"]'), '中部行渲染覆盖可视区').not.toBeNull()
+    expect(el.shadowRoot!.querySelector('.res-row[data-resource="r0"]'), '顶部行随窗口移出').toBeNull()
+  })
+
+  it('V5 窗口未变：scroll 合帧后跳过重建（行节点引用稳定）', async () => {
+    const res = Array.from({ length: 500 }, (_, i) => ({ id: `r${i}`, title: `资源 ${i}` }))
+    const el = mount({ view: 'resource', 'page-show-date': '2026-08-10', resources: JSON.stringify(res) })
+    const rv = resviewOf(el)
+    stubBox(rv, { clientHeight: 720 }) // 窗口 [0, ceil(720/37)+4) = [0, 24)
+    el.requestUpdate()
+    const row = el.shadowRoot!.querySelector<HTMLElement>('.res-row[data-resource="r0"]')!
+    stubBox(rv, { scrollTop: 15 }) // 15/37 仍落第 0 行槽，窗口端点不变（ceil(735/37)=20）
+    rv.dispatchEvent(new Event('scroll'))
+    await flushRaf()
+    expect(el.shadowRoot!.querySelector('.res-row[data-resource="r0"]'), '窗口未变不得重建 DOM（同节点）').toBe(row)
+  })
+
+  it('V6 视口不可测（happy-dom 缺省）：回落全量渲染（500 行 / 24 刻度全渲染）', () => {
+    const res = Array.from({ length: 500 }, (_, i) => ({ id: `r${i}`, title: `资源 ${i}` }))
+    const resEl = mount({ view: 'resource', 'page-show-date': '2026-08-10', resources: JSON.stringify(res) })
+    expect(resEl.shadowRoot!.querySelectorAll('.res-row').length, 'clientHeight 不可测回落全量行').toBe(500)
+    const dayEl = mount({ view: 'day', 'page-show-date': '2026-08-10', 'start-hour': '0', 'end-hour': '24' })
+    expect(dayEl.shadowRoot!.querySelectorAll('.timeview .gutter span').length, 'clientHeight 不可测回落全量刻度').toBe(
+      24,
+    )
+  })
+
+  it('V7 空数据零异常：resource 单行「未分配」、day/week 空渲染不炸', () => {
+    const resEl = mount({ view: 'resource', 'page-show-date': '2026-08-10' })
+    expect(resEl.shadowRoot!.querySelectorAll('[part="resource"] .res-row').length).toBe(1)
+    const dayEl = mount({ view: 'day', 'page-show-date': '2026-08-10' })
+    expect(dayEl.shadowRoot!.querySelector('.col .track')).not.toBeNull()
+    const weekEl = mount({ view: 'week', 'page-show-date': '2026-08-10' })
+    expect(weekEl.shadowRoot!.querySelectorAll('.timeview .col').length).toBe(7)
+  })
+
+  it('V8 窗口原点扣 band 高：scrollTop 先减 band 实高再算窗口（多全天事件时顶部刻度/事件不被裁）', () => {
+    const evs = Array.from({ length: 30 }, (_, i) => ({ date: '2026-08-10', title: `全天事项${i}` }))
+    const el = mount({
+      view: 'day',
+      'page-show-date': '2026-08-10',
+      'start-hour': '0',
+      'end-hour': '24',
+      events: JSON.stringify(evs),
+    })
+    const tv = timeviewOf(el)
+    stubBox(tv, { clientHeight: 240, scrollTop: 500 })
+    // happy-dom 无布局：stub band 行实高（spacer 与 band 同处 grid 首行，行高取大者 137）
+    stubRect(el.shadowRoot!.querySelector('.band-spacer')!, 20)
+    stubRect(el.shadowRoot!.querySelector('.band')!, 137)
+    el.requestUpdate()
+    // 有效原点 = 500 - 137 = 363 → 首可视小时 floor(363/48) = 7 → 窗口 [7-2, …) 起于 05:00
+    // （不扣 band 会错起 08:00：视口顶在 07:00 而渲染从 08:00 起 → 顶部约 1h 空白、可见事件被裁）
+    const first = el.shadowRoot!.querySelector<HTMLElement>('.gutter span')!
+    expect(first.textContent).toBe('05:00')
+  })
+
+  it('V9 重建回焦：聚焦事件条 → 滚动触发窗口平移重建 → shadow.activeElement 仍为同一事件 id', async () => {
+    const el = mount({
+      view: 'day',
+      'page-show-date': '2026-08-10',
+      'start-hour': '0',
+      'end-hour': '24',
+      events: JSON.stringify([{ date: '2026-08-10', title: '焦点目标', start: '05:00', end: '06:00' }]),
+    })
+    const tv = timeviewOf(el)
+    stubBox(tv, { clientHeight: 240 }) // 初始窗口 [0, 7)
+    el.requestUpdate()
+    const ev = el.shadowRoot!.querySelector<HTMLElement>('.col .event')!
+    ev.focus()
+    expect(el.shadowRoot!.activeElement, '前置：事件条已聚焦').toBe(ev)
+    stubBox(tv, { scrollTop: 240 }) // 5 小时 → 窗口平移 [3, 12)，事件条仍在窗内
+    tv.dispatchEvent(new Event('scroll'))
+    await flushRaf()
+    const after = el.shadowRoot!.activeElement as HTMLElement | null
+    expect(after, '重建后焦点不得丢失').not.toBeNull()
+    expect(after!.getAttribute('data-id'), '回焦到同一事件 id').toBe(ev.getAttribute('data-id'))
+  })
+
+  it('V10 aria 行计数：resource 网格 aria-rowcount + 每行绝对 aria-rowindex（1 基，窗口平移不重编号）', () => {
+    const res = Array.from({ length: 500 }, (_, i) => ({ id: `r${i}`, title: `R${i}` }))
+    const el = mount({ view: 'resource', 'page-show-date': '2026-08-10', resources: JSON.stringify(res) })
+    expect(el.shadowRoot!.querySelector('[role="grid"]')?.getAttribute('aria-rowcount')).toBe('500')
+    expect(el.shadowRoot!.querySelector('[role="row"]')?.getAttribute('aria-rowindex')).toBe('1')
+    stubBox(resviewOf(el), { clientHeight: 740, scrollTop: 250 * RES_ROW_H })
+    el.requestUpdate()
+    const mid = el.shadowRoot!.querySelector<HTMLElement>('.res-row[data-resource="r250"]')!
+    expect(mid.getAttribute('aria-rowindex'), '窗口平移后行号仍为绝对行号').toBe('251')
+    // 周 × 资源网格同规格
+    const wk = mount({
+      view: 'resource-week',
+      'page-show-date': '2026-08-10',
+      resources: JSON.stringify([{ id: 'a', title: 'A' }]),
+    })
+    expect(wk.shadowRoot!.querySelector('[role="grid"]')?.getAttribute('aria-rowcount')).toBe('1')
+    expect(wk.shadowRoot!.querySelector('[role="row"]')?.getAttribute('aria-rowindex')).toBe('1')
+  })
+
+  it('V11 res-week 行高下界：1 小时区间（轨道 24px < 单元格 min-height 36px）行高兜底，spacer 总高守恒', () => {
+    const res = Array.from({ length: 200 }, (_, i) => ({ id: `r${i}`, title: `R${i}` }))
+    const el = mount({
+      view: 'resource-week',
+      'page-show-date': '2026-08-10',
+      'start-hour': '8',
+      'end-hour': '9',
+      resources: JSON.stringify(res),
+    })
+    stubBox(resviewOf(el), { clientHeight: 740 })
+    el.requestUpdate()
+    const top = el.shadowRoot!.querySelector<HTMLElement>('.res-pad-top')!
+    const bottom = el.shadowRoot!.querySelector<HTMLElement>('.res-pad-bottom')!
+    const rendered = el.shadowRoot!.querySelectorAll('.res-row').length
+    // 实际行高 = max(轨道 24px, 单元格 min-height 36px) + 1px 行边框 = 37
+    const rowH = Math.max((9 - 8) * 24, 36) + 1
+    expect(rowH).toBe(37)
+    const total = parseFloat(top.style.height) + rendered * rowH + parseFloat(bottom.style.height)
+    expect(total, 'spacer 按兜底行高计 → 总高守恒 200×37（未兜底模型 25px 会少算）').toBe(200 * rowH)
+    expect(parseFloat(bottom.style.height)).toBe((200 - rendered) * rowH)
+  })
+})

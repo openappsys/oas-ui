@@ -5886,3 +5886,552 @@ describe('OASGantt 行名列自定义模板（template[slot="row"]）', () => {
     expect(shadowOf(el).querySelector('.rename-input')).toBeNull()
   })
 })
+
+/**
+ * windowed（服务端行窗口模式）+ 宿主托管时间范围（range-start/range-end）机制测试。
+ *
+ * 契约见 shared/window-data.ts：
+ * - 属性 `windowed`（布尔）+ `total`（全量行数）+ `window-start`（tasks[0] 的绝对行下标）；
+ *   `tasks` 只承载 [window-start, window-start+len) 的已装载切片，行虚拟化窗口在 total 上算，
+ *   渲染/定位按绝对行号。
+ * - 可视行窗口 → expandWindow（±8 margin）→ 未被已装载区间覆盖时派发 `oas-window-request`
+ *   （detail { start, end, reason }，半开、绝对行下标；同 need 去重，reason ∈ init/scroll/resize/data）。
+ * - `range-start`/`range-end`（ISO 日）托管时间轴范围：buildUnits 用该范围（而非 rows 派生）；
+ *   视觉时间窗前后各扩 1 个视口宽、`!rangeCovered` 时派发 `oas-range-request`（去重）。
+ * - windowed 且缺 range-* → devWarn 一次并回落 rows 派生。
+ * - windowed 下本地跨全量能力禁用（auto-schedule / 关键路径在部分数据上会算错）：跳过 + devWarn 一次。
+ * - windowed 要求**扁平行切片**（切片即行序，不递归 children / 不受 expanded 影响，绝对行号按
+ *   扁平行计）；键盘越出切片末端派发请求；aria 坐标（posinset/setsize/rowindex）按全量口径；
+ *   行重排禁用；退出 windowed / 移除 range-* 复位去重态。
+ * - 非 windowed：行为完全不变。
+ */
+
+interface WinReq {
+  start: number
+  end: number
+  reason: string
+}
+
+interface RangeReq {
+  startMs: number
+  endMs: number
+  reason: string
+}
+
+/** mount（监听器先于连接挂上，首帧 init 请求也能捕获） */
+function mountWindowed(attrs: Record<string, string>): { el: OASGantt; reqs: WinReq[]; rangeReqs: RangeReq[] } {
+  const el = new OASGantt()
+  for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v)
+  const reqs: WinReq[] = []
+  const rangeReqs: RangeReq[] = []
+  el.addEventListener('oas-window-request', (e) => {
+    const d = (e as CustomEvent).detail
+    reqs.push({ start: d.start, end: d.end, reason: d.reason })
+  })
+  el.addEventListener('oas-range-request', (e) => {
+    const d = (e as CustomEvent).detail
+    rangeReqs.push({ startMs: d.startMs, endMs: d.endMs, reason: d.reason })
+  })
+  document.body.appendChild(el)
+  return { el, reqs, rangeReqs }
+}
+
+const flushRaf = (): Promise<void> => new Promise((resolve) => requestAnimationFrame(() => resolve(undefined)))
+
+const DAY_MS = 86_400_000
+
+/** 绝对行 [start, start+len) 的任务窗口切片（任务名/id 带绝对行号便于断言） */
+const taskSlice = (start: number, len: number): string =>
+  JSON.stringify(
+    Array.from({ length: len }, (_, i) => ({
+      id: `t${start + i}`,
+      name: `任务${start + i}`,
+      start: `2026-03-${String((i % 27) + 1).padStart(2, '0')}`,
+      end: `2026-03-${String((i % 27) + 2).padStart(2, '0')}`,
+    })),
+  )
+
+const tbodyOf = (el: OASGantt): HTMLElement => shadowOf(el).querySelector<HTMLElement>('.tbody')!
+
+describe('OASGantt windowed（服务端行窗口模式）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('windowed 生效：tasks 视为 [window-start, window-start+len) 的绝对行切片，按绝对行号定位渲染', () => {
+    const { el } = mountWindowed({ windowed: '', total: '100', 'window-start': '10', tasks: taskSlice(10, 5) })
+    const names = nameRows(el)
+    expect(names.length).toBe(5)
+    expect(names[0]!.dataset.key).toBe('t10')
+    expect(names[4]!.dataset.key).toBe('t14')
+    // 绝对行号定位：行 j 的 top = (window-start + j) × row-height（旧口径 j × row-height 会红）
+    expect(names[0]!.style.top).toBe(`${10 * 36}px`)
+    expect(names[4]!.style.top).toBe(`${14 * 36}px`)
+    // 画布高度按全量 total 撑起（滚动域 = 全量行数，非已装载切片）
+    expect(shadowOf(el).querySelector<HTMLElement>('.inner')!.style.height).toBe(`${100 * 36}px`)
+    // 左侧列表滚动域同口径
+    expect(shadowOf(el).querySelector<HTMLElement>('.side-inner')!.style.height).toBe(`${100 * 36}px`)
+  })
+
+  it('首帧派发 oas-window-request（reason=init，绝对半开区间含 margin）', () => {
+    // 视口 120/40=3 行 + buffer6 → 可视 [0,9)；±margin8 → 期望 [0,17)；装载 [0,3) 未覆盖
+    const { reqs } = mountWindowed({
+      windowed: '',
+      total: '1000',
+      'window-start': '0',
+      height: '120',
+      'row-height': '40',
+      tasks: taskSlice(0, 3),
+    })
+    expect(reqs).toEqual([{ start: 0, end: 17, reason: 'init' }])
+  })
+
+  it('宿主回填覆盖期望区间后不再重复派发', () => {
+    const { el, reqs } = mountWindowed({
+      windowed: '',
+      total: '1000',
+      'window-start': '0',
+      height: '120',
+      'row-height': '40',
+      tasks: taskSlice(0, 3),
+    })
+    expect(reqs.length).toBe(1)
+    el.setAttribute('tasks', taskSlice(0, 17)) // 恰好覆盖 [0,17)
+    expect(reqs.length).toBe(1) // 覆盖 → 静默（不重派）
+  })
+
+  it('滚动触发 reason=scroll 的请求；同 need 去重', async () => {
+    const { el, reqs } = mountWindowed({
+      windowed: '',
+      total: '1000',
+      'window-start': '0',
+      height: '120',
+      'row-height': '40',
+      tasks: taskSlice(0, 17),
+    })
+    expect(reqs.length).toBe(0) // 已覆盖，无 init 请求
+    const tb = tbodyOf(el)
+    tb.scrollTop = 1200 // 行 30
+    tb.dispatchEvent(new Event('scroll'))
+    await flushRaf()
+    // 可视 [24,39) → 期望 [16,47)；装载 [0,17) 未覆盖
+    expect(reqs).toEqual([{ start: 16, end: 47, reason: 'scroll' }])
+    // 同 need（滚动位置未变）再触发不重派
+    tb.dispatchEvent(new Event('scroll'))
+    await flushRaf()
+    expect(reqs.length).toBe(1)
+  })
+
+  it('data 变更后请求 reason=data（同 need 不重派；窗口变化才派）', () => {
+    const { el, reqs } = mountWindowed({
+      windowed: '',
+      total: '1000',
+      'window-start': '0',
+      height: '120',
+      'row-height': '40',
+      tasks: taskSlice(0, 3),
+    })
+    expect(reqs).toEqual([{ start: 0, end: 17, reason: 'init' }])
+    // 宿主回填但未覆盖（need 同 [0,17)）→ 契约去重：不重派
+    el.setAttribute('tasks', taskSlice(0, 10))
+    expect(reqs.length).toBe(1)
+    // 宿主覆盖 [0,17)（去重态重置）后再切窗 [500,510)：need 未覆盖 → data 原因再派
+    el.setAttribute('tasks', taskSlice(0, 17))
+    expect(reqs.length).toBe(1)
+    el.setAttribute('window-start', '500')
+    el.setAttribute('tasks', taskSlice(500, 10))
+    expect(reqs.length).toBe(2)
+    expect(reqs[1]).toEqual({ start: 0, end: 17, reason: 'data' })
+  })
+
+  it('虚拟 windowed：可视区间与装载区不相交时不渲染行（画布高度仍按 total 撑起，不把部分数据当全量）', () => {
+    const { el, reqs } = mountWindowed({
+      windowed: '',
+      total: '100',
+      'window-start': '20',
+      height: '120',
+      'row-height': '40',
+      tasks: taskSlice(20, 5),
+    })
+    // 可视 [0,9) 与装载 [20,25) 不相交 → 无行渲染
+    expect(nameRows(el).length).toBe(0)
+    expect(bars(el).length).toBe(0)
+    expect(shadowOf(el).querySelector<HTMLElement>('.inner')!.style.height).toBe('4000px')
+    // 期望区间未覆盖 → init 请求已派发
+    expect(reqs[0]).toEqual({ start: 0, end: 17, reason: 'init' })
+  })
+
+  it('windowed 未装载（tasks 空）不误显空态文案（全量意义上数据存在）', () => {
+    const { el } = mountWindowed({ windowed: '', total: '100', tasks: '[]' })
+    expect(shadowOf(el).querySelector<HTMLElement>('.empty')!.hidden).toBe(true)
+  })
+
+  it('total 为 0 时 windowed 不生效（回落普通模式：相对行号定位、零请求）', () => {
+    const { el, reqs } = mountWindowed({
+      windowed: '',
+      total: '0',
+      'window-start': '10',
+      height: '120',
+      'row-height': '40',
+      tasks: taskSlice(0, 3),
+    })
+    expect(nameRows(el)[0]!.style.top).toBe('0px')
+    expect(reqs.length).toBe(0)
+  })
+
+  it('非 windowed（缺 windowed 属性）：不派发窗口请求（本地全量模式行为不变）', () => {
+    const { el, reqs } = mountWindowed({
+      total: '1000',
+      height: '120',
+      'row-height': '40',
+      tasks: taskSlice(0, 50),
+    })
+    expect(reqs.length).toBe(0)
+    // 本地模式：行号即渲染下标
+    expect(nameRows(el)[0]!.style.top).toBe('0px')
+  })
+
+  it('range-start/range-end 托管时间轴范围：buildUnits 用宿主范围（而非 rows min/max）', () => {
+    const { el } = mountWindowed({
+      'range-start': '2026-01-01',
+      'range-end': '2026-12-31',
+      tasks: JSON.stringify([{ id: 'a', name: 'A', start: '2026-03-02', end: '2026-03-06' }]),
+    })
+    const units = (el as unknown as { units: Array<{ startMs: number; endMs: number }> }).units
+    const jan1 = new Date(2026, 0, 1).getTime()
+    const dec31End = new Date(2026, 11, 31).getTime() + DAY_MS
+    expect(units.length).toBeGreaterThan(0)
+    // 轴覆盖宿主范围：首列起点 ≤ 01-01、末列右缘 ≥ 12-31 含端
+    expect(units[0]!.startMs).toBeLessThanOrEqual(jan1)
+    expect(units[units.length - 1]!.endMs).toBeGreaterThanOrEqual(dec31End)
+  })
+
+  it('windowed 且缺 range-start/range-end：devWarn 一次并回落 rows 派生（重渲染不重复告警）', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    try {
+      const { el } = mountWindowed({
+        windowed: '',
+        total: '10',
+        'window-start': '0',
+        tasks: JSON.stringify([{ id: 'a', name: 'A', start: '2026-03-02', end: '2026-03-06' }]),
+      })
+      expect(warn.mock.calls.some((c) => String(c[0]).includes('range-start'))).toBe(true)
+      el.requestUpdate()
+      expect(warn.mock.calls.filter((c) => String(c[0]).includes('range-start')).length).toBe(1)
+      // 回落 rows 派生：轴覆盖 3 月数据
+      const units = (el as unknown as { units: Array<{ startMs: number }> }).units
+      expect(units.length).toBeGreaterThan(0)
+      expect(units[0]!.startMs).toBeLessThanOrEqual(new Date(2026, 2, 1).getTime())
+    } finally {
+      warn.mockRestore()
+    }
+  })
+
+  it('托管轴（有 range-*）派发 oas-range-request（reason=init）；同 need 去重；范围变化后 reason=data 再派', () => {
+    const { el, rangeReqs } = mountWindowed({
+      windowed: '',
+      total: '10',
+      'window-start': '0',
+      'range-start': '2026-03-01',
+      'range-end': '2026-03-31',
+      tasks: taskSlice(0, 3),
+    })
+    expect(rangeReqs.length).toBe(1)
+    expect(rangeReqs[0]!.reason).toBe('init')
+    // need = 可视时间窗 ± 1 视口宽 → 超出轴端点
+    expect(rangeReqs[0]!.startMs).toBeLessThan(new Date(2026, 2, 1).getTime())
+    expect(rangeReqs[0]!.endMs).toBeGreaterThan(new Date(2026, 2, 31).getTime() + DAY_MS)
+    // 同 need（requestUpdate 重评估）→ 去重不重派
+    el.requestUpdate()
+    expect(rangeReqs.length).toBe(1)
+    // 宿主扩大范围 → buildUnits 重建、need 随之变化 → data 原因再派
+    el.setAttribute('range-start', '2026-01-01')
+    expect(rangeReqs.length).toBe(2)
+    expect(rangeReqs[1]!.reason).toBe('data')
+  })
+
+  it('非 windowed 且无 range-*：不派发 range 请求', () => {
+    const { rangeReqs } = mountWindowed({ tasks: taskSlice(0, 3) })
+    expect(rangeReqs.length).toBe(0)
+  })
+
+  it('windowed 下 auto-schedule 跳过（数据不被联动改期）+ devWarn 一次', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    try {
+      const { el } = mountWindowed({
+        windowed: '',
+        total: '10',
+        'window-start': '0',
+        'auto-schedule': '',
+        tasks: JSON.stringify([
+          { id: 'a1', name: 'A1', start: '2026-03-10', end: '2026-03-12' },
+          { id: 'a2', name: 'A2', start: '2026-03-02', end: '2026-03-04', dependencies: [{ id: 'a1' }] },
+        ]),
+      })
+      // a2.start < a1.end 违反 fs 约束；本地 auto-schedule 会把 a2 推后——windowed 下跳过
+      expect(el.tasks.find((t) => t.id === 'a2')!.start).toBe('2026-03-02')
+      expect(warn.mock.calls.some((c) => String(c[0]).includes('auto-schedule'))).toBe(true)
+      el.requestUpdate()
+      expect(warn.mock.calls.filter((c) => String(c[0]).includes('auto-schedule')).length).toBe(1)
+    } finally {
+      warn.mockRestore()
+    }
+  })
+
+  it('windowed 下关键路径跳过（无 critical 高亮）+ devWarn 一次；非 windowed 对照照常高亮', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    try {
+      const chainTasks = JSON.stringify([
+        { id: 'k1', name: 'K1', start: '2026-03-02', end: '2026-03-04' },
+        { id: 'k2', name: 'K2', start: '2026-03-05', end: '2026-03-09', dependencies: [{ id: 'k1' }] },
+      ])
+      const { el } = mountWindowed({
+        windowed: '',
+        total: '10',
+        'window-start': '0',
+        'show-critical-path': '',
+        tasks: chainTasks,
+      })
+      expect(shadowOf(el).querySelectorAll('.bar.critical').length).toBe(0)
+      expect(warn.mock.calls.some((c) => String(c[0]).includes('关键路径'))).toBe(true)
+      el.requestUpdate()
+      expect(warn.mock.calls.filter((c) => String(c[0]).includes('关键路径')).length).toBe(1)
+      // 对照（反证）：同数据非 windowed → 依赖链 k1/k2 为关键路径高亮
+      const local = mount({ 'show-critical-path': '', tasks: chainTasks })
+      const criticalIds = [...shadowOf(local).querySelectorAll<HTMLElement>('.bar.critical')].map((b) => b.dataset.id)
+      expect(criticalIds.sort()).toEqual(['k1', 'k2'])
+    } finally {
+      warn.mockRestore()
+    }
+  })
+
+  it('windowed 下宿主切窗回填 + 滚动后新切片按绝对行号渲染', async () => {
+    const { el, reqs } = mountWindowed({
+      windowed: '',
+      total: '1000',
+      'window-start': '0',
+      height: '120',
+      'row-height': '40',
+      tasks: taskSlice(0, 17),
+    })
+    // 先滚出装载区触发 scroll 请求（宿主据此回填）
+    const tb = tbodyOf(el)
+    tb.scrollTop = 4000 // 行 100
+    tb.dispatchEvent(new Event('scroll'))
+    await flushRaf()
+    expect(reqs.some((r) => r.reason === 'scroll')).toBe(true)
+    // 宿主按请求回填新窗口 [100,117)
+    el.setAttribute('window-start', '100')
+    el.setAttribute('tasks', taskSlice(100, 17))
+    const names = nameRows(el)
+    expect(names.length).toBeGreaterThan(0)
+    // 绝对行号定位：首行 top = 100 × 40（若按局部下标 0 × 40 会红）
+    expect(names[0]!.dataset.key).toBe('t100')
+    expect(names[0]!.style.top).toBe(`${100 * 40}px`)
+  })
+
+  // F1 回归：windowed × 层级切片（含折叠父级）——旧实现按树递归 rows 塌缩（1 行 ≪ 切片长度），
+  // 覆盖判定误吞请求 + 滚动范围内空白。修复后切片即行序（不递归 children、忽略 expanded）
+  it('windowed 要求扁平行切片：层级切片不塌缩、装载区滚动无空白 + devWarn 一次（扁平切片不告警）', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    try {
+      // 复现：切片 = 1 个父级 + 100 子级（拍平后 _tasks.length=101），expanded='[]' 全收起
+      const slice = JSON.stringify([
+        {
+          id: 'p',
+          name: '父',
+          start: '2026-03-02',
+          end: '2026-03-05',
+          children: Array.from({ length: 100 }, (_, i) => ({
+            id: `c${i}`,
+            name: `子${i}`,
+            start: '2026-03-02',
+            end: '2026-03-05',
+          })),
+        },
+      ])
+      const { el, reqs } = mountWindowed({
+        windowed: '',
+        total: '1000',
+        'window-start': '0',
+        height: '200',
+        'row-height': '40',
+        expanded: '[]',
+        tasks: slice,
+      })
+      // 扁平化：rows = 切片长度（父 + 100 子），loaded 口径与渲染行数一致（旧实现塌缩成 1 行会红）
+      const rows = (el as unknown as { rows: Array<{ task: { id: string } }> }).rows
+      expect(rows.length).toBe(101)
+      expect(rows[0]!.task.id).toBe('p')
+      expect(rows[1]!.task.id).toBe('c0')
+      // 切片即行序：展开集合被忽略（expanded='[]' 不再塌缩），父/子按切片顺序全部成行
+      const initNames = nameRows(el)
+      expect(initNames.length).toBeGreaterThan(1)
+      expect(initNames[0]!.dataset.key).toBe('p')
+      expect(initNames[1]!.dataset.key).toBe('c0')
+      // 装载区内任意滚动位置都有行渲染（旧实现 rows 塌缩 → 空白且不派请求）
+      const tb = tbodyOf(el)
+      tb.scrollTop = 60 * 40 // 行 60（仍在装载 [0,101) 内）
+      tb.dispatchEvent(new Event('scroll'))
+      await flushRaf()
+      const midNames = nameRows(el)
+      expect(midNames.length).toBeGreaterThan(0)
+      expect(midNames[0]!.dataset.key).toBe('c53') // 行 60 - buffer 6 → c53（父占 1 行）
+      expect(reqs.filter((r) => r.reason === 'scroll')).toEqual([]) // 装载区内不派请求
+      // 滚出装载区 → 照常派发 scroll 请求（绝对区间）
+      tb.scrollTop = 500 * 40 // 行 500
+      tb.dispatchEvent(new Event('scroll'))
+      await flushRaf()
+      expect(reqs.some((r) => r.reason === 'scroll')).toBe(true)
+      // 含层级切片 → devWarn 一次（重渲染不重复）
+      expect(warn.mock.calls.some((c) => String(c[0]).includes('扁平行切片'))).toBe(true)
+      el.requestUpdate()
+      expect(warn.mock.calls.filter((c) => String(c[0]).includes('扁平行切片')).length).toBe(1)
+      // 反证：扁平切片不告警
+      warn.mockClear()
+      mountWindowed({ windowed: '', total: '1000', 'window-start': '0', tasks: taskSlice(0, 5) })
+      expect(warn.mock.calls.some((c) => String(c[0]).includes('扁平行切片'))).toBe(false)
+    } finally {
+      warn.mockRestore()
+    }
+  })
+
+  // F2 回归：windowed 下键盘移动到切片末端 ↓（/ 首端 ↑）→ 派发 oas-window-request
+  //（need 覆盖目标绝对行 ±margin，宿主回填后可达），不得静默无响应
+  it('windowed 键盘越出切片末端：派发请求覆盖目标绝对行 ±margin；同 need 去重；越出全量边界不派', () => {
+    const { el, reqs } = mountWindowed({
+      windowed: '',
+      total: '1000',
+      'window-start': '0',
+      height: '120',
+      'row-height': '40',
+      tasks: taskSlice(0, 9), // 装载 [0,9)：init need [0,17) 未覆盖 → 先派 init
+    })
+    expect(reqs).toEqual([{ start: 0, end: 17, reason: 'init' }])
+    const names = nameRows(el)
+    expect(names.length).toBe(9)
+    // 聚焦切片末行 t8 → ↓：目标绝对行 9，need = expandWindow(9,10,1000,8) = [1,18)
+    names[8]!.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }))
+    expect(reqs[1]).toEqual({ start: 1, end: 18, reason: 'scroll' })
+    // 同 need 再按 → 去重不重派（在途请求未回填前不刷屏）
+    names[8]!.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }))
+    expect(reqs.length).toBe(2)
+    // 反证：切片末端 = 全量末端 → 目标越出 [0,total) 不派
+    const edge = mountWindowed({
+      windowed: '',
+      total: '9',
+      'window-start': '0',
+      height: '120',
+      'row-height': '40',
+      tasks: taskSlice(0, 9),
+    })
+    expect(edge.reqs.length).toBe(0) // 装载即全量 → init 也被覆盖
+    nameRows(edge.el)[8]!.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }))
+    expect(edge.reqs.length).toBe(0)
+  })
+
+  // F3 回归：windowed 下 aria 坐标用全量口径（posinset/rowindex=绝对行号 1 基、setsize=total、
+  // 容器 aria-rowcount=total）；非 windowed 行为不变（同级口径、无 rowindex/rowcount）
+  it('windowed 下 aria 坐标按全量口径；非 windowed 保持同级口径', () => {
+    const { el } = mountWindowed({
+      windowed: '',
+      total: '1000',
+      'window-start': '10',
+      tasks: taskSlice(10, 5),
+    })
+    const names = nameRows(el)
+    expect(names.length).toBe(5)
+    expect(names[0]!.getAttribute('aria-posinset')).toBe('11') // 绝对行号（切片局部 1 会红）
+    expect(names[0]!.getAttribute('aria-rowindex')).toBe('11')
+    expect(names[0]!.getAttribute('aria-setsize')).toBe('1000')
+    expect(names[4]!.getAttribute('aria-posinset')).toBe('15')
+    expect(names[4]!.getAttribute('aria-rowindex')).toBe('15')
+    expect(shadowOf(el).querySelector('.side-rows')!.getAttribute('aria-rowcount')).toBe('1000')
+    // 反证：非 windowed 保持既有口径（同级 posinset/setsize，无 rowindex/rowcount）
+    const local = mountWindowed({ total: '1000', 'window-start': '10', tasks: taskSlice(10, 5) })
+    const lnames = nameRows(local.el)
+    expect(lnames[0]!.getAttribute('aria-posinset')).toBe('1')
+    expect(lnames[0]!.getAttribute('aria-setsize')).toBe('5')
+    expect(lnames[0]!.hasAttribute('aria-rowindex')).toBe(false)
+    expect(shadowOf(local.el).querySelector('.side-rows')!.hasAttribute('aria-rowcount')).toBe(false)
+  })
+
+  // F4 回归：range-end 含当日（半开 endMs = 次日 00:00，与 resource 托管轴 / 本地 endMsOf 同口径）
+  // ——旧实现 day 档靠 pad 兜底、hour 档轴尾停在 range-end 当日 00:00+7h（当日大半无列）
+  it('range-end 含当日：day 与 hour 档轴尾都覆盖 range-end 当日（≥ 次日 00:00）', () => {
+    const tailOf = (scale: string): number => {
+      const { el } = mountWindowed({
+        'range-start': '2026-03-01',
+        'range-end': '2026-03-31',
+        scale,
+        tasks: taskSlice(0, 3),
+      })
+      const units = (el as unknown as { units: Array<{ endMs: number }> }).units
+      return units[units.length - 1]!.endMs
+    }
+    const nextDay = new Date(2026, 2, 31).getTime() + DAY_MS
+    expect(tailOf('day')).toBeGreaterThanOrEqual(nextDay)
+    expect(tailOf('hour')).toBeGreaterThanOrEqual(nextDay) // 旧实现得 03-31 07:00 → 红
+  })
+
+  // F5 回归：退出 windowed / 移除 range-* 复位去重态——重进/挂回后首帧重新 init（不被旧去重态吞掉）
+  it('windowed 退出重进与 range-* 移除挂回：重新派发 reason=init', () => {
+    const { el, reqs, rangeReqs } = mountWindowed({
+      windowed: '',
+      total: '1000',
+      'window-start': '0',
+      height: '120',
+      'row-height': '40',
+      'range-start': '2026-03-01',
+      'range-end': '2026-03-31',
+      tasks: taskSlice(0, 3),
+    })
+    expect(reqs.map((r) => r.reason)).toEqual(['init'])
+    expect(rangeReqs.map((r) => r.reason)).toEqual(['init'])
+    // 退出 windowed 再进：清 winReq 去重态 → 重进同 need 重新 init（旧实现 winReq 残留 → 静默）
+    el.removeAttribute('windowed')
+    el.setAttribute('windowed', '')
+    expect(reqs.map((r) => r.reason)).toEqual(['init', 'init'])
+    // range-* 移除再挂回（同值）：清 rangeReq/rangeInitDone → 重新 init（旧实现恒 data）
+    el.removeAttribute('range-start')
+    el.setAttribute('range-start', '2026-03-01')
+    expect(rangeReqs.length).toBe(2)
+    expect(rangeReqs[1]!.reason).toBe('init')
+  })
+
+  // F6 回归：windowed 下行重排禁用（切片内同级 index 对全量无意义，宿主在全量上处理）——
+  // Alt+方向键不派 oas-reparent、数据不动 + devWarn 一次；非 windowed 对照照常重排
+  it('windowed 下行重排禁用：Alt+↓ 不派 oas-reparent + devWarn 一次；非 windowed 照常', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    try {
+      const { el } = mountWindowed({
+        windowed: '',
+        total: '10',
+        'window-start': '0',
+        tasks: taskSlice(0, 3),
+      })
+      let reparent = 0
+      el.addEventListener('oas-reparent', () => reparent++)
+      nameRows(el)[1]!.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', altKey: true, bubbles: true }))
+      expect(reparent).toBe(0)
+      expect(el.tasks.map((t) => t.id)).toEqual(['t0', 't1', 't2'])
+      expect(warn.mock.calls.some((c) => String(c[0]).includes('行重排'))).toBe(true)
+      el.requestUpdate()
+      expect(warn.mock.calls.filter((c) => String(c[0]).includes('行重排')).length).toBe(1)
+      // 反证：非 windowed 同操作照常重排（t1 ↓ 与 t2 交换）
+      const local = mountWindowed({ tasks: taskSlice(0, 3) })
+      let lrep = 0
+      local.el.addEventListener('oas-reparent', () => lrep++)
+      nameRows(local.el)[1]!.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'ArrowDown', altKey: true, bubbles: true }),
+      )
+      expect(lrep).toBe(1)
+      expect(local.el.tasks.map((t) => t.id)).toEqual(['t0', 't2', 't1'])
+    } finally {
+      warn.mockRestore()
+    }
+  })
+})

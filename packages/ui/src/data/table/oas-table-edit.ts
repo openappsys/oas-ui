@@ -43,7 +43,7 @@ export interface TableEditHost {
 
 /** 行内编辑进行中的单元格状态（同一时刻至多一格在编辑） */
 interface EditState {
-  /** 可见行索引（事件 rowIndex，排序/过滤后的展示顺序） */
+  /** 绝对数据行号（事件 rowIndex；windowed 为全量绝对行，其余为展示集数据行序，与 oas-cell-click 同口径） */
   displayIndex: number
   /** 行唯一键 */
   key: string
@@ -936,6 +936,14 @@ export class TableEditController implements ReactiveController, TableEditCapabil
   }
 
   private displayIndexOf(tr: HTMLTableRowElement): number {
+    // 绝对数据行号走 buildRow 写入的 data-row-index（与 oas-cell-click 的 rowIndex 单一口径）：
+    // 虚拟/windowed 下 DOM 内序号是切片窗口内的相对序，直接用会与 cell-click 的绝对行号错位
+    const raw = tr.getAttribute('data-row-index')
+    if (raw !== null) {
+      const n = Number(raw)
+      if (Number.isFinite(n)) return n
+    }
+    // 回落（无 data-row-index 的旧 DOM / 手动构造行）：DOM 内数据行序
     const body = this.hostEl.shadowRoot?.querySelector('tbody')
     if (!body) return -1
     return [...body.querySelectorAll('tr.row')].indexOf(tr)

@@ -51,6 +51,30 @@ el.tasks = tasks.map((t) => moved.find((m) => m.id === t.id) ?? t)
 
 Instance method **`scrollToDate(date)`**: horizontally scrolls the timeline to the given date (`YYYY-MM-DD`, centered in the viewport, minus the sticky resource name column width). Invalid dates / no data are no-ops; RTL layouts use the negative `scrollLeft` model (same as gantt).
 
+## Server-side row window (windowed)
+
+> For thousands of resources / hundreds of thousands of tasks: the host supplies only the resource-row slice near the visible window and the component **holds no full dataset**. The row window is computed from the scroll position and, when not covered by the loaded range, `oas-window-request` is emitted; the host refills and rows render by **absolute row index**.
+
+Attributes: `windowed` (enable) + `total` (full resource row count) + `window-start` (absolute row index of the slice's first row) + `range-start` / `range-end` (host-managed time-axis extent, ISO dates, `range-end` inclusive). Events:
+
+- `oas-window-request`: `detail: { start, end, reason }` (half-open, absolute row indices); the same expected window is not emitted twice.
+- `oas-range-request`: emitted when the visible time window approaches an axis edge; `detail: { startMs, endMs, reason }`.
+
+```html
+<oas-resource windowed total="5000" window-start="0" range-start="2026-01-01" range-end="2026-12-31"
+  scale="day" height="360"></oas-resource>
+<script>
+  const el = document.querySelector('oas-resource[windowed]')
+  el.addEventListener('oas-window-request', (e) => {
+    const { start, end } = e.detail
+    el.setAttribute('window-start', String(start))
+    el.setAttribute('resources', JSON.stringify(fetchResources(start, end))) // fetch from your backend
+  })
+</script>
+```
+
+Conventions in windowed mode: load/overload stats cover **the loaded slice only** (full-dataset stats are the host's job) with a devWarn; without `range-start` / `range-end` the time axis falls back to deriving from loaded tasks with a devWarn; `oas-tasks-change` carries only the slice in `detail.tasks` — the host must **merge by id** into the full dataset, never replace it wholesale.
+
 ## API
 
 ### oas-resource
@@ -62,9 +86,14 @@ Instance method **`scrollToDate(date)`**: horizontally scrolls the timeline to t
 | `capacity` | Default capacity when a resource declares none (default 1) | `string` | `1` |
 | `height` | Component height in px (default 320; accepts a plain number or Npx): mapped to the custom property --oas-resource-height (the host's own inline height always wins and is never overwritten by the component). While the height attribute is present and valid (>0 plain number or Npx) the component takes over this variable — writing it inline on the host and overriding any --oas-resource-height the host set itself; an empty/whitespace value is treated as unset; an invalid value writes nothing and only clears a value this instance wrote earlier, so a host token is never affected; after the attribute is removed the component-written value is cleared to zero, so the height falls back to the token default (320) or host CSS, and the host's previous inline value is not restored; when the height attribute was never set the component never writes the variable, and a --oas-resource-height set by the host (inline or via class rules) is left completely untouched | `string` | `320` |
 | `locale` | Localization (overrides config-provider injection and global locale) | `string` | — |
+| `range-end` | Host-managed time-axis end (ISO date YYYY-MM-DD, inclusive); pair with range-start. If only one is given, reversed or invalid, the axis is not host-managed and a devWarn is emitted | `string` | — |
+| `range-start` | Host-managed time-axis start (ISO date YYYY-MM-DD): when provided the period range is no longer derived from loaded tasks | `string` | — |
 | `resources` | Resources (JSON [{ id, name, capacity? }]) — capacity = parallel tasks per period for that resource (per day in the day scale; falls back to the capacity attribute, ultimately 1) | `ResourceItem[]` | `[]` |
 | `scale` | Histogram period granularity and axis labels: day (default) / week / month; invalid falls back to day | `string` | — |
 | `tasks` | Resource tasks (JSON [{ id, name, start, end, resources? }]); start/end are day precision YYYY-MM-DD only (end inclusive; time-bearing input is treated as that day), resources is the assigned resource id array (assignments to unknown resources are ignored) | `ResourceTask[]` | `[]` |
+| `total` | Full resource row count in windowed mode; 0 or invalid disables windowed (falls back to local mode) | `string` | — |
+| `window-start` | Absolute row index (within the full dataset) of the first row (resource) in the slice (windowed mode) | `string` | `0` |
+| `windowed` | Server-side row-window mode (boolean, off by default): with total / window-start the host supplies only the visible window slice (rendered by absolute row index); when the expected row window is not covered, oas-window-request is emitted for the host to refill. Load/overload stats cover the loaded slice only (full-dataset stats are the host's job) with a devWarn; when range-start / range-end are absent the time axis falls back to deriving from loaded tasks with a devWarn. Non-windowed behavior unchanged | `boolean` | — |
 
 #### Property (JS property; see each row for attribute reflection)
 
@@ -78,8 +107,10 @@ Instance method **`scrollToDate(date)`**: horizontally scrolls the timeline to t
 | Event | Description |
 | --- | --- |
 | `oas-overload` | Dispatched when the overload state changes (at most once per update; the same overload state is not re-dispatched), detail: { overloads: [{ resourceId, period, load, capacity }] } (period is the period start date); not dispatched when there is no overload |
+| `oas-range-request` | Emitted when the time axis is host-managed (range-start/range-end) and the visible time window approaches an axis edge; detail: { startMs, endMs, reason } (the neighbouring range requested). The same expected range is not emitted twice |
 | `oas-task-click` | Dispatched when a task bar in a resource swimlane is clicked, detail: { id, task, resourceId } |
-| `oas-tasks-change` | Dispatched when tasks is written programmatically, detail: { tasks } |
+| `oas-tasks-change` | Emitted when the tasks property is written programmatically; detail: { tasks }. **In windowed mode detail.tasks is only the loaded slice**: the host must merge by id into the full dataset and must not replace it wholesale |
+| `oas-window-request` | Emitted in windowed mode when the expected row window is not covered by the loaded range; detail: { start, end, reason } (half-open, absolute row indices; reason is init / scroll / resize / data). The same expected window is not emitted twice |
 
 #### CSS Variables
 

@@ -1678,3 +1678,119 @@ test('table windowed：滚动派发 oas-window-request、宿主回填渲染绝�
   // 清理 fixture，避免污染同页其他用例
   await page.evaluate(() => document.querySelector('#table-windowed-fixture')?.remove())
 })
+
+test('table windowed a11y + 编辑/点击 rowIndex 同口径（复审回归）', async ({ page }) => {
+  // 复审补口固化：
+  // ① windowed 下 aria-rowcount=total（全量）、每行 aria-rowindex=绝对行号 1 基；
+  // ② oas-edit 的 rowIndex 与 oas-cell-click 同为绝对行号（曾用 DOM 内切片序号 → 宿主映射错行）。
+  // 注：本用例刻意不叠加 grid-navigation——网格语义给 td 挂 role=gridcell，会命中行级手势
+  // 排除清单的 [role] 兜底而阻断 cell-click / 双击进编辑（既有交互冲突，非本批范围）。
+  await page.goto('/components/table.html', { waitUntil: 'domcontentloaded' })
+  await page.waitForFunction(() => customElements.get('oas-table') != null, null, { timeout: 15000 })
+  await page.evaluate(() => {
+    const el = document.createElement('oas-table')
+    el.id = 'qa-windowed-a11y'
+    el.setAttribute('windowed', '')
+    el.setAttribute('total', '1000')
+    el.setAttribute('window-start', '10')
+    el.setAttribute('editable', '')
+    el.setAttribute('row-key', 'name')
+    el.setAttribute(
+      'columns',
+      JSON.stringify([
+        { key: 'name', title: '名称', editable: true },
+        { key: 'age', title: '年龄' },
+      ]),
+    )
+    el.setAttribute('data', JSON.stringify(Array.from({ length: 5 }, (_, i) => ({ name: `行${10 + i}`, age: 10 + i }))))
+    ;(document.querySelector('.vp-doc') ?? document.body).appendChild(el)
+  })
+  await page.waitForFunction(() => {
+    const el = document.querySelector('#qa-windowed-a11y')
+    return !!el?.shadowRoot?.querySelector('tbody tr.row')
+  })
+
+  // ① ARIA：全量口径不随渲染切片变化
+  const aria = await page.evaluate(() => {
+    const el = document.querySelector('#qa-windowed-a11y')!
+    return {
+      rowcount: el.shadowRoot!.querySelector('table')!.getAttribute('aria-rowcount'),
+      indexes: [...el.shadowRoot!.querySelectorAll('tbody tr.row')].map((tr) => tr.getAttribute('aria-rowindex')),
+    }
+  })
+  expect(aria.rowcount, 'aria-rowcount 为全量 total').toBe('1000')
+  expect(aria.indexes, 'aria-rowindex 为绝对行号 1 基').toEqual(['11', '12', '13', '14', '15'])
+
+  // ② 点击 / 编辑 rowIndex 同口径（绝对行号 10）——全部同步在一个 evaluate 内完成，
+  //    避免 windowed 的 ResizeObserver rAF 重建在步骤之间插针拆掉编辑器（settleEdit）
+  const idx = await page.evaluate(() => {
+    const el = document.querySelector('#qa-windowed-a11y')!
+    let cellIdx = -1
+    let editIdx = -1
+    el.addEventListener('oas-cell-click', (e) => (cellIdx = (e as CustomEvent).detail.rowIndex))
+    el.addEventListener('oas-edit', (e) => (editIdx = (e as CustomEvent).detail.rowIndex))
+    const td = el.shadowRoot!.querySelector('tbody tr.row td[data-col="name"]') as HTMLElement
+    td.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }))
+    // 首击触发行选中重建 → 重查活节点再双击进编辑
+    const fresh = el.shadowRoot!.querySelector('tbody tr.row td[data-col="name"]') as HTMLElement
+    fresh.dispatchEvent(new MouseEvent('dblclick', { bubbles: true, composed: true }))
+    const input = fresh.querySelector<HTMLInputElement>('input.cell-editor')
+    if (input) {
+      input.value = '改名'
+      input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
+    }
+    return { cellIdx, editIdx, hasEditor: !!input }
+  })
+  expect(idx.hasEditor, '双击进入编辑').toBe(true)
+  expect(idx.cellIdx, 'cell-click 绝对行号').toBe(10)
+  expect(idx.editIdx, 'oas-edit 与 cell-click 同口径（曾为切片内 0 基序号）').toBe(10)
+
+  await page.evaluate(() => document.querySelector('#qa-windowed-a11y')?.remove())
+})
+
+test('table windowed 键盘到已装载末端越界：派发 oas-window-request（不得静默，复审回归）', async ({ page }) => {
+  // 复审补口固化：网格键盘移动到已装载切片末端越界曾无响应（死路）；
+  // 修复=按目标绝对行 ±margin 派发 oas-window-request，宿主回填后该行可达。
+  await page.goto('/components/table.html', { waitUntil: 'domcontentloaded' })
+  await page.waitForFunction(() => customElements.get('oas-table') != null, null, { timeout: 15000 })
+  await page.evaluate(() => {
+    const el = document.createElement('oas-table')
+    el.id = 'qa-windowed-kbd'
+    el.setAttribute('windowed', '')
+    el.setAttribute('total', '1000')
+    el.setAttribute('window-start', '10')
+    el.setAttribute('grid-navigation', '')
+    el.setAttribute('row-key', 'name')
+    el.setAttribute(
+      'columns',
+      JSON.stringify([
+        { key: 'name', title: '名称' },
+        { key: 'age', title: '年龄' },
+      ]),
+    )
+    el.setAttribute('data', JSON.stringify(Array.from({ length: 5 }, (_, i) => ({ name: `行${10 + i}`, age: 10 + i }))))
+    ;(window as any).__winKbdReqs = []
+    el.addEventListener('oas-window-request', (e) => (window as any).__winKbdReqs.push((e as CustomEvent).detail))
+    ;(document.querySelector('.vp-doc') ?? document.body).appendChild(el)
+  })
+  await page.waitForFunction(() => {
+    const el = document.querySelector('#qa-windowed-kbd')
+    return !!el?.shadowRoot?.querySelectorAll('tbody tr.row').length
+  })
+  // 聚焦末行（绝对行 14）+ ArrowDown → 目标绝对行 15 超出已装载 [10,15) → 期望 [7,24)
+  // 聚焦与派发同一 evaluate 内同步完成：windowed 的 ResizeObserver rAF 重建会移除被聚焦行
+  //（跨 evaluate 的 focus→press 之间被插针则焦点落空，handler 走入口聚焦分支而非越界请求）
+  await page.evaluate(() => {
+    const el = document.querySelector('#qa-windowed-kbd')!
+    const rows = [...el.shadowRoot!.querySelectorAll('tbody tr.row')]
+    const td = rows[4]!.querySelector('td[data-col="name"]') as HTMLElement
+    td.focus()
+    td.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true, composed: true, cancelable: true }),
+    )
+  })
+  await page.waitForFunction(() => (window as any).__winKbdReqs.length > 0)
+  const req = await page.evaluate(() => (window as any).__winKbdReqs[0])
+  expect(req, '越界派发请求覆盖目标绝对行 ±margin').toEqual({ start: 7, end: 24, reason: 'scroll' })
+  await page.evaluate(() => document.querySelector('#qa-windowed-kbd')?.remove())
+})

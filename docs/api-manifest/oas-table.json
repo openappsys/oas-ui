@@ -326,7 +326,7 @@
     },
     {
       "name": "oas-window-request",
-      "detail": "{ start: need.start, end: need.end, reason }"
+      "detail": "{ start: need.start, end: need.end, reason } | { start: need.start, end: need.end, reason: 'scroll' }"
     }
   ],
   "slots": [

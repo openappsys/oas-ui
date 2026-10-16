@@ -28,6 +28,44 @@ export interface WindowRequestDetail {
 /** 行窗口事件名（各组件统一） */
 export const ROW_WINDOW_EVENT = 'oas-window-request'
 
+/**
+ * 时间范围事件名（各组件统一）：时间轴组件（gantt / resource / scheduler）在「宿主托管
+ * 时间范围」（提供 `range-start` / `range-end`）且视口滚动接近轴端点时派发，供宿主按需扩展范围。
+ */
+export const RANGE_WINDOW_EVENT = 'oas-range-request'
+
+export interface RangeRequestDetail {
+  /** 期望起始时刻（epoch ms，含） */
+  startMs: number
+  /** 期望结束时刻（epoch ms，不含） */
+  endMs: number
+  /** 期望区间未覆盖时派发的原因 */
+  reason: WindowRequestReason
+}
+
+/** 期望的相邻时间范围是否已被当前轴范围覆盖（端点前各留 1 个视口宽 = 由组件按视口算好后传入） */
+export function rangeCovered(
+  need: { startMs: number; endMs: number },
+  axis: { startMs: number; endMs: number },
+): boolean {
+  return need.startMs >= axis.startMs && need.endMs <= axis.endMs
+}
+
+/** 解析 ISO 日期（YYYY-MM-DD）为本地零点的 epoch ms；非法（含日历不存在的日期，如 02-30）返回 null */
+export function parseIsoDayMs(iso: string): number | null {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso.trim())
+  if (!m) return null
+  const y = Number(m[1])
+  const mo = Number(m[2])
+  const d = Number(m[3])
+  if (mo < 1 || mo > 12 || d < 1 || d > 31) return null
+  const dt = new Date(y, mo - 1, d)
+  // 日历校验：Date 会把 02-30 滚到 03-02，回读年月日不一致即非法
+  if (dt.getFullYear() !== y || dt.getMonth() !== mo - 1 || dt.getDate() !== d) return null
+  const ms = dt.getTime()
+  return Number.isFinite(ms) ? ms : null
+}
+
 /** 期望区间相对可视窗口的前后缓冲行数 */
 export const WINDOW_MARGIN = 8
 
