@@ -345,3 +345,54 @@ test('chart 密集 x 轴标签：缺省抽稀、xLabelRotate 旋转后真实包�
     expect(m.glyphBox[1]!, `${name} 右不越界`).toBeLessThanOrEqual(m.svgRight + 2)
   }
 })
+
+// RTL 回归：抽稀（步长/落点）、柱组居中、xLabelRotate 旋转三处都必须是纯几何，不随宿主书写方向变化；
+// svg direction 钉死 ltr 后 text-anchor start/end 语义不翻转（旋转标签的 start 锚点在 RTL 下不得变成 end）。
+test('chart 密集标签/旋转/柱组居中：dir=rtl 与 ltr 逐项几何相同，锚点与文字方向不翻转', async ({ page }) => {
+  await page.goto('/components/chart.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-chart')
+  const r = await page.evaluate(() => {
+    const labels = Array.from({ length: 36 }, (_, i) => `09-${String(i + 1).padStart(2, '0')}`)
+    const data = JSON.stringify({ labels, series: [{ name: 'S', data: labels.map((_, i) => i) }] })
+    const snap = (rtl: boolean, options: string, type = 'line') => {
+      const el = document.createElement('oas-chart')
+      if (rtl) el.setAttribute('dir', 'rtl')
+      el.setAttribute('type', type)
+      el.setAttribute('options', options)
+      el.setAttribute('data', data)
+      document.body.appendChild(el)
+      const svg = el.shadowRoot!.querySelector('svg')!
+      const texts = [...svg.querySelectorAll('text.axis-label')] as SVGTextElement[]
+      const out = {
+        labels: texts.map((t) => `${t.getAttribute('x')}|${t.getAttribute('y')}|${t.getAttribute('transform') ?? ''}`),
+        anchors: texts.map((t) => getComputedStyle(t).textAnchor),
+        dirs: texts.map((t) => getComputedStyle(t).direction),
+        bars: [...svg.querySelectorAll('rect.bar')].map((b) => `${b.getAttribute('x')}|${b.getAttribute('width')}`),
+        grid: [...svg.querySelectorAll('line.axis-line')].map(
+          (l) => `${l.getAttribute('x1')},${l.getAttribute('y1')},${l.getAttribute('x2')},${l.getAttribute('y2')}`,
+        ),
+      }
+      el.remove()
+      return out
+    }
+    return {
+      thinLtr: snap(false, '{}'),
+      thinRtl: snap(true, '{}'),
+      rotLtr: snap(false, '{"xLabelRotate":90}'),
+      rotRtl: snap(true, '{"xLabelRotate":90}'),
+      barLtr: snap(false, '{}', 'bar'),
+      barRtl: snap(true, '{}', 'bar'),
+    }
+  })
+
+  expect(r.thinRtl.labels, 'RTL 抽稀标签落点与 LTR 相同').toEqual(r.thinLtr.labels)
+  expect(r.thinRtl.grid, 'RTL 网格与 LTR 相同').toEqual(r.thinLtr.grid)
+  expect(r.rotRtl.labels, 'RTL 竖排标签几何（含 rotate 变换）与 LTR 相同').toEqual(r.rotLtr.labels)
+  expect(r.barRtl.bars, 'RTL 柱组居中与 LTR 相同').toEqual(r.barLtr.bars)
+  expect(r.rotRtl.labels.length, 'RTL 下旋转标签数量与 LTR 相同（抽稀步长不受书写方向影响）').toBe(
+    r.rotLtr.labels.length,
+  )
+  expect(new Set(r.rotRtl.dirs), 'svg 内文字方向恒 ltr').toEqual(new Set(['ltr']))
+  expect(new Set(r.rotRtl.anchors), '旋转标签锚点恒 start（RTL 下不翻成 end）').toEqual(new Set(['start']))
+  expect(new Set(r.thinLtr.anchors), '缺省（水平）标签锚点仍由 CSS 给 middle').toEqual(new Set(['middle']))
+})
