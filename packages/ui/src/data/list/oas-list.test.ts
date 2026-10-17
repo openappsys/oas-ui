@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { setLocale } from '@oas-ui/i18n'
 import en from '@oas-ui/i18n/en'
 import '@oas-ui/i18n'
@@ -767,13 +767,15 @@ describe('OASList', () => {
       expect(groupedRows(el).length).toBe(0)
     })
 
-    it('组头 role="separator"（非行、不参与行交互）', () => {
+    it('组头/分组容器 role="presentation"（非 listitem，不破坏 role=list 的 required-children）', () => {
       const el = new OASList()
       el.data = [{ title: '甲', group: 'A' }]
       document.body.appendChild(el)
       const h = groupedRows(el)[0]!
-      expect(h.getAttribute('role')).toBe('separator')
+      expect(h.getAttribute('role')).toBe('presentation')
       expect(h.hasAttribute('tabindex')).toBe(false)
+      // 分组容器同为 presentation：presentation 会把子节点透传给上层 list
+      expect(h.parentElement!.getAttribute('role')).toBe('presentation')
     })
   })
 
@@ -1169,5 +1171,499 @@ describe('OASList', () => {
       row.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, composed: true, cancelable: true }))
       expect(clicks, '链接行 oas-click 不派发（宿主埋点用 href 通道/监听原生导航）').toBe(0)
     })
+  })
+})
+
+/**
+ * windowed（服务端行窗口模式）+ 行数 a11y 元数据。
+ *
+ * 契约（shared/window-data.ts）：
+ * - 属性 `windowed`（布尔）+ `total`（全量行数）+ `window-start`（data[0] 的绝对行下标）；
+ * - data 只承载 [window-start, window-start+len) 切片；行虚拟窗口在 total 上算，
+ *   已装载行按绝对行号铺位、上下 padding 撑起全量高度；
+ * - 期望区间 = expandWindow(可视窗口, total)；未覆盖时派发 oas-window-request
+ *   （detail { start, end, reason }，半开、绝对行下标），同区间去重、覆盖后复位；
+ * - total=0/非法 → 回落普通模式（零请求）。
+ */
+describe('windowed（服务端行窗口协议）', () => {
+  type Req = { start: number; end: number; reason: string }
+
+  const nextFrame = (): Promise<void> => new Promise((r) => requestAnimationFrame(() => r()))
+
+  const makeSlice = (start: number, len: number): Array<{ title: string }> =>
+    Array.from({ length: len }, (_, i) => ({ title: `行 ${start + i}` }))
+
+  function mountWindowed(opts: {
+    total: number
+    windowStart?: number
+    sliceStart?: number
+    length?: number
+    height?: string
+    rowHeight?: string
+    maxHeight?: string
+  }): { el: OASList; reqs: Req[] } {
+    const el = new OASList()
+    el.setAttribute('role', 'list')
+    el.setAttribute('windowed', '')
+    el.setAttribute('total', String(opts.total))
+    el.setAttribute('window-start', String(opts.windowStart ?? 0))
+    if (opts.height !== undefined) el.setAttribute('height', opts.height)
+    if (opts.rowHeight !== undefined) el.setAttribute('row-height', opts.rowHeight)
+    if (opts.maxHeight !== undefined) el.setAttribute('max-height', opts.maxHeight)
+    el.data = makeSlice(opts.sliceStart ?? opts.windowStart ?? 0, opts.length ?? 10)
+    const reqs: Req[] = []
+    el.addEventListener('oas-window-request', (e) => reqs.push((e as CustomEvent<Req>).detail))
+    document.body.appendChild(el)
+    // happy-dom 无真实布局：windowed 的视口守卫要求可测视口，挂载后桩出 clientHeight，
+    // 再触发一次 update 让首帧窗口按可测视口评估（否则首帧判定无视口、不派 init）
+    const vh = Number.parseFloat(opts.height ?? opts.maxHeight ?? '')
+    if (Number.isFinite(vh) && vh > 0) {
+      const body = el.shadowRoot!.querySelector<HTMLElement>('[part="body"]')!
+      Object.defineProperty(body, 'clientHeight', { configurable: true, value: vh })
+      Object.defineProperty(body, 'scrollHeight', { configurable: true, value: vh * 10 })
+      ;(el as unknown as { requestUpdate(): void }).requestUpdate()
+    }
+    return { el, reqs }
+  }
+
+  const dataBox = (el: OASList): HTMLElement => el.shadowRoot!.querySelector<HTMLElement>('[part="data-items"]')!
+  const rowsOf = (el: OASList): HTMLElement[] => [...dataBox(el).querySelectorAll<HTMLElement>('oas-list-item')]
+  const spacer = (el: OASList, kind: 'top' | 'bottom'): HTMLElement | null =>
+    dataBox(el).querySelector<HTMLElement>(`[data-spacer="${kind}"]`)
+  const bodyOf = (el: OASList): HTMLElement => el.shadowRoot!.querySelector<HTMLElement>('[part="body"]')!
+
+  async function scrollTo(el: OASList, top: number): Promise<void> {
+    bodyOf(el).scrollTop = top
+    bodyOf(el).dispatchEvent(new Event('scroll'))
+    await nextFrame()
+    await nextFrame()
+  }
+
+  it('windowed 进 observedAttributes；init 请求绝对区间并只派一次；滚动派发 scroll 请求且同区间去重', async () => {
+    expect(OASList.observedAttributes).toEqual(expect.arrayContaining(['windowed', 'total', 'window-start']))
+    // height 120 / row-height 40 / total 500：可见 3 行 + buffer 4 = [0,7)，expand ±8 → [0,15)
+    // 切片只装 10 行（未覆盖期望区间）→ 首帧派发 init
+    const { el, reqs } = mountWindowed({ total: 500, height: '120', rowHeight: '40' })
+    expect(reqs[0], '首帧派发 init 请求').toEqual({ start: 0, end: 15, reason: 'init' })
+    // 已装载行按绝对行号渲染（data-index 绝对）
+    expect(rowsOf(el).map((r) => r.getAttribute('data-index'))).toEqual(['0', '1', '2', '3', '4', '5', '6'])
+
+    // 滚动到绝对第 100 行（scrollTop=4000）：可见 [96,107)，expand ±8 → [88,115)
+    await scrollTo(el, 4000)
+    expect(
+      reqs.filter((q) => q.reason === 'scroll'),
+      '滚动后派发 scroll 请求（绝对行区间）',
+    ).toEqual([{ start: 88, end: 115, reason: 'scroll' }])
+
+    const count = reqs.length
+    await scrollTo(el, 4000)
+    await scrollTo(el, 4000)
+    expect(reqs.length, '同一期望区间不重复派发').toBe(count)
+  })
+
+  it('覆盖复位：期望区间被新切片覆盖后重置去重态，同一区间再次未覆盖时可重新派发', async () => {
+    const { el, reqs } = mountWindowed({ total: 500, height: '120', rowHeight: '40' })
+    await scrollTo(el, 4000) // need [88,115)
+    expect(reqs.length).toBe(2)
+
+    // 宿主回填覆盖 need 的切片 → covered → 去重态复位
+    el.data = makeSlice(80, 40)
+    el.setAttribute('window-start', '80') // loaded [80,120)
+    await nextFrame()
+    const afterCovered = reqs.length
+    expect(afterCovered, '覆盖后不再派发').toBe(2)
+
+    // 切片退回 [0,40)：同一 need [88,115) 再次未覆盖 → 必须能重新派发（证明覆盖已复位）
+    el.setAttribute('window-start', '0')
+    el.data = makeSlice(0, 40)
+    await nextFrame()
+    expect(reqs.length, '覆盖复位后同一区间可重新请求').toBeGreaterThan(afterCovered)
+    expect(reqs[reqs.length - 1]).toEqual({ start: 88, end: 115, reason: 'data' })
+  })
+
+  it('total=0 / 非法回落普通模式：零请求、无占位、普通数据行渲染', async () => {
+    const zero = new OASList()
+    zero.setAttribute('windowed', '')
+    zero.setAttribute('total', '0')
+    zero.data = makeSlice(0, 3)
+    const zeroReqs: Req[] = []
+    zero.addEventListener('oas-window-request', (e) => zeroReqs.push((e as CustomEvent<Req>).detail))
+    document.body.appendChild(zero)
+    expect(zeroReqs).toEqual([])
+    expect(spacer(zero, 'top'), '非 windowed 不渲染占位').toBeNull()
+    expect(rowsOf(zero).length).toBe(3)
+
+    const bad = new OASList()
+    bad.setAttribute('windowed', '')
+    bad.setAttribute('total', 'abc')
+    bad.data = makeSlice(0, 3)
+    const badReqs: Req[] = []
+    bad.addEventListener('oas-window-request', (e) => badReqs.push((e as CustomEvent<Req>).detail))
+    document.body.appendChild(bad)
+    expect(badReqs).toEqual([])
+    expect(spacer(bad, 'top')).toBeNull()
+    expect(rowsOf(bad).length).toBe(3)
+  })
+
+  it('windowed 空切片也派发 init（宿主可先挂属性、按请求回填，不误显空态）', () => {
+    const el = new OASList()
+    el.setAttribute('role', 'list')
+    el.setAttribute('windowed', '')
+    el.setAttribute('total', '500')
+    el.setAttribute('height', '120')
+    el.setAttribute('row-height', '40')
+    const reqs: Req[] = []
+    el.addEventListener('oas-window-request', (e) => reqs.push((e as CustomEvent<Req>).detail))
+    document.body.appendChild(el)
+    expect(reqs).toEqual([{ start: 0, end: 15, reason: 'init' }])
+    expect(el.shadowRoot!.querySelector<HTMLElement>('[part="empty"]')!.hidden, '未装载不等于空态').toBe(true)
+    expect(dataBox(el).hidden).toBe(false)
+    expect(parseFloat(spacer(el, 'bottom')!.style.height), '空切片也撑起全量高度').toBe(500 * 40)
+  })
+
+  it('行虚拟窗口在 total 上算：长 total 只渲染可见窗口、上下占位总高守恒', () => {
+    const { el } = mountWindowed({ total: 500, height: '120', rowHeight: '40', length: 40 })
+    const rows = rowsOf(el)
+    expect(rows.length, '只渲染可见窗口 + buffer（不是 total，也不是整个切片）').toBe(7)
+    expect(rows.length).toBeLessThan(40)
+    const topH = parseFloat(spacer(el, 'top')!.style.height)
+    const bottomH = parseFloat(spacer(el, 'bottom')!.style.height)
+    expect(topH).toBe(0)
+    expect(bottomH).toBe((500 - 7) * 40)
+    expect(topH + rows.length * 40 + bottomH, '占位 + 行 = 全量总高').toBe(500 * 40)
+  })
+
+  it('滚到中部：绝对行号渲染 + aria-setsize/posinset 绝对口径 + oas-item-render/click 绝对 index', async () => {
+    const { el } = mountWindowed({ total: 500, height: '120', rowHeight: '40', length: 40 })
+    await scrollTo(el, 8000) // 绝对第 200 行附近
+    const emitted: number[] = []
+    el.addEventListener('oas-item-render', (e) => emitted.push((e as CustomEvent<{ index: number }>).detail.index))
+    // 宿主回填中部切片 [196,236)
+    el.data = makeSlice(196, 40)
+    el.setAttribute('window-start', '196')
+
+    const rows = rowsOf(el)
+    expect(rows.length).toBeGreaterThan(0)
+    expect(rows[0]!.getAttribute('data-index'), '渲染行用绝对行号铺位').toBe('196')
+    expect(rows.map((r) => r.getAttribute('aria-posinset')).slice(0, 3)).toEqual(['197', '198', '199'])
+    expect(rows.every((r) => r.getAttribute('aria-setsize') === '500')).toBe(true)
+    expect(parseFloat(spacer(el, 'top')!.style.height), '顶部占位按绝对首行撑起').toBe(196 * 40)
+    expect(emitted[0], 'oas-item-render index 为绝对行号').toBe(196)
+
+    const clicks: Array<{ index: number }> = []
+    el.addEventListener('oas-click', (e) => clicks.push((e as CustomEvent<{ index: number }>).detail))
+    rows[0]!.setAttribute('clickable', '')
+    rows[0]!.click()
+    expect(clicks[0]?.index, '行点击 index 为绝对行号').toBe(196)
+  })
+
+  it('非 windowed：aria-setsize=全量行数、posinset=行序，零 window 请求（容器 role=list）', () => {
+    const el = new OASList()
+    el.setAttribute('role', 'list')
+    el.setAttribute('aria-label', '成员')
+    el.data = makeSlice(0, 3)
+    const reqs: Req[] = []
+    el.addEventListener('oas-window-request', (e) => reqs.push((e as CustomEvent<Req>).detail))
+    document.body.appendChild(el)
+    // list 角色落在 shadow 内紧贴行的 data-items 上，宿主不再保留（否则可聚焦滚动容器是非法子元素）
+    expect(dataBox(el).getAttribute('role'), '行容器承载 role=list').toBe('list')
+    expect(dataBox(el).getAttribute('aria-label'), '宿主可访问名称随角色迁到行容器').toBe('成员')
+    expect(el.hasAttribute('role'), '宿主 role=list 已迁走').toBe(false)
+    expect(el.hasAttribute('aria-label'), '宿主 aria-label 已迁走').toBe(false)
+    const rows = rowsOf(el)
+    expect(rows.map((r) => r.getAttribute('role'))).toEqual(['listitem', 'listitem', 'listitem'])
+    expect(rows.map((r) => r.getAttribute('aria-setsize'))).toEqual(['3', '3', '3'])
+    expect(rows.map((r) => r.getAttribute('aria-posinset'))).toEqual(['1', '2', '3'])
+    expect(reqs).toEqual([])
+
+    const decl = new OASList()
+    decl.setAttribute('role', 'list')
+    decl.innerHTML = '<oas-list-item title="一"></oas-list-item><oas-list-item title="二"></oas-list-item>'
+    document.body.appendChild(decl)
+    expect(decl.shadowRoot!.querySelector<HTMLElement>('[part="items"]')!.getAttribute('role')).toBe('list')
+    const declRows = [...decl.querySelectorAll<HTMLElement>('oas-list-item')]
+    expect(declRows.map((r) => r.getAttribute('role'))).toEqual(['listitem', 'listitem'])
+    expect(declRows.map((r) => r.getAttribute('aria-setsize'))).toEqual(['2', '2'])
+    expect(declRows.map((r) => r.getAttribute('aria-posinset'))).toEqual(['1', '2'])
+  })
+
+  it('无宿主 role 时默认 list 语义：行容器 role=list、行 listitem（不依赖宿主设 role）', () => {
+    const el = new OASList()
+    el.data = makeSlice(0, 2)
+    document.body.appendChild(el)
+    expect(dataBox(el).getAttribute('role')).toBe('list')
+    for (const row of rowsOf(el)) {
+      expect(row.getAttribute('role')).toBe('listitem')
+      expect(row.getAttribute('aria-setsize')).toBe('2')
+      expect(row.getAttribute('aria-posinset')).toBeTruthy()
+    }
+  })
+
+  it('可聚焦滚动容器不在 list 容器内（required-children 结构）：max-height / windowed 均如此', () => {
+    const el = new OASList()
+    el.setAttribute('max-height', '120')
+    el.setData(makeSlice(0, 30))
+    document.body.appendChild(el)
+    const body = bodyOf(el)
+    const box = dataBox(el)
+    expect(box.parentElement, 'data-items 是 body 的子节点，body 不是 list 的 owned child').toBe(body)
+    expect(box.getAttribute('role')).toBe('list')
+
+    const win = new OASList()
+    win.setAttribute('windowed', '')
+    win.setAttribute('total', '500')
+    win.setAttribute('height', '120')
+    win.setAttribute('row-height', '40')
+    win.setData(makeSlice(0, 10))
+    document.body.appendChild(win)
+    expect(dataBox(win).parentElement).toBe(bodyOf(win))
+    expect(dataBox(win).getAttribute('role')).toBe('list')
+    // spacer 是 aria-hidden 的纯布局节点，不参与 required-children
+    expect(spacer(win, 'top')!.getAttribute('aria-hidden')).toBe('true')
+  })
+
+  it('分组：行容器 role=list、组头/分组容器 presentation、行仍带 setsize/posinset', () => {
+    const el = new OASList()
+    el.setData([
+      { title: '甲', group: 'A' },
+      { title: '乙', group: 'A' },
+      { title: '丙', group: 'B' },
+    ])
+    document.body.appendChild(el)
+    const box = dataBox(el)
+    expect(box.getAttribute('role')).toBe('list')
+    const headers = [...box.querySelectorAll<HTMLElement>('.group-header')]
+    expect(headers.map((h) => h.getAttribute('role'))).toEqual(['presentation', 'presentation'])
+    for (const group of box.querySelectorAll<HTMLElement>('.group')) {
+      expect(group.getAttribute('role')).toBe('presentation')
+    }
+    const rows = rowsOf(el)
+    expect(rows.map((r) => r.getAttribute('role'))).toEqual(['listitem', 'listitem', 'listitem'])
+    expect(rows.map((r) => r.getAttribute('aria-setsize'))).toEqual(['3', '3', '3'])
+    expect(rows.map((r) => r.getAttribute('aria-posinset'))).toEqual(['1', '2', '3'])
+  })
+
+  it('宿主显式行角色冲突（role=button）：容器不挂 list 角色，组件派生的行角色/ARIA 被清理', () => {
+    const el = new OASList()
+    el.addEventListener('oas-item-render', (e) => {
+      const d = (e as CustomEvent<{ index: number; element: HTMLElement }>).detail
+      if (d.index === 0) d.element.setAttribute('role', 'button')
+    })
+    el.setData(makeSlice(0, 3))
+    document.body.appendChild(el)
+    expect(dataBox(el).hasAttribute('role'), '外来行角色使 required-children 不成立 → 不设容器角色').toBe(false)
+    const rows = rowsOf(el)
+    expect(rows[0]!.getAttribute('role'), '宿主显式角色保留').toBe('button')
+    expect(rows[1]!.hasAttribute('role'), '其他行的派生 listitem 被撤销').toBe(false)
+    for (const row of rows) {
+      expect(row.hasAttribute('aria-setsize'), '角色不合法时不留 stale ARIA').toBe(false)
+      expect(row.hasAttribute('aria-posinset')).toBe(false)
+    }
+  })
+
+  it('角色消失时清理此前写入的 aria：声明式行从 listitem 变 role=button 后无 stale ARIA', () => {
+    const el = new OASList()
+    el.innerHTML = '<oas-list-item title="一"></oas-list-item><oas-list-item title="二"></oas-list-item>'
+    document.body.appendChild(el)
+    const rows = [...el.querySelectorAll<HTMLElement>('oas-list-item')]
+    expect(rows.map((r) => r.getAttribute('aria-setsize'))).toEqual(['2', '2'])
+
+    // 宿主把首行改成显式按钮语义 → 下一次 update 判定冲突并清理
+    rows[0]!.setAttribute('role', 'button')
+    el.setAttribute('size', 'lg')
+    expect(rows[0]!.getAttribute('role')).toBe('button')
+    expect(rows[0]!.hasAttribute('aria-setsize')).toBe(false)
+    expect(rows[0]!.hasAttribute('aria-posinset')).toBe(false)
+    expect(rows[1]!.hasAttribute('role'), '撤销组件派生的 listitem').toBe(false)
+    expect(rows[1]!.hasAttribute('aria-setsize')).toBe(false)
+  })
+
+  it('非 windowed 虚拟滚动：role=list 落在 vlist 的 .items，虚拟行带 setsize/posinset（行序口径）', () => {
+    const el = new OASList()
+    el.setAttribute('height', '240')
+    el.data = makeSlice(0, 100)
+    document.body.appendChild(el)
+    const vlist = el.shadowRoot!.querySelector('oas-virtual-list')!
+    const items = vlist.shadowRoot!.querySelector<HTMLElement>('.items')!
+    expect(items.getAttribute('role'), 'list 容器是 vlist 内 .items（可聚焦视口在其外）').toBe('list')
+    const vrows = [...vlist.shadowRoot!.querySelectorAll<HTMLElement>('[part="item"]')]
+    expect(vrows.length).toBeGreaterThan(0)
+    for (const r of vrows) {
+      expect(r.getAttribute('role')).toBe('listitem')
+      expect(r.getAttribute('aria-setsize')).toBe('100')
+      expect(r.getAttribute('aria-posinset')).toBe(String(Number(r.getAttribute('data-index')) + 1))
+    }
+  })
+
+  it('宿主 role=listbox：角色迁到行容器、行派生 option（aria-selected 合法）', () => {
+    const el = new OASList()
+    el.setAttribute('role', 'listbox')
+    el.setAttribute('aria-label', '选择成员')
+    el.innerHTML = '<oas-list-item title="甲"></oas-list-item><oas-list-item title="乙"></oas-list-item>'
+    document.body.appendChild(el)
+    expect(el.hasAttribute('role'), '宿主 listbox 已迁走').toBe(false)
+    expect(el.shadowRoot!.querySelector<HTMLElement>('[part="items"]')!.getAttribute('role')).toBe('listbox')
+    expect(el.shadowRoot!.querySelector<HTMLElement>('[part="items"]')!.getAttribute('aria-label')).toBe('选择成员')
+    const rows = [...el.querySelectorAll<HTMLElement>('oas-list-item')]
+    expect(rows.map((r) => r.getAttribute('role'))).toEqual(['option', 'option'])
+    expect(rows[0]!.getAttribute('aria-selected')).toBe('false')
+    rows[0]!.setAttribute('selected', '')
+    el.setAttribute('size', 'lg')
+    expect(rows[0]!.getAttribute('aria-selected')).toBe('true')
+  })
+
+  it('宿主 role=listbox 但无可访问名称：回落 list 语义（listbox 必须命名，避免 aria-input-field-name 违规）', () => {
+    const el = new OASList()
+    el.setAttribute('role', 'listbox')
+    el.setData([{ title: '甲' }])
+    document.body.appendChild(el)
+    expect(el.hasAttribute('role')).toBe(false)
+    expect(dataBox(el).getAttribute('role'), '未命名的 listbox 不成立 → 结构列表语义').toBe('list')
+    expect(rowsOf(el)[0]!.getAttribute('role')).toBe('listitem')
+  })
+
+  it('虚拟路径宿主给行显式角色（item-render 写 role=button）：放弃 list 语义且不留 stale ARIA', () => {
+    const el = new OASList()
+    el.setAttribute('height', '240')
+    el.addEventListener('oas-item-render', (e) => {
+      const d = (e as CustomEvent<{ index: number; element: HTMLElement }>).detail
+      if (d.index === 0) d.element.setAttribute('role', 'button')
+    })
+    el.setData(makeSlice(0, 100))
+    document.body.appendChild(el)
+    const vlist = el.shadowRoot!.querySelector('oas-virtual-list')!
+    const items = vlist.shadowRoot!.querySelector<HTMLElement>('.items')!
+    expect(items.hasAttribute('role'), '外来临界行角色 → 容器不挂 list').toBe(false)
+    const rows = [...vlist.shadowRoot!.querySelectorAll<HTMLElement>('[part="item"]')]
+    expect(rows[0]!.getAttribute('role'), '宿主显式角色保留').toBe('button')
+    for (const row of rows) {
+      expect(row.hasAttribute('aria-setsize'), '不合法角色下不写/清理 setsize').toBe(false)
+      expect(row.hasAttribute('aria-posinset')).toBe(false)
+    }
+  })
+
+  it('宿主其他显式角色不被覆盖/迁移（role=button 保持原样，不叠加 list 语义）', () => {
+    const el = new OASList()
+    el.setAttribute('role', 'button')
+    el.setData(makeSlice(0, 2))
+    document.body.appendChild(el)
+    expect(el.getAttribute('role')).toBe('button')
+    expect(dataBox(el).hasAttribute('role')).toBe(false)
+    for (const row of rowsOf(el)) expect(row.hasAttribute('role')).toBe(false)
+  })
+
+  it('空列表不挂 list 角色（无 listitem 时不制造 required-children 违规）', () => {
+    const el = new OASList()
+    el.setData([])
+    document.body.appendChild(el)
+    expect(dataBox(el).hasAttribute('role')).toBe(false)
+  })
+
+  it('挂载后动态改宿主 role：role 不进 observedAttributes（标准 ARIA 非组件 API），经属性观察迁移到行容器', async () => {
+    expect(OASList.observedAttributes, 'role 不应污染组件 API 面').not.toContain('role')
+    const el = new OASList()
+    el.setData([{ title: '甲' }])
+    document.body.appendChild(el)
+    expect(dataBox(el).getAttribute('role')).toBe('list')
+    el.setAttribute('aria-label', '成员')
+    el.setAttribute('role', 'listbox')
+    // 属性观察在微任务中回调（MutationObserver），等一拍再断言
+    await Promise.resolve()
+    expect(el.hasAttribute('role'), '动态设置的宿主 role 同样迁走').toBe(false)
+    expect(dataBox(el).getAttribute('role')).toBe('listbox')
+    expect(dataBox(el).getAttribute('aria-label')).toBe('成员')
+    expect(rowsOf(el)[0]!.getAttribute('role')).toBe('option')
+  })
+
+  it('windowed 下不本地行重排（渲染窗口局部 index 对全量无意义）', () => {
+    const { el } = mountWindowed({ total: 500, height: '120', rowHeight: '40' })
+    el.setAttribute('sortable', '')
+    const rows = rowsOf(el)
+    expect(rows.length).toBeGreaterThan(0)
+    expect(rows.every((r) => r.getAttribute('draggable') !== 'true')).toBe(true)
+    const transfer = (): DataTransfer =>
+      ({ setData: () => {}, getData: () => '', effectAllowed: '', dropEffect: '' }) as unknown as DataTransfer
+    let reorders = 0
+    el.addEventListener('oas-reorder', () => reorders++)
+    rows[0]!.dispatchEvent(new DragEvent('dragstart', { bubbles: true, composed: true, dataTransfer: transfer() }))
+    rows[1]!.dispatchEvent(new DragEvent('drop', { bubbles: true, composed: true, dataTransfer: transfer() }))
+    expect(reorders).toBe(0)
+  })
+
+  it('oas-reach-bottom 与 windowed 共存不重复风暴（同一底部只派一次）', async () => {
+    const el = new OASList()
+    el.setAttribute('windowed', '')
+    el.setAttribute('total', '500')
+    el.setAttribute('max-height', '120')
+    el.setAttribute('row-height', '40')
+    el.data = makeSlice(0, 40)
+    let reach = 0
+    el.addEventListener('oas-reach-bottom', () => reach++)
+    document.body.appendChild(el)
+    expect(reach, '挂载即触底（既有语义）').toBe(1)
+    await scrollTo(el, 0)
+    await scrollTo(el, 0)
+    expect(reach, '同一底部位置滚动不重复派发').toBe(1)
+  })
+
+  it('无视口（未配 height / 可测 max-height）：零请求 + devWarn 一次 + 不铺全量占位；补视口后正常请求', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    try {
+      const el = new OASList()
+      el.setAttribute('windowed', '')
+      el.setAttribute('total', '500')
+      el.setAttribute('row-height', '40')
+      const reqs: Req[] = []
+      el.addEventListener('oas-window-request', (e) => reqs.push((e as CustomEvent<Req>).detail))
+      el.data = makeSlice(0, 10)
+      document.body.appendChild(el)
+
+      const viewportWarns = (): number =>
+        warn.mock.calls.filter((c) => String(c[0]).includes('windowed 需要可测的滚动视口')).length
+      expect(reqs, '无视口不派发全量区间请求').toEqual([])
+      expect(viewportWarns(), '告警一次说明需要可测滚动视口').toBe(1)
+      // 不铺 total×rowH 的占位（否则页面出现巨量空白）
+      expect(spacer(el, 'top'), '无视口不渲染 spacer').toBeNull()
+      expect(spacer(el, 'bottom')).toBeNull()
+      expect(rowsOf(el).length, '已装载切片照常渲染').toBe(10)
+      expect(dataBox(el).getAttribute('role'), '无视口也保留 list 语义').toBe('list')
+
+      // 再次 update（数据变更）不重复告警
+      el.setData(makeSlice(0, 10))
+      expect(viewportWarns(), '重渲染不重复告警').toBe(1)
+      expect(reqs).toEqual([])
+
+      // 补上可测视口（max-height 120 / row-height 40）→ 正常请求 [0,15) + 占位恢复
+      el.setAttribute('max-height', '120')
+      expect(reqs, '有视口后按可视窗口请求（首次成功评估 reason=init）').toEqual([
+        { start: 0, end: 15, reason: 'init' },
+      ])
+      expect(spacer(el, 'top'), '有视口后恢复占位').not.toBeNull()
+      expect(rowsOf(el).length, '按视口窗口渲染（3 可见 + 4 buffer）').toBe(7)
+    } finally {
+      warn.mockRestore()
+    }
+  })
+
+  it('height 为非数值 CSS 长度（如 50vh）时按实际量测；happy-dom 无量测不回退全量请求', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    try {
+      const el = new OASList()
+      el.setAttribute('windowed', '')
+      el.setAttribute('total', '500')
+      el.setAttribute('height', '50vh')
+      el.setAttribute('row-height', '40')
+      const reqs: Req[] = []
+      el.addEventListener('oas-window-request', (e) => reqs.push((e as CustomEvent<Req>).detail))
+      el.data = makeSlice(0, 10)
+      document.body.appendChild(el)
+      // happy-dom 无布局：50vh 无法换算 → 不当成视口（不派发全量请求）
+      expect(reqs).toEqual([])
+      // 声明长度原样落到滚动视口样式（浏览器中可量测）
+      expect(bodyOf(el).style.height).toBe('50vh')
+      expect(bodyOf(el).style.overflowY).toBe('auto')
+    } finally {
+      warn.mockRestore()
+    }
   })
 })

@@ -21,6 +21,10 @@
       "type": "string",
       "default": "",
       "observed": true
+    },
+    {
+      "name": "card-estimate",
+      "observed": true
     }
   ],
   "props": [

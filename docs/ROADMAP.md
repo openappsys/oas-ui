@@ -119,7 +119,7 @@
 ## 后续 backlog（按需立项）
 
 - **数据密集型规模化（未发布）**：`oas-gantt` / `oas-resource` 时间轴**列虚拟化**（长跨度横向窗口 + rAF 合帧 + 容器尺寸自愈）；**服务端行窗口协议**（`shared/window-data.ts`：`windowed` + `total` + `window-start` + `oas-window-request`，`range-start`/`range-end` 宿主托管时间轴 + `oas-range-request`）落地于 table / gantt / resource；`oas-resource` 泳道与负载**行虚拟化**、`oas-kanban` 列体卡片虚拟化、`oas-scheduler` 资源行与小时轴虚拟化（含修复资源视图滚动跳顶）；`oas-table` / `oas-gantt` **增量渲染**（选择/汇总不重算全量）。
-- **同属百万级缺口、待补（本批未覆盖）**：tree / list 接入 `windowed` 协议与行数 a11y 元数据；`oas-kanban` 预估卡片步长可配置（`--oas-kanban-*` token 或 property）。
+- **同属百万级缺口——本批已补齐**：tree / list 的 windowed 协议与行数 a11y 元数据（tree=根节点切片、list=行切片；见 CHANGELOG `[未发布]`）；`oas-kanban` 预估卡片步长可配（`card-estimate` / `--oas-kanban-card-step`）。
 - 语言包扩展：10 种内置（v2.5.2）后按社区真实需求增补
 - 专业域纵深：scheduler 与 gantt 已立项（见 PRD「未发布」段）；媒体读数井不做
 - avatar 名字哈希自动配色：已决定不做（属业务逻辑，且与「颜色显式指定」原则冲突）

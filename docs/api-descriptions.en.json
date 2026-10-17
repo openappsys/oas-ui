@@ -1795,7 +1795,8 @@
       "columns": "Column definitions (JSON array [{ key, title, limit? }]; the same-named property array channel works identically — the setter reflects back to the attribute). limit is a WIP limit: when the column's card count exceeds it, the header count turns warning-colored and the column gets a data-over-limit marker (advisory only — drops still land); unset/0/negative = unlimited",
       "cards": "Card data (JSON array [{ id, column, title, ...arbitrary fields }] where column is the owning column key). After a drop the component writes the new grouping/order back to this attribute (uncontrolled write-back + attribute reflection); skipped while a renderCard function is present (the host owns the data)",
       "empty-column-text": "Override for the empty-column / empty swimlane-cell placeholder text (defaults to the i18n kanban.emptyColumn key, translated with the locale)",
-      "swimlane-by": "Swimlane field key: splits the board into horizontal bands by that field's value (band header = fold arrow + field value + count; all expanded by default, fold state survives data changes); missing/empty values fall into the \"(empty)\" band; dropping a card into another band rewrites the swimlane field value; omit for the plain column layout"
+      "swimlane-by": "Swimlane field key: splits the board into horizontal bands by that field's value (band header = fold arrow + field value + count; all expanded by default, fold state survives data changes); missing/empty values fall into the \"(empty)\" band; dropping a card into another band rewrites the swimlane field value; omit for the plain column layout",
+      "card-estimate": "Estimated step (px, default 68) for unmeasured cards in column virtualization: numeric values <= 0 / invalid fall back to 68; ResizeObserver progressively corrects measurements. Only when the attribute is absent is the CSS variable --oas-kanban-card-step read as a fallback (attribute wins)"
     },
     "events": {
       "oas-change": "Emitted after a drag cross-column move, an in-column reorder, or a touch move-menu action settles (dropping back at the original spot emits nothing). detail { id, from, to, index } — from/to are column keys, index is the insertion position in the target column (measured after removing the moved cards; hosts can reproduce with splice(index, 0, card) on the target array); multi-select drags move all selected cards and emit one event whose detail gains ids (all selected ids in data order, id is the first); cross-swimlane drops also gain swimlane { from, to } (the swimlane field value change)",
@@ -1820,13 +1821,17 @@
       "split": "Whether to show item dividers",
       "stripe": "Zebra stripes: fills visually even rows with a subtle background",
       "hoverable": "Hover background for non-clickable rows (selected rows excluded)",
-      "sortable": "Enables row drag-and-drop reordering (data channel + declarative)"
+      "sortable": "Enables row drag-and-drop reordering (data channel + declarative)",
+      "windowed": "Server-side row-window mode (boolean, off by default): with total / window-start, data carries only the slice near the visible window (rendered by absolute row index); when the expected row window is not covered, oas-window-request is emitted for the host to refill. In windowed mode local grouping / drag reorder do not apply (the host owns them)",
+      "total": "Full row count in windowed mode; 0 or invalid disables windowed (falls back to normal mode)",
+      "window-start": "Absolute row index (within the full dataset) of the first row in the slice (windowed mode)"
     },
     "events": {
       "oas-click": "Item click (data/virtual rows); detail carries { index, item }",
       "oas-item-render": "Dispatched after each data-channel row renders; detail carries { index, item, element }",
       "oas-reach-bottom": "Scroll reached the bottom (fired once per bottom entry, re-armed after scrolling away); detail carries { scrollTop }",
-      "oas-reorder": "Fired on drop with the reordered row indexes and payload, `detail: { from, to, item }`"
+      "oas-reorder": "Fired on drop with the reordered row indexes and payload, `detail: { from, to, item }`",
+      "oas-window-request": "Emitted in windowed mode when the expected row window is not covered by the loaded range; detail: { start, end, reason } (half-open, absolute row indices; reason is init / scroll / resize / data). The same expected window is not emitted twice"
     },
     "slots": {
       "": "Default (declarative oas-list-item children)",
@@ -3860,7 +3865,10 @@
       "block-node": "Full-row block selection/hover zone (rows one tier taller)",
       "selectable": "Whole-tree selection switch; `\"false\"` stops click/keyboard selection while expand/check keep working",
       "check-all": "Renders a select-all row above the tree with a tri-state checkbox (requires checkable)",
-      "check-all-label": "Select-all row label (defaults to the i18n select-all copy)"
+      "check-all-label": "Select-all row label (defaults to the i18n select-all copy)",
+      "windowed": "Server-side root-node window mode (boolean, off by default): with total / window-start, data carries only the root-node slice (children travel with their root; lazy loading unchanged); when the expected root window is not covered, oas-window-request is emitted for the host to refill. Non-windowed behavior unchanged",
+      "total": "Full root-node count in windowed mode; 0 or invalid disables windowed (falls back to normal mode)",
+      "window-start": "Absolute root index (within the full dataset) of the first root node in the slice (windowed mode)"
     },
     "events": {
       "oas-check": "Check state change, `detail: { key, checked }`",
@@ -3875,7 +3883,8 @@
       "oas-node-dragover": "Dispatched while dragging over a target, `detail: { dragKey, dropKey, position }` (empty area: dropKey empty, position `inner`)",
       "oas-node-dragleave": "Dispatched when a drag leaves a target, `detail: { dragKey, dropKey, position }`",
       "oas-node-dragend": "Dispatched when a drag ends, `detail: { dragKey }`",
-      "oas-check-all": "Fired when the select-all row toggles, `detail: { checked, values }`"
+      "oas-check-all": "Fired when the select-all row toggles, `detail: { checked, values }`",
+      "oas-window-request": "Emitted in windowed mode when the expected root window is not covered by the loaded range; detail: { start, end, reason } (half-open, absolute root indices; reason is init / scroll / resize / data). The same expected window is not emitted twice"
     },
     "slots": {
       "template[slot=\"node\"]": "Static row template cloned into each node label container; the `[data-node-label]` node is bound to the node label automatically",

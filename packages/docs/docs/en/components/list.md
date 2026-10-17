@@ -695,6 +695,12 @@ onMounted(() => {
   </div>
 </DemoBlock>
 
+## Server-side row window (windowed)
+
+> Very long lists: the host supplies only the row slice near the visible window and the component holds no full dataset. Attributes `windowed` + `total` (full row count) + `window-start` (absolute row index of the slice's first row); the expected row window expands by 8 rows on both sides and, when not covered, `oas-window-request` is emitted (`detail: { start, end, reason }`, half-open absolute row indices). After the host refills, rows render by absolute index with the total height preserved. In windowed mode the `index` in `oas-item-render` / `oas-click` is the absolute row index.
+
+ARIA in windowed mode: rows report `aria-setsize = total` and `aria-posinset = absolute row + 1`. List semantics (`role=list`; `listbox` when clickable) are placed by the component on the row container inside the shadow DOM, with rows deriving `listitem` / `option` — **hosts do not and should not set `role`**; group headers are rendered as `presentation`. windowed mode **requires** a measurable scroll viewport (`height` or a measurable `max-height`); otherwise the component emits no requests and warns once (avoiding a full-range request plus a huge empty spacer).
+
 ## API
 
 ### oas-list
@@ -712,11 +718,15 @@ onMounted(() => {
 | `hoverable` | Hover background for non-clickable rows (selected rows excluded) | `boolean` | — |
 | `loading` | Loading state, shows skeleton placeholders | `boolean` | — |
 | `max-height` | Max height of the list body (px or CSS length); turns the body into a scroll container (pairs with oas-reach-bottom for scroll loading; group headers stick inside this container) | `string` | — |
+| `role` | — | — | — |
 | `row-height` | Virtual scroll row height (px, default 64; data rows must be fixed-height) | `string` | `64` |
 | `size` | Row density: sm / md (default) / lg | `string` | — |
 | `sortable` | Enables row drag-and-drop reordering (data channel + declarative) | `boolean` | — |
 | `split` | Whether to show item dividers | `boolean` | — |
 | `stripe` | Zebra stripes: fills visually even rows with a subtle background | `boolean` | — |
+| `total` | Full row count in windowed mode; 0 or invalid disables windowed (falls back to normal mode) | `string` | — |
+| `window-start` | Absolute row index (within the full dataset) of the first row in the slice (windowed mode) | `string` | `0` |
+| `windowed` | Server-side row-window mode (boolean, off by default): with total / window-start, data carries only the slice near the visible window (rendered by absolute row index); when the expected row window is not covered, oas-window-request is emitted for the host to refill. In windowed mode local grouping / drag reorder do not apply (the host owns them) | `boolean` | — |
 
 #### Events
 
@@ -726,6 +736,7 @@ onMounted(() => {
 | `oas-item-render` | Dispatched after each data-channel row renders; detail carries { index, item, element } |
 | `oas-reach-bottom` | Scroll reached the bottom (fired once per bottom entry, re-armed after scrolling away); detail carries { scrollTop } |
 | `oas-reorder` | Fired on drop with the reordered row indexes and payload, `detail: { from, to, item }` |
+| `oas-window-request` | Emitted in windowed mode when the expected row window is not covered by the loaded range; detail: { start, end, reason } (half-open, absolute row indices; reason is init / scroll / resize / data). The same expected window is not emitted twice |
 
 #### Slots
 

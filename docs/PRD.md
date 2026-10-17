@@ -2057,6 +2057,8 @@ OASElement 的 render 生命周期只首连一次（`rendered` 门闩），组�
 - **`oas-gantt` / `oas-resource` windowed 模式**：`windowed` + `total` + `window-start`（切片绝对行号）+ `range-start` / `range-end`（宿主托管时间轴，ISO 日期；`range-end` 含当日）；事件 `oas-window-request` / `oas-range-request`。windowed 下 gantt 跳过 `auto-schedule` 与关键路径（devWarn）。
 - **`oas-scheduler` 虚拟化**：资源行窗口 + 时间轴（小时轴）窗口（DOM 有界、总高守恒、手势期间抑制重建）；修复资源视图滚动跳顶（清空 DOM 前先读 `scrollTop`，否则被钳回 0）。
 - **增量渲染**：`oas-table` 仅选择变化时复用扁平化/汇总缓存、只 patch 受影响行（行节点身份保持）；`oas-gantt` 选择变化复用 rows/units/关键路径缓存、只 patch 窗口内行/条，并把行点选/连选/键盘相邻定位改为 O(1) 索引；单选档 radio 选中态改同步写终态。
+- **`oas-tree` / `oas-list` windowed**：树为根节点切片（子节点随根、懒加载不变；根级绝对 a11y 口径 + `aria-selected`；windowed 下本地 filter/check-all 禁用、键盘边界派请求、回填滚动锚定），列表为行切片（绝对行号 + 组件自持 `list/listbox` 语义、分组头 presentation、需可测视口否则不请求）。
+- **`oas-kanban` 步长可配**：`card-estimate` / `--oas-kanban-card-step`（属性优先，默认 68，实测自动收敛）；程序化跳滚改为滚动事件内同步重算窗口。
 
 ### 边界
 

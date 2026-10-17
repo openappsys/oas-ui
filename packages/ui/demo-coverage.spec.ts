@@ -135,6 +135,12 @@ const EXEMPT_ATTRS: Record<string, string[]> = {
   // 机制由各自单测与 qa-regression/{gantt,resource}.spec 覆盖
   gantt: ['windowed', 'total', 'window-start', 'range-start', 'range-end'],
   resource: ['windowed', 'total', 'window-start', 'range-start', 'range-end'],
+  // tree/list：windowed 为宿主窗口协议（需宿主回填切片），静态 demo 无法体现；
+  // 机制由各自单测与 qa-regression/{tree,list}.spec 覆盖
+  tree: ['windowed', 'total', 'window-start'],
+  list: ['windowed', 'total', 'window-start'],
+  // kanban：预估步长为数值调优通道（默认 68 已覆盖常规场景），静态 demo 不单独演示
+  kanban: ['card-estimate'],
 }
 
 // manifest 的 tag 与真实注册 tag 不一致的组件（demo 页用真实 tag 渲染）

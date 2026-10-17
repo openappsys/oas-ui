@@ -143,6 +143,8 @@ Ctrl/Cmd+点击逐枚切换选中，Shift+点击做范围选（锚点卡到被�
 
 列体设 `height`（宿主定高）后，各列体独立按可视窗口渲染卡片——单列数千张亦保持 DOM 有界（窗口外卡片不进 DOM，属虚拟化固有取舍：键盘可达范围限于已渲染窗口，跨窗口靠滚动与回焦）。卡片携带 `aria-posinset`（绝对位次）与 `aria-setsize`（该列全量卡数），读屏可报出全量位置。未设 `height`（内容全高）时不启用窗口化，行为与旧版一致。
 
+未实测卡片的预估步进默认为 68px，可用属性 `card-estimate`（px）或 CSS 变量 `--oas-kanban-card-step` 配置（属性优先；实测后由 ResizeObserver 自动修正）——卡片明显高于默认值时建议调大，减少首帧占位偏差。属性变更即时生效；CSS 变量无内建变更通知，需经任一 update 通道（属性/数据/尺寸等）后生效。
+
 ## API
 
 ### oas-kanban
@@ -151,6 +153,7 @@ Ctrl/Cmd+点击逐枚切换选中，Shift+点击做范围选（锚点卡到被�
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
+| `card-estimate` | 列体虚拟化的未实测卡片预估步进（px，默认 68）：数值 ≤0 / 非法回落 68；实测后由 ResizeObserver 逐步修正。仅当属性缺席时读取 CSS 变量 --oas-kanban-card-step 作为兜底（属性优先） | — | — |
 | `cards` | 卡片数据（JSON 数组 [{ id, column, title, ...任意字段 }]，column 为所属列 key）。拖拽落定后组件把新分组/顺序回写本属性（非受控回写 + attribute 反射）；renderCard 函数在场时不回写（数据由宿主持有） | `KanbanCard[] \| string` | `[]` |
 | `columns` | 列定义（JSON 数组 [{ key, title, limit? }]；property 同名数组通道同效，setter 反射回 attribute）。limit 为 WIP 限制：列卡片数超限时列头计数转 warning 色 + data-over-limit 标记（提示语义非阻断，拖入照常落定），缺省/0/负数 = 不限制 | `KanbanColumn[] \| string` | `[]` |
 | `empty-column-text` | 空列/空泳道单元格占位文案覆盖（默认走 i18n kanban.emptyColumn，随 locale 翻译） | `string` | — |

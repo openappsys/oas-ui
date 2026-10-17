@@ -1368,6 +1368,26 @@ function mountBig(n: number, attrs: Record<string, string> = {}): OASKanban {
   return mount({ columns: BIG_COLUMNS, cards: JSON.stringify(bigCards(n)), ...attrs })
 }
 
+/** 大列看板 + 宿主内联 CSS 变量（变量缓存在首次 update() 读取——须在连接前设好） */
+function mountBigWithVar(n: number, cssStep: string, attrs: Record<string, string> = {}): OASKanban {
+  const el = new OASKanban()
+  el.setAttribute('columns', BIG_COLUMNS)
+  el.setAttribute('cards', JSON.stringify(bigCards(n)))
+  for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v)
+  el.style.setProperty('--oas-kanban-card-step', cssStep)
+  document.body.appendChild(el)
+  return el
+}
+
+/** 列内容总高校验口径：顶部占位 + 窗口卡 × 步距 + 底部占位（= 全量卡 × 步距，滚动范围一致） */
+function estSum(el: OASKanban, step: number): number {
+  const body = bigBody(el)
+  const top = body.querySelector<HTMLElement>('.vpad-top')!
+  const bottom = body.querySelector<HTMLElement>('.vpad-bottom')!
+  const rendered = body.querySelectorAll('.card[data-index]').length
+  return Number.parseFloat(top.style.height) + rendered * step + Number.parseFloat(bottom.style.height)
+}
+
 function bigBody(el: OASKanban, key = 'todo'): HTMLElement {
   return columnOf(el, key).querySelector<HTMLElement>('.column-body')!
 }
@@ -1452,6 +1472,39 @@ describe('列体虚拟化（大列只渲染可视窗口）', () => {
     body.dispatchEvent(new Event('scroll'))
     await flushRaf()
     expect(windowPaints(el), '窗口变化后重建').toBe(before + 1)
+  })
+
+  it('程序化跳滚同步回正：scrollTop 大步跳变后同一事件内窗口即与视口一致（回归：scroll→rAF 合帧曾把重算推迟一帧，跳滚后按旧窗口上屏视口整帧空白）', async () => {
+    const el = mountBig(5000)
+    await flushRaf() // 收尾首帧后的校正，基线干净
+    const body = bigBody(el)
+    // 大步跳变 1：0 → 20000。估算步距 68 均一口径：首可见 294（offsetOf(295)=20060 首次越过
+    // 20000）、视口 400 → 末可见 300、缓冲 6 → 窗口 [288, 306)（18 张）
+    body.scrollTop = 20_000
+    body.dispatchEvent(new Event('scroll'))
+    expect(renderedIndexes(el), '跳滚后窗口立即就位（不等 rAF，无空白帧）').toEqual(
+      Array.from({ length: 18 }, (_, i) => 288 + i),
+    )
+    expect(
+      Number.parseFloat(body.querySelector<HTMLElement>('.vpad-top')!.style.height),
+      '顶部占位 = 窗口首张之前的步距总和（19584 = 288×68）',
+    ).toBe(288 * 68)
+    // 大步跳变 2：→ 100000（首可见 1470、窗口 [1464, 1483) 19 张）——重复大步跳变不积压
+    body.scrollTop = 100_000
+    body.dispatchEvent(new Event('scroll'))
+    expect(renderedIndexes(el), '第二次跳变同样立即就位（无旧窗口残留）').toEqual(
+      Array.from({ length: 19 }, (_, i) => 1464 + i),
+    )
+    await flushRaf()
+    expect(
+      (el as unknown as { pendingVirtualColumns: Set<string> }).pendingVirtualColumns.size,
+      '合帧待处理集不积压',
+    ).toBe(0)
+    // 已同步的窗口再收 rAF 不重复重建（诊断计数不增）
+    const paints = windowPaints(el)
+    body.dispatchEvent(new Event('scroll'))
+    await flushRaf()
+    expect(windowPaints(el), '窗口未变的滚动不重建').toBe(paints)
   })
 
   it('空列/单卡零异常：窗口覆盖全部时不加占位（不破坏空列与 list 语义）', () => {
@@ -1664,5 +1717,72 @@ describe('列体虚拟化（大列只渲染可视窗口）', () => {
       )
       expect(card.getAttribute('aria-setsize'), 'setsize 仍为列全量').toBe('5000')
     }
+  })
+
+  // ===== card-estimate 预估步距可配置（card-estimate 属性 > --oas-kanban-card-step 变量 > 默认 68） =====
+  // 未实测卡片的预估步进：宿主可按真实卡片密度校准，首帧窗口/占位更准；
+  // 实测回写（ResizeObserver/等价路径）后仍收敛到真值，估算值只影响未测区。
+
+  it('card-estimate 缺省（无属性/无变量）：未测区按默认 68 估算（既有行为零变化）', () => {
+    const el = mountBig(3000)
+    expect(estSum(el, 68), '默认 68 步距下的列内容总高').toBe(3000 * 68)
+  })
+
+  it('card-estimate="120"：未测区按 120 估算；实测回写后收敛（已测真值 + 未测 120）', () => {
+    const el = mountBig(5000, { 'card-estimate': '120' })
+    expect(estSum(el, 120), '未测区按 120 步距估算（总高 = 5000×120，非默认 68）').toBe(5000 * 120)
+    // 实测回写（走 handleCardResize 真实路径，等价 ResizeObserver 回调）：首卡真实步距 50（卡高 42 + gap 8）
+    const first = bigBody(el).querySelector<HTMLElement>('.card[data-index="0"]')!
+    ;(el as unknown as { handleCardResize: (entries: unknown) => void }).handleCardResize([
+      { target: first, borderBoxSize: [{ blockSize: 42 }] },
+    ])
+    // 收敛：总高 = 首卡真值 50 + 其余 4999 张 × 120；窗口/占位按新高度表重排
+    const body2 = bigBody(el)
+    const rendered2 = body2.querySelectorAll('.card[data-index]').length
+    const top2 = Number.parseFloat(body2.querySelector<HTMLElement>('.vpad-top')!.style.height)
+    const bottom2 = Number.parseFloat(body2.querySelector<HTMLElement>('.vpad-bottom')!.style.height)
+    expect(
+      top2 + 50 + (rendered2 - 1) * 120 + bottom2,
+      '实测后总高 = 真值 50 + 4999×120（不再整列 120、也不回 68）',
+    ).toBe(50 + 4999 * 120)
+  })
+
+  it('仅设 CSS 变量 --oas-kanban-card-step:100px（属性缺席）：按 100 估算', () => {
+    const el = mountBigWithVar(3000, '100px')
+    expect(estSum(el, 100), '变量兜底生效（3000×100）').toBe(3000 * 100)
+  })
+
+  it('CSS 变量非法值（abc）：回落 68', () => {
+    const el = mountBigWithVar(2000, 'abc')
+    expect(estSum(el, 68), '非法变量回落默认').toBe(2000 * 68)
+  })
+
+  it('属性优先于变量：card-estimate="90" 与变量 100px 同设，按属性 90 估算', () => {
+    const el = mountBigWithVar(3000, '100px', { 'card-estimate': '90' })
+    expect(estSum(el, 90), '属性优先（3000×90，非变量的 100）').toBe(3000 * 90)
+  })
+
+  it('属性非法值（0 / -5 / abc）：回落 68', () => {
+    for (const bad of ['0', '-5', 'abc']) {
+      const el = mountBig(2000, { 'card-estimate': bad })
+      expect(estSum(el, 68), `card-estimate="${bad}" 回落默认 68`).toBe(2000 * 68)
+    }
+  })
+
+  it('运行时改属性：走 update 路径重算（68 → 150 总高变化）；改回非法值回落 68', () => {
+    const el = mountBig(2000)
+    expect(estSum(el, 68), '初始按默认 68').toBe(2000 * 68)
+    el.setAttribute('card-estimate', '150')
+    expect(estSum(el, 150), '运行时改属性后总高按 150 重算').toBe(2000 * 150)
+    el.setAttribute('card-estimate', '-5')
+    expect(estSum(el, 68), '运行时改非法值回落 68').toBe(2000 * 68)
+  })
+
+  it('运行时设 CSS 变量 + 任一属性变更触发 update：变量兜底生效（变量无内建变更通知，走既有 update 路径重算）', () => {
+    const el = mountBig(2000)
+    expect(estSum(el, 68), '初始按默认 68').toBe(2000 * 68)
+    el.style.setProperty('--oas-kanban-card-step', '90px')
+    el.setAttribute('empty-column-text', '拖进来') // 任意 observed attribute 变更 → update() → 重读变量缓存
+    expect(estSum(el, 90), '变量兜底在后续 update 生效（2000×90）').toBe(2000 * 90)
   })
 })

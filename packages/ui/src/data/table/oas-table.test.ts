@@ -2453,6 +2453,75 @@ describe('OASTable 受控属性补全（selected / empty-text 进 observedAttrib
   })
 })
 
+describe('OASTable 选中行高亮可辨（暗色主题）', () => {
+  /** 取样式表中指定选择器的声明块（首个 { 到 }）；选择器缺失直接失败 */
+  function ruleBody(css: string, selector: string): string {
+    const i = css.indexOf(selector)
+    expect(i, `样式表缺少选择器：${selector}`).toBeGreaterThanOrEqual(0)
+    const open = css.indexOf('{', i)
+    const close = css.indexOf('}', open)
+    return css.slice(open + 1, close)
+  }
+
+  it('选中底色单点定义：primary 混入「抬升表面」（token/color-mix，暗色随主题自然增强）', () => {
+    const el = mount({ selected: '张三' })
+    const css = el.shadowRoot!.querySelector('style')!.textContent ?? ''
+    const def = ruleBody(css, "tr.row[data-selected='true'],")
+    // 主题自适应：light 下 bg-elevated=白（与 bg 同值，观感基本不变）；dark 下 bg-elevated 比 bg 亮一档，
+    // 同一混合在暗底上获得可辨对比（纯 token 驱动，无需 :host-context / 媒体查询）。
+    expect(def).toMatch(
+      /--_row-selected-bg:\s*color-mix\(\s*in srgb,\s*var\(--oas-color-primary\)\s+\d+%,\s*var\(--oas-color-bg-elevated\)\s*\)/,
+    )
+    // 颜色只走 token/color-mix：选中规则内不得硬编码色值
+    expect(def).not.toMatch(/#[0-9a-fA-F]{3,8}\b|rgba?\(|hsla?\(/)
+  })
+
+  it('普通/固定列/吸顶/吸顶固定列四条选中规则消费同一变量（不得各写一份混色）', () => {
+    const el = mount({
+      selected: '行1',
+      'sticky-rows': '1',
+      'row-key': 'id',
+      columns: STICKY_COLUMNS,
+      data: STICKY_DATA,
+    })
+    const css = el.shadowRoot!.querySelector('style')!.textContent ?? ''
+    const selectors = [
+      "tr.row[data-selected='true'] td {",
+      "tr.row[data-selected='true'] td[data-fixed='left'],",
+      "tr[data-sticky='true'][data-selected='true'] td {",
+      "tr[data-sticky='true'][data-selected='true'] td[data-fixed] {",
+    ]
+    for (const sel of selectors) {
+      const body = ruleBody(css, sel)
+      expect(body, `${sel} 应消费 --_row-selected-bg`).toContain('background: var(--_row-selected-bg)')
+      expect(body, `${sel} 不得回落到透明底或硬编码色值`).not.toMatch(/transparent|#[0-9a-fA-F]{3,8}\b|rgba?\(/)
+    }
+  })
+})
+
+describe('OASTable 行点击选中语义（无 checkable）', () => {
+  it('两次点不同普通行 = 逐行切换累积；再点已选行取消（文档「点击行可切换选中」）', () => {
+    // F2 复核：暗色视觉脚本两次点普通格得到「李四,王五」曾被疑为增量补丁读取旧 selected。
+    // 实测为既有契约：无 checkable 时点行是「切换」语义（逐行累积高亮，不读修饰键），
+    // 与 docs/components/table.md「点击行可切换选中」一致；再点已选行取消该行。
+    const el = mount({ 'row-key': 'name' })
+    rows(el)[1]!.click()
+    expect(el.getAttribute('selected'), '首击选中该行').toBe('李四')
+    rows(el)[2]!.click()
+    expect(el.getAttribute('selected'), '第二击不同行：切换累积（非替换）').toBe('李四,王五')
+    expect(
+      rows(el).map((tr) => tr.getAttribute('data-selected')),
+      '两行同时高亮',
+    ).toEqual(['false', 'true', 'true'])
+    rows(el)[2]!.click()
+    expect(el.getAttribute('selected'), '再点已选行取消该行').toBe('李四')
+    expect(
+      rows(el).map((tr) => tr.getAttribute('data-selected')),
+      '取消仅影响被点行',
+    ).toEqual(['false', 'true', 'false'])
+  })
+})
+
 describe('OASTable 多级表头 + column-keys 重排一致性', () => {
   const GROUP3_COLS = JSON.stringify([
     {

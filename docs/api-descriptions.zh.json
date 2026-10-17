@@ -1795,7 +1795,8 @@
       "columns": "列定义（JSON 数组 [{ key, title, limit? }]；property 同名数组通道同效，setter 反射回 attribute）。limit 为 WIP 限制：列卡片数超限时列头计数转 warning 色 + data-over-limit 标记（提示语义非阻断，拖入照常落定），缺省/0/负数 = 不限制",
       "cards": "卡片数据（JSON 数组 [{ id, column, title, ...任意字段 }]，column 为所属列 key）。拖拽落定后组件把新分组/顺序回写本属性（非受控回写 + attribute 反射）；renderCard 函数在场时不回写（数据由宿主持有）",
       "empty-column-text": "空列/空泳道单元格占位文案覆盖（默认走 i18n kanban.emptyColumn，随 locale 翻译）",
-      "swimlane-by": "泳道字段 key：按该字段值把看板横向分带（带头 = 折叠箭头 + 字段值 + 计数，默认全展开，折叠状态在数据变化时保留）；字段值缺失/空归「（空）」带；跨带拖拽 = 改泳道字段值；不带属性 = 普通列结构"
+      "swimlane-by": "泳道字段 key：按该字段值把看板横向分带（带头 = 折叠箭头 + 字段值 + 计数，默认全展开，折叠状态在数据变化时保留）；字段值缺失/空归「（空）」带；跨带拖拽 = 改泳道字段值；不带属性 = 普通列结构",
+      "card-estimate": "列体虚拟化的未实测卡片预估步进（px，默认 68）：数值 ≤0 / 非法回落 68；实测后由 ResizeObserver 逐步修正。仅当属性缺席时读取 CSS 变量 --oas-kanban-card-step 作为兜底（属性优先）"
     },
     "events": {
       "oas-change": "拖拽换列/列内排序/触屏菜单移动落定后派发（拖回原位不派发）。detail { id, from, to, index }——from/to 为列 key，index 为落点在目标列的插入位（移除移动卡后的口径，宿主对目标列数组 splice(index, 0, card) 即可复现）；多选拖拽移动全部选中卡时派发一条，detail 加 ids（全部选中卡 id，按数据序，id 为首枚）；跨泳道落定加 swimlane { from, to }（泳道字段值变化）",
@@ -1820,13 +1821,17 @@
       "split": "是否显示条目分隔线",
       "stripe": "斑马纹：视觉偶数行铺浅色底",
       "hoverable": "不可点行的 hover 底色反馈（选中行排除）",
-      "sortable": "行拖拽排序（数据通道 + 声明式）"
+      "sortable": "行拖拽排序（数据通道 + 声明式）",
+      "windowed": "服务端行窗口模式（布尔，默认关）：与 total / window-start 配合，data 只承载可见窗口附近的行切片（按绝对行号渲染），期望行区间未被已装载覆盖时派发 oas-window-request 由宿主回填；windowed 下本地分组/拖拽重排不适用（宿主负责）",
+      "total": "windowed 模式下的全量行数；为 0 或非法时 windowed 不生效（回落普通模式）",
+      "window-start": "windowed 模式下切片首行的绝对行号（相对全量）"
     },
     "events": {
       "oas-click": "条目点击（数据/虚拟行），detail 带 { index, item }",
       "oas-item-render": "数据通道每行渲染后派发，detail 带 { index, item, element }",
       "oas-reach-bottom": "滚动触底（进入触底区派发一次，滚离后重新武装），detail 带 { scrollTop }",
-      "oas-reorder": "行拖放重排时派发，`detail: { from, to, item }`"
+      "oas-reorder": "行拖放重排时派发，`detail: { from, to, item }`",
+      "oas-window-request": "windowed 模式下期望行窗口未被已装载区间覆盖时派发，detail: { start, end, reason }（半开区间、绝对行号；reason 为 init / scroll / resize / data）；同一期望区间不重复派发"
     },
     "slots": {
       "": "默认（oas-list-item 声明式子项）",
@@ -3860,7 +3865,10 @@
       "block-node": "整行块级选中/hover 区（行块加高一档）",
       "selectable": "整树点选开关，`\"false\"` 时点击/键盘不选中不派发 oas-select（展开/勾选不受影响）",
       "check-all": "顶部整树全选项行（三态 indeterminate；需 checkable）",
-      "check-all-label": "全选项行文案（缺省复用 i18n 全选）"
+      "check-all-label": "全选项行文案（缺省复用 i18n 全选）",
+      "windowed": "服务端根节点窗口模式（布尔，默认关）：与 total / window-start 配合，data 只承载根节点切片（子节点随根完整携带；懒加载不变），期望根区间未被已装载覆盖时派发 oas-window-request 由宿主回填；非 windowed 行为不变",
+      "total": "windowed 模式下的全量根节点数；为 0 或非法时 windowed 不生效（回落普通模式）",
+      "window-start": "windowed 模式下切片首个根节点的绝对根序号（相对全量根节点）"
     },
     "events": {
       "oas-check": "勾选变化，`detail: { key, checked }`",
@@ -3875,7 +3883,8 @@
       "oas-node-dragover": "拖拽悬过目标时派发，`detail: { dragKey, dropKey, position }`（空白处 dropKey 为空、position 为 `inner`）",
       "oas-node-dragleave": "拖拽离开目标时派发，`detail: { dragKey, dropKey, position }`",
       "oas-node-dragend": "拖拽结束时派发，`detail: { dragKey }`",
-      "oas-check-all": "全选行切换时派发，`detail: { checked, values }`"
+      "oas-check-all": "全选行切换时派发，`detail: { checked, values }`",
+      "oas-window-request": "windowed 模式下期望根节点窗口未被已装载区间覆盖时派发，detail: { start, end, reason }（半开区间、绝对根序号；reason 为 init / scroll / resize / data）；同一期望区间不重复派发"
     },
     "slots": {
       "template[slot=\"node\"]": "节点行静态模板，克隆到每个节点 label 容器；`[data-node-label]` 节点自动绑定节点 label",

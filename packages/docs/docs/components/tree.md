@@ -609,6 +609,18 @@ onMounted(() => {
   </div>
 </DemoBlock>
 
+## 服务端根节点窗口（windowed）
+
+> 超大树（十万根节点级）：宿主只喂「可见窗口附近」的**根节点切片**，组件不持有全量根。期望根区间按展平后的可视行反推（前后各 8 根），未被已装载覆盖时派发 `oas-window-request`，宿主回填后按**绝对根序号**渲染。
+
+属性 `windowed` + `total`（全量根节点数）+ `window-start`（切片首个根节点的绝对根序号）；`data` 只放根节点切片（子节点随根完整携带，`lazy` 懒加载不变）。事件 `oas-window-request`：`detail: { start, end, reason }`（半开、绝对根序号；reason = `init`/`scroll`/`resize`/`data`），同一期望区间不重复派发。
+
+windowed 下 a11y 口径：根节点 `aria-setsize = total`、`aria-posinset = window-start + 根序 + 1`（绝对）；子节点为**同级已装载兄弟数**。选择态同步 `aria-selected`（过滤态下按可见集计数）。
+
+windowed 的本地能力边界：**本地 `filter` 与顶部全选（`check-all`）不可用**（组件跳过并 devWarn，全量过滤/全选请宿主处理后回填）；键盘导航到切片首/末行会派发窗口请求；行拖拽不能跨未装载根。回填建议按「先 `data`、后 `window-start`」的原子序（组件对滚动中回填有锚定，但宿主若每笔请求都整体替换切片，margin 可能形成往返请求；推荐扩窗累积）。
+
+> 宿主回填建议用「扩窗」而非精确替换（否则在切片首端可能按 margin 逐步向 0 收敛）。
+
 ## API
 
 ### oas-tree
@@ -646,7 +658,10 @@ onMounted(() => {
 | `selectable` | 整树点选开关，`"false"` 时点击/键盘不选中不派发 oas-select（展开/勾选不受影响） | `string` | `true` |
 | `selected` | 选中节点 key | `string` | — |
 | `size` | 整树字号与行距五档（xs~xl，别名等价，非法回落 medium） | `string` | `medium` |
+| `total` | windowed 模式下的全量根节点数；为 0 或非法时 windowed 不生效（回落普通模式） | `string` | — |
 | `tree-lines` | 树线缩进引导线 | `boolean` | — |
+| `window-start` | windowed 模式下切片首个根节点的绝对根序号（相对全量根节点） | `string` | `0` |
+| `windowed` | 服务端根节点窗口模式（布尔，默认关）：与 total / window-start 配合，data 只承载根节点切片（子节点随根完整携带；懒加载不变），期望根区间未被已装载覆盖时派发 oas-window-request 由宿主回填；非 windowed 行为不变 | `boolean` | — |
 
 #### Property（JS property；是否写回 attribute 见各行说明）
 
@@ -671,6 +686,7 @@ onMounted(() => {
 | `oas-node-rename` | 内联重命名提交（Enter / 失焦），`detail: { key, label, oldLabel }`；数据由宿主受控——组件不改数据模型，宿主监听后更新 `data` 才生效（不更新则保持旧值；Esc 取消不派发） |
 | `oas-node-render` | 每个渲染的节点行派发，`detail: { node, element, level, expanded, selected, checked }`（element 为节点 label 容器，宿主可改写为图标 / 富文本） |
 | `oas-select` | 选中节点，`detail: { key, selected }` |
+| `oas-window-request` | windowed 模式下期望根节点窗口未被已装载区间覆盖时派发，detail: { start, end, reason }（半开区间、绝对根序号；reason 为 init / scroll / resize / data）；同一期望区间不重复派发 |
 
 #### 插槽
 

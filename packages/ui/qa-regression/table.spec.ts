@@ -2010,3 +2010,67 @@ test('table 万行虚拟滚动：连续选择 20 次渲染行数有界、行节�
   expect(consoleIssues, 'console 零 error/warning').toEqual([])
   await page.evaluate(() => document.querySelector('#qa-virtual-select')?.remove())
 })
+
+test('table 无 checkable 行点击语义：暗色下两次真实单击不同行 = 切换累积（非替换，无修饰键参与）', async ({ page }) => {
+  // F2 复核：暗色视觉脚本两次点普通格得到「李四,王五」，曾疑为增量补丁读取旧 selected 或
+  // Ctrl/Shift 残留。真实两次单击（不同行）复现结论：这是既有的「点击行切换选中」契约
+  //（docs/components/table.md：selected 高亮选中行，点击行可切换选中；上一条万行用例亦固化
+  //  20 行累积），组件不读取任何修饰键——不是陈旧 selected / 修饰键误判。
+  // 本用例以真实指针事件在暗色主题下固化该语义，防止后续误改成替换或回归成补丁读旧值。
+  await page.goto('/components/table.html', { waitUntil: 'domcontentloaded' })
+  await page.waitForFunction(() => customElements.get('oas-table') != null, null, { timeout: 15000 })
+  await page.evaluate(() => {
+    // 与视觉脚本同环境：暗色主题
+    document.documentElement.classList.add('dark')
+    const t = document.createElement('oas-table')
+    t.id = 'qa-row-toggle-semantics'
+    t.setAttribute('row-key', 'name')
+    t.setAttribute(
+      'columns',
+      JSON.stringify([
+        { key: 'name', title: '姓名' },
+        { key: 'age', title: '年龄' },
+      ]),
+    )
+    t.setAttribute(
+      'data',
+      JSON.stringify([
+        { name: '张三', age: 30 },
+        { name: '李四', age: 25 },
+        { name: '王五', age: 35 },
+      ]),
+    )
+    ;(document.querySelector('.vp-doc') ?? document.body).append(t)
+  })
+  await page.waitForFunction(
+    () =>
+      (document.querySelector('#qa-row-toggle-semantics')?.shadowRoot?.querySelectorAll('tbody tr.row').length ?? 0) ===
+      3,
+  )
+  const cell = (i: number) => page.locator('#qa-row-toggle-semantics td[data-col="name"]').nth(i)
+  const snapshot = () =>
+    page.evaluate(() => {
+      const t = document.querySelector('#qa-row-toggle-semantics')!
+      return {
+        selected: t.getAttribute('selected') ?? '',
+        rows: [...t.shadowRoot!.querySelectorAll('tbody tr.row')].map((tr) => tr.getAttribute('data-selected')),
+      }
+    })
+
+  // 第一次真实单击：只选中李四
+  await cell(1).click()
+  await expect.poll(async () => (await snapshot()).selected).toBe('李四')
+  // 第二次真实单击（不同行）：切换累积为李四,王五（文档化切换语义，非替换）
+  await cell(2).click()
+  await expect.poll(async () => (await snapshot()).selected).toBe('李四,王五')
+  expect((await snapshot()).rows, '两行同时高亮').toEqual(['false', 'true', 'true'])
+  // 再点已选行：仅取消该行（切换语义的另一半）
+  await cell(2).click()
+  await expect.poll(async () => (await snapshot()).selected).toBe('李四')
+  expect((await snapshot()).rows, '取消只影响被点行').toEqual(['false', 'true', 'false'])
+
+  await page.evaluate(() => {
+    document.querySelector('#qa-row-toggle-semantics')?.remove()
+    document.documentElement.classList.remove('dark')
+  })
+})

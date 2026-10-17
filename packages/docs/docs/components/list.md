@@ -693,6 +693,12 @@ onMounted(() => {
   </div>
 </DemoBlock>
 
+## 服务端行窗口（windowed）
+
+> 超长列表：宿主只喂「可见窗口附近」的行切片，组件不持有全量行。属性 `windowed` + `total`（全量行数）+ `window-start`（切片首行绝对行号）；期望行区间前后各扩 8 行，未覆盖时派发 `oas-window-request`（`detail: { start, end, reason }`，半开绝对行号），宿主回填后按绝对行号渲染并保持总高守恒。`oas-item-render` / `oas-click` 的 `index` 在 windowed 下为绝对行号。
+
+windowed 下行 `aria-setsize = total`、`aria-posinset = 绝对行号 + 1`。列表语义（`role=list`；可点时 `listbox`）由组件在 shadow 内的行容器上自行落位，行派生 `listitem` / `option`——**宿主无需也不需要设置 `role`**；组头以 `presentation` 呈现。windowed **必须**提供可测滚动视口（`height` 或可测 `max-height`），否则组件不派发请求并 devWarn 一次（避免一次请求全量 + 撑出巨量空白）。
+
 ## API
 
 ### oas-list
@@ -710,11 +716,15 @@ onMounted(() => {
 | `hoverable` | 不可点行的 hover 底色反馈（选中行排除） | `boolean` | — |
 | `loading` | 加载态，显示骨架占位 | `boolean` | — |
 | `max-height` | 列表体最大高度（px 或 CSS 长度），设置后列表体成为滚动容器（配合 oas-reach-bottom 滚动加载；分组组头在此容器内吸顶） | `string` | — |
+| `role` | — | — | — |
 | `row-height` | 虚拟滚动行高（px，默认 64，要求数据行定高） | `string` | `64` |
 | `size` | 行密度：sm / md（默认）/ lg | `string` | — |
 | `sortable` | 行拖拽排序（数据通道 + 声明式） | `boolean` | — |
 | `split` | 是否显示条目分隔线 | `boolean` | — |
 | `stripe` | 斑马纹：视觉偶数行铺浅色底 | `boolean` | — |
+| `total` | windowed 模式下的全量行数；为 0 或非法时 windowed 不生效（回落普通模式） | `string` | — |
+| `window-start` | windowed 模式下切片首行的绝对行号（相对全量） | `string` | `0` |
+| `windowed` | 服务端行窗口模式（布尔，默认关）：与 total / window-start 配合，data 只承载可见窗口附近的行切片（按绝对行号渲染），期望行区间未被已装载覆盖时派发 oas-window-request 由宿主回填；windowed 下本地分组/拖拽重排不适用（宿主负责） | `boolean` | — |
 
 #### 事件
 
@@ -724,6 +734,7 @@ onMounted(() => {
 | `oas-item-render` | 数据通道每行渲染后派发，detail 带 { index, item, element } |
 | `oas-reach-bottom` | 滚动触底（进入触底区派发一次，滚离后重新武装），detail 带 { scrollTop } |
 | `oas-reorder` | 行拖放重排时派发，`detail: { from, to, item }` |
+| `oas-window-request` | windowed 模式下期望行窗口未被已装载区间覆盖时派发，detail: { start, end, reason }（半开区间、绝对行号；reason 为 init / scroll / resize / data）；同一期望区间不重复派发 |
 
 #### 插槽
 

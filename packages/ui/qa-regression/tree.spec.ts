@@ -619,3 +619,196 @@ test('tree check-all 过滤态只选可见匹配（清过滤后全树）', async
   expect(f.includes('b'), '未命中节点不入选').toBe(false)
   expect(a.length, '清过滤全树 4 节点').toBe(4)
 })
+
+// ===== windowed：服务端根节点窗口协议（oas-window-request） =====
+test('tree windowed：滚动派发 oas-window-request、宿主回填渲染绝对根序 + aria 全量口径', async ({ page }) => {
+  // 契约：windowed + total + window-start → data 只承载根节点切片；组件把「已装载切片展平后的
+  // 可视行窗口」反推成根区间（前后扩 WINDOW_MARGIN=8 根）派发 oas-window-request（绝对根下标、
+  // 半开区间），宿主回填后按绝对根序渲染；根行 aria-setsize=total、aria-posinset=绝对根序（1 起）。
+  await page.goto('/components/tree.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-tree')
+  const r = await page.evaluate(async () => {
+    const TOTAL = 500
+    const mkRoots = (from: number, count: number) =>
+      Array.from({ length: count }, (_, i) => ({ key: `k${from + i}`, label: `根 ${from + i}` }))
+    const host = document.createElement('oas-tree')
+    host.setAttribute('windowed', '')
+    host.setAttribute('total', String(TOTAL))
+    host.setAttribute('window-start', '100')
+    host.setAttribute('height', '160')
+    host.setAttribute('row-height', '32')
+    host.style.cssText = 'position:fixed;top:40px;left:8px;width:320px;'
+    const requests: Array<{ start: number; end: number; reason: string }> = []
+    // 简易服务端：收到请求后以请求区间替换切片。注意顺序——先 data 后 window-start：
+    // 两次 setAttribute 各触发一次 update，若先改 window-start，中间态（新 ws + 旧切片）
+    // 会派发偏离请求；先落 data 的中间态恰好与当前去重区间相同而被拦下，链有界收敛
+    host.addEventListener('oas-window-request', (e) => {
+      const d = (e as CustomEvent).detail
+      requests.push({ start: d.start, end: d.end, reason: d.reason })
+      host.setAttribute('data', JSON.stringify(mkRoots(d.start, d.end - d.start)))
+      host.setAttribute('window-start', String(d.start))
+    })
+    document.body.appendChild(host)
+    await customElements.whenDefined('oas-tree')
+    const vroot = () => host.shadowRoot!.querySelector('oas-virtual-list')!.shadowRoot!
+    const waitRequests = (n: number) =>
+      new Promise((resolve, reject) => {
+        const t0 = performance.now()
+        const tick = () => {
+          if (requests.length >= n) resolve(undefined)
+          else if (performance.now() - t0 > 5000) reject(new Error('window-request 超时'))
+          else setTimeout(tick, 30)
+        }
+        tick()
+      })
+    // 首帧 init 请求：空切片无从反推可视根，按视口容量估算 ceil(160/32)+buffer4=9 根
+    // → window-start+[0,9) = [100,109) → 扩 margin → [92,117)
+    await waitRequests(1)
+    if (requests[0]!.start !== 92 || requests[0]!.end !== 117 || requests[0]!.reason !== 'init') {
+      throw new Error('init 请求区间错误：' + JSON.stringify(requests[0]))
+    }
+    // 宿主回填（切片替换链式触发 data 请求，每轮 ws 下移 8 根至 0 处被覆盖收敛），稳态后读首行
+    await waitRequests(3)
+    await new Promise((r) => setTimeout(r, 300))
+    const ws = Number(host.getAttribute('window-start'))
+    const row = vroot().querySelector('[part="row"]')!
+    const firstLabel = row.querySelector('.label')?.textContent ?? ''
+    const initAria = {
+      setsize: row.getAttribute('aria-setsize'),
+      posinset: row.getAttribute('aria-posinset'),
+      role: row.getAttribute('role'),
+      level: row.getAttribute('aria-level'),
+    }
+    // 滚到 scrollTop=384（收敛切片 [0,21) 内第 12 行起）→ 可见行窗 [8,21) 扩 margin → [0,29)
+    // 越过装载边界 21 → reason=scroll
+    const vp = vroot().querySelector('[part="viewport"]') as HTMLElement
+    vp.scrollTop = 384
+    vp.dispatchEvent(new Event('scroll'))
+    await new Promise((r) => setTimeout(r, 400))
+    const scrollReqs = requests.filter((q) => q.reason === 'scroll')
+    const rows = [...vroot().querySelectorAll('[part="row"]')]
+    const lastRow = rows[rows.length - 1]!
+    return {
+      firstThree: requests.slice(0, 3),
+      firstLabel,
+      ws,
+      initAria,
+      scrollCount: scrollReqs.length,
+      firstScroll: scrollReqs[0] ?? null,
+      rowCount: rows.length,
+      firstScrolledLabel: rows[0]?.querySelector('.label')?.textContent ?? '',
+      lastScrolledLabel: lastRow.querySelector('.label')?.textContent ?? '',
+      lastPosinset: lastRow.getAttribute('aria-posinset'),
+    }
+  })
+  expect(r.firstThree[0]).toEqual({ start: 92, end: 117, reason: 'init' })
+  expect(r.firstThree[1]!.reason, '回填后的后续请求走 data 原因').toBe('data')
+  // 绝对根序：首行 label 始终等于当前 window-start 指向的绝对根
+  expect(r.firstLabel, `首行应为绝对根 ${r.ws}`).toBe(`根 ${r.ws}`)
+  // aria 全量口径：根 setsize=total、posinset=绝对根序（1 起）
+  expect(r.initAria.role).toBe('treeitem')
+  expect(r.initAria.level).toBe('1')
+  expect(r.initAria.setsize).toBe('500')
+  expect(r.initAria.posinset).toBe(String(r.ws + 1))
+  // 滚动产生 scroll 原因请求；回填后窗口行仍按绝对根序渲染
+  expect(r.scrollCount, '滚动应产生 scroll 原因请求').toBeGreaterThanOrEqual(1)
+  expect(r.firstScroll!.reason).toBe('scroll')
+  expect(r.firstScrolledLabel, '滚动后首行仍按绝对根序').toBe('根 8')
+  expect(r.lastScrolledLabel).toBe('根 20')
+  expect(r.lastPosinset, '底部行 posinset=绝对根序').toBe('21')
+})
+
+// —— windowed 复审 C2 回归：扩窗回填的滚动锚定（vlist scrollTop 是切片本地坐标）——
+test('tree windowed 回填滚动锚定：window-start 迁移后视口顶行同一绝对根（不跳行）', async ({ page }) => {
+  // 曾现缺陷：window-start 变化的回填不补偿 scrollTop（切片本地坐标），扩窗后视口跳到错误
+  // 绝对根（首行 k111→k103）。修复：回填批次捕获视口顶行锚点，微任务里 scrollToIndex 滚回。
+  // 宿主为「合并式」数据源（cache 累积、按连续段喂切片——windowed 契约的常规宿主形态）；
+  // 另做一次显式 trim（切片裁到 [8,29)）制造 window-start 迁移，验证锚定跨迁移保持视口顶行。
+  await page.goto('/components/tree.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-tree')
+  const r = await page.evaluate(async () => {
+    const TOTAL = 500
+    const host = document.createElement('oas-tree')
+    host.setAttribute('windowed', '')
+    host.setAttribute('total', String(TOTAL))
+    host.setAttribute('window-start', '0')
+    host.setAttribute('height', '160')
+    host.setAttribute('row-height', '32')
+    host.style.cssText = 'position:fixed;top:40px;left:8px;width:320px;'
+    const cache = new Map<number, { key: string; label: string }>()
+    const requests: Array<{ start: number; end: number; reason: string }> = []
+    const feed = (): void => {
+      const keys = [...cache.keys()].sort((a, b) => a - b)
+      const slice: Array<{ key: string; label: string }> = []
+      for (let k = keys[0]!; cache.has(k); k++) slice.push(cache.get(k)!)
+      host.setAttribute('data', JSON.stringify(slice))
+      host.setAttribute('window-start', String(keys[0]!))
+    }
+    host.addEventListener('oas-window-request', (e) => {
+      const d = (e as CustomEvent).detail
+      requests.push({ start: d.start, end: d.end, reason: d.reason })
+      for (let k = d.start; k < d.end; k++) {
+        if (!cache.has(k)) cache.set(k, { key: `k${k}`, label: `根 ${k}` })
+      }
+      feed()
+    })
+    document.body.appendChild(host)
+    await customElements.whenDefined('oas-tree')
+    const vroot = () => host.shadowRoot!.querySelector('oas-virtual-list')!.shadowRoot!
+    const viewport = () => vroot().querySelector('[part="viewport"]') as HTMLElement
+    // 几何法找视口顶可见行（真浏览器有布局，不依赖渲染窗起始序）
+    const topRowLabel = (): string => {
+      const vr = viewport().getBoundingClientRect()
+      for (const row of vroot().querySelectorAll('[part="row"]')) {
+        const b = row.getBoundingClientRect()
+        if (b.top <= vr.top + 2 && b.bottom > vr.top + 2) return row.querySelector('.label')?.textContent ?? ''
+      }
+      return ''
+    }
+    const waitForSettle = async (): Promise<void> => {
+      // 等请求链收敛（400ms 无新请求即视为稳定，上限 8s）——同时证明锚定不引发请求振荡
+      let last = requests.length
+      let stable = 0
+      const t0 = performance.now()
+      while (stable < 400 && performance.now() - t0 < 8000) {
+        await new Promise((r2) => setTimeout(r2, 80))
+        if (requests.length === last) stable += 80
+        else {
+          stable = 0
+          last = requests.length
+        }
+      }
+      return
+    }
+    // ① init 回填链收敛（scrollTop 0 → 切片顶语义，锚定不介入）
+    await waitForSettle()
+    // ② 滚入切片中部：scrollTop 480（视口钳到 maxTop 384）→ 扩窗请求 → 合并回填
+    viewport().scrollTop = 480
+    viewport().dispatchEvent(new Event('scroll'))
+    await waitForSettle()
+    // 「回填前」基线：稳定态视口顶行（回填转换在监听器里同步发生，无中间帧可读）
+    const before = topRowLabel()
+    const scrollTopBefore = viewport().scrollTop
+    // ③ 显式 trim：宿主把切片裁到 [8,29)（window-start 0→8 迁移，模拟数据窗管理）
+    host.setAttribute(
+      'data',
+      JSON.stringify(Array.from({ length: 21 }, (_, i) => ({ key: `k${8 + i}`, label: `根 ${8 + i}` }))),
+    )
+    host.setAttribute('window-start', '8')
+    await waitForSettle()
+    return {
+      before,
+      after: topRowLabel(),
+      scrollTopBefore,
+      scrollTopAfter: viewport().scrollTop,
+      scrollReqs: requests.filter((q) => q.reason === 'scroll').length,
+      totalReqs: requests.length,
+    }
+  })
+  // 请求链：init + 步② scroll 扩窗 + trim 批次的 data 请求（合并宿主回喂后收敛，无振荡）
+  expect(r.totalReqs, 'init/scroll/trim 回填链均有发生').toBeGreaterThanOrEqual(4)
+  expect(r.scrollReqs, 'scroll 驱动的扩窗回填确有发生').toBeGreaterThanOrEqual(1)
+  expect(r.before, '前置：滚入切片中部后视口顶行可读').not.toBe('')
+  expect(r.after, '回填/trim 循环后视口顶行仍是同一绝对根（滚动锚定，不跳行）').toBe(r.before)
+  expect(r.scrollTopAfter, '锚定补偿后 scrollTop 与迁移前一致（同一绝对根在同一本地位）').toBe(r.scrollTopBefore)
+})

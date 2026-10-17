@@ -611,6 +611,18 @@ onMounted(() => {
   </div>
 </DemoBlock>
 
+## Server-side root window (windowed)
+
+> Very large trees (hundreds of thousands of roots): the host supplies only the **root-node slice** near the visible window and the component holds no full root set. The expected root window is derived from the flattened visible rows (8 roots of margin on both sides); when not covered, `oas-window-request` is emitted for the host to refill, and rows render by **absolute root index**.
+
+Attributes: `windowed` + `total` (full root count) + `window-start` (absolute root index of the slice's first root); `data` carries the root slice only (children travel with their root; `lazy` loading unchanged). Event `oas-window-request`: `detail: { start, end, reason }` (half-open, absolute root indices; reason = `init`/`scroll`/`resize`/`data`), the same expected window is not emitted twice.
+
+ARIA in windowed mode: root nodes report `aria-setsize = total` and `aria-posinset = window-start + rootIndex + 1` (absolute); children report their loaded sibling count. Selection state is mirrored to `aria-selected` (counts follow the visible set when filtering).
+
+Boundaries of local capabilities in windowed mode: **local `filter` and top-level check-all are unavailable** (skipped with a devWarn — filter/select on the full dataset on the host side, then refill); keyboard navigation at the slice start/end emits a window request; row drag cannot cross unloaded roots. Refill atomically as "`data` first, then `window-start`" (the component anchors scrolling during refill, but a host that replaces the slice wholesale on every request may ping-pong across the margins; widening the window is recommended).
+
+> Refill with a **widened window** rather than an exact replacement (otherwise the start edge may converge toward 0 step by step with the margin).
+
 ## API
 
 ### oas-tree
@@ -648,7 +660,10 @@ onMounted(() => {
 | `selectable` | Whole-tree selection switch; `"false"` stops click/keyboard selection while expand/check keep working | `string` | `true` |
 | `selected` | Key of the selected node | `string` | — |
 | `size` | Five-tier tree font/padding scale (xs~xl, aliases accepted, invalid falls back to medium) | `string` | `medium` |
+| `total` | Full root-node count in windowed mode; 0 or invalid disables windowed (falls back to normal mode) | `string` | — |
 | `tree-lines` | Tree indentation guide lines | `boolean` | — |
+| `window-start` | Absolute root index (within the full dataset) of the first root node in the slice (windowed mode) | `string` | `0` |
+| `windowed` | Server-side root-node window mode (boolean, off by default): with total / window-start, data carries only the root-node slice (children travel with their root; lazy loading unchanged); when the expected root window is not covered, oas-window-request is emitted for the host to refill. Non-windowed behavior unchanged | `boolean` | — |
 
 #### Property (JS property; see each row for attribute reflection)
 
@@ -673,6 +688,7 @@ onMounted(() => {
 | `oas-node-rename` | Inline rename committed (Enter / blur), `detail: { key, label, oldLabel }`; data stays host-controlled — the component does not mutate the model, so the new label only shows once the host updates `data` (keeps the old value otherwise; Esc cancel does not emit) |
 | `oas-node-render` | Dispatched for each rendered node row, `detail: { node, element, level, expanded, selected, checked }` (element is the node label container; the host can rewrite it into icon / rich text) |
 | `oas-select` | Node selected, `detail: { key, selected }` |
+| `oas-window-request` | Emitted in windowed mode when the expected root window is not covered by the loaded range; detail: { start, end, reason } (half-open, absolute root indices; reason is init / scroll / resize / data). The same expected window is not emitted twice |
 
 #### Slots
 

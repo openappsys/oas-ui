@@ -81,7 +81,7 @@ test('list 分组组头在滚动容器内吸顶（computedStyle position=sticky 
   expect(r.violated).toBe(false)
 })
 
-test('list 分组组头不占用行索引（数据行 data-index 连续、组头是 role=separator 静态条）', async ({ page }) => {
+test('list 分组组头不占用行索引（数据行 data-index 连续、组头/分组容器是 presentation 静态条）', async ({ page }) => {
   await page.goto('/components/list.html', { waitUntil: 'domcontentloaded' })
   await up(page, '#list-grouped')
   await page.waitForFunction(() => {
@@ -93,14 +93,22 @@ test('list 分组组头不占用行索引（数据行 data-index 连续、组头
     const sh = list.shadowRoot!
     const rows = Array.from(sh.querySelectorAll('[part="data-items"] oas-list-item'))
     const headers = Array.from(sh.querySelectorAll('[part="data-items"] .group-header'))
+    const groups = Array.from(sh.querySelectorAll('[part="data-items"] .group'))
     return {
       rowIndexes: rows.map((row) => row.getAttribute('data-index')),
+      rowRoles: rows.map((row) => row.getAttribute('role')),
+      containerRole: sh.querySelector('[part="data-items"]')!.getAttribute('role'),
       headerRoles: headers.map((h) => h.getAttribute('role')),
       headerTabindex: headers.map((h) => h.hasAttribute('tabindex')),
+      groupRoles: groups.map((g) => g.getAttribute('role')),
     }
   })
   expect(r.rowIndexes).toEqual(['0', '1', '2', '3', '4', '5', '6', '7', '8'])
-  for (const role of r.headerRoles) expect(role).toBe('separator')
+  // role=list 落在行容器上；组头/分组容器用 presentation 透传 owned children（required-children 合法）
+  expect(r.containerRole).toBe('list')
+  for (const role of r.rowRoles) expect(role).toBe('listitem')
+  for (const role of r.headerRoles) expect(role).toBe('presentation')
+  for (const role of r.groupRoles) expect(role).toBe('presentation')
   for (const t of r.headerTabindex) expect(t).toBe(false)
 })
 
@@ -122,7 +130,9 @@ test('list：点击可点行内的开关不触发行点击，且行不挂缺省 
     return { rowClicks, role: row.getAttribute('role'), before, after: inner.getAttribute('aria-checked') }
   })
   expect(r, '页面应有嵌开关的可点行').not.toBeNull()
-  expect(r!.role, '可点行不挂缺省 role=button（否则行内开关构成交互嵌套）').toBe(null)
+  // 组件默认把行容器声明为 list，行派生 listitem；关键是不得挂交互角色（role=button 会与行内开关构成嵌套交互）
+  expect(r!.role, '可点行不挂缺省 role=button（否则行内开关构成交互嵌套）').not.toBe('button')
+  expect(['listitem', null], '行角色为 listitem（list 语义）或未设').toContain(r!.role)
   expect(r!.rowClicks, '点击行内开关不应触发整行 oas-click（行与控件不双触发）').toBe(0)
   expect(r!.after, '开关自身应正常切换').not.toBe(r!.before)
 })
@@ -267,4 +277,270 @@ test('list 前置媒体槽（icon / image）真实渲染 + 无内容隐藏', asy
   expect(r.imageVisible, 'image 槽行方形缩略图位可见').toBe(true)
   expect(r.plainIconHidden, '无内容行图标位隐藏').toBe(true)
   expect(r.plainImageHidden, '无内容行缩略图位隐藏').toBe(true)
+})
+
+// ===== windowed（服务端行窗口协议）：滚动请求 → 宿主回填 → 绝对行铺位 + 行数 aria =====
+test('list windowed：滚动派发 oas-window-request、回填后绝对行渲染与 aria-setsize/posinset 绝对口径', async ({
+  page,
+}) => {
+  await page.goto('/components/list.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-list')
+  // 注入 windowed list：total=500、初始切片 40 行、定高视口 240 / 行高 40
+  await page.evaluate(() => {
+    const el = document.createElement('oas-list') as HTMLElement & {
+      data: unknown[]
+      shadowRoot: ShadowRoot
+    }
+    el.id = 'qa-windowed-list'
+    el.setAttribute('role', 'list')
+    el.setAttribute('windowed', '')
+    el.setAttribute('total', '500')
+    el.setAttribute('window-start', '0')
+    el.setAttribute('height', '240')
+    el.setAttribute('row-height', '40')
+    const make = (start: number, len: number) => Array.from({ length: len }, (_, i) => ({ title: `行 ${start + i}` }))
+    ;(el as unknown as { data: unknown[] }).data = make(0, 40)
+    const w = window as unknown as {
+      __winReqs: Array<{ start: number; end: number; reason: string }>
+      __winMake: (s: number, n: number) => Array<{ title: string }>
+    }
+    w.__winReqs = []
+    w.__winMake = make
+    el.addEventListener('oas-window-request', (e) => {
+      w.__winReqs.push((e as CustomEvent<{ start: number; end: number; reason: string }>).detail)
+    })
+    document.body.appendChild(el)
+  })
+  await page.waitForFunction(
+    () =>
+      (document.querySelector('#qa-windowed-list')?.shadowRoot?.querySelectorAll('[part="data-items"] oas-list-item')
+        .length ?? 0) > 0,
+  )
+
+  // 滚动到绝对第 200 行附近：期望区间（半开、绝对行下标）应被派发
+  const req = await page.evaluate(async () => {
+    const el = document.querySelector('#qa-windowed-list')!
+    const body = el.shadowRoot!.querySelector('[part="body"]') as HTMLElement
+    body.scrollTop = 8000
+    body.dispatchEvent(new Event('scroll'))
+    await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)))
+    const reqs = (window as unknown as { __winReqs: Array<{ start: number; end: number; reason: string }> }).__winReqs
+    return reqs[reqs.length - 1] ?? null
+  })
+  expect(req, '滚动后应派发 oas-window-request').not.toBeNull()
+  expect(req!.reason).toBe('scroll')
+  expect(req!.start).toBeGreaterThan(100)
+  expect(req!.end).toBeGreaterThan(req!.start)
+
+  // 模拟宿主回填请求区间切片（window-start = 请求起点）
+  await page.evaluate((r) => {
+    const el = document.querySelector('#qa-windowed-list') as HTMLElement & { data: unknown[] }
+    const w = window as unknown as { __winMake: (s: number, n: number) => Array<{ title: string }> }
+    el.setAttribute('window-start', String(r.start))
+    ;(el as unknown as { data: unknown[] }).data = w.__winMake(r.start, r.end - r.start)
+  }, req!)
+
+  // 回填后：绝对行号渲染（data-index / aria-posinset 均为全量坐标）
+  await page.waitForFunction((r) => {
+    const rows = [
+      ...(document
+        .querySelector('#qa-windowed-list')
+        ?.shadowRoot?.querySelectorAll('[part="data-items"] oas-list-item') ?? []),
+    ] as HTMLElement[]
+    return rows.length > 0 && Number(rows[0]!.getAttribute('data-index')) >= r.start
+  }, req!)
+
+  const r = await page.evaluate(() => {
+    const el = document.querySelector('#qa-windowed-list')!
+    const sh = el.shadowRoot!
+    const rows = [...sh.querySelectorAll<HTMLElement>('[part="data-items"] oas-list-item')]
+    const top = sh.querySelector<HTMLElement>('[data-spacer="top"]')
+    const bottom = sh.querySelector<HTMLElement>('[data-spacer="bottom"]')
+    return {
+      indexes: rows.map((row) => Number(row.getAttribute('data-index'))),
+      posinset: rows.map((row) => Number(row.getAttribute('aria-posinset'))),
+      setsize: rows.map((row) => row.getAttribute('aria-setsize')),
+      topH: top ? parseFloat(top.style.height) : -1,
+      bottomH: bottom ? parseFloat(bottom.style.height) : -1,
+      rowH: rows.length ? rows[0]!.getBoundingClientRect().height : 0,
+      scrollTop: (sh.querySelector('[part="body"]') as HTMLElement).scrollTop,
+    }
+  })
+  expect(r.indexes.length, '回填后有绝对行渲染').toBeGreaterThan(0)
+  // 绝对连续行号（不回到 0 起）
+  expect(r.indexes).toEqual(r.indexes.map((_, i) => r.indexes[0]! + i))
+  expect(Math.min(...r.indexes)).toBeGreaterThanOrEqual(req!.start)
+  for (const row of r.indexes) expect(row).toBeLessThan(500)
+  // aria-setsize = total；aria-posinset = 绝对行号 + 1
+  expect(r.setsize.every((s) => s === '500')).toBe(true)
+  expect(r.posinset).toEqual(r.indexes.map((i) => i + 1))
+  // 占位 + 行 = 全量总高（500 × 40），且滚动位置未被重建清回 0
+  expect(r.rowH).toBeGreaterThan(0)
+  expect(r.topH + r.indexes.length * r.rowH + r.bottomH).toBe(500 * 40)
+  expect(r.scrollTop).toBeGreaterThan(0)
+})
+
+// ===== a11y 角色归属：role=list 落在 shadow 内行容器，宿主不再承担 list 角色 =====
+test('list a11y：windowed(height) / windowed(max-height) / 虚拟 / 分组四条路径角色归属合法（滚动容器不在 list 内）', async ({
+  page,
+}) => {
+  await page.goto('/components/list.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-list')
+  await page.evaluate(async () => {
+    await customElements.whenDefined('oas-list')
+    const make = (start: number, len: number) => Array.from({ length: len }, (_, i) => ({ title: `行 ${start + i}` }))
+    const host = document.createElement('div')
+    host.id = 'qa-list-a11y'
+    document.body.appendChild(host)
+    const mk = (id: string, attrs: Record<string, string>, data: unknown[], role?: string) => {
+      const el = document.createElement('oas-list') as HTMLElement & { data?: unknown[] }
+      el.id = id
+      if (role) el.setAttribute('role', role)
+      for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v)
+      el.data = data
+      host.appendChild(el)
+    }
+    mk(
+      'qa-a11y-win-h',
+      { windowed: '', total: '500', 'window-start': '0', height: '240', 'row-height': '40' },
+      make(0, 40),
+      'list',
+    )
+    mk(
+      'qa-a11y-win-mh',
+      { windowed: '', total: '500', 'window-start': '0', 'max-height': '240', 'row-height': '40' },
+      make(0, 40),
+      'list',
+    )
+    mk('qa-a11y-virtual', { height: '240', 'row-height': '40' }, make(0, 100), 'list')
+    mk(
+      'qa-a11y-grouped',
+      { 'max-height': '240' },
+      [
+        { title: '甲', group: 'A' },
+        { title: '乙', group: 'A' },
+        { title: '丙', group: 'B' },
+      ],
+      'list',
+    )
+  })
+  await page.waitForFunction(() =>
+    ['qa-a11y-win-h', 'qa-a11y-win-mh', 'qa-a11y-virtual', 'qa-a11y-grouped'].every((id) => {
+      const el = document.getElementById(id)
+      const sh = el?.shadowRoot
+      if (!sh) return false
+      const virtual = sh.querySelector('oas-virtual-list') as HTMLElement | null
+      const rows =
+        virtual && !virtual.hidden
+          ? virtual.shadowRoot!.querySelectorAll('[part="item"]')
+          : sh.querySelectorAll('[part="data-items"] oas-list-item')
+      return rows.length > 0
+    }),
+  )
+  const r = await page.evaluate(() => {
+    const out: Record<
+      string,
+      {
+        hostRole: string | null
+        containerRole: string | null
+        rowRoles: Array<string | null>
+        scrollParentOfList: boolean
+        spacerHidden: boolean
+        headerRoles: Array<string | null>
+        groupRoles: Array<string | null>
+      }
+    > = {}
+    for (const id of ['qa-a11y-win-h', 'qa-a11y-win-mh', 'qa-a11y-virtual', 'qa-a11y-grouped']) {
+      const el = document.getElementById(id)!
+      const sh = el.shadowRoot!
+      const virtual = sh.querySelector('oas-virtual-list') as HTMLElement | null
+      const isVirtual = !!virtual && !virtual.hidden
+      const container = isVirtual
+        ? virtual!.shadowRoot!.querySelector<HTMLElement>('.items')
+        : sh.querySelector<HTMLElement>('[part="data-items"]')
+      const rows = isVirtual
+        ? [...virtual!.shadowRoot!.querySelectorAll('[part="item"]')]
+        : [...sh.querySelectorAll('[part="data-items"] oas-list-item')]
+      const body = sh.querySelector<HTMLElement>('[part="body"]')!
+      out[id] = {
+        hostRole: el.getAttribute('role'),
+        containerRole: container?.getAttribute('role') ?? null,
+        rowRoles: rows.slice(0, 3).map((row) => row.getAttribute('role')),
+        // list 容器在滚动容器内部（滚动容器是祖先，不是 list 的 owned child）
+        scrollParentOfList: isVirtual ? virtual!.parentElement === body : container?.parentElement === body,
+        spacerHidden: sh.querySelector('[data-spacer="top"]')?.getAttribute('aria-hidden') === 'true',
+        headerRoles: [...sh.querySelectorAll('[part="data-items"] .group-header')].map((h) => h.getAttribute('role')),
+        groupRoles: [...sh.querySelectorAll('[part="data-items"] .group')].map((g) => g.getAttribute('role')),
+      }
+    }
+    return out
+  })
+  for (const id of ['qa-a11y-win-h', 'qa-a11y-win-mh', 'qa-a11y-virtual', 'qa-a11y-grouped']) {
+    const it = r[id]!
+    expect(it.hostRole, `${id} 宿主不再保留 role=list（可聚焦滚动容器会成为非法子元素）`).toBe(null)
+    expect(it.containerRole, `${id} role=list 落在行容器上`).toBe('list')
+    expect(it.rowRoles.length).toBeGreaterThan(0)
+    for (const role of it.rowRoles) expect(role, `${id} 行派生 listitem`).toBe('listitem')
+    expect(it.scrollParentOfList, `${id} 滚动容器在 list 容器之外`).toBe(true)
+    if (id === 'qa-a11y-win-h' || id === 'qa-a11y-win-mh') {
+      expect(it.spacerHidden, `${id} 占位 aria-hidden（不进入 required-children）`).toBe(true)
+    }
+    if (id === 'qa-a11y-grouped') {
+      for (const role of it.headerRoles) expect(role).toBe('presentation')
+      for (const role of it.groupRoles) expect(role).toBe('presentation')
+    }
+  }
+})
+
+// ===== windowed 无视口：不派发全量请求 + 巨量占位；补视口后恢复正常请求 =====
+test('list windowed 无视口：零请求 + 不铺 total 占位；补 max-height 后按窗口请求', async ({ page }) => {
+  await page.goto('/components/list.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-list')
+  await page.evaluate(async () => {
+    await customElements.whenDefined('oas-list')
+    const el = document.createElement('oas-list') as HTMLElement & { data?: unknown[] }
+    el.id = 'qa-no-viewport'
+    el.setAttribute('windowed', '')
+    el.setAttribute('total', '500')
+    el.setAttribute('row-height', '40')
+    el.data = Array.from({ length: 10 }, (_, i) => ({ title: `行 ${i}` }))
+    const w = window as unknown as { __nvReqs: Array<{ start: number; end: number; reason: string }> }
+    w.__nvReqs = []
+    el.addEventListener('oas-window-request', (e) => {
+      w.__nvReqs.push((e as CustomEvent<{ start: number; end: number; reason: string }>).detail)
+    })
+    document.body.appendChild(el)
+  })
+  await page.waitForFunction(() => {
+    const sh = document.getElementById('qa-no-viewport')!.shadowRoot!
+    return sh.querySelectorAll('[part="data-items"] oas-list-item').length === 10
+  })
+  const noViewport = await page.evaluate(() => {
+    const sh = document.getElementById('qa-no-viewport')!.shadowRoot!
+    return {
+      reqs: (window as unknown as { __nvReqs: unknown[] }).__nvReqs.length,
+      toSpacer: sh.querySelectorAll('[data-spacer="top"]').length,
+      bottomSpacer: sh.querySelectorAll('[data-spacer="bottom"]').length,
+      rows: sh.querySelectorAll('[part="data-items"] oas-list-item').length,
+    }
+  })
+  expect(noViewport.reqs, '无视口不派发全量区间请求').toBe(0)
+  expect(noViewport.toSpacer + noViewport.bottomSpacer, '无视口不铺 total×rowH 巨量空白').toBe(0)
+  expect(noViewport.rows, '已装载切片照常渲染').toBe(10)
+
+  // 补上可测视口 → 按窗口请求 + 占位恢复
+  await page.evaluate(() => document.getElementById('qa-no-viewport')!.setAttribute('max-height', '120'))
+  await page.waitForFunction(() => (window as unknown as { __nvReqs: unknown[] }).__nvReqs.length > 0)
+  const after = await page.evaluate(() => {
+    const w = window as unknown as { __nvReqs: Array<{ start: number; end: number; reason: string }> }
+    const sh = document.getElementById('qa-no-viewport')!.shadowRoot!
+    return {
+      req: w.__nvReqs[w.__nvReqs.length - 1]!,
+      hasSpacer: sh.querySelectorAll('[data-spacer="top"]').length === 1,
+    }
+  })
+  expect(after.req.start, '有视口后请求可算区间').toBe(0)
+  expect(after.req.end).toBeGreaterThan(0)
+  expect(after.req.end).toBeLessThan(500)
+  expect(after.hasSpacer, '有视口后恢复占位').toBe(true)
 })

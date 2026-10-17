@@ -45,7 +45,8 @@ export interface KanbanColumnReorderDetail {
 // 宿主无高度约束时列体按内容自长（既有行为），虚拟化无意义——运行期由 isScrollViewport 判定。
 /** 视口高度下限：clientHeight 低于此视为不可测/无约束（happy-dom、列体未布局），回落全量渲染 */
 const MIN_MEASURABLE_VIEWPORT = 10
-/** 卡片预估步距（卡高 + 列内 gap）：动态行高实测回写前的初值 */
+/** 卡片预估步距默认值（卡高 + 列内 gap）：未实测卡片的兜底初值，可经 card-estimate 属性 /
+ *  --oas-kanban-card-step CSS 变量覆盖（属性 > 变量 > 此默认；唯一真源，经 cardEstimate() 进 HeightCache.configure） */
 const ESTIMATED_CARD_STEP = 68
 /** 上下预渲染卡数（缓冲，滚动方向切换不出现空白） */
 const CARD_WINDOW_BUFFER = 6
@@ -511,6 +512,9 @@ interface KanbanColumnCards {
  * - 拖放后改写数据并**回写 cards attribute**，同时派发 `oas-change`；
  * - `renderCard` property 函数在场时数据不反射回 attribute（内存持有，函数不可序列化）；
  * - 列重排回写 columns attribute（列定义无函数通道，恒反射）。
+ * - `card-estimate`：未测卡片的预估步距 px（默认 68；非法/≤0 回落默认）——列体虚拟化
+ *   首帧/未测区窗口与占位的估算基准，实测回写后自动收敛真值；亦可经 CSS 变量
+ *   `--oas-kanban-card-step` 兜底（属性优先于变量；变量变更经任一 update 通道生效）。
  *
  * 交互：
  * - 卡片 HTML5 DnD 拖拽：换列 + 列内排序；落点插入指示线；拖回原位零操作；
@@ -536,7 +540,7 @@ interface KanbanColumnCards {
  */
 export class OASKanban extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['columns', 'cards', 'empty-column-text', 'swimlane-by', 'dir']
+    return ['columns', 'cards', 'empty-column-text', 'swimlane-by', 'dir', 'card-estimate']
   }
 
   private _columns: KanbanColumn[] = []
@@ -588,6 +592,9 @@ export class OASKanban extends OASElement {
    *  窗口同步据此切片访问（O(窗口)），不再每帧对 _cards 全量 filter；列顺序/卡片顺序/
    *  data-index 绝对位次/拖拽落点/计数/WIP 语义与实时 filter 完全一致 */
   private columnIndex = new Map<string, number[]>()
+  /** 未测卡片预估步距的 CSS 变量兜底缓存（--oas-kanban-card-step 原文）：update() 时读一次，
+   *  滚动帧/实测回写热路径不再读样式（getComputedStyle 有强制样式计算开销，不进每帧） */
+  private cardStepVarCache: string | null = null
 
   get columns(): KanbanColumn[] {
     return this._columns
@@ -714,6 +721,11 @@ export class OASKanban extends OASElement {
   protected override update(): void {
     // RTL 逻辑方向化钩子：列重排落点/指示线/键盘 ←→/触屏按钮按 data-rtl 镜像（库先例）
     this.toggleAttribute('data-rtl', isRtl(this))
+    // 卡片预估步距的 CSS 变量兜底：update() 读一次并缓存（本方法内后续 configure/窗口/占位
+    // 全部走缓存值，滚动帧热路径不再碰 getComputedStyle）。CSS 变量无内建变更通知——宿主
+    // 改变量后经任一触发 update 的通道（属性/数据/locale/config/重连）自然重算窗口与占位
+    this.cardStepVarCache =
+      typeof getComputedStyle === 'function' ? getComputedStyle(this).getPropertyValue('--oas-kanban-card-step') : null
     // 数据重渲染前先关菜单（菜单项引用的列/卡序即将重建，防孤儿态）
     this.closeMenu()
     this.parse()
@@ -1073,6 +1085,26 @@ export class OASKanban extends OASElement {
 
   // ==================== 列体虚拟化内核（窗口计算 / 渲染 / 实测回写） ====================
 
+  /**
+   * 未测卡片的预估步距（px）：`card-estimate` 属性 > `--oas-kanban-card-step` CSS 变量 > 默认 68。
+   * 属性在场但非法/≤0 → 直接回落默认（显式非法视为宿主笔误，静默纠偏、不落变量兜底）；
+   * 变量仅在属性缺席时消费（原文取 update() 时的缓存，本方法可安全用于滚动帧热路径）。
+   * 唯一真源：结果只进 HeightCache.configure，窗口/占位/padding 一律经高度表派生。
+   */
+  private cardEstimate(): number {
+    const attrRaw = this.getAttribute('card-estimate')
+    if (attrRaw != null) {
+      const n = Number(attrRaw)
+      return Number.isFinite(n) && n > 0 ? n : ESTIMATED_CARD_STEP
+    }
+    const raw = this.cardStepVarCache?.trim() ?? ''
+    if (raw !== '') {
+      const n = Number.parseFloat(raw)
+      if (Number.isFinite(n) && n > 0) return n
+    }
+    return ESTIMATED_CARD_STEP
+  }
+
   private ensureColumnState(key: string): KanbanColumnVirtualState {
     let state = this.columnStates.get(key)
     if (!state) {
@@ -1118,7 +1150,7 @@ export class OASKanban extends OASElement {
     opts: { force?: boolean; scrollTop?: number } = {},
   ): boolean {
     const state = this.ensureColumnState(key)
-    state.cache.configure(cards.length, ESTIMATED_CARD_STEP)
+    state.cache.configure(cards.length, this.cardEstimate())
     const vh = body.clientHeight
     let mode: KanbanColumnVirtualState['mode'] = 'full'
     let start = 0
@@ -1222,7 +1254,15 @@ export class OASKanban extends OASElement {
     return el
   }
 
-  /** 列体滚动：rAF 合帧后按各列新滚动位置重算窗口（同帧多次滚动合并为一次） */
+  /**
+   * 列体滚动：同步重算窗口（不经 rAF）。
+   *
+   * 浏览器对 scroll 事件本就按帧合流（同一元素一帧至多派发一次），再经 rAF 合帧没有任何
+   * 合并收益，反而把窗口重算推迟到下一帧：程序化跳滚（scrollTo / 滚动条大幅跳滚）把
+   * scrollTop 一步拉远后，本帧按旧窗口上屏——视口整个落在占位区，出现整帧空白（真浏览器
+   * 实测，三列同时跳滚时逐列复现；连续滚轮因逐帧位移小而无感）。同步重算读的就是事件
+   * 派发时刻的实时 scrollTop，每帧至多一次 O(窗口) 重建，成本与 rAF 合帧相同、少一帧空白。
+   */
   private handleColumnScroll = (e: Event): void => {
     const body = e.currentTarget as HTMLElement | null
     const key = body?.closest('.column')?.getAttribute('data-key')
@@ -1231,10 +1271,14 @@ export class OASKanban extends OASElement {
     // 可能中断拖拽。目标列不受限（自动滚动继续出卡）；落点位次由卡片 data-index 绝对口径计算，
     // 不依赖窗口外 DOM，故冻结不静默失效；拖拽结束（handleDragEnd）补做一次重算把跳过的滚动回正
     if (this.dragIds.length > 0 && this.dragSourceColumns.has(key)) return
-    this.scheduleVirtualSync([key])
+    this.syncColumnWindow(key)
   }
 
-  /** 合帧调度列体窗口重算：keys 为空表示「全部列」（板体尺寸变化） */
+  /**
+   * 合帧调度列体窗口重算（板体尺寸变化 / 拖拽结束补算 / update 收尾等非滚动触发源：
+   * 这些来源可能同帧批量触发，保留 rAF 合帧；滚动路径不经此处——见 handleColumnScroll）。
+   * keys 为空表示「全部列」（板体尺寸变化）。
+   */
   private scheduleVirtualSync(keys: string[]): void {
     if (keys.length === 0) for (const key of this.columnStates.keys()) this.pendingVirtualColumns.add(key)
     else for (const key of keys) this.pendingVirtualColumns.add(key)

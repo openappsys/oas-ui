@@ -164,6 +164,23 @@
       "type": "string",
       "default": "",
       "observed": true
+    },
+    {
+      "name": "windowed",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "total",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "window-start",
+      "type": "string",
+      "default": "0",
+      "observed": true
     }
   ],
   "props": [
@@ -202,6 +219,10 @@
     {
       "name": "oas-node-drop",
       "detail": "{ dragKey: this.dragKey, dropKey: '', position: 'inner', } | { dragKey, dropKey: id, position }"
+    },
+    {
+      "name": "oas-window-request",
+      "detail": "{ start: need.start, end: need.end, reason } | { start: need.start, end: need.end, reason: 'scroll' }"
     },
     {
       "name": "oas-node-render",

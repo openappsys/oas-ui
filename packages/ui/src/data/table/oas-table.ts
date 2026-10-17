@@ -414,9 +414,17 @@ tr.row[data-stripe='odd'] td[data-fixed='left'],
 tr.row[data-stripe='odd'] td[data-fixed='right'] {
   background: var(--oas-color-bg-hover);
 }
+/* 选中行底色（单点定义，固定列/吸顶行复用）：primary 混入「抬升表面」这一层主题表面，
+   颜色随 token 自动适配——light 下 bg-elevated 与 bg 同为白（观感与既有 8% 淡染基本一致），
+   dark 下 bg-elevated 比 bg 亮一档，同一混合在暗底上获得可辨对比（原 8% 混 transparent
+   叠在暗底上几乎看不见）。不得改为硬编码色值或 :host-context（后者已从规范移除且本库禁用）。 */
+tr.row[data-selected='true'],
+tr[data-sticky='true'][data-selected='true'] {
+  --_row-selected-bg: color-mix(in srgb, var(--oas-color-primary) 10%, var(--oas-color-bg-elevated));
+}
 tr.row[data-selected='true'] td[data-fixed='left'],
 tr.row[data-selected='true'] td[data-fixed='right'] {
-  background: var(--oas-color-primary-soft, color-mix(in srgb, var(--oas-color-primary) 8%, transparent));
+  background: var(--_row-selected-bg);
 }
 td {
   padding: var(--_cell-py) var(--_cell-px);
@@ -458,7 +466,7 @@ tr.row:hover td[data-fixed='right'] {
   background: var(--_row-hover-bg, var(--oas-color-bg-hover));
 }
 tr.row[data-selected='true'] td {
-  background: var(--oas-color-primary-soft, color-mix(in srgb, var(--oas-color-primary) 8%, transparent));
+  background: var(--_row-selected-bg);
 }
 /* 虚拟滚动：占位行与定高行 */
 .table-scroll[data-virtual='true'] td {
@@ -564,7 +572,7 @@ tr[data-sticky='true'][data-stripe='odd'] td {
   background: var(--oas-color-bg-hover);
 }
 tr[data-sticky='true'][data-selected='true'] td {
-  background: var(--oas-color-primary-soft, color-mix(in srgb, var(--oas-color-primary) 8%, transparent));
+  background: var(--_row-selected-bg);
 }
 tr[data-sticky='true'] td[data-fixed] {
   z-index: 4;
@@ -574,7 +582,7 @@ tr[data-sticky='true'][data-stripe='odd'] td[data-fixed] {
   background: var(--oas-color-bg-hover);
 }
 tr[data-sticky='true'][data-selected='true'] td[data-fixed] {
-  background: var(--oas-color-primary-soft, color-mix(in srgb, var(--oas-color-primary) 8%, transparent));
+  background: var(--_row-selected-bg);
 }
 tr[data-sticky='true']:hover td {
   background: var(--_row-hover-bg, var(--oas-color-bg-hover));

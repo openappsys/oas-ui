@@ -3,7 +3,19 @@ import { isRtl } from '../../shared/direction.js'
 import { normalizeSizeStrict, ALL_SIZES } from '../../shared/size.js'
 // 注册 oas-virtual-list（OASVirtualList 仅作类型用，需裸 import 保住注册副作用）
 import '../virtual-list/index.js'
+import { computeVirtualWindow } from '../virtual-list/oas-virtual-list.js'
 import type { OASVirtualList } from '../virtual-list/index.js'
+// 服务端行窗口协议（windowed 模式）：与宿主交换根节点区间的共享契约（类型 + 纯工具），
+// 与 oas-table 同源（tree 是层级数据，窗口只对根节点切片，见类注释）
+import {
+  ROW_WINDOW_EVENT,
+  WINDOW_MARGIN,
+  expandWindow,
+  readWindowedMode,
+  sameWindow,
+  windowCovered,
+  type WindowRequestReason,
+} from '../../shared/window-data.js'
 // 共享树内核：flatten/字段归一 + 勾选级联 + 懒加载状态机 + 模板克隆（与 oas-tree-select 同一实现）
 import {
   resolveFieldNames,
@@ -20,6 +32,10 @@ import {
 } from './shared/index.js'
 import type { ResolvedFields, TreeAccessors, TreeModel, FlatRow, CheckStrategy } from './shared/index.js'
 import { devWarn } from '../../shared/dev-warn.js'
+
+/** 编译期一致性：emit 用的字面量 `'window-request'`（拼 `oas-` 前缀）须与共享契约常量一致 */
+const _ROW_WINDOW_EVENT_CHECK: typeof ROW_WINDOW_EVENT = 'oas-window-request'
+void _ROW_WINDOW_EVENT_CHECK
 
 export interface TreeNode {
   key: string
@@ -418,6 +434,14 @@ function warnInvalidTreeSize(raw: string): void {
  * - 字段别名 `field-names`（key/label/children/disabled/isLeaf/loaded）在数据入口归一化。
  *
  * 虚拟化（可选）：设置 `height`（视口高度 px）后经内嵌 oas-virtual-list 仅渲染窗口行。
+ *
+ * windowed（服务端根节点窗口协议，可选）：`windowed` + `total`（全量根节点数）+
+ * `window-start`（`data[0]` 的绝对根下标）三属性齐全（total 为正数）时生效。
+ * tree 是层级数据，窗口只对**根节点**切片：`data` 仅承载 `[window-start, window-start + data.length)`
+ * 的根节点，子节点随根完整携带（懒加载行为不变）。组件把「已装载切片展平后的可视行窗口」反推成
+ * 可见根区间，前后各扩 WINDOW_MARGIN 个根节点；未被已装载根区间覆盖时派发 `oas-window-request`
+ * （detail `{ start, end, reason }`，半开、绝对根下标），同一期望区间不重复派发、被覆盖后复位。
+ * 非 windowed 模式行为完全不变。详见 shared/window-data.ts 契约。
  */
 export class OASTree extends OASElement {
   static override get observedAttributes(): string[] {
@@ -453,6 +477,13 @@ export class OASTree extends OASElement {
       // check-all：顶部整树全选项行（三态 indeterminate）；check-all-label 覆盖缺省文案
       'check-all',
       'check-all-label',
+      // windowed：服务端根节点窗口模式开关（配合 total / window-start）。data 只承载根节点切片，
+      // 期望根窗口请求经 oas-window-request 与宿主交换，见 shared/window-data.ts 契约
+      'windowed',
+      // windowed：全量根节点数（根级 aria-setsize 亦用此全量口径）
+      'total',
+      // windowed：data[0] 在全量根节点中的绝对根下标
+      'window-start',
       // dir：全局约定属性（不进 API 表），运行时切方向即时重判定
       'dir',
     ]
@@ -494,6 +525,38 @@ export class OASTree extends OASElement {
   private syncingExpanded = false
   /** id → 父 id（auto-expand-parent / 键盘回父级用，update 时重建） */
   private parentIndex = new Map<string, string>()
+
+  // ---------- windowed：服务端根节点窗口协议 ----------
+
+  /** windowed 模式解析缓存（update 时刷新）：windowed/total/windowStart/loaded 区间 */
+  private winMode: ReturnType<typeof readWindowedMode> = readWindowedMode(false, 0, 0, 0)
+  /** windowed：最近一次派发的期望区间（同 need 去重；被覆盖后重置允许再派，同 table 惯例） */
+  private winReq: { start: number; end: number } | null = null
+  /** windowed：首帧 init 请求是否已派发（之后 data/total/window-start 变更走 data 原因） */
+  private winInitDone = false
+  /** windowed：vlist 最近一次上报的 scrollTop（可见行窗口反推的滚动输入；初始 0） */
+  private lastScrollTop = 0
+  /** windowed：视口尺寸变化监听（reason=resize；ResizeObserver 缺失环境静默跳过） */
+  private windowResizeObserver: ResizeObserver | null = null
+  /** 可见行 → 切片内根序映射（DFS 前序归属；windowed 反推根区间用，update 时重建） */
+  private visibleRootIndex: number[] = []
+  /** 每节点 aria-setsize/posinset 元数据（根用全量口径、子用同级已装载数；update 时重建） */
+  private ariaMeta = new Map<string, { setsize: number; posinset: number }>()
+
+  // ---------- windowed 复审修复：禁用告警去重 + 回填滚动锚定 ----------
+
+  /** windowed：本地过滤禁用告警去重（实例级一次；同 table windowed 跨全量本地操作禁用惯例） */
+  private windowedFilterWarned = false
+  /** windowed：check-all 禁用告警去重（实例级一次） */
+  private windowedCheckAllWarned = false
+  /** windowed：切片越 total（aria-posinset 越界夹取）告警去重（实例级一次；对齐 table/resource） */
+  private windowedSliceWarned = false
+  /** windowed：回填批次滚动锚定（捕获一次、微任务应用；见 captureWindowAnchor/applyWindowAnchor） */
+  private winAnchor: { key: string; absRoot: number; oldWs: number; scrollTop: number } | null = null
+  /** windowed：锚定微任务在途标记（先 data 后 window-start 的批量回填只保留批次前锚点） */
+  private winAnchorQueued = false
+  /** windowed：上一轮窗口签名（ws:切片根数）；变化才捕获锚点（同值重设不抖动） */
+  private prevWinSig: string | null = null
 
   // ---------- 内联重命名状态 ----------
 
@@ -555,6 +618,13 @@ export class OASTree extends OASElement {
       if (detail && detail.item && detail.element) {
         this.renderRow(detail.item, detail.element)
       }
+    }) as EventListener)
+    // windowed：vlist 滚动上报（rAF 节流）→ 记 scrollTop 并反推可见根区间按需请求（reason=scroll）
+    this.vlist?.addEventListener('oas-scroll', ((e: CustomEvent<{ scrollTop: number; start: number; end: number }>) => {
+      const detail = e.detail
+      if (!detail || !Number.isFinite(detail.scrollTop)) return
+      this.lastScrollTop = detail.scrollTop
+      this.requestWindowIfNeeded('scroll')
     }) as EventListener)
     // 根容器拖放：拖到空白处视为移入根（dropKey 为空字符串、position 'inner'）
     const wrap = this.shadow.querySelector<HTMLElement>('.tree')
@@ -676,7 +746,9 @@ export class OASTree extends OASElement {
   }
 
   private filtering(): boolean {
-    return this.getAttr('filter', '').trim() !== ''
+    // windowed：本地过滤禁用（组件只持有已装载切片，切片上过滤结果会错漏）——filter 属性
+    // 忽略不应用（dev 告警一次见 update），全量过滤由宿主负责（对齐 table 同口径）
+    return !this.winMode.windowed && this.getAttr('filter', '').trim() !== ''
   }
 
   private matchesQuery(node: TreeNode): boolean {
@@ -813,6 +885,25 @@ export class OASTree extends OASElement {
     this.toggleAttribute('data-rtl', isRtl(this))
     this.parseFieldNames()
     this.parseData()
+    // windowed 模式解析：windowed 属性在场且 total 为合法正数才生效
+    //（total 为 0 / 非法 → 回落普通模式，行为不变）；退出 windowed 时重置首帧 init 标记
+    const prevMode = this.winMode
+    this.winMode = readWindowedMode(
+      this.hasAttr('windowed'),
+      Number(this.getAttr('total', '')),
+      Number(this.getAttr('window-start', '0')),
+      this._data.length,
+    )
+    if (!this.winMode.windowed) this.winInitDone = false
+    // windowed：本地过滤禁用（filtering() 已按 windowed 短路）→ 配置在场 dev 告警一次
+    if (this.winMode.windowed && this.getAttr('filter', '').trim() !== '' && !this.windowedFilterWarned) {
+      this.windowedFilterWarned = true
+      devWarn(
+        '[oas-tree] windowed 模式下本地过滤不执行（filter 只作用于已装载切片，结果会错漏）：已忽略 filter，全量过滤由宿主负责（自行过滤后回填 data）',
+      )
+    }
+    // windowed × 虚拟：切片/窗口变更批次的滚动锚定捕获（微任务应用，见 captureWindowAnchor）
+    this.captureWindowAnchor(prevMode)
     this.model = flattenModel(this._data, this.acc)
     releaseLoading(this.model, this.acc, this.loading)
     this.rebuildParentIndex()
@@ -834,6 +925,9 @@ export class OASTree extends OASElement {
       }
     }
     this.visible = this.visibleRows()
+    this.buildVisibleRootIndex()
+    // aria 元数据基于本轮可见集构建（过滤态按可见集计数，须在 visible 就绪后执行）
+    this.buildAriaMeta()
     this.syncCheckAll()
     // 编辑行从可见集消失（数据/过滤变化）→ 静默退出编辑，防悬挂草稿态
     if (this.rename && !this.visible.some((r) => this.acc.idOf(r.node) === this.rename!.key)) {
@@ -868,6 +962,8 @@ export class OASTree extends OASElement {
       this.vlist?.classList.toggle('motion', this.hasAttr('motion'))
       this.vlist?.classList.toggle('block-node', blockNode)
       this.vlist?.setAttribute('data-size', normalized.value)
+      // windowed：空可见集若非过滤所致（切片未装载/空切片），按需请求初始窗口
+      if (!this.filtering()) this.syncWindowRequest()
       return
     }
     emptyEl.hidden = true
@@ -886,8 +982,10 @@ export class OASTree extends OASElement {
       this.vlist.setAttribute('height', this.getAttr('height', '360'))
       this.vlist.setAttribute('item-height', this.getAttr('row-height', '32'))
       this.vlist.items = this.visible
+      this.syncVirtualTreeAria(true)
       this.syncRoving()
       this.syncRenameFocus()
+      this.syncWindowRequest()
       return
     }
     if (this.vlist) {
@@ -895,6 +993,7 @@ export class OASTree extends OASElement {
       this.vlist.removeAttribute('items-role')
       this.vlist.removeAttribute('item-role')
       this.vlist.removeAttribute('aria-label')
+      this.syncVirtualTreeAria(false)
     }
     wrap.innerHTML = ''
     const checked = this.internalChecked()
@@ -909,6 +1008,253 @@ export class OASTree extends OASElement {
     }
     this.syncRoving()
     this.syncRenameFocus()
+    this.syncWindowRequest()
+  }
+
+  // ==================== windowed：服务端根节点窗口协议（oas-window-request） ====================
+
+  /**
+   * 行级 ARIA 元数据（aria-setsize / aria-posinset，renderRow 消费）：
+   * - 根节点全量口径：windowed 下 setsize=total、posinset=windowStart+切片内根序+1（绝对根序）；
+   *   非 windowed setsize=根节点总数、posinset=根序；
+   * - 过滤态（非 windowed；windowed 下本地过滤已禁用）基于**可见集**（命中 + 祖先 + 命中子树）
+   *   计数——读屏不把全量当展示集（根 setsize=可见根数/posinset=可见根序，子级同级可见口径）；
+   * - 子节点用同级已装载兄弟数（windowed 只保证根级绝对口径，文档约定口径）。
+   * 同 key 重复时后写覆盖前写（与 model.byId 的同 key 覆盖行为一致）。
+   * windowed 切片越 total（windowStart + 装载根数 > total）时绝对 posinset 会超过 setsize=total，
+   * 夹到 [1, total] 并 devWarn 一次（渲染行为不变，仅修正读屏元数据；对齐 table/resource 口径）。
+   */
+  private buildAriaMeta(): void {
+    this.ariaMeta.clear()
+    if (this.filtering()) {
+      // 过滤态：可见集计数（visibleRows 已是「命中 + 祖先 + 命中子树」口径）
+      const vis = new Set(this.visible.map((r) => this.acc.idOf(r.node)))
+      const visibleRoots = this._data.filter((n) => vis.has(this.acc.idOf(n)))
+      const rootSetsize = visibleRoots.length
+      visibleRoots.forEach((node, i) => {
+        this.ariaMeta.set(this.acc.idOf(node), { setsize: rootSetsize, posinset: i + 1 })
+        const walk = (list: TreeNode[]): void => {
+          const sibs = list.filter((c) => vis.has(this.acc.idOf(c)))
+          sibs.forEach((child, j) => {
+            this.ariaMeta.set(this.acc.idOf(child), { setsize: sibs.length, posinset: j + 1 })
+            const kids = this.acc.childrenOf(child)
+            if (kids?.length) walk(kids)
+          })
+        }
+        const kids = this.acc.childrenOf(node)
+        if (kids?.length) walk(kids)
+      })
+      return
+    }
+    const windowed = this.winMode.windowed
+    const setsize = windowed ? this.winMode.total : this._data.length
+    const rootOffset = windowed ? this.winMode.windowStart : 0
+    this._data.forEach((node, i) => {
+      let posinset = rootOffset + i + 1
+      if (posinset > setsize) {
+        posinset = setsize
+        if (!this.windowedSliceWarned) {
+          this.windowedSliceWarned = true
+          devWarn(
+            `[oas-tree] windowed 切片超出全量范围（window-start ${this.winMode.windowStart} + 装载 ${this._data.length} 根 > total ${this.winMode.total}），越界根的 aria-posinset 已夹到 total`,
+          )
+        }
+      }
+      this.ariaMeta.set(this.acc.idOf(node), { setsize, posinset })
+      const walk = (list: TreeNode[]): void => {
+        list.forEach((child, j) => {
+          this.ariaMeta.set(this.acc.idOf(child), { setsize: list.length, posinset: j + 1 })
+          const kids = this.acc.childrenOf(child)
+          if (kids?.length) walk(kids)
+        })
+      }
+      const kids = this.acc.childrenOf(node)
+      if (kids?.length) walk(kids)
+    })
+  }
+
+  /** 可见行 → 切片内根序映射：DFS 前序里 depth=0 即进入新根；根行后随子行都归属该根 */
+  private buildVisibleRootIndex(): void {
+    this.visibleRootIndex = new Array(this.visible.length)
+    let cur = -1
+    for (let i = 0; i < this.visible.length; i++) {
+      const row = this.visible[i]!
+      if (row.depth === 0) cur++
+      this.visibleRootIndex[i] = cur
+    }
+  }
+
+  /**
+   * windowed × 虚拟：切片/窗口变更批次的滚动锚定捕获（C2 回归）。
+   * vlist 的 scrollTop 是**切片本地坐标**——window-start 变化的回填若不补偿，会把视口跳到
+   * 错误的绝对根（实测扩窗回填后首行 k111→k103）。宿主回填是「先 data 后 window-start」
+   * 两次 setAttribute（两次 update），本方法在首轮 update 捕获**批次前**的视口锚点一次
+   * （在途锚定的后续 update 不重复捕获），微任务（批次同步属性全部落定后）应用：
+   * ① 视口首行 key 在新切片中的新本地序 → scrollToIndex 滚回视口顶部；
+   * ② key 丢失（宿主换数据）→ 按锚点绝对根序找该根首行滚回；
+   * ③ 根也不在切片内 → 按 (oldWs-newWs)×行高 兜底位移（夹到有效滚动区间）。
+   * 视口在切片顶（scrollTop 0）时不锚定：此时「视口顶 = 已装载切片首行」，回填后保持
+   * 切片顶语义正确（init 回填链即在切片顶收敛），锚定反而会用陈旧绝对根拉跑收敛。
+   */
+  private captureWindowAnchor(prevMode: ReturnType<typeof readWindowedMode>): void {
+    const mode = this.winMode
+    const virtual = this.getAttr('height', '') !== ''
+    if (!mode.windowed || !prevMode.windowed || !virtual) {
+      this.prevWinSig = null
+      return
+    }
+    const sig = `${mode.windowStart}:${this._data.length}`
+    if (sig === this.prevWinSig) return
+    this.prevWinSig = sig
+    if (this.winAnchorQueued) return
+    if (this.lastScrollTop <= 0) return
+    if (this.visible.length === 0 || this.visibleRootIndex.length === 0) return
+    const ih = Number(this.getAttr('row-height', '32')) || 32
+    const top = Math.min(Math.max(0, Math.floor(this.lastScrollTop / ih)), this.visible.length - 1)
+    this.winAnchor = {
+      key: this.acc.idOf(this.visible[top]!.node),
+      absRoot: prevMode.windowStart + (this.visibleRootIndex[top] ?? 0),
+      oldWs: prevMode.windowStart,
+      scrollTop: this.lastScrollTop,
+    }
+    this.winAnchorQueued = true
+    queueMicrotask(() => {
+      this.winAnchorQueued = false
+      const anchor = this.winAnchor
+      this.winAnchor = null
+      if (anchor) this.applyWindowAnchor(anchor)
+    })
+  }
+
+  /** 应用滚动锚定（回填批次落定后）：优先同 key → 绝对根序 → ws 位移兜底，见 captureWindowAnchor */
+  private applyWindowAnchor(a: { key: string; absRoot: number; oldWs: number; scrollTop: number }): void {
+    const vlist = this.vlist
+    if (!vlist || vlist.hidden || !this.isConnected) return
+    if (!this.winMode.windowed || this.getAttr('height', '') === '') return
+    if (this.visible.length === 0 || this.visibleRootIndex.length === 0) return
+    // ① 同 key 锚定：视口首行仍在切片内 → 新本地序滚回视口顶部
+    const keyIdx = this.visibleKeys().indexOf(a.key)
+    if (keyIdx >= 0) {
+      vlist.scrollToIndex(keyIdx, { align: 'start' })
+      return
+    }
+    // ② 绝对根锚定：key 丢失（宿主换数据）但锚点根仍在切片内 → 该根首行滚回顶部
+    const localRoot = a.absRoot - this.winMode.windowStart
+    if (localRoot >= 0 && localRoot < this.visibleRootIndex.length) {
+      const rowIdx = this.visibleRootIndex.indexOf(localRoot)
+      if (rowIdx >= 0) {
+        vlist.scrollToIndex(rowIdx, { align: 'start' })
+        return
+      }
+    }
+    // ③ 兜底：按窗口位移 × 行高补偿（内容随 ws 前移而相对上移，scrollTop 反向补），夹到有效区间
+    const ih = Number(this.getAttr('row-height', '32')) || 32
+    const target = a.scrollTop + (a.oldWs - this.winMode.windowStart) * ih
+    const rowIdx = Math.min(this.visible.length - 1, Math.max(0, Math.round(target / ih)))
+    vlist.scrollToIndex(rowIdx, { align: 'start' })
+  }
+
+  /**
+   * 虚拟路径 role=tree 容器（vlist .items，经 items-role 透传）的 aria-multiselectable
+   * 与非虚拟 .tree 容器同口径同步（multiple/checkable 支持多选时置 true）。
+   * 注：vlist 属性/items 变更同步 update，设置 items 后查询 shadow 内容器即已就位。
+   */
+  private syncVirtualTreeAria(virtual: boolean): void {
+    const itemsEl = this.vlist?.shadowRoot?.querySelector<HTMLElement>('.items')
+    if (!itemsEl) return
+    if (virtual && (this.hasAttr('multiple') || this.hasAttr('checkable'))) {
+      itemsEl.setAttribute('aria-multiselectable', 'true')
+    } else {
+      itemsEl.removeAttribute('aria-multiselectable')
+    }
+  }
+
+  /** windowed：本轮渲染后的按需请求（首帧 reason=init，之后 data/total/window-start 变更走 data） */
+  private syncWindowRequest(): void {
+    if (!this.winMode.windowed) return
+    this.requestWindowIfNeeded(this.winInitDone ? 'data' : 'init')
+    this.winInitDone = true
+    this.setupWindowResize()
+  }
+
+  /**
+   * 按可视行窗口反推期望根区间并按需派发 `oas-window-request`（detail `{ start, end, reason }`，
+   * 半开、绝对根下标）。与 oas-table 同一套去重语义：同一期望区间不重复派发；期望区间被已装载
+   * 区间覆盖时重置去重状态（之后覆盖情况变化可对同一区间再派）。
+   * 非虚拟（无 height）windowed：全部已装载行即视口内容，没有滚动进入未装载区的通道——
+   * 不外扩请求（否则「请求 margin → 装载 → 更大 margin」发散），初始装载由宿主自理。
+   */
+  private requestWindowIfNeeded(reason: WindowRequestReason): void {
+    const mode = this.winMode
+    if (!mode.windowed) return
+    if (this.getAttr('height', '') === '') return
+    const need = this.expectedRootWindow(this.visibleRowWindow())
+    if (windowCovered(need, mode.loaded)) {
+      this.winReq = null
+      return
+    }
+    if (sameWindow(need, this.winReq)) return
+    // 先记后派：监听器同步回填时去重状态已就位
+    this.winReq = { start: need.start, end: need.end }
+    this.emit('window-request', { start: need.start, end: need.end, reason })
+  }
+
+  /** 可见行窗口（相对已装载切片展平后的 visible 行序）：按 vlist 同款定高模型自算（同 buffer 默认） */
+  private visibleRowWindow(): { start: number; end: number } {
+    const vh = Number(this.getAttr('height', '360')) || 360
+    const ih = Number(this.getAttr('row-height', '32')) || 32
+    return computeVirtualWindow(this.lastScrollTop, vh, ih, this.visible.length)
+  }
+
+  /**
+   * 由可见行窗口反推期望根区间：可见行按 DFS 归属到根（visibleRootIndex）得可见根区间，
+   * 前后各扩 WINDOW_MARGIN 个**根节点**、夹到 [0, total)。可见集为空（切片未装载，首帧 init）
+   * 时无从反推可视根，改按「视口容量」估算根数（见 estimateViewportCapacity），
+   * init 一次请求即覆盖「一屏 + buffer + margin」，宿主一次回填即可满足。
+   */
+  private expectedRootWindow(rowWin: { start: number; end: number }): { start: number; end: number } {
+    const mode = this.winMode
+    let rootFrom: number
+    let rootTo: number // 切片内根序，半开
+    if (this.visible.length === 0 || this.visibleRootIndex.length === 0) {
+      rootFrom = 0
+      rootTo = this.estimateViewportCapacity()
+    } else {
+      const s = Math.min(Math.max(0, rowWin.start), this.visible.length - 1)
+      const e = Math.min(Math.max(rowWin.end, s + 1), this.visible.length)
+      rootFrom = this.visibleRootIndex[s] ?? 0
+      rootTo = (this.visibleRootIndex[e - 1] ?? 0) + 1
+    }
+    return expandWindow(mode.windowStart + rootFrom, mode.windowStart + rootTo, mode.total, WINDOW_MARGIN)
+  }
+
+  /**
+   * 空切片（首帧未装载）时的估算可见根容量：ceil(视口高/行高) + vlist 上下预渲染 buffer。
+   * buffer 与 oas-virtual-list 的 `buffer` 属性默认值 4 同源（树未覆写该属性，见其 bufferSize）；
+   * 若 vlist 默认值调整需同步此处，保证 init 请求量与首帧实际渲染窗口一致。
+   */
+  private estimateViewportCapacity(): number {
+    const vh = Number(this.getAttr('height', '360')) || 360
+    const ih = Number(this.getAttr('row-height', '32')) || 32
+    return Math.ceil(vh / ih) + 4
+  }
+
+  /** windowed：视口尺寸变化 → 可见行数变化 → 按需请求（reason=resize）；observer 只挂一次 */
+  private setupWindowResize(): void {
+    if (this.windowResizeObserver || !this.winMode.windowed || this.getAttr('height', '') === '') return
+    if (typeof ResizeObserver === 'undefined') return
+    const target = this.vlist
+    if (!target) return
+    const ro = new ResizeObserver(() => {
+      if (!this.isConnected) return
+      this.requestWindowIfNeeded('resize')
+    })
+    ro.observe(target)
+    this.windowResizeObserver = ro
+    this.onCleanup(() => {
+      ro.disconnect()
+      this.windowResizeObserver = null
+    })
   }
 
   // ---------- 行渲染（虚拟/非虚拟共用） ----------
@@ -938,9 +1284,18 @@ export class OASTree extends OASElement {
     row.setAttribute('part', 'row')
     row.setAttribute('role', 'treeitem')
     row.setAttribute('aria-level', String(depth + 1))
+    // aria-setsize / aria-posinset：根节点用全量口径（windowed=total + 绝对根序；
+    // 非 windowed=根节点总数 + 根序），子节点用同级已装载兄弟数（update 时预构建）
+    const meta = this.ariaMeta.get(id)
+    if (meta) {
+      row.setAttribute('aria-setsize', String(meta.setsize))
+      row.setAttribute('aria-posinset', String(meta.posinset))
+    }
     row.setAttribute('data-key', id)
     row.setAttribute('data-disabled', String(this.nodeDisabled(node)))
     row.setAttribute('data-selected', String(isSelected))
+    // 选择态 ARIA 与 data-selected 同步（role=treeitem 上 aria-selected 合法）
+    row.setAttribute('aria-selected', String(isSelected))
     row.tabIndex = -1
 
     // 缩进占位（tree-lines 时渲染为引导竖线；占位恒在保证行结构稳定）
@@ -1101,7 +1456,20 @@ export class OASTree extends OASElement {
   private syncCheckAll(): void {
     const row = this.shadow.querySelector<HTMLElement>('.check-all')
     if (!row) return
-    const on = this.hasAttr('check-all') && this.hasAttr('checkable')
+    // windowed：全选只覆盖已装载切片（非全量语义，结果会错漏）→ 禁用顶部全选项并告警一次；
+    // 全选由宿主在全量数据上处理（不产生错误的本地全选结果）
+    if (
+      this.winMode.windowed &&
+      this.hasAttr('check-all') &&
+      this.hasAttr('checkable') &&
+      !this.windowedCheckAllWarned
+    ) {
+      this.windowedCheckAllWarned = true
+      devWarn(
+        '[oas-tree] windowed 模式下 check-all 只覆盖已装载切片（全选结果会错漏），已禁用顶部全选项；全选由宿主在全量数据上处理',
+      )
+    }
+    const on = this.hasAttr('check-all') && this.hasAttr('checkable') && !this.winMode.windowed
     row.hidden = !on
     if (!on) return
     const box = row.querySelector<HTMLInputElement>('.check-all-check')
@@ -1637,6 +2005,12 @@ export class OASTree extends OASElement {
   private onTreeFocusOut = (): void => {
     // 焦点可能在本轮 update 重建后短暂悬空，统一到下一帧判定
     queueMicrotask(() => {
+      // 组件已断连（宿主整树移除）：焦点判定无意义，且部分环境（happy-dom）下
+      // 断连后读 shadow.activeElement 会抛——直接置 false 收场
+      if (!this.isConnected) {
+        this.focusInside = false
+        return
+      }
       this.focusInside = this.containsActiveRow()
     })
   }
@@ -1675,9 +2049,11 @@ export class OASTree extends OASElement {
     if (key === 'ArrowDown') {
       e.preventDefault()
       this.navTo(cur, 1, keys)
+      this.requestWindowForEdge(true)
     } else if (key === 'ArrowUp') {
       e.preventDefault()
       this.navTo(cur, -1, keys)
+      this.requestWindowForEdge(false)
     } else if (key === (isRtl(this) ? 'ArrowLeft' : 'ArrowRight')) {
       // 展开/深入键：RTL 镜像（展开箭头视觉朝向随书写方向翻转）
       e.preventDefault()
@@ -1704,9 +2080,11 @@ export class OASTree extends OASElement {
     } else if (key === 'Home') {
       e.preventDefault()
       this.navTo(-1, 1, keys)
+      this.requestWindowForEdge(false)
     } else if (key === 'End') {
       e.preventDefault()
       this.navTo(keys.length, -1, keys)
+      this.requestWindowForEdge(true)
     } else if (key === ' ') {
       e.preventDefault()
       const id = keys[cur]!
@@ -1741,6 +2119,34 @@ export class OASTree extends OASElement {
     }
     if (i < 0 || i >= len) return
     this.focusRowByKey(keys[i]!)
+  }
+
+  /**
+   * windowed：键盘导航落在切片边缘行（末行 ↓/End、首行 ↑/Home）时请求相邻根区间
+   * （need 覆盖目标根 ± WINDOW_MARGIN，reason=scroll，对齐 gantt/table 口径）——
+   * 越出已装载切片不得静默无响应。目标越全量边界、need 已被装载或在途请求覆盖、
+   * 同 need 去重时零行为。非虚拟 windowed 同样生效（键盘是显式进入未装载区的通道，
+   * need 定界 + 去重，无「请求 margin → 更大 margin」发散）。
+   */
+  private requestWindowForEdge(forward: boolean): void {
+    const mode = this.winMode
+    if (!mode.windowed) return
+    if (this.rovingKey === null) return
+    const keys = this.visibleKeys()
+    if (keys.length === 0) return
+    const atEdge = forward ? keys[keys.length - 1] === this.rovingKey : keys[0] === this.rovingKey
+    if (!atEdge) return
+    const target = forward ? mode.loaded.end : mode.windowStart - 1
+    if (target < 0 || target >= mode.total) return
+    const need = expandWindow(target, target + 1, mode.total, WINDOW_MARGIN)
+    if (windowCovered(need, mode.loaded)) return
+    // 已有在途请求覆盖目标 → 不重派（宿主回填后即可达，非静默）
+    const pending = this.winReq
+    if (pending !== null && pending.start <= need.start && need.end <= pending.end) return
+    if (sameWindow(need, this.winReq)) return
+    // 先记后派：监听器同步回填时去重状态已就位
+    this.winReq = { start: need.start, end: need.end }
+    this.emit('window-request', { start: need.start, end: need.end, reason: 'scroll' })
   }
 
   private applyRovingTabIndex(): void {

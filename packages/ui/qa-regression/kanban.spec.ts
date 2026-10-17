@@ -495,3 +495,172 @@ test('kanban 虚拟化读屏全量口径：卡片 aria-posinset 绝对位次 + a
   expect(r.allAbsolute, '窗口内全部卡片 posinset=绝对位次（非窗口内相对序）').toBe(true)
   expect(r.allFullSetsize, '窗口内全部卡片 setsize=列全量').toBe(true)
 })
+
+// ===== 程序化跳滚同步（回归：scroll→rAF 合帧曾把窗口重算推迟一帧）=====
+// 缺陷：scrollTo / 滚动条大幅跳滚把 scrollTop 一步拉远后，重算走「scroll 事件 → rAF」，
+// 本帧仍按旧窗口上屏——视口整个落在占位区整帧空白（三列同时跳滚逐列复现）。
+// 理论 index 口径：组件契约是窗口与「当前布局」一致——高度表为混合前缀（已测卡实测步距
+// rowH + 未测卡预估 68），scrollTop 所指首卡 ≈ w0 + (TARGET − w0×rowH) / 68
+// （w0 = 跳滚前已渲染卡数 = 已实测前缀长度，rowH = 初始窗口相邻卡 rect 间距实测步进）。
+// 均匀 rowH 理论（TARGET/rowH）不适用：未测区按预估 68 布局，实测收敛前滚动映射天然按
+// 混合前缀走（与 oas-virtual-list 动态行高同模型）。容差 = ±10 卡：二分边界 ±1 + 采样后
+// RO 实测回写的视觉锚定补偿 ≤ (w0+窗口上方卡)×|68−rowH| ≈ 21×18px ≈ 7.6 卡。
+
+test('kanban 程序化跳滚：scrollTo 大步跳变后一帧内窗口与视口一致（无空白、无旧窗口残留），重复跳变与到底不积压', async ({
+  page,
+}) => {
+  await page.goto('/components/kanban.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#kanban-scroll')
+  const r = await page.evaluate(async () => {
+    const el = document.querySelector('#kanban-scroll')!
+    const TOTAL = 3000
+    el.setAttribute('columns', JSON.stringify([{ key: 'backlog', title: '需求池' }]))
+    el.setAttribute(
+      'cards',
+      JSON.stringify(
+        Array.from({ length: TOTAL }, (_, i) => ({ id: `big${i}`, column: 'backlog', title: `大列卡 ${i}` })),
+      ),
+    )
+    const bodyOf = (): HTMLElement =>
+      el.shadowRoot!.querySelector('.column[data-key="backlog"] .column-body') as HTMLElement
+    const frame2 = (): Promise<void> =>
+      new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())))
+    const frame1 = (): Promise<void> => new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
+    await frame2()
+    // 等 ResizeObserver 实测回写链收敛（诊断计数连续 3 帧不变）：不等到收敛的话，跳滚瞬间
+    // 可能恰好有待派发的 RO 回调把窗口 force 重算（侥幸路径），掩盖 scroll→rAF 迟一帧缺陷
+    const paintsOf = (): number => (el as unknown as { columnWindowPaints: number }).columnWindowPaints
+    for (let i = 0, stable = 0; i < 40 && stable < 3; i++) {
+      const p = paintsOf()
+      await frame1()
+      stable = paintsOf() === p ? stable + 1 : 0
+    }
+    const body = bodyOf()
+    const cards0 = [...body.querySelectorAll<HTMLElement>('.card[data-index]')]
+    const rowH = cards0[1]!.getBoundingClientRect().top - cards0[0]!.getBoundingClientRect().top
+    const w0 = cards0.length
+    const read = (): Record<string, unknown> => {
+      const b = bodyOf()
+      const cs = [...b.querySelectorAll<HTMLElement>('.card[data-index]')]
+      const bRect = b.getBoundingClientRect()
+      const vis = cs.filter((c) => {
+        const r2 = c.getBoundingClientRect()
+        return r2.bottom > bRect.top && r2.top < bRect.bottom
+      })
+      const idx = cs.map((c) => Number(c.getAttribute('data-index')))
+      return {
+        count: cs.length,
+        first: idx[0] ?? -1,
+        last: idx[idx.length - 1] ?? -1,
+        contiguous: idx.every((v, i) => i === 0 || v === idx[i - 1]! + 1),
+        visFirst: vis.length ? Number(vis[0]!.getAttribute('data-index')) : -1,
+        visCount: vis.length,
+      }
+    }
+    // 一帧后采样：修复后 scroll 事件在本帧 scroll steps 内同步重算，rAF 步采样必已就位；
+    // 缺陷版重算在 rAF 里（晚于采样点）→ 采到旧窗口（RED）
+    const TARGET = 23400
+    body.scrollTo({ top: TARGET, behavior: 'instant' })
+    await frame1()
+    const jump = read()
+    // 反向跳变：跳回已实测前缀末端（offset w0×rowH = 卡 w0 顶），上方全为已测卡 → 无锚定补偿，窗口应精确落位
+    body.scrollTo({ top: w0 * rowH, behavior: 'instant' })
+    await frame1()
+    const back = read()
+    // 到底：窗口末卡 = 全量最后一张且视口非空白
+    body.scrollTo({ top: body.scrollHeight, behavior: 'instant' })
+    await frame1()
+    const bottom = read()
+    return { rowH, w0, TOTAL, TARGET, jump, back, bottom }
+  })
+  expect(r.rowH, '实测步进有效（相邻卡间距 > 0）').toBeGreaterThan(0)
+  const pred = (target: number): number => Math.round(r.w0 + (target - r.w0 * r.rowH) / 68)
+  // --- 跳滚 23400：一帧内窗口与视口一致 ---
+  expect(r.jump.visCount, '视口内有渲染卡（无整帧空白——缺陷版此处为 0）').toBeGreaterThan(0)
+  expect(
+    Math.abs((r.jump.visFirst as number) - pred(r.TARGET)),
+    `视口首卡 ${r.jump.visFirst} 与混合前缀理论 ${pred(r.TARGET)} 一致（容差 ±10：二分边界 ±1 + RO 锚定补偿 ≈7.6 卡）`,
+  ).toBeLessThanOrEqual(10)
+  expect(r.jump.count, '窗口卡数有上界').toBeLessThanOrEqual(60)
+  expect(r.jump.contiguous, '窗口 data-index 连续').toBe(true)
+  // --- 反向跳变到已测前缀末端：上方全为已测卡（无补偿），窗口精确落位 ---
+  expect(r.back.visCount, '反向跳变视口非空白').toBeGreaterThan(0)
+  expect(
+    Math.abs((r.back.visFirst as number) - pred(r.w0 * r.rowH)),
+    `反向跳变首卡 ${r.back.visFirst} 与理论 ${pred(r.w0 * r.rowH)} 一致（已测前缀内 ±3）`,
+  ).toBeLessThanOrEqual(3)
+  // --- 到底：末卡渲染 ---
+  expect(r.bottom.visCount, '到底后视口非空白').toBeGreaterThan(0)
+  expect(r.bottom.last, '到底后窗口末卡 = 全量最后一张（末卡渲染）').toBe(r.TOTAL - 1)
+  expect(r.bottom.contiguous, '到底窗口 data-index 连续').toBe(true)
+})
+
+// ===== card-estimate 预估步距可配置（未测卡片的估算基准）=====
+// 反证点：若 card-estimate 读取逻辑缺失（硬编码 68），总高与顶部占位都按 68 结算——
+// 「总高 ≈ 3000×120」「topPad ≈ midFirst×120」两条断言必失败（68 口径下偏差 >15 万 px）。
+
+test('kanban card-estimate=120：3000 卡大列首屏行数有界、滚到中部覆盖、总高/顶部占位按 120 估算（容差内）', async ({
+  page,
+}) => {
+  await page.goto('/components/kanban.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#kanban-scroll')
+  const r = await page.evaluate(async () => {
+    const el = document.querySelector('#kanban-scroll')!
+    const TOTAL = 3000
+    const STEP = 120
+    el.setAttribute('card-estimate', String(STEP))
+    el.setAttribute('columns', JSON.stringify([{ key: 'backlog', title: '需求池' }]))
+    el.setAttribute(
+      'cards',
+      JSON.stringify(
+        Array.from({ length: TOTAL }, (_, i) => ({ id: `est${i}`, column: 'backlog', title: `估算卡 ${i}` })),
+      ),
+    )
+    const frame = (): Promise<void> =>
+      new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())))
+    await frame()
+    const bodyOf = (): HTMLElement =>
+      el.shadowRoot!.querySelector('.column[data-key="backlog"] .column-body') as HTMLElement
+    const indexes = (root: HTMLElement): number[] =>
+      [...root.querySelectorAll<HTMLElement>('.card[data-index]')].map((c) => Number(c.getAttribute('data-index')))
+    const body = bodyOf()
+    const top = indexes(body)
+    const scrollRange = body.scrollHeight
+    // 滚到中部（无数据变化 → 列体节点不换，引用保持有效）
+    body.scrollTop = Math.floor(scrollRange / 2)
+    body.dispatchEvent(new Event('scroll'))
+    await frame()
+    const mid = indexes(body)
+    const topPad = body.querySelector<HTMLElement>('.vpad-top')
+    return {
+      total: TOTAL,
+      step: STEP,
+      topCount: top.length,
+      topFirst: top[0] ?? -1,
+      scrollRange,
+      midCount: mid.length,
+      midFirst: mid[0] ?? -1,
+      midLast: mid[mid.length - 1] ?? -1,
+      contiguous: mid.every((v, i) => i === 0 || v === mid[i - 1]! + 1),
+      pads: body.querySelectorAll('.vpad').length,
+      topPadH: topPad ? Number.parseFloat(topPad.style.height) : -1,
+      headCount: el.shadowRoot!.querySelector('.column[data-key="backlog"] .column-count')!.textContent,
+    }
+  })
+  expect(r.headCount, '列头计数仍为全量 3000').toBe('3000')
+  expect(r.topCount, '首屏卡片 DOM 有上界').toBeLessThanOrEqual(60)
+  expect(r.topFirst, '首屏窗口从第 0 张开始').toBe(0)
+  expect(r.pads, '滚动后上下占位在').toBe(2)
+  expect(r.midCount, '中部窗口仍有上界').toBeLessThanOrEqual(60)
+  expect(r.midFirst, '已滚到中部').toBeGreaterThan(200)
+  expect(r.midLast, '窗口覆盖连续卡片').toBeGreaterThan(r.midFirst + 5)
+  expect(r.contiguous, 'data-index 连续（滚动语义不变）').toBe(true)
+  // 总高按 120 估算：实测卡只集中在窗口（首屏 + 中部 ≈ 几十枚，真实步距 50–74），
+  // 与 120 估算的偏差有界——下限容差 4000 > 60 枚 × 最大偏差 70px
+  expect(r.scrollRange, '列内滚动范围按 card-estimate=120 撑开（非默认 68）').toBeGreaterThan(r.total * r.step - 4000)
+  expect(r.scrollRange, '总高不超估算上界（padding 与占位负 margin 相抵后余量）').toBeLessThanOrEqual(
+    r.total * r.step + 500,
+  )
+  // 顶部占位 ≈ midFirst × 120（窗口前卡片几乎全部未实测；首屏已测卡的真实步距偏差在容差内）
+  expect(Math.abs(r.topPadH - r.midFirst * r.step), '顶部占位按 120 步距估算').toBeLessThanOrEqual(1500)
+})

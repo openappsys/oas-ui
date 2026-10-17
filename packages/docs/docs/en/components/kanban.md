@@ -143,6 +143,8 @@ Only `title` renders by default; for richer cards (tags, owners, progress) use t
 
 With `height` set on a column body (host-constrained), each column body scrolls independently and renders cards for the visible window only — thousands of cards in one column keep the DOM bounded (cards outside the window are not in the DOM: an inherent virtualization trade-off, keyboard reach is limited to the rendered window, cross-window via scrolling and refocus). Cards carry `aria-posinset` (absolute position) and `aria-setsize` (full card count of the column) so screen readers can announce the full position. Without `height` (full content height) virtualization is off and behavior matches previous versions.
 
+The estimated step for unmeasured cards defaults to 68px and can be configured via the `card-estimate` attribute (px) or the `--oas-kanban-card-step` CSS variable (attribute wins; ResizeObserver corrects measurements afterwards) — raise it when cards are clearly taller than the default to reduce first-frame offset error. Attribute changes apply immediately; the CSS variable has no built-in change notification and takes effect after any update path (attribute/data/size change).
+
 ## API
 
 ### oas-kanban
@@ -151,6 +153,7 @@ With `height` set on a column body (host-constrained), each column body scrolls 
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
+| `card-estimate` | Estimated step (px, default 68) for unmeasured cards in column virtualization: numeric values <= 0 / invalid fall back to 68; ResizeObserver progressively corrects measurements. Only when the attribute is absent is the CSS variable --oas-kanban-card-step read as a fallback (attribute wins) | — | — |
 | `cards` | Card data (JSON array [{ id, column, title, ...arbitrary fields }] where column is the owning column key). After a drop the component writes the new grouping/order back to this attribute (uncontrolled write-back + attribute reflection); skipped while a renderCard function is present (the host owns the data) | `KanbanCard[] \| string` | `[]` |
 | `columns` | Column definitions (JSON array [{ key, title, limit? }]; the same-named property array channel works identically — the setter reflects back to the attribute). limit is a WIP limit: when the column's card count exceeds it, the header count turns warning-colored and the column gets a data-over-limit marker (advisory only — drops still land); unset/0/negative = unlimited | `KanbanColumn[] \| string` | `[]` |
 | `empty-column-text` | Override for the empty-column / empty swimlane-cell placeholder text (defaults to the i18n kanban.emptyColumn key, translated with the locale) | `string` | — |

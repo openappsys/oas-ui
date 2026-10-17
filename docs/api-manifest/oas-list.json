@@ -71,6 +71,23 @@
       "observed": true
     },
     {
+      "name": "windowed",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "total",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "window-start",
+      "type": "string",
+      "default": "0",
+      "observed": true
+    },
+    {
       "name": "sortable",
       "type": "boolean",
       "observed": true
@@ -90,7 +107,11 @@
   "events": [
     {
       "name": "oas-item-render",
-      "detail": "{ index: i, item, element: row }"
+      "detail": "{ index, item, element: row }"
+    },
+    {
+      "name": "oas-window-request",
+      "detail": "{ start: need.start, end: need.end, reason } satisfies WindowRequestDetail"
     },
     {
       "name": "oas-reach-bottom",
