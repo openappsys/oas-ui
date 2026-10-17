@@ -701,6 +701,8 @@ onMounted(() => {
 
 ARIA in windowed mode: rows report `aria-setsize = total` and `aria-posinset = absolute row + 1`. List semantics (`role=list`; `listbox` when clickable) are placed by the component on the row container inside the shadow DOM, with rows deriving `listitem` / `option` — **hosts do not and should not set `role`**; group headers are rendered as `presentation`. windowed mode **requires** a measurable scroll viewport (`height` or a measurable `max-height`); otherwise the component emits no requests and warns once (avoiding a full-range request plus a huge empty spacer).
 
+> For the full host recipe (segment fetch, abort in-flight, merge by id, atomic refill) and a runnable example, see [Server-side windowed data](/en/guide/windowed-data).
+
 ## API
 
 ### oas-list

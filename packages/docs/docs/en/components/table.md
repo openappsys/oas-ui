@@ -448,6 +448,8 @@ In windowed mode **local sort / filter / group / pagination / tree-expand are th
 
 > Note: `total` is reused here as the "full row count" (in pagination mode it means the external total row count); row/column virtualization requires `height` (host-constrained); the windowed slice must be **flat** (the component does not recurse into `children`); rows beyond `total - window-start` are not rendered and produce a one-time devWarn.
 
+> For the full host recipe (segment fetch, abort in-flight, merge by id, atomic refill) and a runnable example, see [Server-side windowed data](/en/guide/windowed-data).
+
 ## Column filter
 
 <DemoBlock title="Column filter (filterable + filter-values controlled)">

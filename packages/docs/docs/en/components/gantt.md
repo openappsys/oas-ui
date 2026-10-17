@@ -277,6 +277,8 @@ Attributes: `windowed` (enable) + `total` (full row count) + `window-start` (abs
 
 Conventions in windowed mode: **the slice must be flat** (a hierarchical slice with `parent`/`children` triggers a devWarn and renders flat — flatten on the host side); `auto-schedule` and the critical path would be wrong on partial data and are **skipped with a devWarn**; row drag-reorder is disabled (index only makes sense within the slice); `oas-tasks-change` carries only the slice in `detail.tasks` — the host must **merge by id** into the full dataset, never replace it wholesale.
 
+> For the full host recipe (segment fetch, abort in-flight, merge by id, atomic refill) and a runnable example, see [Server-side windowed data](/en/guide/windowed-data).
+
 ## Controlled Expansion / Labels & Snapping / Localization
 
 - **Custom fields pass through**: `GanttTask` may carry arbitrary business fields (e.g. `assignee`, `tag`) — they are **preserved as-is** (visible in `el.tasks` / `oas-task-render` / templates) and do not affect scheduling; render them via the bar-label template or `oas-task-render`, and edit via the `oas-modal`+`oas-form` recipe or `updateTask`.

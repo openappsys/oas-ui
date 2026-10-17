@@ -448,6 +448,8 @@ windowed 模式下**本地排序 / 筛选 / 分组 / 分页 / 树形展开交由
 
 > 注意：`total` 在此复用为「全量行数」（分页模式语义为「外部数据分页总行数」）；行/列虚拟化需设 `height`（宿主定高）才启用；windowed 的切片须为**扁平行**（组件不递归 `children`）；切片长度超出 `total - window-start` 时越界行不渲染并 devWarn 一次。
 
+> 完整宿主取数配方（分段、取消在途、按 id 合并、原子回填）与可运行示例见 [服务端窗口取数](/guide/windowed-data)。
+
 ## 列过滤
 
 <DemoBlock title="表头列过滤（filterable + filter-values 受控）">

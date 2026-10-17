@@ -75,6 +75,8 @@ el.tasks = tasks.map((t) => moved.find((m) => m.id === t.id) ?? t)
 
 windowed 下的约定：负载/超载统计**仅基于已装载切片**（全量统计由宿主负责）并 devWarn；缺 `range-start` / `range-end` 时时间轴回落「已装载任务」派生并 devWarn；`oas-tasks-change` 的 `detail.tasks` 仅含切片——宿主须**按 id 合并回全量**，不得整体替换。
 
+> 完整宿主取数配方（分段、取消在途、按 id 合并、原子回填）与可运行示例见 [服务端窗口取数](/guide/windowed-data)。
+
 ## API
 
 ### oas-resource

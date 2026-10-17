@@ -623,6 +623,8 @@ Boundaries of local capabilities in windowed mode: **local `filter` and top-leve
 
 > Refill with a **widened window** rather than an exact replacement (otherwise the start edge may converge toward 0 step by step with the margin).
 
+> For the full host recipe (segment fetch, abort in-flight, merge by id, atomic refill) and a runnable example, see [Server-side windowed data](/en/guide/windowed-data).
+
 ## API
 
 ### oas-tree

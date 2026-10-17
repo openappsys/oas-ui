@@ -24,6 +24,7 @@
 - [SSR 边界策略](https://oas-ui.dev/guide/ssr): OAS-UI 是 Web Components 组件库，组件在浏览器运行时自定义元素、Shadow DOM 与事件。
 - [主题与自定义](https://oas-ui.dev/guide/theming): 在根元素（<html> 或任意容器）上设置 data-theme 切换三套内置主题：
 - [设计 Token（Design Tokens）](https://oas-ui.dev/guide/tokens): OAS-UI 的全部视觉语言都由 CSS 变量（语义 token）驱动。
+- [服务端窗口取数（windowed 配方）](https://oas-ui.dev/guide/windowed-data): 面向十万行级数据：组件只负责算「需要哪一段」，取数、取消、合并由宿主负责。
 
 ## 基础组件
 

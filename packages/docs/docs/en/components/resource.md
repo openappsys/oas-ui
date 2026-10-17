@@ -75,6 +75,8 @@ Attributes: `windowed` (enable) + `total` (full resource row count) + `window-st
 
 Conventions in windowed mode: load/overload stats cover **the loaded slice only** (full-dataset stats are the host's job) with a devWarn; without `range-start` / `range-end` the time axis falls back to deriving from loaded tasks with a devWarn; `oas-tasks-change` carries only the slice in `detail.tasks` — the host must **merge by id** into the full dataset, never replace it wholesale.
 
+> For the full host recipe (segment fetch, abort in-flight, merge by id, atomic refill) and a runnable example, see [Server-side windowed data](/en/guide/windowed-data).
+
 ## API
 
 ### oas-resource

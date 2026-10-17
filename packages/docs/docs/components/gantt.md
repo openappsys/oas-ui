@@ -277,6 +277,8 @@
 
 windowed 下的约定：**切片须为扁平行**（含 `parent`/`children` 的层级切片会 devWarn 并按扁平渲染，展开/收起请宿主侧展平）；`auto-schedule` 与关键路径在部分数据上会算错，**跳过并 devWarn**；行拖拽重排禁用（`index` 只对切片有意义）；`oas-tasks-change` 的 `detail.tasks` 仅含切片——宿主须**按 id 合并回全量**，不得整体替换。
 
+> 完整宿主取数配方（分段、取消在途、按 id 合并、原子回填）与可运行示例见 [服务端窗口取数](/guide/windowed-data)。
+
 ## 展开集合受控 / 标签与吸附 / 本地化
 
 - **自定义字段透传**：`GanttTask` 允许携带任意业务字段（如 `assignee`、`tag`）——组件**原样保留**（`el.tasks` / `oas-task-render` / 模板可见），不参与排程；显示走条标签模板或 `oas-task-render`，编辑走 `oas-modal`+`oas-form` 配方或 `updateTask`。
