@@ -172,3 +172,38 @@ test('resource-management en 页冒烟：标题/卡片/泳道渲染 + console �
   expect(info.bars, '任务条已渲染').toBeGreaterThan(0)
   expect(issues, 'console 零 error/warning').toEqual([])
 })
+
+// 资源卡色点与泳道/负载配色一致：resources[].color → 行上 --_oas-res-color → 条/柱 color-mix 着色。
+test('resource-management 资源颜色：卡片色点与泳道任务条/负载柱同源着色', async ({ page }) => {
+  await page.goto(PAGE, { waitUntil: 'domcontentloaded' })
+  await waitDemoReady(page)
+  const out = await page.evaluate(() => {
+    const el = document.getElementById('rm-resource') as HTMLElement & { shadowRoot: ShadowRoot }
+    const lanes = [...el.shadowRoot.querySelectorAll<HTMLElement>('.row.lane')].map((row) => ({
+      id: row.getAttribute('data-resource-id'),
+      color: row.style.getPropertyValue('--_oas-res-color').trim(),
+    }))
+    const bg = (rid: string) => {
+      const bar = el.shadowRoot.querySelector<HTMLElement>(`.row.lane[data-resource-id="${rid}"] .bar`)
+      return bar ? getComputedStyle(bar).backgroundColor : ''
+    }
+    const loadBg = (rid: string) => {
+      const pillar = el.shadowRoot.querySelector<HTMLElement>(`.row.load[data-resource-id="${rid}"] .pillar:not(.over)`)
+      return pillar ? getComputedStyle(pillar).backgroundColor : ''
+    }
+    return {
+      lanes,
+      barBg: { zhang: bg('zhang'), lisi: bg('lisi'), wangwu: bg('wangwu') },
+      loadBg: { zhang: loadBg('zhang'), lisi: loadBg('lisi'), wangwu: loadBg('wangwu') },
+    }
+  })
+  const byId = new Map(out.lanes.map((l) => [l.id, l.color]))
+  expect(byId.get('zhang'), '张三泳道消费卡片同源 primary').toBe('var(--oas-color-primary)')
+  expect(byId.get('lisi'), '李四泳道消费 success').toBe('var(--oas-color-success)')
+  expect(byId.get('wangwu'), '王五泳道消费 warning').toBe('var(--oas-color-warning)')
+  // 真浏览器解析 color-mix：三条泳道的条/柱底色应互不相同（证明确实按资源着色，而非统一 primary）
+  expect(new Set(Object.values(out.barBg)).size, '三条泳道任务条底色互不相同').toBe(3)
+  const loadColors = Object.values(out.loadBg).filter(Boolean)
+  expect(loadColors.length, '负载柱存在（非超载）').toBeGreaterThan(0)
+  expect(new Set(loadColors).size, '负载柱底色按资源区分').toBeGreaterThan(1)
+})

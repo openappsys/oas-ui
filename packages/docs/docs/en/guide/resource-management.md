@@ -160,9 +160,9 @@ import { onMounted } from 'vue'
 
 onMounted(async () => {
   const RESOURCES = [
-    { id: 'zhang', name: 'Alice', capacity: 1 },
-    { id: 'lisi', name: 'Bob', capacity: 1 },
-    { id: 'wangwu', name: 'Cara', capacity: 1 },
+    { id: 'zhang', name: 'Alice', capacity: 1, color: 'var(--oas-color-primary)' },
+    { id: 'lisi', name: 'Bob', capacity: 1, color: 'var(--oas-color-success)' },
+    { id: 'wangwu', name: 'Cara', capacity: 1, color: 'var(--oas-color-warning)' },
   ]
   const INITIAL_TASKS = [
     { id: 't1', name: 'Requirement review', start: '2026-03-02', end: '2026-03-03', resources: ['zhang'] },
