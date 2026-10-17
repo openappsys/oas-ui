@@ -4713,7 +4713,8 @@
       "range-end": "宿主托管时间轴终点（ISO 日期 YYYY-MM-DD，含当日）：与 range-start 成对使用；只有其一 / 颠倒 / 非法时忽略托管并 devWarn",
       "show-load-values": "负载直方图柱顶显示该档负载数字（布尔，默认关）：仅 load > 0 显示，超载档数字用 danger 色；数字为视觉冗余（aria-hidden），读屏仍读列的负载描述",
       "show-overload-badge": "泳道行头显示「超载 N 档」徽标（布尔，默认关）：仅该资源存在超载档时显示，文案走 i18n resource.overBadge",
-      "bar-label": "任务条内显示任务名（布尔，默认关）：单行省略，窄条自动裁切；不改变 aria-label 与点击/拖拽命中"
+      "bar-label": "任务条内显示任务名（布尔，默认关）：单行省略，窄条自动裁切；不改变 aria-label 与点击/拖拽命中",
+      "header-sticky": "泳道表头纵向吸顶（默认开）：滚动泳道时周/日刻度保持可见；`header-sticky=\"false\"` 关闭（表头随内容滚动）。角落名列在横向滚动时始终贴边（LTR/RTL）"
     },
     "events": {
       "oas-task-click": "点击资源泳道内的任务条时派发，detail: { id, task, resourceId }",

@@ -492,6 +492,7 @@ test('resource RTL sticky 名列贴右 / LTR 贴左（横向滚动到中部）',
   await page.evaluate(() => {
     document.getElementById('res-sticky-ltr')?.remove()
     document.getElementById('res-sticky-rtl')?.remove()
+    document.getElementById('res-sticky-off')?.remove()
   })
   expect(errors).toEqual([])
 })
@@ -2115,5 +2116,131 @@ test('resource 日刻度抽稀：day 档文案数有界（≈ceil(n/2)）、blan
   expect(res.week.textCount, 'week 全文案').toBe(3)
   expect(res.week.blankCount, 'week 无 blank').toBe(0)
   await page.evaluate(() => document.getElementById('res-thin-wrap')?.remove())
+  expect(errors).toEqual([])
+})
+
+// 表头纵向吸顶：滚动泳道后周刻度仍贴在滚动容器顶部；角落名列在横向滚动后仍贴边（LTR/RTL）。
+test('resource 表头吸顶：纵向滚动周刻度保持可见，横向滚动角落名列贴边（LTR/RTL）', async ({ page }) => {
+  const errors = collectErrors(page)
+  await page.goto('/components/resource.html', { waitUntil: 'domcontentloaded' })
+  await waitResource(page, 'res-basic')
+  const out = await page.evaluate(async () => {
+    const mount = async (rtl: boolean) => {
+      const el = document.createElement('oas-resource')
+      el.id = rtl ? 'res-sticky-rtl' : 'res-sticky-ltr'
+      if (rtl) el.setAttribute('dir', 'rtl')
+      el.setAttribute('scale', 'week')
+      el.style.cssText = 'display:block;width:640px;height:240px;margin:12px'
+      el.setAttribute(
+        'resources',
+        JSON.stringify(Array.from({ length: 40 }, (_, i) => ({ id: `m${i}`, name: `资源 ${i + 1}` }))),
+      )
+      el.setAttribute(
+        'tasks',
+        JSON.stringify(
+          Array.from({ length: 40 }, (_, i) => ({
+            id: `t${i}`,
+            name: `任务 ${i + 1}`,
+            start: '2026-02-02',
+            end: '2026-02-06',
+            resources: [`m${i}`],
+          })),
+        ),
+      )
+      document.body.appendChild(el)
+      await new Promise((r) => setTimeout(r, 300))
+      return el
+    }
+    const probe = (el: HTMLElement) => {
+      const sr = el.shadowRoot!
+      const sc = sr.querySelector('.scroller') as HTMLElement
+      const head = sr.querySelector('.row.head') as HTMLElement
+      const name = sr.querySelector('.head .name') as HTMLElement
+      const scRect = sc.getBoundingClientRect()
+      const hRect = head.getBoundingClientRect()
+      const nRect = name.getBoundingClientRect()
+      return {
+        scTop: Math.round(scRect.top),
+        scLeft: Math.round(scRect.left),
+        scRight: Math.round(scRect.right),
+        headTop: Math.round(hRect.top),
+        headBottom: Math.round(hRect.bottom),
+        nameLeft: Math.round(nRect.left),
+        nameRight: Math.round(nRect.right),
+        headZ: getComputedStyle(head).zIndex,
+        nameZ: getComputedStyle(name).zIndex,
+        scrollTop: sc.scrollTop,
+        scrollLeft: sc.scrollLeft,
+      }
+    }
+    const ltr = await mount(false)
+    const sc = ltr.shadowRoot!.querySelector('.scroller') as HTMLElement
+    sc.scrollTop = 600
+    sc.dispatchEvent(new Event('scroll'))
+    await new Promise((r) => setTimeout(r, 300))
+    const ltr1 = probe(ltr)
+    sc.scrollLeft = 240
+    sc.dispatchEvent(new Event('scroll'))
+    await new Promise((r) => setTimeout(r, 300))
+    const ltr2 = probe(ltr)
+
+    const rtl = await mount(true)
+    const sc2 = rtl.shadowRoot!.querySelector('.scroller') as HTMLElement
+    sc2.scrollTop = 600
+    sc2.dispatchEvent(new Event('scroll'))
+    await new Promise((r) => setTimeout(r, 300))
+    sc2.scrollLeft = -240
+    sc2.dispatchEvent(new Event('scroll'))
+    await new Promise((r) => setTimeout(r, 300))
+    const rtl1 = probe(rtl)
+
+    // 关闭开关：header-sticky="false" → 表头回到普通流，随内容滚出容器顶
+    const offEl = document.createElement('oas-resource')
+    offEl.id = 'res-sticky-off'
+    offEl.setAttribute('header-sticky', 'false')
+    offEl.setAttribute('scale', 'week')
+    offEl.style.cssText = 'display:block;width:640px;height:240px;margin:12px'
+    offEl.setAttribute(
+      'resources',
+      JSON.stringify(Array.from({ length: 40 }, (_, i) => ({ id: `o${i}`, name: `资源 ${i + 1}` }))),
+    )
+    offEl.setAttribute(
+      'tasks',
+      JSON.stringify(
+        Array.from({ length: 40 }, (_, i) => ({
+          id: `ot${i}`,
+          name: `任务 ${i + 1}`,
+          start: '2026-02-02',
+          end: '2026-02-06',
+          resources: [`o${i}`],
+        })),
+      ),
+    )
+    document.body.appendChild(offEl)
+    await new Promise((r) => setTimeout(r, 300))
+    const sc3 = offEl.shadowRoot!.querySelector('.scroller') as HTMLElement
+    sc3.scrollTop = 600
+    sc3.dispatchEvent(new Event('scroll'))
+    await new Promise((r) => setTimeout(r, 300))
+    const off = probe(offEl)
+    return { ltr1, ltr2, rtl1, off }
+  })
+  // 纵向滚动后表头贴容器顶（允许 2px 边框误差）
+  expect(Math.abs(out.ltr1.headTop - out.ltr1.scTop), 'LTR 纵向滚动后表头吸顶').toBeLessThanOrEqual(2)
+  expect(out.ltr1.scrollTop, '确实发生了纵向滚动').toBeGreaterThan(0)
+  // 横向滚动后角落名列贴左
+  expect(Math.abs(out.ltr2.nameLeft - out.ltr2.scLeft), 'LTR 横向滚动后角落名列贴左').toBeLessThanOrEqual(2)
+  // RTL：角落名列贴右
+  expect(Math.abs(out.rtl1.nameRight - out.rtl1.scRight), 'RTL 横向滚动后角落名列贴右').toBeLessThanOrEqual(2)
+  expect(Math.abs(out.rtl1.headTop - out.rtl1.scTop), 'RTL 纵向滚动后表头吸顶').toBeLessThanOrEqual(2)
+  // 层级：表头高于泳道，角落高于刻度
+  expect(Number(out.ltr1.headZ)).toBeGreaterThan(2)
+  expect(Number(out.ltr1.nameZ)).toBeGreaterThan(Number(out.ltr1.headZ))
+  // header-sticky="false"：表头随内容滚出容器顶
+  expect(out.off.headTop, '关闭吸顶后表头滚出容器顶').toBeLessThan(out.off.scTop - 100)
+  await page.evaluate(() => {
+    document.getElementById('res-sticky-ltr')?.remove()
+    document.getElementById('res-sticky-rtl')?.remove()
+  })
   expect(errors).toEqual([])
 })

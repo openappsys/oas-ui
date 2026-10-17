@@ -4713,7 +4713,8 @@
       "range-end": "Host-managed time-axis end (ISO date YYYY-MM-DD, inclusive); pair with range-start. If only one is given, reversed or invalid, the axis is not host-managed and a devWarn is emitted",
       "show-load-values": "Show the load value above each histogram bar (boolean, off by default): only for load > 0; overload values use the danger color. The number is visual redundancy (aria-hidden); screen readers still get the column load description",
       "show-overload-badge": "Show an \"Overloaded ×N\" badge in the lane header (boolean, off by default): only for resources with overloaded periods; text comes from the i18n key resource.overBadge",
-      "bar-label": "Show the task name inside the bar (boolean, off by default): single line with ellipsis, clipped on narrow bars; aria-label and click/drag hit-testing are unchanged"
+      "bar-label": "Show the task name inside the bar (boolean, off by default): single line with ellipsis, clipped on narrow bars; aria-label and click/drag hit-testing are unchanged",
+      "header-sticky": "Lane header sticks to the top while scrolling lanes (on by default): week/day ticks stay visible; `header-sticky=\"false\"` disables it (the header scrolls with content). The corner name column always stays pinned on horizontal scroll (LTR/RTL)"
     },
     "events": {
       "oas-task-click": "Dispatched when a task bar in a resource swimlane is clicked, detail: { id, task, resourceId }",

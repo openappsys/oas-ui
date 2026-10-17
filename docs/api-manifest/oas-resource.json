@@ -79,6 +79,10 @@
       "name": "bar-label",
       "type": "boolean",
       "observed": true
+    },
+    {
+      "name": "header-sticky",
+      "observed": true
     }
   ],
   "props": [
@@ -132,12 +136,12 @@
       "default": "20px"
     },
     {
-      "name": "--oas-resource-name-width",
-      "default": "160px"
-    },
-    {
       "name": "--oas-resource-header-bg",
       "default": "var(--oas-color-bg)"
+    },
+    {
+      "name": "--oas-resource-name-width",
+      "default": "160px"
     },
     {
       "name": "--oas-resource-header-height",

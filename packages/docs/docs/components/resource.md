@@ -42,7 +42,7 @@ el.tasks = tasks.map((t) => moved.find((m) => m.id === t.id) ?? t)
 ## 可读性（opt-in 开关）
 
 <DemoBlock title="可读性开关（opt-in）：负载柱顶数字（show-load-values）+ 超载徽标（show-overload-badge）+ 条内任务名（bar-label）">
-  <oas-resource id="res-readable" scale="day" height="420" capacity="1" show-load-values show-overload-badge bar-label
+  <oas-resource id="res-readable" scale="day" height="420" capacity="1" show-load-values show-overload-badge bar-label header-sticky
     resources='[{"id":"zhang","name":"张三","capacity":1},{"id":"li","name":"李四","capacity":1},{"id":"wang","name":"王五","capacity":2}]'
     tasks='[{"id":"t1","name":"需求评审","start":"2026-03-02","end":"2026-03-03","resources":["zhang","li"]},{"id":"t2","name":"接口设计","start":"2026-03-03","end":"2026-03-05","resources":["zhang"]},{"id":"t3","name":"后端开发","start":"2026-03-04","end":"2026-03-08","resources":["li"]},{"id":"t4","name":"前端开发","start":"2026-03-04","end":"2026-03-08","resources":["wang"]},{"id":"t5","name":"联调测试","start":"2026-03-09","end":"2026-03-11","resources":["li","wang"]},{"id":"t6","name":"文档整理","start":"2026-03-02","end":"2026-03-04","resources":["wang"]}]'></oas-resource>
   <div id="res-readable-output" style="color:var(--oas-color-text-secondary);font-size:var(--oas-font-size-sm);margin-top:var(--oas-space-2)">三个开关全开：负载柱顶显示该档并行任务数（超载档红色）；张三行头显示「超载 1 档」徽标；任务条内显示任务名。</div>
@@ -98,6 +98,7 @@ windowed 下的约定：负载/超载统计**仅基于已装载切片**（全量
 | --- | --- | --- | --- |
 | `bar-label` | 任务条内显示任务名（布尔，默认关）：单行省略，窄条自动裁切；不改变 aria-label 与点击/拖拽命中 | `boolean` | — |
 | `capacity` | 资源未声明 capacity 时的缺省容量（默认 1） | `string` | `1` |
+| `header-sticky` | 泳道表头纵向吸顶（默认开）：滚动泳道时周/日刻度保持可见；`header-sticky="false"` 关闭（表头随内容滚动）。角落名列在横向滚动时始终贴边（LTR/RTL） | — | — |
 | `height` | 组件高度 px（默认 320；接受纯数字或 Npx）：映射到自定义属性 --oas-resource-height（宿主自身 height 内联始终优先，组件不覆盖宿主内联）。height 属性在场且为合法值（>0 纯数字或 Npx）时组件接管该变量，写入宿主内联并覆盖宿主自己设置的 --oas-resource-height；空串/空白按未设置处理；非法值不写该变量、仅清除本实例此前写入的值，宿主 token 不受影响；属性移除后组件写入的值归零清除，高度回落 token 缺省 320 或宿主 CSS，宿主原先内联设置的值不恢复；从未设置 height 属性时组件不写该变量，宿主内联或 class 规则设置的 --oas-resource-height 完全不受影响 | `string` | `320` |
 | `locale` | 本地化（覆盖 config-provider 注入与全局 locale） | `string` | — |
 | `range-end` | 宿主托管时间轴终点（ISO 日期 YYYY-MM-DD，含当日）：与 range-start 成对使用；只有其一 / 颠倒 / 非法时忽略托管并 devWarn | `string` | — |

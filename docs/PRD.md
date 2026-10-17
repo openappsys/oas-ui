@@ -2000,7 +2000,7 @@ OASElement 的 render 生命周期只首连一次（`rendered` 门闩），组�
 ### 特性
 
 - **属性/property**：`resources`（JSON `[{ id, name, capacity?, color? }]`，`capacity` = 该资源每档（period）可并行任务数，`day` 档即每天，缺省 1；`color` 为可选 CSS 颜色或 token，用于该泳道任务条与负载柱着色）、`tasks`（JSON `[{ id, name, start, end, resources?: string[] }]`；`resources` 为分配的资源 id 列表）、`scale`（day 默认 / week / month）、`height`、`locale`、`capacity`（全局缺省容量）。
-- **视图**：左侧资源名列（按资源分组），右侧**共享时间轴的资源泳道**（每资源一行，行内画其任务条——单色条，任务名/起止日期/资源名经 aria-label 可读）；下方**负载直方图**：按档（日/周/月）统计每资源「并行任务数」，`负载 > capacity` → 超载高亮（token 色）。泳道与直方图**列宽/刻度/横向滚动联动**。
+- **视图**：左侧资源名列（按资源分组），右侧**共享时间轴的资源泳道**（每资源一行，行内画其任务条——单色条，任务名/起止日期/资源名经 aria-label 可读）；下方**负载直方图**：按档（日/周/月）统计每资源「并行任务数」，`负载 > capacity` → 超载高亮（token 色）。泳道与直方图**列宽/刻度/横向滚动联动**；表头纵向吸顶（默认开，`header-sticky="false"` 可关闭），角落名列横向滚动时保持贴边。
 - **事件**：`oas-task-click`（`{ id, task, resourceId }`）、`oas-overload`（`{ overloads: [{ resourceId, period, load, capacity }] }`，超载态变化时派发——每次更新至多一次、同一超载态不重复派发，避免事件风暴）、`oas-tasks-change`（`{ tasks }`，程序写 tasks property 时派发）。
 - **可读性开关（opt-in，默认关）**：`show-load-values`（负载柱顶数字，超载 danger 色、`aria-hidden`）、`show-overload-badge`（行头「超载 N 档」徽标，i18n `resource.overBadge`）、`bar-label`（条内任务名，单行省略）；`day` 档刻度按列宽稳定抽稀（网格线保留，周/月档不变）。
 - **官方组合示例**：文档站 `guide/resource-management` 用 `oas-resource` + `oas-card` + `oas-checkbox` + `levelResources()` 搭出资源卡/分配表/平衡/后移反馈（宿主层组合，非新组件）。

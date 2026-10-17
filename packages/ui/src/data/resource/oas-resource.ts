@@ -79,6 +79,21 @@ const STYLE = `
 .row:last-child {
   border-bottom: none;
 }
+/* 表头纵向吸顶：滚动泳道时周刻度保持可见（背景遮住下方行）；角落名列再高一层，
+   横向滚动时盖住刻度（与 .name 的 inset-inline-start 吸左/吸右叠加） */
+.row.head {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  background: var(--oas-resource-header-bg, var(--oas-color-bg));
+}
+.head .name {
+  z-index: 4;
+}
+/* 关闭吸顶（header-sticky="false"）：表头回到普通文档流，随内容一起滚动 */
+:host([header-sticky='false']) .row.head {
+  position: static;
+}
 .name {
   flex: none;
   width: var(--oas-resource-name-width, 160px);
@@ -1040,6 +1055,7 @@ export class OASResource extends OASElement {
       'show-load-values',
       'show-overload-badge',
       'bar-label',
+      'header-sticky',
     ]
   }
 

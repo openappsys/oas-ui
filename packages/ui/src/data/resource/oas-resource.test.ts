@@ -3547,3 +3547,26 @@ describe('OASResource 资源颜色（color → 泳道任务条/负载柱着色�
     expect(laneOf(el, 'r1').style.getPropertyValue('--oas-resource-bar-bg').trim()).toBe('')
   })
 })
+
+describe('OASResource 表头吸顶（泳道周刻度）', () => {
+  it('CSS：.row.head 纵向 sticky top 0；角落名列层级高于表头', () => {
+    const el = mount({ resources: '[]', tasks: '[]' })
+    const css = shadowOf(el).querySelector('style')!.textContent ?? ''
+    const start = css.indexOf('.row.head {')
+    expect(start, '存在 .row.head 规则').toBeGreaterThan(-1)
+    const block = css.slice(start, css.indexOf('}', start)).replace(/\s+/g, ' ')
+    expect(block, '纵向吸顶').toContain('position: sticky')
+    expect(block, '贴容器顶').toContain('top: 0')
+    expect(block, '高于泳道内容').toContain('z-index: 3')
+    expect(block, '表头背景遮住下方行').toContain('background: var(--oas-resource-header-bg')
+    const nameStart = css.indexOf('.head .name {')
+    expect(nameStart, '存在 .head .name 规则').toBeGreaterThan(-1)
+    const nameBlock = css.slice(nameStart, css.indexOf('}', nameStart)).replace(/\s+/g, ' ')
+    expect(nameBlock, '角落名列高于刻度层').toContain('z-index: 4')
+    // 开关：header-sticky="false" 时回到普通流（随内容滚动）
+    const offStart = css.indexOf(":host([header-sticky='false']) .row.head")
+    expect(offStart, '存在关闭吸顶规则').toBeGreaterThan(-1)
+    const offBlock = css.slice(offStart, css.indexOf('}', offStart)).replace(/\s+/g, ' ')
+    expect(offBlock, '关闭态非 sticky').toContain('position: static')
+  })
+})
