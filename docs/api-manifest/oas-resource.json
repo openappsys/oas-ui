@@ -145,11 +145,11 @@
     },
     {
       "name": "--oas-resource-bar-bg",
-      "default": "color-mix(in srgb, var(--_oas-res-color, var(--oas-color-primary)) 22%, var(--oas-color-bg))"
+      "default": "color-mix(in srgb, var(--oas-color-primary) 22%, var(--oas-color-bg))"
     },
     {
       "name": "--oas-resource-bar-hover-bg",
-      "default": "color-mix(in srgb, var(--_oas-res-color, var(--oas-color-primary)) 34%, var(--oas-color-bg))"
+      "default": "color-mix(in srgb, var(--oas-color-primary) 34%, var(--oas-color-bg))"
     },
     {
       "name": "--oas-resource-load-height",
@@ -157,7 +157,7 @@
     },
     {
       "name": "--oas-resource-load-bg",
-      "default": "color-mix(in srgb, var(--_oas-res-color, var(--oas-color-primary)) 45%, var(--oas-color-bg))"
+      "default": "color-mix(in srgb, var(--oas-color-primary) 45%, var(--oas-color-bg))"
     },
     {
       "name": "--oas-resource-load-over-bg",

@@ -150,7 +150,7 @@ const STYLE = `
   /* top 按段序内联写入（见 renderLanes）：gap + 段序 ×（条高 + gap） */
   height: var(--oas-resource-bar-height, 20px);
   border-radius: var(--oas-radius-sm);
-  background: var(--oas-resource-bar-bg, color-mix(in srgb, var(--_oas-res-color, var(--oas-color-primary)) 22%, var(--oas-color-bg)));
+  background: var(--oas-resource-bar-bg, color-mix(in srgb, var(--oas-color-primary) 22%, var(--oas-color-bg)));
   box-sizing: border-box;
   /* 与 MIN_BAR_W 一致：renderLanes 已把最小宽并进 width/left，这里仅兜底（不再能造成越界） */
   min-width: 8px;
@@ -158,7 +158,7 @@ const STYLE = `
   user-select: none;
 }
 .bar:hover {
-  background: var(--oas-resource-bar-hover-bg, color-mix(in srgb, var(--_oas-res-color, var(--oas-color-primary)) 34%, var(--oas-color-bg)));
+  background: var(--oas-resource-bar-hover-bg, color-mix(in srgb, var(--oas-color-primary) 34%, var(--oas-color-bg)));
 }
 .bar:focus-visible {
   /* 焦点环：纯 inset box-shadow 双层（不再用 outline）。
@@ -215,7 +215,7 @@ const STYLE = `
   inset-inline-end: var(--oas-space-1);
   min-height: 2px;
   border-radius: var(--oas-radius-xs) var(--oas-radius-xs) 0 0;
-  background: var(--oas-resource-load-bg, color-mix(in srgb, var(--_oas-res-color, var(--oas-color-primary)) 45%, var(--oas-color-bg)));
+  background: var(--oas-resource-load-bg, color-mix(in srgb, var(--oas-color-primary) 45%, var(--oas-color-bg)));
 }
 .pillar.over {
   background: var(--oas-resource-load-over-bg, var(--oas-color-danger));
@@ -2259,8 +2259,16 @@ export class OASResource extends OASElement {
         row.appendChild(track)
       }
       const laneColor = typeof r.color === 'string' && r.color.trim() !== '' ? r.color.trim() : ''
-      if (laneColor) row.style.setProperty('--_oas-res-color', laneColor)
-      else row.style.removeProperty('--_oas-res-color')
+      if (laneColor) {
+        row.style.setProperty('--oas-resource-bar-bg', `color-mix(in srgb, ${laneColor} 22%, var(--oas-color-bg))`)
+        row.style.setProperty(
+          '--oas-resource-bar-hover-bg',
+          `color-mix(in srgb, ${laneColor} 34%, var(--oas-color-bg))`,
+        )
+      } else {
+        row.style.removeProperty('--oas-resource-bar-bg')
+        row.style.removeProperty('--oas-resource-bar-hover-bg')
+      }
       desired.push(row)
       desiredRes.push(r)
       desiredAbs.push(i)
@@ -2510,8 +2518,9 @@ export class OASResource extends OASElement {
       rowEl.setAttribute(ATTR_RESOURCE_ID, row.resource.id)
       const loadColor =
         typeof row.resource.color === 'string' && row.resource.color.trim() !== '' ? row.resource.color.trim() : ''
-      if (loadColor) rowEl.style.setProperty('--_oas-res-color', loadColor)
-      else rowEl.style.removeProperty('--_oas-res-color')
+      if (loadColor)
+        rowEl.style.setProperty('--oas-resource-load-bg', `color-mix(in srgb, ${loadColor} 45%, var(--oas-color-bg))`)
+      else rowEl.style.removeProperty('--oas-resource-load-bg')
       const name = document.createElement('div')
       name.className = 'name'
       name.textContent = row.resource.name

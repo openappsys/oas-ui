@@ -3502,7 +3502,7 @@ describe('OASResource 资源颜色（color → 泳道任务条/负载柱着色�
     document.body.innerHTML = ''
   })
 
-  it('resources 带 color → 泳道行写 --_oas-res-color；负载行同步；缺省不写；CSS 消费该变量', () => {
+  it('resources 带 color → 泳道行覆写公开 token（条/悬停）；负载行覆写负载色；缺省移除', () => {
     const el = mount({
       resources: JSON.stringify([
         { id: 'r1', name: '甲', capacity: 1, color: 'var(--oas-color-success)' },
@@ -3515,17 +3515,24 @@ describe('OASResource 资源颜色（color → 泳道任务条/负载柱着色�
     })
     const l1 = laneOf(el, 'r1')
     const l2 = laneOf(el, 'r2')
-    expect(l1.style.getPropertyValue('--_oas-res-color').trim()).toBe('var(--oas-color-success)')
-    expect(l2.style.getPropertyValue('--_oas-res-color').trim()).toBe('')
-    // 负载行同样带资源色（按资源 id 定位）
+    expect(l1.style.getPropertyValue('--oas-resource-bar-bg').trim()).toBe(
+      'color-mix(in srgb, var(--oas-color-success) 22%, var(--oas-color-bg))',
+    )
+    expect(l1.style.getPropertyValue('--oas-resource-bar-hover-bg').trim()).toBe(
+      'color-mix(in srgb, var(--oas-color-success) 34%, var(--oas-color-bg))',
+    )
+    expect(l2.style.getPropertyValue('--oas-resource-bar-bg').trim()).toBe('')
+    // 负载行同样按资源色覆写 load token（按资源 id 定位）
     const loads = shadowOf(el).querySelectorAll('[data-resource-id="r1"].row.load')
     expect(loads.length).toBe(1)
-    expect((loads[0] as HTMLElement).style.getPropertyValue('--_oas-res-color').trim()).toBe('var(--oas-color-success)')
-    // CSS 消费：泳道条/负载柱的默认色以 --_oas-res-color 为一级回退
+    expect((loads[0] as HTMLElement).style.getPropertyValue('--oas-resource-load-bg').trim()).toBe(
+      'color-mix(in srgb, var(--oas-color-success) 45%, var(--oas-color-bg))',
+    )
+    // CSS 默认仍是公开 token + primary 派生（不泄漏内部变量）
     const css = shadowOf(el).querySelector('style')!.textContent ?? ''
-    expect(css).toContain('var(--_oas-res-color, var(--oas-color-primary))')
-    expect(css).toContain('color-mix(in srgb, var(--_oas-res-color, var(--oas-color-primary)) 22%')
-    expect(css).toContain('color-mix(in srgb, var(--_oas-res-color, var(--oas-color-primary)) 45%')
+    expect(css).toContain('var(--oas-resource-bar-bg, color-mix(in srgb, var(--oas-color-primary) 22%')
+    expect(css).toContain('var(--oas-resource-load-bg, color-mix(in srgb, var(--oas-color-primary) 45%')
+    expect(css).not.toContain('--_oas-res-color')
   })
 
   it('运行时改 resources 的 color → 复用行同步更新（不会残留旧色）', () => {
@@ -3533,10 +3540,10 @@ describe('OASResource 资源颜色（color → 泳道任务条/负载柱着色�
       resources: JSON.stringify([{ id: 'r1', name: '甲', capacity: 1, color: 'var(--oas-color-success)' }]),
       tasks: JSON.stringify([{ id: 't1', name: 'A', start: '2026-03-02', end: '2026-03-02', resources: ['r1'] }]),
     })
-    expect(laneOf(el, 'r1').style.getPropertyValue('--_oas-res-color').trim()).toBe('var(--oas-color-success)')
+    expect(laneOf(el, 'r1').style.getPropertyValue('--oas-resource-bar-bg').trim()).toContain('success')
     el.resources = [{ id: 'r1', name: '甲', capacity: 1, color: 'var(--oas-color-danger)' }]
-    expect(laneOf(el, 'r1').style.getPropertyValue('--_oas-res-color').trim()).toBe('var(--oas-color-danger)')
+    expect(laneOf(el, 'r1').style.getPropertyValue('--oas-resource-bar-bg').trim()).toContain('danger')
     el.resources = [{ id: 'r1', name: '甲', capacity: 1 }]
-    expect(laneOf(el, 'r1').style.getPropertyValue('--_oas-res-color').trim()).toBe('')
+    expect(laneOf(el, 'r1').style.getPropertyValue('--oas-resource-bar-bg').trim()).toBe('')
   })
 })

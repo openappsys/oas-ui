@@ -181,7 +181,7 @@ test('resource-management 资源颜色：卡片色点与泳道任务条/负载�
     const el = document.getElementById('rm-resource') as HTMLElement & { shadowRoot: ShadowRoot }
     const lanes = [...el.shadowRoot.querySelectorAll<HTMLElement>('.row.lane')].map((row) => ({
       id: row.getAttribute('data-resource-id'),
-      color: row.style.getPropertyValue('--_oas-res-color').trim(),
+      color: row.style.getPropertyValue('--oas-resource-bar-bg').trim(),
     }))
     const bg = (rid: string) => {
       const bar = el.shadowRoot.querySelector<HTMLElement>(`.row.lane[data-resource-id="${rid}"] .bar`)
@@ -198,9 +198,9 @@ test('resource-management 资源颜色：卡片色点与泳道任务条/负载�
     }
   })
   const byId = new Map(out.lanes.map((l) => [l.id, l.color]))
-  expect(byId.get('zhang'), '张三泳道消费卡片同源 primary').toBe('var(--oas-color-primary)')
-  expect(byId.get('lisi'), '李四泳道消费 success').toBe('var(--oas-color-success)')
-  expect(byId.get('wangwu'), '王五泳道消费 warning').toBe('var(--oas-color-warning)')
+  expect(byId.get('zhang'), '张三泳道消费卡片同源 primary').toContain('var(--oas-color-primary)')
+  expect(byId.get('lisi'), '李四泳道消费 success').toContain('var(--oas-color-success)')
+  expect(byId.get('wangwu'), '王五泳道消费 warning').toContain('var(--oas-color-warning)')
   // 真浏览器解析 color-mix：三条泳道的条/柱底色应互不相同（证明确实按资源着色，而非统一 primary）
   expect(new Set(Object.values(out.barBg)).size, '三条泳道任务条底色互不相同').toBe(3)
   const loadColors = Object.values(out.loadBg).filter(Boolean)
