@@ -96,7 +96,7 @@
     },
     {
       "name": "events",
-      "type": "CalendarEvent[]",
+      "type": "CalendarEvent[] | string",
       "default": "[]",
       "api": true
     }

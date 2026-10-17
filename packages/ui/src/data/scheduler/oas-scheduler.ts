@@ -1,4 +1,5 @@
 import { OASElement } from '@oas-ui/core'
+import { parseJsonArray } from '../../shared/json-array.js'
 import {
   addMonths,
   buildMonthCells,
@@ -683,7 +684,7 @@ export class OASScheduler extends OASElement {
   private anchorInit = false
   private gridEl: HTMLElement | null = null
   private titleEl: HTMLElement | null = null
-  private view: SchedulerView = 'month'
+  private viewMode: SchedulerView = 'month'
   private lastView = ''
   private dragCtx: {
     id: string
@@ -725,8 +726,8 @@ export class OASScheduler extends OASElement {
   get events(): SchedulerEvent[] {
     return this._events.map((e) => ({ ...e, repeat: e.repeat ? { ...e.repeat } : undefined }))
   }
-  set events(v: SchedulerEvent[]) {
-    this._events = this.normalizeWithIds(sanitizeEvents(v))
+  set events(v: SchedulerEvent[] | string) {
+    this._events = this.normalizeWithIds(sanitizeEvents(parseJsonArray<SchedulerEvent>(v)))
     this._eventsAttrCache = JSON.stringify(this._events)
     this.setAttribute('events', this._eventsAttrCache)
     this.update()
@@ -739,8 +740,8 @@ export class OASScheduler extends OASElement {
   get resources(): SchedulerResource[] {
     return this._resources.map((r) => ({ ...r }))
   }
-  set resources(v: SchedulerResource[]) {
-    this._resources = sanitizeResources(v)
+  set resources(v: SchedulerResource[] | string) {
+    this._resources = sanitizeResources(parseJsonArray<SchedulerResource>(v))
     this._resourcesAttrCache = JSON.stringify(this._resources)
     this.setAttribute('resources', this._resourcesAttrCache)
     this.update()
@@ -899,7 +900,7 @@ export class OASScheduler extends OASElement {
   }
 
   /** 时区（IANA，如 'Asia/Shanghai'；空串 = 本地） */
-  private timezone(): string {
+  private timezoneName(): string {
     const tz = this.getAttr('timezone', '')
     if (!tz) return ''
     try {
@@ -918,7 +919,7 @@ export class OASScheduler extends OASElement {
 
   /** 时区感知的「今天」（按目标时区的年月日取本地零点） */
   private todayTz(): Date {
-    const tz = this.timezone()
+    const tz = this.timezoneName()
     if (!tz) return startOfDay(new Date())
     const parts = new Intl.DateTimeFormat('en-CA', {
       timeZone: tz,
@@ -931,7 +932,7 @@ export class OASScheduler extends OASElement {
   }
 
   private setView(v: SchedulerView): void {
-    this.view = v
+    this.viewMode = v
     this.setAttribute('view', v)
     this.emit('view-change', { view: v } satisfies SchedulerViewChangeDetail)
     this.renderCurrentView()
@@ -942,9 +943,9 @@ export class OASScheduler extends OASElement {
     const timeview = this.shadow.querySelector<HTMLElement>('[part="timeview"]')
     const agenda = this.shadow.querySelector<HTMLElement>('[part="agenda"]')
     const resEl = this.shadow.querySelector<HTMLElement>('[part="resource"]')
-    const isTime = this.view === 'week' || this.view === 'day'
-    const isAgenda = this.view === 'agenda'
-    const isResource = this.view === 'resource' || this.view === 'resource-week'
+    const isTime = this.viewMode === 'week' || this.viewMode === 'day'
+    const isAgenda = this.viewMode === 'agenda'
+    const isResource = this.viewMode === 'resource' || this.viewMode === 'resource-week'
     for (const p of monthParts) p.hidden = isTime || isAgenda || isResource
     if (timeview) timeview.hidden = !isTime
     if (agenda) agenda.hidden = !isAgenda
@@ -1000,7 +1001,7 @@ export class OASScheduler extends OASElement {
     for (const btn of this.shadow.querySelectorAll<HTMLButtonElement>('[part="views"] button')) {
       btn.addEventListener('click', () => {
         const v = btn.dataset.view as SchedulerView
-        if (v && v !== this.view) this.setView(v)
+        if (v && v !== this.viewMode) this.setView(v)
       })
     }
     this.bindScrollWindows()
@@ -1029,9 +1030,9 @@ export class OASScheduler extends OASElement {
     if (viewAttr !== this.lastView) {
       const first = this.lastView === ''
       this.lastView = viewAttr
-      if (!first && viewAttr !== this.view)
+      if (!first && viewAttr !== this.viewMode)
         this.emit('view-change', { view: viewAttr } satisfies SchedulerViewChangeDetail)
-      this.view = SCHEDULER_VIEWS.includes(viewAttr) ? viewAttr : 'month'
+      this.viewMode = SCHEDULER_VIEWS.includes(viewAttr) ? viewAttr : 'month'
     }
     // 面板月锚点：page-show-date 变化时重锚定（受控），未变不打断浏览。
     // page-show-date 视为「目标时区的日历日」直接使用（不换算；防偏西时区差一天/整月）
@@ -1041,11 +1042,11 @@ export class OASScheduler extends OASElement {
       if (rawPage) {
         const p = parseISODate(rawPage)
         // 月视图锚到当月 1 号；周/日视图锚到当天（更贴合「展示包含该日的区间」预期）
-        if (p) this.viewDate = this.view === 'month' ? new Date(p.getFullYear(), p.getMonth(), 1) : startOfDay(p)
+        if (p) this.viewDate = this.viewMode === 'month' ? new Date(p.getFullYear(), p.getMonth(), 1) : startOfDay(p)
       }
     }
     // timezone 变化或首次（无受控锚点）：锚到目标时区的今天
-    const tz = this.timezone()
+    const tz = this.timezoneName()
     if (tz !== this.lastTz || !this.anchorInit) {
       this.lastTz = tz
       this.anchorInit = true
@@ -1055,7 +1056,7 @@ export class OASScheduler extends OASElement {
     const todayBtn = this.shadow.querySelector<HTMLElement>('[part="today"]')
     if (todayBtn) todayBtn.textContent = this.t('scheduler.today')
     for (const btn of this.shadow.querySelectorAll<HTMLButtonElement>('[part="views"] button')) {
-      const active = btn.dataset.view === this.view
+      const active = btn.dataset.view === this.viewMode
       btn.classList.toggle('on', active)
       btn.setAttribute('aria-pressed', String(active))
       const v = btn.dataset.view as SchedulerView
@@ -1075,10 +1076,10 @@ export class OASScheduler extends OASElement {
   }
 
   private navigate(delta: number): void {
-    if (this.view === 'month') this.viewDate = addMonths(this.viewDate, delta)
-    else if (this.view === 'week' || this.view === 'resource-week')
+    if (this.viewMode === 'month') this.viewDate = addMonths(this.viewDate, delta)
+    else if (this.viewMode === 'week' || this.viewMode === 'resource-week')
       this.viewDate = new Date(this.viewDate.getTime() + delta * 7 * 86400_000)
-    else if (this.view === 'agenda') this.viewDate = new Date(this.viewDate.getTime() + delta * 28 * 86400_000)
+    else if (this.viewMode === 'agenda') this.viewDate = new Date(this.viewDate.getTime() + delta * 28 * 86400_000)
     else this.viewDate = new Date(this.viewDate.getTime() + delta * 86400_000)
     this.renderCurrentView()
   }
@@ -1397,14 +1398,14 @@ export class OASScheduler extends OASElement {
     const locale = this.effectiveLocale()
     const today = this.todayTz()
     const days: Date[] = []
-    if (this.view === 'week') {
+    if (this.viewMode === 'week') {
       const ws = this.weekStartOf(this.viewDate)
       for (let i = 0; i < 7; i++) days.push(new Date(ws.getFullYear(), ws.getMonth(), ws.getDate() + i))
     } else {
       days.push(this.viewDate)
     }
     if (this.titleEl) {
-      if (this.view === 'week') {
+      if (this.viewMode === 'week') {
         const end = days[6]!
         this.titleEl.textContent = `${this.fmtTz(days[0]!, 'yyyy-MM-dd')} ~ ${this.fmtTz(end, 'MM-dd')}`
       } else {
@@ -1621,7 +1622,7 @@ export class OASScheduler extends OASElement {
 
   /** 当前时刻分钟数（时区感知；无时区走本地） */
   private nowMinutes(): number | null {
-    const tz = this.timezone()
+    const tz = this.timezoneName()
     if (!tz) {
       const d = new Date()
       return d.getHours() * 60 + d.getMinutes()
@@ -1749,7 +1750,7 @@ export class OASScheduler extends OASElement {
 
   /** 资源视图：resource = 单日横向时间轴；resource-week = 周 × 资源 */
   private renderResource(): void {
-    if (this.view === 'resource') this.renderResourceDay()
+    if (this.viewMode === 'resource') this.renderResourceDay()
     else this.renderResourceWeek()
   }
 
@@ -2063,8 +2064,8 @@ export class OASScheduler extends OASElement {
    *  落定路径 updateEvent/finishCreate 自身会触发重渲染 */
   private refreshScrollWindows(): void {
     if (this.dragCtx || this.createCtx) return
-    const isTime = this.view === 'week' || this.view === 'day'
-    const isResource = this.view === 'resource' || this.view === 'resource-week'
+    const isTime = this.viewMode === 'week' || this.viewMode === 'day'
+    const isResource = this.viewMode === 'resource' || this.viewMode === 'resource-week'
     if (isTime) {
       const win = this.hourWindow()
       if (this.sameWindow(win, this.lastHourWin)) return
@@ -2124,7 +2125,7 @@ export class OASScheduler extends OASElement {
   /** 资源行高（定高模型，同 gantt 行虚拟先例）：单日行 37px；周×资源行 = max(轨道高, 单元格 min-height) + 1px 边框
    *  （min-height 下界：极端 start/end-hour 使轨道高低于单元格 min-height 时，spacer 按实际行高计，总高守恒） */
   private resRowH(): number {
-    if (this.view === 'resource-week') return Math.max((this.endHour() - this.startHour()) * 24, RES_CELL_MIN_H) + 1
+    if (this.viewMode === 'resource-week') return Math.max((this.endHour() - this.startHour()) * 24, RES_CELL_MIN_H) + 1
     return RES_ROW_H
   }
 }

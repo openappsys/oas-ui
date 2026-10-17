@@ -3570,3 +3570,17 @@ describe('OASResource 表头吸顶（泳道周刻度）', () => {
     expect(offBlock, '关闭态非 sticky').toContain('position: static')
   })
 })
+
+describe('property 通道接受 JSON 字符串（框架把静态 attribute 写成 property）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+  it('resources/tasks setter 字符串 → 解析为数组', () => {
+    const el = mount({ resources: '[]', tasks: '[]' })
+    el.resources = JSON.stringify([{ id: 'r1', name: '甲', capacity: 1 }])
+    el.tasks = JSON.stringify([{ id: 't1', name: 'A', start: '2026-03-02', end: '2026-03-03', resources: ['r1'] }])
+    expect(el.resources.length).toBe(1)
+    expect(el.tasks.length).toBe(1)
+    expect(el.tasks[0]!.resources).toEqual(['r1'])
+  })
+})

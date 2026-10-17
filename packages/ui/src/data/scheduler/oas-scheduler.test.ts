@@ -1073,3 +1073,17 @@ describe('OASScheduler 资源视图索引化（终审 F1：滚动帧不随事件
     expect(el.shadowRoot!.querySelectorAll('.res-row').length, '未分配事件清零 → 未分配行移除').toBe(1)
   })
 })
+
+describe('property 通道接受 JSON 字符串（框架把静态 attribute 写成 property）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+  it('events/resources setter 字符串 → 解析为数组', () => {
+    const el = mount({ view: 'week', 'page-show-date': '2026-08-10' })
+    el.resources = JSON.stringify([{ id: 'r1', title: '甲' }])
+    el.events = JSON.stringify([{ date: '2026-08-10', title: '会议', resource: 'r1' }])
+    expect(el.resources.length).toBe(1)
+    expect(el.events.length).toBe(1)
+    expect(el.events[0]!.title).toBe('会议')
+  })
+})

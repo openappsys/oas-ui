@@ -1,4 +1,5 @@
 import { OASElement } from '@oas-ui/core'
+import { parseJsonArray } from '../../shared/json-array.js'
 import {
   addMonthsClamped,
   formatToken,
@@ -1177,8 +1178,12 @@ export class OASResource extends OASElement {
     const memo = new WeakMap<object, unknown>()
     return this._resources.map((r) => toPublicResource(r, memo, this.accessorKeyError('resources')))
   }
-  set resources(v: ResourceItem[]) {
-    this._resources = sanitizeResources(v, this.accessorKeyError('resources'), this.invalidEntry('resources'))
+  set resources(v: ResourceItem[] | string) {
+    this._resources = sanitizeResources(
+      parseJsonArray<ResourceItem>(v, this.invalidEntry('resources')),
+      this.accessorKeyError('resources'),
+      this.invalidEntry('resources'),
+    )
     // attribute 序列化走公开形态（capacity 缺省不落字段、危险键不落），与 property 读回内容一致
     this.resourcesAttrCache = this.serializePublic(
       'resources',
@@ -1201,8 +1206,12 @@ export class OASResource extends OASElement {
     const memo = new WeakMap<object, unknown>()
     return this._tasks.map((t) => toPublicTask(t, memo, this.accessorKeyError('tasks')))
   }
-  set tasks(v: ResourceTask[]) {
-    this._tasks = sanitizeTasks(v, this.accessorKeyError('tasks'), this.invalidEntry('tasks'))
+  set tasks(v: ResourceTask[] | string) {
+    this._tasks = sanitizeTasks(
+      parseJsonArray<ResourceTask>(v, this.invalidEntry('tasks')),
+      this.accessorKeyError('tasks'),
+      this.invalidEntry('tasks'),
+    )
     // attribute 序列化走公开形态（resources 空数组不落字段、危险键不落），与 property 读回内容一致
     // 显式包装：不能 map(toPublicTask) 直传——map 会把 index 塞进 memo 位（非 WeakMap）
     this.tasksAttrCache = this.serializePublic(

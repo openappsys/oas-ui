@@ -149,7 +149,7 @@
   "props": [
     {
       "name": "tasks",
-      "type": "GanttTask[]",
+      "type": "GanttTask[] | string",
       "default": "[]",
       "api": true
     },

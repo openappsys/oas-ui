@@ -1,4 +1,5 @@
 import { OASElement, getLocaleTranslator } from '@oas-ui/core'
+import { parseJsonArray } from '../../shared/json-array.js'
 import {
   resolveLocale,
   startOfDay,
@@ -422,8 +423,8 @@ export class OASCalendar extends OASElement {
   get events(): CalendarEvent[] {
     return this._events.slice()
   }
-  set events(v: CalendarEvent[]) {
-    this._events = sanitizeEvents(v)
+  set events(v: CalendarEvent[] | string) {
+    this._events = sanitizeEvents(parseJsonArray<CalendarEvent>(v))
     this._eventsAttrCache = JSON.stringify(this._events)
     this.setAttribute('events', this._eventsAttrCache)
     this.hideEventsPanel()

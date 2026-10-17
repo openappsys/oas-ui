@@ -929,3 +929,15 @@ describe('D24 months 多月份并排面板', () => {
     expect(all.some((b) => !b.classList.contains('outside'))).toBe(true)
   })
 })
+
+describe('property 通道接受 JSON 字符串（框架把静态 attribute 写成 property）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+  it('events setter 字符串 → 解析为数组', () => {
+    const el = mount({ value: '2026-03-02' })
+    el.events = JSON.stringify([{ date: '2026-03-02', title: '例会' }])
+    expect(el.events.length).toBe(1)
+    expect(el.events[0]!.title).toBe('例会')
+  })
+})

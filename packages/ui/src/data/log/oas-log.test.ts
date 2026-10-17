@@ -380,3 +380,14 @@ describe('OASLog', () => {
     el.remove()
   })
 })
+
+describe('property 通道接受 JSON 字符串（框架把静态 attribute 写成 property）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+  it('lines setter 字符串 → 解析为字符串数组', () => {
+    const el = mount()
+    el.lines = JSON.stringify(['a', 'b'])
+    expect(el.lines).toEqual(['a', 'b'])
+  })
+})

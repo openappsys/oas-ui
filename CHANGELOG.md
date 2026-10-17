@@ -6,7 +6,7 @@
 
 ### 修复
 
-- **SPA 客户端路由下 gantt / resource demo 空白**：私有方法名与单字属性 `scale` 撞名，框架（Vue 自定义元素）按「key in el」把 `scale="day"` 写成 property，own string 遮蔽原型方法 → `this.scale is not a function`；整页刷新因升级晚于 patch 才走 attribute。内部方法改名 `scaleMode()`（公开 API 不变），并新增客户端跳转回归（表格页 → 甘特 → 资源）。
+- **SPA 客户端路由下 scheduler / gantt / resource demo 空白**：① 私有成员与单字属性撞名（`scale`/`view`/`expanded`），框架按「key in el」把静态 attribute 写成 property，own 字符串遮蔽方法或 Set 字段导致报错/空白；内部改名（`scaleMode`/`viewMode`/`expandedSet`，公开 API 不变）。② 数据属性的 property setter 统一接受 JSON 字符串（`events`/`resources`/`tasks`/`lines` 等），框架把静态 attribute 当 property 写入时不再被当作非法数组清空。新增 `shared/json-array` 与客户端跳转回归（表格 → 日程 → 甘特 → 资源）。
 
 ### 特性
 

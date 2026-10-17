@@ -1,4 +1,5 @@
 import { OASElement } from '@oas-ui/core'
+import { parseJsonArray } from '../../shared/json-array.js'
 
 /** 视为"贴底"的滚动剩余距离阈值（px），小于等于该值判定用户停在底部 */
 const AUTO_SCROLL_THRESHOLD = 8
@@ -224,8 +225,8 @@ export class OASLog extends OASElement {
     return this.data.slice()
   }
 
-  set lines(value: string[]) {
-    this.data = Array.isArray(value) ? value.filter((l): l is string => typeof l === 'string') : []
+  set lines(value: string[] | string) {
+    this.data = parseJsonArray<string>(value).filter((l): l is string => typeof l === 'string')
     this.linesFromProperty = true
     if (this.isConnected) this.update()
   }

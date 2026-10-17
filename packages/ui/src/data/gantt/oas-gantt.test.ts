@@ -6679,3 +6679,15 @@ describe('OASGantt windowed（服务端行窗口模式）', () => {
     }
   })
 })
+
+describe('property 通道接受 JSON 字符串（框架把静态 attribute 写成 property）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+  it('tasks setter 字符串 → 解析为任务数组', () => {
+    const el = mount()
+    el.tasks = JSON.stringify([{ id: 't1', name: 'A', start: '2026-03-02', end: '2026-03-03' }])
+    expect(el.tasks.length).toBe(1)
+    expect(el.tasks[0]!.id).toBe('t1')
+  })
+})

@@ -1,4 +1,5 @@
 import { OASElement } from '@oas-ui/core'
+import { parseJsonArray } from '../../shared/json-array.js'
 import {
   formatToken,
   getWeekStart,
@@ -1145,7 +1146,7 @@ export class OASGantt extends OASElement {
   private nextId = 1
   private expandedAttrCache = ''
   /** 展开集合：null = 未受控（数据 expanded 初始化）；expanded 属性出现后受控 */
-  private expanded: Set<string> | null = null
+  private expandedSet: Set<string> | null = null
   private units: TimeUnit[] = []
   /** 主刻度合并组（buildMajorGroups 产物，与 units 同生命周期重建）：renderHeader 窗口切片数据源 */
   private majorGroups: GanttMajorGroup[] = []
@@ -1296,9 +1297,9 @@ export class OASGantt extends OASElement {
       return copy
     })
   }
-  set tasks(v: GanttTask[]) {
+  set tasks(v: GanttTask[] | string) {
     this._tasks = sanitizeTasks(
-      v,
+      parseJsonArray<GanttTask>(v),
       (used) => this.allocId(used),
       (key, msg) => this.warnOnce(key, msg),
     )
@@ -1413,11 +1414,11 @@ export class OASGantt extends OASElement {
   /** 让 id 的父级展开以显示新增子级：受控时补入 expanded 集合并回写属性；未受控时若该父级带
    *  数据级 `expanded:false`（显式收起）则置 true（否则新子级隐形、无重命名/聚焦反馈） */
   private ensureExpanded(id: string): void {
-    if (this.expanded) {
-      if (this.expanded.has(id)) return
-      const next = new Set(this.expanded)
+    if (this.expandedSet) {
+      if (this.expandedSet.has(id)) return
+      const next = new Set(this.expandedSet)
       next.add(id)
-      this.expanded = next
+      this.expandedSet = next
       this.expandedAttrCache = JSON.stringify([...next])
       this.setAttribute('expanded', this.expandedAttrCache)
       return
@@ -1449,7 +1450,7 @@ export class OASGantt extends OASElement {
     if (raw === '') {
       if (this.expandedAttrCache !== '') {
         this.expandedAttrCache = ''
-        this.expanded = null
+        this.expandedSet = null
       }
       return
     }
@@ -1461,7 +1462,7 @@ export class OASGantt extends OASElement {
     } catch {
       parsed = []
     }
-    this.expanded = new Set(Array.isArray(parsed) ? parsed.filter((k): k is string => typeof k === 'string') : [])
+    this.expandedSet = new Set(Array.isArray(parsed) ? parsed.filter((k): k is string => typeof k === 'string') : [])
   }
 
   private effectiveLocale(): string {
@@ -2034,7 +2035,7 @@ export class OASGantt extends OASElement {
 
   /** 生效展开集合：受控属性优先；未受控时缺省全展开（数据 expanded:false 为显式收起的例外） */
   private effectiveExpandedSet(childMap: Map<string, string[]>): Set<string> {
-    if (this.expanded) return this.expanded
+    if (this.expandedSet) return this.expandedSet
     const set = new Set<string>()
     for (const t of this._tasks) {
       if (t.expanded !== false && (childMap.has(t.id) || t.type === 'summary')) set.add(t.id)
@@ -2045,7 +2046,7 @@ export class OASGantt extends OASElement {
   /** 当前展开集合（toggle 用）：优先取 buildRows 缓存；未受控且无缓存时从数据构建
    *  （id 索引 Set 保证万级任务 O(n)——some 线性扫描会 O(n²)） */
   private currentExpandedSet(): Set<string> {
-    if (this.expanded) return this.expanded
+    if (this.expandedSet) return this.expandedSet
     if (this.expandedSetCache) return this.expandedSetCache
     const ids = new Set(this._tasks.map((t) => t.id))
     const childMap = new Map<string, string[]>()
@@ -2065,7 +2066,7 @@ export class OASGantt extends OASElement {
     const willExpand = !set.has(id)
     if (willExpand) next.add(id)
     else next.delete(id)
-    this.expanded = next
+    this.expandedSet = next
     this.expandedAttrCache = JSON.stringify([...next])
     this.setAttribute('expanded', this.expandedAttrCache)
     this.update()
