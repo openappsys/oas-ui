@@ -56,7 +56,7 @@
   "props": [
     {
       "name": "lines",
-      "type": "string[] | string",
+      "type": "string[]",
       "default": "[]"
     }
   ],

@@ -64,13 +64,13 @@
   "props": [
     {
       "name": "events",
-      "type": "SchedulerEvent[] | string",
+      "type": "SchedulerEvent[]",
       "default": "[]",
       "api": true
     },
     {
       "name": "resources",
-      "type": "SchedulerResource[] | string",
+      "type": "SchedulerResource[]",
       "default": "[]",
       "api": true
     }

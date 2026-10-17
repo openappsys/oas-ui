@@ -726,8 +726,8 @@ export class OASScheduler extends OASElement {
   get events(): SchedulerEvent[] {
     return this._events.map((e) => ({ ...e, repeat: e.repeat ? { ...e.repeat } : undefined }))
   }
-  set events(v: SchedulerEvent[] | string) {
-    this._events = this.normalizeWithIds(sanitizeEvents(parseJsonArray<SchedulerEvent>(v)))
+  set events(v: SchedulerEvent[]) {
+    this._events = this.normalizeWithIds(sanitizeEvents(parseJsonArray<SchedulerEvent>(v as unknown)))
     this._eventsAttrCache = JSON.stringify(this._events)
     this.setAttribute('events', this._eventsAttrCache)
     this.update()
@@ -740,8 +740,8 @@ export class OASScheduler extends OASElement {
   get resources(): SchedulerResource[] {
     return this._resources.map((r) => ({ ...r }))
   }
-  set resources(v: SchedulerResource[] | string) {
-    this._resources = sanitizeResources(parseJsonArray<SchedulerResource>(v))
+  set resources(v: SchedulerResource[]) {
+    this._resources = sanitizeResources(parseJsonArray<SchedulerResource>(v as unknown))
     this._resourcesAttrCache = JSON.stringify(this._resources)
     this.setAttribute('resources', this._resourcesAttrCache)
     this.update()

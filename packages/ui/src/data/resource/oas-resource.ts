@@ -1178,9 +1178,9 @@ export class OASResource extends OASElement {
     const memo = new WeakMap<object, unknown>()
     return this._resources.map((r) => toPublicResource(r, memo, this.accessorKeyError('resources')))
   }
-  set resources(v: ResourceItem[] | string) {
+  set resources(v: ResourceItem[]) {
     this._resources = sanitizeResources(
-      parseJsonArray<ResourceItem>(v, this.invalidEntry('resources')),
+      parseJsonArray<ResourceItem>(v as unknown, this.invalidEntry('resources')),
       this.accessorKeyError('resources'),
       this.invalidEntry('resources'),
     )
@@ -1206,9 +1206,9 @@ export class OASResource extends OASElement {
     const memo = new WeakMap<object, unknown>()
     return this._tasks.map((t) => toPublicTask(t, memo, this.accessorKeyError('tasks')))
   }
-  set tasks(v: ResourceTask[] | string) {
+  set tasks(v: ResourceTask[]) {
     this._tasks = sanitizeTasks(
-      parseJsonArray<ResourceTask>(v, this.invalidEntry('tasks')),
+      parseJsonArray<ResourceTask>(v as unknown, this.invalidEntry('tasks')),
       this.accessorKeyError('tasks'),
       this.invalidEntry('tasks'),
     )

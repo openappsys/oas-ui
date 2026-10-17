@@ -88,13 +88,13 @@
   "props": [
     {
       "name": "resources",
-      "type": "ResourceItem[] | string",
+      "type": "ResourceItem[]",
       "default": "[]",
       "api": true
     },
     {
       "name": "tasks",
-      "type": "ResourceTask[] | string",
+      "type": "ResourceTask[]",
       "default": "[]",
       "api": true
     }

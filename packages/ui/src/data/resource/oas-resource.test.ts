@@ -3577,7 +3577,9 @@ describe('property 通道接受 JSON 字符串（框架把静态 attribute 写�
   })
   it('resources/tasks setter 字符串 → 解析为数组', () => {
     const el = mount({ resources: '[]', tasks: '[]' })
+    // @ts-expect-error 以字符串写入：模拟框架把静态 attribute 当 property 传入
     el.resources = JSON.stringify([{ id: 'r1', name: '甲', capacity: 1 }])
+    // @ts-expect-error 以字符串写入：模拟框架把静态 attribute 当 property 传入
     el.tasks = JSON.stringify([{ id: 't1', name: 'A', start: '2026-03-02', end: '2026-03-03', resources: ['r1'] }])
     expect(el.resources.length).toBe(1)
     expect(el.tasks.length).toBe(1)

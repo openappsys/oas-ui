@@ -1080,7 +1080,9 @@ describe('property 通道接受 JSON 字符串（框架把静态 attribute 写�
   })
   it('events/resources setter 字符串 → 解析为数组', () => {
     const el = mount({ view: 'week', 'page-show-date': '2026-08-10' })
+    // @ts-expect-error 以字符串写入：模拟框架把静态 attribute 当 property 传入
     el.resources = JSON.stringify([{ id: 'r1', title: '甲' }])
+    // @ts-expect-error 以字符串写入：模拟框架把静态 attribute 当 property 传入
     el.events = JSON.stringify([{ date: '2026-08-10', title: '会议', resource: 'r1' }])
     expect(el.resources.length).toBe(1)
     expect(el.events.length).toBe(1)

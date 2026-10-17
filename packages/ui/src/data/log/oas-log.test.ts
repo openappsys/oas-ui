@@ -387,6 +387,7 @@ describe('property 通道接受 JSON 字符串（框架把静态 attribute 写�
   })
   it('lines setter 字符串 → 解析为字符串数组', () => {
     const el = mount()
+    // @ts-expect-error 以字符串写入：模拟框架把静态 attribute 当 property 传入
     el.lines = JSON.stringify(['a', 'b'])
     expect(el.lines).toEqual(['a', 'b'])
   })

@@ -225,8 +225,8 @@ export class OASLog extends OASElement {
     return this.data.slice()
   }
 
-  set lines(value: string[] | string) {
-    this.data = parseJsonArray<string>(value).filter((l): l is string => typeof l === 'string')
+  set lines(value: string[]) {
+    this.data = parseJsonArray<string>(value as unknown).filter((l): l is string => typeof l === 'string')
     this.linesFromProperty = true
     if (this.isConnected) this.update()
   }

@@ -423,8 +423,8 @@ export class OASCalendar extends OASElement {
   get events(): CalendarEvent[] {
     return this._events.slice()
   }
-  set events(v: CalendarEvent[] | string) {
-    this._events = sanitizeEvents(parseJsonArray<CalendarEvent>(v))
+  set events(v: CalendarEvent[]) {
+    this._events = sanitizeEvents(parseJsonArray<CalendarEvent>(v as unknown))
     this._eventsAttrCache = JSON.stringify(this._events)
     this.setAttribute('events', this._eventsAttrCache)
     this.hideEventsPanel()

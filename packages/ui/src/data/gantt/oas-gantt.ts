@@ -1297,9 +1297,9 @@ export class OASGantt extends OASElement {
       return copy
     })
   }
-  set tasks(v: GanttTask[] | string) {
+  set tasks(v: GanttTask[]) {
     this._tasks = sanitizeTasks(
-      parseJsonArray<GanttTask>(v),
+      parseJsonArray<GanttTask>(v as unknown),
       (used) => this.allocId(used),
       (key, msg) => this.warnOnce(key, msg),
     )
