@@ -39,6 +39,17 @@ el.tasks = tasks.map((t) => moved.find((m) => m.id === t.id) ?? t)
 
 > `week` 档步进按周 period，而纯函数无 locale 上下文（周起始缺省周一）；跨周边界的任务建议显式传 `{ weekStart: <与页面 locale 一致的值> }`（0=周日 … 6=周六），避免与直方图周粒度判定出现边界差。
 
+## 可读性（opt-in 开关）
+
+<DemoBlock title="可读性开关（opt-in）：负载柱顶数字（show-load-values）+ 超载徽标（show-overload-badge）+ 条内任务名（bar-label）">
+  <oas-resource id="res-readable" scale="day" height="420" capacity="1" show-load-values show-overload-badge bar-label
+    resources='[{"id":"zhang","name":"张三","capacity":1},{"id":"li","name":"李四","capacity":1},{"id":"wang","name":"王五","capacity":2}]'
+    tasks='[{"id":"t1","name":"需求评审","start":"2026-03-02","end":"2026-03-03","resources":["zhang","li"]},{"id":"t2","name":"接口设计","start":"2026-03-03","end":"2026-03-05","resources":["zhang"]},{"id":"t3","name":"后端开发","start":"2026-03-04","end":"2026-03-08","resources":["li"]},{"id":"t4","name":"前端开发","start":"2026-03-04","end":"2026-03-08","resources":["wang"]},{"id":"t5","name":"联调测试","start":"2026-03-09","end":"2026-03-11","resources":["li","wang"]},{"id":"t6","name":"文档整理","start":"2026-03-02","end":"2026-03-04","resources":["wang"]}]'></oas-resource>
+  <div id="res-readable-output" style="color:var(--oas-color-text-secondary);font-size:var(--oas-font-size-sm);margin-top:var(--oas-space-2)">三个开关全开：负载柱顶显示该档并行任务数（超载档红色）；张三行头显示「超载 1 档」徽标；任务条内显示任务名。</div>
+</DemoBlock>
+
+三个可读性能力均为 **opt-in**（默认全关、零新增节点）：`show-load-values` 在每个 load > 0 的负载柱顶显示该档并行任务数（装饰性数字，`aria-hidden`；超载档加 `.over` 走 `--oas-color-danger`）；`show-overload-badge` 在超载资源的泳道行头显示「超载 N 档」徽标（可见信息，不 `aria-hidden`，文案随全局 locale 即时切换）；`bar-label` 在任务条内显示任务名（纯文本渲染防注入，条窄时单行裁切；不影响 aria-label 与点击命中）。
+
 ## 本地化与时间定位
 
 <DemoBlock title="locale=&quot;en-US&quot;（周日起始）+ scale=&quot;week&quot;：刻度文案与周起始按 en-US 口径；scrollToDate 把时间轴滚动定位到指定日期">
@@ -85,6 +96,7 @@ windowed 下的约定：负载/超载统计**仅基于已装载切片**（全量
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
+| `bar-label` | 任务条内显示任务名（布尔，默认关）：单行省略，窄条自动裁切；不改变 aria-label 与点击/拖拽命中 | `boolean` | — |
 | `capacity` | 资源未声明 capacity 时的缺省容量（默认 1） | `string` | `1` |
 | `height` | 组件高度 px（默认 320；接受纯数字或 Npx）：映射到自定义属性 --oas-resource-height（宿主自身 height 内联始终优先，组件不覆盖宿主内联）。height 属性在场且为合法值（>0 纯数字或 Npx）时组件接管该变量，写入宿主内联并覆盖宿主自己设置的 --oas-resource-height；空串/空白按未设置处理；非法值不写该变量、仅清除本实例此前写入的值，宿主 token 不受影响；属性移除后组件写入的值归零清除，高度回落 token 缺省 320 或宿主 CSS，宿主原先内联设置的值不恢复；从未设置 height 属性时组件不写该变量，宿主内联或 class 规则设置的 --oas-resource-height 完全不受影响 | `string` | `320` |
 | `locale` | 本地化（覆盖 config-provider 注入与全局 locale） | `string` | — |
@@ -92,6 +104,8 @@ windowed 下的约定：负载/超载统计**仅基于已装载切片**（全量
 | `range-start` | 宿主托管时间轴起点（ISO 日期 YYYY-MM-DD）：提供后 period 范围不再由已装载任务推导 | `string` | — |
 | `resources` | 资源列表（JSON [{ id, name, capacity? }]）——capacity = 该资源每档（period）可并行任务数（day 档即每天；缺省回落属性 capacity，最终 1） | `ResourceItem[]` | `[]` |
 | `scale` | 直方图 period 粒度与时间轴刻度：day（默认）/ week / month；非法回落 day | `string` | — |
+| `show-load-values` | 负载直方图柱顶显示该档负载数字（布尔，默认关）：仅 load > 0 显示，超载档数字用 danger 色；数字为视觉冗余（aria-hidden），读屏仍读列的负载描述 | `boolean` | — |
+| `show-overload-badge` | 泳道行头显示「超载 N 档」徽标（布尔，默认关）：仅该资源存在超载档时显示，文案走 i18n resource.overBadge | `boolean` | — |
 | `tasks` | 资源任务（JSON [{ id, name, start, end, resources? }]）；start/end 仅日精度 YYYY-MM-DD（end 含当日；带时刻输入按当日处理），resources 为分配的资源 id 数组（指向不存在资源的分配忽略） | `ResourceTask[]` | `[]` |
 | `total` | windowed 模式下的全量资源行数；为 0 或非法时 windowed 不生效（回落本地模式） | `string` | — |
 | `window-start` | windowed 模式下切片首行（资源）的绝对行号（相对全量） | `string` | `0` |

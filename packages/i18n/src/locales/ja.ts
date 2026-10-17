@@ -214,6 +214,7 @@ export const ja: LocaleMessages = {
   'resource.taskAria': '{name}：{start} 〜 {end}、リソース {resource}',
   'resource.loadAria': '{resource}：負荷は正常です',
   'resource.loadOverAria': '{resource}：{count} 期間が過負荷',
+  'resource.overBadge': '過負荷 ×{count}',
   // kanban（かんばん）
   'kanban.emptyColumn': 'カードをここにドラッグ',
   'kanban.moveCard': 'カードを移動',

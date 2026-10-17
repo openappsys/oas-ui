@@ -177,6 +177,7 @@ export const en: LocaleMessages = {
   'resource.taskAria': '{name}: {start} to {end}, resource {resource}',
   'resource.loadAria': '{resource}: load normal',
   'resource.loadOverAria': '{resource}: {count} overloaded period(s)',
+  'resource.overBadge': 'Overloaded ×{count}',
   // kanban（看板）
   'kanban.emptyColumn': 'Drag cards here',
   'kanban.moveCard': 'Move card',

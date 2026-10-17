@@ -64,6 +64,21 @@
       "type": "string",
       "default": "",
       "observed": true
+    },
+    {
+      "name": "show-load-values",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "show-overload-badge",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "bar-label",
+      "type": "boolean",
+      "observed": true
     }
   ],
   "props": [

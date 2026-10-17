@@ -214,6 +214,7 @@ export const de: LocaleMessages = {
   'resource.taskAria': '{name}: {start} bis {end}, Ressource {resource}',
   'resource.loadAria': '{resource}: Auslastung normal',
   'resource.loadOverAria': '{resource}: {count} überlastete Perioden',
+  'resource.overBadge': 'Überlastet ×{count}',
   // kanban (Kanban-Board)
   'kanban.emptyColumn': 'Karten hierher ziehen',
   'kanban.moveCard': 'Karte verschieben',

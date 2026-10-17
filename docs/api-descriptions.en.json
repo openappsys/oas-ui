@@ -4710,7 +4710,10 @@
       "total": "Full resource row count in windowed mode; 0 or invalid disables windowed (falls back to local mode)",
       "window-start": "Absolute row index (within the full dataset) of the first row (resource) in the slice (windowed mode)",
       "range-start": "Host-managed time-axis start (ISO date YYYY-MM-DD): when provided the period range is no longer derived from loaded tasks",
-      "range-end": "Host-managed time-axis end (ISO date YYYY-MM-DD, inclusive); pair with range-start. If only one is given, reversed or invalid, the axis is not host-managed and a devWarn is emitted"
+      "range-end": "Host-managed time-axis end (ISO date YYYY-MM-DD, inclusive); pair with range-start. If only one is given, reversed or invalid, the axis is not host-managed and a devWarn is emitted",
+      "show-load-values": "Show the load value above each histogram bar (boolean, off by default): only for load > 0; overload values use the danger color. The number is visual redundancy (aria-hidden); screen readers still get the column load description",
+      "show-overload-badge": "Show an \"Overloaded ×N\" badge in the lane header (boolean, off by default): only for resources with overloaded periods; text comes from the i18n key resource.overBadge",
+      "bar-label": "Show the task name inside the bar (boolean, off by default): single line with ellipsis, clipped on narrow bars; aria-label and click/drag hit-testing are unchanged"
     },
     "events": {
       "oas-task-click": "Dispatched when a task bar in a resource swimlane is clicked, detail: { id, task, resourceId }",

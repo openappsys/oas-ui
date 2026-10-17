@@ -214,6 +214,7 @@ export const ru: LocaleMessages = {
   'resource.taskAria': '{name}: {start} — {end}, ресурс {resource}',
   'resource.loadAria': '{resource}: нагрузка в норме',
   'resource.loadOverAria': '{resource}: перегрузка в {count} периодах',
+  'resource.overBadge': 'Перегрузка ×{count}',
   // kanban (канбан-доска)
   'kanban.emptyColumn': 'Перетащите карточки сюда',
   'kanban.moveCard': 'Переместить карточку',

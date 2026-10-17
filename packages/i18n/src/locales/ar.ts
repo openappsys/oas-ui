@@ -214,6 +214,7 @@ export const ar: LocaleMessages = {
   'resource.taskAria': '{name}: {start} إلى {end}، المورد {resource}',
   'resource.loadAria': '{resource}: الحمل طبيعي',
   'resource.loadOverAria': '{resource}: {count} فترة محمّلة بشكل زائد',
+  'resource.overBadge': 'تحميل زائد ×{count}',
   // kanban (لوحة كانبان)
   'kanban.emptyColumn': 'اسحب البطاقات إلى هنا',
   'kanban.moveCard': 'نقل البطاقة',

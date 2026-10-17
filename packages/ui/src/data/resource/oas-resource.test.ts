@@ -1,4 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
+import { setLocale } from '@oas-ui/i18n'
+import en from '@oas-ui/i18n/en'
 import { OASResource, levelResources } from './index.js'
 import type { ResourceItem, ResourceScale, ResourceTask, ResourceOverloadDetail } from './index.js'
 
@@ -3293,5 +3295,201 @@ describe('OASResource a11y 行网格（非 windowed 全量口径）', () => {
     expect(mid[0]!.dataset['resourceId'], '窗口已滚到本地第 95 行附近').not.toBe('r0')
     expect(midFirst, '窗口首行绝对行号 > 1').toBeGreaterThan(1)
     expect(midFirst, '绝对行号不超过全量行数').toBeLessThanOrEqual(200)
+  })
+})
+
+describe('OASResource 可读性能力（opt-in，默认全关）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  /** r1 必超载（03-02 load 2 > cap 1）；r2 恒正常（cap 5） */
+  const RES_OVER = JSON.stringify([
+    { id: 'r1', name: '资源甲', capacity: 1 },
+    { id: 'r2', name: '资源乙', capacity: 5 },
+  ])
+  const TASKS_OVER = JSON.stringify([
+    { id: 'a', name: '任务A', start: '2026-03-02', end: '2026-03-02', resources: ['r1'] },
+    { id: 'b', name: '任务B', start: '2026-03-02', end: '2026-03-04', resources: ['r1'] },
+    { id: 'c', name: '任务C', start: '2026-03-02', end: '2026-03-02', resources: ['r2'] },
+  ])
+
+  it('① 默认全关：不渲染 load-value / over-badge / bar-label 任何新增节点（反证：去掉开关判断本组必红）', () => {
+    const el = mount({ resources: RES_OVER, tasks: TASKS_OVER })
+    expect(shadowOf(el).querySelectorAll('.load-value').length, '无负载值数字').toBe(0)
+    expect(shadowOf(el).querySelectorAll('.over-badge').length, '无超载徽标').toBe(0)
+    expect(shadowOf(el).querySelectorAll('.bar-label').length, '无条内标签').toBe(0)
+    // 泳道名列仍是纯文本路径（无 name-text 结构）
+    const laneName = laneOf(el, 'r1').querySelector('.name')!
+    expect(laneName.textContent).toBe('资源甲')
+    expect(laneName.querySelector('.name-text')).toBeNull()
+  })
+
+  it('①-b 三开关各自开启即渲染、互不连带', () => {
+    const lv = mount({ resources: RES_OVER, tasks: TASKS_OVER, 'show-load-values': '' })
+    expect(shadowOf(lv).querySelectorAll('.load-value').length, '4 个 load>0 的柱都有数字').toBe(4)
+    expect(shadowOf(lv).querySelectorAll('.over-badge').length, '未开徽标开关 → 无徽标').toBe(0)
+    expect(shadowOf(lv).querySelectorAll('.bar-label').length, '未开条标签开关 → 无标签').toBe(0)
+
+    const ob = mount({ resources: RES_OVER, tasks: TASKS_OVER, 'show-overload-badge': '' })
+    expect(shadowOf(ob).querySelectorAll('.over-badge').length, '仅超载的 r1 有徽标').toBe(1)
+    expect(shadowOf(ob).querySelectorAll('.load-value').length, '未开数字开关 → 无数字').toBe(0)
+
+    const bl = mount({ resources: RES_OVER, tasks: TASKS_OVER, 'bar-label': '' })
+    expect(shadowOf(bl).querySelectorAll('.bar-label').length, '3 条任务条都有标签').toBe(3)
+    expect(shadowOf(bl).querySelectorAll('.load-value').length, '未开数字开关 → 无数字').toBe(0)
+    expect(shadowOf(bl).querySelectorAll('.over-badge').length, '未开徽标开关 → 无徽标').toBe(0)
+  })
+
+  it('② show-load-values：只显示 load>0；数字 aria-hidden；超载数字带 over 类 + danger 色；bottom 按柱高钳制', () => {
+    const el = mount({ resources: RES_OVER, tasks: TASKS_OVER, 'show-load-values': '' })
+    const r1Cols = [...shadowOf(el).querySelectorAll<HTMLElement>('.load[data-resource-id="r1"] .col')]
+    expect(r1Cols.length, 'r1 覆盖 3 个 period').toBe(3)
+    const values = r1Cols.map((c) => c.querySelector<HTMLElement>('.load-value'))
+    expect(
+      values.map((v) => v?.textContent ?? null),
+      '逐列数字与负载一致',
+    ).toEqual(['2', '1', '1'])
+    // 数字为装饰（列 aria-label 已描述负载）：aria-hidden 避免读屏重复播报
+    expect(
+      values.every((v) => v?.getAttribute('aria-hidden') === 'true'),
+      '数字全部 aria-hidden',
+    ).toBe(true)
+    // 超载（load 2 > cap 1）带 over 类；满载非超载不带
+    expect(values[0]!.classList.contains('over'), '超载档 over 类').toBe(true)
+    expect(values[1]!.classList.contains('over'), 'load=cap 非超载').toBe(false)
+    // bottom 钳制（trackH 回落 token 缺省 64；maxLoad=2）：load 2 → min(64+2, 52) = 52；load 1 → min(32+2, 52) = 34
+    expect(values[0]!.style.bottom, '高柱数字钳在轨道内（不被裁）').toBe('52px')
+    expect(values[1]!.style.bottom, '半高柱数字贴柱顶上方 2px').toBe('34px')
+    // 颜色只走 token（机制断言；对比度/视觉待浏览器复核）
+    const css = shadowOf(el).querySelector('style')!.textContent ?? ''
+    const lvStart = css.indexOf('.load-value {')
+    expect(lvStart, '存在 .load-value 规则').toBeGreaterThan(-1)
+    const lvBlock = css.slice(lvStart, css.indexOf('}', lvStart))
+    expect(lvBlock, '水平居中（所在列内）').toContain('text-align: center')
+    expect(lvBlock, '普通数字用 text-primary（压浅蓝/暗蓝柱都可读）').toContain('color: var(--oas-color-text-primary)')
+    const overStart = css.indexOf('.load-value.over')
+    expect(overStart, '存在 .load-value.over 规则').toBeGreaterThan(-1)
+    const overBlock = css.slice(overStart, css.indexOf('}', overStart))
+    expect(overBlock, '超载数字用 text-on-primary（浅色主题白字/暗色主题深字）').toContain(
+      'var(--oas-color-text-on-primary)',
+    )
+    expect(overBlock, '超载数字加粗').toContain('font-weight: 600')
+  })
+
+  it('③ show-overload-badge：仅 overCount>0 渲染；文案随全局 locale 即时切换；多资源/多实例隔离；徽标可见不 aria-hidden', () => {
+    const zh = mount({ resources: RES_OVER, tasks: TASKS_OVER, 'show-overload-badge': '' })
+    const zhName1 = laneOf(zh, 'r1').querySelector('.name')!
+    const zhBadge = zhName1.querySelector<HTMLElement>('.over-badge')!
+    expect(zhBadge.textContent, 'zh 文案（overCount=1）').toBe('超载 1 档')
+    expect(zhBadge.getAttribute('aria-hidden'), '徽标是可见信息（不 aria-hidden）').toBeNull()
+    expect(zhName1.querySelector<HTMLElement>('.name-text')!.textContent, '名字本体在 name-text 内').toBe('资源甲')
+    // r2 无超载 → 无徽标、名字仍是纯文本
+    const zhName2 = laneOf(zh, 'r2').querySelector('.name')!
+    expect(zhName2.querySelector('.over-badge'), '无超载不渲染徽标').toBeNull()
+    expect(zhName2.textContent, '正常资源名字保持纯文本').toBe('资源乙')
+
+    // 全局 locale 切到 en：translator 变更触发 update，徽标即时改文案（实例隔离：互不串扰）
+    setLocale(en)
+    const enBadge = laneOf(zh, 'r1').querySelector<HTMLElement>('.over-badge')!
+    expect(enBadge.textContent, 'en 文案').toBe('Overloaded ×1')
+    // 独立新实例同样按当前 locale 渲染
+    const en2 = mount({ resources: RES_OVER, tasks: TASKS_OVER, 'show-overload-badge': '' })
+    expect(laneOf(en2, 'r1').querySelector('.over-badge')!.textContent).toBe('Overloaded ×1')
+  })
+
+  it('④ bar-label：条内任务名按纯文本渲染（HTML 注入不解析）；不影响 aria-label 与点击命中；CSS 不截获指针/单行裁切', () => {
+    const xss = '<img src=x onerror="window.__pwned=1"><b>加粗</b>'
+    const el = mount({
+      resources: JSON.stringify([{ id: 'r1', name: 'A' }]),
+      tasks: JSON.stringify([{ id: 't1', name: xss, start: '2026-03-02', end: '2026-03-04', resources: ['r1'] }]),
+      'bar-label': '',
+    })
+    const bar = barOf(el, 't1', 'r1')
+    const label = bar.querySelector<HTMLElement>('.bar-label')!
+    expect(label.textContent, '按纯文本渲染（textContent 赋值，不解析 HTML）').toBe(xss)
+    expect(label.children.length, '无任何子元素（防注入）').toBe(0)
+    expect(label.getAttribute('aria-hidden'), '标签装饰性（条的 aria-label 已含任务名）').toBe('true')
+    expect((bar.getAttribute('aria-label') ?? '').length, '条的 aria-label 不受影响').toBeGreaterThan(0)
+    // 点击命中：label 上的 click 冒泡后仍定位到条（pointer-events:none 由 CSS 承担真实指针穿透）
+    const clicks: string[] = []
+    el.addEventListener('oas-task-click', ((e: CustomEvent<{ id: string }>) => {
+      clicks.push(e.detail.id)
+    }) as EventListener)
+    label.click()
+    expect(clicks, '点击派发不受标签影响').toEqual(['t1'])
+    // CSS 机制：不截获指针 + 单行 ellipsis
+    const css = shadowOf(el).querySelector('style')!.textContent ?? ''
+    const blStart = css.indexOf('.bar-label {')
+    expect(blStart, '存在 .bar-label 规则').toBeGreaterThan(-1)
+    const blBlock = css.slice(blStart, css.indexOf('}', blStart))
+    expect(blBlock, '不截获指针事件').toContain('pointer-events: none')
+    expect(blBlock, '条窄时裁切（单行 ellipsis）').toContain('text-overflow: ellipsis')
+  })
+
+  it('⑤ 日刻度抽稀（默认生效，无开关）：day 档 36px 列 step=2（全局偶数索引才写文案，blank 元素保留网格线）；week/month step=1 不变', () => {
+    // day：6 个 period（03-02..03-07）→ 文案 ceil(6/2)=3 个；tick 元素仍 6 个（网格线不丢）
+    const day = mount({
+      resources: JSON.stringify([{ id: 'r1', name: 'A' }]),
+      tasks: JSON.stringify([{ id: 't1', name: 'T', start: '2026-03-02', end: '2026-03-07', resources: ['r1'] }]),
+    })
+    const dayTicks = [...shadowOf(day).querySelectorAll<HTMLElement>('.ticks .tick')]
+    expect(dayTicks.length, 'tick 元素数不变（抽稀只清文案）').toBe(6)
+    expect(
+      dayTicks.map((t) => t.textContent),
+      '全局偶数索引才有文案',
+    ).toEqual(['03-02', '', '03-04', '', '03-06', ''])
+    expect(dayTicks.filter((t) => t.classList.contains('blank')).length, '奇数索引加 blank 类').toBe(3)
+    expect(dayTicks[0]!.classList.contains('blank'), '首刻度（i=0）恒有文案').toBe(false)
+    // blank 刻度保留几何与分隔线宿主（宽 = 列宽 36，画布/容器宽不变）
+    expect(dayTicks[1]!.style.width).toBe('36px')
+    expect(shadowOf(day).querySelector<HTMLElement>('.ticks')!.style.width).toBe(`${6 * 36}px`)
+
+    // week：列宽 90 → step=1，全文案、无 blank
+    const week = mount({
+      scale: 'week',
+      resources: JSON.stringify([{ id: 'r1', name: 'A' }]),
+      tasks: JSON.stringify([{ id: 't1', name: 'T', start: '2026-03-02', end: '2026-03-10', resources: ['r1'] }]),
+    })
+    const weekTicks = [...shadowOf(week).querySelectorAll<HTMLElement>('.ticks .tick')]
+    expect(weekTicks.length).toBe(2)
+    expect(
+      weekTicks.every((t) => (t.textContent ?? '') !== '' && !t.classList.contains('blank')),
+      'week 不抽稀（全文案）',
+    ).toBe(true)
+
+    // month：列宽 110 → step=1
+    const month = mount({
+      scale: 'month',
+      resources: JSON.stringify([{ id: 'r1', name: 'A' }]),
+      tasks: JSON.stringify([{ id: 't1', name: 'T', start: '2026-03-02', end: '2026-03-31', resources: ['r1'] }]),
+    })
+    expect(
+      [...shadowOf(month).querySelectorAll<HTMLElement>('.ticks .tick')].every(
+        (t) => (t.textContent ?? '') !== '' && !t.classList.contains('blank'),
+      ),
+      'month 不抽稀',
+    ).toBe(true)
+  })
+
+  it('⑥ 默认全关时 DOM 形态与旧实现一致：列内只有柱、条内无子节点、名列无子节点', () => {
+    const el = mount({ resources: RES_OVER, tasks: TASKS_OVER })
+    for (const col of shadowOf(el).querySelectorAll<HTMLElement>('.load .col')) {
+      expect(
+        [...col.children].every((c) => c.classList.contains('pillar')),
+        '列内只允许柱（无数字节点）',
+      ).toBe(true)
+    }
+    for (const bar of shadowOf(el).querySelectorAll<HTMLElement>('.lane .bar')) {
+      expect(bar.children.length, '条内无子节点（无 bar-label）').toBe(0)
+    }
+    for (const name of shadowOf(el).querySelectorAll<HTMLElement>('.lane .name')) {
+      expect(name.children.length, '名列无子节点（纯文本）').toBe(0)
+    }
   })
 })

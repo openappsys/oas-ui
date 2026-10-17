@@ -214,6 +214,7 @@ export const ko: LocaleMessages = {
   'resource.taskAria': '{name}: {start} ~ {end}, 리소스 {resource}',
   'resource.loadAria': '{resource}: 부하 정상',
   'resource.loadOverAria': '{resource}: {count}개 기간 과부하',
+  'resource.overBadge': '과부하 ×{count}',
   // kanban（칸반）
   'kanban.emptyColumn': '카드를 여기로 끌어다 놓으세요',
   'kanban.moveCard': '카드 이동',

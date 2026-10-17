@@ -220,6 +220,61 @@ const STYLE = `
 .pillar.over {
   background: var(--oas-resource-load-over-bg, var(--oas-color-danger));
 }
+/* ===== 可读性能力（opt-in，默认全关；开关在 observedAttributes，开启才渲染对应节点） ===== */
+/* show-load-values：负载柱顶数值。装饰性数字（aria-hidden——所在列的行级 aria-label 已描述负载，
+   避免读屏重复播报）。绝对定位在所属 .col 内水平居中；bottom 由渲染层按柱高内联写入并钳制
+   （bottom ≤ 轨道高 − 12，避免数字越出轨道顶被 .load-track 的 overflow:hidden 裁掉） */
+.load-value {
+  position: absolute;
+  inset-inline: 0;
+  text-align: center;
+  font-size: 11px;
+  line-height: 1;
+  /* 数字可能落在柱身内（高柱）：用 text-primary 保证压浅蓝/暗蓝柱都可读（不用底片，避免 axe 无法评分） */
+  color: var(--oas-color-text-primary);
+  pointer-events: none;
+  z-index: 1;
+}
+/* 超载档（load > capacity）数值：压 danger 柱身用 text-on-primary（浅色主题白字/暗色主题深字） */
+.load-value.over {
+  color: var(--oas-color-text-on-primary);
+  font-weight: 600;
+}
+/* show-overload-badge：泳道行头「超载 N 档」徽标（可见信息，不 aria-hidden）。
+   开启时名字移入 .name-text 承接 ellipsis（flex 容器自身不吃 text-overflow，需要内层块接管）；
+   徽标 flex:none 不被压缩，margin-inline-start 与名字留隔（逻辑属性，RTL 下自动在名字左侧）；
+   颜色只走 danger token（border 用 currentColor 派生，无硬编码色值） */
+.name .name-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.name .over-badge {
+  flex: none;
+  margin-inline-start: var(--oas-space-1);
+  padding: 1px 6px;
+  border: 1px solid currentColor;
+  border-radius: var(--oas-radius-sm);
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--oas-color-danger);
+  white-space: nowrap;
+}
+/* bar-label：任务条内任务名（textContent 纯文本防注入；单行 ellipsis，条窄时自然裁切；
+   pointer-events:none 不截获点击/拖拽命中；行高 = 条高 token 垂直居中并随宿主覆盖联动） */
+.bar-label {
+  position: absolute;
+  inset: 0;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  line-height: var(--oas-resource-bar-height, 20px);
+  padding-inline: var(--oas-space-1);
+  font-size: 11px;
+  color: var(--oas-color-text-primary);
+  pointer-events: none;
+}
 .empty {
   position: absolute;
   inset: 0;
@@ -978,6 +1033,13 @@ export class OASResource extends OASElement {
       'window-start',
       'range-start',
       'range-end',
+      // 可读性能力（opt-in 布尔属性，存在即生效、默认全关——关闭时渲染与旧实现逐节点一致）：
+      // - show-load-values：负载直方图柱顶数值（load > 0 时显示该档并行任务数）
+      // - show-overload-badge：泳道行头「超载 N 档」徽标（overCount > 0 时显示）
+      // - bar-label：任务条内显示任务名（纯文本，条窄由 CSS 裁切）
+      'show-load-values',
+      'show-overload-badge',
+      'bar-label',
     ]
   }
 
@@ -2008,17 +2070,26 @@ export class OASResource extends OASElement {
   }
 
   /** 时间轴刻度（泳道与直方图列宽一致：同一 colW 定位）；容器宽 = canvasW 以对齐泳道与 RTL 镜像。
-   * 只建列窗口 [winColStart, winColEnd) 内的刻度（容器宽仍 = canvasW：滚动条长度不随窗口缩水） */
+   * 只建列窗口 [winColStart, winColEnd) 内的刻度（容器宽仍 = canvasW：滚动条长度不随窗口缩水）。
+   * 日刻度抽稀（默认生效，无开关）：day 档列窄（36px）时「03-02」五字符文案连排拥挤 → 按全局
+   * period 索引做稳定抽稀（i % step === 0 才写文案；其余 tick 元素保留、清文案 + blank 类——
+   * 网格线不丢、画布宽/列对齐不变；窗口平移后同一列的有/无文案不抖动）。step 由列宽推导：
+   * 32.5 ≈ 5 字符 × 6.5px（xs 字号估宽），+6px 余量；day 36px → step 2，week/month 列宽大 → step 1。 */
   private renderTicks(): void {
     if (!this.ticksEl) return
     this.ticksEl.innerHTML = ''
     this.ticksEl.style.width = `${this.canvasW}px`
     const colW = this.colW()
+    const step = this.scale() === 'day' ? Math.max(1, Math.ceil((32.5 + 6) / colW)) : 1
     for (let i = this.winColStart; i < this.winColEnd; i++) {
       const tick = document.createElement('div')
       tick.className = 'tick'
       if (i === 0) tick.classList.add('first')
-      tick.textContent = this.periods[i]!.label
+      if (i % step === 0) {
+        tick.textContent = this.periods[i]!.label
+      } else {
+        tick.classList.add('blank')
+      }
       tick.style.left = `${this.mirrorCellLeft(i * colW, colW)}px`
       tick.style.width = `${colW}px`
       this.ticksEl.appendChild(tick)
@@ -2113,6 +2184,13 @@ export class OASResource extends OASElement {
     this.laneCullVisits = 0
     const locale = this.effectiveLocale()
     const colW = this.colW()
+    // show-overload-badge（opt-in）：泳道行头「超载 N 档」徽标的数据源 = 负载矩阵缓存里的每资源
+    // overCount（update() 已随矩阵预算）。仅开关开启时建索引，默认路径零开销、渲染逐节点不变。
+    const badgeOn = this.hasAttr('show-overload-badge')
+    const overCounts = badgeOn ? new Map<string, number>() : null
+    if (overCounts) {
+      for (const row of this.loadRows) overCounts.set(row.resource.id, row.overCount)
+    }
     // 列窗口像素范围（两侧各多留 1 列 overscan，避免边缘条被误裁）；cull 在画布坐标系进行（RTL 同）
     const winLeft = this.winColStart * colW - colW
     const winRight = this.winColEnd * colW + colW
@@ -2203,7 +2281,23 @@ export class OASResource extends OASElement {
       row.setAttribute('aria-rowindex', String(desiredAbs[k]! + 1))
       const name = row.firstElementChild as HTMLElement
       name.setAttribute('role', 'rowheader')
-      name.textContent = r.name
+      const overCount = overCounts?.get(r.id) ?? 0
+      if (badgeOn && overCount > 0) {
+        // 徽标路径：名字移入 .name-text 承接 ellipsis（flex 容器自身不吃 text-overflow），
+        // 徽标为可见信息（不 aria-hidden）；文案走 i18n（locale 切换经 update() 即时刷新）
+        name.textContent = ''
+        const nameText = document.createElement('span')
+        nameText.className = 'name-text'
+        nameText.textContent = r.name
+        name.appendChild(nameText)
+        const badge = document.createElement('span')
+        badge.className = 'over-badge'
+        badge.textContent = this.t('resource.overBadge', { count: overCount })
+        name.appendChild(badge)
+      } else {
+        // 默认路径（关徽标 / 无超载）：与旧实现逐节点一致（纯 textContent，清掉复用行的旧徽标结构）
+        name.textContent = r.name
+      }
       const track = row.lastElementChild as HTMLElement
       track.setAttribute('role', 'gridcell')
       track.style.width = `${this.canvasW}px`
@@ -2352,6 +2446,22 @@ export class OASResource extends OASElement {
         resource: r.name,
       }),
     )
+    // bar-label（opt-in）：条内任务名。textContent 赋值按纯文本渲染（防 HTML 注入）；
+    // 标签装饰性（aria-hidden——条的 aria-label 已含任务名，避免重复播报）且不截获指针事件
+    //（CSS pointer-events:none），aria-label/点击/拖拽命中全部不受影响。
+    // 复用路径同步开/关与任务名（滚动帧复用条节点，标签随帧保持正确）
+    if (this.hasAttr('bar-label')) {
+      let label = bar.querySelector<HTMLElement>('.bar-label')
+      if (!label) {
+        label = document.createElement('span')
+        label.className = 'bar-label'
+        label.setAttribute('aria-hidden', 'true')
+        bar.appendChild(label)
+      }
+      label.textContent = t.name
+    } else {
+      bar.querySelector('.bar-label')?.remove()
+    }
     return bar
   }
 
@@ -2386,6 +2496,9 @@ export class OASResource extends OASElement {
       el.remove()
     }
     const colW = this.colW()
+    // show-load-values（opt-in）：轨道高只读一次（tokenPx 走 getComputedStyle，逐列调用在大窗口下是浪费）
+    const valuesOn = this.hasAttr('show-load-values')
+    const trackH = valuesOn ? this.loadHeightPx() : 0
     for (let k = visStart; k < visEnd; k++) {
       const row = rows[remote ? k - this.winMode.loaded.start : k]
       if (!row) continue
@@ -2426,6 +2539,19 @@ export class OASResource extends OASElement {
           pillar.dataset['period'] = toISODate(new Date(this.periods[i]!.startMs))
           pillar.setAttribute('aria-hidden', 'true')
           col.appendChild(pillar)
+          // show-load-values（opt-in）：柱顶数值（load > 0 才显示，该档并行任务数）。
+          // 装饰性（aria-hidden——行级 aria-label 已描述负载）；bottom = min(柱高 + 2, 轨道高 − 12)：
+          // 贴柱顶上方 2px，但不高于「轨道顶下 12px」（数字 11px 行高 1，避免越出轨道被裁）
+          if (valuesOn) {
+            const barH = maxLoad > 0 ? (load / maxLoad) * trackH : 0
+            const value = document.createElement('span')
+            value.className = 'load-value'
+            if (load > row.capacity) value.classList.add('over')
+            value.textContent = String(load)
+            value.setAttribute('aria-hidden', 'true')
+            value.style.bottom = `${Math.min(barH + 2, Math.max(0, trackH - 12))}px`
+            col.appendChild(value)
+          }
         }
         track.appendChild(col)
       }

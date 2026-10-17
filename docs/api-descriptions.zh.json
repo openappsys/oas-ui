@@ -4710,7 +4710,10 @@
       "total": "windowed 模式下的全量资源行数；为 0 或非法时 windowed 不生效（回落本地模式）",
       "window-start": "windowed 模式下切片首行（资源）的绝对行号（相对全量）",
       "range-start": "宿主托管时间轴起点（ISO 日期 YYYY-MM-DD）：提供后 period 范围不再由已装载任务推导",
-      "range-end": "宿主托管时间轴终点（ISO 日期 YYYY-MM-DD，含当日）：与 range-start 成对使用；只有其一 / 颠倒 / 非法时忽略托管并 devWarn"
+      "range-end": "宿主托管时间轴终点（ISO 日期 YYYY-MM-DD，含当日）：与 range-start 成对使用；只有其一 / 颠倒 / 非法时忽略托管并 devWarn",
+      "show-load-values": "负载直方图柱顶显示该档负载数字（布尔，默认关）：仅 load > 0 显示，超载档数字用 danger 色；数字为视觉冗余（aria-hidden），读屏仍读列的负载描述",
+      "show-overload-badge": "泳道行头显示「超载 N 档」徽标（布尔，默认关）：仅该资源存在超载档时显示，文案走 i18n resource.overBadge",
+      "bar-label": "任务条内显示任务名（布尔，默认关）：单行省略，窄条自动裁切；不改变 aria-label 与点击/拖拽命中"
     },
     "events": {
       "oas-task-click": "点击资源泳道内的任务条时派发，detail: { id, task, resourceId }",

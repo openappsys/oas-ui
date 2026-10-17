@@ -214,6 +214,7 @@ export const pt: LocaleMessages = {
   'resource.taskAria': '{name}: {start} a {end}, recurso {resource}',
   'resource.loadAria': '{resource}: carga normal',
   'resource.loadOverAria': '{resource}: {count} períodos sobrecarregados',
+  'resource.overBadge': 'Sobrecarga ×{count}',
   // kanban (quadro kanban)
   'kanban.emptyColumn': 'Arraste cartões para cá',
   'kanban.moveCard': 'Mover cartão',

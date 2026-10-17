@@ -1954,3 +1954,166 @@ test('resource windowed × RTL 绝对行号：window-start=100 回填后首行 a
   await page.evaluate(() => document.getElementById('res-win-rtl-abs')?.remove())
   expect(errors).toEqual([])
 })
+
+// ===== 可读性能力回归（opt-in：show-load-values / show-overload-badge / bar-label + 日刻度抽稀） =====
+
+test('resource 可读性三开关：开启后渲染负载值数字/超载徽标/条内标签，默认关闭零新增节点，console 零告警', async ({
+  page,
+}) => {
+  const errors = collectErrors(page)
+  await page.goto('/components/resource.html', { waitUntil: 'domcontentloaded' })
+  await page.evaluate(() => {
+    // r1 必超载（03-02 load 2 > cap 1）；r2 恒正常
+    const resources = JSON.stringify([
+      { id: 'r1', name: '资源甲', capacity: 1 },
+      { id: 'r2', name: '资源乙', capacity: 5 },
+    ])
+    const tasks = JSON.stringify([
+      { id: 'a', name: '任务A', start: '2026-03-02', end: '2026-03-02', resources: ['r1'] },
+      { id: 'b', name: '任务B', start: '2026-03-02', end: '2026-03-04', resources: ['r1'] },
+      { id: 'c', name: '任务C', start: '2026-03-02', end: '2026-03-02', resources: ['r2'] },
+    ])
+    const wrap = document.createElement('div')
+    wrap.id = 'res-readable-wrap'
+    wrap.style.cssText = 'position:fixed;inset:0;z-index:2147483647;background:var(--oas-color-bg,#fff);padding:24px'
+    const mk = (id: string, attrs: string): void => {
+      const el = document.createElement('oas-resource')
+      el.id = id
+      el.style.cssText = 'display:block;width:720px;margin:12px auto;position:relative;z-index:1'
+      el.setAttribute('scale', 'day')
+      el.setAttribute('resources', resources)
+      el.setAttribute('tasks', tasks)
+      if (attrs) el.setAttribute(attrs, '')
+      wrap.appendChild(el)
+    }
+    mk('res-readable-off', '') // 默认全关（对照）
+    mk('res-readable-on1', 'show-load-values')
+    mk('res-readable-on2', 'show-overload-badge')
+    mk('res-readable-on3', 'bar-label')
+    document.body.appendChild(wrap)
+  })
+  await page.waitForFunction(
+    () => !!document.getElementById('res-readable-on3')?.shadowRoot?.querySelector('.row.lane .bar'),
+    undefined,
+    { timeout: 15000 },
+  )
+
+  const res = await page.evaluate(() => {
+    const count = (id: string, sel: string): number =>
+      document.getElementById(id)!.shadowRoot!.querySelectorAll(sel).length
+    const nameHtml = (id: string, rid: string): string =>
+      (document.getElementById(id)!.shadowRoot!.querySelector(`.lane[data-resource-id="${rid}"] .name`) as HTMLElement)
+        .innerHTML
+    return {
+      off: {
+        values: count('res-readable-off', '.load-value'),
+        badges: count('res-readable-off', '.over-badge'),
+        labels: count('res-readable-off', '.bar-label'),
+      },
+      on: {
+        values: count('res-readable-on1', '.load-value'),
+        badges: count('res-readable-on2', '.over-badge'),
+        labels: count('res-readable-on3', '.bar-label'),
+        badgeText: document.getElementById('res-readable-on2')!.shadowRoot!.querySelector('.over-badge')?.textContent,
+        labelText: document.getElementById('res-readable-on3')!.shadowRoot!.querySelector('.bar-label')?.textContent,
+        valueHidden: [
+          ...document.getElementById('res-readable-on1')!.shadowRoot!.querySelectorAll<HTMLElement>('.load-value'),
+        ].every((v) => v.getAttribute('aria-hidden') === 'true'),
+        overValueHasClass: !!document.getElementById('res-readable-on1')!.shadowRoot!.querySelector('.load-value.over'),
+        r1NameHtml: nameHtml('res-readable-on2', 'r1'),
+        r2NameText: (
+          document
+            .getElementById('res-readable-on2')!
+            .shadowRoot!.querySelector('.lane[data-resource-id="r2"] .name') as HTMLElement
+        ).textContent,
+      },
+    }
+  })
+  // 默认全关：零新增节点（反证：开关判断被去掉即红）
+  expect(res.off.values, '默认无负载值数字').toBe(0)
+  expect(res.off.badges, '默认无超载徽标').toBe(0)
+  expect(res.off.labels, '默认无条内标签').toBe(0)
+  // 开启后渲染（4 个 load>0 柱 / 1 个超载徽标 / 3 条任务条）
+  expect(res.on.values, '开启后每个 load>0 柱都有数字').toBe(4)
+  expect(res.on.badges, '仅超载资源有徽标').toBe(1)
+  expect(res.on.labels, '每条任务条都有标签').toBe(3)
+  // 文案与 a11y 机制
+  expect(res.on.badgeText, '徽标文案（zh 默认 locale）').toBe('超载 1 档')
+  expect(res.on.labelText, '条内标签为任务名').toBe('任务A')
+  expect(res.on.valueHidden, '负载值数字全部 aria-hidden（列 aria-label 已描述负载）').toBe(true)
+  expect(res.on.overValueHasClass, '超载档数字带 over 类（danger 色）').toBe(true)
+  expect(res.on.r1NameHtml, '徽标路径：名字在 name-text 内 + 徽标可见').toContain('name-text')
+  expect(res.on.r1NameHtml, '徽标是可见信息（不 aria-hidden）').not.toContain('aria-hidden')
+  expect(res.on.r2NameText, '无超载资源名字保持纯文本').toBe('资源乙')
+
+  // 视觉截图（light + dark）：数字位置/徽标形态/条内标签可读性留档供人工/识图复核
+  const target = page.locator('#res-readable-wrap')
+  await target.screenshot({ path: 'test-results/visual-review/resource-readable-light.png' })
+  await page.evaluate(() => document.documentElement.setAttribute('data-theme', 'dark'))
+  await target.screenshot({ path: 'test-results/visual-review/resource-readable-dark.png' })
+  await page.evaluate(() => {
+    document.documentElement.removeAttribute('data-theme')
+    document.getElementById('res-readable-wrap')?.remove()
+  })
+  expect(errors).toEqual([])
+})
+
+test('resource 日刻度抽稀：day 档文案数有界（≈ceil(n/2)）、blank 刻度保留网格线、week/month 不抽稀、canvas 宽不变', async ({
+  page,
+}) => {
+  const errors = collectErrors(page)
+  await page.goto('/components/resource.html', { waitUntil: 'domcontentloaded' })
+  await page.evaluate(() => {
+    const wrap = document.createElement('div')
+    wrap.id = 'res-thin-wrap'
+    wrap.style.cssText = 'position:fixed;inset:0;z-index:2147483647;background:var(--oas-color-bg,#fff);padding:24px'
+    const resources = JSON.stringify([{ id: 'r1', name: 'A' }])
+    const tasks = JSON.stringify([{ id: 't1', name: 'T', start: '2026-03-01', end: '2026-03-14', resources: ['r1'] }])
+    const mk = (id: string, scale: string): void => {
+      const el = document.createElement('oas-resource')
+      el.id = id
+      el.style.cssText = 'display:block;width:720px;margin:12px auto;position:relative;z-index:1'
+      el.setAttribute('scale', scale)
+      el.setAttribute('resources', resources)
+      el.setAttribute('tasks', tasks)
+      wrap.appendChild(el)
+    }
+    mk('res-thin-day', 'day')
+    mk('res-thin-week', 'week')
+    document.body.appendChild(wrap)
+  })
+  await page.waitForFunction(
+    () => !!document.getElementById('res-thin-week')?.shadowRoot?.querySelector('.row.lane .bar'),
+    undefined,
+    { timeout: 15000 },
+  )
+  const res = await page.evaluate(() => {
+    const info = (id: string) => {
+      const sr = document.getElementById(id)!.shadowRoot!
+      const ticks = [...sr.querySelectorAll<HTMLElement>('.ticks .tick')]
+      const track = sr.querySelector('.lane .track') as HTMLElement
+      return {
+        tickCount: ticks.length,
+        textCount: ticks.filter((t) => (t.textContent ?? '') !== '').length,
+        blankCount: ticks.filter((t) => t.classList.contains('blank')).length,
+        ticksWidth: (sr.querySelector('.ticks') as HTMLElement).style.width,
+        trackWidth: track.style.width,
+        firstText: ticks[0]?.textContent ?? '',
+      }
+    }
+    return { day: info('res-thin-day'), week: info('res-thin-week') }
+  })
+  // day 档 3/1..3/14 = 14 个 period，36px 列 → step 2：文案 ≈ ceil(14/2) = 7（有界），blank 7 个
+  expect(res.day.tickCount, 'tick 元素数不变（抽稀只清文案，网格线不丢）').toBe(14)
+  expect(res.day.textCount, 'day 文案数 = ceil(14/2) = 7').toBe(7)
+  expect(res.day.blankCount, 'blank 刻度数 = 7').toBe(7)
+  expect(res.day.firstText, '首刻度（全局索引 0）恒有文案').toBe('03-01')
+  // 画布/刻度容器宽不变（对齐不破）
+  expect(res.day.ticksWidth, '刻度容器宽仍 = canvasW').toBe(res.day.trackWidth)
+  // week 档（90px 列）不抽稀：14 天 = 3 个周 period，全文案、无 blank
+  expect(res.week.tickCount, 'week period 数').toBe(3)
+  expect(res.week.textCount, 'week 全文案').toBe(3)
+  expect(res.week.blankCount, 'week 无 blank').toBe(0)
+  await page.evaluate(() => document.getElementById('res-thin-wrap')?.remove())
+  expect(errors).toEqual([])
+})

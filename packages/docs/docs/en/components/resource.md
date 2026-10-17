@@ -39,6 +39,17 @@ el.tasks = tasks.map((t) => moved.find((m) => m.id === t.id) ?? t)
 
 > In `week` scale the step is one week period, but the pure function has no locale context (week start defaults to Monday); for tasks crossing week boundaries pass `{ weekStart: <matching the page locale> }` (0=Sunday … 6=Saturday) explicitly to avoid a boundary mismatch with the histogram's week granularity.
 
+## Readability (opt-in switches)
+
+<DemoBlock title="Readability switches (opt-in): load values on pillars (show-load-values) + overload badge (show-overload-badge) + bar labels (bar-label)">
+  <oas-resource id="res-readable" scale="day" height="420" capacity="1" show-load-values show-overload-badge bar-label
+    resources='[{"id":"zhang","name":"Alice","capacity":1},{"id":"li","name":"Bob","capacity":1},{"id":"wang","name":"Cara","capacity":2}]'
+    tasks='[{"id":"t1","name":"Requirement review","start":"2026-03-02","end":"2026-03-03","resources":["zhang","li"]},{"id":"t2","name":"API design","start":"2026-03-03","end":"2026-03-05","resources":["zhang"]},{"id":"t3","name":"Backend","start":"2026-03-04","end":"2026-03-08","resources":["li"]},{"id":"t4","name":"Frontend","start":"2026-03-04","end":"2026-03-08","resources":["wang"]},{"id":"t5","name":"Integration test","start":"2026-03-09","end":"2026-03-11","resources":["li","wang"]},{"id":"t6","name":"Docs","start":"2026-03-02","end":"2026-03-04","resources":["wang"]}]'></oas-resource>
+  <div id="res-readable-output" style="color:var(--oas-color-text-secondary);font-size:var(--oas-font-size-sm);margin-top:var(--oas-space-2)">All three switches on: pillar tops show the parallel task count per period (overloaded in red); Alice's row header shows an "Overloaded 1 period" badge; task bars show their names.</div>
+</DemoBlock>
+
+All three readability capabilities are **opt-in** (off by default, zero extra nodes): `show-load-values` displays the parallel task count on top of every load > 0 pillar (decorative numbers, `aria-hidden`; overloaded pillars get `.over` using `--oas-color-danger`); `show-overload-badge` shows an "Overloaded N periods" badge on the swimlane row header of overloaded resources (visible information, not `aria-hidden`, copy follows the global locale instantly); `bar-label` shows the task name inside the bar (rendered as plain text against injection, single-line clipped on narrow bars; does not affect aria-label or click hit-testing).
+
 ## Localization & Scrolling
 
 <DemoBlock title="locale=&quot;en-US&quot; (Sunday-based) + scale=&quot;week&quot;: labels and week start follow en-US; scrollToDate scrolls the timeline to a given date">
@@ -85,6 +96,7 @@ Conventions in windowed mode: load/overload stats cover **the loaded slice only*
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
+| `bar-label` | Show the task name inside the bar (boolean, off by default): single line with ellipsis, clipped on narrow bars; aria-label and click/drag hit-testing are unchanged | `boolean` | — |
 | `capacity` | Default capacity when a resource declares none (default 1) | `string` | `1` |
 | `height` | Component height in px (default 320; accepts a plain number or Npx): mapped to the custom property --oas-resource-height (the host's own inline height always wins and is never overwritten by the component). While the height attribute is present and valid (>0 plain number or Npx) the component takes over this variable — writing it inline on the host and overriding any --oas-resource-height the host set itself; an empty/whitespace value is treated as unset; an invalid value writes nothing and only clears a value this instance wrote earlier, so a host token is never affected; after the attribute is removed the component-written value is cleared to zero, so the height falls back to the token default (320) or host CSS, and the host's previous inline value is not restored; when the height attribute was never set the component never writes the variable, and a --oas-resource-height set by the host (inline or via class rules) is left completely untouched | `string` | `320` |
 | `locale` | Localization (overrides config-provider injection and global locale) | `string` | — |
@@ -92,6 +104,8 @@ Conventions in windowed mode: load/overload stats cover **the loaded slice only*
 | `range-start` | Host-managed time-axis start (ISO date YYYY-MM-DD): when provided the period range is no longer derived from loaded tasks | `string` | — |
 | `resources` | Resources (JSON [{ id, name, capacity? }]) — capacity = parallel tasks per period for that resource (per day in the day scale; falls back to the capacity attribute, ultimately 1) | `ResourceItem[]` | `[]` |
 | `scale` | Histogram period granularity and axis labels: day (default) / week / month; invalid falls back to day | `string` | — |
+| `show-load-values` | Show the load value above each histogram bar (boolean, off by default): only for load > 0; overload values use the danger color. The number is visual redundancy (aria-hidden); screen readers still get the column load description | `boolean` | — |
+| `show-overload-badge` | Show an "Overloaded ×N" badge in the lane header (boolean, off by default): only for resources with overloaded periods; text comes from the i18n key resource.overBadge | `boolean` | — |
 | `tasks` | Resource tasks (JSON [{ id, name, start, end, resources? }]); start/end are day precision YYYY-MM-DD only (end inclusive; time-bearing input is treated as that day), resources is the assigned resource id array (assignments to unknown resources are ignored) | `ResourceTask[]` | `[]` |
 | `total` | Full resource row count in windowed mode; 0 or invalid disables windowed (falls back to local mode) | `string` | — |
 | `window-start` | Absolute row index (within the full dataset) of the first row (resource) in the slice (windowed mode) | `string` | `0` |

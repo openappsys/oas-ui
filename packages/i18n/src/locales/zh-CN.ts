@@ -214,6 +214,7 @@ export const zhCN = {
   'resource.taskAria': '{name}：{start} 至 {end}，资源 {resource}',
   'resource.loadAria': '{resource}：负载正常',
   'resource.loadOverAria': '{resource}：超载 {count} 档',
+  'resource.overBadge': '超载 {count} 档',
   // kanban（看板）
   'kanban.emptyColumn': '拖拽卡片到此处',
   'kanban.moveCard': '移动卡片',

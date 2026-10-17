@@ -214,6 +214,7 @@ export const fr: LocaleMessages = {
   'resource.taskAria': '{name} : {start} à {end}, ressource {resource}',
   'resource.loadAria': '{resource} : charge normale',
   'resource.loadOverAria': '{resource} : {count} périodes en surcharge',
+  'resource.overBadge': 'Surcharge ×{count}',
   // kanban (tableau kanban)
   'kanban.emptyColumn': 'Déposez les cartes ici',
   'kanban.moveCard': 'Déplacer la carte',
