@@ -66,7 +66,13 @@ el.addEventListener('oas-window-request', async (event) => {
 <script setup>
 import { onMounted } from 'vue'
 
-onMounted(() => {
+onMounted(async () => {
+  // 组件由主题动态 import 注册：先等自定义元素定义完成，避免把 property 写到未升级元素上（own property 会遮蔽 setter、数据丢失）
+  await Promise.all([
+    customElements.whenDefined('oas-table'),
+    customElements.whenDefined('oas-gantt'),
+    customElements.whenDefined('oas-resource'),
+  ])
   const el = document.getElementById('guide-windowed-demo')
   const log = document.getElementById('guide-windowed-demo-log')
   if (!el || !log) return
@@ -474,6 +480,7 @@ gantt / resource 在可视时间窗接近轴端时还会派发 `oas-range-reques
 - **在事件回调里同步写其它属性**（如 `loading`）：会重入 update（渲染中途 `scrollTop` 可能瞬时归零，并多发请求）。请在取数完成后再回填；确需 loading 等状态，放到微任务或取数完成后再写。
 - **逐窗口取数**：请求数会随滚动线性增长；按段取数可降一个数量级。
 - **无 `height`**：组件不会派发请求（无滚动视口），不是 bug，是需要先给视口。
+- **property 写入早于组件升级**：页面脚本里写 `el.tasks` / `el.resources` 等 property 前，先 `await customElements.whenDefined('oas-gantt')`（或对应 tag）——元素未升级时 property 会变成普通字段并遮蔽升级后的 setter，数据静默丢失（本页 demo 已按此处理；改用 attribute 通道则无此问题）。
 
 ## 相关
 

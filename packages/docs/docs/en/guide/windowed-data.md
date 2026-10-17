@@ -66,7 +66,13 @@ The demo simulates a server with local data: 200 rows per segment, 120ms latency
 <script setup>
 import { onMounted } from 'vue'
 
-onMounted(() => {
+onMounted(async () => {
+  // 组件由主题动态 import 注册：先等自定义元素定义完成，避免把 property 写到未升级元素上（own property 会遮蔽 setter、数据丢失）
+  await Promise.all([
+    customElements.whenDefined('oas-table'),
+    customElements.whenDefined('oas-gantt'),
+    customElements.whenDefined('oas-resource'),
+  ])
   const el = document.getElementById('guide-windowed-demo')
   const log = document.getElementById('guide-windowed-demo-log')
   if (!el || !log) return
@@ -474,6 +480,7 @@ gantt / resource also emit `oas-range-request` (`detail: { startMs, endMs, reaso
 - **Writing other attributes synchronously in the handler** (e.g. `loading`): re-enters update (scrollTop may be transiently clamped to 0 mid-render, causing extra requests). Refill after fetching; if you need a loading state, set it in a microtask or after the fetch resolves.
 - **Fetching per window**: request count grows linearly with scrolling; segment fetching cuts it by an order of magnitude.
 - **No `height`**: no requests are emitted (no scroll viewport) — not a bug, the viewport must exist first.
+- **Property writes before upgrade**: before assigning properties such as `el.tasks` / `el.resources` from page scripts, `await customElements.whenDefined('oas-gantt')` (or the matching tag) — on an unupgraded element the property becomes a plain own field that shadows the upgraded setter, silently losing data (the demos on this page already do this; the attribute channel avoids the issue).
 
 ## See also
 

@@ -159,6 +159,8 @@ tasks = tasks.map((t) => moved.find((m) => m.id === t.id) ?? t)
 import { onMounted } from 'vue'
 
 onMounted(async () => {
+  // 组件由主题动态 import 注册：先等定义完成，避免把 resources/tasks property 写到未升级元素上
+  await customElements.whenDefined('oas-resource')
   const RESOURCES = [
     { id: 'zhang', name: 'Alice', capacity: 1, color: 'var(--oas-color-primary)' },
     { id: 'lisi', name: 'Bob', capacity: 1, color: 'var(--oas-color-success)' },
