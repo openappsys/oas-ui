@@ -136,10 +136,323 @@ onMounted(() => {
     load(start, end)
   })
 
+  // ===== gantt windowed：行分段 + 宿主托管时间轴（range-*）+ 范围请求扩轴 =====
+  const setupGantt = () => {
+    const g = document.getElementById('guide-windowed-gantt')
+    const gLog = document.getElementById('guide-windowed-gantt-log')
+    if (!g || !gLog) return
+    const TOTAL = 8000
+    const SEG = 200
+    const DAY = 86400000
+    const segments = new Map()
+    let gSeq = 0
+    let axisStart = '2026-01-01'
+    let axisEnd = '2026-09-30'
+    const stats = { rows: 0, ranges: 0 }
+    const pad = (n) => String(n).padStart(2, '0')
+    const iso = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+    const parse = (s) => {
+      const [y, m, d] = s.split('-').map(Number)
+      return new Date(y, m - 1, d)
+    }
+    const makeTask = (i) => {
+      const start = new Date(2026, 0, 1 + ((i * 7) % 355))
+      return {
+        id: `g${i}`,
+        name: `任务 ${i + 1}`,
+        start: iso(start),
+        end: iso(new Date(start.getTime() + (2 + (i % 6)) * DAY)),
+        progress: (i * 13) % 100,
+      }
+    }
+    const fetchSegment = (seg) =>
+      new Promise((resolve) => {
+        const cached = segments.get(seg)
+        if (cached) return resolve(cached)
+        setTimeout(() => {
+          const from = seg * SEG
+          const rows = Array.from({ length: Math.max(0, Math.min(SEG, TOTAL - from)) }, (_, k) => makeTask(from + k))
+          segments.set(seg, rows)
+          resolve(rows)
+        }, LATENCY)
+      })
+    const render = () => {
+      const ws = Number(g.getAttribute('window-start') ?? 0)
+      gLog.textContent = `行请求 ${stats.rows} 次 · 范围请求 ${stats.ranges} 次 · 轴 ${axisStart} ~ ${axisEnd} · 切片起点 ${ws} · 已装载 ${g.tasks.length} 行（总 ${TOTAL}）`
+    }
+    const load = async (start, end) => {
+      stats.rows++
+      const my = ++gSeq
+      const segFrom = Math.floor(start / SEG)
+      const segTo = Math.floor((Math.max(start, end - 1)) / SEG)
+      const list = await Promise.all(
+        Array.from({ length: segTo - segFrom + 1 }, (_, k) => fetchSegment(segFrom + k)),
+      )
+      if (my !== gSeq) return
+      g.tasks = list.flat()
+      g.setAttribute('window-start', String(segFrom * SEG))
+      render()
+    }
+    g.addEventListener('oas-window-request', (e) => load(e.detail.start, e.detail.end))
+    g.addEventListener('oas-range-request', (e) => {
+      // 只有向右越界才扩轴；左侧越界忽略（否则 scrollLeft=0 时视野左移形成无限请求）
+      const needEnd = e.detail.endMs
+      if (needEnd <= parse(axisEnd).getTime()) return
+      stats.ranges++
+      axisEnd = iso(new Date(needEnd))
+      // 异步写回：避免在组件 update 回调中同步重入
+      queueMicrotask(() => {
+        g.setAttribute('range-start', axisStart)
+        g.setAttribute('range-end', axisEnd)
+        render()
+      })
+    })
+    g.setAttribute('range-start', axisStart)
+    g.setAttribute('range-end', axisEnd)
+    load(0, SEG)
+  }
+
+  // ===== resource windowed：资源行分段 + 宿主托管时间轴 + 范围请求 =====
+  const setupResource = () => {
+    const r = document.getElementById('guide-windowed-resource')
+    const rLog = document.getElementById('guide-windowed-resource-log')
+    if (!r || !rLog) return
+    const TOTAL = 400
+    const SEG = 50
+    const DAY = 86400000
+    const segments = new Map()
+    let rSeq = 0
+    let axisStart = '2026-01-01'
+    let axisEnd = '2026-06-30'
+    const stats = { rows: 0, ranges: 0 }
+    const pad = (n) => String(n).padStart(2, '0')
+    const iso = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+    const parse = (s) => {
+      const [y, m, d] = s.split('-').map(Number)
+      return new Date(y, m - 1, d)
+    }
+    const makeResource = (i) => ({ id: `r${i}`, name: `资源 ${i + 1}`, capacity: 1 + (i % 2) })
+    const makeTasks = (res) => {
+      const base = Number(res.id.slice(1))
+      return Array.from({ length: 2 }, (_, k) => {
+        const start = new Date(2026, 0, 1 + ((base * 11 + k * 47) % 170))
+        return {
+          id: `${res.id}-${k}`,
+          name: `${res.name} · 任务 ${k + 1}`,
+          start: iso(start),
+          end: iso(new Date(start.getTime() + (2 + (k % 4)) * DAY)),
+          resources: [res.id],
+        }
+      })
+    }
+    const fetchSegment = (seg) =>
+      new Promise((resolve) => {
+        const cached = segments.get(seg)
+        if (cached) return resolve(cached)
+        setTimeout(() => {
+          const from = seg * SEG
+          const rows = Array.from({ length: Math.max(0, Math.min(SEG, TOTAL - from)) }, (_, k) =>
+            makeResource(from + k),
+          )
+          segments.set(seg, rows)
+          resolve(rows)
+        }, LATENCY)
+      })
+    const render = () => {
+      const ws = Number(r.getAttribute('window-start') ?? 0)
+      rLog.textContent = `行请求 ${stats.rows} 次 · 范围请求 ${stats.ranges} 次 · 轴 ${axisStart} ~ ${axisEnd} · 切片起点 ${ws} · 资源 ${r.resources.length} · 任务 ${r.tasks.length}（总 ${TOTAL} 资源）`
+    }
+    const load = async (start, end) => {
+      stats.rows++
+      const my = ++rSeq
+      const segFrom = Math.floor(start / SEG)
+      const segTo = Math.floor((Math.max(start, end - 1)) / SEG)
+      const list = await Promise.all(
+        Array.from({ length: segTo - segFrom + 1 }, (_, k) => fetchSegment(segFrom + k)),
+      )
+      if (my !== rSeq) return
+      const resources = list.flat()
+      r.resources = resources
+      r.tasks = resources.flatMap(makeTasks)
+      r.setAttribute('window-start', String(segFrom * SEG))
+      render()
+    }
+    r.addEventListener('oas-window-request', (e) => load(e.detail.start, e.detail.end))
+    r.addEventListener('oas-range-request', (e) => {
+      // 只有向右越界才扩轴；左侧越界忽略（否则 scrollLeft=0 时视野左移形成无限请求）
+      const needEnd = e.detail.endMs
+      if (needEnd <= parse(axisEnd).getTime()) return
+      stats.ranges++
+      axisEnd = iso(new Date(needEnd))
+      queueMicrotask(() => {
+        r.setAttribute('range-start', axisStart)
+        r.setAttribute('range-end', axisEnd)
+        render()
+      })
+    })
+    r.setAttribute('range-start', axisStart)
+    r.setAttribute('range-end', axisEnd)
+    load(0, SEG)
+  }
+
   // 页面首次进入：组件已挂载，主动装一屏（等价于捕获 init）
   load(0, SEG)
+  setupGantt()
+  setupResource()
 })
 </script>
+
+## 甘特 / 资源窗口化（时间轴托管）
+
+行窗口之外，时间轴组件可用 `range-start` / `range-end` 让**宿主托管时间范围**；可视时间窗接近轴端时派发 `oas-range-request`，宿主扩展范围即可。下面两个 demo 演示「按段取行 + 按需扩轴」。
+
+### 甘特（8000 任务 / 轴一年 / 段 200）
+
+<DemoBlock title="gantt windowed + 滚到轴端自动扩轴">
+  <div style="width: 100%">
+    <oas-gantt
+      id="guide-windowed-gantt"
+      windowed
+      total="8000"
+      window-start="0"
+      range-start="2026-01-01"
+      range-end="2026-09-30"
+      height="280"
+      scale="week"
+    ></oas-gantt>
+    <p id="guide-windowed-gantt-log" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin-top: var(--oas-space-2)">
+      等待首个窗口请求…
+    </p>
+  </div>
+</DemoBlock>
+
+### 资源（400 资源 / 轴半年 / 段 50）
+
+<DemoBlock title="resource windowed + 滚到轴端自动扩轴">
+  <div style="width: 100%">
+    <oas-resource
+      id="guide-windowed-resource"
+      windowed
+      total="400"
+      window-start="0"
+      range-start="2026-01-01"
+      range-end="2026-06-30"
+      height="300"
+      scale="week"
+    ></oas-resource>
+    <p id="guide-windowed-resource-log" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin-top: var(--oas-space-2)">
+      等待首个窗口请求…
+    </p>
+  </div>
+</DemoBlock>
+
+## React / Vue 宿主封装
+
+Web Components 桥接注意：Vue 需要在编译器把 `oas-*` 标记为自定义元素（`isCustomElement: (tag) => tag.startsWith('oas-')`）；React 19+ 原生支持自定义元素（19 以下用 ref + `addEventListener`）。**不要在事件回调里同步写属性**（会重入 update），回填放到取数完成后。
+
+### React
+
+```tsx
+import { useEffect, useRef } from 'react'
+
+const SEG = 200
+
+export function WindowedTable({ total }: { total: number }) {
+  const ref = useRef<HTMLElement | null>(null)
+
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    let seq = 0
+    let controller: AbortController | null = null
+
+    const onRequest = async (event: Event) => {
+      const { start, end } = (event as CustomEvent<{ start: number; end: number }>).detail
+      const my = ++seq
+      controller?.abort()
+      controller = new AbortController()
+      const from = Math.floor(start / SEG) * SEG
+      const to = Math.min(total, from + SEG)
+      const rows = await fetch(`/api/rows?from=${from}&to=${to}`, { signal: controller.signal })
+        .then((r) => r.json())
+        .catch(() => null)
+      if (!rows || my !== seq) return
+      el.setAttribute('data', JSON.stringify(rows))
+      el.setAttribute('window-start', String(from))
+    }
+
+    el.addEventListener('oas-window-request', onRequest)
+    return () => {
+      controller?.abort()
+      el.removeEventListener('oas-window-request', onRequest)
+    }
+  }, [total])
+
+  return (
+    <oas-table
+      ref={ref}
+      windowed=""
+      total={String(total)}
+      window-start="0"
+      height="320"
+      row-key="id"
+      columns={JSON.stringify([{ key: 'id', title: 'ID' }, { key: 'name', title: '名称' }])}
+    />
+  )
+}
+```
+
+> TypeScript 下自定义元素需扩展 JSX 类型（如声明 `oas-table` 的 intrinsic element），或在该标签上用 `// @ts-expect-error`。
+
+### Vue 3
+
+```vue
+<script setup lang="ts">
+import { onBeforeUnmount, onMounted, ref } from 'vue'
+
+const SEG = 200
+const table = ref<HTMLElement | null>(null)
+let seq = 0
+let controller: AbortController | null = null
+
+async function onWindowRequest(event: Event) {
+  const el = table.value
+  if (!el) return
+  const { start, end } = (event as CustomEvent<{ start: number; end: number }>).detail
+  const my = ++seq
+  controller?.abort()
+  controller = new AbortController()
+  const from = Math.floor(start / SEG) * SEG
+  const to = Math.min(50000, from + SEG)
+  const rows = await fetch(`/api/rows?from=${from}&to=${to}`, { signal: controller.signal })
+    .then((r) => r.json())
+    .catch(() => null)
+  if (!rows || my !== seq) return
+  el.setAttribute('data', JSON.stringify(rows))
+  el.setAttribute('window-start', String(from))
+}
+
+onMounted(() => table.value?.addEventListener('oas-window-request', onWindowRequest))
+onBeforeUnmount(() => {
+  controller?.abort()
+  table.value?.removeEventListener('oas-window-request', onWindowRequest)
+})
+</script>
+
+<template>
+  <oas-table
+    ref="table"
+    windowed
+    total="50000"
+    window-start="0"
+    height="320"
+    row-key="id"
+    :columns="JSON.stringify([{ key: 'id', title: 'ID' }, { key: 'name', title: '名称' }])"
+  />
+</template>
+```
+
+> 事件名在模板里可写 `@oas-window-request="onWindowRequest"`（Vue 3 会把 `oas-window-request` 当自定义事件转发）。
 
 ## 各组件差异
 

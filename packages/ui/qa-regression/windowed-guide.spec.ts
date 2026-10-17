@@ -91,3 +91,80 @@ test('guide windowed demo（en 页）：首屏装载 + console 零告警', async
   expect(rows, 'en 页 demo 渲染窗口行').toBeGreaterThan(0)
   expect(issues, 'console 零 error/warning').toEqual([])
 })
+
+// 指南页 gantt / resource 窗口化 demo：行窗口（垂直滚动）+ 宿主托管时间轴（滚到轴尾 → oas-range-request → 扩轴）。
+test('guide gantt/resource windowed demo：行窗口 + 轴端范围请求扩轴', async ({ page }) => {
+  const issues: string[] = []
+  page.on('console', (m) => {
+    if (m.type() === 'error' || m.type() === 'warning') issues.push(`${m.type()}: ${m.text()}`)
+  })
+  page.on('pageerror', (e) => issues.push(`pageerror: ${e.message}`))
+
+  await page.goto('/guide/windowed-data.html', { waitUntil: 'domcontentloaded' })
+  await page.waitForFunction(
+    () => {
+      const g = document.getElementById('guide-windowed-gantt-log')
+      const r = document.getElementById('guide-windowed-resource-log')
+      return !!g && !!r && !/等待|Waiting/.test(g.textContent || '') && !/等待|Waiting/.test(r.textContent || '')
+    },
+    undefined,
+    { timeout: 15000 },
+  )
+
+  const initial = await page.evaluate(() => {
+    const g = document.getElementById('guide-windowed-gantt') as HTMLElement & { shadowRoot: ShadowRoot }
+    const r = document.getElementById('guide-windowed-resource') as HTMLElement & { shadowRoot: ShadowRoot }
+    const num = (id: string, kw: string) => {
+      const text = document.getElementById(id)?.textContent || ''
+      return Number(new RegExp(kw + '\\s*(\\d+)').exec(text)?.[1] ?? -1)
+    }
+    return {
+      ganttBars: g.shadowRoot.querySelectorAll('.bars .bar').length,
+      resourceLanes: r.shadowRoot.querySelectorAll('.lanes .row.lane').length,
+      resourceBars: r.shadowRoot.querySelectorAll('.lanes .bar').length,
+      ganttRanges: num('guide-windowed-gantt-log', '范围请求'),
+      resourceRanges: num('guide-windowed-resource-log', '范围请求'),
+    }
+  })
+  expect(initial.ganttBars, 'gantt 初始渲染任务条').toBeGreaterThan(0)
+  expect(initial.resourceLanes, 'resource 初始渲染泳道行').toBeGreaterThan(0)
+  expect(initial.resourceBars, 'resource 初始渲染任务条（轴起点附近有任务）').toBeGreaterThan(0)
+  expect(initial.ganttRanges, '初始（左侧越界被忽略）不扩轴').toBe(0)
+  expect(initial.resourceRanges, 'resource 初始不扩轴').toBe(0)
+
+  const after = await page.evaluate(async () => {
+    const g = document.getElementById('guide-windowed-gantt') as HTMLElement & { shadowRoot: ShadowRoot }
+    const r = document.getElementById('guide-windowed-resource') as HTMLElement & { shadowRoot: ShadowRoot }
+    const gBody = g.shadowRoot.querySelector('.tbody') as HTMLElement
+    gBody.scrollTop = 36 * 400
+    gBody.dispatchEvent(new Event('scroll'))
+    await new Promise((res) => setTimeout(res, 500))
+    gBody.scrollLeft = gBody.scrollWidth
+    gBody.dispatchEvent(new Event('scroll'))
+    await new Promise((res) => setTimeout(res, 800))
+
+    const rSc = r.shadowRoot.querySelector('.scroller') as HTMLElement
+    rSc.scrollTop = 37 * 150
+    rSc.dispatchEvent(new Event('scroll'))
+    await new Promise((res) => setTimeout(res, 600))
+    rSc.scrollLeft = rSc.scrollWidth
+    rSc.dispatchEvent(new Event('scroll'))
+    await new Promise((res) => setTimeout(res, 800))
+
+    return {
+      ganttWS: Number(g.getAttribute('window-start')),
+      ganttRangeEnd: g.getAttribute('range-end') || '',
+      resourceWS: Number(r.getAttribute('window-start')),
+      resourceRangeEnd: r.getAttribute('range-end') || '',
+      ganttLog: document.getElementById('guide-windowed-gantt-log')?.textContent || '',
+      resourceLog: document.getElementById('guide-windowed-resource-log')?.textContent || '',
+    }
+  })
+  expect(after.ganttWS, 'gantt 垂直滚动后切到后续行切片').toBeGreaterThan(0)
+  expect(after.ganttRangeEnd, 'gantt 滚到轴尾后轴范围被扩展').not.toBe('2026-09-30')
+  const rangeCount = Number(/范围请求\s*(\d+)/.exec(after.ganttLog)?.[1] ?? -1)
+  expect(rangeCount, 'gantt 记录范围请求（滚到轴尾至少一次）').toBeGreaterThan(0)
+  expect(after.resourceWS, 'resource 垂直滚动后切到后续资源切片').toBeGreaterThan(0)
+  expect(after.resourceRangeEnd, 'resource 滚到轴尾后轴范围被扩展').not.toBe('2026-06-30')
+  expect(issues, 'console 零 error/warning').toEqual([])
+})
