@@ -1334,13 +1334,13 @@ export class OASResource extends OASElement {
     this._tasks = sanitizeTasks(parsed)
   }
 
-  private scale(): ResourceScale {
+  private scaleMode(): ResourceScale {
     const raw = this.getAttr('scale', '')
     return (SCALES as string[]).includes(raw) ? (raw as ResourceScale) : 'day'
   }
 
   private colW(): number {
-    return SCALE_COL[this.scale()]
+    return SCALE_COL[this.scaleMode()]
   }
 
   /** 组件缺省容量（资源未声明 capacity 时兜底；缺省 1） */
@@ -1891,7 +1891,7 @@ export class OASResource extends OASElement {
       this.winReq = null
     }
     const locale = this.effectiveLocale()
-    const scale = this.scale()
+    const scale = this.scaleMode()
     // 宿主托管时间轴范围（range-start/range-end）：提供时优先于「按任务 min/max 推断」
     const axis = this.managedAxis()
     this.axisMs = axis
@@ -2096,7 +2096,7 @@ export class OASResource extends OASElement {
     this.ticksEl.innerHTML = ''
     this.ticksEl.style.width = `${this.canvasW}px`
     const colW = this.colW()
-    const step = this.scale() === 'day' ? Math.max(1, Math.ceil((32.5 + 6) / colW)) : 1
+    const step = this.scaleMode() === 'day' ? Math.max(1, Math.ceil((32.5 + 6) / colW)) : 1
     for (let i = this.winColStart; i < this.winColEnd; i++) {
       const tick = document.createElement('div')
       tick.className = 'tick'

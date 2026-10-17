@@ -1470,13 +1470,13 @@ export class OASGantt extends OASElement {
     return resolveLocale(this)
   }
 
-  private scale(): GanttScale {
+  private scaleMode(): GanttScale {
     const raw = this.getAttr('scale', '')
     return (SCALES as string[]).includes(raw) ? (raw as GanttScale) : 'day'
   }
 
   private colW(): number {
-    return this.displayColW ?? SCALE_COL[this.scale()]
+    return this.displayColW ?? SCALE_COL[this.scaleMode()]
   }
 
   /**
@@ -1486,7 +1486,7 @@ export class OASGantt extends OASElement {
    * 数据跨度小时任务不再被起始留白推挤到右缘、今日线/里程碑随之可见。
    */
   private computeColW(): void {
-    const scale = this.scale()
+    const scale = this.scaleMode()
     const base = SCALE_COL[scale]
     const avail = this.tbody?.clientWidth ?? 0
     if (avail <= 0 || this.units.length === 0) {
@@ -1710,7 +1710,7 @@ export class OASGantt extends OASElement {
   }
 
   private buildUnits(): void {
-    const scale = this.scale()
+    const scale = this.scaleMode()
     let minMs = Number.POSITIVE_INFINITY
     let maxMs = Number.NEGATIVE_INFINITY
     // 宿主托管范围（range-*）优先：windowed 下组件只持有部分行，rows min/max 不是全量时间范围；
@@ -2469,7 +2469,7 @@ export class OASGantt extends OASElement {
       this.criticalIds = cpOn && cp ? cp.critical : new Set()
       this.conflictIds = confOn && cp ? cp.conflict : new Set()
     }
-    const scale = this.scale()
+    const scale = this.scaleMode()
     if (this.lastScale === '') {
       this.lastScale = scale // 首次吸收不派发
     } else if (this.lastScale !== scale) {
@@ -2605,7 +2605,7 @@ export class OASGantt extends OASElement {
     // 辅刻度抽稀：列宽不足以容纳标签 + 间隙时按 N 取一显示（保留全部格线，只隐藏文本），
     // 防止窄容器下双位日号/月号首尾相接成一团。决策按全列标签计算并缓存（见 visibleMinorCache），
     // 窗口内逐格查集——与旧实现逐帧全量计算产物完全一致
-    const scale = this.scale()
+    const scale = this.scaleMode()
     let cache = this.visibleMinorCache
     if (!cache || cache.units !== this.units || cache.scale !== scale || cache.colW !== colW) {
       cache = {
@@ -3566,13 +3566,13 @@ export class OASGantt extends OASElement {
 
   /** 向更细一档步进（写 scale 属性，既有回调派发 oas-scale-change）；最细档 no-op */
   zoomIn(): void {
-    const i = SCALES.indexOf(this.scale())
+    const i = SCALES.indexOf(this.scaleMode())
     if (i > 0) this.setAttribute('scale', SCALES[i - 1]!)
   }
 
   /** 向更粗一档步进；最粗档 no-op */
   zoomOut(): void {
-    const i = SCALES.indexOf(this.scale())
+    const i = SCALES.indexOf(this.scaleMode())
     if (i >= 0 && i < SCALES.length - 1) this.setAttribute('scale', SCALES[i + 1]!)
   }
 
@@ -4514,7 +4514,7 @@ export class OASGantt extends OASElement {
   /** 按 scale 日历步进 n 个单位（snap 对齐用）；n = 0 必须恒等，否则零位移点按会被锚到月首而静默改期 */
   private addUnitsMs(ms: number, n: number): number {
     if (n === 0) return ms
-    return OASGantt.addUnits(new Date(ms), this.scale(), n).getTime()
+    return OASGantt.addUnits(new Date(ms), this.scaleMode(), n).getTime()
   }
 
   private avgUnitMs(): number {
@@ -5170,7 +5170,7 @@ export class OASGantt extends OASElement {
     const grid = this.gridEl
     if (!grid) return
     grid.innerHTML = ''
-    const scale = this.scale()
+    const scale = this.scaleMode()
     if (scale !== 'day' && scale !== 'hour') return
     if (this.rows.length === 0) return
     const colW = this.colW()

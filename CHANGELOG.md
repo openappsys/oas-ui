@@ -4,6 +4,10 @@
 
 ## [未发布]
 
+### 修复
+
+- **SPA 客户端路由下 gantt / resource demo 空白**：私有方法名与单字属性 `scale` 撞名，框架（Vue 自定义元素）按「key in el」把 `scale="day"` 写成 property，own string 遮蔽原型方法 → `this.scale is not a function`；整页刷新因升级晚于 patch 才走 attribute。内部方法改名 `scaleMode()`（公开 API 不变），并新增客户端跳转回归（表格页 → 甘特 → 资源）。
+
 ### 特性
 
 - **数据密集型组件规模化（行窗口协议）**：新增共享契约 `shared/window-data.ts`（`oas-window-request` 事件名、`{start,end,reason}` 半开绝对区间、±8 行缓冲、覆盖/去重工具）——`windowed`（布尔）+ `total`（全量行数）+ `window-start`（`data[0]` 绝对行号）三属性的统一语义，宿主只喂可视窗口切片即可支撑十万行级数据。
