@@ -716,7 +716,6 @@ windowed 下行 `aria-setsize = total`、`aria-posinset = 绝对行号 + 1`。�
 | `hoverable` | 不可点行的 hover 底色反馈（选中行排除） | `boolean` | — |
 | `loading` | 加载态，显示骨架占位 | `boolean` | — |
 | `max-height` | 列表体最大高度（px 或 CSS 长度），设置后列表体成为滚动容器（配合 oas-reach-bottom 滚动加载；分组组头在此容器内吸顶） | `string` | — |
-| `role` | — | — | — |
 | `row-height` | 虚拟滚动行高（px，默认 64，要求数据行定高） | `string` | `64` |
 | `size` | 行密度：sm / md（默认）/ lg | `string` | — |
 | `sortable` | 行拖拽排序（数据通道 + 声明式） | `boolean` | — |

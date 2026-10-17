@@ -718,7 +718,6 @@ ARIA in windowed mode: rows report `aria-setsize = total` and `aria-posinset = a
 | `hoverable` | Hover background for non-clickable rows (selected rows excluded) | `boolean` | — |
 | `loading` | Loading state, shows skeleton placeholders | `boolean` | — |
 | `max-height` | Max height of the list body (px or CSS length); turns the body into a scroll container (pairs with oas-reach-bottom for scroll loading; group headers stick inside this container) | `string` | — |
-| `role` | — | — | — |
 | `row-height` | Virtual scroll row height (px, default 64; data rows must be fixed-height) | `string` | `64` |
 | `size` | Row density: sm / md (default) / lg | `string` | — |
 | `sortable` | Enables row drag-and-drop reordering (data channel + declarative) | `boolean` | — |
