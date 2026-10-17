@@ -6692,3 +6692,149 @@ describe('property 通道接受 JSON 字符串（框架把静态 attribute 写�
     expect(el.tasks[0]!.id).toBe('t1')
   })
 })
+
+describe('OASGantt 行斑马纹（stripe）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  const ROW_H = 36
+
+  function flatTasks(n: number): GanttTask[] {
+    return Array.from({ length: n }, (_, i) => ({
+      id: `s${i}`,
+      name: `S${i}`,
+      start: '2026-03-02',
+      end: '2026-03-06',
+    }))
+  }
+
+  /** top（px）→ 绝对行号：非 windowed top = i×行高、windowed top = (window-start+i)×行高，
+   *  两模式下 top/行高都是**全量绝对行号**（absRowTop 契约），断言口径统一 */
+  const absOf = (top: string): number => Math.round(Number.parseFloat(top) / ROW_H)
+
+  function stripeAbsRows(el: OASGantt): number[] {
+    return [...shadowOf(el).querySelectorAll<HTMLElement>('.stripe-canvas .stripe')].map((s) => absOf(s.style.top))
+  }
+
+  /** 私有窗口：触发同步 renderWindow（不走 scroll → rAF 合帧，确定性断言） */
+  const rerender = (el: OASGantt): void => (el as unknown as { renderWindow(): void }).renderWindow()
+
+  it('① 默认关：无 .stripe-canvas/.stripe 元素、行名无 data-stripe（零额外 DOM）；stripe="false" 同样关', () => {
+    const el = mount({ tasks: JSON.stringify(flatTasks(12)), height: '180', 'row-height': String(ROW_H) })
+    expect(shadowOf(el).querySelector('.stripe-canvas')).toBeNull()
+    expect(shadowOf(el).querySelectorAll('.stripe').length).toBe(0)
+    expect(shadowOf(el).querySelectorAll('.row-name[data-stripe]').length).toBe(0)
+    // 防宿主布尔绑定写成 stripe="false" 意外开启（同 auto-schedule / show-critical-path 口径）
+    const el2 = mount({
+      tasks: JSON.stringify(flatTasks(12)),
+      stripe: 'false',
+      height: '180',
+      'row-height': String(ROW_H),
+    })
+    expect(shadowOf(el2).querySelector('.stripe-canvas')).toBeNull()
+    expect(shadowOf(el2).querySelectorAll('.row-name[data-stripe]').length).toBe(0)
+  })
+
+  it('② 开启：窗口内奇数绝对行有条纹、偶数无；行名 data-stripe 同口径且与条纹集合一致', () => {
+    const el = mount({
+      tasks: JSON.stringify(flatTasks(24)),
+      stripe: '',
+      height: '180',
+      'row-height': String(ROW_H),
+    })
+    // happy-dom 无布局：viewportH 回落 height 180 → 窗口 [0,11)，奇数绝对行 1/3/5/7/9
+    const stripes = stripeAbsRows(el)
+    expect(stripes, '窗口行已渲染（前提自检）').toEqual([1, 3, 5, 7, 9])
+    const names = nameRows(el)
+    expect(names.length).toBe(11)
+    names.forEach((r) => {
+      const abs = absOf(r.style.top)
+      expect(r.hasAttribute('data-stripe'), `绝对行 ${abs} 的行名 data-stripe 应为 ${abs % 2 === 1}`).toBe(
+        abs % 2 === 1,
+      )
+    })
+    // 条纹集合与行名底色集合一致（无漏行/残影）
+    expect(stripes).toEqual(names.filter((r) => r.hasAttribute('data-stripe')).map((r) => absOf(r.style.top)))
+  })
+
+  it('③ 滚动到中部：条纹按绝对奇偶稳定（winStart=21 → 21 有/22 无）；DOM 序着色会整体错位（反证锚点）', () => {
+    const el = mount({
+      tasks: JSON.stringify(flatTasks(60)),
+      stripe: '',
+      height: '180',
+      'row-height': String(ROW_H),
+    })
+    const tb = tbodyOf(el)
+    // scrollTop = 27×36 → floor=27，−buffer 6 → winStart=21（奇）：首个渲染行即绝对行 21
+    tb.scrollTop = 27 * ROW_H
+    rerender(el)
+    const names = nameRows(el)
+    expect(names.length).toBeGreaterThan(0)
+    expect(absOf(names[0]!.style.top), '首渲染行 = 绝对行 21（窗口数学自检）').toBe(21)
+    // 反证锚点：DOM 序 0 若按序着色应无底色——按**绝对奇偶**必须有（winStart 为奇时两者必错位）
+    expect(names[0]!.hasAttribute('data-stripe'), '绝对行 21（奇）→ 行名有底色').toBe(true)
+    expect(absOf(names[1]!.style.top)).toBe(22)
+    expect(names[1]!.hasAttribute('data-stripe'), '绝对行 22（偶）→ 无').toBe(false)
+    for (const abs of stripeAbsRows(el)) expect(abs % 2, `条纹行 ${abs} 应为奇数绝对行`).toBe(1)
+    names.forEach((r) => expect(r.hasAttribute('data-stripe')).toBe(absOf(r.style.top) % 2 === 1))
+  })
+
+  it('④ windowed 切片：条纹按全量绝对行奇偶（切片 i=0 ↔ 绝对行 21 → 有条纹）', () => {
+    const el = new OASGantt()
+    el.setAttribute('windowed', '')
+    el.setAttribute('total', '100')
+    el.setAttribute('window-start', '21')
+    el.setAttribute('height', '180')
+    el.setAttribute('row-height', String(ROW_H))
+    el.setAttribute('stripe', '')
+    el.setAttribute('tasks', taskSlice(21, 5))
+    document.body.appendChild(el)
+    const tb = tbodyOf(el)
+    // 可视窗口与装载切片 [21,26) 相交：scrollTop = 21×36 → 全量窗口 [15,32) ∩ [21,26) → 局部 [0,5)
+    tb.scrollTop = 21 * ROW_H
+    rerender(el)
+    const names = nameRows(el)
+    expect(names.length, '切片 5 行全渲染').toBe(5)
+    // 绝对行号 = window-start + 局部 i：21 奇/22 偶/23 奇/24 偶/25 奇
+    names.forEach((r, i) => {
+      const abs = absOf(r.style.top)
+      expect(abs, 'windowed 定位按绝对行号（absRowTop 契约）').toBe(21 + i)
+      expect(r.hasAttribute('data-stripe'), `绝对行 ${abs} 行名底色应为 ${abs % 2 === 1}`).toBe(abs % 2 === 1)
+    })
+    expect(stripeAbsRows(el)).toEqual([21, 23, 25])
+  })
+
+  it('⑤ CSS：--oas-gantt-row-stripe-bg token（缺省 bg-hover）与 .stripe/.stripe-canvas 规则（不拦指针）；行名选中态优先', () => {
+    const el = mount({ tasks: JSON.stringify(flatTasks(6)), stripe: '' })
+    const css = shadowOf(el).querySelector('style')!.textContent ?? ''
+    expect(css).toContain('--oas-gantt-row-stripe-bg')
+    expect(css).toMatch(/\.stripe-canvas \{[^}]*pointer-events: none/)
+    expect(css).toMatch(/\.stripe-canvas \.stripe \{[^}]*var\(--oas-gantt-row-stripe-bg, var\(--oas-color-bg-hover\)\)/)
+    expect(css).toMatch(/\.stripe-canvas \.stripe \{[^}]*pointer-events: none/)
+    expect(css).toMatch(
+      /\.row-name\[data-stripe\] \{[^}]*var\(--oas-gantt-row-stripe-bg, var\(--oas-color-bg-hover\)\)/,
+    )
+    // 同特异性下后规则胜：.row-name.selected（选中底色）须定义在 [data-stripe] 之后
+    expect(css.indexOf('.row-name[data-stripe]'), '选中态背景覆盖斑马纹').toBeLessThan(
+      css.indexOf('.row-name.selected'),
+    )
+  })
+
+  it('⑥ 移除属性：条纹容器与行名底色即时清除（回归既有外观）', () => {
+    const el = mount({
+      tasks: JSON.stringify(flatTasks(12)),
+      stripe: '',
+      height: '180',
+      'row-height': String(ROW_H),
+    })
+    expect(shadowOf(el).querySelectorAll('.stripe').length).toBeGreaterThan(0)
+    el.removeAttribute('stripe')
+    expect(shadowOf(el).querySelector('.stripe-canvas'), '关闭后零额外 DOM（容器一并移除）').toBeNull()
+    expect(shadowOf(el).querySelectorAll('.stripe').length).toBe(0)
+    expect(shadowOf(el).querySelectorAll('.row-name[data-stripe]').length).toBe(0)
+  })
+})

@@ -1792,8 +1792,8 @@
   },
   "oas-kanban": {
     "attrs": {
-      "columns": "列定义（JSON 数组 [{ key, title, limit? }]；property 同名数组通道同效，setter 反射回 attribute）。limit 为 WIP 限制：列卡片数超限时列头计数转 warning 色 + data-over-limit 标记（提示语义非阻断，拖入照常落定），缺省/0/负数 = 不限制",
-      "cards": "卡片数据（JSON 数组 [{ id, column, title, ...任意字段 }]，column 为所属列 key）。拖拽落定后组件把新分组/顺序回写本属性（非受控回写 + attribute 反射）；renderCard 函数在场时不回写（数据由宿主持有）",
+      "columns": "列定义（JSON 数组 [{ key, title, limit? }]；property 同名数组通道同效，setter 反射回 attribute）。limit 为 WIP 限制：列卡片数超限时列头计数转 warning 色 + data-over-limit 标记（提示语义非阻断，拖入照常落定），缺省/0/负数 = 不限制；列可带可选 `color`：仅作列头顶部 3px 强调条（不改变列宽/布局）",
+      "cards": "卡片数据（JSON 数组 [{ id, column, title, ...任意字段 }]，column 为所属列 key）。拖拽落定后组件把新分组/顺序回写本属性（非受控回写 + attribute 反射）；renderCard 函数在场时不回写（数据由宿主持有）；卡片可带可选 `color`（CSS 颜色或 token）：仅作卡片左侧 3px 强调条（绝对定位、不改变布局），用于优先级/分类；缺省无强调",
       "empty-column-text": "空列/空泳道单元格占位文案覆盖（默认走 i18n kanban.emptyColumn，随 locale 翻译）",
       "swimlane-by": "泳道字段 key：按该字段值把看板横向分带（带头 = 折叠箭头 + 字段值 + 计数，默认全展开，折叠状态在数据变化时保留）；字段值缺失/空归「（空）」带；跨带拖拽 = 改泳道字段值；不带属性 = 普通列结构",
       "card-estimate": "列体虚拟化的未实测卡片预估步进（px，默认 68）：数值 ≤0 / 非法回落 68；实测后由 ResizeObserver 逐步修正。仅当属性缺席时读取 CSS 变量 --oas-kanban-card-step 作为兜底（属性优先）"
@@ -4350,7 +4350,8 @@
       "total": "windowed 模式下的全量行（任务）数；为 0 或非法时 windowed 不生效（回落本地模式）",
       "window-start": "windowed 模式下切片首行的绝对行号（相对全量）",
       "range-start": "宿主托管时间轴起点（ISO 日期 YYYY-MM-DD）：提供后轴范围不再由数据推导，配合 range-end 支撑窗口化（切片不含完整日期跨度）",
-      "range-end": "宿主托管时间轴终点（ISO 日期 YYYY-MM-DD，含当日）：与 range-start 成对使用"
+      "range-end": "宿主托管时间轴终点（ISO 日期 YYYY-MM-DD，含当日）：与 range-start 成对使用",
+      "stripe": "行斑马纹（布尔，默认关）：按**绝对行号**奇偶给行加底色（虚拟化/窗口化滚动稳定，不随 DOM 顺序跳变）；颜色走 `--oas-gantt-row-stripe-bg`（缺省 `--oas-color-bg-hover`）；选中/周末假日等背景覆盖条纹"
     },
     "events": {
       "oas-reschedule": "依赖联动排程改动了后继任务时派发（auto-schedule 开启），detail: { ids }（被联动改动的任务 id）",

@@ -139,6 +139,19 @@ Ctrl/Cmd+点击逐枚切换选中，Shift+点击做范围选（锚点卡到被�
 - 键盘可达：卡片 `tabindex=0` 可聚焦，非空列体为 `role="list"`（空列不设 list 语义）、卡片为 `role="listitem"`，携带列名与卡片标题的可读名称；列重排可聚焦列头手柄后按 ←/→；
 - 移动菜单只作用于按钮所在的单张卡（多选选中不影响菜单行为）。
 
+## 优先级强调色（可选 color）
+
+列与卡片都可带可选 `color`（CSS 颜色或 token）——只渲染为**3px 强调条**（列头横条 / 卡片左侧竖条，逻辑属性、RTL 自动镜像），不整列/整卡上色，也不改变布局尺寸；用于优先级/分类的快速辨识。缺省无强调、外观零变化。颜色不承载唯一信息（列名/标题仍可读）。
+
+<DemoBlock title="列头与卡片强调色（color）">
+  <div style="width: 100%">
+    <oas-kanban
+      columns='[{"key":"urgent","title":"紧急","color":"var(--oas-color-danger)"},{"key":"plain","title":"常规"}]'
+      cards='[{"id":"p1","column":"urgent","title":"修复线上故障","color":"var(--oas-color-danger)"},{"id":"p2","column":"plain","title":"补充文档","color":"var(--oas-color-warning)"}]'
+    ></oas-kanban>
+  </div>
+</DemoBlock>
+
 ## 大数据量（列体虚拟化）
 
 列体设 `height`（宿主定高）后，各列体独立按可视窗口渲染卡片——单列数千张亦保持 DOM 有界（窗口外卡片不进 DOM，属虚拟化固有取舍：键盘可达范围限于已渲染窗口，跨窗口靠滚动与回焦）。卡片携带 `aria-posinset`（绝对位次）与 `aria-setsize`（该列全量卡数），读屏可报出全量位置。未设 `height`（内容全高）时不启用窗口化，行为与旧版一致。
@@ -154,8 +167,8 @@ Ctrl/Cmd+点击逐枚切换选中，Shift+点击做范围选（锚点卡到被�
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
 | `card-estimate` | 列体虚拟化的未实测卡片预估步进（px，默认 68）：数值 ≤0 / 非法回落 68；实测后由 ResizeObserver 逐步修正。仅当属性缺席时读取 CSS 变量 --oas-kanban-card-step 作为兜底（属性优先） | — | — |
-| `cards` | 卡片数据（JSON 数组 [{ id, column, title, ...任意字段 }]，column 为所属列 key）。拖拽落定后组件把新分组/顺序回写本属性（非受控回写 + attribute 反射）；renderCard 函数在场时不回写（数据由宿主持有） | `KanbanCard[] \| string` | `[]` |
-| `columns` | 列定义（JSON 数组 [{ key, title, limit? }]；property 同名数组通道同效，setter 反射回 attribute）。limit 为 WIP 限制：列卡片数超限时列头计数转 warning 色 + data-over-limit 标记（提示语义非阻断，拖入照常落定），缺省/0/负数 = 不限制 | `KanbanColumn[] \| string` | `[]` |
+| `cards` | 卡片数据（JSON 数组 [{ id, column, title, ...任意字段 }]，column 为所属列 key）。拖拽落定后组件把新分组/顺序回写本属性（非受控回写 + attribute 反射）；renderCard 函数在场时不回写（数据由宿主持有）；卡片可带可选 `color`（CSS 颜色或 token）：仅作卡片左侧 3px 强调条（绝对定位、不改变布局），用于优先级/分类；缺省无强调 | `KanbanCard[] \| string` | `[]` |
+| `columns` | 列定义（JSON 数组 [{ key, title, limit? }]；property 同名数组通道同效，setter 反射回 attribute）。limit 为 WIP 限制：列卡片数超限时列头计数转 warning 色 + data-over-limit 标记（提示语义非阻断，拖入照常落定），缺省/0/负数 = 不限制；列可带可选 `color`：仅作列头顶部 3px 强调条（不改变列宽/布局） | `KanbanColumn[] \| string` | `[]` |
 | `empty-column-text` | 空列/空泳道单元格占位文案覆盖（默认走 i18n kanban.emptyColumn，随 locale 翻译） | `string` | — |
 | `swimlane-by` | 泳道字段 key：按该字段值把看板横向分带（带头 = 折叠箭头 + 字段值 + 计数，默认全展开，折叠状态在数据变化时保留）；字段值缺失/空归「（空）」带；跨带拖拽 = 改泳道字段值；不带属性 = 普通列结构 | `string` | — |
 
@@ -176,6 +189,8 @@ Ctrl/Cmd+点击逐枚切换选中，Shift+点击做范围选（锚点卡到被�
 
 | CSS 变量 | 默认值 |
 | --- | --- |
+| `--oas-kanban-card-color` | `transparent` |
+| `--oas-kanban-column-color` | `transparent` |
 | `--oas-kanban-column-min-height` | `60px` |
 | `--oas-kanban-column-min-width` | `220px` |
 

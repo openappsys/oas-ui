@@ -139,6 +139,19 @@ Only `title` renders by default; for richer cards (tags, owners, progress) use t
 - Keyboard accessible: cards are focusable (`tabindex=0`), non-empty column bodies are `role="list"` (empty columns carry no list semantics), cards are `role="listitem"`, with readable names from column titles and card titles; column reordering also works by focusing the column handle and pressing ←/→;
 - The move menu acts on its own card only (multi-select does not change menu behavior).
 
+## Priority accent color (optional color)
+
+Columns and cards may carry an optional `color` (CSS color or token) — rendered only as a **3px accent bar** (top of the column header / inline-start edge of the card, logical properties so RTL mirrors automatically). It does not color the whole column/card and does not change layout; use it for quick priority/category recognition. Absent means no accent and zero visual change. Color is not the only information channel (column/title text remains readable).
+
+<DemoBlock title="Column and card accent color (color)">
+  <div style="width: 100%">
+    <oas-kanban
+      columns='[{"key":"urgent","title":"Urgent","color":"var(--oas-color-danger)"},{"key":"plain","title":"Normal"}]'
+      cards='[{"id":"p1","column":"urgent","title":"Fix production incident","color":"var(--oas-color-danger)"},{"id":"p2","column":"plain","title":"Update docs","color":"var(--oas-color-warning)"}]'
+    ></oas-kanban>
+  </div>
+</DemoBlock>
+
 ## Large datasets (column virtualization)
 
 With `height` set on a column body (host-constrained), each column body scrolls independently and renders cards for the visible window only — thousands of cards in one column keep the DOM bounded (cards outside the window are not in the DOM: an inherent virtualization trade-off, keyboard reach is limited to the rendered window, cross-window via scrolling and refocus). Cards carry `aria-posinset` (absolute position) and `aria-setsize` (full card count of the column) so screen readers can announce the full position. Without `height` (full content height) virtualization is off and behavior matches previous versions.
@@ -154,8 +167,8 @@ The estimated step for unmeasured cards defaults to 68px and can be configured v
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
 | `card-estimate` | Estimated step (px, default 68) for unmeasured cards in column virtualization: numeric values <= 0 / invalid fall back to 68; ResizeObserver progressively corrects measurements. Only when the attribute is absent is the CSS variable --oas-kanban-card-step read as a fallback (attribute wins) | — | — |
-| `cards` | Card data (JSON array [{ id, column, title, ...arbitrary fields }] where column is the owning column key). After a drop the component writes the new grouping/order back to this attribute (uncontrolled write-back + attribute reflection); skipped while a renderCard function is present (the host owns the data) | `KanbanCard[] \| string` | `[]` |
-| `columns` | Column definitions (JSON array [{ key, title, limit? }]; the same-named property array channel works identically — the setter reflects back to the attribute). limit is a WIP limit: when the column's card count exceeds it, the header count turns warning-colored and the column gets a data-over-limit marker (advisory only — drops still land); unset/0/negative = unlimited | `KanbanColumn[] \| string` | `[]` |
+| `cards` | Card data (JSON array [{ id, column, title, ...arbitrary fields }] where column is the owning column key). After a drop the component writes the new grouping/order back to this attribute (uncontrolled write-back + attribute reflection); skipped while a renderCard function is present (the host owns the data); a card may carry an optional `color` (CSS color or token): rendered as a 3px accent bar on the card's inline-start edge (absolutely positioned, no layout shift) for priority/category; absent means no accent | `KanbanCard[] \| string` | `[]` |
+| `columns` | Column definitions (JSON array [{ key, title, limit? }]; the same-named property array channel works identically — the setter reflects back to the attribute). limit is a WIP limit: when the column's card count exceeds it, the header count turns warning-colored and the column gets a data-over-limit marker (advisory only — drops still land); unset/0/negative = unlimited; a column may carry an optional `color`: rendered as a 3px accent bar on top of the column header (no width/layout change) | `KanbanColumn[] \| string` | `[]` |
 | `empty-column-text` | Override for the empty-column / empty swimlane-cell placeholder text (defaults to the i18n kanban.emptyColumn key, translated with the locale) | `string` | — |
 | `swimlane-by` | Swimlane field key: splits the board into horizontal bands by that field's value (band header = fold arrow + field value + count; all expanded by default, fold state survives data changes); missing/empty values fall into the "(empty)" band; dropping a card into another band rewrites the swimlane field value; omit for the plain column layout | `string` | — |
 
@@ -176,6 +189,8 @@ The estimated step for unmeasured cards defaults to 68px and can be configured v
 
 | CSS Variable | Default |
 | --- | --- |
+| `--oas-kanban-card-color` | `transparent` |
+| `--oas-kanban-column-color` | `transparent` |
 | `--oas-kanban-column-min-height` | `60px` |
 | `--oas-kanban-column-min-width` | `220px` |
 

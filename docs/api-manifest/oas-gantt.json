@@ -117,6 +117,12 @@
       "observed": true
     },
     {
+      "name": "stripe",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
       "name": "windowed",
       "type": "boolean",
       "observed": true
@@ -259,6 +265,10 @@
     {
       "name": "--oas-gantt-row-height",
       "default": "36px"
+    },
+    {
+      "name": "--oas-gantt-row-stripe-bg",
+      "default": "var(--oas-color-bg-hover)"
     },
     {
       "name": "--oas-gantt-critical-color",

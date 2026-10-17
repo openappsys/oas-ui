@@ -1786,3 +1786,184 @@ describe('列体虚拟化（大列只渲染可视窗口）', () => {
     expect(estSum(el, 90), '变量兜底在后续 update 生效（2000×90）').toBe(2000 * 90)
   })
 })
+
+// ===== 优先级强调色（可选数据字段 color）=====
+// 需求：卡片/列可经数据字段 color 指定强调色（CSS 颜色或 token）；缺省零视觉变化（无变量/无额外节点）。
+// 颜色是装饰（不承载唯一信息），不改 aria；虚拟化窗口/数据回写后颜色必须跟随数据（移除时清干净）。
+
+const CARD_COLOR_VAR = '--oas-kanban-card-color'
+const COLUMN_COLOR_VAR = '--oas-kanban-column-color'
+
+const COLOR_COLUMNS = [
+  { key: 'todo', title: '待办', color: 'var(--oas-color-danger)' },
+  { key: 'doing', title: '进行中' },
+]
+const COLOR_CARDS = [
+  { id: 'p1', column: 'todo', title: '紧急', color: 'var(--oas-color-danger)' },
+  { id: 'p2', column: 'todo', title: '普通' },
+  { id: 'p3', column: 'doing', title: '低优', color: 'rgb(1, 2, 3)' },
+]
+
+function mountColor(attrs: Record<string, string> = {}): OASKanban {
+  return mount({ columns: JSON.stringify(COLOR_COLUMNS), cards: JSON.stringify(COLOR_CARDS), ...attrs })
+}
+
+/** 卡片是否完全无内联强调色（无 style 属性 = 零额外标记） */
+function cardHasNoAccent(card: HTMLElement): boolean {
+  return card.style.getPropertyValue(CARD_COLOR_VAR) === '' && !card.hasAttribute('style')
+}
+
+describe('优先级强调色（可选 color）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  it('卡片带 color：写内联 --oas-kanban-card-color；无 color：不写变量且无 style 属性', () => {
+    const el = mountColor()
+    expect(cardOf(el, 'p1').style.getPropertyValue(CARD_COLOR_VAR)).toBe('var(--oas-color-danger)')
+    expect(cardOf(el, 'p3').style.getPropertyValue(CARD_COLOR_VAR)).toBe('rgb(1, 2, 3)')
+    expect(cardHasNoAccent(cardOf(el, 'p2')), '无 color 的卡片零额外标记').toBe(true)
+    // 颜色不承载唯一信息：现有 aria 语义不变
+    expect(cardOf(el, 'p1').getAttribute('aria-label')).toBe('紧急')
+    expect(cardOf(el, 'p1').getAttribute('role')).toBe('listitem')
+  })
+
+  it('列带 color：列容器与列头写内联 --oas-kanban-column-color；无 color：不写变量且无 style 属性', () => {
+    const el = mountColor()
+    expect(columnOf(el, 'todo').style.getPropertyValue(COLUMN_COLOR_VAR)).toBe('var(--oas-color-danger)')
+    expect(headOf(el, 'todo').style.getPropertyValue(COLUMN_COLOR_VAR)).toBe('var(--oas-color-danger)')
+    expect(columnOf(el, 'doing').hasAttribute('style'), '无 color 的列零额外标记').toBe(false)
+    expect(headOf(el, 'doing').hasAttribute('style'), '无 color 的列头零额外标记').toBe(false)
+  })
+
+  it('泳道模式：列头（无 .column 祖先）自带列强调色变量', () => {
+    const el = mount({
+      'swimlane-by': 'prio',
+      columns: JSON.stringify([
+        { key: 'todo', title: '待办', color: 'var(--oas-color-warning)' },
+        { key: 'doing', title: '进行中' },
+      ]),
+      cards: JSON.stringify(SWIM_CARDS.map((c, i) => (i === 0 ? { ...c, color: '#ff0000' } : c))),
+    })
+    expect(headOf(el, 'todo').style.getPropertyValue(COLUMN_COLOR_VAR)).toBe('var(--oas-color-warning)')
+    expect(headOf(el, 'doing').hasAttribute('style')).toBe(false)
+    // 泳道单元格内的卡片同样按 color 写变量
+    expect(cardOf(el, 's1').style.getPropertyValue(CARD_COLOR_VAR)).toBe('#ff0000')
+  })
+
+  it('运行时换色：复用/重建节点与数据同步（新色生效）', () => {
+    const el = mountColor()
+    expect(cardOf(el, 'p2').style.getPropertyValue(CARD_COLOR_VAR)).toBe('')
+    el.cards = [
+      { id: 'p1', column: 'todo', title: '紧急', color: '#123456' },
+      { id: 'p2', column: 'todo', title: '普通', color: 'var(--oas-color-success)' },
+      { id: 'p3', column: 'doing', title: '低优' },
+    ]
+    expect(cardOf(el, 'p1').style.getPropertyValue(CARD_COLOR_VAR)).toBe('#123456')
+    expect(cardOf(el, 'p2').style.getPropertyValue(CARD_COLOR_VAR)).toBe('var(--oas-color-success)')
+    expect(cardHasNoAccent(cardOf(el, 'p3')), '移除 color 后变量清干净').toBe(true)
+  })
+
+  it('运行时移除列 color：列与列头变量同步清除', () => {
+    const el = mountColor()
+    el.columns = [
+      { key: 'todo', title: '待办' },
+      { key: 'doing', title: '进行中' },
+    ]
+    expect(columnOf(el, 'todo').style.getPropertyValue(COLUMN_COLOR_VAR)).toBe('')
+    expect(columnOf(el, 'todo').hasAttribute('style')).toBe(false)
+    expect(headOf(el, 'todo').style.getPropertyValue(COLUMN_COLOR_VAR)).toBe('')
+    expect(headOf(el, 'todo').hasAttribute('style')).toBe(false)
+  })
+
+  it('数据回写保留 color：拖拽落定后卡片颜色与数据字段都不丢（无白名单过滤）', () => {
+    const el = mountColor()
+    dragDrop(el, 'p1', cardOf(el, 'p2'), 10)
+    const moved = el.cards.find((c) => c.id === 'p1')!
+    expect(moved.color, '回写数据保留自定义 color 键').toBe('var(--oas-color-danger)')
+    const written = JSON.parse(el.getAttribute('cards')!).find((c: { id: string }) => c.id === 'p1')
+    expect(written.color, 'attribute 回写保留 color').toBe('var(--oas-color-danger)')
+    expect(cardOf(el, 'p1').style.getPropertyValue(CARD_COLOR_VAR), '落定后渲染仍带色').toBe('var(--oas-color-danger)')
+  })
+
+  it('默认数据（无 color）：全部卡片/列/列头均无强调色变量（零视觉变化）', () => {
+    const el = mount()
+    for (const card of shadow(el).querySelectorAll<HTMLElement>('.card')) {
+      expect(cardHasNoAccent(card)).toBe(true)
+    }
+    for (const col of columnEls(el)) {
+      expect(col.style.getPropertyValue(COLUMN_COLOR_VAR)).toBe('')
+      expect(col.querySelector<HTMLElement>('.column-head')!.style.getPropertyValue(COLUMN_COLOR_VAR)).toBe('')
+    }
+  })
+
+  it('非字符串 color（数字/对象）忽略：不写变量、不抛异常', () => {
+    const el = mount({
+      columns: JSON.stringify([{ key: 'todo', title: '待办', color: 123 }]),
+      cards: JSON.stringify([{ id: 'x', column: 'todo', title: 'x', color: { bad: true } }]),
+    })
+    expect(columnOf(el, 'todo').hasAttribute('style')).toBe(false)
+    expect(cardHasNoAccent(cardOf(el, 'x'))).toBe(true)
+  })
+
+  it('样式含卡片/列强调色伪元素规则：逻辑属性、透明兜底、3px、不参与命中', () => {
+    const el = mount()
+    const css = (shadow(el).querySelector('style')!.textContent ?? '').replace(/\s+/g, ' ')
+    expect(css, '卡片伪元素').toContain('.card::before')
+    expect(css, '卡片强调色变量').toContain(`var(${CARD_COLOR_VAR}, transparent)`)
+    expect(css, '卡片竖条走逻辑起点（RTL 自动镜像）').toMatch(/\.card::before \{[^}]*inset-inline-start: 0/)
+    expect(css, '卡片竖条上下贴边').toMatch(/\.card::before \{[^}]*top: 0;[^}]*bottom: 0;/)
+    expect(css, '卡片竖条 3px 宽').toMatch(/\.card::before \{[^}]*width: 3px/)
+    expect(css, '列头伪元素').toContain('.column-head::before')
+    expect(css, '列强调色变量').toContain(`var(${COLUMN_COLOR_VAR}, transparent)`)
+    expect(css, '列头横条横贯逻辑两侧').toMatch(/\.column-head::before \{[^}]*inset-inline: 0/)
+    expect(css, '列头横条 3px 高').toMatch(/\.column-head::before \{[^}]*height: 3px/)
+    expect(css, '伪元素不参与命中').toMatch(/\.card::before \{[^}]*pointer-events: none/)
+    expect(css, '列头伪元素不参与命中').toMatch(/\.column-head::before \{[^}]*pointer-events: none/)
+    // 不整卡/整列改背景色（只走伪元素强调条）
+    expect(css).not.toContain(`.card { background: var(${CARD_COLOR_VAR})`)
+  })
+
+  it('大列虚拟化：滚动窗口卡片的颜色随数据更新（换色生效/移除清干净）', async () => {
+    stubScrollViewport(400)
+    try {
+      const base = Array.from({ length: 400 }, (_, i) => ({ id: `vc${i}`, column: 'todo', title: `卡 ${i}` }))
+      const el = mount({ columns: BIG_COLUMNS, cards: JSON.stringify(base) })
+      const body = bigBody(el)
+      body.scrollTop = 8000
+      body.dispatchEvent(new Event('scroll'))
+      await flushRaf()
+      const win0 = [...body.querySelectorAll<HTMLElement>('.card[data-index]')]
+      expect(win0.length, '窗口有渲染卡片').toBeGreaterThan(0)
+      expect(
+        win0.every((c) => cardHasNoAccent(c)),
+        '无 color 时窗口卡片零变量',
+      ).toBe(true)
+
+      el.cards = base.map((c) => ({ ...c, color: '#00ff00' }))
+      const body2 = bigBody(el)
+      const win1 = [...body2.querySelectorAll<HTMLElement>('.card[data-index]')]
+      expect(win1.length).toBeGreaterThan(0)
+      expect(
+        win1.every((c) => c.style.getPropertyValue(CARD_COLOR_VAR) === '#00ff00'),
+        '换色后窗口卡片全部生效',
+      ).toBe(true)
+
+      el.cards = base
+      const body3 = bigBody(el)
+      const win2 = [...body3.querySelectorAll<HTMLElement>('.card[data-index]')]
+      expect(win2.length).toBeGreaterThan(0)
+      expect(
+        win2.every((c) => cardHasNoAccent(c)),
+        '移除 color 后窗口卡片变量清干净',
+      ).toBe(true)
+    } finally {
+      restoreViewport()
+    }
+  })
+})

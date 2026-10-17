@@ -1792,8 +1792,8 @@
   },
   "oas-kanban": {
     "attrs": {
-      "columns": "Column definitions (JSON array [{ key, title, limit? }]; the same-named property array channel works identically — the setter reflects back to the attribute). limit is a WIP limit: when the column's card count exceeds it, the header count turns warning-colored and the column gets a data-over-limit marker (advisory only — drops still land); unset/0/negative = unlimited",
-      "cards": "Card data (JSON array [{ id, column, title, ...arbitrary fields }] where column is the owning column key). After a drop the component writes the new grouping/order back to this attribute (uncontrolled write-back + attribute reflection); skipped while a renderCard function is present (the host owns the data)",
+      "columns": "Column definitions (JSON array [{ key, title, limit? }]; the same-named property array channel works identically — the setter reflects back to the attribute). limit is a WIP limit: when the column's card count exceeds it, the header count turns warning-colored and the column gets a data-over-limit marker (advisory only — drops still land); unset/0/negative = unlimited; a column may carry an optional `color`: rendered as a 3px accent bar on top of the column header (no width/layout change)",
+      "cards": "Card data (JSON array [{ id, column, title, ...arbitrary fields }] where column is the owning column key). After a drop the component writes the new grouping/order back to this attribute (uncontrolled write-back + attribute reflection); skipped while a renderCard function is present (the host owns the data); a card may carry an optional `color` (CSS color or token): rendered as a 3px accent bar on the card's inline-start edge (absolutely positioned, no layout shift) for priority/category; absent means no accent",
       "empty-column-text": "Override for the empty-column / empty swimlane-cell placeholder text (defaults to the i18n kanban.emptyColumn key, translated with the locale)",
       "swimlane-by": "Swimlane field key: splits the board into horizontal bands by that field's value (band header = fold arrow + field value + count; all expanded by default, fold state survives data changes); missing/empty values fall into the \"(empty)\" band; dropping a card into another band rewrites the swimlane field value; omit for the plain column layout",
       "card-estimate": "Estimated step (px, default 68) for unmeasured cards in column virtualization: numeric values <= 0 / invalid fall back to 68; ResizeObserver progressively corrects measurements. Only when the attribute is absent is the CSS variable --oas-kanban-card-step read as a fallback (attribute wins)"
@@ -4350,7 +4350,8 @@
       "total": "Full row (task) count in windowed mode; 0 or invalid disables windowed (falls back to local mode)",
       "window-start": "Absolute row index (within the full dataset) of the first row in the slice (windowed mode)",
       "range-start": "Host-managed time-axis start (ISO date YYYY-MM-DD): when provided the axis extent is no longer derived from data; use with range-end to support windowed mode (the slice may not span the full date range)",
-      "range-end": "Host-managed time-axis end (ISO date YYYY-MM-DD, inclusive); pair with range-start"
+      "range-end": "Host-managed time-axis end (ISO date YYYY-MM-DD, inclusive); pair with range-start",
+      "stripe": "Row zebra striping (boolean, off by default): tints rows by the **absolute row index** parity (stable under virtualization/windowing, no DOM-order flicker); color via `--oas-gantt-row-stripe-bg` (default `--oas-color-bg-hover`); selection/weekend backgrounds override the stripe"
     },
     "events": {
       "oas-reschedule": "Dispatched when auto-scheduling moved successor tasks (auto-schedule on), detail: { ids } (ids of the rescheduled tasks)",

@@ -664,3 +664,124 @@ test('kanban card-estimate=120：3000 卡大列首屏行数有界、滚到中部
   // 顶部占位 ≈ midFirst × 120（窗口前卡片几乎全部未实测；首屏已测卡的真实步距偏差在容差内）
   expect(Math.abs(r.topPadH - r.midFirst * r.step), '顶部占位按 120 步距估算').toBeLessThanOrEqual(1500)
 })
+
+// ===== 优先级强调色（可选数据字段 color）=====
+// 回归点：卡片/列 color → 3px 伪元素强调条（逻辑属性、RTL 镜像、暗色可读）；
+// 无 color 时零变量/无伪元素着色（透明兜底）；全程 console 零告警。
+// 反证：去掉 buildCard/buildColumn/applyAccent 的变量写入 → 伪元素背景透明白、变量断言红。
+
+test('kanban 优先级强调色：卡片/列 color 经伪元素生效、RTL 镜像、暗色可读、无 color 无差异、console 零告警', async ({
+  page,
+}) => {
+  const errors: string[] = []
+  page.on('console', (msg) => {
+    if (msg.type() === 'error' || msg.type() === 'warning') errors.push(msg.text())
+  })
+  page.on('pageerror', (e) => errors.push(String(e)))
+  await page.goto('/components/kanban.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-kanban')
+  await page.evaluate(() => {
+    const el = document.createElement('oas-kanban')
+    el.id = 'kanban-accent'
+    el.setAttribute(
+      'columns',
+      JSON.stringify([
+        { key: 'urgent', title: '紧急', color: 'var(--oas-color-danger)' },
+        { key: 'plain', title: '普通' },
+      ]),
+    )
+    el.setAttribute(
+      'cards',
+      JSON.stringify([
+        { id: 'ac1', column: 'urgent', title: '带色卡', color: 'var(--oas-color-danger)' },
+        { id: 'ac2', column: 'urgent', title: '无色卡' },
+        { id: 'ac3', column: 'plain', title: '普通卡' },
+      ]),
+    )
+    document.body.appendChild(el)
+  })
+  await up(page, '#kanban-accent')
+
+  const read = () =>
+    page.evaluate(() => {
+      const el = document.querySelector('#kanban-accent')!
+      const sr = el.shadowRoot!
+      const card = (id: string): HTMLElement => sr.querySelector(`.card[data-id="${id}"]`) as HTMLElement
+      const head = (key: string): HTMLElement => sr.querySelector(`.column-head[data-key="${key}"]`) as HTMLElement
+      const bg = (n: Element, pseudo?: string): string => getComputedStyle(n, pseudo).backgroundColor
+      const box = (n: Element, prop: string, pseudo?: string): string =>
+        getComputedStyle(n, pseudo).getPropertyValue(prop)
+      // 解析当前主题下的 token 真值（不硬编码明暗两套十六进制）
+      const probe = document.createElement('div')
+      probe.style.background = 'var(--oas-color-danger)'
+      document.body.appendChild(probe)
+      const tokenBg = getComputedStyle(probe).backgroundColor
+      probe.remove()
+      return {
+        tokenBg,
+        cardVar: card('ac1').style.getPropertyValue('--oas-kanban-card-color'),
+        cardBarBg: bg(card('ac1'), '::before'),
+        cardBarW: box(card('ac1'), 'width', '::before'),
+        cardBarTop: box(card('ac1'), 'top', '::before'),
+        cardBarBottom: box(card('ac1'), 'bottom', '::before'),
+        cardBarLeft: box(card('ac1'), 'left', '::before'),
+        cardBarRight: box(card('ac1'), 'right', '::before'),
+        cleanCardVar: card('ac2').style.getPropertyValue('--oas-kanban-card-color'),
+        cleanCardStyle: card('ac2').hasAttribute('style'),
+        cleanCardBarBg: bg(card('ac2'), '::before'),
+        colVar: head('urgent').style.getPropertyValue('--oas-kanban-column-color'),
+        colBarBg: bg(head('urgent'), '::before'),
+        colBarH: box(head('urgent'), 'height', '::before'),
+        colBarW: Number.parseFloat(box(head('urgent'), 'width', '::before')),
+        headW: head('urgent').getBoundingClientRect().width,
+        plainColStyle: head('plain').hasAttribute('style'),
+        plainColBarBg: bg(head('plain'), '::before'),
+        // 卡片尺寸不因强调条改变（绝对定位伪元素不参与布局）
+        cardH: card('ac2').getBoundingClientRect().height,
+        cardHColored: card('ac1').getBoundingClientRect().height,
+      }
+    })
+
+  const light = await read()
+  expect(light.cardVar, '卡片内联变量写入').toBe('var(--oas-color-danger)')
+  expect(light.cardBarBg, '卡片强调条取 color（非透明）').toBe(light.tokenBg)
+  expect(light.cardBarW, '卡片竖条 3px').toBe('3px')
+  expect(light.cardBarTop, '竖条贴顶').toBe('0px')
+  expect(light.cardBarBottom, '竖条贴底').toBe('0px')
+  expect(light.cardBarLeft, 'LTR 竖条在左侧（inset-inline-start 逻辑属性）').toBe('0px')
+  expect(Number.parseFloat(light.cardBarRight), 'LTR 竖条不贴右（3px 宽）').toBeGreaterThan(0)
+  expect(light.cleanCardVar, '无 color 卡片无变量').toBe('')
+  expect(light.cleanCardStyle, '无 color 卡片零额外 style 标记').toBe(false)
+  expect(light.cleanCardBarBg, '无 color 伪元素透明（零视觉变化）').toBe('rgba(0, 0, 0, 0)')
+  expect(light.colVar, '列头内联变量写入').toBe('var(--oas-color-danger)')
+  expect(light.colBarBg, '列头横条取 color').toBe(light.tokenBg)
+  expect(light.colBarH, '列头横条 3px 高').toBe('3px')
+  expect(Math.abs(light.colBarW - light.headW), '列头横条横贯列头（inset-inline:0，不改列宽）').toBeLessThanOrEqual(1)
+  expect(light.plainColStyle, '无 color 列头零额外 style 标记').toBe(false)
+  expect(light.plainColBarBg, '无 color 列头伪元素透明').toBe('rgba(0, 0, 0, 0)')
+  expect(light.cardHColored, '强调条不改变卡片高度').toBe(light.cardH)
+
+  // RTL：逻辑属性自动镜像到右侧（视觉待人工复核）
+  const rtl = await page.evaluate(() => {
+    const el = document.querySelector('#kanban-accent')!
+    el.setAttribute('dir', 'rtl')
+    const sr = el.shadowRoot!
+    const card = sr.querySelector('.card[data-id="ac1"]') as HTMLElement
+    const cs = getComputedStyle(card, '::before')
+    return { left: cs.left, right: cs.right }
+  })
+  expect(rtl.right, 'RTL 竖条贴右（inset-inline-start 镜像）').toBe('0px')
+  expect(Number.parseFloat(rtl.left), 'RTL 竖条不贴左（镜像后 3px 宽）').toBeGreaterThan(0)
+
+  // 暗色：强调条取暗色 token（与明色不同、非透明）
+  await page.evaluate(() => document.documentElement.classList.add('dark'))
+  await page.waitForTimeout(300)
+  const dark = await read()
+  expect(dark.cardBarBg, '暗色下强调条取暗色 token').toBe(dark.tokenBg)
+  expect(dark.cardBarBg, '暗色强调条非透明（可读）').not.toBe('rgba(0, 0, 0, 0)')
+  expect(dark.cardBarBg, '暗色 token 与明色不同').not.toBe(light.cardBarBg)
+  expect(dark.cleanCardBarBg, '暗色下无 color 仍透明').toBe('rgba(0, 0, 0, 0)')
+  await page.evaluate(() => document.documentElement.classList.remove('dark'))
+
+  expect(errors, `console 应零告警，实际：${errors.join(' | ')}`).toEqual([])
+})

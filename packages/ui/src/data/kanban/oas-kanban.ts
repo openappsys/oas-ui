@@ -8,10 +8,17 @@ export interface KanbanColumn {
   title: string
   /** WIP 限制：列卡片数（泳道模式下跨带合计）超过该值 → 列头计数转 warning 色 + data-over-limit 标记（提示语义非阻断，拖入照常落定）；缺省/0/负数 = 不限制 */
   limit?: number
+  /** 可选强调色：CSS 颜色或 token（如 `var(--oas-color-danger)`）——列头顶部 3px 横条；
+   *  缺省无强调（零视觉变化）。颜色是装饰，不承载唯一信息 */
+  color?: string
 }
 
 /** 卡片：`cards` 属性（JSON）元素结构——`id` 唯一标识、`column` 为所属列 key，其余字段任意 */
-export type KanbanCard = Record<string, unknown>
+export type KanbanCard = Record<string, unknown> & {
+  /** 可选强调色：CSS 颜色或 token（如 `var(--oas-color-danger)`）——卡片内嵌左侧 3px 竖条；
+   *  缺省无强调（零视觉变化）。颜色是装饰，不承载唯一信息 */
+  color?: string
+}
 
 /**
  * 自定义卡片渲染（renderCard property 函数通道）：`(card) => Node | string`。
@@ -52,6 +59,10 @@ const ESTIMATED_CARD_STEP = 68
 const CARD_WINDOW_BUFFER = 6
 /** 列内 gap 兜底值（getComputedStyle 不可用时；等于 --oas-space-2） */
 const CARD_GAP_FALLBACK = 8
+/** 卡片优先级强调色变量名：内联写在卡片上，`.card::before` 竖条读取（缺省透明） */
+const CARD_COLOR_VAR = '--oas-kanban-card-color'
+/** 列优先级强调色变量名：内联写在列容器/列头上，`.column-head::before` 横条读取（缺省透明） */
+const COLUMN_COLOR_VAR = '--oas-kanban-column-color'
 
 const STYLE = `
 :host {
@@ -90,12 +101,26 @@ const STYLE = `
   overflow: hidden;
 }
 .column-head {
+  position: relative;
   display: flex;
   align-items: center;
   gap: var(--oas-space-2);
   padding: var(--oas-space-2) var(--oas-space-3);
   background: var(--oas-color-bg-hover);
   border-bottom: 1px solid var(--oas-color-border);
+}
+/* 列优先级强调色（可选列字段 color）：列头顶部 3px 横条，逻辑属性横贯（RTL 自动镜像）；
+   缺色时透明（默认零视觉变化）；伪元素不参与命中，不改变列宽/布局。颜色是装饰，不承载唯一信息 */
+.column-head::before {
+  content: '';
+  position: absolute;
+  inset-inline: 0;
+  top: 0;
+  height: 3px;
+  background: var(--oas-kanban-column-color, transparent);
+  /* 跟随列头圆角：普通模式列头无圆角（由 .column overflow 裁切），泳道模式列头独立圆角 */
+  border-radius: inherit;
+  pointer-events: none;
 }
 /* 泳道模式：列头行内的列头是独立小容器（整边框），宽度与列单元格对齐 */
 .lane-header {
@@ -255,6 +280,21 @@ const STYLE = `
   padding: var(--oas-space-2) var(--oas-space-3);
   font-size: var(--oas-font-size-sm);
   cursor: grab;
+}
+/* 卡片优先级强调色（可选卡片字段 color）：3px 内嵌左侧竖条（inset-inline-start 逻辑属性，
+   RTL 自动镜像到右侧）；缺色时透明（默认零视觉变化）；伪元素不参与命中、不改变盒模型。
+   只做侧边强调条，不整卡改背景/边框（避免噪音与对比度风险）。颜色是装饰，不承载唯一信息 */
+.card::before {
+  content: '';
+  position: absolute;
+  inset-inline-start: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: var(--oas-kanban-card-color, transparent);
+  border-start-start-radius: var(--oas-radius-sm);
+  border-end-start-radius: var(--oas-radius-sm);
+  pointer-events: none;
 }
 .card[draggable='true']:active {
   cursor: grabbing;
@@ -987,12 +1027,27 @@ export class OASKanban extends OASElement {
     return cell
   }
 
+  /** 写入/清除元素上的强调色变量。缺省（非字符串/空串）→ 移除变量并清空 style 属性，
+   *  保证无 color 时零额外标记（默认零视觉变化）；数据变化/窗口重建后由建卡/建列路径按最新值重写，
+   *  因此复用节点不会残留旧色。 */
+  private applyAccent(el: HTMLElement, name: string, value: unknown): void {
+    const color = typeof value === 'string' ? value.trim() : ''
+    if (color !== '') {
+      el.style.setProperty(name, color)
+      return
+    }
+    el.style.removeProperty(name)
+    if (el.style.cssText === '') el.removeAttribute('style')
+  }
+
   /** 构建列头（两种模式共用）：手柄 + 标题 + 触屏移动按钮 + 计数（WIP 超限标记在此） */
   private buildColumnHead(col: KanbanColumn, count: number, overLimit: boolean): HTMLElement {
     const head = document.createElement('div')
     head.className = 'column-head'
     head.setAttribute('part', 'column-head')
     head.setAttribute('data-key', col.key)
+    // 列强调色写列头本身：泳道模式下列头无 .column 祖先（不依赖继承），普通模式与列容器同值
+    this.applyAccent(head, COLUMN_COLOR_VAR, col.color)
     if (overLimit) head.setAttribute('data-over-limit', '')
 
     const handle = document.createElement('button')
@@ -1048,6 +1103,7 @@ export class OASKanban extends OASElement {
     column.className = 'column'
     column.setAttribute('part', 'column')
     column.setAttribute('data-key', col.key)
+    this.applyAccent(column, COLUMN_COLOR_VAR, col.color)
     if (overLimit) column.setAttribute('data-over-limit', '')
 
     const head = this.buildColumnHead(col, count, overLimit)
@@ -1376,6 +1432,8 @@ export class OASKanban extends OASElement {
     el.className = 'card'
     el.setAttribute('part', 'card')
     el.setAttribute('data-id', String(card.id ?? ''))
+    // 卡片强调色：每次建卡按当前数据写（窗口滚动/数据回写重建时自然跟随；无 color 清干净）
+    this.applyAccent(el, CARD_COLOR_VAR, card.color)
     if (index >= 0) {
       el.setAttribute('data-index', String(index))
       // 读屏总量口径（F2）：虚拟化下窗口外卡片不在 DOM，listitem 必须自报「容器内绝对位次 +

@@ -108,6 +108,11 @@ const STYLE = `
 .row-name[disabled] {
   cursor: default;
 }
+/* 斑马纹行名（stripe 属性 + 绝对行号奇数）：与时间轴条纹同 token 同奇偶口径；
+   定义在选中底色规则之前（同特异性后者胜）→ 选中覆盖斑马纹 */
+.row-name[data-stripe] {
+  background: var(--oas-gantt-row-stripe-bg, var(--oas-color-bg-hover));
+}
 .row-name.selected {
   background: color-mix(in srgb, var(--oas-color-primary) 18%, transparent);
   box-shadow: inset 2px 0 0 var(--oas-color-primary);
@@ -334,6 +339,20 @@ svg.links .link-hit:focus-visible + .link {
 }
 .inner {
   position: relative;
+}
+/* 行斑马纹容器（stripe 属性，opt-in，懒创建）：绝对行号奇数行整行底色。
+   纯装饰且不拦指针（条拖拽/框选/连线命中不受影响）；DOM 序插在 .grid-canvas 之前
+   （同为 absolute 无 z-index → 先者先绘）→ 周末/假日格画在条纹之上，条纹只透出工作日部分 */
+.stripe-canvas {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.stripe-canvas .stripe {
+  position: absolute;
+  inset-inline-start: 0;
+  background: var(--oas-gantt-row-stripe-bg, var(--oas-color-bg-hover));
+  pointer-events: none;
 }
 .grid-canvas {
   position: absolute;
@@ -1132,6 +1151,8 @@ export class OASGantt extends OASElement {
       'creatable',
       'auto-schedule',
       'show-critical-path',
+      // 行斑马纹开关（opt-in，默认关）
+      'stripe',
       // windowed（服务端行窗口模式）+ 宿主托管时间范围（契约见 shared/window-data.ts）
       'windowed',
       'total',
@@ -1242,6 +1263,8 @@ export class OASGantt extends OASElement {
   private barsEl: HTMLElement | null = null
   private linksEl: SVGSVGElement | null = null
   private gridEl: HTMLElement | null = null
+  /** 行斑马纹容器（stripe 属性懒创建；render() 重建 innerHTML 后由 renderStripes 的 isConnected 检查自愈） */
+  private stripeCanvasEl: HTMLElement | null = null
   private innerEl: HTMLElement | null = null
   private todayEl: HTMLElement | null = null
   private tooltipEl: HTMLElement | null = null
@@ -1579,6 +1602,11 @@ export class OASGantt extends OASElement {
   /** 关键路径开关（防宿主布尔绑定写成 show-critical-path="false" 仍开启，同 auto-schedule） */
   private showCriticalPathOn(): boolean {
     return this.hasAttr('show-critical-path') && this.getAttr('show-critical-path', '') !== 'false'
+  }
+
+  /** 行斑马纹开关（缺省关）：属性存在即开；显式 "false" 视作关（防宿主布尔绑定意外开启，同 auto-schedule） */
+  private stripeOn(): boolean {
+    return this.hasAttr('stripe') && this.getAttr('stripe', '') !== 'false'
   }
 
   /** 基线差值文案（实际 end 相对基线 end：晚/早 N 天或一致） */
@@ -2081,6 +2109,15 @@ export class OASGantt extends OASElement {
    */
   private absRowTop(i: number): number {
     return (this._winMode.windowed ? this._winMode.windowStart + i : i) * this.rowHeight()
+  }
+
+  /**
+   * 行 i 是否斑马纹行（stripe 属性开启时按**全量绝对行号**奇偶判定，与 table/list 同口径；
+   * windowed 按 window-start 偏移——按窗口局部序/nth-child 着色会在滚动后整体错位）。
+   */
+  private isStripeRow(i: number): boolean {
+    const abs = this._winMode.windowed ? this._winMode.windowStart + i : i
+    return abs % 2 === 1
   }
 
   /** 画布总行数（滚动域/连线画布/网格/今日线高度基准）：windowed = 全量 total；本地 = rows 数 */
@@ -2664,6 +2701,7 @@ export class OASGantt extends OASElement {
     this.computeColWindow()
     if (this.winColStart !== prevColStart || this.winColEnd !== prevColEnd) this.renderHeader()
     this.renderSideRows()
+    this.renderStripes()
     this.renderBars()
     this.renderGrid()
     this.renderLinks()
@@ -2736,6 +2774,8 @@ export class OASGantt extends OASElement {
       el.style.top = `${this.absRowTop(i)}px`
       el.style.setProperty('--indent', `${8 + row.depth * 16}px`)
       el.setAttribute('part', 'row-name')
+      // 行斑马纹（stripe 属性）：绝对行号奇数行行名同步底色（与时间轴条纹同口径）
+      if (this.stripeOn() && this.isStripeRow(i)) el.setAttribute('data-stripe', '')
       el.tabIndex = row.task.id === activeId ? 0 : -1
       // 选中态：与局部 patch 同一写入函数（syncSelection），两条路径产物恒一致
       this.writeRowSelectionState(el, this.selected.has(row.task.id))
@@ -5164,6 +5204,47 @@ export class OASGantt extends OASElement {
       if (hit) hit.classList.add('selected')
       else this.selectedLink = null
     }
+  }
+
+  /**
+   * 行斑马纹层（stripe 属性，opt-in）：窗口内绝对行号为奇数的行画整行底色，与左侧行名
+   * （data-stripe → .row-name[data-stripe] 背景）同口径。条纹容器插在 .grid-canvas 之前
+   * （层级在下 → 周末/假日格只透出工作日部分），随滚动帧按窗口重建/清理（无残影）；
+   * 关闭时容器一并移除（零额外 DOM）。条纹 top 走 absRowTop（绝对行号）→ 滚动/变高/切片
+   * 后奇偶稳定。width 取画布全宽：列虚拟化下条纹不属于任何列，只随数据画布变宽。
+   */
+  private renderStripes(): void {
+    const inner = this.innerEl
+    const grid = this.gridEl
+    if (!inner || !grid) return
+    // render() 重建 innerHTML 后旧引用失联 → 以 isConnected 自愈重建
+    let canvas = this.stripeCanvasEl
+    if (canvas && !canvas.isConnected) canvas = this.stripeCanvasEl = null
+    if (!this.stripeOn()) {
+      canvas?.remove()
+      this.stripeCanvasEl = null
+      return
+    }
+    if (!canvas) {
+      canvas = document.createElement('div')
+      canvas.className = 'stripe-canvas'
+      canvas.setAttribute('aria-hidden', 'true')
+      inner.insertBefore(canvas, grid)
+      this.stripeCanvasEl = canvas
+    }
+    canvas.innerHTML = ''
+    const rowH = this.rowHeight()
+    const frag = document.createDocumentFragment()
+    for (let i = this.winStart; i < this.winEnd; i++) {
+      if (!this.isStripeRow(i)) continue
+      const stripe = document.createElement('div')
+      stripe.className = 'stripe'
+      stripe.style.top = `${this.absRowTop(i)}px`
+      stripe.style.height = `${rowH}px`
+      stripe.style.width = `${this.canvasW}px`
+      frag.appendChild(stripe)
+    }
+    canvas.appendChild(frag)
   }
 
   /** 周末/假日列高亮（day/hour 档；week+ 档跨度大不高亮） */

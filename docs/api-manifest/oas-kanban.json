@@ -61,8 +61,16 @@
       "default": "220px"
     },
     {
+      "name": "--oas-kanban-column-color",
+      "default": "transparent"
+    },
+    {
       "name": "--oas-kanban-column-min-height",
       "default": "60px"
+    },
+    {
+      "name": "--oas-kanban-card-color",
+      "default": "transparent"
     }
   ],
   "unresolved": []

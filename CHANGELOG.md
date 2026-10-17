@@ -4,6 +4,11 @@
 
 ## [未发布]
 
+### 特性
+
+- **`oas-gantt` 行斑马纹（`stripe`，默认关）**：按**绝对行号**奇偶给行加底色（虚拟化/窗口化滚动稳定），颜色走新 token `--oas-gantt-row-stripe-bg`（缺省 `--oas-color-bg-hover`）；选中/周末假日等背景覆盖条纹。任务优先级色继续用 `GanttTask.color`（任务条/进度底色）。
+- **`oas-kanban` 优先级强调色（`cards[].color` / `columns[].color`，可选）**：仅渲染 3px 强调条（卡片左侧竖条 / 列头顶部横条，逻辑属性 RTL 镜像），不整卡/整列上色、不改变布局；缺省零视觉变化。
+
 ### 修复
 
 - **SPA 客户端路由下 scheduler / gantt / resource demo 空白**：① 私有成员与单字属性撞名（`scale`/`view`/`expanded`），框架按「key in el」把静态 attribute 写成 property，own 字符串遮蔽方法或 Set 字段导致报错/空白；内部改名（`scaleMode`/`viewMode`/`expandedSet`，公开 API 不变）。② 数据属性的 property setter 统一接受 JSON 字符串（`events`/`resources`/`tasks`/`lines` 等），框架把静态 attribute 当 property 写入时不再被当作非法数组清空。新增 `shared/json-array` 与客户端跳转回归（表格 → 日程 → 甘特 → 资源）。

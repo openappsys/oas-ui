@@ -247,7 +247,7 @@
 ## 行虚拟滚动（万级任务）
 
 <DemoBlock title="height + row-height 启用视口窗口渲染（演示 300 行；只渲染可视窗口 + buffer）">
-  <oas-gantt id="gantt-virtual" height="240" row-height="32"></oas-gantt>
+  <oas-gantt id="gantt-virtual" height="240" row-height="32" stripe></oas-gantt>
   <div style="font-size:var(--oas-font-size-sm);color:var(--oas-color-text-secondary);margin-top:var(--oas-space-2)">方法通道：<oas-button id="gantt-jump" size="small">scrollToTask 跳到第 250 行</oas-button></div>
 </DemoBlock>
 
@@ -578,6 +578,7 @@ onMounted(async () => {
 | `show-critical-path` | 关键路径（布尔，默认关）：在依赖图与工期上算总时差，时差为 0 的任务加 .critical 高亮（颜色走 --oas-gantt-critical-color）；只读展示不改数据 | `string` | — |
 | `show-today` | 今日线（默认开；false 关闭） | `string` | — |
 | `snap` | 拖拽吸附当前刻度（默认开；false 按像素比例平移并保留时间精度） | `string` | — |
+| `stripe` | 行斑马纹（布尔，默认关）：按**绝对行号**奇偶给行加底色（虚拟化/窗口化滚动稳定，不随 DOM 顺序跳变）；颜色走 `--oas-gantt-row-stripe-bg`（缺省 `--oas-color-bg-hover`）；选中/周末假日等背景覆盖条纹 | `string` | — |
 | `tasks` | 甘特任务（JSON）：[{ id?, name, start, end?, type?, progress?, parent?, children?, dependencies?, color?, disabled?, expanded?, baseline?, constraint?（asap/snet/mso/fnlt）, constraintDate? }]——扁平 parent 指针为主，嵌套 children 自动拍平；type:"milestone" 显式优先（带 end 也按里程碑渲染，end 忽略），有子任务时恒为摘要；无 end 亦推导为里程碑；start 晚于 end 自动交换 | `GanttTask[]` | `[]` |
 | `total` | windowed 模式下的全量行（任务）数；为 0 或非法时 windowed 不生效（回落本地模式） | `string` | — |
 | `weekends` | 周末列高亮（默认开；day/hour 档生效；false 关闭） | `string` | — |
@@ -640,6 +641,7 @@ onMounted(async () => {
 | `--oas-gantt-list-width` | — | `220px` |
 | `--oas-gantt-milestone-color` | — | `var(--oas-color-warning)` |
 | `--oas-gantt-row-height` | — | `36px` |
+| `--oas-gantt-row-stripe-bg` | — | `var(--oas-color-bg-hover)` |
 | `--oas-gantt-summary-bg` | — | `var(--oas-color-text-secondary-strong)` |
 | `--oas-gantt-today-color` | — | `var(--oas-color-danger)` |
 | `--oas-gantt-weekend-bg` | — | `color-mix(in srgb, var(--oas-color-bg-hover) 60%, transparent)` |

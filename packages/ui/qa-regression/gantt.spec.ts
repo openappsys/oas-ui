@@ -1372,3 +1372,115 @@ test('gantt 万行选择增量：连点 20 次选择零重建、渲染行数有�
   expect(errors, 'console 零 error').toEqual([])
   expect(warnings.slice(warnBase), '交互期间无组件告警').toEqual([])
 })
+
+// 行斑马纹（stripe，opt-in）：真实浏览器断言——① 开启后奇数绝对行有底色、偶数无，
+// 行名（.row-name data-stripe）与时间轴条纹（.stripe）同口径，computed background 奇偶不同，
+// 条纹层 pointer-events:none（不拦条拖拽/框选/连线命中）；② 滚动到中部后条纹随**绝对行号**
+// 移动（winStart=21 → DOM 序 0 的行必有底色——按窗口局部序/nth-child 着色此断言必红，反证锚点）；
+// ③ 暗色主题下奇偶仍不同（token 有暗色变体 #27272a vs 亮色 #f4f4f5）；④ 关闭（移除属性）后
+// 条纹容器与行名底色一并清除（零额外 DOM）；⑤ console 零告警。
+// 机制层（含窗口数学反证）由单测锁定，本用例补真实布局 + computed style 感知层。
+test('gantt stripe 斑马纹：绝对行号奇偶 + 滚动稳定 + 暗色 + 关闭清除 + console 零告警', async ({ page }) => {
+  const errors: string[] = []
+  page.on('pageerror', (e) => errors.push(e.message))
+  page.on('console', (m) => {
+    if (m.type() === 'error') errors.push(m.text())
+  })
+  await page.goto('/components/gantt.html', { waitUntil: 'domcontentloaded' })
+  await waitGantt(page, 'gantt-basic')
+  const res = await page.evaluate(async () => {
+    await customElements.whenDefined('oas-gantt')
+    const raf = () => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)))
+    const el = document.createElement('oas-gantt') as HTMLElement & { tasks: unknown; shadowRoot: ShadowRoot }
+    el.setAttribute('stripe', '')
+    el.setAttribute('height', '360')
+    el.setAttribute('row-height', '36')
+    el.style.cssText = 'position:fixed;top:-9999px;left:0;width:600px' // 离屏：有真实布局测量
+    document.body.appendChild(el)
+    el.tasks = Array.from({ length: 60 }, (_, i) => ({
+      id: 'z' + i,
+      name: 'Z' + i,
+      start: '2026-03-02',
+      end: '2026-03-06',
+    }))
+    await raf()
+    const sr = el.shadowRoot
+    const ROW_H = 36
+    // top(px) → 绝对行号（非 windowed top = i×行高；windowed = (window-start+i)×行高，同构）
+    const absOf = (pxTop: string): number => Math.round(parseFloat(pxTop) / ROW_H)
+    const bg = (e: HTMLElement): string => getComputedStyle(e).backgroundColor
+    const snapshot = () => {
+      const names = [...sr.querySelectorAll<HTMLElement>('.side-body .row-name')]
+      const stripes = [...sr.querySelectorAll<HTMLElement>('.stripe-canvas .stripe')]
+      return {
+        names: names.map((n) => ({ abs: absOf(n.style.top), striped: n.hasAttribute('data-stripe'), bg: bg(n) })),
+        stripes: stripes.map((s) => ({ abs: absOf(s.style.top), bg: bg(s), pe: getComputedStyle(s).pointerEvents })),
+        canvas: !!sr.querySelector('.stripe-canvas'),
+      }
+    }
+    const light = snapshot()
+    // 滚到中部：scrollTop = 27×36 → 首可见行 27 − buffer 6 → winStart = 21（奇）
+    const tb = sr.querySelector('.tbody') as HTMLElement
+    tb.scrollTop = 27 * ROW_H
+    await raf()
+    await raf()
+    const scrolled = snapshot()
+    // 暗色：token 暗色变体生效（#27272a ≠ 亮色 #f4f4f5）
+    document.documentElement.classList.add('dark')
+    await raf()
+    const dark = snapshot()
+    document.documentElement.classList.remove('dark')
+    // 关闭：移除属性 → 条纹容器与行名底色一并清除
+    el.removeAttribute('stripe')
+    await raf()
+    const off = snapshot()
+    el.remove()
+    return { light, scrolled, dark, off }
+  })
+
+  // ① 开启：奇数绝对行有底色、偶数无；行名与条纹同口径；条纹不拦指针
+  expect(res.light.canvas, '开启后条纹容器存在').toBe(true)
+  expect(res.light.names.length, '窗口行已渲染').toBeGreaterThan(0)
+  for (const n of res.light.names) {
+    expect(n.striped, `绝对行 ${n.abs} 行名 data-stripe 应为 ${n.abs % 2 === 1}`).toBe(n.abs % 2 === 1)
+  }
+  for (const s of res.light.stripes) {
+    expect(s.abs % 2, `条纹落在绝对行 ${s.abs} 应为奇数`).toBe(1)
+    expect(s.pe, '条纹层不拦指针（条拖拽/框选/连线命中不受影响）').toBe('none')
+  }
+  const stripedName = res.light.names.find((n) => n.striped)!
+  const plainName = res.light.names.find((n) => !n.striped)!
+  expect(stripedName.bg, '奇数行行名有底色').not.toBe(plainName.bg)
+  expect(res.light.stripes.length, '时间轴条纹与行名底色行数一致').toBe(res.light.names.filter((n) => n.striped).length)
+  expect(res.light.stripes[0]!.bg, '条纹背景 = 行名底色（同 token）').toBe(stripedName.bg)
+
+  // ② 滚动后仍按绝对奇偶：winStart=21 → 首渲染行（DOM 序 0）必有底色
+  expect(res.scrolled.names[0]!.abs, '滚动后首渲染行 = 绝对行 21（窗口数学自检）').toBe(21)
+  expect(res.scrolled.names[0]!.striped, '绝对行 21（奇）→ 底色；DOM 序着色此处必红（反证锚点）').toBe(true)
+  for (const n of res.scrolled.names) {
+    expect(n.striped, `滚动后绝对行 ${n.abs} 行名 data-stripe 应为 ${n.abs % 2 === 1}`).toBe(n.abs % 2 === 1)
+  }
+  for (const s of res.scrolled.stripes) {
+    expect(s.abs % 2, `滚动后条纹落在绝对行 ${s.abs} 应为奇数`).toBe(1)
+  }
+
+  // ③ 暗色：奇偶仍不同，且条纹底色为暗色变体（≠ 亮色值）
+  for (const n of res.dark.names) {
+    expect(n.striped, `暗色下绝对行 ${n.abs} 同口径`).toBe(n.abs % 2 === 1)
+  }
+  const darkStriped = res.dark.names.find((n) => n.striped)!
+  const darkPlain = res.dark.names.find((n) => !n.striped)!
+  expect(darkStriped.bg, '暗色下奇数行底色 ≠ 偶数行').not.toBe(darkPlain.bg)
+  expect(darkStriped.bg, '暗色 token 变体生效（≠ 亮色底色）').not.toBe(stripedName.bg)
+
+  // ④ 关闭（移除属性）：容器与行名底色一并清除（零额外 DOM）
+  expect(res.off.canvas, '关闭后条纹容器移除').toBe(false)
+  expect(res.off.stripes.length).toBe(0)
+  expect(
+    res.off.names.some((n) => n.striped),
+    '关闭后行名无 data-stripe',
+  ).toBe(false)
+  expect(res.off.names[0]!.bg, '关闭后行名回落无底色（= 亮色无条纹行基线）').toBe(plainName.bg)
+
+  expect(errors, 'console 零 error').toEqual([])
+})

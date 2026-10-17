@@ -2072,6 +2072,19 @@ OASElement 的 render 生命周期只首连一次（`rendered` 门闩），组�
 - e2e：table windowed 滚动→请求→回填渲染绝对行；resource 500 资源行数上界+总高不变+中部覆盖+条可点（含 RTL×windowed）；kanban 3000 卡列内容有界+拖拽落点；gantt windowed 轴托管+range 请求；scheduler 资源行/小时轴窗口覆盖 + 多全天事件（band 多行）顶部刻度/事件可见 + 滚动回焦。
 - 文档：table / gantt / resource zh/en windowed 专节；api-descriptions/manifest 同步（`api:check` 双向 0）；CHANGELOG `[未发布]`。
 
+## 未发布 视觉语义：甘特行斑马纹 + 看板优先级强调色
+
+> 立项背景：甘特行没有横向单元格线、看板需要按优先级快速辨识；统一采用「默认中性、可选强调」：颜色只编码语义，不大面积上色。
+
+### 特性
+
+- **oas-gantt `stripe`（默认关）**：按绝对行号奇偶给行加底色（虚拟化/窗口化稳定），token `--oas-gantt-row-stripe-bg`（缺省 `--oas-color-bg-hover`）；选中/周末覆盖条纹。任务色继续用 `GanttTask.color`。
+- **oas-kanban `cards[].color` / `columns[].color`（可选）**：仅 3px 强调条（卡片左侧/列头顶部，逻辑属性 RTL 镜像），不改布局；缺省零变化。
+
+### 边界
+
+- 不做整行/整卡/整列彩虹背景；颜色不承载唯一信息（行名/标题/数值仍可读）。
+
 ## v2.5.9 oas-calendar `events` 排期条目通道
 
 ### 特性
