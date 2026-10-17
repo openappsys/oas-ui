@@ -168,3 +168,43 @@ test('guide gantt/resource windowed demo：行窗口 + 轴端范围请求扩轴'
   expect(after.resourceRangeEnd, 'resource 滚到轴尾后轴范围被扩展').not.toBe('2026-06-30')
   expect(issues, 'console 零 error/warning').toEqual([])
 })
+
+// 回归：组件包延迟注册（模拟 dev 下主题动态 import 更慢）时，页面脚本不得在未升级元素上写 property。
+// 修复前 el.tasks/el.resources 会变成 own property 遮蔽 setter，表现为泳道/直方图空白。
+test('guide windowed demo：组件包延迟注册仍能装载数据（防 property 早于 upgrade）', async ({ page }) => {
+  const issues: string[] = []
+  page.on('console', (m) => {
+    if (m.type() === 'error' || m.type() === 'warning') issues.push(`${m.type()}: ${m.text()}`)
+  })
+  page.on('pageerror', (e) => issues.push(`pageerror: ${e.message}`))
+  let delayed = false
+  await page.route('**/assets/chunks/index.*.js', async (route) => {
+    delayed = true
+    await new Promise((r) => setTimeout(r, 1200))
+    await route.continue()
+  })
+  await page.goto('/guide/windowed-data.html', { waitUntil: 'domcontentloaded' })
+  await page.waitForFunction(
+    () => {
+      const g = document.getElementById('guide-windowed-gantt')
+      const r = document.getElementById('guide-windowed-resource')
+      return !!g?.shadowRoot?.querySelector('.bars .bar') && !!r?.shadowRoot?.querySelector('.lanes .row.lane')
+    },
+    undefined,
+    { timeout: 20000 },
+  )
+  expect(delayed, 'UI chunk 确实被延迟（否则该回归无效）').toBe(true)
+  const out = await page.evaluate(() => {
+    const g = document.getElementById('guide-windowed-gantt') as HTMLElement & { shadowRoot: ShadowRoot }
+    const r = document.getElementById('guide-windowed-resource') as HTMLElement & { shadowRoot: ShadowRoot }
+    return {
+      ganttBars: g.shadowRoot.querySelectorAll('.bars .bar').length,
+      resourceLanes: r.shadowRoot.querySelectorAll('.lanes .row.lane').length,
+      resourceBars: r.shadowRoot.querySelectorAll('.lanes .bar').length,
+    }
+  })
+  expect(out.ganttBars, '延迟注册后 gantt 仍渲染任务条').toBeGreaterThan(0)
+  expect(out.resourceLanes, '延迟注册后 resource 仍渲染泳道').toBeGreaterThan(0)
+  expect(out.resourceBars, '延迟注册后 resource 仍渲染任务条').toBeGreaterThan(0)
+  expect(issues, 'console 零 error/warning').toEqual([])
+})
