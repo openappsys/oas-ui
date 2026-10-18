@@ -54,6 +54,12 @@ interaction: `el.getAttribute('value')` / `el.hasAttribute('checked')` read the
 current state directly, consistent with the event `detail` — no caching needed
 on your side.
 
+## Data properties
+
+### Does the property channel of a data attribute accept JSON strings?
+
+Yes. For host-framework compatibility (Vue writes static attributes on custom elements as properties), setters of array data properties such as `tasks` / `data` / `resources` / `events` / `items` accept both arrays and JSON strings at runtime (normalized by `shared/json-array`). **The public type remains an array** (prefer arrays through the property channel and JSON strings through the attribute channel); invalid JSON or non-array input generally falls back to an empty value without throwing.
+
 ## Style customization
 
 ### No attribute selectors after `::part()`

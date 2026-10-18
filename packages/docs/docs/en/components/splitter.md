@@ -215,7 +215,7 @@ onMounted(() => {
 | `max` | Maximum ratio of the preceding panel: numbers as percentage, `200px` suffix clamps in pixels; invalid values fall back to 90 | `string` | `90` |
 | `min` | Minimum ratio of the preceding panel: numbers as percentage, `200px` suffix clamps in pixels; invalid values fall back to 10 | `string` | `10` |
 | `percent` | Ratio of the preceding panel (%) | `string` | `50` |
-| `sizes` | Multi-panel mode panel ratios (comma-separated percentages, e.g. `30,40,30`); falls back to equal split when count mismatches panel count | `string` | — |
+| `sizes` | Multi-panel mode panel ratios (attribute accepts CSV or a JSON array, e.g. `30,40,30`); when the count mismatches the panel count, panels render with an equal split | `number[] \| string` | `[]` |
 | `snap` | Drag snap stops: comma-separated percentages or pixel values; dragging within ±8px of a stop snaps to it, arrow keys jump between stops | `string` | — |
 | `vertical` | Vertical direction: panels stack top-to-bottom, divider is horizontal, keyboard uses ArrowUp/Down | `boolean` | — |
 

@@ -553,7 +553,7 @@ export class OASTour extends OASElement {
   private _steps: TourStep[] = []
   /** property 通道：raw 步骤对象（可含函数/元素 target）；优先于 attribute JSON */
   private _stepsRaw: TourStep[] | null = null
-  private current = 0
+  private currentIndex = 0
   private highlight: HTMLElement | null = null
   private popup: HTMLElement | null = null
   private overlay: HTMLElement | null = null
@@ -762,22 +762,22 @@ export class OASTour extends OASElement {
   }
 
   private next(): void {
-    if (this.current >= this._steps.length - 1) {
+    if (this.currentIndex >= this._steps.length - 1) {
       this.finish()
       return
     }
-    this.goTo(this.current + 1)
+    this.goTo(this.currentIndex + 1)
   }
 
   private prev(): void {
-    if (this.current <= 0) return
-    this.goTo(this.current - 1)
+    if (this.currentIndex <= 0) return
+    this.goTo(this.currentIndex - 1)
   }
 
   /** 跳步统一入口：更新 current 属性 + 派发 oas-step + 增量同步 */
   private goTo(index: number): void {
     if (index < 0 || index > this._steps.length - 1) return
-    this.current = index
+    this.currentIndex = index
     this.setAttribute('current', String(index))
     this.emit('step', {
       index,
@@ -790,24 +790,24 @@ export class OASTour extends OASElement {
   }
 
   private skip(): void {
-    this.emit('skip', { index: this.current, total: this._steps.length })
+    this.emit('skip', { index: this.currentIndex, total: this._steps.length })
     this.cancel('skip')
   }
 
   private close(): void {
-    this.emit('close', { index: this.current, total: this._steps.length })
+    this.emit('close', { index: this.currentIndex, total: this._steps.length })
     this.cancel('close')
   }
 
   private finish(): void {
-    this.emit('finish', { index: this.current, total: this._steps.length })
+    this.emit('finish', { index: this.currentIndex, total: this._steps.length })
     this.maybeSaveDontShow()
     this.removeAttribute('open')
   }
 
   /** 取消统一入口：派发 oas-cancel + 可选「不再显示」记忆 + 关闭 */
   private cancel(source: 'skip' | 'esc' | 'close' | 'mask' | 'dont-show-again'): void {
-    this.emit('cancel', { index: this.current, total: this._steps.length, source })
+    this.emit('cancel', { index: this.currentIndex, total: this._steps.length, source })
     this.maybeSaveDontShow()
     this.removeAttribute('open')
   }
@@ -822,17 +822,17 @@ export class OASTour extends OASElement {
 
   private maybeSaveDontShow(): void {
     if (!this.hasAttr('dont-show-again') || !this.dontShowChecked) return
-    safeSet(this.storageKey(), '1')
+    safeSet(this.storageKeyValue(), '1')
   }
 
-  private storageKey(): string {
+  private storageKeyValue(): string {
     return this.getAttr('storage-key', 'oas-tour-dismiss')
   }
 
   /** 引导打开前置校验：「不再显示」命中则拦截（派发 oas-dismiss 保持受控宿主知情） */
   private dismissedBefore(): boolean {
     if (!this.hasAttr('dont-show-again')) return false
-    if (safeGet(this.storageKey()) !== '1') return false
+    if (safeGet(this.storageKeyValue()) !== '1') return false
     this.emit('dismiss', {})
     return true
   }
@@ -971,7 +971,7 @@ export class OASTour extends OASElement {
   private bindAdvance(target: HTMLElement | null): void {
     this.unbindAdvance()
     if (!target || !this.hasAttr('advance-on-click')) return
-    const step = this._steps[this.current]
+    const step = this._steps[this.currentIndex]
     if (step?.advanceOnClick === false) return
     if (step && this.getAttr('target-area-clickable', 'false') === 'false' && !step.targetAreaClickable) {
       // interceptor 显示时点击走 interceptor，无需挂目标
@@ -1118,7 +1118,7 @@ export class OASTour extends OASElement {
    *  this.shadow 查询会落空（曾缺陷：portal 后步骤推进时 syncButtons 等取 null 崩溃） */
   private syncButtons(step: TourStep): void {
     const popup = this.popup!
-    const last = this.current >= this._steps.length - 1
+    const last = this.currentIndex >= this._steps.length - 1
     const hide = (part: 'prev' | 'skip' | 'next', stepFlag?: boolean): boolean =>
       stepFlag ?? this.hasAttr(`hide-${part}`)
     const setHidden = (part: 'prev' | 'skip' | 'next' | 'step-count', hidden: boolean): void => {
@@ -1133,7 +1133,7 @@ export class OASTour extends OASElement {
     nextBtn.textContent = last ? this.t('tour.finish') : this.t('tour.next')
     const prevBtn = popup.querySelector<HTMLButtonElement>('[part="prev"]')!
     prevBtn.textContent = this.t('tour.prev')
-    prevBtn.disabled = this.current === 0
+    prevBtn.disabled = this.currentIndex === 0
     const skipBtn = popup.querySelector<HTMLButtonElement>('[part="skip"]')!
     skipBtn.textContent = this.t('tour.skip')
     // 按钮 props 透传：全局 + step 级合并（step 优先）。
@@ -1183,7 +1183,7 @@ export class OASTour extends OASElement {
   private syncCounter(step: TourStep): void {
     const popup = this.popup!
     const total = this._steps.length
-    const index = this.current
+    const index = this.currentIndex
     const counter = popup.querySelector<HTMLElement>('[part="step-count"]')!
     const template = this.getAttr('progress-text', '')
     const indicators =
@@ -1282,7 +1282,7 @@ export class OASTour extends OASElement {
   /** 定位：高亮（4 段遮罩 + 边框）与弹层（computePosition 12 向 + 翻转 + 避让） */
   private position(): void {
     if (!this.overlay || !this.highlight || !this.popup || !this.interceptor) return
-    const step = this._steps[this.current]
+    const step = this._steps[this.currentIndex]
     if (!step) return
     const target = this.resolveTarget(step)
     const gap = this.resolveGap(step)
@@ -1449,7 +1449,7 @@ export class OASTour extends OASElement {
     if (this.persistRestored || !this.hasAttr('persist')) return
     this.persistRestored = true
     try {
-      const s = JSON.parse(safeGet(this.storageKey()) ?? 'null')
+      const s = JSON.parse(safeGet(this.storageKeyValue()) ?? 'null')
       if (s && s.open === true) {
         this.setAttribute('open', '')
         if (typeof s.current === 'number') this.setAttribute('current', String(s.current))
@@ -1461,7 +1461,7 @@ export class OASTour extends OASElement {
 
   private savePersist(): void {
     if (!this.hasAttr('persist') || !this.persistRestored) return
-    safeSet(this.storageKey(), JSON.stringify({ open: this.hasAttr('open'), current: this.current }))
+    safeSet(this.storageKeyValue(), JSON.stringify({ open: this.hasAttr('open'), current: this.currentIndex }))
   }
 
   /** hints 信标：常驻脉冲点 + 点击气泡 + dismiss 记忆（与 open 无关，常驻渲染） */
@@ -1552,7 +1552,7 @@ export class OASTour extends OASElement {
     this.bindKeydown()
     this.parseSteps()
     this.restorePersist()
-    this.current = Math.min(Math.max(Number(this.getAttr('current', '0')) || 0, 0), this._steps.length - 1)
+    this.currentIndex = Math.min(Math.max(Number(this.getAttr('current', '0')) || 0, 0), this._steps.length - 1)
     const open = this.hasAttr('open')
     if (open && this.dismissedBefore()) {
       this.removeAttribute('open')
@@ -1566,10 +1566,10 @@ export class OASTour extends OASElement {
     // 箭头显隐：arrow 布尔属性默认 true（显示），arrow="false" 隐藏（元素与 ::part(arrow) 保留）
     const arrow = this.popup!.querySelector<HTMLElement>('[data-popper-arrow]')
     if (arrow) arrow.hidden = this.getAttr('arrow', 'true') === 'false'
-    this.syncButtons(this._steps[this.current] ?? {})
+    this.syncButtons(this._steps[this.currentIndex] ?? {})
     // open 状态迁移：true → false 派发 oas-destroy（外部移除 open 也覆盖）
     if (this.prevOpen === true && !open) {
-      this.emit('destroy', { index: this.current, total: this._steps.length })
+      this.emit('destroy', { index: this.currentIndex, total: this._steps.length })
       this.hlIndex = -1
     }
     this.prevOpen = open
@@ -1590,7 +1590,7 @@ export class OASTour extends OASElement {
       return
     }
     this.savePersist()
-    const step = this._steps[this.current]
+    const step = this._steps[this.currentIndex]
     if (!step) return
     this.popup!.querySelector<HTMLElement>('[part="title"]')!.textContent = step.title ?? ''
     this.startTypewriter(step.description ?? '')
@@ -1599,9 +1599,9 @@ export class OASTour extends OASElement {
     // 弹层 type（default/primary）data 同步（CSS 类选择器钩子）
     this.popup.setAttribute('data-type', step.type ?? this.getAttr('type', 'default'))
     // 生命周期：步骤高亮（index 变化才派发，防重复 update）
-    if (this.hlIndex !== this.current) {
-      this.hlIndex = this.current
-      this.emit('highlight-start', { index: this.current, total: this._steps.length })
+    if (this.hlIndex !== this.currentIndex) {
+      this.hlIndex = this.currentIndex
+      this.emit('highlight-start', { index: this.currentIndex, total: this._steps.length })
     }
     // 异步步骤：目标缺失 → waitForElement 轮询等待 / skipMissingElement 跳过
     const target = this.resolveTarget(step)
@@ -1616,8 +1616,8 @@ export class OASTour extends OASElement {
           return
         }
         const skip = step.skipMissingElement ?? this.hasAttr('skip-missing-element')
-        if (skip && this.current < this._steps.length - 1) {
-          this.goTo(this.current + 1)
+        if (skip && this.currentIndex < this._steps.length - 1) {
+          this.goTo(this.currentIndex + 1)
         } else {
           this.position() // fallback：仍定位（居中弹层）
         }
@@ -1633,6 +1633,6 @@ export class OASTour extends OASElement {
     this.position()
     this.syncFollow(open)
     this.ensurePortal()
-    this.emit('highlight-end', { index: this.current, total: this._steps.length })
+    this.emit('highlight-end', { index: this.currentIndex, total: this._steps.length })
   }
 }

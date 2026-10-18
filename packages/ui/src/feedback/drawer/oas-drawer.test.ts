@@ -1064,3 +1064,30 @@ describe('OASDrawer no-mask（无遮罩模式，PRD P2）', () => {
     expect(el.hasAttribute('visible')).toBe(false)
   })
 })
+
+// ===== 属性-方法撞名回归（observedAttributes 的 camelCase 与原型方法同名） =====
+//
+// 机制：宿主框架按 camelCase 做 property 桥接或用户 JS 写 `el.xxx = ...` 会在实例上
+// 建自有属性遮蔽原型同名方法，组件内部 `this.xxx()` 随后抛 TypeError。
+// 私有方法已改名（resizeMin → resizeMinPx / resizeMax → resizeMaxPx）。
+describe('OASDrawer 属性-方法撞名回归', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('property 写入 resizeMin / resizeMax 后 rail Home/End 调整不抛错', () => {
+    const el = mount({ visible: '', resizable: '', width: '400px', 'resize-min': '200', 'resize-max': '300' })
+    const rec = el as unknown as Record<string, unknown>
+    rec.resizeMin = 1
+    rec.resizeMax = 1
+    const rail = el.shadowRoot!.querySelector<HTMLElement>('[part="rail"]')!
+    expect(() => rail.dispatchEvent(new KeyboardEvent('keydown', { key: 'Home', bubbles: true }))).not.toThrow()
+    expect(el.getAttribute('width')).toBe('200px')
+    expect(() => rail.dispatchEvent(new KeyboardEvent('keydown', { key: 'End', bubbles: true }))).not.toThrow()
+    expect(el.getAttribute('width')).toBe('300px')
+  })
+})

@@ -6,7 +6,14 @@ import { up } from './helpers'
 test('barcode：role=img 与 aria-label 落在图形元素上，非法输入渲染错误占位并派发 oas-invalid', async ({ page }) => {
   const badWarns: string[] = []
   // 与 console-sweep 同口径过滤良性资源噪声（静态托管下理论不出现，防环境噪声误报）
-  const allow = [/net::ERR_/, /Failed to load resource/, /vite/, /hydrating/, /cookie .*overwritten/i]
+  const allow = [
+    /net::ERR_/,
+    /Failed to load resource/,
+    /vite/,
+    /hydrating/,
+    /cookie .*overwritten/i,
+    /scroll-linked positioning effect/i,
+  ]
   page.on('console', (m) => {
     if ((m.type() === 'error' || m.type() === 'warning') && !allow.some((re) => re.test(m.text()))) {
       badWarns.push(`${m.type()}: ${m.text()}`)

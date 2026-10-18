@@ -240,9 +240,21 @@ export class OASBubble extends OASElement {
     `
   }
 
+  /** 继承对齐下一帧复读的 rAF id（实例级单飞：同帧多次 update 复用同一帧） */
+  private alignRaf = 0
+
   /** 缓存节点引用 + 绑定事件（render 与水合路径共用） */
   private bind(): void {
     // 无交互事件；结构绑定留给 update()
+  }
+
+  /** 断开连接：取消未决的对齐复读帧（重连后由 update 重新排，避免残留回调） */
+  override disconnectedCallback(): void {
+    if (this.alignRaf) {
+      cancelAnimationFrame(this.alignRaf)
+      this.alignRaf = 0
+    }
+    super.disconnectedCallback()
   }
 
   protected override render(): void {
@@ -272,16 +284,37 @@ export class OASBubble extends OASElement {
     else this.removeAttribute('aria-busy')
     // 横向对齐继承链：message-row 等容器用 text-align 落位 slotted 气泡（见 oas-message-row .content 注释），
     // flex 项不响应 text-align——把继承的计算值反射为内部属性供选择器消费（显式 align 属性优先，含 align="start"）
-    if (this.getAttribute('align') === null) {
-      const ta = getComputedStyle(this).textAlign
-      this.toggleAttribute('data-inherit-end', ta === 'end' || ta === 'right')
-    } else {
-      // 显式 align 在场时清掉历史反射，防 align="start" 被陈旧 data-inherit-end 拉回 end
-      this.removeAttribute('data-inherit-end')
-    }
+    this.syncInheritedAlign()
     // 已知边界：容器侧对齐运行时动态切换（如 message-row 的 align 属性变化）不触发本组件 update，
     // 反射值在下次 update 时收敛；组件自身 align/loading/reactions 变化路径均即时
     this.syncReactions()
+  }
+
+  /**
+   * 反射继承的 text-align。连接时 stylesheet/插槽布局可能尚未就绪（Firefox 下首帧
+   * getComputedStyle 会先读到 start，随后才稳定为 end）——除同步读一次外，再在下一帧复读，
+   * 避免「计算值已 end 但 data-inherit-end 永不再写」的时序缺口（qa-regression 真布局回归）。
+   */
+  private syncInheritedAlign(): void {
+    this.applyInheritedAlign()
+    if (this.getAttribute('align') !== null || this.alignRaf) return
+    // 单飞：同一帧内的多次 update 复用同一个 rAF，避免重复 getComputedStyle
+    this.alignRaf = requestAnimationFrame(() => {
+      this.alignRaf = 0
+      this.applyInheritedAlign()
+    })
+  }
+
+  /** 读取继承的 text-align 并反射为 data-inherit-end（显式 align 优先，清历史反射） */
+  private applyInheritedAlign(): void {
+    if (!this.isConnected) return
+    if (this.getAttribute('align') !== null) {
+      // 显式 align 在场时清掉历史反射，防 align="start" 被陈旧 data-inherit-end 拉回 end
+      this.removeAttribute('data-inherit-end')
+      return
+    }
+    const ta = getComputedStyle(this).textAlign
+    this.toggleAttribute('data-inherit-end', ta === 'end' || ta === 'right')
   }
 
   /**

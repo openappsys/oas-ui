@@ -816,7 +816,7 @@ export class OASButton extends OASElement {
   }
 
   /** 原生表单行为归一化：合法值原样返回，空/非法值回落 button（不提交不重置，静默不告警） */
-  private htmlType(): ButtonHtmlType {
+  private htmlTypeValue(): ButtonHtmlType {
     const raw = this.getAttr('html-type', 'button')
     return (VALID_HTML_TYPES as readonly string[]).includes(raw) ? (raw as ButtonHtmlType) : 'button'
   }
@@ -841,7 +841,7 @@ export class OASButton extends OASElement {
    * 无目标表单（无 form 祖先且 form 属性无匹配 id）时原生激活行为自然 no-op。
    */
   private forwardFormAction(): void {
-    const type = this.htmlType()
+    const type = this.htmlTypeValue()
     if (this.isLink() || type === 'button') return
     const proxy = document.createElement('button')
     proxy.setAttribute('data-oas-form-proxy', '')

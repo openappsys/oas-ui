@@ -284,7 +284,7 @@ export class OASBarcode extends OASElement {
     const showText = this.normalizeDisplayValue()
     const textTop = this.normalizeTextPosition() === 'top'
     const fg = opts?.fg ?? this.fgColor()
-    const bg = opts?.bg ?? this.bgColor()
+    const bg = opts?.bg ?? this.bgColorValue()
 
     // EAN/UPC 护条外侧数字沟槽（不吃静区：在 margin 之外加宽，保证静区完整）
     const gutter = showText && (result.outside.left || result.outside.right) ? Math.ceil(fontSize * 0.7) : 0
@@ -350,7 +350,7 @@ export class OASBarcode extends OASElement {
   }
 
   /** 静区底色：默认固定白（可扫性优先于主题一致性）；属性 / 变量双通道覆盖 */
-  private bgColor(): string {
+  private bgColorValue(): string {
     const v = this.getAttr('bg-color', '').trim()
     if (v) return v
     return 'var(--oas-barcode-bg, #ffffff)'

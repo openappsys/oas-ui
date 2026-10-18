@@ -697,7 +697,7 @@ export class OASTransfer extends OASElement {
   }
 
   /** 每页条数：page-size 归一化（非法/小于 1 回落 10） */
-  private pageSize(): number {
+  private pageSizeValue(): number {
     const n = Math.trunc(Number(this.getAttr('page-size', '10')))
     return Number.isFinite(n) && n >= 1 ? n : 10
   }
@@ -720,7 +720,7 @@ export class OASTransfer extends OASElement {
 
   private changePage(side: 'left' | 'right', delta: -1 | 1): void {
     if (this.injectDisabled()) return
-    const pages = Math.max(1, Math.ceil(this.visibleItems(side).length / this.pageSize()))
+    const pages = Math.max(1, Math.ceil(this.visibleItems(side).length / this.pageSizeValue()))
     const next = this.pageOf(side) + delta
     if (next < 1 || next > pages) return
     this.setPageOf(side, next)
@@ -799,7 +799,7 @@ export class OASTransfer extends OASElement {
     // 分页切片：渲染取当前页切片，面板头计数/全选仍按全量可见语义；空面板不出页脚
     let pageItems = visible
     if (this.paginated() && visible.length > 0) {
-      const size = this.pageSize()
+      const size = this.pageSizeValue()
       const pages = Math.max(1, Math.ceil(visible.length / size))
       const page = this.clampPage(side, pages)
       pageItems = visible.slice((page - 1) * size, page * size)

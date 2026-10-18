@@ -496,14 +496,29 @@ ${TOUCH_TARGET_CSS}
  *  items attribute 写成 property）解析为菜单数据；非法 JSON / 非数组 → 空数组 + devWarn 一次
  *  （同值去重）。曾把字符串直接当 itemsList 渲染——逐字符迭代产出整串垃圾菜单项。 */
 const warnedItemsString = new Set<string>()
+/** 菜单项结构过滤（attribute / property 双通道共用）：非对象、字符串项、缺 value 的普通项不渲染。 */
+function isMenuItemEntry(i: unknown): i is MenuItem {
+  if (!i || typeof i !== 'object') return false
+  const item = i as MenuItem
+  if (item.type === 'divider') return true
+  if (item.type === 'group') return Array.isArray(item.children)
+  // value 类型声明为可选：允许无 value 的展示/动作/链接项（有 label 或 href 即可），
+  // 仅过滤字符串/空对象等垃圾项（attribute 与 property 双通道同口径）
+  return typeof item.value === 'string' || typeof item.label === 'string' || typeof item.href === 'string'
+}
+function sanitizeMenuItems(list: unknown[]): MenuItem[] {
+  return list.filter(isMenuItemEntry)
+}
 function normalizeItemsProperty(v: unknown): MenuItem[] | null {
-  if (typeof v !== 'string') return Array.isArray(v) ? (v as MenuItem[]) : null
-  const dedupKey = `items:${v}`
-  return parseJsonArray<MenuItem>(v, () => {
-    if (warnedItemsString.has(dedupKey)) return
-    warnedItemsString.add(dedupKey)
-    devWarn('[oas-menu] items property 收到非法 JSON 字符串（应为菜单数组或其 JSON），已按空菜单处理')
-  })
+  const raw: unknown =
+    typeof v === 'string'
+      ? parseJsonArray<MenuItem>(v, () => {
+          if (warnedItemsString.has(`items:${v}`)) return
+          warnedItemsString.add(`items:${v}`)
+          devWarn('[oas-menu] items property 收到非法 JSON 字符串（应为菜单数组或其 JSON），已按空菜单处理')
+        })
+      : v
+  return Array.isArray(raw) ? sanitizeMenuItems(raw) : null
 }
 
 export class OASMenu extends OASElement {
@@ -540,7 +555,7 @@ export class OASMenu extends OASElement {
   /** 过滤态下需要自动展开的祖先 value 集合（命中项路径，不改动受控 expanded） */
   private searchExpand = new Set<string>()
   /** 已展开的子菜单 value 集合（单条展开路径） */
-  private expanded = new Set<string>()
+  private expandedSet = new Set<string>()
   private menuEl: HTMLElement | null = null
   /** typeahead 字符缓冲（连续输入定位匹配项） + 超时定时器 */
   private typeaheadBuffer = ''
@@ -567,7 +582,7 @@ export class OASMenu extends OASElement {
    * （滚动不保证补发 mousemove）。
    */
   private repositionOnViewportChange = (): void => {
-    if (this.expanded.size > 0) this.syncSubmenuPositions()
+    if (this.expandedSet.size > 0) this.syncSubmenuPositions()
     this.recheckHoverBridge()
   }
 
@@ -610,7 +625,7 @@ export class OASMenu extends OASElement {
     // 瞬态浮层，移出收起是通行惯例；inline 侧边导航的展开态是持续导航上下文——
     // 可能还受控于宿主 expanded 属性，鼠标移出菜单区域不得收起）
     menuEl.addEventListener('mouseleave', (e) => {
-      if (this.getAttr('mode') === 'inline' || this.expanded.size === 0) return
+      if (this.getAttr('mode') === 'inline' || this.expandedSet.size === 0) return
       // 水平模式下回折/夹取后的面板与父项横向错开：指针从父项斜向移向面板的路径会短暂落在
       // 菜单盒与面板盒之间的页面区域上（面板越高、错开越多越明显）。此处若直接收起，面板在
       // 指针到达前消失（hover 断链）——落在桥区内时保留展开态，交给桥区观察器判定真正离开。
@@ -619,7 +634,7 @@ export class OASMenu extends OASElement {
         this.watchHoverBridge(me.clientX, me.clientY)
         return
       }
-      this.expanded.clear()
+      this.expandedSet.clear()
       this.syncOpen()
     })
     // 视口尺寸/滚动变化时重算子菜单翻转（仅展开态下有意义，浮层是瞬时的）
@@ -705,7 +720,7 @@ export class OASMenu extends OASElement {
     try {
       const parsed = JSON.parse(raw)
       if (Array.isArray(parsed)) {
-        this.expanded = new Set(parsed.filter((v): v is string => typeof v === 'string'))
+        this.expandedSet = new Set(parsed.filter((v): v is string => typeof v === 'string'))
       }
     } catch {
       // 非法 JSON 忽略
@@ -851,14 +866,7 @@ export class OASMenu extends OASElement {
     this.propertyItems = null
     try {
       const parsed = JSON.parse(this.getAttr('items', '[]'))
-      this.itemsList = Array.isArray(parsed)
-        ? parsed.filter((i: MenuItem): i is MenuItem => {
-            if (!i || typeof i !== 'object') return false
-            if (i.type === 'divider') return true
-            if (i.type === 'group') return Array.isArray(i.children)
-            return typeof i.value === 'string'
-          })
-        : []
+      this.itemsList = Array.isArray(parsed) ? sanitizeMenuItems(parsed) : []
     } catch {
       this.itemsList = []
     }
@@ -1005,8 +1013,8 @@ export class OASMenu extends OASElement {
       }
     }
     collect(this.itemsList)
-    for (const v of [...this.expanded]) {
-      if (!valid.has(v)) this.expanded.delete(v)
+    for (const v of [...this.expandedSet]) {
+      if (!valid.has(v)) this.expandedSet.delete(v)
     }
     this.activeStack = this.activeStack.filter((v) => valid.has(v))
     const items = this.currentItems()
@@ -1310,12 +1318,12 @@ export class OASMenu extends OASElement {
   /** 展开状态 → .open class（不重建 DOM） */
   private syncOpen(): void {
     // 全部收起 → 桥区观察器随之卸载（无常驻监听）
-    if (this.expanded.size === 0) this.stopHoverBridgeWatch()
+    if (this.expandedSet.size === 0) this.stopHoverBridgeWatch()
     if (!this.menuEl) return
     const searchOpen = this.searchActive() ? this.searchExpand : null
     for (const li of this.menuEl.querySelectorAll<HTMLElement>('[part="item"][data-value]')) {
       const v = li.dataset.value ?? ''
-      const open = this.expanded.has(v) || (searchOpen?.has(v) ?? false)
+      const open = this.expandedSet.has(v) || (searchOpen?.has(v) ?? false)
       li.classList.toggle('open', open)
       if (open) li.setAttribute('aria-expanded', 'true')
       else if (li.hasAttribute('aria-haspopup')) li.setAttribute('aria-expanded', 'false')
@@ -1323,7 +1331,7 @@ export class OASMenu extends OASElement {
     // inline 模式：inline-sub 就地展开容器显隐（expanded 含父 value 时展开）
     for (const sub of this.menuEl.querySelectorAll<HTMLElement>('.inline-sub')) {
       const v = sub.dataset.parent ?? ''
-      const open = this.expanded.has(v) || (searchOpen?.has(v) ?? false)
+      const open = this.expandedSet.has(v) || (searchOpen?.has(v) ?? false)
       sub.classList.toggle('open', open)
     }
     this.syncSubmenuPositions()
@@ -1460,19 +1468,19 @@ export class OASMenu extends OASElement {
     this.bridgePointer = { x, y }
     const move = (e: MouseEvent): void => {
       this.bridgePointer = { x: e.clientX, y: e.clientY }
-      if (this.expanded.size === 0) {
+      if (this.expandedSet.size === 0) {
         this.stopHoverBridgeWatch()
         return
       }
       if (this.inHoverBridge(e.clientX, e.clientY)) return
       this.stopHoverBridgeWatch()
-      this.expanded.clear()
+      this.expandedSet.clear()
       this.syncOpen()
     }
     const leave = (): void => {
       this.stopHoverBridgeWatch()
-      if (this.expanded.size === 0) return
-      this.expanded.clear()
+      if (this.expandedSet.size === 0) return
+      this.expandedSet.clear()
       this.syncOpen()
     }
     this.bridgeWatch = { move, leave }
@@ -1486,8 +1494,8 @@ export class OASMenu extends OASElement {
     if (!this.bridgeWatch || !p) return
     if (this.inHoverBridge(p.x, p.y)) return
     this.stopHoverBridgeWatch()
-    if (this.expanded.size === 0) return
-    this.expanded.clear()
+    if (this.expandedSet.size === 0) return
+    this.expandedSet.clear()
     this.syncOpen()
   }
 
@@ -1514,7 +1522,7 @@ export class OASMenu extends OASElement {
 
   /** 选中叶子项后是否收起展开的子菜单。缺省按形态：inline 侧边导航不收（一致）、
       浮出形态收（主流默认）；显式 close-on-select="true"/"false" 覆盖缺省。 */
-  private closeOnSelect(): boolean {
+  private closeOnSelectEnabled(): boolean {
     // persistent：选中后不自动收起（close-on-select 族的正向开关，显式优先于 close-on-select）
     if (this.hasAttr('persistent') && this.getAttr('persistent', '') !== 'false') return false
     // 布尔属性语义：存在即 true（含 close-on-select="" 空值），仅显式 "false" 关闭；
@@ -1559,8 +1567,8 @@ export class OASMenu extends OASElement {
     }
     // 选中后子菜单展开态：checkbox 项勾选切换永不收起（连续勾选场景）；
     // 其余按 close-on-select（缺省分形态：inline 不收、浮出收）
-    if (item.kind !== 'checkbox' && this.closeOnSelect() && this.expanded.size > 0) {
-      this.expanded.clear()
+    if (item.kind !== 'checkbox' && this.closeOnSelectEnabled() && this.expandedSet.size > 0) {
+      this.expandedSet.clear()
       this.syncOpen()
     }
   }
@@ -1632,8 +1640,8 @@ export class OASMenu extends OASElement {
     const item = this.findItem(value)
     const open = item?.children?.length ? chain : chain.slice(0, -1)
     const next = new Set(open)
-    if (next.size === this.expanded.size && [...next].every((v) => this.expanded.has(v))) return
-    this.expanded = next
+    if (next.size === this.expandedSet.size && [...next].every((v) => this.expandedSet.has(v))) return
+    this.expandedSet = next
     this.syncOpen()
   }
 
@@ -1669,7 +1677,7 @@ export class OASMenu extends OASElement {
       return
     }
     if (this.hoverCloseTimer && this.hoverCloseValue === value) this.clearHoverCloseTimer()
-    if (this.expanded.has(value)) return
+    if (this.expandedSet.has(value)) return
     this.clearHoverOpenTimer()
     this.hoverOpenTimer = setTimeout(() => {
       this.hoverOpenTimer = null
@@ -1681,7 +1689,7 @@ export class OASMenu extends OASElement {
   private onParentHoverLeave(value: string): void {
     if (!this.hoverDelayMode()) return
     this.clearHoverOpenTimer()
-    if (!this.expanded.has(value)) return
+    if (!this.expandedSet.has(value)) return
     this.clearHoverCloseTimer()
     this.hoverCloseValue = value
     this.hoverCloseTimer = setTimeout(() => {
@@ -1699,30 +1707,30 @@ export class OASMenu extends OASElement {
     const item = this.findItem(value)
     const open = item?.children?.length ? chain : chain.slice(0, -1)
     if (this.getAttr('mode') === 'inline') {
-      const next = new Set(this.expanded)
+      const next = new Set(this.expandedSet)
       for (const v of open) next.add(v)
       if (this.hasAttr('accordion')) {
         for (const s of this.siblingValuesOf(value)) next.delete(s)
       }
-      this.expanded = next
+      this.expandedSet = next
     } else {
       const next = new Set(open)
-      if (next.size === this.expanded.size && [...next].every((v) => this.expanded.has(v))) return
-      this.expanded = next
+      if (next.size === this.expandedSet.size && [...next].every((v) => this.expandedSet.has(v))) return
+      this.expandedSet = next
     }
     this.syncOpen()
   }
 
   /** 收起该分支：删除 value 及其全部后代（inline 多开集合与浮出单链语义都适用） */
   private collapseBranch(value: string): void {
-    const next = new Set(this.expanded)
+    const next = new Set(this.expandedSet)
     const drop = (v: string): void => {
       next.delete(v)
       const item = this.findItem(v)
       for (const c of item?.children ?? []) drop(c.value ?? '')
     }
     drop(value)
-    this.expanded = next
+    this.expandedSet = next
     this.syncOpen()
   }
 
@@ -1731,13 +1739,13 @@ export class OASMenu extends OASElement {
     if (this.isDisabled()) return
     // 水平收纳项「···」：非数据项，直接切换其展开态（不走 chainOf——不在 items 树里）
     if (value === '__more__') {
-      const next = new Set(this.expanded)
+      const next = new Set(this.expandedSet)
       const willExpandMore = !next.has('__more__')
       if (willExpandMore) next.add('__more__')
       else next.delete('__more__')
-      this.expanded = next
+      this.expandedSet = next
       this.emit('expand-change', {
-        expanded: [...this.expanded],
+        expanded: [...this.expandedSet],
         value,
         isExpanded: willExpandMore,
       })
@@ -1749,7 +1757,7 @@ export class OASMenu extends OASElement {
     let willExpand: boolean
     if (inline) {
       // inline 多点展开集合：切换该项展开态；accordion 同级互斥（展开一个收起其他同级）
-      const next = new Set(this.expanded)
+      const next = new Set(this.expandedSet)
       if (next.has(value)) {
         next.delete(value)
         willExpand = false
@@ -1762,19 +1770,19 @@ export class OASMenu extends OASElement {
         next.add(value)
         willExpand = true
       }
-      this.expanded = next
+      this.expandedSet = next
     } else {
       // 浮出模式：单条展开路径（现状）
-      if (this.expanded.has(value)) {
-        this.expanded = new Set(this.chainOf(value).slice(0, -1))
+      if (this.expandedSet.has(value)) {
+        this.expandedSet = new Set(this.chainOf(value).slice(0, -1))
         willExpand = false
       } else {
-        this.expanded = new Set(this.chainOf(value))
+        this.expandedSet = new Set(this.chainOf(value))
         willExpand = true
       }
     }
     // oas-expand-change：展开状态变化时派发（受控/非受控都派发；受控时宿主据此更新 expanded 属性）
-    this.emit('expand-change', { expanded: [...this.expanded], value, isExpanded: willExpand })
+    this.emit('expand-change', { expanded: [...this.expandedSet], value, isExpanded: willExpand })
     this.syncOpen()
   }
 
@@ -1902,7 +1910,7 @@ export class OASMenu extends OASElement {
   /** 键盘进入子菜单：展开并高亮第一个可用子项 */
   private enterSubmenu(item: MenuItem): void {
     this.activeStack.push(item.value ?? '')
-    this.expanded = new Set(this.activeStack)
+    this.expandedSet = new Set(this.activeStack)
     const children = this.currentItems()
     const firstEnabled = children.findIndex((c) => !c.disabled && !c.loading)
     this.activeIndex = firstEnabled >= 0 ? firstEnabled : 0
@@ -1911,7 +1919,7 @@ export class OASMenu extends OASElement {
   /** 键盘返回父级：收起子菜单并高亮父级项 */
   private leaveSubmenu(): void {
     const value = this.activeStack.pop()
-    this.expanded = new Set(this.activeStack)
+    this.expandedSet = new Set(this.activeStack)
     const parentLevel = this.currentItems()
     this.activeIndex = parentLevel.findIndex((i) => i.value === value)
   }

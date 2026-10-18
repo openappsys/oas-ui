@@ -675,7 +675,8 @@ test('kanban 优先级强调色：卡片/列 color 经伪元素生效、RTL 镜�
 }) => {
   const errors: string[] = []
   page.on('console', (msg) => {
-    if (msg.type() === 'error' || msg.type() === 'warning') errors.push(msg.text())
+    // 只收组件自身告警（firefox 的 GA cookie / scroll-linked 等浏览器级 warning 非组件缺陷）
+    if (msg.type() === 'error' || (msg.type() === 'warning' && /^\[oas-/.test(msg.text()))) errors.push(msg.text())
   })
   page.on('pageerror', (e) => errors.push(String(e)))
   await page.goto('/components/kanban.html', { waitUntil: 'domcontentloaded' })

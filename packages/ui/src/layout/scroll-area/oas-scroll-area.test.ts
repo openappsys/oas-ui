@@ -704,3 +704,30 @@ describe('OASScrollArea', () => {
     })
   })
 })
+
+// ===== 属性-方法撞名回归（observedAttributes 的 camelCase 与原型方法同名） =====
+//
+// 机制：宿主框架按 camelCase 做 property 桥接或用户 JS 写 `el.xxx = ...` 会在实例上
+// 建自有属性遮蔽原型同名方法，组件内部 `this.xxx()` 随后抛 TypeError。
+// 私有方法已改名（endDistance → endDistancePx）。
+describe('OASScrollArea 属性-方法撞名回归', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('property 写入 endDistance 后触底判定路径不抛错', async () => {
+    const el = mount()
+    ;(el as unknown as Record<string, unknown>).endDistance = 20
+    const vp = viewport(el)
+    mockSize(vp, { cw: 100, ch: 100, sw: 100, sh: 300 })
+    let count = 0
+    el.addEventListener('oas-end-reached', () => count++)
+    expect(() => scrollTo(el, 0, 200)).not.toThrow()
+    await flushRaf()
+    expect(count).toBe(1)
+  })
+})

@@ -993,10 +993,14 @@ function parseWorkdays(raw: string): Set<number> | null {
  * 背景：Date 合法域为 ±8.64e15 ms；极大有限 lag（1e8~1e10 天）能通过 `Number.isFinite`
  * 检查，但叠加到任务日期后会把排程运算的 ms 推出 Date 域 → `new Date(huge)` 为 Invalid
  * Date → `fmtIso` 内 `Intl.formatToParts` 抛 RangeError（auto-schedule 场景整图白屏）。
- * 取 1e15 ms（≈11574 天）：远大于业务可能的 lag（按年计），同时给真实任务日期
- * （parseISODate 只收 4 位年，|ms| ≤ ~2.6e14）留 ≥ 3 倍余量——叠加后必落在合法 Date 域内。
+ * 取 1e12 ms（= 1e12 / 86_400_000 ≈ 11574 天 ≈ 31.7 年）：远大于业务可能的 lag（按年计）；
+ * 常见 4 位年份（如 2026）叠加后仍为 4 位年份——写回日期经 toISODate 序列化后能再被
+ * parseTaskDate 回读（parseISODate 只收 4 位年）；边界年份（如 9999）由
+ * writeStartKeepingDuration 的写回域守卫兜底（结果不可回读则跳过本次写回）。
+ * 旧上限 1e15 ms 实为 ≈1.15e7 天（≈3.17 万年）：lag=1e7 天即可写出 29405-…（5 位年份），
+ * parseTaskDate 无法回读 → `el.tasks = el.tasks` 这类回写会静默丢任务。
  */
-const LAG_MS_LIMIT = 1e15
+const LAG_MS_LIMIT = 1e12
 
 /**
  * lag 清洗（纯函数，三条入口共用：sanitizeDeps / addDependency / updateDependency）：
@@ -1009,7 +1013,11 @@ function sanitizeLag(v: unknown): number | undefined {
   return v
 }
 
-function sanitizeDeps(v: unknown): GanttDependency[] | undefined {
+function sanitizeDeps(
+  v: unknown,
+  id: string,
+  onWarn?: (key: string, msg: string) => void,
+): GanttDependency[] | undefined {
   if (!Array.isArray(v)) return undefined
   const out: GanttDependency[] = []
   const seen = new Set<string>()
@@ -1019,9 +1027,16 @@ function sanitizeDeps(v: unknown): GanttDependency[] | undefined {
     if (typeof it.id !== 'string' || it.id === '') continue
     const dep: GanttDependency = { id: it.id }
     if (typeof it.type === 'string' && DEP_TYPES.has(it.type)) dep.type = it.type as GanttDependency['type']
-    // lag（天，可负=提前/重叠）：有限且在安全域内才保留，否则丢弃为无 lag（防 Invalid Date 崩溃）
+    // lag（天，可负=提前/重叠）：有限且在安全域内才保留，否则丢弃为无 lag（防 Invalid Date / 5 位年份）
     const lag = sanitizeLag(it.lag)
     if (lag !== undefined) dep.lag = lag
+    else if (typeof it.lag === 'number' && Number.isFinite(it.lag)) {
+      // 属性通道越域告警（实例级一次，key 固定）：NaN/字符串等非法值保持既有静默丢弃口径
+      onWarn?.(
+        'lag-domain',
+        `[oas-gantt] 依赖 lag=${String(it.lag)}（任务 "${id}"）超出安全域（|lag×天| ≤ 1e12 ms，约 11574 天），已按 0 处理`,
+      )
+    }
     // 同源同型去重（重复项会渲染重合连线，且一处删除会连带删掉）；lag 不参与去重键
     const key = `${dep.id}|${dep.type ?? 'fs'}`
     if (seen.has(key)) continue
@@ -1121,7 +1136,7 @@ function sanitizeTasks(
       if (validIds.has(parentVal) && parentVal !== id) t.parent = parentVal
       else if (!fromNest) t.parent = parentVal
     }
-    const deps = sanitizeDeps(raw.dependencies)
+    const deps = sanitizeDeps(raw.dependencies, t.id, onWarn)
     if (deps) t.dependencies = deps
     // 排程约束（opt-in）：白名单 + snet/mso/fnlt 必须带合法 constraintDate，否则丢弃并告警一次
     const con = sanitizeConstraint(raw, t.id, onWarn)
@@ -1331,6 +1346,8 @@ export class OASGantt extends OASElement {
   private warnedWindowedRange = false
   private warnedWindowedFlat = false
   private warnedWindowedReparent = false
+  /** windowed 切片越界（window-start + 装载行数 > total）告警去重（实例级一次） */
+  private warnedWindowedOverflow = false
 
   /** windowed 下行重排禁用告警（一次）：切片内同级 index 对全量无意义，重排由宿主在全量上处理 */
   private warnWindowedReparent(): void {
@@ -1404,7 +1421,7 @@ export class OASGantt extends OASElement {
     const idx = this.rowIndexById.get(id) ?? -1
     if (idx < 0 || !this.tbody) return
     const vh = this.viewportH()
-    this.tbody.scrollTop = Math.max(0, this.absRowTop(idx) - vh / 2 + this.rowHeight() / 2)
+    this.tbody.scrollTop = Math.max(0, this.absRowTop(idx) - vh / 2 + this.rowHeightPx() / 2)
     this.renderWindow()
   }
 
@@ -1610,7 +1627,9 @@ export class OASGantt extends OASElement {
     this.requestRangeIfNeeded('resize')
   }
 
-  private rowHeight(): number {
+  /** 行高（px）：方法名避开 row-height 属性的 camelCase（rowHeight）——同名会被宿主 property
+   *  赋值遮蔽（实例自有属性覆盖原型方法），内部 this.rowHeightPx() 即抛 TypeError */
+  private rowHeightPx(): number {
     const n = Number(this.getAttr('row-height', '36'))
     return Number.isFinite(n) && n >= 20 ? n : 36
   }
@@ -1635,8 +1654,9 @@ export class OASGantt extends OASElement {
     return Number.isFinite(fallback) && fallback > 0 ? fallback : 320
   }
 
-  /** 条旁标签位置：缺省 none——行名列已承载名称，条旁再渲染同名文本属重复信息 */
-  private labelPosition(): 'inside' | 'right' | 'left' | 'none' {
+  /** 条旁标签位置：缺省 none——行名列已承载名称，条旁再渲染同名文本属重复信息。
+   *  方法名避开 label-position 属性的 camelCase（labelPosition），防 property 赋值遮蔽原型方法 */
+  private labelPositionMode(): 'inside' | 'right' | 'left' | 'none' {
     const raw = this.getAttr('label-position', '')
     if (raw === 'inside' || raw === 'right' || raw === 'left') return raw
     return 'none'
@@ -1672,7 +1692,8 @@ export class OASGantt extends OASElement {
     return this.t(days > 0 ? 'gantt.baselineLater' : 'gantt.baselineEarlier', { count: Math.abs(days) })
   }
 
-  private showToday(): boolean {
+  /** 今日线开关（方法名避开 show-today 属性的 camelCase，防 property 赋值遮蔽原型方法） */
+  private showTodayOn(): boolean {
     return this.getAttr('show-today', '') !== 'false'
   }
 
@@ -1761,11 +1782,13 @@ export class OASGantt extends OASElement {
     return getWeekStart(this.effectiveLocale())
   }
 
-  private datesReadonly(): boolean {
+  /** 日期只读（方法名避开 dates-readonly 属性的 camelCase，防 property 赋值遮蔽原型方法） */
+  private datesReadonlyOn(): boolean {
     return this.hasAttr('readonly') || this.hasAttr('dates-readonly')
   }
 
-  private progressReadonly(): boolean {
+  /** 进度只读（方法名避开 progress-readonly 属性的 camelCase，同上） */
+  private progressReadonlyOn(): boolean {
     return this.hasAttr('readonly') || this.hasAttr('progress-readonly')
   }
 
@@ -2164,7 +2187,7 @@ export class OASGantt extends OASElement {
    * （rows 承载 [window-start, window-start+len) 切片，画布坐标系是全量 total 行）。
    */
   private absRowTop(i: number): number {
-    return (this._winMode.windowed ? this._winMode.windowStart + i : i) * this.rowHeight()
+    return (this._winMode.windowed ? this._winMode.windowStart + i : i) * this.rowHeightPx()
   }
 
   /**
@@ -2190,7 +2213,7 @@ export class OASGantt extends OASElement {
   private requestWindowIfNeeded(reason: WindowRequestReason): void {
     const mode = this._winMode
     if (!mode.windowed || !this.tbody) return
-    const vis = computeVirtualWindow(this.tbody.scrollTop, this.viewportH(), this.rowHeight(), mode.total, 6)
+    const vis = computeVirtualWindow(this.tbody.scrollTop, this.viewportH(), this.rowHeightPx(), mode.total, 6)
     const need = expandWindow(vis.start, vis.end, mode.total, WINDOW_MARGIN)
     if (windowCovered(need, mode.loaded)) {
       this.winReq = null
@@ -2504,6 +2527,14 @@ export class OASGantt extends OASElement {
       // 退出 windowed：清去重态 + 首帧标记（重进同 need 必须重新 init，不得被旧去重态吞成静默）
       this.winReq = null
       this.winInitDone = false
+    } else if (this._winMode.loaded.end > this._winMode.total && !this.warnedWindowedOverflow) {
+      // 切片越界（window-start + 装载行数 > total）：越界行按 total 夹取不渲染（渲染窗口在 total 上算）。
+      // 实例级告警一次，对齐 table / tree / resource / list 的切片越界契约——否则宿主会误以为切片全部生效。
+      this.warnedWindowedOverflow = true
+      const overflow = this._winMode.loaded.end - this._winMode.total
+      devWarn(
+        `[oas-gantt] windowed 切片超出全量范围（window-start ${this._winMode.windowStart} + 装载 ${this._tasks.length} 行 > total ${this._winMode.total}），越界 ${overflow} 行不在窗口内（按 total 夹取不渲染）`,
+      )
     }
     // 无托管轴（range-* 缺失/非法/颠倒）：清 range 去重态 + 首帧标记（移除再挂回重新 init）
     if (this.hostRangeMs() === null) {
@@ -2577,10 +2608,10 @@ export class OASGantt extends OASElement {
     const layoutCount = this.layoutRows()
     if (this.innerEl) {
       this.innerEl.style.width = `${this.canvasW}px`
-      this.innerEl.style.height = `${layoutCount * this.rowHeight()}px`
+      this.innerEl.style.height = `${layoutCount * this.rowHeightPx()}px`
     }
     const sideInner = this.shadow.querySelector<HTMLElement>('.side-inner')
-    if (sideInner) sideInner.style.height = `${Math.max(layoutCount * this.rowHeight(), 1)}px`
+    if (sideInner) sideInner.style.height = `${Math.max(layoutCount * this.rowHeightPx(), 1)}px`
     // 空态只按本地模式判定：windowed 下 tasks 空 = 「尚未装载」（全量意义上数据存在），不误显空态
     const isEmpty = !this._winMode.windowed && this._tasks.length === 0
     if (this.emptyEl) {
@@ -2599,10 +2630,10 @@ export class OASGantt extends OASElement {
     const sideLabel = this.shadow.querySelector('.side-rows')
     if (sideLabel) {
       sideLabel.setAttribute('aria-label', this.t('gantt.listLabel'))
-      // windowed：容器上报全量行数（行上 aria-rowindex / posinset 同绝对口径，见 renderSideRows）；
-      // 非 windowed 不写（保持既有行为）
-      if (this._winMode.windowed) sideLabel.setAttribute('aria-rowcount', String(this._winMode.total))
-      else sideLabel.removeAttribute('aria-rowcount')
+      // 行位 ARIA 走 treeitem 合法属性（posinset/setsize/level，见 renderSideRows）：
+      // tree / treeitem 不接受 aria-rowcount / aria-rowindex（axe aria-allowed-attr），
+      // 全量口径由行上的 setsize 承载，不再在容器写 rowcount。
+      sideLabel.removeAttribute('aria-rowcount')
     }
     // 列窗口先于表头切片计算（表头/网格都按窗口渲染；renderWindow 内会再算一次，幂等）
     this.computeColWindow()
@@ -2738,7 +2769,7 @@ export class OASGantt extends OASElement {
   /** 虚拟窗口：只渲染可视行（+buffer）与可视列（+buffer）——名称列、任务条、依赖连线、背景列/表头全部窗口化 */
   private renderWindow(): void {
     if (!this.tbody || !this.innerEl) return
-    const rowH = this.rowHeight()
+    const rowH = this.rowHeightPx()
     // 行虚拟化窗口在 layoutRows()（windowed = 全量 total）上算；windowed 再与已装载切片
     // 求交得**局部渲染窗口**（winStart/winEnd 保持 rows 数组下标语义），定位走 absRowTop（绝对行号）
     const win = computeVirtualWindow(this.tbody.scrollTop, this.viewportH(), rowH, this.layoutRows(), 6)
@@ -2801,7 +2832,7 @@ export class OASGantt extends OASElement {
     // 重建会销毁重命名输入框（部分引擎不触发 blur）→ 复位防卡死
     this.renaming = false
     container.innerHTML = ''
-    const rowH = this.rowHeight()
+    const rowH = this.rowHeightPx()
     const expanded = this.currentExpandedSet()
     const rowTpl = this.querySelector('template[slot="row"]')
     const prevActive = this.activeRowId
@@ -2817,15 +2848,16 @@ export class OASGantt extends OASElement {
       el.setAttribute('role', 'treeitem')
       el.setAttribute('aria-level', String(row.depth + 1))
       if (this._winMode.windowed) {
-        // windowed：aria 坐标按**全量**（total）与绝对行号（1 基）——切片局部序号会向辅助技术
-        // 报错位置；aria-rowindex 同口径补齐（容器 aria-rowcount 见 update()）
+        // windowed：posinset/setsize 按**全量**（total）与绝对行号（1 基）——切片局部序号会向
+        // 辅助技术报错位置。treeitem 不接受 aria-rowindex（行位由 posinset/setsize 表达）。
         const abs = this._winMode.windowStart + i + 1
         el.setAttribute('aria-posinset', String(abs))
         el.setAttribute('aria-setsize', String(this._winMode.total))
-        el.setAttribute('aria-rowindex', String(abs))
+        el.removeAttribute('aria-rowindex')
       } else {
         el.setAttribute('aria-posinset', String(row.posinset))
         el.setAttribute('aria-setsize', String(row.setsize))
+        el.removeAttribute('aria-rowindex')
       }
       el.style.top = `${this.absRowTop(i)}px`
       el.style.setProperty('--indent', `${8 + row.depth * 16}px`)
@@ -2915,12 +2947,12 @@ export class OASGantt extends OASElement {
     const container = this.barsEl
     if (!container) return
     container.innerHTML = ''
-    const rowH = this.rowHeight()
+    const rowH = this.rowHeightPx()
     const colW = this.colW()
     const rtl = isRtl(this)
     const tplTask = this.querySelector('template[slot="task"]')
-    const roDates = this.datesReadonly()
-    const roProgress = this.progressReadonly()
+    const roDates = this.datesReadonlyOn()
+    const roProgress = this.progressReadonlyOn()
     const frag = document.createDocumentFragment()
     for (let i = this.winStart; i < this.winEnd; i++) {
       const row = this.rows[i]!
@@ -2969,7 +3001,7 @@ export class OASGantt extends OASElement {
         if (row.isSummary) {
           bar.classList.add('summary')
         } else {
-          const pos = this.labelPosition()
+          const pos = this.labelPositionMode()
           if (pos !== 'none') bar.classList.add(`label-${pos}`)
           bar.setAttribute('role', 'button')
           bar.tabIndex = 0
@@ -3182,7 +3214,7 @@ export class OASGantt extends OASElement {
     const side = this.sideBody
     if (!ctx || !side) return
     const rect = side.getBoundingClientRect()
-    const rowH = this.rowHeight()
+    const rowH = this.rowHeightPx()
     const y = clientY - rect.top + side.scrollTop
     // 指针 y 对应**画布绝对行**（windowed 下含 window-start 偏移），换算回 rows 局部下标找目标行
     const absIdx = Math.max(0, Math.min(this.layoutRows() - 1, Math.floor(y / rowH)))
@@ -3559,7 +3591,7 @@ export class OASGantt extends OASElement {
     else if (dep.lag !== undefined)
       this.warnOnce(
         `lag:${taskId}`,
-        `[oas-gantt] addDependency 的 lag=${String(dep.lag)} 非法或超出安全域（|lag×天| ≤ 1e15 ms），已按 0 处理`,
+        `[oas-gantt] addDependency 的 lag=${String(dep.lag)} 非法或超出安全域（|lag×天| ≤ 1e12 ms），已按 0 处理`,
       )
     const next: GanttDependency[] = [...deps.map((d) => ({ ...d })), entry]
     task.dependencies = next
@@ -3616,7 +3648,7 @@ export class OASGantt extends OASElement {
     if (to.lag !== undefined && cleanLag === undefined)
       this.warnOnce(
         `lag:${taskId}`,
-        `[oas-gantt] updateDependency 的 lag=${String(to.lag)} 非法或超出安全域（|lag×天| ≤ 1e15 ms），已回退继承原 lag`,
+        `[oas-gantt] updateDependency 的 lag=${String(to.lag)} 非法或超出安全域（|lag×天| ≤ 1e12 ms），已回退继承原 lag`,
       )
     const toLag = cleanLag !== undefined ? cleanLag : deps[idx]!.lag
     const replaced: GanttDependency[] = deps.map((d, i) => {
@@ -4088,7 +4120,7 @@ export class OASGantt extends OASElement {
     const side = this.sideBody
     if (!side) return []
     const rect = side.getBoundingClientRect()
-    const rowH = this.rowHeight()
+    const rowH = this.rowHeightPx()
     const top = Math.min(y0, y1)
     const bottom = Math.max(y0, y1)
     const out: string[] = []
@@ -4399,7 +4431,7 @@ export class OASGantt extends OASElement {
       this.rowPending
     )
       return
-    const rowH = this.rowHeight()
+    const rowH = this.rowHeightPx()
     const sx = this.mirrorX(this.xOf(endpoint === 'end' ? row.endMs : row.startMs))
     const sy = this.absRowTop(rowIndex) + rowH / 2
     const temp = document.createElementNS('http://www.w3.org/2000/svg', 'path')
@@ -4518,8 +4550,8 @@ export class OASGantt extends OASElement {
     else if (target.classList.contains('progress-handle')) mode = 'progress'
     else if (row.isSummary) return // 摘要条不可拖（时间派生自子级）
     if (row.task.disabled === true) return
-    if (mode !== 'progress' && this.datesReadonly()) return
-    if (mode === 'progress' && this.progressReadonly()) return
+    if (mode !== 'progress' && this.datesReadonlyOn()) return
+    if (mode === 'progress' && this.progressReadonlyOn()) return
     this.dragCtx = {
       id: row.task.id,
       mode,
@@ -5018,6 +5050,10 @@ export class OASGantt extends OASElement {
   private writeStartKeepingDuration(t: TG, startMsNew: number, duration: number): boolean {
     const datetime = typeof t.start === 'string' && t.start.length > 10
     const startStr = this.fmtIso(startMsNew, datetime)
+    // 写回域守卫：结果必须能被 parseTaskDate（parseISODate 只收 4 位年）回读，否则
+    // `el.tasks = el.tasks` 这类回写会在清洗层静默丢任务。lag 上限之外的第二道防线——
+    // 边界年份（如 9999）叠加合法 lag 仍可能写出 5 位年份；此时跳过本次写回，保持数据可回读。
+    if (!parseTaskDate(startStr)) return false
     const milestone = t.type === 'milestone' || !t.end
     if (milestone) {
       if (t.start === startStr) return false
@@ -5026,6 +5062,7 @@ export class OASGantt extends OASElement {
       return true
     }
     const endStr = this.fmtEnd(startMsNew + duration, datetime)
+    if (!parseTaskDate(endStr)) return false
     if (t.start === startStr && t.end === endStr) return false
     t.start = startStr
     t.end = endStr
@@ -5041,8 +5078,9 @@ export class OASGantt extends OASElement {
    * oas-tasks-change 契约（一次用户操作只发一次）：由**外层提交口**（commitTasks / applyPatch /
    * applyReparent / removeTasks 等经 syncTasksAttr 的路径，inInternalWrite 判别）统一派发一次
    * （含联动后最终数据），本方法在其在场时只发 oas-reschedule；属性通道直接改数据 / 运行期开启
-   * auto-schedule 等无外层提交的触发，由本方法补发 tasks-change（先 reschedule 后 tasks-change）。
-   * 故 auto-schedule 联动场景事件序为「oas-reschedule → oas-tasks-change」。
+   * auto-schedule 等无外层提交的触发，由本方法补发 tasks-change。
+   * 事件序统一为「oas-reschedule → oas-tasks-change」（属性通道与提交口一致；拖动收口随后还有
+   * oas-task-change）。
    *
    * 约束（opt-in）与工作日日历（workdays，opt-in）在此生效：
    * - snet 取约束下限（只前推）；mso 固定在约束日（依赖不得前推，数据偏离则拉回）；fnlt 不自动移动（仅违约判定）。
@@ -5156,8 +5194,10 @@ export class OASGantt extends OASElement {
     this.syncTasksAttr()
     // 一次用户操作只发一次 oas-tasks-change：内部写回路径由外层提交口统一派发（最终数据），
     // 此处只发 oas-reschedule；无外层提交的触发（属性通道改数据 / 运行期开启）在此补发。
-    if (!this.inInternalWrite) this.emitTasksChange()
+    // 先 reschedule 后 tasks-change：属性通道与提交口事件序统一（提交口的 tasks-change 在嵌套
+    // update 返回后由 commitTasks 派发，同样紧随 reschedule）。
     this.emit('reschedule', { ids } satisfies GanttRescheduleDetail)
+    if (!this.inInternalWrite) this.emitTasksChange()
     return ids
   }
 
@@ -5173,7 +5213,7 @@ export class OASGantt extends OASElement {
       return
     }
     if ((e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') || !e.shiftKey) return
-    if (row.task.disabled === true || row.isSummary || this.datesReadonly()) return
+    if (row.task.disabled === true || row.isSummary || this.datesReadonlyOn()) return
     e.preventDefault()
     const dir = (e.key === 'ArrowRight' ? 1 : -1) * (isRtl(this) ? -1 : 1)
     const datetime = row.task.start.length > 10
@@ -5188,13 +5228,13 @@ export class OASGantt extends OASElement {
   private renderLinks(): void {
     const svg = this.linksEl
     if (!svg) return
-    const totalH = this.layoutRows() * this.rowHeight()
+    const totalH = this.layoutRows() * this.rowHeightPx()
     svg.setAttribute('width', String(this.canvasW))
     svg.setAttribute('height', String(totalH))
     svg.innerHTML =
       '<defs><marker id="oas-gantt-arrow" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L8 4 L0 8 Z"/></marker></defs>'
     if (this.rows.length === 0) return
-    const rowH = this.rowHeight()
+    const rowH = this.rowHeightPx()
     const rowIdx = new Map<string, number>()
     for (let i = this.winStart; i < this.winEnd; i++) rowIdx.set(this.rows[i]!.task.id, i)
     const frag = document.createDocumentFragment()
@@ -5314,7 +5354,7 @@ export class OASGantt extends OASElement {
       this.stripeCanvasEl = canvas
     }
     canvas.innerHTML = ''
-    const rowH = this.rowHeight()
+    const rowH = this.rowHeightPx()
     const frag = document.createDocumentFragment()
     for (let i = this.winStart; i < this.winEnd; i++) {
       if (!this.isStripeRow(i)) continue
@@ -5337,7 +5377,7 @@ export class OASGantt extends OASElement {
     if (scale !== 'day' && scale !== 'hour') return
     if (this.rows.length === 0) return
     const colW = this.colW()
-    const totalH = this.layoutRows() * this.rowHeight()
+    const totalH = this.layoutRows() * this.rowHeightPx()
     const holidays = this.holidaySet()
     const weekends = this.weekendsOn()
     const frag = document.createDocumentFragment()
@@ -5366,13 +5406,13 @@ export class OASGantt extends OASElement {
     const todayMs = startOfDay(new Date()).getTime()
     const inRange =
       this.units.length > 0 && todayMs >= this.units[0]!.startMs && todayMs < this.units[this.units.length - 1]!.endMs
-    if (!this.showToday() || !inRange || this.rows.length === 0) {
+    if (!this.showTodayOn() || !inRange || this.rows.length === 0) {
       line.hidden = true
       return
     }
     line.hidden = false
     line.style.left = `${this.mirrorX(this.xOf(todayMs))}px`
-    line.style.height = `${this.layoutRows() * this.rowHeight()}px`
+    line.style.height = `${this.layoutRows() * this.rowHeightPx()}px`
     line.setAttribute('title', this.t('gantt.today'))
   }
 

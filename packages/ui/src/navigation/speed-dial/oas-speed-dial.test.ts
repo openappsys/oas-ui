@@ -600,6 +600,27 @@ describe('OASSpeedDial 圆弧几何展开', () => {
     }
   })
 
+  it('property 写入 geometry / radius 生效（setter 走 attribute 通道）', () => {
+    const el = mount()
+    const rec = el as unknown as Record<string, unknown>
+    // 修复前私有字段 geometry / radius 被实例属性遮蔽：写入不驱动几何态
+    expect(() => {
+      rec.geometry = 'circle'
+      rec.radius = 48
+    }).not.toThrow()
+    expect(rec.geometry).toBe('circle')
+    expect(rec.radius).toBe(48)
+    expect(el.getAttribute('geometry')).toBe('circle')
+    expect(el.getAttribute('radius')).toBe('48')
+    expect(dial(el).getAttribute('data-geometry')).toBe('circle')
+    expect(el.classList.contains('arc')).toBe(true)
+    const btns = actionBtns(el)
+    expect(btns[0]!.style.getPropertyValue('--t-x')).toBe('0px')
+    expect(btns[0]!.style.getPropertyValue('--t-y')).toBe('-48px')
+    expect(btns[1]!.style.getPropertyValue('--t-x')).toBe('42px')
+    expect(btns[1]!.style.getPropertyValue('--t-y')).toBe('24px')
+  })
+
   it('geometry 非法值回落 linear（零回归：无 arc 类、偏移 0px）', () => {
     const el = mount({ geometry: 'bogus' })
     expect(dial(el).getAttribute('data-geometry')).toBe('linear')
@@ -723,5 +744,47 @@ describe('OASSpeedDial 圆弧几何展开', () => {
       expect(css).toMatch(/:host\s*\{[^}]*inset-inline-end:\s*var\(--oas-space-6\)/)
       expect(css).not.toMatch(/:host\s*\{[^}]*right:\s*var\(--oas-space-6\)/)
     })
+  })
+})
+
+// ===== 属性-方法撞名回归（observedAttributes 的 camelCase 与原型方法同名） =====
+//
+// 机制：`open` 是 observedAttribute，其 camelCase（即 `open` 本身）与私有方法 open(reason)
+// 同名——宿主框架（Vue 等按 property 桥接受控 open）或用户 JS 写 `el.open = true` 会在实例上
+// 建自有属性遮蔽原型方法，主钮 click → toggle → 内部 open/close 调用随后抛 TypeError（监听器
+// 内异常被吞，表现为点击无响应）。私有方法已改名 openMenu/closeMenu（md API 章节无方法条目，
+// 非公开 API），open/close 属性行为不变。此处锁定：property 写入后点击开合仍正常。
+describe('OASSpeedDial 属性-方法撞名回归', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('property 写入 open/close 后主钮点击开合不抛错，open 属性行为不变', () => {
+    const el = mount()
+    const rec = el as unknown as Record<string, unknown>
+    rec.open = true
+    rec.close = null
+    // 第一次点击 → toggle → openMenu：改名前 this.open 被自有属性遮蔽 → TypeError（点击无响应）
+    fab(el).click()
+    expect(el.hasAttribute('open')).toBe(true)
+    expect(dial(el).classList.contains('open')).toBe(true)
+    expect(fab(el).getAttribute('aria-expanded')).toBe('true')
+    // 第二次点击 → toggle → closeMenu：改名前 this.close 为 null → TypeError（收不起）
+    fab(el).click()
+    expect(el.hasAttribute('open')).toBe(false)
+    expect(dial(el).classList.contains('open')).toBe(false)
+    expect(fab(el).getAttribute('aria-expanded')).toBe('false')
+  })
+
+  it('property 写入 open 后 hover 触发路径不抛错（trigger=hover 展开仍生效）', () => {
+    const el = mount({ trigger: 'hover' })
+    ;(el as unknown as Record<string, unknown>).open = true
+    el.dispatchEvent(new MouseEvent('mouseenter'))
+    expect(el.hasAttribute('open')).toBe(true)
+    expect(dial(el).classList.contains('open')).toBe(true)
   })
 })

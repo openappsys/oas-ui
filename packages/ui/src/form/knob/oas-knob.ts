@@ -393,7 +393,7 @@ export class OASKnob extends OASElement {
       return
     }
     const step = this.stepSize()
-    const amount = isPage || (isArrow && ke.shiftKey) ? this.largeStep(step) : step
+    const amount = isPage || (isArrow && ke.shiftKey) ? this.largeStepValue(step) : step
     this.applyValue(this.displayValue() + this.keySign(key) * amount)
   }
 
@@ -560,7 +560,7 @@ export class OASKnob extends OASElement {
   }
 
   /** 键盘大步（Shift+方向 / PageUp·Down）：显式 large-step 优先，缺省 10×step（连续模式 span/10） */
-  private largeStep(step: number): number {
+  private largeStepValue(step: number): number {
     const raw = this.getAttr('large-step', '')
     if (raw !== '') {
       const n = Number(raw)

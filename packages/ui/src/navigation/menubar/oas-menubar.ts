@@ -1936,7 +1936,7 @@ export class OASMenubar extends OASElement {
       this.emit('select', { value: item.value })
     }
     // 收起策略：checkbox 勾选切换永不收起（连续勾选场景）；其余按 close-on-select（缺省收）
-    if (item.kind !== 'checkbox' && this.closeOnSelect()) {
+    if (item.kind !== 'checkbox' && this.closeOnSelectEnabled()) {
       this.collapseAndFocusTop()
     } else {
       this.syncSelection()
@@ -1945,7 +1945,7 @@ export class OASMenubar extends OASElement {
 
   /** close-on-select：缺省 true（桌面菜单栏选中即收，共识默认）；
       显式 close-on-select="true"/"false" 覆盖缺省 */
-  private closeOnSelect(): boolean {
+  private closeOnSelectEnabled(): boolean {
     // 布尔属性语义：存在即 true（含 close-on-select="" 空值），仅显式 "false" 关闭；
     // 未设置（hasAttr 为 false）时按缺省收（与 menu 的 hasAttr+缺省模式一致）
     if (!this.hasAttr('close-on-select')) return true

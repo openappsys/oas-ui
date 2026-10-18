@@ -1121,3 +1121,28 @@ describe('OASInputNumber 数值 scrub（数字区像素锚定计步）', () => {
     expect(css).toMatch(/input\[data-scrubbing\]\s*{[^}]*cursor:\s*ew-resize/)
   })
 })
+
+// ===== 属性-方法撞名回归（observedAttributes 的 camelCase 与原型方法同名） =====
+//
+// 机制：宿主框架按 camelCase 做 property 桥接或用户 JS 写 `el.xxx = ...` 会在实例上
+// 建自有属性遮蔽原型同名方法，组件内部 `this.xxx()` 随后抛 TypeError。
+// 私有方法已改名（decimalSeparator → decimalSeparatorValue）。
+describe('OASInputNumber 属性-方法撞名回归', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('property 写入 decimalSeparator 后格式化与提交路径不抛错', () => {
+    const el = mount({ value: '1.5' })
+    ;(el as unknown as Record<string, unknown>).decimalSeparator = '#'
+    expect(() => el.setAttribute('decimal-separator', ',')).not.toThrow()
+    expect(input(el).value).toBe('1,5')
+    type(el, '2,5')
+    expect(() => commit(el)).not.toThrow()
+    expect(el.getAttribute('value')).toBe('2.5')
+  })
+})

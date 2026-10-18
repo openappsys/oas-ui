@@ -114,6 +114,49 @@ describe('OASVirtualList', () => {
     expect(items(el)[0]!.textContent).toBe('x')
   })
 
+  it('items property 运行时接受 JSON 字符串（SPA 场景，连接前/后均生效）', () => {
+    const el = new OASVirtualList()
+    el.setAttribute('height', '100')
+    el.setAttribute('item-height', '20')
+    // @ts-expect-error 模拟框架把静态 items attribute 的 JSON 字符串写进 property
+    el.items = JSON.stringify(['甲', '乙', '丙'])
+    document.body.appendChild(el)
+    expect(items(el).map((x) => x.textContent)).toEqual(['甲', '乙', '丙'])
+    // @ts-expect-error 连接后赋值走同一归一通道
+    el.items = JSON.stringify(['一', '二'])
+    expect(items(el).map((x) => x.textContent)).toEqual(['一', '二'])
+    expect(el.items).toEqual(['一', '二'])
+  })
+
+  it('连接前 items 被写成 own property（JSON 字符串）：connectedCallback 删除 own 并回收到 setter', () => {
+    // 升级/连接时序竞争：框架在元素连接前把静态 items attribute 的 JSON 字符串写成 property，
+    // own 字符串会遮蔽原型 setter（readonly 访问器）——连接时必须删除 own 并走 setter 回收。
+    const el = new OASVirtualList()
+    el.setAttribute('height', '100')
+    el.setAttribute('item-height', '20')
+    Object.defineProperty(el, 'items', {
+      value: JSON.stringify(['甲', '乙', '丙']),
+      configurable: true,
+      writable: true,
+    })
+    document.body.appendChild(el)
+    expect(Object.prototype.hasOwnProperty.call(el, 'items')).toBe(false)
+    expect(items(el).map((x) => x.textContent)).toEqual(['甲', '乙', '丙'])
+    expect(el.items).toEqual(['甲', '乙', '丙'])
+  })
+
+  it('items property 非法 JSON / 非数组：空数据，不抛', () => {
+    const el = mount({ height: '100', 'item-height': '20', items: JSON.stringify(['a']) })
+    expect(items(el).length).toBe(1)
+    // @ts-expect-error 非法 JSON
+    el.items = '{oops'
+    expect(el.items).toEqual([])
+    expect(items(el).length).toBe(0)
+    // @ts-expect-error 非数组 JSON
+    el.items = '{"a":1}'
+    expect(el.items).toEqual([])
+  })
+
   it('oas-item 事件提供 index/item/element 上下文', () => {
     const data = range(10).map((i) => ({ id: i }))
     const el = mount({ items: JSON.stringify(data) })
@@ -462,5 +505,33 @@ describe('OASVirtualList 动态行高（dynamic-height）', () => {
     })
     const inner2 = el2.shadowRoot!.querySelector<HTMLElement>('[part="inner"]')!
     expect(inner2.style.height).toBe('250px') // 10 × 25
+  })
+})
+
+// ===== 属性-方法撞名回归（observedAttributes 的 camelCase 与原型方法同名） =====
+//
+// 机制：宿主框架（Vue 等按 camelCase 做 property 桥接）或用户 JS 写 `el.itemHeight = 20`
+// 会在实例上建自有属性遮蔽原型同名方法，组件内部 `this.itemHeight()` 随后抛 TypeError。
+// 私有方法已改名 itemHeightPx，此处锁定：property 写入后滚动/窗口计算仍与未写入时等价。
+describe('OASVirtualList 属性-方法撞名回归', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('property 写入 itemHeight 后滚动/窗口计算不抛错，行高随 item-height 属性生效', async () => {
+    const el = mount({ height: '100', 'item-height': '20', items: JSON.stringify(range(100)) })
+    ;(el as unknown as Record<string, unknown>).itemHeight = 20
+    // attribute 变更同步触发 update → 内部 itemHeightPx() 调用；改名前此处抛 TypeError
+    expect(() => el.setAttribute('item-height', '24')).not.toThrow()
+    // 定高锁定与总高随新行高落定（100 × 24）
+    expect(items(el)[0]!.style.height).toBe('24px')
+    expect(el.shadowRoot!.querySelector<HTMLElement>('[part="inner"]')!.style.height).toBe('2400px')
+    // 滚动路径照常（rAF 内 renderWindow 全链路读行高）：滚到底部窗口回绕
+    expect(() => scrollTo(el, 100)).not.toThrow()
+    await flushRaf()
+    expect(items(el)[0]!.getAttribute('data-index')).not.toBeNull()
   })
 })

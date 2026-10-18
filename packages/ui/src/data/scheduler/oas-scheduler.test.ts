@@ -1131,6 +1131,35 @@ describe('OASScheduler 复审修复（I1 now 计时器 / I4 滚动容器键盘�
     expect(internals.nowTimer, '卸载清理 now 计时器').toBeFalsy()
   })
 
+  it('now 定时器在拖拽/创建手势中不重建视图（跨分钟边界不打断手势）', () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-08-10T10:00:00'))
+    const el = mount({
+      view: 'resource',
+      'page-show-date': '2026-08-10',
+      resources: RES,
+      'start-hour': '0',
+      'end-hour': '24',
+    })
+    const internals = el as unknown as { dragCtx: unknown; createCtx: unknown }
+    const line = (): HTMLElement => el.shadowRoot!.querySelector<HTMLElement>('.res-row[data-resource="r1"] .res-now')!
+    const before = parseFloat(line().style.insetInlineStart)
+
+    internals.dragCtx = {}
+    vi.advanceTimersByTime(60_000)
+    expect(parseFloat(line().style.insetInlineStart), '拖动中定时器跳过整视重建（now 线保持）').toBe(before)
+
+    internals.dragCtx = null
+    internals.createCtx = {}
+    vi.advanceTimersByTime(60_000)
+    expect(parseFloat(line().style.insetInlineStart), '创建手势中同样跳过').toBe(before)
+
+    internals.createCtx = null
+    vi.advanceTimersByTime(60_000)
+    expect(parseFloat(line().style.insetInlineStart), '手势结束后恢复每分钟刷新').toBeGreaterThan(before)
+    el.remove()
+  })
+
   it('I1b 无 now 线视图（agenda）停表；切回 resource 重启', () => {
     vi.useFakeTimers()
     vi.setSystemTime(new Date('2026-08-10T10:00:00'))
@@ -1204,5 +1233,34 @@ describe('property 通道接受 JSON 字符串（框架把静态 attribute 写�
     expect(el.resources.length).toBe(1)
     expect(el.events.length).toBe(1)
     expect(el.events[0]!.title).toBe('会议')
+  })
+})
+
+// ===== 属性-方法撞名回归（observedAttributes 的 camelCase 与原型方法同名） =====
+//
+// 机制：宿主框架（Vue 等按 camelCase 做 property 桥接）或用户 JS 写 `el.startHour = 9`
+// 会在实例上建自有属性遮蔽原型同名方法，day/week 视图渲染内部 `this.startHour()` 随后抛
+// TypeError。私有方法已改名（startHourValue / endHourValue），此处锁定：property 写入后
+// attribute 通道行为仍等价。
+describe('OASScheduler 属性-方法撞名回归', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('property 写入 startHour/endHour 后 day 视图 update 不抛错，时间轴按 start-hour/end-hour 属性渲染', () => {
+    const el = mount({ view: 'day', 'page-show-date': '2026-08-10' })
+    const rec = el as unknown as Record<string, unknown>
+    rec.startHour = 9
+    rec.endHour = 18
+    // attribute 变更同步触发 update → renderTimeView 内 startHourValue/endHourValue 调用；
+    // 改名前此处抛 TypeError
+    expect(() => el.setAttribute('start-hour', '9')).not.toThrow()
+    expect(() => el.setAttribute('end-hour', '18')).not.toThrow()
+    // 行为等价断言：gutter 首刻度 = start-hour（09:00）
+    const firstTick = el.shadowRoot!.querySelector<HTMLElement>('.gutter span')!
+    expect(firstTick.textContent).toBe('09:00')
   })
 })

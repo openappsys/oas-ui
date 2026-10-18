@@ -1967,3 +1967,27 @@ describe('优先级强调色（可选 color）', () => {
     }
   })
 })
+
+// ===== 属性-方法撞名回归（observedAttributes 的 camelCase 与原型方法同名） =====
+//
+// 机制：宿主框架按 camelCase 做 property 桥接或用户 JS 写 `el.xxx = ...` 会在实例上
+// 建自有属性遮蔽原型同名方法，组件内部 `this.xxx()` 随后抛 TypeError。
+// 私有方法已改名（emptyColumnText → emptyColumnTextValue / cardEstimate → cardEstimatePx）。
+describe('OASKanban 属性-方法撞名回归', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  it('property 写入 emptyColumnText 后空列文案路径不抛错', () => {
+    const el = mount()
+    ;(el as unknown as Record<string, unknown>).emptyColumnText = 'x'
+    expect(() => el.setAttribute('empty-column-text', '暂无卡片')).not.toThrow()
+    expect(shadow(el).querySelector('[part="empty-column"]')!.textContent).toBe('暂无卡片')
+  })
+})

@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { OASCard } from './index.js'
 
 function mount(attrs: Record<string, string> = {}, slot = '<p>卡片内容</p>'): OASCard {
@@ -444,6 +444,82 @@ describe('OASCard', () => {
   })
 
   describe('shadow 三态与 hoverable 映射', () => {
+    it('C-1 shadow property 写入字符串不覆盖 ShadowRoot：映射 attribute 且组件照常渲染', () => {
+      // 框架（Vue SPA 跳转）按「key in el」把静态 shadow="always" 写成 property：
+      // 基类字段 shadow 若是实例 own 属性会被字符串覆盖 → this.shadow.querySelector 抛错、demo 空白。
+      const el = mount()
+      const rec = el as unknown as { shadow: string | ShadowRoot }
+      expect(() => (rec.shadow = 'always')).not.toThrow()
+      expect(el.getAttribute('shadow')).toBe('always')
+      expect(part(el, 'card').classList.contains('shadow-always')).toBe(true)
+      // 内部读通道仍返回真实 ShadowRoot（组件结构未被污染）
+      expect(el.shadowRoot!.querySelector('[part="link"]')).not.toBeNull()
+      expect(rec.shadow).toBe(el.shadowRoot)
+      // 再切态：属性通道持续生效
+      rec.shadow = 'hover'
+      expect(el.getAttribute('shadow')).toBe('hover')
+      expect(part(el, 'card').classList.contains('shadow-hover')).toBe(true)
+      expect(part(el, 'card').classList.contains('shadow-always')).toBe(false)
+    })
+
+    it('C-1 构造器写入 ShadowRoot 经 setter 保存（原型 accessor 不吞 root）', () => {
+      const el = mount()
+      expect((el as unknown as { shadow: ShadowRoot }).shadow).toBe(el.shadowRoot)
+      // 事件路径依赖 this.shadow.querySelector（交互元素判定）——写入字符串后仍可用
+      ;(el as unknown as { shadow: string }).shadow = 'always'
+      let fired = 0
+      el.setAttribute('clickable', '')
+      el.addEventListener('oas-click', () => fired++)
+      ;(el.shadowRoot!.querySelector('[part="body"]') as HTMLElement).dispatchEvent(
+        new MouseEvent('click', { bubbles: true, cancelable: true, composed: true }),
+      )
+      expect(fired).toBe(1)
+    })
+
+    it('C-2 shadow property 写 null：回缺省态（移除 attribute、阴影类消失、读通道仍是 ShadowRoot）', () => {
+      // Vue `:shadow="cond ? 'always' : null"` 转假时写 null——旧实现什么都不做，旧阴影残留
+      const el = mount({ shadow: 'always' })
+      expect(part(el, 'card').classList.contains('shadow-always')).toBe(true)
+      const rec = el as unknown as { shadow: string | ShadowRoot | null }
+      expect(() => (rec.shadow = null)).not.toThrow()
+      expect(el.hasAttribute('shadow')).toBe(false)
+      expect(part(el, 'card').classList.contains('shadow-always')).toBe(false)
+      expect(part(el, 'card').classList.contains('shadow-hover')).toBe(false)
+      expect(rec.shadow).toBe(el.shadowRoot)
+      // 再写字符串：属性通道仍生效
+      rec.shadow = 'hover'
+      expect(el.getAttribute('shadow')).toBe('hover')
+      expect(part(el, 'card').classList.contains('shadow-hover')).toBe(true)
+    })
+
+    it('C-2 shadow property 写 undefined 同 null（回缺省态）', () => {
+      const el = mount({ shadow: 'always' })
+      const rec = el as unknown as { shadow: string | ShadowRoot | undefined }
+      rec.shadow = undefined
+      expect(el.hasAttribute('shadow')).toBe(false)
+      expect(part(el, 'card').classList.contains('shadow-always')).toBe(false)
+      expect(rec.shadow).toBe(el.shadowRoot)
+    })
+
+    it('C-3 异型写入不污染内部 ShadowRoot，且 devWarn 只告警一次', () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      try {
+        const el = mount({ shadow: 'always' })
+        const rec = el as unknown as { shadow: unknown }
+        expect(() => (rec.shadow = 123)).not.toThrow()
+        // 属性与渲染不受影响；内部读通道仍是真实 root
+        expect(el.getAttribute('shadow')).toBe('always')
+        expect(rec.shadow).toBe(el.shadowRoot)
+        expect(part(el, 'card').classList.contains('shadow-always')).toBe(true)
+        // 同实例再写其他异型：不再重复告警
+        rec.shadow = true
+        rec.shadow = {}
+        expect(warn).toHaveBeenCalledTimes(1)
+      } finally {
+        warn.mockRestore()
+      }
+    })
+
     it('shadow="always"：常显阴影类', () => {
       const el = mount({ shadow: 'always' })
       expect(part(el, 'card').classList.contains('shadow-always')).toBe(true)

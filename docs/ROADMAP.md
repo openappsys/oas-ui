@@ -120,6 +120,9 @@
 
 - **数据密集型规模化（未发布）**：`oas-gantt` / `oas-resource` 时间轴**列虚拟化**（长跨度横向窗口 + rAF 合帧 + 容器尺寸自愈）；**服务端行窗口协议**（`shared/window-data.ts`：`windowed` + `total` + `window-start` + `oas-window-request`，`range-start`/`range-end` 宿主托管时间轴 + `oas-range-request`）落地于 table / gantt / resource；`oas-resource` 泳道与负载**行虚拟化**、`oas-kanban` 列体卡片虚拟化、`oas-scheduler` 资源行与小时轴虚拟化（含修复资源视图滚动跳顶）；`oas-table` / `oas-gantt` **增量渲染**（选择/汇总不重算全量）。
 - **同属百万级缺口——本批已补齐**：tree / list 的 windowed 协议与行数 a11y 元数据（tree=根节点切片、list=行切片；见 CHANGELOG `[未发布]`）；`oas-kanban` 预估卡片步长可配（`card-estimate` / `--oas-kanban-card-step`）。
+- **本批已补齐（续）**：`oas-chart` x 轴标签自动抽稀与 `options.xLabelRotate` 旋转；`oas-resource` 可读性开关（`show-load-values` / `show-overload-badge` / `bar-label`）、泳道表头吸顶与资源配色；`oas-gantt` 行斑马纹（`stripe`）；`oas-kanban` 卡片/列优先级强调色（`color`）；指南页「服务端窗口取数」与「资源管理」组合示例；数据属性与可聚焦性修复（gantt lag 安全域与写回单通道、scheduler now/限高/可聚焦、table 焦点回锚/滚动缓存、list/menu/rate setter）。
+- **数据属性行为修复（未发布）**：index-bar `sections` property 与 own property 回收；cascader/select/toggle-group/slider/tree-select/combobox 多值 `value` 字符串（tree-select 含单选对象与树外 label 回显）、virtual-list `items` 字符串；menu 结构过滤双通道；splitter `sizes` property（JSON/CSV 双格式、非法不覆盖受控 attribute、own 遮蔽回收）；gantt lag 域收紧/写回域守卫/事件序/切片越界告警/tree 行位 ARIA；table 横向滚动回锚；scheduler 时间线刷新手势守卫；bubble 继承对齐 rAF 单飞；`vue-prop-hijack` 逐实例属性值与实际渲染门禁扩展（含 property 字符串注入探针）；windowed 虚拟化 ARIA + axe 回归。
+- **属性通道边界修复（未发布）**：card `shadow` 属性与基类 ShadowRoot 字段分通道（字符串写 attribute、`null`/`undefined` 回缺省、异型忽略并告警一次）；select / swipe-cell 布尔 `open` 的 presence 语义（空串视为打开）；`collision-guard` 撞名检查合并基类实例成员并识别原型 `defineProperty` 遮蔽。
 - 语言包扩展：10 种内置（v2.5.2）后按社区真实需求增补
 - 专业域纵深：scheduler 与 gantt 已立项（见 PRD「未发布」段）；媒体读数井不做
 - avatar 名字哈希自动配色：已决定不做（属业务逻辑，且与「颜色显式指定」原则冲突）

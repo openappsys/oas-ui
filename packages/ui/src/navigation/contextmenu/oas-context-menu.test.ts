@@ -97,6 +97,31 @@ describe('OASContextMenu', () => {
       expect(anchor(el).hasAttribute('hidden')).toBe(false)
     })
 
+    it('property 写入 closeOnScroll / longPressDelay 后打开与长按不抛（内部方法改名防实例遮蔽）', async () => {
+      vi.useFakeTimers()
+      const el = mount()
+      const rec = el as unknown as Record<string, unknown>
+      // Vue/React 桥接的 camelCase property 会遮蔽同名私有方法；内部判定仍读 attribute
+      rec.closeOnScroll = false
+      rec.longPressDelay = 10
+      const target = el.querySelector('div')!
+      expect(() =>
+        target.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, clientX: 30, clientY: 20 })),
+      ).not.toThrow()
+      await Promise.resolve()
+      expect(anchor(el).hasAttribute('hidden')).toBe(false)
+      // close-on-scroll 缺省 true：滚动关闭（property 写入不改变 attribute 通道语义）
+      window.dispatchEvent(new Event('scroll'))
+      expect(anchor(el).hasAttribute('hidden')).toBe(true)
+      // long-press-delay 缺省 500ms：长按按属性通道触发
+      target.dispatchEvent(touchEvent('touchstart', [{ clientX: 10, clientY: 10 }]))
+      vi.advanceTimersByTime(499)
+      expect(anchor(el).hasAttribute('hidden')).toBe(true)
+      vi.advanceTimersByTime(1)
+      await Promise.resolve()
+      expect(anchor(el).hasAttribute('hidden')).toBe(false)
+    })
+
     it('长按前大幅滑动视为滚动手势，不触发', async () => {
       vi.useFakeTimers()
       const el = mount()

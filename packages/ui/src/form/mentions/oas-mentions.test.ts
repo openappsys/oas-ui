@@ -900,3 +900,33 @@ describe('OASMentions value property（公开读/写通道）', () => {
     expect(Object.hasOwn(el, 'value')).toBe(false)
   })
 })
+
+// ===== 属性-方法撞名回归（observedAttributes 的 camelCase 与原型方法同名） =====
+//
+// 机制：宿主框架按 camelCase 做 property 桥接或用户 JS 写 `el.xxx = ...` 会在实例上
+// 建自有属性遮蔽原型同名方法，组件内部 `this.xxx()` 随后抛 TypeError。
+// 私有方法已改名（minRows → minRowsCount / maxRows → maxRowsCount）。
+describe('OASMentions 属性-方法撞名回归', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('property 写入 minRows / maxRows 后 autosize 计算不抛错', () => {
+    const el = mount({ options: OPTIONS, autosize: '' })
+    const rec = el as unknown as Record<string, unknown>
+    rec.minRows = 1
+    rec.maxRows = 1
+    const t = ta(el)
+    const cs = getComputedStyle(t)
+    const lh = cs.lineHeight.endsWith('px')
+      ? parseFloat(cs.lineHeight)
+      : parseFloat(cs.lineHeight) * parseFloat(cs.fontSize)
+    expect(() => el.setAttribute('min-rows', '3')).not.toThrow()
+    expect(t.style.minHeight).toBe(`${Math.round(lh * 3 + 16)}px`)
+    expect(() => type(el, 'a\nb\nc\nd')).not.toThrow()
+  })
+})

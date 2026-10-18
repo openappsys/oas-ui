@@ -312,9 +312,27 @@ export class OASSpeedDial extends OASElement {
   private fab: HTMLButtonElement | null = null
   private actionsEl: HTMLElement | null = null
   /** 展开几何（合法化后的值，linear 默认） */
-  private geometry: Geometry = 'linear'
+  private geometryMode: Geometry = 'linear'
   /** 圆弧半径（px，合法化后，非法回落 96） */
-  private radius: number = DEFAULT_RADIUS
+  private radiusValue: number = DEFAULT_RADIUS
+
+  /** 展开几何 property 通道：写回 `geometry` attribute（非法值由渲染合法化回落 linear） */
+  private get geometry(): Geometry {
+    return this.validGeometry()
+  }
+
+  private set geometry(value: Geometry | string) {
+    this.setAttribute('geometry', value)
+  }
+
+  /** 圆弧半径 property 通道：写回 `radius` attribute（非法值由渲染合法化回落默认 96） */
+  private get radius(): number {
+    return this.validRadius()
+  }
+
+  private set radius(value: number | string) {
+    this.setAttribute('radius', String(value))
+  }
   /** hover 离开宽限期计时器 */
   private hoverHideTimer: ReturnType<typeof setTimeout> | null = null
   /** hover 触发展开时置位：syncOpen 跳过「自动聚焦首项」，不抢焦点 */
@@ -494,11 +512,11 @@ export class OASSpeedDial extends OASElement {
 
   /** 同步几何态：宿主 data-geometry / arc 类 + 每个动作的圆弧偏移（--t-x/--t-y） */
   private syncGeometry(): void {
-    this.geometry = this.validGeometry()
-    this.radius = this.validRadius()
-    this.dial?.setAttribute('data-geometry', this.geometry)
+    this.geometryMode = this.validGeometry()
+    this.radiusValue = this.validRadius()
+    this.dial?.setAttribute('data-geometry', this.geometryMode)
     // 宿主 arc 类驱动圆弧 CSS（linear 时移除，零回归）
-    this.classList.toggle('arc', this.geometry !== 'linear')
+    this.classList.toggle('arc', this.geometryMode !== 'linear')
     const btns = this.actionButtons()
     btns.forEach((btn, i) => {
       const [tx, ty] = this.arcOffset(i, btns.length)
@@ -518,20 +536,20 @@ export class OASSpeedDial extends OASElement {
    *   （即半圆的后半段，首项在主方向、末项在相邻轴）。
    */
   private arcOffset(index: number, count: number): [number, number] {
-    if (this.geometry === 'linear' || count === 0) return [0, 0]
+    if (this.geometryMode === 'linear' || count === 0) return [0, 0]
     const rad = (deg: number): number => (deg * Math.PI) / 180
     const base = DIR_ANGLE[this.effectiveDirection()] ?? 90
     let angle: number
-    if (this.geometry === 'circle') {
+    if (this.geometryMode === 'circle') {
       angle = 90 - (index * 360) / count
-    } else if (this.geometry === 'semi-circle') {
+    } else if (this.geometryMode === 'semi-circle') {
       angle = count === 1 ? base : base - 90 + (index * 180) / (count - 1)
     } else {
       // quarter-circle
       angle = count === 1 ? base : base + (index * 90) / (count - 1)
     }
     const a = rad(angle)
-    return [Math.round(this.radius * Math.cos(a)), Math.round(-this.radius * Math.sin(a))]
+    return [Math.round(this.radiusValue * Math.cos(a)), Math.round(-this.radiusValue * Math.sin(a))]
   }
 
   /** trigger 是否启用 hover 行为：trigger="hover" 且非触屏（coarse 回落 click） */
@@ -573,18 +591,22 @@ export class OASSpeedDial extends OASElement {
   }
 
   private toggle(): void {
-    if (this.hasAttr('open')) this.close('toggle')
-    else this.open('toggle')
+    if (this.hasAttr('open')) this.closeMenu('toggle')
+    else this.openMenu('toggle')
   }
 
-  private open(reason: SpeedDialOpenReason): void {
+  /** 展开（方法名避开 open 属性的 camelCase——`open` 与属性字面同名，宿主框架按 property
+   *  桥接受控 open 时会遮蔽原型方法，toggle/hover 内部调用即抛 TypeError；md API 章节无方法
+   *  条目，非公开 API，直接改名，open/close 属性行为不变） */
+  private openMenu(reason: SpeedDialOpenReason): void {
     if (this.hasAttr('open')) return
     this.skipFocusOnOpen = reason === 'hover'
     this.setAttribute('open', '')
     this.emit('open', { open: true, reason })
   }
 
-  private close(reason: SpeedDialOpenReason): void {
+  /** 收起（openMenu 的成对私有方法，改名理由同上） */
+  private closeMenu(reason: SpeedDialOpenReason): void {
     if (!this.hasAttr('open')) return
     this.removeAttribute('open')
     this.emit('open', { open: false, reason })
@@ -592,7 +614,7 @@ export class OASSpeedDial extends OASElement {
 
   private select(index: number, action: SpeedDialAction): void {
     this.emit('select', { index, label: action.label })
-    this.close('select')
+    this.closeMenu('select')
   }
 
   // —— hover 触发 ——
@@ -600,7 +622,7 @@ export class OASSpeedDial extends OASElement {
   private onHoverEnter = (): void => {
     if (!this.isHoverTrigger()) return
     this.clearHoverHide()
-    this.open('hover')
+    this.openMenu('hover')
   }
 
   private onHoverLeave = (e: MouseEvent): void => {
@@ -608,7 +630,7 @@ export class OASSpeedDial extends OASElement {
     // 移到面板（shadow 内）不算离开：悬停区域 = 宿主 + 面板
     if (this.hoverTargetInside(e.relatedTarget)) return
     this.clearHoverHide()
-    this.hoverHideTimer = setTimeout(() => this.close('hover'), HOVER_LEAVE_GRACE)
+    this.hoverHideTimer = setTimeout(() => this.closeMenu('hover'), HOVER_LEAVE_GRACE)
   }
 
   private onPanelEnter = (): void => {
@@ -620,7 +642,7 @@ export class OASSpeedDial extends OASElement {
     if (!this.isHoverTrigger()) return
     if (this.hoverTargetInside(e.relatedTarget)) return
     this.clearHoverHide()
-    this.hoverHideTimer = setTimeout(() => this.close('hover'), HOVER_LEAVE_GRACE)
+    this.hoverHideTimer = setTimeout(() => this.closeMenu('hover'), HOVER_LEAVE_GRACE)
   }
 
   private clearHoverHide(): void {
@@ -670,13 +692,13 @@ export class OASSpeedDial extends OASElement {
   private handleOutsideClick = (e: MouseEvent): void => {
     if (!this.hasAttr('open')) return
     if (e.composedPath().includes(this)) return
-    this.close('outside')
+    this.closeMenu('outside')
   }
 
   private handleDocKeydown = (e: KeyboardEvent): void => {
     if (e.key !== 'Escape') return
     if (!this.hasAttr('open')) return
-    this.close('escape')
+    this.closeMenu('escape')
     this.fab?.focus()
   }
 }

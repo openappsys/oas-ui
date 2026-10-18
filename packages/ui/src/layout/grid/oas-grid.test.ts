@@ -502,3 +502,31 @@ describe('OASGrid collapsed-rows 折叠行（PRD P2）', () => {
     expect(tail(grid).hidden).toBe(true)
   })
 })
+
+// ===== 属性-方法撞名回归（observedAttributes 的 camelCase 与原型方法同名） =====
+//
+// 机制：宿主框架按 camelCase 做 property 桥接或用户 JS 写 `el.xxx = ...` 会在实例上
+// 建自有属性遮蔽原型同名方法，组件内部 `this.xxx()` 随后抛 TypeError。
+// 私有方法已改名（collapsedRows → collapsedRowsValue）。
+describe('OASGrid 属性-方法撞名回归', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  it('property 写入 collapsedRows 后折叠行同步不抛错', () => {
+    const grid = new OASGrid()
+    grid.innerHTML = Array.from({ length: 6 }, (_, i) => `<oas-grid-item span="8">项 ${i + 1}</oas-grid-item>`).join('')
+    document.body.appendChild(grid)
+    ;(grid as unknown as Record<string, unknown>).collapsedRows = 2
+    expect(() => grid.setAttribute('collapsed-rows', '1')).not.toThrow()
+    const items = [...grid.querySelectorAll<HTMLElement>('oas-grid-item')]
+    expect(items.slice(3).every((i) => i.hasAttribute('hidden'))).toBe(true)
+    expect(grid.shadowRoot!.querySelector<HTMLElement>('[part="collapse-tail"]')!.hidden).toBe(false)
+  })
+})

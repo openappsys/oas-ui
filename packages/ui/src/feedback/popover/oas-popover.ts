@@ -1022,7 +1022,7 @@ export class OASPopover extends OASElement {
     if (this.hasAttr('virtual') || this.hasAttr('disabled')) return
     if (this.hasAttr('hide-empty') && this.isEmptyPopup()) return
     this.clearCloseTimer()
-    const delay = this.openDelay(hover)
+    const delay = this.openDelayMs(hover)
     if (delay > 0) {
       this.clearOpenTimer()
       this.openTimer = setTimeout(() => this.setOpen(true), delay)
@@ -1036,7 +1036,7 @@ export class OASPopover extends OASElement {
     if (this.hasAttr('virtual')) return
     if (!this.canClose(source)) return
     this.clearOpenTimer()
-    const delay = this.closeDelay(hover)
+    const delay = this.closeDelayMs(hover)
     if (delay > 0) {
       this.clearCloseTimer()
       this.closeTimer = setTimeout(() => {
@@ -1048,7 +1048,7 @@ export class OASPopover extends OASElement {
   }
 
   /** 开延迟：hover 路径优先 hover-delay，回落 open-delay，再回落默认 150；非 hover 用 open-delay（默认 0） */
-  private openDelay(hover: boolean): number {
+  private openDelayMs(hover: boolean): number {
     if (hover) {
       const h = Number.parseInt(this.getAttr('hover-delay', ''), 10)
       if (Number.isFinite(h) && h >= 0) return h
@@ -1061,7 +1061,7 @@ export class OASPopover extends OASElement {
   }
 
   /** 关延迟：hover 路径优先 hover-hide-delay，回落 close-delay，再回落默认 100；非 hover 用 close-delay（默认 0） */
-  private closeDelay(hover: boolean): number {
+  private closeDelayMs(hover: boolean): number {
     if (hover) {
       const h = Number.parseInt(this.getAttr('hover-hide-delay', ''), 10)
       if (Number.isFinite(h) && h >= 0) return h
@@ -1210,7 +1210,7 @@ export class OASPopover extends OASElement {
   }
 
   /** collision-padding：视口边缘夹取边距（px），默认 4 */
-  private collisionPadding(): number {
+  private collisionPaddingPx(): number {
     const n = Number.parseInt(this.getAttr('collision-padding', ''), 10)
     return Number.isFinite(n) && n >= 0 ? n : COLLISION_PAD
   }
@@ -1284,7 +1284,7 @@ export class OASPopover extends OASElement {
     if (stickToEdge) anchorRect = this.clampRectToViewport(anchorRect, viewport)
     const panelRect = this.panel.getBoundingClientRect()
     const autoAdjust = this.getAttr('auto-adjust-overflow', 'true') !== 'false'
-    const padding = this.collisionPadding()
+    const padding = this.collisionPaddingPx()
     const { distance, skid } = this.parseOffset()
     // P23 断点简写解析（"bottom md:right" 按当前视口宽度取生效值）
     const requested = this.resolveResponsive(this.getAttr('placement', 'top'))
@@ -1317,7 +1317,7 @@ export class OASPopover extends OASElement {
 
   /** 锚点矩形夹取到视口内（sticky=always 贴边保位的锚点侧等价矩形） */
   private clampRectToViewport(r: DOMRect, viewport: { width: number; height: number }): DOMRect {
-    const pad = this.collisionPadding()
+    const pad = this.collisionPaddingPx()
     const w = Math.min(r.width, viewport.width - pad * 2)
     const h = Math.min(r.height, viewport.height - pad * 2)
     const left = Math.max(pad, Math.min(r.left, viewport.width - pad - w))
@@ -1337,7 +1337,7 @@ export class OASPopover extends OASElement {
       this.panel.style.maxHeight = ''
       return
     }
-    const pad = this.collisionPadding()
+    const pad = this.collisionPaddingPx()
     const { distance } = this.parseOffset()
     const vh = getViewport().height
     let avail: number

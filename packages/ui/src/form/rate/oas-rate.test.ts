@@ -514,6 +514,23 @@ describe('OASRate 能力补齐', () => {
     }
   })
 
+  it('M colors/icons property 收到空 JSON 数组（[] / "[]"）：与未设置等价，回落属性通道/默认', () => {
+    const c = mount({ value: '5', colors: '["red","gold","green"]' })
+    // @ts-expect-error 空 JSON 字符串应回落属性通道（不覆盖为空）
+    c.colors = '[]'
+    expect(c.style.getPropertyValue('--oas-rate-active'), '空字符串回落属性通道').toBe('var(--oas-preset-green)')
+    c.colors = []
+    expect(c.style.getPropertyValue('--oas-rate-active'), '空数组同样回落属性通道').toBe('var(--oas-preset-green)')
+
+    const el = mount({ value: '3', icons: '["a","b","c","d","e"]' })
+    // @ts-expect-error 空 JSON 字符串应回落属性通道（不覆盖为空）
+    el.icons = '[]'
+    expect(
+      stars(el).map((s) => s.textContent?.trim()),
+      '空数组不覆盖属性通道的逐值符号',
+    ).toEqual(['a', 'b', 'c', 'd', 'e'])
+  })
+
   it('slot="icon-N" 逐位插槽：每颗星投影对应内容（声明式通道）', async () => {
     const emojis = ['😡', '😠', '😐', '🙂', '😍']
     const el = new OASRate()
@@ -717,5 +734,29 @@ describe('OASRate value property（get/set）', () => {
     expect(Object.getOwnPropertyDescriptor(Object.getPrototypeOf(el), 'value')).toBeDefined()
     el.value = 2
     expect(Object.hasOwn(el, 'value')).toBe(false)
+  })
+})
+
+// ===== 属性-方法撞名回归（observedAttributes 的 camelCase 与原型方法同名） =====
+//
+// 机制：宿主框架按 camelCase 做 property 桥接或用户 JS 写 `el.xxx = ...` 会在实例上
+// 建自有属性遮蔽原型同名方法，组件内部 `this.xxx()` 随后抛 TypeError。
+// 私有方法已改名（allowClear → allowClearOn）。
+describe('OASRate 属性-方法撞名回归', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('property 写入 allowClear 后点击已选星清空路径不抛错', () => {
+    const el = mount({ value: '4' })
+    ;(el as unknown as Record<string, unknown>).allowClear = false
+    let detail: unknown
+    el.addEventListener('oas-change', (e: Event) => (detail = (e as CustomEvent).detail))
+    expect(() => stars(el)[3]!.click()).not.toThrow()
+    expect(detail).toEqual({ value: 0 })
   })
 })

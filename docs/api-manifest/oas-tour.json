@@ -248,19 +248,19 @@
     },
     {
       "name": "oas-skip",
-      "detail": "{ index: this.current, total: this._steps.length }"
+      "detail": "{ index: this.currentIndex, total: this._steps.length }"
     },
     {
       "name": "oas-close",
-      "detail": "{ index: this.current, total: this._steps.length }"
+      "detail": "{ index: this.currentIndex, total: this._steps.length }"
     },
     {
       "name": "oas-finish",
-      "detail": "{ index: this.current, total: this._steps.length }"
+      "detail": "{ index: this.currentIndex, total: this._steps.length }"
     },
     {
       "name": "oas-cancel",
-      "detail": "{ index: this.current, total: this._steps.length, source }"
+      "detail": "{ index: this.currentIndex, total: this._steps.length, source }"
     },
     {
       "name": "oas-dismiss",
@@ -268,15 +268,15 @@
     },
     {
       "name": "oas-destroy",
-      "detail": "{ index: this.current, total: this._steps.length }"
+      "detail": "{ index: this.currentIndex, total: this._steps.length }"
     },
     {
       "name": "oas-highlight-start",
-      "detail": "{ index: this.current, total: this._steps.length }"
+      "detail": "{ index: this.currentIndex, total: this._steps.length }"
     },
     {
       "name": "oas-highlight-end",
-      "detail": "{ index: this.current, total: this._steps.length }"
+      "detail": "{ index: this.currentIndex, total: this._steps.length }"
     }
   ],
   "slots": [

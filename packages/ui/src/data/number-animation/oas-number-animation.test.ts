@@ -143,6 +143,24 @@ describe('OASNumberAnimation', () => {
     expect(text(el)).toBe('0')
   })
 
+  it('property 写入 from 起始值生效（setter 走 from attribute 通道）', () => {
+    const el = new OASNumberAnimation()
+    const rec = el as unknown as Record<string, unknown>
+    // 修复前私有字段 from 被实例属性遮蔽：写入不参与起播计算
+    expect(() => {
+      rec.from = 5
+    }).not.toThrow()
+    expect(rec.from).toBe(5)
+    expect(el.getAttribute('from')).toBe('5')
+    el.setAttribute('value', '100')
+    el.setAttribute('duration', '500')
+    document.body.appendChild(el)
+    advanceFrame(0)
+    expect(text(el)).toBe('5')
+    advanceFrame(500)
+    expect(text(el)).toBe('100')
+  })
+
   it('from 等于目标值：定值不启动动画', () => {
     const el = mount({ value: '100', from: '100', duration: '500' })
     expect(text(el)).toBe('100')

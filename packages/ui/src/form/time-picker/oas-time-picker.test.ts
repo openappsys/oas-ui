@@ -1096,3 +1096,27 @@ describe('OASTimePicker value property（公开读/写通道）', () => {
     expect(Object.hasOwn(el, 'value')).toBe(false)
   })
 })
+
+// ===== 属性-方法撞名回归（observedAttributes 的 camelCase 与原型方法同名） =====
+//
+// 机制：宿主框架按 camelCase 做 property 桥接或用户 JS 写 `el.xxx = ...` 会在实例上
+// 建自有属性遮蔽原型同名方法，组件内部 `this.xxx()` 随后抛 TypeError。
+// 私有方法已改名（isRange → isRangeOn）。
+describe('OASTimePicker 属性-方法撞名回归', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  it('property 写入 isRange 后范围模式渲染路径不抛错', () => {
+    const el = mount()
+    ;(el as unknown as Record<string, unknown>).isRange = true
+    expect(() => el.setAttribute('is-range', '')).not.toThrow()
+    expect(trigger(el).readOnly).toBe(true)
+  })
+})

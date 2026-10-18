@@ -2236,6 +2236,27 @@ describe('items property 通道（对象数组直赋）', () => {
     expect(labels(el), 'null 退位后 attribute 通道数据应立即渲染').toEqual(['属性项'])
   })
 
+  it('M items property 字符串/数组统一结构过滤：字符串数组与缺 value 项不渲染垃圾菜单', () => {
+    const el = new OASMenu()
+    // @ts-expect-error 模拟 '["a","b"]' 被框架写成 property
+    el.items = '["a","b"]'
+    document.body.appendChild(el)
+    expect(labels(el), '字符串数组按非法条目过滤').toEqual([])
+    // 数组通道同样走结构过滤（不再原样当作 MenuItem[] 渲染）
+    const mixed: unknown[] = [
+      { label: '合法', value: 'ok' },
+      'junk',
+      null,
+      { label: '缺 value' },
+      { type: 'group', label: '缺 children' },
+      { type: 'divider' },
+    ]
+    // @ts-expect-error 混合数组（含字符串/缺字段项）
+    el.items = mixed
+    // 类型声明 value 可选：有 label 的免 value 项保留；字符串/null/缺 children 的 group 被过滤
+    expect(labels(el)).toEqual(['合法', '缺 value'])
+  })
+
   it('I-1 items property 收到 JSON 字符串（框架写 property 场景）：解析渲染，不再产出逐字符垃圾项', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     try {
@@ -2272,5 +2293,30 @@ describe('items property 通道（对象数组直赋）', () => {
     // collapsed 收敛段只允许 margin 归零，不得对 .media 写 display:none
     expect(css).not.toMatch(/\[collapsed\]\)\s*>\s*\.menu\s*>\s*\.item\s*>\s*\.media\s*\{[^}]*display:\s*none/s)
     expect(css).toMatch(/\[collapsed\]\)\s*\.item\s*>\s*\.media\s*\{[^}]*margin-inline-end:\s*0/s)
+  })
+})
+
+// ===== 属性-方法撞名回归（observedAttributes 的 camelCase 与原型方法同名） =====
+//
+// 机制：宿主框架按 camelCase 做 property 桥接或用户 JS 写 `el.xxx = ...` 会在实例上
+// 建自有属性遮蔽原型同名方法，组件内部 `this.xxx()` 随后抛 TypeError。
+// 私有方法已改名（closeOnSelect → closeOnSelectEnabled）。
+describe('OASMenu 属性-方法撞名回归', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('property 写入 closeOnSelect 后选中收起路径不抛错', () => {
+    const el = mount({ items: NESTED_ITEMS })
+    ;(el as unknown as Record<string, unknown>).closeOnSelect = false
+    el.shadowRoot!.querySelector<HTMLElement>('[data-value="edit"]')!.click()
+    expect(() => el.shadowRoot!.querySelector<HTMLElement>('[data-value="copy"]')!.click()).not.toThrow()
+    const parent = el.shadowRoot!.querySelector<HTMLElement>('[data-value="edit"]')!
+    expect(parent.classList.contains('open'), '默认 vertical 选中后收起').toBe(false)
+    expect(el.getAttribute('value')).toBe('copy')
   })
 })

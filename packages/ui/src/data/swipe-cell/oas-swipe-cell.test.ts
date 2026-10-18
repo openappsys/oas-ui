@@ -304,6 +304,33 @@ describe('OASSwipeCell', () => {
     expect(el.open).toBe(false)
   })
 
+  it("I-1 open property 四态：''/true 打开，false/'false' 关闭（presence 语义）", () => {
+    const el = mount()
+    stubActionsWidth(el, 80)
+    // ''：Vue 静态 `<oas-swipe-cell open>` 经 property 写入的形态——必须视为打开
+    el.open = ''
+    expect(el.hasAttribute('open'), "property '' 应落地 open 属性").toBe(true)
+    expect(el.open).toBe(true)
+    el.open = true
+    expect(el.hasAttribute('open')).toBe(true)
+    el.open = false
+    expect(el.hasAttribute('open')).toBe(false)
+    expect(el.open).toBe(false)
+    el.open = 'false'
+    expect(el.hasAttribute('open'), "'false' 应视为关闭").toBe(false)
+  })
+
+  it("I-1 元素已连接后写入 '' 不删属性（hydration 顺序安全）", () => {
+    const el = mount()
+    stubActionsWidth(el, 80)
+    el.open = ''
+    expect(el.hasAttribute('open')).toBe(true)
+    // 已打开后再写 ''：幂等保持
+    el.open = ''
+    expect(el.hasAttribute('open')).toBe(true)
+    expect(el.getAttribute('open')).toBe('')
+  })
+
   it('手势开后再手势关：向左滑开、向右滑关并派发 oas-close', () => {
     const el = mount()
     stubActionsWidth(el, 80)

@@ -123,7 +123,7 @@ actions 默认挂 inline-end 侧（LTR 右侧，左滑露出）；`side="start"`
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
 | `disabled` | 全禁手势 | `boolean` | — |
-| `open` | 打开态（可读写；任一侧开着即为真；程序性变化派发 oas-open / oas-close） | `boolean` | — |
+| `open` | 打开态（可读写；任一侧开着即为真；程序性变化派发 oas-open / oas-close） | `boolean \| string` | — |
 | `open-side` | 当前/目标开侧：`start` / `end`；与 `open` 同设即开该侧，读取反映当前开侧 | `'' \| 'start' \| 'end'` | — |
 | `side` | actions 挂侧：`end`（默认，inline-end——LTR 右/RTL 左，向 inline-start 滑开）/ `start`（inline-start，向 inline-end 滑开——LTR 右滑）；与书写方向正交，RTL 自动镜像；同项有 `actions-start` 时忽略 | `string` | `end` |
 | `threshold` | 释放吸附阈值（px）；位移超过则吸附到开态，否则回弹关 | — | — |

@@ -71,11 +71,11 @@
     },
     {
       "name": "oas-expand",
-      "detail": "{ expanded: this.expanded }"
+      "detail": "{ expanded: this.expandedState }"
     },
     {
       "name": "oas-collapse",
-      "detail": "{ expanded: this.expanded }"
+      "detail": "{ expanded: this.expandedState }"
     }
   ],
   "slots": [],

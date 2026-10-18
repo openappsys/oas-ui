@@ -724,3 +724,33 @@ describe('OASEditable value property（get/set）', () => {
     expect(Object.hasOwn(el, 'value')).toBe(false)
   })
 })
+
+// ===== 属性-方法撞名回归（observedAttributes 的 camelCase 与原型方法同名） =====
+//
+// 机制：宿主框架按 camelCase 做 property 桥接或用户 JS 写 `el.xxx = ...` 会在实例上
+// 建自有属性遮蔽原型同名方法，组件内部 `this.xxx()` 随后抛 TypeError。
+// 私有方法已改名（submitOnEnter → submitOnEnterEnabled / submitOnBlur → submitOnBlurEnabled）。
+describe('OASEditable 属性-方法撞名回归', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('property 写入 submitOnEnter / submitOnBlur 后 Enter 与 blur 提交路径不抛错', () => {
+    const el = mount({ value: 'a' })
+    const rec = el as unknown as Record<string, unknown>
+    rec.submitOnEnter = false
+    rec.submitOnBlur = false
+    display(el).click()
+    field(el).value = 'b'
+    expect(() => pressField(el, 'Enter')).not.toThrow()
+    expect(el.getAttribute('value'), '默认 submit-on-enter=true：Enter 提交').toBe('b')
+    display(el).click()
+    field(el).value = 'c'
+    expect(() => field(el).dispatchEvent(new FocusEvent('blur', { relatedTarget: document.body }))).not.toThrow()
+    expect(el.getAttribute('value'), '默认 submit-on-blur=true：blur 提交').toBe('c')
+  })
+})

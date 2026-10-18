@@ -789,10 +789,10 @@ export class OASSidebar extends OASElement {
   private railStartX = 0
   private railStartWidth = 0
 
-  private resizeMin(): number {
+  private resizeMinPx(): number {
     return Number(this.getAttr('resize-min', '160')) || 160
   }
-  private resizeMax(): number {
+  private resizeMaxPx(): number {
     return Number(this.getAttr('resize-max', '480')) || 480
   }
 
@@ -844,10 +844,10 @@ export class OASSidebar extends OASElement {
       this.setWidthPx(cur - sign * step)
     } else if (ke.key === 'Home') {
       ke.preventDefault()
-      this.setWidthPx(this.resizeMin())
+      this.setWidthPx(this.resizeMinPx())
     } else if (ke.key === 'End') {
       ke.preventDefault()
-      this.setWidthPx(this.resizeMax())
+      this.setWidthPx(this.resizeMaxPx())
     } else {
       return
     }
@@ -855,7 +855,7 @@ export class OASSidebar extends OASElement {
   }
 
   private setWidthPx(px: number): void {
-    const clamped = Math.round(Math.min(this.resizeMax(), Math.max(this.resizeMin(), px)))
+    const clamped = Math.round(Math.min(this.resizeMaxPx(), Math.max(this.resizeMinPx(), px)))
     this.setAttribute('width', `${clamped}px`)
     this.syncRailAria(clamped)
   }
@@ -865,8 +865,8 @@ export class OASSidebar extends OASElement {
     const rail = this.shadow.querySelector<HTMLElement>('[part="rail"]')
     if (!rail) return
     const v = value ?? Math.round(this.currentWidthPx())
-    rail.setAttribute('aria-valuemin', String(this.resizeMin()))
-    rail.setAttribute('aria-valuemax', String(this.resizeMax()))
+    rail.setAttribute('aria-valuemin', String(this.resizeMinPx()))
+    rail.setAttribute('aria-valuemax', String(this.resizeMaxPx()))
     rail.setAttribute('aria-valuenow', String(v))
   }
 

@@ -1212,3 +1212,29 @@ describe('OASDropdown reserve-width（触发器预留最宽选项，切值不抖
     expect(triggerBtn(el).style.minWidth).toMatch(/^[\d.]+px$/)
   })
 })
+
+// ===== 属性-方法撞名回归（observedAttributes 的 camelCase 与原型方法同名） =====
+//
+// 机制：宿主框架按 camelCase 做 property 桥接或用户 JS 写 `el.xxx = ...` 会在实例上
+// 建自有属性遮蔽原型同名方法，组件内部 `this.xxx()` 随后抛 TypeError。
+// 私有方法已改名（hoverDelay → hoverDelayMs）。
+describe('OASDropdown 属性-方法撞名回归', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('property 写入 hoverDelay 后 hover 开关路径不抛错', async () => {
+    const el = mount({ trigger: 'hover', 'hover-delay': '0', 'hover-hide-delay': '0' })
+    ;(el as unknown as Record<string, unknown>).hoverDelay = 1
+    expect(() => el.dispatchEvent(new MouseEvent('mouseenter'))).not.toThrow()
+    await sleep(20)
+    expect(el.hasAttribute('open')).toBe(true)
+    expect(() => el.dispatchEvent(new MouseEvent('mouseleave'))).not.toThrow()
+    await sleep(20)
+    expect(el.hasAttribute('open')).toBe(false)
+  })
+})

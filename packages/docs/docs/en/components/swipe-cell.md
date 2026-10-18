@@ -123,7 +123,7 @@ At most one swipe item is open within the same document at a time: once an item 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
 | `disabled` | Disable all gestures | `boolean` | — |
-| `open` | Open state (read/write; true when either side is open; programmatic changes dispatch oas-open / oas-close) | `boolean` | — |
+| `open` | Open state (read/write; true when either side is open; programmatic changes dispatch oas-open / oas-close) | `boolean \| string` | — |
 | `open-side` | Current/target open side: `start` / `end`; set together with `open` to open that side, read back to reflect the current side | `'' \| 'start' \| 'end'` | — |
 | `side` | Side the actions attach to: `end` (default, inline-end—right in LTR / left in RTL, swipe toward inline-start) / `start` (inline-start, swipe toward inline-end—rightward in LTR); orthogonal to text direction, mirrors automatically in RTL; ignored when the item also has `actions-start` | `string` | `end` |
 | `threshold` | Release snap threshold (px); a drag beyond it snaps open, otherwise it bounces closed | — | — |

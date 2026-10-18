@@ -856,9 +856,15 @@ export class OASUpload extends OASFormElement {
     this._beforeUpload = typeof fn === 'function' ? fn : null
   }
 
+  /** 列表样式：property 通道写回 `list-type` attribute（Vue/React 桥接安全）；
+   *  非法值运行时容忍（交由 attribute 通道，渲染时回落 list）。 */
   private get listType(): ListType {
     const v = this.getAttr('list-type', 'list')
     return v === 'picture' || v === 'picture-card' ? v : 'list'
+  }
+
+  private set listType(value: ListType | string) {
+    this.setAttribute('list-type', value)
   }
 
   /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */

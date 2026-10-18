@@ -330,6 +330,52 @@ describe('OASEllipsis', () => {
       expect(el.hasAttribute('expanded')).toBe(false)
     })
 
+    it('property 写入 expanded=true/false 展开收起生效（getter/setter 走 attribute 通道）', () => {
+      const el = mount({ text: '长文本内容用于受控展开演示', expandable: '' })
+      forceOverflow(el, true)
+      const rec = el as unknown as Record<string, unknown>
+      // 修复前私有字段 expanded 被实例属性遮蔽：写入不落 attribute，视觉/aria 不跟随
+      expect(() => {
+        rec.expanded = true
+      }).not.toThrow()
+      expect(el.hasAttribute('expanded')).toBe(true)
+      expect(rec.expanded).toBe(true)
+      expect(toggleEl(el).hidden).toBe(false)
+      expect(toggleEl(el).textContent).toContain('收起')
+      rec.expanded = false
+      expect(el.hasAttribute('expanded')).toBe(false)
+      expect(rec.expanded).toBe(false)
+      expect(toggleEl(el).textContent).toContain('展开')
+    })
+
+    it("I-1 expanded property 四态：''/true 展开，false/'false' 收起（presence 语义）", () => {
+      const el = mount({ text: '长文本内容用于受控展开演示', expandable: '' })
+      forceOverflow(el, true)
+      const rec = el as unknown as Record<string, unknown>
+      // ''：Vue 静态 `<oas-ellipsis expanded>` 经 property 写入的形态——必须视为展开
+      rec.expanded = ''
+      expect(el.hasAttribute('expanded'), "property '' 应落地 expanded 属性").toBe(true)
+      expect(toggleEl(el).textContent).toContain('收起')
+      rec.expanded = true
+      expect(el.hasAttribute('expanded')).toBe(true)
+      rec.expanded = false
+      expect(el.hasAttribute('expanded')).toBe(false)
+      rec.expanded = 'false'
+      expect(el.hasAttribute('expanded'), "'false' 应视为关闭").toBe(false)
+    })
+
+    it("I-1 元素已连接后写入 '' 不删属性（hydration 顺序安全）", () => {
+      const el = mount({ text: '长文本内容用于受控展开演示', expandable: '' })
+      forceOverflow(el, true)
+      el.setAttribute('expanded', '')
+      const rec = el as unknown as Record<string, unknown>
+      rec.expanded = ''
+      expect(el.hasAttribute('expanded')).toBe(true)
+      expect(el.getAttribute('expanded')).toBe('')
+      // 展开态未被水合顺序打回省略态
+      expect(toggleEl(el).textContent).toContain('收起')
+    })
+
     it('宿主置 expanded 后内部状态跟随（不派发重复展开事件）', () => {
       const el = mount({ text: '长文本', expandable: '' })
       forceOverflow(el, true)

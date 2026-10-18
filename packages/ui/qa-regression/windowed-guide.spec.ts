@@ -6,7 +6,8 @@ import { test, expect } from '@playwright/test'
 test('guide windowed demo：首屏装载、跳滚换窗、段内滚动零请求、console 零告警', async ({ page }) => {
   const issues: string[] = []
   page.on('console', (m) => {
-    if (m.type() === 'error' || m.type() === 'warning') issues.push(`${m.type()}: ${m.text()}`)
+    if (m.type() === 'error' || (m.type() === 'warning' && /^\[oas-/.test(m.text())))
+      issues.push(`${m.type()}: ${m.text()}`)
   })
   page.on('pageerror', (e) => issues.push(`pageerror: ${e.message}`))
 
@@ -72,7 +73,8 @@ test('guide windowed demo：首屏装载、跳滚换窗、段内滚动零请求�
 test('guide windowed demo（en 页）：首屏装载 + console 零告警', async ({ page }) => {
   const issues: string[] = []
   page.on('console', (m) => {
-    if (m.type() === 'error' || m.type() === 'warning') issues.push(`${m.type()}: ${m.text()}`)
+    if (m.type() === 'error' || (m.type() === 'warning' && /^\[oas-/.test(m.text())))
+      issues.push(`${m.type()}: ${m.text()}`)
   })
   page.on('pageerror', (e) => issues.push(`pageerror: ${e.message}`))
   await page.goto('/en/guide/windowed-data.html', { waitUntil: 'domcontentloaded' })
@@ -96,7 +98,8 @@ test('guide windowed demo（en 页）：首屏装载 + console 零告警', async
 test('guide gantt/resource windowed demo：行窗口 + 轴端范围请求扩轴', async ({ page }) => {
   const issues: string[] = []
   page.on('console', (m) => {
-    if (m.type() === 'error' || m.type() === 'warning') issues.push(`${m.type()}: ${m.text()}`)
+    if (m.type() === 'error' || (m.type() === 'warning' && /^\[oas-/.test(m.text())))
+      issues.push(`${m.type()}: ${m.text()}`)
   })
   page.on('pageerror', (e) => issues.push(`pageerror: ${e.message}`))
 
@@ -174,7 +177,8 @@ test('guide gantt/resource windowed demo：行窗口 + 轴端范围请求扩轴'
 test('guide windowed demo：组件包延迟注册仍能装载数据（防 property 早于 upgrade）', async ({ page }) => {
   const issues: string[] = []
   page.on('console', (m) => {
-    if (m.type() === 'error' || m.type() === 'warning') issues.push(`${m.type()}: ${m.text()}`)
+    if (m.type() === 'error' || (m.type() === 'warning' && /^\[oas-/.test(m.text())))
+      issues.push(`${m.type()}: ${m.text()}`)
   })
   page.on('pageerror', (e) => issues.push(`pageerror: ${e.message}`))
   let delayed = false

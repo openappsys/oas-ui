@@ -1058,13 +1058,13 @@ export class OASColorPicker extends OASElement {
 
   /** 面板可见预设数：列 × 行（preset-rows 缺省不设上限，兼容一期 12 项全显） */
   private presetLimit(): number {
-    const cols = this.presetColumns()
+    const cols = this.presetColumnsCount()
     const rows = Number.parseInt(this.getAttr('preset-rows', ''), 10)
     if (!Number.isFinite(rows) || rows <= 0) return Number.POSITIVE_INFINITY
     return cols * rows
   }
 
-  private presetColumns(): number {
+  private presetColumnsCount(): number {
     const cols = Number.parseInt(this.getAttr('preset-columns', '8'), 10)
     return Number.isFinite(cols) && cols > 0 ? cols : 8
   }
@@ -1077,7 +1077,7 @@ export class OASColorPicker extends OASElement {
     if (sig === this.presetsSig && box.childElementCount > 0) return
     this.presetsSig = sig
     this.parsePresets()
-    box.style.setProperty('--preset-cols', String(this.presetColumns()))
+    box.style.setProperty('--preset-cols', String(this.presetColumnsCount()))
     box.innerHTML = ''
     const limit = this.presetLimit()
     const max = Number.isFinite(limit) ? Math.min(this.presets.length, limit) : this.presets.length

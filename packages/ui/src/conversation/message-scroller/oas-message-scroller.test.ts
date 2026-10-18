@@ -944,3 +944,42 @@ describe('OASMessageScroller B 批', () => {
     expect(OASMessageScroller.observedAttributes).toContain('track-visible')
   })
 })
+
+// ===== 属性-方法撞名回归（observedAttributes 的 camelCase 与原型方法同名） =====
+//
+// 机制：宿主框架按 camelCase 做 property 桥接或用户 JS 写 `el.xxx = ...` 会在实例上
+// 建自有属性遮蔽原型同名方法，组件内部 `this.xxx()` 随后抛 TypeError。
+// 私有方法已改名（edgeThreshold → edgeThresholdPx / prevPeek → prevPeekPx）。
+describe('OASMessageScroller 属性-方法撞名回归', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('property 写入 edgeThreshold / prevPeek 后滚动与轮次锚定路径不抛错', async () => {
+    const el = mount('<p>a1</p><p anchor>q1</p><p>ans1</p>', { 'turn-anchor': '' })
+    const rec = el as unknown as Record<string, unknown>
+    rec.edgeThreshold = 12
+    rec.prevPeek = 16
+    const vp = stubScroll(el, { scrollHeight: 2000, clientHeight: 400 })
+    const q1 = el.children[1]!
+    stubGeometry(el, [
+      { node: el.children[0]!, y: 0 },
+      { node: q1, y: 100 },
+      { node: el.children[2]!, y: 200 },
+    ])
+    await raf()
+    await raf()
+    expect(() => {
+      vp.scrollTop = 100 - 16
+      vp.dispatchEvent(new Event('scroll'))
+    }).not.toThrow()
+    Object.defineProperty(vp, 'scrollHeight', { configurable: true, value: 2400 })
+    el.appendChild(document.createElement('p'))
+    await raf()
+    expect(vp.scrollTop, '锚顶保留 prev-peek 16px 语境').toBe(84)
+  })
+})

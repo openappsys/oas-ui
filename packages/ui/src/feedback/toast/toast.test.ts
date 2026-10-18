@@ -1335,3 +1335,36 @@ describe('离场时长单位解析', () => {
     expect(document.body.querySelector('oas-toast')).toBeNull()
   })
 })
+
+// ===== 属性-方法撞名回归（observedAttributes 的 camelCase 与原型方法同名） =====
+//
+// 机制：宿主框架按 camelCase 做 property 桥接或用户 JS 写 `el.xxx = ...` 会在实例上
+// 建自有属性遮蔽原型同名方法，组件内部 `this.xxx()` 随后抛 TypeError。
+// 私有方法已改名（swipeDirection → swipeDirectionValue）。
+describe('OASToast 属性-方法撞名回归', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    vi.useFakeTimers()
+  })
+
+  afterEach(() => {
+    destroyAll()
+    vi.useRealTimers()
+    document.body.innerHTML = ''
+  })
+
+  it('property 写入 swipeDirection 后滑动关闭路径不抛错', async () => {
+    toast.info({ title: 'x', duration: 0 })
+    await Promise.resolve()
+    const t = el()
+    ;(t as unknown as Record<string, unknown>).swipeDirection = 'left'
+    const box = t.shadowRoot!.querySelector<HTMLElement>('.box')!
+    expect(() => {
+      box.dispatchEvent(new PointerEvent('pointerdown', { clientX: 250, clientY: 50, pointerId: 1 }))
+      window.dispatchEvent(new PointerEvent('pointermove', { clientX: 100, clientY: 50, pointerId: 1 }))
+      window.dispatchEvent(new PointerEvent('pointerup', { clientX: 100, clientY: 50, pointerId: 1 }))
+    }).not.toThrow()
+    await settleClose()
+    expect(document.body.querySelector('oas-toast')).toBeNull()
+  })
+})

@@ -314,7 +314,7 @@ export class OASLog extends OASElement {
       // 顶部插入历史行：下方内容整体下移，补偿 scrollTop 保持用户阅读位置
       this.setScrollTop(vp, vp.scrollTop + (vp.scrollHeight - prevHeight))
     }
-    if (this.autoScroll() && wasStuck) {
+    if (this.autoScrollOn() && wasStuck) {
       this.setScrollTop(vp, vp.scrollHeight)
     }
   }
@@ -326,7 +326,7 @@ export class OASLog extends OASElement {
     this.programmaticScroll = false
   }
 
-  private autoScroll(): boolean {
+  private autoScrollOn(): boolean {
     return this.getAttr('auto-scroll', 'true') !== 'false'
   }
 

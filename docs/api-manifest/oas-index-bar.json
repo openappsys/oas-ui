@@ -4,7 +4,6 @@
   "attrs": [
     {
       "name": "sections",
-      "type": "string",
       "default": "[]",
       "observed": true
     },
@@ -21,7 +20,12 @@
       "observed": true
     }
   ],
-  "props": [],
+  "props": [
+    {
+      "name": "sections",
+      "type": "IndexBarSection[]"
+    }
+  ],
   "events": [
     {
       "name": "oas-item-click",

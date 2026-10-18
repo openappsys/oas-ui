@@ -138,7 +138,20 @@ export class OASEllipsis extends OASElement {
   private toggleEl: HTMLButtonElement | null = null
   private mirrorEl: HTMLElement | null = null
   private observer: ResizeObserver | null = null
-  private expanded = false
+  private expandedState = false
+
+  /** 展开态 property 通道：写回 `expanded` attribute（受控语义不变，Vue/React 桥接安全） */
+  private get expanded(): boolean {
+    return this.hasAttr('expanded')
+  }
+
+  private set expanded(value: boolean | string) {
+    // presence 语义：静态 `<oas-ellipsis expanded>` 经框架 property 通道写入的是空串 `''`，
+    // 空串必须视为 true（`!!value` 会 removeAttribute 导致失效/水合收起）；
+    // 仅 false / 'false' 关闭。
+    const on = value !== false && value !== 'false' && value != null
+    this.toggleAttribute('expanded', on)
+  }
   /** 当前溢出状态（点击展开判定与 aria 同步共用） */
   private overflow = false
   /** 溢出状态上次派发值（null = 尚未派发，首次恒派发，之后同值不再派发） */
@@ -194,8 +207,8 @@ export class OASEllipsis extends OASElement {
 
     // 受控同步：`expanded` 属性在场 → 以属性为准（宿主可强制展开/收起）；
     // 属性缺席 → 内部状态驱动（非受控），内部切换时反射回属性（双通道一致）
-    if (this.hasAttr('expanded') !== this.expanded) {
-      this.expanded = this.hasAttr('expanded')
+    if (this.hasAttr('expanded') !== this.expandedState) {
+      this.expandedState = this.hasAttr('expanded')
     }
 
     const text = this.getAttr('text', '')
@@ -246,7 +259,7 @@ export class OASEllipsis extends OASElement {
     }
 
     this.clearManualStyles()
-    const clamped = !this.expanded
+    const clamped = !this.expandedState
 
     // 省略样式由 rows 决定（展开态移除）：先应用形态再测量溢出（line-clamp 参与 scrollHeight）
     this.textEl.classList.toggle('single', clamped && rows === 1)
@@ -287,12 +300,12 @@ export class OASEllipsis extends OASElement {
 
     // 展开态展示全文（不省略）；否则溢出且（JS 截断 / 开 tooltip / 可展开）时进入省略态。
     // JS 截断后自身宽度已收窄不再溢出，但内容被截短 → 视为省略态挂全文 tooltip
-    const inClampMode = !this.expanded && overflow && (jsTruncated || tooltipOn || expandable)
+    const inClampMode = !this.expandedState && overflow && (jsTruncated || tooltipOn || expandable)
 
     // 展开/收起按钮：块级形态（文本下方）；可展开且（溢出或已展开）时可见（click 模式隐藏）
     if (this.toggleEl) {
       this.toggleEl.classList.remove('inline')
-      const showToggle = expandable && !this.isClickMode() && (overflow || this.expanded)
+      const showToggle = expandable && !this.isClickMode() && (overflow || this.expandedState)
       this.toggleEl.hidden = !showToggle
       const label = this.toggleLabel()
       this.toggleEl.textContent = label
@@ -313,7 +326,7 @@ export class OASEllipsis extends OASElement {
     if (!this.textEl || !this.rootEl) return
     const clickMode = this.isClickMode()
 
-    if (!this.expanded) {
+    if (!this.expandedState) {
       // 探测：CSS clamp 形态测溢出（此时宿主宽度被 max-width 撑到容器宽）
       this.textEl.classList.remove('manual', 'nowrap')
       this.textEl.classList.toggle('single', rows === 1)
@@ -435,7 +448,7 @@ export class OASEllipsis extends OASElement {
 
   /** 展开/收起文案：属性优先（expand-text / collapse-text），缺省走 i18n */
   private toggleLabel(): string {
-    return this.expanded
+    return this.expandedState
       ? this.getAttr('collapse-text') || this.t('ellipsis.collapse')
       : this.getAttr('expand-text') || this.t('ellipsis.expand')
   }
@@ -592,7 +605,7 @@ export class OASEllipsis extends OASElement {
 
   /** 点文本展开当前是否可交互：click 模式且（溢出省略态或已展开可收起） */
   private clickToExpandActive(): boolean {
-    return this.isClickMode() && (this.overflow || this.expanded)
+    return this.isClickMode() && (this.overflow || this.expandedState)
   }
 
   /** 同步文本本体交互语义（role/tabindex/aria-expanded/cursor）；非点击模式清除 */
@@ -603,7 +616,7 @@ export class OASEllipsis extends OASElement {
     if (active) {
       this.textEl.setAttribute('role', 'button')
       this.textEl.setAttribute('tabindex', '0')
-      this.textEl.setAttribute('aria-expanded', String(this.expanded))
+      this.textEl.setAttribute('aria-expanded', String(this.expandedState))
     } else {
       this.textEl.removeAttribute('role')
       this.textEl.removeAttribute('tabindex')
@@ -662,10 +675,10 @@ export class OASEllipsis extends OASElement {
   }
 
   private handleToggle(): void {
-    this.expanded = !this.expanded
-    this.emit(this.expanded ? 'expand' : 'collapse', { expanded: this.expanded })
+    this.expandedState = !this.expandedState
+    this.emit(this.expandedState ? 'expand' : 'collapse', { expanded: this.expandedState })
     // 反射回属性：受控宿主可回读/拦截，属性变化驱动 update（幂等）
-    if (this.expanded) this.setAttribute('expanded', '')
+    if (this.expandedState) this.setAttribute('expanded', '')
     else this.removeAttribute('expanded')
     this.update()
   }

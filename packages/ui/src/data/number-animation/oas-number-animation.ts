@@ -77,7 +77,7 @@ export class OASNumberAnimation extends OASElement {
   }
 
   private raf = 0
-  private from = 0
+  private fromValue = 0
   private to = 0
   private _duration = DEFAULT_DURATION
 
@@ -87,6 +87,14 @@ export class OASNumberAnimation extends OASElement {
   }
   set duration(value: number | string) {
     this.setAttribute('duration', String(value))
+  }
+
+  /** 起始值 property 通道：写回 `from` attribute，下一轮起播生效（与属性语义一致） */
+  private get from(): number {
+    return this.resolveFrom()
+  }
+  private set from(value: number | string) {
+    this.setAttribute('from', String(value))
   }
   private startedAt = 0
   private current = 0
@@ -140,7 +148,7 @@ export class OASNumberAnimation extends OASElement {
       this.stop()
       if (this.lastTarget === null) {
         this.current = this.resolveFrom()
-        this.from = this.current
+        this.fromValue = this.current
         this.to = target
         this._duration = duration
         this.lastTarget = target
@@ -163,7 +171,7 @@ export class OASNumberAnimation extends OASElement {
       this.stop()
       const changed = this.lastTarget !== target
       this.current = target
-      this.from = target
+      this.fromValue = target
       this.to = target
       this._duration = duration
       this.lastTarget = target
@@ -194,7 +202,7 @@ export class OASNumberAnimation extends OASElement {
       this.stop()
       const changed = this.current !== target || this.lastTarget !== target
       this.current = target
-      this.from = target
+      this.fromValue = target
       this.to = target
       this._duration = duration
       this.lastTarget = target
@@ -208,7 +216,7 @@ export class OASNumberAnimation extends OASElement {
   /** 起播一轮：起点即目标时定值不启动动画（不派发 finish，与挂载即定值同语义） */
   private startRound(from: number, to: number, duration: number): void {
     this.stop()
-    this.from = from
+    this.fromValue = from
     this.to = to
     this._duration = duration
     this.lastTarget = to
@@ -226,7 +234,7 @@ export class OASNumberAnimation extends OASElement {
     if (this.startedAt < 0) this.startedAt = ts
     const p = Math.min(1, (ts - this.startedAt) / this._duration)
     const ease = EASING[this.getAttr('easing', 'ease-out')] ?? easeOutCubic
-    this.current = this.from + (this.to - this.from) * ease(p)
+    this.current = this.fromValue + (this.to - this.fromValue) * ease(p)
     this.renderText()
     if (p >= 1) {
       this.current = this.to

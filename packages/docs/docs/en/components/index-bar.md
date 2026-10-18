@@ -97,7 +97,7 @@ onMounted(() => {
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
 | `height` | Fixed height of the list area in px; when it overflows the list scrolls internally. When unset the list grows with its content and the scroll spy watches the viewport | `string` | — |
-| `sections` | Sections JSON: `[{ key, title?, items: [{ label, value? }] }]`; the letter rail is derived from sections (keys are unique, the first duplicate wins), `title` falls back to `key`, and an item's `value` falls back to `label` | `string` | `[]` |
+| `sections` | Sections JSON: `[{ key, title?, items: [{ label, value? }] }]`; the letter rail is derived from sections (keys are unique, the first duplicate wins), `title` falls back to `key`, and an item's `value` falls back to `label` | `IndexBarSection[]` | `[]` |
 | `sticky` | Sticky section headers (default true); explicitly set `sticky="false"` to disable | `string` | `true` |
 
 #### Events

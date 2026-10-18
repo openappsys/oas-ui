@@ -760,6 +760,56 @@ describe('OASImage 受控预览', () => {
     expect(maskOf(el).hasAttribute('hidden')).toBe(true)
   })
 
+  it('previewOpen property 写入开合生效（getter/setter 走 preview-open attribute 通道）', () => {
+    const el = new OASImage()
+    el.setAttribute('src', '/a.png')
+    el.setAttribute('preview', '')
+    document.body.appendChild(el)
+    expect(maskOf(el).hasAttribute('hidden')).toBe(true)
+    const rec = el as unknown as Record<string, unknown>
+    // 修复前私有字段 previewOpen 被实例属性遮蔽：写入不驱动浮层
+    expect(() => {
+      rec.previewOpen = true
+    }).not.toThrow()
+    expect(el.hasAttribute('preview-open')).toBe(true)
+    expect(rec.previewOpen).toBe(true)
+    expect(maskOf(el).hasAttribute('hidden')).toBe(false)
+    rec.previewOpen = false
+    expect(el.hasAttribute('preview-open')).toBe(false)
+    expect(maskOf(el).hasAttribute('hidden')).toBe(true)
+  })
+
+  it("I-1 previewOpen property 四态：''/true 打开，false/'false' 关闭（presence 语义）", () => {
+    const el = new OASImage()
+    el.setAttribute('src', '/a.png')
+    el.setAttribute('preview', '')
+    document.body.appendChild(el)
+    const rec = el as unknown as Record<string, unknown>
+    // ''：Vue 静态 `<oas-image preview-open>` 经 property 写入的形态——必须视为打开
+    rec.previewOpen = ''
+    expect(el.hasAttribute('preview-open'), "property '' 应落地 preview-open 属性").toBe(true)
+    expect(maskOf(el).hasAttribute('hidden')).toBe(false)
+    rec.previewOpen = true
+    expect(el.hasAttribute('preview-open')).toBe(true)
+    rec.previewOpen = false
+    expect(el.hasAttribute('preview-open')).toBe(false)
+    expect(maskOf(el).hasAttribute('hidden')).toBe(true)
+    rec.previewOpen = 'false'
+    expect(el.hasAttribute('preview-open'), "'false' 应视为关闭").toBe(false)
+  })
+
+  it("I-1 元素已连接后写入 '' 不删属性（hydration 顺序安全）", () => {
+    const el = new OASImage()
+    el.setAttribute('src', '/a.png')
+    el.setAttribute('preview', '')
+    document.body.appendChild(el)
+    el.setAttribute('preview-open', '')
+    const rec = el as unknown as Record<string, unknown>
+    rec.previewOpen = ''
+    expect(el.hasAttribute('preview-open')).toBe(true)
+    expect(maskOf(el).hasAttribute('hidden')).toBe(false)
+  })
+
   it('内部开合反射 preview-open 属性（双向同步）', () => {
     const el = new OASImage()
     el.setAttribute('src', '/a.png')

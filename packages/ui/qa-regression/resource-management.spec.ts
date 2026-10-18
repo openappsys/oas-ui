@@ -53,7 +53,8 @@ function snapshot(page: import('@playwright/test').Page) {
 test('resource-management 组合示例：初始超载 → 取消勾选重算 → 一键平衡收敛 → 重置恢复', async ({ page }) => {
   const issues: string[] = []
   page.on('console', (m) => {
-    if (m.type() === 'error' || m.type() === 'warning') issues.push(`${m.type()}: ${m.text()}`)
+    if (m.type() === 'error' || (m.type() === 'warning' && /^\[oas-/.test(m.text())))
+      issues.push(`${m.type()}: ${m.text()}`)
   })
   page.on('pageerror', (e) => issues.push(`pageerror: ${e.message}`))
 
@@ -144,7 +145,8 @@ test('resource-management 组合示例：初始超载 → 取消勾选重算 →
 test('resource-management en 页冒烟：标题/卡片/泳道渲染 + console 零告警', async ({ page }) => {
   const issues: string[] = []
   page.on('console', (m) => {
-    if (m.type() === 'error' || m.type() === 'warning') issues.push(`${m.type()}: ${m.text()}`)
+    if (m.type() === 'error' || (m.type() === 'warning' && /^\[oas-/.test(m.text())))
+      issues.push(`${m.type()}: ${m.text()}`)
   })
   page.on('pageerror', (e) => issues.push(`pageerror: ${e.message}`))
 

@@ -942,3 +942,32 @@ describe('property 通道接受 JSON 字符串（框架把静态 attribute 写�
     expect(el.events[0]!.title).toBe('例会')
   })
 })
+
+// ===== 属性-方法撞名回归（observedAttributes 的 camelCase 与原型方法同名） =====
+//
+// 机制：宿主框架按 camelCase 做 property 桥接或用户 JS 写 `el.xxx = ...` 会在实例上
+// 建自有属性遮蔽原型同名方法，组件内部 `this.xxx()` 随后抛 TypeError。
+// 私有方法已改名（calendarSystem → calendarSystemValue）。
+describe('OASCalendar 属性-方法撞名回归', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  it('property 写入 calendarSystem 后历法渲染路径不抛错', () => {
+    const el = mount({ value: '2026-08-09' })
+    ;(el as unknown as Record<string, unknown>).calendarSystem = 'islamic'
+    expect(() => el.setAttribute('calendar-system', 'islamic')).not.toThrow()
+    const expected = new Intl.DateTimeFormat('zh-CN', {
+      calendar: 'islamic',
+      year: 'numeric',
+      month: 'long',
+    }).format(new Date(2026, 7, 9))
+    expect(el.shadowRoot!.querySelector('[part="title"]')!.textContent).toBe(expected)
+  })
+})

@@ -328,7 +328,7 @@ export class OASTextarea extends OASFormElement {
 
     if (this.autosizeEnabled()) {
       // autosize：高度由 min-rows/max-rows 约束，rows 取 min-rows
-      t.rows = this.minRows()
+      t.rows = this.minRowsCount()
       t.style.resize = 'none'
       this.maybeAutoResize()
     } else {
@@ -458,12 +458,12 @@ export class OASTextarea extends OASFormElement {
     return this.hasAttr('autosize') || this.hasAttr('auto-height')
   }
 
-  private minRows(): number {
+  private minRowsCount(): number {
     const n = Number(this.getAttr('min-rows', '1'))
     return Number.isFinite(n) && n >= 1 ? Math.floor(n) : 1
   }
 
-  private maxRows(): number {
+  private maxRowsCount(): number {
     const n = Number(this.getAttr('max-rows', '6'))
     return Number.isFinite(n) && n >= 1 ? Math.floor(n) : 6
   }
@@ -513,7 +513,7 @@ export class OASTextarea extends OASFormElement {
     const t = this.ta
     if (!t || !this.autosizeEnabled()) return
     const lh = this.lineHeight()
-    const minRows = this.minRows()
+    const minRows = this.minRowsCount()
     const minH = Math.round(lh * minRows + this.paddingV())
     t.style.minHeight = `${minH}px`
     if (this.maxRowsUnlimited()) {
@@ -523,7 +523,7 @@ export class OASTextarea extends OASFormElement {
       t.style.overflowY = 'hidden'
       return
     }
-    const maxRows = Math.max(this.maxRows(), minRows)
+    const maxRows = Math.max(this.maxRowsCount(), minRows)
     const maxH = Math.round(lh * maxRows + this.paddingV())
     t.style.maxHeight = `${maxH}px`
     t.style.height = 'auto'

@@ -890,16 +890,19 @@ export class OASScheduler extends OASElement {
     return getWeekStart(this.effectiveLocale())
   }
 
-  private startHour(): number {
+  /** 时间轴起始小时（方法名避开 start-hour 属性的 camelCase（startHour）——同名会被宿主
+   *  property 赋值遮蔽原型方法，day/week 视图渲染内部调用即抛 TypeError） */
+  private startHourValue(): number {
     const h = Math.floor(Number(this.getAttr('start-hour', '8')))
     return Number.isFinite(h) && h >= 0 && h <= 23 ? h : 8
   }
 
-  private endHour(): number {
+  /** 时间轴结束小时（方法名避开 end-hour 属性的 camelCase，同上） */
+  private endHourValue(): number {
     const h = Math.floor(Number(this.getAttr('end-hour', '20')))
     const valid = Number.isFinite(h) && h <= 24 ? h : 20
     // 非法区间（end <= start）钳到 start+1，防时间轴负高度塌陷
-    return Math.max(valid, this.startHour() + 1)
+    return Math.max(valid, this.startHourValue() + 1)
   }
 
   /** 时区（IANA，如 'Asia/Shanghai'；空串 = 本地） */
@@ -1407,8 +1410,8 @@ export class OASScheduler extends OASElement {
     // 焦点保持：重建前记录焦点事件条 id，重建尾按 id 回焦（防窗口平移重建丢焦点）
     const focusId = this.focusedId()
     const hourH = HOUR_H
-    const startH = this.startHour()
-    const endH = this.endHour()
+    const startH = this.startHourValue()
+    const endH = this.endHourValue()
     const hours = endH - startH
     // 时间轴窗口：可视小时 ±buffer；视口不可测（happy-dom/SSR）回落全量
     const win = this.hourWindow()
@@ -1597,7 +1600,7 @@ export class OASScheduler extends OASElement {
     const hourH = 48
     const track = col.querySelector<HTMLElement>('.track')
     const rect = track?.getBoundingClientRect()
-    const startH = this.startHour()
+    const startH = this.startHourValue()
     const duration = ctx.originEnd - ctx.originStart
     let minutes = startH * 60 + (rect ? ((e.clientY - rect.top) / hourH) * 60 : 0)
     minutes = Math.round(minutes / 30) * 30
@@ -1620,7 +1623,7 @@ export class OASScheduler extends OASElement {
     if (!ctx || ctx.mode !== 'resize') return
     const hourH = 48
     const rect = track.getBoundingClientRect()
-    const startH = this.startHour()
+    const startH = this.startHourValue()
     let end = startH * 60 + ((e.clientY - rect.top) / hourH) * 60
     end = Math.round(end / 15) * 15
     end = Math.max(ctx.originStart + 15, Math.min(end, 24 * 60))
@@ -1659,21 +1662,21 @@ export class OASScheduler extends OASElement {
   private minuteFromY(track: HTMLElement, clientY: number): number {
     const hourH = 48
     const rect = track.getBoundingClientRect()
-    const lo = this.startHour() * 60
-    let m = this.startHour() * 60 + ((clientY - rect.top) / hourH) * 60
+    const lo = this.startHourValue() * 60
+    let m = this.startHourValue() * 60 + ((clientY - rect.top) / hourH) * 60
     m = Math.round(m / 15) * 15
-    return Math.max(lo, Math.min(m, this.endHour() * 60))
+    return Math.max(lo, Math.min(m, this.endHourValue() * 60))
   }
 
   /** 由横向坐标换算分钟数（资源单日视图；RTL 从 inline-start 边量起） */
   private minuteFromX(lane: HTMLElement, clientX: number): number {
     const rect = lane.getBoundingClientRect()
-    const lo = this.startHour() * 60
-    const span = (this.endHour() - this.startHour()) * 60
+    const lo = this.startHourValue() * 60
+    const span = (this.endHourValue() - this.startHourValue()) * 60
     const rel = isRtl(this) ? rect.right - clientX : clientX - rect.left
     let m = lo + (rect.width > 0 ? rel / rect.width : 0) * span
     m = Math.round(m / 15) * 15
-    return Math.max(lo, Math.min(m, this.endHour() * 60))
+    return Math.max(lo, Math.min(m, this.endHourValue() * 60))
   }
 
   private fmtMin(m: number): string {
@@ -1718,11 +1721,11 @@ export class OASScheduler extends OASElement {
     const b = Math.max(ctx.anchor, cur)
     if (ctx.mode === 'v') {
       const hourH = 48
-      this.previewEl.style.top = `${((a - this.startHour() * 60) / 60) * hourH}px`
+      this.previewEl.style.top = `${((a - this.startHourValue() * 60) / 60) * hourH}px`
       this.previewEl.style.height = `${Math.max(((b - a) / 60) * hourH, 4)}px`
     } else {
-      const span = (this.endHour() - this.startHour()) * 60
-      this.previewEl.style.insetInlineStart = `${((a - this.startHour() * 60) / span) * 100}%`
+      const span = (this.endHourValue() - this.startHourValue()) * 60
+      this.previewEl.style.insetInlineStart = `${((a - this.startHourValue() * 60) / span) * 100}%`
       this.previewEl.style.width = `${Math.max(((b - a) / span) * 100, 0.5)}%`
     }
   }
@@ -1756,7 +1759,12 @@ export class OASScheduler extends OASElement {
 
   private startNowTimer(): void {
     if (this.nowTimer || this.getAttr('show-now', 'true') === 'false') return
-    this.nowTimer = window.setInterval(() => this.renderCurrentView(), 60_000)
+    this.nowTimer = window.setInterval(() => {
+      // 拖拽/创建手势进行中不整视重建（与 refreshScrollWindows 同守卫：重建会拆掉
+      // pointer capture 的 track/lane，手势中断；跨分钟边界尤其容易撞上）
+      if (!this.isConnected || this.dragCtx || this.createCtx) return
+      this.renderCurrentView()
+    }, 60_000)
   }
 
   private stopNowTimer(): void {
@@ -1809,8 +1817,8 @@ export class OASScheduler extends OASElement {
     el.className = 'resourceview res-day'
     el.toggleAttribute('data-rtl', isRtl(this))
 
-    const startH = this.startHour()
-    const endH = this.endHour()
+    const startH = this.startHourValue()
+    const endH = this.endHourValue()
     const hours = endH - startH
     const today = this.todayTz()
     const showNow = this.getAttr('show-now', 'true') !== 'false'
@@ -1915,8 +1923,8 @@ export class OASScheduler extends OASElement {
       this.titleEl.textContent = `${this.fmtTz(days[0]!, 'yyyy-MM-dd')} ~ ${this.fmtTz(days[6]!, 'MM-dd')}`
     // 行窗口必须在清空内容前计算（同 renderResourceDay：清 DOM 后读 scrollTop 会被钳回 0）
     const rows = this.resourceRows()
-    const startH = this.startHour()
-    const endH = this.endHour()
+    const startH = this.startHourValue()
+    const endH = this.endHourValue()
     const hourH = 24
     // 周×资源行高（定高模型，resRowH 单一事实源）：max(轨道高, 单元格 min-height) + 1px 边框——
     // 极端 start/end-hour 使轨道高 < 36px 时按实际行高兜底，spacer 不少算；全天芯片堆叠会使
@@ -2114,7 +2122,7 @@ export class OASScheduler extends OASElement {
   private hourWindow(): { start: number; end: number } {
     const tv = this.shadow.querySelector<HTMLElement>('[part="timeview"]')
     const vh = this.measurableH(tv)
-    const hours = this.endHour() - this.startHour()
+    const hours = this.endHourValue() - this.startHourValue()
     if (!tv || vh === null) return { start: 0, end: hours }
     return computeVirtualWindow(tv.scrollTop - this.bandRowH(), vh, HOUR_H, hours, HOUR_BUFFER)
   }
@@ -2143,7 +2151,8 @@ export class OASScheduler extends OASElement {
   /** 资源行高（定高模型，同 gantt 行虚拟先例）：单日行 37px；周×资源行 = max(轨道高, 单元格 min-height) + 1px 边框
    *  （min-height 下界：极端 start/end-hour 使轨道高低于单元格 min-height 时，spacer 按实际行高计，总高守恒） */
   private resRowH(): number {
-    if (this.viewMode === 'resource-week') return Math.max((this.endHour() - this.startHour()) * 24, RES_CELL_MIN_H) + 1
+    if (this.viewMode === 'resource-week')
+      return Math.max((this.endHourValue() - this.startHourValue()) * 24, RES_CELL_MIN_H) + 1
     return RES_ROW_H
   }
 }

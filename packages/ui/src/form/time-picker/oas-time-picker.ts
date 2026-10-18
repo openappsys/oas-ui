@@ -472,7 +472,7 @@ export class OASTimePicker extends OASFormElement {
     super.attributeChangedCallback(name, oldValue, newValue)
   }
 
-  private isRange(): boolean {
+  private isRangeOn(): boolean {
     return this.hasAttr('is-range')
   }
 
@@ -570,7 +570,7 @@ export class OASTimePicker extends OASFormElement {
       if (this.injectDisabled() || this.hasAttr('readonly')) return
       const n = this.nowInZone()
       const p = { h: n.getHours(), m: n.getMinutes(), s: n.getSeconds() }
-      this.sides = this.isRange() ? [p, p] : [p]
+      this.sides = this.isRangeOn() ? [p, p] : [p]
       const detail = this.commitValue()
       this.requestOpen(false)
       this.emit('confirm', { value: detail })
@@ -717,8 +717,8 @@ export class OASTimePicker extends OASFormElement {
   /** 提交当前 parts（is-range 起止自动排序），有 diff 才写值派发 oas-change；返回 detail */
   private commitValue(): string | string[] {
     const next = this.currentValue()
-    const nextRaw = this.isRange() ? JSON.stringify(next) : (next as string)
-    const detail: string | string[] = this.isRange() ? (next as string[]) : next
+    const nextRaw = this.isRangeOn() ? JSON.stringify(next) : (next as string)
+    const detail: string | string[] = this.isRangeOn() ? (next as string[]) : next
     if (nextRaw !== this.committedValue) {
       // 用户交互置脏：冻结 reset 基线（须先于 setAttribute——回调内 update 会读脏标记）
       this.valueDirty = true
@@ -789,7 +789,7 @@ export class OASTimePicker extends OASFormElement {
   /** 当前 value 属性解析为两侧 parts（单值长度 1） */
   private parseSides(): TimeParts[] {
     const raw = this.getAttr('value', '')
-    if (this.isRange()) {
+    if (this.isRangeOn()) {
       try {
         const arr = JSON.parse(raw)
         if (Array.isArray(arr) && arr.length === 2) {
@@ -808,7 +808,7 @@ export class OASTimePicker extends OASFormElement {
 
   /** 当前 parts 序列化为值串（range 起止自动排序） */
   private currentValue(): string | string[] {
-    if (!this.isRange()) return partsToString(this.sides[0]!)
+    if (!this.isRangeOn()) return partsToString(this.sides[0]!)
     const [a, b] = [partsToString(this.sides[0]!), partsToString(this.sides[1]!)]
     return a <= b ? [a, b] : [b, a]
   }
@@ -817,7 +817,7 @@ export class OASTimePicker extends OASFormElement {
   private normalizedValue(): string {
     const raw = this.getAttr('value', '')
     if (!raw) return ''
-    return this.isRange() ? JSON.stringify(this.parseSides().map(partsToString)) : raw
+    return this.isRangeOn() ? JSON.stringify(this.parseSides().map(partsToString)) : raw
   }
 
   /** 12 小时制的 am/pm 本地化词（走 Intl dayPeriod，locale 通道） */
@@ -1118,7 +1118,7 @@ export class OASTimePicker extends OASFormElement {
         if (!p) return
         // 用户交互置脏：冻结 reset 基线（须先于 setAttribute——回调内 update 会读脏标记）
         this.valueDirty = true
-        if (this.isRange()) {
+        if (this.isRangeOn()) {
           const value = [item.value, item.value]
           this.setAttribute('value', JSON.stringify(value))
           this.emit('change', { value })
@@ -1225,7 +1225,7 @@ export class OASTimePicker extends OASFormElement {
     const disabled = this.injectDisabled()
     const readonly = this.hasAttr('readonly')
     i.disabled = disabled
-    i.readOnly = disabled || readonly || this.isRange()
+    i.readOnly = disabled || readonly || this.isRangeOn()
     const placeholder = this.getAttr('placeholder', this.t('timePicker.placeholder'))
     i.placeholder = placeholder
     // 可访问命名：label 属性（表单标签，对齐 oas-select 契约）> placeholder 回退；
@@ -1260,7 +1260,7 @@ export class OASTimePicker extends OASFormElement {
       return formatToken(new Date(2000, 0, 1, p.h, p.m, p.s), format, locale)
     }
     const sides = this.parseSides()
-    if (this.isRange()) return `${one(sides[0]!)} ~ ${one(sides[1]!)}`
+    if (this.isRangeOn()) return `${one(sides[0]!)} ~ ${one(sides[1]!)}`
     return one(sides[0]!)
   }
 
@@ -1269,7 +1269,7 @@ export class OASTimePicker extends OASFormElement {
     const i = this.triggerEl
     if (!i || !this.typing) return
     this.typing = false
-    if (this.isRange() || this.hasAttr('readonly') || this.injectDisabled()) {
+    if (this.isRangeOn() || this.hasAttr('readonly') || this.injectDisabled()) {
       i.value = this.displayText()
       return
     }
@@ -1300,7 +1300,7 @@ export class OASTimePicker extends OASFormElement {
     const prev = this.getAttr('value', '')
     if (prev === '') return
     let prevDetail: string | string[] = prev
-    if (this.isRange()) {
+    if (this.isRangeOn()) {
       try {
         const arr = JSON.parse(prev)
         if (Array.isArray(arr)) prevDetail = arr.map(String)
@@ -1328,7 +1328,7 @@ export class OASTimePicker extends OASFormElement {
   get value(): string | string[] {
     const raw = this.getAttr('value', '')
     if (raw === '') return ''
-    if (!this.isRange()) return raw
+    if (!this.isRangeOn()) return raw
     try {
       const arr: unknown = JSON.parse(raw)
       if (Array.isArray(arr)) return arr.map(String)
@@ -1366,7 +1366,7 @@ export class OASTimePicker extends OASFormElement {
    */
   protected override getFormValue(): string | FormData | null {
     const raw = this.getAttr('value', '')
-    if (!this.isRange()) return raw === '' ? null : raw
+    if (!this.isRangeOn()) return raw === '' ? null : raw
     let start = ''
     let end = ''
     try {

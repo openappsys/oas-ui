@@ -205,6 +205,18 @@ describe('OASTable exportable 集成', () => {
     expect(detail.fileName).toBe('a_b 报表.xls')
   })
 
+  it('property 写入 exportFileName 后导出不抛，文件名仍按 attribute 通道', () => {
+    const el = mount({ exportable: '', 'export-file-name': '报表' })
+    const rec = el as unknown as Record<string, unknown>
+    // Vue/React 桥接的 camelCase property 会遮蔽同名原型方法；改名后仅落实例属性，不参与内部调用
+    rec.exportFileName = 'hijacked'
+    let detail: { fileName?: string; format?: string } = {}
+    el.addEventListener('oas-export', (e: Event) => (detail = (e as CustomEvent).detail))
+    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})
+    expect(() => el.exportData('csv')).not.toThrow()
+    expect(detail.fileName).toBe('报表.csv')
+  })
+
   it('导出按钮点击 → 派发 oas-export（默认格式）', () => {
     const el = mount({ exportable: '' })
     let detail: unknown

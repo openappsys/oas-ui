@@ -344,13 +344,19 @@ test('message-scroller last-anchor：打开定位在最后提问行顶部；scro
   // scrollToMessage 真点：可见反馈（返回值 true + 输出行更新）
   await realClick(page, '#msc-la-first', null)
   await expect(page.locator('#msc-la-out')).toHaveText(/→ true/, { timeout: 5000 })
-  const firstTop = await page.evaluate(() => {
-    const host = document.querySelector('#msc-last-anchor') as HTMLElement
-    const vp = host.shadowRoot!.querySelector('.viewport') as HTMLElement
-    const first = host.querySelector('oas-message-row') as HTMLElement
-    return first.getBoundingClientRect().top - vp.getBoundingClientRect().top
-  })
-  expect(Math.abs(firstTop), 'scrollToMessage(m1) 后第一条消息顶对视口顶').toBeLessThanOrEqual(8)
+  // 首条顶端对齐：demo 异步填充/字体落定可能晚一拍，轮询收敛（不用固定等待）
+  await expect
+    .poll(
+      () =>
+        page.evaluate(() => {
+          const host = document.querySelector('#msc-last-anchor') as HTMLElement
+          const vp = host.shadowRoot!.querySelector('.viewport') as HTMLElement
+          const first = host.querySelector('oas-message-row') as HTMLElement
+          return Math.abs(first.getBoundingClientRect().top - vp.getBoundingClientRect().top)
+        }),
+      { timeout: 5000 },
+    )
+    .toBeLessThanOrEqual(8)
 })
 
 test('message-scroller turn-anchor：锚顶跟随中流式追加，提问钉在视口顶不漂移', async ({ page }) => {

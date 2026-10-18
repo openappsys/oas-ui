@@ -641,7 +641,34 @@ export class OASSlider extends OASElement {
    * attributeChangedCallback，显式 update 保证生效。
    */
   set value(v: number | number[]) {
-    const attr = Array.isArray(v) ? JSON.stringify(v.map((n) => Number(n))) : String(Number(v) || 0)
+    // 运行时容忍 JSON 字符串（框架把静态 value attribute 写成 property）；公开类型保持数值语义
+    const input: unknown = v
+    let attr: string
+    if (Array.isArray(input)) {
+      attr = JSON.stringify(input.map((n) => Number(n)))
+    } else if (typeof input === 'string') {
+      // 运行时容忍字符串：Vue 等框架会把静态 value attribute 的 JSON 字符串直接写成 property
+      // （`'[20,80]'` 若走 `Number(v) || 0` 会整串变 0，range 双值丢失）。
+      const raw = input.trim()
+      if (raw.startsWith('[')) {
+        try {
+          const parsed: unknown = JSON.parse(raw)
+          // 数组 → 归一为紧凑 JSON（不双重编码）；非数组/非法 JSON 交给属性通道按原样解析
+          attr = Array.isArray(parsed) ? JSON.stringify(parsed.map((n) => Number(n))) : input
+        } catch {
+          attr = input
+        }
+      } else if (raw === '') {
+        attr = '0'
+      } else if (Number.isFinite(Number(raw))) {
+        attr = String(Number(raw))
+      } else {
+        // 逗号分隔字符串（`30,70`）等属性通道既有写法：原样落到 attribute 由 update 解析
+        attr = input
+      }
+    } else {
+      attr = String(Number(input) || 0)
+    }
     this.setAttribute('value', attr)
     if (this.hasRendered) this.update()
   }
@@ -861,7 +888,7 @@ export class OASSlider extends OASElement {
     this.toggleAttribute('data-multi', multi)
     this.setAttribute('data-size', this.normalizeSize())
     this.setAttribute('data-thumb-shape', this.normalizeThumb())
-    this.setAttribute('data-tooltip-pos', this.tooltipPosition(vertical))
+    this.setAttribute('data-tooltip-pos', this.tooltipPositionValue(vertical))
     this.applyHostVar('color', '--oas-slider-color')
     this.applyHostVar('track-color', '--oas-slider-track')
     this.applyHostVar('accent-color', '--oas-slider-accent')
@@ -1256,7 +1283,7 @@ export class OASSlider extends OASElement {
   }
 
   /** 生效的气泡方向：显式属性（四向）优先，vertical 默认 right、水平默认 top */
-  private tooltipPosition(vertical: boolean): string {
+  private tooltipPositionValue(vertical: boolean): string {
     const raw = this.getAttr('tooltip-position', '')
     if (TOOLTIP_POSITIONS.has(raw)) return raw
     return vertical ? 'right' : 'top'

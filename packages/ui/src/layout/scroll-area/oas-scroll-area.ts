@@ -166,7 +166,7 @@ export class OASScrollArea extends OASElement {
   private leftDuringDrag = false
   private prevUserSelect = ''
   /** 贴底状态：用户是否停靠在底部（滚动事件实时维护，追加内容时据此决定是否自动滚到底） */
-  private stickToBottom = true
+  private stickToBottomState = true
   /** 内容变化观察器（stick-to-bottom 追加自动贴底） */
   private stickObserver: MutationObserver | null = null
   /** end-reached 是否已派发（去抖：需先离开底部区域才可再次触发） */
@@ -413,7 +413,7 @@ export class OASScrollArea extends OASElement {
 
   private handleScrollEvt = (): void => {
     // 贴底状态实时维护（滚动事件触发时立即读取，不等待 rAF）
-    if (this.hasAttr('stick-to-bottom')) this.stickToBottom = this.isStuck()
+    if (this.hasAttr('stick-to-bottom')) this.stickToBottomState = this.isStuck()
     if (this.raf) return
     this.raf = requestAnimationFrame(() => {
       this.raf = 0
@@ -594,7 +594,7 @@ export class OASScrollArea extends OASElement {
 
   /** 贴底同步：开启 stick-to-bottom 且当前贴底时滚到新底部（追加后 scrollHeight 已增长） */
   private syncStick(): void {
-    if (!this.hasAttr('stick-to-bottom') || !this.stickToBottom) return
+    if (!this.hasAttr('stick-to-bottom') || !this.stickToBottomState) return
     const vp = this.viewport
     if (!vp || vp.scrollHeight <= 0) return
     vp.scrollTop = vp.scrollHeight
@@ -606,7 +606,7 @@ export class OASScrollArea extends OASElement {
   }
 
   /** end-reached 触发距离（px，默认 0）；非法值回退 0 */
-  private endDistance(): number {
+  private endDistancePx(): number {
     const n = Number(this.getAttr('end-distance', '0'))
     return Number.isFinite(n) && n > 0 ? n : 0
   }
@@ -616,7 +616,7 @@ export class OASScrollArea extends OASElement {
     const vp = this.viewport
     if (!vp) return false
     if (vp.scrollHeight <= vp.clientHeight) return false
-    return vp.scrollHeight - vp.scrollTop - vp.clientHeight <= this.endDistance()
+    return vp.scrollHeight - vp.scrollTop - vp.clientHeight <= this.endDistancePx()
   }
 
   /** 横向是否到达右边缘（距右边缘 ≤ end-distance；RTL 下为左边缘，负值区间） */
@@ -625,7 +625,7 @@ export class OASScrollArea extends OASElement {
     if (!vp) return false
     const maxX = vp.scrollWidth - vp.clientWidth
     if (maxX <= 0) return false
-    const dist = this.endDistance()
+    const dist = this.endDistancePx()
     if (this.isRtl()) return vp.scrollLeft <= -maxX + dist
     return vp.scrollLeft >= maxX - dist
   }

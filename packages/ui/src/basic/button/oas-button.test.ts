@@ -1113,3 +1113,27 @@ describe('active / active-tint 选中态', () => {
     expect(fired).toBe(0)
   })
 })
+
+// ===== 属性-方法撞名回归（observedAttributes 的 camelCase 与原型方法同名） =====
+//
+// 机制：宿主框架按 camelCase 做 property 桥接或用户 JS 写 `el.xxx = ...` 会在实例上
+// 建自有属性遮蔽原型同名方法，组件内部 `this.xxx()` 随后抛 TypeError。
+// 私有方法已改名（htmlType → htmlTypeValue），此处锁定 property 写入后内部路径仍可执行。
+describe('OASButton 属性-方法撞名回归', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('property 写入 htmlType 后点击内部按钮不抛错（原生表单桥接路径可执行）', () => {
+    const el = mount({ 'html-type': 'submit' })
+    ;(el as unknown as Record<string, unknown>).htmlType = 'reset'
+    let clicks = 0
+    el.addEventListener('oas-click', () => clicks++)
+    expect(() => shadowBtn(el).click()).not.toThrow()
+    expect(clicks).toBe(1)
+  })
+})

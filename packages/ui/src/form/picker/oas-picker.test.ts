@@ -343,3 +343,34 @@ describe('OASPicker', () => {
     }, 15000)
   })
 })
+
+// ===== 属性-方法撞名回归（observedAttributes 的 camelCase 与原型方法同名） =====
+//
+// 机制：宿主框架按 camelCase 做 property 桥接或用户 JS 写 `el.xxx = ...` 会在实例上
+// 建自有属性遮蔽原型同名方法，组件内部 `this.xxx()` 随后抛 TypeError。
+// 私有方法已改名（itemHeight → itemHeightPx / visibleCount → visibleCountValue）。
+describe('OASPicker 属性-方法撞名回归', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  it('property 写入 itemHeight / visibleCount 后列高与占位计算不抛错', () => {
+    const el = mount({ columns: COLUMNS })
+    const rec = el as unknown as Record<string, unknown>
+    rec.itemHeight = 1
+    rec.visibleCount = 1
+    expect(() => {
+      el.setAttribute('item-height', '40')
+      el.setAttribute('visible-count', '4')
+    }).not.toThrow()
+    const c0 = cols(el)[0]!
+    expect((c0.querySelector('.spacer') as HTMLElement).style.height).toBe('80px')
+    expect(c0.style.height).toBe('200px')
+  })
+})

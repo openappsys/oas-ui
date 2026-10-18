@@ -4,6 +4,8 @@ import { chevronLeftPath } from '@oas-ui/icons/icons/chevron-left'
 import { chevronRightPath } from '@oas-ui/icons/icons/chevron-right'
 import { chevronUpPath } from '@oas-ui/icons/icons/chevron-up'
 import { isRtl } from '../../shared/direction.js'
+import { parseJsonArray } from '../../shared/json-array.js'
+import { devWarn } from '../../shared/dev-warn.js'
 
 const STYLE = `
 :host {
@@ -148,9 +150,11 @@ export class OASSplitter extends OASElement {
   private startPercent = 0
   private dragPercent = 0
 
-  /** 布局状态 */
-  private sizes: number[] = []
+  /** 布局状态（sizes property 的内部真值，避免与原型访问器同名遮蔽） */
+  private sizesData: number[] = []
   private sizesInitialized = false
+  /** 上次因非法 sizes property 告警的原值（同值去重） */
+  private lastInvalidSizes = ''
   private initialPercent = 50
   private initialSizes: number[] = []
   /** 折叠到 0 的面板索引集合（受控语义：写回 collapsed 属性） */
@@ -164,6 +168,61 @@ export class OASSplitter extends OASElement {
   override attributeChangedCallback(name: string, oldValue: string | null, newValue: string | null): void {
     this.lastAttr = name
     super.attributeChangedCallback(name, oldValue, newValue)
+  }
+
+  /**
+   * 连接前被写成 own property 的 `sizes` 回收：框架（Vue 对自定义元素按「key in el」判定）
+   * 可能在元素升级/连接前把静态 `sizes` attribute 直接赋成实例字段。own 数据属性会遮蔽原型
+   * accessor，setter 不再执行、attribute 也没写入 → 连接后布局丢失。删除 own 并回收到 setter。
+   */
+  override connectedCallback(): void {
+    super.connectedCallback()
+    if (Object.prototype.hasOwnProperty.call(this, 'sizes')) {
+      const own = (this as unknown as { sizes?: unknown }).sizes
+      if (Array.isArray(own) || typeof own === 'string') {
+        delete (this as unknown as Record<string, unknown>).sizes
+        // 连接前 own 预设的尺寸才是双击复位的「初始基线」：super.connectedCallback 期间 sizes
+        // attribute 尚未落盘，initialSizes 已被固化为均分；先重置基线标志，让下方 setter 写
+        // attribute 触发的 update → ensureSizes 用回收值重新采集，双击复位回预设比例而非均分
+        this.sizesInitialized = false
+        this.sizes = own as number[] | string
+      }
+    }
+  }
+
+  /**
+   * 面板尺寸（百分比，归一后总和≈100）property 通道。
+   *
+   * 读：优先按 `sizes` 属性归一解析（attribute 是受控真源，避免面板数不匹配时返回与 attribute
+   * 矛盾的陈旧均分值）；无合法属性时返回内部尺寸副本。
+   * 写：运行时接受百分比数组、逗号分隔百分比（文档写法 `30,40,30`）或 JSON 字符串——Vue 等
+   * 框架按「key in el」会把静态 `sizes` attribute 直接写成 property（SPA 跳转后元素已升级）。
+   * 合法值归一后写回 JSON attribute；非法/空值保留既有 attribute（受控值不被破坏）+ devWarn 一次。
+   */
+  get sizes(): number[] {
+    const parsed = this.parseSizes(this.getAttr('sizes', ''))
+    if (parsed) return parsed
+    return this.sizesData.slice()
+  }
+
+  set sizes(v: number[] | string) {
+    const parsed = this.parseSizes(v as unknown)
+    if (!parsed) {
+      this.warnInvalidSizes(v as unknown)
+      return
+    }
+    this.setAttribute('sizes', JSON.stringify(parsed.map((s) => Math.round(s * 100) / 100)))
+    if (this.hasRendered) this.update()
+  }
+
+  /** 非法 sizes property 告警（同实例同值只告警一次，避免受控重试刷屏） */
+  private warnInvalidSizes(v: unknown): void {
+    const key = typeof v === 'string' ? v : typeof v
+    if (this.lastInvalidSizes === key) return
+    this.lastInvalidSizes = key
+    devWarn(
+      '[oas-splitter] sizes property 收到非法/空数据（应为百分比数组、逗号分隔百分比或其 JSON 字符串），已忽略并保留既有 sizes 属性',
+    )
   }
 
   /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
@@ -329,10 +388,30 @@ export class OASSplitter extends OASElement {
     if (this.collapsedPanels.size === 0) this.removeAttribute('collapsed')
   }
 
-  /** sizes 属性（逗号分隔百分比）→ 归一化数组；数量不匹配/非法回落均分 */
-  private parseSizes(raw: string): number[] | null {
-    if (!raw || raw.trim() === '') return null
-    const parts = raw.split(',').map((s) => parseFloat(s.trim()))
+  /**
+   * sizes 输入 → 归一化数组。兼容三种书写：
+   * - 百分比数组（property 直接赋值）：`[30, 40, 30]`
+   * - 逗号分隔百分比（文档 attribute 写法）：`30,40,30`
+   * - JSON 数组字符串（property setter 写回 / 框架静态 attribute）：`[30,40,30]`
+   * 非法/空/负值/总和为 0 返回 null（调用方决定保留受控值还是回落均分）。
+   */
+  private parseSizes(raw: unknown): number[] | null {
+    let parts: number[]
+    if (Array.isArray(raw)) {
+      if (raw.length === 0) return null
+      parts = raw.map((n) => (typeof n === 'number' ? n : typeof n === 'string' ? Number(n) : NaN))
+    } else {
+      if (typeof raw !== 'string') return null
+      const trimmed = raw.trim()
+      if (trimmed === '') return null
+      if (trimmed.startsWith('[')) {
+        const parsed = parseJsonArray<unknown>(trimmed)
+        if (parsed.length === 0) return null
+        parts = parsed.map((n) => (typeof n === 'number' ? n : typeof n === 'string' ? Number(n) : NaN))
+      } else {
+        parts = trimmed.split(',').map((s) => parseFloat(s.trim()))
+      }
+    }
     if (parts.length === 0 || parts.some((n) => !Number.isFinite(n) || n < 0)) return null
     const sum = parts.reduce((a, b) => a + b, 0)
     if (sum <= 0) return null
@@ -345,24 +424,24 @@ export class OASSplitter extends OASElement {
 
   private ensureSizes(n: number): void {
     if (n <= 0) {
-      this.sizes = []
+      this.sizesData = []
       return
     }
     const parsed = this.parseSizes(this.getAttr('sizes', ''))
     if (parsed && parsed.length === n) {
-      this.sizes = parsed
-    } else if (parsed || this.sizes.length !== n) {
+      this.sizesData = parsed
+    } else if (parsed || this.sizesData.length !== n) {
       // sizes 属性存在但数量不匹配（或面板数变化）→ 回落均分
-      this.sizes = this.equalSizes(n)
+      this.sizesData = this.equalSizes(n)
     }
     if (!this.sizesInitialized) {
-      this.initialSizes = [...this.sizes]
+      this.initialSizes = [...this.sizesData]
       this.sizesInitialized = true
     }
   }
 
   private writeBackSizes(): void {
-    this.setAttribute('sizes', this.sizes.map((s) => Math.round(s * 100) / 100).join(','))
+    this.setAttribute('sizes', this.sizesData.map((s) => Math.round(s * 100) / 100).join(','))
   }
 
   // ---------- 事件（委托） ----------
@@ -426,7 +505,8 @@ export class OASSplitter extends OASElement {
     this.dragging = true
     this.dragIndex = index
     this.startPos = this.hasAttr('vertical') ? e.clientY : e.clientX
-    this.startPercent = this.mode === 'legacy' ? Number(this.getAttr('percent', '50')) || 50 : (this.sizes[index] ?? 50)
+    this.startPercent =
+      this.mode === 'legacy' ? Number(this.getAttr('percent', '50')) || 50 : (this.sizesData[index] ?? 50)
     this.dragPercent = this.startPercent
     this.setAttribute('dragging', '')
     this.splitters[index]?.classList.add('is-active')
@@ -447,7 +527,7 @@ export class OASSplitter extends OASElement {
     // 统一按 min/max（multi 含配对和约束）夹取，再吸附到 snap 档位（档位越界不吸附），
     // ghost 与最终落盘一致（lazy 路径共用 dragPercent）
     const pairSum =
-      this.mode === 'multi' ? (this.sizes[this.dragIndex] ?? 0) + (this.sizes[this.dragIndex + 1] ?? 0) : null
+      this.mode === 'multi' ? (this.sizesData[this.dragIndex] ?? 0) + (this.sizesData[this.dragIndex + 1] ?? 0) : null
     this.dragPercent = this.snapPercent(this.clampPercent(p, pairSum), pairSum)
     if (this.hasAttr('lazy')) {
       // lazy：拖拽中只动分隔条视觉位置，不写 percent/重渲面板
@@ -495,7 +575,7 @@ export class OASSplitter extends OASElement {
       const p = Number(this.getAttr('percent', '50')) || 50
       this.setPercent(this.snapStep(p, delta))
     } else {
-      const p = this.sizes[index] ?? 50
+      const p = this.sizesData[index] ?? 50
       this.setSizes(index, this.snapStep(p, delta))
     }
   }
@@ -571,12 +651,13 @@ export class OASSplitter extends OASElement {
 
   /** multi：相邻两面板此消彼长（配对和守恒），写回 sizes 属性 */
   private setSizes(index: number, p: number): void {
-    const pairSum = (this.sizes[index] ?? 0) + (this.sizes[index + 1] ?? 0)
+    const pairSum = (this.sizesData[index] ?? 0) + (this.sizesData[index + 1] ?? 0)
     const clamped = this.clampPercent(p, pairSum)
-    this.sizes[index] = clamped
-    this.sizes[index + 1] = Math.max(0, pairSum - clamped)
+    this.sizesData[index] = clamped
+    this.sizesData[index + 1] = Math.max(0, pairSum - clamped)
     this.writeBackSizes()
-    this.emit('resize', { percent: clamped, index, sizes: [...this.sizes] })
+    const sizes = this.sizes.slice()
+    this.emit('resize', { percent: sizes[index], index, sizes })
     this.applyPercent()
   }
 
@@ -591,11 +672,12 @@ export class OASSplitter extends OASElement {
     const b = this.initialSizes[index + 1] ?? 50
     const total = a + b
     if (total <= 0) return
-    const pairSum = (this.sizes[index] ?? 0) + (this.sizes[index + 1] ?? 0)
-    this.sizes[index] = (a / total) * pairSum
-    this.sizes[index + 1] = pairSum - this.sizes[index]
+    const pairSum = (this.sizesData[index] ?? 0) + (this.sizesData[index + 1] ?? 0)
+    this.sizesData[index] = (a / total) * pairSum
+    this.sizesData[index + 1] = pairSum - this.sizesData[index]
     this.writeBackSizes()
-    this.emit('resize', { percent: this.sizes[index], index, sizes: [...this.sizes] })
+    const sizes = this.sizes.slice()
+    this.emit('resize', { percent: sizes[index], index, sizes })
     this.applyPercent()
   }
 
@@ -663,7 +745,7 @@ export class OASSplitter extends OASElement {
         // 末面板吸收剩余空间（sizes 归一化 sum≈100，余量即末面板尺寸）
         pane.style.flex = '1 1 0%'
       } else {
-        pane.style.flex = `0 0 ${this.sizes[i] ?? 100 / n}%`
+        pane.style.flex = `0 0 ${this.sizesData[i] ?? 100 / n}%`
       }
     })
   }
@@ -681,8 +763,8 @@ export class OASSplitter extends OASElement {
     if (collapsed) {
       // 收起：尺寸并给右邻面板（此消彼长）
       if (this.mode === 'multi') {
-        this.sizes[index + 1] = (this.sizes[index + 1] ?? 0) + sizeBefore
-        this.sizes[index] = 0
+        this.sizesData[index + 1] = (this.sizesData[index + 1] ?? 0) + sizeBefore
+        this.sizesData[index] = 0
       }
       this.collapsedPanels.add(index)
       this.collapsedPrev.set(index, sizeBefore)
@@ -690,9 +772,9 @@ export class OASSplitter extends OASElement {
       // 展开：把折叠前尺寸从右邻面板挪回
       const prev = this.collapsedPrev.get(index) ?? sizeBefore
       if (this.mode === 'multi') {
-        const give = Math.min(prev, this.sizes[index + 1] ?? prev)
-        this.sizes[index] = give
-        this.sizes[index + 1] = Math.max(0, (this.sizes[index + 1] ?? 0) - give)
+        const give = Math.min(prev, this.sizesData[index + 1] ?? prev)
+        this.sizesData[index] = give
+        this.sizesData[index + 1] = Math.max(0, (this.sizesData[index + 1] ?? 0) - give)
       }
       this.collapsedPanels.delete(index)
       this.collapsedPrev.delete(index)
@@ -755,7 +837,7 @@ export class OASSplitter extends OASElement {
 
   private panelSize(index: number): number {
     if (this.mode === 'legacy') return Number(this.getAttr('percent', '50')) || 50
-    return this.sizes[index] ?? (this.sizes.length ? 100 / this.sizes.length : 50)
+    return this.sizesData[index] ?? (this.sizesData.length ? 100 / this.sizesData.length : 50)
   }
 
   // ---------- aria ----------
@@ -772,7 +854,7 @@ export class OASSplitter extends OASElement {
       splitter.setAttribute('aria-orientation', orientation)
       splitter.setAttribute('aria-label', this.t('splitter.adjust'))
       splitter.setAttribute('aria-disabled', String(disabled))
-      const p = this.mode === 'legacy' ? Number(this.getAttr('percent', '50')) || 50 : (this.sizes[i] ?? 50)
+      const p = this.mode === 'legacy' ? Number(this.getAttr('percent', '50')) || 50 : (this.sizesData[i] ?? 50)
       splitter.setAttribute('aria-valuenow', String(Math.round(p * 100) / 100))
       splitter.setAttribute('aria-valuemin', String(min))
       splitter.setAttribute('aria-valuemax', String(max))

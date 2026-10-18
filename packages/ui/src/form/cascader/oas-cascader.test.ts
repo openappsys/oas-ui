@@ -1327,4 +1327,108 @@ describe('OASCascader value property（get/set）', () => {
     el.value = ['zj']
     expect(Object.hasOwn(el, 'value')).toBe(false)
   })
+
+  it('C1 set value 接受 JSON 字符串：单选路径 / 多选路径集合均正确归一', () => {
+    const single = mount()
+    // @ts-expect-error 模拟框架把静态 attribute 的 JSON 字符串写进 property
+    single.value = '["zj","hz"]'
+    expect(JSON.parse(single.getAttribute('value')!)).toEqual(['zj', 'hz'])
+    expect(single.value).toEqual(['zj', 'hz'])
+    expect(trigger(single).textContent).toContain('浙江 / 杭州')
+
+    const multi = mount({ multiple: '' })
+    // @ts-expect-error 同上
+    multi.value = '[["zj","hz"]]'
+    expect(JSON.parse(multi.getAttribute('value')!)).toEqual([['zj', 'hz']])
+    expect(multi.value).toEqual([['zj', 'hz']])
+    // 多选扁平数组字符串 → 视为单条路径（与数组入参同语义）
+    // @ts-expect-error 同上
+    multi.value = '["js","nj"]'
+    expect(JSON.parse(multi.getAttribute('value')!)).toEqual([['js', 'nj']])
+  })
+
+  it('C1 set value 非法 JSON 字符串：不抛、不覆盖既有属性通道值', () => {
+    const el = mount({ value: JSON.stringify(['zj', 'hz']) })
+    // @ts-expect-error 非法字符串
+    el.value = '{oops'
+    expect(JSON.parse(el.getAttribute('value')!)).toEqual(['zj', 'hz'])
+    expect(el.value).toEqual(['zj', 'hz'])
+    // @ts-expect-error 非数组 JSON 同样回落属性通道
+    el.value = '{"a":1}'
+    expect(JSON.parse(el.getAttribute('value')!)).toEqual(['zj', 'hz'])
+  })
+
+  it('C1 set value 非法字符串 devWarn：同值去重、no-op 语义不变', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    try {
+      const el = mount({ value: JSON.stringify(['zj', 'hz']) })
+      // @ts-expect-error 模拟框架写 property 的非法字符串
+      el.value = 'not-json-c1'
+      // @ts-expect-error 同值重复赋值不应重复告警
+      el.value = 'not-json-c1'
+      expect(JSON.parse(el.getAttribute('value')!)).toEqual(['zj', 'hz'])
+      const warnings = () => warn.mock.calls.filter((c) => String(c[0]).includes('oas-cascader'))
+      expect(warnings().length).toBe(1)
+      expect(String(warnings()[0]![0])).toContain('JSON')
+      // @ts-expect-error 非数组 JSON 另计一次
+      el.value = '{"c1":true}'
+      expect(warnings().length).toBe(2)
+      expect(JSON.parse(el.getAttribute('value')!)).toEqual(['zj', 'hz'])
+    } finally {
+      warn.mockRestore()
+    }
+  })
+})
+
+// ===== 属性-方法撞名回归（observedAttributes 与原型方法同名：placement 单词无 camelCase 分叉） =====
+//
+// 机制：宿主框架或用户 JS 写 `el.placement = 'top-start'` 会在实例上建自有属性
+// 遮蔽原型同名方法，组件内部 `this.placement()` 随后抛 TypeError。私有方法已改名
+// placementMode，此处锁定：property 写入后打开浮层行为仍与未写入时等价。
+describe('OASCascader 属性-方法撞名回归', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it("property 写入 placement='top-start' 后打开浮层不抛错，面板照常展开", () => {
+    const el = mount({ placement: 'top-start' })
+    ;(el as unknown as Record<string, unknown>).placement = 'top-start'
+    // 打开浮层走 syncDropdown → positionDropdown → 内部 placementMode()；改名前此处抛 TypeError
+    expect(() => trigger(el).click()).not.toThrow()
+    expect(el.hasAttribute('open')).toBe(true)
+    expect(dropdown(el).classList.contains('open')).toBe(true)
+  })
+})
+
+// ===== 属性-方法撞名回归（observedAttributes 的 camelCase 与原型方法同名） =====
+//
+// 机制：宿主框架按 camelCase 做 property 桥接或用户 JS 写 `el.xxx = ...` 会在实例上
+// 建自有属性遮蔽原型同名方法，组件内部 `this.xxx()` 随后抛 TypeError。
+// 私有方法已改名（valueMode → valueModeSetting / showAllLevels → showAllLevelsOn）。
+describe('OASCascader 属性-方法撞名回归', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('property 写入 valueMode / showAllLevels 后提交与路径文案路径不抛错', () => {
+    const single = mount({ value: '["zj","hz"]' })
+    ;(single as unknown as Record<string, unknown>).showAllLevels = false
+    expect(() => single.setAttribute('show-all-levels', 'true')).not.toThrow()
+    expect(trigger(single).textContent).toContain('浙江')
+
+    const el = mount({ multiple: '' })
+    const rec = el as unknown as Record<string, unknown>
+    rec.valueMode = 'onlyLeaf'
+    rec.showAllLevels = false
+    trigger(el).click()
+    expect(() => (rows(el, 0)[0]!.querySelector('.check') as HTMLElement).click()).not.toThrow()
+    expect(el.getAttribute('value')).toContain('zj')
+  })
 })

@@ -753,3 +753,28 @@ describe('OASColorPicker value property（get/set）', () => {
     expect(el.shadowRoot!.querySelector('[part="trigger"], .trigger')!.textContent).toContain('ff0000')
   })
 })
+
+// ===== 属性-方法撞名回归（observedAttributes 的 camelCase 与原型方法同名） =====
+//
+// 机制：宿主框架按 camelCase 做 property 桥接或用户 JS 写 `el.xxx = ...` 会在实例上
+// 建自有属性遮蔽原型同名方法，组件内部 `this.xxx()` 随后抛 TypeError。
+// 私有方法已改名（presetColumns → presetColumnsCount）。
+describe('OASColorPicker 属性-方法撞名回归', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('property 写入 presetColumns 后预设网格渲染不抛错', () => {
+    const list = '["#111111","#222222","#333333","#444444","#555555","#666666"]'
+    const el = mount({ preset: list })
+    ;(el as unknown as Record<string, unknown>).presetColumns = 9
+    expect(() => el.setAttribute('preset-columns', '3')).not.toThrow()
+    open(el)
+    const box = el.shadowRoot!.querySelector<HTMLElement>('.presets')!
+    expect(box.style.getPropertyValue('--preset-cols')).toBe('3')
+  })
+})

@@ -418,7 +418,7 @@ export class OASGrid extends OASElement {
   }
 
   /** 折叠显示的最大行数（非法回落 1，下限 1） */
-  private collapsedRows(): number {
+  private collapsedRowsValue(): number {
     const n = Math.trunc(Number(this.getAttr('collapsed-rows', '1')))
     return Number.isFinite(n) && n >= 1 ? n : 1
   }
@@ -449,7 +449,7 @@ export class OASGrid extends OASElement {
 
     // 行模型先行：判定是否真有可折叠内容——collapsed-rows >= 总行数时不写 collapsed
     // （写了却全量可见且无收起入口，读 collapsed 的宿主会误判状态）
-    const maxRows = this.collapsedRows()
+    const maxRows = this.collapsedRowsValue()
     const rows: number[] = []
     let row = 1
     let pos = 0

@@ -696,8 +696,10 @@ export class OASPopconfirm extends OASElement {
     return this.getAttr('placement', '') || this.getAttr('position', '') || 'top'
   }
 
-  /** 面板定位：委托共享定位引擎 computePosition（12 向 + 主轴翻转 + 视口避让） */
-  private position(): void {
+  /** 面板定位：委托共享定位引擎 computePosition（12 向 + 主轴翻转 + 视口避让）。
+   *  方法名避开 position 属性的 camelCase 同名（position 单词无大小写分叉），
+   *  防 property 赋值遮蔽原型方法（el.position='top' 后 this.position() 抛 TypeError） */
+  private placePanel(): void {
     if (!this.popoverEl) return
     const anchorRect = this.anchorRect()
     if (!anchorRect) return
@@ -829,7 +831,7 @@ export class OASPopconfirm extends OASElement {
     cancelAnimationFrame(this.scrollRaf)
     this.scrollRaf = requestAnimationFrame(() => {
       if (!this.popoverEl || !this.hasAttr('open')) return
-      this.position()
+      this.placePanel()
     })
   }
 
@@ -963,7 +965,7 @@ export class OASPopconfirm extends OASElement {
       if (!this.isVirtual()) document.addEventListener('click', this.handleOutside, true)
       else document.removeEventListener('click', this.handleOutside, true)
       this.syncWidth()
-      this.position()
+      this.placePanel()
       this.syncScrollFollow(true)
     } else {
       this.clearOpenTimer()

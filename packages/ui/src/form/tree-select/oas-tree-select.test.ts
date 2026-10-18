@@ -1353,4 +1353,185 @@ describe('OASTreeSelect value property（公开读/写通道）', () => {
     el.value = 'react'
     expect(Object.hasOwn(el, 'value')).toBe(false)
   })
+
+  it('C1 多选 value property 接受 JSON 字符串：解析为数组、不双重编码、chip 非 JSON 串', () => {
+    const el = mount({ multiple: '', value: '[]' })
+    el.value = '["fe","be"]'
+    expect(el.getAttribute('value')).toBe('["fe","be"]')
+    expect(el.value).toEqual(['fe', 'be'])
+    const chips = [...el.shadowRoot!.querySelectorAll('.chip:not(.chip-plus)')].map((n) => n.textContent?.trim() ?? '')
+    expect(chips).toHaveLength(2)
+    expect(chips.join('|')).not.toContain('[')
+    expect(chips.join('|')).not.toContain('"')
+  })
+
+  it('C1 多选 value property 接受统计嵌套对象（label-in-value）：提升 value 并回填 label', () => {
+    const el = mount({ multiple: '', 'label-in-value': '', value: '[]' })
+    el.value = '[{"value":"react","label":"乱写"}]'
+    expect(el.value).toEqual(['react'])
+    expect(el.getAttribute('value')).toBe('[{"value":"react","label":"React"}]')
+    expect(el.shadowRoot!.querySelector('.chip')!.textContent).toContain('React')
+  })
+
+  it('C1 多选 value property 非法 JSON：按单值处理、不抛、不双重编码', () => {
+    const el = mount({ multiple: '', value: '[]' })
+    expect(() => {
+      el.value = '{bad-value'
+    }).not.toThrow()
+    expect(el.getAttribute('value')).toBe('["{bad-value"]')
+    expect(el.value).toEqual(['{bad-value'])
+  })
+
+  it('C1 单选 value property 语义不变：字符串即值，数组取首项', () => {
+    const el = mount({ value: 'fe' })
+    el.value = 'react'
+    expect(el.getAttribute('value')).toBe('react')
+    expect(el.value).toBe('react')
+    el.value = ['vue']
+    expect(el.getAttribute('value')).toBe('vue')
+    expect(el.value).toBe('vue')
+  })
+
+  it('数字 ID 兜底：property 字符串里的数字项 String() 归一，与树内字符串值通道匹配', () => {
+    // 框架把静态数字数组 value attribute 写成 property 字符串的 SPA 场景：
+    // 数字 ID 直接丢弃会让选中态丢失，String() 归一后与树内字符串节点值匹配
+    const el = mount({ multiple: '', value: '[]' })
+    el.value = '[1,2]'
+    expect(el.getAttribute('value')).toBe('["1","2"]')
+    expect(el.value).toEqual(['1', '2'])
+    // 树内没有数字 ID 对应节点时按树外值保留 chip 原文（不变成空白；textContent 含移除按钮 ×）
+    const chips = [...el.shadowRoot!.querySelectorAll('.chip:not(.chip-plus)')].map((n) => n.textContent?.trim() ?? '')
+    expect(chips).toEqual(['1×', '2×'])
+  })
+
+  it('数字 ID 兜底：单选数字值 String() 归一；对象数字 value 保留 label', () => {
+    const single = mount({ value: 'fe' })
+    single.value = 42 as unknown as string
+    expect(single.getAttribute('value')).toBe('42')
+    expect(single.value).toBe('42')
+
+    // label-in-value 对象形态：value 为数字时同样 String()，label 保留供回显
+    const lv = mount({ multiple: '', 'label-in-value': '', value: '[]' })
+    lv.value = '[{"value":999,"label":"树外数字"}]'
+    expect(JSON.parse(lv.getAttribute('value') ?? '[]')).toEqual([{ value: '999', label: '树外数字' }])
+    expect(lv.shadowRoot!.querySelector('.chip')!.textContent).toContain('树外数字')
+  })
+
+  it('label-in-value 单选 property 对象字符串：解析对象、不双重编码、trigger 回显 label', () => {
+    const el = mount({ 'label-in-value': '' })
+    el.value = '{"value":"react","label":"React"}'
+    expect(el.getAttribute('value')).toBe('{"value":"react","label":"React"}')
+    expect(el.value).toBe('react')
+    expect(trigger(el).textContent).toContain('React')
+    expect(trigger(el).textContent).not.toContain('"value"')
+  })
+
+  it('label-in-value 多选 property 对象数组：树外对象 label 保留回显，树内 label 用节点文案', () => {
+    const el = mount({ multiple: '', 'label-in-value': '' })
+    el.value = '[{"value":"ghost","label":"外部节点"},{"value":"react","label":"乱写"}]'
+    expect(JSON.parse(el.getAttribute('value') ?? '[]')).toEqual([
+      { value: 'ghost', label: '外部节点' },
+      { value: 'react', label: 'React' },
+    ])
+    expect(el.value).toEqual(['ghost', 'react'])
+    const chips = [...el.shadowRoot!.querySelectorAll('.chip:not(.chip-plus)')].map((n) => (n.textContent ?? '').trim())
+    expect(
+      chips.some((t) => t.includes('外部节点')),
+      '树外对象 label 应回显',
+    ).toBe(true)
+    expect(
+      chips.some((t) => t.includes('React')),
+      '树内值回显节点 label',
+    ).toBe(true)
+  })
+
+  it('label-in-value 多选 property 正常 JSON 字符串：解析数组、不双重编码', () => {
+    const el = mount({ multiple: '', 'label-in-value': '' })
+    el.value = '["fe","be"]'
+    expect(JSON.parse(el.getAttribute('value') ?? '[]')).toEqual([
+      { value: 'fe', label: '前端' },
+      { value: 'be', label: '后端' },
+    ])
+    expect(el.value).toEqual(['fe', 'be'])
+  })
+})
+
+// ===== 属性-方法撞名回归（observedAttributes 的 camelCase 与原型方法同名） =====
+//
+// 机制：宿主框架按 camelCase 做 property 桥接或用户 JS 写 `el.xxx = ...` 会在实例上
+// 建自有属性遮蔽原型同名方法，组件内部 `this.xxx()` 随后抛 TypeError。
+// 私有方法已改名（labelInValue → labelInValueOn / checkStrategy → checkStrategyValue /
+// checkStrictly → checkStrictlyOn）。
+describe('OASTreeSelect 属性-方法撞名回归', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('property 写入 labelInValue / checkStrategy / checkStrictly 后勾选提交路径不抛错', () => {
+    const el = mount({ multiple: '', 'label-in-value': '', 'check-strategy': 'parent' })
+    const rec = el as unknown as Record<string, unknown>
+    rec.labelInValue = true
+    rec.checkStrategy = 'child'
+    rec.checkStrictly = true
+    expect(() => {
+      el.setAttribute('label-in-value', '')
+      el.setAttribute('check-strategy', 'parent')
+    }).not.toThrow()
+    trigger(el).click()
+    expect(() => byLabel(el, '前端').click()).not.toThrow()
+    expect(el.getAttribute('value')).toContain('fe')
+  })
+})
+
+// ===== 数字 id 节点回归（parseOptions/idOf 与 value 通道同一 String() 口径） =====
+//
+// 机制：树数据 id 常为数字（后端主键），组件值通道统一为字符串——parseOptions 曾按
+// `typeof value !== 'string'` 把数字 id 节点整体丢弃，idOf 对数字返回 ''，与 value 通道
+// 的数字 String() 归一承诺矛盾（值进得来、节点却不存在）。
+describe('OASTreeSelect 数字 id 节点（与 value 通道口径一致）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  const NUM_OPTIONS = JSON.stringify([
+    { label: '数字节点', value: 42 },
+    { label: '字符串节点', value: 'str' },
+  ])
+
+  it('options 混合数字/字符串 id：数字节点渲染（不丢弃），点击选中写回字符串值并回显', () => {
+    const el = mount({ options: NUM_OPTIONS })
+    trigger(el).click()
+    expect(nodes(el).length, '数字 id 节点不能被 parseOptions 丢弃').toBe(2)
+    byLabel(el, '数字节点').click()
+    expect(el.getAttribute('value')).toBe('42')
+    expect(trigger(el).textContent).toContain('数字节点')
+  })
+
+  it('多选数字 id 预设 value：数字节点勾选 chip 回显节点 label', () => {
+    const el = mount({ multiple: '', value: '[42,"str"]', options: NUM_OPTIONS })
+    const chips = [...el.shadowRoot!.querySelectorAll('.chip:not(.chip-plus)')].map((n) => n.textContent ?? '')
+    expect(chips.length).toBe(2)
+    expect(chips[0]).toContain('数字节点')
+    expect(chips[1]).toContain('字符串节点')
+  })
+
+  it('数字 id 父节点可展开、子节点数字 id 可勾选（级联值全部 String() 归一）', () => {
+    const el = mount({
+      multiple: '',
+      'default-expand-all': '',
+      options: JSON.stringify([{ label: '数字父级', value: 1, children: [{ label: '数字子级', value: 11 }] }]),
+    })
+    trigger(el).click()
+    expect(rowLabels(el)).toBe('数字父级|数字子级')
+    byLabel(el, '数字子级').click()
+    expect(JSON.parse(el.getAttribute('value') ?? '[]')).toEqual(['1', '11'])
+  })
 })

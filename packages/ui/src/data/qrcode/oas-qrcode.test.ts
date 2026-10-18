@@ -389,3 +389,33 @@ describe('OASQRCode 形状化 / 渐变 / 挖空（美化维度）', () => {
     expect(svg).not.toContain('currentColor')
   })
 })
+
+// ===== 属性-方法撞名回归（observedAttributes 的 camelCase 与原型方法同名） =====
+//
+// 机制：宿主框架按 camelCase 做 property 桥接或用户 JS 写 `el.xxx = ...` 会在实例上
+// 建自有属性遮蔽原型同名方法，组件内部 `this.xxx()` 随后抛 TypeError。
+// 私有方法已改名（gradientAngle → gradientAngleValue / bgColor → bgColorValue）。
+describe('OASQRCode 属性-方法撞名回归', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  it('property 写入 gradientAngle / bgColor 后重渲染路径不抛错', () => {
+    const el = mount({ value: 'hi', gradient: '["#111111","#222222"]' })
+    const rec = el as unknown as Record<string, unknown>
+    rec.gradientAngle = 0
+    rec.bgColor = '#000'
+    expect(() => {
+      el.setAttribute('gradient-angle', '90')
+      el.setAttribute('bg-color', '#f5f5f5')
+    }).not.toThrow()
+    expect(svgOf(el).querySelector('defs linearGradient#oas-qr-grad')).not.toBeNull()
+    expect(svgOf(el).querySelector('rect')!.getAttribute('fill')).toBe('#f5f5f5')
+  })
+})

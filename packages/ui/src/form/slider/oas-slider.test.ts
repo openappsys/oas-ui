@@ -1490,6 +1490,55 @@ describe('OASSlider value property（get/set）', () => {
     el.value = 3
     expect(Object.hasOwn(el, 'value')).toBe(false)
   })
+
+  it('set value 接受 JSON 数组字符串（range/多值）：解析为数值数组，不双重编码', () => {
+    const el = mount({ range: '' })
+    ;(el as unknown as { value: unknown }).value = '[20,80]'
+    expect(el.getAttribute('value')).toBe('[20,80]')
+    expect(el.value).toEqual([20, 80])
+    expect([Number(byRole(el, 'range-min').value), Number(byRole(el, 'range-max').value)]).toEqual([20, 80])
+
+    const multi = mount()
+    ;(multi as unknown as { value: unknown }).value = '[10, 30, 70]'
+    expect(JSON.parse(multi.getAttribute('value')!)).toEqual([10, 30, 70])
+    expect(multi.value).toEqual([10, 30, 70])
+    const multiThumbs = [...multi.shadowRoot!.querySelectorAll<HTMLInputElement>('[data-role^="thumb-"]')].map((n) =>
+      Number(n.value),
+    )
+    expect(multiThumbs).toEqual([10, 30, 70])
+  })
+
+  it('set value 接受数字字符串（按数值而非整串）', () => {
+    const el = mount({ value: '10' })
+    ;(el as unknown as { value: unknown }).value = '55'
+    expect(el.getAttribute('value')).toBe('55')
+    expect(el.value).toBe(55)
+    expect(Number(range(el).value)).toBe(55)
+  })
+
+  it('set value 非法 JSON 不抛：回落属性通道（逗号数组仍可解析）', () => {
+    const single = mount({ value: '10' })
+    expect(() => {
+      ;(single as unknown as { value: unknown }).value = '{oops'
+    }).not.toThrow()
+    // 属性通道原样保留非法串，getter 按属性语义回落数值（不抛、不丢受控属性）
+    expect(single.getAttribute('value')).toBe('{oops')
+    expect(Number.isFinite(single.value)).toBe(true)
+
+    // range 属性通道既有的逗号数组写法原样透传，由 update 解析
+    const rangeEl = mount({ range: '' })
+    ;(rangeEl as unknown as { value: unknown }).value = '30,70'
+    expect(rangeEl.getAttribute('value')).toBe('30,70')
+    expect(rangeEl.value).toEqual([30, 70])
+  })
+
+  it('set value 数组通道不回归（紧凑 JSON + 把手同步）', () => {
+    const el = mount({ range: '' })
+    el.value = [20, 80]
+    expect(el.getAttribute('value')).toBe('[20,80]')
+    expect(el.value).toEqual([20, 80])
+    expect([Number(byRole(el, 'range-min').value), Number(byRole(el, 'range-max').value)]).toEqual([20, 80])
+  })
 })
 
 describe('OASSlider 数值 scrub（读数区像素锚定计步）', () => {
@@ -2034,5 +2083,27 @@ describe('OASSlider 色轨（track 预设渐变）', () => {
     expect(css).toContain('background-image: var(--oas-slider-track-image, none)')
     expect(css).toMatch(/:host\(\[data-color-track\]\)\s*\.fill\s*{\s*display:\s*none/)
     expect(css).toMatch(/:host\(\[data-track='false'\]\)\s*\.track-wrap::before/)
+  })
+})
+
+// ===== 属性-方法撞名回归（observedAttributes 的 camelCase 与原型方法同名） =====
+//
+// 机制：宿主框架按 camelCase 做 property 桥接或用户 JS 写 `el.xxx = ...` 会在实例上
+// 建自有属性遮蔽原型同名方法，组件内部 `this.xxx()` 随后抛 TypeError。
+// 私有方法已改名（tooltipPosition → tooltipPositionValue）。
+describe('OASSlider 属性-方法撞名回归', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('property 写入 tooltipPosition 后气泡方向同步不抛错', () => {
+    const el = mount({ value: '40' })
+    ;(el as unknown as Record<string, unknown>).tooltipPosition = 'bottom'
+    expect(() => el.setAttribute('tooltip-position', 'left')).not.toThrow()
+    expect(el.getAttribute('data-tooltip-pos')).toBe('left')
   })
 })

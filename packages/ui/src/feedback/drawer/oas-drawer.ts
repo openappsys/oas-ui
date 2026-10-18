@@ -934,10 +934,10 @@ export class OASDrawer extends OASElement {
   private railStart = 0
   private railStartDim = 0
 
-  private resizeMin(): number {
+  private resizeMinPx(): number {
     return Number(this.getAttr('resize-min', '160')) || 160
   }
-  private resizeMax(): number {
+  private resizeMaxPx(): number {
     return Number(this.getAttr('resize-max', '1000')) || 1000
   }
 
@@ -1005,8 +1005,8 @@ export class OASDrawer extends OASElement {
       if (e.key === 'ArrowDown') next = cur + step
       else if (e.key === 'ArrowUp') next = cur - step
     }
-    if (next === null && e.key === 'Home') next = this.resizeMin()
-    if (next === null && e.key === 'End') next = this.resizeMax()
+    if (next === null && e.key === 'Home') next = this.resizeMinPx()
+    if (next === null && e.key === 'End') next = this.resizeMaxPx()
     if (next === null) return
     e.preventDefault()
     this.setDimensionPx(next)
@@ -1014,7 +1014,7 @@ export class OASDrawer extends OASElement {
   }
 
   private setDimensionPx(px: number): void {
-    const clamped = Math.round(Math.min(this.resizeMax(), Math.max(this.resizeMin(), px)))
+    const clamped = Math.round(Math.min(this.resizeMaxPx(), Math.max(this.resizeMinPx(), px)))
     // 写回主轴对应属性：横向 width、纵向 height（P1-16 起纵向抽屉有显式 height 通道）
     this.setAttribute(this.isHorizontal() ? 'width' : 'height', `${clamped}px`)
   }

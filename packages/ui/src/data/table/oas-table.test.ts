@@ -2959,6 +2959,14 @@ describe('OASTable P2 批（table-layout / hover / filter-icon / indent-size / r
       el.setAttribute('indent-size', '-5')
       expect((rows(el)[1]!.querySelector('td[data-col="name"]') as HTMLElement).style.paddingLeft).toBe('40px')
     })
+
+    it('property 写入 indentSize 后树表展开不抛（内部方法改名防实例遮蔽）', () => {
+      const el = mount({ data: TREE_DATA, expanded: 'p1' })
+      const rec = el as unknown as Record<string, unknown>
+      rec.indentSize = 999
+      expect(() => el.setAttribute('expanded', 'p1')).not.toThrow()
+      expect((rows(el)[1]!.querySelector('td[data-col="name"]') as HTMLElement).style.paddingLeft).toBe('40px')
+    })
   })
 
   describe('row-expandable（行展开谓词 property）', () => {
@@ -3538,5 +3546,44 @@ describe('filter panel 关闭监听生命周期（监听跟面板走，不残留
     expect(host.filterPanelCloseBound).toBe(true)
     el.remove()
     expect(host.filterPanelCloseBound, '断开组件兜底摘监听').toBe(false)
+  })
+})
+
+// ===== 属性-方法撞名回归（observedAttributes 的 camelCase 与原型方法同名） =====
+//
+// 机制：宿主框架（Vue 等按 camelCase 做 property 桥接）或用户 JS 写 `el.rowHeight = 40`
+// 会在实例上建自有属性遮蔽原型同名方法，组件内部 `this.rowHeight()` 随后抛 TypeError。
+// 私有方法已改名 rowHeightPx，此处锁定：property 写入后滚动/虚拟化路径仍与未写入时等价。
+describe('OASTable 属性-方法撞名回归', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  it('property 写入 rowHeight 后滚动/虚拟化路径不抛错，行高随 row-height 属性生效', async () => {
+    const el = mount({
+      height: '200',
+      'row-height': '40',
+      columns: JSON.stringify([
+        { key: 'name', title: '姓名' },
+        { key: 'age', title: '年龄' },
+      ]),
+      data: BIG_DATA,
+    })
+    ;(el as unknown as Record<string, unknown>).rowHeight = 40
+    // attribute 变更同步触发 update → 内部 rowHeightPx() 调用；改名前此处抛 TypeError
+    expect(() => el.setAttribute('row-height', '48')).not.toThrow()
+    // 窗口行内联高度随新行高落定
+    expect(rows(el)[0]!.style.height).toBe('48px')
+    // 滚动路径照常（handleScroll → renderVirtualBody 全链路读行高）：滚到 400，
+    // floor(400/48)-4=4 → 首可见行4
+    scrollWrap(el).scrollTop = 400
+    scrollWrap(el).dispatchEvent(new Event('scroll'))
+    await flushRaf()
+    expect(rows(el)[0]!.textContent).toContain('行4')
   })
 })

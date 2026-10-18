@@ -923,7 +923,7 @@ export class OASKanban extends OASElement {
   }
 
   /** 空列/空单元格占位文案：属性覆盖 > i18n */
-  private emptyColumnText(): string {
+  private emptyColumnTextValue(): string {
     const custom = this.getAttr('empty-column-text', '')
     if (custom !== '') return custom
     return this.t('kanban.emptyColumn')
@@ -1016,7 +1016,7 @@ export class OASKanban extends OASElement {
       const empty = document.createElement('div')
       empty.className = 'empty-cell'
       empty.setAttribute('part', 'empty-cell')
-      empty.textContent = this.emptyColumnText()
+      empty.textContent = this.emptyColumnTextValue()
       cell.appendChild(empty)
       return cell
     }
@@ -1125,7 +1125,7 @@ export class OASKanban extends OASElement {
       const empty = document.createElement('div')
       empty.className = 'empty-column'
       empty.setAttribute('part', 'empty-column')
-      empty.textContent = this.emptyColumnText()
+      empty.textContent = this.emptyColumnTextValue()
       body.appendChild(empty)
       return
     }
@@ -1147,7 +1147,7 @@ export class OASKanban extends OASElement {
    * 变量仅在属性缺席时消费（原文取 update() 时的缓存，本方法可安全用于滚动帧热路径）。
    * 唯一真源：结果只进 HeightCache.configure，窗口/占位/padding 一律经高度表派生。
    */
-  private cardEstimate(): number {
+  private cardEstimatePx(): number {
     const attrRaw = this.getAttribute('card-estimate')
     if (attrRaw != null) {
       const n = Number(attrRaw)
@@ -1206,7 +1206,7 @@ export class OASKanban extends OASElement {
     opts: { force?: boolean; scrollTop?: number } = {},
   ): boolean {
     const state = this.ensureColumnState(key)
-    state.cache.configure(cards.length, this.cardEstimate())
+    state.cache.configure(cards.length, this.cardEstimatePx())
     const vh = body.clientHeight
     let mode: KanbanColumnVirtualState['mode'] = 'full'
     let start = 0

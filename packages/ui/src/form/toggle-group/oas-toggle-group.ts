@@ -42,6 +42,26 @@ function normalizeChoice(raw: string, fallback: string, valid: readonly string[]
 }
 
 /**
+ * 多选 value property 归一（框架把静态 JSON attribute 写成 property 的 SPA 场景）：
+ * 字符串先按 JSON 数组解析（`'["a","b"]'` → `['a','b']`）；解析失败/非数组按单值；
+ * 空串 / null → 空数组。字符串直接 `[String(v)]` 会被整串当单值并双重编码。
+ */
+function coerceMultiValues(v: string | string[] | null | undefined): string[] {
+  if (Array.isArray(v)) return v.map((x) => String(x))
+  if (v == null || v === '') return []
+  const s = String(v)
+  if (s.trim() !== '') {
+    try {
+      const parsed: unknown = JSON.parse(s)
+      if (Array.isArray(parsed)) return parsed.map((x) => String(x))
+    } catch {
+      /* 非法 JSON：按单值处理（不抛） */
+    }
+  }
+  return [s]
+}
+
+/**
  * 自定义选中色的实底文字色：按相对亮度取深/浅（共享实现见 `shared/on-color`；不可解析回落 CSS token）。
  */
 function pickOnColor(color: string): string {
@@ -331,8 +351,7 @@ export class OASToggleGroup extends OASElement {
    */
   set value(v: string | string[]) {
     if (this.hasAttr('multiple')) {
-      const arr = Array.isArray(v) ? v.map((x) => String(x)) : v == null || v === '' ? [] : [String(v)]
-      this.setAttribute('value', JSON.stringify(arr))
+      this.setAttribute('value', JSON.stringify(coerceMultiValues(v)))
     } else {
       const s = Array.isArray(v) ? (v[0] ?? '') : v == null ? '' : String(v)
       this.setAttribute('value', s)

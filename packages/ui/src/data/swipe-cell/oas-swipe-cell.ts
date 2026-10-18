@@ -168,8 +168,11 @@ export class OASSwipeCell extends OASElement {
   get open(): boolean {
     return this.hasAttribute('open')
   }
-  set open(value: boolean) {
-    this.toggleAttribute('open', !!value)
+  set open(value: boolean | string) {
+    // presence 语义：静态 `<oas-swipe-cell open>` 经框架 property 通道写入的是空串 `''`，
+    // 空串必须视为打开；仅 false / 'false' 关闭。
+    const on = value !== false && value !== 'false' && value != null
+    this.toggleAttribute('open', on)
   }
 
   /**

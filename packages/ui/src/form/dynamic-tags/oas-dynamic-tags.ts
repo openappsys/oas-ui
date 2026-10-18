@@ -487,15 +487,17 @@ export class OASDynamicTags extends OASElement {
     return raw !== null && raw >= 0 ? raw : Number.POSITIVE_INFINITY
   }
 
-  private saveOnBlur(): boolean {
+  private saveOnBlurEnabled(): boolean {
     return this.getAttr('save-on-blur', 'true') !== 'false'
   }
 
-  private addOnPaste(): boolean {
+  private addOnPasteEnabled(): boolean {
     return this.getAttr('add-on-paste', 'true') !== 'false'
   }
 
-  private separator(): string {
+  /** 分隔符（方法名避开 separator 属性同名——单词无大小写分叉，property 赋值
+   *  el.separator=',' 会遮蔽原型方法，故不叫 separator()） */
+  private separatorChar(): string {
     return this.getAttr('separator', ',')
   }
 
@@ -561,7 +563,7 @@ export class OASDynamicTags extends OASElement {
       edit.addEventListener('keydown', (e: KeyboardEvent) => this.onEditKeydown(e, idx))
       edit.addEventListener('blur', () => {
         if (this.editingIndex === idx) {
-          if (this.saveOnBlur()) this.commitEdit(idx, true)
+          if (this.saveOnBlurEnabled()) this.commitEdit(idx, true)
           else this.cancelEdit()
         }
       })
@@ -679,7 +681,7 @@ export class OASDynamicTags extends OASElement {
     if (!inputEl) return
     // IME 组合态防护：中文输入法 Enter/分隔符选词确认不触发提交（isComposing / keyCode 229）
     if (isComposing(e)) return
-    const sep = this.separator()
+    const sep = this.separatorChar()
     if (e.key === 'Enter' || (sep !== '' && e.key === sep)) {
       e.preventDefault()
       this.addTag(inputEl.value)
@@ -704,15 +706,15 @@ export class OASDynamicTags extends OASElement {
     this.emit('blur')
     const inputEl = this.inputEl
     if (!inputEl) return
-    if (this.saveOnBlur() && inputEl.value.trim() !== '') {
+    if (this.saveOnBlurEnabled() && inputEl.value.trim() !== '') {
       this.addTag(inputEl.value)
     }
   }
 
   /** 粘贴拆分：文本含分隔符时批量建标签（逐项查重/上限/格式校验），否则保持原生插入 */
   private onPaste(e: ClipboardEvent): void {
-    if (!this.addOnPaste()) return
-    const sep = this.separator()
+    if (!this.addOnPasteEnabled()) return
+    const sep = this.separatorChar()
     if (sep === '') return
     const text = e.clipboardData?.getData('text') ?? ''
     if (!text.includes(sep)) return

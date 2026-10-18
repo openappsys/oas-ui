@@ -732,7 +732,7 @@ onMounted(() => {
 | `max-tag-count` | Collapse tags beyond this count into `+N` in multiple mode (opt-in; without it tags wrap instead of collapsing) | `number` | — |
 | `multiple` | Multiple select | `boolean` | — |
 | `name` | Form field name (key for native FormData submission; also the key of same-name multiple entries in multiple mode; the browser skips submission when name is absent) | `string` | — |
-| `open` | Controlled open: attribute present = open, removed = closed; host gestures only fire oas-open-change (no forced write-back) | `boolean` | `false` |
+| `open` | Controlled open: attribute present = open, removed = closed; host gestures only fire oas-open-change (no forced write-back) | `boolean \| string` | `false` |
 | `options` | Options, JSON array `[{ label, value, disabled?, group? }]` | `Option[] \| string` | `[]` |
 | `placeholder` | Placeholder text | — | — |
 | `placement` | Dropdown direction: `auto` (default, bottom-first with flip) / `top` / `bottom` (forced, no flip) | `string` | `auto` |

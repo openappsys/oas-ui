@@ -97,7 +97,7 @@ onMounted(() => {
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
 | `height` | 列表区固定高度（px），超出时列表内部滚动；缺省时列表自适应内容高、滚动联动监听视口 | `string` | — |
-| `sections` | 分节列表 JSON：`[{ key, title?, items: [{ label, value? }] }]`；字母侧栏从 sections 自动派生（key 唯一，重复保留首个），`title` 缺省回退 `key`，条目 `value` 缺省回退 `label` | `string` | `[]` |
+| `sections` | 分节列表 JSON：`[{ key, title?, items: [{ label, value? }] }]`；字母侧栏从 sections 自动派生（key 唯一，重复保留首个），`title` 缺省回退 `key`，条目 `value` 缺省回退 `label` | `IndexBarSection[]` | `[]` |
 | `sticky` | 分节头吸顶（默认 true）；显式 `sticky="false"` 关闭 | `string` | `true` |
 
 #### 事件

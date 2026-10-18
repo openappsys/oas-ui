@@ -1536,3 +1536,27 @@ describe('onReconnect mobileMq change 监听恢复（重连后移动断点切换
     expect(adds, '重连后 mobileMq change 监听恢复一次（不叠）').toBe(1)
   })
 })
+
+// ===== 属性-方法撞名回归（observedAttributes 的 camelCase 与原型方法同名） =====
+//
+// 机制：宿主框架按 camelCase 做 property 桥接或用户 JS 写 `el.xxx = ...` 会在实例上
+// 建自有属性遮蔽原型同名方法，组件内部 `this.xxx()` 随后抛 TypeError。
+// 私有方法已改名（closeOnSelect → closeOnSelectEnabled）。
+describe('OASMenubar 属性-方法撞名回归', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('property 写入 closeOnSelect 后选中收起路径不抛错', () => {
+    const el = mount()
+    ;(el as unknown as Record<string, unknown>).closeOnSelect = false
+    topItems(el)[0]!.click()
+    const open = el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="open"]')!
+    expect(() => open.click()).not.toThrow()
+    expect(openSubmenus(el).length, '默认选中叶子后收起子菜单').toBe(0)
+  })
+})

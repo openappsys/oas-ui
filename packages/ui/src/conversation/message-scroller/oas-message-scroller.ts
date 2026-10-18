@@ -347,7 +347,7 @@ export class OASMessageScroller extends OASElement {
 
   private metrics(): ScrollMetrics {
     const vp = this.viewport
-    const threshold = this.edgeThreshold()
+    const threshold = this.edgeThresholdPx()
     const scrollTop = vp?.scrollTop ?? 0
     const scrollHeight = vp?.scrollHeight ?? 0
     const clientHeight = vp?.clientHeight ?? 0
@@ -364,7 +364,7 @@ export class OASMessageScroller extends OASElement {
     }
   }
 
-  private edgeThreshold(): number {
+  private edgeThresholdPx(): number {
     const raw = this.getAttr('edge-threshold').trim()
     if (raw === '') return 8
     const n = Number(raw)
@@ -372,7 +372,7 @@ export class OASMessageScroller extends OASElement {
   }
 
   /** prev-peek：轮次锚定对齐时锚顶上方露出的语境 px（默认 64；非法/负值回退 64） */
-  private prevPeek(): number {
+  private prevPeekPx(): number {
     const raw = this.getAttr('prev-peek').trim()
     if (raw === '') return 64
     const n = Number(raw)
@@ -415,7 +415,7 @@ export class OASMessageScroller extends OASElement {
     if (!vp) return { visibleMessageIds: [], currentAnchorId: null }
     const vpTop = vp.getBoundingClientRect().top
     const vpHeight = vp.clientHeight
-    const threshold = this.edgeThreshold()
+    const threshold = this.edgeThresholdPx()
     const visibleMessageIds: string[] = []
     let currentAnchorId: string | null = null
     for (const el of this.slottedElements()) {
@@ -511,8 +511,8 @@ export class OASMessageScroller extends OASElement {
         const anchorEl = this.findLastAnchor()
         if (anchorEl) {
           const y = this.viewportYOf(anchorEl)
-          const peek = this.prevPeek()
-          const th = this.edgeThreshold()
+          const peek = this.prevPeekPx()
+          const th = this.edgeThresholdPx()
           keep = Math.abs(y) <= th || Math.abs(y - peek) <= th
           // 读者手动滚进锚定窗口：跟随延续，但模式锁作废——下次裁决按当前位置重新定型
           // （否则先前的 'bottom' 锁会把读者在锚顶窗口的跟随误压成钉底）
@@ -693,13 +693,13 @@ export class OASMessageScroller extends OASElement {
         // 定型后 following 保持期间不切——贴底跟随中锚点穿越顶部窗口不会误拉回顶部。
         if (this.turnMode == null) {
           const y = this.viewportYOf(anchorEl)
-          const peek = this.prevPeek()
-          const th = this.edgeThreshold()
+          const peek = this.prevPeekPx()
+          const th = this.edgeThresholdPx()
           this.turnMode = Math.abs(y) <= th || Math.abs(y - peek) <= th ? 'anchor' : 'bottom'
         }
         if (this.turnMode === 'anchor') {
           // 锚顶跟随：锚钉在视口顶 prev-peek 处（露出上一条尾部作语境），回答在锚下方流入
-          this.writeScrollTop(vp, this.contentYOf(anchorEl) - this.prevPeek())
+          this.writeScrollTop(vp, this.contentYOf(anchorEl) - this.prevPeekPx())
         } else {
           this.writeScrollTop(vp, bottom)
         }

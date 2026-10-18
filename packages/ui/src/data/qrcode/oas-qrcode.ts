@@ -241,7 +241,7 @@ export class OASQRCode extends OASElement {
     try {
       const ec = this.normalizeEc()
       const qr = encodeQR(value, ec)
-      const { inner, total } = this.renderInner(qr.modules, qr.size, size, this.fgColor(), this.bgColor())
+      const { inner, total } = this.renderInner(qr.modules, qr.size, size, this.fgColor(), this.bgColorValue())
 
       svg.setAttribute('viewBox', `0 0 ${total} ${total}`)
       svg.setAttribute('width', String(size))
@@ -369,7 +369,7 @@ export class OASQRCode extends OASElement {
   }
 
   /** 渐变角度（deg，CSS 约定 0=自下而上、90=自左向右）；默认 45，非法值回落默认 */
-  private gradientAngle(): number {
+  private gradientAngleValue(): number {
     const n = Number(this.getAttr('gradient-angle', '45'))
     return Number.isFinite(n) ? ((n % 360) + 360) % 360 : 45
   }
@@ -403,7 +403,7 @@ export class OASQRCode extends OASElement {
    * 背景色：默认固定白（可扫性优先于主题一致性——扫码器要求浅色静区，
    * dark 主题下一块白底码是通行做法）；属性 / `--oas-qrcode-bg` 变量双通道覆盖。
    */
-  private bgColor(): string {
+  private bgColorValue(): string {
     const v = this.getAttr('bg-color', '').trim()
     if (v) return v
     return 'var(--oas-qrcode-bg, #ffffff)'
@@ -508,7 +508,7 @@ export class OASQRCode extends OASElement {
     let gradientArea: GradientArea | undefined
     if (stops) {
       if (dotShape !== 'square') gradientArea = { x: margin, y: margin, size: moduleCount }
-      defs += linearGradientDef(stops, this.gradientAngle(), 'oas-qr-grad', gradientArea)
+      defs += linearGradientDef(stops, this.gradientAngleValue(), 'oas-qr-grad', gradientArea)
       fill = 'url(#oas-qr-grad)'
     }
 

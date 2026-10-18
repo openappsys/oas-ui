@@ -1216,9 +1216,9 @@ test('gantt windowed 层级切片扁平化：装载区滚动无空白 + aria 全
   expect(res.mid.first, '滚动后首渲染行按扁平行序（行 120 - buffer 6 → c113）').toBe('c113')
   expect(res.reqsInLoaded, '装载区内滚动零请求（期望区间被覆盖）').toBe(0)
   expect(res.aria.posinset, 'posinset = 绝对行号（1 基）').toBe('115')
-  expect(res.aria.rowindex, 'rowindex = 绝对行号（1 基）').toBe('115')
+  expect(res.aria.rowindex, 'treeitem 不使用 aria-rowindex（axe aria-allowed-attr）').toBe('')
   expect(res.aria.setsize, 'setsize = 全量 total').toBe('1000')
-  expect(res.aria.rowcount, '容器 aria-rowcount = 全量 total').toBe('1000')
+  expect(res.aria.rowcount, 'tree 不使用 aria-rowcount（全量口径由 setsize 承载）').toBe('')
 })
 
 // 万行「选择变化」增量回归：真实浏览器连点选择 20 次（Ctrl 累加/退选）——
@@ -1553,4 +1553,143 @@ test('gantt 极大 lag 安全域：lag=1e8 + auto-schedule 渲染正常 + consol
   expect(res.startAfter, '联动前推到前置右缘 03-02 12:00（合法日期）').toBe('2026-03-02 12:00')
   expect(res.datesValid, `日期数据合法（实得 ${res.startBefore}/${res.startAfter}/${res.endAfter}）`).toBe(true)
   expect(errors, 'console 零 error').toEqual([])
+})
+
+// C2 回归（lag 安全域上限）：旧上限 1e15 ms（注释曾误写 ≈11574 天，实为 ≈1.15e7 天）放行
+// lag=1e7 天 → 2026 + 27397 年 = 29405（5 位年份）→ 组件 parseTaskDate（parseISODate 只收 4 位年）
+// 无法回读 → el.tasks = el.tasks 时清洗层静默丢任务。新上限 1e12 ms（≈11574 天）。
+test('gantt lag 安全域 1e7 天：不写 5 位年份、回写不丢任务（告警口径由单测锁定）', async ({ page }) => {
+  await page.goto('/components/gantt.html', { waitUntil: 'domcontentloaded' })
+  await waitGantt(page, 'gantt-basic')
+  const res = await page.evaluate(async () => {
+    await customElements.whenDefined('oas-gantt')
+    const raf = () => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)))
+    type Task = {
+      id: string
+      name: string
+      start: string
+      end?: string
+      dependencies?: Array<{ id: string; type?: string; lag?: number }>
+    }
+    const el = document.createElement('oas-gantt') as HTMLElement & {
+      tasks: Task[]
+      shadowRoot: ShadowRoot
+    }
+    el.setAttribute('auto-schedule', '')
+    el.style.cssText = 'position:fixed;top:-9999px;left:0;width:600px' // 离屏：有真实布局测量
+    document.body.appendChild(el)
+    el.tasks = [
+      { id: 'd', name: 'D', start: '2026-03-02', end: '2026-03-06' },
+      {
+        id: 't',
+        name: 'T',
+        start: '2026-03-01',
+        end: '2026-03-02',
+        dependencies: [{ id: 'd', type: 'fs', lag: 1e7 }],
+      },
+    ]
+    await raf()
+    const before = el.tasks
+    const start = before.find((x) => x.id === 't')!.start
+    const lagDropped = before.find((x) => x.id === 't')!.dependencies?.[0]?.lag === undefined
+    // 回写：旧实现 5 位年份不能被回读 → 任务被清洗掉
+    el.tasks = el.tasks
+    await raf()
+    const after = el.tasks
+    const out = {
+      lagDropped,
+      start,
+      fiveDigit: /^\d{5}-/.test(start),
+      idsBefore: before.map((x) => x.id).sort(),
+      idsAfter: after.map((x) => x.id).sort(),
+      startAfter: after.find((x) => x.id === 't')?.start ?? '',
+      bars: el.shadowRoot.querySelectorAll('.bars .bar').length,
+    }
+    el.remove()
+    return out
+  })
+  expect(res.lagDropped, '越域 lag 按 0 处理（依赖保留）').toBe(true)
+  expect(res.start, '排程到前置右缘 03-07').toBe('2026-03-07')
+  expect(res.fiveDigit, '不写出 5 位年份（旧实现 29405-…）').toBe(false)
+  expect(res.idsAfter, 'el.tasks = el.tasks 回写不丢任务').toEqual(res.idsBefore)
+  expect(res.startAfter, '回写后日期仍可回读').toBe('2026-03-07')
+  expect(res.bars, '组件正常渲染两条任务条').toBe(2)
+})
+
+// C3 回归（事件序）：属性通道直接改写 tasks 时联动排程序原为 tasks-change → reschedule，
+// 与提交口 reschedule → tasks-change 相反。现两通道统一为「reschedule → tasks-change」。
+test('gantt 属性通道联动排程事件序：reschedule → tasks-change（一次）', async ({ page }) => {
+  await page.goto('/components/gantt.html', { waitUntil: 'domcontentloaded' })
+  await waitGantt(page, 'gantt-basic')
+  const events = await page.evaluate(async () => {
+    await customElements.whenDefined('oas-gantt')
+    const raf = () => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)))
+    const el = document.createElement('oas-gantt')
+    el.setAttribute('auto-schedule', '')
+    el.style.cssText = 'position:fixed;top:-9999px;left:0;width:600px'
+    const order: string[] = []
+    el.addEventListener('oas-reschedule', () => order.push('reschedule'))
+    el.addEventListener('oas-tasks-change', () => order.push('tasks-change'))
+    document.body.appendChild(el)
+    // 属性通道写入：d 右缘 03-07，t 起点 03-02 → update 末尾联动前推 t
+    el.setAttribute(
+      'tasks',
+      JSON.stringify([
+        { id: 'd', name: 'D', start: '2026-03-02', end: '2026-03-06' },
+        { id: 't', name: 'T', start: '2026-03-02', end: '2026-03-04', dependencies: [{ id: 'd' }] },
+      ]),
+    )
+    await raf()
+    const start = (el as unknown as { tasks: Array<{ id: string; start: string }> }).tasks.find(
+      (x) => x.id === 't',
+    )?.start
+    el.remove()
+    return { order, start }
+  })
+  expect(events.start, '联动前推已发生（否则事件序断言无意义）').toBe('2026-03-07')
+  expect(events.order, '属性通道与提交口统一事件序').toEqual(['reschedule', 'tasks-change'])
+})
+
+// C4 回归（windowed 切片越界）：window-start + 装载行数 > total 时旧实现静默截断，
+// 宿主误以为切片全部生效。现越界行按 total 夹取不渲染 + 实例级 devWarn 一次。
+test('gantt windowed 切片越界：越界行不渲染 + total 夹取（告警口径由单测锁定）', async ({ page }) => {
+  await page.goto('/components/gantt.html', { waitUntil: 'domcontentloaded' })
+  await waitGantt(page, 'gantt-basic')
+  const res = await page.evaluate(async () => {
+    await customElements.whenDefined('oas-gantt')
+    const raf = () => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)))
+    const el = document.createElement('oas-gantt')
+    el.setAttribute('windowed', '')
+    el.setAttribute('total', '100')
+    el.setAttribute('window-start', '95')
+    el.setAttribute('height', '120')
+    el.setAttribute('row-height', '40')
+    el.setAttribute('range-start', '2026-03-01')
+    el.setAttribute('range-end', '2026-03-31')
+    el.style.cssText = 'position:fixed;top:-9999px;left:0;width:600px'
+    document.body.appendChild(el)
+    // loaded [95,115) 越过 total 100 → 越界 15 行
+    el.setAttribute(
+      'tasks',
+      JSON.stringify(
+        Array.from({ length: 20 }, (_, i) => ({
+          id: `t${95 + i}`,
+          name: `T${95 + i}`,
+          start: '2026-03-02',
+          end: '2026-03-06',
+        })),
+      ),
+    )
+    await raf()
+    const tb = el.shadowRoot!.querySelector('.tbody') as HTMLElement
+    tb.scrollTop = 95 * 40
+    tb.dispatchEvent(new Event('scroll'))
+    await raf()
+    const rows = [...el.shadowRoot!.querySelectorAll<HTMLElement>('.side-body .row-name')].map((r) => r.dataset.key)
+    const innerH = (el.shadowRoot!.querySelector('.inner') as HTMLElement).style.height
+    el.remove()
+    return { rows, innerH }
+  })
+  expect(res.rows, 'total 夹取：只渲染 95..99 五行').toEqual(['t95', 't96', 't97', 't98', 't99'])
+  expect(res.innerH, '滚动域仍按 total 撑起').toBe(`${100 * 40}px`)
 })

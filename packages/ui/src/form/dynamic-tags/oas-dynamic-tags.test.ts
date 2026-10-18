@@ -863,3 +863,65 @@ describe('OASDynamicTags value property（get/set）', () => {
     expect(Object.hasOwn(el, 'value')).toBe(false)
   })
 })
+
+// ===== 属性-方法撞名回归（observedAttributes 与原型方法同名：separator 单词无 camelCase 分叉） =====
+//
+// 机制：宿主框架或用户 JS 写 `el.separator = ';'` 会在实例上建自有属性遮蔽原型同名
+// 方法，组件内部 `this.separator()` 随后抛 TypeError。私有方法已改名 separatorChar，
+// 此处锁定：property 写入后提交/分隔符拆分行为仍与未写入时等价。
+describe('OASDynamicTags 属性-方法撞名回归', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('property 写入 separator 后输入 Enter 提交不抛错，分隔符通道照常生效', () => {
+    const el = mount({ separator: ';' })
+    // property 桥接（Angular [separator] / 用户 JS）在实例上建自有属性遮蔽原型方法；
+    // 属性通道值不受影响，内部路径读 attribute
+    ;(el as unknown as Record<string, unknown>).separator = ';'
+    // Enter 提交路径（onKeydown 内读分隔符）；改名前此处抛 TypeError
+    expect(() => {
+      typeValue(el, 'a')
+      pressKey(el, 'Enter')
+    }).not.toThrow()
+    expect(el.modelValue).toEqual(['a'])
+    // 分隔符属性值照常生效：分号键直接提交
+    expect(() => {
+      typeValue(el, 'b')
+      pressKey(el, ';')
+    }).not.toThrow()
+    expect(el.modelValue).toEqual(['a', 'b'])
+  })
+})
+
+// ===== 属性-方法撞名回归（observedAttributes 的 camelCase 与原型方法同名） =====
+//
+// 机制：宿主框架按 camelCase 做 property 桥接或用户 JS 写 `el.xxx = ...` 会在实例上
+// 建自有属性遮蔽原型同名方法，组件内部 `this.xxx()` 随后抛 TypeError。
+// 私有方法已改名（saveOnBlur → saveOnBlurEnabled / addOnPaste → addOnPasteEnabled）。
+describe('OASDynamicTags 属性-方法撞名回归', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('property 写入 saveOnBlur / addOnPaste 后失焦与粘贴路径不抛错', () => {
+    const el = mount()
+    const rec = el as unknown as Record<string, unknown>
+    rec.saveOnBlur = false
+    rec.addOnPaste = false
+    typeValue(el, 'draft')
+    expect(() => inputEl(el).dispatchEvent(new FocusEvent('blur'))).not.toThrow()
+    expect(el.modelValue, '默认 save-on-blur=true：失焦提交').toEqual(['draft'])
+    const ev = new Event('paste', { bubbles: true, cancelable: true })
+    Object.defineProperty(ev, 'clipboardData', { value: { getData: () => 'a,b' } })
+    expect(() => inputEl(el).dispatchEvent(ev)).not.toThrow()
+    expect(el.modelValue, '默认 add-on-paste=true：逗号拆分新增').toEqual(['draft', 'a', 'b'])
+  })
+})

@@ -1084,3 +1084,33 @@ describe('OASHoverCard', () => {
     })
   })
 })
+
+// ===== 属性-方法撞名回归（observedAttributes 的 camelCase 与原型方法同名） =====
+//
+// 机制：宿主框架按 camelCase 做 property 桥接或用户 JS 写 `el.xxx = ...` 会在实例上
+// 建自有属性遮蔽原型同名方法，组件内部 `this.xxx()` 随后抛 TypeError。
+// 私有方法已改名（openDelay → openDelayMs / closeDelay → closeDelayMs）。
+describe('OASHoverCard 属性-方法撞名回归', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    vi.useFakeTimers()
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+    document.body.innerHTML = ''
+  })
+
+  it('property 写入 openDelay / closeDelay 后 hover 开关路径不抛错', () => {
+    const el = mount({ title: 'x' })
+    const rec = el as unknown as Record<string, unknown>
+    rec.openDelay = 1
+    rec.closeDelay = 1
+    expect(() => anchorOf(el).dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }))).not.toThrow()
+    vi.advanceTimersByTime(301)
+    expect(card(el).getAttribute('aria-hidden')).toBe('false')
+    expect(() => anchorOf(el).dispatchEvent(new MouseEvent('mouseleave', { bubbles: true }))).not.toThrow()
+    vi.advanceTimersByTime(151)
+    expect(card(el).getAttribute('aria-hidden')).toBe('true')
+  })
+})

@@ -300,7 +300,7 @@ export class OASEditable extends OASElement {
    * （提交口径与 oas-change 一致）。
    */
   get value(): string {
-    return this.editing && this.fieldEl ? this.fieldEl.value : this.getAttr('value', '')
+    return this.editingState && this.fieldEl ? this.fieldEl.value : this.getAttr('value', '')
   }
 
   /**
@@ -319,7 +319,7 @@ export class OASEditable extends OASElement {
   private editEl: HTMLElement | null = null
   private fieldEl: HTMLInputElement | HTMLTextAreaElement | null = null
   private pencilEl: HTMLButtonElement | null = null
-  private editing = false
+  private editingState = false
   /** default-editing 仅首次消费（退出后不因属性在场而重复进入） */
   private defaultEditingApplied = false
   /** light DOM 观察器：template[slot="display"/"ok-icon"/"cancel-icon"] 增删 → 重刷展示态 */
@@ -431,13 +431,13 @@ export class OASEditable extends OASElement {
     }
     // editing 受控同步：宿主加属性进入；移除属性走取消路径退出（非破坏）
     const wantEditing = this.hasAttr('editing')
-    if (wantEditing && !this.editing) this.enterEdit()
-    else if (!wantEditing && this.editing) this.exitControlled()
+    if (wantEditing && !this.editingState) this.enterEdit()
+    else if (!wantEditing && this.editingState) this.exitControlled()
 
     this.syncDisplay()
     this.syncMirror()
     // 编辑中外部改 value/size → 宽度跟随（内部输入走 field input 事件）
-    if (this.editing) this.syncFieldWidth()
+    if (this.editingState) this.syncFieldWidth()
   }
 
   /** 编辑字段确保：multiline 切 textarea、单行切 input（替换时重挂监听） */
@@ -470,7 +470,7 @@ export class OASEditable extends OASElement {
     }
     field.addEventListener('input', () => this.syncFieldWidth())
     this.fieldEl = field
-    if (this.editing) {
+    if (this.editingState) {
       field.value = this.getAttr('value', '')
       field.focus()
     }
@@ -594,7 +594,7 @@ export class OASEditable extends OASElement {
     fieldEl.setAttribute('aria-label', this.t('editable.edit'))
     if (status === 'error') fieldEl.setAttribute('aria-invalid', 'true')
     else fieldEl.removeAttribute('aria-invalid')
-    if (isTextarea(fieldEl) && this.editing) this.autoResize()
+    if (isTextarea(fieldEl) && this.editingState) this.autoResize()
 
     const okBtn = this.shadow.querySelector<HTMLButtonElement>('.ok')
     const cancelBtn = this.shadow.querySelector<HTMLButtonElement>('.cancel')
@@ -621,11 +621,11 @@ export class OASEditable extends OASElement {
     }
   }
 
-  private submitOnEnter(): boolean {
+  private submitOnEnterEnabled(): boolean {
     return this.getAttr('submit-on-enter', 'true') !== 'false'
   }
 
-  private submitOnBlur(): boolean {
+  private submitOnBlurEnabled(): boolean {
     return this.getAttr('submit-on-blur', 'true') !== 'false'
   }
 
@@ -645,10 +645,10 @@ export class OASEditable extends OASElement {
 
   private enterEdit(): void {
     if (this.hasAttr('disabled') || this.hasAttr('readonly')) return
-    if (this.editing) return
+    if (this.editingState) return
     const fieldEl = this.fieldEl
     if (!fieldEl) return
-    this.editing = true
+    this.editingState = true
     if (this.displayEl) this.displayEl.hidden = true
     if (this.editEl) this.editEl.hidden = false
     fieldEl.value = this.getAttr('value', '')
@@ -677,7 +677,7 @@ export class OASEditable extends OASElement {
   }
 
   private exitEdit(): void {
-    this.editing = false
+    this.editingState = false
     if (this.editEl) this.editEl.hidden = true
     if (this.displayEl) this.displayEl.hidden = false
     this.removeAttribute('editing')
@@ -690,7 +690,7 @@ export class OASEditable extends OASElement {
   }
 
   private submit(): void {
-    if (!this.editing) return
+    if (!this.editingState) return
     const oldValue = this.getAttr('value', '')
     const next = this.fieldEl?.value ?? ''
     this.exitEdit()
@@ -708,7 +708,7 @@ export class OASEditable extends OASElement {
   }
 
   private cancel(): void {
-    if (!this.editing) return
+    if (!this.editingState) return
     this.exitEdit()
     this.emit('cancel', { value: this.getAttr('value', '') })
     this.focusTrigger()
@@ -736,7 +736,7 @@ export class OASEditable extends OASElement {
       return
     }
     if (e.key === 'Enter') {
-      if (this.submitOnEnter()) {
+      if (this.submitOnEnterEnabled()) {
         e.preventDefault()
         this.submit()
       }
@@ -747,11 +747,11 @@ export class OASEditable extends OASElement {
   }
 
   private handleBlur(e: FocusEvent): void {
-    if (!this.editing) return
+    if (!this.editingState) return
     const related = e.relatedTarget as Node | null
     // 焦点移到自身内部的确认/取消/铅笔按钮时交给按钮 click，避免双重提交
     if (related && this.shadow.contains(related)) return
     // submit-on-blur=false：blur 不提交也不退出（必须显式点确认/取消按钮）
-    if (this.submitOnBlur()) this.submit()
+    if (this.submitOnBlurEnabled()) this.submit()
   }
 }

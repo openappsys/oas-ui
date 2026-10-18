@@ -1931,7 +1931,10 @@ test('table 万行虚拟滚动：连续选择 20 次渲染行数有界、行节�
   // → 窗口 44 行：容纳「连点 20 行」且满足 <50 有界断言。
   const consoleIssues: string[] = []
   page.on('console', (m) => {
-    if (m.type() === 'error' || m.type() === 'warning') consoleIssues.push(`${m.type()}: ${m.text()}`)
+    // I-3 口径：只收 error + 组件前缀 warning。firefox 会带 GA cookie / scroll-linked 等浏览器级
+    // warning（非组件缺陷），全量 warning 收集在 firefox 稳定误报。
+    if (m.type() === 'error' || (m.type() === 'warning' && m.text().includes('[oas-table]')))
+      consoleIssues.push(`${m.type()}: ${m.text()}`)
   })
   page.on('pageerror', (e) => consoleIssues.push(`pageerror: ${e.message}`))
   await page.goto('/components/table.html', { waitUntil: 'domcontentloaded' })
@@ -2007,7 +2010,7 @@ test('table 万行虚拟滚动：连续选择 20 次渲染行数有界、行节�
   expect(r.rowCountAfter, '虚拟窗口行数远小于总量 10000').toBeLessThan(50)
   expect(r.identityKept, '行节点身份保持（局部补丁而非整表重建）').toBe(true)
   expect(r.selectedCount, '20 行全部呈选中态').toBe(20)
-  expect(consoleIssues, 'console 零 error/warning').toEqual([])
+  expect(consoleIssues, 'console 零告警（error + [oas-table] warning 口径）').toEqual([])
   await page.evaluate(() => document.querySelector('#qa-virtual-select')?.remove())
 })
 
@@ -2083,7 +2086,10 @@ test('table windowed 切片回填焦点回锚：聚焦行 → 宿主回填 windo
   // 重渲染后行仍在窗口内则恢复焦点与 gridPos；不在窗口内不强行聚焦（不回退切片首行）。
   const consoleIssues: string[] = []
   page.on('console', (m) => {
-    if (m.type() === 'error' || m.type() === 'warning') consoleIssues.push(`${m.type()}: ${m.text()}`)
+    // I-3 口径：只收 error + 组件前缀 warning（同「万行虚拟滚动」用例注释，firefox 浏览器级
+    // warning 不属组件缺陷，全量收集在 firefox 稳定误报）。
+    if (m.type() === 'error' || (m.type() === 'warning' && m.text().includes('[oas-table]')))
+      consoleIssues.push(`${m.type()}: ${m.text()}`)
   })
   page.on('pageerror', (e) => consoleIssues.push(`pageerror: ${e.message}`))
   await page.goto('/components/table.html', { waitUntil: 'domcontentloaded' })
@@ -2216,5 +2222,169 @@ test('table windowed 切片回填焦点回锚：聚焦行 → 宿主回填 windo
     r3.reqs[0]!.reason,
   )
   await page.evaluate(() => document.querySelector('#qa-windowed-focus')?.remove())
-  expect(consoleIssues, 'console 零 error/warning').toEqual([])
+  expect(consoleIssues, 'console 零告警（error + [oas-table] warning 口径）').toEqual([])
+})
+
+test('table windowed 聚焦后横向滚动不被回锚拉回：每帧 scrollLeft 保持 + 焦点保持 + 纵向位置保持（I-1）', async ({
+  page,
+}) => {
+  // I-1 缺陷固化：windowed + grid-navigation + 列溢出时，聚焦单元格后横向滚动，滚动帧重建 tbody
+  // 的焦点回锚用 td.focus() + scrollCellIntoView 把视口每帧拉回锚格（scrollLeft 恒 0，用户无法
+  // 横向滚动）。修复=滚动帧回锚 preventScroll 且不 scrollIntoView + 帧前后保存/恢复 scrollLeft。
+  const consoleIssues: string[] = []
+  page.on('console', (m) => {
+    // I-3 口径：只收 error + [oas-table] 前缀 warning（firefox 浏览器级 warning 非组件缺陷）
+    if (m.type() === 'error' || (m.type() === 'warning' && m.text().includes('[oas-table]')))
+      consoleIssues.push(`${m.type()}: ${m.text()}`)
+  })
+  page.on('pageerror', (e) => consoleIssues.push(`pageerror: ${e.message}`))
+  await page.goto('/components/table.html', { waitUntil: 'domcontentloaded' })
+  await page.waitForFunction(() => customElements.get('oas-table') != null, null, { timeout: 15000 })
+  // 8 列 × 160px 宽表（横向溢出）+ windowed 行虚拟：横向滚动走滚动帧 tbody 重建路径
+  await page.evaluate(() => {
+    const t = document.createElement('oas-table')
+    t.id = 'qa-windowed-hscroll'
+    t.setAttribute('windowed', '')
+    t.setAttribute('total', '1000')
+    t.setAttribute('window-start', '0')
+    t.setAttribute('row-key', 'c0')
+    t.setAttribute('height', '200')
+    t.setAttribute('row-height', '40')
+    t.setAttribute('grid-navigation', '')
+    // fixed 布局：160px 列宽生效 → 8×160=1280px 横向溢出（auto 布局会把列压缩进容器，无滚动可言）
+    t.setAttribute('table-layout', 'fixed')
+    t.setAttribute(
+      'columns',
+      JSON.stringify(Array.from({ length: 8 }, (_, i) => ({ key: `c${i}`, title: `列${i}`, width: '160px' }))),
+    )
+    const make = (n: number) =>
+      Array.from({ length: n }, (_, i) =>
+        Object.fromEntries(Array.from({ length: 8 }, (_, c) => [`c${c}`, c === 0 ? `行${i}` : `${i}-${c}`])),
+      )
+    t.setAttribute('data', JSON.stringify(make(40)))
+    ;(document.querySelector('.vp-doc') ?? document.body).append(t)
+    // shadow 内 mutation 静默监测：满载下 ResizeObserver 触发的 update() 会迟到插针（update 路径
+    // 回锚走 focus+scrollIntoView，会拉回横向位置——那是 update 路径的设计行为，非滚动帧缺陷），
+    // 后续操作前必须等渲染彻底安静，消除「等待→操作」之间被插针的窗口
+    const w = window as unknown as { __qaHsMutedAt?: number }
+    w.__qaHsMutedAt = performance.now()
+    new MutationObserver(() => {
+      w.__qaHsMutedAt = performance.now()
+    }).observe(t.shadowRoot!, { subtree: true, childList: true, attributes: true })
+  })
+  await page.waitForFunction(
+    () =>
+      (document.querySelector('#qa-windowed-hscroll')?.shadowRoot?.querySelectorAll('tbody tr[data-key]').length ?? 0) >
+      0,
+    null,
+    { timeout: 15000 },
+  )
+  // 等横向溢出真实存在（fixed 布局列宽撑出 scrollWidth）：高并发下布局未稳时赋值
+  // scrollLeft 会被 clamp 回 0（实抓），先锁「可横向滚」再操作
+  await page.waitForFunction(
+    () => {
+      const wrap = document
+        .querySelector('#qa-windowed-hscroll')
+        ?.shadowRoot?.querySelector('.table-scroll') as HTMLElement | null
+      return !!wrap && wrap.scrollWidth > wrap.clientWidth
+    },
+    null,
+    { timeout: 15000 },
+  )
+  // 等渲染彻底安静（shadow 内 400ms 无 mutation）：消除 ResizeObserver/update 迟到插针
+  // （插针的 update 回锚会拉回横向位置——属 update 路径设计行为，不得污染滚动帧断言）
+  await page.waitForFunction(
+    () => performance.now() - ((window as unknown as { __qaHsMutedAt?: number }).__qaHsMutedAt ?? 0) > 400,
+    null,
+    { timeout: 20000, polling: 50 },
+  )
+  // oas-scroll 计数：证明每个横向滚动步里滚动帧重建真实发生（防「根本没重建所以绿」的假绿）
+  await page.evaluate(() => {
+    const t = document.querySelector<HTMLElement>('#qa-windowed-hscroll')!
+    t.dataset.scrollFrames = '0'
+    t.addEventListener('oas-scroll', () => {
+      t.dataset.scrollFrames = String(Number(t.dataset.scrollFrames ?? '0') + 1)
+    })
+    // 聚焦行2 的 c0 格（视口内）
+    ;(t.shadowRoot!.querySelector('tr[data-key="行2"] td[data-col="c0"]') as HTMLElement)!.focus()
+  })
+  // 连采 6 帧 scrollLeft：滚动帧重建若把视口拉回锚格，采样序列必然出现回退
+  const sampleScrollLeft = () =>
+    page.evaluate(
+      () =>
+        new Promise<number[]>((resolve) => {
+          const wrap = document.querySelector('#qa-windowed-hscroll')!.shadowRoot!.querySelector('.table-scroll')!
+          const out: number[] = []
+          const tick = () => {
+            out.push(wrap.scrollLeft)
+            if (out.length >= 6) resolve(out)
+            else requestAnimationFrame(tick)
+          }
+          requestAnimationFrame(tick)
+        }),
+    )
+  for (const target of [200, 400, 600]) {
+    await page.evaluate((v) => {
+      const wrap = document
+        .querySelector('#qa-windowed-hscroll')!
+        .shadowRoot!.querySelector('.table-scroll') as HTMLElement
+      wrap.scrollLeft = v
+    }, target)
+    const frames = await sampleScrollLeft()
+    expect(frames, `横向滚动到 ${target} 后每帧 scrollLeft 保持（不被回锚拉回）：${frames.join(',')}`).toEqual(
+      frames.map(() => target),
+    )
+  }
+  const focusState = await page.evaluate(() => {
+    const t = document.querySelector<HTMLElement>('#qa-windowed-hscroll')!
+    const ae = t.shadowRoot!.activeElement as HTMLElement | null
+    return {
+      key: ae?.closest?.('tr[data-key]')?.getAttribute('data-key') ?? '',
+      col: ae?.getAttribute('data-col') ?? '',
+      frames: Number(t.dataset.scrollFrames ?? '0'),
+    }
+  })
+  expect(focusState.frames, '横向滚动期间滚动帧重建真实发生（oas-scroll ≥3 次）').toBeGreaterThanOrEqual(3)
+  expect(focusState.key, '横向滚动后焦点仍在锚行（preventScroll 回锚）').toBe('行2')
+  expect(focusState.col, '列位置保持').toBe('c0')
+  // 宿主回填（update 路径）：焦点回锚行为保持——update 路径保留 focus + scrollIntoView（锚行可见）
+  await page.evaluate(() => {
+    const t = document.querySelector('#qa-windowed-hscroll') as HTMLElement & { data?: unknown }
+    t.data = Array.from({ length: 60 }, (_, i) =>
+      Object.fromEntries(Array.from({ length: 8 }, (_, c) => [`c${c}`, c === 0 ? `行${i}` : `${i}-${c}`])),
+    )
+  })
+  await page.waitForTimeout(250)
+  const afterRefill = await page.evaluate(() => {
+    const t = document.querySelector('#qa-windowed-hscroll')!
+    const ae = t.shadowRoot!.activeElement as HTMLElement | null
+    return ae?.closest?.('tr[data-key]')?.getAttribute('data-key') ?? ''
+  })
+  expect(afterRefill, 'update 回填路径焦点仍回锚同一 row-key（既有行为不变）').toBe('行2')
+  // 纵向：滚动位置保持（st 恢复路径不被横向回锚破坏）
+  await page.evaluate(() => {
+    const wrap = document
+      .querySelector('#qa-windowed-hscroll')!
+      .shadowRoot!.querySelector('.table-scroll') as HTMLElement
+    wrap.scrollTop = 400
+  })
+  await page.waitForFunction(
+    () => {
+      const wrap = document
+        .querySelector('#qa-windowed-hscroll')!
+        .shadowRoot!.querySelector('.table-scroll') as HTMLElement
+      return wrap.scrollTop === 400
+    },
+    null,
+    { timeout: 15000 },
+  )
+  const vertical = await page.evaluate(() => {
+    const wrap = document
+      .querySelector('#qa-windowed-hscroll')!
+      .shadowRoot!.querySelector('.table-scroll') as HTMLElement
+    return { scrollTop: wrap.scrollTop, scrollLeft: wrap.scrollLeft }
+  })
+  expect(vertical.scrollTop, '纵向滚动位置保持（不被钳回 0）').toBe(400)
+  await page.evaluate(() => document.querySelector('#qa-windowed-hscroll')?.remove())
+  expect(consoleIssues, 'console 零告警（error + [oas-table] warning 口径）').toEqual([])
 })

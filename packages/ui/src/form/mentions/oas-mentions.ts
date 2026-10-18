@@ -502,7 +502,7 @@ export class OASMentions extends OASFormElement {
       this.resetHeight()
     } else {
       if (this.autosizeEnabled()) {
-        t.rows = this.minRows()
+        t.rows = this.minRowsCount()
         t.style.resize = 'none'
         this.maybeAutoResize()
       } else {
@@ -1085,12 +1085,12 @@ export class OASMentions extends OASFormElement {
     return this.hasAttr('autosize')
   }
 
-  private minRows(): number {
+  private minRowsCount(): number {
     const n = Number(this.getAttr('min-rows', '1'))
     return Number.isFinite(n) && n >= 1 ? Math.floor(n) : 1
   }
 
-  private maxRows(): number {
+  private maxRowsCount(): number {
     const n = Number(this.getAttr('max-rows', '6'))
     return Number.isFinite(n) && n >= 1 ? Math.floor(n) : 6
   }
@@ -1158,7 +1158,7 @@ export class OASMentions extends OASFormElement {
     const t = this.ta
     if (!t || !this.autosizeEnabled()) return
     const lh = this.lineHeight()
-    const minRows = this.minRows()
+    const minRows = this.minRowsCount()
     const minH = Math.round(lh * minRows + this.paddingV())
     t.style.minHeight = `${minH}px`
     if (this.maxRowsUnlimited()) {
@@ -1168,7 +1168,7 @@ export class OASMentions extends OASFormElement {
       t.style.overflowY = 'hidden'
       return
     }
-    const maxRows = Math.max(this.maxRows(), minRows)
+    const maxRows = Math.max(this.maxRowsCount(), minRows)
     const maxH = Math.round(lh * maxRows + this.paddingV())
     t.style.maxHeight = `${maxH}px`
     t.style.height = 'auto'

@@ -1062,6 +1062,33 @@ describe('OASSelect 受控展开（open + oas-open-change）', () => {
     expect(trigger(el).getAttribute('aria-expanded')).toBe('false')
   })
 
+  it("I-1 open property 四态：''/true 展开，false/'false' 收起（presence 语义）", () => {
+    const el = mount()
+    // ''：Vue 静态 `<oas-select open>` 经 property 写入的形态——必须视为展开
+    el.open = ''
+    expect(el.hasAttribute('open'), "property '' 应落地 open 属性").toBe(true)
+    expect(trigger(el).getAttribute('aria-expanded')).toBe('true')
+    el.open = true
+    expect(el.hasAttribute('open')).toBe(true)
+    el.open = false
+    expect(el.hasAttribute('open')).toBe(false)
+    expect(trigger(el).getAttribute('aria-expanded')).toBe('false')
+    el.open = 'false'
+    expect(el.hasAttribute('open'), "'false' 应视为收起").toBe(false)
+  })
+
+  it("I-1 元素已连接后写入 '' 不删属性（hydration 顺序安全）", () => {
+    const el = mount()
+    expect(el.hasAttribute('open')).toBe(false)
+    el.open = ''
+    expect(el.hasAttribute('open')).toBe(true)
+    // 已展开后再写 ''：幂等保持，不触发 remove→set 抖动
+    el.open = ''
+    expect(el.hasAttribute('open')).toBe(true)
+    expect(el.getAttribute('open')).toBe('')
+    expect(trigger(el).getAttribute('aria-expanded')).toBe('true')
+  })
+
   it('open property 关闭：非受控展开态下 el.open = false 直接收起（removeAttribute 无回调路径）', () => {
     const el = mount()
     open(el)
@@ -2180,6 +2207,24 @@ describe('OASSelect value property（get/set）', () => {
     expect(fired).toBe(0)
   })
 
+  it('C1 多选 value property 收到 JSON 字符串（SPA 场景）：解析归一，不整串单值/双重编码', () => {
+    const el = mount({ multiple: '' })
+    el.value = '["apple","orange"]'
+    expect(el.getAttribute('value')).toBe('["apple","orange"]')
+    expect(el.value).toEqual(['apple', 'orange'])
+    expect(el.shadowRoot!.querySelectorAll('.chip').length).toBe(2)
+  })
+
+  it('C1 多选 value 字符串：单值仍按单值，非法 JSON 不抛并按单值处理', () => {
+    const el = mount({ multiple: '' })
+    el.value = 'banana'
+    expect(JSON.parse(el.getAttribute('value')!)).toEqual(['banana'])
+    // 非法 JSON（以 [ 开头但解析失败）按单值处理
+    el.value = '[oops'
+    expect(JSON.parse(el.getAttribute('value')!)).toEqual(['[oops'])
+    expect(el.value).toEqual(['[oops'])
+  })
+
   it("'value' in el === true（原型访问器，非实例 expando）", () => {
     const el = mount()
     expect('value' in el).toBe(true)
@@ -2231,5 +2276,27 @@ describe('OASSelect reserve-width（触发器预留最宽选项，切值不抖�
   it('无选项且无 placeholder 时写 0px（无预留）', () => {
     const el = mount({ 'reserve-width': '', options: '[]', placeholder: '' })
     expect(el.style.getPropertyValue('--oas-select-reserve')).toBe('0px')
+  })
+})
+
+// ===== 属性-方法撞名回归（observedAttributes 的 camelCase 与原型方法同名） =====
+//
+// 机制：宿主框架按 camelCase 做 property 桥接或用户 JS 写 `el.xxx = ...` 会在实例上
+// 建自有属性遮蔽原型同名方法，组件内部 `this.xxx()` 随后抛 TypeError。
+// 私有方法已改名（showArrow → showArrowOn）。
+describe('OASSelect 属性-方法撞名回归', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('property 写入 showArrow 后箭头显隐路径不抛错', () => {
+    const el = mount()
+    ;(el as unknown as Record<string, unknown>).showArrow = false
+    expect(() => el.setAttribute('show-arrow', 'false')).not.toThrow()
+    expect(trigger(el).querySelector('.chevron')!.hasAttribute('hidden')).toBe(true)
   })
 })

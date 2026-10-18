@@ -1419,3 +1419,33 @@ describe('onReconnect mq change 监听恢复（重连后媒体断点切换不失
     expect(adds, '重连后 mq change 监听恢复一次（onReconnect 补挂不叠）').toBe(1)
   })
 })
+
+// ===== 属性-方法撞名回归（observedAttributes 的 camelCase 与原型方法同名） =====
+//
+// 机制：宿主框架按 camelCase 做 property 桥接或用户 JS 写 `el.xxx = ...` 会在实例上
+// 建自有属性遮蔽原型同名方法，组件内部 `this.xxx()` 随后抛 TypeError。
+// 私有方法已改名（resizeMin → resizeMinPx / resizeMax → resizeMaxPx）。
+describe('OASSidebar 属性-方法撞名回归', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+    stubMatchMedia(false)
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  it('property 写入 resizeMin / resizeMax 后 rail Home/End 调整不抛错', () => {
+    const el = mount({ resizable: '', width: '240px', 'resize-min': '200', 'resize-max': '300' })
+    const rec = el as unknown as Record<string, unknown>
+    rec.resizeMin = 1
+    rec.resizeMax = 1
+    const rail = el.shadowRoot!.querySelector<HTMLElement>('[part="rail"]')!
+    expect(() => rail.dispatchEvent(new KeyboardEvent('keydown', { key: 'Home', bubbles: true }))).not.toThrow()
+    expect(el.getAttribute('width')).toBe('200px')
+    expect(() => rail.dispatchEvent(new KeyboardEvent('keydown', { key: 'End', bubbles: true }))).not.toThrow()
+    expect(el.getAttribute('width')).toBe('300px')
+  })
+})

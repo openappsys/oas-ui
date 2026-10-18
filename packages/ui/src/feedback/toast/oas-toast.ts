@@ -745,7 +745,7 @@ export class OASToast extends OASElement {
 
   // ---------- 滑动关闭（P10） ----------
 
-  private swipeDirection(): string {
+  private swipeDirectionValue(): string {
     return this.getAttr('swipe-direction', 'both')
   }
 
@@ -760,7 +760,7 @@ export class OASToast extends OASElement {
     const dy = e.clientY - this.swipe.startY
     this.swipe.x = dx
     this.swipe.y = dy
-    const dir = this.swipeDirection()
+    const dir = this.swipeDirectionValue()
     let tx = 0
     let ty = 0
     if (dir === 'right' || dir === 'left' || dir === 'both') tx = dx
@@ -777,7 +777,7 @@ export class OASToast extends OASElement {
     if (!this.swipe || e.pointerId !== this.swipe.id) return
     const { x, y } = this.swipe
     this.swipe = null
-    const dir = this.swipeDirection()
+    const dir = this.swipeDirectionValue()
     const dirHit =
       (dir === 'right' && x >= SWIPE_THRESHOLD) ||
       (dir === 'left' && x <= -SWIPE_THRESHOLD) ||

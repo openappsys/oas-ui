@@ -100,6 +100,39 @@ describe('OASTree 展开（expanded JSON 数组）+ 选中', () => {
     expect(labels(el)).toBe('节点 1|子节点 1-1|节点 2')
   })
 
+  it('data 数字 key 节点：渲染、selected 字符串匹配回显、点选写回 String() 值（idOf 数字归一回归）', () => {
+    const el = mount({
+      data: JSON.stringify([
+        { key: 1, label: '数字节点' },
+        { key: 's', label: '字符串节点' },
+      ]),
+      selected: '1',
+    })
+    expect(rows(el).length, '数字 key 节点不能被丢弃').toBe(2)
+    const numeric = rows(el).find((r) => r.textContent?.includes('数字节点'))!
+    expect(numeric.getAttribute('data-selected'), 'selected="1" 应匹配数字 key=1 节点').toBe('true')
+    // 点选字符串节点写回其字符串 key（行为不变）；再点数字节点写回 '1'
+    rows(el)
+      .find((r) => r.textContent?.includes('字符串节点'))!
+      .click()
+    expect(el.getAttribute('selected')).toBe('s')
+    numeric.click()
+    expect(el.getAttribute('selected')).toBe('1')
+  })
+
+  it('checkable 数字 key：checked 属性数字项与数字 key 节点勾选态匹配（级联 String() 口径一致）', () => {
+    const el = mount({
+      checkable: '',
+      checked: '[1]',
+      data: JSON.stringify([
+        { key: 1, label: '数字节点' },
+        { key: 's', label: '字符串节点' },
+      ]),
+    })
+    const numeric = rows(el).find((r) => r.textContent?.includes('数字节点'))!
+    expect(numeric.querySelector<HTMLInputElement>('input[type="checkbox"]')!.checked).toBe(true)
+  })
+
   it('expanded 为旧版逗号串：按空集合回落并 dev 告警一次（v2.5 破坏性变更的迁移指引）', () => {
     const el = mount({ expanded: 'a,b' })
     expect(labels(el)).toBe('节点 A|节点 B')
@@ -319,6 +352,22 @@ describe('OASTree 勾选级联（checkable / check-strategy / check-strictly / h
     checkBox(el, checkboxes(el)[1]!, true)
     expect(checkedOf(el)).toEqual(['a', 'a-1'])
     expect(checkboxes(el)[0]!.indeterminate).toBe(false)
+  })
+
+  it('property 写入 checkStrictly / checkStrategy 后勾选不抛（内部方法改名防实例遮蔽）', () => {
+    const el = mount({
+      checkable: '',
+      'check-strategy': 'parent',
+      expanded: '["a"]',
+      data: CASCADE_DATA,
+    })
+    const rec = el as unknown as Record<string, unknown>
+    // Vue/React 桥接会把 camelCase property 写到实例；同名私有方法被实例属性遮蔽会 TypeError
+    rec.checkStrictly = true
+    rec.checkStrategy = 'child'
+    expect(() => checkBox(el, checkboxes(el)[0]!, true)).not.toThrow()
+    // 内部判定仍以 attribute 通道为准：非 strict + strategy=parent → 导出值只含父级
+    expect(checkedOf(el)).toEqual(['a'])
   })
 
   it('级联语义对齐 tree-select：父值受控回填 → 子级展示勾选', () => {

@@ -675,4 +675,45 @@ describe('OASTable windowed（服务端行窗口模式）', () => {
     const active = el.shadowRoot!.activeElement as HTMLElement | null
     expect(active?.closest?.('tr.row')?.getAttribute('data-key') ?? '').not.toBe('行1')
   })
+
+  it('I-1 滚动帧回锚：preventScroll 回锚不调 scrollIntoView、横向 scrollLeft 保持；update 回填路径保留 scrollIntoView', async () => {
+    const { el } = mountWindowed({
+      windowed: '',
+      total: '1000',
+      'window-start': '0',
+      'row-key': 'name',
+      height: '200',
+      'row-height': '40',
+      data: slice(0, 20),
+      'grid-navigation': '',
+    })
+    const nameTdOf = (key: string): HTMLElement =>
+      el.shadowRoot!.querySelector<HTMLElement>(`tr[data-key="${key}"] td[data-col="name"]`)!
+    const wrap = wrapOf(el)
+    // 聚焦行3 后横向滚动：滚动帧重建 tbody 曾用 focus() + scrollIntoView 把视口拉回锚格
+    nameTdOf('行3').focus()
+    expect(el.shadowRoot!.activeElement).toBe(nameTdOf('行3'))
+    const target = el as unknown as { scrollCellIntoView: (td: HTMLTableCellElement) => void }
+    const spy = vi.spyOn(target, 'scrollCellIntoView')
+    wrap.scrollLeft = 300
+    wrap.dispatchEvent(new Event('scroll'))
+    await flushRaf()
+    const restored = el.shadowRoot!.activeElement as HTMLElement | null
+    expect(restored?.tagName, '滚动帧重建后焦点应回锚（preventScroll 路径）').toBe('TD')
+    expect(restored!.closest('tr')!.getAttribute('data-key'), '回锚到同一 row-key').toBe('行3')
+    expect(wrap.scrollLeft, '横向滚动位置不被回锚拉回').toBe(300)
+    expect(spy, '滚动帧回锚不得调用 scrollIntoView（会把滚动位置拉回锚格）').not.toHaveBeenCalled()
+    // gridPos 已重映射：方向键自锚行续接（回锚不破坏网格导航）
+    restored!.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true, composed: true, cancelable: true }),
+    )
+    expect(el.shadowRoot!.activeElement!.closest('tr')!.getAttribute('data-key')).toBe('行4')
+    // 对照：update 路径（宿主回填切片）保留 focus + scrollIntoView——保证回填后锚行可见
+    spy.mockClear()
+    el.setAttribute('data', slice(0, 40))
+    const updated = el.shadowRoot!.activeElement as HTMLElement | null
+    expect(updated?.closest('tr')?.getAttribute('data-key'), 'update 回填路径焦点仍回锚').toBe('行4')
+    expect(spy, 'update 回填路径保留 scrollIntoView（锚行可见）').toHaveBeenCalled()
+    spy.mockRestore()
+  })
 })

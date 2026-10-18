@@ -40,6 +40,12 @@ OAS-UI 组的处理：
 
 受控组件（switch / radio-group / checkbox-group / slider / input-number 等）交互后会把最新值**写回宿主属性**：`el.getAttribute('value')` / `el.hasAttribute('checked')` 直接可读，与事件 `detail` 一致，无需自己缓存。
 
+## 数据属性
+
+### 数据属性的 property 通道接受 JSON 字符串吗？
+
+接受。出于宿主框架兼容（Vue 会把自定义元素上的静态 attribute 直接写成 property），`tasks` / `data` / `resources` / `events` / `items` 等数组数据属性的 setter 在运行时同时接受数组与 JSON 字符串（由 `shared/json-array` 统一归一）。**公开类型仍是数组**（推荐 property 传数组、attribute 传 JSON 字符串）；非法 JSON / 非数组一般回落空值，不抛异常。
+
 ## 样式定制
 
 ### `::part()` 后面不能接属性选择器

@@ -488,6 +488,88 @@ describe('OASIndexBar', () => {
     expect(items(el).map((b) => b.textContent)).toEqual(['Zed'])
   })
 
+  it('C1 sections property 收到 JSON 字符串（SPA 场景）：归一后回写属性并正常分组渲染', () => {
+    // Vue 按「key in el」把静态 sections attribute 的 JSON 字符串直接写进 property——
+    // 无 setter 的实例字段会被 own string 覆盖且 attribute 未写入 → 分节数据整体丢失
+    const el = new OASIndexBar()
+    document.body.appendChild(el)
+    expect(sectionEls(el).length).toBe(0)
+    // @ts-expect-error 模拟框架把静态 attribute 的 JSON 字符串写进 property
+    el.sections = SECTIONS
+    expect(JSON.parse(el.getAttribute('sections')!)).toHaveLength(3)
+    expect(letters(el).map((b) => b.textContent)).toEqual(['A', 'B', 'C'])
+    expect(items(el).map((b) => b.textContent)).toEqual(['Alice', 'Amy', 'Bob', 'Cara'])
+  })
+
+  it('C1 sections property 非法 JSON：空态 + devWarn 一次（同值去重），不抛', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    try {
+      const el = mount()
+      // @ts-expect-error 模拟非法字符串被写入 property
+      el.sections = '{bad'
+      expect(sectionEls(el).length).toBe(0)
+      expect(JSON.parse(el.getAttribute('sections')!)).toEqual([])
+      // @ts-expect-error 同值重复赋值不重复告警
+      el.sections = '{bad'
+      expect(warn.mock.calls.filter((c) => String(c[0]).includes('oas-index-bar')).length).toBe(1)
+    } finally {
+      warn.mockRestore()
+    }
+  })
+
+  it('连接前 sections 被写成 own property（JSON 字符串）：connectedCallback 删除 own 并回收到属性通道', () => {
+    // 升级/连接时序竞争：框架在元素连接前把静态 sections attribute 的 JSON 字符串写成 property，
+    // own 字符串会遮蔽原型访问器且 attribute 未写入——连接时必须删除 own 并走 setter 回收。
+    const el = new OASIndexBar()
+    Object.defineProperty(el, 'sections', { value: SECTIONS, configurable: true, writable: true })
+    document.body.appendChild(el)
+    expect(Object.prototype.hasOwnProperty.call(el, 'sections')).toBe(false)
+    expect(JSON.parse(el.getAttribute('sections')!)).toHaveLength(3)
+    expect(letters(el).map((b) => b.textContent)).toEqual(['A', 'B', 'C'])
+    expect(items(el).map((b) => b.textContent)).toEqual(['Alice', 'Amy', 'Bob', 'Cara'])
+  })
+
+  it('连接前 sections 被写成 own property（数组）：同样删除 own 并回收', () => {
+    const el = new OASIndexBar()
+    const data = [{ key: 'Z', items: [{ label: 'Zed' }] }]
+    Object.defineProperty(el, 'sections', { value: data, configurable: true, writable: true })
+    document.body.appendChild(el)
+    expect(Object.prototype.hasOwnProperty.call(el, 'sections')).toBe(false)
+    expect(letters(el).map((b) => b.textContent)).toEqual(['Z'])
+    expect(items(el).map((b) => b.textContent)).toEqual(['Zed'])
+  })
+
+  it('M-1 own property 回收首帧不派发 oas-change，正常交互路径仍派发', () => {
+    // 回收触发的 update 若沿用 initialized=true，会把高亮从 null 迁到首分节并多派发一次 oas-change
+    const el = new OASIndexBar()
+    Object.defineProperty(el, 'sections', { value: SECTIONS, configurable: true, writable: true })
+    const changes: Array<{ key: string }> = []
+    el.addEventListener('oas-change', (e) => changes.push((e as CustomEvent).detail))
+    document.body.appendChild(el)
+    expect(changes, '回收首帧等价初始渲染，不派发').toEqual([])
+    expect(activeLetter(el)).toBe('A')
+
+    // 正常路径不变：跳转仍派发一次
+    el.setAttribute('height', '200')
+    makeScrollable(list(el))
+    stubRect(list(el), rect(0))
+    sectionEls(el).forEach((s, i) => stubRect(s, rect(i * 400)))
+    letters(el)[2]!.click()
+    expect(activeLetter(el)).toBe('C')
+    expect(changes).toEqual([{ key: 'C' }])
+  })
+
+  it('sections property 数组通道行为不变；getter 返回拷贝（改返回值不影响内部）', () => {
+    const el = mount()
+    el.sections = [{ key: 'Z', items: [{ label: 'Zed', value: 'zed' }] }]
+    expect(letters(el).map((b) => b.textContent)).toEqual(['Z'])
+    const read = el.sections
+    expect(read).toEqual([{ key: 'Z', title: 'Z', items: [{ label: 'Zed', value: 'zed' }] }])
+    read[0]!.items[0]!.label = 'changed'
+    read[0]!.key = 'X'
+    expect(el.sections[0]).toEqual({ key: 'Z', title: 'Z', items: [{ label: 'Zed', value: 'zed' }] })
+  })
+
   it('运行时移除 height 恢复自适应', () => {
     const el = mount({ height: '200' })
     expect(list(el).style.height).toBe('200px')

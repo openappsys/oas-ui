@@ -834,3 +834,27 @@ describe('移动端缺口（窄视口 vw 保护 + coarse pointer hover 降级）
     }
   })
 })
+
+// ===== 属性-方法撞名回归（observedAttributes 与原型方法同名：position 单词无 camelCase 分叉） =====
+//
+// 机制：宿主框架（Vue 等按 camelCase 做 property 桥接）或用户 JS 写 `el.position = 'top'`
+// 会在实例上建自有属性遮蔽原型同名方法，组件内部 `this.position()` 随后抛 TypeError。
+// 私有方法已改名 placePanel，此处锁定：property 写入后 attribute 通道行为仍与未写入时等价。
+describe('OASPopconfirm 属性-方法撞名回归', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it("property 写入 position='top' 后 setAttribute('open') 不抛错，面板定位照常", () => {
+    const el = mount({ title: '确认？', 'auto-adjust-overflow': 'false' })
+    ;(el as unknown as Record<string, unknown>).position = 'top'
+    // attribute 变更同步触发 update → 内部 placePanel() 调用；改名前此处抛 TypeError
+    expect(() => el.setAttribute('open', '')).not.toThrow()
+    // 面板定位照常：面板打开 + data-placement 随旧 position 属性值落定（关翻转，确定性断言）
+    expect(pop(el).getAttribute('aria-hidden')).toBe('false')
+    expect(pop(el).getAttribute('data-placement')).toBe('top')
+  })
+})

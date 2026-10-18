@@ -1048,3 +1048,28 @@ describe('OASTransfer value property（get/set）', () => {
     expect(Object.hasOwn(el, 'value')).toBe(false)
   })
 })
+
+// ===== 属性-方法撞名回归（observedAttributes 的 camelCase 与原型方法同名） =====
+//
+// 机制：宿主框架按 camelCase 做 property 桥接或用户 JS 写 `el.xxx = ...` 会在实例上
+// 建自有属性遮蔽原型同名方法，组件内部 `this.xxx()` 随后抛 TypeError。
+// 私有方法已改名（pageSize → pageSizeValue）。
+describe('OASTransfer 属性-方法撞名回归', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  it('property 写入 pageSize 后分页渲染不抛错', async () => {
+    const el = mount({ pagination: '' })
+    ;(el as unknown as Record<string, unknown>).pageSize = 2
+    await Promise.resolve()
+    expect(() => el.setAttribute('page-size', '2')).not.toThrow()
+    expect(leftOptions(el).length).toBe(2)
+  })
+})

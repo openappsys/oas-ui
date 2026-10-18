@@ -1,5 +1,7 @@
 import { OASElement } from '@oas-ui/core'
 import { isRtl } from '../../shared/direction.js'
+import { parseJsonArray } from '../../shared/json-array.js'
+import { devWarn } from '../../shared/dev-warn.js'
 
 /** 索引栏条目数据 */
 export interface IndexBarItem {
@@ -158,6 +160,9 @@ function prefersReducedMotion(): boolean {
 
 let uid = 0
 
+/** sections property 通道非法输入告警去重（同值只告警一次） */
+const warnedSections = new Set<string>()
+
 /**
  * oas-index-bar —— 索引栏（navigation 族，移动原生形态批）。
  *
@@ -187,9 +192,30 @@ export class OASIndexBar extends OASElement {
   private listEl: HTMLElement | null = null
   private barEl: HTMLElement | null = null
 
-  private sections: NormalizedSection[] = []
+  private sectionsData: NormalizedSection[] = []
   private sectionEls: HTMLElement[] = []
   private letterEls: HTMLButtonElement[] = []
+
+  /**
+   * 分节数据 property 通道（读：归一后深拷贝；写：归一后回写 `sections` 属性）。
+   *
+   * 运行时接受数组或 JSON 字符串——Vue 等框架按「key in el」把静态 `sections` attribute 的
+   * JSON 字符串直接写成 property（SPA 跳转后元素已升级），无 setter 的实例字段会被 own string
+   * 覆盖且 attribute 未写入 → 数据整体丢失。非法输入按空分节处理 + devWarn 一次（同值去重）。
+   */
+  get sections(): IndexBarSection[] {
+    return this.normalizeSections(this.rawSectionsValue()).map((s) => ({
+      key: s.key,
+      title: s.title,
+      items: s.items.map((item) => ({ ...item })),
+    }))
+  }
+
+  set sections(v: IndexBarSection[]) {
+    const parsed = parseJsonArray<unknown>(v as unknown, () => this.warnInvalidSections(v as unknown))
+    this.setAttribute('sections', JSON.stringify(parsed))
+    if (this.hasRendered) this.update()
+  }
 
   /** 上次解析的 sections 原串：同值不重建 DOM */
   private lastSectionsRaw: string | null = null
@@ -212,6 +238,24 @@ export class OASIndexBar extends OASElement {
   private dragIndex = -1
 
   private readonly uid = ++uid
+
+  override connectedCallback(): void {
+    super.connectedCallback()
+    // 升级/连接时序竞争：连接前被赋过 sections（SSR/onMounted 与模块加载的时序竞争），
+    // own 属性遮蔽原型访问器 → parseSections 读 attribute 为空 → 不渲染。
+    // 运行时 value 可能是分节数组，也可能是框架把静态 sections attribute 写成 property 的 JSON 字符串。
+    if (Object.prototype.hasOwnProperty.call(this, 'sections')) {
+      const own = (this as unknown as { sections?: unknown }).sections
+      if (Array.isArray(own) || typeof own === 'string') {
+        delete (this as unknown as Record<string, unknown>).sections
+        // 回收首帧等价于初始渲染：不走 oas-change 派发分支。
+        // （首帧 update 已把 initialized 置 true；若不重置，回收触发的第二次 update
+        //  会把高亮从 null 迁到首分节并误派发 oas-change。）
+        this.initialized = false
+        this.sections = own as IndexBarSection[]
+      }
+    }
+  }
 
   /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
   private template(): string {
@@ -262,7 +306,7 @@ export class OASIndexBar extends OASElement {
     this.attachSpy()
     if (!this.initialized) {
       // 首帧：列表起始在顶部，高亮首分节且不派发 oas-change（滚动联动负责后续）
-      this.applyActive(this.sections.length > 0 ? 0 : -1, false)
+      this.applyActive(this.sectionsData.length > 0 ? 0 : -1, false)
       this.initialized = true
     } else {
       this.applyActive(this.computeCurrent(), true)
@@ -272,16 +316,21 @@ export class OASIndexBar extends OASElement {
   // ---------- 数据解析 ----------
 
   private parseSections(): void {
-    let parsed: unknown = null
+    this.sectionsData = this.normalizeSections(this.rawSectionsValue())
+  }
+
+  /** 读取 `sections` 属性原文并解析（非法 JSON → null，由归一化层按空分节处理） */
+  private rawSectionsValue(): unknown {
     try {
-      parsed = JSON.parse(this.getAttr('sections', '[]'))
+      return JSON.parse(this.getAttr('sections', '[]'))
     } catch {
-      parsed = null
+      return null
     }
-    if (!Array.isArray(parsed)) {
-      this.sections = []
-      return
-    }
+  }
+
+  /** 归一化分节数据：过滤非对象 / 缺 key / 重复 key / 非法 item（属性与 property 双通道共用） */
+  private normalizeSections(parsed: unknown): NormalizedSection[] {
+    if (!Array.isArray(parsed)) return []
     const out: NormalizedSection[] = []
     const seen = new Set<string>()
     for (const raw of parsed) {
@@ -301,7 +350,15 @@ export class OASIndexBar extends OASElement {
       }
       out.push({ key, title, items })
     }
-    this.sections = out
+    return out
+  }
+
+  /** 非法 sections property 输入告警（同值 / 同类型一次） */
+  private warnInvalidSections(v: unknown): void {
+    const key = typeof v === 'string' ? v : typeof v
+    if (warnedSections.has(key)) return
+    warnedSections.add(key)
+    devWarn('[oas-index-bar] sections property 收到非法数据（应为分节数组或其 JSON），已按空分节处理')
   }
 
   // ---------- 渲染 ----------
@@ -314,9 +371,9 @@ export class OASIndexBar extends OASElement {
     bar.innerHTML = ''
     this.sectionEls = []
     this.letterEls = []
-    this.sections.forEach((section, i) => list.appendChild(this.buildSection(section, i)))
-    this.sections.forEach((section, i) => bar.appendChild(this.buildLetter(section, i)))
-    if (this.focusIndex >= this.sections.length) this.focusIndex = Math.max(0, this.sections.length - 1)
+    this.sectionsData.forEach((section, i) => list.appendChild(this.buildSection(section, i)))
+    this.sectionsData.forEach((section, i) => bar.appendChild(this.buildLetter(section, i)))
+    if (this.focusIndex >= this.sectionsData.length) this.focusIndex = Math.max(0, this.sectionsData.length - 1)
     this.syncRoving()
     this.renderActive()
   }
@@ -397,7 +454,7 @@ export class OASIndexBar extends OASElement {
 
   private renderActive(): void {
     this.letterEls.forEach((btn, i) => {
-      const on = this.sections[i]?.key === this.activeKey
+      const on = this.sectionsData[i]?.key === this.activeKey
       btn.classList.toggle('active', on)
       btn.setAttribute('aria-current', on ? 'true' : 'false')
     })
@@ -447,7 +504,7 @@ export class OASIndexBar extends OASElement {
   }
 
   private computeCurrent(): number {
-    const len = this.sections.length
+    const len = this.sectionsData.length
     if (len === 0) return -1
     const root = this.spyRoot()
     const threshold = root === window ? 1 : (this.listEl?.getBoundingClientRect().top ?? 0) + 1
@@ -464,7 +521,7 @@ export class OASIndexBar extends OASElement {
   }
 
   private applyActive(index: number, emit: boolean): void {
-    const key = index >= 0 ? this.sections[index]?.key : null
+    const key = index >= 0 ? this.sectionsData[index]?.key : null
     if (key == null || key === this.activeKey) return
     this.activeKey = key
     this.renderActive()
@@ -472,7 +529,7 @@ export class OASIndexBar extends OASElement {
   }
 
   private jumpTo(index: number, emit: boolean): void {
-    const section = this.sections[index]
+    const section = this.sectionsData[index]
     if (!section) return
     const root = this.spyRoot()
     const target = root === window ? this.docTop(index) : this.contentTop(index)

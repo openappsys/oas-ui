@@ -478,7 +478,7 @@ export class OASCalendar extends OASElement {
   }
 
   /** 生效历法：`calendar-system` 属性（Intl calendar 标识，如 chinese/islamic/hebrew）；缺省公历 */
-  private calendarSystem(): string {
+  private calendarSystemValue(): string {
     return this.getAttr('calendar-system', '').trim()
   }
 
@@ -657,7 +657,7 @@ export class OASCalendar extends OASElement {
     if (title) {
       // format 覆盖头部标题格式（token 同 date-picker：yyyy/MM/dd…）；十年面板为区间形态，格式串不适用
       const fmt = this.getAttr('format', '')
-      const calendar = this.calendarSystem()
+      const calendar = this.calendarSystemValue()
       const y = this.viewDate.getFullYear()
       const count = this.monthCount()
       title.textContent =
@@ -763,7 +763,7 @@ export class OASCalendar extends OASElement {
     const hadFocus = focusNow || (this.shadow.activeElement != null && grid.contains(this.shadow.activeElement))
     const selected = this.isRange() ? null : this.selectedDate()
     const focus = this.focusDate ?? selected ?? startOfDay(new Date())
-    const calendar = this.calendarSystem()
+    const calendar = this.calendarSystemValue()
 
     // 多月份并排：清空后逐月渲染（每月一个 role=rowgroup 面板）；单月份保持既有直挂结构（零回归）
     if (count > 1) grid.innerHTML = ''

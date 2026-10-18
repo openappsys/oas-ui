@@ -12,7 +12,27 @@
 ### 修复
 
 - **SPA 客户端路由下 scheduler / gantt / resource demo 空白**：① 私有成员与单字属性撞名（`scale`/`view`/`expanded`），框架按「key in el」把静态 attribute 写成 property，own 字符串遮蔽方法或 Set 字段导致报错/空白；内部改名（`scaleMode`/`viewMode`/`expandedSet`，公开 API 不变）。② 数据属性的 property setter 统一接受 JSON 字符串（`events`/`resources`/`tasks`/`lines` 等），框架把静态 attribute 当 property 写入时不再被当作非法数组清空。新增 `shared/json-array` 与客户端跳转回归（表格 → 日程 → 甘特 → 资源）。
-- **同款 property setter 字符串容忍补齐（menu / rate / list）**：SPA 跳转下框架把静态 JSON attribute 写成 property 字符串——`oas-menu` 的 `items` property 收到字符串曾把 JSON 串逐字符渲染成整串垃圾菜单项（非法 JSON → 空菜单 + devWarn 一次）；`oas-rate` 的 `colors` / `icons` property 收到字符串曾被当异型丢弃而属性通道又没被写，配置整体失效（现解析生效，非法 JSON 回落属性通道）；`oas-list` 的 `data` property 同口径（公开类型仍为数组，与 gantt/resource 一致）。docs-nav 回归补 menu（项数合理）与 rate（colors/icons 生效）客户端跳转断言。
+- **SPA 路由下 card demo 空白/崩溃（`shadow` 属性与基类字段撞名）**：`shadow` 既是卡片阴影属性（`always`/`hover`/`none`），也是 `OASElement` 内部的 ShadowRoot 字段；框架按「key in el」把静态 `shadow` attribute 写成 property 时，字符串覆盖真实 root，后续 `this.shadow.querySelector` 抛错中断渲染。现以原型访问器分通道：字符串写回 attribute；`null` / `undefined`（受控表达式转假）移除 attribute 回缺省无阴影态；仅 ShadowRoot（或带 `querySelector` 的对象）落入内部存储；其他异型忽略并 dev 告警一次——属性、渲染与事件路径不再被污染。
+- **布尔 `open` 属性经框架 property 通道写入空串被误判关闭（`oas-select` / `oas-swipe-cell`）**：静态 `<oas-select open>` / `<oas-swipe-cell open>` 在宿主框架下以空串 `''` 写入 property，旧 setter 用真值判断将其当成关闭；现按 presence 语义处理——空串视为打开，仅 `false` / `'false'` / `null` / `undefined` 关闭。
+- **`collision-guard` 守卫扩展到基类成员**：源码级撞名检查在组件自身成员之外合并基类实例成员（`OASElement`；表单组件含 `OASFormElement`），attribute 的 camelCase 名撞基类方法/字段/只读访问器时同样报红；`static` 块内经 `Object.defineProperty(this.prototype, ...)` 安装的 get/set 遮蔽纳入识别（设计内 property 双通道豁免），并补「撤掉 card 遮蔽必红」的反证用例。
+- **数据属性通道修复（虚拟化 / 跨组件防护强化）**：
+  - **`oas-index-bar` `sections` property 通道**：补 getter/setter（运行时接受分节数组或其 JSON 字符串，归一后回写 `sections` 属性）；连接前已被写成 own property（字符串/数组）时在 `connectedCallback` 删除 own 并回收到访问器，修复 SPA 跳转后索引栏空数据（私有字段改名 `sectionsData` 防同名遮蔽）。
+  - **多值表单控件 `value` property 字符串容忍**：`oas-cascader` / `oas-select`（multiple）/ `oas-toggle-group`（multiple）/ `oas-slider`（双值）/ `oas-tree-select`（multiple；单选对象字符串同样归一，label-in-value 多选保留树外对象 label 回显）/ `oas-combobox`（multiple）——框架把静态 `value` JSON attribute 写成 property 字符串时先 JSON 归一，不再整串当单值（数组双重编码）或 `Number('[...]') → 0`（slider 双值丢失）；`oas-virtual-list.items` 的 connectedCallback 回收分支同时覆盖 JSON 字符串（此前只回收数组）。
+  - **`oas-menu` items 双通道统一（结构过滤 + property 字符串容忍）**：attribute / property 的 items 走同一 `sanitizeMenuItems`（非对象、字符串项、既无 `value` 又无 `label`/`href` 的普通项不渲染；有 `label` 或 `href` 的免 `value` 项保留）；property 通道收到 JSON 字符串先解析为菜单数组，非法 JSON → 空菜单 + devWarn 一次——修复框架把静态 `items` attribute 写成 property 字符串时被当异型丢弃或逐字符渲染成垃圾菜单项。docs-nav 回归补 menu 客户端跳转断言（项数合理）。
+  - **`oas-splitter` `sizes` property 通道**：新增 getter/setter（接受百分比数组、文档的逗号分隔写法或其 JSON 字符串，归一总和 100 后写回 JSON attribute）；内部字段改名 `sizesData` 防同名遮蔽，连接前被写成 own property 时回收进 setter，非法/空输入保留既有受控 attribute 并 devWarn 一次；getter 以 attribute 为真源，面板数不匹配回落均分时不再返回与 attribute 矛盾的陈旧值。
+  - **`oas-gantt` 排程与窗口化收口**：依赖 `lag` 安全域由 1e15 ms 收紧到 1e12 ms（约 11574 天）并补属性通道越界 devWarn；`writeStartKeepingDuration` 增加写回域守卫（结果无法被 `parseTaskDate` 回读则跳过，防 5 位年份导致 `el.tasks = el.tasks` 静默丢任务）；`auto-schedule` 属性通道事件序统一为 `oas-reschedule → oas-tasks-change`；windowed 切片越界（`window-start + 装载数 > total`）devWarn 一次；行位 ARIA 改回 `treeitem` 合法属性（`posinset`/`setsize`/`level`），移除容器 `aria-rowcount` 与行 `aria-rowindex`。
+  - **`oas-table` 横向滚动回锚**：滚动帧重建前保存/恢复 `scrollLeft`，回锚用 `focus({ preventScroll: true })` 且不调 `scrollCellIntoView`——修复 `grid-navigation` 下每帧横向滚动被拉回锚点格（`scrollLeft` 恒 0）。
+  - **`oas-scheduler` 当前时间线刷新手势守卫**：每分钟 `show-now` 刷新在拖拽/创建手势进行中跳过整视重建，避免拆掉 pointer capture 导致手势中断。
+  - **`oas-bubble` 继承对齐 rAF 单飞**：`syncInheritedAlign` 的下一帧复读改为实例级单飞（同帧多次 update 复用同一帧），断开连接时取消未决帧，避免重复 `getComputedStyle`。
+  - **门禁覆盖强化**：`vue-prop-hijack` 契约表扩展到全部数据属性组件页（tree/chart/kanban/calendar/list/scheduler/table/gantt/resource/splitter/virtual-list），attribute 通道以同路由 SSR 静态 HTML 为基线**逐实例**比对缺失（防部分实例被劫持的聚合漏判），property 通道改为逐实例 setter/own property/渲染断言；新增 `qa-regression/windowed-a11y.spec.ts` 覆盖 gantt/table/tree/list/resource 虚拟化行位 ARIA + axe（wcag2a/2aa/21aa）critical/serious 零容忍。
+- **其余数据属性 property setter 字符串容忍补齐（rate / list）**：SPA 跳转下框架把静态 JSON attribute 写成 property 字符串——`oas-rate` 的 `colors` / `icons` property 收到字符串曾被当异型丢弃而属性通道又没被写，配置整体失效（现解析生效，非法 JSON 回落属性通道）；`oas-list` 的 `data` property 同口径（公开类型仍为数组，与 gantt/resource 一致）。docs-nav 回归补 rate（colors/icons 生效）客户端跳转断言。
+- **布尔属性 property 通道与数字 ID 数据补齐（ellipsis / image / number-animation / speed-dial / upload / tree-select / tree / index-bar）**：
+  - **`oas-ellipsis` `expanded` / `oas-image` `preview-open` 布尔属性 property 通道 + 空串语义**：私有布尔字段与同名属性撞名，框架按「key in el」走 property 赋值时写入实例字段、属性通道整体失效。改为 getter/setter 写回同名属性，并按 presence 语义处理——静态 `<oas-ellipsis expanded>` 经框架 property 通道写入的是空串 `''`，空串必须视为 true（`!!value` 会 removeAttribute 导致失效/水合收起），`false` / `'false'` 关闭。
+  - **`oas-number-animation` `from` / `oas-speed-dial` `geometry` / `radius` 属性-字段撞名**：私有字段改名（`fromValue` / `geometryMode` / `radiusValue`）并补 property 通道写回同名属性（非法值由渲染合法化回落缺省），框架 property 写入不再被 own 字段遮蔽而静默失效。
+  - **`oas-upload` `listType` getter-only 崩溃**：`listType` 曾是私有只读 getter，Vue/React 桥接按「key in el」写 property 时抛「only a getter」TypeError 中断渲染；补 setter 写回 `list-type` 属性（非法值渲染时回落 list，行为不变）。
+  - **`oas-tree-select` / `oas-tree` 数字 ID/key 节点**：树数据 id 常为后端数字主键，但 tree-select 的 options 解析按 `typeof !== 'string'` 把数字 id 节点整体丢弃、节点访问器 idOf 对数字返回 ''（tree 同款）——而 value/checked/expanded 通道早已数字 String() 归一，值进得来、节点却不存在。现数据入口与节点访问器统一数字 String() 口径：数字 id 节点正常渲染、可选中/勾选/展开级联、预设数字值回显节点 label；字符串行为不变。
+  - **`oas-index-bar` sections 回收首帧误派 oas-change**：连接前被框架写成 own property 的 sections 在 `connectedCallback` 回收进 setter 后触发第二次 update，把首帧高亮初始化误判为用户切换并派发 oas-change；回收时重置首帧标记（回收等价初始渲染，不派发事件）。
+- **`oas-table` 导出文件名方法收为内部 API**：`generateExportFileName()`（原公开名 `exportFileName()`）改为内部方法，不再出现在公开类型——公开方法名与 `export-file-name` 属性的 camelCase property 桥接同名冲突（宿主写该属性会遮蔽方法）。自定义导出文件名走 `export-file-name` 属性或 `exportData(format, { fileName })`，行为不变。
 - **`oas-table` windowed 切片回填后焦点丢失**：update / 滚动帧清空 tbody 会连带拆掉聚焦单元格，宿主回填新切片（`window-start` / `data` 变化）后焦点静默丢失且 `gridPos` 还是旧渲染矩阵坐标。修复：重渲染前记录聚焦行的**绝对行键**（row-key 值，缺失回落绝对行号）与列，重渲染后该行仍在新窗口内则恢复焦点并把 `gridPos` 重映射到新矩阵坐标；已不在窗口内则不强行聚焦（不回退切片首行）。`oas-window-request` 派发行为不变。
 - **`oas-table` 非 windowed 虚拟滚动帧 O(总数据)**：滚动回调曾每帧重跑过滤切片（`computeDisplayRoots`）、全量可见性过滤（`visibleFlat`）与数据行序前缀扫描。修复：展示集（visibleFlat 结果 + 序号前缀 + 数据行数）按「数据/排序/筛选/分组/展开/分页/列」签名缓存，滚动帧只做窗口切片（windowed 同走缓存，行为不变）；新增内部诊断计数 `visibleBuilds` 锁定滚动帧零全量重建。
 - **`oas-list` windowed `window-start` 越过 `total` 不夹取**：夹取到全量末尾渲染并 devWarn 一次（对齐 table 的切片越界告警契约）——不夹取会按越界绝对行号铺 spacer，顶部占位撑出 `total×rowH` 之外的巨量空白。
@@ -133,7 +153,7 @@
 - **max-tag-count 数值口径五方归一**：select / cascader / combobox / tree-select / dynamic-tags 全部改走 `intAttr` 读取器并加 `>= 0` 钳制——负值/非法值统一视为未设置（不折叠；此前 tree-select/dynamic-tags 会把全部标签折叠为 +N，cascader 负值会出现离群切片丢尾格）；manifest 类型统一为 `number`
 
 - **oas-toast 离场时长 CSS 单位解析**：`--oas-toast-leave-duration` 的秒值（如 `0.2s`）此前被 `parseFloat` 误当毫秒（0.2ms），离场动画被即刻截断；现按 CSS 时间单位正确换算（`s` / `ms`，非法值回落默认 200ms）
-- **oas-combobox 虚拟滚动视口 tabindex**：改走 `viewportFocusable` 属性通道（与 cascader 同款先例）——此前 `removeAttribute` 会被 virtual-list 下次 update 重新加回，视口多一个 Tab 停靠点
+- **oas-combobox 虚拟滚动视口 tabindex**：改走 `viewportFocusable` 属性通道（与 cascader 的既有做法一致）——此前 `removeAttribute` 会被 virtual-list 下次 update 重新加回，视口多一个 Tab 停靠点
 - **oas-bubble `reactions-side` / `reactions-align` 生效**：宿主改 flex 列容器（原块布局下 `order` / `align-self` 无效）；message-row 的 `text-align` 对齐继承经 `data-inherit-end` 反射保留（`align="end"` 行气气泡仍右对齐），显式 `align` 属性优先于继承反射
 - **oas-float-button `trigger="hover"` 触屏回落 click**：粗指针（coarse pointer）下自动按 click 触发（此前触屏 tap 完全不展开，与文档承诺的「触屏回落 click」一致）
 - **oas-popover 移除死属性 `arrow-point-at-center`**：popover 箭头默认即跟随锚点（单测 + e2e 佐证），该属性登记在 observedAttributes 却从未被消费；已从属性清单 / manifest / 文档同步移除（tooltip / dropdown / hover-card / tour 的同名属性不受影响）
@@ -173,7 +193,7 @@
 - **`@oas-ui/ui/ssr` 出口补全**：新增 `OASGantt`/`OASBarcode`/`OASScheduler`/`OASBottomSheet`/`OASAppBar`/`OASStepperPanel`/`OASFormItem`/`OASButtonGroupSeparator` 类导出（此前文件头宣称「re-export 全部组件类」但缺 8 个——含 v2.5.9 的 scheduler；均从类文件直出，不引含 define 副作用的目录入口）。
 - **文档站语言偏好污染（满负载实抓）**：首访适配的偏好槽 `oas-lang` 此前只靠 `oldValue === undefined` 判定「落地不写」，路由/水合重算会以 oldValue 有值再次触发 watcher 写回落地页 locale——污染后 en 浏览器访问 zh 深链不再跳转。改为「点击语言下拉才算显式切换」写入 + e2e 回归锁。
 - **浅色玻璃面板在白色背景下边界与内部隔断线消失（用户两轮实抓）**：浅色玻璃的 surface（白 0.6~0.75 半透明）与折光边（白 0.55）在白底上同为白色系，面板读作浮字；内部隔断线（modal 标题/底部分割线）走白色 border token，在白面板上同样消失（暗色下白色结构线可见，故只有浅色出问题）。修复双管齐下：① 三档阴影前置发丝线（`0 0 0 1px rgba(0,0,0,0.06~0.08)`）补面板外缘；② 浅色 `--oas-color-border` 系列改深色发丝（`rgba(0,0,0,0.08/0.14)`）补内部隔断——折光边职责仍归白色 `--oas-glass-ring`（outline 内缩），结构线与折光边分工对齐 iOS 浅色半透明面板；dark 段不动（范围纪律）。e2e 固化 computed 阴影含发丝线 + modal 标题分割线为深色系断言 + 白底/渐变双场景截图复核。
-- **oas-color-picker 未连接写 `value` 崩溃（React 19 宿主整树中断）**：React 19 在元素已升级、未连接时设置 property，`set value()` 直调 `update()` 读到未渲染内部件（`syncControls` 的 `.r/.g/.b` 非空断言）抛 TypeError。修复：setter 加 `hasRendered` 守卫（属性写入保留，首渲染自然读新值，与基类 `attributeChangedCallback` 早退同语义）。同步落地 29 组件 `value` setter 未连接守卫普查套件 + 真实浏览器 e2e 固化；并把同款守卫**统一铺到全部 20 个直调 `update()` 的 value setter**（input/textarea/select/slider/cascader/date-picker/time-picker/rate/radio/segmented/transfer/tree-select 等——此前「恰好不崩」靠各组件 update() 路径容错，现改为构造保证的「廉价 setter」约定：连接安全不依赖实现细节）。
+- **oas-color-picker 未连接写 `value` 崩溃（React 19 宿主整树中断）**：React 19 在元素已升级、未连接时设置 property，`set value()` 直调 `update()` 读到未渲染内部件（`syncControls` 的 `.r/.g/.b` 非空断言）抛 TypeError。修复：setter 加 `hasRendered` 守卫（属性写入保留，首渲染自然读新值，与基类 `attributeChangedCallback` 早退同语义）。同步落地 29 组件 `value` setter 未连接守卫普查套件 + 真实浏览器 e2e 固化；并把该守卫**统一铺到全部 20 个直调 `update()` 的 value setter**（input/textarea/select/slider/cascader/date-picker/time-picker/rate/radio/segmented/transfer/tree-select 等——此前「恰好不崩」靠各组件 update() 路径容错，现改为构造保证的「廉价 setter」约定：连接安全不依赖实现细节）。
 - **high-contrast × class 式暗色（`html.dark`）下玻璃材质泄漏**：`.dark` 选择器补 `:not([data-theme="high-contrast"])`——HC 可访问性强档下 blur/ring/折射全部让位（此前仅 `[data-theme='dark']` 路径排除）。
 
 ## [2.5.9] - 2026-10-05
@@ -270,10 +290,10 @@
 
 ### 修复
 
-- **oas-modal `no-mask` 的 `aria-modal` 语义修正**：非模态（页面可交互）时硬编码 `aria-modal="true"` 会向读屏谎报模态——改为动态（no-mask → false；对齐 dialog.show() 语义与 drawer 同款修复）
+- **oas-modal `no-mask` 的 `aria-modal` 语义修正**：非模态（页面可交互）时硬编码 `aria-modal="true"` 会向读屏谎报模态——改为动态（no-mask → false；对齐 dialog.show() 语义与 drawer 的既有修复一致）
 - **oas-context-menu `kind="checkbox"` 勾选项链路断裂**（新增 kind demo 时浏览器实抓）：宿主 `value` 从不下传给内层 menu（初始勾选态永不回显）、勾选切换不写回宿主（勾选态丢失）、勾选即关菜单（违反「勾选切换不收起」惯例）——补齐 value 下传 + 勾选写回 + checkbox 切换不收起，转发 detail 带 `checked`；存量「宿主不写回 value」测试锁的正是缺陷行为，已扶正
 - **oas-input 未提交输入被无关 update 抹掉**：typing（未提交）期间任何属性变化触发的 update() 都会从 value 属性回写内层 input——用户正在输入的文本被旧属性值覆盖（loading 远程校验主场景实抓：校验请求发出 loading 开、响应回来 loading 关，期间输入全丢；status/size 等切换同病）。改为「value 属性实际变化才回写」（未提交输入保护），受控写回路径不变；单测 + e2e 固化
-- **`[hidden]` 兜底全量收口（79 文件/66 组件实证）**：`:host { display }` 是 shadow 作者样式，来源压过 UA `[hidden]` 规则——凡 :host 设 display 而缺 `:host([hidden])` 兜底的组件，宿主写 `hidden` 仍可见。CDN 全量实测 163 组件中 66 个失效（含 button/icon/tag/input/select 等高频件；2.5.6 曾按报障收口 8 处，系症状驱动的局部收口）；本次全量补齐同款规则，另修 oas-grid 内联 `display` 压过兜底、oas-anchor-target（单文件多组件漏网）两处边角。新增 style-conventions 源码级守卫（逐样式字面量粒度，防新组件再漏）+ 实测 sweep 复验归零
+- **`[hidden]` 兜底全量收口（79 文件/66 组件实证）**：`:host { display }` 是 shadow 作者样式，来源压过 UA `[hidden]` 规则——凡 :host 设 display 而缺 `:host([hidden])` 兜底的组件，宿主写 `hidden` 仍可见。CDN 全量实测 163 组件中 66 个失效（含 button/icon/tag/input/select 等高频件；2.5.6 曾按报障收口 8 处，系症状驱动的局部收口）；本次全量补齐同类规则，另修 oas-grid 内联 `display` 压过兜底、oas-anchor-target（单文件多组件漏网）两处边角。新增 style-conventions 源码级守卫（逐样式字面量粒度，防新组件再漏）+ 实测 sweep 复验归零
 
 ## [2.5.6] - 2026-09-23
 
@@ -666,7 +686,7 @@
 - **sidebar 嵌套子菜单两个视觉缺陷**：`.sub` 类名冲突致激活背景溢出面板右缘（容器改 `.submenu` 隔离）；无图标子项 label 与父项齐平/偏左（保留图标占位 + label 缩进父项右侧）
 - **splitter + sidebar 组合**：sidebar 内联 style 被 update 周期清除致拖拽调宽失效——`width="100%"` 属性化；e2e 真拖回归固化
 - **card**：无 title 时 header part 仍渲染 33px 空占位——补 `.header[hidden]` 兜底（对齐 `.cover[hidden]` 先例）
-- **docs 首页**：「性能速览 → 三行代码」两屏间渐变分隔光带缺失（该屏双伪元素被网格/光晕占用）——显式 `.home-divider` 元素承载，与其他屏同位同款
+- **docs 首页**：「性能速览 → 三行代码」两屏间渐变分隔光带缺失（该屏双伪元素被网格/光晕占用）——显式 `.home-divider` 元素承载，与其他屏同位一致
 
 ### 变更
 

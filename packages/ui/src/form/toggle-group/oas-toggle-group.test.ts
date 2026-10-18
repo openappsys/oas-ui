@@ -765,6 +765,27 @@ describe('OASToggleGroup value property（get/set）', () => {
     expect(multi.value).toEqual(['week', 'month'])
   })
 
+  it('C1 多选 value property 收到 JSON 字符串（SPA 场景）：解析为选中集，不双重编码', () => {
+    const el = mount({ multiple: '' })
+    el.value = '["week"]'
+    expect(el.getAttribute('value'), 'attribute 仍为单层 JSON 数组').toBe('["week"]')
+    expect(el.value).toEqual(['week'])
+    expect(buttons(el)[1]!.getAttribute('aria-checked')).toBe('true')
+
+    el.value = '["day","month"]'
+    expect(JSON.parse(el.getAttribute('value')!)).toEqual(['day', 'month'])
+    expect(buttons(el).map((b) => b.getAttribute('aria-checked'))).toEqual(['true', 'false', 'true'])
+  })
+
+  it('C1 多选 value 字符串：单值仍按单值，非法 JSON 不抛并按单值处理', () => {
+    const el = mount({ multiple: '' })
+    el.value = 'week'
+    expect(JSON.parse(el.getAttribute('value')!)).toEqual(['week'])
+    // 非法 JSON 按单值处理（不抛）
+    el.value = '[oops'
+    expect(JSON.parse(el.getAttribute('value')!)).toEqual(['[oops'])
+  })
+
   it("'value' in el === true（原型访问器，非实例 expando）", () => {
     const el = mount()
     expect('value' in el).toBe(true)

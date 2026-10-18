@@ -26,6 +26,26 @@ function normalizeChoice(raw: string, fallback: string, valid: readonly string[]
   return (valid as readonly string[]).includes(raw) ? raw : fallback
 }
 
+/**
+ * 多选 value property 归一（框架把静态 JSON attribute 写成 property 的 SPA 场景）：
+ * 字符串先按 JSON 数组解析（`'["apple","banana"]'` → `['apple','banana']`）；
+ * 解析失败/非数组按单值；空串 → 空数组。字符串直接 `[String(v)]` 会把整串当单值并双重编码。
+ */
+function coerceMultiValues(v: string | string[] | null | undefined): string[] {
+  if (Array.isArray(v)) return v.map((x) => String(x))
+  if (v == null || v === '') return []
+  const s = String(v)
+  if (s.trim() !== '') {
+    try {
+      const parsed: unknown = JSON.parse(s)
+      if (Array.isArray(parsed)) return parsed.map((x) => String(x))
+    } catch {
+      /* 非法 JSON：按单值处理（不抛） */
+    }
+  }
+  return [s]
+}
+
 /** 选项行样式（非虚拟模式渲染在 combobox 自身 shadow；虚拟模式注入到 vlist shadow，两处共用） */
 const OPTION_STYLE = `
 .option {
@@ -467,8 +487,8 @@ export class OASCombobox extends OASFormElement {
    */
   set value(v: string | string[]) {
     if (this.isMultiple()) {
-      const arr = Array.isArray(v) ? v.map((x) => String(x)) : v == null || v === '' ? [] : [String(v)]
-      this.setAttribute('value', JSON.stringify(arr))
+      // 字符串按 JSON 数组归一：SPA 下静态 value JSON attribute 会被框架写成 property 字符串
+      this.setAttribute('value', JSON.stringify(coerceMultiValues(v)))
     } else {
       const next = v == null || Array.isArray(v) ? '' : String(v)
       this.setAttribute('value', next)

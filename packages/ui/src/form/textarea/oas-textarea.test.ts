@@ -87,6 +87,21 @@ describe('OASTextarea', () => {
     expect(t.style.maxHeight).toBe(`${Math.round(lh * 4 + 16)}px`)
   })
 
+  it('property 写入 minRows / maxRows 后 autosize 输入不抛（内部方法改名防实例遮蔽）', () => {
+    const el = mount({ autosize: '', 'min-rows': '2', 'max-rows': '4' })
+    const t = ta(el)
+    const rec = el as unknown as Record<string, unknown>
+    // Vue/React 桥接的 camelCase property 会遮蔽同名私有方法；内部判定仍读 attribute
+    rec.minRows = 9
+    rec.maxRows = 1
+    Object.defineProperty(t, 'scrollHeight', { configurable: true, value: 500 })
+    t.value = '很长的内容'.repeat(20)
+    expect(() => t.dispatchEvent(new Event('input'))).not.toThrow()
+    const lh = lineHeight(t)
+    expect(t.style.minHeight).toBe(`${Math.round(lh * 2 + 16)}px`)
+    expect(t.style.maxHeight).toBe(`${Math.round(lh * 4 + 16)}px`)
+  })
+
   it('内容超出 max-rows 时高度封顶并出现滚动条', () => {
     const el = mount({ autosize: '', 'max-rows': '2' })
     const t = ta(el)

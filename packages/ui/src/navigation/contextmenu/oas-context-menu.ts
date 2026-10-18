@@ -179,7 +179,7 @@ export class OASContextMenu extends OASElement {
         if (this.hasPending) this.positionAt(this.pendingX, this.pendingY)
         document.addEventListener('click', this.handleOutside, true)
         document.addEventListener('contextmenu', this.handleDocContext)
-        if (this.closeOnScroll()) window.addEventListener('scroll', this.handleScroll, true)
+        if (this.closeOnScrollOn()) window.addEventListener('scroll', this.handleScroll, true)
       }
     } else {
       document.removeEventListener('click', this.handleOutside, true)
@@ -229,12 +229,12 @@ export class OASContextMenu extends OASElement {
   }
 
   /** close-on-scroll 布尔属性：默认 true（滚动关闭），仅 "false" 关闭该行为 */
-  private closeOnScroll(): boolean {
+  private closeOnScrollOn(): boolean {
     return this.getAttr('close-on-scroll', 'true') !== 'false'
   }
 
   /** long-press-delay：长按触发时长（ms），默认 500，非法值回退 500 */
-  private longPressDelay(): number {
+  private longPressDelayMs(): number {
     const raw = parseInt(this.getAttr('long-press-delay', '500'), 10)
     return Number.isFinite(raw) && raw >= 0 ? raw : 500
   }
@@ -247,7 +247,7 @@ export class OASContextMenu extends OASElement {
     this.longPressY = touch.clientY
     this.longPressArmed = false
     window.clearTimeout(this.longPressTimer)
-    const delay = this.longPressDelay()
+    const delay = this.longPressDelayMs()
     this.longPressTimer = window.setTimeout(() => {
       // 计时到：视为右键打开菜单（随后到达的原生 contextmenu 会被 preventDefault 掉，幂等不重复打开）
       this.longPressArmed = true

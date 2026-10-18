@@ -852,6 +852,32 @@ describe('OASCombobox value property（公开读/写通道）', () => {
     el.value = 'apple'
     expect(Object.hasOwn(el, 'value')).toBe(false)
   })
+
+  it('C1 多选 value property 接受 JSON 字符串：解析为数组、chip 数与文本正确、不双重编码', () => {
+    const el = mount({ multiple: '', value: '[]' })
+    el.value = '["apple","banana"]'
+    expect(el.getAttribute('value')).toBe('["apple","banana"]')
+    expect(el.value).toEqual(['apple', 'banana'])
+    const chips = [...el.shadowRoot!.querySelectorAll<HTMLElement>('.chip .chip-label')].map((n) => n.textContent ?? '')
+    expect(chips).toEqual(['苹果', '香蕉'])
+  })
+
+  it('C1 多选 value property 非法 JSON：按单值处理、不抛、不双重编码', () => {
+    const el = mount({ multiple: '', value: '[]' })
+    expect(() => {
+      el.value = '{bad-value'
+    }).not.toThrow()
+    expect(el.getAttribute('value')).toBe('["{bad-value"]')
+    expect(el.value).toEqual(['{bad-value'])
+  })
+
+  it('C1 单选 value property 语义不变：字符串即值', () => {
+    const el = mount({ value: '' })
+    el.value = 'banana'
+    expect(el.getAttribute('value')).toBe('banana')
+    expect(el.value).toBe('banana')
+    expect(input(el).value).toBe('香蕉')
+  })
 })
 
 describe('OASCombobox multiple 多选（对齐 oas-select 多选语义）', () => {

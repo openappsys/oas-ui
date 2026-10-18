@@ -967,3 +967,30 @@ describe('OASTour 移动端适配', () => {
     expect(parseFloat(bottomSeg.style.height)).toBe(0)
   })
 })
+
+// ===== 属性-方法撞名回归（observedAttributes 的 camelCase 与原型方法同名） =====
+//
+// 机制：宿主框架按 camelCase 做 property 桥接或用户 JS 写 `el.xxx = ...` 会在实例上
+// 建自有属性遮蔽原型同名方法，组件内部 `this.xxx()` 随后抛 TypeError。
+// 私有方法已改名（storageKey → storageKeyValue）。
+describe('OASTour 属性-方法撞名回归', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    try {
+      localStorage.clear()
+    } catch {
+      /* 忽略不可用环境 */
+    }
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('property 写入 storageKey 后打开前置校验不抛错', () => {
+    const el = mount({ 'dont-show-again': 'true', 'storage-key': 'oas-tour-collision' })
+    ;(el as unknown as Record<string, unknown>).storageKey = 'x'
+    expect(() => el.setAttribute('open', '')).not.toThrow()
+    expect(el.hasAttribute('open')).toBe(true)
+  })
+})

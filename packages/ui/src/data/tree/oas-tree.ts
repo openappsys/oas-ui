@@ -369,14 +369,23 @@ const VIRTUAL_ROW_STYLE = `
 ${ROW_STYLE}
 `
 
+/**
+ * 数字 key 归一（数据/状态两通道同一口径）：有限数字 String() 转字符串 key——
+ * expanded/checked/selected 属性通道早已数字 String()（parseIdList，v2.5 数字 key 缺陷修复），
+ * 节点访问器 idOf 此前却对数字返回 ''，数字 key 节点渲染后无法被选中/勾选/展开匹配；
+ * 字符串原样返回，其余回落空串（调用方按无效值处理）。
+ */
+function normalizeKeyValue(v: unknown): string {
+  if (typeof v === 'string') return v
+  if (typeof v === 'number' && Number.isFinite(v)) return String(v)
+  return ''
+}
+
 /** 按字段别名构造共享访问器（TreeNode 经 record 索引读取原始数据） */
 function makeTreeAccessors(fields: ResolvedFields): TreeAccessors<TreeNode> {
   const read = (n: TreeNode): Record<string, unknown> => n as unknown as Record<string, unknown>
   return {
-    idOf: (n) => {
-      const v = read(n)[fields.idField]
-      return typeof v === 'string' ? v : ''
-    },
+    idOf: (n) => normalizeKeyValue(read(n)[fields.idField]),
     labelOf: (n) => {
       const v = read(n)[fields.labelField]
       return typeof v === 'string' ? v : ''
@@ -773,17 +782,17 @@ export class OASTree extends OASElement {
     return new Set()
   }
 
-  private checkStrictly(): boolean {
+  private checkStrictlyOn(): boolean {
     return this.hasAttr('check-strictly')
   }
 
-  private checkStrategy(): CheckStrategy {
+  private checkStrategyValue(): CheckStrategy {
     const s = this.getAttr('check-strategy', 'all')
     return s === 'parent' || s === 'child' ? s : 'all'
   }
 
   private internalChecked(): Set<string> {
-    if (this.checkStrictly()) return new Set(parseIdList(this.getAttr('checked', '')))
+    if (this.checkStrictlyOn()) return new Set(parseIdList(this.getAttr('checked', '')))
     return closureFromValues({ model: this.model, acc: this.acc }, parseIdList(this.getAttr('checked', '')))
   }
 
@@ -1275,7 +1284,7 @@ export class OASTree extends OASElement {
     const isHalf =
       checkable &&
       !isChecked &&
-      !this.checkStrictly() &&
+      !this.checkStrictlyOn() &&
       halfByDescendant({ model: this.model, acc: this.acc }, checked, id)
     const disabled = this.nodeDisabled(node) || this.isTreeDisabled()
 
@@ -1426,11 +1435,11 @@ export class OASTree extends OASElement {
     if (!node || !this.nodeCheckable(node)) return
     const ctx = { model: this.model, acc: this.acc }
     const checked = this.internalChecked()
-    flipChecked(ctx, checked, id, this.checkStrictly())
+    flipChecked(ctx, checked, id, this.checkStrictlyOn())
     const values = applyCheckStrategy(
       ctx,
       checked,
-      this.checkStrictly() ? 'all' : this.checkStrategy(),
+      this.checkStrictlyOn() ? 'all' : this.checkStrategyValue(),
       parseIdList(this.getAttr('checked', '')),
     )
     this.setAttribute('checked', JSON.stringify(values))
@@ -1495,7 +1504,12 @@ export class OASTree extends OASElement {
     const ctx = { model: this.model, acc: this.acc }
     const checked = on ? closureFromValues(ctx, this.checkableKeys()) : new Set<string>()
     const controlled = parseIdList(this.getAttr('checked', ''))
-    const values = applyCheckStrategy(ctx, checked, this.checkStrictly() ? 'all' : this.checkStrategy(), controlled)
+    const values = applyCheckStrategy(
+      ctx,
+      checked,
+      this.checkStrictlyOn() ? 'all' : this.checkStrategyValue(),
+      controlled,
+    )
     this.setAttribute('checked', JSON.stringify(values))
     this.emit('check-all', { checked: on, values })
   }

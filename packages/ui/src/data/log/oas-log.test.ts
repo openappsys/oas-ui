@@ -392,3 +392,32 @@ describe('property 通道接受 JSON 字符串（框架把静态 attribute 写�
     expect(el.lines).toEqual(['a', 'b'])
   })
 })
+
+// ===== 属性-方法撞名回归（observedAttributes 的 camelCase 与原型方法同名） =====
+//
+// 机制：宿主框架按 camelCase 做 property 桥接或用户 JS 写 `el.xxx = ...` 会在实例上
+// 建自有属性遮蔽原型同名方法，组件内部 `this.xxx()` 随后抛 TypeError。
+// 私有方法已改名（autoScroll → autoScrollOn）。
+describe('OASLog 属性-方法撞名回归', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  it('property 写入 autoScroll 后追加日志的自动滚底路径不抛错', () => {
+    const el = mount()
+    ;(el as unknown as Record<string, unknown>).autoScroll = false
+    const vp = viewport(el)
+    stubScroll(vp, { scrollHeight: 1000, clientHeight: 100, scrollTop: 900 })
+    vp.dispatchEvent(new Event('scroll'))
+    expect(() => {
+      el.lines = ['新日志']
+    }).not.toThrow()
+    expect(vp.scrollTop, '默认 auto-scroll=true：贴底时追加仍滚到底').toBe(1000)
+  })
+})

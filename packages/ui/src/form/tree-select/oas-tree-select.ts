@@ -40,8 +40,67 @@ export interface TreeOption {
 /** 勾选策略：all=父级+子级全进值；parent=只保留父级（子级全选时以父级为代表）；child=只保留叶子 */
 type CheckStrategy = 'all' | 'parent' | 'child'
 
+/**
+ * 数字 id 归一（options/value 两通道同一口径）：有限数字 String() 转字符串值，
+ * 与 parseValuePairs 的 value 通道承诺一致（树数据 id 常为后端数字主键）；
+ * 字符串原样返回，其余（undefined/null/对象等）回落空串（调用方按无效值丢弃/不匹配）。
+ */
+function normalizeIdValue(v: unknown): string {
+  if (typeof v === 'string') return v
+  if (typeof v === 'number' && Number.isFinite(v)) return String(v)
+  return ''
+}
+
 const VALID_SIZES = ['small', 'medium', 'large'] as const
 const VALID_STATUSES = ['error', 'warning', 'success'] as const
+
+/** property 通道归一后的值对：label 仅在 label-in-value 对象形态下携带（树外值回显用） */
+interface ValuePair {
+  value: string
+  label?: string
+}
+
+/**
+ * value property 归一（框架把静态 JSON attribute 写成 property 的 SPA 场景）：
+ * - 字符串先按 JSON 解析（`'["js"]'` → 数组、`'{"value":"js","label":"JS"}'` → 对象）；
+ *   解析失败按纯字符串单值处理（不抛），空串 → 空数组；
+ * - 数组按项提升（字符串 / 数字 / `{ value, label }` 对象），保留 label——直接 `[String(v)]`
+ *   会把整串 JSON 当单值并双重编码，只提升 value 又会丢树外对象的 label；
+ * - 数字 ID 兜底：树数据 id 常为数字（组件值通道统一为字符串），数字项与对象数字 value
+ *   经 String() 归一后才能与树内节点值匹配选中态。
+ */
+function parseValuePairs(v: unknown): ValuePair[] {
+  const lift = (x: unknown): ValuePair | null => {
+    if (typeof x === 'string') return { value: x }
+    if (typeof x === 'number' && Number.isFinite(x)) return { value: String(x) }
+    if (x && typeof x === 'object') {
+      const rec = x as Record<string, unknown>
+      if (typeof rec.value === 'string') {
+        return { value: rec.value, label: typeof rec.label === 'string' ? rec.label : undefined }
+      }
+      if (typeof rec.value === 'number' && Number.isFinite(rec.value)) {
+        return { value: String(rec.value), label: typeof rec.label === 'string' ? rec.label : undefined }
+      }
+    }
+    return null
+  }
+  let raw: unknown = v
+  if (typeof raw === 'string') {
+    const s = raw.trim()
+    if (s === '') return []
+    if (s.startsWith('[') || s.startsWith('{')) {
+      try {
+        raw = JSON.parse(s)
+      } catch {
+        /* 非法 JSON：按单值处理（不抛） */
+      }
+    }
+  }
+  if (raw == null || raw === '') return []
+  if (Array.isArray(raw)) return raw.map(lift).filter((x): x is ValuePair => x !== null)
+  const single = lift(raw)
+  return single === null ? [] : [single]
+}
 
 /**
  * 节点行样式（非虚拟渲染在 tree-select 自身 shadow；虚拟模式需注入 vlist shadow，两处共用）。
@@ -513,10 +572,8 @@ interface FlatNode {
 function defaultAccessors(fields: ResolvedFields): TreeAccessors<TreeOption> {
   const read = (o: TreeOption): Record<string, unknown> => o as unknown as Record<string, unknown>
   return {
-    idOf: (o) => {
-      const v = read(o)[fields.idField]
-      return typeof v === 'string' ? v : ''
-    },
+    // 数字 id String() 归一（与 value 通道一致）：树内节点值才能匹配 parseValuePairs 归一后的数字选中值
+    idOf: (o) => normalizeIdValue(read(o)[fields.idField]),
     labelOf: (o) => {
       const v = read(o)[fields.labelField]
       return typeof v === 'string' ? v : ''
@@ -822,9 +879,14 @@ export class OASTreeSelect extends OASFormElement {
    * 冻结的既有语义不变）。
    */
   set value(v: string | string[] | null) {
-    const values = Array.isArray(v) ? v.map((x) => String(x)) : v == null || v === '' ? [] : [String(v)]
+    // 字符串/数组统一归一对（SPA 下静态 `value` JSON attribute 会被写成 property 字符串）：
+    // - 单选：字符串即值；JSON 对象形态解析后取 value，label 保留供对象序列化；
+    //   数组取首项（不强猜语义）。
+    // - 多选：JSON 数组解析；对象项保留 { value, label } 对（树外对象 label 能回显）。
+    const pairs = parseValuePairs(v)
+    const values = pairs.map((p) => p.value)
     if (values.length === 0) this.removeAttribute('value')
-    else this.setAttribute('value', this.serializeValues(values))
+    else this.setAttribute('value', this.serializeValues(values, pairs))
     if (this.hasRendered) this.update()
   }
 
@@ -897,8 +959,14 @@ export class OASTreeSelect extends OASFormElement {
     try {
       const parsed = JSON.parse(raw)
       const valueField = this.fields.idField
+      // 节点值有效性：字符串或有限数字（数字 id 经 idOf String() 归一参与选中/级联，
+      // 与 value 通道口径一致；此前 typeof !== 'string' 会把数字 id 节点整体丢弃）
       this._options = Array.isArray(parsed)
-        ? parsed.filter((o) => o && typeof (o as unknown as Record<string, unknown>)[valueField] === 'string')
+        ? parsed.filter((o) => {
+            if (!o || typeof o !== 'object') return false
+            const v = (o as unknown as Record<string, unknown>)[valueField]
+            return typeof v === 'string' || (typeof v === 'number' && Number.isFinite(v))
+          })
         : []
     } catch {
       this._options = []
@@ -1281,27 +1349,31 @@ export class OASTreeSelect extends OASFormElement {
   // ---------- 取值 ----------
 
   /** label-in-value：value 携 { value, label } 对象（单选对象 / 多选对象数组），oas-change detail 同形 */
-  private labelInValue(): boolean {
+  private labelInValueOn(): boolean {
     return this.hasAttr('label-in-value')
   }
 
   /**
    * 当前选中值（内部统一为字符串数组）：label-in-value 时兼容对象形态
    * （{ value, label } → 提升 value），纯字符串形态照旧——两种形态混写均安全。
+   * 数字值（含对象数字 value）String() 归一，与 parseValuePairs 写通道同口径：
+   * attribute 直写 `[42]` 与 property 写入 `[42]` 落到同一字符串值。
    */
   private currentValues(): string[] {
     const lift = (v: unknown): string | null => {
       if (typeof v === 'string') return v
+      if (typeof v === 'number' && Number.isFinite(v)) return String(v)
       if (v && typeof v === 'object') {
         const value = (v as Record<string, unknown>).value
         if (typeof value === 'string') return value
+        if (typeof value === 'number' && Number.isFinite(value)) return String(value)
       }
       return null
     }
     if (!this.hasAttr('multiple')) {
       const raw = this.getAttr('value', '')
       if (raw === '') return []
-      if (this.labelInValue()) {
+      if (this.labelInValueOn()) {
         try {
           const lifted = lift(JSON.parse(raw))
           if (lifted !== null) return [lifted]
@@ -1321,12 +1393,16 @@ export class OASTreeSelect extends OASFormElement {
   }
 
   /**
-   * value 属性序列化：label-in-value 时携 { value, label }（label 由当前展示 label 反查），
-   * 否则字符串（单选）/ 字符串数组（多选）。
+   * value 属性序列化：label-in-value 时携 { value, label }，否则字符串（单选）/ 字符串数组（多选）。
+   * label 取值优先级：树内节点用节点 label（show-path 同口径）；树外值用调用方提供的 label
+   * 兜底（property 通道对象形态），最后回落 cache-data / 既有 value 对象 label。
    */
-  private serializeValues(values: string[]): string {
-    if (this.labelInValue()) {
-      const paired = values.map((v) => ({ value: v, label: this.displayLabelOf(v) }))
+  private serializeValues(values: string[], sources?: ValuePair[]): string {
+    if (this.labelInValueOn()) {
+      const paired = values.map((v, i) => ({
+        value: v,
+        label: this.valueMap.has(v) ? this.displayLabelOf(v) : (sources?.[i]?.label ?? this.displayLabelOf(v)),
+      }))
       return this.hasAttr('multiple') ? JSON.stringify(paired) : JSON.stringify(paired[0] ?? '')
     }
     return this.hasAttr('multiple') ? JSON.stringify(values) : (values[0] ?? '')
@@ -1334,7 +1410,7 @@ export class OASTreeSelect extends OASFormElement {
 
   /** oas-change detail 的 value：与 value 属性同形（label-in-value 携 { value, label } 对象） */
   private changeValueOf(values: string[]): unknown {
-    if (!this.labelInValue()) {
+    if (!this.labelInValueOn()) {
       return this.hasAttr('multiple') ? values : (values[0] ?? '')
     }
     const paired = values.map((v) => ({ value: v, label: this.displayLabelOf(v) }))
@@ -1346,7 +1422,7 @@ export class OASTreeSelect extends OASFormElement {
 
   private parseValueLabels(): void {
     this.valueLabels.clear()
-    if (!this.labelInValue()) return
+    if (!this.labelInValueOn()) return
     try {
       const raw = this.getAttr('value', '')
       if (raw === '') return
@@ -1378,12 +1454,12 @@ export class OASTreeSelect extends OASFormElement {
     if (search && search.value !== v) search.value = v
   }
 
-  private checkStrategy(): CheckStrategy {
+  private checkStrategyValue(): CheckStrategy {
     const s = this.getAttr('check-strategy', 'all')
     return s === 'parent' || s === 'child' ? s : 'all'
   }
 
-  private checkStrictly(): boolean {
+  private checkStrictlyOn(): boolean {
     return this.hasAttr('check-strictly')
   }
 
@@ -1407,7 +1483,7 @@ export class OASTreeSelect extends OASFormElement {
    * - 级联模式：closureFromValues 从受控 value 做级联闭包（含自底向上收敛），见共享内核。
    */
   private internalChecked(): Set<string> {
-    if (this.checkStrictly()) return new Set(this.currentValues())
+    if (this.checkStrictlyOn()) return new Set(this.currentValues())
     return closureFromValues(this.checkCtx(), this.currentValues())
   }
 
@@ -1422,11 +1498,11 @@ export class OASTreeSelect extends OASFormElement {
     const value = this.valueKeyOf(option)
     const willCheck = !checked.has(value)
     if (willCheck && this.maxReached()) return false
-    flipChecked(ctx, checked, value, this.checkStrictly())
+    flipChecked(ctx, checked, value, this.checkStrictlyOn())
     const values = applyCheckStrategy(
       ctx,
       checked,
-      this.checkStrictly() ? 'all' : this.checkStrategy(),
+      this.checkStrictlyOn() ? 'all' : this.checkStrategyValue(),
       this.currentValues(),
     )
     const max = this.maxLimit()
@@ -1750,7 +1826,7 @@ export class OASTreeSelect extends OASFormElement {
     if (multiple) {
       const check = document.createElement('span')
       check.className = 'check'
-      const isHalf = !isChecked && !this.checkStrictly() && halfByDescendant(this.checkCtx(), checked, value)
+      const isHalf = !isChecked && !this.checkStrictlyOn() && halfByDescendant(this.checkCtx(), checked, value)
       check.classList.toggle('checked', isChecked)
       check.classList.toggle('half', isHalf)
       check.textContent = isChecked ? '✓' : isHalf ? '—' : ''

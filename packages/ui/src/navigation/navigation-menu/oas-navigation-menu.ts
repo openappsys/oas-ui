@@ -1114,7 +1114,9 @@ export class OASNavigationMenu extends OASElement {
     return this.getAttr('orientation', 'horizontal') === 'vertical'
   }
 
-  private delayDuration(): number {
+  /** 打开延迟毫秒（方法名避开 delay-duration 属性的 camelCase（delayDuration）——同名会被
+   *  宿主 property 赋值遮蔽原型方法，hover 打开/关闭宽限路径内部调用即抛 TypeError） */
+  private openDelayMs(): number {
     const n = Number.parseInt(this.getAttr('delay-duration', '200'), 10)
     return Number.isFinite(n) && n >= 0 ? n : 200
   }
@@ -1124,7 +1126,9 @@ export class OASNavigationMenu extends OASElement {
     return Number.isFinite(n) && n >= 0 ? n : 300
   }
 
-  private columns(): number {
+  /** 面板网格列数（方法名避开 columns 属性的 camelCase——columns 与属性字面同名，宿主
+   *  property 赋值会遮蔽原型方法，面板渲染内部调用即抛 TypeError） */
+  private columnCount(): number {
     const n = Number.parseInt(this.getAttr('columns', '2'), 10)
     return Number.isFinite(n) && n >= 1 ? n : 2
   }
@@ -1373,7 +1377,7 @@ export class OASNavigationMenu extends OASElement {
     const grid = document.createElement('ul')
     grid.className = 'grid'
     grid.setAttribute('part', 'grid')
-    grid.style.setProperty('--nav-columns', String(this.columns()))
+    grid.style.setProperty('--nav-columns', String(this.columnCount()))
     for (const child of item.children) {
       if (child.type === 'divider') continue
       if (child.type === 'group') {
@@ -1760,7 +1764,7 @@ export class OASNavigationMenu extends OASElement {
       this.openTimer = null
     }
     const skip = this.skipDelay() > 0 && this.lastCloseAt > 0 && Date.now() - this.lastCloseAt < this.skipDelay()
-    const delay = skip ? 0 : this.delayDuration()
+    const delay = skip ? 0 : this.openDelayMs()
     if (delay <= 0) {
       this.open(value)
       return
@@ -1791,7 +1795,7 @@ export class OASNavigationMenu extends OASElement {
         this.closeTimer = null
         this.close()
       },
-      Math.max(this.delayDuration(), 150),
+      Math.max(this.openDelayMs(), 150),
     )
   }
 

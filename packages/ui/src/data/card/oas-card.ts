@@ -1,4 +1,5 @@
 import { OASElement } from '@oas-ui/core'
+import { devWarn } from '../../shared/dev-warn.js'
 
 const STYLE = `
 :host {
@@ -339,7 +340,65 @@ const STYLE = `
 /** 整卡点击的排除选择器：命中这些交互元素时不派发 oas-click（避免与内部按钮/链接冲突） */
 const INTERACTIVE_SEL = 'button, a, input, select, textarea, [role="button"], oas-button, oas-link'
 
+/** 可作 ShadowRoot 存储的对象判定（`querySelector` 是组件内部读通道的最小依赖）。
+ *  `instanceof ShadowRoot` 在无 DOM 全局的 SSR 环境会抛 ReferenceError，故先判全局存在。 */
+function isShadowLike(value: unknown): value is ShadowRoot {
+  if (typeof ShadowRoot !== 'undefined' && value instanceof ShadowRoot) return true
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    typeof (value as { querySelector?: unknown }).querySelector === 'function'
+  )
+}
+
 export class OASCard extends OASElement {
+  /**
+   * 真实 ShadowRoot 存储（基类构造器 `this.shadow = root` 经下方 setter 落到这里）。
+   *
+   * 为什么需要遮蔽：`shadow` 既是本组件的 attribute（always/hover/never），也是 OASElement
+   * 的基类字段。框架（Vue/React）按「key in el」把静态 attribute 写成 property——若基类字段
+   * 直接是实例 own 属性，字符串会覆盖 ShadowRoot，后续 `this.shadow.querySelector` 抛
+   * `is not a function` 崩宿主（SPA 跳转后 card demo 空白）。原型 accessor 让字符串写入
+   * 安全地走 attribute 通道，基类写 root 时走存储通道。
+   */
+  private cardShadow!: ShadowRoot
+  /** 异型写入只告警一次（同一实例重复写不再刷屏） */
+  private shadowSetterWarned = false
+
+  // TS 不允许 accessor 覆盖基类字段（TS2611），沿用树选择器的原型 defineProperty 遮蔽：
+  // 基类构造器 `this.shadow = root` 命中本 setter 落盘真实 root；框架写字符串走 attribute。
+  static {
+    Object.defineProperty(this.prototype, 'shadow', {
+      configurable: true,
+      enumerable: false,
+      get(this: OASCard): ShadowRoot {
+        return this.cardShadow ?? this.shadowRoot!
+      },
+      set(this: OASCard, value: ShadowRoot | string | null | undefined): void {
+        if (typeof value === 'string') {
+          // 框架 property 写入（Vue 静态 `shadow="always"`）：映射回 attribute，语义不变
+          this.setAttribute('shadow', value)
+          return
+        }
+        if (value == null) {
+          // 受控表达式转假（Vue `:shadow="cond ? 'always' : null"`）：回缺省无阴影态。
+          // 必须移除 attribute——什么都不做会残留旧阴影态（内部 cardShadow 不动，读通道仍是 root）
+          this.removeAttribute('shadow')
+          return
+        }
+        if (isShadowLike(value)) {
+          this.cardShadow = value
+          return
+        }
+        // 异型（数字/布尔/无 querySelector 的对象）：丢弃写入防污染内部读通道，dev 告警一次
+        if (!this.shadowSetterWarned) {
+          this.shadowSetterWarned = true
+          devWarn(`[oas-card] shadow 只接受 ShadowRoot 或 'always'/'hover'/'none' 字符串，已忽略 ${typeof value} 写入`)
+        }
+      },
+    })
+  }
+
   static override get observedAttributes(): string[] {
     // size / density / variant / header-bordered 为纯 CSS 属性（:host([..]) 选择器驱动）；
     // 仍进观察列表——API 扫描以观察列表为发现通道，且变更时重渲染无副作用

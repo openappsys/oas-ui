@@ -1094,7 +1094,7 @@ export class OASCommand extends OASElement {
 
   // ==================== 最近使用 / 历史 ====================
 
-  private recentStorageKey(): string {
+  private recentStorageKeyValue(): string {
     const k = this.getAttr('recent-storage-key', '')
     return k ? `oas-command:recent:${k}` : ''
   }
@@ -1102,7 +1102,7 @@ export class OASCommand extends OASElement {
   private ensureRecentsLoaded(): void {
     if (this.recentsLoaded || !this.hasAttr('recent')) return
     this.recentsLoaded = true
-    const key = this.recentStorageKey()
+    const key = this.recentStorageKeyValue()
     if (!key) return
     try {
       if (typeof localStorage === 'undefined') return
@@ -1127,7 +1127,7 @@ export class OASCommand extends OASElement {
     if (item.shortcut) entry.shortcut = item.shortcut
     if (item.description) entry.description = item.description
     this.recents = [entry, ...this.recents.filter((r) => r.value !== entry.value)].slice(0, MAX_RECENTS)
-    const key = this.recentStorageKey()
+    const key = this.recentStorageKeyValue()
     if (!key) return
     try {
       if (typeof localStorage !== 'undefined') {

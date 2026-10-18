@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { setLocale } from '@oas-ui/i18n'
 import { OASBubble } from './index.js'
 
@@ -20,6 +20,8 @@ describe('OASBubble', () => {
 
   afterEach(() => {
     document.body.innerHTML = ''
+    vi.unstubAllGlobals()
+    vi.restoreAllMocks()
   })
 
   it('渲染默认插槽内容与 part=bubble 骨架', () => {
@@ -57,6 +59,28 @@ describe('OASBubble', () => {
     expect(css).toContain(':host([align="end"])')
     // 行方向翻转用 flex 逻辑方向（row-reverse），不得出现物理 left/right 边距
     expect(css).not.toMatch(/margin-left:|margin-right:|padding-left:|padding-right:/)
+  })
+
+  it('继承对齐 rAF 单飞：同帧多次 update 只排一个 rAF，执行后可再排；断开取消未决帧', () => {
+    const raf = vi.fn((_cb: FrameRequestCallback) => 7)
+    const cancel = vi.fn()
+    vi.stubGlobal('requestAnimationFrame', raf)
+    vi.stubGlobal('cancelAnimationFrame', cancel)
+    const el = mount('<p>x</p>')
+    expect(raf).toHaveBeenCalledTimes(1)
+    // 同帧连续属性更新不再新增待执行帧（复用已排的那一个）
+    el.setAttribute('loading', '')
+    el.removeAttribute('loading')
+    el.setAttribute('reactions', '[]')
+    expect(raf).toHaveBeenCalledTimes(1)
+    // 执行后清空 pending，下一次 update 重新排
+    const cb = raf.mock.calls[0]![0] as FrameRequestCallback
+    cb(0)
+    el.setAttribute('loading', '')
+    expect(raf).toHaveBeenCalledTimes(2)
+    // 断开连接取消未决帧
+    el.remove()
+    expect(cancel).toHaveBeenCalled()
   })
 
   it('max-width 默认 80% 且走 CSS 变量开口；ghost 放开上限', () => {

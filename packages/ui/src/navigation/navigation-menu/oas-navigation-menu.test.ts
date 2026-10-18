@@ -1529,3 +1529,39 @@ describe('onReconnect childObserver 重建（重连后子项变化监听不失�
     expect(host.childObserver, '重连后 childObserver 重建').not.toBeNull()
   })
 })
+
+// ===== 属性-方法撞名回归（observedAttributes 的 camelCase 与原型方法同名） =====
+//
+// 机制：宿主框架（Vue 等按 camelCase 做 property 桥接）或用户 JS 写 `el.columns = 3`
+// 会在实例上建自有属性遮蔽原型同名方法，面板渲染内部 `this.columns()` 随后抛 TypeError。
+// 私有方法已改名（columnCount / openDelayMs——后者对应 delay-duration 的额外扫描发现），
+// 此处锁定：property 写入后 attribute 通道行为仍等价。
+describe('OASNavigationMenu 属性-方法撞名回归', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.focus()
+    document.body.innerHTML = ''
+  })
+
+  it('property 写入 columns 后打开面板不抛错，列数走 columns 属性（--nav-columns）', () => {
+    const el = mount({ items: ITEMS, columns: '3' })
+    ;(el as unknown as Record<string, unknown>).columns = 3
+    // attribute 变更同步触发 update → renderPanel 内 columnCount() 调用；改名前此处抛 TypeError
+    expect(() => el.setAttribute('value', 'products')).not.toThrow()
+    const grid = el.shadowRoot!.querySelector<HTMLElement>('[part="grid"]')!
+    expect(grid.style.getPropertyValue('--nav-columns')).toBe('3')
+  })
+
+  it('property 写入 delayDuration 后 hover 打开路径不抛错，延迟走 delay-duration 属性（0 即开）', () => {
+    const el = mount({ items: ITEMS, 'delay-duration': '0' })
+    ;(el as unknown as Record<string, unknown>).delayDuration = 0
+    // mouseenter → scheduleOpen → openDelayMs()：改名前抛 TypeError（监听器内异常吞掉，面板不开）
+    const trigger = el.shadowRoot!.querySelector<HTMLElement>('[part="top-item"][data-value="products"]')!
+    expect(() => trigger.dispatchEvent(new MouseEvent('mouseenter'))).not.toThrow()
+    // 行为等价断言：delay-duration=0 同步打开（触发器 aria-expanded=true）
+    expect(trigger.getAttribute('aria-expanded')).toBe('true')
+  })
+})

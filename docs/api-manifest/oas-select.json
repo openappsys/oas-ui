@@ -196,7 +196,7 @@
     },
     {
       "name": "open",
-      "type": "boolean",
+      "type": "boolean | string",
       "default": "false"
     },
     {

@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { setLocale } from '@oas-ui/i18n'
 import en from '@oas-ui/i18n/en'
 import { OASSplitter } from './index.js'
@@ -633,6 +633,188 @@ describe('OASSplitter snap（拖拽吸附档位，PRD D18）', () => {
     expect(el.getAttribute('percent')).toBe('75')
     key(el, 'ArrowUp')
     expect(el.getAttribute('percent')).toBe('50')
+  })
+})
+
+describe('OASSplitter sizes property（框架字符串/数组双通道）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('连接前写入数组：attribute 写 JSON、连接后布局比例生效', () => {
+    const el = new OASSplitter()
+    el.innerHTML = `<div>一</div><div>二</div><div>三</div>`
+    el.sizes = [30, 40, 30]
+    expect(el.getAttribute('sizes')).toBe('[30,40,30]')
+    document.body.appendChild(el)
+    const panes = el.shadowRoot!.querySelectorAll('.pane')
+    expect((panes[0] as HTMLElement).style.flex).toBe('0 0 30%')
+    expect((panes[1] as HTMLElement).style.flex).toBe('0 0 40%')
+    expect(el.sizes).toEqual([30, 40, 30])
+  })
+
+  it('连接前写入 CSV 字符串（文档写法）：解析并写回 JSON attribute，布局 30/40/30', () => {
+    const el = new OASSplitter()
+    el.innerHTML = `<div>一</div><div>二</div><div>三</div>`
+    el.sizes = '30,40,30'
+    expect(el.getAttribute('sizes')).toBe('[30,40,30]')
+    document.body.appendChild(el)
+    const panes = el.shadowRoot!.querySelectorAll('.pane')
+    expect((panes[0] as HTMLElement).style.flex).toBe('0 0 30%')
+    expect((panes[1] as HTMLElement).style.flex).toBe('0 0 40%')
+    expect(el.sizes).toEqual([30, 40, 30])
+  })
+
+  it('连接后写入 JSON 字符串（SPA property 通道）：解析为数组并重排布局', () => {
+    const el = mountMulti()
+    el.setAttribute('sizes', '50,25,25')
+    el.sizes = '[30,40,30]'
+    expect(el.getAttribute('sizes')).toBe('[30,40,30]')
+    const panes = el.shadowRoot!.querySelectorAll('.pane')
+    expect((panes[0] as HTMLElement).style.flex).toBe('0 0 30%')
+    expect((panes[1] as HTMLElement).style.flex).toBe('0 0 40%')
+    expect(el.sizes).toEqual([30, 40, 30])
+  })
+
+  it('连接后写入 CSV 字符串（文档 demo / SPA property 通道）：解析为数组并重排布局', () => {
+    const el = mountMulti()
+    el.setAttribute('sizes', '50,25,25')
+    el.sizes = '30,40,30'
+    expect(el.getAttribute('sizes')).toBe('[30,40,30]')
+    const panes = el.shadowRoot!.querySelectorAll('.pane')
+    expect((panes[0] as HTMLElement).style.flex).toBe('0 0 30%')
+    expect((panes[1] as HTMLElement).style.flex).toBe('0 0 40%')
+    expect(el.sizes).toEqual([30, 40, 30])
+  })
+
+  it('非法/空 sizes property 不覆盖既有 attribute（保留受控值）+ devWarn 一次', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    try {
+      const el = mountMulti()
+      el.setAttribute('sizes', '30,40,30')
+      el.sizes = '{bad-sizes'
+      expect(el.getAttribute('sizes'), '非法串不得覆盖受控 attribute').toBe('30,40,30')
+      const panes = el.shadowRoot!.querySelectorAll('.pane')
+      expect((panes[0] as HTMLElement).style.flex).toBe('0 0 30%')
+      el.sizes = ''
+      expect(el.getAttribute('sizes'), '空值不得覆盖受控 attribute').toBe('30,40,30')
+      expect(warn.mock.calls.filter((c) => String(c[0]).includes('oas-splitter')).length).toBe(2)
+    } finally {
+      warn.mockRestore()
+    }
+  })
+
+  it('面板数不匹配：布局回落均分，getter 跟随 attribute（不返回陈旧均分数组）', () => {
+    const el = mountMulti()
+    el.setAttribute('sizes', '30,70')
+    const panes = el.shadowRoot!.querySelectorAll('.pane')
+    const flexOf = (i: number) => parseFloat((panes[i] as HTMLElement).style.flex.split(' ')[2] ?? '')
+    expect(flexOf(0)).toBeCloseTo(33.33, 1)
+    expect(flexOf(1)).toBeCloseTo(33.33, 1)
+    expect(el.sizes).toEqual([30, 70])
+  })
+
+  it('连接前 own property（字符串 / 数组）回收进 setter：不遮蔽访问器、布局生效', () => {
+    for (const own of ['30,40,30', [30, 40, 30]] as const) {
+      const el = new OASSplitter()
+      el.innerHTML = `<div>一</div><div>二</div><div>三</div>`
+      Object.defineProperty(el, 'sizes', {
+        value: own,
+        writable: true,
+        configurable: true,
+        enumerable: true,
+      })
+      document.body.appendChild(el)
+      expect(Object.hasOwn(el, 'sizes'), 'own property 应被删除').toBe(false)
+      expect(el.getAttribute('sizes')).toBe('[30,40,30]')
+      const panes = el.shadowRoot!.querySelectorAll('.pane')
+      expect((panes[0] as HTMLElement).style.flex).toBe('0 0 30%')
+      expect((panes[1] as HTMLElement).style.flex).toBe('0 0 40%')
+      expect(el.sizes).toEqual([30, 40, 30])
+      el.remove()
+    }
+  })
+
+  it('连接前 own 回收后双击复位回预设比例（基线不固化为均分）', () => {
+    // 回归：回收发生在 super.connectedCallback（首渲染）之后，若不重置基线标志，
+    // initialSizes 已固化为均分 [33.33,33.33,33.33]，双击第一分隔条得 35/35/30
+    const el = new OASSplitter()
+    el.innerHTML = `<div>一</div><div>二</div><div>三</div>`
+    Object.defineProperty(el, 'sizes', {
+      value: '30,40,30',
+      writable: true,
+      configurable: true,
+      enumerable: true,
+    })
+    document.body.appendChild(el)
+    const first = el.shadowRoot!.querySelectorAll('[part="splitter"]')[0]!
+    first.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }))
+    // 基线正确时：相邻对按预设 30/40 等比还原（pairSum=70 → 30/40/30）；
+    // 基线错误（均分）时得 35/35/30
+    expect(el.getAttribute('sizes')).toBe('30,40,30')
+  })
+
+  it('正常 attribute 路径：双击复位回初始 30/40/30（拖乱后还原）', () => {
+    const el = new OASSplitter()
+    el.setAttribute('sizes', '30,40,30')
+    el.innerHTML = `<div>一</div><div>二</div><div>三</div>`
+    document.body.appendChild(el)
+    Object.defineProperty(el, 'clientWidth', { value: 1000, configurable: true })
+    const first = el.shadowRoot!.querySelectorAll('[part="splitter"]')[0]!
+    // 先拖乱：30/40/30 → 40/30/30
+    first.dispatchEvent(pointer('pointerdown', 300))
+    document.dispatchEvent(pointer('pointermove', 400))
+    document.dispatchEvent(pointer('pointerup', 400))
+    expect(el.getAttribute('sizes')).toBe('40,30,30')
+    // 双击复位回初始比例
+    first.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }))
+    expect(el.getAttribute('sizes')).toBe('30,40,30')
+  })
+
+  it('sizes getter 返回副本，不暴露内部数组', () => {
+    const el = mountMulti()
+    el.sizes = [20, 30, 50]
+    const read = el.sizes
+    read[0] = 99
+    expect(el.sizes).toEqual([20, 30, 50])
+    expect(el.getAttribute('sizes')).toBe('[20,30,50]')
+  })
+
+  it('非法 JSON：不抛、回落默认均分、devWarn 同值只告警一次', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    try {
+      const el = mountMulti()
+      expect(() => {
+        el.sizes = '{bad-sizes'
+      }).not.toThrow()
+      const panes = el.shadowRoot!.querySelectorAll('.pane')
+      const flexOf = (i: number) => parseFloat((panes[i] as HTMLElement).style.flex.split(' ')[2] ?? '')
+      expect(flexOf(0)).toBeCloseTo(33.33, 1)
+      expect(flexOf(1)).toBeCloseTo(33.33, 1)
+      el.sizes = '{bad-sizes'
+      expect(warn.mock.calls.filter((c) => String(c[0]).includes('oas-splitter')).length).toBe(1)
+    } finally {
+      warn.mockRestore()
+    }
+  })
+
+  it('非数组 JSON / 数组内非法数值：回落默认均分 + 告警', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    try {
+      const el = mountMulti()
+      el.sizes = '{"a":1}'
+      const panes = el.shadowRoot!.querySelectorAll('.pane')
+      expect(parseFloat((panes[0] as HTMLElement).style.flex.split(' ')[2] ?? '')).toBeCloseTo(33.33, 1)
+      el.sizes = [30, -1, 70]
+      expect(parseFloat((panes[0] as HTMLElement).style.flex.split(' ')[2] ?? '')).toBeCloseTo(33.33, 1)
+      expect(warn.mock.calls.filter((c) => String(c[0]).includes('oas-splitter')).length).toBeGreaterThan(0)
+    } finally {
+      warn.mockRestore()
+    }
   })
 })
 

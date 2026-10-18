@@ -1,5 +1,6 @@
 import { OASElement } from '@oas-ui/core'
 import { HeightCache, computeDynamicWindow } from './dynamic-height.js'
+import { parseJsonArray } from '../../shared/json-array.js'
 
 export interface VirtualWindow {
   start: number
@@ -159,15 +160,20 @@ export class OASVirtualList extends OASElement {
     super.connectedCallback()
     // 升级前被赋过 items（SSR/onMounted 与模块加载的时序竞争），自有属性遮蔽原型
     // setter → parseItems 读 attribute 为空 → 不渲染。回收到 setter 通道。
-    if (Object.prototype.hasOwnProperty.call(this, 'items') && Array.isArray(this.items)) {
-      const own = this.items
-      delete (this as unknown as Record<string, unknown>).items
-      this.items = own
+    // 运行时 value 可能是数组，也可能是框架把静态 items attribute 写成 property 的 JSON 字符串。
+    if (Object.prototype.hasOwnProperty.call(this, 'items')) {
+      const own = (this as unknown as { items?: unknown }).items
+      if (Array.isArray(own) || typeof own === 'string') {
+        delete (this as unknown as Record<string, unknown>).items
+        this.items = own as unknown[]
+      }
     }
   }
 
   set items(value: unknown[]) {
-    this.data = Array.isArray(value) ? value.slice() : []
+    // 运行时容忍 JSON 字符串（框架把静态 items attribute 写成 property）；公开类型保持数组。
+    // 非法 JSON / 非数组回落空数组（同 gantt/resource 的 setter 口径），不抛异常。
+    this.data = parseJsonArray<unknown>(value as unknown).slice()
     this.itemsFromProperty = true
     this.heightCache.configure(this.data.length, this.estimatedHeight())
     if (this.isConnected) this.update()
@@ -267,7 +273,7 @@ export class OASVirtualList extends OASElement {
     const idx = Math.min(Math.max(0, Math.trunc(index)), count - 1)
     const dynamic = this.isDynamic()
     if (dynamic) this.heightCache.configure(count, this.estimatedHeight())
-    const ih = dynamic ? this.heightCache.heightAt(idx) : this.itemHeight()
+    const ih = dynamic ? this.heightCache.heightAt(idx) : this.itemHeightPx()
     const vh = this.listHeight()
     const total = dynamic ? this.heightCache.total() : count * ih
     const maxTop = Math.max(0, total - vh)
@@ -306,7 +312,9 @@ export class OASVirtualList extends OASElement {
     return Number(this.getAttr('height', '320')) || 320
   }
 
-  private itemHeight(): number {
+  /** 定高项高度（方法名避开 item-height 属性的 camelCase itemHeight，防 property 赋值
+   *  el.itemHeight=20 遮蔽原型方法，对齐 gantt/table 的 xxxPx 惯例） */
+  private itemHeightPx(): number {
     return Number(this.getAttr('item-height', '36')) || 36
   }
 
@@ -345,7 +353,7 @@ export class OASVirtualList extends OASElement {
   private estimatedHeight(): number {
     const raw = this.getAttr('estimated-item-height', '')
     if (raw !== '' && Number(raw) > 0) return Number(raw)
-    return this.itemHeight()
+    return this.itemHeightPx()
   }
 
   /** 解析滚动目标并绑定 scroll 监听（可切换：外部容器 → 自身视口） */
@@ -385,7 +393,7 @@ export class OASVirtualList extends OASElement {
       this.renderItems()
       return
     }
-    const ih = this.itemHeight()
+    const ih = this.itemHeightPx()
     // 数据收缩时夹取 scrollTop，避免窗口越界
     const scrollTop = Math.min(Math.max(0, target ? target.scrollTop : 0), Math.max(0, count * ih - vh))
     const win = computeVirtualWindow(scrollTop, vh, ih, count, this.bufferSize())
@@ -410,7 +418,7 @@ export class OASVirtualList extends OASElement {
     itemsEl.innerHTML = ''
     const tpl = this.itemTemplate()
     const dynamic = this.isDynamic()
-    const ih = this.itemHeight()
+    const ih = this.itemHeightPx()
     for (let i = this.start; i < this.end; i++) {
       const item = this.data[i]
       const el = document.createElement('div')

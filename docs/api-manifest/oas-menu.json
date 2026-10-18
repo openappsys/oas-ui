@@ -90,7 +90,7 @@
     },
     {
       "name": "oas-expand-change",
-      "detail": "{ expanded: [...this.expanded], value, isExpanded: willExpandMore, } | { expanded: [...this.expanded], value, isExpanded: willExpand }"
+      "detail": "{ expanded: [...this.expandedSet], value, isExpanded: willExpandMore, } | { expanded: [...this.expandedSet], value, isExpanded: willExpand }"
     }
   ],
   "slots": [],

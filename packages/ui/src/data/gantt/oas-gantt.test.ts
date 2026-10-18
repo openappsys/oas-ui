@@ -1833,7 +1833,7 @@ describe('OASGantt 选择变化增量渲染（选择不重跑全量构建）', (
     const first = shadowOf(el).querySelector<HTMLElement>('.row-name')!
     expect(first.dataset.key).toBe('t12000')
     expect(first.getAttribute('aria-posinset'), '绝对行号（1 基）').toBe('12001')
-    expect(first.getAttribute('aria-rowindex')).toBe('12001')
+    expect(first.hasAttribute('aria-rowindex'), 'treeitem 不使用 aria-rowindex').toBe(false)
     expect(first.getAttribute('aria-setsize')).toBe('50000')
 
     el.selection = ['t12003']
@@ -1843,10 +1843,10 @@ describe('OASGantt 选择变化增量渲染（选择不重跑全量构建）', (
     expect(snap(), 'windowed 下选择变化同样零全量重算').toEqual(base)
     expect(g.rows).toBe(rowsRef)
     expect(shadowOf(el).querySelector('.row-name[data-key="t12000"]')).toBe(first)
-    // 绝对行号 aria 不因选择变化漂移；容器 rowcount 仍为全量
+    // 绝对行号 aria 不因选择变化漂移；全量口径由行 setsize 承载（不使用 rowcount/rowindex）
     expect(first.getAttribute('aria-posinset')).toBe('12001')
-    expect(first.getAttribute('aria-rowindex')).toBe('12001')
-    expect(shadowOf(el).querySelector('.side-rows')!.getAttribute('aria-rowcount')).toBe('50000')
+    expect(first.hasAttribute('aria-rowindex')).toBe(false)
+    expect(shadowOf(el).querySelector('.side-rows')!.hasAttribute('aria-rowcount')).toBe(false)
     // 选中态落到切片内目标行（行 aria/class/data + 条 class/data）
     const selRow = shadowOf(el).querySelector<HTMLElement>('.row-name[data-key="t12006"]')!
     expect(selRow.getAttribute('aria-selected')).toBe('true')
@@ -4570,6 +4570,29 @@ describe('OASGantt 依赖联动排程（auto-schedule）', () => {
     )
   })
 
+  it('属性通道直接改写 tasks：联动排程事件序统一为 reschedule → tasks-change（一次 tasks-change）', () => {
+    const el = mount({
+      'auto-schedule': '',
+      tasks: JSON.stringify([
+        { id: 'd', name: 'D', start: '2026-03-02', end: '2026-03-06' },
+        { id: 't', name: 'T', start: '2026-03-02', end: '2026-03-04', dependencies: [{ id: 'd' }] },
+      ]),
+    })
+    const order: string[] = []
+    el.addEventListener('oas-tasks-change', () => order.push('tasks-change'))
+    el.addEventListener('oas-reschedule', () => order.push('reschedule'))
+    // 属性通道（非内部写回）：同数据再次写入 → update 末尾 reschedule 前推 t
+    el.setAttribute(
+      'tasks',
+      JSON.stringify([
+        { id: 'd', name: 'D', start: '2026-03-02', end: '2026-03-06' },
+        { id: 't', name: 'T', start: '2026-03-02', end: '2026-03-04', dependencies: [{ id: 'd' }] },
+      ]),
+    )
+    expect(taskOf(el, 't').start).toBe('2026-03-07')
+    expect(order).toEqual(['reschedule', 'tasks-change'])
+  })
+
   it('迭代松弛：依赖链数组顺序逆序（后继在前）也能级联到稳定', () => {
     const el = mount({
       'auto-schedule': '',
@@ -5215,6 +5238,102 @@ describe('OASGantt 依赖 lag/lead', () => {
     expect(t.end).toBe('2026-03-08')
     expect(t.start, '不产生 Invalid Date 数据串').not.toContain('NaN')
     expect(barOf(el, 't')).not.toBeNull()
+  })
+
+  it('lag 安全域：1e7 天（旧上限放行）按 0 处理——不写 5 位年份、回写不丢任务、属性通道告警一次', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    try {
+      const el = mount({
+        'auto-schedule': '',
+        tasks: JSON.stringify([
+          { id: 'd', name: 'D', start: '2026-03-02', end: '2026-03-06' },
+          {
+            id: 't',
+            name: 'T',
+            start: '2026-03-01',
+            end: '2026-03-02',
+            dependencies: [{ id: 'd', type: 'fs', lag: 1e7 }],
+          },
+        ]),
+      })
+      const t = taskOf(el, 't')
+      // 旧上限 1e15 ms（≈1.15e7 天）放行 1e7 天 → 2026 + 27397 年 = 29405（5 位年份）
+      expect(t.dependencies).toEqual([{ id: 'd', type: 'fs' }])
+      expect(t.start).toBe('2026-03-07')
+      expect(t.start, '不写出 5 位年份（旧实现 29405-…）').not.toMatch(/^\d{5}-/)
+      // 属性通道越域告警一次（实例级去重）
+      const msgs = (): string[] => warn.mock.calls.map((c) => String(c[0])).filter((m) => m.includes('超出安全域'))
+      expect(msgs().length).toBe(1)
+      expect(msgs()[0]).toContain('lag=10000000')
+      el.requestUpdate()
+      expect(msgs().length, '重渲染不重复告警').toBe(1)
+      // 回写：旧实现 5 位年份不能被 parseTaskDate 回读 → 清洗层静默丢任务
+      el.tasks = el.tasks
+      expect(el.tasks.map((x) => x.id).sort()).toEqual(['d', 't'])
+      expect(taskOf(el, 't').start).toBe('2026-03-07')
+    } finally {
+      warn.mockRestore()
+    }
+  })
+
+  it('lag 安全域：1e8 / 1e10 天仍按 0 处理且回写不崩（不写 5 位年份）', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    try {
+      const el = mount({
+        'auto-schedule': '',
+        tasks: JSON.stringify([
+          { id: 'd', name: 'D', start: '2026-03-02', end: '2026-03-06' },
+          {
+            id: 't',
+            name: 'T',
+            start: '2026-03-01',
+            end: '2026-03-02',
+            dependencies: [
+              { id: 'd', type: 'ss', lag: 1e8 },
+              { id: 'd', type: 'ff', lag: 1e10 },
+            ],
+          },
+        ]),
+      })
+      expect(taskOf(el, 't').dependencies).toEqual([
+        { id: 'd', type: 'ss' },
+        { id: 'd', type: 'ff' },
+      ])
+      expect(() => {
+        el.tasks = el.tasks
+      }).not.toThrow()
+      expect(el.tasks.map((x) => x.id).sort()).toEqual(['d', 't'])
+      for (const x of el.tasks) expect(x.start).not.toMatch(/^\d{5}-/)
+    } finally {
+      warn.mockRestore()
+    }
+  })
+
+  it('lag 安全域：写回结果必须可回读——边界年份（9999）叠加越界时不写 5 位年份、回写不丢任务', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    try {
+      const el = mount({
+        'auto-schedule': '',
+        tasks: JSON.stringify([
+          { id: 'd', name: 'D', start: '9999-12-01', end: '9999-12-10' },
+          {
+            id: 't',
+            name: 'T',
+            start: '9999-12-01',
+            end: '9999-12-02',
+            dependencies: [{ id: 'd', type: 'fs', lag: 10000 }], // 安全域内，但叠加 9999 年后为 5 位年份
+          },
+        ]),
+      })
+      // 越界写回被拒（不写 10027-…），数据保持可回读
+      expect(taskOf(el, 't').start).toBe('9999-12-01')
+      expect(taskOf(el, 't').start).not.toMatch(/^\d{5}-/)
+      el.tasks = el.tasks
+      expect(el.tasks.map((x) => x.id).sort()).toEqual(['d', 't'])
+      for (const x of el.tasks) expect(x.start).not.toMatch(/^\d{5}-/)
+    } finally {
+      warn.mockRestore()
+    }
   })
 
   it('lag 安全域：命令式 addDependency / updateDependency 传 1e308/1e10/Infinity/NaN 不抛且结果合法', () => {
@@ -6753,8 +6872,8 @@ describe('OASGantt windowed（服务端行窗口模式）', () => {
     expect(edge.reqs.length).toBe(0)
   })
 
-  // F3 回归：windowed 下 aria 坐标用全量口径（posinset/rowindex=绝对行号 1 基、setsize=total、
-  // 容器 aria-rowcount=total）；非 windowed 行为不变（同级口径、无 rowindex/rowcount）
+  // F3 回归：windowed 下 aria 坐标用全量口径（posinset=绝对行号 1 基、setsize=total）；
+  // tree/treeitem 不使用 aria-rowcount/aria-rowindex（axe aria-allowed-attr）；非 windowed 保持同级口径
   it('windowed 下 aria 坐标按全量口径；非 windowed 保持同级口径', () => {
     const { el } = mountWindowed({
       windowed: '',
@@ -6765,11 +6884,11 @@ describe('OASGantt windowed（服务端行窗口模式）', () => {
     const names = nameRows(el)
     expect(names.length).toBe(5)
     expect(names[0]!.getAttribute('aria-posinset')).toBe('11') // 绝对行号（切片局部 1 会红）
-    expect(names[0]!.getAttribute('aria-rowindex')).toBe('11')
+    expect(names[0]!.hasAttribute('aria-rowindex')).toBe(false)
     expect(names[0]!.getAttribute('aria-setsize')).toBe('1000')
     expect(names[4]!.getAttribute('aria-posinset')).toBe('15')
-    expect(names[4]!.getAttribute('aria-rowindex')).toBe('15')
-    expect(shadowOf(el).querySelector('.side-rows')!.getAttribute('aria-rowcount')).toBe('1000')
+    expect(names[4]!.hasAttribute('aria-rowindex')).toBe(false)
+    expect(shadowOf(el).querySelector('.side-rows')!.hasAttribute('aria-rowcount')).toBe(false)
     // 反证：非 windowed 保持既有口径（同级 posinset/setsize，无 rowindex/rowcount）
     const local = mountWindowed({ total: '1000', 'window-start': '10', tasks: taskSlice(10, 5) })
     const lnames = nameRows(local.el)
@@ -6795,6 +6914,38 @@ describe('OASGantt windowed（服务端行窗口模式）', () => {
     const nextDay = new Date(2026, 2, 31).getTime() + DAY_MS
     expect(tailOf('day')).toBeGreaterThanOrEqual(nextDay)
     expect(tailOf('hour')).toBeGreaterThanOrEqual(nextDay) // 旧实现得 03-31 07:00 → 红
+  })
+
+  // F7 回归：windowed 切片越界（window-start + 装载行数 > total）——越界行按 total 夹取不渲染，
+  // 实例级 devWarn 一次（旧实现静默截断，宿主误以为切片全部生效）
+  it('windowed 切片越界：越界行不渲染（按 total 夹取）+ devWarn 一次', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    try {
+      const { el } = mountWindowed({
+        windowed: '',
+        total: '100',
+        'window-start': '95',
+        height: '120',
+        'row-height': '40',
+        tasks: taskSlice(95, 20), // loaded [95,115) 越过 total 100 → 越界 15 行
+      })
+      const msgs = (): string[] =>
+        warn.mock.calls.map((c) => String(c[0])).filter((m) => m.includes('切片超出全量范围'))
+      expect(msgs().length, '挂载即告警一次').toBe(1)
+      expect(msgs()[0]).toContain('window-start 95')
+      expect(msgs()[0]).toContain('越界 15 行')
+      // 滚到全量末尾：只渲染 95..99 五行（绝对行号仍正确）
+      const tb = tbodyOf(el)
+      tb.scrollTop = 95 * 40
+      tb.dispatchEvent(new Event('scroll'))
+      await flushRaf()
+      const rows = nameRows(el)
+      expect(rows.map((r) => r.dataset.key)).toEqual(['t95', 't96', 't97', 't98', 't99'])
+      el.requestUpdate()
+      expect(msgs().length, '重渲染不重复告警').toBe(1)
+    } finally {
+      warn.mockRestore()
+    }
   })
 
   // F5 回归：退出 windowed / 移除 range-* 复位去重态——重进/挂回后首帧重新 init（不被旧去重态吞掉）
@@ -7009,8 +7160,54 @@ describe('OASGantt 行斑马纹（stripe）', () => {
     })
     expect(shadowOf(el).querySelectorAll('.stripe').length).toBeGreaterThan(0)
     el.removeAttribute('stripe')
-    expect(shadowOf(el).querySelector('.stripe-canvas'), '关闭后零额外 DOM（容器一并移除）').toBeNull()
+    expect(shadowOf(el).querySelector('.stripe-canvas'), '关闭后容器整体移除，不留一个条纹').toBeNull()
     expect(shadowOf(el).querySelectorAll('.stripe').length).toBe(0)
     expect(shadowOf(el).querySelectorAll('.row-name[data-stripe]').length).toBe(0)
+  })
+})
+
+// ===== 属性-方法撞名回归（observedAttributes 的 camelCase 与原型方法同名） =====
+//
+// 机制：宿主框架（Vue 等按 camelCase 做 property 桥接）或用户 JS 写 `el.rowHeight = 48`
+// 会在实例上建自有属性遮蔽原型同名方法，组件内部 `this.rowHeight()` 随后抛 TypeError。
+// 私有方法已改名（rowHeightPx / labelPositionMode / showTodayOn / datesReadonlyOn /
+// progressReadonlyOn），此处锁定：property 写入后 attribute 通道行为仍与未写入时等价。
+describe('OASGantt 属性-方法撞名回归', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('property 写入 rowHeight 后 update 不抛错，行高随 row-height 属性生效（.inner 高度 = 行数 × 行高）', () => {
+    const el = mount({ tasks: JSON.stringify(BASE_TASKS) })
+    ;(el as unknown as Record<string, unknown>).rowHeight = 48
+    // attribute 变更同步触发 update → 内部 rowHeightPx() 调用；改名前此处抛 TypeError
+    expect(() => el.setAttribute('row-height', '48')).not.toThrow()
+    // 行为等价断言：BASE_TASKS 3 行 × 48px
+    expect(shadowOf(el).querySelector<HTMLElement>('.inner')!.style.height).toBe('144px')
+  })
+
+  it('property 写入 labelPosition / showToday / datesReadonly / progressReadonly 后 update 不抛错，行为与 attribute 等价', () => {
+    const el = mount({ tasks: JSON.stringify(BASE_TASKS) })
+    const rec = el as unknown as Record<string, unknown>
+    rec.labelPosition = 'inside'
+    rec.showToday = false
+    rec.datesReadonly = true
+    rec.progressReadonly = true
+    expect(() => {
+      el.setAttribute('label-position', 'inside')
+      el.setAttribute('show-today', 'false')
+      el.setAttribute('dates-readonly', '')
+      el.setAttribute('progress-readonly', '')
+    }).not.toThrow()
+    // label-position=inside：条旁标签渲染
+    expect(barOf(el, 't1').querySelector('.bar-label')).not.toBeNull()
+    // show-today=false：今日线隐藏
+    expect(shadowOf(el).querySelector<HTMLElement>('.today-line')!.hidden).toBe(true)
+    // dates-readonly / progress-readonly：拖拽手柄与进度手柄不渲染
+    expect(barOf(el, 't1').querySelector('.handle')).toBeNull()
+    expect(barOf(el, 't1').querySelector('.progress-handle')).toBeNull()
   })
 })

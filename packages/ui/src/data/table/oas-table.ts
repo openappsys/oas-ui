@@ -2155,8 +2155,9 @@ export class OASTableBase extends OASElement {
     this.applyRowAriaSemantics()
     // 吸顶行：为前 N 行写入 data-sticky 与 top 偏移（依赖已铺好的表头/行测量高度）
     this.applyStickyRows()
-    // I3：windowed 切片重渲染后按锚点恢复焦点（行仍在窗口内才恢复，不回退切片首行）
-    this.restoreWindowedFocusAnchor()
+    // I3：windowed 切片重渲染后按锚点恢复焦点（行仍在窗口内才恢复，不回退切片首行）；
+    // 非滚动帧（宿主回填 update）路径：保留 focus + scrollIntoView，保证锚行可见
+    this.restoreWindowedFocusAnchor(false)
     // innerHTML 清空曾触发浏览器把 scrollTop 钳回 0；内容（含占位）已铺满后恢复原滚动位置
     if (this.wrap && this.wrap.scrollTop !== st) {
       this.ignoreNextScroll = true
@@ -2444,7 +2445,7 @@ export class OASTableBase extends OASElement {
       if (colIdx === 0) {
         // 树形：按层级缩进（indent-size 属性控制每级 px，缺省 24=现状；非法/负值回落默认）
         if (hasChildren || flat.depth > 0) {
-          td.style.paddingLeft = `${16 + flat.depth * this.indentSize()}px`
+          td.style.paddingLeft = `${16 + flat.depth * this.indentSizePx()}px`
         }
         // 树形：父行展开/收起按钮
         if (hasChildren) {
@@ -2524,7 +2525,7 @@ export class OASTableBase extends OASElement {
   }
 
   /** 树形缩进每级 px（indent-size 属性；缺省/非法/负值回落 24=历史现状） */
-  private indentSize(): number {
+  private indentSizePx(): number {
     const n = Number(this.getAttr('indent-size', '24'))
     return Number.isFinite(n) && n >= 0 ? n : 24
   }
@@ -2578,7 +2579,7 @@ export class OASTableBase extends OASElement {
     // 展开富内容请用非虚拟模式（与 merge 同级的虚拟模式限制，文档已写明）。
     if (this.wrap?.getAttribute('data-virtual') === 'true') {
       td.style.display = 'block'
-      td.style.height = `${this.rowHeight()}px`
+      td.style.height = `${this.rowHeightPx()}px`
       td.style.overflow = 'hidden'
     }
     tr.appendChild(td)
@@ -2607,7 +2608,7 @@ export class OASTableBase extends OASElement {
     scrollTop = this.wrap ? this.wrap.scrollTop : 0,
     dataOrdinal?: number[],
   ): void {
-    const win = computeVirtualWindow(scrollTop, this.tableHeight(), this.rowHeight(), display.length)
+    const win = computeVirtualWindow(scrollTop, this.tableHeight(), this.rowHeightPx(), display.length)
     const colSpan = this.columnCount()
     // 数据行序前缀（不含 expand/group 行）：虚拟窗口行的 rowIndex（cell-click / edit / ARIA）
     // 须与全量展示集同口径。缓存未携带时（外部直调兜底）就地补扫一次
@@ -2620,7 +2621,7 @@ export class OASTableBase extends OASElement {
       for (let i = 0; i < stickyEnd; i++) {
         const f = display[i]!
         const tr = this.buildVirtualRow(f, i, rowKey, selected, expanded, layout, ordinals[i]!)
-        tr.style.height = `${this.rowHeight()}px`
+        tr.style.height = `${this.rowHeightPx()}px`
         body.appendChild(tr)
       }
       windowStart = Math.max(win.start, stickyEnd)
@@ -2630,14 +2631,14 @@ export class OASTableBase extends OASElement {
     topSpacer.className = 'spacer'
     const topTd = document.createElement('td')
     topTd.colSpan = colSpan
-    topTd.style.height = `${(windowStart - stickyEnd) * this.rowHeight()}px`
+    topTd.style.height = `${(windowStart - stickyEnd) * this.rowHeightPx()}px`
     topSpacer.appendChild(topTd)
     body.appendChild(topSpacer)
 
     for (let i = windowStart; i < win.end; i++) {
       const f = display[i]!
       const tr = this.buildVirtualRow(f, i, rowKey, selected, expanded, layout, ordinals[i]!)
-      tr.style.height = `${this.rowHeight()}px`
+      tr.style.height = `${this.rowHeightPx()}px`
       body.appendChild(tr)
     }
 
@@ -2645,7 +2646,7 @@ export class OASTableBase extends OASElement {
     bottomSpacer.className = 'spacer'
     const bottomTd = document.createElement('td')
     bottomTd.colSpan = colSpan
-    bottomTd.style.height = `${(display.length - win.end) * this.rowHeight()}px`
+    bottomTd.style.height = `${(display.length - win.end) * this.rowHeightPx()}px`
     bottomSpacer.appendChild(bottomTd)
     body.appendChild(bottomSpacer)
   }
@@ -2690,7 +2691,7 @@ export class OASTableBase extends OASElement {
     layout: { offsets: Map<string, ColumnOffset>; hasFixed: boolean },
     scrollTop: number,
   ): void {
-    const ih = this.rowHeight()
+    const ih = this.rowHeightPx()
     const colSpan = this.columnCount()
     const win = computeVirtualWindow(scrollTop, this.tableHeight(), ih, this._winMode.total)
     // display 条目 → 绝对行号：数据行占一个绝对行号；expand 内容行贴在前一数据行之后的槽位
@@ -3645,8 +3646,9 @@ export class OASTableBase extends OASElement {
     return parseExportFormats(this.getAttr('export-format', 'csv'))
   }
 
-  /** 导出文件名（去扩展名；净化路径分隔符与文件系统保留字符） */
-  exportFileName(): string {
+  /** 导出文件名（去扩展名；净化路径分隔符与文件系统保留字符）。内部方法不作为公开 API——
+   *  原公开名 exportFileName 与 `export-file-name` 属性的 camelCase property 桥接同名冲突。 */
+  private generateExportFileName(): string {
     return sanitizeFileName(this.getAttr('export-file-name', 'export'))
   }
 
@@ -3680,7 +3682,7 @@ export class OASTableBase extends OASElement {
    */
   exportData(format: ExportFormat = this.exportFormats()[0]!, options: { fileName?: string } = {}): string {
     const { headers, rows } = this.exportMatrix()
-    const fileName = `${sanitizeFileName(options.fileName ?? this.exportFileName())}.${EXPORT_EXT[format]}`
+    const fileName = `${sanitizeFileName(options.fileName ?? this.generateExportFileName())}.${EXPORT_EXT[format]}`
     const content = format === 'excel' ? toExcelXml(headers, rows) : toCSV(headers, rows, { bom: true })
     downloadText(content, fileName, format)
     this.emit('export', { format, fileName, rowCount: rows.length })
@@ -3981,8 +3983,16 @@ export class OASTableBase extends OASElement {
    * 重映射到新渲染矩阵坐标（绝对行号 → 矩阵行号，Tab 再进容器 / 方向键续接不跳行）；
    * 锚行已不在窗口内（宿主回填的切片不含该行）→ 不强行聚焦——焦点跳到别的行（如切片首行）
    * 比焦点丢失更误导，直接放弃锚点。
+   *
+   * @param scrollFrame 是否为滚动帧路径（handleScroll 内的 tbody 重建）。滚动帧下：
+   * - `focus({ preventScroll: true })` 回锚且**不调用** scrollCellIntoView——用户正在滚动，
+   *   回锚若触发浏览器滚动会把横向 scrollLeft 每帧拉回锚格（I-1 复审缺陷：横向滚动恒回 0），
+   *   纵向由调用方既有的 scrollTop 恢复承担；横向 scrollLeft 同样由调用方保存/恢复；
+   * - update 路径（宿主回填切片）保留原有行为：focus() + scrollCellIntoView，
+   *   保证宿主回填后锚行可见。
+   * 锚点格仍是当前焦点时不再回锚（避免无谓 focus 触发浏览器滚动）。
    */
-  private restoreWindowedFocusAnchor(): void {
+  private restoreWindowedFocusAnchor(scrollFrame: boolean): void {
     const anchor = this.focusAnchor
     this.focusAnchor = null
     if (!anchor || !this.hasAttr('grid-navigation')) return
@@ -3993,9 +4003,15 @@ export class OASTableBase extends OASElement {
     if (row < 0) return
     const td = this.gridCellAt(row, anchor.col)
     if (!td) return
-    td.focus()
+    if (this.shadow.activeElement !== td) {
+      if (scrollFrame) {
+        td.focus({ preventScroll: true })
+      } else {
+        td.focus()
+        this.scrollCellIntoView(td)
+      }
+    }
     this.gridPos = { row, col: anchor.col }
-    this.scrollCellIntoView(td)
   }
 
   /** 可导航单元格矩阵：当前渲染的数据行 × 该行 td 列表（column-virtual 占位格不入矩阵——
@@ -4155,7 +4171,7 @@ export class OASTableBase extends OASElement {
     if (this.hasAttr('pagination')) return Math.max(1, Number(this.getAttr('page-size', '10')) || 10)
     const viewport = this.wrap?.clientHeight || (this.isVirtual() ? this.tableHeight() : 0)
     if (viewport <= 0) return 1
-    return Math.max(1, Math.floor(viewport / this.rowHeight()))
+    return Math.max(1, Math.floor(viewport / this.rowHeightPx()))
   }
 
   /** 聚焦网格单元格：直接 focus + 滚入视口 + 记忆坐标（Tab 再次进入续用） */
@@ -4296,7 +4312,9 @@ export class OASTableBase extends OASElement {
     return Number(this.getAttr('height', '320')) || 320
   }
 
-  private rowHeight(): number {
+  /** 行高（方法名避开 row-height 属性的 camelCase rowHeight，防 property 赋值
+   *  el.rowHeight=40 遮蔽原型方法，对齐 gantt 的 rowHeightPx 惯例） */
+  private rowHeightPx(): number {
     return Number(this.getAttr('row-height', '40')) || 40
   }
 
@@ -4384,6 +4402,8 @@ export class OASTableBase extends OASElement {
         return
       }
       const st = this.wrap!.scrollTop
+      // I-1：横向滚动位置同样帧前保存——清空 tbody + 回锚 focus 曾把 scrollLeft 拉回锚格处
+      const sl = this.wrap!.scrollLeft
       const rowKey = this.getAttr('row-key', 'key')
       const selected = this.getAttr('selected', '').split(',').filter(Boolean)
       const expanded = new Set(this.getAttr('expanded', '').split(',').filter(Boolean))
@@ -4410,18 +4430,21 @@ export class OASTableBase extends OASElement {
       this.applyGridSemantics()
       this.applyRowAriaSemantics()
       this.applyStickyRows()
-      // I3：windowed 重渲染后按锚点恢复焦点（行仍在窗口内才恢复）
-      this.restoreWindowedFocusAnchor()
-      // 清空曾把 scrollTop 钳回 0，内容铺满后恢复（窗口按 st 算，视觉不跳）
-      if (this.wrap!.scrollTop !== st) {
+      // I3：windowed 重渲染后按锚点恢复焦点（行仍在窗口内才恢复）；滚动帧路径用
+      // preventScroll 回锚且不 scrollIntoView（I-1：否则横向滚动每帧被拉回锚格）
+      this.restoreWindowedFocusAnchor(true)
+      // 清空曾把 scrollTop 钳回 0、回锚 focus 曾改写 scrollLeft：内容铺满后一并恢复
+      //（窗口按 st 算，纵向视觉不跳；横向停在用户滚到的位置，不被锚点拉回）
+      if (this.wrap!.scrollTop !== st || this.wrap!.scrollLeft !== sl) {
         this.ignoreNextScroll = true
         this.wrap!.scrollTop = st
+        this.wrap!.scrollLeft = sl
       }
       // windowed：滚动事件 detail 的窗口按全量行数计（绝对行下标；与 oas-window-request 同坐标系）
       const win = computeVirtualWindow(
         st,
         this.tableHeight(),
-        this.rowHeight(),
+        this.rowHeightPx(),
         this.windowedOn() ? this._winMode.total : display.length,
       )
       this.emit('scroll', { scrollTop: st, start: win.start, end: win.end })
@@ -4441,7 +4464,7 @@ export class OASTableBase extends OASElement {
     const mode = this._winMode
     if (!mode.windowed || !this.isVirtual()) return
     const st = this.wrap?.scrollTop ?? 0
-    const vis = computeVirtualWindow(st, this.tableHeight(), this.rowHeight(), mode.total)
+    const vis = computeVirtualWindow(st, this.tableHeight(), this.rowHeightPx(), mode.total)
     const need = expandWindow(vis.start, vis.end, mode.total, WINDOW_MARGIN)
     if (windowCovered(need, mode.loaded)) {
       this.winReq = null

@@ -1,5 +1,6 @@
 import { OASElement } from '@oas-ui/core'
 import { resolveDirection } from '../../shared/direction.js'
+import { devWarn } from '../../shared/dev-warn.js'
 // 注册 oas-bottom-sheet（移动端底部抽屉承载件，需裸 import 保住注册副作用）
 import '../../feedback/bottom-sheet/index.js'
 import type { OASBottomSheet } from '../../feedback/bottom-sheet/index.js'
@@ -37,6 +38,8 @@ const VALID_STATUSES = ['error', 'warning', 'success'] as const
 const VALID_VALUE_MODES = ['all', 'parentFirst', 'onlyLeaf'] as const
 /** 悬停展开延时：跨行扫过时避免误展开（近似悬停安全区） */
 const HOVER_EXPAND_DELAY = 120
+/** 已告警过的非法 value 原值（模块内同值去重，避免受控重试刷屏） */
+const warnedInvalidValues = new Set<string>()
 
 /** 列虚拟滚动阈值：列项数超过它才启用虚拟（短列全量渲染，避免 1~2 项的子级列也撑满固定高度） */
 const VIRTUAL_COLUMN_THRESHOLD = 50
@@ -642,22 +645,58 @@ export class OASCascader extends OASElement {
    * attributeChangedCallback，显式 update 保证生效。
    */
   set value(v: string[] | string[][] | null) {
-    const nested = Array.isArray(v) && v.length > 0 && Array.isArray((v as unknown[])[0])
+    // 运行时容忍 JSON 字符串：框架（Vue 按「key in el」）会把静态 value attribute 的 JSON 字符串
+    // 直接写成 property。先 JSON.parse 归一（非法 → 回落属性通道，不覆盖既有受控值 + devWarn 一次）。
+    let input: unknown = v
+    if (typeof input === 'string') {
+      const raw = input.trim()
+      if (raw === '') {
+        input = []
+      } else {
+        try {
+          input = JSON.parse(raw)
+        } catch {
+          this.warnInvalidValue(v)
+          return
+        }
+      }
+    }
+    if (input == null) input = []
+    if (!Array.isArray(input)) {
+      this.warnInvalidValue(v)
+      return
+    }
+    const arr = input as unknown[]
+    const nested = arr.length > 0 && Array.isArray(arr[0])
     if (this.isMultiple()) {
       let paths: string[][]
-      if (v == null) paths = []
-      else if (nested) paths = (v as string[][]).map((p) => p.map(String))
-      else if (v.length) paths = [(v as string[]).map(String)]
+      if (nested) paths = arr.map((p) => (Array.isArray(p) ? p.map(String) : []))
+      else if (arr.length) paths = [arr.map(String)]
       else paths = []
       this.setAttribute('value', JSON.stringify(paths))
     } else {
       let path: string[]
-      if (v == null) path = []
-      else if (nested) path = ((v as string[][])[0] ?? []).map(String)
-      else path = (v as string[]).map(String)
+      if (nested) path = ((arr[0] as unknown[]) ?? []).map(String)
+      else path = arr.map(String)
       this.setAttribute('value', JSON.stringify(path))
     }
     if (this.hasRendered) this.update()
+  }
+
+  /** 非法 value property 诊断：同值只告警一次，保留 no-op 语义（不覆盖属性通道既有受控值） */
+  private warnInvalidValue(v: unknown): void {
+    let key: string
+    try {
+      key = typeof v === 'string' ? v : (JSON.stringify(v) ?? String(v))
+    } catch {
+      key = String(v)
+    }
+    if (warnedInvalidValues.has(key)) return
+    warnedInvalidValues.add(key)
+    devWarn(
+      '[oas-cascader] value property 收到非法数据（应为路径数组 / 路径集合或其 JSON 字符串），已忽略；' +
+        '静态 JSON 属性通道仍是权威值',
+    )
   }
 
   constructor() {
@@ -782,7 +821,7 @@ export class OASCascader extends OASElement {
     return this.isMultiple() && this.hasAttr('check-strictly')
   }
 
-  private valueMode(): ValueMode {
+  private valueModeSetting(): ValueMode {
     return pickValid(this.getAttr('value-mode', 'all'), 'all', VALID_VALUE_MODES) as ValueMode
   }
 
@@ -791,7 +830,7 @@ export class OASCascader extends OASElement {
   }
 
   /** 默认 true（完整路径，与存量行为一致）；show-all-levels="false" 收窄为仅末级 */
-  private showAllLevels(): boolean {
+  private showAllLevelsOn(): boolean {
     return this.getAttr('show-all-levels', 'true') !== 'false'
   }
 
@@ -976,7 +1015,7 @@ export class OASCascader extends OASElement {
   /** 勾选键集 → 按 value-mode 派生对外值（DFS 序）；树外未知路径原样保留 */
   private applyStrategy(checked: Set<string>): string[][] {
     const out: string[][] = []
-    const mode = this.valueMode()
+    const mode = this.valueModeSetting()
     const walk = (list: CascaderOption[], prefix: string[]): void => {
       for (const o of list) {
         const path = [...prefix, o.value]
@@ -1185,8 +1224,10 @@ export class OASCascader extends OASElement {
     }
   }
 
-  /** 面板弹出方向：placement 属性（12 向，对齐浮层引擎 Placement），非法值回落 bottom */
-  private placement(): Placement {
+  /** 面板弹出方向：placement 属性（12 向，对齐浮层引擎 Placement），非法值回落 bottom。
+   *  方法名避开 placement 属性同名（单词无大小写分叉，property 赋值 el.placement 会
+   *  遮蔽原型方法，故不叫 placement()） */
+  private placementMode(): Placement {
     const raw = this.getAttr('placement', 'bottom')
     return ((VALID_PLACEMENTS as readonly string[]).includes(raw) ? raw : 'bottom') as Placement
   }
@@ -1200,7 +1241,7 @@ export class OASCascader extends OASElement {
     const { top, left } = computePosition(
       anchorRect,
       panelRect,
-      this.placement(),
+      this.placementMode(),
       getViewport(),
       undefined,
       undefined,
@@ -1798,7 +1839,7 @@ export class OASCascader extends OASElement {
 
   private pathToText(path: string[]): string {
     const labels = this.pathLabels(path)
-    return this.showAllLevels() ? labels.join(this.separatorText()) : (labels[labels.length - 1] ?? '')
+    return this.showAllLevelsOn() ? labels.join(this.separatorText()) : (labels[labels.length - 1] ?? '')
   }
 
   private intAttr(name: string): number | null {

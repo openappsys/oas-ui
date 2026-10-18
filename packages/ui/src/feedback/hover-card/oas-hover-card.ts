@@ -578,7 +578,7 @@ export class OASHoverCard extends OASElement {
     this.showTimer = setTimeout(() => {
       this.showTimer = null
       if (!this.hasAttr('disabled')) this.setAttribute('open', '')
-    }, this.openDelay())
+    }, this.openDelayMs())
   }
 
   private scheduleHide(): void {
@@ -586,10 +586,10 @@ export class OASHoverCard extends OASElement {
     this.hideTimer = setTimeout(() => {
       this.hideTimer = null
       this.removeAttribute('open')
-    }, this.closeDelay())
+    }, this.closeDelayMs())
   }
 
-  private openDelay(): number {
+  private openDelayMs(): number {
     const direct = this.getAttr('open-delay')
     if (direct !== '') return this.num(direct, 300)
     const legacy = this.getAttr('delay')
@@ -597,7 +597,7 @@ export class OASHoverCard extends OASElement {
     return 300
   }
 
-  private closeDelay(): number {
+  private closeDelayMs(): number {
     const direct = this.getAttr('close-delay')
     if (direct !== '') return this.num(direct, 150)
     const legacy = this.getAttr('delay')

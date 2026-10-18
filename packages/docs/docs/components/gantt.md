@@ -146,7 +146,7 @@
 
 ## 排程深化（依赖 lag/lead + 关键路径）
 
-- **依赖 lag/lead**：`dependencies: [{ id, type?, lag? }]`——`lag` 单位为**天、可负**（负 = 提前/重叠），并入 `auto-schedule` 四型约束（`fs: 后继 start ≥ 前置 end + lag`、`ss: 后继 start ≥ 前置 start + lag`、`ff/sf` 同理按 end）。缺省 0，向后兼容。
+- **依赖 lag/lead**：`dependencies: [{ id, type?, lag? }]`——`lag` 单位为**天、可负**（负 = 提前/重叠），并入 `auto-schedule` 四型约束（`fs: 后继 start ≥ 前置 end + lag`、`ss: 后继 start ≥ 前置 start + lag`、`ff/sf` 同理按 end）。缺省 0，向后兼容。`|lag|` 超过 **11574 天（≈31 年）**或非有限数值时按 0 处理并 devWarn 一次（防止极端值把排期写成组件无法回读的 5 位年份）。
 - **关键路径**：`show-critical-path`（布尔，默认关）——以**当前排期为基准**（ES 取现网 start）在依赖图 + 工期上反向推最晚时间算**总时差**，时差为 0 的任务条加 `.critical` 高亮（颜色走 `--oas-gantt-critical-color`）。只读展示，不改数据。
 - **时差标记**：总时差为 **0** → `.critical`（实线描边）；总时差为**负**（已违反后继约束）→ `.conflict`（虚线描边，`--oas-gantt-conflict-color`）。`el.tasks` 里 `lag` 为分数（如 `0.5`）时会把该条升为时间精度串（按需取整）。
 
@@ -158,7 +158,7 @@
 
 - **任务约束**：`GanttTask.constraint`（`'asap'` 默认 / `'snet'` 不得早于 / `'mso'` 固定开始 / `'fnlt'` 不得晚于完成）+ `constraintDate`。`auto-schedule` 下：`snet` 取起始下限、`mso` 固定开始（不被依赖前推）、`fnlt` 为软截止（不自动移动）。违反（`snet` 早于下限 / `mso` 与依赖冲突或偏离 / `fnlt` 超期）在 **`show-critical-path` 或 `auto-schedule` 开启时**以 `.conflict` 标出。摘要行上的约束无意义（日期派生）→ 忽略并告警一次。
 - **工作日日历**：`workdays`（JSON 周几数组 `[0..6]`，opt-in；缺省/空 = 不限周几）+ `holidays`（**假日恒为非工作日**，与是否开 `workdays` 无关）。`auto-schedule` 的前推落点**吸附到下一个工作日**（跳过假日与 `workdays` 之外的日子）。运行期改 `workdays`/`holidays` 或整体重写 `tasks` 都会触发重新规整。
-- **事件顺序**：`auto-schedule` 开启时，一次收口可能先派发 `oas-reschedule`（联动订正）与订正后的 `oas-tasks-change`，再派发 `oas-task-change`（拖动的那个任务，`start/end` 取**订正后终值**）。宿主以 `el.tasks` / `detail.task` 为准即可。
+- **事件顺序**：`auto-schedule` 开启且联动改期时，无论交互提交（拖拽 / 键盘 / `updateTask` / `updateTasks`）还是宿主直接改写 `tasks`（属性通道），事件序统一为 `oas-reschedule`（联动订正）→ `oas-tasks-change`（订正后的最终数据）；拖拽 / 键盘改期收口随后再派发 `oas-task-change`（拖动的那个任务，`start/end` 取**订正后终值**）。一次操作只派发一次 `oas-tasks-change`。宿主以 `el.tasks` / `detail.task` 为准即可。
 
 <DemoBlock title="工作日日历：workdays=[工作日] 下拖前置，后置自动吸附到下一个工作日；连线 +2（lag）标签可见">
   <oas-gantt id="gantt-workdays" auto-schedule workdays="[1,2,3,4,5]" height="200"></oas-gantt>
@@ -275,7 +275,7 @@
 </script>
 ```
 
-windowed 下的约定：**切片须为扁平行**（含 `parent`/`children` 的层级切片会 devWarn 并按扁平渲染，展开/收起请宿主侧展平）；`auto-schedule` 与关键路径在部分数据上会算错，**跳过并 devWarn**；行拖拽重排禁用（`index` 只对切片有意义）；**一次用户操作只派发一次 `oas-tasks-change`**（事件序 `oas-reschedule → oas-tasks-change → oas-task-change`）；`oas-tasks-change` 的 `detail.tasks` 仅含切片——宿主须**按 id 合并回全量**，不得整体替换。
+windowed 下的约定：**切片须为扁平行**（含 `parent`/`children` 的层级切片会 devWarn 并按扁平渲染，展开/收起请宿主侧展平）；`auto-schedule` 与关键路径在部分数据上会算错，**跳过并 devWarn**；行拖拽重排禁用（`index` 只对切片有意义）；**切片越界**（`window-start` + 装载行数 > `total`）时越界行按 `total` 夹取不渲染，并 devWarn 一次；**跨窗口连线不绘制**——前置任务不在已装载切片内时该依赖连线跳过（组件只持有切片，无法定位切片外端点；需要完整连线时请让宿主把相关前置一并放入切片，或在聚合层展示）；**一次用户操作只派发一次 `oas-tasks-change`**；`oas-tasks-change` 的 `detail.tasks` 仅含切片——宿主须**按 id 合并回全量**，不得整体替换。
 
 > 完整宿主取数配方（分段、取消在途、按 id 合并、原子回填）与可运行示例见 [服务端窗口取数](/guide/windowed-data)。
 

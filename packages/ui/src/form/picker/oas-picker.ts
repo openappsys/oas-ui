@@ -147,12 +147,12 @@ export class OASPicker extends OASFormElement {
     this.setAttribute('value', typeof v === 'string' ? v : JSON.stringify(v))
   }
 
-  private itemHeight(): number {
+  private itemHeightPx(): number {
     const n = Number(this.getAttr('item-height', String(DEFAULT_ITEM_HEIGHT)))
     return Number.isFinite(n) && n > 0 ? Math.floor(n) : DEFAULT_ITEM_HEIGHT
   }
 
-  private visibleCount(): number {
+  private visibleCountValue(): number {
     let n = Number(this.getAttr('visible-count', String(DEFAULT_VISIBLE_COUNT)))
     if (!Number.isFinite(n) || n < 3) n = DEFAULT_VISIBLE_COUNT
     n = Math.floor(n)
@@ -304,8 +304,8 @@ export class OASPicker extends OASFormElement {
     // 统一解析：列 + 下标一次成型（级联深层初值首帧即完整列数）
     const { cols, indices } = this.resolveAll()
     this.selectedIdx = cols.map((_, i) => indices[i] ?? 0)
-    const h = this.itemHeight()
-    const count = this.visibleCount()
+    const h = this.itemHeightPx()
+    const count = this.visibleCountValue()
     const spacer = ((count - 1) / 2) * h
     const disabled = this.hasAttr('disabled')
     wheels.innerHTML = ''
@@ -367,14 +367,14 @@ export class OASPicker extends OASFormElement {
 
   /** 滚动位换算选中下标（布局无关：只依赖 scrollTop 与 item-height） */
   private indexFromScroll(col: HTMLElement): number {
-    const h = this.itemHeight()
+    const h = this.itemHeightPx()
     return Math.max(0, Math.round(col.scrollTop / h))
   }
 
   private scrollToIndex(colIdx: number, itemIdx: number, smooth: boolean): void {
     const col = this.shadow.querySelectorAll<HTMLElement>('.column')[colIdx]
     if (!col) return
-    const top = itemIdx * this.itemHeight()
+    const top = itemIdx * this.itemHeightPx()
     // scrollTo 缺席/抛错环境（happy-dom 等）回退直接写 scrollTop——逻辑选中不依赖物理吸附
     if (smooth) {
       try {
@@ -422,7 +422,7 @@ export class OASPicker extends OASFormElement {
     if (items[idx]?.disabled) {
       idx = this.nearestEnabled(items, idx)
       this.scrollToIndex(colIdx, idx, true)
-    } else if (col.scrollTop !== idx * this.itemHeight()) {
+    } else if (col.scrollTop !== idx * this.itemHeightPx()) {
       // 吸附校正（scroll-snap 缺席环境兜底；原生环境为同值 no-op）
       this.scrollToIndex(colIdx, idx, true)
     }

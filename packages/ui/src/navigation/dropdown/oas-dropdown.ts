@@ -522,7 +522,7 @@ export class OASDropdown extends OASElement {
     if (this.tapToggleOnCoarse()) return // 触屏降级：coarse 下 hover 展开停用（tap 切换接管）
     if (!this.hasTrigger('hover') || this.hasAttr('disabled')) return
     this.clearHoverHide()
-    this.hoverShowTimer = setTimeout(() => this.setOpen(true), this.hoverDelay('hover-delay', HOVER_DELAY))
+    this.hoverShowTimer = setTimeout(() => this.setOpen(true), this.hoverDelayMs('hover-delay', HOVER_DELAY))
   }
 
   private onHoverLeave = (e: MouseEvent): void => {
@@ -534,7 +534,7 @@ export class OASDropdown extends OASElement {
     // 指针移到浮层面板（shadow 内）或宿主 light DOM 内不关：悬停区域 = 宿主 + 面板
     if (this.hoverTargetInside(e.relatedTarget)) return
     this.clearHoverShow()
-    this.hoverHideTimer = setTimeout(() => this.setOpen(false), this.hoverDelay('hover-hide-delay', HOVER_HIDE_DELAY))
+    this.hoverHideTimer = setTimeout(() => this.setOpen(false), this.hoverDelayMs('hover-hide-delay', HOVER_HIDE_DELAY))
   }
 
   private onPanelEnter = (): void => {
@@ -548,7 +548,7 @@ export class OASDropdown extends OASElement {
     // 触屏降级：tap 合成的 mouseleave 不得关掉刚 tap 展开的菜单
     if (this.tapToggleOnCoarse()) return
     if (this.hoverTargetInside(e.relatedTarget)) return
-    this.hoverHideTimer = setTimeout(() => this.setOpen(false), this.hoverDelay('hover-hide-delay', HOVER_HIDE_DELAY))
+    this.hoverHideTimer = setTimeout(() => this.setOpen(false), this.hoverDelayMs('hover-hide-delay', HOVER_HIDE_DELAY))
   }
 
   /** 指针/焦点移到的目标是否仍在「宿主 + 浮层面板」区域内（跨 shadow 时 relatedTarget 已 retarget 到 shadow host） */
@@ -577,7 +577,7 @@ export class OASDropdown extends OASElement {
   }
 
   /** hover 防抖延时：属性缺省用内置默认（hover-delay 150 / hover-hide-delay 100） */
-  private hoverDelay(attr: 'hover-delay' | 'hover-hide-delay', fallback: number): number {
+  private hoverDelayMs(attr: 'hover-delay' | 'hover-hide-delay', fallback: number): number {
     const n = Number.parseInt(this.getAttr(attr, ''), 10)
     return Number.isFinite(n) && n >= 0 ? n : fallback
   }

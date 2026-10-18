@@ -316,6 +316,25 @@ describe('OASUpload list-type', () => {
     el.setAttribute('list-type', 'picture')
     expect(el.shadowRoot!.querySelectorAll('.item-picture').length).toBe(1)
   })
+
+  it('listType property 写入不抛：写 list-type attribute 并驱动渲染（非法值容忍回落 list）', () => {
+    const el = mount()
+    el.files = [makeFile('a.png', 'image/png')]
+    const rec = el as unknown as Record<string, unknown>
+    // 修复前只有 getter、无 setter：Vue/React property 写入抛 TypeError
+    expect(() => {
+      rec.listType = 'picture-card'
+    }).not.toThrow()
+    expect(el.getAttribute('list-type')).toBe('picture-card')
+    expect(el.shadowRoot!.querySelectorAll('.card').length).toBe(1)
+    // 非法值运行时容忍（交属性通道，渲染按 list 回落）
+    expect(() => {
+      rec.listType = 'card'
+    }).not.toThrow()
+    expect(el.getAttribute('list-type')).toBe('card')
+    expect(el.shadowRoot!.querySelectorAll('.card').length).toBe(0)
+    expect(el.shadowRoot!.querySelectorAll('.item-picture').length).toBe(0)
+  })
 })
 
 // ---- 数量超限 ----

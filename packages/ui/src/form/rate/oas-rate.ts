@@ -391,7 +391,7 @@ export class OASRate extends OASElement {
     // allow-half：按点击位置半区判定（左半 = idx-0.5，右半 = idx）
     if (this.hasAttr('allow-half')) v = this.halfAwareValue(idx, e)
     // allow-clear（默认 true）：点击得到与当前值相同的结果时清空为 0
-    if (this.allowClear() && v === this.currentValue()) {
+    if (this.allowClearOn() && v === this.currentValue()) {
       this.setValue(0)
     } else {
       this.setValue(v)
@@ -430,7 +430,7 @@ export class OASRate extends OASElement {
   }
 
   /** 点击清空是否开启：默认 true，allow-clear="false" 关闭 */
-  private allowClear(): boolean {
+  private allowClearOn(): boolean {
     return this.getAttr('allow-clear', 'true') !== 'false'
   }
 
@@ -745,11 +745,12 @@ function splitList(raw: string): string[] {
 /**
  * property 通道数组归一（I-2）：接受非空字符串数组；JSON 字符串（框架按「key in el」把静态
  * icons/colors attribute 写成 property 的 SPA 场景）解析为字符串数组——复用属性通道同款
- * `parseJsonArray`（非法 JSON → null 回落属性通道 + devWarn 同值去重）；其余异型静默回落 null。
+ * `parseJsonArray`（非法 JSON → null 回落属性通道 + devWarn 同值去重）。空数组 / 空 JSON
+ * （`[]` / `'[]'`）与「未设置」等价，回落属性通道/默认，不覆盖为空；其余异型静默回落 null。
  */
 function normalizeStringArray(v: unknown, kind: string): string[] | null {
-  if (typeof v === 'string') return parseJsonArray(kind, v)
-  if (!Array.isArray(v)) return null
-  const list = v.filter((x): x is string => typeof x === 'string')
-  return list.length ? list : null
+  const list = typeof v === 'string' ? parseJsonArray(kind, v) : Array.isArray(v) ? v : null
+  if (!list) return null
+  const filtered = list.filter((x): x is string => typeof x === 'string')
+  return filtered.length ? filtered : null
 }

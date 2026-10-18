@@ -558,7 +558,7 @@ export class OASInputNumber extends OASFormElement {
   private repeatTimer: number | null = null
 
   /** 数字 scrub 状态（null = 未在 scrub；单指针独占） */
-  private scrub: {
+  private scrubState: {
     id: number
     anchor: ReturnType<typeof beginScrub>
     active: boolean
@@ -675,7 +675,7 @@ export class OASInputNumber extends OASFormElement {
   override disconnectedCallback(): void {
     this.stopHold()
     this.finishScrubListeners()
-    this.scrub = null
+    this.scrubState = null
     super.disconnectedCallback()
   }
 
@@ -813,7 +813,7 @@ export class OASInputNumber extends OASFormElement {
       }
     }
     // 小数分隔符归一到 '.'（decimal-separator 属性优先，缺省 locale 感知）
-    const sep = this.decimalSeparator()
+    const sep = this.decimalSeparatorValue()
     let normalized = sep === '.' ? raw : raw.split(sep).join('.')
     // 多小数点收敛：分组符与小数符混用时（如 de 的 "1.234,5" → "1.234.5"）仅保留最后一个作小数点
     const lastDot = normalized.lastIndexOf('.')
@@ -830,14 +830,14 @@ export class OASInputNumber extends OASFormElement {
   }
 
   /** 小数分隔符：decimal-separator 属性优先，缺省运行环境 locale 的小数分隔符（与 Intl 格式化同源） */
-  private decimalSeparator(): string {
+  private decimalSeparatorValue(): string {
     const explicit = this.getAttr('decimal-separator', '')
     return explicit !== '' ? explicit : localeDecimalSeparator()
   }
 
   /** 把文本中的 from 分隔符替换为配置的小数分隔符（sep === from 时原样返回） */
   private applyDecimalSeparator(text: string, from: string): string {
-    const sep = this.decimalSeparator()
+    const sep = this.decimalSeparatorValue()
     return sep === from ? text : text.split(from).join(sep)
   }
 
@@ -1019,7 +1019,7 @@ export class OASInputNumber extends OASFormElement {
 
   /** 输入框按下：记录锚点（像素 + 基准值），挂 window 级 move/up；不 preventDefault（保留聚焦） */
   private beginPointerScrub(e: PointerEvent): void {
-    if (this.scrub) return
+    if (this.scrubState) return
     if (this.scrubOff() || this.injectDisabled() || this.hasAttr('readonly')) return
     if (this.isCoarsePointer()) return
     if (e.pointerType === 'mouse' && e.button !== 0) return
@@ -1031,14 +1031,14 @@ export class OASInputNumber extends OASFormElement {
     const minRaw = this.getAttr('min', '')
     const base =
       parsed !== null && !Number.isNaN(parsed) ? parsed : (committed ?? (minRaw !== '' ? Number(minRaw) || 0 : 0))
-    this.scrub = { id: e.pointerId, anchor: beginScrub(e.clientX, base), active: false, startValue: committed }
+    this.scrubState = { id: e.pointerId, anchor: beginScrub(e.clientX, base), active: false, startValue: committed }
     window.addEventListener('pointermove', this.onScrubMove)
     window.addEventListener('pointerup', this.onScrubUp)
     window.addEventListener('pointercancel', this.onScrubUp)
   }
 
   private onScrubMove = (e: PointerEvent): void => {
-    const s = this.scrub
+    const s = this.scrubState
     const i = this.input
     if (!s || e.pointerId !== s.id || !i) return
     if (!s.active) {
@@ -1076,9 +1076,9 @@ export class OASInputNumber extends OASFormElement {
   }
 
   private onScrubUp = (e: PointerEvent): void => {
-    const s = this.scrub
+    const s = this.scrubState
     if (!s || e.pointerId !== s.id) return
-    this.scrub = null
+    this.scrubState = null
     this.finishScrubListeners()
     const i = this.input
     i?.removeAttribute('data-scrubbing')

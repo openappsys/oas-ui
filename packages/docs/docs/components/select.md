@@ -728,7 +728,7 @@ onMounted(() => {
 | `max-tag-count` | 多选标签按数量折叠为 `+N`（需显式设置；未设置时标签默认换行展示，不折叠） | `number` | — |
 | `multiple` | 多选 | `boolean` | — |
 | `name` | 表单字段名（原生 FormData 提交的 key；多选时作为同名多条 entry 的 key；无 name 浏览器自动不提交） | `string` | — |
-| `open` | 受控展开：属性在场=展开、移除=收起；宿主手势只派 oas-open-change 通知（组件不强制写回） | `boolean` | `false` |
+| `open` | 受控展开：属性在场=展开、移除=收起；宿主手势只派 oas-open-change 通知（组件不强制写回） | `boolean \| string` | `false` |
 | `options` | 选项，JSON 数组 `[{ label, value, disabled?, group? }]` | `Option[] \| string` | `[]` |
 | `placeholder` | 占位提示 | — | — |
 | `placement` | 下拉方向：`auto`（默认，下方优先自动翻转）/ `top` / `bottom`（强制不翻转） | `string` | `auto` |

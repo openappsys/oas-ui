@@ -337,7 +337,20 @@ export class OASImage extends OASElement {
   private observer: IntersectionObserver | null = null
 
   // 预览状态
-  private previewOpen = false
+  private previewOpenState = false
+
+  /** 预览开合 property 通道：写回 `preview-open` attribute（受控语义不变，Vue/React 桥接安全） */
+  private get previewOpen(): boolean {
+    return this.hasAttr('preview-open')
+  }
+
+  private set previewOpen(value: boolean | string) {
+    // presence 语义：静态 `<oas-image preview-open>` 经框架 property 通道写入的是空串 `''`，
+    // 空串必须视为 true（`!!value` 会 removeAttribute 导致失效/水合收起）；
+    // 仅 false / 'false' 关闭。
+    const on = value !== false && value !== 'false' && value != null
+    this.toggleAttribute('preview-open', on)
+  }
   private scale = 1
   private rotation = 0
   private flipX = false
@@ -459,7 +472,7 @@ export class OASImage extends OASElement {
       this.dragging = false
       this.previousFocus = null
       this.destroyPortal()
-      this.previewOpen = false
+      this.previewOpenState = false
       this.shadow.querySelector('.preview-mask')?.setAttribute('hidden', '')
       this.removeAttribute('preview-open')
     })
@@ -693,7 +706,7 @@ export class OASImage extends OASElement {
    * 供容器组件（oas-image-group）受控 `current` 属性驱动跳图。
    */
   previewGoTo(index: number): void {
-    if (!this.previewOpen || this.gallery.length === 0) return
+    if (!this.previewOpenState || this.gallery.length === 0) return
     const i = clamp(Math.trunc(index), 0, this.gallery.length - 1)
     if (i === this.galleryIndex) return
     this.showImage(i)
@@ -729,7 +742,7 @@ export class OASImage extends OASElement {
 
   /** 打开预览：图集模式可指定起始索引（缺省取主图 src 在列表中的位置，未命中从 0 开始） */
   openPreview(index?: number): void {
-    if (!this.maskEl() || this.previewOpen) return
+    if (!this.maskEl() || this.previewOpenState) return
     if (this.gallery.length > 0) {
       let i = typeof index === 'number' ? index : this.gallery.indexOf(this.currentSrc())
       if (i < 0) i = 0
@@ -751,8 +764,8 @@ export class OASImage extends OASElement {
    * （不派发 oas-preview-change，外部已知情）。
    */
   private setOpen(open: boolean, opts: { fromAttr?: boolean } = {}): void {
-    if (open === this.previewOpen) return
-    this.previewOpen = open
+    if (open === this.previewOpenState) return
+    this.previewOpenState = open
     if (this.hasAttr('preview-open') !== open) {
       if (open) this.setAttribute('preview-open', '')
       else this.removeAttribute('preview-open')
@@ -938,13 +951,13 @@ export class OASImage extends OASElement {
 
   /** 滚轮缩放：阻断页面滚动（passive:false），向上放大、向下缩小 */
   private onWheel = (e: WheelEvent): void => {
-    if (!this.previewOpen) return
+    if (!this.previewOpenState) return
     e.preventDefault()
     this.zoom(e.deltaY < 0 ? 1 : -1)
   }
 
   private onPointerDown = (e: PointerEvent): void => {
-    if (!this.previewOpen || e.button !== 0) return
+    if (!this.previewOpenState || e.button !== 0) return
     this.activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY })
     if (this.activePointers.size >= 2) {
       // 第二指落下：进入双指捏合缩放，取消单指拖拽态（单指平移与捏合互斥）
@@ -1237,9 +1250,9 @@ export class OASImage extends OASElement {
 
     // 受控：preview-open 属性在场时驱动开合（内部态变化已反射回属性，双向一致）
     const attrOpen = this.hasAttr('preview-open')
-    if (attrOpen !== this.previewOpen) this.setOpen(attrOpen, { fromAttr: true })
+    if (attrOpen !== this.previewOpenState) this.setOpen(attrOpen, { fromAttr: true })
     // 自愈：打开态但 portal 缺失（如断开期间被属性打开，ensurePortal 当时放弃）→ 补挂
-    if (this.previewOpen && !this.portalHost && this.isConnected) this.ensurePortal()
+    if (this.previewOpenState && !this.portalHost && this.isConnected) this.ensurePortal()
 
     // 预览浮层 chrome（locale 感知）
     this.syncPreviewChrome()

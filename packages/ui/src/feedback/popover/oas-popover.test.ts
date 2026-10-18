@@ -2930,3 +2930,49 @@ describe('触屏降级（P3）：coarse pointer 下 trigger 含 hover 回落 tap
     expect(el.hasAttribute('open')).toBe(true)
   })
 })
+
+// ===== 属性-方法撞名回归（observedAttributes 的 camelCase 与原型方法同名） =====
+//
+// 机制：宿主框架按 camelCase 做 property 桥接或用户 JS 写 `el.xxx = ...` 会在实例上
+// 建自有属性遮蔽原型同名方法，组件内部 `this.xxx()` 随后抛 TypeError。
+// 私有方法已改名（openDelay → openDelayMs / closeDelay → closeDelayMs /
+// collisionPadding → collisionPaddingPx）。
+describe('OASPopover 属性-方法撞名回归', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => unmountAll())
+
+  it('property 写入 collisionPadding 后定位路径不抛错', () => {
+    const el = mountOpen({ placement: 'bottom' })
+    const rec = el as unknown as Record<string, unknown>
+    rec.collisionPadding = 999
+    const p = panelOf(el)
+    stubPanelRect(p, 200, 60)
+    const btn = el.querySelector('button')!
+    stubRect(btn, { left: 12, top: 300, width: 64, height: 32 })
+    setViewport(1280, 800)
+    expect(() => el.setAttribute('collision-padding', '20')).not.toThrow()
+    expect(p.style.left).toBe('20px')
+  })
+
+  it('property 写入 openDelay / closeDelay 后 hover 开关路径不抛错', async () => {
+    const el = mount({
+      trigger: 'hover',
+      'hover-delay': '0',
+      'hover-hide-delay': '0',
+      'open-delay': '0',
+      'close-delay': '0',
+    })
+    const rec = el as unknown as Record<string, unknown>
+    rec.openDelay = 1
+    rec.closeDelay = 1
+    expect(() => el.dispatchEvent(new MouseEvent('mouseenter'))).not.toThrow()
+    await sleep(20)
+    expect(el.hasAttribute('open')).toBe(true)
+    expect(() => el.dispatchEvent(new MouseEvent('mouseleave'))).not.toThrow()
+    await sleep(20)
+    expect(el.hasAttribute('open')).toBe(false)
+  })
+})
