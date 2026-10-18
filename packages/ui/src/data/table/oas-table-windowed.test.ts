@@ -580,4 +580,99 @@ describe('OASTable windowed（服务端行窗口模式）', () => {
       warn.mockRestore()
     }
   })
+
+  // ---- I3：windowed 切片回填后的焦点回锚 ----
+
+  it('I3 焦点回锚：回填切片后聚焦行仍在窗口内 → 焦点与 gridPos 恢复到同一 row-key', () => {
+    const { el } = mountWindowed({
+      windowed: '',
+      total: '1000',
+      'window-start': '0',
+      'row-key': 'name',
+      data: slice(0, 20),
+      'grid-navigation': '',
+    })
+    const nameTdOf = (key: string): HTMLElement =>
+      el.shadowRoot!.querySelector<HTMLElement>(`tr[data-key="${key}"] td[data-col="name"]`)!
+    // 聚焦行3 的 name 格（绝对行 3，列 0）
+    nameTdOf('行3').focus()
+    expect(el.shadowRoot!.activeElement).toBe(nameTdOf('行3'))
+    // 宿主回填新切片（行3 仍在窗口内）：update 清空 tbody 曾把焦点一起拆掉
+    el.setAttribute('data', slice(0, 40))
+    const restored = el.shadowRoot!.activeElement as HTMLElement | null
+    expect(restored, '回填后焦点应恢复').toBeTruthy()
+    expect(restored!.tagName, '焦点应落在单元格上').toBe('TD')
+    expect(restored!.closest('tr')!.getAttribute('data-key'), '应回锚到同一逻辑行（row-key）').toBe('行3')
+    // gridPos 重映射：焦点回容器后按方向键应续接自锚行（而非切片首行）
+    const wrap = wrapOf(el)
+    wrap.focus()
+    wrap.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true, composed: true, cancelable: true }),
+    )
+    expect(el.shadowRoot!.activeElement, 'gridPos 应已重映射到锚行坐标').toBe(nameTdOf('行3'))
+    // 焦点在格上时方向键正常漫游（回锚不破坏网格导航）
+    nameTdOf('行3').dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true, composed: true, cancelable: true }),
+    )
+    expect(el.shadowRoot!.activeElement!.closest('tr')!.getAttribute('data-key')).toBe('行4')
+  })
+
+  it('I3 虚拟窗口回填：锚行仍在窗口内恢复焦点；切片变化后锚行不在 → 不强行聚焦（不回退首行）', async () => {
+    const { el, reqs } = mountWindowed({
+      windowed: '',
+      total: '1000',
+      'window-start': '0',
+      'row-key': 'name',
+      height: '200',
+      'row-height': '40',
+      data: slice(0, 17),
+      'grid-navigation': '',
+    })
+    const nameTdOf = (key: string): HTMLElement | null =>
+      el.shadowRoot!.querySelector<HTMLElement>(`tr[data-key="${key}"] td[data-col="name"]`)
+    // 滚到行 100 区域：可视 [97,110) → 期望 [89,118) 未装载 → 派发 scroll 请求
+    const wrap = wrapOf(el)
+    wrap.scrollTop = 4040
+    wrap.dispatchEvent(new Event('scroll'))
+    await flushRaf()
+    expect(reqs).toEqual([{ start: 89, end: 118, reason: 'scroll' }])
+    // 宿主回填 [100,140)：渲染行 100 起，聚焦行103
+    el.setAttribute('window-start', '100')
+    el.setAttribute('data', slice(100, 40))
+    const td103 = nameTdOf('行103')!
+    expect(td103, '回填后行103 在渲染窗口内').toBeTruthy()
+    td103.focus()
+    expect(el.shadowRoot!.activeElement).toBe(td103)
+    // 宿主再次回填（切片变化，行103 仍在新切片 [95,145) 内）→ 焦点应回锚到同一 row-key
+    el.setAttribute('window-start', '95')
+    el.setAttribute('data', slice(95, 50))
+    const restored = el.shadowRoot!.activeElement as HTMLElement | null
+    expect(restored, '切片变化后焦点应恢复').toBeTruthy()
+    expect(restored!.closest('tr')!.getAttribute('data-key'), '回锚到同一逻辑行').toBe('行103')
+    // 负例：换窗到行103 不在的切片（[95,103) 不含行103，但行97-102 仍可见）→ 不强行聚焦
+    el.setAttribute('window-start', '95')
+    el.setAttribute('data', slice(95, 8))
+    const after = el.shadowRoot!.activeElement as HTMLElement | null
+    const afterKey = after?.closest?.('tr.row')?.getAttribute('data-key') ?? ''
+    expect(afterKey, '不回退到切片首行 行97').not.toBe('行97')
+    // oas-window-request 行为不变：三次回填的期望区间同为 [89,118)（滚动位置未变）→
+    // 按 need 去重不重派（data 原因仅在 need 变化时派发）；scroll 请求恰一次
+    expect(reqs).toEqual([{ start: 89, end: 118, reason: 'scroll' }])
+  })
+
+  it('I3 非 windowed 不受影响：data 变化重建 tbody 不做焦点回锚（维持原行为）', () => {
+    const { el } = mountWindowed({
+      total: '100',
+      'row-key': 'name',
+      data: slice(0, 5),
+      'grid-navigation': '',
+    })
+    const nameTdOf = (key: string): HTMLElement =>
+      el.shadowRoot!.querySelector<HTMLElement>(`tr[data-key="${key}"] td[data-col="name"]`)!
+    nameTdOf('行1').focus()
+    el.setAttribute('data', slice(0, 6))
+    // 非 windowed：无回锚机制（锚行行为与改动前一致——焦点不恢复）
+    const active = el.shadowRoot!.activeElement as HTMLElement | null
+    expect(active?.closest?.('tr.row')?.getAttribute('data-key') ?? '').not.toBe('行1')
+  })
 })

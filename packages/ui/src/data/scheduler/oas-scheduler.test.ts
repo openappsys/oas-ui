@@ -1074,6 +1074,123 @@ describe('OASScheduler 资源视图索引化（终审 F1：滚动帧不随事件
   })
 })
 
+describe('OASScheduler 复审修复（I1 now 计时器 / I4 滚动容器键盘可达）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+  afterEach(() => {
+    vi.useRealTimers()
+    document.body.innerHTML = ''
+  })
+
+  const RES = JSON.stringify([{ id: 'r1', title: '会议室 A' }])
+
+  /** happy-dom 无布局：伪造滚动容器尺寸（溢出判定读 scrollHeight/clientHeight） */
+  function stubScroll(
+    el: HTMLElement,
+    box: { clientHeight?: number; scrollHeight?: number; clientWidth?: number; scrollWidth?: number },
+  ): void {
+    for (const [k, v] of Object.entries(box)) {
+      Object.defineProperty(el, k, { value: v, configurable: true })
+    }
+  }
+
+  it('I1 resource 视图启动 now 计时器：每分钟刷新 .res-now 位置；切走停表、切回重启、卸载清理', () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-08-10T10:00:00'))
+    const el = mount({
+      view: 'resource',
+      'page-show-date': '2026-08-10',
+      resources: RES,
+      'start-hour': '0',
+      'end-hour': '24',
+    })
+    const internals = el as unknown as { nowTimer: unknown }
+    const line = (): HTMLElement => el.shadowRoot!.querySelector<HTMLElement>('.res-row[data-resource="r1"] .res-now')!
+    expect(internals.nowTimer, 'resource 视图启动 now 计时器').toBeTruthy()
+    expect(line(), '当天资源视图渲染 now 线').not.toBeNull()
+    const before = parseFloat(line().style.insetInlineStart)
+    vi.advanceTimersByTime(60_000)
+    expect(parseFloat(line().style.insetInlineStart), '推进 1 分钟后 now 线位置变化').toBeGreaterThan(before)
+
+    // 切到 week：资源视图计时器停掉（week 自身按 PRD 也要每分钟刷新 now 线，故 nowTimer 仍 > 0；
+    // 用「隐藏后的 .res-now 不再随时钟更新」证明资源视图确实停表，且无旧定时器继续刷资源视图）
+    el.shadowRoot!.querySelector<HTMLButtonElement>('[data-view="week"]')!.click()
+    expect(el.shadowRoot!.querySelector<HTMLElement>('[part="timeview"]')!.hidden).toBe(false)
+    expect(el.shadowRoot!.querySelector<HTMLElement>('[part="resource"]')!.hidden).toBe(true)
+    const frozen = line().style.insetInlineStart
+    vi.advanceTimersByTime(60_000)
+    expect(line().style.insetInlineStart, '切到 week 后资源 now 线不再刷新').toBe(frozen)
+
+    // 切回 resource：重启定时器并立即按当前时刻重渲染
+    el.shadowRoot!.querySelector<HTMLButtonElement>('[data-view="resource"]')!.click()
+    expect(internals.nowTimer, '切回 resource 重启计时器').toBeTruthy()
+    expect(parseFloat(line().style.insetInlineStart), '切回后 now 线推进到当前时刻').toBeGreaterThan(parseFloat(frozen))
+
+    el.remove()
+    expect(internals.nowTimer, '卸载清理 now 计时器').toBeFalsy()
+  })
+
+  it('I1b 无 now 线视图（agenda）停表；切回 resource 重启', () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-08-10T10:00:00'))
+    const el = mount({
+      view: 'resource',
+      'page-show-date': '2026-08-10',
+      resources: RES,
+      'start-hour': '0',
+      'end-hour': '24',
+    })
+    const internals = el as unknown as { nowTimer: unknown }
+    expect(internals.nowTimer).toBeTruthy()
+    el.shadowRoot!.querySelector<HTMLButtonElement>('[data-view="agenda"]')!.click()
+    expect(internals.nowTimer, 'agenda 无 now 线，计时器停止').toBeFalsy()
+    el.shadowRoot!.querySelector<HTMLButtonElement>('[data-view="resource"]')!.click()
+    expect(internals.nowTimer, '切回 resource 重启').toBeTruthy()
+  })
+
+  it('I2 资源视图默认 max-height 640px（--oas-scheduler-resource-max-height 可覆盖，与 timeview 一致）', () => {
+    const el = mount({ view: 'resource', 'page-show-date': '2026-08-10', resources: RES })
+    const css = el.shadowRoot!.querySelector('style')!.textContent ?? ''
+    const start = css.indexOf('.resourceview {')
+    expect(start, '存在 .resourceview 规则').toBeGreaterThan(-1)
+    const block = css.slice(start, css.indexOf('}', start)).replace(/\s+/g, ' ')
+    expect(block, '默认限高 640px 且可由 token 覆盖').toContain(
+      'max-height: var(--oas-scheduler-resource-max-height, 640px)',
+    )
+  })
+
+  it('I4 滚动容器键盘可达：真实溢出才 tabindex=0；不溢出 / 隐藏视图无 tabindex（无空 Tab 停靠点）', () => {
+    const day = mount({ view: 'day', 'page-show-date': '2026-08-10', 'start-hour': '0', 'end-hour': '24' })
+    const tv = day.shadowRoot!.querySelector<HTMLElement>('[part="timeview"]')!
+    stubScroll(tv, { clientHeight: 240, scrollHeight: 1200 })
+    day.requestUpdate()
+    expect(tv.getAttribute('tabindex'), 'timeview 溢出时键盘可达').toBe('0')
+
+    stubScroll(tv, { scrollHeight: 240 })
+    day.requestUpdate()
+    expect(tv.hasAttribute('tabindex'), 'timeview 不溢出时不加 tabindex').toBe(false)
+
+    // 切走隐藏：即使先前可滚动也移除 tabindex（隐藏容器不是有效 Tab 停靠点）
+    stubScroll(tv, { scrollHeight: 1200 })
+    day.requestUpdate()
+    expect(tv.getAttribute('tabindex')).toBe('0')
+    day.shadowRoot!.querySelector<HTMLButtonElement>('[data-view="month"]')!.click()
+    expect(tv.hidden).toBe(true)
+    expect(tv.hasAttribute('tabindex'), '隐藏视图移除 tabindex').toBe(false)
+
+    // [part=resource] 同口径
+    const res = mount({ view: 'resource', 'page-show-date': '2026-08-10', resources: RES })
+    const rv = res.shadowRoot!.querySelector<HTMLElement>('[part="resource"]')!
+    stubScroll(rv, { clientHeight: 640, scrollHeight: 5000 })
+    res.requestUpdate()
+    expect(rv.getAttribute('tabindex'), '资源视图溢出时键盘可达').toBe('0')
+    stubScroll(rv, { scrollHeight: 640 })
+    res.requestUpdate()
+    expect(rv.hasAttribute('tabindex'), '资源视图不溢出时不加 tabindex').toBe(false)
+  })
+})
+
 describe('property 通道接受 JSON 字符串（框架把静态 attribute 写成 property）', () => {
   beforeEach(() => {
     document.body.innerHTML = ''

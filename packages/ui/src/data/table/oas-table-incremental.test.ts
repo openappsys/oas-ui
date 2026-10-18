@@ -281,4 +281,57 @@ describe('OASTable 增量渲染（选择切换零重算）', () => {
       '张三',
     )
   })
+
+  it('I6 非windowed 虚拟滚动帧零全量重建：滚动多帧 visibleBuilds/flatBuilds 不增；签名失效才重建', async () => {
+    // 缺陷固化：滚动回调曾每帧重跑 computeDisplayRoots（过滤切片）+ visibleFlat（全量可见性
+    // 过滤）+ 数据行序前缀扫描——均为 O(总量)。修复=展示集按渲染签名缓存，滚动帧只做窗口切片。
+    const el = mount({ data: bigData(2000), height: '320', 'row-height': '40' })
+    const before = {
+      flat: tableRenderDiagnostics.flatBuilds,
+      sum: tableRenderDiagnostics.summaryComputes,
+      visible: tableRenderDiagnostics.visibleBuilds,
+    }
+    const firstRowText = (): string =>
+      el.shadowRoot!.querySelector('tbody tr[data-key]')!.getAttribute('data-key') ?? ''
+    expect(dataRows(el).length, '窗口化渲染（远小于总量）').toBeLessThan(60)
+    const wrap = el.shadowRoot!.querySelector<HTMLElement>('.table-scroll')!
+    // 连滚 3 帧：窗口切片变化、展示集零重建
+    for (const top of [400, 800, 1200]) {
+      wrap.scrollTop = top
+      wrap.dispatchEvent(new Event('scroll'))
+      await new Promise((r) => requestAnimationFrame(() => r(undefined)))
+      expect(tableRenderDiagnostics.visibleBuilds, `scrollTop=${top} 帧不重建展示集`).toBe(before.visible)
+      expect(tableRenderDiagnostics.flatBuilds, `scrollTop=${top} 帧不重建扁平化`).toBe(before.flat)
+    }
+    // 窗口确实在切（首行随滚动前进；scrollTop=1200/40=30 → buffer 4 → 首行 行26）
+    expect(firstRowText()).toBe('k26')
+    // 签名失效（数据变化）才重建：visibleBuilds 增长且新窗口反映新数据
+    el.setAttribute('data', bigData(3000))
+    expect(tableRenderDiagnostics.visibleBuilds, '数据变化重建展示集').toBe(before.visible + 1)
+    wrap.scrollTop = 2400
+    wrap.dispatchEvent(new Event('scroll'))
+    await new Promise((r) => requestAnimationFrame(() => r(undefined)))
+    expect(tableRenderDiagnostics.visibleBuilds, '重建后的滚动帧继续命中缓存').toBe(before.visible + 1)
+    // 过滤变化同样失效（签名含 filter-values）
+    el.setAttribute('filter-values', JSON.stringify({ name: '行1' }))
+    expect(tableRenderDiagnostics.visibleBuilds).toBe(before.visible + 2)
+  })
+
+  it('I6 windowed 滚动帧同走展示集缓存（切片不变时零重建）', async () => {
+    const el = mount({
+      windowed: '',
+      total: '5000',
+      'window-start': '0',
+      'row-key': 'key',
+      height: '320',
+      'row-height': '40',
+      data: bigData(60),
+    })
+    const before = tableRenderDiagnostics.visibleBuilds
+    const wrap = el.shadowRoot!.querySelector<HTMLElement>('.table-scroll')!
+    wrap.scrollTop = 800
+    wrap.dispatchEvent(new Event('scroll'))
+    await new Promise((r) => requestAnimationFrame(() => r(undefined)))
+    expect(tableRenderDiagnostics.visibleBuilds, 'windowed 滚动帧命中展示集缓存').toBe(before)
+  })
 })

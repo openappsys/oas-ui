@@ -1484,3 +1484,73 @@ test('gantt stripe 斑马纹：绝对行号奇偶 + 滚动稳定 + 暗色 + 关�
 
   expect(errors, 'console 零 error').toEqual([])
 })
+
+// C1 回归（lag 安全域）：极大有限 lag（1e8 天）× auto-schedule 曾把排程运算推出 Date 合法域
+// （±8.64e15 ms）→ Invalid Date → fmtIso 内 Intl.formatToParts 抛 RangeError（整图白屏）。
+// 修复口径：越域 lag 清洗为无 lag（等价 0，依赖保留），排程按 0 计算。
+// 本用例走 hour 精度任务（fmtIso → Intl 崩溃路径的触发条件）：① 组件可渲染（非白屏）；
+// ② lag 被清洗；③ 日期数据合法（无 NaN）；④ console 零 error。
+test('gantt 极大 lag 安全域：lag=1e8 + auto-schedule 渲染正常 + console 零 error', async ({ page }) => {
+  const errors: string[] = []
+  page.on('pageerror', (e) => errors.push(`pageerror: ${e.message}`))
+  page.on('console', (m) => {
+    if (m.type() === 'error') errors.push(`error: ${m.text()}`)
+  })
+  await page.goto('/components/gantt.html', { waitUntil: 'domcontentloaded' })
+  await waitGantt(page, 'gantt-basic')
+  const res = await page.evaluate(async () => {
+    await customElements.whenDefined('oas-gantt')
+    const raf = () => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)))
+    const el = document.createElement('oas-gantt') as HTMLElement & {
+      tasks: Array<{
+        id: string
+        name: string
+        start: string
+        end?: string
+        dependencies?: Array<{ id: string; lag?: number }>
+      }>
+      shadowRoot: ShadowRoot
+      updateTask(id: string, patch: Record<string, string>): boolean
+    }
+    el.setAttribute('auto-schedule', '')
+    el.style.cssText = 'position:fixed;top:-9999px;left:0;width:600px' // 离屏：有真实布局测量
+    document.body.appendChild(el)
+    el.tasks = [
+      { id: 'd', name: 'D', start: '2026-03-02 08:00', end: '2026-03-02 12:00' },
+      {
+        id: 't',
+        name: 'T',
+        start: '2026-03-03 09:00',
+        end: '2026-03-03 10:00',
+        dependencies: [{ id: 'd', lag: 1e8 }],
+      },
+    ]
+    await raf()
+    const t = el.tasks.find((x) => x.id === 't')!
+    // 命令式改期触发联动前推（旧实现在此 fmtIso(Invalid Date) → RangeError）
+    let updateThrew = false
+    try {
+      el.updateTask('t', { start: '2026-03-01 09:00', end: '2026-03-01 10:00' })
+    } catch {
+      updateThrew = true
+    }
+    const t2 = el.tasks.find((x) => x.id === 't')!
+    const out = {
+      bars: el.shadowRoot.querySelectorAll('.bars .bar').length,
+      lagDropped: t.dependencies?.[0]?.lag === undefined,
+      startBefore: t.start,
+      updateThrew,
+      startAfter: t2.start,
+      endAfter: t2.end ?? '',
+      datesValid: [t.start, t2.start, t2.end ?? ''].every((s) => s !== '' && !s.includes('NaN')),
+    }
+    el.remove()
+    return out
+  })
+  expect(res.bars, '组件可渲染（非白屏，两条任务条都在）').toBe(2)
+  expect(res.lagDropped, '越域 lag 清洗为无 lag（等价 0，依赖保留）').toBe(true)
+  expect(res.updateThrew, '命令式联动改期不抛 RangeError').toBe(false)
+  expect(res.startAfter, '联动前推到前置右缘 03-02 12:00（合法日期）').toBe('2026-03-02 12:00')
+  expect(res.datesValid, `日期数据合法（实得 ${res.startBefore}/${res.startAfter}/${res.endAfter}）`).toBe(true)
+  expect(errors, 'console 零 error').toEqual([])
+})

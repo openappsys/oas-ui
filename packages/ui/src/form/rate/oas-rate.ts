@@ -184,23 +184,25 @@ export class OASRate extends OASElement {
   private iconsProp: string[] | null = null
   private colorsProp: string[] | null = null
 
-  /** 逐值符号 property 通道：el.icons = ['😞','😐','😄']（优先于 icons 属性；非数组静默忽略） */
+  /** 逐值符号 property 通道：el.icons = ['😞','😐','😄']（优先于 icons 属性；非数组静默忽略；
+   *  JSON 字符串运行时容忍，见 normalizeStringArray） */
   get icons(): string[] | null {
     return this.iconsProp
   }
 
   set icons(v: string[] | null) {
-    this.iconsProp = normalizeStringArray(v)
+    this.iconsProp = normalizeStringArray(v, 'icons')
     if (this.hasRendered) this.runUpdateAndNotify()
   }
 
-  /** 分段阈值色 property 通道：el.colors = ['#f50','#faad14','#52c41a']（优先于 colors 属性；非数组静默忽略） */
+  /** 分段阈值色 property 通道：el.colors = ['#f50','#faad14','#52c41a']（优先于 colors 属性；
+   *  非数组静默忽略；JSON 字符串运行时容忍，见 normalizeStringArray） */
   get colors(): string[] | null {
     return this.colorsProp
   }
 
   set colors(v: string[] | null) {
-    this.colorsProp = normalizeStringArray(v)
+    this.colorsProp = normalizeStringArray(v, 'colors')
     if (this.hasRendered) this.runUpdateAndNotify()
   }
 
@@ -740,8 +742,13 @@ function splitList(raw: string): string[] {
     .filter(Boolean)
 }
 
-/** property 通道数组归一：仅接受非空字符串数组（宿主框架绑定为字符串等异型静默回落 null） */
-function normalizeStringArray(v: unknown): string[] | null {
+/**
+ * property 通道数组归一（I-2）：接受非空字符串数组；JSON 字符串（框架按「key in el」把静态
+ * icons/colors attribute 写成 property 的 SPA 场景）解析为字符串数组——复用属性通道同款
+ * `parseJsonArray`（非法 JSON → null 回落属性通道 + devWarn 同值去重）；其余异型静默回落 null。
+ */
+function normalizeStringArray(v: unknown, kind: string): string[] | null {
+  if (typeof v === 'string') return parseJsonArray(kind, v)
   if (!Array.isArray(v)) return null
   const list = v.filter((x): x is string => typeof x === 'string')
   return list.length ? list : null

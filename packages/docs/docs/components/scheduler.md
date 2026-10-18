@@ -159,7 +159,7 @@ onMounted(async () => {
 
 ## 大数据量（虚拟化）
 
-资源视图的资源行与 `day` 视图的小时轴按可视窗口渲染：渲染行数/刻度数与 DOM 规模不随数据总量增长，占位撑起滚动范围（总高守恒）；滚动重建后按事件 id 回焦，拖拽/创建手势进行中抑制窗口重建（避免销毁 pointer capture）。资源行与时间轴均带 `aria-rowcount` 与绝对行号 `aria-rowindex`。
+资源视图的资源行与 `day` 视图的小时轴按可视窗口渲染：渲染行数/刻度数与 DOM 规模不随数据总量增长，占位撑起滚动范围（总高守恒）；滚动重建后按事件 id 回焦，拖拽/创建手势进行中抑制窗口重建（避免销毁 pointer capture）。资源视图默认限高 `--oas-scheduler-resource-max-height`（缺省 640px，与时间轴一致），超出即内部滚动并窗口化；资源行与时间轴均带 `aria-rowcount` 与绝对行号 `aria-rowindex`。
 
 ## API
 
@@ -197,3 +197,9 @@ onMounted(async () => {
 | `oas-events-change` | events 数据变化（set/addEvent/updateEvent/removeEvent）时派发，detail: { events } |
 | `oas-remind` | 事件提醒到点时派发，detail: { id, event }（start - remind 分钟，组件内置定时器） |
 | `oas-view-change` | 视图切换（month/week/day/agenda）时派发，detail: { view }；属性首次吸收不派发 |
+
+#### CSS 变量
+
+| CSS 变量 | 默认值 |
+| --- | --- |
+| `--oas-scheduler-resource-max-height` | `640px` |

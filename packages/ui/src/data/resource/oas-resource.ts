@@ -1788,8 +1788,22 @@ export class OASResource extends OASElement {
    */
   private onViewportResize(): void {
     this.renderWindow()
+    this.syncScrollerFocusable()
     this.requestRowsIfNeeded('resize')
     this.requestRangeIfNeeded('resize')
+  }
+
+  /**
+   * 滚动容器键盘可达性（axe: scrollable-region-focusable）：内容真实溢出（纵向或横向）才补
+   * tabindex=0，否则移除——不可滚动时不留空 Tab 停靠点（同 list body 口径）；空态覆盖时 scroller
+   * 处于 hidden，恒不聚焦。须在行/列渲染之后调用（先渲染再量 scrollHeight）。
+   */
+  private syncScrollerFocusable(): void {
+    const sc = this.scrollerEl
+    if (!sc) return
+    const overflow = !sc.hidden && (sc.scrollHeight > sc.clientHeight + 1 || sc.scrollWidth > sc.clientWidth + 1)
+    if (overflow) sc.setAttribute('tabindex', '0')
+    else sc.removeAttribute('tabindex')
   }
 
   /**
@@ -2080,6 +2094,8 @@ export class OASResource extends OASElement {
       if (isEmpty) this.emptyEl.textContent = this.t('resource.empty')
     }
     if (this.scrollerEl) this.scrollerEl.hidden = isEmpty
+    // 键盘可达性须在行/列渲染与空态显隐之后判定（真实溢出才补 tabindex）
+    this.syncScrollerFocusable()
 
     // oas-overload：每次 update 至多一个事件聚合全部超载档；签名去重防挂载双 update 重复派发；
     // 无超载复位签名（消除后再次超载可再派发）

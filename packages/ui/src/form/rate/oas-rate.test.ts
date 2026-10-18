@@ -486,15 +486,32 @@ describe('OASRate 能力补齐', () => {
     expect(s.map((x) => x.textContent?.trim())).toEqual(['😞', '😞', '😐', '😄', '😄'])
   })
 
-  it('icons/colors property 收到非数组（宿主误绑字符串）静默回落属性通道', () => {
+  it('I-2 icons/colors property 收到 JSON 字符串（框架写 property 场景）：解析生效；非法字符串回落属性通道', () => {
+    // SPA 场景：Vue 按「key in el」把静态 icons/colors attribute 的 JSON 字符串直接写进 setter——
+    // 曾被当异型静默丢弃，属性通道又没被写（property/attribute 二选一）→ 配置整体失效
     const el = mount({ icons: '["a","b","c","d","e"]' })
-    // @ts-expect-error 模拟宿主框架误把字符串绑到 property
-    el.icons = '["x"]'
-    expect(stars(el)[0]!.textContent?.trim()).toBe('a')
+    // @ts-expect-error 模拟框架把静态 attribute 的 JSON 字符串写进 property
+    el.icons = '["x","y","z","w","v"]'
+    expect(
+      stars(el).map((s) => s.textContent?.trim()),
+      'JSON 字符串解析为逐值符号',
+    ).toEqual(['x', 'y', 'z', 'w', 'v'])
     const c = mount({ value: '5', colors: '["red","gold","green"]' })
     // @ts-expect-error 同上
-    c.colors = 'oops'
-    expect(c.style.getPropertyValue('--oas-rate-active')).toBe('var(--oas-preset-green)')
+    c.colors = '["blue","lime","purple"]'
+    // 3 段均分：max=5 → 边界 1.67/3.33；值 5 → 第三段 purple（预设名映射 token）
+    expect(c.style.getPropertyValue('--oas-rate-active'), 'JSON 字符串解析为分段色').toBe('var(--oas-preset-purple)')
+    // 非法 JSON 字符串 → colorsProp=null 回落属性通道（devWarn 同值去重，与属性通道同口径）
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    try {
+      const c2 = mount({ value: '5', colors: '["red","gold","green"]' })
+      // @ts-expect-error 同上
+      c2.colors = 'oops'
+      expect(c2.style.getPropertyValue('--oas-rate-active'), '非法 JSON 回落属性通道').toBe('var(--oas-preset-green)')
+      expect(warn.mock.calls.filter((call) => String(call[0]).includes('oas-rate')).length, 'devWarn 一次').toBe(1)
+    } finally {
+      warn.mockRestore()
+    }
   })
 
   it('slot="icon-N" 逐位插槽：每颗星投影对应内容（声明式通道）', async () => {

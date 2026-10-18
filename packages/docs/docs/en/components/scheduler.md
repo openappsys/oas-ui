@@ -159,7 +159,7 @@ onMounted(async () => {
 
 ## Large datasets (virtualization)
 
-In the resource view the resource rows, and in the `day` view the hour axis, render for the visible window only: the number of rendered rows/ticks does not grow with the dataset size, and spacers preserve the scroll range (total height invariant). After a scroll rebuild focus is restored by event id, and window rebuilds are suppressed while a drag/create gesture is active (so pointer capture is not destroyed). Resource rows and the timeline carry `aria-rowcount` and absolute `aria-rowindex`.
+In the resource view the resource rows, and in the `day` view the hour axis, render for the visible window only: the number of rendered rows/ticks does not grow with the dataset size, and spacers preserve the scroll range (total height invariant). After a scroll rebuild focus is restored by event id, and window rebuilds are suppressed while a drag/create gesture is active (so pointer capture is not destroyed). The resource view is capped by `--oas-scheduler-resource-max-height` (default 640px, matching the timeline); beyond that it scrolls internally and virtualizes. Resource rows and the timeline carry `aria-rowcount` and absolute `aria-rowindex`.
 
 ## API
 
@@ -197,3 +197,9 @@ In the resource view the resource rows, and in the `day` view the hour axis, ren
 | `oas-events-change` | Dispatched on any events change (set/addEvent/updateEvent/removeEvent), detail: { events } |
 | `oas-remind` | Dispatched when an event reminder is due, detail: { id, event } (fires at start - remind minutes via built-in timers) |
 | `oas-view-change` | Dispatched on view switch (month/week/day/agenda), detail: { view }; not dispatched on initial attribute absorption |
+
+#### CSS Variables
+
+| CSS Variable | Default |
+| --- | --- |
+| `--oas-scheduler-resource-max-height` | `640px` |

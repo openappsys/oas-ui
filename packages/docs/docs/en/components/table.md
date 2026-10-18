@@ -444,7 +444,7 @@ Attributes: `windowed` (enable) + `total` (full row count) + `window-start` (abs
 </script>
 ```
 
-In windowed mode **local sort / filter / group / pagination / tree-expand are the host's responsibility** (the component skips them with a devWarn) — listen to the existing `oas-sort-change` / `oas-filter-change` / `oas-page-change` events, process the full dataset, then refill the window slice. Off by default: behavior unchanged.
+In windowed mode **local sort / filter / group / pagination / tree-expand / summary / merge (`merge`, `span-method`) / `column-virtual` are the host's responsibility** (the component skips them with a devWarn) — listen to the existing `oas-sort-change` / `oas-filter-change` / `oas-page-change` events, process the full dataset, then refill the window slice. Off by default: behavior unchanged.
 
 > Note: `total` is reused here as the "full row count" (in pagination mode it means the external total row count); row/column virtualization requires `height` (host-constrained); the windowed slice must be **flat** (the component does not recurse into `children`); rows beyond `total - window-start` are not rendered and produce a one-time devWarn.
 

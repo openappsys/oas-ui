@@ -650,7 +650,12 @@ export interface GanttTask {
   children?: GanttTask[]
   /** 依赖（id 指向其他任务；type 缺省 fs） */
   dependencies?: GanttDependency[]
-  /** 条色覆盖（走 CSS 变量解析） */
+  /**
+   * 条色覆盖（走 CSS 变量解析，写入条元素 `--oas-gantt-bar-color`）：只作用于**普通任务条**底色
+   * 与其进度/进度手柄（bar-progress 同步取该 token）。milestone 走 `--oas-gantt-milestone-color`
+   * 语义色、summary 走 `--oas-gantt-summary-bg` 语义色，均不受 task.color 影响（形态色即语义，
+   * 不随单任务数据漂移）。
+   */
   color?: string
   /**
    * 排程约束模式（opt-in；缺省 = 无约束，排程行为与旧版一致）：
@@ -983,6 +988,27 @@ function parseWorkdays(raw: string): Set<number> | null {
   return days.size > 0 ? days : null
 }
 
+/**
+ * lag 安全域上限（ms）：lag 必须有限且 |lag × DAY_MS| ≤ LAG_MS_LIMIT。
+ * 背景：Date 合法域为 ±8.64e15 ms；极大有限 lag（1e8~1e10 天）能通过 `Number.isFinite`
+ * 检查，但叠加到任务日期后会把排程运算的 ms 推出 Date 域 → `new Date(huge)` 为 Invalid
+ * Date → `fmtIso` 内 `Intl.formatToParts` 抛 RangeError（auto-schedule 场景整图白屏）。
+ * 取 1e15 ms（≈11574 天）：远大于业务可能的 lag（按年计），同时给真实任务日期
+ * （parseISODate 只收 4 位年，|ms| ≤ ~2.6e14）留 ≥ 3 倍余量——叠加后必落在合法 Date 域内。
+ */
+const LAG_MS_LIMIT = 1e15
+
+/**
+ * lag 清洗（纯函数，三条入口共用：sanitizeDeps / addDependency / updateDependency）：
+ * 合法（有限数值且在安全域内）原样返回；否则返回 undefined = 调用方丢弃该 lag（等价 0/缺省，
+ * 依赖本身保留——与既有「NaN/非数值丢弃为无 lag」清洗口径一致）。
+ */
+function sanitizeLag(v: unknown): number | undefined {
+  if (typeof v !== 'number' || !Number.isFinite(v)) return undefined
+  if (Math.abs(v * DAY_MS) > LAG_MS_LIMIT) return undefined
+  return v
+}
+
 function sanitizeDeps(v: unknown): GanttDependency[] | undefined {
   if (!Array.isArray(v)) return undefined
   const out: GanttDependency[] = []
@@ -993,9 +1019,9 @@ function sanitizeDeps(v: unknown): GanttDependency[] | undefined {
     if (typeof it.id !== 'string' || it.id === '') continue
     const dep: GanttDependency = { id: it.id }
     if (typeof it.type === 'string' && DEP_TYPES.has(it.type)) dep.type = it.type as GanttDependency['type']
-    // lag（天，可负）：仅保留有限数值，其余丢弃（不把 NaN/字符串透传进排程计算）
-    // lag（天，可负=提前/重叠）；须有限且 ×DAY_MS 不溢出（防 Invalid Date 崩溃），否则丢弃为无 lag
-    if (typeof it.lag === 'number' && Number.isFinite(it.lag) && Number.isFinite(it.lag * DAY_MS)) dep.lag = it.lag
+    // lag（天，可负=提前/重叠）：有限且在安全域内才保留，否则丢弃为无 lag（防 Invalid Date 崩溃）
+    const lag = sanitizeLag(it.lag)
+    if (lag !== undefined) dep.lag = lag
     // 同源同型去重（重复项会渲染重合连线，且一处删除会连带删掉）；lag 不参与去重键
     const key = `${dep.id}|${dep.type ?? 'fs'}`
     if (seen.has(key)) continue
@@ -1164,6 +1190,14 @@ export class OASGantt extends OASElement {
 
   private _tasks: TG[] = []
   private tasksAttrCache = ''
+  /**
+   * 组件内部正在写 `tasks` 属性（syncTasksAttr 在场）：属性通道会**同步**触发一次全量 update
+   * （基类 attributeChangedCallback），置位期间嵌套 update 末尾的 reschedule 据此判定「外层提交口
+   * 稍后会统一派发 oas-tasks-change」→ 跳过自己的 emitTasksChange，保证一次用户操作只发一次
+   * oas-tasks-change（属性通道直接改数据 / 运行期开启 auto-schedule 等无外层提交的触发不置位，
+   * reschedule 照常补发）。嵌套写回（update 内 reschedule 再 syncTasksAttr）经 prev 恢复语义正确。
+   */
+  private inInternalWrite = false
   private nextId = 1
   private expandedAttrCache = ''
   /** 展开集合：null = 未受控（数据 expanded 初始化）；expanded 属性出现后受控 */
@@ -1326,11 +1360,9 @@ export class OASGantt extends OASElement {
       (used) => this.allocId(used),
       (key, msg) => this.warnOnce(key, msg),
     )
-    // 外部整体重写：收敛幽灵选中/锚点/活动/揭示态由 update() 统一处理（property 与 attribute 一致）
-    this.tasksAttrCache = JSON.stringify(this._tasks)
-    this.setAttribute('tasks', this.tasksAttrCache)
-    this.update()
-    this.emitTasksChange()
+    // 外部整体重写：收敛幽灵选中/锚点/活动/揭示态由 update() 统一处理（property 与 attribute 一致）；
+    // 写回走 commitTasks 单通道（syncTasksAttr 的属性通道已触发一次全量 update，不再手动 update）
+    this.commitTasks()
   }
 
   /** 按 id 单条增量更新（浅合并 patch 后走 sanitize 清洗；找不到或非法 patch 返回 false） */
@@ -1339,6 +1371,13 @@ export class OASGantt extends OASElement {
     if (idx < 0) return false
     // 非法 end（非空串且解析失败）显式拒绝：否则清洗层静默丢弃 end，task 会被悄悄降级成 milestone
     if (patch.end !== undefined && patch.end !== '' && !parseTaskDate(patch.end)) return false
+    // patch.children 契约告警：清洗层会把 children 拍平，但这里只取单条清洗结果——patch 携带的
+    // 子条目被静默丢弃。数据契约以扁平 parent 指针为准，不支持 patch children（告警一次防宿主误用）。
+    if (patch.children !== undefined)
+      this.warnOnce(
+        `patch-children:${id}`,
+        '[oas-gantt] updateTask 的 patch.children 已忽略（数据契约以扁平 parent 指针为准，不支持 patch children；层级请改用 parent 指针或整体重写 tasks）',
+      )
     const merged = { ...this._tasks[idx]!, ...patch, id }
     const [clean] = sanitizeTasks(
       [merged],
@@ -1348,14 +1387,15 @@ export class OASGantt extends OASElement {
     if (!clean) return false
     clean.id = id
     this._tasks = [...this._tasks.slice(0, idx), clean, ...this._tasks.slice(idx + 1)]
-    this.syncTasksAttr()
-    this.update()
-    this.emitTasksChange()
+    this.commitTasks()
     return true
   }
 
   /** 滚动到指定任务行（虚拟滚动下委托内部视口，目标行垂直居中）；找不到为空操作。
-   *  命名避开 DOM 内建 Element.scrollTo（签名不兼容会崩宿主 property 通道，同 prefix/blur 先例） */
+   *  命名避开 DOM 内建 Element.scrollTo（签名不兼容会崩宿主 property 通道，同 prefix/blur 先例）。
+   *  windowed 边界：组件只持有已装载切片，rowIndexById 只含切片内任务——目标未装载时静默 no-op
+   *  （宿主应先按 oas-window-request 回填窗口再调用）；定位坐标按绝对行号（absRowTop），
+   *  切片内命中即正确，无需宿主换算。 */
   scrollToTask(id: string): void {
     // 重建窗口会清 bars/links，先终止进行中的拖拽/重排/连线，防陈旧锚点
     if (this.dragCtx) this.cancelDrag()
@@ -1418,19 +1458,35 @@ export class OASGantt extends OASElement {
     devWarn(msg)
   }
 
+  /**
+   * 写回 `tasks` 属性（组件内部唯一写出口）。setAttribute 会**同步**触发基类
+   * attributeChangedCallback → 一次全量 update()（属性通道），故调用方**不要再手动 update()**——
+   * 旧实现 syncTasksAttr 后又手动 update 一次（双跑），auto-schedule 的 reschedule 内再
+   * sync+update，一次拖拽全量重渲染 4 跑。事件由调用方在写回之后按各自契约派发。
+   */
   private syncTasksAttr(): void {
     this.tasksAttrCache = JSON.stringify(this._tasks)
-    this.setAttribute('tasks', this.tasksAttrCache)
+    const prev = this.inInternalWrite
+    this.inInternalWrite = true
+    try {
+      this.setAttribute('tasks', this.tasksAttrCache)
+    } finally {
+      this.inInternalWrite = prev
+    }
   }
 
   private emitTasksChange(): void {
     this.emit('tasks-change', { tasks: this.tasks } satisfies GanttTasksChangeDetail)
   }
 
-  /** 创作通道统一写回出口：反射属性 + 重渲染 + 派发 oas-tasks-change（一次提交一次事件） */
+  /**
+   * 创作通道统一写回出口：反射属性 + 重渲染 + 派发 oas-tasks-change（一次提交一次事件）。
+   * 重渲染由 syncTasksAttr 的属性通道同步触发（一次全量 update），此处不再手动 update；
+   * update 末尾 auto-schedule 的 reschedule 若联动改期，其 oas-tasks-change 被判别旗标抑制
+   * （inInternalWrite），最终由本出口统一派发一次（含联动后的最终数据）。
+   */
   private commitTasks(): void {
     this.syncTasksAttr()
-    this.update()
     this.emitTasksChange()
   }
 
@@ -3497,7 +3553,14 @@ export class OASGantt extends OASElement {
     const deps = task.dependencies ?? []
     if (deps.some((d) => d.id === dep.id && (d.type ?? 'fs') === type)) return false
     const entry: GanttDependency = { id: dep.id, type }
-    if (typeof dep.lag === 'number' && Number.isFinite(dep.lag)) entry.lag = dep.lag
+    // lag 安全域收口（与 sanitizeDeps 同一函数）：越域/非法 → 丢弃为无 lag（等价 0），依赖保留
+    const lag = sanitizeLag(dep.lag)
+    if (lag !== undefined) entry.lag = lag
+    else if (dep.lag !== undefined)
+      this.warnOnce(
+        `lag:${taskId}`,
+        `[oas-gantt] addDependency 的 lag=${String(dep.lag)} 非法或超出安全域（|lag×天| ≤ 1e15 ms），已按 0 处理`,
+      )
     const next: GanttDependency[] = [...deps.map((d) => ({ ...d })), entry]
     task.dependencies = next
     this.commitTasks()
@@ -3548,7 +3611,14 @@ export class OASGantt extends OASElement {
     if (idx < 0) return false
     if (!this._tasks.some((t) => t.id === to.id) || to.id === taskId) return false
     const toType = to.type && DEP_TYPES.has(to.type) ? to.type : fromType
-    const toLag = typeof to.lag === 'number' && Number.isFinite(to.lag) ? to.lag : deps[idx]!.lag
+    // lag 安全域收口（与 sanitizeDeps 同一函数）：to.lag 越域/非法 → 回退继承原 lag（既有缺省语义）
+    const cleanLag = sanitizeLag(to.lag)
+    if (to.lag !== undefined && cleanLag === undefined)
+      this.warnOnce(
+        `lag:${taskId}`,
+        `[oas-gantt] updateDependency 的 lag=${String(to.lag)} 非法或超出安全域（|lag×天| ≤ 1e15 ms），已回退继承原 lag`,
+      )
+    const toLag = cleanLag !== undefined ? cleanLag : deps[idx]!.lag
     const replaced: GanttDependency[] = deps.map((d, i) => {
       if (i !== idx) return { ...d }
       const e: GanttDependency = { id: to.id, type: toType }
@@ -3621,6 +3691,8 @@ export class OASGantt extends OASElement {
    * 缩放以容纳全部任务：取**最细且**能满足「跨度按该档单位折算的列数 × 该档最小列宽 ≤ 可用宽」的档
    * （全任务可见前提下尽量保留细节）；都不满足取最粗档 year。写 scale 属性后滚动定位到最早任务；无任务 no-op。
    * 可用宽取 tbody.clientWidth（无布局环境为 0 → 回落最粗档）。
+   * windowed 边界：rows 只是已装载切片，本方法按切片 min/max 派生范围——不代表全量时间范围，
+   * 切片不含全量边界时选档偏细；windowed 下建议宿主提供 range-* 托管轴并自行选择档位。
    */
   fit(): void {
     if (this.rows.length === 0) return
@@ -3800,7 +3872,9 @@ export class OASGantt extends OASElement {
   /** 新建后聚焦目标行并进入行内重命名（目标行未在窗口内时 focusRow 先滚动重建窗口） */
   private enterRename(id: string): void {
     this.focusRow(id)
-    const row = this.rows.find((r) => r.task.id === id)
+    // 行定位走恒定索引（rebuildRowIndex；focusRow 滚动重建窗口后同样已刷新），
+    // 替代 rows.find 的 O(总量) 线性扫描
+    const row = this.rows[this.rowIndexById.get(id) ?? -1]
     const nameEl = this.sideRows?.querySelector<HTMLElement>(`.row-name[data-key="${escId(id)}"] .name`)
     if (row && nameEl) this.startRename(row, nameEl)
   }
@@ -4123,8 +4197,9 @@ export class OASGantt extends OASElement {
         e.preventDefault()
         if (!this.currentExpandedSet().has(id)) this.toggleExpand(id)
         // 展开后焦点保持在该项；若已展开则进入首个子级
-        const i = this.rows.findIndex((r) => r.task.id === id)
-        const child = this.rows[i + 1]
+        // （toggleExpand → update 重建 rows 与 rowIndexById，此处取的是重建后的恒定索引）
+        const i = this.rowIndexById.get(id) ?? -1
+        const child = i >= 0 ? this.rows[i + 1] : undefined
         if (this.currentExpandedSet().has(id) && child && child.depth > row.depth) this.focusRow(child.task.id)
         else this.focusRow(id)
       }
@@ -4659,9 +4734,7 @@ export class OASGantt extends OASElement {
     const idx = this._tasks.findIndex((t) => t.id === id)
     if (idx < 0) return false
     this._tasks[idx] = { ...this._tasks[idx]!, ...patch, id }
-    this.syncTasksAttr()
-    this.update()
-    this.emitTasksChange()
+    this.commitTasks()
     return true
   }
 
@@ -4961,8 +5034,15 @@ export class OASGantt extends OASElement {
 
   /**
    * 依赖约束松弛：返回被联动改期的任务 id（未开 auto-schedule 或零改动 → []，零事件）。
-   * 命中多个前置时逐条满足（取最靠后约束）；收口一次性 syncTasksAttr + update + emitTasksChange，
-   * 随后派发 oas-reschedule（**先 tasks-change 后 reschedule**）。
+   * 命中多个前置时逐条满足（取最靠后约束）；收口 syncTasksAttr（属性通道同步触发一次全量
+   * update 完成联动重渲染，**不再内嵌 update**——旧实现 sync+update 嵌套在触发它的 update 里，
+   * 一次拖拽全量重渲染 4 跑）+ 派发 oas-reschedule。
+   *
+   * oas-tasks-change 契约（一次用户操作只发一次）：由**外层提交口**（commitTasks / applyPatch /
+   * applyReparent / removeTasks 等经 syncTasksAttr 的路径，inInternalWrite 判别）统一派发一次
+   * （含联动后最终数据），本方法在其在场时只发 oas-reschedule；属性通道直接改数据 / 运行期开启
+   * auto-schedule 等无外层提交的触发，由本方法补发 tasks-change（先 reschedule 后 tasks-change）。
+   * 故 auto-schedule 联动场景事件序为「oas-reschedule → oas-tasks-change」。
    *
    * 约束（opt-in）与工作日日历（workdays，opt-in）在此生效：
    * - snet 取约束下限（只前推）；mso 固定在约束日（依赖不得前推，数据偏离则拉回）；fnlt 不自动移动（仅违约判定）。
@@ -5074,8 +5154,9 @@ export class OASGantt extends OASElement {
     if (changed.size === 0) return []
     const ids = [...changed]
     this.syncTasksAttr()
-    this.update()
-    this.emitTasksChange()
+    // 一次用户操作只发一次 oas-tasks-change：内部写回路径由外层提交口统一派发（最终数据），
+    // 此处只发 oas-reschedule；无外层提交的触发（属性通道改数据 / 运行期开启）在此补发。
+    if (!this.inInternalWrite) this.emitTasksChange()
     this.emit('reschedule', { ids } satisfies GanttRescheduleDetail)
     return ids
   }

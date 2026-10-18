@@ -6,6 +6,9 @@ import { TOUCH_TARGET_CSS } from '../../shared/touch-target.js'
 import { isRtl } from '../../shared/direction.js'
 // 数据载体类：前置媒体（slot="leading"）的提取/判定工具挂在其类上（插槽标记归属载体，api:scan 归属正确）
 import { OASMenuItem } from './oas-menu-item.js'
+// items property 运行时容忍 JSON 字符串（框架把静态 attribute 写成 property 的 SPA 场景）
+import { parseJsonArray } from '../../shared/json-array.js'
+import { devWarn } from '../../shared/dev-warn.js'
 
 export type MenuItemType = 'item' | 'group' | 'divider'
 
@@ -489,6 +492,20 @@ a.item:visited {
 ${TOUCH_TARGET_CSS}
 `
 
+/** items property 运行时归一（I-1）：对象数组原样；JSON 字符串（框架按「key in el」把静态
+ *  items attribute 写成 property）解析为菜单数据；非法 JSON / 非数组 → 空数组 + devWarn 一次
+ *  （同值去重）。曾把字符串直接当 itemsList 渲染——逐字符迭代产出整串垃圾菜单项。 */
+const warnedItemsString = new Set<string>()
+function normalizeItemsProperty(v: unknown): MenuItem[] | null {
+  if (typeof v !== 'string') return Array.isArray(v) ? (v as MenuItem[]) : null
+  const dedupKey = `items:${v}`
+  return parseJsonArray<MenuItem>(v, () => {
+    if (warnedItemsString.has(dedupKey)) return
+    warnedItemsString.add(dedupKey)
+    devWarn('[oas-menu] items property 收到非法 JSON 字符串（应为菜单数组或其 JSON），已按空菜单处理')
+  })
+}
+
 export class OASMenu extends OASElement {
   static override get observedAttributes(): string[] {
     return [
@@ -816,9 +833,12 @@ export class OASMenu extends OASElement {
   }
 
   set items(value: MenuItem[] | null) {
-    this.propertyItems = value
-    if (value != null) {
-      this.itemsList = value
+    // 运行时容忍 JSON 字符串（框架把静态 items attribute 写成 property）：解析为菜单数组，
+    // 非法 → 空数组 + devWarn 一次。公开类型保持数组（与 gantt/resource 的 setter 口径一致，
+    // API 文档类型准确），字符串仅作运行时容忍
+    this.propertyItems = value == null ? null : normalizeItemsProperty(value as unknown)
+    if (this.propertyItems != null) {
+      this.itemsList = this.propertyItems
       this.pruneState()
     }
     // 两种赋值都立即重渲染：null（退位）时不重渲染会让 UI 停留在 property 旧数据，

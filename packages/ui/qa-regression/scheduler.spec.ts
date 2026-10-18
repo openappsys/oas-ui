@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test'
+import AxeBuilder from '@axe-core/playwright'
 
 // scheduler 浏览器回归：视图渲染/切换/芯片/全天行/重复展开/agenda/console 零告警
 test('scheduler 浏览器回归：月/周/agenda 视图渲染与切换 + console 零告警', async ({ page }) => {
@@ -432,5 +433,162 @@ test('scheduler 虚拟化终审：500 资源 × 5000+ 事件滚动覆盖 + 未�
   await expect(unassigned).toHaveAttribute('aria-rowindex', '501')
 
   await page.evaluate(() => document.getElementById('scheduler-virtual-index')?.remove())
+  expect(errors, 'console 零告警').toEqual([])
+})
+
+// I2 资源视图默认限高：宿主只给 height=600px、不内联改 shadow 内 max-height 时，
+// `.resourceview` 自身按默认 640px 形成滚动视口 → 纵向窗口化生效（渲染行有界、总高守恒）。
+test('scheduler 资源视图默认限高：宿主 height=600px + 500 资源内部滚动并窗口化', async ({ page }) => {
+  const errors: string[] = []
+  page.on('pageerror', (e) => errors.push(e.message))
+  page.on('console', (m) => {
+    if (m.type() === 'error') errors.push(m.text())
+  })
+  await page.goto('/components/scheduler.html', { waitUntil: 'domcontentloaded' })
+  await page.waitForSelector('#scheduler-basic', { timeout: 15000 })
+
+  await page.evaluate(() => {
+    const el = document.createElement('oas-scheduler')
+    el.id = 'scheduler-res-height'
+    el.style.height = '600px'
+    el.setAttribute('view', 'resource')
+    el.setAttribute('page-show-date', '2026-08-10')
+    el.setAttribute(
+      'resources',
+      JSON.stringify(Array.from({ length: 500 }, (_, i) => ({ id: `r${i}`, title: `资源 ${i}` }))),
+    )
+    document.body.appendChild(el)
+  })
+  const host = page.locator('#scheduler-res-height')
+  await expect(host.locator('.res-row').first()).toBeVisible()
+
+  const read = () =>
+    host.evaluate((h) => {
+      const view = h.shadowRoot!.querySelector('[part="resource"]') as HTMLElement
+      return {
+        hostH: h.getBoundingClientRect().height,
+        maxH: getComputedStyle(view).maxHeight,
+        clientH: view.clientHeight,
+        scrollH: view.scrollHeight,
+        scrollTop: view.scrollTop,
+        rows: h.shadowRoot!.querySelectorAll('.res-row').length,
+      }
+    })
+  const before = await read()
+  expect(before.hostH, '宿主 height=600px 生效').toBeCloseTo(600, 0)
+  expect(before.maxH, '资源视图默认限高 640px（与 timeview 一致）').toBe('640px')
+  expect(before.clientH, '资源视图形成滚动视口').toBeGreaterThan(0)
+  expect(before.scrollH, '500 行内容超过视口：内部产生滚动').toBeGreaterThan(before.clientH + 1)
+  // 窗口行数上界 = ceil(640/37)=18 可视行 + 上下预渲染 buffer 各 4（RES_ROW_BUFFER）。
+  // 首屏顶部 buffer 被 clamp 到 0 时为 22；滚动到中部上下 buffer 均满 → 26 为精确上界
+  expect(before.rows, '500 行只渲染可视窗口（非全量）').toBeLessThanOrEqual(26)
+  expect(before.rows, '窗口渲染非空').toBeGreaterThan(0)
+
+  // 中部滚动：行窗口平移覆盖可视区；spacer 守恒总高（scrollHeight 不随窗口重建缩水）
+  await host.evaluate((h) => {
+    const view = h.shadowRoot!.querySelector('[part="resource"]') as HTMLElement
+    view.scrollTop = 250 * 37
+    view.dispatchEvent(new Event('scroll'))
+  })
+  await expect(host.locator('.res-row[data-resource="r250"]')).toHaveCount(1)
+  await expect(host.locator('.res-row[data-resource="r0"]')).toHaveCount(0)
+  const after = await read()
+  expect(after.scrollTop, '窗口平移重建后 scrollTop 保持（不跳回顶部）').toBe(250 * 37)
+  expect(Math.abs(after.scrollH - before.scrollH), 'scrollHeight 守恒（spacer 撑起全量总高）').toBeLessThanOrEqual(1)
+  // 同上：滚动中部上下 buffer 均不被裁剪，26 为精确上界（实测 26，原 ≤24 未算双 buffer）
+  expect(after.rows, '窗口行数仍有界').toBeLessThanOrEqual(26)
+
+  // 宿主可覆盖 token：自定义属性穿透 shadow 生效
+  const overridden = await host.evaluate((h) => {
+    h.style.setProperty('--oas-scheduler-resource-max-height', '300px')
+    const view = h.shadowRoot!.querySelector('[part="resource"]') as HTMLElement
+    return getComputedStyle(view).maxHeight
+  })
+  expect(overridden, '--oas-scheduler-resource-max-height 可覆盖默认限高').toBe('300px')
+
+  await page.evaluate(() => document.getElementById('scheduler-res-height')?.remove())
+  expect(errors, 'console 零告警').toEqual([])
+})
+
+// I4 滚动容器键盘可达（axe: scrollable-region-focusable）：
+// - day 视图无事件：timeview 可滚动且无可聚焦子元素
+// - resource-week 空事件：resourceview 可滚动且行头为 div（无可聚焦子元素）
+test('scheduler 滚动容器键盘可达：day 无事件 / resource-week 空事件 axe 零违规', async ({ page }) => {
+  const errors: string[] = []
+  page.on('pageerror', (e) => errors.push(e.message))
+  page.on('console', (m) => {
+    if (m.type() === 'error') errors.push(m.text())
+  })
+  await page.goto('/components/scheduler.html', { waitUntil: 'domcontentloaded' })
+  await page.waitForSelector('#scheduler-basic', { timeout: 15000 })
+
+  await page.evaluate(() => {
+    const day = document.createElement('oas-scheduler')
+    day.id = 'scheduler-axe-day'
+    day.style.cssText = 'display:block;width:800px;margin:12px'
+    day.setAttribute('view', 'day')
+    day.setAttribute('page-show-date', '2026-08-10')
+    day.setAttribute('start-hour', '0')
+    day.setAttribute('end-hour', '24')
+    document.body.appendChild(day)
+
+    const wk = document.createElement('oas-scheduler')
+    wk.id = 'scheduler-axe-resweek'
+    wk.style.cssText = 'display:block;width:900px;margin:12px'
+    wk.setAttribute('view', 'resource-week')
+    wk.setAttribute('page-show-date', '2026-08-10')
+    wk.setAttribute(
+      'resources',
+      JSON.stringify(Array.from({ length: 50 }, (_, i) => ({ id: `w${i}`, title: `资源 ${i}` }))),
+    )
+    document.body.appendChild(wk)
+  })
+  await page.waitForFunction(
+    () => {
+      const day = document.getElementById('scheduler-axe-day') as (HTMLElement & { shadowRoot?: ShadowRoot }) | null
+      const wk = document.getElementById('scheduler-axe-resweek') as (HTMLElement & { shadowRoot?: ShadowRoot }) | null
+      return (
+        !!day?.shadowRoot?.querySelector('[part="timeview"] .gutter span') &&
+        !!wk?.shadowRoot?.querySelector('[part="resource"] .res-row')
+      )
+    },
+    undefined,
+    { timeout: 15000 },
+  )
+
+  const probe = await page.evaluate(() => {
+    const day = document.getElementById('scheduler-axe-day') as HTMLElement & { shadowRoot: ShadowRoot }
+    const wk = document.getElementById('scheduler-axe-resweek') as HTMLElement & { shadowRoot: ShadowRoot }
+    const tv = day.shadowRoot.querySelector('[part="timeview"]') as HTMLElement
+    const rv = wk.shadowRoot.querySelector('[part="resource"]') as HTMLElement
+    return {
+      tvTab: tv.getAttribute('tabindex'),
+      tvScrollH: tv.scrollHeight,
+      tvClientH: tv.clientHeight,
+      rvTab: rv.getAttribute('tabindex'),
+      rvScrollH: rv.scrollHeight,
+      rvClientH: rv.clientHeight,
+    }
+  })
+  expect(probe.tvScrollH, 'day 无事件时 timeview 确实可滚动').toBeGreaterThan(probe.tvClientH + 1)
+  expect(probe.tvTab, 'timeview 可滚动 → tabindex=0（键盘可达）').toBe('0')
+  expect(probe.rvScrollH, 'resource-week 空事件时 resourceview 确实可滚动').toBeGreaterThan(probe.rvClientH + 1)
+  expect(probe.rvTab, 'resourceview 可滚动 → tabindex=0（键盘可达）').toBe('0')
+
+  const results = await new AxeBuilder({ page })
+    .include('#scheduler-axe-day')
+    .include('#scheduler-axe-resweek')
+    .withRules(['scrollable-region-focusable'])
+    .analyze()
+  expect(
+    results.violations.filter((v) => v.id === 'scrollable-region-focusable'),
+    'axe scrollable-region-focusable 零违规',
+  ).toEqual([])
+
+  // 临时探针删除（不留 DOM）
+  await page.evaluate(() => {
+    document.getElementById('scheduler-axe-day')?.remove()
+    document.getElementById('scheduler-axe-resweek')?.remove()
+  })
   expect(errors, 'console 零告警').toEqual([])
 })

@@ -102,6 +102,11 @@
     }
   ],
   "slots": [],
-  "cssVars": [],
+  "cssVars": [
+    {
+      "name": "--oas-scheduler-resource-max-height",
+      "default": "640px"
+    }
+  ],
   "unresolved": []
 }

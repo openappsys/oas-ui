@@ -3571,6 +3571,54 @@ describe('OASResource 表头吸顶（泳道周刻度）', () => {
   })
 })
 
+describe('OASResource 滚动容器键盘可达（axe: scrollable-region-focusable）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  const RES_ONE = JSON.stringify([{ id: 'r1', name: 'A' }])
+  const TASK_ONE = JSON.stringify([{ id: 't1', name: 'T', start: '2026-03-02', end: '2026-03-03', resources: ['r1'] }])
+
+  /** happy-dom 无布局：伪造滚动容器尺寸（溢出判定读 scrollHeight/clientHeight 等） */
+  function stubScroll(
+    el: HTMLElement,
+    box: { clientHeight?: number; scrollHeight?: number; clientWidth?: number; scrollWidth?: number },
+  ): void {
+    for (const [k, v] of Object.entries(box)) {
+      Object.defineProperty(el, k, { value: v, configurable: true })
+    }
+  }
+
+  it('内容真实溢出（纵向或横向）才补 tabindex=0；不溢出时移除（无空 Tab 停靠点）', () => {
+    const el = mount({ resources: RES_ONE, tasks: TASK_ONE })
+    const sc = shadowOf(el).querySelector<HTMLElement>('.scroller')!
+    stubScroll(sc, { clientHeight: 180, scrollHeight: 1000, clientWidth: 400, scrollWidth: 400 })
+    el.requestUpdate()
+    expect(sc.getAttribute('tabindex'), '纵向溢出时键盘可达').toBe('0')
+
+    stubScroll(sc, { scrollHeight: 180 })
+    el.requestUpdate()
+    expect(sc.hasAttribute('tabindex'), '不溢出时移除 tabindex').toBe(false)
+
+    // 仅横向溢出同样需要键盘可达（overflow: auto 两轴）
+    stubScroll(sc, { scrollWidth: 900 })
+    el.requestUpdate()
+    expect(sc.getAttribute('tabindex'), '横向溢出时键盘可达').toBe('0')
+  })
+
+  it('空态（scroller 隐藏）不补 tabindex', () => {
+    const el = mount({ resources: '[]', tasks: '[]' })
+    const sc = shadowOf(el).querySelector<HTMLElement>('.scroller')!
+    stubScroll(sc, { clientHeight: 180, scrollHeight: 1000, clientWidth: 400, scrollWidth: 400 })
+    el.requestUpdate()
+    expect(sc.hidden, '空态隐藏 scroller').toBe(true)
+    expect(sc.hasAttribute('tabindex'), '隐藏容器不成为 Tab 停靠点').toBe(false)
+  })
+})
+
 describe('property 通道接受 JSON 字符串（框架把静态 attribute 写成 property）', () => {
   beforeEach(() => {
     document.body.innerHTML = ''

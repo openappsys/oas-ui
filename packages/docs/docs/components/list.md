@@ -697,7 +697,7 @@ onMounted(() => {
 
 > 超长列表：宿主只喂「可见窗口附近」的行切片，组件不持有全量行。属性 `windowed` + `total`（全量行数）+ `window-start`（切片首行绝对行号）；期望行区间前后各扩 8 行，未覆盖时派发 `oas-window-request`（`detail: { start, end, reason }`，半开绝对行号），宿主回填后按绝对行号渲染并保持总高守恒。`oas-item-render` / `oas-click` 的 `index` 在 windowed 下为绝对行号。
 
-windowed 下行 `aria-setsize = total`、`aria-posinset = 绝对行号 + 1`。列表语义（`role=list`；可点时 `listbox`）由组件在 shadow 内的行容器上自行落位，行派生 `listitem` / `option`——**宿主无需也不需要设置 `role`**；组头以 `presentation` 呈现。windowed **必须**提供可测滚动视口（`height` 或可测 `max-height`），否则组件不派发请求并 devWarn 一次（避免一次请求全量 + 撑出巨量空白）。
+windowed 下行 `aria-setsize = total`、`aria-posinset = 绝对行号 + 1`。列表语义（默认 `role=list`；宿主显式设置 `role="listbox"` 时采用）由组件在 shadow 内的行容器上自行落位，行派生 `listitem` / `option`——**宿主无需也不需要设置 `role`**；组头以 `presentation` 呈现。windowed **必须**提供可测滚动视口（`height` 或可测 `max-height`），否则组件不派发请求并 devWarn 一次（避免一次请求全量 + 撑出巨量空白）。
 
 > 完整宿主取数配方（分段、取消在途、按 id 合并、原子回填）与可运行示例见 [服务端窗口取数](/guide/windowed-data)。
 

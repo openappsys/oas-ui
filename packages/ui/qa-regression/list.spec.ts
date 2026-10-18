@@ -544,3 +544,44 @@ test('list windowed 无视口：零请求 + 不铺 total 占位；补 max-height
   expect(after.req.end).toBeLessThan(500)
   expect(after.hasSpacer, '有视口后恢复占位').toBe(true)
 })
+
+// ===== M-2：window-start 越过 total（脏数据）→ 夹取 + 占位不超全量高度 =====
+test('list windowed window-start 越过 total：夹取到全量末尾 + 顶部占位不超 total×rowH', async ({ page }) => {
+  await page.goto('/components/list.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-list')
+  await page.evaluate(async () => {
+    await customElements.whenDefined('oas-list')
+    const el = document.createElement('oas-list') as HTMLElement & { data?: unknown[] }
+    el.id = 'qa-ws-overflow'
+    el.setAttribute('windowed', '')
+    el.setAttribute('total', '100')
+    el.setAttribute('window-start', '150')
+    el.setAttribute('height', '120')
+    el.setAttribute('row-height', '40')
+    el.data = Array.from({ length: 3 }, (_, i) => ({ title: `行 ${150 + i}` }))
+    document.body.appendChild(el)
+  })
+  // 等夹取渲染落定（顶部占位在场），不要只等 shadowRoot（shadow 建好时渲染可能未跑完）
+  await page.waitForFunction(() => {
+    const sh = document.getElementById('qa-ws-overflow')?.shadowRoot
+    return sh?.querySelector<HTMLElement>('[data-spacer="top"]') != null
+  })
+  const r = await page.evaluate(() => {
+    const sh = document.getElementById('qa-ws-overflow')!.shadowRoot!
+    const top = sh.querySelector<HTMLElement>('[data-spacer="top"]')
+    const bottom = sh.querySelector<HTMLElement>('[data-spacer="bottom"]')
+    return {
+      topH: top ? parseFloat(top.style.height) : -1,
+      bottomH: bottom ? parseFloat(bottom.style.height) : -1,
+      rows: sh.querySelectorAll('[part="data-items"] oas-list-item').length,
+    }
+  })
+  // 不夹取会按 ws=150 铺出 6000px 的越界顶部占位；夹取后上限 = total × rowH = 4000
+  expect(r.topH, '顶部占位夹到全量高度（不超过 4000）').toBeLessThanOrEqual(100 * 40)
+  expect(r.topH).toBe(4000)
+  expect(r.rows, '越界切片不渲染行').toBe(0)
+  expect(r.bottomH).toBe(0)
+  // 越界 devWarn 属 dev-only 通道（docs 为生产构建 → NODE_ENV=production 时被摇掉），e2e 不断言告警；
+  // 「夹取 + devWarn 一次」由 oas-list.test.ts「M-2 window-start 越过 total」单测覆盖
+  await page.evaluate(() => document.getElementById('qa-ws-overflow')?.remove())
+})

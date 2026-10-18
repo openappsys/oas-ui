@@ -2074,3 +2074,147 @@ test('table 无 checkable 行点击语义：暗色下两次真实单击不同行
     document.documentElement.classList.remove('dark')
   })
 })
+
+test('table windowed 切片回填焦点回锚：聚焦行 → 宿主回填 window-start=100 → 焦点仍在同一 row-key（oas-window-request 行为不变）', async ({
+  page,
+}) => {
+  // I3 回归：windowed 下 update / 滚动帧清空 tbody 会连带拆掉聚焦单元格——宿主回填新切片后
+  // 焦点静默丢失（gridPos 还是旧渲染矩阵坐标）。修复=重渲染前记录聚焦行的绝对行键与列，
+  // 重渲染后行仍在窗口内则恢复焦点与 gridPos；不在窗口内不强行聚焦（不回退切片首行）。
+  const consoleIssues: string[] = []
+  page.on('console', (m) => {
+    if (m.type() === 'error' || m.type() === 'warning') consoleIssues.push(`${m.type()}: ${m.text()}`)
+  })
+  page.on('pageerror', (e) => consoleIssues.push(`pageerror: ${e.message}`))
+  await page.goto('/components/table.html', { waitUntil: 'domcontentloaded' })
+  await page.waitForFunction(() => customElements.get('oas-table') != null, null, { timeout: 15000 })
+  await page.evaluate(() => {
+    const t = document.createElement('oas-table') as HTMLElement & { data?: unknown }
+    t.id = 'qa-windowed-focus'
+    t.setAttribute('windowed', '')
+    t.setAttribute('total', '1000')
+    t.setAttribute('window-start', '0')
+    t.setAttribute('row-key', 'name')
+    t.setAttribute('height', '200')
+    t.setAttribute('row-height', '40')
+    t.setAttribute('grid-navigation', '')
+    t.setAttribute(
+      'columns',
+      JSON.stringify([
+        { key: 'name', title: '名称' },
+        { key: 'age', title: '年龄' },
+      ]),
+    )
+    const make = (s: number, n: number) => Array.from({ length: n }, (_, i) => ({ name: `行${s + i}`, age: s + i }))
+    t.data = make(0, 20)
+    const w = window as unknown as { __qaWinReqs: Array<{ start: number; end: number; reason: string }> }
+    w.__qaWinReqs = []
+    t.addEventListener('oas-window-request', (e) => {
+      w.__qaWinReqs.push((e as CustomEvent<{ start: number; end: number; reason: string }>).detail)
+    })
+    ;(document.querySelector('.vp-doc') ?? document.body).append(t)
+  })
+  await page.waitForFunction(
+    () =>
+      (document.querySelector('#qa-windowed-focus')?.shadowRoot?.querySelectorAll('tbody tr[data-key]').length ?? 0) >
+      0,
+    null,
+    { timeout: 15000 },
+  )
+  // 滚到行 100 区域 → 宿主按 scroll 请求回填 window-start=100 切片。
+  // scrollTop 取 4060 而非 4040：4040 恰是行 104 底缘超出视口 9px 的位置（sticky 表头占 49px 流高），
+  // ArrowDown 续接的原生 focus 滚动会把 scrollTop 推到 4049 → need 变化再派发一次（不同 need 派发
+  // 属契约行为，非重复），「同 need 仅一次」无法精确断言。4060 让行 103/104 均完全落在视口内
+  //（键盘续接全程零 focus 滚动漂移），对应期望区间 = 可视 [97,111) ± margin8 → [89,119)
+  await page.evaluate(() => {
+    const t = document.querySelector('#qa-windowed-focus')!
+    const wrap = t.shadowRoot!.querySelector('.table-scroll') as HTMLElement
+    wrap.scrollTop = 4060
+    wrap.dispatchEvent(new Event('scroll'))
+  })
+  await page.waitForFunction(() => (window as unknown as { __qaWinReqs: unknown[] }).__qaWinReqs.length > 0, null, {
+    timeout: 15000,
+  })
+  await page.evaluate(() => {
+    const t = document.querySelector('#qa-windowed-focus') as HTMLElement & { data?: unknown }
+    const make = (s: number, n: number) => Array.from({ length: n }, (_, i) => ({ name: `行${s + i}`, age: s + i }))
+    t.setAttribute('window-start', '100')
+    t.data = make(100, 40)
+  })
+  await page.waitForFunction(
+    () => {
+      const t = document.querySelector('#qa-windowed-focus')!
+      return !!t.shadowRoot!.querySelector('tr[data-key="行100"]')
+    },
+    null,
+    { timeout: 15000 },
+  )
+  // 聚焦回填窗口内的行103
+  await page.evaluate(() => {
+    const t = document.querySelector('#qa-windowed-focus')!
+    ;(t.shadowRoot!.querySelector('tr[data-key="行103"] td[data-col="name"]') as HTMLElement)!.focus()
+  })
+  // 宿主再次回填（切片变化为 [95,145)，行103 仍在窗口内）→ 焦点应回锚到同一 row-key
+  await page.evaluate(() => {
+    const t = document.querySelector('#qa-windowed-focus') as HTMLElement & { data?: unknown }
+    const make = (s: number, n: number) => Array.from({ length: n }, (_, i) => ({ name: `行${s + i}`, age: s + i }))
+    t.setAttribute('window-start', '95')
+    t.data = make(95, 50)
+  })
+  await page.waitForTimeout(200)
+  const r1 = await page.evaluate(() => {
+    const t = document.querySelector('#qa-windowed-focus')!
+    const active = t.shadowRoot!.activeElement as HTMLElement | null
+    return {
+      focusedKey: active?.closest?.('tr[data-key]')?.getAttribute('data-key') ?? '',
+      focusedCol: active?.getAttribute?.('data-col') ?? '',
+    }
+  })
+  expect(r1.focusedKey, '切片回填后焦点应回锚到同一 row-key').toBe('行103')
+  expect(r1.focusedCol, '列位置保持').toBe('name')
+  // 键盘续接：回锚后方向键自原行继续漫游
+  await page.evaluate(() => {
+    const t = document.querySelector('#qa-windowed-focus')!
+    const active = t.shadowRoot!.activeElement as HTMLElement
+    active.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true, composed: true, cancelable: true }),
+    )
+  })
+  const r2 = await page.evaluate(
+    () =>
+      (document.querySelector('#qa-windowed-focus')!.shadowRoot!.activeElement as HTMLElement | null)
+        ?.closest?.('tr[data-key]')
+        ?.getAttribute('data-key') ?? '',
+  )
+  expect(r2, '方向键自锚行续接（gridPos 已重映射）').toBe('行104')
+  // 负例：切片变化为不含行103（[95,103)）→ 不强行聚焦（不回退切片首行 行97）
+  await page.evaluate(() => {
+    const t = document.querySelector('#qa-windowed-focus') as HTMLElement & { data?: unknown }
+    const make = (s: number, n: number) => Array.from({ length: n }, (_, i) => ({ name: `行${s + i}`, age: s + i }))
+    t.setAttribute('window-start', '95')
+    t.data = make(95, 8)
+  })
+  await page.waitForTimeout(200)
+  const r3 = await page.evaluate(() => {
+    const t = document.querySelector('#qa-windowed-focus')!
+    const active = t.shadowRoot!.activeElement as HTMLElement | null
+    return {
+      focusedKey: active?.closest?.('tr[data-key]')?.getAttribute('data-key') ?? '',
+      firstRendered: t.shadowRoot!.querySelector('tbody tr[data-key]')?.getAttribute('data-key') ?? '',
+      reqs: (window as unknown as { __qaWinReqs: Array<{ start: number; end: number; reason: string }> }).__qaWinReqs,
+    }
+  })
+  expect(r3.firstRendered, '行97-102 仍渲染').toBe('行97')
+  expect(r3.focusedKey, '锚行不在窗口内不得回退到切片首行').not.toBe('行97')
+  // oas-window-request 行为不变：同 need 去重（滚动位置未变 → 三次回填共享同一期望区间，仅派发一次）。
+  // 首个请求 reason 容忍 resize：ResizeObserver 首轮回调与滚动帧 rAF 同帧竞态，先到者以己方 reason
+  // 派发同一期望区间、后到者被去重——need 与去重才是契约，reason 属竞态敏感值不作严格断言
+  expect(r3.reqs.length, '同 need 不重复派发（滚动位置未变，全流程仅一个期望区间）').toBe(1)
+  expect(r3.reqs[0]!.start, '请求起点（含 margin 前扩）').toBe(89)
+  expect(r3.reqs[0]!.end, '请求终点（scrollTop=4060 → 可视 [97,111) + margin8）').toBe(119)
+  expect(['scroll', 'resize'], `触发原因须为滚动/视口尺寸路径（实得 ${r3.reqs[0]!.reason}）`).toContain(
+    r3.reqs[0]!.reason,
+  )
+  await page.evaluate(() => document.querySelector('#qa-windowed-focus')?.remove())
+  expect(consoleIssues, 'console 零 error/warning').toEqual([])
+})

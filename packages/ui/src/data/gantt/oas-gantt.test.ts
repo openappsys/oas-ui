@@ -1856,6 +1856,47 @@ describe('OASGantt 选择变化增量渲染（选择不重跑全量构建）', (
     expect(el.selection).toEqual(['t12006'])
     el.remove()
   })
+
+  it('写回单通道：一次 updateTask 全量构建恰好 1 次（旧实现属性通道 + 手动 update 双跑）', () => {
+    const el = mount({ tasks: JSON.stringify(hugeTasks(200)), height: '320', 'row-height': '36' })
+    const before = snap()
+    el.updateTask('k0', { progress: 10 })
+    const after = snap()
+    expect(after.rowBuilds - before.rowBuilds, '一次 updateTask = 1 次 buildRows').toBe(1)
+    expect(after.unitBuilds - before.unitBuilds, '一次 updateTask = 1 次 buildUnits').toBe(1)
+  })
+
+  it('写回单通道：auto-schedule 联动拖拽全量构建 2 次（拖拽帧 + 联动帧；旧实现 sync+手动双跑 ×2 = 4 次）', () => {
+    const el = mount({
+      'auto-schedule': '',
+      tasks: JSON.stringify([
+        { id: 'a', name: 'A', start: '2026-03-02', end: '2026-03-02' },
+        { id: 'b', name: 'B', start: '2026-03-02', end: '2026-03-02', dependencies: [{ id: 'a' }] },
+      ]),
+    })
+    // 挂载时联动已规整（b 前推到 03-03）→ 快照取挂载后的稳态
+    const before = snap()
+    dragSeq(barOf(el, 'a'), 72)
+    const after = snap()
+    expect(after.rowBuilds - before.rowBuilds, '联动拖拽 = 拖拽渲染 + 联动重渲染 = 2（非 4）').toBe(2)
+    expect(after.unitBuilds - before.unitBuilds, 'buildUnits 同口径 2 次').toBe(2)
+    expect(taskOf(el, 'b').start).toBe('2026-03-05')
+  })
+
+  it('写回单通道：auto-schedule 联动一次 updateTask 全量构建 2 次（旧实现 4 次）', () => {
+    const el = mount({
+      'auto-schedule': '',
+      tasks: JSON.stringify([
+        { id: 'd', name: 'D', start: '2026-03-02', end: '2026-03-06' },
+        { id: 't', name: 'T', start: '2026-03-01', end: '2026-03-02', dependencies: [{ id: 'd' }] },
+      ]),
+    })
+    const before = snap()
+    el.updateTask('t', { start: '2026-03-01', end: '2026-03-02' })
+    const after = snap()
+    expect(after.rowBuilds - before.rowBuilds, '联动 updateTask = 提交帧 + 联动帧 = 2（非 4）').toBe(2)
+    expect(taskOf(el, 't').start).toBe('2026-03-07')
+  })
 })
 
 describe('OASGantt 列虚拟滚动（横向时间轴窗口）', () => {
@@ -2551,6 +2592,24 @@ describe('OASGantt tasks 通道与方法', () => {
     expect(barOf(el, 't1').classList.contains('milestone')).toBe(false)
     expect(el.updateTask('t1', { end: '' })).toBe(true)
     expect(barOf(el, 't1').classList.contains('milestone')).toBe(true)
+  })
+
+  it('updateTask patch.children：子条目忽略（数据契约以扁平 parent 指针为准）+ devWarn 一次', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    try {
+      const el = mount({ tasks: JSON.stringify([{ id: 'p', name: 'P', start: '2026-03-02', end: '2026-03-06' }]) })
+      expect(
+        el.updateTask('p', {
+          name: 'P2',
+          children: [{ id: 'c', name: 'C', start: '2026-03-02', end: '2026-03-03' }],
+        }),
+      ).toBe(true)
+      expect(el.tasks.length, 'patch.children 不被拍平进数据（丢弃改为告警，层级走 parent 指针）').toBe(1)
+      expect(el.tasks[0]!.name).toBe('P2')
+      expect(warn.mock.calls.some((c) => String(c[0]).includes('patch.children'))).toBe(true)
+    } finally {
+      warn.mockRestore()
+    }
   })
 
   it('scrollToDate / scrollToToday 可用（滚到目标日期）', () => {
@@ -4482,7 +4541,7 @@ describe('OASGantt 依赖联动排程（auto-schedule）', () => {
     expect(seen).toEqual([['t']])
   })
 
-  it('级联：拖 A 后 B/C 逐级顺延；工期保持；reschedule 一次 + tasks-change（拖拽自身 + reschedule）', () => {
+  it('级联：拖 A 后 B/C 逐级顺延；工期保持；一次操作只发一次 oas-tasks-change + reschedule 一次', () => {
     const el = mount({
       'auto-schedule': '',
       tasks: JSON.stringify([
@@ -4492,16 +4551,23 @@ describe('OASGantt 依赖联动排程（auto-schedule）', () => {
       ]),
     })
     const seen = watchReschedule(el)
-    let tasksChanged = 0
-    el.addEventListener('oas-tasks-change', () => tasksChanged++)
+    // 契约（写回单通道收口后）：一次用户操作只发一次 oas-tasks-change——旧实现「拖拽自身 +
+    // reschedule」各发一次（共 2 次）；现在联动收口并入外层提交口统一派发（含联动后最终数据），
+    // 事件序为 reschedule（联动收口）→ tasks-change（提交口）
+    const order: string[] = []
+    el.addEventListener('oas-tasks-change', () => order.push('tasks-change'))
+    el.addEventListener('oas-reschedule', () => order.push('reschedule'))
     dragSeq(barOf(el, 'a'), 72)
     expect(taskOf(el, 'a').start).toBe('2026-03-04')
     expect(taskOf(el, 'b').start).toBe('2026-03-05')
     expect(taskOf(el, 'c').start).toBe('2026-03-06')
     expect(seen).toHaveLength(1)
     expect([...seen[0]!].sort()).toEqual(['b', 'c'])
-    // 拖拽自身的 tasks-change + reschedule 收口的一次 tasks-change
-    expect(tasksChanged).toBe(2)
+    expect(order).toEqual(['reschedule', 'tasks-change'])
+    // 属性与 DOM 最终一致
+    expect(JSON.parse(el.getAttribute('tasks') ?? '[]').find((t: { id: string }) => t.id === 'c').start).toBe(
+      '2026-03-06',
+    )
   })
 
   it('迭代松弛：依赖链数组顺序逆序（后继在前）也能级联到稳定', () => {
@@ -5099,6 +5165,116 @@ describe('OASGantt 依赖 lag/lead', () => {
     // lead 2 天：右缘 03-07 − 2 天 = 03-05，早于 lag=0 的 03-07（约束更松）；工期 2 天 → end 03-06
     expect(taskOf(lead, 't').start).toBe('2026-03-05')
     expect(taskOf(lead, 't').end).toBe('2026-03-06')
+  })
+
+  it('lag 安全域：极大有限 lag（1e8 天）+ auto-schedule 不抛 RangeError（hour 精度走 fmtIso/Intl 崩溃路径）', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    try {
+      // 旧实现：1e8 × DAY_MS = 8.64e15 恰在 Date 合法域边缘（Number.isFinite 放行），
+      // 排程叠加真实日期后超域 → Invalid Date → fmtIso → Intl.formatToParts 抛 RangeError（白屏）
+      const el = mount({
+        'auto-schedule': '',
+        tasks: JSON.stringify([
+          { id: 'd', name: 'D', start: '2026-03-02 08:00', end: '2026-03-02 12:00' },
+          {
+            id: 't',
+            name: 'T',
+            start: '2026-03-03 09:00',
+            end: '2026-03-03 10:00',
+            dependencies: [{ id: 'd', lag: 1e8 }],
+          },
+        ]),
+      })
+      // 挂载即清洗：越域 lag 丢弃为无 lag（依赖保留）；fs 约束本已满足 → 数据原样
+      expect(taskOf(el, 't').dependencies).toEqual([{ id: 'd' }])
+      expect(taskOf(el, 't').start).toBe('2026-03-03 09:00')
+      // 命令式改期触发联动前推：前置右缘 03-02 12:00（fmtIso 正常，不产生 Invalid Date）
+      expect(() => el.updateTask('t', { start: '2026-03-01 09:00', end: '2026-03-01 10:00' })).not.toThrow()
+      expect(taskOf(el, 't').start).toBe('2026-03-02 12:00')
+      expect(taskOf(el, 't').end).toBe('2026-03-02 13:00')
+      // 组件可渲染（非白屏）
+      expect(barOf(el, 't')).not.toBeNull()
+    } finally {
+      warn.mockRestore()
+    }
+  })
+
+  it('lag 安全域：日精度极大 lag（1e9 天）属性通道清洗为无 lag，排程产出合法日期（不写 NaN 数据串）', () => {
+    const el = mount({
+      'auto-schedule': '',
+      tasks: JSON.stringify([
+        { id: 'd', name: 'D', start: '2026-03-02', end: '2026-03-06' },
+        { id: 't', name: 'T', start: '2026-03-01', end: '2026-03-02', dependencies: [{ id: 'd', lag: 1e9 }] },
+      ]),
+    })
+    const t = taskOf(el, 't')
+    expect(t.dependencies).toEqual([{ id: 'd' }])
+    // lag 清洗为 0 → 前推到前置右缘 03-07（工期 2 天 → end 03-08）；
+    // 旧实现在此写出 NaN-NaN-NaN 数据串（toISODate(Invalid Date)）
+    expect(t.start).toBe('2026-03-07')
+    expect(t.end).toBe('2026-03-08')
+    expect(t.start, '不产生 Invalid Date 数据串').not.toContain('NaN')
+    expect(barOf(el, 't')).not.toBeNull()
+  })
+
+  it('lag 安全域：命令式 addDependency / updateDependency 传 1e308/1e10/Infinity/NaN 不抛且结果合法', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    try {
+      const el = mount({
+        'auto-schedule': '',
+        tasks: JSON.stringify([
+          { id: 'a', name: 'A', start: '2026-03-02', end: '2026-03-03' },
+          { id: 'b', name: 'B', start: '2026-03-04', end: '2026-03-05' },
+        ]),
+      })
+      // a 右缘 03-04 = b 起点：fs 约束已满足（联动不改日期），聚焦 lag 清洗口径
+      expect(() => el.addDependency('b', { id: 'a', lag: 1e308 })).not.toThrow()
+      expect(el.tasks.find((t) => t.id === 'b')!.dependencies).toEqual([{ id: 'a', type: 'fs' }])
+      expect(() => el.addDependency('b', { id: 'a', type: 'ss', lag: 1e10 })).not.toThrow()
+      expect(() => el.addDependency('b', { id: 'a', type: 'ff', lag: Number.POSITIVE_INFINITY })).not.toThrow()
+      expect(() => el.addDependency('b', { id: 'a', type: 'sf', lag: Number.NaN })).not.toThrow()
+      expect(el.tasks.find((t) => t.id === 'b')!.dependencies).toEqual([
+        { id: 'a', type: 'fs' },
+        { id: 'a', type: 'ss' },
+        { id: 'a', type: 'ff' },
+        { id: 'a', type: 'sf' },
+      ])
+      // 命令式通道告警一次（warnOnce key = lag:<taskId>，同任务去重）
+      expect(warn.mock.calls.some((c) => String(c[0]).includes('addDependency 的 lag'))).toBe(true)
+      // updateDependency：越域 to.lag → 回退继承原 lag（fs 无原 lag → 不落 lag 键）
+      expect(() => el.updateDependency('b', { id: 'a', type: 'fs' }, { id: 'a', type: 'fs', lag: 1e10 })).not.toThrow()
+      expect(el.tasks.find((t) => t.id === 'b')!.dependencies![0]).toEqual({ id: 'a', type: 'fs' })
+      // 正常 lag 命令式通道不受影响
+      expect(el.updateDependency('b', { id: 'a', type: 'fs' }, { id: 'a', type: 'fs', lag: 3 })).toBe(true)
+      expect(el.tasks.find((t) => t.id === 'b')!.dependencies![0]).toEqual({ id: 'a', type: 'fs', lag: 3 })
+    } finally {
+      warn.mockRestore()
+    }
+  })
+
+  it('lag 安全域：正常 lag（±3）属性通道不受影响', () => {
+    const lag3 = mount({
+      'auto-schedule': '',
+      tasks: JSON.stringify([
+        { id: 'd', name: 'D', start: '2026-03-02', end: '2026-03-06' },
+        { id: 't', name: 'T', start: '2026-03-01', end: '2026-03-02', dependencies: [{ id: 'd', lag: 3 }] },
+      ]),
+    })
+    expect(taskOf(lag3, 't').dependencies).toEqual([{ id: 'd', lag: 3 }])
+    // d 右缘 03-07 + 3 天 = 03-10；工期 2 天（03-01..03-02 含端）→ end 03-11
+    expect(taskOf(lag3, 't').start).toBe('2026-03-10')
+    expect(taskOf(lag3, 't').end).toBe('2026-03-11')
+    const lead3 = mount({
+      'auto-schedule': '',
+      tasks: JSON.stringify([
+        { id: 'd', name: 'D', start: '2026-03-10', end: '2026-03-12' },
+        { id: 't', name: 'T', start: '2026-03-01', end: '2026-03-02', dependencies: [{ id: 'd', lag: -3 }] },
+      ]),
+    })
+    expect(taskOf(lead3, 't').dependencies).toEqual([{ id: 'd', lag: -3 }])
+    // d 右缘 03-13 − 3 天 = 03-10（lead 约束更松）；工期 2 天 → end 03-11
+    expect(taskOf(lead3, 't').start).toBe('2026-03-10')
+    expect(taskOf(lead3, 't').end).toBe('2026-03-11')
   })
 
   it('addDependency：透传 lag；缺省不写 lag；同源同型不同 lag 仍视为重复', () => {

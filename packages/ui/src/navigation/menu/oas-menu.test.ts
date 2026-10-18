@@ -2236,6 +2236,34 @@ describe('items property 通道（对象数组直赋）', () => {
     expect(labels(el), 'null 退位后 attribute 通道数据应立即渲染').toEqual(['属性项'])
   })
 
+  it('I-1 items property 收到 JSON 字符串（框架写 property 场景）：解析渲染，不再产出逐字符垃圾项', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    try {
+      // SPA 场景：Vue 按「key in el」把静态 items attribute 的 JSON 字符串直接写进 setter——
+      // 曾把字符串当 itemsList 渲染（逐字符 → 整串垃圾菜单项）
+      const el = new OASMenu()
+      // @ts-expect-error 模拟框架把静态 attribute 的 JSON 字符串写进 property
+      el.items = JSON.stringify([
+        { label: '解析项甲', value: 'a' },
+        { label: '解析项乙', value: 'b' },
+      ])
+      document.body.appendChild(el)
+      expect(labels(el), 'JSON 字符串应解析为菜单数据').toEqual(['解析项甲', '解析项乙'])
+      // 非法 JSON → 空菜单 + devWarn 一次（同值去重）
+      const bad = new OASMenu()
+      // @ts-expect-error 同上
+      bad.items = '{oops}'
+      document.body.appendChild(bad)
+      expect(labels(bad), '非法 JSON 按空菜单处理').toEqual([])
+      expect(warn.mock.calls.filter((c) => String(c[0]).includes('oas-menu')).length, 'devWarn 一次').toBe(1)
+      // @ts-expect-error 同值再赋不重复告警
+      bad.items = '{oops}'
+      expect(warn.mock.calls.filter((c) => String(c[0]).includes('oas-menu')).length, '同值去重').toBe(1)
+    } finally {
+      warn.mockRestore()
+    }
+  })
+
   it('collapsed 收起态：媒体位不写 display:none（隐藏会产生可 hover 的空白条目），仅 margin 收敛', () => {
     const el = mountMenuChildren(
       `<oas-menu-item value="a">首页<template slot="leading"><i data-x></i></template></oas-menu-item>`,

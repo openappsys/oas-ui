@@ -12,6 +12,11 @@
 ### 修复
 
 - **SPA 客户端路由下 scheduler / gantt / resource demo 空白**：① 私有成员与单字属性撞名（`scale`/`view`/`expanded`），框架按「key in el」把静态 attribute 写成 property，own 字符串遮蔽方法或 Set 字段导致报错/空白；内部改名（`scaleMode`/`viewMode`/`expandedSet`，公开 API 不变）。② 数据属性的 property setter 统一接受 JSON 字符串（`events`/`resources`/`tasks`/`lines` 等），框架把静态 attribute 当 property 写入时不再被当作非法数组清空。新增 `shared/json-array` 与客户端跳转回归（表格 → 日程 → 甘特 → 资源）。
+- **同款 property setter 字符串容忍补齐（menu / rate / list）**：SPA 跳转下框架把静态 JSON attribute 写成 property 字符串——`oas-menu` 的 `items` property 收到字符串曾把 JSON 串逐字符渲染成整串垃圾菜单项（非法 JSON → 空菜单 + devWarn 一次）；`oas-rate` 的 `colors` / `icons` property 收到字符串曾被当异型丢弃而属性通道又没被写，配置整体失效（现解析生效，非法 JSON 回落属性通道）；`oas-list` 的 `data` property 同口径（公开类型仍为数组，与 gantt/resource 一致）。docs-nav 回归补 menu（项数合理）与 rate（colors/icons 生效）客户端跳转断言。
+- **`oas-table` windowed 切片回填后焦点丢失**：update / 滚动帧清空 tbody 会连带拆掉聚焦单元格，宿主回填新切片（`window-start` / `data` 变化）后焦点静默丢失且 `gridPos` 还是旧渲染矩阵坐标。修复：重渲染前记录聚焦行的**绝对行键**（row-key 值，缺失回落绝对行号）与列，重渲染后该行仍在新窗口内则恢复焦点并把 `gridPos` 重映射到新矩阵坐标；已不在窗口内则不强行聚焦（不回退切片首行）。`oas-window-request` 派发行为不变。
+- **`oas-table` 非 windowed 虚拟滚动帧 O(总数据)**：滚动回调曾每帧重跑过滤切片（`computeDisplayRoots`）、全量可见性过滤（`visibleFlat`）与数据行序前缀扫描。修复：展示集（visibleFlat 结果 + 序号前缀 + 数据行数）按「数据/排序/筛选/分组/展开/分页/列」签名缓存，滚动帧只做窗口切片（windowed 同走缓存，行为不变）；新增内部诊断计数 `visibleBuilds` 锁定滚动帧零全量重建。
+- **`oas-list` windowed `window-start` 越过 `total` 不夹取**：夹取到全量末尾渲染并 devWarn 一次（对齐 table 的切片越界告警契约）——不夹取会按越界绝对行号铺 spacer，顶部占位撑出 `total×rowH` 之外的巨量空白。
+- **`oas-list` 迁移后宿主动态 aria-label / aria-labelledby 不同步**：角色迁移会把可访问名称从宿主移除，此后宿主框架随状态更新把同名属性写回宿主元素时行容器停在首次迁移的旧值。修复：记住 label 迁移来源并随宿主属性变更继续同步到行容器（宿主清空绑定时保留行容器既有名称，不制造未命名 listbox）。
 
 ### 特性
 
@@ -57,6 +62,15 @@
 
 - **`oas-resource` 资源负载 / 泳道视图**（新组件，data 族）：`resources`（含 `capacity`）+ `tasks`（含 `resources` 分配）→ 资源泳道（共享时间轴）+ 负载直方图（超载高亮）；事件 `oas-overload` / `oas-task-click` / `oas-tasks-change`；方法 `scrollToDate`；纯函数 `levelResources()`（保工期、只延后、不自动回写）；i18n ×10（`resource.*`）；文档 zh/en 新页。
 - **时间轴列虚拟化（横向窗口）**：`.scroller` 滚动驱动 rAF 合帧的列窗口——刻度与负载直方图列按窗口切片，泳道内任务条按窗口像素相交裁剪（保留 overscan 与最小条宽），画布宽保持 `period 数×列宽`；`scrollToDate` 命中后同帧出窗口；首列分隔线判据由 `:first-child` 改为 period 索引 0（窗口化下 DOM 首元素未必是轴首列）。另：负载矩阵由「资源 × period × 任务」三重循环改为单趟归档 + 二分区间累加（`O(Σspan) + O(S·log P)`），输出逐字节一致。
+
+### 特性 · `oas-chart`
+
+- **x 轴标签自动抽稀**：标签密集（估算标签宽 + 间隙 > 实际间距）时按步长 k 抽稀渲染（每 k 个渲染一个，端点有空间时保留），不再叠成一团；不密集时步长 1 行为不变。宽度以 user 单位估算（SVG 等比缩放比例不变）：CJK 记 1em、其余记 0.55em。
+- **柱组水平居中于分类 band**：修正折线点看似落在柱右缘的对位偏差（band 内居中取点）。
+- **`options.xLabelRotate`（0–90）**：x 轴标签旋转，与自动抽稀可组合。
+- **密集分类 demo**：36 天日请求量演示抽稀效果。
+- **文档与 API 语料同步**：chart 页 zh/en 补抽稀与 `xLabelRotate` 说明（API 表走 api-descriptions 语料生成）。
+- **指南页「服务端窗口取数」（guide/windowed-data）**：分段 / 取消 / 合并 / 原子回填的取数模式讲解 + gantt / resource 可运行 demo（时间轴托管范围 + range 请求扩轴）与 React / Vue 封装示例；组件页交叉链接。
 
 ### 工程
 

@@ -41,6 +41,8 @@ export const tableRenderDiagnostics = {
   flatBuilds: 0,
   /** computeSummary 汇总计算执行次数（缓存命中不计） */
   summaryComputes: 0,
+  /** visibleFlat 展示集重建次数（签名缓存命中不计；I6 滚动帧缓存复用断言用） */
+  visibleBuilds: 0,
 }
 
 export interface TableColumn {
@@ -1205,6 +1207,15 @@ export class OASTableBase extends OASElement {
   /** 扁平化缓存：flat 输入签名（data/sort/filter/group/expanded/分页切片/列类型轮廓）→ 结果。
       仅选择变化时复用，免 O(总量) 的 walk+sort 重跑（增量渲染优化的核心缓存） */
   private flatCache: { key: string; flat: FlatRow[] } | null = null
+  /** 展示集缓存（I6）：visibleFlat 结果 + 数据行序前缀 + 数据行数，按 flatCacheSignature
+      同键缓存——虚拟滚动帧只做窗口切片，不再每帧重跑 O(总量) 的过滤切片 / 可见性过滤 /
+      序号扫描（update 全量渲染与滚动帧共用同一缓存与键） */
+  private visibleCache: {
+    key: string
+    display: FlatRow[]
+    ordinals: number[]
+    logicalRows: number
+  } | null = null
   /** 汇总值缓存：scope + flat 来源键 + 配置签名 → computeSummary 结果。
       数据/筛选/分组未变、仅选择变化时不重算（选择不参与 sum/avg/count 聚合） */
   private summaryValuesCache: { key: string; values: Map<string, string> } | null = null
@@ -1232,6 +1243,10 @@ export class OASTableBase extends OASElement {
   private _exportRows: Array<Record<string, unknown>> = []
   /** 网格导航：最近聚焦的单元格坐标（Tab 进容器后方向键从该处继续；无则从首格进入） */
   private gridPos: { row: number; col: number } | null = null
+  /** windowed 切片重渲染的焦点回锚（I3）：聚焦行的**绝对行键**（row-key 值，缺失回落绝对
+      行号）与矩阵列号。update / 滚动帧清空 tbody 会连带拆掉聚焦单元格，宿主回填切片后
+      焦点曾静默丢失；重渲染后按锚找回同一逻辑行（行不在新窗口内则放弃，不回退切片首行） */
+  private focusAnchor: { key: string; absRow: number; col: number } | null = null
   /** 行拖拽：拖拽源行 key（不依赖 dataTransfer——部分环境 DragEvent 不带 dataTransfer） */
   private dragRowKey = ''
   /** 行拖拽：最近一次 dragover 计算的落点（目标行 key + 插前/插后） */
@@ -1694,6 +1709,56 @@ export class OASTableBase extends OASElement {
     return flat
   }
 
+  /** 数据行序前缀扫描（不含 expand/group 行；渲染窗口 rowIndex / ARIA 口径共用一次扫描结果） */
+  private computeOrdinals(display: FlatRow[]): { ordinals: number[]; logicalRows: number } {
+    const ordinals: number[] = new Array(display.length)
+    let ord = 0
+    for (let i = 0; i < display.length; i++) {
+      ordinals[i] = ord
+      if (display[i]!.kind === 'data') ord++
+    }
+    return { ordinals, logicalRows: ord }
+  }
+
+  /**
+   * 展示集重建（诊断计数点）：visibleFlat + 序号前缀 + 数据行数一次算齐并落缓存。
+   * update 全量渲染与滚动帧（displayWithCache 未命中时）都经此入口，visibleBuilds
+   * 语义 = 「visibleFlat 全量执行次数（签名缓存命中不计）」。
+   */
+  private computeVisible(
+    sorts: SortState[],
+    rowKey: string,
+    roots: Array<Record<string, unknown>>,
+    groupBy: string,
+    expanded: Set<string>,
+  ): { display: FlatRow[]; ordinals: number[]; logicalRows: number } {
+    tableRenderDiagnostics.visibleBuilds++
+    const flat = this.flatWithCache(sorts, rowKey, roots, groupBy)
+    const display = this.visibleFlat(flat, expanded, rowKey)
+    return { display, ...this.computeOrdinals(display) }
+  }
+
+  /**
+   * 展示集（带缓存）：签名（数据/排序/筛选/分组/展开/分页/列，同 flatCacheSignature）一致
+   * 时直接复用上次结果——虚拟滚动帧只做窗口切片，不重跑 O(总量) 的过滤切片 / 可见性过滤 /
+   * 序号扫描（I6：此前每个滚动帧全量重算）。签名在 computeDisplayRoots 可能钳制 current
+   * 之后重取，保证缓存键与钳制后的属性基准一致。
+   */
+  private displayWithCache(
+    sorts: SortState[],
+    rowKey: string,
+    groupBy: string,
+    expanded: Set<string>,
+  ): { display: FlatRow[]; ordinals: number[]; logicalRows: number } {
+    if (this.visibleCache && this.visibleCache.key === this.flatCacheSignature(groupBy)) {
+      return this.visibleCache
+    }
+    const { roots } = this.computeDisplayRoots()
+    const vis = this.computeVisible(sorts, rowKey, roots, groupBy, expanded)
+    this.visibleCache = { key: this.flatCacheSignature(groupBy), ...vis }
+    return this.visibleCache
+  }
+
   /** 全量渲染完成后落定渲染状态（快路径判定的基准）。三个渲染出口（loading/empty/常规）都要调用 */
   private settleRenderState(): void {
     this.renderState = { sig: this.renderSignature(), selection: this.getAttr('selected', '') }
@@ -1780,11 +1845,15 @@ export class OASTableBase extends OASElement {
     // 与虚拟滚动重建路径同源，防孪生路径漂移）；windowed 下分组不本地执行（groupByEffective 返回 ''）
     const groupBy = this.windowedOn() ? '' : this.groupByEffective()
     // 扁平化（带输入签名缓存）：选择等非 flat 输入变化时复用上次结果，不重跑 O(总量) walk+sort；
-    // windowed：flat 直接取已装载切片（不排序/不分组/不递归 children），见 buildWindowedFlat
+    // windowed：flat 直接取已装载切片（不排序/不分组/不递归 children），见 buildWindowedFlat。
+    // flat 先行构建入缓存（表头全选态 / summary-scope=page 仍直接消费 flat），
+    // 展示集（visibleFlat + 序号前缀）再落签名缓存：滚动帧经 displayWithCache 命中复用（I6）
     const flat = this.flatWithCache(sorts, rowKey, roots, groupBy)
-    const display = this.visibleFlat(flat, expanded, rowKey)
+    const vis = this.computeVisible(sorts, rowKey, roots, groupBy, expanded)
+    const display = vis.display
+    this.visibleCache = { key: this.flatCacheSignature(groupBy), ...vis }
     // aria-rowcount 的展示集口径（数据行数，不含 expand/group 行）；windowed 另按 total 全量
-    this._logicalRowCount = this.countDataRows(display)
+    this._logicalRowCount = vis.logicalRows
     // D8：导出数据集 = 当前展示的数据行（过滤 + 排序 + 分页切片后；虚拟模式取完整展示集合）
     this._exportRows = display.filter((f) => f.kind === 'data').map((f) => f.row)
     const summaryConfigs = this.buildSummaryConfigs()
@@ -1936,6 +2005,8 @@ export class OASTableBase extends OASElement {
       }
     }
 
+    // I3：windowed 重渲染前捕获焦点锚点（下方清空 tbody 会连带拆掉聚焦单元格）
+    this.captureWindowedFocusAnchor()
     const st = this.wrap ? this.wrap.scrollTop : 0
     head.innerHTML = ''
     body.innerHTML = ''
@@ -2084,6 +2155,8 @@ export class OASTableBase extends OASElement {
     this.applyRowAriaSemantics()
     // 吸顶行：为前 N 行写入 data-sticky 与 top 偏移（依赖已铺好的表头/行测量高度）
     this.applyStickyRows()
+    // I3：windowed 切片重渲染后按锚点恢复焦点（行仍在窗口内才恢复，不回退切片首行）
+    this.restoreWindowedFocusAnchor()
     // innerHTML 清空曾触发浏览器把 scrollTop 钳回 0；内容（含占位）已铺满后恢复原滚动位置
     if (this.wrap && this.wrap.scrollTop !== st) {
       this.ignoreNextScroll = true
@@ -2522,7 +2595,8 @@ export class OASTableBase extends OASElement {
     return null
   }
 
-  /** 虚拟滚动：占位行 + 可见窗口行（数据/展开内容/分节头行均参与窗口） */
+  /** 虚拟滚动：占位行 + 可见窗口行（数据/展开内容/分节头行均参与窗口）。
+      `dataOrdinal` 为展示集的数据行序前缀（签名缓存复用，I6：滚动帧不再逐帧重扫） */
   private renderVirtualBody(
     body: HTMLElement,
     display: FlatRow[],
@@ -2531,19 +2605,13 @@ export class OASTableBase extends OASElement {
     expanded: Set<string>,
     layout: { offsets: Map<string, ColumnOffset>; hasFixed: boolean },
     scrollTop = this.wrap ? this.wrap.scrollTop : 0,
+    dataOrdinal?: number[],
   ): void {
     const win = computeVirtualWindow(scrollTop, this.tableHeight(), this.rowHeight(), display.length)
     const colSpan = this.columnCount()
     // 数据行序前缀（不含 expand/group 行）：虚拟窗口行的 rowIndex（cell-click / edit / ARIA）
-    // 须与全量展示集同口径。O(display) 一次扫描，相对本路径已做的 buildFlat 排序可忽略
-    const dataOrdinal: number[] = new Array(display.length)
-    {
-      let ord = 0
-      for (let i = 0; i < display.length; i++) {
-        dataOrdinal[i] = ord
-        if (display[i]!.kind === 'data') ord++
-      }
-    }
+    // 须与全量展示集同口径。缓存未携带时（外部直调兜底）就地补扫一次
+    const ordinals = dataOrdinal ?? this.computeOrdinals(display).ordinals
     // 吸顶行恒渲染在列表顶部（视口外的吸顶行也从窗口中排除，避免重复渲染）
     const sticky = this.stickyRowCount()
     const stickyEnd = Math.min(sticky, display.length)
@@ -2551,7 +2619,7 @@ export class OASTableBase extends OASElement {
     if (stickyEnd > 0) {
       for (let i = 0; i < stickyEnd; i++) {
         const f = display[i]!
-        const tr = this.buildVirtualRow(f, i, rowKey, selected, expanded, layout, dataOrdinal[i]!)
+        const tr = this.buildVirtualRow(f, i, rowKey, selected, expanded, layout, ordinals[i]!)
         tr.style.height = `${this.rowHeight()}px`
         body.appendChild(tr)
       }
@@ -2568,7 +2636,7 @@ export class OASTableBase extends OASElement {
 
     for (let i = windowStart; i < win.end; i++) {
       const f = display[i]!
-      const tr = this.buildVirtualRow(f, i, rowKey, selected, expanded, layout, dataOrdinal[i]!)
+      const tr = this.buildVirtualRow(f, i, rowKey, selected, expanded, layout, ordinals[i]!)
       tr.style.height = `${this.rowHeight()}px`
       body.appendChild(tr)
     }
@@ -3886,11 +3954,48 @@ export class OASTableBase extends OASElement {
     return this.dragRows().indexOf(tr)
   }
 
-  /** 展示集内的数据行数（不含 expand 内容行 / 分节头行） */
-  private countDataRows(display: FlatRow[]): number {
-    let n = 0
-    for (const f of display) if (f.kind === 'data') n++
-    return n
+  /**
+   * windowed 重渲染前的焦点锚点捕获（I3）：update / 滚动帧清空 tbody 会连带拆掉聚焦单元格，
+   * 宿主回填切片（window-start / data 变化）后焦点曾静默丢失。记录聚焦行的**绝对行键**
+   * （row-key 值，缺失回落绝对行号）与矩阵列号。仅捕获网格单元格焦点（TD）——行内编辑器 /
+   * 控件焦点不在捕获范围（其取消语义由 settleEdit / 既有渲染管线承担）。
+   */
+  private captureWindowedFocusAnchor(): void {
+    this.focusAnchor = null
+    if (!this.windowedOn()) return
+    const focused = this.shadow.activeElement as HTMLElement | null
+    if (!focused || focused.tagName !== 'TD') return
+    const tr = focused.closest('tr.row') as HTMLTableRowElement | null
+    const body = this.shadow.querySelector('tbody')
+    if (!tr || !body || !body.contains(tr)) return
+    // 列号与 gridMatrix 同口径（过滤 column-virtual 占位格），回锚后方向键漫游不错位
+    const col = [...tr.querySelectorAll('td')]
+      .filter((td) => !td.classList.contains('col-virtual-placeholder'))
+      .indexOf(focused as HTMLTableCellElement)
+    if (col < 0) return
+    this.focusAnchor = { key: tr.getAttribute('data-key') ?? '', absRow: this.absRowIndexOf(tr), col }
+  }
+
+  /**
+   * windowed 重渲染后的焦点回锚（I3）：锚行仍在新渲染窗口内 → 恢复单元格焦点并把 gridPos
+   * 重映射到新渲染矩阵坐标（绝对行号 → 矩阵行号，Tab 再进容器 / 方向键续接不跳行）；
+   * 锚行已不在窗口内（宿主回填的切片不含该行）→ 不强行聚焦——焦点跳到别的行（如切片首行）
+   * 比焦点丢失更误导，直接放弃锚点。
+   */
+  private restoreWindowedFocusAnchor(): void {
+    const anchor = this.focusAnchor
+    this.focusAnchor = null
+    if (!anchor || !this.hasAttr('grid-navigation')) return
+    const rows = this.dragRows()
+    // 行定位优先按 row-key 值（数据语义稳定，排序/换窗后仍成立）；无 row-key 命中回落绝对行号
+    let row = anchor.key !== '' ? rows.findIndex((tr) => tr.getAttribute('data-key') === anchor.key) : -1
+    if (row < 0) row = rows.findIndex((tr) => this.absRowIndexOf(tr) === anchor.absRow)
+    if (row < 0) return
+    const td = this.gridCellAt(row, anchor.col)
+    if (!td) return
+    td.focus()
+    this.gridPos = { row, col: anchor.col }
+    this.scrollCellIntoView(td)
   }
 
   /** 可导航单元格矩阵：当前渲染的数据行 × 该行 td 列表（column-virtual 占位格不入矩阵——
@@ -4282,16 +4387,16 @@ export class OASTableBase extends OASElement {
       const rowKey = this.getAttr('row-key', 'key')
       const selected = this.getAttr('selected', '').split(',').filter(Boolean)
       const expanded = new Set(this.getAttr('expanded', '').split(',').filter(Boolean))
-      // 滚动帧的数据口径与 update 完全一致（统一走 groupByEffective + computeDisplayRoots——
-      // 孪生路径曾漏接互斥判定与过滤/分页切片：过滤行复活、分页失效，交叉审运行时复现）；
-      // windowed：排序/分组不本地执行（groupByEffective 返回 ''），flat 取已装载切片。
-      // 扁平化同走输入签名缓存：滚动帧 flat 输入不变，复用上次结果不重跑 O(总量) walk+sort
+      // 滚动帧的数据口径与 update 完全一致（统一走 groupByEffective + 展示集缓存——
+      // 孪生路径曾漏接互斥判定与过滤/分页切片：过滤行复活、分页失效，交叉审运行时复现）。
+      // I6：展示集（visibleFlat + 序号前缀 + 行数）按签名缓存复用，滚动帧只做窗口切片，
+      // 不再每帧重跑 O(总量) 的过滤切片 / 可见性过滤 / 序号扫描（visibleBuilds 诊断锁定）
       const groupBy = this.groupByEffective()
-      const { roots } = this.computeDisplayRoots()
-      const flat = this.flatWithCache(this.resolveSorts(), rowKey, roots, groupBy)
-      const display = this.visibleFlat(flat, expanded, rowKey)
-      // aria-rowcount 的展示集口径（数据行数，不含 expand/group 行）；windowed 另按 total 全量
-      this._logicalRowCount = this.countDataRows(display)
+      const vis = this.displayWithCache(this.resolveSorts(), rowKey, groupBy, expanded)
+      const display = vis.display
+      this._logicalRowCount = vis.logicalRows
+      // I3：windowed 重渲染前捕获焦点锚点（清空 tbody 会连带拆掉聚焦单元格）
+      this.captureWindowedFocusAnchor()
       // 滚动窗口重渲染前静默取消进行中的编辑（委托 edit 能力）
       this.editCap?.settleEdit()
       body.innerHTML = ''
@@ -4300,11 +4405,13 @@ export class OASTableBase extends OASElement {
         this.renderWindowedBody(body, display, rowKey, selected, expanded, this.computeLayout(), st)
         this.requestWindowIfNeeded('scroll')
       } else {
-        this.renderVirtualBody(body, display, rowKey, selected, expanded, this.computeLayout(), st)
+        this.renderVirtualBody(body, display, rowKey, selected, expanded, this.computeLayout(), st, vis.ordinals)
       }
       this.applyGridSemantics()
       this.applyRowAriaSemantics()
       this.applyStickyRows()
+      // I3：windowed 重渲染后按锚点恢复焦点（行仍在窗口内才恢复）
+      this.restoreWindowedFocusAnchor()
       // 清空曾把 scrollTop 钳回 0，内容铺满后恢复（窗口按 st 算，视觉不跳）
       if (this.wrap!.scrollTop !== st) {
         this.ignoreNextScroll = true

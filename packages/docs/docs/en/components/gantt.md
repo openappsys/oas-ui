@@ -275,7 +275,7 @@ Attributes: `windowed` (enable) + `total` (full row count) + `window-start` (abs
 </script>
 ```
 
-Conventions in windowed mode: **the slice must be flat** (a hierarchical slice with `parent`/`children` triggers a devWarn and renders flat — flatten on the host side); `auto-schedule` and the critical path would be wrong on partial data and are **skipped with a devWarn**; row drag-reorder is disabled (index only makes sense within the slice); `oas-tasks-change` carries only the slice in `detail.tasks` — the host must **merge by id** into the full dataset, never replace it wholesale.
+Conventions in windowed mode: **the slice must be flat** (a hierarchical slice with `parent`/`children` triggers a devWarn and renders flat — flatten on the host side); `auto-schedule` and the critical path would be wrong on partial data and are **skipped with a devWarn**; row drag-reorder is disabled (index only makes sense within the slice); **one user action emits `oas-tasks-change` exactly once** (event order `oas-reschedule → oas-tasks-change → oas-task-change`); `oas-tasks-change` carries only the slice in `detail.tasks` — the host must **merge by id** into the full dataset, never replace it wholesale.
 
 > For the full host recipe (segment fetch, abort in-flight, merge by id, atomic refill) and a runnable example, see [Server-side windowed data](/en/guide/windowed-data).
 

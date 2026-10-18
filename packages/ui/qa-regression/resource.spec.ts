@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test'
 import type { Page } from '@playwright/test'
+import AxeBuilder from '@axe-core/playwright'
 
 // 冷启动去竞态：等 oas-resource 升级 + 首帧泳道条渲染
 async function waitResource(page: Page, id: string): Promise<void> {
@@ -2243,4 +2244,63 @@ test('resource 表头吸顶：纵向滚动周刻度保持可见，横向滚动�
     document.getElementById('res-sticky-rtl')?.remove()
   })
   expect(errors).toEqual([])
+})
+
+// I4 滚动容器键盘可达（axe: scrollable-region-focusable）：
+// windowed 行窗口 + 空视口（resources=[]、total=500）时 scroller 仍由 spacer 撑出滚动范围，
+// 但窗口内没有任何可聚焦条 → 必须给 scroller 补 tabindex=0，否则 axe serious 违规。
+test('resource 滚动容器键盘可达：windowed 空视口 scroller 可聚焦，axe scrollable-region-focusable 零违规', async ({
+  page,
+}) => {
+  const errors: string[] = []
+  page.on('pageerror', (e) => errors.push(e.message))
+  page.on('console', (m) => {
+    if (m.type() === 'error') errors.push(m.text())
+  })
+  await page.goto('/components/resource.html', { waitUntil: 'domcontentloaded' })
+  // 等组件 bundle 升级完成（借既有 demo 的泳道条）
+  await waitResource(page, 'res-basic')
+
+  await page.evaluate(() => {
+    const el = document.createElement('oas-resource')
+    el.id = 'res-axe-windowed'
+    el.style.cssText = 'display:block;width:640px;height:320px;margin:12px'
+    el.setAttribute('windowed', '')
+    el.setAttribute('total', '500')
+    el.setAttribute('window-start', '0')
+    el.setAttribute('resources', '[]')
+    el.setAttribute('tasks', '[]')
+    el.setAttribute('range-start', '2026-01-01')
+    el.setAttribute('range-end', '2026-12-31')
+    document.body.appendChild(el)
+  })
+
+  const probe = page.locator('#res-axe-windowed')
+  await expect
+    .poll(() =>
+      probe.evaluate((host) => {
+        const sc = host.shadowRoot!.querySelector('.scroller') as HTMLElement | null
+        return sc ? sc.getAttribute('tabindex') : null
+      }),
+    )
+    .toBe('0')
+  const metrics = await probe.evaluate((host) => {
+    const sc = host.shadowRoot!.querySelector('.scroller') as HTMLElement
+    return { scrollH: sc.scrollHeight, clientH: sc.clientHeight, hidden: sc.hidden }
+  })
+  expect(metrics.hidden, 'windowed 空视口不显示空态覆盖层（scroller 可见）').toBe(false)
+  expect(metrics.scrollH, 'spacer 撑起全量行高 → scroller 确实可滚动').toBeGreaterThan(metrics.clientH + 1)
+
+  const results = await new AxeBuilder({ page })
+    .include('#res-axe-windowed')
+    .withRules(['scrollable-region-focusable'])
+    .analyze()
+  expect(
+    results.violations.filter((v) => v.id === 'scrollable-region-focusable'),
+    'axe scrollable-region-focusable 零违规',
+  ).toEqual([])
+
+  // 临时探针删除（不留 DOM）
+  await page.evaluate(() => document.getElementById('res-axe-windowed')?.remove())
+  expect(errors, 'console 零告警').toEqual([])
 })

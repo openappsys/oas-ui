@@ -1666,4 +1666,113 @@ describe('windowed（服务端行窗口协议）', () => {
       warn.mockRestore()
     }
   })
+
+  it('M-2 window-start 越过 total：夹取到全量末尾 + devWarn 一次（顶部占位不超 total×rowH）', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    try {
+      const warnMsgs = (): string[] =>
+        warn.mock.calls.map((c) => String(c[0])).filter((m) => m.includes('window-start'))
+      const el = new OASList()
+      el.setAttribute('windowed', '')
+      el.setAttribute('total', '100')
+      el.setAttribute('window-start', '150')
+      el.setAttribute('height', '120')
+      el.setAttribute('row-height', '40')
+      el.data = makeSlice(150, 3)
+      document.body.appendChild(el)
+      const body = el.shadowRoot!.querySelector<HTMLElement>('[part="body"]')!
+      Object.defineProperty(body, 'clientHeight', { configurable: true, value: 120 })
+      Object.defineProperty(body, 'scrollHeight', { configurable: true, value: 120 * 10 })
+      ;(el as unknown as { requestUpdate(): void }).requestUpdate()
+      // 夹取后：顶部占位 = total × rowH = 4000（不夹取会按 ws=150 铺出 6000+ 的越界空白）
+      const topH = parseFloat(spacer(el, 'top')!.style.height)
+      expect(topH, '顶部占位夹到全量高度').toBe(4000)
+      expect(topH, '顶部占位不得超过 total×rowH').toBeLessThanOrEqual(4000)
+      expect(rowsOf(el).length, '越界切片不渲染行').toBe(0)
+      expect(warnMsgs().length, '越界告警一次').toBe(1)
+      expect(warnMsgs()[0], '告警含越界值').toContain('150')
+      // 同实例重渲染不重复告警（去重一次）
+      el.setAttribute('window-start', '160')
+      expect(warnMsgs().length, '同实例只提示一次').toBe(1)
+    } finally {
+      warn.mockRestore()
+    }
+  })
+
+  it('I5 data property 收到 JSON 字符串（框架写 property 场景）：解析渲染；非法回落空数组', () => {
+    const el = new OASList()
+    // @ts-expect-error 模拟框架把静态 data attribute 的 JSON 字符串写进 property
+    el.data = JSON.stringify([{ title: '字符串通道' }, { title: '第二行' }])
+    document.body.appendChild(el)
+    const rows = rowsOf(el)
+    expect(rows.length).toBe(2)
+    expect(rows[0]!.getAttribute('data-index')).toBe('0')
+    // 非法 JSON / 非数组 → 空数组（同 gantt/resource 口径：不抛异常、静默清空）
+    const bad = new OASList()
+    // @ts-expect-error 同上
+    bad.data = '{oops}'
+    document.body.appendChild(bad)
+    expect(rowsOf(bad).length).toBe(0)
+    const arr = new OASList()
+    // @ts-expect-error 非数组非字符串对象同样清空
+    arr.data = { title: '不是数组' }
+    document.body.appendChild(arr)
+    expect(rowsOf(arr).length).toBe(0)
+  })
+})
+
+describe('M-1 宿主可访问名称动态同步（迁移后随宿主属性变更更新行容器）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  const makeSlice = (n: number): Array<{ title: string }> => Array.from({ length: n }, (_, i) => ({ title: `行${i}` }))
+
+  it('迁移后宿主更新 aria-label：行容器随宿主变更同步并再次从宿主移除', async () => {
+    const el = new OASList()
+    el.setAttribute('role', 'listbox')
+    el.setAttribute('aria-label', '旧名称')
+    el.data = makeSlice(2)
+    document.body.appendChild(el)
+    const box = el.shadowRoot!.querySelector<HTMLElement>('[part="data-items"]')!
+    expect(box.getAttribute('role')).toBe('listbox')
+    expect(box.getAttribute('aria-label'), '首帧迁移').toBe('旧名称')
+    expect(el.hasAttribute('aria-label'), '宿主上的名称已迁走').toBe(false)
+    // 宿主框架 patch：aria-label 重新出现在宿主元素（role 已不在）→ 观察器触发 update → 同步
+    el.setAttribute('aria-label', '新名称')
+    await Promise.resolve()
+    await new Promise((r) => setTimeout(r, 0))
+    expect(box.getAttribute('aria-label'), '行容器名称应随宿主变更更新（曾停在旧值）').toBe('新名称')
+    expect(el.hasAttribute('aria-label'), '同步后再次从宿主移除').toBe(false)
+    // aria-labelledby 同口径
+    el.setAttribute('aria-labelledby', 'ext-label')
+    await new Promise((r) => setTimeout(r, 0))
+    expect(box.getAttribute('aria-labelledby')).toBe('ext-label')
+    expect(el.hasAttribute('aria-labelledby')).toBe(false)
+  })
+
+  it('宿主移除 aria-label 时行容器保留既有名称（不制造未命名 listbox）', async () => {
+    const el = new OASList()
+    el.setAttribute('role', 'listbox')
+    el.setAttribute('aria-label', '成员')
+    el.data = makeSlice(2)
+    document.body.appendChild(el)
+    const box = el.shadowRoot!.querySelector<HTMLElement>('[part="data-items"]')!
+    expect(box.getAttribute('role')).toBe('listbox')
+    expect(box.getAttribute('aria-label'), '首帧迁移').toBe('成员')
+    expect(el.hasAttribute('aria-label')).toBe(false)
+    // 动态更新到新值后再清空宿主绑定：行容器保留最后同步的名称（抽走 listbox 名称 = a11y 违规）
+    el.setAttribute('aria-label', '新成员')
+    await new Promise((r) => setTimeout(r, 0))
+    expect(box.getAttribute('aria-label')).toBe('新成员')
+    el.removeAttribute('aria-label')
+    await new Promise((r) => setTimeout(r, 0))
+    expect(box.getAttribute('aria-label'), '宿主清空绑定不抽走行容器名称').toBe('新成员')
+  })
 })

@@ -3,6 +3,9 @@ import { devWarn } from '../../shared/dev-warn.js'
 import { isRtl } from '../../shared/direction.js'
 import { computeVirtualWindow } from '../virtual-list/oas-virtual-list.js'
 import type { OASVirtualList } from '../virtual-list/oas-virtual-list.js'
+// 运行时容忍 JSON 字符串的数据通道归一（同 gantt/resource 口径：框架把静态 attribute 当
+// property 写入宿主时，setter 收到的是 JSON 字符串而非数组）
+import { parseJsonArray } from '../../shared/json-array.js'
 // 服务端行窗口协议（windowed 模式）：与 table / gantt 同源同语义（类型 + 纯工具）。
 // emit 用字面量 'window-request'（api:scan 解析锚点），与共享契约常量做编译期一致性校验。
 import {
@@ -291,6 +294,8 @@ export class OASList extends OASElement {
   private hostAriaObserver: MutationObserver | null = null
   /** windowed：无视口告警是否已发（每实例只提醒一次） */
   private winNoViewportWarned = false
+  /** windowed：window-start 越过 total 的夹取告警是否已发（每实例只提醒一次，M-2/M-3 对齐 table） */
+  private winStartClampWarned = false
   /** list 语义：活动行容器上的角色（'' = 不施加 list 语义）与行子角色 */
   private listRole: 'list' | 'listbox' | '' = ''
   private listChildRole: 'listitem' | 'option' | '' = ''
@@ -315,8 +320,14 @@ export class OASList extends OASElement {
     this.setData(value)
   }
 
+  /**
+   * 数据写入（property 通道）。公开类型保持 `unknown[]`（API 文档类型准确），运行时经
+   * `parseJsonArray` 容忍 JSON 字符串——框架（Vue 按「key in el」写 property）把静态
+   * `data` attribute 的 JSON 字符串直接写进 setter 时不再被当非法数组清空（同
+   * gantt/resource/scheduler 口径）；非法 JSON / 非数组按空数组处理。
+   */
   setData(value: unknown[]): void {
-    this.rows = Array.isArray(value) ? value.slice() : []
+    this.rows = parseJsonArray<unknown>(value as unknown).slice()
     this.dataFromProperty = true
     if (this.isConnected) this.update()
   }
@@ -467,6 +478,22 @@ export class OASList extends OASElement {
       Number(this.getAttr('window-start', '0')),
       this.rows.length,
     )
+    // M-2：window-start 越过 total 末尾（脏数据）→ 夹取到全量末尾渲染并 devWarn 一次
+    //（对齐 table 的切片越界告警契约：宿主曾误以为越界切片全部生效；不夹取会按越界绝对行号
+    // 铺 spacer，顶部占位撑出 total×rowH 之外的巨量空白）
+    if (this.winMode.windowed && this.winMode.windowStart > this.winMode.total) {
+      if (!this.winStartClampWarned) {
+        this.winStartClampWarned = true
+        devWarn(
+          `[oas-list] windowed window-start ${this.winMode.windowStart} 超出 total ${this.winMode.total}，已夹取到全量末尾渲染（请检查宿主分页/滚动偏移计算）`,
+        )
+      }
+      this.winMode = {
+        ...this.winMode,
+        windowStart: this.winMode.total,
+        loaded: { start: this.winMode.total, end: this.winMode.total + Math.max(0, this.rows.length) },
+      }
+    }
     if (!this.winMode.windowed) {
       this.winReq = null
       this.winInitDone = false
@@ -903,13 +930,27 @@ export class OASList extends OASElement {
     const hostRole = (this.getAttribute('role') ?? '').trim()
     if (hostRole === 'list' || hostRole === 'listbox') {
       if (role !== '' && container) {
-        for (const attr of ['aria-label', 'aria-labelledby']) {
+        for (const attr of ['aria-label', 'aria-labelledby'] as const) {
           const v = this.getAttribute(attr)
           if (v != null) container.setAttribute(attr, v)
           this.removeAttribute(attr)
         }
       }
       this.removeAttribute('role')
+    }
+    // M-1：迁移后的宿主可访问名称动态同步——宿主框架随状态更新把 aria-label/aria-labelledby
+    // 重新写（或新绑定）到宿主元素（role 已迁走，上面的 role 判定不再命中）→ 拷贝到行容器并
+    // 再次从宿主移除，行容器名称跟随宿主绑定变化（否则停在首次迁移的旧值）。仅在「宿主曾声明
+    // list/listbox（迁移态）且 list 语义仍活跃」时接管——宿主主动换角色即放弃，不劫持；
+    // 宿主移除属性时保留行容器既有名称（抽走 listbox 名称会制造 aria-input-field-name 违规）
+    if (role !== '' && container && this.adoptedListRole !== '') {
+      for (const attr of ['aria-label', 'aria-labelledby'] as const) {
+        const v = this.getAttribute(attr)
+        if (v != null) {
+          container.setAttribute(attr, v)
+          this.removeAttribute(attr)
+        }
+      }
     }
 
     for (const { el, pos, size } of rows) this.syncRowAria(el, pos, size)

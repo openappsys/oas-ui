@@ -379,6 +379,9 @@ const STYLE = `
   overflow: auto;
   /* 同 .timeview：滚动锚定会在窗口重建时放大滚轮增量，禁用 */
   overflow-anchor: none;
+  /* 默认限高与 .timeview 一致：宿主未给限高时资源视图自身形成滚动视口，
+     否则内容（资源行）直接撑高容器，纵向窗口化永不生效（宿主可用 token 覆盖） */
+  max-height: var(--oas-scheduler-resource-max-height, 640px);
   font-size: var(--oas-font-size-sm);
 }
 .res-head {
@@ -955,11 +958,26 @@ export class OASScheduler extends OASElement {
       this.renderTimeView()
       this.startNowTimer()
     } else if (isAgenda) this.renderAgenda()
-    else if (isResource) this.renderResource()
-    else {
+    else if (isResource) {
+      this.renderResource()
+      // 资源单日视图（今天）有 now 线，需每分钟刷新位置；resource-week 无 now 线不启动定时器
+      if (this.viewMode === 'resource') this.startNowTimer()
+    } else {
       this.renderWeekdays()
       this.renderMonth()
     }
+    // 可滚动容器键盘可达（axe: scrollable-region-focusable）：仅内容真实溢出时补 tabindex，
+    // 不可滚动时不加（避免多出空 Tab 停靠点）。隐藏视图（切走后仍留在 DOM）恒移除
+    this.syncScrollFocusable(timeview)
+    this.syncScrollFocusable(resEl)
+  }
+
+  /** 滚动容器键盘可达性同步：真实溢出才 tabindex=0，否则移除（无空 Tab 停靠点） */
+  private syncScrollFocusable(el: HTMLElement | null): void {
+    if (!el) return
+    const overflow = !el.hidden && (el.scrollHeight > el.clientHeight + 1 || el.scrollWidth > el.clientWidth + 1)
+    if (overflow) el.setAttribute('tabindex', '0')
+    else el.removeAttribute('tabindex')
   }
 
   private template(): string {
