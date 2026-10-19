@@ -410,3 +410,49 @@ test('scheduler month 2000 events：真实浏览器首渲染与事件 DOM 上界
   expect(result.chips).toBeLessThanOrEqual(2000)
   expect(errors).toEqual([])
 })
+
+test('SPA 路由切换：数据组件反复挂载/卸载无 pageerror', async ({ page }) => {
+  const errors = collectErrors(page)
+  await page.goto('/components/button.html', { waitUntil: 'domcontentloaded' })
+  await page.waitForFunction(
+    () => ['oas-list', 'oas-tree', 'oas-kanban', 'oas-scheduler'].every((t) => customElements.get(t) != null),
+    null,
+    { timeout: 15000 },
+  )
+  const result = await page.evaluate(async () => {
+    const raf = (): Promise<void> => new Promise((r) => requestAnimationFrame(() => r()))
+    for (let i = 0; i < 10; i++) {
+      const list = document.createElement('oas-list') as HTMLElement & { data: unknown }
+      list.setAttribute('height', '120')
+      list.setAttribute('row-height', '32')
+      list.data = Array.from({ length: 20 }, (_, n) => ({ title: 'l' + n }))
+      document.body.append(list)
+      list.remove()
+
+      const tree = document.createElement('oas-tree') as HTMLElement & { data: unknown }
+      tree.setAttribute('height', '120')
+      tree.setAttribute('row-height', '32')
+      tree.data = Array.from({ length: 20 }, (_, n) => ({ key: 'k' + n, label: 't' + n }))
+      document.body.append(tree)
+      tree.remove()
+
+      const kanban = document.createElement('oas-kanban') as HTMLElement & { columns: unknown; cards: unknown }
+      kanban.setAttribute('height', '160')
+      kanban.columns = [{ key: 'a', title: 'A' }]
+      kanban.cards = [{ id: 'c' + i, column: 'a', title: 'card' }]
+      document.body.append(kanban)
+      kanban.remove()
+
+      const scheduler = document.createElement('oas-scheduler') as HTMLElement & { events: unknown }
+      scheduler.setAttribute('view', 'month')
+      scheduler.setAttribute('page-show-date', '2026-08-10')
+      scheduler.events = [{ date: '2026-08-10', title: 'e' }]
+      document.body.append(scheduler)
+      scheduler.remove()
+      await raf()
+    }
+    return { ok: true }
+  })
+  expect(result.ok).toBe(true)
+  expect(errors, 'SPA 反复挂载不得产生 pageerror/console error').toEqual([])
+})
