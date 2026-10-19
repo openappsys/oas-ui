@@ -1237,4 +1237,11 @@ describe('OASDropdown 属性-方法撞名回归', () => {
     await sleep(20)
     expect(el.hasAttribute('open')).toBe(false)
   })
+  it('disconnect 解绑 coarse tap（SPA 重挂不叠加 pointerup）', () => {
+    const el = mount()
+    const anchor = el.querySelector('button')!
+    const remove = vi.spyOn(anchor, 'removeEventListener')
+    el.remove()
+    expect(remove).toHaveBeenCalledWith('pointerup', expect.any(Function))
+  })
 })

@@ -434,6 +434,8 @@ export class OAStooltip extends OASElement {
     }
     // coarse 降级 tap 判定走 pointerup（Gecko 对 slot 裸文本节点的触屏命中会静默丢整串
     // touch/compat 事件致 click 不到——移动仿真实证）；compat click 去重忽略
+    this.unbindCoarseTap?.()
+    this.unbindCoarseTap = null
     if (this.anchor) this.unbindCoarseTap = bindCoarseTap(this.anchor, handleTap)
     this.anchor?.addEventListener('click', (e) => {
       if (this.anchor && clickIgnorable(this.anchor, e)) return
@@ -455,6 +457,8 @@ export class OAStooltip extends OASElement {
 
     // 清理：定时器 + 模块级浮层栈 + 全局监听（滚动重定位/外点关闭）+ portal host
     this.onCleanup(() => {
+      this.unbindCoarseTap?.()
+      this.unbindCoarseTap = null
       this.cancelShow()
       this.cancelHide()
       this.cancelTouch()

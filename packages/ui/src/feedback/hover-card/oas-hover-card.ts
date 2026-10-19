@@ -398,6 +398,8 @@ export class OASHoverCard extends OASElement {
     // 触屏降级（P3）：coarse pointer 下 hover/focus 通道停用，点按锚点 tap 切换（开/关）。
     // tap 判定走 pointerup（Gecko 对 slot 裸文本节点的触屏命中会静默丢整串 touch/compat
     // 事件致 click 永远不到——移动仿真实证；pointerup 该路径恒可达）；compat click 去重忽略
+    this.unbindCoarseTap?.()
+    this.unbindCoarseTap = null
     if (this.anchor) this.unbindCoarseTap = bindCoarseTap(this.anchor, () => this.onAnchorTap())
     this.anchor?.addEventListener('click', (e) => {
       if (this.anchor && clickIgnorable(this.anchor, e)) return
@@ -409,6 +411,8 @@ export class OASHoverCard extends OASElement {
     this.card?.querySelector<HTMLSlotElement>('slot[name="title"]')?.addEventListener('slotchange', () => this.update())
     this.syncGroup()
     this.onCleanup(() => {
+      this.unbindCoarseTap?.()
+      this.unbindCoarseTap = null
       if (this.showTimer) clearTimeout(this.showTimer)
       if (this.hideTimer) clearTimeout(this.hideTimer)
       this.unregisterGroup()

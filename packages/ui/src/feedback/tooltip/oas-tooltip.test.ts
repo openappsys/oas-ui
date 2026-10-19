@@ -2289,4 +2289,11 @@ describe('OAStooltip 增强能力（2026-09）', () => {
     await Promise.resolve()
     expect(tip(el).getAttribute('aria-hidden')).toBe('false')
   })
+  it('disconnect 解绑 coarse tap（SPA 重挂不叠加 pointerup）', () => {
+    const el = mount({ content: 'x' })
+    const anchor = el.querySelector('button')!
+    const remove = vi.spyOn(anchor, 'removeEventListener')
+    el.remove()
+    expect(remove).toHaveBeenCalledWith('pointerup', expect.any(Function))
+  })
 })

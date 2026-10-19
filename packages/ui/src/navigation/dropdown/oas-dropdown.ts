@@ -320,6 +320,8 @@ export class OASDropdown extends OASElement {
     }
     // coarse 降级 tap 判定走 pointerup（Gecko 对 slot 裸文本节点的触屏命中会静默丢整串
     // touch/compat 事件致 click 不到——移动仿真实证）；compat click 去重忽略
+    this.unbindCoarseTap?.()
+    this.unbindCoarseTap = null
     if (this.anchor) this.unbindCoarseTap = bindCoarseTap(this.anchor, () => handleTap({} as Event))
     this.anchor?.addEventListener('click', (e: Event) => {
       if (this.anchor && clickIgnorable(this.anchor, e)) return
@@ -349,6 +351,10 @@ export class OASDropdown extends OASElement {
       if (e.key === 'Escape') this.removeAttribute('open')
     }
     document.addEventListener('keydown', onKey)
+    this.onCleanup(() => {
+      this.unbindCoarseTap?.()
+      this.unbindCoarseTap = null
+    })
     this.onCleanup(() => document.removeEventListener('keydown', onKey))
     this.onCleanup(() => document.removeEventListener('click', this.handleOutside, true))
     // 滚动/尺寸变化重定位监听（scroll 用 capture 捕获嵌套容器滚动，同 tooltip 的 virtual 跟随）

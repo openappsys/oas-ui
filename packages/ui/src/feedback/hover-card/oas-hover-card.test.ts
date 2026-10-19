@@ -1113,4 +1113,11 @@ describe('OASHoverCard 属性-方法撞名回归', () => {
     vi.advanceTimersByTime(151)
     expect(card(el).getAttribute('aria-hidden')).toBe('true')
   })
+  it('disconnect 解绑 coarse tap（SPA 重挂不叠加 pointerup）', () => {
+    const el = mount({ title: 'x' })
+    const anchor = anchorOf(el)
+    const remove = vi.spyOn(anchor, 'removeEventListener')
+    el.remove()
+    expect(remove).toHaveBeenCalledWith('pointerup', expect.any(Function))
+  })
 })

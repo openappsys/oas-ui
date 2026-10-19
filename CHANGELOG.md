@@ -19,6 +19,7 @@
 
 ### 修复
 
+- **coarse-tap 监听在 SPA 重挂时重复绑定**：`hover-card` / `tooltip` / `dropdown` 调用 `bindCoarseTap` 后未在 `onCleanup` 执行返回值解绑，重复挂载会叠加 `pointerup` 监听；现解绑并清空引用，补三组件回归。
 - **玻璃静态边缘折射移除（跨浏览器一致性）**：`filter: url("data:image/svg+xml,...#id")` 在 Chromium 执行、Firefox 不执行，导致同一组件出现轮廓锯齿与视觉尺寸分叉。移除全部控件上的静态折射与 `--oas-glass-refraction`，保留半透明 surface、backdrop 模糊、折光边、阴影和指针动态高光；组件尺寸/命中区完全由布局决定。API 文档同步删除该变量。
 - **`glass-fluid.js` 跨模块单例**：运行时所有权挂 `globalThis`，bundle 与 CDN / 多包各持一份时后续实例的 `startGlassFluid` / `stopGlassFluid` 委托首实例，避免 `pointermove` 监听与注入样式表翻倍；单实例行为不变。
 - **`oas-switch` 玻璃态锯齿/膨胀**：关闭 switch 的位移折射滤镜（保留玻璃 surface 与高光），修复 18px 轨道/把手在 Chromium 被位移成锯齿轮廓、并因外扩显得比 Firefox 更高更胖的问题；开关恢复与布局盒一致的尺寸。
