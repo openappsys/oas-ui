@@ -98,7 +98,12 @@ const STYLE = `
 }
 .subtitle {
   font-size: var(--oas-font-size-xs);
-  color: var(--oas-color-text-secondary);
+  /* 副标题直接使用 text-secondary 在半透明 titlebar 底上仅约 4.35:1；
+     与 text-primary 混合提升到 AA 4.5:1 以上，同时保留次级层级。 */
+  color: var(
+    --oas-titlebar-subtitle-color,
+    color-mix(in srgb, var(--oas-color-text-secondary) 78%, var(--oas-color-text-primary))
+  );
   line-height: 1.2;
   white-space: nowrap;
   overflow: hidden;

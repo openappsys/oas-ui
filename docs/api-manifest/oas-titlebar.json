@@ -86,6 +86,10 @@
     {
       "name": "--oas-titlebar-trailing-inset",
       "default": "var(--oas-space-2)"
+    },
+    {
+      "name": "--oas-titlebar-subtitle-color",
+      "default": "color-mix(in srgb, var(--oas-color-text-secondary) 78%, var(--oas-color-text-primary))"
     }
   ],
   "unresolved": []

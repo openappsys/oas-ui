@@ -8,11 +8,37 @@
    组件 scoped 样式一律引用 var(--home-*) 或 --oas-* 语义 token，禁止硬编码色值。 */
 /* 构建时移除了 VitePress Preflight 的通用 `* { margin/padding/border:0 }`（防止覆盖
    oas-* 宿主）。这里只补 docs 原生元素需要的复位，与之前 Preflight 下的视觉一致。 */
+html,
+body {
+  /* breakout demo 的 100vw 横幅在右侧会溢出几个像素；clip 不建立滚动容器，保留 sticky */
+  overflow-x: clip;
+}
 body {
   margin: 0;
 }
 h1 {
   margin: 0;
+}
+
+/* container breakout demo：包装层必须接近视口宽，不能缩成 demo 内容列宽后把横幅裁掉。 */
+.demo-breakout-wrap {
+  width: 100vw;
+  max-width: none !important;
+  flex: none;
+  margin-inline: calc(50% - 50vw);
+  overflow-x: clip;
+}
+
+/* 全宽 demo 会画到右侧目录列下方；目录保持页面底色并抬到上层，避免文字叠在横幅上。 */
+.VPDocAside {
+  position: relative;
+  z-index: 1;
+  background: var(--vp-c-bg);
+}
+/* 目录的滚动容器有 overflow 裁剪，右缘补白放在它自己身上，才能盖住全宽 demo 的右端。 */
+.aside-container {
+  background: var(--vp-c-bg);
+  box-shadow: 32px 0 0 var(--vp-c-bg);
 }
 
 :root {

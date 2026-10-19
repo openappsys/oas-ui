@@ -63,7 +63,7 @@ The `fluid` boolean attribute removes `max-width` entirely — the container alw
 Any slotted child with a `breakout` attribute breaks out of the fixed width to span the full viewport width (classic formula `width: 100vw` + `margin-inline: calc(50% - 50vw)`). Ideal for a "constrained content, full-width local banner" page structure.
 
 <DemoBlock title="breakout — full-width banner">
-  <div style="overflow-x: clip">
+  <div class="demo-breakout-wrap">
     <oas-container size="md" style="background: var(--oas-color-bg-hover)">
       First paragraph of constrained content
       <div breakout class="demo-breakout-banner">breakout banner · breaks 768px to span the viewport</div>

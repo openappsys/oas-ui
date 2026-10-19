@@ -161,6 +161,7 @@ onMounted(() => {
 | CSS 变量 | 默认值 |
 | --- | --- |
 | `--oas-titlebar-bg` | `color-mix(in srgb, var(--oas-color-text-primary) 5%, var(--oas-color-bg))` |
+| `--oas-titlebar-subtitle-color` | `color-mix(in srgb, var(--oas-color-text-secondary) 78%, var(--oas-color-text-primary))` |
 | `--oas-titlebar-height` | `var(--oas-titlebar-compact-height, 34px)` |
 | `--oas-titlebar-leading-inset` | `var(--oas-space-2)` |
 | `--oas-titlebar-trailing-inset` | `var(--oas-space-2)` |

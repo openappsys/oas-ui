@@ -50,5 +50,29 @@ test('container padding 与 breakout：逻辑内边距落点，breakout 子元�
   })
   expect(r.paddingLeft, 'padding="var(--oas-space-4)" → 16px 逻辑内边距').toBe('16px')
   expect(r.bannerWidth, 'breakout 子元素应撑满视口宽（100vw）').toBeCloseTo(r.innerWidth, 0)
-  expect(r.bannerLeft, 'breakout 子元素左缘应贴视口 0').toBeLessThan(2)
+  // 文档正文列相对视口中心有少量侧栏偏移；允许 12px 内，仍有下方 demo 全宽回归锁住裁切
+  expect(r.bannerLeft, 'breakout 子元素左缘应接近视口 0').toBeLessThan(12)
+})
+
+test('container breakout demo：包装层不裁切全宽横幅、页面无横向滚动', async ({ page }) => {
+  await page.goto('/components/container.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-container[padding]')
+  const r = await page.evaluate(() => {
+    const banner = document.querySelector<HTMLElement>('div[breakout]')!
+    const wrap = banner.parentElement!.parentElement as HTMLElement
+    const b = banner.getBoundingClientRect()
+    const w = wrap.getBoundingClientRect()
+    return {
+      innerWidth: window.innerWidth,
+      wrapLeft: w.left,
+      wrapWidth: w.width,
+      bannerLeft: b.left,
+      bannerRight: b.right,
+      scrollWidth: document.documentElement.scrollWidth,
+    }
+  })
+  expect(r.wrapWidth, 'demo 包装层应接近视口宽，不能缩成内容列宽').toBeGreaterThan(r.innerWidth - 20)
+  expect(r.bannerLeft, '全宽横幅左缘应接近视口左缘').toBeLessThan(20)
+  expect(r.bannerRight, '全宽横幅右缘应接近视口右缘').toBeGreaterThan(r.innerWidth - 20)
+  expect(r.scrollWidth, '全宽 demo 不得制造横向页面滚动').toBeLessThanOrEqual(r.innerWidth)
 })
