@@ -23,6 +23,12 @@ export interface SidebarItem {
   group?: string
   /** 徽标计数（可选）：项右侧小圆角徽标 */
   badge?: string | number
+  /** 行首头像图片 URL（可选）：优先于 avatarText/avatarColor；装饰性，名称由 label 提供 */
+  avatar?: string
+  /** 行首头像文字（可选）：无图时渲染首字母/缩写圆（配 avatarColor；缺省底色走主色） */
+  avatarText?: string
+  /** 行首头像底色（可选）：任意 CSS 色值；有文字时自动按底色明暗择深/浅字保对比度 */
+  avatarColor?: string
   /** 嵌套子菜单（可选）：有 children 的项渲染为可展开/收起的父项 */
   children?: SidebarItem[]
   /** 项操作按钮（可选）：悬停项时出现在右侧 */
@@ -262,6 +268,37 @@ aside {
 .item .label {
   overflow: hidden;
   text-overflow: ellipsis;
+}
+/* 行首头像：图片或首字母圆（18px，与徽标同档；间距由 .item 的 gap 提供，RTL 自动镜像）。
+   底色取自 --oas-sidebar-avatar-color 的 18% 淡底 + 55% 色环；文字恒用主题字色——
+   任意宿主色直铺作文字底会低对比（亮蓝上白字），刻意不那样做。 */
+.item-avatar {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: 18px;
+  block-size: 18px;
+  border-radius: 50%;
+  overflow: hidden;
+  box-sizing: border-box;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1;
+  user-select: none;
+  background: color-mix(
+    in srgb,
+    var(--oas-sidebar-avatar-color, var(--oas-color-primary)) 18%,
+    var(--oas-color-bg-elevated)
+  );
+  color: var(--oas-color-text-primary);
+  box-shadow: inset 0 0 0 1px
+    color-mix(in srgb, var(--oas-sidebar-avatar-color, var(--oas-color-primary)) 55%, transparent);
+}
+.item-avatar-img {
+  inline-size: 100%;
+  block-size: 100%;
+  object-fit: cover;
 }
 /* 组标题：弱化小标题，纯展示不可点；折叠态隐藏（同 .item .label） */
 .group-title {
@@ -1052,6 +1089,8 @@ export class OASSidebar extends OASElement {
     if (hasChildren && active && this.findActiveChild(item.children!, active)) {
       btn.classList.add('child-selected')
     }
+    const avatar = this.renderAvatar(item)
+    if (avatar) btn.appendChild(avatar)
     const icon = document.createElement('span')
     icon.className = 'icon'
     const iconSvg = item.icon ? this.iconSvg(item.icon, item.iconColor) : null
@@ -1346,6 +1385,32 @@ export class OASSidebar extends OASElement {
     return findSiblings(this._items) ?? []
   }
 
+  /**
+   * 行首头像：`avatar`（图片 URL，property 赋值不拼 HTML）优先；否则 `avatarText` 渲染首字母圆。
+   * 装饰性节点（aria-hidden）：可读名称由行 label / aria-label 提供，避免读屏重复播报。
+   * 底色只作「淡底 + 色环」的着色源（自定义属性 --oas-sidebar-avatar-color），首字母恒用主题字色——
+   * 任意宿主色直接当文字底色会出现低对比（如亮蓝上白字），这样在明暗两主题下都稳定达标。
+   */
+  private renderAvatar(item: SidebarItem): HTMLElement | null {
+    if (!item.avatar && !item.avatarText && !item.avatarColor) return null
+    const av = document.createElement('span')
+    av.className = 'item-avatar'
+    av.setAttribute('part', 'avatar')
+    av.setAttribute('aria-hidden', 'true')
+    av.style.setProperty('--oas-sidebar-avatar-color', item.avatarColor ?? 'var(--oas-color-primary)')
+    if (item.avatar) {
+      const img = document.createElement('img')
+      img.className = 'item-avatar-img'
+      img.alt = ''
+      img.src = item.avatar
+      av.appendChild(img)
+    } else {
+      av.classList.add('item-avatar-text')
+      av.textContent = item.avatarText ?? ''
+    }
+    return av
+  }
+
   private chevronSvg(): string {
     return `<svg viewBox="0 0 16 16" width="0.9em" height="0.9em" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4.5 L10 8 L6 11.5"/></svg>`
   }
@@ -1390,6 +1455,9 @@ export class OASSidebar extends OASElement {
         typeof entry.badge === 'string' || typeof entry.badge === 'number'
           ? (entry.badge as string | number)
           : undefined,
+      avatar: typeof entry.avatar === 'string' ? entry.avatar : undefined,
+      avatarText: typeof entry.avatarText === 'string' ? entry.avatarText : undefined,
+      avatarColor: typeof entry.avatarColor === 'string' ? entry.avatarColor : undefined,
       actions: Array.isArray(entry.actions)
         ? (entry.actions as unknown[])
             .filter(
@@ -1451,6 +1519,12 @@ export class OASSidebar extends OASElement {
       // 数字语义：纯数字字符串转 number，其余保留 string（对齐 SidebarItem.badge 的 string|number）
       item.badge = /^\d+$/.test(badge) ? Number(badge) : badge
     }
+    const avatar = el.getAttribute('avatar')
+    if (avatar) item.avatar = avatar
+    const avatarText = el.getAttribute('avatar-text')
+    if (avatarText) item.avatarText = avatarText
+    const avatarColor = el.getAttribute('avatar-color')
+    if (avatarColor) item.avatarColor = avatarColor
     const children = this.parseChildLevel(el.children)
     if (children.length > 0) item.children = children as SidebarItem[]
     return item

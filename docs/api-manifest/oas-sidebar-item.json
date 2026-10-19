@@ -21,6 +21,18 @@
     {
       "name": "badge",
       "observed": true
+    },
+    {
+      "name": "avatar",
+      "observed": true
+    },
+    {
+      "name": "avatar-text",
+      "observed": true
+    },
+    {
+      "name": "avatar-color",
+      "observed": true
     }
   ],
   "props": [],

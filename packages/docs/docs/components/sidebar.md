@@ -153,6 +153,18 @@
   </div>
 </DemoBlock>
 
+## 行首头像
+
+菜单项支持行首头像（`part="avatar"`）：`avatar` 为图片 URL，优先于首字母；无图时用 `avatarText` 渲染首字母圆，`avatarColor`（任意 CSS 色值）作为**淡底 + 色环**的着色源（文字恒用主题字色——宿主色任意直铺作文字底会出现低对比，故不那样做），明暗主题下对比度稳定。头像为装饰性节点（`aria-hidden`），可读名称仍由行 `label` 提供，读屏不会重复播报；折叠图标条态与移动抽屉态同样保留。
+
+<DemoBlock title="行首头像（首字母圆 / 图片）">
+  <div style="height: 330px; width: 100%">
+    <oas-sidebar items='[{"label":"张伟","value":"u1","group":"团队","avatarText":"张","avatarColor":"#e11d48"},{"label":"李娜","value":"u2","avatarText":"李","avatarColor":"#0ea5e9"},{"label":"王强","value":"u3","avatarText":"王","avatarColor":"#fef08a"},{"label":"产品组","value":"g1","group":"空间","avatar":"/favicon.svg"}]'></oas-sidebar>
+  </div>
+</DemoBlock>
+
+子元素声明式通道同样支持：`<oas-sidebar-item avatar="/favicon.svg">` 或 `avatar-text="张" avatar-color="#e11d48"`；属性与 `items` JSON 字段一一对应（`avatar` / `avatarText` / `avatarColor`）。
+
 ## 自定义图标与着色
 
 菜单项 `icon` 默认取 `@oas-ui/icons` 内置注册表图标名；应用级自定义图标走官方正路 `registerIcon(name, svg)`（`@oas-ui/ui` 导出）——**一处注册，`<oas-icon>` 与侧栏及未来其它消费方全部可见**（勿直接改内置图标数据；按需模式用内置名需 `import '@oas-ui/icons/register'` 一次），同名注册覆盖内置图标。
@@ -371,7 +383,7 @@
 | `drawer-open` | 移动端抽屉打开态（受控：设置即开、清除即收；断点回桌面自动移除） | `boolean` | — |
 | `expand-on-hover` | 折叠图标条悬停临时展开（纯视觉态，不改 collapsed 受控） | — | — |
 | `hide-toggle` | 隐藏底部折叠按钮（桌面端恒显示的内置折叠切换；存在即隐藏，宿主 opt-out，静态侧栏场景用） | `boolean` | — |
-| `items` | 菜单项 JSON `[{label, value, icon?, iconColor?, group?, badge?, children?, actions?}]`（支持分隔线条目 `{type:"divider"}`；children 嵌套子菜单） | `SidebarEntry[] \| string` | `[]` |
+| `items` | 菜单项 JSON `[{label, value, icon?, iconColor?, group?, badge?, avatar?, avatarText?, avatarColor?, children?, actions?}]`（支持分隔线条目 `{type:"divider"}`；children 嵌套子菜单；avatar 为图片 URL，优先于 avatarText + avatarColor 首字母圆） | `SidebarEntry[] \| string` | `[]` |
 | `loading` | 骨架屏加载态（存在即显示脉冲骨架；数值为骨架行数，默认 4） | `string` | `4` |
 | `mobile-breakpoint` | 移动端断点（px），窄于该值变覆盖式抽屉 | — | — |
 | `resizable` | 边缘拖拽调宽（存在即显示宿主边缘拖拽条；仅桌面非折叠态可用） | `boolean` | — |
@@ -403,6 +415,7 @@
 
 | CSS 变量 | 说明 | 默认值 |
 | --- | --- | --- |
+| `--oas-sidebar-avatar-color` | 行首头像着色源缺省值（淡底 + 色环）；item.avatarColor 逐项内联覆盖 | `var(--oas-color-primary)` |
 | `--oas-sidebar-badge-bg` | 徽标背景色 | `var(--oas-color-primary)` |
 | `--oas-sidebar-badge-color` | 徽标文字色 | `#fff` |
 | `--oas-sidebar-bg` | 侧栏背景；默认锚定基础 token（主题 / 暗色 / 品牌自动跟随），宿主覆盖即整体换色 | `var(--oas-color-bg-hover)` |
@@ -416,6 +429,9 @@
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
+| `avatar` | 行首头像图片 URL（装饰性，名称由 label 提供）；优先于 avatar-text / avatar-color | — | — |
+| `avatar-color` | 行首头像着色源（任意 CSS 色值）：作为淡底 + 色环；文字恒用主题字色，明暗主题下对比度稳定 | — | — |
+| `avatar-text` | 行首头像文字：无图时渲染首字母/缩写圆（着色源为 avatar-color，缺省主色） | — | — |
 | `badge` | 徽标计数（纯数字字符串转 number，其余保留 string；对齐 SidebarItem.badge 的 string\|number） | — | — |
 | `group` | 分组名（连续同组项在组首项前渲染组标题） | — | — |
 | `icon` | 前置图标（`@oas-ui/icons` 内置图标名；折叠图标条态显示） | — | — |

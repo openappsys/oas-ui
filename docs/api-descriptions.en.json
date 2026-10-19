@@ -2790,7 +2790,7 @@
   "oas-sidebar": {
     "attrs": {
       "collapsed": "Controlled collapse to an icon strip (present means collapsed)",
-      "items": "Menu items JSON `[{label, value, icon?, iconColor?, group?, badge?, children?, actions?}]` (supports divider entries `{type:\"divider\"}`; children for nested submenus)",
+      "items": "Menu items JSON `[{label, value, icon?, iconColor?, group?, badge?, avatar?, avatarText?, avatarColor?, children?, actions?}]` (divider entries `{type:\"divider\"}` supported; children nests submenus; avatar is an image URL taking precedence over an avatarText + avatarColor initials circle)",
       "mobile-breakpoint": "Mobile breakpoint (px); narrower than this becomes an overlay drawer",
       "width": "Expanded width; defaults to the `--oas-sidebar-width` token",
       "active": "Value of the currently-highlighted menu item (controlled: set/clear immediately re-renders highlight)",
@@ -2823,7 +2823,8 @@
       "--oas-sidebar-collapsed-width": "Collapsed icon-rail width",
       "--oas-sidebar-item-hover-bg": "Item hover background (defaults to a text-primary 6% mix)",
       "--oas-sidebar-badge-bg": "Badge background",
-      "--oas-sidebar-badge-color": "Badge text color"
+      "--oas-sidebar-badge-color": "Badge text color",
+      "--oas-sidebar-avatar-color": "Default tint for leading avatars (soft background + ring); per-item avatarColor overrides it inline"
     }
   },
   "oas-sidebar-divider": {
@@ -2839,7 +2840,10 @@
       "icon": "Leading icon (`@oas-ui/icons` registry icon name; shown in the collapsed icon strip)",
       "group": "Group name (consecutive items in the same group get a group title before the group's first item)",
       "badge": "Count badge (all-digit strings convert to `number`, otherwise stay `string`; matches `SidebarItem.badge`'s `string | number`)",
-      "icon-color": "Icon color: when set, fixes the icon color (replaces the built-in mono path's currentColor, taking precedence over disabled/active state colors); defaults to currentColor so the color follows states"
+      "icon-color": "Icon color: when set, fixes the icon color (replaces the built-in mono path's currentColor, taking precedence over disabled/active state colors); defaults to currentColor so the color follows states",
+      "avatar": "Leading avatar image URL (decorative; the name comes from label); takes precedence over avatar-text / avatar-color",
+      "avatar-text": "Leading avatar text: renders an initials circle when there is no image (tinted by avatar-color, primary by default)",
+      "avatar-color": "Leading avatar tint (any CSS color) used as a soft background + colored ring; the text always uses the theme text color, keeping contrast stable in both themes"
     },
     "events": {},
     "slots": {

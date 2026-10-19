@@ -144,6 +144,10 @@
     {
       "name": "--oas-sidebar-item-hover-bg",
       "default": "color-mix(in srgb, var(--oas-color-text-primary) 6%, transparent)"
+    },
+    {
+      "name": "--oas-sidebar-avatar-color",
+      "default": "var(--oas-color-primary)"
     }
   ],
   "unresolved": []

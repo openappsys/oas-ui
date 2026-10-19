@@ -153,6 +153,18 @@ Items support `badge` count badges (colors via `--oas-sidebar-badge-bg/-color` v
   </div>
 </DemoBlock>
 
+## Leading avatars
+
+Items support a leading avatar (`part="avatar"`): `avatar` is an image URL and takes precedence over initials; without an image, `avatarText` renders an initials circle and `avatarColor` (any CSS color) drives a **soft tint + colored ring** (the text always uses the theme text color — painting text directly on an arbitrary host color yields low contrast, so we deliberately don't), staying readable in both themes. The avatar is decorative (`aria-hidden`) — the accessible name still comes from the row `label`, so screen readers don't announce it twice; it is kept in the collapsed icon rail and the mobile drawer as well.
+
+<DemoBlock title="Leading avatars (initials / image)">
+  <div style="height: 330px; width: 100%">
+    <oas-sidebar items='[{"label":"Zhang Wei","value":"u1","group":"Team","avatarText":"Z","avatarColor":"#e11d48"},{"label":"Li Na","value":"u2","avatarText":"L","avatarColor":"#0ea5e9"},{"label":"Wang Qiang","value":"u3","avatarText":"W","avatarColor":"#fef08a"},{"label":"Product","value":"g1","group":"Spaces","avatar":"/favicon.svg"}]'></oas-sidebar>
+  </div>
+</DemoBlock>
+
+The declarative child channel works the same way: `<oas-sidebar-item avatar="/favicon.svg">` or `avatar-text="Z" avatar-color="#e11d48"`; attributes map one-to-one to the `items` JSON fields (`avatar` / `avatarText` / `avatarColor`).
+
 ## Custom icons and coloring
 
 Item `icon` defaults to the built-in `@oas-ui/icons` registry; app-level custom icons go through the official `registerIcon(name, svg)` path (exported by `@oas-ui/ui`) — **register once, and `<oas-icon>`, the sidebar and any future consumers all see it** (do not mutate the built-in icon data; on-demand mode using built-in names needs a one-time `import '@oas-ui/icons/register'`); a same-name registration overrides the built-in icon.
@@ -370,7 +382,7 @@ Besides the `items` JSON, items can be declared with `<oas-sidebar-item>` / `<oa
 | `drawer-open` | Mobile drawer open state (controlled: set opens, clear closes; auto-removed when breakpoint returns to desktop) | `boolean` | — |
 | `expand-on-hover` | Temporarily expand the collapsed icon strip on hover (visual only; does not change controlled collapsed) | — | — |
 | `hide-toggle` | Hide the bottom collapse button (a built-in toggle always visible on desktop; presence hides it — host opt-out for static sidebars) | `boolean` | — |
-| `items` | Menu items JSON `[{label, value, icon?, iconColor?, group?, badge?, children?, actions?}]` (supports divider entries `{type:"divider"}`; children for nested submenus) | `SidebarEntry[] \| string` | `[]` |
+| `items` | Menu items JSON `[{label, value, icon?, iconColor?, group?, badge?, avatar?, avatarText?, avatarColor?, children?, actions?}]` (divider entries `{type:"divider"}` supported; children nests submenus; avatar is an image URL taking precedence over an avatarText + avatarColor initials circle) | `SidebarEntry[] \| string` | `[]` |
 | `loading` | Skeleton loading state (shows a pulsing skeleton when present; value sets row count, default 4) | `string` | `4` |
 | `mobile-breakpoint` | Mobile breakpoint (px); narrower than this becomes an overlay drawer | — | — |
 | `resizable` | Edge drag-resize (shows a drag rail on the host edge; desktop non-collapsed only) | `boolean` | — |
@@ -402,6 +414,7 @@ Besides the `items` JSON, items can be declared with `<oas-sidebar-item>` / `<oa
 
 | CSS Variable | Description | Default |
 | --- | --- | --- |
+| `--oas-sidebar-avatar-color` | Default tint for leading avatars (soft background + ring); per-item avatarColor overrides it inline | `var(--oas-color-primary)` |
 | `--oas-sidebar-badge-bg` | Badge background | `var(--oas-color-primary)` |
 | `--oas-sidebar-badge-color` | Badge text color | `#fff` |
 | `--oas-sidebar-bg` | Sidebar background; defaults stay anchored to base tokens (theme / dark / brand flow through automatically), host override recolors the whole bar | `var(--oas-color-bg-hover)` |
@@ -415,6 +428,9 @@ Besides the `items` JSON, items can be declared with `<oas-sidebar-item>` / `<oa
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
+| `avatar` | Leading avatar image URL (decorative; the name comes from label); takes precedence over avatar-text / avatar-color | — | — |
+| `avatar-color` | Leading avatar tint (any CSS color) used as a soft background + colored ring; the text always uses the theme text color, keeping contrast stable in both themes | — | — |
+| `avatar-text` | Leading avatar text: renders an initials circle when there is no image (tinted by avatar-color, primary by default) | — | — |
 | `badge` | Count badge (all-digit strings convert to `number`, otherwise stay `string`; matches `SidebarItem.badge`'s `string \| number`) | — | — |
 | `group` | Group name (consecutive items in the same group get a group title before the group's first item) | — | — |
 | `icon` | Leading icon (`@oas-ui/icons` registry icon name; shown in the collapsed icon strip) | — | — |

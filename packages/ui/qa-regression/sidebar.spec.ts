@@ -291,3 +291,56 @@ test('sidebar flyout hover 链路：hover 父项打开，移入面板驻留不�
   }, target.value)
   expect(stillOpen, '指针已在面板内悬停时面板不应自动关闭（hover 链路不得断裂）').toBe(true)
 })
+
+// 行首头像：真实布局（18px 圆 / 行序 / 图片可见）+ RTL 自动镜像 + 装饰性不进无障碍树。
+test('sidebar 行首头像：首字母圆与图片真实渲染，RTL 镜像，装饰性节点不可见', async ({ page }) => {
+  await page.goto('/components/sidebar.html', { waitUntil: 'domcontentloaded' })
+  await page.waitForFunction(() => !!customElements.get('oas-sidebar'))
+  const r = await page.evaluate(async () => {
+    const el = document.createElement('oas-sidebar')
+    el.setAttribute(
+      'items',
+      JSON.stringify([
+        { label: '张伟', value: 'u1', avatarText: '张', avatarColor: '#e11d48' },
+        { label: '李娜', value: 'u2', avatarText: '李', avatarColor: '#fef08a' },
+        { label: '产品组', value: 'g1', avatar: '/favicon.svg' },
+        { label: '收件箱', value: 'inbox', icon: 'star' },
+      ]),
+    )
+    el.style.width = '240px'
+    document.body.appendChild(el)
+    const frame = () => new Promise((res) => requestAnimationFrame(() => requestAnimationFrame(() => res(null))))
+    await frame()
+    const row = (v: string) => el.shadowRoot!.querySelector<HTMLElement>(`[data-value="${v}"]`)!
+    const avatar = (v: string) => row(v).querySelector<HTMLElement>('[part="avatar"]')
+    const rect = (n: Element) => n.getBoundingClientRect()
+    const read = () => {
+      const img = avatar('g1')!.querySelector('img') as HTMLImageElement
+      return {
+        circle: { w: Math.round(rect(avatar('u1')!).width), h: Math.round(rect(avatar('u1')!).height) },
+        beforeLabel: rect(avatar('u1')!).left < rect(row('u1').querySelector('.label')!).left,
+        hidden: avatar('u1')!.getAttribute('aria-hidden'),
+        text: avatar('u1')!.textContent,
+        imgOk: img.complete && img.naturalWidth > 0,
+        noAvatar: avatar('inbox') === null,
+        textColorMatchesLabel:
+          getComputedStyle(avatar('u2')!).color === getComputedStyle(row('u2').querySelector('.label')!).color,
+      }
+    }
+    if (!(avatar('g1')!.querySelector('img') as HTMLImageElement).complete) await frame()
+    const ltr = read()
+    el.setAttribute('dir', 'rtl')
+    await frame()
+    const rtl = { beforeLabel: rect(avatar('u1')!).left > rect(row('u1').querySelector('.label')!).left }
+    el.remove()
+    return { ltr, rtl }
+  })
+  expect(r.ltr.circle, '头像为 18px 圆').toEqual({ w: 18, h: 18 })
+  expect(r.ltr.beforeLabel, '头像在 label 之前（行首）').toBe(true)
+  expect(r.ltr.hidden, '装饰性头像不进无障碍树').toBe('true')
+  expect(r.ltr.text).toBe('张')
+  expect(r.ltr.imgOk, '图片头像加载成功').toBe(true)
+  expect(r.ltr.noAvatar, '无头像项不渲染节点').toBe(true)
+  expect(r.ltr.textColorMatchesLabel, '首字母色与行文字一致（主题 token，不随宿主色翻转）').toBe(true)
+  expect(r.rtl.beforeLabel, 'RTL 下头像镜像到行首（右侧）').toBe(true)
+})

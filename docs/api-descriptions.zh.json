@@ -2790,7 +2790,7 @@
   "oas-sidebar": {
     "attrs": {
       "collapsed": "受控折叠，收窄为图标条（存在即折叠）",
-      "items": "菜单项 JSON `[{label, value, icon?, iconColor?, group?, badge?, children?, actions?}]`（支持分隔线条目 `{type:\"divider\"}`；children 嵌套子菜单）",
+      "items": "菜单项 JSON `[{label, value, icon?, iconColor?, group?, badge?, avatar?, avatarText?, avatarColor?, children?, actions?}]`（支持分隔线条目 `{type:\"divider\"}`；children 嵌套子菜单；avatar 为图片 URL，优先于 avatarText + avatarColor 首字母圆）",
       "mobile-breakpoint": "移动端断点（px），窄于该值变覆盖式抽屉",
       "width": "展开宽度，默认走 `--oas-sidebar-width` token",
       "active": "当前高亮菜单项 value（受控：外部设置/清除立即高亮迁移，重绘）",
@@ -2823,7 +2823,8 @@
       "--oas-sidebar-collapsed-width": "折叠图标条宽度",
       "--oas-sidebar-item-hover-bg": "项悬停背景（默认 text-primary 6% 混合）",
       "--oas-sidebar-badge-bg": "徽标背景色",
-      "--oas-sidebar-badge-color": "徽标文字色"
+      "--oas-sidebar-badge-color": "徽标文字色",
+      "--oas-sidebar-avatar-color": "行首头像着色源缺省值（淡底 + 色环）；item.avatarColor 逐项内联覆盖"
     }
   },
   "oas-sidebar-divider": {
@@ -2839,7 +2840,10 @@
       "icon": "前置图标（`@oas-ui/icons` 内置图标名；折叠图标条态显示）",
       "group": "分组名（连续同组项在组首项前渲染组标题）",
       "badge": "徽标计数（纯数字字符串转 number，其余保留 string；对齐 SidebarItem.badge 的 string|number）",
-      "icon-color": "前置图标颜色：显式时固定该色（替换内置单色 path 的 currentColor，优先于禁用/激活态默认色）；缺省 currentColor 随态着色"
+      "icon-color": "前置图标颜色：显式时固定该色（替换内置单色 path 的 currentColor，优先于禁用/激活态默认色）；缺省 currentColor 随态着色",
+      "avatar": "行首头像图片 URL（装饰性，名称由 label 提供）；优先于 avatar-text / avatar-color",
+      "avatar-text": "行首头像文字：无图时渲染首字母/缩写圆（着色源为 avatar-color，缺省主色）",
+      "avatar-color": "行首头像着色源（任意 CSS 色值）：作为淡底 + 色环；文字恒用主题字色，明暗主题下对比度稳定"
     },
     "events": {},
     "slots": {

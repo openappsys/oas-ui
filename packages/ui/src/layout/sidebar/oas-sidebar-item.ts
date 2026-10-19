@@ -15,7 +15,7 @@ const ITEM_STYLE = `
  * 侧栏菜单项（子元素声明式通道）。
  *
  * 纯数据载体：默认插槽文本为 label，属性对齐 SidebarItem 字段
- * （value/icon/group/badge）。badge 字符串直传，纯数字字符串（`/^\d+$/`）
+ * （value/icon/group/badge/avatar/avatar-text/avatar-color）。badge 字符串直传，纯数字字符串（`/^\d+$/`）
  * 由宿主解析时转 number，对齐 SidebarItem.badge 的 string|number。
  * 直接子元素 <oas-sidebar-item>（及 <oas-sidebar-divider>）递归为嵌套 children
  * （children 内分隔线仅本子元素通道支持；items JSON 通道的 children 会被过滤掉分隔线条目）。
@@ -24,7 +24,7 @@ const ITEM_STYLE = `
  */
 export class OASSidebarItem extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['value', 'icon', 'icon-color', 'group', 'badge']
+    return ['value', 'icon', 'icon-color', 'group', 'badge', 'avatar', 'avatar-text', 'avatar-color']
   }
 
   protected override render(): void {

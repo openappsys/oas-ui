@@ -550,6 +550,62 @@ describe('OASSidebar 能力补齐批（嵌套/徽标/操作/分隔线/骨架/快
     expect(badge.classList.contains('item-badge')).toBe(true)
   })
 
+  it('行首头像：items JSON 的首字母圆（avatarText + avatarColor）渲染在图标之前、装饰性不进无障碍树', () => {
+    stubMatchMedia(false)
+    const el = mount({
+      items:
+        '[{"label":"张伟","value":"u1","avatarText":"张","avatarColor":"#e11d48"},{"label":"收件箱","value":"inbox","icon":"star"}]',
+    })
+    const row = el.shadowRoot!.querySelector<HTMLElement>('[data-value="u1"]')!
+    const av = row.querySelector<HTMLElement>('[part="avatar"]')!
+    expect(av, '头像节点存在').not.toBeNull()
+    expect(av.textContent).toBe('张')
+    expect(av.classList.contains('item-avatar')).toBe(true)
+    expect(av.getAttribute('aria-hidden')).toBe('true')
+    expect(av.style.getPropertyValue('--oas-sidebar-avatar-color')).toBe('#e11d48')
+    // 文字色走主题 token（不按任意宿主色直铺，避免亮蓝上白字这类低对比）
+    expect(av.style.color).toBe('')
+    // 行序：头像在图标/文字之前（行首）
+    const kids = [...row.children]
+    expect(kids.indexOf(av)).toBeLessThan(kids.findIndex((k) => k.classList.contains('label')))
+    // 无头像的项不渲染节点、不占位
+    const plain = el.shadowRoot!.querySelector<HTMLElement>('[data-value="inbox"]')!
+    expect(plain.querySelector('[part="avatar"]')).toBeNull()
+  })
+
+  it('行首头像：avatar 图片优先于首字母，alt 置空（名称由行 aria-label 提供）', () => {
+    stubMatchMedia(false)
+    const el = mount({
+      items:
+        '[{"label":"张伟","value":"u1","avatar":"https://example.com/a.png","avatarText":"张","avatarColor":"#0ea5e9"}]',
+    })
+    const av = el.shadowRoot!.querySelector<HTMLElement>('[data-value="u1"] [part="avatar"]')!
+    const img = av.querySelector('img')!
+    expect(img.getAttribute('src')).toBe('https://example.com/a.png')
+    expect(img.getAttribute('alt')).toBe('')
+    expect(img.classList.contains('item-avatar-img')).toBe(true)
+    expect(av.textContent, '有图时不再渲染首字母').toBe('')
+    // 抗注入：URL 走 property 赋值，不拼 HTML
+    expect(el.shadowRoot!.querySelector('[data-value="u1"] [onerror]')).toBeNull()
+  })
+
+  it('行首头像：子元素属性通道（avatar-text / avatar-color / avatar）映射到内部模型', () => {
+    stubMatchMedia(false)
+    const el = mountSidebarChildren(`
+      <oas-sidebar-item value="u1" avatar-text="李" avatar-color="#fef08a">李娜</oas-sidebar-item>
+      <oas-sidebar-item value="u2" avatar="https://example.com/b.png">王强</oas-sidebar-item>
+    `)
+    const model = (el as unknown as { _items: Array<{ avatar?: string; avatarText?: string; avatarColor?: string }> })
+      ._items
+    expect(model[0]!.avatarText).toBe('李')
+    expect(model[0]!.avatarColor).toBe('#fef08a')
+    expect(model[1]!.avatar).toBe('https://example.com/b.png')
+    const av = el.shadowRoot!.querySelector<HTMLElement>('[data-value="u1"] [part="avatar"]')!
+    expect(av.textContent).toBe('李')
+    expect(av.style.getPropertyValue('--oas-sidebar-avatar-color')).toBe('#fef08a')
+    expect(el.shadowRoot!.querySelector('[data-value="u2"] [part="avatar"] img')).not.toBeNull()
+  })
+
   it('折叠态嵌套父项点击打开子菜单 flyout（父项不是页面，不再派发父项 select；子项可点击派发 select）', () => {
     stubMatchMedia(false)
     const el = mount({
