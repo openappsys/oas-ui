@@ -5,6 +5,24 @@
 
 ---
 
+## 未发布：date-picker 范围手输 + sidebar 行内容渲染 🚧
+
+### 功能定义
+
+补齐两个已有组件的实际使用缺口：日期范围可直接键入，侧栏菜单行可承载双行等富内容；均为增量能力，不新增组件、不改变既有 value/attribute 契约。
+
+### 详细需求
+
+- **`oas-date-picker` 范围手输**：`daterange` / `datetimerange` / `monthrange` / `yearrange` 触发器开放键入，按 `separator`（默认 `~`）拆分起止；`datetimerange` 只键入日期时按 `default-time` 补齐；起止倒置、越界、禁用日期、非法输入回退当前值且不提交。`multiple` 保持只读回显。
+- **`oas-sidebar` 行内容**：新增 `renderLabel` property 函数通道 `(item) => Node | string | null`；Node 直接挂载到 label 区，字符串按纯文本渲染，null/undefined 回退 `item.label`。函数不写 attribute/不参与 SSR；可访问名称仍取 `item.label`，折叠态随文字区隐藏；行内交互统一走 `actions`。
+
+### 验收标准
+
+- 单测覆盖：范围四种类型的合法/倒置/越界/自定义 separator/default-time；sidebar 的 Node/字符串/null/先于连接赋值/aria-label。
+- e2e 覆盖真实键入与 demo 富内容渲染；a11y（light/dark）无新增严重违规；`pnpm test` / `typecheck` / `build` / `api:check` / `stats:check` / `llms:check` 全绿。
+
+---
+
 ## v0.1.0 工程骨架 ✅ 起点
 
 ### 功能定义

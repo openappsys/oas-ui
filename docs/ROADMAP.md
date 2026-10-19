@@ -2,6 +2,13 @@
 
 版本遵循 SemVer。v1.0.0 为首个正式发布。每个版本 = 一个可独立交付/可试用的里程碑。
 
+## 未发布
+
+| 范围 | 内容 | 状态 |
+| --- | --- | --- |
+| **date-picker 范围手输** | `daterange` / `datetimerange` / `monthrange` / `yearrange` 触发器开放键入，按 `separator` 拆分起止；倒置/越界/非法回退；与面板提交共用 value 契约 | 🚧 待发布 |
+| **sidebar 行内容** | `renderLabel` property 函数通道，Node/字符串/null 三态，富内容不反射 attribute/SSR | 🚧 待发布 |
+
 ## 版本规划
 
 | 版本        | 内容                                                                                                                                                                                                                                                       | 状态      |
