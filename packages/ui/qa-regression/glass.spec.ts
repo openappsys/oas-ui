@@ -28,10 +28,16 @@ function parseRgba(s: string): [number, number, number, number] | null {
 /** 归一化任意计算色值 → [r,g,b,a]（0-255）：hex / color(srgb r g b [/ a]) / rgb(a)。
  *  color-mix 计算值经浏览器序列化为 `color(srgb …)`，只匹配 `rgba?()` 会静默漏采（假绿）。 */
 function parseSrgb(s: string): [number, number, number, number] | null {
-  const hex = s.match(/^#([0-9a-f]{6})$/i)
+  // Lightning CSS 可能把半透明色压缩为 #rgba / #rrggbbaa；必须保留 alpha 归一化。
+  const hex = s.match(/^#([0-9a-f]{3,4}|[0-9a-f]{6}|[0-9a-f]{8})$/i)
   if (hex) {
-    const n = parseInt(hex[1]!, 16)
-    return [(n >> 16) & 255, (n >> 8) & 255, n & 255, 1]
+    const h = hex[1]!
+    const expand = (x: string): number => parseInt(x.length === 1 ? x + x : x, 16)
+    if (h.length <= 4) {
+      return [expand(h[0]!), expand(h[1]!), expand(h[2]!), h[3] ? expand(h[3]) / 255 : 1]
+    }
+    const n = parseInt(h.slice(0, 6), 16)
+    return [(n >> 16) & 255, (n >> 8) & 255, n & 255, h.length === 8 ? parseInt(h.slice(6), 16) / 255 : 1]
   }
   const cs = s.match(/color\(srgb\s+([\d.]+)\s+([\d.]+)\s+([\d.]+)(?:\s*\/\s*([\d.]+))?\)/)
   if (cs) return [Number(cs[1]) * 255, Number(cs[2]) * 255, Number(cs[3]) * 255, cs[4] != null ? Number(cs[4]) : 1]
@@ -583,22 +589,42 @@ test.describe('玻璃材质与动态高光（跨浏览器一致）', () => {
       await page.waitForTimeout(600)
       const r = await page.evaluate(
         async (cases: string[]) => {
+          // 用 Canvas 把任意 CSS 计算色（rgb/color(srgb)/oklab/oklch/color-mix 结果）归一到 sRGB；
+          // Vite/Lightning CSS 会改变主题色的序列化形式，正则白名单会漏采。
+          const canvas = document.createElement('canvas')
+          canvas.width = 1
+          canvas.height = 1
+          const ctx = canvas.getContext('2d')!
+          const probe = document.createElement('span')
           const parse = (s: string): [number, number, number, number] | null => {
-            const hex = s.match(/^#([0-9a-f]{6})$/i)
-            if (hex) {
-              const n = parseInt(hex[1]!, 16)
-              return [(n >> 16) & 255, (n >> 8) & 255, n & 255, 1]
+            if (!s) return null
+            // 自定义属性可能是原始 color-mix()/var()；通过自定义属性再赋给 color，
+            // 让浏览器完成计算，再交给 Canvas 归一化。
+            probe.style.color = 'rgba(1, 2, 3, 0.5)'
+            probe.style.setProperty('--oas-probe-color', s)
+            probe.style.color = 'var(--oas-probe-color)'
+            document.body.appendChild(probe)
+            const resolved = getComputedStyle(probe).color
+            probe.remove()
+            if (!resolved || resolved === 'rgba(1, 2, 3, 0.5)') {
+              // 探针不接受的自定义属性值（例如部分 #rrggbbaa 序列化）直接按 hex8 归一化。
+              const hex8 = s.match(/^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i)
+              if (hex8)
+                return [
+                  parseInt(hex8[1]!, 16),
+                  parseInt(hex8[2]!, 16),
+                  parseInt(hex8[3]!, 16),
+                  parseInt(hex8[4]!, 16) / 255,
+                ]
+              return null
             }
-            const cs = s.match(/color\(srgb\s+([\d.]+)\s+([\d.]+)\s+([\d.]+)(?:\s*\/\s*([\d.]+))?\)/)
-            if (cs)
-              return [Number(cs[1]) * 255, Number(cs[2]) * 255, Number(cs[3]) * 255, cs[4] != null ? Number(cs[4]) : 1]
-            const m = s.match(/rgba?\(([^)]+)\)/)
-            if (!m) return null
-            const p = m[1]!
-              .split(/[,\s/]+/)
-              .filter(Boolean)
-              .map(Number)
-            return [p[0]!, p[1]!, p[2]!, p.length > 3 ? p[3]! : 1]
+            ctx.clearRect(0, 0, 1, 1)
+            ctx.fillStyle = 'rgba(1, 2, 3, 0.5)'
+            ctx.fillStyle = resolved
+            ctx.fillRect(0, 0, 1, 1)
+            const [r, g, b, a] = ctx.getImageData(0, 0, 1, 1).data
+            if (r === 1 && g === 2 && b === 3 && a === 128) return null
+            return [r!, g!, b!, a! / 255]
           }
           const out: Array<{ tag: string; fg: number[]; bg: number[]; sheen: number[]; sheenPress: number[] }> = []
           for (const tag of cases) {
@@ -631,7 +657,10 @@ test.describe('玻璃材质与动态高光（跨浏览器一致）', () => {
               const sheenPress = parse(
                 getComputedStyle(host).getPropertyValue('--oas-glass-sheen-press').trim() || 'rgba(255,255,255,0)',
               )
-              if (!rgb || !bg || !sheen || !sheenPress) throw new Error(`无法归一化 ${tag} 的计算色值（禁止静默漏采）`)
+              if (!rgb || !bg || !sheen || !sheenPress)
+                throw new Error(
+                  `无法归一化 ${tag} 的计算色值（禁止静默漏采）：fg=${JSON.stringify(cs.color)} bg=${JSON.stringify(cs.backgroundColor)} sheen=${JSON.stringify(getComputedStyle(host).getPropertyValue('--oas-glass-sheen'))} press=${JSON.stringify(getComputedStyle(host).getPropertyValue('--oas-glass-sheen-press'))}`,
+                )
               out.push({ tag, fg: rgb, bg, sheen, sheenPress })
             }
             host.remove()
@@ -728,7 +757,7 @@ test.describe('玻璃材质与动态高光（跨浏览器一致）', () => {
         const sh = parseSrgb(s.sheen || 'rgba(255,255,255,0)')
         expect(fg, `${theme}/${s.t} 文字色无法归一化（color-mix？）`).not.toBeNull()
         expect(bg, `${theme}/${s.t} 底色无法归一化（color-mix？）`).not.toBeNull()
-        expect(sh, `${theme}/${s.t} sheen 无法归一化`).not.toBeNull()
+        expect(sh, `${theme}/${s.t} sheen 无法归一化 raw=${JSON.stringify(s.sheen)}`).not.toBeNull()
         expect(sh![3], `${theme}/${s.t} sheen 必须有 alpha（为 0 则 hover 断言空转）`).toBeGreaterThan(0)
         const fgRgb: [number, number, number] = [fg![0], fg![1], fg![2]]
         const bgRgb: [number, number, number] = [bg![0], bg![1], bg![2]]

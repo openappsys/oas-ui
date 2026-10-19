@@ -252,10 +252,18 @@ test('scheduler 虚拟化：资源行/时间轴窗口量界 + 滚动覆盖 + 拖
     const track = host.shadowRoot!.querySelector('.col .track') as HTMLElement
     const t = track.getBoundingClientRect()
     const v = tv.getBoundingClientRect()
+    // 文档站顶栏是 fixed 覆盖层；1440×720 等较矮视口滚到底时宿主顶部会落到顶栏下方，
+    // 拖拽起点必须再让开顶栏底边，否则物理鼠标实际命中 NAV（组件收不到 pointerdown）。
+    const headerBottom = Math.max(
+      document.querySelector('.VPNav')?.getBoundingClientRect().bottom ?? 0,
+      document.querySelector('.VPNavBar')?.getBoundingClientRect().bottom ?? 0,
+      // 顶栏菜单盒比 header 更高（向下溢出 16px），也要纳入命中禁区。
+      document.querySelector('.VPNavMenu')?.getBoundingClientRect().bottom ?? 0,
+    )
     return {
       x: t.left,
       w: t.width,
-      top: Math.max(t.top, v.top, 0),
+      top: Math.max(t.top, v.top, headerBottom, 0),
       bottom: Math.min(t.bottom, v.bottom, window.innerHeight),
     }
   })

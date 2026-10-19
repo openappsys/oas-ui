@@ -1,13 +1,13 @@
 {
   "note": "感知对比度 ratchet 基线（只许降不许升）：逐页记录 <30/<45/<60 档节点数、axe 比值违规数、禁用态豁免数（exempt）与无法评分数（skipped，非纯色 fg/bg）；未登记的页必须为零。更新方式见 a11y.spec.ts 顶部说明。",
   "totals": {
-    "sampled": 31672,
+    "sampled": 32594,
     "below30": 0,
     "below45": 0,
     "below60": 0,
-    "ratio": 266,
+    "ratio": 260,
     "exempt": 630,
-    "skipped": 3008
+    "skipped": 3180
   },
   "topPairs": [],
   "pages": {
@@ -57,7 +57,7 @@
       "below60": 0,
       "ratio": 1,
       "exempt": 0,
-      "skipped": 20
+      "skipped": 25
     },
     "anchor.html::dark": {
       "below30": 0,
@@ -65,7 +65,7 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 20
+      "skipped": 25
     },
     "app-bar.html": {
       "below30": 0,
@@ -113,7 +113,7 @@
       "below60": 0,
       "ratio": 3,
       "exempt": 0,
-      "skipped": 28
+      "skipped": 30
     },
     "badge.html::dark": {
       "below30": 0,
@@ -121,7 +121,7 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 28
+      "skipped": 30
     },
     "barcode.html": {
       "below30": 0,
@@ -201,7 +201,7 @@
       "below60": 0,
       "ratio": 1,
       "exempt": 0,
-      "skipped": 4
+      "skipped": 2
     },
     "card.html::dark": {
       "below30": 0,
@@ -209,7 +209,7 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 4
+      "skipped": 2
     },
     "carousel.html": {
       "below30": 0,
@@ -265,7 +265,7 @@
       "below60": 0,
       "ratio": 1,
       "exempt": 1,
-      "skipped": 0
+      "skipped": 2
     },
     "checkbox.html::dark": {
       "below30": 0,
@@ -273,7 +273,7 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 1,
-      "skipped": 0
+      "skipped": 2
     },
     "code.html": {
       "below30": 0,
@@ -441,7 +441,7 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 19
+      "skipped": 20
     },
     "editable.html::dark": {
       "below30": 0,
@@ -449,7 +449,7 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 19
+      "skipped": 20
     },
     "empty.html": {
       "below30": 0,
@@ -481,15 +481,7 @@
       "below60": 0,
       "ratio": 4,
       "exempt": 0,
-      "skipped": 5
-    },
-    "flex.html::dark": {
-      "below30": 0,
-      "below45": 0,
-      "below60": 0,
-      "ratio": 0,
-      "exempt": 0,
-      "skipped": 5
+      "skipped": 0
     },
     "float-button.html": {
       "below30": 0,
@@ -529,7 +521,7 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 10
+      "skipped": 11
     },
     "gantt.html::dark": {
       "below30": 0,
@@ -537,7 +529,7 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 10
+      "skipped": 11
     },
     "gradient-text.html": {
       "below30": 0,
@@ -609,7 +601,7 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 3
+      "skipped": 2
     },
     "kanban.html::dark": {
       "below30": 0,
@@ -617,7 +609,7 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 3
+      "skipped": 2
     },
     "kbd.html": {
       "below30": 0,
@@ -639,7 +631,7 @@
       "below30": 0,
       "below45": 0,
       "below60": 0,
-      "ratio": 1,
+      "ratio": 0,
       "exempt": 1,
       "skipped": 0
     },
@@ -657,7 +649,7 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 16
+      "skipped": 15
     },
     "layout.html::dark": {
       "below30": 0,
@@ -665,15 +657,7 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 16
-    },
-    "link.html": {
-      "below30": 0,
-      "below45": 0,
-      "below60": 0,
-      "ratio": 2,
-      "exempt": 0,
-      "skipped": 0
+      "skipped": 15
     },
     "list.html": {
       "below30": 0,
@@ -695,7 +679,7 @@
       "below30": 0,
       "below45": 0,
       "below60": 0,
-      "ratio": 6,
+      "ratio": 4,
       "exempt": 0,
       "skipped": 179
     },
@@ -745,7 +729,7 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 12
+      "skipped": 48
     },
     "message-scroller.html::dark": {
       "below30": 0,
@@ -753,7 +737,7 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 12
+      "skipped": 48
     },
     "message.html": {
       "below30": 0,
@@ -839,7 +823,7 @@
       "below30": 0,
       "below45": 0,
       "below60": 0,
-      "ratio": 6,
+      "ratio": 3,
       "exempt": 0,
       "skipped": 0
     },
@@ -923,6 +907,22 @@
       "exempt": 0,
       "skipped": 21
     },
+    "radio.html": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": 3
+    },
+    "radio.html::dark": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": 3
+    },
     "rate.html": {
       "below30": 0,
       "below45": 0,
@@ -939,29 +939,13 @@
       "exempt": 0,
       "skipped": 12
     },
-    "result.html": {
-      "below30": 0,
-      "below45": 0,
-      "below60": 0,
-      "ratio": 0,
-      "exempt": 0,
-      "skipped": 1
-    },
-    "result.html::dark": {
-      "below30": 0,
-      "below45": 0,
-      "below60": 0,
-      "ratio": 0,
-      "exempt": 0,
-      "skipped": 1
-    },
     "scheduler.html": {
       "below30": 0,
       "below45": 0,
       "below60": 0,
       "ratio": 0,
       "exempt": 77,
-      "skipped": 5
+      "skipped": 7
     },
     "scheduler.html::dark": {
       "below30": 0,
@@ -969,7 +953,7 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 77,
-      "skipped": 5
+      "skipped": 7
     },
     "scroll-area.html": {
       "below30": 0,
@@ -977,7 +961,7 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 24
+      "skipped": 17
     },
     "scroll-area.html::dark": {
       "below30": 0,
@@ -985,7 +969,7 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 24
+      "skipped": 17
     },
     "select.html": {
       "below30": 0,
@@ -1009,7 +993,7 @@
       "below60": 0,
       "ratio": 7,
       "exempt": 0,
-      "skipped": 5
+      "skipped": 2
     },
     "sidebar.html::dark": {
       "below30": 0,
@@ -1017,7 +1001,7 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 5
+      "skipped": 2
     },
     "slider.html": {
       "below30": 0,
@@ -1041,7 +1025,7 @@
       "below60": 0,
       "ratio": 2,
       "exempt": 0,
-      "skipped": 3
+      "skipped": 1
     },
     "space.html::dark": {
       "below30": 0,
@@ -1049,7 +1033,7 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 3
+      "skipped": 1
     },
     "spin.html": {
       "below30": 0,
@@ -1071,7 +1055,7 @@
       "below30": 0,
       "below45": 0,
       "below60": 0,
-      "ratio": 3,
+      "ratio": 1,
       "exempt": 0,
       "skipped": 0
     },
@@ -1097,7 +1081,7 @@
       "below60": 0,
       "ratio": 12,
       "exempt": 5,
-      "skipped": 75
+      "skipped": 81
     },
     "steps.html::dark": {
       "below30": 0,
@@ -1105,7 +1089,7 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 5,
-      "skipped": 75
+      "skipped": 81
     },
     "swipe-cell.html": {
       "below30": 0,
@@ -1113,7 +1097,7 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 8
+      "skipped": 10
     },
     "swipe-cell.html::dark": {
       "below30": 0,
@@ -1121,7 +1105,7 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 8
+      "skipped": 10
     },
     "table.html": {
       "below30": 0,
@@ -1161,7 +1145,7 @@
       "below60": 0,
       "ratio": 31,
       "exempt": 0,
-      "skipped": 2
+      "skipped": 1
     },
     "tag.html::dark": {
       "below30": 0,
@@ -1169,7 +1153,7 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 2
+      "skipped": 1
     },
     "timeline.html": {
       "below30": 0,
@@ -1193,7 +1177,7 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 6
+      "skipped": 8
     },
     "titlebar.html::dark": {
       "below30": 0,
@@ -1201,7 +1185,7 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 6
+      "skipped": 8
     },
     "toast.html": {
       "below30": 0,
@@ -1233,15 +1217,7 @@
       "below60": 0,
       "ratio": 1,
       "exempt": 0,
-      "skipped": 3
-    },
-    "tooltip.html::dark": {
-      "below30": 0,
-      "below45": 0,
-      "below60": 0,
-      "ratio": 0,
-      "exempt": 0,
-      "skipped": 3
+      "skipped": 0
     },
     "transfer.html": {
       "below30": 0,
@@ -1329,7 +1305,7 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 40
+      "skipped": 42
     },
     "virtual-list.html::dark": {
       "below30": 0,
@@ -1337,7 +1313,7 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 40
+      "skipped": 42
     },
     "watermark.html": {
       "below30": 0,

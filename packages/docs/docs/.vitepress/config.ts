@@ -24,6 +24,45 @@ const EN_PREFIX = 'en/'
 const CLEAN_URLS = true
 
 /**
+ * VitePress 2 默认主题引入 Tailwind Preflight。其通用 `*` 规则会把
+ * margin/padding/border 归零，并作用到自定义元素宿主，覆盖组件 shadow 内
+ * `:host` 的容器内边距、卡片边框等。这里只移除这条通用 reset，保留其余
+ * Preflight（字体、表单等）与 `[hidden]` 规则；docs 自身需要的 body/h1
+ * 复位在 `theme/style.css` 用原生元素选择器补齐，不会波及 oas-* 宿主。
+ *
+ * 若未来 VitePress 改变 base.css 结构，transform 会抛错而不是静默失效。
+ */
+function stripPreflightHostReset(): {
+  name: string
+  enforce: 'pre'
+  transform: (code: string, id: string) => string | undefined
+} {
+  return {
+    name: 'oas-strip-preflight-host-reset',
+    enforce: 'pre',
+    transform(code, id) {
+      if (!id.includes('/vitepress/dist/client/theme-default/styles/base.css')) return undefined
+      const start = code.indexOf('/* #region Tailwind Preflight */')
+      const end = code.indexOf('/* #endregion */', start)
+      if (start < 0 || end < 0) {
+        throw new Error('[oas] VitePress base.css 缺少 Tailwind Preflight 标记，无法保护自定义元素宿主；请复核升级')
+      }
+      const region = code.slice(start, end)
+      const stripped = region.replace(
+        /(\*,[\s\S]*?\{[\s\S]*?)\r?\n\s*margin:\s*0;\r?\n\s*padding:\s*0;\r?\n\s*border:\s*0 solid;/,
+        '$1',
+      )
+      if (stripped === region) {
+        throw new Error(
+          '[oas] VitePress Preflight 通用 reset 结构变化，无法移除宿主 margin/padding/border；请复核 base.css',
+        )
+      }
+      return code.slice(0, start) + stripped + code.slice(end)
+    },
+  }
+}
+
+/**
  * 由页面源文件相对路径推导站点 URL，规则与 VitePress 内置 sitemap 一致（cleanUrls 时去 `.html`）：
  * 文件页 `foo.md` → `/foo`；目录页 `foo/index.md` → `/foo/`（保留斜杠）；根 `index.md` → `/`。
  */
@@ -417,6 +456,7 @@ gtag('config', 'G-RXS142HBXF');`,
     },
   },
   vite: {
+    plugins: [stripPreflightHostReset()],
     server: {
       port: 5175,
       strictPort: true, // 固定 5175，端口被占时直接报错而不是自增到 5176/5177

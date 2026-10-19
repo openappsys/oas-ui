@@ -73,8 +73,8 @@ const STYLE = `
   z-index: calc(var(--oas-z-index-base, 0) + var(--oas-z-modal, 1300) + 1);
   background: var(--oas-color-bg);
   /* 磨砂玻璃接线（容器级 surface）：变量缺省时零影响 */
-  backdrop-filter: var(--oas-glass-blur, none);
   -webkit-backdrop-filter: var(--oas-glass-blur, none);
+  backdrop-filter: var(--oas-glass-blur, none);
   outline: 1px solid var(--oas-glass-ring, transparent);
   outline-offset: -1px;
   border-radius: var(--oas-radius-lg) var(--oas-radius-lg) 0 0;

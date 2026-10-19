@@ -234,10 +234,11 @@ test.describe('官网首页（重设计版）', () => {
   test('SPA 路由切换 GA page_view 补发（onAfterRouteChanged 回归）', async ({ page }) => {
     await page.goto('/', { waitUntil: 'domcontentloaded' })
     await page.waitForFunction(() => Array.isArray(window.dataLayer))
-    // 点击 hero 主 CTA（oas-click 事件 → 跳转快速开始）
-    const cta = page.locator('.home-hero oas-button').first()
-    await cta.waitFor({ state: 'attached' })
-    await cta.locator('[part="button"]').click()
+    // 点击站点内真实链接，走 VitePress Router 的 SPA 切换（hero CTA 用 window.location
+    // 整页跳转，不经过 Router；用链接才能验证 onAfterRouteChange 的 page_view 补发）
+    const link = page.locator('.home-footer a[href="/guide/getting-started"]').first()
+    await link.waitFor({ state: 'attached' })
+    await link.click()
     await page.waitForURL(/guide\/getting-started/)
     await expect
       .poll(async () =>

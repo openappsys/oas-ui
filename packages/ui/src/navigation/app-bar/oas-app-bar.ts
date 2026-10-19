@@ -28,8 +28,8 @@ const STYLE = `
   color: var(--oas-color-text-primary);
   background: var(--oas-color-bg-elevated);
   /* 磨砂玻璃接线（栏体 surface，玻璃栏为合法形态）：变量缺省时零影响 */
-  backdrop-filter: var(--oas-glass-blur, none);
   -webkit-backdrop-filter: var(--oas-glass-blur, none);
+  backdrop-filter: var(--oas-glass-blur, none);
   outline: 1px solid var(--oas-glass-ring, transparent);
   outline-offset: -1px;
   box-sizing: border-box;

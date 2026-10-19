@@ -83,8 +83,8 @@ onBeforeUnmount(() => {
 .gg-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: var(--oas-space-4) }
 .gg-card {
   background: var(--oas-color-bg-elevated);
-  backdrop-filter: var(--oas-glass-blur, none);
   -webkit-backdrop-filter: var(--oas-glass-blur, none);
+  backdrop-filter: var(--oas-glass-blur, none);
   outline: 1px solid var(--oas-glass-ring, transparent);
   outline-offset: -1px;
   border-radius: var(--oas-radius-lg);

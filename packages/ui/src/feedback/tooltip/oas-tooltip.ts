@@ -30,8 +30,8 @@ const STYLE = `
   background: var(--oas-tooltip-bg, var(--oas-color-text-primary));
   color: var(--oas-tooltip-color, var(--oas-color-bg));
   /* 磨砂玻璃接线（容器级 surface）：变量缺省时零影响 */
-  backdrop-filter: var(--oas-glass-blur, none);
   -webkit-backdrop-filter: var(--oas-glass-blur, none);
+  backdrop-filter: var(--oas-glass-blur, none);
   outline: 1px solid var(--oas-glass-ring, transparent);
   outline-offset: -1px;
   font-size: var(--oas-font-size-sm);
@@ -1179,21 +1179,44 @@ export class OAStooltip extends OASElement {
   }
 
   /**
-   * 浮层自身尺寸测量：优先 offsetWidth/offsetHeight（布局尺寸，不含 transform）。
+   * 浮层自身布局尺寸测量（不含 transform）。
    * tip-enter 进场动画的 scale(0.9) 会污染 getBoundingClientRect（打开瞬间的首帧测量
    * 拿到缩小 ~10% 的宽高），导致居中/间距/翻转判定按错误尺寸计算，且不同触发路径
    * （hover 即时打开 vs focus 稍后重定位）测量时机不同会造成落点分歧。
-   * offset* 为 0 时（无布局引擎的测试环境 / display:none）回落 getBoundingClientRect。
+   * 这里用 rect 尺寸 / 当前 transform scale；offsetWidth/offsetHeight 会四舍五入到整数，
+   * 13px 字号下 27.5px 内容高会被当成 28px，placement=top 实际间距多出 0.5px。
+   * rect 为 0 时（无布局引擎的测试环境 / display:none）回落 offset*。
    */
   private popupRect(): DOMRect {
-    const rect = this.tipEl!.getBoundingClientRect()
+    const el = this.tipEl!
+    const rect = el.getBoundingClientRect()
+    const transform = getComputedStyle(el).transform
+    let scale = 1
+    if (transform && transform !== 'none') {
+      // 浏览器动画期间是 matrix(...)；无布局引擎的测试环境可能序列化为 scale(...)。
+      const matrix = /^matrix\(([^)]+)\)/.exec(transform)
+      const simple = /^scale(?:3d|X|Y)?\(([^,)]+)/.exec(transform)
+      const a = matrix ? Number(matrix[1]!.split(',')[0]) : simple ? Number(simple[1]) : 1
+      if (Number.isFinite(a) && Math.abs(a) > 0.001) scale = Math.abs(a)
+    } else {
+      // 拿不到 computed transform 时，用「rect / offset」的明显比例回退识别进场缩放；
+      // 阈值 0.97 避开 offset 四舍五入造成的 0.982 误判。
+      const ratios = [
+        el.offsetWidth > 0 ? rect.width / el.offsetWidth : 1,
+        el.offsetHeight > 0 ? rect.height / el.offsetHeight : 1,
+      ]
+      const anim = ratios.find((r) => Number.isFinite(r) && r > 0 && r < 0.97)
+      if (anim) scale = anim
+    }
     return {
       left: rect.left,
       top: rect.top,
       right: rect.right,
       bottom: rect.bottom,
-      width: this.tipEl!.offsetWidth || rect.width,
-      height: this.tipEl!.offsetHeight || rect.height,
+      // rect 尺寸随 tip-enter 的 scale 缩放；除以当前 scale 得到真实布局尺寸，
+      // 同时避免 offsetWidth/offsetHeight 四舍五入丢失 0.5px 导致间距偏移。
+      width: rect.width / scale || el.offsetWidth || rect.width,
+      height: rect.height / scale || el.offsetHeight || rect.height,
     } as DOMRect
   }
 

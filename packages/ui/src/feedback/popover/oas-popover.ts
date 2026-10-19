@@ -64,8 +64,8 @@ const STYLE = `
   min-width: var(--oas-popover-min-width, 200px);
   color: var(--oas-color-text-primary);
   /* 磨砂玻璃接线（容器级 surface）：ring 合入原 outline:none 槽位（默认 transparent 等价无边） */
-  backdrop-filter: var(--oas-glass-blur, none);
   -webkit-backdrop-filter: var(--oas-glass-blur, none);
+  backdrop-filter: var(--oas-glass-blur, none);
   outline: 1px solid var(--oas-glass-ring, transparent);
   outline-offset: -1px;
   /* portal（append-to）时 host 为 pointer-events:none（不吞页面指针），

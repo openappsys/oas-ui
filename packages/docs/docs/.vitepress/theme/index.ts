@@ -20,16 +20,30 @@ export default {
     app.component('DemoBlock', DemoBlock)
     app.component('TokenShowcase', TokenShowcase)
     // gtag 的 config 只在页面整加载时触发一次 page_view，SPA 内路由切换需手动补发。
-    // vitepress Router 的钩子是实例属性（onAfterRouteChanged），必须赋值注册；
-    // 此前误写成「onAfterRouteChange?.(cb) 方法调用」——属性不存在，可选链静默短路，补发从未生效
+    // VitePress 2 把 Router 钩子改名为 onAfterRouteChange（1.x 为 onAfterRouteChanged），
+    // 两个都写：当前版本走新名，兼容未来回退/升级；钩子是实例属性，必须赋值注册，
+    // 不能写成 onAfterRouteChange?.(cb) 方法调用（可选链会静默短路）。
     // 仅生产环境补发：dev 下 config.ts 不注入 gtag 脚本（w.gtag 不存在），此处一并跳过
     if (!import.meta.env.SSR && import.meta.env.PROD) {
-      router.onAfterRouteChanged = (to) => {
+      // 首屏已由 gtag inline config 自动发 page_view；VitePress 2 首载也会调用一次钩子，
+      // 因此以当前 pathname 初始化，首次回调跳过；同页 hash 跳转也不重复发。
+      // `.html` 入口与 clean URL 需要归一到同一 path，否则旧外链会首屏多计一次。
+      const normalizePath = (path: string): string =>
+        path.replace(/\/index\.html?$/, '/').replace(/\.html?$/, '').replace(/\/$/, '') || '/'
+      let lastPagePath = normalizePath(window.location.pathname)
+      const sendPageView = (to: string): void => {
         const w = window as unknown as {
           gtag?: (cmd: string, id: string, opts?: { page_path?: string }) => void
         }
+        const path = normalizePath(new URL(to, window.location.origin).pathname)
+        if (path === lastPagePath) return
+        lastPagePath = path
         w.gtag?.('config', 'G-RXS142HBXF', { page_path: to })
       }
+      router.onAfterRouteChange = sendPageView
+      ;(
+        router as typeof router & { onAfterRouteChanged?: (to: string) => void }
+      ).onAfterRouteChanged = sendPageView
     }
   },
   setup() {

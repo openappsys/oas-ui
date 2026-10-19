@@ -1199,6 +1199,23 @@ describe('OAStooltip', () => {
     // 当前缺陷（按 72.9x28.8 计算）会得到 263.2px / 395.55px
   })
 
+  it('小数布局尺寸按 rect 精确计算（offsetHeight 四舍五入不得造成间距 0.5px 偏移）', async () => {
+    const el = mount({ content: '提示在上方', placement: 'top' })
+    await Promise.resolve()
+    const t = tip(el)
+    const btn = el.querySelector('button')!
+    stubRect(btn, { left: 400, top: 300, width: 64, height: 32 })
+    // 13px 字号 × 1.5 行高 + 上下 padding = 27.5px；浏览器 offsetHeight 会报 28。
+    stubRect(t, { left: 0, top: 0, width: 80.5, height: 27.5 })
+    Object.defineProperty(t, 'offsetWidth', { value: 81, configurable: true })
+    Object.defineProperty(t, 'offsetHeight', { value: 28, configurable: true })
+    setViewport(1280, 800)
+    btn.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }))
+    await Promise.resolve()
+    expect(t.style.top).toBe('262.5px') // 300 - 27.5 - 10
+    expect(t.style.left).toBe('391.75px') // (400 + 32) - 80.5 / 2
+  })
+
   it('focus 通道在已打开时不重复写 open 属性（同值 setAttribute 也触发 update/重定位）', async () => {
     const el = mount({ content: 'x', placement: 'top' })
     await Promise.resolve()

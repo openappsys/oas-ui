@@ -47,8 +47,8 @@ const STYLE = `
   inset: 0;
   background: var(--oas-backdrop-bg, var(--oas-color-overlay));
   opacity: var(--oas-backdrop-opacity, 1);
-  backdrop-filter: var(--oas-backdrop-blur, none);
   -webkit-backdrop-filter: var(--oas-backdrop-blur, none);
+  backdrop-filter: var(--oas-backdrop-blur, none);
   /* 点击穿透：命中测试直接落到 .mask，P5 的「点遮罩」判定（target === mask）才成立 */
   pointer-events: none;
 }

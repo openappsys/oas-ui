@@ -90,10 +90,12 @@ const STYLE = `
 /* 关闭态：host hidden 会被作者级 display 规则覆盖，需显式补回（关闭后真正隐藏）；
    退场过渡期间（[hidden][data-closing]）保持可见播放淡出，过渡结束移除 data-closing 即落隐藏 */
 :host([hidden]) {
-  display: none;
+  display: none !important;
 }
 :host([hidden][data-closing]) {
-  display: block;
+  /* 页面级 Preflight（如 VitePress 2）会对 [hidden] 加 display:none !important；
+     退场期间必须由组件更具体的宿主规则重新显示，否则淡出动画被瞬间跳过。 */
+  display: block !important;
 }
 .bar {
   /* 语义色变量（type 驱动）：底色/描边用 --nb-accent，文字用 --nb-text（亮暗主题各自的可读档） */

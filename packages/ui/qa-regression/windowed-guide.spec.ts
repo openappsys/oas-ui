@@ -181,9 +181,11 @@ test('guide windowed demo：组件包延迟注册仍能装载数据（防 proper
       issues.push(`${m.type()}: ${m.text()}`)
   })
   page.on('pageerror', (e) => issues.push(`pageerror: ${e.message}`))
-  let delayed = false
-  await page.route('**/assets/chunks/index.*.js', async (route) => {
-    delayed = true
+  let delayedUi = false
+  // 必须延迟 UI 包 chunk（VitePress 2 为 assets/chunks/dist.*，1.x 为 chunks/index.*），
+  // 不能只延迟页面 chunk；否则组件包早已注册，回归会变成假绿。
+  await page.route(/\/assets\/(?:chunks\/(?:index|dist)|guide_windowed-data\.md)\..*\.js$/, async (route) => {
+    if (/\/assets\/chunks\/(?:index|dist)\./.test(route.request().url())) delayedUi = true
     await new Promise((r) => setTimeout(r, 1200))
     await route.continue()
   })
@@ -197,7 +199,7 @@ test('guide windowed demo：组件包延迟注册仍能装载数据（防 proper
     undefined,
     { timeout: 20000 },
   )
-  expect(delayed, 'UI chunk 确实被延迟（否则该回归无效）').toBe(true)
+  expect(delayedUi, 'UI chunk 确实被延迟（否则该回归无效）').toBe(true)
   const out = await page.evaluate(() => {
     const g = document.getElementById('guide-windowed-gantt') as HTMLElement & { shadowRoot: ShadowRoot }
     const r = document.getElementById('guide-windowed-resource') as HTMLElement & { shadowRoot: ShadowRoot }

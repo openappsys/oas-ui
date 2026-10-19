@@ -263,8 +263,8 @@ const STYLE = `
   border-radius: var(--oas-radius-md);
   box-shadow: var(--oas-shadow-md);
   /* 磨砂玻璃接线（容器级 surface）：变量缺省时零影响 */
-  backdrop-filter: var(--oas-glass-blur, none);
   -webkit-backdrop-filter: var(--oas-glass-blur, none);
+  backdrop-filter: var(--oas-glass-blur, none);
   outline: 1px solid var(--oas-glass-ring, transparent);
   outline-offset: -1px;
   padding: var(--oas-space-3);

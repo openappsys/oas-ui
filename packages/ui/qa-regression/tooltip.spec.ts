@@ -823,8 +823,15 @@ test('tooltip 无空格长串在 max-width 内断行不溢出（overflow-wrap: a
   await page.goto('/components/ellipsis.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-ellipsis')
   const r = await page.evaluate(async () => {
-    const el = [...document.querySelectorAll('oas-ellipsis')].find((e) => (e.getAttribute('text') ?? '').includes('/'))
+    const el = [...document.querySelectorAll<HTMLElement>('oas-ellipsis')].find((e) =>
+      (e.getAttribute('text') ?? '').includes('/'),
+    )
     if (!el) return null
+    // VitePress 2 的正文列更宽，原 demo 的长路径在部分视口下可能不再溢出；
+    // 收窄到固定宽度，确保测试验证的是 tooltip 断行规则而不是页面列宽。
+    el.style.maxWidth = '240px'
+    // 等 ResizeObserver/布局帧决定溢出并挂载 tooltip
+    await new Promise((r2) => setTimeout(r2, 120))
     const tip = el.shadowRoot!.querySelector('oas-tooltip')
     if (!tip) return null
     // 强制打开浮层（hover 等价路径）

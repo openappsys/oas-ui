@@ -39,8 +39,8 @@ const STYLE = `
   background: var(--oas-color-bg);
   box-shadow: var(--oas-shadow-md);
   /* 磨砂玻璃接线（容器级 surface）：变量缺省时零影响 */
-  backdrop-filter: var(--oas-glass-blur, none);
   -webkit-backdrop-filter: var(--oas-glass-blur, none);
+  backdrop-filter: var(--oas-glass-blur, none);
   outline: 1px solid var(--oas-glass-ring, transparent);
   outline-offset: -1px;
   font-size: var(--oas-font-size-md);
@@ -236,8 +236,8 @@ const STYLE = `
 :host([variant='translucent']) .box {
   background: color-mix(in srgb, var(--oas-color-bg) 78%, transparent);
   border-color: color-mix(in srgb, var(--oas-color-border) 60%, transparent);
-  backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
 }
 @keyframes oas-toast-spin {
   to { transform: rotate(360deg); }

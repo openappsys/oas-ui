@@ -6,6 +6,15 @@
 /* ===== 官网首页（重设计版）：HomeHero / HomeUseCases / HomeCode / HomePerf / HomeCta ===== */
 /* 首页设计变量：浅色默认（:root），深色走 html.dark，跟随系统主题切换。
    组件 scoped 样式一律引用 var(--home-*) 或 --oas-* 语义 token，禁止硬编码色值。 */
+/* 构建时移除了 VitePress Preflight 的通用 `* { margin/padding/border:0 }`（防止覆盖
+   oas-* 宿主）。这里只补 docs 原生元素需要的复位，与之前 Preflight 下的视觉一致。 */
+body {
+  margin: 0;
+}
+h1 {
+  margin: 0;
+}
+
 :root {
   --home-bg: #f7f8fc;
   --home-text: #18181b;

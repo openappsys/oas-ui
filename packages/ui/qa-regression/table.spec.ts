@@ -315,19 +315,24 @@ test('table 表头吸顶：非固定列表头纵向 sticky 不被覆盖失效（
     const table = block.querySelector('oas-table')!
     const sr = table.shadowRoot!
     const scroll = sr.querySelector('.table-scroll') as HTMLElement
-    scroll.scrollTop = 300
+    // 不假定固定 300px 滚动余量：VitePress 2 的正文列宽变化会改变表格高度，
+    // 目标值取「300 与实际最大滚动量」的较小者，仍能验证 sticky 表头。
+    const target = Math.min(300, Math.max(0, scroll.scrollHeight - scroll.clientHeight))
+    scroll.scrollTop = target
     const ths = [...sr.querySelectorAll('thead th')].map((th) => ({
       text: th.textContent!.trim().slice(0, 4),
       position: getComputedStyle(th).position,
       top: Math.round(th.getBoundingClientRect().top),
     }))
     return {
+      target,
       scrollTop: scroll.scrollTop,
       scrollTop0: Math.round(scroll.getBoundingClientRect().top),
       ths,
     }
   })
-  expect(result.scrollTop, '容器应已滚动').toBe(300)
+  expect(result.target, '容器应有可滚动余量').toBeGreaterThan(0)
+  expect(result.scrollTop, '容器应已滚动到目标位置').toBe(result.target)
   for (const th of result.ths) {
     expect(th.position, `${th.text} 表头应为 sticky（不被 relative 覆盖）`).toBe('sticky')
     // 吸顶生效：表头应停在容器顶缘（top:0 → th.top ≈ 容器 top，容差 2px）
