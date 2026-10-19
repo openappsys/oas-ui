@@ -132,9 +132,14 @@ test('kanban 断开重连后：开菜单 → 外点关闭正常（交叉审同�
 test('kanban 列拖拽重排：列头手柄拖到邻列 → oas-column-reorder（PRD 二期验收 e2e）', async ({ page }) => {
   await page.goto('/components/kanban.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-kanban')
+  await page.waitForFunction(
+    () => (document.getElementById('kanban-reorder')?.shadowRoot?.querySelectorAll('.column-drag').length ?? 0) >= 2,
+    undefined,
+    { timeout: 15000 },
+  )
   const r = await page.evaluate(() => {
-    // 用列重排 demo（带手柄）；无独立 demo 实例时用首个看板（一期也有列结构）
-    const el = document.querySelector('oas-kanban')!
+    // 精确取列重排 demo，避免首个看板尚未完成列渲染时误判为无手柄
+    const el = document.getElementById('kanban-reorder')!
     const events: unknown[] = []
     el.addEventListener('oas-column-reorder', (e) => events.push((e as CustomEvent).detail))
     const handles = [...el.shadowRoot!.querySelectorAll<HTMLElement>('.column-drag')]
@@ -252,7 +257,11 @@ test('kanban 宿主定高：板体吃满宿主不溢出 + 列体真内滚（回�
   await page.goto('/components/kanban.html', { waitUntil: 'domcontentloaded' })
   await up(page, '#kanban-scroll')
   const r = await page.evaluate(() => {
-    const host = document.querySelector('#kanban-scroll')!
+    const host = document.querySelector<HTMLElement>('#kanban-scroll')!
+    // 收窄宿主高度，保证首列内容在当前宽度下必然超过列体可视区；
+    // 该测试验证「定高 → 列体真内滚」，不依赖 demo 文案在某一视口下恰好溢出。
+    host.style.height = '220px'
+    void host.offsetHeight
     const board = host.shadowRoot!.querySelector('.kanban') as HTMLElement
     const body = board.querySelector('.column-body') as HTMLElement
     // 宿主后面的说明文字（曾与板体重叠）
