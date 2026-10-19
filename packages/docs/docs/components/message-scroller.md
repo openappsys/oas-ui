@@ -345,7 +345,9 @@ onMounted(async () => {
   const lastAnchorRow = la ? [...la.querySelectorAll('oas-message-row[anchor]')].at(-1) ?? null : null
   // 定位收敛：页面级样式/字体晚应用会让早期几何过期（行高事后变化），rAF+timeout 轮询重定位直至稳定
   let laTries = 0
+  let laSettling = true
   const laSettle = () => {
+    if (!laSettling) return
     const vp = la?.shadowRoot?.querySelector('.viewport')
     if (!vp || !lastAnchorRow || laTries++ > 12) return
     const offset = lastAnchorRow.getBoundingClientRect().top - vp.getBoundingClientRect().top
@@ -354,6 +356,8 @@ onMounted(async () => {
   }
   laSettle()
   document.querySelector('#msc-la-first')?.addEventListener('click', () => {
+    // 用户显式定位后停止自动收敛，避免轮询把视图拉回最后锚点、盖掉这次点击
+    laSettling = false
     const hit = la?.scrollToMessage('m1')
     if (laOut) laOut.textContent = `scrollToMessage('m1') → ${hit}（滚动到第一条消息顶部）`
   })

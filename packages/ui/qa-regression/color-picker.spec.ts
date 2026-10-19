@@ -527,7 +527,9 @@ test('color-picker 未连接写 value 不崩（React 19 属性先写时序回归
   const errors: string[] = []
   page.on('pageerror', (e) => errors.push(String(e)))
   await page.goto('/components/color-picker.html', { waitUntil: 'domcontentloaded' })
-  await page.waitForTimeout(600)
+  // 不能按固定 600ms 猜 docs 的动态 import 已完成：Firefox CI 慢加载下元素尚未注册，
+  // `el.value = ...` 会写成 own property 而不是 setter，append 后 attribute 仍为空。
+  await page.waitForFunction(() => customElements.get('oas-color-picker') != null, null, { timeout: 15000 })
   const r = await page.evaluate(async () => {
     const el = document.createElement('oas-color-picker') as HTMLElement & { value: string }
     el.value = '#ff0000'

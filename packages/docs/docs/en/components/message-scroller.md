@@ -339,7 +339,9 @@ onMounted(async () => {
   const lastAnchorRow = la ? [...la.querySelectorAll('oas-message-row[anchor]')].at(-1) ?? null : null
   // Position settling: page-level styles/fonts applied late make early geometry stale (row heights change after the fact); poll with rAF+timeout and re-position until stable
   let laTries = 0
+  let laSettling = true
   const laSettle = () => {
+    if (!laSettling) return
     const vp = la?.shadowRoot?.querySelector('.viewport')
     if (!vp || !lastAnchorRow || laTries++ > 12) return
     const offset = lastAnchorRow.getBoundingClientRect().top - vp.getBoundingClientRect().top
@@ -348,6 +350,8 @@ onMounted(async () => {
   }
   laSettle()
   document.querySelector('#msc-la-first')?.addEventListener('click', () => {
+    // Stop auto-settling after an explicit user action so polling cannot pull the view back to the last anchor
+    laSettling = false
     const hit = la?.scrollToMessage('m1')
     if (laOut) laOut.textContent = `scrollToMessage('m1') → ${hit} (scrolled to the first message's top)`
   })

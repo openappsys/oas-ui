@@ -13,7 +13,7 @@ Full TypeScript types · tree-shakable · light/dark/high-contrast themes · SSR
 | Components | 145 |
 | Full CDN bundle (gzip) | 731.6 KB |
 | Button chain (gzip) | 26.6 KB |
-| Tests (incl. e2e) | 11329 |
+| Tests (incl. e2e) | 11336 |
 | Locales | 10 built-in: zh-CN / en / ja / ko / de / fr / es / pt / ru / ar (ar is RTL) |
 | Current version | v2.6.2 |
 
