@@ -307,7 +307,7 @@ On touch devices (`pointer: coarse`) the button minimum height grows to 44px (`-
       <oas-button html-type="submit" type="primary">Submit</oas-button>
       <oas-button html-type="submit" formtarget="_blank">Submit in new tab (formtarget)</oas-button>
       <oas-button html-type="reset">Reset</oas-button>
-      <oas-button html-type="submit" formnovalidate formaction="/search" formmethod="post">No-validate submit (formaction/formmethod)</oas-button>
+      <oas-button html-type="submit" formnovalidate formaction="/search" formmethod="post" formenctype="multipart/form-data">No-validate submit (formaction/formmethod/formenctype)</oas-button>
     </oas-space>
   </form>
   <div id="btn-form-out" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin-top: var(--oas-space-2); min-height: 20px"></div>
