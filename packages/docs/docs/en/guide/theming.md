@@ -52,7 +52,7 @@ A skin only overrides `--oas-color-primary`; the derived steps (`-hover` / `-act
 
 **Mechanism**: 25 floating-surface components (modal / drawer / popover / tooltip / dropdown / select-family panels / message / snackbar / bottom-sheet / app-bar, etc.) uniformly consume `--oas-glass-blur` (backdrop-filter tier) and `--oas-glass-ring` (specular outline ring). Without glass.css everything falls back to `none` / `transparent`, leaving components exactly as before.
 
-**Cross-browser consistency**: this material layer uses cross-browser CSS only (translucent tokens / `backdrop-filter` / `outline` / `box-shadow`) and no SVG displacement filter. The v2.6.0 static edge refraction relied on a data-URI `filter` that Chromium executes but Firefox ignores, so the same component could show jagged edges and different visual sizes per engine; it was removed in the unreleased cleanup. **Dynamic fluidity** (pointer specular highlight + press tightening) remains available via the optional `glass-fluid.js` runtime (see [Frosted Glass](/en/guide/glass)) and does not change geometry.
+**Cross-browser consistency**: this material layer uses cross-browser CSS only (translucent tokens / `backdrop-filter` / `outline` / `box-shadow`) and no SVG displacement filter. The v2.6.0 static edge refraction relied on a data-URI `filter` that Chromium executes but Firefox ignores, so the same component could show jagged edges and different visual sizes per engine; it was removed in v2.6.2. **Dynamic fluidity** (pointer specular highlight + press tightening) remains available via the optional `glass-fluid.js` runtime (see [Frosted Glass](/en/guide/glass)) and does not change geometry.
 
 **Boundaries**:
 

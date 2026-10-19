@@ -503,7 +503,7 @@ Node-safe 入口、`@oas-ui/ssr` 渲染器、白名单试点、e2e 四条验收�
 
 #### v1.9 第四阶段（DSD 彻底落地，已完成）
 
-- **白名单全量覆盖**：123/124 tag 可 SSR（仅 theme-editor 工具组件排除 + 5 个命令式组件 message/notification/toast/snackbar/loading-bar 按"无初始 DOM"定论客户端专属）——五批推进：表单 27 类 → 反馈 9 → 数据展示 28 → 导航布局 32 → 收尾 12，每组件均完成 template/bind/hydrate 拆分、数据组件 JSON attribute 通道、测量组件延迟写入。（**注：123/124 为 v1.9 时点数据**；白名单随后续版本持续扩充，**当前覆盖 160 个可注册 tag（全库 205）**——权威清单与边界见 `docs/ssr.md`，新增组件强制决策由对账守卫 `packages/ssr/src/whitelist-coverage.test.ts` 把关。）
+- **白名单全量覆盖**：123/124 tag 可 SSR（仅 theme-editor 工具组件排除 + 5 个命令式组件 message/notification/toast/snackbar/loading-bar 按"无初始 DOM"定论客户端专属）——五批推进：表单 27 类 → 反馈 9 → 数据展示 28 → 导航布局 32 → 收尾 12，每组件均完成 template/bind/hydrate 拆分、数据组件 JSON attribute 通道、测量组件延迟写入。（**注：123/124 为 v1.9 时点数据**；白名单随后续版本持续扩充，**当前覆盖 161 个可注册 tag（全库 206）**——权威清单与边界见 `docs/ssr.md`，新增组件强制决策由对账守卫 `packages/ssr/src/whitelist-coverage.test.ts` 把关。）
 - **嵌套组件递归序列化**：renderToString 递归注入嵌套 DSD template（ensureNestedTags 预装载 + injectNestedDSD 深度优先），descriptions/tabs/form-item/layout 等组合场景快照完整
 - **改造中修复的真实缺陷**：水合动态内容重复渲染（rate/dynamic-input/log/marquee）、crypto.randomUUID 破坏快照确定性（改模块级计数器）、transfer 缺 observedAttributes、alert 关闭不隐藏（`:host([hidden])` 补位，全库排查）、result 图标不随 status 更新、carousel 覆写 onCleanup 不调基类、textarea autosize 首帧闪动
 - **CDN 发布准备**：`dist/cdn.js` 单文件 IIFE bundle（gzip ~116KB）+ theme 包根 index.css + 文档 CDN 示例修正
@@ -1845,7 +1845,7 @@ OASElement 的 render 生命周期只首连一次（`rendered` 门闩），组�
 
 - 单测（渲染/CRUD/事件派发/数据变更）+ docs（zh/en）+ api-manifest + i18n ×10 + 全量 e2e 全绿。
 
-## 未发布 oas-scheduler 纵深（资源视图 + 拖拽创建 + 当前时间线）
+## v2.6.2 oas-scheduler 纵深（资源视图 + 拖拽创建 + 当前时间线）
 
 > 立项背景：scheduler 已具月/周/日/日程四视图。本批把它从「日历」升级为「排班工具」，核心是资源维度。版本号由用户定。
 
@@ -1874,7 +1874,7 @@ OASElement 的 render 生命周期只首连一次（`rendered` 门闩），组�
 - 文档：scheduler.md zh/en 增章节；api-manifest / api-descriptions 同步（`api:check` 双向 0）；i18n ×10。
 - 全量 `pnpm test` / `typecheck` / `build` / `api:check` 全绿。
 
-## 未发布 oas-gantt 纵深（依赖连线交互编辑 + 行重排 + 基线对比）
+## v2.6.2 oas-gantt 纵深（依赖连线交互编辑 + 行重排 + 基线对比）
 
 > 立项背景：gantt 已具任务树、四种依赖、拖拽三件套、六档刻度、虚拟滚动，摘要进度已按子任务工期加权汇总（`buildRows` 内 `aggregate`）。本批补三项能力。定位不变——组件是宿主数据的可视化与编辑层，不做排程引擎；关键路径等排程计算仍归宿主（见边界）。
 
@@ -1905,7 +1905,7 @@ OASElement 的 render 生命周期只首连一次（`rendered` 门闩），组�
 - 文档：gantt.md zh/en 增章节；api-manifest / api-descriptions 同步（`api:check` 双向 0）；i18n ×10。
 - 全量 `pnpm test` / typecheck / build / api:check 全绿。
 
-## 未发布 oas-gantt 任务管理创作能力（命令式增删改 + 行内新建 + 缩放）
+## v2.6.2 oas-gantt 任务管理创作能力（命令式增删改 + 行内新建 + 缩放）
 
 > 立项背景：他人用 oas-gantt 搭「任务管理甘特」时，组件只提供「编辑现有数据」，造数据只能整体重写 `tasks`。本批补「创作闭环」——命令式增删改、行内新建、视图缩放，并提供可照抄的完整示例。定位不变：不做排程引擎（关键路径/联动排程仍归宿主）。
 
@@ -1928,7 +1928,7 @@ OASElement 的 render 生命周期只首连一次（`rendered` 门闩），组�
 - 文档：gantt.md zh/en 增段；api-manifest / api-descriptions 同步（`api:check` 双向 0）；i18n ×10。
 - 全量 `pnpm test` / typecheck / build / api:check 全绿。
 
-## 未发布 oas-gantt 任务管理增强（依赖联动排程 + 框选多任务 + 拖拽建任务）
+## v2.6.2 oas-gantt 任务管理增强（依赖联动排程 + 框选多任务 + 拖拽建任务）
 
 > 立项背景：承接「任务管理创作能力」，补齐「改前置、后置顺延」「一次选多条」「空白拖出任务」三项高频诉求，使组件从「能画」到「能用」。定位不变：不做完整排程引擎（关键路径、资源不碰）。
 
@@ -1950,7 +1950,7 @@ OASElement 的 render 生命周期只首连一次（`rendered` 门闩），组�
 - 文档：gantt.md zh/en 增段；api-manifest / api-descriptions 同步（`api:check` 双向 0）。
 - 全量 `pnpm test` / typecheck / build / api:check 全绿。
 
-## 未发布 oas-gantt 排程深化（依赖 lag/lead + 关键路径）
+## v2.6.2 oas-gantt 排程深化（依赖 lag/lead + 关键路径）
 
 > 立项背景：承接 `auto-schedule` 排程引擎，补齐排程的两块「能用」要素——依赖偏移（lag/lead）与关键路径，使组件能回答「谁拖了会拖累整体」。
 
@@ -1971,7 +1971,7 @@ OASElement 的 render 生命周期只首连一次（`rendered` 门闩），组�
 - 文档：gantt.md zh/en 增段；api-manifest / api-descriptions 同步（`api:check` 双向 0）。
 - 全量 `pnpm test` / typecheck / build / api:check 全绿。
 
-## 未发布 oas-gantt 排程约束与工作日日历
+## v2.6.2 oas-gantt 排程约束与工作日日历
 
 > 立项背景：在「依赖 + lag + 关键路径 + 最小前推」之上补两块排程必需——任务约束与工作日日历（跳过周末/假日）。定位仍为「可视化 + 编辑层 + 轻量排程」，不做资源/平衡与完整 CPM。
 
@@ -1993,7 +1993,7 @@ OASElement 的 render 生命周期只首连一次（`rendered` 门闩），组�
 - 文档：gantt.md zh/en 增段；api-manifest / api-descriptions 同步（`api:check` 双向 0）。
 - 全量 `pnpm test` / typecheck / build / api:check 全绿。
 
-## 未发布 oas-resource 资源负载 / 泳道视图（新组件，data 族）
+## v2.6.2 oas-resource 资源负载 / 泳道视图（新组件，data 族）
 
 > 立项背景：让「用 oas-ui 做项目管理」的人能看资源。gantt/scheduler 均不承载资源视图；本件为**纯视图层**：给定资源与任务，渲染资源泳道（共享时间轴）+ 负载直方图（超载高亮）。**不做排程/平衡引擎**（平衡以纯函数导出、由宿主决定是否回写）。定位与边界：组件库只做视图与交互；资源实体与容量由宿主提供。
 
@@ -2016,10 +2016,10 @@ OASElement 的 render 生命周期只首连一次（`rendered` 门闩），组�
 
 - 单测：`resources`/`tasks` 解析与容错（非法/缺省/未知资源 id）；泳道按资源分组与行高计算；负载统计（day/week/month）与超载判定；`levelResources` 纯函数（保工期/只延后/确定性/无超载收敛/上限）；`oas-overload` 派发；`scrollToDate`；缺省/空态零异常。
 - e2e：新增 `resource.md` 页 demo 真点（超载高亮可见、平衡按钮回写后超载消失、暗色）+ console 零告警。
-- 文档：新增 `resource.md` zh/en（进自动收集面）+ api-manifest / api-descriptions 同步（`api:check` 双向 0）+ i18n ×10（若需文案）+ CHANGELOG `[未发布]`。
+- 文档：新增 `resource.md` zh/en（进自动收集面）+ api-manifest / api-descriptions 同步（`api:check` 双向 0）+ i18n ×10（若需文案）+ CHANGELOG `[2.6.2]`。
 - 全量 `pnpm test` / typecheck / build / api:check 全绿。
 
-## 未发布 时间轴列虚拟化（oas-gantt / oas-resource 横向窗口）
+## v2.6.2 时间轴列虚拟化（oas-gantt / oas-resource 横向窗口）
 
 > 立项背景：做「能支撑百万级数据的项目管理产品」时，甘特/资源的纵向已窗口化（行），但**横向时间轴全量渲染**——长跨度（day 档跨约 10 年 ≈3650 列）时表头刻度与底色格按列数线性增长（甘特每次滚动还重建全量周末格），成为第一瓶颈。本批把「行×列」二维窗口补齐。定位：纯渲染层优化，**不改公开 API**（缓冲列数为内部常量）。
 
@@ -2043,10 +2043,10 @@ OASElement 的 render 生命周期只首连一次（`rendered` 门闩），组�
 
 - 单测：gantt/resource 各自列窗口数学（含 RTL 负 scrollLeft、回落到全量、滚动窗口平移、画布宽不变、条相交裁剪）。
 - e2e：`qa-regression/scale.spec.ts`——gantt 万行 × 约 3650 列、resource 5000 任务 × 1096 period 的渲染节点上界 + 中部可见覆盖 + 数据量翻倍对照；gantt/resource 既有 e2e 改按文本/日期定位（不再依赖 DOM 全局索引）。
-- 文档：CHANGELOG `[未发布]`；公开 API 无变更（`api:check` 双向 0）。
+- 文档：CHANGELOG `[2.6.2]`；公开 API 无变更（`api:check` 双向 0）。
 - 全量 `pnpm test` / typecheck / build / api:check 全绿。
 
-## 未发布 数据密集型组件规模化（行窗口协议 + 资源/看板虚拟化）
+## v2.6.2 数据密集型组件规模化（行窗口协议 + 资源/看板虚拟化）
 
 > 立项背景：让组件库能支撑「项目管理软件」的百万级数据——此前只有 table/tree/gantt 有本地行虚拟化，且宿主必须把全量数据喂进组件（内存/传输双输）。本批补「服务端行窗口协议」（宿主只喂可视窗口）+ resource 纵向虚拟化 + kanban 卡片虚拟化。定位：纯前端契约与渲染层；后端由宿主/其他系统负责。
 
@@ -2070,9 +2070,9 @@ OASElement 的 render 生命周期只首连一次（`rendered` 门闩），组�
 
 - 单测：共享契约纯函数；table windowed（请求派发/去重/绝对行/本地操作禁用/键盘越界请求/编辑与点击行号口径一致/aria 绝对行号）；resource 行虚拟化（窗口/守恒/焦点/正交）；kanban 卡片虚拟化（窗口/守恒/拖拽/回焦）；gantt windowed（扁平切片/轴托管/能力禁用/键盘越界/aria 绝对口径/状态复位）；resource windowed（RTL×windowed/越界告警/range 非法回落）；scheduler 虚拟化（行窗/小时窗扣 band/回焦/aria/极端行高）。
 - e2e：table windowed 滚动→请求→回填渲染绝对行；resource 500 资源行数上界+总高不变+中部覆盖+条可点（含 RTL×windowed）；kanban 3000 卡列内容有界+拖拽落点；gantt windowed 轴托管+range 请求；scheduler 资源行/小时轴窗口覆盖 + 多全天事件（band 多行）顶部刻度/事件可见 + 滚动回焦。
-- 文档：table / gantt / resource zh/en windowed 专节；api-descriptions/manifest 同步（`api:check` 双向 0）；CHANGELOG `[未发布]`。
+- 文档：table / gantt / resource zh/en windowed 专节；api-descriptions/manifest 同步（`api:check` 双向 0）；CHANGELOG `[2.6.2]`。
 
-## 未发布 视觉语义：甘特行斑马纹 + 看板优先级强调色
+## v2.6.2 视觉语义：甘特行斑马纹 + 看板优先级强调色
 
 > 立项背景：甘特行没有横向单元格线、看板需要按优先级快速辨识；统一采用「默认中性、可选强调」：颜色只编码语义，不大面积上色。
 
@@ -2167,7 +2167,7 @@ OASElement 的 render 生命周期只首连一次（`rendered` 门闩），组�
 
 ## v2.6.0 玻璃边缘折射 v1
 
-> **未发布收口更新**：本批静态边缘折射已移除——Chromium 执行 data-URI SVG 位移滤镜，Firefox 忽略，造成同组件轮廓锯齿与视觉尺寸分叉；保留半透明、backdrop 模糊、折光边、阴影和指针动态高光，详见 CHANGELOG。以下内容为历史实现记录。
+> **v2.6.2 收口更新**：本批静态边缘折射已移除——Chromium 执行 data-URI SVG 位移滤镜，Firefox 忽略，造成同组件轮廓锯齿与视觉尺寸分叉；保留半透明、backdrop 模糊、折光边、阴影和指针动态高光，详见 CHANGELOG。以下内容为历史实现记录。
 >
 > 承接液态玻璃批的如实口径：静态磨砂近似已发布（v2.5.9），本批补 Apple 定义的标志性特征「边缘折射变形」。**范围纪律（用户定）**：Apple 定义的材料范围是控制/导览/系统体验（按钮、开关、滑块、标签页栏、边栏、通知、控制中心）——本批只在对应元素落地，不无限扩展到全部浮层（内容面板不进 v1；动态流动感/实时光学高光仍属后续）。
 
@@ -2558,5 +2558,5 @@ group 子钮此前为宿主自填 light DOM（`slot="action"`），组件用 `::
 
 - **范围**：服务端窗口协议与 table/tree/list/gantt/resource/kanban/scheduler 虚拟化、gantt 任务管理与约束/日历、resource/scheduler 资源视图、chart 抽稀/旋转、数据属性双通道与撞名治理；磨砂玻璃跨浏览器一致性（移除静态边缘折射）、Frosted 命名与 `prefers-reduced-transparency`、`glass-fluid.js` 跨模块单例；框架接入指南。
 - **破坏性变更**：`--oas-glass-refraction` 移除，依赖 Chromium 独有边缘折射的覆盖需删除；文档“液态玻璃”改称“磨砂玻璃（Frosted Glass）”，文件名/组件 API 不变。
-- **测试与门禁**：全量单测 10494 passed；Chromium e2e 2199 passed / 37 skipped；Firefox e2e 1313 passed / 7 skipped；`typecheck` / `build` / `api:check` / `llms:check` / `stats:check` / `perf:size` / `perf:bench` / `trace --all` 全绿。
+- **测试与门禁**：全量单测 10497 passed；Chromium e2e 2199 passed / 37 skipped；Firefox e2e 1313 passed / 7 skipped；`typecheck` / `build` / `api:check` / `llms:check` / `stats:check` / `perf:size` / `perf:bench` / `trace --all` 全绿。
 - **发布通道**：源码托管于 Gitea（非 GitHub）→ 本地通道 `pnpm release`；tag `v2.6.2` 仅作版本标记。

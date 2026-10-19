@@ -16,14 +16,17 @@ import { fileURLToPath } from 'node:url'
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../..')
 const OUT = join(ROOT, 'packages/docs/docs/.vitepress/generated/stats.json')
 
-// 1) 组件目录数
+// 1) 组件目录数（排除无公开组件页的内部基础设施）
 const UI_SRC = join(ROOT, 'packages/ui/src')
+const INTERNAL_COMPONENT_DIRS = new Set(['overlay/floating'])
 let components = 0
 for (const group of readdirSync(UI_SRC, { withFileTypes: true })) {
   if (!group.isDirectory()) continue
   const groupDir = join(UI_SRC, group.name)
   for (const c of readdirSync(groupDir, { withFileTypes: true })) {
-    if (c.isDirectory() && existsSync(join(groupDir, c.name, 'index.ts'))) components++
+    const key = `${group.name}/${c.name}`
+    if (c.isDirectory() && !INTERNAL_COMPONENT_DIRS.has(key) && existsSync(join(groupDir, c.name, 'index.ts')))
+      components++
   }
 }
 

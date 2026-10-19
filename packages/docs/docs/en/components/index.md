@@ -128,6 +128,7 @@ OAS-UI provides 145 framework-agnostic Web Components, organized into 9 groups b
 - [Kanban](/en/components/kanban) — Column + card kanban board: drag across columns / reorder within / column reorder / WIP limits / multi-select / swimlanes, fires oas-change on drop.
 - [Scheduler](/en/components/scheduler) — Month-view scheduler: event chips in day cells (title + color bar) + events read/write channel + CRUD methods and events, pure UI state.
 - [Gantt](/en/components/gantt) — Project scheduling: row-tree WBS + task bars/milestones/summary bars + FS/SS/FF/SF dependency links + six-scale time ruler + drag to reschedule/stretch/progress + three-level read-only + virtual scrolling.
+- [Resource](/en/components/resource) — Resource lanes + workload histogram: task allocation, capacity and overload highlighting per resource; a pure view layer that does not write schedules back.
 
 - [Table](/en/components/table) —— Displays structured data in a row-and-column grid with sorting, row selection, multi-select, and a loading state. It can be wired together with a pagination component.
 - [Tree](/en/components/tree) —— Displays hierarchical data with support for selection, expansion, multi-select, lazy loading, and node drag-and-drop.

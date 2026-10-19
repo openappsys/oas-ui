@@ -11,11 +11,11 @@ Full TypeScript types · tree-shakable · light/dark/high-contrast themes · SSR
 | Metric | Value |
 | --- | --- |
 | Components | 145 |
-| Full CDN bundle (gzip) | 678.8 KB |
-| Button chain (gzip) | 26.7 KB |
-| Unit tests | 10400+ |
+| Full CDN bundle (gzip) | 731.3 KB |
+| Button chain (gzip) | 26.6 KB |
+| Tests (incl. e2e) | 11317 |
 | Locales | 10 built-in: zh-CN / en / ja / ko / de / fr / es / pt / ru / ar (ar is RTL) |
-| Current version | v2.6.1 |
+| Current version | v2.6.2 |
 
 ## Getting Started
 

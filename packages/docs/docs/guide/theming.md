@@ -51,7 +51,7 @@ document.documentElement.dataset.skin = 'emerald' // violet | emerald | rose | a
 
 **机制**：浮层 surface 组件（modal / drawer / popover / tooltip / dropdown / select 系面板 / message / snackbar / bottom-sheet / app-bar 等 25 个）统一消费 `--oas-glass-blur`（`backdrop-filter` 模糊档）与 `--oas-glass-ring`（折光描边环）两个变量。不引 glass.css 时全部回落 `none` / `transparent`，组件行为与此前完全一致。
 
-**跨浏览器一致性**：本材质层只使用跨浏览器 CSS（半透明 token / `backdrop-filter` / `outline` / `box-shadow`），不使用 SVG 位移滤镜。v2.6.0 的静态边缘折射依赖 data-URI `filter`，Chromium 执行而 Firefox 忽略，会让同一组件在浏览器间出现轮廓锯齿与视觉尺寸差异；该效果已在未发布批次移除。**动态流动感**（指针镜面高光 + 按压收紧）仍由可选运行时 `glass-fluid.js` 提供（见[磨砂玻璃](/guide/glass)），不改变几何尺寸。
+**跨浏览器一致性**：本材质层只使用跨浏览器 CSS（半透明 token / `backdrop-filter` / `outline` / `box-shadow`），不使用 SVG 位移滤镜。v2.6.0 的静态边缘折射依赖 data-URI `filter`，Chromium 执行而 Firefox 忽略，会让同一组件在浏览器间出现轮廓锯齿与视觉尺寸差异；该效果已在 v2.6.2 移除。**动态流动感**（指针镜面高光 + 按压收紧）仍由可选运行时 `glass-fluid.js` 提供（见[磨砂玻璃](/guide/glass)），不改变几何尺寸。
 
 **边界**：
 

@@ -128,6 +128,7 @@ OAS-UI 提供 145 个框架无关的 Web Components 组件，按用途划分为 
 - [Kanban 看板](/components/kanban) —— 列 + 卡片的看板视图：拖拽换列/列内排序/列重排/WIP 限制/卡片多选/泳道分带，落定派发 oas-change。
 - [Scheduler 日程](/components/scheduler) —— 月视图日程组件：日格事件芯片（标题 + 色条）+ events 读写通道 + CRUD 方法与事件，纯 UI 态。
 - [Gantt 甘特图](/components/gantt) —— 项目排期组件：行树 WBS + 任务条/里程碑/摘要条 + FS/SS/FF/SF 依赖连线 + 六档时间刻度 + 拖拽改期/拉伸/改进度 + 只读三级 + 行虚拟滚动。
+- [Resource 资源负载](/components/resource) —— 资源泳道 + 负载直方图：按资源展示任务分配、容量与超载高亮，纯视图层，不自动回写排程。
 
 - [Table 表格](/components/table) —— 用于以行列表格形式展示结构化数据，支持排序、行选中、多选与加载态，可与分页组件联动。
 - [Tree 树](/components/tree) —— 用于展示层级数据，支持选中、展开、多选、懒加载与节点拖拽。

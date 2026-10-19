@@ -11,11 +11,11 @@ TypeScript 全量类型 · tree-shakable · light/dark/high-contrast 三主题 �
 | 指标 | 数值 |
 | --- | --- |
 | 组件数 | 145 |
-| CDN 全量单文件（gzip） | 678.8 KB |
-| 按钮单链（gzip） | 26.7 KB |
-| 单测 | 10400+ |
+| CDN 全量单文件（gzip） | 731.3 KB |
+| 按钮单链（gzip） | 26.6 KB |
+| 测试（含 e2e） | 11317 |
 | 语言包 | 内置 10 种：zh-CN / en / ja / ko / de / fr / es / pt / ru / ar（ar 为 RTL） |
-| 当前版本 | v2.6.1 |
+| 当前版本 | v2.6.2 |
 
 ## 快速开始
 
