@@ -139,11 +139,11 @@
   </oas-breadcrumb>
 </DemoBlock>
 
-## 层级缩进视觉
+## 层级纵向视觉
 
-面包屑默认平铺；纯 CSS 即可做出「逐级缩进」的层级视觉（分隔符隐藏 + 项按序缩进，不进 API）。思路：`::part(nav)` 改纵向排列、`::part(separator)` 隐藏、`::part(item):nth-child()` 按出现次序递增缩进。
+面包屑默认平铺；纯 CSS 即可做成纵向层级列表（分隔符隐藏，不进 API）。思路：`::part(nav)` 改纵向排列、`::part(separator)` 隐藏；不要给 `::part()` 接 `:nth-child()` 等伪类，规格不允许，Vite 8 / Lightning CSS 会直接拒绝该规则。
 
-<DemoBlock title="层级缩进（纯 CSS）">
+<DemoBlock title="层级纵向（纯 CSS）">
   <oas-breadcrumb class="bc-hierarchy" separator="/" items='[{"label":"首页","href":"/"},{"label":"组件","href":"/components"},{"label":"导航","href":"/components/anchor"},{"label":"面包屑"}]'></oas-breadcrumb>
 </DemoBlock>
 
@@ -155,15 +155,6 @@
 }
 .bc-hierarchy::part(separator) {
   display: none;
-}
-.bc-hierarchy::part(item):nth-child(3) {
-  padding-left: 20px;
-}
-.bc-hierarchy::part(item):nth-child(5) {
-  padding-left: 40px;
-}
-.bc-hierarchy::part(item):nth-child(7) {
-  padding-left: 60px;
 }
 </style>
 

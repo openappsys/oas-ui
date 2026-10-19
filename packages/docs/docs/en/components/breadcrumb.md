@@ -139,11 +139,11 @@ Place `<oas-breadcrumb-separator>` between two items; its content can be arbitra
   </oas-breadcrumb>
 </DemoBlock>
 
-## Hierarchy indentation visual
+## Hierarchy vertical visual
 
-The breadcrumb is flat by default; a pure-CSS trick can produce an indented "level" look (hide separators + indent items in order — no API involved). Idea: make `::part(nav)` vertical, hide `::part(separator)`, and increase `padding-left` on `::part(item):nth-child()` by occurrence order.
+The breadcrumb is flat by default; a pure-CSS trick can produce a vertical hierarchy list (hide separators — no API involved). Idea: make `::part(nav)` vertical and hide `::part(separator)`; do not chain `:nth-child()` or other pseudo-classes after `::part()` — the spec forbids it and Vite 8 / Lightning CSS rejects the rule outright.
 
-<DemoBlock title="Hierarchy indentation (pure CSS)">
+<DemoBlock title="Vertical hierarchy (pure CSS)">
   <oas-breadcrumb class="bc-hierarchy" separator="/" items='[{"label":"Home","href":"/"},{"label":"Components","href":"/components"},{"label":"Navigation","href":"/components/anchor"},{"label":"Breadcrumb"}]'></oas-breadcrumb>
 </DemoBlock>
 
@@ -155,15 +155,6 @@ The breadcrumb is flat by default; a pure-CSS trick can produce an indented "lev
 }
 .bc-hierarchy::part(separator) {
   display: none;
-}
-.bc-hierarchy::part(item):nth-child(3) {
-  padding-left: 20px;
-}
-.bc-hierarchy::part(item):nth-child(5) {
-  padding-left: 40px;
-}
-.bc-hierarchy::part(item):nth-child(7) {
-  padding-left: 60px;
 }
 </style>
 
