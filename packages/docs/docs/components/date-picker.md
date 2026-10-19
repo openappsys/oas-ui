@@ -304,7 +304,7 @@ readonly 下面板可展开浏览、单元格可键盘导航，但点选 / 快�
 | `placement` | 浮层位置，12 向：`top`/`bottom`/`left`/`right` × `-start`/`-end`（默认 `bottom-start`）；触发器贴近视口右缘时自动右对齐翻转、下方空间不足时上翻，并夹取到视口内 | `string` | `bottom-start` |
 | `readonly` | 只读：面板可展开浏览（单元格可键盘导航），点选/快捷/清除/手输均不提交 | `boolean` | — |
 | `required` | 必填标记（驱动原生校验链 valueMissing；不透传内层控件） | `boolean` | — |
-| `separator` | 范围类型触发器内起止值分隔符（仅显示层，value 契约不变） | `string` | — |
+| `separator` | 范围类型触发器内起止值分隔符（同时用于范围手输拆分；value 契约不变） | `string` | — |
 | `shortcuts-position` | 快捷预设位置：`bottom`（默认，顶部横排）/ `left`（左侧纵栏） | `string` | `bottom` |
 | `show-week-number` | 显示 ISO 周号列（`type=week` 自带） | `boolean` | — |
 | `size` | 尺寸档：`small` / `medium` / `large`（就近读取 config-provider 注入） | `string` | `medium` |
