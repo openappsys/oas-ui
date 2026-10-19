@@ -111,6 +111,7 @@ onBeforeUnmount(() => {
 
 - `data-glass` 叠加在 `data-theme` / `data-skin` 之上，三者自由组合；
 - 材质依赖背景反差——给页面一个有色彩层次的背景（渐变/图片）时质感最强，纯色同色相背景上减弱（文字仍可读）；
+- 暗色档单独标定：`--oas-glass-ring` / `-sheen` / `-press` 比浅色低但不再压到不可感知（边缘高光、透光层次可见），模糊强度略增；亮/暗切换无需改用法；
 - 局部降级：任意容器覆盖 `--oas-glass-blur: none; --oas-glass-ring: transparent; --oas-glass-refraction: ;`（折射停用值留空而非 none，原因见[主题与自定义](/guide/theming#液态玻璃-glass-css)；构建链吞空值时可用 `saturate(1)` 恒等滤镜替代）；
 - `high-contrast` 主题下不启用（实心可访问性档优先）。
 

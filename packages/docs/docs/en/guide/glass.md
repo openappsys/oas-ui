@@ -112,6 +112,7 @@ onBeforeUnmount(() => {
 
 - `data-glass` stacks on top of `data-theme` / `data-skin`—freely composable;
 - the material needs backdrop contrast: it shines over colorful gradients/photos and recedes on flat same-hue backgrounds (text stays legible);
+- the dark tier is tuned separately: `--oas-glass-ring` / `-sheen` / `-press` stay lower than light but are no longer imperceptible (edge highlight and translucency remain visible), with slightly stronger blur; no usage change between themes;
 - local opt-out: override `--oas-glass-blur: none; --oas-glass-ring: transparent; --oas-glass-refraction: ;` on any container (the refraction opt-out value must be empty, not `none`—see [Theming](/en/guide/theming#liquid-glass-glass-css); if your build chain strips empty custom properties, use the identity filter `saturate(1)` instead);
 - disabled under the `high-contrast` theme (solid accessibility tier wins).
 

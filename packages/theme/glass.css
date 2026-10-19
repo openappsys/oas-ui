@@ -90,22 +90,24 @@
   /* dark surface：低 alpha 高透（深色玻璃的材质感主场）。alpha 档与文字档联动标定
      （oklab 实测：亮蓝/品红/深青三类代表面上主/次文字感知分均 ≥60）——
      19.3 分事故的根因是 dark 选择器特异性吃错 light token（白底白字），
-     不是 dark 材质本身需要高 alpha */
+     不是 dark 材质本身需要高 alpha。
+     暗色高光档比浅色低，但此前 ring/sheen 压得过低，深色背景上边缘与透光感
+     几乎不可见；此处按「能感知但不刺眼」重新标定，press 仍低于浅色。 */
   --oas-color-bg: rgba(24, 24, 27, 0.62);
   --oas-color-bg-elevated: rgba(46, 46, 54, 0.55);
   --oas-color-bg-hover: rgba(52, 52, 58, 0.62);
   --oas-color-bg-disabled: rgba(39, 39, 42, 0.6);
   /* 玻璃档次要文字提亮（busy 背板上默认档不达标） */
   --oas-color-text-secondary: #d8d8e0;
-  --oas-color-border: rgba(255, 255, 255, 0.14);
-  --oas-color-border-strong: rgba(255, 255, 255, 0.22);
+  --oas-color-border: rgba(255, 255, 255, 0.24);
+  --oas-color-border-strong: rgba(255, 255, 255, 0.32);
   --oas-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4), 0 2px 8px rgba(0, 0, 0, 0.5);
   --oas-shadow-md: 0 4px 8px -2px rgba(0, 0, 0, 0.45), 0 12px 28px -4px rgba(0, 0, 0, 0.55);
   --oas-shadow-lg: 0 8px 16px -4px rgba(0, 0, 0, 0.5), 0 24px 48px -8px rgba(0, 0, 0, 0.65);
-  --oas-glass-blur: blur(18px) saturate(1.6);
-  --oas-glass-ring: rgba(255, 255, 255, 0.16);
-  /* 动态流动感高光（暗色）：白高光更低 alpha，避免暗面板上过曝与文字对比度波动 */
-  --oas-glass-sheen: rgba(255, 255, 255, 0.14);
+  --oas-glass-blur: blur(20px) saturate(1.7);
+  --oas-glass-ring: rgba(255, 255, 255, 0.5);
+  /* 动态流动感高光（暗色）：仍低于浅色档，避免暗面板上过曝与文字对比度波动 */
+  --oas-glass-sheen: rgba(255, 255, 255, 0.2);
   --oas-glass-sheen-size: 180px;
-  --oas-glass-sheen-press: rgba(255, 255, 255, 0.24);
+  --oas-glass-sheen-press: rgba(255, 255, 255, 0.3);
 }

@@ -18,6 +18,7 @@
 
 - [无障碍（A11y）](https://oas-ui.dev/guide/accessibility): OAS-UI 以 WCAG 2.1 AA 为目标，并有持续的 axe 自动化审计。
 - [集成 FAQ](https://oas-ui.dev/guide/faq): 来自真实项目集成的常见问题与陷阱。
+- [框架接入（React / Vue / Next / Nuxt）](https://oas-ui.dev/guide/frameworks): OAS-UI 是 Web Components 组件库，不需要官方 wrapper 也能直接用。
 - [液态玻璃画廊](https://oas-ui.dev/guide/glass): 半透明 surface + backdrop 模糊 + 高光折光边的材质层（边缘折射为静态置换近似；动态流动感由可选运行时 glass-fluid.js 提供——指针镜面高光 + 按压收紧，详见本页「动态流动感」）。
 - [场景方案](https://oas-ui.dev/guide/recipes): 以「完整可拷贝」为标准的组合模式集。
 - [资源管理示例（组合示例）](https://oas-ui.dev/guide/resource-management): 本页不是新组件：演示如何用 oas-resource（泳道 + 负载直方图）+ oas-card（资源卡）+ oas-checkbox（任务分配表）加纯函数 levelResources() 组合出一个可交互的资源管理页。

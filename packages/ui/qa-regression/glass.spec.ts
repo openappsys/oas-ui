@@ -77,6 +77,11 @@ test.describe('液态玻璃材质层', () => {
       expect(r.ringColor, '折光边应可见（非透明）').not.toMatch(/rgba\(0, 0, 0, 0\)|transparent/)
       const surf = parseRgba(r.cardBg)!
       expect(surf[3], 'surface 半透明（alpha < 1）').toBeLessThan(1)
+      if (theme === 'dark') {
+        // 暗色折光边曾压到 0.16，深色背景上几乎不可见；锁住「能感知但不刺眼」的下限
+        const ring = parseRgba(r.ringColor)!
+        expect(ring[3], '暗色折光边 alpha 不应回落到不可感知档（>= 0.4）').toBeGreaterThanOrEqual(0.4)
+      }
       // 感知对比度：surface 文字色 ×（surface rgba 合成到三类代表背板）
       for (const [label, bd] of BACKDROPS) {
         const eff = composite(surf, bd)
