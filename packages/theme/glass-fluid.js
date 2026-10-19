@@ -12,9 +12,9 @@
  * 粗指针（`pointer: coarse`，触屏无 hover 语义）；`high-contrast`。
  * 生命周期：`startGlassFluid()` / `stopGlassFluid()` 幂等；stop 真移除注入表与注入观察器；
  * 起停观察器常驻（条件恢复后自动重启）。
- * 单例假设：本运行时按**单实例**设计（`glass.css`/`glass-fluid.js` 只应引入一次）。若将来出现
- * 「宿主 bundle 与 CDN / 多包各持一份」的重复加载（监听器/注入表翻倍），再对齐 icons 运行时的
- * `globalThis` 单例方案（同 `architecture.md §3.1` 效果层扩展点）。
+ * 单例：运行时所有权挂在 `globalThis`（固定 key），bundle 与 CDN / 多包各持一份时，
+ * 后续模块实例的 `startGlassFluid` / `stopGlassFluid` 委托给首个实例，避免监听器/注入表翻倍
+ * （同 icons 运行时的 `globalThis` 单例方案，`architecture.md §3.1` 效果层扩展点）。
  * 兼容基线：`adoptedStyleSheets` / `CSSStyleSheet` 需 Safari 16.4+ / Firefox 101+ / Chrome 73+；
  * 注入表用到 `:where()`（Chrome 88+ / Safari 14+ / Firefox 78+），与库内既有 `:where()`/`color-mix()` 用法一致，
  * 实际基线更高（本库另有 color-mix 基线）。不支持构造样式表时静默跳过（高光缺失，不影响其余玻璃层）。
@@ -384,7 +384,7 @@ function attachPointer(doc, win) {
  * 启动（幂等）。守卫不满足时不注入不改 DOM，但会安装起停观察器（供之后满足条件时自动启用）。
  * @param {{ doc?: Document, win?: Window }} [opts]
  */
-export function startGlassFluid(opts = {}) {
+function startGlassFluidImpl(opts = {}) {
   const doc = opts.doc ?? (typeof document !== 'undefined' ? document : null)
   const win = opts.win ?? (typeof window !== 'undefined' ? window : null)
   if (!doc || !win) return
@@ -395,7 +395,7 @@ export function startGlassFluid(opts = {}) {
 }
 
 /** 停止（幂等）：退订指针监听 + 清标记/变量 + **移除注入表** + 断连注入观察器（起停观察器保留）。 */
-export function stopGlassFluid() {
+function stopGlassFluidImpl() {
   const doc = boundDoc ?? (typeof document !== 'undefined' ? document : null)
   const win = boundWin ?? (typeof window !== 'undefined' ? window : null)
   if (doc && listener) {
@@ -426,6 +426,28 @@ export function stopGlassFluid() {
   pruneScheduled = false
   listener = null
   started = false
+}
+
+// ---------- 跨模块单例：所有权挂 globalThis，重复加载只保留首实例 ----------
+const RUNTIME_KEY = '__oas_glass_fluid_runtime_v1__'
+const runtimeOwner = (globalThis[RUNTIME_KEY] ??= { start: null, stop: null })
+
+/**
+ * 启动（幂等）。重复加载的模块实例委托给首个实例，避免 pointermove / 注入表翻倍。
+ * @param {{ doc?: Document, win?: Window }} [opts]
+ */
+export function startGlassFluid(opts = {}) {
+  if (runtimeOwner.start && runtimeOwner.start !== startGlassFluid) return runtimeOwner.start(opts)
+  runtimeOwner.start = startGlassFluid
+  runtimeOwner.stop = stopGlassFluid
+  return startGlassFluidImpl(opts)
+}
+
+/** 停止（幂等）；重复加载的实例委托给首个实例。 */
+export function stopGlassFluid() {
+  if (runtimeOwner.stop && runtimeOwner.stop !== stopGlassFluid) return runtimeOwner.stop()
+  runtimeOwner.stop = stopGlassFluid
+  return stopGlassFluidImpl()
 }
 
 // 浏览器环境模块加载即自动启动（安装起停观察器：data-glass 稍后加上/摘除、媒体查询变化均自动起停）；

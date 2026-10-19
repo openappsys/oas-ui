@@ -261,6 +261,22 @@ describe('glass-fluid 运行时（动态层）', () => {
     add.mockRestore()
   })
 
+  it('globalThis 单例：重复模块加载把 start/stop 所有权委托给首实例', async () => {
+    const KEY = '__oas_glass_fluid_runtime_v1__'
+    delete (globalThis as Record<string, unknown>)[KEY]
+    vi.resetModules()
+    const first = await import('./glass-fluid.js')
+    vi.resetModules()
+    const second = await import('./glass-fluid.js')
+    const owner = (globalThis as unknown as Record<string, { start?: unknown; stop?: unknown }>)[KEY]!
+    expect(owner.start, '首实例持有 start 所有权').toBe(first.startGlassFluid)
+    expect(owner.start, '后续实例不得接管 start').not.toBe(second.startGlassFluid)
+    expect(owner.stop, '首实例持有 stop 所有权').toBe(first.stopGlassFluid)
+    // 第二个实例 stop 必须委托首实例（而不是操作自己未启动的状态）
+    second.stopGlassFluid()
+    delete (globalThis as Record<string, unknown>)[KEY]
+  })
+
   it('非鼠标指针抬起（触屏 tap）→ 经 pointerup 清理高光', async () => {
     document.documentElement.setAttribute('data-glass', '')
     const host = document.createElement('oas-button')
