@@ -98,7 +98,8 @@
     },
     {
       "name": "renderLabel",
-      "type": "SidebarLabelRenderer | null"
+      "type": "SidebarLabelRenderer | null",
+      "api": true
     }
   ],
   "events": [

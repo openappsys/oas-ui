@@ -726,7 +726,10 @@ export class OASSidebar extends OASElement {
 
   private _renderLabel: SidebarLabelRenderer | null = null
 
-  /** 自定义行内容：property 函数通道（不可序列化，不进 attribute/SSR；SSR 回退 label） */
+  /**
+   * 自定义行内容：property 函数通道（不可序列化，不进 attribute/SSR；SSR 回退 label）
+   * @apiProperty
+   */
   get renderLabel(): SidebarLabelRenderer | null {
     return this._renderLabel
   }
