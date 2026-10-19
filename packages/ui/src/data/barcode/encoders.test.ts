@@ -380,9 +380,83 @@ describe('EAN/UPC 护条不变量', () => {
   })
 })
 
+describe('GS1-128 / UPC-E / Codabar / MSI', () => {
+  it('GS1-128：Start B + FNC1 + B 子集数据 + mod103 校验，括号仅做分组', () => {
+    const r = encodeBarcode('(01)12345678901231', 'gs1-128')
+    expect(r.display).toBe('0112345678901231')
+    expect(r.symbols?.slice(0, 2)).toEqual([104, 102])
+    // ASCII '0'=16、'1'=17，括号被移除
+    expect(r.symbols?.slice(2, 4)).toEqual([16, 17])
+    assertRunInvariants(r)
+  })
+
+  it('GS1-128：| 映射 FNC1 分隔，空值/非 ASCII 失败', () => {
+    const r = encodeBarcode('0101234567890128|10ABC', 'gs1-128')
+    expect(r.symbols).toContain(102)
+    expect(() => encodeBarcode('', 'gs1-128')).toThrowError(BarcodeEncodeError)
+    try {
+      encodeBarcode('01中文', 'gs1-128')
+    } catch (e) {
+      expect((e as BarcodeEncodeError).reason).toBe('charset')
+    }
+  })
+
+  it('UPC-E：6 位按末位规则展开并补校验位；8 位全码校验', () => {
+    // 公开示例：UPC-A 042100005264 ↔ UPC-E 04252614
+    const r = encodeBarcode('425261', 'upce')
+    expect(r.display).toBe('04252614')
+    expect(r.modules).toBe(51)
+    expect(r.guards).toHaveLength(5)
+    expect(r.outside).toEqual({ left: '0', right: '4' })
+    expect(r.text).toEqual([{ value: '425261', start: 3, width: 42 }])
+    assertRunInvariants(r)
+    expect(() => encodeBarcode('04252614', 'upce')).not.toThrow()
+    try {
+      encodeBarcode('04252615', 'upce')
+    } catch (e) {
+      expect((e as BarcodeEncodeError).reason).toBe('checksum')
+    }
+    expect(() => encodeBarcode('42526', 'upce')).toThrowError(BarcodeEncodeError)
+  })
+
+  it('Codabar：A/B 起止符、字符间窄空、数据 HRI 不含起止符', () => {
+    const r = encodeBarcode('A1234B', 'codabar')
+    expect(r.display).toBe('1234')
+    // A(10) + 0 + 1(9) + 0 + 2(9) + 0 + 3(9) + 0 + 4(9) + 0 + B(10)
+    expect(r.modules).toBe(61)
+    expect(r.text).toEqual([{ value: '1234', start: 0, width: 61 }])
+    assertRunInvariants(r)
+    try {
+      encodeBarcode('12A?', 'codabar')
+    } catch (e) {
+      expect((e as BarcodeEncodeError).reason).toBe('charset')
+    }
+  })
+
+  it('MSI：纯数字 start 110 + 每数字 12 位 + stop 1001', () => {
+    const r = encodeBarcode('123', 'msi')
+    expect(r.display).toBe('123')
+    expect(r.modules).toBe(3 + 12 * 3 + 4)
+    expect(r.runs[0]).toBe(2) // 110 压缩为宽条 + 窄空
+    assertRunInvariants(r)
+    expect(() => encodeBarcode('12a', 'msi')).toThrowError(BarcodeEncodeError)
+  })
+})
+
 describe('format 分发与未知码制', () => {
-  it('BARCODE_FORMATS 恰为第一期 6 码制', () => {
-    expect([...BARCODE_FORMATS]).toEqual(['code128', 'ean13', 'ean8', 'upca', 'code39', 'itf14'])
+  it('BARCODE_FORMATS 为扩展后的 10 码制', () => {
+    expect([...BARCODE_FORMATS]).toEqual([
+      'code128',
+      'gs1-128',
+      'ean13',
+      'ean8',
+      'upce',
+      'upca',
+      'code39',
+      'codabar',
+      'msi',
+      'itf14',
+    ])
   })
 
   it('未知 format 拒绝（组件层归一回退，编码器层硬失败）', () => {

@@ -85,7 +85,7 @@ test('barcode：role=img 与 aria-label 落在图形元素上，非法输入渲�
   expect(badWarns, 'console 零告警').toEqual([])
 })
 
-test('barcode：六码制切换全部可渲染，整体宽度由内容决定；暗色下默认仍白底深条', async ({ page }) => {
+test('barcode：十码制切换全部可渲染，整体宽度由内容决定；暗色下默认仍白底深条', async ({ page }) => {
   await page.goto('/components/barcode.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-barcode')
 
@@ -100,13 +100,17 @@ test('barcode：六码制切换全部可渲染，整体宽度由内容决定；�
     }
     const svgOf = (el: HTMLElement): SVGSVGElement => el.shadowRoot!.querySelector('svg')!
 
-    // 六码制合法样例全部出条形 path
+    // 十码制合法样例全部出条形 path
     const cases: Array<[string, string, string]> = [
       ['code128', 'LOG-2026-0042', 'code128'],
+      ['gs1-128', '(01)12345678901231', 'gs1-128'],
       ['ean13', '4006381333931', 'ean13'],
       ['ean8', '96385074', 'ean8'],
+      ['upce', '425261', 'upce'],
       ['upca', '036000291452', 'upca'],
       ['code39', 'ASSET-0093', 'code39'],
+      ['codabar', 'A1234B', 'codabar'],
+      ['msi', '123456', 'msi'],
       ['itf14', '10614141000415', 'itf14'],
     ]
     const widths: Record<string, string> = {}
@@ -135,7 +139,7 @@ test('barcode：六码制切换全部可渲染，整体宽度由内容决定；�
     return { rendered, widths, clampedWidth, darkFill, darkPathFill }
   })
 
-  for (const key of ['code128', 'ean13', 'ean8', 'upca', 'code39', 'itf14']) {
+  for (const key of ['code128', 'gs1-128', 'ean13', 'ean8', 'upce', 'upca', 'code39', 'codabar', 'msi', 'itf14']) {
     expect(r.rendered[key], `${key} 应渲染出条形 path`).toBe(true)
     expect(Number(r.widths[key]), `${key} 宽度应由内容决定（>0）`).toBeGreaterThan(0)
   }

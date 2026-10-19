@@ -67,15 +67,26 @@ const PRESET_COLORS = new Set([
   'purple',
 ])
 
-const VALID_FORMATS = new Set(['code128', 'ean13', 'ean8', 'upca', 'code39', 'itf14'])
+const VALID_FORMATS = new Set([
+  'code128',
+  'gs1-128',
+  'ean13',
+  'ean8',
+  'upce',
+  'upca',
+  'code39',
+  'codabar',
+  'msi',
+  'itf14',
+])
 
 /**
  * oas-barcode —— 一维条码组件。
  *
  * 属性（kebab-case）：
  * - `value`：条码内容；空值走空态占位
- * - `format`：码制 `code128`（默认，auto A/B/C 子集切换）/ `ean13` / `ean8` / `upca` /
- *   `code39` / `itf14`；非法值静默回退 code128
+ * - `format`：码制 `code128`（默认，auto A/B/C 子集切换）/ `gs1-128` / `ean13` / `ean8` /
+ *   `upce` / `upca` / `code39` / `codabar` / `msi` / `itf14`；非法值静默回退 code128
  * - `bar-width`：X-dimension 条宽（px，默认 2，下限 clamp ≥1）
  * - `height`：条高（px，默认 100，不含文字区与护条延伸）
  * - `display-value`：人读文字显隐（默认显示；显式 `display-value="false"` 关闭）

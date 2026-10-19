@@ -66,10 +66,14 @@ describe('OASBarcode', () => {
   it('六码制全部可编码渲染（结构合法：条 path + 背景 rect）', () => {
     const cases: Array<[string, string]> = [
       ['code128', 'HELLO-128'],
+      ['gs1-128', '(01)12345678901231'],
       ['ean13', '4006381333931'],
       ['ean8', '96385074'],
+      ['upce', '425261'],
       ['upca', '036000291452'],
       ['code39', 'ABC 123'],
+      ['codabar', 'A1234B'],
+      ['msi', '123456'],
       ['itf14', '10614141000415'],
     ]
     for (const [format, value] of cases) {

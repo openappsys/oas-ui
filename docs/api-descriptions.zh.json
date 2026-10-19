@@ -2575,7 +2575,7 @@
     "attrs": {
       "aria-label": "图形元素（svg，`role=\"img\"`）可访问名称，缺省走 i18n",
       "value": "条码内容（空值走空态占位）",
-      "format": "码制：`code128`（默认，auto A/B/C 子集自动切换）/ `ean13` / `ean8` / `upca` / `code39` / `itf14`（非法值回退 code128）",
+      "format": "码制：`code128`（默认，auto A/B/C 子集自动切换）/ `gs1-128` / `ean13` / `ean8` / `upce` / `upca` / `code39` / `codabar` / `msi` / `itf14`（非法值回退 code128）",
       "bar-width": "条宽 X-dimension（px，默认 2，下限 clamp ≥1）",
       "height": "条高（px，默认 100，不含文字区与护条延伸）",
       "display-value": "人读文字显隐（默认显示；显式 `\"false\"` 关闭）",

@@ -5,7 +5,7 @@
 
 ---
 
-## 未发布：date-picker 范围手输 + sidebar 行内容渲染 🚧
+## 未发布：date-picker 范围手输 + sidebar 行内容渲染 + barcode 扩展 🚧
 
 ### 功能定义
 
@@ -15,11 +15,12 @@
 
 - **`oas-date-picker` 范围手输**：`daterange` / `datetimerange` / `monthrange` / `yearrange` 触发器开放键入，按 `separator`（默认 `~`）拆分起止；`datetimerange` 只键入日期时按 `default-time` 补齐；起止倒置、越界、禁用日期、非法输入回退当前值且不提交。`multiple` 保持只读回显。
 - **`oas-sidebar` 行内容**：新增 `renderLabel` property 函数通道 `(item) => Node | string | null`；Node 直接挂载到 label 区，字符串按纯文本渲染，null/undefined 回退 `item.label`。函数不写 attribute/不参与 SSR；可访问名称仍取 `item.label`，折叠态随文字区隐藏；行内交互统一走 `actions`。
+- **`oas-barcode` 扩展码制**：新增 GS1-128（首部 FNC1、`|` 字段分隔、括号仅分组）、UPC-E（6/7/8 位，按末位规则展开并计算校验位）、Codabar（A–D 起止符）与 MSI（纯数字、起始 110 + 12 位/数字 + 停止 1001）；`format` 新增 `gs1-128` / `upce` / `codabar` / `msi`，非法值继续回退 `code128`。
 
 ### 验收标准
 
-- 单测覆盖：范围四种类型的合法/倒置/越界/自定义 separator/default-time；sidebar 的 Node/字符串/null/先于连接赋值/aria-label。
-- e2e 覆盖真实键入与 demo 富内容渲染；a11y（light/dark）无新增严重违规；`pnpm test` / `typecheck` / `build` / `api:check` / `stats:check` / `llms:check` 全绿。
+- 单测覆盖：范围四种类型的合法/倒置/越界/自定义 separator/default-time；sidebar 的 Node/字符串/null/先于连接赋值/aria-label；barcode 四种新码制的合法/非法/校验位与 run 不变量。
+- e2e 覆盖真实键入、demo 富内容渲染与十码制切换；a11y（light/dark）无新增严重违规；`pnpm test` / `typecheck` / `build` / `api:check` / `stats:check` / `llms:check` 全绿。
 
 ---
 

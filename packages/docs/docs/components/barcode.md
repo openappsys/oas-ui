@@ -1,6 +1,6 @@
 # Barcode 条码
 
-基于**纯 TypeScript 零依赖编码器**（自研）的一维条码组件，第一期覆盖 6 码制（CODE128 / EAN-13 / EAN-8 / UPC-A / CODE39 / ITF-14），输出内联 SVG，可扫码、可下载。
+基于**纯 TypeScript 零依赖编码器**（自研）的一维条码组件，覆盖 10 码制（CODE128 / GS1-128 / EAN-13 / EAN-8 / UPC-E / UPC-A / CODE39 / Codabar / MSI / ITF-14），输出内联 SVG，可扫码、可下载。
 
 ## 基础用法
 
@@ -12,17 +12,21 @@
 
 ## 码制
 
-<DemoBlock title="第一期 6 码制">
+<DemoBlock title="十种码制">
   <div style="width: 100%; display: flex; gap: var(--oas-space-5); align-items: flex-start; flex-wrap: wrap">
     <oas-barcode value="LOG-2026-0042" format="code128" aria-label="CODE128 条码"></oas-barcode>
+    <oas-barcode value="(01)12345678901231" format="gs1-128" aria-label="GS1-128 条码"></oas-barcode>
     <oas-barcode value="4006381333931" format="ean13" aria-label="EAN-13 商品条码"></oas-barcode>
     <oas-barcode value="96385074" format="ean8" aria-label="EAN-8 商品条码"></oas-barcode>
+    <oas-barcode value="425261" format="upce" aria-label="UPC-E 商品条码"></oas-barcode>
     <oas-barcode value="036000291452" format="upca" aria-label="UPC-A 商品条码"></oas-barcode>
     <oas-barcode value="ASSET-0093" format="code39" aria-label="CODE39 资产条码"></oas-barcode>
+    <oas-barcode value="A1234B" format="codabar" aria-label="Codabar 条码"></oas-barcode>
+    <oas-barcode value="123456" format="msi" aria-label="MSI 条码"></oas-barcode>
     <oas-barcode value="10614141000415" format="itf14" aria-label="ITF-14 箱码"></oas-barcode>
   </div>
   <p style="width: 100%; margin: var(--oas-space-3) 0 0; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">
-    <code>format</code>：<code>code128</code>（默认，auto A/B/C）/ <code>ean13</code> / <code>ean8</code> / <code>upca</code> / <code>code39</code> / <code>itf14</code>，非法值回退 code128。EAN/UPC 系给 12/7/11/13 位数据时**自动补算校验位**，给全码则校验末位合法性；EAN-13 首位数字与 UPC-A 首末位按标准渲染在护条外侧，护条向下延伸。CODE39 自动大写化；ITF-14 为固定 13+1 位箱码。
+    <code>format</code>：<code>code128</code>（默认，auto A/B/C）/ <code>gs1-128</code> / <code>ean13</code> / <code>ean8</code> / <code>upce</code> / <code>upca</code> / <code>code39</code> / <code>codabar</code> / <code>msi</code> / <code>itf14</code>，非法值回退 code128。EAN/UPC 系给 12/7/11/13 位数据时**自动补算校验位**，给全码则校验末位合法性；EAN-13 首位数字与 UPC-A 首末位按标准渲染在护条外侧，护条向下延伸；UPC-E 接受 6/7/8 位并按末位规则展开补校验位。GS1-128 首部固定 FNC1，`|` 表示字段分隔（FNC1），`(01)…` 括号仅作视觉分组。CODE39 自动大写化；Codabar 用 A–D 作起止符；MSI 为纯数字基础码、不自动附加校验位；ITF-14 为固定 13+1 位箱码。
   </p>
 </DemoBlock>
 
@@ -165,7 +169,7 @@ onMounted(() => {
 | `color` | 条色（默认固定深色 `#18181b`——与固定白底配套保证 dark 可扫；`--oas-barcode-color` 变量或预设名/任意色值覆盖） | `string` | — |
 | `display-value` | 人读文字显隐（默认显示；显式 `"false"` 关闭） | `string` | — |
 | `font-size` | 人读文字字号（px，默认 16） | `string` | `16` |
-| `format` | 码制：`code128`（默认，auto A/B/C 子集自动切换）/ `ean13` / `ean8` / `upca` / `code39` / `itf14`（非法值回退 code128） | `string` | `code128` |
+| `format` | 码制：`code128`（默认，auto A/B/C 子集自动切换）/ `gs1-128` / `ean13` / `ean8` / `upce` / `upca` / `code39` / `codabar` / `msi` / `itf14`（非法值回退 code128） | `string` | `code128` |
 | `height` | 条高（px，默认 100，不含文字区与护条延伸） | `string` | `100` |
 | `margin` | 左右静区（px，缺省即 `10 × bar-width`——默认即可扫）；显式值低于 `10 × bar-width` 时收敛到下限并 console.warn 一次（可扫性护栏） | — | — |
 | `text-margin` | 文字与条间距（px，默认 4） | `string` | `4` |

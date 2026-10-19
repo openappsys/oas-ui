@@ -1,6 +1,6 @@
 # Barcode
 
-A 1D barcode component based on a **pure TypeScript, zero-dependency encoder** (built in-house). The first release covers 6 symbologies (CODE128 / EAN-13 / EAN-8 / UPC-A / CODE39 / ITF-14), outputs inline SVG, and is scannable and downloadable.
+A 1D barcode component based on a **pure TypeScript, zero-dependency encoder** (built in-house). It covers 10 symbologies (CODE128 / GS1-128 / EAN-13 / EAN-8 / UPC-E / UPC-A / CODE39 / Codabar / MSI / ITF-14), outputs inline SVG, and is scannable and downloadable.
 
 ## Basic Usage
 
@@ -12,17 +12,21 @@ A 1D barcode component based on a **pure TypeScript, zero-dependency encoder** (
 
 ## Symbologies
 
-<DemoBlock title="6 symbologies in the first release">
+<DemoBlock title="Ten symbologies">
   <div style="width: 100%; display: flex; gap: var(--oas-space-5); align-items: flex-start; flex-wrap: wrap">
     <oas-barcode value="LOG-2026-0042" format="code128" aria-label="CODE128 barcode"></oas-barcode>
+    <oas-barcode value="(01)12345678901231" format="gs1-128" aria-label="GS1-128 barcode"></oas-barcode>
     <oas-barcode value="4006381333931" format="ean13" aria-label="EAN-13 product barcode"></oas-barcode>
     <oas-barcode value="96385074" format="ean8" aria-label="EAN-8 product barcode"></oas-barcode>
+    <oas-barcode value="425261" format="upce" aria-label="UPC-E product barcode"></oas-barcode>
     <oas-barcode value="036000291452" format="upca" aria-label="UPC-A product barcode"></oas-barcode>
     <oas-barcode value="ASSET-0093" format="code39" aria-label="CODE39 asset barcode"></oas-barcode>
+    <oas-barcode value="A1234B" format="codabar" aria-label="Codabar barcode"></oas-barcode>
+    <oas-barcode value="123456" format="msi" aria-label="MSI barcode"></oas-barcode>
     <oas-barcode value="10614141000415" format="itf14" aria-label="ITF-14 carton barcode"></oas-barcode>
   </div>
   <p style="width: 100%; margin: var(--oas-space-3) 0 0; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">
-    <code>format</code>: <code>code128</code> (default, auto A/B/C) / <code>ean13</code> / <code>ean8</code> / <code>upca</code> / <code>code39</code> / <code>itf14</code>; invalid values fall back to code128. For EAN/UPC, 12/7/11/13 data digits get the **check digit calculated automatically**; a full-length code is validated against its last digit. The EAN-13 first digit and the UPC-A first/last digits are rendered outside the guard bars per the standard, and guard bars extend downward. CODE39 upper-cases input automatically; ITF-14 is a fixed 13+1 digit carton code.
+    <code>format</code>: <code>code128</code> (default, auto A/B/C) / <code>gs1-128</code> / <code>ean13</code> / <code>ean8</code> / <code>upce</code> / <code>upca</code> / <code>code39</code> / <code>codabar</code> / <code>msi</code> / <code>itf14</code>; invalid values fall back to code128. For EAN/UPC, 12/7/11/13 data digits get the **check digit calculated automatically**; a full-length code is validated against its last digit. The EAN-13 first digit and the UPC-A first/last digits are rendered outside the guard bars per the standard, and guard bars extend downward; UPC-E accepts 6/7/8 digits and expands by its last digit before computing the check digit. GS1-128 always starts with FNC1; <code>|</code> marks a field separator (FNC1), and <code>(01)…</code> parentheses are visual grouping only. CODE39 upper-cases input automatically; Codabar uses A–D start/stop characters; MSI is a numeric base code with no automatic check digit; ITF-14 is a fixed 13+1 digit carton code.
   </p>
 </DemoBlock>
 
@@ -165,7 +169,7 @@ onMounted(() => {
 | `color` | Bar color (default fixed dark `#18181b` — paired with the white background for dark-theme scannability; override via `--oas-barcode-color`, preset name, or any color value) | `string` | — |
 | `display-value` | Show the human readable interpretation (shown by default; set to `"false"` to hide) | `string` | — |
 | `font-size` | HRI text font size (px, default 16) | `string` | `16` |
-| `format` | Symbology: `code128` (default, auto A/B/C subset switching) / `ean13` / `ean8` / `upca` / `code39` / `itf14` (invalid values fall back to code128) | `string` | `code128` |
+| `format` | Symbology: `code128` (default, auto A/B/C subset switching) / `gs1-128` / `ean13` / `ean8` / `upce` / `upca` / `code39` / `codabar` / `msi` / `itf14` (invalid values fall back to code128) | `string` | `code128` |
 | `height` | Bar height (px, default 100, excluding the text zone and guard-bar extension) | `string` | `100` |
 | `margin` | Left/right quiet zone (px, defaults to `10 × bar-width`—scannable out of the box); explicit values below `10 × bar-width` are clamped up to the floor with a one-time console.warn (scannability guardrail) | — | — |
 | `text-margin` | Spacing between text and bars (px, default 4) | `string` | `4` |

@@ -20,10 +20,31 @@
  * 护条延伸信息 + HRI 文字分段（模块坐标）。渲染层只需按序画矩形，不感知码制差异。
  */
 
-export type BarcodeFormat = 'code128' | 'ean13' | 'ean8' | 'upca' | 'code39' | 'itf14'
+export type BarcodeFormat =
+  | 'code128'
+  | 'gs1-128'
+  | 'ean13'
+  | 'ean8'
+  | 'upce'
+  | 'upca'
+  | 'code39'
+  | 'codabar'
+  | 'msi'
+  | 'itf14'
 
-/** 第一期支持的码制清单（顺序即文档展示顺序） */
-export const BARCODE_FORMATS: readonly BarcodeFormat[] = ['code128', 'ean13', 'ean8', 'upca', 'code39', 'itf14']
+/** 支持的码制清单（顺序即文档展示顺序） */
+export const BARCODE_FORMATS: readonly BarcodeFormat[] = [
+  'code128',
+  'gs1-128',
+  'ean13',
+  'ean8',
+  'upce',
+  'upca',
+  'code39',
+  'codabar',
+  'msi',
+  'itf14',
+]
 
 /** 非法输入失败原因：字符集不符 / 位数不符 / 校验位不符 */
 export type InvalidReason = 'charset' | 'length' | 'checksum'
@@ -301,8 +322,62 @@ function code128Symbols(data: string): number[] {
   return symbols
 }
 
+/** 符号序列 → 条/空 runs（含停止符；CODE128 所有条目复用） */
+function code128Runs(symbols: number[]): number[] {
+  const runs: number[] = []
+  for (const s of symbols) {
+    for (const ch of CODE128_PATTERNS[s]!) runs.push(Number(ch))
+  }
+  for (const ch of CODE128_STOP) runs.push(Number(ch))
+  return runs
+}
+
+/** CODE128 系统一产物（HRI 文本按原值单段） */
+function code128Result(symbols: number[], display: string): EncodeResult {
+  const runs = code128Runs(symbols)
+  const modules = runs.reduce((a, b) => a + b, 0)
+  return {
+    runs,
+    guards: [],
+    guardExtend: 0,
+    modules,
+    text: [{ value: display, start: 0, width: modules }],
+    outside: {},
+    display,
+    symbols,
+  }
+}
+
 /* ------------------------------------------------------------------ *
- * EAN-13 / EAN-8 / UPC-A（ISO/IEC 15420；GS1 GenSpec）
+ * GS1-128（ISO/IEC 15417 + GS1 FNC1；B 子集，`|` 表示 FNC1 分隔）
+ * ------------------------------------------------------------------ */
+
+/**
+ * GS1-128：值首部固定 FNC1（AI 数据起始语义），`|` 作为字段分隔（FNC1）；
+ * 允许 `(01)……` 括号书写但括号只做视觉分组、不进入码字。仅 B 子集 ASCII 32–126。
+ */
+function encodeGs1_128(value: string): EncodeResult {
+  const raw = value.trim()
+  if (raw.length === 0) throw new BarcodeEncodeError('length', 'GS1-128 内容不能为空')
+  const clean = raw.replace(/[()]/g, '')
+  const symbols: number[] = [104, 102] // Start B + FNC1
+  for (const ch of clean) {
+    if (ch === '|') {
+      symbols.push(102)
+      continue
+    }
+    const code = ch.charCodeAt(0)
+    if (code < 32 || code > 126) {
+      throw new BarcodeEncodeError('charset', `GS1-128 仅支持 ASCII 32–126，收到：${JSON.stringify(ch)}`)
+    }
+    symbols.push(code - 32)
+  }
+  symbols.push(code128Checksum(symbols))
+  return code128Result(symbols, clean.replace(/\|/g, ''))
+}
+
+/* ------------------------------------------------------------------ *
+ * EAN-13 / EAN-8 / UPC-A / UPC-E（ISO/IEC 15420；GS1 GenSpec）
  * ------------------------------------------------------------------ */
 
 /** 左侧奇（L）/ 偶（G）奇偶编码与右侧（R）编码（7 位模块串） */
@@ -354,6 +429,32 @@ const EAN13_PARITY: readonly string[] = [
   'LGLGLG',
   'LGLGGL',
   'LGGLGL',
+]
+
+/** UPC-E 奇偶模式：number system 0 / 1，下标为校验位（O=L、E=G） */
+const UPCE_PARITY_NS0: readonly string[] = [
+  'EEEOOO',
+  'EEOEOO',
+  'EEOOEO',
+  'EEOOOE',
+  'EOEEOO',
+  'EOOEEO',
+  'EOOOEE',
+  'EOEOEO',
+  'EOEOOE',
+  'EOOEOE',
+]
+const UPCE_PARITY_NS1: readonly string[] = [
+  'OOOEEE',
+  'OOEOEE',
+  'OOEEOE',
+  'OOEEEO',
+  'OEOOEE',
+  'OEEOOE',
+  'OEEEOO',
+  'OEOEOE',
+  'OEOEEO',
+  'OEEOEO',
 ]
 
 /** 位串压缩为条/空 run 序列（位串恒以 1 开头） */
@@ -464,6 +565,63 @@ function encodeUpca(value: string): EncodeResult {
   }
 }
 
+/**
+ * UPC-E：接受 6 位（默认 number system 0）/ 7 位（首位 0/1）/ 8 位（含校验位）。
+ * 6 位数字按末位规则展开为 UPC-A 11 位载荷后算 check，再按 number system + check
+ * 选奇偶模式（O=L、E=G）；结构 101 + 6×7 + 010101 = 51 模块。
+ */
+function encodeUpce(value: string): EncodeResult {
+  requireDigits(value, 'UPC-E')
+  if (value.length !== 6 && value.length !== 7 && value.length !== 8) {
+    throw new BarcodeEncodeError('length', `UPC-E 需要 6 / 7 / 8 位数字，收到 ${value.length} 位`)
+  }
+  const ns = value.length === 6 ? '0' : value[0]!
+  if (ns !== '0' && ns !== '1') {
+    throw new BarcodeEncodeError('charset', `UPC-E number system 仅支持 0/1，收到 ${ns}`)
+  }
+  const body = value.length === 6 ? value : value.slice(1, 7)
+  const inputCheck = value.length === 8 ? value[7]! : null
+  const last = body[5]!
+  let payload = ''
+  if (last === '0' || last === '1' || last === '2') {
+    // MM + last + 00 + 00 + PPP
+    payload = ns + body.slice(0, 2) + last + '0000' + body.slice(2, 5)
+  } else if (last === '3') {
+    // MMM + 00 + 000 + PP
+    payload = ns + body.slice(0, 3) + '00000' + body.slice(3, 5)
+  } else if (last === '4') {
+    // MMMM + 0 + 0000 + P
+    payload = ns + body.slice(0, 4) + '0' + '0000' + body.slice(4, 5)
+  } else {
+    // MMMMM + 0000 + P
+    payload = ns + body.slice(0, 5) + '0000' + body.slice(5, 6)
+  }
+  const check = gs1CheckDigit(payload)
+  if (inputCheck && inputCheck !== check) {
+    throw new BarcodeEncodeError('checksum', `UPC-E 校验位不符：末位应为 ${check}，收到 ${inputCheck}`)
+  }
+  const parity = (ns === '0' ? UPCE_PARITY_NS0 : UPCE_PARITY_NS1)[Number(check)]!
+  let bits = '101'
+  for (let k = 0; k < 6; k++) {
+    bits += parity[k] === 'E' ? EAN_G[Number(body[k])] : EAN_L[Number(body[k])]
+  }
+  bits += '010101'
+  const { runs, guards } = encodeEanModules(bits, [
+    [0, 2],
+    [46, 48],
+    [50, 50],
+  ])
+  return {
+    runs,
+    guards,
+    guardExtend: 5,
+    modules: 51,
+    text: [{ value: body, start: 3, width: 42 }],
+    outside: { left: ns, right: check },
+    display: `${ns}${body}${check}`,
+  }
+}
+
 /* ------------------------------------------------------------------ *
  * CODE39（ISO/IEC 16388；43 字符 + 起止符）
  * ------------------------------------------------------------------ */
@@ -561,6 +719,111 @@ function encodeCode39(value: string): EncodeResult {
 }
 
 /* ------------------------------------------------------------------ *
+ * Codabar（NW-7 / ANSI/AIM BC3；7 元素 4 条 3 空，起止 A–D）
+ * ------------------------------------------------------------------ */
+
+/** 标准 Codabar 位串表（1=条，0=空；字符间补 1 个窄空） */
+const CODABAR_PATTERNS: Readonly<Record<string, string>> = {
+  '0': '101010011',
+  '1': '101011001',
+  '2': '101001011',
+  '3': '110010101',
+  '4': '101101001',
+  '5': '110101001',
+  '6': '100101011',
+  '7': '100101101',
+  '8': '100110101',
+  '9': '110100101',
+  '-': '101001101',
+  $: '101100101',
+  ':': '1101011011',
+  '/': '1101101011',
+  '.': '1101101101',
+  '+': '1011011011',
+  A: '1011001001',
+  B: '1010010011',
+  C: '1001001011',
+  D: '1010011001',
+}
+const CODABAR_BODY = new Set('0123456789-$:/.+')
+const CODABAR_DELIM = new Set(['A', 'B', 'C', 'D'])
+
+function encodeCodabar(value: string): EncodeResult {
+  const raw = value.trim()
+  if (raw.length === 0) throw new BarcodeEncodeError('length', 'Codabar 内容不能为空')
+  let body = raw
+  let start = 'A'
+  let stop = 'A'
+  const first = raw[0]!.toUpperCase()
+  const last = raw[raw.length - 1]!.toUpperCase()
+  if (CODABAR_DELIM.has(first) || CODABAR_DELIM.has(last)) {
+    if (raw.length < 3 || !CODABAR_DELIM.has(first) || !CODABAR_DELIM.has(last)) {
+      throw new BarcodeEncodeError('charset', 'Codabar 起止符必须同时为 A–D')
+    }
+    start = first
+    stop = last
+    body = raw.slice(1, -1)
+  }
+  if (body.length === 0) throw new BarcodeEncodeError('length', 'Codabar 数据不能为空')
+  for (const ch of body) {
+    if (!CODABAR_BODY.has(ch)) {
+      throw new BarcodeEncodeError('charset', `Codabar 仅接受 0-9 与 - $ : / . +，收到：${JSON.stringify(ch)}`)
+    }
+  }
+  let bits = CODABAR_PATTERNS[start]!
+  for (const ch of body) bits += '0' + CODABAR_PATTERNS[ch]!
+  bits += '0' + CODABAR_PATTERNS[stop]!
+  const runs = compressBits(bits)
+  const modules = runs.reduce((a, b) => a + b, 0)
+  return {
+    runs,
+    guards: [],
+    guardExtend: 0,
+    modules,
+    text: [{ value: body, start: 0, width: modules }],
+    outside: {},
+    display: body,
+  }
+}
+
+/* ------------------------------------------------------------------ *
+ * MSI（Plessey / MSI Mod 10 基础码；纯数字，不自动附加校验位）
+ * ------------------------------------------------------------------ */
+
+/** 每个数字 12 位（4 条/空交替，1=条） */
+const MSI_PATTERNS: readonly string[] = [
+  '100100100100',
+  '100100100110',
+  '100100110100',
+  '100100110110',
+  '100110100100',
+  '100110100110',
+  '100110110100',
+  '100110110110',
+  '110100100100',
+  '110100100110',
+]
+
+function encodeMsi(value: string): EncodeResult {
+  requireDigits(value, 'MSI')
+  if (value.length === 0) throw new BarcodeEncodeError('length', 'MSI 内容不能为空')
+  let bits = '110'
+  for (const ch of value) bits += MSI_PATTERNS[Number(ch)]!
+  bits += '1001'
+  const runs = compressBits(bits)
+  const modules = runs.reduce((a, b) => a + b, 0)
+  return {
+    runs,
+    guards: [],
+    guardExtend: 0,
+    modules,
+    text: [{ value, start: 0, width: modules }],
+    outside: {},
+    display: value,
+  }
+}
+
+/* ------------------------------------------------------------------ *
  * ITF-14（GS1 GenSpec；交插 2of5 + mod10，固定 13+1 位）
  * ------------------------------------------------------------------ */
 
@@ -610,33 +873,24 @@ function encodeItf14(value: string): EncodeResult {
 /** 按码制编码；未知码制硬失败（组件层负责归一回退 code128） */
 export function encodeBarcode(value: string, format: BarcodeFormat): EncodeResult {
   switch (format) {
-    case 'code128': {
-      const symbols = code128Symbols(value)
-      const runs: number[] = []
-      for (const s of symbols) {
-        for (const ch of CODE128_PATTERNS[s]!) runs.push(Number(ch))
-      }
-      for (const ch of CODE128_STOP) runs.push(Number(ch))
-      const modules = runs.reduce((a, b) => a + b, 0)
-      return {
-        runs,
-        guards: [],
-        guardExtend: 0,
-        modules,
-        text: [{ value, start: 0, width: modules }],
-        outside: {},
-        display: value,
-        symbols,
-      }
-    }
+    case 'code128':
+      return code128Result(code128Symbols(value), value)
+    case 'gs1-128':
+      return encodeGs1_128(value)
     case 'ean13':
       return encodeEan13(value)
     case 'ean8':
       return encodeEan8(value)
+    case 'upce':
+      return encodeUpce(value)
     case 'upca':
       return encodeUpca(value)
     case 'code39':
       return encodeCode39(value)
+    case 'codabar':
+      return encodeCodabar(value)
+    case 'msi':
+      return encodeMsi(value)
     case 'itf14':
       return encodeItf14(value)
     default:

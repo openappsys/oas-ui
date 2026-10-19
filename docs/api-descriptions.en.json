@@ -2575,7 +2575,7 @@
     "attrs": {
       "aria-label": "Accessible name of the graphic element (svg, `role=\"img\"`); defaults to i18n",
       "value": "Barcode content (empty value shows the empty placeholder)",
-      "format": "Symbology: `code128` (default, auto A/B/C subset switching) / `ean13` / `ean8` / `upca` / `code39` / `itf14` (invalid values fall back to code128)",
+      "format": "Symbology: `code128` (default, auto A/B/C subset switching) / `gs1-128` / `ean13` / `ean8` / `upce` / `upca` / `code39` / `codabar` / `msi` / `itf14` (invalid values fall back to code128)",
       "bar-width": "Bar width X-dimension (px, default 2, clamped to ≥1)",
       "height": "Bar height (px, default 100, excluding the text zone and guard-bar extension)",
       "display-value": "Show the human readable interpretation (shown by default; set to `\"false\"` to hide)",
