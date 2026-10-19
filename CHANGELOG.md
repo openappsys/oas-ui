@@ -8,7 +8,8 @@
 
 - **`@oas-ui/theme` 发布 CSS 最小化**：`index.css` 改为由 `index.source.css` 生成的无注释产物，保留源码文件与既有导出路径；实测 `index.css` 从 10,767 B / 3.8 KB gzip 降至 7,343 B / 1.7 KB gzip。
 - **真实浏览器堆内存回归**：新增 Chromium CDP GC soak，覆盖 list / tree / kanban / scheduler 各 8 轮挂载/卸载；本轮实测堆增长为 0。Firefox 无 `performance.memory`，自动跳过该断言。
-- **开发依赖安全升级**：同步升级 Playwright、Vitest、Vite、happy-dom 等开发依赖，并将 `@oas-ui/ssr` 的 happy-dom 与测试环境统一到 21.x，消除双版本 `Illegal constructor`；`pnpm audit --prod` 仅剩 VitePress 内置 Vite 5 的 dev server 告警（仅本地文档开发环境，CI/发布产物不暴露）。
+- **开发依赖安全升级**：同步升级 Playwright、Vitest、Vite、happy-dom 等开发依赖，并将 `@oas-ui/ssr` 的 happy-dom 与测试环境统一到 21.x，消除双版本 `Illegal constructor`。
+- **文档站升级 VitePress 2 alpha 试用**：`vitepress` 升到 `2.0.0-alpha.20`（Vite 8），`pnpm audit --prod` 清零；构建、首页/组件 smoke、visual、console 与 barcode a11y 均通过。同步修复 breadcrumb 示例中不合规的 `::part(item):nth-child()` 选择器（Lightning CSS 会拒绝整条规则），示例改为纵向层级列表；VitePress 2 仍为 alpha，升级后的 dev server 需重启。
 
 ### 功能
 
