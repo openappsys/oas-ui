@@ -4,7 +4,7 @@
 
 OAS-UI 设计 token 包 —— CSS 变量体系：light / dark / high-contrast 三套主题色板、间距、字号、圆角等。通过 `html[data-theme="dark"]` 切换主题。
 
-> 本包 = **语义 token（CSS）** + 若干**独立可选层**（皮肤 `skins.css`、玻璃材质 `glass.css` + 运行时 `glass-fluid.js`）。可选层均为 opt-in 独立文件：不引入即零影响，且不进 `@oas-ui/ui` 体积。详见[液态玻璃指南](https://oas-ui.dev/guide/glass)。
+> 本包 = **语义 token（CSS）** + 若干**独立可选层**（皮肤 `skins.css`、玻璃材质 `glass.css` + 运行时 `glass-fluid.js`）。可选层均为 opt-in 独立文件：不引入即零影响，且不进 `@oas-ui/ui` 体积。详见[磨砂玻璃指南](https://oas-ui.dev/guide/glass)。
 
 ### 安装
 
@@ -67,7 +67,7 @@ document.documentElement.dataset.skin = 'emerald' // violet | emerald | rose | a
 
 `@oas-ui/theme` — the design token package of OAS-UI. A CSS variable system: light / dark / high-contrast color palettes, spacing, font sizes, radii, etc. Switch themes via `html[data-theme="dark"]`.
 
-> This package = **semantic tokens (CSS)** + a few **independent optional layers** (skins `skins.css`, glass material `glass.css` + runtime `glass-fluid.js`). Every optional layer is an opt-in standalone file: zero effect unless imported, and it never adds to the `@oas-ui/ui` bundle. See the [Liquid Glass guide](https://oas-ui.dev/en/guide/glass).
+> This package = **semantic tokens (CSS)** + a few **independent optional layers** (skins `skins.css`, glass material `glass.css` + runtime `glass-fluid.js`). Every optional layer is an opt-in standalone file: zero effect unless imported, and it never adds to the `@oas-ui/ui` bundle. See the [Frosted glass guide](https://oas-ui.dev/en/guide/glass).
 
 ### Install
 

@@ -9,6 +9,7 @@
 - **`oas-gantt` 行斑马纹（`stripe`，默认关）**：按**绝对行号**奇偶给行加底色（虚拟化/窗口化滚动稳定），颜色走新 token `--oas-gantt-row-stripe-bg`（缺省 `--oas-color-bg-hover`）；选中/周末假日等背景覆盖条纹。任务优先级色继续用 `GanttTask.color`（任务条/进度底色）。
 - **`oas-kanban` 优先级强调色（`cards[].color` / `columns[].color`，可选）**：仅渲染 3px 强调条（卡片左侧竖条 / 列头顶部横条，逻辑属性 RTL 镜像），不整卡/整列上色、不改变布局；缺省零视觉变化。
 - **液态玻璃暗色档可感知性**：暗色下 `--oas-glass-ring` / `-sheen` / `-press` 与模糊强度重新标定（高光仍低于浅色档），修复深色背景上边缘高光与透光层次几乎不可见；亮色档不变，`high-contrast` 仍不启用，文字对比度门禁保持。
+- **磨砂玻璃（Frosted Glass）命名与降低透明度**：对外文档/画廊/README 将“液态玻璃”统一为“磨砂玻璃（Frosted Glass）”，避免与 Apple Liquid Glass 混淆；文件名与 `--oas-glass-*` API 不变。新增 `prefers-reduced-transparency: reduce` 回退：实心 surface、关闭模糊/折光边/动态高光，保留圆角与阴影。
 - **框架接入指南**：新增 `guide/frameworks`（zh/en），集中说明 React 19 原生事件写法、`@oas-ui/react` hooks 的定位与限制、Vue/Nuxt 的 `isCustomElement` 配置、复杂 property/布尔属性/SSR 常见坑；不新增 wrapper 包。
 
 ### 修复

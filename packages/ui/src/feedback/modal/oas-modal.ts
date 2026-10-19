@@ -134,7 +134,7 @@ const STYLE = `
      （dialog 静息态 transform:none 不构成包含块），P17 无回归 */
   overflow: hidden;
   box-shadow: var(--oas-shadow-lg);
-  /* 液态玻璃接线（容器级 surface）：变量缺省时 blur=none / ring=transparent，零影响 */
+  /* 磨砂玻璃接线（容器级 surface）：变量缺省时 blur=none / ring=transparent，零影响 */
   backdrop-filter: var(--oas-glass-blur, none);
   -webkit-backdrop-filter: var(--oas-glass-blur, none);
   outline: 1px solid var(--oas-glass-ring, transparent);

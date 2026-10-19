@@ -20,7 +20,7 @@ const STYLE = `
 .menu-anchor[hidden] {
   display: none;
 }
-/* 液态玻璃接线（容器级 surface）：视觉面是内层 oas-menu 本体（menu-anchor 仅定位壳，
+/* 磨砂玻璃接线（容器级 surface）：视觉面是内层 oas-menu 本体（menu-anchor 仅定位壳，
    无背景接 blur 无意义），ring 叠加在其视觉边框上；变量缺省时零影响 */
 .menu-anchor oas-menu {
   backdrop-filter: var(--oas-glass-blur, none);

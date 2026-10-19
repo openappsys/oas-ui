@@ -1,5 +1,5 @@
 /**
- * @oas-ui/theme/glass-fluid.js 类型声明（液态玻璃动态层运行时）。
+ * @oas-ui/theme/glass-fluid.js 类型声明（磨砂玻璃动态层运行时）。
  * 供 TS 宿主具名导入生命周期钩子/en：「引包即生效」的 side-effect import 无需类型。
  */
 

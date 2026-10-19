@@ -29,7 +29,7 @@ const STYLE = `
   border-radius: max(0px, min(var(--oas-radius-sm), calc((var(--oas-tip-cross, 999px) - 11.31px) / 2)));
   background: var(--oas-tooltip-bg, var(--oas-color-text-primary));
   color: var(--oas-tooltip-color, var(--oas-color-bg));
-  /* 液态玻璃接线（容器级 surface）：变量缺省时零影响 */
+  /* 磨砂玻璃接线（容器级 surface）：变量缺省时零影响 */
   backdrop-filter: var(--oas-glass-blur, none);
   -webkit-backdrop-filter: var(--oas-glass-blur, none);
   outline: 1px solid var(--oas-glass-ring, transparent);

@@ -72,7 +72,7 @@ const STYLE = `
   bottom: 0;
   z-index: calc(var(--oas-z-index-base, 0) + var(--oas-z-modal, 1300) + 1);
   background: var(--oas-color-bg);
-  /* 液态玻璃接线（容器级 surface）：变量缺省时零影响 */
+  /* 磨砂玻璃接线（容器级 surface）：变量缺省时零影响 */
   backdrop-filter: var(--oas-glass-blur, none);
   -webkit-backdrop-filter: var(--oas-glass-blur, none);
   outline: 1px solid var(--oas-glass-ring, transparent);

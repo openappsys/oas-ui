@@ -70,7 +70,7 @@ const STYLE = `
   box-shadow: var(--oas-shadow-md);
   padding: var(--oas-space-4);
   min-width: 200px;
-  /* 液态玻璃接线（容器级 surface）：变量缺省时零影响 */
+  /* 磨砂玻璃接线（容器级 surface）：变量缺省时零影响 */
   backdrop-filter: var(--oas-glass-blur, none);
   -webkit-backdrop-filter: var(--oas-glass-blur, none);
   outline: 1px solid var(--oas-glass-ring, transparent);

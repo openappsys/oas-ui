@@ -1,5 +1,5 @@
 /**
- * @oas-ui/theme/glass-fluid.js —— 液态玻璃「动态层」运行时（可选，伴随 glass.css）。
+ * @oas-ui/theme/glass-fluid.js —— 磨砂玻璃「动态层」运行时（可选，伴随 glass.css）。
  *
  * 职责（B 档：玻璃规则体从组件剥离，动态层由运行时注入）：
  * 1. **注入高光样式表**：按注册表（tag → surface 选择器）把一张共享 `CSSStyleSheet`

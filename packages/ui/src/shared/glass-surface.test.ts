@@ -28,7 +28,7 @@ import { OASAppBar } from '../navigation/app-bar/index.js'
 import { OASBottomNavigation } from '../navigation/bottom-navigation/index.js'
 
 /**
- * 液态玻璃 L1：浮层 surface 统一接线共享测试。
+ * 磨砂玻璃 L1：浮层 surface 统一接线共享测试。
  *
  * 每个浮层 surface 组件（容器级弹层面板/卡片本体，行级/长列表不接）的 shadow
  * 样式必须消费 `--oas-glass-blur` / `--oas-glass-ring` 两个效果变量（缺省值
@@ -77,7 +77,7 @@ function styleText(el: HTMLElement): string {
   return style!.textContent ?? ''
 }
 
-describe('液态玻璃 L1：浮层 surface 接线', () => {
+describe('磨砂玻璃 L1：浮层 surface 接线', () => {
   afterEach(() => {
     document.body.innerHTML = ''
   })
@@ -221,6 +221,18 @@ describe('玻璃跨浏览器一致性：不依赖浏览器专属位移滤镜', (
       expect(source, `[${f}] 不得含 data-glass* 标记属性`).not.toMatch(/data-glass/)
       expect(source, `[${f}] 不得含玻璃高光规则（sheen）`).not.toContain('oas-glass-sheen')
     }
+  })
+
+  it('prefers-reduced-transparency 回退实心并关闭模糊/折光边/高光', () => {
+    const css = readFileSync(resolve(import.meta.dirname, '../../../../packages/theme/glass.css'), 'utf8')
+    const idx = css.indexOf('prefers-reduced-transparency')
+    expect(idx).toBeGreaterThan(0)
+    const block = css.slice(idx)
+    expect(block).toContain('--oas-glass-blur: none')
+    expect(block).toContain('--oas-glass-ring: transparent')
+    expect(block).toContain('--oas-glass-sheen: transparent')
+    expect(block).toContain('--oas-color-bg: #ffffff')
+    expect(block).toContain('--oas-color-bg: #18181b')
   })
 
   it('glass.css 定义动态流动感高光变量（sheen/半径/按压档，明暗双段）', () => {

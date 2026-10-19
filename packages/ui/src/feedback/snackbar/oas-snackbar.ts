@@ -19,7 +19,7 @@ const STYLE = `
   padding: var(--oas-space-2) var(--oas-space-4);
   border-radius: var(--oas-radius-md);
   background: var(--oas-color-bg-elevated);
-  /* 液态玻璃接线（容器级 surface）：变量缺省时零影响 */
+  /* 磨砂玻璃接线（容器级 surface）：变量缺省时零影响 */
   backdrop-filter: var(--oas-glass-blur, none);
   -webkit-backdrop-filter: var(--oas-glass-blur, none);
   outline: 1px solid var(--oas-glass-ring, transparent);

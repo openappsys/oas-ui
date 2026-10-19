@@ -1,4 +1,4 @@
-// 液态玻璃 L2：材质机制 + 感知对比度实测门禁（PRD 承诺：代表性背景 <60 零容忍）。
+// 磨砂玻璃 L2：材质机制 + 感知对比度实测门禁（PRD 承诺：代表性背景 <60 零容忍）。
 // 方法：已知纯底背板上的半透明 surface 做 alpha 合成求有效底色，对 surface 文字色跑
 // 感知对比度（与 a11y.spec 同源 oklab 评分）——亮蓝/品红/深青三类代表背板 × 明暗双主题。
 
@@ -50,7 +50,7 @@ const BACKDROPS: Array<[string, [number, number, number]]> = [
   ['深青', [31, 74, 68]],
 ]
 
-test.describe('液态玻璃材质层', () => {
+test.describe('磨砂玻璃材质层', () => {
   for (const theme of ['light', 'dark']) {
     test(`材质机制 + 文字感知对比度（${theme}，三类背板 <60 零容忍）`, async ({ page }) => {
       await page.goto(PAGE, { waitUntil: 'domcontentloaded' })
@@ -224,6 +224,35 @@ test.describe('玻璃材质与动态高光（跨浏览器一致）', () => {
     ['oas-bottom-navigation', (h) => h.shadowRoot!.querySelector('.tablist')],
     ['oas-message', (h) => h.shadowRoot!.querySelector('.box')],
   ]
+
+  test('prefers-reduced-transparency：实心回退（关 blur/ring/sheen）', async ({ page, browserName }) => {
+    test.skip(browserName !== 'chromium', 'CDP media emulation is Chromium-only')
+    await page.goto(PAGE, { waitUntil: 'domcontentloaded' })
+    await page.waitForTimeout(800)
+    const cdp = await page.context().newCDPSession(page)
+    await cdp.send('Emulation.setEmulatedMedia', {
+      features: [{ name: 'prefers-reduced-transparency', value: 'reduce' }],
+    })
+    await page.waitForTimeout(250)
+    const r = await page.evaluate(() => {
+      const root = getComputedStyle(document.documentElement)
+      const card = getComputedStyle(document.querySelector('.gg-card')!)
+      return {
+        matched: matchMedia('(prefers-reduced-transparency: reduce)').matches,
+        blur: root.getPropertyValue('--oas-glass-blur').trim(),
+        ring: root.getPropertyValue('--oas-glass-ring').trim(),
+        sheen: root.getPropertyValue('--oas-glass-sheen').trim(),
+        cardBg: card.backgroundColor,
+        cardBlur: card.backdropFilter,
+      }
+    })
+    expect(r.matched).toBe(true)
+    expect(r.blur).toBe('none')
+    expect(r.ring).toBe('transparent')
+    expect(r.sheen).toBe('transparent')
+    expect(r.cardBg).toBe('rgb(255, 255, 255)')
+    expect(r.cardBlur).toBe('none')
+  })
 
   test('动态流动感：多组件指针命中 → 坐标变量 + 高光亮起 → 离开清理（跨引擎）', async ({ page }) => {
     await page.goto(PAGE, { waitUntil: 'domcontentloaded' })

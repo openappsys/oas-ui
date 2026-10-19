@@ -1,4 +1,4 @@
-# 液态玻璃画廊
+# 磨砂玻璃画廊
 
 > 半透明 surface + backdrop 模糊 + 高光折光边的材质层（不依赖浏览器专属滤镜，Chromium / Firefox 同构；动态流动感由可选运行时 `glass-fluid.js` 提供——指针镜面高光 + 按压收紧，详见本页「动态流动感」）。
 
@@ -57,7 +57,7 @@ onBeforeUnmount(() => {
       <oas-input placeholder="输入框（实心控件）" style="width: 220px"></oas-input>
     </div>
   </div>
-  <oas-modal v-if="open" visible no-mask draggable title="液态玻璃对话框" @oas-close="open = false">
+  <oas-modal v-if="open" visible no-mask draggable title="磨砂玻璃对话框" @oas-close="open = false">
     <p>面板背景透出背后的渐变与按钮——blur + 高光边共同构成玻璃材质。</p>
   </oas-modal>
 </div>
@@ -112,9 +112,11 @@ onBeforeUnmount(() => {
 
 - `data-glass` 叠加在 `data-theme` / `data-skin` 之上，三者自由组合；
 - 材质依赖背景反差——给页面一个有色彩层次的背景（渐变/图片）时质感最强，纯色同色相背景上减弱（文字仍可读）；
+- 照片/视频等不可控 busy 背景不保证文字对比度；必要时提高 surface alpha 或在局部关闭玻璃层；
 - 暗色档单独标定：`--oas-glass-ring` / `-sheen` / `-press` 比浅色低但不再压到不可感知（边缘高光、透光层次可见），模糊强度略增；亮/暗切换无需改用法；
 - 局部降级：任意容器覆盖 `--oas-glass-blur: none; --oas-glass-ring: transparent`；
-- `high-contrast` 主题下不启用（实心可访问性档优先）。
+- `high-contrast` 主题下不启用（实心可访问性档优先）；
+- 系统 `prefers-reduced-transparency: reduce` 下回退实心 surface（关闭模糊、折光边和动态高光，保留圆角/阴影）。
 
 ### 动态流动感（指针镜面高光，可选运行时）
 

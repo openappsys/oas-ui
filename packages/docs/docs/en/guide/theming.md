@@ -39,7 +39,7 @@ document.documentElement.dataset.skin = 'emerald' // violet | emerald | rose | a
 
 A skin only overrides `--oas-color-primary`; the derived steps (`-hover` / `-active` / `-primary-text` / focus ring) follow automatically. For deeper customization (surfaces / radius / density) use the CSS variable overrides below.
 
-## Liquid Glass (glass.css)
+## Frosted Glass (glass.css)
 
 `@oas-ui/theme/glass.css` provides a liquid-glass material layer (optional, same mechanism as skins.css: opt-in, zero impact when not loaded)—translucent surfaces + backdrop blur + specular edge ring + larger radii + deeper layered shadows. Stack `data-glass` on top of `data-theme` / `data-skin`; all three compose freely:
 
@@ -52,17 +52,18 @@ A skin only overrides `--oas-color-primary`; the derived steps (`-hover` / `-act
 
 **Mechanism**: 25 floating-surface components (modal / drawer / popover / tooltip / dropdown / select-family panels / message / snackbar / bottom-sheet / app-bar, etc.) uniformly consume `--oas-glass-blur` (backdrop-filter tier) and `--oas-glass-ring` (specular outline ring). Without glass.css everything falls back to `none` / `transparent`, leaving components exactly as before.
 
-**Cross-browser consistency**: this material layer uses cross-browser CSS only (translucent tokens / `backdrop-filter` / `outline` / `box-shadow`) and no SVG displacement filter. The v2.6.0 static edge refraction relied on a data-URI `filter` that Chromium executes but Firefox ignores, so the same component could show jagged edges and different visual sizes per engine; it was removed in the unreleased cleanup. **Dynamic fluidity** (pointer specular highlight + press tightening) remains available via the optional `glass-fluid.js` runtime (see [Liquid Glass](/en/guide/glass)) and does not change geometry.
+**Cross-browser consistency**: this material layer uses cross-browser CSS only (translucent tokens / `backdrop-filter` / `outline` / `box-shadow`) and no SVG displacement filter. The v2.6.0 static edge refraction relied on a data-URI `filter` that Chromium executes but Firefox ignores, so the same component could show jagged edges and different visual sizes per engine; it was removed in the unreleased cleanup. **Dynamic fluidity** (pointer specular highlight + press tightening) remains available via the optional `glass-fluid.js` runtime (see [Frosted Glass](/en/guide/glass)) and does not change geometry.
 
 **Boundaries**:
 
-- the material needs backdrop contrast—richest over colorful gradients/photos, recedes on flat same-hue backgrounds (text stays legible via token safe tiers);
+- the material needs backdrop contrast—richest over colorful gradients/photos, recedes on flat same-hue backgrounds (text stays legible via token safe tiers); busy photo/video backdrops do not guarantee contrast, so raise alpha or disable the glass layer locally when needed;
 - text safety is a hard constraint: the dark tier uses low-alpha, high-transparency surfaces (translucency is the signature look of dark glass; alpha tiers are calibrated together with text tiers; perceptual-contrast gate ≥60, see the gallery);
 - blur applies only to container-level surfaces (rows/long lists are excluded to avoid the cost of blurring large areas);
 - disabled under the `high-contrast` theme (solid accessibility tier wins);
+- under `prefers-reduced-transparency: reduce`, falls back to solid surfaces (no blur, edge ring, or dynamic highlight);
 - local opt-out: override `--oas-glass-blur: none; --oas-glass-ring: transparent` on any container;
 
-Live preview: [Liquid Glass Gallery](/en/guide/glass).
+Live preview: [Frosted Glass Gallery](/en/guide/glass).
 
 ## Custom themes (CSS variable overrides)
 

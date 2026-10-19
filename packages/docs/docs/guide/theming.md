@@ -38,9 +38,9 @@ document.documentElement.dataset.skin = 'emerald' // violet | emerald | rose | a
 
 皮肤仅覆盖 `--oas-color-primary`，`-hover` / `-active` / `-primary-text` / 焦点环等派生档自动跟随；需要更深定制（表面色 / 圆角 / 密度）仍走下方 CSS 变量覆盖。
 
-## 液态玻璃（glass.css）
+## 磨砂玻璃（glass.css）
 
-`@oas-ui/theme/glass.css` 提供液态玻璃材质层（可选层，与 skins.css 同机制：opt-in 不引则零影响）——半透明 surface + backdrop 模糊 + 高光折光边 + 圆角放大 + 分层深影。在 `data-theme` / `data-skin` 之上叠加 `data-glass` 启用，三者自由组合：
+`@oas-ui/theme/glass.css` 提供磨砂玻璃材质层（可选层，与 skins.css 同机制：opt-in 不引则零影响）——半透明 surface + backdrop 模糊 + 高光折光边 + 圆角放大 + 分层深影。在 `data-theme` / `data-skin` 之上叠加 `data-glass` 启用，三者自由组合：
 
 ```html
 <link rel="stylesheet" href="https://unpkg.com/@oas-ui/theme@2/glass.css" />
@@ -51,17 +51,18 @@ document.documentElement.dataset.skin = 'emerald' // violet | emerald | rose | a
 
 **机制**：浮层 surface 组件（modal / drawer / popover / tooltip / dropdown / select 系面板 / message / snackbar / bottom-sheet / app-bar 等 25 个）统一消费 `--oas-glass-blur`（`backdrop-filter` 模糊档）与 `--oas-glass-ring`（折光描边环）两个变量。不引 glass.css 时全部回落 `none` / `transparent`，组件行为与此前完全一致。
 
-**跨浏览器一致性**：本材质层只使用跨浏览器 CSS（半透明 token / `backdrop-filter` / `outline` / `box-shadow`），不使用 SVG 位移滤镜。v2.6.0 的静态边缘折射依赖 data-URI `filter`，Chromium 执行而 Firefox 忽略，会让同一组件在浏览器间出现轮廓锯齿与视觉尺寸差异；该效果已在未发布批次移除。**动态流动感**（指针镜面高光 + 按压收紧）仍由可选运行时 `glass-fluid.js` 提供（见[液态玻璃](/guide/glass)），不改变几何尺寸。
+**跨浏览器一致性**：本材质层只使用跨浏览器 CSS（半透明 token / `backdrop-filter` / `outline` / `box-shadow`），不使用 SVG 位移滤镜。v2.6.0 的静态边缘折射依赖 data-URI `filter`，Chromium 执行而 Firefox 忽略，会让同一组件在浏览器间出现轮廓锯齿与视觉尺寸差异；该效果已在未发布批次移除。**动态流动感**（指针镜面高光 + 按压收紧）仍由可选运行时 `glass-fluid.js` 提供（见[磨砂玻璃](/guide/glass)），不改变几何尺寸。
 
 **边界**：
 
-- 材质依赖背景反差——页面有色彩层次（渐变/图片）时质感最强，纯色同色相背景上减弱（文字仍走 token 安全档可读）；
-- 文字安全是硬约束：dark 档 surface 用低 alpha 高透（深色玻璃的材质感主场；alpha 档与文字档联动标定，感知对比度实测门禁 ≥60 分，见「液态玻璃画廊」）；
+- 材质依赖背景反差——页面有色彩层次（渐变/图片）时质感最强，纯色同色相背景上减弱（文字仍走 token 安全档可读）；照片/视频等 busy 背景不保证对比度，必要时提高 alpha 或局部关闭玻璃；
+- 文字安全是硬约束：dark 档 surface 用低 alpha 高透（深色玻璃的材质感主场；alpha 档与文字档联动标定，感知对比度实测门禁 ≥60 分，见「磨砂玻璃画廊」）；
 - blur 只上容器级 surface（行级/长列表不接，避免大面积模糊的性能成本）；
 - `high-contrast` 主题下不启用（实心可访问性档优先）；
+- `prefers-reduced-transparency: reduce` 下回退实心 surface（关闭模糊/折光边/动态高光）；
 - 局部降级：任意容器覆盖 `--oas-glass-blur: none; --oas-glass-ring: transparent` 即可；
 
-实时预览见[液态玻璃画廊](/guide/glass)。
+实时预览见[磨砂玻璃画廊](/guide/glass)。
 
 ## 自定义主题（CSS 变量覆盖）
 

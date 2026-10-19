@@ -1,4 +1,4 @@
-# Liquid Glass Gallery
+# Frosted Glass Gallery
 
 > A material layer of translucent surfaces, backdrop blur, and specular edge rings (no browser-specific filters; Chromium and Firefox render the same geometry; dynamic fluidity is provided by the optional `glass-fluid.js` runtime — pointer specular highlight + press tightening; see "Dynamic fluidity" on this page).
 
@@ -58,7 +58,7 @@ onBeforeUnmount(() => {
       <oas-input placeholder="Input (solid control)" style="width: 220px"></oas-input>
     </div>
   </div>
-  <oas-modal v-if="open" visible no-mask draggable title="Liquid glass dialog" @oas-close="open = false">
+  <oas-modal v-if="open" visible no-mask draggable title="Frosted glass dialog" @oas-close="open = false">
     <p>The gradient and buttons behind show through the panel—blur and specular ring form the glass material.</p>
   </oas-modal>
 </div>
@@ -113,9 +113,11 @@ onBeforeUnmount(() => {
 
 - `data-glass` stacks on top of `data-theme` / `data-skin`—freely composable;
 - the material needs backdrop contrast: it shines over colorful gradients/photos and recedes on flat same-hue backgrounds (text stays legible);
+- uncontrolled busy backdrops (photos/video) do not guarantee text contrast; raise the surface alpha or disable the glass layer locally when needed;
 - the dark tier is tuned separately: `--oas-glass-ring` / `-sheen` / `-press` stay lower than light but are no longer imperceptible (edge highlight and translucency remain visible), with slightly stronger blur; no usage change between themes;
 - local opt-out: override `--oas-glass-blur: none; --oas-glass-ring: transparent` on any container;
-- disabled under the `high-contrast` theme (solid accessibility tier wins).
+- disabled under the `high-contrast` theme (solid accessibility tier wins);
+- under `prefers-reduced-transparency: reduce`, falls back to solid surfaces (no blur, edge ring, or dynamic highlight; radius and shadow remain).
 
 ### Dynamic fluidity (pointer specular highlight, optional runtime)
 
