@@ -2304,3 +2304,46 @@ test('resource 滚动容器键盘可达：windowed 空视口 scroller 可聚焦�
   await page.evaluate(() => document.getElementById('res-axe-windowed')?.remove())
   expect(errors, 'console 零告警').toEqual([])
 })
+
+test('resource 资源名与任务条标签文字可选中复制', async ({ page }) => {
+  await page.goto('/components/resource.html', { waitUntil: 'domcontentloaded' })
+  await waitResource(page, 'res-readable')
+
+  const r = await page.evaluate(() => {
+    const host = document.getElementById('res-readable') as HTMLElement
+    const name = host.shadowRoot!.querySelector('.row.lane .name') as HTMLElement
+    const barLabel = host.shadowRoot!.querySelector('.bar-label') as HTMLElement
+    const selectText = (el: HTMLElement): string => {
+      const range = document.createRange()
+      range.selectNodeContents(el)
+      const sel = window.getSelection()!
+      sel.removeAllRanges()
+      sel.addRange(range)
+      return sel.toString()
+    }
+    return {
+      nameUserSelect: getComputedStyle(name).userSelect,
+      barUserSelect: getComputedStyle(barLabel).userSelect,
+      nameText: selectText(name),
+      barText: selectText(barLabel),
+    }
+  })
+  expect(r.nameUserSelect, '资源名列应允许文本选择').toBe('text')
+  expect(r.barUserSelect, '任务条标签应允许文本选择').toBe('text')
+  expect(r.nameText.length).toBeGreaterThan(0)
+  expect(r.barText.length).toBeGreaterThan(0)
+
+  // 真实鼠标拖选（不是只读 computedStyle）：资源名文本可被用户划选复制
+  const name = page.locator('#res-readable .row.lane .name').first()
+  await name.scrollIntoViewIfNeeded()
+  const box = await name.boundingBox()
+  if (box) {
+    await page.evaluate(() => window.getSelection()?.removeAllRanges())
+    await page.mouse.move(box.x + 2, box.y + box.height / 2)
+    await page.mouse.down()
+    await page.mouse.move(box.x + Math.min(box.width - 2, 80), box.y + box.height / 2, { steps: 5 })
+    await page.mouse.up()
+    const selected = await page.evaluate(() => window.getSelection()?.toString() ?? '')
+    expect(selected.length, '真实拖选应产生文本选区').toBeGreaterThan(0)
+  }
+})

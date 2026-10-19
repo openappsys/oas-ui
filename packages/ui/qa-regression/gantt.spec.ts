@@ -1693,3 +1693,51 @@ test('gantt windowed 切片越界：越界行不渲染 + total 夹取（告警�
   expect(res.rows, 'total 夹取：只渲染 95..99 五行').toEqual(['t95', 't96', 't97', 't98', 't99'])
   expect(res.innerH, '滚动域仍按 total 撑起').toBe(`${100 * 40}px`)
 })
+
+test('gantt 任务名与条形标签文字可选中复制（不牺牲可选中文本）', async ({ page }) => {
+  await page.goto('/components/gantt.html', { waitUntil: 'domcontentloaded' })
+  await waitGantt(page, 'gantt-basic')
+  await page.waitForFunction(() => {
+    const host = document.querySelector('oas-gantt[label-position="inside"]') as HTMLElement | null
+    return !!host?.shadowRoot?.querySelector('.bar-label')
+  })
+
+  const r = await page.evaluate(() => {
+    const basic = document.querySelector('#gantt-basic') as HTMLElement
+    const labelHost = document.querySelector('oas-gantt[label-position="inside"]') as HTMLElement
+    const rowName = basic.shadowRoot!.querySelector('.row-name .name') as HTMLElement
+    const barLabel = labelHost.shadowRoot!.querySelector('.bar-label') as HTMLElement
+    const selectText = (el: HTMLElement): string => {
+      const range = document.createRange()
+      range.selectNodeContents(el)
+      const sel = window.getSelection()!
+      sel.removeAllRanges()
+      sel.addRange(range)
+      return sel.toString()
+    }
+    return {
+      rowUserSelect: getComputedStyle(rowName).userSelect,
+      barUserSelect: getComputedStyle(barLabel).userSelect,
+      rowText: selectText(rowName),
+      barText: selectText(barLabel),
+    }
+  })
+  expect(r.rowUserSelect, '任务名列应允许文本选择').toBe('text')
+  expect(r.barUserSelect, '条标签应允许文本选择').toBe('text')
+  expect(r.rowText).toContain('一期')
+  expect(r.barText.length).toBeGreaterThan(0)
+
+  // 真实鼠标拖选（不是只读 computedStyle）：行名文本可被用户划选复制
+  const name = page.locator('#gantt-basic .row-name[data-key="t1"] .name')
+  await name.scrollIntoViewIfNeeded()
+  const box = await name.boundingBox()
+  if (box) {
+    await page.evaluate(() => window.getSelection()?.removeAllRanges())
+    await page.mouse.move(box.x + 2, box.y + box.height / 2)
+    await page.mouse.down()
+    await page.mouse.move(box.x + box.width - 2, box.y + box.height / 2, { steps: 5 })
+    await page.mouse.up()
+    const selected = await page.evaluate(() => window.getSelection()?.toString() ?? '')
+    expect(selected.length, '真实拖选应产生文本选区').toBeGreaterThan(0)
+  }
+})

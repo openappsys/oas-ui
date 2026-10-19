@@ -112,7 +112,8 @@ const STYLE = `
   white-space: nowrap;
   text-overflow: ellipsis;
   color: var(--oas-color-text-primary);
-  user-select: none;
+  /* 资源名是数据文本：允许鼠标选中复制（本组件无行拖拽手势，不与交互冲突） */
+  user-select: text;
 }
 .head .name {
   color: var(--oas-color-text-secondary-strong);
@@ -171,7 +172,8 @@ const STYLE = `
   /* 与 MIN_BAR_W 一致：renderLanes 已把最小宽并进 width/left，这里仅兜底（不再能造成越界） */
   min-width: 8px;
   cursor: pointer;
-  user-select: none;
+  /* 条标签是数据文本：可选中复制；条本身只做点击反馈，无拖拽手势 */
+  user-select: text;
 }
 .bar:hover {
   background: var(--oas-resource-bar-hover-bg, color-mix(in srgb, var(--oas-color-primary) 34%, var(--oas-color-bg)));
@@ -277,7 +279,7 @@ const STYLE = `
   white-space: nowrap;
 }
 /* bar-label：任务条内任务名（textContent 纯文本防注入；单行 ellipsis，条窄时自然裁切；
-   pointer-events:none 不截获点击/拖拽命中；行高 = 条高 token 垂直居中并随宿主覆盖联动） */
+   文字可选中复制；标签点击冒泡到 .bar，不改变点击反馈路径） */
 .bar-label {
   position: absolute;
   inset: 0;
@@ -289,7 +291,9 @@ const STYLE = `
   padding-inline: var(--oas-space-1);
   font-size: 11px;
   color: var(--oas-color-text-primary);
-  pointer-events: none;
+  /* 允许选中复制条标签；标签点击仍冒泡到 .bar，不改变点击反馈路径 */
+  pointer-events: auto;
+  user-select: text;
 }
 .empty {
   position: absolute;
@@ -2499,8 +2503,8 @@ export class OASResource extends OASElement {
       }),
     )
     // bar-label（opt-in）：条内任务名。textContent 赋值按纯文本渲染（防 HTML 注入）；
-    // 标签装饰性（aria-hidden——条的 aria-label 已含任务名，避免重复播报）且不截获指针事件
-    //（CSS pointer-events:none），aria-label/点击/拖拽命中全部不受影响。
+    // 标签装饰性（aria-hidden——条的 aria-label 已含任务名，避免重复播报）且可选中复制；
+    // 标签点击冒泡到 .bar，aria-label/点击反馈路径不受影响。
     // 复用路径同步开/关与任务名（滚动帧复用条节点，标签随帧保持正确）
     if (this.hasAttr('bar-label')) {
       let label = bar.querySelector<HTMLElement>('.bar-label')

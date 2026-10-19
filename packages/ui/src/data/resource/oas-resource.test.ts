@@ -3416,19 +3416,19 @@ describe('OASResource 可读性能力（opt-in，默认全关）', () => {
     expect(label.children.length, '无任何子元素（防注入）').toBe(0)
     expect(label.getAttribute('aria-hidden'), '标签装饰性（条的 aria-label 已含任务名）').toBe('true')
     expect((bar.getAttribute('aria-label') ?? '').length, '条的 aria-label 不受影响').toBeGreaterThan(0)
-    // 点击命中：label 上的 click 冒泡后仍定位到条（pointer-events:none 由 CSS 承担真实指针穿透）
+    // 点击命中：label 上的 click 冒泡后仍定位到条（标签可选中，点击路径不变）
     const clicks: string[] = []
     el.addEventListener('oas-task-click', ((e: CustomEvent<{ id: string }>) => {
       clicks.push(e.detail.id)
     }) as EventListener)
     label.click()
     expect(clicks, '点击派发不受标签影响').toEqual(['t1'])
-    // CSS 机制：不截获指针 + 单行 ellipsis
+    // CSS 机制：标签文字可选中复制 + 单行 ellipsis
     const css = shadowOf(el).querySelector('style')!.textContent ?? ''
     const blStart = css.indexOf('.bar-label {')
     expect(blStart, '存在 .bar-label 规则').toBeGreaterThan(-1)
     const blBlock = css.slice(blStart, css.indexOf('}', blStart))
-    expect(blBlock, '不截获指针事件').toContain('pointer-events: none')
+    expect(blBlock, '标签文字可选中').toContain('user-select: text')
     expect(blBlock, '条窄时裁切（单行 ellipsis）').toContain('text-overflow: ellipsis')
   })
 

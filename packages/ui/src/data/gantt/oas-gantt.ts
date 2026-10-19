@@ -130,24 +130,34 @@ const STYLE = `
   color: var(--oas-gantt-conflict-color, var(--oas-color-danger));
   text-decoration: underline dashed;
 }
-/* 触屏重排手柄：整行拖与纵向滚动冲突（touch-action 手势起始即定夺），
-   故粗指针下改由手柄承载重排，手柄独占 touch-action: none，其余区域仍可滚动 */
+/* 行重排手柄：任务名可选中后，拖拽改由右侧手柄承载；
+   粗指针下常显（整行拖与纵向滚动冲突），细指针下悬停/聚焦时显形 */
 .row-drag {
-  display: none;
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  touch-action: none;
+  cursor: grab;
+  color: var(--oas-color-text-secondary);
+  padding-inline: 2px;
+  min-width: 24px;
+  min-height: 24px;
+  letter-spacing: -3px;
+  opacity: 0;
+  pointer-events: none;
 }
 @media (pointer: coarse) {
   .row-drag {
-    display: inline-flex;
-    flex: none;
-    align-items: center;
-    justify-content: center;
-    touch-action: none;
-    cursor: grab;
-    color: var(--oas-color-text-secondary);
-    padding-inline: 2px;
-    min-width: 24px;
-    min-height: 24px;
-    letter-spacing: -3px;
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
+@media (pointer: fine) {
+  .row-name:hover .row-drag,
+  .row-name:focus-within .row-drag {
+    opacity: 1;
+    pointer-events: auto;
   }
 }
 .row-name:focus-visible {
@@ -254,6 +264,8 @@ svg.links .link-hit:focus-visible + .link {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  /* 任务名是数据文本：允许选中复制；行拖拽改由右侧手柄承载 */
+  user-select: text;
 }
 .toggle {
   appearance: none;
@@ -497,7 +509,9 @@ svg.links .temp-link {
   overflow: hidden;
   text-overflow: ellipsis;
   max-width: 200px;
-  pointer-events: none;
+  /* 条标签是数据文本：允许选中复制；条拖拽从标签外区域/手柄开始 */
+  pointer-events: auto;
+  user-select: text;
   color: var(--oas-color-text-primary);
   font-size: var(--oas-font-size-xs);
 }
@@ -1281,6 +1295,8 @@ export class OASGantt extends OASElement {
     y: number
     disabled: boolean
     viaHandle: boolean
+    /** 起手在任务名文本内：点击仍选中行，拖动交给浏览器做文本选择，不进入重排 */
+    textTarget: boolean
     byId: Map<string, TG>
   } | null = null
   /** 空白框选手势（行带 rows / 条相交 bars）：记录起止点与追加语义 */
@@ -2875,10 +2891,10 @@ export class OASGantt extends OASElement {
         el.setAttribute('disabled', '')
         el.setAttribute('aria-disabled', 'true')
       }
-      if (this.coarse && !this._winMode.windowed) {
-        // 触屏重排手柄：pointerdown 事件冒泡到行，走 onRowPointerDown 的统一入口
+      if (!this._winMode.windowed) {
+        // 行重排手柄：pointerdown 事件冒泡到行，走 onRowPointerDown 的统一入口
         // （自带 e.button/多 ctx 互斥守卫 + 判拖阈值），避免自建 handler 漏守卫与误触发。
-        // windowed 下不出手柄：行重排已禁用（切片内 index 对全量无意义，视觉即语义）
+        // 细指针悬停/聚焦显形，粗指针常显；windowed 下不出手柄（行重排已禁用）。
         const drag = document.createElement('span')
         drag.className = 'row-drag'
         drag.setAttribute('aria-hidden', 'true')
@@ -3197,6 +3213,7 @@ export class OASGantt extends OASElement {
       disabled: row.task.disabled === true,
       // 手柄起手：判拖阈值后进重排；纯点按（未达阈值）不进选择，避免「点手柄改了选中」
       viaHandle: (e.target as HTMLElement).classList.contains('row-drag'),
+      textTarget: !!(e.target as HTMLElement).closest('.name'),
       byId: new Map(this._tasks.map((t) => [t.id, t])),
     }
     this.bindRowPending()
@@ -4327,6 +4344,8 @@ export class OASGantt extends OASElement {
     if (Math.abs(e.clientX - p.x) + Math.abs(e.clientY - p.y) > thr) {
       this.unbindRowPending()
       this.rowPending = null
+      // 起手在任务名文本：让浏览器继续完成文本选择，不抢成行重排；点击（未超阈值）仍走行选中
+      if (p.textTarget) return
       // windowed：行重排禁用（切片内同级 index 对全量无意义，宿主在全量上处理）
       if (this._winMode.windowed) {
         this.warnWindowedReparent()
@@ -4544,6 +4563,8 @@ export class OASGantt extends OASElement {
   private onBarPointerDown(e: PointerEvent, row: GanttRow, bar: HTMLElement): void {
     if (e.button !== 0 || this.dragCtx || this.reparentCtx || this.linkCtx || this.rowPending) return
     const target = e.target as HTMLElement
+    // 条标签是可选中的文本；从标签拖动不应改期，改期从条体/两端手柄开始
+    if (target.closest('.bar-label')) return
     let mode: DragMode = 'move'
     if (target.classList.contains('handle-start')) mode = 'resize-start'
     else if (target.classList.contains('handle-end')) mode = 'resize-end'
