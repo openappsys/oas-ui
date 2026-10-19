@@ -1,6 +1,6 @@
 # DatePicker
 
-A date picker supporting ten types — date, daterange, month, monthrange, year, yearrange, datetime, datetimerange, week, and quarter — with keyboard operation and `Intl.DateTimeFormat` formatting. The trigger is an input: you can type a date directly (committed on blur or Enter; invalid input reverts).
+A date picker supporting ten types — date, daterange, month, monthrange, year, yearrange, datetime, datetimerange, week, and quarter — with keyboard operation and `Intl.DateTimeFormat` formatting. The trigger is an input: you can type a date or range directly (committed on blur or Enter; invalid input reverts).
 
 ## Basic Selection
 
@@ -17,6 +17,8 @@ Click the input to open the panel and click a date to select; or type `2026-08-1
 </DemoBlock>
 
 A double-month grid: pick the start first, then the end; submits a JSON array `["start","end"]`. Hovering previews the range. Every endpoint pick emits `oas-calendar-change` (see [Events](#controlled--events)). Range selection defaults to a **double-month grid** (left + right month linked); in the mobile form (narrow-screen drawer panel) the two month grids stack into a single column — desktop containers do not auto-collapse to single panel.
+
+Ranges can also be typed directly: separate the endpoints with `separator` (default `~`), for example `2026-08-05 ~ 2026-08-15`. Use `2026-08 ~ 2026-10` for `monthrange`, `2024 ~ 2026` for `yearrange`, and optional times for `datetimerange` (date-only input fills the `default-time`). Reversed, out-of-range, or invalid input reverts without committing.
 
 ## Month & Month Range
 
@@ -73,7 +75,7 @@ datetime submits after picking date + time and clicking "OK"; datetimerange show
   <oas-date-picker type="daterange" separator=" to " value='["2026-08-05","2026-08-15"]'></oas-date-picker>
 </DemoBlock>
 
-`separator` customizes the separator between the start/end values inside the trigger for range types (default `~`); display only — the value contract is unchanged.
+`separator` customizes the separator between the start/end values inside the trigger for range types (default `~`) and is also used to split typed ranges; the value contract is unchanged.
 
 ## Range Default Time
 
@@ -302,7 +304,7 @@ Programmatic read/write of the current value goes through the public `value` pro
 | `placement` | Popup placement, 12 directions: `top`/`bottom`/`left`/`right` × `-start`/`-end` (default `bottom-start`); auto right-aligns near the viewport right edge, flips upward when space below is insufficient, and clamps into the viewport | `string` | `bottom-start` |
 | `readonly` | Readonly: the panel can be opened and browsed (cells keyboard-navigable), but no interaction commits | `boolean` | — |
 | `required` | Required marker (drives the native valueMissing validation chain; not passed through to the inner control) | `boolean` | — |
-| `separator` | Custom separator between start/end values in the trigger for range types (display only) | `string` | — |
+| `separator` | Custom separator between start/end values in the trigger for range types; also splits typed ranges | `string` | — |
 | `shortcuts-position` | Shortcut placement: `bottom` (default, horizontal on top) / `left` (vertical sidebar) | `string` | `bottom` |
 | `show-week-number` | Show an ISO week-number column (built-in for `type=week`) | `boolean` | — |
 | `size` | Size: `small` / `medium` / `large` (reads the nearest config-provider injection) | `string` | `medium` |

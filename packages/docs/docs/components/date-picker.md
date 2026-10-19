@@ -1,6 +1,6 @@
 # DatePicker 日期选择器
 
-日期选择器，支持 `date` / `daterange` / `month` / `monthrange` / `year` / `yearrange` / `datetime` / `datetimerange` / `week` / `quarter` 十种类型，键盘可操作，`Intl.DateTimeFormat` 格式化；触发器为输入框，可直接键入日期（失焦或回车提交，非法输入自动回退）。
+日期选择器，支持 `date` / `daterange` / `month` / `monthrange` / `year` / `yearrange` / `datetime` / `datetimerange` / `week` / `quarter` 十种类型，键盘可操作，`Intl.DateTimeFormat` 格式化；触发器为输入框，可直接键入日期或范围（失焦或回车提交，非法输入自动回退）。
 
 ## 基础选择
 
@@ -17,6 +17,8 @@
 </DemoBlock>
 
 双月网格，先选起点再选终点，提交 JSON 数组 `["start","end"]`；悬停可预览区间。每次起止落选都会派发 `oas-calendar-change`（见[事件](#受控与事件)）。范围选择默认**双月网格**（左月 + 右月联动）；移动形态（窄屏抽屉面板）下双月网格纵向堆叠为单列，桌面容器不自动收缩为单面板。
+
+范围也支持直接键入：用 `separator`（默认 `~`）分隔起止，例如 `2026-08-05 ~ 2026-08-15`；`monthrange` / `yearrange` 用 `2026-08 ~ 2026-10`、`2024 ~ 2026`，`datetimerange` 可带时刻（只键入日期时按 `default-time` 补齐）。起止倒置、越界或非法输入会回退到当前值，不提交。
 
 ## 月份与月份区间
 
@@ -73,7 +75,7 @@ datetime 选日期与时分秒后点「确定」提交；datetimerange 双月 + 
   <oas-date-picker type="daterange" separator=" 至 " value='["2026-08-05","2026-08-15"]'></oas-date-picker>
 </DemoBlock>
 
-`separator` 自定义范围类型触发器内起止值的分隔符（缺省 `~`）；仅影响显示，value 契约不变。
+`separator` 自定义范围类型触发器内起止值的分隔符（缺省 `~`），同时用于范围手输拆分；value 契约不变。
 
 ## 范围默认时刻
 

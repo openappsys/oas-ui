@@ -978,7 +978,7 @@
       "value": "Current value: `yyyy-MM-dd` / `yyyy-MM` / `yyyy` / `yyyy-Wnn` / `yyyy-Qn` / `yyyy-MM-ddTHH:mm:ss` / JSON range array",
       "required": "Required marker (drives the native valueMissing validation chain; not passed through to the inner control)",
       "name": "Form field name (key for native FormData submission; range mode derives name-start / name-end entries; the browser skips submission when name is absent)",
-      "separator": "Custom separator between start/end values in the trigger for range types (display only)",
+      "separator": "Custom separator between start/end values in the trigger for range types; also splits typed ranges",
       "default-time": "Default start/end times for datetimerange (JSON array or single value); auto-filled when the value lacks a time part",
       "timezone": "Timezone anchor: an IANA zone name (e.g. America/New_York) or UTC; omitted/invalid falls back to the host local zone. Today highlight, shortcuts and default-time derivation read this zone's wall clock; the value contract is unchanged",
       "caption-layout": "Panel caption style: buttons (default, caption button toggles the month panel) / dropdown (month/year dropdowns for quick jumps, date-of-birth style far-year navigation; applies to day-grid single-value panels only — date/datetime/week; picking navigates without changing the value)"

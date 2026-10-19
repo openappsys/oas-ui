@@ -891,13 +891,70 @@ describe('手输通道', () => {
     expect(input(el).value).toBe('2026-08-09')
   })
 
-  it('readonly / 范围与多选形态输入只读（二期通道）', () => {
+  it('readonly / 多选形态输入只读，范围开放手输', () => {
     const ro = mount({ value: '2026-08-09', readonly: '' })
     expect(input(ro).readOnly).toBe(true)
     const range = mount({ type: 'daterange', value: '["2026-08-05","2026-08-15"]' })
-    expect(input(range).readOnly).toBe(true)
+    expect(input(range).readOnly).toBe(false)
     const multi = mount({ value: '2026-08-09', multiple: '' })
     expect(input(multi).readOnly).toBe(true)
+  })
+
+  it('daterange 可手输两段（默认/自定义 separator）并派发 oas-change', () => {
+    const el = mount({ type: 'daterange' })
+    type(el, '2026-09-01 ~ 2026-09-10')
+    let detail: unknown
+    el.addEventListener('oas-change', (e: Event) => (detail = (e as CustomEvent).detail))
+    blurInput(el)
+    expect(el.getAttribute('value')).toBe('["2026-09-01","2026-09-10"]')
+    expect(detail).toEqual({ value: ['2026-09-01', '2026-09-10'] })
+    expect(input(el).value).toBe('2026-09-01 ~ 2026-09-10')
+
+    const custom = mount({ type: 'daterange', separator: ' 至 ' })
+    type(custom, '2026-09-03 至 2026-09-12')
+    blurInput(custom)
+    expect(custom.getAttribute('value')).toBe('["2026-09-03","2026-09-12"]')
+    expect(input(custom).value).toBe('2026-09-03 至 2026-09-12')
+  })
+
+  it('daterange 手输倒置/越界/非法时回退，不提交', () => {
+    const el = mount({ type: 'daterange', value: '["2026-09-01","2026-09-10"]' })
+    type(el, '2026-09-12 ~ 2026-09-03')
+    blurInput(el)
+    expect(el.getAttribute('value')).toBe('["2026-09-01","2026-09-10"]')
+    expect(input(el).value).toBe('2026-09-01 ~ 2026-09-10')
+
+    type(el, 'not-a-date ~ 2026-09-03')
+    blurInput(el)
+    expect(el.getAttribute('value')).toBe('["2026-09-01","2026-09-10"]')
+
+    const bounded = mount({ type: 'daterange', min: '2026-09-05' })
+    type(bounded, '2026-09-01 ~ 2026-09-10')
+    blurInput(bounded)
+    expect(bounded.hasAttribute('value')).toBe(false)
+    expect(input(bounded).value).toBe('')
+  })
+
+  it('monthrange / yearrange / datetimerange 手输按端点类型解析', () => {
+    const month = mount({ type: 'monthrange' })
+    type(month, '2026-08 ~ 2026-10')
+    blurInput(month)
+    expect(month.getAttribute('value')).toBe('["2026-08","2026-10"]')
+
+    const year = mount({ type: 'yearrange' })
+    type(year, '2024 ~ 2026')
+    blurInput(year)
+    expect(year.getAttribute('value')).toBe('["2024","2026"]')
+
+    const dt = mount({ type: 'datetimerange' })
+    type(dt, '2026-09-01 ~ 2026-09-10')
+    blurInput(dt)
+    expect(dt.getAttribute('value')).toBe('["2026-09-01T00:00:00","2026-09-10T23:59:59"]')
+    expect(input(dt).value).toBe('2026-09-01T00:00:00 ~ 2026-09-10T23:59:59')
+
+    type(dt, '2026-09-01 09:30 ~ 2026-09-02 18:00')
+    blurInput(dt)
+    expect(dt.getAttribute('value')).toBe('["2026-09-01T09:30:00","2026-09-02T18:00:00"]')
   })
 
   it('ArrowDown 打开面板，Esc 关闭并回退未提交输入', () => {

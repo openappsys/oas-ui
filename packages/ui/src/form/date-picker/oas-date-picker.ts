@@ -846,14 +846,28 @@ export class OASDatePicker extends OASFormElement {
     return RANGE_TYPES.has(this.pickerType)
   }
 
+  /** 范围手输的端点类型：range 的日期/时间/月/年精度分别复用单值解析 */
+  private rangeEndpointType(): PickerType {
+    switch (this.pickerType) {
+      case 'datetimerange':
+        return 'datetime'
+      case 'monthrange':
+        return 'month'
+      case 'yearrange':
+        return 'year'
+      default:
+        return 'date'
+    }
+  }
+
   /** multiple 仅在 date 类型下生效（daterange 忽略，走范围语义） */
   private isMultiple(): boolean {
     return this.hasAttr('multiple') && this.pickerType === 'date'
   }
 
-  /** 手输通道开放形态：单值类型（range/multiple 为二期通道，输入框只读回显） */
+  /** 手输通道开放形态：单值 + 范围（multiple 仍是只读回显） */
   private isEditableType(): boolean {
-    return !this.isRangeType() && !this.isMultiple()
+    return !this.isMultiple()
   }
 
   private currentFormat(): string {
@@ -1296,8 +1310,8 @@ export class OASDatePicker extends OASFormElement {
    * yyyy年M月 / yyyyMM）、year（yyyy）、week（yyyy-Wnn）、quarter（yyyy-Qn）、
    * datetime（日期 + 空格或 T + H:mm[:ss]）。非法返回 null。
    */
-  private parseInputValue(text: string): Date | null {
-    const t = this.pickerType
+  private parseInputValue(text: string, type: PickerType = this.pickerType): Date | null {
+    const t = type
     const s = text.trim()
     if (!s) return null
     const valid = (y: number, mo: number, d: number): Date | null => {
@@ -1352,6 +1366,42 @@ export class OASDatePicker extends OASFormElement {
     if (h > 23 || mi > 59 || se > 59) return null
     base.setHours(h, mi, se, 0)
     return base
+  }
+
+  /**
+   * 范围手输解析：按 separator（或常见 `~` / `～` / `—` / `至` / `to`）拆成两端，
+   * 分别按范围端点类型解析；起止倒置、越界、disabledDate 均返回 null。
+   * datetimerange 只键入日期时用 default-time 补齐时刻（与面板提交一致）。
+   */
+  private parseRangeInputValue(text: string): [Date, Date] | null {
+    const sep = this.getAttr('separator', '') || ' ~ '
+    const candidates = [sep, sep.trim(), ' ~ ', '~', '～', '—', '–', '至', 'to']
+      .map((s) => s.trim())
+      .filter((s) => s.length > 0 && s !== '-')
+    let parts: [string, string] | null = null
+    for (const candidate of candidates) {
+      const idx = text.indexOf(candidate)
+      if (idx > 0 && idx + candidate.length < text.length) {
+        parts = [text.slice(0, idx), text.slice(idx + candidate.length)]
+        break
+      }
+    }
+    if (!parts) return null
+    const type = this.rangeEndpointType()
+    const defaults = this.defaultTimeRange()
+    const one = (s: string, idx: 0 | 1): Date | null => {
+      const d = this.parseInputValue(s, type)
+      if (!d) return null
+      if (type === 'datetime' && !/[T\s]\d{1,2}:\d{2}/.test(s)) {
+        const p = defaults[idx]
+        d.setHours(p.h, p.m, p.s, 0)
+      }
+      return this.isAcceptableDate(d) ? d : null
+    }
+    const start = one(parts[0], 0)
+    const end = one(parts[1], 1)
+    if (!start || !end || start.getTime() > end.getTime()) return null
+    return [start, end]
   }
 
   /** 键入候选是否可提交：min/max（日精度）与 disabledDate 联合校验 */
@@ -1420,10 +1470,14 @@ export class OASDatePicker extends OASFormElement {
     const raw = this.getAttr('value', '')
     if (!raw) return ''
     if (this.isRangeType()) {
-      const r = this.parseRange()
-      if (!r.start || !r.end) return ''
+      const endpoints = this.rawRangeEndpoints()
+      if (!endpoints) return ''
+      const type = this.rangeEndpointType()
+      const start = this.parseInputValue(endpoints[0], type)
+      const end = this.parseInputValue(endpoints[1], type)
+      if (!start || !end) return ''
       const sep = this.getAttr('separator', '') || ' ~ '
-      return `${this.formatAnchor(r.start)}${sep}${this.formatAnchor(r.end)}`
+      return `${this.formatRangeEndpoint(start)}${sep}${this.formatRangeEndpoint(end)}`
     }
     if (this.isMultiple()) {
       const dates = this.selectedAnchorArray()
@@ -1451,6 +1505,21 @@ export class OASDatePicker extends OASFormElement {
     }
     const text = i.value.trim()
     if (text === '') {
+      i.value = this.displayText()
+      return
+    }
+    if (this.isRangeType()) {
+      const pair = this.parseRangeInputValue(text)
+      if (pair) {
+        const endpoints = pair.map((d) => this.formatRangeEndpoint(d))
+        const value = JSON.stringify(endpoints)
+        if (value !== this.getAttr('value', '')) {
+          this.valueDirty = true // 用户交互置脏：冻结 reset 基线
+          this.setAttribute('value', value)
+          this.emit('change', { value: endpoints })
+          return
+        }
+      }
       i.value = this.displayText()
       return
     }

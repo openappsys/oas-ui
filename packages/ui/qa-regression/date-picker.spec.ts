@@ -45,6 +45,25 @@ test('date-picker / time-picker 面板贴输入框下方（:host 为定位祖先
   }
 })
 
+test('date-picker 范围手输：separator 拆分、提交 JSON、非法回退', async ({ page }) => {
+  await page.goto('/components/date-picker.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-date-picker')
+  const host = page.locator('oas-date-picker[type="daterange"]').first()
+  const trigger = host.locator('[part="trigger"]')
+  await expect(trigger).toHaveJSProperty('readOnly', false)
+
+  await trigger.fill('2026-09-01 ~ 2026-09-10')
+  await trigger.press('Tab')
+  await expect.poll(() => host.getAttribute('value')).toBe('["2026-09-01","2026-09-10"]')
+  await expect(trigger).toHaveValue('2026-09-01 ~ 2026-09-10')
+
+  // 倒置不提交，显示回退到当前值
+  await trigger.fill('2026-09-12 ~ 2026-09-03')
+  await trigger.press('Tab')
+  await expect(host).toHaveAttribute('value', '["2026-09-01","2026-09-10"]')
+  await expect(trigger).toHaveValue('2026-09-01 ~ 2026-09-10')
+})
+
 // 移动端专项：bottom-sheet 底部抽屉承载（data-mobile-sheet 标记 + sheet open + dropdown 静态化 + oas-close 同步收起）
 test('date-picker 移动端：底部抽屉贴视口底展开 + dropdown 静态化 + 点遮罩同步收起', async ({ browser }) => {
   const ctx = await browser.newContext({ viewport: { width: 375, height: 667 }, hasTouch: true, isMobile: true })

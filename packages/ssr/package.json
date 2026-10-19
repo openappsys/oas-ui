@@ -43,6 +43,6 @@
     "@oas-ui/i18n": "workspace:*",
     "@oas-ui/icons": "workspace:*",
     "@oas-ui/ui": "workspace:*",
-    "happy-dom": "^20.14.5"
+    "happy-dom": "^21.0.3"
   }
 }

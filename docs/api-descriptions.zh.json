@@ -978,7 +978,7 @@
       "value": "当前值：`yyyy-MM-dd` / `yyyy-MM` / `yyyy` / `yyyy-Wnn` / `yyyy-Qn` / `yyyy-MM-ddTHH:mm:ss` / JSON 范围数组",
       "required": "必填标记（驱动原生校验链 valueMissing；不透传内层控件）",
       "name": "表单字段名（原生 FormData 提交的 key；范围模式派生 name-start / name-end 两条 entry；无 name 浏览器自动不提交）",
-      "separator": "范围类型触发器内起止值分隔符（仅显示层，value 契约不变）",
+      "separator": "范围类型触发器内起止值分隔符（同时用于范围手输拆分；value 契约不变）",
       "default-time": "datetimerange 起止默认时刻（JSON 数组或单串同值；值缺时间部分时补齐）",
       "timezone": "时区锚点：IANA 时区名（如 America/New_York）或 UTC；缺省/非法回落宿主本地。「今天」高亮、快捷预设与默认时刻推导按该时区墙钟解析，value 契约不变",
       "caption-layout": "面板标题形态：buttons（默认，标题按钮切月面板）/ dropdown（月/年下拉快速跳转，出生日期等远年场景；仅日网格单值面板 date/datetime/week 生效，选择仅导航不改值）"

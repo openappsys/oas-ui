@@ -74,7 +74,7 @@
 - [Cascader 级联选择](https://oas-ui.dev/components/cascader): 多级联动选择：支持多选勾选、父子解绑、多选值策略、路径搜索、动态加载、受控开合与标签折叠，键盘可操作。
 - [TreeSelect 树形选择器](https://oas-ui.dev/components/tree-select): 树形结构选择，支持父子级联多选、搜索过滤、懒加载与标签化回显。
 - [Mentions 提及](https://oas-ui.dev/components/mentions): 输入 @（或 # 等）触发建议浮层的提及输入组件，适合 @成员 / @任务 / 评论发布等场景。
-- [DatePicker 日期选择器](https://oas-ui.dev/components/date-picker): 日期选择器，支持 date / daterange / month / monthrange / year / yearrange / datetime / datetimerange / week / quarter 十种类型，键盘可操作，Intl.DateTimeFormat 格式化；触发器为输入框，可直接键入日期（失焦或回车提交，非法输入自动回退）。
+- [DatePicker 日期选择器](https://oas-ui.dev/components/date-picker): 日期选择器，支持 date / daterange / month / monthrange / year / yearrange / datetime / datetimerange / week / quarter 十种类型，键盘可操作，Intl.DateTimeFormat 格式化；触发器为输入框，可直接键入日期或范围（失焦或回车提交，非法输入自动回退）。
 - [TimePicker 时间选择器](https://oas-ui.dev/components/time-picker): 时间选择器，下拉时分秒列选择（12 小时制时附上午/下午列），↑/↓ 调整、Home/End 跳首末、Enter 确认、Esc 取消，支持三元步进与禁用时刻；触发器为输入框，可直接键入时刻（失焦或回车提交，非法输入自动回退）。
 - [Calendar 日历](https://oas-ui.dev/components/calendar): 日历组件，月/年两种模式，支持选中、禁用日期、周号与键盘网格导航；日期描述走 Intl.DateTimeFormat（locale 感知）。
 - [Upload 上传](https://oas-ui.dev/components/upload): 点击或拖拽选择文件，展示文件列表与上传进度。
