@@ -125,9 +125,7 @@
       "title": "Rich title channel (overrides the heading attribute)",
       "trailing": "Rightmost trailing custom area"
     },
-    "cssVars": {
-      "--oas-glass-refraction": "Liquid-glass edge refraction filter (active under `data-glass`, default none); for local opt-out override with an **empty** value (`--oas-glass-refraction: ;`)—not `none` (mixing `none` with button-state brightness() invalidates the whole filter declaration)"
-    }
+    "cssVars": {}
   },
   "oas-aspect-ratio": {
     "attrs": {
@@ -330,9 +328,7 @@
       "oas-change": "The active item changed, `detail: { value }`"
     },
     "slots": {},
-    "cssVars": {
-      "--oas-glass-refraction": "Liquid-glass edge refraction filter (active under `data-glass`, default none); for local opt-out override with an **empty** value (`--oas-glass-refraction: ;`)—not `none` (mixing `none` with button-state brightness() invalidates the whole filter declaration)"
-    }
+    "cssVars": {}
   },
   "oas-bottom-navigation-item": {
     "attrs": {
@@ -454,8 +450,7 @@
       "--oas-button-active-tint-on": "Label color on solid selected fills (primary etc.): custom tints pick black/white by background luminance; falls back to --oas-color-text-on-primary when not injected",
       "--oas-button-active-tint-text": "Text-safe variant of the selected tint: theme-aware deepen/lighten mix (toward near-black in light, near-white in dark; presets use the -text token directly) — labels on soft selected fills and text-variant selection",
       "--oas-button-color-deep": "Text-safe deepened variant of the custom `color`: the color-mix used for hover/active and outlined/dashed/filled text (injected by the component via `--oas-deep-mix` / `--oas-deep-sink`; inert without a custom color)",
-      "--oas-button-height": "Button height override (falls back to the size-tier value by default); containers needing full-row-height buttons (e.g. swipe-cell actions) inject 100% via ::slotted (built into swipe-cell)",
-      "--oas-glass-refraction": "Liquid-glass edge refraction filter (active under `data-glass`, default none); for local opt-out override with an **empty** value (`--oas-glass-refraction: ;`)—not `none` (mixing `none` with button-state brightness() invalidates the whole filter declaration)"
+      "--oas-button-height": "Button height override (falls back to the size-tier value by default); containers needing full-row-height buttons (e.g. swipe-cell actions) inject 100% via ::slotted (built into swipe-cell)"
     }
   },
   "oas-button-group": {
@@ -2105,9 +2100,7 @@
       "avatar": "Avatar slot (before the message text)",
       "content": "Rich body content slot"
     },
-    "cssVars": {
-      "--oas-glass-refraction": "Liquid-glass edge refraction filter (active under `data-glass`, default none); for local opt-out override with an **empty** value (`--oas-glass-refraction: ;`)—not `none` (mixing `none` with button-state brightness() invalidates the whole filter declaration)"
-    }
+    "cssVars": {}
   },
   "oas-modal": {
     "attrs": {
@@ -2191,8 +2184,7 @@
     },
     "cssVars": {
       "--oas-notification-progress-color": "Countdown progress bar color",
-      "--oas-notification-width": "Card width (referenced internally by size levels)",
-      "--oas-glass-refraction": "Liquid-glass edge refraction filter (active under `data-glass`, default none); for local opt-out override with an **empty** value (`--oas-glass-refraction: ;`)—not `none` (mixing `none` with button-state brightness() invalidates the whole filter declaration)"
+      "--oas-notification-width": "Card width (referenced internally by size levels)"
     }
   },
   "oas-navigation-menu": {
@@ -2935,7 +2927,6 @@
       "levels": "Stereo level values `{ left, right }` (normalized 0–1; object assignment reflects to a JSON attribute, clear with `null`)"
     },
     "cssVars": {
-      "--oas-glass-refraction": "Liquid-glass edge refraction filter (active under `data-glass`, default none); for local opt-out override with an **empty** value (`--oas-glass-refraction: ;`)—not `none` (mixing `none` with button-state brightness() invalidates the whole filter declaration)",
       "--oas-slider-track-image": "Color-rail gradient image (written by the component for a `track` preset; the track pseudo-element's background-image, defaults to none for a solid rail color)"
     }
   },
@@ -2962,9 +2953,7 @@
     "slots": {
       "": "Notification content"
     },
-    "cssVars": {
-      "--oas-glass-refraction": "Liquid-glass edge refraction filter (active under `data-glass`, default none); for local opt-out override with an **empty** value (`--oas-glass-refraction: ;`)—not `none` (mixing `none` with button-state brightness() invalidates the whole filter declaration)"
-    }
+    "cssVars": {}
   },
   "oas-space": {
     "attrs": {
@@ -3142,8 +3131,7 @@
       "description": "Rich description content (takes precedence over the description attribute text)"
     },
     "cssVars": {
-      "--oas-switch-on-color": "Label text color inside the on-track (when `color` overrides the track background, the component injects a dark/light text color by luminance; falls back to `var(--oas-color-bg)`)",
-      "--oas-glass-refraction": "Liquid-glass edge refraction filter (active under `data-glass`, default none); for local opt-out override with an **empty** value (`--oas-glass-refraction: ;`)—not `none` (mixing `none` with button-state brightness() invalidates the whole filter declaration)"
+      "--oas-switch-on-color": "Label text color inside the on-track (when `color` overrides the track background, the component injects a dark/light text color by luminance; falls back to `var(--oas-color-bg)`)"
     }
   },
   "oas-tab-panel": {
@@ -3570,9 +3558,7 @@
     "slots": {
       "title": "Rich title content slot; overrides the title attribute text when present"
     },
-    "cssVars": {
-      "--oas-glass-refraction": "Liquid-glass edge refraction filter (active under `data-glass`, default none); for local opt-out override with an **empty** value (`--oas-glass-refraction: ;`)—not `none` (mixing `none` with button-state brightness() invalidates the whole filter declaration)"
-    }
+    "cssVars": {}
   },
   "oas-toggle-button": {
     "attrs": {

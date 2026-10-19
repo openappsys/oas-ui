@@ -428,7 +428,6 @@ onMounted(() => {
 
 | CSS Variable | Description | Default |
 | --- | --- | --- |
-| `--oas-glass-refraction` | Liquid-glass edge refraction filter (active under `data-glass`, default none); for local opt-out override with an **empty** value (`--oas-glass-refraction: ;`)—not `none` (mixing `none` with button-state brightness() invalidates the whole filter declaration) | `none` |
 | `--oas-slider-accent` | — | `var(--oas-color-primary)` |
 | `--oas-slider-color` | — | `var(--oas-color-primary)` |
 | `--oas-slider-height` | — | `200px` |

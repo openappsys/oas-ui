@@ -146,15 +146,15 @@ describe('液态玻璃 L1：浮层 surface 接线', () => {
   })
 })
 
-describe('玻璃边缘折射 v1：controls/nav/notification 消费', () => {
+describe('玻璃跨浏览器一致性：不依赖浏览器专属位移滤镜', () => {
   afterEach(() => {
     document.body.innerHTML = ''
   })
 
-  it('8 个范围组件消费 --oas-glass-refraction（缺省回落 none 零副作用）', () => {
-    // 直接读样式文本断言（消费行存在性；滤镜缺省 none 不改变默认渲染）
+  it('玻璃控件源码不消费 --oas-glass-refraction（Chromium 执行 / Firefox 忽略会造成外观分叉）', () => {
     const files: Array<[string, string]> = [
       ['oas-button', 'basic/button/oas-button.ts'],
+      ['oas-switch', 'form/switch/oas-switch.ts'],
       ['oas-slider', 'form/slider/oas-slider.ts'],
       ['oas-app-bar', 'navigation/app-bar/oas-app-bar.ts'],
       ['oas-bottom-navigation', 'navigation/bottom-navigation/oas-bottom-navigation.ts'],
@@ -164,43 +164,27 @@ describe('玻璃边缘折射 v1：controls/nav/notification 消费', () => {
       ['oas-notification', 'feedback/notification/oas-notification.ts'],
     ]
     for (const [name, rel] of files) {
-      const src = readFileSync(resolve(import.meta.dirname, `../../../../packages/ui/src/${rel}`), 'utf8')
-      expect(src, `[${name}] 缺 --oas-glass-refraction 消费`).toContain('filter: var(--oas-glass-refraction, none)')
+      const source = readFileSync(resolve(import.meta.dirname, `../../../../packages/ui/src/${rel}`), 'utf8')
+      expect(source, `[${name}] 不得再消费位移折射滤镜`).not.toContain('--oas-glass-refraction')
     }
   })
 
-  it('范围纪律：内容面板（modal/drawer/popover + select 全族）不进折射 v1', () => {
-    const out: Array<[string, string]> = [
-      ['oas-modal', 'feedback/modal/oas-modal.ts'],
-      ['oas-drawer', 'feedback/drawer/oas-drawer.ts'],
-      ['oas-popover', 'feedback/popover/oas-popover.ts'],
-      ['oas-select', 'form/select/oas-select.ts'],
-      ['oas-cascader', 'form/cascader/oas-cascader.ts'],
-      ['oas-tree-select', 'form/tree-select/oas-tree-select.ts'],
-      ['oas-date-picker', 'form/date-picker/oas-date-picker.ts'],
-      ['oas-time-picker', 'form/time-picker/oas-time-picker.ts'],
-      ['oas-color-picker', 'form/color-picker/oas-color-picker.ts'],
-      ['oas-combobox', 'form/combobox/oas-combobox.ts'],
-      ['oas-auto-complete', 'form/auto-complete/oas-auto-complete.ts'],
-      ['oas-mentions', 'form/mentions/oas-mentions.ts'],
-    ]
-    for (const [name, rel] of out) {
-      const src = readFileSync(resolve(import.meta.dirname, `../../../../packages/ui/src/${rel}`), 'utf8')
-      expect(src, `[${name}] 不得进折射 v1（范围纪律）`).not.toContain('--oas-glass-refraction')
-    }
+  it('glass.css 不再定义位移折射滤镜（保留 blur / ring / sheen 跨浏览器材质）', () => {
+    const css = readFileSync(resolve(import.meta.dirname, '../../../../packages/theme/glass.css'), 'utf8')
+    expect(css).not.toContain('--oas-glass-refraction')
+    expect(css).not.toContain('feDisplacementMap')
+    expect(css).toContain('--oas-glass-blur:')
+    expect(css).toContain('--oas-glass-ring:')
+    expect(css).toContain('--oas-glass-sheen:')
   })
 
-  it('app-bar 溢出弹层关折射为组件内中性功能规则（不依赖玻璃运行时；仅 CSS 场景同安全）', () => {
+  it('app-bar 不再维护折射防裁切标记（滤镜移除后不留死钩子）', () => {
     const src = readFileSync(
       resolve(import.meta.dirname, '../../../../packages/ui/src/navigation/app-bar/oas-app-bar.ts'),
       'utf8',
     )
-    // 组件侧不得出现玻璃专属标记（data-glass*）；防裁切改用中性功能标记 data-panel-open
     expect(src).not.toMatch(/data-glass/)
-    expect(src).not.toContain('data-more-open')
-    expect(src, '缺弹层打开标记').toContain("setAttribute('data-panel-open', '')")
-    expect(src, '缺弹层关闭清理').toContain("removeAttribute('data-panel-open')")
-    expect(src, '缺组件内让位规则（filter: none）').toMatch(/:host\(\[data-panel-open\]\)\s*\{[^}]*filter:\s*none/)
+    expect(src).not.toContain('data-panel-open')
   })
 
   it('玻璃消费点纪律：组件源码只允许 var 消费行（零规则体/零标记属性/零高光逻辑）', () => {
@@ -219,14 +203,13 @@ describe('玻璃边缘折射 v1：controls/nav/notification 消费', () => {
     const ALLOWED = [
       /--oas-glass-blur/,
       /--oas-glass-ring/,
-      /--oas-glass-refraction/,
       /^\/\*/, // 块注释行
       /^\*/,
       /^\/\//, // 行注释
     ]
     for (const f of files) {
-      const src = readFileSync(f, 'utf8')
-      const lines = src.split('\n')
+      const source = readFileSync(f, 'utf8')
+      const lines = source.split('\n')
       lines.forEach((line, i) => {
         if (!/glass/i.test(line)) return
         const ok = ALLOWED.some((re) => re.test(line.trim()))
@@ -235,8 +218,8 @@ describe('玻璃边缘折射 v1：controls/nav/notification 消费', () => {
           `[${f.replace(glassDir, 'src')}:${i + 1}] 组件内不得出现玻璃规则体/标记（只允许 var 消费行）：${line.trim()}`,
         ).toBe(true)
       })
-      expect(src, `[${f}] 不得含 data-glass* 标记属性`).not.toMatch(/data-glass/)
-      expect(src, `[${f}] 不得含玻璃高光规则（sheen）`).not.toContain('oas-glass-sheen')
+      expect(source, `[${f}] 不得含 data-glass* 标记属性`).not.toMatch(/data-glass/)
+      expect(source, `[${f}] 不得含玻璃高光规则（sheen）`).not.toContain('oas-glass-sheen')
     }
   })
 
@@ -248,53 +231,5 @@ describe('玻璃边缘折射 v1：controls/nav/notification 消费', () => {
     const darkIdx = css.indexOf('[data-theme="dark"]')
     expect(darkIdx).toBeGreaterThan(0)
     expect(css.slice(darkIdx), 'dark 段应有独立 sheen 档').toContain('--oas-glass-sheen:')
-  })
-
-  it('switch 不接折射：18px 轨道/把手不套位移滤镜（锯齿/膨胀源码回归锁）', () => {
-    const sw = readFileSync(
-      resolve(import.meta.dirname, '../../../../packages/ui/src/form/switch/oas-switch.ts'),
-      'utf8',
-    )
-    expect(sw).not.toContain('--oas-glass-refraction')
-    expect(sw).not.toMatch(/filter:\s*var\(--oas-glass-refraction/)
-  })
-
-  it('禁用关折射跨组件统一：slider 双伪元素 disabled 守卫（UA 伪元素无 computed 通道，锁源码形态）', () => {
-    const slider = readFileSync(
-      resolve(import.meta.dirname, '../../../../packages/ui/src/form/slider/oas-slider.ts'),
-      'utf8',
-    )
-    expect(slider).toContain('input:disabled::-webkit-slider-thumb')
-    expect(slider).toContain('input:disabled::-moz-range-thumb')
-    // webkit/moz 守卫必须分条书写（合并选择器遇到不认识的伪元素整条失效）
-    expect(slider).toMatch(/input:disabled::-webkit-slider-thumb\s*\{\s*filter:\s*none/)
-    expect(slider).toMatch(/input:disabled::-moz-range-thumb\s*\{\s*filter:\s*none/)
-  })
-
-  it('glass.css 定义 --oas-glass-refraction：data-URI 自包含滤镜（shadow 内可解析）且仅在 data-glass 作用域', () => {
-    const css = readFileSync(resolve(import.meta.dirname, '../../../../packages/theme/glass.css'), 'utf8')
-    // data-URI 内联 SVG：url(#id) 片段引用在 shadow DOM 内无法跨树解析（实测静默忽略），
-    // 自包含 data-URI 是唯一能穿透 shadow 边界的滤镜引用方式
-    expect(css).toContain('--oas-glass-refraction: url("data:image/svg+xml,')
-    expect(css).toContain('feDisplacementMap')
-    // 硬约束①：discrete 阈值归一（alpha≥0.5→1）——半透明玻璃面与不透明面统一实心剪影，
-    // 「中心恒不变形」与表面透明度无关的前提（不归一则玻璃面中心偏离中性，review 实抓）
-    expect(css).toContain("type='discrete'")
-    expect(css).toContain("tableValues='0%201'")
-    // 硬约束②：法向位移——Sobel 双卷积把轮廓梯度编入 R/G 通道（bias 0.5 中性），
-    // feDisplacementMap 按 R/G 双通道取位移矢量：每个边缘带沿自身法线微膨胀（非 45° 对角拖影）
-    expect(css).toContain('feConvolveMatrix')
-    expect(css).toContain("bias='0.5'")
-    expect(css).toContain("xChannelSelector='R'")
-    expect(css).toContain("yChannelSelector='G'")
-    // 硬约束③：scale=10——膨胀峰值实测 ±4px（外包络宽高各 +8px，控制视觉膨胀与热区偏差）
-    expect(css).toContain("scale='10'")
-    // 硬约束④：滤镜区域横向 -50%/200%、纵向 -100%/300%——投影主下探（shadow-md 尾部约 40px），
-    // 矮元素（message box 约 36px 高）纵向 -50% 缓冲仍可能切在衰减段（review 两轮实抓）
-    expect(css).toContain("x='-50%25'")
-    expect(css).toContain("width='200%25'")
-    expect(css).toContain("y='-100%25'")
-    expect(css).toContain("height='300%25'")
-    expect(css).toContain('[data-glass]')
   })
 })

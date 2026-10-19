@@ -1,6 +1,6 @@
 # Liquid Glass Gallery
 
-> A material layer of translucent surfaces, backdrop blur, and specular edge rings (edge refraction ships as a static displacement approximation; dynamic fluidity is provided by the optional `glass-fluid.js` runtime — pointer specular highlight + press tightening; see "Dynamic fluidity" on this page).
+> A material layer of translucent surfaces, backdrop blur, and specular edge rings (no browser-specific filters; Chromium and Firefox render the same geometry; dynamic fluidity is provided by the optional `glass-fluid.js` runtime — pointer specular highlight + press tightening; see "Dynamic fluidity" on this page).
 
 <script setup>
 import { computed, ref, onMounted, onBeforeUnmount } from 'vue'
@@ -44,7 +44,7 @@ onBeforeUnmount(() => {
     <oas-button>Default</oas-button>
     <oas-switch checked></oas-switch>
     <oas-slider value="45" style="width: 200px"></oas-slider>
-    <span class="gg-note">Edge refraction (static displacement approximation): control outlines bulge along the edge normal, center untouched</span>
+    <span class="gg-note">Translucency + blur + edge ring are consistent across browsers; control geometry does not change per engine</span>
   </div>
   <div class="gg-cards">
     <div class="gg-card">
@@ -114,12 +114,12 @@ onBeforeUnmount(() => {
 - `data-glass` stacks on top of `data-theme` / `data-skin`—freely composable;
 - the material needs backdrop contrast: it shines over colorful gradients/photos and recedes on flat same-hue backgrounds (text stays legible);
 - the dark tier is tuned separately: `--oas-glass-ring` / `-sheen` / `-press` stay lower than light but are no longer imperceptible (edge highlight and translucency remain visible), with slightly stronger blur; no usage change between themes;
-- local opt-out: override `--oas-glass-blur: none; --oas-glass-ring: transparent; --oas-glass-refraction: ;` on any container (the refraction opt-out value must be empty, not `none`—see [Theming](/en/guide/theming#liquid-glass-glass-css); if your build chain strips empty custom properties, use the identity filter `saturate(1)` instead);
+- local opt-out: override `--oas-glass-blur: none; --oas-glass-ring: transparent` on any container;
 - disabled under the `high-contrast` theme (solid accessibility tier wins).
 
 ### Dynamic fluidity (pointer specular highlight, optional runtime)
 
-The highlight needs a small runtime (`glass-fluid.js`): a single document `pointermove` listener resolves the surface via `composedPath` and writes the pointer position as element-local CSS variables; **the runtime injects the highlight stylesheet into the matching components' shadow roots** (`adoptedStyleSheets`), so **no glass rule or marker exists in component sources** (only `--oas-glass-*` variable consumption lines). Closing refraction while the app-bar overflow panel is open is done by a neutral in-component marker `data-panel-open` (so the panel is not clipped) and does not depend on the runtime — it works with `glass.css` alone or under reduced motion.
+The highlight needs a small runtime (`glass-fluid.js`): a single document `pointermove` listener resolves the surface via `composedPath` and writes the pointer position as element-local CSS variables; **the runtime injects the highlight stylesheet into the matching components' shadow roots** (`adoptedStyleSheets`), so **no glass rule or marker exists in component sources** (only `--oas-glass-*` variable consumption lines).
 
 ```html
 <link rel="stylesheet" href="https://unpkg.com/@oas-ui/theme@2/glass.css" />
@@ -129,7 +129,7 @@ The highlight needs a small runtime (`glass-fluid.js`): a single document `point
 <html data-glass>
 ```
 
-- Scope matches refraction (9 controls/nav/notification components: button / switch / slider thumb / app-bar / bottom-navigation / message / toast / snackbar / notification); content panels are excluded;
+- Dynamic highlight scope (9 controls/nav/notification components: button / switch / slider thumb / app-bar / bottom-navigation / message / toast / snackbar / notification); content panels are excluded;
 - Guards: zero listeners without `data-glass`; disabled under `prefers-reduced-motion: reduce`; not enabled for coarse pointers (touch); disabled under `high-contrast`; starts/stops automatically as the markers or media queries change;
 - Tunable variables (CSS custom properties pierce shadow DOM): `--oas-glass-px` / `--oas-glass-py` (pointer-local coordinates written by the runtime — do not set manually), `--oas-glass-sheen` / `--oas-glass-sheen-size` / `--oas-glass-sheen-press` (sheen color, radius, pressed color; one step each for light and dark, defined in `glass.css`);
 - The highlight layer sits above the surface background and below the label text (`isolation: isolate` + negative `z-index`), so the specular reflection never washes out the label;

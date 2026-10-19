@@ -332,7 +332,7 @@ const BUDGETS = [
     get: () => glassCss.gzipBytes,
     limit: 6 * 1024, // 6 KB（可选玻璃静态层，首次定档 2026-10-08；实测约 4.42 KB）
     basis:
-      '实测 gzip 约 4.42 KB（玻璃静态层：surface 半透明 token + 折射 data-URI 滤镜 + 折光边 + 阴影；独立可选，不进 union），上浮约 35% 定档 6 KB',
+      '实测 gzip 约 2.7 KB（玻璃静态层：surface 半透明 token + 折光边 + 阴影；独立可选，不进 union），保留 6 KB 上限',
   },
   {
     name: '@oas-ui/theme skins.css gzip',

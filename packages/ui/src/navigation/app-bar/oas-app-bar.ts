@@ -30,7 +30,6 @@ const STYLE = `
   /* 液态玻璃接线（栏体 surface，玻璃栏为合法形态）：变量缺省时零影响 */
   backdrop-filter: var(--oas-glass-blur, none);
   -webkit-backdrop-filter: var(--oas-glass-blur, none);
-  filter: var(--oas-glass-refraction, none);
   outline: 1px solid var(--oas-glass-ring, transparent);
   outline-offset: -1px;
   box-sizing: border-box;
@@ -42,11 +41,6 @@ const STYLE = `
 
 :host([hidden]) {
   display: none;
-}
-/* 溢出弹层打开期间关滤镜（功能规则：filter 非 none 会把向下弹出的面板裁进滤镜区域）。
-   中性标记 data-panel-open 由组件维护——不引用玻璃变量、不依赖玻璃运行时（仅 CSS 场景同安全） */
-:host([data-panel-open]) {
-  filter: none;
 }
 /* ===== 主行 ===== */
 .row {
@@ -649,9 +643,6 @@ export class OASAppBar extends OASElement {
     if (!this.morePanelEl || !this.moreBtnEl || !this.actionsWrapEl) return
     this.moreOpen = true
     this.morePanelEl.hidden = false
-    // 弹层打开期间关滤镜（功能规则：filter 非 none 时整棵子树被裁进滤镜区域，向下弹出的面板会整体落在区域外）。
-    // 用中性标记 data-panel-open（不引用玻璃变量、不依赖运行时——仅引 glass.css 或 reduced-motion 下同样安全）
-    this.setAttribute('data-panel-open', '')
     this.moreBtnEl.setAttribute('aria-expanded', 'true')
     // 弹层打开时 actions 容器切 overflow: visible（横向超出不被 clip 裁掉）
     this.actionsWrapEl.classList.add('open')
@@ -663,7 +654,6 @@ export class OASAppBar extends OASElement {
   private closeMore(returnFocus = false): void {
     if (!this.moreOpen) return
     this.moreOpen = false
-    this.removeAttribute('data-panel-open')
     if (this.morePanelEl) this.morePanelEl.hidden = true
     if (this.moreBtnEl) {
       this.moreBtnEl.setAttribute('aria-expanded', 'false')

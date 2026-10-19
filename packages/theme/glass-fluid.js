@@ -18,8 +18,6 @@
  * 兼容基线：`adoptedStyleSheets` / `CSSStyleSheet` 需 Safari 16.4+ / Firefox 101+ / Chrome 73+；
  * 注入表用到 `:where()`（Chrome 88+ / Safari 14+ / Firefox 78+），与库内既有 `:where()`/`color-mix()` 用法一致，
  * 实际基线更高（本库另有 color-mix 基线）。不支持构造样式表时静默跳过（高光缺失，不影响其余玻璃层）。
- * 注：app-bar 溢出弹层「打开期间关折射」的防裁切规则**在组件内**（`data-panel-open`，功能规则、
- * 不依赖本运行时）——仅引 glass.css 或 reduced-motion 下同样安全。
  */
 
 /** 指针命中时运行时挂在 surface 上的激活标记（仅运行时写入，组件源码无此标记） */
@@ -116,7 +114,7 @@ ${GLASS_BUTTONS.map((s) => `${mark(s, attr)}${SOLID_SURFACE}:active::after`).joi
   background: none;
   box-shadow: inset 0 0 0 2px var(--oas-glass-sheen-press, transparent);
 }
-/* 禁用控件静态无装饰（折射已关，高光同样不亮）；background:none 让计算值可直接断言（不只是 opacity 0）；
+/* 禁用控件静态无装饰（高光同样不亮）；background:none 让计算值可直接断言（不只是 opacity 0）；
    链接形态按钮（a[part=button]，无原生 disabled）用 aria-disabled 表达禁用，同样关高光 */
 button[${attr}][disabled]::after,
 button[${attr}][aria-disabled='true']::after,

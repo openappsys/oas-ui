@@ -114,10 +114,6 @@
       "default": "320px"
     },
     {
-      "name": "--oas-glass-refraction",
-      "default": "none"
-    },
-    {
       "name": "--oas-glass-blur",
       "default": "none"
     },

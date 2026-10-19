@@ -47,7 +47,7 @@ document.documentElement.dataset.skin = 'emerald' // violet | emerald | rose | a
 
 ### 可选材质层（玻璃）
 
-`glass.css` 提供玻璃材质（半透明 surface + backdrop 模糊 + 高光折光边 + 边缘折射），`glass-fluid.js` 提供指针镜面高光运行时。两者都是**独立可选文件**（opt-in，不引则零影响、不进组件体积）：
+`glass.css` 提供玻璃材质（半透明 surface + backdrop 模糊 + 高光折光边），`glass-fluid.js` 提供指针镜面高光运行时。两者都是**独立可选文件**（opt-in，不引则零影响、不进组件体积）：
 
 ```html
 <link rel="stylesheet" href="https://unpkg.com/@oas-ui/theme@2/glass.css" />

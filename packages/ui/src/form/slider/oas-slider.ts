@@ -195,7 +195,6 @@ input::-webkit-slider-runnable-track {
 }
 input::-webkit-slider-thumb {
   appearance: none;
-  filter: var(--oas-glass-refraction, none);
   width: var(--oas-slider-thumb-size);
   height: var(--oas-slider-thumb-size);
   border-radius: 50%;
@@ -208,14 +207,6 @@ input::-webkit-slider-thumb {
   background: var(--oas-slider-color);
   border: none;
   transition: transform var(--oas-transition-fast) var(--oas-ease-out);
-}
-/* 禁用关折射（与 button/switch 同一纪律：禁用控件静态无装饰变形）；
-   webkit/moz 伪元素必须分开书写（不认识的选择器会使整条规则失效） */
-input:disabled::-webkit-slider-thumb {
-  filter: none;
-}
-input:disabled::-moz-range-thumb {
-  filter: none;
 }
 /* hover 放大只在支持 hover 的设备生效：触屏点按后 :hover 会粘滞，拇指会一直保持放大
    （与纵向自定义拇指共用同一守卫，四种「横向/纵向 × 桌面/触屏」组合行为一致） */
@@ -235,7 +226,6 @@ input::-moz-range-track {
 }
 input::-moz-range-thumb {
   width: var(--oas-slider-thumb-size);
-  filter: var(--oas-glass-refraction, none);
   height: var(--oas-slider-thumb-size);
   box-sizing: border-box;
   border-radius: 50%;

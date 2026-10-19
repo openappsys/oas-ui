@@ -1,6 +1,6 @@
 # 液态玻璃画廊
 
-> 半透明 surface + backdrop 模糊 + 高光折光边的材质层（边缘折射为静态置换近似；动态流动感由可选运行时 `glass-fluid.js` 提供——指针镜面高光 + 按压收紧，详见本页「动态流动感」）。
+> 半透明 surface + backdrop 模糊 + 高光折光边的材质层（不依赖浏览器专属滤镜，Chromium / Firefox 同构；动态流动感由可选运行时 `glass-fluid.js` 提供——指针镜面高光 + 按压收紧，详见本页「动态流动感」）。
 
 <script setup>
 import { computed, ref, onMounted, onBeforeUnmount } from 'vue'
@@ -43,7 +43,7 @@ onBeforeUnmount(() => {
     <oas-button>次按钮</oas-button>
     <oas-switch checked></oas-switch>
     <oas-slider value="45" style="width: 200px"></oas-slider>
-    <span class="gg-note">边缘折射（静态置换近似）：控件轮廓沿边缘法向微膨胀，中间不变形</span>
+    <span class="gg-note">半透明 + 模糊 + 折光边跨浏览器一致；控件尺寸不随浏览器变化</span>
   </div>
   <div class="gg-cards">
     <div class="gg-card">
@@ -113,12 +113,12 @@ onBeforeUnmount(() => {
 - `data-glass` 叠加在 `data-theme` / `data-skin` 之上，三者自由组合；
 - 材质依赖背景反差——给页面一个有色彩层次的背景（渐变/图片）时质感最强，纯色同色相背景上减弱（文字仍可读）；
 - 暗色档单独标定：`--oas-glass-ring` / `-sheen` / `-press` 比浅色低但不再压到不可感知（边缘高光、透光层次可见），模糊强度略增；亮/暗切换无需改用法；
-- 局部降级：任意容器覆盖 `--oas-glass-blur: none; --oas-glass-ring: transparent; --oas-glass-refraction: ;`（折射停用值留空而非 none，原因见[主题与自定义](/guide/theming#液态玻璃-glass-css)；构建链吞空值时可用 `saturate(1)` 恒等滤镜替代）；
+- 局部降级：任意容器覆盖 `--oas-glass-blur: none; --oas-glass-ring: transparent`；
 - `high-contrast` 主题下不启用（实心可访问性档优先）。
 
 ### 动态流动感（指针镜面高光，可选运行时）
 
-镜面高光需要一小段运行时（`glass-fluid.js`）——单文档 `pointermove` 监听 + `composedPath` 命中 surface，把指针位置写成元素本地坐标变量；**高光样式表由运行时按注册表注入**对应组件的 shadow 根（`adoptedStyleSheets`），因此**组件源码里没有任何玻璃规则体或标记属性**（只有 `--oas-glass-*` 变量消费行）。app-bar 溢出弹层打开期间关折射由组件内的中性标记 `data-panel-open` 完成（防弹层被滤镜区域裁切），不依赖运行时——只引 `glass.css` 或 reduced-motion 下同样生效。
+镜面高光需要一小段运行时（`glass-fluid.js`）——单文档 `pointermove` 监听 + `composedPath` 命中 surface，把指针位置写成元素本地坐标变量；**高光样式表由运行时按注册表注入**对应组件的 shadow 根（`adoptedStyleSheets`），因此**组件源码里没有任何玻璃规则体或标记属性**（只有 `--oas-glass-*` 变量消费行）。
 
 ```html
 <link rel="stylesheet" href="https://unpkg.com/@oas-ui/theme@2/glass.css" />
@@ -128,7 +128,7 @@ onBeforeUnmount(() => {
 <html data-glass>
 ```
 
-- 消费范围与折射同域（9 个控件/导航/通知组件：button / switch / slider 把手 / app-bar / bottom-navigation / message / toast / snackbar / notification）；内容面板不接；
+- 动态高光消费范围（9 个控件/导航/通知组件：button / switch / slider 把手 / app-bar / bottom-navigation / message / toast / snackbar / notification）；内容面板不接；
 - 守卫：无 `data-glass` 零监听；`prefers-reduced-motion: reduce` 不启用；粗指针（触屏）不接；`high-contrast` 不启用；标记/媒体查询变化会自动起停；
 - 可调变量（CSS 自定义属性可穿透 shadow 覆写）：`--oas-glass-px` / `--oas-glass-py`（运行时写入的指针本地坐标，勿手改）、`--oas-glass-sheen` / `--oas-glass-sheen-size` / `--oas-glass-sheen-press`（高光色、半径、按压色；明暗各一档，定义在 `glass.css`）；
 - 高光层落在「surface 背景之上、文字之下」（`isolation: isolate` + 负 `z-index`），镜面反射不冲淡标签文字；

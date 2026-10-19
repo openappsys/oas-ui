@@ -116,10 +116,6 @@
   ],
   "cssVars": [
     {
-      "name": "--oas-glass-refraction",
-      "default": "none"
-    },
-    {
       "name": "--oas-msg-type-color",
       "default": "var(--oas-color-border)"
     },

@@ -262,10 +262,6 @@
       "default": "none"
     },
     {
-      "name": "--oas-glass-refraction",
-      "default": "none"
-    },
-    {
       "name": "--oas-slider-thumb-size",
       "default": "14px"
     },

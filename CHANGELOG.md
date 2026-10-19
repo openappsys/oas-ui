@@ -13,6 +13,7 @@
 
 ### 修复
 
+- **玻璃静态边缘折射移除（跨浏览器一致性）**：`filter: url("data:image/svg+xml,...#id")` 在 Chromium 执行、Firefox 不执行，导致同一组件出现轮廓锯齿与视觉尺寸分叉。移除全部控件上的静态折射与 `--oas-glass-refraction`，保留半透明 surface、backdrop 模糊、折光边、阴影和指针动态高光；组件尺寸/命中区完全由布局决定。API 文档同步删除该变量。
 - **`oas-switch` 玻璃态锯齿/膨胀**：关闭 switch 的位移折射滤镜（保留玻璃 surface 与高光），修复 18px 轨道/把手在 Chromium 被位移成锯齿轮廓、并因外扩显得比 Firefox 更高更胖的问题；开关恢复与布局盒一致的尺寸。
 - **液态玻璃画廊明暗切换失真**：切换器改为全站主题，不再只给舞台写 `data-theme`——后者会让基础 dark token 覆盖玻璃 surface，暗色卡片变成不透明 `#3f3f46`、玻璃透光丢失；新增回归断言暗色卡片保持半透明。
 - **SPA 客户端路由下 scheduler / gantt / resource demo 空白**：① 私有成员与单字属性撞名（`scale`/`view`/`expanded`），框架按「key in el」把静态 attribute 写成 property，own 字符串遮蔽方法或 Set 字段导致报错/空白；内部改名（`scaleMode`/`viewMode`/`expandedSet`，公开 API 不变）。② 数据属性的 property setter 统一接受 JSON 字符串（`events`/`resources`/`tasks`/`lines` 等），框架把静态 attribute 当 property 写入时不再被当作非法数组清空。新增 `shared/json-array` 与客户端跳转回归（表格 → 日程 → 甘特 → 资源）。

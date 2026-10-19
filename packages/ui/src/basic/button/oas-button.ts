@@ -62,7 +62,6 @@ const STYLE = `
 button,
 a[part='button'] {
   appearance: none;
-  filter: var(--oas-glass-refraction, none);
   border: 1px solid var(--oas-color-border);
   background: var(--oas-color-bg);
   color: var(--oas-color-text-primary);
@@ -169,7 +168,7 @@ a[part='button'][aria-disabled='true'] {
   opacity: 0.6;
   background: var(--oas-color-bg-disabled);
   color: var(--oas-color-text-disabled);
-  /* 禁用态关闭折射（与 disabled-focusable 一致） */
+  /* 禁用态关闭亮度滤镜（与 disabled-focusable 一致） */
   filter: none;
 }
 a[part='button'][aria-disabled='true']:hover {
@@ -193,7 +192,7 @@ button:focus-visible {
    字面色走主题感知混合/亮度判定）。
    有意设计：禁用 × 选中时颜色维度的选中态不被禁用规则反超（特异性更高）——禁用组里
    当前选中项保持主色淡底/描边（经 opacity 0.6 柔化），用户能读到「当前状态是什么」；
-   全灰会丢失状态信息（通行做法：禁用只灭交互与装饰变形，不抹状态）。折射/亮度等
+   全灰会丢失状态信息（通行做法：禁用只灭交互与装饰变形，不抹状态）。亮度等
    装饰变形则由下方禁用守卫钉死 */
 :host([aria-pressed='true']) button,
 :host([aria-pressed='true']) a[part='button'] {
@@ -207,7 +206,7 @@ button[disabled] {
   opacity: 0.6;
   background: var(--oas-color-bg-disabled);
   color: var(--oas-color-text-disabled);
-  /* 禁用态关闭折射（与 disabled-focusable 一致：禁用外观恒定不变形） */
+  /* 禁用态关闭亮度滤镜（与 disabled-focusable 一致：禁用外观恒定不变形） */
   filter: none;
 }
 button.primary {
@@ -240,7 +239,7 @@ a[part='button'].success {
 }
 button.success:hover {
   /* hover 变暗、选中更深（0.94 → 0.85）：与 primary 的 color-mix 加深体系同向递进 */
-  filter: brightness(0.94) var(--oas-glass-refraction, );
+  filter: brightness(0.94);
 }
 button.warning {
   background: color-mix(in srgb, var(--oas-color-warning) 80%, var(--oas-color-text-primary));
@@ -253,7 +252,7 @@ a[part='button'].warning {
   color: var(--oas-color-text-on-warning);
 }
 button.warning:hover {
-  filter: brightness(0.94) var(--oas-glass-refraction, );
+  filter: brightness(0.94);
 }
 button.danger {
   background: color-mix(in srgb, var(--oas-color-danger) 80%, var(--oas-color-text-primary));
@@ -266,7 +265,7 @@ a[part='button'].danger {
   color: var(--oas-color-text-on-danger);
 }
 button.danger:hover {
-  filter: brightness(0.94) var(--oas-glass-refraction, );
+  filter: brightness(0.94);
 }
 /* 有色 / text 按钮的选中态覆盖（选中比 hover 更深一档：0.85 vs 0.94）。
    anchor 变体必须与 button 一样带 :host([aria-pressed]) 前缀——曾现 bug：a 镜像规则丢了前缀，
@@ -284,7 +283,7 @@ button.danger:hover {
 :host([aria-pressed='true']) a[part='button'].success,
 :host([aria-pressed='true']) a[part='button'].warning,
 :host([aria-pressed='true']) a[part='button'].danger {
-  filter: brightness(0.85) var(--oas-glass-refraction, );
+  filter: brightness(0.85);
 }
 :host([aria-pressed='true']) button.text,
 :host([aria-pressed='true']) a[part='button'].text {
@@ -584,7 +583,7 @@ a[part='button'].wave {
 button.wave:active,
 a[part='button'].wave:active {
   transform: scale(0.97);
-  filter: brightness(0.94) var(--oas-glass-refraction, );
+  filter: brightness(0.94);
 }
 /* disabled-focusable：视觉禁用（降饱和 + 禁用配色）但保持可聚焦/可 hover（供 tooltip 解释禁用原因）。
    不设原生 disabled；点击由 JS 拦截。置于形态规则之后覆盖 type 的 hover/active 重着色，
@@ -604,7 +603,7 @@ a[part='button'].disabled-focusable:active {
   filter: none;
 }
 /* 禁用态守卫（置于全部状态组合滤镜之后）：禁用原生按钮仍匹配 :hover，aria-pressed 选中态
-   规则特异性更高——两者都会把 brightness+折射的组合滤镜反超回禁用按钮（review 实抓）。
+   规则特异性更高——两者都会把 brightness 组合滤镜反超回禁用按钮（review 实抓）。
    三种禁用形态 × hover/active/选中 全部钉死 filter: none（禁用外观恒定不变形不闪断）。
    只钉 filter 不钉 transform：原生 disabled 不触发 :active，wave 的 scale 不会生效
    （disabled-focusable 不设原生 disabled，其 transform 已由上方块归零）。

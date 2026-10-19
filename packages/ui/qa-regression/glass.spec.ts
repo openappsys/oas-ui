@@ -188,289 +188,31 @@ test.describe('液态玻璃材质层', () => {
   })
 })
 
-test.describe('玻璃边缘折射 v1（data-URI 自包含滤镜）', () => {
-  // 实现约束：shadow DOM 内 CSS 的 url(#id) 片段引用无法跨 shadow 边界解析（实测静默忽略），
-  // 滤镜必须以 data-URI 内联——本组断言锁死该机制（退回 #id 引用即红）。
-
-  for (const theme of ['light', 'dark']) {
-    test(`shadow 组件消费 data-URI 滤镜（${theme}，button）`, async ({ page }) => {
-      await page.goto(PAGE, { waitUntil: 'domcontentloaded' })
-      if (theme === 'dark') await page.evaluate(() => document.documentElement.classList.add('dark'))
-      await page.waitForTimeout(800)
-      const filter = await page.evaluate(
-        () =>
-          getComputedStyle((document.querySelector('oas-button') as HTMLElement).shadowRoot!.querySelector('button')!)
-            .filter,
-      )
-      expect(filter, `${theme}/button 应消费折射滤镜`).toContain('data:image/svg+xml')
-      expect(filter, `${theme}/button 应为位移滤镜`).toContain('feDisplacementMap')
-    })
-  }
-
-  test('禁用态守卫：hover/选中不得把组合滤镜反超回禁用按钮（特异性反超实抓回归锁）', async ({ page }) => {
+test.describe('玻璃材质与动态高光（跨浏览器一致）', () => {
+  test('玻璃控件不消费位移滤镜，开关尺寸与布局盒一致（Chromium/Firefox 同构）', async ({ page }) => {
     await page.goto(PAGE, { waitUntil: 'domcontentloaded' })
-    await page.waitForTimeout(800)
-    await page.evaluate(() => {
-      const stage = document.querySelector('.gg-stage')!
-      const mk = (attrs: Record<string, string>, text: string) => {
-        const b = document.createElement('oas-button')
-        for (const [k, v] of Object.entries(attrs)) b.setAttribute(k, v)
-        b.textContent = text
-        stage.appendChild(b)
-        return b
-      }
-      mk({ type: 'success', disabled: '' }, 'guard-probe-disabled')
-      mk({ type: 'success', 'disabled-focusable': '', 'aria-pressed': 'true' }, 'guard-probe-pressed')
-    })
-    await page.waitForTimeout(400)
-    // hover 禁用 success 按钮（原生 disabled 仍匹配 :hover；success:hover 组合滤镜特异性更高）
-    const probe = page.locator('oas-button', { hasText: 'guard-probe-disabled' }).first()
-    await probe.hover()
-    await page.waitForTimeout(300)
+    await page.waitForTimeout(900)
     const r = await page.evaluate(() => {
-      const read = (text: string) => {
-        const el = [...document.querySelectorAll('oas-button')].find((b) => b.textContent === text)!
-        return getComputedStyle(el.shadowRoot!.querySelector('button, a[part="button"]')!).filter
+      const read = (host: Element) => {
+        const root = (host as HTMLElement).shadowRoot
+        const surfaces = [...(root?.querySelectorAll('button, .thumb, input[type="range"]') ?? [])]
+        return surfaces.map((el) => getComputedStyle(el).filter)
       }
-      return { disabledHover: read('guard-probe-disabled'), pressedDisabledFocusable: read('guard-probe-pressed') }
-    })
-    expect(r.disabledHover, '禁用按钮 hover 不得恢复 brightness/折射（守卫规则钉死 none）').toBe('none')
-    expect(r.pressedDisabledFocusable, '选中 × disabled-focusable 不得恢复组合滤镜').toBe('none')
-  })
-
-  test('switch 不套位移折射（18px 小圆的锯齿/膨胀回归锁）', async ({ page }) => {
-    await page.goto(PAGE, { waitUntil: 'domcontentloaded' })
-    await page.waitForTimeout(800)
-    const r = await page.evaluate(() => {
-      const sw = document.querySelector('.gg-controls oas-switch')!
-      const btn = sw.shadowRoot!.querySelector('button')!
-      const thumb = sw.shadowRoot!.querySelector('.thumb')!
-      return { btn: getComputedStyle(btn).filter, thumb: getComputedStyle(thumb).filter }
-    })
-    expect(r.btn, 'switch 不消费位移滤镜（会把轨道撑大且把手边缘锯齿）').toBe('none')
-    expect(r.thumb, 'switch 把手不消费位移滤镜（小圆最易锯齿）').toBe('none')
-  })
-
-  test('slider 把手折射真实执行（chromium 像素级；UA 伪元素无 computed 通道）', async ({ page, browserName }) => {
-    test.skip(browserName === 'firefox', 'Firefox 不执行 data-URI SVG 滤镜位移（降级契约由像素断言锁）')
-    await page.goto(PAGE, { waitUntil: 'domcontentloaded' })
-    await page.waitForTimeout(800)
-    // 把手裁剪区：按 value 比例定位 thumb 中心（::-webkit-slider-thumb 是 UA 伪元素，getComputedStyle 探不到）。
-    // 依赖：画廊首个 oas-slider 为水平滑块（若画廊重排出垂直滑块在前，clip 错位 → 假红，失败模式安全）
-    const clip = await page.evaluate(() => {
-      const input = document.querySelector('oas-slider')?.shadowRoot?.querySelector('input')
-      if (!input) return null
-      const r = input.getBoundingClientRect()
-      const ratio =
-        (Number(input.value || 0) - Number(input.min || 0)) / (Number(input.max || 100) - Number(input.min || 0))
-      const cx = r.x + ratio * r.width
-      return { x: cx - 18, y: r.y - 8, width: 36, height: r.height + 16 }
-    })
-    expect(clip, '画廊应有 oas-slider').not.toBeNull()
-    const on = await page.screenshot({ clip: clip! })
-    await page.evaluate(() => document.documentElement.style.setProperty('--oas-glass-refraction', 'none'))
-    await page.waitForTimeout(300)
-    const off = await page.screenshot({ clip: clip! })
-    const diff = await diffRatio(page, on, off)
-    expect(diff, 'slider 把手折射应真实执行（开/关渲染不同）').toBeGreaterThan(0.001)
-  })
-
-  test('filter × backdrop-filter 共存：折射生效时玻璃模糊不丢（message 盒）', async ({ page, browserName }) => {
-    test.skip(browserName === 'firefox', 'Firefox 不执行 data-URI SVG 滤镜位移（降级契约由像素断言锁）')
-    await page.goto(PAGE, { waitUntil: 'domcontentloaded' })
-    await page.waitForTimeout(800)
-    const r = await page.evaluate(async () => {
-      const btns = [...document.querySelectorAll('oas-button')]
-      const trigger = btns.find((b) => /消息|message/i.test(b.textContent || ''))
-      ;(trigger?.shadowRoot?.querySelector('button') as HTMLButtonElement | undefined)?.click()
-      await new Promise((res) => setTimeout(res, 700))
-      const box = document.querySelector('oas-message')?.shadowRoot?.querySelector('.box')
-      if (!box) return null
-      const cs = getComputedStyle(box)
+      const hosts = [...document.querySelectorAll('.gg-stage oas-button, .gg-stage oas-switch, .gg-stage oas-slider')]
+      const sw = document.querySelector('.gg-controls oas-switch') as HTMLElement
+      const swButton = sw?.shadowRoot?.querySelector('button')
+      const box = swButton?.getBoundingClientRect()
       return {
-        filter: cs.filter,
-        backdrop: cs.backdropFilter || (cs as unknown as { webkitBackdropFilter: string }).webkitBackdropFilter,
+        filters: hosts.flatMap((h) => read(h)),
+        switchBox: box ? { w: box.width, h: box.height } : null,
       }
     })
-    expect(r, '画廊消息 demo 应弹出').not.toBeNull()
-    expect(r!.filter, '折射应生效').toContain('data:image/svg+xml')
-    expect(r!.backdrop, '折射生效时 backdrop 模糊不丢').toContain('blur(')
-  })
-
-  test('文档化降级路径：容器覆盖空值 → 基础态 none 且 button hover 亮度反馈不失效（none 混排非法实抓回归锁）', async ({
-    page,
-  }) => {
-    await page.goto(PAGE, { waitUntil: 'domcontentloaded' })
-    await page.waitForTimeout(800)
-    // 文档口径：折射停用值留空（--oas-glass-refraction: ;）——none 与 brightness() 混排会使整条声明非法
-    await page.addStyleTag({ content: '.gg-stage { --oas-glass-refraction: ; }' })
-    const host = await page.evaluateHandle(() => {
-      const stage = document.querySelector('.gg-stage')!
-      const b = document.createElement('oas-button')
-      b.setAttribute('type', 'success')
-      b.textContent = 'optout-probe'
-      stage.appendChild(b)
-      return b
-    })
-    await page.waitForTimeout(400)
-    const base = await page.evaluate(() => {
-      const el = [...document.querySelectorAll('oas-button')].find((b) => b.textContent === 'optout-probe')!
-      return getComputedStyle(el.shadowRoot!.querySelector('button')!).filter
-    })
-    expect(base, '空值停用后基础态应回落 none').toBe('none')
-    const probe = page.locator('oas-button', { hasText: 'optout-probe' }).first()
-    await probe.hover()
-    await page.waitForTimeout(300)
-    const hover = await page.evaluate(() => {
-      const el = [...document.querySelectorAll('oas-button')].find((b) => b.textContent === 'optout-probe')!
-      return getComputedStyle(el.shadowRoot!.querySelector('button')!).filter
-    })
-    expect(hover, '空值停用后 hover 亮度反馈必须仍在（brightness 不被折射变量拖非法）').toBe('brightness(0.94)')
-    await host.dispose()
-  })
-
-  /** 两张 PNG 截图的像素差异率（浏览器内 canvas 解码比对；阈值 8/255 抗栅格噪声） */
-  async function diffRatio(page: import('@playwright/test').Page, a: Buffer, b: Buffer): Promise<number> {
-    return page.evaluate(
-      async ([aB64, bB64]) => {
-        const load = (b64: string) =>
-          new Promise<HTMLImageElement>((res, rej) => {
-            const img = new Image()
-            img.onload = () => res(img)
-            img.onerror = rej
-            img.src = 'data:image/png;base64,' + b64
-          })
-        const [ia, ib] = await Promise.all([load(aB64 as string), load(bB64 as string)])
-        const c = document.createElement('canvas')
-        c.width = ia.width
-        c.height = ia.height
-        const ctx = c.getContext('2d')!
-        ctx.drawImage(ia, 0, 0)
-        const da = ctx.getImageData(0, 0, c.width, c.height).data
-        ctx.clearRect(0, 0, c.width, c.height)
-        ctx.drawImage(ib, 0, 0)
-        const db = ctx.getImageData(0, 0, c.width, c.height).data
-        let diff = 0
-        for (let i = 0; i < da.length; i += 4) {
-          if (
-            Math.abs(da[i]! - db[i]!) > 8 ||
-            Math.abs(da[i + 1]! - db[i + 1]!) > 8 ||
-            Math.abs(da[i + 2]! - db[i + 2]!) > 8
-          )
-            diff++
-        }
-        return diff / (da.length / 4)
-      },
-      [a.toString('base64'), b.toString('base64')],
-    )
-  }
-
-  test('滤镜真实执行：边缘变形而中间恒不变形（硬约束），且布局盒不变（零副作用）', async ({ page, browserName }) => {
-    await page.goto(PAGE, { waitUntil: 'domcontentloaded' })
-    await page.waitForTimeout(800)
-    const btn = page.locator('oas-button').first()
-    // 中心裁剪区（中部 50%×50%：远离边缘环带，折射硬约束要求此处像素零变化）
-    const box = (await btn.boundingBox())!
-    const centerClip = {
-      x: box.x + box.width * 0.25,
-      y: box.y + box.height * 0.25,
-      width: box.width * 0.5,
-      height: box.height * 0.5,
+    expect(r.filters.length, '应采到玻璃控件 surface').toBeGreaterThan(0)
+    for (const filter of r.filters) {
+      expect(filter, '玻璃控件不得再消费浏览器专属位移滤镜').not.toContain('data:image/svg+xml')
+      expect(filter, '玻璃控件不得再出现 feDisplacementMap').not.toContain('feDisplacementMap')
     }
-    const fullOn = await btn.screenshot()
-    const centerOn = await page.screenshot({ clip: centerClip })
-    const r = await page.evaluate(() => {
-      const host = document.querySelector('oas-button')!
-      const inner = host.shadowRoot!.querySelector('button')!
-      const withFilter = inner.getBoundingClientRect()
-      document.documentElement.style.setProperty('--oas-glass-refraction', 'none')
-      const without = inner.getBoundingClientRect()
-      return {
-        with: { w: Math.round(withFilter.width), h: Math.round(withFilter.height) },
-        without: { w: Math.round(without.width), h: Math.round(without.height) },
-      }
-    })
-    await page.waitForTimeout(300)
-    const fullOff = await btn.screenshot()
-    const centerOff = await page.screenshot({ clip: centerClip })
-    const fullDiff = await diffRatio(page, fullOn, fullOff)
-    const centerDiff = await diffRatio(page, centerOn, centerOff)
-    if (browserName === 'firefox') {
-      // Firefox 对 CSS filter 的 data-URI SVG 滤镜不执行位移（实测开/关仅 ±1 LSB 栅格噪声）——
-      // v1 如实降级为「无折射但渲染正常」。此处锁死安全降级契约：视觉无差异 ≠ 假绿，
-      // 而是引擎能力的如实边界（若哪天 Firefox 支持了，本断言变红提醒改回执行断言）
-      expect(fullDiff, 'Firefox 安全降级：折射无感不破坏渲染').toBeLessThan(0.01)
-    } else {
-      // ①执行证明：整体开/关必不同（滤镜失效/未执行 → 恒等 → 红）
-      expect(fullDiff, '折射滤镜应真实执行（开/关渲染不同）').toBeGreaterThan(0.001)
-    }
-    // ②硬约束：中心区像素开/关一致（位移侵入中心 → 红；滤镜链 discrete 阈值归一保证中性）
-    expect(centerDiff, '中间恒不变形（硬约束）：中心区像素开/关应一致').toBeLessThan(0.001)
-    // ③布局零副作用：位移仅视觉层
-    expect(r.with, '折射不得改变布局盒').toEqual(r.without)
-  })
-
-  test('法向位移方向性：外包络双轴对称膨胀（梯度图通道错乱盲区回归锁）', async ({ page, browserName }) => {
-    test.skip(browserName === 'firefox', 'Firefox 不执行 data-URI SVG 滤镜位移（降级契约由像素断言锁）')
-    await page.goto(PAGE, { waitUntil: 'domcontentloaded' })
-    await page.waitForTimeout(800)
-    // 白底探针区 + primary 按钮：R/G 任一通道写反或 X/Y 互换 → 单轴不膨胀 → 红
-    const clip = await page.evaluate(() => {
-      const host = document.createElement('div')
-      host.style.cssText = 'position:fixed;left:40px;top:40px;width:320px;height:180px;background:#fff;z-index:9999'
-      const b = document.createElement('oas-button')
-      b.setAttribute('type', 'primary')
-      b.textContent = 'dir-probe'
-      b.style.cssText = 'position:absolute;left:90px;top:70px'
-      host.appendChild(b)
-      document.body.appendChild(host)
-      return { x: 40, y: 40, width: 320, height: 180 }
-    })
-    await page.waitForTimeout(500)
-    /** 蓝像素外包络（B 高 R 低区分白底） */
-    const bboxBlue = async () => {
-      const shot = await page.screenshot({ clip })
-      return page.evaluate(async (b64) => {
-        const img = new Image()
-        await new Promise((res) => {
-          img.onload = res
-          img.src = 'data:image/png;base64,' + (b64 as string)
-        })
-        const c = document.createElement('canvas')
-        c.width = img.width
-        c.height = img.height
-        const ctx = c.getContext('2d')!
-        ctx.drawImage(img, 0, 0)
-        const d = ctx.getImageData(0, 0, c.width, c.height).data
-        let minY = 1e9
-        let maxY = -1
-        let minX = 1e9
-        let maxX = -1
-        for (let y = 0; y < c.height; y++)
-          for (let x = 0; x < c.width; x++) {
-            const i = (y * c.width + x) * 4
-            if (d[i + 2]! > 180 && d[i]! < 120 && d[i + 1]! < 150) {
-              if (y < minY) minY = y
-              if (y > maxY) maxY = y
-              if (x < minX) minX = x
-              if (x > maxX) maxX = x
-            }
-          }
-        return maxX < 0 ? null : { w: maxX - minX + 1, h: maxY - minY + 1 }
-      }, shot.toString('base64'))
-    }
-    const on = await bboxBlue()
-    await page.evaluate(() => document.documentElement.style.setProperty('--oas-glass-refraction', 'none'))
-    await page.waitForTimeout(300)
-    const off = await bboxBlue()
-    expect(on, '探针按钮应可量测').not.toBeNull()
-    expect(off, '探针按钮应可量测').not.toBeNull()
-    const dw = on!.w - off!.w
-    const dh = on!.h - off!.h
-    expect(dw, '宽度方向应膨胀（R 通道位移生效）').toBeGreaterThan(2)
-    expect(dh, '高度方向应膨胀（G 通道位移生效）').toBeGreaterThan(2)
-    expect(Math.abs(dw - dh), '双轴应对称膨胀（通道互换/隔离写反 → 单轴不变 → 红）').toBeLessThanOrEqual(2)
-    expect(dw, '膨胀幅度上限（scale=10 峰值 ±4px/侧 → 外包络约 +8px + 抗锯齿余量）').toBeLessThanOrEqual(12)
+    expect(r.switchBox).toEqual({ w: 40, h: 22 })
   })
 
   /** 动态流动感覆盖的控件域探针：[标签, 在宿主内取 surface 元素]（message 系共享 .box 形态，见源断言） */
@@ -1020,50 +762,6 @@ test.describe('玻璃边缘折射 v1（data-URI 自包含滤镜）', () => {
     })
     expect(r.fluid, '无 data-glass 不得亮高光').toBe(false)
     expect(r.px, '无 data-glass 不得写坐标').toBe('')
-  })
-
-  test('app-bar 溢出弹层打开期间关折射（组件内中性功能规则；弹层不被滤镜区域裁切）', async ({ page }) => {
-    await page.goto(PAGE, { waitUntil: 'domcontentloaded' })
-    await page.waitForTimeout(800)
-    // 真实交互：压窄栏体触发 overflow 收纳 → 出现「···」→ 点击打开弹层
-    const r = await page.evaluate(async () => {
-      const bar = document.createElement('oas-app-bar') as HTMLElement & { shadowRoot: ShadowRoot; remove(): void }
-      for (let i = 0; i < 6; i++) {
-        const a = document.createElement('oas-button')
-        a.setAttribute('slot', 'actions')
-        a.textContent = 'A' + i
-        bar.appendChild(a)
-      }
-      bar.style.cssText = 'display:block;width:280px;position:fixed;left:40px;top:80px;z-index:9999'
-      document.body.appendChild(bar)
-      await customElements.whenDefined('oas-app-bar')
-      await new Promise((res) => setTimeout(res, 300))
-      const more = bar.shadowRoot.querySelector('[part="more"]') as HTMLButtonElement | null
-      if (!more || more.hidden) return { noOverflow: true } as const
-      const read = () => ({ filter: getComputedStyle(bar).filter, open: bar.hasAttribute('data-panel-open') })
-      const closed = read()
-      more.click()
-      await new Promise((res) => setTimeout(res, 120))
-      const opened = read()
-      // 真实键盘路径：openMore 已把焦点移入面板首项；Esc 在 shadow 内派发（host 上派发不会进入自己的 shadow）
-      const panel = bar.shadowRoot.querySelector('[part="more-panel"]') as HTMLElement
-      const focused = (bar.shadowRoot.activeElement as HTMLElement | null) ?? panel
-      focused.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }))
-      await new Promise((res) => setTimeout(res, 120))
-      const restored = read()
-      bar.remove()
-      return { closed, opened, restored }
-    })
-    expect(r, '应触发溢出收纳以出现「···」').not.toHaveProperty('noOverflow')
-    const rr = r as {
-      closed: { filter: string; open: boolean }
-      opened: { filter: string; open: boolean }
-      restored: { filter: string; open: boolean }
-    }
-    expect(rr.closed.filter, '常态应消费折射滤镜').toContain('data:image/svg+xml')
-    expect(rr.opened.open, '弹层打开时应挂中性标记 data-panel-open').toBe(true)
-    expect(rr.opened.filter, '弹层打开期间应关滤波（防裁切）').toBe('none')
-    expect(rr.restored.filter, '弹层关闭后应恢复折射').toContain('data:image/svg+xml')
   })
 
   test('注册表 ↔ 真实 DOM 对账：每个注册组件的 surface 选择器都命中（防漂移静默失效）', async ({ page }) => {

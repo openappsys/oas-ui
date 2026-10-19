@@ -17,7 +17,6 @@ const STYLE = `
   display: flex;
   /* 结构定位锚点：玻璃高光层（运行时注入的 ::after）需要包含块；中性规则、与玻璃层解耦 */
   position: relative;
-  filter: var(--oas-glass-refraction, none);
   flex-direction: column;
   border: 1px solid var(--oas-color-border);
   border-radius: var(--oas-radius-lg);
