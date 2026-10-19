@@ -785,6 +785,7 @@ export class OASButton extends OASElement {
       'html-type',
       'form',
       'formaction',
+      'formenctype',
       'formmethod',
       'formnovalidate',
       'formtarget',
@@ -853,6 +854,8 @@ export class OASButton extends OASElement {
     if (formId) proxy.setAttribute('form', formId)
     const formaction = this.getAttr('formaction', '')
     if (formaction) proxy.setAttribute('formaction', formaction)
+    const formenctype = this.getAttr('formenctype', '')
+    if (formenctype) proxy.setAttribute('formenctype', formenctype)
     const formmethod = this.getAttr('formmethod', '')
     if (formmethod) proxy.setAttribute('formmethod', formmethod)
     if (this.hasAttr('formnovalidate')) proxy.setAttribute('formnovalidate', '')

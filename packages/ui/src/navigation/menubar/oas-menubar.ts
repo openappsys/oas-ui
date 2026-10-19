@@ -1712,7 +1712,7 @@ export class OASMenubar extends OASElement {
     })
     this.collapsedValues = hasOverflow
       ? dataEls
-          .filter((w, i) => i >= firstOverflow)
+          .filter((_, i) => i >= firstOverflow)
           .map((w) => w.dataset.value ?? '')
           .filter(Boolean)
       : []

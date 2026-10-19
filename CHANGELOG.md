@@ -16,6 +16,9 @@
 - **磨砂玻璃暗色档可感知性**：暗色下 `--oas-glass-ring` / `-sheen` / `-press` 与模糊强度重新标定（高光仍低于浅色档），修复深色背景上边缘高光与透光层次几乎不可见；亮色档不变，`high-contrast` 仍不启用，文字对比度门禁保持。
 - **磨砂玻璃（Frosted Glass）命名与降低透明度**：对外文档/画廊/README 将“液态玻璃”统一为“磨砂玻璃（Frosted Glass）”，避免与 Apple Liquid Glass 混淆；文件名与 `--oas-glass-*` API 不变。新增 `prefers-reduced-transparency: reduce` 回退：实心 surface、关闭模糊/折光边/动态高光，保留圆角与阴影。
 - **框架接入指南**：新增 `guide/frameworks`（zh/en），集中说明 React 19 原生事件写法、`@oas-ui/react` hooks 的定位与限制、Vue/Nuxt 的 `isCustomElement` 配置、复杂 property/布尔属性/SSR 常见坑；不新增 wrapper 包。
+- **`oas-message-scroller` 可见性通道改用 IntersectionObserver**：`track-visible` 不再在每次 scroll 逐行读取 `getBoundingClientRect()`；进入/离开视口写 `data-visible`，仅在交叉变化时重算 `visibleMessageIds` / `currentAnchorId` 并派发 `oas-visible-change`。无 `IntersectionObserver` 的环境自动回退 rect 计算。
+- **`oas-button` 补 `formenctype`**：原生表单提交代理支持 `formenctype`（覆盖表单 `enctype`），与 `formaction` / `formmethod` / `formnovalidate` / `formtarget` 同通道转发。
+- **真实浏览器规模与生命周期回归**：新增 Playwright `scale-perf`，覆盖 table 10 万行首渲染/滚动帧/DOM 上界、gantt/resource 大数据预算、message-scroller 500 行可见性滚动，以及 overlay 反复挂载/卸载的 document/window 监听净增长；不依赖 happy-dom 计时。
 
 ### 修复
 

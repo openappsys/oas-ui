@@ -773,7 +773,6 @@ export class OASDatePicker extends OASFormElement {
   private sheetEl: OASBottomSheet | null = null
   private openState = false
   /** 展开态下面板是否已完成 open() 式状态初始化（防止 update 重入 boot） */
-  private panelBooted = false
   private viewDate: Date = startOfDay(new Date())
   /** unlink-panels 时第二面板独立锚（linked 模式恒由 viewDate 派生） */
   private viewDate2: Date = startOfDay(new Date())
@@ -1091,14 +1090,12 @@ export class OASDatePicker extends OASFormElement {
       }
     }
     this.openState = true
-    this.panelBooted = true
     this.syncDropdown()
     this.renderPanel(focusNow)
   }
 
   private closeSync(): void {
     this.openState = false
-    this.panelBooted = false
     this.typing = false
     this.syncDropdown()
     this.syncTrigger()

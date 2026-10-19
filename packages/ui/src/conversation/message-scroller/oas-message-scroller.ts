@@ -140,7 +140,8 @@ type TurnMode = 'anchor' | 'bottom'
  * - `turn-anchor`：布尔在场——轮次锚定（锚点标记 = slotted 元素的 `anchor` 属性）
  * - `prev-peek`：轮次锚定对齐时锚顶上方露出的语境 px（默认 64）
  * - `track-visible`：布尔在场——开启可见性通道（`oas-visible-change` 事件 + `visibleMessageIds` /
- *   `currentAnchorId` getter）；未开启零计算（pay-for-use，长会话不付逐行 rect 代价）
+ *   `currentAnchorId` getter）；未开启零计算；开启后由 IntersectionObserver 驱动并写 `data-visible`，
+ *   无 IO 环境回退逐行 rect（长会话不付无意义扫描代价）
  * - `label`：viewport 可读名称覆盖（缺省走 locale「消息列表」；读入后从宿主移除——原生全局属性吸收惯例）
  *
  * 协作标记（宿主写在 slotted 行上，scroller 只读）：
@@ -231,6 +232,12 @@ export class OASMessageScroller extends OASElement {
   /** 内容/视口尺寸观察（流式文本增长无 slotchange 信号时仍能跟随；视口 resize 刷新边缘态；
    *  也承担异步保位锚的重对齐通道） */
   private ro: ResizeObserver | null = null
+  /** 可见性观察器：track-visible 时按交叉变化驱动，不随每次 scroll 扫描全部 rect */
+  private io: IntersectionObserver | null = null
+  /** 已 observe 的消息元素，slotchange 时做增删对账 */
+  private ioObserved = new Set<Element>()
+  /** 首次 IO 回调前不广播，避免空快照覆盖初始状态 */
+  private visibleReady = false
   /** 默认 slot（slotted 行查询缓存） */
   private slotNode: HTMLSlotElement | null = null
   /** 上次对外广播的可见性快照（变化才派发 oas-visible-change） */
@@ -259,6 +266,7 @@ export class OASMessageScroller extends OASElement {
     this.slotNode = this.shadow.querySelector('slot')
     this.slotNode?.addEventListener('slotchange', this.handleSlotChange)
     this.observeResize()
+    this.observeVisibility()
   }
 
   private get viewport(): HTMLElement | null {
@@ -290,6 +298,73 @@ export class OASMessageScroller extends OASElement {
     this.ro.observe(vp)
   }
 
+  /**
+   * 可见性观察：以 viewport 为 root，只 observe 带 message-id 的 slotted 消息。
+   *
+   * 交叉变化时写 `data-visible`，并重算一次可见 id / 当前锚点（锚点需比较
+   * edge-threshold，只在少量 anchor 元素上取 rect，不再遍历全部消息）。
+   * 无 IntersectionObserver（SSR / happy-dom / 旧环境）时保留 computeVisible 回退。
+   */
+  private observeVisibility(): void {
+    if (!this.hasAttr('track-visible')) return
+    const vp = this.viewport
+    if (!vp || typeof IntersectionObserver === 'undefined') return
+    if (!this.io) {
+      this.io = new IntersectionObserver(
+        (entries) => {
+          for (const entry of entries) {
+            const el = entry.target as HTMLElement
+            if (entry.isIntersecting) el.setAttribute('data-visible', '')
+            else el.removeAttribute('data-visible')
+          }
+          this.visibleReady = true
+          this.syncVisibility()
+        },
+        { root: vp, threshold: 0 },
+      )
+      this.onCleanup(() => this.stopVisibility())
+    }
+    const current = new Set(this.slottedElements().filter((el) => el.hasAttribute('message-id')))
+    for (const el of this.ioObserved) {
+      if (!current.has(el)) {
+        this.io.unobserve(el)
+        this.ioObserved.delete(el)
+      }
+    }
+    for (const el of current) {
+      if (this.ioObserved.has(el)) continue
+      this.io.observe(el)
+      this.ioObserved.add(el)
+    }
+  }
+
+  private stopVisibility(): void {
+    this.io?.disconnect()
+    this.io = null
+    this.ioObserved.clear()
+    this.visibleReady = false
+    for (const el of this.slottedElements()) el.removeAttribute('data-visible')
+  }
+
+  /** 从 IO 维护的 data-visible 读取可见 id；锚点仅对 anchor 元素取 rect。 */
+  private visibleFromIntersections(): MessageScrollerVisibility {
+    const vp = this.viewport
+    if (!vp) return { visibleMessageIds: [], currentAnchorId: null }
+    const vpTop = vp.getBoundingClientRect().top
+    const threshold = this.edgeThresholdPx()
+    const visibleMessageIds: string[] = []
+    let currentAnchorId: string | null = null
+    for (const el of this.slottedElements()) {
+      const id = el.getAttribute('message-id')
+      if (!id || !el.hasAttribute('data-visible')) continue
+      visibleMessageIds.push(id)
+      if (el.hasAttribute('anchor') && el.getBoundingClientRect().top - vpTop <= threshold) {
+        currentAnchorId = id
+      }
+    }
+    return { visibleMessageIds, currentAnchorId }
+  }
+
   protected override render(): void {
     this.shadow.innerHTML = this.template()
     this.bind()
@@ -311,6 +386,7 @@ export class OASMessageScroller extends OASElement {
     this.broadcastEnabled = true
     this.removeAttribute('data-pending-scroll')
     this.syncScrollState()
+    this.observeVisibility()
     this.syncVisibility()
     this.observeResize()
   }
@@ -339,8 +415,13 @@ export class OASMessageScroller extends OASElement {
     if (!this.hasAttr('turn-anchor')) this.turnMode = null
     this.syncScrollState()
     // 可见性通道：开则计算广播，关则清快照（再开时首拍必广播一次）
-    if (this.hasAttr('track-visible')) this.syncVisibility()
-    else this.lastVisible = null
+    if (this.hasAttr('track-visible')) {
+      this.observeVisibility()
+      this.syncVisibility()
+    } else {
+      this.stopVisibility()
+      this.lastVisible = null
+    }
   }
 
   // ---------- 几何与状态 ----------
@@ -431,12 +512,12 @@ export class OASMessageScroller extends OASElement {
 
   /** 当前视口内消息 id 清单（原地计算，不依赖 track-visible；未声明 message-id 的行不计入） */
   get visibleMessageIds(): string[] {
-    return this.computeVisible().visibleMessageIds
+    return (this.io && this.visibleReady ? this.visibleFromIntersections() : this.computeVisible()).visibleMessageIds
   }
 
   /** 当前轮次锚点 id（视口顶附近最后一个 anchor 标记行）；无则 null */
   get currentAnchorId(): string | null {
-    return this.computeVisible().currentAnchorId
+    return (this.io && this.visibleReady ? this.visibleFromIntersections() : this.computeVisible()).currentAnchorId
   }
 
   /**
@@ -445,7 +526,9 @@ export class OASMessageScroller extends OASElement {
    */
   private syncVisibility(): void {
     if (!this.hasAttr('track-visible')) return
-    const next = this.computeVisible()
+    // IO 首次回调前没有可信的 data-visible 快照；用 rect 回退，避免空集合误广播
+    // （真实浏览器首个回调后切到 IO；happy-dom / 旧环境永远走回退）
+    const next = this.io && this.visibleReady ? this.visibleFromIntersections() : this.computeVisible()
     const prev = this.lastVisible
     const changed =
       !prev ||
@@ -607,6 +690,7 @@ export class OASMessageScroller extends OASElement {
       }
     }
     this.prevFirstNode = first
+    this.observeVisibility()
     this.scheduleContentChange(true)
   }
 
@@ -626,7 +710,7 @@ export class OASMessageScroller extends OASElement {
     })
   }
 
-  private applyContentChange(fromSlot: boolean, fromRo: boolean): void {
+  private applyContentChange(_fromSlot: boolean, fromRo: boolean): void {
     const vp = this.viewport
     if (!vp) return
     const pending = this.pendingChange
@@ -714,6 +798,7 @@ export class OASMessageScroller extends OASElement {
     this.lastFirstY = first ? this.contentYOf(first) : 0
     this.lastHeight = vp.scrollHeight
     this.syncScrollState()
+    this.observeVisibility()
     this.syncVisibility()
   }
 

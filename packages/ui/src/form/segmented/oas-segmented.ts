@@ -196,7 +196,6 @@ export class OASSegmented extends OASElement {
   private lastIndicatorBox = ''
   /** light DOM 观察器：template[slot="option"] 增删 → 重建选项 */
   private childObserver: MutationObserver | null = null
-  private resizeObserver: ResizeObserver | null = null
 
   /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
   private template(): string {
@@ -227,10 +226,8 @@ export class OASSegmented extends OASElement {
     if (typeof ResizeObserver !== 'undefined') {
       const ro = new ResizeObserver(() => this.syncSelection())
       if (group) ro.observe(group)
-      this.resizeObserver = ro
       this.onCleanup(() => {
         ro.disconnect()
-        this.resizeObserver = null
       })
     }
   }

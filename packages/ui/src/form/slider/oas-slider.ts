@@ -671,7 +671,6 @@ export class OASSlider extends OASElement {
   private numInputs: HTMLInputElement[] = []
   /** 数值输入框之间的分隔符（多值时显示） */
   private numSeps: HTMLSpanElement[] = []
-  private wrap: HTMLElement | null = null
   /** 本次渲染生效的把手数（事件回调里判定索引用） */
   private thumbCountCache = 1
   /**
@@ -758,7 +757,6 @@ export class OASSlider extends OASElement {
   /** 缓存节点引用 + 绑定轨道级事件（render 与水合路径共用；把手级监听在创建时挂） */
   private bind(): void {
     const wrap = this.shadow.querySelector<HTMLElement>('[part="track-wrap"]')
-    this.wrap = wrap
 
     // 轨道指针按下：只读拦截；垂直模式 pointer 接管；多把手按「离哪个拇指近」提升该 input 的 z-index
     wrap?.addEventListener('pointerdown', (e) => {
@@ -846,7 +844,6 @@ export class OASSlider extends OASElement {
 
   protected override update(): void {
     const wrap = this.shadow.querySelector<HTMLElement>('[part="track-wrap"]')
-    this.wrap = wrap
     if (!wrap) return
     const n = this.thumbCount()
     this.thumbCountCache = n
@@ -1555,14 +1552,6 @@ export class OASSlider extends OASElement {
   // ---------- range / 多把手模式 ----------
 
   /** 读取当前各把手实时值，保证升序（range 双值交换保持 lo ≤ hi） */
-  private currentRange(): [number, number] {
-    const vals = this.currentValues()
-    const lo = vals[0] ?? Number(this.getAttr('min', '0'))
-    const hi = vals[1] ?? Number(this.getAttr('max', '100'))
-    return lo > hi ? [hi, lo] : [lo, hi]
-  }
-
-  /** 拖动中钳制 lo ≤ hi（避免跨过另一个 thumb） */
   private clampRangeInputs(): void {
     const minInput = this.thumbs[0]
     const maxInput = this.thumbs[1]

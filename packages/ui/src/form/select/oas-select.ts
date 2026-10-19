@@ -842,11 +842,9 @@ export class OASSelect extends OASFormElement {
    * 宿主属性写完即移除——避免宿主 + trigger 双 Tab 停靠点；宿主再设任意值（含同值）
    * 会重新委托（幂等收敛）；非法整数值视为不参与 Tab 序（移除 trigger tabindex）。
    */
-  private delegatedTabindex: string | null = null
   private syncTabindex(): void {
     const raw = this.getAttribute('tabindex')
     if (raw !== null) {
-      this.delegatedTabindex = raw
       this.removeAttribute('tabindex')
       if (this.triggerEl) {
         const n = Number.parseInt(raw, 10)

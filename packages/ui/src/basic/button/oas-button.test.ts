@@ -742,7 +742,15 @@ describe('OASButton 原生表单提交（html-type + form 属性组）', () => {
   }
 
   it('html-type 属性组进入 observedAttributes', () => {
-    for (const name of ['html-type', 'form', 'formaction', 'formmethod', 'formnovalidate', 'formtarget']) {
+    for (const name of [
+      'html-type',
+      'form',
+      'formaction',
+      'formenctype',
+      'formmethod',
+      'formnovalidate',
+      'formtarget',
+    ]) {
       expect(OASButton.observedAttributes).toContain(name)
     }
   })
@@ -793,10 +801,11 @@ describe('OASButton 原生表单提交（html-type + form 属性组）', () => {
     expect(events.length).toBe(1)
   })
 
-  it('formaction/formmethod/formtarget 镜像到代理 submitter（原生 submitter 机制消费）', () => {
+  it('formaction/formenctype/formmethod/formtarget 镜像到代理 submitter（原生 submitter 机制消费）', () => {
     const { form, btn } = mountInForm({
       'html-type': 'submit',
       formaction: '/search',
+      formenctype: 'multipart/form-data',
       formmethod: 'post',
       formtarget: '_blank',
     })
@@ -805,6 +814,7 @@ describe('OASButton 原生表单提交（html-type + form 属性组）', () => {
     expect(events.length).toBe(1)
     const submitter = events[0]!.submitter as HTMLElement
     expect(submitter.getAttribute('formaction')).toBe('/search')
+    expect(submitter.getAttribute('formenctype')).toBe('multipart/form-data')
     expect(submitter.getAttribute('formmethod')).toBe('post')
     expect(submitter.getAttribute('formtarget')).toBe('_blank')
   })

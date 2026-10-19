@@ -596,7 +596,7 @@ export class ColorPickerDesignerController implements ReactiveController, ColorP
 
   private onSvKey = (e: KeyboardEvent): void => {
     if (this.isLocked()) return
-    const [h, s, v] = this.hsvOfEdit()
+    const [, s, v] = this.hsvOfEdit()
     let ns = s
     let nv = v
     const key = e.key

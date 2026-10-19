@@ -44,7 +44,7 @@ export class TableColumnSettingsController implements ReactiveController {
   /** 当前列宽拖拽状态 */
   private resizeState: { key: string; startX: number; startWidth: number } | null = null
 
-  constructor(private host: HTMLElement & TableColumnSettingsHost) {
+  constructor(host: HTMLElement & TableColumnSettingsHost) {
     this.hostEl = host
   }
 
@@ -267,7 +267,7 @@ export class TableColumnSettingsController implements ReactiveController {
     if (th) th.style.width = `${next}px`
   }
 
-  private onPointerUp = (e: PointerEvent): void => {
+  private onPointerUp = (_e: PointerEvent): void => {
     if (!this.resizeState) return
     const { key } = this.resizeState
     const th = this.thead?.querySelector<HTMLElement>(`th[data-key="${key}"]`)

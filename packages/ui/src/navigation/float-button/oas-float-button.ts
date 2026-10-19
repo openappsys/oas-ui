@@ -1,12 +1,10 @@
 import { OASElement, escapeAttr } from '@oas-ui/core'
 import { lookupIcon } from '@oas-ui/icons/runtime'
 import { isRtl } from '../../shared/direction.js'
-import { normalizeSizeStrict, ALL_SIZES, type OasSize } from '../../shared/size.js'
+import { normalizeSizeStrict, ALL_SIZES } from '../../shared/size.js'
 import { devWarn } from '../../shared/dev-warn.js'
 
 /** 尺寸档位：xs/small/medium/large/xl 全称（默认 large，对应 48px 常规 FAB 观感）；sm/md/lg 为等价别名 */
-type FloatButtonSize = OasSize
-
 /** 非法 size 告警：回落 large 并在 dev 下 console.warn 一次（同值去重）；sm/md/lg 别名由 shared/size 静默映射，不告警 */
 const warnedSizes = new Set<string>()
 function warnInvalidSize(raw: string): void {

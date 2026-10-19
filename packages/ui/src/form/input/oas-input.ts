@@ -1156,7 +1156,6 @@ export class OASInput extends OASFormElement {
     this.normalizeLegacyAlias('suffix-text', 'suffix')
     const value = this.getAttr('value', '')
     const placeholder = this.getAttr('placeholder', '')
-    const type = this.getAttr('type', 'text')
     // disabled 就近读取全局禁用注入（组件显式 disabled > 豁免 > provider 注入）
     const disabled = this.injectDisabled()
     const readonly = this.hasAttr('readonly')

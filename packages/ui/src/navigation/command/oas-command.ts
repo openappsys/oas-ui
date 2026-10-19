@@ -1296,7 +1296,6 @@ export class OASCommand extends OASElement {
     this.viewEl?.setAttribute('hidden', '')
 
     const q0 = this.searchQuery.trim()
-    const q = q0.toLowerCase()
 
     // loading 态：占位行 + aria-busy
     if (this.hasAttr('loading')) {

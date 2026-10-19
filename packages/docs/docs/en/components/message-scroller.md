@@ -514,6 +514,8 @@ onMounted(async () => {
 
 With `track-visible` present the visibility channel is enabled (pay-for-use, zero computation when off): it dispatches `oas-visible-change` (detail `{ visibleMessageIds, currentAnchorId }`) when the visible set changes, and always exposes `visibleMessageIds` / `currentAnchorId` getters (computed on demand). `visibleMessageIds` lists the message ids intersecting the viewport (rows without `message-id` are excluded); `currentAnchorId` is the turn at the reader position — the last `anchor`-marked row near the viewport top. Useful for outline menus, search positioning, and read tracking.
 
+The implementation observes slotted rows with `IntersectionObserver`: entering/leaving the viewport writes `data-visible`, and the visible set is recomputed only when intersections change; `scroll` no longer reads `getBoundingClientRect()` for every row. Environments without `IntersectionObserver` (SSR / happy-dom / older browsers) fall back to rect computation with the same semantics.
+
 ## Long-conversation virtualization (compose with oas-virtual-list)
 
 The scroller owns anchoring/follow for normal conversations; for thousands of turns, hand the message data to `oas-virtual-list` for viewport windowing (only visible rows + buffer are rendered) while each row still renders as `oas-message-row` / `oas-bubble` — virtualization belongs to virtual-list, scroll intent to the scroller, and neither rewrites the other. Use `scrollToIndex(index, { align: 'end' })` to open at the latest and follow after appending.
@@ -531,7 +533,7 @@ The scroller owns anchoring/follow for normal conversations; for thousands of tu
 
 ## Boundaries
 
-- **Visibility channel**: when `track-visible` is off, nothing is computed and nothing is dispatched (pay-for-use); when on, it computes viewport intersection (long conversations pay the per-row rect cost only when the host opts in). Rows without `message-id` never enter the visible set.
+- **Visibility channel**: when `track-visible` is off, nothing is computed and nothing is dispatched (pay-for-use); when on, it computes viewport intersections via `IntersectionObserver` (rows without `message-id` never enter the visible set; environments without IO fall back to per-row rect computation).
 - **Virtualization & render cost**: offscreen-row render skipping (`content-visibility` etc.) arrives with virtualization (enabling it alone on slotted elements stalls at the intrinsic-size placeholder — verified and pulled); multi-thousand-turn conversations compose with a virtual list on the host side.
 - **Empty state**: renders an empty log; hosts place their own empty-state content.
 - **Prepend preservation boundary**: the preservation anchor releases on real reader scrolling (reader position wins); with `pin-to-bottom` / bottom following the compensation is moot (pinning settles after). Same-frame mixed settlement relies on the pre-insertion first element still being in the DOM (no compensation for that frame if the host removed it).

@@ -520,6 +520,8 @@ onMounted(async () => {
 
 `track-visible` 在场开启可见性通道（pay-for-use，未开启零计算）：可见集变化时派发 `oas-visible-change`（detail `{ visibleMessageIds, currentAnchorId }`），并始终提供 `visibleMessageIds` / `currentAnchorId` getter（按需计算）。`visibleMessageIds` 是当前与视口相交的消息 id 清单（未声明 `message-id` 的行不计入）；`currentAnchorId` 是「读者阅读位置所在的轮次」——最后一个视口顶附近的 `anchor` 标记行。供大纲菜单、搜索定位、已读追踪等使用。
 
+实现使用 `IntersectionObserver` 观察带 `message-id` 的 slotted 元素：进入/离开视口时写 `data-visible`，仅在交叉变化时重算可见集合，`scroll` 不再逐行读取 `getBoundingClientRect()`。无 `IntersectionObserver` 的环境（SSR / happy-dom / 旧浏览器）自动回退 rect 计算，语义不变。
+
 ## 长会话虚拟化（组合 oas-virtual-list）
 
 scroller 负责常规会话的锚定/跟随；数千轮超长会话把消息数据交给 `oas-virtual-list` 做视口窗口渲染（只渲染可见行 + 缓冲），消息行仍用 `oas-message-row` / `oas-bubble` 渲染——虚拟化归 virtual-list，滚动意图归 scroller，职责互不重写。`scrollToIndex(index, { align: 'end' })` 打开到最新、追加后跟随。
@@ -537,7 +539,7 @@ scroller 负责常规会话的锚定/跟随；数千轮超长会话把消息数�
 
 ## 边界
 
-- **可见性通道**：`track-visible` 未开启时不计算、不派发（pay-for-use）；开启后按视口相交计算（长会话逐行 rect 的代价由宿主开启该属性时承担）。未声明 `message-id` 的行不进可见集。
+- **可见性通道**：`track-visible` 未开启时不计算、不派发（pay-for-use）；开启后由 `IntersectionObserver` 观察 `message-id` 行，仅在交叉变化时重算可见集（无 IO 环境回退 rect 计算）。未声明 `message-id` 的行不进可见集。
 - **虚拟化与渲染降耗**：离屏行跳过渲染（`content-visibility` 等）随虚拟化一起提供（slotted 元素上单独启用会卡占位高度不展开，实测撤回）；数千轮长会话接虚拟列表由宿主组合。
 - **空态**：无消息时容器照常渲染（空 log），宿主放空态插槽内容即可。
 - **prepend 保位边界**：保位锚在读者真实滚动时释放（读者位置优先）；`pin-to-bottom` / 贴底跟随时补偿无意义（钉底后发覆盖）。同帧混合插入的结算依赖插入前首元素仍在 DOM（宿主删除该行时该帧不补偿）。

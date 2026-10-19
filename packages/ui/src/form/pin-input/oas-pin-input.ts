@@ -7,9 +7,7 @@ import { devWarn } from '../../shared/dev-warn.js'
  * 尺寸档位：对齐全局 control-height token（ui-spec §2.1）
  * small=24px / medium=32px（默认）/ large=40px
  */
-type PinSize = 'small' | 'medium' | 'large'
 /** 形态档位：outlined 描边（默认）/ filled 填充 / underlined 下划线 */
-type PinVariant = 'outlined' | 'filled' | 'underlined'
 /**
  * 字符约束语义档（非原生 type 透传）：
  * - number：仅数字 [0-9]（默认，OTP 主场景），联动 inputmode=numeric

@@ -119,8 +119,6 @@ const PRESET_COLORS = new Set([
   'purple',
 ])
 
-const DEFAULT_BG = '#ffffff'
-
 /** 形状化数据区的 pattern id（合并路径 + pattern 平铺，几何与逐模块绘制等价） */
 const MODULE_PATTERN_ID = 'oas-qr-pat'
 

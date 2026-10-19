@@ -10,7 +10,6 @@ const STAR = `
   <path d="M8 2.4 L9.9 6.2 L14 6.8 L11 9.7 L11.6 13.8 L8 12 L4.4 13.8 L5 9.7 L2 6.8 L6.1 6.2 Z" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/>
 </svg>`
 
-type RateSize = 'small' | 'medium' | 'large'
 const warnedSizes = new Set<string>()
 
 /** 非法 size 告警：回落 medium 并在 dev 下 console.warn 一次（同值去重，同控件惯例）；

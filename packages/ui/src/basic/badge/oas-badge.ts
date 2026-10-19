@@ -86,7 +86,6 @@ const VALID_ATTENTION: readonly string[] = ['pulse', 'bounce']
 const VALID_CORNER: readonly string[] = ['top-right', 'top-left', 'bottom-right', 'bottom-left']
 const VALID_VARIANTS: readonly string[] = ['solid', 'outline']
 const VALID_RIBBON_DIRECTIONS: readonly string[] = ['down', 'left', 'right']
-const VALID_RIBBON_VERTICALS: readonly string[] = ['top', 'center', 'bottom']
 const VALID_RIBBON_ANCHORS: readonly string[] = [
   'top',
   'right',

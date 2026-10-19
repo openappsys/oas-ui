@@ -402,7 +402,6 @@ export class OASTimePicker extends OASFormElement {
   private sheetEl: OASBottomSheet | null = null
   private openState = false
   /** 展开态下面板是否已初始化（防 update 重入 boot） */
-  private panelBooted = false
   /** 起止两侧的时刻状态（单值长度 1，is-range 长度 2） */
   private sides: TimeParts[] = [{ h: 0, m: 0, s: 0 }]
   private committedValue = ''
@@ -684,14 +683,12 @@ export class OASTimePicker extends OASFormElement {
     this.activeColumn = 0
     this.typing = false
     this.openState = true
-    this.panelBooted = true
     this.syncDropdown()
     this.renderColumns(focusNow)
   }
 
   private closeSync(): void {
     this.openState = false
-    this.panelBooted = false
     this.typing = false
     this.syncDropdown()
     this.syncTrigger()

@@ -113,6 +113,10 @@ test('gantt 规模回归：10 年 day 档（≈3660 列）× 1 万行，表头/�
     return { buildMs, before, after, shadowNodes }
   })
 
+  expect(metrics.buildMs, 'gantt 10 年 × 1 万行首渲染超预算').toBeLessThan(
+    test.info().project.name === 'firefox' ? 15_000 : 5_000,
+  )
+
   logMetrics(test.info(), `gantt 10y×10k buildMs=${metrics.buildMs.toFixed(0)}`, {
     before: metrics.before,
     after: metrics.after,
@@ -252,6 +256,10 @@ test('resource 规模回归：3 年 day 档（≈1096 period）× 5000 任务，
       coverage: tickAtCenter,
     }
   })
+
+  expect(before.buildMs, 'resource 3 年 × 5 千任务首渲染超预算').toBeLessThan(
+    test.info().project.name === 'firefox' ? 15_000 : 8_000,
+  )
 
   logMetrics(test.info(), `resource 3y×5k buildMs=${before.buildMs.toFixed(0)}`, { before, after })
   await page.evaluate(() => document.getElementById('res-scale-3y')?.remove())

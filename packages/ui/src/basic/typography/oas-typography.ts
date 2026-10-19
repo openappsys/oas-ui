@@ -251,18 +251,6 @@ li.block-tag {
 }
 `
 
-function styleFor(tag: string): string {
-  return BASE_STYLE
-}
-
-interface TypoOptions {
-  tag: string
-  levels?: boolean
-  part: string
-  /** size 字号档开关：仅 oas-text 开放（title/paragraph 不开放——level 已驱动标题字号，避免双轨打架） */
-  size?: boolean
-}
-
 type TypographyConstructor = CustomElementConstructor & {
   observedAttributes: string[]
 }
@@ -323,7 +311,6 @@ function createTypography(
     }
 
     private root: HTMLElement | null = null
-    private contentEl: HTMLElement | null = null
     private suffixEl: HTMLElement | null = null
     private actionsEl: HTMLElement | null = null
     private copyBtn: HTMLButtonElement | null = null
@@ -350,7 +337,6 @@ function createTypography(
     /** 缓存节点引用 + 绑定事件（render 与水合路径共用） */
     private bind(): void {
       this.root = this.shadow.querySelector('.text')
-      this.contentEl = this.shadow.querySelector('.content')
       this.suffixEl = this.shadow.querySelector('.suffix')
       this.actionsEl = this.shadow.querySelector('.actions')
       this.copyBtn = this.shadow.querySelector('.copy-btn')
@@ -489,7 +475,6 @@ function createTypography(
       root.replaceWith(next)
       this.root = next
       // 引用重绑：解包态 content 失效置 null；行内态重查（重建或搬迁后引用均已更新）
-      this.contentEl = unwrap ? null : (next.querySelector('.content') ?? null)
       this.suffixEl = unwrap ? null : (next.querySelector('.suffix') ?? null)
     }
 

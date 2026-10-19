@@ -1525,7 +1525,7 @@ export class OASTour extends OASElement {
     }
   }
 
-  private openHint(index: number, hint: TourHint, target: HTMLElement): void {
+  private openHint(index: number, _hint: TourHint, _target: HTMLElement): void {
     this.activeHint = index
     this.renderHints()
   }

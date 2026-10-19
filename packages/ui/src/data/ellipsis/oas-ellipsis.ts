@@ -225,7 +225,7 @@ export class OASEllipsis extends OASElement {
   }
 
   /** 水合首帧：省略态写入统一延迟到 rAF 校正；期间（含 rAF 前其他 update/RO 回调）一律抑制 */
-  private scheduleHydratedClamp(text: string): void {
+  private scheduleHydratedClamp(_text: string): void {
     if (this.layoutRafScheduled) return
     this.layoutRafScheduled = true
     const raf = requestAnimationFrame(() => {

@@ -400,7 +400,6 @@ export class OASTransfer extends OASElement {
   private _data: TransferItem[] = []
   private leftSelected = new Set<string>()
   private rightSelected = new Set<string>()
-  private activeSide: 'left' | 'right' = 'left'
   private leftListbox: HTMLElement | null = null
   private rightListbox: HTMLElement | null = null
   private virtualLeft: OASVirtualList | null = null

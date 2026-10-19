@@ -353,6 +353,7 @@
 | `download` | 链接模式（href）透传 `download` 属性（文件下载按钮） | `string` | — |
 | `form` | 关联表单 id：按钮在表单外时指向目标表单（原生 form 关联机制） | `string` | — |
 | `formaction` | 本次提交的目标 URL（覆盖表单 action） | `string` | — |
+| `formenctype` | 本次提交的表单编码（application/x-www-form-urlencoded / multipart/form-data / text/plain，覆盖表单 enctype） | `string` | — |
 | `formmethod` | 本次提交的 HTTP 方法（get/post/dialog，覆盖表单 method） | `string` | — |
 | `formnovalidate` | 本次提交跳过原生校验（仅本次，不等价表单 novalidate） | `boolean` | — |
 | `formtarget` | 本次提交响应的展示目标（_blank/_self 等，覆盖表单 target） | `string` | — |

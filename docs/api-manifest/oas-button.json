@@ -160,6 +160,12 @@
       "observed": true
     },
     {
+      "name": "formenctype",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
       "name": "formmethod",
       "type": "string",
       "default": "",

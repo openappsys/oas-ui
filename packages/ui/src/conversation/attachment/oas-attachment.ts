@@ -9,8 +9,6 @@ export type AttachmentSize = 'default' | 'sm' | 'xs'
 const BUSY_STATES = new Set(['uploading', 'processing'])
 
 /** state 全词表（独立于 oas-upload：upload 无 idle/processing，本组件无 pending） */
-const STATES = new Set(['idle', 'uploading', 'processing', 'error', 'done'])
-
 /** 三档尺寸：default/sm/xs（sm 接受 small 别名，归一逻辑见 normalizeSize） */
 function normalizeSize(raw: string | null): string {
   if (!raw) return 'default'

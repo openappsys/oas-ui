@@ -757,7 +757,6 @@ export class OASUpload extends OASFormElement {
   private _files: UploadEntry[] = []
   private statusMap = new Map<UploadEntry, FileStatus>()
   private urlMap = new Map<UploadEntry, string>()
-  private previewFile: UploadEntry | null = null
   private previousFocus: HTMLElement | null = null
   private timer: ReturnType<typeof setInterval> | null = null
   /** 进行中的上传控制器（XHR / custom-request 返回的 abort 句柄） */
@@ -1937,7 +1936,6 @@ export class OASUpload extends OASFormElement {
 
   private openPreview(entry: UploadEntry): void {
     if (this.injectDisabled()) return
-    this.previewFile = entry
     this.previousFocus = document.activeElement as HTMLElement | null
     if (!this.previewBody || !this.previewMask) return
     this.previewBody.innerHTML = ''
@@ -1969,7 +1967,6 @@ export class OASUpload extends OASFormElement {
   private closePreview(): void {
     if (!this.previewMask || this.previewMask.hasAttribute('hidden')) return
     this.previewMask.setAttribute('hidden', '')
-    this.previewFile = null
     this.previousFocus?.focus()
     this.previousFocus = null
     document.removeEventListener('keydown', this.handleKeydown)

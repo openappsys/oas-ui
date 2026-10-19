@@ -353,6 +353,7 @@ Clicking "Submit" fires the native `submit` event (the demo calls `preventDefaul
 | `download` | Passthrough `download` attribute in link mode (href) for file-download buttons | `string` | — |
 | `form` | Associated form id for buttons outside the target form (native form-attribute association) | `string` | — |
 | `formaction` | Target URL for this submission (overrides the form action) | `string` | — |
+| `formenctype` | Form encoding for this submission (application/x-www-form-urlencoded / multipart/form-data / text/plain, overrides the form enctype) | `string` | — |
 | `formmethod` | HTTP method for this submission (get/post/dialog, overrides the form method) | `string` | — |
 | `formnovalidate` | Skip native validation for this submission only | `boolean` | — |
 | `formtarget` | Browsing target for the response (_blank/_self etc., overrides the form target) | `string` | — |

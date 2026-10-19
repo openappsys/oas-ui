@@ -416,6 +416,7 @@
       "download": "Passthrough `download` attribute in link mode (href) for file-download buttons",
       "form": "Associated form id for buttons outside the target form (native form-attribute association)",
       "formaction": "Target URL for this submission (overrides the form action)",
+      "formenctype": "Form encoding for this submission (application/x-www-form-urlencoded / multipart/form-data / text/plain, overrides the form enctype)",
       "formmethod": "HTTP method for this submission (get/post/dialog, overrides the form method)",
       "formnovalidate": "Skip native validation for this submission only",
       "formtarget": "Browsing target for the response (_blank/_self etc., overrides the form target)",
