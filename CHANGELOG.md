@@ -2,13 +2,18 @@
 
 所有显著变更记录于此。
 
-## [未发布]
+## [2.6.2] - 2026-10-19
+
+### 破坏性变更（迁移）
+
+- **玻璃静态边缘折射移除**：`--oas-glass-refraction` 不再定义，也不再有组件消费。宿主若曾覆盖该变量或依赖 Chromium 独有的边缘外扩/锯齿效果，请删除覆盖；磨砂玻璃基线保留半透明 surface、backdrop 模糊、折光边、阴影和指针动态高光。`glass.css` / `glass-fluid.js` 路径及其余 `--oas-glass-*` 变量不变。
+- **对外命名调整**：文档中的“液态玻璃”统一为“磨砂玻璃（Frosted Glass）”，避免与 Apple Liquid Glass 混淆；组件 tag、文件名、CSS 变量和公开 API 不变。
 
 ### 特性
 
 - **`oas-gantt` 行斑马纹（`stripe`，默认关）**：按**绝对行号**奇偶给行加底色（虚拟化/窗口化滚动稳定），颜色走新 token `--oas-gantt-row-stripe-bg`（缺省 `--oas-color-bg-hover`）；选中/周末假日等背景覆盖条纹。任务优先级色继续用 `GanttTask.color`（任务条/进度底色）。
 - **`oas-kanban` 优先级强调色（`cards[].color` / `columns[].color`，可选）**：仅渲染 3px 强调条（卡片左侧竖条 / 列头顶部横条，逻辑属性 RTL 镜像），不整卡/整列上色、不改变布局；缺省零视觉变化。
-- **液态玻璃暗色档可感知性**：暗色下 `--oas-glass-ring` / `-sheen` / `-press` 与模糊强度重新标定（高光仍低于浅色档），修复深色背景上边缘高光与透光层次几乎不可见；亮色档不变，`high-contrast` 仍不启用，文字对比度门禁保持。
+- **磨砂玻璃暗色档可感知性**：暗色下 `--oas-glass-ring` / `-sheen` / `-press` 与模糊强度重新标定（高光仍低于浅色档），修复深色背景上边缘高光与透光层次几乎不可见；亮色档不变，`high-contrast` 仍不启用，文字对比度门禁保持。
 - **磨砂玻璃（Frosted Glass）命名与降低透明度**：对外文档/画廊/README 将“液态玻璃”统一为“磨砂玻璃（Frosted Glass）”，避免与 Apple Liquid Glass 混淆；文件名与 `--oas-glass-*` API 不变。新增 `prefers-reduced-transparency: reduce` 回退：实心 surface、关闭模糊/折光边/动态高光，保留圆角与阴影。
 - **框架接入指南**：新增 `guide/frameworks`（zh/en），集中说明 React 19 原生事件写法、`@oas-ui/react` hooks 的定位与限制、Vue/Nuxt 的 `isCustomElement` 配置、复杂 property/布尔属性/SSR 常见坑；不新增 wrapper 包。
 
@@ -17,7 +22,7 @@
 - **玻璃静态边缘折射移除（跨浏览器一致性）**：`filter: url("data:image/svg+xml,...#id")` 在 Chromium 执行、Firefox 不执行，导致同一组件出现轮廓锯齿与视觉尺寸分叉。移除全部控件上的静态折射与 `--oas-glass-refraction`，保留半透明 surface、backdrop 模糊、折光边、阴影和指针动态高光；组件尺寸/命中区完全由布局决定。API 文档同步删除该变量。
 - **`glass-fluid.js` 跨模块单例**：运行时所有权挂 `globalThis`，bundle 与 CDN / 多包各持一份时后续实例的 `startGlassFluid` / `stopGlassFluid` 委托首实例，避免 `pointermove` 监听与注入样式表翻倍；单实例行为不变。
 - **`oas-switch` 玻璃态锯齿/膨胀**：关闭 switch 的位移折射滤镜（保留玻璃 surface 与高光），修复 18px 轨道/把手在 Chromium 被位移成锯齿轮廓、并因外扩显得比 Firefox 更高更胖的问题；开关恢复与布局盒一致的尺寸。
-- **液态玻璃画廊明暗切换失真**：切换器改为全站主题，不再只给舞台写 `data-theme`——后者会让基础 dark token 覆盖玻璃 surface，暗色卡片变成不透明 `#3f3f46`、玻璃透光丢失；新增回归断言暗色卡片保持半透明。
+- **磨砂玻璃画廊明暗切换失真**：切换器改为全站主题，不再只给舞台写 `data-theme`——后者会让基础 dark token 覆盖玻璃 surface，暗色卡片变成不透明 `#3f3f46`、玻璃透光丢失；新增回归断言暗色卡片保持半透明。
 - **SPA 客户端路由下 scheduler / gantt / resource demo 空白**：① 私有成员与单字属性撞名（`scale`/`view`/`expanded`），框架按「key in el」把静态 attribute 写成 property，own 字符串遮蔽方法或 Set 字段导致报错/空白；内部改名（`scaleMode`/`viewMode`/`expandedSet`，公开 API 不变）。② 数据属性的 property setter 统一接受 JSON 字符串（`events`/`resources`/`tasks`/`lines` 等），框架把静态 attribute 当 property 写入时不再被当作非法数组清空。新增 `shared/json-array` 与客户端跳转回归（表格 → 日程 → 甘特 → 资源）。
 - **SPA 路由下 card demo 空白/崩溃（`shadow` 属性与基类字段撞名）**：`shadow` 既是卡片阴影属性（`always`/`hover`/`none`），也是 `OASElement` 内部的 ShadowRoot 字段；框架按「key in el」把静态 `shadow` attribute 写成 property 时，字符串覆盖真实 root，后续 `this.shadow.querySelector` 抛错中断渲染。现以原型访问器分通道：字符串写回 attribute；`null` / `undefined`（受控表达式转假）移除 attribute 回缺省无阴影态；仅 ShadowRoot（或带 `querySelector` 的对象）落入内部存储；其他异型忽略并 dev 告警一次——属性、渲染与事件路径不再被污染。
 - **布尔 `open` 属性经框架 property 通道写入空串被误判关闭（`oas-select` / `oas-swipe-cell`）**：静态 `<oas-select open>` / `<oas-swipe-cell open>` 在宿主框架下以空串 `''` 写入 property，旧 setter 用真值判断将其当成关闭；现按 presence 语义处理——空串视为打开，仅 `false` / `'false'` / `null` / `undefined` 关闭。
@@ -45,7 +50,7 @@
 - **`oas-list` windowed `window-start` 越过 `total` 不夹取**：夹取到全量末尾渲染并 devWarn 一次（对齐 table 的切片越界告警契约）——不夹取会按越界绝对行号铺 spacer，顶部占位撑出 `total×rowH` 之外的巨量空白。
 - **`oas-list` 迁移后宿主动态 aria-label / aria-labelledby 不同步**：角色迁移会把可访问名称从宿主移除，此后宿主框架随状态更新把同名属性写回宿主元素时行容器停在首次迁移的旧值。修复：记住 label 迁移来源并随宿主属性变更继续同步到行容器（宿主清空绑定时保留行容器既有名称，不制造未命名 listbox）。
 
-### 特性
+### 特性 · 数据规模与窗口化
 
 - **数据密集型组件规模化（行窗口协议）**：新增共享契约 `shared/window-data.ts`（`oas-window-request` 事件名、`{start,end,reason}` 半开绝对区间、±8 行缓冲、覆盖/去重工具）——`windowed`（布尔）+ `total`（全量行数）+ `window-start`（`data[0]` 绝对行号）三属性的统一语义，宿主只喂可视窗口切片即可支撑十万行级数据。
 - **`oas-table` 服务端行窗口模式**：`windowed` + `total` + `window-start` → 组件不持有全量数据，按可视行窗口派发 `oas-window-request` 由宿主回填；本地排序/筛选/分组/分页/树形展开交由宿主（跳过本地执行并 devWarn），行的选中/编辑/点击等按行能力在已装载切片上正常。

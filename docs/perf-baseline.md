@@ -109,10 +109,10 @@
 | button 链                 | 25.0 KB   | 29 KB（绝对值）       | 2026-10-08 重定档（图标库 opt-in 卸掉整套图标）；实测上浮约 15%                                |
 | table 链                  | 93.2 KB   | 108 KB（绝对值）      | 2026-10-08 重定档（同上）；含 core + virtual-list + i18n + 分页 + 导出/移动降级/编辑器通道      |
 | form 链                   | 25.6 KB   | 29 KB（绝对值）       | 实测上浮约 15%                                                                                |
-| gantt 链                  | 40.0 KB   | 46 KB（绝对值）       | 首次定档（gantt + core + i18n + virtual-list）                                               |
+| gantt 链                  | 61.1 KB   | 70 KB（绝对值）       | v2.6.2 重定档（任务管理/约束/日历/列虚拟化等能力增量；gantt + core + i18n + virtual-list）    |
 | @oas-ui/theme index.css | 3.8 KB    | 4 KB（绝对值）        | 实测上浮约 14%（预设 -text token + dark 语义色修复后）                                        |
 | @oas-ui/theme glass-fluid.js | 7.8 KB | 8.5 KB（绝对值）      | 可选运行时独立档（注册表 + 注入样式表 + 指针高光；已达 WARN 预警线，新增大改前先瘦身评估）    |
-| @oas-ui/theme glass.css   | 2.7 KB    | 6 KB（绝对值）        | 可选玻璃静态层独立档（surface 半透明 token + 折光边 + 阴影）                                   |
+| @oas-ui/theme glass.css   | 3.04 KB    | 6 KB（绝对值）        | 可选玻璃静态层独立档（surface 半透明 token + 折光边 + 阴影）                                   |
 | @oas-ui/theme skins.css   | 0.9 KB    | 2 KB（绝对值）        | 可选皮肤层独立档（预设色板皮肤变量族）                                                        |
 | @oas-ui/ui/data/table/core 链 | 61.3 KB | 70 KB（绝对值）  | `/core` 纯核路径独立档（主路径减能力 + 图标 opt-in；须小于主链 table 93.2 KB）                 |
 

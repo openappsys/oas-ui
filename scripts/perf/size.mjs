@@ -309,9 +309,9 @@ const BUDGETS = [
   {
     name: '@oas-ui/ui/data/gantt 链 gzip',
     get: () => componentMeasures.gantt.gzipBytes,
-    limit: 46 * 1024, // 46 KB（2026-10-07 首次定档：实测 39.6 KB——大组件独立档位，增长可见）
+    limit: 70 * 1024, // 70 KB（v2.6.2 重定档：任务管理/约束/日历/列虚拟化等能力增量）
     basis:
-      '首次定档：实测 gzip 40.0 KB（gantt 组件 + 编码器无关，链含 core + i18n + virtual-list，v2.6.0 落地），上浮约 15% 定档 46 KB',
+      'v2.6.2 重定档：实测 gzip 61.1 KB（gantt 任务管理/依赖编辑/约束/工作日日历/列虚拟化/多选等能力增量，链含 core + i18n + virtual-list）；上浮约 15% 定档 70 KB。前一档 46 KB 定档于 2026-10-07（实测 39.6 KB）',
   },
   {
     name: '@oas-ui/theme index.css gzip',
@@ -332,7 +332,7 @@ const BUDGETS = [
     get: () => glassCss.gzipBytes,
     limit: 6 * 1024, // 6 KB（可选玻璃静态层，首次定档 2026-10-08；实测约 4.42 KB）
     basis:
-      '实测 gzip 约 2.7 KB（玻璃静态层：surface 半透明 token + 折光边 + 阴影；独立可选，不进 union），保留 6 KB 上限',
+      '实测 gzip 约 3.04 KB（玻璃静态层：surface 半透明 token + 折光边 + 阴影；独立可选，不进 union），保留 6 KB 上限',
   },
   {
     name: '@oas-ui/theme skins.css gzip',

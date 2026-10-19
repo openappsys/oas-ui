@@ -2551,3 +2551,12 @@ group 子钮此前为宿主自填 light DOM（`slot="action"`），组件用 `::
 - **范围**：v2.6.0 之后的全部能力批与修复——新组件 `oas-knob` / conversation 会话族五件 / `oas-questionnaire`（+ `oas-form` `validate()`/`getValues()`）/ `oas-collapsible` / workbench 工作台族（titlebar/statusbar/inspector/action-bar 及子件）；液态玻璃「动态流动感」v1；**破坏性变更**：内置图标集改 opt-in；float-button group 自渲染子钮（`actions` 通道）；专业密度 A/C 批；能力补全批（scope-bar / transport-well / music-well / attachment-group / swipe-cell 双向滑动 等）。
 - **测试与门禁**：全量单测 9767 passed；全量 e2e 3301 passed；`typecheck` / `build` / `api:check` / `llms:check` / `stats:check` / `perf:size` / `perf:bench` / `trace --all` 全绿。
 - **发布通道**：源码托管于 Gitea（非 GitHub）→ 本地通道 `pnpm release`；tag `v2.6.1` 仅作版本标记。
+
+## v2.6.2 — 发布汇总 ✅
+
+> 版本号由用户定。本段为发布收口记录；内容权威见 `CHANGELOG.md [2.6.2]`。
+
+- **范围**：服务端窗口协议与 table/tree/list/gantt/resource/kanban/scheduler 虚拟化、gantt 任务管理与约束/日历、resource/scheduler 资源视图、chart 抽稀/旋转、数据属性双通道与撞名治理；磨砂玻璃跨浏览器一致性（移除静态边缘折射）、Frosted 命名与 `prefers-reduced-transparency`、`glass-fluid.js` 跨模块单例；框架接入指南。
+- **破坏性变更**：`--oas-glass-refraction` 移除，依赖 Chromium 独有边缘折射的覆盖需删除；文档“液态玻璃”改称“磨砂玻璃（Frosted Glass）”，文件名/组件 API 不变。
+- **测试与门禁**：全量单测 10494 passed；Chromium e2e 2199 passed / 37 skipped；Firefox e2e 1313 passed / 7 skipped；`typecheck` / `build` / `api:check` / `llms:check` / `stats:check` / `perf:size` / `perf:bench` / `trace --all` 全绿。
+- **发布通道**：源码托管于 Gitea（非 GitHub）→ 本地通道 `pnpm release`；tag `v2.6.2` 仅作版本标记。
