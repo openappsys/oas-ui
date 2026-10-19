@@ -105,6 +105,22 @@
   </div>
 </DemoBlock>
 
+## 分组独立高亮
+
+`active` 是「当前页」语义（全侧栏至多一个、`aria-current="page"`）。多组筛选面板要「项目 / 视图 / 状态各自独立高亮」时用 `active-by-group`（受控 JSON）：键为 group 名，值为**字符串 = 组内单选**、**字符串数组 = 组内多选**。分组项带 `aria-pressed`（toggle 语义，组内所有项都有真/假），不设 `aria-current`；两套语义可同项共存。
+
+<DemoBlock title="分组独立高亮（active-by-group，含同组多选）">
+  <div style="height: 340px; width: 100%; display: flex">
+    <oas-sidebar id="sidebar-by-group" active-by-group='{"项目":"p1","视图":["v1","v2"],"状态":"doing"}' onoas-select="sidebarByGroupSelect(event)" items='[{"label":"项目 A","value":"p1","group":"项目","icon":"📁"},{"label":"项目 B","value":"p2","group":"项目","icon":"📁"},{"label":"表格","value":"v1","group":"视图","icon":"📋"},{"label":"看板","value":"v2","group":"视图","icon":"🗂️"},{"label":"时间线","value":"v3","group":"视图","icon":"📅"},{"label":"待办","value":"todo","group":"状态","icon":"⬜"},{"label":"进行中","value":"doing","group":"状态","icon":"🔄"}]'></oas-sidebar>
+    <div style="flex: 1; min-width: 0; padding: var(--oas-space-4); background: var(--oas-color-bg)">
+      <p>「项目」「状态」组单选；「视图」组多选（点选切换、互不覆盖）。</p>
+      <oas-tag id="sidebar-by-group-log" type="info">项目 p1 · 视图 v1,v2 · 状态 doing</oas-tag>
+    </div>
+  </div>
+</DemoBlock>
+
+宿主只维护状态：监听 `oas-select`（detail 带 `group`），按组写回 `active-by-group` 即可——组件不持有内部选中态（与 `active` 同为受控）。同组多选的值用数组；点击时是「加入/移出」，单选组则是「替换」。
+
 ## 嵌套子菜单
 
 菜单项支持 `children` 嵌套：父项点击展开/收起（不派发 `oas-select`），含激活子项的父项自动展开；折叠图标条态子树隐藏。展开/收起带平滑高度动画（`prefers-reduced-motion` 自动降级）；`accordion` 同级互斥——展开一个父项自动收起其他同级父项（适合长导航只保留一个展开区）。
@@ -379,6 +395,7 @@
 | --- | --- | --- | --- |
 | `accordion` | 手风琴同级互斥（存在即生效：展开一个父项自动收起其他同级父项；默认多父项可同时展开） | `boolean` | — |
 | `active` | 当前高亮菜单项 value（受控：外部设置/清除立即高亮迁移，重绘） | `string` | — |
+| `active-by-group` | 分组独立高亮（受控 JSON）：group 名 → 选中值；字符串 = 组内单选，字符串数组 = 组内多选。分组项带 aria-pressed（toggle 语义），不设 aria-current；与 active（当前页）互不影响，可同项共存。非法 JSON/非对象/非字符串值静默忽略 | `string` | — |
 | `collapsed` | 受控折叠，收窄为图标条（存在即折叠） | `boolean` | — |
 | `drawer-open` | 移动端抽屉打开态（受控：设置即开、清除即收；断点回桌面自动移除） | `boolean` | — |
 | `expand-on-hover` | 折叠图标条悬停临时展开（纯视觉态，不改 collapsed 受控） | — | — |
@@ -401,7 +418,7 @@
 | `oas-action` | `detail: { value: string, action: string, label: string }`；触发时机：点击项悬停操作按钮时（不触发 oas-select） |
 | `oas-collapse` | `detail: { collapsed: boolean }`；触发时机：桌面折叠按钮切换时 |
 | `oas-resize` | `detail: { width: number }`；触发时机：拖拽调宽松手时 / 方向键微调宽度时 |
-| `oas-select` | `detail: { value: string, label: string }`；触发时机：选中菜单项时（移动端同时收起抽屉） |
+| `oas-select` | `detail: { value: string, label: string, group?: string }`；触发时机：选中菜单项时（移动端同时收起抽屉；`group` 供宿主按组写回 `active-by-group`） |
 
 #### 插槽
 
@@ -476,6 +493,32 @@ onMounted(async () => {
   window.sidebarActionLog = (e) => {
     const tag = document.getElementById('sidebar-action-log')
     if (tag) tag.textContent = `操作：${e.detail.label}（${e.detail.action}）`
+  }
+  // 分组独立高亮 demo：宿主维护 active-by-group（字符串=单选，数组=同组多选）
+  window.sidebarByGroupSelect = (e) => {
+    const sidebar = document.getElementById('sidebar-by-group')
+    if (!sidebar) return
+    const { group, value } = e.detail
+    if (!group) return
+    let state = {}
+    try {
+      state = JSON.parse(sidebar.getAttribute('active-by-group') || '{}')
+    } catch {
+      state = {}
+    }
+    const cur = state[group]
+    state[group] = Array.isArray(cur)
+      ? cur.includes(value)
+        ? cur.filter((v) => v !== value)
+        : [...cur, value]
+      : value
+    sidebar.setAttribute('active-by-group', JSON.stringify(state))
+    const log = document.getElementById('sidebar-by-group-log')
+    if (log) {
+      log.textContent = Object.entries(state)
+        .map(([g, v]) => `${g} ${Array.isArray(v) ? v.join(',') : v}`)
+        .join(' · ')
+    }
   }
   window.sidebarResizeLog = (e) => {
     const tag = document.getElementById('sidebar-resize-log')

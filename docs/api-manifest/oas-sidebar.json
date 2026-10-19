@@ -34,6 +34,12 @@
       "observed": true
     },
     {
+      "name": "active-by-group",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
       "name": "drawer-open",
       "type": "boolean",
       "observed": true
@@ -98,7 +104,7 @@
     },
     {
       "name": "oas-select",
-      "detail": "{ value: item.value, label: item.label }"
+      "detail": "{ value: item.value, label: item.label, group: item.group }"
     },
     {
       "name": "oas-action",

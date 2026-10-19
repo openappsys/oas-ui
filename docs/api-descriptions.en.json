@@ -2804,11 +2804,12 @@
       "variant": "Variant: sidebar (default flush) / floating (radius + shadow) / inset (radius + background contrast)",
       "resizable": "Edge drag-resize (shows a drag rail on the host edge; desktop non-collapsed only)",
       "resize-min": "Minimum resize width (px, default 160)",
-      "resize-max": "Maximum resize width (px, default 480)"
+      "resize-max": "Maximum resize width (px, default 480)",
+      "active-by-group": "Per-group independent highlight (controlled JSON): group name → selected value; a string means single-select within the group, an array of strings means multi-select. Group items carry aria-pressed (toggle semantics) and never aria-current; independent from active (current page) and both can coexist on one item. Invalid JSON / non-object / non-string values are silently ignored"
     },
     "events": {
       "oas-collapse": "`detail: { collapsed: boolean }`; When fired: Desktop collapse button toggled",
-      "oas-select": "`detail: { value: string, label: string }`; When fired: A menu item was selected (also collapses the drawer on mobile)",
+      "oas-select": "`detail: { value: string, label: string, group?: string }`; fired when a menu item is selected (the mobile drawer also closes; `group` lets the host write back `active-by-group`)",
       "oas-action": "`detail: { value: string, action: string, label: string }`; When fired: an item hover action button is clicked (does not fire oas-select)",
       "oas-resize": "`detail: { width: number }`; When fired: drag-resize ends / arrow keys adjust the width"
     },

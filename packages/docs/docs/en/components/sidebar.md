@@ -105,6 +105,22 @@ Menu `items` support an optional `group` field: consecutive items in the same gr
   </div>
 </DemoBlock>
 
+## Per-group independent highlight
+
+`active` is the "current page" semantic (at most one per sidebar, `aria-current="page"`). For multi-group filter panels where "project / view / status" each highlight independently, use `active-by-group` (controlled JSON): keys are group names and values are **a string for single-select within that group** or **an array of strings for multi-select**. Group items carry `aria-pressed` (toggle semantics — every item in the group gets true/false) and never `aria-current`; both semantics can coexist on the same item.
+
+<DemoBlock title="Per-group highlight (active-by-group, with multi-select)">
+  <div style="height: 340px; width: 100%; display: flex">
+    <oas-sidebar id="sidebar-by-group" active-by-group='{"Project":"p1","Views":["v1","v2"],"Status":"doing"}' onoas-select="sidebarByGroupSelect(event)" items='[{"label":"Project A","value":"p1","group":"Project","icon":"📁"},{"label":"Project B","value":"p2","group":"Project","icon":"📁"},{"label":"Table","value":"v1","group":"Views","icon":"📋"},{"label":"Board","value":"v2","group":"Views","icon":"🗂️"},{"label":"Timeline","value":"v3","group":"Views","icon":"📅"},{"label":"Todo","value":"todo","group":"Status","icon":"⬜"},{"label":"In progress","value":"doing","group":"Status","icon":"🔄"}]'></oas-sidebar>
+    <div style="flex: 1; min-width: 0; padding: var(--oas-space-4); background: var(--oas-color-bg)">
+      <p>“Project” and “Status” are single-select; “Views” is multi-select (click toggles, no overwrite).</p>
+      <oas-tag id="sidebar-by-group-log" type="info">Project p1 · Views v1,v2 · Status doing</oas-tag>
+    </div>
+  </div>
+</DemoBlock>
+
+The host owns the state: listen for `oas-select` (the detail includes `group`) and write the next value back to `active-by-group` — the component holds no internal selection state (same controlled contract as `active`). Use an array for multi-select groups; clicks there add/remove, while single-select groups replace.
+
 ## Nested submenus
 
 Items support `children` nesting: a parent item toggles expansion on click (without firing `oas-select`); a parent containing the active child auto-expands. Subtrees are hidden in the collapsed icon strip. Expand/collapse runs a smooth height animation (degrades automatically under `prefers-reduced-motion`); `accordion` makes siblings mutually exclusive — expanding one parent collapses the others at the same level (great for long navs that keep only one section open).
@@ -378,6 +394,7 @@ Besides the `items` JSON, items can be declared with `<oas-sidebar-item>` / `<oa
 | --- | --- | --- | --- |
 | `accordion` | Accordion mode (when present: expanding one parent collapses the other parents at the same level; multiple parents can be open by default) | `boolean` | — |
 | `active` | Value of the currently-highlighted menu item (controlled: set/clear immediately re-renders highlight) | `string` | — |
+| `active-by-group` | Per-group independent highlight (controlled JSON): group name → selected value; a string means single-select within the group, an array of strings means multi-select. Group items carry aria-pressed (toggle semantics) and never aria-current; independent from active (current page) and both can coexist on one item. Invalid JSON / non-object / non-string values are silently ignored | `string` | — |
 | `collapsed` | Controlled collapse to an icon strip (present means collapsed) | `boolean` | — |
 | `drawer-open` | Mobile drawer open state (controlled: set opens, clear closes; auto-removed when breakpoint returns to desktop) | `boolean` | — |
 | `expand-on-hover` | Temporarily expand the collapsed icon strip on hover (visual only; does not change controlled collapsed) | — | — |
@@ -400,7 +417,7 @@ Besides the `items` JSON, items can be declared with `<oas-sidebar-item>` / `<oa
 | `oas-action` | `detail: { value: string, action: string, label: string }`; When fired: an item hover action button is clicked (does not fire oas-select) |
 | `oas-collapse` | `detail: { collapsed: boolean }`; When fired: Desktop collapse button toggled |
 | `oas-resize` | `detail: { width: number }`; When fired: drag-resize ends / arrow keys adjust the width |
-| `oas-select` | `detail: { value: string, label: string }`; When fired: A menu item was selected (also collapses the drawer on mobile) |
+| `oas-select` | `detail: { value: string, label: string, group?: string }`; fired when a menu item is selected (the mobile drawer also closes; `group` lets the host write back `active-by-group`) |
 
 #### Slots
 
@@ -476,6 +493,32 @@ onMounted(async () => {
   window.sidebarActionLog = (e) => {
     const tag = document.getElementById('sidebar-action-log')
     if (tag) tag.textContent = `Action: ${e.detail.label} (${e.detail.action})`
+  }
+  // Per-group demo: the host owns active-by-group (string = single-select, array = multi-select)
+  window.sidebarByGroupSelect = (e) => {
+    const sidebar = document.getElementById('sidebar-by-group')
+    if (!sidebar) return
+    const { group, value } = e.detail
+    if (!group) return
+    let state = {}
+    try {
+      state = JSON.parse(sidebar.getAttribute('active-by-group') || '{}')
+    } catch {
+      state = {}
+    }
+    const cur = state[group]
+    state[group] = Array.isArray(cur)
+      ? cur.includes(value)
+        ? cur.filter((v) => v !== value)
+        : [...cur, value]
+      : value
+    sidebar.setAttribute('active-by-group', JSON.stringify(state))
+    const log = document.getElementById('sidebar-by-group-log')
+    if (log) {
+      log.textContent = Object.entries(state)
+        .map(([g, v]) => `${g} ${Array.isArray(v) ? v.join(',') : v}`)
+        .join(' · ')
+    }
   }
   window.sidebarResizeLog = (e) => {
     const tag = document.getElementById('sidebar-resize-log')

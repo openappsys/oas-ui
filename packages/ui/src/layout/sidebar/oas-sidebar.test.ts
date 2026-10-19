@@ -542,6 +542,116 @@ describe('OASSidebar 能力补齐批（嵌套/徽标/操作/分隔线/骨架/快
     expect(childBtn.getAttribute('aria-current')).toBe('page')
   })
 
+  it('分组独立高亮：active-by-group 各组各自单值，互不影响；组内项带 aria-pressed（真/假）', () => {
+    stubMatchMedia(false)
+    const el = mount({
+      'active-by-group': '{"项目":"p1","视图":"v2","状态":"doing"}',
+      items: JSON.stringify([
+        { label: 'P1', value: 'p1', group: '项目', icon: 'star' },
+        { label: 'P2', value: 'p2', group: '项目', icon: 'star' },
+        { label: 'V1', value: 'v1', group: '视图', icon: 'star' },
+        { label: 'V2', value: 'v2', group: '视图', icon: 'star' },
+        { label: '待办', value: 'todo', group: '状态', icon: 'star' },
+        { label: '进行中', value: 'doing', group: '状态', icon: 'star' },
+        { label: '收件箱', value: 'inbox', icon: 'star' },
+      ]),
+    })
+    const root = el.shadowRoot!
+    const row = (v: string) => root.querySelector<HTMLElement>(`[data-value="${v}"]`)!
+    // 三组同时各有一个高亮（互不影响）
+    expect(['p1', 'v2', 'doing'].every((v) => row(v).classList.contains('active'))).toBe(true)
+    expect(['p2', 'v1', 'todo'].some((v) => row(v).classList.contains('active'))).toBe(false)
+    // 分组态是 toggle 语义：组内所有项都有 aria-pressed；非分组项没有
+    expect(row('p1').getAttribute('aria-pressed')).toBe('true')
+    expect(row('p2').getAttribute('aria-pressed')).toBe('false')
+    expect(row('inbox').hasAttribute('aria-pressed')).toBe(false)
+    // 分组高亮不是「当前页」：不设 aria-current
+    expect(row('p1').hasAttribute('aria-current')).toBe(false)
+  })
+
+  it('分组独立高亮：同组多选（值为数组）——组内多项同时高亮', () => {
+    stubMatchMedia(false)
+    const el = mount({
+      'active-by-group': '{"标签":["bug","ui"],"状态":"open"}',
+      items: JSON.stringify([
+        { label: 'Bug', value: 'bug', group: '标签', icon: 'star' },
+        { label: 'UI', value: 'ui', group: '标签', icon: 'star' },
+        { label: '性能', value: 'perf', group: '标签', icon: 'star' },
+        { label: '打开', value: 'open', group: '状态', icon: 'star' },
+        { label: '关闭', value: 'closed', group: '状态', icon: 'star' },
+      ]),
+    })
+    const root = el.shadowRoot!
+    const row = (v: string) => root.querySelector<HTMLElement>(`[data-value="${v}"]`)!
+    expect(row('bug').classList.contains('active')).toBe(true)
+    expect(row('ui').classList.contains('active')).toBe(true)
+    expect(row('perf').classList.contains('active')).toBe(false)
+    expect(row('open').classList.contains('active')).toBe(true)
+    expect(row('closed').classList.contains('active')).toBe(false)
+    expect([...root.querySelectorAll('[aria-pressed="true"]')].map((b) => b.getAttribute('data-value'))).toEqual([
+      'bug',
+      'ui',
+      'open',
+    ])
+    // 受控：宿主改值后立即迁移
+    el.setAttribute('active-by-group', '{"标签":["perf"],"状态":"closed"}')
+    expect(row('bug').classList.contains('active')).toBe(false)
+    expect(row('perf').classList.contains('active')).toBe(true)
+    expect(row('closed').classList.contains('active')).toBe(true)
+  })
+
+  it('分组独立高亮：与导航 active 共存（导航项 aria-current，分组项 aria-pressed）', () => {
+    stubMatchMedia(false)
+    const el = mount({
+      active: 'inbox',
+      'active-by-group': '{"项目":"p1"}',
+      items: JSON.stringify([
+        { label: 'P1', value: 'p1', group: '项目', icon: 'star' },
+        { label: '收件箱', value: 'inbox', icon: 'star' },
+      ]),
+    })
+    const root = el.shadowRoot!
+    const nav = root.querySelector<HTMLElement>('[data-value="inbox"]')!
+    const filtered = root.querySelector<HTMLElement>('[data-value="p1"]')!
+    expect(nav.getAttribute('aria-current')).toBe('page')
+    expect(nav.hasAttribute('aria-pressed'), '导航项不参与分组 toggle').toBe(false)
+    expect(filtered.classList.contains('active')).toBe(true)
+    expect(filtered.hasAttribute('aria-current'), '分组项不是当前页').toBe(false)
+    expect(filtered.getAttribute('aria-pressed')).toBe('true')
+  })
+
+  it('分组独立高亮：非法 JSON/非对象值静默忽略（不影响普通渲染）', () => {
+    stubMatchMedia(false)
+    const items = JSON.stringify([{ label: 'P1', value: 'p1', group: '项目', icon: 'star' }])
+    for (const bad of ['not-json', '[]', 'null', '"x"', '{"项目":123}', '{"项目":null}']) {
+      document.body.innerHTML = ''
+      const el = mount({ 'active-by-group': bad, items })
+      const row = el.shadowRoot!.querySelector<HTMLElement>('[data-value="p1"]')!
+      expect(row.classList.contains('active'), bad).toBe(false)
+      expect(row.hasAttribute('aria-pressed'), bad).toBe(false)
+      expect(row.textContent).toContain('P1')
+    }
+  })
+
+  it('分组独立高亮：oas-select 的 detail 带 group（宿主据此做分组 toggle）', () => {
+    stubMatchMedia(false)
+    const el = mount({
+      'active-by-group': '{"项目":"p1"}',
+      items: JSON.stringify([
+        { label: 'P1', value: 'p1', group: '项目', icon: 'star' },
+        { label: 'V1', value: 'v1', group: '视图', icon: 'star' },
+        { label: '收件箱', value: 'inbox', icon: 'star' },
+      ]),
+    })
+    const details: Array<Record<string, unknown>> = []
+    el.addEventListener('oas-select', (e) => details.push((e as CustomEvent).detail))
+    const click = (v: string): void => el.shadowRoot!.querySelector<HTMLElement>(`[data-value="${v}"]`)!.click()
+    click('v1')
+    click('inbox')
+    expect(details[0]).toEqual({ value: 'v1', label: 'V1', group: '视图' })
+    expect(details[1]).toEqual({ value: 'inbox', label: '收件箱', group: undefined })
+  })
+
   it('徽标：item.badge 渲染 part="badge" 计数徽标', () => {
     stubMatchMedia(false)
     const el = mount({ items: '[{"label":"收件箱","value":"inbox","badge":"12"}]' })

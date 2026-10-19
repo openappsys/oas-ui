@@ -344,3 +344,82 @@ test('sidebar 行首头像：首字母圆与图片真实渲染，RTL 镜像，�
   expect(r.ltr.textColorMatchesLabel, '首字母色与行文字一致（主题 token，不随宿主色翻转）').toBe(true)
   expect(r.rtl.beforeLabel, 'RTL 下头像镜像到行首（右侧）').toBe(true)
 })
+// 分组独立高亮：各组互不影响；同组多选数组可 toggle；aria 语义（pressed vs current）正确。
+test('sidebar 分组独立高亮：active-by-group 单选/多选、aria-pressed 与 aria-current 分离', async ({ page }) => {
+  await page.goto('/components/sidebar.html', { waitUntil: 'domcontentloaded' })
+  await page.waitForFunction(() => !!customElements.get('oas-sidebar'))
+  const r = await page.evaluate(async () => {
+    type Detail = { value: string; label: string; group?: string }
+    const el = document.createElement('oas-sidebar')
+    el.setAttribute('active', 'inbox')
+    el.setAttribute('active-by-group', JSON.stringify({ 项目: 'p1', 视图: ['v1', 'v2'] }))
+    el.setAttribute(
+      'items',
+      JSON.stringify([
+        { label: 'P1', value: 'p1', group: '项目', icon: 'star' },
+        { label: 'P2', value: 'p2', group: '项目', icon: 'star' },
+        { label: 'V1', value: 'v1', group: '视图', icon: 'star' },
+        { label: 'V2', value: 'v2', group: '视图', icon: 'star' },
+        { label: 'V3', value: 'v3', group: '视图', icon: 'star' },
+        { label: '收件箱', value: 'inbox', icon: 'star' },
+      ]),
+    )
+    document.body.appendChild(el)
+    await new Promise((res) => requestAnimationFrame(() => res(null)))
+    const root = el.shadowRoot!
+    const row = (v: string): HTMLElement => root.querySelector<HTMLElement>(`[data-value="${v}"]`)!
+    const snap = () => ({
+      active: [...root.querySelectorAll<HTMLElement>('.item.active')].map((b) => b.dataset.value).sort(),
+      pressed: [...root.querySelectorAll<HTMLElement>('[aria-pressed]')]
+        .map((b) => `${b.dataset.value}:${b.getAttribute('aria-pressed')}`)
+        .sort(),
+      current: [...root.querySelectorAll<HTMLElement>('[aria-current="page"]')].map((b) => b.dataset.value),
+      navPressed: row('inbox').hasAttribute('aria-pressed'),
+    })
+    const before = snap()
+    let detail: Detail | null = null
+    el.addEventListener('oas-select', (e) => {
+      detail = (e as CustomEvent<Detail>).detail
+    })
+    row('v3').click()
+    const state = JSON.parse(el.getAttribute('active-by-group') ?? '{}') as Record<string, string | string[]>
+    const views = state['视图'] as string[]
+    state['视图'] = [...views, detail!.value]
+    el.setAttribute('active-by-group', JSON.stringify(state))
+    const afterAdd = snap()
+    state['视图'] = views.filter((v) => v !== 'v3')
+    el.setAttribute('active-by-group', JSON.stringify(state))
+    const afterRemove = snap()
+    el.remove()
+    return { before, afterAdd, afterRemove, detail }
+  })
+  expect(r.before.active).toEqual(['inbox', 'p1', 'v1', 'v2'])
+  expect(r.before.pressed).toEqual(['p1:true', 'p2:false', 'v1:true', 'v2:true', 'v3:false'])
+  expect(r.before.current).toEqual(['inbox'])
+  expect(r.before.navPressed, '导航项不参与分组 toggle').toBe(false)
+  expect(r.detail).toEqual({ value: 'v3', label: 'V3', group: '视图' })
+  expect(r.afterAdd.active).toContain('v3')
+  expect(r.afterRemove.active).not.toContain('v3')
+})
+
+// 文档 demo 的宿主配方真实可用：点「时间线」加入「视图」多选，日志同步。
+test('sidebar 文档 demo：分组独立高亮 + 同组多选可点，宿主写回状态生效', async ({ page }) => {
+  await page.goto('/components/sidebar.html', { waitUntil: 'domcontentloaded' })
+  await page.waitForFunction(() => !!document.getElementById('sidebar-by-group')?.shadowRoot)
+  const r = await page.evaluate(async () => {
+    const el = document.getElementById('sidebar-by-group')
+    if (!el || !el.shadowRoot) return null
+    const root = el.shadowRoot
+    el.scrollIntoView({ block: 'center' })
+    const active = (): string[] =>
+      [...root.querySelectorAll<HTMLElement>('.item.active')].map((b) => b.dataset.value ?? '').sort()
+    const before = active()
+    root.querySelector<HTMLElement>('[data-value="v3"]')!.click()
+    await new Promise((res) => requestAnimationFrame(() => res(null)))
+    return { before, after: active(), log: document.getElementById('sidebar-by-group-log')?.textContent ?? '' }
+  })
+  expect(r).not.toBeNull()
+  expect(r!.before).toEqual(expect.arrayContaining(['p1', 'v1', 'v2', 'doing']))
+  expect(r!.after).toContain('v3')
+  expect(r!.log).toContain('v3')
+})

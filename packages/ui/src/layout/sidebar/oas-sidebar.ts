@@ -35,6 +35,9 @@ export interface SidebarItem {
   actions?: SidebarItemAction[]
 }
 
+/** 分组独立高亮：group 名 → 选中值（字符串 = 同组单选；数组 = 同组多选） */
+export type SidebarActiveByGroup = Record<string, string | string[]>
+
 /** 分隔线条目：`{type:'divider'}` 在菜单中渲染分隔线 */
 export interface SidebarDivider {
   type: 'divider'
@@ -663,7 +666,7 @@ aside {
  *
  * 事件：
  * - `oas-collapse`：detail `{ collapsed }`，折叠切换时派发（含快捷键）
- * - `oas-select`：detail `{ value, label }`，选中菜单项时派发（受控迁移同时派发）
+ * - `oas-select`：detail `{ value, label, group? }`，选中菜单项时派发（受控迁移同时派发；group 供宿主按组写回 active-by-group）
  * - `oas-action`：detail `{ value, action, label }`，菜单项操作按钮点击时派发
  * - `oas-resize`：detail `{ width }`，拖拽松手 / 复位微调结束时派发
  *
@@ -678,6 +681,7 @@ export class OASSidebar extends OASElement {
       'width',
       'mobile-breakpoint',
       'active',
+      'active-by-group',
       'drawer-open',
       'hide-toggle',
       'loading',
@@ -1038,6 +1042,7 @@ export class OASSidebar extends OASElement {
       return
     }
     const active = this.getAttr('active', '')
+    const byGroup = this.activeByGroup()
     let currentGroup: string | undefined
     for (const entry of this._items) {
       if ('type' in entry && entry.type === 'divider') {
@@ -1060,12 +1065,37 @@ export class OASSidebar extends OASElement {
         nav.appendChild(title)
       }
       currentGroup = group || undefined
-      nav.appendChild(this.renderItem(item, collapsed, active, 0))
+      nav.appendChild(this.renderItem(item, collapsed, active, 0, byGroup))
     }
   }
 
+  /** 分组独立高亮（受控）：group → 值；数组即同组多选。非法 JSON/非对象/非字符串值静默忽略 */
+  private activeByGroup(): SidebarActiveByGroup {
+    const raw = this.getAttr('active-by-group', '')
+    if (!raw) return {}
+    let parsed: unknown
+    try {
+      parsed = JSON.parse(raw)
+    } catch {
+      return {}
+    }
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return {}
+    const out: SidebarActiveByGroup = {}
+    for (const [group, v] of Object.entries(parsed as Record<string, unknown>)) {
+      if (typeof v === 'string') out[group] = v
+      else if (Array.isArray(v)) out[group] = v.filter((x): x is string => typeof x === 'string')
+    }
+    return out
+  }
+
   /** 渲染单个菜单项（含徽标/操作/嵌套子项；collapsed=桌面图标条态） */
-  private renderItem(item: SidebarItem, collapsed: boolean, active: string, depth: number): HTMLElement {
+  private renderItem(
+    item: SidebarItem,
+    collapsed: boolean,
+    active: string,
+    depth: number,
+    byGroup: SidebarActiveByGroup = {},
+  ): HTMLElement {
     const hasChildren = !!item.children?.length
     // 折叠图标条态 + 树形父项：走 flyout 子菜单（父项不是页面，点击开合面板——
     // 此前曾把父项点击退化为派发 select 修「死交互」，但父项 value 不是可导航页面，
@@ -1079,11 +1109,19 @@ export class OASSidebar extends OASElement {
     btn.setAttribute('aria-label', item.label)
     btn.dataset.value = item.value
     if (depth > 0) btn.classList.add('sub')
-    const isActive = !hasChildren && item.value === active
-    if (isActive) {
-      btn.classList.add('active')
-      btn.setAttribute('aria-current', 'page')
-    }
+    // 导航当前页（aria-current）与分组筛选高亮（aria-pressed）是两套独立语义，可同项共存：
+    // - active：单值「当前页」，全侧栏至多一个，not toggle
+    // - active-by-group：按 group 各自受控（string 单选 / string[] 多选），组内所有项都带 aria-pressed
+    const isNavActive = !hasChildren && item.value === active
+    const groupSel = item.group != null ? byGroup[item.group] : undefined
+    const groupInScope = item.group != null && Object.hasOwn(byGroup, item.group)
+    const isGroupActive =
+      !hasChildren &&
+      groupSel != null &&
+      (Array.isArray(groupSel) ? groupSel.includes(item.value) : groupSel === item.value)
+    if (isNavActive || isGroupActive) btn.classList.add('active')
+    if (isNavActive) btn.setAttribute('aria-current', 'page')
+    if (!hasChildren && groupInScope) btn.setAttribute('aria-pressed', String(isGroupActive))
     // 激活后代指示：父项（含折叠态纯图标项）带 child-selected 主色淡底——
     // 折叠图标条下子项隐身，激活态经父项保留可见（父项非当前页，不设 aria-current）
     if (hasChildren && active && this.findActiveChild(item.children!, active)) {
@@ -1150,7 +1188,7 @@ export class OASSidebar extends OASElement {
           d.setAttribute('role', 'separator')
           subInner.appendChild(d)
         } else {
-          subInner.appendChild(this.renderItem(child as SidebarItem, collapsed, active, depth + 1))
+          subInner.appendChild(this.renderItem(child as SidebarItem, collapsed, active, depth + 1, byGroup))
         }
       }
       btn.addEventListener('click', () => {
@@ -1179,7 +1217,7 @@ export class OASSidebar extends OASElement {
       })
     } else if (!flyoutMode) {
       btn.addEventListener('click', () => {
-        this.emit('select', { value: item.value, label: item.label })
+        this.emit('select', { value: item.value, label: item.label, group: item.group })
         if (this.hasAttr('drawer-open')) this.closeDrawer()
       })
     }
@@ -1210,7 +1248,7 @@ export class OASSidebar extends OASElement {
     if (collapsed && hasChildren && item.icon) {
       const block = document.createElement('div')
       block.className = 'item-block'
-      const flyout = this.buildFlyout(item, active)
+      const flyout = this.buildFlyout(item, active, byGroup)
       block.append(btn, flyout)
       btn.setAttribute('aria-haspopup', 'true')
       btn.setAttribute('aria-expanded', 'false')
@@ -1263,7 +1301,7 @@ export class OASSidebar extends OASElement {
   private static readonly FLYOUT_CLOSE_DELAY = 300
 
   /** 构建 flyout 面板：子项按展开态渲染（嵌套子树内联可展开），叶子子项点击派发 select 后关面板 */
-  private buildFlyout(item: SidebarItem, active: string): HTMLElement {
+  private buildFlyout(item: SidebarItem, active: string, byGroup: SidebarActiveByGroup = {}): HTMLElement {
     const flyout = document.createElement('div')
     flyout.className = 'flyout'
     flyout.setAttribute('part', 'flyout')
@@ -1278,7 +1316,7 @@ export class OASSidebar extends OASElement {
         d.setAttribute('role', 'separator')
         flyout.appendChild(d)
       } else {
-        const node = this.renderItem(child as SidebarItem, false, active, 1)
+        const node = this.renderItem(child as SidebarItem, false, active, 1, byGroup)
         // flyout 内所有菜单按钮挂 menuitem 语义（根节点 + 嵌套子树内按钮）
         if (node.matches?.('[part="item"]')) node.setAttribute('role', 'menuitem')
         for (const btn of node.querySelectorAll<HTMLElement>('[part="item"]')) btn.setAttribute('role', 'menuitem')
