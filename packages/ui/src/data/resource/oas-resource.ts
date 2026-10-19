@@ -80,6 +80,11 @@ const STYLE = `
 .row:last-child {
   border-bottom: none;
 }
+/* 最后一条资源泳道不是整个组件的最后一行（其下还有负载直方图标题/行）；
+   :last-child 会误删其底边，补回作为直方图区上方的分隔线 */
+.lanes > .row.lane:last-child {
+  border-bottom: 1px solid var(--oas-color-border);
+}
 /* 表头纵向吸顶：滚动泳道时周刻度保持可见（背景遮住下方行）；角落名列再高一层，
    横向滚动时盖住刻度（与 .name 的 inset-inline-start 吸左/吸右叠加） */
 .row.head {

@@ -2347,3 +2347,21 @@ test('resource 资源名与任务条标签文字可选中复制', async ({ page 
     expect(selected.length, '真实拖选应产生文本选区').toBeGreaterThan(0)
   }
 })
+
+test('resource 负载直方图区上方有分隔线（最后泳道不丢下边框）', async ({ page }) => {
+  await page.goto('/components/resource.html', { waitUntil: 'domcontentloaded' })
+  await waitResource(page, 'res-basic')
+  const r = await page.evaluate(() => {
+    const host = document.getElementById('res-basic') as HTMLElement
+    const lastLane = host.shadowRoot!.querySelector('.lanes > .row.lane:last-child') as HTMLElement
+    const hist = host.shadowRoot!.querySelector('.row.hist-head') as HTMLElement
+    return {
+      lastLaneBottomWidth: getComputedStyle(lastLane).borderBottomWidth,
+      lastLaneBottomStyle: getComputedStyle(lastLane).borderBottomStyle,
+      adjacent: Math.abs(lastLane.getBoundingClientRect().bottom - hist.getBoundingClientRect().top) <= 1,
+    }
+  })
+  expect(r.lastLaneBottomWidth, '最后泳道保留底部分隔线').toBe('1px')
+  expect(r.lastLaneBottomStyle).toBe('solid')
+  expect(r.adjacent, '分隔线紧邻负载直方图标题上方').toBe(true)
+})
