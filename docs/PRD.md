@@ -2322,7 +2322,7 @@ OASElement 的 render 生命周期只首连一次（`rendered` 门闩），组�
 
 对话/消息形态立项（能力缺口 D-P2；feedback/message 批次已定性「会话行是另一组件类别，单独立项」）。与 oas-comment（评论区，回复树）**并存不合并**：会话流有方向（我方/对方左右分侧）、动态追加 + 自动滚动 + 流式增长、时间戳/系统事件分隔标记、附件行——评论区均不承载。新族目录 `packages/ui/src/conversation/`（第八个语义族，源码目录 = 文档站语义组），会话行命名 `oas-message-row`（避开全局提示 oas-message）。
 
-本批 = A 批（静态四件 + scroller 钉底/跳底）；B 批已并入本段（精确滚动与会话体验）：稳定锚点异步保位、同帧混合插入精确结算、首屏防跳（data-pending-scroll）、`last-anchor` 打开位置、轮次锚定（`turn-anchor`）、`scrollToMessage`。可见性追踪判定 v2 候选（牵出大纲/已读独立语义，pay-for-use），不随本批交付。
+本批 = A 批（静态四件 + scroller 钉底/跳底）；B 批已并入本段（精确滚动与会话体验）：稳定锚点异步保位、同帧混合插入精确结算、首屏防跳（data-pending-scroll）、`last-anchor` 打开位置、轮次锚定（`turn-anchor`）、`scrollToMessage`。可见性追踪判定 v2 候选（牵出大纲/已读独立语义，pay-for-use），不随本批交付；后续批次已实现 `track-visible`（IntersectionObserver + `data-visible`，无 IO 回退 rect，见 v2.6.2 段）。
 
 ### 功能定义
 
@@ -2340,7 +2340,7 @@ OASElement 的 render 生命周期只首连一次（`rendered` 门闩），组�
 
 ### 边界（B 批后仍不做）
 
-- 可见性追踪（视口内消息清单，`oas-visible-change`/`data-visible`）：v2 候选——牵出大纲菜单/已读标记独立语义，宿主可用 IntersectionObserver 自行组合。
+- 可见性追踪（视口内消息清单，`oas-visible-change`/`data-visible`）：v2 候选（后续批次已实现：`track-visible` + IntersectionObserver + `data-visible`）——牵出大纲菜单/已读标记独立语义，宿主可用 IntersectionObserver 自行组合。
 - 虚拟化（数千轮长会话）：宿主接虚拟列表组合；`content-visibility` 在 slotted 元素上单独启用会卡占位高度不展开（实测撤回），随虚拟化一起评估。
 - 不做（框架/宿主层）：消息 parts 管线、run 状态机、sendMessage/stop/regenerate、分支/编辑、持久化；文件类型图标库（图标由宿主/slot 传）；长文折叠/浮层/反应条（组合模式或 v2）。
 - 首屏防跳只覆盖「连接 → 首帧定位」段；客户端异步拉取首批消息的场景由 auto-scroll/pin-to-bottom 装载行为接管。
