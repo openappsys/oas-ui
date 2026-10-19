@@ -1042,7 +1042,7 @@ export class OASSidebar extends OASElement {
       return
     }
     const active = this.getAttr('active', '')
-    const byGroup = this.activeByGroup()
+    const byGroup = this.activeByGroupMap()
     let currentGroup: string | undefined
     for (const entry of this._items) {
       if ('type' in entry && entry.type === 'divider') {
@@ -1070,7 +1070,7 @@ export class OASSidebar extends OASElement {
   }
 
   /** 分组独立高亮（受控）：group → 值；数组即同组多选。非法 JSON/非对象/非字符串值静默忽略 */
-  private activeByGroup(): SidebarActiveByGroup {
+  private activeByGroupMap(): SidebarActiveByGroup {
     const raw = this.getAttr('active-by-group', '')
     if (!raw) return {}
     let parsed: unknown
