@@ -116,9 +116,10 @@
 | @oas-ui/theme skins.css   | 0.9 KB    | 2 KB（绝对值）        | 可选皮肤层独立档（预设色板皮肤变量族）                                                        |
 | @oas-ui/ui/data/table/core 链 | 67.0 KB | 70 KB（绝对值）  | `/core` 纯核路径独立档（主路径减能力 + 图标 opt-in；须小于主链 table 101.9 KB）                 |
 
+> **Headroom（v2.6.2 实测）**：CDN 38.7 KB、全量入口 76.6 KB、table 6.1 KB、table/core 3.0 KB、theme index 0.2 KB、glass-fluid 0.4 KB。下一版新增能力前先做预算评审；低于 3% headroom 的入口默认不加功能，先做瘦身或独立子包。
+
 > 规则：**新增 L3 能力子包 / 可选运行时须配独立绝对值档**（见 `docs/architecture.md` §3.1）；可选层文件不参与全量天花板（不进 union，由 §4 泄漏断言保证）。另有**图标全量注册表零进入**断言：`packages/icons/dist/registry.js` 不得出现在任何基础链闭包（锁死"按需链不背整套图标"）。
 
-> 规则：**新增 L3 能力子包 / 可选运行时须配独立绝对值档**（见 `docs/architecture.md` §3.1）；可选层文件不参与全量天花板（不进 union，由 §4 泄漏断言保证）。
 
 ### 渲染预算（本地/发布前，`pnpm perf:bench` 量级防退化）
 
