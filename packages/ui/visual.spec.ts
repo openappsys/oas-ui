@@ -33,11 +33,17 @@ async function shoot(page: import('@playwright/test').Page, stem: string): Promi
   }
   const parts = Math.ceil(height / 16000)
   for (let i = 0; i < parts; i++) {
-    await page.screenshot({
-      path: `${stem}-p${i + 1}.png`,
-      // fullPage + clip：clip 取文档坐标（缺省按视口坐标会越界报错）
-      fullPage: true,
-      clip: { x: 0, y: i * 16000, width: 860, height: Math.min(16000, height - i * 16000) },
-    })
+    try {
+      await page.screenshot({
+        path: `${stem}-p${i + 1}.png`,
+        // fullPage + clip：clip 取文档坐标（缺省按视口坐标会越界报错）
+        fullPage: true,
+        clip: { x: 0, y: i * 16000, width: 860, height: Math.min(16000, height - i * 16000) },
+      })
+    } catch {
+      // 页面在分片截图期间高度变化/字体重排时，clip 可能落到最终图像外；
+      // 退化为整页截图（仍保留产物，避免把协议错误当成视觉缺陷）。
+      await page.screenshot({ path: `${stem}-p${i + 1}.png`, fullPage: true })
+    }
   }
 }

@@ -115,6 +115,7 @@ test('button-group 禁用 × 选中：选中态颜色保留可读（有意设计
   // 通行做法：禁用组的当前选中项保持主色描边/淡底（经 opacity 柔化），用户能读到当前状态；
   // 全灰会丢失状态信息。此处锁定「禁用不反超选中态颜色」（曾被怀疑是缺陷，实为有意）。
   await page.goto('/components/button-group.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-button-group')
   await page.waitForTimeout(600)
   const r = await page.evaluate(() => {
     const g = document.querySelector('oas-button-group[value]') ?? document.querySelector('oas-button-group')!

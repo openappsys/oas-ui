@@ -651,6 +651,7 @@ test('titlebar 容器语义：role=group + aria-label（回归：aria-label 曾�
 for (const page_ of ['titlebar', 'statusbar', 'inspector', 'action-bar']) {
   test(`workbench ${page_} 页 console 零告警 + 暗色冒烟`, async ({ page }) => {
     await page.goto(`/components/${page_}.html`, { waitUntil: 'domcontentloaded' })
+    await up(page, `oas-${page_}`)
     await page.waitForTimeout(400)
     // 暗色切换后组件 shadow 正常渲染（任取一个组件探活）
     await page.evaluate(() => document.documentElement.classList.add('dark'))

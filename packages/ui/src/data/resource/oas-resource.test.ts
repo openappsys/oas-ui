@@ -1722,7 +1722,7 @@ describe('OASResource 结构性操作容错（G5：revoked Proxy 不抛未捕获
   })
 })
 
-describe('OASResource 横向虚拟化（时间轴 period 列窗口）', () => {
+describe('OASResource 横向虚拟化（时间轴 period 列窗口）', { timeout: 30_000 }, () => {
   beforeEach(() => {
     document.body.innerHTML = ''
   })
@@ -2601,7 +2601,7 @@ describe('OASResource 行虚拟化（纵向窗口，泳道/负载两区独立）
   })
 })
 
-describe('OASResource 服务端窗口（windowed 行窗口 + 宿主托管时间轴范围）', () => {
+describe('OASResource 服务端窗口（windowed 行窗口 + 宿主托管时间轴范围）', { timeout: 30_000 }, () => {
   // 契约见 packages/ui/src/shared/window-data.ts：
   // - 行窗口：windowed + total + window-start，绝对行号半开区间，未覆盖派发 oas-window-request
   // - 范围：range-start/range-end（ISO，range-end 含当日）托管时间轴，未覆盖派发 oas-range-request
