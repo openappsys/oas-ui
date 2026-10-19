@@ -2,6 +2,13 @@
 
 所有显著变更记录于此。
 
+## [未发布]
+
+### 构建与性能
+
+- **`@oas-ui/theme` 发布 CSS 最小化**：`index.css` 改为由 `index.source.css` 生成的无注释产物，保留源码文件与既有导出路径；实测 `index.css` 从 10,767 B / 3.8 KB gzip 降至 7,343 B / 1.7 KB gzip。
+- **真实浏览器堆内存回归**：新增 Chromium CDP GC soak，覆盖 list / tree / kanban / scheduler 各 8 轮挂载/卸载；本轮实测堆增长为 0。Firefox 无 `performance.memory`，自动跳过该断言。
+
 ## [2.6.2] - 2026-10-19
 
 ### 破坏性变更（迁移）

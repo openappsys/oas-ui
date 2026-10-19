@@ -116,6 +116,8 @@ test('button-group 禁用 × 选中：选中态颜色保留可读（有意设计
   // 全灰会丢失状态信息。此处锁定「禁用不反超选中态颜色」（曾被怀疑是缺陷，实为有意）。
   await page.goto('/components/button-group.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-button-group')
+  // group 的 shadow 就绪不等于 light-DOM 子按钮已升级；Firefox 慢加载下曾读到 null shadowRoot
+  await up(page, 'oas-button-group oas-button')
   await page.waitForTimeout(600)
   const r = await page.evaluate(() => {
     const g = document.querySelector('oas-button-group[value]') ?? document.querySelector('oas-button-group')!
