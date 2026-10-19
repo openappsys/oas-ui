@@ -151,11 +151,10 @@ describe('玻璃边缘折射 v1：controls/nav/notification 消费', () => {
     document.body.innerHTML = ''
   })
 
-  it('9 个范围组件消费 --oas-glass-refraction（缺省回落 none 零副作用）', () => {
+  it('8 个范围组件消费 --oas-glass-refraction（缺省回落 none 零副作用）', () => {
     // 直接读样式文本断言（消费行存在性；滤镜缺省 none 不改变默认渲染）
     const files: Array<[string, string]> = [
       ['oas-button', 'basic/button/oas-button.ts'],
-      ['oas-switch', 'form/switch/oas-switch.ts'],
       ['oas-slider', 'form/slider/oas-slider.ts'],
       ['oas-app-bar', 'navigation/app-bar/oas-app-bar.ts'],
       ['oas-bottom-navigation', 'navigation/bottom-navigation/oas-bottom-navigation.ts'],
@@ -251,12 +250,16 @@ describe('玻璃边缘折射 v1：controls/nav/notification 消费', () => {
     expect(css.slice(darkIdx), 'dark 段应有独立 sheen 档').toContain('--oas-glass-sheen:')
   })
 
-  it('禁用关折射跨组件统一：switch button[disabled] + slider 双伪元素 disabled 守卫（UA 伪元素无 computed 通道，锁源码形态）', () => {
+  it('switch 不接折射：18px 轨道/把手不套位移滤镜（锯齿/膨胀源码回归锁）', () => {
     const sw = readFileSync(
       resolve(import.meta.dirname, '../../../../packages/ui/src/form/switch/oas-switch.ts'),
       'utf8',
     )
-    expect(sw).toMatch(/button\[disabled\]\s*\{[^}]*filter:\s*none/)
+    expect(sw).not.toContain('--oas-glass-refraction')
+    expect(sw).not.toMatch(/filter:\s*var\(--oas-glass-refraction/)
+  })
+
+  it('禁用关折射跨组件统一：slider 双伪元素 disabled 守卫（UA 伪元素无 computed 通道，锁源码形态）', () => {
     const slider = readFileSync(
       resolve(import.meta.dirname, '../../../../packages/ui/src/form/slider/oas-slider.ts'),
       'utf8',

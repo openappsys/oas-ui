@@ -193,24 +193,17 @@ test.describe('玻璃边缘折射 v1（data-URI 自包含滤镜）', () => {
   // 滤镜必须以 data-URI 内联——本组断言锁死该机制（退回 #id 引用即红）。
 
   for (const theme of ['light', 'dark']) {
-    test(`shadow 组件消费 data-URI 滤镜（${theme}，button/switch/slider 把手）`, async ({ page, browserName }) => {
+    test(`shadow 组件消费 data-URI 滤镜（${theme}，button）`, async ({ page }) => {
       await page.goto(PAGE, { waitUntil: 'domcontentloaded' })
       if (theme === 'dark') await page.evaluate(() => document.documentElement.classList.add('dark'))
       await page.waitForTimeout(800)
-      const r = await page.evaluate(() => {
-        const probe = (host: Element | null, sel: string) => {
-          const el = (host as HTMLElement | null)?.shadowRoot?.querySelector(sel)
-          return el ? getComputedStyle(el).filter : null
-        }
-        return {
-          button: probe(document.querySelector('oas-button'), 'button'),
-          switch: probe(document.querySelector('oas-switch'), 'button'),
-        }
-      })
-      for (const [name, filter] of Object.entries(r)) {
-        expect(filter, `${theme}/${name} 应消费折射滤镜`).toContain('data:image/svg+xml')
-        expect(filter, `${theme}/${name} 应为位移滤镜`).toContain('feDisplacementMap')
-      }
+      const filter = await page.evaluate(
+        () =>
+          getComputedStyle((document.querySelector('oas-button') as HTMLElement).shadowRoot!.querySelector('button')!)
+            .filter,
+      )
+      expect(filter, `${theme}/button 应消费折射滤镜`).toContain('data:image/svg+xml')
+      expect(filter, `${theme}/button 应为位移滤镜`).toContain('feDisplacementMap')
     })
   }
 
@@ -245,19 +238,17 @@ test.describe('玻璃边缘折射 v1（data-URI 自包含滤镜）', () => {
     expect(r.pressedDisabledFocusable, '选中 × disabled-focusable 不得恢复组合滤镜').toBe('none')
   })
 
-  test('switch 禁用态关折射（禁用控件静态无装饰变形——跨组件统一纪律）', async ({ page }) => {
+  test('switch 不套位移折射（18px 小圆的锯齿/膨胀回归锁）', async ({ page }) => {
     await page.goto(PAGE, { waitUntil: 'domcontentloaded' })
     await page.waitForTimeout(800)
     const r = await page.evaluate(() => {
-      const sw = document.createElement('oas-switch')
-      sw.setAttribute('disabled', '')
-      document.querySelector('.gg-stage')!.appendChild(sw)
-      const inner = sw.shadowRoot!.querySelector('button')!
-      const filter = getComputedStyle(inner).filter
-      sw.remove()
-      return filter
+      const sw = document.querySelector('.gg-controls oas-switch')!
+      const btn = sw.shadowRoot!.querySelector('button')!
+      const thumb = sw.shadowRoot!.querySelector('.thumb')!
+      return { btn: getComputedStyle(btn).filter, thumb: getComputedStyle(thumb).filter }
     })
-    expect(r, 'switch 禁用态应关折射（含 busy，busy 同样 btn.disabled=true）').toBe('none')
+    expect(r.btn, 'switch 不消费位移滤镜（会把轨道撑大且把手边缘锯齿）').toBe('none')
+    expect(r.thumb, 'switch 把手不消费位移滤镜（小圆最易锯齿）').toBe('none')
   })
 
   test('slider 把手折射真实执行（chromium 像素级；UA 伪元素无 computed 通道）', async ({ page, browserName }) => {

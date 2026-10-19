@@ -10,8 +10,9 @@
  * - `--oas-glass-ring`（高光描边环）：surface 组件经
  *   `outline: 1px solid var(--oas-glass-ring, transparent); outline-offset: -1px` 消费
  *   （贴近玻璃的折光边；默认 transparent 不可见）；
- * - `--oas-glass-refraction`（边缘折射，仅 9 个 controls/nav/notification 组件消费，
- *   内容面板不接）：data-URI 自包含 SVG 位移滤镜。
+ * - `--oas-glass-refraction`（边缘折射，仅 8 个 controls/nav/notification 组件消费，
+ *   内容面板不接）：data-URI 自包含 SVG 位移滤镜。switch 不接：18px 小圆位移会锯齿、
+ *   外扩后还会显得比布局盒更高更胖，开关只保留玻璃 surface 与动态高光。
  *
  * 降级：局部停用可对任意容器覆盖
  * `--oas-glass-blur: none; --oas-glass-ring: transparent; --oas-glass-refraction: ;`
