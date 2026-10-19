@@ -110,7 +110,7 @@ document.documentElement.dataset.skin = 'emerald' // violet | emerald | rose | a
 
 ### Optional material layer (glass)
 
-`glass.css` ships the glass material (translucent surface + backdrop blur + specular edge + edge refraction); `glass-fluid.js` ships the pointer specular-highlight runtime. Both are **opt-in standalone files** (zero effect unless imported; never added to the component bundle):
+`glass.css` ships the frosted glass material (translucent surface + backdrop blur + specular edge ring); `glass-fluid.js` ships the pointer specular-highlight runtime. Both are **opt-in standalone files** (zero effect unless imported; never added to the component bundle):
 
 ```html
 <link rel="stylesheet" href="https://unpkg.com/@oas-ui/theme@2/glass.css" />
