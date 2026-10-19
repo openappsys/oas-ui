@@ -110,7 +110,7 @@ Menu `items` support an optional `group` field: consecutive items in the same gr
 `active` is the "current page" semantic (at most one per sidebar, `aria-current="page"`). For multi-group filter panels where "project / view / status" each highlight independently, use `active-by-group` (controlled JSON): keys are group names and values are **a string for single-select within that group** or **an array of strings for multi-select**. Group items carry `aria-pressed` (toggle semantics — every item in the group gets true/false) and never `aria-current`; both semantics can coexist on the same item.
 
 <DemoBlock title="Per-group highlight (active-by-group, with multi-select)">
-  <div style="height: 340px; width: 100%; display: flex">
+  <div style="height: 510px; width: 100%; display: flex">
     <oas-sidebar id="sidebar-by-group" active-by-group='{"Project":"p1","Views":["v1","v2"],"Status":"doing"}' onoas-select="sidebarByGroupSelect(event)" items='[{"label":"Project A","value":"p1","group":"Project","icon":"📁"},{"label":"Project B","value":"p2","group":"Project","icon":"📁"},{"label":"Table","value":"v1","group":"Views","icon":"📋"},{"label":"Board","value":"v2","group":"Views","icon":"🗂️"},{"label":"Timeline","value":"v3","group":"Views","icon":"📅"},{"label":"Todo","value":"todo","group":"Status","icon":"⬜"},{"label":"In progress","value":"doing","group":"Status","icon":"🔄"}]'></oas-sidebar>
     <div style="flex: 1; min-width: 0; padding: var(--oas-space-4); background: var(--oas-color-bg)">
       <p>“Project” and “Status” are single-select; “Views” is multi-select (click toggles, no overwrite).</p>

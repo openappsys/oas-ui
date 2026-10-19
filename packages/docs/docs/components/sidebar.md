@@ -110,7 +110,7 @@
 `active` 是「当前页」语义（全侧栏至多一个、`aria-current="page"`）。多组筛选面板要「项目 / 视图 / 状态各自独立高亮」时用 `active-by-group`（受控 JSON）：键为 group 名，值为**字符串 = 组内单选**、**字符串数组 = 组内多选**。分组项带 `aria-pressed`（toggle 语义，组内所有项都有真/假），不设 `aria-current`；两套语义可同项共存。
 
 <DemoBlock title="分组独立高亮（active-by-group，含同组多选）">
-  <div style="height: 340px; width: 100%; display: flex">
+  <div style="height: 510px; width: 100%; display: flex">
     <oas-sidebar id="sidebar-by-group" active-by-group='{"项目":"p1","视图":["v1","v2"],"状态":"doing"}' onoas-select="sidebarByGroupSelect(event)" items='[{"label":"项目 A","value":"p1","group":"项目","icon":"📁"},{"label":"项目 B","value":"p2","group":"项目","icon":"📁"},{"label":"表格","value":"v1","group":"视图","icon":"📋"},{"label":"看板","value":"v2","group":"视图","icon":"🗂️"},{"label":"时间线","value":"v3","group":"视图","icon":"📅"},{"label":"待办","value":"todo","group":"状态","icon":"⬜"},{"label":"进行中","value":"doing","group":"状态","icon":"🔄"}]'></oas-sidebar>
     <div style="flex: 1; min-width: 0; padding: var(--oas-space-4); background: var(--oas-color-bg)">
       <p>「项目」「状态」组单选；「视图」组多选（点选切换、互不覆盖）。</p>
