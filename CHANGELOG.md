@@ -13,6 +13,7 @@
 
 ### 功能
 
+- **`levelResources` 新增 `mode: 'reassign'`（资源重分配均载）**：在既有 `shift`（顺延、保工期）之外提供「日期完全不变、只换人」的平衡语义——把超载资源上的任务改派给任务覆盖的**每个** period 都有余量的资源（按 worst load ratio 选最空闲、并列取资源输入序；多资源任务只替换超载的那一个分配）；找不到可行目标即停，**不退化顺延**。适配有业务截止日、只能换人的场景（pm 模板「一键均载」），返回被改派任务的完整副本，宿主仍按 id 回写。
 - **`oas-date-picker` 范围手输**：`daterange` / `datetimerange` / `monthrange` / `yearrange` 触发器由只读回显改为可键入，按 `separator`（默认 `~`）拆分起止；支持 `2026-08-05 ~ 2026-08-15`、`2026-08 ~ 2026-10`、`2024 ~ 2026` 与带时刻的 datetime 范围。起止倒置、越界、禁用日期或非法输入回退当前值，不提交；`datetimerange` 只键入日期时按 `default-time` 补齐时刻。
 - **`oas-sidebar` 自定义行内容**：新增 `renderLabel` property 函数通道 `(item) => Node | string | null`，可把菜单项文字区替换为双行文本等富内容；返回字符串按纯文本渲染，返回 `null` 回退 `item.label`。函数不反射 attribute/不参与 SSR，可访问名称仍取 `item.label`，折叠态随文字区隐藏；行内不要放交互元素（整行本身是按钮，交互走 `actions`）。
 - **`oas-barcode` 扩展至 10 码制**：新增 GS1-128（首部 FNC1，`|` 分隔字段，括号仅分组）、UPC-E（6/7/8 位，按末位规则展开并补校验位）、Codabar（A–D 起止符）与 MSI（纯数字基础码）；`format` 新增 `gs1-128` / `upce` / `codabar` / `msi`，非法值仍回退 `code128`。补齐编码单测、组件渲染/e2e 覆盖与 zh/en 文档。

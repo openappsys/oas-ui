@@ -370,6 +370,9 @@ export interface ResourceOverloadDetail {
   overloads: ResourceOverloadEntry[]
 }
 
+/** levelResources 平衡模式：shift=整体顺延（改日期、保工期）；reassign=改派资源（日期不变、尊重 capacity） */
+export type LevelResourcesMode = 'shift' | 'reassign'
+
 /** levelResources 选项 */
 export interface LevelResourcesOptions {
   /** 步进粒度（缺省 day） */
@@ -380,6 +383,12 @@ export interface LevelResourcesOptions {
   maxIter?: number
   /** week 档周起始（0=周日 … 6=周六；缺省 1=周一，纯函数无 locale 上下文） */
   weekStart?: number
+  /**
+   * 平衡模式（缺省 shift）：
+   * - shift：把超载档内较晚任务整体后移一个 period（改日期、保工期，对截止日不友好）
+   * - reassign：把任务改派给整段都有余量的资源（日期不变、尊重 capacity；找不到目标即停，不退化顺延）
+   */
+  mode?: LevelResourcesMode
 }
 
 /** 内部清洗后资源模型（capacity: null = 回落组件缺省容量）；白名单外键原样透传 */
@@ -951,6 +960,8 @@ export function levelResources(
   const capOf = new Map<string, number>()
   for (const r of rs) capOf.set(r.id, r.capacity ?? capDefault)
 
+  if (opts.mode === 'reassign') return reassignOverload(rs, work, capOf, scale, weekStart, maxIter, onKeyError)
+
   const moved = new Set<string>()
   let iter = 0
   for (;;) {
@@ -1009,6 +1020,130 @@ export function levelResources(
   for (const t of work) {
     if (moved.has(t.id)) out.push(toPublicTask(t, undefined, onKeyError))
   }
+  return out
+}
+
+/**
+ * 重分配模式（levelResources 内部实现）：日期不动，把超载资源上的任务改派给「整段都有余量」的资源。
+ *
+ * 约定：
+ * - 超载档按资源输入序 → period 时序；候选任务按开始晚→早、输入序靠后→靠前（与 shift 受害者口径一致）；
+ * - 目标资源须在任务覆盖的**每个** period 满足 load + 1 ≤ capacity，按 worst load ratio 取最空闲者
+ *   （并列取资源输入序在前）；已分配给该任务的资源不重复选；
+ * - 每次成功改派只降低超载资源负载、且不制造新超载（目标已校验），故有限步收敛；
+ * - 找不到可行目标即停（**不退化顺延**）；达 maxIter 亦停。不改入参，返回被改派任务。
+ */
+function reassignOverload(
+  rs: RS[],
+  work: RT[],
+  capOf: Map<string, number>,
+  scale: ResourceScale,
+  weekStart: number,
+  maxIter: number,
+  onKeyError?: (key: string) => void,
+): ResourceTask[] {
+  const spans = spansOf(work)
+  if (spans.length === 0) return []
+  let minMs = Number.POSITIVE_INFINITY
+  let maxMs = Number.NEGATIVE_INFINITY
+  for (const s of spans) {
+    if (s.startMs < minMs) minMs = s.startMs
+    if (s.endMs > maxMs) maxMs = s.endMs
+  }
+  const periods = buildPeriods(minMs, maxMs, scale, weekStart, 'en', () => {
+    if (periodsTruncWarned) return
+    periodsTruncWarned = true
+    devWarn(`[oas-resource] period 数超过 ${MAX_PERIODS}，已截断（任务日期跨度可能异常）`)
+  })
+  if (periods.length === 0) return []
+
+  const overlaps = (s: Span, p: Period): boolean => s.startMs < p.endMs && s.endMs > p.startMs
+  const spanIdxs = (s: Span): number[] => {
+    const out: number[] = []
+    for (let i = 0; i < periods.length; i++) if (overlaps(s, periods[i]!)) out.push(i)
+    return out
+  }
+
+  // 资源 × period 负载矩阵（与直方图同口径：任务与 period 相交即计 1）
+  const load = new Map<string, number[]>()
+  for (const r of rs) load.set(r.id, new Array<number>(periods.length).fill(0))
+  for (const s of spans) {
+    for (const rid of work[s.index]!.resources) {
+      const arr = load.get(rid)
+      if (!arr) continue
+      for (const i of spanIdxs(s)) arr[i] = (arr[i] ?? 0) + 1
+    }
+  }
+
+  const changed = new Set<string>()
+  let iter = 0
+  while (iter < maxIter) {
+    let hit: { rid: string; idx: number } | null = null
+    for (const r of rs) {
+      const arr = load.get(r.id)!
+      const cap = capOf.get(r.id)!
+      for (let i = 0; i < arr.length; i++) {
+        if ((arr[i] ?? 0) > cap) {
+          hit = { rid: r.id, idx: i }
+          break
+        }
+      }
+      if (hit) break
+    }
+    if (!hit) break
+    const rid = hit.rid
+    const period = periods[hit.idx]!
+    const candidates = spans
+      .filter((s) => work[s.index]!.resources.includes(rid) && overlaps(s, period))
+      .sort((a, b) => b.startMs - a.startMs || b.index - a.index)
+
+    let progressed = false
+    for (const s of candidates) {
+      const t = work[s.index]!
+      const idxs = spanIdxs(s)
+      let bestRid: string | null = null
+      let bestScore = Number.POSITIVE_INFINITY
+      for (const r of rs) {
+        if (r.id === rid || t.resources.includes(r.id)) continue
+        const cap = capOf.get(r.id)!
+        if (!(cap > 0)) continue
+        const arr = load.get(r.id)!
+        let worst = 0
+        let feasible = true
+        for (const i of idxs) {
+          const after = (arr[i] ?? 0) + 1
+          if (after > cap) {
+            feasible = false
+            break
+          }
+          worst = Math.max(worst, after / cap)
+        }
+        if (feasible && worst < bestScore) {
+          bestScore = worst
+          bestRid = r.id
+        }
+      }
+      if (!bestRid) continue
+      const at = t.resources.indexOf(rid)
+      if (at < 0) continue
+      t.resources = [...t.resources]
+      t.resources[at] = bestRid
+      const from = load.get(rid)!
+      const to = load.get(bestRid)!
+      for (const i of idxs) {
+        from[i] = (from[i] ?? 0) - 1
+        to[i] = (to[i] ?? 0) + 1
+      }
+      changed.add(t.id)
+      iter++
+      progressed = true
+      break
+    }
+    if (!progressed) break
+  }
+
+  const out: ResourceTask[] = []
+  for (const t of work) if (changed.has(t.id)) out.push(toPublicTask(t, undefined, onKeyError))
   return out
 }
 

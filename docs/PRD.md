@@ -2023,7 +2023,7 @@ OASElement 的 render 生命周期只首连一次（`rendered` 门闩），组�
 - **事件**：`oas-task-click`（`{ id, task, resourceId }`）、`oas-overload`（`{ overloads: [{ resourceId, period, load, capacity }] }`，超载态变化时派发——每次更新至多一次、同一超载态不重复派发，避免事件风暴）、`oas-tasks-change`（`{ tasks }`，程序写 tasks property 时派发）。
 - **可读性开关（opt-in，默认关）**：`show-load-values`（负载柱顶数字，超载 danger 色、`aria-hidden`）、`show-overload-badge`（行头「超载 N 档」徽标，i18n `resource.overBadge`）、`bar-label`（条内任务名，单行省略）；`day` 档刻度按列宽稳定抽稀（网格线保留，周/月档不变）。
 - **官方组合示例**：文档站 `guide/resource-management` 用 `oas-resource` + `oas-card` + `oas-checkbox` + `levelResources()` 搭出资源卡/分配表/平衡/后移反馈（宿主层组合，非新组件）。
-- **方法**：`scrollToDate(date)`；**平衡（可选，纯函数）**：`levelResources(resources, tasks, opts)` 导出——保工期、把超载档内较晚的任务整体顺延，返回「被后移的任务数组」；组件**不自动改数据**（宿主据返回值 `tasks=` 回写）。
+- **方法**：`scrollToDate(date)`；**平衡（可选，纯函数）**：`levelResources(resources, tasks, opts)` 导出——`mode: 'shift'`（缺省）保工期、把超载档内较晚任务整体顺延；`mode: 'reassign'` **不改日期**、把任务改派给「整段都有余量」的资源（尊重 capacity、按最空闲目标择一；找不到目标即停，不退化顺延；多资源任务只替换超载的那一个）。返回「被改动任务数组」；组件**不自动改数据**（宿主据返回值 `tasks=` 回写）。
 - **CSS token**：`--oas-resource-*`（沿用 `--oas-color-*`），暗色/高对比有变体；无硬编码色。
 
 ### 边界
@@ -2033,7 +2033,7 @@ OASElement 的 render 生命周期只首连一次（`rendered` 门闩），组�
 
 ### 验收
 
-- 单测：`resources`/`tasks` 解析与容错（非法/缺省/未知资源 id）；泳道按资源分组与行高计算；负载统计（day/week/month）与超载判定；`levelResources` 纯函数（保工期/只延后/确定性/无超载收敛/上限）；`oas-overload` 派发；`scrollToDate`；缺省/空态零异常。
+- 单测：`resources`/`tasks` 解析与容错（非法/缺省/未知资源 id）；泳道按资源分组与行高计算；负载统计（day/week/month）与超载判定；`levelResources` 纯函数（保工期/只延后/确定性/无超载收敛/上限；reassign 模式：日期不变、整段容量校验、目标取最空闲、无目标不改派、多资源只替换超载分配、maxIter）；`oas-overload` 派发；`scrollToDate`；缺省/空态零异常。
 - e2e：新增 `resource.md` 页 demo 真点（超载高亮可见、平衡按钮回写后超载消失、暗色）+ console 零告警。
 - 文档：新增 `resource.md` zh/en（进自动收集面）+ api-manifest / api-descriptions 同步（`api:check` 双向 0）+ i18n ×10（若需文案）+ CHANGELOG `[2.6.2]`。
 - 全量 `pnpm test` / typecheck / build / api:check 全绿。

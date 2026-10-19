@@ -19,8 +19,11 @@ Resource load / swimlane view (new component, data family): given **resources** 
 
 ## Overload & Leveling
 
-<DemoBlock title="Detect overload (oas-overload) → one-click leveling: levelResources() keeps durations and shifts later tasks in overloaded periods; the host writes tasks back">
-  <oas-button id="res-level-btn" size="small">Level resources</oas-button>
+<DemoBlock title="Detect overload (oas-overload) → one-click leveling: keep durations and shift (default) or reassign with mode: reassign (dates unchanged); the host writes tasks back">
+  <div style="display: flex; gap: var(--oas-space-2); flex-wrap: wrap">
+    <oas-button id="res-level-btn" size="small">Level (shift)</oas-button>
+    <oas-button id="res-reassign-btn" size="small">Balance (reassign)</oas-button>
+  </div>
   <oas-resource id="res-level" scale="day" height="320"></oas-resource>
   <div id="res-level-output" style="color:var(--oas-color-text-secondary);font-size:var(--oas-font-size-sm);margin-top:var(--oas-space-2)"></div>
 </DemoBlock>
@@ -30,12 +33,20 @@ Leveling is a **host decision**: the component only exports a pure function
 ```ts
 import { levelResources } from '@oas-ui/ui'
 
+// Shift (default): changes dates, keeps durations
 const moved = levelResources(resources, tasks, { scale: 'day' })
-// moved = the shifted tasks (new dates); merge by id and write back
-el.tasks = tasks.map((t) => moved.find((m) => m.id === t.id) ?? t)
+// Reassign: dates unchanged; move tasks to resources with spare capacity for the whole span
+const reassigned = levelResources(resources, tasks, { scale: 'day', mode: 'reassign' })
+// Both return full copies of the changed tasks; merge by id and write back
+el.tasks = tasks.map((t) => [...moved, ...reassigned].find((m) => m.id === t.id) ?? t)
 ```
 
-`levelResources` guarantees: each task keeps its duration, later-only shifts, deterministic (same input → same output), iterates until no overload or `maxIter`; it does **not** mutate the input. The component never calls it automatically.
+`levelResources` guarantees: deterministic (same input → same output), iterates until no overload or `maxIter`; it does **not** mutate the input. The component never calls it automatically.
+
+`options.mode` (default `shift`):
+
+- `shift`: each task keeps its duration and only moves later; suitable when there is deadline slack.
+- `reassign`: **dates never change** — tasks on an overloaded resource are moved to a resource with spare capacity in **every** period the task spans (picked by the lowest worst load ratio, ties by resource input order; multi-resource tasks only swap the overloaded assignment). Stops when no feasible target exists — it **never degrades to shifting**; the right mode when deadlines are hard and only people can move (the pm template's "balance load" button).
 
 > In `week` scale the step is one week period, but the pure function has no locale context (week start defaults to Monday); for tasks crossing week boundaries pass `{ weekStart: <matching the page locale> }` (0=Sunday … 6=Saturday) explicitly to avoid a boundary mismatch with the histogram's week granularity.
 
@@ -195,7 +206,8 @@ onMounted(async () => {
     // Initial feedback: oas-overload already fired on mount, reflect it from the DOM once
     const initialOver = el.shadowRoot?.querySelectorAll('.pillar.over').length ?? 0
     out.textContent = initialOver ? `Overloaded: ${initialOver}` : 'No overload'
-    document.getElementById('res-level-btn')?.addEventListener('click', async () => {
+    const resName = (id) => resources.find((r) => r.id === id)?.name ?? id
+    const runLeveling = async (mode) => {
       for (let i = 0; i < 100 && typeof window.levelResources !== 'function'; i++) {
         await new Promise((r) => setTimeout(r, 50))
       }
@@ -203,15 +215,23 @@ onMounted(async () => {
         out.textContent = '(levelResources not ready yet, please retry)'
         return
       }
-      const moved = window.levelResources(resources, tasks, { scale: 'day' })
+      const moved = window.levelResources(resources, tasks, { scale: 'day', mode })
       if (moved.length === 0) {
-        out.textContent = 'Nothing to level (no overload)'
+        out.textContent =
+          mode === 'reassign' ? 'Cannot balance: no resource has spare capacity for the whole span' : 'Nothing to level (no overload)'
         return
       }
       tasks = tasks.map((t) => moved.find((m) => m.id === t.id) ?? t)
       el.tasks = tasks
-      out.textContent = `Leveled: shifted ${moved.length} task(s) (${moved.map((m) => m.name).join(', ')})`
-    })
+      out.textContent =
+        mode === 'reassign'
+          ? `Balanced: reassigned ${moved.length} task(s) (${moved
+              .map((m) => `${m.name} → ${(m.resources ?? []).map(resName).join('+')}`)
+              .join(', ')})`
+          : `Leveled: shifted ${moved.length} task(s) (${moved.map((m) => m.name).join(', ')})`
+    }
+    document.getElementById('res-level-btn')?.addEventListener('click', () => runLeveling('shift'))
+    document.getElementById('res-reassign-btn')?.addEventListener('click', () => runLeveling('reassign'))
   }
 
   const localeEl = document.getElementById('res-locale')

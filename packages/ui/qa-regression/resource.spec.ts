@@ -2365,3 +2365,36 @@ test('resource 负载直方图区上方有分隔线（最后泳道不丢下边�
   expect(r.lastLaneBottomStyle).toBe('solid')
   expect(r.adjacent, '分隔线紧邻负载直方图标题上方').toBe(true)
 })
+
+// 重分配均载（mode: reassign）：日期不变、资源改派、超载清零（与顺延模式互不影响，独立用例重载页面）。
+test('resource 浏览器回归：一键均载（reassign）改派资源、日期不变、超载清零', async ({ page }) => {
+  const errors: string[] = []
+  page.on('pageerror', (e) => errors.push(e.message))
+  page.on('console', (m) => {
+    if (m.type() === 'error') errors.push(m.text())
+  })
+  await page.goto('/components/resource.html', { waitUntil: 'domcontentloaded' })
+  await waitResource(page, 'res-level')
+  const host = page.locator('#res-level')
+  await expect(host.locator('.pillar.over').first()).toBeVisible()
+
+  const snapshot = () =>
+    host.evaluate((el) => {
+      const tasks = (
+        el as HTMLElement & { tasks: Array<{ id: string; start: string; end: string; resources?: string[] }> }
+      ).tasks
+      return tasks.map((t) => ({ id: t.id, start: t.start, end: t.end, resources: [...(t.resources ?? [])].sort() }))
+    })
+  const before = await snapshot()
+
+  await page.locator('#res-reassign-btn').click()
+  await expect(page.locator('#res-level-output')).toContainText('均载完成')
+  await expect.poll(async () => host.locator('.pillar.over').count(), { timeout: 5000 }).toBe(0)
+
+  const after = await snapshot()
+  // 日期完全不变（reassign 的核心契约）
+  expect(after.map((t) => `${t.id}:${t.start}:${t.end}`)).toEqual(before.map((t) => `${t.id}:${t.start}:${t.end}`))
+  // 至少一个任务的资源分配变了，且入参未被就地修改（组件侧是新数组）
+  expect(after.map((t) => t.resources.join('+'))).not.toEqual(before.map((t) => t.resources.join('+')))
+  expect(errors).toEqual([])
+})

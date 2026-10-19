@@ -535,6 +535,112 @@ describe('levelResources（纯函数）', () => {
   })
 })
 
+describe('levelResources reassign（重分配：不改日期、换资源）', () => {
+  const RES2: ResourceItem[] = [
+    { id: 'r1', name: 'A', capacity: 1 },
+    { id: 'r2', name: 'B', capacity: 1 },
+  ]
+  const span = (id: string, resources: string[], start = '2026-03-02', end = '2026-03-06'): ResourceTask => ({
+    id,
+    name: id,
+    start,
+    end,
+    resources,
+  })
+
+  it('超载任务改派给空闲资源：日期/工期不变、只返回被改派任务、不改入参', () => {
+    const tasks = [span('t1', ['r1']), span('t2', ['r1'])]
+    const input = JSON.parse(JSON.stringify(tasks))
+    const moved = levelResources(RES2, tasks, { mode: 'reassign' })
+    // 受害者选择与 shift 一致：开始较晚者；并列取输入序靠后
+    expect(moved.map((t) => t.id)).toEqual(['t2'])
+    expect(moved[0]!.resources).toEqual(['r2'])
+    expect(moved[0]!.start).toBe('2026-03-02')
+    expect(moved[0]!.end).toBe('2026-03-06')
+    // 不改入参
+    expect(tasks).toEqual(input)
+  })
+
+  it('目标无余量时不改派、也不退化为顺延：返回空、日期保持', () => {
+    const tasks = [span('t1', ['r1']), span('t2', ['r1']), span('u1', ['r2'])]
+    const moved = levelResources(RES2, tasks, { mode: 'reassign' })
+    expect(moved).toEqual([])
+    expect(tasks.map((t) => t.start)).toEqual(['2026-03-02', '2026-03-02', '2026-03-02'])
+  })
+
+  it('必须整段有余量：目标只在任务覆盖的部分 period 有空 → 不改派', () => {
+    const tasks = [span('t1', ['r1']), span('t2', ['r1']), span('u1', ['r2'], '2026-03-05', '2026-03-05')]
+    const moved = levelResources(RES2, tasks, { mode: 'reassign' })
+    // r2 在 03-05 已满，两个候选任务都跨该档 → 无法整段容纳
+    expect(moved).toEqual([])
+  })
+
+  it('多资源任务：只替换超载资源，保留其它分配', () => {
+    const resources: ResourceItem[] = [
+      { id: 'r1', name: 'A', capacity: 1 },
+      { id: 'r2', name: 'B', capacity: 1 },
+      { id: 'r3', name: 'C', capacity: 1 },
+    ]
+    const tasks = [span('t1', ['r1']), span('t2', ['r1', 'r3'])]
+    const moved = levelResources(resources, tasks, { mode: 'reassign' })
+    expect(moved.map((t) => t.id)).toEqual(['t2'])
+    expect(moved[0]!.resources).toEqual(['r2', 'r3'])
+  })
+
+  it('目标选择：优先最空闲（worst load ratio 最小），而非输入序第一个', () => {
+    const resources: ResourceItem[] = [
+      { id: 'r1', name: 'A', capacity: 1 },
+      { id: 'r2', name: 'B', capacity: 2 },
+      { id: 'r3', name: 'C', capacity: 2 },
+    ]
+    const tasks = [
+      span('t1', ['r1']),
+      span('t2', ['r1']),
+      span('u1', ['r2']), // r2 在整段已占 1/2；r3 空闲
+    ]
+    const moved = levelResources(resources, tasks, { mode: 'reassign' })
+    expect(moved.map((t) => t.id)).toEqual(['t2'])
+    expect(moved[0]!.resources).toEqual(['r3'])
+  })
+
+  it('确定性 + maxIter：同输入同输出；maxIter=0 不动作；maxIter=1 只改派一个', () => {
+    const resources: ResourceItem[] = [
+      { id: 'r1', name: 'A', capacity: 1 },
+      { id: 'r2', name: 'B', capacity: 1 },
+      { id: 'r3', name: 'C', capacity: 1 },
+    ]
+    const tasks = [span('t1', ['r1']), span('t2', ['r1']), span('t3', ['r1'])]
+    expect(levelResources(resources, tasks, { mode: 'reassign', maxIter: 0 })).toEqual([])
+    expect(levelResources(resources, tasks, { mode: 'reassign', maxIter: 1 })).toHaveLength(1)
+    expect(levelResources(resources, tasks, { mode: 'reassign' })).toEqual(
+      levelResources(resources, tasks, { mode: 'reassign' }),
+    )
+    const moved = levelResources(resources, tasks, { mode: 'reassign' })
+    // 先改派最晚者 t3→r2（并列目标取输入序），再 t2→r3；返回按输入序
+    expect(moved.map((t) => t.resources)).toEqual([['r3'], ['r2']])
+  })
+
+  it('收敛：结果并回后组件直方图无 .over（重分配模式）', () => {
+    const tasks = [span('t1', ['r1']), span('t2', ['r1'])]
+    const moved = levelResources(RES2, tasks, { mode: 'reassign' })
+    const leveled = tasks.map((t) => moved.find((m) => m.id === t.id) ?? t)
+    document.body.innerHTML = ''
+    const el = mount({ resources: JSON.stringify(RES2), tasks: JSON.stringify(leveled) })
+    expect(pillarsOf(el, 'r1').every((p) => !p.classList.contains('over'))).toBe(true)
+    expect(pillarsOf(el, 'r2').every((p) => !p.classList.contains('over'))).toBe(true)
+  })
+
+  it('显式 mode:shift 与缺省一致；非法 mode 回落 shift', () => {
+    const tasks = [span('t1', ['r1']), span('t2', ['r1'])]
+    const def = levelResources(RES2, tasks)
+    expect(levelResources(RES2, tasks, { mode: 'shift' })).toEqual(def)
+    expect(levelResources(RES2, tasks, { mode: 'bogus' as never })).toEqual(def)
+    // shift 改日期（03-07），reassign 不改日期（03-02）
+    expect(def[0]!.start).toBe('2026-03-07')
+    expect(levelResources(RES2, tasks, { mode: 'reassign' })[0]!.start).toBe('2026-03-02')
+  })
+})
+
 describe('OASResource 空态与语义', () => {
   beforeEach(() => {
     document.body.innerHTML = ''

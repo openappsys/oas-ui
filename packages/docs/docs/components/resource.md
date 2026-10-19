@@ -19,8 +19,11 @@
 
 ## 负载超载与资源平衡
 
-<DemoBlock title="检测超载（oas-overload）→ 一键平衡：levelResources() 保工期、把超载档内较晚任务整体顺延，宿主回写 tasks">
-  <oas-button id="res-level-btn" size="small">一键平衡</oas-button>
+<DemoBlock title="检测超载（oas-overload）→ 一键平衡/均载：levelResources() 保工期顺延 或 mode: reassign 改派资源（日期不变），宿主回写 tasks">
+  <div style="display: flex; gap: var(--oas-space-2); flex-wrap: wrap">
+    <oas-button id="res-level-btn" size="small">一键平衡（顺延）</oas-button>
+    <oas-button id="res-reassign-btn" size="small">一键均载（重分配）</oas-button>
+  </div>
   <oas-resource id="res-level" scale="day" height="320"></oas-resource>
   <div id="res-level-output" style="color:var(--oas-color-text-secondary);font-size:var(--oas-font-size-sm);margin-top:var(--oas-space-2)"></div>
 </DemoBlock>
@@ -30,12 +33,20 @@
 ```ts
 import { levelResources } from '@oas-ui/ui'
 
+// 顺延（缺省）：改日期、保工期
 const moved = levelResources(resources, tasks, { scale: 'day' })
-// moved = 被后移的任务（新日期）；宿主按 id 合并后写回
-el.tasks = tasks.map((t) => moved.find((m) => m.id === t.id) ?? t)
+// 重分配：不改日期，把任务改派给整段有余量的资源
+const reassigned = levelResources(resources, tasks, { scale: 'day', mode: 'reassign' })
+// 两者都返回「被改动任务的完整副本」；宿主按 id 合并后写回
+el.tasks = tasks.map((t) => [...moved, ...reassigned].find((m) => m.id === t.id) ?? t)
 ```
 
-`levelResources` 保证：每任务工期不变、只后移不前移、确定性（同输入同输出）、迭代至无超载或达 `maxIter`；**不改入参**。组件不自动调用。
+`levelResources` 保证：确定性（同输入同输出）、迭代至无超载或达 `maxIter`；**不改入参**。组件不自动调用。
+
+`options.mode`（缺省 `shift`）：
+
+- `shift`（顺延）：每任务工期不变、只后移不前移；适合截止日有余量的排期。
+- `reassign`（重分配）：**日期完全不变**，把超载资源上的任务改派给「任务覆盖的每个档都有余量」的资源（按 worst load ratio 选最空闲者，并列取资源输入序；多资源任务只替换超载的那一个）。找不到可行目标即停——**不会退化成顺延**，适合有业务截止日、只能换人的场景（pm 模板的「一键均载」）。
 
 > `week` 档步进按周 period，而纯函数无 locale 上下文（周起始缺省周一）；跨周边界的任务建议显式传 `{ weekStart: <与页面 locale 一致的值> }`（0=周日 … 6=周六），避免与直方图周粒度判定出现边界差。
 
@@ -194,7 +205,8 @@ onMounted(async () => {
     // 初始反馈：挂载时已派发过 oas-overload，按当前 DOM 立即反映一次
     const initialOver = el.shadowRoot?.querySelectorAll('.pillar.over').length ?? 0
     out.textContent = initialOver ? `检测到超载 ${initialOver} 处` : '无超载'
-    document.getElementById('res-level-btn')?.addEventListener('click', async () => {
+    const resName = (id) => resources.find((r) => r.id === id)?.name ?? id
+    const runLeveling = async (mode) => {
       for (let i = 0; i < 100 && typeof window.levelResources !== 'function'; i++) {
         await new Promise((r) => setTimeout(r, 50))
       }
@@ -202,15 +214,22 @@ onMounted(async () => {
         out.textContent = '（levelResources 尚未就绪，请稍后再试）'
         return
       }
-      const moved = window.levelResources(resources, tasks, { scale: 'day' })
+      const moved = window.levelResources(resources, tasks, { scale: 'day', mode })
       if (moved.length === 0) {
-        out.textContent = '无需平衡（无超载）'
+        out.textContent = mode === 'reassign' ? '无法均载：没有整段都有余量的资源' : '无需平衡（无超载）'
         return
       }
       tasks = tasks.map((t) => moved.find((m) => m.id === t.id) ?? t)
       el.tasks = tasks
-      out.textContent = `平衡完成：后移 ${moved.length} 个任务（${moved.map((m) => m.name).join('、')}）`
-    })
+      out.textContent =
+        mode === 'reassign'
+          ? `均载完成：改派 ${moved.length} 个任务（${moved
+              .map((m) => `${m.name} → ${(m.resources ?? []).map(resName).join('+')}`)
+              .join('、')}）`
+          : `平衡完成：后移 ${moved.length} 个任务（${moved.map((m) => m.name).join('、')}）`
+    }
+    document.getElementById('res-level-btn')?.addEventListener('click', () => runLeveling('shift'))
+    document.getElementById('res-reassign-btn')?.addEventListener('click', () => runLeveling('reassign'))
   }
 
   const localeEl = document.getElementById('res-locale')
