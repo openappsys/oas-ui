@@ -5,8 +5,8 @@
   "type": "module",
   "packageManager": "pnpm@12.5.1",
   "scripts": {
-    "predev": "pnpm -r --filter @oas-ui/ui... build",
-    "dev": "cross-env CI=true pnpm --parallel --filter @oas-ui/core --filter @oas-ui/i18n --filter @oas-ui/icons --filter @oas-ui/ui --filter @oas-ui/docs dev",
+    "predev": "pnpm -r --filter @oas-ui/ui... build && pnpm --filter @oas-ui/theme build",
+    "dev": "cross-env CI=true pnpm --parallel --filter @oas-ui/core --filter @oas-ui/i18n --filter @oas-ui/icons --filter @oas-ui/theme --filter @oas-ui/ui --filter @oas-ui/docs dev",
     "build": "pnpm -r build",
     "test": "vitest run",
     "typecheck": "tsc --noEmit -p tsconfig.json",

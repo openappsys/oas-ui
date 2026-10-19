@@ -1,0 +1,261 @@
+/* OAS UI Theme tokens（规范：docs/ui-spec.md §1。组件只引用语义 token、禁止硬编码色值；
+   主题经 data-theme="dark" 切换。各注释的完整沿革见 git 历史） */
+
+:root,
+:host {
+  --oas-color-primary: #0b6cff;
+  /* hover 85% / active 75% 掺黑（亮蓝需大幅混黑才有明显视觉差） */
+  --oas-color-primary-hover: color-mix(in srgb, var(--oas-color-primary) 85%, black);
+  --oas-color-primary-active: color-mix(in srgb, var(--oas-color-primary) 75%, black);
+  /* primary 文字安全档（取值=active 同值；语义分离：调交互态不连带改文字色） */
+  --oas-color-primary-text: color-mix(in srgb, var(--oas-color-primary) 75%, black);
+  --oas-color-success: #16a34a;
+  --oas-color-warning: #d97706;
+  --oas-color-danger: #dc2626;
+  /* 填充底上的文字色（实心语义按钮/激活选项/徽标） */
+  --oas-color-text-on-primary: #ffffff;
+  --oas-color-text-on-success: #ffffff;
+  --oas-color-text-on-warning: #ffffff;
+  --oas-color-text-on-danger: #ffffff;
+  --oas-color-text-primary: #18181b;
+  --oas-color-text-secondary: #71717a;
+  /* 次级文字安全档（弱化背景专用）：secondary 混主文字色加深——secondary on bg-hover 仅 4.39
+     不达 WCAG AA 4.5（本档实测 5.15）；dark/高对比下 secondary 原值已达标（保持引用）。
+     适用：弱化底色（bg-hover/禁用行/空态占位）上的次级文字——普通底色仍用 secondary。 */
+  --oas-color-text-secondary-strong: color-mix(
+    in srgb,
+    var(--oas-color-text-secondary) 88%,
+    var(--oas-color-text-primary)
+  );
+  --oas-color-text-disabled: #a1a1aa;
+  --oas-color-border: #e4e4e7;
+  --oas-color-border-strong: #d4d4d8;
+  --oas-color-bg: #ffffff;
+  --oas-color-bg-elevated: #ffffff;
+  --oas-color-bg-hover: #f4f4f5;
+  --oas-color-bg-disabled: #f4f4f5;
+  --oas-color-overlay: rgba(0, 0, 0, 0.5);
+
+  /* 恒深表面（主题无关，light/dark 同值）：工作台操作条 transport 表体等
+     「表面不随宿主主题翻转」的组件用；ink（中深）→ ink-deep（近黑）两档 + 其上前景 */
+  --oas-color-ink: #26262b;
+  --oas-color-ink-deep: #18181b;
+  --oas-color-on-ink: #fafafa;
+
+  /* 预设色板（color 属性按名引用；dark 走下方调亮变体） */
+  --oas-preset-magenta: #eb2f96;
+  --oas-preset-red: #f5222d;
+  --oas-preset-volcano: #fa541c;
+  --oas-preset-orange: #fa8c16;
+  --oas-preset-gold: #faad14;
+  --oas-preset-lime: #a0d911;
+  --oas-preset-green: #52c41a;
+  --oas-preset-cyan: #13c2c2;
+  --oas-preset-blue: #1677ff;
+  --oas-preset-geekblue: #2f54eb;
+  --oas-preset-purple: #722ed1;
+
+  /* 预设 -text：文字/实底安全档。派生规则与阈值见 docs/ui-spec.md §1.2；
+     复算 / 合规审计：node scripts/theme/derive-presets.mjs（守卫见 ui/src/style-conventions.test.ts） */
+  --oas-preset-magenta-text: #cc2983;
+  --oas-preset-red-text: #da1e28;
+  --oas-preset-volcano-text: #c64216;
+  --oas-preset-orange-text: #a55c0f;
+  /* gold 深金棕档：与 orange-text 色距 12.4（ΔE_OK），保持金棕色相（漂移 6.4°） */
+  --oas-preset-gold-text: #6a4c00;
+  --oas-preset-lime-text: #5a7a0a;
+  /* green 深绿档：与 lime-text 同族，双底达标下沿 L 轴压深拉开色距（原 #357f11 仅 3.9） */
+  --oas-preset-green-text: #256800;
+  --oas-preset-cyan-text: #0c7c7c;
+  --oas-preset-blue-text: #146ae3;
+  /* geekblue 深蓝档：与 blue-text 拉开色距（原 #2f54eb 仅 5.1） */
+  --oas-preset-geekblue-text: #2544db;
+  --oas-preset-purple-text: #722ed1;
+
+  /* 语义色 -text：文字承载面达标深色（≥60 双底实测；填充面用本色） */
+  --oas-color-success-text: #11813a;
+  --oas-color-warning-text: #a75c05;
+  --oas-color-danger-text: #d82525;
+  --oas-color-info-text: #0e7490;
+
+  /* 自定义 hex 色文字安全档：light/HC 72% 掺黑，dark 见下 */
+  --oas-deep-mix: 72%;
+  --oas-deep-sink: black;
+
+  --oas-font-size-xs: 12px;
+  --oas-font-size-sm: 13px;
+  --oas-font-size-md: 14px;
+  --oas-font-size-lg: 16px;
+  --oas-font-size-xl: 20px;
+
+  --oas-space-1: 4px;
+  --oas-space-1_5: 6px;
+  --oas-space-2: 8px;
+  --oas-space-2_5: 10px;
+  --oas-space-3: 12px;
+  --oas-space-4: 16px;
+  --oas-space-4_5: 20px;
+  --oas-space-5: 24px;
+  --oas-space-6: 32px;
+
+  /* 布局尺寸（不分主题，三主题共用） */
+  --oas-container-xs: 480px;
+  --oas-container-sm: 576px;
+  --oas-container-md: 768px;
+  --oas-container-lg: 992px;
+  --oas-container-xl: 1200px;
+  --oas-container-full: 100%;
+  --oas-sidebar-width: 220px;
+  --oas-sidebar-collapsed-width: 64px;
+
+  --oas-radius-xs: 2px;
+  --oas-radius-sm: 4px;
+  --oas-radius-md: 6px;
+  --oas-radius-lg: 10px;
+  --oas-radius-xl: 14px;
+
+  --oas-control-height-xs: 20px;
+  --oas-control-height-sm: 24px;
+  --oas-control-height-md: 32px;
+  --oas-control-height-lg: 40px;
+  --oas-control-height-xl: 48px;
+  /* 触摸目标最小高（iOS HIG；coarse 下浮层交互行用；不分主题） */
+  --oas-touch-target-min: 44px;
+
+  --oas-transition-fast: 120ms;
+  --oas-transition-base: 180ms;
+  --oas-ease-out: cubic-bezier(0.2, 0, 0.2, 1);
+  --oas-ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* 阴影三档：sm 悬浮 / md 下拉 / lg 模态（方向性投影豁免见 ui-spec）。
+     现代分层投影：每档两层（近距硬边 + 远距柔和扩散），比单层更细腻、边缘不脏。 */
+  --oas-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.1);
+  --oas-shadow-md: 0 2px 4px -1px rgba(0, 0, 0, 0.06), 0 4px 12px -2px rgba(0, 0, 0, 0.1);
+  --oas-shadow-lg: 0 4px 8px -2px rgba(0, 0, 0, 0.08), 0 16px 32px -8px rgba(0, 0, 0, 0.16);
+
+  --oas-z-dropdown: 1000;
+  --oas-z-sticky: 1020;
+  --oas-z-fixed: 1030;
+  --oas-z-overlay: 1040;
+  --oas-z-modal: 1050;
+  --oas-z-message: 1060;
+  --oas-z-toast: 1070;
+  --oas-z-tooltip: 1080;
+
+  --oas-focus-ring: 0 0 0 2px color-mix(in srgb, var(--oas-color-primary) 30%, transparent);
+}
+
+[data-theme="dark"],
+html.dark {
+  /* 主/危险色亮化为粉彩档（原 #4d9fff/#f87171 中间调双底均不达感知分 60）；
+     面亮化后 hover/active 反转提亮（dark 激活变亮惯例，压暗会拉回不达标） */
+  --oas-color-primary: #9ecdff;
+  /* hover 88% / active 78% 掺白提亮（随 primary 联动） */
+  --oas-color-primary-hover: color-mix(in srgb, var(--oas-color-primary) 88%, white);
+  --oas-color-primary-active: color-mix(in srgb, var(--oas-color-primary) 78%, white);
+  /* primary 文字安全档（=active 同值） */
+  --oas-color-primary-text: color-mix(in srgb, var(--oas-color-primary) 78%, white);
+  --oas-color-success: #4ade80;
+  --oas-color-warning: #fbbf24;
+  --oas-color-danger: #fbb2b2;
+  /* 语义色变亮后白字对比不足：对底文字改深色（≥4.5:1） */
+  --oas-color-text-on-primary: #18181b;
+  --oas-color-text-on-success: #18181b;
+  --oas-color-text-on-warning: #18181b;
+  --oas-color-text-on-danger: #18181b;
+  --oas-color-text-primary: #fafafa;
+  /* 次要文字 #c6c6ce：压 elevated 底 #3f3f46 感知分 62.8（原 #b8b8c0 仅 54.7） */
+  --oas-color-text-secondary: #c6c6ce;
+  /* dark：secondary 原值 on bg-hover 已达标（≈7+），安全档保持引用（与 light 同 token 名消费） */
+  --oas-color-text-secondary-strong: var(--oas-color-text-secondary);
+  --oas-color-text-disabled: #8d8d95;
+  --oas-color-border: #52525b;
+  --oas-color-border-strong: #71717a;
+  --oas-color-bg: #18181b;
+  --oas-color-bg-elevated: #3f3f46;
+  --oas-color-bg-hover: #27272a;
+  --oas-color-bg-disabled: #27272a;
+  --oas-color-overlay: rgba(0, 0, 0, 0.6);
+  /* 恒深表面：主题无关（与 light 段同值，恒定即恒定） */
+  --oas-color-ink: #26262b;
+  --oas-color-ink-deep: #18181b;
+  --oas-color-on-ink: #fafafa;
+  /* dark 阴影：暗底加深 */
+  --oas-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3), 0 1px 3px rgba(0, 0, 0, 0.4);
+  --oas-shadow-md: 0 2px 4px -1px rgba(0, 0, 0, 0.4), 0 4px 12px -2px rgba(0, 0, 0, 0.5);
+  --oas-shadow-lg: 0 4px 8px -2px rgba(0, 0, 0, 0.5), 0 16px 32px -8px rgba(0, 0, 0, 0.6);
+  /* 预设色板 dark 变体：整体调亮一档（深底对比达标） */
+  --oas-preset-magenta: #f759ab;
+  --oas-preset-red: #ff4d4f;
+  --oas-preset-volcano: #ff7a45;
+  --oas-preset-orange: #ffa940;
+  --oas-preset-gold: #ffc53d;
+  --oas-preset-lime: #bae637;
+  --oas-preset-green: #73d13d;
+  --oas-preset-cyan: #36cfc9;
+  --oas-preset-blue: #4096ff;
+  --oas-preset-geekblue: #597ef7;
+  --oas-preset-purple: #9254de;
+  /* 预设 -text dark：保色相提亮档（规则见 docs/ui-spec.md §1.2，含 bg-elevated ≥60 约束与安全方向退让） */
+  --oas-preset-magenta-text: #fbaed6;
+  --oas-preset-red-text: #ffb1b2;
+  --oas-preset-volcano-text: #ffb395;
+  --oas-preset-orange-text: #ffb25b;
+  --oas-preset-gold-text: #ffd681;
+  --oas-preset-lime-text: #bae738;
+  --oas-preset-green-text: #7ad845;
+  --oas-preset-cyan-text: #40d6d0;
+  --oas-preset-blue-text: #c2ddff;
+  --oas-preset-geekblue-text: #a9c1ff;
+  --oas-preset-purple-text: #d3bbf2;
+  /* 语义 -text dark：本色已达标，同值 */
+  --oas-color-success-text: #4ade80;
+  --oas-color-warning-text: #fbbf24;
+  --oas-color-danger-text: #fbb2b2;
+  --oas-color-info-text: #22d3ee;
+  /* hex 文字安全档混合参数：dark 掺近白（掺黑暗色不可读） */
+  --oas-deep-mix: 38%;
+  --oas-deep-sink: var(--oas-color-text-primary);
+}
+
+[data-theme="high-contrast"] {
+  --oas-color-primary: #0050b3;
+  --oas-color-primary-hover: #003a8c;
+  --oas-color-primary-active: #002766;
+  --oas-color-primary-text: #002766;
+  --oas-color-success: #006d1b;
+  --oas-color-warning: #8c4a00;
+  --oas-color-danger: #a8071a;
+  /* 高对比主题保持白字（primary #0050b3 等深色底对比充足） */
+  --oas-color-text-on-primary: #ffffff;
+  --oas-color-text-on-success: #ffffff;
+  --oas-color-text-on-warning: #ffffff;
+  --oas-color-text-on-danger: #ffffff;
+  --oas-color-text-primary: #000000;
+  --oas-color-text-secondary: #262626;
+  /* high-contrast：secondary 已足够深，安全档保持引用 */
+  --oas-color-text-secondary-strong: var(--oas-color-text-secondary);
+  --oas-color-text-disabled: #595959;
+  --oas-color-border: #000000;
+  --oas-color-bg: #ffffff;
+  --oas-color-bg-elevated: #ffffff;
+  --oas-color-bg-hover: #e6f7ff;
+  --oas-color-bg-disabled: #d9d9d9;
+  --oas-color-overlay: rgba(0, 0, 0, 0.8);
+  /* 恒深表面：主题无关（继承 :root 同值；显式重申与 dark 段口径一致——恒定即恒定） */
+  --oas-color-ink: #26262b;
+  --oas-color-ink-deep: #18181b;
+  --oas-color-on-ink: #fafafa;
+  --oas-focus-ring: 0 0 0 3px #ffd666;
+  --oas-deep-mix: 72%;
+  --oas-deep-sink: black;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+}

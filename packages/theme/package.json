@@ -23,6 +23,10 @@
   },
   "main": "./index.css",
   "types": "./index.css",
+  "scripts": {
+    "build": "node ../../scripts/theme/minify-css.mjs",
+    "dev": "node ../../scripts/theme/minify-css.mjs --watch"
+  },
   "exports": {
     ".": "./index.css",
     "./skins.css": "./skins.css",

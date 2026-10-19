@@ -4,18 +4,18 @@
     "method": "gzip = zlib gzipSync；brotli = zlib.brotliCompressSync q11；单组件链 = 静态 import 图遍历 + 逐文件压缩求和（上界估计）",
     "packages": {
       "@oas-ui/ui": {
-        "distTotalBytes": 36667951,
+        "distTotalBytes": 36683374,
         "browserJs": {
           "files": 423,
-          "rawBytes": 9966611,
-          "gzipBytes": 2729997,
-          "brotliBytes": 2066960
+          "rawBytes": 9970903,
+          "gzipBytes": 2730881,
+          "brotliBytes": 2067745
         },
         "fullEntry": {
           "files": 463,
-          "rawBytes": 3528500,
-          "gzipBytes": 1088919,
-          "brotliBytes": 912961,
+          "rawBytes": 3530023,
+          "gzipBytes": 1089206,
+          "brotliBytes": 913141,
           "fileList": [
             "packages/ui/dist/index.js",
             "packages/icons/dist/register.js",
@@ -484,16 +484,16 @@
         },
         "cdn": {
           "files": 1,
-          "rawBytes": 2958179,
-          "gzipBytes": 748813,
-          "brotliBytes": 497820
+          "rawBytes": 2959488,
+          "gzipBytes": 749112,
+          "brotliBytes": 498107
         }
       },
       "@oas-ui/theme": {
         "indexCss": {
-          "rawBytes": 10767,
-          "gzipBytes": 3856,
-          "brotliBytes": 3116
+          "rawBytes": 7343,
+          "gzipBytes": 1763,
+          "brotliBytes": 1410
         }
       },
       "@oas-ui/core": {
@@ -526,9 +526,9 @@
         "entry": "basic/button",
         "spec": "@oas-ui/ui/basic/button",
         "files": 13,
-        "rawBytes": 78435,
-        "gzipBytes": 27262,
-        "brotliBytes": 22685,
+        "rawBytes": 78531,
+        "gzipBytes": 27281,
+        "brotliBytes": 22701,
         "fileList": [
           "packages/ui/dist/basic/button/index.js",
           "packages/ui/dist/basic/button/oas-button.js",
@@ -549,9 +549,9 @@
         "entry": "data/table",
         "spec": "@oas-ui/ui/data/table",
         "files": 47,
-        "rawBytes": 325232,
-        "gzipBytes": 104362,
-        "brotliBytes": 87331,
+        "rawBytes": 325158,
+        "gzipBytes": 104341,
+        "brotliBytes": 87309,
         "fileList": [
           "packages/ui/dist/data/table/index.js",
           "packages/i18n/dist/index.js",
@@ -606,9 +606,9 @@
         "entry": "data/table/core",
         "spec": "@oas-ui/ui/data/table/core",
         "files": 27,
-        "rawBytes": 213171,
-        "gzipBytes": 68559,
-        "brotliBytes": 57259,
+        "rawBytes": 213156,
+        "gzipBytes": 68554,
+        "brotliBytes": 57254,
         "fileList": [
           "packages/ui/dist/data/table/core/index.js",
           "packages/i18n/dist/index.js",
@@ -692,7 +692,7 @@
     "budgets": [
       {
         "name": "dist/cdn.js gzip",
-        "actualBytes": 748813,
+        "actualBytes": 749112,
         "limitBytes": 788480,
         "warnAtBytes": 709632,
         "pass": true,
@@ -701,7 +701,7 @@
       },
       {
         "name": "@oas-ui/ui 全量入口链 gzip",
-        "actualBytes": 1088919,
+        "actualBytes": 1089206,
         "limitBytes": 1167360,
         "warnAtBytes": 1050624,
         "pass": true,
@@ -710,7 +710,7 @@
       },
       {
         "name": "@oas-ui/ui/basic/button 链 gzip",
-        "actualBytes": 27262,
+        "actualBytes": 27281,
         "limitBytes": 30720,
         "warnAtBytes": 27648,
         "pass": true,
@@ -719,7 +719,7 @@
       },
       {
         "name": "@oas-ui/ui/data/table 链 gzip",
-        "actualBytes": 104362,
+        "actualBytes": 104341,
         "limitBytes": 110592,
         "warnAtBytes": 99533,
         "pass": true,
@@ -746,11 +746,11 @@
       },
       {
         "name": "@oas-ui/theme index.css gzip",
-        "actualBytes": 3856,
+        "actualBytes": 1763,
         "limitBytes": 4096,
         "warnAtBytes": 3686,
         "pass": true,
-        "warn": true,
+        "warn": false,
         "basis": "实测 gzip 3.52 KB（skins 皮肤层变量族 + 阴影双层精修后），上浮约 15%；前档 3.5 KB 定档于 2026-09-15（3.0 KB 实测）"
       },
       {
@@ -782,7 +782,7 @@
       },
       {
         "name": "@oas-ui/ui/data/table/core 链 gzip",
-        "actualBytes": 68559,
+        "actualBytes": 68554,
         "limitBytes": 71680,
         "warnAtBytes": 64512,
         "pass": true,
