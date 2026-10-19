@@ -424,7 +424,7 @@ Besides the `items` JSON, items can be declared with `<oas-sidebar-item>` / `<oa
 
 | Property | Description | Type | Default |
 | --- | --- | --- | --- |
-| `renderLabel` | Custom row-content renderer `(item) => Node \| string \| null` (property channel; functions cannot be serialized and stay out of attributes/SSR). A returned Node mounts into the label area (for two-line or other rich content); a string renders as plain text; null/undefined falls back to `item.label`. The accessible name remains `item.label`, and the content hides with the label in collapsed mode; set null to restore default rendering | — | — |
+| `renderLabel` | Custom row-content renderer `(item) => Node \| string \| null` (property channel; functions cannot be serialized and stay out of attributes/SSR). A returned Node mounts into the label area (for two-line or other rich content); a string renders as plain text; null/undefined falls back to `item.label`. The accessible name remains `item.label`, and the content hides with the label in collapsed mode; set null to restore default rendering | `SidebarLabelRenderer \| null` | — |
 
 #### Events
 

@@ -425,7 +425,7 @@
 
 | Property | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
-| `renderLabel` | 自定义行内容渲染函数 `(item) => Node \| string \| null`（property 通道，函数不可序列化，不进 attribute/SSR）。返回 Node 直接挂载到 label 区（可放双行文本等富内容）；返回字符串按纯文本渲染；返回 null/undefined 回退 `item.label`。可访问名称仍取 `item.label`，折叠态随 label 隐藏；置 null 恢复默认渲染 | — | — |
+| `renderLabel` | 自定义行内容渲染函数 `(item) => Node \| string \| null`（property 通道，函数不可序列化，不进 attribute/SSR）。返回 Node 直接挂载到 label 区（可放双行文本等富内容）；返回字符串按纯文本渲染；返回 null/undefined 回退 `item.label`。可访问名称仍取 `item.label`，折叠态随 label 隐藏；置 null 恢复默认渲染 | `SidebarLabelRenderer \| null` | — |
 
 #### 事件
 
