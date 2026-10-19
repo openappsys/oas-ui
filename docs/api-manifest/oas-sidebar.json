@@ -95,6 +95,10 @@
       "name": "items",
       "type": "SidebarEntry[] | string",
       "default": "[]"
+    },
+    {
+      "name": "renderLabel",
+      "type": "SidebarLabelRenderer | null"
     }
   ],
   "events": [

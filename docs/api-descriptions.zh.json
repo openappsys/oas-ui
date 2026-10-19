@@ -2813,6 +2813,9 @@
       "oas-action": "`detail: { value: string, action: string, label: string }`；触发时机：点击项悬停操作按钮时（不触发 oas-select）",
       "oas-resize": "`detail: { width: number }`；触发时机：拖拽调宽松手时 / 方向键微调宽度时"
     },
+    "props": {
+      "renderLabel": "自定义行内容渲染函数 `(item) => Node | string | null`（property 通道，函数不可序列化，不进 attribute/SSR）。返回 Node 直接挂载到 label 区（可放双行文本等富内容）；返回字符串按纯文本渲染；返回 null/undefined 回退 `item.label`。可访问名称仍取 `item.label`，折叠态随 label 隐藏；置 null 恢复默认渲染"
+    },
     "slots": {
       "": "菜单项内容（默认插槽文本；直接子元素 `<oas-sidebar-item>` 递归为嵌套 children）",
       "footer": "侧栏底部自定义内容",

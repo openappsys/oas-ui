@@ -181,6 +181,16 @@ Items support a leading avatar (`part="avatar"`): `avatar` is an image URL and t
 
 The declarative child channel works the same way: `<oas-sidebar-item avatar="/favicon.svg">` or `avatar-text="Z" avatar-color="#e11d48"`; attributes map one-to-one to the `items` JSON fields (`avatar` / `avatarText` / `avatarColor`).
 
+## Custom row content
+
+`renderLabel` (a property function channel) can replace each item's text area: a returned `Node` mounts directly (two-line text, icon + description, and other rich content), a string renders as plain text, and `null` falls back to `label`. The function is not serializable, so it never lands in an attribute or SSR; the accessible name still comes from `item.label`, and the content hides with the label in collapsed mode. Do not put buttons/links inside the row content — the whole row is a button; use `actions` for interactions.
+
+<DemoBlock title="renderLabel custom row content (two lines)">
+  <div style="height: 260px; width: 100%">
+    <oas-sidebar id="sidebar-render-label" items='[{"label":"Workbench","value":"home","icon":"star"},{"label":"Dashboard","value":"dashboard","icon":"tree"},{"label":"Settings","value":"settings","icon":"gear"}]'></oas-sidebar>
+  </div>
+</DemoBlock>
+
 ## Custom icons and coloring
 
 Item `icon` defaults to the built-in `@oas-ui/icons` registry; app-level custom icons go through the official `registerIcon(name, svg)` path (exported by `@oas-ui/ui`) — **register once, and `<oas-icon>`, the sidebar and any future consumers all see it** (do not mutate the built-in icon data; on-demand mode using built-in names needs a one-time `import '@oas-ui/icons/register'`); a same-name registration overrides the built-in icon.
@@ -410,6 +420,12 @@ Besides the `items` JSON, items can be declared with `<oas-sidebar-item>` / `<oa
 | `variant` | Variant: sidebar (default flush) / floating (radius + shadow) / inset (radius + background contrast) | — | — |
 | `width` | Expanded width; defaults to the `--oas-sidebar-width` token | `string` | `0` |
 
+#### Property (JS property; see each row for attribute reflection)
+
+| Property | Description | Type | Default |
+| --- | --- | --- | --- |
+| `renderLabel` | Custom row-content renderer `(item) => Node \| string \| null` (property channel; functions cannot be serialized and stay out of attributes/SSR). A returned Node mounts into the label area (for two-line or other rich content); a string renders as plain text; null/undefined falls back to `item.label`. The accessible name remains `item.label`, and the content hides with the label in collapsed mode; set null to restore default rendering | — | — |
+
 #### Events
 
 | Event | Description |
@@ -490,6 +506,31 @@ onMounted(async () => {
   // (the first render happens before registration completes and would fall back to text)
   const customSidebar = document.getElementById('sidebar-custom-icon')
   if (customSidebar) customSidebar.setAttribute('items', customSidebar.getAttribute('items') || '')
+  // renderLabel property channel: return a Node for two-line content (never reflected to attributes)
+  const labelSidebar = document.getElementById('sidebar-render-label')
+  if (labelSidebar) {
+    const meta = new Map([
+      ['home', '3 unread'],
+      ['dashboard', '+12% today'],
+      ['settings', 'Preferences'],
+    ])
+    labelSidebar.renderLabel = (item) => {
+      const wrap = document.createElement('span')
+      wrap.style.display = 'flex'
+      wrap.style.flexDirection = 'column'
+      wrap.style.gap = '1px'
+      wrap.style.minWidth = '0'
+      const title = document.createElement('span')
+      title.textContent = item.label
+      title.style.fontWeight = '600'
+      const hint = document.createElement('span')
+      hint.textContent = meta.get(item.value) || ''
+      hint.style.fontSize = 'var(--oas-font-size-xs)'
+      hint.style.color = 'var(--oas-color-text-secondary-strong)'
+      wrap.append(title, hint)
+      return wrap
+    }
+  }
   window.sidebarActionLog = (e) => {
     const tag = document.getElementById('sidebar-action-log')
     if (tag) tag.textContent = `Action: ${e.detail.label} (${e.detail.action})`

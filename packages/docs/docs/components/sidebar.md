@@ -181,6 +181,16 @@
 
 子元素声明式通道同样支持：`<oas-sidebar-item avatar="/favicon.svg">` 或 `avatar-text="张" avatar-color="#e11d48"`；属性与 `items` JSON 字段一一对应（`avatar` / `avatarText` / `avatarColor`）。
 
+## 自定义行内容
+
+`renderLabel`（property 函数通道）可替换每个菜单项的文字区：返回 `Node` 直接挂载（适合双行文本、图标 + 说明等富内容），返回字符串按纯文本渲染，返回 `null` 回退 `label`。函数不可序列化，不写入 attribute、不参与 SSR；可访问名称仍取 `item.label`，折叠态随文字区一起隐藏。不要在行内放按钮/链接等交互元素——整行本身是按钮，交互请用 `actions`。
+
+<DemoBlock title="renderLabel 自定义行内容（双行）">
+  <div style="height: 260px; width: 100%">
+    <oas-sidebar id="sidebar-render-label" items='[{"label":"工作台","value":"home","icon":"star"},{"label":"数据看板","value":"dashboard","icon":"tree"},{"label":"设置","value":"settings","icon":"gear"}]'></oas-sidebar>
+  </div>
+</DemoBlock>
+
 ## 自定义图标与着色
 
 菜单项 `icon` 默认取 `@oas-ui/icons` 内置注册表图标名；应用级自定义图标走官方正路 `registerIcon(name, svg)`（`@oas-ui/ui` 导出）——**一处注册，`<oas-icon>` 与侧栏及未来其它消费方全部可见**（勿直接改内置图标数据；按需模式用内置名需 `import '@oas-ui/icons/register'` 一次），同名注册覆盖内置图标。
@@ -411,6 +421,12 @@
 | `variant` | 形态：sidebar（默认贴边）/ floating（悬浮圆角阴影）/ inset（内嵌圆角背景） | — | — |
 | `width` | 展开宽度，默认走 `--oas-sidebar-width` token | `string` | `0` |
 
+#### Property（JS property；是否写回 attribute 见各行说明）
+
+| Property | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| `renderLabel` | 自定义行内容渲染函数 `(item) => Node \| string \| null`（property 通道，函数不可序列化，不进 attribute/SSR）。返回 Node 直接挂载到 label 区（可放双行文本等富内容）；返回字符串按纯文本渲染；返回 null/undefined 回退 `item.label`。可访问名称仍取 `item.label`，折叠态随 label 隐藏；置 null 恢复默认渲染 | — | — |
+
 #### 事件
 
 | 事件 | 说明 |
@@ -490,6 +506,31 @@ onMounted(async () => {
   // 注册后重设 items 触发重绘：让查表命中自定义图标名（首次渲染时注册未完成会回退文本）
   const customSidebar = document.getElementById('sidebar-custom-icon')
   if (customSidebar) customSidebar.setAttribute('items', customSidebar.getAttribute('items') || '')
+  // renderLabel property 通道：返回 Node 承载双行内容（函数不反射 attribute）
+  const labelSidebar = document.getElementById('sidebar-render-label')
+  if (labelSidebar) {
+    const meta = new Map([
+      ['home', '3 条未读'],
+      ['dashboard', '今日 +12%'],
+      ['settings', '偏好与权限'],
+    ])
+    labelSidebar.renderLabel = (item) => {
+      const wrap = document.createElement('span')
+      wrap.style.display = 'flex'
+      wrap.style.flexDirection = 'column'
+      wrap.style.gap = '1px'
+      wrap.style.minWidth = '0'
+      const title = document.createElement('span')
+      title.textContent = item.label
+      title.style.fontWeight = '600'
+      const hint = document.createElement('span')
+      hint.textContent = meta.get(item.value) || ''
+      hint.style.fontSize = 'var(--oas-font-size-xs)'
+      hint.style.color = 'var(--oas-color-text-secondary-strong)'
+      wrap.append(title, hint)
+      return wrap
+    }
+  }
   window.sidebarActionLog = (e) => {
     const tag = document.getElementById('sidebar-action-log')
     if (tag) tag.textContent = `操作：${e.detail.label}（${e.detail.action}）`

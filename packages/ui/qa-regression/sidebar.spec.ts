@@ -423,3 +423,30 @@ test('sidebar 文档 demo：分组独立高亮 + 同组多选可点，宿主写�
   expect(r!.after).toContain('v3')
   expect(r!.log).toContain('v3')
 })
+
+test('sidebar renderLabel：demo 双行富内容挂载且不反射 attribute', async ({ page }) => {
+  await page.goto('/components/sidebar.html', { waitUntil: 'domcontentloaded' })
+  await page.waitForFunction(() => !!document.getElementById('sidebar-render-label')?.shadowRoot, undefined, {
+    timeout: 15000,
+  })
+  const r = await page.evaluate(() => {
+    const el = document.getElementById('sidebar-render-label')!
+    const root = el.shadowRoot!
+    const home = root.querySelector<HTMLElement>('[part="item"][data-value="home"]')!
+    const custom = home.querySelector<HTMLElement>('.label.label-custom')
+    return {
+      hasCustom: !!custom,
+      lines: custom?.firstElementChild?.children.length ?? 0,
+      text: custom?.textContent ?? '',
+      ariaLabel: home.getAttribute('aria-label'),
+      reflected: el.hasAttribute('render-label'),
+      hostItems: el.getAttribute('items') ?? '',
+    }
+  })
+  expect(r.hasCustom, 'renderLabel 返回 Node 应挂到 label-custom 容器').toBe(true)
+  expect(r.lines, '双行内容应保留两个子节点').toBe(2)
+  expect(r.text).toContain('3 条未读')
+  expect(r.ariaLabel).toBe('工作台')
+  expect(r.reflected, '函数通道不反射 attribute').toBe(false)
+  expect(r.hostItems).not.toContain('renderLabel')
+})

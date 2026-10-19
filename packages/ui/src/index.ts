@@ -62,6 +62,7 @@ export {
   OASSidebarItem,
   OASSidebarDivider,
   type SidebarItem,
+  type SidebarLabelRenderer,
 } from './layout/sidebar/index.js'
 export { OASContainer } from './layout/container/index.js'
 export { OASAspectRatio } from './layout/aspect-ratio/index.js'

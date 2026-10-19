@@ -13,6 +13,7 @@
 ### 功能
 
 - **`oas-date-picker` 范围手输**：`daterange` / `datetimerange` / `monthrange` / `yearrange` 触发器由只读回显改为可键入，按 `separator`（默认 `~`）拆分起止；支持 `2026-08-05 ~ 2026-08-15`、`2026-08 ~ 2026-10`、`2024 ~ 2026` 与带时刻的 datetime 范围。起止倒置、越界、禁用日期或非法输入回退当前值，不提交；`datetimerange` 只键入日期时按 `default-time` 补齐时刻。
+- **`oas-sidebar` 自定义行内容**：新增 `renderLabel` property 函数通道 `(item) => Node | string | null`，可把菜单项文字区替换为双行文本等富内容；返回字符串按纯文本渲染，返回 `null` 回退 `item.label`。函数不反射 attribute/不参与 SSR，可访问名称仍取 `item.label`，折叠态随文字区隐藏；行内不要放交互元素（整行本身是按钮，交互走 `actions`）。
 
 ### 交互
 

@@ -12,4 +12,4 @@ if (!customElements.get('oas-sidebar-divider')) {
 }
 
 export { OASSidebar, OASSidebarItem, OASSidebarDivider }
-export type { SidebarItem } from './oas-sidebar.js'
+export type { SidebarItem, SidebarLabelRenderer } from './oas-sidebar.js'

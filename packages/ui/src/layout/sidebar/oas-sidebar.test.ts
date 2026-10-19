@@ -89,6 +89,50 @@ describe('OASSidebar（可折叠侧栏）', () => {
     expect(detail).toEqual({ value: 'home', label: '首页' })
   })
 
+  it('renderLabel property：Node 富内容 / 字符串 / null 回退，aria-label 不变', () => {
+    stubMatchMedia(false)
+    const el = mount({
+      items: JSON.stringify([
+        { label: '首页', value: 'home', icon: 'star' },
+        { label: '设置', value: 'settings', icon: 'gear' },
+      ]),
+    })
+    const calls: string[] = []
+    el.renderLabel = (item) => {
+      calls.push(item.value)
+      if (item.value === 'home') {
+        const box = document.createElement('span')
+        box.className = 'rich-label'
+        box.innerHTML = '<b>首页</b><small>工作台</small>'
+        return box
+      }
+      if (item.value === 'settings') return '设置项'
+      return null
+    }
+    const items = [...el.shadowRoot!.querySelectorAll<HTMLElement>('[part="item"]')]
+    const home = items.find((i) => i.dataset.value === 'home')!
+    const settings = items.find((i) => i.dataset.value === 'settings')!
+    expect(calls, '每个菜单项都应调用 renderLabel').toEqual(['home', 'settings'])
+    expect(home.querySelector('.label.label-custom .rich-label'), 'Node 直接挂载').toBeTruthy()
+    expect(home.textContent).toContain('工作台')
+    expect(home.getAttribute('aria-label'), '可访问名称仍取 item.label').toBe('首页')
+    expect(settings.querySelector('.label')!.textContent, '字符串按纯文本渲染').toBe('设置项')
+    expect(el.hasAttribute('render-label'), '函数通道不反射 attribute').toBe(false)
+
+    el.renderLabel = null
+    expect(el.shadowRoot!.querySelector('.rich-label'), '置 null 恢复默认 label 渲染').toBeNull()
+    expect(el.shadowRoot!.querySelector('.label')!.textContent).toBe('首页')
+  })
+
+  it('renderLabel 先于连接赋值也能在首帧生效', () => {
+    stubMatchMedia(false)
+    const el = new OASSidebar()
+    el.setAttribute('items', JSON.stringify([{ label: '首页', value: 'home', icon: 'star' }]))
+    el.renderLabel = () => '首帧自定义'
+    document.body.appendChild(el)
+    expect(el.shadowRoot!.querySelector('.label')!.textContent).toBe('首帧自定义')
+  })
+
   it('非法 items JSON 不报错、不渲染菜单', () => {
     stubMatchMedia(false)
     const el = mount({ items: '{oops' })

@@ -35,6 +35,9 @@ export interface SidebarItem {
   actions?: SidebarItemAction[]
 }
 
+/** 行内容渲染器：返回 Node 直接挂载、字符串按纯文本渲染、null/undefined 回退 label（property 通道，函数不可序列化） */
+export type SidebarLabelRenderer = (item: SidebarItem) => Node | string | null
+
 /** 分组独立高亮：group 名 → 选中值（字符串 = 同组单选；数组 = 同组多选） */
 export type SidebarActiveByGroup = Record<string, string | string[]>
 
@@ -272,6 +275,19 @@ aside {
   overflow: hidden;
   text-overflow: ellipsis;
 }
+/* renderLabel 返回 Node 时用纵向容器承载富内容（双行文本/徽标组合等），
+   默认 label 仍保持单行省略；折叠态沿用 .label 的隐藏规则 */
+.item .label.label-custom {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  min-width: 0;
+}
+.item .label.label-custom > * {
+  max-width: 100%;
+  min-width: 0;
+}
 /* 行首头像：图片或首字母圆（18px，与徽标同档；间距由 .item 的 gap 提供，RTL 自动镜像）。
    底色取自 --oas-sidebar-avatar-color 的 18% 淡底 + 55% 色环；文字恒用主题字色——
    任意宿主色直铺作文字底会低对比（亮蓝上白字），刻意不那样做。 */
@@ -424,6 +440,9 @@ aside {
 }
 :host(:not([data-mobile])[collapsed]) .flyout .item .label {
   display: inline;
+}
+:host(:not([data-mobile])[collapsed]) .flyout .item .label.label-custom {
+  display: flex;
 }
 @media (prefers-reduced-motion: reduce) {
   .flyout {
@@ -703,6 +722,19 @@ export class OASSidebar extends OASElement {
   }
   set items(value: SidebarEntry[] | string) {
     this.setAttribute('items', typeof value === 'string' ? value : JSON.stringify(value))
+  }
+
+  private _renderLabel: SidebarLabelRenderer | null = null
+
+  /** 自定义行内容：property 函数通道（不可序列化，不进 attribute/SSR；SSR 回退 label） */
+  get renderLabel(): SidebarLabelRenderer | null {
+    return this._renderLabel
+  }
+  set renderLabel(fn: SidebarLabelRenderer | null) {
+    const next = typeof fn === 'function' ? fn : null
+    if (next === this._renderLabel) return
+    this._renderLabel = next
+    if (this.isConnected) this.update()
   }
   private mq: MediaQueryList | null = null
   /** 展开的嵌套父项 value 集合（父项点击切换） */
@@ -1145,7 +1177,15 @@ export class OASSidebar extends OASElement {
     }
     const label = document.createElement('span')
     label.className = 'label'
-    label.textContent = item.label
+    const custom = this._renderLabel ? this._renderLabel(item) : null
+    if (custom && typeof custom === 'object' && 'nodeType' in custom) {
+      label.classList.add('label-custom')
+      label.appendChild(custom as Node)
+    } else if (custom != null) {
+      label.textContent = String(custom)
+    } else {
+      label.textContent = item.label
+    }
     btn.append(icon, label)
     // 徽标：项右侧小圆角计数
     if (item.badge != null && item.badge !== '') {
