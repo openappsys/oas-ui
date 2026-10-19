@@ -30,7 +30,7 @@
 | @oas-ui/ui（浏览器可加载 JS，全部按需文件之和）   | 423    | 9,733.0 KB | 2,666.0 KB                      |
 | @oas-ui/ui（全量入口链，`import '@oas-ui/ui'`） | 463    | —          | **1,063.7 KB**                    |
 | @oas-ui/ui（dist/cdn.js 单文件全量 bundle）       | 1      | —          | **731.6 KB**（brotli 486.6 KB） |
-| @oas-ui/theme（index.css）                        | 1      | 7,343 B   | 1.8 KB                          |
+| @oas-ui/theme（index.css）                        | 1      | 7,343 B   | 1.7 KB                          |
 | @oas-ui/core（基类运行时）                        | 5      | —          | 13.5 KB                         |
 | @oas-ui/i18n（registry + 语言包）                 | 7      | —          | 62.5 KB                         |
 | @oas-ui/icons（图标注册表 + runtime + register + 47 内联 SVG） | 48 | — | 13.2 KB                    |
@@ -63,7 +63,7 @@
 | 全量           | cdn.js 731.6 KB；全量入口链 1,063.7 KB（上界） | 天花板 770/1140 KB 内随能力增长，预警线 693/1026 KB（§4）                                     |
 | 按需（button） | 26.6 KB（含 core；图标仅精确 path）          | 预算 29 KB 的 **86%**；图标库 opt-in 后卸掉整套图标（34.1→26.6 KB）                           |
 | 按需（table）  | 101.9 KB（链含 core + virtual-list + i18n + 分页 + 导出/移动降级/编辑器通道） | 预算 108 KB 的 86%；`/core` 纯核路径为瘦身消费者预留（见 architecture §3.1）              |
-| 主题           | 1.8 KB gzip（index.css）                     | 一套语义 token 变量即全部主题成本；组件样式内联进组件，无独立样式文件                        |
+| 主题           | 1.7 KB gzip（index.css）                     | 一套语义 token 变量即全部主题成本；组件样式内联进组件，无独立样式文件                        |
 | 可选运行时     | glass-fluid.js 8.1 KB gzip（独立档）         | 预算 8.5 KB 的 92%（已达 WARN 预警线）；独立可选、不进 union                                |
 | 图标集         | 组件链只含精确 path；全量集 13.0 KB gzip     | 图标库 opt-in：全量入口自动注册（开箱即用），按需链不背整套                                   |
 
