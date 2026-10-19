@@ -3,8 +3,13 @@
 > A material layer of translucent surfaces, backdrop blur, and specular edge rings (edge refraction ships as a static displacement approximation; dynamic fluidity is provided by the optional `glass-fluid.js` runtime — pointer specular highlight + press tightening; see "Dynamic fluidity" on this page).
 
 <script setup>
-import { ref, onMounted, onBeforeUnmount } from 'vue'
-const theme = ref('light')
+import { computed, ref, onMounted, onBeforeUnmount } from 'vue'
+import { useData } from 'vitepress'
+const { isDark } = useData()
+const theme = computed(() => (isDark.value ? 'dark' : 'light'))
+const setTheme = (next) => {
+  isDark.value = next === 'dark'
+}
 const open = ref(false)
 const msg = ref(null)
 const popMsg = () => {
@@ -27,10 +32,10 @@ onBeforeUnmount(() => {
 })
 </script>
 
-<div class="gg-stage" :data-theme="theme">
+<div class="gg-stage">
   <div class="gg-toolbar">
-    <button class="sg-btn" :class="{ 'sg-active': theme === 'light' }" @click="theme = 'light'">light</button>
-    <button class="sg-btn" :class="{ 'sg-active': theme === 'dark' }" @click="theme = 'dark'">dark</button>
+    <button class="sg-btn" :class="{ 'sg-active': theme === 'light' }" @click="setTheme('light')">light</button>
+    <button class="sg-btn" :class="{ 'sg-active': theme === 'dark' }" @click="setTheme('dark')">dark</button>
     <oas-button type="primary" @click="open = true">Open dialog</oas-button>
     <oas-button @click="popMsg">Show message</oas-button>
   </div>
@@ -72,10 +77,6 @@ onBeforeUnmount(() => {
     linear-gradient(160deg, #2a3550, #4a2a50 55%, #1f4a44);
   /* The modal centers on the viewport — the stage must fill most of the viewport height so the dialog lands on the gradient (on a dark page background the glass effect would be invisible) */
   min-height: 72vh;
-}
-.gg-stage[data-theme="dark"] {
-  /* Dialog translucency tweak (the modal consumes --oas-color-bg; the variable inherits into the shadow DOM — zero impact on the library) */
-  --oas-color-bg: rgba(24, 24, 27, 0.5);
 }
 .gg-controls { display: flex; align-items: center; gap: var(--oas-space-4); margin-bottom: var(--oas-space-4); padding: var(--oas-space-2) 0; }
 .gg-note { color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); }

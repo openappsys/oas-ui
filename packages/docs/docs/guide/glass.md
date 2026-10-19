@@ -3,8 +3,13 @@
 > 半透明 surface + backdrop 模糊 + 高光折光边的材质层（边缘折射为静态置换近似；动态流动感由可选运行时 `glass-fluid.js` 提供——指针镜面高光 + 按压收紧，详见本页「动态流动感」）。
 
 <script setup>
-import { ref, onMounted, onBeforeUnmount } from 'vue'
-const theme = ref('light')
+import { computed, ref, onMounted, onBeforeUnmount } from 'vue'
+import { useData } from 'vitepress'
+const { isDark } = useData()
+const theme = computed(() => (isDark.value ? 'dark' : 'light'))
+const setTheme = (next) => {
+  isDark.value = next === 'dark'
+}
 const open = ref(false)
 const msg = ref(null)
 const popMsg = () => {
@@ -26,10 +31,10 @@ onBeforeUnmount(() => {
 })
 </script>
 
-<div class="gg-stage" :data-theme="theme">
+<div class="gg-stage">
   <div class="gg-toolbar">
-    <button class="sg-btn" :class="{ 'sg-active': theme === 'light' }" @click="theme = 'light'">light</button>
-    <button class="sg-btn" :class="{ 'sg-active': theme === 'dark' }" @click="theme = 'dark'">dark</button>
+    <button class="sg-btn" :class="{ 'sg-active': theme === 'light' }" @click="setTheme('light')">light</button>
+    <button class="sg-btn" :class="{ 'sg-active': theme === 'dark' }" @click="setTheme('dark')">dark</button>
     <oas-button type="primary" @click="open = true">打开对话框</oas-button>
     <oas-button @click="popMsg">弹出消息</oas-button>
   </div>
@@ -71,10 +76,6 @@ onBeforeUnmount(() => {
     linear-gradient(160deg, #2a3550, #4a2a50 55%, #1f4a44);
   /* modal 按视口居中——舞台须占满大部分视口高，弹窗才落在渐变之上（否则弹在深色页面上看不出玻璃感） */
   min-height: 72vh;
-}
-.gg-stage[data-theme="dark"] {
-  /* 弹窗透度微调（modal 消费 --oas-color-bg；变量可继承进 shadow——零库影响） */
-  --oas-color-bg: rgba(24, 24, 27, 0.5);
 }
 .gg-controls { display: flex; align-items: center; gap: var(--oas-space-4); margin-bottom: var(--oas-space-4); padding: var(--oas-space-2) 0; }
 .gg-note { color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); }

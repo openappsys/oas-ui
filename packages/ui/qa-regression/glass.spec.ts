@@ -103,6 +103,21 @@ test.describe('液态玻璃材质层', () => {
     })
   }
 
+  test('demo 深浅切换走全站主题：暗色卡片仍半透明（stage 基础 token 不得覆盖玻璃 surface）', async ({ page }) => {
+    await page.goto(PAGE, { waitUntil: 'domcontentloaded' })
+    await page.waitForTimeout(800)
+    await page.locator('.gg-toolbar .sg-btn').filter({ hasText: 'dark' }).click()
+    await page.waitForTimeout(300)
+    const r = await page.evaluate(() => ({
+      dark: document.documentElement.classList.contains('dark'),
+      stageTheme: document.querySelector('.gg-stage')?.getAttribute('data-theme') ?? null,
+      cardBg: getComputedStyle(document.querySelector('.gg-card')!).backgroundColor,
+    }))
+    expect(r.dark, '点 dark 应切到全站暗色（否则玻璃暗色档不生效）').toBe(true)
+    expect(r.stageTheme, '切换器不得只改 stage 的 data-theme（会命中基础 dark token，盖掉玻璃 surface）').toBeNull()
+    expect(parseRgba(r.cardBg)![3], '暗色玻璃 surface 应保持半透明').toBeLessThan(1)
+  })
+
   test('high-contrast 下不启用（实心可访问性档优先）', async ({ page }) => {
     await page.goto(PAGE, { waitUntil: 'domcontentloaded' })
     await page.waitForTimeout(500)

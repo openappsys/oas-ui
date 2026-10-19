@@ -13,6 +13,7 @@
 
 ### 修复
 
+- **液态玻璃画廊明暗切换失真**：切换器改为全站主题，不再只给舞台写 `data-theme`——后者会让基础 dark token 覆盖玻璃 surface，暗色卡片变成不透明 `#3f3f46`、玻璃透光丢失；新增回归断言暗色卡片保持半透明。
 - **SPA 客户端路由下 scheduler / gantt / resource demo 空白**：① 私有成员与单字属性撞名（`scale`/`view`/`expanded`），框架按「key in el」把静态 attribute 写成 property，own 字符串遮蔽方法或 Set 字段导致报错/空白；内部改名（`scaleMode`/`viewMode`/`expandedSet`，公开 API 不变）。② 数据属性的 property setter 统一接受 JSON 字符串（`events`/`resources`/`tasks`/`lines` 等），框架把静态 attribute 当 property 写入时不再被当作非法数组清空。新增 `shared/json-array` 与客户端跳转回归（表格 → 日程 → 甘特 → 资源）。
 - **SPA 路由下 card demo 空白/崩溃（`shadow` 属性与基类字段撞名）**：`shadow` 既是卡片阴影属性（`always`/`hover`/`none`），也是 `OASElement` 内部的 ShadowRoot 字段；框架按「key in el」把静态 `shadow` attribute 写成 property 时，字符串覆盖真实 root，后续 `this.shadow.querySelector` 抛错中断渲染。现以原型访问器分通道：字符串写回 attribute；`null` / `undefined`（受控表达式转假）移除 attribute 回缺省无阴影态；仅 ShadowRoot（或带 `querySelector` 的对象）落入内部存储；其他异型忽略并 dev 告警一次——属性、渲染与事件路径不再被污染。
 - **布尔 `open` 属性经框架 property 通道写入空串被误判关闭（`oas-select` / `oas-swipe-cell`）**：静态 `<oas-select open>` / `<oas-swipe-cell open>` 在宿主框架下以空串 `''` 写入 property，旧 setter 用真值判断将其当成关闭；现按 presence 语义处理——空串视为打开，仅 `false` / `'false'` / `null` / `undefined` 关闭。
