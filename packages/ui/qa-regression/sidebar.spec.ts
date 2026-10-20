@@ -456,3 +456,78 @@ test('sidebar renderLabel：demo 双行富内容挂载且不反射 attribute', a
   expect(r.reflected, '函数通道不反射 attribute').toBe(false)
   expect(r.hostItems).not.toContain('renderLabel')
 })
+
+// hide-toggle + 空 header 槽：头部塌陷（不留 24px 死缝）；有 header 内容或移动抽屉打开时保留。
+test('sidebar hide-toggle + 空 header：头部塌陷与恢复（真实几何）', async ({ page }) => {
+  await page.goto('/components/sidebar.html', { waitUntil: 'domcontentloaded' })
+  await page.waitForFunction(() => !!customElements.get('oas-sidebar'))
+  const r = await page.evaluate(async () => {
+    const el = document.createElement('oas-sidebar')
+    el.setAttribute('hide-toggle', '')
+    el.style.width = '220px'
+    el.style.height = '320px'
+    document.body.appendChild(el)
+    const frame = () => new Promise((res) => requestAnimationFrame(() => requestAnimationFrame(() => res(null))))
+    await frame()
+    const head = () => el.shadowRoot!.querySelector<HTMLElement>('[part="head"]')!
+    const nav = () => el.shadowRoot!.querySelector<HTMLElement>('[part="nav"]')!
+    const snap = () => ({
+      hidden: head().hidden,
+      display: getComputedStyle(head()).display,
+      headH: Math.round(head().getBoundingClientRect().height),
+      navTop: Math.round(nav().getBoundingClientRect().top - el.getBoundingClientRect().top),
+    })
+    const empty = snap()
+    const header = document.createElement('div')
+    header.setAttribute('slot', 'header')
+    header.textContent = '工作区'
+    header.style.padding = '4px'
+    el.appendChild(header)
+    await frame()
+    const withHeader = snap()
+    header.remove()
+    await frame()
+    const removed = snap()
+    el.remove()
+    return { empty, withHeader, removed }
+  })
+  expect(r.empty.hidden, '空 header + hide-toggle：head 塌陷').toBe(true)
+  expect(r.empty.display).toBe('none')
+  expect(r.empty.headH).toBe(0)
+  expect(r.empty.navTop, '导航紧贴面板顶部（无 24px 死缝）').toBe(0)
+  expect(r.withHeader.hidden, '有 header 内容：head 保留').toBe(false)
+  expect(r.withHeader.headH).toBeGreaterThan(0)
+  expect(r.removed.hidden, '移除 header 内容：重新塌陷').toBe(true)
+})
+
+// 移动抽屉打开时关闭按钮需要头部容器：hide-toggle + 空 header 也不能塌陷。
+test('sidebar hide-toggle + 空 header：移动抽屉打开时头部保留、关闭后收起', async ({ page }) => {
+  await page.goto('/components/sidebar.html', { waitUntil: 'domcontentloaded' })
+  await page.waitForFunction(() => !!customElements.get('oas-sidebar'))
+  const r = await page.evaluate(async () => {
+    const el = document.createElement('oas-sidebar') as HTMLElement & {
+      openDrawer: () => void
+      closeDrawer: () => void
+    }
+    el.setAttribute('hide-toggle', '')
+    el.setAttribute('mobile-breakpoint', '2000')
+    document.body.appendChild(el)
+    const frame = () => new Promise((res) => requestAnimationFrame(() => requestAnimationFrame(() => res(null))))
+    await frame()
+    const head = () => el.shadowRoot!.querySelector<HTMLElement>('[part="head"]')!
+    const close = () => el.shadowRoot!.querySelector<HTMLElement>('[part="close"]')!
+    const before = { headHidden: head().hidden, closeHidden: close().hidden }
+    el.openDrawer()
+    await frame()
+    const opened = { headHidden: head().hidden, closeHidden: close().hidden }
+    el.closeDrawer()
+    await frame()
+    const closed = { headHidden: head().hidden, closeHidden: close().hidden }
+    el.remove()
+    return { before, opened, closed }
+  })
+  expect(r.before.headHidden, '抽屉关闭：head 塌陷').toBe(true)
+  expect(r.opened.closeHidden).toBe(false)
+  expect(r.opened.headHidden, '抽屉打开：head 保留以承载关闭按钮').toBe(false)
+  expect(r.closed.headHidden).toBe(true)
+})

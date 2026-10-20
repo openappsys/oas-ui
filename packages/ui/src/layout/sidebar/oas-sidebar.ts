@@ -192,6 +192,10 @@ aside {
   gap: var(--oas-space-2, 8px);
   padding: var(--oas-space-3, 12px);
 }
+/* hide-toggle 且 header 槽为空时整体塌陷（否则留下 12px*2 的纯占位死缝） */
+.head[hidden] {
+  display: none;
+}
 [part='close'] {
   border: none;
   background: none;
@@ -773,6 +777,8 @@ export class OASSidebar extends OASElement {
   private bind(): void {
     this.shadow.querySelector('.mask')?.addEventListener('click', () => this.closeDrawer())
     this.shadow.querySelector('[part="close"]')?.addEventListener('click', () => this.closeDrawer())
+    // header 槽内容增删 → 重新判定头部是否塌陷（hide-toggle + 空槽）
+    this.shadow.querySelector('slot[name="header"]')?.addEventListener('slotchange', () => this.update())
     this.shadow.querySelector('[part="trigger"]')?.addEventListener('click', () => this.openDrawer())
     this.shadow.querySelector('[part="toggle"]')?.addEventListener('click', () => this.toggleCollapsed())
 
@@ -1019,6 +1025,21 @@ export class OASSidebar extends OASElement {
     if (toggle) toggle.hidden = mobile || this.hasAttr('hide-toggle')
     if (trigger) trigger.hidden = !mobile
     if (close) close.hidden = !drawerOpen
+    // 头部塌陷：hide-toggle 且 header 槽为空时（关闭按钮也隐藏）不留纯占位；
+    // 移动抽屉打开时关闭按钮需要容器，保留头部。
+    const head = this.shadow.querySelector<HTMLElement>('[part="head"]')
+    if (head) {
+      const headerSlot = this.shadow.querySelector<HTMLSlotElement>('slot[name="header"]')
+      const hasHeaderContent =
+        headerSlot
+          ?.assignedNodes({ flatten: true })
+          .some(
+            (node) =>
+              node.nodeType === 1 /* Element */ ||
+              (node.nodeType === 3 /* Text */ && (node.textContent ?? '').trim() !== ''),
+          ) ?? false
+      head.hidden = this.hasAttr('hide-toggle') && !hasHeaderContent && !drawerOpen
+    }
 
     // 内置文案走 locale registry（setLocale 切换自动重刷 update）
     this.shadow.querySelector<HTMLElement>('.nav')?.setAttribute('aria-label', this.t('sidebar.nav'))

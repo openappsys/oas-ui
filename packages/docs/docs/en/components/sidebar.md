@@ -19,7 +19,7 @@ Pass menu JSON via the `items` attribute (`[{label, value, icon?}]`); the defaul
 
 ## Collapsing
 
-Clicking the bottom「«」button toggles `collapsed` (a controlled attribute; fires `oas-collapse`). In the collapsed state only icons are shown, and menu items without an `icon` are hidden automatically. `hide-toggle` hides the button (host opt-out, e.g. for static sidebars).
+Clicking the bottom「«」button toggles `collapsed` (a controlled attribute; fires `oas-collapse`). In the collapsed state only icons are shown, and menu items without an `icon` are hidden automatically. `hide-toggle` hides the button (host opt-out, e.g. for static sidebars); in that case, if the `slot="header"` is empty the whole header collapses (no more 12px top/bottom padding) — while the mobile drawer is open the header stays because the close button needs the container.
 
 **Nested submenus use a flyout panel in the collapsed state**: a tree parent renders as an icon item; clicking (or hovering with a short delay) opens a submenu panel anchored to the item's inline-end (mirrored to the left in RTL) with collision avoidance. Clicking a leaf fires `oas-select` and closes the panel; nested subtrees expand inline inside the panel; Esc closes and refocuses the parent; clicking outside closes; only one flyout is open at a time. Note (contract change): clicking a collapsed-state parent only opens the flyout and **no longer fires `oas-select` for the parent itself** (a parent is not a navigable page) — if you previously relied on the parent's `oas-select` in the collapsed state, listen for `oas-select` from the flyout's leaf items instead.
 
@@ -408,7 +408,7 @@ Besides the `items` JSON, items can be declared with `<oas-sidebar-item>` / `<oa
 | `collapsed` | Controlled collapse to an icon strip (present means collapsed) | `boolean` | — |
 | `drawer-open` | Mobile drawer open state (controlled: set opens, clear closes; auto-removed when breakpoint returns to desktop) | `boolean` | — |
 | `expand-on-hover` | Temporarily expand the collapsed icon strip on hover (visual only; does not change controlled collapsed) | — | — |
-| `hide-toggle` | Hide the bottom collapse button (a built-in toggle always visible on desktop; presence hides it — host opt-out for static sidebars) | `boolean` | — |
+| `hide-toggle` | Hide the bottom collapse toggle (the built-in desktop toggle; present means hidden — host opt-out for static sidebars); when the header slot is empty the whole header collapses too (kept while the mobile drawer is open because of the close button) | `boolean` | — |
 | `items` | Menu items JSON `[{label, value, icon?, iconColor?, group?, badge?, avatar?, avatarText?, avatarColor?, children?, actions?}]` (divider entries `{type:"divider"}` supported; children nests submenus; avatar is an image URL taking precedence over an avatarText + avatarColor initials circle) | `SidebarEntry[] \| string` | `[]` |
 | `loading` | Skeleton loading state (shows a pulsing skeleton when present; value sets row count, default 4) | `string` | `4` |
 | `mobile-breakpoint` | Mobile breakpoint (px); narrower than this becomes an overlay drawer | — | — |

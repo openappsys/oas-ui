@@ -2796,7 +2796,7 @@
       "active": "Value of the currently-highlighted menu item (controlled: set/clear immediately re-renders highlight)",
       "drawer-open": "Mobile drawer open state (controlled: set opens, clear closes; auto-removed when breakpoint returns to desktop)",
       "loading": "Skeleton loading state (shows a pulsing skeleton when present; value sets row count, default 4)",
-      "hide-toggle": "Hide the bottom collapse button (a built-in toggle always visible on desktop; presence hides it — host opt-out for static sidebars)",
+      "hide-toggle": "Hide the bottom collapse toggle (the built-in desktop toggle; present means hidden — host opt-out for static sidebars); when the header slot is empty the whole header collapses too (kept while the mobile drawer is open because of the close button)",
       "accordion": "Accordion mode (when present: expanding one parent collapses the other parents at the same level; multiple parents can be open by default)",
       "expand-on-hover": "Temporarily expand the collapsed icon strip on hover (visual only; does not change controlled collapsed)",
       "shortcut": "Enable Ctrl/Cmd+B collapse toggling (off by default to avoid hijacking a global key)",

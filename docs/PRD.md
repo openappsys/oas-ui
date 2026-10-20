@@ -822,7 +822,7 @@ moreBtn 键盘打开聚焦第一项 + 列表 roving（ArrowUp/Down/Home/End/Ente
 
 ### sidebar 深挖批（实测驱动）
 
-- **能力**：`hide-toggle`（折叠按钮 opt-out）、`accordion` 手风琴同级互斥（menu 同语义）、嵌套子树平滑动画（grid 0fr/1fr 过渡 + visibility 联动 + reduced-motion 降级）、嵌套机制无限级（3 级实证，文档建议 ≤3 级）、图标通道打通 registerIcon 正路（lookupIcon 单一查表点导出）+ `iconColor` 项级着色、`--oas-sidebar-bg` 背景开口（var 链回落）、child-selected 激活后代指示
+- **能力**：`hide-toggle`（折叠按钮 opt-out；此时 header 槽为空则头部塌陷，移动抽屉打开态保留）、`accordion` 手风琴同级互斥（menu 同语义）、嵌套子树平滑动画（grid 0fr/1fr 过渡 + visibility 联动 + reduced-motion 降级）、嵌套机制无限级（3 级实证，文档建议 ≤3 级）、图标通道打通 registerIcon 正路（lookupIcon 单一查表点导出）+ `iconColor` 项级着色、`--oas-sidebar-bg` 背景开口（var 链回落）、child-selected 激活后代指示
 - **修复**：折叠态嵌套父项死交互（纯图标项化）、折叠态徽标溢出走紧凑角标、子菜单 hidden 失效根治（display:flex 压 UA 规则——视觉断言固化：computed visibility/高度而非仅属性）、父子项底色粘连（.item-block 呼吸 gap）、嵌套缩进收敛（61→49px）+ 引导线对比度（text-primary 12% 混色）
 - **教训沉淀**：「机制正确 ≠ 用户看到的正确」——显隐类修复必须量真实渲染；hidden 语义与动画不可兼得（display:none 无过渡）→ visibility+0fr 两全
 

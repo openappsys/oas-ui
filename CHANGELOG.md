@@ -30,6 +30,8 @@
 
 ### 交互
 
+- **`oas-sidebar`：`hide-toggle` + 空 `header` 槽时头部塌陷**：原先 `.head` 的 12px 上下留白无条件渲染，关闭按钮隐藏且 header 槽为空时留下一条约 24px 的纯占位死缝。现在 `hide-toggle` 且 header 槽无内容（且非移动抽屉打开态）时 `.head` 整体隐藏；header 槽内容增删经 `slotchange` 实时重判；移动抽屉打开时因关闭按钮仍保留头部。宿主不再需要用 `::part(head){display:none}` 兜底。
+
 - **`oas-gantt` / `oas-resource` 文本可选中复制**：任务名、资源名与条标签恢复 `user-select: text`，支持鼠标划选/复制；`oas-gantt` 行拖拽改由右侧重排手柄承载（细指针悬停/聚焦显形，粗指针常显），避免行重排与文本选择互相抢占；`oas-resource` 条标签点击仍冒泡到任务条。新增 Chromium/Firefox 真实拖选回归。
 - **`oas-resource` 负载直方图上方分隔线缺失**：`.row:last-child` 把最后一条资源泳道的底边也清掉了，导致直方图标题行上方断线；补回最后泳道底边并加几何回归。
 

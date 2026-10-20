@@ -1536,6 +1536,39 @@ describe('OASSidebar 图标通道与着色', () => {
     )
   })
 
+  it('hide-toggle + 空 header 槽：头部整体塌陷（不再留 24px 死缝）', () => {
+    stubMatchMedia(false)
+    const el = mount({ 'hide-toggle': '' })
+    const head = el.shadowRoot!.querySelector<HTMLElement>('[part="head"]')!
+    expect(head.hidden, '无 header 内容且关闭按钮隐藏时 head 应隐藏').toBe(true)
+    // 有 header 内容时保留头部
+    const el2 = mount({ 'hide-toggle': '' })
+    const header = document.createElement('div')
+    header.setAttribute('slot', 'header')
+    header.textContent = '工作区'
+    el2.appendChild(header)
+    // happy-dom 不保证自动派发 slotchange：显式派发以验证监听
+    el2.shadowRoot!.querySelector('slot[name="header"]')!.dispatchEvent(new Event('slotchange'))
+    const head2 = el2.shadowRoot!.querySelector<HTMLElement>('[part="head"]')!
+    expect(head2.hidden, '有 header 内容时 head 保留').toBe(false)
+    // 未设置 hide-toggle 时保持原行为（即使 header 为空）
+    const el3 = mount({})
+    expect(el3.shadowRoot!.querySelector<HTMLElement>('[part="head"]')!.hidden).toBe(false)
+  })
+
+  it('hide-toggle + 空 header：移动抽屉打开时头部保留（关闭按钮可见），关闭后收起', () => {
+    stubMatchMedia(true)
+    const el = mount({ 'hide-toggle': '' })
+    const head = (): HTMLElement => el.shadowRoot!.querySelector<HTMLElement>('[part="head"]')!
+    const close = (): HTMLElement => el.shadowRoot!.querySelector<HTMLElement>('[part="close"]')!
+    expect(head().hidden, '抽屉未开：头部塌陷').toBe(true)
+    el.openDrawer()
+    expect(close().hidden).toBe(false)
+    expect(head().hidden, '抽屉打开：关闭按钮需要头部容器').toBe(false)
+    el.closeDrawer()
+    expect(head().hidden).toBe(true)
+  })
+
   it('hide-toggle：桌面折叠按钮隐藏（宿主 opt-out）；默认显示', () => {
     stubMatchMedia(false)
     const el = mount({ 'hide-toggle': '' })
