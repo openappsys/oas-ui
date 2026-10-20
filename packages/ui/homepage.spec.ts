@@ -79,7 +79,14 @@ test.describe('官网首页（重设计版）', () => {
     await expect(sec).toContainText(String(stats.perf.cdnGzipKB))
     await expect(sec).toContainText(String(stats.perf.buttonChainKB))
     await expect(sec).toContainText(String(stats.perf.fullEntryKB))
-    await expect(sec.locator('a[href*="/guide"]')).toBeAttached()
+    // 完整基准在仓库 docs/perf-baseline.md（站点无独立性能页）→ 外链 GitHub
+    const baseline = sec.locator('a[href$="docs/perf-baseline.md"]')
+    await expect(baseline).toBeAttached()
+    await expect(baseline).toHaveAttribute(
+      'href',
+      /github\.com\/openappsys\/oas-ui\/blob\/main\/docs\/perf-baseline\.md/,
+    )
+    await expect(baseline).toHaveAttribute('target', '_blank')
   })
 
   test('CTA 终端 + 双按钮', async ({ page }) => {

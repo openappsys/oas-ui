@@ -33,7 +33,7 @@
         <div class="hcta-term">
           <div class="hcta-term-bar">
             <i class="r"></i><i class="y"></i><i class="g"></i>
-            <span class="hcta-term-file">oas-ui@2.0.0</span>
+            <span class="hcta-term-file">oas-ui@{{ stats.version }}</span>
           </div>
           <div class="hcta-term-body">
             <div><span class="pmt">~/demo</span> <span class="dlr">$</span> <span class="cmd">pnpm add @oas-ui/ui @oas-ui/theme</span></div>
@@ -58,6 +58,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useData } from 'vitepress'
+import stats from '../../generated/stats.json'
 
 const { lang } = useData()
 const isEn = computed(() => lang.value.startsWith('en'))

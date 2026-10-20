@@ -7,8 +7,8 @@
         <p class="hp-intro">
           {{
             isEn
-              ? 'Public baseline, reproducible — full methodology and per-component numbers in the docs.'
-              : '公开基准，可复现——完整方法论与各组件链数据见文档。'
+              ? 'Public baseline, reproducible — full methodology and per-component chains live in docs/perf-baseline.md.'
+              : '公开基准，可复现——完整方法论与各组件链数据见仓库 docs/perf-baseline.md。'
           }}
         </p>
       </header>
@@ -39,7 +39,12 @@
         </p>
       </div>
       <p class="hp-note home-reveal">
-        <a href="/guide/ssr">{{ isEn ? 'Full baseline →' : '查看完整基准 →' }}</a>
+        <a
+          href="https://github.com/openappsys/oas-ui/blob/main/docs/perf-baseline.md"
+          target="_blank"
+          rel="noopener"
+          >{{ isEn ? 'Full baseline (GitHub) →' : '查看完整基准（GitHub）→' }}</a
+        >
       </p>
     </div>
   </section>
