@@ -859,6 +859,49 @@ describe('levelResources 容量日历 / 技能 / 优先级', () => {
     expect(moved.map((t) => t.start)).toEqual(['2026-03-03'])
   })
 
+  it('workdays: [] 下多日任务按占用档数计；不足时整体跳过，不先移走再放弃', () => {
+    const resources: ResourceItem[] = [
+      { id: 'r1', name: 'A', capacity: 1, workdays: [], capacityOverrides: { '2026-03-03': 1 } },
+    ]
+    const task = span('t1', ['r1'], '2026-03-02', '2026-03-04')
+    expect(levelResources(resources, [task])).toEqual([])
+  })
+
+  it('workdays: [] 下 week 档可合并同周多个小数 override（0.5+0.5=1）', () => {
+    const resources: ResourceItem[] = [
+      {
+        id: 'r1',
+        name: 'A',
+        capacity: 1,
+        workdays: [],
+        capacityOverrides: { '2026-03-10': 0.5, '2026-03-11': 0.5 },
+      },
+    ]
+    const moved = levelResources(resources, [span('t1', ['r1'])], { scale: 'week' })
+    expect(moved).toHaveLength(1)
+  })
+
+  it('workdays: [] 的跨资源判定按该资源自身任务起点，不用全局最早任务', () => {
+    const resources: ResourceItem[] = [
+      {
+        id: 'r1',
+        name: 'past-override',
+        capacity: 1,
+        workdays: [],
+        capacityOverrides: { '2026-03-02': 1 },
+      },
+      { id: 'r2', name: 'live', capacity: 1 },
+    ]
+    const tasks = [
+      span('late', ['r1'], '2026-03-10', '2026-03-10'),
+      span('t2', ['r2'], '2026-03-01', '2026-03-01'),
+      span('t3', ['r2'], '2026-03-01', '2026-03-01'),
+    ]
+    const moved = levelResources(resources, tasks)
+    expect(moved.map((t) => t.id)).toEqual(['t3'])
+    expect(moved[0]!.start).toBe('2026-03-02')
+  })
+
   it('非法 workdays（字符串/越界）按未声明处理，不静默变成永不排班', () => {
     const resources: ResourceItem[] = [
       { id: 'r1', name: 'A', capacity: 1, workdays: ['1', '2', 7] as unknown as number[] },

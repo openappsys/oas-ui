@@ -729,20 +729,21 @@ function hasCalendar(r: RS): boolean {
 
 /**
  * 是否存在足够的未来可排容量（结构判定，不受当前 period 窗口影响）：
- * 只有「workdays 显式为空」才需要看 override；未来（>= 当前最早任务）的正 override
- * 按可容纳整日任务数 floor(capacity) 累加，足够容纳该资源上的任务才视为可排。
+ * 只有「workdays 显式为空」才需要看 override；从该资源自身最早任务起，
+ * 未来正 override 的容量总和必须覆盖其任务占用的档数（多日任务按档数计）。
+ * 容量按数值累加，因此 week/month 档内的小数 override 可合并（如 0.5+0.5）。
  * 其余情况（含当前连续假期/0 override）未来仍可能恢复基础容量，shift 允许继续移动。
  */
-function hasPotentialCapacity(r: RS, fromMs: number, assignedCount: number): boolean {
+function hasPotentialCapacity(r: RS, fromMs: number, demand: number): boolean {
   if (r.workdays === null || r.workdays.length > 0) return true
   if (!r.capacityOverrides) return false
-  let units = 0
+  let total = 0
   for (const [key, n] of r.capacityOverrides) {
-    if (n < 1) continue
+    if (n <= 0) continue
     const d = parseTaskDate(key)
     if (!d || d.getTime() < fromMs) continue
-    units += Math.floor(n)
-    if (units >= assignedCount) return true
+    total += n
+    if (total >= demand) return true
   }
   return false
 }
@@ -1221,11 +1222,20 @@ export function levelResources(
     let victimIndex = -1
     let victimPeriod: Period | null = null
     outer: for (const r of rs) {
-      // 当前窗口全为 0 时，只有结构上永远不可排（workdays: [] 且未来正 override
-      // 不足以容纳该资源上的任务）才跳过；连续假期/单日 override=0 仍可继续移动。
-      if (!periods.some((p) => capAt(r, p) > 0)) {
-        const assignedCount = spans.reduce((n, s) => n + (work[s.index]!.resources.includes(r.id) ? 1 : 0), 0)
-        if (!hasPotentialCapacity(r, minMs, assignedCount)) {
+      // workdays: [] 时容量只来自 override；必须从该资源自身最早任务起，
+      // 确认未来 override 总容量足以覆盖任务占用的档数，否则整体跳过、避免先移走再放弃。
+      // 非空 workdays / 未声明 workdays 即使当前连续假期，未来仍会恢复基础容量，不在此判死。
+      if (r.workdays !== null && r.workdays.length === 0) {
+        let resourceMin = Number.POSITIVE_INFINITY
+        let demand = 0
+        for (const s of spans) {
+          if (!work[s.index]!.resources.includes(r.id)) continue
+          if (s.startMs < resourceMin) resourceMin = s.startMs
+          for (const p of periods) {
+            if (s.startMs < p.endMs && s.endMs > p.startMs) demand++
+          }
+        }
+        if (resourceMin !== Number.POSITIVE_INFINITY && !hasPotentialCapacity(r, resourceMin, demand)) {
           if (!zeroCapacityWarned) {
             zeroCapacityWarned = true
             devWarn('[oas-resource] 资源 workdays 为空且未来无足够正容量 override，shift 无法消除超载，已保持原日期')
