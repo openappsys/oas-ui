@@ -37,7 +37,7 @@
   <oas-scheduler id="scheduler-span" view="week" page-show-date="2026-08-10" events='[{"date":"2026-08-10","endDate":"2026-08-12","title":"设计冻结"},{"date":"2026-08-13","endDate":"2026-08-14","title":"回归窗口","color":"#059669"},{"date":"2026-08-12","endDate":"2026-08-13","title":"夜间值守","start":"22:00","end":"02:00"}]'></oas-scheduler>
 </DemoBlock>
 
-跨日全天事件在周视图的顶部全天带渲染为一条连续长条（不再逐日重复芯片）；按住长条横向拖动可按列宽吸附平移日期，回写 `date` / `endDate` 并派发 `oas-events-change`。定时跨日事件也在顶部跨日带渲染连续条，条上带 `开始–结束` 时间标签；日内时间轴不再重复拆块。
+跨日全天事件在周视图的顶部全天带渲染为一条连续长条（不再逐日重复芯片）；按住长条横向拖动可按列宽吸附平移日期，回写 `date` / `endDate` 并派发 `oas-events-change`；键盘聚焦连续条后可用 `←` / `→` 按天平移。定时跨日事件也在顶部跨日带渲染连续条，条上带 `开始–结束` 时间标签；日内时间轴不再重复拆块。
 
 <DemoBlock title="提醒（remind 分钟，到点派发 oas-remind）">
   <oas-scheduler id="scheduler-remind" page-show-date="2026-08-10"></oas-scheduler>

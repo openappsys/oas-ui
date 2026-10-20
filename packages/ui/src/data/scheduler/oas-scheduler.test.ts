@@ -1536,6 +1536,27 @@ describe('scheduler 跨日全天 / repeat count+byDay / ICS 增强', () => {
     expect(el.shadowRoot!.querySelector<HTMLElement>('.band-span')!.style.width).not.toBe('')
   })
 
+  it('跨日连续条支持左右方向键按天平移（键盘可达）', () => {
+    const el = mount({
+      view: 'week',
+      'page-show-date': '2026-08-10',
+      events: JSON.stringify([{ id: 'span', date: '2026-08-10', endDate: '2026-08-11', title: '连续' }]),
+    })
+    const bar = el.shadowRoot!.querySelector<HTMLElement>('.band-span')!
+    let changes = 0
+    el.addEventListener('oas-events-change', () => changes++)
+    bar.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }))
+    let event = el.events.find((item) => item.id === 'span')!
+    expect(event.date).toBe('2026-08-11')
+    expect(event.endDate).toBe('2026-08-12')
+    expect(changes).toBe(1)
+    bar.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true }))
+    event = el.events.find((item) => item.id === 'span')!
+    expect(event.date).toBe('2026-08-10')
+    expect(event.endDate).toBe('2026-08-11')
+    expect(changes).toBe(2)
+  })
+
   it('定时跨日事件在周视图渲染连续条，不再按日拆块', () => {
     const el = mount({
       view: 'week',

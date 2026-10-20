@@ -10,6 +10,7 @@ const PAGES = [
   { path: '/components/scheduler.html', tag: 'oas-scheduler' },
   { path: '/components/resource.html', tag: 'oas-resource' },
   { path: '/components/chart.html', tag: 'oas-chart' },
+  { path: '/components/prompt-input.html', tag: 'oas-prompt-input' },
 ]
 
 for (const pageCase of PAGES) {
@@ -33,3 +34,16 @@ for (const pageCase of PAGES) {
     expect(errors, `WebKit console/pageerror: ${pageCase.path}`).toEqual([])
   })
 }
+
+test('webkit interaction: prompt-input 键盘提交', async ({ page }) => {
+  await page.goto('/components/prompt-input.html', { waitUntil: 'domcontentloaded' })
+  await page.waitForFunction(() => {
+    const el = document.querySelector('oas-prompt-input') as (HTMLElement & { shadowRoot?: ShadowRoot | null }) | null
+    return !!el?.shadowRoot?.querySelector('[part="textarea"]')
+  })
+  const textarea = page.locator('#prompt-input-basic [part="textarea"]')
+  await textarea.fill('WebKit 键盘提交')
+  await textarea.press('Enter')
+  await expect(page.locator('#prompt-input-output')).toContainText('已提交：WebKit 键盘提交')
+  await expect(textarea).toHaveValue('')
+})

@@ -2162,6 +2162,12 @@ export class OASScheduler extends OASElement {
         e.stopPropagation()
         this.emit('event-click', { id: ev.id, event: { ...ev } } satisfies SchedulerEventClickDetail)
       })
+      bar.setAttribute('aria-keyshortcuts', 'ArrowLeft ArrowRight')
+      bar.addEventListener('keydown', (e) => {
+        if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return
+        e.preventDefault()
+        this.shiftSpanByDays(ev, e.key === 'ArrowLeft' ? -1 : 1)
+      })
       // 跨日连续条拖拽整体平移（按列宽吸附到天）
       let dragX: number | null = null
       let lastDelta = 0
@@ -2185,11 +2191,7 @@ export class OASScheduler extends OASElement {
         bar.classList.remove('dragging')
         bar.style.transform = ''
         if (lastDelta !== 0) {
-          const shift = (iso: string): string => {
-            const d = parseISODate(iso)!
-            return toISODate(new Date(d.getFullYear(), d.getMonth(), d.getDate() + lastDelta))
-          }
-          this.updateEvent(ev.id, { date: shift(ev.date), endDate: shift(ev.endDate!) })
+          this.shiftSpanByDays(ev, lastDelta)
         }
       }
       bar.addEventListener('pointerup', finish)
@@ -2203,6 +2205,18 @@ export class OASScheduler extends OASElement {
     if (spanLayer.childElementCount > 0) band.appendChild(spanLayer)
     tv.appendChild(cols)
     this.restoreFocus(focusId)
+  }
+
+  /** 跨日连续条整体平移（指针拖拽/键盘共用；按整天吸附） */
+  private shiftSpanByDays(ev: SchedulerEvent & { id: string }, delta: number): void {
+    if (delta === 0) return
+    const current = this._events.find((item) => item.id === ev.id) ?? ev
+    if (!current.endDate) return
+    const shift = (iso: string): string => {
+      const d = parseISODate(iso)!
+      return toISODate(new Date(d.getFullYear(), d.getMonth(), d.getDate() + delta))
+    }
+    this.updateEvent(current.id, { date: shift(current.date), endDate: shift(current.endDate) })
   }
 
   private setDropCol(col: HTMLElement | null): void {

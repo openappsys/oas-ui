@@ -47,6 +47,21 @@ test('scheduler 浏览器回归：月/周/agenda 视图渲染与切换 + console
   await expect(span.locator('.band-span.timed-span', { hasText: '夜间值守' })).toContainText('22:00')
   await expect(span.locator('.band-col .chip')).toHaveCount(0)
 
+  // 键盘可达：聚焦连续条后左右方向键按天平移
+  const keyboardBar = span.locator('.band-span', { hasText: '回归窗口' })
+  await expect(keyboardBar).toHaveAttribute('aria-keyshortcuts', 'ArrowLeft ArrowRight')
+  await keyboardBar.focus()
+  await page.keyboard.press('ArrowRight')
+  await expect
+    .poll(() =>
+      span.evaluate((el) =>
+        (el as unknown as { events: Array<{ title: string; date: string; endDate?: string }> }).events.find(
+          (item) => item.title === '回归窗口',
+        ),
+      ),
+    )
+    .toMatchObject({ date: '2026-08-14', endDate: '2026-08-15' })
+
   // 跨日连续条拖动：按列宽吸附平移日期并回写 events
   const bar = span.locator('.band-span', { hasText: '设计冻结' })
   await bar.scrollIntoViewIfNeeded()
