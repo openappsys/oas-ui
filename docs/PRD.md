@@ -2603,10 +2603,10 @@ group 子钮此前为宿主自填 light DOM（`slot="action"`），组件用 `::
 
 ## 未发布：scheduler 跨日连续条、重复规则扩展与 ICS 导出增强
 
-- **范围**：周视图 `endDate` 事件（全天与定时）在顶部跨日带渲染连续长条，定时条带 `开始–结束` 时间标签；支持长条横向拖动整体平移并按列宽吸附到天；`repeat` 增加 `byMonth` / `byMonthDay` / `bySetPos` / `exDates`；`eventsToIcs()` 增加 `EXDATE` / `VALARM` / `X-OAS-COLOR` 与 `rangeStart` / `rangeEnd` 过滤；新增窗口日期取数 recipe。
-- **语义**：跨日事件（含定时）不再按日拆块；拖动落定回写 `date` / `endDate` 并派发 `oas-events-change`，保留 `start/end` 时刻。`byMonth` 限定月份（1-12）、`byMonthDay` 限定日（1-31）、`bySetPos` 写入 RRULE、`exDates` 同时过滤本地 occurrence 与输出 ICS。`rangeStart` / `rangeEnd` 为含端日期，只导出与区间相交的事件。
+- **范围**：周视图 `endDate` 事件（全天与定时）在顶部跨日带渲染连续长条，定时条带 `开始–结束` 时间标签；支持长条横向拖动整体平移并按列宽吸附到天，键盘聚焦后 `←` / `→` 按天平移；`repeat` 增加 `byMonth` / `byMonthDay` / `bySetPos` / `exDates`；`eventsToIcs()` 增加 `EXDATE` / `VALARM` / `X-OAS-COLOR` 与 `rangeStart` / `rangeEnd` 过滤；新增窗口日期取数 recipe。
+- **语义**：跨日事件（含定时）不再按日拆块；拖动/键盘平移回写 `date` / `endDate` 并派发 `oas-events-change`，保留 `start/end` 时刻；键盘移出当前周时视图跟随，避免条卸载后焦点丢失。`byMonth` 限定月份（1-12）、`byMonthDay` 限定日（1-31）、`bySetPos` 写入 RRULE、`exDates` 同时过滤本地 occurrence 与输出 ICS。`rangeStart` / `rangeEnd` 为含端日期，只导出与区间相交的事件。
 - **兼容**：新字段全部可选；未使用时不改变既有渲染与 ICS 输出。连续条仅周视图出现，月/日/agenda 仍按日芯片/行项展示。
-- **验收**：单测覆盖连续条、无逐日芯片、BYMONTH/BYMONTHDAY/EXDATE/remind 与 ICS 字段；e2e 覆盖新 demo 的连续条显示与 console 零告警；文档 zh/en、API 说明与 CHANGELOG 同步。
+- **验收**：单测覆盖连续条、无逐日芯片、键盘平移/视图跟随、BYMONTH/BYMONTHDAY/EXDATE/remind 与 ICS 字段；e2e 覆盖新 demo 的连续条显示、键盘焦点保持与 console 零告警；文档 zh/en、API 说明与 CHANGELOG 同步。
 
 ## 未发布：gantt 项目自动分组与偏差徽标
 

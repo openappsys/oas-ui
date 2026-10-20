@@ -36,6 +36,11 @@ for (const pageCase of PAGES) {
 }
 
 test('webkit interaction: prompt-input 键盘提交', async ({ page }) => {
+  const errors: string[] = []
+  page.on('pageerror', (e) => errors.push(e.message))
+  page.on('console', (m) => {
+    if (m.type() === 'error') errors.push(m.text())
+  })
   await page.goto('/components/prompt-input.html', { waitUntil: 'domcontentloaded' })
   await page.waitForFunction(() => {
     const el = document.querySelector('oas-prompt-input') as (HTMLElement & { shadowRoot?: ShadowRoot | null }) | null
@@ -46,4 +51,5 @@ test('webkit interaction: prompt-input 键盘提交', async ({ page }) => {
   await textarea.press('Enter')
   await expect(page.locator('#prompt-input-output')).toContainText('已提交：WebKit 键盘提交')
   await expect(textarea).toHaveValue('')
+  expect(errors, 'WebKit prompt-input 交互 console/pageerror').toEqual([])
 })

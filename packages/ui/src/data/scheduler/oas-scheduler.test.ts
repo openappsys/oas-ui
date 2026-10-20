@@ -1557,6 +1557,36 @@ describe('scheduler 跨日全天 / repeat count+byDay / ICS 增强', () => {
     expect(changes).toBe(2)
   })
 
+  it('连续条移出当前周时视图跟随，焦点/条保持', () => {
+    const el = mount({
+      view: 'week',
+      'page-show-date': '2026-08-10',
+      events: JSON.stringify([{ id: 'span', date: '2026-08-10', endDate: '2026-08-11', title: '连续' }]),
+    })
+    for (let i = 0; i < 7; i++) {
+      el.shadowRoot!.querySelector<HTMLElement>('.band-span')!.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }),
+      )
+    }
+    expect(el.events.find((item) => item.id === 'span')!.date).toBe('2026-08-17')
+    expect(el.shadowRoot!.querySelector('.band-span')).not.toBeNull()
+    expect(el.shadowRoot!.querySelector('.band-col[data-date="2026-08-17"]')).not.toBeNull()
+  })
+
+  it('定时跨日条键盘平移保留 start/end 时刻', () => {
+    const el = mount({
+      view: 'week',
+      'page-show-date': '2026-08-10',
+      events: JSON.stringify([
+        { id: 'night', date: '2026-08-10', endDate: '2026-08-11', title: '夜间', start: '22:00', end: '02:00' },
+      ]),
+    })
+    el.shadowRoot!.querySelector<HTMLElement>('.band-span.timed-span')!.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }),
+    )
+    expect(el.events[0]).toMatchObject({ date: '2026-08-11', endDate: '2026-08-12', start: '22:00', end: '02:00' })
+  })
+
   it('定时跨日事件在周视图渲染连续条，不再按日拆块', () => {
     const el = mount({
       view: 'week',

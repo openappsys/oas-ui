@@ -117,7 +117,7 @@ for (const [app, port] of [
     expect(mounted.kanbanRendered, 'kanban 真渲染').toBe(true)
     expect(mounted.prefixRendered, 'oas-input prefix-text 真渲染（非仅不崩）').toBe('¥')
     expect(mounted.prompt, 'prompt-input 已挂载').toBe(true)
-    const submitted = await page.evaluate(() => {
+    const textareaReady = await page.evaluate(() => {
       const prompt = document.querySelector('oas-prompt-input') as
         | (HTMLElement & { shadowRoot?: ShadowRoot | null })
         | null
@@ -128,7 +128,7 @@ for (const [app, port] of [
       textarea.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
       return true
     })
-    expect(submitted, 'prompt-input textarea 应可访问').toBe(true)
+    expect(textareaReady, 'prompt-input textarea 应可访问').toBe(true)
     await expect(page.locator('#prompt-output')).toContainText('framework bridge')
     expect(errs, `${app} playground 报错:\n${[...new Set(errs)].slice(0, 5).join('\n')}`).toEqual([])
   })

@@ -61,6 +61,20 @@ test('scheduler 浏览器回归：月/周/agenda 视图渲染与切换 + console
       ),
     )
     .toMatchObject({ date: '2026-08-14', endDate: '2026-08-15' })
+  const focusId = await span.evaluate(
+    (el) => (el.shadowRoot?.activeElement as HTMLElement | null)?.getAttribute('data-id') ?? null,
+  )
+  expect(focusId, '平移后焦点应回到同一条 continuous bar').toBe('ev2')
+  await page.keyboard.press('ArrowLeft')
+  await expect
+    .poll(() =>
+      span.evaluate((el) =>
+        (el as unknown as { events: Array<{ title: string; date: string; endDate?: string }> }).events.find(
+          (item) => item.title === '回归窗口',
+        ),
+      ),
+    )
+    .toMatchObject({ date: '2026-08-13', endDate: '2026-08-14' })
 
   // 跨日连续条拖动：按列宽吸附平移日期并回写 events
   const bar = span.locator('.band-span', { hasText: '设计冻结' })

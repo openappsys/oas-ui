@@ -37,7 +37,7 @@ Monthly/weekly rules may also use `byMonth` (1-12), `byMonthDay` (1-31), `bySetP
   <oas-scheduler view="week" page-show-date="2026-08-10" events='[{"date":"2026-08-10","endDate":"2026-08-12","title":"Design freeze"},{"date":"2026-08-13","endDate":"2026-08-14","title":"Regression window","color":"#059669"},{"date":"2026-08-12","endDate":"2026-08-13","title":"Night shift","start":"22:00","end":"02:00"}]'></oas-scheduler>
 </DemoBlock>
 
-In week view, an all-day event with `endDate` renders as one continuous bar in the all-day band (instead of one chip per day). Drag the bar horizontally to shift `date` / `endDate` by whole columns; the component dispatches `oas-events-change`. When the bar is focused, `←` / `→` shifts it by one day. Timed multi-day events also render as one continuous bar in the top multi-day band, with a `start–end` time label; the day time grid no longer duplicates per-day blocks.
+In week view, an all-day event with `endDate` renders as one continuous bar in the all-day band (instead of one chip per day). Drag the bar horizontally to shift `date` / `endDate` by whole columns; the component dispatches `oas-events-change`. When the bar is focused, `←` / `→` shifts it by one day; if it leaves the current week the view follows, so the bar is not unmounted under focus. Timed multi-day events also render as one continuous bar in the top multi-day band, with a `start–end` time label; the day time grid no longer duplicates per-day blocks.
 
 <DemoBlock title="Reminders (remind minutes; oas-remind when due)">
   <oas-scheduler id="scheduler-remind" page-show-date="2026-08-10"></oas-scheduler>

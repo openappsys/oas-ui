@@ -2166,6 +2166,7 @@ export class OASScheduler extends OASElement {
       bar.addEventListener('keydown', (e) => {
         if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return
         e.preventDefault()
+        e.stopPropagation()
         this.shiftSpanByDays(ev, e.key === 'ArrowLeft' ? -1 : 1)
       })
       // 跨日连续条拖拽整体平移（按列宽吸附到天）
@@ -2216,7 +2217,17 @@ export class OASScheduler extends OASElement {
       const d = parseISODate(iso)!
       return toISODate(new Date(d.getFullYear(), d.getMonth(), d.getDate() + delta))
     }
-    this.updateEvent(current.id, { date: shift(current.date), endDate: shift(current.endDate) })
+    const nextDate = shift(current.date)
+    // 键盘可连续平移：移出当前周/日时视图跟随，避免条卸载后焦点丢失
+    const next = parseISODate(nextDate)!
+    if (this.viewMode === 'week') {
+      const weekStart = this.weekStartOf(this.viewDate)
+      const weekEnd = new Date(weekStart.getFullYear(), weekStart.getMonth(), weekStart.getDate() + 6)
+      if (next < weekStart || next > weekEnd) this.viewDate = startOfDay(next)
+    } else if (this.viewMode === 'day') {
+      if (nextDate !== toISODate(this.viewDate)) this.viewDate = startOfDay(next)
+    }
+    this.updateEvent(current.id, { date: nextDate, endDate: shift(current.endDate) })
   }
 
   private setDropCol(col: HTMLElement | null): void {
