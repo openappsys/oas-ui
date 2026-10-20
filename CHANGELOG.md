@@ -21,7 +21,7 @@
 
 - **`oas-gantt` 截止日 / 浮时 / 基线差异**：`GanttTask.deadline` 超期并入 `.conflict` 并渲染 `.deadline` 标记；`show-float` 显示总浮时（LF − EF）与自由浮时（最近后继允许的延后量），同步 `data-total-float` / `data-free-float`；`baseline.progress` 渲染基线进度覆盖层；新增纯函数 `computeVariance(tasks)` 输出 start/end/duration/progress 差值。
 
-- **`oas-scheduler` 服务端资源行窗口 / 宿主展开重复 / 打印**：resource / resource-week 支持 `windowed` + `total` + `window-start` 与 `oas-window-request`（绝对行号、半开区间）；windowed 下不自动追加「未分配」行。宿主展开 occurrence 时须从基础事件剥离 `repeat`（组件保留切片内本地展开）；提供保留 id `__unassigned__` 显式承接未分配事件。新增 `@media print`（隐藏工具栏、取消滚动限高含 agenda）与 `beforeprint` 打印已装载切片 / `afterprint` 恢复窗口。ICS 导出不在本批。
+- **`oas-scheduler` 服务端资源行窗口 / 宿主展开重复 / 打印**：resource / resource-week 支持 `windowed` + `total` + `window-start` 与 `oas-window-request`（绝对行号、半开区间）；windowed 下不自动追加「未分配」行。宿主展开 occurrence 时须从基础事件剥离 `repeat`（组件保留切片内本地展开）；提供保留 id `__unassigned__` 显式承接未分配事件。新增 `@media print`（隐藏工具栏、取消滚动限高含 agenda）与 `beforeprint` 打印已装载切片 / `afterprint` 恢复窗口。新增 `eventsToIcs()` / `el.exportIcs()`：全天/浮动本地时间、RRULE 子集、RFC 5545 转义与 75 字节折行。
 
 ### 交互
 

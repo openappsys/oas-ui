@@ -483,6 +483,8 @@ export {
 } from './data/kanban/index.js'
 export {
   OASScheduler,
+  eventsToIcs,
+  type IcsExportOptions,
   type SchedulerEvent,
   type SchedulerEventsChangeDetail,
   type SchedulerEventClickDetail,

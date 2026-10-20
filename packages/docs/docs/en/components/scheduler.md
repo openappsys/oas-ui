@@ -180,6 +180,19 @@ The resource views (`resource` / `resource-week`) support server-side slices: `w
 ></oas-scheduler>
 ```
 
+## ICS Export
+
+```ts
+import { eventsToIcs } from '@oas-ui/ui'
+
+const ics = el.exportIcs() // current events
+const standalone = eventsToIcs(events, { calendarName: 'My Calendar' })
+```
+
+- Events without `start` export as all-day events (`DTSTART/DTEND;VALUE=DATE`, end = next day); timed events use floating local time (no TZID).
+- `repeat` maps to `RRULE:FREQ=...;INTERVAL=...;UNTIL=...` (`until` is inclusive).
+- Text is RFC 5545 escaped; output uses CRLF and 75-byte folding; invalid-date events are skipped. The `now` option fixes `DTSTAMP` for reproducible exports/tests.
+
 ## API
 
 ### oas-scheduler

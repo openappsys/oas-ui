@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { OASScheduler } from './index.js'
+import { OASScheduler, eventsToIcs } from './index.js'
 import type { SchedulerEvent } from './index.js'
 
 function mount(attrs: Record<string, string> = {}): OASScheduler {
@@ -1383,5 +1383,46 @@ describe('OASScheduler 属性-方法撞名回归', () => {
     // 行为等价断言：gutter 首刻度 = start-hour（09:00）
     const firstTick = el.shadowRoot!.querySelector<HTMLElement>('.gutter span')!
     expect(firstTick.textContent).toBe('09:00')
+  })
+})
+
+describe('scheduler ICS 导出', () => {
+  it('全天/定时/重复/转义：生成 VCALENDAR 行，CRLF 换行，非法事件跳过', () => {
+    const now = new Date(Date.UTC(2026, 7, 1, 12, 0, 0))
+    const events: SchedulerEvent[] = [
+      { id: 'a', date: '2026-08-03', title: 'A, B; C\nD', repeat: { freq: 'daily', until: '2026-08-05' } },
+      {
+        id: 'b',
+        date: '2026-08-10',
+        title: 'Timed',
+        start: '09:00',
+        end: '10:30',
+        repeat: { freq: 'weekly', interval: 2 },
+      },
+      { id: 'bad', date: '2026-13-40', title: 'Bad' },
+    ]
+    const ics = eventsToIcs(events, { now, calendarName: 'Work' })
+    expect(ics.startsWith('BEGIN:VCALENDAR\r\n')).toBe(true)
+    expect(ics.endsWith('END:VCALENDAR\r\n')).toBe(true)
+    expect(ics).toContain('DTSTAMP:20260801T120000Z')
+    expect(ics).toContain('DTSTART;VALUE=DATE:20260803')
+    expect(ics).toContain('DTEND;VALUE=DATE:20260804')
+    expect(ics).toContain('RRULE:FREQ=DAILY;UNTIL=20260805')
+    expect(ics).toContain('SUMMARY:A\\, B\\; C\\nD')
+    expect(ics).toContain('DTSTART:20260810T090000')
+    expect(ics).toContain('DTEND:20260810T103000')
+    expect(ics).toContain('RRULE:FREQ=WEEKLY;INTERVAL=2')
+    expect(ics).toContain('X-WR-CALNAME:Work')
+    expect(ics).not.toContain('Bad')
+    expect(ics.split('\r\n').length).toBeGreaterThan(10)
+  })
+
+  it('组件 exportIcs 走当前事件；不修改 events', () => {
+    const now = new Date(Date.UTC(2026, 7, 1, 0, 0, 0))
+    const el = mount({ events: JSON.stringify([{ id: 'x', date: '2026-08-03', title: 'X' }]) })
+    const before = el.events
+    const ics = el.exportIcs({ now })
+    expect(ics).toContain('SUMMARY:X')
+    expect(el.events).toEqual(before)
   })
 })

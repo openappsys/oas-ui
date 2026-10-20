@@ -180,6 +180,19 @@ onMounted(async () => {
 ></oas-scheduler>
 ```
 
+## ICS 导出
+
+```ts
+import { eventsToIcs } from '@oas-ui/ui'
+
+const ics = el.exportIcs() // 当前事件
+const standalone = eventsToIcs(events, { calendarName: 'My Calendar' })
+```
+
+- 无 `start` 的事件导出为全天事件（`DTSTART/DTEND;VALUE=DATE`，结束为次日）；有 `start` 的事件使用浮动本地时间（不写 TZID）。
+- `repeat` 映射为 `RRULE:FREQ=...;INTERVAL=...;UNTIL=...`（`until` 含当日）。
+- 文本按 RFC 5545 转义，输出 CRLF 与 75 字节折行；非法日期事件跳过。`now` 选项可固定 `DTSTAMP`（测试/可复现导出）。
+
 ## API
 
 ### oas-scheduler

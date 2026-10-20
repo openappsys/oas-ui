@@ -607,6 +607,14 @@ export interface SchedulerCreateDetail {
   resource?: string
 }
 
+/** ICS 导出选项 */
+export interface IcsExportOptions {
+  /** 日历名称（写入 X-WR-CALNAME） */
+  calendarName?: string
+  /** DTSTAMP 时间（缺省 new Date()；测试用固定值） */
+  now?: Date
+}
+
 /** 资源（资源视图的行） */
 export interface SchedulerResource {
   id: string
@@ -685,6 +693,109 @@ function sanitizeResources(v: unknown): SchedulerResource[] {
     out.push(r)
   }
   return out
+}
+
+function pad2(n: number): string {
+  return String(n).padStart(2, '0')
+}
+
+function icsDate(d: Date): string {
+  return `${d.getFullYear()}${pad2(d.getMonth() + 1)}${pad2(d.getDate())}`
+}
+
+function icsDateTime(d: Date, minutes: number): string {
+  const offset = Math.floor(minutes / 1440)
+  const day = offset === 0 ? d : new Date(d.getFullYear(), d.getMonth(), d.getDate() + offset)
+  const h = Math.floor((minutes % 1440) / 60)
+  const m = minutes % 60
+  return `${icsDate(day)}T${pad2(h)}${pad2(m)}00`
+}
+
+/** UTC DTSTAMP（ICS 规范要求 UTC） */
+function icsStamp(d: Date): string {
+  return (
+    `${d.getUTCFullYear()}${pad2(d.getUTCMonth() + 1)}${pad2(d.getUTCDate())}` +
+    `T${pad2(d.getUTCHours())}${pad2(d.getUTCMinutes())}${pad2(d.getUTCSeconds())}Z`
+  )
+}
+
+function icsEscape(s: string): string {
+  return s.replace(/\\/g, '\\\\').replace(/\r?\n/g, '\\n').replace(/;/g, '\\;').replace(/,/g, '\\,')
+}
+
+/** 75 octet 折行（续行以空格开头；按 UTF-8 字节数计算，避免截断多字节字符） */
+function foldIcsLine(line: string): string {
+  const enc = new TextEncoder()
+  if (enc.encode(line).length <= 75) return line
+  const parts: string[] = []
+  let chunk = ''
+  let bytes = 0
+  for (const ch of line) {
+    const b = enc.encode(ch).length
+    if (bytes + b > 74) {
+      parts.push(chunk)
+      chunk = ` ${ch}`
+      bytes = 1 + b
+    } else {
+      chunk += ch
+      bytes += b
+    }
+  }
+  if (chunk) parts.push(chunk)
+  return parts.join('\r\n')
+}
+
+/**
+ * 导出 iCalendar（ICS，RFC 5545 子集）。纯函数，不修改输入。
+ * - 无 start 的事件按全天处理（DTSTART/DTEND 为 VALUE=DATE，结束为次日）。
+ * - 有 start 的事件使用**浮动本地时间**（不写 TZID，便于跨客户端；时区锚定由宿主按需转换）。
+ * - repeat 映射为 RRULE:FREQ/INTERVAL/UNTIL（until 含当日；不带时区）。
+ * - 非法日期事件跳过；输出 CRLF 换行、75 字节折行。
+ */
+export function eventsToIcs(events: SchedulerEvent[], options: IcsExportOptions = {}): string {
+  const stamp = icsStamp(options.now ?? new Date())
+  const lines: string[] = [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'PRODID:-//OAS-UI//Scheduler//EN',
+    'CALSCALE:GREGORIAN',
+    'METHOD:PUBLISH',
+  ]
+  if (options.calendarName) lines.push(`X-WR-CALNAME:${icsEscape(options.calendarName)}`)
+  events.forEach((ev, index) => {
+    if (!ev || typeof ev.date !== 'string' || !ev.title) return
+    const day = parseISODate(ev.date)
+    if (!day) return
+    const id = String(ev.id ?? `oas-${index}-${icsDate(day)}`).replace(/[\r\n]/g, '')
+    const startMin = parseTime(ev.start)
+    const allDay = startMin === null
+    const start = allDay ? icsDate(day) : icsDateTime(day, startMin)
+    const endMinRaw = parseTime(ev.end)
+    const timedEnd = startMin === null ? null : Math.max(endMinRaw ?? startMin + 60, startMin + 15)
+    const nextDay = new Date(day.getFullYear(), day.getMonth(), day.getDate() + 1)
+    lines.push('BEGIN:VEVENT')
+    lines.push(`UID:${id}@oas-ui`)
+    lines.push(`DTSTAMP:${stamp}`)
+    if (allDay) {
+      lines.push(`DTSTART;VALUE=DATE:${start}`)
+      lines.push(`DTEND;VALUE=DATE:${icsDate(nextDay)}`)
+    } else {
+      lines.push(`DTSTART:${start}`)
+      lines.push(`DTEND:${icsDateTime(day, timedEnd!)}`)
+    }
+    lines.push(`SUMMARY:${icsEscape(ev.title)}`)
+    if (ev.repeat) {
+      let rule = `FREQ=${ev.repeat.freq.toUpperCase()}`
+      const interval = Math.max(1, Math.floor(ev.repeat.interval ?? 1))
+      if (interval > 1) rule += `;INTERVAL=${interval}`
+      const until = ev.repeat.until ? parseISODate(ev.repeat.until) : null
+      if (until) rule += allDay ? `;UNTIL=${icsDate(until)}` : `;UNTIL=${icsDate(until)}T235959`
+      lines.push(`RRULE:${rule}`)
+    }
+    lines.push('END:VEVENT')
+  })
+  lines.push('END:VCALENDAR')
+  return lines.map(foldIcsLine).join('\r\n') + '\r\n'
 }
 
 export class OASScheduler extends OASElement {
@@ -802,6 +913,11 @@ export class OASScheduler extends OASElement {
     this._resourcesAttrCache = JSON.stringify(this._resources)
     this.setAttribute('resources', this._resourcesAttrCache)
     this.update()
+  }
+
+  /** 导出当前事件的 ICS 字符串（纯函数 eventsToIcs 的实例便捷通道；不触发重渲染） */
+  exportIcs(options?: IcsExportOptions): string {
+    return eventsToIcs(this._events, options)
   }
 
   /** 新增事件：返回分配到的 id */
