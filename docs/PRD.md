@@ -2593,3 +2593,10 @@ group 子钮此前为宿主自填 light DOM（`slot="action"`），组件用 `::
 - **语义**：总浮时 = LF − EF；自由浮时 = 最近后继允许的延后量（按 FS/SS/FF/SF + lag）；摘要不参与 CPM；windowed 模式跳过浮时/关键路径并在切片上只做截止日违约。正差值 = 当前晚于基线/工期更长/进度更多；无 `baseline.progress` 时 `progressDelta` 为 null。
 - **兼容**：新字段/属性均可选；缺省不渲染浮时标签、截止标记或基线进度层，既有渲染与事件不变。
 - **验收**：单测覆盖 deadline 违约/未超期、总浮时/自由浮时（自由可小于总）、baseline.progress 清洗/渲染、computeVariance 四类差值/无基线/无进度；e2e 覆盖新 demo 的显示与 console 零告警；文档 zh/en、API 说明与 CHANGELOG 同步。
+
+## 未发布：scheduler 服务端资源行窗口、重复语义与打印
+
+- **范围**：resource / resource-week 接入共享行窗口协议（`windowed` + `total` + `window-start` + `oas-window-request`）；windowed 下 `resources` 仅承载切片，组件不自动追加「未分配」行。打印样式 `@media print` 隐藏工具栏/取消滚动限高，`beforeprint` 临时关闭行/小时虚拟化、`afterprint` 恢复。
+- **重复语义（先落地宿主展开）**：windowed 下组件仍对已装载切片内 `repeat` 做本地展开；跨窗口重复实例由宿主展开为独立 occurrence（唯一 id）下发，避免边界重复/漏渲染。ICS 导出不在本批。
+- **兼容**：`windowed` 缺省关，非 windowed 渲染/事件/CRUD 与旧版一致；打印仅在打印上下文改变呈现。
+- **验收**：单测覆盖 windowed 绝对行号/aria/spacer/请求去重、beforeprint 全量/afterprint 恢复；e2e 覆盖资源切片与 @media print；文档 zh/en、API 说明、CHANGELOG 同步。

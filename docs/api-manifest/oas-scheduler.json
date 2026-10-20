@@ -59,6 +59,23 @@
       "type": "string",
       "default": "true",
       "observed": true
+    },
+    {
+      "name": "windowed",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "total",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "window-start",
+      "type": "string",
+      "default": "0",
+      "observed": true
     }
   ],
   "props": [
@@ -99,6 +116,10 @@
     {
       "name": "oas-create",
       "detail": "{ date: ctx.iso, start: this.fmtMin(a), end: this.fmtMin(b), resource: ctx.resource, } satisfies SchedulerCreateDetail"
+    },
+    {
+      "name": "oas-window-request",
+      "detail": "{ start: need.start, end: need.end, reason: 'scroll' } satisfies WindowRequestDetail"
     }
   ],
   "slots": [],

@@ -600,3 +600,48 @@ test('scheduler 滚动容器键盘可达：day 无事件 / resource-week 空事�
   })
   expect(errors, 'console 零告警').toEqual([])
 })
+
+test('scheduler windowed 资源切片 + 打印样式：绝对行号、窗口请求、@media print', async ({ page }) => {
+  const errors: string[] = []
+  page.on('pageerror', (e) => errors.push(e.message))
+  page.on('console', (m) => {
+    if (m.type() === 'error') errors.push(m.text())
+  })
+  await page.goto('/components/scheduler.html', { waitUntil: 'domcontentloaded' })
+  const r = await page.evaluate(() => {
+    const el = document.createElement('oas-scheduler')
+    el.id = 'scheduler-windowed-qa'
+    el.setAttribute('view', 'resource')
+    el.setAttribute('page-show-date', '2026-08-10')
+    el.setAttribute('windowed', '')
+    el.setAttribute('total', '100')
+    el.setAttribute('window-start', '40')
+    el.setAttribute(
+      'resources',
+      JSON.stringify(Array.from({ length: 20 }, (_, i) => ({ id: `r${40 + i}`, title: `R${40 + i}` }))),
+    )
+    let req: { start: number; end: number } | null = null
+    el.addEventListener('oas-window-request', (e) => {
+      req = (e as CustomEvent).detail
+    })
+    document.body.appendChild(el)
+    return new Promise<{ rowCount: string | null; firstIndex: string | null; req: unknown; printCss: boolean }>(
+      (resolve) => {
+        setTimeout(() => {
+          const root = el.shadowRoot!
+          resolve({
+            rowCount: root.querySelector('[role="grid"]')?.getAttribute('aria-rowcount') ?? null,
+            firstIndex: root.querySelector('.res-row[data-resource="r40"]')?.getAttribute('aria-rowindex') ?? null,
+            req,
+            printCss: (root.querySelector('style')?.textContent ?? '').includes('@media print'),
+          })
+        }, 400)
+      },
+    )
+  })
+  expect(r.rowCount).toBe('100')
+  expect(r.firstIndex).toBe('41')
+  expect(r.req, '应派发 oas-window-request').not.toBeNull()
+  expect(r.printCss, '应包含 @media print').toBe(true)
+  expect(errors).toEqual([])
+})

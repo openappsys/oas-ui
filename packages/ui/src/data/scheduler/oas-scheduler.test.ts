@@ -823,6 +823,47 @@ describe('OASScheduler 虚拟化（时间轴小时窗口 + 资源行窗口）', 
     expect(parseFloat(bottom!.style.height)).toBe((500 - 24) * RES_ROW_H)
   })
 
+  it('V3b windowed 资源切片：按绝对行号渲染/aria/spacer，并派发 oas-window-request', () => {
+    const res = Array.from({ length: 20 }, (_, i) => ({ id: `r${40 + i}`, title: `R${40 + i}` }))
+    const el = new OASScheduler()
+    let req: { start: number; end: number } | null = null
+    el.addEventListener('oas-window-request', (e) => {
+      req = (e as CustomEvent).detail
+    })
+    el.setAttribute('view', 'resource')
+    el.setAttribute('page-show-date', '2026-08-10')
+    el.setAttribute('windowed', '')
+    el.setAttribute('total', '100')
+    el.setAttribute('window-start', '40')
+    el.setAttribute('resources', JSON.stringify(res))
+    document.body.appendChild(el)
+    stubBox(resviewOf(el), { clientHeight: 740, scrollTop: 40 * RES_ROW_H })
+    el.requestUpdate()
+    expect(el.shadowRoot!.querySelector('[role="grid"]')!.getAttribute('aria-rowcount')).toBe('100')
+    const first = el.shadowRoot!.querySelector<HTMLElement>('.res-row[data-resource="r40"]')!
+    expect(first.getAttribute('aria-rowindex')).toBe('41')
+    expect(parseFloat(el.shadowRoot!.querySelector<HTMLElement>('.res-pad-top')!.style.height)).toBe(40 * RES_ROW_H)
+    expect(parseFloat(el.shadowRoot!.querySelector<HTMLElement>('.res-pad-bottom')!.style.height)).toBe(
+      (100 - 60) * RES_ROW_H,
+    )
+    expect(req, '切片未覆盖可视窗口时应请求宿主回填').not.toBeNull()
+    expect(req!.start).toBeLessThanOrEqual(40)
+    expect(req!.end).toBeGreaterThanOrEqual(60)
+  })
+
+  it('打印：@media print 存在；beforeprint 临时渲染全量、afterprint 恢复行窗口', () => {
+    const res = Array.from({ length: 500 }, (_, i) => ({ id: `r${i}`, title: `R${i}` }))
+    const el = mount({ view: 'resource', 'page-show-date': '2026-08-10', resources: JSON.stringify(res) })
+    expect(el.shadowRoot!.querySelector('style')?.textContent ?? '').toContain('@media print')
+    stubBox(resviewOf(el), { clientHeight: 740 })
+    el.requestUpdate()
+    expect(el.shadowRoot!.querySelectorAll('.res-row').length).toBe(24)
+    window.dispatchEvent(new Event('beforeprint'))
+    expect(el.shadowRoot!.querySelectorAll('.res-row').length).toBe(500)
+    window.dispatchEvent(new Event('afterprint'))
+    expect(el.shadowRoot!.querySelectorAll('.res-row').length).toBe(24)
+  })
+
   it('V4 中部滚动：scroll 合帧驱动窗口平移覆盖可视区（中部行出现、顶部行移出）', async () => {
     const res = Array.from({ length: 500 }, (_, i) => ({ id: `r${i}`, title: `资源 ${i}` }))
     const el = mount({ view: 'resource', 'page-show-date': '2026-08-10', resources: JSON.stringify(res) })

@@ -4304,7 +4304,10 @@
       "view": "View: month (default) / week / day / agenda / resource / resource-week; week/day views show a time axis with positioned event blocks (untimed events go to the all-day row); agenda shows a 28-day chronological list; resource is a single-day horizontal resource timeline, resource-week a week x resource matrix",
       "start-hour": "Time axis start hour (0-23, default 8)",
       "end-hour": "Time axis end hour (> start-hour and <= 24, default 20)",
-      "timezone": "Timezone (IANA, e.g. Asia/Shanghai; empty = local): affects title/column date formatting and the today marker (via Intl timeZone); invalid values fall back to local"
+      "timezone": "Timezone (IANA, e.g. Asia/Shanghai; empty = local): affects title/column date formatting and the today marker (via Intl timeZone); invalid values fall back to local",
+      "windowed": "Server-side resource row window mode (boolean, off by default): for resource / resource-week, resources carries only the [window-start, window-start + resources.length) slice; emits oas-window-request (absolute, half-open range) when the visible window is uncovered. The component does not auto-append an Unassigned row.",
+      "total": "Total resource row count in windowed mode (must be positive); used for aria-rowcount and absolute row indices.",
+      "window-start": "Absolute row index of the first loaded row in windowed mode."
     },
     "events": {
       "oas-create": "Dispatched when an empty time cell is dragged out to a range of >=15 minutes, detail: { date, start, end, resource? } — the component does not create the event; the host calls addEvent. A shorter drag is treated as oas-day-click",
@@ -4312,7 +4315,8 @@
       "oas-event-click": "Dispatched when an event chip is clicked, detail: { id, event } (does not trigger the day click)",
       "oas-events-change": "Dispatched on any events change (set/addEvent/updateEvent/removeEvent), detail: { events }",
       "oas-view-change": "Dispatched on view switch (month/week/day/agenda), detail: { view }; not dispatched on initial attribute absorption",
-      "oas-remind": "Dispatched when an event reminder is due, detail: { id, event } (fires at start - remind minutes via built-in timers)"
+      "oas-remind": "Dispatched when an event reminder is due, detail: { id, event } (fires at start - remind minutes via built-in timers)",
+      "oas-window-request": "Emitted in windowed mode when the visible resource-row window is not covered by the loaded slice; detail: { start, end, reason } (absolute, half-open; the same window is not emitted twice)."
     },
     "props": {
       "events": "Schedule events (`SchedulerEvent[]`): `el.events` reads (copy incl. auto ids); `el.events = [...]` writes (syncs the events attribute + re-renders + dispatches oas-events-change)",

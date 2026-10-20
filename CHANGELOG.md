@@ -21,6 +21,8 @@
 
 - **`oas-gantt` 截止日 / 浮时 / 基线差异**：`GanttTask.deadline` 超期并入 `.conflict` 并渲染 `.deadline` 标记；`show-float` 显示总浮时（LF − EF）与自由浮时（最近后继允许的延后量），同步 `data-total-float` / `data-free-float`；`baseline.progress` 渲染基线进度覆盖层；新增纯函数 `computeVariance(tasks)` 输出 start/end/duration/progress 差值。
 
+- **`oas-scheduler` 服务端资源行窗口 / 宿主展开重复 / 打印**：resource / resource-week 支持 `windowed` + `total` + `window-start` 与 `oas-window-request`（绝对行号、半开区间）；windowed 下不自动追加「未分配」行。跨窗口 repeat 由宿主展开为独立 occurrence（组件保留切片内本地展开）。新增 `@media print`（隐藏工具栏、取消滚动限高）与 `beforeprint` 全量渲染 / `afterprint` 恢复窗口。ICS 导出不在本批。
+
 ### 交互
 
 - **`oas-gantt` / `oas-resource` 文本可选中复制**：任务名、资源名与条标签恢复 `user-select: text`，支持鼠标划选/复制；`oas-gantt` 行拖拽改由右侧重排手柄承载（细指针悬停/聚焦显形，粗指针常显），避免行重排与文本选择互相抢占；`oas-resource` 条标签点击仍冒泡到任务条。新增 Chromium/Firefox 真实拖选回归。

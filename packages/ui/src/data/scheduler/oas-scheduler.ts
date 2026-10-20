@@ -14,6 +14,14 @@ import {
   weekdayLabels,
 } from '../../form/calendar/date-grid.js'
 import { isRtl } from '../../shared/direction.js'
+import {
+  WINDOW_MARGIN,
+  expandWindow,
+  readWindowedMode,
+  sameWindow as sameWindowRange,
+  windowCovered,
+  type WindowRequestDetail,
+} from '../../shared/window-data.js'
 import { computeVirtualWindow } from '../virtual-list/oas-virtual-list.js'
 
 const STYLE = `
@@ -504,6 +512,34 @@ const STYLE = `
   pointer-events: none;
   z-index: 4;
 }
+@media print {
+  .calendar {
+    border: 0;
+    border-radius: 0;
+    height: auto !important;
+  }
+  .header,
+  .views,
+  .create-preview {
+    display: none !important;
+  }
+  .timeview,
+  .resourceview,
+  .res-body,
+  .grid {
+    max-height: none !important;
+    overflow: visible !important;
+  }
+  .res-row,
+  .event,
+  .res-ev {
+    break-inside: avoid;
+  }
+  .today-line,
+  .res-now {
+    display: none !important;
+  }
+}
 `
 
 /** 日程事件：`{ id?, date: 'YYYY-MM-DD', title, color?, start?, end? }`（start/end 为 'HH:mm' 时刻，week/day 视图按时刻渲染 timed 块，缺省为全天事件） */
@@ -514,7 +550,8 @@ export interface SchedulerEvent {
   color?: string
   start?: string
   end?: string
-  /** 重复规则（RRULE 子集）：按 freq × interval 从 date 起重复，until 截止（含当日） */
+  /** 重复规则（RRULE 子集）：按 freq × interval 从 date 起重复，until 截止（含当日）。
+   *  windowed 模式下组件仍展开已装载切片内的 occurrence；跨窗口 occurrence 由宿主展开为独立事件（唯一 id）。 */
   repeat?: SchedulerRepeat
   /** 提前提醒分钟数（组件到点派发 oas-remind） */
   remind?: number
@@ -657,6 +694,10 @@ export class OASScheduler extends OASElement {
       'timezone',
       'show-now',
       'dir',
+      // 服务端资源行窗口协议（resource / resource-week）
+      'windowed',
+      'total',
+      'window-start',
     ]
   }
 
@@ -682,6 +723,12 @@ export class OASScheduler extends OASElement {
   private nowTimer = 0
   private nextId = 1
   private viewDate: Date = startOfDay(new Date())
+  /** 服务端资源行窗口（resource / resource-week）；非 windowed 时行为与旧版本一致 */
+  private winMode = readWindowedMode(false, 0, 0, 0)
+  private lastWindowReq: { start: number; end: number } | null = null
+  /** 已应用过的 window-start：切片首行变化时把资源滚动容器锚到该绝对行 */
+  private lastWindowStart = -1
+  private printAll = false
   private lastPageAnchor = ''
   private lastTz = ''
   private anchorInit = false
@@ -1026,6 +1073,23 @@ export class OASScheduler extends OASElement {
       })
     }
     this.bindScrollWindows()
+    window.addEventListener('beforeprint', this.onBeforePrint)
+    window.addEventListener('afterprint', this.onAfterPrint)
+    this.onCleanup(() => {
+      window.removeEventListener('beforeprint', this.onBeforePrint)
+      window.removeEventListener('afterprint', this.onAfterPrint)
+    })
+  }
+
+  /** 打印前临时关闭行/小时虚拟化，打印完整视图；afterprint 恢复窗口渲染 */
+  private onBeforePrint = (): void => {
+    this.printAll = true
+    this.renderCurrentView()
+  }
+
+  private onAfterPrint = (): void => {
+    this.printAll = false
+    this.renderCurrentView()
   }
 
   protected override render(): void {
@@ -1044,6 +1108,16 @@ export class OASScheduler extends OASElement {
   protected override update(): void {
     this.syncEvents()
     this.syncResources()
+    this.winMode = readWindowedMode(
+      this.hasAttr('windowed'),
+      Number(this.getAttr('total', '')),
+      Number(this.getAttr('window-start', '0')),
+      this._resources.length,
+    )
+    if (!this.winMode.windowed) {
+      this.lastWindowReq = null
+      this.lastWindowStart = -1
+    }
     this.rebuildResourceIndex()
     this.scheduleReminders()
     // view 属性同步（受控宿主驱动才发 oas-view-change；属性首次吸收不派发）
@@ -1776,13 +1850,21 @@ export class OASScheduler extends OASElement {
 
   /** 资源视图：resource = 单日横向时间轴；resource-week = 周 × 资源 */
   private renderResource(): void {
+    // 宿主换切片后把滚动锚到切片首行的绝对位置，否则 scrollTop 仍在旧区间、窗口换算为空
+    if (this.winMode.windowed && this.winMode.windowStart !== this.lastWindowStart) {
+      this.lastWindowStart = this.winMode.windowStart
+      const res = this.shadow.querySelector<HTMLElement>('[part="resource"]')
+      if (res) res.scrollTop = this.winMode.windowStart * this.resRowH()
+    }
     if (this.viewMode === 'resource') this.renderResourceDay()
     else this.renderResourceWeek()
   }
 
-  /** 资源行：显式 resources；无则单行「未分配」。事件带未知 resource 时补一行「未分配」（按索引计数 O(1) 判定） */
+  /** 资源行：显式 resources；无则单行「未分配」。事件带未知 resource 时补一行「未分配」（按索引计数 O(1) 判定）。
+   *  windowed 模式只持有宿主给的资源切片，不自行追加「未分配」（全量归属由宿主负责）。 */
   private resourceRows(): SchedulerResource[] {
     const rows: SchedulerResource[] = this._resources.map((r) => ({ ...r }))
+    if (this.winMode.windowed) return rows
     if (rows.length === 0) return [{ id: '', title: this.t('scheduler.unassigned') }]
     if (this._unassignedCount > 0) rows.push({ id: '', title: this.t('scheduler.unassigned') })
     return rows
@@ -1810,6 +1892,8 @@ export class OASScheduler extends OASElement {
     // 同 renderTimeView「先算窗口再清 DOM」的顺序。
     const rows = this.resourceRows()
     const rowH = RES_ROW_H
+    const totalRows = this.winMode.windowed ? this.winMode.total : rows.length
+    const rowBase = this.winMode.windowed ? this.winMode.windowStart : 0
     // 行窗口：可视行 ±buffer；视口不可测回落全量
     const win = this.rowWindow(rows.length, rowH)
     this.lastRowWin = win
@@ -1844,12 +1928,12 @@ export class OASScheduler extends OASElement {
     const body = document.createElement('div')
     body.className = 'res-body'
     body.setAttribute('role', 'grid')
-    body.setAttribute('aria-rowcount', String(rows.length))
+    body.setAttribute('aria-rowcount', String(totalRows))
     // 行窗口 spacer：窗口外行以等高占位撑起总高（滚动范围守恒；aria-hidden 不进可访问树）
     const padTop = document.createElement('div')
     padTop.className = 'res-pad-top'
     padTop.setAttribute('aria-hidden', 'true')
-    padTop.style.height = `${win.start * rowH}px`
+    padTop.style.height = `${(rowBase + win.start) * rowH}px`
     body.appendChild(padTop)
     for (let i = win.start; i < win.end; i++) {
       const r = rows[i]!
@@ -1857,7 +1941,7 @@ export class OASScheduler extends OASElement {
       row.className = 'res-row'
       row.dataset.resource = r.id
       row.setAttribute('role', 'row')
-      row.setAttribute('aria-rowindex', String(i + 1))
+      row.setAttribute('aria-rowindex', String(rowBase + i + 1))
       const label = document.createElement('button')
       label.type = 'button'
       label.className = 'res-label'
@@ -1904,9 +1988,10 @@ export class OASScheduler extends OASElement {
     const padBottom = document.createElement('div')
     padBottom.className = 'res-pad-bottom'
     padBottom.setAttribute('aria-hidden', 'true')
-    padBottom.style.height = `${(rows.length - win.end) * rowH}px`
+    padBottom.style.height = `${Math.max(0, totalRows - rowBase - win.end) * rowH}px`
     body.appendChild(padBottom)
     el.appendChild(body)
+    this.requestResourceWindow(win)
     this.restoreFocus(focusId)
   }
 
@@ -1923,6 +2008,8 @@ export class OASScheduler extends OASElement {
       this.titleEl.textContent = `${this.fmtTz(days[0]!, 'yyyy-MM-dd')} ~ ${this.fmtTz(days[6]!, 'MM-dd')}`
     // 行窗口必须在清空内容前计算（同 renderResourceDay：清 DOM 后读 scrollTop 会被钳回 0）
     const rows = this.resourceRows()
+    const totalRows = this.winMode.windowed ? this.winMode.total : rows.length
+    const rowBase = this.winMode.windowed ? this.winMode.windowStart : 0
     const startH = this.startHourValue()
     const endH = this.endHourValue()
     const hourH = 24
@@ -1955,11 +2042,11 @@ export class OASScheduler extends OASElement {
     const body = document.createElement('div')
     body.className = 'res-body'
     body.setAttribute('role', 'grid')
-    body.setAttribute('aria-rowcount', String(rows.length))
+    body.setAttribute('aria-rowcount', String(totalRows))
     const padTop = document.createElement('div')
     padTop.className = 'res-pad-top'
     padTop.setAttribute('aria-hidden', 'true')
-    padTop.style.height = `${win.start * rowH}px`
+    padTop.style.height = `${(rowBase + win.start) * rowH}px`
     body.appendChild(padTop)
     for (let i = win.start; i < win.end; i++) {
       const r = rows[i]!
@@ -1967,7 +2054,7 @@ export class OASScheduler extends OASElement {
       row.className = 'res-row'
       row.dataset.resource = r.id
       row.setAttribute('role', 'row')
-      row.setAttribute('aria-rowindex', String(i + 1))
+      row.setAttribute('aria-rowindex', String(rowBase + i + 1))
       const label = document.createElement('div')
       label.className = 'res-label'
       label.setAttribute('role', 'rowheader')
@@ -2028,9 +2115,10 @@ export class OASScheduler extends OASElement {
     const padBottom = document.createElement('div')
     padBottom.className = 'res-pad-bottom'
     padBottom.setAttribute('aria-hidden', 'true')
-    padBottom.style.height = `${(rows.length - win.end) * rowH}px`
+    padBottom.style.height = `${Math.max(0, totalRows - rowBase - win.end) * rowH}px`
     body.appendChild(padBottom)
     el.appendChild(body)
+    this.requestResourceWindow(win)
     this.restoreFocus(focusId)
   }
 
@@ -2100,6 +2188,8 @@ export class OASScheduler extends OASElement {
     } else if (isResource) {
       const rows = this.resourceRows()
       const win = this.rowWindow(rows.length, this.resRowH())
+      // windowed 下即使局部窗口不变，绝对滚动窗口也可能移出已装载切片；先请求再判重
+      this.requestResourceWindow(win)
       if (this.sameWindow(win, this.lastRowWin)) return
       this.lastRowWin = win
       this.renderResource()
@@ -2123,7 +2213,7 @@ export class OASScheduler extends OASElement {
     const tv = this.shadow.querySelector<HTMLElement>('[part="timeview"]')
     const vh = this.measurableH(tv)
     const hours = this.endHourValue() - this.startHourValue()
-    if (!tv || vh === null) return { start: 0, end: hours }
+    if (this.printAll || !tv || vh === null) return { start: 0, end: hours }
     return computeVirtualWindow(tv.scrollTop - this.bandRowH(), vh, HOUR_H, hours, HOUR_BUFFER)
   }
 
@@ -2140,12 +2230,37 @@ export class OASScheduler extends OASElement {
     return h
   }
 
-  /** 资源行窗口：可视行 ±buffer；视口不可测回落全量 */
+  /** 资源行窗口：可视行 ±buffer；视口不可测回落全量。
+   *  windowed 下 scrollTop 是**全量绝对行号**，先按 total 算绝对窗口再换算为已装载切片内的局部窗口。 */
   private rowWindow(count: number, rowH: number): { start: number; end: number } {
     const res = this.shadow.querySelector<HTMLElement>('[part="resource"]')
     const vh = this.measurableH(res)
-    if (!res || vh === null) return { start: 0, end: count }
+    if (this.printAll || !res || vh === null) return { start: 0, end: count }
+    if (this.winMode.windowed) {
+      // 初始/切片切换时 scrollTop 可能仍为 0（内容尚未撑高，赋值被钳制）：先渲染切片首屏，
+      // 等滚动锚定完成后再按绝对位置收窄窗口。
+      const startTop = this.winMode.windowStart * rowH
+      if (res.scrollTop < startTop) return { start: 0, end: count }
+      const abs = computeVirtualWindow(res.scrollTop, vh, rowH, this.winMode.total, RES_ROW_BUFFER)
+      return {
+        start: Math.max(0, abs.start - this.winMode.windowStart),
+        end: Math.min(count, Math.max(0, abs.end - this.winMode.windowStart)),
+      }
+    }
     return computeVirtualWindow(res.scrollTop, vh, rowH, count, RES_ROW_BUFFER)
+  }
+
+  /** windowed：可视窗口（绝对行号）未覆盖已装载切片时派发 oas-window-request（同区间去重） */
+  private requestResourceWindow(localWin: { start: number; end: number }): void {
+    if (!this.winMode.windowed || !this.isConnected) return
+    const absStart = this.winMode.windowStart + localWin.start
+    const absEnd = this.winMode.windowStart + localWin.end
+    const need = expandWindow(absStart, absEnd, this.winMode.total, WINDOW_MARGIN)
+    if (windowCovered(need, this.winMode.loaded)) return
+    if (sameWindowRange(need, this.lastWindowReq)) return
+    this.lastWindowReq = need
+    // OASElement.emit 会自动加 oas- 前缀；ROW_WINDOW_EVENT 常量已是完整事件名
+    this.emit('window-request', { start: need.start, end: need.end, reason: 'scroll' } satisfies WindowRequestDetail)
   }
 
   /** 资源行高（定高模型，同 gantt 行虚拟先例）：单日行 37px；周×资源行 = max(轨道高, 单元格 min-height) + 1px 边框

@@ -133,6 +133,8 @@
 
 - **已立项（未发布）：gantt 截止日 + 浮时 + 基线差异**——deadline / show-float（总浮时/自由浮时）/ baseline.progress / computeVariance；无新字段时零渲染变化。详见 PRD「未发布」段。
 
+- **已立项（未发布）：scheduler 资源行窗口 + 宿主展开重复 + 打印**——windowed/total/window-start/oas-window-request；跨窗口 repeat 由宿主展开；@media print 与 beforeprint 全量渲染。详见 PRD「未发布」段。
+
 ## 后续 backlog（按需立项）
 
 - **数据密集型规模化（v2.6.2 已交付）**：`oas-gantt` / `oas-resource` 时间轴**列虚拟化**（长跨度横向窗口 + rAF 合帧 + 容器尺寸自愈）；**服务端行窗口协议**（`shared/window-data.ts`：`windowed` + `total` + `window-start` + `oas-window-request`，`range-start`/`range-end` 宿主托管时间轴 + `oas-range-request`）落地于 table / gantt / resource；`oas-resource` 泳道与负载**行虚拟化**、`oas-kanban` 列体卡片虚拟化、`oas-scheduler` 资源行与小时轴虚拟化（含修复资源视图滚动跳顶）；`oas-table` / `oas-gantt` **增量渲染**（选择/汇总不重算全量）。
