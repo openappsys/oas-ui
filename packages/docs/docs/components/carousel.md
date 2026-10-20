@@ -378,6 +378,14 @@ onMounted(() => {
 | `trigger` | 指示器切换时机：`click`（默认）/ `hover`（悬停即切，click 仍可用） | `string` | `click` |
 | `type` | 轮播形态：`"card"` 为卡片模式——当前卡居中为主体、左右邻卡露出缩小降透明，点击邻卡直接切换；与 `slides-per-view`/`effect`/`direction` 互斥（卡片模式优先），卡宽/卡间距/邻卡缩放走 `--oas-carousel-card-width` / `--oas-carousel-card-gap` / `--oas-carousel-card-scale` | `string` | — |
 
+#### 方法
+
+| 方法 | 签名 | 说明 |
+| --- | --- | --- |
+| `next` | `next(): void` | 切换到下一屏 |
+| `prev` | `prev(): void` | 切换到上一屏 |
+| `goTo` | `goTo(index: number): void` | 跳转到指定屏（页索引，从 0 起） |
+
 #### 事件
 
 | 事件 | 说明 |

@@ -183,6 +183,12 @@ onMounted(() => {
 | `status` | 状态机：`active`（默认）/ `expired`（过期遮罩，点击刷新派 `oas-refresh`）/ `loading` / `scanned` | `string` | `active` |
 | `value` | 二维码内容文本 | `string` | — |
 
+#### 方法
+
+| 方法 | 签名 | 说明 |
+| --- | --- | --- |
+| `download` | `download(filename: unknown): Promise<void>` | 下载当前二维码为 PNG（离屏 rasterize：SVG-only 渲染架构不引入常驻 canvas）。 |
+
 #### 事件
 
 | 事件 | 说明 |

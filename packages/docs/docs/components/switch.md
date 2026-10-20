@@ -247,6 +247,12 @@ onMounted(() => {
 | `unchecked-text` | 关闭时显示的文案；medium/large/xl 在轨道内，xs/small 在轨道外侧 | — | — |
 | `variant` | 形态：`default`（默认拨杆）/ `card`（卡片：描边容器包住拨杆 + 标签 + 描述，整卡可点、选中描边着色，对齐 checkbox/radio 选择卡）；非法值静默回落 default | `string` | — |
 
+#### 方法
+
+| 方法 | 签名 | 说明 |
+| --- | --- | --- |
+| `focus` | `focus(options?: FocusOptions): void` | label 点击聚焦委托：把焦点交给 shadow 内 button |
+
 #### 事件
 
 | 事件 | 说明 |

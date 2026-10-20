@@ -29,6 +29,7 @@
       "api": true
     }
   ],
+  "methods": [],
   "events": [
     {
       "name": "oas-change",

@@ -182,23 +182,6 @@ onMounted(async () => {
 
 ## API
 
-### 方法
-
-| 方法 | 说明 |
-| --- | --- |
-| `loadingBar.start(options?)` | 开始加载，返回 `{ el }` 句柄；多次调用并发计数。`options`：`speed`（节拍 ms）、`to`（挂载容器：元素/选择器/函数）、`position`（`top`/`bottom`）、`reverse` |
-| `loadingBar.finish(target?)` | 完成一个会话；并发会话下仅最后一个触发收尾 |
-| `loadingBar.error(target?)` | 失败收尾；未 `start` 直接调用也以错误态收尾（不闪烁） |
-| `loadingBar.increment(step?, target?)` | 手动推进（默认随机 0–10，夹取 0–100） |
-| `loadingBar.set(percent, target?)` | 精确设置进度（0–100 夹取） |
-| `loadingBar.decrement(step?, target?)` | 手动回退（默认随机 0–10，夹取 0–100） |
-| `loadingBar.active` | 默认宿主当前是否有活跃会话 |
-| `loadingBar.isActive(target?)` | 指定容器当前是否有活跃会话 |
-| `loadingBar.getEl(target?)` | 取加载条元素（可挂生命周期事件监听）；未 `start` 返回 `null` |
-| `destroyAllLoadingBar()` | 移除全部加载条（跨容器） |
-
-`target` 为容器元素 / CSS 选择器 / 返回元素的函数，缺省为最近 `oas-app` 宿主或 `body`。
-
 ### oas-loading-bar
 
 #### 属性
@@ -210,6 +193,17 @@ onMounted(async () => {
 | `reverse` | 方向反转（RTL 场景进度从右往左） | — | — |
 | `speed` | 推进速度基准（ms，默认 200），start(speed) 可覆盖 | `string` | `200` |
 | `status` | 当前状态（活动态查询）：组件仅在错误终态写入 `error`，其余时刻移除该属性（不写 `loading`/`finish`） | `string` | — |
+
+#### 方法
+
+| 方法 | 签名 | 说明 |
+| --- | --- | --- |
+| `start` | `start(speed?: number): void` | 开始一个加载会话：并发计数 +1；首个会话触发推进与 oas-start |
+| `finish` | `finish(): void` | 完成一个会话：并发计数 -1；仅最后一个 finish 触发收尾 |
+| `error` | `error(): void` | 失败收尾：并发计数 -1；批次内任一 error 决定最终终态。 |
+| `increment` | `increment(step?: number): void` | 手动推进 step（默认随机 0–10）；夹取 0–100 |
+| `set` | `set(percent: number): void` | 精确设置进度（0–100 夹取） |
+| `decrement` | `decrement(step?: number): void` | 手动回退 step（默认随机 0–10）；夹取 0–100 |
 
 #### 事件
 
@@ -227,5 +221,7 @@ onMounted(async () => {
 | `--oas-loading-bar-error-color` | `var(--oas-color-danger)` |
 | `--oas-loading-bar-height` | `3px` |
 | `--oas-loading-bar-z-index` | `calc(var(--oas-z-index-base, 0) + var(--oas-z-message, 1060))` |
+
+`target` 为容器元素 / CSS 选择器 / 返回元素的函数，缺省为最近 `oas-app` 宿主或 `body`。
 
 进度条 `role="progressbar"`，进度通过 `aria-valuenow` 同步，活动态同步 `aria-busy`。

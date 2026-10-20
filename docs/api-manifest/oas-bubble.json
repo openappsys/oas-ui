@@ -25,6 +25,7 @@
     }
   ],
   "props": [],
+  "methods": [],
   "events": [
     {
       "name": "oas-reaction",

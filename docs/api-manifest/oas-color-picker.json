@@ -118,6 +118,33 @@
       "api": true
     }
   ],
+  "methods": [
+    {
+      "name": "refreshControls",
+      "signature": "refreshControls(): void",
+      "description": "宿主能力面：designer 活动 stop 变化后重绘核心控件（RGB/hex/clear 等）"
+    },
+    {
+      "name": "commitColor",
+      "signature": "commitColor(rgba: RGBA): void",
+      "description": "宿主能力面：designer 的 sv/hue/stop 拖拽统一提交入口（单色提交 / 渐变改写活动 stop）"
+    },
+    {
+      "name": "setColorValue",
+      "signature": "setColorValue(color: RGBA): void",
+      "description": "宿主能力面：记录当前单色编辑色快照（designer 渐变编辑后同步，保持模式切换一致）"
+    },
+    {
+      "name": "colorValue",
+      "signature": "colorValue(): RGBA",
+      "description": "宿主能力面：当前单色编辑色（designer 非渐变时 sv/hue 基准）"
+    },
+    {
+      "name": "translateText",
+      "signature": "translateText(key: string, params?: Record<string, string | number>): string",
+      "description": "宿主能力面：翻译内置文案（就近 config-provider / locale；与 table 能力同构）"
+    }
+  ],
   "events": [
     {
       "name": "oas-open-change",

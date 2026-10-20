@@ -49,6 +49,13 @@
       "type": "number | string"
     }
   ],
+  "methods": [
+    {
+      "name": "play",
+      "signature": "play(): void",
+      "description": "手动重播一轮：从 from 起播到目标；播放中防重入（每轮至多一次 oas-finish）"
+    }
+  ],
   "events": [
     {
       "name": "oas-finish",

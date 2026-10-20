@@ -67,7 +67,7 @@ export default defineConfig({
     { name: 'docs-site', use: {}, testMatch: /homepage\.spec\.ts/ },
     // 组件全量（默认 project 跑除 homepage 外的所有 spec，含 packages/ssr 的 dsd 验收 spec）
     // ——改 oas-* 组件源码时跑
-    { name: 'chromium', use: {}, testIgnore: /homepage\.spec\.ts/ },
+    { name: 'chromium', use: {}, testIgnore: /(homepage|webkit)\.spec\.ts/ },
     // Firefox 抽样覆盖：全量 e2e 在 Firefox 上跑会翻倍耗时——不值。只挑能暴露
     // 浏览器专有渲染/兼容问题的 spec（视觉截图、全页冒烟、浏览器相关回归），
     // 交互密集或时序敏感的 spec（interaction/a11y/demo/onoas 等）留在 chromium
@@ -89,6 +89,15 @@ export default defineConfig({
       // 不改门禁实质（真失败重试仍失败）。
       timeout: 120_000,
       retries: 2,
+    },
+    // WebKit 抽样：只跑代表性页面 smoke（CSS 引擎差异主要在布局/浮层/虚拟滚动），
+    // 不全量复制 Chromium 套件；失败仍按真实失败处理。
+    {
+      name: 'webkit',
+      use: { browserName: 'webkit' },
+      testMatch: /webkit\.spec\.ts/,
+      timeout: 120_000,
+      retries: 1,
     },
   ],
 })

@@ -44,6 +44,13 @@
     }
   ],
   "props": [],
+  "methods": [
+    {
+      "name": "syncOverflow",
+      "signature": "syncOverflow(): void",
+      "description": "重算溢出收纳：actions 区宽度不足时，超出项打 data-collapsed 隐藏并镜像进「···」弹层。"
+    }
+  ],
   "events": [
     {
       "name": "oas-menu-toggle"

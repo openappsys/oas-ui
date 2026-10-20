@@ -38,6 +38,38 @@
       "default": "0"
     }
   ],
+  "methods": [
+    {
+      "name": "start",
+      "signature": "start(speed?: number): void",
+      "description": "开始一个加载会话：并发计数 +1；首个会话触发推进与 oas-start"
+    },
+    {
+      "name": "finish",
+      "signature": "finish(): void",
+      "description": "完成一个会话：并发计数 -1；仅最后一个 finish 触发收尾"
+    },
+    {
+      "name": "error",
+      "signature": "error(): void",
+      "description": "失败收尾：并发计数 -1；批次内任一 error 决定最终终态。"
+    },
+    {
+      "name": "increment",
+      "signature": "increment(step?: number): void",
+      "description": "手动推进 step（默认随机 0–10）；夹取 0–100"
+    },
+    {
+      "name": "set",
+      "signature": "set(percent: number): void",
+      "description": "精确设置进度（0–100 夹取）"
+    },
+    {
+      "name": "decrement",
+      "signature": "decrement(step?: number): void",
+      "description": "手动回退 step（默认随机 0–10）；夹取 0–100"
+    }
+  ],
   "events": [
     {
       "name": "oas-start",

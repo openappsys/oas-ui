@@ -113,6 +113,28 @@
     }
   ],
   "props": [],
+  "methods": [
+    {
+      "name": "show",
+      "signature": "show(): void",
+      "description": "打开气泡（等价 open 属性；oas-open-change reason='api'）"
+    },
+    {
+      "name": "hide",
+      "signature": "hide(): void",
+      "description": "关闭气泡（等价移除 open；oas-open-change reason='api'）"
+    },
+    {
+      "name": "restoreFocus",
+      "signature": "restoreFocus(): void",
+      "description": "关闭后焦点还原到触发元素（恒定行为；virtual 模式无锚点跳过）。"
+    },
+    {
+      "name": "requestClose",
+      "signature": "requestClose(reason: OpenChangeReason): void",
+      "description": "关闭请求：记录来源 → 移除 open 属性（公开供模块级 Esc 栈调用；非文档化 API）"
+    }
+  ],
   "events": [
     {
       "name": "oas-ok",

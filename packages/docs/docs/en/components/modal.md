@@ -705,20 +705,6 @@ onMounted(async () => {
 
 ## API
 
-### Methods
-
-| Method | Description |
-| --- | --- |
-| `modal.confirm({ title?, content?, okText?, cancelText?, onOk?, onCancel? })` | Opens a confirm dialog (OK / Cancel buttons), returns `{ close }` |
-| `modal.info(options)` / `modal.success(options)` / `modal.warning(options)` / `modal.error(options)` | Semantic dialog: matching icon + single "OK" button, returns `{ close }` |
-| `modal.prompt({ title?, inputValue?, placeholder?, inputType?, validator?, onOk? })` | Input dialog: resolves `{ value, action }`, returns a Promise & `{ close, update }` |
-| `modal.options({ title?, content?, items?, type?, okText?, cancelText?, onOk? })` | Options dialog (`type`: radio / checkbox / toggle): resolves `{ value, action }` (radio → a single string; checkbox/toggle → an array), returns a Promise & `{ close, update }` |
-| `destroyAllModal()` | Closes and destroys all imperative dialogs (after each close animation ends) |
-
-- Options: `{ title?, content?, okText?, cancelText?, onOk?, onCancel? }`. `content` is plain text; when `onOk` returns a Promise the OK button enters loading (closes on resolve, stays open on reject for retry or cancel).
-- Returns a `{ close() }` handle: closes the current instance programmatically without firing `onOk` / `onCancel`.
-- Mounts to the nearest `oas-app` container (falls back to `body`); multiple instances stack; imperative instances unmount only after the close animation ends (`oas-after-close`).
-
 ### oas-modal
 
 #### Attributes
@@ -758,6 +744,14 @@ onMounted(async () => {
 | `width` | Dialog width (px or percentage) | — | — |
 | `z-index` | Explicit z-index base stacked on `--oas-z-index-base` (dialog sits 1 above the mask; defaults to the `--oas-z-modal` tier) | — | — |
 
+#### Methods
+
+| Method | Signature | Description |
+| --- | --- | --- |
+| `getModalCapability` | `getModalCapability(name: string): T \| null` | 按名取已注入能力 controller（命令式层委托点；未 import 对应能力返回 null） |
+| `close` | `close(source: ModalCloseSource): void` | 关闭请求（确定/取消/✕/遮罩/Esc/编程）：cancelable oas-before-close 拦截， |
+| `applyZ` | `applyZ(): void` | z-index 计算：显式 z-index 属性覆盖默认 modal 档位（--oas-z-modal）； |
+
 #### Events
 
 | Event | Description |
@@ -796,5 +790,9 @@ onMounted(async () => {
 | `--oas-modal-max-height` | `90vh` |
 | `--oas-modal-origin-x` | `center` |
 | `--oas-modal-origin-y` | `center` |
+
+- Options: `{ title?, content?, okText?, cancelText?, onOk?, onCancel? }`. `content` is plain text; when `onOk` returns a Promise the OK button enters loading (closes on resolve, stays open on reject for retry or cancel).
+- Returns a `{ close() }` handle: closes the current instance programmatically without firing `onOk` / `onCancel`.
+- Mounts to the nearest `oas-app` container (falls back to `body`); multiple instances stack; imperative instances unmount only after the close animation ends (`oas-after-close`).
 
 `role="dialog"` + `aria-modal="true"`; focus moves to the "Cancel" button on open (to the "OK" button with `focus-ok`) and is restored on close.

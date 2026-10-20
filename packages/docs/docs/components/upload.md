@@ -464,6 +464,14 @@ onMounted(async () => {
 | `files` | 受控文件列表（property 通道，写回即同步渲染） | `Array<File \| UploadEchoFile>` | `[]` |
 | `value` | 当前值：可提交的 `File[]`（仅文件体条目；回显记录不含文件体、不计入） | `File[] \| null` | `[]` |
 
+#### 方法
+
+| 方法 | 签名 | 说明 |
+| --- | --- | --- |
+| `startUpload` | `startUpload(): void` | 上传入口：真实通道（action XHR / custom-request）逐文件发起；无通道回落模拟进度。 |
+| `submit` | `submit(): void` | 手动上传入口别名（对齐主流「提交」心智） |
+| `abort` | `abort(entry?: File): void` | 取消上传：传入条目取消单个；无参取消全部进行中的上传 |
+
 #### 事件
 
 | 事件 | 说明 |

@@ -62,6 +62,7 @@
     }
   ],
   "props": [],
+  "methods": [],
   "events": [
     {
       "name": "oas-collapse",

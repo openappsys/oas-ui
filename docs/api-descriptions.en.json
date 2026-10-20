@@ -4326,7 +4326,7 @@
   },
   "oas-gantt": {
     "attrs": {
-      "tasks": "Gantt tasks (JSON): [{ id?, name, start, end?, type?, progress?, parent?, children?, dependencies?, color?, disabled?, expanded?, baseline? (start/end?/progress?), deadline?, deadlines?, constraint? ('asap'|'snet'|'mso'|'fnlt'), constraintDate? }] — flat parent pointers are the primary contract; nested children are flattened automatically; explicit type:\"milestone\" takes precedence (rendered as milestone even with end, which is ignored) but a task with children is always a summary; no end also infers milestone; start/end are swapped automatically when start is after end",
+      "tasks": "Gantt tasks (JSON): [{ id?, name, start, end?, type?, progress?, parent?, children?, dependencies?, color?, disabled?, expanded?, baseline? (start/end?/progress?), resources?, deadline?, deadlines?, constraint? ('asap'|'snet'|'mso'|'fnlt'), constraintDate? }] — flat parent pointers are the primary contract; nested children are flattened automatically; explicit type:\"milestone\" takes precedence (rendered as milestone even with end, which is ignored) but a task with children is always a summary; no end also infers milestone; start/end are swapped automatically when start is after end",
       "scale": "Time scale: hour / day (default) / week / month / quarter / year; invalid values fall back to day",
       "expanded": "Expanded set (JSON array, controlled): defaults to fully expanded when absent; explicit [] collapses all; written back on toggle",
       "readonly": "Whole chart read-only (no rescheduling/progress, drag handles not rendered)",
@@ -4355,7 +4355,8 @@
       "show-float": "Show total/free float (boolean, off by default): computed only on a complete dependency graph; the bar gets a total/free float label plus data-total-float/data-free-float in days. Summaries are excluded; windowed mode skips it with a devWarn.",
       "group-by-project": "Group root tasks by project into synthetic summary rows (row id __oas_project__:&lt;project&gt;) without mutating the task array; windowed mode requires host-flattened rows",
       "show-variance": "Render a Δ±Nd variance badge after the row name when a baseline exists; exposes data-start-delta/data-end-delta/data-duration-delta/data-progress-delta",
-      "history": "Built-in undo/redo (boolean, off by default): records task commits (max 100), used with undo()/redo()/canUndo/canRedo/clearHistory(); replacing tasks wholesale clears the stack"
+      "history": "Built-in undo/redo (boolean, off by default): records task commits (max 100), used with undo()/redo()/canUndo/canRedo/clearHistory(); replacing tasks wholesale clears the stack",
+      "resources": "Per-resource calendars (JSON): [{ id, name?, workdays?, holidays?, shifts? }] used with GanttTask.resources; workdays are intersected, holidays unioned; shifts: [] means no available shift; day-level auto-schedule uses workdays/holidays only"
     },
     "events": {
       "oas-reschedule": "Dispatched when auto-scheduling moved successor tasks (auto-schedule on), detail: { ids } (ids of the rescheduled tasks)",
@@ -4735,6 +4736,38 @@
     "props": {
       "resources": "Resources (JSON [{ id, name, capacity?, workdays?, holidays?, capacityOverrides?, skills? }]). `workdays` uses 0=Sunday…6=Saturday; `[]` means fully unavailable. When `workdays` is absent and `holidays` / `capacityOverrides` are empty, capacity = parallel tasks per period (legacy); otherwise period capacity is the sum of daily capacity, non-empty `capacityOverrides` wins over `workdays` / `holidays`, and may be fractional while task load is counted in whole days (a 0.5 day cannot hold a whole-day task); empty `holidays` / `capacityOverrides` count as absent. `skills` is a skill-tag array. A resource may carry an optional `color` (CSS color or token, e.g. `var(--oas-color-success)`) used to tint its lane bars and load bars; when absent the unified `--oas-resource-bar-bg` / `--oas-resource-load-bg` applies; property read is a copy: nested plain objects/arrays are deep-cloned — cycle-safe; shared references stay shared within a single read result; Date is copied by value (not shared); exotic objects such as class instances/Set are shared by reference; writing syncs the attribute + re-renders; if a custom key is not serializable, only that key is dropped from the attribute while the property readback stays complete",
       "tasks": "Resource tasks (JSON [{ id, name, start, end, resources?, priority?, requiredSkills?, project? }]); start/end are day precision YYYY-MM-DD only (end inclusive; time-bearing input is treated as that day), resources is the assigned resource id array (assignments to unknown resources are ignored). priority: lower is more important; requiredSkills: every reassign target must have all tags; project works with levelResources({ projectOrder }) for cross-project priority; property read is a copy: nested plain objects/arrays are deep-cloned — cycle-safe; shared references stay shared within a single read result; Date is copied by value (not shared); exotic objects such as class instances/Set are shared by reference; writing syncs the attribute + re-renders + dispatches oas-tasks-change"
+    }
+  },
+  "oas-prompt-input": {
+    "attrs": {
+      "value": "Current text (property channel; attribute is the initial value)",
+      "placeholder": "Placeholder (defaults to i18n promptInput.placeholder)",
+      "disabled": "Disable input and submit",
+      "readonly": "Read-only (focus/copy, no edits)",
+      "loading": "Generating; send button becomes stop",
+      "maxlength": "Maximum character count",
+      "rows": "Initial rows (1+, auto-grow capped at 160px)",
+      "suggestions": "Suggestions JSON: strings or { label?, value } items",
+      "submit-on-enter": "Enter submits (default true; false requires the button; Shift+Enter always newlines)",
+      "clear-on-submit": "Clear after submit (default true)"
+    },
+    "props": {
+      "value": "Current text (read/write)"
+    },
+    "events": {
+      "oas-submit": "Dispatched on submit, detail: { value }",
+      "oas-stop": "Dispatched when the stop button is clicked while loading",
+      "oas-suggestion-select": "Dispatched when a suggestion is clicked, detail: { value, label }"
+    },
+    "slots": {
+      "prefix": "Content before the input",
+      "actions": "Actions before the send button",
+      "footer": "Footer/help row"
+    },
+    "methods": {
+      "submit": "Submit current text; returns false for empty/disabled/loading",
+      "stop": "Stop generation (dispatches oas-stop only while loading)",
+      "focusInput": "Focus the inner textarea"
     }
   }
 }

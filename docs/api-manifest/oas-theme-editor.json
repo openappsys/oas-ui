@@ -12,6 +12,33 @@
     }
   ],
   "props": [],
+  "methods": [
+    {
+      "name": "exportJson",
+      "signature": "exportJson(): Record<string, string>",
+      "description": "导出当前 token 集 JSON（`{ '--oas-*': value }`，值为实时 computed 值）。"
+    },
+    {
+      "name": "exportCss",
+      "signature": "exportCss(): string",
+      "description": "导出当前 token 集为 CSS 文本（`:root { --oas-*: value; ... }`，与 exportJson 同源）。"
+    },
+    {
+      "name": "importJson",
+      "signature": "importJson(json: Record<string, unknown> | string): void",
+      "description": "应用 token 集到 themeRoot：`{ '--oas-*': value }`，非 `--` 开头键忽略并 dev 告警"
+    },
+    {
+      "name": "applyPreset",
+      "signature": "applyPreset(name: string): void",
+      "description": "应用内置预设主题。只调尺寸族 token（control-height / space），不动颜色："
+    },
+    {
+      "name": "reset",
+      "signature": "reset(): void",
+      "description": "重置：清除本组件写入宿主的内联 CSS 变量，恢复默认主题值。"
+    }
+  ],
   "events": [
     {
       "name": "oas-change",

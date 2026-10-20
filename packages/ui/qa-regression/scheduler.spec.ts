@@ -42,8 +42,9 @@ test('scheduler 浏览器回归：月/周/agenda 视图渲染与切换 + console
 
   // 跨日全天：周视图渲染连续长条，不再逐日重复芯片
   const span = page.locator('#scheduler-span')
-  await expect(span.locator('.band-span')).toHaveCount(2)
+  await expect(span.locator('.band-span')).toHaveCount(3)
   await expect(span.locator('.band-span', { hasText: '设计冻结' })).toBeVisible()
+  await expect(span.locator('.band-span.timed-span', { hasText: '夜间值守' })).toContainText('22:00')
   await expect(span.locator('.band-col .chip')).toHaveCount(0)
 
   // 跨日连续条拖动：按列宽吸附平移日期并回写 events

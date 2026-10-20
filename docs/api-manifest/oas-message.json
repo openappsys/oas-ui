@@ -100,6 +100,28 @@
       "default": "false"
     }
   ],
+  "methods": [
+    {
+      "name": "refresh",
+      "signature": "refresh(content: MessageContent, type?: MessageType, duration?: number, count?: number): void",
+      "description": "命令式层刷新入口：更新内容/类型/时长/合并计数并重置自动关闭计时。"
+    },
+    {
+      "name": "close",
+      "signature": "close(source: MessageCloseSource): void",
+      "description": "关闭：派发 oas-close（detail 携带 key 与来源）后出场动画移除（减动效时立即移除）"
+    },
+    {
+      "name": "pause",
+      "signature": "pause(): void",
+      "description": "暂停自动关闭计时（剩余时长记账；无计时器时为空操作）"
+    },
+    {
+      "name": "resume",
+      "signature": "resume(): void",
+      "description": "恢复自动关闭计时（剩余时长续走；已过期则立即关闭）"
+    }
+  ],
   "events": [
     {
       "name": "oas-close",

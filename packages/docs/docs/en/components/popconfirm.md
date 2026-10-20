@@ -295,6 +295,15 @@ onMounted(async () => {
 | `virtual-y` | Virtual anchor y (viewport coordinate, px) | — | — |
 | `width` | Panel width: a number (px) / `"trigger"` (same width as the trigger) / any CSS value; default min-width 200px | `string` | — |
 
+#### Methods
+
+| Method | Signature | Description |
+| --- | --- | --- |
+| `show` | `show(): void` | 打开气泡（等价 open 属性；oas-open-change reason='api'） |
+| `hide` | `hide(): void` | 关闭气泡（等价移除 open；oas-open-change reason='api'） |
+| `restoreFocus` | `restoreFocus(): void` | 关闭后焦点还原到触发元素（恒定行为；virtual 模式无锚点跳过）。 |
+| `requestClose` | `requestClose(reason: OpenChangeReason): void` | 关闭请求：记录来源 → 移除 open 属性（公开供模块级 Esc 栈调用；非文档化 API） |
+
 #### Events
 
 | Event | Description |
@@ -324,13 +333,5 @@ onMounted(async () => {
 | `--oas-popconfirm-arrow-height` | `12px` |
 | `--oas-popconfirm-arrow-radius` | `0` |
 | `--oas-popconfirm-arrow-width` | `12px` |
-
-### Methods
-
-| Method | Description |
-| --- | --- |
-| `show()` | Opens the bubble (equivalent to the `open` attribute; `oas-open-change` reports `reason: api`) |
-| `hide()` | Closes the bubble (equivalent to removing `open`; `oas-open-change` reports `reason: api`) |
-| `restoreFocus()` | Restores focus to the trigger element |
 
 The panel uses `role="alertdialog"`; focus moves into the bubble on open (OK button first) and returns to the trigger on close; the trigger keeps `aria-expanded` / `aria-controls` in sync; Esc closes the topmost bubble (layer by layer when nested).

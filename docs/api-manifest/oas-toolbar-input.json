@@ -27,6 +27,7 @@
     }
   ],
   "props": [],
+  "methods": [],
   "events": [
     {
       "name": "oas-input",

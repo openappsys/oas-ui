@@ -33,6 +33,18 @@
     }
   ],
   "props": [],
+  "methods": [
+    {
+      "name": "show",
+      "signature": "show(x: number, y: number): void",
+      "description": "编程式打开：任意坐标弹菜单（表格行/画布/选区右键等脱离宿主元素的场景）。"
+    },
+    {
+      "name": "close",
+      "signature": "close(): void",
+      "description": "编程式关闭：宿主 el.close() 调用（与右键别处关闭/Esc/外部点击/选中同路径）"
+    }
+  ],
   "events": [
     {
       "name": "oas-select",

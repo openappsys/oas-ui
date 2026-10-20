@@ -575,14 +575,6 @@ onMounted(() => {
 
 ## API
 
-### 方法
-
-| 方法 | 说明 |
-| --- | --- |
-| `submit()` | 公开提交入口：委托内部 form 的 `requestSubmit()`（保留 submit 事件与 submitter 语义），经校验后派发 `oas-submit` / `oas-validate-fail`。跨 shadow 边界时 light DOM 按钮无原生提交语义，统一用此方法（如 `this.closest('oas-form').submit()`） |
-| `validate()` | 公开校验入口：校验全部字段并同步错误态（`aria-invalid` + 错误文案），返回 `Promise<boolean>`。**纯校验**——不派发 `oas-submit` / `oas-validate-fail`、不做 scroll-to-first-error；供分步容器等外部门控复用校验内核（异步 validator 聚合等待、禁用字段跳过、无 rules 默认放行） |
-| `getValues()` | 公开取值入口：全表当前值快照（嵌套结构），与 `submit()` 派发的 `detail.values` 同口径——不做校验、不过滤禁用字段，零交互字段的 `value` 属性预填同样计入。返回 `Record<string, unknown>` |
-
 ### oas-form
 
 #### 属性
@@ -602,6 +594,16 @@ onMounted(() => {
 | `size` | 表级尺寸档：经 data-form-size 通道下发表内全部字段（字段自身显式 size 优先，form-associated 字段动态跟随） | — | — |
 | `validate-messages` | 按规则类型覆盖 locale 默认校验文案（property/JSON 双通道，支持 ${min}/${max}/${value} 插值，default 兜底） | `ValidateMessages \| string` | — |
 | `validate-trigger` | 字段级即时校验触发时机：`input`（默认，边输入边校验）/ `blur` / `change`；规则 `validateTrigger` 可逐字段覆盖；提交始终全量校验 | `string` | `input` |
+
+#### 方法
+
+| 方法 | 签名 | 说明 |
+| --- | --- | --- |
+| `reapplyInitialValues` | `reapplyInitialValues(): void` | 为「初始值基线建立后才出现的字段」补写 initial-values（oas-form-list 等动态字段容器 |
+| `getValues` | `getValues(): Record<string, unknown>` | 公开取值入口：全表当前值快照（嵌套结构），与 submit() 派发的 detail.values 同口径 |
+| `validate` | `validate(): Promise<boolean>` | 公开校验入口：校验全部字段并同步错误态（aria-invalid + 错误文案），返回是否全部通过。 |
+| `submit` | `submit(): void` | 公开提交入口：委托内部 form 的 requestSubmit()。 |
+| `reset` | `reset(): void` | 重置回初始值（与 form-associated reset 基线语义一致：回初始值、清除校验错误态、不派发任何事件） |
 
 #### 事件
 
@@ -629,6 +631,13 @@ onMounted(() => {
 | `required` | 必填星号（仅视觉标记，校验规则仍由 form 的 `rules` 驱动） | `boolean` | — |
 | `span` | 24 栅格占列数（仅 form `layout="grid"` 生效；非 1-24 整数按 24） | `string` | `24` |
 | `status-icon` | 校验失败时在错误文本前显示 danger 状态图标（修正后隐藏） | `boolean` | — |
+
+#### 方法
+
+| 方法 | 签名 | 说明 |
+| --- | --- | --- |
+| `setError` | `setError(message: string \| null): void` | 校验错误文本收编（由 oas-form 调用）。message 为空时移除错误态。 |
+| `refreshLayout` | `refreshLayout(): void` | 供父 oas-form 在布局属性变化时调用，即时重刷 grid/标签布局感知 |
 
 #### 插槽
 

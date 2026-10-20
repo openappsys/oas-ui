@@ -130,6 +130,18 @@
       "api": true
     }
   ],
+  "methods": [
+    {
+      "name": "focus",
+      "signature": "focus(options?: FocusOptions): void",
+      "description": "label 点击聚焦委托：把焦点交给 shadow 内主输入（配合 oas-form-item 的 label 点击代理）"
+    },
+    {
+      "name": "select",
+      "signature": "select(): void",
+      "description": "选中文本（委托内部 textarea）"
+    }
+  ],
   "events": [
     {
       "name": "oas-input",

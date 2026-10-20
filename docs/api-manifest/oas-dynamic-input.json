@@ -89,6 +89,7 @@
       "api": true
     }
   ],
+  "methods": [],
   "events": [
     {
       "name": "oas-row-render",

@@ -71,6 +71,7 @@
     }
   ],
   "props": [],
+  "methods": [],
   "events": [
     {
       "name": "oas-click",

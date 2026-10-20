@@ -697,6 +697,18 @@ svg.links .temp-link {
 `
 
 /** 甘特任务（数据契约：扁平 `parent` 指针为主；嵌套 `children` 输入在清洗层自动拍平兼容） */
+/** gantt 资源日历（逐资源工作日/假期/班次）；只影响 auto-schedule 的工作日吸附 */
+export interface GanttResource {
+  id: string
+  name?: string
+  /** 工作日（0=周日…6=周六）；缺省沿用全局 workdays，[] 表示不可用 */
+  workdays?: number[]
+  /** 资源假期（YYYY-MM-DD）；与全局 holidays 取并集 */
+  holidays?: string[]
+  /** 班次窗口（小时级展示/宿主排程使用；空数组表示该资源不可用） */
+  shifts?: Array<{ start: string; end: string }>
+}
+
 export interface GanttTask {
   id?: string
   /** 任务名（必填，缺失丢弃） */
@@ -739,6 +751,8 @@ export interface GanttTask {
   expanded?: boolean
   /** 所属项目键（配合 group-by-project 自动生成项目根摘要） */
   project?: string
+  /** 分配的 gantt 资源 id（配合 resources 属性使用逐资源工作日/假期） */
+  resources?: string[]
   /** 截止日（'YYYY-MM-DD'；hour 档可带时刻）；结束晚于截止日时标 .conflict 并渲染截止标记 */
   deadline?: string
   /** 多个截止日（可选；与 deadline 合并，去重并只保留合法日期） */
@@ -983,6 +997,7 @@ const RESERVED_TASK_KEYS = new Set([
   'expanded',
   'baseline',
   'project',
+  'resources',
   'deadline',
   'deadlines',
   'constraint',
@@ -1284,6 +1299,14 @@ function sanitizeTasks(
     if (raw.expanded === true || raw.expanded === false) t.expanded = raw.expanded
     if (raw.type === 'task' || raw.type === 'milestone' || raw.type === 'summary') t.type = raw.type
     if (typeof raw.project === 'string' && raw.project.trim() !== '') t.project = raw.project.trim()
+    if (Array.isArray(raw.resources)) {
+      const resources = [
+        ...new Set(
+          raw.resources.filter((x): x is string => typeof x === 'string' && x.trim() !== '').map((x) => x.trim()),
+        ),
+      ]
+      if (resources.length > 0) t.resources = resources
+    }
     const deadline = typeof raw.deadline === 'string' ? raw.deadline.trim() : ''
     if (deadline && parseTaskDate(deadline)) t.deadline = deadline
     else if (deadline) {
@@ -1346,6 +1369,7 @@ export class OASGantt extends OASElement {
       'weekends',
       'holidays',
       'workdays',
+      'resources',
       'first-day-of-week',
       'locale',
       'height',
@@ -1407,6 +1431,8 @@ export class OASGantt extends OASElement {
   private warnedRescheduleCycle = false
   /** 工作日日历缓存（key = workdays + holidays 原文；属性变化即重建） */
   private workCalCache: { key: string; days: Set<number> | null; holidays: Set<string> } | null = null
+  /** resources 属性缓存（逐资源日历） */
+  private resourceCalCache: { raw: string; map: Map<string, GanttResource> } | null = null
   /** holidays 属性解析缓存（key = 属性原文）：renderGrid 每帧读取，不落缓存会在滚动帧内反复 JSON.parse；属性原文变化即失效，语义与逐次解析一致 */
   private holidayCache: { raw: string; set: Set<string> } | null = null
   /**
@@ -2029,8 +2055,81 @@ export class OASGantt extends OASElement {
   }
 
   /** 工作日判定：周几 ∈ workdays 且非 holidays。workdays 缺省/非法/空 → 恒 true（零行为） */
-  private isWorkingDay(ms: number): boolean {
-    const { days, holidays } = this.workCalendar()
+  private resourceCalendars(): Map<string, GanttResource> {
+    const raw = this.getAttr('resources', '')
+    const cached = this.resourceCalCache
+    if (cached && cached.raw === raw) return cached.map
+    const map = new Map<string, GanttResource>()
+    let parsed: unknown
+    try {
+      parsed = raw === '' ? [] : JSON.parse(raw)
+    } catch {
+      parsed = []
+    }
+    if (Array.isArray(parsed)) {
+      for (const item of parsed) {
+        if (typeof item !== 'object' || item === null) continue
+        const record = item as Record<string, unknown>
+        if (typeof record.id !== 'string' || record.id.trim() === '') continue
+        const resource: GanttResource = { id: record.id.trim() }
+        if (typeof record.name === 'string' && record.name.trim() !== '') resource.name = record.name.trim()
+        if (Array.isArray(record.workdays)) {
+          resource.workdays = [
+            ...new Set(
+              record.workdays.filter(
+                (n): n is number => typeof n === 'number' && Number.isInteger(n) && n >= 0 && n <= 6,
+              ),
+            ),
+          ]
+        }
+        if (Array.isArray(record.holidays)) {
+          resource.holidays = [
+            ...new Set(
+              record.holidays
+                .filter((x): x is string => typeof x === 'string' && !!parseTaskDate(x))
+                .map((x) => toISODate(parseTaskDate(x)!)),
+            ),
+          ]
+        }
+        if (Array.isArray(record.shifts)) {
+          resource.shifts = record.shifts
+            .filter(
+              (s): s is { start: string; end: string } =>
+                typeof s === 'object' &&
+                s !== null &&
+                typeof (s as Record<string, unknown>).start === 'string' &&
+                typeof (s as Record<string, unknown>).end === 'string',
+            )
+            .map((s) => ({ start: s.start, end: s.end }))
+        }
+        map.set(resource.id, resource)
+      }
+    }
+    this.resourceCalCache = { raw, map }
+    return map
+  }
+
+  private taskCalendar(task?: GanttTask): { days: Set<number> | null; holidays: Set<string> } {
+    const base = this.workCalendar()
+    if (!task?.resources?.length) return base
+    const resources = this.resourceCalendars()
+    let days = base.days ? new Set(base.days) : null
+    const holidays = new Set(base.holidays)
+    for (const id of task.resources) {
+      const resource = resources.get(id)
+      if (!resource) continue
+      if (resource.shifts && resource.shifts.length === 0) days = new Set()
+      if (resource.workdays !== undefined) {
+        const own = new Set(resource.workdays)
+        days = days ? new Set([...days].filter((day) => own.has(day))) : own
+      }
+      for (const holiday of resource.holidays ?? []) holidays.add(holiday)
+    }
+    return { days, holidays }
+  }
+
+  private isWorkingDay(ms: number, task?: GanttTask): boolean {
+    const { days, holidays } = this.taskCalendar(task)
     const d = new Date(ms)
     // 假日恒为非工作日（与 workdays 是否开启无关）；workdays 缺省则不限制周几
     if (holidays.has(toISODate(d))) return false
@@ -2042,13 +2141,13 @@ export class OASGantt extends OASElement {
    * 吸附到「当天或之后」的下一个工作日（逐日前进，上限 SNAP_MAX_DAYS 天防死循环）。
    * workdays 未开启 → 原值返回（零行为）；上限内找不到工作日（几乎不可达）→ 原值返回（宁可不移动）。
    */
-  private snapToWorkingDay(ms: number): number {
-    const { days, holidays } = this.workCalendar()
+  private snapToWorkingDay(ms: number, task?: GanttTask): number {
+    const { days, holidays } = this.taskCalendar(task)
     // 无 workdays 且无假日 → 全周皆工作日，无需求吸附
     if (!days && holidays.size === 0) return ms
     let cur = ms
     for (let i = 0; i < SNAP_MAX_DAYS; i++) {
-      if (this.isWorkingDay(cur)) return cur
+      if (this.isWorkingDay(cur, task)) return cur
       cur += DAY_MS
     }
     return ms
@@ -5673,18 +5772,18 @@ export class OASGantt extends OASElement {
           // 端点落在非工作日 → 吸附到下一个工作日；ff/sf 吸附对应 end 后派生 start（工期不变）
           const need =
             type === 'fs'
-              ? this.snapToWorkingDay(pa.endMs + lagMs)
+              ? this.snapToWorkingDay(pa.endMs + lagMs, t)
               : type === 'ss'
-                ? this.snapToWorkingDay(pa.startMs + lagMs)
+                ? this.snapToWorkingDay(pa.startMs + lagMs, t)
                 : type === 'ff'
-                  ? this.snapToWorkingDay(pa.endMs + lagMs) - duration
-                  : this.snapToWorkingDay(pa.startMs + lagMs) - duration
+                  ? this.snapToWorkingDay(pa.endMs + lagMs, t) - duration
+                  : this.snapToWorkingDay(pa.startMs + lagMs, t) - duration
           if (need > required) required = need
         }
         // snet：约束下限（只前推不提前）。约束优先：先取 max 再吸附，故吸附结果不会早于约束日
         if (con && con.mode === 'snet' && con.ms > required) required = con.ms
         if (!(required > startMs)) continue // 只推不提前（fnlt 不在此移动：仅参与违约判定）
-        required = this.snapToWorkingDay(required)
+        required = this.snapToWorkingDay(required, t)
         if (!(required > startMs)) continue
         if (this.writeStartKeepingDuration(t, required, duration)) {
           changed.add(t.id)

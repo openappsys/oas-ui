@@ -243,23 +243,6 @@ onMounted(async () => {
 
 ## API
 
-### Methods
-
-| Method | Description |
-| --- | --- |
-| `message.info(content, options?)` | Info message, returns `{ close, pause, resume }` |
-| `message.success(content, options?)` | Success message |
-| `message.warning(content, options?)` | Warning message |
-| `message.error(content, options?)` | Error message |
-| `message.question(content, options?)` | Question message (question icon) |
-| `message.loading(content, options?)` | Loading message (no auto-close, not closable by default) |
-| `message.show(type, content, options?)` | Generic entry: built-in type or one registered via `registerType` |
-| `message.update(key, { content, type?, duration? })` | Update an existing message; creates a new one if the key does not exist |
-| `message.destroy(key)` | Close the message identified by `key` |
-| `message.promise(promise, { loading, success, error })` | Promise chain: loading → success/error |
-| `message.registerType(name, { icon?, color?, closable? })` | Register a custom message type |
-| `destroyAllMessage()` | Clear all messages |
-
 ### oas-message
 
 #### Attributes
@@ -279,6 +262,15 @@ onMounted(async () => {
 | `show-icon` | Whether to show the type icon (default true; false for text only) | `string` | `true` |
 | `show-progress` | Show a countdown progress bar synced with the duration | `boolean` | — |
 | `type` | Message type: `info`/`success`/`warning`/`error`/`loading`/`question` | `string` | `info` |
+
+#### Methods
+
+| Method | Signature | Description |
+| --- | --- | --- |
+| `refresh` | `refresh(content: MessageContent, type?: MessageType, duration?: number, count?: number): void` | 命令式层刷新入口：更新内容/类型/时长/合并计数并重置自动关闭计时。 |
+| `close` | `close(source: MessageCloseSource): void` | 关闭：派发 oas-close（detail 携带 key 与来源）后出场动画移除（减动效时立即移除） |
+| `pause` | `pause(): void` | 暂停自动关闭计时（剩余时长记账；无计时器时为空操作） |
+| `resume` | `resume(): void` | 恢复自动关闭计时（剩余时长续走；已过期则立即关闭） |
 
 #### Events
 

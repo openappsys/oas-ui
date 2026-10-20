@@ -22,6 +22,18 @@
     }
   ],
   "props": [],
+  "methods": [
+    {
+      "name": "openOverflow",
+      "signature": "openOverflow(): void",
+      "description": "打开折叠弹层：克隆全部被折叠成员头像进列表 + 定位（供模块级 Esc 栈/内部调用）"
+    },
+    {
+      "name": "closeOverflow",
+      "signature": "closeOverflow(refocus: unknown): void",
+      "description": "关闭折叠弹层；refocus=true 时焦点回到计数按钮（Escape 路径，带回焦豁免防重开）"
+    }
+  ],
   "events": [],
   "slots": [
     {

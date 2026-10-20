@@ -664,6 +664,14 @@ onMounted(async () => {
 | `type` | 样式变体：`line`（下划线，默认）/ `card`（卡片式） | `string` | `line` |
 | `without-scroll-controls` | 关闭溢出时的左右/上下滚动箭头（默认溢出自动显示箭头） | `boolean` | — |
 
+#### 方法
+
+| 方法 | 签名 | 说明 |
+| --- | --- | --- |
+| `translateText` | `translateText(key: string, params?: Record<string, string \| number>): string` | 翻译内置文案（就近 config-provider / locale；能力 controller 与外部模板经此取词） |
+| `refreshTabs` | `refreshTabs(): void` | 刷新标签栏（重命名写回 label 后重建 tablist 恢复结构；能力 controller 专用） |
+| `notifyManager` | `notifyManager(kind: 'add' \| 'close' \| 'rename' \| 'reorder', detail: unknown): void` | 派发 manager 能力结果事件（add/close/rename/reorder；detail 由能力 controller 组好） |
+
 #### 事件
 
 | 事件 | 说明 |

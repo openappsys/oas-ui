@@ -81,6 +81,12 @@
 | `to-fixed` | 小数位（Number.prototype.toFixed）；缺省整数显示 | `string` | — |
 | `value` | 目标数值；非法按 0 | `string` | `0` |
 
+#### 方法
+
+| 方法 | 签名 | 说明 |
+| --- | --- | --- |
+| `play` | `play(): void` | 手动重播一轮：从 from 起播到目标；播放中防重入（每轮至多一次 oas-finish） |
+
 #### 事件
 
 | 事件 | 说明 |

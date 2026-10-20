@@ -98,6 +98,33 @@
       "api": true
     }
   ],
+  "methods": [
+    {
+      "name": "exportIcs",
+      "signature": "exportIcs(options?: IcsExportOptions): string",
+      "description": "导出当前事件的 ICS 字符串（纯函数 eventsToIcs 的实例便捷通道；不触发重渲染）"
+    },
+    {
+      "name": "downloadIcs",
+      "signature": "downloadIcs(filename: unknown, options?: IcsExportOptions): string",
+      "description": "下载当前事件的 ICS 文件（浏览器环境；返回生成的 ICS 字符串便于测试/宿主复用）"
+    },
+    {
+      "name": "addEvent",
+      "signature": "addEvent(ev: SchedulerEvent): string",
+      "description": "新增事件：返回分配到的 id"
+    },
+    {
+      "name": "updateEvent",
+      "signature": "updateEvent(id: string, patch: Partial<SchedulerEvent>): boolean",
+      "description": "按 id 更新事件（浅合并 patch 后走 sanitize 清洗；找不到返回 false）"
+    },
+    {
+      "name": "removeEvent",
+      "signature": "removeEvent(id: string): boolean",
+      "description": "按 id 删除事件；找不到返回 false"
+    }
+  ],
   "events": [
     {
       "name": "oas-events-change",

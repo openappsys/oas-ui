@@ -254,6 +254,7 @@ export const WHITELIST = [
   'oas-message-scroller',
   'oas-marker',
   'oas-message-row',
+  'oas-prompt-input',
   'oas-titlebar',
   'oas-traffic-lights',
   'oas-statusbar',
@@ -462,6 +463,7 @@ const TAG_ENTRY: Record<WhiteListTag, string> = {
   'oas-message-scroller': '@oas-ui/ui/conversation/message-scroller',
   'oas-marker': '@oas-ui/ui/conversation/marker',
   'oas-message-row': '@oas-ui/ui/conversation/message-row',
+  'oas-prompt-input': '@oas-ui/ui/conversation/prompt-input',
   'oas-titlebar': '@oas-ui/ui/workbench/titlebar',
   'oas-traffic-lights': '@oas-ui/ui/workbench/titlebar',
   // statusbar-item 与 statusbar 同目录，装载一次注册两个 tag

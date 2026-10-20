@@ -343,9 +343,4 @@ onMounted(async () => {
 
 ### Static methods
 
-| Method | Description |
-| --- | --- |
-| `OASSpin.fullscreen(options?)` | Imperative fullscreen loading, returns `{ close() }`; `options`: `{ tip?: string; delay?: number }` |
-| `OASSpin.setDefaultIndicator(html \| null)` | Register a global default indicator (affects newly created instances); `null` restores the built-in ring |
-
 The indicator uses `role="status"` (`role="progressbar"` + the `aria-value` trio in progress mode) with a built-in screen-reader label; host `aria-busy` syncs with `spinning`.

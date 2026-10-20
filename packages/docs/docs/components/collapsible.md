@@ -143,6 +143,12 @@ onMounted(async () => {
 | `header` | 触发器文案（渲染进触发按钮；富内容用 slot="header"，插槽优先） | `string` | — |
 | `open` | 展开态（受控开关）：属性缺席 = 非受控自管（首帧由 default-open 播种）；属性在场 = 受控（值非 "false" 为展开、"false" 为收起），点击翻转后写回属性并派发事件（乐观更新） | — | — |
 
+#### 方法
+
+| 方法 | 签名 | 说明 |
+| --- | --- | --- |
+| `isDisabled` | `isDisabled(): boolean` | 生效禁用态（显式 disabled 属性；config-provider 注入的全局禁用同样生效） |
+
 #### 事件
 
 | 事件 | 说明 |

@@ -258,14 +258,6 @@ onMounted(() => {
 
 ## API
 
-### 方法
-
-| 方法 | 说明 |
-| --- | --- |
-| `scrollTo(options)` / `scrollTo(x, y)` | 滚动到指定位置，`options: { top?, left?, behavior?: 'auto' \| 'smooth' }`（委托视口） |
-| `scrollToTop(options?)` / `scrollToBottom(options?)` | 滚到顶/底，`options: { behavior? }` 默认平滑 |
-| `scrollIntoView(selectorOrEl, options?)` | 容器内元素滚进视口，`options` 的 `block` / `inline` 透传 |
-
 ### oas-scroll-area
 
 #### 属性
@@ -279,6 +271,15 @@ onMounted(() => {
 | `stick-to-bottom` | 贴底：新内容追加时若当前停靠在底部（距底 ≤8px）自动滚到底，上翻阅读时不打断 | `boolean` | — |
 | `type` | 滚动条显示模式（`auto \| always \| scroll \| hover`，默认 `always`）：`auto` 滚动/悬停显示后延时隐藏；`always` 溢出常显；`scroll` 仅滚动时显示；`hover` 仅悬停时显示。非法值回退 `always` | `ScrollAreaType` | `always` |
 | `width` | 视口宽度（px），不设置时铺满宿主宽度 | — | — |
+
+#### 方法
+
+| 方法 | 签名 | 说明 |
+| --- | --- | --- |
+| `scrollTo` | `scrollTo(x?: ScrollToOptions \| number, y?: number): void` | 滚动到指定位置，委托 viewport.scrollTo（与原生 Element.scrollTo 兼容： |
+| `scrollToTop` | `scrollToTop(options?: { behavior?: ScrollBehavior }): void` | 平滑/即时滚到顶部（保留横向位置；默认平滑滚动） |
+| `scrollToBottom` | `scrollToBottom(options?: { behavior?: ScrollBehavior }): void` | 平滑/即时滚到底部（保留横向位置；默认平滑滚动） |
+| `scrollIntoView` | `scrollIntoView(target?: string \| Element \| ScrollIntoViewOptions \| boolean, options?: ScrollIntoViewOptions): void` | 让容器内元素滚进视口，委托目标元素的原生 scrollIntoView（`options` 的 |
 
 #### 事件
 

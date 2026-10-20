@@ -704,6 +704,58 @@ function extractProps(cls) {
   return props
 }
 
+// ---------- methods：公开方法（有 JSDoc 的 public method；生命周期/事件处理器排除） ----------
+const METHOD_EXCLUDE = new Set([
+  'connectedCallback',
+  'disconnectedCallback',
+  'attributeChangedCallback',
+  'render',
+  'update',
+  'hydrate',
+  'bind',
+  'requestUpdate',
+])
+
+function methodDoc(member) {
+  const full = typeof member.getFullText === 'function' ? member.getFullText() : member.getText()
+  const start = full.lastIndexOf('/**')
+  if (start === -1) return ''
+  const block = full.slice(start)
+  if (block.includes('@internal')) return ''
+  const lines = block
+    .replace(/^\/\*\*?/, '')
+    .split(/\r?\n/)
+    .map((line) =>
+      line
+        .replace(/^\s*\*\s?/, '')
+        .replace(/\s*\*\/\s*$/, '')
+        .trim(),
+    )
+    .filter((line) => line !== '' && !line.startsWith('@'))
+  return lines[0] ?? ''
+}
+
+function extractMethods(cls) {
+  const out = []
+  for (const m of cls.members || []) {
+    if (m.kind !== K.MethodDeclaration) continue
+    const mods = (m.modifiers || []).map((x) => x.kind)
+    if (mods.includes(K.StaticKeyword) || mods.includes(K.PrivateKeyword) || mods.includes(K.ProtectedKeyword)) continue
+    const name = m.name?.text
+    if (!name || METHOD_EXCLUDE.has(name) || name.startsWith('_') || /^(on|handle)[A-Z]/.test(name)) continue
+    const description = methodDoc(m)
+    if (!description) continue
+    const params = (m.parameters || []).map((p) => {
+      const paramName = p.name?.getText?.() ?? 'arg'
+      const type = srcText(p.type) ?? 'unknown'
+      return `${paramName}${p.questionToken ? '?' : ''}: ${type}`
+    })
+    const ret = srcText(m.type) ?? 'void'
+    out.push({ name, signature: `${name}(${params.join(', ')}): ${ret}`, description })
+  }
+  return out
+}
+
 // getter 返回表达式 → backing field 字段名（无则不返回）：
 //   `return this.X`、`return this.X.slice()`、`return [...this.X]`
 function getterBackingField(retExpr) {
@@ -999,6 +1051,7 @@ function scanDir(project, dir, unresolvedGlobal) {
         sourceFile: null,
         attrs: [],
         props: [],
+        methods: [],
         events: [],
         slots: [],
         unresolved,
@@ -1008,6 +1061,7 @@ function scanDir(project, dir, unresolvedGlobal) {
 
     const observed = getObservedAttributes(classNode, unresolved, factoryCall, factoryFn)
     const props = extractProps(classNode)
+    const methods = extractMethods(classNode)
     const attrs = extractAttrs(classNode, observed, new Set(props.map((p) => p.name)))
     // 跨组件属性补充（badge 等由父组件 getAttribute 读取的属性）
     for (const name of SUPPLEMENT_ATTRS[tag] ?? []) {
@@ -1030,6 +1084,7 @@ function scanDir(project, dir, unresolvedGlobal) {
       sourceFile: classFile,
       attrs: finalAttrs,
       props,
+      methods,
       events,
       slots,
       cssVars,
@@ -1045,11 +1100,13 @@ function summarize(manifest) {
   let typed = 0
   let events = 0
   let slots = 0
+  let methods = 0
   for (const m of Object.values(manifest)) {
     attrs += m.attrs.length
     typed += m.attrs.filter((a) => a.type).length
     events += m.events.length
     slots += m.slots.length
+    methods += m.methods?.length ?? 0
   }
   return {
     components: Object.keys(manifest).length,
@@ -1057,6 +1114,7 @@ function summarize(manifest) {
     typed,
     events,
     slots,
+    methods,
     typeRatio: attrs ? (typed / attrs).toFixed(3) : '0',
   }
 }
@@ -1113,6 +1171,7 @@ function main() {
   console.log(`attr 总数：${s.attrs}（有 type 推断 ${s.typed}，占比 ${s.typeRatio}）`)
   console.log(`event 总数：${s.events}`)
   console.log(`slot 总数：${s.slots}`)
+  console.log(`method 总数：${s.methods}`)
   const unresolvedList = []
   for (const tag of Object.keys(ordered)) {
     if (ordered[tag].unresolved.length) {

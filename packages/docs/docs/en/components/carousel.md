@@ -378,6 +378,14 @@ Besides the automatic hover/focus pause, `pause-button` renders an explicit paus
 | `trigger` | Indicator activation: `click` (default) / `hover` (hover switches, click still works) | `string` | `click` |
 | `type` | Carousel layout type: `"card"` enables card mode — the current card is centered as the main body with neighboring cards peeking on both sides (scaled down, dimmed); clicking a neighbor card switches to it directly; mutually exclusive with `slides-per-view`/`effect`/`direction` (card mode wins); card width/gap/neighbor scale via `--oas-carousel-card-width` / `--oas-carousel-card-gap` / `--oas-carousel-card-scale` | `string` | — |
 
+#### Methods
+
+| Method | Signature | Description |
+| --- | --- | --- |
+| `next` | `next(): void` | 切换到下一屏 |
+| `prev` | `prev(): void` | 切换到上一屏 |
+| `goTo` | `goTo(index: number): void` | 跳转到指定屏（页索引，从 0 起） |
+
 #### Events
 
 | Event | Description |

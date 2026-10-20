@@ -8,6 +8,7 @@ if (!customElements.get('oas-gantt')) {
 export { OASGantt, computeVariance }
 export type {
   GanttTask,
+  GanttResource,
   GanttBaselineVariance,
   GanttDependency,
   GanttScale,

@@ -2603,8 +2603,8 @@ group 子钮此前为宿主自填 light DOM（`slot="action"`），组件用 `::
 
 ## 未发布：scheduler 跨日连续条、重复规则扩展与 ICS 导出增强
 
-- **范围**：周视图 `endDate` 全天事件在顶部全天带渲染连续长条（替代逐日芯片），支持长条横向拖动整体平移并按列宽吸附到天；`repeat` 增加 `byMonth` / `byMonthDay` / `bySetPos` / `exDates`；`eventsToIcs()` 增加 `EXDATE` / `VALARM` / `X-OAS-COLOR` 与 `rangeStart` / `rangeEnd` 过滤。
-- **语义**：仅全天事件合成连续条；带 `start` 的跨日事件仍按日拆段，避免跨列时间轴错位。拖动落定回写 `date` / `endDate` 并派发 `oas-events-change`。`byMonth` 限定月份（1-12）、`byMonthDay` 限定日（1-31）、`bySetPos` 写入 RRULE、`exDates` 同时过滤本地 occurrence 与输出 ICS。`rangeStart` / `rangeEnd` 为含端日期，只导出与区间相交的事件。
+- **范围**：周视图 `endDate` 事件（全天与定时）在顶部跨日带渲染连续长条，定时条带 `开始–结束` 时间标签；支持长条横向拖动整体平移并按列宽吸附到天；`repeat` 增加 `byMonth` / `byMonthDay` / `bySetPos` / `exDates`；`eventsToIcs()` 增加 `EXDATE` / `VALARM` / `X-OAS-COLOR` 与 `rangeStart` / `rangeEnd` 过滤；新增窗口日期取数 recipe。
+- **语义**：跨日事件（含定时）不再按日拆块；拖动落定回写 `date` / `endDate` 并派发 `oas-events-change`，保留 `start/end` 时刻。`byMonth` 限定月份（1-12）、`byMonthDay` 限定日（1-31）、`bySetPos` 写入 RRULE、`exDates` 同时过滤本地 occurrence 与输出 ICS。`rangeStart` / `rangeEnd` 为含端日期，只导出与区间相交的事件。
 - **兼容**：新字段全部可选；未使用时不改变既有渲染与 ICS 输出。连续条仅周视图出现，月/日/agenda 仍按日芯片/行项展示。
 - **验收**：单测覆盖连续条、无逐日芯片、BYMONTH/BYMONTHDAY/EXDATE/remind 与 ICS 字段；e2e 覆盖新 demo 的连续条显示与 console 零告警；文档 zh/en、API 说明与 CHANGELOG 同步。
 
@@ -2642,3 +2642,18 @@ group 子钮此前为宿主自填 light DOM（`slot="action"`），组件用 `::
 - **语义**：热力格按 `load / capacity` 分低/中/高/超载，容量 0 显示不可用；技能矩阵使用 `skills` 并集，✓ 表示具备，不做虚拟化（大规模数据建议宿主分页）。两者均只读展示，不修改数据。
 - **兼容**：默认关闭，不改变既有泳道/直方图与 windowed 行为；技能矩阵不参与负载计算。
 - **验收**：单测覆盖热力格/图例/超载类与技能矩阵勾选/移除属性恢复；e2e 覆盖两个 demo；resource a11y 零严重违规；文档 zh/en、API 说明与 CHANGELOG 同步。
+
+## 未发布：gantt 逐资源日历/班次
+
+- **范围**：新增 esources 属性与 GanttTask.resources；资源项支持 workdays、holidays、shifts。uto-schedule 按任务全部分配资源的工作日取交集、假期取并集后吸附工作日。shifts: [] 表示资源无可用班次；具体小时窗口保留给宿主小时级排程/展示。
+- **语义**：未声明 esources 或任务无资源时回退全局 workdays/holidays；资源缺失 id 忽略。日级排程只消费 workdays/holidays，不改变既有任务工期/依赖语义。
+- **兼容**：新字段全部可选；不设置时与旧版完全一致。
+- **验收**：单测覆盖资源假期、工作日交集、多资源组合、任务 resources 清洗；e2e 覆盖逐资源日历 demo；文档 zh/en、API 说明与 CHANGELOG 同步。
+
+## 未发布：conversation prompt-input 提示词输入
+
+- **范围**：新增 oas-prompt-input（conversation 族）：多行自增高、Enter 提交 / Shift+Enter 换行、submit-on-enter、clear-on-submit、loading 发送/停止态、disabled/eadonly/maxlength/ows、suggestions 建议项、prefix/ctions/ooter 插槽。
+- **事件/方法**：oas-submit（{ value }）、oas-stop、oas-suggestion-select（{ value, label }）；submit() / stop() / ocusInput()。
+- **兼容**：新增组件，不影响既有会话族；不依赖外部数据源。
+- **验收**：单测覆盖提交/换行/禁用/loading/建议/双通道值；e2e 覆盖真实输入、建议回填与停止；a11y 页面纳入自动收集；文档 zh/en、API/SSR 白名单与 CHANGELOG 同步。
+

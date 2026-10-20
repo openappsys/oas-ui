@@ -241,6 +241,7 @@
       "default": "[]"
     }
   ],
+  "methods": [],
   "events": [
     {
       "name": "oas-step",

@@ -242,6 +242,14 @@ onMounted(() => {
 | `formatValue` | 值格式化函数：`el.formatValue = (value) => string`，输出同时进 show-value 值文本与 `aria-valuetext`，优先级高于 `format` 属性与 `unit` 后缀，置 null 清除 | `((value: number) => string \| number \| null \| undefined) \| null` | — |
 | `value` | 当前值：读返回夹取+吸附后的数值（拖拽中为拖拽实时值），写为受控赋值即生效（写受控属性并强制同步，不派发事件） | `number` | — |
 
+#### 方法
+
+| 方法 | 签名 | 说明 |
+| --- | --- | --- |
+| `reset` | `reset(): void` | 复位到默认值（default-value 缺省 min），派发 oas-reset |
+| `stepUp` | `stepUp(): void` | 按 step 步进一格（等价方向键） |
+| `stepDown` | `stepDown(): void` | 按 step 回退一格（等价方向键） |
+
 #### 事件
 
 | 事件 | 说明 |

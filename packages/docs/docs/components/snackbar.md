@@ -163,6 +163,12 @@ onMounted(async () => {
 | `queue` | 栈满排队：同方向在屏满 3 条时 FIFO 排队等空位补位展示（未设置则挤掉最老一条，reason=`evict`） | `boolean` | — |
 | `swipe` | 启用滑动关闭：纵向拖拽 ≥48px 关闭（顺势抛出离场） | `boolean` | — |
 
+#### 方法
+
+| 方法 | 签名 | 说明 |
+| --- | --- | --- |
+| `requestDismiss` | `requestDismiss(): void` | 宿主外部触发的受控下屏：仅派发 oas-close，宿主负责移除 open（堆叠超限挤下与 Escape 关闭不经此方法，直接 dismiss） |
+
 #### 事件
 
 | 事件 | 说明 |

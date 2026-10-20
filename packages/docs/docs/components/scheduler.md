@@ -34,10 +34,10 @@
 月/周规则还可加 `byMonth`（1-12）、`byMonthDay`（1-31）、`bySetPos`（如 `-1`）、`byDay`（weekly，0=周日…6=周六）与 `exDates`（排除日期，`YYYY-MM-DD`）。本地 occurrence 过滤支持 `byMonth` / `byMonthDay` / `byDay` / `exDates`，以及「monthly + byMonthDay + bySetPos」组合；其他 `bySetPos` 场景原样写入 ICS `RRULE`。
 
 <DemoBlock title="跨日全天条（周视图连续长条，可整体拖动平移）">
-  <oas-scheduler id="scheduler-span" view="week" page-show-date="2026-08-10" events='[{"date":"2026-08-10","endDate":"2026-08-12","title":"设计冻结"},{"date":"2026-08-13","endDate":"2026-08-14","title":"回归窗口","color":"#059669"}]'></oas-scheduler>
+  <oas-scheduler id="scheduler-span" view="week" page-show-date="2026-08-10" events='[{"date":"2026-08-10","endDate":"2026-08-12","title":"设计冻结"},{"date":"2026-08-13","endDate":"2026-08-14","title":"回归窗口","color":"#059669"},{"date":"2026-08-12","endDate":"2026-08-13","title":"夜间值守","start":"22:00","end":"02:00"}]'></oas-scheduler>
 </DemoBlock>
 
-跨日全天事件在周视图的顶部全天带渲染为一条连续长条（不再逐日重复芯片）；按住长条横向拖动可按列宽吸附平移日期，回写 `date` / `endDate` 并派发 `oas-events-change`。定时跨日事件仍按日拆段，避免跨列时间轴错位。
+跨日全天事件在周视图的顶部全天带渲染为一条连续长条（不再逐日重复芯片）；按住长条横向拖动可按列宽吸附平移日期，回写 `date` / `endDate` 并派发 `oas-events-change`。定时跨日事件也在顶部跨日带渲染连续条，条上带 `开始–结束` 时间标签；日内时间轴不再重复拆块。
 
 <DemoBlock title="提醒（remind 分钟，到点派发 oas-remind）">
   <oas-scheduler id="scheduler-remind" page-show-date="2026-08-10"></oas-scheduler>
@@ -224,6 +224,37 @@ onMounted(async () => {
 ></oas-scheduler>
 ```
 
+### 日期窗口取数配方（宿主侧）
+
+组件当前只内建资源行窗口；按日期窗口取数是宿主职责。推荐做法：以 `page-show-date` + `view` 推导可见区间，视图切换/翻页时取消在途请求并只喂该区间事件，避免重复展开与时间轴抖动。
+
+```ts
+const el = document.querySelector('oas-scheduler')
+let ac: AbortController | null = null
+
+async function loadWindow() {
+  ac?.abort()
+  ac = new AbortController()
+  const anchor = el.getAttribute('page-show-date') // YYYY-MM-DD
+  const view = el.getAttribute('view') ?? 'month'
+  const days = view === 'day' ? 1 : view === 'week' || view === 'resource-week' ? 7 : view === 'agenda' ? 28 : 31
+  const start = new Date(`${anchor}T00:00:00`)
+  const end = new Date(start.getFullYear(), start.getMonth(), start.getDate() + days - 1)
+  const iso = (d: Date) => d.toISOString().slice(0, 10)
+  const res = await fetch(`/api/events?start=${iso(start)}&end=${iso(end)}`, { signal: ac.signal })
+  el.events = await res.json() // 只替换当前窗口事件
+}
+
+el.addEventListener('oas-view-change', loadWindow)
+// 翻页：宿主更新 page-show-date 后调用 loadWindow；资源行回填继续走 oas-window-request
+document.querySelector('[data-prev]')?.addEventListener('click', () => {
+  el.setAttribute('page-show-date', prevAnchor(el.getAttribute('page-show-date')!))
+  loadWindow()
+})
+```
+
+> `repeat` 若由宿主展开，必须剥离基础事件的 `repeat` 并为每个 occurrence 使用唯一 id；窗口内事件跨窗口边界时，按宿主协议保留相邻 buffer，避免翻页瞬间空白。
+
 ## ICS 导出
 
 <DemoBlock title="下载当前事件为 .ics（UTC + Asia/Shanghai）">
@@ -274,6 +305,16 @@ el.downloadIcs('my.ics', { timeMode: 'utc', timezone: 'Asia/Shanghai' })
 | --- | --- | --- | --- |
 | `events` | 日程事件（`SchedulerEvent[]`）：`el.events` 读（含自动 id 的拷贝）；`el.events = [...]` 写（同步 events 属性 + 重渲染 + 派发 oas-events-change） | `SchedulerEvent[]` | `[]` |
 | `resources` | 资源列表（`SchedulerResource[]`）：`el.resources` 读（拷贝）；`el.resources = [...]` 写（同步 resources 属性 + 重渲染） | `SchedulerResource[]` | `[]` |
+
+#### 方法
+
+| 方法 | 签名 | 说明 |
+| --- | --- | --- |
+| `exportIcs` | `exportIcs(options?: IcsExportOptions): string` | 导出当前事件的 ICS 字符串（纯函数 eventsToIcs 的实例便捷通道；不触发重渲染） |
+| `downloadIcs` | `downloadIcs(filename: unknown, options?: IcsExportOptions): string` | 下载当前事件的 ICS 文件（浏览器环境；返回生成的 ICS 字符串便于测试/宿主复用） |
+| `addEvent` | `addEvent(ev: SchedulerEvent): string` | 新增事件：返回分配到的 id |
+| `updateEvent` | `updateEvent(id: string, patch: Partial<SchedulerEvent>): boolean` | 按 id 更新事件（浅合并 patch 后走 sanitize 清洗；找不到返回 false） |
+| `removeEvent` | `removeEvent(id: string): boolean` | 按 id 删除事件；找不到返回 false |
 
 #### 事件
 

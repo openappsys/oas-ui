@@ -265,6 +265,53 @@
       "type": "TableSpanMethod | null"
     }
   ],
+  "methods": [
+    {
+      "name": "effectiveColumns",
+      "signature": "effectiveColumns(): TableColumn[]",
+      "description": "有效列：按 column-keys（受控显示集合+顺序）过滤排序；无 column-keys 时回落全部叶子列（向后兼容）。"
+    },
+    {
+      "name": "getColumns",
+      "signature": "getColumns(): TableColumn[]",
+      "description": "当前全部列定义（含组列；表格基础 API，能力 controller / 宿主可读）"
+    },
+    {
+      "name": "translateText",
+      "signature": "translateText(key: string, params?: Record<string, string | number>): string",
+      "description": "翻译内置文案（就近 config-provider / locale；能力 controller 与外部自定义模板经此取词）。"
+    },
+    {
+      "name": "paintCell",
+      "signature": "paintCell(td: HTMLTableCellElement, col: TableColumn, row: Record<string, unknown>): void",
+      "description": "重绘单元格为常规展示内容：清空后按 cellNode 挂载（尊重 render/cellTemplate 富内容）。"
+    },
+    {
+      "name": "notifyEdit",
+      "signature": "notifyEdit(kind: 'edit' | 'edit-cancel', detail: TableEditDetail): void",
+      "description": "派发编辑结果事件（提交/取消；detail 由 edit 能力组好）。事件名以字面量书写在此，"
+    },
+    {
+      "name": "setColumnOrder",
+      "signature": "setColumnOrder(keys: string[]): void",
+      "description": "更新列显示顺序（写回 column-keys 并重渲染；派发 oas-column-order，宿主可做持久化）"
+    },
+    {
+      "name": "setColumnWidth",
+      "signature": "setColumnWidth(key: string, width: number): void",
+      "description": "更新指定列宽（写回 columns 对应列 width 并重渲染；派发 oas-column-resize）。property 列定义含函数时改内存"
+    },
+    {
+      "name": "exportMatrix",
+      "signature": "exportMatrix(): { headers: string[]; rows: string[][] }",
+      "description": "导出矩阵：表头（列 title / headerTemplate 文本）+ 当前可见数据行。"
+    },
+    {
+      "name": "exportData",
+      "signature": "exportData(format: ExportFormat, options: { fileName?: string }): string",
+      "description": "导出并触发下载：生成内容 → Blob 下载 → 派发 `oas-export`"
+    }
+  ],
   "events": [
     {
       "name": "oas-check",

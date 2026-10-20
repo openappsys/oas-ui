@@ -531,6 +531,14 @@ A range input is just two `oas-input` elements plus a separator layout (the comp
 | --- | --- | --- | --- |
 | `value` | Current value: parser/mask-aware submitted-value semantics (`el.value` reads; `el.value = x` writes the controlled `value` and syncs the inner control, no event) | `string` | — |
 
+#### Methods
+
+| Method | Signature | Description |
+| --- | --- | --- |
+| `focus` | `focus(options?: FocusOptions): void` | label 点击聚焦委托：把焦点交给 shadow 内主输入（配合 oas-form-item 的 label 点击代理） |
+| `blur` | `blur(): void` | 失焦委托：把 blur 交给 shadow 内主输入 |
+| `select` | `select(): void` | 选中输入框全部内容（委托原生 input.select） |
+
 #### Events
 
 | Event | Description |

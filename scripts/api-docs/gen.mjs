@@ -57,6 +57,8 @@ const GROUP_HEADINGS = new Set([
   '事件',
   '插槽',
   'props',
+  '方法',
+  'methods',
   'attributes',
   'events',
   'slots',
@@ -129,7 +131,7 @@ function classifyTable(headerCells) {
     return { type: 'skip', reason: '组件说明/映射表（首列组件/Component）' }
   }
   if (HEADER.field.has(first)) return { type: 'skip', reason: '字段表' }
-  if (HEADER.method.has(first)) return { type: 'skip', reason: '方法表' }
+  if (HEADER.method.has(first)) return { type: 'method' }
   if (HEADER.part.has(first)) return { type: 'skip', reason: '部件表' }
   return { type: 'skip', reason: `表头不识别：${headerCells.join(' | ')}` }
 }
@@ -320,6 +322,14 @@ function tagRows(tag, lang) {
     return { name, desc: d, type: p?.type ?? null, default: p?.default ?? null }
   })
 
+  // methods：manifest 单源（public + JSDoc 方法）；说明优先语料覆盖，否则用源码 JSDoc 首行
+  const descMethods = desc.methods ?? {}
+  const methods = (man.methods ?? []).map((m) => ({
+    name: m.name,
+    signature: m.signature ?? `${m.name}()`,
+    desc: descMethods[m.name] ?? m.description ?? null,
+  }))
+
   // events：manifest ∪ 语料；detail 若 manifest 有而说明没有，追加到说明末尾
   const eventNames = new Set(man.events.map((e) => e.name))
   for (const k of Object.keys(desc.events)) eventNames.add(k)
@@ -359,7 +369,7 @@ function tagRows(tag, lang) {
     .sort((a, b) => (a.name < b.name ? -1 : 1))
     .map((v) => ({ name: v.name, default: v.default ?? null, desc: (desc.cssVars ?? {})[v.name] ?? null }))
 
-  return { attrs, props, events, slots, cssVars }
+  return { attrs, props, methods, events, slots, cssVars }
 }
 
 // ---------- markdown 渲染 ----------
@@ -391,6 +401,13 @@ function renderPropTable(rows, lang) {
       r.type ? `\`${esc(r.type)}\`` : '—',
       r.default ? `\`${esc(r.default)}\`` : '—',
     ]),
+  )
+}
+function renderMethodTable(rows, lang) {
+  const header = lang === 'zh' ? ['方法', '签名', '说明'] : ['Method', 'Signature', 'Description']
+  return mdTable(
+    header,
+    rows.map((r) => [`\`${esc(r.name)}\``, `\`${esc(r.signature)}\``, esc(r.desc ?? '—')]),
   )
 }
 function renderEventTable(rows, lang) {
@@ -439,6 +456,7 @@ function buildGenerated(tags, lang) {
       lang === 'zh'
         ? 'Property（JS property；是否写回 attribute 见各行说明）'
         : 'Property (JS property; see each row for attribute reflection)',
+    methods: lang === 'zh' ? '方法' : 'Methods',
     events: lang === 'zh' ? '事件' : 'Events',
     slots: lang === 'zh' ? '插槽' : 'Slots',
     cssVars: lang === 'zh' ? 'CSS 变量' : 'CSS Variables',
@@ -447,10 +465,19 @@ function buildGenerated(tags, lang) {
   const parts = []
   for (const tag of tags) {
     const g = tagRows(tag, lang)
-    if (!g.attrs.length && !g.props.length && !g.events.length && !g.slots.length && !(g.cssVars ?? []).length) continue
+    if (
+      !g.attrs.length &&
+      !g.props.length &&
+      !g.methods.length &&
+      !g.events.length &&
+      !g.slots.length &&
+      !(g.cssVars ?? []).length
+    )
+      continue
     const tables = []
     if (g.attrs.length) tables.push(`#### ${headings.attrs}\n\n${renderAttrTable(g.attrs, lang)}`)
     if (g.props.length) tables.push(`#### ${headings.props}\n\n${renderPropTable(g.props, lang)}`)
+    if (g.methods.length) tables.push(`#### ${headings.methods}\n\n${renderMethodTable(g.methods, lang)}`)
     if (g.events.length) tables.push(`#### ${headings.events}\n\n${renderEventTable(g.events, lang)}`)
     if (g.slots.length) tables.push(`#### ${headings.slots}\n\n${renderSlotTable(g.slots, lang)}`)
     if ((g.cssVars ?? []).length) tables.push(`#### ${headings.cssVars}\n\n${renderCssVarTable(g.cssVars, lang)}`)

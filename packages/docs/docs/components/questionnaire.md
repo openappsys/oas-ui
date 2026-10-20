@@ -376,18 +376,6 @@ onMounted(() => {
 
 ## API
 
-### 方法
-
-| 方法 | 说明 |
-| --- | --- |
-| `next()` | 下一步：先对当前步 `oas-form` 校验（`validation="false"` 时跳过），通过才前进；异步校验在途时重入直接拒绝。返回 `Promise<boolean>` |
-| `prev()` | 上一步：不校验（回退不被错误困住）。返回 `boolean` |
-| `goto(index)` | 直跳任意步：不走单步门控；越界夹取，落在 hidden 步时向后解析。返回 `boolean` |
-| `validate()` | 校验全部参与步（非 `hidden` 且未跳过；顺序执行，逐步派发 `oas-step-validate`），返回 `Promise<boolean>` |
-| `submit()` | 提交：重校全部参与步（含早期步），全过才派发 `oas-submit`（`detail.values` 为跨步汇总值，仅参与步——`hidden` / 已跳过步不计入）。返回 `Promise<boolean>` |
-| `getValues()` | 跨步值汇总（参与步口径，与校验同集合）：各参与步 `oas-form` 当前值按步序深合并（与单表 `submit()` 的 `detail.values` 同口径，零交互的 `value` 属性预填同样计入）；需全量数据可读各面板内的 `oas-form`。返回 `Record<string, unknown>` |
-| `reset()` | 全部步骤 form 重置回初始值、清错误态、`current` 回 0；不派发任何事件 |
-
 ### oas-questionnaire
 
 #### 属性
@@ -409,6 +397,19 @@ onMounted(() => {
 | `skip-text` | 「跳过本步」按钮文案（覆盖 locale 缺省） | — | — |
 | `steps` | 步骤数据 JSON `[{ key?, title, description?, optional?, hidden? }]`；非法/空回落 `[]` | `QuestionnaireStep[] \| string` | `[]` |
 | `validation` | 单步校验门控（默认开，`validation="false"` 纯导航；`submit()` 不受此开关影响、始终重校） | `string` | `true` |
+
+#### 方法
+
+| 方法 | 签名 | 说明 |
+| --- | --- | --- |
+| `next` | `next(): Promise<boolean>` | 下一步：单步校验门控（当前步 oas-form 未过不放行；无 form / validation="false" 放行）。 |
+| `prev` | `prev(): boolean` | 上一步：不校验（对齐「回退不被校验挡住」惯例） |
+| `goto` | `goto(index: number): boolean` | 直跳任意步：不走单步门控（与 next() 语义分离）；越界夹取、hidden 步向后解析 |
+| `skipStep` | `skipStep(): boolean` | 跳过当前可选步：不校验直接前进（before-change 仍可拦截）。 |
+| `validate` | `validate(): Promise<boolean>` | 校验全部参与步（非 hidden 且未跳过，不提交）：每步派发 oas-step-validate，返回是否全部通过。 |
+| `submit` | `submit(): Promise<boolean>` | 提交：重校全部参与步（含早期步），全过才派发 oas-submit{values}（跨步汇总，仅参与步） |
+| `getValues` | `getValues(): Record<string, unknown>` | 跨步值汇总（参与步口径，与 validateAll 同判据）：各参与步（非 hidden 且未跳过）的 |
+| `reset` | `reset(): void` | 重置：全部步骤 form reset 回初始值（清错误态）、清值跟踪、清跳过记录、current 回 0。 |
 
 #### 事件
 

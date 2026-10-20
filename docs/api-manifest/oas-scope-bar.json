@@ -51,6 +51,13 @@
       "type": "string"
     }
   ],
+  "methods": [
+    {
+      "name": "selectValue",
+      "signature": "selectValue(value: string): void",
+      "description": "按 value 触发一次选择（单选选中/多选切换）——供外部程序化调用"
+    }
+  ],
   "events": [
     {
       "name": "oas-change",

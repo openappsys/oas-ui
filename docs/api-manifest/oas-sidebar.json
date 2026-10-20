@@ -102,6 +102,18 @@
       "api": true
     }
   ],
+  "methods": [
+    {
+      "name": "openDrawer",
+      "signature": "openDrawer(): void",
+      "description": "公开：编程打开移动抽屉，等价于点击内置触发按钮（`part=\"trigger\"`）。"
+    },
+    {
+      "name": "closeDrawer",
+      "signature": "closeDrawer(): void",
+      "description": "公开：编程关闭移动抽屉，等价于点击遮罩 / 关闭按钮 / 按 Esc。"
+    }
+  ],
   "events": [
     {
       "name": "oas-resize",

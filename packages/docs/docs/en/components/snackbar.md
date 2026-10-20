@@ -163,6 +163,12 @@ onMounted(async () => {
 | `queue` | Queue when full: with 3 visible entries in the direction, new ones wait FIFO for a free slot (unset: the oldest is evicted with reason=`evict`) | `boolean` | — |
 | `swipe` | Enable swipe-to-dismiss: a vertical drag of ≥48px dismisses (flinging out along the gesture) | `boolean` | — |
 
+#### Methods
+
+| Method | Signature | Description |
+| --- | --- | --- |
+| `requestDismiss` | `requestDismiss(): void` | 宿主外部触发的受控下屏：仅派发 oas-close，宿主负责移除 open（堆叠超限挤下与 Escape 关闭不经此方法，直接 dismiss） |
+
 #### Events
 
 | Event | Description |

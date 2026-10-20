@@ -158,10 +158,22 @@ Assemble a task detail editor with `oas-modal` + `oas-form` (the component only 
 
 - **Task constraints**: `GanttTask.constraint` (`'asap'` default / `'snet'` start-no-earlier-than / `'mso'` must-start-on / `'fnlt'` finish-no-later-than) + `constraintDate`. Under `auto-schedule`: `snet` sets a start floor, `mso` pins the start (not pushed by dependencies), `fnlt` is a soft deadline (no auto-move). Violations (`snet` earlier than the floor / `mso` conflicting with dependencies or off the pin / `fnlt` over deadline) are marked `.conflict` when **`show-critical-path` or `auto-schedule` is on**. Constraints on summary rows are meaningless (dates are derived) → ignored with a one-time warning.
 - **Working-days calendar**: `workdays` (JSON weekday array `[0..6]`, opt-in; absent/empty = any weekday) + `holidays` (**holidays are always non-working**, regardless of `workdays`). `auto-schedule` snaps pushed landing points to the **next working day** (skipping holidays and days outside `workdays`). Changing `workdays`/`holidays` at runtime, or rewriting `tasks`, re-normalizes.
+- **Per-resource calendars**: `resources` (JSON `[{ id, name?, workdays?, holidays?, shifts? }]`) + `GanttTask.resources`. For a task assigned multiple resources, `workdays` is intersected and `holidays` are unioned; `shifts: []` means no available shift. `shifts` is retained for hour-level host scheduling/presentation; day-level `auto-schedule` consumes only workdays/holidays.
 - **Event order**: with `auto-schedule` on and dependent corrections applied, the order is uniformly `oas-reschedule` (dependent corrections) → `oas-tasks-change` (final corrected data), whether the change comes from an interaction commit (drag / keyboard / `updateTask` / `updateTasks`) or the host rewriting `tasks` directly (attribute channel); a drag/keyboard settle then dispatches `oas-task-change` (the dragged task, with `start/end` carrying the **corrected final values**). One operation dispatches `oas-tasks-change` exactly once. Hosts should read `el.tasks` / `detail.task`.
 
 <DemoBlock title="Working-days calendar: with workdays=[Mon–Fri], drag the predecessor and the successor snaps to the next working day; a +2 (lag) label is visible on the link">
   <oas-gantt id="gantt-workdays" auto-schedule workdays="[1,2,3,4,5]" height="200"></oas-gantt>
+</DemoBlock>
+
+<DemoBlock title="Per-resource calendars: resource A holiday + resource B alternate-day shift; workdays intersect">
+  <oas-gantt
+    id="gantt-resource-cal"
+    auto-schedule
+    workdays="[1,2,3,4,5]"
+    resources='[{"id":"ra","holidays":["2026-03-09"]},{"id":"rb","workdays":[1,3,5],"shifts":[{"start":"09:00","end":"18:00"}]}]'
+    tasks='[{"id":"rc1","name":"Design","start":"2026-03-02","end":"2026-03-06"},{"id":"rc2","name":"Integration (A+B)","start":"2026-03-01","end":"2026-03-02","resources":["ra","rb"],"dependencies":[{"id":"rc1"}]}]'
+    height="180"
+  ></oas-gantt>
 </DemoBlock>
 
 ## Host Integration Recipes (Undo/Redo / Edit Dialog / Export)
@@ -650,6 +662,7 @@ onMounted(async () => {
 | `range-end` | Host-managed time-axis end (ISO date YYYY-MM-DD, inclusive); pair with range-start | `string` | — |
 | `range-start` | Host-managed time-axis start (ISO date YYYY-MM-DD): when provided the axis extent is no longer derived from data; use with range-end to support windowed mode (the slice may not span the full date range) | `string` | — |
 | `readonly` | Whole chart read-only (no rescheduling/progress, drag handles not rendered) | `boolean` | — |
+| `resources` | Per-resource calendars (JSON): [{ id, name?, workdays?, holidays?, shifts? }] used with GanttTask.resources; workdays are intersected, holidays unioned; shifts: [] means no available shift; day-level auto-schedule uses workdays/holidays only | `string` | — |
 | `row-height` | Row height in px (default 36, minimum 20) | `string` | `36` |
 | `scale` | Time scale: hour / day (default) / week / month / quarter / year; invalid values fall back to day | `string` | — |
 | `show-baseline` | Baseline comparison (boolean, off by default): tasks with baseline render a baseline bar under the actual bar (baseline.progress renders an overlay), with a title showing the delta (N days later/earlier or same) | `boolean` | — |
@@ -659,7 +672,7 @@ onMounted(async () => {
 | `show-variance` | Render a Δ±Nd variance badge after the row name when a baseline exists; exposes data-start-delta/data-end-delta/data-duration-delta/data-progress-delta | `string` | — |
 | `snap` | Snap drags to the current scale unit (on by default; false shifts by pixel ratio and keeps time precision) | `string` | — |
 | `stripe` | Row zebra striping (boolean, off by default): tints rows by the **absolute row index** parity (stable under virtualization/windowing, no DOM-order flicker); color via `--oas-gantt-row-stripe-bg` (default `--oas-color-bg-hover`); selection/weekend backgrounds override the stripe | `string` | — |
-| `tasks` | Gantt tasks (JSON): [{ id?, name, start, end?, type?, progress?, parent?, children?, dependencies?, color?, disabled?, expanded?, baseline? (start/end?/progress?), deadline?, deadlines?, constraint? ('asap'\|'snet'\|'mso'\|'fnlt'), constraintDate? }] — flat parent pointers are the primary contract; nested children are flattened automatically; explicit type:"milestone" takes precedence (rendered as milestone even with end, which is ignored) but a task with children is always a summary; no end also infers milestone; start/end are swapped automatically when start is after end | `GanttTask[]` | `[]` |
+| `tasks` | Gantt tasks (JSON): [{ id?, name, start, end?, type?, progress?, parent?, children?, dependencies?, color?, disabled?, expanded?, baseline? (start/end?/progress?), resources?, deadline?, deadlines?, constraint? ('asap'\|'snet'\|'mso'\|'fnlt'), constraintDate? }] — flat parent pointers are the primary contract; nested children are flattened automatically; explicit type:"milestone" takes precedence (rendered as milestone even with end, which is ignored) but a task with children is always a summary; no end also infers milestone; start/end are swapped automatically when start is after end | `GanttTask[]` | `[]` |
 | `total` | Full row (task) count in windowed mode; 0 or invalid disables windowed (falls back to local mode) | `string` | — |
 | `weekends` | Weekend column highlights (on by default; applies on day/hour tiers; false to disable) | `string` | — |
 | `window-start` | Absolute row index (within the full dataset) of the first row in the slice (windowed mode) | `string` | `0` |
@@ -672,6 +685,29 @@ onMounted(async () => {
 | --- | --- | --- | --- |
 | `selection` | Selected task ids (`string[]`): `el.selection` reads (copy); `el.selection = [...]` writes (re-renders selection + dispatches oas-selection-change); `removeTasks(ids)` batch-removes (with descendants) | `string[]` | — |
 | `tasks` | Gantt tasks (`GanttTask[]`): `el.tasks` reads (copy; nested input already flattened to parent pointers); `el.tasks = [...]` writes (syncs the tasks attribute + re-renders + dispatches oas-tasks-change) | `GanttTask[]` | `[]` |
+
+#### Methods
+
+| Method | Signature | Description |
+| --- | --- | --- |
+| `updateTask` | `updateTask(id: string, patch: Partial<GanttTask>): boolean` | 按 id 单条增量更新（浅合并 patch 后走 sanitize 清洗；找不到或非法 patch 返回 false） |
+| `scrollToTask` | `scrollToTask(id: string): void` | 滚动到指定任务行（虚拟滚动下委托内部视口，目标行垂直居中）；找不到为空操作。 |
+| `scrollToDate` | `scrollToDate(date: string): void` | 滚动到指定日期（水平居中）；非法日期忽略。RTL 走真实浏览器 scrollLeft 负值模型 |
+| `scrollToToday` | `scrollToToday(): void` | 滚动到今天 |
+| `undo` | `undo(): boolean` | 撤销最近一次任务数据提交；返回是否实际撤销 |
+| `redo` | `redo(): boolean` | 重做最近一次撤销；返回是否实际重做 |
+| `clearHistory` | `clearHistory(): void` | 清空撤销/重做历史（不改变当前任务） |
+| `removeTasks` | `removeTasks(ids: string[]): void` | 批量删除任务（连同其后代）；找不到即忽略 |
+| `addTask` | `addTask(task: Partial<GanttTask>, opts: { parent?: string \| null; before?: string; after?: string }): string` | 新增任务（命令式创作通道）：返回新任务 id；非法输入返回 ''（零改动、零事件）。 |
+| `moveTask` | `moveTask(id: string, opts: { parent?: string \| null; index?: number }): boolean` | 移动任务到指定父级（opts.parent 省略保持原父级、null 移为根级）下的第 index 位 |
+| `duplicateTask` | `duplicateTask(id: string, opts: { id?: string; name?: string; parent?: string \| null }): string \| null` | 复制任务及其全部后代（深拷贝、各自新 id，父指针映射到新 id），紧跟原子树之后插入，返回新根 id； |
+| `addDependency` | `addDependency(taskId: string, dep: { id: string; type?: 'fs' \| 'ss' \| 'ff' \| 'sf'; lag?: number }): boolean` | 新增依赖（后继 taskId 依赖 dep.id）：type 缺省 fs；lag（天，可负）可选，缺省不写（等价 0）。 |
+| `removeDependency` | `removeDependency(taskId: string, dep: { id: string; type?: 'fs' \| 'ss' \| 'ff' \| 'sf' }): boolean` | 删除依赖：dep.type 给出只删该 (id,type)；未给出删该 id 的全部类型。找不到返回 false。 |
+| `updateDependency` | `updateDependency(taskId: string, from: { id: string; type?: 'fs' \| 'ss' \| 'ff' \| 'sf'; lag?: number }, to: { id: string; type?: 'fs' \| 'ss' \| 'ff' \| 'sf'; lag?: number }): boolean` | 改写依赖：from 找不到 / to.id 不存在或指向自身 / 无实际变化（含 lag）→ false。 |
+| `updateTasks` | `updateTasks(patches: Array<{ id: string } & Partial<GanttTask>>): number` | 批量浅合并（逐条：id 不存在跳过；end 给非空且解析失败跳过该条；其余走 sanitize 单条清洗， |
+| `zoomIn` | `zoomIn(): void` | 向更细一档步进（写 scale 属性，既有回调派发 oas-scale-change）；最细档 no-op |
+| `zoomOut` | `zoomOut(): void` | 向更粗一档步进；最粗档 no-op |
+| `fit` | `fit(): void` | 缩放以容纳全部任务：取**最细且**能满足「跨度按该档单位折算的列数 × 该档最小列宽 ≤ 可用宽」的档 |
 
 #### Events
 

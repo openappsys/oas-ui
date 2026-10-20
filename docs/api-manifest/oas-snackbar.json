@@ -68,6 +68,13 @@
     }
   ],
   "props": [],
+  "methods": [
+    {
+      "name": "requestDismiss",
+      "signature": "requestDismiss(): void",
+      "description": "宿主外部触发的受控下屏：仅派发 oas-close，宿主负责移除 open（堆叠超限挤下与 Escape 关闭不经此方法，直接 dismiss）"
+    }
+  ],
   "events": [
     {
       "name": "oas-action"

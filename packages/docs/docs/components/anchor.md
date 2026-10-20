@@ -378,6 +378,12 @@ onMounted(() => {
 | `target-offset` | 点击定位落点偏移（px），避让固定头；未设置时回退 `offset`；项级 `targetOffset` 优先 | `string` | — |
 | `variant` | 样式变体：`default`（轨道+墨水条）/ `underline`（滑动下划线）/ `lineless`（无轴线）/ `block`（块状背景） | `string` | `default` |
 
+#### 方法
+
+| 方法 | 签名 | 说明 |
+| --- | --- | --- |
+| `scrollTo` | `scrollTo(x?: string \| ScrollToOptions \| number, y?: number): void` | 程序化定位（exposes scrollTo 语义）；滚动触发的高亮联动/事件由 scroll spy 自然接管。 |
+
 #### 事件
 
 | 事件 | 说明 |

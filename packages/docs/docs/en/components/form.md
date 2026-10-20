@@ -576,14 +576,6 @@ onMounted(() => {
 
 ## API
 
-### Methods
-
-| Method | Description |
-| --- | --- |
-| `submit()` | Public submit entry: delegates to the inner form's `requestSubmit()` (preserves the submit event and submitter semantics); after validation dispatches `oas-submit` / `oas-validate-fail`. Across the shadow boundary light-DOM buttons have no native submit semantics, so use this method uniformly (e.g. `this.closest('oas-form').submit()`) |
-| `validate()` | Public validation entry: validates all fields and syncs error states (`aria-invalid` + error text), returns `Promise<boolean>`. **Pure validation** — dispatches no `oas-submit` / `oas-validate-fail` and performs no scroll-to-first-error; intended for external gating consumers such as step containers (awaits async validators, skips disabled fields, passes by default with no rules) |
-| `getValues()` | Public value entry: a snapshot of all current field values (nested structure), same shape as the `detail.values` dispatched by `submit()` — no validation, disabled fields not filtered out; zero-interaction fields prefilled via the `value` attribute are included. Returns `Record<string, unknown>` |
-
 ### oas-form
 
 #### Attributes
@@ -603,6 +595,16 @@ onMounted(() => {
 | `size` | Form-level size tier distributed to all fields via the data-form-size channel (a field's own explicit size wins; form-associated fields follow dynamically) | — | — |
 | `validate-messages` | Overrides locale-default validation messages per rule type (property/JSON channels, ${min}/${max}/${value} placeholders, default fallback) | `ValidateMessages \| string` | — |
 | `validate-trigger` | When per-field live validation fires: `input` (default, validate as you type) / `blur` / `change`; a rule's `validateTrigger` overrides per field; submission always validates everything | `string` | `input` |
+
+#### Methods
+
+| Method | Signature | Description |
+| --- | --- | --- |
+| `reapplyInitialValues` | `reapplyInitialValues(): void` | 为「初始值基线建立后才出现的字段」补写 initial-values（oas-form-list 等动态字段容器 |
+| `getValues` | `getValues(): Record<string, unknown>` | 公开取值入口：全表当前值快照（嵌套结构），与 submit() 派发的 detail.values 同口径 |
+| `validate` | `validate(): Promise<boolean>` | 公开校验入口：校验全部字段并同步错误态（aria-invalid + 错误文案），返回是否全部通过。 |
+| `submit` | `submit(): void` | 公开提交入口：委托内部 form 的 requestSubmit()。 |
+| `reset` | `reset(): void` | 重置回初始值（与 form-associated reset 基线语义一致：回初始值、清除校验错误态、不派发任何事件） |
 
 #### Events
 
@@ -630,6 +632,13 @@ onMounted(() => {
 | `required` | Required asterisk (visual only; validation is still driven by form `rules`) | `boolean` | — |
 | `span` | Columns spanned in the 24-column grid (only when form `layout="grid"`; non-integer in 1-24 → `24`) | `string` | `24` |
 | `status-icon` | Shows a danger status icon before the error text while the error is present | `boolean` | — |
+
+#### Methods
+
+| Method | Signature | Description |
+| --- | --- | --- |
+| `setError` | `setError(message: string \| null): void` | 校验错误文本收编（由 oas-form 调用）。message 为空时移除错误态。 |
+| `refreshLayout` | `refreshLayout(): void` | 供父 oas-form 在布局属性变化时调用，即时重刷 grid/标签布局感知 |
 
 #### Slots
 

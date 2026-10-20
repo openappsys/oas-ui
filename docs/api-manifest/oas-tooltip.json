@@ -187,6 +187,18 @@
       "type": "Element | null"
     }
   ],
+  "methods": [
+    {
+      "name": "setOpen",
+      "signature": "setOpen(open: boolean, source: unknown, reason: unknown): void",
+      "description": "触发入口。虚拟模式（virtual）不绑定宿主元素，open 完全受外部控制，"
+    },
+    {
+      "name": "restoreFocus",
+      "signature": "restoreFocus(): void",
+      "description": "Esc 关闭后焦点还原到触发元素（公开：模块级 Esc 处理器可调用）。虚拟模式跳过"
+    }
+  ],
   "events": [
     {
       "name": "oas-open-change",

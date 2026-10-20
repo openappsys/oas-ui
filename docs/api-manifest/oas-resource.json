@@ -109,6 +109,13 @@
       "api": true
     }
   ],
+  "methods": [
+    {
+      "name": "scrollToDate",
+      "signature": "scrollToDate(date: string): void",
+      "description": "滚动到指定日期（在时间轴可视区水平居中，扣除 sticky 资源名列宽度）；非法日期/无数据为空操作。RTL 走负值 scrollLeft 模型（同 gantt）。"
+    }
+  ],
   "events": [
     {
       "name": "oas-tasks-change",

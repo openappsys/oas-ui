@@ -4326,7 +4326,7 @@
   },
   "oas-gantt": {
     "attrs": {
-      "tasks": "甘特任务（JSON）：[{ id?, name, start, end?, type?, progress?, parent?, children?, dependencies?, color?, disabled?, expanded?, baseline?（start/end?/progress?）, deadline?, deadlines?, constraint?（asap/snet/mso/fnlt）, constraintDate? }]——扁平 parent 指针为主，嵌套 children 自动拍平；type:\"milestone\" 显式优先（带 end 也按里程碑渲染，end 忽略），有子任务时恒为摘要；无 end 亦推导为里程碑；start 晚于 end 自动交换",
+      "tasks": "甘特任务（JSON）：[{ id?, name, start, end?, type?, progress?, parent?, children?, dependencies?, color?, disabled?, expanded?, baseline?（start/end?/progress?）, resources?, deadline?, deadlines?, constraint?（asap/snet/mso/fnlt）, constraintDate? }]——扁平 parent 指针为主，嵌套 children 自动拍平；type:\"milestone\" 显式优先（带 end 也按里程碑渲染，end 忽略），有子任务时恒为摘要；无 end 亦推导为里程碑；start 晚于 end 自动交换",
       "scale": "时间刻度：hour / day（默认）/ week / month / quarter / year；非法值回落 day",
       "expanded": "已展开集合（JSON 数组，受控）：属性缺席缺省全展开；显式 [] 全收起；点折叠钮写回",
       "readonly": "整图只读（禁改期/禁进度，不渲染拖拽手柄）",
@@ -4355,7 +4355,8 @@
       "show-float": "显示总浮时/自由浮时（布尔，默认关）：仅在依赖图完整时计算，条上显示「总浮时/自由浮时」标签并写入 data-total-float/data-free-float（单位为天）；摘要不参与，windowed 模式跳过并 devWarn",
       "group-by-project": "按任务 project 自动生成项目根摘要（行 id 为 __oas_project__:&lt;project&gt;），原任务数组不变；windowed 模式要求宿主自行展平，不做自动分组",
       "show-variance": "任务带 baseline 时在行名后显示 Δ±Nd 偏差徽标，并写入 data-start-delta/data-end-delta/data-duration-delta/data-progress-delta；正值标红、负值标绿",
-      "history": "内建撤销/重做（布尔，默认关）：记录任务提交快照（最多 100 步），配合 undo()/redo()/canUndo/canRedo/clearHistory()；外部整体重写 tasks 会清空历史"
+      "history": "内建撤销/重做（布尔，默认关）：记录任务提交快照（最多 100 步），配合 undo()/redo()/canUndo/canRedo/clearHistory()；外部整体重写 tasks 会清空历史",
+      "resources": "逐资源日历（JSON）：[{ id, name?, workdays?, holidays?, shifts? }]；与 GanttTask.resources 配合，多资源 workdays 取交集、holidays 取并集；shifts: [] 表示无可用班次，日级 auto-schedule 只消费 workdays/holidays"
     },
     "events": {
       "oas-reschedule": "依赖联动排程改动了后继任务时派发（auto-schedule 开启），detail: { ids }（被联动改动的任务 id）",
@@ -4735,6 +4736,38 @@
     "props": {
       "resources": "资源列表（JSON [{ id, name, capacity?, workdays?, holidays?, capacityOverrides?, skills? }]）。`workdays` 编号 0=周日…6=周六，`[]` 表示全不可用；未声明 `workdays` 且 `holidays` / `capacityOverrides` 为空时，capacity = 每档（period）可并行任务数（旧语义）；否则按逐日容量求和，非空 `capacityOverrides` 优先于 `workdays` / `holidays`，可写小数但任务按整日计数（0.5 日无法容纳整日任务）；空 `holidays` / `capacityOverrides` 视为未声明。`skills` 为技能标签。资源可带可选 `color`（CSS 颜色或 token，如 `var(--oas-color-success)`）：用于该泳道任务条与负载柱着色，缺省走 `--oas-resource-bar-bg` / `--oas-resource-load-bg` 的统一色；property 读为拷贝：嵌套 plain object / array 深拷贝——循环安全；同一引用在单次读取结果内保持共享；Date 按值复制（不保持共享）；类实例 / Set 等奇异对象按引用；写同步 attribute + 重渲染，含不可序列化自定义键时 attribute 仅丢弃该键，property 读回仍完整保留",
       "tasks": "资源任务（JSON [{ id, name, start, end, resources?, priority?, requiredSkills?, project? }]）；start/end 仅日精度 YYYY-MM-DD（end 含当日；带时刻输入按当日处理），resources 为分配的资源 id 数组（指向不存在资源的分配忽略）。priority 数值越小越优先；requiredSkills 在 reassign 时要求目标资源全部具备；project 配合 levelResources({ projectOrder }) 做跨项目优先级；property 读为拷贝：嵌套 plain object / array 深拷贝——循环安全；同一引用在单次读取结果内保持共享；Date 按值复制（不保持共享）；类实例 / Set 等奇异对象按引用；写同步 attribute + 重渲染 + 派发 oas-tasks-change"
+    }
+  },
+  "oas-prompt-input": {
+    "attrs": {
+      "value": "当前文本（property 双通道；attribute 作为初始值）",
+      "placeholder": "占位文案（缺省 i18n promptInput.placeholder）",
+      "disabled": "禁用输入与提交",
+      "readonly": "只读（可聚焦/复制，不可修改）",
+      "loading": "生成中；发送钮切换为停止",
+      "maxlength": "最大字符数",
+      "rows": "初始行数（1+，自增高上限 160px）",
+      "suggestions": "建议项 JSON：字符串或 { label?, value } 数组",
+      "submit-on-enter": "Enter 提交（默认 true；false 时仅按钮提交，Shift+Enter 始终换行）",
+      "clear-on-submit": "提交后清空（默认 true）"
+    },
+    "props": {
+      "value": "当前文本（读写）"
+    },
+    "events": {
+      "oas-submit": "提交时派发，detail: { value }",
+      "oas-stop": "loading 时点击停止派发",
+      "oas-suggestion-select": "点击建议项时派发，detail: { value, label }"
+    },
+    "slots": {
+      "prefix": "输入框前置内容",
+      "actions": "发送钮前的操作区",
+      "footer": "输入框底部说明/工具行"
+    },
+    "methods": {
+      "submit": "提交当前文本；空值/禁用/loading 返回 false",
+      "stop": "停止生成（仅 loading 时派发 oas-stop）",
+      "focusInput": "聚焦内部 textarea"
     }
   }
 }

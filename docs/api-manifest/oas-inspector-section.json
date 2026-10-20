@@ -30,6 +30,7 @@
     }
   ],
   "props": [],
+  "methods": [],
   "events": [
     {
       "name": "oas-toggle",

@@ -107,6 +107,7 @@
       "default": "[]"
     }
   ],
+  "methods": [],
   "events": [
     {
       "name": "oas-focus",

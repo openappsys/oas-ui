@@ -176,6 +176,12 @@ onMounted(() => {
 | `menu-open` | 汉堡钮展开态（受控）：宿主开合侧栏后回写，按钮 aria-expanded 随之同步 | `boolean` | — |
 | `position` | 定位形态：static（默认，文档流）/ absolute / fixed / floating（悬浮圆角投影） | `string` | `static` |
 
+#### 方法
+
+| 方法 | 签名 | 说明 |
+| --- | --- | --- |
+| `syncOverflow` | `syncOverflow(): void` | 重算溢出收纳：actions 区宽度不足时，超出项打 data-collapsed 隐藏并镜像进「···」弹层。 |
+
 #### 事件
 
 | 事件 | 说明 |

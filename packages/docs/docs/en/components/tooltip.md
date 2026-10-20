@@ -781,6 +781,13 @@ onMounted(() => {
 | `virtual-y` | Virtual anchor viewport Y coordinate (px, e.g. mouse `clientY`); position by coordinates when set together with `virtual-x` | — | — |
 | `width` | Popup width: a number (px) / `"trigger"` (same width as the trigger) / any CSS value; still capped by `--oas-tooltip-max-width` (default 240px) | `string` | — |
 
+#### Methods
+
+| Method | Signature | Description |
+| --- | --- | --- |
+| `setOpen` | `setOpen(open: boolean, source: unknown, reason: unknown): void` | 触发入口。虚拟模式（virtual）不绑定宿主元素，open 完全受外部控制， |
+| `restoreFocus` | `restoreFocus(): void` | Esc 关闭后焦点还原到触发元素（公开：模块级 Esc 处理器可调用）。虚拟模式跳过 |
+
 #### Events
 
 | Event | Description |

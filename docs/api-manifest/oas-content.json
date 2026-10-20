@@ -3,6 +3,7 @@
   "sourceFile": "packages/ui/src/layout/layout/oas-content.ts",
   "attrs": [],
   "props": [],
+  "methods": [],
   "events": [],
   "slots": [
     {

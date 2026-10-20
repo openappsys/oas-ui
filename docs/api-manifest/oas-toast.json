@@ -107,6 +107,23 @@
       "type": "Node | null"
     }
   ],
+  "methods": [
+    {
+      "name": "close",
+      "signature": "close(trigger: ToastCloseTrigger): void",
+      "description": "关闭当前 toast：派发 oas-close → 播放离场动画 → 移除 → oas-destroy"
+    },
+    {
+      "name": "transition",
+      "signature": "transition(type: ToastType, title: string | Node, duration: unknown): void",
+      "description": "promise 链流转：切换类型并重置自动关闭计时器。title 支持 string（属性通道）或"
+    },
+    {
+      "name": "refresh",
+      "signature": "refresh(options: ToastRefreshOptions): void",
+      "description": "命令式 update() 数据通道：整卡增量刷新（内容/类型/时长/描述/按钮），并重置自动关闭计时"
+    }
+  ],
   "events": [
     {
       "name": "oas-open",

@@ -53,6 +53,23 @@
       "type": "string | null"
     }
   ],
+  "methods": [
+    {
+      "name": "scrollToEnd",
+      "signature": "scrollToEnd(opts?: { behavior?: ScrollBehavior }): void",
+      "description": "滚到底部。behavior：'auto'（默认，瞬时）/ 'instant'（瞬时）/ 'smooth'（平滑）。"
+    },
+    {
+      "name": "scrollToStart",
+      "signature": "scrollToStart(opts?: { behavior?: ScrollBehavior }): void",
+      "description": "滚到顶部（参数同 scrollToEnd）"
+    },
+    {
+      "name": "scrollToMessage",
+      "signature": "scrollToMessage(id: string, opts?: { behavior?: ScrollBehavior }): boolean",
+      "description": "滚到指定 message-id 的消息行顶部。命中返回 true；id 不存在返回 false 且不滚动"
+    }
+  ],
   "events": [
     {
       "name": "oas-visible-change"

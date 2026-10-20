@@ -202,6 +202,12 @@ const file = importResourceCalendars(json)
 | `resources` | 资源列表（JSON [{ id, name, capacity?, workdays?, holidays?, capacityOverrides?, skills? }]）。`workdays` 编号 0=周日…6=周六，`[]` 表示全不可用；未声明 `workdays` 且 `holidays` / `capacityOverrides` 为空时，capacity = 每档（period）可并行任务数（旧语义）；否则按逐日容量求和，非空 `capacityOverrides` 优先于 `workdays` / `holidays`，可写小数但任务按整日计数（0.5 日无法容纳整日任务）；空 `holidays` / `capacityOverrides` 视为未声明。`skills` 为技能标签。资源可带可选 `color`（CSS 颜色或 token，如 `var(--oas-color-success)`）：用于该泳道任务条与负载柱着色，缺省走 `--oas-resource-bar-bg` / `--oas-resource-load-bg` 的统一色；property 读为拷贝：嵌套 plain object / array 深拷贝——循环安全；同一引用在单次读取结果内保持共享；Date 按值复制（不保持共享）；类实例 / Set 等奇异对象按引用；写同步 attribute + 重渲染，含不可序列化自定义键时 attribute 仅丢弃该键，property 读回仍完整保留 | `ResourceItem[]` | `[]` |
 | `tasks` | 资源任务（JSON [{ id, name, start, end, resources?, priority?, requiredSkills?, project? }]）；start/end 仅日精度 YYYY-MM-DD（end 含当日；带时刻输入按当日处理），resources 为分配的资源 id 数组（指向不存在资源的分配忽略）。priority 数值越小越优先；requiredSkills 在 reassign 时要求目标资源全部具备；project 配合 levelResources({ projectOrder }) 做跨项目优先级；property 读为拷贝：嵌套 plain object / array 深拷贝——循环安全；同一引用在单次读取结果内保持共享；Date 按值复制（不保持共享）；类实例 / Set 等奇异对象按引用；写同步 attribute + 重渲染 + 派发 oas-tasks-change | `ResourceTask[]` | `[]` |
 
+#### 方法
+
+| 方法 | 签名 | 说明 |
+| --- | --- | --- |
+| `scrollToDate` | `scrollToDate(date: string): void` | 滚动到指定日期（在时间轴可视区水平居中，扣除 sticky 资源名列宽度）；非法日期/无数据为空操作。RTL 走负值 scrollLeft 模型（同 gantt）。 |
+
 #### 事件
 
 | 事件 | 说明 |

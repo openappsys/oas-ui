@@ -60,6 +60,7 @@
       "type": "CheckboxOption[] | string"
     }
   ],
+  "methods": [],
   "events": [
     {
       "name": "oas-focus"

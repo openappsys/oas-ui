@@ -569,6 +569,14 @@ scroller 负责常规会话的锚定/跟随；数千轮超长会话把消息数�
 | `track-visible` | 布尔在场：开启可见性通道（oas-visible-change 事件 + visibleMessageIds / currentAnchorId getter）；未开启零计算（pay-for-use） | `boolean` | — |
 | `turn-anchor` | 轮次锚定（布尔在场）：把一次提问+回答作为锚定单元——锚点贴视口顶时把最后 anchor 标记消息钉在视口顶 prev-peek 处，回答在锚下方流入；读者在底部延续贴底跟随，上翻即静止（绝不逆着读者意图移动） | `boolean` | — |
 
+#### 方法
+
+| 方法 | 签名 | 说明 |
+| --- | --- | --- |
+| `scrollToEnd` | `scrollToEnd(opts?: { behavior?: ScrollBehavior }): void` | 滚到底部。behavior：'auto'（默认，瞬时）/ 'instant'（瞬时）/ 'smooth'（平滑）。 |
+| `scrollToStart` | `scrollToStart(opts?: { behavior?: ScrollBehavior }): void` | 滚到顶部（参数同 scrollToEnd） |
+| `scrollToMessage` | `scrollToMessage(id: string, opts?: { behavior?: ScrollBehavior }): boolean` | 滚到指定 message-id 的消息行顶部。命中返回 true；id 不存在返回 false 且不滚动 |
+
 #### 事件
 
 | 事件 | 说明 |
@@ -588,13 +596,5 @@ scroller 负责常规会话的锚定/跟随；数千轮超长会话把消息数�
 | CSS 变量 | 默认值 |
 | --- | --- |
 | `--oas-message-gap` | `var(--oas-space-4)` |
-
-#### 方法
-
-| 方法 | 说明 |
-| --- | --- |
-| `scrollToEnd(opts?)` | 滚到底部；`opts.behavior` 可传 `'smooth'`（缺省瞬时） |
-| `scrollToStart(opts?)` | 滚到顶部（参数同上） |
-| `scrollToMessage(id, opts?)` | 按 `message-id` 滚到指定消息行顶部；命中返回 `true`，未知 id 返回 `false` 且不滚动（参数同上） |
 
 状态反射：`data-scrollable`（`"start"` / `"end"` / `"start end"` 空格分隔，无可滚为空）；`data-pending-scroll`（首屏防跳——初始定位应用前在场，定位/读者让位后移除）。ARIA：viewport `role="region"` + 可读名称 + `tabindex="0"`；内容容器 `role="log"` + `aria-relevant="additions"`。CSS 变量：`--oas-message-gap`（行间距，默认 `var(--oas-space-4)`）。部件：`::part(scroller)` / `::part(viewport)` / `::part(content)` / `::part(button)`。

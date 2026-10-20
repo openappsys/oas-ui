@@ -121,6 +121,9 @@ const EXEMPT_EVENTS = new Set([
   'oas-task-add', // gantt：命令式/行内新建需真点按钮或拖出区间（通用探针不可达；qa-regression/gantt.spec.ts 已固化真实链路）
   'oas-reschedule', // gantt：依赖联动排程需 auto-schedule 开启后真拖前置（通用探针不可达；qa-regression/gantt.spec.ts 已固化真实链路）
   'oas-history-change', // gantt：history 为 opt-in，需点专用更新/撤销/重做按钮（通用探针不可达；qa-regression/gantt.spec.ts 已固化真实链路）
+  'oas-submit', // prompt-input：需在 shadow textarea 内真输入并回车（通用探针不可达；qa-regression/prompt-input.spec.ts 已固化）
+  'oas-stop', // prompt-input：需点 shadow 内 loading 停止钮（qa-regression/prompt-input.spec.ts 已固化）
+  'oas-suggestion-select', // prompt-input：需点 shadow 内建议项（qa-regression/prompt-input.spec.ts 已固化）
   'oas-window-request', // table：windowed 模式需宿主只喂可视窗口切片才触发（通用探针不可达；qa-regression/table.spec.ts 已固化真实滚动→请求→回填链路）
   'oas-range-request', // gantt/resource：宿主托管时间范围时滚到轴端才触发（通用探针不可达；qa-regression/gantt.spec.ts 与 resource.spec.ts 已固化真实链路）
 ])

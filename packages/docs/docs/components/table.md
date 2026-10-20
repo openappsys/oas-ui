@@ -1038,6 +1038,20 @@ onMounted(() => {
 | `window-start` | windowed 模式下 data[0] 在全量数据集中的行下标（绝对行号）：组件按绝对行渲染与占位；非 windowed 时忽略 | `string` | `0` |
 | `windowed` | 服务端行窗口模式（布尔，默认关）：与 total / window-start 配合，宿主只喂可视窗口切片，组件不持有全量数据。开启后按可视行窗口（前后各 8 行缓冲）计算期望区间，未被已装载区间覆盖时派发 oas-window-request 由宿主回填；本地排序/筛选/分组/分页/树形展开交由宿主负责（组件跳过本地执行并 devWarn）。缺省关闭时行为不变 | `boolean` | — |
 
+#### 方法
+
+| 方法 | 签名 | 说明 |
+| --- | --- | --- |
+| `effectiveColumns` | `effectiveColumns(): TableColumn[]` | 有效列：按 column-keys（受控显示集合+顺序）过滤排序；无 column-keys 时回落全部叶子列（向后兼容）。 |
+| `getColumns` | `getColumns(): TableColumn[]` | 当前全部列定义（含组列；表格基础 API，能力 controller / 宿主可读） |
+| `translateText` | `translateText(key: string, params?: Record<string, string \| number>): string` | 翻译内置文案（就近 config-provider / locale；能力 controller 与外部自定义模板经此取词）。 |
+| `paintCell` | `paintCell(td: HTMLTableCellElement, col: TableColumn, row: Record<string, unknown>): void` | 重绘单元格为常规展示内容：清空后按 cellNode 挂载（尊重 render/cellTemplate 富内容）。 |
+| `notifyEdit` | `notifyEdit(kind: 'edit' \| 'edit-cancel', detail: TableEditDetail): void` | 派发编辑结果事件（提交/取消；detail 由 edit 能力组好）。事件名以字面量书写在此， |
+| `setColumnOrder` | `setColumnOrder(keys: string[]): void` | 更新列显示顺序（写回 column-keys 并重渲染；派发 oas-column-order，宿主可做持久化） |
+| `setColumnWidth` | `setColumnWidth(key: string, width: number): void` | 更新指定列宽（写回 columns 对应列 width 并重渲染；派发 oas-column-resize）。property 列定义含函数时改内存 |
+| `exportMatrix` | `exportMatrix(): { headers: string[]; rows: string[][] }` | 导出矩阵：表头（列 title / headerTemplate 文本）+ 当前可见数据行。 |
+| `exportData` | `exportData(format: ExportFormat, options: { fileName?: string }): string` | 导出并触发下载：生成内容 → Blob 下载 → 派发 `oas-export` |
+
 #### 事件
 
 | 事件 | 说明 |

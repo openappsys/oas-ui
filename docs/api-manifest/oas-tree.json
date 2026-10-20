@@ -207,6 +207,33 @@
       "default": "[]"
     }
   ],
+  "methods": [
+    {
+      "name": "expandAll",
+      "signature": "expandAll(): void",
+      "description": "全部展开：展开所有已有 children 的节点（懒加载未加载节点不触发加载）"
+    },
+    {
+      "name": "collapseAll",
+      "signature": "collapseAll(): void",
+      "description": "全部收起"
+    },
+    {
+      "name": "expand",
+      "signature": "expand(keys: string[]): void",
+      "description": "展开指定 key 集合"
+    },
+    {
+      "name": "collapse",
+      "signature": "collapse(keys: string[]): void",
+      "description": "收起指定 key 集合（连同子树）"
+    },
+    {
+      "name": "scrollTo",
+      "signature": "scrollTo(target?: string | number | ScrollToOptions, optionsOrY?: number | { expand?: boolean }): void",
+      "description": "滚动到节点。默认展开其祖先链后定位；options.expand=false 时不改展开状态（需节点本身可见）。"
+    }
+  ],
   "events": [
     {
       "name": "oas-node-dragover",

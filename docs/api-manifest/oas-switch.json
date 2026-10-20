@@ -109,6 +109,13 @@
       "type": "string | boolean"
     }
   ],
+  "methods": [
+    {
+      "name": "focus",
+      "signature": "focus(options?: FocusOptions): void",
+      "description": "label 点击聚焦委托：把焦点交给 shadow 内 button"
+    }
+  ],
   "events": [
     {
       "name": "oas-focus"

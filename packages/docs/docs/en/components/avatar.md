@@ -345,6 +345,13 @@ To show a name or description per avatar, compose with a wrapping `oas-tooltip` 
 | `size` | Unified avatar size (px); the count badge adapts | `string` | — |
 | `spacing` | Member spacing in px (negative = overlapping; overrides the `--oas-avatar-group-overlap` variable) | `string` | — |
 
+#### Methods
+
+| Method | Signature | Description |
+| --- | --- | --- |
+| `openOverflow` | `openOverflow(): void` | 打开折叠弹层：克隆全部被折叠成员头像进列表 + 定位（供模块级 Esc 栈/内部调用） |
+| `closeOverflow` | `closeOverflow(refocus: unknown): void` | 关闭折叠弹层；refocus=true 时焦点回到计数按钮（Escape 路径，带回焦豁免防重开） |
+
 #### Slots
 
 | Name | Description |

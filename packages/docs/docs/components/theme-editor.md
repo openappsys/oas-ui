@@ -146,18 +146,20 @@ document.getElementById('te-preset-status').textContent = name
 | `preset` | 内置预设主题：`compact`（紧凑，control-height -4px、space 按比例收缩）/ `comfortable`（宽松，+4px、space 按比例放大）/ `default`（等价 reset，清除已写入内联变量）；非法值忽略并 dev 告警 | — | — |
 | `token` | 自定义要编辑的 token 列表（CSS 变量名） | — | — |
 
+#### 方法
+
+| 方法 | 签名 | 说明 |
+| --- | --- | --- |
+| `exportJson` | `exportJson(): Record<string, string>` | 导出当前 token 集 JSON（`{ '--oas-*': value }`，值为实时 computed 值）。 |
+| `exportCss` | `exportCss(): string` | 导出当前 token 集为 CSS 文本（`:root { --oas-*: value; ... }`，与 exportJson 同源）。 |
+| `importJson` | `importJson(json: Record<string, unknown> \| string): void` | 应用 token 集到 themeRoot：`{ '--oas-*': value }`，非 `--` 开头键忽略并 dev 告警 |
+| `applyPreset` | `applyPreset(name: string): void` | 应用内置预设主题。只调尺寸族 token（control-height / space），不动颜色： |
+| `reset` | `reset(): void` | 重置：清除本组件写入宿主的内联 CSS 变量，恢复默认主题值。 |
+
 #### 事件
 
 | 事件 | 说明 |
 | --- | --- |
 | `oas-change` | 编辑任一 token，`detail: { token, value }` |
-
-| 方法             | 说明                                                         |
-| ---------------- | ------------------------------------------------------------ |
-| `exportJson()`   | 返回当前 token 集 `{ '--oas-*': value }`                     |
-| `exportCss()`    | 返回 `:root { --oas-*: value; ... }` CSS 文本（与 exportJson 同源） |
-| `importJson(json)` | 应用 token 集到 themeRoot：`{ '--oas-*': value }`，非 `--` 开头键忽略并 dev 告警（同值去重），写入后就地同步面板（不整棵重建、不丢焦点） |
-| `applyPreset(name)` | 应用内置预设主题（`compact` / `comfortable` / `default`）；非法名忽略并 dev 告警（同值去重） |
-| `reset()`        | 清除编辑器写入宿主的内联 CSS 变量，恢复默认主题值             |
 
 行为：token 从宿主（或最近 `oas-config-provider`）computed style 读取；编辑即时 `style.setProperty` 写回宿主，子树实时继承；位于 config-provider 内部时写入最近 provider（整个子树继承）。颜色行 = 色板 + 文本框双通道：色板只承载可解析为 `#rrggbb` 的值（`rgb()`/`oklch()` 等颜色函数自动转 hex，含 `var()` 的 `color-mix()` 等不可解析值色板置灰禁用）；文本框始终可编辑原始值（任意 CSS 颜色函数），非法输入不写回并标红提示。数字行 = range 滑块 + number 输入联动（min/max/step 由 token 定义），写回保留原单位；空值/非法值不写入不派发。组用 details/summary 可折叠（默认展开），顶部搜索框按 token 名子串过滤。预设主题只调尺寸族 token（control-height / space），应用后记录进 writtenTokens，`reset()` 一并清除。

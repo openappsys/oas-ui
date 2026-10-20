@@ -343,9 +343,4 @@ onMounted(async () => {
 
 ### 静态方法
 
-| 方法 | 说明 |
-| --- | --- |
-| `OASSpin.fullscreen(options?)` | 命令式全屏加载，返回 `{ close() }`；`options`: `{ tip?: string; delay?: number }` |
-| `OASSpin.setDefaultIndicator(html \| null)` | 注册全局默认指示器（此后新建实例生效）；`null` 恢复内置环 |
-
 指示器 `role="status"`（进度模式为 `role="progressbar"` + `aria-value` 三件套），内置读屏文案；宿主 `aria-busy` 随 `spinning` 同步。

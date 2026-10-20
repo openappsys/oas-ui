@@ -83,6 +83,7 @@
       "type": "MenuItem[] | null"
     }
   ],
+  "methods": [],
   "events": [
     {
       "name": "oas-select",

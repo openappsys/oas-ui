@@ -290,6 +290,14 @@ onMounted(async () => {
 | `icon-placement` | 展开图标位置：`start`（标题左侧）/ `end`（默认，右侧）；item 可单独覆盖 | `string` | `end` |
 | `variant` | 形态：`outlined`（默认，带边框圆角容器）/ `borderless`（无边框幽灵形态） | — | — |
 
+#### 方法
+
+| 方法 | 签名 | 说明 |
+| --- | --- | --- |
+| `expandAll` | `expandAll(): void` | 展开全部可用面板（跳过 disabled）；手风琴语义下只展开第一项。命令式方法，不触发 before-collapse |
+| `collapseAll` | `collapseAll(): void` | 收起全部面板。命令式方法，不受 no-collapse 强锁限制（锁只约束头部点击） |
+| `requestSync` | `requestSync(): void` | item 升级晚于容器（define 顺序窗口）时由 item 连接后微任务回调：重同步 roving/disabled 态 |
+
 #### 事件
 
 | 事件 | 说明 |
@@ -319,6 +327,14 @@ onMounted(async () => {
 | `no-collapse` | 强锁展开态：展开后点击自身不收起（不影响其他面板开合） | — | — |
 | `open` | 是否展开（由容器托管） | `boolean` | — |
 | `summary` | 折叠态摘要：面板收起时在头部尾部展示（用于不展开即报内部值，如「12px 4px」），展开后隐藏；单行超出省略号截断；不承担标题语义 | `string` | — |
+
+#### 方法
+
+| 方法 | 签名 | 说明 |
+| --- | --- | --- |
+| `setRoving` | `setRoving(active: boolean): void` | 容器 roving tabindex / 键盘移动用：头 button 是否可 Tab 聚焦 |
+| `focusHead` | `focusHead(): void` | 容器 roving 键盘移动用：聚焦头 button |
+| `isDisabled` | `isDisabled(): boolean` | 生效禁用态（显式 disabled 属性；config-provider 注入的全局禁用同样生效） |
 
 #### 插槽
 

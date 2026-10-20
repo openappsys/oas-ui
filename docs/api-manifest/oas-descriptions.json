@@ -49,6 +49,7 @@
       "default": "[]"
     }
   ],
+  "methods": [],
   "events": [],
   "slots": [
     {

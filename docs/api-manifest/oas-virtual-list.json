@@ -54,6 +54,13 @@
       "default": "[]"
     }
   ],
+  "methods": [
+    {
+      "name": "scrollToIndex",
+      "signature": "scrollToIndex(index: number, options?: ScrollToIndexOptions): void",
+      "description": "滚动到指定索引项（公共契约，供 list/tree 等内嵌消费方定位，无需直查内部 DOM）。"
+    }
+  ],
   "events": [
     {
       "name": "oas-item",

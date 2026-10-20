@@ -321,6 +321,12 @@ onMounted(() => {
 | `offset-bottom` | 距底部多远视为触底（px，触发 `oas-require-more` 的 from=bottom，默认 0） | — | — |
 | `offset-top` | 距顶部多远视为触顶（px，触发 `oas-require-more` 的 from=top，默认 0） | — | — |
 
+#### 方法
+
+| 方法 | 签名 | 说明 |
+| --- | --- | --- |
+| `scrollTo` | `scrollTo(target?: (ScrollToOptions & { position?: 'top' \| 'bottom' }) \| 'top' \| 'bottom' \| number): void` | 滚动视口：`'top'` 到顶、`'bottom'` 到底、数字为像素 scrollTop； |
+
 #### 事件
 
 | 事件 | 说明 |

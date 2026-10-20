@@ -825,6 +825,17 @@ onMounted(() => {
 | `virtual-y` | Virtual anchor y (viewport coordinate, px) | — | — |
 | `width` | Panel width: a number (px) / `"trigger"` (same width as the trigger) / any CSS value (e.g. `50%`, `240px`); unset keeps the default | `string` | — |
 
+#### Methods
+
+| Method | Signature | Description |
+| --- | --- | --- |
+| `getTriggerAnchor` | `getTriggerAnchor(): Element \| null` | 触发元素（能力 controller 绑定 touch 手势的目标；bind 解析后固定，同 anchor）。 |
+| `hasContextmenuTrigger` | `hasContextmenuTrigger(): boolean` | 右键/触屏长按手势门控：非 virtual / 非 disabled / trigger 含 contextmenu |
+| `openAtPoint` | `openAtPoint(x: number, y: number): void` | 以指针坐标（右键光标 / 触屏长按触点）为锚点打开面板：写入光标触点矩形（打开期间 |
+| `requestRefresh` | `requestRefresh(): void` | 请求宿主重算（contextmenu 能力包断点跨越 matchMedia change → 重解析 placement/size 生效值） |
+| `closeWith` | `closeWith(source: string): boolean` | P5 统一关闭入口（可取消）：派发 cancelable 的 oas-before-close（detail.source 标注来源）， |
+| `restoreFocus` | `restoreFocus(): void` | Esc 关闭后焦点还原到触发元素（公开：模块级 Esc 处理器与宿主均可调用）。 |
+
 #### Events
 
 | Event | Description |

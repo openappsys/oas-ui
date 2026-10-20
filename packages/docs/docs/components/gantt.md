@@ -158,10 +158,22 @@
 
 - **任务约束**：`GanttTask.constraint`（`'asap'` 默认 / `'snet'` 不得早于 / `'mso'` 固定开始 / `'fnlt'` 不得晚于完成）+ `constraintDate`。`auto-schedule` 下：`snet` 取起始下限、`mso` 固定开始（不被依赖前推）、`fnlt` 为软截止（不自动移动）。违反（`snet` 早于下限 / `mso` 与依赖冲突或偏离 / `fnlt` 超期）在 **`show-critical-path` 或 `auto-schedule` 开启时**以 `.conflict` 标出。摘要行上的约束无意义（日期派生）→ 忽略并告警一次。
 - **工作日日历**：`workdays`（JSON 周几数组 `[0..6]`，opt-in；缺省/空 = 不限周几）+ `holidays`（**假日恒为非工作日**，与是否开 `workdays` 无关）。`auto-schedule` 的前推落点**吸附到下一个工作日**（跳过假日与 `workdays` 之外的日子）。运行期改 `workdays`/`holidays` 或整体重写 `tasks` 都会触发重新规整。
+- **逐资源日历**：`resources`（JSON `[{ id, name?, workdays?, holidays?, shifts? }]`）+ `GanttTask.resources`。任务分配多个资源时，`workdays` 取交集、`holidays` 取并集；`shifts: []` 表示该资源无可用班次。`shifts` 目前保留给小时级宿主排程/展示，`auto-schedule` 的日级吸附只消费 workdays/holidays（不改变既有全局日历语义）。
 - **事件顺序**：`auto-schedule` 开启且联动改期时，无论交互提交（拖拽 / 键盘 / `updateTask` / `updateTasks`）还是宿主直接改写 `tasks`（属性通道），事件序统一为 `oas-reschedule`（联动订正）→ `oas-tasks-change`（订正后的最终数据）；拖拽 / 键盘改期收口随后再派发 `oas-task-change`（拖动的那个任务，`start/end` 取**订正后终值**）。一次操作只派发一次 `oas-tasks-change`。宿主以 `el.tasks` / `detail.task` 为准即可。
 
 <DemoBlock title="工作日日历：workdays=[工作日] 下拖前置，后置自动吸附到下一个工作日；连线 +2（lag）标签可见">
   <oas-gantt id="gantt-workdays" auto-schedule workdays="[1,2,3,4,5]" height="200"></oas-gantt>
+</DemoBlock>
+
+<DemoBlock title="逐资源日历：资源 A 假期 + 资源 B 隔日班次，工作日前推取交集">
+  <oas-gantt
+    id="gantt-resource-cal"
+    auto-schedule
+    workdays="[1,2,3,4,5]"
+    resources='[{"id":"ra","holidays":["2026-03-09"]},{"id":"rb","workdays":[1,3,5],"shifts":[{"start":"09:00","end":"18:00"}]}]'
+    tasks='[{"id":"rc1","name":"设计","start":"2026-03-02","end":"2026-03-06"},{"id":"rc2","name":"联调（资源 A+B）","start":"2026-03-01","end":"2026-03-02","resources":["ra","rb"],"dependencies":[{"id":"rc1"}]}]'
+    height="180"
+  ></oas-gantt>
 </DemoBlock>
 
 ## 宿主集成配方（撤销重做 / 编辑弹窗 / 导出）
@@ -649,6 +661,7 @@ onMounted(async () => {
 | `range-end` | 宿主托管时间轴终点（ISO 日期 YYYY-MM-DD，含当日）：与 range-start 成对使用 | `string` | — |
 | `range-start` | 宿主托管时间轴起点（ISO 日期 YYYY-MM-DD）：提供后轴范围不再由数据推导，配合 range-end 支撑窗口化（切片不含完整日期跨度） | `string` | — |
 | `readonly` | 整图只读（禁改期/禁进度，不渲染拖拽手柄） | `boolean` | — |
+| `resources` | 逐资源日历（JSON）：[{ id, name?, workdays?, holidays?, shifts? }]；与 GanttTask.resources 配合，多资源 workdays 取交集、holidays 取并集；shifts: [] 表示无可用班次，日级 auto-schedule 只消费 workdays/holidays | `string` | — |
 | `row-height` | 行高 px（默认 36，下限 20） | `string` | `36` |
 | `scale` | 时间刻度：hour / day（默认）/ week / month / quarter / year；非法值回落 day | `string` | — |
 | `show-baseline` | 基线对比（布尔，默认关）：任务带 baseline 时在实际条下渲染基线条（baseline.progress 渲染进度覆盖层），title 标差值（比基线晚/早 N 天或一致） | `boolean` | — |
@@ -658,7 +671,7 @@ onMounted(async () => {
 | `show-variance` | 任务带 baseline 时在行名后显示 Δ±Nd 偏差徽标，并写入 data-start-delta/data-end-delta/data-duration-delta/data-progress-delta；正值标红、负值标绿 | `string` | — |
 | `snap` | 拖拽吸附当前刻度（默认开；false 按像素比例平移并保留时间精度） | `string` | — |
 | `stripe` | 行斑马纹（布尔，默认关）：按**绝对行号**奇偶给行加底色（虚拟化/窗口化滚动稳定，不随 DOM 顺序跳变）；颜色走 `--oas-gantt-row-stripe-bg`（缺省 `--oas-color-bg-hover`）；选中/周末假日等背景覆盖条纹 | `string` | — |
-| `tasks` | 甘特任务（JSON）：[{ id?, name, start, end?, type?, progress?, parent?, children?, dependencies?, color?, disabled?, expanded?, baseline?（start/end?/progress?）, deadline?, deadlines?, constraint?（asap/snet/mso/fnlt）, constraintDate? }]——扁平 parent 指针为主，嵌套 children 自动拍平；type:"milestone" 显式优先（带 end 也按里程碑渲染，end 忽略），有子任务时恒为摘要；无 end 亦推导为里程碑；start 晚于 end 自动交换 | `GanttTask[]` | `[]` |
+| `tasks` | 甘特任务（JSON）：[{ id?, name, start, end?, type?, progress?, parent?, children?, dependencies?, color?, disabled?, expanded?, baseline?（start/end?/progress?）, resources?, deadline?, deadlines?, constraint?（asap/snet/mso/fnlt）, constraintDate? }]——扁平 parent 指针为主，嵌套 children 自动拍平；type:"milestone" 显式优先（带 end 也按里程碑渲染，end 忽略），有子任务时恒为摘要；无 end 亦推导为里程碑；start 晚于 end 自动交换 | `GanttTask[]` | `[]` |
 | `total` | windowed 模式下的全量行（任务）数；为 0 或非法时 windowed 不生效（回落本地模式） | `string` | — |
 | `weekends` | 周末列高亮（默认开；day/hour 档生效；false 关闭） | `string` | — |
 | `window-start` | windowed 模式下切片首行的绝对行号（相对全量） | `string` | `0` |
@@ -671,6 +684,29 @@ onMounted(async () => {
 | --- | --- | --- | --- |
 | `selection` | 选中任务 id 集合（`string[]`）：`el.selection` 读（拷贝）；`el.selection = [...]` 写（重渲染选中态 + 派发 oas-selection-change）；`removeTasks(ids)` 批量删除（连同后代） | `string[]` | — |
 | `tasks` | 甘特任务（`GanttTask[]`）：`el.tasks` 读（拷贝，嵌套输入已拍平为 parent 指针）；`el.tasks = [...]` 写（同步 tasks 属性 + 重渲染 + 派发 oas-tasks-change） | `GanttTask[]` | `[]` |
+
+#### 方法
+
+| 方法 | 签名 | 说明 |
+| --- | --- | --- |
+| `updateTask` | `updateTask(id: string, patch: Partial<GanttTask>): boolean` | 按 id 单条增量更新（浅合并 patch 后走 sanitize 清洗；找不到或非法 patch 返回 false） |
+| `scrollToTask` | `scrollToTask(id: string): void` | 滚动到指定任务行（虚拟滚动下委托内部视口，目标行垂直居中）；找不到为空操作。 |
+| `scrollToDate` | `scrollToDate(date: string): void` | 滚动到指定日期（水平居中）；非法日期忽略。RTL 走真实浏览器 scrollLeft 负值模型 |
+| `scrollToToday` | `scrollToToday(): void` | 滚动到今天 |
+| `undo` | `undo(): boolean` | 撤销最近一次任务数据提交；返回是否实际撤销 |
+| `redo` | `redo(): boolean` | 重做最近一次撤销；返回是否实际重做 |
+| `clearHistory` | `clearHistory(): void` | 清空撤销/重做历史（不改变当前任务） |
+| `removeTasks` | `removeTasks(ids: string[]): void` | 批量删除任务（连同其后代）；找不到即忽略 |
+| `addTask` | `addTask(task: Partial<GanttTask>, opts: { parent?: string \| null; before?: string; after?: string }): string` | 新增任务（命令式创作通道）：返回新任务 id；非法输入返回 ''（零改动、零事件）。 |
+| `moveTask` | `moveTask(id: string, opts: { parent?: string \| null; index?: number }): boolean` | 移动任务到指定父级（opts.parent 省略保持原父级、null 移为根级）下的第 index 位 |
+| `duplicateTask` | `duplicateTask(id: string, opts: { id?: string; name?: string; parent?: string \| null }): string \| null` | 复制任务及其全部后代（深拷贝、各自新 id，父指针映射到新 id），紧跟原子树之后插入，返回新根 id； |
+| `addDependency` | `addDependency(taskId: string, dep: { id: string; type?: 'fs' \| 'ss' \| 'ff' \| 'sf'; lag?: number }): boolean` | 新增依赖（后继 taskId 依赖 dep.id）：type 缺省 fs；lag（天，可负）可选，缺省不写（等价 0）。 |
+| `removeDependency` | `removeDependency(taskId: string, dep: { id: string; type?: 'fs' \| 'ss' \| 'ff' \| 'sf' }): boolean` | 删除依赖：dep.type 给出只删该 (id,type)；未给出删该 id 的全部类型。找不到返回 false。 |
+| `updateDependency` | `updateDependency(taskId: string, from: { id: string; type?: 'fs' \| 'ss' \| 'ff' \| 'sf'; lag?: number }, to: { id: string; type?: 'fs' \| 'ss' \| 'ff' \| 'sf'; lag?: number }): boolean` | 改写依赖：from 找不到 / to.id 不存在或指向自身 / 无实际变化（含 lag）→ false。 |
+| `updateTasks` | `updateTasks(patches: Array<{ id: string } & Partial<GanttTask>>): number` | 批量浅合并（逐条：id 不存在跳过；end 给非空且解析失败跳过该条；其余走 sanitize 单条清洗， |
+| `zoomIn` | `zoomIn(): void` | 向更细一档步进（写 scale 属性，既有回调派发 oas-scale-change）；最细档 no-op |
+| `zoomOut` | `zoomOut(): void` | 向更粗一档步进；最粗档 no-op |
+| `fit` | `fit(): void` | 缩放以容纳全部任务：取**最细且**能满足「跨度按该档单位折算的列数 × 该档最小列宽 ≤ 可用宽」的档 |
 
 #### 事件
 

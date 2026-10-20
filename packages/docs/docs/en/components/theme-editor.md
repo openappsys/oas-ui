@@ -146,18 +146,20 @@ onMounted(() => {
 | `preset` | Built-in preset theme: `compact` (tight; control-height -4px, space scaled down proportionally) / `comfortable` (roomy; +4px, space scaled up proportionally) / `default` (equivalent to reset; clears written inline variables). Invalid values are ignored with a dev warning | — | — |
 | `token` | Custom list of tokens to edit (CSS variable names) | — | — |
 
+#### Methods
+
+| Method | Signature | Description |
+| --- | --- | --- |
+| `exportJson` | `exportJson(): Record<string, string>` | 导出当前 token 集 JSON（`{ '--oas-*': value }`，值为实时 computed 值）。 |
+| `exportCss` | `exportCss(): string` | 导出当前 token 集为 CSS 文本（`:root { --oas-*: value; ... }`，与 exportJson 同源）。 |
+| `importJson` | `importJson(json: Record<string, unknown> \| string): void` | 应用 token 集到 themeRoot：`{ '--oas-*': value }`，非 `--` 开头键忽略并 dev 告警 |
+| `applyPreset` | `applyPreset(name: string): void` | 应用内置预设主题。只调尺寸族 token（control-height / space），不动颜色： |
+| `reset` | `reset(): void` | 重置：清除本组件写入宿主的内联 CSS 变量，恢复默认主题值。 |
+
 #### Events
 
 | Event | Description |
 | --- | --- |
 | `oas-change` | Editing any token, `detail: { token, value }` |
-
-| Method           | Description                                                  |
-| ---------------- | ------------------------------------------------------------ |
-| `exportJson()`   | Returns the current token set `{ '--oas-*': value }`         |
-| `exportCss()`    | Returns `:root { --oas-*: value; ... }` CSS text (same source as exportJson) |
-| `importJson(json)` | Applies a token set to the themeRoot: `{ '--oas-*': value }`; non-`--` keys are ignored with a dev warning (deduplicated), then the panel refreshes in place (no rebuild, no focus loss) |
-| `applyPreset(name)` | Applies a built-in preset theme (`compact` / `comfortable` / `default`); invalid names are ignored with a dev warning (deduplicated) |
-| `reset()`        | Clears the inline CSS variables written to the host and restores the default theme values |
 
 Behavior: tokens are read from the computed style of the host (or the nearest `oas-config-provider`); edits are written back to the host immediately via `style.setProperty`, and the subtree inherits them live. Inside a config-provider, writes go to the nearest provider (inherited by the whole subtree). Color rows are a swatch + text box dual channel: the swatch only carries values parseable to `#rrggbb` (color functions such as `rgb()`/`oklch()` are converted to hex; unparseable values like `color-mix()` containing `var()` disable the swatch); the text box always keeps the original value editable (any CSS color function) and invalid input is neither written nor dispatched, showing a red outline. Numeric rows link a range slider with a number input (min/max/step from the token definition) and write back with the original unit; empty or invalid numeric input is neither written nor dispatched. Groups are collapsible via details/summary (open by default); the search box filters rows by token name substring. Presets only touch size-family tokens (control-height / space); applied tokens are recorded in writtenTokens and cleared together by `reset()`.

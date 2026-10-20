@@ -3,6 +3,7 @@
   "sourceFile": "packages/ui/src/conversation/attachment/oas-attachment-group.ts",
   "attrs": [],
   "props": [],
+  "methods": [],
   "events": [],
   "slots": [
     {

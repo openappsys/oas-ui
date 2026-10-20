@@ -36,6 +36,18 @@
     }
   ],
   "props": [],
+  "methods": [
+    {
+      "name": "setError",
+      "signature": "setError(message: string | null): void",
+      "description": "校验错误文本收编（由 oas-form 调用）。message 为空时移除错误态。"
+    },
+    {
+      "name": "refreshLayout",
+      "signature": "refreshLayout(): void",
+      "description": "供父 oas-form 在布局属性变化时调用，即时重刷 grid/标签布局感知"
+    }
+  ],
   "events": [],
   "slots": [
     {

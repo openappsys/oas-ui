@@ -274,6 +274,7 @@ const componentSidebar: DefaultTheme.SidebarItem[] = [
       { text: 'MessageScroller 会话滚动容器', link: '/components/message-scroller' },
       { text: 'Marker 会话标记', link: '/components/marker' },
       { text: 'MessageRow 消息行', link: '/components/message-row' },
+      { text: 'PromptInput 提示词输入', link: '/components/prompt-input' },
     ],
   },
   {

@@ -176,6 +176,12 @@ onMounted(() => {
 | `text-position` | HRI text position: `bottom` (default) / `top` | `string` | `bottom` |
 | `value` | Barcode content (empty value shows the empty placeholder) | `string` | — |
 
+#### Methods
+
+| Method | Signature | Description |
+| --- | --- | --- |
+| `download` | `download(filename: unknown): Promise<void>` | 下载当前条码为 PNG（离屏 rasterize：SVG-only 渲染架构不引入常驻 canvas）。 |
+
 #### Events
 
 | Event | Description |

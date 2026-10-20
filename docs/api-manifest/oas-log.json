@@ -60,6 +60,13 @@
       "default": "[]"
     }
   ],
+  "methods": [
+    {
+      "name": "scrollTo",
+      "signature": "scrollTo(target?: (ScrollToOptions & { position?: 'top' | 'bottom' }) | 'top' | 'bottom' | number): void",
+      "description": "滚动视口：`'top'` 到顶、`'bottom'` 到底、数字为像素 scrollTop；"
+    }
+  ],
   "events": [
     {
       "name": "oas-search",

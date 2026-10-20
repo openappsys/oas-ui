@@ -345,6 +345,16 @@ onMounted(async () => {
 | `title` | 标题文案（渲染进可见标题区；读取后即从宿主移除，不残留原生悬浮提示；清空传空串）；富内容用 slot="title" | `string` | — |
 | `type` | 通知类型：`info`/`success`/`warning`/`error` | `string` | `info` |
 
+#### 方法
+
+| 方法 | 签名 | 说明 |
+| --- | --- | --- |
+| `close` | `close(source: NotificationCloseSource): void` | 统一关闭出口：派发 oas-close（detail.source 标明来源）后移除。 |
+| `refresh` | `refresh(): void` | 命令式更新通道：刷新标题/描述/富内容/footer（title/description 非观察属性， |
+| `transition` | `transition(type: NotificationType, title: string \| Node, duration: unknown): void` | promise 链流转：切换类型并重置自动关闭计时器（loading → success/error 场景）。 |
+| `pause` | `pause(): void` | 悬停暂停：记录剩余时间并暂停进度动画（pause-on-hover 通道，外部也可调用） |
+| `resume` | `resume(): void` | 恢复：从剩余时间继续倒计时与进度动画 |
+
 #### 事件
 
 | 事件 | 说明 |
@@ -370,18 +380,6 @@ onMounted(async () => {
 | `--oas-glass-ring` | — | `transparent` |
 | `--oas-notification-progress-color` | 倒计时进度条颜色 | `var(--oas-color-primary)` |
 | `--oas-notification-width` | 卡片宽度（尺寸档位内部引用） | `320px` |
-
-### 方法
-
-| 方法 | 说明 |
-| --- | --- |
-| `notification.info({ title, description?, content?, duration?, showProgress?, progressPosition?, scrollable?, position?, max?, offset?, container?, priority?, stackMode?, stackThreshold?, key?, onClose?, onClick?, closable?, pauseOnHover?, size?, icon?, closeIcon?, footer? })` | 信息通知，返回 `{ close }` |
-| `notification.success(...)` / `notification.warning(...)` / `notification.error(...)` | 成功/警告/错误通知，options 同上 |
-| `notification.loading(...)` | loading 态：spinner 图标、不自动关、不可手动关 |
-| `notification.promise(p, { loading, success, error })` | promise 链：loading → 成功切 success（4500ms 自动关）/ 失败切 error |
-| `notification.update(key, { title?, description?, content?, duration?, type? })` | 更新已存在通知（key 定位）；key 不存在则新建 |
-| `notification.destroy(key)` | 关闭指定 key 的通知；不存在静默无操作 |
-| `destroyAllNotification()` | 清空全部通知（不触发 onClose） |
 
 - `position` 四角：`top-right`（默认）/ `top-left` / `bottom-right` / `bottom-left`，每角独立栈容器。
 - `max` 同栈数量上限（默认 `0` 不限），超限丢最老——优先丢最老的 normal，全 high 才丢最老 high；被挤出同样触发 `onClose`（`source: 'evict'`）。

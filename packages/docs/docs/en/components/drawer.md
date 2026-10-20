@@ -426,6 +426,13 @@ onMounted(async () => {
 | `width` | Drawer width (px or percentage), takes precedence over `size` | — | — |
 | `z-index` | Explicit z-index base: stacked on `--oas-z-index-base` (the panel sits 1 above the mask); defaults to the overlay tier `--oas-z-overlay`, incrementing with stack depth when nested | — | — |
 
+#### Methods
+
+| Method | Signature | Description |
+| --- | --- | --- |
+| `close` | `close(): void` | 编程关闭（命令式 API handle / 宿主主动）：绕过 before-close 拦截，立即开始关闭动画 |
+| `applyZ` | `applyZ(): void` | z-index 计算：显式 z-index 属性覆盖默认 overlay 档位；嵌套层级叠加栈深偏移 |
+
 #### Events
 
 | Event | Description |

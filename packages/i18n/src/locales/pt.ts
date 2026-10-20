@@ -101,6 +101,10 @@ export const pt: LocaleMessages = {
   'steps.next': 'Próximo',
   'steps.optional': 'Opcional',
   // questionnaire（多步问答）
+  'promptInput.placeholder': 'Digite uma mensagem…',
+  'promptInput.send': 'Enviar',
+  'promptInput.stop': 'Parar',
+  'promptInput.suggestions': 'Sugestões',
   'questionnaire.prev': 'Anterior',
   'questionnaire.next': 'Próximo',
   'questionnaire.submit': 'Concluir',

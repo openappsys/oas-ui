@@ -38,6 +38,28 @@
     }
   ],
   "props": [],
+  "methods": [
+    {
+      "name": "scrollTo",
+      "signature": "scrollTo(x?: ScrollToOptions | number, y?: number): void",
+      "description": "滚动到指定位置，委托 viewport.scrollTo（与原生 Element.scrollTo 兼容："
+    },
+    {
+      "name": "scrollToTop",
+      "signature": "scrollToTop(options?: { behavior?: ScrollBehavior }): void",
+      "description": "平滑/即时滚到顶部（保留横向位置；默认平滑滚动）"
+    },
+    {
+      "name": "scrollToBottom",
+      "signature": "scrollToBottom(options?: { behavior?: ScrollBehavior }): void",
+      "description": "平滑/即时滚到底部（保留横向位置；默认平滑滚动）"
+    },
+    {
+      "name": "scrollIntoView",
+      "signature": "scrollIntoView(target?: string | Element | ScrollIntoViewOptions | boolean, options?: ScrollIntoViewOptions): void",
+      "description": "让容器内元素滚进视口，委托目标元素的原生 scrollIntoView（`options` 的"
+    }
+  ],
   "events": [
     {
       "name": "oas-scroll",

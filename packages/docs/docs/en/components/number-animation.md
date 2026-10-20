@@ -81,6 +81,12 @@ Font size is fixed at `--oas-font-size-lg` (16px) by default and does not follow
 | `to-fixed` | Decimal places (`Number.prototype.toFixed`); when omitted, integer display | `string` | — |
 | `value` | Target value; invalid values treated as 0 | `string` | `0` |
 
+#### Methods
+
+| Method | Signature | Description |
+| --- | --- | --- |
+| `play` | `play(): void` | 手动重播一轮：从 from 起播到目标；播放中防重入（每轮至多一次 oas-finish） |
+
 #### Events
 
 | Event | Description |

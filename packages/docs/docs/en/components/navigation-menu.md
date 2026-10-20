@@ -188,6 +188,12 @@ onMounted(() => {
 | `skip-delay-duration` | Skip-delay window in ms, default 300: hovering another trigger within this window after a close opens it immediately | `string` | `300` |
 | `value` | Controlled open item (top-level trigger value; empty string = closed; when present the open state follows the attribute and interactions only dispatch `oas-change` for the host to update) | `string` | — |
 
+#### Methods
+
+| Method | Signature | Description |
+| --- | --- | --- |
+| `syncOverflowCollapse` | `syncOverflowCollapse(): void` | 重算顶级溢出收纳：bar 装不下时尾部顶级项打 data-collapsed 隐藏并镜像进「···」弹层。 |
+
 #### Events
 
 | Event | Description |

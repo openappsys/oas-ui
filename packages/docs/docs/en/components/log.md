@@ -319,6 +319,12 @@ When history lines are prepended, the reconcile aligns rows by content key: exis
 | `offset-bottom` | Distance from the bottom that counts as reaching it (px, fires `oas-require-more` with from=bottom, default 0) | — | — |
 | `offset-top` | Distance from the top that counts as reaching it (px, fires `oas-require-more` with from=top, default 0) | — | — |
 
+#### Methods
+
+| Method | Signature | Description |
+| --- | --- | --- |
+| `scrollTo` | `scrollTo(target?: (ScrollToOptions & { position?: 'top' \| 'bottom' }) \| 'top' \| 'bottom' \| number): void` | 滚动视口：`'top'` 到顶、`'bottom'` 到底、数字为像素 scrollTop； |
+
 #### Events
 
 | Event | Description |

@@ -1817,3 +1817,25 @@ test('gantt history：更新后撤销/重做，oas-history-change 反馈', async
     ),
   ).toBe('2026-03-10')
 })
+
+test('gantt 逐资源日历：资源假期/工作日交集驱动前推', async ({ page }) => {
+  await page.goto('/components/gantt.html', { waitUntil: 'domcontentloaded' })
+  await waitGantt(page, 'gantt-resource-cal')
+  const host = page.locator('#gantt-resource-cal')
+  await expect(host.locator('.bars .bar[data-id="rc2"]')).toBeVisible()
+  expect(
+    await host.evaluate(
+      (el) =>
+        (el as unknown as { tasks: Array<{ id: string; start: string; resources?: string[] }> }).tasks.find(
+          (t) => t.id === 'rc2',
+        )?.start,
+    ),
+  ).toBe('2026-03-11')
+  expect(
+    await host.evaluate(
+      (el) =>
+        (el as unknown as { tasks: Array<{ id: string; resources?: string[] }> }).tasks.find((t) => t.id === 'rc2')
+          ?.resources,
+    ),
+  ).toEqual(['ra', 'rb'])
+})

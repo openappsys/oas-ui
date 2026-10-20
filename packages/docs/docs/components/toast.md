@@ -233,46 +233,6 @@ onMounted(async () => {
 
 ## API
 
-### 方法
-
-| 方法 | 说明 |
-| --- | --- |
-| `toast.info(options)` | 信息提示，返回 `{ close, update }` |
-| `toast.success(options)` | 成功提示，返回 `{ close, update }` |
-| `toast.warning(options)` | 警告提示，返回 `{ close, update }` |
-| `toast.error(options)` | 错误提示，返回 `{ close, update }` |
-| `toast.loading(options)` | 加载提示（不可关），返回 `{ close, update }` |
-| `toast.promise(promise, opts)` | promise 链：loading → success/error |
-| `toast.update(id, options)` | 按 id 原位更新；id 不存在则新建 |
-| `toast.dismiss(id)` | 按 id 关闭（可见或排队中） |
-| `toast.config(options)` | 全局默认配置（调用参数优先） |
-| `toast.toaster(name)` | 命名实例：独立栈/队列/配置 |
-| `destroyAllToast()` | 清空全部实例 |
-
-### options
-
-| 字段 | 说明 | 类型 | 默认值 |
-| --- | --- | --- | --- |
-| `title` | 标题（string 或 Node） | `string \| Node` | — |
-| `description` | 描述 | `string` | — |
-| `action` / `actions` | 操作按钮（多按钮 + noDismiss + variant） | `ToastAction \| ToastAction[]` | — |
-| `duration` | 自动关闭时长（ms），0 不关闭 | `number` | `3000` |
-| `closable` | 是否可手动关闭（loading 恒关） | `boolean` | `true` |
-| `position` | 位置（9 方向） | `ToastPosition` | `top-right` |
-| `id` | 唯一标识：供 `update` / `dismiss` 定位 | `string` | — |
-| `onClose` | 关闭回调（自动/手动/按钮/dismiss/destroyAll 均触发一次） | `() => void` | — |
-| `priority` | 优先级：与 max 队列配合，高优先级抢占可见位 | `number` | `0` |
-| `max` | 该位置栈最大可见数，超限排队 | `number` | `Infinity` |
-| `politeness` | 读屏敏感度：`assertive` / `polite` | `string` | 按类型 |
-| `showProgress` | 剩余时间进度条（duration>0 时显示） | `boolean` | `false` |
-| `progressRing` | 进度环式关闭按钮（duration>0 时显示） | `boolean` | `false` |
-| `grouping` | 同内容去重：同栈同内容合并并递增计数徽标 | `boolean` | `false` |
-| `swipeDirection` | 滑动关闭方向：`both`/`right`/`left`/`up`/`down` | `string` | `both` |
-| `stacked` | 折叠堆叠模式（+N 收纳 / peek 层叠） | `boolean` | `false` |
-| `variant` | 变体：`solid`/`plain`/`translucent` | `string` | `solid` |
-| `container` | 挂载点（元素或函数），覆盖默认宿主 | `HTMLElement \| () => HTMLElement` | — |
-| `pauseOnHover` / `pauseOnFocus` / `pauseOnWindowBlur` | 暂停计时开关（默认全开） | `boolean` | `true` |
-
 ### oas-toast
 
 #### 属性
@@ -297,6 +257,14 @@ onMounted(async () => {
 | `type` | 提示类型：`info`/`success`/`warning`/`error`/`loading` | `string` | `info` |
 | `variant` | 视觉变体：默认卡片 / `plain`（无边框无底纹文本直出）/ `translucent`（半透明毛玻璃） | — | — |
 
+#### 方法
+
+| 方法 | 签名 | 说明 |
+| --- | --- | --- |
+| `close` | `close(trigger: ToastCloseTrigger): void` | 关闭当前 toast：派发 oas-close → 播放离场动画 → 移除 → oas-destroy |
+| `transition` | `transition(type: ToastType, title: string \| Node, duration: unknown): void` | promise 链流转：切换类型并重置自动关闭计时器。title 支持 string（属性通道）或 |
+| `refresh` | `refresh(options: ToastRefreshOptions): void` | 命令式 update() 数据通道：整卡增量刷新（内容/类型/时长/描述/按钮），并重置自动关闭计时 |
+
 #### 事件
 
 | 事件 | 说明 |
@@ -320,6 +288,30 @@ onMounted(async () => {
 | `--oas-toast-ease` | `ease` |
 | `--oas-toast-enter-duration` | `0.2s` |
 | `--oas-toast-leave-duration` | `0.2s` |
+
+### options
+
+| 字段 | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| `title` | 标题（string 或 Node） | `string \| Node` | — |
+| `description` | 描述 | `string` | — |
+| `action` / `actions` | 操作按钮（多按钮 + noDismiss + variant） | `ToastAction \| ToastAction[]` | — |
+| `duration` | 自动关闭时长（ms），0 不关闭 | `number` | `3000` |
+| `closable` | 是否可手动关闭（loading 恒关） | `boolean` | `true` |
+| `position` | 位置（9 方向） | `ToastPosition` | `top-right` |
+| `id` | 唯一标识：供 `update` / `dismiss` 定位 | `string` | — |
+| `onClose` | 关闭回调（自动/手动/按钮/dismiss/destroyAll 均触发一次） | `() => void` | — |
+| `priority` | 优先级：与 max 队列配合，高优先级抢占可见位 | `number` | `0` |
+| `max` | 该位置栈最大可见数，超限排队 | `number` | `Infinity` |
+| `politeness` | 读屏敏感度：`assertive` / `polite` | `string` | 按类型 |
+| `showProgress` | 剩余时间进度条（duration>0 时显示） | `boolean` | `false` |
+| `progressRing` | 进度环式关闭按钮（duration>0 时显示） | `boolean` | `false` |
+| `grouping` | 同内容去重：同栈同内容合并并递增计数徽标 | `boolean` | `false` |
+| `swipeDirection` | 滑动关闭方向：`both`/`right`/`left`/`up`/`down` | `string` | `both` |
+| `stacked` | 折叠堆叠模式（+N 收纳 / peek 层叠） | `boolean` | `false` |
+| `variant` | 变体：`solid`/`plain`/`translucent` | `string` | `solid` |
+| `container` | 挂载点（元素或函数），覆盖默认宿主 | `HTMLElement \| () => HTMLElement` | — |
+| `pauseOnHover` / `pauseOnFocus` / `pauseOnWindowBlur` | 暂停计时开关（默认全开） | `boolean` | `true` |
 
 - `error` 类型默认 `role="alert"` + `aria-live="assertive"`，其余 `role="status"` + `aria-live="polite"`；`politeness` 可覆盖。
 - 多个 toast 共用一个栈容器，同一方向按位置堆叠；`duration` 计时器在关闭/卸载时清理，无泄漏。

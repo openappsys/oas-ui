@@ -334,6 +334,12 @@ onMounted(() => {
 | `orientation` | Layout direction: `horizontal` (default) / `vertical` (arrow navigation follows the axis; separator becomes a horizontal line) | `string` | `horizontal` |
 | `size` | Size step: `small` / `medium` (default) / `large` | `string` | — |
 
+#### Methods
+
+| Method | Signature | Description |
+| --- | --- | --- |
+| `syncOverflow` | `syncOverflow(): void` | 重算溢出收纳：容器宽度不足时，超出项打 data-collapsed 隐藏并镜像进「···」弹层。 |
+
 #### Slots
 
 | Name | Description |
@@ -353,6 +359,12 @@ onMounted(() => {
 | `multiple` | Multiple-select mode (each item toggles independently) | `boolean` | — |
 | `size` | Size step (small/medium/large); defaults to the nearest oas-toolbar's size | `string` | — |
 | `value` | Current value: string for single-select; JSON array string for multiple-select | `string` | — |
+
+#### Methods
+
+| Method | Signature | Description |
+| --- | --- | --- |
+| `selectValue` | `selectValue(value: string): void` | 供工具栏溢出镜像调用：按 value 触发一次选择（单选选中/多选切换） |
 
 #### Events
 
@@ -411,6 +423,12 @@ onMounted(() => {
 | `multiple` | Multiple-select mode (each pill toggles independently) | `boolean` | — |
 | `size` | Size step (small/medium/large); defaults to the nearest oas-toolbar's size | `string` | — |
 | `value` | Current value: string for single-select; JSON array string for multiple-select | `string` | — |
+
+#### Methods
+
+| Method | Signature | Description |
+| --- | --- | --- |
+| `selectValue` | `selectValue(value: string): void` | 按 value 触发一次选择（单选选中/多选切换）——供外部程序化调用 |
 
 #### Events
 

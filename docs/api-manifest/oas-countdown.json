@@ -48,6 +48,13 @@
     }
   ],
   "props": [],
+  "methods": [
+    {
+      "name": "reset",
+      "signature": "reset(): void",
+      "description": "命令式重置：倒计时回到 value 初值、正计时回到 start 初值重新计时；"
+    }
+  ],
   "events": [
     {
       "name": "oas-finish"

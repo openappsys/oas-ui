@@ -15,6 +15,10 @@
 | **scheduler 资源分组与第二时区** | `resources[].group` 分组标题行 + `secondary-timezone` 第二时区刻度 | 🚧 待发布 |
 | **gantt 内建撤销/重做** | opt-in `history` + `undo()` / `redo()` / `clearHistory()` + `oas-history-change` | 🚧 待发布 |
 | **resource 热力图与技能矩阵** | `heatmap` 热力格/图例/title + `skill-matrix` 技能矩阵视图 | 🚧 待发布 |
+| **scheduler 定时跨日连续条 + 日期窗口 recipe** | 定时跨日事件顶部连续条（带时刻标签）+ 宿主日期窗口取数示例 | 🚧 待发布 |
+| **gantt 逐资源日历/班次** | `resources` + `GanttTask.resources`；工作日交集/假期并集驱动 auto-schedule | 🚧 待发布 |
+| **conversation prompt-input** | 新组件：多行自增高、提交/停止、建议项、附件/操作/页脚插槽 | 🚧 待发布 |
+| **API methods 扫描 + WebKit 抽样** | `api:scan/api:gen` 输出方法表；WebKit smoke 子集纳入 e2e | 🚧 待发布 |
 
 ## 版本规划
 

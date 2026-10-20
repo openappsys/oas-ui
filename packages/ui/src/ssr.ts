@@ -218,6 +218,7 @@ export { OASAttachmentGroup } from './conversation/attachment/oas-attachment-gro
 export { OASMessageScroller } from './conversation/message-scroller/oas-message-scroller.js'
 export { OASMarker } from './conversation/marker/oas-marker.js'
 export { OASMessageRow } from './conversation/message-row/oas-message-row.js'
+export { OASPromptInput } from './conversation/prompt-input/oas-prompt-input.js'
 
 // ---------- workbench ----------
 export { OASTitlebar } from './workbench/titlebar/oas-titlebar.js'

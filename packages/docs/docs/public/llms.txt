@@ -189,6 +189,7 @@
 - [MessageScroller 会话滚动容器](https://oas-ui.dev/components/message-scroller): 会话滚动容器：一套「滚动意图模型」——读者在底部时跟随新内容（AI 式）、IM 式始终钉底可切、跳到底按钮、上翻加载历史不跳动（含异步资源保位）、轮次锚定（AI「回到最后提问」）、首屏防跳。
 - [Marker 会话标记](https://oas-ui.dev/components/marker): 会话时间戳/系统事件标记：行内小状态、描边胶囊行、带文字分隔线。IM 里的「今天 10:00」时间分隔、「某某 加入群聊」系统事件、AI 流式「生成中」状态都归此类。
 - [MessageRow 消息行](https://oas-ui.dev/components/message-row): 会话消息行（组合行）：行布局所有者——负责头像槽、方向、header/footer 排布与发送态；可见表面由 oas-bubble（默认插槽内）提供。
+- [PromptInput 提示词输入](https://oas-ui.dev/components/prompt-input): 会话输入框：多行自增高、Enter 提交、Shift+Enter 换行、建议项、发送/停止态、附件与页脚插槽。
 
 ## 框架级容器
 

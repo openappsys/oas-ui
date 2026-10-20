@@ -1042,6 +1042,20 @@ The full endpoint URLs far exceed the column width (long unbreakable strings): h
 | `window-start` | In windowed mode, the row index of data[0] within the full dataset (absolute row number): the component renders and offsets by absolute row; ignored when not windowed | `string` | `0` |
 | `windowed` | Server-side row-window mode (boolean, off by default): with total / window-start the host supplies only the visible window slice and the component holds no full dataset. When enabled the component computes the expected range from the visible row window (8-row buffer on both sides) and, if it is not covered by the loaded range, emits oas-window-request for the host to refill; local sort/filter/group/pagination/tree-expand are the host's responsibility (the component skips them with a devWarn). Off by default: behavior unchanged | `boolean` | — |
 
+#### Methods
+
+| Method | Signature | Description |
+| --- | --- | --- |
+| `effectiveColumns` | `effectiveColumns(): TableColumn[]` | 有效列：按 column-keys（受控显示集合+顺序）过滤排序；无 column-keys 时回落全部叶子列（向后兼容）。 |
+| `getColumns` | `getColumns(): TableColumn[]` | 当前全部列定义（含组列；表格基础 API，能力 controller / 宿主可读） |
+| `translateText` | `translateText(key: string, params?: Record<string, string \| number>): string` | 翻译内置文案（就近 config-provider / locale；能力 controller 与外部自定义模板经此取词）。 |
+| `paintCell` | `paintCell(td: HTMLTableCellElement, col: TableColumn, row: Record<string, unknown>): void` | 重绘单元格为常规展示内容：清空后按 cellNode 挂载（尊重 render/cellTemplate 富内容）。 |
+| `notifyEdit` | `notifyEdit(kind: 'edit' \| 'edit-cancel', detail: TableEditDetail): void` | 派发编辑结果事件（提交/取消；detail 由 edit 能力组好）。事件名以字面量书写在此， |
+| `setColumnOrder` | `setColumnOrder(keys: string[]): void` | 更新列显示顺序（写回 column-keys 并重渲染；派发 oas-column-order，宿主可做持久化） |
+| `setColumnWidth` | `setColumnWidth(key: string, width: number): void` | 更新指定列宽（写回 columns 对应列 width 并重渲染；派发 oas-column-resize）。property 列定义含函数时改内存 |
+| `exportMatrix` | `exportMatrix(): { headers: string[]; rows: string[][] }` | 导出矩阵：表头（列 title / headerTemplate 文本）+ 当前可见数据行。 |
+| `exportData` | `exportData(format: ExportFormat, options: { fileName?: string }): string` | 导出并触发下载：生成内容 → Blob 下载 → 派发 `oas-export` |
+
 #### Events
 
 | Event | Description |

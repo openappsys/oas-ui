@@ -57,6 +57,7 @@
       "type": "unknown"
     }
   ],
+  "methods": [],
   "events": [
     {
       "name": "oas-click",

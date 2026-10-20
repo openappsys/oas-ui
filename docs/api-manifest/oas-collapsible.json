@@ -23,6 +23,13 @@
     }
   ],
   "props": [],
+  "methods": [
+    {
+      "name": "isDisabled",
+      "signature": "isDisabled(): boolean",
+      "description": "生效禁用态（显式 disabled 属性；config-provider 注入的全局禁用同样生效）"
+    }
+  ],
   "events": [
     {
       "name": "oas-toggle",

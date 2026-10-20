@@ -344,6 +344,13 @@ onMounted(() => {
 | `size` | 统一头像尺寸（px），计数圆点同步适配 | `string` | — |
 | `spacing` | 成员间距（px，可为负 = 叠放；覆盖 `--oas-avatar-group-overlap` 变量） | `string` | — |
 
+#### 方法
+
+| 方法 | 签名 | 说明 |
+| --- | --- | --- |
+| `openOverflow` | `openOverflow(): void` | 打开折叠弹层：克隆全部被折叠成员头像进列表 + 定位（供模块级 Esc 栈/内部调用） |
+| `closeOverflow` | `closeOverflow(refocus: unknown): void` | 关闭折叠弹层；refocus=true 时焦点回到计数按钮（Escape 路径，带回焦豁免防重开） |
+
 #### 插槽
 
 | 名称 | 说明 |

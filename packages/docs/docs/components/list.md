@@ -727,6 +727,12 @@ windowed 下行 `aria-setsize = total`、`aria-posinset = 绝对行号 + 1`。�
 | `window-start` | windowed 模式下切片首行的绝对行号（相对全量） | `string` | `0` |
 | `windowed` | 服务端行窗口模式（布尔，默认关）：与 total / window-start 配合，data 只承载可见窗口附近的行切片（按绝对行号渲染），期望行区间未被已装载覆盖时派发 oas-window-request 由宿主回填；windowed 下本地分组/拖拽重排不适用（宿主负责） | `boolean` | — |
 
+#### 方法
+
+| 方法 | 签名 | 说明 |
+| --- | --- | --- |
+| `setData` | `setData(value: unknown[]): void` | 数据写入（property 通道）。公开类型保持 `unknown[]`（API 文档类型准确），运行时经 |
+
 #### 事件
 
 | 事件 | 说明 |

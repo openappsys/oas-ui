@@ -202,6 +202,12 @@ const file = importResourceCalendars(json)
 | `resources` | Resources (JSON [{ id, name, capacity?, workdays?, holidays?, capacityOverrides?, skills? }]). `workdays` uses 0=Sunday…6=Saturday; `[]` means fully unavailable. When `workdays` is absent and `holidays` / `capacityOverrides` are empty, capacity = parallel tasks per period (legacy); otherwise period capacity is the sum of daily capacity, non-empty `capacityOverrides` wins over `workdays` / `holidays`, and may be fractional while task load is counted in whole days (a 0.5 day cannot hold a whole-day task); empty `holidays` / `capacityOverrides` count as absent. `skills` is a skill-tag array. A resource may carry an optional `color` (CSS color or token, e.g. `var(--oas-color-success)`) used to tint its lane bars and load bars; when absent the unified `--oas-resource-bar-bg` / `--oas-resource-load-bg` applies; property read is a copy: nested plain objects/arrays are deep-cloned — cycle-safe; shared references stay shared within a single read result; Date is copied by value (not shared); exotic objects such as class instances/Set are shared by reference; writing syncs the attribute + re-renders; if a custom key is not serializable, only that key is dropped from the attribute while the property readback stays complete | `ResourceItem[]` | `[]` |
 | `tasks` | Resource tasks (JSON [{ id, name, start, end, resources?, priority?, requiredSkills?, project? }]); start/end are day precision YYYY-MM-DD only (end inclusive; time-bearing input is treated as that day), resources is the assigned resource id array (assignments to unknown resources are ignored). priority: lower is more important; requiredSkills: every reassign target must have all tags; project works with levelResources({ projectOrder }) for cross-project priority; property read is a copy: nested plain objects/arrays are deep-cloned — cycle-safe; shared references stay shared within a single read result; Date is copied by value (not shared); exotic objects such as class instances/Set are shared by reference; writing syncs the attribute + re-renders + dispatches oas-tasks-change | `ResourceTask[]` | `[]` |
 
+#### Methods
+
+| Method | Signature | Description |
+| --- | --- | --- |
+| `scrollToDate` | `scrollToDate(date: string): void` | 滚动到指定日期（在时间轴可视区水平居中，扣除 sticky 资源名列宽度）；非法日期/无数据为空操作。RTL 走负值 scrollLeft 模型（同 gantt）。 |
+
 #### Events
 
 | Event | Description |

@@ -108,6 +108,7 @@
       "default": "[]"
     }
   ],
+  "methods": [],
   "events": [
     {
       "name": "oas-before-change",

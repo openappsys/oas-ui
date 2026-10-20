@@ -427,6 +427,13 @@ onMounted(async () => {
 | `src` | Image URL | `string` | — |
 | `width` | Explicit width (numbers become px; any CSS size string passes through; empty restores auto) | `string` | — |
 
+#### Methods
+
+| Method | Signature | Description |
+| --- | --- | --- |
+| `previewGoTo` | `previewGoTo(index: number): void` | 图集跳转到第 index 张（预览打开时生效；未打开/无图集不做事，越界收敛）。 |
+| `openPreview` | `openPreview(index?: number): void` | 打开预览：图集模式可指定起始索引（缺省取主图 src 在列表中的位置，未命中从 0 开始） |
+
 #### Events
 
 | Event | Description |
@@ -454,6 +461,13 @@ onMounted(async () => {
 | --- | --- | --- | --- |
 | `current` | Current gallery index (optional controlled): when present, clicks open at `current`, internal paging reflects back to the attribute, and external changes drive the preview jump; when absent the attribute is not created and only `oas-change` is emitted | — | — |
 | `infinite` | Loop paging around the first/last image (passed through to the shared preview host) | `boolean` | — |
+
+#### Methods
+
+| Method | Signature | Description |
+| --- | --- | --- |
+| `openPreview` | `openPreview(index?: number): void` | 打开共享预览：index 为图集起始索引；current 受控时以属性为准 |
+| `closePreview` | `closePreview(): void` | 关闭共享预览（委托共享宿主） |
 
 #### Events
 

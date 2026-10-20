@@ -233,6 +233,12 @@ onMounted(() => {
 | `items` | Data array (property channel, takes precedence over the `items` attribute); data JSON string (attribute channel) | `unknown[]` | `[]` |
 | `scroll-target` | CSS selector of the external scroll container; when set, the component has no scrollbar of its own and listens to the external scroll | `string` | — |
 
+#### Methods
+
+| Method | Signature | Description |
+| --- | --- | --- |
+| `scrollToIndex` | `scrollToIndex(index: number, options?: ScrollToIndexOptions): void` | 滚动到指定索引项（公共契约，供 list/tree 等内嵌消费方定位，无需直查内部 DOM）。 |
+
 #### Events
 
 | Event | Description |

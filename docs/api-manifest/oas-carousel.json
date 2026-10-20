@@ -110,6 +110,23 @@
     }
   ],
   "props": [],
+  "methods": [
+    {
+      "name": "next",
+      "signature": "next(): void",
+      "description": "切换到下一屏"
+    },
+    {
+      "name": "prev",
+      "signature": "prev(): void",
+      "description": "切换到上一屏"
+    },
+    {
+      "name": "goTo",
+      "signature": "goTo(index: number): void",
+      "description": "跳转到指定屏（页索引，从 0 起）"
+    }
+  ],
   "events": [
     {
       "name": "oas-change",

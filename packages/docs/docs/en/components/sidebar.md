@@ -384,18 +384,6 @@ Besides the `items` JSON, items can be declared with `<oas-sidebar-item>` / `<oa
 
 ## API
 
-### Methods
-
-| Method | Description |
-| --- | --- |
-| `openDrawer()` | Opens the mobile drawer programmatically (same as clicking the built-in trigger `part="trigger"`) |
-| `closeDrawer()` | Closes the mobile drawer programmatically (same as mask click / close button / Esc) |
-
-- Usage: `const el = document.querySelector('oas-sidebar') as OASSidebar; el.openDrawer()`.
-- Equivalent to the controlled `drawer-open` attribute: the methods are sugar for setting/removing it (`openDrawer` sets, `closeDrawer` removes) and can be mixed; repeated calls are idempotent.
-- Mobile only (viewport narrower than `mobile-breakpoint`); on desktop the attribute is reclaimed by `update` immediately, leaving no floating layer.
-- Drawer open/close emits no event: observe the `drawer-open` attribute (MutationObserver) or keep host state; for a two-state toggle, call `openDrawer()` / `closeDrawer()` based on your own state.
-
 ### oas-sidebar
 
 #### Attributes
@@ -425,6 +413,13 @@ Besides the `items` JSON, items can be declared with `<oas-sidebar-item>` / `<oa
 | Property | Description | Type | Default |
 | --- | --- | --- | --- |
 | `renderLabel` | Custom row-content renderer `(item) => Node \| string \| null` (property channel; functions cannot be serialized and stay out of attributes/SSR). A returned Node mounts into the label area (for two-line or other rich content); a string renders as plain text; null/undefined falls back to `item.label`. The accessible name remains `item.label`, and the content hides with the label in collapsed mode; set null to restore default rendering | `SidebarLabelRenderer \| null` | — |
+
+#### Methods
+
+| Method | Signature | Description |
+| --- | --- | --- |
+| `openDrawer` | `openDrawer(): void` | 公开：编程打开移动抽屉，等价于点击内置触发按钮（`part="trigger"`）。 |
+| `closeDrawer` | `closeDrawer(): void` | 公开：编程关闭移动抽屉，等价于点击遮罩 / 关闭按钮 / 按 Esc。 |
 
 #### Events
 
@@ -483,6 +478,11 @@ Besides the `items` JSON, items can be declared with `<oas-sidebar-item>` / `<oa
 | Name | Description |
 | --- | --- |
 | default | Divider data carrier (no attributes; the host parses it as `{type:"divider"}`) |
+
+- Usage: `const el = document.querySelector('oas-sidebar') as OASSidebar; el.openDrawer()`.
+- Equivalent to the controlled `drawer-open` attribute: the methods are sugar for setting/removing it (`openDrawer` sets, `closeDrawer` removes) and can be mixed; repeated calls are idempotent.
+- Mobile only (viewport narrower than `mobile-breakpoint`); on desktop the attribute is reclaimed by `update` immediately, leaving no floating layer.
+- Drawer open/close emits no event: observe the `drawer-open` attribute (MutationObserver) or keep host state; for a two-state toggle, call `openDrawer()` / `closeDrawer()` based on your own state.
 
 ### Parts
 

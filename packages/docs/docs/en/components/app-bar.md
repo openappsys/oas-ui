@@ -176,6 +176,12 @@ onMounted(() => {
 | `menu-open` | Hamburger expanded state (controlled): the host writes back after toggling its drawer; the button aria-expanded stays in sync | `boolean` | — |
 | `position` | Positioning mode: static (default, in flow) / absolute / fixed / floating (floating rounded with shadow) | `string` | `static` |
 
+#### Methods
+
+| Method | Signature | Description |
+| --- | --- | --- |
+| `syncOverflow` | `syncOverflow(): void` | 重算溢出收纳：actions 区宽度不足时，超出项打 data-collapsed 隐藏并镜像进「···」弹层。 |
+
 #### Events
 
 | Event | Description |

@@ -385,18 +385,6 @@
 
 ## API
 
-### 方法
-
-| 方法 | 说明 |
-| --- | --- |
-| `openDrawer()` | 编程打开移动端抽屉（等价于点击内置触发按钮 `part="trigger"`） |
-| `closeDrawer()` | 编程关闭移动端抽屉（等价于点击遮罩 / 关闭按钮 / 按 Esc） |
-
-- 调用方式：`const el = document.querySelector('oas-sidebar') as OASSidebar; el.openDrawer()`。
-- 与受控属性 `drawer-open` 等价：方法即该属性的写入/移除语法糖（`openDrawer` 设置、`closeDrawer` 移除），两者可混用；重复调用幂等。
-- 仅移动端（视口窄于 `mobile-breakpoint`）生效；桌面态调用由 update 立即回收，不残留浮层。
-- 抽屉开合不派发事件：宿主可观察 `drawer-open` 属性（MutationObserver）或自行维护状态；需要开合双态时按自身状态调用 `openDrawer()` / `closeDrawer()`。
-
 ### oas-sidebar
 
 #### 属性
@@ -426,6 +414,13 @@
 | Property | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
 | `renderLabel` | 自定义行内容渲染函数 `(item) => Node \| string \| null`（property 通道，函数不可序列化，不进 attribute/SSR）。返回 Node 直接挂载到 label 区（可放双行文本等富内容）；返回字符串按纯文本渲染；返回 null/undefined 回退 `item.label`。可访问名称仍取 `item.label`，折叠态随 label 隐藏；置 null 恢复默认渲染 | `SidebarLabelRenderer \| null` | — |
+
+#### 方法
+
+| 方法 | 签名 | 说明 |
+| --- | --- | --- |
+| `openDrawer` | `openDrawer(): void` | 公开：编程打开移动抽屉，等价于点击内置触发按钮（`part="trigger"`）。 |
+| `closeDrawer` | `closeDrawer(): void` | 公开：编程关闭移动抽屉，等价于点击遮罩 / 关闭按钮 / 按 Esc。 |
 
 #### 事件
 
@@ -484,6 +479,11 @@
 | 名称 | 说明 |
 | --- | --- |
 | 默认 | 分隔线数据载体（无属性，宿主解析为 `{type:"divider"}`） |
+
+- 调用方式：`const el = document.querySelector('oas-sidebar') as OASSidebar; el.openDrawer()`。
+- 与受控属性 `drawer-open` 等价：方法即该属性的写入/移除语法糖（`openDrawer` 设置、`closeDrawer` 移除），两者可混用；重复调用幂等。
+- 仅移动端（视口窄于 `mobile-breakpoint`）生效；桌面态调用由 update 立即回收，不残留浮层。
+- 抽屉开合不派发事件：宿主可观察 `drawer-open` 属性（MutationObserver）或自行维护状态；需要开合双态时按自身状态调用 `openDrawer()` / `closeDrawer()`。
 
 ### 部件（part）
 

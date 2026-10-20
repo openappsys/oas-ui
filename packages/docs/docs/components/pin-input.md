@@ -322,6 +322,13 @@ onMounted(() => {
 | --- | --- | --- | --- |
 | `value` | 当前值：各格字符拼接字符串；property 与 `value` 属性同源（setter 写回 attribute、属性改动即时同步各格），会反射到 attribute | `string` | — |
 
+#### 方法
+
+| 方法 | 签名 | 说明 |
+| --- | --- | --- |
+| `focus` | `focus(indexOrOptions?: number \| FocusOptions): void` | 组件级聚焦：`focus()` 无参聚焦首个空格（全部填满时聚焦末格）；`focus(index)` 聚焦指定格 |
+| `blur` | `blur(): void` | 使当前活动格失焦 |
+
 #### 事件
 
 | 事件 | 说明 |

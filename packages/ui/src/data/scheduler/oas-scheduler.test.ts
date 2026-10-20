@@ -1536,7 +1536,7 @@ describe('scheduler 跨日全天 / repeat count+byDay / ICS 增强', () => {
     expect(el.shadowRoot!.querySelector<HTMLElement>('.band-span')!.style.width).not.toBe('')
   })
 
-  it('定时跨日事件按首日/末日拆段（周视图两列各有块）', () => {
+  it('定时跨日事件在周视图渲染连续条，不再按日拆块', () => {
     const el = mount({
       view: 'week',
       'page-show-date': '2026-08-10',
@@ -1546,8 +1546,11 @@ describe('scheduler 跨日全天 / repeat count+byDay / ICS 增强', () => {
         { id: 'night', date: '2026-08-10', endDate: '2026-08-11', title: '夜间', start: '22:00', end: '02:00' },
       ]),
     })
-    expect(el.shadowRoot!.querySelectorAll('.col[data-date="2026-08-10"] .event').length).toBe(1)
-    expect(el.shadowRoot!.querySelectorAll('.col[data-date="2026-08-11"] .event').length).toBe(1)
+    const bar = el.shadowRoot!.querySelector<HTMLElement>('.band-span.timed-span')!
+    expect(bar).not.toBeNull()
+    expect(bar.textContent).toContain('22:00')
+    expect(bar.textContent).toContain('夜间')
+    expect(el.shadowRoot!.querySelectorAll('.col .event').length).toBe(0)
   })
 
   it('weekly byDay + count：只出现指定 weekday，且不超过 count 次', () => {

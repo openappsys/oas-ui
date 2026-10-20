@@ -222,6 +222,23 @@
       "api": true
     }
   ],
+  "methods": [
+    {
+      "name": "focus",
+      "signature": "focus(options?: FocusOptions): void",
+      "description": "label 点击聚焦委托：把焦点交给 shadow 内主输入（配合 oas-form-item 的 label 点击代理）"
+    },
+    {
+      "name": "blur",
+      "signature": "blur(): void",
+      "description": "失焦委托：把 blur 交给 shadow 内主输入"
+    },
+    {
+      "name": "select",
+      "signature": "select(): void",
+      "description": "选中输入框全部内容（委托原生 input.select）"
+    }
+  ],
   "events": [
     {
       "name": "oas-input",

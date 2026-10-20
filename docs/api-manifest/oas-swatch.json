@@ -56,6 +56,18 @@
       "api": true
     }
   ],
+  "methods": [
+    {
+      "name": "setGroupRole",
+      "signature": "setGroupRole(role: 'radio' | 'checkbox' | null): void",
+      "description": "组语义切换挂点（oas-swatch-group 驱动：button→radio/checkbox + aria-checked）"
+    },
+    {
+      "name": "syncSelected",
+      "signature": "syncSelected(selected: boolean): void",
+      "description": "组同步选中态（含 ARIA 同步）"
+    }
+  ],
   "events": [
     {
       "name": "oas-click",

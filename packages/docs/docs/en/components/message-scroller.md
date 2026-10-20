@@ -563,6 +563,14 @@ The scroller owns anchoring/follow for normal conversations; for thousands of tu
 | `track-visible` | Boolean present: enables the visibility channel (oas-visible-change event + visibleMessageIds / currentAnchorId getters); zero computation when off (pay-for-use) | `boolean` | — |
 | `turn-anchor` | Turn anchoring (boolean presence): one question+answer exchange is the anchoring unit — while the anchor sits at the viewport top the last anchor-marked message is pinned at prev-peek from the top with answers flowing in beneath; bottom following continues at the bottom; scrolled-up readers are never pulled | `boolean` | — |
 
+#### Methods
+
+| Method | Signature | Description |
+| --- | --- | --- |
+| `scrollToEnd` | `scrollToEnd(opts?: { behavior?: ScrollBehavior }): void` | 滚到底部。behavior：'auto'（默认，瞬时）/ 'instant'（瞬时）/ 'smooth'（平滑）。 |
+| `scrollToStart` | `scrollToStart(opts?: { behavior?: ScrollBehavior }): void` | 滚到顶部（参数同 scrollToEnd） |
+| `scrollToMessage` | `scrollToMessage(id: string, opts?: { behavior?: ScrollBehavior }): boolean` | 滚到指定 message-id 的消息行顶部。命中返回 true；id 不存在返回 false 且不滚动 |
+
 #### Events
 
 | Event | Description |
@@ -582,13 +590,5 @@ The scroller owns anchoring/follow for normal conversations; for thousands of tu
 | CSS Variable | Default |
 | --- | --- |
 | `--oas-message-gap` | `var(--oas-space-4)` |
-
-#### Methods
-
-| Method | Description |
-| --- | --- |
-| `scrollToEnd(opts?)` | Scroll to bottom; `opts.behavior` accepts `'smooth'` (instant by default) |
-| `scrollToStart(opts?)` | Scroll to top (same options) |
-| `scrollToMessage(id, opts?)` | Scroll to the top of the message row with the given `message-id`; returns `true` on hit, `false` without scrolling for unknown ids (same options) |
 
 State reflection: `data-scrollable` (`"start"` / `"end"` / `"start end"` space-separated); `data-pending-scroll` (first-paint jump prevention — present until the initial position is applied, removed after positioning or reader yield). ARIA: viewport `role="region"` + accessible name + `tabindex="0"`; content container `role="log"` + `aria-relevant="additions"`. CSS variable: `--oas-message-gap` (row gap, default `var(--oas-space-4)`). Parts: `::part(scroller)` / `::part(viewport)` / `::part(content)` / `::part(button)`.

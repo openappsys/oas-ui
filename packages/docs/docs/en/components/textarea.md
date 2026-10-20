@@ -224,6 +224,13 @@ onMounted(() => {
 | --- | --- | --- | --- |
 | `value` | Current value: the inner textarea text (`el.value` reads; `el.value = x` writes the controlled `value` and syncs, no event) | `string` | — |
 
+#### Methods
+
+| Method | Signature | Description |
+| --- | --- | --- |
+| `focus` | `focus(options?: FocusOptions): void` | label 点击聚焦委托：把焦点交给 shadow 内主输入（配合 oas-form-item 的 label 点击代理） |
+| `select` | `select(): void` | 选中文本（委托内部 textarea） |
+
 #### Events
 
 | Event | Description |

@@ -465,6 +465,14 @@ The current form value is available through the public `value` property for read
 | `files` | Controlled file list (property channel; assigning re-renders) | `Array<File \| UploadEchoFile>` | `[]` |
 | `value` | Current value: the submittable `File[]` (file-body entries only; echo records without a body are excluded) | `File[] \| null` | `[]` |
 
+#### Methods
+
+| Method | Signature | Description |
+| --- | --- | --- |
+| `startUpload` | `startUpload(): void` | 上传入口：真实通道（action XHR / custom-request）逐文件发起；无通道回落模拟进度。 |
+| `submit` | `submit(): void` | 手动上传入口别名（对齐主流「提交」心智） |
+| `abort` | `abort(entry?: File): void` | 取消上传：传入条目取消单个；无参取消全部进行中的上传 |
+
 #### Events
 
 | Event | Description |

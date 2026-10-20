@@ -523,6 +523,12 @@ Programmatic read/write of the current value goes through the public `value` pro
 | --- | --- | --- | --- |
 | `value` | Current value: a value for single; an array of values for multiple | `string \| string[] \| null` | — |
 
+#### Methods
+
+| Method | Signature | Description |
+| --- | --- | --- |
+| `focus` | `focus(options?: FocusOptions): void` | label 点击聚焦委托：把焦点交给 shadow 内 trigger（配合 oas-form-item 的 label 点击代理） |
+
 #### Events
 
 | Event | Description |

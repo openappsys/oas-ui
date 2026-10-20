@@ -6317,6 +6317,31 @@ describe('OASGantt 工作日日历（workdays）', () => {
     { id: 't', name: 'T', start: '2026-03-01', end: '2026-03-02', dependencies: [{ id: 'd' }] },
   ])
 
+  it('逐资源日历：资源 workdays 取交集、资源 holidays 取并集，auto-schedule 跳过不可用日', () => {
+    const el = mount({
+      'auto-schedule': '',
+      workdays: '[1,2,3,4,5]',
+      resources: JSON.stringify([
+        { id: 'r1', holidays: ['2026-03-09'] },
+        { id: 'r2', workdays: [1, 3, 5], shifts: [{ start: '09:00', end: '18:00' }] },
+      ]),
+      tasks: JSON.stringify([
+        { id: 'd', name: 'D', start: '2026-03-02', end: '2026-03-06' },
+        {
+          id: 't',
+          name: 'T',
+          start: '2026-03-01',
+          end: '2026-03-02',
+          resources: ['r1', 'r2'],
+          dependencies: [{ id: 'd' }],
+        },
+      ]),
+    })
+    // 03-09 周一被 r1 假期排除；03-10 周二不在 r2 的 [1,3,5]；落到 03-11 周三
+    expect(taskOf(el, 't').start).toBe('2026-03-11')
+    expect(el.tasks.find((task) => task.id === 't')!.resources).toEqual(['r1', 'r2'])
+  })
+
   it('前推落周六 → 吸附到周一（对照组：无 workdays 落在周六不吸附）', () => {
     const plain = mount({ 'auto-schedule': '', tasks: depPair })
     expect(taskOf(plain, 't').start, '对照：无 workdays → 落在周六').toBe('2026-03-07')

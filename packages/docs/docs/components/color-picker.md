@@ -225,6 +225,16 @@ onMounted(() => {
 | --- | --- | --- | --- |
 | `value` | 当前值：颜色字符串（读受控 `value` 属性） | `string` | — |
 
+#### 方法
+
+| 方法 | 签名 | 说明 |
+| --- | --- | --- |
+| `refreshControls` | `refreshControls(): void` | 宿主能力面：designer 活动 stop 变化后重绘核心控件（RGB/hex/clear 等） |
+| `commitColor` | `commitColor(rgba: RGBA): void` | 宿主能力面：designer 的 sv/hue/stop 拖拽统一提交入口（单色提交 / 渐变改写活动 stop） |
+| `setColorValue` | `setColorValue(color: RGBA): void` | 宿主能力面：记录当前单色编辑色快照（designer 渐变编辑后同步，保持模式切换一致） |
+| `colorValue` | `colorValue(): RGBA` | 宿主能力面：当前单色编辑色（designer 非渐变时 sv/hue 基准） |
+| `translateText` | `translateText(key: string, params?: Record<string, string \| number>): string` | 宿主能力面：翻译内置文案（就近 config-provider / locale；与 table 能力同构） |
+
 #### 事件
 
 | 事件 | 说明 |

@@ -290,6 +290,14 @@ The container provides the imperative methods `expandAll()` / `collapseAll()`. I
 | `icon-placement` | Expand icon placement: `start` (left of title) / `end` (default, right); overridable per item | `string` | `end` |
 | `variant` | Variant: `outlined` (default, bordered rounded container) / `borderless` (ghost, no border) | — | — |
 
+#### Methods
+
+| Method | Signature | Description |
+| --- | --- | --- |
+| `expandAll` | `expandAll(): void` | 展开全部可用面板（跳过 disabled）；手风琴语义下只展开第一项。命令式方法，不触发 before-collapse |
+| `collapseAll` | `collapseAll(): void` | 收起全部面板。命令式方法，不受 no-collapse 强锁限制（锁只约束头部点击） |
+| `requestSync` | `requestSync(): void` | item 升级晚于容器（define 顺序窗口）时由 item 连接后微任务回调：重同步 roving/disabled 态 |
+
 #### Events
 
 | Event | Description |
@@ -319,6 +327,14 @@ The container provides the imperative methods `expandAll()` / `collapseAll()`. I
 | `no-collapse` | Lock the expanded state: clicking itself does not collapse (other panels unaffected) | — | — |
 | `open` | Whether it is expanded (managed by the container) | `boolean` | — |
 | `summary` | Collapsed-state summary: shown at the header tail while the panel is collapsed (report the inner value without expanding, e.g. "12px 4px"), hidden when expanded; single line with ellipsis truncation; carries no heading semantics | `string` | — |
+
+#### Methods
+
+| Method | Signature | Description |
+| --- | --- | --- |
+| `setRoving` | `setRoving(active: boolean): void` | 容器 roving tabindex / 键盘移动用：头 button 是否可 Tab 聚焦 |
+| `focusHead` | `focusHead(): void` | 容器 roving 键盘移动用：聚焦头 button |
+| `isDisabled` | `isDisabled(): boolean` | 生效禁用态（显式 disabled 属性；config-provider 注入的全局禁用同样生效） |
 
 #### Slots
 

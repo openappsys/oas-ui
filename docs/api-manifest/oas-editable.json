@@ -87,6 +87,7 @@
       "api": true
     }
   ],
+  "methods": [],
   "events": [
     {
       "name": "oas-editing",

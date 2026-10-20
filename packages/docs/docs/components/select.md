@@ -752,6 +752,12 @@ onMounted(() => {
 | --- | --- | --- | --- |
 | `value` | 当前值：单选取选中值字符串，`multiple` 时取选中值数组（等价读 `value` 属性） | `string \| string[]` | — |
 
+#### 方法
+
+| 方法 | 签名 | 说明 |
+| --- | --- | --- |
+| `focus` | `focus(options?: FocusOptions): void` | label 点击聚焦委托：把焦点交给 shadow 内 trigger（配合 oas-form-item 的 label 点击代理） |
+
 #### 事件
 
 | 事件 | 说明 |

@@ -295,6 +295,15 @@ onMounted(async () => {
 | `virtual-y` | 虚拟锚点 y（视口坐标，px） | — | — |
 | `width` | 面板宽度：数字（px）/ `"trigger"`（与触发元素同宽）/ 任意 CSS 值；默认 min-width 200px | `string` | — |
 
+#### 方法
+
+| 方法 | 签名 | 说明 |
+| --- | --- | --- |
+| `show` | `show(): void` | 打开气泡（等价 open 属性；oas-open-change reason='api'） |
+| `hide` | `hide(): void` | 关闭气泡（等价移除 open；oas-open-change reason='api'） |
+| `restoreFocus` | `restoreFocus(): void` | 关闭后焦点还原到触发元素（恒定行为；virtual 模式无锚点跳过）。 |
+| `requestClose` | `requestClose(reason: OpenChangeReason): void` | 关闭请求：记录来源 → 移除 open 属性（公开供模块级 Esc 栈调用；非文档化 API） |
+
 #### 事件
 
 | 事件 | 说明 |
@@ -324,13 +333,5 @@ onMounted(async () => {
 | `--oas-popconfirm-arrow-height` | `12px` |
 | `--oas-popconfirm-arrow-radius` | `0` |
 | `--oas-popconfirm-arrow-width` | `12px` |
-
-### 方法
-
-| 方法 | 说明 |
-| --- | --- |
-| `show()` | 打开气泡（等价 `open` 属性，`oas-open-change` 的 `reason` 为 `api`） |
-| `hide()` | 关闭气泡（等价移除 `open`，`oas-open-change` 的 `reason` 为 `api`） |
-| `restoreFocus()` | 焦点还原到触发元素 |
 
 面板 `role="alertdialog"`；打开时焦点移入气泡（确定按钮优先），关闭后焦点回到触发元素；trigger 同步 `aria-expanded` / `aria-controls`；Esc 关闭最顶层气泡（嵌套场景逐层关闭）。

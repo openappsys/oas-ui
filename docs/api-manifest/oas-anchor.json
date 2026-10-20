@@ -120,6 +120,13 @@
       "type": "((activeHref: string) => string) | null"
     }
   ],
+  "methods": [
+    {
+      "name": "scrollTo",
+      "signature": "scrollTo(x?: string | ScrollToOptions | number, y?: number): void",
+      "description": "程序化定位（exposes scrollTo 语义）；滚动触发的高亮联动/事件由 scroll spy 自然接管。"
+    }
+  ],
   "events": [
     {
       "name": "oas-click",

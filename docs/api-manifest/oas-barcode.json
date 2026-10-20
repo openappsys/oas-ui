@@ -72,6 +72,13 @@
     }
   ],
   "props": [],
+  "methods": [
+    {
+      "name": "download",
+      "signature": "download(filename: unknown): Promise<void>",
+      "description": "下载当前条码为 PNG（离屏 rasterize：SVG-only 渲染架构不引入常驻 canvas）。"
+    }
+  ],
   "events": [
     {
       "name": "oas-invalid",

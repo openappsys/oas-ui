@@ -33,6 +33,23 @@
     }
   ],
   "props": [],
+  "methods": [
+    {
+      "name": "expandAll",
+      "signature": "expandAll(): void",
+      "description": "展开全部可用面板（跳过 disabled）；手风琴语义下只展开第一项。命令式方法，不触发 before-collapse"
+    },
+    {
+      "name": "collapseAll",
+      "signature": "collapseAll(): void",
+      "description": "收起全部面板。命令式方法，不受 no-collapse 强锁限制（锁只约束头部点击）"
+    },
+    {
+      "name": "requestSync",
+      "signature": "requestSync(): void",
+      "description": "item 升级晚于容器（define 顺序窗口）时由 item 连接后微任务回调：重同步 roving/disabled 态"
+    }
+  ],
   "events": [
     {
       "name": "oas-change",

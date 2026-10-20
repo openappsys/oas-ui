@@ -134,6 +134,13 @@ onMounted(() => {
 | --- | --- | --- | --- |
 | `value` | 当前值：色块颜色标识（即 `color` 属性） | `string` | — |
 
+#### 方法
+
+| 方法 | 签名 | 说明 |
+| --- | --- | --- |
+| `setGroupRole` | `setGroupRole(role: 'radio' \| 'checkbox' \| null): void` | 组语义切换挂点（oas-swatch-group 驱动：button→radio/checkbox + aria-checked） |
+| `syncSelected` | `syncSelected(selected: boolean): void` | 组同步选中态（含 ARIA 同步） |
+
 #### 事件
 
 | 事件 | 说明 |

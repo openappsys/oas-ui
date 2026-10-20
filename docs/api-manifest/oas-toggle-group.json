@@ -86,6 +86,7 @@
       "default": "[]"
     }
   ],
+  "methods": [],
   "events": [
     {
       "name": "oas-exceed-limit",

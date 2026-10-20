@@ -101,6 +101,10 @@ export const zhCN = {
   'steps.next': '下一步',
   'steps.optional': '可选',
   // questionnaire（多步问答）
+  'promptInput.placeholder': '输入消息…',
+  'promptInput.send': '发送',
+  'promptInput.stop': '停止',
+  'promptInput.suggestions': '建议',
   'questionnaire.prev': '上一步',
   'questionnaire.next': '下一步',
   'questionnaire.submit': '完成',

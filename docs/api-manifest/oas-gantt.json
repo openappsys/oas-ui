@@ -59,6 +59,12 @@
       "observed": true
     },
     {
+      "name": "resources",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
       "name": "first-day-of-week",
       "type": "string",
       "default": "",
@@ -195,6 +201,98 @@
       "name": "selection",
       "type": "string[]",
       "api": true
+    }
+  ],
+  "methods": [
+    {
+      "name": "updateTask",
+      "signature": "updateTask(id: string, patch: Partial<GanttTask>): boolean",
+      "description": "按 id 单条增量更新（浅合并 patch 后走 sanitize 清洗；找不到或非法 patch 返回 false）"
+    },
+    {
+      "name": "scrollToTask",
+      "signature": "scrollToTask(id: string): void",
+      "description": "滚动到指定任务行（虚拟滚动下委托内部视口，目标行垂直居中）；找不到为空操作。"
+    },
+    {
+      "name": "scrollToDate",
+      "signature": "scrollToDate(date: string): void",
+      "description": "滚动到指定日期（水平居中）；非法日期忽略。RTL 走真实浏览器 scrollLeft 负值模型"
+    },
+    {
+      "name": "scrollToToday",
+      "signature": "scrollToToday(): void",
+      "description": "滚动到今天"
+    },
+    {
+      "name": "undo",
+      "signature": "undo(): boolean",
+      "description": "撤销最近一次任务数据提交；返回是否实际撤销"
+    },
+    {
+      "name": "redo",
+      "signature": "redo(): boolean",
+      "description": "重做最近一次撤销；返回是否实际重做"
+    },
+    {
+      "name": "clearHistory",
+      "signature": "clearHistory(): void",
+      "description": "清空撤销/重做历史（不改变当前任务）"
+    },
+    {
+      "name": "removeTasks",
+      "signature": "removeTasks(ids: string[]): void",
+      "description": "批量删除任务（连同其后代）；找不到即忽略"
+    },
+    {
+      "name": "addTask",
+      "signature": "addTask(task: Partial<GanttTask>, opts: { parent?: string | null; before?: string; after?: string }): string",
+      "description": "新增任务（命令式创作通道）：返回新任务 id；非法输入返回 ''（零改动、零事件）。"
+    },
+    {
+      "name": "moveTask",
+      "signature": "moveTask(id: string, opts: { parent?: string | null; index?: number }): boolean",
+      "description": "移动任务到指定父级（opts.parent 省略保持原父级、null 移为根级）下的第 index 位"
+    },
+    {
+      "name": "duplicateTask",
+      "signature": "duplicateTask(id: string, opts: { id?: string; name?: string; parent?: string | null }): string | null",
+      "description": "复制任务及其全部后代（深拷贝、各自新 id，父指针映射到新 id），紧跟原子树之后插入，返回新根 id；"
+    },
+    {
+      "name": "addDependency",
+      "signature": "addDependency(taskId: string, dep: { id: string; type?: 'fs' | 'ss' | 'ff' | 'sf'; lag?: number }): boolean",
+      "description": "新增依赖（后继 taskId 依赖 dep.id）：type 缺省 fs；lag（天，可负）可选，缺省不写（等价 0）。"
+    },
+    {
+      "name": "removeDependency",
+      "signature": "removeDependency(taskId: string, dep: { id: string; type?: 'fs' | 'ss' | 'ff' | 'sf' }): boolean",
+      "description": "删除依赖：dep.type 给出只删该 (id,type)；未给出删该 id 的全部类型。找不到返回 false。"
+    },
+    {
+      "name": "updateDependency",
+      "signature": "updateDependency(taskId: string, from: { id: string; type?: 'fs' | 'ss' | 'ff' | 'sf'; lag?: number }, to: { id: string; type?: 'fs' | 'ss' | 'ff' | 'sf'; lag?: number }): boolean",
+      "description": "改写依赖：from 找不到 / to.id 不存在或指向自身 / 无实际变化（含 lag）→ false。"
+    },
+    {
+      "name": "updateTasks",
+      "signature": "updateTasks(patches: Array<{ id: string } & Partial<GanttTask>>): number",
+      "description": "批量浅合并（逐条：id 不存在跳过；end 给非空且解析失败跳过该条；其余走 sanitize 单条清洗，"
+    },
+    {
+      "name": "zoomIn",
+      "signature": "zoomIn(): void",
+      "description": "向更细一档步进（写 scale 属性，既有回调派发 oas-scale-change）；最细档 no-op"
+    },
+    {
+      "name": "zoomOut",
+      "signature": "zoomOut(): void",
+      "description": "向更粗一档步进；最粗档 no-op"
+    },
+    {
+      "name": "fit",
+      "signature": "fit(): void",
+      "description": "缩放以容纳全部任务：取**最细且**能满足「跨度按该档单位折算的列数 × 该档最小列宽 ≤ 可用宽」的档"
     }
   ],
   "events": [

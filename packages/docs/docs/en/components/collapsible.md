@@ -143,6 +143,12 @@ When the component is not upgraded (no JS), the light DOM content renders as pla
 | `header` | Trigger text (rendered inside the trigger button; rich content via slot="header", slot wins) | `string` | — |
 | `open` | Open state (controlled switch): attribute absent = uncontrolled self-managed (seeded by default-open on the first frame); attribute present = controlled (any value other than "false" is open, "false" is collapsed), clicks flip, write the attribute back and emit (optimistic update) | — | — |
 
+#### Methods
+
+| Method | Signature | Description |
+| --- | --- | --- |
+| `isDisabled` | `isDisabled(): boolean` | 生效禁用态（显式 disabled 属性；config-provider 注入的全局禁用同样生效） |
+
 #### Events
 
 | Event | Description |

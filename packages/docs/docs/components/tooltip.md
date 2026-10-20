@@ -781,6 +781,13 @@ onMounted(() => {
 | `virtual-y` | 虚拟锚点视口 Y 坐标（px，如鼠标 `clientY`），与 `virtual-x` 同时设置时按坐标定位 | — | — |
 | `width` | 浮层宽度：数字（px）/ `"trigger"`（与触发元素同宽）/ 任意 CSS 值；仍受 `--oas-tooltip-max-width`（默认 240px）封顶 | `string` | — |
 
+#### 方法
+
+| 方法 | 签名 | 说明 |
+| --- | --- | --- |
+| `setOpen` | `setOpen(open: boolean, source: unknown, reason: unknown): void` | 触发入口。虚拟模式（virtual）不绑定宿主元素，open 完全受外部控制， |
+| `restoreFocus` | `restoreFocus(): void` | Esc 关闭后焦点还原到触发元素（公开：模块级 Esc 处理器可调用）。虚拟模式跳过 |
+
 #### 事件
 
 | 事件 | 说明 |

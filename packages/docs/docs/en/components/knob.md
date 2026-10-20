@@ -242,6 +242,14 @@ onMounted(() => {
 | `formatValue` | Value formatter: `el.formatValue = (value) => string`, output feeds both the show-value text and `aria-valuetext`; higher priority than the `format` attribute and `unit` suffix; set null to clear | `((value: number) => string \| number \| null \| undefined) \| null` | — |
 | `value` | Current value: reads back the clamped + snapped number (the live dragging value mid-drag); writing is controlled-assign-immediate (writes the attribute and force-syncs, no events) | `number` | — |
 
+#### Methods
+
+| Method | Signature | Description |
+| --- | --- | --- |
+| `reset` | `reset(): void` | 复位到默认值（default-value 缺省 min），派发 oas-reset |
+| `stepUp` | `stepUp(): void` | 按 step 步进一格（等价方向键） |
+| `stepDown` | `stepDown(): void` | 按 step 回退一格（等价方向键） |
+
 #### Events
 
 | Event | Description |

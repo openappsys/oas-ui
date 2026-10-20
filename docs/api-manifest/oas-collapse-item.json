@@ -54,6 +54,23 @@
     }
   ],
   "props": [],
+  "methods": [
+    {
+      "name": "setRoving",
+      "signature": "setRoving(active: boolean): void",
+      "description": "容器 roving tabindex / 键盘移动用：头 button 是否可 Tab 聚焦"
+    },
+    {
+      "name": "focusHead",
+      "signature": "focusHead(): void",
+      "description": "容器 roving 键盘移动用：聚焦头 button"
+    },
+    {
+      "name": "isDisabled",
+      "signature": "isDisabled(): boolean",
+      "description": "生效禁用态（显式 disabled 属性；config-provider 注入的全局禁用同样生效）"
+    }
+  ],
   "events": [],
   "slots": [
     {

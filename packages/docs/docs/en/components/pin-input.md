@@ -322,6 +322,13 @@ onMounted(() => {
 | --- | --- | --- | --- |
 | `value` | Current value: concatenated string of all cell characters; the property and the `value` attribute share one channel (the setter writes back the attribute and attribute changes sync to all cells), so it is reflected as an attribute | `string` | — |
 
+#### Methods
+
+| Method | Signature | Description |
+| --- | --- | --- |
+| `focus` | `focus(indexOrOptions?: number \| FocusOptions): void` | 组件级聚焦：`focus()` 无参聚焦首个空格（全部填满时聚焦末格）；`focus(index)` 聚焦指定格 |
+| `blur` | `blur(): void` | 使当前活动格失焦 |
+
 #### Events
 
 | Event | Description |

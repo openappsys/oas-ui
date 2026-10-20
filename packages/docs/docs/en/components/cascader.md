@@ -402,6 +402,12 @@ On touch screens (coarse pointer) or narrow viewports (<768px), the multi-level 
 | --- | --- | --- | --- |
 | `value` | Current value: the selected path array, or an array of selected paths when `multiple` | `string[] \| string[][] \| null` | — |
 
+#### Methods
+
+| Method | Signature | Description |
+| --- | --- | --- |
+| `focus` | `focus(options?: FocusOptions): void` | label 点击聚焦委托：把焦点交给 shadow 内 trigger（配合 oas-form-item 的 label 点击代理） |
+
 #### Events
 
 | Event | Description |

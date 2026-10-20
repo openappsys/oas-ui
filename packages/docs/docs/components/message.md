@@ -243,23 +243,6 @@ onMounted(async () => {
 
 ## API
 
-### 方法
-
-| 方法                                  | 说明                       |
-| ------------------------------------- | -------------------------- |
-| `message.info(content, options?)` | 信息提示，返回 `{ close, pause, resume }` |
-| `message.success(content, options?)` | 成功提示 |
-| `message.warning(content, options?)` | 警告提示 |
-| `message.error(content, options?)` | 错误提示 |
-| `message.question(content, options?)` | 疑问提示（问号图标） |
-| `message.loading(content, options?)` | 加载提示（默认不自动关、不可关） |
-| `message.show(type, content, options?)` | 通用入口：内置类型或 `registerType` 注册的自定义类型 |
-| `message.update(key, { content, type?, duration? })` | 更新已存在消息，key 不存在则新建 |
-| `message.destroy(key)` | 关闭指定 key 的消息 |
-| `message.promise(promise, { loading, success, error })` | promise 链：loading → success/error |
-| `message.registerType(name, { icon?, color?, closable? })` | 注册自定义消息类型 |
-| `destroyAllMessage()` | 清空全部消息 |
-
 ### oas-message
 
 #### 属性
@@ -279,6 +262,15 @@ onMounted(async () => {
 | `show-icon` | 是否显示类型图标（默认 true；false 纯文字） | `string` | `true` |
 | `show-progress` | 显示倒计时进度条（时长同步） | `boolean` | — |
 | `type` | 消息类型：`info`/`success`/`warning`/`error`/`loading`/`question` | `string` | `info` |
+
+#### 方法
+
+| 方法 | 签名 | 说明 |
+| --- | --- | --- |
+| `refresh` | `refresh(content: MessageContent, type?: MessageType, duration?: number, count?: number): void` | 命令式层刷新入口：更新内容/类型/时长/合并计数并重置自动关闭计时。 |
+| `close` | `close(source: MessageCloseSource): void` | 关闭：派发 oas-close（detail 携带 key 与来源）后出场动画移除（减动效时立即移除） |
+| `pause` | `pause(): void` | 暂停自动关闭计时（剩余时长记账；无计时器时为空操作） |
+| `resume` | `resume(): void` | 恢复自动关闭计时（剩余时长续走；已过期则立即关闭） |
 
 #### 事件
 

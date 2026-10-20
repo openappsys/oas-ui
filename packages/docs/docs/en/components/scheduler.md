@@ -34,10 +34,10 @@ Week/day views show a time axis (`start-hour` / `end-hour`, default 8–20): eve
 Monthly/weekly rules may also use `byMonth` (1-12), `byMonthDay` (1-31), `bySetPos` (for example `-1`), `byDay` (weekly, 0=Sunday…6=Saturday), and `exDates` (excluded dates, `YYYY-MM-DD`). Local occurrence filtering supports `byMonth` / `byMonthDay` / `byDay` / `exDates`, plus monthly `byMonthDay` + `bySetPos`; other `bySetPos` cases are emitted to ICS `RRULE` as-is.
 
 <DemoBlock title="Multi-day all-day bars (continuous in week view; drag to shift as a whole)">
-  <oas-scheduler view="week" page-show-date="2026-08-10" events='[{"date":"2026-08-10","endDate":"2026-08-12","title":"Design freeze"},{"date":"2026-08-13","endDate":"2026-08-14","title":"Regression window","color":"#059669"}]'></oas-scheduler>
+  <oas-scheduler view="week" page-show-date="2026-08-10" events='[{"date":"2026-08-10","endDate":"2026-08-12","title":"Design freeze"},{"date":"2026-08-13","endDate":"2026-08-14","title":"Regression window","color":"#059669"},{"date":"2026-08-12","endDate":"2026-08-13","title":"Night shift","start":"22:00","end":"02:00"}]'></oas-scheduler>
 </DemoBlock>
 
-In week view, an all-day event with `endDate` renders as one continuous bar in the all-day band (instead of one chip per day). Drag the bar horizontally to shift `date` / `endDate` by whole columns; the component dispatches `oas-events-change`. Timed multi-day events are still split per day to keep the time axis aligned.
+In week view, an all-day event with `endDate` renders as one continuous bar in the all-day band (instead of one chip per day). Drag the bar horizontally to shift `date` / `endDate` by whole columns; the component dispatches `oas-events-change`. Timed multi-day events also render as one continuous bar in the top multi-day band, with a `start–end` time label; the day time grid no longer duplicates per-day blocks.
 
 <DemoBlock title="Reminders (remind minutes; oas-remind when due)">
   <oas-scheduler id="scheduler-remind" page-show-date="2026-08-10"></oas-scheduler>
@@ -209,6 +209,36 @@ The resource views (`resource` / `resource-week`) support server-side slices: `w
 ></oas-scheduler>
 ```
 
+### Date-window recipe (host side)
+
+The component currently only provides resource-row windowing; date-window fetching is the host's job. Recommended: derive the visible range from `page-show-date` + `view`, abort in-flight requests on view/page changes, and feed only that range's events.
+
+```ts
+const el = document.querySelector('oas-scheduler')
+let ac: AbortController | null = null
+
+async function loadWindow() {
+  ac?.abort()
+  ac = new AbortController()
+  const anchor = el.getAttribute('page-show-date') // YYYY-MM-DD
+  const view = el.getAttribute('view') ?? 'month'
+  const days = view === 'day' ? 1 : view === 'week' || view === 'resource-week' ? 7 : view === 'agenda' ? 28 : 31
+  const start = new Date(`${anchor}T00:00:00`)
+  const end = new Date(start.getFullYear(), start.getMonth(), start.getDate() + days - 1)
+  const iso = (d: Date) => d.toISOString().slice(0, 10)
+  const res = await fetch(`/api/events?start=${iso(start)}&end=${iso(end)}`, { signal: ac.signal })
+  el.events = await res.json()
+}
+
+el.addEventListener('oas-view-change', loadWindow)
+document.querySelector('[data-prev]')?.addEventListener('click', () => {
+  el.setAttribute('page-show-date', prevAnchor(el.getAttribute('page-show-date')!))
+  loadWindow()
+})
+```
+
+> If the host expands `repeat`, strip it from base events and give every occurrence a unique id. Keep a small buffer around window boundaries to avoid a blank frame when paging.
+
 ## ICS Export
 
 <DemoBlock title="Download current events as .ics (UTC + Asia/Shanghai)">
@@ -259,6 +289,16 @@ el.downloadIcs('my.ics', { timeMode: 'utc', timezone: 'Asia/Shanghai' })
 | --- | --- | --- | --- |
 | `events` | Schedule events (`SchedulerEvent[]`): `el.events` reads (copy incl. auto ids); `el.events = [...]` writes (syncs the events attribute + re-renders + dispatches oas-events-change) | `SchedulerEvent[]` | `[]` |
 | `resources` | Resources (`SchedulerResource[]`): `el.resources` reads (copy); `el.resources = [...]` writes (syncs the resources attribute + re-renders) | `SchedulerResource[]` | `[]` |
+
+#### Methods
+
+| Method | Signature | Description |
+| --- | --- | --- |
+| `exportIcs` | `exportIcs(options?: IcsExportOptions): string` | 导出当前事件的 ICS 字符串（纯函数 eventsToIcs 的实例便捷通道；不触发重渲染） |
+| `downloadIcs` | `downloadIcs(filename: unknown, options?: IcsExportOptions): string` | 下载当前事件的 ICS 文件（浏览器环境；返回生成的 ICS 字符串便于测试/宿主复用） |
+| `addEvent` | `addEvent(ev: SchedulerEvent): string` | 新增事件：返回分配到的 id |
+| `updateEvent` | `updateEvent(id: string, patch: Partial<SchedulerEvent>): boolean` | 按 id 更新事件（浅合并 patch 后走 sanitize 清洗；找不到返回 false） |
+| `removeEvent` | `removeEvent(id: string): boolean` | 按 id 删除事件；找不到返回 false |
 
 #### Events
 

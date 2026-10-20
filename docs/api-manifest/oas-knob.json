@@ -140,6 +140,23 @@
       "api": true
     }
   ],
+  "methods": [
+    {
+      "name": "reset",
+      "signature": "reset(): void",
+      "description": "复位到默认值（default-value 缺省 min），派发 oas-reset"
+    },
+    {
+      "name": "stepUp",
+      "signature": "stepUp(): void",
+      "description": "按 step 步进一格（等价方向键）"
+    },
+    {
+      "name": "stepDown",
+      "signature": "stepDown(): void",
+      "description": "按 step 回退一格（等价方向键）"
+    }
+  ],
   "events": [
     {
       "name": "oas-drag-start",

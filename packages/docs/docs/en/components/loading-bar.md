@@ -182,23 +182,6 @@ onMounted(async () => {
 
 ## API
 
-### Methods
-
-| Method | Description |
-| --- | --- |
-| `loadingBar.start(options?)` | Start loading; returns a `{ el }` handle. Concurrent `start` calls are counted. `options`: `speed` (tick ms), `to` (container: element / selector / function), `position` (`top`/`bottom`), `reverse` |
-| `loadingBar.finish(target?)` | Finish one session; only the last one closes the bar |
-| `loadingBar.error(target?)` | Close with an error; without a prior `start` it still closes in the error state (no flicker) |
-| `loadingBar.increment(step?, target?)` | Advance the progress (default random 0–10, clamped 0–100) |
-| `loadingBar.set(percent, target?)` | Set the progress exactly (clamped 0–100) |
-| `loadingBar.decrement(step?, target?)` | Move the progress back (default random 0–10, clamped 0–100) |
-| `loadingBar.active` | Whether the default host has an active session |
-| `loadingBar.isActive(target?)` | Whether the given container has an active session |
-| `loadingBar.getEl(target?)` | Get the bar element (attach lifecycle listeners); `null` if not started |
-| `destroyAllLoadingBar()` | Remove all loading bars (across containers) |
-
-`target` is a container element / CSS selector / function returning an element; it defaults to the nearest `oas-app` host or `body`.
-
 ### oas-loading-bar
 
 #### Attributes
@@ -210,6 +193,17 @@ onMounted(async () => {
 | `reverse` | Reverse direction (RTL progress flows right to left) | — | — |
 | `speed` | Base advance speed (ms, default 200); start(speed) overrides | `string` | `200` |
 | `status` | Current status (activity query): the component only writes `error` at the error terminal state and removes the attribute otherwise (never writes `loading`/`finish`) | `string` | — |
+
+#### Methods
+
+| Method | Signature | Description |
+| --- | --- | --- |
+| `start` | `start(speed?: number): void` | 开始一个加载会话：并发计数 +1；首个会话触发推进与 oas-start |
+| `finish` | `finish(): void` | 完成一个会话：并发计数 -1；仅最后一个 finish 触发收尾 |
+| `error` | `error(): void` | 失败收尾：并发计数 -1；批次内任一 error 决定最终终态。 |
+| `increment` | `increment(step?: number): void` | 手动推进 step（默认随机 0–10）；夹取 0–100 |
+| `set` | `set(percent: number): void` | 精确设置进度（0–100 夹取） |
+| `decrement` | `decrement(step?: number): void` | 手动回退 step（默认随机 0–10）；夹取 0–100 |
 
 #### Events
 
@@ -227,5 +221,7 @@ onMounted(async () => {
 | `--oas-loading-bar-error-color` | `var(--oas-color-danger)` |
 | `--oas-loading-bar-height` | `3px` |
 | `--oas-loading-bar-z-index` | `calc(var(--oas-z-index-base, 0) + var(--oas-z-message, 1060))` |
+
+`target` is a container element / CSS selector / function returning an element; it defaults to the nearest `oas-app` host or `body`.
 
 The bar uses `role="progressbar"` with progress synced via `aria-valuenow` and the active state via `aria-busy`.

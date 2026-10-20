@@ -426,6 +426,13 @@ onMounted(async () => {
 | `width` | 抽屉宽度（px 或百分比），优先级高于 `size` | — | — |
 | `z-index` | 显式层级基准：叠加在 `--oas-z-index-base` 之上（面板比遮罩高 1）；缺省走 overlay 档位 `--oas-z-overlay`，嵌套打开时随栈深递增 | — | — |
 
+#### 方法
+
+| 方法 | 签名 | 说明 |
+| --- | --- | --- |
+| `close` | `close(): void` | 编程关闭（命令式 API handle / 宿主主动）：绕过 before-close 拦截，立即开始关闭动画 |
+| `applyZ` | `applyZ(): void` | z-index 计算：显式 z-index 属性覆盖默认 overlay 档位；嵌套层级叠加栈深偏移 |
+
 #### 事件
 
 | 事件 | 说明 |

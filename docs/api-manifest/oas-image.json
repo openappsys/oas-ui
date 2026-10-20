@@ -81,6 +81,18 @@
     }
   ],
   "props": [],
+  "methods": [
+    {
+      "name": "previewGoTo",
+      "signature": "previewGoTo(index: number): void",
+      "description": "图集跳转到第 index 张（预览打开时生效；未打开/无图集不做事，越界收敛）。"
+    },
+    {
+      "name": "openPreview",
+      "signature": "openPreview(index?: number): void",
+      "description": "打开预览：图集模式可指定起始索引（缺省取主图 src 在列表中的位置，未命中从 0 开始）"
+    }
+  ],
   "events": [
     {
       "name": "oas-load",

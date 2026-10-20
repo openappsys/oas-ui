@@ -376,18 +376,6 @@ onMounted(() => {
 
 ## API
 
-### Methods
-
-| Method | Description |
-| --- | --- |
-| `next()` | Next step: validates the current step's `oas-form` first (skipped when `validation="false"`), advances only on success; re-entrant calls while async validation is pending are rejected. Returns `Promise<boolean>` |
-| `prev()` | Previous step: never validates (going back is never blocked). Returns `boolean` |
-| `goto(index)` | Jump to any step without the gating; out-of-range indexes are clamped, hidden steps resolve forward. Returns `boolean` |
-| `validate()` | Validates every participating step (non-`hidden`, non-skipped; sequentially, emitting `oas-step-validate` per step), returns `Promise<boolean>` |
-| `submit()` | Submit: re-validates every participating step (including earlier ones), emits `oas-submit` (`detail.values` merged across participating steps only — `hidden` / skipped steps excluded) only when all pass. Returns `Promise<boolean>` |
-| `getValues()` | Merged values across participating steps (same set as validation): each participating step's `oas-form` current values deep-merged in step order (same shape as a single form's `submit()` `detail.values`; zero-interaction fields prefilled via the `value` attribute are included); read the inner `oas-form`s for the full data. Returns `Record<string, unknown>` |
-| `reset()` | Resets every step's form to its initial values, clears errors, sets `current` to 0; dispatches no events |
-
 ### oas-questionnaire
 
 #### Attributes
@@ -409,6 +397,19 @@ onMounted(() => {
 | `skip-text` | "Skip this step" button label (overrides the locale default) | — | — |
 | `steps` | Step data JSON `[{ key?, title, description?, optional?, hidden? }]`; invalid/empty falls back to `[]` | `QuestionnaireStep[] \| string` | `[]` |
 | `validation` | Per-step validation gating (on by default, `validation="false"` for pure navigation; `submit()` always re-validates regardless) | `string` | `true` |
+
+#### Methods
+
+| Method | Signature | Description |
+| --- | --- | --- |
+| `next` | `next(): Promise<boolean>` | 下一步：单步校验门控（当前步 oas-form 未过不放行；无 form / validation="false" 放行）。 |
+| `prev` | `prev(): boolean` | 上一步：不校验（对齐「回退不被校验挡住」惯例） |
+| `goto` | `goto(index: number): boolean` | 直跳任意步：不走单步门控（与 next() 语义分离）；越界夹取、hidden 步向后解析 |
+| `skipStep` | `skipStep(): boolean` | 跳过当前可选步：不校验直接前进（before-change 仍可拦截）。 |
+| `validate` | `validate(): Promise<boolean>` | 校验全部参与步（非 hidden 且未跳过，不提交）：每步派发 oas-step-validate，返回是否全部通过。 |
+| `submit` | `submit(): Promise<boolean>` | 提交：重校全部参与步（含早期步），全过才派发 oas-submit{values}（跨步汇总，仅参与步） |
+| `getValues` | `getValues(): Record<string, unknown>` | 跨步值汇总（参与步口径，与 validateAll 同判据）：各参与步（非 hidden 且未跳过）的 |
+| `reset` | `reset(): void` | 重置：全部步骤 form reset 回初始值（清错误态）、清值跟踪、清跳过记录、current 回 0。 |
 
 #### Events
 

@@ -2076,7 +2076,8 @@ export class OASScheduler extends OASElement {
         if (!seg) {
           // 跨日全天事件改由 band 上的连续长条统一渲染（不再逐日重复芯片）
           if (!ev.endDate) allDay.appendChild(this.renderChip(ev))
-        } else {
+        } else if (!(ev.start && ev.endDate && ev.endDate > ev.date)) {
+          // 跨日定时事件改由 band 连续条统一渲染，避免首日/末日重复块
           timed.push({ ev, s: seg.start, e: seg.end })
         }
       }
@@ -2139,7 +2140,7 @@ export class OASScheduler extends OASElement {
     const firstIso = toISODate(days[0]!)
     const lastIso = toISODate(days[days.length - 1]!)
     for (const ev of this._events) {
-      if (ev.start || !ev.endDate || ev.repeat) continue
+      if (!ev.endDate || ev.repeat) continue
       const start = ev.date < firstIso ? firstIso : ev.date
       const end = ev.endDate > lastIso ? lastIso : ev.endDate
       if (start > lastIso || end < firstIso) continue
@@ -2149,9 +2150,11 @@ export class OASScheduler extends OASElement {
       if (startIdx < 0 || endIdx <= startIdx) continue
       const bar = document.createElement('button')
       bar.type = 'button'
-      bar.className = 'band-span'
+      bar.className = ev.start ? 'band-span timed-span' : 'band-span'
       bar.dataset.id = ev.id
-      bar.textContent = ev.title
+      if (ev.start) bar.dataset.timed = ''
+      const timeText = ev.start ? `${ev.start}${ev.end ? `–${ev.end}` : ''}` : ''
+      bar.textContent = timeText ? `${timeText} ${ev.title}` : ev.title
       if (ev.color) bar.style.setProperty('--chip-color', ev.color)
       bar.style.insetInlineStart = `${(startIdx / days.length) * 100}%`
       bar.style.width = `${((endIdx - startIdx) / days.length) * 100}%`

@@ -165,6 +165,23 @@
       "type": "boolean"
     }
   ],
+  "methods": [
+    {
+      "name": "getModalCapability",
+      "signature": "getModalCapability(name: string): T | null",
+      "description": "按名取已注入能力 controller（命令式层委托点；未 import 对应能力返回 null）"
+    },
+    {
+      "name": "close",
+      "signature": "close(source: ModalCloseSource): void",
+      "description": "关闭请求（确定/取消/✕/遮罩/Esc/编程）：cancelable oas-before-close 拦截，"
+    },
+    {
+      "name": "applyZ",
+      "signature": "applyZ(): void",
+      "description": "z-index 计算：显式 z-index 属性覆盖默认 modal 档位（--oas-z-modal）；"
+    }
+  ],
   "events": [
     {
       "name": "oas-ok"

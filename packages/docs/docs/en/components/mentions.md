@@ -320,6 +320,12 @@ Programmatic read/write of the current value goes through the public `value` pro
 | --- | --- | --- | --- |
 | `value` | Current value: the full text including @mention tokens | `string` | — |
 
+#### Methods
+
+| Method | Signature | Description |
+| --- | --- | --- |
+| `focus` | `focus(options?: FocusOptions): void` | label 点击聚焦委托：把焦点交给 shadow 内主输入（配合 oas-form-item 的 label 点击代理） |
+
 #### Events
 
 | Event | Description |

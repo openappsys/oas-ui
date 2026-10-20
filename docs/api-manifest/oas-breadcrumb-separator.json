@@ -3,6 +3,7 @@
   "sourceFile": "packages/ui/src/navigation/breadcrumb/oas-breadcrumb-separator.ts",
   "attrs": [],
   "props": [],
+  "methods": [],
   "events": [],
   "slots": [
     {

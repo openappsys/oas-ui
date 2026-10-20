@@ -345,6 +345,16 @@ onMounted(async () => {
 | `title` | Title text (rendered into the visible title region; absorbed from the host on read so no native hover tooltip remains; pass an empty string to clear); use the "title" slot for rich content | `string` | — |
 | `type` | Notification type: `info`/`success`/`warning`/`error` | `string` | `info` |
 
+#### Methods
+
+| Method | Signature | Description |
+| --- | --- | --- |
+| `close` | `close(source: NotificationCloseSource): void` | 统一关闭出口：派发 oas-close（detail.source 标明来源）后移除。 |
+| `refresh` | `refresh(): void` | 命令式更新通道：刷新标题/描述/富内容/footer（title/description 非观察属性， |
+| `transition` | `transition(type: NotificationType, title: string \| Node, duration: unknown): void` | promise 链流转：切换类型并重置自动关闭计时器（loading → success/error 场景）。 |
+| `pause` | `pause(): void` | 悬停暂停：记录剩余时间并暂停进度动画（pause-on-hover 通道，外部也可调用） |
+| `resume` | `resume(): void` | 恢复：从剩余时间继续倒计时与进度动画 |
+
 #### Events
 
 | Event | Description |
@@ -370,18 +380,6 @@ onMounted(async () => {
 | `--oas-glass-ring` | — | `transparent` |
 | `--oas-notification-progress-color` | Countdown progress bar color | `var(--oas-color-primary)` |
 | `--oas-notification-width` | Card width (referenced internally by size levels) | `320px` |
-
-### Methods
-
-| Method | Description |
-| --- | --- |
-| `notification.info({ title, description?, content?, duration?, showProgress?, progressPosition?, scrollable?, position?, max?, offset?, container?, priority?, stackMode?, stackThreshold?, key?, onClose?, onClick?, closable?, pauseOnHover?, size?, icon?, closeIcon?, footer? })` | Info notification, returns `{ close }` |
-| `notification.success(...)` / `notification.warning(...)` / `notification.error(...)` | Success/warning/error notifications, same options |
-| `notification.loading(...)` | Loading state: spinner icon, no auto close, not manually closable |
-| `notification.promise(p, { loading, success, error })` | Promise chain: loading → success on resolve (auto closes in 4500ms) / error on reject |
-| `notification.update(key, { title?, description?, content?, duration?, type? })` | Update an existing notification (located by key); creates one if the key is unknown |
-| `notification.destroy(key)` | Close the notification with the given key; silent no-op if absent |
-| `destroyAllNotification()` | Clear all notifications (does not fire onClose) |
 
 - `position` covers four corners: `top-right` (default) / `top-left` / `bottom-right` / `bottom-left`; each corner owns an independent stack container.
 - `max` caps the stack size (default `0` = unlimited); the oldest is dropped first — oldest normal first, oldest high only when all are high; evictions also fire `onClose` (`source: 'evict'`).

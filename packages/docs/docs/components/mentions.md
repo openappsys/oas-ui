@@ -320,6 +320,12 @@ onMounted(() => {
 | --- | --- | --- | --- |
 | `value` | 当前值：含 @提及标记的完整文本 | `string` | — |
 
+#### 方法
+
+| 方法 | 签名 | 说明 |
+| --- | --- | --- |
+| `focus` | `focus(options?: FocusOptions): void` | label 点击聚焦委托：把焦点交给 shadow 内主输入（配合 oas-form-item 的 label 点击代理） |
+
 #### 事件
 
 | 事件 | 说明 |

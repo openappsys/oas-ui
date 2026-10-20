@@ -729,6 +729,12 @@ ARIA in windowed mode: rows report `aria-setsize = total` and `aria-posinset = a
 | `window-start` | Absolute row index (within the full dataset) of the first row in the slice (windowed mode) | `string` | `0` |
 | `windowed` | Server-side row-window mode (boolean, off by default): with total / window-start, data carries only the slice near the visible window (rendered by absolute row index); when the expected row window is not covered, oas-window-request is emitted for the host to refill. In windowed mode local grouping / drag reorder do not apply (the host owns them) | `boolean` | — |
 
+#### Methods
+
+| Method | Signature | Description |
+| --- | --- | --- |
+| `setData` | `setData(value: unknown[]): void` | 数据写入（property 通道）。公开类型保持 `unknown[]`（API 文档类型准确），运行时经 |
+
 #### Events
 
 | Event | Description |

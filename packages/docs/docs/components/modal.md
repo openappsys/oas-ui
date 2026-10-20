@@ -705,20 +705,6 @@ onMounted(async () => {
 
 ## API
 
-### 方法
-
-| 方法 | 说明 |
-| --- | --- |
-| `modal.confirm({ title?, content?, okText?, cancelText?, onOk?, onCancel? })` | 打开确认框（确定/取消双按钮），返回 `{ close }` |
-| `modal.info(options)` / `modal.success(options)` / `modal.warning(options)` / `modal.error(options)` | 语义确认框：对应图标 + 单「确定」按钮，返回 `{ close }` |
-| `modal.prompt({ title?, inputValue?, placeholder?, inputType?, validator?, onOk? })` | 输入框确认：结果 resolve `{ value, action }`，返回 Promise & `{ close, update }` |
-| `modal.options({ title?, content?, items?, type?, okText?, cancelText?, onOk? })` | 选项选择框（`type`：radio / checkbox / toggle）：结果 resolve `{ value, action }`（radio 单个字符串；checkbox/toggle 数组），返回 Promise & `{ close, update }` |
-| `destroyAllModal()` | 关闭并销毁全部命令式确认框（等各自关闭动画结束） |
-
-- 选项：`{ title?, content?, okText?, cancelText?, onOk?, onCancel? }`。`content` 为纯文本；`onOk` 返回 Promise 时确定按钮进入 loading（resolve 关闭、reject 保持打开可重试或取消）。
-- 返回 `{ close() }` 句柄：编程关闭当前实例，不触发 `onOk` / `onCancel`。
-- 挂载到最近 `oas-app` 容器（无则 `body`）；多实例可叠放；命令式实例在关闭动画结束（`oas-after-close`）后才卸载。
-
 ### oas-modal
 
 #### 属性
@@ -758,6 +744,14 @@ onMounted(async () => {
 | `width` | 对话框宽度（px 或百分比） | — | — |
 | `z-index` | 显式层级基准（叠加在 `--oas-z-index-base` 之上，对话框比遮罩高 1；缺省走 `--oas-z-modal` 档位） | — | — |
 
+#### 方法
+
+| 方法 | 签名 | 说明 |
+| --- | --- | --- |
+| `getModalCapability` | `getModalCapability(name: string): T \| null` | 按名取已注入能力 controller（命令式层委托点；未 import 对应能力返回 null） |
+| `close` | `close(source: ModalCloseSource): void` | 关闭请求（确定/取消/✕/遮罩/Esc/编程）：cancelable oas-before-close 拦截， |
+| `applyZ` | `applyZ(): void` | z-index 计算：显式 z-index 属性覆盖默认 modal 档位（--oas-z-modal）； |
+
 #### 事件
 
 | 事件 | 说明 |
@@ -796,5 +790,9 @@ onMounted(async () => {
 | `--oas-modal-max-height` | `90vh` |
 | `--oas-modal-origin-x` | `center` |
 | `--oas-modal-origin-y` | `center` |
+
+- 选项：`{ title?, content?, okText?, cancelText?, onOk?, onCancel? }`。`content` 为纯文本；`onOk` 返回 Promise 时确定按钮进入 loading（resolve 关闭、reject 保持打开可重试或取消）。
+- 返回 `{ close() }` 句柄：编程关闭当前实例，不触发 `onOk` / `onCancel`。
+- 挂载到最近 `oas-app` 容器（无则 `body`）；多实例可叠放；命令式实例在关闭动画结束（`oas-after-close`）后才卸载。
 
 `role="dialog"` + `aria-modal="true"`，打开时焦点移入「取消」按钮（`focus-ok` 时移入「确定」按钮），关闭后还原。

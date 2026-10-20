@@ -3,6 +3,7 @@
   "sourceFile": "packages/ui/src/layout/sidebar/oas-sidebar-divider.ts",
   "attrs": [],
   "props": [],
+  "methods": [],
   "events": [],
   "slots": [
     {

@@ -144,6 +144,18 @@
       "type": "boolean"
     }
   ],
+  "methods": [
+    {
+      "name": "close",
+      "signature": "close(): void",
+      "description": "编程关闭（命令式 API handle / 宿主主动）：绕过 before-close 拦截，立即开始关闭动画"
+    },
+    {
+      "name": "applyZ",
+      "signature": "applyZ(): void",
+      "description": "z-index 计算：显式 z-index 属性覆盖默认 overlay 档位；嵌套层级叠加栈深偏移"
+    }
+  ],
   "events": [
     {
       "name": "oas-ok"

@@ -13,6 +13,18 @@
     }
   ],
   "props": [],
+  "methods": [
+    {
+      "name": "openPreview",
+      "signature": "openPreview(index?: number): void",
+      "description": "打开共享预览：index 为图集起始索引；current 受控时以属性为准"
+    },
+    {
+      "name": "closePreview",
+      "signature": "closePreview(): void",
+      "description": "关闭共享预览（委托共享宿主）"
+    }
+  ],
   "events": [
     {
       "name": "oas-preview",

@@ -3,6 +3,7 @@
   "sourceFile": "packages/ui/src/navigation/menu/oas-menu-divider.ts",
   "attrs": [],
   "props": [],
+  "methods": [],
   "events": [],
   "slots": [
     {

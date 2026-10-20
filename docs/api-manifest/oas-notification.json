@@ -82,6 +82,33 @@
       "type": "Node | null"
     }
   ],
+  "methods": [
+    {
+      "name": "close",
+      "signature": "close(source: NotificationCloseSource): void",
+      "description": "统一关闭出口：派发 oas-close（detail.source 标明来源）后移除。"
+    },
+    {
+      "name": "refresh",
+      "signature": "refresh(): void",
+      "description": "命令式更新通道：刷新标题/描述/富内容/footer（title/description 非观察属性，"
+    },
+    {
+      "name": "transition",
+      "signature": "transition(type: NotificationType, title: string | Node, duration: unknown): void",
+      "description": "promise 链流转：切换类型并重置自动关闭计时器（loading → success/error 场景）。"
+    },
+    {
+      "name": "pause",
+      "signature": "pause(): void",
+      "description": "悬停暂停：记录剩余时间并暂停进度动画（pause-on-hover 通道，外部也可调用）"
+    },
+    {
+      "name": "resume",
+      "signature": "resume(): void",
+      "description": "恢复：从剩余时间继续倒计时与进度动画"
+    }
+  ],
   "events": [
     {
       "name": "oas-click"

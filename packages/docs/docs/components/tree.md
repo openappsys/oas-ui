@@ -671,6 +671,16 @@ windowed 的本地能力边界：**本地 `filter` 与顶部全选（`check-all`
 | --- | --- | --- | --- |
 | `load` | 懒加载函数（property 通道，`(node) => Promise<children>`） | `(payload: { key: string }) => void \| Promise<unknown>` | — |
 
+#### 方法
+
+| 方法 | 签名 | 说明 |
+| --- | --- | --- |
+| `expandAll` | `expandAll(): void` | 全部展开：展开所有已有 children 的节点（懒加载未加载节点不触发加载） |
+| `collapseAll` | `collapseAll(): void` | 全部收起 |
+| `expand` | `expand(keys: string[]): void` | 展开指定 key 集合 |
+| `collapse` | `collapse(keys: string[]): void` | 收起指定 key 集合（连同子树） |
+| `scrollTo` | `scrollTo(target?: string \| number \| ScrollToOptions, optionsOrY?: number \| { expand?: boolean }): void` | 滚动到节点。默认展开其祖先链后定位；options.expand=false 时不改展开状态（需节点本身可见）。 |
+
 #### 事件
 
 | 事件 | 说明 |

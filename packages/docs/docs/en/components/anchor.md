@@ -378,6 +378,12 @@ onMounted(() => {
 | `target-offset` | Click landing offset in px (avoids fixed headers); falls back to `offset` when unset; per-item `targetOffset` wins | `string` | — |
 | `variant` | Style variant: `default` (rail + moving ink) / `underline` (sliding underline) / `lineless` (no axis) / `block` (filled background) | `string` | `default` |
 
+#### Methods
+
+| Method | Signature | Description |
+| --- | --- | --- |
+| `scrollTo` | `scrollTo(x?: string \| ScrollToOptions \| number, y?: number): void` | 程序化定位（exposes scrollTo 语义）；滚动触发的高亮联动/事件由 scroll spy 自然接管。 |
+
 #### Events
 
 | Event | Description |

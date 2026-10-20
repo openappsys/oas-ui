@@ -1,0 +1,113 @@
+{
+  "className": "OASPromptInput",
+  "sourceFile": "packages/ui/src/conversation/prompt-input/oas-prompt-input.ts",
+  "attrs": [
+    {
+      "name": "value",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "placeholder",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "disabled",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "readonly",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "loading",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "maxlength",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "rows",
+      "type": "string",
+      "default": "1",
+      "observed": true
+    },
+    {
+      "name": "suggestions",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "submit-on-enter",
+      "type": "string",
+      "default": "true",
+      "observed": false
+    },
+    {
+      "name": "clear-on-submit",
+      "type": "string",
+      "default": "true",
+      "observed": false
+    }
+  ],
+  "props": [
+    {
+      "name": "value",
+      "type": "string",
+      "api": true
+    }
+  ],
+  "methods": [
+    {
+      "name": "submit",
+      "signature": "submit(): boolean",
+      "description": "提交当前文本；空值 / 禁用 / loading 返回 false"
+    },
+    {
+      "name": "stop",
+      "signature": "stop(): void",
+      "description": "停止生成（仅在 loading 时派发）"
+    },
+    {
+      "name": "focusInput",
+      "signature": "focusInput(): void",
+      "description": "聚焦输入框"
+    }
+  ],
+  "events": [
+    {
+      "name": "oas-suggestion-select",
+      "detail": "{ value: item.value, label: item.label } satisfies PromptInputSuggestionDetail"
+    },
+    {
+      "name": "oas-submit",
+      "detail": "{ value } satisfies PromptInputSubmitDetail"
+    },
+    {
+      "name": "oas-stop",
+      "detail": "{}"
+    }
+  ],
+  "slots": [
+    {
+      "name": "actions"
+    },
+    {
+      "name": "footer"
+    },
+    {
+      "name": "prefix"
+    }
+  ],
+  "cssVars": [],
+  "unresolved": []
+}

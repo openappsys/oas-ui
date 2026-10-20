@@ -104,6 +104,13 @@
       "type": "unknown[]"
     }
   ],
+  "methods": [
+    {
+      "name": "setData",
+      "signature": "setData(value: unknown[]): void",
+      "description": "数据写入（property 通道）。公开类型保持 `unknown[]`（API 文档类型准确），运行时经"
+    }
+  ],
   "events": [
     {
       "name": "oas-item-render",

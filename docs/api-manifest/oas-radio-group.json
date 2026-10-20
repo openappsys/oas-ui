@@ -53,6 +53,7 @@
       "type": "RadioOption[] | string"
     }
   ],
+  "methods": [],
   "events": [
     {
       "name": "oas-focus"

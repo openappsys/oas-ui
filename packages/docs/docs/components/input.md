@@ -531,6 +531,14 @@ onMounted(() => {
 | --- | --- | --- | --- |
 | `value` | 当前值：parser/mask 感知的提交值语义（`el.value` 读；`el.value = x` 写受控 `value` 并即时回写内部控件，不派发事件） | `string` | — |
 
+#### 方法
+
+| 方法 | 签名 | 说明 |
+| --- | --- | --- |
+| `focus` | `focus(options?: FocusOptions): void` | label 点击聚焦委托：把焦点交给 shadow 内主输入（配合 oas-form-item 的 label 点击代理） |
+| `blur` | `blur(): void` | 失焦委托：把 blur 交给 shadow 内主输入 |
+| `select` | `select(): void` | 选中输入框全部内容（委托原生 input.select） |
+
 #### 事件
 
 | 事件 | 说明 |

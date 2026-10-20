@@ -233,46 +233,6 @@ onMounted(async () => {
 
 ## API
 
-### Methods
-
-| Method | Description |
-| --- | --- |
-| `toast.info(options)` | Info toast, returns `{ close, update }` |
-| `toast.success(options)` | Success toast, returns `{ close, update }` |
-| `toast.warning(options)` | Warning toast, returns `{ close, update }` |
-| `toast.error(options)` | Error toast, returns `{ close, update }` |
-| `toast.loading(options)` | Loading toast (not closable), returns `{ close, update }` |
-| `toast.promise(promise, opts)` | Promise chain: loading → success/error |
-| `toast.update(id, options)` | Update a toast in place by id; creates one if missing |
-| `toast.dismiss(id)` | Close a toast by id (visible or queued) |
-| `toast.config(options)` | Global default config (per-call wins) |
-| `toast.toaster(name)` | Named instance: isolated stacks/queues/config |
-| `destroyAllToast()` | Clear all instances |
-
-### options
-
-| Field | Description | Type | Default |
-| --- | --- | --- | --- |
-| `title` | Title (string or Node) | `string \| Node` | — |
-| `description` | Description | `string` | — |
-| `action` / `actions` | Action buttons (multiple + noDismiss + variant) | `ToastAction \| ToastAction[]` | — |
-| `duration` | Auto-dismiss duration (ms); 0 keeps it open | `number` | `3000` |
-| `closable` | Whether it can be closed manually (loading is always unclosable) | `boolean` | `true` |
-| `position` | Position (9 directions) | `ToastPosition` | `top-right` |
-| `id` | Unique id for `update` / `dismiss` | `string` | — |
-| `onClose` | Close callback (auto/manual/button/dismiss/destroyAll each fire once) | `() => void` | — |
-| `priority` | Priority: with the max queue, higher preempts a visible slot | `number` | `0` |
-| `max` | Max visible toasts in the position stack; extras queue | `number` | `Infinity` |
-| `politeness` | Screen-reader sensitivity: `assertive` / `polite` | `string` | by type |
-| `showProgress` | Remaining-time progress bar (shown when duration>0) | `boolean` | `false` |
-| `progressRing` | Progress ring close button (shown when duration>0) | `boolean` | `false` |
-| `grouping` | Same-content dedupe: merge in the same stack and bump the count badge | `boolean` | `false` |
-| `swipeDirection` | Swipe direction: `both`/`right`/`left`/`up`/`down` | `string` | `both` |
-| `stacked` | Collapsed stacking mode (+N fold / peek) | `boolean` | `false` |
-| `variant` | Variant: `solid`/`plain`/`translucent` | `string` | `solid` |
-| `container` | Mount point (element or function), overrides the default host | `HTMLElement \| () => HTMLElement` | — |
-| `pauseOnHover` / `pauseOnFocus` / `pauseOnWindowBlur` | Pause timer toggles (all on by default) | `boolean` | `true` |
-
 ### oas-toast
 
 #### Attributes
@@ -297,6 +257,14 @@ onMounted(async () => {
 | `type` | Toast type: `info`/`success`/`warning`/`error`/`loading` | `string` | `info` |
 | `variant` | Visual variant: default card / `plain` (no border/background, text straight out) / `translucent` (translucent frosted glass) | — | — |
 
+#### Methods
+
+| Method | Signature | Description |
+| --- | --- | --- |
+| `close` | `close(trigger: ToastCloseTrigger): void` | 关闭当前 toast：派发 oas-close → 播放离场动画 → 移除 → oas-destroy |
+| `transition` | `transition(type: ToastType, title: string \| Node, duration: unknown): void` | promise 链流转：切换类型并重置自动关闭计时器。title 支持 string（属性通道）或 |
+| `refresh` | `refresh(options: ToastRefreshOptions): void` | 命令式 update() 数据通道：整卡增量刷新（内容/类型/时长/描述/按钮），并重置自动关闭计时 |
+
 #### Events
 
 | Event | Description |
@@ -320,6 +288,30 @@ onMounted(async () => {
 | `--oas-toast-ease` | `ease` |
 | `--oas-toast-enter-duration` | `0.2s` |
 | `--oas-toast-leave-duration` | `0.2s` |
+
+### options
+
+| Field | Description | Type | Default |
+| --- | --- | --- | --- |
+| `title` | Title (string or Node) | `string \| Node` | — |
+| `description` | Description | `string` | — |
+| `action` / `actions` | Action buttons (multiple + noDismiss + variant) | `ToastAction \| ToastAction[]` | — |
+| `duration` | Auto-dismiss duration (ms); 0 keeps it open | `number` | `3000` |
+| `closable` | Whether it can be closed manually (loading is always unclosable) | `boolean` | `true` |
+| `position` | Position (9 directions) | `ToastPosition` | `top-right` |
+| `id` | Unique id for `update` / `dismiss` | `string` | — |
+| `onClose` | Close callback (auto/manual/button/dismiss/destroyAll each fire once) | `() => void` | — |
+| `priority` | Priority: with the max queue, higher preempts a visible slot | `number` | `0` |
+| `max` | Max visible toasts in the position stack; extras queue | `number` | `Infinity` |
+| `politeness` | Screen-reader sensitivity: `assertive` / `polite` | `string` | by type |
+| `showProgress` | Remaining-time progress bar (shown when duration>0) | `boolean` | `false` |
+| `progressRing` | Progress ring close button (shown when duration>0) | `boolean` | `false` |
+| `grouping` | Same-content dedupe: merge in the same stack and bump the count badge | `boolean` | `false` |
+| `swipeDirection` | Swipe direction: `both`/`right`/`left`/`up`/`down` | `string` | `both` |
+| `stacked` | Collapsed stacking mode (+N fold / peek) | `boolean` | `false` |
+| `variant` | Variant: `solid`/`plain`/`translucent` | `string` | `solid` |
+| `container` | Mount point (element or function), overrides the default host | `HTMLElement \| () => HTMLElement` | — |
+| `pauseOnHover` / `pauseOnFocus` / `pauseOnWindowBlur` | Pause timer toggles (all on by default) | `boolean` | `true` |
 
 - `error` defaults to `role="alert"` + `aria-live="assertive"`; others use `role="status"` + `aria-live="polite"`; override with `politeness`.
 - Multiple toasts share one stack container and stack by position; `duration` timers are cleaned up on close/unmount with no leaks.

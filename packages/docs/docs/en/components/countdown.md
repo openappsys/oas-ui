@@ -91,6 +91,12 @@ Font size is fixed at `--oas-font-size-lg` (16px) by default and does not follow
 | `type` | Timing mode: `"countup"` counts up from `start` with no end point (no `oas-finish`); absent = countdown | `string` | — |
 | `value` | Total countdown duration (milliseconds); ignored in count-up mode | `string` | `0` |
 
+#### Methods
+
+| Method | Signature | Description |
+| --- | --- | --- |
+| `reset` | `reset(): void` | 命令式重置：倒计时回到 value 初值、正计时回到 start 初值重新计时； |
+
 #### Events
 
 | Event | Description |

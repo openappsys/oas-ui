@@ -188,6 +188,12 @@ onMounted(() => {
 | `skip-delay-duration` | 跳过延迟窗口（毫秒），默认 300：关闭后窗口内再次 hover 其他项直接打开跳过延迟 | `string` | `300` |
 | `value` | 受控打开项（顶级触发器 value，空字符串 = 关闭；存在时打开态以属性为准，交互仅派发 `oas-change` 由宿主更新） | `string` | — |
 
+#### 方法
+
+| 方法 | 签名 | 说明 |
+| --- | --- | --- |
+| `syncOverflowCollapse` | `syncOverflowCollapse(): void` | 重算顶级溢出收纳：bar 装不下时尾部顶级项打 data-collapsed 隐藏并镜像进「···」弹层。 |
+
 #### 事件
 
 | 事件 | 说明 |

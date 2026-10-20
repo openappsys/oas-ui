@@ -53,6 +53,7 @@
       "type": "HTMLTemplateElement | null"
     }
   ],
+  "methods": [],
   "events": [],
   "slots": [
     {

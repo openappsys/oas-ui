@@ -248,6 +248,12 @@ onMounted(() => {
 | `unchecked-text` | Label shown when off; inside the track at medium/large/xl, outside at xs/small | — | — |
 | `variant` | Variant: `default` (plain thumb) / `card` (a bordered card wrapping the thumb + label + description; whole card clickable, selected state tints the border, aligned with the checkbox/radio choice card); invalid values silently fall back to default | `string` | — |
 
+#### Methods
+
+| Method | Signature | Description |
+| --- | --- | --- |
+| `focus` | `focus(options?: FocusOptions): void` | label 点击聚焦委托：把焦点交给 shadow 内 button |
+
 #### Events
 
 | Event | Description |

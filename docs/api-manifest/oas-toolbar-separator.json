@@ -3,6 +3,7 @@
   "sourceFile": "packages/ui/src/navigation/toolbar/oas-toolbar-separator.ts",
   "attrs": [],
   "props": [],
+  "methods": [],
   "events": [],
   "slots": [],
   "cssVars": [

@@ -80,6 +80,33 @@
       "type": "ValidateMessages | string"
     }
   ],
+  "methods": [
+    {
+      "name": "reapplyInitialValues",
+      "signature": "reapplyInitialValues(): void",
+      "description": "为「初始值基线建立后才出现的字段」补写 initial-values（oas-form-list 等动态字段容器"
+    },
+    {
+      "name": "getValues",
+      "signature": "getValues(): Record<string, unknown>",
+      "description": "公开取值入口：全表当前值快照（嵌套结构），与 submit() 派发的 detail.values 同口径"
+    },
+    {
+      "name": "validate",
+      "signature": "validate(): Promise<boolean>",
+      "description": "公开校验入口：校验全部字段并同步错误态（aria-invalid + 错误文案），返回是否全部通过。"
+    },
+    {
+      "name": "submit",
+      "signature": "submit(): void",
+      "description": "公开提交入口：委托内部 form 的 requestSubmit()。"
+    },
+    {
+      "name": "reset",
+      "signature": "reset(): void",
+      "description": "重置回初始值（与 form-associated reset 基线语义一致：回初始值、清除校验错误态、不派发任何事件）"
+    }
+  ],
   "events": [
     {
       "name": "oas-submit",

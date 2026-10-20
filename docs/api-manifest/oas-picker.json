@@ -43,6 +43,7 @@
       "type": "string[] | string"
     }
   ],
+  "methods": [],
   "events": [
     {
       "name": "oas-change",

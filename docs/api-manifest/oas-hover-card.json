@@ -117,6 +117,7 @@
       "type": "Element | null"
     }
   ],
+  "methods": [],
   "events": [
     {
       "name": "oas-open-change",

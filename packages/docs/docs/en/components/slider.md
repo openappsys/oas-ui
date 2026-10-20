@@ -411,6 +411,12 @@ onMounted(() => {
 | `levels` | Stereo level values `{ left, right }` (normalized 0–1; object assignment reflects to a JSON attribute, clear with `null`) | `{ left?: number; right?: number } \| string \| null` | — |
 | `value` | Current value: a number for a single thumb, or an array of numbers for multiple thumbs | `number \| number[]` | — |
 
+#### Methods
+
+| Method | Signature | Description |
+| --- | --- | --- |
+| `focus` | `focus(options?: FocusOptions): void` | label 点击聚焦委托：把焦点交给 shadow 内主滑块（配合 oas-form-item 的 label 点击代理） |
+
 #### Events
 
 | Event | Description |

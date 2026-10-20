@@ -258,14 +258,6 @@ onMounted(() => {
 
 ## API
 
-### Methods
-
-| Method | Description |
-| --- | --- |
-| `scrollTo(options)` / `scrollTo(x, y)` | Scrolls to a position, `options: { top?, left?, behavior?: 'auto' \| 'smooth' }` (delegates to the viewport) |
-| `scrollToTop(options?)` / `scrollToBottom(options?)` | Scrolls to the top/bottom, `options: { behavior? }`, smooth by default |
-| `scrollIntoView(selectorOrEl, options?)` | Scrolls an element inside the container into view; `block` / `inline` from `options` are passed through |
-
 ### oas-scroll-area
 
 #### Attributes
@@ -279,6 +271,15 @@ onMounted(() => {
 | `stick-to-bottom` | Stick to bottom: when new content is appended and the user is at the bottom (≤8px), auto-scroll to the new bottom; never interrupts reading history | `boolean` | — |
 | `type` | Scrollbar visibility mode (`auto \| always \| scroll \| hover`, default `always`): `auto` shows while scrolling/hovering then auto-hides after a delay; `always` keeps it visible on overflow; `scroll` shows only while scrolling; `hover` shows only while hovering. Invalid values fall back to `always` | `ScrollAreaType` | `always` |
 | `width` | Viewport width (px); when unset, fills the host width | — | — |
+
+#### Methods
+
+| Method | Signature | Description |
+| --- | --- | --- |
+| `scrollTo` | `scrollTo(x?: ScrollToOptions \| number, y?: number): void` | 滚动到指定位置，委托 viewport.scrollTo（与原生 Element.scrollTo 兼容： |
+| `scrollToTop` | `scrollToTop(options?: { behavior?: ScrollBehavior }): void` | 平滑/即时滚到顶部（保留横向位置；默认平滑滚动） |
+| `scrollToBottom` | `scrollToBottom(options?: { behavior?: ScrollBehavior }): void` | 平滑/即时滚到底部（保留横向位置；默认平滑滚动） |
+| `scrollIntoView` | `scrollIntoView(target?: string \| Element \| ScrollIntoViewOptions \| boolean, options?: ScrollIntoViewOptions): void` | 让容器内元素滚进视口，委托目标元素的原生 scrollIntoView（`options` 的 |
 
 #### Events
 

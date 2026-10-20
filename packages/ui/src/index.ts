@@ -441,6 +441,7 @@ import './conversation/attachment/index.js'
 import './conversation/message-scroller/index.js'
 import './conversation/marker/index.js'
 import './conversation/message-row/index.js'
+import './conversation/prompt-input/index.js'
 export { OASCard } from './data/card/oas-card.js'
 export { OASAvatar } from './data/avatar/oas-avatar.js'
 export { OASAvatarGroup } from './data/avatar-group/oas-avatar-group.js'
@@ -497,6 +498,7 @@ export {
   OASGantt,
   computeVariance,
   type GanttTask,
+  type GanttResource,
   type GanttBaselineVariance,
   type GanttDependency,
   type GanttScale,
@@ -590,6 +592,12 @@ export type {
 export { OASMarker } from './conversation/marker/oas-marker.js'
 export { OASMessageRow } from './conversation/message-row/oas-message-row.js'
 export type { MessageRowStatus } from './conversation/message-row/oas-message-row.js'
+export { OASPromptInput } from './conversation/prompt-input/oas-prompt-input.js'
+export type {
+  PromptInputSuggestion,
+  PromptInputSubmitDetail,
+  PromptInputSuggestionDetail,
+} from './conversation/prompt-input/oas-prompt-input.js'
 
 import './framework/config-provider/index.js'
 import './framework/app/index.js'

@@ -116,6 +116,7 @@
       "api": true
     }
   ],
+  "methods": [],
   "events": [
     {
       "name": "oas-open-change",

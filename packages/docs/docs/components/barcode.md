@@ -176,6 +176,12 @@ onMounted(() => {
 | `text-position` | 人读文字位置：`bottom`（默认）/ `top` | `string` | `bottom` |
 | `value` | 条码内容（空值走空态占位） | `string` | — |
 
+#### 方法
+
+| 方法 | 签名 | 说明 |
+| --- | --- | --- |
+| `download` | `download(filename: unknown): Promise<void>` | 下载当前条码为 PNG（离屏 rasterize：SVG-only 渲染架构不引入常驻 canvas）。 |
+
 #### 事件
 
 | 事件 | 说明 |

@@ -87,6 +87,7 @@
       "type": "string | boolean"
     }
   ],
+  "methods": [],
   "events": [
     {
       "name": "oas-change",

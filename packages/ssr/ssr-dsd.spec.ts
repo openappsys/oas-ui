@@ -662,6 +662,12 @@ test.beforeAll(async () => {
       '<span slot="header">张三 10:24</span><p>今天下午三点开会</p>',
     ),
     renderToString(
+      'oas-prompt-input',
+      { placeholder: '输入消息', value: '你好', suggestions: JSON.stringify(['总结', '继续']) },
+      '',
+      { locale: 'zh-CN' },
+    ),
+    renderToString(
       'oas-titlebar',
       { title: '未命名文档', subtitle: '已保存', 'window-actions': 'minimize,maximize,close' },
       '',

@@ -425,6 +425,13 @@ onMounted(async () => {
 | `src` | 图片地址 | `string` | — |
 | `width` | 显式宽度（数字按 px，CSS 尺寸串原样透传，空值恢复 auto） | `string` | — |
 
+#### 方法
+
+| 方法 | 签名 | 说明 |
+| --- | --- | --- |
+| `previewGoTo` | `previewGoTo(index: number): void` | 图集跳转到第 index 张（预览打开时生效；未打开/无图集不做事，越界收敛）。 |
+| `openPreview` | `openPreview(index?: number): void` | 打开预览：图集模式可指定起始索引（缺省取主图 src 在列表中的位置，未命中从 0 开始） |
+
 #### 事件
 
 | 事件 | 说明 |
@@ -452,6 +459,13 @@ onMounted(async () => {
 | --- | --- | --- | --- |
 | `current` | 当前图集索引（可选受控）：属性在场时受控——点击按 current 起开、内部翻页反射回该属性、外部改属性驱动预览跳图；缺席时不造属性，仅派发 oas-change | — | — |
 | `infinite` | 翻页首尾循环（透传共享预览宿主） | `boolean` | — |
+
+#### 方法
+
+| 方法 | 签名 | 说明 |
+| --- | --- | --- |
+| `openPreview` | `openPreview(index?: number): void` | 打开共享预览：index 为图集起始索引；current 受控时以属性为准 |
+| `closePreview` | `closePreview(): void` | 关闭共享预览（委托共享宿主） |
 
 #### 事件
 

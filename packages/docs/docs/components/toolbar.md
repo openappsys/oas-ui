@@ -334,6 +334,12 @@ onMounted(() => {
 | `orientation` | 布局方向：`horizontal`（默认）/ `vertical`（纵向，方向键随向导航、分隔符自动变横线） | `string` | `horizontal` |
 | `size` | 尺寸档位：`small` / `medium`（默认）/ `large` | `string` | — |
 
+#### 方法
+
+| 方法 | 签名 | 说明 |
+| --- | --- | --- |
+| `syncOverflow` | `syncOverflow(): void` | 重算溢出收纳：容器宽度不足时，超出项打 data-collapsed 隐藏并镜像进「···」弹层。 |
+
 #### 插槽
 
 | 名称 | 说明 |
@@ -353,6 +359,12 @@ onMounted(() => {
 | `multiple` | 多选模式（每项独立切换） | `boolean` | — |
 | `size` | 尺寸档位（small/medium/large），缺省跟随最近 oas-toolbar | `string` | — |
 | `value` | 当前值：单选为字符串；多选为 JSON 数组字符串 | `string` | — |
+
+#### 方法
+
+| 方法 | 签名 | 说明 |
+| --- | --- | --- |
+| `selectValue` | `selectValue(value: string): void` | 供工具栏溢出镜像调用：按 value 触发一次选择（单选选中/多选切换） |
 
 #### 事件
 
@@ -411,6 +423,12 @@ onMounted(() => {
 | `multiple` | 多选模式（每个药丸独立切换） | `boolean` | — |
 | `size` | 尺寸档位（small/medium/large），缺省跟随最近 oas-toolbar 的 size | `string` | — |
 | `value` | 当前值：单选为字符串；多选为 JSON 数组字符串 | `string` | — |
+
+#### 方法
+
+| 方法 | 签名 | 说明 |
+| --- | --- | --- |
+| `selectValue` | `selectValue(value: string): void` | 按 value 触发一次选择（单选选中/多选切换）——供外部程序化调用 |
 
 #### 事件
 

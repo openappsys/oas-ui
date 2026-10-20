@@ -143,6 +143,23 @@
       "type": "UploadBeforeUpload | null"
     }
   ],
+  "methods": [
+    {
+      "name": "startUpload",
+      "signature": "startUpload(): void",
+      "description": "上传入口：真实通道（action XHR / custom-request）逐文件发起；无通道回落模拟进度。"
+    },
+    {
+      "name": "submit",
+      "signature": "submit(): void",
+      "description": "手动上传入口别名（对齐主流「提交」心智）"
+    },
+    {
+      "name": "abort",
+      "signature": "abort(entry?: File): void",
+      "description": "取消上传：传入条目取消单个；无参取消全部进行中的上传"
+    }
+  ],
   "events": [
     {
       "name": "oas-crop",

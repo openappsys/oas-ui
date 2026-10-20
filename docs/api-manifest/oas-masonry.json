@@ -33,6 +33,7 @@
       "default": "[]"
     }
   ],
+  "methods": [],
   "events": [],
   "slots": [
     {
