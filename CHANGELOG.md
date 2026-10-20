@@ -31,6 +31,7 @@
 - **`oas-gantt` 内建撤销/重做（opt-in）**：新增 `history` 属性与 `undo()` / `redo()` / `canUndo` / `canRedo` / `clearHistory()`，最多 100 步；覆盖任务更新/增删/移动/复制/依赖变更与拖拽提交，外部整体重写 `tasks` 或关闭属性清空历史；新增 `oas-history-change` 事件。
 - **`oas-resource` 热力图与技能矩阵**：新增 `heatmap`（低/中/高/超载热力格 + 图例 + 每格 title）与 `skill-matrix`（行=资源、列=技能并集）opt-in 视图，并补充 `resource.heat*` i18n 文案。
 - **`oas-scheduler` 定时跨日连续条**：周视图定时跨日事件改在顶部跨日带渲染一条连续条（带 `开始–结束` 时间标签），不再按日拆块；拖动或键盘 `←`/`→` 平移保留 `start/end` 时刻（RTL 下方向镜像），移出当前周时视图跟随。补充宿主日期窗口取数 recipe。
+- **`oas-scheduler` 日期窗口托管**：新增 `range-start` / `range-end` 与 `oas-range-request`；当前视图可见日期范围未被宿主范围覆盖时派发，支持月/周/日/agenda 与资源视图。
 - **`oas-gantt` 逐资源日历/班次**：新增 `resources` 属性与 `GanttTask.resources`；多资源工作日取交集、假期取并集，驱动 `auto-schedule`；`shifts: []` 表示资源无可用班次，小时级班次窗口留给宿主。
 - **`oas-prompt-input`（conversation 族）**：新增提示词输入组件——多行自增高、Enter 提交/Shift+Enter 换行、loading 发送/停止、建议项、禁用/只读/长度、prefix/actions/footer 插槽，事件 `oas-submit` / `oas-stop` / `oas-suggestion-select`。
 - **工程**：`api:scan/api:gen` 新增公开方法表（JSDoc 方法自动入 manifest/文档）；Playwright 新增 WebKit smoke 子集（8 个代表页）与 prompt-input 键盘提交交互。

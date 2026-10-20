@@ -18,9 +18,12 @@ import { devWarn } from '../../shared/dev-warn.js'
 import {
   WINDOW_MARGIN,
   expandWindow,
+  parseIsoDayMs,
+  rangeCovered,
   readWindowedMode,
   sameWindow as sameWindowRange,
   windowCovered,
+  type RangeRequestDetail,
   type WindowRequestDetail,
   type WindowRequestReason,
 } from '../../shared/window-data.js'
@@ -1085,6 +1088,9 @@ export class OASScheduler extends OASElement {
       'windowed',
       'total',
       'window-start',
+      // 时间范围托管协议（oas-range-request）
+      'range-start',
+      'range-end',
     ]
   }
 
@@ -1113,6 +1119,7 @@ export class OASScheduler extends OASElement {
   /** 服务端资源行窗口（resource / resource-week）；非 windowed 时行为与旧版本一致 */
   private winMode = readWindowedMode(false, 0, 0, 0)
   private lastWindowReq: { start: number; end: number } | null = null
+  private lastRangeReq: { startMs: number; endMs: number } | null = null
   private windowReason: WindowRequestReason = 'init'
   private initialWindowAnchored = false
   private printAll = false
@@ -1465,6 +1472,7 @@ export class OASScheduler extends OASElement {
     // 不可滚动时不加（避免多出空 Tab 停靠点）。隐藏视图（切走后仍留在 DOM）恒移除
     this.syncScrollFocusable(timeview)
     this.syncScrollFocusable(resEl)
+    this.requestRangeIfNeeded()
   }
 
   /** 滚动容器键盘可达性同步：真实溢出才 tabindex=0，否则移除（无空 Tab 停靠点） */
@@ -2946,6 +2954,62 @@ export class OASScheduler extends OASElement {
     const startTop = rowBase * rowH
     const endTop = (rowBase + this._resources.length) * rowH
     if (res.scrollTop < startTop || res.scrollTop >= endTop) res.scrollTop = startTop
+  }
+
+  /** 宿主托管时间范围（range-start/range-end，ISO 日期，end 含端）→ 半开 [startMs,endMs) */
+  private hostRangeMs(): { startMs: number; endMs: number } | null {
+    const start = parseIsoDayMs(this.getAttr('range-start', ''))
+    const end = parseIsoDayMs(this.getAttr('range-end', ''))
+    if (start === null || end === null || end < start) return null
+    const d = new Date(end)
+    return { startMs: start, endMs: new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1).getTime() }
+  }
+
+  /** 当前视图实际可见的日期范围（含端日期转半开区间） */
+  private visibleRangeMs(): { startMs: number; endMs: number } | null {
+    const nextDay = (date: Date): number => new Date(date.getFullYear(), date.getMonth(), date.getDate() + 1).getTime()
+    if (this.viewMode === 'month') {
+      const cells = buildMonthCells(this.viewDate, this.effectiveLocale(), this.effectiveWeekStart())
+      if (cells.length === 0) return null
+      return { startMs: startOfDay(cells[0]!.date).getTime(), endMs: nextDay(cells[cells.length - 1]!.date) }
+    }
+    if (this.viewMode === 'week' || this.viewMode === 'resource-week') {
+      const weekStart = this.weekStartOf(this.viewDate)
+      return {
+        startMs: startOfDay(weekStart).getTime(),
+        endMs: new Date(weekStart.getFullYear(), weekStart.getMonth(), weekStart.getDate() + 7).getTime(),
+      }
+    }
+    if (this.viewMode === 'agenda') {
+      return {
+        startMs: startOfDay(this.viewDate).getTime(),
+        endMs: new Date(this.viewDate.getFullYear(), this.viewDate.getMonth(), this.viewDate.getDate() + 28).getTime(),
+      }
+    }
+    return { startMs: startOfDay(this.viewDate).getTime(), endMs: nextDay(this.viewDate) }
+  }
+
+  /**
+   * 宿主提供 range-start/range-end 时托管时间范围：当前视图可见范围未被覆盖时派发
+   * `oas-range-request`（detail `{ startMs, endMs, reason }`），同范围去重；无 range 时零行为。
+   */
+  private requestRangeIfNeeded(): void {
+    const axis = this.hostRangeMs()
+    if (!axis) {
+      this.lastRangeReq = null
+      return
+    }
+    const need = this.visibleRangeMs()
+    if (!need) return
+    if (rangeCovered(need, axis)) {
+      this.lastRangeReq = null
+      return
+    }
+    if (this.lastRangeReq && this.lastRangeReq.startMs === need.startMs && this.lastRangeReq.endMs === need.endMs)
+      return
+    const reason: WindowRequestReason = this.lastRangeReq ? 'data' : 'init'
+    this.lastRangeReq = { ...need }
+    this.emit('range-request', { ...need, reason } satisfies RangeRequestDetail)
   }
 
   /** windowed：绝对可视窗口未覆盖已装载切片时派发 oas-window-request（同区间去重）。

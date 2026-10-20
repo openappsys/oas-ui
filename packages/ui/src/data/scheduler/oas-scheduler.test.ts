@@ -1536,6 +1536,60 @@ describe('scheduler 跨日全天 / repeat count+byDay / ICS 增强', () => {
     expect(el.shadowRoot!.querySelector<HTMLElement>('.band-span')!.style.width).not.toBe('')
   })
 
+  it('range 托管：可视周窗口未覆盖时派发 oas-range-request，覆盖后去重', () => {
+    const el = mount({ view: 'week', 'page-show-date': '2026-08-10' })
+    const reqs: Array<{ startMs: number; endMs: number; reason: string }> = []
+    el.addEventListener('oas-range-request', (e) =>
+      reqs.push((e as CustomEvent<{ startMs: number; endMs: number; reason: string }>).detail),
+    )
+    el.setAttribute('range-start', '2026-08-10')
+    el.setAttribute('range-end', '2026-08-12')
+    expect(reqs).toHaveLength(1)
+    expect(reqs[0]).toMatchObject({
+      startMs: new Date(2026, 7, 10).getTime(),
+      endMs: new Date(2026, 7, 17).getTime(),
+      reason: 'init',
+    })
+    el.setAttribute('range-end', '2026-08-16')
+    expect(reqs).toHaveLength(1)
+    el.setAttribute('page-show-date', '2026-08-17')
+    expect(reqs).toHaveLength(2)
+    expect(reqs[1]!.startMs).toBe(new Date(2026, 7, 17).getTime())
+  })
+
+  it('range 托管：月/日/agenda 按各自可见范围计算', () => {
+    const getRange = (attrs: Record<string, string>) => {
+      const el = mount(attrs)
+      let detail: { startMs: number; endMs: number } | null = null
+      el.addEventListener('oas-range-request', (e) => {
+        detail = (e as CustomEvent<{ startMs: number; endMs: number }>).detail
+      })
+      el.setAttribute('range-start', '2026-08-01')
+      el.setAttribute('range-end', '2026-08-03')
+      return detail as { startMs: number; endMs: number } | null
+    }
+    const day = getRange({ view: 'day', 'page-show-date': '2026-08-10' })!
+    expect(day).toMatchObject({ startMs: new Date(2026, 7, 10).getTime(), endMs: new Date(2026, 7, 11).getTime() })
+    const agenda = getRange({ view: 'agenda', 'page-show-date': '2026-08-10' })!
+    expect(agenda).toMatchObject({
+      startMs: new Date(2026, 7, 10).getTime(),
+      endMs: new Date(2026, 7, 10 + 28).getTime(),
+    })
+    const month = getRange({ view: 'month', 'page-show-date': '2026-08-15' })!
+    expect(month.startMs).toBeLessThanOrEqual(new Date(2026, 7, 1).getTime())
+    expect(month.endMs).toBeGreaterThanOrEqual(new Date(2026, 8, 1).getTime())
+    expect((month.endMs - month.startMs) / 86_400_000).toBeGreaterThanOrEqual(35)
+  })
+
+  it('range 托管：非法/缺失 range 时不派发 range-request', () => {
+    const el = mount({ view: 'week', 'page-show-date': '2026-08-10' })
+    const reqs: unknown[] = []
+    el.addEventListener('oas-range-request', (e) => reqs.push(e))
+    el.setAttribute('range-start', 'not-a-date')
+    el.setAttribute('range-end', '2026-08-16')
+    expect(reqs).toHaveLength(0)
+  })
+
   it('跨日连续条支持左右方向键按天平移（键盘可达）', () => {
     const el = mount({
       view: 'week',

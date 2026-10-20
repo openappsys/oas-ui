@@ -224,9 +224,31 @@ onMounted(async () => {
 ></oas-scheduler>
 ```
 
-### 日期窗口取数配方（宿主侧）
+### 日期窗口托管与取数
 
-组件当前只内建资源行窗口；按日期窗口取数是宿主职责。推荐做法：以 `page-show-date` + `view` 推导可见区间，视图切换/翻页时取消在途请求并只喂该区间事件，避免重复展开与时间轴抖动。
+组件原生支持日期窗口托管：提供 `range-start` / `range-end`（ISO 日期，`end` 含端）后，当前视图可见范围未被覆盖时派发 `oas-range-request`（detail `{ startMs, endMs, reason }`）；宿主回填事件并更新 `range-*` 即完成闭环，同范围自动去重。月视图按实际 6 周网格、周/资源周按 7 天、日/资源日按当天、agenda 按 28 天计算。
+
+```ts
+const el = document.querySelector('oas-scheduler')
+el.addEventListener('oas-range-request', async (e) => {
+  const { startMs, endMs } = e.detail
+  const iso = (ms: number) => {
+    const d = new Date(ms)
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+  }
+  const start = iso(startMs)
+  const endExclusive = iso(endMs)
+  const end = iso(endMs - 1) // range-end 含端
+  const res = await fetch(`/api/events?start=${start}&end=${endExclusive}`)
+  el.events = await res.json()
+  el.setAttribute('range-start', start)
+  el.setAttribute('range-end', end)
+})
+```
+
+> 未使用 `range-*` 时组件不派发该事件；仍可按 `page-show-date` + `view` 自行推导可见区间。资源行窗口继续走 `oas-window-request`，两者可同时使用。
+
+如需手动推导可见区间（旧接法），可继续使用：
 
 ```ts
 const el = document.querySelector('oas-scheduler')
@@ -289,6 +311,8 @@ el.downloadIcs('my.ics', { timeMode: 'utc', timezone: 'Asia/Shanghai' })
 | `first-day-of-week` | 周起始日（0-6）；缺省按 locale 推导 | `string` | — |
 | `locale` | 本地化（覆盖 config-provider 注入与全局 locale） | `string` | — |
 | `page-show-date` | 面板月锚点（受控）：yyyy-MM-dd，变化时重锚定显示月份 | `string` | — |
+| `range-end` | 宿主托管的时间范围终点（ISO 日期，含端）；当前视图可见范围未被覆盖时派发 oas-range-request | `string` | — |
+| `range-start` | 宿主托管的时间范围起点（ISO 日期，含端）；与 range-end 一起启用 oas-range-request 托管 | `string` | — |
 | `resources` | 资源列表（JSON）：[{ id, title, color?, group? }]——资源视图按资源分组；事件 resource 缺省或指向未知 id 时归「未分配」行；group 非空时自动插入分组标题行 | `SchedulerResource[]` | `[]` |
 | `secondary-timezone` | 第二时区（IANA）：在 day/week/资源单日时间刻度追加第二时区标签；非法值忽略并 devWarn | `string` | — |
 | `show-now` | 当前时间线（默认开；false 关闭）：week/day 视图与资源单日视图在今天的时间区渲染 now 线 | `string` | `true` |
@@ -324,6 +348,7 @@ el.downloadIcs('my.ics', { timeMode: 'utc', timezone: 'Asia/Shanghai' })
 | `oas-day-click` | 点击空白日格时派发，detail: { date, resource? }（资源视图带资源行 id）——宿主接新增表单 |
 | `oas-event-click` | 点击事件芯片时派发，detail: { id, event }（不触发日格点击） |
 | `oas-events-change` | events 数据变化（set/addEvent/updateEvent/removeEvent）时派发，detail: { events } |
+| `oas-range-request` | 宿主托管日期窗口：当前视图可见范围未被 range-start/range-end 覆盖时派发，detail: { startMs, endMs, reason }；无 range-* 时不派发 |
 | `oas-remind` | 事件提醒到点时派发，detail: { id, event }（start - remind 分钟，组件内置定时器） |
 | `oas-view-change` | 视图切换（month/week/day/agenda）时派发，detail: { view }；属性首次吸收不派发 |
 | `oas-window-request` | windowed 模式下可视资源行窗口未被已装载切片覆盖时派发，detail: { start, end, reason }（绝对行号、半开区间；同一窗口不重复派发） |

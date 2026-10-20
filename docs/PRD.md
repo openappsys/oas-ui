@@ -2608,6 +2608,13 @@ group 子钮此前为宿主自填 light DOM（`slot="action"`），组件用 `::
 - **兼容**：新字段全部可选；未使用时不改变既有渲染与 ICS 输出。连续条仅周视图出现，月/日/agenda 仍按日芯片/行项展示。
 - **验收**：单测覆盖连续条、无逐日芯片、键盘平移/视图跟随、BYMONTH/BYMONTHDAY/EXDATE/remind 与 ICS 字段；e2e 覆盖新 demo 的连续条显示、键盘焦点保持与 console 零告警；文档 zh/en、API 说明与 CHANGELOG 同步。
 
+## 未发布：scheduler 日期窗口托管协议（S01）
+
+- **范围**：新增 `range-start` / `range-end`（ISO 日期，end 含端）与 `oas-range-request`（detail `{ startMs, endMs, reason }`）；当前视图可见日期范围未被宿主范围覆盖时派发，同范围去重。
+- **语义**：月视图按实际 6 周网格、周/资源周按 7 天、日/资源日按当天、agenda 按 28 天计算可见范围；无 `range-*` 时零行为；`startMs` / `endMs` 为本地时区半开区间，`range-end` 当天仍包含。
+- **兼容**：新属性/事件可选；不设置时与既有渲染完全一致；资源行窗口 `oas-window-request` 保持不变。
+- **验收**：单测覆盖托管范围派发/去重/覆盖后静默/非法范围；e2e 覆盖真实事件 detail；文档 zh/en、API 说明、PRD/CHANGELOG 同步。
+
 ## 未发布：gantt 项目自动分组与偏差徽标
 
 - **范围**：`GanttTask.project` + `group-by-project` 自动生成项目根摘要；`show-variance` 在行名后渲染基线偏差徽标；`GanttTask.deadlines` 支持多个截止日。

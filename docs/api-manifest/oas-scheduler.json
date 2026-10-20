@@ -82,6 +82,18 @@
       "type": "string",
       "default": "0",
       "observed": true
+    },
+    {
+      "name": "range-start",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "range-end",
+      "type": "string",
+      "default": "",
+      "observed": true
     }
   ],
   "props": [
@@ -149,6 +161,10 @@
     {
       "name": "oas-create",
       "detail": "{ date: ctx.iso, start: this.fmtMin(a), end: this.fmtMin(b), resource: ctx.resource, } satisfies SchedulerCreateDetail"
+    },
+    {
+      "name": "oas-range-request",
+      "detail": "{ ...need, reason } satisfies RangeRequestDetail"
     },
     {
       "name": "oas-window-request",

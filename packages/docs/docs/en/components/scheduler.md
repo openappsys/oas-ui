@@ -209,9 +209,31 @@ The resource views (`resource` / `resource-week`) support server-side slices: `w
 ></oas-scheduler>
 ```
 
-### Date-window recipe (host side)
+### Date-window hosting & fetching
 
-The component currently only provides resource-row windowing; date-window fetching is the host's job. Recommended: derive the visible range from `page-show-date` + `view`, abort in-flight requests on view/page changes, and feed only that range's events.
+The component now supports native date-window hosting: provide `range-start` / `range-end` (ISO dates, inclusive end) and it emits `oas-range-request` (`{ startMs, endMs, reason }`) when the visible range is not covered; update events and `range-*` to close the loop. Requests are de-duplicated. Visible ranges: month = actual 6-week grid, week/resource-week = 7 days, day/resource = the day, agenda = 28 days.
+
+```ts
+const el = document.querySelector('oas-scheduler')
+el.addEventListener('oas-range-request', async (e) => {
+  const { startMs, endMs } = e.detail
+  const iso = (ms: number) => {
+    const d = new Date(ms)
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+  }
+  const start = iso(startMs)
+  const endExclusive = iso(endMs)
+  const end = iso(endMs - 1)
+  const res = await fetch(`/api/events?start=${start}&end=${endExclusive}`)
+  el.events = await res.json()
+  el.setAttribute('range-start', start)
+  el.setAttribute('range-end', end)
+})
+```
+
+> Without `range-*` nothing is emitted; hosts may still derive the range from `page-show-date` + `view`. Resource-row windowing keeps using `oas-window-request`; both can coexist.
+
+If you prefer manual range derivation (legacy integration), keep using:
 
 ```ts
 const el = document.querySelector('oas-scheduler')
@@ -273,6 +295,8 @@ el.downloadIcs('my.ics', { timeMode: 'utc', timezone: 'Asia/Shanghai' })
 | `first-day-of-week` | First day of week (0-6); defaults to locale-derived | `string` | — |
 | `locale` | Localization (overrides config-provider injection and global locale) | `string` | — |
 | `page-show-date` | Panel month anchor (controlled): yyyy-MM-dd; re-anchors the shown month on change | `string` | — |
+| `range-end` | Host-managed range end (ISO date, inclusive); emits oas-range-request when the visible range is not covered | `string` | — |
+| `range-start` | Host-managed range start (ISO date, inclusive); together with range-end enables oas-range-request hosting | `string` | — |
 | `resources` | Resources (JSON): [{ id, title, color?, group? }] — resource views group by resource; events whose resource is absent or unknown go to the 'Unassigned' row; a non-empty group inserts a group header row | `SchedulerResource[]` | `[]` |
 | `secondary-timezone` | Secondary timezone (IANA): appends a second timezone label to day/week/resource-day time gutters; invalid values are ignored with a devWarn | `string` | — |
 | `show-now` | Current-time line (on by default; false disables): renders a now line for today in week/day and single-day resource views | `string` | `true` |
@@ -308,6 +332,7 @@ el.downloadIcs('my.ics', { timeMode: 'utc', timezone: 'Asia/Shanghai' })
 | `oas-day-click` | Dispatched when an empty day cell is clicked, detail: { date, resource? } (resource row id in resource views) — host attaches an add form |
 | `oas-event-click` | Dispatched when an event chip is clicked, detail: { id, event } (does not trigger the day click) |
 | `oas-events-change` | Dispatched on any events change (set/addEvent/updateEvent/removeEvent), detail: { events } |
+| `oas-range-request` | Host-managed date window: emitted when the visible range is not covered by range-start/range-end; detail: { startMs, endMs, reason }; no-op without range-* |
 | `oas-remind` | Dispatched when an event reminder is due, detail: { id, event } (fires at start - remind minutes via built-in timers) |
 | `oas-view-change` | Dispatched on view switch (month/week/day/agenda), detail: { view }; not dispatched on initial attribute absorption |
 | `oas-window-request` | Emitted in windowed mode when the visible resource-row window is not covered by the loaded slice; detail: { start, end, reason } (absolute, half-open; the same window is not emitted twice). |

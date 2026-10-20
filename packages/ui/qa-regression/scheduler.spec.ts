@@ -136,6 +136,25 @@ test('scheduler RTL 连续条方向键按视觉方向镜像', async ({ page }) =
     .toMatchObject({ date: '2026-08-12', endDate: '2026-08-13' })
 })
 
+test('scheduler 范围托管：range-start/end 未覆盖时派发 oas-range-request', async ({ page }) => {
+  await page.goto('/components/scheduler.html', { waitUntil: 'domcontentloaded' })
+  await page.waitForSelector('#scheduler-span', { timeout: 15000 })
+  const detail = await page.evaluate(
+    () =>
+      new Promise<{ startMs: number; endMs: number; reason: string }>((resolve) => {
+        const el = document.querySelector('#scheduler-span')!
+        el.addEventListener('oas-range-request', (e) => resolve((e as CustomEvent).detail), { once: true })
+        el.setAttribute('range-start', '2026-08-10')
+        el.setAttribute('range-end', '2026-08-12')
+      }),
+  )
+  expect(detail).toMatchObject({
+    startMs: new Date(2026, 7, 10).getTime(),
+    endMs: new Date(2026, 7, 17).getTime(),
+    reason: 'init',
+  })
+})
+
 test('scheduler 资源视图 + 拖拽创建 + now 线 浏览器回归', async ({ page }) => {
   const errors: string[] = []
   page.on('pageerror', (e) => errors.push(e.message))
