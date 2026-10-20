@@ -1913,6 +1913,64 @@ describe('OASTabs', () => {
       expect(tabs.length).toBe(1)
       expect(tabs[0]!.getAttribute('data-value')).toBe('a')
     })
+    it('items 属性变更（value 序列不变、label 变）→ 可视标签重建（不残留旧文案）', () => {
+      const el = new OASTabs()
+      el.setAttribute(
+        'items',
+        JSON.stringify([
+          { label: '仪表盘', value: 'dash' },
+          { label: '设置', value: 'settings' },
+        ]),
+      )
+      el.setAttribute('active', 'dash')
+      document.body.appendChild(el)
+      const labels = (): Array<string | null> =>
+        [...el.shadowRoot!.querySelectorAll('.tab-label')].map((n) => n.textContent)
+      expect(labels()).toEqual(['仪表盘', '设置'])
+      // 同 value、不同 label：此前 value 序列一致会跳过重建，标签文案残留旧语言
+      el.setAttribute(
+        'items',
+        JSON.stringify([
+          { label: 'Dashboard', value: 'dash' },
+          { label: 'Settings', value: 'settings' },
+        ]),
+      )
+      expect(labels()).toEqual(['Dashboard', 'Settings'])
+      expect(el.getAttribute('items')).toContain('Dashboard')
+      // active 仍按 value 保持
+      const active = el.shadowRoot!.querySelector<HTMLElement>('[role="tab"][data-value="dash"]')!
+      expect(active.getAttribute('aria-selected')).toBe('true')
+    })
+
+    it('items 属性变更（value 序列不变、badge/icon 变）→ 徽标与图标重建', () => {
+      const el = new OASTabs()
+      el.setAttribute('items', JSON.stringify([{ label: '收件箱', value: 'in', badge: '3' }]))
+      document.body.appendChild(el)
+      const badge = (): HTMLElement | null =>
+        el.shadowRoot!.querySelector<HTMLElement>('[role="tab"][data-value="in"] .tab-badge')
+      expect(badge()?.textContent).toBe('3')
+      el.setAttribute('items', JSON.stringify([{ label: '收件箱', value: 'in', badge: '9', icon: 'mail' }]))
+      expect(badge()?.textContent).toBe('9')
+      expect(
+        el.shadowRoot!.querySelector('[role="tab"][data-value="in"] .tab-icon'),
+        '新增 icon 也应重建出来',
+      ).not.toBeNull()
+    })
+
+    it('items 原样重设不触发无谓重建（同一 JSON 字符串）', () => {
+      const el = new OASTabs()
+      const items = JSON.stringify([
+        { label: 'A', value: 'a' },
+        { label: 'B', value: 'b' },
+      ])
+      el.setAttribute('items', items)
+      document.body.appendChild(el)
+      const before = el.querySelectorAll('oas-tab-panel').length
+      const firstPanel = el.querySelector('oas-tab-panel')
+      el.setAttribute('items', items)
+      expect(el.querySelectorAll('oas-tab-panel').length).toBe(before)
+      expect(el.querySelector('oas-tab-panel'), '同值不重建（节点身份不变）').toBe(firstPanel)
+    })
   })
 
   describe('icon-only 纯图标标签', () => {

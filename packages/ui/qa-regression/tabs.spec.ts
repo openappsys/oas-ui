@@ -421,3 +421,48 @@ test('tabs tabindex 透传：Vue demo 下属性存活、全部标签钮写同值
   expect(r.allMinus1, '标签钮未全部透传 tabindex=-1').toBe(true)
   expect(r.hostKeepsAttr, '透传为非吸收语义：宿主属性应保留在场（移除即恢复 roving）').toBe(true)
 })
+
+// items 是 observedAttributes，但此前只按 value 序列判断是否重建：同 value 改 label/badge/icon 时
+// attribute 已更新、可视标签仍是旧文案（语言切换实锤）。回归：属性变更必须实时重建可视标签。
+test('tabs items attribute 变更（value 不变、label/徽标变）→ 可视标签实时重建且 active 保持', async ({ page }) => {
+  await page.goto('/components/tabs.html', { waitUntil: 'domcontentloaded' })
+  await page.waitForFunction(() => !!customElements.get('oas-tabs'))
+  const r = await page.evaluate(async () => {
+    const el = document.createElement('oas-tabs')
+    el.setAttribute(
+      'items',
+      JSON.stringify([
+        { label: '仪表盘', value: 'dash' },
+        { label: '设置', value: 'settings', badge: '3' },
+      ]),
+    )
+    el.setAttribute('active', 'dash')
+    document.body.appendChild(el)
+    const frame = () => new Promise((res) => requestAnimationFrame(() => res(null)))
+    await frame()
+    const labels = (): Array<string | null> =>
+      [...el.shadowRoot!.querySelectorAll('.tab-label')].map((n) => n.textContent)
+    const badge = (): string | null =>
+      el.shadowRoot!.querySelector('[role="tab"][data-value="settings"] .tab-badge')?.textContent ?? null
+    const before = { labels: labels(), badge: badge() }
+    el.setAttribute(
+      'items',
+      JSON.stringify([
+        { label: 'Dashboard', value: 'dash' },
+        { label: 'Settings', value: 'settings', badge: '9' },
+      ]),
+    )
+    await frame()
+    const after = { labels: labels(), badge: badge() }
+    const active = el.shadowRoot!.querySelector('[role="tab"][data-value="dash"]')!.getAttribute('aria-selected')
+    const attr = el.getAttribute('items') ?? ''
+    el.remove()
+    return { before, after, active, attr }
+  })
+  expect(r.before.labels).toEqual(['仪表盘', '设置'])
+  expect(r.before.badge).toBe('3')
+  expect(r.after.labels, '同 value 改 label 后可视标签必须更新').toEqual(['Dashboard', 'Settings'])
+  expect(r.after.badge, '徽标随 items 重建').toBe('9')
+  expect(r.active, 'active 按 value 保持').toBe('true')
+  expect(r.attr).toContain('Dashboard')
+})

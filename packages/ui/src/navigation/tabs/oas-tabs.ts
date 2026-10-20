@@ -738,6 +738,8 @@ export class OASTabs extends OASElement {
   private prevActiveValue: string | undefined = undefined
   /** items 数据驱动同步中标志（防止生成 panel 触发 MutationObserver 导致 update 无限循环） */
   private itemsSyncing = false
+  /** 上次已同步的 items 原文（同一字符串不重建；value 序列相同但文案/徽标/图标变化时也必须重建） */
+  private lastItemsRaw: string | null = null
 
   /**
    * 能力注入：构造时快照已注册能力 + connected 期订阅晚加入（注册可能晚于元素构造——
@@ -924,6 +926,7 @@ export class OASTabs extends OASElement {
     const raw = this.getAttr('items', '')
     if (!raw) return
     if (this.itemsSyncing) return
+    if (raw === this.lastItemsRaw) return
     let items: Array<Record<string, unknown>> = []
     try {
       const parsed = JSON.parse(raw)
@@ -932,12 +935,8 @@ export class OASTabs extends OASElement {
       return
     }
     this.itemsSyncing = true
+    this.lastItemsRaw = raw
     try {
-      // 一致性检查：现有面板 value 序列与 items 一致则跳过（防 MutationObserver 重复 update 重建）
-      const existing = [...this.querySelectorAll(':scope > oas-tab-panel')].map((p) => p.getAttribute('value'))
-      const itemValues = items.map((i) => String(i.value ?? ''))
-      const same = existing.length === itemValues.length && existing.every((v, i) => v === itemValues[i])
-      if (same) return
       // 清掉现有直接子面板（items 优先，子元素忽略）
       for (const p of [...this.querySelectorAll(':scope > oas-tab-panel')]) p.remove()
       for (const item of items) {
