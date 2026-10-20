@@ -2754,6 +2754,18 @@ describe('OASGantt 截止日 / 浮时 / 基线进度', () => {
     })
     expect(shadowOf(el).querySelectorAll('.float-label').length).toBe(0)
     expect(barOf(el, 'a').querySelector('.bar-label .float-inline')).not.toBeNull()
+
+    const inside = mount({
+      'show-float': '',
+      'label-position': 'inside',
+      tasks: JSON.stringify([
+        { id: 'a', name: 'A', start: '2026-03-02', end: '2026-03-04' },
+        { id: 'b', name: 'B', start: '2026-03-05', end: '2026-03-09', dependencies: [{ id: 'a' }] },
+      ]),
+    })
+    // 条内标签窄条会截断；inside 组合改走条外浮时标签，且颜色随实底可读
+    expect(barOf(inside, 'a').querySelector('.float-label')).not.toBeNull()
+    expect(barOf(inside, 'a').querySelector('.float-inline')).toBeNull()
   })
 
   it('baseline.progress：清洗 0-100 并渲染基线进度覆盖层', () => {

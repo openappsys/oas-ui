@@ -510,9 +510,13 @@ svg.links .temp-link {
 }
 .float-inline {
   margin-inline-start: 4px;
-  color: var(--oas-color-text-secondary);
+  color: inherit;
   font-size: var(--oas-font-size-xs, 11px);
   font-weight: normal;
+}
+.bar.has-float.label-right .bar-label,
+.bar.has-float.label-left .bar-label {
+  max-width: 360px;
 }
 .bar:active {
   cursor: grabbing;
@@ -3173,10 +3177,12 @@ export class OASGantt extends OASElement {
         const freeDays = Math.round(this.freeFloatMs.get(row.task.id)! / DAY_MS)
         bar.dataset.totalFloat = String(totalDays)
         bar.dataset.freeFloat = String(freeDays)
+        bar.classList.add('has-float')
         const text = this.t('gantt.floatSummary', { total: totalDays, free: freeDays })
-        // label-position 已渲染条旁/条内任务名时，把浮时并入同一标签，避免两个绝对定位标签叠印。
+        // 条旁 label-right/left：并入同一标签，避免两个绝对定位标签叠印；
+        // 条内 label-inside：任务名在条内，浮时仍放条外（不受窄条截断，且不叠印）。
         const existingLabel = bar.querySelector<HTMLElement>('.bar-label')
-        if (existingLabel) {
+        if (existingLabel && !bar.classList.contains('label-inside')) {
           const inline = document.createElement('span')
           inline.className = 'float-inline'
           inline.setAttribute('aria-hidden', 'true')
