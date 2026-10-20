@@ -695,7 +695,7 @@ test('scheduler 月历窄容器：长标题不撑爆 7 列、末列不越界、�
   expect(r.longChipsTruncated, '长标题被省略号截断而非撑开').toBe(true)
 })
 
-test('scheduler 打印预览：agenda 取消限高 + Chromium PDF 可生成', async ({ page }) => {
+test('scheduler 打印预览：agenda 取消限高 + Chromium PDF 可生成', async ({ page, browserName }) => {
   const errors: string[] = []
   page.on('pageerror', (e) => errors.push(e.message))
   page.on('console', (m) => {
@@ -714,7 +714,9 @@ test('scheduler 打印预览：agenda 取消限高 + Chromium PDF 可生成', as
   })
   expect(style.maxHeight, 'print 下 agenda 不应再限高 640px').toBe('none')
   expect(style.overflow, 'print 下 agenda 应可见溢出').toBe('visible')
-  const pdf = await page.pdf({ format: 'A4', printBackground: true })
-  expect(pdf.length, '打印预览应能生成 PDF').toBeGreaterThan(1000)
+  if (browserName === 'chromium') {
+    const pdf = await page.pdf({ format: 'A4', printBackground: true })
+    expect(pdf.length, '打印预览应能生成 PDF').toBeGreaterThan(1000)
+  }
   expect(errors).toEqual([])
 })
