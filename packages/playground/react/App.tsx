@@ -16,7 +16,9 @@ export default function App() {
   const formRef = useRef<HTMLElement | null>(null)
   const tableRef = useRef<HTMLElement | null>(null)
   const kanbanRef = useRef<HTMLElement | null>(null)
+  const promptRef = useRef<HTMLElement | null>(null)
   const [moveInfo, setMoveInfo] = useState('')
+  const [promptValue, setPromptValue] = useState('')
 
   // 主题挂 html（documentElement）：token 的 [data-theme] 变量定义在 html 上，
   // body 背景与全部组件一起跟随；挂根 div 会导致页面底色不跟随（普通行透明底透出白页，dark 下文字不可见）
@@ -58,6 +60,18 @@ export default function App() {
     }
     el.addEventListener('oas-change', handler)
     return () => el.removeEventListener('oas-change', handler)
+  }, [])
+
+  // oas-prompt-input 可发 oas-submit（detail: { value }），沿用 ref + useEffect
+  useEffect(() => {
+    const el = promptRef.current
+    if (!el) return
+    const handler = (e: Event) => {
+      const d = (e as CustomEvent<{ value: string }>).detail
+      setPromptValue(d.value)
+    }
+    el.addEventListener('oas-submit', handler)
+    return () => el.removeEventListener('oas-submit', handler)
   }, [])
 
   // 组件对 `prefix` 遮蔽了只读 `Element.prefix` 并反射到规范属性 `prefix-text`——React 直接写
@@ -130,6 +144,16 @@ export default function App() {
           cards='[{"id":"t1","column":"todo","title":"梳理需求"},{"id":"t2","column":"doing","title":"开发组件"},{"id":"t3","column":"done","title":"发布"}]'
         ></oas-kanban>
         {moveInfo && <p>移动：{moveInfo}</p>}
+      </div>
+
+      <div className="demo-block">
+        <h3>提示词输入（oas-submit 桥接）</h3>
+        <oas-prompt-input
+          ref={promptRef}
+          placeholder="输入消息，Enter 发送"
+          suggestions='["总结","继续"]'
+        ></oas-prompt-input>
+        {promptValue && <p id="prompt-output">已提交：{promptValue}</p>}
       </div>
 
       <div className="demo-block">

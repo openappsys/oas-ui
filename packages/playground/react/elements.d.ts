@@ -67,6 +67,16 @@ declare namespace React {
         },
         HTMLElement
       >
+      'oas-prompt-input': React.DetailedHTMLProps<
+        React.HTMLAttributes<HTMLElement> & {
+          value?: string
+          placeholder?: string
+          suggestions?: string
+          loading?: boolean
+          disabled?: boolean
+        },
+        HTMLElement
+      >
     }
   }
 }

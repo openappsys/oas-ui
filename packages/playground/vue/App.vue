@@ -60,6 +60,10 @@ function onChangeMove(e: Event) {
   const d = (e as CustomEvent<{ id: string; from: string; to: string; index: number }>).detail
   moveInfo.value = `「${d.id}」${d.from} → ${d.to} 第 ${d.index + 1} 位`
 }
+const promptValue = ref('')
+function onPromptSubmit(e: Event) {
+  promptValue.value = (e as CustomEvent<{ value: string }>).detail.value
+}
 </script>
 
 <template>
@@ -120,6 +124,16 @@ function onChangeMove(e: Event) {
         @oas-change="onChangeMove"
       ></oas-kanban>
       <p v-if="moveInfo">移动：{{ moveInfo }}</p>
+    </div>
+
+    <div class="demo-block">
+      <h3>提示词输入（oas-submit 桥接）</h3>
+      <oas-prompt-input
+        placeholder="输入消息，Enter 发送"
+        suggestions='["总结","继续"]'
+        @oas-submit="onPromptSubmit"
+      ></oas-prompt-input>
+      <p v-if="promptValue" id="prompt-output">已提交：{{ promptValue }}</p>
     </div>
 
     <div class="demo-block">

@@ -109,12 +109,27 @@ for (const [app, port] of [
         kanban: !!k,
         kanbanRendered: !!k && !!k.shadowRoot && (k.shadowRoot.textContent || '').includes('待办'),
         prefixRendered: prefixPart ? (prefixPart.textContent || '').trim() : '',
+        prompt: !!document.querySelector('oas-prompt-input'),
       }
     })
     expect(mounted.buttons, '组件已挂载').toBeGreaterThan(0)
     expect(mounted.form && mounted.table && mounted.kanban, '表单/表格/看板 demo 块均存在').toBe(true)
     expect(mounted.kanbanRendered, 'kanban 真渲染').toBe(true)
     expect(mounted.prefixRendered, 'oas-input prefix-text 真渲染（非仅不崩）').toBe('¥')
+    expect(mounted.prompt, 'prompt-input 已挂载').toBe(true)
+    const submitted = await page.evaluate(() => {
+      const prompt = document.querySelector('oas-prompt-input') as
+        | (HTMLElement & { shadowRoot?: ShadowRoot | null })
+        | null
+      const textarea = prompt?.shadowRoot?.querySelector('[part="textarea"]') as HTMLTextAreaElement | null
+      if (!textarea) return false
+      textarea.value = 'framework bridge'
+      textarea.dispatchEvent(new Event('input', { bubbles: true }))
+      textarea.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
+      return true
+    })
+    expect(submitted, 'prompt-input textarea 应可访问').toBe(true)
+    await expect(page.locator('#prompt-output')).toContainText('framework bridge')
     expect(errs, `${app} playground 报错:\n${[...new Set(errs)].slice(0, 5).join('\n')}`).toEqual([])
   })
 }
