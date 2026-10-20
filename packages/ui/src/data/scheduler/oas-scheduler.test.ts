@@ -1310,6 +1310,19 @@ describe('OASScheduler 复审修复（I1 now 计时器 / I4 滚动容器键盘�
     )
   })
 
+  it('月历 .day 有 min-width:0（防长 nowrap 芯片把 7 列网格撑爆、末两列被裁）', () => {
+    const el = mount({ 'page-show-date': '2026-08-01' })
+    const css = el.shadowRoot!.querySelector('style')!.textContent ?? ''
+    const start = css.indexOf('.day {')
+    expect(start, '存在 .day 规则').toBeGreaterThan(-1)
+    const block = css.slice(start, css.indexOf('}', start)).replace(/\s+/g, ' ')
+    expect(block, '网格项可收缩').toContain('min-width: 0')
+    // .chips 的同款守卫保持（芯片列可收缩）
+    const chips = css.indexOf('.chips {')
+    const chipsBlock = css.slice(chips, css.indexOf('}', chips)).replace(/\s+/g, ' ')
+    expect(chipsBlock, '.chips 仍可收缩').toContain('min-width: 0')
+  })
+
   it('I4 滚动容器键盘可达：真实溢出才 tabindex=0；不溢出 / 隐藏视图无 tabindex（无空 Tab 停靠点）', () => {
     const day = mount({ view: 'day', 'page-show-date': '2026-08-10', 'start-hour': '0', 'end-hour': '24' })
     const tv = day.shadowRoot!.querySelector<HTMLElement>('[part="timeview"]')!

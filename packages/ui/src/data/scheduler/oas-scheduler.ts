@@ -276,6 +276,9 @@ const STYLE = `
 }
 .day {
   position: relative;
+  /* 网格项自动最小尺寸是 min-content：长 nowrap 芯片会把 repeat(7,1fr) 撑爆成横向溢出、
+     末两列（周六/日）被裁。min-width:0 让轨道按 1fr 收缩，芯片自身 overflow:hidden 负责省略。 */
+  min-width: 0;
   min-height: 84px;
   padding: var(--oas-space-1);
   border: none;

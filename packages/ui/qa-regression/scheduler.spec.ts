@@ -651,3 +651,46 @@ test('scheduler windowed 资源切片 + 打印样式：绝对行号、窗口请�
   expect(r.printCss, '应包含 @media print').toBe(true)
   expect(errors).toEqual([])
 })
+
+// 月历窄容器：长 nowrap 标题不得撑爆 repeat(7,1fr) 轨道（.day 缺 min-width:0 的回归）。
+test('scheduler 月历窄容器：长标题不撑爆 7 列、末列不越界、芯片省略', async ({ page }) => {
+  await page.goto('/components/scheduler.html', { waitUntil: 'domcontentloaded' })
+  await page.waitForSelector('#scheduler-basic', { timeout: 15000 })
+  const r = await page.evaluate(async () => {
+    const el = document.getElementById('scheduler-basic') as HTMLElement & { events: unknown[] }
+    el.style.width = '700px'
+    el.events = [
+      { date: '2026-08-01', title: '这是一个非常非常长的事件标题用于制造最小内容宽度溢出' },
+      { date: '2026-08-02', title: '另一个同样很长很长的事件标题用于制造最小内容宽度溢出' },
+    ]
+    await new Promise((res) => requestAnimationFrame(() => requestAnimationFrame(() => res(null))))
+    const sr = el.shadowRoot!
+    const grid = sr.querySelector('.grid') as HTMLElement
+    const days = [...sr.querySelectorAll('.day')] as HTMLElement[]
+    const g = grid.getBoundingClientRect()
+    const widths = days.map((d) => Math.round(d.getBoundingClientRect().width))
+    const lastRow = days.slice(-7)
+    return {
+      gridScroll: grid.scrollWidth,
+      gridClient: grid.clientWidth,
+      hostScroll: el.scrollWidth,
+      hostClient: el.clientWidth,
+      widths,
+      lastRowRight: Math.round(Math.max(...lastRow.map((d) => d.getBoundingClientRect().right))),
+      gridRight: Math.round(g.right),
+      chipsInCell: [...sr.querySelectorAll('.chip')].every((c) => {
+        const day = c.closest('.day')!
+        return c.getBoundingClientRect().right <= day.getBoundingClientRect().right + 1
+      }),
+      longChipsTruncated: [...sr.querySelectorAll('.chip')]
+        .filter((c) => (c.textContent ?? '').includes('非常非常长') || (c.textContent ?? '').includes('同样很长'))
+        .every((c) => c.scrollWidth > c.clientWidth + 1),
+    }
+  })
+  expect(new Set(r.widths).size, '7 列等宽').toBe(1)
+  expect(r.gridScroll, '网格无横向溢出').toBeLessThanOrEqual(r.gridClient + 1)
+  expect(r.hostScroll, '宿主无横向溢出').toBeLessThanOrEqual(r.hostClient + 1)
+  expect(r.lastRowRight, '末列不越出网格').toBeLessThanOrEqual(r.gridRight + 1)
+  expect(r.chipsInCell, '芯片外框在格内').toBe(true)
+  expect(r.longChipsTruncated, '长标题被省略号截断而非撑开').toBe(true)
+})
