@@ -844,6 +844,21 @@ describe('levelResources 容量日历 / 技能 / 优先级', () => {
     expect(levelResources(resources, [span('t1', ['r1'])]).map((t) => t.id)).toEqual([])
   })
 
+  it('workdays: [] 时只认未来且足以容纳任务的 override，过去/0.5/容量不足都直接跳过', () => {
+    const base = { id: 'r1', name: 'A', capacity: 1, workdays: [] as number[] }
+    // 过去 override 不能让任务向后顺延
+    expect(levelResources([{ ...base, capacityOverrides: { '2026-01-01': 1 } }], [span('t1', ['r1'])])).toEqual([])
+    // 0.5 日装不下整日任务
+    expect(levelResources([{ ...base, capacityOverrides: { '2026-03-03': 0.5 } }], [span('t1', ['r1'])])).toEqual([])
+    // 两个任务但只有一个未来容量单位：不足则整体跳过，不推 500
+    expect(
+      levelResources([{ ...base, capacityOverrides: { '2026-03-03': 1 } }], [span('t1', ['r1']), span('t2', ['r1'])]),
+    ).toEqual([])
+    // 可达的未来 override：顺延到该日
+    const moved = levelResources([{ ...base, capacityOverrides: { '2026-03-03': 1 } }], [span('t1', ['r1'])])
+    expect(moved.map((t) => t.start)).toEqual(['2026-03-03'])
+  })
+
   it('非法 workdays（字符串/越界）按未声明处理，不静默变成永不排班', () => {
     const resources: ResourceItem[] = [
       { id: 'r1', name: 'A', capacity: 1, workdays: ['1', '2', 7] as unknown as number[] },

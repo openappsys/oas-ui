@@ -407,7 +407,7 @@ export interface LevelResourcesOptions {
   /**
    * 平衡模式（缺省 shift）：
    * - shift：把超载档内优先级最低的任务整体后移一个 period（改日期、保工期，对截止日不友好）；
-   *   workdays 显式为空且没有正容量 override 时保持原日期并 devWarn，不推到 maxIter 之后。
+   *   workdays 显式为空且未来没有足够的正容量 override 时保持原日期并 devWarn，不推到 maxIter 之后。
    * - reassign：把任务改派给整段都有余量的资源（日期不变、尊重 capacity；找不到目标即停，不退化顺延）
    */
   mode?: LevelResourcesMode
@@ -728,15 +728,23 @@ function hasCalendar(r: RS): boolean {
 }
 
 /**
- * 是否存在未来可排日期（结构判定，不受当前 period 窗口影响）：
- * 只有「workdays 显式为空且没有任何正容量 override」才是永久不可排；
- * 其余情况（含当前连续假期/0 override）未来仍可能恢复容量，shift 允许继续移动。
+ * 是否存在足够的未来可排容量（结构判定，不受当前 period 窗口影响）：
+ * 只有「workdays 显式为空」才需要看 override；未来（>= 当前最早任务）的正 override
+ * 按可容纳整日任务数 floor(capacity) 累加，足够容纳该资源上的任务才视为可排。
+ * 其余情况（含当前连续假期/0 override）未来仍可能恢复基础容量，shift 允许继续移动。
  */
-function hasPotentialCapacity(r: RS): boolean {
-  if (r.workdays !== null && r.workdays.length === 0) {
-    return [...(r.capacityOverrides?.values() ?? [])].some((n) => n > 0)
+function hasPotentialCapacity(r: RS, fromMs: number, assignedCount: number): boolean {
+  if (r.workdays === null || r.workdays.length > 0) return true
+  if (!r.capacityOverrides) return false
+  let units = 0
+  for (const [key, n] of r.capacityOverrides) {
+    if (n < 1) continue
+    const d = parseTaskDate(key)
+    if (!d || d.getTime() < fromMs) continue
+    units += Math.floor(n)
+    if (units >= assignedCount) return true
   }
-  return true
+  return false
 }
 
 let invalidWorkdaysWarned = false
@@ -1150,7 +1158,7 @@ function buildPeriods(
  *
  * 确定性约定：超载档按资源输入序 → period 时序取第一个处理；受害者先比 projectOrder
  * （靠后项目先让位）、再比 priority（数值大者先让位），并列取 startMs 最大者、输入序靠后者。
- * workdays 显式为空且没有正容量 override 时视为永久不可排（不移动、devWarn），避免把任务推到 maxIter 之后。
+ * workdays 显式为空且未来没有足够的正容量 override 时视为永久不可排（不移动、devWarn），避免把任务推到 maxIter 之后。
  * week 档周起始由 opts.weekStart 决定（缺省周一，纯函数无 locale 上下文；与组件 locale
  * 周起始不同时，周粒度判定可能存在边界差）。
  */
@@ -1213,14 +1221,17 @@ export function levelResources(
     let victimIndex = -1
     let victimPeriod: Period | null = null
     outer: for (const r of rs) {
-      // 当前窗口全为 0 时，只有结构上永远不可排（workdays: [] 且没有正 override）才跳过；
-      // 连续假期/单日 override=0 仍可能通过移动恢复，不能仅凭当前窗口判死。
-      if (!periods.some((p) => capAt(r, p) > 0) && !hasPotentialCapacity(r)) {
-        if (!zeroCapacityWarned) {
-          zeroCapacityWarned = true
-          devWarn('[oas-resource] 资源 workdays 为空且无正容量 override，shift 无法消除超载，已保持原日期')
+      // 当前窗口全为 0 时，只有结构上永远不可排（workdays: [] 且未来正 override
+      // 不足以容纳该资源上的任务）才跳过；连续假期/单日 override=0 仍可继续移动。
+      if (!periods.some((p) => capAt(r, p) > 0)) {
+        const assignedCount = spans.reduce((n, s) => n + (work[s.index]!.resources.includes(r.id) ? 1 : 0), 0)
+        if (!hasPotentialCapacity(r, minMs, assignedCount)) {
+          if (!zeroCapacityWarned) {
+            zeroCapacityWarned = true
+            devWarn('[oas-resource] 资源 workdays 为空且未来无足够正容量 override，shift 无法消除超载，已保持原日期')
+          }
+          continue
         }
-        continue
       }
       for (const period of periods) {
         const cap = capAt(r, period)

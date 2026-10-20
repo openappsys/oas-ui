@@ -73,7 +73,7 @@ levelResources(resources, tasks, { scale: 'week', projectOrder: ['portal'] })
 - `reassign` 默认 `respectSkills: true`，目标资源必须拥有任务的全部 `requiredSkills`；无技能数据时不影响旧行为。
 - `projectOrder` 中靠前的项目优先；同项目内 `priority` 数值小者优先，低优先级任务先让位/改派。项目名与技能均按 trim 后比较。
 - 仍是确定性贪心，不承诺全局最优。
-- `shift` 遇到 `workdays: []` 且没有正容量 override（结构上永久不可排）时不会把任务推到 `maxIter` 个 period 之后，而是保持原日期并 devWarn；连续假期/单日 0 override 仍可继续顺延。`reassign` 找不到目标时直接返回空。
+- `shift` 遇到 `workdays: []` 且未来没有足够正容量 override（结构上永久不可排）时不会把任务推到 `maxIter` 个 period 之后，而是保持原日期并 devWarn；连续假期/单日 0 override 仍可继续顺延。`reassign` 找不到目标时直接返回空。
 
 `options.mode`（缺省 `shift`）：
 
@@ -146,7 +146,7 @@ windowed 下的约定：负载/超载统计**仅基于已装载切片**（全量
 | `locale` | 本地化（覆盖 config-provider 注入与全局 locale） | `string` | — |
 | `range-end` | 宿主托管时间轴终点（ISO 日期 YYYY-MM-DD，含当日）：与 range-start 成对使用；只有其一 / 颠倒 / 非法时忽略托管并 devWarn | `string` | — |
 | `range-start` | 宿主托管时间轴起点（ISO 日期 YYYY-MM-DD）：提供后 period 范围不再由已装载任务推导 | `string` | — |
-| `resources` | 资源列表（JSON [{ id, name, capacity?, workdays?, holidays?, capacityOverrides?, skills? }]）。`workdays` 编号 0=周日…6=周六，`[]` 表示全不可用；未声明 `workdays` 且 `holidays` / `capacityOverrides` 为空时，capacity = 每档（period）可并行任务数（旧语义）；否则按逐日容量求和，非空 `capacityOverrides` 优先于 `holidays`，可写小数但任务按整日计数（0.5 日无法容纳整日任务）；空 `holidays` / `capacityOverrides` 视为未声明。`skills` 为技能标签。资源可带可选 `color`（CSS 颜色或 token，如 `var(--oas-color-success)`）：用于该泳道任务条与负载柱着色，缺省走 `--oas-resource-bar-bg` / `--oas-resource-load-bg` 的统一色 | `ResourceItem[]` | `[]` |
+| `resources` | 资源列表（JSON [{ id, name, capacity?, workdays?, holidays?, capacityOverrides?, skills? }]）。`workdays` 编号 0=周日…6=周六，`[]` 表示全不可用；未声明 `workdays` 且 `holidays` / `capacityOverrides` 为空时，capacity = 每档（period）可并行任务数（旧语义）；否则按逐日容量求和，非空 `capacityOverrides` 优先于 `workdays` / `holidays`，可写小数但任务按整日计数（0.5 日无法容纳整日任务）；空 `holidays` / `capacityOverrides` 视为未声明。`skills` 为技能标签。资源可带可选 `color`（CSS 颜色或 token，如 `var(--oas-color-success)`）：用于该泳道任务条与负载柱着色，缺省走 `--oas-resource-bar-bg` / `--oas-resource-load-bg` 的统一色 | `ResourceItem[]` | `[]` |
 | `scale` | 直方图 period 粒度与时间轴刻度：day（默认）/ week / month；非法回落 day | `string` | — |
 | `show-load-values` | 负载直方图柱顶显示该档负载数字（布尔，默认关）：仅 load > 0 显示，超载档数字用 `text-on-primary`（浅色主题白字/暗色主题深字，压在 danger 柱身上保证对比）；数字为视觉冗余（aria-hidden），读屏仍读列的负载描述 | `boolean` | — |
 | `show-overload-badge` | 泳道行头显示「超载 N 档」徽标（布尔，默认关）：仅该资源存在超载档时显示，文案走 i18n resource.overBadge | `boolean` | — |
@@ -159,7 +159,7 @@ windowed 下的约定：负载/超载统计**仅基于已装载切片**（全量
 
 | Property | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
-| `resources` | 资源列表（JSON [{ id, name, capacity?, workdays?, holidays?, capacityOverrides?, skills? }]）。`workdays` 编号 0=周日…6=周六，`[]` 表示全不可用；未声明 `workdays` 且 `holidays` / `capacityOverrides` 为空时，capacity = 每档（period）可并行任务数（旧语义）；否则按逐日容量求和，非空 `capacityOverrides` 优先于 `holidays`，可写小数但任务按整日计数（0.5 日无法容纳整日任务）；空 `holidays` / `capacityOverrides` 视为未声明。`skills` 为技能标签。资源可带可选 `color`（CSS 颜色或 token，如 `var(--oas-color-success)`）：用于该泳道任务条与负载柱着色，缺省走 `--oas-resource-bar-bg` / `--oas-resource-load-bg` 的统一色；property 读为拷贝：嵌套 plain object / array 深拷贝——循环安全；同一引用在单次读取结果内保持共享；Date 按值复制（不保持共享）；类实例 / Set 等奇异对象按引用；写同步 attribute + 重渲染，含不可序列化自定义键时 attribute 仅丢弃该键，property 读回仍完整保留 | `ResourceItem[]` | `[]` |
+| `resources` | 资源列表（JSON [{ id, name, capacity?, workdays?, holidays?, capacityOverrides?, skills? }]）。`workdays` 编号 0=周日…6=周六，`[]` 表示全不可用；未声明 `workdays` 且 `holidays` / `capacityOverrides` 为空时，capacity = 每档（period）可并行任务数（旧语义）；否则按逐日容量求和，非空 `capacityOverrides` 优先于 `workdays` / `holidays`，可写小数但任务按整日计数（0.5 日无法容纳整日任务）；空 `holidays` / `capacityOverrides` 视为未声明。`skills` 为技能标签。资源可带可选 `color`（CSS 颜色或 token，如 `var(--oas-color-success)`）：用于该泳道任务条与负载柱着色，缺省走 `--oas-resource-bar-bg` / `--oas-resource-load-bg` 的统一色；property 读为拷贝：嵌套 plain object / array 深拷贝——循环安全；同一引用在单次读取结果内保持共享；Date 按值复制（不保持共享）；类实例 / Set 等奇异对象按引用；写同步 attribute + 重渲染，含不可序列化自定义键时 attribute 仅丢弃该键，property 读回仍完整保留 | `ResourceItem[]` | `[]` |
 | `tasks` | 资源任务（JSON [{ id, name, start, end, resources?, priority?, requiredSkills?, project? }]）；start/end 仅日精度 YYYY-MM-DD（end 含当日；带时刻输入按当日处理），resources 为分配的资源 id 数组（指向不存在资源的分配忽略）。priority 数值越小越优先；requiredSkills 在 reassign 时要求目标资源全部具备；project 配合 levelResources({ projectOrder }) 做跨项目优先级；property 读为拷贝：嵌套 plain object / array 深拷贝——循环安全；同一引用在单次读取结果内保持共享；Date 按值复制（不保持共享）；类实例 / Set 等奇异对象按引用；写同步 attribute + 重渲染 + 派发 oas-tasks-change | `ResourceTask[]` | `[]` |
 
 #### 事件
