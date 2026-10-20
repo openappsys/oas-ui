@@ -2188,6 +2188,11 @@ export class OASScheduler extends OASElement {
       row.dataset.resource = r.id
       row.setAttribute('role', 'row')
       row.setAttribute('aria-rowindex', String(rowBase + i + 1))
+      if (this.winMode.windowed) {
+        // windowed 的绝对行号/像素映射依赖定高：固定行高并裁切溢出，避免全天芯片堆叠改变实际行高
+        row.style.height = `${rowH}px`
+        row.style.overflow = 'hidden'
+      }
       const label = document.createElement('div')
       label.className = 'res-label'
       label.setAttribute('role', 'rowheader')

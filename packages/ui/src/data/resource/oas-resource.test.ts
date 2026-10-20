@@ -879,6 +879,21 @@ describe('levelResources 容量日历 / 技能 / 优先级', () => {
     ]
     const moved = levelResources(resources, [span('t1', ['r1'])], { scale: 'week' })
     expect(moved).toHaveLength(1)
+    expect(moved[0]!.start).toBe('2026-03-09')
+  })
+
+  it('0.3+0.7 浮点 override 按 1e-6 归一，不误判不可排', () => {
+    const resources: ResourceItem[] = [
+      {
+        id: 'r1',
+        name: 'A',
+        capacity: 1,
+        workdays: [],
+        capacityOverrides: { '2026-03-10': 0.3, '2026-03-11': 0.7 },
+      },
+    ]
+    const moved = levelResources(resources, [span('t1', ['r1'])], { scale: 'week' })
+    expect(moved).toHaveLength(1)
   })
 
   it('workdays: [] 的跨资源判定按该资源自身任务起点，不用全局最早任务', () => {

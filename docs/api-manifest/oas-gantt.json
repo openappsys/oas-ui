@@ -313,6 +313,10 @@
       "default": "var(--oas-color-text-secondary-strong)"
     },
     {
+      "name": "--oas-gantt-deadline-color",
+      "default": "var(--oas-color-danger)"
+    },
+    {
       "name": "--oas-gantt-bar-progress-bg",
       "default": "var(--oas-gantt-bar-color, var(--oas-color-primary))"
     },

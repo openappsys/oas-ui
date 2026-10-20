@@ -4383,7 +4383,8 @@
     "cssVars": {
       "--oas-gantt-baseline-color": "Baseline bar color (default translucent secondary text)",
       "--oas-gantt-critical-color": "Critical-path highlight color (default --oas-color-danger)",
-      "--oas-gantt-conflict-color": "Conflict (negative-float) highlight color (default --oas-color-danger)"
+      "--oas-gantt-conflict-color": "Conflict (negative-float) highlight color (default --oas-color-danger)",
+      "--oas-gantt-deadline-color": "Deadline marker color (default --oas-color-danger)"
     }
   },
   "oas-picker": {

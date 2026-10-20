@@ -745,7 +745,8 @@ function hasPotentialCapacity(r: RS, fromMs: number, demand: number): boolean {
     total += n
     if (total >= demand) return true
   }
-  return false
+  // 与 periodCapacity 同口径做 1e-6 归一：0.3+0.7 之类的浮点累加不应误判不可排。
+  return Math.round(total * 1e6) / 1e6 >= demand
 }
 
 let invalidWorkdaysWarned = false

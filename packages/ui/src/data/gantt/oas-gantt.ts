@@ -489,7 +489,7 @@ svg.links .temp-link {
 .deadline {
   position: absolute;
   width: 2px;
-  border-inline-start: 1px dashed var(--oas-color-danger);
+  border-inline-start: 1px dashed var(--oas-gantt-deadline-color, var(--oas-color-danger));
   pointer-events: auto;
   cursor: help;
   opacity: 0.75;
@@ -1252,6 +1252,9 @@ function sanitizeTasks(
     if (raw.type === 'task' || raw.type === 'milestone' || raw.type === 'summary') t.type = raw.type
     const deadline = typeof raw.deadline === 'string' ? raw.deadline.trim() : ''
     if (deadline && parseTaskDate(deadline)) t.deadline = deadline
+    else if (deadline) {
+      onWarn?.(`deadline:${t.id}`, `[oas-gantt] 任务 "${t.id}" 的 deadline 非法，已丢弃`)
+    }
     const base = raw.baseline
     if (typeof base === 'object' && base !== null) {
       const b = base as Record<string, unknown>
@@ -1259,7 +1262,18 @@ function sanitizeTasks(
       if (s && parseTaskDate(s)) {
         const bb: { start: string; end?: string; progress?: number } = { start: s }
         const e = typeof b.end === 'string' ? b.end.trim() : ''
-        if (e && parseTaskDate(e)) bb.end = e
+        if (e && parseTaskDate(e)) {
+          const sD = parseTaskDate(s)!
+          const eD = parseTaskDate(e)!
+          const eMs = e.length > 10 ? eD.getTime() : eD.getTime() + DAY_MS
+          if (eMs < sD.getTime()) {
+            onWarn?.(`baseline:${t.id}`, `[oas-gantt] 任务 "${t.id}" baseline start 晚于 end，已自动交换`)
+            bb.start = e
+            bb.end = s
+          } else {
+            bb.end = e
+          }
+        }
         const bp = parseProgress(b.progress)
         if (bp !== undefined) bb.progress = bp
         t.baseline = bb
@@ -2688,6 +2702,12 @@ export class OASGantt extends OASElement {
         this.warnOnce(
           `constraint-summary:${r.task.id}`,
           `[oas-gantt] 摘要任务 "${r.task.id}" 的 constraint 已忽略（摘要日期由子级派生）`,
+        )
+      }
+      if (r.hasChildren && r.task.deadline) {
+        this.warnOnce(
+          `deadline-summary:${r.task.id}`,
+          `[oas-gantt] 摘要任务 "${r.task.id}" 的 deadline 已忽略（摘要日期由子级派生）`,
         )
       }
     }

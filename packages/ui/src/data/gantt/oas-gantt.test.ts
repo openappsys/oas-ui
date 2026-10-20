@@ -2678,6 +2678,21 @@ describe('OASGantt 基线对比（baseline）', () => {
     expect(parseFloat(a.style.width)).toBeGreaterThan(0)
   })
 
+  it('baseline start 晚于 end：自动交换（不把负工期带入差异计算）', () => {
+    const el = mount({
+      tasks: JSON.stringify([
+        {
+          id: 'rev',
+          name: 'Rev',
+          start: '2026-03-02',
+          end: '2026-03-06',
+          baseline: { start: '2026-03-06', end: '2026-03-02' },
+        },
+      ]),
+    })
+    expect(el.tasks[0]!.baseline).toEqual({ start: '2026-03-02', end: '2026-03-06' })
+  })
+
   it('baseline 数据经 taskSnapshot 透传（task-click detail 含 deep copy）', () => {
     const el = mount({ tasks: TASKS, 'show-baseline': '' })
     let seen: GanttTask | undefined
