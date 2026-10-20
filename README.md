@@ -72,6 +72,12 @@ pnpm add @oas-ui/next   # Next.js：RSC OasComponent + OasRegistry 客户端注�
 
 SSR / DSD 指南见文档站 [SSR 页](https://oas-ui.dev/guide/ssr)与 `@oas-ui/ssr` 包。
 
+AI agent 使用入口：
+
+- 安装消费型 skill：`npx skills add openappsys/oas-ui --skill using-oas-ui`
+- Skill 源文件：`skills/using-oas-ui/SKILL.md`
+- 机器可读文档：`https://oas-ui.dev/llms.txt`、`https://oas-ui.dev/llms-full.txt`
+
 ## 包结构
 
 | 包 | 说明 |
