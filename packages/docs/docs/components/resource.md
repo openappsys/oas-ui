@@ -11,8 +11,8 @@
   <div id="res-basic-output" style="color:var(--oas-color-text-secondary);font-size:var(--oas-font-size-sm);margin-top:var(--oas-space-2)"></div>
 </DemoBlock>
 
-- `resources`：`[{ id, name, capacity? }]`，`capacity` = 该资源**每档（period）**可并行任务数（`day` 档即每天；缺省回落组件属性 `capacity`，最终 1）。
-- `tasks`：`[{ id, name, start, end, resources?: string[] }]`，`start/end` 为 `YYYY-MM-DD`（**仅日精度**，`end` 含当日；带时刻的输入按当日处理），`resources` 为分配的资源 id 数组；指向不存在资源的分配被忽略。
+- `resources`：`[{ id, name, capacity?, workdays?, holidays?, capacityOverrides?, skills? }]`。未声明任何日历字段时，`capacity` = 该资源**每档（period）**可并行任务数（兼容旧语义）；声明 `workdays` / `holidays` / `capacityOverrides` 后切换为**逐日容量**，周期容量 = 周期内逐日容量求和（`capacityOverrides` 可表达半天 `0.5`，优先于 `workdays` / `holidays`）。`skills` 为技能标签数组。
+- `tasks`：`[{ id, name, start, end, resources?: string[], priority?, requiredSkills?, project? }]`，`start/end` 为 `YYYY-MM-DD`（**仅日精度**，`end` 含当日；带时刻的输入按当日处理），`resources` 为分配的资源 id 数组；指向不存在资源的分配被忽略。`priority` 数值越小越优先；`requiredSkills` 在 reassign 时要求目标资源全部具备；`project` 配合 `levelResources({ projectOrder })` 做跨项目优先级。
 - `scale`：`day`（默认）/ `week` / `month`——决定直方图 period 粒度与刻度文案。
 - 泳道与直方图**共享列宽与横向滚动**；超载柱加 `.over`（颜色走 `--oas-color-danger`）；同一资源内**互相重叠的任务条按段堆叠**显示（互不遮挡，点哪条命中哪条）。
 - 泳道间距 token `--oas-resource-lane-gap` 由行高与条高派生（`--oas-resource-row-height` 参与派生；多段轨道实高 = 段数 × 条高 +（段数 + 1）× 间距）。该 token 声明在组件宿主元素上：**仅宿主元素级**可覆盖——内联 style 或命中宿主元素的 class 规则（e2e 实测：宿主 class 设 `--oas-resource-lane-gap:4px` → 单段轨道高 36 → 28）；`:root` / 祖先级声明不生效（宿主自身已有声明，继承值被压过）。
@@ -42,6 +42,26 @@ el.tasks = tasks.map((t) => [...moved, ...reassigned].find((m) => m.id === t.id)
 ```
 
 `levelResources` 保证：确定性（同输入同输出）、迭代至无超载或达 `maxIter`；**不改入参**。组件不自动调用。
+
+### 容量日历、技能与优先级
+
+```ts
+const resources = [
+  { id: 'alice', name: 'Alice', capacity: 1, workdays: [1, 2, 3, 4, 5], holidays: ['2026-03-05'], skills: ['frontend'] },
+  { id: 'bob', name: 'Bob', capacity: 1, capacityOverrides: { '2026-03-06': 0.5 }, skills: ['backend'] },
+]
+const tasks = [
+  { id: 't1', name: '页面开发', start: '2026-03-02', end: '2026-03-06', resources: ['alice'], requiredSkills: ['frontend'], priority: 0, project: 'portal' },
+]
+// 周档容量 = 每个工作日容量求和；holiday 当天为 0，override 可写半天 0.5
+levelResources(resources, tasks, { scale: 'week', projectOrder: ['portal'] })
+```
+
+- 未声明日历字段：保持旧的「每档容量」语义；声明后按逐日容量求和。
+- `reassign` 默认 `respectSkills: true`，目标资源必须拥有任务的全部 `requiredSkills`；无技能数据时不影响旧行为。
+- `projectOrder` 中靠前的项目优先；同项目内 `priority` 数值小者优先，低优先级任务先让位/改派。
+- 仍是确定性贪心，不承诺全局最优。
+- `workdays: []` 表示每天容量 0（全部不可用）；空 `capacityOverrides: {}` 不改变容量。
 
 `options.mode`（缺省 `shift`）：
 
@@ -114,11 +134,11 @@ windowed 下的约定：负载/超载统计**仅基于已装载切片**（全量
 | `locale` | 本地化（覆盖 config-provider 注入与全局 locale） | `string` | — |
 | `range-end` | 宿主托管时间轴终点（ISO 日期 YYYY-MM-DD，含当日）：与 range-start 成对使用；只有其一 / 颠倒 / 非法时忽略托管并 devWarn | `string` | — |
 | `range-start` | 宿主托管时间轴起点（ISO 日期 YYYY-MM-DD）：提供后 period 范围不再由已装载任务推导 | `string` | — |
-| `resources` | 资源列表（JSON [{ id, name, capacity? }]）——capacity = 该资源每档（period）可并行任务数（day 档即每天；缺省回落属性 capacity，最终 1）；资源可带可选 `color`（CSS 颜色或 token，如 `var(--oas-color-success)`）：用于该泳道任务条与负载柱着色，缺省走 `--oas-resource-bar-bg` / `--oas-resource-load-bg` 的统一色 | `ResourceItem[]` | `[]` |
+| `resources` | 资源列表（JSON [{ id, name, capacity?, workdays?, holidays?, capacityOverrides?, skills? }]）。未声明日历字段时 capacity = 每档（period）可并行任务数（旧语义）；声明 workdays / holidays / capacityOverrides 后按逐日容量求和（overrides 可半天 0.5，优先于 holidays/workdays）。`skills` 为技能标签。资源可带可选 `color`（CSS 颜色或 token，如 `var(--oas-color-success)`）：用于该泳道任务条与负载柱着色，缺省走 `--oas-resource-bar-bg` / `--oas-resource-load-bg` 的统一色 | `ResourceItem[]` | `[]` |
 | `scale` | 直方图 period 粒度与时间轴刻度：day（默认）/ week / month；非法回落 day | `string` | — |
 | `show-load-values` | 负载直方图柱顶显示该档负载数字（布尔，默认关）：仅 load > 0 显示，超载档数字用 `text-on-primary`（浅色主题白字/暗色主题深字，压在 danger 柱身上保证对比）；数字为视觉冗余（aria-hidden），读屏仍读列的负载描述 | `boolean` | — |
 | `show-overload-badge` | 泳道行头显示「超载 N 档」徽标（布尔，默认关）：仅该资源存在超载档时显示，文案走 i18n resource.overBadge | `boolean` | — |
-| `tasks` | 资源任务（JSON [{ id, name, start, end, resources? }]）；start/end 仅日精度 YYYY-MM-DD（end 含当日；带时刻输入按当日处理），resources 为分配的资源 id 数组（指向不存在资源的分配忽略） | `ResourceTask[]` | `[]` |
+| `tasks` | 资源任务（JSON [{ id, name, start, end, resources?, priority?, requiredSkills?, project? }]）；start/end 仅日精度 YYYY-MM-DD（end 含当日；带时刻输入按当日处理），resources 为分配的资源 id 数组（指向不存在资源的分配忽略）。priority 数值越小越优先；requiredSkills 在 reassign 时要求目标资源全部具备；project 配合 levelResources({ projectOrder }) 做跨项目优先级 | `ResourceTask[]` | `[]` |
 | `total` | windowed 模式下的全量资源行数；为 0 或非法时 windowed 不生效（回落本地模式） | `string` | — |
 | `window-start` | windowed 模式下切片首行（资源）的绝对行号（相对全量） | `string` | `0` |
 | `windowed` | 服务端行窗口模式（布尔，默认关）：与 total / window-start 配合，宿主只喂可视窗口切片（按绝对行号渲染），期望行区间未被已装载覆盖时派发 oas-window-request 由宿主回填；负载/超载统计仅基于已装载切片（全量统计由宿主负责）并 devWarn；缺 range-start / range-end 时时间轴回落「已装载任务」派生并 devWarn。非 windowed 行为不变 | `boolean` | — |
@@ -127,8 +147,8 @@ windowed 下的约定：负载/超载统计**仅基于已装载切片**（全量
 
 | Property | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
-| `resources` | 资源列表（读为拷贝：嵌套 plain object / array 深拷贝——循环安全；同一引用在单次读取结果内保持共享；Date 按值复制（不保持共享）；类实例 / Set 等奇异对象按引用；写同步 attribute + 重渲染，含不可序列化自定义键时 attribute 仅丢弃该键，property 读回仍完整保留）；资源可带可选 `color`（CSS 颜色或 token，如 `var(--oas-color-success)`）：用于该泳道任务条与负载柱着色，缺省走 `--oas-resource-bar-bg` / `--oas-resource-load-bg` 的统一色 | `ResourceItem[]` | `[]` |
-| `tasks` | 资源任务（读为拷贝：嵌套 plain object / array 深拷贝——循环安全；同一引用在单次读取结果内保持共享；Date 按值复制（不保持共享）；类实例 / Set 等奇异对象按引用；写同步 attribute + 重渲染 + 派发 oas-tasks-change，含不可序列化自定义键时 attribute 仅丢弃该键，property 读回仍完整保留） | `ResourceTask[]` | `[]` |
+| `resources` | 资源列表（JSON [{ id, name, capacity?, workdays?, holidays?, capacityOverrides?, skills? }]）。未声明日历字段时 capacity = 每档（period）可并行任务数（旧语义）；声明 workdays / holidays / capacityOverrides 后按逐日容量求和（overrides 可半天 0.5，优先于 holidays/workdays）。`skills` 为技能标签。资源可带可选 `color`（CSS 颜色或 token，如 `var(--oas-color-success)`）：用于该泳道任务条与负载柱着色，缺省走 `--oas-resource-bar-bg` / `--oas-resource-load-bg` 的统一色；property 读为拷贝：嵌套 plain object / array 深拷贝——循环安全；同一引用在单次读取结果内保持共享；Date 按值复制（不保持共享）；类实例 / Set 等奇异对象按引用；写同步 attribute + 重渲染 | `ResourceItem[]` | `[]` |
+| `tasks` | 资源任务（JSON [{ id, name, start, end, resources?, priority?, requiredSkills?, project? }]）；start/end 仅日精度 YYYY-MM-DD（end 含当日；带时刻输入按当日处理），resources 为分配的资源 id 数组（指向不存在资源的分配忽略）。priority 数值越小越优先；requiredSkills 在 reassign 时要求目标资源全部具备；project 配合 levelResources({ projectOrder }) 做跨项目优先级；property 读为拷贝：嵌套 plain object / array 深拷贝——循环安全；同一引用在单次读取结果内保持共享；Date 按值复制（不保持共享）；类实例 / Set 等奇异对象按引用；写同步 attribute + 重渲染 + 派发 oas-tasks-change | `ResourceTask[]` | `[]` |
 
 #### 事件
 

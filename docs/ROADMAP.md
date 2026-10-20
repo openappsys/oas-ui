@@ -127,6 +127,8 @@
 6. PRD 版本段更新（含测试数）+ 本 ROADMAP 状态更新
 7. 涉及 Shadow DOM 样式/组件的改动提交前必跑 `pnpm build`（vitest/jsdom 抓不到 scoped CSS 语法错误）
 
+- **已立项（未发布）：resource 容量日历 + 技能匹配 + 优先级均载**——支持逐日容量、半天/假期、requiredSkills、task priority / projectOrder；无日历数据时保持旧语义。详见 PRD「未发布」段。
+
 ## 后续 backlog（按需立项）
 
 - **数据密集型规模化（v2.6.2 已交付）**：`oas-gantt` / `oas-resource` 时间轴**列虚拟化**（长跨度横向窗口 + rAF 合帧 + 容器尺寸自愈）；**服务端行窗口协议**（`shared/window-data.ts`：`windowed` + `total` + `window-start` + `oas-window-request`，`range-start`/`range-end` 宿主托管时间轴 + `oas-range-request`）落地于 table / gantt / resource；`oas-resource` 泳道与负载**行虚拟化**、`oas-kanban` 列体卡片虚拟化、`oas-scheduler` 资源行与小时轴虚拟化（含修复资源视图滚动跳顶）；`oas-table` / `oas-gantt` **增量渲染**（选择/汇总不重算全量）。

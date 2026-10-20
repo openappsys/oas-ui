@@ -2579,3 +2579,11 @@ group 子钮此前为宿主自填 light DOM（`slot="action"`），组件用 `::
 - **破坏性变更**：`--oas-glass-refraction` 移除，依赖 Chromium 独有边缘折射的覆盖需删除；文档“液态玻璃”改称“磨砂玻璃（Frosted Glass）”，文件名/组件 API 不变。
 - **测试与门禁**：全量单测 10497 passed；Chromium e2e 2199 passed / 37 skipped；Firefox e2e 1313 passed / 7 skipped；`typecheck` / `build` / `api:check` / `llms:check` / `stats:check` / `perf:size` / `perf:bench` / `trace --all` 全绿。
 - **发布通道**：源码托管于 Gitea（非 GitHub）→ 本地通道 `pnpm release`；tag `v2.6.2` 仅作版本标记。
+
+
+## 未发布：resource 容量日历、技能与优先级均载
+
+- **范围**：`oas-resource` 数据契约扩展：`ResourceItem.workdays / holidays / capacityOverrides / skills`，`ResourceTask.priority / requiredSkills / project`；`levelResources()` 增加 `respectSkills` / `projectOrder`。
+- **语义**：未声明日历字段时保持旧的每档容量；声明后按逐日容量求和（`capacityOverrides` 支持半天 0.5，优先于假期/工作日）。reassign 默认要求目标资源具备全部 `requiredSkills`；项目顺序优先，任务 priority 数值小者优先，低优先级先让位。
+- **兼容**：全部字段可选；无日历/技能/优先级数据时输出与 v2.6.2 逐字节一致。
+- **验收**：单测覆盖工作日/假期/半天/技能/优先级/项目顺序/确定性/maxIter；组件 e2e 覆盖 holiday 超载与 `oas-overload.capacity`；文档 zh/en、API 说明与 a11y/性能门禁同步。

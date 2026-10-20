@@ -323,6 +323,14 @@ export interface ResourceItem {
   name: string
   /** 该资源的并行容量上限（正数；缺省回落 capacity 属性，最终 1） */
   capacity?: number
+  /** 每周可用日（0=周日…6=周六；省略=不启用逐日日历，沿用旧的每 period 容量语义） */
+  workdays?: number[]
+  /** 假期日期（YYYY-MM-DD；当天容量 0） */
+  holidays?: string[]
+  /** 日期级容量覆盖（YYYY-MM-DD → 容量；可表达半天 0.5、临时加班；优先于 workdays/holidays） */
+  capacityOverrides?: Record<string, number>
+  /** 资源技能标签（reassign 时用于 requiredSkills 硬匹配） */
+  skills?: string[]
   [key: string]: unknown
 }
 
@@ -338,6 +346,12 @@ export interface ResourceTask {
   end: string
   /** 分配的资源 id 数组（指向不存在资源的分配被忽略） */
   resources?: string[]
+  /** 任务优先级（数值越小越优先；缺省 0）；均载时低优先级任务先让位 */
+  priority?: number
+  /** 任务需要的技能（reassign 目标必须全部具备；缺省空 = 不限制） */
+  requiredSkills?: string[]
+  /** 所属项目键（配合 projectOrder 做跨项目优先级） */
+  project?: string
   [key: string]: unknown
 }
 
@@ -389,6 +403,10 @@ export interface LevelResourcesOptions {
    * - reassign：把任务改派给整段都有余量的资源（日期不变、尊重 capacity；找不到目标即停，不退化顺延）
    */
   mode?: LevelResourcesMode
+  /** reassign 时是否要求目标资源具备 task.requiredSkills（缺省 true；无技能数据时无影响） */
+  respectSkills?: boolean
+  /** 跨项目优先级：数组靠前的项目优先；未列出的项目排在最后（仅 levelResources 使用） */
+  projectOrder?: string[]
 }
 
 /** 内部清洗后资源模型（capacity: null = 回落组件缺省容量）；白名单外键原样透传 */
@@ -396,6 +414,11 @@ interface RS {
   id: string
   name: string
   capacity: number | null
+  /** null = 未声明 workdays（旧语义：capacity 按 period 计，不按逐日求和） */
+  workdays: number[] | null
+  holidays: Set<string>
+  capacityOverrides: Map<string, number> | null
+  skills: string[] | null
   [key: string]: unknown
 }
 
@@ -406,6 +429,9 @@ interface RT {
   start: string
   end: string
   resources: string[]
+  priority: number
+  requiredSkills: string[]
+  project: string
   [key: string]: unknown
 }
 
@@ -523,9 +549,17 @@ function computeRowWindowFromOffsets(
 }
 
 /** 资源已知字段（清洗时按各自口径处理）；此外的键视为宿主自定义字段，原样透传 */
-const RESERVED_RESOURCE_KEYS = new Set(['id', 'name', 'capacity'])
+const RESERVED_RESOURCE_KEYS = new Set([
+  'id',
+  'name',
+  'capacity',
+  'workdays',
+  'holidays',
+  'capacityOverrides',
+  'skills',
+])
 /** 任务已知字段（清洗时按各自口径处理）；此外的键视为宿主自定义字段，原样透传 */
-const RESERVED_TASK_KEYS = new Set(['id', 'name', 'start', 'end', 'resources'])
+const RESERVED_TASK_KEYS = new Set(['id', 'name', 'start', 'end', 'resources', 'priority', 'requiredSkills', 'project'])
 
 /** 透传白名单外的自定义键时一律跳过的危险键：防 `__proto__` 等原型 setter / 内建键遮蔽 */
 const UNSAFE_KEYS = new Set(['__proto__', 'constructor', 'prototype'])
@@ -679,6 +713,105 @@ function sanitizeCapacity(v: unknown): number | null {
   return v
 }
 
+/** 容量日历字段存在性：任一字段声明即启用逐日容量（否则保持旧的 period 容量语义） */
+function hasCalendar(r: RS): boolean {
+  return r.workdays !== null || r.holidays.size > 0 || r.capacityOverrides !== null
+}
+
+function sanitizeWorkdays(v: unknown): number[] | null {
+  if (!Array.isArray(v)) return null
+  const out = new Set<number>()
+  for (const n of v) if (typeof n === 'number' && Number.isInteger(n) && n >= 0 && n <= 6) out.add(n)
+  return [...out].sort((a, b) => a - b)
+}
+
+function sanitizeHolidays(v: unknown): Set<string> {
+  const out = new Set<string>()
+  if (!Array.isArray(v)) return out
+  for (const s of v) {
+    if (typeof s !== 'string') continue
+    const d = parseISODate(s.trim())
+    if (d) out.add(toISODate(d))
+  }
+  return out
+}
+
+function sanitizeCapacityOverrides(v: unknown): Map<string, number> | null {
+  if (typeof v !== 'object' || v === null || Array.isArray(v)) return null
+  const out = new Map<string, number>()
+  for (const key of Object.keys(v)) {
+    const d = parseISODate(key)
+    if (!d) continue
+    const n = safeGet(v as Record<string, unknown>, key)
+    if (n === READ_FAILED || typeof n !== 'number' || !Number.isFinite(n) || n < 0) continue
+    out.set(toISODate(d), n)
+  }
+  return out
+}
+
+function sanitizeSkills(v: unknown): string[] | null {
+  if (!Array.isArray(v)) return null
+  return [...new Set(v.filter((x): x is string => typeof x === 'string' && x.trim() !== '').map((x) => x.trim()))]
+}
+
+function sanitizePriority(v: unknown): number {
+  return typeof v === 'number' && Number.isFinite(v) ? v : 0
+}
+
+function sanitizeSkillsMatch(v: unknown): boolean {
+  return v !== false
+}
+
+function sanitizeProjectOrder(v: unknown): string[] {
+  return Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string' && x !== '') : []
+}
+
+/**
+ * 资源在某个 period 的容量。
+ * - 未声明任何日历字段：保持旧语义，capacity 按 period 计（不是逐日求和）。
+ * - 声明 workdays/holidays/capacityOverrides 任一：按日求容量并求和；
+ *   workdays 缺省视为每天可用（不隐式改周末语义），holidays=0，capacityOverrides 优先。
+ */
+function periodCapacity(r: RS, period: Period, _scale: ResourceScale, _weekStart: number, capDefault: number): number {
+  const base = r.capacity ?? capDefault
+  if (!hasCalendar(r)) return base
+  const workdays = r.workdays === null ? null : new Set(r.workdays)
+  let total = 0
+  let cursor = startOfDay(new Date(period.startMs))
+  const end = new Date(period.endMs)
+  while (cursor.getTime() < end.getTime()) {
+    const key = toISODate(cursor)
+    const override = r.capacityOverrides?.get(key)
+    if (override != null) total += override
+    else if (r.holidays.has(key)) total += 0
+    else if (workdays === null || workdays.has(cursor.getDay())) total += base
+    cursor = addDays(cursor, 1)
+  }
+  return total
+}
+
+function hasRequiredSkills(r: RS, t: RT): boolean {
+  if (t.requiredSkills.length === 0) return true
+  if (!r.skills) return false
+  return t.requiredSkills.every((skill) => r.skills!.includes(skill))
+}
+
+function projectRank(project: string, order: string[]): number {
+  const i = order.indexOf(project)
+  return i < 0 ? order.length : i
+}
+
+/** 均载受害者/改派候选排序：低优先级先让位；并列保持 start 晚→早、输入序后→前 */
+function compareLowPriorityFirst(a: Span, b: Span, tasks: RT[], projectOrder: string[]): number {
+  const ta = tasks[a.index]!
+  const tb = tasks[b.index]!
+  const projectDiff = projectRank(tb.project, projectOrder) - projectRank(ta.project, projectOrder)
+  if (projectDiff !== 0) return projectDiff
+  const priorityDiff = tb.priority - ta.priority
+  if (priorityDiff !== 0) return priorityDiff
+  return b.startMs - a.startMs || b.index - a.index
+}
+
 /**
  * 清洗资源数组（纯函数）：非对象/缺 id/缺名/空串丢弃；重复 id 保留首个；
  * capacity 非正有限数 → null（回落组件缺省容量）；白名单外的自定义键原样透传。
@@ -713,7 +846,19 @@ function sanitizeResources(v: unknown, onKeyError?: (key: string) => void, onInv
       if (seen.has(id)) continue
       seen.add(id)
       const cap = safeGet(raw, 'capacity')
-      const r: RS = { id, name, capacity: cap === READ_FAILED ? null : sanitizeCapacity(cap) }
+      const workdaysRaw = safeGet(raw, 'workdays')
+      const holidaysRaw = safeGet(raw, 'holidays')
+      const overridesRaw = safeGet(raw, 'capacityOverrides')
+      const skillsRaw = safeGet(raw, 'skills')
+      const r: RS = {
+        id,
+        name,
+        capacity: cap === READ_FAILED ? null : sanitizeCapacity(cap),
+        workdays: workdaysRaw === READ_FAILED ? null : sanitizeWorkdays(workdaysRaw),
+        holidays: holidaysRaw === READ_FAILED ? new Set() : sanitizeHolidays(holidaysRaw),
+        capacityOverrides: overridesRaw === READ_FAILED ? null : sanitizeCapacityOverrides(overridesRaw),
+        skills: skillsRaw === READ_FAILED ? null : sanitizeSkills(skillsRaw),
+      }
       // 自定义字段透传（ResourceItem 的 `[key: string]: unknown` 契约）：白名单外的键原样保留
       for (const k of ownKeys) {
         if (RESERVED_RESOURCE_KEYS.has(k) || UNSAFE_KEYS.has(k)) continue
@@ -788,12 +933,18 @@ function sanitizeTasks(v: unknown, onKeyError?: (key: string) => void, onInvalid
       const resources = Array.isArray(rawResources)
         ? [...new Set(rawResources.filter((x): x is string => typeof x === 'string' && x !== ''))]
         : []
+      const priorityRaw = safeGet(raw, 'priority')
+      const requiredRaw = safeGet(raw, 'requiredSkills')
+      const projectRaw = safeGet(raw, 'project')
       const t: RT = {
         id,
         name,
         start: toISODate(startDate),
         end: toISODate(endDate),
         resources,
+        priority: priorityRaw === READ_FAILED ? 0 : sanitizePriority(priorityRaw),
+        requiredSkills: requiredRaw === READ_FAILED ? [] : (sanitizeSkills(requiredRaw) ?? []),
+        project: typeof projectRaw === 'string' ? projectRaw : '',
       }
       // 自定义字段透传（ResourceTask 的 `[key: string]: unknown` 契约）：白名单外的键原样保留
       for (const k of ownKeys) {
@@ -820,6 +971,9 @@ function sanitizeTasks(v: unknown, onKeyError?: (key: string) => void, onInvalid
 function toPublicTask(t: RT, memo?: WeakMap<object, unknown>, onKeyError?: (key: string) => void): ResourceTask {
   const copy: ResourceTask = { id: t.id, name: t.name, start: t.start, end: t.end }
   if (t.resources.length > 0) copy.resources = [...t.resources]
+  if (t.priority !== 0) copy.priority = t.priority
+  if (t.requiredSkills.length > 0) copy.requiredSkills = [...t.requiredSkills]
+  if (t.project !== '') copy.project = t.project
   for (const k of Object.keys(t)) {
     if (RESERVED_TASK_KEYS.has(k) || UNSAFE_KEYS.has(k)) continue
     const v = safeGet(t, k)
@@ -841,6 +995,10 @@ function toPublicTask(t: RT, memo?: WeakMap<object, unknown>, onKeyError?: (key:
 function toPublicResource(r: RS, memo?: WeakMap<object, unknown>, onKeyError?: (key: string) => void): ResourceItem {
   const copy: ResourceItem = { id: r.id, name: r.name }
   if (r.capacity != null) copy.capacity = r.capacity
+  if (r.workdays !== null) copy.workdays = [...r.workdays]
+  if (r.holidays.size > 0) copy.holidays = [...r.holidays]
+  if (r.capacityOverrides) copy.capacityOverrides = Object.fromEntries(r.capacityOverrides)
+  if (r.skills && r.skills.length > 0) copy.skills = [...r.skills]
   for (const k of Object.keys(r)) {
     if (RESERVED_RESOURCE_KEYS.has(k) || UNSAFE_KEYS.has(k)) continue
     const v = safeGet(r, k)
@@ -956,11 +1114,23 @@ export function levelResources(
       : DEFAULT_MAX_ITER
   const weekStart =
     typeof opts.weekStart === 'number' && Number.isInteger(opts.weekStart) ? ((opts.weekStart % 7) + 7) % 7 : 1
+  const respectSkills = sanitizeSkillsMatch(opts.respectSkills)
+  const projectOrder = sanitizeProjectOrder(opts.projectOrder)
 
-  const capOf = new Map<string, number>()
-  for (const r of rs) capOf.set(r.id, r.capacity ?? capDefault)
+  // 日历容量按 (resource, period) 缓存：shift 每次迭代、reassign 每轮候选会重复询问同一档；
+  // 无日历资源仍走 periodCapacity 的 O(1) 早退，缓存表不改变结果。
+  const capCache = new Map<string, number>()
+  const capAt = (r: RS, period: Period): number => {
+    const key = `${r.id}|${period.startMs}|${period.endMs}`
+    const hit = capCache.get(key)
+    if (hit !== undefined) return hit
+    const value = periodCapacity(r, period, scale, weekStart, capDefault)
+    capCache.set(key, value)
+    return value
+  }
 
-  if (opts.mode === 'reassign') return reassignOverload(rs, work, capOf, scale, weekStart, maxIter, onKeyError)
+  if (opts.mode === 'reassign')
+    return reassignOverload(rs, work, capAt, scale, weekStart, maxIter, respectSkills, projectOrder, onKeyError)
 
   const moved = new Set<string>()
   let iter = 0
@@ -985,25 +1155,21 @@ export function levelResources(
     let victimIndex = -1
     let victimPeriod: Period | null = null
     outer: for (const r of rs) {
-      const cap = capOf.get(r.id)!
       for (const period of periods) {
+        const cap = capAt(r, period)
         let load = 0
-        let best = -1
-        let bestStart = -1
+        let bestSpan: Span | null = null
         for (const s of spans) {
           const t = work[s.index]!
           if (!t.resources.includes(r.id)) continue
           if (s.startMs < period.endMs && s.endMs > period.startMs) {
             load++
-            // 受害者：重叠任务中开始较晚者；并列取输入序靠后
-            if (s.startMs >= bestStart) {
-              bestStart = s.startMs
-              best = s.index
-            }
+            // 受害者：低优先级先让位；并列开始较晚者、输入序靠后
+            if (!bestSpan || compareLowPriorityFirst(s, bestSpan, work, projectOrder) < 0) bestSpan = s
           }
         }
-        if (load > cap) {
-          victimIndex = best
+        if (load > cap && bestSpan) {
+          victimIndex = bestSpan.index
           victimPeriod = period
           break outer
         }
@@ -1036,10 +1202,12 @@ export function levelResources(
 function reassignOverload(
   rs: RS[],
   work: RT[],
-  capOf: Map<string, number>,
+  capAt: (r: RS, period: Period) => number,
   scale: ResourceScale,
   weekStart: number,
   maxIter: number,
+  respectSkills: boolean,
+  projectOrder: string[],
   onKeyError?: (key: string) => void,
 ): ResourceTask[] {
   const spans = spansOf(work)
@@ -1081,9 +1249,8 @@ function reassignOverload(
     let hit: { rid: string; idx: number } | null = null
     for (const r of rs) {
       const arr = load.get(r.id)!
-      const cap = capOf.get(r.id)!
       for (let i = 0; i < arr.length; i++) {
-        if ((arr[i] ?? 0) > cap) {
+        if ((arr[i] ?? 0) > capAt(r, periods[i]!)) {
           hit = { rid: r.id, idx: i }
           break
         }
@@ -1095,7 +1262,7 @@ function reassignOverload(
     const period = periods[hit.idx]!
     const candidates = spans
       .filter((s) => work[s.index]!.resources.includes(rid) && overlaps(s, period))
-      .sort((a, b) => b.startMs - a.startMs || b.index - a.index)
+      .sort((a, b) => compareLowPriorityFirst(a, b, work, projectOrder))
 
     let progressed = false
     for (const s of candidates) {
@@ -1105,12 +1272,16 @@ function reassignOverload(
       let bestScore = Number.POSITIVE_INFINITY
       for (const r of rs) {
         if (r.id === rid || t.resources.includes(r.id)) continue
-        const cap = capOf.get(r.id)!
-        if (!(cap > 0)) continue
+        if (respectSkills && !hasRequiredSkills(r, t)) continue
         const arr = load.get(r.id)!
         let worst = 0
         let feasible = true
         for (const i of idxs) {
+          const cap = capAt(r, periods[i]!)
+          if (!(cap > 0)) {
+            feasible = false
+            break
+          }
           const after = (arr[i] ?? 0) + 1
           if (after > cap) {
             feasible = false
@@ -1254,7 +1425,13 @@ export class OASResource extends OASElement {
    */
   private laneCullVisits = 0
   /** 负载统计结果缓存（滚动帧只重渲染窗口，不重算矩阵；overCount 亦随矩阵预算，避免每帧 reduce） */
-  private loadRows: Array<{ resource: RS; capacity: number; loads: number[]; overCount: number }> = []
+  private loadRows: Array<{
+    resource: RS
+    capacity: number
+    capacities: number[]
+    loads: number[]
+    overCount: number
+  }> = []
   private maxLoad = 0
   /** 超载签名去重：render+connect 双 update、属性链式触发下保证同一超载态只派发一次 */
   private lastOverloadKey: string | null = null
@@ -2059,6 +2236,7 @@ export class OASResource extends OASElement {
     }
     const locale = this.effectiveLocale()
     const scale = this.scaleMode()
+    const weekStart = getWeekStart(locale)
     // 宿主托管时间轴范围（range-start/range-end）：提供时优先于「按任务 min/max 推断」
     const axis = this.managedAxis()
     this.axisMs = axis
@@ -2147,6 +2325,7 @@ export class OASResource extends OASElement {
     const perResourceLoads = this._resources.map((r) => {
       const cap = r.capacity ?? capDefault
       const loads = new Array<number>(periodCount).fill(0)
+      const capacities = this.periods.map((period) => periodCapacity(r, period, scale, weekStart, capDefault))
       const assigned = assignedByRes.get(r.id)
       if (assigned) {
         for (const s of assigned) {
@@ -2160,20 +2339,20 @@ export class OASResource extends OASElement {
       for (let i = 0; i < periodCount; i++) {
         const load = loads[i]!
         if (load > maxLoad) maxLoad = load
-        if (load > cap) overCount++
+        if (load > capacities[i]!) overCount++
       }
-      return { resource: r, capacity: cap, loads, overCount }
+      return { resource: r, capacity: cap, capacities, loads, overCount }
     })
     const overloadEntries: ResourceOverloadEntry[] = []
     for (const row of perResourceLoads) {
       for (let i = 0; i < this.periods.length; i++) {
         const load = row.loads[i]!
-        if (load > row.capacity) {
+        if (load > row.capacities[i]!) {
           overloadEntries.push({
             resourceId: row.resource.id,
             period: toISODate(new Date(this.periods[i]!.startMs)),
             load,
-            capacity: row.capacity,
+            capacity: row.capacities[i]!,
           })
         }
       }
@@ -2668,7 +2847,7 @@ export class OASResource extends OASElement {
    * 横向仍按列窗口建列，成本 O(窗内行数 × 窗口列数)。
    */
   private renderLoads(
-    rows: Array<{ resource: RS; capacity: number; loads: number[]; overCount: number }>,
+    rows: Array<{ resource: RS; capacity: number; capacities: number[]; loads: number[]; overCount: number }>,
     maxLoad: number,
   ): void {
     if (!this.loadsEl) return
@@ -2734,7 +2913,7 @@ export class OASResource extends OASElement {
         const load = row.loads[i]!
         if (load > 0) {
           const pillar = document.createElement('div')
-          pillar.className = load > row.capacity ? 'pillar over' : 'pillar'
+          pillar.className = load > row.capacities[i]! ? 'pillar over' : 'pillar'
           pillar.style.height = maxLoad > 0 ? `${(load / maxLoad) * 100}%` : '0'
           pillar.dataset['load'] = String(load)
           pillar.dataset['period'] = toISODate(new Date(this.periods[i]!.startMs))
@@ -2747,7 +2926,7 @@ export class OASResource extends OASElement {
             const barH = maxLoad > 0 ? (load / maxLoad) * trackH : 0
             const value = document.createElement('span')
             value.className = 'load-value'
-            if (load > row.capacity) value.classList.add('over')
+            if (load > row.capacities[i]!) value.classList.add('over')
             value.textContent = String(load)
             value.setAttribute('aria-hidden', 'true')
             value.style.bottom = `${Math.min(barH + 2, Math.max(0, trackH - 12))}px`

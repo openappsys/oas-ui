@@ -11,8 +11,8 @@ Resource load / swimlane view (new component, data family): given **resources** 
   <div id="res-basic-output" style="color:var(--oas-color-text-secondary);font-size:var(--oas-font-size-sm);margin-top:var(--oas-space-2)"></div>
 </DemoBlock>
 
-- `resources`: `[{ id, name, capacity? }]`; `capacity` = parallel tasks **per period** (per day in the `day` scale; falls back to the `capacity` attribute, ultimately 1).
-- `tasks`: `[{ id, name, start, end, resources?: string[] }]` — `start/end` are `YYYY-MM-DD` (**day precision only**, inclusive `end`; time-bearing input is treated as that day); `resources` is the assigned resource id array; assignments pointing to unknown resources are ignored.
+- `resources`: `[{ id, name, capacity?, workdays?, holidays?, capacityOverrides?, skills? }]`. Without any calendar field, `capacity` = parallel tasks **per period** (legacy semantics, falls back to the `capacity` attribute, ultimately 1). With `workdays` / `holidays` / `capacityOverrides`, capacity is **per day** and a period capacity is the sum of its days (`capacityOverrides` supports half days such as `0.5` and wins over `workdays` / `holidays`). `skills` is a skill-tag array.
+- `tasks`: `[{ id, name, start, end, resources?: string[], priority?, requiredSkills?, project? }]` — `start/end` are `YYYY-MM-DD` (**day precision only**, inclusive `end`; time-bearing input is treated as that day); `resources` is the assigned resource id array; assignments pointing to unknown resources are ignored. `priority`: lower is more important; `requiredSkills` requires every assigned target resource to have all tags during reassign; `project` works with `levelResources({ projectOrder })` for cross-project priority.
 - `scale`: `day` (default) / `week` / `month` — controls the histogram period granularity and axis labels.
 - Swimlanes and histogram **share column width and horizontal scroll**; overload bars get `.over` (color via `--oas-color-danger`); overlapping task bars within a resource are **stacked in sub-rows** (no mutual occlusion, clicking a bar hits that bar).
 - The lane-gap token `--oas-resource-lane-gap` is derived from row height and bar height (`--oas-resource-row-height` participates; a multi-segment track's real height = segments × bar height + (segments + 1) × gap). The token is declared on the component host element: only **element-level** overrides take effect — inline style or a class rule hitting the host element (e2e-verified: a host class setting `--oas-resource-lane-gap:4px` → single-segment track height 36 → 28); `:root` / ancestor-level declarations do not (the host already declares its own value, so the inherited value is overridden).
@@ -42,6 +42,26 @@ el.tasks = tasks.map((t) => [...moved, ...reassigned].find((m) => m.id === t.id)
 ```
 
 `levelResources` guarantees: deterministic (same input → same output), iterates until no overload or `maxIter`; it does **not** mutate the input. The component never calls it automatically.
+
+### Capacity calendars, skills, and priority
+
+```ts
+const resources = [
+  { id: 'alice', name: 'Alice', capacity: 1, workdays: [1, 2, 3, 4, 5], holidays: ['2026-03-05'], skills: ['frontend'] },
+  { id: 'bob', name: 'Bob', capacity: 1, capacityOverrides: { '2026-03-06': 0.5 }, skills: ['backend'] },
+]
+const tasks = [
+  { id: 't1', name: 'Page work', start: '2026-03-02', end: '2026-03-06', resources: ['alice'], requiredSkills: ['frontend'], priority: 0, project: 'portal' },
+]
+// Weekly capacity sums each working day; holidays contribute 0; overrides can express a half day (0.5)
+levelResources(resources, tasks, { scale: 'week', projectOrder: ['portal'] })
+```
+
+- Without calendar fields, the legacy per-period capacity semantics are unchanged; with them, period capacity is the sum of daily capacity.
+- `reassign` defaults to `respectSkills: true`; every target must have all of a task's `requiredSkills`. No skill data means no behavior change.
+- Projects earlier in `projectOrder` win; within a project lower `priority` values win. Lower-priority tasks move/reassign first.
+- The algorithm remains deterministic and greedy; it does not claim a global optimum.
+- `workdays: []` means zero capacity every day (fully unavailable); an empty `capacityOverrides: {}` does not change capacity.
 
 `options.mode` (default `shift`):
 
@@ -114,11 +134,11 @@ Conventions in windowed mode: load/overload stats cover **the loaded slice only*
 | `locale` | Localization (overrides config-provider injection and global locale) | `string` | — |
 | `range-end` | Host-managed time-axis end (ISO date YYYY-MM-DD, inclusive); pair with range-start. If only one is given, reversed or invalid, the axis is not host-managed and a devWarn is emitted | `string` | — |
 | `range-start` | Host-managed time-axis start (ISO date YYYY-MM-DD): when provided the period range is no longer derived from loaded tasks | `string` | — |
-| `resources` | Resources (JSON [{ id, name, capacity? }]) — capacity = parallel tasks per period for that resource (per day in the day scale; falls back to the capacity attribute, ultimately 1); a resource may carry an optional `color` (CSS color or token, e.g. `var(--oas-color-success)`) used to tint its lane bars and load bars; when absent the unified `--oas-resource-bar-bg` / `--oas-resource-load-bg` applies | `ResourceItem[]` | `[]` |
+| `resources` | Resources (JSON [{ id, name, capacity?, workdays?, holidays?, capacityOverrides?, skills? }]). Without calendar fields, capacity = parallel tasks per period (legacy); with workdays / holidays / capacityOverrides, period capacity is the sum of daily capacity (overrides may be a half day such as 0.5 and wins over holidays/workdays). `skills` is a skill-tag array. A resource may carry an optional `color` (CSS color or token, e.g. `var(--oas-color-success)`) used to tint its lane bars and load bars; when absent the unified `--oas-resource-bar-bg` / `--oas-resource-load-bg` applies | `ResourceItem[]` | `[]` |
 | `scale` | Histogram period granularity and axis labels: day (default) / week / month; invalid falls back to day | `string` | — |
 | `show-load-values` | Show the load value above each histogram bar (boolean, off by default): only for load > 0; overload values use text-on-primary (white in light / dark in dark) for contrast on the danger bar. The number is visual redundancy (aria-hidden); screen readers still get the column load description | `boolean` | — |
 | `show-overload-badge` | Show an "Overloaded ×N" badge in the lane header (boolean, off by default): only for resources with overloaded periods; text comes from the i18n key resource.overBadge | `boolean` | — |
-| `tasks` | Resource tasks (JSON [{ id, name, start, end, resources? }]); start/end are day precision YYYY-MM-DD only (end inclusive; time-bearing input is treated as that day), resources is the assigned resource id array (assignments to unknown resources are ignored) | `ResourceTask[]` | `[]` |
+| `tasks` | Resource tasks (JSON [{ id, name, start, end, resources?, priority?, requiredSkills?, project? }]); start/end are day precision YYYY-MM-DD only (end inclusive; time-bearing input is treated as that day), resources is the assigned resource id array (assignments to unknown resources are ignored). priority: lower is more important; requiredSkills: every reassign target must have all tags; project works with levelResources({ projectOrder }) for cross-project priority | `ResourceTask[]` | `[]` |
 | `total` | Full resource row count in windowed mode; 0 or invalid disables windowed (falls back to local mode) | `string` | — |
 | `window-start` | Absolute row index (within the full dataset) of the first row (resource) in the slice (windowed mode) | `string` | `0` |
 | `windowed` | Server-side row-window mode (boolean, off by default): with total / window-start the host supplies only the visible window slice (rendered by absolute row index); when the expected row window is not covered, oas-window-request is emitted for the host to refill. Load/overload stats cover the loaded slice only (full-dataset stats are the host's job) with a devWarn; when range-start / range-end are absent the time axis falls back to deriving from loaded tasks with a devWarn. Non-windowed behavior unchanged | `boolean` | — |
@@ -127,8 +147,8 @@ Conventions in windowed mode: load/overload stats cover **the loaded slice only*
 
 | Property | Description | Type | Default |
 | --- | --- | --- | --- |
-| `resources` | Resources (reads a copy: nested plain objects/arrays are deep-cloned — cycle-safe; shared references stay shared within a single read result; Date is copied by value (not kept shared); exotic objects such as class instances/Set are shared by reference; writing syncs the attribute + re-renders; unserializable custom keys are dropped individually from the attribute, the property read-back keeps the full data); a resource may carry an optional `color` (CSS color or token, e.g. `var(--oas-color-success)`) used to tint its lane bars and load bars; when absent the unified `--oas-resource-bar-bg` / `--oas-resource-load-bg` applies | `ResourceItem[]` | `[]` |
-| `tasks` | Resource tasks (reads a copy: nested plain objects/arrays are deep-cloned — cycle-safe; shared references stay shared within a single read result; Date is copied by value (not kept shared); exotic objects such as class instances/Set are shared by reference; writing syncs the attribute + re-renders + dispatches oas-tasks-change; unserializable custom keys are dropped individually from the attribute, the property read-back keeps the full data) | `ResourceTask[]` | `[]` |
+| `resources` | Resources (JSON [{ id, name, capacity?, workdays?, holidays?, capacityOverrides?, skills? }]). Without calendar fields, capacity = parallel tasks per period (legacy); with workdays / holidays / capacityOverrides, period capacity is the sum of daily capacity (overrides may be a half day such as 0.5 and wins over holidays/workdays). `skills` is a skill-tag array. A resource may carry an optional `color` (CSS color or token, e.g. `var(--oas-color-success)`) used to tint its lane bars and load bars; when absent the unified `--oas-resource-bar-bg` / `--oas-resource-load-bg` applies; property read is a copy: nested plain objects/arrays are deep-cloned — cycle-safe; shared references stay shared within a single read result; Date is copied by value (not shared); exotic objects such as class instances/Set are shared by reference; writing syncs the attribute + re-renders | `ResourceItem[]` | `[]` |
+| `tasks` | Resource tasks (JSON [{ id, name, start, end, resources?, priority?, requiredSkills?, project? }]); start/end are day precision YYYY-MM-DD only (end inclusive; time-bearing input is treated as that day), resources is the assigned resource id array (assignments to unknown resources are ignored). priority: lower is more important; requiredSkills: every reassign target must have all tags; project works with levelResources({ projectOrder }) for cross-project priority; property read is a copy: nested plain objects/arrays are deep-cloned — cycle-safe; shared references stay shared within a single read result; Date is copied by value (not shared); exotic objects such as class instances/Set are shared by reference; writing syncs the attribute + re-renders + dispatches oas-tasks-change | `ResourceTask[]` | `[]` |
 
 #### Events
 

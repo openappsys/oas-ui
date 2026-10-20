@@ -2,7 +2,13 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { setLocale } from '@oas-ui/i18n'
 import en from '@oas-ui/i18n/en'
 import { OASResource, levelResources } from './index.js'
-import type { ResourceItem, ResourceScale, ResourceTask, ResourceOverloadDetail } from './index.js'
+import type {
+  LevelResourcesOptions,
+  ResourceItem,
+  ResourceScale,
+  ResourceTask,
+  ResourceOverloadDetail,
+} from './index.js'
 
 function mount(attrs: Record<string, string> = {}): OASResource {
   const el = new OASResource()
@@ -367,6 +373,22 @@ describe('OASResource oas-overload 事件', () => {
     ])
   })
 
+  it('容量日历：holiday 当天容量 0，oas-overload 的 capacity 使用逐档容量而非资源标量', () => {
+    const events: ResourceOverloadDetail[] = []
+    const el = new OASResource()
+    el.setAttribute('resources', JSON.stringify([{ id: 'r1', name: 'A', capacity: 1, holidays: ['2026-03-02'] }]))
+    el.setAttribute(
+      'tasks',
+      JSON.stringify([{ id: 't1', name: 'A1', start: '2026-03-02', end: '2026-03-02', resources: ['r1'] }]),
+    )
+    el.addEventListener('oas-overload', ((e: CustomEvent<ResourceOverloadDetail>) => {
+      events.push(e.detail)
+    }) as EventListener)
+    document.body.appendChild(el)
+    expect(events[0]!.overloads).toEqual([{ resourceId: 'r1', period: '2026-03-02', load: 1, capacity: 0 }])
+    expect(pillarsOf(el, 'r1')[0]!.classList.contains('over')).toBe(true)
+  })
+
   it('无超载不派发；超载消除后复位，再次超载再派发', () => {
     const events: ResourceOverloadDetail[] = []
     const el = new OASResource()
@@ -638,6 +660,89 @@ describe('levelResources reassign（重分配：不改日期、换资源）', ()
     // shift 改日期（03-07），reassign 不改日期（03-02）
     expect(def[0]!.start).toBe('2026-03-07')
     expect(levelResources(RES2, tasks, { mode: 'reassign' })[0]!.start).toBe('2026-03-02')
+  })
+})
+
+describe('levelResources 容量日历 / 技能 / 优先级', () => {
+  const span = (id: string, resources: string[], start = '2026-03-02', end = '2026-03-02'): ResourceTask => ({
+    id,
+    name: id,
+    start,
+    end,
+    resources,
+  })
+
+  it('week 容量按工作日逐日求和：5 个周一起始任务在 5 天工作制下不超载', () => {
+    const resources: ResourceItem[] = [{ id: 'r1', name: 'A', capacity: 1, workdays: [1, 2, 3, 4, 5] }]
+    const tasks = ['t1', 't2', 't3', 't4', 't5'].map((id) => span(id, ['r1']))
+    expect(levelResources(resources, tasks, { scale: 'week' })).toEqual([])
+  })
+
+  it('holidays 从周期容量扣除：5 个任务遇到 1 天假期时移动 1 个', () => {
+    const resources: ResourceItem[] = [
+      { id: 'r1', name: 'A', capacity: 1, workdays: [1, 2, 3, 4, 5], holidays: ['2026-03-03'] },
+    ]
+    const tasks = ['t1', 't2', 't3', 't4', 't5'].map((id) => span(id, ['r1']))
+    const moved = levelResources(resources, tasks, { scale: 'week' })
+    expect(moved).toHaveLength(1)
+  })
+
+  it('capacityOverrides 支持半天容量：0.5 容量日上的任务被顺延', () => {
+    const resources: ResourceItem[] = [{ id: 'r1', name: 'A', capacity: 1, capacityOverrides: { '2026-03-02': 0.5 } }]
+    const tasks = [span('t1', ['r1'])]
+    expect(levelResources(resources, tasks).map((t) => t.id)).toEqual(['t1'])
+  })
+
+  it('reassign 默认尊重技能；无匹配技能的资源不被选中', () => {
+    const resources: ResourceItem[] = [
+      { id: 'r1', name: 'A', capacity: 1, skills: ['js'] },
+      { id: 'r2', name: 'B', capacity: 1, skills: ['go'] },
+    ]
+    const tasks = [span('t1', ['r1']), { ...span('t2', ['r1']), requiredSkills: ['go'] }]
+    const moved = levelResources(resources, tasks, { mode: 'reassign' })
+    expect(moved).toHaveLength(1)
+    expect(moved[0]!.id).toBe('t2')
+    expect(moved[0]!.resources).toEqual(['r2'])
+  })
+
+  it('受害者按任务优先级选择：priority 数值大的先被顺延', () => {
+    const resources: ResourceItem[] = [{ id: 'r1', name: 'A', capacity: 1 }]
+    const tasks = [
+      { ...span('high', ['r1']), priority: 0 },
+      { ...span('low', ['r1']), priority: 10 },
+    ]
+    const moved = levelResources(resources, tasks)
+    expect(moved.map((t) => t.id)).toEqual(['low'])
+  })
+
+  it('respectSkills:false 显式关闭技能过滤（无技能资源可作为改派目标）', () => {
+    const resources: ResourceItem[] = [
+      { id: 'r1', name: 'A', capacity: 1, skills: [] },
+      { id: 'r2', name: 'B', capacity: 1, skills: [] },
+    ]
+    const tasks = [
+      { ...span('t1', ['r1']), requiredSkills: ['go'] },
+      { ...span('t2', ['r1']), requiredSkills: ['go'] },
+    ]
+    expect(levelResources(resources, tasks, { mode: 'reassign' })).toEqual([])
+    const moved = levelResources(resources, tasks, { mode: 'reassign', respectSkills: false })
+    expect(moved.map((t) => t.id)).toEqual(['t2'])
+    expect(moved[0]!.resources).toEqual(['r2'])
+  })
+
+  it('capacityOverrides 可把单日容量显式压到 0（全天不可用）', () => {
+    const resources: ResourceItem[] = [{ id: 'r1', name: 'A', capacity: 1, capacityOverrides: { '2026-03-02': 0 } }]
+    expect(levelResources(resources, [span('t1', ['r1'])]).map((t) => t.id)).toEqual(['t1'])
+  })
+
+  it('projectOrder 中靠后的项目先让位', () => {
+    const resources: ResourceItem[] = [{ id: 'r1', name: 'A', capacity: 1 }]
+    const tasks = [
+      { ...span('a', ['r1']), project: 'A' },
+      { ...span('b', ['r1']), project: 'B' },
+    ]
+    const moved = levelResources(resources, tasks, { projectOrder: ['A', 'B'] } as LevelResourcesOptions)
+    expect(moved.map((t) => t.id)).toEqual(['b'])
   })
 })
 
@@ -1880,7 +1985,13 @@ describe('OASResource 横向虚拟化（时间轴 period 列窗口）', { timeou
   /** 内部诊断视图（只读）：布局缓存 / 负载矩阵缓存 / 窗口索引 / 预计算计数 / cull 访问计数 */
   type Internals = {
     laneLayout: Map<string, LaneCache>
-    loadRows: Array<{ resource: { id: string }; capacity: number; loads: number[]; overCount: number }>
+    loadRows: Array<{
+      resource: { id: string }
+      capacity: number
+      capacities: number[]
+      loads: number[]
+      overCount: number
+    }>
     winColStart: number
     winColEnd: number
     laneLayoutBuilds: number

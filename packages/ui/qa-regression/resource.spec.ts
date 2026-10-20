@@ -63,6 +63,31 @@ test('resource 浏览器回归：泳道 + 负载超载 + 一键平衡（回写�
   expect(errors).toEqual([])
 })
 
+test('resource 容量日历：holiday 当天容量 0，直方图真实超载并可读', async ({ page }) => {
+  await page.goto('/components/resource.html', { waitUntil: 'domcontentloaded' })
+  const r = await page.evaluate(async () => {
+    const el = document.createElement('oas-resource')
+    el.id = 'res-calendar-qa'
+    el.setAttribute('resources', JSON.stringify([{ id: 'r1', name: 'A', capacity: 1, holidays: ['2026-03-02'] }]))
+    el.setAttribute(
+      'tasks',
+      JSON.stringify([{ id: 't1', name: 'Holiday task', start: '2026-03-02', end: '2026-03-02', resources: ['r1'] }]),
+    )
+    let capacity: number | null = null
+    el.addEventListener('oas-overload', (e) => {
+      capacity = (e as CustomEvent<{ overloads: Array<{ capacity: number }> }>).detail.overloads[0]?.capacity ?? null
+    })
+    document.body.appendChild(el)
+    await new Promise((resolve) => setTimeout(resolve, 300))
+    return {
+      capacity,
+      over: el.shadowRoot?.querySelectorAll('.pillar.over').length ?? 0,
+    }
+  })
+  expect(r.capacity, 'oas-overload 应带该档容量 0').toBe(0)
+  expect(r.over, 'holiday 当天任务应显示超载柱').toBeGreaterThan(0)
+})
+
 test('resource 暗色：超载高亮与泳道可见、console 零告警', async ({ page }) => {
   const errors: string[] = []
   page.on('pageerror', (e) => errors.push(e.message))
