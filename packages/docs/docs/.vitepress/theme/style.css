@@ -13,13 +13,6 @@ body {
   /* breakout demo 的 100vw 横幅在右侧会溢出几个像素；clip 不建立滚动容器，保留 sticky */
   overflow-x: clip;
 }
-body {
-  margin: 0;
-}
-h1 {
-  margin: 0;
-}
-
 /* container breakout demo：包装层必须接近视口宽，不能缩成 demo 内容列宽后把横幅裁掉。 */
 .demo-breakout-wrap {
   width: 100vw;

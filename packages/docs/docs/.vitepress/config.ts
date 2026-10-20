@@ -1,11 +1,15 @@
 import { defineConfig } from 'vitepress'
 import type { DefaultTheme, HeadConfig } from 'vitepress'
-import { copyFileSync, mkdirSync, readdirSync, writeFileSync } from 'node:fs'
+import { copyFileSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 /** docs 根目录（config.ts 位于 docs/.vitepress/）——用于构建期生成每页 markdown 镜像 */
 const DOCS_DIR = join(dirname(fileURLToPath(import.meta.url)), '..')
+/** 自定义元素标签清单（API 生成物）；Preflight 原生 reset 需要显式排除这些宿主。 */
+const OAS_TAGS = JSON.parse(
+  readFileSync(join(DOCS_DIR, '../../..', 'docs/api-manifest/index.json'), 'utf8'),
+) as string[]
 
 /**
  * 站点规范域名（SEO 绝对 URL：canonical / OG / sitemap 的基准——这些按规范必须是绝对 URL，
@@ -26,9 +30,9 @@ const CLEAN_URLS = true
 /**
  * VitePress 2 默认主题引入 Tailwind Preflight。其通用 `*` 规则会把
  * margin/padding/border 归零，并作用到自定义元素宿主，覆盖组件 shadow 内
- * `:host` 的容器内边距、卡片边框等。这里只移除这条通用 reset，保留其余
- * Preflight（字体、表单等）与 `[hidden]` 规则；docs 自身需要的 body/h1
- * 复位在 `theme/style.css` 用原生元素选择器补齐，不会波及 oas-* 宿主。
+ * `:host` 的容器内边距、卡片边框等。这里保留 reset 对原生元素的作用
+ * （VitePress 导航按钮/侧栏 p.text 依赖它），但把选择器改成 `*:not(oas-*)`，
+ * 显式排除全部 OAS 自定义元素宿主；其余 Preflight 与 `[hidden]` 规则保留。
  *
  * 若未来 VitePress 改变 base.css 结构，transform 会抛错而不是静默失效。
  */
@@ -54,10 +58,14 @@ function stripPreflightHostReset(): {
       )
       if (stripped === region) {
         throw new Error(
-          '[oas] VitePress Preflight 通用 reset 结构变化，无法移除宿主 margin/padding/border；请复核 base.css',
+          '[oas] VitePress Preflight 通用 reset 结构变化，无法拆分宿主 margin/padding/border；请复核 base.css',
         )
       }
-      return code.slice(0, start) + stripped + code.slice(end)
+      const hostSelector = OAS_TAGS.length ? `*:not(${OAS_TAGS.join(', ')})` : '*'
+      const scopedReset =
+        `\n${hostSelector},::after,::before,::backdrop,::file-selector-button {` +
+        '\n  margin: 0;\n  padding: 0;\n  border: 0 solid;\n}\n'
+      return code.slice(0, start) + stripped + scopedReset + code.slice(end)
     },
   }
 }

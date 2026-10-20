@@ -40,7 +40,8 @@ const STYLE = `
    需在页面顶层包裹层配 overflow-x: clip（或 overflow-x: hidden）抑制。 */
 ::slotted([breakout]) {
   width: 100vw;
-  margin-inline: calc(50% - 50vw);
+  /* !important：slotted 元素在 light DOM，页面级原生元素 margin reset 会覆盖负外边距。 */
+  margin-inline: calc(50% - 50vw) !important;
 }
 :host([hidden]) {
   display: none;
