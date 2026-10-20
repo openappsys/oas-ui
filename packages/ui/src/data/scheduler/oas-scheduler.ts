@@ -2167,7 +2167,9 @@ export class OASScheduler extends OASElement {
         if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return
         e.preventDefault()
         e.stopPropagation()
-        this.shiftSpanByDays(ev, e.key === 'ArrowLeft' ? -1 : 1)
+        const dir = isRtl(this) ? -1 : 1
+        const step = e.key === 'ArrowRight' ? dir : -dir
+        this.shiftSpanByDays(ev, step)
       })
       // 跨日连续条拖拽整体平移（按列宽吸附到天）
       let dragX: number | null = null
@@ -2183,7 +2185,7 @@ export class OASScheduler extends OASElement {
         if (dragX === null) return
         const colW = band.clientWidth / days.length
         if (!(colW > 0)) return
-        lastDelta = Math.round((e.clientX - dragX) / colW)
+        lastDelta = Math.round((e.clientX - dragX) / colW) * (isRtl(this) ? -1 : 1)
         bar.style.transform = `translateX(${lastDelta * colW}px)`
       })
       const finish = (): void => {

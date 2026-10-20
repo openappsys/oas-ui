@@ -1557,6 +1557,19 @@ describe('scheduler 跨日全天 / repeat count+byDay / ICS 增强', () => {
     expect(changes).toBe(2)
   })
 
+  it('RTL 下方向键跟随视觉方向（右键回退一天）', () => {
+    const el = mount({
+      view: 'week',
+      dir: 'rtl',
+      'page-show-date': '2026-08-10',
+      events: JSON.stringify([{ id: 'span', date: '2026-08-10', endDate: '2026-08-11', title: '连续' }]),
+    })
+    el.shadowRoot!.querySelector<HTMLElement>('.band-span')!.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }),
+    )
+    expect(el.events.find((item) => item.id === 'span')!.date).toBe('2026-08-09')
+  })
+
   it('连续条移出当前周时视图跟随，焦点/条保持', () => {
     const el = mount({
       view: 'week',

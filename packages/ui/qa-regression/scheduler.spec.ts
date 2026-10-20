@@ -117,6 +117,25 @@ test('scheduler 浏览器回归：月/周/agenda 视图渲染与切换 + console
 })
 
 // 资源视图（单日 + 周 × 资源）+ 拖拽创建 + now 线
+test('scheduler RTL 连续条方向键按视觉方向镜像', async ({ page }) => {
+  await page.goto('/components/scheduler.html', { waitUntil: 'domcontentloaded' })
+  await page.waitForSelector('#scheduler-span', { timeout: 15000 })
+  const span = page.locator('#scheduler-span')
+  await span.evaluate((el) => el.setAttribute('dir', 'rtl'))
+  const bar = span.locator('.band-span', { hasText: '回归窗口' })
+  await bar.focus()
+  await page.keyboard.press('ArrowRight')
+  await expect
+    .poll(() =>
+      span.evaluate((el) =>
+        (el as unknown as { events: Array<{ title: string; date: string; endDate?: string }> }).events.find(
+          (item) => item.title === '回归窗口',
+        ),
+      ),
+    )
+    .toMatchObject({ date: '2026-08-12', endDate: '2026-08-13' })
+})
+
 test('scheduler 资源视图 + 拖拽创建 + now 线 浏览器回归', async ({ page }) => {
   const errors: string[] = []
   page.on('pageerror', (e) => errors.push(e.message))
