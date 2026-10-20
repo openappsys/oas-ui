@@ -89,6 +89,33 @@ test.describe('官网首页（重设计版）', () => {
     await expect(baseline).toHaveAttribute('target', '_blank')
   })
 
+  test('性能标尺：最窄段数值完整可见（贴段左缘且不被白底/相邻段遮住）', async ({ page }) => {
+    await page.goto('/', { waitUntil: 'domcontentloaded' })
+    await page.waitForSelector('.home-perf', { timeout: 15000 })
+    await page.evaluate(() => document.querySelector('.home-perf')?.scrollIntoView({ block: 'center' }))
+    await page.waitForTimeout(400)
+    const r = await page.evaluate(() => {
+      const seg = document.querySelector('.home-perf .seg-btn') as HTMLElement | null
+      const val = seg?.querySelector('.hp-val') as HTMLElement | null
+      if (!seg || !val) return null
+      const b = val.getBoundingClientRect()
+      const s = seg.getBoundingClientRect()
+      const y = Math.round(b.top + b.height / 2)
+      const onTop = (x: number): boolean => document.elementFromPoint(x, y) === val
+      return {
+        tiny: seg.classList.contains('seg-tiny'),
+        leftAligned: Math.abs(b.left - s.left) <= 1,
+        leftVisible: onTop(Math.round(b.left + 1)),
+        midVisible: onTop(Math.round(b.left + b.width / 2)),
+        rightVisible: onTop(Math.round(b.right - 1)),
+      }
+    })
+    expect(r).not.toBeNull()
+    expect(r!.tiny, '窄段使用 seg-tiny 布局').toBe(true)
+    expect(r!.leftAligned, '数值贴段左缘（不再居中溢出到白底）').toBe(true)
+    expect(r!.leftVisible && r!.midVisible && r!.rightVisible, '数值全宽都可见（未被遮挡）').toBe(true)
+  })
+
   test('CTA 终端 + 双按钮', async ({ page }) => {
     await page.goto('/', { waitUntil: 'domcontentloaded' })
     const cta = page.locator('.home-cta')

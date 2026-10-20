@@ -19,7 +19,11 @@
           <span class="hp-legend-item"><i class="sw" style="width:100%"></i>{{ isEn ? 'Full entry' : '全量入口' }} <b>{{ stats.perf.fullEntryKB }}</b> KB</span>
         </div>
         <div class="hp-scale">
-          <div class="hp-seg seg-btn" :style="{ width: pct(stats.perf.buttonChainKB) }"><span class="hp-val">{{ stats.perf.buttonChainKB }}</span><span class="hp-unit">KB</span></div>
+          <div
+            class="hp-seg seg-btn"
+            :class="{ 'seg-tiny': isTiny(stats.perf.buttonChainKB) }"
+            :style="{ width: pct(stats.perf.buttonChainKB) }"
+          ><span class="hp-val">{{ stats.perf.buttonChainKB }}</span><span class="hp-unit">KB</span></div>
           <div class="hp-seg seg-cdn" :style="{ width: pct(stats.perf.cdnGzipKB) }"><span class="hp-val">{{ stats.perf.cdnGzipKB }}</span><span class="hp-unit">KB</span></div>
           <div class="hp-seg seg-full" style="width:100%"><span class="hp-val">{{ stats.perf.fullEntryKB }}</span><span class="hp-unit">KB</span></div>
           <div class="hp-mark" :style="{ left: pct(stats.perf.buttonChainKB) }">
@@ -62,6 +66,8 @@ const isEn = computed(() => lang.value.startsWith('en'))
 const perf = stats.perf
 const pct = (kb: number): string => `${((kb / perf.fullEntryKB) * 100).toFixed(2)}%`
 const savePct = computed(() => Math.round((1 - perf.buttonChainKB / perf.fullEntryKB) * 100))
+// 段宽不足以容纳数值时贴左缘（见 .seg-tiny 样式）：避免居中把一截推到白色卡片上
+const isTiny = (kb: number): boolean => (kb / perf.fullEntryKB) * 100 < 10
 </script>
 
 <style scoped>
@@ -198,6 +204,16 @@ const savePct = computed(() => Math.round((1 - perf.buttonChainKB / perf.fullEnt
   font-family: var(--oas-font-family-mono, ui-monospace, Consolas, monospace);
   font-size: 10px;
   color: #a1a1aa;
+}
+/* 极窄段（如按钮链 2.5%）：数值居中会有一截落在白色卡片上（白字白底不可见），
+   改为贴段左缘并抬到相邻段之上——白字全程压在蓝色条上，完整可读。 */
+.seg-tiny .hp-val,
+.seg-tiny .hp-unit {
+  align-self: flex-start;
+}
+.seg-tiny .hp-val {
+  position: relative;
+  z-index: 1;
 }
 .seg-btn,
 .seg-cdn,
