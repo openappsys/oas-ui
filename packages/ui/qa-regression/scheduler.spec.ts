@@ -102,6 +102,12 @@ test('scheduler 资源视图 + 拖拽创建 + now 线 浏览器回归', async ({
   await expect(resDay.locator('.res-row[data-resource="a"] .res-bar')).toContainText('晨会')
   await expect(resDay.locator('.res-row[data-resource="c"] .res-allDayChip')).toContainText('维护')
 
+  // 资源分组 + 第二时区
+  const grouped = page.locator('#scheduler-res-group')
+  await expect(grouped.locator('.res-row.res-group')).toHaveCount(2)
+  await expect(grouped.locator('.res-row.res-group .res-group-label')).toHaveText(['华东', '公共'])
+  await expect(grouped.locator('.res-tick[data-tz]').first()).toBeVisible()
+
   // 周 × 资源矩阵：7 列日头 + 格内事件
   const resWeek = page.locator('#scheduler-res-week')
   await expect(resWeek.locator('.res-dayhead')).toHaveCount(7)

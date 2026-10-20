@@ -17,6 +17,21 @@ Resource load / swimlane view (new component, data family): given **resources** 
 - Swimlanes and histogram **share column width and horizontal scroll**; overload bars get `.over` (color via `--oas-color-danger`); overlapping task bars within a resource are **stacked in sub-rows** (no mutual occlusion, clicking a bar hits that bar).
 - The lane-gap token `--oas-resource-lane-gap` is derived from row height and bar height (`--oas-resource-row-height` participates; a multi-segment track's real height = segments × bar height + (segments + 1) × gap). The token is declared on the component host element: only **element-level** overrides take effect — inline style or a class rule hitting the host element (e2e-verified: a host class setting `--oas-resource-lane-gap:4px` → single-segment track height 36 → 28); `:root` / ancestor-level declarations do not (the host already declares its own value, so the inherited value is overridden).
 
+## Heatmap & Skill Matrix
+
+<DemoBlock title="heatmap: color by load/capacity, legend plus per-cell title">
+  <oas-resource heatmap scale="day" height="300" capacity="1"
+    resources='[{"id":"a","name":"Alice","capacity":1},{"id":"b","name":"Bob","capacity":2}]'
+    tasks='[{"id":"h1","name":"Requirements","start":"2026-03-02","end":"2026-03-03","resources":["a"]},{"id":"h2","name":"Design","start":"2026-03-03","end":"2026-03-04","resources":["a"]},{"id":"h3","name":"Build","start":"2026-03-02","end":"2026-03-05","resources":["b"]}]'></oas-resource>
+</DemoBlock>
+
+<DemoBlock title="skill-matrix: rows = resources, columns = skill union; check means owned">
+  <oas-resource skill-matrix height="240"
+    resources='[{"id":"a","name":"Alice","skills":["frontend","design"]},{"id":"b","name":"Bob","skills":["backend","devops"]},{"id":"c","name":"Carol","skills":["design","backend"]}]'></oas-resource>
+</DemoBlock>
+
+`heatmap` switches the load histogram to heat cells (low/mid/high/over by `load / capacity`), with a legend in the histogram header and a per-cell `title` showing date + `load/capacity`. `skill-matrix` switches to a skill matrix (rows = resources, columns = skill union, ✓ = owned) and does not participate in load calculation; the matrix is not virtualized, so paginate for very large resource/skill sets.
+
 ## Overload & Leveling
 
 <DemoBlock title="Detect overload (oas-overload) → one-click leveling: keep durations and shift (default) or reassign with mode: reassign (dates unchanged); the host writes tasks back">
@@ -165,6 +180,7 @@ const file = importResourceCalendars(json)
 | `bar-label` | Show the task name inside the bar (boolean, off by default): single line with ellipsis, clipped on narrow bars; aria-label and click/drag hit-testing are unchanged | `boolean` | — |
 | `capacity` | Default capacity when a resource declares none (default 1) | `string` | `1` |
 | `header-sticky` | Lane header sticks to the top while scrolling lanes (on by default): week/day ticks stay visible; `header-sticky="false"` disables it (the header scrolls with content). The corner name column always stays pinned on horizontal scroll (LTR/RTL) | — | — |
+| `heatmap` | Load heatmap (boolean, off by default): colors cells by load/capacity with low/mid/high/over; the histogram header renders a legend and each cell title shows date + load/capacity | `boolean` | — |
 | `height` | Component height in px (default 320; accepts a plain number or Npx): mapped to the custom property --oas-resource-height (the host's own inline height always wins and is never overwritten by the component). While the height attribute is present and valid (>0 plain number or Npx) the component takes over this variable — writing it inline on the host and overriding any --oas-resource-height the host set itself; an empty/whitespace value is treated as unset; an invalid value writes nothing and only clears a value this instance wrote earlier, so a host token is never affected; after the attribute is removed the component-written value is cleared to zero, so the height falls back to the token default (320) or host CSS, and the host's previous inline value is not restored; when the height attribute was never set the component never writes the variable, and a --oas-resource-height set by the host (inline or via class rules) is left completely untouched | `string` | `320` |
 | `locale` | Localization (overrides config-provider injection and global locale) | `string` | — |
 | `range-end` | Host-managed time-axis end (ISO date YYYY-MM-DD, inclusive); pair with range-start. If only one is given, reversed or invalid, the axis is not host-managed and a devWarn is emitted | `string` | — |
@@ -173,6 +189,7 @@ const file = importResourceCalendars(json)
 | `scale` | Histogram period granularity and axis labels: day (default) / week / month; invalid falls back to day | `string` | — |
 | `show-load-values` | Show the load value above each histogram bar (boolean, off by default): only for load > 0; overload values use text-on-primary (white in light / dark in dark) for contrast on the danger bar. The number is visual redundancy (aria-hidden); screen readers still get the column load description | `boolean` | — |
 | `show-overload-badge` | Show an "Overloaded ×N" badge in the lane header (boolean, off by default): only for resources with overloaded periods; text comes from the i18n key resource.overBadge | `boolean` | — |
+| `skill-matrix` | Skill matrix view (boolean, off by default): rows = resources, columns = skill union, check = owned; not virtualized | `boolean` | — |
 | `tasks` | Resource tasks (JSON [{ id, name, start, end, resources?, priority?, requiredSkills?, project? }]); start/end are day precision YYYY-MM-DD only (end inclusive; time-bearing input is treated as that day), resources is the assigned resource id array (assignments to unknown resources are ignored). priority: lower is more important; requiredSkills: every reassign target must have all tags; project works with levelResources({ projectOrder }) for cross-project priority | `ResourceTask[]` | `[]` |
 | `total` | Full resource row count in windowed mode; 0 or invalid disables windowed (falls back to local mode) | `string` | — |
 | `window-start` | Absolute row index (within the full dataset) of the first row (resource) in the slice (windowed mode) | `string` | `0` |

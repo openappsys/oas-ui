@@ -505,6 +505,7 @@ export {
   type GanttProgressChangeDetail,
   type GanttTasksChangeDetail,
   type GanttExpandChangeDetail,
+  type GanttHistoryChangeDetail,
   type GanttScaleChangeDetail,
   type GanttTaskRenderDetail,
   type GanttReparentDetail,

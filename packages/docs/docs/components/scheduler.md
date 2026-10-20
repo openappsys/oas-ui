@@ -76,6 +76,10 @@
   <oas-scheduler id="scheduler-res-week" view="resource-week" page-show-date="2026-08-10" resources='[{"id":"a","title":"会议室 A","color":"#2563eb"},{"id":"b","title":"会议室 B"}]' events='[{"date":"2026-08-10","title":"晨会","start":"09:00","end":"10:00","resource":"a"},{"date":"2026-08-11","title":"评审","start":"13:00","end":"14:00","resource":"b"},{"date":"2026-08-12","title":"全天巡检","resource":"a"}]'></oas-scheduler>
 </DemoBlock>
 
+<DemoBlock title="资源分组 + 第二时区（group + secondary-timezone）">
+  <oas-scheduler id="scheduler-res-group" view="resource" page-show-date="2026-08-10" start-hour="8" end-hour="18" secondary-timezone="UTC" resources='[{"id":"a","title":"会议室 A","group":"华东","color":"#2563eb"},{"id":"b","title":"会议室 B","group":"华东"},{"id":"c","title":"设备间","group":"公共"}]' events='[{"date":"2026-08-10","title":"晨会","start":"09:00","end":"10:00","resource":"a"},{"date":"2026-08-10","title":"评审","start":"14:00","end":"15:30","resource":"b"}]'></oas-scheduler>
+</DemoBlock>
+
 <DemoBlock title="拖拽创建（时间格空白处拖出区间 → oas-create）">
   <oas-scheduler id="scheduler-create" view="day" page-show-date="2026-08-10" start-hour="8" end-hour="18" events='[{"date":"2026-08-10","title":"晨会","start":"09:00","end":"10:00"}]'></oas-scheduler>
   <div id="scheduler-create-output" style="color:var(--oas-color-text-secondary);font-size:var(--oas-font-size-sm);margin-top:var(--oas-space-2)"></div>
@@ -87,7 +91,7 @@
   </div>
 </DemoBlock>
 
-`view="resource"` 以行为资源、横向为小时渲染单日排班；`view="resource-week"` 为周 × 资源矩阵（行 = 资源、列 = 本周 7 天）。事件用 `resource` 字段归属资源行，缺省或未知 id 归「未分配」行。在时间格空白处按住拖出区间（≥15 分钟）派发 `oas-create`（`detail: { date, start, end, resource? }`），组件不自动建事件——宿主接到后调 `addEvent`；位移不足视作点击派发 `oas-day-click`。`show-now`（默认开）在当前时间处渲染 now 线。
+`view="resource"` 以行为资源、横向为小时渲染单日排班；`view="resource-week"` 为周 × 资源矩阵（行 = 资源、列 = 本周 7 天）。事件用 `resource` 字段归属资源行，缺省或未知 id 归「未分配」行。在时间格空白处按住拖出区间（≥15 分钟）派发 `oas-create`（`detail: { date, start, end, resource? }`），组件不自动建事件——宿主接到后调 `addEvent`；位移不足视作点击派发 `oas-day-click`。`show-now`（默认开）在当前时间处渲染 now 线。`resources[].group` 非空时在资源行前自动插入分组标题行（同名只插一次，输入顺序保持）；windowed 切片不自动生成分组行，需宿主自行提供。`secondary-timezone` 为时间刻度追加第二时区标签（仅 `day` / `week` / 资源单日视图；非法 IANA 忽略并 devWarn）。
 
 ## CRUD（方法通道）
 
@@ -254,7 +258,8 @@ el.downloadIcs('my.ics', { timeMode: 'utc', timezone: 'Asia/Shanghai' })
 | `first-day-of-week` | 周起始日（0-6）；缺省按 locale 推导 | `string` | — |
 | `locale` | 本地化（覆盖 config-provider 注入与全局 locale） | `string` | — |
 | `page-show-date` | 面板月锚点（受控）：yyyy-MM-dd，变化时重锚定显示月份 | `string` | — |
-| `resources` | 资源列表（JSON）：[{ id, title, color? }]——资源视图按资源分组；事件 resource 缺省或指向未知 id 时归「未分配」行 | `SchedulerResource[]` | `[]` |
+| `resources` | 资源列表（JSON）：[{ id, title, color?, group? }]——资源视图按资源分组；事件 resource 缺省或指向未知 id 时归「未分配」行；group 非空时自动插入分组标题行 | `SchedulerResource[]` | `[]` |
+| `secondary-timezone` | 第二时区（IANA）：在 day/week/资源单日时间刻度追加第二时区标签；非法值忽略并 devWarn | `string` | — |
 | `show-now` | 当前时间线（默认开；false 关闭）：week/day 视图与资源单日视图在今天的时间区渲染 now 线 | `string` | `true` |
 | `start-hour` | 时间轴起始小时（0-23，默认 8） | `string` | `8` |
 | `timezone` | 时区（IANA，如 Asia/Shanghai；空串=本地）：影响标题/列头日期格式化与「今天」标记（经 Intl timeZone）；非法时区回落本地 | `string` | — |

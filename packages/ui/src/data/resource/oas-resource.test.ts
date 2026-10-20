@@ -3776,6 +3776,47 @@ describe('OASResource 可读性能力（opt-in，默认全关）', () => {
     expect(laneName.querySelector('.name-text')).toBeNull()
   })
 
+  it('skill-matrix：行=资源、列=技能并集，具备技能显示勾选；移除属性恢复泳道', () => {
+    const el = mount({
+      resources: JSON.stringify([
+        { id: 'r1', name: '甲', skills: ['frontend', 'design'] },
+        { id: 'r2', name: '乙', skills: ['backend'] },
+      ]),
+      tasks: JSON.stringify([{ id: 't', name: 'T', start: '2026-03-02', end: '2026-03-03', resources: ['r1'] }]),
+      'skill-matrix': '',
+    })
+    const matrix = shadowOf(el).querySelector<HTMLElement>('.skill-matrix')!
+    expect(matrix.hidden).toBe(false)
+    expect(shadowOf(el).querySelector<HTMLElement>('.scroller')!.hidden).toBe(true)
+    expect([...matrix.querySelectorAll<HTMLElement>('.skill-cell.header')].map((n) => n.textContent)).toEqual([
+      '资源负载',
+      'backend',
+      'design',
+      'frontend',
+    ])
+    expect([...matrix.querySelectorAll<HTMLElement>('.skill-cell.row-head')].map((n) => n.textContent)).toEqual([
+      '甲',
+      '乙',
+    ])
+    expect(matrix.querySelectorAll('.skill-cell.has').length).toBe(3)
+    el.removeAttribute('skill-matrix')
+    el.requestUpdate()
+    expect(shadowOf(el).querySelector<HTMLElement>('.scroller')!.hidden).toBe(false)
+    expect(shadowOf(el).querySelector<HTMLElement>('.skill-matrix')!.hidden).toBe(true)
+  })
+
+  it('heatmap：按负载/容量渲染热力格、图例与 title 提示', () => {
+    const el = mount({ resources: RES_OVER, tasks: TASKS_OVER, heatmap: '' })
+    const cells = [...shadowOf(el).querySelectorAll<HTMLElement>('.heat-cell')]
+    expect(cells.length).toBeGreaterThan(0)
+    expect(cells.some((cell) => cell.classList.contains('over'))).toBe(true)
+    expect(cells.every((cell) => !!cell.title && cell.title.includes('/'))).toBe(true)
+    expect(shadowOf(el).querySelectorAll('.pillar').length, 'heatmap 模式不渲染柱体').toBe(0)
+    const legend = shadowOf(el).querySelector('.heat-legend')
+    expect(legend?.querySelectorAll('.heat-legend-item').length).toBe(4)
+    expect(legend?.textContent).toContain('低')
+  })
+
   it('①-b 三开关各自开启即渲染、互不连带', () => {
     const lv = mount({ resources: RES_OVER, tasks: TASKS_OVER, 'show-load-values': '' })
     expect(shadowOf(lv).querySelectorAll('.load-value').length, '4 个 load>0 的柱都有数字').toBe(4)

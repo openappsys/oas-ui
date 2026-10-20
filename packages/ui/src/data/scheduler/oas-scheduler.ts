@@ -178,6 +178,14 @@ const STYLE = `
   text-align: end;
   transform: translateY(-50%);
 }
+.tz-secondary {
+  display: block;
+  color: var(--oas-color-text-secondary);
+  background: var(--oas-color-bg);
+  font-size: calc(var(--oas-font-size-xs) - 1px);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
 .timeview .cols {
   position: relative;
   display: grid;
@@ -447,6 +455,18 @@ const STYLE = `
   font-size: var(--oas-font-size-xs);
   white-space: nowrap;
 }
+.res-tick[data-tz]::after {
+  content: attr(data-tz);
+  position: absolute;
+  inset-block-start: 100%;
+  inset-inline-start: 50%;
+  transform: translateX(-50%);
+  color: var(--oas-color-text-secondary);
+  font-size: calc(var(--oas-font-size-xs) - 1px);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+  white-space: nowrap;
+}
 .res-body { position: relative; }
 .res-row {
   display: grid;
@@ -476,6 +496,21 @@ const STYLE = `
   height: 8px;
   border-radius: var(--oas-radius-full, 999px);
   background: var(--chip-color, var(--oas-color-primary));
+}
+.res-row.res-group,
+.res-week .res-row.res-group {
+  grid-template-columns: 1fr;
+  background: var(--oas-color-bg-hover);
+}
+.res-group-label {
+  display: flex;
+  align-items: center;
+  padding-inline: var(--oas-space-2);
+  min-height: 36px;
+  background: var(--oas-color-bg-hover);
+  color: var(--oas-color-text-secondary-strong);
+  font-size: var(--oas-font-size-sm);
+  font-weight: 600;
 }
 .res-lane { position: relative; min-height: 36px; }
 .res-bar {
@@ -688,12 +723,15 @@ export interface SchedulerResource {
   id: string
   title: string
   color?: string
+  /** 资源分组名；同名资源在资源视图中归入同一分组标题行 */
+  group?: string
 }
 
 export type SchedulerView = 'month' | 'week' | 'day' | 'agenda' | 'resource' | 'resource-week'
 
 /** windowed 模式下宿主可显式提供的「未分配」资源行 id（无/未知 resource 的事件归入该行） */
 const UNASSIGNED_RESOURCE_ID = '__unassigned__'
+const GROUP_RESOURCE_PREFIX = '__group__:'
 
 const SCHEDULER_VIEWS: SchedulerView[] = ['month', 'week', 'day', 'agenda', 'resource', 'resource-week']
 
@@ -802,6 +840,7 @@ function sanitizeResources(v: unknown): SchedulerResource[] {
     seen.add(it.id)
     const r: SchedulerResource = { id: it.id, title: it.title }
     if (typeof it.color === 'string' && it.color !== '') r.color = it.color
+    if (typeof it.group === 'string' && it.group.trim() !== '') r.group = it.group.trim()
     out.push(r)
   }
   return out
@@ -1039,6 +1078,7 @@ export class OASScheduler extends OASElement {
       'start-hour',
       'end-hour',
       'timezone',
+      'secondary-timezone',
       'show-now',
       'dir',
       // 服务端资源行窗口协议（resource / resource-week）
@@ -1078,6 +1118,8 @@ export class OASScheduler extends OASElement {
   private printAll = false
   private warnedWindowConfig = false
   private warnedWindowOverflow = false
+  private warnedGroupedWindowed = false
+  private warnedSecondaryTimezone = false
   private lastPageAnchor = ''
   private lastTz = ''
   private anchorInit = false
@@ -1331,6 +1373,37 @@ export class OASScheduler extends OASElement {
     try {
       new Intl.DateTimeFormat('en', { timeZone: tz })
       return tz
+    } catch {
+      return ''
+    }
+  }
+
+  /** 副时区（时间刻度第二行标签）；非法/与主时区相同则隐藏 */
+  private secondaryTimezoneName(): string {
+    const tz = this.getAttr('secondary-timezone', '').trim()
+    if (!tz || tz === this.timezoneName()) return ''
+    try {
+      new Intl.DateTimeFormat('en', { timeZone: tz })
+      return tz
+    } catch {
+      if (!this.warnedSecondaryTimezone) {
+        this.warnedSecondaryTimezone = true
+        devWarn(`[oas-scheduler] secondary-timezone "${tz}" 非法，已忽略`)
+      }
+      return ''
+    }
+  }
+
+  private secondaryTimeLabel(date: Date): string {
+    const tz = this.secondaryTimezoneName()
+    if (!tz) return ''
+    try {
+      return new Intl.DateTimeFormat('en-GB', {
+        timeZone: tz,
+        hour: '2-digit',
+        minute: '2-digit',
+        hourCycle: 'h23',
+      }).format(date)
     } catch {
       return ''
     }
@@ -1969,6 +2042,15 @@ export class OASScheduler extends OASElement {
       const span = document.createElement('span')
       span.textContent = `${String(startH + i).padStart(2, '0')}:00`
       span.style.top = `${i * hourH}px`
+      const secondary = this.secondaryTimeLabel(
+        new Date(days[0]!.getFullYear(), days[0]!.getMonth(), days[0]!.getDate(), startH + i),
+      )
+      if (secondary) {
+        const small = document.createElement('small')
+        small.className = 'tz-secondary'
+        small.textContent = secondary
+        span.appendChild(small)
+      }
       gutter.appendChild(span)
     }
     tv.appendChild(gutter)
@@ -2364,10 +2446,29 @@ export class OASScheduler extends OASElement {
    *  windowed 模式只持有宿主给的资源切片，不自行追加「未分配」（全量归属由宿主负责）。 */
   private resourceRows(): SchedulerResource[] {
     const rows: SchedulerResource[] = this._resources.map((r) => ({ ...r }))
-    if (this.winMode.windowed) return rows
+    if (this.winMode.windowed) {
+      if (!this.warnedGroupedWindowed && rows.some((r) => r.group)) {
+        this.warnedGroupedWindowed = true
+        devWarn(
+          '[oas-scheduler] windowed 资源切片不自动生成分组标题行（切片行号需由宿主负责）；请由宿主在切片中显式提供分组行',
+        )
+      }
+      return rows
+    }
     if (rows.length === 0) return [{ id: '', title: this.t('scheduler.unassigned') }]
-    if (this._unassignedCount > 0) rows.push({ id: '', title: this.t('scheduler.unassigned') })
-    return rows
+    const grouped: SchedulerResource[] = []
+    const seen = new Set<string>()
+    for (const row of rows) {
+      if (row.group) {
+        if (!seen.has(row.group)) {
+          seen.add(row.group)
+          grouped.push({ id: `${GROUP_RESOURCE_PREFIX}${row.group}`, title: row.group, group: row.group })
+        }
+      }
+      grouped.push(row)
+    }
+    if (this._unassignedCount > 0) grouped.push({ id: '', title: this.t('scheduler.unassigned') })
+    return grouped
   }
 
   private eventsOnResource(iso: string, resourceId: string): Array<SchedulerEvent & { id: string }> {
@@ -2420,6 +2521,8 @@ export class OASScheduler extends OASElement {
       tick.className = 'res-tick'
       tick.style.insetInlineStart = `${((h - startH) / hours) * 100}%`
       tick.textContent = `${String(h).padStart(2, '0')}:00`
+      const secondary = this.secondaryTimeLabel(new Date(day.getFullYear(), day.getMonth(), day.getDate(), h))
+      if (secondary) tick.dataset.tz = secondary
       axis.appendChild(tick)
     }
     head.appendChild(axis)
@@ -2443,6 +2546,17 @@ export class OASScheduler extends OASElement {
       row.dataset.resource = r.id
       row.setAttribute('role', 'row')
       row.setAttribute('aria-rowindex', String(rowBase + i + 1))
+      if (r.id.startsWith(GROUP_RESOURCE_PREFIX)) {
+        row.classList.add('res-group')
+        row.style.height = `${rowH}px`
+        const groupLabel = document.createElement('div')
+        groupLabel.className = 'res-group-label'
+        groupLabel.setAttribute('role', 'rowheader')
+        groupLabel.textContent = r.title
+        row.appendChild(groupLabel)
+        body.appendChild(row)
+        continue
+      }
       const label = document.createElement('button')
       label.type = 'button'
       label.className = 'res-label'
@@ -2564,6 +2678,17 @@ export class OASScheduler extends OASElement {
       row.dataset.resource = r.id
       row.setAttribute('role', 'row')
       row.setAttribute('aria-rowindex', String(rowBase + i + 1))
+      if (r.id.startsWith(GROUP_RESOURCE_PREFIX)) {
+        row.classList.add('res-group')
+        row.style.height = `${rowH}px`
+        const groupLabel = document.createElement('div')
+        groupLabel.className = 'res-group-label'
+        groupLabel.setAttribute('role', 'rowheader')
+        groupLabel.textContent = r.title
+        row.appendChild(groupLabel)
+        body.appendChild(row)
+        continue
+      }
       if (this.winMode.windowed) {
         // windowed 的绝对行号/像素映射依赖定高：固定行高并裁切溢出，避免全天芯片堆叠改变实际行高
         row.style.height = `${rowH}px`

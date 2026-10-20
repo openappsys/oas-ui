@@ -17,6 +17,21 @@
 - 泳道与直方图**共享列宽与横向滚动**；超载柱加 `.over`（颜色走 `--oas-color-danger`）；同一资源内**互相重叠的任务条按段堆叠**显示（互不遮挡，点哪条命中哪条）。
 - 泳道间距 token `--oas-resource-lane-gap` 由行高与条高派生（`--oas-resource-row-height` 参与派生；多段轨道实高 = 段数 × 条高 +（段数 + 1）× 间距）。该 token 声明在组件宿主元素上：**仅宿主元素级**可覆盖——内联 style 或命中宿主元素的 class 规则（e2e 实测：宿主 class 设 `--oas-resource-lane-gap:4px` → 单段轨道高 36 → 28）；`:root` / 祖先级声明不生效（宿主自身已有声明，继承值被压过）。
 
+## 热力图与技能矩阵
+
+<DemoBlock title="heatmap：按 load/capacity 着色，图例 + 每格 title 提示">
+  <oas-resource id="res-heatmap" heatmap scale="day" height="300" capacity="1"
+    resources='[{"id":"a","name":"张三","capacity":1},{"id":"b","name":"李四","capacity":2}]'
+    tasks='[{"id":"h1","name":"需求","start":"2026-03-02","end":"2026-03-03","resources":["a"]},{"id":"h2","name":"设计","start":"2026-03-03","end":"2026-03-04","resources":["a"]},{"id":"h3","name":"开发","start":"2026-03-02","end":"2026-03-05","resources":["b"]}]'></oas-resource>
+</DemoBlock>
+
+<DemoBlock title="skill-matrix：行=资源、列=技能并集，勾选表示具备">
+  <oas-resource id="res-skills" skill-matrix height="240"
+    resources='[{"id":"a","name":"张三","skills":["frontend","design"]},{"id":"b","name":"李四","skills":["backend","devops"]},{"id":"c","name":"王五","skills":["design","backend"]}]'></oas-resource>
+</DemoBlock>
+
+`heatmap` 把负载直方图切换为热力格：颜色按 `load / capacity` 分低/中/高/超载，图例在直方图表头，每格 `title` 给出日期与 `load/capacity`。`skill-matrix` 切换为技能矩阵视图（行 = 资源、列 = 技能并集，✓ = 具备），不参与负载计算；技能矩阵不做虚拟化，资源/技能很多时建议宿主分页。
+
 ## 负载超载与资源平衡
 
 <DemoBlock title="检测超载（oas-overload）→ 一键平衡/均载：levelResources() 保工期顺延 或 mode: reassign 改派资源（日期不变），宿主回写 tasks">
@@ -165,6 +180,7 @@ const file = importResourceCalendars(json)
 | `bar-label` | 任务条内显示任务名（布尔，默认关）：单行省略，窄条自动裁切；不改变 aria-label 与点击/拖拽命中 | `boolean` | — |
 | `capacity` | 资源未声明 capacity 时的缺省容量（默认 1） | `string` | `1` |
 | `header-sticky` | 泳道表头纵向吸顶（默认开）：滚动泳道时周/日刻度保持可见；`header-sticky="false"` 关闭（表头随内容滚动）。角落名列在横向滚动时始终贴边（LTR/RTL） | — | — |
+| `heatmap` | 负载热力图（布尔，默认关）：按 load/capacity 渲染低/中/高/超载热力格，表头显示图例，每格 title 为日期与 load/capacity | `boolean` | — |
 | `height` | 组件高度 px（默认 320；接受纯数字或 Npx）：映射到自定义属性 --oas-resource-height（宿主自身 height 内联始终优先，组件不覆盖宿主内联）。height 属性在场且为合法值（>0 纯数字或 Npx）时组件接管该变量，写入宿主内联并覆盖宿主自己设置的 --oas-resource-height；空串/空白按未设置处理；非法值不写该变量、仅清除本实例此前写入的值，宿主 token 不受影响；属性移除后组件写入的值归零清除，高度回落 token 缺省 320 或宿主 CSS，宿主原先内联设置的值不恢复；从未设置 height 属性时组件不写该变量，宿主内联或 class 规则设置的 --oas-resource-height 完全不受影响 | `string` | `320` |
 | `locale` | 本地化（覆盖 config-provider 注入与全局 locale） | `string` | — |
 | `range-end` | 宿主托管时间轴终点（ISO 日期 YYYY-MM-DD，含当日）：与 range-start 成对使用；只有其一 / 颠倒 / 非法时忽略托管并 devWarn | `string` | — |
@@ -173,6 +189,7 @@ const file = importResourceCalendars(json)
 | `scale` | 直方图 period 粒度与时间轴刻度：day（默认）/ week / month；非法回落 day | `string` | — |
 | `show-load-values` | 负载直方图柱顶显示该档负载数字（布尔，默认关）：仅 load > 0 显示，超载档数字用 `text-on-primary`（浅色主题白字/暗色主题深字，压在 danger 柱身上保证对比）；数字为视觉冗余（aria-hidden），读屏仍读列的负载描述 | `boolean` | — |
 | `show-overload-badge` | 泳道行头显示「超载 N 档」徽标（布尔，默认关）：仅该资源存在超载档时显示，文案走 i18n resource.overBadge | `boolean` | — |
+| `skill-matrix` | 技能矩阵视图（布尔，默认关）：行=资源、列=技能并集，✓ 表示具备；无虚拟化 | `boolean` | — |
 | `tasks` | 资源任务（JSON [{ id, name, start, end, resources?, priority?, requiredSkills?, project? }]）；start/end 仅日精度 YYYY-MM-DD（end 含当日；带时刻输入按当日处理），resources 为分配的资源 id 数组（指向不存在资源的分配忽略）。priority 数值越小越优先；requiredSkills 在 reassign 时要求目标资源全部具备；project 配合 levelResources({ projectOrder }) 做跨项目优先级 | `ResourceTask[]` | `[]` |
 | `total` | windowed 模式下的全量资源行数；为 0 或非法时 windowed 不生效（回落本地模式） | `string` | — |
 | `window-start` | windowed 模式下切片首行（资源）的绝对行号（相对全量） | `string` | `0` |

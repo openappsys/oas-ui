@@ -675,6 +675,46 @@ describe('OASGantt 行树（WBS）与折叠', () => {
     expect(el.tasks, '原任务数组不被合成行污染').toHaveLength(3)
   })
 
+  it('undo/redo：任务提交可撤销重做，外部整体重写重置历史', () => {
+    const noHistory = mount({
+      tasks: JSON.stringify([{ id: 'a', name: 'A', start: '2026-03-02', end: '2026-03-06' }]),
+    })
+    noHistory.updateTask('a', { name: 'A1' })
+    expect(noHistory.canUndo, 'history 未开启默认不记录').toBe(false)
+    expect(noHistory.undo()).toBe(false)
+
+    const el = mount({
+      tasks: JSON.stringify([{ id: 'a', name: 'A', start: '2026-03-02', end: '2026-03-06' }]),
+      history: '',
+    })
+    const actions: string[] = []
+    el.addEventListener('oas-history-change', (e) => actions.push((e as CustomEvent).detail.action))
+    expect(el.canUndo).toBe(false)
+    expect(el.updateTask('a', { name: 'A1' })).toBe(true)
+    expect(el.updateTask('a', { name: 'A2' })).toBe(true)
+    expect(el.canUndo).toBe(true)
+    expect(el.undo()).toBe(true)
+    expect(el.tasks[0]!.name).toBe('A1')
+    expect(el.undo()).toBe(true)
+    expect(el.tasks[0]!.name).toBe('A')
+    expect(el.canUndo).toBe(false)
+    expect(el.redo()).toBe(true)
+    expect(el.tasks[0]!.name).toBe('A1')
+    expect(el.canRedo).toBe(true)
+    el.updateTask('a', { name: 'A3' })
+    expect(el.canRedo, '新提交应清空重做栈').toBe(false)
+    const id = el.addTask({ name: 'B', start: '2026-03-09', end: '2026-03-10' })
+    expect(el.tasks.some((t) => t.id === id)).toBe(true)
+    el.undo()
+    expect(el.tasks.some((t) => t.id === id)).toBe(false)
+    el.tasks = [{ id: 'x', name: 'X', start: '2026-03-01', end: '2026-03-02' }]
+    expect(el.canUndo).toBe(false)
+    expect(el.canRedo).toBe(false)
+    expect(actions).toContain('change')
+    expect(actions).toContain('undo')
+    expect(actions).toContain('redo')
+  })
+
   it('group-by-project 关闭时保持原行序', () => {
     const tasks: GanttTask[] = [
       { id: 'a', name: 'A', start: '2026-03-02', end: '2026-03-06', project: 'Alpha' },

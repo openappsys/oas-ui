@@ -4299,7 +4299,7 @@
       "page-show-date": "面板月锚点（受控）：yyyy-MM-dd，变化时重锚定显示月份",
       "first-day-of-week": "周起始日（0-6）；缺省按 locale 推导",
       "locale": "本地化（覆盖 config-provider 注入与全局 locale）",
-      "resources": "资源列表（JSON）：[{ id, title, color? }]——资源视图按资源分组；事件 resource 缺省或指向未知 id 时归「未分配」行",
+      "resources": "资源列表（JSON）：[{ id, title, color?, group? }]——资源视图按资源分组；事件 resource 缺省或指向未知 id 时归「未分配」行；group 非空时自动插入分组标题行",
       "show-now": "当前时间线（默认开；false 关闭）：week/day 视图与资源单日视图在今天的时间区渲染 now 线",
       "view": "视图：month（默认）/ week / day / agenda / resource / resource-week；周/日视图为时刻表 + 事件块定位，无 start 的事件进全天行；agenda 为 28 天时序清单；resource 为单日资源横向时间轴、resource-week 为周 × 资源矩阵",
       "start-hour": "时间轴起始小时（0-23，默认 8）",
@@ -4307,7 +4307,8 @@
       "timezone": "时区（IANA，如 Asia/Shanghai；空串=本地）：影响标题/列头日期格式化与「今天」标记（经 Intl timeZone）；非法时区回落本地",
       "windowed": "服务端资源行窗口模式（布尔，默认关）：resource / resource-week 的 resources 只承载 [window-start, window-start + resources.length) 切片；可视窗口未覆盖时派发 oas-window-request（绝对行号、半开区间），回填后更新 window-start。windowed 下不自动追加「未分配」行；需要时宿主可提供保留 id `__unassigned__`",
       "total": "windowed 模式下的资源行总数（正数才生效）；用于 aria-rowcount 与绝对行号",
-      "window-start": "windowed 模式下切片首行的绝对行号（相对全量）"
+      "window-start": "windowed 模式下切片首行的绝对行号（相对全量）",
+      "secondary-timezone": "第二时区（IANA）：在 day/week/资源单日时间刻度追加第二时区标签；非法值忽略并 devWarn"
     },
     "events": {
       "oas-create": "在时间格空白处拖出 >=15 分钟区间时派发，detail: { date, start, end, resource? }——组件不自动建事件，宿主接后自行 addEvent；位移不足视作 oas-day-click",
@@ -4353,7 +4354,8 @@
       "stripe": "行斑马纹（布尔，默认关）：按**绝对行号**奇偶给行加底色（虚拟化/窗口化滚动稳定，不随 DOM 顺序跳变）；颜色走 `--oas-gantt-row-stripe-bg`（缺省 `--oas-color-bg-hover`）；选中/周末假日等背景覆盖条纹",
       "show-float": "显示总浮时/自由浮时（布尔，默认关）：仅在依赖图完整时计算，条上显示「总浮时/自由浮时」标签并写入 data-total-float/data-free-float（单位为天）；摘要不参与，windowed 模式跳过并 devWarn",
       "group-by-project": "按任务 project 自动生成项目根摘要（行 id 为 __oas_project__:&lt;project&gt;），原任务数组不变；windowed 模式要求宿主自行展平，不做自动分组",
-      "show-variance": "任务带 baseline 时在行名后显示 Δ±Nd 偏差徽标，并写入 data-start-delta/data-end-delta/data-duration-delta/data-progress-delta；正值标红、负值标绿"
+      "show-variance": "任务带 baseline 时在行名后显示 Δ±Nd 偏差徽标，并写入 data-start-delta/data-end-delta/data-duration-delta/data-progress-delta；正值标红、负值标绿",
+      "history": "内建撤销/重做（布尔，默认关）：记录任务提交快照（最多 100 步），配合 undo()/redo()/canUndo/canRedo/clearHistory()；外部整体重写 tasks 会清空历史"
     },
     "events": {
       "oas-reschedule": "依赖联动排程改动了后继任务时派发（auto-schedule 开启），detail: { ids }（被联动改动的任务 id）",
@@ -4370,7 +4372,8 @@
       "oas-dependencies-change": "连线拖拽建依赖 / 选中删除收口时派发，detail: { taskId, dependencies }（taskId 为依赖变化的后继任务）",
       "oas-selection-change": "多选集合变化（点击 / 键盘 / property 写入）时派发，detail: { ids }（选中的任务 id 数组）",
       "oas-window-request": "windowed 模式下期望行窗口未被已装载区间覆盖时派发，detail: { start, end, reason }（半开区间、绝对行号；reason 为 init / scroll / resize / data）；同一期望区间不重复派发",
-      "oas-range-request": "宿主托管时间范围（range-start/range-end）且可视时间窗接近轴端点时派发，detail: { startMs, endMs, reason }（期望的相邻范围）；同一期望范围不重复派发"
+      "oas-range-request": "宿主托管时间范围（range-start/range-end）且可视时间窗接近轴端点时派发，detail: { startMs, endMs, reason }（期望的相邻范围）；同一期望范围不重复派发",
+      "oas-history-change": "history 开启后，每次可撤销提交/撤销/重做/清空时派发，detail: { canUndo, canRedo, action }（action: change/undo/redo/clear）"
     },
     "slots": {
       "template[slot=\"empty\"]": "空数据态内容（缺省「暂无任务」）",
@@ -4718,7 +4721,9 @@
       "show-load-values": "负载直方图柱顶显示该档负载数字（布尔，默认关）：仅 load > 0 显示，超载档数字用 `text-on-primary`（浅色主题白字/暗色主题深字，压在 danger 柱身上保证对比）；数字为视觉冗余（aria-hidden），读屏仍读列的负载描述",
       "show-overload-badge": "泳道行头显示「超载 N 档」徽标（布尔，默认关）：仅该资源存在超载档时显示，文案走 i18n resource.overBadge",
       "bar-label": "任务条内显示任务名（布尔，默认关）：单行省略，窄条自动裁切；不改变 aria-label 与点击/拖拽命中",
-      "header-sticky": "泳道表头纵向吸顶（默认开）：滚动泳道时周/日刻度保持可见；`header-sticky=\"false\"` 关闭（表头随内容滚动）。角落名列在横向滚动时始终贴边（LTR/RTL）"
+      "header-sticky": "泳道表头纵向吸顶（默认开）：滚动泳道时周/日刻度保持可见；`header-sticky=\"false\"` 关闭（表头随内容滚动）。角落名列在横向滚动时始终贴边（LTR/RTL）",
+      "heatmap": "负载热力图（布尔，默认关）：按 load/capacity 渲染低/中/高/超载热力格，表头显示图例，每格 title 为日期与 load/capacity",
+      "skill-matrix": "技能矩阵视图（布尔，默认关）：行=资源、列=技能并集，✓ 表示具备；无虚拟化"
     },
     "events": {
       "oas-task-click": "点击资源泳道内的任务条时派发，detail: { id, task, resourceId }",

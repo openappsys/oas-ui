@@ -252,6 +252,55 @@ const STYLE = `
 .pillar.over {
   background: var(--oas-resource-load-over-bg, var(--oas-color-danger));
 }
+/* heatmap：按 load/capacity 着色，title/图例提供可读信息 */
+.heat-cell {
+  position: absolute;
+  inset: 2px;
+  border-radius: var(--oas-radius-xs);
+  background: color-mix(in srgb, var(--oas-color-primary) 10%, var(--oas-color-bg));
+}
+.heat-cell.low {
+  background: color-mix(in srgb, var(--oas-color-primary) 24%, var(--oas-color-bg));
+}
+.heat-cell.mid {
+  background: color-mix(in srgb, var(--oas-color-primary) 46%, var(--oas-color-bg));
+}
+.heat-cell.high {
+  background: color-mix(in srgb, var(--oas-color-primary) 68%, var(--oas-color-bg));
+}
+.heat-cell.over {
+  background: var(--oas-resource-load-over-bg, var(--oas-color-danger));
+}
+.heat-cell.unavailable {
+  background: transparent;
+  box-shadow: inset 0 0 0 1px var(--oas-color-border);
+}
+.heat-legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--oas-space-2);
+  padding: 0 var(--oas-space-2);
+  min-height: 20px;
+}
+.heat-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--oas-color-text-secondary-strong);
+  font-size: var(--oas-font-size-xs);
+  white-space: nowrap;
+}
+.heat-legend-swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--oas-color-primary) 10%, var(--oas-color-bg));
+}
+.heat-legend-swatch.low { background: color-mix(in srgb, var(--oas-color-primary) 24%, var(--oas-color-bg)); }
+.heat-legend-swatch.mid { background: color-mix(in srgb, var(--oas-color-primary) 46%, var(--oas-color-bg)); }
+.heat-legend-swatch.high { background: color-mix(in srgb, var(--oas-color-primary) 68%, var(--oas-color-bg)); }
+.heat-legend-swatch.over { background: var(--oas-resource-load-over-bg, var(--oas-color-danger)); }
 /* ===== 可读性能力（opt-in，默认全关；开关在 observedAttributes，开启才渲染对应节点） ===== */
 /* show-load-values：负载柱顶数值。装饰性数字（aria-hidden——所在列的行级 aria-label 已描述负载，
    避免读屏重复播报）。绝对定位在所属 .col 内水平居中；bottom 由渲染层按柱高内联写入并钳制
@@ -318,6 +367,48 @@ const STYLE = `
   color: var(--oas-color-text-secondary-strong);
   background: var(--oas-color-bg);
   z-index: 3;
+}
+.skill-matrix {
+  display: grid;
+  overflow: auto;
+  border: 1px solid var(--oas-color-border);
+  border-radius: var(--oas-radius-md);
+  margin: var(--oas-space-2);
+  background: var(--oas-color-bg);
+}
+.skill-matrix[hidden],
+.scroller[hidden] {
+  display: none !important;
+}
+.skill-matrix-row {
+  display: contents;
+}
+.skill-cell {
+  min-height: 32px;
+  padding: var(--oas-space-1) var(--oas-space-2);
+  border-inline-end: 1px solid var(--oas-color-border);
+  border-block-end: 1px solid var(--oas-color-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--oas-color-bg);
+  font-size: var(--oas-font-size-sm);
+}
+.skill-cell.header,
+.skill-cell.row-head {
+  background: var(--oas-color-bg-hover);
+  color: var(--oas-color-text-secondary-strong);
+  font-weight: 600;
+}
+.skill-cell.row-head {
+  justify-content: flex-start;
+}
+.skill-cell.has {
+  color: var(--oas-color-text-primary);
+  font-weight: 700;
+}
+.skill-check::before {
+  content: '✓';
 }
 .empty[hidden] {
   display: none !important;
@@ -1469,6 +1560,8 @@ export class OASResource extends OASElement {
       // - bar-label：任务条内显示任务名（纯文本，条窄由 CSS 裁切）
       'show-load-values',
       'show-overload-badge',
+      'heatmap',
+      'skill-matrix',
       'bar-label',
       'header-sticky',
     ]
@@ -2299,6 +2392,7 @@ export class OASResource extends OASElement {
             <div class="loads"></div>
           </div>
         </div>
+        <div class="skill-matrix" part="skill-matrix" role="table" hidden></div>
         <div class="empty" hidden></div>
       </div>
     `
@@ -2320,6 +2414,14 @@ export class OASResource extends OASElement {
     this.syncResources()
     this.syncTasks()
     this.toggleAttribute('data-rtl', isRtl(this))
+    if (this.hasAttr('skill-matrix')) {
+      this.renderSkillMatrix()
+      return
+    }
+    const scroller = this.shadow.querySelector<HTMLElement>('.scroller')
+    const matrix = this.shadow.querySelector<HTMLElement>('.skill-matrix')
+    if (scroller) scroller.hidden = false
+    if (matrix) matrix.hidden = true
     // 服务端行窗口模式解析：windowed 属性在场且 total 为合法正数才生效（其余回落既有本地全量口径）；
     // 退出 windowed 时复位首帧 init 标记与去重状态（再次进入可重新 init）
     this.winMode = readWindowedMode(
@@ -2487,7 +2589,30 @@ export class OASResource extends OASElement {
     if (histHeadName) histHeadName.textContent = this.t('resource.load')
     // 表头/刻度容器显式与泳道同宽同位（RTL 镜像定位与横向溢出覆盖都要求 容器宽 = canvasW）
     const histPad = this.shadow.querySelector<HTMLElement>('.hist-pad')
-    if (histPad) histPad.style.width = `${this.canvasW}px`
+    if (histPad) {
+      histPad.style.width = `${this.canvasW}px`
+      histPad.querySelector('.heat-legend')?.remove()
+      if (this.hasAttr('heatmap')) {
+        const legend = document.createElement('div')
+        legend.className = 'heat-legend'
+        legend.setAttribute('aria-hidden', 'true')
+        for (const [key, label] of [
+          ['low', 'resource.heatLow'],
+          ['mid', 'resource.heatMid'],
+          ['high', 'resource.heatHigh'],
+          ['over', 'resource.heatOver'],
+        ] as const) {
+          const item = document.createElement('span')
+          item.className = 'heat-legend-item'
+          const swatch = document.createElement('span')
+          swatch.className = `heat-legend-swatch ${key}`
+          item.appendChild(swatch)
+          item.appendChild(document.createTextNode(this.t(label)))
+          legend.appendChild(item)
+        }
+        histPad.appendChild(legend)
+      }
+    }
     // 缓存负载结果供滚动帧复用（滚动只换窗口，不重算矩阵）
     this.loadRows = perResourceLoads
     this.maxLoad = maxLoad
@@ -2943,6 +3068,81 @@ export class OASResource extends OASElement {
    * 窗内行整段重建即可（无键控复用需求）。.row-spacer 与泳道区同口径撑起负载区总高（滚动总高不缩水）。
    * 横向仍按列窗口建列，成本 O(窗内行数 × 窗口列数)。
    */
+  /** 技能矩阵视图（skill-matrix）：行=资源、列=技能并集；适合小中规模资源组 */
+  private renderSkillMatrix(): void {
+    const matrix = this.shadow.querySelector<HTMLElement>('.skill-matrix')
+    if (!matrix) return
+    const scroller = this.shadow.querySelector<HTMLElement>('.scroller')
+    const empty = this.shadow.querySelector<HTMLElement>('.empty')
+    if (scroller) scroller.hidden = true
+    if (empty) empty.hidden = true
+    matrix.hidden = false
+    matrix.innerHTML = ''
+    const resources = this._resources
+    const skillSet = new Set<string>()
+    for (const resource of resources) {
+      for (const skill of resource.skills ?? []) skillSet.add(skill)
+    }
+    const skills = [...skillSet].sort((a, b) => a.localeCompare(b))
+    matrix.style.gridTemplateColumns = `minmax(120px, 1fr) repeat(${Math.max(skills.length, 1)}, minmax(48px, 1fr))`
+    if (resources.length === 0) {
+      const row = document.createElement('div')
+      row.className = 'skill-matrix-row'
+      row.setAttribute('role', 'row')
+      const message = document.createElement('div')
+      message.className = 'skill-cell'
+      message.setAttribute('role', 'cell')
+      message.style.gridColumn = '1 / -1'
+      message.textContent = this.t('resource.empty')
+      row.appendChild(message)
+      matrix.appendChild(row)
+      return
+    }
+    const headerRow = document.createElement('div')
+    headerRow.className = 'skill-matrix-row'
+    headerRow.setAttribute('role', 'row')
+    const corner = document.createElement('div')
+    corner.className = 'skill-cell header'
+    corner.setAttribute('role', 'columnheader')
+    corner.textContent = this.t('resource.label')
+    headerRow.appendChild(corner)
+    for (const skill of skills) {
+      const head = document.createElement('div')
+      head.className = 'skill-cell header'
+      head.setAttribute('role', 'columnheader')
+      head.textContent = skill
+      headerRow.appendChild(head)
+    }
+    matrix.appendChild(headerRow)
+    for (const resource of resources) {
+      const row = document.createElement('div')
+      row.className = 'skill-matrix-row'
+      row.setAttribute('role', 'row')
+      const rowHead = document.createElement('div')
+      rowHead.className = 'skill-cell row-head'
+      rowHead.setAttribute('role', 'rowheader')
+      rowHead.textContent = resource.name
+      row.appendChild(rowHead)
+      for (const skill of skills) {
+        const cell = document.createElement('div')
+        cell.className = 'skill-cell'
+        cell.setAttribute('role', 'cell')
+        const has = (resource.skills ?? []).includes(skill)
+        if (has) {
+          cell.classList.add('has')
+          const check = document.createElement('span')
+          check.className = 'skill-check'
+          check.setAttribute('aria-hidden', 'true')
+          cell.appendChild(check)
+          cell.setAttribute('aria-label', `${resource.name}: ${skill} ✓`)
+        }
+        cell.title = `${resource.name}: ${skill}${has ? ' ✓' : ''}`
+        row.appendChild(cell)
+      }
+      matrix.appendChild(row)
+    }
+  }
+
   private renderLoads(
     rows: Array<{ resource: RS; capacities: number[]; loads: number[]; overCount: number }>,
     maxLoad: number,
@@ -3010,7 +3210,21 @@ export class OASResource extends OASElement {
         const load = row.loads[i]!
         const cap = row.capacities[i]!
         if (cap <= 0) col.classList.add('unavailable')
-        if (load > 0) {
+        if (this.hasAttr('heatmap')) {
+          const cell = document.createElement('div')
+          cell.className = 'heat-cell'
+          const ratio = cap > 0 ? load / cap : load > 0 ? 2 : 0
+          if (cap <= 0) cell.classList.add('unavailable')
+          else if (load > cap) cell.classList.add('over')
+          else if (ratio >= 0.75) cell.classList.add('high')
+          else if (ratio >= 0.4) cell.classList.add('mid')
+          else if (load > 0) cell.classList.add('low')
+          const period = this.periods[i]
+          const label = `${period ? toISODate(new Date(period.startMs)) : ''} ${load}/${cap}`
+          cell.title = label
+          cell.setAttribute('aria-hidden', 'true')
+          col.appendChild(cell)
+        } else if (load > 0) {
           const pillar = document.createElement('div')
           pillar.className = load > row.capacities[i]! ? 'pillar over' : 'pillar'
           pillar.style.height = maxLoad > 0 ? `${(load / maxLoad) * 100}%` : '0'

@@ -168,9 +168,29 @@ Assemble a task detail editor with `oas-modal` + `oas-form` (the component only 
 
 The component only guarantees a closed loop of data + interaction; the capabilities below are provided as official recipes (no changes to the component itself):
 
-### Undo / Redo (host-owned history)
+### Undo / Redo (built-in `history`, opt-in)
 
-This is a **controlled-data model**: every change dispatches `oas-task-change` (with `oldStart/oldEnd/start/end`) plus `oas-tasks-change`. Keeping **your own** history stack from these events is the most robust approach — a built-in stack would create a second source of truth against the host `tasks`: undo writes internally then gets overwritten by the host, granularity mismatches host actions, and controlled re-renders bounce the undo back. Typical approach: listen to `oas-task-change` / `oas-reparent` / `oas-dependencies-change`, record inverse operations, and write back via `updateTask` / `moveTask` / `updateTasks`.
+`history` (off by default) records snapshots for `updateTask` / `updateTasks` / `addTask` / `removeTasks` / `moveTask` / `duplicateTask` / dependency mutations and drag commits (up to 100 steps). Use `undo()` / `redo()` / `canUndo` / `canRedo` / `clearHistory()`; each undo/redo/new commit dispatches `oas-history-change` with `{ canUndo, canRedo, action }`. Turning `history` off or replacing `tasks` wholesale clears the stack.
+
+```ts
+const gantt = document.querySelector('oas-gantt')
+gantt.setAttribute('history', '')
+gantt.updateTask('t1', { end: '2026-03-10' })
+gantt.undo()
+gantt.redo()
+```
+
+<DemoBlock title="history: update a task, then undo/redo; button state follows oas-history-change">
+  <div style="display:flex;gap:var(--oas-space-2);margin-bottom:var(--oas-space-2)">
+    <oas-button id="gantt-history-change" size="small">Move "Design" later</oas-button>
+    <oas-button id="gantt-history-undo" size="small">Undo</oas-button>
+    <oas-button id="gantt-history-redo" size="small">Redo</oas-button>
+  </div>
+  <oas-gantt id="gantt-history" history height="180" tasks='[{"id":"h1","name":"Design","start":"2026-03-02","end":"2026-03-06","progress":40},{"id":"h2","name":"Build","start":"2026-03-09","end":"2026-03-13","dependencies":[{"id":"h1"}]}]'></oas-gantt>
+  <div id="gantt-history-output" style="color:var(--oas-color-text-secondary);font-size:var(--oas-font-size-sm);margin-top:var(--oas-space-2)"></div>
+</DemoBlock>
+
+> If the host treats `tasks` as the controlled source of truth and writes it back, keeping a host-owned stack is still recommended: the built-in stack is cleared by the next wholesale rewrite and host business actions may be coarser than task commits.
 
 ### Edit dialog (double-click a task bar)
 
@@ -369,6 +389,20 @@ import { onMounted } from 'vue'
 onMounted(async () => {
   await customElements.whenDefined('oas-gantt')
   const out = document.getElementById('gantt-output')
+
+  const hist = document.getElementById('gantt-history')
+  const histOut = document.getElementById('gantt-history-output')
+  if (hist && histOut) {
+    const sync = (detail) => {
+      histOut.textContent = `history: ${detail.action} (undo ${detail.canUndo}, redo ${detail.canRedo})`
+    }
+    hist.addEventListener('oas-history-change', (e) => sync(e.detail))
+    document.getElementById('gantt-history-change')?.addEventListener('oas-click', () => {
+      hist.updateTask('h1', { end: '2026-03-10' })
+    })
+    document.getElementById('gantt-history-undo')?.addEventListener('oas-click', () => hist.undo())
+    document.getElementById('gantt-history-redo')?.addEventListener('oas-click', () => hist.redo())
+  }
 
   // Today-line demo: the range dynamically covers today (guarantees the line falls inside the axis)
   const today = document.getElementById('gantt-today')
@@ -608,6 +642,7 @@ onMounted(async () => {
 | `first-day-of-week` | Week start day (0-6); defaults to locale derivation (used for week-tier alignment) | `string` | — |
 | `group-by-project` | Group root tasks by project into synthetic summary rows (row id __oas_project__:&lt;project&gt;) without mutating the task array; windowed mode requires host-flattened rows | `string` | — |
 | `height` | Component height in px (default 320; accepts a plain number or Npx): mapped to the custom property --oas-gantt-height. The height is applied to the internal canvas (.gantt) — the host's own inline height only frames the outer box, while the inner canvas height is still governed by the height attribute / --oas-gantt-height and is not stretched by the host's inline height; to change the overall height use the height attribute or --oas-gantt-height. While the height attribute is present and valid (>0 plain number or Npx) the component takes over this variable — writing it inline on the host and overriding any --oas-gantt-height the host set itself; an empty/whitespace value is treated as unset; an invalid value writes nothing and only clears a value this instance wrote earlier, so a host token is never affected; after the attribute is removed the component-written value is cleared to zero, so the height falls back to the token default (320) or host CSS, and the host's previous inline value is not restored; when the height attribute was never set the component never writes the variable, and a --oas-gantt-height set by the host (inline or via class rules) is left completely untouched | `string` | `320` |
+| `history` | Built-in undo/redo (boolean, off by default): records task commits (max 100), used with undo()/redo()/canUndo/canRedo/clearHistory(); replacing tasks wholesale clears the stack | `string` | — |
 | `holidays` | Holiday list (JSON ["YYYY-MM-DD",…]): matching columns highlighted (takes precedence over weekend tint); holidays are always non-working (regardless of workdays) and are skipped by auto-schedule | `string` | — |
 | `label-position` | Bar label position: inside / right / left; default `none` (the row-name column already shows the name, so the bar does not repeat it); invalid values fall back to `none` | `string` | — |
 | `locale` | Localization (overrides config-provider injection and the global locale) | `string` | — |
@@ -644,6 +679,7 @@ onMounted(async () => {
 | --- | --- |
 | `oas-dependencies-change` | Dispatched when a link drag creates a dependency or a selected link is deleted, detail: { taskId, dependencies } (taskId is the successor whose dependencies changed) |
 | `oas-expand-change` | Dispatched on row tree collapse/expand, detail: { id, expanded } |
+| `oas-history-change` | With history enabled, dispatched after each undoable commit/undo/redo/clear, detail: { canUndo, canRedo, action } (change/undo/redo/clear) |
 | `oas-progress-change` | Dispatched when a progress handle drag settles, detail: { id, task, progress } |
 | `oas-range-request` | Emitted when the time axis is host-managed (range-start/range-end) and the visible time window approaches an axis edge; detail: { startMs, endMs, reason } (the neighbouring range requested). The same expected range is not emitted twice |
 | `oas-reparent` | Dispatched when a row drag reparent/reorder settles, detail: { id, parent, index } (parent null means root level; index is the sibling position) |

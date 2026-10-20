@@ -2621,3 +2621,24 @@ group 子钮此前为宿主自填 light DOM（`slot="action"`），组件用 `::
 - **语义**：利用率负载口径与组件一致（任务与某日相交即给每个 assigned resource 记 1），容量按 workdays/holidays/capacityOverrides 逐日求和，支持 day/week/month 汇总；未声明日历字段时 capacity 作为逐日基数。指派建议按技能缺口优先、利用率/容量次之排序；日历 JSON 版本化为 1，导入时清洗非法日期、负数容量与空技能。
 - **兼容**：纯新增导出，不改变组件属性、事件或既有 `levelResources` 行为。
 - **验收**：单测覆盖日/周/月汇总、假期/半天 override、空数据、日历往返与非法输入、建议排序；文档 zh/en 与 CHANGELOG 同步。
+
+## 未发布：scheduler 资源分组与第二时区
+
+- **范围**：`SchedulerResource.group` 在 resource / resource-week 视图生成分组标题行；新增 `secondary-timezone` 属性，在 day/week/资源单日时间刻度显示第二时区标签。
+- **语义**：同名 group 只生成一次标题行，资源保持输入顺序；windowed 切片不自动生成分组行（宿主自行提供切片行）并 devWarn。第二时区仅影响刻度显示，不改变事件定位；非法 IANA 忽略并 devWarn。
+- **兼容**：`group`/`secondary-timezone` 均可选；不设置时渲染与旧版一致。
+- **验收**：单测覆盖分组行序/组内顺序/resource-week、第二时区标签数量与非法值；e2e 覆盖资源分组 + 第二时区 demo；a11y 零严重违规；文档 zh/en、API 说明与 CHANGELOG 同步。
+
+## 未发布：gantt 内建撤销/重做（opt-in）
+
+- **范围**：新增 `history` 属性与 `undo()` / `redo()` / `canUndo` / `canRedo` / `clearHistory()`；新增 `oas-history-change` 事件（`{ canUndo, canRedo, action }`）。
+- **语义**：仅 `history` 开启时记录任务提交快照（最多 100 步），覆盖 updateTask/updateTasks/addTask/removeTasks/moveTask/duplicateTask/依赖增删改与拖拽提交；外部整体重写 `tasks` 或关闭 `history` 清空历史。默认关闭，保持受控数据模型与零历史开销。
+- **兼容**：默认行为不变；开启后 `tasks-change` 仍按原契约派发，宿主可在 `oas-history-change` 中同步按钮状态。
+- **验收**：单测覆盖多步撤销/重做、重做栈清空、外部重写重置、默认关闭不记录；文档 zh/en、API/事件说明与 CHANGELOG 同步。
+
+## 未发布：resource 热力图与技能矩阵视图
+
+- **范围**：新增 `heatmap`（负载直方图切热力格 + 图例 + 每格 title）与 `skill-matrix`（行=资源、列=技能并集）两个 opt-in 视图；i18n 新增 `resource.heatLow/heatMid/heatHigh/heatOver`。
+- **语义**：热力格按 `load / capacity` 分低/中/高/超载，容量 0 显示不可用；技能矩阵使用 `skills` 并集，✓ 表示具备，不做虚拟化（大规模数据建议宿主分页）。两者均只读展示，不修改数据。
+- **兼容**：默认关闭，不改变既有泳道/直方图与 windowed 行为；技能矩阵不参与负载计算。
+- **验收**：单测覆盖热力格/图例/超载类与技能矩阵勾选/移除属性恢复；e2e 覆盖两个 demo；resource a11y 零严重违规；文档 zh/en、API 说明与 CHANGELOG 同步。

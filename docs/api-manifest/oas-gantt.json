@@ -112,6 +112,12 @@
       "observed": true
     },
     {
+      "name": "history",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
       "name": "creatable",
       "type": "boolean",
       "observed": true
@@ -178,6 +184,14 @@
       "api": true
     },
     {
+      "name": "canUndo",
+      "type": "boolean"
+    },
+    {
+      "name": "canRedo",
+      "type": "boolean"
+    },
+    {
       "name": "selection",
       "type": "string[]",
       "api": true
@@ -187,6 +201,10 @@
     {
       "name": "oas-tasks-change",
       "detail": "{ tasks: this.tasks } satisfies GanttTasksChangeDetail"
+    },
+    {
+      "name": "oas-history-change",
+      "detail": "{ canUndo: this.undoStack.length > 0, canRedo: this.redoStack.length > 0, action, } satisfies GanttHistoryChangeDetail"
     },
     {
       "name": "oas-expand-change",

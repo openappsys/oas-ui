@@ -4299,7 +4299,7 @@
       "page-show-date": "Panel month anchor (controlled): yyyy-MM-dd; re-anchors the shown month on change",
       "first-day-of-week": "First day of week (0-6); defaults to locale-derived",
       "locale": "Localization (overrides config-provider injection and global locale)",
-      "resources": "Resources (JSON): [{ id, title, color? }] — resource views group by resource; events whose resource is absent or unknown go to the 'Unassigned' row",
+      "resources": "Resources (JSON): [{ id, title, color?, group? }] — resource views group by resource; events whose resource is absent or unknown go to the 'Unassigned' row; a non-empty group inserts a group header row",
       "show-now": "Current-time line (on by default; false disables): renders a now line for today in week/day and single-day resource views",
       "view": "View: month (default) / week / day / agenda / resource / resource-week; week/day views show a time axis with positioned event blocks (untimed events go to the all-day row); agenda shows a 28-day chronological list; resource is a single-day horizontal resource timeline, resource-week a week x resource matrix",
       "start-hour": "Time axis start hour (0-23, default 8)",
@@ -4307,7 +4307,8 @@
       "timezone": "Timezone (IANA, e.g. Asia/Shanghai; empty = local): affects title/column date formatting and the today marker (via Intl timeZone); invalid values fall back to local",
       "windowed": "Server-side resource row window mode (boolean, off by default): for resource / resource-week, resources carries only the [window-start, window-start + resources.length) slice; emits oas-window-request (absolute, half-open range) when the visible window is uncovered. The component does not auto-append an Unassigned row; the host may provide the reserved id `__unassigned__`.",
       "total": "Total resource row count in windowed mode (must be positive); used for aria-rowcount and absolute row indices.",
-      "window-start": "Absolute row index of the first loaded row in windowed mode."
+      "window-start": "Absolute row index of the first loaded row in windowed mode.",
+      "secondary-timezone": "Secondary timezone (IANA): appends a second timezone label to day/week/resource-day time gutters; invalid values are ignored with a devWarn"
     },
     "events": {
       "oas-create": "Dispatched when an empty time cell is dragged out to a range of >=15 minutes, detail: { date, start, end, resource? } — the component does not create the event; the host calls addEvent. A shorter drag is treated as oas-day-click",
@@ -4353,7 +4354,8 @@
       "stripe": "Row zebra striping (boolean, off by default): tints rows by the **absolute row index** parity (stable under virtualization/windowing, no DOM-order flicker); color via `--oas-gantt-row-stripe-bg` (default `--oas-color-bg-hover`); selection/weekend backgrounds override the stripe",
       "show-float": "Show total/free float (boolean, off by default): computed only on a complete dependency graph; the bar gets a total/free float label plus data-total-float/data-free-float in days. Summaries are excluded; windowed mode skips it with a devWarn.",
       "group-by-project": "Group root tasks by project into synthetic summary rows (row id __oas_project__:&lt;project&gt;) without mutating the task array; windowed mode requires host-flattened rows",
-      "show-variance": "Render a Δ±Nd variance badge after the row name when a baseline exists; exposes data-start-delta/data-end-delta/data-duration-delta/data-progress-delta"
+      "show-variance": "Render a Δ±Nd variance badge after the row name when a baseline exists; exposes data-start-delta/data-end-delta/data-duration-delta/data-progress-delta",
+      "history": "Built-in undo/redo (boolean, off by default): records task commits (max 100), used with undo()/redo()/canUndo/canRedo/clearHistory(); replacing tasks wholesale clears the stack"
     },
     "events": {
       "oas-reschedule": "Dispatched when auto-scheduling moved successor tasks (auto-schedule on), detail: { ids } (ids of the rescheduled tasks)",
@@ -4370,7 +4372,8 @@
       "oas-dependencies-change": "Dispatched when a link drag creates a dependency or a selected link is deleted, detail: { taskId, dependencies } (taskId is the successor whose dependencies changed)",
       "oas-selection-change": "Dispatched when the multi-select set changes (click / keyboard / property write), detail: { ids } (selected task ids)",
       "oas-window-request": "Emitted in windowed mode when the expected row window is not covered by the loaded range; detail: { start, end, reason } (half-open, absolute row indices; reason is init / scroll / resize / data). The same expected window is not emitted twice",
-      "oas-range-request": "Emitted when the time axis is host-managed (range-start/range-end) and the visible time window approaches an axis edge; detail: { startMs, endMs, reason } (the neighbouring range requested). The same expected range is not emitted twice"
+      "oas-range-request": "Emitted when the time axis is host-managed (range-start/range-end) and the visible time window approaches an axis edge; detail: { startMs, endMs, reason } (the neighbouring range requested). The same expected range is not emitted twice",
+      "oas-history-change": "With history enabled, dispatched after each undoable commit/undo/redo/clear, detail: { canUndo, canRedo, action } (change/undo/redo/clear)"
     },
     "slots": {
       "template[slot=\"empty\"]": "Empty-state content (defaults to \"No tasks\")",
@@ -4718,7 +4721,9 @@
       "show-load-values": "Show the load value above each histogram bar (boolean, off by default): only for load > 0; overload values use text-on-primary (white in light / dark in dark) for contrast on the danger bar. The number is visual redundancy (aria-hidden); screen readers still get the column load description",
       "show-overload-badge": "Show an \"Overloaded ×N\" badge in the lane header (boolean, off by default): only for resources with overloaded periods; text comes from the i18n key resource.overBadge",
       "bar-label": "Show the task name inside the bar (boolean, off by default): single line with ellipsis, clipped on narrow bars; aria-label and click/drag hit-testing are unchanged",
-      "header-sticky": "Lane header sticks to the top while scrolling lanes (on by default): week/day ticks stay visible; `header-sticky=\"false\"` disables it (the header scrolls with content). The corner name column always stays pinned on horizontal scroll (LTR/RTL)"
+      "header-sticky": "Lane header sticks to the top while scrolling lanes (on by default): week/day ticks stay visible; `header-sticky=\"false\"` disables it (the header scrolls with content). The corner name column always stays pinned on horizontal scroll (LTR/RTL)",
+      "heatmap": "Load heatmap (boolean, off by default): colors cells by load/capacity with low/mid/high/over; the histogram header renders a legend and each cell title shows date + load/capacity",
+      "skill-matrix": "Skill matrix view (boolean, off by default): rows = resources, columns = skill union, check = owned; not virtualized"
     },
     "events": {
       "oas-task-click": "Dispatched when a task bar in a resource swimlane is clicked, detail: { id, task, resourceId }",

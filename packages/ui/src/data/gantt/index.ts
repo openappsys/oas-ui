@@ -16,6 +16,7 @@ export type {
   GanttProgressChangeDetail,
   GanttTasksChangeDetail,
   GanttExpandChangeDetail,
+  GanttHistoryChangeDetail,
   GanttScaleChangeDetail,
   GanttTaskRenderDetail,
   GanttReparentDetail,

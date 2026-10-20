@@ -1790,3 +1790,30 @@ test('gantt deadline / show-float / baseline.progress：截止违约、浮时标
   ).toBe('25%')
   expect(errors).toEqual([])
 })
+
+test('gantt history：更新后撤销/重做，oas-history-change 反馈', async ({ page }) => {
+  await page.goto('/components/gantt.html', { waitUntil: 'domcontentloaded' })
+  await waitGantt(page, 'gantt-history')
+  const host = page.locator('#gantt-history')
+  await page.locator('#gantt-history-change').click()
+  await expect(page.locator('#gantt-history-output')).toContainText('change')
+  expect(
+    await host.evaluate(
+      (el) => (el as unknown as { tasks: Array<{ id: string; end: string }> }).tasks.find((t) => t.id === 'h1')?.end,
+    ),
+  ).toBe('2026-03-10')
+  await page.locator('#gantt-history-undo').click()
+  await expect(page.locator('#gantt-history-output')).toContainText('undo')
+  expect(
+    await host.evaluate(
+      (el) => (el as unknown as { tasks: Array<{ id: string; end: string }> }).tasks.find((t) => t.id === 'h1')?.end,
+    ),
+  ).toBe('2026-03-06')
+  await page.locator('#gantt-history-redo').click()
+  await expect(page.locator('#gantt-history-output')).toContainText('redo')
+  expect(
+    await host.evaluate(
+      (el) => (el as unknown as { tasks: Array<{ id: string; end: string }> }).tasks.find((t) => t.id === 'h1')?.end,
+    ),
+  ).toBe('2026-03-10')
+})

@@ -168,9 +168,29 @@
 
 组件只保证「数据 + 交互闭环」，下列能力以官方配方给出（不改组件本体）：
 
-### 撤销 / 重做（宿主自建历史栈）
+### 撤销 / 重做（内建 `history`，opt-in）
 
-组件是**受控数据模型**：每次改动派发 `oas-task-change`（含 `oldStart/oldEnd/start/end`）与 `oas-tasks-change`。宿主据这些事件维护**自己的**历史栈最稳妥——组件内建历史会与宿主 `tasks` 真相形成双源：撤销写回内部再被宿主回写覆盖、粒度与宿主业务动作不一致、受控重渲染会把撤销结果弹回。典型做法：监听 `oas-task-change`/`oas-reparent`/`oas-dependencies-change` 记录逆操作，撤销/重做时用 `updateTask` / `moveTask` / `updateTasks` 回写。
+组件新增 `history`（默认关）：开启后对 `updateTask` / `updateTasks` / `addTask` / `removeTasks` / `moveTask` / `duplicateTask` / 依赖增删改及拖拽提交记录快照，最多 100 步；提供 `undo()` / `redo()` / `canUndo` / `canRedo` / `clearHistory()`，每次撤销/重做/新提交派发 `oas-history-change`（`detail: { canUndo, canRedo, action }`）。关闭 `history` 或宿主整体重写 `tasks` 会清空历史。
+
+```ts
+const gantt = document.querySelector('oas-gantt')
+gantt.setAttribute('history', '')
+gantt.updateTask('t1', { end: '2026-03-10' })
+gantt.undo() // 回到旧 end
+gantt.redo()
+```
+
+<DemoBlock title="history：更新任务 → 撤销/重做，按钮状态随 oas-history-change 同步">
+  <div style="display:flex;gap:var(--oas-space-2);margin-bottom:var(--oas-space-2)">
+    <oas-button id="gantt-history-change" size="small">延后「设计」</oas-button>
+    <oas-button id="gantt-history-undo" size="small">撤销</oas-button>
+    <oas-button id="gantt-history-redo" size="small">重做</oas-button>
+  </div>
+  <oas-gantt id="gantt-history" history height="180" tasks='[{"id":"h1","name":"设计","start":"2026-03-02","end":"2026-03-06","progress":40},{"id":"h2","name":"开发","start":"2026-03-09","end":"2026-03-13","dependencies":[{"id":"h1"}]}]'></oas-gantt>
+  <div id="gantt-history-output" style="color:var(--oas-color-text-secondary);font-size:var(--oas-font-size-sm);margin-top:var(--oas-space-2)"></div>
+</DemoBlock>
+
+> 若宿主把 `tasks` 作为受控真相并自行回写，仍建议宿主自建历史栈：组件内建历史不会阻止宿主的下一次整体重写，且宿主业务动作的粒度可能比任务提交更粗。监听 `oas-task-change` / `oas-reparent` / `oas-dependencies-change` 记录逆操作仍是受控场景的稳妥做法。
 
 ### 编辑弹窗（双击任务条）
 
@@ -370,6 +390,20 @@ import { onMounted } from 'vue'
 onMounted(async () => {
   await customElements.whenDefined('oas-gantt')
   const out = document.getElementById('gantt-output')
+
+  const hist = document.getElementById('gantt-history')
+  const histOut = document.getElementById('gantt-history-output')
+  if (hist && histOut) {
+    const sync = (detail) => {
+      histOut.textContent = `history：${detail.action}（可撤销 ${detail.canUndo}，可重做 ${detail.canRedo}）`
+    }
+    hist.addEventListener('oas-history-change', (e) => sync(e.detail))
+    document.getElementById('gantt-history-change')?.addEventListener('oas-click', () => {
+      hist.updateTask('h1', { end: '2026-03-10' })
+    })
+    document.getElementById('gantt-history-undo')?.addEventListener('oas-click', () => hist.undo())
+    document.getElementById('gantt-history-redo')?.addEventListener('oas-click', () => hist.redo())
+  }
 
   // 今日线演示：区间动态覆盖今天（保证今日线必然落在范围内）
   const today = document.getElementById('gantt-today')
@@ -607,6 +641,7 @@ onMounted(async () => {
 | `first-day-of-week` | 周起始日（0-6）；缺省按 locale 推导（week 档对齐用） | `string` | — |
 | `group-by-project` | 按任务 project 自动生成项目根摘要（行 id 为 __oas_project__:&lt;project&gt;），原任务数组不变；windowed 模式要求宿主自行展平，不做自动分组 | `string` | — |
 | `height` | 组件高度 px（默认 320；接受纯数字或 Npx）：映射到自定义属性 --oas-gantt-height。高度挂在内部画布（.gantt）上——宿主自身 height 内联只框定外盒，内部画布高度仍由 height 属性 / --oas-gantt-height 决定（不会被宿主内联 height 拉伸）；整体调高请用 height 属性或 --oas-gantt-height。height 属性在场且为合法值（>0 纯数字或 Npx）时组件接管该变量，写入宿主内联并覆盖宿主自己设置的 --oas-gantt-height；空串/空白按未设置处理；非法值不写该变量、仅清除本实例此前写入的值，宿主 token 不受影响；属性移除后组件写入的值归零清除，高度回落 token 缺省 320 或宿主 CSS，宿主原先内联设置的值不恢复；从未设置 height 属性时组件不写该变量，宿主内联或 class 规则设置的 --oas-gantt-height 完全不受影响 | `string` | `320` |
+| `history` | 内建撤销/重做（布尔，默认关）：记录任务提交快照（最多 100 步），配合 undo()/redo()/canUndo/canRedo/clearHistory()；外部整体重写 tasks 会清空历史 | `string` | — |
 | `holidays` | 假日列表（JSON ["YYYY-MM-DD",…]）：对应列高亮（优先于周末底色）；假日恒为非工作日（与 workdays 是否开启无关），auto-schedule 前推时跳过 | `string` | — |
 | `label-position` | 任务条标签位置：inside 条内 / right 条旁 / left 条左；缺省 none（行名列已承载名称，条旁不再重复渲染）；非法值回落 none | `string` | — |
 | `locale` | 本地化（覆盖 config-provider 注入与全局 locale） | `string` | — |
@@ -643,6 +678,7 @@ onMounted(async () => {
 | --- | --- |
 | `oas-dependencies-change` | 连线拖拽建依赖 / 选中删除收口时派发，detail: { taskId, dependencies }（taskId 为依赖变化的后继任务） |
 | `oas-expand-change` | 行树折叠/展开时派发，detail: { id, expanded } |
+| `oas-history-change` | history 开启后，每次可撤销提交/撤销/重做/清空时派发，detail: { canUndo, canRedo, action }（action: change/undo/redo/clear） |
 | `oas-progress-change` | 拖进度手柄收口时派发，detail: { id, task, progress } |
 | `oas-range-request` | 宿主托管时间范围（range-start/range-end）且可视时间窗接近轴端点时派发，detail: { startMs, endMs, reason }（期望的相邻范围）；同一期望范围不重复派发 |
 | `oas-reparent` | 行拖拽改父子 / 重排收口时派发，detail: { id, parent, index }（parent 为 null 表示根级，index 为同级序号） |

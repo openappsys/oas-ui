@@ -55,6 +55,12 @@
       "observed": true
     },
     {
+      "name": "secondary-timezone",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
       "name": "show-now",
       "type": "string",
       "default": "true",

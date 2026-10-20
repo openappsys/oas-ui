@@ -34,6 +34,21 @@ function shadowLayers(boxShadow: string): Array<{ color: string; spread: number;
     })
 }
 
+test('resource 热力图 + 技能矩阵 demo：热力格/图例/勾选渲染', async ({ page }) => {
+  await page.goto('/components/resource.html', { waitUntil: 'domcontentloaded' })
+  const heat = page.locator('#res-heatmap')
+  await expect(heat.locator('.heat-cell').first()).toBeVisible()
+  await expect(heat.locator('.heat-cell.over').first()).toBeVisible()
+  await expect(heat.locator('.heat-legend-item')).toHaveCount(4)
+  await page.waitForFunction(() => {
+    const el = document.getElementById('res-skills') as (HTMLElement & { shadowRoot?: ShadowRoot | null }) | null
+    return !!el?.shadowRoot?.querySelector('.skill-cell.has')
+  })
+  const skills = page.locator('#res-skills')
+  await expect(skills.locator('.skill-cell.header')).toHaveCount(5)
+  await expect(skills.locator('.skill-cell.has')).toHaveCount(6)
+})
+
 test('resource 浏览器回归：泳道 + 负载超载 + 一键平衡（回写后超载消失）+ console 零告警', async ({ page }) => {
   const errors: string[] = []
   page.on('pageerror', (e) => errors.push(e.message))

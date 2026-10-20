@@ -120,6 +120,7 @@ const EXEMPT_EVENTS = new Set([
   'oas-selection-change', // gantt：多选需真点行（通用探针不可达；qa-regression/gantt.spec.ts 已固化真实点选链路）
   'oas-task-add', // gantt：命令式/行内新建需真点按钮或拖出区间（通用探针不可达；qa-regression/gantt.spec.ts 已固化真实链路）
   'oas-reschedule', // gantt：依赖联动排程需 auto-schedule 开启后真拖前置（通用探针不可达；qa-regression/gantt.spec.ts 已固化真实链路）
+  'oas-history-change', // gantt：history 为 opt-in，需点专用更新/撤销/重做按钮（通用探针不可达；qa-regression/gantt.spec.ts 已固化真实链路）
   'oas-window-request', // table：windowed 模式需宿主只喂可视窗口切片才触发（通用探针不可达；qa-regression/table.spec.ts 已固化真实滚动→请求→回填链路）
   'oas-range-request', // gantt/resource：宿主托管时间范围时滚到轴端才触发（通用探针不可达；qa-regression/gantt.spec.ts 与 resource.spec.ts 已固化真实链路）
 ])

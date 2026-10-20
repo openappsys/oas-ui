@@ -76,6 +76,10 @@ For events with `remind` (minutes), the component dispatches `oas-remind` (`deta
   <oas-scheduler id="scheduler-res-week" view="resource-week" page-show-date="2026-08-10" resources='[{"id":"a","title":"Room A","color":"#2563eb"},{"id":"b","title":"Room B"}]' events='[{"date":"2026-08-10","title":"Standup","start":"09:00","end":"10:00","resource":"a"},{"date":"2026-08-11","title":"Review","start":"13:00","end":"14:00","resource":"b"},{"date":"2026-08-12","title":"All-day inspection","resource":"a"}]'></oas-scheduler>
 </DemoBlock>
 
+<DemoBlock title="Resource groups + secondary timezone (group + secondary-timezone)">
+  <oas-scheduler id="scheduler-res-group" view="resource" page-show-date="2026-08-10" start-hour="8" end-hour="18" secondary-timezone="UTC" resources='[{"id":"a","title":"Room A","group":"East","color":"#2563eb"},{"id":"b","title":"Room B","group":"East"},{"id":"c","title":"Equipment","group":"Shared"}]' events='[{"date":"2026-08-10","title":"Standup","start":"09:00","end":"10:00","resource":"a"},{"date":"2026-08-10","title":"Review","start":"14:00","end":"15:30","resource":"b"}]'></oas-scheduler>
+</DemoBlock>
+
 <DemoBlock title="Drag to create (drag a range on an empty time cell → oas-create)">
   <oas-scheduler id="scheduler-create" view="day" page-show-date="2026-08-10" start-hour="8" end-hour="18" events='[{"date":"2026-08-10","title":"Standup","start":"09:00","end":"10:00"}]'></oas-scheduler>
   <div id="scheduler-create-output" style="color:var(--oas-color-text-secondary);font-size:var(--oas-font-size-sm);margin-top:var(--oas-space-2)"></div>
@@ -87,7 +91,7 @@ For events with `remind` (minutes), the component dispatches `oas-remind` (`deta
   </div>
 </DemoBlock>
 
-`view="resource"` renders a single-day schedule with resources as rows and hours across; `view="resource-week"` is a week x resource matrix (rows = resources, columns = 7 days of the week). Events are assigned to a resource row via their `resource` field; absent or unknown ids go to the "Unassigned" row. Dragging a range (>=15 minutes) on an empty time cell dispatches `oas-create` (`detail: { date, start, end, resource? }`) — the component does not create the event; the host calls `addEvent`. A shorter drag is treated as a click and dispatches `oas-day-click`. `show-now` (on by default) renders a now line at the current time.
+`view="resource"` renders a single-day schedule with resources as rows and hours across; `view="resource-week"` is a week x resource matrix (rows = resources, columns = 7 days of the week). Events are assigned to a resource row via their `resource` field; absent or unknown ids go to the "Unassigned" row. Dragging a range (>=15 minutes) on an empty time cell dispatches `oas-create` (`detail: { date, start, end, resource? }`) — the component does not create the event; the host calls `addEvent`. A shorter drag is treated as a click and dispatches `oas-day-click`. `show-now` (on by default) renders a now line at the current time. A non-empty `resources[].group` inserts a group header row before its resources (once per name, input order preserved); windowed slices do not auto-generate group rows. `secondary-timezone` appends a second timezone label to the day/week/resource-day time gutter (invalid IANA is ignored with a devWarn).
 
 ## CRUD (method channel)
 
@@ -239,7 +243,8 @@ el.downloadIcs('my.ics', { timeMode: 'utc', timezone: 'Asia/Shanghai' })
 | `first-day-of-week` | First day of week (0-6); defaults to locale-derived | `string` | — |
 | `locale` | Localization (overrides config-provider injection and global locale) | `string` | — |
 | `page-show-date` | Panel month anchor (controlled): yyyy-MM-dd; re-anchors the shown month on change | `string` | — |
-| `resources` | Resources (JSON): [{ id, title, color? }] — resource views group by resource; events whose resource is absent or unknown go to the 'Unassigned' row | `SchedulerResource[]` | `[]` |
+| `resources` | Resources (JSON): [{ id, title, color?, group? }] — resource views group by resource; events whose resource is absent or unknown go to the 'Unassigned' row; a non-empty group inserts a group header row | `SchedulerResource[]` | `[]` |
+| `secondary-timezone` | Secondary timezone (IANA): appends a second timezone label to day/week/resource-day time gutters; invalid values are ignored with a devWarn | `string` | — |
 | `show-now` | Current-time line (on by default; false disables): renders a now line for today in week/day and single-day resource views | `string` | `true` |
 | `start-hour` | Time axis start hour (0-23, default 8) | `string` | `8` |
 | `timezone` | Timezone (IANA, e.g. Asia/Shanghai; empty = local): affects title/column date formatting and the today marker (via Intl timeZone); invalid values fall back to local | `string` | — |

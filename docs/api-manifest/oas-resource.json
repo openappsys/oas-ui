@@ -76,6 +76,16 @@
       "observed": true
     },
     {
+      "name": "heatmap",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "skill-matrix",
+      "type": "boolean",
+      "observed": true
+    },
+    {
       "name": "bar-label",
       "type": "boolean",
       "observed": true

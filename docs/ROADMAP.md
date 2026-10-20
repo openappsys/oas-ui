@@ -12,6 +12,9 @@
 | **scheduler 跨日连续条与重复扩展** | 周视图全天连续条 + 横向拖动；`byMonth` / `byMonthDay` / `bySetPos` / `exDates`；ICS `EXDATE` / `VALARM` / 区间过滤 | 🚧 待发布 |
 | **gantt 项目分组与偏差徽标** | `project` + `group-by-project` 合成项目根摘要；`show-variance` 行名偏差徽标 | 🚧 待发布 |
 | **resource 利用率与日历交换** | `computeUtilization` / `suggestAssignments` / `exportResourceCalendars` / `importResourceCalendars` | 🚧 待发布 |
+| **scheduler 资源分组与第二时区** | `resources[].group` 分组标题行 + `secondary-timezone` 第二时区刻度 | 🚧 待发布 |
+| **gantt 内建撤销/重做** | opt-in `history` + `undo()` / `redo()` / `clearHistory()` + `oas-history-change` | 🚧 待发布 |
+| **resource 热力图与技能矩阵** | `heatmap` 热力格/图例/title + `skill-matrix` 技能矩阵视图 | 🚧 待发布 |
 
 ## 版本规划
 

@@ -27,6 +27,9 @@
 - **`oas-scheduler` 跨日全天连续条与重复/ICS 增强**：周视图 `endDate` 全天事件在顶部全天带渲染一条连续长条（不再逐日重复芯片），支持按住长条横向拖动并按列宽吸附平移 `date` / `endDate`；定时跨日事件仍按日拆段。`repeat` 新增 `byMonth` / `byMonthDay` / `bySetPos` / `exDates`，本地 occurrence 过滤与 ICS `RRULE` / `EXDATE` 同步；ICS 新增 `VALARM`（`remind`）、`X-OAS-COLOR`（`color`）与 `rangeStart` / `rangeEnd` 导出过滤。
 - **`oas-gantt` 项目分组与偏差徽标**：`GanttTask.project` + `group-by-project` 按项目自动生成合成根摘要（`__oas_project__:<project>`），原任务数组不变；`show-variance` 在行名后渲染 `Δ±Nd` 徽标并暴露 data 差值，正值标红、负值标绿；`GanttTask.deadlines` 支持多个截止日（与 `deadline` 合并去重，每个日期一个标记，任一超期标 conflict）。
 - **资源利用率与日历交换工具**：导出 `computeUtilization(resources, tasks, options)`（day/week/month 汇总，容量按 workdays/holidays/capacityOverrides 计）、`suggestAssignments(task, resources, tasks)`（技能缺口优先、再看利用率）、`buildSkillMatrix(resources)`（技能并集 + 资源具备矩阵）、`exportResourceCalendars` / `importResourceCalendars`（版本化 JSON，导入清洗非法值）。
+- **`oas-scheduler` 资源分组与第二时区**：`resources[].group` 在 resource / resource-week 自动插入分组标题行（同名一次、保持输入顺序；windowed 切片由宿主负责）；新增 `secondary-timezone` 在 day/week/资源单日时间刻度显示第二时区标签，非法 IANA 忽略并 devWarn。
+- **`oas-gantt` 内建撤销/重做（opt-in）**：新增 `history` 属性与 `undo()` / `redo()` / `canUndo` / `canRedo` / `clearHistory()`，最多 100 步；覆盖任务更新/增删/移动/复制/依赖变更与拖拽提交，外部整体重写 `tasks` 或关闭属性清空历史；新增 `oas-history-change` 事件。
+- **`oas-resource` 热力图与技能矩阵**：新增 `heatmap`（低/中/高/超载热力格 + 图例 + 每格 title）与 `skill-matrix`（行=资源、列=技能并集）opt-in 视图，并补充 `resource.heat*` i18n 文案。
 
 ### 交互
 

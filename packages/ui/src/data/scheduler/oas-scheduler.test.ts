@@ -421,6 +421,35 @@ describe('OASScheduler P3：时区 + 日程（agenda）视图', () => {
     expect(bad.shadowRoot!.querySelector('[part="title"]')?.textContent).toContain('2026')
   })
 
+  it('secondary-timezone：时间刻度显示第二时区标签，非法值忽略', () => {
+    const el = mount({
+      view: 'day',
+      'page-show-date': '2026-08-10',
+      'start-hour': '8',
+      'end-hour': '10',
+      timezone: 'UTC',
+      'secondary-timezone': 'Asia/Tokyo',
+    })
+    const labels = [...el.shadowRoot!.querySelectorAll<HTMLElement>('.gutter .tz-secondary')]
+    expect(labels.length).toBe(2)
+    expect(labels.every((n) => /^\d{2}:\d{2}$/.test(n.textContent ?? ''))).toBe(true)
+    const res = mount({
+      view: 'resource',
+      'page-show-date': '2026-08-10',
+      'start-hour': '8',
+      'end-hour': '10',
+      'secondary-timezone': 'Asia/Tokyo',
+    })
+    expect(res.shadowRoot!.querySelectorAll('.res-tick[data-tz]').length).toBe(2)
+    const bad = mount({
+      view: 'day',
+      'page-show-date': '2026-08-10',
+      timezone: 'UTC',
+      'secondary-timezone': 'Not/AZone',
+    })
+    expect(bad.shadowRoot!.querySelectorAll('.tz-secondary').length).toBe(0)
+  })
+
   it('视图按钮含 agenda；切换派发 oas-view-change', () => {
     const el = mount({ 'page-show-date': '2026-08-10' })
     const btn = el.shadowRoot!.querySelector<HTMLButtonElement>('[part="views"] button[data-view="agenda"]')
@@ -657,6 +686,37 @@ describe('OASScheduler 资源视图 + now 线 + 拖拽创建', () => {
     expect(r1.querySelector('.res-bar')?.textContent).toBe('评审')
     const r2 = el.shadowRoot!.querySelector('.res-row[data-resource="r2"]')!
     expect(r2.querySelector('.res-allDayChip')?.textContent).toBe('全天项')
+  })
+
+  it('资源分组：同名 group 在资源视图生成分组标题行，组内资源保持顺序', () => {
+    const el = mount({
+      view: 'resource',
+      'page-show-date': '2026-08-10',
+      resources: JSON.stringify([
+        { id: 'r1', title: 'A', group: '华东' },
+        { id: 'r2', title: 'B', group: '华东' },
+        { id: 'r3', title: 'C', group: '华北' },
+        { id: 'r4', title: 'D' },
+      ]),
+    })
+    const rows = [...el.shadowRoot!.querySelectorAll<HTMLElement>('.res-row')]
+    expect(rows.map((r) => r.dataset.resource)).toEqual(['__group__:华东', 'r1', 'r2', '__group__:华北', 'r3', 'r4'])
+    expect(rows[0]!.classList.contains('res-group')).toBe(true)
+    expect(rows[0]!.querySelector('.res-group-label')?.textContent).toBe('华东')
+    expect(el.resources[0]!.group).toBe('华东')
+  })
+
+  it('view=resource-week 同样渲染资源分组标题行', () => {
+    const el = mount({
+      view: 'resource-week',
+      'page-show-date': '2026-08-10',
+      resources: JSON.stringify([
+        { id: 'r1', title: 'A', group: '华东' },
+        { id: 'r2', title: 'B', group: '华东' },
+      ]),
+    })
+    expect(el.shadowRoot!.querySelectorAll('.res-row.res-group').length).toBe(1)
+    expect(el.shadowRoot!.querySelector('.res-group-label')?.textContent).toBe('华东')
   })
 
   it('view=resource：无 resources 时渲染单行「未分配」', () => {

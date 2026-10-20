@@ -808,6 +808,13 @@ export interface GanttExpandChangeDetail {
   expanded: boolean
 }
 
+/** history-change 事件载荷（undo/redo 与每次可撤销提交后派发） */
+export interface GanttHistoryChangeDetail {
+  canUndo: boolean
+  canRedo: boolean
+  action: 'change' | 'undo' | 'redo' | 'clear'
+}
+
 /** scale-change 事件载荷 */
 export interface GanttScaleChangeDetail {
   scale: GanttScale
@@ -1348,6 +1355,7 @@ export class OASGantt extends OASElement {
       'show-baseline',
       'show-variance',
       'show-float',
+      'history',
       'creatable',
       'auto-schedule',
       'show-critical-path',
@@ -1374,6 +1382,12 @@ export class OASGantt extends OASElement {
    */
   private inInternalWrite = false
   private nextId = 1
+  private undoStack: GanttTask[][] = []
+  private redoStack: GanttTask[][] = []
+  private lastTasksSnapshot: GanttTask[] = []
+  private lastTasksSignature = ''
+  private historyRestoring = false
+  private readonly historyLimit = 100
   private expandedAttrCache = ''
   /** 展开集合：null = 未受控（数据 expanded 初始化）；expanded 属性出现后受控 */
   private expandedSet: Set<string> | null = null
@@ -1532,6 +1546,7 @@ export class OASGantt extends OASElement {
       const copy: GanttTask = { ...t }
       if (copy.dependencies) copy.dependencies = copy.dependencies.map((d) => ({ ...d }))
       if (copy.baseline) copy.baseline = { ...copy.baseline }
+      if (copy.deadlines) copy.deadlines = [...copy.deadlines]
       delete copy.children
       return copy
     })
@@ -1542,6 +1557,8 @@ export class OASGantt extends OASElement {
       (used) => this.allocId(used),
       (key, msg) => this.warnOnce(key, msg),
     )
+    // 外部整体重写视为新基线：清空历史，避免撤销回宿主不认识的旧数据
+    this.resetHistoryState()
     // 外部整体重写：收敛幽灵选中/锚点/活动/揭示态由 update() 统一处理（property 与 attribute 一致）；
     // 写回走 commitTasks 单通道（syncTasksAttr 的属性通道已触发一次全量 update，不再手动 update）
     this.commitTasks()
@@ -1661,6 +1678,89 @@ export class OASGantt extends OASElement {
     this.emit('tasks-change', { tasks: this.tasks } satisfies GanttTasksChangeDetail)
   }
 
+  /** 当前任务快照（深拷贝依赖/基线/截止日数组） */
+  private snapshotTasks(): GanttTask[] {
+    return this.tasks
+  }
+
+  private resetHistoryState(): void {
+    this.undoStack = []
+    this.redoStack = []
+    if (!this.historyOn()) {
+      this.lastTasksSnapshot = []
+      this.lastTasksSignature = ''
+      return
+    }
+    this.lastTasksSnapshot = this.snapshotTasks()
+    this.lastTasksSignature = JSON.stringify(this._tasks)
+  }
+
+  private emitHistoryChange(action: GanttHistoryChangeDetail['action']): void {
+    this.emit('history-change', {
+      canUndo: this.undoStack.length > 0,
+      canRedo: this.redoStack.length > 0,
+      action,
+    } satisfies GanttHistoryChangeDetail)
+  }
+
+  /** 是否可撤销 */
+  get canUndo(): boolean {
+    return this.undoStack.length > 0
+  }
+
+  /** 是否可重做 */
+  get canRedo(): boolean {
+    return this.redoStack.length > 0
+  }
+
+  /** 撤销最近一次任务数据提交；返回是否实际撤销 */
+  undo(): boolean {
+    if (!this.historyOn()) return false
+    const previous = this.undoStack.pop()
+    if (!previous) return false
+    this.redoStack.push(this.snapshotTasks())
+    this.restoreTasksSnapshot(previous)
+    this.emitHistoryChange('undo')
+    return true
+  }
+
+  /** 重做最近一次撤销；返回是否实际重做 */
+  redo(): boolean {
+    if (!this.historyOn()) return false
+    const next = this.redoStack.pop()
+    if (!next) return false
+    this.undoStack.push(this.snapshotTasks())
+    this.restoreTasksSnapshot(next)
+    this.emitHistoryChange('redo')
+    return true
+  }
+
+  /** 清空撤销/重做历史（不改变当前任务） */
+  clearHistory(): void {
+    this.resetHistoryState()
+    this.emitHistoryChange('clear')
+  }
+
+  private restoreTasksSnapshot(snapshot: GanttTask[]): void {
+    this.historyRestoring = true
+    try {
+      this._tasks = snapshot.map((task) => {
+        const copy: GanttTask = { ...task }
+        if (copy.dependencies) copy.dependencies = copy.dependencies.map((d) => ({ ...d }))
+        if (copy.baseline) copy.baseline = { ...copy.baseline }
+        if (copy.deadlines) copy.deadlines = [...copy.deadlines]
+        copy.id = task.id ?? ''
+        return copy as TG
+      })
+      this.lastTasksSnapshot = this.snapshotTasks()
+      this.lastTasksSignature = JSON.stringify(this._tasks)
+      this.syncTasksAttr()
+    } finally {
+      this.historyRestoring = false
+    }
+    this.emitTasksChange()
+  }
+
   /**
    * 创作通道统一写回出口：反射属性 + 重渲染 + 派发 oas-tasks-change（一次提交一次事件）。
    * 重渲染由 syncTasksAttr 的属性通道同步触发（一次全量 update），此处不再手动 update；
@@ -1668,6 +1768,17 @@ export class OASGantt extends OASElement {
    * （inInternalWrite），最终由本出口统一派发一次（含联动后的最终数据）。
    */
   private commitTasks(): void {
+    if (this.historyOn() && !this.historyRestoring) {
+      const signature = JSON.stringify(this._tasks)
+      if (this.lastTasksSignature !== '' && signature !== this.lastTasksSignature) {
+        this.undoStack.push(this.lastTasksSnapshot)
+        if (this.undoStack.length > this.historyLimit) this.undoStack.shift()
+        this.redoStack = []
+        this.emitHistoryChange('change')
+      }
+      this.lastTasksSnapshot = this.snapshotTasks()
+      this.lastTasksSignature = signature
+    }
     this.syncTasksAttr()
     this.emitTasksChange()
   }
@@ -1703,6 +1814,7 @@ export class OASGantt extends OASElement {
       (used) => this.allocId(used),
       (key, msg) => this.warnOnce(key, msg),
     )
+    this.resetHistoryState()
   }
 
   /** expanded 属性同步（JSON 数组受控；属性缺席回落数据 expanded 初始集合） */
@@ -1837,6 +1949,10 @@ export class OASGantt extends OASElement {
 
   private varianceOn(): boolean {
     return this.hasAttr('show-variance') && this.getAttr('show-variance', '') !== 'false'
+  }
+
+  private historyOn(): boolean {
+    return this.hasAttr('history') && this.getAttr('history', '') !== 'false'
   }
 
   private groupByProjectOn(): boolean {
@@ -2732,6 +2848,14 @@ export class OASGantt extends OASElement {
   }
 
   protected override update(): void {
+    if (!this.historyOn()) {
+      this.undoStack = []
+      this.redoStack = []
+      this.lastTasksSnapshot = []
+      this.lastTasksSignature = ''
+    } else if (this.lastTasksSignature === '') {
+      this.resetHistoryState()
+    }
     // 拖拽中数据被外部重写 → 终止拖拽回滚（受控纪律：外部数据为准）
     if (this.dragCtx) this.cancelDrag()
     this.cancelReparent()
