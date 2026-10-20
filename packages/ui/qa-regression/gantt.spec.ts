@@ -1741,3 +1741,44 @@ test('gantt 任务名与条形标签文字可选中复制（不牺牲可选中�
     expect(selected.length, '真实拖选应产生文本选区').toBeGreaterThan(0)
   }
 })
+
+test('gantt deadline / show-float / baseline.progress：截止违约、浮时标签与基线进度可见', async ({ page }) => {
+  const errors: string[] = []
+  page.on('pageerror', (e) => errors.push(e.message))
+  page.on('console', (m) => {
+    if (m.type() === 'error') errors.push(m.text())
+  })
+  await page.goto('/components/gantt.html', { waitUntil: 'domcontentloaded' })
+  await waitGantt(page, 'gantt-basic')
+  await page.evaluate(() => {
+    const el = document.createElement('oas-gantt')
+    el.id = 'gantt-qa-advanced'
+    el.setAttribute('show-baseline', '')
+    el.setAttribute('show-float', '')
+    el.setAttribute(
+      'tasks',
+      JSON.stringify([
+        {
+          id: 'd1',
+          name: 'Design',
+          start: '2026-03-02',
+          end: '2026-03-04',
+          deadline: '2026-03-03',
+          progress: 40,
+          baseline: { start: '2026-03-02', end: '2026-03-03', progress: 25 },
+        },
+        { id: 'd2', name: 'Build', start: '2026-03-05', end: '2026-03-09', dependencies: [{ id: 'd1' }] },
+      ]),
+    )
+    document.body.appendChild(el)
+  })
+  const el = page.locator('#gantt-qa-advanced')
+  await expect(el.locator('.bars .bar[data-id="d1"].conflict')).toBeVisible()
+  await expect(el.locator('.deadline[data-id="d1"]')).toBeVisible()
+  await expect(el.locator('.float-label').first()).toBeVisible()
+  await expect(el.locator('.baseline[data-id="d1"] .baseline-progress')).toBeVisible()
+  expect(
+    await el.locator('.baseline[data-id="d1"] .baseline-progress').evaluate((n) => (n as HTMLElement).style.width),
+  ).toBe('25%')
+  expect(errors).toEqual([])
+})

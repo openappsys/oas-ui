@@ -198,6 +198,8 @@ export const es: LocaleMessages = {
   'gantt.tooltipProgress': 'Progreso {progress}%',
   'gantt.tooltipRange': '{start} a {end}',
   'gantt.baselineLater': '{count} d más tarde que la base',
+  'gantt.floatSummary': 'Holgura total {total} d · holgura libre {free} d',
+  'gantt.deadline': 'Vence {date}',
   'gantt.baselineEarlier': '{count} d antes que la base',
   'gantt.baselineSame': 'Igual que la base',
   'gantt.rename': 'Renombrar',

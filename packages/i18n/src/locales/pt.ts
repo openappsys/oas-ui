@@ -198,6 +198,8 @@ export const pt: LocaleMessages = {
   'gantt.tooltipProgress': 'Progresso {progress}%',
   'gantt.tooltipRange': '{start} a {end}',
   'gantt.baselineLater': '{count} d depois da linha de base',
+  'gantt.floatSummary': 'Folga total {total} d · folga livre {free} d',
+  'gantt.deadline': 'Prazo {date}',
   'gantt.baselineEarlier': '{count} d antes da linha de base',
   'gantt.baselineSame': 'Igual à linha de base',
   'gantt.rename': 'Renomear',

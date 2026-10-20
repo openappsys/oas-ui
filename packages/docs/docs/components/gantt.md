@@ -242,7 +242,31 @@
   <oas-gantt show-baseline tasks='[{"id":"b1","name":"设计（实际晚基线 2 天）","start":"2026-03-02","end":"2026-03-06","progress":80,"baseline":{"start":"2026-03-02","end":"2026-03-04"}},{"id":"b2","name":"开发（与基线一致）","start":"2026-03-05","end":"2026-03-13","progress":40,"baseline":{"start":"2026-03-05","end":"2026-03-13"}},{"id":"b3","name":"测试（实际早基线 1 天）","start":"2026-03-16","end":"2026-03-18","progress":20,"baseline":{"start":"2026-03-16","end":"2026-03-19"}}]'></oas-gantt>
 </DemoBlock>
 
-`show-baseline`（默认关）开启后，任务带 `baseline: { start, end? }` 时在实际条下渲染一条浅色基线条；条的 `title` 标实际相对基线的差值（比基线晚/早 N 天、或「与基线一致」）。基线数据由宿主保存，组件只读不写回；基线条颜色走 `--oas-gantt-baseline-color`。
+`show-baseline`（默认关）开启后，任务带 `baseline: { start, end? }` 时在实际条下渲染一条浅色基线条；条的 `title` 标实际相对基线的差值（比基线晚/早 N 天、或「与基线一致」）。基线数据由宿主保存，组件只读不写回；基线条颜色走 `--oas-gantt-baseline-color`。`baseline.progress` 为基线进度（0-100），开启后在基线条内渲染进度覆盖层（`--oas-gantt-baseline-progress-color`）。
+
+## 截止日、浮时与基线差异（deadline / show-float / baseline.progress）
+
+<DemoBlock title="show-baseline + show-float：基线进度、总浮时/自由浮时；deadline 超期标 conflict">
+  <oas-gantt
+    show-baseline
+    show-float
+    height="220"
+    tasks='[{"id":"d1","name":"设计（超截止日）","start":"2026-03-02","end":"2026-03-04","deadline":"2026-03-03","progress":40,"baseline":{"start":"2026-03-02","end":"2026-03-03","progress":25}},{"id":"d2","name":"开发","start":"2026-03-05","end":"2026-03-09","progress":50,"baseline":{"start":"2026-03-05","end":"2026-03-08","progress":30}},{"id":"d3","name":"联调（有浮时）","start":"2026-03-05","end":"2026-03-06","dependencies":[{"id":"d1"}]}]'
+  ></oas-gantt>
+</DemoBlock>
+
+- `GanttTask.deadline`：截止日（`YYYY-MM-DD`；hour 档可带时刻）。条结束晚于截止日时加 `.conflict`，并在时间轴渲染 `.deadline` 虚线标记。
+- `show-float`：显示**总浮时**（LF − EF）与**自由浮时**（最近后继允许的延后量）；条上标签同时写入 `data-total-float` / `data-free-float`（天）。摘要不参与 CPM；windowed 模式无法在切片上得到正确依赖图，会跳过并 devWarn。
+- `baseline.progress`：基线进度 0-100；开启 `show-baseline` 后基线条内渲染 `.baseline-progress` 覆盖层。
+- 宿主可用导出的纯函数 `computeVariance(tasks)` 得到基线差异：
+
+```ts
+import { computeVariance } from '@oas-ui/ui'
+
+const rows = computeVariance(el.tasks)
+// [{ id, startDelta, endDelta, durationDelta, progressDelta }]
+// 正数 = 当前晚于基线 / 工期更长 / 进度更多；无 baseline.progress 时 progressDelta 为 null
+```
 
 ## 行虚拟滚动（万级任务）
 
@@ -574,12 +598,13 @@ onMounted(async () => {
 | `readonly` | 整图只读（禁改期/禁进度，不渲染拖拽手柄） | `boolean` | — |
 | `row-height` | 行高 px（默认 36，下限 20） | `string` | `36` |
 | `scale` | 时间刻度：hour / day（默认）/ week / month / quarter / year；非法值回落 day | `string` | — |
-| `show-baseline` | 基线对比（布尔，默认关）：任务带 baseline 时在实际条下渲染基线条，title 标差值（比基线晚/早 N 天或一致） | `boolean` | — |
+| `show-baseline` | 基线对比（布尔，默认关）：任务带 baseline 时在实际条下渲染基线条（baseline.progress 渲染进度覆盖层），title 标差值（比基线晚/早 N 天或一致） | `boolean` | — |
 | `show-critical-path` | 关键路径（布尔，默认关）：在依赖图与工期上算总时差，时差为 0 的任务加 .critical 高亮（颜色走 --oas-gantt-critical-color）；只读展示不改数据 | `string` | — |
+| `show-float` | 显示总浮时/自由浮时（布尔，默认关）：仅在依赖图完整时计算，条上显示「总浮时/自由浮时」标签并写入 data-total-float/data-free-float（单位为天）；摘要不参与，windowed 模式跳过并 devWarn | `string` | — |
 | `show-today` | 今日线（默认开；false 关闭） | `string` | — |
 | `snap` | 拖拽吸附当前刻度（默认开；false 按像素比例平移并保留时间精度） | `string` | — |
 | `stripe` | 行斑马纹（布尔，默认关）：按**绝对行号**奇偶给行加底色（虚拟化/窗口化滚动稳定，不随 DOM 顺序跳变）；颜色走 `--oas-gantt-row-stripe-bg`（缺省 `--oas-color-bg-hover`）；选中/周末假日等背景覆盖条纹 | `string` | — |
-| `tasks` | 甘特任务（JSON）：[{ id?, name, start, end?, type?, progress?, parent?, children?, dependencies?, color?, disabled?, expanded?, baseline?, constraint?（asap/snet/mso/fnlt）, constraintDate? }]——扁平 parent 指针为主，嵌套 children 自动拍平；type:"milestone" 显式优先（带 end 也按里程碑渲染，end 忽略），有子任务时恒为摘要；无 end 亦推导为里程碑；start 晚于 end 自动交换 | `GanttTask[]` | `[]` |
+| `tasks` | 甘特任务（JSON）：[{ id?, name, start, end?, type?, progress?, parent?, children?, dependencies?, color?, disabled?, expanded?, baseline?（start/end?/progress?）, deadline?, constraint?（asap/snet/mso/fnlt）, constraintDate? }]——扁平 parent 指针为主，嵌套 children 自动拍平；type:"milestone" 显式优先（带 end 也按里程碑渲染，end 忽略），有子任务时恒为摘要；无 end 亦推导为里程碑；start 晚于 end 自动交换 | `GanttTask[]` | `[]` |
 | `total` | windowed 模式下的全量行（任务）数；为 0 或非法时 windowed 不生效（回落本地模式） | `string` | — |
 | `weekends` | 周末列高亮（默认开；day/hour 档生效；false 关闭） | `string` | — |
 | `window-start` | windowed 模式下切片首行的绝对行号（相对全量） | `string` | `0` |
@@ -630,6 +655,7 @@ onMounted(async () => {
 | `--oas-gantt-bar-height` | — | `22px` |
 | `--oas-gantt-bar-progress-bg` | — | `var(--oas-gantt-bar-color, var(--oas-color-primary))` |
 | `--oas-gantt-baseline-color` | 基线条颜色（默认半透明次要文字色） | `color-mix(in srgb, var(--oas-color-text-secondary-strong) 55%, transparent)` |
+| `--oas-gantt-baseline-progress-color` | — | `var(--oas-color-text-secondary-strong)` |
 | `--oas-gantt-conflict-color` | 违约（负总时差）高亮色（默认 --oas-color-danger） | `var(--oas-color-danger)` |
 | `--oas-gantt-critical-color` | 关键路径高亮色（默认 --oas-color-danger） | `var(--oas-color-danger)` |
 | `--oas-gantt-grid-line-color` | — | `var(--oas-color-border)` |

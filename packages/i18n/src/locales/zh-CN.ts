@@ -198,6 +198,8 @@ export const zhCN = {
   'gantt.tooltipProgress': '进度 {progress}%',
   'gantt.tooltipRange': '{start} 至 {end}',
   'gantt.baselineLater': '比基线晚 {count} 天',
+  'gantt.floatSummary': '总浮时 {total} 天 · 自由浮时 {free} 天',
+  'gantt.deadline': '截止 {date}',
   'gantt.baselineEarlier': '比基线早 {count} 天',
   'gantt.baselineSame': '与基线一致',
   'gantt.rename': '重命名',

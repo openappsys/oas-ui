@@ -2586,3 +2586,10 @@ group 子钮此前为宿主自填 light DOM（`slot="action"`），组件用 `::
 - **语义**：未声明 `workdays` 且 `holidays` / `capacityOverrides` 为空时保持旧的每档容量；声明 `workdays`（`[]` 表示全不可用）或非空 `holidays` / `capacityOverrides` 后按逐日容量求和。`capacityOverrides` 优先于假期/工作日，可写小数，但任务负载按整日计数（0.5 日无法容纳整日任务，为后续 effort 模型预留）；空 `holidays` / `capacityOverrides` 视为未声明。reassign 默认要求目标资源具备全部 `requiredSkills`；项目顺序优先，任务 priority 数值小者优先，低优先级先让位；项目名/技能按 trim 后比较。
 - **兼容**：全部字段可选；未使用新字段时输出与 v2.6.2 一致。`priority` / `requiredSkills` / `project` / `skills` 等键名被新 API 占用，旧宿主同名字段不再透传；`capacityOverrides` 接受 0，资源 `capacity` 仍要求正数。
 - **验收**：单测覆盖工作日/假期/半天/技能/优先级/项目顺序/空声明/非法值/读回/确定性/maxIter；组件 e2e 覆盖 holiday 超载与 `oas-overload.capacity`；文档 zh/en、API 说明、CHANGELOG 与 a11y/性能门禁同步。
+
+## 未发布：gantt 截止日、浮时与基线差异
+
+- **范围**：`GanttTask.deadline`（截止日，超期并入 `.conflict` 并渲染 `.deadline` 标记）、`baseline.progress`（基线进度 0-100，基线条内进度覆盖层）、`show-float`（总浮时/自由浮时标签 + `data-total-float`/`data-free-float`）；导出纯函数 `computeVariance(tasks)` 返回 start/end/duration/progress 差值。
+- **语义**：总浮时 = LF − EF；自由浮时 = 最近后继允许的延后量（按 FS/SS/FF/SF + lag）；摘要不参与 CPM；windowed 模式跳过浮时/关键路径并在切片上只做截止日违约。正差值 = 当前晚于基线/工期更长/进度更多；无 `baseline.progress` 时 `progressDelta` 为 null。
+- **兼容**：新字段/属性均可选；缺省不渲染浮时标签、截止标记或基线进度层，既有渲染与事件不变。
+- **验收**：单测覆盖 deadline 违约/未超期、总浮时/自由浮时（自由可小于总）、baseline.progress 清洗/渲染、computeVariance 四类差值/无基线/无进度；e2e 覆盖新 demo 的显示与 console 零告警；文档 zh/en、API 说明与 CHANGELOG 同步。

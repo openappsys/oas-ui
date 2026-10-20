@@ -480,6 +480,30 @@ svg.links .temp-link {
   min-width: 8px;
   z-index: 0;
 }
+.baseline-progress {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--oas-gantt-baseline-progress-color, var(--oas-color-text-secondary-strong));
+}
+.deadline {
+  position: absolute;
+  width: 0;
+  border-inline-start: 1px dashed var(--oas-color-danger);
+  pointer-events: none;
+  opacity: 0.75;
+  z-index: 1;
+}
+.float-label {
+  position: absolute;
+  inset-inline-start: calc(100% + 4px);
+  top: 50%;
+  transform: translateY(-50%);
+  white-space: nowrap;
+  font-size: var(--oas-font-size-xs, 11px);
+  color: var(--oas-color-text-secondary);
+  pointer-events: none;
+}
 .bar:active {
   cursor: grabbing;
 }
@@ -686,9 +710,24 @@ export interface GanttTask {
   disabled?: boolean
   /** summary 初始展开（缺省全展开，显式 false 为收起例外；expanded 属性受控优先——见 effectiveExpandedSet） */
   expanded?: boolean
-  /** 基线计划（对比用；由宿主保存，组件只读）：start 必填 'YYYY-MM-DD'（hour 档可带时刻），end 缺省 = 单点 */
-  baseline?: { start: string; end?: string }
+  /** 截止日（'YYYY-MM-DD'；hour 档可带时刻）；结束晚于截止日时标 .conflict 并渲染截止标记 */
+  deadline?: string
+  /** 基线计划（对比用；由宿主保存，组件只读）：start 必填；end 缺省 = 单点；progress 为基线进度 0-100 */
+  baseline?: { start: string; end?: string; progress?: number }
   [key: string]: unknown
+}
+
+/** 基线与当前排期的差值（日精度；正数 = 当前晚于基线/工期更长/进度更多） */
+export interface GanttBaselineVariance {
+  id: string
+  /** 当前开始 − 基线开始（天） */
+  startDelta: number
+  /** 当前结束 − 基线结束（天） */
+  endDelta: number
+  /** 当前工期 − 基线工期（天） */
+  durationDelta: number
+  /** 当前进度 − 基线进度；基线未提供 progress 时为 null */
+  progressDelta: number | null
 }
 
 /** 依赖关系 */
@@ -905,6 +944,7 @@ const RESERVED_TASK_KEYS = new Set([
   'disabled',
   'expanded',
   'baseline',
+  'deadline',
   'constraint',
   'constraintDate',
 ])
@@ -951,6 +991,40 @@ export function pickVisibleLabels(labels: string[], colW: number, strides: numbe
 function parseTaskDate(s: unknown): Date | null {
   if (typeof s !== 'string') return null
   return parseISODate(s.trim())
+}
+
+/** 本地日历日序号（UTC 归一，规避 DST 的 23/25 小时误差）；日期非法返回 null */
+function dayIndex(s: unknown): number | null {
+  const d = parseTaskDate(s)
+  if (!d) return null
+  return Math.round(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / DAY_MS)
+}
+
+/**
+ * 基线差异（纯函数，日精度）：逐任务比较当前 start/end/progress 与 baseline。
+ * - 无 id / 无合法 baseline.start 的任务跳过；baseline.end 缺省按单点（= start）处理。
+ * - 当前 end 缺省按里程碑（= start）处理；差值正数表示当前晚于基线/工期更长/进度更多。
+ * - baseline.progress 未提供时 progressDelta=null（不把缺失当成 0）。
+ */
+export function computeVariance(tasks: GanttTask[]): GanttBaselineVariance[] {
+  const out: GanttBaselineVariance[] = []
+  for (const t of tasks) {
+    if (!t || typeof t.id !== 'string' || t.id === '' || !t.baseline) continue
+    const curStart = dayIndex(t.start)
+    const baseStart = dayIndex(t.baseline.start)
+    if (curStart === null || baseStart === null) continue
+    const curEnd = dayIndex(t.end) ?? curStart
+    const baseEnd = dayIndex(t.baseline.end) ?? baseStart
+    const baseProgress = parseProgress(t.baseline.progress)
+    out.push({
+      id: t.id,
+      startDelta: curStart - baseStart,
+      endDelta: curEnd - baseEnd,
+      durationDelta: curEnd - curStart - (baseEnd - baseStart),
+      progressDelta: baseProgress === undefined ? null : (parseProgress(t.progress) ?? 0) - baseProgress,
+    })
+  }
+  return out
 }
 
 function parseProgress(v: unknown): number | undefined {
@@ -1162,14 +1236,18 @@ function sanitizeTasks(
     if (raw.disabled === true) t.disabled = true
     if (raw.expanded === true || raw.expanded === false) t.expanded = raw.expanded
     if (raw.type === 'task' || raw.type === 'milestone' || raw.type === 'summary') t.type = raw.type
+    const deadline = typeof raw.deadline === 'string' ? raw.deadline.trim() : ''
+    if (deadline && parseTaskDate(deadline)) t.deadline = deadline
     const base = raw.baseline
     if (typeof base === 'object' && base !== null) {
       const b = base as Record<string, unknown>
       const s = typeof b.start === 'string' ? b.start.trim() : ''
       if (s && parseTaskDate(s)) {
-        const bb: { start: string; end?: string } = { start: s }
+        const bb: { start: string; end?: string; progress?: number } = { start: s }
         const e = typeof b.end === 'string' ? b.end.trim() : ''
         if (e && parseTaskDate(e)) bb.end = e
+        const bp = parseProgress(b.progress)
+        if (bp !== undefined) bb.progress = bp
         t.baseline = bb
       }
     }
@@ -1203,6 +1281,7 @@ export class OASGantt extends OASElement {
       'label-position',
       'snap',
       'show-baseline',
+      'show-float',
       'creatable',
       'auto-schedule',
       'show-critical-path',
@@ -1258,6 +1337,9 @@ export class OASGantt extends OASElement {
   /** 关键路径任务 id 集合（show-critical-path 开启时计算；关闭为空集，渲染零影响） */
   private criticalIds = new Set<string>()
   private conflictIds = new Set<string>()
+  /** show-float 开启时的总浮时/自由浮时（ms，仅叶子/里程碑；摘要不参与 CPM） */
+  private totalFloatMs = new Map<string, number>()
+  private freeFloatMs = new Map<string, number>()
   /** buildRows 产物缓存：渲染窗口（滚动每帧）复用，避免万级任务下每帧重建展开集 */
   private expandedSetCache: Set<string> | null = null
   /** 自适应列宽（px）：视口可用宽度内铺下整个窗口时收窄至恰好适配；null = 回落各档基准列宽（无布局环境） */
@@ -1684,6 +1766,10 @@ export class OASGantt extends OASElement {
 
   private baselineOn(): boolean {
     return this.hasAttr('show-baseline')
+  }
+
+  private showFloatOn(): boolean {
+    return this.hasAttr('show-float') && this.getAttr('show-float', '') !== 'false'
   }
 
   /** 依赖联动排程开关（缺省关）：属性存在即开；显式 "false" 视作关（防宿主布尔绑定取值意外开启） */
@@ -2596,19 +2682,25 @@ export class OASGantt extends OASElement {
     // 结果（未装载前置/后继缺失），跳过并 devWarn 一次（宿主可在服务端计算后自行标注/过滤）。
     const cpOn = this.showCriticalPathOn()
     const confOn = cpOn || this.autoScheduleOn()
-    if (this._winMode.windowed && confOn) {
-      if (cpOn && !this.warnedWindowedCritical) {
+    const floatOn = this.showFloatOn()
+    const needCpm = cpOn || confOn || floatOn
+    if (this._winMode.windowed && (confOn || floatOn)) {
+      if ((cpOn || floatOn) && !this.warnedWindowedCritical) {
         this.warnedWindowedCritical = true
         devWarn(
-          '[oas-gantt] windowed 模式下关键路径/违约判定需要全量数据，已跳过本地计算（部分数据上会得到错误结果）；请宿主在全量数据上计算后自行标注',
+          '[oas-gantt] windowed 模式下关键路径/违约/浮时判定需要全量数据，已跳过本地计算（部分数据上会得到错误结果）；请宿主在全量数据上计算后自行标注',
         )
       }
       this.criticalIds = new Set()
-      this.conflictIds = new Set()
+      this.conflictIds = this.deadlineConflictIds()
+      this.totalFloatMs = new Map()
+      this.freeFloatMs = new Map()
     } else {
-      const cp = confOn ? this.criticalPathIds() : null
+      const cp = needCpm ? this.criticalPathIds() : null
       this.criticalIds = cpOn && cp ? cp.critical : new Set()
-      this.conflictIds = confOn && cp ? cp.conflict : new Set()
+      this.conflictIds = new Set([...(confOn && cp ? cp.conflict : []), ...this.deadlineConflictIds()])
+      this.totalFloatMs = floatOn && cp ? cp.totalFloat : new Map()
+      this.freeFloatMs = floatOn && cp ? cp.freeFloat : new Map()
     }
     const scale = this.scaleMode()
     if (this.lastScale === '') {
@@ -3065,6 +3157,20 @@ export class OASGantt extends OASElement {
         }
       }
 
+      // 浮时：仅 show-float 开启时渲染（数据属性供宿主消费，标签为视觉提示）
+      if (!row.isSummary && this.showFloatOn() && this.totalFloatMs.has(row.task.id)) {
+        const totalDays = Math.round(this.totalFloatMs.get(row.task.id)! / DAY_MS)
+        const freeDays = Math.round(this.freeFloatMs.get(row.task.id)! / DAY_MS)
+        bar.dataset.totalFloat = String(totalDays)
+        bar.dataset.freeFloat = String(freeDays)
+        const fl = document.createElement('span')
+        fl.className = 'float-label'
+        fl.setAttribute('part', 'float')
+        fl.setAttribute('aria-hidden', 'true')
+        fl.textContent = this.t('gantt.floatSummary', { total: totalDays, free: freeDays })
+        bar.appendChild(fl)
+      }
+
       // 基线对比条（计划 vs 实际）：置于实际条之下，只读展示
       if (this.baselineOn() && row.task.baseline && !row.isMilestone) {
         const b = row.task.baseline
@@ -3084,9 +3190,32 @@ export class OASGantt extends OASElement {
           bl.style.left = `${this.mirrorX(bx1) - (rtl ? bw : 0)}px`
           bl.style.width = `${bw}px`
           bl.title = this.baselineDeltaText(row, bEnd)
+          if (b.progress !== undefined) {
+            const bp = document.createElement('span')
+            bp.className = 'baseline-progress'
+            bp.style.width = `${b.progress}%`
+            bl.appendChild(bp)
+          }
           frag.appendChild(bl)
         }
       }
+      // 截止标记：横向位置 = deadline 日期，纵向贯穿行高；超出截止日的条另加 .conflict
+      if (row.task.deadline) {
+        const dlMs = parseTaskDate(row.task.deadline)?.getTime()
+        if (dlMs !== undefined) {
+          const dl = document.createElement('span')
+          dl.className = 'deadline'
+          dl.dataset.id = row.task.id
+          dl.setAttribute('part', 'deadline')
+          dl.setAttribute('aria-hidden', 'true')
+          dl.title = this.t('gantt.deadline', { date: this.fmtDay(dlMs) })
+          dl.style.left = `${this.mirrorX(this.xOf(dlMs))}px`
+          dl.style.top = `${this.absRowTop(i)}px`
+          dl.style.height = `${rowH}px`
+          frag.appendChild(dl)
+        }
+      }
+
       // 连线点（拖拽建依赖）：仅非只读态渲染，悬停显现（disabled 任务可作**前置**，故仍渲染）
       // 里程碑 start==end，两点几何重合易误判类型 → 只出「完成端」单点（fs 惯例）
       if (!this.hasAttr('readonly')) {
@@ -4929,9 +5058,19 @@ export class OASGantt extends OASElement {
    * - 依赖环内节点不参与 CP（排程端让位后无法定义 CP 序），环外节点照常计算；全为环内 → 空集。
    * - 违约集 conflict = 负总时差 ∪ 约束违反（snet 未达约束日 / mso 未落在约束日 / fnlt 超出约束日右缘）。
    */
-  private criticalPathIds(): { critical: Set<string>; conflict: Set<string> } {
+  private criticalPathIds(): {
+    critical: Set<string>
+    conflict: Set<string>
+    totalFloat: Map<string, number>
+    freeFloat: Map<string, number>
+  } {
     ganttRenderDiag.cpComputes++ // 仅内部诊断（见 ganttRenderDiag）
-    const empty = { critical: new Set<string>(), conflict: new Set<string>() }
+    const empty = {
+      critical: new Set<string>(),
+      conflict: new Set<string>(),
+      totalFloat: new Map<string, number>(),
+      freeFloat: new Map<string, number>(),
+    }
     const tasks = this._tasks
     if (tasks.length === 0) return empty
     const byId = new Map<string, TG>()
@@ -5010,10 +5149,36 @@ export class OASGantt extends OASElement {
       }
       lf.set(id, value)
     }
+    // 总浮时 = LF − EF；自由浮时 = 不被任何后继约束压缩的最大可延后量。
+    // 自由浮时按依赖类型逐边计算后取最小值；无后继任务可延后到项目完成。
+    const totalFloat = new Map<string, number>()
+    const freeFloat = new Map<string, number>()
+    for (const t of nodes) {
+      const start = es.get(t.id)!
+      const duration = dur.get(t.id)!
+      const end = start + duration
+      totalFloat.set(t.id, lf.get(t.id)! - end)
+      let ff = projectEnd - end
+      for (const { succ, type, lag } of successors.get(t.id) ?? []) {
+        const succStart = es.get(succ)!
+        const succEnd = succStart + dur.get(succ)!
+        const lagMs = lag * DAY_MS
+        const implied =
+          type === 'fs'
+            ? succStart - end - lagMs
+            : type === 'ss'
+              ? succStart - start - lagMs
+              : type === 'ff'
+                ? succEnd - end - lagMs
+                : succEnd - start - lagMs
+        if (implied < ff) ff = implied
+      }
+      freeFloat.set(t.id, ff)
+    }
     const critical = new Set<string>()
     const conflict = new Set<string>()
     for (const t of nodes) {
-      const float = lf.get(t.id)! - dur.get(t.id)! - es.get(t.id)!
+      const float = totalFloat.get(t.id)!
       if (Math.abs(float) < 1e-6) critical.add(t.id)
       else if (float < -1e-6) conflict.add(t.id) // 负总时差 = 已违反后继约束（违约）
       // 约束违反并入违约集（与负总时差同样呈现 .conflict）；日精度约束按**日历日**比较（本地时区安全）
@@ -5054,7 +5219,23 @@ export class OASGantt extends OASElement {
         }
       }
     }
-    return { critical, conflict }
+    return { critical, conflict, totalFloat, freeFloat }
+  }
+
+  /** 截止日违约集：结束日晚于 deadline（日精度按含端日期比较；时刻精度按 ms） */
+  private deadlineConflictIds(): Set<string> {
+    const out = new Set<string>()
+    for (const t of this._tasks) {
+      if (!t.deadline) continue
+      const d = parseTaskDate(t.deadline)
+      if (!d) continue
+      const end = this.endMsOfTask(t)
+      if (end <= 0) continue
+      const dateOnly = t.deadline.length <= 10
+      const late = dateOnly ? toISODate(new Date(end - 1)) > toISODate(new Date(d.getTime())) : end > d.getTime()
+      if (late) out.add(t.id)
+    }
+    return out
   }
 
   /** 连线 lag 提示文案（aria-label 末尾）：lag>0 作「滞后」、lag<0 作「提前」，0 不附 */

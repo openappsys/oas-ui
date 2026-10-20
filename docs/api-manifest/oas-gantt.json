@@ -100,6 +100,12 @@
       "observed": true
     },
     {
+      "name": "show-float",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
       "name": "creatable",
       "type": "boolean",
       "observed": true
@@ -301,6 +307,10 @@
     {
       "name": "--oas-gantt-baseline-color",
       "default": "color-mix(in srgb, var(--oas-color-text-secondary-strong) 55%, transparent)"
+    },
+    {
+      "name": "--oas-gantt-baseline-progress-color",
+      "default": "var(--oas-color-text-secondary-strong)"
     },
     {
       "name": "--oas-gantt-bar-progress-bg",

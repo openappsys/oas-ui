@@ -198,6 +198,8 @@ export const ru: LocaleMessages = {
   'gantt.tooltipProgress': 'Прогресс {progress}%',
   'gantt.tooltipRange': '{start} — {end}',
   'gantt.baselineLater': 'На {count} дн. позже базового',
+  'gantt.floatSummary': 'Общий резерв {total} д · свободный {free} д',
+  'gantt.deadline': 'Срок {date}',
   'gantt.baselineEarlier': 'На {count} дн. раньше базового',
   'gantt.baselineSame': 'Совпадает с базовым',
   'gantt.rename': 'Переименовать',

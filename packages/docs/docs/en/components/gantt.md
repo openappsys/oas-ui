@@ -242,7 +242,31 @@ The today line is decorative (`aria-hidden`) and renders only when today falls i
   <oas-gantt show-baseline tasks='[{"id":"b1","name":"Design (actual 2d later)","start":"2026-03-02","end":"2026-03-06","progress":80,"baseline":{"start":"2026-03-02","end":"2026-03-04"}},{"id":"b2","name":"Build (on baseline)","start":"2026-03-05","end":"2026-03-13","progress":40,"baseline":{"start":"2026-03-05","end":"2026-03-13"}},{"id":"b3","name":"Test (actual 1d earlier)","start":"2026-03-16","end":"2026-03-18","progress":20,"baseline":{"start":"2026-03-16","end":"2026-03-19"}}]'></oas-gantt>
 </DemoBlock>
 
-With `show-baseline` on (off by default), a task carrying `baseline: { start, end? }` renders a translucent baseline bar under the actual bar; the bar `title` shows the actual-vs-baseline delta (N days later/earlier, or "on baseline"). Baseline data is owned by the host; the component is read-only on it. Baseline color comes from `--oas-gantt-baseline-color`.
+With `show-baseline` on (off by default), a task carrying `baseline: { start, end? }` renders a translucent baseline bar under the actual bar; the bar `title` shows the actual-vs-baseline delta (N days later/earlier, or "on baseline"). Baseline data is owned by the host; the component is read-only on it. `baseline.progress` is baseline progress 0-100; when present, a progress overlay renders inside the baseline bar (`--oas-gantt-baseline-progress-color`).
+
+## Deadlines, Float & Baseline Variance (deadline / show-float / baseline.progress)
+
+<DemoBlock title="show-baseline + show-float: baseline progress, total/free float; a missed deadline gets .conflict">
+  <oas-gantt
+    show-baseline
+    show-float
+    height="220"
+    tasks='[{"id":"d1","name":"Design (missed deadline)","start":"2026-03-02","end":"2026-03-04","deadline":"2026-03-03","progress":40,"baseline":{"start":"2026-03-02","end":"2026-03-03","progress":25}},{"id":"d2","name":"Build","start":"2026-03-05","end":"2026-03-09","progress":50,"baseline":{"start":"2026-03-05","end":"2026-03-08","progress":30}},{"id":"d3","name":"Integration (has float)","start":"2026-03-05","end":"2026-03-06","dependencies":[{"id":"d1"}]}]'
+  ></oas-gantt>
+</DemoBlock>
+
+- `GanttTask.deadline`: due date (`YYYY-MM-DD`; hour scale may include time). When the bar ends after it, the bar gets `.conflict` and the chart renders a dashed `.deadline` marker.
+- `show-float`: shows **total float** (LF − EF) and **free float** (slack before the nearest successor); the bar also exposes `data-total-float` / `data-free-float` in days. Summaries are excluded from CPM; windowed mode skips it with a devWarn because a slice lacks the full dependency graph.
+- `baseline.progress`: baseline progress 0-100; with `show-baseline`, a `.baseline-progress` overlay renders inside the baseline bar.
+- Hosts can use the exported pure function `computeVariance(tasks)` for baseline variance:
+
+```ts
+import { computeVariance } from '@oas-ui/ui'
+
+const rows = computeVariance(el.tasks)
+// [{ id, startDelta, endDelta, durationDelta, progressDelta }]
+// Positive = later than baseline / longer duration / more progress; progressDelta is null without baseline.progress
+```
 
 ## Row Virtualization (10k-scale tasks)
 
@@ -576,12 +600,13 @@ onMounted(async () => {
 | `readonly` | Whole chart read-only (no rescheduling/progress, drag handles not rendered) | `boolean` | — |
 | `row-height` | Row height in px (default 36, minimum 20) | `string` | `36` |
 | `scale` | Time scale: hour / day (default) / week / month / quarter / year; invalid values fall back to day | `string` | — |
-| `show-baseline` | Baseline comparison (boolean, off by default): tasks with a baseline render a baseline bar under the actual bar, its title showing the delta (N days later/earlier than baseline, or on baseline) | `boolean` | — |
+| `show-baseline` | Baseline comparison (boolean, off by default): tasks with baseline render a baseline bar under the actual bar (baseline.progress renders an overlay), with a title showing the delta (N days later/earlier or same) | `boolean` | — |
 | `show-critical-path` | Critical path (boolean, off by default): runs a CPM pass over the dependency graph + durations to compute total float and adds a .critical highlight to zero-float tasks (color via --oas-gantt-critical-color); read-only | `string` | — |
+| `show-float` | Show total/free float (boolean, off by default): computed only on a complete dependency graph; the bar gets a total/free float label plus data-total-float/data-free-float in days. Summaries are excluded; windowed mode skips it with a devWarn. | `string` | — |
 | `show-today` | Today line (on by default; false to disable) | `string` | — |
 | `snap` | Snap drags to the current scale unit (on by default; false shifts by pixel ratio and keeps time precision) | `string` | — |
 | `stripe` | Row zebra striping (boolean, off by default): tints rows by the **absolute row index** parity (stable under virtualization/windowing, no DOM-order flicker); color via `--oas-gantt-row-stripe-bg` (default `--oas-color-bg-hover`); selection/weekend backgrounds override the stripe | `string` | — |
-| `tasks` | Gantt tasks (JSON): [{ id?, name, start, end?, type?, progress?, parent?, children?, dependencies?, color?, disabled?, expanded?, baseline?, constraint? ('asap'\|'snet'\|'mso'\|'fnlt'), constraintDate? }] — flat parent pointers are the primary contract; nested children are flattened automatically; explicit type:"milestone" takes precedence (rendered as milestone even with end, which is ignored) but a task with children is always a summary; no end also infers milestone; start/end are swapped automatically when start is after end | `GanttTask[]` | `[]` |
+| `tasks` | Gantt tasks (JSON): [{ id?, name, start, end?, type?, progress?, parent?, children?, dependencies?, color?, disabled?, expanded?, baseline? (start/end?/progress?), deadline?, constraint? ('asap'\|'snet'\|'mso'\|'fnlt'), constraintDate? }] — flat parent pointers are the primary contract; nested children are flattened automatically; explicit type:"milestone" takes precedence (rendered as milestone even with end, which is ignored) but a task with children is always a summary; no end also infers milestone; start/end are swapped automatically when start is after end | `GanttTask[]` | `[]` |
 | `total` | Full row (task) count in windowed mode; 0 or invalid disables windowed (falls back to local mode) | `string` | — |
 | `weekends` | Weekend column highlights (on by default; applies on day/hour tiers; false to disable) | `string` | — |
 | `window-start` | Absolute row index (within the full dataset) of the first row in the slice (windowed mode) | `string` | `0` |
@@ -632,6 +657,7 @@ onMounted(async () => {
 | `--oas-gantt-bar-height` | — | `22px` |
 | `--oas-gantt-bar-progress-bg` | — | `var(--oas-gantt-bar-color, var(--oas-color-primary))` |
 | `--oas-gantt-baseline-color` | Baseline bar color (default translucent secondary text) | `color-mix(in srgb, var(--oas-color-text-secondary-strong) 55%, transparent)` |
+| `--oas-gantt-baseline-progress-color` | — | `var(--oas-color-text-secondary-strong)` |
 | `--oas-gantt-conflict-color` | Conflict (negative-float) highlight color (default --oas-color-danger) | `var(--oas-color-danger)` |
 | `--oas-gantt-critical-color` | Critical-path highlight color (default --oas-color-danger) | `var(--oas-color-danger)` |
 | `--oas-gantt-grid-line-color` | — | `var(--oas-color-border)` |

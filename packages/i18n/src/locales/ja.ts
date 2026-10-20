@@ -198,6 +198,8 @@ export const ja: LocaleMessages = {
   'gantt.tooltipProgress': '進捗 {progress}%',
   'gantt.tooltipRange': '{start} から {end}',
   'gantt.baselineLater': 'ベースラインより {count} 日遅れ',
+  'gantt.floatSummary': '総浮時 {total}日 · 自由浮時 {free}日',
+  'gantt.deadline': '期限 {date}',
   'gantt.baselineEarlier': 'ベースラインより {count} 日早い',
   'gantt.baselineSame': 'ベースラインどおり',
   'gantt.rename': '名前を変更',

@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { OASGantt } from './index.js'
+import { OASGantt, computeVariance } from './index.js'
 import { pickVisibleLabels, ganttRenderDiag } from './oas-gantt.js'
-import type { GanttTask, GanttReparentDetail } from './index.js'
+import type { GanttTask, GanttBaselineVariance, GanttReparentDetail } from './index.js'
 import type { GanttTaskAddDetail } from './oas-gantt.js'
 
 function mount(attrs: Record<string, string> = {}): OASGantt {
@@ -2687,6 +2687,105 @@ describe('OASGantt 基线对比（baseline）', () => {
     barOf(el, 'a').click()
     expect(seen?.baseline).toEqual({ start: '2026-03-02', end: '2026-03-04' })
     expect(seen?.baseline).not.toBe(el.tasks[0]!.baseline)
+  })
+})
+
+describe('OASGantt 截止日 / 浮时 / 基线进度', () => {
+  const TASKS_CP: GanttTask[] = [
+    { id: 'a', name: 'A', start: '2026-03-02', end: '2026-03-04' },
+    { id: 'b', name: 'B', start: '2026-03-05', end: '2026-03-09', dependencies: [{ id: 'a' }] },
+    { id: 'c', name: 'C', start: '2026-03-05', end: '2026-03-06', dependencies: [{ id: 'a' }] },
+  ]
+
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('deadline：渲染截止标记；结束晚于截止日标 .conflict，未超出不标', () => {
+    const el = mount({
+      tasks: JSON.stringify([
+        { id: 'late', name: 'Late', start: '2026-03-02', end: '2026-03-04', deadline: '2026-03-03' },
+        { id: 'ok', name: 'OK', start: '2026-03-02', end: '2026-03-04', deadline: '2026-03-10' },
+      ]),
+    })
+    expect(el.tasks.find((t) => t.id === 'late')!.deadline).toBe('2026-03-03')
+    expect(barOf(el, 'late').classList.contains('conflict'), '超出截止日违约').toBe(true)
+    expect(barOf(el, 'ok').classList.contains('conflict'), '未超出不违约').toBe(false)
+    expect(shadowOf(el).querySelectorAll('.deadline').length).toBe(2)
+  })
+
+  it('show-float：显示总浮时/自由浮时数据与标签；关闭时零新增', () => {
+    const off = mount({ tasks: JSON.stringify(TASKS_CP) })
+    expect(barOf(off, 'a').dataset.totalFloat).toBeUndefined()
+    expect(shadowOf(off).querySelectorAll('.float-label').length).toBe(0)
+
+    const on = mount({ 'show-float': '', tasks: JSON.stringify(TASKS_CP) })
+    expect(barOf(on, 'a').dataset.totalFloat).toBe('0')
+    expect(barOf(on, 'c').dataset.totalFloat).toBe('3')
+    expect(barOf(on, 'c').dataset.freeFloat).toBe('3')
+    expect(shadowOf(on).querySelectorAll('.float-label').length).toBeGreaterThan(0)
+    expect(barOf(on, 'c').textContent).toContain('3')
+  })
+
+  it('show-float：自由浮时按最近后继计算，可小于总浮时', () => {
+    const el = mount({
+      'show-float': '',
+      tasks: JSON.stringify([
+        { id: 'a', name: 'A', start: '2026-03-02', end: '2026-03-02' },
+        { id: 'b', name: 'B', start: '2026-03-05', end: '2026-03-05', dependencies: [{ id: 'a' }] },
+        { id: 'c', name: 'C', start: '2026-03-10', end: '2026-03-10', dependencies: [{ id: 'a' }] },
+      ]),
+    })
+    expect(barOf(el, 'a').dataset.totalFloat).toBe('7')
+    expect(barOf(el, 'a').dataset.freeFloat).toBe('2')
+  })
+
+  it('baseline.progress：清洗 0-100 并渲染基线进度覆盖层', () => {
+    const el = mount({
+      'show-baseline': '',
+      tasks: JSON.stringify([
+        {
+          id: 'a',
+          name: 'A',
+          start: '2026-03-02',
+          end: '2026-03-06',
+          progress: 60,
+          baseline: { start: '2026-03-02', end: '2026-03-04', progress: 25 },
+        },
+      ]),
+    })
+    expect(el.tasks[0]!.baseline).toEqual({ start: '2026-03-02', end: '2026-03-04', progress: 25 })
+    const fill = shadowOf(el).querySelector<HTMLElement>('.baseline[data-id="a"] .baseline-progress')!
+    expect(fill.style.width).toBe('25%')
+  })
+
+  it('computeVariance：返回 start/end/duration/progress 差值；无基线跳过；无 baseline.progress 时 progressDelta=null', () => {
+    const tasks: GanttTask[] = [
+      {
+        id: 'a',
+        name: 'A',
+        start: '2026-03-04',
+        end: '2026-03-08',
+        progress: 60,
+        baseline: { start: '2026-03-02', end: '2026-03-06', progress: 40 },
+      },
+      {
+        id: 'b',
+        name: 'B',
+        start: '2026-03-04',
+        end: '2026-03-08',
+        progress: 60,
+        baseline: { start: '2026-03-02', end: '2026-03-06' },
+      },
+      { id: 'c', name: 'C', start: '2026-03-04', end: '2026-03-08' },
+    ]
+    const out: GanttBaselineVariance[] = computeVariance(tasks)
+    expect(out.map((v) => v.id)).toEqual(['a', 'b'])
+    expect(out[0]).toMatchObject({ startDelta: 2, endDelta: 2, durationDelta: 0, progressDelta: 20 })
+    expect(out[1]!.progressDelta).toBeNull()
   })
 })
 

@@ -198,6 +198,8 @@ export const ko: LocaleMessages = {
   'gantt.tooltipProgress': '진행률 {progress}%',
   'gantt.tooltipRange': '{start} ~ {end}',
   'gantt.baselineLater': '베이스라인보다 {count}일 지연',
+  'gantt.floatSummary': '총 여유 {total}일 · 자유 여유 {free}일',
+  'gantt.deadline': '마감 {date}',
   'gantt.baselineEarlier': '베이스라인보다 {count}일 단축',
   'gantt.baselineSame': '베이스라인과 동일',
   'gantt.rename': '이름 바꾸기',

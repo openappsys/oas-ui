@@ -493,7 +493,9 @@ export {
 } from './data/scheduler/index.js'
 export {
   OASGantt,
+  computeVariance,
   type GanttTask,
+  type GanttBaselineVariance,
   type GanttDependency,
   type GanttScale,
   type GanttTaskClickDetail,

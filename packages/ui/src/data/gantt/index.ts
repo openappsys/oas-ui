@@ -1,13 +1,14 @@
 import '@oas-ui/i18n'
-import { OASGantt } from './oas-gantt.js'
+import { OASGantt, computeVariance } from './oas-gantt.js'
 
 if (!customElements.get('oas-gantt')) {
   customElements.define('oas-gantt', OASGantt)
 }
 
-export { OASGantt }
+export { OASGantt, computeVariance }
 export type {
   GanttTask,
+  GanttBaselineVariance,
   GanttDependency,
   GanttScale,
   GanttTaskClickDetail,

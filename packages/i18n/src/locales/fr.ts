@@ -198,6 +198,8 @@ export const fr: LocaleMessages = {
   'gantt.tooltipProgress': 'Progression {progress} %',
   'gantt.tooltipRange': '{start} au {end}',
   'gantt.baselineLater': '{count} j plus tard que la référence',
+  'gantt.floatSummary': 'Marge totale {total} j · marge libre {free} j',
+  'gantt.deadline': 'Échéance {date}',
   'gantt.baselineEarlier': '{count} j plus tôt que la référence',
   'gantt.baselineSame': 'Conforme à la référence',
   'gantt.rename': 'Renommer',

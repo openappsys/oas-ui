@@ -198,6 +198,8 @@ export const ar: LocaleMessages = {
   'gantt.tooltipProgress': 'التقدم {progress}%',
   'gantt.tooltipRange': '{start} إلى {end}',
   'gantt.baselineLater': 'متأخر عن الأساس بـ {count} يوم',
+  'gantt.floatSummary': 'إجمالي السماح {total} ي · السماح الحر {free} ي',
+  'gantt.deadline': 'الموعد {date}',
   'gantt.baselineEarlier': 'مبكر عن الأساس بـ {count} يوم',
   'gantt.baselineSame': 'مطابق للأساس',
   'gantt.rename': 'إعادة تسمية',

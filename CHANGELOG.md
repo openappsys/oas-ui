@@ -19,6 +19,8 @@
 - **`oas-barcode` 扩展至 10 码制**：新增 GS1-128（首部 FNC1，`|` 分隔字段，括号仅分组）、UPC-E（6/7/8 位，按末位规则展开并补校验位）、Codabar（A–D 起止符）与 MSI（纯数字基础码）；`format` 新增 `gs1-128` / `upce` / `codabar` / `msi`，非法值仍回退 `code128`。补齐编码单测、组件渲染/e2e 覆盖与 zh/en 文档。
 - **`oas-resource` 容量日历、技能匹配与优先级均载**：`ResourceItem` 新增 `workdays`（0=周日…6=周六，`[]` 为全不可用）、`holidays`、`capacityOverrides`（日期级容量，优先于假期/工作日，可小数）、`skills`；`ResourceTask` 新增 `priority`（数值小者优先）、`requiredSkills`、`project`；`levelResources()` 新增 `respectSkills` / `projectOrder`，`reassign` 默认要求目标资源具备任务全部技能，shift/reassign 都按「低优先级先让位」选择受害者。未声明 `workdays` 且 `holidays`/`capacityOverrides` 为空时保持旧的每档容量语义；`workdays: []` 且未来没有足够正容量 override 时不再把任务推到 `maxIter` 之后。组件直方图与 `oas-overload` 按逐档容量判定。
 
+- **`oas-gantt` 截止日 / 浮时 / 基线差异**：`GanttTask.deadline` 超期并入 `.conflict` 并渲染 `.deadline` 标记；`show-float` 显示总浮时（LF − EF）与自由浮时（最近后继允许的延后量），同步 `data-total-float` / `data-free-float`；`baseline.progress` 渲染基线进度覆盖层；新增纯函数 `computeVariance(tasks)` 输出 start/end/duration/progress 差值。
+
 ### 交互
 
 - **`oas-gantt` / `oas-resource` 文本可选中复制**：任务名、资源名与条标签恢复 `user-select: text`，支持鼠标划选/复制；`oas-gantt` 行拖拽改由右侧重排手柄承载（细指针悬停/聚焦显形，粗指针常显），避免行重排与文本选择互相抢占；`oas-resource` 条标签点击仍冒泡到任务条。新增 Chromium/Firefox 真实拖选回归。
