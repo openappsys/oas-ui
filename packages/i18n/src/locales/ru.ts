@@ -186,6 +186,7 @@ export const ru: LocaleMessages = {
   'scheduler.unassigned': 'Не назначено',
   'scheduler.allDay': 'Весь день',
   'scheduler.noEvents': 'Нет событий в этом диапазоне',
+  'scheduler.loading': 'Загрузка ресурсов…',
   // gantt (диаграмма Ганта)
   'gantt.empty': 'Нет задач',
   'gantt.listLabel': 'Список задач',

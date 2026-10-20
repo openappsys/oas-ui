@@ -4295,7 +4295,7 @@
   },
   "oas-scheduler": {
     "attrs": {
-      "events": "日程事件（JSON）：[{ id?, date: YYYY-MM-DD, title, color?, start?, end? }]——日格渲染事件芯片（标题+色条），>2 合并 +N 条",
+      "events": "日程事件（JSON）：[{ id?, date: YYYY-MM-DD, endDate?, title, color?, start?, end?, repeat? { freq, interval?, until?, count?, byDay? }, resource? }]——日格渲染事件芯片，>2 合并 +N 条；endDate 支持跨日全天，repeat 支持 count/byDay",
       "page-show-date": "面板月锚点（受控）：yyyy-MM-dd，变化时重锚定显示月份",
       "first-day-of-week": "周起始日（0-6）；缺省按 locale 推导",
       "locale": "本地化（覆盖 config-provider 注入与全局 locale）",

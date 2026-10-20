@@ -186,6 +186,7 @@ export const pt: LocaleMessages = {
   'scheduler.unassigned': 'Não atribuído',
   'scheduler.allDay': 'Dia inteiro',
   'scheduler.noEvents': 'Sem eventos neste período',
+  'scheduler.loading': 'Carregando recursos…',
   // gantt (diagrama de Gantt)
   'gantt.empty': 'Sem tarefas',
   'gantt.listLabel': 'Lista de tarefas',

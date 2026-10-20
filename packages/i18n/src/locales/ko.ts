@@ -186,6 +186,7 @@ export const ko: LocaleMessages = {
   'scheduler.unassigned': '미할당',
   'scheduler.allDay': '종일',
   'scheduler.noEvents': '이 기간에 일정이 없습니다',
+  'scheduler.loading': '리소스를 불러오는 중…',
   // gantt（간트 차트）
   'gantt.empty': '작업이 없습니다',
   'gantt.listLabel': '작업 목록',

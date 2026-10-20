@@ -191,3 +191,19 @@ onMounted(() => {
     }
 })
 </script>
+
+## 多项目甘特树 + 资源项目优先级
+
+多项目不引入第二个 gantt 实例：给每个项目建一个根摘要任务（`type:"summary"`），项目任务作为 `children`/`parent` 子级；项目根、任务条、依赖和虚拟滚动共用一棵树。资源侧用 task 的 `project` 字段 + `levelResources({ projectOrder })` 把「项目优先级」传给均载。
+
+```ts
+const tasks = [
+  { id: `p-a`, name: `项目 A`, type: `summary`, start: `2026-03-02`, end: `2026-03-13`, children: [
+    { id: `a1`, name: `A 设计`, start: `2026-03-02`, end: `2026-03-06`, project: `A` },
+  ]},
+]
+const leveled = levelResources(resources, resourceTasks, { projectOrder: [`A`, `B`] })
+```
+
+- 项目根只负责分组/汇总，依赖写在叶子任务上；跨项目依赖与普通依赖同构。
+- 资源均载仍按 `projectOrder` 排序，靠后项目先让位；不会修改 gantt 的项目根日期。

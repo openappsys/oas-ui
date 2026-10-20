@@ -231,6 +231,15 @@ const STYLE = `
 .load .col.first {
   border-inline-start: none;
 }
+/* 容量日历不可用档：整列斜纹底，零负载也能看见（color-mix 跟主题） */
+.load .col.unavailable {
+  background-image: repeating-linear-gradient(
+    135deg,
+    transparent 0 4px,
+    color-mix(in srgb, var(--oas-color-border) 55%, transparent) 4px 5px
+  );
+  background-color: var(--oas-resource-unavailable-bg, transparent);
+}
 .pillar {
   position: absolute;
   bottom: 0;
@@ -1517,7 +1526,6 @@ export class OASResource extends OASElement {
   /** 负载统计结果缓存（滚动帧只重渲染窗口，不重算矩阵；overCount 亦随矩阵预算，避免每帧 reduce） */
   private loadRows: Array<{
     resource: RS
-    capacity: number
     capacities: number[]
     loads: number[]
     overCount: number
@@ -2413,7 +2421,6 @@ export class OASResource extends OASElement {
     const periodCount = this.periods.length
     let maxLoad = 0
     const perResourceLoads = this._resources.map((r) => {
-      const cap = r.capacity ?? capDefault
       const loads = new Array<number>(periodCount).fill(0)
       const capacities = this.periods.map((period) => periodCapacity(r, period, scale, weekStart, capDefault))
       const assigned = assignedByRes.get(r.id)
@@ -2431,7 +2438,7 @@ export class OASResource extends OASElement {
         if (load > maxLoad) maxLoad = load
         if (load > capacities[i]!) overCount++
       }
-      return { resource: r, capacity: cap, capacities, loads, overCount }
+      return { resource: r, capacities, loads, overCount }
     })
     const overloadEntries: ResourceOverloadEntry[] = []
     for (const row of perResourceLoads) {
@@ -2937,7 +2944,7 @@ export class OASResource extends OASElement {
    * 横向仍按列窗口建列，成本 O(窗内行数 × 窗口列数)。
    */
   private renderLoads(
-    rows: Array<{ resource: RS; capacity: number; capacities: number[]; loads: number[]; overCount: number }>,
+    rows: Array<{ resource: RS; capacities: number[]; loads: number[]; overCount: number }>,
     maxLoad: number,
   ): void {
     if (!this.loadsEl) return
@@ -3001,6 +3008,8 @@ export class OASResource extends OASElement {
         col.style.width = `${colW}px`
         col.setAttribute('aria-hidden', 'true')
         const load = row.loads[i]!
+        const cap = row.capacities[i]!
+        if (cap <= 0) col.classList.add('unavailable')
         if (load > 0) {
           const pillar = document.createElement('div')
           pillar.className = load > row.capacities[i]! ? 'pillar over' : 'pillar'

@@ -70,6 +70,7 @@ levelResources(resources, tasks, { scale: 'week', projectOrder: ['portal'] })
 - Without `workdays` and with empty `holidays` / `capacityOverrides`, the legacy per-period capacity semantics are unchanged; with them, period capacity is the sum of daily capacity. Empty `holidays: []` / `capacityOverrides: {}` count as absent and do not switch the legacy semantics.
 - `workdays` uses `0=Sunday…6=Saturday`; `workdays: []` means zero capacity every day (fully unavailable). A non-empty array with no valid values (strings, out-of-range, 1..7 convention) is treated as absent with a devWarn instead of silently making the resource unschedulable.
 - `capacityOverrides` wins over `holidays`; capacity may be fractional, but task load is counted in whole days, so a `0.5` day cannot hold a whole-day task.
+- Zero-capacity periods get a full-column striped background in the load histogram (`--oas-resource-unavailable-bg`) even when no task is present; overload pillars still overlay danger color.
 - `reassign` defaults to `respectSkills: true`; every target must have all of a task's `requiredSkills`. No skill data means no behavior change.
 - Projects earlier in `projectOrder` win; within a project lower `priority` values win. Lower-priority tasks move/reassign first. Project names and skills are compared after trimming.
 - The algorithm remains deterministic and greedy; it does not claim a global optimum.
@@ -188,6 +189,7 @@ Conventions in windowed mode: load/overload stats cover **the loaded slice only*
 | `--oas-resource-load-over-bg` | `var(--oas-color-danger)` |
 | `--oas-resource-name-width` | `160px` |
 | `--oas-resource-row-height` | `36px` |
+| `--oas-resource-unavailable-bg` | `transparent` |
 
 <script setup>
 import { onMounted } from 'vue'

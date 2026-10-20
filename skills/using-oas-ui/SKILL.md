@@ -49,6 +49,13 @@ Icons referenced by name (for example `icon="check"`) need `import '@oas-ui/icon
 - Only JSON-stringify when the component's API documents a JSON attribute.
 - Controlled usage: listen to `oas-change`/`oas-input`, then write the new value back. Do not treat the attribute as the live value when a property channel exists.
 
+## Data components (gantt / resource / scheduler)
+
+- `oas-gantt`: `tasks` (property/JSON) with `parent`/`children` WBS, dependencies, `deadline`, `baseline { start, end, progress }`, `constraint`; `show-baseline`, `show-float` (total/free float), `show-critical-path`. Use `computeVariance(tasks)` for baseline deltas. Multi-project = project root summary tasks with children (one tree, not multiple gantt instances).
+- `oas-resource`: `resources` (`workdays` 0=Sunday…6=Saturday, `holidays`, `capacityOverrides`, `skills`) and `tasks` (`priority`, `requiredSkills`, `project`); `levelResources(resources, tasks, { respectSkills, projectOrder })` is a pure deterministic leveling helper (shift/reassign).
+- `oas-scheduler`: `view` month/week/day/agenda/resource/resource-week; `repeat` (RRULE subset incl. `count`/`byDay`), `endDate` for multi-day all-day events; `windowed` + `total` + `window-start` for server-side resource rows with `oas-window-request`; `exportIcs()` / `downloadIcs()` and `eventsToIcs(events, options)` (timeMode floating/utc/tzid).
+- Windowed contracts: feed only the loaded slice; listen for `oas-window-request` and update `window-start` + data. For host-expanded repeats, strip `repeat` from the base event and send unique occurrence ids.
+
 ## Theme and SSR
 
 - Dark: add `class="dark"` to `<html>` or set `data-theme="dark"`. `data-theme="high-contrast"` is also supported.

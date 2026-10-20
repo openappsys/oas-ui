@@ -432,6 +432,9 @@ describe('OASResource oas-overload 事件', () => {
     document.body.appendChild(el)
     expect(events[0]!.overloads).toEqual([{ resourceId: 'r1', period: '2026-03-02', load: 1, capacity: 0 }])
     expect(pillarsOf(el, 'r1')[0]!.classList.contains('over')).toBe(true)
+    expect(shadowOf(el).querySelectorAll('.load .col.unavailable').length, '容量 0 的档应有不可用底纹').toBeGreaterThan(
+      0,
+    )
   })
 
   it('无超载不派发；超载消除后复位，再次超载再派发', () => {
@@ -2214,7 +2217,6 @@ describe('OASResource 横向虚拟化（时间轴 period 列窗口）', { timeou
     laneLayout: Map<string, LaneCache>
     loadRows: Array<{
       resource: { id: string }
-      capacity: number
       capacities: number[]
       loads: number[]
       overCount: number

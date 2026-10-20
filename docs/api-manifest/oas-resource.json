@@ -160,6 +160,10 @@
       "default": "64px"
     },
     {
+      "name": "--oas-resource-unavailable-bg",
+      "default": "transparent"
+    },
+    {
       "name": "--oas-resource-load-bg",
       "default": "color-mix(in srgb, var(--oas-color-primary) 45%, var(--oas-color-bg))"
     },

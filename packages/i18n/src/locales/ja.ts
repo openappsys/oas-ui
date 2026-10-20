@@ -186,6 +186,7 @@ export const ja: LocaleMessages = {
   'scheduler.unassigned': '未割り当て',
   'scheduler.allDay': '終日',
   'scheduler.noEvents': 'この期間に予定はありません',
+  'scheduler.loading': 'リソースを読み込み中…',
   // gantt（ガントチャート）
   'gantt.empty': 'タスクはありません',
   'gantt.listLabel': 'タスク一覧',

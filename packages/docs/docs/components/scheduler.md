@@ -39,10 +39,16 @@
 
 带 `remind`（分钟）的事件，组件在「`start` − `remind` 分钟」到点派发 `oas-remind`（`detail: { id, event }`；无 `start` 按当日 00:00 计）。过期/已删/断开连接均不再派发。
 
+<DemoBlock title="宿主展开重复：基础事件不带 repeat，每个 occurrence 独立下发（唯一 id）">
+  <oas-scheduler page-show-date="2026-08-01" events='[{"id":"occ-1","date":"2026-08-03","title":"站会（宿主展开 1）"},{"id":"occ-2","date":"2026-08-04","title":"站会（宿主展开 2）"},{"id":"occ-3","date":"2026-08-05","title":"站会（宿主展开 3）"}]'></oas-scheduler>
+</DemoBlock>
+
+> windowed 场景推荐这种宿主展开方式：组件不会再对基础事件做第二次展开。
+
 ## 时区与日程视图
 
 <DemoBlock title="日程视图（agenda：锚点起 28 天时序清单）">
-  <oas-scheduler view="agenda" page-show-date="2026-08-10" events='[{"date":"2026-08-10","title":"晨会","start":"09:00","end":"10:00","color":"#dc2626"},{"date":"2026-08-12","title":"评审","color":"#059669"},{"date":"2026-08-05","title":"每日站会","repeat":{"freq":"daily"}}]'></oas-scheduler>
+  <oas-scheduler id="scheduler-agenda" view="agenda" page-show-date="2026-08-10" events='[{"date":"2026-08-10","title":"晨会","start":"09:00","end":"10:00","color":"#dc2626"},{"date":"2026-08-12","title":"评审","color":"#059669"},{"date":"2026-08-05","title":"每日站会","repeat":{"freq":"daily"}}]'></oas-scheduler>
 </DemoBlock>
 
 `view="agenda"` 从锚点起 28 天按日分组列出事件（重复事件已展开）：定时事件带 `start–end` 时间、无 `start` 标「全天」；点事件行派发 `oas-event-click`、点日头派发 `oas-day-click`。
@@ -154,12 +160,34 @@ onMounted(async () => {
       crout.textContent = `oas-create：${date} ${start}–${end}${resource ? `（${resource}）` : ''} → 已 addEvent`
     })
   }
+
+  // windowed 资源行：演示宿主按 oas-window-request 回填切片（20 行，每次 5 行）
+  const win = document.getElementById('scheduler-windowed-demo')
+  if (win) {
+    const total = 20
+    const size = 5
+    const all = Array.from({ length: total }, (_, i) => ({ id: `wr${i}`, title: `资源 ${i + 1}` }))
+    const apply = (start) => {
+      const s = Math.max(0, Math.min(total - size, start))
+      win.setAttribute('window-start', String(s))
+      win.setAttribute('resources', JSON.stringify(all.slice(s, s + size)))
+    }
+    win.addEventListener('oas-window-request', (e) => apply(e.detail.start))
+    apply(0)
+  }
 })
 </script>
 
 ## 大数据量（虚拟化）
 
 资源视图的资源行与 `day` 视图的小时轴按可视窗口渲染：渲染行数/刻度数与 DOM 规模不随数据总量增长，占位撑起滚动范围（总高守恒）；滚动重建后按事件 id 回焦，拖拽/创建手势进行中抑制窗口重建（避免销毁 pointer capture）。资源视图默认限高 `--oas-scheduler-resource-max-height`（缺省 640px，与时间轴一致），超出即内部滚动并窗口化；资源行与时间轴均带 `aria-rowcount` 与绝对行号 `aria-rowindex`。
+
+## 打印预览
+
+<DemoBlock title="打印：@media print 隐藏工具栏、取消 agenda/资源视图限高（点击按钮打开系统打印预览）">
+  <oas-button size="small" onclick="window.print()">打印当前预约</oas-button>
+  <oas-scheduler id="scheduler-print" view="agenda" page-show-date="2026-08-10" events='[{"date":"2026-08-10","title":"打印演示","start":"09:00","end":"10:00"}]'></oas-scheduler>
+</DemoBlock>
 
 ## 服务端资源行窗口（windowed）与打印
 
@@ -187,11 +215,13 @@ import { eventsToIcs } from '@oas-ui/ui'
 
 const ics = el.exportIcs() // 当前事件
 const standalone = eventsToIcs(events, { calendarName: 'My Calendar' })
+el.downloadIcs('my.ics', { timeMode: 'utc', timezone: 'Asia/Shanghai' })
 ```
 
-- 无 `start` 的事件导出为全天事件（`DTSTART/DTEND;VALUE=DATE`，结束为次日）；有 `start` 的事件使用浮动本地时间（不写 TZID）。
-- `repeat` 映射为 `RRULE:FREQ=...;INTERVAL=...;UNTIL=...`（`until` 含当日）。
-- 文本按 RFC 5545 转义，输出 CRLF 与 75 字节折行；非法日期事件跳过。`now` 选项可固定 `DTSTAMP`（测试/可复现导出）。
+- 无 `start` 的事件导出为全天事件（`DTSTART/DTEND;VALUE=DATE`，结束为次日；`endDate` 支持跨日全天）。
+- `timeMode`：`floating`（默认，浮动本地时间）/ `utc`（按 `timezone` 转 UTC，带 `Z`）/ `tzid`（`TZID` + 固定偏移 `VTIMEZONE`，跨 DST 精确转换建议用 `utc`）。
+- `repeat` 映射为 `RRULE:FREQ/INTERVAL/COUNT/BYDAY/UNTIL`（`until` 含当日）。
+- 文本按 RFC 5545 转义，输出 CRLF 与 75 字节折行；非法日期事件跳过。`now` 选项可固定 `DTSTAMP`。
 
 ## API
 
@@ -202,7 +232,7 @@ const standalone = eventsToIcs(events, { calendarName: 'My Calendar' })
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
 | `end-hour` | 时间轴结束小时（>start-hour 且 <=24，默认 20） | `string` | `20` |
-| `events` | 日程事件（JSON）：[{ id?, date: YYYY-MM-DD, title, color?, start?, end? }]——日格渲染事件芯片（标题+色条），>2 合并 +N 条 | `SchedulerEvent[]` | `[]` |
+| `events` | 日程事件（JSON）：[{ id?, date: YYYY-MM-DD, endDate?, title, color?, start?, end?, repeat? { freq, interval?, until?, count?, byDay? }, resource? }]——日格渲染事件芯片，>2 合并 +N 条；endDate 支持跨日全天，repeat 支持 count/byDay | `SchedulerEvent[]` | `[]` |
 | `first-day-of-week` | 周起始日（0-6）；缺省按 locale 推导 | `string` | — |
 | `locale` | 本地化（覆盖 config-provider 注入与全局 locale） | `string` | — |
 | `page-show-date` | 面板月锚点（受控）：yyyy-MM-dd，变化时重锚定显示月份 | `string` | — |

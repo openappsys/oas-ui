@@ -39,10 +39,16 @@ Week/day views show a time axis (`start-hour` / `end-hour`, default 8–20): eve
 
 For events with `remind` (minutes), the component dispatches `oas-remind` (`detail: { id, event }`) at `start` − `remind` minutes (untimed events count as 00:00). Past/removed/disconnected events never fire.
 
+<DemoBlock title="Host-expanded repeats: the base event has no repeat; each occurrence is sent with a unique id">
+  <oas-scheduler page-show-date="2026-08-01" events='[{"id":"occ-1","date":"2026-08-03","title":"Standup (host 1)"},{"id":"occ-2","date":"2026-08-04","title":"Standup (host 2)"},{"id":"occ-3","date":"2026-08-05","title":"Standup (host 3)"}]'></oas-scheduler>
+</DemoBlock>
+
+> In windowed mode prefer this host-expanded form: the component will not expand the base event a second time.
+
 ## Timezone & Agenda View
 
 <DemoBlock title="Agenda view (28-day chronological list from anchor)">
-  <oas-scheduler view="agenda" page-show-date="2026-08-10" events='[{"date":"2026-08-10","title":"Standup","start":"09:00","end":"10:00","color":"#dc2626"},{"date":"2026-08-12","title":"Review","color":"#059669"},{"date":"2026-08-05","title":"Daily standup","repeat":{"freq":"daily"}}]'></oas-scheduler>
+  <oas-scheduler id="scheduler-agenda" view="agenda" page-show-date="2026-08-10" events='[{"date":"2026-08-10","title":"Standup","start":"09:00","end":"10:00","color":"#dc2626"},{"date":"2026-08-12","title":"Review","color":"#059669"},{"date":"2026-08-05","title":"Daily standup","repeat":{"freq":"daily"}}]'></oas-scheduler>
 </DemoBlock>
 
 `view="agenda"` lists events grouped by day for 28 days from the anchor (recurring events expanded): timed events show `start–end`, untimed events are labeled all-day; clicking a row dispatches `oas-event-click`, clicking a day header dispatches `oas-day-click`.
@@ -161,6 +167,13 @@ onMounted(async () => {
 
 In the resource view the resource rows, and in the `day` view the hour axis, render for the visible window only: the number of rendered rows/ticks does not grow with the dataset size, and spacers preserve the scroll range (total height invariant). After a scroll rebuild focus is restored by event id, and window rebuilds are suppressed while a drag/create gesture is active (so pointer capture is not destroyed). The resource view is capped by `--oas-scheduler-resource-max-height` (default 640px, matching the timeline); beyond that it scrolls internally and virtualizes. Resource rows and the timeline carry `aria-rowcount` and absolute `aria-rowindex`.
 
+## Print preview
+
+<DemoBlock title="Print: @media print hides the toolbar and removes agenda/resource scroll caps (opens the system print dialog)">
+  <oas-button size="small" onclick="window.print()">Print current schedule</oas-button>
+  <oas-scheduler id="scheduler-print" view="agenda" page-show-date="2026-08-10" events='[{"date":"2026-08-10","title":"Print demo","start":"09:00","end":"10:00"}]'></oas-scheduler>
+</DemoBlock>
+
 ## Server-side resource row window (windowed) and printing
 
 The resource views (`resource` / `resource-week`) support server-side slices: `windowed` + `total` + `window-start`, with `resources` carrying only `[window-start, window-start + resources.length)`. The component emits `oas-window-request` (absolute, half-open row range) when the visible window is not covered; the host responds with a new slice and updates `window-start`. `aria-rowcount` uses `total`, and `aria-rowindex` uses absolute row numbers.
@@ -187,11 +200,13 @@ import { eventsToIcs } from '@oas-ui/ui'
 
 const ics = el.exportIcs() // current events
 const standalone = eventsToIcs(events, { calendarName: 'My Calendar' })
+el.downloadIcs('my.ics', { timeMode: 'utc', timezone: 'Asia/Shanghai' })
 ```
 
-- Events without `start` export as all-day events (`DTSTART/DTEND;VALUE=DATE`, end = next day); timed events use floating local time (no TZID).
-- `repeat` maps to `RRULE:FREQ=...;INTERVAL=...;UNTIL=...` (`until` is inclusive).
-- Text is RFC 5545 escaped; output uses CRLF and 75-byte folding; invalid-date events are skipped. The `now` option fixes `DTSTAMP` for reproducible exports/tests.
+- Events without `start` export as all-day events (`DTSTART/DTEND;VALUE=DATE`, end = next day; `endDate` supports multi-day all-day events).
+- `timeMode`: `floating` (default, local wall time) / `utc` (converted with `timezone`, `Z` suffix) / `tzid` (`TZID` plus a fixed-offset `VTIMEZONE`; use `utc` for DST-accurate conversion).
+- `repeat` maps to `RRULE:FREQ/INTERVAL/COUNT/BYDAY/UNTIL` (`until` is inclusive).
+- Text is RFC 5545 escaped; output uses CRLF and 75-byte folding; invalid-date events are skipped. The `now` option fixes `DTSTAMP`.
 
 ## API
 
@@ -202,7 +217,7 @@ const standalone = eventsToIcs(events, { calendarName: 'My Calendar' })
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
 | `end-hour` | Time axis end hour (> start-hour and <= 24, default 20) | `string` | `20` |
-| `events` | Schedule events (JSON): [{ id?, date: YYYY-MM-DD, title, color?, start?, end? }] — chips rendered in day cells (title + color bar), collapsed to +N beyond 2 | `SchedulerEvent[]` | `[]` |
+| `events` | Schedule events (JSON): [{ id?, date: YYYY-MM-DD, endDate?, title, color?, start?, end?, repeat? { freq, interval?, until?, count?, byDay? }, resource? }] — chips rendered in day cells (title + color bar), collapsed to +N beyond 2 | `SchedulerEvent[]` | `[]` |
 | `first-day-of-week` | First day of week (0-6); defaults to locale-derived | `string` | — |
 | `locale` | Localization (overrides config-provider injection and global locale) | `string` | — |
 | `page-show-date` | Panel month anchor (controlled): yyyy-MM-dd; re-anchors the shown month on change | `string` | — |

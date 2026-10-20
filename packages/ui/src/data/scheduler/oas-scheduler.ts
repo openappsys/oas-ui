@@ -14,6 +14,7 @@ import {
   weekdayLabels,
 } from '../../form/calendar/date-grid.js'
 import { isRtl } from '../../shared/direction.js'
+import { devWarn } from '../../shared/dev-warn.js'
 import {
   WINDOW_MARGIN,
   expandWindow,
@@ -491,6 +492,12 @@ const STYLE = `
 .res-cell.today { background: color-mix(in srgb, var(--oas-color-primary) 6%, transparent); }
 .res-cell-allday { margin: 2px; }
 .res-cell-track { position: relative; }
+.chip.spanning,
+.res-ev.spanning {
+  border-inline-start-width: 3px;
+  border-inline-start-style: solid;
+  border-inline-start-color: var(--chip-color, var(--oas-color-primary));
+}
 .res-ev {
   position: absolute;
   inset-inline: 2px;
@@ -508,6 +515,12 @@ const STYLE = `
   cursor: pointer;
 }
 .resourceview[data-rtl] { direction: rtl; }
+.res-empty {
+  padding: var(--oas-space-4);
+  text-align: center;
+  color: var(--oas-color-text-secondary);
+  font-size: var(--oas-font-size-sm);
+}
 .create-preview {
   position: absolute;
   background: color-mix(in srgb, var(--oas-color-primary) 22%, transparent);
@@ -557,7 +570,9 @@ export interface SchedulerEvent {
   color?: string
   start?: string
   end?: string
-  /** 重复规则（RRULE 子集）：按 freq × interval 从 date 起重复，until 截止（含当日）。
+  /** 全天事件结束日期（含当日；用于跨日全天事件；缺省=单日） */
+  endDate?: string
+  /** 重复规则（RRULE 子集）：按 freq × interval 从 date 起重复，until/count 截止。
    *  windowed 模式下组件仍展开已装载切片内的 occurrence；跨窗口 occurrence 由宿主展开为独立事件（唯一 id）。 */
   repeat?: SchedulerRepeat
   /** 提前提醒分钟数（组件到点派发 oas-remind） */
@@ -571,6 +586,10 @@ export interface SchedulerRepeat {
   freq: 'daily' | 'weekly' | 'monthly'
   interval?: number
   until?: string
+  /** 发生次数上限（与 until 同时存在时先到者生效） */
+  count?: number
+  /** weekly 的多 weekday（0=周日…6=周六）；缺省沿用 date 的 weekday */
+  byDay?: number[]
 }
 
 /** remind 事件载荷 */
@@ -616,6 +635,10 @@ export interface IcsExportOptions {
   calendarName?: string
   /** DTSTAMP 时间（缺省 new Date()；测试用固定值） */
   now?: Date
+  /** 时间输出：floating（默认，浮动本地时间）/ utc（转换后带 Z）/ tzid（TZID + 固定偏移 VTIMEZONE） */
+  timeMode?: 'floating' | 'utc' | 'tzid'
+  /** IANA 时区（timeMode=utc/tzid 时用于换算；缺省系统本地时区） */
+  timezone?: string
 }
 
 /** 资源（资源视图的行） */
@@ -664,12 +687,26 @@ function sanitizeEvents(v: unknown): SchedulerEvent[] {
     if (typeof it.color === 'string' && it.color !== '') ev.color = it.color
     if (typeof it.start === 'string' && it.start !== '' && parseTime(it.start) !== null) ev.start = it.start
     if (typeof it.end === 'string' && it.end !== '' && parseTime(it.end) !== null) ev.end = it.end
+    if (typeof it.endDate === 'string' && it.endDate !== '') {
+      const startDay = parseISODate(it.date)
+      const endDay = parseISODate(it.endDate)
+      if (startDay && endDay && endDay.getTime() >= startDay.getTime()) ev.endDate = toISODate(endDay)
+    }
     if (typeof it.repeat === 'object' && it.repeat !== null) {
       const r = it.repeat as Record<string, unknown>
       if (r.freq === 'daily' || r.freq === 'weekly' || r.freq === 'monthly') {
         const rep: SchedulerRepeat = { freq: r.freq }
         if (typeof r.interval === 'number' && r.interval >= 1) rep.interval = r.interval
         if (typeof r.until === 'string' && r.until !== '') rep.until = r.until
+        if (typeof r.count === 'number' && Number.isInteger(r.count) && r.count >= 1) rep.count = r.count
+        if (Array.isArray(r.byDay)) {
+          const days = [
+            ...new Set(
+              r.byDay.filter((n): n is number => typeof n === 'number' && Number.isInteger(n) && n >= 0 && n <= 6),
+            ),
+          ]
+          if (days.length) rep.byDay = days
+        }
         ev.repeat = rep
       }
     }
@@ -715,6 +752,48 @@ function icsDateTime(d: Date, minutes: number): string {
 }
 
 /** UTC DTSTAMP（ICS 规范要求 UTC） */
+/** 时区在给定时刻的 UTC 偏移（分钟，东正西负） */
+function tzOffsetMinutes(timeZone: string | undefined, at: Date): number {
+  if (!timeZone) return -at.getTimezoneOffset()
+  try {
+    const parts = new Intl.DateTimeFormat('en-US', {
+      timeZone,
+      hour12: false,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+    }).formatToParts(at)
+    const get = (t: string): number => Number(parts.find((p) => p.type === t)?.value ?? 0)
+    const asUTC = Date.UTC(get('year'), get('month') - 1, get('day'), get('hour'), get('minute'), get('second'))
+    return Math.round((asUTC - at.getTime()) / 60_000)
+  } catch {
+    return -at.getTimezoneOffset()
+  }
+}
+
+/** 本地墙钟 → UTC（DST 用两轮偏移校正） */
+function wallToUtc(day: Date, minutes: number, timeZone: string | undefined): Date {
+  const y = day.getFullYear()
+  const mo = day.getMonth()
+  const d = day.getDate()
+  if (!timeZone) return new Date(y, mo, d, 0, minutes)
+  // 墙钟以 UTC 字段构造，再按目标时区偏移换算（避免宿主本地时区二次偏移）
+  const wallAsUtc = Date.UTC(y, mo, d, 0, minutes)
+  let utc = new Date(wallAsUtc - tzOffsetMinutes(timeZone, new Date(wallAsUtc)) * 60_000)
+  utc = new Date(wallAsUtc - tzOffsetMinutes(timeZone, utc) * 60_000)
+  return utc
+}
+
+function icsUtcStamp(d: Date): string {
+  return (
+    `${d.getUTCFullYear()}${pad2(d.getUTCMonth() + 1)}${pad2(d.getUTCDate())}` +
+    `T${pad2(d.getUTCHours())}${pad2(d.getUTCMinutes())}${pad2(d.getUTCSeconds())}Z`
+  )
+}
+
 function icsStamp(d: Date): string {
   return (
     `${d.getUTCFullYear()}${pad2(d.getUTCMonth() + 1)}${pad2(d.getUTCDate())}` +
@@ -757,6 +836,8 @@ function foldIcsLine(line: string): string {
  */
 export function eventsToIcs(events: SchedulerEvent[], options: IcsExportOptions = {}): string {
   const stamp = icsStamp(options.now ?? new Date())
+  const timeMode = options.timeMode ?? 'floating'
+  const tz = timeMode === 'tzid' ? options.timezone : undefined
   const lines: string[] = [
     'BEGIN:VCALENDAR',
     'VERSION:2.0',
@@ -764,36 +845,91 @@ export function eventsToIcs(events: SchedulerEvent[], options: IcsExportOptions 
     'CALSCALE:GREGORIAN',
     'METHOD:PUBLISH',
   ]
-  if (options.calendarName) lines.push(`X-WR-CALNAME:${icsEscape(options.calendarName)}`)
+  if (options.calendarName) lines.push('X-WR-CALNAME:' + icsEscape(options.calendarName))
+  // TZID 模式：固定偏移 VTIMEZONE（标准/夏令时各一条近似观察项；跨 DST 精确转换请用 utc）
+  if (tz) {
+    const jan = tzOffsetMinutes(tz, new Date(2026, 0, 1))
+    const jul = tzOffsetMinutes(tz, new Date(2026, 6, 1))
+    const off = (m: number): string => {
+      const sign = m >= 0 ? '+' : '-'
+      const a = Math.abs(m)
+      return sign + pad2(Math.floor(a / 60)) + pad2(a % 60)
+    }
+    lines.push('BEGIN:VTIMEZONE', 'TZID:' + tz, 'X-LIC-LOCATION:' + tz)
+    lines.push(
+      'BEGIN:STANDARD',
+      'DTSTART:19700101T000000',
+      'TZOFFSETFROM:' + off(jan),
+      'TZOFFSETTO:' + off(jan),
+      'TZNAME:STD',
+      'END:STANDARD',
+    )
+    if (jul !== jan) {
+      lines.push(
+        'BEGIN:DAYLIGHT',
+        'DTSTART:19700601T000000',
+        'TZOFFSETFROM:' + off(jan),
+        'TZOFFSETTO:' + off(jul),
+        'TZNAME:DST',
+        'END:DAYLIGHT',
+      )
+    }
+    lines.push('END:VTIMEZONE')
+  }
   events.forEach((ev, index) => {
     if (!ev || typeof ev.date !== 'string' || !ev.title) return
     const day = parseISODate(ev.date)
     if (!day) return
-    const id = String(ev.id ?? `oas-${index}-${icsDate(day)}`).replace(/[\r\n]/g, '')
+    const id = String(ev.id ?? 'oas-' + index + '-' + icsDate(day)).replace(/[\r\n]/g, '')
     const startMin = parseTime(ev.start)
     const allDay = startMin === null
-    const start = allDay ? icsDate(day) : icsDateTime(day, startMin)
     const endMinRaw = parseTime(ev.end)
     const timedEnd = startMin === null ? null : Math.max(endMinRaw ?? startMin + 60, startMin + 15)
-    const nextDay = new Date(day.getFullYear(), day.getMonth(), day.getDate() + 1)
-    lines.push('BEGIN:VEVENT')
-    lines.push(`UID:${id}@oas-ui`)
-    lines.push(`DTSTAMP:${stamp}`)
+    const endDate = ev.endDate ? parseISODate(ev.endDate) : null
+    const nextDay = endDate
+      ? new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate() + 1)
+      : new Date(day.getFullYear(), day.getMonth(), day.getDate() + 1)
+    const start = allDay ? icsDate(day) : icsDateTime(day, startMin)
+    const end = allDay ? icsDate(nextDay) : icsDateTime(day, timedEnd!)
+    let dtStart: string
+    let dtEnd: string
     if (allDay) {
-      lines.push(`DTSTART;VALUE=DATE:${start}`)
-      lines.push(`DTEND;VALUE=DATE:${icsDate(nextDay)}`)
+      dtStart = 'DTSTART;VALUE=DATE:' + start
+      dtEnd = 'DTEND;VALUE=DATE:' + end
+    } else if (timeMode === 'utc') {
+      dtStart = 'DTSTART:' + icsUtcStamp(wallToUtc(day, startMin!, options.timezone))
+      const endDay = new Date(day.getFullYear(), day.getMonth(), day.getDate() + Math.floor(timedEnd! / 1440))
+      dtEnd = 'DTEND:' + icsUtcStamp(wallToUtc(endDay, timedEnd! % 1440, options.timezone))
+    } else if (timeMode === 'tzid' && tz) {
+      dtStart = 'DTSTART;TZID=' + tz + ':' + start
+      dtEnd = 'DTEND;TZID=' + tz + ':' + end
     } else {
-      lines.push(`DTSTART:${start}`)
-      lines.push(`DTEND:${icsDateTime(day, timedEnd!)}`)
+      dtStart = 'DTSTART:' + start
+      dtEnd = 'DTEND:' + end
     }
-    lines.push(`SUMMARY:${icsEscape(ev.title)}`)
+    lines.push('BEGIN:VEVENT')
+    lines.push('UID:' + id + '@oas-ui')
+    lines.push('DTSTAMP:' + stamp)
+    lines.push(dtStart, dtEnd)
+    lines.push('SUMMARY:' + icsEscape(ev.title))
     if (ev.repeat) {
-      let rule = `FREQ=${ev.repeat.freq.toUpperCase()}`
+      let rule = 'FREQ=' + ev.repeat.freq.toUpperCase()
       const interval = Math.max(1, Math.floor(ev.repeat.interval ?? 1))
-      if (interval > 1) rule += `;INTERVAL=${interval}`
+      if (interval > 1) rule += ';INTERVAL=' + interval
+      if (ev.repeat.count) rule += ';COUNT=' + Math.floor(ev.repeat.count)
+      const byDay = ev.repeat.byDay
+      if (ev.repeat.freq === 'weekly' && byDay?.length) {
+        const names = ['SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA']
+        rule += ';BYDAY=' + byDay.map((d) => names[d]).join(',')
+      }
       const until = ev.repeat.until ? parseISODate(ev.repeat.until) : null
-      if (until) rule += allDay ? `;UNTIL=${icsDate(until)}` : `;UNTIL=${icsDate(until)}T235959`
-      lines.push(`RRULE:${rule}`)
+      if (until) {
+        if (allDay) rule += ';UNTIL=' + icsDate(until)
+        else if (timeMode === 'utc')
+          rule += ';UNTIL=' + icsUtcStamp(new Date(until.getFullYear(), until.getMonth(), until.getDate(), 23, 59))
+        else rule += ';UNTIL=' + icsDate(until) + 'T235959'
+      }
+      lines.push('RRULE:' + rule)
     }
     lines.push('END:VEVENT')
   })
@@ -850,6 +986,8 @@ export class OASScheduler extends OASElement {
   private windowReason: WindowRequestReason = 'init'
   private initialWindowAnchored = false
   private printAll = false
+  private warnedWindowConfig = false
+  private warnedWindowOverflow = false
   private lastPageAnchor = ''
   private lastTz = ''
   private anchorInit = false
@@ -921,6 +1059,23 @@ export class OASScheduler extends OASElement {
   /** 导出当前事件的 ICS 字符串（纯函数 eventsToIcs 的实例便捷通道；不触发重渲染） */
   exportIcs(options?: IcsExportOptions): string {
     return eventsToIcs(this._events, options)
+  }
+
+  /** 下载当前事件的 ICS 文件（浏览器环境；返回生成的 ICS 字符串便于测试/宿主复用） */
+  downloadIcs(filename = 'oas-events.ics', options?: IcsExportOptions): string {
+    const ics = this.exportIcs(options)
+    if (typeof document !== 'undefined' && typeof URL !== 'undefined' && typeof Blob !== 'undefined') {
+      const url = URL.createObjectURL(new Blob([ics], { type: 'text/calendar;charset=utf-8' }))
+      const a = document.createElement('a')
+      a.href = url
+      a.download = filename
+      a.rel = 'noopener'
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      setTimeout(() => URL.revokeObjectURL(url), 0)
+    }
+    return ics
   }
 
   /** 新增事件：返回分配到的 id */
@@ -1255,6 +1410,22 @@ export class OASScheduler extends OASElement {
       this.initialWindowAnchored = false
     } else {
       this.windowReason = this.lastWindowReq ? 'data' : 'init'
+      const totalRaw = Number(this.getAttr('total', ''))
+      const startRaw = Number(this.getAttr('window-start', '0'))
+      if (
+        (!Number.isFinite(totalRaw) || totalRaw <= 0 || !Number.isFinite(startRaw) || startRaw < 0) &&
+        !this.warnedWindowConfig
+      ) {
+        this.warnedWindowConfig = true
+        devWarn('[oas-scheduler] windowed 需要合法 total（正数）与 window-start（非负数），当前配置已回落本地全量模式')
+      }
+      const overflow = this.winMode.windowStart + this._resources.length - this.winMode.total
+      if (overflow > 0 && !this.warnedWindowOverflow) {
+        this.warnedWindowOverflow = true
+        devWarn(
+          `[oas-scheduler] windowed 切片越界 ${overflow} 行（window-start + resources.length > total），越界行已裁剪`,
+        )
+      }
     }
     this.rebuildResourceIndex()
     this.scheduleReminders()
@@ -1373,10 +1544,28 @@ export class OASScheduler extends OASElement {
   }
 
   private eventsOn(iso: string): Array<SchedulerEvent & { id: string }> {
-    return this._events.filter((e) => (e.repeat ? this.isOccurrence(e, iso) : e.date === iso))
+    return this._events.filter((e) => this.eventOnDate(e, iso))
   }
 
-  /** iso 是否该重复事件的某个发生日（RRULE 子集：daily/weekly 按天数间隔、monthly 按同日） */
+  /** 事件是否在 iso 出现：repeat 走规则；无 repeat 支持 date..endDate 跨日 */
+  private eventOnDate(ev: SchedulerEvent, iso: string): boolean {
+    if (ev.repeat) return this.isOccurrence(ev, iso)
+    if (ev.endDate) return iso >= ev.date && iso <= ev.endDate
+    return ev.date === iso
+  }
+
+  /** 跨日事件在 iso 的时段：返回 null = 全天；定时事件按起止日拆成多段（首日到 24:00、末日从 00:00） */
+  private eventSegment(ev: SchedulerEvent, iso: string): { start: number; end: number } | null {
+    const s = parseTime(ev.start)
+    if (s === null) return null
+    const rawEnd = parseTime(ev.end) ?? s + 60
+    if (!ev.endDate || iso === ev.date) return { start: s, end: Math.max(rawEnd, s + 15) }
+    if (iso === ev.endDate) return { start: 0, end: Math.max(rawEnd, 15) }
+    return { start: 0, end: 1440 }
+  }
+
+  /** iso 是否该重复事件的某个发生日（RRULE 子集：daily/weekly 按天数间隔、monthly 按同日；
+   *  weekly 可带 byDay，count 限制发生次数） */
   private isOccurrence(ev: SchedulerEvent, iso: string): boolean {
     const rep = ev.repeat
     if (!rep) return false
@@ -1387,10 +1576,22 @@ export class OASScheduler extends OASElement {
     if (until && d.getTime() > until.getTime()) return false
     const interval = Math.max(rep.interval ?? 1, 1)
     const days = Math.round((d.getTime() - d0.getTime()) / 86400_000)
-    if (rep.freq === 'daily') return days % interval === 0
-    if (rep.freq === 'weekly') return days % (7 * interval) === 0
-    const monthDiff = d.getFullYear() * 12 + d.getMonth() - (d0.getFullYear() * 12 + d0.getMonth())
-    return d.getDate() === d0.getDate() && monthDiff % interval === 0
+    let ordinal: number | null = null
+    if (rep.freq === 'daily') {
+      if (days % interval !== 0) return false
+      ordinal = days / interval + 1
+    } else if (rep.freq === 'weekly') {
+      const byDay = rep.byDay?.length ? rep.byDay : [d0.getDay()]
+      if (!byDay.includes(d.getDay())) return false
+      const weekDiff = Math.floor(days / 7)
+      if (weekDiff % interval !== 0) return false
+      ordinal = Math.floor(weekDiff / interval) * byDay.length + byDay.indexOf(d.getDay()) + 1
+    } else {
+      const monthDiff = d.getFullYear() * 12 + d.getMonth() - (d0.getFullYear() * 12 + d0.getMonth())
+      if (d.getDate() !== d0.getDate() || monthDiff % interval !== 0) return false
+      ordinal = monthDiff / interval + 1
+    }
+    return rep.count === undefined || ordinal <= rep.count
   }
 
   /** 提醒调度：每个带 remind 的事件在「下一发生日的 start - remind 分钟」到点派发 oas-remind。
@@ -1579,7 +1780,7 @@ export class OASScheduler extends OASElement {
   private renderChip(ev: SchedulerEvent & { id: string }): HTMLButtonElement {
     const chip = document.createElement('button')
     chip.type = 'button'
-    chip.className = 'chip'
+    chip.className = ev.endDate ? 'chip spanning' : 'chip'
     chip.dataset.id = ev.id
     chip.textContent = ev.title
     if (ev.color) chip.style.setProperty('--chip-color', ev.color)
@@ -1688,12 +1889,11 @@ export class OASScheduler extends OASElement {
       allDay.className = 'allday'
       const timed: Array<{ ev: SchedulerEvent & { id: string }; s: number; e: number }> = []
       for (const ev of this.eventsOn(iso)) {
-        const s = parseTime(ev.start)
-        if (s === null) {
+        const seg = this.eventSegment(ev, iso)
+        if (!seg) {
           allDay.appendChild(this.renderChip(ev))
         } else {
-          const e = parseTime(ev.end) ?? s + 60
-          timed.push({ ev, s, e: Math.max(e, s + 15) })
+          timed.push({ ev, s: seg.start, e: seg.end })
         }
       }
       bandCol.appendChild(allDay)
@@ -2008,7 +2208,7 @@ export class OASScheduler extends OASElement {
     const bucket = this._eventsByResource.get(resourceId)
     if (!bucket) return []
     this._diagEventScans += bucket.length // 仅内部诊断
-    return bucket.filter((e) => (e.repeat ? this.isOccurrence(e, iso) : e.date === iso))
+    return bucket.filter((e) => this.eventOnDate(e, iso))
   }
 
   /** 单日资源视图：行 = 资源，横向 = 小时；事件按 start/end 渲染为横条，全天事件排行首 */
@@ -2100,14 +2300,13 @@ export class OASScheduler extends OASElement {
         this.clearCreatePreview()
       })
       for (const ev of this.eventsOnResource(iso, r.id)) {
-        const s = parseTime(ev.start)
-        if (s === null) {
+        const seg = this.eventSegment(ev, iso)
+        if (!seg) {
           const chip = this.renderChip(ev)
           chip.classList.add('res-allDayChip')
           lane.appendChild(chip)
         } else {
-          const en = Math.max(parseTime(ev.end) ?? s + 60, s + 15)
-          lane.appendChild(this.renderResourceBar(ev, s, en, startH, endH))
+          lane.appendChild(this.renderResourceBar(ev, seg.start, seg.end, startH, endH))
         }
       }
       if (showNow && isSameDay(day, today) && now !== null && now >= startH * 60 && now <= endH * 60) {
@@ -2125,6 +2324,13 @@ export class OASScheduler extends OASElement {
     padBottom.style.height = `${this.printAll && this.winMode.windowed ? 0 : Math.max(0, totalRows - rowBase - win.end) * rowH}px`
     body.appendChild(padBottom)
     el.appendChild(body)
+    if (rows.length === 0 && this.winMode.windowed) {
+      const empty = document.createElement('div')
+      empty.className = 'res-empty'
+      empty.setAttribute('role', 'status')
+      empty.textContent = this.t('scheduler.loading')
+      el.appendChild(empty)
+    }
     this.anchorWindowedScroll(rowBase, rowH)
     this.requestResourceWindow()
     this.restoreFocus(focusId)
@@ -2214,11 +2420,11 @@ export class OASScheduler extends OASElement {
         track.className = 'res-cell-track'
         track.style.height = `${(endH - startH) * hourH}px`
         for (const ev of this.eventsOnResource(dIso, r.id)) {
-          const s = parseTime(ev.start)
-          if (s === null) {
+          const seg = this.eventSegment(ev, dIso)
+          if (!seg) {
             const chip = document.createElement('button')
             chip.type = 'button'
-            chip.className = 'chip res-cell-allday'
+            chip.className = ev.endDate ? 'chip res-cell-allday spanning' : 'chip res-cell-allday'
             chip.dataset.id = ev.id
             chip.textContent = ev.title
             if (ev.color) chip.style.setProperty('--chip-color', ev.color)
@@ -2228,15 +2434,14 @@ export class OASScheduler extends OASElement {
             })
             cell.appendChild(chip)
           } else {
-            const en = Math.max(parseTime(ev.end) ?? s + 60, s + 15)
             const block = document.createElement('button')
             block.type = 'button'
-            block.className = 'res-ev'
+            block.className = ev.endDate ? 'res-ev spanning' : 'res-ev'
             block.dataset.id = ev.id
             block.textContent = ev.title
             if (ev.color) block.style.setProperty('--chip-color', ev.color)
-            block.style.top = `${((s - startH * 60) / 60) * hourH}px`
-            block.style.height = `${Math.max(((en - s) / 60) * hourH, 12)}px`
+            block.style.top = `${((seg.start - startH * 60) / 60) * hourH}px`
+            block.style.height = `${Math.max(((seg.end - seg.start) / 60) * hourH, 12)}px`
             block.addEventListener('click', (e) => {
               e.stopPropagation()
               this.emit('event-click', { id: ev.id, event: { ...ev } } satisfies SchedulerEventClickDetail)

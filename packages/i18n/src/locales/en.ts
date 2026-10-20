@@ -149,6 +149,7 @@ export const en: LocaleMessages = {
   'scheduler.unassigned': 'Unassigned',
   'scheduler.allDay': 'All day',
   'scheduler.noEvents': 'No events in this range',
+  'scheduler.loading': 'Loading resources…',
   // gantt（甘特图）
   'gantt.empty': 'No tasks',
   'gantt.listLabel': 'Task list',

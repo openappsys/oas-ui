@@ -1,13 +1,13 @@
 {
   "note": "感知对比度 ratchet 基线（只许降不许升）：逐页记录 <30/<45/<60 档节点数、axe 比值违规数、禁用态豁免数（exempt）与无法评分数（skipped，非纯色 fg/bg）；未登记的页必须为零。更新方式见 a11y.spec.ts 顶部说明。",
   "totals": {
-    "sampled": 32594,
+    "sampled": 32784,
     "below30": 0,
     "below45": 0,
     "below60": 0,
-    "ratio": 260,
-    "exempt": 630,
-    "skipped": 3180
+    "ratio": 266,
+    "exempt": 652,
+    "skipped": 3184
   },
   "topPairs": [],
   "pages": {
@@ -215,7 +215,7 @@
       "below30": 0,
       "below45": 0,
       "below60": 0,
-      "ratio": 1,
+      "ratio": 5,
       "exempt": 0,
       "skipped": 2
     },
@@ -521,7 +521,7 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 11
+      "skipped": 13
     },
     "gantt.html::dark": {
       "below30": 0,
@@ -529,7 +529,7 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 11
+      "skipped": 13
     },
     "gradient-text.html": {
       "below30": 0,
@@ -944,7 +944,7 @@
       "below45": 0,
       "below60": 0,
       "ratio": 0,
-      "exempt": 77,
+      "exempt": 88,
       "skipped": 7
     },
     "scheduler.html::dark": {
@@ -952,7 +952,7 @@
       "below45": 0,
       "below60": 0,
       "ratio": 0,
-      "exempt": 77,
+      "exempt": 88,
       "skipped": 7
     },
     "scroll-area.html": {
@@ -991,7 +991,7 @@
       "below30": 0,
       "below45": 0,
       "below60": 0,
-      "ratio": 7,
+      "ratio": 8,
       "exempt": 0,
       "skipped": 2
     },
@@ -1023,7 +1023,7 @@
       "below30": 0,
       "below45": 0,
       "below60": 0,
-      "ratio": 2,
+      "ratio": 3,
       "exempt": 0,
       "skipped": 1
     },

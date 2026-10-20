@@ -70,6 +70,7 @@ levelResources(resources, tasks, { scale: 'week', projectOrder: ['portal'] })
 - 未声明 `workdays` 且 `holidays` / `capacityOverrides` 为空：保持旧的「每档容量」语义；声明后按逐日容量求和。空 `holidays: []` / 空 `capacityOverrides: {}` 视为未声明，不会把旧语义切到逐日。
 - `workdays` 编号 `0=周日…6=周六`；`workdays: []` 表示每天容量 0（全部不可用）。非空但全部非法的值（字符串、越界、1..7 约定）会按未声明处理并 devWarn，避免静默变成永不排班。
 - `capacityOverrides` 优先于 `holidays`；容量可为小数，但任务按整日计数，`0.5` 日无法容纳整日任务。
+- 容量为 0 的档在负载直方图整列显示斜纹底（`--oas-resource-unavailable-bg`），即使该档没有任务；超载柱仍叠加 danger 色。
 - `reassign` 默认 `respectSkills: true`，目标资源必须拥有任务的全部 `requiredSkills`；无技能数据时不影响旧行为。
 - `projectOrder` 中靠前的项目优先；同项目内 `priority` 数值小者优先，低优先级任务先让位/改派。项目名与技能均按 trim 后比较。
 - 仍是确定性贪心，不承诺全局最优。
@@ -188,6 +189,7 @@ windowed 下的约定：负载/超载统计**仅基于已装载切片**（全量
 | `--oas-resource-load-over-bg` | `var(--oas-color-danger)` |
 | `--oas-resource-name-width` | `160px` |
 | `--oas-resource-row-height` | `36px` |
+| `--oas-resource-unavailable-bg` | `transparent` |
 
 <script setup>
 import { onMounted } from 'vue'

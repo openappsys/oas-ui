@@ -41,7 +41,7 @@ test('scheduler 浏览器回归：月/周/agenda 视图渲染与切换 + console
   await expect(repeat.locator('.day[data-date="2026-08-04"] .chip')).toContainText('每日站会')
 
   // agenda 视图：分组 + 行
-  const agenda = page.locator('[view="agenda"]')
+  const agenda = page.locator('#scheduler-agenda')
   await expect(agenda.locator('.ag-row', { hasText: '晨会' }).first()).toBeVisible()
 
   // agenda 行不被 flex 压缩：内容超 max-height 应滚动溢出而非压扁行（实抓：行被压到 13px 裁掉文本上半）
@@ -693,4 +693,28 @@ test('scheduler 月历窄容器：长标题不撑爆 7 列、末列不越界、�
   expect(r.lastRowRight, '末列不越出网格').toBeLessThanOrEqual(r.gridRight + 1)
   expect(r.chipsInCell, '芯片外框在格内').toBe(true)
   expect(r.longChipsTruncated, '长标题被省略号截断而非撑开').toBe(true)
+})
+
+test('scheduler 打印预览：agenda 取消限高 + Chromium PDF 可生成', async ({ page }) => {
+  const errors: string[] = []
+  page.on('pageerror', (e) => errors.push(e.message))
+  page.on('console', (m) => {
+    if (m.type() === 'error') errors.push(m.text())
+  })
+  await page.goto('/components/scheduler.html', { waitUntil: 'domcontentloaded' })
+  await page.waitForSelector('#scheduler-print', { timeout: 15000 })
+  await page.emulateMedia({ media: 'print' })
+  const style = await page.evaluate(() => {
+    const el = document.getElementById('scheduler-print') as HTMLElement & {
+      shadowRoot?: ShadowRoot | null
+    }
+    const agenda = el.shadowRoot?.querySelector('.agenda') as HTMLElement | null
+    const cs = agenda ? getComputedStyle(agenda) : null
+    return { maxHeight: cs?.maxHeight ?? '', overflow: cs?.overflowY ?? '' }
+  })
+  expect(style.maxHeight, 'print 下 agenda 不应再限高 640px').toBe('none')
+  expect(style.overflow, 'print 下 agenda 应可见溢出').toBe('visible')
+  const pdf = await page.pdf({ format: 'A4', printBackground: true })
+  expect(pdf.length, '打印预览应能生成 PDF').toBeGreaterThan(1000)
+  expect(errors).toEqual([])
 })

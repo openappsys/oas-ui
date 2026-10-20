@@ -92,6 +92,20 @@ await import('@oas-ui/ui/form/form-item')
 // ---------- 统计 ----------
 const ITERATIONS = 100
 const WARMUP = 5
+// 多批取 p95 中位数：单批 p95 易被一次 GC 尖峰拉高；3 批中位数保留回归信号又抑制环境抖动
+const BATCHES = 3
+
+function medianP95(runs) {
+  return [...runs].sort((a, b) => a.p95Ms - b.p95Ms)[Math.floor(runs.length / 2)]
+}
+
+/** 单批内按时间序切 3 段各取 p95，再取中位数（不增加采样次数/内存） */
+function stableStats(times) {
+  const runs = []
+  const size = Math.max(1, Math.ceil(times.length / BATCHES))
+  for (let i = 0; i < times.length; i += size) runs.push(stats(times.slice(i, i + size)))
+  return medianP95(runs)
+}
 
 function stats(arr) {
   const sorted = [...arr].sort((a, b) => a - b)
@@ -129,7 +143,7 @@ function benchFirstRender(tag, build) {
     times.push(performance.now() - t0)
     el.remove()
   }
-  return stats(times)
+  return stableStats(times)
 }
 
 /** update 增量：已连接元素上反复换属性值，计时 attributeChangedCallback → update() */
@@ -141,7 +155,7 @@ function benchUpdate(el, mutate) {
     mutate(el, i)
     times.push(performance.now() - t0)
   }
-  return stats(times)
+  return stableStats(times)
 }
 
 // ---------- 场景数据 ----------

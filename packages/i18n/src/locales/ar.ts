@@ -186,6 +186,7 @@ export const ar: LocaleMessages = {
   'scheduler.unassigned': 'غير معيَّن',
   'scheduler.allDay': 'طوال اليوم',
   'scheduler.noEvents': 'لا توجد أحداث في هذا النطاق',
+  'scheduler.loading': 'جارٍ تحميل الموارد…',
   // gantt (مخطط جانت)
   'gantt.empty': 'لا توجد مهام',
   'gantt.listLabel': 'قائمة المهام',

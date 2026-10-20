@@ -186,6 +186,7 @@ export const zhCN = {
   'scheduler.unassigned': '未分配',
   'scheduler.allDay': '全天',
   'scheduler.noEvents': '此区间无日程',
+  'scheduler.loading': '正在加载资源…',
   // gantt（甘特图）
   'gantt.empty': '暂无任务',
   'gantt.listLabel': '任务列表',

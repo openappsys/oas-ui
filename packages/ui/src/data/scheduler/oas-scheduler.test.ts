@@ -851,6 +851,19 @@ describe('OASScheduler 虚拟化（时间轴小时窗口 + 资源行窗口）', 
     expect(req!.end).toBeGreaterThanOrEqual(60)
   })
 
+  it('windowed 空切片：显示加载占位（不渲染假行）', () => {
+    const el = mount({
+      view: 'resource',
+      'page-show-date': '2026-08-10',
+      windowed: '',
+      total: '100',
+      'window-start': '40',
+      resources: '[]',
+    })
+    expect(el.shadowRoot!.querySelectorAll('.res-row').length).toBe(0)
+    expect(el.shadowRoot!.querySelector('.res-empty')?.textContent).toContain('加载')
+  })
+
   it('windowed 未分配行可用保留 id __unassigned__ 显式承接', () => {
     const el = mount({
       view: 'resource',
@@ -1437,5 +1450,79 @@ describe('scheduler ICS 导出', () => {
     const ics = el.exportIcs({ now })
     expect(ics).toContain('SUMMARY:X')
     expect(el.events).toEqual(before)
+  })
+})
+
+describe('scheduler 跨日全天 / repeat count+byDay / ICS 增强', () => {
+  it('endDate 覆盖的每一天都渲染全天芯片（月视图）', () => {
+    const el = mount({
+      'page-show-date': '2026-08-01',
+      events: JSON.stringify([{ id: 'span', date: '2026-08-10', endDate: '2026-08-12', title: '跨日' }]),
+    })
+    for (const d of ['2026-08-10', '2026-08-11', '2026-08-12']) {
+      expect(el.shadowRoot!.querySelector('.day[data-date="' + d + '"] .chip')?.textContent).toBe('跨日')
+    }
+    expect(el.shadowRoot!.querySelector('.day[data-date="2026-08-13"] .chip')).toBeNull()
+  })
+
+  it('定时跨日事件按首日/末日拆段（周视图两列各有块）', () => {
+    const el = mount({
+      view: 'week',
+      'page-show-date': '2026-08-10',
+      'start-hour': '0',
+      'end-hour': '24',
+      events: JSON.stringify([
+        { id: 'night', date: '2026-08-10', endDate: '2026-08-11', title: '夜间', start: '22:00', end: '02:00' },
+      ]),
+    })
+    expect(el.shadowRoot!.querySelectorAll('.col[data-date="2026-08-10"] .event').length).toBe(1)
+    expect(el.shadowRoot!.querySelectorAll('.col[data-date="2026-08-11"] .event').length).toBe(1)
+  })
+
+  it('weekly byDay + count：只出现指定 weekday，且不超过 count 次', () => {
+    const el = mount({
+      'page-show-date': '2026-08-01',
+      events: JSON.stringify([
+        { id: 'r', date: '2026-08-03', title: '双周', repeat: { freq: 'weekly', byDay: [1, 3], count: 4 } },
+      ]),
+    })
+    const hit = [...el.shadowRoot!.querySelectorAll<HTMLElement>('.day[data-date]')]
+      .filter((d) => d.querySelector('.chip'))
+      .map((d) => d.dataset.date)
+    expect(hit).toEqual(['2026-08-03', '2026-08-05', '2026-08-10', '2026-08-12'])
+  })
+
+  it('ICS：endDate/COUNT/BYDAY/UTC/TZID 输出', () => {
+    const now = new Date(Date.UTC(2026, 7, 1, 0, 0, 0))
+    const allDay = eventsToIcs([{ id: 's', date: '2026-08-10', endDate: '2026-08-12', title: 'Span' }], {
+      now,
+      timeMode: 'utc',
+      timezone: 'Asia/Shanghai',
+    })
+    expect(allDay).toContain('DTSTART;VALUE=DATE:20260810')
+    expect(allDay).toContain('DTEND;VALUE=DATE:20260813')
+    const recurring = eventsToIcs(
+      [
+        {
+          id: 'r',
+          date: '2026-08-03',
+          title: 'R',
+          start: '09:00',
+          end: '10:00',
+          repeat: { freq: 'weekly', byDay: [1, 3], count: 4 },
+        },
+      ],
+      { now, timeMode: 'utc', timezone: 'Asia/Shanghai' },
+    )
+    expect(recurring).toContain('DTSTART:20260803T010000Z')
+    expect(recurring).toContain('RRULE:FREQ=WEEKLY;COUNT=4;BYDAY=MO,WE')
+    const tzid = eventsToIcs([{ id: 't', date: '2026-08-03', title: 'T', start: '09:00', end: '10:00' }], {
+      now,
+      timeMode: 'tzid',
+      timezone: 'Asia/Shanghai',
+    })
+    expect(tzid).toContain('BEGIN:VTIMEZONE')
+    expect(tzid).toContain('TZID:Asia/Shanghai')
+    expect(tzid).toContain('DTSTART;TZID=Asia/Shanghai:20260803T090000')
   })
 })

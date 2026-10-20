@@ -242,7 +242,7 @@
   <oas-gantt show-baseline tasks='[{"id":"b1","name":"设计（实际晚基线 2 天）","start":"2026-03-02","end":"2026-03-06","progress":80,"baseline":{"start":"2026-03-02","end":"2026-03-04"}},{"id":"b2","name":"开发（与基线一致）","start":"2026-03-05","end":"2026-03-13","progress":40,"baseline":{"start":"2026-03-05","end":"2026-03-13"}},{"id":"b3","name":"测试（实际早基线 1 天）","start":"2026-03-16","end":"2026-03-18","progress":20,"baseline":{"start":"2026-03-16","end":"2026-03-19"}}]'></oas-gantt>
 </DemoBlock>
 
-`show-baseline`（默认关）开启后，任务带 `baseline: { start, end? }` 时在实际条下渲染一条浅色基线条；条的 `title` 标实际相对基线的差值（比基线晚/早 N 天、或「与基线一致」）。基线数据由宿主保存，组件只读不写回；基线条颜色走 `--oas-gantt-baseline-color`。`baseline.progress` 为基线进度（0-100），开启后在基线条内渲染进度覆盖层（`--oas-gantt-baseline-progress-color`）。
+`show-baseline`（默认关）开启后，任务带 `baseline: { start, end? }` 时在实际条下渲染一条浅色基线条；条的 `title` 标实际相对基线的差值（比基线晚/早 N 天、或「与基线一致」）。基线数据由宿主保存，组件只读不写回；基线条颜色走 `--oas-gantt-baseline-color`，截止虚线走 `--oas-gantt-deadline-color`。基线条还暴露 `data-start-delta` / `data-end-delta` / `data-duration-delta` / `data-progress-delta`（天/百分比），供宿主做差异面板；也可直接调用 `computeVariance(tasks)`。`baseline.progress` 为基线进度（0-100），开启后在基线条内渲染进度覆盖层（`--oas-gantt-baseline-progress-color`）。
 
 ## 截止日、浮时与基线差异（deadline / show-float / baseline.progress）
 

@@ -191,3 +191,19 @@ onMounted(() => {
     }
 })
 </script>
+
+## Multi-project Gantt tree + resource project priority
+
+Do not add a second gantt instance: create one root summary task per project (`type:"summary"`) and put project tasks under it via `children`/`parent`. Project roots, task bars, dependencies and virtualization share one tree. On the resource side, use task `project` plus `levelResources({ projectOrder })` to carry project priority into leveling.
+
+```ts
+const tasks = [
+  { id: `p-a`, name: `Project A`, type: `summary`, start: `2026-03-02`, end: `2026-03-13`, children: [
+    { id: `a1`, name: `A design`, start: `2026-03-02`, end: `2026-03-06`, project: `A` },
+  ]},
+]
+const leveled = levelResources(resources, resourceTasks, { projectOrder: [`A`, `B`] })
+```
+
+- Project roots only group/aggregate; dependencies live on leaf tasks and may cross projects.
+- Resource leveling sorts by `projectOrder`; later projects yield first and gantt project-root dates are not rewritten.

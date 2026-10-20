@@ -1014,6 +1014,13 @@ function dayIndex(s: unknown): number | null {
   return Math.round(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / DAY_MS)
 }
 
+/** 结束日索引：带时刻且恰为 00:00 时按前一日（渲染的 end 为右缘、日精度含端） */
+function endDayIndex(s: unknown): number | null {
+  const idx = dayIndex(s)
+  if (idx === null) return null
+  return typeof s === 'string' && s.length > 10 && s.slice(11, 16) === '00:00' ? idx - 1 : idx
+}
+
 /**
  * 基线差异（纯函数，日精度）：逐任务比较当前 start/end/progress 与 baseline。
  * - 无 id / 无合法 baseline.start 的任务跳过；baseline.end 缺省按单点（= start）处理。
@@ -1027,8 +1034,8 @@ export function computeVariance(tasks: GanttTask[]): GanttBaselineVariance[] {
     const curStart = dayIndex(t.start)
     const baseStart = dayIndex(t.baseline.start)
     if (curStart === null || baseStart === null) continue
-    const curEnd = dayIndex(t.end) ?? curStart
-    const baseEnd = dayIndex(t.baseline.end) ?? baseStart
+    const curEnd = endDayIndex(t.end) ?? curStart
+    const baseEnd = endDayIndex(t.baseline.end) ?? baseStart
     const baseProgress = parseProgress(t.baseline.progress)
     out.push({
       id: t.id,
@@ -3237,6 +3244,13 @@ export class OASGantt extends OASElement {
           bl.style.left = `${this.mirrorX(bx1) - (rtl ? bw : 0)}px`
           bl.style.width = `${bw}px`
           bl.title = this.baselineDeltaText(row, bEnd)
+          const variance = computeVariance([row.task])[0]
+          if (variance) {
+            bl.dataset.startDelta = String(variance.startDelta)
+            bl.dataset.endDelta = String(variance.endDelta)
+            bl.dataset.durationDelta = String(variance.durationDelta)
+            if (variance.progressDelta != null) bl.dataset.progressDelta = String(variance.progressDelta)
+          }
           if (b.progress !== undefined) {
             const bp = document.createElement('span')
             bp.className = 'baseline-progress'

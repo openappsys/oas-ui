@@ -2676,6 +2676,9 @@ describe('OASGantt 基线对比（baseline）', () => {
     expect(b.title, '与基线一致').toBe('与基线一致')
     expect(shadowOf(on).querySelector('.baseline[data-id="c"]'), '非法基线不渲染').toBeNull()
     expect(parseFloat(a.style.width)).toBeGreaterThan(0)
+    expect(a.dataset.startDelta).toBe('0')
+    expect(a.dataset.endDelta).toBe('2')
+    expect(a.dataset.durationDelta).toBe('2')
   })
 
   it('baseline start 晚于 end：自动交换（不把负工期带入差异计算）', () => {
@@ -2826,6 +2829,18 @@ describe('OASGantt 截止日 / 浮时 / 基线进度', () => {
     expect(out.map((v) => v.id)).toEqual(['a', 'b'])
     expect(out[0]).toMatchObject({ startDelta: 2, endDelta: 2, durationDelta: 0, progressDelta: 20 })
     expect(out[1]!.progressDelta).toBeNull()
+
+    const timed = computeVariance([
+      {
+        id: 'timed',
+        name: 'Timed',
+        start: '2026-03-04',
+        end: '2026-03-08 00:00',
+        baseline: { start: '2026-03-02', end: '2026-03-06' },
+      },
+    ])
+    // 00:00 结束是右缘：当前实际结束日按 03-07 计，不是 03-08
+    expect(timed[0]!.endDelta).toBe(1)
   })
 })
 
