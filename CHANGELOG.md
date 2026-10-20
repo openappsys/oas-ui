@@ -35,6 +35,7 @@
 - **`oas-gantt` 逐资源日历/班次**：新增 `resources` 属性与 `GanttTask.resources`；多资源工作日取交集、假期取并集，驱动 `auto-schedule`；`shifts: []` 表示资源无可用班次，小时级班次窗口留给宿主。
 - **`oas-prompt-input`（conversation 族）**：新增提示词输入组件——多行自增高、Enter 提交/Shift+Enter 换行、loading 发送/停止、建议项、禁用/只读/长度、prefix/actions/footer 插槽，事件 `oas-submit` / `oas-stop` / `oas-suggestion-select`。
 - **工程**：`api:scan/api:gen` 新增公开方法表（JSDoc 方法自动入 manifest/文档）；Playwright 新增 WebKit smoke 子集（8 个代表页）与 prompt-input 键盘提交交互。
+- **文档**：新增 AI 会话接入 recipe（prompt-input + message-scroller：流式、停止、失败重试），补 scheduler 原生日期窗口托管示例。
 
 ### 交互
 

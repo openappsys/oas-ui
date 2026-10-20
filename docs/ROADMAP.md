@@ -19,6 +19,7 @@
 | **gantt 逐资源日历/班次** | `resources` + `GanttTask.resources`；工作日交集/假期并集驱动 auto-schedule | 🚧 待发布 |
 | **conversation prompt-input** | 新组件：多行自增高、提交/停止、建议项、附件/操作/页脚插槽 | 🚧 待发布 |
 | **scheduler 日期窗口托管协议** | `range-start` / `range-end` + `oas-range-request`，按视图可见范围请求 | 🚧 待发布 |
+| **AI 会话接入 recipe** | prompt-input + message-scroller 流式/停止/失败重试示例 | 🚧 待发布 |
 | **API methods 扫描 + WebKit 抽样** | `api:scan/api:gen` 输出方法表；WebKit smoke 子集纳入 e2e | 🚧 待发布 |
 
 ## 版本规划

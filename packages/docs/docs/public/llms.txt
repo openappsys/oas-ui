@@ -17,6 +17,7 @@
 ## 指南
 
 - [无障碍（A11y）](https://oas-ui.dev/guide/accessibility): OAS-UI 以 WCAG 2.1 AA 为目标，并有持续的 axe 自动化审计。
+- [AI 会话接入](https://oas-ui.dev/guide/ai-chat): 一条最小可运行的 AI 会话链路：oas-prompt-input 负责输入与停止，oas-message-scroller 负责消息列表与自动跟随，oas-message-row / oas-bubble 负责消息呈现。
 - [集成 FAQ](https://oas-ui.dev/guide/faq): 来自真实项目集成的常见问题与陷阱。
 - [框架接入（React / Vue / Next / Nuxt）](https://oas-ui.dev/guide/frameworks): OAS-UI 是 Web Components 组件库，不需要官方 wrapper 也能直接用。
 - [磨砂玻璃画廊](https://oas-ui.dev/guide/glass): 半透明 surface + backdrop 模糊 + 高光折光边的材质层（不依赖浏览器专属滤镜，Chromium / Firefox 同构；动态流动感由可选运行时 glass-fluid.js 提供——指针镜面高光 + 按压收紧，详见本页「动态流动感」）。
