@@ -1644,7 +1644,10 @@ test('table 子元素通道 + 列内模板 + 真实列宽拖拽：不崩表（�
   expect(r.tplAlive, '模板渲染不丢').toBe('张三')
   expect(r.columnsAttr, '含模板的列定义不回写 columns attribute').toBeNull()
   // 宽度落到声明源：值为拖拽结果（table-layout auto 下 th 实际宽 ≠ 声明的 120，断言机制而非绝对值）
-  expect(r.childWidth, '宽度落到声明源（子元素 width attribute）').toMatch(/^\d+px$/)
+  // Firefox 会把实际布局宽度回写成小数（如 340.117px）；断言数值有效且确实更新，
+  // 不用整数正则误判合法子像素宽度。
+  const childWidth = Number.parseFloat(r.childWidth ?? '')
+  expect(Number.isFinite(childWidth) && childWidth > 0, '宽度落到声明源（子元素 width attribute）').toBe(true)
   expect(r.childWidth, '宽度随拖拽更新（不再是初始 120px）').not.toBe('120px')
 })
 

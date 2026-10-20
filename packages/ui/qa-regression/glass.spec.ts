@@ -884,7 +884,10 @@ test.describe('玻璃材质与动态高光（跨浏览器一致）', () => {
 
   test('无 data-glass 时回落 none（opt-in 零影响）', async ({ page }) => {
     await page.goto(PAGE, { waitUntil: 'domcontentloaded' })
-    await page.waitForTimeout(500)
+    // CI 冷启动时组件升级可能晚于固定等待；等 shadow 根就绪再取内部按钮
+    await page.waitForFunction(() => document.querySelector('oas-button')?.shadowRoot != null, undefined, {
+      timeout: 15000,
+    })
     const filter = await page.evaluate(() => {
       document.documentElement.removeAttribute('data-glass')
       const inner = document.querySelector('oas-button')!.shadowRoot!.querySelector('button')!

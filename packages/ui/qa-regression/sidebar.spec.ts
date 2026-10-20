@@ -260,6 +260,12 @@ test('sidebar 折叠态树形父项点击开 flyout：面板在 rail 右侧视�
 // 无 pointerenter 处理器取消计时。真实鼠标轨迹：hover btn 打开 → 移入面板驻留 >400ms → 面板仍开。
 test('sidebar flyout hover 链路：hover 父项打开，移入面板驻留不自动关闭', async ({ page }) => {
   await page.goto('/components/sidebar.html', { waitUntil: 'domcontentloaded' })
+  // CI 冷启动/并行下组件包可能晚于 domcontentloaded 注册；先等升级完成再取 shadowRoot
+  await page.waitForFunction(
+    () => [...document.querySelectorAll('oas-sidebar')].some((s) => !!s.shadowRoot),
+    undefined,
+    { timeout: 15000 },
+  )
   await page.evaluate(() => {
     const blk = [...document.querySelectorAll('.demo-block')].find((b) => (b.textContent || '').includes('嵌套'))!
     blk.scrollIntoView({ block: 'center' })
