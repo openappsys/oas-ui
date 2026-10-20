@@ -40,6 +40,29 @@ test('scheduler 浏览器回归：月/周/agenda 视图渲染与切换 + console
   const repeat = page.locator('#scheduler-repeat')
   await expect(repeat.locator('.day[data-date="2026-08-04"] .chip')).toContainText('每日站会')
 
+  // 跨日全天：周视图渲染连续长条，不再逐日重复芯片
+  const span = page.locator('#scheduler-span')
+  await expect(span.locator('.band-span')).toHaveCount(2)
+  await expect(span.locator('.band-span', { hasText: '设计冻结' })).toBeVisible()
+  await expect(span.locator('.band-col .chip')).toHaveCount(0)
+
+  // 跨日连续条拖动：按列宽吸附平移日期并回写 events
+  const bar = span.locator('.band-span', { hasText: '设计冻结' })
+  await bar.scrollIntoViewIfNeeded()
+  const bandBox = await span.locator('.band').boundingBox()
+  const barBox = await bar.boundingBox()
+  if (!bandBox || !barBox) throw new Error('band/bar bounding box missing')
+  const colW = bandBox.width / 7
+  await page.mouse.move(barBox.x + barBox.width / 2, barBox.y + barBox.height / 2)
+  await page.mouse.down()
+  await page.mouse.move(barBox.x + barBox.width / 2 + colW, barBox.y + barBox.height / 2, { steps: 4 })
+  await page.mouse.up()
+  await expect
+    .poll(() =>
+      span.evaluate((el) => (el as unknown as { events: Array<{ date: string; endDate?: string }> }).events[0]),
+    )
+    .toMatchObject({ date: '2026-08-11', endDate: '2026-08-13' })
+
   // agenda 视图：分组 + 行
   const agenda = page.locator('#scheduler-agenda')
   await expect(agenda.locator('.ag-row', { hasText: '晨会' }).first()).toBeVisible()

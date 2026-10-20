@@ -24,6 +24,9 @@
 - **`oas-gantt` 截止日 / 浮时 / 基线差异**：`GanttTask.deadline` 超期并入 `.conflict` 并渲染 `.deadline` 标记；`show-float` 显示总浮时（LF − EF）与自由浮时（最近后继允许的延后量），同步 `data-total-float` / `data-free-float`；`baseline.progress` 渲染基线进度覆盖层；新增纯函数 `computeVariance(tasks)` 输出 start/end/duration/progress 差值。
 
 - **`oas-scheduler` 服务端资源行窗口 / 宿主展开重复 / 打印**：resource / resource-week 支持 `windowed` + `total` + `window-start` 与 `oas-window-request`（绝对行号、半开区间）；windowed 下不自动追加「未分配」行。宿主展开 occurrence 时须从基础事件剥离 `repeat`（组件保留切片内本地展开）；提供保留 id `__unassigned__` 显式承接未分配事件。新增 `@media print`（隐藏工具栏、取消滚动限高含 agenda）与 `beforeprint` 打印已装载切片 / `afterprint` 恢复窗口。新增 `eventsToIcs()` / `el.exportIcs()`：全天/浮动本地时间、RRULE 子集、RFC 5545 转义与 75 字节折行。
+- **`oas-scheduler` 跨日全天连续条与重复/ICS 增强**：周视图 `endDate` 全天事件在顶部全天带渲染一条连续长条（不再逐日重复芯片），支持按住长条横向拖动并按列宽吸附平移 `date` / `endDate`；定时跨日事件仍按日拆段。`repeat` 新增 `byMonth` / `byMonthDay` / `bySetPos` / `exDates`，本地 occurrence 过滤与 ICS `RRULE` / `EXDATE` 同步；ICS 新增 `VALARM`（`remind`）、`X-OAS-COLOR`（`color`）与 `rangeStart` / `rangeEnd` 导出过滤。
+- **`oas-gantt` 项目分组与偏差徽标**：`GanttTask.project` + `group-by-project` 按项目自动生成合成根摘要（`__oas_project__:<project>`），原任务数组不变；`show-variance` 在行名后渲染 `Δ±Nd` 徽标并暴露 data 差值，正值标红、负值标绿；`GanttTask.deadlines` 支持多个截止日（与 `deadline` 合并去重，每个日期一个标记，任一超期标 conflict）。
+- **资源利用率与日历交换工具**：导出 `computeUtilization(resources, tasks, options)`（day/week/month 汇总，容量按 workdays/holidays/capacityOverrides 计）、`suggestAssignments(task, resources, tasks)`（技能缺口优先、再看利用率）、`buildSkillMatrix(resources)`（技能并集 + 资源具备矩阵）、`exportResourceCalendars` / `importResourceCalendars`（版本化 JSON，导入清洗非法值）。
 
 ### 交互
 

@@ -132,6 +132,28 @@ Conventions in windowed mode: load/overload stats cover **the loaded slice only*
 
 > For the full host recipe (segment fetch, abort in-flight, merge by id, atomic refill) and a runnable example, see [Server-side windowed data](/en/guide/windowed-data).
 
+## Utilization, assignment suggestions, and calendar exchange
+
+```ts
+import { computeUtilization, suggestAssignments, buildSkillMatrix, exportResourceCalendars, importResourceCalendars } from '@oas-ui/ui'
+
+// Defaults to per-day buckets; supports week / month. Capacity is summed per day from workdays/holidays/capacityOverrides.
+const report = computeUtilization(resources, tasks, { scale: 'week', rangeStart: '2026-08-01', rangeEnd: '2026-08-31' })
+// report.resources[0] -> { resourceId, name, load, capacity, utilization, periods }
+
+// Skill gaps first, then utilization/capacity. Read-only.
+const suggestions = suggestAssignments(task, resources, tasks)
+
+// Skill union plus per-resource ownership (skills sorted alphabetically).
+const matrix = buildSkillMatrix(resources)
+
+// Versioned JSON exchange; import sanitizes invalid dates, negative capacity, and empty skills.
+const json = exportResourceCalendars(resources)
+const file = importResourceCalendars(json)
+```
+
+`computeUtilization` uses the same load rule as the component (a task intersecting a day adds 1 for each assigned resource); without calendar fields, `capacity` is the per-day base. `suggestAssignments` returns candidates sorted by ascending `score`, with resources that have `missingSkills` pushed back. `buildSkillMatrix` only aggregates skills and does not infer levels or proficiency. `importResourceCalendars` throws on invalid JSON/version, so hosts should `try/catch` and show a message.
+
 ## API
 
 ### oas-resource

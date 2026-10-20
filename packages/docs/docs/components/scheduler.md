@@ -31,6 +31,13 @@
 </DemoBlock>
 
 `repeat` 按 `freq` × `interval` 从 `date` 起展开（daily 按天数间隔、weekly 按周、monthly 按同日），`until` 截止（含当日）；`el.events` 仍只读原始条目（展开只发生在渲染层）。
+月/周规则还可加 `byMonth`（1-12）、`byMonthDay`（1-31）、`bySetPos`（如 `-1`）、`byDay`（weekly，0=周日…6=周六）与 `exDates`（排除日期，`YYYY-MM-DD`）。本地 occurrence 过滤支持 `byMonth` / `byMonthDay` / `byDay` / `exDates`，以及「monthly + byMonthDay + bySetPos」组合；其他 `bySetPos` 场景原样写入 ICS `RRULE`。
+
+<DemoBlock title="跨日全天条（周视图连续长条，可整体拖动平移）">
+  <oas-scheduler id="scheduler-span" view="week" page-show-date="2026-08-10" events='[{"date":"2026-08-10","endDate":"2026-08-12","title":"设计冻结"},{"date":"2026-08-13","endDate":"2026-08-14","title":"回归窗口","color":"#059669"}]'></oas-scheduler>
+</DemoBlock>
+
+跨日全天事件在周视图的顶部全天带渲染为一条连续长条（不再逐日重复芯片）；按住长条横向拖动可按列宽吸附平移日期，回写 `date` / `endDate` 并派发 `oas-events-change`。定时跨日事件仍按日拆段，避免跨列时间轴错位。
 
 <DemoBlock title="提醒（remind 分钟，到点派发 oas-remind）">
   <oas-scheduler id="scheduler-remind" page-show-date="2026-08-10"></oas-scheduler>
@@ -126,6 +133,11 @@ onMounted(async () => {
     })
   }
 
+  const ics = document.getElementById('scheduler-ics')
+  document.getElementById('scheduler-ics-download')?.addEventListener('oas-click', () => {
+    if (ics) ics.downloadIcs('oas-calendar.ics', { timeMode: 'utc', timezone: 'Asia/Shanghai' })
+  })
+
   const click = document.getElementById('scheduler-click')
   const cout = document.getElementById('scheduler-click-output')
   if (click) {
@@ -210,6 +222,11 @@ onMounted(async () => {
 
 ## ICS 导出
 
+<DemoBlock title="下载当前事件为 .ics（UTC + Asia/Shanghai）">
+  <oas-button id="scheduler-ics-download" size="small">下载 .ics</oas-button>
+  <oas-scheduler id="scheduler-ics" view="week" page-show-date="2026-08-10" events='[{"date":"2026-08-10","title":"晨会","start":"09:00","end":"10:00"},{"date":"2026-08-11","endDate":"2026-08-12","title":"设计冻结"}]'></oas-scheduler>
+</DemoBlock>
+
 ```ts
 import { eventsToIcs } from '@oas-ui/ui'
 
@@ -220,7 +237,8 @@ el.downloadIcs('my.ics', { timeMode: 'utc', timezone: 'Asia/Shanghai' })
 
 - 无 `start` 的事件导出为全天事件（`DTSTART/DTEND;VALUE=DATE`，结束为次日；`endDate` 支持跨日全天）。
 - `timeMode`：`floating`（默认，浮动本地时间）/ `utc`（按 `timezone` 转 UTC，带 `Z`）/ `tzid`（`TZID` + 固定偏移 `VTIMEZONE`，跨 DST 精确转换建议用 `utc`）。
-- `repeat` 映射为 `RRULE:FREQ/INTERVAL/COUNT/BYDAY/UNTIL`（`until` 含当日）。
+- `repeat` 映射为 `RRULE:FREQ/INTERVAL/COUNT/BYDAY/BYMONTH/BYMONTHDAY/BYSETPOS/UNTIL`（`until` 含当日），`exDates` 输出 `EXDATE;VALUE=DATE`；`remind` 输出 `VALARM`，`color` 输出 `X-OAS-COLOR`。
+- `eventsToIcs(events, { rangeStart, rangeEnd })` 只导出与区间相交的事件；`el.exportIcs(options)` / `el.downloadIcs(filename, options)` 透传同名字段。
 - 文本按 RFC 5545 转义，输出 CRLF 与 75 字节折行；非法日期事件跳过。`now` 选项可固定 `DTSTAMP`。
 
 ## API

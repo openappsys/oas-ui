@@ -110,9 +110,40 @@ const STYLE = `
   border-bottom: 1px solid var(--oas-color-border);
 }
 .band {
+  position: relative;
   display: grid;
   grid-auto-flow: column;
   grid-auto-columns: 1fr;
+}
+.band-span-layer {
+  position: absolute;
+  inset-block-start: 26px;
+  inset-inline: 0;
+  height: 20px;
+  pointer-events: none;
+  z-index: 2;
+}
+.band-span {
+  position: absolute;
+  height: 20px;
+  border: 0;
+  border-radius: var(--oas-radius-sm);
+  background: color-mix(in srgb, var(--chip-color, var(--oas-color-primary)) 22%, var(--oas-color-bg));
+  color: var(--oas-color-text-primary);
+  font: inherit;
+  font-size: var(--oas-font-size-xs);
+  padding-inline: var(--oas-space-1);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: start;
+  pointer-events: auto;
+  cursor: grab;
+}
+.band-span.dragging {
+  cursor: grabbing;
+  opacity: 0.85;
+  z-index: 3;
 }
 .band-col {
   border-inline-end: 1px solid var(--oas-color-border);
@@ -590,6 +621,14 @@ export interface SchedulerRepeat {
   count?: number
   /** weekly 的多 weekday（0=周日…6=周六）；缺省沿用 date 的 weekday */
   byDay?: number[]
+  /** 限定月份（1-12） */
+  byMonth?: number[]
+  /** 限定月内日（1-31） */
+  byMonthDay?: number[]
+  /** BYSETPOS（如 -1 = 最后一个；月度 + byMonthDay 组合本地生效，其余频率写入 ICS） */
+  bySetPos?: number
+  /** 排除日期（YYYY-MM-DD，含端；EXDATE） */
+  exDates?: string[]
 }
 
 /** remind 事件载荷 */
@@ -639,6 +678,9 @@ export interface IcsExportOptions {
   timeMode?: 'floating' | 'utc' | 'tzid'
   /** IANA 时区（timeMode=utc/tzid 时用于换算；缺省系统本地时区） */
   timezone?: string
+  /** 仅导出与 [rangeStart, rangeEnd] 相交的事件（YYYY-MM-DD） */
+  rangeStart?: string
+  rangeEnd?: string
 }
 
 /** 资源（资源视图的行） */
@@ -706,6 +748,36 @@ function sanitizeEvents(v: unknown): SchedulerEvent[] {
             ),
           ]
           if (days.length) rep.byDay = days
+        }
+        if (Array.isArray(r.byMonth)) {
+          const months = [
+            ...new Set(
+              r.byMonth.filter((n): n is number => typeof n === 'number' && Number.isInteger(n) && n >= 1 && n <= 12),
+            ),
+          ]
+          if (months.length) rep.byMonth = months
+        }
+        if (Array.isArray(r.byMonthDay)) {
+          const mdays = [
+            ...new Set(
+              r.byMonthDay.filter(
+                (n): n is number => typeof n === 'number' && Number.isInteger(n) && n >= 1 && n <= 31,
+              ),
+            ),
+          ]
+          if (mdays.length) rep.byMonthDay = mdays
+        }
+        if (typeof r.bySetPos === 'number' && Number.isInteger(r.bySetPos) && r.bySetPos !== 0)
+          rep.bySetPos = r.bySetPos
+        if (Array.isArray(r.exDates)) {
+          const ex = [
+            ...new Set(
+              r.exDates
+                .filter((x): x is string => typeof x === 'string' && !!parseISODate(x))
+                .map((x) => toISODate(parseISODate(x)!)),
+            ),
+          ]
+          if (ex.length) rep.exDates = ex
         }
         ev.repeat = rep
       }
@@ -880,6 +952,8 @@ export function eventsToIcs(events: SchedulerEvent[], options: IcsExportOptions 
     if (!ev || typeof ev.date !== 'string' || !ev.title) return
     const day = parseISODate(ev.date)
     if (!day) return
+    if (options.rangeStart && (ev.endDate ?? ev.date) < options.rangeStart) return
+    if (options.rangeEnd && ev.date > options.rangeEnd) return
     const id = String(ev.id ?? 'oas-' + index + '-' + icsDate(day)).replace(/[\r\n]/g, '')
     const startMin = parseTime(ev.start)
     const allDay = startMin === null
@@ -922,6 +996,9 @@ export function eventsToIcs(events: SchedulerEvent[], options: IcsExportOptions 
         const names = ['SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA']
         rule += ';BYDAY=' + byDay.map((d) => names[d]).join(',')
       }
+      if (ev.repeat.byMonth?.length) rule += ';BYMONTH=' + ev.repeat.byMonth.join(',')
+      if (ev.repeat.byMonthDay?.length) rule += ';BYMONTHDAY=' + ev.repeat.byMonthDay.join(',')
+      if (ev.repeat.bySetPos) rule += ';BYSETPOS=' + ev.repeat.bySetPos
       const until = ev.repeat.until ? parseISODate(ev.repeat.until) : null
       if (until) {
         if (allDay) rule += ';UNTIL=' + icsDate(until)
@@ -930,6 +1007,19 @@ export function eventsToIcs(events: SchedulerEvent[], options: IcsExportOptions 
         else rule += ';UNTIL=' + icsDate(until) + 'T235959'
       }
       lines.push('RRULE:' + rule)
+      if (ev.repeat.exDates?.length) {
+        lines.push('EXDATE;VALUE=DATE:' + ev.repeat.exDates.map((x) => x.replaceAll('-', '')).join(','))
+      }
+    }
+    if (ev.color) lines.push('X-OAS-COLOR:' + icsEscape(ev.color))
+    if (ev.remind !== undefined && ev.remind >= 0) {
+      lines.push(
+        'BEGIN:VALARM',
+        'ACTION:DISPLAY',
+        `TRIGGER:-PT${Math.floor(ev.remind)}M`,
+        'DESCRIPTION:' + icsEscape(ev.title),
+        'END:VALARM',
+      )
     }
     lines.push('END:VEVENT')
   })
@@ -1574,6 +1664,8 @@ export class OASScheduler extends OASElement {
     if (!d0 || !d || d.getTime() < d0.getTime()) return false
     const until = rep.until ? parseISODate(rep.until) : null
     if (until && d.getTime() > until.getTime()) return false
+    if (rep.exDates?.includes(iso)) return false
+    if (rep.byMonth?.length && !rep.byMonth.includes(d.getMonth() + 1)) return false
     const interval = Math.max(rep.interval ?? 1, 1)
     const days = Math.round((d.getTime() - d0.getTime()) / 86400_000)
     let ordinal: number | null = null
@@ -1588,7 +1680,16 @@ export class OASScheduler extends OASElement {
       ordinal = Math.floor(weekDiff / interval) * byDay.length + byDay.indexOf(d.getDay()) + 1
     } else {
       const monthDiff = d.getFullYear() * 12 + d.getMonth() - (d0.getFullYear() * 12 + d0.getMonth())
-      if (d.getDate() !== d0.getDate() || monthDiff % interval !== 0) return false
+      let dayOk = rep.byMonthDay?.length ? rep.byMonthDay.includes(d.getDate()) : d.getDate() === d0.getDate()
+      if (dayOk && rep.bySetPos && rep.byMonthDay?.length) {
+        const candidates = rep.byMonthDay
+          .map((day) => new Date(d.getFullYear(), d.getMonth(), day))
+          .filter((candidate) => candidate.getMonth() === d.getMonth())
+          .sort((a, b) => a.getDate() - b.getDate())
+        const index = rep.bySetPos > 0 ? rep.bySetPos - 1 : candidates.length + rep.bySetPos
+        dayOk = candidates[index]?.getDate() === d.getDate()
+      }
+      if (!dayOk || monthDiff % interval !== 0) return false
       ordinal = monthDiff / interval + 1
     }
     return rep.count === undefined || ordinal <= rep.count
@@ -1891,7 +1992,8 @@ export class OASScheduler extends OASElement {
       for (const ev of this.eventsOn(iso)) {
         const seg = this.eventSegment(ev, iso)
         if (!seg) {
-          allDay.appendChild(this.renderChip(ev))
+          // 跨日全天事件改由 band 上的连续长条统一渲染（不再逐日重复芯片）
+          if (!ev.endDate) allDay.appendChild(this.renderChip(ev))
         } else {
           timed.push({ ev, s: seg.start, e: seg.end })
         }
@@ -1949,6 +2051,71 @@ export class OASScheduler extends OASElement {
       col.appendChild(track)
       cols.appendChild(col)
     }
+    // 跨日全天事件：在 band 上画一条连续长条（替代逐日芯片）
+    const spanLayer = document.createElement('div')
+    spanLayer.className = 'band-span-layer'
+    const firstIso = toISODate(days[0]!)
+    const lastIso = toISODate(days[days.length - 1]!)
+    for (const ev of this._events) {
+      if (ev.start || !ev.endDate || ev.repeat) continue
+      const start = ev.date < firstIso ? firstIso : ev.date
+      const end = ev.endDate > lastIso ? lastIso : ev.endDate
+      if (start > lastIso || end < firstIso) continue
+      const startIdx = days.findIndex((d) => toISODate(d) >= start)
+      let endIdx = days.findIndex((d) => toISODate(d) > end)
+      if (endIdx < 0) endIdx = days.length
+      if (startIdx < 0 || endIdx <= startIdx) continue
+      const bar = document.createElement('button')
+      bar.type = 'button'
+      bar.className = 'band-span'
+      bar.dataset.id = ev.id
+      bar.textContent = ev.title
+      if (ev.color) bar.style.setProperty('--chip-color', ev.color)
+      bar.style.insetInlineStart = `${(startIdx / days.length) * 100}%`
+      bar.style.width = `${((endIdx - startIdx) / days.length) * 100}%`
+      bar.addEventListener('click', (e) => {
+        e.stopPropagation()
+        this.emit('event-click', { id: ev.id, event: { ...ev } } satisfies SchedulerEventClickDetail)
+      })
+      // 跨日连续条拖拽整体平移（按列宽吸附到天）
+      let dragX: number | null = null
+      let lastDelta = 0
+      bar.addEventListener('pointerdown', (e) => {
+        if (e.button !== 0) return
+        dragX = e.clientX
+        lastDelta = 0
+        bar.setPointerCapture(e.pointerId)
+        bar.classList.add('dragging')
+      })
+      bar.addEventListener('pointermove', (e) => {
+        if (dragX === null) return
+        const colW = band.clientWidth / days.length
+        if (!(colW > 0)) return
+        lastDelta = Math.round((e.clientX - dragX) / colW)
+        bar.style.transform = `translateX(${lastDelta * colW}px)`
+      })
+      const finish = (): void => {
+        if (dragX === null) return
+        dragX = null
+        bar.classList.remove('dragging')
+        bar.style.transform = ''
+        if (lastDelta !== 0) {
+          const shift = (iso: string): string => {
+            const d = parseISODate(iso)!
+            return toISODate(new Date(d.getFullYear(), d.getMonth(), d.getDate() + lastDelta))
+          }
+          this.updateEvent(ev.id, { date: shift(ev.date), endDate: shift(ev.endDate!) })
+        }
+      }
+      bar.addEventListener('pointerup', finish)
+      bar.addEventListener('pointercancel', () => {
+        dragX = null
+        bar.classList.remove('dragging')
+        bar.style.transform = ''
+      })
+      spanLayer.appendChild(bar)
+    }
+    if (spanLayer.childElementCount > 0) band.appendChild(spanLayer)
     tv.appendChild(cols)
     this.restoreFocus(focusId)
   }

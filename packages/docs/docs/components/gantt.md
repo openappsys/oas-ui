@@ -244,6 +244,22 @@
 
 `show-baseline`（默认关）开启后，任务带 `baseline: { start, end? }` 时在实际条下渲染一条浅色基线条；条的 `title` 标实际相对基线的差值（比基线晚/早 N 天、或「与基线一致」）。基线数据由宿主保存，组件只读不写回；基线条颜色走 `--oas-gantt-baseline-color`，截止虚线走 `--oas-gantt-deadline-color`。基线条还暴露 `data-start-delta` / `data-end-delta` / `data-duration-delta` / `data-progress-delta`（天/百分比），供宿主做差异面板；也可直接调用 `computeVariance(tasks)`。`baseline.progress` 为基线进度（0-100），开启后在基线条内渲染进度覆盖层（`--oas-gantt-baseline-progress-color`）。
 
+## 项目分组与偏差徽标（group-by-project / show-variance）
+
+<DemoBlock title="group-by-project：按 project 自动生成项目根摘要；show-variance：行名后显示结束日偏差">
+  <oas-gantt
+    id="gantt-project"
+    group-by-project
+    show-baseline
+    show-variance
+    height="220"
+    tasks='[{"id":"a1","name":"需求","start":"2026-03-02","end":"2026-03-06","project":"Alpha","progress":80,"baseline":{"start":"2026-03-02","end":"2026-03-04"}},{"id":"a2","name":"设计","start":"2026-03-04","end":"2026-03-10","project":"Alpha"},{"id":"b1","name":"接口","start":"2026-03-05","end":"2026-03-09","project":"Beta","progress":40,"baseline":{"start":"2026-03-05","end":"2026-03-09"}}]'
+  ></oas-gantt>
+</DemoBlock>
+
+- `GanttTask.project`：根任务的项目键。开启 `group-by-project` 后组件按首次出现顺序生成合成项目根摘要（行 id 形如 `__oas_project__:<project>`），根任务挂到对应摘要下；原任务数组不被修改。`windowed` 模式要求宿主自行展平，不做自动分组。
+- `show-variance`：任务带 `baseline` 时在行名后渲染 `.variance` 徽标（文本 `Δ±Nd`，以结束日偏差为主），并写 `data-start-delta` / `data-end-delta` / `data-duration-delta` / `data-progress-delta`；正值标红、负值标绿，完整差值在 `title` / `aria-label`。
+
 ## 截止日、浮时与基线差异（deadline / show-float / baseline.progress）
 
 <DemoBlock title="show-baseline + show-float：基线进度、总浮时/自由浮时；deadline 超期标 conflict">
@@ -256,6 +272,7 @@
 </DemoBlock>
 
 - `GanttTask.deadline`：截止日（`YYYY-MM-DD`；hour 档可带时刻）。条结束晚于截止日时加 `.conflict`，并在时间轴渲染 `.deadline` 虚线标记。
+- `GanttTask.deadlines`：多个截止日（可选）。与 `deadline` 合并去重后每个日期渲染一个 `.deadline`（`data-deadline-index` 标序号）；任一截止日被超过即标 `.conflict`。摘要行上的截止日仍忽略并 devWarn。
 - `show-float`：显示**总浮时**（LF − EF）与**自由浮时**（最近后继允许的延后量）；条上同时写入 `data-total-float` / `data-free-float`（天）。摘要不参与 CPM；windowed 模式无法在切片上得到正确依赖图，会跳过并 devWarn。
 - `baseline.progress`：基线进度 0-100；开启 `show-baseline` 后基线条内渲染 `.baseline-progress` 覆盖层。
 - 宿主可用导出的纯函数 `computeVariance(tasks)` 得到基线差异：
@@ -588,6 +605,7 @@ onMounted(async () => {
 | `dates-readonly` | 禁改期/拉伸（进度仍可拖） | `boolean` | — |
 | `expanded` | 已展开集合（JSON 数组，受控）：属性缺席缺省全展开；显式 [] 全收起；点折叠钮写回 | `string` | — |
 | `first-day-of-week` | 周起始日（0-6）；缺省按 locale 推导（week 档对齐用） | `string` | — |
+| `group-by-project` | 按任务 project 自动生成项目根摘要（行 id 为 __oas_project__:&lt;project&gt;），原任务数组不变；windowed 模式要求宿主自行展平，不做自动分组 | `string` | — |
 | `height` | 组件高度 px（默认 320；接受纯数字或 Npx）：映射到自定义属性 --oas-gantt-height。高度挂在内部画布（.gantt）上——宿主自身 height 内联只框定外盒，内部画布高度仍由 height 属性 / --oas-gantt-height 决定（不会被宿主内联 height 拉伸）；整体调高请用 height 属性或 --oas-gantt-height。height 属性在场且为合法值（>0 纯数字或 Npx）时组件接管该变量，写入宿主内联并覆盖宿主自己设置的 --oas-gantt-height；空串/空白按未设置处理；非法值不写该变量、仅清除本实例此前写入的值，宿主 token 不受影响；属性移除后组件写入的值归零清除，高度回落 token 缺省 320 或宿主 CSS，宿主原先内联设置的值不恢复；从未设置 height 属性时组件不写该变量，宿主内联或 class 规则设置的 --oas-gantt-height 完全不受影响 | `string` | `320` |
 | `holidays` | 假日列表（JSON ["YYYY-MM-DD",…]）：对应列高亮（优先于周末底色）；假日恒为非工作日（与 workdays 是否开启无关），auto-schedule 前推时跳过 | `string` | — |
 | `label-position` | 任务条标签位置：inside 条内 / right 条旁 / left 条左；缺省 none（行名列已承载名称，条旁不再重复渲染）；非法值回落 none | `string` | — |
@@ -602,9 +620,10 @@ onMounted(async () => {
 | `show-critical-path` | 关键路径（布尔，默认关）：在依赖图与工期上算总时差，时差为 0 的任务加 .critical 高亮（颜色走 --oas-gantt-critical-color）；只读展示不改数据 | `string` | — |
 | `show-float` | 显示总浮时/自由浮时（布尔，默认关）：仅在依赖图完整时计算，条上显示「总浮时/自由浮时」标签并写入 data-total-float/data-free-float（单位为天）；摘要不参与，windowed 模式跳过并 devWarn | `string` | — |
 | `show-today` | 今日线（默认开；false 关闭） | `string` | — |
+| `show-variance` | 任务带 baseline 时在行名后显示 Δ±Nd 偏差徽标，并写入 data-start-delta/data-end-delta/data-duration-delta/data-progress-delta；正值标红、负值标绿 | `string` | — |
 | `snap` | 拖拽吸附当前刻度（默认开；false 按像素比例平移并保留时间精度） | `string` | — |
 | `stripe` | 行斑马纹（布尔，默认关）：按**绝对行号**奇偶给行加底色（虚拟化/窗口化滚动稳定，不随 DOM 顺序跳变）；颜色走 `--oas-gantt-row-stripe-bg`（缺省 `--oas-color-bg-hover`）；选中/周末假日等背景覆盖条纹 | `string` | — |
-| `tasks` | 甘特任务（JSON）：[{ id?, name, start, end?, type?, progress?, parent?, children?, dependencies?, color?, disabled?, expanded?, baseline?（start/end?/progress?）, deadline?, constraint?（asap/snet/mso/fnlt）, constraintDate? }]——扁平 parent 指针为主，嵌套 children 自动拍平；type:"milestone" 显式优先（带 end 也按里程碑渲染，end 忽略），有子任务时恒为摘要；无 end 亦推导为里程碑；start 晚于 end 自动交换 | `GanttTask[]` | `[]` |
+| `tasks` | 甘特任务（JSON）：[{ id?, name, start, end?, type?, progress?, parent?, children?, dependencies?, color?, disabled?, expanded?, baseline?（start/end?/progress?）, deadline?, deadlines?, constraint?（asap/snet/mso/fnlt）, constraintDate? }]——扁平 parent 指针为主，嵌套 children 自动拍平；type:"milestone" 显式优先（带 end 也按里程碑渲染，end 忽略），有子任务时恒为摘要；无 end 亦推导为里程碑；start 晚于 end 自动交换 | `GanttTask[]` | `[]` |
 | `total` | windowed 模式下的全量行（任务）数；为 0 或非法时 windowed 不生效（回落本地模式） | `string` | — |
 | `weekends` | 周末列高亮（默认开；day/hour 档生效；false 关闭） | `string` | — |
 | `window-start` | windowed 模式下切片首行的绝对行号（相对全量） | `string` | `0` |

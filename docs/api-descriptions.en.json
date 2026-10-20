@@ -4325,7 +4325,7 @@
   },
   "oas-gantt": {
     "attrs": {
-      "tasks": "Gantt tasks (JSON): [{ id?, name, start, end?, type?, progress?, parent?, children?, dependencies?, color?, disabled?, expanded?, baseline? (start/end?/progress?), deadline?, constraint? ('asap'|'snet'|'mso'|'fnlt'), constraintDate? }] — flat parent pointers are the primary contract; nested children are flattened automatically; explicit type:\"milestone\" takes precedence (rendered as milestone even with end, which is ignored) but a task with children is always a summary; no end also infers milestone; start/end are swapped automatically when start is after end",
+      "tasks": "Gantt tasks (JSON): [{ id?, name, start, end?, type?, progress?, parent?, children?, dependencies?, color?, disabled?, expanded?, baseline? (start/end?/progress?), deadline?, deadlines?, constraint? ('asap'|'snet'|'mso'|'fnlt'), constraintDate? }] — flat parent pointers are the primary contract; nested children are flattened automatically; explicit type:\"milestone\" takes precedence (rendered as milestone even with end, which is ignored) but a task with children is always a summary; no end also infers milestone; start/end are swapped automatically when start is after end",
       "scale": "Time scale: hour / day (default) / week / month / quarter / year; invalid values fall back to day",
       "expanded": "Expanded set (JSON array, controlled): defaults to fully expanded when absent; explicit [] collapses all; written back on toggle",
       "readonly": "Whole chart read-only (no rescheduling/progress, drag handles not rendered)",
@@ -4351,7 +4351,9 @@
       "range-start": "Host-managed time-axis start (ISO date YYYY-MM-DD): when provided the axis extent is no longer derived from data; use with range-end to support windowed mode (the slice may not span the full date range)",
       "range-end": "Host-managed time-axis end (ISO date YYYY-MM-DD, inclusive); pair with range-start",
       "stripe": "Row zebra striping (boolean, off by default): tints rows by the **absolute row index** parity (stable under virtualization/windowing, no DOM-order flicker); color via `--oas-gantt-row-stripe-bg` (default `--oas-color-bg-hover`); selection/weekend backgrounds override the stripe",
-      "show-float": "Show total/free float (boolean, off by default): computed only on a complete dependency graph; the bar gets a total/free float label plus data-total-float/data-free-float in days. Summaries are excluded; windowed mode skips it with a devWarn."
+      "show-float": "Show total/free float (boolean, off by default): computed only on a complete dependency graph; the bar gets a total/free float label plus data-total-float/data-free-float in days. Summaries are excluded; windowed mode skips it with a devWarn.",
+      "group-by-project": "Group root tasks by project into synthetic summary rows (row id __oas_project__:&lt;project&gt;) without mutating the task array; windowed mode requires host-flattened rows",
+      "show-variance": "Render a Δ±Nd variance badge after the row name when a baseline exists; exposes data-start-delta/data-end-delta/data-duration-delta/data-progress-delta"
     },
     "events": {
       "oas-reschedule": "Dispatched when auto-scheduling moved successor tasks (auto-schedule on), detail: { ids } (ids of the rescheduled tasks)",

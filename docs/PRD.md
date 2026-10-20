@@ -2600,3 +2600,24 @@ group 子钮此前为宿主自填 light DOM（`slot="action"`），组件用 `::
 - **重复语义（先落地宿主展开）**：windowed 下组件仍对已装载切片内 `repeat` 做本地展开；宿主展开 occurrence 时必须从基础事件剥离 `repeat`（或不下发基础序列），每个 occurrence 用唯一 id，避免同日重复。行窗口只按资源切片，日期 occurrence 由宿主负责。ICS 导出已在本批落地。
 - **兼容**：`windowed` 缺省关，非 windowed 渲染/事件/CRUD 与旧版一致；打印仅在打印上下文改变呈现。
 - **验收**：单测覆盖 windowed 绝对行号/aria/spacer/请求去重、off-slice 空交集、beforeprint/afterprint；e2e 覆盖资源切片首屏锚定、宿主回填滚动保持与 @media print；文档 zh/en、API 说明、CHANGELOG 同步。
+
+## 未发布：scheduler 跨日连续条、重复规则扩展与 ICS 导出增强
+
+- **范围**：周视图 `endDate` 全天事件在顶部全天带渲染连续长条（替代逐日芯片），支持长条横向拖动整体平移并按列宽吸附到天；`repeat` 增加 `byMonth` / `byMonthDay` / `bySetPos` / `exDates`；`eventsToIcs()` 增加 `EXDATE` / `VALARM` / `X-OAS-COLOR` 与 `rangeStart` / `rangeEnd` 过滤。
+- **语义**：仅全天事件合成连续条；带 `start` 的跨日事件仍按日拆段，避免跨列时间轴错位。拖动落定回写 `date` / `endDate` 并派发 `oas-events-change`。`byMonth` 限定月份（1-12）、`byMonthDay` 限定日（1-31）、`bySetPos` 写入 RRULE、`exDates` 同时过滤本地 occurrence 与输出 ICS。`rangeStart` / `rangeEnd` 为含端日期，只导出与区间相交的事件。
+- **兼容**：新字段全部可选；未使用时不改变既有渲染与 ICS 输出。连续条仅周视图出现，月/日/agenda 仍按日芯片/行项展示。
+- **验收**：单测覆盖连续条、无逐日芯片、BYMONTH/BYMONTHDAY/EXDATE/remind 与 ICS 字段；e2e 覆盖新 demo 的连续条显示与 console 零告警；文档 zh/en、API 说明与 CHANGELOG 同步。
+
+## 未发布：gantt 项目自动分组与偏差徽标
+
+- **范围**：`GanttTask.project` + `group-by-project` 自动生成项目根摘要；`show-variance` 在行名后渲染基线偏差徽标；`GanttTask.deadlines` 支持多个截止日。
+- **语义**：只收拢 `parent` 为空的根任务；合成行 id 为 `__oas_project__:<project>`（冲突时追加 `#n`），仅修改展示层克隆，原任务数组不变；windowed 模式要求宿主自行展平，不做自动分组。偏差徽标以结束日差值为主，写 `data-start-delta` / `data-end-delta` / `data-duration-delta` / `data-progress-delta`，正值标红、负值标绿，完整差值进 `title` / `aria-label`。`deadlines` 与 `deadline` 合并去重，每个日期渲染一个 `.deadline`，任一超期标 `.conflict`。
+- **兼容**：两个属性均缺省关；不改变既有行序、拖拽、选择与事件。
+- **验收**：单测覆盖分组行序/原数组不变/关闭回落、偏差徽标 data 与 aria；e2e 覆盖新 demo；文档 zh/en、API 说明与 CHANGELOG 同步。
+
+## 未发布：resource 利用率、指派建议与日历交换
+
+- **范围**：新增纯函数 `computeUtilization(resources, tasks, options)`、`suggestAssignments(task, resources, tasks, options)`、`exportResourceCalendars(resources)`、`importResourceCalendars(json)` 及对应类型导出。
+- **语义**：利用率负载口径与组件一致（任务与某日相交即给每个 assigned resource 记 1），容量按 workdays/holidays/capacityOverrides 逐日求和，支持 day/week/month 汇总；未声明日历字段时 capacity 作为逐日基数。指派建议按技能缺口优先、利用率/容量次之排序；日历 JSON 版本化为 1，导入时清洗非法日期、负数容量与空技能。
+- **兼容**：纯新增导出，不改变组件属性、事件或既有 `levelResources` 行为。
+- **验收**：单测覆盖日/周/月汇总、假期/半天 override、空数据、日历往返与非法输入、建议排序；文档 zh/en 与 CHANGELOG 同步。

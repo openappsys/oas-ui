@@ -132,6 +132,28 @@ windowed 下的约定：负载/超载统计**仅基于已装载切片**（全量
 
 > 完整宿主取数配方（分段、取消在途、按 id 合并、原子回填）与可运行示例见 [服务端窗口取数](/guide/windowed-data)。
 
+## 利用率、指派建议与日历交换
+
+```ts
+import { computeUtilization, suggestAssignments, buildSkillMatrix, exportResourceCalendars, importResourceCalendars } from '@oas-ui/ui'
+
+// 利用率报告：默认按日，可切换 week / month；容量按 workdays/holidays/capacityOverrides 逐日汇总
+const report = computeUtilization(resources, tasks, { scale: 'week', rangeStart: '2026-08-01', rangeEnd: '2026-08-31' })
+// report.resources[0] -> { resourceId, name, load, capacity, utilization, periods }
+
+// 指派建议：技能缺口优先，其次利用率/容量；不修改数据
+const suggestions = suggestAssignments(task, resources, tasks)
+
+// 技能矩阵：技能并集 + 每个资源是否具备（技能按字母序）
+const matrix = buildSkillMatrix(resources)
+
+// 日历交换：JSON 版本化，导入时清洗非法日期/负数容量/未知技能
+const json = exportResourceCalendars(resources)
+const file = importResourceCalendars(json)
+```
+
+`computeUtilization` 的负载口径与组件一致（任务与某日相交即给每个 assigned resource 记 1）；未声明日历字段时 `capacity` 作为逐日基数。`suggestAssignments` 返回按 `score` 升序的候选，`missingSkills` 非空的资源排后。`buildSkillMatrix` 只汇总技能，不推断等级/熟练度。`importResourceCalendars` 对非法 JSON/版本抛错，宿主应 `try/catch` 后提示。
+
 ## API
 
 ### oas-resource

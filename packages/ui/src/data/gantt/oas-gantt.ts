@@ -267,6 +267,19 @@ svg.links .link-hit:focus-visible + .link {
   /* 任务名是数据文本：允许选中复制；行拖拽改由右侧手柄承载 */
   user-select: text;
 }
+.variance {
+  flex: none;
+  font-size: var(--oas-font-size-xs);
+  font-variant-numeric: tabular-nums;
+  color: var(--oas-color-text-secondary-strong);
+  white-space: nowrap;
+}
+.variance[data-late] {
+  color: var(--oas-color-danger);
+}
+.variance[data-early] {
+  color: var(--oas-color-success);
+}
 .toggle {
   appearance: none;
   border: none;
@@ -724,8 +737,12 @@ export interface GanttTask {
   disabled?: boolean
   /** summary 初始展开（缺省全展开，显式 false 为收起例外；expanded 属性受控优先——见 effectiveExpandedSet） */
   expanded?: boolean
+  /** 所属项目键（配合 group-by-project 自动生成项目根摘要） */
+  project?: string
   /** 截止日（'YYYY-MM-DD'；hour 档可带时刻）；结束晚于截止日时标 .conflict 并渲染截止标记 */
   deadline?: string
+  /** 多个截止日（可选；与 deadline 合并，去重并只保留合法日期） */
+  deadlines?: string[]
   /** 基线计划（对比用；由宿主保存，组件只读）：start 必填；end 缺省 = 单点；progress 为基线进度 0-100 */
   baseline?: { start: string; end?: string; progress?: number }
   [key: string]: unknown
@@ -958,7 +975,9 @@ const RESERVED_TASK_KEYS = new Set([
   'disabled',
   'expanded',
   'baseline',
+  'project',
   'deadline',
+  'deadlines',
   'constraint',
   'constraintDate',
 ])
@@ -1257,10 +1276,21 @@ function sanitizeTasks(
     if (raw.disabled === true) t.disabled = true
     if (raw.expanded === true || raw.expanded === false) t.expanded = raw.expanded
     if (raw.type === 'task' || raw.type === 'milestone' || raw.type === 'summary') t.type = raw.type
+    if (typeof raw.project === 'string' && raw.project.trim() !== '') t.project = raw.project.trim()
     const deadline = typeof raw.deadline === 'string' ? raw.deadline.trim() : ''
     if (deadline && parseTaskDate(deadline)) t.deadline = deadline
     else if (deadline) {
       onWarn?.(`deadline:${t.id}`, `[oas-gantt] 任务 "${t.id}" 的 deadline 非法，已丢弃`)
+    }
+    if (Array.isArray(raw.deadlines)) {
+      const list: string[] = []
+      for (const x of raw.deadlines) {
+        if (typeof x !== 'string') continue
+        const value = x.trim()
+        if (!value || !parseTaskDate(value) || list.includes(value)) continue
+        list.push(value)
+      }
+      if (list.length > 0) t.deadlines = list
     }
     const base = raw.baseline
     if (typeof base === 'object' && base !== null) {
@@ -1316,12 +1346,14 @@ export class OASGantt extends OASElement {
       'label-position',
       'snap',
       'show-baseline',
+      'show-variance',
       'show-float',
       'creatable',
       'auto-schedule',
       'show-critical-path',
       // 行斑马纹开关（opt-in，默认关）
       'stripe',
+      'group-by-project',
       // windowed（服务端行窗口模式）+ 宿主托管时间范围（契约见 shared/window-data.ts）
       'windowed',
       'total',
@@ -1803,6 +1835,14 @@ export class OASGantt extends OASElement {
     return this.hasAttr('show-baseline')
   }
 
+  private varianceOn(): boolean {
+    return this.hasAttr('show-variance') && this.getAttr('show-variance', '') !== 'false'
+  }
+
+  private groupByProjectOn(): boolean {
+    return this.hasAttr('group-by-project') && this.getAttr('group-by-project', '') !== 'false'
+  }
+
   private showFloatOn(): boolean {
     return this.hasAttr('show-float') && this.getAttr('show-float', '') !== 'false'
   }
@@ -2085,8 +2125,56 @@ export class OASGantt extends OASElement {
 
   // ===== 渲染模型（行树 + 摘要聚合）=====
 
+  /** 按 project 把根任务收进合成项目根（仅展示层克隆，不改原任务） */
+  private groupTasksByProject(tasks: TG[]): TG[] {
+    const groups = new Map<string, TG[]>()
+    const order: string[] = []
+    for (const t of tasks) {
+      if (t.parent || !t.project) continue
+      const list = groups.get(t.project)
+      if (list) list.push(t)
+      else {
+        groups.set(t.project, [t])
+        order.push(t.project)
+      }
+    }
+    if (order.length === 0) return tasks
+    const used = new Set(tasks.map((t) => t.id))
+    const groupRoots = new Map<string, TG>()
+    for (const project of order) {
+      let id = `__oas_project__:${project}`
+      let n = 2
+      while (used.has(id)) id = `__oas_project__:${project}#${n++}`
+      used.add(id)
+      const members = groups.get(project)!
+      let start = members[0]!.start
+      let end = members[0]!.end ?? members[0]!.start
+      for (const t of members) {
+        if (t.start < start) start = t.start
+        const e = t.end ?? t.start
+        if (e > end) end = e
+      }
+      groupRoots.set(project, { id, name: project, start, end, type: 'summary', project } as TG)
+    }
+    const out: TG[] = []
+    const emitted = new Set<string>()
+    for (const t of tasks) {
+      if (!t.parent && t.project) {
+        if (emitted.has(t.project)) continue
+        emitted.add(t.project)
+        out.push(groupRoots.get(t.project)!)
+        for (const member of groups.get(t.project)!) {
+          out.push({ ...member, parent: groupRoots.get(t.project)!.id, children: undefined })
+        }
+      } else {
+        out.push(t)
+      }
+    }
+    return out
+  }
+
   private buildRows(): void {
-    const tasks = this._tasks
+    const tasks = this.groupByProjectOn() ? this.groupTasksByProject(this._tasks) : this._tasks
     // 日期助手（windowed 扁平分支与树形分支共用）
     const startMsOf = (t: TG): number => parseTaskDate(t.start)?.getTime() ?? 0
     // 里程碑口径（全局统一）：显式 type:"milestone" 优先（带 end 也算，渲染/聚合/连线锚点一致忽略 end），
@@ -2217,7 +2305,7 @@ export class OASGantt extends OASElement {
     for (const ids of sibList.values()) ids.forEach((id, i) => posIndex.set(id, i + 1))
     const posKey = (t: TG, depth: number): string => (depth === 0 ? '' : (t.parent ?? ''))
 
-    const expanded = this.effectiveExpandedSet(childMap)
+    const expanded = this.effectiveExpandedSet(childMap, tasks)
     // 缓存：后续渲染窗口（含滚动每帧）直接复用，避免万级任务下每帧重建展开集（O(n) → O(1)）
     this.expandedSetCache = expanded
     const rows: GanttRow[] = []
@@ -2278,10 +2366,10 @@ export class OASGantt extends OASElement {
   }
 
   /** 生效展开集合：受控属性优先；未受控时缺省全展开（数据 expanded:false 为显式收起的例外） */
-  private effectiveExpandedSet(childMap: Map<string, string[]>): Set<string> {
+  private effectiveExpandedSet(childMap: Map<string, string[]>, tasks: TG[] = this._tasks): Set<string> {
     if (this.expandedSet) return this.expandedSet
     const set = new Set<string>()
-    for (const t of this._tasks) {
+    for (const t of tasks) {
       if (t.expanded !== false && (childMap.has(t.id) || t.type === 'summary')) set.add(t.id)
     }
     return set
@@ -2711,7 +2799,7 @@ export class OASGantt extends OASElement {
           `[oas-gantt] 摘要任务 "${r.task.id}" 的 constraint 已忽略（摘要日期由子级派生）`,
         )
       }
-      if (r.hasChildren && r.task.deadline) {
+      if (r.hasChildren && (r.task.deadline || (r.task.deadlines?.length ?? 0) > 0)) {
         this.warnOnce(
           `deadline-summary:${r.task.id}`,
           `[oas-gantt] 摘要任务 "${r.task.id}" 的 deadline 已忽略（摘要日期由子级派生）`,
@@ -3067,6 +3155,25 @@ export class OASGantt extends OASElement {
         }
       }
       el.appendChild(name)
+      if (this.varianceOn() && row.task.baseline) {
+        const variance = computeVariance([row.task])[0]
+        if (variance) {
+          const badge = document.createElement('span')
+          badge.className = 'variance'
+          badge.dataset.startDelta = String(variance.startDelta)
+          badge.dataset.endDelta = String(variance.endDelta)
+          badge.dataset.durationDelta = String(variance.durationDelta)
+          if (variance.progressDelta != null) badge.dataset.progressDelta = String(variance.progressDelta)
+          if (variance.endDelta > 0) badge.dataset.late = ''
+          else if (variance.endDelta < 0) badge.dataset.early = ''
+          badge.textContent = `Δ${variance.endDelta > 0 ? '+' : ''}${variance.endDelta}d`
+          const bEnd = row.task.baseline.end ?? row.task.baseline.start
+          const baseEnd = parseTaskDate(bEnd)
+          badge.title = baseEnd ? this.baselineDeltaText(row, baseEnd.getTime()) : badge.textContent
+          badge.setAttribute('aria-label', badge.title)
+          el.appendChild(badge)
+        }
+      }
       // 行内新建（creatable）：只读与任务级禁用行不出按钮
       if (this.hasAttr('creatable') && !this.hasAttr('readonly') && row.task.disabled !== true) {
         const add = document.createElement('button')
@@ -3261,22 +3368,25 @@ export class OASGantt extends OASElement {
         }
       }
       // 截止标记：横向位置 = deadline 日期，纵向贯穿行高；超出截止日的条另加 .conflict
-      if (row.task.deadline) {
-        const dlMs = parseTaskDate(row.task.deadline)?.getTime()
-        if (dlMs !== undefined) {
-          const dl = document.createElement('span')
-          dl.className = 'deadline'
-          dl.dataset.id = row.task.id
-          dl.setAttribute('part', 'deadline')
-          dl.setAttribute('role', 'img')
-          const deadlineText = this.t('gantt.deadline', { date: this.fmtDay(dlMs) })
-          dl.setAttribute('aria-label', deadlineText)
-          dl.title = deadlineText
-          dl.style.left = `${this.mirrorX(this.xOf(dlMs))}px`
-          dl.style.top = `${this.absRowTop(i)}px`
-          dl.style.height = `${rowH}px`
-          frag.appendChild(dl)
-        }
+      const deadlineValues = [
+        ...new Set([...(row.task.deadline ? [row.task.deadline] : []), ...(row.task.deadlines ?? [])]),
+      ]
+      for (let di = 0; di < deadlineValues.length; di++) {
+        const dlMs = parseTaskDate(deadlineValues[di]!)?.getTime()
+        if (dlMs === undefined) continue
+        const dl = document.createElement('span')
+        dl.className = 'deadline'
+        dl.dataset.id = row.task.id
+        dl.dataset.deadlineIndex = String(di)
+        dl.setAttribute('part', 'deadline')
+        dl.setAttribute('role', 'img')
+        const deadlineText = this.t('gantt.deadline', { date: this.fmtDay(dlMs) })
+        dl.setAttribute('aria-label', deadlineText)
+        dl.title = deadlineText
+        dl.style.left = `${this.mirrorX(this.xOf(dlMs))}px`
+        dl.style.top = `${this.absRowTop(i)}px`
+        dl.style.height = `${rowH}px`
+        frag.appendChild(dl)
       }
 
       // 连线点（拖拽建依赖）：仅非只读态渲染，悬停显现（disabled 任务可作**前置**，故仍渲染）
@@ -5289,14 +5399,20 @@ export class OASGantt extends OASElement {
   private deadlineConflictIds(): Set<string> {
     const out = new Set<string>()
     for (const t of this._tasks) {
-      if (!t.deadline) continue
-      const d = parseTaskDate(t.deadline)
-      if (!d) continue
+      const values = [...(t.deadline ? [t.deadline] : []), ...(t.deadlines ?? [])]
+      if (values.length === 0) continue
       const end = this.endMsOfTask(t)
       if (end <= 0) continue
-      const dateOnly = t.deadline.length <= 10
-      const late = dateOnly ? toISODate(new Date(end - 1)) > toISODate(new Date(d.getTime())) : end > d.getTime()
-      if (late) out.add(t.id)
+      for (const value of values) {
+        const d = parseTaskDate(value)
+        if (!d) continue
+        const dateOnly = value.length <= 10
+        const late = dateOnly ? toISODate(new Date(end - 1)) > toISODate(new Date(d.getTime())) : end > d.getTime()
+        if (late) {
+          out.add(t.id)
+          break
+        }
+      }
     }
     return out
   }

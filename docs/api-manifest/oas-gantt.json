@@ -100,6 +100,12 @@
       "observed": true
     },
     {
+      "name": "show-variance",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
       "name": "show-float",
       "type": "string",
       "default": "",
@@ -124,6 +130,12 @@
     },
     {
       "name": "stripe",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "group-by-project",
       "type": "string",
       "default": "",
       "observed": true

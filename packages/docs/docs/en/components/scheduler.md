@@ -31,6 +31,13 @@ Week/day views show a time axis (`start-hour` / `end-hour`, default 8–20): eve
 </DemoBlock>
 
 `repeat` expands occurrences from `date` by `freq` × `interval` (daily by day interval, weekly by week, monthly by same day-of-month), with `until` as the inclusive end; `el.events` still reads the raw entries (expansion happens only at render time).
+Monthly/weekly rules may also use `byMonth` (1-12), `byMonthDay` (1-31), `bySetPos` (for example `-1`), `byDay` (weekly, 0=Sunday…6=Saturday), and `exDates` (excluded dates, `YYYY-MM-DD`). Local occurrence filtering supports `byMonth` / `byMonthDay` / `byDay` / `exDates`, plus monthly `byMonthDay` + `bySetPos`; other `bySetPos` cases are emitted to ICS `RRULE` as-is.
+
+<DemoBlock title="Multi-day all-day bars (continuous in week view; drag to shift as a whole)">
+  <oas-scheduler view="week" page-show-date="2026-08-10" events='[{"date":"2026-08-10","endDate":"2026-08-12","title":"Design freeze"},{"date":"2026-08-13","endDate":"2026-08-14","title":"Regression window","color":"#059669"}]'></oas-scheduler>
+</DemoBlock>
+
+In week view, an all-day event with `endDate` renders as one continuous bar in the all-day band (instead of one chip per day). Drag the bar horizontally to shift `date` / `endDate` by whole columns; the component dispatches `oas-events-change`. Timed multi-day events are still split per day to keep the time axis aligned.
 
 <DemoBlock title="Reminders (remind minutes; oas-remind when due)">
   <oas-scheduler id="scheduler-remind" page-show-date="2026-08-10"></oas-scheduler>
@@ -126,6 +133,11 @@ onMounted(async () => {
     })
   }
 
+  const ics = document.getElementById('scheduler-ics')
+  document.getElementById('scheduler-ics-download')?.addEventListener('oas-click', () => {
+    if (ics) ics.downloadIcs('oas-calendar.ics', { timeMode: 'utc', timezone: 'Asia/Shanghai' })
+  })
+
   const click = document.getElementById('scheduler-click')
   const cout = document.getElementById('scheduler-click-output')
   if (click) {
@@ -195,6 +207,11 @@ The resource views (`resource` / `resource-week`) support server-side slices: `w
 
 ## ICS Export
 
+<DemoBlock title="Download current events as .ics (UTC + Asia/Shanghai)">
+  <oas-button id="scheduler-ics-download" size="small">Download .ics</oas-button>
+  <oas-scheduler id="scheduler-ics" view="week" page-show-date="2026-08-10" events='[{"date":"2026-08-10","title":"Standup","start":"09:00","end":"10:00"},{"date":"2026-08-11","endDate":"2026-08-12","title":"Design freeze"}]'></oas-scheduler>
+</DemoBlock>
+
 ```ts
 import { eventsToIcs } from '@oas-ui/ui'
 
@@ -205,7 +222,8 @@ el.downloadIcs('my.ics', { timeMode: 'utc', timezone: 'Asia/Shanghai' })
 
 - Events without `start` export as all-day events (`DTSTART/DTEND;VALUE=DATE`, end = next day; `endDate` supports multi-day all-day events).
 - `timeMode`: `floating` (default, local wall time) / `utc` (converted with `timezone`, `Z` suffix) / `tzid` (`TZID` plus a fixed-offset `VTIMEZONE`; use `utc` for DST-accurate conversion).
-- `repeat` maps to `RRULE:FREQ/INTERVAL/COUNT/BYDAY/UNTIL` (`until` is inclusive).
+- `repeat` maps to `RRULE:FREQ/INTERVAL/COUNT/BYDAY/BYMONTH/BYMONTHDAY/BYSETPOS/UNTIL` (`until` is inclusive); `exDates` emits `EXDATE;VALUE=DATE`; `remind` emits `VALARM` and `color` emits `X-OAS-COLOR`.
+- `eventsToIcs(events, { rangeStart, rangeEnd })` exports only events intersecting the inclusive range; `el.exportIcs(options)` / `el.downloadIcs(filename, options)` pass the same fields through.
 - Text is RFC 5545 escaped; output uses CRLF and 75-byte folding; invalid-date events are skipped. The `now` option fixes `DTSTAMP`.
 
 ## API

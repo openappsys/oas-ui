@@ -1465,6 +1465,17 @@ describe('scheduler 跨日全天 / repeat count+byDay / ICS 增强', () => {
     expect(el.shadowRoot!.querySelector('.day[data-date="2026-08-13"] .chip')).toBeNull()
   })
 
+  it('跨日全天事件在周视图渲染一条连续长条（不再逐日芯片）', () => {
+    const el = mount({
+      view: 'week',
+      'page-show-date': '2026-08-10',
+      events: JSON.stringify([{ id: 'span', date: '2026-08-10', endDate: '2026-08-12', title: '连续' }]),
+    })
+    expect(el.shadowRoot!.querySelectorAll('.band-span').length).toBe(1)
+    expect(el.shadowRoot!.querySelectorAll('.band-col .chip').length).toBe(0)
+    expect(el.shadowRoot!.querySelector<HTMLElement>('.band-span')!.style.width).not.toBe('')
+  })
+
   it('定时跨日事件按首日/末日拆段（周视图两列各有块）', () => {
     const el = mount({
       view: 'week',
@@ -1490,6 +1501,45 @@ describe('scheduler 跨日全天 / repeat count+byDay / ICS 增强', () => {
       .filter((d) => d.querySelector('.chip'))
       .map((d) => d.dataset.date)
     expect(hit).toEqual(['2026-08-03', '2026-08-05', '2026-08-10', '2026-08-12'])
+  })
+
+  it('monthly byMonth + byMonthDay + exDates：限定月份/日并排除 EXDATE', () => {
+    const events = JSON.stringify([
+      {
+        id: 'r',
+        date: '2026-08-01',
+        title: '盘点',
+        repeat: { freq: 'monthly', byMonth: [8, 9], byMonthDay: [1, 15], exDates: ['2026-09-01'] },
+      },
+    ])
+    const aug = mount({ 'page-show-date': '2026-08-01', events })
+    const augHit = [...aug.shadowRoot!.querySelectorAll<HTMLElement>('.day[data-date]')]
+      .filter((d) => d.querySelector('.chip'))
+      .map((d) => d.dataset.date)
+    expect(augHit).toEqual(['2026-08-01', '2026-08-15'])
+    const sep = mount({ 'page-show-date': '2026-09-01', events })
+    const sepHit = [...sep.shadowRoot!.querySelectorAll<HTMLElement>('.day[data-date]')]
+      .filter((d) => d.querySelector('.chip'))
+      .map((d) => d.dataset.date)
+    expect(sepHit).toEqual(['2026-09-15'])
+  })
+
+  it('monthly bySetPos=-1 与 byMonthDay 组合只保留最后一个候选日', () => {
+    const el = mount({
+      'page-show-date': '2026-08-01',
+      events: JSON.stringify([
+        {
+          id: 'r',
+          date: '2026-08-01',
+          title: '末次',
+          repeat: { freq: 'monthly', byMonthDay: [1, 15], bySetPos: -1 },
+        },
+      ]),
+    })
+    const hit = [...el.shadowRoot!.querySelectorAll<HTMLElement>('.day[data-date]')]
+      .filter((d) => d.querySelector('.chip'))
+      .map((d) => d.dataset.date)
+    expect(hit).toEqual(['2026-08-15'])
   })
 
   it('ICS：endDate/COUNT/BYDAY/UTC/TZID 输出', () => {
@@ -1524,5 +1574,20 @@ describe('scheduler 跨日全天 / repeat count+byDay / ICS 增强', () => {
     expect(tzid).toContain('BEGIN:VTIMEZONE')
     expect(tzid).toContain('TZID:Asia/Shanghai')
     expect(tzid).toContain('DTSTART;TZID=Asia/Shanghai:20260803T090000')
+    const extra = eventsToIcs(
+      [
+        {
+          id: 'e',
+          date: '2026-08-01',
+          title: 'Extra',
+          repeat: { freq: 'monthly', byMonth: [8, 9], byMonthDay: [1, 15], exDates: ['2026-09-01'] },
+          remind: 10,
+        },
+      ],
+      { now },
+    )
+    expect(extra).toContain('RRULE:FREQ=MONTHLY;BYMONTH=8,9;BYMONTHDAY=1,15')
+    expect(extra).toContain('EXDATE;VALUE=DATE:20260901')
+    expect(extra).toContain('TRIGGER:-PT10M')
   })
 })

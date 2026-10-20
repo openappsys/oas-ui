@@ -9,6 +9,9 @@
 | **date-picker 范围手输** | `daterange` / `datetimerange` / `monthrange` / `yearrange` 触发器开放键入，按 `separator` 拆分起止；倒置/越界/非法回退；与面板提交共用 value 契约 | 🚧 待发布 |
 | **sidebar 行内容** | `renderLabel` property 函数通道，Node/字符串/null 三态，富内容不反射 attribute/SSR | 🚧 待发布 |
 | **barcode 扩展码制** | GS1-128 / UPC-E / Codabar / MSI；保留原 6 码制与 `format` 回退 | 🚧 待发布 |
+| **scheduler 跨日连续条与重复扩展** | 周视图全天连续条 + 横向拖动；`byMonth` / `byMonthDay` / `bySetPos` / `exDates`；ICS `EXDATE` / `VALARM` / 区间过滤 | 🚧 待发布 |
+| **gantt 项目分组与偏差徽标** | `project` + `group-by-project` 合成项目根摘要；`show-variance` 行名偏差徽标 | 🚧 待发布 |
+| **resource 利用率与日历交换** | `computeUtilization` / `suggestAssignments` / `exportResourceCalendars` / `importResourceCalendars` | 🚧 待发布 |
 
 ## 版本规划
 

@@ -244,6 +244,21 @@ The today line is decorative (`aria-hidden`) and renders only when today falls i
 
 With `show-baseline` on (off by default), a task carrying `baseline: { start, end? }` renders a translucent baseline bar under the actual bar; the bar `title` shows the actual-vs-baseline delta (N days later/earlier, or "on baseline"). Baseline data is owned by the host; the component is read-only on it. `baseline.progress` is baseline progress 0-100; when present, a progress overlay renders inside the baseline bar (`--oas-gantt-baseline-progress-color`). The baseline bar also exposes `data-start-delta` / `data-end-delta` / `data-duration-delta` / `data-progress-delta` (days/percent) for host variance panels; `computeVariance(tasks)` is available as well. The deadline line uses `--oas-gantt-deadline-color`.
 
+## Project Grouping & Variance Badge (group-by-project / show-variance)
+
+<DemoBlock title="group-by-project: auto project root summaries; show-variance: end-date delta after the row name">
+  <oas-gantt
+    group-by-project
+    show-baseline
+    show-variance
+    height="220"
+    tasks='[{"id":"a1","name":"Requirements","start":"2026-03-02","end":"2026-03-06","project":"Alpha","progress":80,"baseline":{"start":"2026-03-02","end":"2026-03-04"}},{"id":"a2","name":"Design","start":"2026-03-04","end":"2026-03-10","project":"Alpha"},{"id":"b1","name":"API","start":"2026-03-05","end":"2026-03-09","project":"Beta","progress":40,"baseline":{"start":"2026-03-05","end":"2026-03-09"}}]'
+  ></oas-gantt>
+</DemoBlock>
+
+- `GanttTask.project`: project key for root tasks. With `group-by-project`, the component creates synthetic project root summaries in first-seen order (row id `__oas_project__:<project>`) and moves root tasks under them without mutating the original array. `windowed` requires host-flattened rows and does not auto-group.
+- `show-variance`: with a baseline, renders a `.variance` badge after the row name (`Δ±Nd`, primarily end-date delta) and exposes `data-start-delta` / `data-end-delta` / `data-duration-delta` / `data-progress-delta`; positive values are red, negative green, and the full delta is in `title` / `aria-label`.
+
 ## Deadlines, Float & Baseline Variance (deadline / show-float / baseline.progress)
 
 <DemoBlock title="show-baseline + show-float: baseline progress, total/free float; a missed deadline gets .conflict">
@@ -256,6 +271,7 @@ With `show-baseline` on (off by default), a task carrying `baseline: { start, en
 </DemoBlock>
 
 - `GanttTask.deadline`: due date (`YYYY-MM-DD`; hour scale may include time). When the bar ends after it, the bar gets `.conflict` and the chart renders a dashed `.deadline` marker.
+- `GanttTask.deadlines`: optional multiple due dates. Merged and deduplicated with `deadline`; each date renders one `.deadline` marker (`data-deadline-index`). Missing any one marks `.conflict`. Deadlines on summary rows are still ignored with a devWarn.
 - `show-float`: shows **total float** (LF − EF) and **free float** (slack before the nearest successor); the bar also exposes `data-total-float` / `data-free-float` in days. Summaries are excluded from CPM; windowed mode skips it with a devWarn because a slice lacks the full dependency graph.
 - `baseline.progress`: baseline progress 0-100; with `show-baseline`, a `.baseline-progress` overlay renders inside the baseline bar.
 - Hosts can use the exported pure function `computeVariance(tasks)` for baseline variance:
@@ -590,6 +606,7 @@ onMounted(async () => {
 | `dates-readonly` | No rescheduling/resizing (progress still draggable) | `boolean` | — |
 | `expanded` | Expanded set (JSON array, controlled): defaults to fully expanded when absent; explicit [] collapses all; written back on toggle | `string` | — |
 | `first-day-of-week` | Week start day (0-6); defaults to locale derivation (used for week-tier alignment) | `string` | — |
+| `group-by-project` | Group root tasks by project into synthetic summary rows (row id __oas_project__:&lt;project&gt;) without mutating the task array; windowed mode requires host-flattened rows | `string` | — |
 | `height` | Component height in px (default 320; accepts a plain number or Npx): mapped to the custom property --oas-gantt-height. The height is applied to the internal canvas (.gantt) — the host's own inline height only frames the outer box, while the inner canvas height is still governed by the height attribute / --oas-gantt-height and is not stretched by the host's inline height; to change the overall height use the height attribute or --oas-gantt-height. While the height attribute is present and valid (>0 plain number or Npx) the component takes over this variable — writing it inline on the host and overriding any --oas-gantt-height the host set itself; an empty/whitespace value is treated as unset; an invalid value writes nothing and only clears a value this instance wrote earlier, so a host token is never affected; after the attribute is removed the component-written value is cleared to zero, so the height falls back to the token default (320) or host CSS, and the host's previous inline value is not restored; when the height attribute was never set the component never writes the variable, and a --oas-gantt-height set by the host (inline or via class rules) is left completely untouched | `string` | `320` |
 | `holidays` | Holiday list (JSON ["YYYY-MM-DD",…]): matching columns highlighted (takes precedence over weekend tint); holidays are always non-working (regardless of workdays) and are skipped by auto-schedule | `string` | — |
 | `label-position` | Bar label position: inside / right / left; default `none` (the row-name column already shows the name, so the bar does not repeat it); invalid values fall back to `none` | `string` | — |
@@ -604,9 +621,10 @@ onMounted(async () => {
 | `show-critical-path` | Critical path (boolean, off by default): runs a CPM pass over the dependency graph + durations to compute total float and adds a .critical highlight to zero-float tasks (color via --oas-gantt-critical-color); read-only | `string` | — |
 | `show-float` | Show total/free float (boolean, off by default): computed only on a complete dependency graph; the bar gets a total/free float label plus data-total-float/data-free-float in days. Summaries are excluded; windowed mode skips it with a devWarn. | `string` | — |
 | `show-today` | Today line (on by default; false to disable) | `string` | — |
+| `show-variance` | Render a Δ±Nd variance badge after the row name when a baseline exists; exposes data-start-delta/data-end-delta/data-duration-delta/data-progress-delta | `string` | — |
 | `snap` | Snap drags to the current scale unit (on by default; false shifts by pixel ratio and keeps time precision) | `string` | — |
 | `stripe` | Row zebra striping (boolean, off by default): tints rows by the **absolute row index** parity (stable under virtualization/windowing, no DOM-order flicker); color via `--oas-gantt-row-stripe-bg` (default `--oas-color-bg-hover`); selection/weekend backgrounds override the stripe | `string` | — |
-| `tasks` | Gantt tasks (JSON): [{ id?, name, start, end?, type?, progress?, parent?, children?, dependencies?, color?, disabled?, expanded?, baseline? (start/end?/progress?), deadline?, constraint? ('asap'\|'snet'\|'mso'\|'fnlt'), constraintDate? }] — flat parent pointers are the primary contract; nested children are flattened automatically; explicit type:"milestone" takes precedence (rendered as milestone even with end, which is ignored) but a task with children is always a summary; no end also infers milestone; start/end are swapped automatically when start is after end | `GanttTask[]` | `[]` |
+| `tasks` | Gantt tasks (JSON): [{ id?, name, start, end?, type?, progress?, parent?, children?, dependencies?, color?, disabled?, expanded?, baseline? (start/end?/progress?), deadline?, deadlines?, constraint? ('asap'\|'snet'\|'mso'\|'fnlt'), constraintDate? }] — flat parent pointers are the primary contract; nested children are flattened automatically; explicit type:"milestone" takes precedence (rendered as milestone even with end, which is ignored) but a task with children is always a summary; no end also infers milestone; start/end are swapped automatically when start is after end | `GanttTask[]` | `[]` |
 | `total` | Full row (task) count in windowed mode; 0 or invalid disables windowed (falls back to local mode) | `string` | — |
 | `weekends` | Weekend column highlights (on by default; applies on day/hour tiers; false to disable) | `string` | — |
 | `window-start` | Absolute row index (within the full dataset) of the first row in the slice (windowed mode) | `string` | `0` |

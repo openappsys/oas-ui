@@ -36,6 +36,14 @@ test('gantt 浏览器回归：渲染 + 刻度切换 + 折叠 + 拖拽改期 + co
   await expect(basic.locator('.bars .bar[data-id="m1"].milestone')).toBeVisible()
   await expect(basic.locator('.side-body .row-name[data-key="t2"]')).toBeVisible()
 
+  // 项目分组 + 偏差徽标：合成项目根摘要下挂根任务，行名后显示 Δ±Nd
+  const project = page.locator('#gantt-project')
+  await waitGantt(page, 'gantt-project')
+  await expect(project.locator('.side-body .row-name[data-key="__oas_project__:Alpha"] .toggle')).toBeVisible()
+  await expect(project.locator('.side-body .row-name[data-key="a1"]')).toBeVisible()
+  await expect(project.locator('.side-body .row-name[data-key="a1"] .variance')).toContainText('Δ')
+  await expect(project.locator('.side-body .row-name[data-key="b1"]')).toBeVisible()
+
   // 依赖连线（SVG path data-type）
   await expect(basic.locator('svg.links path[data-from][data-to]').first()).toBeVisible()
 

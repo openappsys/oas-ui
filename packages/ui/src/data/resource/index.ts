@@ -7,6 +7,23 @@ if (!customElements.get('oas-resource')) {
 
 export { OASResource }
 export { levelResources } from './oas-resource.js'
+export {
+  exportResourceCalendars,
+  importResourceCalendars,
+  computeUtilization,
+  suggestAssignments,
+  buildSkillMatrix,
+} from './resource-utils.js'
+export type {
+  ResourceCalendarFile,
+  ResourceCalendarEntry,
+  UtilizationOptions,
+  UtilizationPeriod,
+  ResourceUtilization,
+  UtilizationReport,
+  SkillMatrix,
+  AssignmentSuggestion,
+} from './resource-utils.js'
 export type {
   ResourceItem,
   ResourceTask,

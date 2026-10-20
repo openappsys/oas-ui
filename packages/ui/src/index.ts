@@ -516,6 +516,11 @@ export {
 export {
   OASResource,
   levelResources,
+  exportResourceCalendars,
+  importResourceCalendars,
+  computeUtilization,
+  suggestAssignments,
+  buildSkillMatrix,
   type ResourceItem,
   type ResourceTask,
   type ResourceScale,
@@ -524,6 +529,14 @@ export {
   type ResourceOverloadEntry,
   type ResourceOverloadDetail,
   type LevelResourcesOptions,
+  type ResourceCalendarFile,
+  type ResourceCalendarEntry,
+  type UtilizationOptions,
+  type UtilizationPeriod,
+  type ResourceUtilization,
+  type UtilizationReport,
+  type SkillMatrix,
+  type AssignmentSuggestion,
 } from './data/resource/index.js'
 export { OASCarousel } from './data/carousel/oas-carousel.js'
 export { OASTree, type TreeNode } from './data/tree/index.js'

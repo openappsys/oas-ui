@@ -4325,7 +4325,7 @@
   },
   "oas-gantt": {
     "attrs": {
-      "tasks": "甘特任务（JSON）：[{ id?, name, start, end?, type?, progress?, parent?, children?, dependencies?, color?, disabled?, expanded?, baseline?（start/end?/progress?）, deadline?, constraint?（asap/snet/mso/fnlt）, constraintDate? }]——扁平 parent 指针为主，嵌套 children 自动拍平；type:\"milestone\" 显式优先（带 end 也按里程碑渲染，end 忽略），有子任务时恒为摘要；无 end 亦推导为里程碑；start 晚于 end 自动交换",
+      "tasks": "甘特任务（JSON）：[{ id?, name, start, end?, type?, progress?, parent?, children?, dependencies?, color?, disabled?, expanded?, baseline?（start/end?/progress?）, deadline?, deadlines?, constraint?（asap/snet/mso/fnlt）, constraintDate? }]——扁平 parent 指针为主，嵌套 children 自动拍平；type:\"milestone\" 显式优先（带 end 也按里程碑渲染，end 忽略），有子任务时恒为摘要；无 end 亦推导为里程碑；start 晚于 end 自动交换",
       "scale": "时间刻度：hour / day（默认）/ week / month / quarter / year；非法值回落 day",
       "expanded": "已展开集合（JSON 数组，受控）：属性缺席缺省全展开；显式 [] 全收起；点折叠钮写回",
       "readonly": "整图只读（禁改期/禁进度，不渲染拖拽手柄）",
@@ -4351,7 +4351,9 @@
       "range-start": "宿主托管时间轴起点（ISO 日期 YYYY-MM-DD）：提供后轴范围不再由数据推导，配合 range-end 支撑窗口化（切片不含完整日期跨度）",
       "range-end": "宿主托管时间轴终点（ISO 日期 YYYY-MM-DD，含当日）：与 range-start 成对使用",
       "stripe": "行斑马纹（布尔，默认关）：按**绝对行号**奇偶给行加底色（虚拟化/窗口化滚动稳定，不随 DOM 顺序跳变）；颜色走 `--oas-gantt-row-stripe-bg`（缺省 `--oas-color-bg-hover`）；选中/周末假日等背景覆盖条纹",
-      "show-float": "显示总浮时/自由浮时（布尔，默认关）：仅在依赖图完整时计算，条上显示「总浮时/自由浮时」标签并写入 data-total-float/data-free-float（单位为天）；摘要不参与，windowed 模式跳过并 devWarn"
+      "show-float": "显示总浮时/自由浮时（布尔，默认关）：仅在依赖图完整时计算，条上显示「总浮时/自由浮时」标签并写入 data-total-float/data-free-float（单位为天）；摘要不参与，windowed 模式跳过并 devWarn",
+      "group-by-project": "按任务 project 自动生成项目根摘要（行 id 为 __oas_project__:&lt;project&gt;），原任务数组不变；windowed 模式要求宿主自行展平，不做自动分组",
+      "show-variance": "任务带 baseline 时在行名后显示 Δ±Nd 偏差徽标，并写入 data-start-delta/data-end-delta/data-duration-delta/data-progress-delta；正值标红、负值标绿"
     },
     "events": {
       "oas-reschedule": "依赖联动排程改动了后继任务时派发（auto-schedule 开启），detail: { ids }（被联动改动的任务 id）",

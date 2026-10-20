@@ -660,6 +660,29 @@ describe('OASGantt 行树（WBS）与折叠', () => {
     toggle().click()
     expect(nameRows(el).length).toBe(4)
   })
+
+  it('group-by-project：自动生成项目根摘要并收拢同项目根任务', () => {
+    const tasks: GanttTask[] = [
+      { id: 'a', name: 'A', start: '2026-03-02', end: '2026-03-06', project: 'Alpha' },
+      { id: 'b', name: 'B', start: '2026-03-04', end: '2026-03-10', project: 'Alpha' },
+      { id: 'c', name: 'C', start: '2026-03-09', end: '2026-03-12', project: 'Beta' },
+    ]
+    const el = mount({ tasks: JSON.stringify(tasks), 'group-by-project': '' })
+    const rows = nameRows(el)
+    expect(rows.map((r) => r.dataset.key)).toEqual(['__oas_project__:Alpha', 'a', 'b', '__oas_project__:Beta', 'c'])
+    expect(rows[0]!.getAttribute('aria-level')).toBe('1')
+    expect(rows[1]!.getAttribute('aria-level')).toBe('2')
+    expect(el.tasks, '原任务数组不被合成行污染').toHaveLength(3)
+  })
+
+  it('group-by-project 关闭时保持原行序', () => {
+    const tasks: GanttTask[] = [
+      { id: 'a', name: 'A', start: '2026-03-02', end: '2026-03-06', project: 'Alpha' },
+      { id: 'b', name: 'B', start: '2026-03-04', end: '2026-03-10', project: 'Beta' },
+    ]
+    const el = mount({ tasks: JSON.stringify(tasks) })
+    expect(nameRows(el).map((r) => r.dataset.key)).toEqual(['a', 'b'])
+  })
 })
 
 describe('OASGantt 依赖连线（FS/SS/FF/SF）', () => {
@@ -2681,6 +2704,41 @@ describe('OASGantt 基线对比（baseline）', () => {
     expect(a.dataset.durationDelta).toBe('2')
   })
 
+  it('show-variance 在行名后渲染偏差徽标与 data 属性', () => {
+    const el = mount({
+      tasks: JSON.stringify([
+        {
+          id: 'a',
+          name: 'A',
+          start: '2026-03-02',
+          end: '2026-03-06',
+          progress: 60,
+          baseline: { start: '2026-03-02', end: '2026-03-04', progress: 25 },
+        },
+      ]),
+      'show-variance': '',
+    })
+    const badge = shadowOf(el).querySelector<HTMLElement>('.row-name[data-key="a"] .variance')!
+    expect(badge.textContent).toBe('Δ+2d')
+    expect(badge.dataset.endDelta).toBe('2')
+    expect(badge.dataset.startDelta).toBe('0')
+    expect(badge.dataset.durationDelta).toBe('2')
+    expect(badge.dataset.progressDelta).toBe('35')
+    expect(badge.dataset.late).toBe('')
+    expect(badge.title).toContain('3')
+    const baselineTask = JSON.stringify([
+      {
+        id: 'x',
+        name: 'X',
+        start: '2026-03-02',
+        end: '2026-03-03',
+        baseline: { start: '2026-03-02', end: '2026-03-02' },
+      },
+    ])
+    expect(shadowOf(mount({ tasks: baselineTask })).querySelector('.variance')).toBeNull()
+    expect(shadowOf(mount({ tasks: baselineTask, 'show-variance': 'false' })).querySelector('.variance')).toBeNull()
+  })
+
   it('baseline start 晚于 end：自动交换（不把负工期带入差异计算）', () => {
     const el = mount({
       tasks: JSON.stringify([
@@ -2709,6 +2767,25 @@ describe('OASGantt 基线对比（baseline）', () => {
 })
 
 describe('OASGantt 截止日 / 浮时 / 基线进度', () => {
+  it('deadlines 多截止日渲染多个标记，任一超期即标 conflict', () => {
+    const el = mount({
+      tasks: JSON.stringify([
+        {
+          id: 'd',
+          name: 'D',
+          start: '2026-03-02',
+          end: '2026-03-06',
+          deadline: '2026-03-09',
+          deadlines: ['2026-03-04', '2026-03-04', 'bad', '2026-03-09'],
+        },
+      ]),
+      'show-critical-path': '',
+    })
+    expect(el.tasks[0]!.deadlines).toEqual(['2026-03-04', '2026-03-09'])
+    expect(shadowOf(el).querySelectorAll('.deadline[data-id="d"]').length).toBe(2)
+    expect(shadowOf(el).querySelector('.row-name[data-key="d"]')!.classList.contains('conflict')).toBe(true)
+  })
+
   const TASKS_CP: GanttTask[] = [
     { id: 'a', name: 'A', start: '2026-03-02', end: '2026-03-04' },
     { id: 'b', name: 'B', start: '2026-03-05', end: '2026-03-09', dependencies: [{ id: 'a' }] },
