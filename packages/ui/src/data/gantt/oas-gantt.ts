@@ -503,6 +503,9 @@ svg.links .temp-link {
   white-space: nowrap;
   font-size: var(--oas-font-size-xs, 11px);
   color: var(--oas-color-text-secondary);
+  background: var(--oas-color-bg);
+  padding-inline: 2px;
+  border-radius: var(--oas-radius-sm);
   pointer-events: none;
 }
 .float-inline {
