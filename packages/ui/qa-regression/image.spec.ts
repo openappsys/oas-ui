@@ -204,45 +204,25 @@ test('image 懒加载：视口外图片不加载（img 无 src、占位显示）
   })
   expect(state.total).toBeGreaterThan(5)
   expect(state.noSrc, '列表底部应有未加载的图片').toBeGreaterThan(0)
-  // 逐步滚动内层列表到底部（模拟真实浏览：每屏都经过视口，IO 逐屏触发加载；
-  // 一次滚到底会跳过中间项，这些项从未进入视口 → 永远不加载，属于正确懒加载行为）。
-  // 注意：懒加载图片读入后从占位高度（160）长到真实尺寸（约 287），列表 scrollHeight
-  // 随加载持续变大，故每轮必须重读 max，直到 scrollTop 停在稳定底部（内容不再增长）。
-  await page.evaluate(async () => {
-    const list = document.querySelector('#image-lazy-list') as HTMLElement
-    let lastMax = -1
-    let stable = 0
-    let guard = 0
-    while (guard < 400) {
-      const max = list.scrollHeight - list.clientHeight
-      if (list.scrollTop < max) {
-        list.scrollTop = Math.min(list.scrollTop + 150, max)
-      } else if (max === lastMax) {
-        stable++
-        if (stable >= 3) break
-      } else {
-        stable = 0
-      }
-      lastMax = max
-      await new Promise((r) => setTimeout(r, 80))
-      guard++
-    }
-  })
-  await page.waitForFunction(
-    () => {
-      const list = document.querySelector('#image-lazy-list')!
-      const imgs = [...list.querySelectorAll('oas-image[lazy]')]
-      return (
-        imgs.length > 0 &&
-        imgs.every((i) => {
-          const img = i.shadowRoot?.querySelector('img')
-          return img && img.hasAttribute('src')
-        })
+  // 逐项滚入视口：懒加载依赖 IntersectionObserver，定时连续滚动在慢机器/并行
+  // worker 下可能在 IO 回调前越过中间项，导致正确跳过却让用例抖动。逐项
+  // scrollIntoView + 等 src 出现，既模拟真实浏览，也让断言与 IO 回调同步。
+  const lazyItems = page.locator('#image-lazy-list oas-image[lazy]')
+  const lazyCount = await lazyItems.count()
+  for (let i = 0; i < lazyCount; i++) {
+    const item = lazyItems.nth(i)
+    await item.scrollIntoViewIfNeeded()
+    await expect
+      .poll(
+        () =>
+          item.evaluate((el) => {
+            const img = el.shadowRoot?.querySelector('img')
+            return !!img?.hasAttribute('src')
+          }),
+        { timeout: 15000 },
       )
-    },
-    null,
-    { timeout: 20000 },
-  )
+      .toBe(true)
+  }
   // 状态机收尾：首批（列表首个）加载完成后 aria-busy 从 true 复位为 false
   await page.waitForFunction(
     () => {
