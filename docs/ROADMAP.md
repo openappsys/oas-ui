@@ -127,6 +127,8 @@
 6. PRD 版本段更新（含测试数）+ 本 ROADMAP 状态更新
 7. 涉及 Shadow DOM 样式/组件的改动提交前必跑 `pnpm build`（vitest/jsdom 抓不到 scoped CSS 语法错误）
 
+## 已立项（未发布）
+
 - **已立项（未发布）：resource 容量日历 + 技能匹配 + 优先级均载**——支持逐日容量、半天/假期、requiredSkills、task priority / projectOrder；无日历数据时保持旧语义。详见 PRD「未发布」段。
 
 ## 后续 backlog（按需立项）

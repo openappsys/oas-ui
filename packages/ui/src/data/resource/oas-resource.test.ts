@@ -118,6 +118,51 @@ describe('OASResource 属性与数据通道', () => {
     expect(taskAttr).toEqual(JSON.parse(JSON.stringify(el.tasks)))
   })
 
+  it('容量日历 / 技能 / 优先级字段经 attribute 与 property 双通道往返保留', () => {
+    const el = mount()
+    el.resources = [
+      {
+        id: 'r1',
+        name: 'A',
+        capacity: 1,
+        workdays: [1, 2, 3, 4, 5],
+        holidays: ['2026-03-05'],
+        capacityOverrides: { '2026-03-06': 0.5 },
+        skills: ['frontend'],
+      },
+    ] as ResourceItem[]
+    el.tasks = [
+      {
+        id: 't1',
+        name: 'T',
+        start: '2026-03-02',
+        end: '2026-03-06',
+        resources: ['r1'],
+        priority: 5,
+        requiredSkills: ['frontend'],
+        project: 'portal',
+      },
+    ] as ResourceTask[]
+    expect(el.resources[0]).toMatchObject({
+      workdays: [1, 2, 3, 4, 5],
+      holidays: ['2026-03-05'],
+      capacityOverrides: { '2026-03-06': 0.5 },
+      skills: ['frontend'],
+    })
+    expect(el.tasks[0]).toMatchObject({ priority: 5, requiredSkills: ['frontend'], project: 'portal' })
+    expect(JSON.parse(el.getAttribute('resources')!)[0]).toMatchObject({
+      workdays: [1, 2, 3, 4, 5],
+      holidays: ['2026-03-05'],
+      capacityOverrides: { '2026-03-06': 0.5 },
+      skills: ['frontend'],
+    })
+    expect(JSON.parse(el.getAttribute('tasks')!)[0]).toMatchObject({
+      priority: 5,
+      requiredSkills: ['frontend'],
+      project: 'portal',
+    })
+  })
+
   it('非法数据容错：resources/tasks 非法条目跳过；重复资源 id 去重；不抛异常', () => {
     const el = mount({
       resources: JSON.stringify([
@@ -693,7 +738,7 @@ describe('levelResources 容量日历 / 技能 / 优先级', () => {
     expect(levelResources(resources, tasks).map((t) => t.id)).toEqual(['t1'])
   })
 
-  it('reassign 默认尊重技能；无匹配技能的资源不被选中', () => {
+  it('reassign 技能匹配：目标资源具备 requiredSkills 时可改派', () => {
     const resources: ResourceItem[] = [
       { id: 'r1', name: 'A', capacity: 1, skills: ['js'] },
       { id: 'r2', name: 'B', capacity: 1, skills: ['go'] },
@@ -708,8 +753,8 @@ describe('levelResources 容量日历 / 技能 / 优先级', () => {
   it('受害者按任务优先级选择：priority 数值大的先被顺延', () => {
     const resources: ResourceItem[] = [{ id: 'r1', name: 'A', capacity: 1 }]
     const tasks = [
-      { ...span('high', ['r1']), priority: 0 },
       { ...span('low', ['r1']), priority: 10 },
+      { ...span('high', ['r1']), priority: 0 },
     ]
     const moved = levelResources(resources, tasks)
     expect(moved.map((t) => t.id)).toEqual(['low'])
@@ -738,11 +783,120 @@ describe('levelResources 容量日历 / 技能 / 优先级', () => {
   it('projectOrder 中靠后的项目先让位', () => {
     const resources: ResourceItem[] = [{ id: 'r1', name: 'A', capacity: 1 }]
     const tasks = [
-      { ...span('a', ['r1']), project: 'A' },
       { ...span('b', ['r1']), project: 'B' },
+      { ...span('a', ['r1']), project: 'A' },
     ]
     const moved = levelResources(resources, tasks, { projectOrder: ['A', 'B'] } as LevelResourcesOptions)
     expect(moved.map((t) => t.id)).toEqual(['b'])
+  })
+
+  it('projectOrder 优先于 task priority；未列项目排在最后', () => {
+    const resources: ResourceItem[] = [{ id: 'r1', name: 'A', capacity: 1 }]
+    const byOrder = levelResources(
+      resources,
+      [
+        { ...span('a', ['r1']), project: 'A', priority: 100 },
+        { ...span('b', ['r1']), project: 'B', priority: 0 },
+      ],
+      { projectOrder: ['A', 'B'] } as LevelResourcesOptions,
+    )
+    expect(byOrder.map((t) => t.id)).toEqual(['b'])
+
+    const byUnlisted = levelResources(
+      resources,
+      [
+        { ...span('unlisted', ['r1']), project: 'Z' },
+        { ...span('listed', ['r1']), project: 'A' },
+      ],
+      { projectOrder: ['A'] } as LevelResourcesOptions,
+    )
+    expect(byUnlisted.map((t) => t.id)).toEqual(['unlisted'])
+  })
+
+  it('空 holidays 与空 capacityOverrides 视为未声明，保持旧的每档容量语义', () => {
+    const tasks = ['t1', 't2', 't3', 't4', 't5'].map((id) => span(id, ['r1']))
+    const emptyHolidays: ResourceItem[] = [{ id: 'r1', name: 'A', capacity: 1, holidays: [] as string[] }]
+    const emptyOverrides: ResourceItem[] = [
+      { id: 'r1', name: 'A', capacity: 1, capacityOverrides: {} as Record<string, number> },
+    ]
+    // 旧语义：week 档 capacity=1，5 个重叠任务移动 4 个；若被误当逐日日历，容量会变成 7/0
+    expect(levelResources(emptyHolidays, tasks, { scale: 'week' })).toHaveLength(4)
+    expect(levelResources(emptyOverrides, tasks, { scale: 'week' })).toHaveLength(4)
+  })
+
+  it('连续 3 天假期仍可顺延到下一个有容量日（不能因当前窗口全 0 而误判永久不可排）', () => {
+    const resources: ResourceItem[] = [
+      {
+        id: 'r1',
+        name: 'A',
+        capacity: 1,
+        workdays: [1, 2, 3, 4, 5],
+        holidays: ['2026-03-02', '2026-03-03', '2026-03-04'],
+      },
+    ]
+    const moved = levelResources(resources, [span('t1', ['r1'])])
+    expect(moved).toHaveLength(1)
+    expect(moved[0]!.start).toBe('2026-03-05')
+  })
+
+  it('workdays: [] 是显式全不可用：shift 不把任务推到 500 个 period 之后', () => {
+    const resources: ResourceItem[] = [{ id: 'r1', name: 'A', capacity: 1, workdays: [] as number[] }]
+    expect(levelResources(resources, [span('t1', ['r1'])]).map((t) => t.id)).toEqual([])
+  })
+
+  it('非法 workdays（字符串/越界）按未声明处理，不静默变成永不排班', () => {
+    const resources: ResourceItem[] = [
+      { id: 'r1', name: 'A', capacity: 1, workdays: ['1', '2', 7] as unknown as number[] },
+    ]
+    const tasks = ['t1', 't2', 't3', 't4', 't5'].map((id) => span(id, ['r1']))
+    expect(levelResources(resources, tasks, { scale: 'week' })).toHaveLength(4)
+  })
+
+  it('month 档按当月工作日容量求和', () => {
+    const resources: ResourceItem[] = [{ id: 'r1', name: 'A', capacity: 1, workdays: [1] }]
+    const tasks = ['t1', 't2', 't3', 't4', 't5', 't6'].map((id) => span(id, ['r1'], '2026-03-02', '2026-03-02'))
+    const moved = levelResources(resources, tasks, { scale: 'month' })
+    expect(moved).toHaveLength(1)
+  })
+
+  it('capacityOverrides 优先于 holidays（同一天两者都有时按 override）', () => {
+    const resources: ResourceItem[] = [
+      {
+        id: 'r1',
+        name: 'A',
+        capacity: 1,
+        holidays: ['2026-03-02'],
+        capacityOverrides: { '2026-03-02': 2 },
+      },
+    ]
+    const tasks = Array.from({ length: 8 }, (_, i) => span(`t${i}`, ['r1']))
+    // 一周 7 天：override 2 + 其余 6 天 = 8；若 holiday 胜出则只有 6
+    expect(levelResources(resources, tasks, { scale: 'week' })).toEqual([])
+  })
+
+  it('reassign 同样按 priority / projectOrder 选择低优先级任务先改派', () => {
+    const resources: ResourceItem[] = [
+      { id: 'r1', name: 'A', capacity: 1 },
+      { id: 'r2', name: 'B', capacity: 1 },
+    ]
+    const priorityTasks = [
+      { ...span('low', ['r1']), priority: 10 },
+      { ...span('high', ['r1']), priority: 0 },
+    ]
+    const byPriority = levelResources(resources, priorityTasks, { mode: 'reassign' })
+    expect(byPriority.map((t) => t.id)).toEqual(['low'])
+    expect(byPriority[0]!.resources).toEqual(['r2'])
+
+    const projectTasks = [
+      { ...span('b', ['r1']), project: 'B' },
+      { ...span('a', ['r1']), project: 'A' },
+    ]
+    const byProject = levelResources(resources, projectTasks, {
+      mode: 'reassign',
+      projectOrder: ['A', 'B'],
+    } as LevelResourcesOptions)
+    expect(byProject.map((t) => t.id)).toEqual(['b'])
+    expect(byProject[0]!.resources).toEqual(['r2'])
   })
 })
 

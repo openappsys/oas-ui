@@ -11,7 +11,7 @@ Resource load / swimlane view (new component, data family): given **resources** 
   <div id="res-basic-output" style="color:var(--oas-color-text-secondary);font-size:var(--oas-font-size-sm);margin-top:var(--oas-space-2)"></div>
 </DemoBlock>
 
-- `resources`: `[{ id, name, capacity?, workdays?, holidays?, capacityOverrides?, skills? }]`. Without any calendar field, `capacity` = parallel tasks **per period** (legacy semantics, falls back to the `capacity` attribute, ultimately 1). With `workdays` / `holidays` / `capacityOverrides`, capacity is **per day** and a period capacity is the sum of its days (`capacityOverrides` supports half days such as `0.5` and wins over `workdays` / `holidays`). `skills` is a skill-tag array.
+- `resources`: `[{ id, name, capacity?, workdays?, holidays?, capacityOverrides?, skills? }]`. When `workdays` is absent and `holidays` / `capacityOverrides` are empty, `capacity` = parallel tasks **per period** (legacy semantics, falls back to the `capacity` attribute, ultimately 1). With `workdays` (`0=Sunday…6=Saturday`; `[]` means fully unavailable), non-empty `holidays`, or non-empty `capacityOverrides`, capacity is **per day** and a period capacity is the sum of its days. `capacityOverrides` (YYYY-MM-DD → capacity) wins over `workdays` / `holidays` and may be fractional (such as `0.5`); task load is counted in whole days, so a 0.5 day cannot hold a whole-day task (reserved for a future effort model). `skills` is a skill-tag array.
 - `tasks`: `[{ id, name, start, end, resources?: string[], priority?, requiredSkills?, project? }]` — `start/end` are `YYYY-MM-DD` (**day precision only**, inclusive `end`; time-bearing input is treated as that day); `resources` is the assigned resource id array; assignments pointing to unknown resources are ignored. `priority`: lower is more important; `requiredSkills` requires every assigned target resource to have all tags during reassign; `project` works with `levelResources({ projectOrder })` for cross-project priority.
 - `scale`: `day` (default) / `week` / `month` — controls the histogram period granularity and axis labels.
 - Swimlanes and histogram **share column width and horizontal scroll**; overload bars get `.over` (color via `--oas-color-danger`); overlapping task bars within a resource are **stacked in sub-rows** (no mutual occlusion, clicking a bar hits that bar).
@@ -53,15 +53,27 @@ const resources = [
 const tasks = [
   { id: 't1', name: 'Page work', start: '2026-03-02', end: '2026-03-06', resources: ['alice'], requiredSkills: ['frontend'], priority: 0, project: 'portal' },
 ]
-// Weekly capacity sums each working day; holidays contribute 0; overrides can express a half day (0.5)
+// Weekly capacity sums each working day; holidays contribute 0; override capacity may be fractional (task load counts whole days)
 levelResources(resources, tasks, { scale: 'week', projectOrder: ['portal'] })
 ```
 
-- Without calendar fields, the legacy per-period capacity semantics are unchanged; with them, period capacity is the sum of daily capacity.
+<DemoBlock title="Capacity calendar: holidays show 0 and half-day capacity shows an overload bar (day scale)">
+  <oas-resource
+    id="res-calendar"
+    scale="day"
+    height="220"
+    resources='[{"id":"alice","name":"Alice","capacity":1,"workdays":[1,2,3,4,5],"holidays":["2026-03-05"],"skills":["frontend"]},{"id":"bob","name":"Bob","capacity":1,"workdays":[1,2,3,4,5],"capacityOverrides":{"2026-03-06":0.5},"skills":["backend"]}]'
+    tasks='[{"id":"c1","name":"Page work","start":"2026-03-02","end":"2026-03-04","resources":["alice"],"requiredSkills":["frontend"],"priority":0,"project":"portal"},{"id":"c2","name":"Holiday task","start":"2026-03-05","end":"2026-03-05","resources":["alice"],"requiredSkills":["frontend"],"project":"portal"},{"id":"c3","name":"Half-day capacity","start":"2026-03-06","end":"2026-03-06","resources":["bob"],"requiredSkills":["backend"],"project":"portal"}]'
+  ></oas-resource>
+</DemoBlock>
+
+- Without `workdays` and with empty `holidays` / `capacityOverrides`, the legacy per-period capacity semantics are unchanged; with them, period capacity is the sum of daily capacity. Empty `holidays: []` / `capacityOverrides: {}` count as absent and do not switch the legacy semantics.
+- `workdays` uses `0=Sunday…6=Saturday`; `workdays: []` means zero capacity every day (fully unavailable). A non-empty array with no valid values (strings, out-of-range, 1..7 convention) is treated as absent with a devWarn instead of silently making the resource unschedulable.
+- `capacityOverrides` wins over `holidays`; capacity may be fractional, but task load is counted in whole days, so a `0.5` day cannot hold a whole-day task.
 - `reassign` defaults to `respectSkills: true`; every target must have all of a task's `requiredSkills`. No skill data means no behavior change.
-- Projects earlier in `projectOrder` win; within a project lower `priority` values win. Lower-priority tasks move/reassign first.
+- Projects earlier in `projectOrder` win; within a project lower `priority` values win. Lower-priority tasks move/reassign first. Project names and skills are compared after trimming.
 - The algorithm remains deterministic and greedy; it does not claim a global optimum.
-- `workdays: []` means zero capacity every day (fully unavailable); an empty `capacityOverrides: {}` does not change capacity.
+- `shift` skips a resource only when `workdays: []` and no positive override make it structurally unschedulable, with a devWarn instead of pushing tasks past `maxIter` periods; consecutive holidays / a single zero override can still be shifted past. `reassign` returns no targets when none is feasible.
 
 `options.mode` (default `shift`):
 
@@ -134,7 +146,7 @@ Conventions in windowed mode: load/overload stats cover **the loaded slice only*
 | `locale` | Localization (overrides config-provider injection and global locale) | `string` | — |
 | `range-end` | Host-managed time-axis end (ISO date YYYY-MM-DD, inclusive); pair with range-start. If only one is given, reversed or invalid, the axis is not host-managed and a devWarn is emitted | `string` | — |
 | `range-start` | Host-managed time-axis start (ISO date YYYY-MM-DD): when provided the period range is no longer derived from loaded tasks | `string` | — |
-| `resources` | Resources (JSON [{ id, name, capacity?, workdays?, holidays?, capacityOverrides?, skills? }]). Without calendar fields, capacity = parallel tasks per period (legacy); with workdays / holidays / capacityOverrides, period capacity is the sum of daily capacity (overrides may be a half day such as 0.5 and wins over holidays/workdays). `skills` is a skill-tag array. A resource may carry an optional `color` (CSS color or token, e.g. `var(--oas-color-success)`) used to tint its lane bars and load bars; when absent the unified `--oas-resource-bar-bg` / `--oas-resource-load-bg` applies | `ResourceItem[]` | `[]` |
+| `resources` | Resources (JSON [{ id, name, capacity?, workdays?, holidays?, capacityOverrides?, skills? }]). `workdays` uses 0=Sunday…6=Saturday; `[]` means fully unavailable. When `workdays` is absent and `holidays` / `capacityOverrides` are empty, capacity = parallel tasks per period (legacy); otherwise period capacity is the sum of daily capacity, non-empty `capacityOverrides` wins over `holidays`, and may be fractional while task load is counted in whole days (a 0.5 day cannot hold a whole-day task); empty `holidays` / `capacityOverrides` count as absent. `skills` is a skill-tag array. A resource may carry an optional `color` (CSS color or token, e.g. `var(--oas-color-success)`) used to tint its lane bars and load bars; when absent the unified `--oas-resource-bar-bg` / `--oas-resource-load-bg` applies | `ResourceItem[]` | `[]` |
 | `scale` | Histogram period granularity and axis labels: day (default) / week / month; invalid falls back to day | `string` | — |
 | `show-load-values` | Show the load value above each histogram bar (boolean, off by default): only for load > 0; overload values use text-on-primary (white in light / dark in dark) for contrast on the danger bar. The number is visual redundancy (aria-hidden); screen readers still get the column load description | `boolean` | — |
 | `show-overload-badge` | Show an "Overloaded ×N" badge in the lane header (boolean, off by default): only for resources with overloaded periods; text comes from the i18n key resource.overBadge | `boolean` | — |
@@ -147,7 +159,7 @@ Conventions in windowed mode: load/overload stats cover **the loaded slice only*
 
 | Property | Description | Type | Default |
 | --- | --- | --- | --- |
-| `resources` | Resources (JSON [{ id, name, capacity?, workdays?, holidays?, capacityOverrides?, skills? }]). Without calendar fields, capacity = parallel tasks per period (legacy); with workdays / holidays / capacityOverrides, period capacity is the sum of daily capacity (overrides may be a half day such as 0.5 and wins over holidays/workdays). `skills` is a skill-tag array. A resource may carry an optional `color` (CSS color or token, e.g. `var(--oas-color-success)`) used to tint its lane bars and load bars; when absent the unified `--oas-resource-bar-bg` / `--oas-resource-load-bg` applies; property read is a copy: nested plain objects/arrays are deep-cloned — cycle-safe; shared references stay shared within a single read result; Date is copied by value (not shared); exotic objects such as class instances/Set are shared by reference; writing syncs the attribute + re-renders | `ResourceItem[]` | `[]` |
+| `resources` | Resources (JSON [{ id, name, capacity?, workdays?, holidays?, capacityOverrides?, skills? }]). `workdays` uses 0=Sunday…6=Saturday; `[]` means fully unavailable. When `workdays` is absent and `holidays` / `capacityOverrides` are empty, capacity = parallel tasks per period (legacy); otherwise period capacity is the sum of daily capacity, non-empty `capacityOverrides` wins over `holidays`, and may be fractional while task load is counted in whole days (a 0.5 day cannot hold a whole-day task); empty `holidays` / `capacityOverrides` count as absent. `skills` is a skill-tag array. A resource may carry an optional `color` (CSS color or token, e.g. `var(--oas-color-success)`) used to tint its lane bars and load bars; when absent the unified `--oas-resource-bar-bg` / `--oas-resource-load-bg` applies; property read is a copy: nested plain objects/arrays are deep-cloned — cycle-safe; shared references stay shared within a single read result; Date is copied by value (not shared); exotic objects such as class instances/Set are shared by reference; writing syncs the attribute + re-renders; if a custom key is not serializable, only that key is dropped from the attribute while the property readback stays complete | `ResourceItem[]` | `[]` |
 | `tasks` | Resource tasks (JSON [{ id, name, start, end, resources?, priority?, requiredSkills?, project? }]); start/end are day precision YYYY-MM-DD only (end inclusive; time-bearing input is treated as that day), resources is the assigned resource id array (assignments to unknown resources are ignored). priority: lower is more important; requiredSkills: every reassign target must have all tags; project works with levelResources({ projectOrder }) for cross-project priority; property read is a copy: nested plain objects/arrays are deep-cloned — cycle-safe; shared references stay shared within a single read result; Date is copied by value (not shared); exotic objects such as class instances/Set are shared by reference; writing syncs the attribute + re-renders + dispatches oas-tasks-change | `ResourceTask[]` | `[]` |
 
 #### Events

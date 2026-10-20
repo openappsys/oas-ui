@@ -2580,10 +2580,9 @@ group 子钮此前为宿主自填 light DOM（`slot="action"`），组件用 `::
 - **测试与门禁**：全量单测 10497 passed；Chromium e2e 2199 passed / 37 skipped；Firefox e2e 1313 passed / 7 skipped；`typecheck` / `build` / `api:check` / `llms:check` / `stats:check` / `perf:size` / `perf:bench` / `trace --all` 全绿。
 - **发布通道**：源码托管于 Gitea（非 GitHub）→ 本地通道 `pnpm release`；tag `v2.6.2` 仅作版本标记。
 
-
 ## 未发布：resource 容量日历、技能与优先级均载
 
 - **范围**：`oas-resource` 数据契约扩展：`ResourceItem.workdays / holidays / capacityOverrides / skills`，`ResourceTask.priority / requiredSkills / project`；`levelResources()` 增加 `respectSkills` / `projectOrder`。
-- **语义**：未声明日历字段时保持旧的每档容量；声明后按逐日容量求和（`capacityOverrides` 支持半天 0.5，优先于假期/工作日）。reassign 默认要求目标资源具备全部 `requiredSkills`；项目顺序优先，任务 priority 数值小者优先，低优先级先让位。
-- **兼容**：全部字段可选；无日历/技能/优先级数据时输出与 v2.6.2 逐字节一致。
-- **验收**：单测覆盖工作日/假期/半天/技能/优先级/项目顺序/确定性/maxIter；组件 e2e 覆盖 holiday 超载与 `oas-overload.capacity`；文档 zh/en、API 说明与 a11y/性能门禁同步。
+- **语义**：未声明 `workdays` 且 `holidays` / `capacityOverrides` 为空时保持旧的每档容量；声明 `workdays`（`[]` 表示全不可用）或非空 `holidays` / `capacityOverrides` 后按逐日容量求和。`capacityOverrides` 优先于假期/工作日，可写小数，但任务负载按整日计数（0.5 日无法容纳整日任务，为后续 effort 模型预留）；空 `holidays` / `capacityOverrides` 视为未声明。reassign 默认要求目标资源具备全部 `requiredSkills`；项目顺序优先，任务 priority 数值小者优先，低优先级先让位；项目名/技能按 trim 后比较。
+- **兼容**：全部字段可选；未使用新字段时输出与 v2.6.2 一致。`priority` / `requiredSkills` / `project` / `skills` 等键名被新 API 占用，旧宿主同名字段不再透传；`capacityOverrides` 接受 0，资源 `capacity` 仍要求正数。
+- **验收**：单测覆盖工作日/假期/半天/技能/优先级/项目顺序/空声明/非法值/读回/确定性/maxIter；组件 e2e 覆盖 holiday 超载与 `oas-overload.capacity`；文档 zh/en、API 说明、CHANGELOG 与 a11y/性能门禁同步。

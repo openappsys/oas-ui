@@ -321,13 +321,19 @@ export interface ResourceItem {
   id?: string
   /** 资源名（必填，缺失丢弃） */
   name: string
-  /** 该资源的并行容量上限（正数；缺省回落 capacity 属性，最终 1） */
+  /** 并行容量（正数；未启用日历时是每 period 容量，启用后是每日容量；缺省回落 capacity 属性，最终 1） */
   capacity?: number
-  /** 每周可用日（0=周日…6=周六；省略=不启用逐日日历，沿用旧的每 period 容量语义） */
+  /**
+   * 每周可用日（0=周日…6=周六）。省略且 holidays/capacityOverrides 为空时沿用旧的每 period 容量语义；
+   * [] 表示全不可用；非空但全部非法时按未声明处理并 devWarn。
+   */
   workdays?: number[]
-  /** 假期日期（YYYY-MM-DD；当天容量 0） */
+  /** 假期日期（严格 YYYY-MM-DD；非空时启用逐日容量，当天容量 0；空数组视为未声明） */
   holidays?: string[]
-  /** 日期级容量覆盖（YYYY-MM-DD → 容量；可表达半天 0.5、临时加班；优先于 workdays/holidays） */
+  /**
+   * 日期级容量覆盖（严格 YYYY-MM-DD → 容量；非空时启用逐日容量，优先于 workdays/holidays）。
+   * 可写小数（如 0.5），但任务负载按整日计数，0.5 日无法容纳整日任务。
+   */
   capacityOverrides?: Record<string, number>
   /** 资源技能标签（reassign 时用于 requiredSkills 硬匹配） */
   skills?: string[]
@@ -376,6 +382,7 @@ export interface ResourceOverloadEntry {
   /** period 起始日期 'YYYY-MM-DD' */
   period: string
   load: number
+  /** 该 period 的容量（启用日历时为逐日求和；否则为资源每档容量） */
   capacity: number
 }
 
@@ -399,7 +406,8 @@ export interface LevelResourcesOptions {
   weekStart?: number
   /**
    * 平衡模式（缺省 shift）：
-   * - shift：把超载档内较晚任务整体后移一个 period（改日期、保工期，对截止日不友好）
+   * - shift：把超载档内优先级最低的任务整体后移一个 period（改日期、保工期，对截止日不友好）；
+   *   workdays 显式为空且没有正容量 override 时保持原日期并 devWarn，不推到 maxIter 之后。
    * - reassign：把任务改派给整段都有余量的资源（日期不变、尊重 capacity；找不到目标即停，不退化顺延）
    */
   mode?: LevelResourcesMode
@@ -713,16 +721,52 @@ function sanitizeCapacity(v: unknown): number | null {
   return v
 }
 
-/** 容量日历字段存在性：任一字段声明即启用逐日容量（否则保持旧的 period 容量语义） */
 function hasCalendar(r: RS): boolean {
-  return r.workdays !== null || r.holidays.size > 0 || r.capacityOverrides !== null
+  // workdays 空数组是「显式全不可用」；空 holidays / 空 capacityOverrides 视为未声明，
+  // 避免宿主用默认空配置时把旧「每档 capacity」语义悄悄切换成逐日语义。
+  return r.workdays !== null || r.holidays.size > 0 || (r.capacityOverrides?.size ?? 0) > 0
 }
+
+/**
+ * 是否存在未来可排日期（结构判定，不受当前 period 窗口影响）：
+ * 只有「workdays 显式为空且没有任何正容量 override」才是永久不可排；
+ * 其余情况（含当前连续假期/0 override）未来仍可能恢复容量，shift 允许继续移动。
+ */
+function hasPotentialCapacity(r: RS): boolean {
+  if (r.workdays !== null && r.workdays.length === 0) {
+    return [...(r.capacityOverrides?.values() ?? [])].some((n) => n > 0)
+  }
+  return true
+}
+
+let invalidWorkdaysWarned = false
 
 function sanitizeWorkdays(v: unknown): number[] | null {
   if (!Array.isArray(v)) return null
+  if (v.length === 0) return []
   const out = new Set<number>()
   for (const n of v) if (typeof n === 'number' && Number.isInteger(n) && n >= 0 && n <= 6) out.add(n)
+  if (out.size === 0) {
+    // 非空但全部非法（字符串化、1..7 约定、越界）→ 按未声明处理，避免静默变成「永不排班」。
+    if (!invalidWorkdaysWarned) {
+      invalidWorkdaysWarned = true
+      devWarn('[oas-resource] workdays 无合法值（应为 0=周日…6=周六 的整数），已按未声明处理')
+    }
+    return null
+  }
   return [...out].sort((a, b) => a - b)
+}
+
+/** 严格日精度解析：只接受 YYYY-MM-DD 且日期真实存在（新日历字段不继承宽松 yyyy-MM 解析） */
+function parseStrictDay(s: string): Date | null {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s.trim())
+  if (!m) return null
+  const y = Number(m[1])
+  const mo = Number(m[2])
+  const day = Number(m[3])
+  const d = new Date(y, mo - 1, day)
+  if (d.getFullYear() !== y || d.getMonth() !== mo - 1 || d.getDate() !== day) return null
+  return startOfDay(d)
 }
 
 function sanitizeHolidays(v: unknown): Set<string> {
@@ -730,7 +774,7 @@ function sanitizeHolidays(v: unknown): Set<string> {
   if (!Array.isArray(v)) return out
   for (const s of v) {
     if (typeof s !== 'string') continue
-    const d = parseISODate(s.trim())
+    const d = parseStrictDay(s)
     if (d) out.add(toISODate(d))
   }
   return out
@@ -740,7 +784,7 @@ function sanitizeCapacityOverrides(v: unknown): Map<string, number> | null {
   if (typeof v !== 'object' || v === null || Array.isArray(v)) return null
   const out = new Map<string, number>()
   for (const key of Object.keys(v)) {
-    const d = parseISODate(key)
+    const d = parseStrictDay(key)
     if (!d) continue
     const n = safeGet(v as Record<string, unknown>, key)
     if (n === READ_FAILED || typeof n !== 'number' || !Number.isFinite(n) || n < 0) continue
@@ -763,7 +807,17 @@ function sanitizeSkillsMatch(v: unknown): boolean {
 }
 
 function sanitizeProjectOrder(v: unknown): string[] {
-  return Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string' && x !== '') : []
+  if (!Array.isArray(v)) return []
+  const seen = new Set<string>()
+  const out: string[] = []
+  for (const x of v) {
+    if (typeof x !== 'string') continue
+    const s = x.trim()
+    if (s === '' || seen.has(s)) continue
+    seen.add(s)
+    out.push(s)
+  }
+  return out
 }
 
 /**
@@ -787,7 +841,8 @@ function periodCapacity(r: RS, period: Period, _scale: ResourceScale, _weekStart
     else if (workdays === null || workdays.has(cursor.getDay())) total += base
     cursor = addDays(cursor, 1)
   }
-  return total
+  // 浮点 override（如 0.1）逐日累加会出现 0.999…；按 1e-6 归一，避免整数负载误判超载。
+  return Math.round(total * 1e6) / 1e6
 }
 
 function hasRequiredSkills(r: RS, t: RT): boolean {
@@ -944,7 +999,7 @@ function sanitizeTasks(v: unknown, onKeyError?: (key: string) => void, onInvalid
         resources,
         priority: priorityRaw === READ_FAILED ? 0 : sanitizePriority(priorityRaw),
         requiredSkills: requiredRaw === READ_FAILED ? [] : (sanitizeSkills(requiredRaw) ?? []),
-        project: typeof projectRaw === 'string' ? projectRaw : '',
+        project: typeof projectRaw === 'string' ? projectRaw.trim() : '',
       }
       // 自定义字段透传（ResourceTask 的 `[key: string]: unknown` 契约）：白名单外的键原样保留
       for (const k of ownKeys) {
@@ -1090,12 +1145,14 @@ function buildPeriods(
 
 /**
  * 负载均衡（纯函数）：保持每任务工期不变，若某资源某 period 超载，
- * 把与该 period 重叠的任务中「开始较晚」者整体后移一个 period（并列取输入序靠后），
- * 迭代至无超载或达 maxIter。返回「被后移的任务数组」（不改入参）；组件不自动调用。
+ * 把与该 period 重叠的任务中优先级最低者整体后移一个 period，迭代至无超载或达 maxIter。
+ * 返回「被后移的任务数组」（不改入参）；组件不自动调用。
  *
- * 确定性约定：超载档按资源输入序 → period 时序取第一个处理；受害者取重叠任务中
- * startMs 最大者（并列取输入序靠后）。week 档周起始由 opts.weekStart 决定（缺省周一，
- * 纯函数无 locale 上下文；与组件 locale 周起始不同时，周粒度判定可能存在边界差）。
+ * 确定性约定：超载档按资源输入序 → period 时序取第一个处理；受害者先比 projectOrder
+ * （靠后项目先让位）、再比 priority（数值大者先让位），并列取 startMs 最大者、输入序靠后者。
+ * workdays 显式为空且没有正容量 override 时视为永久不可排（不移动、devWarn），避免把任务推到 maxIter 之后。
+ * week 档周起始由 opts.weekStart 决定（缺省周一，纯函数无 locale 上下文；与组件 locale
+ * 周起始不同时，周粒度判定可能存在边界差）。
  */
 export function levelResources(
   resources: ResourceItem[],
@@ -1133,6 +1190,7 @@ export function levelResources(
     return reassignOverload(rs, work, capAt, scale, weekStart, maxIter, respectSkills, projectOrder, onKeyError)
 
   const moved = new Set<string>()
+  let zeroCapacityWarned = false
   let iter = 0
   for (;;) {
     if (iter >= maxIter) break
@@ -1155,6 +1213,15 @@ export function levelResources(
     let victimIndex = -1
     let victimPeriod: Period | null = null
     outer: for (const r of rs) {
+      // 当前窗口全为 0 时，只有结构上永远不可排（workdays: [] 且没有正 override）才跳过；
+      // 连续假期/单日 override=0 仍可能通过移动恢复，不能仅凭当前窗口判死。
+      if (!periods.some((p) => capAt(r, p) > 0) && !hasPotentialCapacity(r)) {
+        if (!zeroCapacityWarned) {
+          zeroCapacityWarned = true
+          devWarn('[oas-resource] 资源 workdays 为空且无正容量 override，shift 无法消除超载，已保持原日期')
+        }
+        continue
+      }
       for (const period of periods) {
         const cap = capAt(r, period)
         let load = 0
@@ -1193,7 +1260,8 @@ export function levelResources(
  * 重分配模式（levelResources 内部实现）：日期不动，把超载资源上的任务改派给「整段都有余量」的资源。
  *
  * 约定：
- * - 超载档按资源输入序 → period 时序；候选任务按开始晚→早、输入序靠后→靠前（与 shift 受害者口径一致）；
+ * - 超载档按资源输入序 → period 时序；候选任务先按 projectOrder（靠后先让位）、priority
+ *   （数值大先让位），再按开始晚→早、输入序靠后→靠前（与 shift 受害者口径一致）；
  * - 目标资源须在任务覆盖的**每个** period 满足 load + 1 ≤ capacity，按 worst load ratio 取最空闲者
  *   （并列取资源输入序在前）；已分配给该任务的资源不重复选；
  * - 每次成功改派只降低超载资源负载、且不制造新超载（目标已校验），故有限步收敛；
