@@ -256,7 +256,7 @@
 </DemoBlock>
 
 - `GanttTask.deadline`：截止日（`YYYY-MM-DD`；hour 档可带时刻）。条结束晚于截止日时加 `.conflict`，并在时间轴渲染 `.deadline` 虚线标记。
-- `show-float`：显示**总浮时**（LF − EF）与**自由浮时**（最近后继允许的延后量）；条上标签同时写入 `data-total-float` / `data-free-float`（天）。摘要不参与 CPM；windowed 模式无法在切片上得到正确依赖图，会跳过并 devWarn。
+- `show-float`：显示**总浮时**（LF − EF）与**自由浮时**（最近后继允许的延后量）；条上同时写入 `data-total-float` / `data-free-float`（天）。摘要不参与 CPM；windowed 模式无法在切片上得到正确依赖图，会跳过并 devWarn。
 - `baseline.progress`：基线进度 0-100；开启 `show-baseline` 后基线条内渲染 `.baseline-progress` 覆盖层。
 - 宿主可用导出的纯函数 `computeVariance(tasks)` 得到基线差异：
 

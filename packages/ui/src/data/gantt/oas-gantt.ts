@@ -488,9 +488,10 @@ svg.links .temp-link {
 }
 .deadline {
   position: absolute;
-  width: 0;
+  width: 2px;
   border-inline-start: 1px dashed var(--oas-color-danger);
-  pointer-events: none;
+  pointer-events: auto;
+  cursor: help;
   opacity: 0.75;
   z-index: 1;
 }
@@ -503,6 +504,12 @@ svg.links .temp-link {
   font-size: var(--oas-font-size-xs, 11px);
   color: var(--oas-color-text-secondary);
   pointer-events: none;
+}
+.float-inline {
+  margin-inline-start: 4px;
+  color: var(--oas-color-text-secondary);
+  font-size: var(--oas-font-size-xs, 11px);
+  font-weight: normal;
 }
 .bar:active {
   cursor: grabbing;
@@ -3163,12 +3170,23 @@ export class OASGantt extends OASElement {
         const freeDays = Math.round(this.freeFloatMs.get(row.task.id)! / DAY_MS)
         bar.dataset.totalFloat = String(totalDays)
         bar.dataset.freeFloat = String(freeDays)
-        const fl = document.createElement('span')
-        fl.className = 'float-label'
-        fl.setAttribute('part', 'float')
-        fl.setAttribute('aria-hidden', 'true')
-        fl.textContent = this.t('gantt.floatSummary', { total: totalDays, free: freeDays })
-        bar.appendChild(fl)
+        const text = this.t('gantt.floatSummary', { total: totalDays, free: freeDays })
+        // label-position 已渲染条旁/条内任务名时，把浮时并入同一标签，避免两个绝对定位标签叠印。
+        const existingLabel = bar.querySelector<HTMLElement>('.bar-label')
+        if (existingLabel) {
+          const inline = document.createElement('span')
+          inline.className = 'float-inline'
+          inline.setAttribute('aria-hidden', 'true')
+          inline.textContent = text
+          existingLabel.appendChild(inline)
+        } else {
+          const fl = document.createElement('span')
+          fl.className = 'float-label'
+          fl.setAttribute('part', 'float')
+          fl.setAttribute('aria-hidden', 'true')
+          fl.textContent = text
+          bar.appendChild(fl)
+        }
       }
 
       // 基线对比条（计划 vs 实际）：置于实际条之下，只读展示
@@ -3207,8 +3225,10 @@ export class OASGantt extends OASElement {
           dl.className = 'deadline'
           dl.dataset.id = row.task.id
           dl.setAttribute('part', 'deadline')
-          dl.setAttribute('aria-hidden', 'true')
-          dl.title = this.t('gantt.deadline', { date: this.fmtDay(dlMs) })
+          dl.setAttribute('role', 'img')
+          const deadlineText = this.t('gantt.deadline', { date: this.fmtDay(dlMs) })
+          dl.setAttribute('aria-label', deadlineText)
+          dl.title = deadlineText
           dl.style.left = `${this.mirrorX(this.xOf(dlMs))}px`
           dl.style.top = `${this.absRowTop(i)}px`
           dl.style.height = `${rowH}px`

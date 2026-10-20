@@ -2743,6 +2743,19 @@ describe('OASGantt 截止日 / 浮时 / 基线进度', () => {
     expect(barOf(el, 'a').dataset.freeFloat).toBe('2')
   })
 
+  it('show-float + label-position：浮时并入任务名标签，不产生第二个绝对定位标签', () => {
+    const el = mount({
+      'show-float': '',
+      'label-position': 'right',
+      tasks: JSON.stringify([
+        { id: 'a', name: 'A', start: '2026-03-02', end: '2026-03-04' },
+        { id: 'b', name: 'B', start: '2026-03-05', end: '2026-03-09', dependencies: [{ id: 'a' }] },
+      ]),
+    })
+    expect(shadowOf(el).querySelectorAll('.float-label').length).toBe(0)
+    expect(barOf(el, 'a').querySelector('.bar-label .float-inline')).not.toBeNull()
+  })
+
   it('baseline.progress：清洗 0-100 并渲染基线进度覆盖层', () => {
     const el = mount({
       'show-baseline': '',
