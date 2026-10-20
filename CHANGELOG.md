@@ -6,6 +6,8 @@
 
 ### 构建与性能
 
+- **构建期去除样式字符串中的 CSS 注释**：组件样式写在 `*_STYLE` / `*_CSS` 字符串里，JS 压缩器不处理字符串内容，注释会随产物发布。新增构建插件按命名约定识别样式常量，把注释替换为**等长空白**（保留长度/行号，源映射不变；字符串与 `${}` 插值内部不处理）。实测 gzip：`dist/cdn.js` 739.6 → 601.5 KiB（−18.7%）、全量入口链 1063.7 → 909.7 KiB、button 按需链 26.6 → 22.4 KiB；运行时样式不变。
+
 - **`@oas-ui/theme` 发布 CSS 最小化**：`index.css` 改为由 `index.source.css` 生成的无注释产物，保留源码文件与既有导出路径；实测 `index.css` 从 10,767 B / 3.8 KB gzip 降至 7,343 B / 1.7 KB gzip。
 - **真实浏览器堆内存回归**：新增 Chromium CDP GC soak，覆盖 list / tree / kanban / scheduler 各 8 轮挂载/卸载；本轮实测堆增长为 0。Firefox 无 `performance.memory`，自动跳过该断言。
 - **开发依赖安全升级**：同步升级 Playwright、Vitest、Vite、happy-dom 等开发依赖，并将 `@oas-ui/ssr` 的 happy-dom 与测试环境统一到 21.x，消除双版本 `Illegal constructor`。

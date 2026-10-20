@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite'
 import { readdirSync, statSync } from 'node:fs'
 import { resolve, relative, join } from 'node:path'
+import { stripStyleComments } from './scripts/strip-css-comments'
 
 function collectEntries(dir: string, root: string, acc: Record<string, string> = {}): Record<string, string> {
   for (const name of readdirSync(dir)) {
@@ -22,6 +23,19 @@ const entries = collectEntries(srcRoot, srcRoot)
 entries['ssr'] = resolve(srcRoot, 'ssr.ts')
 
 export default defineConfig({
+  plugins: [
+    {
+      // 组件样式写在 *_STYLE / *_CSS 字符串里，JS 压缩不会动字符串内容；
+      // 构建期把 CSS 注释替换为等长空白（保长度/行号），避免注释随 cdn.js 发布。
+      name: 'oas-strip-style-comments',
+      enforce: 'pre',
+      transform(code, id) {
+        if (!/[\\/]packages[\\/]ui[\\/]src[\\/].*\.ts$/.test(id)) return null
+        const out = stripStyleComments(code)
+        return out === code ? null : { code: out, map: null }
+      },
+    },
+  ],
   build: {
     lib: {
       entry: entries,

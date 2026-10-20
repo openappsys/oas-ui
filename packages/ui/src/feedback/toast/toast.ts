@@ -136,11 +136,7 @@ interface StackState {
 let stackStyleInjected = false
 
 /** 栈容器堆叠/收纳样式（命令式创建，注入一次文档级样式） */
-function injectStackStyle(): void {
-  if (stackStyleInjected) return
-  stackStyleInjected = true
-  const style = document.createElement('style')
-  style.textContent = `
+const STACK_STYLE = `
 .oas-toast-stack {
   position: relative;
 }
@@ -174,6 +170,12 @@ function injectStackStyle(): void {
   pointer-events: auto;
 }
 `
+
+function injectStackStyle(): void {
+  if (stackStyleInjected) return
+  stackStyleInjected = true
+  const style = document.createElement('style')
+  style.textContent = STACK_STYLE
   document.head.appendChild(style)
 }
 

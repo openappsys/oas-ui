@@ -1,5 +1,6 @@
 import { defineConfig } from 'vite'
 import { resolve } from 'node:path'
+import { stripStyleComments } from './scripts/strip-css-comments'
 
 /**
  * CDN IIFE bundle 构建（多入口，按需打包族）：
@@ -24,6 +25,17 @@ export default defineConfig(() => {
   const fileName = isFamily ? `cdn/${family}.js` : 'cdn.js'
 
   return {
+    plugins: [
+      {
+        name: 'oas-strip-style-comments',
+        enforce: 'pre',
+        transform(code, id) {
+          if (!/[\\/]packages[\\/]ui[\\/]src[\\/].*\.ts$/.test(id)) return null
+          const out = stripStyleComments(code)
+          return out === code ? null : { code: out, map: null }
+        },
+      },
+    ],
     resolve: {
       // 数组形式保证匹配顺序：更具体的子路径必须先于包名映射（对象形式的匹配顺序不保证先长后短）
       alias: [
