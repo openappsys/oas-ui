@@ -31,7 +31,8 @@
     "rtl:audit:interactive": "node scripts/e2e/rtl-audit-gate.mjs --interactive",
     "visual:review": "node scripts/e2e/visual-review.mjs",
     "llms:gen": "node scripts/llms/gen.mjs",
-    "llms:check": "node scripts/llms/gen.mjs --check && git diff --exit-code -- packages/docs/docs/public/llms.txt"
+    "llms:check": "node scripts/llms/gen.mjs --check && git diff --exit-code -- packages/docs/docs/public/llms.txt",
+    "skill:check": "node scripts/skills/check.mjs"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.14.0",

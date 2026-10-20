@@ -17,6 +17,7 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm format:check
+      - run: pnpm skill:check
       - run: pnpm test
       # typecheck 依赖各 workspace 包的 d.ts（build 产物 dist/types）——必须 build 之后跑
       - run: pnpm build
@@ -38,7 +39,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2, 3, 4]
+        # 4 片实测单片 40min+（table/sidebar/toolbar 等大文件集中）；6 片降低关键路径。
+        shard: [1, 2, 3, 4, 5, 6]
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -54,8 +56,8 @@ jobs:
           path: ~/.cache/ms-playwright
           key: ${{ runner.os }}-playwright-${{ hashFiles('pnpm-lock.yaml') }}
       - run: pnpm exec playwright install --with-deps chromium firefox
-      # 全量 e2e 分 4 片并行（5 个遍历型 spec 各 7-10min，串行 15min+；3 片 ≈ 6min → 4 片 ≈ 4.5min）
-      - run: pnpm test:e2e -- --shard=${{ matrix.shard }}/4
+      # 全量 e2e 分 6 片并行：大文件（table/sidebar/toolbar）不再集中压满单片关键路径
+      - run: pnpm test:e2e -- --shard=${{ matrix.shard }}/6
       # RTL 几何门禁（117 组件页 LTR/RTL 差集 sweep，exit 非零即红）——只跑 shard 1，免三片重复
       - name: RTL 几何门禁（仅 shard 1）
         if: matrix.shard == 1

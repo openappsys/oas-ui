@@ -50,6 +50,11 @@ function main() {
     }
   }
   for (const tag of skipped) console.log(`[api:check] 跳过在途 WIP 组件：${tag}`)
+  // CI 必须是干净提交：任何“源码有未提交改动”的 WIP 跳过都说明 manifest/源码没有一起提交
+  if (process.env.CI && skipped.length) {
+    console.error(`[api:check] CI 检出 WIP 跳过组件：${skipped.join(', ')}（源码与 manifest 未一起提交）`)
+    process.exit(1)
+  }
   if (unresolvedHits.length) {
     console.error(
       `[api:check] manifest 带 unresolved 标记（扫描解析盲区，属性可能静默丢失）：${unresolvedHits.join(', ')}`,

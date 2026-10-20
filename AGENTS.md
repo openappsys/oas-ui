@@ -35,6 +35,7 @@
 - **提交纪律**：涉及组件/Shadow DOM 样式的提交，提交前必跑 `pnpm build`（单测与 typecheck 抓不到 scoped CSS 语法错误）
 - **API 防漂移**：`pnpm api:check`（CI 强制）。md 的 `## API` 章节是生成物，禁止手改——改组件属性/事件/插槽后跑 `pnpm api:scan && pnpm api:gen`；改说明文案改 `docs/api-descriptions.{zh,en}.json` 再 gen（详见 engineering.md §4 API 表格自动化）
 - **文档索引（llms.txt）**：`pnpm llms:gen` 生成站点根 `/llms.txt` + `/llms-full.txt`，并原样镜像每页 `.md`（页面 head 注入 `rel="alternate" type="text/markdown"` + `describedby`），遵循 llmstxt.org 规范；`pnpm llms:check`（CI 强制防漂移）。改组件页/侧栏/guide 后同步跑（详见 engineering.md §4 llms.txt）
+- **AI skill 防漂移**：`pnpm skill:check`（CI 强制）。消费型 skill 在 `skills/using-oas-ui/SKILL.md`，改包名/事件写法/安装命令/README 入口时同步跑；脚本校验 frontmatter、关键 API 写法、包入口与旧 `.agents` 路径不回流
 
 ## 用户视角验证门禁
 
