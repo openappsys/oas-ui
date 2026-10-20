@@ -165,9 +165,9 @@ onMounted(async () => {
 
 资源视图（`resource` / `resource-week`）支持服务端分片：`windowed` + `total` + `window-start`，`resources` 只喂 `[window-start, window-start + resources.length)` 的资源切片。组件按可视窗口派发 `oas-window-request`（绝对行号、半开区间），宿主回填切片后更新 `window-start`；`aria-rowcount` 使用 `total`，`aria-rowindex` 使用绝对行号。
 
-- windowed 下组件不自动追加「未分配」行（全量归属由宿主负责）。
-- 组件仍会对已装载切片内的 `repeat` 事件做本地展开；**跨窗口/重复实例语义由宿主展开**：建议宿主把每个 occurrence 作为独立事件（唯一 id）下发，避免窗口边界处重复或漏渲染。
-- 打印样式 `@media print` 隐藏工具栏、取消滚动限高；`beforeprint` 会临时关闭行/小时虚拟化渲染完整视图，`afterprint` 恢复窗口渲染。
+- windowed 下组件不自动追加「未分配」行；宿主需要该行时显式提供保留 id `__unassigned__`，无/未知 `resource` 的事件会归入该行。
+- 组件仍会对已装载切片内的 `repeat` 事件做本地展开；宿主展开 occurrence 时**必须从基础事件剥离 `repeat`（或不再下发基础序列）**，否则同一天会重复渲染；每个 occurrence 用唯一 id。
+- 打印样式 `@media print` 隐藏工具栏/视图按钮、取消滚动限高（含 agenda）；`beforeprint` 临时关闭行/小时虚拟化，打印已装载切片（windowed 不输出切片外空白 spacer），`afterprint` 恢复窗口渲染。
 
 ```html
 <oas-scheduler
@@ -200,7 +200,7 @@ onMounted(async () => {
 | `total` | windowed 模式下的资源行总数（正数才生效）；用于 aria-rowcount 与绝对行号 | `string` | — |
 | `view` | 视图：month（默认）/ week / day / agenda / resource / resource-week；周/日视图为时刻表 + 事件块定位，无 start 的事件进全天行；agenda 为 28 天时序清单；resource 为单日资源横向时间轴、resource-week 为周 × 资源矩阵 | `SchedulerView` | `month` |
 | `window-start` | windowed 模式下切片首行的绝对行号（相对全量） | `string` | `0` |
-| `windowed` | 服务端资源行窗口模式（布尔，默认关）：resource / resource-week 的 resources 只承载 [window-start, window-start + resources.length) 切片；可视窗口未覆盖时派发 oas-window-request（绝对行号、半开区间），回填后更新 window-start。windowed 下不自动追加「未分配」行 | `boolean` | — |
+| `windowed` | 服务端资源行窗口模式（布尔，默认关）：resource / resource-week 的 resources 只承载 [window-start, window-start + resources.length) 切片；可视窗口未覆盖时派发 oas-window-request（绝对行号、半开区间），回填后更新 window-start。windowed 下不自动追加「未分配」行；需要时宿主可提供保留 id `__unassigned__` | `boolean` | — |
 
 #### Property（JS property；是否写回 attribute 见各行说明）
 

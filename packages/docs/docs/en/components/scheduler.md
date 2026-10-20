@@ -165,9 +165,9 @@ In the resource view the resource rows, and in the `day` view the hour axis, ren
 
 The resource views (`resource` / `resource-week`) support server-side slices: `windowed` + `total` + `window-start`, with `resources` carrying only `[window-start, window-start + resources.length)`. The component emits `oas-window-request` (absolute, half-open row range) when the visible window is not covered; the host responds with a new slice and updates `window-start`. `aria-rowcount` uses `total`, and `aria-rowindex` uses absolute row numbers.
 
-- In windowed mode the component does not append an "Unassigned" row automatically (the host owns full-dataset grouping).
-- Repeat events inside the loaded slice are still expanded locally; **cross-window/occurrence semantics are owned by the host**: send each occurrence as an independent event with a unique id to avoid duplicates or gaps at window boundaries.
-- Print CSS (`@media print`) hides the toolbar and removes scroll caps; `beforeprint` temporarily disables row/hour virtualization to render the full view, and `afterprint` restores window rendering.
+- In windowed mode the component does not append an "Unassigned" row automatically; the host can provide the reserved id `__unassigned__`, and events with no/unknown `resource` are grouped there.
+- Repeat events inside the loaded slice are still expanded locally; when the host expands occurrences it **must strip `repeat` from the base event (or stop sending the base series)**, otherwise the same day renders twice. Give each occurrence a unique id.
+- Print CSS (`@media print`) hides the toolbar/view buttons and removes scroll caps (including agenda); `beforeprint` temporarily disables row/hour virtualization and prints the loaded slice (windowed omits spacer blank pages), and `afterprint` restores window rendering.
 
 ```html
 <oas-scheduler
@@ -200,7 +200,7 @@ The resource views (`resource` / `resource-week`) support server-side slices: `w
 | `total` | Total resource row count in windowed mode (must be positive); used for aria-rowcount and absolute row indices. | `string` | — |
 | `view` | View: month (default) / week / day / agenda / resource / resource-week; week/day views show a time axis with positioned event blocks (untimed events go to the all-day row); agenda shows a 28-day chronological list; resource is a single-day horizontal resource timeline, resource-week a week x resource matrix | `SchedulerView` | `month` |
 | `window-start` | Absolute row index of the first loaded row in windowed mode. | `string` | `0` |
-| `windowed` | Server-side resource row window mode (boolean, off by default): for resource / resource-week, resources carries only the [window-start, window-start + resources.length) slice; emits oas-window-request (absolute, half-open range) when the visible window is uncovered. The component does not auto-append an Unassigned row. | `boolean` | — |
+| `windowed` | Server-side resource row window mode (boolean, off by default): for resource / resource-week, resources carries only the [window-start, window-start + resources.length) slice; emits oas-window-request (absolute, half-open range) when the visible window is uncovered. The component does not auto-append an Unassigned row; the host may provide the reserved id `__unassigned__`. | `boolean` | — |
 
 #### Property (JS property; see each row for attribute reflection)
 

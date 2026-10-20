@@ -4305,7 +4305,7 @@
       "start-hour": "Time axis start hour (0-23, default 8)",
       "end-hour": "Time axis end hour (> start-hour and <= 24, default 20)",
       "timezone": "Timezone (IANA, e.g. Asia/Shanghai; empty = local): affects title/column date formatting and the today marker (via Intl timeZone); invalid values fall back to local",
-      "windowed": "Server-side resource row window mode (boolean, off by default): for resource / resource-week, resources carries only the [window-start, window-start + resources.length) slice; emits oas-window-request (absolute, half-open range) when the visible window is uncovered. The component does not auto-append an Unassigned row.",
+      "windowed": "Server-side resource row window mode (boolean, off by default): for resource / resource-week, resources carries only the [window-start, window-start + resources.length) slice; emits oas-window-request (absolute, half-open range) when the visible window is uncovered. The component does not auto-append an Unassigned row; the host may provide the reserved id `__unassigned__`.",
       "total": "Total resource row count in windowed mode (must be positive); used for aria-rowcount and absolute row indices.",
       "window-start": "Absolute row index of the first loaded row in windowed mode."
     },

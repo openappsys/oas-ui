@@ -4305,7 +4305,7 @@
       "start-hour": "时间轴起始小时（0-23，默认 8）",
       "end-hour": "时间轴结束小时（>start-hour 且 <=24，默认 20）",
       "timezone": "时区（IANA，如 Asia/Shanghai；空串=本地）：影响标题/列头日期格式化与「今天」标记（经 Intl timeZone）；非法时区回落本地",
-      "windowed": "服务端资源行窗口模式（布尔，默认关）：resource / resource-week 的 resources 只承载 [window-start, window-start + resources.length) 切片；可视窗口未覆盖时派发 oas-window-request（绝对行号、半开区间），回填后更新 window-start。windowed 下不自动追加「未分配」行",
+      "windowed": "服务端资源行窗口模式（布尔，默认关）：resource / resource-week 的 resources 只承载 [window-start, window-start + resources.length) 切片；可视窗口未覆盖时派发 oas-window-request（绝对行号、半开区间），回填后更新 window-start。windowed 下不自动追加「未分配」行；需要时宿主可提供保留 id `__unassigned__`",
       "total": "windowed 模式下的资源行总数（正数才生效）；用于 aria-rowcount 与绝对行号",
       "window-start": "windowed 模式下切片首行的绝对行号（相对全量）"
     },

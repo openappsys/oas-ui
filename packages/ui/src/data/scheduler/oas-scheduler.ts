@@ -21,6 +21,7 @@ import {
   sameWindow as sameWindowRange,
   windowCovered,
   type WindowRequestDetail,
+  type WindowRequestReason,
 } from '../../shared/window-data.js'
 import { computeVirtualWindow } from '../virtual-list/oas-virtual-list.js'
 
@@ -518,13 +519,16 @@ const STYLE = `
     border-radius: 0;
     height: auto !important;
   }
-  .header,
   .views,
+  .header > .today,
+  .header > [part='prev'],
+  .header > [part='next'],
   .create-preview {
     display: none !important;
   }
   .timeview,
   .resourceview,
+  .agenda,
   .res-body,
   .grid {
     max-height: none !important;
@@ -535,7 +539,7 @@ const STYLE = `
   .res-ev {
     break-inside: avoid;
   }
-  .today-line,
+  .nowline,
   .res-now {
     display: none !important;
   }
@@ -611,6 +615,9 @@ export interface SchedulerResource {
 }
 
 export type SchedulerView = 'month' | 'week' | 'day' | 'agenda' | 'resource' | 'resource-week'
+
+/** windowed 模式下宿主可显式提供的「未分配」资源行 id（无/未知 resource 的事件归入该行） */
+const UNASSIGNED_RESOURCE_ID = '__unassigned__'
 
 const SCHEDULER_VIEWS: SchedulerView[] = ['month', 'week', 'day', 'agenda', 'resource', 'resource-week']
 
@@ -726,8 +733,8 @@ export class OASScheduler extends OASElement {
   /** 服务端资源行窗口（resource / resource-week）；非 windowed 时行为与旧版本一致 */
   private winMode = readWindowedMode(false, 0, 0, 0)
   private lastWindowReq: { start: number; end: number } | null = null
-  /** 已应用过的 window-start：切片首行变化时把资源滚动容器锚到该绝对行 */
-  private lastWindowStart = -1
+  private windowReason: WindowRequestReason = 'init'
+  private initialWindowAnchored = false
   private printAll = false
   private lastPageAnchor = ''
   private lastTz = ''
@@ -911,8 +918,9 @@ export class OASScheduler extends OASElement {
     for (const r of this._resources) ids.add(r.id)
     const byResource = new Map<string, Array<SchedulerEvent & { id: string }>>()
     let unassigned = 0
+    const hasUnassignedRow = ids.has(UNASSIGNED_RESOURCE_ID)
     for (const e of this._events) {
-      const key = e.resource && ids.has(e.resource) ? e.resource : ''
+      const key = e.resource && ids.has(e.resource) ? e.resource : hasUnassignedRow ? UNASSIGNED_RESOURCE_ID : ''
       if (key === '') unassigned++
       let bucket = byResource.get(key)
       if (!bucket) {
@@ -1073,11 +1081,20 @@ export class OASScheduler extends OASElement {
       })
     }
     this.bindScrollWindows()
+    this.bindPrintListeners()
+  }
+
+  /** 打印监听幂等绑定（重连时只补监听，不重跑 bind 里的匿名按钮监听） */
+  private printBound = false
+  private bindPrintListeners(): void {
+    if (this.printBound) return
+    this.printBound = true
     window.addEventListener('beforeprint', this.onBeforePrint)
     window.addEventListener('afterprint', this.onAfterPrint)
     this.onCleanup(() => {
       window.removeEventListener('beforeprint', this.onBeforePrint)
       window.removeEventListener('afterprint', this.onAfterPrint)
+      this.printBound = false
     })
   }
 
@@ -1116,7 +1133,9 @@ export class OASScheduler extends OASElement {
     )
     if (!this.winMode.windowed) {
       this.lastWindowReq = null
-      this.lastWindowStart = -1
+      this.initialWindowAnchored = false
+    } else {
+      this.windowReason = this.lastWindowReq ? 'data' : 'init'
     }
     this.rebuildResourceIndex()
     this.scheduleReminders()
@@ -1377,6 +1396,7 @@ export class OASScheduler extends OASElement {
   /** 断开重连：scroll 监听已被 onCleanup 移除，重绑恢复滚动窗口刷新（幂等，bindScrollWindows 自守卫） */
   protected override onReconnect(): void {
     this.bindScrollWindows()
+    this.bindPrintListeners()
   }
 
   private renderMonth(): void {
@@ -1850,12 +1870,6 @@ export class OASScheduler extends OASElement {
 
   /** 资源视图：resource = 单日横向时间轴；resource-week = 周 × 资源 */
   private renderResource(): void {
-    // 宿主换切片后把滚动锚到切片首行的绝对位置，否则 scrollTop 仍在旧区间、窗口换算为空
-    if (this.winMode.windowed && this.winMode.windowStart !== this.lastWindowStart) {
-      this.lastWindowStart = this.winMode.windowStart
-      const res = this.shadow.querySelector<HTMLElement>('[part="resource"]')
-      if (res) res.scrollTop = this.winMode.windowStart * this.resRowH()
-    }
     if (this.viewMode === 'resource') this.renderResourceDay()
     else this.renderResourceWeek()
   }
@@ -1893,7 +1907,7 @@ export class OASScheduler extends OASElement {
     const rows = this.resourceRows()
     const rowH = RES_ROW_H
     const totalRows = this.winMode.windowed ? this.winMode.total : rows.length
-    const rowBase = this.winMode.windowed ? this.winMode.windowStart : 0
+    const rowBase = this.winMode.windowed ? Math.min(this.winMode.windowStart, totalRows) : 0
     // 行窗口：可视行 ±buffer；视口不可测回落全量
     const win = this.rowWindow(rows.length, rowH)
     this.lastRowWin = win
@@ -1933,9 +1947,10 @@ export class OASScheduler extends OASElement {
     const padTop = document.createElement('div')
     padTop.className = 'res-pad-top'
     padTop.setAttribute('aria-hidden', 'true')
-    padTop.style.height = `${(rowBase + win.start) * rowH}px`
+    padTop.style.height = `${this.printAll && this.winMode.windowed ? 0 : (rowBase + win.start) * rowH}px`
     body.appendChild(padTop)
     for (let i = win.start; i < win.end; i++) {
+      if (rowBase + i >= totalRows) break
       const r = rows[i]!
       const row = document.createElement('div')
       row.className = 'res-row'
@@ -1988,10 +2003,11 @@ export class OASScheduler extends OASElement {
     const padBottom = document.createElement('div')
     padBottom.className = 'res-pad-bottom'
     padBottom.setAttribute('aria-hidden', 'true')
-    padBottom.style.height = `${Math.max(0, totalRows - rowBase - win.end) * rowH}px`
+    padBottom.style.height = `${this.printAll && this.winMode.windowed ? 0 : Math.max(0, totalRows - rowBase - win.end) * rowH}px`
     body.appendChild(padBottom)
     el.appendChild(body)
-    this.requestResourceWindow(win)
+    this.anchorWindowedScroll(rowBase, rowH)
+    this.requestResourceWindow()
     this.restoreFocus(focusId)
   }
 
@@ -2009,7 +2025,7 @@ export class OASScheduler extends OASElement {
     // 行窗口必须在清空内容前计算（同 renderResourceDay：清 DOM 后读 scrollTop 会被钳回 0）
     const rows = this.resourceRows()
     const totalRows = this.winMode.windowed ? this.winMode.total : rows.length
-    const rowBase = this.winMode.windowed ? this.winMode.windowStart : 0
+    const rowBase = this.winMode.windowed ? Math.min(this.winMode.windowStart, totalRows) : 0
     const startH = this.startHourValue()
     const endH = this.endHourValue()
     const hourH = 24
@@ -2046,9 +2062,10 @@ export class OASScheduler extends OASElement {
     const padTop = document.createElement('div')
     padTop.className = 'res-pad-top'
     padTop.setAttribute('aria-hidden', 'true')
-    padTop.style.height = `${(rowBase + win.start) * rowH}px`
+    padTop.style.height = `${this.printAll && this.winMode.windowed ? 0 : (rowBase + win.start) * rowH}px`
     body.appendChild(padTop)
     for (let i = win.start; i < win.end; i++) {
+      if (rowBase + i >= totalRows) break
       const r = rows[i]!
       const row = document.createElement('div')
       row.className = 'res-row'
@@ -2115,10 +2132,11 @@ export class OASScheduler extends OASElement {
     const padBottom = document.createElement('div')
     padBottom.className = 'res-pad-bottom'
     padBottom.setAttribute('aria-hidden', 'true')
-    padBottom.style.height = `${Math.max(0, totalRows - rowBase - win.end) * rowH}px`
+    padBottom.style.height = `${this.printAll && this.winMode.windowed ? 0 : Math.max(0, totalRows - rowBase - win.end) * rowH}px`
     body.appendChild(padBottom)
     el.appendChild(body)
-    this.requestResourceWindow(win)
+    this.anchorWindowedScroll(rowBase, rowH)
+    this.requestResourceWindow()
     this.restoreFocus(focusId)
   }
 
@@ -2150,14 +2168,29 @@ export class OASScheduler extends OASElement {
   private bindScrollWindows(): void {
     if (this.scrollBound) return
     this.scrollBound = true
-    const onScroll = (): void => this.scheduleWindowRefresh()
+    const onScroll = (): void => {
+      this.windowReason = 'scroll'
+      this.scheduleWindowRefresh()
+    }
     const tv = this.shadow.querySelector<HTMLElement>('[part="timeview"]')
     const res = this.shadow.querySelector<HTMLElement>('[part="resource"]')
     tv?.addEventListener('scroll', onScroll, { passive: true })
     res?.addEventListener('scroll', onScroll, { passive: true })
+    const ro =
+      typeof ResizeObserver !== 'undefined'
+        ? new ResizeObserver(() => {
+            this.windowReason = 'resize'
+            this.scheduleWindowRefresh()
+          })
+        : null
+    if (ro) {
+      if (tv) ro.observe(tv)
+      if (res) ro.observe(res)
+    }
     this.onCleanup(() => {
       tv?.removeEventListener('scroll', onScroll)
       res?.removeEventListener('scroll', onScroll)
+      ro?.disconnect()
       if (this.scrollRaf) cancelAnimationFrame(this.scrollRaf)
       this.scrollRaf = 0
       this.scrollBound = false
@@ -2189,7 +2222,7 @@ export class OASScheduler extends OASElement {
       const rows = this.resourceRows()
       const win = this.rowWindow(rows.length, this.resRowH())
       // windowed 下即使局部窗口不变，绝对滚动窗口也可能移出已装载切片；先请求再判重
-      this.requestResourceWindow(win)
+      this.requestResourceWindow()
       if (this.sameWindow(win, this.lastRowWin)) return
       this.lastRowWin = win
       this.renderResource()
@@ -2231,36 +2264,60 @@ export class OASScheduler extends OASElement {
   }
 
   /** 资源行窗口：可视行 ±buffer；视口不可测回落全量。
-   *  windowed 下 scrollTop 是**全量绝对行号**，先按 total 算绝对窗口再换算为已装载切片内的局部窗口。 */
+   *  windowed 下 scrollTop 是**全量绝对行号**，先按 total 算绝对窗口，再与已装载切片求交；
+   *  空交集退化为一点（防 spacer 总高虚增）。 */
   private rowWindow(count: number, rowH: number): { start: number; end: number } {
     const res = this.shadow.querySelector<HTMLElement>('[part="resource"]')
     const vh = this.measurableH(res)
     if (this.printAll || !res || vh === null) return { start: 0, end: count }
     if (this.winMode.windowed) {
-      // 初始/切片切换时 scrollTop 可能仍为 0（内容尚未撑高，赋值被钳制）：先渲染切片首屏，
-      // 等滚动锚定完成后再按绝对位置收窄窗口。
       const startTop = this.winMode.windowStart * rowH
-      if (res.scrollTop < startTop) return { start: 0, end: count }
-      const abs = computeVirtualWindow(res.scrollTop, vh, rowH, this.winMode.total, RES_ROW_BUFFER)
-      return {
-        start: Math.max(0, abs.start - this.winMode.windowStart),
-        end: Math.min(count, Math.max(0, abs.end - this.winMode.windowStart)),
+      const endTop = (this.winMode.windowStart + this._resources.length) * rowH
+      // 首帧滚动位置尚未锚定到切片：先渲染整个切片，随后 anchorWindowedScroll 只做一次校正。
+      if (!this.initialWindowAnchored && (res.scrollTop < startTop || res.scrollTop >= endTop)) {
+        return { start: 0, end: count }
       }
+      const abs = computeVirtualWindow(res.scrollTop, vh, rowH, this.winMode.total, RES_ROW_BUFFER)
+      const start = Math.max(0, Math.min(count, abs.start - this.winMode.windowStart))
+      const end = Math.max(start, Math.min(count, abs.end - this.winMode.windowStart))
+      return { start, end }
     }
     return computeVirtualWindow(res.scrollTop, vh, rowH, count, RES_ROW_BUFFER)
   }
 
-  /** windowed：可视窗口（绝对行号）未覆盖已装载切片时派发 oas-window-request（同区间去重） */
-  private requestResourceWindow(localWin: { start: number; end: number }): void {
-    if (!this.winMode.windowed || !this.isConnected) return
-    const absStart = this.winMode.windowStart + localWin.start
-    const absEnd = this.winMode.windowStart + localWin.end
-    const need = expandWindow(absStart, absEnd, this.winMode.total, WINDOW_MARGIN)
-    if (windowCovered(need, this.winMode.loaded)) return
+  /** windowed 首屏锚定：仅当滚动位置落在已装载切片之外时对齐切片首行；
+   *  宿主按请求回填（切片覆盖当前视口）时不动用户滚动位置，避免“请求→回填→再上移”风暴。 */
+  private anchorWindowedScroll(rowBase: number, rowH: number): void {
+    if (!this.winMode.windowed || this.printAll || this.initialWindowAnchored) return
+    this.initialWindowAnchored = true
+    const res = this.shadow.querySelector<HTMLElement>('[part="resource"]')
+    if (!res) return
+    const startTop = rowBase * rowH
+    const endTop = (rowBase + this._resources.length) * rowH
+    if (res.scrollTop < startTop || res.scrollTop >= endTop) res.scrollTop = startTop
+  }
+
+  /** windowed：绝对可视窗口未覆盖已装载切片时派发 oas-window-request（同区间去重）。
+   *  视口不可测（隐藏容器/SSR）时不请求，防「请求 margin → 装载 → 更大 margin」发散。 */
+  private requestResourceWindow(): void {
+    if (!this.winMode.windowed || !this.isConnected || this.printAll) return
+    const res = this.shadow.querySelector<HTMLElement>('[part="resource"]')
+    const vh = this.measurableH(res)
+    if (!res || vh === null) return
+    const abs = computeVirtualWindow(res.scrollTop, vh, this.resRowH(), this.winMode.total, RES_ROW_BUFFER)
+    const need = expandWindow(abs.start, abs.end, this.winMode.total, WINDOW_MARGIN)
+    if (windowCovered(need, this.winMode.loaded)) {
+      this.lastWindowReq = null
+      return
+    }
     if (sameWindowRange(need, this.lastWindowReq)) return
     this.lastWindowReq = need
-    // OASElement.emit 会自动加 oas- 前缀；ROW_WINDOW_EVENT 常量已是完整事件名
-    this.emit('window-request', { start: need.start, end: need.end, reason: 'scroll' } satisfies WindowRequestDetail)
+    // OASElement.emit 会自动加 oas- 前缀
+    this.emit('window-request', {
+      start: need.start,
+      end: need.end,
+      reason: this.windowReason,
+    } satisfies WindowRequestDetail)
   }
 
   /** 资源行高（定高模型，同 gantt 行虚拟先例）：单日行 37px；周×资源行 = max(轨道高, 单元格 min-height) + 1px 边框

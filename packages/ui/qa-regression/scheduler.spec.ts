@@ -625,21 +625,27 @@ test('scheduler windowed 资源切片 + 打印样式：绝对行号、窗口请�
       req = (e as CustomEvent).detail
     })
     document.body.appendChild(el)
-    return new Promise<{ rowCount: string | null; firstIndex: string | null; req: unknown; printCss: boolean }>(
-      (resolve) => {
-        setTimeout(() => {
-          const root = el.shadowRoot!
-          resolve({
-            rowCount: root.querySelector('[role="grid"]')?.getAttribute('aria-rowcount') ?? null,
-            firstIndex: root.querySelector('.res-row[data-resource="r40"]')?.getAttribute('aria-rowindex') ?? null,
-            req,
-            printCss: (root.querySelector('style')?.textContent ?? '').includes('@media print'),
-          })
-        }, 400)
-      },
-    )
+    return new Promise<{
+      rowCount: string | null
+      firstIndex: string | null
+      req: unknown
+      printCss: boolean
+      scrollTop: number
+    }>((resolve) => {
+      setTimeout(() => {
+        const root = el.shadowRoot!
+        resolve({
+          rowCount: root.querySelector('[role="grid"]')?.getAttribute('aria-rowcount') ?? null,
+          firstIndex: root.querySelector('.res-row[data-resource="r40"]')?.getAttribute('aria-rowindex') ?? null,
+          req,
+          printCss: (root.querySelector('style')?.textContent ?? '').includes('@media print'),
+          scrollTop: root.querySelector('[part="resource"]')?.scrollTop ?? 0,
+        })
+      }, 400)
+    })
   })
   expect(r.rowCount).toBe('100')
+  expect(r.scrollTop, '首屏应锚定到切片首行（37px/行 × 40）').toBeGreaterThanOrEqual(40 * 37)
   expect(r.firstIndex).toBe('41')
   expect(r.req, '应派发 oas-window-request').not.toBeNull()
   expect(r.printCss, '应包含 @media print').toBe(true)

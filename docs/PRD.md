@@ -2596,7 +2596,7 @@ group 子钮此前为宿主自填 light DOM（`slot="action"`），组件用 `::
 
 ## 未发布：scheduler 服务端资源行窗口、重复语义与打印
 
-- **范围**：resource / resource-week 接入共享行窗口协议（`windowed` + `total` + `window-start` + `oas-window-request`）；windowed 下 `resources` 仅承载切片，组件不自动追加「未分配」行。打印样式 `@media print` 隐藏工具栏/取消滚动限高，`beforeprint` 临时关闭行/小时虚拟化、`afterprint` 恢复。
-- **重复语义（先落地宿主展开）**：windowed 下组件仍对已装载切片内 `repeat` 做本地展开；跨窗口重复实例由宿主展开为独立 occurrence（唯一 id）下发，避免边界重复/漏渲染。ICS 导出不在本批。
+- **范围**：resource / resource-week 接入共享行窗口协议（`windowed` + `total` + `window-start` + `oas-window-request`）；windowed 下 `resources` 仅承载切片，组件不自动追加「未分配」行。打印样式 `@media print` 隐藏工具栏/取消滚动限高，`beforeprint` 临时关闭行/小时虚拟化并打印已装载切片（windowed 不输出切片外空白 spacer）、`afterprint` 恢复。
+- **重复语义（先落地宿主展开）**：windowed 下组件仍对已装载切片内 `repeat` 做本地展开；宿主展开 occurrence 时必须从基础事件剥离 `repeat`（或不下发基础序列），每个 occurrence 用唯一 id，避免同日重复。行窗口只按资源切片，日期 occurrence 由宿主负责。ICS 导出不在本批。
 - **兼容**：`windowed` 缺省关，非 windowed 渲染/事件/CRUD 与旧版一致；打印仅在打印上下文改变呈现。
-- **验收**：单测覆盖 windowed 绝对行号/aria/spacer/请求去重、beforeprint 全量/afterprint 恢复；e2e 覆盖资源切片与 @media print；文档 zh/en、API 说明、CHANGELOG 同步。
+- **验收**：单测覆盖 windowed 绝对行号/aria/spacer/请求去重、off-slice 空交集、beforeprint/afterprint；e2e 覆盖资源切片首屏锚定、宿主回填滚动保持与 @media print；文档 zh/en、API 说明、CHANGELOG 同步。

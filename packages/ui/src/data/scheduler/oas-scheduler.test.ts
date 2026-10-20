@@ -851,6 +851,86 @@ describe('OASScheduler 虚拟化（时间轴小时窗口 + 资源行窗口）', 
     expect(req!.end).toBeGreaterThanOrEqual(60)
   })
 
+  it('windowed 未分配行可用保留 id __unassigned__ 显式承接', () => {
+    const el = mount({
+      view: 'resource',
+      'page-show-date': '2026-08-10',
+      windowed: '',
+      total: '2',
+      'window-start': '0',
+      resources: JSON.stringify([
+        { id: 'r1', title: 'R1' },
+        { id: '__unassigned__', title: 'Unassigned' },
+      ]),
+      events: JSON.stringify([{ date: '2026-08-10', title: 'orphan', start: '09:00', end: '10:00' }]),
+    })
+    const un = el.shadowRoot!.querySelector<HTMLElement>('.res-row[data-resource="__unassigned__"]')!
+    expect(un).not.toBeNull()
+    expect(un.querySelector('.res-bar')?.textContent).toBe('orphan')
+  })
+
+  it('windowed 隐藏视口不请求（防 margin 扩容发散）', () => {
+    const res = Array.from({ length: 20 }, (_, i) => ({ id: `r${40 + i}`, title: `R${40 + i}` }))
+    const el = new OASScheduler()
+    let req: unknown = null
+    el.addEventListener('oas-window-request', (e) => {
+      req = (e as CustomEvent).detail
+    })
+    el.setAttribute('view', 'resource')
+    el.setAttribute('windowed', '')
+    el.setAttribute('total', '100')
+    el.setAttribute('window-start', '40')
+    el.setAttribute('resources', JSON.stringify(res))
+    document.body.appendChild(el)
+    el.requestUpdate()
+    expect(req, '不可测视口不应派发窗口请求').toBeNull()
+  })
+
+  it('windowed off-slice：空交集退化为一点，spacer 总高守恒且请求覆盖可见底部', () => {
+    const res = Array.from({ length: 20 }, (_, i) => ({ id: `r${40 + i}`, title: `R${40 + i}` }))
+    const el = mount({
+      view: 'resource',
+      'page-show-date': '2026-08-10',
+      windowed: '',
+      total: '100',
+      'window-start': '40',
+      resources: JSON.stringify(res),
+    })
+    stubBox(resviewOf(el), { clientHeight: 740, scrollTop: 80 * RES_ROW_H })
+    el.requestUpdate()
+    const rows = el.shadowRoot!.querySelectorAll('.res-row')
+    expect(rows.length, '可视窗口在切片下方时应 0 行').toBe(0)
+    const top = parseFloat(el.shadowRoot!.querySelector<HTMLElement>('.res-pad-top')!.style.height)
+    const bottom = parseFloat(el.shadowRoot!.querySelector<HTMLElement>('.res-pad-bottom')!.style.height)
+    expect(top + bottom, 'spacer 总高守恒').toBe(100 * RES_ROW_H)
+  })
+
+  it('windowed 宿主回填切片不拽动用户滚动位置（无请求→回填→上移风暴）', async () => {
+    const res = Array.from({ length: 20 }, (_, i) => ({ id: `r${40 + i}`, title: `R${40 + i}` }))
+    const el = mount({
+      view: 'resource',
+      'page-show-date': '2026-08-10',
+      windowed: '',
+      total: '300',
+      'window-start': '40',
+      resources: JSON.stringify(res),
+    })
+    const rv = resviewOf(el)
+    stubBox(rv, { clientHeight: 740, scrollTop: 150 * RES_ROW_H })
+    let request: { start: number; end: number } | null = null
+    el.addEventListener('oas-window-request', (e) => {
+      request = (e as CustomEvent).detail
+    })
+    rv.dispatchEvent(new Event('scroll'))
+    await flushRaf()
+    expect(request, '滚动到未装载区应请求宿主').not.toBeNull()
+    const next = Array.from({ length: 20 }, (_, i) => ({ id: `r${request!.start + i}`, title: 'X' }))
+    el.setAttribute('window-start', String(request!.start))
+    el.setAttribute('resources', JSON.stringify(next))
+    el.requestUpdate()
+    expect(rv.scrollTop, '宿主回填后不得把用户滚动拽到切片首行').toBe(150 * RES_ROW_H)
+  })
+
   it('打印：@media print 存在；beforeprint 临时渲染全量、afterprint 恢复行窗口', () => {
     const res = Array.from({ length: 500 }, (_, i) => ({ id: `r${i}`, title: `R${i}` }))
     const el = mount({ view: 'resource', 'page-show-date': '2026-08-10', resources: JSON.stringify(res) })
