@@ -1,5 +1,6 @@
 import { OASElement } from '@oas-ui/core'
 import { lookupIcon } from '@oas-ui/icons/runtime'
+import { safeUrl } from '../../shared/safe-url.js'
 import { normalizeSizeStrict, THREE_SIZES } from '../../shared/size.js'
 import { devWarn } from '../../shared/dev-warn.js'
 
@@ -242,7 +243,9 @@ export class OASLink extends OASElement {
       if (!isValid) warnOnce('size', rawSize, 'medium', THREE_SIZES)
     }
 
-    a.setAttribute('href', href)
+    const safeHref = safeUrl(href)
+    if (safeHref) a.setAttribute('href', safeHref)
+    else a.removeAttribute('href')
     // download 透传（原生 <a download>）：空值布尔也透传（浏览器用原链接文件名），移除属性即清除
     if (this.hasAttr('download')) a.setAttribute('download', this.getAttr('download', ''))
     else a.removeAttribute('download')

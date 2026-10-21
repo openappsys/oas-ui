@@ -225,3 +225,6 @@ hover/active 为 `color-mix()` 派生值（随 primary 联动，light 掺黑压�
 - **`innerHTML` 的适用场景**：仅静态模板、受控常量（图标 SVG、骨架）。**禁止把未转义的用户数据裸拼进 `innerHTML`**。
 - **正面范例**：`oas-table` —— 表头/单元格动态数据用 `textContent`，`FILTER_ICON` 等为受控常量可用 `innerHTML`。
 - **上下文选型**：code / equation 等需保留 `&lt;`/`&gt;` 字面作预转义的，用 `escapeText`；文本或双引号属性值用 `escapeHtml` / `escapeAttr`。
+- **URL 协议**：`href` / `src` 等导航属性只允许 `http:` / `https:` / `mailto:` / `tel:` 与相对地址；`javascript:` / `data:` / `vbscript:` 等可执行或内联文档协议必须回落为空并移除属性（统一走 `shared/safe-url`）。
+- **可信 HTML 通道**：`empty.illustration`、`tour.close-icon`、`table.expand`、`icon.src` / `registerIcon` 等明确接收 HTML/SVG 的 API，只可传可信内容；文档必须写明信任边界，不可信数据由宿主先净化。
+- **CSP**：本库大量使用 `innerHTML` 与内联 `<style>`；启用严格 `Content-Security-Policy` / Trusted Types 的宿主需为这些通道放行或自行提供适配层，不能假设零配置兼容。

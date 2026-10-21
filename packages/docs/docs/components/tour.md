@@ -118,7 +118,7 @@
 
 ## 关闭按钮定制
 
-`show-close="false"` 隐藏关闭按钮；`close-icon` 自定义关闭按钮内容（HTML）。
+`show-close="false"` 隐藏关闭按钮；`close-icon` 自定义关闭按钮内容（HTML），只可传入可信数据，不可信内容请先在宿主侧转义。
 
 <DemoBlock title="关闭按钮定制">
   <oas-space>

@@ -286,7 +286,7 @@ In the first table above `summary-scope` is omitted (`all`): page 1 shows the to
   </div>
 </DemoBlock>
 
-When a row's data has a non-empty `expand` field, an expand column appears at the end of the table; clicking the button expands the whole row to show custom content. The expanded state is stored in the `expanded` attribute (a comma-separated set of keys), and toggling emits `oas-expand`.
+When a row's data has a non-empty `expand` field, an expand column appears at the end of the table; clicking the button expands the whole row to show custom content. The expanded state is stored in the `expanded` attribute (a comma-separated set of keys), and toggling emits `oas-expand`. `expand` is rendered as an HTML string: pass trusted content only, or escape/sanitize untrusted data on the host side.
 
 <DemoBlock title="Controlled expansion (expanded attribute)">
   <div style="width: 100%">

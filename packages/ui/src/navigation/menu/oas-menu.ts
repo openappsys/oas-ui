@@ -1,4 +1,4 @@
-import { OASElement } from '@oas-ui/core'
+import { escapeAttr, OASElement } from '@oas-ui/core'
 // 图标走 @oas-ui/icons 运行时查表（registerIcon 自定义注册优先、内置集兜底，与 oas-icon 同源）——
 // 不经 oas-icon 组件模块，避免把整个 <oas-icon> 拉进 menu 按需链
 import { lookupIcon } from '@oas-ui/icons/runtime'
@@ -1286,7 +1286,9 @@ export class OASMenu extends OASElement {
     const content = lookupIcon(icon)
     if (!content) return null
     const stroke = iconColor || 'currentColor'
-    const coloredContent = iconColor ? content.replace(/stroke="currentColor"/g, `stroke="${stroke}"`) : content
+    const coloredContent = iconColor
+      ? content.replace(/stroke="currentColor"/g, `stroke="${escapeAttr(stroke)}"`)
+      : content
     const span = document.createElement('span')
     span.className = className
     span.setAttribute('aria-hidden', 'true')

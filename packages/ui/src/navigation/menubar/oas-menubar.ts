@@ -1,4 +1,4 @@
-import { OASElement } from '@oas-ui/core'
+import { escapeAttr, OASElement } from '@oas-ui/core'
 import type { MenuItem, MenuItemKind } from '../menu/index.js'
 // 图标查表走 @oas-ui/icons 运行时（registerIcon 自定义优先、内置集兜底，与 oas-icon 同源）；
 // 不经 oas-icon 组件模块——避免把整个 <oas-icon> 拉进 menubar 按需链
@@ -1376,7 +1376,9 @@ export class OASMenubar extends OASElement {
   /** 已解析 path 内容 → 内联 SVG（createIcon 的下游；组件固定 chrome 也可直接喂精确 path 常量） */
   private createIconFromPath(content: string, className = 'icon', iconColor?: string): HTMLElement | null {
     const stroke = iconColor || 'currentColor'
-    const coloredContent = iconColor ? content.replace(/stroke="currentColor"/g, `stroke="${stroke}"`) : content
+    const coloredContent = iconColor
+      ? content.replace(/stroke="currentColor"/g, `stroke="${escapeAttr(stroke)}"`)
+      : content
     const span = document.createElement('span')
     span.className = className
     span.setAttribute('aria-hidden', 'true')

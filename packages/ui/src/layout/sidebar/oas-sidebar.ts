@@ -1,4 +1,4 @@
-import { OASElement } from '@oas-ui/core'
+import { escapeAttr, OASElement } from '@oas-ui/core'
 // 图标渲染走 @oas-ui/icons 运行时查表（registerIcon 自定义优先、内置集兜底，与 oas-icon 同源），
 // 不经 oas-icon 组件模块——避免把整个 <oas-icon> 拉进 sidebar 按需链
 import { lookupIcon } from '@oas-ui/icons/runtime'
@@ -1306,8 +1306,8 @@ export class OASSidebar extends OASElement {
       }
       btn.appendChild(actions)
     }
-    // 折叠态无图标项整体隐藏（仅保留图标）；嵌套子项在折叠态隐藏
-    if (collapsed && !item.icon) btn.hidden = true
+    // 折叠态无图标项整体隐藏（仅保留图标）；有行首头像的项也算「有可视内容」，保留
+    if (collapsed && !item.icon && !item.avatar && !item.avatarText && !item.avatarColor) btn.hidden = true
     // 折叠态 + 树形父项：flyout 子菜单（父项不是页面——点击开合面板；子项才是导航目标）
     if (collapsed && hasChildren && item.icon) {
       const block = document.createElement('div')
@@ -1526,8 +1526,9 @@ export class OASSidebar extends OASElement {
     const path = lookupIcon(name)
     if (!path) return null
     const stroke = iconColor || 'currentColor'
-    const coloredPath = iconColor ? path.replace(/stroke="currentColor"/g, `stroke="${stroke}"`) : path
-    return `<svg viewBox="0 0 16 16" width="1.25em" height="1.25em" aria-hidden="true" focusable="false" fill="none" stroke="${stroke}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">${coloredPath}</svg>`
+    const strokeAttr = escapeAttr(stroke)
+    const coloredPath = iconColor ? path.replace(/stroke="currentColor"/g, `stroke="${strokeAttr}"`) : path
+    return `<svg viewBox="0 0 16 16" width="1.25em" height="1.25em" aria-hidden="true" focusable="false" fill="none" stroke="${strokeAttr}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">${coloredPath}</svg>`
   }
 
   private parseItems(): void {

@@ -1,4 +1,4 @@
-import { OASElement } from '@oas-ui/core'
+import { escapeAttr, OASElement } from '@oas-ui/core'
 import { lookupIcon } from '@oas-ui/icons/runtime'
 import { isRtl } from '../../shared/direction.js'
 
@@ -315,7 +315,7 @@ export class OASSegmented extends OASElement {
       if (isValidIcon(icon)) {
         const iconEl = document.createElement('span')
         iconEl.className = 'item-icon'
-        iconEl.innerHTML = `<oas-icon name="${icon}"></oas-icon>`
+        iconEl.innerHTML = `<oas-icon name="${escapeAttr(icon)}"></oas-icon>`
         lab.appendChild(iconEl)
       }
       const text = document.createElement('span')

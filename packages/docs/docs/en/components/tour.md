@@ -118,7 +118,7 @@ When the target is off-screen the tour scrolls to it (`scroll-into-view-options`
 
 ## Close button customization
 
-`show-close="false"` hides the close button; `close-icon` replaces its content with arbitrary HTML.
+`show-close="false"` hides the close button; `close-icon` replaces its content with arbitrary HTML. Pass trusted content only, or escape untrusted data on the host side.
 
 <DemoBlock title="Close button customization">
   <oas-space>

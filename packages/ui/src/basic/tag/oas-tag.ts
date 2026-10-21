@@ -1,4 +1,5 @@
-import { OASElement } from '@oas-ui/core'
+import { escapeAttr, OASElement } from '@oas-ui/core'
+import { safeUrl } from '../../shared/safe-url.js'
 import { normalizeSizeStrict, ALL_SIZES } from '../../shared/size.js'
 import { lookupIcon } from '@oas-ui/icons/runtime'
 import { devWarn } from '../../shared/dev-warn.js'
@@ -479,10 +480,10 @@ export class OASTag extends OASElement {
 
   /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
   private template(): string {
-    const href = this.getAttr('href', '')
+    const href = safeUrl(this.getAttr('href', ''))
     const target = this.getAttr('target', '')
     const tag = href ? 'a' : 'span'
-    const hrefAttr = href ? ` href="${href}"${target ? ` target="${target}"` : ''}` : ''
+    const hrefAttr = href ? ` href="${escapeAttr(href)}"${target ? ` target="${escapeAttr(target)}"` : ''}` : ''
     return `
       <style>${STYLE}</style>
       <${tag} class="tag" part="tag"${hrefAttr}>
@@ -712,7 +713,7 @@ export class OASTag extends OASElement {
         const valid = closeIcon !== '' && lookupIcon(closeIcon) !== undefined
         if (valid) {
           if (closeIconEl.dataset.icon !== closeIcon) {
-            closeIconEl.innerHTML = `<oas-icon name="${closeIcon}"></oas-icon>`
+            closeIconEl.innerHTML = `<oas-icon name="${escapeAttr(closeIcon)}"></oas-icon>`
             closeIconEl.dataset.icon = closeIcon
           }
         } else if (closeIconEl.dataset.icon !== undefined) {
@@ -744,7 +745,7 @@ export class OASTag extends OASElement {
       iconEl.hidden = !valid
       if (valid) {
         if (iconEl.dataset.icon !== icon) {
-          iconEl.innerHTML = `<oas-icon name="${icon}"></oas-icon>`
+          iconEl.innerHTML = `<oas-icon name="${escapeAttr(icon)}"></oas-icon>`
           iconEl.dataset.icon = icon
         }
       } else {
@@ -761,7 +762,7 @@ export class OASTag extends OASElement {
       iconEndEl.hidden = !valid
       if (valid) {
         if (iconEndEl.dataset.icon !== iconEnd) {
-          iconEndEl.innerHTML = `<oas-icon name="${iconEnd}"></oas-icon>`
+          iconEndEl.innerHTML = `<oas-icon name="${escapeAttr(iconEnd)}"></oas-icon>`
           iconEndEl.dataset.icon = iconEnd
         }
       } else {
@@ -778,7 +779,7 @@ export class OASTag extends OASElement {
       checkedIconEl.hidden = !(checkable && checked && valid)
       if (valid) {
         if (checkedIconEl.dataset.icon !== checkedIcon) {
-          checkedIconEl.innerHTML = `<oas-icon name="${checkedIcon}"></oas-icon>`
+          checkedIconEl.innerHTML = `<oas-icon name="${escapeAttr(checkedIcon)}"></oas-icon>`
           checkedIconEl.dataset.icon = checkedIcon
         }
       } else {

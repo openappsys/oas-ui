@@ -1,4 +1,5 @@
-import { OASElement, readConfigValue } from '@oas-ui/core'
+import { escapeAttr, OASElement, readConfigValue } from '@oas-ui/core'
+import { safeUrl } from '../../shared/safe-url.js'
 import { pickOnColor as pickOnColorBase } from '../../shared/on-color.js'
 import { normalizeSizeStrict, ALL_SIZES } from '../../shared/size.js'
 import { lookupIcon } from '@oas-ui/icons/runtime'
@@ -868,17 +869,17 @@ export class OASButton extends OASElement {
 
   /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
   private template(): string {
-    const href = this.getAttr('href', '')
+    const href = safeUrl(this.getAttr('href', ''))
     const target = this.getAttr('target', '')
     const download = this.getAttr('download', '')
     const rel = this.getAttr('rel', '')
     const tag = href ? 'a' : 'button'
     const hrefAttr = [
-      href ? ` href="${href}"` : '',
-      target ? ` target="${target}"` : '',
+      href ? ` href="${escapeAttr(href)}"` : '',
+      target ? ` target="${escapeAttr(target)}"` : '',
       // download 支持空值布尔（浏览器用原链接文件名），用 hasAttr 判断存在即透传
-      this.hasAttr('download') ? ` download="${download}"` : '',
-      rel ? ` rel="${rel}"` : '',
+      this.hasAttr('download') ? ` download="${escapeAttr(download)}"` : '',
+      rel ? ` rel="${escapeAttr(rel)}"` : '',
     ].join('')
     return `
       <style>${STYLE}</style>

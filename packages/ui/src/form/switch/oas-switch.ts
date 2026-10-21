@@ -1,4 +1,4 @@
-import { OASFormElement } from '@oas-ui/core'
+import { escapeAttr, OASFormElement } from '@oas-ui/core'
 import { pickOnColor as pickOnColorBase } from '../../shared/on-color.js'
 import { lookupIcon } from '@oas-ui/icons/runtime'
 import { isRtl } from '../../shared/direction.js'
@@ -516,7 +516,7 @@ export class OASSwitch extends OASFormElement {
       thumbIcon.hidden = !valid
       if (valid) {
         if (thumbIcon.dataset.icon !== name) {
-          thumbIcon.innerHTML = `<oas-icon name="${name}"></oas-icon>`
+          thumbIcon.innerHTML = `<oas-icon name="${escapeAttr(name)}"></oas-icon>`
           thumbIcon.dataset.icon = name
         }
       } else {

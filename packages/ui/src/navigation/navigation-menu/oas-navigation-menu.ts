@@ -1,4 +1,4 @@
-import { OASElement } from '@oas-ui/core'
+import { escapeAttr, OASElement } from '@oas-ui/core'
 import { getViewport } from '../../overlay/floating/index.js'
 import type { MenuItem } from '../menu/index.js'
 import type { MenuItemKind } from '../menu/oas-menu.js'
@@ -1668,7 +1668,9 @@ export class OASNavigationMenu extends OASElement {
     const content = lookupIcon(icon)
     if (!content) return null
     const stroke = iconColor || 'currentColor'
-    const coloredContent = iconColor ? content.replace(/stroke="currentColor"/g, `stroke="${stroke}"`) : content
+    const coloredContent = iconColor
+      ? content.replace(/stroke="currentColor"/g, `stroke="${escapeAttr(stroke)}"`)
+      : content
     const span = document.createElement('span')
     span.className = className
     span.setAttribute('aria-hidden', 'true')

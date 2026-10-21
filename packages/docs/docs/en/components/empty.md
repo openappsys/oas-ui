@@ -53,7 +53,7 @@ Description text is set via the `description` attribute, or via rich content pla
 
 ## Custom illustration (image URL / SVG markup / slot)
 
-The `illustration` attribute accepts an image URL or inline SVG/HTML markup; the `illustration` slot takes any content and has the highest priority.
+The `illustration` attribute accepts an image URL or inline SVG/HTML markup; the `illustration` slot takes any content and has the highest priority. Markup is rendered as HTML: pass trusted content only, or escape untrusted data on the host side.
 
 <DemoBlock title="Image URL">
   <oas-empty title="No data" illustration="https://picsum.photos/seed/oas-empty/120"></oas-empty>

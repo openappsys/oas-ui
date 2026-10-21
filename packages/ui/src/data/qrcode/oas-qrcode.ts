@@ -513,18 +513,21 @@ export class OASQRCode extends OASElement {
     // 数据区：square 走纯色/渐变直填合并单 path（crispEdges 保锐利）；
     // rounded/dots 走「合并路径 + pattern 平铺原型」——路径体量与 square 同级（旧逐模块 <use> 约 5 倍体积）
     const d = dataPath(modules, moduleCount, margin, skip)
+    // fill/bg 允许宿主传任意 CSS 色值；写入 SVG 属性前统一转义，避免引号逃逸出属性上下文
+    const fillAttr = escapeAttr(fill)
+    const bgAttr = escapeAttr(bg)
     let data: string
     if (dotShape === 'square') {
-      data = `<path d="${d}" fill="${fill}" shape-rendering="crispEdges"/>`
+      data = `<path d="${d}" fill="${fillAttr}" shape-rendering="crispEdges"/>`
     } else {
-      defs += modulePatternDef(dotShape, MODULE_PATTERN_ID, fill)
+      defs += modulePatternDef(dotShape, MODULE_PATTERN_ID, fillAttr)
       data = `<path d="${d}" fill="url(#${MODULE_PATTERN_ID})"/>`
     }
     // 定位图形单独绘制（corner-shape=square 时与模块栅格逐像素等价；rounded 换圆角）
     const crisp = cornerShape === 'square' ? ' shape-rendering="crispEdges"' : ''
-    const finder = `<path d="${finderPath(moduleCount, margin, cornerShape)}" fill="${fill}" fill-rule="evenodd"${crisp}/>`
+    const finder = `<path d="${finderPath(moduleCount, margin, cornerShape)}" fill="${fillAttr}" fill-rule="evenodd"${crisp}/>`
 
-    let inner = `<rect width="${total}" height="${total}" fill="${bg}"/>`
+    let inner = `<rect width="${total}" height="${total}" fill="${bgAttr}"/>`
     if (defs) inner += `<defs>${defs}</defs>`
     inner += data + finder
 
@@ -533,7 +536,7 @@ export class OASQRCode extends OASElement {
       const x = total / 2 - iconModules / 2
       const y = total / 2 - iconModules / 2
       const radius = Math.max(1, iconModules * 0.12)
-      inner += `<rect x="${x - iconPad}" y="${y - iconPad}" width="${iconModules + iconPad * 2}" height="${iconModules + iconPad * 2}" rx="${radius}" fill="${bg}"/>`
+      inner += `<rect x="${x - iconPad}" y="${y - iconPad}" width="${iconModules + iconPad * 2}" height="${iconModules + iconPad * 2}" rx="${radius}" fill="${bgAttr}"/>`
       inner += `<image href="${escapeAttr(icon)}" x="${x}" y="${y}" width="${iconModules}" height="${iconModules}" preserveAspectRatio="xMidYMid slice"/>`
     }
     return { inner, total }

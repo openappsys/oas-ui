@@ -286,7 +286,7 @@
   </div>
 </DemoBlock>
 
-行数据存在非空 `expand` 字段时，表尾出现展开列，点击行尾按钮展开一整行展示自定义内容；展开状态保存在 `expanded` 属性（逗号分隔的 key 集合），切换时派发 `oas-expand`。
+行数据存在非空 `expand` 字段时，表尾出现展开列，点击行尾按钮展开一整行展示自定义内容；展开状态保存在 `expanded` 属性（逗号分隔的 key 集合），切换时派发 `oas-expand`。`expand` 按 HTML 字符串渲染，只可传入可信内容；不可信数据请先在宿主侧转义或改用纯文本。
 
 <DemoBlock title="受控展开（expanded 属性）">
   <div style="width: 100%">
