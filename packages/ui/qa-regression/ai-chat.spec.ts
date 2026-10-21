@@ -71,7 +71,19 @@ test('AI 会话流式期间上翻不被逐 token 拉回', async ({ page }) => {
     const log = document.getElementById('ai-chat-log') as HTMLElement & { shadowRoot?: ShadowRoot | null }
     log.shadowRoot!.querySelector<HTMLElement>('[part="viewport"]')!.scrollTop = 0
   })
-  await page.waitForTimeout(500)
+  await page.waitForFunction(
+    () => {
+      const log = document.getElementById('ai-chat-log') as HTMLElement
+      const bubbles = log.querySelectorAll('oas-bubble')
+      const text = bubbles[bubbles.length - 1]?.textContent ?? ''
+      return text.length > 20
+    },
+    undefined,
+    { timeout: 5000 },
+  )
+  await page.evaluate(
+    () => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))),
+  )
   const scrollTop = await page.evaluate(() => {
     const log = document.getElementById('ai-chat-log') as HTMLElement & { shadowRoot?: ShadowRoot | null }
     return log.shadowRoot!.querySelector<HTMLElement>('[part="viewport"]')!.scrollTop

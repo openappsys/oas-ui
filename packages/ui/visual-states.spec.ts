@@ -7,7 +7,7 @@ test('Q09 reduced-motion：代表页面动画时长压到近零', async ({ page 
   await page.emulateMedia({ reducedMotion: 'reduce' })
   for (const name of PAGES) {
     await page.goto(`/components/${name}.html`, { waitUntil: 'domcontentloaded' })
-    await page.waitForTimeout(200)
+    await page.waitForFunction(() => document.querySelector('.demo-block') != null)
     const violations = await page.evaluate(() => {
       const bad: string[] = []
       const walk = (root: Document | ShadowRoot): void => {
@@ -78,7 +78,7 @@ test('Q09 narrow：320px 视口代表页面无页面级横向溢出', async ({ p
   await page.setViewportSize({ width: 320, height: 667 })
   for (const name of NARROW_PAGES) {
     await page.goto(`/components/${name}.html`, { waitUntil: 'domcontentloaded' })
-    await page.waitForTimeout(100)
+    await page.waitForFunction(() => document.querySelector('.demo-block') != null)
     const overflow = await page.evaluate(
       () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
     )
