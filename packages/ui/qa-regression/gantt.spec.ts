@@ -1839,3 +1839,33 @@ test('gantt 逐资源日历：资源假期/工作日交集驱动前推', async (
     ),
   ).toEqual(['ra', 'rb'])
 })
+
+test('gantt 资源泳道：按首个资源分组、多资源任务不重复', async ({ page }) => {
+  await page.goto('/components/gantt.html', { waitUntil: 'domcontentloaded' })
+  await waitGantt(page, 'gantt-resource-lanes')
+  const host = page.locator('#gantt-resource-lanes')
+  const rows = await host.evaluate((el) => {
+    const shadow = (el as HTMLElement).shadowRoot!
+    return [...shadow.querySelectorAll<HTMLElement>('.side-body .row-name')].map((row) => ({
+      key: row.dataset.key,
+      text: (row.textContent || '').trim(),
+    }))
+  })
+  expect(rows.map((row) => row.key)).toEqual(['__oas_resource__:ra', 'rl1', 'rl3', '__oas_resource__:rb', 'rl2', 'rl4'])
+  expect(rows[0]!.text).toContain('设计')
+  expect(rows[3]!.text).toContain('开发')
+  expect(rows.filter((row) => row.key === 'rl3')).toHaveLength(1)
+})
+
+test('gantt 小时级班次：前推落在班次外吸附到下一班次起点', async ({ page }) => {
+  await page.goto('/components/gantt.html', { waitUntil: 'domcontentloaded' })
+  await waitGantt(page, 'gantt-shift-hour')
+  const host = page.locator('#gantt-shift-hour')
+  expect(
+    await host.evaluate((el) =>
+      (el as unknown as { tasks: Array<{ id: string; start: string; end: string }> }).tasks.find(
+        (task) => task.id === 'sh2',
+      ),
+    ),
+  ).toMatchObject({ start: '2026-03-03 09:00', end: '2026-03-03 10:00' })
+})

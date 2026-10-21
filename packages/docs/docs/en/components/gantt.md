@@ -158,7 +158,8 @@ Assemble a task detail editor with `oas-modal` + `oas-form` (the component only 
 
 - **Task constraints**: `GanttTask.constraint` (`'asap'` default / `'snet'` start-no-earlier-than / `'mso'` must-start-on / `'fnlt'` finish-no-later-than) + `constraintDate`. Under `auto-schedule`: `snet` sets a start floor, `mso` pins the start (not pushed by dependencies), `fnlt` is a soft deadline (no auto-move). Violations (`snet` earlier than the floor / `mso` conflicting with dependencies or off the pin / `fnlt` over deadline) are marked `.conflict` when **`show-critical-path` or `auto-schedule` is on**. Constraints on summary rows are meaningless (dates are derived) → ignored with a one-time warning.
 - **Working-days calendar**: `workdays` (JSON weekday array `[0..6]`, opt-in; absent/empty = any weekday) + `holidays` (**holidays are always non-working**, regardless of `workdays`). `auto-schedule` snaps pushed landing points to the **next working day** (skipping holidays and days outside `workdays`). Changing `workdays`/`holidays` at runtime, or rewriting `tasks`, re-normalizes.
-- **Per-resource calendars**: `resources` (JSON `[{ id, name?, workdays?, holidays?, shifts? }]`) + `GanttTask.resources`. For a task assigned multiple resources, `workdays` is intersected and `holidays` are unioned; `shifts: []` means no available shift. `shifts` is retained for hour-level host scheduling/presentation; day-level `auto-schedule` consumes only workdays/holidays.
+- **Per-resource calendars**: `resources` (JSON `[{ id, name?, workdays?, holidays?, shifts? }]`) + `GanttTask.resources`. For a task assigned multiple resources, `workdays` is intersected and `holidays` are unioned; `shifts: []` means no available shift. In `hour` scale, `auto-schedule` snaps the start into the first assigned resource with shifts (inside a shift stays; between/after shifts moves to the next shift start; multi-resource shift intersection is future work); day-level scheduling still consumes only workdays/holidays.
+- **Resource lanes**: `group-by-resource` creates summary lanes from each task's first `resources` entry (lane name uses the resource `name`, falling back to id); multi-resource tasks appear only under their first resource, and unassigned tasks stay top-level. When both `group-by-resource` and `group-by-project` are set, resource lanes win.
 - **Event order**: with `auto-schedule` on and dependent corrections applied, the order is uniformly `oas-reschedule` (dependent corrections) → `oas-tasks-change` (final corrected data), whether the change comes from an interaction commit (drag / keyboard / `updateTask` / `updateTasks`) or the host rewriting `tasks` directly (attribute channel); a drag/keyboard settle then dispatches `oas-task-change` (the dragged task, with `start/end` carrying the **corrected final values**). One operation dispatches `oas-tasks-change` exactly once. Hosts should read `el.tasks` / `detail.task`.
 
 <DemoBlock title="Working-days calendar: with workdays=[Mon–Fri], drag the predecessor and the successor snaps to the next working day; a +2 (lag) label is visible on the link">
@@ -172,6 +173,27 @@ Assemble a task detail editor with `oas-modal` + `oas-form` (the component only 
     workdays="[1,2,3,4,5]"
     resources='[{"id":"ra","holidays":["2026-03-09"]},{"id":"rb","workdays":[1,3,5],"shifts":[{"start":"09:00","end":"18:00"}]}]'
     tasks='[{"id":"rc1","name":"Design","start":"2026-03-02","end":"2026-03-06"},{"id":"rc2","name":"Integration (A+B)","start":"2026-03-01","end":"2026-03-02","resources":["ra","rb"],"dependencies":[{"id":"rc1"}]}]'
+    height="180"
+  ></oas-gantt>
+</DemoBlock>
+
+<DemoBlock title="Resource lanes: group by first assigned resource; multi-resource tasks appear once">
+  <oas-gantt
+    id="gantt-resource-lanes"
+    group-by-resource
+    resources='[{"id":"ra","name":"Design"},{"id":"rb","name":"Engineering"}]'
+    tasks='[{"id":"rl1","name":"Visuals","start":"2026-03-02","end":"2026-03-04","resources":["ra"]},{"id":"rl2","name":"Implement","start":"2026-03-03","end":"2026-03-06","resources":["rb"]},{"id":"rl3","name":"Integration","start":"2026-03-05","end":"2026-03-07","resources":["ra","rb"]},{"id":"rl4","name":"Unassigned","start":"2026-03-06","end":"2026-03-07"}]'
+    height="220"
+  ></oas-gantt>
+</DemoBlock>
+
+<DemoBlock title="Hour-level shifts: dependency pushes to 19:00; auto-schedule snaps to next day 09:00">
+  <oas-gantt
+    id="gantt-shift-hour"
+    auto-schedule
+    scale="hour"
+    resources='[{"id":"rh","shifts":[{"start":"09:00","end":"18:00"}]}]'
+    tasks='[{"id":"sh1","name":"Overrun","start":"2026-03-02 10:00","end":"2026-03-02 19:00"},{"id":"sh2","name":"Successor","start":"2026-03-02 08:00","end":"2026-03-02 09:00","resources":["rh"],"dependencies":[{"id":"sh1"}]}]'
     height="180"
   ></oas-gantt>
 </DemoBlock>
@@ -653,6 +675,7 @@ onMounted(async () => {
 | `expanded` | Expanded set (JSON array, controlled): defaults to fully expanded when absent; explicit [] collapses all; written back on toggle | `string` | — |
 | `first-day-of-week` | Week start day (0-6); defaults to locale derivation (used for week-tier alignment) | `string` | — |
 | `group-by-project` | Group root tasks by project into synthetic summary rows (row id __oas_project__:&lt;project&gt;) without mutating the task array; windowed mode requires host-flattened rows | `string` | — |
+| `group-by-resource` | Group root tasks into summary lanes by their first resources entry (lane name from resources.name, falling back to id); multi-resource tasks appear only under their first resource; unassigned tasks stay top-level; resource lanes win over group-by-project | `string` | — |
 | `height` | Component height in px (default 320; accepts a plain number or Npx): mapped to the custom property --oas-gantt-height. The height is applied to the internal canvas (.gantt) — the host's own inline height only frames the outer box, while the inner canvas height is still governed by the height attribute / --oas-gantt-height and is not stretched by the host's inline height; to change the overall height use the height attribute or --oas-gantt-height. While the height attribute is present and valid (>0 plain number or Npx) the component takes over this variable — writing it inline on the host and overriding any --oas-gantt-height the host set itself; an empty/whitespace value is treated as unset; an invalid value writes nothing and only clears a value this instance wrote earlier, so a host token is never affected; after the attribute is removed the component-written value is cleared to zero, so the height falls back to the token default (320) or host CSS, and the host's previous inline value is not restored; when the height attribute was never set the component never writes the variable, and a --oas-gantt-height set by the host (inline or via class rules) is left completely untouched | `string` | `320` |
 | `history` | Built-in undo/redo (boolean, off by default): records task commits (max 100), used with undo()/redo()/canUndo/canRedo/clearHistory(); replacing tasks wholesale clears the stack | `string` | — |
 | `holidays` | Holiday list (JSON ["YYYY-MM-DD",…]): matching columns highlighted (takes precedence over weekend tint); holidays are always non-working (regardless of workdays) and are skipped by auto-schedule | `string` | — |
@@ -662,7 +685,7 @@ onMounted(async () => {
 | `range-end` | Host-managed time-axis end (ISO date YYYY-MM-DD, inclusive); pair with range-start | `string` | — |
 | `range-start` | Host-managed time-axis start (ISO date YYYY-MM-DD): when provided the axis extent is no longer derived from data; use with range-end to support windowed mode (the slice may not span the full date range) | `string` | — |
 | `readonly` | Whole chart read-only (no rescheduling/progress, drag handles not rendered) | `boolean` | — |
-| `resources` | Per-resource calendars (JSON): [{ id, name?, workdays?, holidays?, shifts? }] used with GanttTask.resources; workdays are intersected, holidays unioned; shifts: [] means no available shift; day-level auto-schedule uses workdays/holidays only | `string` | — |
+| `resources` | Per-resource calendars (JSON): [{ id, name?, workdays?, holidays?, shifts? }] used with GanttTask.resources; workdays intersect, holidays union; shifts: [] means no available shift; hour-scale auto-schedule snaps into the first assigned resource with shifts, day scale uses workdays/holidays only | `string` | — |
 | `row-height` | Row height in px (default 36, minimum 20) | `string` | `36` |
 | `scale` | Time scale: hour / day (default) / week / month / quarter / year; invalid values fall back to day | `string` | — |
 | `show-baseline` | Baseline comparison (boolean, off by default): tasks with baseline render a baseline bar under the actual bar (baseline.progress renders an overlay), with a title showing the delta (N days later/earlier or same) | `boolean` | — |

@@ -1386,6 +1386,7 @@ export class OASGantt extends OASElement {
       // 行斑马纹开关（opt-in，默认关）
       'stripe',
       'group-by-project',
+      'group-by-resource',
       // windowed（服务端行窗口模式）+ 宿主托管时间范围（契约见 shared/window-data.ts）
       'windowed',
       'total',
@@ -1985,6 +1986,10 @@ export class OASGantt extends OASElement {
     return this.hasAttr('group-by-project') && this.getAttr('group-by-project', '') !== 'false'
   }
 
+  private groupByResourceOn(): boolean {
+    return this.hasAttr('group-by-resource') && this.getAttr('group-by-resource', '') !== 'false'
+  }
+
   private showFloatOn(): boolean {
     return this.hasAttr('show-float') && this.getAttr('show-float', '') !== 'false'
   }
@@ -2151,6 +2156,43 @@ export class OASGantt extends OASElement {
       cur += DAY_MS
     }
     return ms
+  }
+
+  /** 任务的班次窗口（首个带 shifts 的分配资源；多资源交集留待后续） */
+  private shiftWindows(task?: GanttTask): Array<{ start: number; end: number }> | null {
+    if (!task?.resources?.length) return null
+    const resources = this.resourceCalendars()
+    for (const id of task.resources) {
+      const shifts = resources.get(id)?.shifts
+      if (!shifts) continue
+      const windows: Array<{ start: number; end: number }> = []
+      for (const shift of shifts) {
+        const [sh, sm] = shift.start.split(':').map(Number)
+        const [eh, em] = shift.end.split(':').map(Number)
+        const start = sh! * 60 + sm!
+        const end = eh! * 60 + em!
+        if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) continue
+        windows.push({ start, end })
+      }
+      windows.sort((a, b) => a.start - b.start)
+      return windows.length > 0 ? windows : null
+    }
+    return null
+  }
+
+  /** hour 档按资源班次吸附起点：班次内保留，班次间/班次后落到下一个班次起点 */
+  private snapToShift(ms: number, task?: GanttTask): number {
+    if (this.scaleMode() !== 'hour') return ms
+    const windows = this.shiftWindows(task)
+    if (!windows) return ms
+    const d = new Date(ms)
+    const minute = d.getHours() * 60 + d.getMinutes()
+    if (windows.some((w) => minute >= w.start && minute < w.end)) return ms
+    const dayStart = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime()
+    for (const w of windows) {
+      if (minute < w.start) return dayStart + w.start * 60_000
+    }
+    return new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1).getTime() + windows[0]!.start * 60_000
   }
 
   /**
@@ -2388,8 +2430,70 @@ export class OASGantt extends OASElement {
     return out
   }
 
+  /** 按首个分配资源把根任务收进合成资源泳道（仅展示层克隆，不改原任务；未分配任务保持顶层） */
+  private groupTasksByResource(tasks: TG[]): TG[] {
+    const groups = new Map<string, TG[]>()
+    const order: string[] = []
+    for (const t of tasks) {
+      if (t.parent) continue
+      const resource = t.resources?.[0]
+      if (!resource) continue
+      const list = groups.get(resource)
+      if (list) list.push(t)
+      else {
+        groups.set(resource, [t])
+        order.push(resource)
+      }
+    }
+    if (order.length === 0) return tasks
+    const calendars = this.resourceCalendars()
+    const used = new Set(tasks.map((t) => t.id))
+    const groupRoots = new Map<string, TG>()
+    for (const resource of order) {
+      let id = `__oas_resource__:${resource}`
+      let n = 2
+      while (used.has(id)) id = `__oas_resource__:${resource}#${n++}`
+      used.add(id)
+      const members = groups.get(resource)!
+      let start = members[0]!.start
+      let end = members[0]!.end ?? members[0]!.start
+      for (const t of members) {
+        if (t.start < start) start = t.start
+        const e = t.end ?? t.start
+        if (e > end) end = e
+      }
+      groupRoots.set(resource, {
+        id,
+        name: calendars.get(resource)?.name ?? resource,
+        start,
+        end,
+        type: 'summary',
+      } as TG)
+    }
+    const out: TG[] = []
+    const grouped = new Set([...groups.values()].flat().map((t) => t.id))
+    for (const t of tasks) {
+      if (grouped.has(t.id)) {
+        const root = groupRoots.get(t.resources![0]!)
+        if (root && !out.includes(root)) {
+          out.push(root)
+          for (const member of groups.get(t.resources![0]!)!) {
+            out.push({ ...member, parent: root.id, children: undefined })
+          }
+        }
+        continue
+      }
+      out.push(t)
+    }
+    return out
+  }
+
   private buildRows(): void {
-    const tasks = this.groupByProjectOn() ? this.groupTasksByProject(this._tasks) : this._tasks
+    const tasks = this.groupByResourceOn()
+      ? this.groupTasksByResource(this._tasks)
+      : this.groupByProjectOn()
+        ? this.groupTasksByProject(this._tasks)
+        : this._tasks
     // 日期助手（windowed 扁平分支与树形分支共用）
     const startMsOf = (t: TG): number => parseTaskDate(t.start)?.getTime() ?? 0
     // 里程碑口径（全局统一）：显式 type:"milestone" 优先（带 end 也算，渲染/聚合/连线锚点一致忽略 end），
@@ -5784,6 +5888,7 @@ export class OASGantt extends OASElement {
         if (con && con.mode === 'snet' && con.ms > required) required = con.ms
         if (!(required > startMs)) continue // 只推不提前（fnlt 不在此移动：仅参与违约判定）
         required = this.snapToWorkingDay(required, t)
+        required = this.snapToShift(required, t)
         if (!(required > startMs)) continue
         if (this.writeStartKeepingDuration(t, required, duration)) {
           changed.add(t.id)

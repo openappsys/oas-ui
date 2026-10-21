@@ -4359,7 +4359,8 @@
       "group-by-project": "Group root tasks by project into synthetic summary rows (row id __oas_project__:&lt;project&gt;) without mutating the task array; windowed mode requires host-flattened rows",
       "show-variance": "Render a Δ±Nd variance badge after the row name when a baseline exists; exposes data-start-delta/data-end-delta/data-duration-delta/data-progress-delta",
       "history": "Built-in undo/redo (boolean, off by default): records task commits (max 100), used with undo()/redo()/canUndo/canRedo/clearHistory(); replacing tasks wholesale clears the stack",
-      "resources": "Per-resource calendars (JSON): [{ id, name?, workdays?, holidays?, shifts? }] used with GanttTask.resources; workdays are intersected, holidays unioned; shifts: [] means no available shift; day-level auto-schedule uses workdays/holidays only"
+      "resources": "Per-resource calendars (JSON): [{ id, name?, workdays?, holidays?, shifts? }] used with GanttTask.resources; workdays intersect, holidays union; shifts: [] means no available shift; hour-scale auto-schedule snaps into the first assigned resource with shifts, day scale uses workdays/holidays only",
+      "group-by-resource": "Group root tasks into summary lanes by their first resources entry (lane name from resources.name, falling back to id); multi-resource tasks appear only under their first resource; unassigned tasks stay top-level; resource lanes win over group-by-project"
     },
     "events": {
       "oas-reschedule": "Dispatched when auto-scheduling moved successor tasks (auto-schedule on), detail: { ids } (ids of the rescheduled tasks)",

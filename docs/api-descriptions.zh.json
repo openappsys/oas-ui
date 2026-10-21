@@ -4359,7 +4359,8 @@
       "group-by-project": "按任务 project 自动生成项目根摘要（行 id 为 __oas_project__:&lt;project&gt;），原任务数组不变；windowed 模式要求宿主自行展平，不做自动分组",
       "show-variance": "任务带 baseline 时在行名后显示 Δ±Nd 偏差徽标，并写入 data-start-delta/data-end-delta/data-duration-delta/data-progress-delta；正值标红、负值标绿",
       "history": "内建撤销/重做（布尔，默认关）：记录任务提交快照（最多 100 步），配合 undo()/redo()/canUndo/canRedo/clearHistory()；外部整体重写 tasks 会清空历史",
-      "resources": "逐资源日历（JSON）：[{ id, name?, workdays?, holidays?, shifts? }]；与 GanttTask.resources 配合，多资源 workdays 取交集、holidays 取并集；shifts: [] 表示无可用班次，日级 auto-schedule 只消费 workdays/holidays"
+      "resources": "逐资源日历（JSON [{ id, name?, workdays?, holidays?, shifts? }]）：与 GanttTask.resources 配合；多资源 workdays 取交集、holidays 取并集；shifts: [] 表示无可用班次；hour 档 auto-schedule 吸附到首个带班次资源的窗口，日级只消费 workdays/holidays",
+      "group-by-resource": "按任务首个 resources 生成资源摘要泳道（资源名取 resources.name，缺省用 id）；多资源任务只出现在首个资源下，未分配任务保持顶层；与 group-by-project 同时开启时资源泳道优先"
     },
     "events": {
       "oas-reschedule": "依赖联动排程改动了后继任务时派发（auto-schedule 开启），detail: { ids }（被联动改动的任务 id）",

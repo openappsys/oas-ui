@@ -153,6 +153,12 @@
       "observed": true
     },
     {
+      "name": "group-by-resource",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
       "name": "windowed",
       "type": "boolean",
       "observed": true

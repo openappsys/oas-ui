@@ -2652,10 +2652,10 @@ group 子钮此前为宿主自填 light DOM（`slot="action"`），组件用 `::
 
 ## 未发布：gantt 逐资源日历/班次
 
-- **范围**：新增 esources 属性与 GanttTask.resources；资源项支持 workdays、holidays、shifts。uto-schedule 按任务全部分配资源的工作日取交集、假期取并集后吸附工作日。shifts: [] 表示资源无可用班次；具体小时窗口保留给宿主小时级排程/展示。
-- **语义**：未声明 esources 或任务无资源时回退全局 workdays/holidays；资源缺失 id 忽略。日级排程只消费 workdays/holidays，不改变既有任务工期/依赖语义。
-- **兼容**：新字段全部可选；不设置时与旧版完全一致。
-- **验收**：单测覆盖资源假期、工作日交集、多资源组合、任务 resources 清洗；e2e 覆盖逐资源日历 demo；文档 zh/en、API 说明与 CHANGELOG 同步。
+- **范围**：新增 resources 属性与 GanttTask.resources；资源项支持 workdays、holidays、shifts；新增 `group-by-resource` 资源泳道（按首个分配资源分组，资源名取 name/缺省 id，多资源任务只出现一次，未分配任务保持顶层）。auto-schedule 按任务全部分配资源的工作日取交集、假期取并集后吸附工作日；hour 档按首个带班次资源的 shifts 吸附起点。shifts: [] 表示资源无可用班次。
+- **语义**：未声明 resources 或任务无资源时回退全局 workdays/holidays；资源缺失 id 忽略。日级排程只消费 workdays/holidays，hour 档班次只吸附起点、不压缩工期；多资源班次交集待后续。
+- **兼容**：新字段/属性全部可选；不设置时与旧版完全一致；group-by-resource 与 group-by-project 同时开启时资源泳道优先。
+- **验收**：单测覆盖资源假期、工作日交集、多资源组合、任务 resources 清洗、hour 班次吸附、资源泳道分组；e2e 覆盖逐资源日历/资源泳道/小时班次 demo；文档 zh/en、API 说明与 CHANGELOG 同步。
 
 ## 未发布：conversation prompt-input 提示词输入
 

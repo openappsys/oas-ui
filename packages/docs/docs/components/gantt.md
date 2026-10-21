@@ -158,7 +158,8 @@
 
 - **任务约束**：`GanttTask.constraint`（`'asap'` 默认 / `'snet'` 不得早于 / `'mso'` 固定开始 / `'fnlt'` 不得晚于完成）+ `constraintDate`。`auto-schedule` 下：`snet` 取起始下限、`mso` 固定开始（不被依赖前推）、`fnlt` 为软截止（不自动移动）。违反（`snet` 早于下限 / `mso` 与依赖冲突或偏离 / `fnlt` 超期）在 **`show-critical-path` 或 `auto-schedule` 开启时**以 `.conflict` 标出。摘要行上的约束无意义（日期派生）→ 忽略并告警一次。
 - **工作日日历**：`workdays`（JSON 周几数组 `[0..6]`，opt-in；缺省/空 = 不限周几）+ `holidays`（**假日恒为非工作日**，与是否开 `workdays` 无关）。`auto-schedule` 的前推落点**吸附到下一个工作日**（跳过假日与 `workdays` 之外的日子）。运行期改 `workdays`/`holidays` 或整体重写 `tasks` 都会触发重新规整。
-- **逐资源日历**：`resources`（JSON `[{ id, name?, workdays?, holidays?, shifts? }]`）+ `GanttTask.resources`。任务分配多个资源时，`workdays` 取交集、`holidays` 取并集；`shifts: []` 表示该资源无可用班次。`shifts` 目前保留给小时级宿主排程/展示，`auto-schedule` 的日级吸附只消费 workdays/holidays（不改变既有全局日历语义）。
+- **逐资源日历**：`resources`（JSON `[{ id, name?, workdays?, holidays?, shifts? }]`）+ `GanttTask.resources`。任务分配多个资源时，`workdays` 取交集、`holidays` 取并集；`shifts: []` 表示该资源无可用班次。`hour` 档 `auto-schedule` 会将起点吸附到首个带班次资源的窗口（班次内保留，班次间/班次后落到下一班次起点；多资源班次交集待后续）；日级排程仍只消费 workdays/holidays。
+- **资源泳道**：`group-by-resource` 按任务首个 `resources` 生成资源摘要泳道（资源名取 `resources` 的 `name`，缺省用 id）；多资源任务只出现在首个资源下，未分配任务保持顶层。与 `group-by-project` 同时开启时资源泳道优先。
 - **事件顺序**：`auto-schedule` 开启且联动改期时，无论交互提交（拖拽 / 键盘 / `updateTask` / `updateTasks`）还是宿主直接改写 `tasks`（属性通道），事件序统一为 `oas-reschedule`（联动订正）→ `oas-tasks-change`（订正后的最终数据）；拖拽 / 键盘改期收口随后再派发 `oas-task-change`（拖动的那个任务，`start/end` 取**订正后终值**）。一次操作只派发一次 `oas-tasks-change`。宿主以 `el.tasks` / `detail.task` 为准即可。
 
 <DemoBlock title="工作日日历：workdays=[工作日] 下拖前置，后置自动吸附到下一个工作日；连线 +2（lag）标签可见">
@@ -172,6 +173,27 @@
     workdays="[1,2,3,4,5]"
     resources='[{"id":"ra","holidays":["2026-03-09"]},{"id":"rb","workdays":[1,3,5],"shifts":[{"start":"09:00","end":"18:00"}]}]'
     tasks='[{"id":"rc1","name":"设计","start":"2026-03-02","end":"2026-03-06"},{"id":"rc2","name":"联调（资源 A+B）","start":"2026-03-01","end":"2026-03-02","resources":["ra","rb"],"dependencies":[{"id":"rc1"}]}]'
+    height="180"
+  ></oas-gantt>
+</DemoBlock>
+
+<DemoBlock title="资源泳道：按首个分配资源分组，多资源任务不重复">
+  <oas-gantt
+    id="gantt-resource-lanes"
+    group-by-resource
+    resources='[{"id":"ra","name":"设计"},{"id":"rb","name":"开发"}]'
+    tasks='[{"id":"rl1","name":"视觉稿","start":"2026-03-02","end":"2026-03-04","resources":["ra"]},{"id":"rl2","name":"实现","start":"2026-03-03","end":"2026-03-06","resources":["rb"]},{"id":"rl3","name":"联调","start":"2026-03-05","end":"2026-03-07","resources":["ra","rb"]},{"id":"rl4","name":"待分配","start":"2026-03-06","end":"2026-03-07"}]'
+    height="220"
+  ></oas-gantt>
+</DemoBlock>
+
+<DemoBlock title="小时级班次：依赖前推落到 19:00，自动吸附到次日 09:00 班次起点">
+  <oas-gantt
+    id="gantt-shift-hour"
+    auto-schedule
+    scale="hour"
+    resources='[{"id":"rh","shifts":[{"start":"09:00","end":"18:00"}]}]'
+    tasks='[{"id":"sh1","name":"超时任务","start":"2026-03-02 10:00","end":"2026-03-02 19:00"},{"id":"sh2","name":"后继","start":"2026-03-02 08:00","end":"2026-03-02 09:00","resources":["rh"],"dependencies":[{"id":"sh1"}]}]'
     height="180"
   ></oas-gantt>
 </DemoBlock>
@@ -652,6 +674,7 @@ onMounted(async () => {
 | `expanded` | 已展开集合（JSON 数组，受控）：属性缺席缺省全展开；显式 [] 全收起；点折叠钮写回 | `string` | — |
 | `first-day-of-week` | 周起始日（0-6）；缺省按 locale 推导（week 档对齐用） | `string` | — |
 | `group-by-project` | 按任务 project 自动生成项目根摘要（行 id 为 __oas_project__:&lt;project&gt;），原任务数组不变；windowed 模式要求宿主自行展平，不做自动分组 | `string` | — |
+| `group-by-resource` | 按任务首个 resources 生成资源摘要泳道（资源名取 resources.name，缺省用 id）；多资源任务只出现在首个资源下，未分配任务保持顶层；与 group-by-project 同时开启时资源泳道优先 | `string` | — |
 | `height` | 组件高度 px（默认 320；接受纯数字或 Npx）：映射到自定义属性 --oas-gantt-height。高度挂在内部画布（.gantt）上——宿主自身 height 内联只框定外盒，内部画布高度仍由 height 属性 / --oas-gantt-height 决定（不会被宿主内联 height 拉伸）；整体调高请用 height 属性或 --oas-gantt-height。height 属性在场且为合法值（>0 纯数字或 Npx）时组件接管该变量，写入宿主内联并覆盖宿主自己设置的 --oas-gantt-height；空串/空白按未设置处理；非法值不写该变量、仅清除本实例此前写入的值，宿主 token 不受影响；属性移除后组件写入的值归零清除，高度回落 token 缺省 320 或宿主 CSS，宿主原先内联设置的值不恢复；从未设置 height 属性时组件不写该变量，宿主内联或 class 规则设置的 --oas-gantt-height 完全不受影响 | `string` | `320` |
 | `history` | 内建撤销/重做（布尔，默认关）：记录任务提交快照（最多 100 步），配合 undo()/redo()/canUndo/canRedo/clearHistory()；外部整体重写 tasks 会清空历史 | `string` | — |
 | `holidays` | 假日列表（JSON ["YYYY-MM-DD",…]）：对应列高亮（优先于周末底色）；假日恒为非工作日（与 workdays 是否开启无关），auto-schedule 前推时跳过 | `string` | — |
@@ -661,7 +684,7 @@ onMounted(async () => {
 | `range-end` | 宿主托管时间轴终点（ISO 日期 YYYY-MM-DD，含当日）：与 range-start 成对使用 | `string` | — |
 | `range-start` | 宿主托管时间轴起点（ISO 日期 YYYY-MM-DD）：提供后轴范围不再由数据推导，配合 range-end 支撑窗口化（切片不含完整日期跨度） | `string` | — |
 | `readonly` | 整图只读（禁改期/禁进度，不渲染拖拽手柄） | `boolean` | — |
-| `resources` | 逐资源日历（JSON）：[{ id, name?, workdays?, holidays?, shifts? }]；与 GanttTask.resources 配合，多资源 workdays 取交集、holidays 取并集；shifts: [] 表示无可用班次，日级 auto-schedule 只消费 workdays/holidays | `string` | — |
+| `resources` | 逐资源日历（JSON [{ id, name?, workdays?, holidays?, shifts? }]）：与 GanttTask.resources 配合；多资源 workdays 取交集、holidays 取并集；shifts: [] 表示无可用班次；hour 档 auto-schedule 吸附到首个带班次资源的窗口，日级只消费 workdays/holidays | `string` | — |
 | `row-height` | 行高 px（默认 36，下限 20） | `string` | `36` |
 | `scale` | 时间刻度：hour / day（默认）/ week / month / quarter / year；非法值回落 day | `string` | — |
 | `show-baseline` | 基线对比（布尔，默认关）：任务带 baseline 时在实际条下渲染基线条（baseline.progress 渲染进度覆盖层），title 标差值（比基线晚/早 N 天或一致） | `boolean` | — |
