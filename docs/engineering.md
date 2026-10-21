@@ -24,6 +24,8 @@
 
 **跨浏览器抽样**：全量 e2e 只在 chromium 跑；firefox 按抽样子集跑 `visual` / `smoke` / `qa-regression` 三个 spec，圈定逻辑在 `playwright.config.ts` 的 firefox project `testMatch`（`/qa-regression\//` 匹配整个 `qa-regression/` 目录）。抽样目的：暴露浏览器专有渲染/兼容问题（如 slider `::-webkit-slider-runnable-track` 在 Firefox 失效导致轨道不可见的历史缺陷），全量在 Firefox 上跑会翻倍耗时、不值得；交互密集或时序敏感的 spec（interaction/a11y/demo/onoas 等）不纳入——Firefox headless 时序差异可能引入 flaky，宁少勿滥。新增浏览器相关回归断言优先放进 `qa-regression/` 对应组件文件，会自动纳入 firefox 抽样。
 
+**WebKit 与失败产物**：WebKit 只有 `webkit.spec.ts` 抽样（8 页 smoke + prompt-input 键盘交互），在独立 `e2e-webkit` job 中安装并运行，不混入 Chromium/Firefox 分片；否则未安装 WebKit 的 runner 会让整个 shard 失败。CI 的 e2e job 在 `CI` 下启用 `trace: on-first-retry`、`screenshot: only-on-failure`，并上传 `playwright-report/`、`test-results/`（排除体积大的 `test-results/visual/**`），保留 7 天；本地默认关闭这些产物。
+
 **厂商前缀样式通道：机制进 CI，引擎层不进 CI**：需要厂商前缀的样式（当前只有 backdrop 的模糊）一律走「**内联自定义属性 + 样式表标准/`-webkit-` 双规则**」形态，不写内联 vendor 属性——SSR 运行时 DOM 会丢弃内联 `-webkit-*`，只写内联标准+前缀属性会让 DSD 快照在**禁 JS 首帧**的老版本 Safari 上没有模糊。**覆盖边界**：单测锁**机制**（样式表含标准与 `-webkit-` 两条规则且同走 `var(--<组件>-*)` 变量通道、内联只写变量、不再写内联前缀属性）；**引擎层（前缀是否真被引擎接受）不在 CI 覆盖**——Chromium 已移除该前缀属性（前缀通道对它恒不生效），WebKit 在 Windows CI 上不可靠，为一条默认值不受影响的降级通道引入平台依赖不划算。**手工验证方法**（改这条通道前后各跑一次）：本地 WebKit（`npx playwright install webkit`）打开 backdrop 的**禁 JS 快照**（DSD 产物；或禁 JS 加载页面），在 `getComputedStyle(scrim)` 里核对 `-webkit-backdrop-filter` 的 computed 值 === 写入 `--oas-backdrop-blur` 的值；对照组不设置该变量时应为 `none`——正反两面都过才说明前缀通道真的通，只测正面会把「变量写了但前缀通道没生效」漏掉。
 
 ## 3. 组件开发清单（每个新组件必经）

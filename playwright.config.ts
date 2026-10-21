@@ -19,7 +19,14 @@ const E2E_REUSE = process.env.E2E_REUSE != null ? process.env.E2E_REUSE === '1' 
 const E2E_WORKERS =
   Number(process.env.E2E_WORKERS) || (process.env.CI ? 4 : Math.min(Math.max(os.cpus().length - 2, 4), 12))
 
+// CI 失败现场默认不保留任何 trace/截图，失败只剩控制台日志。CI 或显式 E2E_ARTIFACTS=1 时
+// 只在首次重试保留 trace、只对失败用例截图；本地默认关闭，避免无谓 I/O。
+const E2E_ARTIFACTS = !!process.env.CI || process.env.E2E_ARTIFACTS === '1'
+
 export default defineConfig({
+  reporter: E2E_ARTIFACTS
+    ? [['list'], ['html', { open: 'never' }], ['json', { outputFile: 'test-results/results.json' }]]
+    : 'list',
   // 收集根：组件/文档站 e2e 在 packages/ui，dsd 验收 spec 在 packages/ssr（依赖方向 ssr → ui，
   // 放 ui 会形成构建环）——故收到 packages 一级，`**/*.spec.ts` 两个目录都覆盖。
   testDir: './packages',
@@ -47,6 +54,10 @@ export default defineConfig({
     // 该适配已改为「仅显式 oas-lang 偏好跳转」，不再按浏览器语言跳。语言偏好自身的用例在
     // homepage.spec.ts 里用 browser.newContext({ locale }) 显式覆盖。）
     locale: 'zh-CN',
+    // 失败现场：只保留首次重试的 trace 与失败截图，正常用例零额外开销。
+    trace: E2E_ARTIFACTS ? 'on-first-retry' : 'off',
+    screenshot: E2E_ARTIFACTS ? 'only-on-failure' : 'off',
+    video: 'off',
   },
   webServer: {
     // dist 缺失时先 build（本地默认），否则直接起服务（CI / 分片编排已 build）。
