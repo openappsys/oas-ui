@@ -51,6 +51,10 @@ With the boolean `loading` attribute present, content switches to a three-dot ty
 
 `streaming` means "some content is already visible and more is arriving": content stays visible, the host reflects `aria-busy`, and the content region uses `aria-live="off"` to avoid per-token announcements. Remove it when the answer ends and let a host status region announce completion/stop/failure. `loading` and `streaming` are different states; do not use `loading` for streaming append.
 
+<DemoBlock title="Streaming append (streaming)">
+  <oas-bubble streaming>Part of the answer is visible and more content is still arriving.</oas-bubble>
+</DemoBlock>
+
 <script setup>
 import { onMounted } from 'vue'
 onMounted(async () => {

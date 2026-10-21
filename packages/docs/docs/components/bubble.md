@@ -51,6 +51,10 @@
 
 `streaming` 表示「已有部分内容、仍在追加」：内容保持可见，宿主反射 `aria-busy`，内容区设 `aria-live="off"` 避免逐 token 播报；回答结束移除该属性，由外部 status 区播报完成/停止/失败。`loading` 与 `streaming` 语义不同，不要用 `loading` 表示流式追加。
 
+<DemoBlock title="流式追加（streaming）">
+  <oas-bubble streaming>已经收到部分回答，内容仍在继续追加。</oas-bubble>
+</DemoBlock>
+
 <script setup>
 import { onMounted } from 'vue'
 onMounted(async () => {
