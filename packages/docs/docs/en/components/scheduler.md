@@ -19,10 +19,10 @@ Month-view scheduling component: renders event chips (title + color bar) inside 
 </DemoBlock>
 
 <DemoBlock title="Day view (single-column time axis) + oas-view-change">
-  <oas-scheduler id="scheduler-day" view="day" page-show-date="2026-08-10" events='[{"date":"2026-08-10","title":"Standup","start":"09:00","end":"10:00"},{"date":"2026-08-10","title":"Review","start":"14:00","end":"15:30"}]'></oas-scheduler>
+  <oas-scheduler id="scheduler-day" view="day" page-show-date="2026-08-10" events='[{"date":"2026-08-10","title":"Standup","start":"09:00","end":"10:00"},{"date":"2026-08-10","title":"Interview","start":"09:30","end":"10:30"},{"date":"2026-08-10","title":"Review","start":"14:00","end":"15:30"}]'></oas-scheduler>
 </DemoBlock>
 
-Week/day views show a time axis (`start-hour` / `end-hour`, default 8–20): events with `start`/`end` are positioned as blocks by time; untimed events go to the all-day row on top; switching views via the header buttons dispatches `oas-view-change`. Event blocks support **drag-to-move** (drop on a target column/time to change `date` + `start`, keeping duration) and **bottom-edge drag-resize** (change `end` in 15-minute steps), written back with `oas-events-change` on settle.
+Week/day views show a time axis (`start-hour` / `end-hour`, default 8–20): events with `start`/`end` are positioned as blocks by time; untimed events go to the all-day row on top; **time-overlapping events are automatically split into side-by-side lanes** (equal width within a cluster, with gaps, no more complete overlap); switching views via the header buttons dispatches `oas-view-change`. Event blocks support **drag-to-move** (drop on a target column/time to change `date` + `start`, keeping duration) and **bottom-edge drag-resize** (change `end` in 15-minute steps), written back with `oas-events-change` on settle.
 
 ## Recurrence & Reminders
 

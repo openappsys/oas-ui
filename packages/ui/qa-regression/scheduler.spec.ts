@@ -817,3 +817,93 @@ test('scheduler 打印预览：agenda 取消限高 + Chromium PDF 可生成', as
   }
   expect(errors).toEqual([])
 })
+
+test('scheduler 日视图：重叠定时事件按车道并排（不再完全叠印）', async ({ page }) => {
+  const errors: string[] = []
+  page.on('pageerror', (e) => errors.push(e.message))
+  page.on('console', (m) => {
+    if (m.type() === 'error') errors.push(m.text())
+  })
+  await page.goto('/components/scheduler.html', { waitUntil: 'domcontentloaded' })
+  await page.waitForSelector('#scheduler-week', { timeout: 15000 })
+
+  const r = await page.evaluate(async () => {
+    const el = document.createElement('oas-scheduler') as HTMLElement & { events: unknown[] }
+    el.setAttribute('view', 'day')
+    el.setAttribute('page-show-date', '2026-08-10')
+    el.setAttribute('start-hour', '8')
+    el.setAttribute('end-hour', '18')
+    el.style.width = '720px'
+    el.style.height = '600px'
+    document.body.appendChild(el)
+    el.events = [
+      { date: '2026-08-10', title: 'A', start: '09:00', end: '11:00' },
+      { date: '2026-08-10', title: 'B', start: '09:30', end: '10:30' },
+      { date: '2026-08-10', title: 'C', start: '12:00', end: '14:00' },
+    ]
+    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)))
+    const evs = [...(el.shadowRoot!.querySelectorAll('.timeview .col .event') as NodeListOf<HTMLElement>)]
+    const rect = (t: string) => {
+      const e = evs.find((x) => x.textContent === t)
+      if (!e) return null
+      const b = e.getBoundingClientRect()
+      return { left: b.left, right: b.right, top: b.top, bottom: b.bottom, w: b.width }
+    }
+    const trackEl = el.shadowRoot!.querySelector<HTMLElement>('.timeview .col .track')!
+    const tb = trackEl.getBoundingClientRect()
+    const track = { left: tb.left, right: tb.right, w: tb.width }
+    // 3 车道场景：同一时刻三条事件
+    const el3 = document.createElement('oas-scheduler') as HTMLElement & { events: unknown[] }
+    el3.setAttribute('view', 'day')
+    el3.setAttribute('page-show-date', '2026-08-10')
+    el3.setAttribute('start-hour', '8')
+    el3.setAttribute('end-hour', '18')
+    el3.style.width = '720px'
+    document.body.appendChild(el3)
+    el3.events = ['D', 'E', 'F'].map((title) => ({ date: '2026-08-10', title, start: '09:00', end: '10:00' }))
+    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)))
+    const evs3 = [...(el3.shadowRoot!.querySelectorAll('.timeview .col .event') as NodeListOf<HTMLElement>)]
+    const tb3 = el3.shadowRoot!.querySelector<HTMLElement>('.timeview .col .track')!.getBoundingClientRect()
+    const lanes3 = evs3
+      .map((e) => {
+        const b = e.getBoundingClientRect()
+        return { left: b.left, right: b.right, w: b.width }
+      })
+      .sort((x, y) => x.left - y.left)
+    el3.remove()
+    return {
+      a: rect('A'),
+      b: rect('B'),
+      c: rect('C'),
+      host: el.getBoundingClientRect().width,
+      track,
+      lanes3,
+      track3: { left: tb3.left, right: tb3.right },
+    }
+  })
+
+  expect(r.a, '重叠事件 A 应渲染').not.toBeNull()
+  expect(r.b, '重叠事件 B 应渲染').not.toBeNull()
+  expect(r.c, '非重叠事件 C 应渲染').not.toBeNull()
+  // 同一聚簇两车道：A/B 各占约半列，横向错开且有间隙，纵向仍重叠（同一时段）
+  expect(r.a!.w).toBeLessThan(r.host * 0.6)
+  expect(r.b!.w).toBeLessThan(r.host * 0.6)
+  expect(Math.min(r.a!.right, r.b!.right) - Math.max(r.a!.left, r.b!.left)).toBeLessThanOrEqual(1)
+  expect(Math.min(r.a!.bottom, r.b!.bottom) - Math.max(r.a!.top, r.b!.top)).toBeGreaterThan(0)
+  // 列内 4px 外边距 + 车道间 2px 间隙（与单车道 C 同口径）
+  expect(Math.abs(r.a!.left - r.track.left - 4), '首车道左缘保留 4px 外边距').toBeLessThanOrEqual(1)
+  expect(Math.abs(r.track.right - r.b!.right - 4), '末车道右缘保留 4px 外边距').toBeLessThanOrEqual(1)
+  expect(Math.abs(r.b!.left - r.a!.right - 2), '车道间隙 2px').toBeLessThanOrEqual(1)
+  expect(Math.abs(r.c!.left - r.track.left - 4), '单车道同样保留 4px 外边距').toBeLessThanOrEqual(1)
+  expect(Math.abs(r.track.right - r.c!.right - 4), '单车道右缘 4px').toBeLessThanOrEqual(1)
+  // 不重叠的 C 占满整列
+  expect(r.c!.w).toBeGreaterThan(r.host * 0.8)
+  // 三车道：3 条等宽、起点互异、首末仍留 4px
+  expect(r.lanes3).toHaveLength(3)
+  expect(Math.abs(r.lanes3[0]!.w - r.lanes3[1]!.w)).toBeLessThanOrEqual(1)
+  expect(Math.abs(r.lanes3[1]!.w - r.lanes3[2]!.w)).toBeLessThanOrEqual(1)
+  expect(Math.abs(r.lanes3[0]!.left - r.track3.left - 4)).toBeLessThanOrEqual(1)
+  expect(Math.abs(r.track3.right - r.lanes3[2]!.right - 4)).toBeLessThanOrEqual(1)
+  expect(new Set(r.lanes3.map((l) => Math.round(l.left))).size, '三条车道起点互异').toBe(3)
+  expect(errors).toEqual([])
+})

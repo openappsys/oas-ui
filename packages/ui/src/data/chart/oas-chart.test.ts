@@ -29,6 +29,23 @@ function svgOf(el: OASChart): SVGSVGElement {
   return el.shadowRoot!.querySelector('svg')!
 }
 
+/** 与组件 estimateLabelWidth 同口径的独立复算（用于断言占位） */
+function estWidth(s: string): number {
+  let w = 0
+  for (const ch of s) {
+    const cp = ch.codePointAt(0) ?? 0
+    if (cp >= 0x2e80) w += 12
+    else if (ch === ' ' || ch === '\t') w += 4
+    else if (ch === 'M' || ch === 'W' || ch === '@' || ch === '%') w += 12
+    else if (ch === 'm' || ch === 'w') w += 10.5
+    else if (ch >= 'A' && ch <= 'Z') w += 8.3
+    else if (ch >= '0' && ch <= '9') w += 7.4
+    else if (ch === '-' || ch === '.' || ch === ':' || ch === '/') w += 4.5
+    else w += 6.6
+  }
+  return w
+}
+
 function wrapperOf(el: OASChart): HTMLElement {
   return el.shadowRoot!.querySelector('[part="wrapper"]')!
 }
@@ -65,6 +82,32 @@ describe('OASChart', () => {
     const slices = svgOf(el).querySelectorAll('.slice')
     expect(slices.length).toBe(3)
     expect(slices[0]!.querySelector('title')!.textContent).toContain('一月')
+  })
+
+  it('type=pie 扇区配色 8 色循环：第 5 类不回落首色（c4），第 9 类才回到 c0', () => {
+    const make = (n: number) => {
+      const labels = Array.from({ length: n }, (_, i) => `S${i + 1}`)
+      return mount({
+        type: 'pie',
+        data: JSON.stringify({ labels, series: [{ name: 'P', data: labels.map(() => 1) }] }),
+      })
+    }
+    const five = [...svgOf(make(5)).querySelectorAll('.slice')].map((s) => s.getAttribute('class') ?? '')
+    expect(five[0]).toContain('c0')
+    expect(five[4], '第 5 类使用第 5 个配色（不回落到 c0）').toContain('c4')
+    const nine = [...svgOf(make(9)).querySelectorAll('.slice')].map((s) => s.getAttribute('class') ?? '')
+    expect(nine[8], '第 9 类回到 c0（8 色循环）').toContain('c0')
+    // 深色变体由 token 提供：c4..c7 规则引用 preset text token
+    const el = make(1)
+    const css = el.shadowRoot!.querySelector('style')!.textContent ?? ''
+    for (const [cls, token] of [
+      ['c4', '--oas-preset-purple-text'],
+      ['c5', '--oas-preset-cyan-text'],
+      ['c6', '--oas-preset-magenta-text'],
+      ['c7', '--oas-preset-geekblue-text'],
+    ] as const) {
+      expect(css).toContain(`.${cls} { color: var(${token}); }`)
+    }
   })
 
   it('type=area 渲染面积图：折线 + 填充 path（填充闭合到基线）', () => {
@@ -305,6 +348,88 @@ describe('OASChart', () => {
     expect(xs.length).toBeGreaterThanOrEqual(2)
     expect(xs.length).toBeLessThan(36)
     for (let i = 1; i < xs.length; i++) expect(xs[i]! - xs[i - 1]!).toBeGreaterThanOrEqual(30)
+  })
+
+  it('X 轴边缘标签仅在越出 viewBox 时内对齐：短标签首端保持居中、末端 end（不被裁切）', () => {
+    const el = mount({ type: 'line', data: SINGLE }) // 一月/二月/三月，首末点贴绘图区边缘
+    const texts = [...svgOf(el).querySelectorAll('text.axis-label')] as SVGTextElement[]
+    expect(texts[0]!.getAttribute('style') ?? '', '首标签未越出 viewBox，保持居中').toBe('')
+    expect(texts[texts.length - 1]!.getAttribute('style') ?? '', '末标签右缘越过 viewBox → end').toContain(
+      'text-anchor:end',
+    )
+    expect(texts[1]!.getAttribute('style') ?? '', '中间标签保持居中').toBe('')
+    // 估算边界：首标签左缘 ≥ 0、末标签右缘 ≤ 520（viewBox 内）
+    const maxW = Math.max(...['一月', '二月', '三月'].map(estWidth))
+    const xs = texts.map((t) => Number(t.getAttribute('x')))
+    expect(xs[0]! - maxW / 2).toBeGreaterThanOrEqual(0)
+    expect(xs[2]!).toBeLessThanOrEqual(520)
+  })
+
+  it('密集水平标签贴边对齐后不与相邻标签叠字（末端剔除相撞项）', () => {
+    const labels = Array.from({ length: 36 }, (_, i) => `09-${String(i + 1).padStart(2, '0')}`)
+    const el = mount({
+      type: 'line',
+      data: JSON.stringify({ labels, series: [{ name: 'S', data: labels.map((_, i) => i) }] }),
+    })
+    const texts = [...svgOf(el).querySelectorAll('text.axis-label')] as SVGTextElement[]
+    const bounds = texts.map((t) => {
+      const x = Number(t.getAttribute('x'))
+      const w = estWidth(t.textContent ?? '')
+      const style = t.getAttribute('style') ?? ''
+      return style.includes('start') ? [x, x + w] : style.includes('end') ? [x - w, x] : [x - w / 2, x + w / 2]
+    })
+    for (let i = 1; i < bounds.length; i++) {
+      expect(bounds[i]![0]!, `第 ${i} 个标签左缘不压前一个右缘`).toBeGreaterThanOrEqual(bounds[i - 1]![1]! - 0.5)
+    }
+    expect(texts.length, '仍按宽度抽稀').toBeLessThan(36)
+    expect(texts[texts.length - 1]!.getAttribute('style') ?? '').toContain('text-anchor:end')
+    expect(bounds[bounds.length - 1]![1]!, '末标签右缘不越出 viewBox').toBeLessThanOrEqual(520)
+  })
+
+  it('柱状图密集标签：居中/端点对齐后按自身宽度避让，不与相邻标签叠字', () => {
+    const labels = Array.from({ length: 20 }, (_, i) => `09-${String(i + 1).padStart(2, '0')}`)
+    const el = mount({
+      type: 'bar',
+      data: JSON.stringify({ labels, series: [{ name: 'S', data: labels.map((_, i) => i) }] }),
+    })
+    const texts = [...svgOf(el).querySelectorAll('text.axis-label')] as SVGTextElement[]
+    const bounds = texts.map((t) => {
+      const x = Number(t.getAttribute('x'))
+      const w = estWidth(t.textContent ?? '')
+      const style = t.getAttribute('style') ?? ''
+      return style.includes('start') ? [x, x + w] : style.includes('end') ? [x - w, x] : [x - w / 2, x + w / 2]
+    })
+    for (let i = 1; i < bounds.length; i++) {
+      expect(bounds[i]![0]!, `柱状第 ${i} 个标签不叠前一个`).toBeGreaterThanOrEqual(bounds[i - 1]![1]! - 0.5)
+    }
+    expect(texts.length, '仍按宽度抽稀').toBeLessThan(20)
+    expect(texts.length, '不因端点避让被过度剔除').toBeGreaterThanOrEqual(5)
+    // 柱状标签不应被推到相邻柱上：首标签仍是 band 中心（未越出 viewBox 时保持 middle）
+    expect(texts[0]!.getAttribute('style') ?? '').toBe('')
+  })
+
+  it('混合宽度标签：首端长标签参与渲染且与相邻标签不叠字', () => {
+    const labels = Array.from({ length: 36 }, (_, i) => String(i + 1))
+    labels[0] = 'September 2026'
+    const el = mount({
+      type: 'line',
+      data: JSON.stringify({ labels, series: [{ name: 'S', data: labels.map((_, i) => i) }] }),
+    })
+    const texts = [...svgOf(el).querySelectorAll('text.axis-label')] as SVGTextElement[]
+    const bounds = texts.map((t) => {
+      const x = Number(t.getAttribute('x'))
+      const w = estWidth(t.textContent ?? '')
+      const style = t.getAttribute('style') ?? ''
+      return style.includes('start') ? [x, x + w] : style.includes('end') ? [x - w, x] : [x - w / 2, x + w / 2]
+    })
+    for (let i = 1; i < bounds.length; i++) {
+      expect(bounds[i]![0]!, `混合宽度第 ${i} 个标签不叠前一个`).toBeGreaterThanOrEqual(bounds[i - 1]![1]! - 0.5)
+    }
+    expect(
+      texts.some((t) => t.textContent === 'September 2026'),
+      '长标签不能被静默丢掉',
+    ).toBe(true)
+    expect(texts.length, '仍抽稀').toBeLessThan(36)
   })
 
   it('X 轴标签不密集时全量渲染（不抽稀）', () => {

@@ -585,6 +585,72 @@ describe('OASScheduler P1：view 切换 + 周/日时间轴 + 拖拽移动/缩放
     )
   })
 
+  it('view=day：时间重叠的定时事件按车道并排（不再完全叠印），非重叠事件仍占满整列', () => {
+    const el = mount({
+      view: 'day',
+      'page-show-date': '2026-08-10',
+      'start-hour': '8',
+      'end-hour': '18',
+      events: JSON.stringify([
+        { date: '2026-08-10', title: 'A', start: '09:00', end: '11:00' },
+        { date: '2026-08-10', title: 'B', start: '09:30', end: '10:30' },
+        { date: '2026-08-10', title: 'C', start: '12:00', end: '13:00' },
+      ]),
+    })
+    const evs = [...el.shadowRoot!.querySelectorAll<HTMLElement>('.timeview .col .event')]
+    const byTitle = new Map(evs.map((e) => [e.textContent, e]))
+    // A/B 时间重叠 → 同一聚簇 2 车道，各占约半列且起始位置不同；保留 4px 列内边距
+    expect(byTitle.get('A')!.style.width).toContain('/ 2')
+    expect(byTitle.get('B')!.style.width).toContain('/ 2')
+    expect(byTitle.get('A')!.style.insetInlineStart).toContain('4px')
+    expect(byTitle.get('A')!.style.insetInlineStart).not.toBe(byTitle.get('B')!.style.insetInlineStart)
+    expect(byTitle.get('A')!.style.insetInlineEnd).toBe('auto')
+    expect(byTitle.get('A')!.style.boxSizing).toBe('border-box')
+    // C 与它们不重叠 → 不设车道宽度（沿用 CSS 的整列定位）
+    expect(byTitle.get('C')!.style.width).toBe('')
+  })
+
+  it('view=day：同开始/包含关系按最大并发分道；首尾相接不算重叠（整列宽度）', () => {
+    const el = mount({
+      view: 'day',
+      'page-show-date': '2026-08-10',
+      'start-hour': '8',
+      'end-hour': '18',
+      events: JSON.stringify([
+        { date: '2026-08-10', title: 'A', start: '09:00', end: '10:00' },
+        { date: '2026-08-10', title: 'B', start: '09:00', end: '09:30' },
+        { date: '2026-08-10', title: 'C', start: '09:15', end: '09:45' },
+        { date: '2026-08-10', title: 'D', start: '10:00', end: '11:00' },
+      ]),
+    })
+    const evs = [...el.shadowRoot!.querySelectorAll<HTMLElement>('.timeview .col .event')]
+    const byTitle = new Map(evs.map((e) => [e.textContent, e]))
+    for (const t of ['A', 'B', 'C']) {
+      expect(byTitle.get(t)!.style.width, `${t} 属于 3 车道聚簇`).toContain('/ 3')
+    }
+    expect(
+      new Set(['A', 'B', 'C'].map((t) => byTitle.get(t)!.style.insetInlineStart)).size,
+      '三条车道起点互异（不能都落在 lane 0）',
+    ).toBe(3)
+    expect(byTitle.get('D')!.style.width, '10:00 与 A 首尾相接，另起聚簇整列宽').toBe('')
+  })
+
+  it('view=day：完全落在 start-hour 之前的事件不占车道（可见事件仍整列宽）', () => {
+    const el = mount({
+      view: 'day',
+      'page-show-date': '2026-08-10',
+      'start-hour': '8',
+      'end-hour': '18',
+      events: JSON.stringify([
+        { date: '2026-08-10', title: 'X', start: '06:00', end: '08:00' },
+        { date: '2026-08-10', title: 'Y', start: '07:00', end: '09:00' },
+      ]),
+    })
+    const evs = [...el.shadowRoot!.querySelectorAll<HTMLElement>('.timeview .col .event')]
+    expect(evs.map((e) => e.textContent)).toEqual(['Y'])
+    expect(evs[0]!.style.width, '时段外事件不占车道，Y 不应被挤成半宽').toBe('')
+  })
+
   it('view=day：只渲染 1 列；视图按钮切换派发 oas-view-change（属性吸收不派发）', () => {
     const el = timedEl({ view: 'day' })
     expect(el.shadowRoot!.querySelectorAll('.timeview .col').length).toBe(1)

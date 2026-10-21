@@ -112,8 +112,9 @@ aside {
     transform var(--oas-transition-base, 180ms) var(--oas-ease-out, cubic-bezier(0.2, 0, 0.2, 1)),
     visibility 0s var(--oas-transition-base, 180ms);
 }
-/* RTL：抽屉贴视觉右缘（inset-inline-start 逻辑镜像），关闭态藏到右外（transform 物理向量手动镜像） */
-:host([data-rtl]) .panel {
+/* RTL 移动抽屉：贴视觉右缘（inset-inline-start 逻辑镜像），关闭态藏到右外（transform 物理向量手动镜像）；
+   仅限移动态——桌面侧栏不是抽屉，translation 会把整个面板移出宿主 */
+:host([data-mobile][data-rtl]) .panel {
   transform: translateX(100%);
   /* 方向性投影：投影侧随停靠侧（placement 物理语义） */
   box-shadow: -4px 0 16px rgba(0, 0, 0, 0.12);
@@ -1153,10 +1154,12 @@ export class OASSidebar extends OASElement {
     byGroup: SidebarActiveByGroup = {},
   ): HTMLElement {
     const hasChildren = !!item.children?.length
+    // 行首头像也算「折叠态可见内容」：有头像的成员行在图标条里保留（avatarColor 单独无内容，不算）
+    const hasAvatar = !!(item.avatar || item.avatarText)
     // 折叠图标条态 + 树形父项：走 flyout 子菜单（父项不是页面，点击开合面板——
     // 此前曾把父项点击退化为派发 select 修「死交互」，但父项 value 不是可导航页面，
     // 用户侧仍无任何可达子页的路径；flyout 才是主流侧栏惯例）
-    const flyoutMode = collapsed && hasChildren && !!item.icon
+    const flyoutMode = collapsed && hasChildren && (!!item.icon || hasAvatar)
     const effectiveHasChildren = hasChildren && !collapsed
     const btn = document.createElement('button')
     btn.className = 'item'
@@ -1307,9 +1310,9 @@ export class OASSidebar extends OASElement {
       btn.appendChild(actions)
     }
     // 折叠态无图标项整体隐藏（仅保留图标）；有行首头像的项也算「有可视内容」，保留
-    if (collapsed && !item.icon && !item.avatar && !item.avatarText && !item.avatarColor) btn.hidden = true
+    if (collapsed && !item.icon && !hasAvatar) btn.hidden = true
     // 折叠态 + 树形父项：flyout 子菜单（父项不是页面——点击开合面板；子项才是导航目标）
-    if (collapsed && hasChildren && item.icon) {
+    if (collapsed && hasChildren && (item.icon || hasAvatar)) {
       const block = document.createElement('div')
       block.className = 'item-block'
       const flyout = this.buildFlyout(item, active, byGroup)
@@ -1323,9 +1326,10 @@ export class OASSidebar extends OASElement {
       // 键盘：Enter/Space 经 button 原生 click 已覆盖；Esc 在组级 keydown（bind 时挂）
       return block
     }
-    // 折叠态：图标项包 tooltip（label 提示，placement=right）
+    // 折叠态：图标项/头像项包 tooltip（label 提示，placement=right）；
+    // expand-on-hover 悬停会展开出 label，再弹 tooltip 会重复遮挡
     let out: HTMLElement = btn
-    if (collapsed && item.icon && !hasChildren) {
+    if (collapsed && (item.icon || hasAvatar) && !hasChildren && !this.hasAttr('expand-on-hover')) {
       const tip = document.createElement('oas-tooltip')
       tip.setAttribute('content', item.label)
       tip.setAttribute('placement', 'right')
@@ -1494,7 +1498,8 @@ export class OASSidebar extends OASElement {
    * 任意宿主色直接当文字底色会出现低对比（如亮蓝上白字），这样在明暗两主题下都稳定达标。
    */
   private renderAvatar(item: SidebarItem): HTMLElement | null {
-    if (!item.avatar && !item.avatarText && !item.avatarColor) return null
+    // 只有 avatarColor 没有图/文字时不产生可视内容（避免空圆环）
+    if (!item.avatar && !item.avatarText) return null
     const av = document.createElement('span')
     av.className = 'item-avatar'
     av.setAttribute('part', 'avatar')

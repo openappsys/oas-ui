@@ -346,6 +346,77 @@ test('chart 密集 x 轴标签：缺省抽稀、xLabelRotate 旋转后真实包�
   }
 })
 
+// 柱状/组合/堆叠走 middle 锚点：端点只在真正越出 viewBox 时内对齐；混合宽度长标签必须仍参与渲染
+test('chart 柱状图与混合宽度标签：真实包围盒不叠字、不越界、不过度抽稀、长标签不丢', async ({ page }) => {
+  await page.goto('/components/chart.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-chart')
+  const r = await page.evaluate(() => {
+    const measure = (type: string, labels: string[]) => {
+      const data = JSON.stringify({ labels, series: [{ name: 'S', data: labels.map((_, i) => i) }] })
+      const el = document.createElement('oas-chart')
+      el.setAttribute('type', type)
+      el.setAttribute('data', data)
+      document.body.appendChild(el)
+      const svg = el.shadowRoot!.querySelector('svg')!
+      const texts = [...svg.querySelectorAll('text.axis-label')] as SVGTextElement[]
+      const rects = texts.map((t) => t.getBoundingClientRect())
+      let overlaps = 0
+      for (let i = 1; i < rects.length; i++) {
+        const a = rects[i - 1]!
+        const b = rects[i]!
+        if (a.left < b.right - 0.5 && b.left < a.right - 0.5) overlaps++
+      }
+      const svgBox = svg.getBoundingClientRect()
+      const bars = [...svg.querySelectorAll('rect.bar')].map(
+        (b) => Number(b.getAttribute('x')) + Number(b.getAttribute('width')) / 2,
+      )
+      let maxCenterDelta = 0
+      let matched = 0
+      for (const t of texts) {
+        const m = /^09-(\d+)$/.exec(t.textContent ?? '')
+        if (!m) continue
+        const center = bars[Number(m[1]) - 1]
+        if (center != null) {
+          matched++
+          maxCenterDelta = Math.max(maxCenterDelta, Math.abs(Number(t.getAttribute('x')) - center))
+        }
+      }
+      const out = {
+        rendered: texts.length,
+        overlaps,
+        matched,
+        hasLong: texts.some((t) => t.textContent === 'September 2026'),
+        maxCenterDelta,
+        firstStyle: texts[0]?.getAttribute('style') ?? '',
+        leftInside: Math.min(...rects.map((x) => x.left)) >= svgBox.left - 2,
+        rightInside: Math.max(...rects.map((x) => x.right)) <= svgBox.right + 2,
+      }
+      el.remove()
+      return out
+    }
+    const barLabels = Array.from({ length: 20 }, (_, i) => `09-${String(i + 1).padStart(2, '0')}`)
+    const barWide = Array.from({ length: 20 }, () => 'MMMM')
+    const mixed = Array.from({ length: 36 }, (_, i) => String(i + 1))
+    mixed[0] = 'September 2026'
+    return { bar: measure('bar', barLabels), barWide: measure('bar', barWide), mixed: measure('line', mixed) }
+  })
+
+  expect(r.bar.rendered, '柱状图仍按宽度抽稀').toBeLessThan(20)
+  expect(r.bar.rendered, '柱状图不因端点避让被过度剔除').toBeGreaterThanOrEqual(5)
+  expect(r.bar.matched, '单系列柱标签与柱一一匹配（该断言只适用于单系列）').toBeGreaterThanOrEqual(5)
+  expect(r.bar.overlaps, '柱状图标签不叠字').toBe(0)
+  expect(r.bar.firstStyle, '未越出 viewBox 的柱标签保持居中（不压到相邻柱）').toBe('')
+  expect(r.bar.maxCenterDelta, '柱标签 x 与对应柱中心对齐（防止被推离柱）').toBeLessThanOrEqual(1)
+  expect(r.bar.leftInside, '柱状图首标签不越出绘图卡片').toBe(true)
+  expect(r.bar.rightInside, '柱状图末标签不越出绘图卡片').toBe(true)
+  expect(r.barWide.rendered, '宽字形标签不能被全部抽掉（否则空集断言恒真）').toBeGreaterThan(0)
+  expect(r.barWide.overlaps, '宽拉丁字形（MMMM）不因估算偏低叠字').toBe(0)
+  expect(r.barWide.leftInside && r.barWide.rightInside, '宽字形标签不越出绘图卡片').toBe(true)
+  expect(r.mixed.hasLong, '首端长标签必须渲染（不能被静默丢掉）').toBe(true)
+  expect(r.mixed.overlaps, '混合宽度不叠字').toBe(0)
+  expect(r.mixed.rendered, '混合宽度不因长标签全部消失').toBeGreaterThanOrEqual(5)
+})
+
 // RTL 回归：抽稀（步长/落点）、柱组居中、xLabelRotate 旋转三处都必须是纯几何，不随宿主书写方向变化；
 // svg direction 钉死 ltr 后 text-anchor start/end 语义不翻转（旋转标签的 start 锚点在 RTL 下不得变成 end）。
 test('chart 密集标签/旋转/柱组居中：dir=rtl 与 ltr 逐项几何相同，锚点与文字方向不翻转', async ({ page }) => {
@@ -394,5 +465,9 @@ test('chart 密集标签/旋转/柱组居中：dir=rtl 与 ltr 逐项几何相�
   )
   expect(new Set(r.rotRtl.dirs), 'svg 内文字方向恒 ltr').toEqual(new Set(['ltr']))
   expect(new Set(r.rotRtl.anchors), '旋转标签锚点恒 start（RTL 下不翻成 end）').toEqual(new Set(['start']))
-  expect(new Set(r.thinLtr.anchors), '缺省（水平）标签锚点仍由 CSS 给 middle').toEqual(new Set(['middle']))
+  expect(r.thinRtl.anchors, '水平标签锚点分配逐项与 LTR 一致（RTL 不翻转）').toEqual(r.thinLtr.anchors)
+  // 端点只在越出 viewBox 时内对齐：末标签 end；首标签未越界保持 middle
+  expect(r.thinLtr.anchors[0], '首标签未越出 viewBox → middle').toBe('middle')
+  expect(r.thinLtr.anchors[r.thinLtr.anchors.length - 1], '末标签越出 viewBox → end').toBe('end')
+  expect(new Set(r.thinLtr.anchors), '水平标签锚点仅 middle/end').toEqual(new Set(['middle', 'end']))
 })

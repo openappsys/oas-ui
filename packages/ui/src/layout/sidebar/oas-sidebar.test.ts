@@ -708,7 +708,7 @@ describe('OASSidebar 能力补齐批（嵌套/徽标/操作/分隔线/骨架/快
     stubMatchMedia(false)
     const el = mount({
       items:
-        '[{"label":"张伟","value":"u1","avatarText":"张","avatarColor":"#e11d48"},{"label":"收件箱","value":"inbox","icon":"star"}]',
+        '[{"label":"张伟","value":"u1","avatarText":"张","avatarColor":"#e11d48"},{"label":"收件箱","value":"inbox","icon":"star"},{"label":"仅色","value":"tint","avatarColor":"#0ea5e9"}]',
     })
     const row = el.shadowRoot!.querySelector<HTMLElement>('[data-value="u1"]')!
     const av = row.querySelector<HTMLElement>('[part="avatar"]')!
@@ -725,6 +725,9 @@ describe('OASSidebar 能力补齐批（嵌套/徽标/操作/分隔线/骨架/快
     // 无头像的项不渲染节点、不占位
     const plain = el.shadowRoot!.querySelector<HTMLElement>('[data-value="inbox"]')!
     expect(plain.querySelector('[part="avatar"]')).toBeNull()
+    // 仅 avatarColor 无文字/图：不渲染空圆环
+    const tint = el.shadowRoot!.querySelector<HTMLElement>('[data-value="tint"]')!
+    expect(tint.querySelector('[part="avatar"]')).toBeNull()
   })
 
   it('行首头像：avatar 图片优先于首字母，alt 置空（名称由行 aria-label 提供）', () => {
@@ -758,6 +761,44 @@ describe('OASSidebar 能力补齐批（嵌套/徽标/操作/分隔线/骨架/快
     expect(av.textContent).toBe('李')
     expect(av.style.getPropertyValue('--oas-sidebar-avatar-color')).toBe('#fef08a')
     expect(el.shadowRoot!.querySelector('[data-value="u2"] [part="avatar"] img')).not.toBeNull()
+  })
+
+  it('折叠态：有行首头像无图标的项保留（成员行不再消失），无头像无图标仍隐藏', () => {
+    stubMatchMedia(false)
+    const el = mount({
+      collapsed: '',
+      items: JSON.stringify([
+        { label: '张伟', value: 'u1', avatarText: '张', avatarColor: '#e11d48' },
+        { label: '李娜', value: 'u2', avatar: '/favicon.svg' },
+        { label: '仅色', value: 'tint', avatarColor: '#0ea5e9' },
+        { label: '纯文字', value: 'plain' },
+      ]),
+    })
+    const row = (v: string): HTMLElement => el.shadowRoot!.querySelector<HTMLElement>(`[data-value="${v}"]`)!
+    expect(row('u1').hidden, '首字母头像行保留').toBe(false)
+    expect(row('u2').hidden, '图片头像行保留').toBe(false)
+    expect(row('tint').hidden, '仅 avatarColor（无文字/图）不产生可视内容，仍隐藏').toBe(true)
+    expect(row('plain').hidden, '无头像无图标行仍隐藏').toBe(true)
+    expect(row('u1').querySelector('[part="avatar"]'), '折叠态头像仍渲染').not.toBeNull()
+    expect(el.shadowRoot!.querySelector('oas-tooltip[content="张伟"]'), '折叠态头像行有 label 提示').not.toBeNull()
+  })
+
+  it('折叠态：有头像 + children 无 icon 的父项也走 flyout（子项可达，不派发父项 select）', () => {
+    stubMatchMedia(false)
+    const el = mount({
+      collapsed: '',
+      items: '[{"label":"带队人","value":"lead","avatarText":"带","children":[{"label":"成员","value":"member"}]}]',
+    })
+    let detail: unknown
+    el.addEventListener('oas-select', (e) => (detail = (e as CustomEvent).detail))
+    const parent = el.shadowRoot!.querySelector<HTMLElement>('[data-value="lead"]')!
+    expect(parent.getAttribute('aria-haspopup'), '头像父项折叠态应声明弹出子菜单').toBe('true')
+    const flyout = el.shadowRoot!.querySelector<HTMLElement>('[part="flyout"]')!
+    parent.click()
+    expect(flyout.hidden, '点击头像父项打开 flyout').toBe(false)
+    expect(detail, '父项不派发 select').toBeUndefined()
+    flyout.querySelector<HTMLElement>('[data-value="member"]')!.click()
+    expect(detail, 'flyout 内子项可选中').toEqual({ value: 'member', label: '成员' })
   })
 
   it('折叠态嵌套父项点击打开子菜单 flyout（父项不是页面，不再派发父项 select；子项可点击派发 select）', () => {
@@ -1010,12 +1051,20 @@ describe('OASSidebar 能力补齐批（嵌套/徽标/操作/分隔线/骨架/快
     expect(tip.querySelector('[part="item"]')).not.toBeNull()
   })
 
-  it('expand-on-hover：折叠图标条悬停临时展开的 CSS 规则存在', () => {
+  it('expand-on-hover：折叠图标条悬停临时展开的 CSS 规则存在；悬停展开时不再重复弹 tooltip', () => {
     stubMatchMedia(false)
-    const el = mount({ 'expand-on-hover': '', collapsed: '' })
+    const el = mount({
+      'expand-on-hover': '',
+      collapsed: '',
+      items: JSON.stringify([
+        { label: '张伟', value: 'u1', avatarText: '张' },
+        { label: '收件箱', value: 'inbox', icon: 'star' },
+      ]),
+    })
     const css = el.shadowRoot!.querySelector('style')!.textContent!
     expect(css).toMatch(/\[expand-on-hover\]:hover[^}]*width:\s*var\(--oas-sidebar-width/)
     expect(css).toMatch(/\[expand-on-hover\]:hover[^}]*\.item \.label[^}]*display:\s*inline/)
+    expect(el.shadowRoot!.querySelector('oas-tooltip'), '悬停展开已有 label，不再叠 tooltip').toBeNull()
   })
 
   it('side=right：移动抽屉从右侧滑入（CSS 规则存在）', () => {
@@ -1588,9 +1637,11 @@ describe('OASSidebar 图标通道与着色', () => {
     const el = mount({ dir: 'rtl' })
     expect(el.hasAttribute('data-rtl'), 'RTL 宿主应标记 data-rtl').toBe(true)
     const stl = el.shadowRoot!.querySelector('style')!.textContent!
-    // 抽屉贴行内起点（RTL 视觉右缘），关闭态藏到右外（transform 物理向量经 data-rtl 镜像）
+    // 抽屉贴行内起点（RTL 视觉右缘），关闭态藏到右外（transform 物理向量经 data-rtl 镜像）；
+    // 镜像位移只在移动抽屉态生效，桌面 RTL 不得被移出宿主
     expect(stl).toMatch(/\.panel\s*\{[^}]*inset-inline-start:\s*0/)
-    expect(stl).toMatch(/:host\(\[data-rtl\]\)\s+\.panel\s*\{[^}]*translateX\(100%\)/)
+    expect(stl).toMatch(/:host\(\[data-mobile\]\[data-rtl\]\)\s+\.panel\s*\{[^}]*translateX\(100%\)/)
+    expect(stl).not.toMatch(/:host\(\[data-rtl\]\)\s+\.panel\s*\{[^}]*translateX\(100%\)/)
     // side=right + RTL 组合规则存在
     expect(stl).toMatch(/:host\(\[data-mobile\]\[side='right'\]\[data-rtl\]\)\s+\.panel\s*\{[^}]*translateX\(-100%\)/)
     // 不再用 :dir() 伪类（统一 data-rtl 机制，浏览器兼容）

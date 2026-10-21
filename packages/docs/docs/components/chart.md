@@ -185,7 +185,7 @@
 - 数据更新重绘 SVG（同 qrcode 模式），节点不重建
 - 空/非法数据 → 空态占位
 - 每个数据点带原生 `<title>` tooltip，零孤儿浮层
-- x 轴分类标签密集（间距不足以容下最宽标签）时按可用宽度自动抽稀，端点有富余则保留；抽稀只作用于标签（数据点不抽稀），不旋转/不加省略号——需要斜排/竖排时用 `options.xLabelRotate`（0–90），旋转后仍按投影宽度抽稀兜底
+- x 轴分类标签密集（间距不足以容下最宽标签）时按可用宽度自动抽稀（折线/面积端点优先保留；柱状按宽度抽稀，端点越界时才保留）；抽稀只作用于标签（数据点不抽稀），不旋转/不加省略号——需要斜排/竖排时用 `options.xLabelRotate`（0–90），旋转后仍按投影宽度抽稀兜底；水平标签仅在越过 viewBox 左右界时向内对齐（首 `start` / 末 `end`），并按各标签自身宽度剔除会与端点相撞的相邻标签（柱状/组合/堆叠同样适用，未越界时仍与柱组中心对齐），不被裁切
 - 动画为纯 CSS（`@media (prefers-reduced-motion: no-preference)` 包裹），reduced-motion 下自动关闭，无 JS 计时器
 - radar 维度量程为全局统一（`options.max` 或 nice 刻度），暂不支持逐维独立量程——需要时宿主可先自行归一化（如 0-100 分制）
 - polar-area 值全为 0 时不渲染扇区（与饼图同口径）；半径量程为最大值满半径
@@ -193,5 +193,5 @@
 - 系列级 `type` / `yAxisIndex` 只被直角坐标系图型（line / bar / area / 组合图）消费；`stacked-bar` / `pie` / `donut` / `radar` / `polar-area` 忽略系列级覆盖，一律按顶层 `type` 渲染
 - 仅声明 `options.yAxis` 第 2 项而绑定未覆盖两侧（无右绑、或全部系列绑右致左轴空置）时按单轴渲染——不渲染 0 刻度假轴（未用轴名同免）
 - y 轴刻度步长恒为整数（nice 上取整，最小步长 1）：小数量程（如 0~0.01、不足 4 段的量程）会退化为整步刻度、量程顶被抬到整步倍数而数据贴近底部——小量程数据建议宿主先做单位换算（如 ×100 转百分比）
-- 配色映射语义：饼系（pie / donut / polar-area）按**分类**上色，直角系（line / bar / area / stacked-bar / radar / 组合图）按**系列**上色；`options.colors` 按同序覆盖
+- 配色映射语义：饼系（pie / donut / polar-area）按**分类**上色，直角系（line / bar / area / stacked-bar / radar / 组合图）按**系列**上色；`options.colors` 按同序覆盖；缺省 8 色循环（primary / success / warning / danger / purple / cyan / magenta / geekblue），超过 8 个才回绕
 - 图表 svg 内文字方向钉死 `direction: ltr`（坐标语义与书写方向正交）：宿主 `dir=rtl` 不翻转文字锚点、不镜像几何

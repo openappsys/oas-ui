@@ -3,6 +3,8 @@
 
 :root,
 :host {
+  /* 原生控件（checkbox/radio/滚动条等）跟随主题明暗；暗色不声明会在深底上出现白块 */
+  color-scheme: light;
   --oas-color-primary: #0b6cff;
   /* hover 85% / active 75% 掺黑（亮蓝需大幅混黑才有明显视觉差） */
   --oas-color-primary-hover: color-mix(in srgb, var(--oas-color-primary) 85%, black);
@@ -147,6 +149,7 @@
 
 [data-theme="dark"],
 html.dark {
+  color-scheme: dark;
   /* 主/危险色亮化为粉彩档（原 #4d9fff/#f87171 中间调双底均不达感知分 60）；
      面亮化后 hover/active 反转提亮（dark 激活变亮惯例，压暗会拉回不达标） */
   --oas-color-primary: #9ecdff;
@@ -219,6 +222,7 @@ html.dark {
 }
 
 [data-theme="high-contrast"] {
+  color-scheme: light;
   --oas-color-primary: #0050b3;
   --oas-color-primary-hover: #003a8c;
   --oas-color-primary-active: #002766;

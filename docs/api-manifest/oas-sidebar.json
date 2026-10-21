@@ -57,6 +57,7 @@
     },
     {
       "name": "expand-on-hover",
+      "type": "boolean",
       "observed": true
     },
     {

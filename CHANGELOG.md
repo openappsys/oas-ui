@@ -8,7 +8,7 @@
 
 - **构建期去除样式字符串中的 CSS 注释**：组件样式写在 `*_STYLE` / `*_CSS` 字符串里，JS 压缩器不处理字符串内容，注释会随产物发布。新增构建插件按命名约定识别样式常量，把注释替换为**等长空白**（保留长度/行号，源映射不变；字符串与 `${}` 插值内部不处理）。实测 gzip：`dist/cdn.js` 739.6 → 601.5 KiB（−18.7%）、全量入口链 1063.7 → 909.7 KiB、button 按需链 26.6 → 22.4 KiB；运行时样式不变。
 
-- **`@oas-ui/theme` 发布 CSS 最小化**：`index.css` 改为由 `index.source.css` 生成的无注释产物，保留源码文件与既有导出路径；实测 `index.css` 从 10,767 B / 3.8 KB gzip 降至 7,343 B / 1.7 KB gzip。
+- **`@oas-ui/theme` 发布 CSS 最小化**：`index.css` 改为由 `index.source.css` 生成的无注释产物，保留源码文件与既有导出路径；实测 `index.css` 从 10,767 B / 3.8 KB gzip 降至 7,411 B / 1.7 KB gzip。
 - **真实浏览器堆内存回归**：新增 Chromium CDP GC soak，覆盖 list / tree / kanban / scheduler 各 8 轮挂载/卸载；本轮实测堆增长为 0。Firefox 无 `performance.memory`，自动跳过该断言。
 - **开发依赖安全升级**：同步升级 Playwright、Vitest、Vite、happy-dom 等开发依赖，并将 `@oas-ui/ssr` 的 happy-dom 与测试环境统一到 21.x，消除双版本 `Illegal constructor`。
 - **文档站升级 VitePress 2 alpha 试用**：`vitepress` 升到 `2.0.0-alpha.20`（Vite 8），`pnpm audit --prod` 清零；构建、首页/组件 smoke、visual、console 与 barcode a11y 均通过。同步修复 breadcrumb 示例中不合规的 `::part(item):nth-child()` 选择器（Lightning CSS 会拒绝整条规则），示例改为纵向层级列表；VitePress 2 仍为 alpha，升级后的 dev server 需重启。
@@ -18,6 +18,8 @@
 - **`levelResources` 新增 `mode: 'reassign'`（资源重分配均载）**：在既有 `shift`（顺延、保工期）之外提供「日期完全不变、只换人」的平衡语义——把超载资源上的任务改派给任务覆盖的**每个** period 都有余量的资源（按 worst load ratio 选最空闲、并列取资源输入序；多资源任务只替换超载的那一个分配）；找不到可行目标即停，**不退化顺延**。适配有业务截止日、只能换人的场景（pm 模板「一键均载」），返回被改派任务的完整副本，宿主仍按 id 回写。
 - **`oas-date-picker` 范围手输**：`daterange` / `datetimerange` / `monthrange` / `yearrange` 触发器由只读回显改为可键入，按 `separator`（默认 `~`）拆分起止；支持 `2026-08-05 ~ 2026-08-15`、`2026-08 ~ 2026-10`、`2024 ~ 2026` 与带时刻的 datetime 范围。起止倒置、越界、禁用日期或非法输入回退当前值，不提交；`datetimerange` 只键入日期时按 `default-time` 补齐时刻。
 - **`oas-sidebar` 自定义行内容**：新增 `renderLabel` property 函数通道 `(item) => Node | string | null`，可把菜单项文字区替换为双行文本等富内容；返回字符串按纯文本渲染，返回 `null` 回退 `item.label`。函数不反射 attribute/不参与 SSR，可访问名称仍取 `item.label`，折叠态随文字区隐藏；行内不要放交互元素（整行本身是按钮，交互走 `actions`）。
+- **`oas-sidebar` 行首头像**：新增 `avatar`（图片 URL，优先）/ `avatarText`（首字母圆）/ `avatarColor`（淡底 + 色环着色源）通道，`items` JSON 与 `<oas-sidebar-item>` 属性一一对应；头像为装饰性节点（`aria-hidden`），可读名称仍由 `label` 提供，暗色下对比度稳定。
+- **`oas-sidebar` 分组独立高亮 `active-by-group`**：按 `group` 各自受控（`string` 单选 / `string[]` 多选），组内项带 `aria-pressed`；与 `active`（`aria-current="page"` 当前页）正交，可同项共存。
 - **`oas-barcode` 扩展至 10 码制**：新增 GS1-128（首部 FNC1，`|` 分隔字段，括号仅分组）、UPC-E（6/7/8 位，按末位规则展开并补校验位）、Codabar（A–D 起止符）与 MSI（纯数字基础码）；`format` 新增 `gs1-128` / `upce` / `codabar` / `msi`，非法值仍回退 `code128`。补齐编码单测、组件渲染/e2e 覆盖与 zh/en 文档。
 - **`oas-resource` 容量日历、技能匹配与优先级均载**：`ResourceItem` 新增 `workdays`（0=周日…6=周六，`[]` 为全不可用）、`holidays`、`capacityOverrides`（日期级容量，优先于假期/工作日，可小数）、`skills`；`ResourceTask` 新增 `priority`（数值小者优先）、`requiredSkills`、`project`；`levelResources()` 新增 `respectSkills` / `projectOrder`，`reassign` 默认要求目标资源具备任务全部技能，shift/reassign 都按「低优先级先让位」选择受害者。未声明 `workdays` 且 `holidays`/`capacityOverrides` 为空时保持旧的每档容量语义；`workdays: []` 且未来没有足够正容量 override 时不再把任务推到 `maxIter` 之后。组件直方图与 `oas-overload` 按逐档容量判定。
 
@@ -43,6 +45,15 @@
 
 - **`oas-gantt` / `oas-resource` 文本可选中复制**：任务名、资源名与条标签恢复 `user-select: text`，支持鼠标划选/复制；`oas-gantt` 行拖拽改由右侧重排手柄承载（细指针悬停/聚焦显形，粗指针常显），避免行重排与文本选择互相抢占；`oas-resource` 条标签点击仍冒泡到任务条。新增 Chromium/Firefox 真实拖选回归。
 - **`oas-resource` 负载直方图上方分隔线缺失**：`.row:last-child` 把最后一条资源泳道的底边也清掉了，导致直方图标题行上方断线；补回最后泳道底边并加几何回归。
+
+### 修复与改进
+
+- **`oas-chart` 默认配色扩到 8 色循环**：原调色板只有 primary/success/warning/danger 四色，第 5 个分类/系列回落到首色（饼图 5 段时首尾同色，语义混淆）。现追加 purple/cyan/magenta/geekblue（走 preset text token，含暗色变体），超过 8 个才回绕；`options.colors` 覆盖语义不变。
+- **`oas-chart` 首/末 x 轴标签贴边裁切**：折线/面积图端点标签居中绘制时，半宽越过 viewBox 左右界被裁切（1:1 设计宽度下末位标签明显缺字）。现在仅在真正越过 viewBox 时改为向内对齐（首 `start` / 末 `end`），并按各标签自身宽度剔除会与端点相撞的相邻标签；未越界时柱状/组合/堆叠标签仍与柱组中心对齐，不被推离。同步收紧拉丁大写/宽字形（M/W/大写/数字）的宽度估算，减少宽字体叠字与旋转裁切。旋转标签按投影抽稀的路径不变。
+- **`@oas-ui/theme` 声明 `color-scheme`**：基础/高对比主题 `light`，暗色主题 `dark`。此前暗色下原生控件（checkbox/radio/滚动条等）仍按浅色绘制出现白块，宿主需自行补 `color-scheme: dark`。
+- **`oas-sidebar` 折叠态保留有头像的菜单项**：原先折叠时仅保留有 `icon` 的项，只有行首头像（成员行）的项被整体隐藏；现在有 `avatar` / `avatarText` 的项在图标条内保留头像（`avatarColor` 单独无内容仍隐藏），保留项带 label tooltip（`expand-on-hover` 悬停已展开文字时不叠 tooltip）；有头像的树形父项同样走 flyout（子项可达、父项不派发 `select`），无图标也无头像的项仍隐藏。
+- **`oas-sidebar` 桌面 RTL 面板移出宿主**：RTL 抽屉的 `translateX(100%)` 规则未限定移动态，桌面 RTL 下整个 `.panel` 被平移到宿主外（展开/折叠都不可见）。现仅在 `[data-mobile]` 抽屉态应用该镜像位移，桌面 RTL 保持流内布局。
+- **`oas-scheduler` 重叠定时事件按车道并排**：周/日视图同一时段多个定时事件原先完全叠印（文字互相覆盖）。现按贪心车道分配在聚簇内等宽并排（2px 间隙、逻辑属性 RTL 镜像），不重叠事件仍占满整列；拖拽移动/缩放交互不变。
 
 ## [2.6.2] - 2026-10-19
 

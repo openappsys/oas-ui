@@ -749,6 +749,40 @@ const RES_ROW_BUFFER = 4
 /** 资源周视图单元格最小高（px，镜像 CSS .res-cell min-height）——行高模型下界（防极端区间 spacer 少算） */
 const RES_CELL_MIN_H = 36
 
+/**
+ * 定时事件车道分配：同一天内时间重叠的事件并排显示，避免完全叠印。
+ * 半开区间（首尾相接不算重叠）；按开始时间排序后贪心占道，聚簇内统一车道数。
+ */
+function layoutTimedLanes(
+  items: Array<{ ev: { id: string }; s: number; e: number }>,
+): Map<string, { lane: number; lanes: number }> {
+  const out = new Map<string, { lane: number; lanes: number }>()
+  const sorted = [...items].sort((a, b) => a.s - b.s || b.e - a.e || a.ev.id.localeCompare(b.ev.id))
+  let laneEnds: number[] = []
+  let clusterEnd = Number.NEGATIVE_INFINITY
+  let cluster: Array<{ id: string; lane: number }> = []
+  const flush = (): void => {
+    for (const { id, lane } of cluster) out.set(id, { lane, lanes: laneEnds.length })
+    laneEnds = []
+    clusterEnd = Number.NEGATIVE_INFINITY
+    cluster = []
+  }
+  for (const it of sorted) {
+    if (cluster.length > 0 && it.s >= clusterEnd) flush()
+    let lane = laneEnds.findIndex((end) => end <= it.s)
+    if (lane < 0) {
+      lane = laneEnds.length
+      laneEnds.push(it.e)
+    } else {
+      laneEnds[lane] = it.e
+    }
+    cluster.push({ id: it.ev.id, lane })
+    clusterEnd = Math.max(clusterEnd, it.e)
+  }
+  flush()
+  return out
+}
+
 /** 'HH:mm' → 分钟数；非法或越界返回 null（h 0-24、m 0-59，且 24 点仅允许整点） */
 function parseTime(s: string | undefined): number | null {
   if (typeof s !== 'string' || !/^\d{1,2}:\d{2}$/.test(s)) return null
@@ -2104,9 +2138,13 @@ export class OASScheduler extends OASElement {
       // 事件块按小时窗口 y 相交裁剪：与窗口无交集的跳过；跨窗长事件几何不变（track 仍全高）
       const winStartMin = (startH + win.start) * 60
       const winEndMin = (startH + win.end) * 60
+      // 车道分配只统计与整个日视图时段（start-hour..end-hour）相交的事件：
+      // 完全落在时段外的事件不渲染，也不能占车道（否则可见事件会被挤成半宽、旁边留空道）。
+      // 用日范围而非滚动窗口，保证滚动时车道数稳定。窗口内渲染仍在下方单独裁剪。
+      const laneMap = layoutTimedLanes(timed.filter(({ s, e }) => e > startH * 60 && s < endH * 60))
       for (const { ev, s, e } of timed) {
         if (e <= winStartMin || s >= winEndMin) continue
-        track.appendChild(this.renderTimedEvent(ev, s, e, startH, hourH))
+        track.appendChild(this.renderTimedEvent(ev, s, e, startH, hourH, laneMap.get(ev.id)))
       }
       if (isSameDay(d, today) && this.getAttr('show-now', 'true') !== 'false') {
         const now = this.nowMinutes()
@@ -2252,6 +2290,7 @@ export class OASScheduler extends OASElement {
     e: number,
     startH: number,
     hourH: number,
+    lane?: { lane: number; lanes: number },
   ): HTMLButtonElement {
     const el = document.createElement('button')
     el.type = 'button'
@@ -2262,6 +2301,15 @@ export class OASScheduler extends OASElement {
     if (ev.color) el.style.setProperty('--chip-color', ev.color)
     el.style.top = `${((s - startH * 60) / 60) * hourH}px`
     el.style.height = `${Math.max(((e - s) / 60) * hourH, 16)}px`
+    if (lane && lane.lanes > 1) {
+      // 重叠事件按车道并排（逻辑属性，RTL 下从右往左排）；保留 4px 列内边距 + 2px 车道间隙
+      const gap = 2
+      const avail = `(100% - 8px - ${(lane.lanes - 1) * gap}px)`
+      el.style.boxSizing = 'border-box'
+      el.style.insetInlineStart = `calc(4px + ${lane.lane} * (${avail} / ${lane.lanes} + ${gap}px))`
+      el.style.insetInlineEnd = 'auto'
+      el.style.width = `calc(${avail} / ${lane.lanes})`
+    }
     el.addEventListener('click', (evt) => {
       evt.stopPropagation()
       this.emit('event-click', { id: ev.id, event: { ...ev } } satisfies SchedulerEventClickDetail)

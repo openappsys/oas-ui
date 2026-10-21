@@ -2,6 +2,7 @@
 
 :root,
 :host {
+  color-scheme: light;
   --oas-color-primary: #0b6cff;
   --oas-color-primary-hover: color-mix(in srgb, var(--oas-color-primary) 85%, black);
   --oas-color-primary-active: color-mix(in srgb, var(--oas-color-primary) 75%, black);
@@ -111,6 +112,7 @@
 }
 [data-theme="dark"],
 html.dark {
+  color-scheme: dark;
   --oas-color-primary: #9ecdff;
   --oas-color-primary-hover: color-mix(in srgb, var(--oas-color-primary) 88%, white);
   --oas-color-primary-active: color-mix(in srgb, var(--oas-color-primary) 78%, white);
@@ -169,6 +171,7 @@ html.dark {
   --oas-deep-sink: var(--oas-color-text-primary);
 }
 [data-theme="high-contrast"] {
+  color-scheme: light;
   --oas-color-primary: #0050b3;
   --oas-color-primary-hover: #003a8c;
   --oas-color-primary-active: #002766;

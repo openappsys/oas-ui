@@ -44,19 +44,23 @@ export interface ChartOptions {
   xLabelRotate?: number
 }
 
-/** 默认系列配色（只用 token，含暗色变体） */
+/** 默认系列配色（只用 token，含暗色变体）；8 色循环，避免 >4 类别回落首色 */
 const PALETTE = [
   'var(--oas-color-primary)',
   'var(--oas-color-success)',
   'var(--oas-color-warning)',
   'var(--oas-color-danger)',
+  'var(--oas-preset-purple-text)',
+  'var(--oas-preset-cyan-text)',
+  'var(--oas-preset-magenta-text)',
+  'var(--oas-preset-geekblue-text)',
 ]
 
 /** 面积图渐变 id 计数器（同页多组件实例防 id 冲突） */
 let areaGradSeq = 0
 
 /** 折线图配色类：color 继承 → 元素 stroke/fill 用 currentColor */
-const SWATCH_CLASSES = ['c0', 'c1', 'c2', 'c3']
+const SWATCH_CLASSES = ['c0', 'c1', 'c2', 'c3', 'c4', 'c5', 'c6', 'c7']
 
 /** 环形图镂空比例（内半径 = 外半径 × 该值） */
 const DONUT_HOLE_RATIO = 0.62
@@ -109,6 +113,10 @@ svg {
 .c1 { color: var(--oas-color-success); }
 .c2 { color: var(--oas-color-warning); }
 .c3 { color: var(--oas-color-danger); }
+.c4 { color: var(--oas-preset-purple-text); }
+.c5 { color: var(--oas-preset-cyan-text); }
+.c6 { color: var(--oas-preset-magenta-text); }
+.c7 { color: var(--oas-preset-geekblue-text); }
 /* 折线 */
 .line-path {
   fill: none;
@@ -909,27 +917,74 @@ export class OASChart extends OASElement {
     const idx: number[] = []
     for (let i = 0; i < n; i += step) idx.push(i)
     const last = n - 1
-    if (idx[idx.length - 1] !== last && (last - idx[idx.length - 1]!) * spacing >= need) idx.push(last)
-    const rotAttr =
-      layout.rot > 0
-        ? {
-            t: (cx: number): string => ` transform="rotate(${layout.rot} ${cx.toFixed(1)} ${layout.y})"`,
-            s: ' style="text-anchor:start"',
-          }
-        : { t: (): string => '', s: '' }
+    const cxOf = (i: number): number =>
+      anchor === 'middle' ? PAD.l + i * bandW + bandW / 2 : n > 1 ? PAD.l + (i * plotW) / (n - 1) : PAD.l + plotW / 2
+    const leftEdge = 0
+    const rightEdge = W
+    const widthOf = (i: number): number => this.estimateLabelWidth(labels[i] ?? '')
+    // 端点真正越出 **viewBox** 时才改锚点（绘图区左右留白本身还能容纳半宽，过早内移会让标签压到相邻柱上）。
+    // 对齐后端点向绘图区内多伸半个字宽，需按**各标签自身宽度**剔除会与其相撞的相邻标签，否则叠字。
+    const lastClamped = layout.rot === 0 && cxOf(last) + widthOf(last) / 2 > rightEdge - 0.5
+    if (idx[idx.length - 1] !== last && ((last - idx[idx.length - 1]!) * spacing >= need || lastClamped)) {
+      idx.push(last)
+    }
+    /** 标签实际占位（user 单位）：越出 viewBox 时锚点内移，按自身宽度算左右缘 */
+    const spanOf = (i: number): { left: number; right: number } => {
+      const cx = cxOf(i)
+      const w = widthOf(i)
+      if (cx - w / 2 < leftEdge + 0.5) return { left: cx, right: cx + w }
+      if (cx + w / 2 > rightEdge - 0.5) return { left: cx - w, right: cx }
+      return { left: cx - w / 2, right: cx + w / 2 }
+    }
+    let draw = idx
+    if (layout.rot === 0 && idx.length > 1) {
+      draw = [...idx]
+      const gap = 2
+      // 保留首末两端，只剔除与端点真重叠的中间标签
+      while (draw.length > 2) {
+        const first = spanOf(draw[0]!)
+        const next = spanOf(draw[1]!)
+        if (next.left >= first.right + gap) break
+        draw.splice(1, 1)
+      }
+      while (draw.length > 2) {
+        const lastSpan = spanOf(draw[draw.length - 1]!)
+        const prev = spanOf(draw[draw.length - 2]!)
+        if (prev.right <= lastSpan.left - gap) break
+        draw.splice(draw.length - 2, 1)
+      }
+    }
+    const textAttrs = (cx: number, w: number): string => {
+      if (layout.rot > 0) {
+        return ` transform="rotate(${layout.rot} ${cx.toFixed(1)} ${layout.y})" style="text-anchor:start"`
+      }
+      // 越出 viewBox 的端点向内对齐（首 start / 末 end）
+      if (cx - w / 2 < leftEdge + 0.5) return ' style="text-anchor:start"'
+      if (cx + w / 2 > rightEdge - 0.5) return ' style="text-anchor:end"'
+      return ''
+    }
     let out = ''
-    for (const i of idx) {
-      const cx =
-        anchor === 'middle' ? PAD.l + i * bandW + bandW / 2 : n > 1 ? PAD.l + (i * plotW) / (n - 1) : PAD.l + plotW / 2
-      out += `<text class="axis-label" x="${cx.toFixed(1)}" y="${layout.y}"${rotAttr.t(cx)}${rotAttr.s}>${this.escapeText(labels[i] ?? '')}</text>`
+    for (const i of draw) {
+      const cx = cxOf(i)
+      out += `<text class="axis-label" x="${cx.toFixed(1)}" y="${layout.y}"${textAttrs(cx, widthOf(i))}>${this.escapeText(labels[i] ?? '')}</text>`
     }
     return out
   }
 
-  /** 标签宽估算（user 单位，axis-label 12px）：CJK 约 1em、其余约 0.55em */
+  /** 标签宽估算（user 单位，axis-label 12px）：CJK 12；宽拉丁字形按实测上界偏保守取，避免低估叠字/裁切 */
   private estimateLabelWidth(s: string): number {
     let w = 0
-    for (const ch of s) w += (ch.codePointAt(0) ?? 0) >= 0x2e80 ? 12 : 6.6
+    for (const ch of s) {
+      const cp = ch.codePointAt(0) ?? 0
+      if (cp >= 0x2e80) w += 12
+      else if (ch === ' ' || ch === '\t') w += 4
+      else if (ch === 'M' || ch === 'W' || ch === '@' || ch === '%') w += 12
+      else if (ch === 'm' || ch === 'w') w += 10.5
+      else if (ch >= 'A' && ch <= 'Z') w += 8.3
+      else if (ch >= '0' && ch <= '9') w += 7.4
+      else if (ch === '-' || ch === '.' || ch === ':' || ch === '/') w += 4.5
+      else w += 6.6
+    }
     return w
   }
 

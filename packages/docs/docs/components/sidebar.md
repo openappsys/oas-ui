@@ -19,9 +19,9 @@
 
 ## 折叠
 
-点击底部「«」按钮切换 `collapsed`（受控属性，派发 `oas-collapse`）；折叠态只显示图标，无 icon 的菜单项自动隐藏。`hide-toggle` 可隐藏该按钮（宿主 opt-out，如静态侧栏场景）；此时若 `slot="header"` 为空，头部整体塌陷（不再保留 12px 上下留白）——移动抽屉打开时因关闭按钮仍需要容器，头部保留。
+点击底部「«」按钮切换 `collapsed`（受控属性，派发 `oas-collapse`）；折叠态只显示图标或行首头像，无 icon 且无头像的菜单项自动隐藏。有 `avatar` / `avatarText` 的叶子项保留头像并带 label tooltip（`expand-on-hover` 悬停时已展开出文字，不再叠 tooltip）；有头像的树形父项同样用 flyout 展示子项（`avatarColor` 单独无文字/图不产生可视内容，仍隐藏）。`hide-toggle` 可隐藏该按钮（宿主 opt-out，如静态侧栏场景）；此时若 `slot="header"` 为空，头部整体塌陷（不再保留 12px 上下留白）——移动抽屉打开时因关闭按钮仍需要容器，头部保留。
 
-**折叠态嵌套子菜单走 flyout 浮层**：树形父项在折叠态渲染为图标项，点击（或悬停延迟）弹出子菜单面板——面板锚定父项 inline-end（RTL 镜像到左）、碰撞避让、叶子项点击派发 `oas-select` 并关面板，嵌套子树在面板内内联展开；Esc 关闭并回焦父项、点击外部关闭、单开互斥。注意（契约变更）：折叠态父项点击只开 flyout，**不再派发父项自身的 `oas-select`**（父项不是可导航页面）——若此前依赖折叠态父项的 `oas-select` 做导航，请改监听 flyout 内叶子项的 `oas-select`。
+**折叠态嵌套子菜单走 flyout 浮层**：树形父项在折叠态渲染为图标项（或行首头像项），点击（或悬停延迟）弹出子菜单面板——面板锚定父项 inline-end（RTL 镜像到左）、碰撞避让、叶子项点击派发 `oas-select` 并关面板，嵌套子树在面板内内联展开；Esc 关闭并回焦父项、点击外部关闭、单开互斥。注意（契约变更）：折叠态父项点击只开 flyout，**不再派发父项自身的 `oas-select`**（父项不是可导航页面）——若此前依赖折叠态父项的 `oas-select` 做导航，请改监听 flyout 内叶子项的 `oas-select`。
 
 <DemoBlock title="hide-toggle（隐藏折叠按钮，静态侧栏）">
   <div style="height: 240px; width: 100%; display: flex">
@@ -396,7 +396,7 @@
 | `active-by-group` | 分组独立高亮（受控 JSON）：group 名 → 选中值；字符串 = 组内单选，字符串数组 = 组内多选。分组项带 aria-pressed（toggle 语义），不设 aria-current；与 active（当前页）互不影响，可同项共存。非法 JSON/非对象/非字符串值静默忽略 | `string` | — |
 | `collapsed` | 受控折叠，收窄为图标条（存在即折叠） | `boolean` | — |
 | `drawer-open` | 移动端抽屉打开态（受控：设置即开、清除即收；断点回桌面自动移除） | `boolean` | — |
-| `expand-on-hover` | 折叠图标条悬停临时展开（纯视觉态，不改 collapsed 受控） | — | — |
+| `expand-on-hover` | 折叠图标条悬停临时展开（纯视觉态，不改 collapsed 受控） | `boolean` | — |
 | `hide-toggle` | 隐藏底部折叠按钮（桌面端恒显示的内置折叠切换；存在即隐藏，宿主 opt-out，静态侧栏场景用）；此时若 header 槽为空，头部整体塌陷（移动抽屉打开时因关闭按钮保留） | `boolean` | — |
 | `items` | 菜单项 JSON `[{label, value, icon?, iconColor?, group?, badge?, avatar?, avatarText?, avatarColor?, children?, actions?}]`（支持分隔线条目 `{type:"divider"}`；children 嵌套子菜单；avatar 为图片 URL，优先于 avatarText + avatarColor 首字母圆） | `SidebarEntry[] \| string` | `[]` |
 | `loading` | 骨架屏加载态（存在即显示脉冲骨架；数值为骨架行数，默认 4） | `string` | `4` |

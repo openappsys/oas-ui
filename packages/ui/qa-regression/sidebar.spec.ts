@@ -531,3 +531,92 @@ test('sidebar hide-toggle + 空 header：移动抽屉打开时头部保留、关
   expect(r.opened.headHidden, '抽屉打开：head 保留以承载关闭按钮').toBe(false)
   expect(r.closed.headHidden).toBe(true)
 })
+
+// 折叠态头像：成员行保留、叶子项 tooltip、头像父项走 flyout（子项可达，父项不派 select）
+test('sidebar 折叠态头像：成员行保留 + tooltip；头像父项开 flyout 不派父项 select', async ({ page }) => {
+  await page.goto('/components/sidebar.html', { waitUntil: 'domcontentloaded' })
+  await page.waitForFunction(() => !!customElements.get('oas-sidebar'))
+  const r = await page.evaluate(async () => {
+    const el = document.createElement('oas-sidebar')
+    el.setAttribute('collapsed', '')
+    el.setAttribute(
+      'items',
+      JSON.stringify([
+        { label: '张伟', value: 'u1', avatarText: '张', avatarColor: '#e11d48' },
+        { label: '带队人', value: 'lead', avatarText: '带', children: [{ label: '成员', value: 'member' }] },
+        { label: '纯文字', value: 'plain' },
+      ]),
+    )
+    el.style.width = '240px'
+    document.body.appendChild(el)
+    await new Promise((res) => requestAnimationFrame(() => requestAnimationFrame(() => res(null))))
+    const row = (v: string) => el.shadowRoot!.querySelector<HTMLElement>(`[data-value="${v}"]`)!
+    const avatar = row('u1').querySelector<HTMLElement>('[part="avatar"]')
+    const out = {
+      avatarVisible: !row('u1').hidden && !!avatar && Math.round(avatar.getBoundingClientRect().width) === 18,
+      plainHidden: row('plain').hidden,
+      tooltip: !!el.shadowRoot!.querySelector('oas-tooltip[content="张伟"]'),
+    }
+    let detail: unknown
+    el.addEventListener('oas-select', (e) => (detail = (e as CustomEvent).detail))
+    row('lead').click()
+    const flyout = el.shadowRoot!.querySelector<HTMLElement>('[part="flyout"]')!
+    return {
+      ...out,
+      flyoutOpen: !!flyout && !flyout.hidden,
+      parentDetail: detail,
+      childDetail: (() => {
+        flyout.querySelector<HTMLElement>('[data-value="member"]')!.click()
+        return detail
+      })(),
+    }
+  })
+  expect(r.avatarVisible, '折叠态头像行保留且头像 18px').toBe(true)
+  expect(r.plainHidden, '无图标无头像行仍隐藏').toBe(true)
+  expect(r.tooltip, '折叠态头像叶子项带 label tooltip').toBe(true)
+  expect(r.flyoutOpen, '头像父项点击打开 flyout').toBe(true)
+  expect(r.parentDetail, '父项不派发 select').toBeUndefined()
+  expect(r.childDetail, 'flyout 内子项可选中').toEqual({ value: 'member', label: '成员' })
+})
+
+// 桌面 RTL：面板必须是流内布局，不能被抽屉用的 translateX(100%) 移出宿主
+test('sidebar 桌面 RTL：展开与折叠态面板都在宿主范围内', async ({ page }) => {
+  await page.goto('/components/sidebar.html', { waitUntil: 'domcontentloaded' })
+  await page.waitForFunction(() => !!customElements.get('oas-sidebar'))
+  const r = await page.evaluate(async () => {
+    const el = document.createElement('oas-sidebar')
+    el.setAttribute('dir', 'rtl')
+    el.setAttribute(
+      'items',
+      JSON.stringify([
+        { label: '张伟', value: 'u1', avatarText: '张' },
+        { label: '收件箱', value: 'inbox', icon: 'star' },
+      ]),
+    )
+    el.style.height = '600px'
+    document.body.appendChild(el)
+    const frame = () => new Promise((res) => requestAnimationFrame(() => requestAnimationFrame(() => res(null))))
+    await frame()
+    const panel = el.shadowRoot!.querySelector<HTMLElement>('[part="panel"]')!
+    const inside = () => {
+      const h = el.getBoundingClientRect()
+      const p = panel.getBoundingClientRect()
+      return {
+        inside: p.left >= h.left - 1 && p.right <= h.right + 1 && p.width > 0,
+        hostW: Math.round(h.width),
+        left: p.left,
+        right: p.right,
+      }
+    }
+    const expanded = inside()
+    el.setAttribute('collapsed', '')
+    await new Promise((res) => setTimeout(res, 400))
+    const collapsed = inside()
+    el.remove()
+    return { expanded, collapsed }
+  })
+  expect(r.expanded.inside, '桌面 RTL 展开态面板在宿主内').toBe(true)
+  expect(r.collapsed.inside, '桌面 RTL 折叠态面板在宿主内').toBe(true)
+  expect(r.collapsed.hostW, '折叠态宿主确实收窄（不是被内联宽度撑住）').toBeLessThan(120)
+  expect(r.collapsed.hostW).toBeLessThan(r.expanded.hostW)
+})
