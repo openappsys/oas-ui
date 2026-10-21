@@ -4418,7 +4418,8 @@
       "reactions": "Reaction bar as a JSON array; each item { emoji, count?, active?, label? } (emoji required). Empty array / invalid JSON renders nothing",
       "reactions-side": "Vertical placement of the reaction bar: bottom (default, below the bubble) / top (above the bubble)",
       "reactions-align": "Horizontal alignment of the reaction bar: start / end; defaults to following the bubble align",
-      "align": "Direction: start (other party, default) / end (self) — logical-property alignment (align-self, RTL mirrored automatically); when set explicitly it wins over the inherited text-align reflection"
+      "align": "Direction: start (other party, default) / end (self) — logical-property alignment (align-self, RTL mirrored automatically); when set explicitly it wins over the inherited text-align reflection",
+      "streaming": "Streaming state (boolean presence): content stays visible and the host reflects aria-busy; the content region uses aria-live=off to avoid per-token announcements, while a host status region announces completion."
     },
     "events": {
       "oas-reaction": "Fired when a reaction is clicked; detail { emoji, count, active, index } (reaction data stays owned by the host)"

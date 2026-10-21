@@ -49,6 +49,8 @@
 
 布尔属性 `loading` 在场时内容切换为三点打字指示（AI「正在输入」场景），宿主元素反射 `aria-busy`；动画尊重 `prefers-reduced-motion`。
 
+`streaming` 表示「已有部分内容、仍在追加」：内容保持可见，宿主反射 `aria-busy`，内容区设 `aria-live="off"` 避免逐 token 播报；回答结束移除该属性，由外部 status 区播报完成/停止/失败。`loading` 与 `streaming` 语义不同，不要用 `loading` 表示流式追加。
+
 <script setup>
 import { onMounted } from 'vue'
 onMounted(async () => {
@@ -100,6 +102,7 @@ onMounted(async () => {
 | `reactions` | 表情回应条 JSON 数组，每项 { emoji, count?, active?, label? }（emoji 必填）；空数组/非法 JSON 不渲染反应条 | — | — |
 | `reactions-align` | 反应条横向对齐：start / end；缺省跟随气泡 align | — | — |
 | `reactions-side` | 反应条纵向位置：bottom（默认，气泡下方）/ top（气泡上方） | — | — |
+| `streaming` | 流式追加态（布尔在场）：内容保持可见，宿主反射 aria-busy；内容区 aria-live=off，避免逐 token 播报，终态由外部 status 区播报 | `boolean` | — |
 
 #### 事件
 

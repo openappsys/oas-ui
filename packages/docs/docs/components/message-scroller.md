@@ -33,6 +33,8 @@
 
 默认 `default-position="end"`：打开即定位到底部。viewport 为 `role="region"` + 可读名称（缺省走 locale「消息列表」，可用 `label` 属性覆盖）+ `tabindex="0"`（Tab 聚焦后方向键滚动）；内容容器 `role="log"` + `aria-relevant="additions"`（屏幕阅读器只播报新增行）。
 
+流式回复的逐 token 文本变更不应触发 `role=log` 播报；完成 / 停止 / 失败由独立状态通道播报。调用 `announce(text)` 写入 viewport 外的隐藏 `role="status"` 区，不会被 `aria-busy` 或 log 的 additions 策略抑制；重复同一句会先清空、下一帧再写入。也可以由宿主自己提供 `role="status"` 区，二选一即可，避免重复播报。
+
 ## 首屏防跳（data-pending-scroll）
 
 <DemoBlock title="end / last-anchor 打开前的未定位帧不闪现顶部">
@@ -138,7 +140,7 @@
   </div>
 </DemoBlock>
 
-宿主在消息行上标 `anchor` 属性即轮次锚点（AI 场景通常标在用户提问行）；`default-position="last-anchor"` 打开时定位到**最后一个锚点**的顶部——长会话回到「最后提问位置」继续阅读，而不是落底或回顶；锚点靠底（下方内容不足一屏）时贴底显示（滚动上限 clamp，与「最后提问在屏幕底部」的产品直觉一致）。无锚点时回退 `end`。`scrollToMessage(id, opts?)` 按 `message-id` 精确滚到某条消息顶部（命中返回 `true`，未知 id 返回 `false` 且不滚动）。
+宿主在消息行上标 `anchor` 属性即轮次锚点（AI 场景通常标在用户提问行）；`default-position="last-anchor"` 打开时定位到**最后一个锚点**的顶部——长会话回到「最后提问位置」继续阅读，而不是落底或回顶；锚点靠底（下方内容不足一屏）时贴底显示（滚动上限 clamp，与「最后提问在屏幕底部」的产品直觉一致）。无锚点时回退 `end`。`scrollToMessage(id, opts?)` 按 `message-id` 精确滚到某条消息顶部（命中返回 `true`，未知 id 返回 `false` 且不滚动）。异步补齐历史后需要重新回到最后提问位置时，调用公开方法 `scrollToLastAnchor(opts?)`，无需宿主自己查锚点 id。
 
 ## 轮次锚定（turn-anchor）
 
@@ -573,9 +575,11 @@ scroller 负责常规会话的锚定/跟随；数千轮超长会话把消息数�
 
 | 方法 | 签名 | 说明 |
 | --- | --- | --- |
+| `announce` | `announce(text: string): void` | 向读屏播报一条状态（生成中 / 完成 / 停止 / 失败等）。 |
 | `scrollToEnd` | `scrollToEnd(opts?: { behavior?: ScrollBehavior }): void` | 滚到底部。behavior：'auto'（默认，瞬时）/ 'instant'（瞬时）/ 'smooth'（平滑）。 |
 | `scrollToStart` | `scrollToStart(opts?: { behavior?: ScrollBehavior }): void` | 滚到顶部（参数同 scrollToEnd） |
 | `scrollToMessage` | `scrollToMessage(id: string, opts?: { behavior?: ScrollBehavior }): boolean` | 滚到指定 message-id 的消息行顶部。命中返回 true；id 不存在返回 false 且不滚动 |
+| `scrollToLastAnchor` | `scrollToLastAnchor(opts?: { behavior?: ScrollBehavior }): boolean` | 滚到最后一个轮次锚点（`anchor` 标记行）顶部；无锚点返回 false |
 
 #### 事件
 

@@ -49,6 +49,8 @@ The tinted surfaces of `secondary`/`destructive` mix theme semantic colors via `
 
 With the boolean `loading` attribute present, content switches to a three-dot typing indicator (the AI "typing" scenario) and the host element reflects `aria-busy`; the animation respects `prefers-reduced-motion`.
 
+`streaming` means "some content is already visible and more is arriving": content stays visible, the host reflects `aria-busy`, and the content region uses `aria-live="off"` to avoid per-token announcements. Remove it when the answer ends and let a host status region announce completion/stop/failure. `loading` and `streaming` are different states; do not use `loading` for streaming append.
+
 <script setup>
 import { onMounted } from 'vue'
 onMounted(async () => {
@@ -100,6 +102,7 @@ onMounted(async () => {
 | `reactions` | Reaction bar as a JSON array; each item { emoji, count?, active?, label? } (emoji required). Empty array / invalid JSON renders nothing | — | — |
 | `reactions-align` | Horizontal alignment of the reaction bar: start / end; defaults to following the bubble align | — | — |
 | `reactions-side` | Vertical placement of the reaction bar: bottom (default, below the bubble) / top (above the bubble) | — | — |
+| `streaming` | Streaming state (boolean presence): content stays visible and the host reflects aria-busy; the content region uses aria-live=off to avoid per-token announcements, while a host status region announces completion. | `boolean` | — |
 
 #### Events
 

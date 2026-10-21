@@ -8,6 +8,11 @@
       "observed": true
     },
     {
+      "name": "streaming",
+      "type": "boolean",
+      "observed": true
+    },
+    {
       "name": "reactions",
       "observed": true
     },

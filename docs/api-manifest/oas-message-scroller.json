@@ -55,6 +55,11 @@
   ],
   "methods": [
     {
+      "name": "announce",
+      "signature": "announce(text: string): void",
+      "description": "向读屏播报一条状态（生成中 / 完成 / 停止 / 失败等）。"
+    },
+    {
       "name": "scrollToEnd",
       "signature": "scrollToEnd(opts?: { behavior?: ScrollBehavior }): void",
       "description": "滚到底部。behavior：'auto'（默认，瞬时）/ 'instant'（瞬时）/ 'smooth'（平滑）。"
@@ -68,6 +73,11 @@
       "name": "scrollToMessage",
       "signature": "scrollToMessage(id: string, opts?: { behavior?: ScrollBehavior }): boolean",
       "description": "滚到指定 message-id 的消息行顶部。命中返回 true；id 不存在返回 false 且不滚动"
+    },
+    {
+      "name": "scrollToLastAnchor",
+      "signature": "scrollToLastAnchor(opts?: { behavior?: ScrollBehavior }): boolean",
+      "description": "滚到最后一个轮次锚点（`anchor` 标记行）顶部；无锚点返回 false"
     }
   ],
   "events": [

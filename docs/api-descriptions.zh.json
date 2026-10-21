@@ -4418,7 +4418,8 @@
       "reactions": "表情回应条 JSON 数组，每项 { emoji, count?, active?, label? }（emoji 必填）；空数组/非法 JSON 不渲染反应条",
       "reactions-side": "反应条纵向位置：bottom（默认，气泡下方）/ top（气泡上方）",
       "reactions-align": "反应条横向对齐：start / end；缺省跟随气泡 align",
-      "align": "方向：start（对方，默认）/ end（我方）——逻辑属性实现（align-self 镜像），RTL 自动镜像；显式设置时优先于容器 text-align 的继承反射"
+      "align": "方向：start（对方，默认）/ end（我方）——逻辑属性实现（align-self 镜像），RTL 自动镜像；显式设置时优先于容器 text-align 的继承反射",
+      "streaming": "流式追加态（布尔在场）：内容保持可见，宿主反射 aria-busy；内容区 aria-live=off，避免逐 token 播报，终态由外部 status 区播报"
     },
     "events": {
       "oas-reaction": "点击某条反应时派发，detail { emoji, count, active, index }（反应数据仍由宿主拥有，组件只派发意图）"

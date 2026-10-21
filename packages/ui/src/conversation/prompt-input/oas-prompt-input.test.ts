@@ -56,6 +56,20 @@ describe('oas-prompt-input', () => {
     expect(stopped).toBe(1)
   })
 
+  it('loading 反射 aria-busy；readonly + loading 时停止按钮仍可用', () => {
+    const el = mount({ loading: '', readonly: '' })
+    const send = el.shadowRoot!.querySelector<HTMLButtonElement>('[part="send"]')!
+    expect(el.getAttribute('aria-busy')).toBe('true')
+    expect(send.disabled).toBe(false)
+    let stopped = 0
+    el.addEventListener('oas-stop', () => stopped++)
+    send.click()
+    expect(stopped).toBe(1)
+    el.removeAttribute('loading')
+    expect(el.hasAttribute('aria-busy')).toBe(false)
+    expect(send.disabled).toBe(true)
+  })
+
   it('suggestions 点击回填并派发 oas-suggestion-select', () => {
     const el = mount({ suggestions: JSON.stringify(['总结', { label: '继续', value: 'continue' }]) })
     const chips = [...el.shadowRoot!.querySelectorAll<HTMLButtonElement>('.suggestion')]

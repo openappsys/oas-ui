@@ -33,6 +33,8 @@ The conversation scroll container: a scroll-intent model — follow new content 
 
 Defaults to `default-position="end"`: opening lands at the bottom. The viewport is `role="region"` with an accessible name (locale "Messages" by default, override with `label`) and `tabindex="0"` (focus with Tab, scroll with arrow keys); the content container is `role="log"` + `aria-relevant="additions"` (screen readers announce only new rows).
 
+Per-token text changes during streaming should not trigger `role=log` announcements; completion / stop / failure are announced by a separate status channel. Call `announce(text)` to write into a visually hidden `role="status"` region outside the viewport, unaffected by `aria-busy` or the log additions policy; repeated text is cleared and written on the next frame. Alternatively provide your own `role="status"` region — use one, not both, to avoid duplicate speech.
+
 ## First-paint jump prevention (data-pending-scroll)
 
 <DemoBlock title="No top flash before the initial position is applied (end / last-anchor)">
@@ -138,7 +140,7 @@ When older messages are prepended, `preserve-scroll-on-prepend` (**on by default
   </div>
 </DemoBlock>
 
-Marking a row with the `anchor` attribute makes it a turn anchor (in AI scenarios typically the user's question row); `default-position="last-anchor"` opens at the top of the **last anchor** — long conversations resume at "the last question position" instead of dropping to the bottom or jumping to the top; when the anchor sits near the bottom (less than a viewport of content below), it displays bottom-clamped (the scroll ceiling, matching the product intuition of "the last question at the bottom of the screen"). With no anchor it falls back to `end`. `scrollToMessage(id, opts?)` scrolls precisely to the top of a message by `message-id` (returns `true` on hit; unknown ids return `false` without scrolling).
+Marking a row with the `anchor` attribute makes it a turn anchor (in AI scenarios typically the user's question row); `default-position="last-anchor"` opens at the top of the **last anchor** — long conversations resume at "the last question position" instead of dropping to the bottom or jumping to the top; when the anchor sits near the bottom (less than a viewport of content below), it displays bottom-clamped (the scroll ceiling, matching the product intuition of "the last question at the bottom of the screen"). With no anchor it falls back to `end`. `scrollToMessage(id, opts?)` scrolls precisely to the top of a message by `message-id` (returns `true` on hit; unknown ids return `false` without scrolling). After loading history asynchronously, call the public `scrollToLastAnchor(opts?)` to return to the last question without looking up the anchor id yourself.
 
 ## Turn anchoring (turn-anchor)
 
@@ -567,9 +569,11 @@ The scroller owns anchoring/follow for normal conversations; for thousands of tu
 
 | Method | Signature | Description |
 | --- | --- | --- |
+| `announce` | `announce(text: string): void` | 向读屏播报一条状态（生成中 / 完成 / 停止 / 失败等）。 |
 | `scrollToEnd` | `scrollToEnd(opts?: { behavior?: ScrollBehavior }): void` | 滚到底部。behavior：'auto'（默认，瞬时）/ 'instant'（瞬时）/ 'smooth'（平滑）。 |
 | `scrollToStart` | `scrollToStart(opts?: { behavior?: ScrollBehavior }): void` | 滚到顶部（参数同 scrollToEnd） |
 | `scrollToMessage` | `scrollToMessage(id: string, opts?: { behavior?: ScrollBehavior }): boolean` | 滚到指定 message-id 的消息行顶部。命中返回 true；id 不存在返回 false 且不滚动 |
+| `scrollToLastAnchor` | `scrollToLastAnchor(opts?: { behavior?: ScrollBehavior }): boolean` | 滚到最后一个轮次锚点（`anchor` 标记行）顶部；无锚点返回 false |
 
 #### Events
 

@@ -15,6 +15,8 @@
 
 ## 生成中 / 禁用
 
+`loading` 期间宿主反射 `aria-busy="true"`，发送钮切换为「停止」并派发 `oas-stop`；`readonly` 只限制编辑，不阻止停止命令。
+
 <DemoBlock title="loading：发送钮切换为停止；disabled：不可输入/提交">
   <div style="display:flex;flex-direction:column;gap:var(--oas-space-3)">
     <oas-prompt-input id="prompt-input-stop" loading value="正在生成回答…"></oas-prompt-input>

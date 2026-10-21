@@ -99,6 +99,26 @@ describe('OASMessageScroller', () => {
     expect(content.getAttribute('aria-relevant')).toBe('additions')
   })
 
+  it('announce 写入 viewport 外 status；重复文本先清空再下一帧写入', async () => {
+    const el = mount('<p>m1</p>')
+    const status = el.shadowRoot!.querySelector<HTMLElement>('[part="status"]')!
+    expect(status.getAttribute('role')).toBe('status')
+    expect(status.getAttribute('aria-live')).toBe('polite')
+    expect(status.getAttribute('aria-atomic')).toBe('true')
+    expect(status.parentElement?.classList.contains('scroller')).toBe(true)
+    expect(viewportOf(el).contains(status)).toBe(false)
+
+    el.announce('生成中')
+    expect(status.textContent).toBe('')
+    await raf()
+    expect(status.textContent).toBe('生成中')
+
+    el.announce('生成中')
+    expect(status.textContent).toBe('')
+    await raf()
+    expect(status.textContent).toBe('生成中')
+  })
+
   it('label 属性覆盖 viewport 可读名称（原生全局属性吸收：读入后从宿主移除）', () => {
     const el = mount('<p>m1</p>', { label: '客服会话' })
     expect(viewportOf(el).getAttribute('aria-label')).toBe('客服会话')
@@ -500,6 +520,22 @@ describe('OASMessageScroller B 批', () => {
     await raf()
     await raf()
     expect(vp.scrollTop, '最后一个锚（内容 y=900）顶对齐').toBe(900)
+  })
+
+  it('scrollToLastAnchor()：公开恢复到最后一个 anchor；无锚点返回 false', () => {
+    const el = mount('<p>a1</p><p anchor>q1</p><p>mid</p><p anchor>q2</p><p>tail</p>')
+    const vp = stubScroll(el, { scrollHeight: 2000, clientHeight: 400 })
+    stubGeometry(el, [
+      { node: el.children[0]!, y: 0 },
+      { node: el.children[1]!, y: 100 },
+      { node: el.children[2]!, y: 300 },
+      { node: el.children[3]!, y: 900 },
+      { node: el.children[4]!, y: 1000 },
+    ])
+    expect(el.scrollToLastAnchor()).toBe(true)
+    expect(vp.scrollTop).toBe(900)
+    const empty = mount('<p>m1</p>')
+    expect(empty.scrollToLastAnchor()).toBe(false)
   })
 
   it('last-anchor：无锚点消息时回退 end', async () => {

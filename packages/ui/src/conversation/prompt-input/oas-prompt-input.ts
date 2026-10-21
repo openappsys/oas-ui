@@ -263,7 +263,10 @@ export class OASPromptInput extends OASElement {
     send.className = loading ? 'stop' : 'send'
     send.textContent = this.t(loading ? 'promptInput.stop' : 'promptInput.send')
     send.setAttribute('aria-label', send.textContent)
-    send.disabled = disabled || readonly || (!loading && this.value.trim() === '')
+    // readonly 只限制编辑；生成中「停止」是命令而非编辑，不能被 readonly 禁用
+    send.disabled = disabled || (!loading && (readonly || this.value.trim() === ''))
+    if (loading) this.setAttribute('aria-busy', 'true')
+    else this.removeAttribute('aria-busy')
     this.syncSendState()
     this.renderSuggestions()
     this.syncSlotVisibility()
@@ -271,8 +274,10 @@ export class OASPromptInput extends OASElement {
 
   private syncSendState(): void {
     if (!this.sendEl) return
-    const disabled = this.hasAttr('disabled') || this.hasAttr('readonly')
-    this.sendEl.disabled = disabled || (!this.hasAttr('loading') && this.value.trim() === '')
+    const disabled = this.hasAttr('disabled')
+    const readonly = this.hasAttr('readonly')
+    const loading = this.hasAttr('loading')
+    this.sendEl.disabled = disabled || (!loading && (readonly || this.value.trim() === ''))
   }
 
   private syncSlotVisibility(): void {

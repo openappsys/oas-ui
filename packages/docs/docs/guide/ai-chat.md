@@ -24,7 +24,7 @@
     <div style="display:flex;gap:var(--oas-space-2);align-items:center;flex-wrap:wrap">
       <oas-button id="ai-chat-fail" size="small">模拟失败</oas-button>
       <oas-button id="ai-chat-retry" size="small" type="primary">重试上一条</oas-button>
-      <span id="ai-chat-status" role="status" style="font-size:var(--oas-font-size-sm);color:var(--oas-color-text-secondary)">等待发送</span>
+      <span id="ai-chat-status" role="status" aria-atomic="true" style="font-size:var(--oas-font-size-sm);color:var(--oas-color-text-secondary)">等待发送</span>
     </div>
   </div>
 </DemoBlock>
@@ -39,9 +39,10 @@ input.addEventListener('oas-submit', async (e) => {
   const reply = appendAssistantBubble()
   input.setAttribute('loading', '')
   try {
+    // 只在追加一轮时滚动一次；流式期间交给 auto-scroll 尊重读者意图
+    log.scrollToEnd()
     for await (const chunk of streamChat(prompt)) {
       reply.textContent += chunk
-      log.scrollToEnd()
     }
     status.textContent = '完成'
   } catch {
@@ -61,7 +62,7 @@ input.addEventListener('oas-stop', () => {
 
 - `oas-submit` 只负责取 `detail.value`；清空、Enter 提交、Shift+Enter 换行由组件处理。
 - 生成期间给 `oas-prompt-input` 加 `loading`，发送钮会变成「停止」并派发 `oas-stop`。
-- 流式追加后调用 `message-scroller.scrollToEnd()`，不要直接改 `scrollTop`，避免与自动跟随/锚点逻辑冲突。
+- 只在追加一轮/发送时调用一次 `message-scroller.scrollToEnd()`；流式期间不要逐 chunk 调用，否则会把正在上翻阅读的用户持续拉回底部。需要主动播报生成/完成/停止/失败时，用 `message-scroller.announce(text)`（或页面自己的 `role=status` 区）。
 - 失败时保留用户消息，重试只追加新的 assistant 轮次；不要覆盖原错误消息。
 - 真实请求应使用 `AbortController`，并在组件卸载时中止与清理监听。
 
@@ -96,12 +97,12 @@ onMounted(async () => {
     return bubble
   }
 
-  const respond = async (prompt, fail = false) => {
+  const respond = async (prompt, { fail = false, appendUser = true } = {}) => {
     if (busy) return
     busy = true
     stopped = false
     lastPrompt = prompt
-    append(prompt, true)
+    if (appendUser) append(prompt, true)
     const reply = append('', false)
     input.setAttribute('loading', '')
     status.textContent = fail ? '模拟失败中…' : '生成中…'
@@ -114,12 +115,13 @@ onMounted(async () => {
       reply.textContent = '请求失败：网络错误'
       status.textContent = '失败，可重试'
     } else {
+      reply.setAttribute('streaming', '')
       for (const char of text) {
         if (stopped) break
         reply.textContent += char
-        log.scrollToEnd()
         await sleep(22)
       }
+      reply.removeAttribute('streaming')
       status.textContent = stopped ? '已停止' : '完成'
     }
     input.removeAttribute('loading')
@@ -134,10 +136,10 @@ onMounted(async () => {
     status.textContent = '停止中…'
   })
   failBtn?.addEventListener('click', () => {
-    if (!busy && lastPrompt) void respond(lastPrompt, true)
+    if (!busy && lastPrompt) void respond(lastPrompt, { fail: true, appendUser: false })
   })
   retryBtn?.addEventListener('click', () => {
-    if (!busy && lastPrompt) void respond(lastPrompt)
+    if (!busy && lastPrompt) void respond(lastPrompt, { appendUser: false })
   })
 })
 </script>

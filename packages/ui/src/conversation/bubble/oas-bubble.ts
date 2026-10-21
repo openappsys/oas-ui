@@ -225,7 +225,7 @@ const STYLE = `
  */
 export class OASBubble extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['loading', 'reactions', 'reactions-side', 'reactions-align', 'align']
+    return ['loading', 'streaming', 'reactions', 'reactions-side', 'reactions-align', 'align']
   }
 
   /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
@@ -272,15 +272,21 @@ export class OASBubble extends OASElement {
 
   protected override update(): void {
     const loading = this.hasAttr('loading')
+    const streaming = this.hasAttr('streaming')
     const content = this.shadow.querySelector<HTMLElement>('[part="content"]')
     const typing = this.shadow.querySelector<HTMLElement>('[part="typing"]')
-    if (content) content.hidden = loading
+    if (content) {
+      content.hidden = loading
+      // 流式追加期间关闭 content 的 live 播报，避免逐 token 打断；终态由外部 status 区播报
+      if (streaming) content.setAttribute('aria-live', 'off')
+      else content.removeAttribute('aria-live')
+    }
     if (typing) {
       typing.hidden = !loading
       typing.setAttribute('aria-label', this.t('bubble.loading'))
     }
-    // aria-busy 反射宿主：AT 在气泡外层即感知流式进行中
-    if (loading) this.setAttribute('aria-busy', 'true')
+    // aria-busy 反射宿主：loading 表示首 token 前，streaming 表示已有内容仍在追加
+    if (loading || streaming) this.setAttribute('aria-busy', 'true')
     else this.removeAttribute('aria-busy')
     // 横向对齐继承链：message-row 等容器用 text-align 落位 slotted 气泡（见 oas-message-row .content 注释），
     // flex 项不响应 text-align——把继承的计算值反射为内部属性供选择器消费（显式 align 属性优先，含 align="start"）

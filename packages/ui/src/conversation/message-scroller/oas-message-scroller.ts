@@ -93,6 +93,18 @@ const STYLE = `
 .jump[hidden] {
   display: none;
 }
+/* 独立状态通道：放在 viewport 外，避免 aria-busy/流式子树影响；视觉隐藏但可被读屏播报 */
+.status {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
 `
 
 interface ScrollMetrics {
@@ -198,6 +210,8 @@ export class OASMessageScroller extends OASElement {
   private turnMode: TurnMode | null = null
   /** 内容变化合批帧句柄 */
   private contentRaf = 0
+  /** 状态播报 rAF：重复文本先清空再写入，避免读屏去重吞掉同一句 */
+  private statusRaf = 0
   /** slotchange 时刻的几何快照（prepend 保位基准） */
   private pendingChange: {
     oldHeight: number
@@ -252,6 +266,7 @@ export class OASMessageScroller extends OASElement {
           <div class="content" part="content" role="log" aria-relevant="additions"><slot></slot></div>
         </div>
         <button type="button" class="jump" part="button" hidden><slot name="button"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" fill="none"><path d="M8 3 V13 M4 9 L8 13 L12 9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></slot></button>
+        <div class="status" part="status" role="status" aria-live="polite" aria-atomic="true"></div>
       </div>
     `
   }
@@ -395,6 +410,10 @@ export class OASMessageScroller extends OASElement {
     if (this.contentRaf) {
       cancelAnimationFrame(this.contentRaf)
       this.contentRaf = 0
+    }
+    if (this.statusRaf) {
+      cancelAnimationFrame(this.statusRaf)
+      this.statusRaf = 0
     }
     super.disconnectedCallback()
   }
@@ -849,6 +868,24 @@ export class OASMessageScroller extends OASElement {
   }
 
   /**
+   * 向读屏播报一条状态（生成中 / 完成 / 停止 / 失败等）。
+   *
+   * 通道位于 viewport 外，不会被 `role=log` 的 additions 策略或 `aria-busy` 抑制；
+   * 重复同一句时先清空、下一帧再写入，规避部分读屏的文本去重。
+   */
+  announce(text: string): void {
+    const status = this.shadow.querySelector<HTMLElement>('[part="status"]')
+    if (!status) return
+    const value = text == null ? '' : String(text)
+    if (this.statusRaf) cancelAnimationFrame(this.statusRaf)
+    status.textContent = ''
+    this.statusRaf = requestAnimationFrame(() => {
+      status.textContent = value
+      this.statusRaf = 0
+    })
+  }
+
+  /**
    * 滚到底部。behavior：'auto'（默认，瞬时）/ 'instant'（瞬时）/ 'smooth'（平滑）。
    * 命令式滚动后重新同步状态（跟随态/按钮/事件）。
    */
@@ -873,7 +910,7 @@ export class OASMessageScroller extends OASElement {
   }
 
   /** 滚到最后一个轮次锚点（`anchor` 标记行）顶部；无锚点返回 false */
-  private scrollToLastAnchor(opts?: { behavior?: ScrollBehavior }): boolean {
+  scrollToLastAnchor(opts?: { behavior?: ScrollBehavior }): boolean {
     const el = this.findLastAnchor()
     if (!el) return false
     this.scrollToElementTop(el, opts)

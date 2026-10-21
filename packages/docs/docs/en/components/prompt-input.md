@@ -15,6 +15,8 @@ Conversation composer: auto-growing multiline input, Enter to submit, Shift+Ente
 
 ## Loading / Disabled
 
+While `loading`, the host reflects `aria-busy="true"`, the send button becomes "Stop" and dispatches `oas-stop`; `readonly` restricts editing but does not block the stop command.
+
 <DemoBlock title="loading: send becomes stop; disabled: input and submit are blocked">
   <div style="display:flex;flex-direction:column;gap:var(--oas-space-3)">
     <oas-prompt-input id="prompt-input-stop" loading value="Generating a response…"></oas-prompt-input>

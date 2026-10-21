@@ -103,6 +103,18 @@ describe('OASBubble', () => {
     expect(el.shadowRoot!.querySelector('[part="content"]')!.hasAttribute('hidden')).toBe(false)
   })
 
+  it('streaming：内容保持可见，content 关闭 live 播报，宿主 aria-busy', () => {
+    const el = mount('<p>流式文本</p>')
+    el.setAttribute('streaming', '')
+    const content = el.shadowRoot!.querySelector('[part="content"]')!
+    expect(content.hasAttribute('hidden')).toBe(false)
+    expect(content.getAttribute('aria-live')).toBe('off')
+    expect(el.getAttribute('aria-busy')).toBe('true')
+    el.removeAttribute('streaming')
+    expect(content.hasAttribute('aria-live')).toBe(false)
+    expect(el.hasAttribute('aria-busy')).toBe(false)
+  })
+
   it('loading 态打字点有可读名称（locale：正在输入…）且三点均 aria-hidden', () => {
     const el = mount('<p>x</p>', { loading: '' })
     const typing = el.shadowRoot!.querySelector('[part="typing"]')!

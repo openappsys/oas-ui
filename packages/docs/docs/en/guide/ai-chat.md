@@ -24,7 +24,7 @@ A minimal runnable AI chat loop: `oas-prompt-input` owns input/stop, `oas-messag
     <div style="display:flex;gap:var(--oas-space-2);align-items:center;flex-wrap:wrap">
       <oas-button id="ai-chat-fail" size="small">Simulate error</oas-button>
       <oas-button id="ai-chat-retry" size="small" type="primary">Retry last</oas-button>
-      <span id="ai-chat-status" role="status" style="font-size:var(--oas-font-size-sm);color:var(--oas-color-text-secondary)">Waiting</span>
+      <span id="ai-chat-status" role="status" aria-atomic="true" style="font-size:var(--oas-font-size-sm);color:var(--oas-color-text-secondary)">Waiting</span>
     </div>
   </div>
 </DemoBlock>
@@ -39,9 +39,10 @@ input.addEventListener('oas-submit', async (e) => {
   const reply = appendAssistantBubble()
   input.setAttribute('loading', '')
   try {
+    // Scroll once per turn; streaming relies on auto-scroll to respect reader intent
+    log.scrollToEnd()
     for await (const chunk of streamChat(prompt)) {
       reply.textContent += chunk
-      log.scrollToEnd()
     }
     status.textContent = 'Done'
   } catch {
@@ -61,7 +62,7 @@ input.addEventListener('oas-stop', () => {
 
 - `oas-submit` only carries `detail.value`; Enter, Shift+Enter and clearing are handled by the component.
 - Set `loading` while generating; the send button becomes stop and dispatches `oas-stop`.
-- After streaming a chunk, call `message-scroller.scrollToEnd()` instead of writing `scrollTop` directly, so auto-follow and anchoring keep working.
+- Call `message-scroller.scrollToEnd()` once per turn (on append/send), not for every streamed chunk; per-chunk calls drag readers back to the bottom while they scroll up. Use `message-scroller.announce(text)` (or your own `role=status` region) for generating/done/stopped/failed updates.
 - Keep the user message on failure; retry appends a new assistant turn instead of overwriting the error.
 - Use `AbortController` in real requests and clean up listeners on unmount.
 
@@ -96,12 +97,12 @@ onMounted(async () => {
     return bubble
   }
 
-  const respond = async (prompt, fail = false) => {
+  const respond = async (prompt, { fail = false, appendUser = true } = {}) => {
     if (busy) return
     busy = true
     stopped = false
     lastPrompt = prompt
-    append(prompt, true)
+    if (appendUser) append(prompt, true)
     const reply = append('', false)
     input.setAttribute('loading', '')
     status.textContent = fail ? 'Simulating failure…' : 'Generating…'
@@ -114,12 +115,13 @@ onMounted(async () => {
       reply.textContent = 'Request failed: network error'
       status.textContent = 'Failed, retry available'
     } else {
+      reply.setAttribute('streaming', '')
       for (const char of text) {
         if (stopped) break
         reply.textContent += char
-        log.scrollToEnd()
         await sleep(22)
       }
+      reply.removeAttribute('streaming')
       status.textContent = stopped ? 'Stopped' : 'Done'
     }
     input.removeAttribute('loading')
@@ -134,10 +136,10 @@ onMounted(async () => {
     status.textContent = 'Stopping…'
   })
   failBtn?.addEventListener('click', () => {
-    if (!busy && lastPrompt) void respond(lastPrompt, true)
+    if (!busy && lastPrompt) void respond(lastPrompt, { fail: true, appendUser: false })
   })
   retryBtn?.addEventListener('click', () => {
-    if (!busy && lastPrompt) void respond(lastPrompt)
+    if (!busy && lastPrompt) void respond(lastPrompt, { appendUser: false })
   })
 })
 </script>
