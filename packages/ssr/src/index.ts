@@ -42,15 +42,15 @@
  * 禁 JS 时子组件 shadow 内容同样可见；浏览器 upgrade 后父子均按指纹走真水合。
  *
  * 为什么按需装载（而不是 `import('@oas-ui/ui')` 全量）：
- * - 全量入口会求值全部 ~115 个组件目录（每个目录 index.ts 的 define 副作用 + 各自依赖图），
- *   测试环境首次 renderToString 实测约 1.8~3.5s；
+ * - 全量入口会求值全部组件目录（当前 153 个 index.ts / 209 个 tag；每个目录 index.ts 的
+ *   define 副作用 + 各自依赖图），测试环境首次 renderToString 实测约 1.8~3.5s；
  * - 本渲染器按 tag 只动态 import 对应组件目录（如 `@oas-ui/ui/basic/button`），白名单组件
  *   首载实测 < 200ms。目录 index.ts 的 define 副作用注册到 shim 的 customElements 上
  *   （shim 在 import 之前先装好），无需手动 define，安全；
  * - 嵌套场景（slotHTML 里含其他白名单子组件，如 form>form-item）会在渲染前把子组件 tag
  *   一并按需装载——子组件不 upgrade 就没有 shadowRoot 可序列化，禁 JS 快照会丢失子组件内容。
  * - 为什么不走 `@oas-ui/ui/ssr`（Node-safe 类导出入口）：该入口 re-export 全部组件类，
- *   import 任一具名导出都会求值全部 ~115 个类文件（模块装载量不降，只是不 define）；
+ *   import 任一具名导出都会求值全部类文件（模块装载量不降，只是不 define）；
  *   单独 `@oas-ui/ui/basic/button/oas-button` 子路径与 ui exports 的 `./*` 通配
  *   （映射到 `dist/<目录>/index.js`）形态不符不可达；目录 index 才是真正的按需最小单元。
  *
@@ -520,31 +520,8 @@ async function ensureI18n(): Promise<typeof import('@oas-ui/i18n')> {
 /**
  * 渲染白名单组件为含 DSD 快照的宿主 HTML 字符串。
  *
- * @param tag 白名单组件标签（oas-button / oas-tag / oas-empty / oas-divider /
- *   oas-text / oas-title / oas-paragraph / oas-table / oas-affix / oas-ellipsis /
- *   oas-scroll-area / oas-tree / oas-select / oas-input / oas-textarea / oas-checkbox /
- *   oas-checkbox-group / oas-radio / oas-radio-group / oas-switch / oas-slider /
- *   oas-input-number / oas-rate / oas-auto-complete / oas-combobox / oas-cascader /
- *   oas-tree-select / oas-mentions / oas-date-picker / oas-time-picker / oas-calendar /
- *   oas-upload / oas-transfer / oas-color-picker / oas-toggle-button / oas-toggle-group /
- *   oas-pin-input / oas-dynamic-input / oas-dynamic-tags / oas-editable / oas-form /
- *   oas-form-item / oas-alert / oas-progress / oas-spin / oas-skeleton / oas-result /
- *   oas-backdrop / oas-modal / oas-drawer / oas-popconfirm / oas-card / oas-avatar /
- *   oas-avatar-group / oas-image / oas-qrcode / oas-watermark / oas-collapse /
- *   oas-collapse-item / oas-descriptions / oas-descriptions-item / oas-timeline /
- *   oas-timeline-item / oas-list / oas-list-item / oas-carousel / oas-statistic /
- *   oas-countdown / oas-chart / oas-code / oas-equation / oas-log / oas-masonry /
- *   oas-comment / oas-marquee / oas-number-animation / oas-gradient-text /
- *   oas-aspect-ratio / oas-virtual-list / oas-tabs / oas-tab-panel /
- *   oas-bottom-navigation / oas-pagination / oas-steps / oas-segmented /
- *   oas-breadcrumb / oas-anchor / oas-back-top / oas-menu / oas-dropdown /
- *   oas-context-menu / oas-menubar / oas-navigation-menu / oas-toolbar /
- *   oas-command / oas-tour / oas-hover-card / oas-splitter / oas-flex /
- *   oas-page-header / oas-float-button / oas-speed-dial / oas-layout /
- *   oas-header / oas-sider / oas-content / oas-footer / oas-sidebar /
- *   oas-container / oas-grid / oas-grid-item / oas-badge / oas-button-group /
- *   oas-icon / oas-kbd / oas-label / oas-link / oas-space / oas-visually-hidden /
- *   oas-tooltip / oas-popover / oas-config-provider / oas-app），其余抛错
+ * @param tag 白名单组件标签（完整清单见 `WHITELIST` 与 `docs/ssr-matrix.md`），
+ *   非白名单标签抛错
  * @param attrs 宿主 attributes（kebab-case 键），值在序列化时做 & " < > 完整 HTML 转义
  * @param slotHTML 注入 light DOM 的 HTML 片段（默认插槽内容）；内部含白名单子组件时
  *   会被递归序列化为嵌套 DSD（子组件 shadowRoot + 指纹包成 template 插到内容最前）
