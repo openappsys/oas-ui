@@ -1,0 +1,35 @@
+{
+  "name": "foo-bar",
+  "group": "conversation",
+  "className": "OASFooBar",
+  "tag": "oas-foo-bar",
+  "ssr": false,
+  "overlay": false,
+  "zh": { "title": "FooBar", "summary": "一句话说明组件用途。" },
+  "en": { "title": "FooBar", "summary": "One-line component summary." },
+  "attrs": [
+    {
+      "name": "label",
+      "type": "string",
+      "default": "",
+      "desc": { "zh": "标签文本", "en": "Label text" }
+    },
+    {
+      "name": "disabled",
+      "type": "boolean",
+      "default": false,
+      "desc": { "zh": "禁用", "en": "Disabled" }
+    }
+  ],
+  "events": [
+    {
+      "name": "change",
+      "detail": "{ value: string }",
+      "desc": { "zh": "值变化时派发", "en": "Dispatched when the value changes" }
+    }
+  ],
+  "slots": [
+    { "name": "", "desc": { "zh": "默认内容", "en": "Default content" } },
+    { "name": "icon", "desc": { "zh": "图标", "en": "Icon" } }
+  ]
+}

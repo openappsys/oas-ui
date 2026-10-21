@@ -35,6 +35,7 @@
 ## 3. 组件开发清单（每个新组件必经）
 
 - [ ] 确认 ROADMAP/PRD 有该组件条目（或先补 PRD，拒绝"顺手加组件"）
+- [ ] 用 `pnpm scaffold:component --spec <spec.json> --dry-run` 生成源码/单测/qa/文档/注册入口骨架；spec 校验失败先修 spec
 - [ ] 完成设计前必答清单（见 AGENTS.md）
 - [ ] 写测试（先 RED）→ 实现（GREEN）
 - [ ] 属性/事件对照 ui-spec.md 的命名与 state 矩阵自查
