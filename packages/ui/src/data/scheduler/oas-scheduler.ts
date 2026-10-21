@@ -2144,7 +2144,7 @@ export class OASScheduler extends OASElement {
       const laneMap = layoutTimedLanes(timed.filter(({ s, e }) => e > startH * 60 && s < endH * 60))
       for (const { ev, s, e } of timed) {
         if (e <= winStartMin || s >= winEndMin) continue
-        track.appendChild(this.renderTimedEvent(ev, s, e, startH, hourH, laneMap.get(ev.id)))
+        track.appendChild(this.renderTimedEvent(ev, s, e, startH, endH, hourH, laneMap.get(ev.id)))
       }
       if (isSameDay(d, today) && this.getAttr('show-now', 'true') !== 'false') {
         const now = this.nowMinutes()
@@ -2289,6 +2289,7 @@ export class OASScheduler extends OASElement {
     s: number,
     e: number,
     startH: number,
+    endH: number,
     hourH: number,
     lane?: { lane: number; lanes: number },
   ): HTMLButtonElement {
@@ -2299,8 +2300,18 @@ export class OASScheduler extends OASElement {
     el.draggable = true
     el.textContent = ev.title
     if (ev.color) el.style.setProperty('--chip-color', ev.color)
-    el.style.top = `${((s - startH * 60) / 60) * hourH}px`
-    el.style.height = `${Math.max(((e - s) / 60) * hourH, 16)}px`
+    // 几何按日视图时段 [start-hour, end-hour] 夹取：早到/晚走的事件不能越出 track 盖住表头或下方
+    const dayStart = startH * 60
+    const dayEnd = endH * 60
+    const totalH = (endH - startH) * hourH
+    const vs = Math.min(Math.max(s, dayStart), dayEnd)
+    const ve = Math.min(Math.max(e, vs), dayEnd)
+    const top = ((vs - dayStart) / 60) * hourH
+    const rawH = ((ve - vs) / 60) * hourH
+    // 保留 16px 可读下限，但不能超过轨道剩余高度（贴底事件不再向下溢出）
+    const height = Math.min(Math.max(rawH, 16), Math.max(totalH - top, 0))
+    el.style.top = `${top}px`
+    el.style.height = `${height}px`
     if (lane && lane.lanes > 1) {
       // 重叠事件按车道并排（逻辑属性，RTL 下从右往左排）；保留 4px 列内边距 + 2px 车道间隙
       const gap = 2

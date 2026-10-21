@@ -54,6 +54,7 @@
 - **`oas-sidebar` 折叠态保留有头像的菜单项**：原先折叠时仅保留有 `icon` 的项，只有行首头像（成员行）的项被整体隐藏；现在有 `avatar` / `avatarText` 的项在图标条内保留头像（`avatarColor` 单独无内容仍隐藏），保留项带 label tooltip（`expand-on-hover` 悬停用展开文字、不叠 hover tooltip，键盘 focus 仍弹 label）；有头像的树形父项同样走 flyout（子项可达、父项不派发 `select`），无图标也无头像的项仍隐藏。
 - **`oas-sidebar` 桌面 RTL 面板移出宿主**：RTL 抽屉的 `translateX(100%)` 规则未限定移动态，桌面 RTL 下整个 `.panel` 被平移到宿主外（展开/折叠都不可见）。现仅在 `[data-mobile]` 抽屉态应用该镜像位移，桌面 RTL 保持流内布局。
 - **`oas-scheduler` 重叠定时事件按车道并排**：周/日视图同一时段多个定时事件原先完全叠印（文字互相覆盖）。现按贪心车道分配在聚簇内等宽并排（2px 间隙、逻辑属性 RTL 镜像），不重叠事件仍占满整列；拖拽移动/缩放交互不变。
+- **`oas-scheduler` 时段外事件越出轨道盖住列头**：早于 `start-hour`（或晚于 `end-hour`）的定时事件原先按原始起止算 top/height，会跑到轨道外盖住列头/下方。现在几何按 `[start-hour, end-hour]` 夹取，贴底短事件的高度让位于轨道剩余高度；补单测与 Chromium/Firefox 真实几何回归。
 
 ## [2.6.2] - 2026-10-19
 

@@ -907,3 +907,61 @@ test('scheduler 日视图：重叠定时事件按车道并排（不再完全叠�
   expect(new Set(r.lanes3.map((l) => Math.round(l.left))).size, '三条车道起点互异').toBe(3)
   expect(errors).toEqual([])
 })
+
+// 早到/晚走事件必须按 start-hour..end-hour 夹取：不得越出轨道盖住列表头或下方
+test('scheduler 日视图：早到/晚走事件夹取在轨道内，不盖列头', async ({ page }) => {
+  const errors: string[] = []
+  page.on('pageerror', (e) => errors.push(e.message))
+  page.on('console', (m) => {
+    if (m.type() === 'error') errors.push(m.text())
+  })
+  await page.goto('/components/scheduler.html', { waitUntil: 'domcontentloaded' })
+  await page.waitForSelector('#scheduler-week', { timeout: 15000 })
+
+  const r = await page.evaluate(async () => {
+    const el = document.createElement('oas-scheduler') as HTMLElement & { events: unknown[] }
+    el.setAttribute('view', 'day')
+    el.setAttribute('page-show-date', '2026-08-10')
+    el.setAttribute('start-hour', '8')
+    el.setAttribute('end-hour', '18')
+    el.style.width = '720px'
+    el.style.height = '600px'
+    document.body.appendChild(el)
+    el.events = [
+      { date: '2026-08-10', title: '早到', start: '07:00', end: '09:00' },
+      { date: '2026-08-10', title: '晚走', start: '17:00', end: '19:00' },
+      { date: '2026-08-10', title: '贴底', start: '17:45', end: '18:00' },
+    ]
+    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)))
+    const track = el.shadowRoot!.querySelector<HTMLElement>('.col[data-date="2026-08-10"] .track')!
+    const head = el.shadowRoot!.querySelector<HTMLElement>('.band-col[data-date="2026-08-10"] .col-head')!
+    const rect = (n: Element) => {
+      const b = n.getBoundingClientRect()
+      return { top: b.top, bottom: b.bottom, height: b.height }
+    }
+    const byTitle = new Map(
+      [...el.shadowRoot!.querySelectorAll<HTMLElement>('.col[data-date="2026-08-10"] .event')].map((e) => [
+        e.textContent,
+        rect(e),
+      ]),
+    )
+    const out = {
+      track: rect(track),
+      head: rect(head),
+      early: byTitle.get('早到')!,
+      late: byTitle.get('晚走')!,
+      short: byTitle.get('贴底')!,
+    }
+    el.remove()
+    return out
+  })
+
+  expect(r.early.top, '早到事件从轨道顶开始（不进入列头）').toBeGreaterThanOrEqual(r.track.top - 1)
+  expect(r.early.top, '早到事件不覆盖列头').toBeGreaterThanOrEqual(r.head.bottom - 1)
+  expect(r.late.bottom, '晚走事件在轨道底截止').toBeLessThanOrEqual(r.track.bottom + 1)
+  expect(r.short.bottom, '贴底短事件不向下溢出').toBeLessThanOrEqual(r.track.bottom + 1)
+  expect(r.early.height, '早到事件高度裁到 08:00–09:00（1 小时）').toBeCloseTo(48, 0)
+  expect(r.late.height, '晚走事件高度裁到 17:00–18:00（1 小时）').toBeCloseTo(48, 0)
+  expect(r.short.height, '贴底事件高度让位于剩余轨道').toBeLessThanOrEqual(12.5)
+  expect(errors).toEqual([])
+})

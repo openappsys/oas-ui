@@ -651,6 +651,38 @@ describe('OASScheduler P1：view 切换 + 周/日时间轴 + 拖拽移动/缩放
     expect(evs[0]!.style.width, '时段外事件不占车道，Y 不应被挤成半宽').toBe('')
   })
 
+  it('view=day：早到/晚走事件按 start-hour..end-hour 夹取，不越出 track 盖表头', () => {
+    const el = mount({
+      view: 'day',
+      'page-show-date': '2026-08-10',
+      'start-hour': '8',
+      'end-hour': '18',
+      events: JSON.stringify([
+        { date: '2026-08-10', title: '早到', start: '07:00', end: '09:00' },
+        { date: '2026-08-10', title: '正常', start: '09:00', end: '10:00' },
+        { date: '2026-08-10', title: '晚走', start: '17:00', end: '19:00' },
+        { date: '2026-08-10', title: '贴底', start: '17:45', end: '18:00' },
+      ]),
+    })
+    const byTitle = new Map(
+      [...el.shadowRoot!.querySelectorAll<HTMLElement>('.timeview .col .event')].map((e) => [e.textContent, e]),
+    )
+    const box = (t: string) => ({
+      top: Number.parseFloat(byTitle.get(t)!.style.top),
+      h: Number.parseFloat(byTitle.get(t)!.style.height),
+    })
+    const totalH = (18 - 8) * 48
+    expect(box('早到'), '早到事件从轨道顶开始，不再负 top').toEqual({ top: 0, h: 48 })
+    expect(box('正常')).toEqual({ top: 48, h: 48 })
+    expect(box('晚走'), '晚走事件在轨道底截止').toEqual({ top: 432, h: 48 })
+    expect(box('贴底'), '贴底短事件高度让位于剩余轨道，不向下溢出').toEqual({ top: 468, h: 12 })
+    for (const t of ['早到', '正常', '晚走', '贴底']) {
+      const b = box(t)
+      expect(b.top, `${t} top 不为负`).toBeGreaterThanOrEqual(0)
+      expect(b.top + b.h, `${t} 底部不越出 track`).toBeLessThanOrEqual(totalH + 0.5)
+    }
+  })
+
   it('view=day：只渲染 1 列；视图按钮切换派发 oas-view-change（属性吸收不派发）', () => {
     const el = timedEl({ view: 'day' })
     expect(el.shadowRoot!.querySelectorAll('.timeview .col').length).toBe(1)
