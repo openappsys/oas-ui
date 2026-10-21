@@ -677,11 +677,11 @@ Boundaries of local capabilities in windowed mode: **local `filter` and top-leve
 
 | Method | Signature | Description |
 | --- | --- | --- |
-| `expandAll` | `expandAll(): void` | 全部展开：展开所有已有 children 的节点（懒加载未加载节点不触发加载） |
-| `collapseAll` | `collapseAll(): void` | 全部收起 |
-| `expand` | `expand(keys: string[]): void` | 展开指定 key 集合 |
-| `collapse` | `collapse(keys: string[]): void` | 收起指定 key 集合（连同子树） |
-| `scrollTo` | `scrollTo(target?: string \| number \| ScrollToOptions, optionsOrY?: number \| { expand?: boolean }): void` | 滚动到节点。默认展开其祖先链后定位；options.expand=false 时不改展开状态（需节点本身可见）。 |
+| `expandAll` | `expandAll(): void` | Expand all: expands every node that already has children (lazy-loading does not load unloaded nodes) |
+| `collapseAll` | `collapseAll(): void` | Collapse all |
+| `expand` | `expand(keys: string[]): void` | Expand the given key set |
+| `collapse` | `collapse(keys: string[]): void` | Collapse the given key set (including subtrees) |
+| `scrollTo` | `scrollTo(target?: string \| number \| ScrollToOptions, optionsOrY?: number \| { expand?: boolean }): void` | Scroll to a node. By default its ancestor chain is expanded first; with options.expand=false the expansion state is left unchanged (the node must already be visible) |
 
 #### Events
 

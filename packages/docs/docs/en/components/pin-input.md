@@ -326,8 +326,8 @@ onMounted(() => {
 
 | Method | Signature | Description |
 | --- | --- | --- |
-| `focus` | `focus(indexOrOptions?: number \| FocusOptions): void` | 组件级聚焦：`focus()` 无参聚焦首个空格（全部填满时聚焦末格）；`focus(index)` 聚焦指定格 |
-| `blur` | `blur(): void` | 使当前活动格失焦 |
+| `focus` | `focus(indexOrOptions?: number \| FocusOptions): void` | Component-level focus: `focus()` with no argument focuses the first empty cell (the last cell when all are filled); `focus(index)` focuses the given cell |
+| `blur` | `blur(): void` | Blur the currently active cell |
 
 #### Events
 

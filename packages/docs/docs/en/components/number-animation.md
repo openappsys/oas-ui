@@ -85,7 +85,7 @@ Font size is fixed at `--oas-font-size-lg` (16px) by default and does not follow
 
 | Method | Signature | Description |
 | --- | --- | --- |
-| `play` | `play(): void` | 手动重播一轮：从 from 起播到目标；播放中防重入（每轮至多一次 oas-finish） |
+| `play` | `play(): void` | Manually replay one round: plays from from to the target; re-entrancy guard while playing (at most one oas-finish per round) |
 
 #### Events
 

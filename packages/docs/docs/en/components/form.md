@@ -600,11 +600,11 @@ onMounted(() => {
 
 | Method | Signature | Description |
 | --- | --- | --- |
-| `reapplyInitialValues` | `reapplyInitialValues(): void` | 为「初始值基线建立后才出现的字段」补写 initial-values（oas-form-list 等动态字段容器 |
-| `getValues` | `getValues(): Record<string, unknown>` | 公开取值入口：全表当前值快照（嵌套结构），与 submit() 派发的 detail.values 同口径 |
-| `validate` | `validate(): Promise<boolean>` | 公开校验入口：校验全部字段并同步错误态（aria-invalid + 错误文案），返回是否全部通过。 |
-| `submit` | `submit(): void` | 公开提交入口：委托内部 form 的 requestSubmit()。 |
-| `reset` | `reset(): void` | 重置回初始值（与 form-associated reset 基线语义一致：回初始值、清除校验错误态、不派发任何事件） |
+| `reapplyInitialValues` | `reapplyInitialValues(): void` | Writes initial-values for fields that appear only after the initial-value baseline is established (dynamic field containers such as oas-form-list) |
+| `getValues` | `getValues(): Record<string, unknown>` | Public value getter: a snapshot of the current values for the whole form (nested structure), with the same shape as detail.values dispatched by submit() |
+| `validate` | `validate(): Promise<boolean>` | Public validation entry: validates all fields and syncs error state (aria-invalid + error message), returning whether everything passed |
+| `submit` | `submit(): void` | Public submit entry: delegates to requestSubmit() on the internal form |
+| `reset` | `reset(): void` | Reset to the initial values (matching form-associated reset baseline semantics: restores initial values, clears validation errors, dispatches no events) |
 
 #### Events
 
@@ -637,8 +637,8 @@ onMounted(() => {
 
 | Method | Signature | Description |
 | --- | --- | --- |
-| `setError` | `setError(message: string \| null): void` | 校验错误文本收编（由 oas-form 调用）。message 为空时移除错误态。 |
-| `refreshLayout` | `refreshLayout(): void` | 供父 oas-form 在布局属性变化时调用，即时重刷 grid/标签布局感知 |
+| `setError` | `setError(message: string \| null): void` | Validation error text sink (called by oas-form). An empty message removes the error state |
+| `refreshLayout` | `refreshLayout(): void` | Called by the parent oas-form when layout attributes change, to immediately refresh grid/label layout awareness |
 
 #### Slots
 

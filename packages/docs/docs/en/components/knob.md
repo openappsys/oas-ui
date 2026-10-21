@@ -246,9 +246,9 @@ onMounted(() => {
 
 | Method | Signature | Description |
 | --- | --- | --- |
-| `reset` | `reset(): void` | 复位到默认值（default-value 缺省 min），派发 oas-reset |
-| `stepUp` | `stepUp(): void` | 按 step 步进一格（等价方向键） |
-| `stepDown` | `stepDown(): void` | 按 step 回退一格（等价方向键） |
+| `reset` | `reset(): void` | Reset to the default value (default-value falls back to min) and dispatch oas-reset |
+| `stepUp` | `stepUp(): void` | Step up one increment by step (equivalent to the arrow keys) |
+| `stepDown` | `stepDown(): void` | Step down one increment by step (equivalent to the arrow keys) |
 
 #### Events
 

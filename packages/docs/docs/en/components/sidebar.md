@@ -418,8 +418,8 @@ Besides the `items` JSON, items can be declared with `<oas-sidebar-item>` / `<oa
 
 | Method | Signature | Description |
 | --- | --- | --- |
-| `openDrawer` | `openDrawer(): void` | 公开：编程打开移动抽屉，等价于点击内置触发按钮（`part="trigger"`）。 |
-| `closeDrawer` | `closeDrawer(): void` | 公开：编程关闭移动抽屉，等价于点击遮罩 / 关闭按钮 / 按 Esc。 |
+| `openDrawer` | `openDrawer(): void` | Public: programmatically open the mobile drawer, equivalent to clicking the built-in trigger button (`part="trigger"`) |
+| `closeDrawer` | `closeDrawer(): void` | Public: programmatically close the mobile drawer, equivalent to clicking the scrim / close button / pressing Esc |
 
 #### Events
 

@@ -187,8 +187,8 @@ onMounted(() => {
 
 | Method | Signature | Description |
 | --- | --- | --- |
-| `show` | `show(x: number, y: number): void` | 编程式打开：任意坐标弹菜单（表格行/画布/选区右键等脱离宿主元素的场景）。 |
-| `close` | `close(): void` | 编程式关闭：宿主 el.close() 调用（与右键别处关闭/Esc/外部点击/选中同路径） |
+| `show` | `show(x: number, y: number): void` | Open programmatically: shows the menu at arbitrary coordinates (table rows, canvas, selection context menus, and other cases detached from the host element) |
+| `close` | `close(): void` | Close programmatically: for host el.close() calls (same path as closing from a right-click elsewhere / Esc / outside click / selection) |
 
 #### Events
 

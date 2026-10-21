@@ -733,7 +733,7 @@ ARIA in windowed mode: rows report `aria-setsize = total` and `aria-posinset = a
 
 | Method | Signature | Description |
 | --- | --- | --- |
-| `setData` | `setData(value: unknown[]): void` | 数据写入（property 通道）。公开类型保持 `unknown[]`（API 文档类型准确），运行时经 |
+| `setData` | `setData(value: unknown[]): void` | Data write (property channel). The public type stays `unknown[]` (accurate API docs), while at runtime JSON strings are tolerated through `parseJsonArray` |
 
 #### Events
 

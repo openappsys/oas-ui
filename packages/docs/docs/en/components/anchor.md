@@ -382,7 +382,7 @@ onMounted(() => {
 
 | Method | Signature | Description |
 | --- | --- | --- |
-| `scrollTo` | `scrollTo(x?: string \| ScrollToOptions \| number, y?: number): void` | 程序化定位（exposes scrollTo 语义）；滚动触发的高亮联动/事件由 scroll spy 自然接管。 |
+| `scrollTo` | `scrollTo(x?: string \| ScrollToOptions \| number, y?: number): void` | Programmatic positioning (exposes scrollTo semantics); scroll-triggered highlight sync and events are handled by scroll spy automatically |
 
 #### Events
 

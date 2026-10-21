@@ -1046,15 +1046,15 @@ The full endpoint URLs far exceed the column width (long unbreakable strings): h
 
 | Method | Signature | Description |
 | --- | --- | --- |
-| `effectiveColumns` | `effectiveColumns(): TableColumn[]` | 有效列：按 column-keys（受控显示集合+顺序）过滤排序；无 column-keys 时回落全部叶子列（向后兼容）。 |
-| `getColumns` | `getColumns(): TableColumn[]` | 当前全部列定义（含组列；表格基础 API，能力 controller / 宿主可读） |
-| `translateText` | `translateText(key: string, params?: Record<string, string \| number>): string` | 翻译内置文案（就近 config-provider / locale；能力 controller 与外部自定义模板经此取词）。 |
-| `paintCell` | `paintCell(td: HTMLTableCellElement, col: TableColumn, row: Record<string, unknown>): void` | 重绘单元格为常规展示内容：清空后按 cellNode 挂载（尊重 render/cellTemplate 富内容）。 |
-| `notifyEdit` | `notifyEdit(kind: 'edit' \| 'edit-cancel', detail: TableEditDetail): void` | 派发编辑结果事件（提交/取消；detail 由 edit 能力组好）。事件名以字面量书写在此， |
-| `setColumnOrder` | `setColumnOrder(keys: string[]): void` | 更新列显示顺序（写回 column-keys 并重渲染；派发 oas-column-order，宿主可做持久化） |
-| `setColumnWidth` | `setColumnWidth(key: string, width: number): void` | 更新指定列宽（写回 columns 对应列 width 并重渲染；派发 oas-column-resize）。property 列定义含函数时改内存 |
-| `exportMatrix` | `exportMatrix(): { headers: string[]; rows: string[][] }` | 导出矩阵：表头（列 title / headerTemplate 文本）+ 当前可见数据行。 |
-| `exportData` | `exportData(format: ExportFormat, options: { fileName?: string }): string` | 导出并触发下载：生成内容 → Blob 下载 → 派发 `oas-export` |
+| `effectiveColumns` | `effectiveColumns(): TableColumn[]` | Effective columns: filtered and ordered by column-keys (controlled visible set + order); falls back to all leaf columns when column-keys is absent (backward compatible) |
+| `getColumns` | `getColumns(): TableColumn[]` | All current column definitions (including group columns; a base table API readable by the capability controller / host) |
+| `translateText` | `translateText(key: string, params?: Record<string, string \| number>): string` | Translate built-in copy (nearest config-provider / locale; the capability controller and external custom templates look up text here) |
+| `paintCell` | `paintCell(td: HTMLTableCellElement, col: TableColumn, row: Record<string, unknown>): void` | Repaint the cell as regular display content: clears it and mounts cellNode (respecting rich content from render/cellTemplate) |
+| `notifyEdit` | `notifyEdit(kind: 'edit' \| 'edit-cancel', detail: TableEditDetail): void` | Dispatch the edit result event (commit/cancel; detail is assembled by the edit capability). The event name is written as a literal here |
+| `setColumnOrder` | `setColumnOrder(keys: string[]): void` | Update the column display order (writes back column-keys and re-renders; dispatches oas-column-order so the host can persist it) |
+| `setColumnWidth` | `setColumnWidth(key: string, width: number): void` | Update the given column width (writes back the matching width in columns and re-renders; dispatches oas-column-resize). When the property column definitions contain functions, updates the in-memory definition |
+| `exportMatrix` | `exportMatrix(): { headers: string[]; rows: string[][] }` | Export matrix: headers (column title / headerTemplate text) + currently visible data rows |
+| `exportData` | `exportData(format: ExportFormat, options: { fileName?: string }): string` | Export and trigger a download: generate content → Blob download → dispatch `oas-export` |
 
 #### Events
 

@@ -669,9 +669,9 @@ When present, `tabindex` is forwarded to every tab button (overriding the defaul
 
 | Method | Signature | Description |
 | --- | --- | --- |
-| `translateText` | `translateText(key: string, params?: Record<string, string \| number>): string` | 翻译内置文案（就近 config-provider / locale；能力 controller 与外部模板经此取词） |
-| `refreshTabs` | `refreshTabs(): void` | 刷新标签栏（重命名写回 label 后重建 tablist 恢复结构；能力 controller 专用） |
-| `notifyManager` | `notifyManager(kind: 'add' \| 'close' \| 'rename' \| 'reorder', detail: unknown): void` | 派发 manager 能力结果事件（add/close/rename/reorder；detail 由能力 controller 组好） |
+| `translateText` | `translateText(key: string, params?: Record<string, string \| number>): string` | Translate built-in copy (nearest config-provider / locale; the capability controller and external templates look up text here) |
+| `refreshTabs` | `refreshTabs(): void` | Refresh the tab bar (after a rename writes back label, rebuilds the tablist to restore structure; capability controller only) |
+| `notifyManager` | `notifyManager(kind: 'add' \| 'close' \| 'rename' \| 'reorder', detail: unknown): void` | Dispatch the manager capability result event (add/close/rename/reorder; detail is assembled by the capability controller) |
 
 #### Events
 

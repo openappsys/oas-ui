@@ -150,11 +150,11 @@ onMounted(() => {
 
 | Method | Signature | Description |
 | --- | --- | --- |
-| `exportJson` | `exportJson(): Record<string, string>` | 导出当前 token 集 JSON（`{ '--oas-*': value }`，值为实时 computed 值）。 |
-| `exportCss` | `exportCss(): string` | 导出当前 token 集为 CSS 文本（`:root { --oas-*: value; ... }`，与 exportJson 同源）。 |
-| `importJson` | `importJson(json: Record<string, unknown> \| string): void` | 应用 token 集到 themeRoot：`{ '--oas-*': value }`，非 `--` 开头键忽略并 dev 告警 |
-| `applyPreset` | `applyPreset(name: string): void` | 应用内置预设主题。只调尺寸族 token（control-height / space），不动颜色： |
-| `reset` | `reset(): void` | 重置：清除本组件写入宿主的内联 CSS 变量，恢复默认主题值。 |
+| `exportJson` | `exportJson(): Record<string, string>` | Export the current token set as JSON (`{ '--oas-*': value }`, with live computed values) |
+| `exportCss` | `exportCss(): string` | Export the current token set as CSS text (`:root { --oas-*: value; ... }`, same source as exportJson) |
+| `importJson` | `importJson(json: Record<string, unknown> \| string): void` | Apply a token set to the themeRoot: `{ '--oas-*': value }`; keys not starting with `--` are ignored with a dev warning |
+| `applyPreset` | `applyPreset(name: string): void` | Apply a built-in preset theme. Only size-family tokens are set (control-height / space); colors are untouched |
+| `reset` | `reset(): void` | Reset: clears the inline CSS variables this component wrote to the host and restores the default theme values |
 
 #### Events
 

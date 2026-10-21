@@ -430,8 +430,8 @@ onMounted(async () => {
 
 | Method | Signature | Description |
 | --- | --- | --- |
-| `close` | `close(): void` | 编程关闭（命令式 API handle / 宿主主动）：绕过 before-close 拦截，立即开始关闭动画 |
-| `applyZ` | `applyZ(): void` | z-index 计算：显式 z-index 属性覆盖默认 overlay 档位；嵌套层级叠加栈深偏移 |
+| `close` | `close(): void` | Programmatic close (imperative API handle / host-initiated): bypasses the before-close gate and starts the closing animation immediately |
+| `applyZ` | `applyZ(): void` | z-index computation: an explicit z-index attribute overrides the default overlay tier; nesting adds a stack-depth offset |
 
 #### Events
 

@@ -382,9 +382,9 @@ Besides the automatic hover/focus pause, `pause-button` renders an explicit paus
 
 | Method | Signature | Description |
 | --- | --- | --- |
-| `next` | `next(): void` | 切换到下一屏 |
-| `prev` | `prev(): void` | 切换到上一屏 |
-| `goTo` | `goTo(index: number): void` | 跳转到指定屏（页索引，从 0 起） |
+| `next` | `next(): void` | Switch to the next slide |
+| `prev` | `prev(): void` | Switch to the previous slide |
+| `goTo` | `goTo(index: number): void` | Jump to the given slide (page index, zero-based) |
 
 #### Events
 

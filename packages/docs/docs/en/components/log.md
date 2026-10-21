@@ -323,7 +323,7 @@ When history lines are prepended, the reconcile aligns rows by content key: exis
 
 | Method | Signature | Description |
 | --- | --- | --- |
-| `scrollTo` | `scrollTo(target?: (ScrollToOptions & { position?: 'top' \| 'bottom' }) \| 'top' \| 'bottom' \| number): void` | 滚动视口：`'top'` 到顶、`'bottom'` 到底、数字为像素 scrollTop； |
+| `scrollTo` | `scrollTo(target?: (ScrollToOptions & { position?: 'top' \| 'bottom' }) \| 'top' \| 'bottom' \| number): void` | Scroll the viewport: `'top'` goes to the top, `'bottom'` to the bottom, and a number is the pixel scrollTop |
 
 #### Events
 

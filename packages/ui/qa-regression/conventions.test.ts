@@ -312,3 +312,27 @@ describe('zh/en 双语镜像守卫（demo style 块 + 章节标题计数）', ()
     ).toEqual([])
   })
 })
+
+describe('英文 API 文案语言守卫', () => {
+  it('en/components/*.md 的 Methods 表描述不得残留中文', () => {
+    const enDir = join(ROOT, 'packages', 'docs', 'docs', 'en', 'components')
+    const cjk = /[\u4e00-\u9fff]/
+    const problems: string[] = []
+    for (const name of readdirSync(enDir).filter((f) => f.endsWith('.md'))) {
+      const lines = readFileSync(join(enDir, name), 'utf8').split('\n')
+      let inMethods = false
+      lines.forEach((line, index) => {
+        if (/^#### Methods\b/.test(line)) {
+          inMethods = true
+          return
+        }
+        if (inMethods && /^#{1,4} /.test(line)) inMethods = false
+        if (inMethods && cjk.test(line)) problems.push(`${name}:${index + 1} ${line.trim()}`)
+      })
+    }
+    expect(
+      problems,
+      `英文 Methods 表残留中文（改 en 页对应行，不要改生成物 API 章节）：\n${problems.join('\n')}`,
+    ).toEqual([])
+  })
+})

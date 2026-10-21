@@ -713,24 +713,24 @@ onMounted(async () => {
 
 | Method | Signature | Description |
 | --- | --- | --- |
-| `updateTask` | `updateTask(id: string, patch: Partial<GanttTask>): boolean` | 按 id 单条增量更新（浅合并 patch 后走 sanitize 清洗；找不到或非法 patch 返回 false） |
-| `scrollToTask` | `scrollToTask(id: string): void` | 滚动到指定任务行（虚拟滚动下委托内部视口，目标行垂直居中）；找不到为空操作。 |
-| `scrollToDate` | `scrollToDate(date: string): void` | 滚动到指定日期（水平居中）；非法日期忽略。RTL 走真实浏览器 scrollLeft 负值模型 |
-| `scrollToToday` | `scrollToToday(): void` | 滚动到今天 |
-| `undo` | `undo(): boolean` | 撤销最近一次任务数据提交；返回是否实际撤销 |
-| `redo` | `redo(): boolean` | 重做最近一次撤销；返回是否实际重做 |
-| `clearHistory` | `clearHistory(): void` | 清空撤销/重做历史（不改变当前任务） |
-| `removeTasks` | `removeTasks(ids: string[]): void` | 批量删除任务（连同其后代）；找不到即忽略 |
-| `addTask` | `addTask(task: Partial<GanttTask>, opts: { parent?: string \| null; before?: string; after?: string }): string` | 新增任务（命令式创作通道）：返回新任务 id；非法输入返回 ''（零改动、零事件）。 |
-| `moveTask` | `moveTask(id: string, opts: { parent?: string \| null; index?: number }): boolean` | 移动任务到指定父级（opts.parent 省略保持原父级、null 移为根级）下的第 index 位 |
-| `duplicateTask` | `duplicateTask(id: string, opts: { id?: string; name?: string; parent?: string \| null }): string \| null` | 复制任务及其全部后代（深拷贝、各自新 id，父指针映射到新 id），紧跟原子树之后插入，返回新根 id； |
-| `addDependency` | `addDependency(taskId: string, dep: { id: string; type?: 'fs' \| 'ss' \| 'ff' \| 'sf'; lag?: number }): boolean` | 新增依赖（后继 taskId 依赖 dep.id）：type 缺省 fs；lag（天，可负）可选，缺省不写（等价 0）。 |
-| `removeDependency` | `removeDependency(taskId: string, dep: { id: string; type?: 'fs' \| 'ss' \| 'ff' \| 'sf' }): boolean` | 删除依赖：dep.type 给出只删该 (id,type)；未给出删该 id 的全部类型。找不到返回 false。 |
-| `updateDependency` | `updateDependency(taskId: string, from: { id: string; type?: 'fs' \| 'ss' \| 'ff' \| 'sf'; lag?: number }, to: { id: string; type?: 'fs' \| 'ss' \| 'ff' \| 'sf'; lag?: number }): boolean` | 改写依赖：from 找不到 / to.id 不存在或指向自身 / 无实际变化（含 lag）→ false。 |
-| `updateTasks` | `updateTasks(patches: Array<{ id: string } & Partial<GanttTask>>): number` | 批量浅合并（逐条：id 不存在跳过；end 给非空且解析失败跳过该条；其余走 sanitize 单条清洗， |
-| `zoomIn` | `zoomIn(): void` | 向更细一档步进（写 scale 属性，既有回调派发 oas-scale-change）；最细档 no-op |
-| `zoomOut` | `zoomOut(): void` | 向更粗一档步进；最粗档 no-op |
-| `fit` | `fit(): void` | 缩放以容纳全部任务：取**最细且**能满足「跨度按该档单位折算的列数 × 该档最小列宽 ≤ 可用宽」的档 |
+| `updateTask` | `updateTask(id: string, patch: Partial<GanttTask>): boolean` | Incrementally update a single task by id (shallow-merges the patch, then runs sanitize; returns false when the id is missing or the patch is invalid) |
+| `scrollToTask` | `scrollToTask(id: string): void` | Scroll to the given task row (delegates to the internal viewport under virtual scrolling; the target row is centered vertically); no-op when not found |
+| `scrollToDate` | `scrollToDate(date: string): void` | Scroll to the given date (centered horizontally); invalid dates are ignored. RTL uses the real browser negative scrollLeft model |
+| `scrollToToday` | `scrollToToday(): void` | Scroll to today |
+| `undo` | `undo(): boolean` | Undo the most recent task data commit; returns whether anything was actually undone |
+| `redo` | `redo(): boolean` | Redo the most recent undo; returns whether anything was actually redone |
+| `clearHistory` | `clearHistory(): void` | Clear the undo/redo history (current tasks are unchanged) |
+| `removeTasks` | `removeTasks(ids: string[]): void` | Delete tasks in bulk (including their descendants); missing ids are ignored |
+| `addTask` | `addTask(task: Partial<GanttTask>, opts: { parent?: string \| null; before?: string; after?: string }): string` | Add a task (imperative authoring channel): returns the new task id; invalid input returns '' (no changes, no events) |
+| `moveTask` | `moveTask(id: string, opts: { parent?: string \| null; index?: number }): boolean` | Move a task to position index under the given parent (opts.parent omitted keeps the current parent; null moves it to the root level) |
+| `duplicateTask` | `duplicateTask(id: string, opts: { id?: string; name?: string; parent?: string \| null }): string \| null` | Duplicate a task and all its descendants (deep copy, new ids, parent pointers remapped to the new ids), inserted right after the original subtree, returning the new root id |
+| `addDependency` | `addDependency(taskId: string, dep: { id: string; type?: 'fs' \| 'ss' \| 'ff' \| 'sf'; lag?: number }): boolean` | Add a dependency (successor taskId depends on dep.id): type defaults to fs; the optional lag (days, may be negative) is omitted by default (equivalent to 0) |
+| `removeDependency` | `removeDependency(taskId: string, dep: { id: string; type?: 'fs' \| 'ss' \| 'ff' \| 'sf' }): boolean` | Remove a dependency: when dep.type is given only that (id,type) is removed; otherwise all types for that id are removed. Returns false when not found |
+| `updateDependency` | `updateDependency(taskId: string, from: { id: string; type?: 'fs' \| 'ss' \| 'ff' \| 'sf'; lag?: number }, to: { id: string; type?: 'fs' \| 'ss' \| 'ff' \| 'sf'; lag?: number }): boolean` | Rewrite a dependency: returns false when from is not found, to.id does not exist or points to itself, or nothing actually changes (including lag) |
+| `updateTasks` | `updateTasks(patches: Array<{ id: string } & Partial<GanttTask>>): number` | Shallow-merge in bulk (per item: skip when the id does not exist; skip the item when a non-empty end fails to parse; otherwise run sanitize per item) |
+| `zoomIn` | `zoomIn(): void` | Step one level finer (writes the scale attribute; existing callbacks dispatch oas-scale-change); no-op at the finest level |
+| `zoomOut` | `zoomOut(): void` | Step one level coarser; no-op at the coarsest level |
+| `fit` | `fit(): void` | Zoom to fit all tasks: picks the **finest** level where "columns for the span in that unit × the minimum column width at that level ≤ available width" |
 
 #### Events
 

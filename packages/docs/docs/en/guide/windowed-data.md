@@ -67,7 +67,7 @@ The demo simulates a server with local data: 200 rows per segment, 120ms latency
 import { onMounted } from 'vue'
 
 onMounted(async () => {
-  // 组件由主题动态 import 注册：先等自定义元素定义完成，避免把 property 写到未升级元素上（own property 会遮蔽 setter、数据丢失）
+  // Components are registered by the theme via dynamic import: wait for custom element definitions before writing properties to an unupgraded element (an own property would shadow the setter and lose data)
   await Promise.all([
     customElements.whenDefined('oas-table'),
     customElements.whenDefined('oas-gantt'),

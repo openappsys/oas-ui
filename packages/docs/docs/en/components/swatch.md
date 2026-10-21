@@ -138,8 +138,8 @@ onMounted(() => {
 
 | Method | Signature | Description |
 | --- | --- | --- |
-| `setGroupRole` | `setGroupRole(role: 'radio' \| 'checkbox' \| null): void` | 组语义切换挂点（oas-swatch-group 驱动：button→radio/checkbox + aria-checked） |
-| `syncSelected` | `syncSelected(selected: boolean): void` | 组同步选中态（含 ARIA 同步） |
+| `setGroupRole` | `setGroupRole(role: 'radio' \| 'checkbox' \| null): void` | Group semantics hook (driven by oas-swatch-group: button→radio/checkbox + aria-checked) |
+| `syncSelected` | `syncSelected(selected: boolean): void` | Sync the selected state from the group (including ARIA sync) |
 
 #### Events
 

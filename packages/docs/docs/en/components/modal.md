@@ -748,9 +748,9 @@ onMounted(async () => {
 
 | Method | Signature | Description |
 | --- | --- | --- |
-| `getModalCapability` | `getModalCapability(name: string): T \| null` | 按名取已注入能力 controller（命令式层委托点；未 import 对应能力返回 null） |
-| `close` | `close(source: ModalCloseSource): void` | 关闭请求（确定/取消/✕/遮罩/Esc/编程）：cancelable oas-before-close 拦截， |
-| `applyZ` | `applyZ(): void` | z-index 计算：显式 z-index 属性覆盖默认 modal 档位（--oas-z-modal）； |
+| `getModalCapability` | `getModalCapability(name: string): T \| null` | Get an injected capability controller by name (the imperative delegation point; returns null when the capability is not imported) |
+| `close` | `close(source: ModalCloseSource): void` | Close request (confirm/cancel/✕/scrim/Esc/programmatic): intercepted by the cancelable oas-before-close |
+| `applyZ` | `applyZ(): void` | z-index computation: an explicit z-index attribute overrides the default modal tier (--oas-z-modal) |
 
 #### Events
 

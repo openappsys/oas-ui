@@ -299,10 +299,10 @@ onMounted(async () => {
 
 | Method | Signature | Description |
 | --- | --- | --- |
-| `show` | `show(): void` | 打开气泡（等价 open 属性；oas-open-change reason='api'） |
-| `hide` | `hide(): void` | 关闭气泡（等价移除 open；oas-open-change reason='api'） |
-| `restoreFocus` | `restoreFocus(): void` | 关闭后焦点还原到触发元素（恒定行为；virtual 模式无锚点跳过）。 |
-| `requestClose` | `requestClose(reason: OpenChangeReason): void` | 关闭请求：记录来源 → 移除 open 属性（公开供模块级 Esc 栈调用；非文档化 API） |
+| `show` | `show(): void` | Open the popover (equivalent to the open attribute; oas-open-change reason='api') |
+| `hide` | `hide(): void` | Close the popover (equivalent to removing open; oas-open-change reason='api') |
+| `restoreFocus` | `restoreFocus(): void` | Restore focus to the trigger after closing (always; skipped in virtual mode with no anchor) |
+| `requestClose` | `requestClose(reason: OpenChangeReason): void` | Close request: records the source → removes the open attribute (public for the module-level Esc stack; not a documented API) |
 
 #### Events
 

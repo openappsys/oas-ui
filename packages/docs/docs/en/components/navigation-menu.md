@@ -192,7 +192,7 @@ onMounted(() => {
 
 | Method | Signature | Description |
 | --- | --- | --- |
-| `syncOverflowCollapse` | `syncOverflowCollapse(): void` | 重算顶级溢出收纳：bar 装不下时尾部顶级项打 data-collapsed 隐藏并镜像进「···」弹层。 |
+| `syncOverflowCollapse` | `syncOverflowCollapse(): void` | Recompute top-level overflow: when the bar cannot fit, trailing top-level items get data-collapsed, are hidden, and are mirrored into the "..." overlay |
 
 #### Events
 

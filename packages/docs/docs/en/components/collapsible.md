@@ -147,7 +147,7 @@ When the component is not upgraded (no JS), the light DOM content renders as pla
 
 | Method | Signature | Description |
 | --- | --- | --- |
-| `isDisabled` | `isDisabled(): boolean` | 生效禁用态（显式 disabled 属性；config-provider 注入的全局禁用同样生效） |
+| `isDisabled` | `isDisabled(): boolean` | Effective disabled state (explicit disabled attribute; a global disable injected by config-provider also applies) |
 
 #### Events
 

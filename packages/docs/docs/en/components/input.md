@@ -535,9 +535,9 @@ A range input is just two `oas-input` elements plus a separator layout (the comp
 
 | Method | Signature | Description |
 | --- | --- | --- |
-| `focus` | `focus(options?: FocusOptions): void` | label 点击聚焦委托：把焦点交给 shadow 内主输入（配合 oas-form-item 的 label 点击代理） |
-| `blur` | `blur(): void` | 失焦委托：把 blur 交给 shadow 内主输入 |
-| `select` | `select(): void` | 选中输入框全部内容（委托原生 input.select） |
+| `focus` | `focus(options?: FocusOptions): void` | Label click focus delegation: forwards focus to the main input inside the shadow root (works with the label click proxy in oas-form-item) |
+| `blur` | `blur(): void` | Blur delegation: forwards blur to the main input inside the shadow root |
+| `select` | `select(): void` | Select all input content (delegates to the native input.select) |
 
 #### Events
 

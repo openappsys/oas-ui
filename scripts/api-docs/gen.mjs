@@ -68,6 +68,9 @@ const GROUP_HEADINGS = new Set([
 
 const TAG_RE = /^oas-[a-z0-9-]+$/
 
+// 这些页面含按 tag 分组的手工 Methods 表；保留手工表，生成器只维护 attrs/events/slots。
+const MANUAL_METHODS_PAGES = new Set(['avatar.md', 'collapse.md', 'form.md', 'image.md', 'toolbar.md'])
+
 /**
  * 已人工复核的「仅语料」插槽（扫描器在源码找不到、但确属该组件公开 API 的条目）。
  * 这些组件的默认槽是「宿主子节点内容」——由组件/父组件直接读 light DOM
@@ -449,7 +452,7 @@ function renderCssVarTable(rows, lang) {
 }
 
 /** 生成统一版式的 `## API` 章节内容（不含 `## API` 标题行） */
-function buildGenerated(tags, lang) {
+function buildGenerated(tags, lang, { omitMethods = false } = {}) {
   const headings = {
     attrs: lang === 'zh' ? '属性' : 'Attributes',
     props:
@@ -477,7 +480,9 @@ function buildGenerated(tags, lang) {
     const tables = []
     if (g.attrs.length) tables.push(`#### ${headings.attrs}\n\n${renderAttrTable(g.attrs, lang)}`)
     if (g.props.length) tables.push(`#### ${headings.props}\n\n${renderPropTable(g.props, lang)}`)
-    if (g.methods.length) tables.push(`#### ${headings.methods}\n\n${renderMethodTable(g.methods, lang)}`)
+    // 手工 Methods 表（历史页面多 tag 分组）优先：避免生成表与手工表并存造成重复
+    if (!omitMethods && g.methods.length)
+      tables.push(`#### ${headings.methods}\n\n${renderMethodTable(g.methods, lang)}`)
     if (g.events.length) tables.push(`#### ${headings.events}\n\n${renderEventTable(g.events, lang)}`)
     if (g.slots.length) tables.push(`#### ${headings.slots}\n\n${renderSlotTable(g.slots, lang)}`)
     if ((g.cssVars ?? []).length) tables.push(`#### ${headings.cssVars}\n\n${renderCssVarTable(g.cssVars, lang)}`)
@@ -519,6 +524,8 @@ function isConsumed(b, blocks, i, pageTags) {
  *   { status: 'changed', newLines, oldSectionLines, newSectionLines }  需要重写
  */
 function processPage(file, lang) {
+  // 这 5 页的 Methods 表按 tag 手工分组，交给人工维护；生成器只读跳过，避免生成表与手工表重复。
+  if (MANUAL_METHODS_PAGES.has(file)) return { status: 'skip', reason: '手工 Methods 表页面' }
   const dir = lang === 'zh' ? ZH_DIR : EN_DIR
   const path = join(dir, file)
   const text = readFileSync(path, 'utf8')
@@ -545,13 +552,22 @@ function processPage(file, lang) {
   const tags = collectPageTags(blocks, primaryTag, MANIFEST)
   if (tags.length === 0) return { status: 'skip', reason: `无法归属 tag（primary ${primaryTag} 不在 manifest）` }
 
-  const generated = buildGenerated(tags, lang)
+  // 多 tag 历史页面用手工 Methods 表（按 tag 分组）；生成表会与之并存造成重复，故对这些页跳过 Methods 生成。
+  const hasManualMethods =
+    MANUAL_METHODS_PAGES.has(file) &&
+    blocks.some((b) => b.kind === 'table' && /^\|\s*(?:Method|方法)\s*\|/.test(b.lines[0] ?? ''))
+  const generated = buildGenerated(tags, lang, { omitMethods: hasManualMethods })
 
   // 块序列 → 输出行
   const outBlocks = []
   let inserted = false
   for (let i = 0; i < blocks.length; i++) {
     const b = blocks[i]
+    // 手工 Methods 表原样保留（不消费），避免生成器把它删掉
+    if (hasManualMethods && b.kind === 'table' && /^\|\s*(?:Method|方法)\s*\|/.test(b.lines[0] ?? '')) {
+      outBlocks.push(b)
+      continue
+    }
     if (isConsumed(b, blocks, i, tags)) {
       if (!inserted) {
         inserted = true

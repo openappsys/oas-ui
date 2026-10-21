@@ -349,8 +349,8 @@ To show a name or description per avatar, compose with a wrapping `oas-tooltip` 
 
 | Method | Signature | Description |
 | --- | --- | --- |
-| `openOverflow` | `openOverflow(): void` | 打开折叠弹层：克隆全部被折叠成员头像进列表 + 定位（供模块级 Esc 栈/内部调用） |
-| `closeOverflow` | `closeOverflow(refocus: unknown): void` | 关闭折叠弹层；refocus=true 时焦点回到计数按钮（Escape 路径，带回焦豁免防重开） |
+| `openOverflow` | `openOverflow(): void` | Open the collapsed overlay: clones all collapsed member avatars into a list and positions it (for the module-level Esc stack / internal calls) |
+| `closeOverflow` | `closeOverflow(refocus: unknown): void` | Close the collapsed overlay; with refocus=true focus returns to the count button (Escape path, with a refocus exemption that prevents reopening) |
 
 #### Slots
 

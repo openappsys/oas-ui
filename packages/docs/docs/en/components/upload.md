@@ -469,9 +469,9 @@ The current form value is available through the public `value` property for read
 
 | Method | Signature | Description |
 | --- | --- | --- |
-| `startUpload` | `startUpload(): void` | 上传入口：真实通道（action XHR / custom-request）逐文件发起；无通道回落模拟进度。 |
-| `submit` | `submit(): void` | 手动上传入口别名（对齐主流「提交」心智） |
-| `abort` | `abort(entry?: File): void` | 取消上传：传入条目取消单个；无参取消全部进行中的上传 |
+| `startUpload` | `startUpload(): void` | Upload entry: the real channel (action XHR / custom-request) is used per file; with no channel it falls back to simulated progress |
+| `submit` | `submit(): void` | Alias of the manual upload entry (matching the common "submit" mental model) |
+| `abort` | `abort(entry?: File): void` | Cancel uploads: passing an entry cancels that one; omitting it cancels all in-flight uploads |
 
 #### Events
 

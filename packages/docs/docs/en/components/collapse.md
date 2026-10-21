@@ -294,9 +294,9 @@ The container provides the imperative methods `expandAll()` / `collapseAll()`. I
 
 | Method | Signature | Description |
 | --- | --- | --- |
-| `expandAll` | `expandAll(): void` | 展开全部可用面板（跳过 disabled）；手风琴语义下只展开第一项。命令式方法，不触发 before-collapse |
-| `collapseAll` | `collapseAll(): void` | 收起全部面板。命令式方法，不受 no-collapse 强锁限制（锁只约束头部点击） |
-| `requestSync` | `requestSync(): void` | item 升级晚于容器（define 顺序窗口）时由 item 连接后微任务回调：重同步 roving/disabled 态 |
+| `expandAll` | `expandAll(): void` | Expand all enabled panels (disabled ones are skipped); under accordion semantics only the first item expands. Imperative method that does not fire before-collapse |
+| `collapseAll` | `collapseAll(): void` | Collapse all panels. Imperative method that ignores the no-collapse lock (the lock only constrains header clicks) |
+| `requestSync` | `requestSync(): void` | Called by an item in a microtask after it connects when the item upgrades after the container (define-order window): resyncs roving/disabled state |
 
 #### Events
 
@@ -332,9 +332,9 @@ The container provides the imperative methods `expandAll()` / `collapseAll()`. I
 
 | Method | Signature | Description |
 | --- | --- | --- |
-| `setRoving` | `setRoving(active: boolean): void` | 容器 roving tabindex / 键盘移动用：头 button 是否可 Tab 聚焦 |
-| `focusHead` | `focusHead(): void` | 容器 roving 键盘移动用：聚焦头 button |
-| `isDisabled` | `isDisabled(): boolean` | 生效禁用态（显式 disabled 属性；config-provider 注入的全局禁用同样生效） |
+| `setRoving` | `setRoving(active: boolean): void` | For container roving tabindex / keyboard navigation: whether the header button is Tab-focusable |
+| `focusHead` | `focusHead(): void` | For container roving keyboard navigation: focuses the header button |
+| `isDisabled` | `isDisabled(): boolean` | Effective disabled state (explicit disabled attribute; a global disable injected by config-provider also applies) |
 
 #### Slots
 

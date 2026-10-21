@@ -237,7 +237,7 @@ onMounted(() => {
 
 | Method | Signature | Description |
 | --- | --- | --- |
-| `scrollToIndex` | `scrollToIndex(index: number, options?: ScrollToIndexOptions): void` | 滚动到指定索引项（公共契约，供 list/tree 等内嵌消费方定位，无需直查内部 DOM）。 |
+| `scrollToIndex` | `scrollToIndex(index: number, options?: ScrollToIndexOptions): void` | Scroll to the item at the given index (public contract for embedded consumers such as list/tree, without querying internal DOM) |
 
 #### Events
 

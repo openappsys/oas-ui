@@ -431,8 +431,8 @@ onMounted(async () => {
 
 | Method | Signature | Description |
 | --- | --- | --- |
-| `previewGoTo` | `previewGoTo(index: number): void` | 图集跳转到第 index 张（预览打开时生效；未打开/无图集不做事，越界收敛）。 |
-| `openPreview` | `openPreview(index?: number): void` | 打开预览：图集模式可指定起始索引（缺省取主图 src 在列表中的位置，未命中从 0 开始） |
+| `previewGoTo` | `previewGoTo(index: number): void` | Jump the gallery to item index (only while the preview is open; no-op when closed or there is no gallery, out-of-range values are clamped) |
+| `openPreview` | `openPreview(index?: number): void` | Open the preview: in gallery mode an initial index may be given (defaults to the position of the main image src in the list, falling back to 0) |
 
 #### Events
 
@@ -466,8 +466,8 @@ onMounted(async () => {
 
 | Method | Signature | Description |
 | --- | --- | --- |
-| `openPreview` | `openPreview(index?: number): void` | 打开共享预览：index 为图集起始索引；current 受控时以属性为准 |
-| `closePreview` | `closePreview(): void` | 关闭共享预览（委托共享宿主） |
+| `openPreview` | `openPreview(index?: number): void` | Open the shared preview: index is the gallery start index; when current is controlled, the attribute takes precedence |
+| `closePreview` | `closePreview(): void` | Close the shared preview (delegated to the shared host) |
 
 #### Events
 

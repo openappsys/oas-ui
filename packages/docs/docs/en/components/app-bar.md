@@ -180,7 +180,7 @@ onMounted(() => {
 
 | Method | Signature | Description |
 | --- | --- | --- |
-| `syncOverflow` | `syncOverflow(): void` | 重算溢出收纳：actions 区宽度不足时，超出项打 data-collapsed 隐藏并镜像进「···」弹层。 |
+| `syncOverflow` | `syncOverflow(): void` | Recompute overflow: when the actions area is too narrow, overflowing items get data-collapsed, are hidden, and are mirrored into the "..." overlay |
 
 #### Events
 

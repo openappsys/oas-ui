@@ -402,14 +402,14 @@ onMounted(() => {
 
 | Method | Signature | Description |
 | --- | --- | --- |
-| `next` | `next(): Promise<boolean>` | 下一步：单步校验门控（当前步 oas-form 未过不放行；无 form / validation="false" 放行）。 |
-| `prev` | `prev(): boolean` | 上一步：不校验（对齐「回退不被校验挡住」惯例） |
-| `goto` | `goto(index: number): boolean` | 直跳任意步：不走单步门控（与 next() 语义分离）；越界夹取、hidden 步向后解析 |
-| `skipStep` | `skipStep(): boolean` | 跳过当前可选步：不校验直接前进（before-change 仍可拦截）。 |
-| `validate` | `validate(): Promise<boolean>` | 校验全部参与步（非 hidden 且未跳过，不提交）：每步派发 oas-step-validate，返回是否全部通过。 |
-| `submit` | `submit(): Promise<boolean>` | 提交：重校全部参与步（含早期步），全过才派发 oas-submit{values}（跨步汇总，仅参与步） |
-| `getValues` | `getValues(): Record<string, unknown>` | 跨步值汇总（参与步口径，与 validateAll 同判据）：各参与步（非 hidden 且未跳过）的 |
-| `reset` | `reset(): void` | 重置：全部步骤 form reset 回初始值（清错误态）、清值跟踪、清跳过记录、current 回 0。 |
+| `next` | `next(): Promise<boolean>` | Next step: gated by single-step validation (blocked while the current step's oas-form has not passed; allowed with no form / validation="false") |
+| `prev` | `prev(): boolean` | Previous step: no validation (following the convention that going back is never blocked by validation) |
+| `goto` | `goto(index: number): boolean` | Jump directly to any step: skips single-step gating (separate from next() semantics); out-of-range values are clamped and hidden steps are resolved backwards |
+| `skipStep` | `skipStep(): boolean` | Skip the current optional step: advances without validation (before-change can still intercept) |
+| `validate` | `validate(): Promise<boolean>` | Validate all participating steps (not hidden and not skipped; does not submit): dispatches oas-step-validate per step and returns whether all passed |
+| `submit` | `submit(): Promise<boolean>` | Submit: re-validates all participating steps (including earlier ones) and dispatches oas-submit{values} only when everything passes (cross-step aggregation, participating steps only) |
+| `getValues` | `getValues(): Record<string, unknown>` | Cross-step value aggregation (participating steps only, same criteria as validateAll): the values of each participating step (not hidden and not skipped) |
+| `reset` | `reset(): void` | Reset: every step's form resets to its initial values (clearing error state), value tracking and skip records are cleared, and current returns to 0 |
 
 #### Events
 

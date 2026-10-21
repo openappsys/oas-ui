@@ -785,8 +785,8 @@ onMounted(() => {
 
 | Method | Signature | Description |
 | --- | --- | --- |
-| `setOpen` | `setOpen(open: boolean, source: unknown, reason: unknown): void` | 触发入口。虚拟模式（virtual）不绑定宿主元素，open 完全受外部控制， |
-| `restoreFocus` | `restoreFocus(): void` | Esc 关闭后焦点还原到触发元素（公开：模块级 Esc 处理器可调用）。虚拟模式跳过 |
+| `setOpen` | `setOpen(open: boolean, source: unknown, reason: unknown): void` | Trigger entry. Virtual mode (virtual) binds no host element and open is fully controlled externally |
+| `restoreFocus` | `restoreFocus(): void` | Restore focus to the trigger after an Esc close (public: callable by the module-level Esc handler). Skipped in virtual mode |
 
 #### Events
 

@@ -338,7 +338,7 @@ onMounted(() => {
 
 | Method | Signature | Description |
 | --- | --- | --- |
-| `syncOverflow` | `syncOverflow(): void` | 重算溢出收纳：容器宽度不足时，超出项打 data-collapsed 隐藏并镜像进「···」弹层。 |
+| `syncOverflow` | `syncOverflow(): void` | Recompute overflow: when the container is too narrow, overflowing items get data-collapsed, are hidden, and are mirrored into the "..." overlay |
 
 #### Slots
 
@@ -364,7 +364,7 @@ onMounted(() => {
 
 | Method | Signature | Description |
 | --- | --- | --- |
-| `selectValue` | `selectValue(value: string): void` | 供工具栏溢出镜像调用：按 value 触发一次选择（单选选中/多选切换） |
+| `selectValue` | `selectValue(value: string): void` | Called by the toolbar overflow mirror: triggers one selection by value (select in single mode / toggle in multiple mode) |
 
 #### Events
 
@@ -428,7 +428,7 @@ onMounted(() => {
 
 | Method | Signature | Description |
 | --- | --- | --- |
-| `selectValue` | `selectValue(value: string): void` | 按 value 触发一次选择（单选选中/多选切换）——供外部程序化调用 |
+| `selectValue` | `selectValue(value: string): void` | Trigger one selection by value (select in single mode / toggle in multiple mode) for external programmatic calls |
 
 #### Events
 

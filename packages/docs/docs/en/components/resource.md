@@ -206,7 +206,7 @@ const file = importResourceCalendars(json)
 
 | Method | Signature | Description |
 | --- | --- | --- |
-| `scrollToDate` | `scrollToDate(date: string): void` | 滚动到指定日期（在时间轴可视区水平居中，扣除 sticky 资源名列宽度）；非法日期/无数据为空操作。RTL 走负值 scrollLeft 模型（同 gantt）。 |
+| `scrollToDate` | `scrollToDate(date: string): void` | Scroll to the given date (centered horizontally in the timeline viewport, excluding the sticky resource column width); invalid dates or no data are no-ops. RTL uses the negative scrollLeft model (as in gantt) |
 
 #### Events
 

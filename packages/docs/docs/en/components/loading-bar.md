@@ -198,12 +198,12 @@ onMounted(async () => {
 
 | Method | Signature | Description |
 | --- | --- | --- |
-| `start` | `start(speed?: number): void` | 开始一个加载会话：并发计数 +1；首个会话触发推进与 oas-start |
-| `finish` | `finish(): void` | 完成一个会话：并发计数 -1；仅最后一个 finish 触发收尾 |
-| `error` | `error(): void` | 失败收尾：并发计数 -1；批次内任一 error 决定最终终态。 |
-| `increment` | `increment(step?: number): void` | 手动推进 step（默认随机 0–10）；夹取 0–100 |
-| `set` | `set(percent: number): void` | 精确设置进度（0–100 夹取） |
-| `decrement` | `decrement(step?: number): void` | 手动回退 step（默认随机 0–10）；夹取 0–100 |
+| `start` | `start(speed?: number): void` | Start a loading session: increments the concurrency count; the first session starts progress and dispatches oas-start |
+| `finish` | `finish(): void` | Complete a session: decrements the concurrency count; only the last finish triggers the wrap-up |
+| `error` | `error(): void` | Failure wrap-up: decrements the concurrency count; any error in the batch decides the final state |
+| `increment` | `increment(step?: number): void` | Advance progress by step manually (random 0–10 by default); clamped to 0–100 |
+| `set` | `set(percent: number): void` | Set progress precisely (clamped to 0–100) |
+| `decrement` | `decrement(step?: number): void` | Roll progress back by step manually (random 0–10 by default); clamped to 0–100 |
 
 #### Events
 

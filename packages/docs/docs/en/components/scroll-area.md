@@ -276,10 +276,10 @@ onMounted(() => {
 
 | Method | Signature | Description |
 | --- | --- | --- |
-| `scrollTo` | `scrollTo(x?: ScrollToOptions \| number, y?: number): void` | 滚动到指定位置，委托 viewport.scrollTo（与原生 Element.scrollTo 兼容： |
-| `scrollToTop` | `scrollToTop(options?: { behavior?: ScrollBehavior }): void` | 平滑/即时滚到顶部（保留横向位置；默认平滑滚动） |
-| `scrollToBottom` | `scrollToBottom(options?: { behavior?: ScrollBehavior }): void` | 平滑/即时滚到底部（保留横向位置；默认平滑滚动） |
-| `scrollIntoView` | `scrollIntoView(target?: string \| Element \| ScrollIntoViewOptions \| boolean, options?: ScrollIntoViewOptions): void` | 让容器内元素滚进视口，委托目标元素的原生 scrollIntoView（`options` 的 |
+| `scrollTo` | `scrollTo(x?: ScrollToOptions \| number, y?: number): void` | Scroll to the given position, delegating to viewport.scrollTo (compatible with the native Element.scrollTo arguments) |
+| `scrollToTop` | `scrollToTop(options?: { behavior?: ScrollBehavior }): void` | Smooth/instant scroll to the top (keeps the horizontal position; smooth by default) |
+| `scrollToBottom` | `scrollToBottom(options?: { behavior?: ScrollBehavior }): void` | Smooth/instant scroll to the bottom (keeps the horizontal position; smooth by default) |
+| `scrollIntoView` | `scrollIntoView(target?: string \| Element \| ScrollIntoViewOptions \| boolean, options?: ScrollIntoViewOptions): void` | Scroll an element inside the container into view, delegating to the target element's native scrollIntoView (the `options` argument is passed through) |
 
 #### Events
 

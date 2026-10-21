@@ -228,8 +228,8 @@ onMounted(() => {
 
 | Method | Signature | Description |
 | --- | --- | --- |
-| `focus` | `focus(options?: FocusOptions): void` | label 点击聚焦委托：把焦点交给 shadow 内主输入（配合 oas-form-item 的 label 点击代理） |
-| `select` | `select(): void` | 选中文本（委托内部 textarea） |
+| `focus` | `focus(options?: FocusOptions): void` | Label click focus delegation: forwards focus to the main input inside the shadow root (works with the label click proxy in oas-form-item) |
+| `select` | `select(): void` | Select text (delegates to the internal textarea) |
 
 #### Events
 

@@ -267,10 +267,10 @@ onMounted(async () => {
 
 | Method | Signature | Description |
 | --- | --- | --- |
-| `refresh` | `refresh(content: MessageContent, type?: MessageType, duration?: number, count?: number): void` | 命令式层刷新入口：更新内容/类型/时长/合并计数并重置自动关闭计时。 |
-| `close` | `close(source: MessageCloseSource): void` | 关闭：派发 oas-close（detail 携带 key 与来源）后出场动画移除（减动效时立即移除） |
-| `pause` | `pause(): void` | 暂停自动关闭计时（剩余时长记账；无计时器时为空操作） |
-| `resume` | `resume(): void` | 恢复自动关闭计时（剩余时长续走；已过期则立即关闭） |
+| `refresh` | `refresh(content: MessageContent, type?: MessageType, duration?: number, count?: number): void` | Imperative layer refresh entry: updates content/type/duration/merge count and resets the auto-close timer |
+| `close` | `close(source: MessageCloseSource): void` | Close: dispatches oas-close (detail carries the key and source), then removes after the exit animation (removed immediately with reduced motion) |
+| `pause` | `pause(): void` | Pause the auto-close timer (remaining time is tracked; no-op when there is no timer) |
+| `resume` | `resume(): void` | Resume the auto-close timer (continues with the remaining time; closes immediately if already expired) |
 
 #### Events
 

@@ -415,7 +415,7 @@ onMounted(() => {
 
 | Method | Signature | Description |
 | --- | --- | --- |
-| `focus` | `focus(options?: FocusOptions): void` | label 点击聚焦委托：把焦点交给 shadow 内主滑块（配合 oas-form-item 的 label 点击代理） |
+| `focus` | `focus(options?: FocusOptions): void` | Label click focus delegation: forwards focus to the main slider inside the shadow root (works with the label click proxy in oas-form-item) |
 
 #### Events
 

@@ -349,11 +349,11 @@ onMounted(async () => {
 
 | Method | Signature | Description |
 | --- | --- | --- |
-| `close` | `close(source: NotificationCloseSource): void` | 统一关闭出口：派发 oas-close（detail.source 标明来源）后移除。 |
-| `refresh` | `refresh(): void` | 命令式更新通道：刷新标题/描述/富内容/footer（title/description 非观察属性， |
-| `transition` | `transition(type: NotificationType, title: string \| Node, duration: unknown): void` | promise 链流转：切换类型并重置自动关闭计时器（loading → success/error 场景）。 |
-| `pause` | `pause(): void` | 悬停暂停：记录剩余时间并暂停进度动画（pause-on-hover 通道，外部也可调用） |
-| `resume` | `resume(): void` | 恢复：从剩余时间继续倒计时与进度动画 |
+| `close` | `close(source: NotificationCloseSource): void` | Unified close exit: dispatches oas-close (detail.source indicates the source), then removes |
+| `refresh` | `refresh(): void` | Imperative update channel: refreshes title/description/rich content/footer (title/description are not observed attributes, so updates go through here) |
+| `transition` | `transition(type: NotificationType, title: string \| Node, duration: unknown): void` | Promise chain transition: switches the type and resets the auto-close timer (loading → success/error scenarios) |
+| `pause` | `pause(): void` | Hover pause: records the remaining time and pauses the progress animation (pause-on-hover channel; callable externally too) |
+| `resume` | `resume(): void` | Resume: continues the countdown and progress animation from the remaining time |
 
 #### Events
 

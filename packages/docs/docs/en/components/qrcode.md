@@ -187,7 +187,7 @@ When `value` is empty, a "No content" placeholder is shown; when the content exc
 
 | Method | Signature | Description |
 | --- | --- | --- |
-| `download` | `download(filename: unknown): Promise<void>` | 下载当前二维码为 PNG（离屏 rasterize：SVG-only 渲染架构不引入常驻 canvas）。 |
+| `download` | `download(filename: unknown): Promise<void>` | Download the current QR code as PNG (off-screen rasterize: the SVG-only rendering architecture adds no persistent canvas) |
 
 #### Events
 

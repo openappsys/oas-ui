@@ -318,11 +318,11 @@ el.downloadIcs('my.ics', { timeMode: 'utc', timezone: 'Asia/Shanghai' })
 
 | Method | Signature | Description |
 | --- | --- | --- |
-| `exportIcs` | `exportIcs(options?: IcsExportOptions): string` | 导出当前事件的 ICS 字符串（纯函数 eventsToIcs 的实例便捷通道；不触发重渲染） |
-| `downloadIcs` | `downloadIcs(filename: unknown, options?: IcsExportOptions): string` | 下载当前事件的 ICS 文件（浏览器环境；返回生成的 ICS 字符串便于测试/宿主复用） |
-| `addEvent` | `addEvent(ev: SchedulerEvent): string` | 新增事件：返回分配到的 id |
-| `updateEvent` | `updateEvent(id: string, patch: Partial<SchedulerEvent>): boolean` | 按 id 更新事件（浅合并 patch 后走 sanitize 清洗；找不到返回 false） |
-| `removeEvent` | `removeEvent(id: string): boolean` | 按 id 删除事件；找不到返回 false |
+| `exportIcs` | `exportIcs(options?: IcsExportOptions): string` | Export the current events as an ICS string (instance convenience channel for the pure eventsToIcs function; does not trigger a re-render) |
+| `downloadIcs` | `downloadIcs(filename: unknown, options?: IcsExportOptions): string` | Download the current events as an ICS file (browser environment; returns the generated ICS string for tests / host reuse) |
+| `addEvent` | `addEvent(ev: SchedulerEvent): string` | Add an event: returns the assigned id |
+| `updateEvent` | `updateEvent(id: string, patch: Partial<SchedulerEvent>): boolean` | Update an event by id (shallow-merges the patch, then runs sanitize; returns false when not found) |
+| `removeEvent` | `removeEvent(id: string): boolean` | Remove an event by id; returns false when not found |
 
 #### Events
 

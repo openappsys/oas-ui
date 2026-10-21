@@ -252,7 +252,7 @@ onMounted(() => {
 
 | Method | Signature | Description |
 | --- | --- | --- |
-| `focus` | `focus(options?: FocusOptions): void` | label 点击聚焦委托：把焦点交给 shadow 内 button |
+| `focus` | `focus(options?: FocusOptions): void` | Label click focus delegation: forwards focus to the button inside the shadow root |
 
 #### Events
 

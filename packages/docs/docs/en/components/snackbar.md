@@ -167,7 +167,7 @@ onMounted(async () => {
 
 | Method | Signature | Description |
 | --- | --- | --- |
-| `requestDismiss` | `requestDismiss(): void` | 宿主外部触发的受控下屏：仅派发 oas-close，宿主负责移除 open（堆叠超限挤下与 Escape 关闭不经此方法，直接 dismiss） |
+| `requestDismiss` | `requestDismiss(): void` | Controlled dismissal triggered externally by the host: only dispatches oas-close and the host is responsible for removing open (stack-limit eviction and Escape close bypass this method and dismiss directly) |
 
 #### Events
 

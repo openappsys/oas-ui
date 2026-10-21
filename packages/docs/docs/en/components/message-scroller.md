@@ -569,11 +569,11 @@ The scroller owns anchoring/follow for normal conversations; for thousands of tu
 
 | Method | Signature | Description |
 | --- | --- | --- |
-| `announce` | `announce(text: string): void` | 向读屏播报一条状态（生成中 / 完成 / 停止 / 失败等）。 |
-| `scrollToEnd` | `scrollToEnd(opts?: { behavior?: ScrollBehavior }): void` | 滚到底部。behavior：'auto'（默认，瞬时）/ 'instant'（瞬时）/ 'smooth'（平滑）。 |
-| `scrollToStart` | `scrollToStart(opts?: { behavior?: ScrollBehavior }): void` | 滚到顶部（参数同 scrollToEnd） |
-| `scrollToMessage` | `scrollToMessage(id: string, opts?: { behavior?: ScrollBehavior }): boolean` | 滚到指定 message-id 的消息行顶部。命中返回 true；id 不存在返回 false 且不滚动 |
-| `scrollToLastAnchor` | `scrollToLastAnchor(opts?: { behavior?: ScrollBehavior }): boolean` | 滚到最后一个轮次锚点（`anchor` 标记行）顶部；无锚点返回 false |
+| `announce` | `announce(text: string): void` | Announce a status to screen readers (generating / complete / stopped / failed, etc.) |
+| `scrollToEnd` | `scrollToEnd(opts?: { behavior?: ScrollBehavior }): void` | Scroll to the bottom. behavior: 'auto' (default, instant) / 'instant' (instant) / 'smooth' (smooth) |
+| `scrollToStart` | `scrollToStart(opts?: { behavior?: ScrollBehavior }): void` | Scroll to the top (same options as scrollToEnd) |
+| `scrollToMessage` | `scrollToMessage(id: string, opts?: { behavior?: ScrollBehavior }): boolean` | Scroll the message row with the given message-id to the top. Returns true on a hit; returns false and does not scroll when the id does not exist |
+| `scrollToLastAnchor` | `scrollToLastAnchor(opts?: { behavior?: ScrollBehavior }): boolean` | Scroll to the top of the last turn anchor (the row marked with `anchor`); returns false when there is no anchor |
 
 #### Events
 

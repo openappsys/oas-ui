@@ -95,7 +95,7 @@ Font size is fixed at `--oas-font-size-lg` (16px) by default and does not follow
 
 | Method | Signature | Description |
 | --- | --- | --- |
-| `reset` | `reset(): void` | 命令式重置：倒计时回到 value 初值、正计时回到 start 初值重新计时； |
+| `reset` | `reset(): void` | Imperative reset: the countdown returns to the initial value and the count-up returns to the initial start, restarting the timer |
 
 #### Events
 

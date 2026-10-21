@@ -829,12 +829,12 @@ onMounted(() => {
 
 | Method | Signature | Description |
 | --- | --- | --- |
-| `getTriggerAnchor` | `getTriggerAnchor(): Element \| null` | 触发元素（能力 controller 绑定 touch 手势的目标；bind 解析后固定，同 anchor）。 |
-| `hasContextmenuTrigger` | `hasContextmenuTrigger(): boolean` | 右键/触屏长按手势门控：非 virtual / 非 disabled / trigger 含 contextmenu |
-| `openAtPoint` | `openAtPoint(x: number, y: number): void` | 以指针坐标（右键光标 / 触屏长按触点）为锚点打开面板：写入光标触点矩形（打开期间 |
-| `requestRefresh` | `requestRefresh(): void` | 请求宿主重算（contextmenu 能力包断点跨越 matchMedia change → 重解析 placement/size 生效值） |
-| `closeWith` | `closeWith(source: string): boolean` | P5 统一关闭入口（可取消）：派发 cancelable 的 oas-before-close（detail.source 标注来源）， |
-| `restoreFocus` | `restoreFocus(): void` | Esc 关闭后焦点还原到触发元素（公开：模块级 Esc 处理器与宿主均可调用）。 |
+| `getTriggerAnchor` | `getTriggerAnchor(): Element \| null` | Trigger element (the target the capability controller binds touch gestures to; fixed after bind resolves, same as anchor) |
+| `hasContextmenuTrigger` | `hasContextmenuTrigger(): boolean` | Right-click / touch long-press gesture gate: not virtual / not disabled / trigger includes contextmenu |
+| `openAtPoint` | `openAtPoint(x: number, y: number): void` | Open the panel anchored at pointer coordinates (right-click cursor / touch long-press point): writes the cursor/point rect and keeps it while open |
+| `requestRefresh` | `requestRefresh(): void` | Request a host recompute (when the contextmenu capability crosses a breakpoint on matchMedia change → re-resolve the effective placement/size) |
+| `closeWith` | `closeWith(source: string): boolean` | P5 unified close entry (cancelable): dispatches a cancelable oas-before-close (detail.source marks the source) |
+| `restoreFocus` | `restoreFocus(): void` | Restore focus to the trigger after an Esc close (public: callable by the module-level Esc handler and the host) |
 
 #### Events
 

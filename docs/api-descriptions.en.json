@@ -82,7 +82,10 @@
       "oas-change": "Fired on highlight change (both click and scroll-driven), `detail: { href, prevHref }`",
       "oas-click": "Fired when a user clicks an anchor item (separate from the scroll-driven `oas-change`, so hosts can react to user actions only; also fires for external-link `target` items), `detail: { href, item }`"
     },
-    "slots": {}
+    "slots": {},
+    "methods": {
+      "scrollTo": "Programmatic positioning (exposes scrollTo semantics); scroll-triggered highlight sync and events are handled by scroll spy automatically"
+    }
   },
   "oas-anchor-item": {
     "attrs": {
@@ -125,7 +128,10 @@
       "title": "Rich title channel (overrides the heading attribute)",
       "trailing": "Rightmost trailing custom area"
     },
-    "cssVars": {}
+    "cssVars": {},
+    "methods": {
+      "syncOverflow": "Recompute overflow: when the actions area is too narrow, overflowing items get data-collapsed, are hidden, and are mirrored into the \"...\" overlay"
+    }
   },
   "oas-aspect-ratio": {
     "attrs": {
@@ -209,6 +215,10 @@
       "fallback": "Custom placeholder content when the image fails to load (or the avatar has no content)",
       "icon": "Icon avatar (explicit icon content; no first-character truncation)",
       "trigger": "Custom content for the change-avatar overlay (shown on hover/focus; built-in camera icon by default)"
+    },
+    "methods": {
+      "openOverflow": "Open the collapsed overlay: clones all collapsed member avatars into a list and positions it (for the module-level Esc stack / internal calls)",
+      "closeOverflow": "Close the collapsed overlay; with refocus=true focus returns to the count button (Escape path, with a refocus exemption that prevents reopening)"
     }
   },
   "oas-avatar-group": {
@@ -570,6 +580,11 @@
     },
     "slots": {
       "": "Carousel slides"
+    },
+    "methods": {
+      "next": "Switch to the next slide",
+      "prev": "Switch to the previous slide",
+      "goTo": "Jump to the given slide (page index, zero-based)"
     }
   },
   "oas-cascader": {
@@ -612,6 +627,9 @@
     },
     "props": {
       "value": "Current value: the selected path array, or an array of selected paths when `multiple`"
+    },
+    "methods": {
+      "focus": "Label click focus delegation: forwards focus to the trigger inside the shadow root (works with the label click proxy in oas-form-item)"
     }
   },
   "oas-chart": {
@@ -693,6 +711,14 @@
     },
     "slots": {
       "": "Collapse panels (`oas-collapse-item`)"
+    },
+    "methods": {
+      "expandAll": "Expand all enabled panels (disabled ones are skipped); under accordion semantics only the first item expands. Imperative method that does not fire before-collapse",
+      "collapseAll": "Collapse all panels. Imperative method that ignores the no-collapse lock (the lock only constrains header clicks)",
+      "requestSync": "Called by an item in a microtask after it connects when the item upgrades after the container (define-order window): resyncs roving/disabled state",
+      "setRoving": "For container roving tabindex / keyboard navigation: whether the header button is Tab-focusable",
+      "focusHead": "For container roving keyboard navigation: focuses the header button",
+      "isDisabled": "Effective disabled state (explicit disabled attribute; a global disable injected by config-provider also applies)"
     }
   },
   "oas-collapse-item": {
@@ -749,6 +775,13 @@
     },
     "props": {
       "value": "Current value: the color string (read from the controlled `value` attribute)"
+    },
+    "methods": {
+      "refreshControls": "Host capability surface: redraws core controls (RGB/hex/clear, etc.) after the designer's active stop changes",
+      "commitColor": "Host capability surface: unified commit entry for designer sv/hue/stop dragging (solid-color commit / gradient edit of the active stop)",
+      "setColorValue": "Host capability surface: records a snapshot of the current solid edit color (synced after designer gradient edits so mode switches stay consistent)",
+      "colorValue": "Host capability surface: current solid edit color (the sv/hue baseline when the designer is not in gradient mode)",
+      "translateText": "Host capability surface: translates built-in copy (nearest config-provider / locale; same shape as the table capability)"
     }
   },
   "oas-combobox": {
@@ -895,6 +928,10 @@
     },
     "slots": {
       "": "Context menu content (items / groups)"
+    },
+    "methods": {
+      "show": "Open programmatically: shows the menu at arbitrary coordinates (table rows, canvas, selection context menus, and other cases detached from the host element)",
+      "close": "Close programmatically: for host el.close() calls (same path as closing from a right-click elsewhere / Esc / outside click / selection)"
     }
   },
   "oas-context-menu-divider": {
@@ -953,6 +990,9 @@
       "prefix": "Leading content (distributed content takes precedence over the `prefix` attribute text)",
       "suffix": "Trailing content (distributed content takes precedence over the `suffix` attribute text)",
       "title": "Heading above the value (distributed content takes precedence over the `title` attribute text)"
+    },
+    "methods": {
+      "reset": "Imperative reset: the countdown returns to the initial value and the count-up returns to the initial start, restarting the timer"
     }
   },
   "oas-date-picker": {
@@ -1097,6 +1137,10 @@
       "": "Drawer body content",
       "footer": "Footer action area",
       "header-actions": "Action area on the right of the title bar"
+    },
+    "methods": {
+      "close": "Programmatic close (imperative API handle / host-initiated): bypasses the before-close gate and starts the closing animation immediately",
+      "applyZ": "z-index computation: an explicit z-index attribute overrides the default overlay tier; nesting adds a stack-depth offset"
     }
   },
   "oas-dropdown": {
@@ -1390,6 +1434,15 @@
     },
     "slots": {
       "": "Form content (`oas-form-item` and friends)"
+    },
+    "methods": {
+      "reapplyInitialValues": "Writes initial-values for fields that appear only after the initial-value baseline is established (dynamic field containers such as oas-form-list)",
+      "getValues": "Public value getter: a snapshot of the current values for the whole form (nested structure), with the same shape as detail.values dispatched by submit()",
+      "validate": "Public validation entry: validates all fields and syncs error state (aria-invalid + error message), returning whether everything passed",
+      "submit": "Public submit entry: delegates to requestSubmit() on the internal form",
+      "reset": "Reset to the initial values (matching form-associated reset baseline semantics: restores initial values, clears validation errors, dispatches no events)",
+      "setError": "Validation error text sink (called by oas-form). An empty message removes the error state",
+      "refreshLayout": "Called by the parent oas-form when layout attributes change, to immediately refresh grid/label layout awareness"
     }
   },
   "oas-form-item": {
@@ -1549,6 +1602,11 @@
       "template[slot=\"placeholder\"]": "Custom loading placeholder content (gray block + text by default)",
       "template[slot=\"error\"]": "Custom error placeholder content (shared by the main image and gallery preview failures)",
       "template[slot=\"toolbar\"]": "Custom preview toolbar content: cloned into the overlay toolbar area, replacing the default button group (defaults remain when absent). Emits oas-toolbar-render on clone and on every open (detail { element, actions }); action commands: zoomIn/zoomOut/rotateLeft/rotateRight/flipX/flipY/download/close/prev/next (prev/next are no-ops in single-image mode)"
+    },
+    "methods": {
+      "previewGoTo": "Jump the gallery to item index (only while the preview is open; no-op when closed or there is no gallery, out-of-range values are clamped)",
+      "openPreview": "Open the shared preview: index is the gallery start index; when current is controlled, the attribute takes precedence",
+      "closePreview": "Close the shared preview (delegated to the shared host)"
     }
   },
   "oas-image-group": {
@@ -1629,6 +1687,11 @@
     },
     "props": {
       "value": "Current value: parser/mask-aware submitted-value semantics (`el.value` reads; `el.value = x` writes the controlled `value` and syncs the inner control, no event)"
+    },
+    "methods": {
+      "focus": "Label click focus delegation: forwards focus to the main input inside the shadow root (works with the label click proxy in oas-form-item)",
+      "blur": "Blur delegation: forwards blur to the main input inside the shadow root",
+      "select": "Select all input content (delegates to the native input.select)"
     }
   },
   "oas-input-number": {
@@ -1673,6 +1736,9 @@
     },
     "props": {
       "value": "Current value: the live-parsed numeric string (empty / invalid input yields an empty string)"
+    },
+    "methods": {
+      "focus": "Label click focus delegation: forwards focus to the main input inside the shadow root (works with the label click proxy in oas-form-item)"
     }
   },
   "oas-kbd": {
@@ -1732,6 +1798,11 @@
       "--oas-knob-body": "Knob body color",
       "--oas-knob-indicator": "Indicator (pointer line / dot) color",
       "--oas-knob-value-color": "show-value text color"
+    },
+    "methods": {
+      "reset": "Reset to the default value (default-value falls back to min) and dispatch oas-reset",
+      "stepUp": "Step up one increment by step (equivalent to the arrow keys)",
+      "stepDown": "Step down one increment by step (equivalent to the arrow keys)"
     }
   },
   "oas-label": {
@@ -1836,6 +1907,9 @@
       "header": "Header area (group titles, actions)",
       "load-more": "Tail \"load more\" area (button / loading placeholder)",
       "template[slot=\"item\"]": "Static skeleton cloned per data item, bound to data via oas-item-render"
+    },
+    "methods": {
+      "setData": "Data write (property channel). The public type stays `unknown[]` (accurate API docs), while at runtime JSON strings are tolerated through `parseJsonArray`"
     }
   },
   "oas-list-item": {
@@ -1880,7 +1954,10 @@
       "oas-require-more": "Fired once when scrolling enters the top/bottom threshold edge (not repeatedly while staying, re-arms after leaving), `detail: { from: \"top\" | \"bottom\" }`; for loading history/new entries",
       "oas-search": "Search filter report: fired when the keyword or the data changes (deduped for identical state), `detail: { keyword, matched, total }` (matched = matching line count, total = total lines; the filter window is the currently loaded lines)"
     },
-    "slots": {}
+    "slots": {},
+    "methods": {
+      "scrollTo": "Scroll the viewport: `'top'` goes to the top, `'bottom'` to the bottom, and a number is the pixel scrollTop"
+    }
   },
   "oas-marquee": {
     "attrs": {
@@ -1954,6 +2031,9 @@
     },
     "props": {
       "value": "Current value: the full text including @mention tokens"
+    },
+    "methods": {
+      "focus": "Label click focus delegation: forwards focus to the main input inside the shadow root (works with the label click proxy in oas-form-item)"
     }
   },
   "oas-menu": {
@@ -2101,7 +2181,13 @@
       "avatar": "Avatar slot (before the message text)",
       "content": "Rich body content slot"
     },
-    "cssVars": {}
+    "cssVars": {},
+    "methods": {
+      "refresh": "Imperative layer refresh entry: updates content/type/duration/merge count and resets the auto-close timer",
+      "close": "Close: dispatches oas-close (detail carries the key and source), then removes after the exit animation (removed immediately with reduced motion)",
+      "pause": "Pause the auto-close timer (remaining time is tracked; no-op when there is no timer)",
+      "resume": "Resume the auto-close timer (continues with the remaining time; closes immediately if already expired)"
+    }
   },
   "oas-modal": {
     "attrs": {
@@ -2157,6 +2243,11 @@
       "description": "Description text (shown below the title)",
       "footer": "Footer action area",
       "media": "Media region slot (icon / illustration / thumbnail); centered at the top of the body, rendered only when it has content (no placeholder when empty)"
+    },
+    "methods": {
+      "getModalCapability": "Get an injected capability controller by name (the imperative delegation point; returns null when the capability is not imported)",
+      "close": "Close request (confirm/cancel/✕/scrim/Esc/programmatic): intercepted by the cancelable oas-before-close",
+      "applyZ": "z-index computation: an explicit z-index attribute overrides the default modal tier (--oas-z-modal)"
     }
   },
   "oas-notification": {
@@ -2186,6 +2277,13 @@
     "cssVars": {
       "--oas-notification-progress-color": "Countdown progress bar color",
       "--oas-notification-width": "Card width (referenced internally by size levels)"
+    },
+    "methods": {
+      "close": "Unified close exit: dispatches oas-close (detail.source indicates the source), then removes",
+      "refresh": "Imperative update channel: refreshes title/description/rich content/footer (title/description are not observed attributes, so updates go through here)",
+      "transition": "Promise chain transition: switches the type and resets the auto-close timer (loading → success/error scenarios)",
+      "pause": "Hover pause: records the remaining time and pauses the progress animation (pause-on-hover channel; callable externally too)",
+      "resume": "Resume: continues the countdown and progress animation from the remaining time"
     }
   },
   "oas-navigation-menu": {
@@ -2207,6 +2305,9 @@
     },
     "slots": {
       "panel-footer": "Marketing slot at the bottom of the panel: `<div slot=\"panel-footer\">` (CTA cards etc.) renders a footer container inside the panel when it has content"
+    },
+    "methods": {
+      "syncOverflowCollapse": "Recompute top-level overflow: when the bar cannot fit, trailing top-level items get data-collapsed, are hidden, and are mirrored into the \"...\" overlay"
     }
   },
   "oas-navigation-menu-group": {
@@ -2273,7 +2374,10 @@
     "events": {
       "oas-finish": "Emitted once when the animation reaches the target, detail `{ value: target value }`"
     },
-    "slots": {}
+    "slots": {},
+    "methods": {
+      "play": "Manually replay one round: plays from from to the target; re-entrancy guard while playing (at most one oas-finish per round)"
+    }
   },
   "oas-option": {
     "attrs": {
@@ -2403,6 +2507,10 @@
     "slots": {},
     "props": {
       "value": "Current value: concatenated string of all cell characters; the property and the `value` attribute share one channel (the setter writes back the attribute and attribute changes sync to all cells), so it is reflected as an attribute"
+    },
+    "methods": {
+      "focus": "Component-level focus: `focus()` with no argument focuses the first empty cell (the last cell when all are filled); `focus(index)` focuses the given cell",
+      "blur": "Blur the currently active cell"
     }
   },
   "oas-popconfirm": {
@@ -2439,6 +2547,12 @@
       "actions": "Action buttons area (replaces the default confirm / cancel buttons)",
       "description": "Description text",
       "icon": "Custom icon (replaces the built-in one: a warning triangle for default / warning themes, a circled exclamation for danger)"
+    },
+    "methods": {
+      "show": "Open the popover (equivalent to the open attribute; oas-open-change reason='api')",
+      "hide": "Close the popover (equivalent to removing open; oas-open-change reason='api')",
+      "restoreFocus": "Restore focus to the trigger after closing (always; skipped in virtual mode with no anchor)",
+      "requestClose": "Close request: records the source → removes the open attribute (public for the module-level Esc stack; not a documented API)"
     }
   },
   "oas-popover": {
@@ -2501,6 +2615,14 @@
       "header": "Structured header slot",
       "": "Panel body content",
       "content": "Panel content (equivalent to the default slot; named for explicit use)"
+    },
+    "methods": {
+      "getTriggerAnchor": "Trigger element (the target the capability controller binds touch gestures to; fixed after bind resolves, same as anchor)",
+      "hasContextmenuTrigger": "Right-click / touch long-press gesture gate: not virtual / not disabled / trigger includes contextmenu",
+      "openAtPoint": "Open the panel anchored at pointer coordinates (right-click cursor / touch long-press point): writes the cursor/point rect and keeps it while open",
+      "requestRefresh": "Request a host recompute (when the contextmenu capability crosses a breakpoint on matchMedia change → re-resolve the effective placement/size)",
+      "closeWith": "P5 unified close entry (cancelable): dispatches a cancelable oas-before-close (detail.source marks the source)",
+      "restoreFocus": "Restore focus to the trigger after an Esc close (public: callable by the module-level Esc handler and the host)"
     }
   },
   "oas-progress": {
@@ -2569,6 +2691,9 @@
     },
     "slots": {
       "template[slot=\"status\"]": "Custom status overlay content (built-in overlays per state by default)"
+    },
+    "methods": {
+      "download": "Download the current QR code as PNG (off-screen rasterize: the SVG-only rendering architecture adds no persistent canvas)"
     }
   },
   "oas-barcode": {
@@ -2589,7 +2714,10 @@
     "events": {
       "oas-invalid": "Fired when invalid input renders the error placeholder, detail { reason }: `charset` (characters not allowed) / `length` (wrong digit count) / `checksum` (check digit mismatch); fires once per invalid input"
     },
-    "slots": {}
+    "slots": {},
+    "methods": {
+      "download": "Download the current barcode as PNG (off-screen rasterize: the SVG-only rendering architecture adds no persistent canvas)"
+    }
   },
   "oas-radio": {
     "attrs": {
@@ -2686,6 +2814,12 @@
     },
     "slots": {
       "": "Scrollable content"
+    },
+    "methods": {
+      "scrollTo": "Scroll to the given position, delegating to viewport.scrollTo (compatible with the native Element.scrollTo arguments)",
+      "scrollToTop": "Smooth/instant scroll to the top (keeps the horizontal position; smooth by default)",
+      "scrollToBottom": "Smooth/instant scroll to the bottom (keeps the horizontal position; smooth by default)",
+      "scrollIntoView": "Scroll an element inside the container into view, delegating to the target element's native scrollIntoView (the `options` argument is passed through)"
     }
   },
   "oas-scope-bar": {
@@ -2785,6 +2919,9 @@
     },
     "props": {
       "value": "Current value: the selected value string, or an array of selected values when `multiple` (equivalent to reading the `value` attribute)"
+    },
+    "methods": {
+      "focus": "Label click focus delegation: forwards focus to the trigger inside the shadow root (works with the label click proxy in oas-form-item)"
     }
   },
   "oas-sidebar": {
@@ -2829,6 +2966,10 @@
       "--oas-sidebar-badge-bg": "Badge background",
       "--oas-sidebar-badge-color": "Badge text color",
       "--oas-sidebar-avatar-color": "Default tint for leading avatars (soft background + ring); per-item avatarColor overrides it inline"
+    },
+    "methods": {
+      "openDrawer": "Public: programmatically open the mobile drawer, equivalent to clicking the built-in trigger button (`part=\"trigger\"`)",
+      "closeDrawer": "Public: programmatically close the mobile drawer, equivalent to clicking the scrim / close button / pressing Esc"
     }
   },
   "oas-sidebar-divider": {
@@ -2937,6 +3078,9 @@
     },
     "cssVars": {
       "--oas-slider-track-image": "Color-rail gradient image (written by the component for a `track` preset; the track pseudo-element's background-image, defaults to none for a solid rail color)"
+    },
+    "methods": {
+      "focus": "Label click focus delegation: forwards focus to the main slider inside the shadow root (works with the label click proxy in oas-form-item)"
     }
   },
   "oas-snackbar": {
@@ -2962,7 +3106,10 @@
     "slots": {
       "": "Notification content"
     },
-    "cssVars": {}
+    "cssVars": {},
+    "methods": {
+      "requestDismiss": "Controlled dismissal triggered externally by the host: only dispatches oas-close and the host is responsible for removing open (stack-limit eviction and Escape close bypass this method and dismiss directly)"
+    }
   },
   "oas-space": {
     "attrs": {
@@ -3141,6 +3288,9 @@
     },
     "cssVars": {
       "--oas-switch-on-color": "Label text color inside the on-track (when `color` overrides the track background, the component injects a dark/light text color by luminance; falls back to `var(--oas-color-bg)`)"
+    },
+    "methods": {
+      "focus": "Label click focus delegation: forwards focus to the button inside the shadow root"
     }
   },
   "oas-tab-panel": {
@@ -3228,6 +3378,17 @@
     "slots": {
       "template[slot=\"empty\"]": "Rich empty-state content (takes precedence over empty-text and the default empty text)",
       "template[slot=\"filter-icon\"]": "Custom filter trigger icon in filterable column headers"
+    },
+    "methods": {
+      "effectiveColumns": "Effective columns: filtered and ordered by column-keys (controlled visible set + order); falls back to all leaf columns when column-keys is absent (backward compatible)",
+      "getColumns": "All current column definitions (including group columns; a base table API readable by the capability controller / host)",
+      "translateText": "Translate built-in copy (nearest config-provider / locale; the capability controller and external custom templates look up text here)",
+      "paintCell": "Repaint the cell as regular display content: clears it and mounts cellNode (respecting rich content from render/cellTemplate)",
+      "notifyEdit": "Dispatch the edit result event (commit/cancel; detail is assembled by the edit capability). The event name is written as a literal here",
+      "setColumnOrder": "Update the column display order (writes back column-keys and re-renders; dispatches oas-column-order so the host can persist it)",
+      "setColumnWidth": "Update the given column width (writes back the matching width in columns and re-renders; dispatches oas-column-resize). When the property column definitions contain functions, updates the in-memory definition",
+      "exportMatrix": "Export matrix: headers (column title / headerTemplate text) + currently visible data rows",
+      "exportData": "Export and trigger a download: generate content → Blob download → dispatch `oas-export`"
     }
   },
   "oas-table-column": {
@@ -3301,6 +3462,11 @@
       "close-icon": "Close button icon content (closable tabs)",
       "add-icon": "Add button icon content (addable tabs)",
       "actions": "Action area fixed at the right of the tab bar, outside the scrollable tablist (after the + button when addable; no space when empty)"
+    },
+    "methods": {
+      "translateText": "Translate built-in copy (nearest config-provider / locale; the capability controller and external templates look up text here)",
+      "refreshTabs": "Refresh the tab bar (after a rename writes back label, rebuilds the tablist to restore structure; capability controller only)",
+      "notifyManager": "Dispatch the manager capability result event (add/close/rename/reorder; detail is assembled by the capability controller)"
     }
   },
   "oas-tag": {
@@ -3428,6 +3594,10 @@
     "slots": {},
     "props": {
       "value": "Current value: the inner textarea text (`el.value` reads; `el.value = x` writes the controlled `value` and syncs, no event)"
+    },
+    "methods": {
+      "focus": "Label click focus delegation: forwards focus to the main input inside the shadow root (works with the label click proxy in oas-form-item)",
+      "select": "Select text (delegates to the internal textarea)"
     }
   },
   "oas-theme-editor": {
@@ -3438,7 +3608,14 @@
     "events": {
       "oas-change": "Editing any token, `detail: { token, value }`"
     },
-    "slots": {}
+    "slots": {},
+    "methods": {
+      "exportJson": "Export the current token set as JSON (`{ '--oas-*': value }`, with live computed values)",
+      "exportCss": "Export the current token set as CSS text (`:root { --oas-*: value; ... }`, same source as exportJson)",
+      "importJson": "Apply a token set to the themeRoot: `{ '--oas-*': value }`; keys not starting with `--` are ignored with a dev warning",
+      "applyPreset": "Apply a built-in preset theme. Only size-family tokens are set (control-height / space); colors are untouched",
+      "reset": "Reset: clears the inline CSS variables this component wrote to the host and restores the default theme values"
+    }
   },
   "oas-time-picker": {
     "attrs": {
@@ -3567,7 +3744,12 @@
     "slots": {
       "title": "Rich title content slot; overrides the title attribute text when present"
     },
-    "cssVars": {}
+    "cssVars": {},
+    "methods": {
+      "close": "Close the current toast: dispatch oas-close → play the exit animation → remove → oas-destroy",
+      "transition": "Promise chain transition: switches the type and resets the auto-close timer. title accepts a string (attribute channel) or a Node",
+      "refresh": "Imperative update() data channel: incremental refresh of the whole card (content/type/duration/description/buttons) and resets the auto-close timer"
+    }
   },
   "oas-toggle-button": {
     "attrs": {
@@ -3674,6 +3856,10 @@
     "slots": {
       "": "Trigger element (hover/focus trigger); optional in `virtual` mode",
       "content": "Rich content (takes precedence over the `content` attribute text when present)"
+    },
+    "methods": {
+      "setOpen": "Trigger entry. Virtual mode (virtual) binds no host element and open is fully controlled externally",
+      "restoreFocus": "Restore focus to the trigger after an Esc close (public: callable by the module-level Esc handler). Skipped in virtual mode"
     }
   },
   "oas-toolbar": {
@@ -3689,6 +3875,10 @@
       "": "Toolbar controls: buttons / oas-button / toggle group / input / links / separators, etc.",
       "start": "Content at the front of the toolbar (rendered before the default content; participates in roving and overflow collapse)",
       "end": "Content at the tail of the toolbar (rendered after the default content; participates in roving and overflow collapse; semantically close to `data-toolbar-far`, prefer this slot for new code)"
+    },
+    "methods": {
+      "syncOverflow": "Recompute overflow: when the container is too narrow, overflowing items get data-collapsed, are hidden, and are mirrored into the \"...\" overlay",
+      "selectValue": "Trigger one selection by value (select in single mode / toggle in multiple mode) for external programmatic calls"
     }
   },
   "oas-toolbar-input": {
@@ -3889,6 +4079,13 @@
     },
     "props": {
       "load": "Lazy-load function (property channel, `(node) => Promise<children>`)"
+    },
+    "methods": {
+      "expandAll": "Expand all: expands every node that already has children (lazy-loading does not load unloaded nodes)",
+      "collapseAll": "Collapse all",
+      "expand": "Expand the given key set",
+      "collapse": "Collapse the given key set (including subtrees)",
+      "scrollTo": "Scroll to a node. By default its ancestor chain is expanded first; with options.expand=false the expansion state is left unchanged (the node must already be visible)"
     }
   },
   "oas-tree-select": {
@@ -3945,6 +4142,9 @@
     },
     "props": {
       "value": "Current value: a value for single; an array of values for multiple"
+    },
+    "methods": {
+      "focus": "Label click focus delegation: forwards focus to the trigger inside the shadow root (works with the label click proxy in oas-form-item)"
     }
   },
   "oas-upload": {
@@ -3994,6 +4194,11 @@
     "props": {
       "files": "Controlled file list (property channel; assigning re-renders)",
       "value": "Current value: the submittable `File[]` (file-body entries only; echo records without a body are excluded)"
+    },
+    "methods": {
+      "startUpload": "Upload entry: the real channel (action XHR / custom-request) is used per file; with no channel it falls back to simulated progress",
+      "submit": "Alias of the manual upload entry (matching the common \"submit\" mental model)",
+      "abort": "Cancel uploads: passing an entry cancels that one; omitting it cancels all in-flight uploads"
     }
   },
   "oas-virtual-list": {
@@ -4012,6 +4217,9 @@
     },
     "slots": {
       "template[slot=\"item\"]": "Static per-item template, cloned into each visible item container (optional)"
+    },
+    "methods": {
+      "scrollToIndex": "Scroll to the item at the given index (public contract for embedded consumers such as list/tree, without querying internal DOM)"
     }
   },
   "oas-visually-hidden": {
@@ -4110,6 +4318,16 @@
       "--oas-questionnaire-nav-gap": "Nav region button gap",
       "--oas-questionnaire-progress-bg": "Progress track background",
       "--oas-questionnaire-progress-bar-bg": "Progress fill color"
+    },
+    "methods": {
+      "next": "Next step: gated by single-step validation (blocked while the current step's oas-form has not passed; allowed with no form / validation=\"false\")",
+      "prev": "Previous step: no validation (following the convention that going back is never blocked by validation)",
+      "goto": "Jump directly to any step: skips single-step gating (separate from next() semantics); out-of-range values are clamped and hidden steps are resolved backwards",
+      "skipStep": "Skip the current optional step: advances without validation (before-change can still intercept)",
+      "validate": "Validate all participating steps (not hidden and not skipped; does not submit): dispatches oas-step-validate per step and returns whether all passed",
+      "submit": "Submit: re-validates all participating steps (including earlier ones) and dispatches oas-submit{values} only when everything passes (cross-step aggregation, participating steps only)",
+      "getValues": "Cross-step value aggregation (participating steps only, same criteria as validateAll): the values of each participating step (not hidden and not skipped)",
+      "reset": "Reset: every step's form resets to its initial values (clearing error state), value tracking and skip records are cleared, and current returns to 0"
     }
   },
   "oas-stepper": {
@@ -4150,7 +4368,15 @@
       "oas-finish": "Dispatched when finish() finalizes",
       "oas-start": "Dispatched when the first session of a batch calls start() (subsequent start() calls of a concurrent batch do not re-dispatch)"
     },
-    "slots": {}
+    "slots": {},
+    "methods": {
+      "start": "Start a loading session: increments the concurrency count; the first session starts progress and dispatches oas-start",
+      "finish": "Complete a session: decrements the concurrency count; only the last finish triggers the wrap-up",
+      "error": "Failure wrap-up: decrements the concurrency count; any error in the batch decides the final state",
+      "increment": "Advance progress by step manually (random 0–10 by default); clamped to 0–100",
+      "set": "Set progress precisely (clamped to 0–100)",
+      "decrement": "Roll progress back by step manually (random 0–10 by default); clamped to 0–100"
+    }
   },
   "oas-skeleton-item": {
     "attrs": {
@@ -4228,6 +4454,10 @@
     "cssVars": {},
     "props": {
       "value": "Current value: the swatch color identifier (i.e. the `color` attribute)"
+    },
+    "methods": {
+      "setGroupRole": "Group semantics hook (driven by oas-swatch-group: button→radio/checkbox + aria-checked)",
+      "syncSelected": "Sync the selected state from the group (including ARIA sync)"
     }
   },
   "oas-swatch-group": {
@@ -4325,6 +4555,13 @@
     "props": {
       "events": "Schedule events (`SchedulerEvent[]`): `el.events` reads (copy incl. auto ids); `el.events = [...]` writes (syncs the events attribute + re-renders + dispatches oas-events-change)",
       "resources": "Resources (`SchedulerResource[]`): `el.resources` reads (copy); `el.resources = [...]` writes (syncs the resources attribute + re-renders)"
+    },
+    "methods": {
+      "exportIcs": "Export the current events as an ICS string (instance convenience channel for the pure eventsToIcs function; does not trigger a re-render)",
+      "downloadIcs": "Download the current events as an ICS file (browser environment; returns the generated ICS string for tests / host reuse)",
+      "addEvent": "Add an event: returns the assigned id",
+      "updateEvent": "Update an event by id (shallow-merges the patch, then runs sanitize; returns false when not found)",
+      "removeEvent": "Remove an event by id; returns false when not found"
     }
   },
   "oas-gantt": {
@@ -4395,6 +4632,26 @@
       "--oas-gantt-critical-color": "Critical-path highlight color (default --oas-color-danger)",
       "--oas-gantt-conflict-color": "Conflict (negative-float) highlight color (default --oas-color-danger)",
       "--oas-gantt-deadline-color": "Deadline marker color (default --oas-color-danger)"
+    },
+    "methods": {
+      "updateTask": "Incrementally update a single task by id (shallow-merges the patch, then runs sanitize; returns false when the id is missing or the patch is invalid)",
+      "scrollToTask": "Scroll to the given task row (delegates to the internal viewport under virtual scrolling; the target row is centered vertically); no-op when not found",
+      "scrollToDate": "Scroll to the given date (centered horizontally); invalid dates are ignored. RTL uses the real browser negative scrollLeft model",
+      "scrollToToday": "Scroll to today",
+      "undo": "Undo the most recent task data commit; returns whether anything was actually undone",
+      "redo": "Redo the most recent undo; returns whether anything was actually redone",
+      "clearHistory": "Clear the undo/redo history (current tasks are unchanged)",
+      "removeTasks": "Delete tasks in bulk (including their descendants); missing ids are ignored",
+      "addTask": "Add a task (imperative authoring channel): returns the new task id; invalid input returns '' (no changes, no events)",
+      "moveTask": "Move a task to position index under the given parent (opts.parent omitted keeps the current parent; null moves it to the root level)",
+      "duplicateTask": "Duplicate a task and all its descendants (deep copy, new ids, parent pointers remapped to the new ids), inserted right after the original subtree, returning the new root id",
+      "addDependency": "Add a dependency (successor taskId depends on dep.id): type defaults to fs; the optional lag (days, may be negative) is omitted by default (equivalent to 0)",
+      "removeDependency": "Remove a dependency: when dep.type is given only that (id,type) is removed; otherwise all types for that id are removed. Returns false when not found",
+      "updateDependency": "Rewrite a dependency: returns false when from is not found, to.id does not exist or points to itself, or nothing actually changes (including lag)",
+      "updateTasks": "Shallow-merge in bulk (per item: skip when the id does not exist; skip the item when a non-empty end fails to parse; otherwise run sanitize per item)",
+      "zoomIn": "Step one level finer (writes the scale attribute; existing callbacks dispatch oas-scale-change); no-op at the finest level",
+      "zoomOut": "Step one level coarser; no-op at the coarsest level",
+      "fit": "Zoom to fit all tasks: picks the **finest** level where \"columns for the span in that unit × the minimum column width at that level ≤ available width\""
     }
   },
   "oas-picker": {
@@ -4469,6 +4726,13 @@
     "slots": {
       "": "Message rows (oas-message-row / oas-marker etc.; the anchor / message-id attributes on rows are scroller cooperation markers)",
       "button": "Custom jump-to-bottom button content (replaces the built-in arrow glyph; visibility and click remain component-owned; default is the built-in part=button)"
+    },
+    "methods": {
+      "announce": "Announce a status to screen readers (generating / complete / stopped / failed, etc.)",
+      "scrollToEnd": "Scroll to the bottom. behavior: 'auto' (default, instant) / 'instant' (instant) / 'smooth' (smooth)",
+      "scrollToStart": "Scroll to the top (same options as scrollToEnd)",
+      "scrollToMessage": "Scroll the message row with the given message-id to the top. Returns true on a hit; returns false and does not scroll when the id does not exist",
+      "scrollToLastAnchor": "Scroll to the top of the last turn anchor (the row marked with `anchor`); returns false when there is no anchor"
     }
   },
   "oas-marker": {
@@ -4695,6 +4959,9 @@
       "": "Collapsible body content",
       "header": "Rich trigger content slot, overrides the header attribute text",
       "template[slot=\"toggle\"]": "Custom toggle icon template (built-in arrow by default)"
+    },
+    "methods": {
+      "isDisabled": "Effective disabled state (explicit disabled attribute; a global disable injected by config-provider also applies)"
     }
   },
   "oas-attachment-group": {
@@ -4741,6 +5008,9 @@
     "props": {
       "resources": "Resources (JSON [{ id, name, capacity?, workdays?, holidays?, capacityOverrides?, skills? }]). `workdays` uses 0=Sunday…6=Saturday; `[]` means fully unavailable. When `workdays` is absent and `holidays` / `capacityOverrides` are empty, capacity = parallel tasks per period (legacy); otherwise period capacity is the sum of daily capacity, non-empty `capacityOverrides` wins over `workdays` / `holidays`, and may be fractional while task load is counted in whole days (a 0.5 day cannot hold a whole-day task); empty `holidays` / `capacityOverrides` count as absent. `skills` is a skill-tag array. A resource may carry an optional `color` (CSS color or token, e.g. `var(--oas-color-success)`) used to tint its lane bars and load bars; when absent the unified `--oas-resource-bar-bg` / `--oas-resource-load-bg` applies; property read is a copy: nested plain objects/arrays are deep-cloned — cycle-safe; shared references stay shared within a single read result; Date is copied by value (not shared); exotic objects such as class instances/Set are shared by reference; writing syncs the attribute + re-renders; if a custom key is not serializable, only that key is dropped from the attribute while the property readback stays complete",
       "tasks": "Resource tasks (JSON [{ id, name, start, end, resources?, priority?, requiredSkills?, project? }]); start/end are day precision YYYY-MM-DD only (end inclusive; time-bearing input is treated as that day), resources is the assigned resource id array (assignments to unknown resources are ignored). priority: lower is more important; requiredSkills: every reassign target must have all tags; project works with levelResources({ projectOrder }) for cross-project priority; property read is a copy: nested plain objects/arrays are deep-cloned — cycle-safe; shared references stay shared within a single read result; Date is copied by value (not shared); exotic objects such as class instances/Set are shared by reference; writing syncs the attribute + re-renders + dispatches oas-tasks-change"
+    },
+    "methods": {
+      "scrollToDate": "Scroll to the given date (centered horizontally in the timeline viewport, excluding the sticky resource column width); invalid dates or no data are no-ops. RTL uses the negative scrollLeft model (as in gantt)"
     }
   },
   "oas-prompt-input": {

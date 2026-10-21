@@ -261,9 +261,9 @@ onMounted(async () => {
 
 | Method | Signature | Description |
 | --- | --- | --- |
-| `close` | `close(trigger: ToastCloseTrigger): void` | 关闭当前 toast：派发 oas-close → 播放离场动画 → 移除 → oas-destroy |
-| `transition` | `transition(type: ToastType, title: string \| Node, duration: unknown): void` | promise 链流转：切换类型并重置自动关闭计时器。title 支持 string（属性通道）或 |
-| `refresh` | `refresh(options: ToastRefreshOptions): void` | 命令式 update() 数据通道：整卡增量刷新（内容/类型/时长/描述/按钮），并重置自动关闭计时 |
+| `close` | `close(trigger: ToastCloseTrigger): void` | Close the current toast: dispatch oas-close → play the exit animation → remove → oas-destroy |
+| `transition` | `transition(type: ToastType, title: string \| Node, duration: unknown): void` | Promise chain transition: switches the type and resets the auto-close timer. title accepts a string (attribute channel) or a Node |
+| `refresh` | `refresh(options: ToastRefreshOptions): void` | Imperative update() data channel: incremental refresh of the whole card (content/type/duration/description/buttons) and resets the auto-close timer |
 
 #### Events
 
