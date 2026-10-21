@@ -51,7 +51,7 @@
 - **`oas-chart` 默认配色扩到 8 色循环**：原调色板只有 primary/success/warning/danger 四色，第 5 个分类/系列回落到首色（饼图 5 段时首尾同色，语义混淆）。现追加 purple/cyan/magenta/geekblue（走 preset text token，含暗色变体），超过 8 个才回绕；`options.colors` 覆盖语义不变。
 - **`oas-chart` 首/末 x 轴标签贴边裁切**：折线/面积图端点标签居中绘制时，半宽越过 viewBox 左右界被裁切（1:1 设计宽度下末位标签明显缺字）。现在仅在真正越过 viewBox 时改为向内对齐（首 `start` / 末 `end`），并按各标签自身宽度剔除会与端点相撞的相邻标签；未越界时柱状/组合/堆叠标签仍与柱组中心对齐，不被推离。同步收紧拉丁大写/宽字形（M/W/大写/数字）的宽度估算，减少宽字体叠字与旋转裁切。旋转标签按投影抽稀的路径不变。
 - **`@oas-ui/theme` 声明 `color-scheme`**：基础/高对比主题 `light`，暗色主题 `dark`。此前暗色下原生控件（checkbox/radio/滚动条等）仍按浅色绘制出现白块，宿主需自行补 `color-scheme: dark`。
-- **`oas-sidebar` 折叠态保留有头像的菜单项**：原先折叠时仅保留有 `icon` 的项，只有行首头像（成员行）的项被整体隐藏；现在有 `avatar` / `avatarText` 的项在图标条内保留头像（`avatarColor` 单独无内容仍隐藏），保留项带 label tooltip（`expand-on-hover` 悬停已展开文字时不叠 tooltip）；有头像的树形父项同样走 flyout（子项可达、父项不派发 `select`），无图标也无头像的项仍隐藏。
+- **`oas-sidebar` 折叠态保留有头像的菜单项**：原先折叠时仅保留有 `icon` 的项，只有行首头像（成员行）的项被整体隐藏；现在有 `avatar` / `avatarText` 的项在图标条内保留头像（`avatarColor` 单独无内容仍隐藏），保留项带 label tooltip（`expand-on-hover` 悬停用展开文字、不叠 hover tooltip，键盘 focus 仍弹 label）；有头像的树形父项同样走 flyout（子项可达、父项不派发 `select`），无图标也无头像的项仍隐藏。
 - **`oas-sidebar` 桌面 RTL 面板移出宿主**：RTL 抽屉的 `translateX(100%)` 规则未限定移动态，桌面 RTL 下整个 `.panel` 被平移到宿主外（展开/折叠都不可见）。现仅在 `[data-mobile]` 抽屉态应用该镜像位移，桌面 RTL 保持流内布局。
 - **`oas-scheduler` 重叠定时事件按车道并排**：周/日视图同一时段多个定时事件原先完全叠印（文字互相覆盖）。现按贪心车道分配在聚簇内等宽并排（2px 间隙、逻辑属性 RTL 镜像），不重叠事件仍占满整列；拖拽移动/缩放交互不变。
 

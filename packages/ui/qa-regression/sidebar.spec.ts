@@ -620,3 +620,32 @@ test('sidebar 桌面 RTL：展开与折叠态面板都在宿主范围内', async
   expect(r.collapsed.hostW, '折叠态宿主确实收窄（不是被内联宽度撑住）').toBeLessThan(120)
   expect(r.collapsed.hostW).toBeLessThan(r.expanded.hostW)
 })
+
+// expand-on-hover：悬停靠 CSS 展开出 label，键盘 focus 不触发展开，必须仍能弹出 tooltip
+test('sidebar expand-on-hover：键盘 focus 折叠项仍弹出 label tooltip', async ({ page }) => {
+  await page.goto('/components/sidebar.html', { waitUntil: 'domcontentloaded' })
+  await page.waitForFunction(() => !!customElements.get('oas-sidebar'))
+  const r = await page.evaluate(async () => {
+    const el = document.createElement('oas-sidebar')
+    el.setAttribute('collapsed', '')
+    el.setAttribute('expand-on-hover', '')
+    el.setAttribute(
+      'items',
+      JSON.stringify([
+        { label: '张伟', value: 'u1', avatarText: '张' },
+        { label: '收件箱', value: 'inbox', icon: 'star' },
+      ]),
+    )
+    document.body.appendChild(el)
+    await new Promise((res) => requestAnimationFrame(() => requestAnimationFrame(() => res(null))))
+    const row = el.shadowRoot!.querySelector<HTMLElement>('[data-value="u1"]')!
+    row.focus()
+    await new Promise((res) => setTimeout(res, 400))
+    const tip = el.shadowRoot!.querySelector('oas-tooltip[content="张伟"]')
+    const out = { trigger: tip?.getAttribute('trigger') ?? '', open: !!tip?.hasAttribute('open') }
+    el.remove()
+    return out
+  })
+  expect(r.trigger, 'expand-on-hover 下 tooltip 只保留 focus 通道').toBe('focus')
+  expect(r.open, '键盘 focus 应打开 label tooltip').toBe(true)
+})

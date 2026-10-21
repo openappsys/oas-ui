@@ -1051,7 +1051,7 @@ describe('OASSidebar 能力补齐批（嵌套/徽标/操作/分隔线/骨架/快
     expect(tip.querySelector('[part="item"]')).not.toBeNull()
   })
 
-  it('expand-on-hover：折叠图标条悬停临时展开的 CSS 规则存在；悬停展开时不再重复弹 tooltip', () => {
+  it('expand-on-hover：折叠图标条悬停临时展开的 CSS 规则存在；hover 不重复弹 tooltip，focus 保留', () => {
     stubMatchMedia(false)
     const el = mount({
       'expand-on-hover': '',
@@ -1064,7 +1064,10 @@ describe('OASSidebar 能力补齐批（嵌套/徽标/操作/分隔线/骨架/快
     const css = el.shadowRoot!.querySelector('style')!.textContent!
     expect(css).toMatch(/\[expand-on-hover\]:hover[^}]*width:\s*var\(--oas-sidebar-width/)
     expect(css).toMatch(/\[expand-on-hover\]:hover[^}]*\.item \.label[^}]*display:\s*inline/)
-    expect(el.shadowRoot!.querySelector('oas-tooltip'), '悬停展开已有 label，不再叠 tooltip').toBeNull()
+    const tips = [...el.shadowRoot!.querySelectorAll('oas-tooltip')]
+    expect(tips.length, '折叠态每项仍有 tooltip 载体').toBe(2)
+    for (const tip of tips)
+      expect(tip.getAttribute('trigger'), '只保留 focus 通道，避免 hover 与展开文字重复').toBe('focus')
   })
 
   it('side=right：移动抽屉从右侧滑入（CSS 规则存在）', () => {

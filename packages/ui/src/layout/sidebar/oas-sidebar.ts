@@ -1326,13 +1326,15 @@ export class OASSidebar extends OASElement {
       // 键盘：Enter/Space 经 button 原生 click 已覆盖；Esc 在组级 keydown（bind 时挂）
       return block
     }
-    // 折叠态：图标项/头像项包 tooltip（label 提示，placement=right）；
-    // expand-on-hover 悬停会展开出 label，再弹 tooltip 会重复遮挡
+    // 折叠态：图标项/头像项包 tooltip（label 提示，placement=right）。
+    // expand-on-hover 悬停会展开出 label，hover 不再弹 tooltip；但键盘 focus 不会触发展开，
+    // 因此保留 focus 通道（trigger=focus），避免键盘用户只剩一个无文字图标。
     let out: HTMLElement = btn
-    if (collapsed && (item.icon || hasAvatar) && !hasChildren && !this.hasAttr('expand-on-hover')) {
+    if (collapsed && (item.icon || hasAvatar) && !hasChildren) {
       const tip = document.createElement('oas-tooltip')
       tip.setAttribute('content', item.label)
       tip.setAttribute('placement', 'right')
+      if (this.hasAttr('expand-on-hover')) tip.setAttribute('trigger', 'focus')
       tip.appendChild(btn)
       out = tip as unknown as HTMLElement
     }

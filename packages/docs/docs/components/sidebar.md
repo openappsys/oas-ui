@@ -19,7 +19,7 @@
 
 ## 折叠
 
-点击底部「«」按钮切换 `collapsed`（受控属性，派发 `oas-collapse`）；折叠态只显示图标或行首头像，无 icon 且无头像的菜单项自动隐藏。有 `avatar` / `avatarText` 的叶子项保留头像并带 label tooltip（`expand-on-hover` 悬停时已展开出文字，不再叠 tooltip）；有头像的树形父项同样用 flyout 展示子项（`avatarColor` 单独无文字/图不产生可视内容，仍隐藏）。`hide-toggle` 可隐藏该按钮（宿主 opt-out，如静态侧栏场景）；此时若 `slot="header"` 为空，头部整体塌陷（不再保留 12px 上下留白）——移动抽屉打开时因关闭按钮仍需要容器，头部保留。
+点击底部「«」按钮切换 `collapsed`（受控属性，派发 `oas-collapse`）；折叠态只显示图标或行首头像，无 icon 且无头像的菜单项自动隐藏。有 `avatar` / `avatarText` 的叶子项保留头像并带 label tooltip（`expand-on-hover` 悬停时已展开出文字，不叠 hover tooltip；键盘 focus 仍弹 label）；有头像的树形父项同样用 flyout 展示子项（`avatarColor` 单独无文字/图不产生可视内容，仍隐藏）。`hide-toggle` 可隐藏该按钮（宿主 opt-out，如静态侧栏场景）；此时若 `slot="header"` 为空，头部整体塌陷（不再保留 12px 上下留白）——移动抽屉打开时因关闭按钮仍需要容器，头部保留。
 
 **折叠态嵌套子菜单走 flyout 浮层**：树形父项在折叠态渲染为图标项（或行首头像项），点击（或悬停延迟）弹出子菜单面板——面板锚定父项 inline-end（RTL 镜像到左）、碰撞避让、叶子项点击派发 `oas-select` 并关面板，嵌套子树在面板内内联展开；Esc 关闭并回焦父项、点击外部关闭、单开互斥。注意（契约变更）：折叠态父项点击只开 flyout，**不再派发父项自身的 `oas-select`**（父项不是可导航页面）——若此前依赖折叠态父项的 `oas-select` 做导航，请改监听 flyout 内叶子项的 `oas-select`。
 
