@@ -675,6 +675,12 @@ button.loading-with-text .spinner {
     transform: rotate(360deg);
   }
 }
+/* 降低动态：loading 环停止旋转，保留静态圆环作为加载指示 */
+@media (prefers-reduced-motion: reduce) {
+  .spinner {
+    animation: none;
+  }
+}
 /* ===== 触控目标抬升（仅 coarse pointer 命中）：按钮最小高度抬到 --oas-touch-target-min。
    min-height 大于各档固定 height 时按 min-height 取值（xs 20px / md 32px 等被抬到 44px，
    已 ≥44px 的档如 xl 不变）；icon-only / circle 经 aspect-ratio 同步放宽到 44×44。
