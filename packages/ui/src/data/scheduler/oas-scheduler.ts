@@ -148,6 +148,23 @@ const STYLE = `
   opacity: 0.85;
   z-index: 3;
 }
+.band-span .span-resize {
+  position: absolute;
+  inset-block: 0;
+  inset-inline-end: 0;
+  width: 8px;
+  cursor: ew-resize;
+}
+.band-span .span-resize::after {
+  content: '';
+  position: absolute;
+  inset-block: 5px;
+  inset-inline-end: 2px;
+  width: 2px;
+  border-radius: 1px;
+  background: var(--chip-color, var(--oas-color-primary));
+  opacity: 0.7;
+}
 .band-col {
   border-inline-end: 1px solid var(--oas-color-border);
   border-bottom: 1px solid var(--oas-color-border);
@@ -239,12 +256,41 @@ const STYLE = `
 .timeview .event[draggable='true']:hover {
   background: color-mix(in srgb, var(--chip-color, var(--oas-color-primary)) 30%, transparent);
 }
-.timeview .event .resize {
+.timeview .event .resize,
+.timeview .event .resize-start {
   position: absolute;
   inset-inline: 0;
-  bottom: 0;
   height: 7px;
   cursor: ns-resize;
+}
+.timeview .event .resize {
+  bottom: 0;
+}
+.timeview .event .resize-start {
+  top: 0;
+}
+.timeview .event .resize::after,
+.timeview .event .resize-start::after {
+  content: '';
+  position: absolute;
+  inset-inline: 38%;
+  height: 2px;
+  border-radius: 1px;
+  background: currentColor;
+  opacity: 0.35;
+  pointer-events: none;
+}
+.timeview .event .resize::after {
+  bottom: 2px;
+}
+.timeview .event .resize-start::after {
+  top: 2px;
+}
+.timeview .event:hover .resize::after,
+.timeview .event:hover .resize-start::after,
+.timeview .event:focus-within .resize::after,
+.timeview .event:focus-within .resize-start::after {
+  opacity: 0.7;
 }
 .timeview .col.drop {
   outline: 2px dashed var(--oas-color-primary);
@@ -608,6 +654,9 @@ const STYLE = `
   .header > .today,
   .header > [part='prev'],
   .header > [part='next'],
+  .span-resize,
+  .resize,
+  .resize-start,
   .create-preview {
     display: none !important;
   }
@@ -1170,12 +1219,15 @@ export class OASScheduler extends OASElement {
   private lastView = ''
   private dragCtx: {
     id: string
-    mode: 'move' | 'resize'
+    mode: 'move' | 'resize' | 'resize-start'
     originStart: number
     originEnd: number
+    newStart?: string
     newEnd?: string
   } | null = null
   private dropCol: HTMLElement | null = null
+  /** 单步撤销快照：仅记录 updateEvent 前的事件数组；重叠事件仍按车道并存，不视为冲突 */
+  private undoBefore: Array<SchedulerEvent & { id: string }> | null = null
   private createCtx: {
     mode: 'v' | 'h'
     iso: string
@@ -1209,7 +1261,10 @@ export class OASScheduler extends OASElement {
     return this._events.map((e) => ({ ...e, repeat: e.repeat ? { ...e.repeat } : undefined }))
   }
   set events(v: SchedulerEvent[]) {
-    this._events = this.normalizeWithIds(sanitizeEvents(parseJsonArray<SchedulerEvent>(v as unknown)))
+    const next = this.normalizeWithIds(sanitizeEvents(parseJsonArray<SchedulerEvent>(v as unknown)))
+    // 受控宿主常把 oas-events-change 的 events 原样写回：相等时保留撤销快照
+    if (JSON.stringify(next) !== JSON.stringify(this._events)) this.undoBefore = null
+    this._events = next
     this._eventsAttrCache = JSON.stringify(this._events)
     this.setAttribute('events', this._eventsAttrCache)
     this.update()
@@ -1253,22 +1308,62 @@ export class OASScheduler extends OASElement {
 
   /** 新增事件：返回分配到的 id */
   addEvent(ev: SchedulerEvent): string {
+    if (!this.validDateRange(ev.date, ev.endDate)) return ''
     const [item] = this.normalizeWithIds(sanitizeEvents([ev]), true)
-    if (!item) return ''
+    if (!item || !this.validDateRange(item.date, item.endDate) || !this.validTimeRange(item)) return ''
     this._events = [...this._events, item]
+    this.undoBefore = null
     this.syncEventsAttr()
     this.emitEventsChange()
     return item.id
   }
 
-  /** 按 id 更新事件（浅合并 patch 后走 sanitize 清洗；找不到返回 false） */
+  /**
+   * @apiProperty 是否有可撤销的单步事件变更（只读；配合 undo()）
+   */
+  get canUndo(): boolean {
+    return this.undoBefore !== null
+  }
+
+  /** 同日定时事件必须 end > start；跨日事件由 endDate 表达，允许 end 早于 start */
+  private validTimeRange(ev: SchedulerEvent): boolean {
+    if (!ev.start || !ev.end) return true
+    const start = parseTime(ev.start)
+    const end = parseTime(ev.end)
+    if (start === null || end === null) return true
+    if (ev.endDate && ev.endDate !== ev.date) return true
+    return end > start
+  }
+
+  /** endDate 合法且不早于 date */
+  private validDateRange(date: string | undefined, endDate: string | undefined): boolean {
+    if (endDate === undefined || endDate === '') return true
+    const end = parseISODate(endDate)
+    if (!end) return false
+    const start = typeof date === 'string' ? parseISODate(date) : null
+    return !start || end >= start
+  }
+
+  /** patch 不能把 endDate 写成非法日期，也不能让 date 落到既有 endDate 之后 */
+  private validDatePatch(base: SchedulerEvent, patch: Partial<SchedulerEvent>): boolean {
+    const date = typeof patch.date === 'string' ? patch.date : base.date
+    const endDate = 'endDate' in patch ? patch.endDate : base.endDate
+    return this.validDateRange(date, endDate)
+  }
+
+  /** 按 id 更新事件（浅合并 patch 后走 sanitize 清洗；找不到或时间区间非法返回 false） */
   updateEvent(id: string, patch: Partial<SchedulerEvent>): boolean {
     const idx = this._events.findIndex((e) => e.id === id)
     if (idx < 0) return false
+    if (!this.validDatePatch(this._events[idx]!, patch)) return false
     const merged = { ...this._events[idx]!, ...patch, id }
     const [clean] = sanitizeEvents([merged])
     if (!clean) return false
     ;(clean as SchedulerEvent & { id: string }).id = id
+    // 只有改到时间字段才重校验区间：已载入的非法旧数据不能冻结标题等无关更新
+    const touchesTime = 'start' in patch || 'end' in patch || 'endDate' in patch || 'date' in patch
+    if (touchesTime && !this.validTimeRange(clean)) return false
+    this.undoBefore = this._events.map((item) => ({ ...item }))
     this._events = [
       ...this._events.slice(0, idx),
       clean as SchedulerEvent & { id: string },
@@ -1279,11 +1374,22 @@ export class OASScheduler extends OASElement {
     return true
   }
 
+  /** 撤销最近一次 updateEvent（单步）；无可撤销变更时返回 false */
+  undo(): boolean {
+    if (!this.undoBefore) return false
+    this._events = this.undoBefore
+    this.undoBefore = null
+    this.syncEventsAttr()
+    this.emitEventsChange()
+    return true
+  }
+
   /** 按 id 删除事件；找不到返回 false */
   removeEvent(id: string): boolean {
     const idx = this._events.findIndex((e) => e.id === id)
     if (idx < 0) return false
     this._events = [...this._events.slice(0, idx), ...this._events.slice(idx + 1)]
+    this.undoBefore = null
     this.syncEventsAttr()
     this.emitEventsChange()
     return true
@@ -1341,7 +1447,10 @@ export class OASScheduler extends OASElement {
     } catch {
       parsed = []
     }
-    this._events = this.normalizeWithIds(sanitizeEvents(parsed))
+    const next = this.normalizeWithIds(sanitizeEvents(parsed))
+    // 受控回写与当前数据相同：不清撤销快照
+    if (JSON.stringify(next) !== JSON.stringify(this._events)) this.undoBefore = null
+    this._events = next
   }
 
   private syncResources(): void {
@@ -2171,11 +2280,14 @@ export class OASScheduler extends OASElement {
       track.addEventListener('pointermove', (e) => this.onTrackPointerMove(track, iso, e))
       track.addEventListener('pointerup', () => this.onTrackPointerUp())
       track.addEventListener('pointercancel', () => {
+        const previewing = this.dragCtx?.mode === 'resize' || this.dragCtx?.mode === 'resize-start'
         this.dragCtx = null
         this.createCtx = null
         document.removeEventListener('keydown', this.onCreateEsc)
         this.clearCreatePreview()
         this.setDropCol(null)
+        // 取消缩放时恢复指针移动阶段改过的 top/height 预览
+        if (previewing) this.update()
       })
       col.appendChild(track)
       cols.appendChild(col)
@@ -2185,6 +2297,8 @@ export class OASScheduler extends OASElement {
     spanLayer.className = 'band-span-layer'
     const firstIso = toISODate(days[0]!)
     const lastIso = toISODate(days[days.length - 1]!)
+    // 跨日条按占用列区间贪心分配行，重叠的条上下分层，避免末日手柄被上层条盖住
+    const spanRows: number[] = []
     for (const ev of this._events) {
       if (!ev.endDate || ev.repeat) continue
       const start = ev.date < firstIso ? firstIso : ev.date
@@ -2194,6 +2308,10 @@ export class OASScheduler extends OASElement {
       let endIdx = days.findIndex((d) => toISODate(d) > end)
       if (endIdx < 0) endIdx = days.length
       if (startIdx < 0 || endIdx <= startIdx) continue
+      const row = spanRows.findIndex((end) => end <= startIdx)
+      if (row < 0) spanRows.push(endIdx)
+      else spanRows[row] = endIdx
+      const lane = row < 0 ? spanRows.length - 1 : row
       const bar = document.createElement('button')
       bar.type = 'button'
       bar.className = ev.start ? 'band-span timed-span' : 'band-span'
@@ -2204,19 +2322,58 @@ export class OASScheduler extends OASElement {
       if (ev.color) bar.style.setProperty('--chip-color', ev.color)
       bar.style.insetInlineStart = `${(startIdx / days.length) * 100}%`
       bar.style.width = `${((endIdx - startIdx) / days.length) * 100}%`
+      bar.style.top = `${lane * 22}px`
       bar.addEventListener('click', (e) => {
         e.stopPropagation()
         this.emit('event-click', { id: ev.id, event: { ...ev } } satisfies SchedulerEventClickDetail)
       })
-      bar.setAttribute('aria-keyshortcuts', 'ArrowLeft ArrowRight')
+      bar.setAttribute('aria-keyshortcuts', 'ArrowLeft ArrowRight Alt+ArrowLeft Alt+ArrowRight')
       bar.addEventListener('keydown', (e) => {
         if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return
         e.preventDefault()
         e.stopPropagation()
         const dir = isRtl(this) ? -1 : 1
         const step = e.key === 'ArrowRight' ? dir : -dir
-        this.shiftSpanByDays(ev, step)
+        if (e.altKey) this.resizeSpanEndByDays(ev, step)
+        else this.shiftSpanByDays(ev, step)
       })
+      // 终点拖拽手柄：只改 endDate，不移动 date；Alt+方向键提供等价键盘路径
+      const endHandle = document.createElement('span')
+      endHandle.className = 'span-resize'
+      endHandle.setAttribute('aria-hidden', 'true')
+      endHandle.addEventListener('pointerdown', (e) => {
+        if (e.button !== 0) return
+        e.stopPropagation()
+        e.preventDefault()
+        const startX = e.clientX
+        const colW = band.clientWidth / days.length
+        if (!(colW > 0)) return
+        const baseWidth = bar.getBoundingClientRect().width
+        let delta = 0
+        endHandle.setPointerCapture(e.pointerId)
+        bar.classList.add('dragging')
+        const move = (me: PointerEvent): void => {
+          if (me.pointerId !== e.pointerId) return
+          delta = Math.round((me.clientX - startX) / colW) * (isRtl(this) ? -1 : 1)
+          bar.style.width = `${Math.max(colW, baseWidth + delta * colW)}px`
+        }
+        const cleanup = (): void => {
+          endHandle.removeEventListener('pointermove', move)
+          endHandle.removeEventListener('pointerup', finish)
+          endHandle.removeEventListener('pointercancel', cancel)
+          bar.classList.remove('dragging')
+          bar.style.width = ''
+        }
+        const finish = (): void => {
+          cleanup()
+          if (delta !== 0) this.resizeSpanEndByDays(ev, delta)
+        }
+        const cancel = (): void => cleanup()
+        endHandle.addEventListener('pointermove', move)
+        endHandle.addEventListener('pointerup', finish)
+        endHandle.addEventListener('pointercancel', cancel)
+      })
+      bar.appendChild(endHandle)
       // 跨日连续条拖拽整体平移（按列宽吸附到天）
       let dragX: number | null = null
       let lastDelta = 0
@@ -2251,7 +2408,19 @@ export class OASScheduler extends OASElement {
       })
       spanLayer.appendChild(bar)
     }
-    if (spanLayer.childElementCount > 0) band.appendChild(spanLayer)
+    if (spanLayer.childElementCount > 0) {
+      const bandTop = band.getBoundingClientRect().top
+      const heads = [...band.querySelectorAll<HTMLElement>('.band-col .col-head')]
+      const allDays = [...band.querySelectorAll<HTMLElement>('.band-col .allday')]
+      const hasChips = allDays.some((el) => el.childElementCount > 0)
+      const anchor = hasChips ? allDays : heads
+      const contentTop =
+        anchor.length > 0 ? Math.max(...anchor.map((el) => el.getBoundingClientRect().bottom)) - bandTop + 2 : 26
+      spanLayer.style.top = `${Math.max(26, Math.round(contentTop))}px`
+      spanLayer.style.height = `${spanRows.length * 22}px`
+      band.style.minHeight = `${Math.max(26, Math.round(contentTop)) + spanRows.length * 22 + 2}px`
+      band.appendChild(spanLayer)
+    }
     tv.appendChild(cols)
     this.restoreFocus(focusId)
   }
@@ -2276,6 +2445,36 @@ export class OASScheduler extends OASElement {
       if (nextDate !== toISODate(this.viewDate)) this.viewDate = startOfDay(next)
     }
     this.updateEvent(current.id, { date: nextDate, endDate: shift(current.endDate) })
+  }
+
+  /** 跨日条终点缩放：只改 endDate，保持 date/start/end；定时跨日至少保留 2 天 */
+  private resizeSpanEndByDays(ev: SchedulerEvent & { id: string }, delta: number): void {
+    if (delta === 0) return
+    const current = this._events.find((item) => item.id === ev.id) ?? ev
+    if (!current.endDate) return
+    const start = parseISODate(current.date)
+    const end = parseISODate(current.endDate)
+    if (!start || !end) return
+    const next = new Date(end.getFullYear(), end.getMonth(), end.getDate() + delta)
+    const timedSpan = Boolean(current.start)
+    const minEnd = new Date(start.getFullYear(), start.getMonth(), start.getDate() + (timedSpan ? 1 : 0))
+    if (next < minEnd) return
+    const nextEnd = toISODate(next)
+    this.followSpanEnd(nextEnd)
+    // 全天条缩到单日时清空 endDate，回到常规全天芯片；定时条最少保留次日端点
+    this.updateEvent(current.id, { endDate: !timedSpan && nextEnd === current.date ? undefined : nextEnd })
+  }
+
+  /** 终点缩到可视范围之前时跟随视图，避免条卸载后键盘焦点丢到 body */
+  private followSpanEnd(iso: string): void {
+    const d = parseISODate(iso)
+    if (!d) return
+    if (this.viewMode === 'week') {
+      const weekStart = this.weekStartOf(this.viewDate)
+      if (d < weekStart) this.viewDate = startOfDay(d)
+    } else if (this.viewMode === 'day' && iso < toISODate(this.viewDate)) {
+      this.viewDate = startOfDay(d)
+    }
   }
 
   private setDropCol(col: HTMLElement | null): void {
@@ -2334,7 +2533,15 @@ export class OASScheduler extends OASElement {
       this.dragCtx = null
       this.setDropCol(null)
     })
-    // 底缘缩放手柄：pointer 拖拽改 end
+    // 顶缘缩放手柄：pointer 拖拽改 start；底缘改 end
+    const startGrip = document.createElement('span')
+    startGrip.className = 'resize-start'
+    startGrip.addEventListener('pointerdown', (evt) => {
+      evt.stopPropagation()
+      evt.preventDefault()
+      this.dragCtx = { id: ev.id, mode: 'resize-start', originStart: s, originEnd: e }
+      ;(evt.currentTarget as HTMLElement).setPointerCapture(evt.pointerId)
+    })
     const grip = document.createElement('span')
     grip.className = 'resize'
     grip.addEventListener('pointerdown', (evt) => {
@@ -2344,6 +2551,8 @@ export class OASScheduler extends OASElement {
       ;(evt.currentTarget as HTMLElement).setPointerCapture(evt.pointerId)
       // 记在 track 的 pointermove/up 上结算（手柄本身即目标，捕获后事件流同样落在其祖先 track）
     })
+    // 矮块（15–25 分钟或贴底裁剪）不叠顶缘手柄，给中部保留可拖拽/点击区域
+    if (height >= 24) el.appendChild(startGrip)
     el.appendChild(grip)
     return el
   }
@@ -2379,15 +2588,28 @@ export class OASScheduler extends OASElement {
       return
     }
     const ctx = this.dragCtx
-    if (!ctx || ctx.mode !== 'resize') return
+    if (!ctx || (ctx.mode !== 'resize' && ctx.mode !== 'resize-start')) return
     const hourH = 48
     const rect = track.getBoundingClientRect()
     const startH = this.startHourValue()
+    const block = track.querySelector<HTMLElement>(`.event[data-id="${ctx.id}"]`)
+    if (ctx.mode === 'resize-start') {
+      let start = startH * 60 + ((e.clientY - rect.top) / hourH) * 60
+      start = Math.round(start / 15) * 15
+      const maxStart = Math.floor((ctx.originEnd - 15) / 15) * 15
+      start = Math.max(startH * 60, Math.min(start, maxStart))
+      ctx.newStart = `${String(Math.floor(start / 60)).padStart(2, '0')}:${String(start % 60).padStart(2, '0')}`
+      if (block) {
+        block.style.top = `${((start - startH * 60) / 60) * hourH}px`
+        block.style.height = `${Math.max(((ctx.originEnd - start) / 60) * hourH, 16)}px`
+      }
+      return
+    }
     let end = startH * 60 + ((e.clientY - rect.top) / hourH) * 60
     end = Math.round(end / 15) * 15
-    end = Math.max(ctx.originStart + 15, Math.min(end, 24 * 60))
+    const minEnd = Math.min(24 * 60, Math.ceil((ctx.originStart + 15) / 15) * 15)
+    end = Math.max(minEnd, Math.min(end, 24 * 60))
     ctx.newEnd = `${String(Math.floor(end / 60)).padStart(2, '0')}:${String(end % 60).padStart(2, '0')}`
-    const block = track.querySelector<HTMLElement>(`.event[data-id="${ctx.id}"]`)
     if (block) block.style.height = `${Math.max(((end - ctx.originStart) / 60) * hourH, 16)}px`
   }
 
@@ -2396,8 +2618,15 @@ export class OASScheduler extends OASElement {
     if (this.finishCreate()) return
     const ctx = this.dragCtx
     this.dragCtx = null
-    if (!ctx || ctx.mode !== 'resize' || !ctx.newEnd) return
-    this.updateEvent(ctx.id, { end: ctx.newEnd })
+    if (!ctx) return
+    const current = this._events.find((item) => item.id === ctx.id)
+    if (ctx.mode === 'resize-start' && ctx.newStart) {
+      if (current?.start !== ctx.newStart) this.updateEvent(ctx.id, { start: ctx.newStart })
+      return
+    }
+    if (ctx.mode === 'resize' && ctx.newEnd && current?.end !== ctx.newEnd) {
+      this.updateEvent(ctx.id, { end: ctx.newEnd })
+    }
   }
 
   /** 当前时刻分钟数（时区感知；无时区走本地） */

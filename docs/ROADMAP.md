@@ -10,6 +10,7 @@
 | **sidebar 行内容** | `renderLabel` property 函数通道，Node/字符串/null 三态，富内容不反射 attribute/SSR | 🚧 待发布 |
 | **barcode 扩展码制** | GS1-128 / UPC-E / Codabar / MSI；保留原 6 码制与 `format` 回退 | 🚧 待发布 |
 | **scheduler 跨日连续条与重复扩展** | 周视图全天连续条 + 横向拖动；`byMonth` / `byMonthDay` / `bySetPos` / `exDates`；ICS `EXDATE` / `VALARM` / 区间过滤 | 🚧 待发布 |
+| **scheduler 跨日终点缩放 + 起止编辑 + 单步撤销** | 末端手柄/`Alt+←→` 只改 `endDate`，重叠条分层；时间块顶缘改 `start`（15 分钟吸附）；同日非法区间拒绝；`canUndo` / `undo()` | 🚧 待发布 |
 | **gantt 项目分组与偏差徽标** | `project` + `group-by-project` 合成项目根摘要；`show-variance` 行名偏差徽标 | 🚧 待发布 |
 | **resource 利用率与日历交换** | `computeUtilization` / `suggestAssignments` / `exportResourceCalendars` / `importResourceCalendars` | 🚧 待发布 |
 | **scheduler 资源分组与第二时区** | `resources[].group` 分组标题行 + `secondary-timezone` 第二时区刻度 | 🚧 待发布 |

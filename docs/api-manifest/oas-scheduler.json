@@ -108,6 +108,11 @@
       "type": "SchedulerResource[]",
       "default": "[]",
       "api": true
+    },
+    {
+      "name": "canUndo",
+      "type": "boolean",
+      "api": true
     }
   ],
   "methods": [
@@ -129,7 +134,12 @@
     {
       "name": "updateEvent",
       "signature": "updateEvent(id: string, patch: Partial<SchedulerEvent>): boolean",
-      "description": "按 id 更新事件（浅合并 patch 后走 sanitize 清洗；找不到返回 false）"
+      "description": "按 id 更新事件（浅合并 patch 后走 sanitize 清洗；找不到或时间区间非法返回 false）"
+    },
+    {
+      "name": "undo",
+      "signature": "undo(): boolean",
+      "description": "撤销最近一次 updateEvent（单步）；无可撤销变更时返回 false"
     },
     {
       "name": "removeEvent",

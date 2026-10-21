@@ -49,7 +49,7 @@ test('scheduler 浏览器回归：月/周/agenda 视图渲染与切换 + console
 
   // 键盘可达：聚焦连续条后左右方向键按天平移
   const keyboardBar = span.locator('.band-span', { hasText: '回归窗口' })
-  await expect(keyboardBar).toHaveAttribute('aria-keyshortcuts', 'ArrowLeft ArrowRight')
+  await expect(keyboardBar).toHaveAttribute('aria-keyshortcuts', 'ArrowLeft ArrowRight Alt+ArrowLeft Alt+ArrowRight')
   await keyboardBar.focus()
   await page.keyboard.press('ArrowRight')
   await expect
@@ -134,6 +134,134 @@ test('scheduler RTL 连续条方向键按视觉方向镜像', async ({ page }) =
       ),
     )
     .toMatchObject({ date: '2026-08-12', endDate: '2026-08-13' })
+  // RTL 下 Alt+ArrowLeft 是视觉向左 = 终点向后扩一天
+  await page.keyboard.press('Alt+ArrowLeft')
+  await expect
+    .poll(() =>
+      span.evaluate((el) =>
+        (el as unknown as { events: Array<{ title: string; date: string; endDate?: string }> }).events.find(
+          (item) => item.title === '回归窗口',
+        ),
+      ),
+    )
+    .toMatchObject({ date: '2026-08-12', endDate: '2026-08-14' })
+})
+
+test('scheduler 跨日条终点缩放只改 endDate，可单步撤销', async ({ page }) => {
+  const errors: string[] = []
+  page.on('pageerror', (e) => errors.push(e.message))
+  page.on('console', (m) => {
+    if (m.type() === 'error') errors.push(m.text())
+  })
+  await page.goto('/components/scheduler.html', { waitUntil: 'domcontentloaded' })
+  await page.waitForSelector('#scheduler-span', { timeout: 15000 })
+  const span = page.locator('#scheduler-span')
+  await span.evaluate((el) =>
+    (el as unknown as { addEvent: (ev: Record<string, string>) => string }).addEvent({
+      date: '2026-08-10',
+      title: '单日全天',
+    }),
+  )
+  const chip = span.locator('.band-col[data-date="2026-08-10"] .allday .chip', { hasText: '单日全天' })
+  await expect(chip).toBeVisible()
+  const bar = span.locator('.band-span', { hasText: '设计冻结' })
+  await bar.scrollIntoViewIfNeeded()
+  const chipBox = await chip.boundingBox()
+  const barBox = await bar.boundingBox()
+  if (!chipBox || !barBox) throw new Error('chip/bar bounding box missing')
+  expect(chipBox.y + chipBox.height, '跨日条不应盖住同周单日全天芯片').toBeLessThanOrEqual(barBox.y + 1)
+  const barTops = await span
+    .locator('.band-span')
+    .evaluateAll((els) => els.map((el) => Math.round(el.getBoundingClientRect().top)))
+  expect(new Set(barTops).size, '重叠的跨日条应上下分层，避免末端手柄被盖住').toBeGreaterThan(1)
+  const bandBox = await span.locator('.band').boundingBox()
+  const handleBox = await bar.locator('.span-resize').boundingBox()
+  if (!bandBox || !handleBox) throw new Error('band/handle bounding box missing')
+  const colW = bandBox.width / 7
+  // 末端手柄真实拖拽：只拉长 endDate，不移动 date
+  await page.mouse.move(handleBox.x + handleBox.width / 2, handleBox.y + handleBox.height / 2)
+  await page.mouse.down()
+  await page.mouse.move(handleBox.x + handleBox.width / 2 + colW, handleBox.y + handleBox.height / 2, {
+    steps: 4,
+  })
+  await page.mouse.up()
+  await expect
+    .poll(() =>
+      span.evaluate((el) =>
+        (el as unknown as { events: Array<{ title: string; date: string; endDate?: string }> }).events.find(
+          (item) => item.title === '设计冻结',
+        ),
+      ),
+    )
+    .toMatchObject({ date: '2026-08-10', endDate: '2026-08-13' })
+  expect(await span.evaluate((el) => (el as unknown as { canUndo: boolean }).canUndo)).toBe(true)
+  await span.evaluate((el) => (el as unknown as { undo: () => boolean }).undo())
+  await expect
+    .poll(() =>
+      span.evaluate((el) =>
+        (el as unknown as { events: Array<{ title: string; date: string; endDate?: string }> }).events.find(
+          (item) => item.title === '设计冻结',
+        ),
+      ),
+    )
+    .toMatchObject({ date: '2026-08-10', endDate: '2026-08-12' })
+  // Alt+方向键等价路径
+  await bar.focus()
+  await page.keyboard.press('Alt+ArrowRight')
+  await expect
+    .poll(() =>
+      span.evaluate((el) =>
+        (el as unknown as { events: Array<{ title: string; date: string; endDate?: string }> }).events.find(
+          (item) => item.title === '设计冻结',
+        ),
+      ),
+    )
+    .toMatchObject({ date: '2026-08-10', endDate: '2026-08-13' })
+  expect(
+    await span.evaluate((el) => (el as unknown as { canUndo: boolean }).canUndo),
+    '跨日缩放后应有单步撤销快照',
+  ).toBe(true)
+  await span.evaluate((el) => (el as unknown as { undo: () => boolean }).undo())
+  await expect
+    .poll(() =>
+      span.evaluate((el) =>
+        (el as unknown as { events: Array<{ title: string; date: string; endDate?: string }> }).events.find(
+          (item) => item.title === '设计冻结',
+        ),
+      ),
+    )
+    .toMatchObject({ date: '2026-08-10', endDate: '2026-08-12' })
+  expect(await span.evaluate((el) => (el as unknown as { canUndo: boolean }).canUndo)).toBe(false)
+  expect(errors).toEqual([])
+})
+
+test('scheduler 时间块顶缘拖拽改 start，底缘仍改 end', async ({ page }) => {
+  const errors: string[] = []
+  page.on('pageerror', (e) => errors.push(e.message))
+  page.on('console', (m) => {
+    if (m.type() === 'error') errors.push(m.text())
+  })
+  await page.goto('/components/scheduler.html', { waitUntil: 'domcontentloaded' })
+  await page.waitForSelector('#scheduler-week', { timeout: 15000 })
+  const week = page.locator('#scheduler-week')
+  const event = week.locator('.col[data-date="2026-08-10"] .event[data-id]').first()
+  await event.scrollIntoViewIfNeeded()
+  const box = await event.boundingBox()
+  if (!box) throw new Error('event bounding box missing')
+  await page.mouse.move(box.x + box.width / 2, box.y + 3)
+  await page.mouse.down()
+  await page.mouse.move(box.x + box.width / 2, box.y - 24, { steps: 4 })
+  await page.mouse.up()
+  await expect
+    .poll(() =>
+      week.evaluate((el) =>
+        (el as unknown as { events: Array<{ title: string; start?: string; end?: string }> }).events.find(
+          (item) => item.title === '晨会',
+        ),
+      ),
+    )
+    .toMatchObject({ start: '08:30', end: '10:00' })
+  expect(errors).toEqual([])
 })
 
 test('scheduler 范围托管：range-start/end 未覆盖时派发 oas-range-request', async ({ page }) => {

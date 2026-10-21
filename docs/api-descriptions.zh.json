@@ -4316,7 +4316,7 @@
       "oas-create": "在时间格空白处拖出 >=15 分钟区间时派发，detail: { date, start, end, resource? }——组件不自动建事件，宿主接后自行 addEvent；位移不足视作 oas-day-click",
       "oas-day-click": "点击空白日格时派发，detail: { date, resource? }（资源视图带资源行 id）——宿主接新增表单",
       "oas-event-click": "点击事件芯片时派发，detail: { id, event }（不触发日格点击）",
-      "oas-events-change": "events 数据变化（set/addEvent/updateEvent/removeEvent）时派发，detail: { events }",
+      "oas-events-change": "events 数据变化（set/addEvent/updateEvent/removeEvent/undo）时派发，detail: { events }",
       "oas-view-change": "视图切换（month/week/day/agenda）时派发，detail: { view }；属性首次吸收不派发",
       "oas-remind": "事件提醒到点时派发，detail: { id, event }（start - remind 分钟，组件内置定时器）",
       "oas-window-request": "windowed 模式下可视资源行窗口未被已装载切片覆盖时派发，detail: { start, end, reason }（绝对行号、半开区间；同一窗口不重复派发）",
@@ -4324,7 +4324,11 @@
     },
     "props": {
       "events": "日程事件（`SchedulerEvent[]`）：`el.events` 读（含自动 id 的拷贝）；`el.events = [...]` 写（同步 events 属性 + 重渲染 + 派发 oas-events-change）",
-      "resources": "资源列表（`SchedulerResource[]`）：`el.resources` 读（拷贝）；`el.resources = [...]` 写（同步 resources 属性 + 重渲染）"
+      "resources": "资源列表（`SchedulerResource[]`）：`el.resources` 读（拷贝）；`el.resources = [...]` 写（同步 resources 属性 + 重渲染）",
+      "canUndo": "是否有可撤销的单步事件变更（只读；配合 `undo()`）"
+    },
+    "methods": {
+      "undo": "撤销最近一次 updateEvent（含拖拽移动、时间块双缘缩放、跨日条终点缩放）；无快照返回 false，成功回写并派发 oas-events-change"
     }
   },
   "oas-gantt": {

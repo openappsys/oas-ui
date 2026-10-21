@@ -22,7 +22,7 @@ Month-view scheduling component: renders event chips (title + color bar) inside 
   <oas-scheduler id="scheduler-day" view="day" page-show-date="2026-08-10" events='[{"date":"2026-08-10","title":"Standup","start":"09:00","end":"10:00"},{"date":"2026-08-10","title":"Interview","start":"09:30","end":"10:30"},{"date":"2026-08-10","title":"Review","start":"14:00","end":"15:30"}]'></oas-scheduler>
 </DemoBlock>
 
-Week/day views show a time axis (`start-hour` / `end-hour`, default 8–20): events with `start`/`end` are positioned as blocks by time; untimed events go to the all-day row on top; **time-overlapping events are automatically split into side-by-side lanes** (equal width within a cluster, with gaps, no more complete overlap); events earlier than `start-hour` or later than `end-hour` are clipped to the range, so blocks never leave the track or cover the column header; switching views via the header buttons dispatches `oas-view-change`. Event blocks support **drag-to-move** (drop on a target column/time to change `date` + `start`, keeping duration) and **bottom-edge drag-resize** (change `end` in 15-minute steps), written back with `oas-events-change` on settle.
+Week/day views show a time axis (`start-hour` / `end-hour`, default 8–20): events with `start`/`end` are positioned as blocks by time; untimed events go to the all-day row on top; **time-overlapping events are automatically split into side-by-side lanes** (equal width within a cluster, with gaps, no more complete overlap); events earlier than `start-hour` or later than `end-hour` are clipped to the range, so blocks never leave the track or cover the column header; switching views via the header buttons dispatches `oas-view-change`. Event blocks support **drag-to-move** (drop on a target column/time to change `date` + `start`, keeping duration) and **two-edge drag-resize** (top edge changes `start`, bottom edge changes `end`, both in 15-minute steps); dragging the top edge past the end clamps it to `end - 15` minutes, written back with `oas-events-change` on settle. Overlapping events still coexist in lanes and are not treated as conflicts; only an invalid same-day range with `start >= end` is rejected.
 
 ## Recurrence & Reminders
 
@@ -37,7 +37,9 @@ Monthly/weekly rules may also use `byMonth` (1-12), `byMonthDay` (1-31), `bySetP
   <oas-scheduler view="week" page-show-date="2026-08-10" events='[{"date":"2026-08-10","endDate":"2026-08-12","title":"Design freeze"},{"date":"2026-08-13","endDate":"2026-08-14","title":"Regression window","color":"#059669"},{"date":"2026-08-12","endDate":"2026-08-13","title":"Night shift","start":"22:00","end":"02:00"}]'></oas-scheduler>
 </DemoBlock>
 
-In week view, an all-day event with `endDate` renders as one continuous bar in the all-day band (instead of one chip per day). Drag the bar horizontally to shift `date` / `endDate` by whole columns; the component dispatches `oas-events-change`. When the bar is focused, `←` / `→` shifts it by one day (mirrored in RTL); if it leaves the current week the view follows, so the bar is not unmounted under focus. Timed multi-day events also render as one continuous bar in the top multi-day band, with a `start–end` time label; the day time grid no longer duplicates per-day blocks.
+In week view, an all-day event with `endDate` renders as one continuous bar in the all-day band (instead of one chip per day); overlapping bars are stacked into rows so the end handle is not covered by a bar above. Drag the bar horizontally to shift `date` / `endDate` by whole columns; the component dispatches `oas-events-change`. Drag the bar's end handle to change only `endDate` (keeping `date` / `start` / `end`); when the bar is focused, `Alt+←` / `Alt+→` resizes the end by one day (mirrored in RTL), while plain `←` / `→` still shifts the whole bar. Timed multi-day bars keep at least two days (next-day end); when shrunk before the visible week the view follows, and an all-day bar shrunk to one day returns to a regular all-day chip. If it leaves the current week the view follows, so the bar is not unmounted under focus. Timed multi-day events also render as one continuous bar in the top multi-day band, with a `start–end` time label; the day time grid no longer duplicates per-day blocks.
+
+Each `updateEvent` (including drag/resize) keeps the previous snapshot: use `el.canUndo` to check whether a change can be reverted and `el.undo()` to revert the latest one, which dispatches `oas-events-change`. Replacing `events` or calling add/remove clears the snapshot so undo never crosses external data changes.
 
 <DemoBlock title="Reminders (remind minutes; oas-remind when due)">
   <oas-scheduler id="scheduler-remind" page-show-date="2026-08-10"></oas-scheduler>
@@ -311,6 +313,7 @@ el.downloadIcs('my.ics', { timeMode: 'utc', timezone: 'Asia/Shanghai' })
 
 | Property | Description | Type | Default |
 | --- | --- | --- | --- |
+| `canUndo` | Whether a single-step event change can be undone (read-only; use with `undo()`) | `boolean` | — |
 | `events` | Schedule events (`SchedulerEvent[]`): `el.events` reads (copy incl. auto ids); `el.events = [...]` writes (syncs the events attribute + re-renders + dispatches oas-events-change) | `SchedulerEvent[]` | `[]` |
 | `resources` | Resources (`SchedulerResource[]`): `el.resources` reads (copy); `el.resources = [...]` writes (syncs the resources attribute + re-renders) | `SchedulerResource[]` | `[]` |
 
@@ -321,7 +324,8 @@ el.downloadIcs('my.ics', { timeMode: 'utc', timezone: 'Asia/Shanghai' })
 | `exportIcs` | `exportIcs(options?: IcsExportOptions): string` | Export the current events as an ICS string (instance convenience channel for the pure eventsToIcs function; does not trigger a re-render) |
 | `downloadIcs` | `downloadIcs(filename: unknown, options?: IcsExportOptions): string` | Download the current events as an ICS file (browser environment; returns the generated ICS string for tests / host reuse) |
 | `addEvent` | `addEvent(ev: SchedulerEvent): string` | Add an event: returns the assigned id |
-| `updateEvent` | `updateEvent(id: string, patch: Partial<SchedulerEvent>): boolean` | Update an event by id (shallow-merges the patch, then runs sanitize; returns false when not found) |
+| `updateEvent` | `updateEvent(id: string, patch: Partial<SchedulerEvent>): boolean` | Update an event by id (shallow-merges the patch, then runs sanitize; returns false when not found or when a same-day range has start >= end) |
+| `undo` | `undo(): boolean` | Undo the most recent updateEvent (including drag-move, two-edge time resize, and multi-day end resize); returns false when there is no snapshot, otherwise writes back and dispatches oas-events-change |
 | `removeEvent` | `removeEvent(id: string): boolean` | Remove an event by id; returns false when not found |
 
 #### Events
@@ -331,7 +335,7 @@ el.downloadIcs('my.ics', { timeMode: 'utc', timezone: 'Asia/Shanghai' })
 | `oas-create` | Dispatched when an empty time cell is dragged out to a range of >=15 minutes, detail: { date, start, end, resource? } — the component does not create the event; the host calls addEvent. A shorter drag is treated as oas-day-click |
 | `oas-day-click` | Dispatched when an empty day cell is clicked, detail: { date, resource? } (resource row id in resource views) — host attaches an add form |
 | `oas-event-click` | Dispatched when an event chip is clicked, detail: { id, event } (does not trigger the day click) |
-| `oas-events-change` | Dispatched on any events change (set/addEvent/updateEvent/removeEvent), detail: { events } |
+| `oas-events-change` | Dispatched on any events change (set/addEvent/updateEvent/removeEvent/undo), detail: { events } |
 | `oas-range-request` | Host-managed date window: emitted when the visible range is not covered by range-start/range-end; detail: { startMs, endMs, reason }; no-op without range-* |
 | `oas-remind` | Dispatched when an event reminder is due, detail: { id, event } (fires at start - remind minutes via built-in timers) |
 | `oas-view-change` | Dispatched on view switch (month/week/day/agenda), detail: { view }; not dispatched on initial attribute absorption |

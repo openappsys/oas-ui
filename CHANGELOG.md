@@ -33,6 +33,7 @@
 - **`oas-gantt` 内建撤销/重做（opt-in）**：新增 `history` 属性与 `undo()` / `redo()` / `canUndo` / `canRedo` / `clearHistory()`，最多 100 步；覆盖任务更新/增删/移动/复制/依赖变更与拖拽提交，外部整体重写 `tasks` 或关闭属性清空历史；新增 `oas-history-change` 事件。
 - **`oas-resource` 热力图与技能矩阵**：新增 `heatmap`（低/中/高/超载热力格 + 图例 + 每格 title）与 `skill-matrix`（行=资源、列=技能并集）opt-in 视图，并补充 `resource.heat*` i18n 文案。
 - **`oas-scheduler` 定时跨日连续条**：周视图定时跨日事件改在顶部跨日带渲染一条连续条（带 `开始–结束` 时间标签），不再按日拆块；拖动或键盘 `←`/`→` 平移保留 `start/end` 时刻（RTL 下方向镜像），移出当前周时视图跟随。补充宿主日期窗口取数 recipe。
+- **`oas-scheduler` 跨日终点缩放、起止时刻编辑与单步撤销**：跨日连续条新增末端手柄（只改 `endDate`，保持 `date`/`start`/`end`）与 `Alt+←`/`Alt+→` 键盘缩放（RTL 按视觉方向镜像），重叠的条自动上下分层、末端手柄不被上层条盖住；时间块新增顶缘手柄改 `start`，与既有底缘改 `end` 一样按 15 分钟吸附，顶缘越过结束点钳制到 15 分钟网格内的 `end - 15` 分钟。定时跨日条最少保留 2 天，全天条缩到单日后回到芯片；缩出可视周时视图跟随。同日 `start >= end` 的非法区间拒绝写入；重叠事件仍按车道并存，不视为冲突。`updateEvent` 保留单步快照，新增 `el.canUndo` / `el.undo()`；整体 set/add/remove 清空快照，受控宿主原样回写相同 events 时保留。
 - **`oas-scheduler` 日期窗口托管**：新增 `range-start` / `range-end` 与 `oas-range-request`；当前视图可见日期范围未被宿主范围覆盖时派发，支持月/周/日/agenda 与资源视图。
 - **`oas-gantt` 逐资源日历/班次**：新增 `resources` 属性与 `GanttTask.resources`，多资源工作日交集/假期并集驱动 `auto-schedule`；新增 `group-by-resource` 资源泳道（按首个资源分组，多资源任务不重复），`hour` 档按首个带班次资源的 `shifts` 吸附起点（班次外自动落到下一班次；多资源班次交集待后续）。
 - **`oas-prompt-input`（conversation 族）**：新增提示词输入组件——多行自增高、Enter 提交/Shift+Enter 换行、loading 发送/停止、建议项、禁用/只读/长度、prefix/actions/footer 插槽，事件 `oas-submit` / `oas-stop` / `oas-suggestion-select`。

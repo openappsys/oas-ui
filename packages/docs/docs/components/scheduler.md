@@ -22,7 +22,7 @@
   <oas-scheduler id="scheduler-day" view="day" page-show-date="2026-08-10" events='[{"date":"2026-08-10","title":"晨会","start":"09:00","end":"10:00"},{"date":"2026-08-10","title":"面试","start":"09:30","end":"10:30"},{"date":"2026-08-10","title":"评审","start":"14:00","end":"15:30"}]'></oas-scheduler>
 </DemoBlock>
 
-周/日视图为时刻表（`start-hour` / `end-hour` 限幅，默认 8–20 点）：带 `start`/`end` 的事件按时间绝对定位成块，无 `start` 的事件进顶部全天行；**时间重叠的事件自动按车道并排**（聚簇内等宽、带间隙，不再完全叠印）；早于 `start-hour` / 晚于 `end-hour` 的事件按区间夹取，块不会越出轨道或盖住列头；视图按钮切换派发 `oas-view-change`。事件块支持**拖拽移动**（拖到目标列/时刻改 `date` + `start`，保持时长）与**底缘拖拽缩放**（改 `end`，15 分钟步进），落定回写并派发 `oas-events-change`。
+周/日视图为时刻表（`start-hour` / `end-hour` 限幅，默认 8–20 点）：带 `start`/`end` 的事件按时间绝对定位成块，无 `start` 的事件进顶部全天行；**时间重叠的事件自动按车道并排**（聚簇内等宽、带间隙，不再完全叠印）；早于 `start-hour` / 晚于 `end-hour` 的事件按区间夹取，块不会越出轨道或盖住列头；视图按钮切换派发 `oas-view-change`。事件块支持**拖拽移动**（拖到目标列/时刻改 `date` + `start`，保持时长）与**上下双缘缩放**（顶缘改 `start`、底缘改 `end`，15 分钟步进）；顶缘拖到结束点之前即钳制为 `end - 15` 分钟，落定回写并派发 `oas-events-change`。重叠事件仍按车道并存，不属于冲突；只有同日 `start >= end` 的非法区间会被拒绝写入。
 
 ## 重复规则与提醒
 
@@ -37,7 +37,9 @@
   <oas-scheduler id="scheduler-span" view="week" page-show-date="2026-08-10" events='[{"date":"2026-08-10","endDate":"2026-08-12","title":"设计冻结"},{"date":"2026-08-13","endDate":"2026-08-14","title":"回归窗口","color":"#059669"},{"date":"2026-08-12","endDate":"2026-08-13","title":"夜间值守","start":"22:00","end":"02:00"}]'></oas-scheduler>
 </DemoBlock>
 
-跨日全天事件在周视图的顶部全天带渲染为一条连续长条（不再逐日重复芯片）；按住长条横向拖动可按列宽吸附平移日期，回写 `date` / `endDate` 并派发 `oas-events-change`；键盘聚焦连续条后可用 `←` / `→` 按天平移（RTL 下按视觉方向镜像）；移出当前周时视图跟随，避免条卸载后丢失焦点。定时跨日事件也在顶部跨日带渲染连续条，条上带 `开始–结束` 时间标签；日内时间轴不再重复拆块。
+跨日全天事件在周视图的顶部全天带渲染为一条连续长条（不再逐日重复芯片），重叠的条自动上下分层，末端手柄不会被上层条盖住；按住长条横向拖动可按列宽吸附平移日期，回写 `date` / `endDate` 并派发 `oas-events-change`；拖动长条末端手柄只改 `endDate`（保持 `date` / `start` / `end`），键盘聚焦连续条后用 `Alt+←` / `Alt+→` 可按天缩放终点（RTL 下按视觉方向镜像）；未按 Alt 的 `←` / `→` 仍整体平移。定时跨日条最少保留 2 天（次日端点），缩到可视周之前时视图跟随；全天条缩到单日后回到常规全天芯片。移出当前周时视图跟随，避免条卸载后丢失焦点。定时跨日事件也在顶部跨日带渲染连续条，条上带 `开始–结束` 时间标签；日内时间轴不再重复拆块。
+
+每次 `updateEvent`（含拖拽/缩放）保留上一份快照：`el.canUndo` 查询是否有可撤销变更，`el.undo()` 回退最近一次并派发 `oas-events-change`；整体 set/add/remove 会清空快照，避免撤销跨到外部数据。
 
 <DemoBlock title="提醒（remind 分钟，到点派发 oas-remind）">
   <oas-scheduler id="scheduler-remind" page-show-date="2026-08-10"></oas-scheduler>
@@ -327,6 +329,7 @@ el.downloadIcs('my.ics', { timeMode: 'utc', timezone: 'Asia/Shanghai' })
 
 | Property | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
+| `canUndo` | 是否有可撤销的单步事件变更（只读；配合 `undo()`） | `boolean` | — |
 | `events` | 日程事件（`SchedulerEvent[]`）：`el.events` 读（含自动 id 的拷贝）；`el.events = [...]` 写（同步 events 属性 + 重渲染 + 派发 oas-events-change） | `SchedulerEvent[]` | `[]` |
 | `resources` | 资源列表（`SchedulerResource[]`）：`el.resources` 读（拷贝）；`el.resources = [...]` 写（同步 resources 属性 + 重渲染） | `SchedulerResource[]` | `[]` |
 
@@ -337,7 +340,8 @@ el.downloadIcs('my.ics', { timeMode: 'utc', timezone: 'Asia/Shanghai' })
 | `exportIcs` | `exportIcs(options?: IcsExportOptions): string` | 导出当前事件的 ICS 字符串（纯函数 eventsToIcs 的实例便捷通道；不触发重渲染） |
 | `downloadIcs` | `downloadIcs(filename: unknown, options?: IcsExportOptions): string` | 下载当前事件的 ICS 文件（浏览器环境；返回生成的 ICS 字符串便于测试/宿主复用） |
 | `addEvent` | `addEvent(ev: SchedulerEvent): string` | 新增事件：返回分配到的 id |
-| `updateEvent` | `updateEvent(id: string, patch: Partial<SchedulerEvent>): boolean` | 按 id 更新事件（浅合并 patch 后走 sanitize 清洗；找不到返回 false） |
+| `updateEvent` | `updateEvent(id: string, patch: Partial<SchedulerEvent>): boolean` | 按 id 更新事件（浅合并 patch 后走 sanitize 清洗；找不到或时间区间非法返回 false） |
+| `undo` | `undo(): boolean` | 撤销最近一次 updateEvent（含拖拽移动、时间块双缘缩放、跨日条终点缩放）；无快照返回 false，成功回写并派发 oas-events-change |
 | `removeEvent` | `removeEvent(id: string): boolean` | 按 id 删除事件；找不到返回 false |
 
 #### 事件
@@ -347,7 +351,7 @@ el.downloadIcs('my.ics', { timeMode: 'utc', timezone: 'Asia/Shanghai' })
 | `oas-create` | 在时间格空白处拖出 >=15 分钟区间时派发，detail: { date, start, end, resource? }——组件不自动建事件，宿主接后自行 addEvent；位移不足视作 oas-day-click |
 | `oas-day-click` | 点击空白日格时派发，detail: { date, resource? }（资源视图带资源行 id）——宿主接新增表单 |
 | `oas-event-click` | 点击事件芯片时派发，detail: { id, event }（不触发日格点击） |
-| `oas-events-change` | events 数据变化（set/addEvent/updateEvent/removeEvent）时派发，detail: { events } |
+| `oas-events-change` | events 数据变化（set/addEvent/updateEvent/removeEvent/undo）时派发，detail: { events } |
 | `oas-range-request` | 宿主托管日期窗口：当前视图可见范围未被 range-start/range-end 覆盖时派发，detail: { startMs, endMs, reason }；无 range-* 时不派发 |
 | `oas-remind` | 事件提醒到点时派发，detail: { id, event }（start - remind 分钟，组件内置定时器） |
 | `oas-view-change` | 视图切换（month/week/day/agenda）时派发，detail: { view }；属性首次吸收不派发 |

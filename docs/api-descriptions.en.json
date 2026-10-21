@@ -4546,7 +4546,7 @@
       "oas-create": "Dispatched when an empty time cell is dragged out to a range of >=15 minutes, detail: { date, start, end, resource? } — the component does not create the event; the host calls addEvent. A shorter drag is treated as oas-day-click",
       "oas-day-click": "Dispatched when an empty day cell is clicked, detail: { date, resource? } (resource row id in resource views) — host attaches an add form",
       "oas-event-click": "Dispatched when an event chip is clicked, detail: { id, event } (does not trigger the day click)",
-      "oas-events-change": "Dispatched on any events change (set/addEvent/updateEvent/removeEvent), detail: { events }",
+      "oas-events-change": "Dispatched on any events change (set/addEvent/updateEvent/removeEvent/undo), detail: { events }",
       "oas-view-change": "Dispatched on view switch (month/week/day/agenda), detail: { view }; not dispatched on initial attribute absorption",
       "oas-remind": "Dispatched when an event reminder is due, detail: { id, event } (fires at start - remind minutes via built-in timers)",
       "oas-window-request": "Emitted in windowed mode when the visible resource-row window is not covered by the loaded slice; detail: { start, end, reason } (absolute, half-open; the same window is not emitted twice).",
@@ -4554,14 +4554,16 @@
     },
     "props": {
       "events": "Schedule events (`SchedulerEvent[]`): `el.events` reads (copy incl. auto ids); `el.events = [...]` writes (syncs the events attribute + re-renders + dispatches oas-events-change)",
-      "resources": "Resources (`SchedulerResource[]`): `el.resources` reads (copy); `el.resources = [...]` writes (syncs the resources attribute + re-renders)"
+      "resources": "Resources (`SchedulerResource[]`): `el.resources` reads (copy); `el.resources = [...]` writes (syncs the resources attribute + re-renders)",
+      "canUndo": "Whether a single-step event change can be undone (read-only; use with `undo()`)"
     },
     "methods": {
       "exportIcs": "Export the current events as an ICS string (instance convenience channel for the pure eventsToIcs function; does not trigger a re-render)",
       "downloadIcs": "Download the current events as an ICS file (browser environment; returns the generated ICS string for tests / host reuse)",
       "addEvent": "Add an event: returns the assigned id",
-      "updateEvent": "Update an event by id (shallow-merges the patch, then runs sanitize; returns false when not found)",
-      "removeEvent": "Remove an event by id; returns false when not found"
+      "updateEvent": "Update an event by id (shallow-merges the patch, then runs sanitize; returns false when not found or when a same-day range has start >= end)",
+      "removeEvent": "Remove an event by id; returns false when not found",
+      "undo": "Undo the most recent updateEvent (including drag-move, two-edge time resize, and multi-day end resize); returns false when there is no snapshot, otherwise writes back and dispatches oas-events-change"
     }
   },
   "oas-gantt": {

@@ -60,6 +60,159 @@ describe('OASScheduler 月视图 + events CRUD', () => {
     expect(read).not.toBe((el as unknown as { _events: unknown[] })._events)
   })
 
+  it('updateEvent 后 canUndo/undo 恢复上一条事件并派发变更', () => {
+    const el = mount({
+      view: 'week',
+      'page-show-date': '2026-08-12',
+      events: JSON.stringify([{ id: 'e1', date: '2026-08-10', endDate: '2026-08-12', title: '原' }]),
+    })
+    let changes = 0
+    el.addEventListener('oas-events-change', () => changes++)
+    expect(el.canUndo).toBe(false)
+    expect(el.updateEvent('e1', { title: '改' })).toBe(true)
+    expect(el.canUndo).toBe(true)
+    expect(el.events[0]!.title).toBe('改')
+    expect(el.undo()).toBe(true)
+    expect(el.events[0]!.title).toBe('原')
+    expect(el.canUndo).toBe(false)
+    expect(changes).toBe(2)
+  })
+
+  it('跨日条 Alt+ArrowRight 改 endDate，Alt+ArrowLeft 撤销式缩回', async () => {
+    const el = mount({
+      view: 'week',
+      'page-show-date': '2026-08-12',
+      events: JSON.stringify([{ id: 'span', date: '2026-08-10', endDate: '2026-08-11', title: '跨日' }]),
+    })
+    const bar = (): HTMLElement => el.shadowRoot!.querySelector<HTMLElement>('.band-span[data-id="span"]')!
+    expect(bar()).not.toBeNull()
+    bar().dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', altKey: true, bubbles: true }))
+    expect(el.events[0]!.endDate).toBe('2026-08-12')
+    bar().dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', altKey: true, bubbles: true }))
+    expect(el.events[0]!.endDate).toBe('2026-08-11')
+  })
+
+  it('S03：15 分钟块不叠顶缘手柄；末端手柄 pointercancel 不写数据', () => {
+    const short = mount({
+      view: 'week',
+      'page-show-date': '2026-08-10',
+      events: JSON.stringify([{ id: 's', date: '2026-08-10', title: '短会', start: '09:00', end: '09:15' }]),
+    })
+    const shortEvent = short.shadowRoot!.querySelector<HTMLElement>('.col[data-date="2026-08-10"] .event')!
+    expect(shortEvent.querySelector('.resize-start')).toBeNull()
+    expect(shortEvent.querySelector('.resize')).not.toBeNull()
+
+    const el = mount({
+      view: 'week',
+      'page-show-date': '2026-08-10',
+      events: JSON.stringify([{ id: 'span', date: '2026-08-10', endDate: '2026-08-11', title: '跨日' }]),
+    })
+    const band = el.shadowRoot!.querySelector<HTMLElement>('.band')!
+    Object.defineProperty(band, 'clientWidth', { value: 700, configurable: true })
+    const handle = el.shadowRoot!.querySelector<HTMLElement>('.band-span .span-resize')!
+    handle.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, pointerId: 9, clientX: 0 }))
+    handle.dispatchEvent(new PointerEvent('pointermove', { bubbles: true, pointerId: 9, clientX: 100 }))
+    handle.dispatchEvent(new PointerEvent('pointercancel', { bubbles: true, pointerId: 9 }))
+    const barEl = handle.parentElement as HTMLElement
+    expect(barEl.classList.contains('dragging')).toBe(false)
+    expect(barEl.style.width).toBe('')
+    // cancel 必须拆掉 finish 监听：随后再 pointerup 也不能写数据
+    handle.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, pointerId: 9 }))
+    expect(el.events[0]!.endDate).toBe('2026-08-11')
+    expect(el.canUndo).toBe(false)
+  })
+
+  it('S03：时间块缩放 pointercancel 恢复预览几何，且不写数据', async () => {
+    const el = mount({
+      view: 'week',
+      'page-show-date': '2026-08-10',
+      events: JSON.stringify([{ id: 'e1', date: '2026-08-10', title: '会', start: '09:00', end: '10:00' }]),
+    })
+    const track = el.shadowRoot!.querySelector<HTMLElement>('.col[data-date="2026-08-10"] .track')!
+    track.getBoundingClientRect = () =>
+      ({ top: 0, left: 0, width: 100, height: 576, right: 100, bottom: 576, x: 0, y: 0, toJSON: () => ({}) }) as DOMRect
+    const event = (): HTMLElement => el.shadowRoot!.querySelector<HTMLElement>('.col[data-date="2026-08-10"] .event')!
+    const before = event().style.height
+    const grip = event().querySelector<HTMLElement>('.resize')!
+    grip.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, pointerId: 11 }))
+    const move = new PointerEvent('pointermove', { bubbles: true, pointerId: 11 })
+    Object.defineProperty(move, 'clientY', { value: (11 - 8) * 48 })
+    track.dispatchEvent(move)
+    expect(event().style.height).not.toBe(before)
+    track.dispatchEvent(new PointerEvent('pointercancel', { bubbles: true, pointerId: 11 }))
+    await Promise.resolve()
+    expect(event().style.height).toBe(before)
+    expect(el.events[0]!.end).toBe('10:00')
+  })
+
+  it('S03：非法 endDate / date 越界拒绝，受控原样回写保留撤销快照', () => {
+    const loaded = mount({
+      events: JSON.stringify([{ id: 'old', date: '2026-08-10', title: '旧', start: '10:00', end: '09:00' }]),
+    })
+    expect(loaded.updateEvent('old', { title: '改名' }), '载入的旧非法区间不应冻结无关字段更新').toBe(true)
+    expect(loaded.updateEvent('old', { start: '11:00' })).toBe(false)
+
+    const el = mount({
+      events: JSON.stringify([{ id: 'e1', date: '2026-08-10', endDate: '2026-08-12', title: '原' }]),
+      'page-show-date': '2026-08-01',
+    })
+    expect(el.updateEvent('e1', { endDate: 'bad' })).toBe(false)
+    expect(el.updateEvent('e1', { endDate: '2026-08-09' })).toBe(false)
+    expect(el.updateEvent('e1', { date: '2026-08-20' })).toBe(false)
+    expect(el.addEvent({ date: '2026-08-10', endDate: '2026-08-09', title: 'bad' })).toBe('')
+    expect(el.updateEvent('e1', { title: '改' })).toBe(true)
+    expect(el.canUndo).toBe(true)
+    el.events = el.events
+    expect(el.canUndo, '受控桥接原样回写不应清空撤销快照').toBe(true)
+    expect(el.undo()).toBe(true)
+    expect(el.events[0]!.title).toBe('原')
+  })
+
+  it('S03：顶缘越过 end 时按 15 分钟网格钳制，不产生 09:52 这类非网格值', () => {
+    const el = mount({
+      view: 'week',
+      'page-show-date': '2026-08-10',
+      events: JSON.stringify([{ id: 'e1', date: '2026-08-10', title: 'x', start: '09:00', end: '10:07' }]),
+    })
+    const ev = el.shadowRoot!.querySelector<HTMLElement>('.col[data-date="2026-08-10"] .event')!
+    const grip = ev.querySelector('.resize-start') as HTMLElement
+    const track = el.shadowRoot!.querySelector<HTMLElement>('.col[data-date="2026-08-10"] .track')!
+    track.getBoundingClientRect = () =>
+      ({ top: 0, left: 0, width: 100, height: 576, right: 100, bottom: 576, x: 0, y: 0, toJSON: () => ({}) }) as DOMRect
+    grip.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, pointerId: 5 }))
+    const move = new PointerEvent('pointermove', { bubbles: true, pointerId: 5 })
+    Object.defineProperty(move, 'clientY', { value: (10.5 - 8) * 48 })
+    track.dispatchEvent(move)
+    track.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, pointerId: 5 }))
+    expect(el.events[0]!.start).toBe('09:45')
+  })
+
+  it('S03：定时跨日条最少保留 2 天；缩出可视周时视图跟随且焦点不丢', () => {
+    const night = mount({
+      view: 'week',
+      'page-show-date': '2026-08-12',
+      events: JSON.stringify([
+        { id: 'night', date: '2026-08-10', endDate: '2026-08-11', title: '夜', start: '22:00', end: '02:00' },
+      ]),
+    })
+    const nightBar = night.shadowRoot!.querySelector<HTMLElement>('.band-span[data-id="night"]')!
+    nightBar.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', altKey: true, bubbles: true }))
+    expect(night.events[0]!.endDate).toBe('2026-08-11')
+    expect(night.canUndo).toBe(false)
+
+    const long = mount({
+      view: 'week',
+      'page-show-date': '2026-08-12',
+      events: JSON.stringify([{ id: 'long', date: '2026-08-01', endDate: '2026-08-10', title: '长' }]),
+    })
+    const longBar = long.shadowRoot!.querySelector<HTMLElement>('.band-span[data-id="long"]')!
+    longBar.focus()
+    longBar.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', altKey: true, bubbles: true }))
+    expect(long.events[0]!.endDate).toBe('2026-08-09')
+    expect(long.shadowRoot!.querySelector('.band-span[data-id="long"]')).not.toBeNull()
+    expect(long.shadowRoot!.activeElement?.getAttribute('data-id')).toBe('long')
+  })
+
   it('addEvent/updateEvent/removeEvent：CRUD 各派发一次 events-change 并即时生效', () => {
     const el = mount({ 'page-show-date': '2026-08-01' })
     const seen: string[] = []
@@ -334,6 +487,20 @@ describe('OASScheduler review 修复回归（C1/I1/I2/I4/I5/I-5/I-6/I-7/I-1）',
     expect(el.updateEvent(id, { title: '' })).toBe(false)
     expect(el.events[0]!.date).toBe('2026-08-10')
     expect(el.events[0]!.title).toBe('a')
+  })
+
+  it('同日 start >= end 被拒绝且不产生撤销快照；跨日 end 可早于 start', () => {
+    const el = mount({
+      events: JSON.stringify([{ date: '2026-08-10', title: 'a', start: '09:00', end: '10:00' }]),
+      'page-show-date': '2026-08-10',
+    })
+    const id = el.events[0]!.id!
+    expect(el.updateEvent(id, { start: '10:30' })).toBe(false)
+    expect(el.canUndo).toBe(false)
+    expect(el.events[0]!.start).toBe('09:00')
+    expect(el.updateEvent(id, { start: '22:00', end: '02:00', endDate: '2026-08-11' })).toBe(true)
+    expect(el.events[0]).toMatchObject({ start: '22:00', end: '02:00', endDate: '2026-08-11' })
+    expect(el.addEvent({ date: '2026-08-10', title: 'bad', start: '10:00', end: '09:00' })).toBe('')
   })
 
   it('I-7：非法时间（25:00）被清洗为不定时（进全天行而非溢出）', () => {
@@ -731,6 +898,22 @@ describe('OASScheduler P1：view 切换 + 周/日时间轴 + 拖拽移动/缩放
     track.dispatchEvent(up)
     const resized = el.events.find((x) => x.title === '晨会')!
     expect(resized.end).toBe('11:30')
+  })
+
+  it('顶部缩放手柄：pointer 位移改 start；不晚于 end-15', () => {
+    const el = timedEl({ view: 'week' })
+    const ev = el.shadowRoot!.querySelector('.col[data-date="2026-08-10"] .event') as HTMLElement
+    const grip = ev.querySelector('.resize-start') as HTMLElement
+    const track = el.shadowRoot!.querySelector('.col[data-date="2026-08-10"] .track') as HTMLElement
+    track.getBoundingClientRect = () =>
+      ({ top: 0, left: 0, width: 100, height: 576, right: 100, bottom: 576, x: 0, y: 0, toJSON: () => ({}) }) as DOMRect
+    grip.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, pointerId: 3 }))
+    const move = new PointerEvent('pointermove', { bubbles: true, pointerId: 3 })
+    Object.defineProperty(move, 'clientY', { value: (9.5 - 8) * 48 })
+    track.dispatchEvent(move)
+    track.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, pointerId: 3 }))
+    expect(el.events.find((x) => x.title === '晨会')!.start).toBe('09:30')
+    expect(el.events.find((x) => x.title === '晨会')!.end).toBe('10:00')
   })
 
   it('周导航：prev/next 按周平移；start-hour/end-hour 限幅时刻表', () => {
