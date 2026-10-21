@@ -4773,5 +4773,34 @@
       "stop": "Stop generation (dispatches oas-stop only while loading)",
       "focusInput": "Focus the inner textarea"
     }
+  },
+  "oas-message-actions": {
+    "attrs": {
+      "actions": "Actions JSON: [{ key, label, title?, disabled?, active?, tone? }]",
+      "message-id": "Message id echoed in oas-action detail",
+      "align": "Alignment: start (default) / end",
+      "disabled": "Disable every action",
+      "label": "Optional aria-label for the action group"
+    },
+    "events": {
+      "oas-action": "Dispatched on click, detail: { key, messageId }"
+    }
+  },
+  "oas-tool-call": {
+    "attrs": {
+      "name": "Tool name",
+      "summary": "One-line summary",
+      "status": "Status: running / success / error",
+      "args": "Arguments text or JSON (rendered as text)",
+      "result": "Result text or JSON (rendered as text)",
+      "open": "Start expanded",
+      "collapsible": "Whether the body can collapse; false forces it open"
+    },
+    "events": {
+      "oas-toggle": "Dispatched on expand/collapse, detail: { open, name }"
+    },
+    "slots": {
+      "icon": "Tool icon"
+    }
   }
 }

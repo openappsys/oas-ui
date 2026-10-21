@@ -101,6 +101,11 @@ export const ar: LocaleMessages = {
   'steps.next': 'التالي',
   'steps.optional': 'اختياري',
   // questionnaire（多步问答）
+  'toolCall.running': 'قيد التشغيل',
+  'toolCall.success': 'مكتمل',
+  'toolCall.error': 'فشل',
+  'toolCall.arguments': 'الوسائط',
+  'toolCall.result': 'النتيجة',
   'promptInput.placeholder': 'اكتب رسالة…',
   'promptInput.send': 'إرسال',
   'promptInput.stop': 'إيقاف',

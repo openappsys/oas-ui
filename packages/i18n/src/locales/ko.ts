@@ -101,6 +101,11 @@ export const ko: LocaleMessages = {
   'steps.next': '다음',
   'steps.optional': '선택',
   // questionnaire（多步问答）
+  'toolCall.running': '실행 중',
+  'toolCall.success': '완료',
+  'toolCall.error': '실패',
+  'toolCall.arguments': '인수',
+  'toolCall.result': '결과',
   'promptInput.placeholder': '메시지를 입력하세요…',
   'promptInput.send': '보내기',
   'promptInput.stop': '중지',

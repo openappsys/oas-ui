@@ -1,0 +1,46 @@
+{
+  "className": "OASMessageActions",
+  "sourceFile": "packages/ui/src/conversation/message-actions/oas-message-actions.ts",
+  "attrs": [
+    {
+      "name": "actions",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "message-id",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "align",
+      "type": "string",
+      "default": "start",
+      "observed": true
+    },
+    {
+      "name": "disabled",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "label",
+      "type": "string",
+      "default": "",
+      "observed": true
+    }
+  ],
+  "props": [],
+  "methods": [],
+  "events": [
+    {
+      "name": "oas-action",
+      "detail": "{ key: action.key, messageId: this.getAttr('message-id', '') || undefined, } satisfies MessageActionDetail"
+    }
+  ],
+  "slots": [],
+  "cssVars": [],
+  "unresolved": []
+}

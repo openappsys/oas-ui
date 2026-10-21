@@ -101,6 +101,11 @@ export const de: LocaleMessages = {
   'steps.next': 'Weiter',
   'steps.optional': 'Optional',
   // questionnaire（多步问答）
+  'toolCall.running': 'Läuft',
+  'toolCall.success': 'Abgeschlossen',
+  'toolCall.error': 'Fehlgeschlagen',
+  'toolCall.arguments': 'Argumente',
+  'toolCall.result': 'Ergebnis',
   'promptInput.placeholder': 'Nachricht eingeben…',
   'promptInput.send': 'Senden',
   'promptInput.stop': 'Stopp',

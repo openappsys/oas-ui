@@ -2664,3 +2664,10 @@ group 子钮此前为宿主自填 light DOM（`slot="action"`），组件用 `::
 - **兼容**：新增组件，不影响既有会话族；不依赖外部数据源。
 - **验收**：单测覆盖提交/换行/禁用/loading/建议/双通道值；e2e 覆盖真实输入、建议回填与停止；a11y 页面纳入自动收集；文档 zh/en、API/SSR 白名单与 CHANGELOG 同步。
 
+
+## 未发布：conversation 消息操作与工具调用
+
+- **范围**：新增 `oas-message-actions`（复制/重试/编辑/重新生成/分支/反馈等操作条，JSON actions + `oas-action`，只派发事件）与 `oas-tool-call`（工具名/摘要/运行状态/参数/结果，默认折叠，`oas-toggle`，只展示宿主数据）。
+- **语义**：组件不内置会话状态、不发请求、不执行工具、不解析函数；`oas-message-actions` 的 `message-id` 原样回传；`oas-tool-call` 的 args/result 只按文本展示，不注入 HTML。
+- **兼容**：新增可选组件，不改变 prompt-input/message-row/bubble 既有行为；tool-call 默认折叠，`collapsible=false` 强制展开。
+- **验收**：单测覆盖 actions 渲染/事件/disabled/active/危险态、tool-call 折叠/状态/文本转义；e2e 覆盖真实点击与 a11y；文档 zh/en、API 说明、PRD/CHANGELOG 同步。

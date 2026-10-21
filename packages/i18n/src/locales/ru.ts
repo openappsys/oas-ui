@@ -101,6 +101,11 @@ export const ru: LocaleMessages = {
   'steps.next': 'Далее',
   'steps.optional': 'Необязательно',
   // questionnaire（多步问答）
+  'toolCall.running': 'Выполняется',
+  'toolCall.success': 'Готово',
+  'toolCall.error': 'Ошибка',
+  'toolCall.arguments': 'Аргументы',
+  'toolCall.result': 'Результат',
   'promptInput.placeholder': 'Введите сообщение…',
   'promptInput.send': 'Отправить',
   'promptInput.stop': 'Стоп',

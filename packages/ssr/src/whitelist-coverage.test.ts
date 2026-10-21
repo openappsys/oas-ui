@@ -63,6 +63,9 @@ const NOT_SSR: ReadonlySet<string> = new Set<string>([
   'oas-swipe-cell',
   'oas-swatch',
   'oas-theme-editor',
+  // conversation AI 新组件暂未做 DSD
+  'oas-message-actions',
+  'oas-tool-call',
 ])
 
 function manifestTags(): string[] {

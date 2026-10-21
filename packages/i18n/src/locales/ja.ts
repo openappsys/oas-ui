@@ -101,6 +101,11 @@ export const ja: LocaleMessages = {
   'steps.next': '次へ',
   'steps.optional': '任意',
   // questionnaire（多步问答）
+  'toolCall.running': '実行中',
+  'toolCall.success': '完了',
+  'toolCall.error': '失敗',
+  'toolCall.arguments': '引数',
+  'toolCall.result': '結果',
   'promptInput.placeholder': 'メッセージを入力…',
   'promptInput.send': '送信',
   'promptInput.stop': '停止',

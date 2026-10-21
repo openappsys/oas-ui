@@ -101,6 +101,11 @@ export const pt: LocaleMessages = {
   'steps.next': 'Próximo',
   'steps.optional': 'Opcional',
   // questionnaire（多步问答）
+  'toolCall.running': 'Em execução',
+  'toolCall.success': 'Concluído',
+  'toolCall.error': 'Falhou',
+  'toolCall.arguments': 'Argumentos',
+  'toolCall.result': 'Resultado',
   'promptInput.placeholder': 'Digite uma mensagem…',
   'promptInput.send': 'Enviar',
   'promptInput.stop': 'Parar',

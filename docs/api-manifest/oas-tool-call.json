@@ -1,0 +1,62 @@
+{
+  "className": "OASToolCall",
+  "sourceFile": "packages/ui/src/conversation/tool-call/oas-tool-call.ts",
+  "attrs": [
+    {
+      "name": "name",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "summary",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "status",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "args",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "result",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "open",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "collapsible",
+      "type": "string",
+      "default": "true",
+      "observed": true
+    }
+  ],
+  "props": [],
+  "methods": [],
+  "events": [
+    {
+      "name": "oas-toggle",
+      "detail": "{ open, name: this.getAttr('name', '') } satisfies ToolCallToggleDetail"
+    }
+  ],
+  "slots": [
+    {
+      "name": "icon"
+    }
+  ],
+  "cssVars": [],
+  "unresolved": []
+}

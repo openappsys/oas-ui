@@ -441,6 +441,8 @@ import './conversation/attachment/index.js'
 import './conversation/message-scroller/index.js'
 import './conversation/marker/index.js'
 import './conversation/message-row/index.js'
+import './conversation/message-actions/index.js'
+import './conversation/tool-call/index.js'
 import './conversation/prompt-input/index.js'
 export { OASCard } from './data/card/oas-card.js'
 export { OASAvatar } from './data/avatar/oas-avatar.js'
@@ -592,6 +594,14 @@ export type {
 export { OASMarker } from './conversation/marker/oas-marker.js'
 export { OASMessageRow } from './conversation/message-row/oas-message-row.js'
 export type { MessageRowStatus } from './conversation/message-row/oas-message-row.js'
+export { OASMessageActions } from './conversation/message-actions/oas-message-actions.js'
+export type {
+  MessageAction,
+  MessageActionDetail,
+  MessageActionTone,
+} from './conversation/message-actions/oas-message-actions.js'
+export { OASToolCall } from './conversation/tool-call/oas-tool-call.js'
+export type { ToolCallStatus, ToolCallToggleDetail } from './conversation/tool-call/oas-tool-call.js'
 export { OASPromptInput } from './conversation/prompt-input/oas-prompt-input.js'
 export type {
   PromptInputSuggestion,
