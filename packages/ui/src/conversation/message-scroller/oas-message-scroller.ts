@@ -389,6 +389,8 @@ export class OASMessageScroller extends OASElement {
   /** 真水合：校验 SSR 快照结构（viewport 骨架存在）后直接接管，跳过 shadow 重建 */
   protected override hydrate(): boolean {
     if (!this.viewport) return false
+    // 旧版本 DSD 快照没有 status 节点：回退重建，避免 announce() 静默 no-op
+    if (!this.shadow.querySelector('[part="status"]')) return false
     this.bind()
     return true
   }

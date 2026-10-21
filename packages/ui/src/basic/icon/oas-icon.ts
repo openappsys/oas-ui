@@ -355,7 +355,10 @@ export class OASIcon extends OASElement {
     if (options.spriteSheet) {
       // sprite 模式：使在途 src/library 请求失效，防止旧响应覆盖 <use>
       ++this.fetchId
-      host.innerHTML = `<use href="${url}#${name}"></use>`
+      host.replaceChildren()
+      const use = document.createElementNS('http://www.w3.org/2000/svg', 'use')
+      use.setAttribute('href', `${url}#${name}`)
+      host.appendChild(use)
       return
     }
     this.fetchSvg(url, (text) => {

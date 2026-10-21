@@ -22,6 +22,8 @@ import { fileURLToPath, pathToFileURL } from 'node:url'
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../..')
 const DEFAULT_ROOTS = ['packages/ui/qa-regression', 'packages/ui/src']
 const IGNORE_SKIP_FILES = new Set(['packages/ui/demo-coverage.spec.ts'])
+// 视觉截图 spec 只产出人工复核素材，不承担断言；不是“忘了写 expect”
+const INTENTIONAL_ZERO_EXPECT = new Set(['packages/ui/visual.spec.ts'])
 
 export function walk(dir) {
   const out = []
@@ -45,7 +47,7 @@ export function analyzeSource(source, file = '') {
     file,
     testCount,
     expectCount,
-    zeroExpect: testCount > 0 && expectCount === 0,
+    zeroExpect: testCount > 0 && expectCount === 0 && !INTENTIONAL_ZERO_EXPECT.has(file),
     unconditionalSkips: IGNORE_SKIP_FILES.has(file) ? [] : unconditionalSkips,
     waitForTimeout,
     weakAssertions,
@@ -55,6 +57,10 @@ export function analyzeSource(source, file = '') {
 
 export function audit(roots = DEFAULT_ROOTS) {
   const files = roots.flatMap((root) => walk(join(ROOT, root)))
+  // 顶层 e2e spec（visual-states/smoke/interaction 等）不在 qa-regression 下，也要纳入
+  for (const name of readdirSync(join(ROOT, 'packages/ui'))) {
+    if (/\.spec\.ts$/.test(name)) files.push(join(ROOT, 'packages/ui', name))
+  }
   return files
     .map((file) => analyzeSource(readFileSync(file, 'utf8'), relative(ROOT, file).replaceAll('\\', '/')))
     .sort((a, b) => a.file.localeCompare(b.file))
@@ -94,8 +100,8 @@ function main() {
   const results = audit()
   const summary = summarize(results)
   const check = process.argv.includes('--check')
-  const maxWait = argValue('--max-wait', 384)
-  const maxWeak = argValue('--max-weak', 1830)
+  const maxWait = argValue('--max-wait', 413)
+  const maxWeak = argValue('--max-weak', 1840)
 
   if (process.argv.includes('--json')) {
     console.log(JSON.stringify({ summary, results }, null, 2))

@@ -9,9 +9,17 @@
 const SAFE_PROTOCOL = /^(?:https?|mailto|tel):/i
 const HAS_PROTOCOL = /^[a-z][a-z0-9+.-]*:/i
 
+function normalizeUrl(value: unknown): string {
+  // URL 解析器会剥掉 ASCII 控制字符（含 tab/newline/CR）；判定前先做同样的归一，
+  // 否则 `java\nscript:` 会绕过协议白名单但浏览器仍按 javascript: 执行。
+  return String(value)
+    .replace(/[\u0000-\u001f\u007f]/g, '')
+    .replace(/^[\u0000-\u0020]+|[\u0000-\u0020]+$/g, '')
+}
+
 export function safeUrl(value: unknown): string {
   if (value === null || value === undefined) return ''
-  const url = String(value).trim()
+  const url = normalizeUrl(value)
   if (!url) return ''
   if (HAS_PROTOCOL.test(url)) return SAFE_PROTOCOL.test(url) ? url : ''
   return url
@@ -19,7 +27,7 @@ export function safeUrl(value: unknown): string {
 
 export function isSafeUrl(value: unknown): boolean {
   if (value === null || value === undefined) return false
-  const url = String(value).trim()
+  const url = normalizeUrl(value)
   if (!url) return false
   return !HAS_PROTOCOL.test(url) || SAFE_PROTOCOL.test(url)
 }

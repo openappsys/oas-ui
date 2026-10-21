@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { registerIcon } from '@oas-ui/icons/runtime'
+import { registerIcon, registerIconLibrary } from '@oas-ui/icons/runtime'
 import { OASButton } from '../basic/button/index.js'
+import { OASIcon } from '../basic/icon/index.js'
 import { OASLink } from '../basic/link/index.js'
 import { OASTag } from '../basic/tag/index.js'
 import { OASQRCode } from '../data/qrcode/index.js'
@@ -25,6 +26,7 @@ function expectNoInjectedAttrs(root: ParentNode): void {
   for (const el of root.querySelectorAll('*')) {
     expect(el.getAttribute('onload'), `${el.tagName} 不应出现 onload`).toBeNull()
     expect(el.getAttribute('onmouseover'), `${el.tagName} 不应出现 onmouseover`).toBeNull()
+    expect(el.getAttribute('onclick'), `${el.tagName} 不应出现 onclick`).toBeNull()
   }
 }
 
@@ -73,6 +75,20 @@ describe('HTML/SVG 注入安全回归', () => {
     expectNoInjectedAttrs(el.shadowRoot!)
   })
 
+  it('icon sprite 的 library/name 不逃逸 <use> 属性上下文', async () => {
+    registerIconLibrary('evil-sprite', {
+      resolver: () => 'https://example.com/icons.svg',
+      spriteSheet: true,
+    })
+    const el = mount(new OASIcon(), {
+      library: 'evil-sprite',
+      name: 'x"></use><image href="x" onerror="window.__oas_xss=1',
+    })
+    await flush()
+    expectNoInjectedAttrs(el.shadowRoot!)
+    expect(el.shadowRoot!.querySelector('image')).toBeNull()
+  })
+
   it('qrcode 的 color/bg-color 不逃逸 SVG 属性上下文', async () => {
     const el = mount(new OASQRCode(), {
       value: 'HELLO',
@@ -96,7 +112,9 @@ describe('HTML/SVG 注入安全回归', () => {
     ['navigation-menu', OASNavigationMenu],
   ] as const) {
     it(`${name} 的 icon-color 不逃逸 SVG 属性上下文`, async () => {
-      const items = JSON.stringify([{ label: 'Home', value: 'home', icon: 'evil', iconColor: PAYLOAD }])
+      const items = JSON.stringify([
+        { label: 'Home', value: 'home', icon: 'evil', iconColor: `${PAYLOAD} $& onclick=window.__oas_xss=1` },
+      ])
       const el = mount(new ctor(), { items })
       await flush()
       expectNoInjectedAttrs(el.shadowRoot!)

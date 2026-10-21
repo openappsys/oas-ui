@@ -1,4 +1,5 @@
 import { escapeAttr, OASElement } from '@oas-ui/core'
+import { safeUrl } from '../../shared/safe-url.js'
 import { getViewport } from '../../overlay/floating/index.js'
 import type { MenuItem } from '../menu/index.js'
 import type { MenuItemKind } from '../menu/oas-menu.js'
@@ -1173,7 +1174,8 @@ export class OASNavigationMenu extends OASElement {
         el.setAttribute('aria-expanded', 'false')
         el.setAttribute('aria-controls', this.viewportId)
       } else {
-        el.setAttribute('href', item.href)
+        const href = safeUrl(item.href)
+        if (href) el.setAttribute('href', href)
         if (item.target) el.setAttribute('target', item.target)
         if (item.active) el.setAttribute('aria-current', 'page')
       }
@@ -1321,7 +1323,8 @@ export class OASNavigationMenu extends OASElement {
         el.setAttribute('type', 'button')
         el.appendChild(this.createChevron())
       } else if (origin.hasAttribute('href')) {
-        el.setAttribute('href', origin.getAttribute('href') ?? '')
+        const href = safeUrl(origin.getAttribute('href'))
+        if (href) el.setAttribute('href', href)
         if (origin.getAttribute('target')) el.setAttribute('target', origin.getAttribute('target')!)
         if (origin.getAttribute('aria-current') === 'page') el.setAttribute('aria-current', 'page')
       }
@@ -1412,7 +1415,8 @@ export class OASNavigationMenu extends OASElement {
     const a = document.createElement('a')
     a.className = 'card-link'
     a.setAttribute('part', 'card-link')
-    a.setAttribute('href', item.href ?? '#')
+    const cardHref = safeUrl(item.href)
+    if (cardHref) a.setAttribute('href', cardHref)
     if (item.target) a.setAttribute('target', item.target)
     if (item.active) a.setAttribute('aria-current', 'page')
     if (item.disabled) a.setAttribute('aria-disabled', 'true')
@@ -1470,7 +1474,8 @@ export class OASNavigationMenu extends OASElement {
     for (const child of item.children ?? []) {
       const li2 = document.createElement('li')
       const a2 = document.createElement('a')
-      a2.setAttribute('href', (child as NavItem).href ?? '#')
+      const childHref = safeUrl((child as NavItem).href)
+      if (childHref) a2.setAttribute('href', childHref)
       if ((child as NavItem).target) a2.setAttribute('target', (child as NavItem).target!)
       if ((child as NavItem).active) a2.setAttribute('aria-current', 'page')
       if (child.disabled) a2.setAttribute('aria-disabled', 'true')
@@ -1591,7 +1596,8 @@ export class OASNavigationMenu extends OASElement {
       const a = document.createElement('a')
       a.className = 'sub-link'
       a.setAttribute('part', 'sub-link')
-      a.setAttribute('href', s.href ?? '#')
+      const subHref = safeUrl(s.href)
+      if (subHref) a.setAttribute('href', subHref)
       if (s.target) a.setAttribute('target', s.target)
       if (s.active) a.setAttribute('aria-current', 'page')
       if (s.disabled) a.setAttribute('aria-disabled', 'true')
@@ -1669,7 +1675,7 @@ export class OASNavigationMenu extends OASElement {
     if (!content) return null
     const stroke = iconColor || 'currentColor'
     const coloredContent = iconColor
-      ? content.replace(/stroke="currentColor"/g, `stroke="${escapeAttr(stroke)}"`)
+      ? content.replace(/stroke="currentColor"/g, () => `stroke="${escapeAttr(stroke)}"`)
       : content
     const span = document.createElement('span')
     span.className = className

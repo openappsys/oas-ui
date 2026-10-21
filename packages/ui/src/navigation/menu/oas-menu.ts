@@ -1,4 +1,5 @@
 import { escapeAttr, OASElement } from '@oas-ui/core'
+import { safeUrl } from '../../shared/safe-url.js'
 // 图标走 @oas-ui/icons 运行时查表（registerIcon 自定义注册优先、内置集兜底，与 oas-icon 同源）——
 // 不经 oas-icon 组件模块，避免把整个 <oas-icon> 拉进 menu 按需链
 import { lookupIcon } from '@oas-ui/icons/runtime'
@@ -1119,7 +1120,8 @@ export class OASMenu extends OASElement {
       li.className = 'item'
       li.setAttribute('part', 'item')
       if (item.href) {
-        li.setAttribute('href', item.href)
+        const href = safeUrl(item.href)
+        if (href) li.setAttribute('href', href)
         if (item.target) li.setAttribute('target', item.target)
         if (item.rel) li.setAttribute('rel', item.rel)
       }
@@ -1287,7 +1289,7 @@ export class OASMenu extends OASElement {
     if (!content) return null
     const stroke = iconColor || 'currentColor'
     const coloredContent = iconColor
-      ? content.replace(/stroke="currentColor"/g, `stroke="${escapeAttr(stroke)}"`)
+      ? content.replace(/stroke="currentColor"/g, () => `stroke="${escapeAttr(stroke)}"`)
       : content
     const span = document.createElement('span')
     span.className = className

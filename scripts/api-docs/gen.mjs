@@ -452,7 +452,7 @@ function renderCssVarTable(rows, lang) {
 }
 
 /** 生成统一版式的 `## API` 章节内容（不含 `## API` 标题行） */
-function buildGenerated(tags, lang, { omitMethods = false } = {}) {
+function buildGenerated(tags, lang) {
   const headings = {
     attrs: lang === 'zh' ? '属性' : 'Attributes',
     props:
@@ -480,9 +480,7 @@ function buildGenerated(tags, lang, { omitMethods = false } = {}) {
     const tables = []
     if (g.attrs.length) tables.push(`#### ${headings.attrs}\n\n${renderAttrTable(g.attrs, lang)}`)
     if (g.props.length) tables.push(`#### ${headings.props}\n\n${renderPropTable(g.props, lang)}`)
-    // 手工 Methods 表（历史页面多 tag 分组）优先：避免生成表与手工表并存造成重复
-    if (!omitMethods && g.methods.length)
-      tables.push(`#### ${headings.methods}\n\n${renderMethodTable(g.methods, lang)}`)
+    if (g.methods.length) tables.push(`#### ${headings.methods}\n\n${renderMethodTable(g.methods, lang)}`)
     if (g.events.length) tables.push(`#### ${headings.events}\n\n${renderEventTable(g.events, lang)}`)
     if (g.slots.length) tables.push(`#### ${headings.slots}\n\n${renderSlotTable(g.slots, lang)}`)
     if ((g.cssVars ?? []).length) tables.push(`#### ${headings.cssVars}\n\n${renderCssVarTable(g.cssVars, lang)}`)
@@ -524,7 +522,8 @@ function isConsumed(b, blocks, i, pageTags) {
  *   { status: 'changed', newLines, oldSectionLines, newSectionLines }  需要重写
  */
 function processPage(file, lang) {
-  // 这 5 页的 Methods 表按 tag 手工分组，交给人工维护；生成器只读跳过，避免生成表与手工表重复。
+  // 这 5 页的 Methods 表按 tag 手工分组；生成器暂整页跳过，避免生成表与手工表重复。
+  // 债务：这些页的 attrs/events/slots 漂移仍靠人工/后续矩阵校验。
   if (MANUAL_METHODS_PAGES.has(file)) return { status: 'skip', reason: '手工 Methods 表页面' }
   const dir = lang === 'zh' ? ZH_DIR : EN_DIR
   const path = join(dir, file)
@@ -552,22 +551,13 @@ function processPage(file, lang) {
   const tags = collectPageTags(blocks, primaryTag, MANIFEST)
   if (tags.length === 0) return { status: 'skip', reason: `无法归属 tag（primary ${primaryTag} 不在 manifest）` }
 
-  // 多 tag 历史页面用手工 Methods 表（按 tag 分组）；生成表会与之并存造成重复，故对这些页跳过 Methods 生成。
-  const hasManualMethods =
-    MANUAL_METHODS_PAGES.has(file) &&
-    blocks.some((b) => b.kind === 'table' && /^\|\s*(?:Method|方法)\s*\|/.test(b.lines[0] ?? ''))
-  const generated = buildGenerated(tags, lang, { omitMethods: hasManualMethods })
+  const generated = buildGenerated(tags, lang)
 
   // 块序列 → 输出行
   const outBlocks = []
   let inserted = false
   for (let i = 0; i < blocks.length; i++) {
     const b = blocks[i]
-    // 手工 Methods 表原样保留（不消费），避免生成器把它删掉
-    if (hasManualMethods && b.kind === 'table' && /^\|\s*(?:Method|方法)\s*\|/.test(b.lines[0] ?? '')) {
-      outBlocks.push(b)
-      continue
-    }
     if (isConsumed(b, blocks, i, tags)) {
       if (!inserted) {
         inserted = true

@@ -18,6 +18,11 @@ describe('safeUrl', () => {
     expect(safeUrl('data:text/html,<script>alert(1)</script>')).toBe('')
     expect(safeUrl('vbscript:msgbox(1)')).toBe('')
     expect(safeUrl('  javascript:alert(1)  ')).toBe('')
+    expect(safeUrl('java\nscript:alert(1)')).toBe('')
+    expect(safeUrl('java\tscript:alert(1)')).toBe('')
+    expect(safeUrl('java\rscript:alert(1)')).toBe('')
+    expect(safeUrl('\u0000javascript:alert(1)')).toBe('')
+    expect(isSafeUrl('java\nscript:alert(1)')).toBe(false)
   })
 
   it('空值回落空串', () => {

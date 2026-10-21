@@ -158,7 +158,13 @@ function docsSource(spec, lang) {
   const title = lang === 'zh' ? spec.zh.title : spec.en.title
   const summary = lang === 'zh' ? spec.zh.summary : spec.en.summary
   const api = spec.attrs.length
-    ? `| ${spec.attrs.map((a) => a.name).join(' | ')} |\n| ${spec.attrs.map(() => '---').join(' | ')} |`
+    ? [
+        '| 属性 | 说明 | 类型 | 默认值 |',
+        '| --- | --- | --- | --- |',
+        ...spec.attrs.map(
+          (a) => `| \`${a.name}\` | ${a.desc[lang]} | \`${a.type ?? 'string'}\` | ${a.default ?? '—'} |`,
+        ),
+      ].join('\n')
     : '| 属性 | 说明 | 类型 | 默认值 |\n| --- | --- | --- | --- |'
   return `# ${title}
 
@@ -213,10 +219,12 @@ function patchWhitelist(spec, text) {
 
 function patchTagEntry(spec, text) {
   if (text.includes(`'${spec.tag}':`)) return text
-  return text.replace(
-    /\n\}\n\nconst tagLoaded/,
+  const next = text.replace(
+    /\n\}\n\n(?:\/\*\*[\s\S]*?\*\/\n)?const tagLoaded/,
     `\n  '${spec.tag}': '@oas-ui/ui/${spec.group}/${spec.name}',\n}\n\nconst tagLoaded`,
   )
+  if (next === text) throw new Error('TAG_ENTRY 补丁失败：未找到 const tagLoaded 锚点')
+  return next
 }
 
 function patchDescriptions(spec, data, lang) {

@@ -1,4 +1,6 @@
 import assert from 'node:assert/strict'
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import test from 'node:test'
 import { normalizeSpec, plan } from './component.mjs'
 
@@ -38,6 +40,22 @@ test('plan 生成源码/测试/文档并补丁注册入口', () => {
   assert.ok(patchPaths.includes('packages/ui/src/families/conversation.ts'))
   assert.ok(patchPaths.includes('packages/ui/src/ssr.ts'))
   assert.ok(patchPaths.includes('packages/ssr/src/not-ssr.ts'))
+})
+
+test('SSR 白名单补丁能在真实 index.ts 上同时写入 WHITELIST 与 TAG_ENTRY', () => {
+  const result = plan({ ...SPEC, ssr: true })
+  const patch = result.patches.find((p) => p.path === 'packages/ssr/src/index.ts')
+  const input = readFileSync(join(process.cwd(), 'packages/ssr/src/index.ts'), 'utf8')
+  const output = patch.fn(input)
+  assert.match(output, /'oas-foo-bar'/)
+  assert.match(output, /'oas-foo-bar': '@oas-ui\/ui\/conversation\/foo-bar'/)
+})
+
+test('文档 API 占位表使用规范表头，api:gen 可接管', () => {
+  const result = plan(SPEC)
+  const zh = result.files.find((f) => f.path.endsWith('/components/foo-bar.md'))
+  assert.match(zh.content, /\| 属性 \| 说明 \| 类型 \| 默认值 \|/)
+  assert.match(zh.content, /`label`/)
 })
 
 test('NOT_SSR 补丁插入到数组末尾且不破坏导出行', () => {

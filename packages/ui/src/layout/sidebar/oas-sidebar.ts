@@ -1527,7 +1527,7 @@ export class OASSidebar extends OASElement {
     if (!path) return null
     const stroke = iconColor || 'currentColor'
     const strokeAttr = escapeAttr(stroke)
-    const coloredPath = iconColor ? path.replace(/stroke="currentColor"/g, `stroke="${strokeAttr}"`) : path
+    const coloredPath = iconColor ? path.replace(/stroke="currentColor"/g, () => `stroke="${strokeAttr}"`) : path
     return `<svg viewBox="0 0 16 16" width="1.25em" height="1.25em" aria-hidden="true" focusable="false" fill="none" stroke="${strokeAttr}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">${coloredPath}</svg>`
   }
 

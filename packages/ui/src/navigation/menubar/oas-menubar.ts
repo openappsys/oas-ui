@@ -1,4 +1,5 @@
 import { escapeAttr, OASElement } from '@oas-ui/core'
+import { safeUrl } from '../../shared/safe-url.js'
 import type { MenuItem, MenuItemKind } from '../menu/index.js'
 // 图标查表走 @oas-ui/icons 运行时（registerIcon 自定义优先、内置集兜底，与 oas-icon 同源）；
 // 不经 oas-icon 组件模块——避免把整个 <oas-icon> 拉进 menubar 按需链
@@ -1126,7 +1127,8 @@ export class OASMenubar extends OASElement {
       btn.className = 'top-item'
       btn.setAttribute('part', 'top-item')
       if (!hasChildren && item.href) {
-        btn.setAttribute('href', item.href)
+        const href = safeUrl(item.href)
+        if (href) btn.setAttribute('href', href)
         if (item.target) btn.setAttribute('target', item.target)
         if (item.target === '_blank') {
           if (!item.rel) btn.setAttribute('rel', 'noopener')
@@ -1268,7 +1270,8 @@ export class OASMenubar extends OASElement {
       )
       li.setAttribute('tabindex', '-1')
       if (!hasChildren && item.href) {
-        li.setAttribute('href', item.href)
+        const href = safeUrl(item.href)
+        if (href) li.setAttribute('href', href)
         if (item.target) li.setAttribute('target', item.target)
         if (item.target === '_blank') {
           if (!item.rel) li.setAttribute('rel', 'noopener')
@@ -1377,7 +1380,7 @@ export class OASMenubar extends OASElement {
   private createIconFromPath(content: string, className = 'icon', iconColor?: string): HTMLElement | null {
     const stroke = iconColor || 'currentColor'
     const coloredContent = iconColor
-      ? content.replace(/stroke="currentColor"/g, `stroke="${escapeAttr(stroke)}"`)
+      ? content.replace(/stroke="currentColor"/g, () => `stroke="${escapeAttr(stroke)}"`)
       : content
     const span = document.createElement('span')
     span.className = className
@@ -1756,7 +1759,8 @@ export class OASMenubar extends OASElement {
     li.setAttribute('role', action ? 'menuitem' : checkbox ? 'menuitemcheckbox' : 'menuitemradio')
     li.setAttribute('tabindex', '-1')
     if (item.href) {
-      li.setAttribute('href', item.href)
+      const href = safeUrl(item.href)
+      if (href) li.setAttribute('href', href)
       if (item.target) li.setAttribute('target', item.target)
       if (item.target === '_blank') {
         if (!item.rel) li.setAttribute('rel', 'noopener')
