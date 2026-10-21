@@ -60,11 +60,8 @@ export default defineConfig(() => {
         formats: ['iife'] as 'iife'[],
         fileName: () => fileName,
       },
-      rollupOptions: {
-        output: {
-          inlineDynamicImports: true,
-        },
-      },
+      // IIFE 单入口本身不产 chunk；Vite 8 已默认 codeSplitting:false，
+      // 旧的 output.inlineDynamicImports 会被忽略并告警，故不再显式设置。
       outDir: 'dist',
       // 不清空 dist：主构建的 preserveModules ESM 输出保留在同一目录
       emptyOutDir: false,

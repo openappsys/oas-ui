@@ -4,6 +4,10 @@
   "private": true,
   "type": "module",
   "packageManager": "pnpm@12.5.1",
+  "engines": {
+    "node": "^22.18.0 || ^24.0.0 || >=26.0.0",
+    "pnpm": ">=12"
+  },
   "scripts": {
     "predev": "pnpm -r --filter @oas-ui/ui... build && pnpm --filter @oas-ui/theme build",
     "dev": "cross-env CI=true pnpm --parallel --filter @oas-ui/core --filter @oas-ui/i18n --filter @oas-ui/icons --filter @oas-ui/theme --filter @oas-ui/ui --filter @oas-ui/docs dev",
@@ -41,13 +45,12 @@
     "@oas-ui/theme": "workspace:*",
     "@oas-ui/ui": "workspace:*",
     "@playwright/test": "^1.64.1",
-    "@types/node": "^26.6.5",
+    "@types/node": "^22.18.0",
     "cross-env": "^10.1.0",
     "happy-dom": "^21.0.3",
     "markdownlint-cli2": "^0.23.3",
     "typescript": "^7.0.2",
     "vite": "^8.3.4",
-    "vite-plugin-dts": "^5.1.2",
     "vitest": "^5.0.5"
   }
 }

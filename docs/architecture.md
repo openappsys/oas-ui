@@ -10,7 +10,7 @@
 | 组件基类      | 自研轻量基类（`OASElement`，基于 `HTMLElement`）   | 核心无第三方运行时依赖；响应式自研（见 §2.1），不引第三方基类库 |
 | 响应式        | **自研 signal + 自研断点/容器查询桥接**            | 零依赖原则的延伸；组件粒度小，自研成本可控（见 §2.1）   |
 | 语言          | TypeScript strict                                  | 全量类型、属性/事件类型导出                             |
-| 构建          | Vite（library mode）+ `vite-plugin-dts`            | 产出 ESM + `.d.ts`，按需加载                            |
+| 构建          | Vite（library mode）+ `tsc --emitDeclarationOnly`   | 产出 ESM + `.d.ts`，按需加载                            |
 | 单测          | Vitest + happy-dom                                 | 组件事件/属性/渲染                                      |
 | 视觉/交互测试 | Playwright（chromium/firefox/webkit）              | 真实浏览器交互、视觉回归（可先行 chromium）             |
 | 主题          | CSS 变量（`:root` + `[data-theme]`）               | 运行时换肤、宿主可覆盖                                  |
@@ -187,7 +187,7 @@ oas-ui/
 | 层       | 工具                  | 覆盖                                                           |
 | -------- | --------------------- | -------------------------------------------------------------- |
 | 单测     | Vitest                | 属性映射、事件派发、state 转移、边界（disabled/empty/loading） |
-| 行为测试 | Vitest + jsdom        | 键盘导航、焦点陷阱、受控模式                                   |
+| 行为测试 | Vitest + happy-dom    | 键盘导航、焦点陷阱、受控模式                                   |
 | 视觉回归 | Playwright screenshot | 每组件各状态、light/dark                                       |
 | 无障碍   | Playwright + axe-core | 键盘流 + ARIA                                                  |
 | 互操作   | playground            | React/Vue 真实宿主跑通、事件/属性桥接                          |

@@ -14,6 +14,6 @@
     "@oas-ui/theme": "workspace:*",
     "@oas-ui/ui": "workspace:*",
     "shiki": "^4.4.3",
-    "vitepress": "^2.0.0-alpha.20"
+    "vitepress": "2.0.0-alpha.20"
   }
 }

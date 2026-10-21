@@ -41,7 +41,7 @@ export default defineConfig({
       entry: entries,
       formats: ['es'],
     },
-    rollupOptions: {
+    rolldownOptions: {
       external: [/^@oas-ui\//],
       treeshake: {
         // 含注册副作用的 side-effect import 必须保留：i18n（注入 translator）、

@@ -33,8 +33,8 @@
 ### 详细需求
 
 - pnpm monorepo：`packages/core` `packages/theme` `packages/icons` `packages/ui` `packages/docs` + 根 workspace
-- 构建：Vite library mode，ESM 产物 + `vite-plugin-dts` 生成 `.d.ts`，`sideEffects: false`
-- 测试：Vitest（jsdom/happy-dom）+ Playwright 基础配置（chromium + axe-core）
+- 构建：Vite library mode，ESM 产物 + `tsc --emitDeclarationOnly` 生成 `.d.ts`，`sideEffects: false`
+- 测试：Vitest（happy-dom）+ Playwright 基础配置（chromium + axe-core）
 - `OASElement` 基类：`HTMLElement` 子类，提供属性观察（`observedAttributes` → 属性代理）、事件工具、CSS 变量注入
 - theme token：`:root`（light）+ `[data-theme="dark"]` 双套 CSS 变量（色/字号/间距/圆角/动效，初版定义主色阶）
 - 组件 Button 完整落地（作为范例组件）：`<oas-button>`，属性 `type/size/disabled/loading`，事件 `oas-click`，Shadow DOM + `::part(button)` 暴露
