@@ -19,6 +19,8 @@
     "test:e2e:components": "playwright test --project=chromium --project=firefox",
     "test:e2e:webkit": "playwright test --project=webkit",
     "test:e2e:shards": "node scripts/e2e/shards.mjs",
+    "qa:audit": "node scripts/qa/assert-audit.mjs",
+    "qa:audit:check": "node scripts/qa/assert-audit.mjs --check",
     "format": "biome format --write .",
     "format:check": "biome format .",
     "api:scan": "node scripts/api-docs/scan.mjs",

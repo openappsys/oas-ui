@@ -114,9 +114,9 @@ test('movable：canvas 引擎下拖拽 offset 写回、背景位置跟随（图�
 test('watermark demo 属性存活（Vue 不剥离）：grayscale / fullscreen 宿主属性均在', async ({ page }) => {
   await page.goto('/components/watermark.html', { waitUntil: 'domcontentloaded' })
   await up(page, '#wm-img-gray')
-  expect(await page.locator('oas-watermark[grayscale]').count()).toBeGreaterThan(0)
-  expect(await page.locator('oas-watermark[movable]').count()).toBeGreaterThan(0)
-  expect(await page.locator('oas-watermark[staggered]').count()).toBeGreaterThan(0)
+  await expect(page.locator('#wm-img-gray')).toHaveAttribute('grayscale', '')
+  await expect(page.locator('#wm-movable')).toHaveAttribute('movable', '')
+  await expect(page.locator('oas-watermark[staggered]')).toHaveCount(1)
 })
 
 test('watermark 空容器：无 slot 内容时宿主不塌缩、水印图层有实际宽度（flex 容器空宿主 0 宽回归）', async ({ page }) => {

@@ -119,25 +119,25 @@ test('breadcrumb ellipsis 模式项下拉不被裁剪：面板 elementFromPoint 
     const host = [...document.querySelectorAll('oas-breadcrumb')].find((b) =>
       (b.getAttribute('items') || '').includes('"dropdown"'),
     )
-    if (!host) return { skip: true as const }
+    if (!host) return { skip: 'host' as const, open: false, height: 0, hitInside: false }
     host.scrollIntoView({ block: 'center' })
     await new Promise((res) => setTimeout(res, 300))
     const trig = host.shadowRoot!.querySelector<HTMLElement>('[aria-haspopup]')
-    if (!trig) return { skip: true as const }
+    if (!trig) return { skip: 'trigger' as const, open: false, height: 0, hitInside: false }
     trig.click()
     await new Promise((res) => setTimeout(res, 400))
     const panel = host.shadowRoot!.querySelector<HTMLElement>('.menu-panel.open')
-    if (!panel) return { skip: false as const, open: false }
+    if (!panel) return { skip: null, open: false, height: 0, hitInside: false }
     const rect = panel.getBoundingClientRect()
     const hit = document.elementFromPoint(rect.left + rect.width / 2, Math.min(rect.top + 8, rect.bottom - 4))
     return {
-      skip: false as const,
+      skip: null,
       open: true,
       height: rect.height,
       hitInside: !!hit && (host.shadowRoot!.contains(hit) || host.contains(hit)),
     }
   })
-  if (r.skip) return
+  expect(r.skip, 'demo 必须存在 dropdown 实例与触发按钮').toBeNull()
   expect(r.open, '下拉面板应打开').toBe(true)
   expect(r.height, '下拉面板应有高度').toBeGreaterThan(20)
   expect(r.hitInside, '下拉面板顶部应真实可见（不被 nav overflow 裁剪）').toBe(true)

@@ -32,8 +32,12 @@ test('demo 事件反馈（点击 button 弹出 message）', async ({ page }) => 
   await page.waitForFunction(() => document.querySelectorAll('oas-message').length > 0, null, {
     timeout: 5000,
   })
-  const n = await page.evaluate(() => document.querySelectorAll('oas-message').length)
-  expect(n).toBeGreaterThan(0)
+  const message = await page.evaluate(() => {
+    const first = document.querySelector('oas-message')
+    return { count: document.querySelectorAll('oas-message').length, text: first?.textContent?.trim() ?? '' }
+  })
+  expect(message.count, '点击后应恰好出现一条 message').toBe(1)
+  expect(message.text, 'message 文案应来自 oas-click 事件').toContain('oas-click')
 })
 
 test('size 五档：button/tag/switch 在 demo 中渲染对应 size class（不静默吞值）', async ({ page }) => {

@@ -143,7 +143,7 @@ test('kanban 列拖拽重排：列头手柄拖到邻列 → oas-column-reorder�
     const events: unknown[] = []
     el.addEventListener('oas-column-reorder', (e) => events.push((e as CustomEvent).detail))
     const handles = [...el.shadowRoot!.querySelectorAll<HTMLElement>('.column-drag')]
-    if (handles.length < 2) return { skip: true, events }
+    if (handles.length < 2) return { handles: handles.length, events, keys: [] }
     const dt = new DataTransfer()
     handles[0]!.dispatchEvent(new DragEvent('dragstart', { bubbles: true, composed: true, dataTransfer: dt }))
     const secondHead = [...el.shadowRoot!.querySelectorAll<HTMLElement>('.column')][1]!.querySelector(
@@ -156,15 +156,15 @@ test('kanban 列拖拽重排：列头手柄拖到邻列 → oas-column-reorder�
     secondHead.dispatchEvent(new DragEvent('drop', { bubbles: true, composed: true, dataTransfer: dt }))
     handles[0]!.dispatchEvent(new DragEvent('dragend', { bubbles: true, composed: true, dataTransfer: dt }))
     return {
+      handles: handles.length,
       events,
       keys: (JSON.parse(el.getAttribute('columns') ?? '[]') as Array<{ key: string }>).map((c) => c.key),
     }
   })
-  if (r.skip) {
-    test.skip(true, '列重排手柄选择器未命中——demo 结构需对齐')
-    return
-  }
+  expect(r.handles, 'demo 必须提供至少两个列重排手柄').toBeGreaterThanOrEqual(2)
   expect(r.events.length, '列重排派发 oas-column-reorder').toBe(1)
+  expect(r.events[0], '列重排 detail 必须带 from/to/keys').toMatchObject({ from: 0, to: 1 })
+  expect(Array.isArray((r.events[0] as { keys?: unknown }).keys)).toBe(true)
 })
 
 test('kanban 多选拖拽：Ctrl 选两枚 → 拖一枚 → 全部选中卡移动 + 一条 oas-change 带 ids', async ({ page }) => {
