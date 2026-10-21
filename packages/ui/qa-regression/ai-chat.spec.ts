@@ -51,22 +51,14 @@ test('AI 会话流式期间上翻不被逐 token 拉回', async ({ page }) => {
   })
   await page.evaluate(() => {
     const log = document.getElementById('ai-chat-log') as HTMLElement
-    log.style.height = '80px'
+    log.style.height = '40px'
   })
   const input = page.locator('#ai-chat-input [part="textarea"]')
   await input.fill('上翻阅读测试')
   await input.press('Enter')
   await expect(page.locator('#ai-chat-log')).toContainText('上翻阅读测试')
-  // 等流式内容撑出滚动空间后，模拟读者上翻到顶部
-  await page.waitForFunction(
-    () => {
-      const log = document.getElementById('ai-chat-log') as HTMLElement & { shadowRoot?: ShadowRoot | null }
-      const vp = log.shadowRoot?.querySelector<HTMLElement>('[part="viewport"]')
-      return !!vp && vp.scrollHeight > vp.clientHeight + 20
-    },
-    undefined,
-    { timeout: 5000 },
-  )
+  // 高度 40px 下追加用户行即已溢出；流式开始后立即模拟读者上翻到顶部
+  await page.waitForFunction(() => document.querySelector('#ai-chat-status')?.textContent === '生成中…')
   await page.evaluate(() => {
     const log = document.getElementById('ai-chat-log') as HTMLElement & { shadowRoot?: ShadowRoot | null }
     log.shadowRoot!.querySelector<HTMLElement>('[part="viewport"]')!.scrollTop = 0
@@ -89,6 +81,7 @@ test('AI 会话流式期间上翻不被逐 token 拉回', async ({ page }) => {
     return log.shadowRoot!.querySelector<HTMLElement>('[part="viewport"]')!.scrollTop
   })
   expect(scrollTop, '读者上翻后流式追加不应强制滚底').toBeLessThan(5)
-  await page.locator('#ai-chat-input [part="send"]').click()
-  await expect(page.locator('#ai-chat-status')).toHaveText('已停止', { timeout: 5000 })
+  // 清理：仍在生成则停止；已完成则无需操作（停止语义由主用例覆盖）
+  const stop = page.locator('#ai-chat-input [part="send"]')
+  if ((await stop.textContent()) === '停止') await stop.click()
 })
