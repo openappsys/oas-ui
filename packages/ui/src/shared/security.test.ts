@@ -99,6 +99,21 @@ describe('HTML/SVG 注入安全回归', () => {
     expectNoInjectedAttrs(el.shadowRoot!)
   })
 
+  for (const [name, ctor] of [
+    ['menu', OASMenu],
+    ['menubar', OASMenubar],
+    ['navigation-menu', OASNavigationMenu],
+  ] as const) {
+    it(`${name} 的 items href 不写入 javascript:`, async () => {
+      const items = JSON.stringify([{ label: 'Bad', value: 'bad', href: 'javascript:window.__oas_xss=1' }])
+      const el = mount(new ctor(), { items })
+      await flush()
+      for (const anchor of el.shadowRoot!.querySelectorAll<HTMLAnchorElement>('a[href]')) {
+        expect(anchor.getAttribute('href') ?? '').not.toMatch(/^javascript:/i)
+      }
+    })
+  }
+
   it('link 的 javascript: 不写入 href', async () => {
     const el = mount(new OASLink(), { href: 'javascript:window.__oas_xss=1' })
     await flush()
