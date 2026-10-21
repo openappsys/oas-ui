@@ -252,6 +252,9 @@ export abstract class OASElement extends HTMLElement {
    * 规范名存在 → 不动；否则旧名有值 → 复制到规范名并移除旧名（旧名不再参与后续读取）。
    *
    * 幂等（规范名已存在即跳过），无需外部 guard；迁移仅改宿主 attribute，不影响 shadow/SSR 检查。
+   *
+   * 台账：`docs/deprecations.json`（`pnpm deprecations:check` 校验）。移除别名前必须确认 property
+   * 访问器仍保留（React/Vue 的 `key in el` 通道），且 removeIn 已由用户定为高于当前版本的 major。
    */
   protected normalizeLegacyAlias(primary: string, legacy: string): void {
     if (this.getAttribute(primary) != null) return

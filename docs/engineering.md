@@ -20,6 +20,8 @@
 
 **命名约定**：组件单测 `packages/ui/src/<组>/<组件>/oas-xxx.test.ts`（Vitest + happy-dom）；e2e spec 集中在 `packages/ui/*.spec.ts`，按职责命名：`a11y.spec.ts`（axe 审计 + 感知对比度门禁）、`smoke.spec.ts`（全页渲染无 JS 错误/告警）、`console-sweep.spec.ts`（每页 console 零告警零报错门禁）、`qa-regression/`（历次复核缺陷固化回归，按组件一文件：`qa-regression/<组件>.spec.ts`，跨组件/全局场景进 `misc.spec.ts`，共享工具在 `helpers.ts`；覆盖选中态可见性/纵向布局/圆角合并/hover 可读性/addon 属性存活/点击不滚动/demo 事件反馈）、`dark.spec.ts`（暗色冒烟）、`demo.spec.ts`/`code.spec.ts`（demo 渲染与示例代码）、`interaction.spec.ts`/`onoas*.spec.ts`（交互/事件绑定）、`visual.spec.ts`（全页截图）。qa-regression 按组件拆文件是 Playwright 文件级并行的要求：单巨石文件只能独占一个 worker 串行执行，拆开后多 worker 真并行。DSD 验收 spec 例外地在 `packages/ssr/ssr-dsd.spec.ts`：渲染器在 ssr 侧、被验组件库在 ui 侧，依赖方向为 ssr → ui，放 ui 会形成构建环；Playwright 的 `testDir` 为 `packages/`，该 spec 同样进 chromium 全量（firefox 抽样面不变）。
 
+**废弃 API 台账**：`docs/deprecations.json` 是别名/事件双发/已移除墓碑的唯一机器可读来源；`pnpm deprecations:gen` 生成 `docs/deprecations.md`，`pnpm deprecations:check` 校验 `normalizeLegacyAlias` 调用、canonical 存在性与 removeIn 版本纪律。移除版本由用户定，AI 不擅自填写或执行移除。
+
 **断言质量审计**：`pnpm qa:audit` 输出无 `expect` 文件、无条件 `test.skip(true)`、固定 `waitForTimeout`、弱断言与事件只断 length 的分布；`pnpm qa:audit:check` 以当前基线为上限，新增假绿或等待膨胀会红灯。它不是覆盖率替代品，只负责让“测了但没断言”可见。
 
 **Vitest 运行模式**：默认逐文件隔离（Vitest 5 + happy-dom，每文件独立环境）。**关闭隔离不可用（2026-09 尝试已回退）**：`poolOptions` 在 Vitest 4 已移除（曾被误设为 `poolOptions.forks.isolate=false`——死配置，全量仍逐文件建环境）；改顶层 `isolate: false` 真正关闭后，跨文件模块状态共享直接击穿 18 条测试（capability 注册表 late-join 污染 / vi.mock 的 computePositionMock 泄漏 / hover-card 计时态等）——本套件大量用例依赖「每文件全新模块图」（vi.mock 模块替换、能力注册表、locale 全局态、matchMedia 桩），为 ~15% 的 wall 节省逐个扶正不值得，已回退为默认隔离。后续若确需提速，先按「模块级全局态清单」（capability 注册表 / vi.mock / setLocale / 桩）逐类做环境自清理，再评估开关。

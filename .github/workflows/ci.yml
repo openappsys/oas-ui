@@ -38,6 +38,8 @@ jobs:
       # 发布前本地跑一遍核对即可（见 docs/engineering.md §4 性能基准）。
       - run: pnpm perf:size
       - run: pnpm api:check
+      # 废弃 API 台账：别名必须登记，canonical 必须存在，removeIn 不得倒退
+      - run: pnpm deprecations:check
       # SSR 覆盖矩阵防漂移：组件必须二选一（WHITELIST / NOT_SSR），文档数量与清单同步
       - run: pnpm ssr:check
       # /llms.txt 防漂移（llmstxt.org 规范；由 docs 侧栏 + 组件 md 生成，入库的是精选索引）

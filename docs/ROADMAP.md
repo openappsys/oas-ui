@@ -22,6 +22,7 @@
 | **AI 会话接入 recipe** | prompt-input + message-scroller 流式/停止/失败重试示例 | 🚧 待发布 |
 | **API methods 扫描 + WebKit 抽样** | `api:scan/api:gen` 输出方法表；WebKit smoke 子集纳入 e2e | 🚧 待发布 |
 | **AI 会话流式可访问性** | `message-scroller.announce()` 独立 status 区；`bubble.streaming`；prompt-input aria-busy/readonly 停止；recipe 逐 token 滚底与重试重复用户行修复 | 🚧 待发布 |
+| **废弃 API 台账** | `docs/deprecations.json` + `deprecations:check`；别名/事件双发/已移除墓碑结构化登记，removeIn 由用户定 | 🚧 待发布 |
 
 ## 版本规划
 
