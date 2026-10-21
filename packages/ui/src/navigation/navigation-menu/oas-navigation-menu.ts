@@ -1417,6 +1417,7 @@ export class OASNavigationMenu extends OASElement {
     a.setAttribute('part', 'card-link')
     const cardHref = safeUrl(item.href)
     if (cardHref) a.setAttribute('href', cardHref)
+    else a.tabIndex = 0
     if (item.target) a.setAttribute('target', item.target)
     if (item.active) a.setAttribute('aria-current', 'page')
     if (item.disabled) a.setAttribute('aria-disabled', 'true')
@@ -1476,6 +1477,7 @@ export class OASNavigationMenu extends OASElement {
       const a2 = document.createElement('a')
       const childHref = safeUrl((child as NavItem).href)
       if (childHref) a2.setAttribute('href', childHref)
+      else a2.tabIndex = 0
       if ((child as NavItem).target) a2.setAttribute('target', (child as NavItem).target!)
       if ((child as NavItem).active) a2.setAttribute('aria-current', 'page')
       if (child.disabled) a2.setAttribute('aria-disabled', 'true')
@@ -1598,6 +1600,7 @@ export class OASNavigationMenu extends OASElement {
       a.setAttribute('part', 'sub-link')
       const subHref = safeUrl(s.href)
       if (subHref) a.setAttribute('href', subHref)
+      else a.tabIndex = 0
       if (s.target) a.setAttribute('target', s.target)
       if (s.active) a.setAttribute('aria-current', 'page')
       if (s.disabled) a.setAttribute('aria-disabled', 'true')

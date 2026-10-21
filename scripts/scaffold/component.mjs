@@ -219,12 +219,15 @@ function patchWhitelist(spec, text) {
 
 function patchTagEntry(spec, text) {
   if (text.includes(`'${spec.tag}':`)) return text
-  const next = text.replace(
-    /\n\}\n\n(?:\/\*\*[\s\S]*?\*\/\n)?const tagLoaded/,
-    `\n  '${spec.tag}': '@oas-ui/ui/${spec.group}/${spec.name}',\n}\n\nconst tagLoaded`,
-  )
-  if (next === text) throw new Error('TAG_ENTRY 补丁失败：未找到 const tagLoaded 锚点')
-  return next
+  const tagLoaded = text.indexOf('const tagLoaded')
+  const tagEntry = text.indexOf('const TAG_ENTRY')
+  if (tagLoaded < 0 || tagEntry < 0 || tagLoaded < tagEntry) {
+    throw new Error('TAG_ENTRY 补丁失败：未找到 TAG_ENTRY / const tagLoaded 锚点')
+  }
+  // 在 TAG_ENTRY 之后、tagLoaded 之前的最后一个对象闭合 } 前插入，避免跨段匹配到 LOCALES。
+  const close = text.lastIndexOf('\n}', tagLoaded)
+  if (close < tagEntry) throw new Error('TAG_ENTRY 补丁失败：未找到对象闭合')
+  return `${text.slice(0, close)}\n  '${spec.tag}': '@oas-ui/ui/${spec.group}/${spec.name}',${text.slice(close)}`
 }
 
 function patchDescriptions(spec, data, lang) {

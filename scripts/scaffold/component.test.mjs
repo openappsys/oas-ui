@@ -49,6 +49,11 @@ test('SSR 白名单补丁能在真实 index.ts 上同时写入 WHITELIST 与 TAG
   const output = patch.fn(input)
   assert.match(output, /'oas-foo-bar'/)
   assert.match(output, /'oas-foo-bar': '@oas-ui\/ui\/conversation\/foo-bar'/)
+  const entryIndex = output.indexOf("'oas-foo-bar':")
+  assert.ok(entryIndex > output.indexOf('const TAG_ENTRY'))
+  assert.ok(entryIndex < output.indexOf('const tagLoaded'))
+  assert.match(output, /SNAPSHOT_FORMAT_VERSION/)
+  assert.ok(output.length >= input.length - 2)
 })
 
 test('文档 API 占位表使用规范表头，api:gen 可接管', () => {

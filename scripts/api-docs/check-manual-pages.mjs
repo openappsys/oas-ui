@@ -34,15 +34,22 @@ for (const tag of JSON.parse(readFileSync(join(MANIFEST_DIR, 'index.json'), 'utf
 const TYPE_BY_HEADER = new Map([
   ['属性', 'attrs'],
   ['attribute', 'attrs'],
+  ['attributes', 'attrs'],
   ['property', 'props'],
+  ['properties', 'props'],
+  ['props', 'props'],
   ['事件', 'events'],
   ['event', 'events'],
+  ['events', 'events'],
   ['插槽', 'slots'],
   ['slot', 'slots'],
+  ['slots', 'slots'],
   ['css 变量', 'cssVars'],
   ['css variable', 'cssVars'],
+  ['css variables', 'cssVars'],
   ['方法', 'methods'],
   ['method', 'methods'],
+  ['methods', 'methods'],
 ])
 
 function normalizeName(raw) {
@@ -117,6 +124,21 @@ for (const path of PAGES) {
       problems.push(`${path}: 页面 tag ${tag} 不在 manifest`)
       continue
     }
+    // 整段缺失检查（props 目前有 3 个历史页面没有 Property 段，先 allowlist）
+    for (const kind of ['attrs', 'events', 'slots', 'cssVars', 'methods']) {
+      const expected = manifestNames(tag, kind)
+      if (expected && expected.size > 0 && !groups.has(kind)) {
+        problems.push(`${path}: ${tag} 缺少 ${kind} 段`)
+      }
+    }
+    if (
+      !['oas-form', 'oas-toolbar-toggle', 'oas-scope-bar'].includes(tag) &&
+      manifestNames(tag, 'props')?.size > 0 &&
+      !groups.has('props')
+    ) {
+      problems.push(`${path}: ${tag} 缺少 props 段`)
+    }
+
     for (const [kind, names] of groups) {
       const expected = manifestNames(tag, kind)
       if (!expected) continue
