@@ -162,6 +162,16 @@ test('scheduler 跨日条终点缩放只改 endDate，可单步撤销', async ({
       title: '单日全天',
     }),
   )
+  // 受控桥接常见回声：把 oas-events-change 的 events 原样写回，不应清空撤销快照
+  await span.evaluate((el) => {
+    el.addEventListener(
+      'oas-events-change',
+      (e) => {
+        ;(el as unknown as { events: unknown[] }).events = (e as CustomEvent<{ events: unknown[] }>).detail.events
+      },
+      { once: true },
+    )
+  })
   const chip = span.locator('.band-col[data-date="2026-08-10"] .allday .chip', { hasText: '单日全天' })
   await expect(chip).toBeVisible()
   const bar = span.locator('.band-span', { hasText: '设计冻结' })

@@ -689,6 +689,28 @@ describe('OASScheduler P2：重复规则（RRULE 子集）+ 提醒', () => {
     expect(el.events[0]!.repeat?.freq).toBe('daily')
   })
 
+  it('repeat 与 endDate 不组合：清洗掉 endDate，按 occurrence 展开成每日条目而不是隐形跨日条', () => {
+    const el = mount({
+      view: 'week',
+      'page-show-date': '2026-08-10',
+      events: JSON.stringify([
+        {
+          id: 'rep-span',
+          date: '2026-08-10',
+          endDate: '2026-08-12',
+          title: '重复跨日',
+          repeat: { freq: 'daily', count: 3 },
+        },
+      ]),
+    })
+    expect(el.events[0]!.endDate).toBeUndefined()
+    expect(el.shadowRoot!.querySelector('.band-span[data-id="rep-span"]')).toBeNull()
+    for (const iso of ['2026-08-10', '2026-08-11', '2026-08-12']) {
+      expect(el.shadowRoot!.querySelector(`.band-col[data-date="${iso}"] .allday .chip`)?.textContent).toBe('重复跨日')
+    }
+    expect(el.shadowRoot!.querySelector('.band-col[data-date="2026-08-13"] .allday .chip')).toBeNull()
+  })
+
   it('remind：到点派发 oas-remind（start - remind 分钟）；过期不排', () => {
     vi.useFakeTimers()
     try {

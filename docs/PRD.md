@@ -2611,7 +2611,7 @@ group 子钮此前为宿主自填 light DOM（`slot="action"`），组件用 `::
 ## 未发布：scheduler 跨日终点缩放、起止时刻编辑与单步撤销（S03）
 
 - **范围**：跨日连续条末端手柄只改 `endDate`（保持 `date` / `start` / `end`），重叠条自动上下分层避免手柄被盖住；键盘 `Alt+←` / `Alt+→` 按天缩放（RTL 按视觉方向镜像）；时间块新增顶缘手柄改 `start`，既有底缘改 `end`，统一 15 分钟吸附；`updateEvent` 保留单步快照，新增 `canUndo` / `undo()`。
-- **语义**：顶缘拖到结束点之前钳制到 15 分钟网格内的 `end - 15`（先吸附再取上界，不产生 09:52 这类非网格值）；同日定时事件 `start >= end`（不含以 `endDate` 表达的跨日事件）拒绝写入且不产生撤销快照。定时跨日条最少保留 2 天（次日端点），全天条缩到单日后清空 `endDate` 回到芯片；缩到可视周之前时视图跟随，避免焦点丢到 body。重叠事件继续按车道并存，**不视为冲突**——既有产品语义支持并行日程，冲突仅指非法时间区间。`undo()` 回退最近一次 `updateEvent` 并派发 `oas-events-change`；整体 `events` set / `addEvent` / `removeEvent` 清空快照，但受控宿主原样回写相同 events 时保留快照。
+- **语义**：顶缘拖到结束点之前钳制到 15 分钟网格内的 `end - 15`（先吸附再取上界，不产生 09:52 这类非网格值）；同日定时事件 `start >= end`（不含以 `endDate` 表达的跨日事件）拒绝写入且不产生撤销快照。定时跨日条最少保留 2 天（次日端点），全天条缩到单日后清空 `endDate` 回到芯片；缩到可视周之前时视图跟随，避免焦点丢到 body。`repeat` 不与 `endDate` 组合：同时给出时清洗掉 `endDate`，按 occurrence 展开为每日条目，避免既不进跨日条也不进芯片而隐形。重叠事件继续按车道并存，**不视为冲突**——既有产品语义支持并行日程，冲突仅指非法时间区间。`undo()` 回退最近一次 `updateEvent` 并派发 `oas-events-change`；整体 `events` set / `addEvent` / `removeEvent` 清空快照，但受控宿主原样回写相同 events 时保留快照。
 - **兼容**：无新 attribute；新增只读 property `canUndo`，合法 `updateEvent` 行为不变；跨日条整体平移与既有键盘 `←` / `→` 不变；未调用 `undo()` 时无行为变化。
 - **验收**：单测覆盖终点缩放只改 `endDate`、Alt 键盘与 RTL、顶缘缩放、15 分钟吸附与 `end - 15` 钳制、定时跨日最少 2 天、视图跟随、非法区间/非法 endDate、pointercancel 不写数据、单步撤销与受控回写快照；e2e 覆盖真实鼠标顶缘/末端拖拽、Alt 键盘、重叠条分层、跨日条与单日芯片不遮挡、RTL 与 console 零告警；文档 zh/en、API 说明、PRD/ROADMAP/CHANGELOG 同步。
 

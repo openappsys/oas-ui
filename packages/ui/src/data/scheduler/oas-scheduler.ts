@@ -906,6 +906,8 @@ function sanitizeEvents(v: unknown): SchedulerEvent[] {
         ev.repeat = rep
       }
     }
+    // repeat 与 endDate 不组合：跨日条按原始事件渲染，重复按 occurrence 展开；两者并存会同时被两条路径跳过而隐形
+    if (ev.repeat && ev.endDate) delete ev.endDate
     if (typeof it.remind === 'number' && Number.isFinite(it.remind) && it.remind >= 0) ev.remind = it.remind
     if (typeof it.resource === 'string' && it.resource !== '') ev.resource = it.resource
     out.push(ev)
@@ -1262,8 +1264,8 @@ export class OASScheduler extends OASElement {
   }
   set events(v: SchedulerEvent[]) {
     const next = this.normalizeWithIds(sanitizeEvents(parseJsonArray<SchedulerEvent>(v as unknown)))
-    // 受控宿主常把 oas-events-change 的 events 原样写回：相等时保留撤销快照
-    if (JSON.stringify(next) !== JSON.stringify(this._events)) this.undoBefore = null
+    // 受控宿主常把 oas-events-change 的 events 原样写回：按清洗后语义判等，避免键序差异清掉撤销快照
+    if (!this.sameEvents(next)) this.undoBefore = null
     this._events = next
     this._eventsAttrCache = JSON.stringify(this._events)
     this.setAttribute('events', this._eventsAttrCache)
@@ -1400,6 +1402,12 @@ export class OASScheduler extends OASElement {
    * - 显式 id：本批首次出现且不撞（respectExisting 时的）存量 → 保留；本批重复或撞存量 → 自动避让
    * - 自动 id：避让「存量 + 本批全部显式 id + 已分配 id」
    */
+  /** 语义判等：两边都走清洗+id 归一，忽略宿主回写带来的键序/undefined 差异 */
+  private sameEvents(next: Array<SchedulerEvent & { id: string }>): boolean {
+    const current = this.normalizeWithIds(sanitizeEvents(this._events))
+    return JSON.stringify(next) === JSON.stringify(current)
+  }
+
   private normalizeWithIds(v: SchedulerEvent[], respectExisting = false): Array<SchedulerEvent & { id: string }> {
     const avoid = new Set<string>()
     if (respectExisting) for (const e of this._events) avoid.add(e.id)
@@ -1449,7 +1457,7 @@ export class OASScheduler extends OASElement {
     }
     const next = this.normalizeWithIds(sanitizeEvents(parsed))
     // 受控回写与当前数据相同：不清撤销快照
-    if (JSON.stringify(next) !== JSON.stringify(this._events)) this.undoBefore = null
+    if (!this.sameEvents(next)) this.undoBefore = null
     this._events = next
   }
 

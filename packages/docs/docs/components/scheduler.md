@@ -22,7 +22,7 @@
   <oas-scheduler id="scheduler-day" view="day" page-show-date="2026-08-10" events='[{"date":"2026-08-10","title":"晨会","start":"09:00","end":"10:00"},{"date":"2026-08-10","title":"面试","start":"09:30","end":"10:30"},{"date":"2026-08-10","title":"评审","start":"14:00","end":"15:30"}]'></oas-scheduler>
 </DemoBlock>
 
-周/日视图为时刻表（`start-hour` / `end-hour` 限幅，默认 8–20 点）：带 `start`/`end` 的事件按时间绝对定位成块，无 `start` 的事件进顶部全天行；**时间重叠的事件自动按车道并排**（聚簇内等宽、带间隙，不再完全叠印）；早于 `start-hour` / 晚于 `end-hour` 的事件按区间夹取，块不会越出轨道或盖住列头；视图按钮切换派发 `oas-view-change`。事件块支持**拖拽移动**（拖到目标列/时刻改 `date` + `start`，保持时长）与**上下双缘缩放**（顶缘改 `start`、底缘改 `end`，15 分钟步进）；顶缘拖到结束点之前即钳制为 `end - 15` 分钟，落定回写并派发 `oas-events-change`。重叠事件仍按车道并存，不属于冲突；只有同日 `start >= end` 的非法区间会被拒绝写入。
+周/日视图为时刻表（`start-hour` / `end-hour` 限幅，默认 8–20 点）：带 `start`/`end` 的事件按时间绝对定位成块，无 `start` 的事件进顶部全天行；**时间重叠的事件自动按车道并排**（聚簇内等宽、带间隙，不再完全叠印）；早于 `start-hour` / 晚于 `end-hour` 的事件按区间夹取，块不会越出轨道或盖住列头；视图按钮切换派发 `oas-view-change`。事件块支持**拖拽移动**（拖到目标列/时刻改 `date` + `start`，保持时长）与**上下双缘缩放**（顶缘改 `start`、底缘改 `end`，15 分钟步进）；顶缘拖到结束点之前即钳制为 `end - 15` 分钟，落定回写并派发 `oas-events-change`；吸附只作用于被拖拽的一端，另一端保持原值，非网格既有时间不会被改写。重叠事件仍按车道并存，不属于冲突；只有同日 `start >= end` 的非法区间会被拒绝写入。
 
 ## 重复规则与提醒
 
@@ -31,7 +31,7 @@
 </DemoBlock>
 
 `repeat` 按 `freq` × `interval` 从 `date` 起展开（daily 按天数间隔、weekly 按周、monthly 按同日），`until` 截止（含当日）；`el.events` 仍只读原始条目（展开只发生在渲染层）。
-月/周规则还可加 `byMonth`（1-12）、`byMonthDay`（1-31）、`bySetPos`（如 `-1`）、`byDay`（weekly，0=周日…6=周六）与 `exDates`（排除日期，`YYYY-MM-DD`）。本地 occurrence 过滤支持 `byMonth` / `byMonthDay` / `byDay` / `exDates`，以及「monthly + byMonthDay + bySetPos」组合；其他 `bySetPos` 场景原样写入 ICS `RRULE`。
+月/周规则还可加 `byMonth`（1-12）、`byMonthDay`（1-31）、`bySetPos`（如 `-1`）、`byDay`（weekly，0=周日…6=周六）与 `exDates`（排除日期，`YYYY-MM-DD`）。本地 occurrence 过滤支持 `byMonth` / `byMonthDay` / `byDay` / `exDates`，以及「monthly + byMonthDay + bySetPos」组合；其他 `bySetPos` 场景原样写入 ICS `RRULE`。`repeat` 不与 `endDate` 组合：同时给出时组件忽略 `endDate`，按 occurrence 展开为每日条目，避免既不进跨日条也不进芯片而隐形。
 
 <DemoBlock title="跨日全天条（周视图连续长条，可整体拖动平移）">
   <oas-scheduler id="scheduler-span" view="week" page-show-date="2026-08-10" events='[{"date":"2026-08-10","endDate":"2026-08-12","title":"设计冻结"},{"date":"2026-08-13","endDate":"2026-08-14","title":"回归窗口","color":"#059669"},{"date":"2026-08-12","endDate":"2026-08-13","title":"夜间值守","start":"22:00","end":"02:00"}]'></oas-scheduler>
