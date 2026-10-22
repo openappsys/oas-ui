@@ -43,7 +43,7 @@ test('anchor 墨水条 hidden→visible：尺寸自愈，与可见容器直接�
       while (performance.now() < deadline) {
         await raf()
         const r = ink.getBoundingClientRect()
-        const key = `${r.width}x${r.height}@${r.top},${r.left}`
+        const key = `${r.width.toFixed(1)}x${r.height.toFixed(1)}@${r.top.toFixed(1)},${r.left.toFixed(1)}`
         if ((r.width > 0 || r.height > 0) && key === prev) return
         prev = key
       }

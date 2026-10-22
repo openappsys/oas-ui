@@ -102,10 +102,15 @@ test('resource 容量日历：holiday 当天容量 0，直方图真实超载并�
       )
     })
     document.body.appendChild(el)
-    await Promise.race([
-      overload,
-      new Promise((_, reject) => setTimeout(() => reject(new Error('oas-overload timeout')), 3000)),
-    ])
+    let timeout: ReturnType<typeof setTimeout> | undefined
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      timeout = setTimeout(() => reject(new Error('oas-overload timeout')), 3000)
+    })
+    try {
+      await Promise.race([overload, timeoutPromise])
+    } finally {
+      if (timeout) clearTimeout(timeout)
+    }
     await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)))
     return {
       capacity,

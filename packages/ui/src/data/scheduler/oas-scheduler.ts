@@ -1397,17 +1397,17 @@ export class OASScheduler extends OASElement {
     return true
   }
 
-  /**
-   * id 归一化（避让集与重复判定分离）：
-   * - 显式 id：本批首次出现且不撞（respectExisting 时的）存量 → 保留；本批重复或撞存量 → 自动避让
-   * - 自动 id：避让「存量 + 本批全部显式 id + 已分配 id」
-   */
   /** 语义判等：两边都走清洗+id 归一，忽略宿主回写带来的键序/undefined 差异 */
   private sameEvents(next: Array<SchedulerEvent & { id: string }>): boolean {
     const current = this.normalizeWithIds(sanitizeEvents(this._events))
     return JSON.stringify(next) === JSON.stringify(current)
   }
 
+  /**
+   * id 归一化（避让集与重复判定分离）：
+   * - 显式 id：本批首次出现且不撞（respectExisting 时的）存量 → 保留；本批重复或撞存量 → 自动避让
+   * - 自动 id：避让「存量 + 本批全部显式 id + 已分配 id」
+   */
   private normalizeWithIds(v: SchedulerEvent[], respectExisting = false): Array<SchedulerEvent & { id: string }> {
     const avoid = new Set<string>()
     if (respectExisting) for (const e of this._events) avoid.add(e.id)

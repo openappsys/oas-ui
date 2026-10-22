@@ -168,6 +168,16 @@ describe('OASScheduler 月视图 + events CRUD', () => {
     expect(el.events[0]!.title).toBe('原')
   })
 
+  it('S03：自动 id 事件的受控回写也保留撤销快照（键序归一）', () => {
+    const el = mount({ events: JSON.stringify([{ date: '2026-08-10', title: '原' }]) })
+    const id = el.events[0]!.id!
+    expect(el.updateEvent(id, { title: '改' })).toBe(true)
+    el.events = el.events
+    expect(el.canUndo).toBe(true)
+    expect(el.undo()).toBe(true)
+    expect(el.events[0]!.title).toBe('原')
+  })
+
   it('S03：顶缘越过 end 时按 15 分钟网格钳制，不产生 09:52 这类非网格值', () => {
     const el = mount({
       view: 'week',
