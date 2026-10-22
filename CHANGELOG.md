@@ -2,7 +2,7 @@
 
 所有显著变更记录于此。
 
-## [未发布]
+## [2.6.3] - 2026-10-22
 
 ### 构建与性能
 
@@ -1176,6 +1176,7 @@
 - 基础运行时 `@oas-ui/core`、主题 token、图标库
 - 新增 Button、Icon、Tag、Badge、Space、Divider、Link、Typography
 
+[2.6.3]: https://github.com/openappsys/oas-ui/compare/v2.6.2...v2.6.3
 [2.6.1]: https://github.com/openappsys/oas-ui/compare/v2.6.0...v2.6.1
 [2.6.0]: https://github.com/openappsys/oas-ui/releases/tag/v2.6.0
 [2.5.9]: https://github.com/openappsys/oas-ui/releases/tag/v2.5.9
