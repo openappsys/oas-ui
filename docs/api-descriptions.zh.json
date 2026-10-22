@@ -4360,7 +4360,7 @@
       "range-end": "宿主托管时间轴终点（ISO 日期 YYYY-MM-DD，含当日）：与 range-start 成对使用",
       "stripe": "行斑马纹（布尔，默认关）：按**绝对行号**奇偶给行加底色（虚拟化/窗口化滚动稳定，不随 DOM 顺序跳变）；颜色走 `--oas-gantt-row-stripe-bg`（缺省 `--oas-color-bg-hover`）；选中/周末假日等背景覆盖条纹",
       "show-float": "显示总浮时/自由浮时（布尔，默认关）：仅在依赖图完整时计算，条上显示「总浮时/自由浮时」标签并写入 data-total-float/data-free-float（单位为天）；摘要不参与，windowed 模式跳过并 devWarn",
-      "group-by-project": "按任务 project 自动生成项目根摘要（行 id 为 __oas_project__:&lt;project&gt;），原任务数组不变；windowed 模式要求宿主自行展平，不做自动分组",
+      "group-by-project": "按任务 project 自动生成项目根摘要（行 id 为 `__oas_project__:<project>`），原任务数组不变；windowed 模式要求宿主自行展平，不做自动分组",
       "show-variance": "任务带 baseline 时在行名后显示 Δ±Nd 偏差徽标，并写入 data-start-delta/data-end-delta/data-duration-delta/data-progress-delta；正值标红、负值标绿",
       "history": "内建撤销/重做（布尔，默认关）：记录任务提交快照（最多 100 步），配合 undo()/redo()/canUndo/canRedo/clearHistory()；外部整体重写 tasks 会清空历史",
       "resources": "逐资源日历（JSON [{ id, name?, workdays?, holidays?, shifts? }]）：与 GanttTask.resources 配合；多资源 workdays 取交集、holidays 取并集；shifts: [] 表示无可用班次；hour 档 auto-schedule 吸附到首个带班次资源的窗口，日级只消费 workdays/holidays",

@@ -5,7 +5,7 @@
 
 ---
 
-## 未发布：date-picker 范围手输 + sidebar 行内容渲染 + barcode 扩展 🚧
+## v2.6.3：date-picker 范围手输 + sidebar 行内容渲染 + barcode 扩展 🚧
 
 ### 功能定义
 
@@ -2580,99 +2580,98 @@ group 子钮此前为宿主自填 light DOM（`slot="action"`），组件用 `::
 - **测试与门禁**：全量单测 10497 passed；Chromium e2e 2199 passed / 37 skipped；Firefox e2e 1313 passed / 7 skipped；`typecheck` / `build` / `api:check` / `llms:check` / `stats:check` / `perf:size` / `perf:bench` / `trace --all` 全绿。
 - **发布通道**：源码托管于 Gitea（非 GitHub）→ 本地通道 `pnpm release`；tag `v2.6.2` 仅作版本标记。
 
-## 未发布：resource 容量日历、技能与优先级均载
+## v2.6.3：resource 容量日历、技能与优先级均载
 
 - **范围**：`oas-resource` 数据契约扩展：`ResourceItem.workdays / holidays / capacityOverrides / skills`，`ResourceTask.priority / requiredSkills / project`；`levelResources()` 增加 `respectSkills` / `projectOrder`。
 - **语义**：未声明 `workdays` 且 `holidays` / `capacityOverrides` 为空时保持旧的每档容量；声明 `workdays`（`[]` 表示全不可用）或非空 `holidays` / `capacityOverrides` 后按逐日容量求和。`capacityOverrides` 优先于假期/工作日，可写小数，但任务负载按整日计数（0.5 日无法容纳整日任务，为后续 effort 模型预留）；空 `holidays` / `capacityOverrides` 视为未声明。reassign 默认要求目标资源具备全部 `requiredSkills`；项目顺序优先，任务 priority 数值小者优先，低优先级先让位；项目名/技能按 trim 后比较。
 - **兼容**：全部字段可选；未使用新字段时输出与 v2.6.2 一致。`priority` / `requiredSkills` / `project` / `skills` 等键名被新 API 占用，旧宿主同名字段不再透传；`capacityOverrides` 接受 0，资源 `capacity` 仍要求正数。
 - **验收**：单测覆盖工作日/假期/半天/技能/优先级/项目顺序/空声明/非法值/读回/确定性/maxIter；组件 e2e 覆盖 holiday 超载与 `oas-overload.capacity`；文档 zh/en、API 说明、CHANGELOG 与 a11y/性能门禁同步。
 
-## 未发布：gantt 截止日、浮时与基线差异
+## v2.6.3：gantt 截止日、浮时与基线差异
 
 - **范围**：`GanttTask.deadline`（截止日，超期并入 `.conflict` 并渲染 `.deadline` 标记）、`baseline.progress`（基线进度 0-100，基线条内进度覆盖层）、`show-float`（总浮时/自由浮时标签 + `data-total-float`/`data-free-float`）；导出纯函数 `computeVariance(tasks)` 返回 start/end/duration/progress 差值。
 - **语义**：总浮时 = LF − EF；自由浮时 = 最近后继允许的延后量（按 FS/SS/FF/SF + lag）；摘要不参与 CPM；windowed 模式跳过浮时/关键路径并在切片上只做截止日违约。正差值 = 当前晚于基线/工期更长/进度更多；无 `baseline.progress` 时 `progressDelta` 为 null。
 - **兼容**：新字段/属性均可选；缺省不渲染浮时标签、截止标记或基线进度层，既有渲染与事件不变。
 - **验收**：单测覆盖 deadline 违约/未超期、总浮时/自由浮时（自由可小于总）、baseline.progress 清洗/渲染、computeVariance 四类差值/无基线/无进度；e2e 覆盖新 demo 的显示与 console 零告警；文档 zh/en、API 说明与 CHANGELOG 同步。
 
-## 未发布：scheduler 服务端资源行窗口、重复语义与打印
+## v2.6.3：scheduler 服务端资源行窗口、重复语义与打印
 
 - **范围**：resource / resource-week 接入共享行窗口协议（`windowed` + `total` + `window-start` + `oas-window-request`）；windowed 下 `resources` 仅承载切片，组件不自动追加「未分配」行（可用保留 id `__unassigned__` 显式承接）。打印样式 `@media print` 隐藏工具栏/取消滚动限高，`beforeprint` 临时关闭行/小时虚拟化并打印已装载切片（windowed 不输出切片外空白 spacer）、`afterprint` 恢复。新增 `eventsToIcs()` / `el.exportIcs()`：全天/浮动本地时间、RRULE 子集、RFC 5545 转义与折行。
 - **重复语义（先落地宿主展开）**：windowed 下组件仍对已装载切片内 `repeat` 做本地展开；宿主展开 occurrence 时必须从基础事件剥离 `repeat`（或不下发基础序列），每个 occurrence 用唯一 id，避免同日重复。行窗口只按资源切片，日期 occurrence 由宿主负责。ICS 导出已在本批落地。
 - **兼容**：`windowed` 缺省关，非 windowed 渲染/事件/CRUD 与旧版一致；打印仅在打印上下文改变呈现。
 - **验收**：单测覆盖 windowed 绝对行号/aria/spacer/请求去重、off-slice 空交集、beforeprint/afterprint；e2e 覆盖资源切片首屏锚定、宿主回填滚动保持与 @media print；文档 zh/en、API 说明、CHANGELOG 同步。
 
-## 未发布：scheduler 跨日连续条、重复规则扩展与 ICS 导出增强
+## v2.6.3：scheduler 跨日连续条、重复规则扩展与 ICS 导出增强
 
 - **范围**：周视图 `endDate` 事件（全天与定时）在顶部跨日带渲染连续长条，定时条带 `开始–结束` 时间标签；支持长条横向拖动整体平移并按列宽吸附到天，键盘聚焦后 `←` / `→` 按天平移（RTL 下按视觉方向镜像）；`repeat` 增加 `byMonth` / `byMonthDay` / `bySetPos` / `exDates`；`eventsToIcs()` 增加 `EXDATE` / `VALARM` / `X-OAS-COLOR` 与 `rangeStart` / `rangeEnd` 过滤；新增窗口日期取数 recipe。
 - **语义**：跨日事件（含定时）不再按日拆块；拖动/键盘平移回写 `date` / `endDate` 并派发 `oas-events-change`，保留 `start/end` 时刻；键盘移出当前周时视图跟随，避免条卸载后焦点丢失。`byMonth` 限定月份（1-12）、`byMonthDay` 限定日（1-31）、`bySetPos` 写入 RRULE、`exDates` 同时过滤本地 occurrence 与输出 ICS。`rangeStart` / `rangeEnd` 为含端日期，只导出与区间相交的事件。
 - **兼容**：新字段全部可选；未使用时不改变既有渲染与 ICS 输出。连续条仅周视图出现，月/日/agenda 仍按日芯片/行项展示。
 - **验收**：单测覆盖连续条、无逐日芯片、键盘平移/视图跟随、BYMONTH/BYMONTHDAY/EXDATE/remind 与 ICS 字段；e2e 覆盖新 demo 的连续条显示、键盘焦点保持与 console 零告警；文档 zh/en、API 说明与 CHANGELOG 同步。
 
-## 未发布：scheduler 跨日终点缩放、起止时刻编辑与单步撤销（S03）
+## v2.6.3：scheduler 跨日终点缩放、起止时刻编辑与单步撤销（S03）
 
 - **范围**：跨日连续条末端手柄只改 `endDate`（保持 `date` / `start` / `end`），重叠条自动上下分层避免手柄被盖住；键盘 `Alt+←` / `Alt+→` 按天缩放（RTL 按视觉方向镜像）；时间块新增顶缘手柄改 `start`，既有底缘改 `end`，统一 15 分钟吸附；`updateEvent` 保留单步快照，新增 `canUndo` / `undo()`。
 - **语义**：顶缘拖到结束点之前钳制到 15 分钟网格内的 `end - 15`（先吸附再取上界，不产生 09:52 这类非网格值）；同日定时事件 `start >= end`（不含以 `endDate` 表达的跨日事件）拒绝写入且不产生撤销快照。定时跨日条最少保留 2 天（次日端点），全天条缩到单日后清空 `endDate` 回到芯片；缩到可视周之前时视图跟随，避免焦点丢到 body。`repeat` 不与 `endDate` 组合：同时给出时清洗掉 `endDate`，按 occurrence 展开为每日条目，避免既不进跨日条也不进芯片而隐形。重叠事件继续按车道并存，**不视为冲突**——既有产品语义支持并行日程，冲突仅指非法时间区间。`undo()` 回退最近一次 `updateEvent` 并派发 `oas-events-change`；整体 `events` set / `addEvent` / `removeEvent` 清空快照，但受控宿主原样回写相同 events 时保留快照。
 - **兼容**：无新 attribute；新增只读 property `canUndo`，合法 `updateEvent` 行为不变；跨日条整体平移与既有键盘 `←` / `→` 不变；未调用 `undo()` 时无行为变化。
 - **验收**：单测覆盖终点缩放只改 `endDate`、Alt 键盘与 RTL、顶缘缩放、15 分钟吸附与 `end - 15` 钳制、定时跨日最少 2 天、视图跟随、非法区间/非法 endDate、pointercancel 不写数据、单步撤销与受控回写快照；e2e 覆盖真实鼠标顶缘/末端拖拽、Alt 键盘、重叠条分层、跨日条与单日芯片不遮挡、RTL 与 console 零告警；文档 zh/en、API 说明、PRD/ROADMAP/CHANGELOG 同步。
 
-## 未发布：scheduler 日期窗口托管协议（S01）
+## v2.6.3：scheduler 日期窗口托管协议（S01）
 
 - **范围**：新增 `range-start` / `range-end`（ISO 日期，end 含端）与 `oas-range-request`（detail `{ startMs, endMs, reason }`）；当前视图可见日期范围未被宿主范围覆盖时派发，同范围去重。
 - **语义**：月视图按实际 6 周网格、周/资源周按 7 天、日/资源日按当天、agenda 按 28 天计算可见范围；无 `range-*` 时零行为；`startMs` / `endMs` 为本地时区半开区间，`range-end` 当天仍包含。
 - **兼容**：新属性/事件可选；不设置时与既有渲染完全一致；资源行窗口 `oas-window-request` 保持不变。
 - **验收**：单测覆盖托管范围派发/去重/覆盖后静默/非法范围；e2e 覆盖真实事件 detail；文档 zh/en、API 说明、PRD/CHANGELOG 同步。
 
-## 未发布：gantt 项目自动分组与偏差徽标
+## v2.6.3：gantt 项目自动分组与偏差徽标
 
 - **范围**：`GanttTask.project` + `group-by-project` 自动生成项目根摘要；`show-variance` 在行名后渲染基线偏差徽标；`GanttTask.deadlines` 支持多个截止日。
 - **语义**：只收拢 `parent` 为空的根任务；合成行 id 为 `__oas_project__:<project>`（冲突时追加 `#n`），仅修改展示层克隆，原任务数组不变；windowed 模式要求宿主自行展平，不做自动分组。偏差徽标以结束日差值为主，写 `data-start-delta` / `data-end-delta` / `data-duration-delta` / `data-progress-delta`，正值标红、负值标绿，完整差值进 `title` / `aria-label`。`deadlines` 与 `deadline` 合并去重，每个日期渲染一个 `.deadline`，任一超期标 `.conflict`。
 - **兼容**：两个属性均缺省关；不改变既有行序、拖拽、选择与事件。
 - **验收**：单测覆盖分组行序/原数组不变/关闭回落、偏差徽标 data 与 aria；e2e 覆盖新 demo；文档 zh/en、API 说明与 CHANGELOG 同步。
 
-## 未发布：resource 利用率、指派建议与日历交换
+## v2.6.3：resource 利用率、指派建议与日历交换
 
 - **范围**：新增纯函数 `computeUtilization(resources, tasks, options)`、`suggestAssignments(task, resources, tasks, options)`、`exportResourceCalendars(resources)`、`importResourceCalendars(json)` 及对应类型导出。
 - **语义**：利用率负载口径与组件一致（任务与某日相交即给每个 assigned resource 记 1），容量按 workdays/holidays/capacityOverrides 逐日求和，支持 day/week/month 汇总；未声明日历字段时 capacity 作为逐日基数。指派建议按技能缺口优先、利用率/容量次之排序；日历 JSON 版本化为 1，导入时清洗非法日期、负数容量与空技能。
 - **兼容**：纯新增导出，不改变组件属性、事件或既有 `levelResources` 行为。
 - **验收**：单测覆盖日/周/月汇总、假期/半天 override、空数据、日历往返与非法输入、建议排序；文档 zh/en 与 CHANGELOG 同步。
 
-## 未发布：scheduler 资源分组与第二时区
+## v2.6.3：scheduler 资源分组与第二时区
 
 - **范围**：`SchedulerResource.group` 在 resource / resource-week 视图生成分组标题行；新增 `secondary-timezone` 属性，在 day/week/资源单日时间刻度显示第二时区标签。
 - **语义**：同名 group 只生成一次标题行，资源保持输入顺序；windowed 切片不自动生成分组行（宿主自行提供切片行）并 devWarn。第二时区仅影响刻度显示，不改变事件定位；非法 IANA 忽略并 devWarn。
 - **兼容**：`group`/`secondary-timezone` 均可选；不设置时渲染与旧版一致。
 - **验收**：单测覆盖分组行序/组内顺序/resource-week、第二时区标签数量与非法值；e2e 覆盖资源分组 + 第二时区 demo；a11y 零严重违规；文档 zh/en、API 说明与 CHANGELOG 同步。
 
-## 未发布：gantt 内建撤销/重做（opt-in）
+## v2.6.3：gantt 内建撤销/重做（opt-in）
 
 - **范围**：新增 `history` 属性与 `undo()` / `redo()` / `canUndo` / `canRedo` / `clearHistory()`；新增 `oas-history-change` 事件（`{ canUndo, canRedo, action }`）。
 - **语义**：仅 `history` 开启时记录任务提交快照（最多 100 步），覆盖 updateTask/updateTasks/addTask/removeTasks/moveTask/duplicateTask/依赖增删改与拖拽提交；外部整体重写 `tasks` 或关闭 `history` 清空历史。默认关闭，保持受控数据模型与零历史开销。
 - **兼容**：默认行为不变；开启后 `tasks-change` 仍按原契约派发，宿主可在 `oas-history-change` 中同步按钮状态。
 - **验收**：单测覆盖多步撤销/重做、重做栈清空、外部重写重置、默认关闭不记录；文档 zh/en、API/事件说明与 CHANGELOG 同步。
 
-## 未发布：resource 热力图与技能矩阵视图
+## v2.6.3：resource 热力图与技能矩阵视图
 
 - **范围**：新增 `heatmap`（负载直方图切热力格 + 图例 + 每格 title）与 `skill-matrix`（行=资源、列=技能并集）两个 opt-in 视图；i18n 新增 `resource.heatLow/heatMid/heatHigh/heatOver`。
 - **语义**：热力格按 `load / capacity` 分低/中/高/超载，容量 0 显示不可用；技能矩阵使用 `skills` 并集，✓ 表示具备，不做虚拟化（大规模数据建议宿主分页）。两者均只读展示，不修改数据。
 - **兼容**：默认关闭，不改变既有泳道/直方图与 windowed 行为；技能矩阵不参与负载计算。
 - **验收**：单测覆盖热力格/图例/超载类与技能矩阵勾选/移除属性恢复；e2e 覆盖两个 demo；resource a11y 零严重违规；文档 zh/en、API 说明与 CHANGELOG 同步。
 
-## 未发布：gantt 逐资源日历/班次
+## v2.6.3：gantt 逐资源日历/班次
 
 - **范围**：新增 resources 属性与 GanttTask.resources；资源项支持 workdays、holidays、shifts；新增 `group-by-resource` 资源泳道（按首个分配资源分组，资源名取 name/缺省 id，多资源任务只出现一次，未分配任务保持顶层）。auto-schedule 按任务全部分配资源的工作日取交集、假期取并集后吸附工作日；hour 档按所有声明 shifts 资源的窗口交集吸附起点；未声明 shifts 的资源不约束。shifts: [] 表示资源无可用班次。
 - **语义**：未声明 resources 或任务无资源时回退全局 workdays/holidays；资源缺失 id 忽略。日级排程只消费 workdays/holidays，hour 档班次只吸附起点、不压缩工期；多资源班次取交集，无共同班次时不吸附、不拖到任何一方单边班次。
 - **兼容**：新字段/属性全部可选；不设置时与旧版完全一致；group-by-resource 与 group-by-project 同时开启时资源泳道优先。
 - **验收**：单测覆盖资源假期、工作日交集、多资源组合、任务 resources 清洗、hour 班次吸附与多资源交集/无交集、资源泳道分组；e2e 覆盖逐资源日历/资源泳道/小时班次 demo；文档 zh/en、API 说明与 CHANGELOG 同步。
 
-## 未发布：conversation prompt-input 提示词输入
+## v2.6.3：conversation prompt-input 提示词输入
 
 - **范围**：新增 oas-prompt-input（conversation 族）：多行自增高、Enter 提交 / Shift+Enter 换行、submit-on-enter、clear-on-submit、loading 发送/停止态、disabled/eadonly/maxlength/ows、suggestions 建议项、prefix/ctions/ooter 插槽。
 - **事件/方法**：oas-submit（{ value }）、oas-stop、oas-suggestion-select（{ value, label }）；submit() / stop() / ocusInput()。
 - **兼容**：新增组件，不影响既有会话族；不依赖外部数据源。
 - **验收**：单测覆盖提交/换行/禁用/loading/建议/双通道值；e2e 覆盖真实输入、建议回填与停止；a11y 页面纳入自动收集；文档 zh/en、API/SSR 白名单与 CHANGELOG 同步。
 
-
-## 未发布：conversation 消息操作与工具调用
+## v2.6.3：conversation 消息操作与工具调用
 
 - **范围**：新增 `oas-message-actions`（复制/重试/编辑/重新生成/分支/反馈等操作条，JSON actions + `oas-action`，只派发事件）与 `oas-tool-call`（工具名/摘要/运行状态/参数/结果，默认折叠，`oas-toggle`，只展示宿主数据）。
 - **语义**：组件不内置会话状态、不发请求、不执行工具、不解析函数；`oas-message-actions` 的 `message-id` 原样回传；`oas-tool-call` 的 args/result 只按文本展示，不注入 HTML。

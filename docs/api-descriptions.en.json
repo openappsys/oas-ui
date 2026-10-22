@@ -4595,7 +4595,7 @@
       "range-end": "Host-managed time-axis end (ISO date YYYY-MM-DD, inclusive); pair with range-start",
       "stripe": "Row zebra striping (boolean, off by default): tints rows by the **absolute row index** parity (stable under virtualization/windowing, no DOM-order flicker); color via `--oas-gantt-row-stripe-bg` (default `--oas-color-bg-hover`); selection/weekend backgrounds override the stripe",
       "show-float": "Show total/free float (boolean, off by default): computed only on a complete dependency graph; the bar gets a total/free float label plus data-total-float/data-free-float in days. Summaries are excluded; windowed mode skips it with a devWarn.",
-      "group-by-project": "Group root tasks by project into synthetic summary rows (row id __oas_project__:&lt;project&gt;) without mutating the task array; windowed mode requires host-flattened rows",
+      "group-by-project": "Group root tasks by project into synthetic summary rows (row id `__oas_project__:<project>`) without mutating the task array; windowed mode requires host-flattened rows",
       "show-variance": "Render a Δ±Nd variance badge after the row name when a baseline exists; exposes data-start-delta/data-end-delta/data-duration-delta/data-progress-delta",
       "history": "Built-in undo/redo (boolean, off by default): records task commits (max 100), used with undo()/redo()/canUndo/canRedo/clearHistory(); replacing tasks wholesale clears the stack",
       "resources": "Per-resource calendars (JSON): [{ id, name?, workdays?, holidays?, shifts? }] used with GanttTask.resources; workdays intersect, holidays union; shifts: [] means no available shift; hour-scale auto-schedule snaps into the first assigned resource with shifts, day scale uses workdays/holidays only",

@@ -2,28 +2,29 @@
 
 版本遵循 SemVer。v1.0.0 为首个正式发布。每个版本 = 一个可独立交付/可试用的里程碑。
 
-## 未发布
+## v2.6.3（已发布）
 
 | 范围 | 内容 | 状态 |
 | --- | --- | --- |
-| **date-picker 范围手输** | `daterange` / `datetimerange` / `monthrange` / `yearrange` 触发器开放键入，按 `separator` 拆分起止；倒置/越界/非法回退；与面板提交共用 value 契约 | 🚧 待发布 |
-| **sidebar 行内容** | `renderLabel` property 函数通道，Node/字符串/null 三态，富内容不反射 attribute/SSR | 🚧 待发布 |
-| **barcode 扩展码制** | GS1-128 / UPC-E / Codabar / MSI；保留原 6 码制与 `format` 回退 | 🚧 待发布 |
-| **scheduler 跨日连续条与重复扩展** | 周视图全天连续条 + 横向拖动；`byMonth` / `byMonthDay` / `bySetPos` / `exDates`；ICS `EXDATE` / `VALARM` / 区间过滤 | 🚧 待发布 |
-| **scheduler 跨日终点缩放 + 起止编辑 + 单步撤销** | 末端手柄/`Alt+←→` 只改 `endDate`，重叠条分层；时间块顶缘改 `start`（15 分钟吸附）；同日非法区间拒绝；`canUndo` / `undo()` | 🚧 待发布 |
-| **gantt 项目分组与偏差徽标** | `project` + `group-by-project` 合成项目根摘要；`show-variance` 行名偏差徽标 | 🚧 待发布 |
-| **resource 利用率与日历交换** | `computeUtilization` / `suggestAssignments` / `exportResourceCalendars` / `importResourceCalendars` | 🚧 待发布 |
-| **scheduler 资源分组与第二时区** | `resources[].group` 分组标题行 + `secondary-timezone` 第二时区刻度 | 🚧 待发布 |
-| **gantt 内建撤销/重做** | opt-in `history` + `undo()` / `redo()` / `clearHistory()` + `oas-history-change` | 🚧 待发布 |
-| **resource 热力图与技能矩阵** | `heatmap` 热力格/图例/title + `skill-matrix` 技能矩阵视图 | 🚧 待发布 |
-| **scheduler 定时跨日连续条 + 日期窗口 recipe** | 定时跨日事件顶部连续条（带时刻标签）+ 宿主日期窗口取数示例 | 🚧 待发布 |
-| **gantt 逐资源日历/班次** | `resources` + `GanttTask.resources`；工作日交集/假期并集驱动 auto-schedule；资源泳道 + hour 班次交集吸附 | 🚧 待发布 |
-| **conversation prompt-input** | 新组件：多行自增高、提交/停止、建议项、附件/操作/页脚插槽 | 🚧 待发布 |
-| **scheduler 日期窗口托管协议** | `range-start` / `range-end` + `oas-range-request`，按视图可见范围请求 | 🚧 待发布 |
-| **AI 会话接入 recipe** | prompt-input + message-scroller 流式/停止/失败重试示例 | 🚧 待发布 |
-| **API methods 扫描 + WebKit 抽样** | `api:scan/api:gen` 输出方法表；WebKit smoke 子集纳入 e2e | 🚧 待发布 |
-| **AI 会话流式可访问性** | `message-scroller.announce()` 独立 status 区；`bubble.streaming`；prompt-input aria-busy/readonly 停止；recipe 逐 token 滚底与重试重复用户行修复 | 🚧 待发布 |
-| **废弃 API 台账** | `docs/deprecations.json` + `deprecations:check`；别名/事件双发/已移除墓碑结构化登记，removeIn 由用户定 | 🚧 待发布 |
+| **date-picker 范围手输** | `daterange` / `datetimerange` / `monthrange` / `yearrange` 触发器开放键入，按 `separator` 拆分起止；倒置/越界/非法回退；与面板提交共用 value 契约 | ✅ 已发布 v2.6.3 |
+| **sidebar 行内容** | `renderLabel` property 函数通道，Node/字符串/null 三态，富内容不反射 attribute/SSR | ✅ 已发布 v2.6.3 |
+| **barcode 扩展码制** | GS1-128 / UPC-E / Codabar / MSI；保留原 6 码制与 `format` 回退 | ✅ 已发布 v2.6.3 |
+| **scheduler 跨日连续条与重复扩展** | 周视图全天连续条 + 横向拖动；`byMonth` / `byMonthDay` / `bySetPos` / `exDates`；ICS `EXDATE` / `VALARM` / 区间过滤 | ✅ 已发布 v2.6.3 |
+| **scheduler 跨日终点缩放 + 起止编辑 + 单步撤销** | 末端手柄/`Alt+←→` 只改 `endDate`，重叠条分层；时间块顶缘改 `start`（15 分钟吸附）；同日非法区间拒绝；`canUndo` / `undo()` | ✅ 已发布 v2.6.3 |
+| **gantt 项目分组与偏差徽标** | `project` + `group-by-project` 合成项目根摘要；`show-variance` 行名偏差徽标 | ✅ 已发布 v2.6.3 |
+| **resource 利用率与日历交换** | `computeUtilization` / `suggestAssignments` / `exportResourceCalendars` / `importResourceCalendars` | ✅ 已发布 v2.6.3 |
+| **scheduler 资源分组与第二时区** | `resources[].group` 分组标题行 + `secondary-timezone` 第二时区刻度 | ✅ 已发布 v2.6.3 |
+| **gantt 内建撤销/重做** | opt-in `history` + `undo()` / `redo()` / `clearHistory()` + `oas-history-change` | ✅ 已发布 v2.6.3 |
+| **resource 热力图与技能矩阵** | `heatmap` 热力格/图例/title + `skill-matrix` 技能矩阵视图 | ✅ 已发布 v2.6.3 |
+| **scheduler 定时跨日连续条 + 日期窗口 recipe** | 定时跨日事件顶部连续条（带时刻标签）+ 宿主日期窗口取数示例 | ✅ 已发布 v2.6.3 |
+| **gantt 逐资源日历/班次** | `resources` + `GanttTask.resources`；工作日交集/假期并集驱动 auto-schedule；资源泳道 + hour 班次交集吸附 | ✅ 已发布 v2.6.3 |
+| **conversation prompt-input** | 新组件：多行自增高、提交/停止、建议项、附件/操作/页脚插槽 | ✅ 已发布 v2.6.3 |
+| **scheduler 日期窗口托管协议** | `range-start` / `range-end` + `oas-range-request`，按视图可见范围请求 | ✅ 已发布 v2.6.3 |
+| **AI 会话接入 recipe** | prompt-input + message-scroller 流式/停止/失败重试示例 | ✅ 已发布 v2.6.3 |
+| **API methods 扫描 + WebKit 抽样** | `api:scan/api:gen` 输出方法表；WebKit smoke 子集纳入 e2e | ✅ 已发布 v2.6.3 |
+| **AI 会话流式可访问性** | `message-scroller.announce()` 独立 status 区；`bubble.streaming`；prompt-input aria-busy/readonly 停止；recipe 逐 token 滚底与重试重复用户行修复 | ✅ 已发布 v2.6.3 |
+| **废弃 API 台账** | `docs/deprecations.json` + `deprecations:check`；别名/事件双发/已移除墓碑结构化登记，removeIn 由用户定 | ✅ 已发布 v2.6.3 |
+| **conversation 消息操作与工具调用** | `oas-message-actions` + `oas-tool-call`；操作只派发事件，工具卡只展示数据 | ✅ 已发布 v2.6.3 |
 
 ## 版本规划
 
@@ -121,6 +122,7 @@
 | **v2.6.2** | **oas-gantt 排程约束与工作日日历**：任务约束（`constraint` asap/snet/mso/fnlt + `constraintDate`，auto-schedule 生效）+ 工作日日历（`workdays` opt-in + 复用 holidays，前推吸附工作日）+ 工程修正（lag 清零删键 / 依赖图 SCC 环内让位 / CP 拓扑序 O(V+E) / 示例补 lag）；边界：资源平衡/ALAP/工时班次不做 | ✅ 已完成 |
 | **v2.6.2** | **oas-resource 资源负载 / 泳道视图**（新组件，data 族）：`resources`（含 capacity）+ `tasks`（含 `resources` 分配）→ 资源泳道（共享时间轴）+ 负载直方图（超载高亮）；事件 `oas-overload`/`oas-task-click`/`oas-tasks-change`；纯函数 `levelResources()`（不自动回写）；边界：排程/平衡引擎、资源成本/工时日历、模板一律不做（模板归 oas-ui-templates） | ✅ 已完成 |
 | **v2.6.2** | **发布后规模与生命周期收口**：真实浏览器 Playwright 规模回归（table 10 万行、gantt/resource 大数据、message-scroller 可见性滚动、overlay SPA 重挂监听）；`track-visible` 改 IntersectionObserver + `data-visible`（保留无 IO 回退）；`oas-button` 补 `formenctype`；清理死声明并同步 `perf-baseline.md` | ✅ 已完成 |
+| **v2.6.3** | **调度/排程收口 + AI 会话补件 + 平台质量批**：scheduler 日期窗口托管、跨日连续条（全天/定时、拖动/末端缩放/Alt 键盘/RTL/分层）、时间块双缘编辑、非法区间拦截与单步 undo；gantt 项目分组/偏差徽标、内建 history、逐资源日历与 hour 班次交集；resource 容量日历/技能匹配/优先级均载/热力图/技能矩阵；date-picker 范围手输、sidebar 行内容/头像/分组高亮、barcode 扩至 10 码制；prompt-input 与 message-actions/tool-call；API methods 自动生成、WebKit 抽样、构建期 CSS 注释剥离与堆内存回归 | ✅ 已完成 |
 
 > **注（可选工具包）**：`@oas-ui/react` 桥接包**不单独发布**，降级为仓库内可选工具包——React 19 原生「`on` + 全小写字面量」写法（`<oas-button onoas-submit={...}>`）即可监听 `oas-*`；桥接 hooks（`useOasEvent`/`useOasEvents`）供需要 camelCase 惯例 / TS 类型 / React 17-18 兼容的宿主按需使用，不随版本发布、不写入发布清单（详见 PRD）。
 
@@ -142,13 +144,13 @@
 6. PRD 版本段更新（含测试数）+ 本 ROADMAP 状态更新
 7. 涉及 Shadow DOM 样式/组件的改动提交前必跑 `pnpm build`（vitest/jsdom 抓不到 scoped CSS 语法错误）
 
-## 已立项（未发布）
+## v2.6.3 已交付
 
-- **已立项（未发布）：resource 容量日历 + 技能匹配 + 优先级均载**——支持逐日容量、半天/假期、requiredSkills、task priority / projectOrder；无日历数据时保持旧语义。详见 PRD「未发布」段。
+- **已交付（v2.6.3）：resource 容量日历 + 技能匹配 + 优先级均载**——支持逐日容量、半天/假期、requiredSkills、task priority / projectOrder；无日历数据时保持旧语义。详见 PRD v2.6.3 段。
 
-- **已立项（未发布）：gantt 截止日 + 浮时 + 基线差异**——deadline / show-float（总浮时/自由浮时）/ baseline.progress / computeVariance；无新字段时零渲染变化。详见 PRD「未发布」段。
+- **已交付（v2.6.3）：gantt 截止日 + 浮时 + 基线差异**——deadline / show-float（总浮时/自由浮时）/ baseline.progress / computeVariance；无新字段时零渲染变化。详见 PRD v2.6.3 段。
 
-- **已立项（未发布）：scheduler 资源行窗口 + 宿主展开重复 + 打印**——windowed/total/window-start/oas-window-request；跨窗口 repeat 由宿主展开；@media print 与 beforeprint 全量渲染。详见 PRD「未发布」段。
+- **已交付（v2.6.3）：scheduler 资源行窗口 + 宿主展开重复 + 打印**——windowed/total/window-start/oas-window-request；跨窗口 repeat 由宿主展开；@media print 与 beforeprint 全量渲染。详见 PRD v2.6.3 段。
 
 ## 后续 backlog（按需立项）
 
@@ -162,5 +164,3 @@
 - avatar 名字哈希自动配色：已决定不做（属业务逻辑，且与「颜色显式指定」原则冲突）
 
 > 历史 backlog 已全部落地并随版本归档：SSR/DSD 全阶段（v1.9）、grid 栅格表单（v1.9）、API 表格自动化（v1.8）、全量 RTL 视觉审计静态+交互态（v2.5.7 批次）、形状化二维码体积压缩（v2.5.7 批次）；能力缺口 P1/P2 清单（v2.5.7）与后续能力清单（2026-10 批次）亦已清零，详见上方版本表。
-
-| **conversation 消息操作与工具调用** | `oas-message-actions` + `oas-tool-call`；操作只派发事件，工具卡只展示数据 | 🚧 待发布 |

@@ -1219,5 +1219,6 @@
 [1.6.0]: https://github.com/openappsys/oas-ui/tree/v1.6.0
 [1.7.0]: https://github.com/openappsys/oas-ui/tree/v1.7.0
 [1.8.0]: https://github.com/openappsys/oas-ui/tree/v1.8.0
+
 - **`oas-message-actions`（conversation 族）**：消息操作条，JSON actions 支持复制/重试/编辑/重新生成/分支/反馈等；只派发 `oas-action`（detail `{ key, messageId }`），不内置会话状态。
 - **`oas-tool-call`（conversation 族）**：工具调用卡片，展示名称/摘要/运行状态/参数/结果，默认折叠并派发 `oas-toggle`；只展示宿主数据，不执行工具、不注入 HTML。

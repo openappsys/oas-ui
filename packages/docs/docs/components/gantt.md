@@ -684,7 +684,7 @@ onMounted(async () => {
 | `dates-readonly` | 禁改期/拉伸（进度仍可拖） | `boolean` | — |
 | `expanded` | 已展开集合（JSON 数组，受控）：属性缺席缺省全展开；显式 [] 全收起；点折叠钮写回 | `string` | — |
 | `first-day-of-week` | 周起始日（0-6）；缺省按 locale 推导（week 档对齐用） | `string` | — |
-| `group-by-project` | 按任务 project 自动生成项目根摘要（行 id 为 __oas_project__:&lt;project&gt;），原任务数组不变；windowed 模式要求宿主自行展平，不做自动分组 | `string` | — |
+| `group-by-project` | 按任务 project 自动生成项目根摘要（行 id 为 `__oas_project__:<project>`），原任务数组不变；windowed 模式要求宿主自行展平，不做自动分组 | `string` | — |
 | `group-by-resource` | 按任务首个 resources 生成资源摘要泳道（资源名取 resources.name，缺省用 id）；多资源任务只出现在首个资源下，未分配任务保持顶层；与 group-by-project 同时开启时资源泳道优先 | `string` | — |
 | `height` | 组件高度 px（默认 320；接受纯数字或 Npx）：映射到自定义属性 --oas-gantt-height。高度挂在内部画布（.gantt）上——宿主自身 height 内联只框定外盒，内部画布高度仍由 height 属性 / --oas-gantt-height 决定（不会被宿主内联 height 拉伸）；整体调高请用 height 属性或 --oas-gantt-height。height 属性在场且为合法值（>0 纯数字或 Npx）时组件接管该变量，写入宿主内联并覆盖宿主自己设置的 --oas-gantt-height；空串/空白按未设置处理；非法值不写该变量、仅清除本实例此前写入的值，宿主 token 不受影响；属性移除后组件写入的值归零清除，高度回落 token 缺省 320 或宿主 CSS，宿主原先内联设置的值不恢复；从未设置 height 属性时组件不写该变量，宿主内联或 class 规则设置的 --oas-gantt-height 完全不受影响 | `string` | `320` |
 | `history` | 内建撤销/重做（布尔，默认关）：记录任务提交快照（最多 100 步），配合 undo()/redo()/canUndo/canRedo/clearHistory()；外部整体重写 tasks 会清空历史 | `string` | — |
