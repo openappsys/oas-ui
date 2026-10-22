@@ -91,6 +91,14 @@ if (pmVersion) {
     for (const file of readdirSync(WF_DIR).filter((n) => /\.ya?ml$/.test(n))) {
       const lines = readFileSync(join(WF_DIR, file), 'utf8').split(/\r?\n/)
       for (let i = 0; i < lines.length; i++) {
+        // pnpm 12 下 `pnpm <script> -- --arg` 会把多余的 `--` 传进脚本（实测 Playwright 因此吞掉
+        // --project 过滤、CI 全量片误跑 WebKit）；工作流里禁止这种写法，参数直接跟在脚本名后。
+        if (/pnpm\s+[\w:-]+\s+--\s+--/.test(lines[i])) {
+          console.error(
+            `✗ .github/workflows/${file}:${i + 1} 使用了 \`pnpm <script> -- --...\`：pnpm 12 会把分隔符传给脚本，改为 \`pnpm <script> --arg\``,
+          )
+          fail++
+        }
         if (!lines[i].includes('pnpm/action-setup')) continue
         const setupIndent = lines[i].match(/^\s*/)[0].length
         for (let j = i + 1; j < lines.length; j++) {
