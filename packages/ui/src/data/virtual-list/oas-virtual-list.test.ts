@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { OASVirtualList, computeVirtualWindow, HeightCache, computeDynamicWindow } from './index.js'
 
 function mount(attrs: Record<string, string> = {}): OASVirtualList {
@@ -505,6 +505,56 @@ describe('OASVirtualList 动态行高（dynamic-height）', () => {
     })
     const inner2 = el2.shadowRoot!.querySelector<HTMLElement>('[part="inner"]')!
     expect(inner2.style.height).toBe('250px') // 10 × 25
+  })
+
+  it('dynamic 重建窗口前 unobserve 旧行，观察目标不随滚动泄漏', () => {
+    const observed = new Set<Element>()
+    let unobserved = 0
+    class RO {
+      constructor(_cb: ResizeObserverCallback) {}
+      observe(el: Element): void {
+        observed.add(el)
+      }
+      unobserve(el: Element): void {
+        if (observed.delete(el)) unobserved++
+      }
+      disconnect(): void {
+        observed.clear()
+      }
+    }
+    vi.stubGlobal('ResizeObserver', RO)
+    try {
+      const el = mount({
+        'dynamic-height': '',
+        height: '100',
+        'estimated-item-height': '20',
+        items: JSON.stringify(range(100)),
+      })
+      const before = observed.size
+      expect(before).toBeGreaterThan(0)
+      // 强制重建窗口（等效滚动/尺寸变化）：旧行应先 unobserve 再移除
+      el.setAttribute('buffer', '6')
+      expect(unobserved, '重建前应 unobserve 旧行').toBeGreaterThan(0)
+      expect(observed.size, '观察目标不应超过当前 DOM 行数').toBe(items(el).length)
+    } finally {
+      vi.unstubAllGlobals()
+    }
+  })
+
+  it('动态窗口直接用 HeightCache 前缀视图，不逐帧复制大数组', () => {
+    const el = mount({
+      'dynamic-height': '',
+      height: '100',
+      'estimated-item-height': '20',
+      items: JSON.stringify(range(100)),
+    })
+    const cache = (el as unknown as { heightCache: HeightCache }).heightCache
+    const a = cache.offsets()
+    cache.measure(0, 80)
+    const b = cache.offsets()
+    expect(b, '前缀视图应复用同一数组（增量维护）').toBe(a)
+    expect(b[1]).toBe(80)
+    expect((el as unknown as { prefixArray?: unknown }).prefixArray, '不应保留逐帧复制方法').toBeUndefined()
   })
 })
 

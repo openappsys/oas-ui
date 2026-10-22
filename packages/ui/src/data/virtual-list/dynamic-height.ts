@@ -78,6 +78,12 @@ export class HeightCache {
   total(): number {
     return this.offsetOf(this.count)
   }
+
+  /** 行偏移前缀视图（长度 count+1，调用方只读；增量维护，不逐帧复制） */
+  offsets(): number[] {
+    this.sync()
+    return this.prefix
+  }
 }
 
 /**

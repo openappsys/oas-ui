@@ -12,6 +12,8 @@
 - **夏令时（DST）日历运算**：`oas-gantt` day/week 刻度、范围右界、auto-schedule 工作日/班次吸附与整日工期折算、`oas-scheduler` 翻页/agenda/提醒/下次发生日全部改日历日运算，修复回拨日时间轴错位一天、翻页原地不动、提醒漂移。
 - **`oas-scheduler` 跨日/ICS 修正**：资源视图跨日定时事件首日渲染到 24:00、resource-week 补 `[start-hour,end-hour]` 夹取；ICS 定时跨日事件 `DTEND` 落 `endDate` 当日 `end`，定时事件 `EXDATE` 与 `DTSTART` 值类型一致；weekly `byDay` 的 `COUNT`/本地展开序号一致。
 - **`oas-gantt` 受控回写不清 history**：`tasks` property 语义相同回写（键序无关）不再清空撤销栈。
+- **`oas-virtual-list` dynamic-height 修复**：重建窗口前解除旧行 ResizeObserver 观察（修复滚动泄漏），动态窗口直接复用 `HeightCache` 前缀视图（去掉每帧 O(n) 复制）。
+- **`oas-image` 预览下载链接走 `safeUrl`**：危险协议不写入下载 href，合法 blob/相对地址不受影响。
 - **共享浮层栈**：新增 `overlay-stack`（Esc 后进先出 + 统一计数 body 滚动锁），modal/drawer/tour/dropdown/context-menu/sidebar 接入；多层同开时一次 Esc 只关一层，滚动锁跨组件计数并精确恢复宿主 inline `overflow`；`no-esc-close` 不再穿透到下层。
 - **键盘与可访问性**：`oas-menu` 改 `aria-activedescendant` 读屏模型，水平模式轴向与 RTL 镜像、Space 激活、Home/End、typeahead 假焦点修复；`oas-tabs` hover 不再抢焦点，tab↔tabpanel 语义链补齐；`oas-dropdown` 非 split 触发器补 `aria-haspopup`/`aria-expanded` 且键盘打开后焦点入菜单、Esc 回焦；`oas-context-menu` 打开后焦点入菜单、Esc 回焦触发源；`oas-sidebar` 移动抽屉补 `role=dialog`/`aria-modal` 与打开入焦/关闭回焦/Tab 循环；`oas-menubar` 全局快捷键与 Alt 访问键在可编辑控件内让路；`oas-prompt-input` 焦点守卫穿透 shadow；表单清除钮与 cascader 多选 chip 移除钮进入 Tab 序并支持 Enter/Space。
 

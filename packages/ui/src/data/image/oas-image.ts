@@ -1,5 +1,6 @@
 import { OASElement } from '@oas-ui/core'
 import { isRtl } from '../../shared/direction.js'
+import { safeUrl } from '../../shared/safe-url.js'
 
 const STYLE = `
 :host {
@@ -1110,7 +1111,7 @@ export class OASImage extends OASElement {
 
   /** 命令通道下载：临时锚节点触发浏览器下载（等价默认工具栏下载链接） */
   private downloadImage(): void {
-    const src = this.currentPreviewSrc()
+    const src = safeUrl(this.currentPreviewSrc())
     if (!src) return
     const a = document.createElement('a')
     a.setAttribute('href', src)
@@ -1185,7 +1186,11 @@ export class OASImage extends OASElement {
       next.disabled = !infinite && this.galleryIndex >= total - 1
     }
     const link = root.querySelector<HTMLAnchorElement>('[part="preview-download"]')
-    if (link) link.setAttribute('href', this.currentPreviewSrc())
+    if (link) {
+      const href = safeUrl(this.currentPreviewSrc())
+      if (href) link.setAttribute('href', href)
+      else link.removeAttribute('href')
+    }
   }
 
   protected override update(): void {

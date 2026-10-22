@@ -382,7 +382,7 @@ export class OASVirtualList extends OASElement {
       this.heightCache.configure(count, this.estimatedHeight())
       const total = this.heightCache.total()
       const scrollTop = Math.min(Math.max(0, target ? target.scrollTop : 0), Math.max(0, total - vh))
-      const win = computeDynamicWindow(this.prefixArray(count), count, scrollTop, vh, this.bufferSize())
+      const win = computeDynamicWindow(this.heightCache.offsets(), count, scrollTop, vh, this.bufferSize())
       this.start = win.start
       this.end = win.end
       if (this.inner) this.inner.style.height = `${total}px`
@@ -405,16 +405,13 @@ export class OASVirtualList extends OASElement {
     this.renderItems()
   }
 
-  /** 动态窗口计算用的行偏移数组（长度 count+1，经 HeightCache 维护的 prefix 视图） */
-  private prefixArray(count: number): number[] {
-    const arr: number[] = new Array(count + 1)
-    for (let i = 0; i <= count; i++) arr[i] = this.heightCache.offsetOf(i)
-    return arr
-  }
-
   private renderItems(): void {
     const itemsEl = this.itemsEl
     if (!itemsEl) return
+    // 动态行高：重建前解除旧行观察（节点 detach 后 RO 仍持引用，滚动即泄漏）
+    if (this.isDynamic() && this.resizeObserver) {
+      for (const child of Array.from(itemsEl.children)) this.resizeObserver.unobserve(child)
+    }
     itemsEl.innerHTML = ''
     const tpl = this.itemTemplate()
     const dynamic = this.isDynamic()

@@ -170,6 +170,17 @@ describe('OASImage preview 增强', () => {
     return q(el, '[part="preview-image"]')
   }
 
+  it('预览下载链接走 safeUrl：javascript: 不写入 href（downloadImage 与 preview-download 同口径）', () => {
+    const el = mountPreview('javascript:window.__oas_xss=1')
+    ;(el.shadowRoot!.querySelector('.previewable') as HTMLElement).click()
+    const link = q<HTMLAnchorElement>(el, '[part="preview-download"]')
+    expect(link).not.toBeNull()
+    expect(link.getAttribute('href') ?? '', '危险协议不得写入下载链接').not.toMatch(/^javascript:/i)
+    // 合法 blob/相对地址不受影响
+    el.setAttribute('src', 'blob:https://example.com/550e8400-e29b-41d4-a716-446655440000')
+    expect(link.getAttribute('href')).toContain('blob:https://example.com/')
+  })
+
   it('点击打开全屏浮层并派发 oas-preview（detail 含 src）', () => {
     const el = mountPreview()
     let detail: unknown
