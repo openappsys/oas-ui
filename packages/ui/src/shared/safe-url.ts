@@ -14,7 +14,7 @@ function normalizeUrl(value: unknown): string {
   // 否则 `java\nscript:` 会绕过协议白名单但浏览器仍按 javascript: 执行。
   return String(value)
     .replace(/[\u0000-\u001f\u007f]/g, '')
-    .replace(/^[\u0000-\u0020]+|[\u0000-\u0020]+$/g, '')
+    .replace(/^[\u0000-\u0020\u00a0]+|[\u0000-\u0020\u00a0]+$/g, '')
 }
 
 export function safeUrl(value: unknown): string {

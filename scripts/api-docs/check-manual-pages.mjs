@@ -9,21 +9,11 @@
 import { existsSync, readFileSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { MANUAL_METHODS_PAGES } from './manual-pages.mjs'
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../..')
 const MANIFEST_DIR = join(ROOT, 'docs/api-manifest')
-const PAGES = [
-  'components/avatar.md',
-  'components/collapse.md',
-  'components/form.md',
-  'components/image.md',
-  'components/toolbar.md',
-  'en/components/avatar.md',
-  'en/components/collapse.md',
-  'en/components/form.md',
-  'en/components/image.md',
-  'en/components/toolbar.md',
-]
+const PAGES = MANUAL_METHODS_PAGES
 
 const manifest = {}
 for (const tag of JSON.parse(readFileSync(join(MANIFEST_DIR, 'index.json'), 'utf8'))) {

@@ -100,8 +100,9 @@ function main() {
   const results = audit()
   const summary = summarize(results)
   const check = process.argv.includes('--check')
-  const maxWait = argValue('--max-wait', 413)
-  const maxWeak = argValue('--max-weak', 1840)
+  // 阈值带约 5% 余量，避免新增一两条合规断言就顶线失败；继续增长仍会被挡下
+  const maxWait = argValue('--max-wait', 440)
+  const maxWeak = argValue('--max-weak', 1930)
 
   if (process.argv.includes('--json')) {
     console.log(JSON.stringify({ summary, results }, null, 2))

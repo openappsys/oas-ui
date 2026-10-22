@@ -13,6 +13,13 @@ describe('safeUrl', () => {
     expect(safeUrl('docs/a')).toBe('docs/a')
   })
 
+  it('相对地址保留内部空格；首尾空格/NBSP 先剥掉再判定', () => {
+    expect(safeUrl('  /docs/a  ')).toBe('/docs/a')
+    expect(safeUrl('\u00a0/docs/a\u00a0')).toBe('/docs/a')
+    expect(safeUrl('/docs/a b')).toBe('/docs/a b')
+    expect(isSafeUrl('\u00a0/docs/a\u00a0')).toBe(true)
+  })
+
   it('拦截可执行/内联文档协议', () => {
     expect(safeUrl('javascript:alert(1)')).toBe('')
     expect(safeUrl('data:text/html,<script>alert(1)</script>')).toBe('')

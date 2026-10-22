@@ -37,6 +37,17 @@ test('anchor 墨水条 hidden→visible：尺寸自愈，与可见容器直接�
   const r = await page.evaluate(async () => {
     const raf = () => new Promise((res) => requestAnimationFrame(() => res(null)))
     const tick = (n: number) => new Promise((res) => setTimeout(res, n))
+    const waitInkStable = async (ink: HTMLElement): Promise<void> => {
+      const deadline = performance.now() + 2000
+      let prev = ''
+      while (performance.now() < deadline) {
+        await raf()
+        const r = ink.getBoundingClientRect()
+        const key = `${r.width}x${r.height}@${r.top},${r.left}`
+        if ((r.width > 0 || r.height > 0) && key === prev) return
+        prev = key
+      }
+    }
     const items = JSON.stringify([
       { href: '#sec-1', title: '第一章' },
       { href: '#sec-2', title: '第二章' },
@@ -56,9 +67,9 @@ test('anchor 墨水条 hidden→visible：尺寸自愈，与可见容器直接�
       if (hidden) box.style.display = ''
       await raf()
       await raf()
-      await tick(260) // 等墨水条过渡（transition 0.15s）稳定
       const root = anchor.shadowRoot!
       const ink = root.querySelector<HTMLElement>('[part="ink"]')!
+      await waitInkStable(ink)
       const active = [...root.querySelectorAll<HTMLElement>('[part="link"]')].find(
         (l) => l.getAttribute('aria-current') === 'true',
       )!

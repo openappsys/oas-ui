@@ -213,6 +213,20 @@ describe('OASScheduler 月视图 + events CRUD', () => {
     expect(long.shadowRoot!.activeElement?.getAttribute('data-id')).toBe('long')
   })
 
+  it('S03：day 视图跨日条缩到可视日前时跟随且不失焦', () => {
+    const day = mount({
+      view: 'day',
+      'page-show-date': '2026-08-12',
+      events: JSON.stringify([{ id: 'long-day', date: '2026-08-01', endDate: '2026-08-12', title: '长日' }]),
+    })
+    const dayBar = day.shadowRoot!.querySelector<HTMLElement>('.band-span[data-id="long-day"]')!
+    dayBar.focus()
+    dayBar.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', altKey: true, bubbles: true }))
+    expect(day.events[0]!.endDate).toBe('2026-08-11')
+    expect(day.shadowRoot!.querySelector('.band-span[data-id="long-day"]')).not.toBeNull()
+    expect(day.shadowRoot!.activeElement?.getAttribute('data-id')).toBe('long-day')
+  })
+
   it('addEvent/updateEvent/removeEvent：CRUD 各派发一次 events-change 并即时生效', () => {
     const el = mount({ 'page-show-date': '2026-08-01' })
     const seen: string[] = []

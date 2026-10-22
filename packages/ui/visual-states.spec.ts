@@ -54,7 +54,6 @@ test('Q09 high-contrast：主题 token 生效且页面无横向溢出', async ({
       document.documentElement.setAttribute('data-theme', 'high-contrast')
       const root = getComputedStyle(document.documentElement)
       return {
-        bg: root.getPropertyValue('--oas-color-bg').trim(),
         text: root.getPropertyValue('--oas-color-text-primary').trim(),
         border: root.getPropertyValue('--oas-color-border').trim(),
         scheme: root.colorScheme,

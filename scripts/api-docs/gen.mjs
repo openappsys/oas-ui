@@ -27,6 +27,7 @@ import { readFileSync, writeFileSync, readdirSync, existsSync } from 'node:fs'
 import { execSync } from 'node:child_process'
 import { join, dirname, resolve, relative } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { MANUAL_METHODS_PAGE_FILES } from './manual-pages.mjs'
 
 const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url))
 const ROOT = resolve(SCRIPT_DIR, '..', '..')
@@ -69,7 +70,7 @@ const GROUP_HEADINGS = new Set([
 const TAG_RE = /^oas-[a-z0-9-]+$/
 
 // 这些页面含按 tag 分组的手工 Methods 表；保留手工表，生成器只维护 attrs/events/slots。
-const MANUAL_METHODS_PAGES = new Set(['avatar.md', 'collapse.md', 'form.md', 'image.md', 'toolbar.md'])
+const MANUAL_METHODS_PAGES = new Set(MANUAL_METHODS_PAGE_FILES)
 
 /**
  * 已人工复核的「仅语料」插槽（扫描器在源码找不到、但确属该组件公开 API 的条目）。
