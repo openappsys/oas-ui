@@ -6385,6 +6385,52 @@ describe('OASGantt 工作日日历（workdays）', () => {
     expect(taskOf(el, 't').end).toBe('2026-03-03 10:00')
   })
 
+  it('小时级班次多资源取交集：r1 09-18 × r2 11-12 → 落到次日 11:00；无共同班次不吸附', () => {
+    const el = mount({
+      'auto-schedule': '',
+      scale: 'hour',
+      resources: JSON.stringify([
+        { id: 'r1', shifts: [{ start: '09:00', end: '18:00' }] },
+        { id: 'r2', shifts: [{ start: '11:00', end: '12:00' }] },
+      ]),
+      tasks: JSON.stringify([
+        { id: 'd', name: 'D', start: '2026-03-02 10:00', end: '2026-03-02 19:00' },
+        {
+          id: 't',
+          name: 'T',
+          start: '2026-03-02 08:00',
+          end: '2026-03-02 09:00',
+          resources: ['r1', 'r2'],
+          dependencies: [{ id: 'd' }],
+        },
+      ]),
+    })
+    expect(taskOf(el, 't').start).toBe('2026-03-03 11:00')
+    expect(taskOf(el, 't').end).toBe('2026-03-03 12:00')
+
+    const none = mount({
+      'auto-schedule': '',
+      scale: 'hour',
+      resources: JSON.stringify([
+        { id: 'r1', shifts: [{ start: '09:00', end: '10:00' }] },
+        { id: 'r2', shifts: [{ start: '11:00', end: '12:00' }] },
+      ]),
+      tasks: JSON.stringify([
+        { id: 'd', name: 'D', start: '2026-03-02 10:00', end: '2026-03-02 19:00' },
+        {
+          id: 't',
+          name: 'T',
+          start: '2026-03-02 08:00',
+          end: '2026-03-02 09:00',
+          resources: ['r1', 'r2'],
+          dependencies: [{ id: 'd' }],
+        },
+      ]),
+    })
+    // 无共同班次：不吸附、不拖动到任何一方单边班次
+    expect(taskOf(none, 't').start).toBe('2026-03-02 19:00')
+  })
+
   it('前推落周六 → 吸附到周一（对照组：无 workdays 落在周六不吸附）', () => {
     const plain = mount({ 'auto-schedule': '', tasks: depPair })
     expect(taskOf(plain, 't').start, '对照：无 workdays → 落在周六').toBe('2026-03-07')

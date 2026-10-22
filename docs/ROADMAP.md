@@ -17,7 +17,7 @@
 | **gantt 内建撤销/重做** | opt-in `history` + `undo()` / `redo()` / `clearHistory()` + `oas-history-change` | 🚧 待发布 |
 | **resource 热力图与技能矩阵** | `heatmap` 热力格/图例/title + `skill-matrix` 技能矩阵视图 | 🚧 待发布 |
 | **scheduler 定时跨日连续条 + 日期窗口 recipe** | 定时跨日事件顶部连续条（带时刻标签）+ 宿主日期窗口取数示例 | 🚧 待发布 |
-| **gantt 逐资源日历/班次** | `resources` + `GanttTask.resources`；工作日交集/假期并集驱动 auto-schedule；资源泳道 + hour 班次吸附 | 🚧 待发布 |
+| **gantt 逐资源日历/班次** | `resources` + `GanttTask.resources`；工作日交集/假期并集驱动 auto-schedule；资源泳道 + hour 班次交集吸附 | 🚧 待发布 |
 | **conversation prompt-input** | 新组件：多行自增高、提交/停止、建议项、附件/操作/页脚插槽 | 🚧 待发布 |
 | **scheduler 日期窗口托管协议** | `range-start` / `range-end` + `oas-range-request`，按视图可见范围请求 | 🚧 待发布 |
 | **AI 会话接入 recipe** | prompt-input + message-scroller 流式/停止/失败重试示例 | 🚧 待发布 |

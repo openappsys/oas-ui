@@ -2360,7 +2360,7 @@ OASElement 的 render 生命周期只首连一次（`rendered` 门闩），组�
 ### 边界（B 批后仍不做）
 
 - 可见性追踪（视口内消息清单，`oas-visible-change`/`data-visible`）：v2 候选（后续批次已实现：`track-visible` + IntersectionObserver + `data-visible`）——牵出大纲菜单/已读标记独立语义，宿主可用 IntersectionObserver 自行组合。
-- 虚拟化（数千轮长会话）：宿主接虚拟列表组合；`content-visibility` 在 slotted 元素上单独启用会卡占位高度不展开（实测撤回），随虚拟化一起评估。当前 scroller 与 `oas-virtual-list` 的 `scroll-target` 不能跨 shadow 组合，文档按「二选一」表述，不宣称可直接组合。
+- 虚拟化（数千轮长会话）：**不在 message-scroller 内建窗口化**——组件不拥有消息数据，窗口化会要求行数据/高度模型/移除补偿进入核心，破坏 slotted 契约；`content-visibility` 在 slotted 元素上单独启用会卡占位高度不展开（实测撤回）。长会话由宿主组合 `oas-virtual-list`（虚拟化归 virtual-list，滚动意图归 scroller），或在 scroller 外层用 `track-visible` / `oas-visible-change` 做宿主侧裁剪信号；当前 scroller 与 `oas-virtual-list` 的 `scroll-target` 不能跨 shadow 组合，文档按「二选一」表述，不宣称可直接组合。
 - 不做（框架/宿主层）：消息 parts 管线、run 状态机、sendMessage/stop/regenerate、分支/编辑、持久化；文件类型图标库（图标由宿主/slot 传）；长文折叠/浮层/反应条（组合模式或 v2）。
 - 首屏防跳只覆盖「连接 → 首帧定位」段；客户端异步拉取首批消息的场景由 auto-scroll/pin-to-bottom 装载行为接管。
 
@@ -2659,10 +2659,10 @@ group 子钮此前为宿主自填 light DOM（`slot="action"`），组件用 `::
 
 ## 未发布：gantt 逐资源日历/班次
 
-- **范围**：新增 resources 属性与 GanttTask.resources；资源项支持 workdays、holidays、shifts；新增 `group-by-resource` 资源泳道（按首个分配资源分组，资源名取 name/缺省 id，多资源任务只出现一次，未分配任务保持顶层）。auto-schedule 按任务全部分配资源的工作日取交集、假期取并集后吸附工作日；hour 档按首个带班次资源的 shifts 吸附起点。shifts: [] 表示资源无可用班次。
-- **语义**：未声明 resources 或任务无资源时回退全局 workdays/holidays；资源缺失 id 忽略。日级排程只消费 workdays/holidays，hour 档班次只吸附起点、不压缩工期；多资源班次交集待后续。
+- **范围**：新增 resources 属性与 GanttTask.resources；资源项支持 workdays、holidays、shifts；新增 `group-by-resource` 资源泳道（按首个分配资源分组，资源名取 name/缺省 id，多资源任务只出现一次，未分配任务保持顶层）。auto-schedule 按任务全部分配资源的工作日取交集、假期取并集后吸附工作日；hour 档按所有声明 shifts 资源的窗口交集吸附起点；未声明 shifts 的资源不约束。shifts: [] 表示资源无可用班次。
+- **语义**：未声明 resources 或任务无资源时回退全局 workdays/holidays；资源缺失 id 忽略。日级排程只消费 workdays/holidays，hour 档班次只吸附起点、不压缩工期；多资源班次取交集，无共同班次时不吸附、不拖到任何一方单边班次。
 - **兼容**：新字段/属性全部可选；不设置时与旧版完全一致；group-by-resource 与 group-by-project 同时开启时资源泳道优先。
-- **验收**：单测覆盖资源假期、工作日交集、多资源组合、任务 resources 清洗、hour 班次吸附、资源泳道分组；e2e 覆盖逐资源日历/资源泳道/小时班次 demo；文档 zh/en、API 说明与 CHANGELOG 同步。
+- **验收**：单测覆盖资源假期、工作日交集、多资源组合、任务 resources 清洗、hour 班次吸附与多资源交集/无交集、资源泳道分组；e2e 覆盖逐资源日历/资源泳道/小时班次 demo；文档 zh/en、API 说明与 CHANGELOG 同步。
 
 ## 未发布：conversation prompt-input 提示词输入
 

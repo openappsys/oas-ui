@@ -546,7 +546,7 @@ scroller 负责常规会话的锚定/跟随；数千轮超长会话把消息数�
 ## 边界
 
 - **可见性通道**：`track-visible` 未开启时不计算、不派发（pay-for-use）；开启后由 `IntersectionObserver` 观察 `message-id` 行，仅在交叉变化时重算可见集（无 IO 环境回退 rect 计算）。未声明 `message-id` 的行不进可见集。
-- **虚拟化与渲染降耗**：离屏行跳过渲染（`content-visibility` 等）随虚拟化一起提供（slotted 元素上单独启用会卡占位高度不展开，实测撤回）；数千轮长会话接虚拟列表由宿主组合。
+- **虚拟化与渲染降耗**：不在 message-scroller 内建窗口化——组件不拥有消息数据，窗口化会把行数据/高度模型/移除补偿带进核心；离屏行跳过渲染（`content-visibility` 等）随虚拟化一起提供（slotted 元素上单独启用会卡占位高度不展开，实测撤回）。数千轮长会话由宿主组合 `oas-virtual-list`，或用 `track-visible` / `oas-visible-change` 作为宿主侧裁剪信号；卸载上方历史时由宿主按高度补偿 scrollTop。
 - **空态**：无消息时容器照常渲染（空 log），宿主放空态插槽内容即可。
 - **prepend 保位边界**：保位锚在读者真实滚动时释放（读者位置优先）；`pin-to-bottom` / 贴底跟随时补偿无意义（钉底后发覆盖）。同帧混合插入的结算依赖插入前首元素仍在 DOM（宿主删除该行时该帧不补偿）。
 - **首屏防跳边界**：`data-pending-scroll` 只覆盖「连接 → 首帧定位」这一段；宿主在挂载后异步拉取首批消息的场景由 `auto-scroll`/`pin-to-bottom` 的装载行为接管。pending 期间 viewport 不可聚焦（毫秒级窗口）。

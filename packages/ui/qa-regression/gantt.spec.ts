@@ -1869,3 +1869,16 @@ test('gantt 小时级班次：前推落在班次外吸附到下一班次起点',
     ),
   ).toMatchObject({ start: '2026-03-03 09:00', end: '2026-03-03 10:00' })
 })
+
+test('gantt 小时级班次交集：多资源共同班次 11-12，后继落到次日 11:00', async ({ page }) => {
+  await page.goto('/components/gantt.html', { waitUntil: 'domcontentloaded' })
+  await waitGantt(page, 'gantt-shift-intersect')
+  const host = page.locator('#gantt-shift-intersect')
+  expect(
+    await host.evaluate((el) =>
+      (el as unknown as { tasks: Array<{ id: string; start: string; end: string }> }).tasks.find(
+        (task) => task.id === 'shi2',
+      ),
+    ),
+  ).toMatchObject({ start: '2026-03-03 11:00', end: '2026-03-03 12:00' })
+})

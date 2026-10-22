@@ -35,10 +35,10 @@
 - **`oas-scheduler` 定时跨日连续条**：周视图定时跨日事件改在顶部跨日带渲染一条连续条（带 `开始–结束` 时间标签），不再按日拆块；拖动或键盘 `←`/`→` 平移保留 `start/end` 时刻（RTL 下方向镜像），移出当前周时视图跟随。补充宿主日期窗口取数 recipe。
 - **`oas-scheduler` 跨日终点缩放、起止时刻编辑与单步撤销**：跨日连续条新增末端手柄（只改 `endDate`，保持 `date`/`start`/`end`）与 `Alt+←`/`Alt+→` 键盘缩放（RTL 按视觉方向镜像），重叠的条自动上下分层、末端手柄不被上层条盖住；时间块新增顶缘手柄改 `start`，与既有底缘改 `end` 一样按 15 分钟吸附，顶缘越过结束点钳制到 15 分钟网格内的 `end - 15` 分钟。定时跨日条最少保留 2 天，全天条缩到单日后回到芯片；缩出可视周时视图跟随。`repeat` 不与 `endDate` 组合，同时给出时忽略 `endDate` 并按 occurrence 展开。同日 `start >= end` 的非法区间拒绝写入；重叠事件仍按车道并存，不视为冲突。`updateEvent` 保留单步快照，新增 `el.canUndo` / `el.undo()`；整体 set/add/remove 清空快照，受控宿主原样回写相同 events 时保留。
 - **`oas-scheduler` 日期窗口托管**：新增 `range-start` / `range-end` 与 `oas-range-request`；当前视图可见日期范围未被宿主范围覆盖时派发，支持月/周/日/agenda 与资源视图。
-- **`oas-gantt` 逐资源日历/班次**：新增 `resources` 属性与 `GanttTask.resources`，多资源工作日交集/假期并集驱动 `auto-schedule`；新增 `group-by-resource` 资源泳道（按首个资源分组，多资源任务不重复），`hour` 档按首个带班次资源的 `shifts` 吸附起点（班次外自动落到下一班次；多资源班次交集待后续）。
+- **`oas-gantt` 逐资源日历/班次**：新增 `resources` 属性与 `GanttTask.resources`，多资源工作日交集/假期并集驱动 `auto-schedule`；新增 `group-by-resource` 资源泳道（按首个资源分组，多资源任务不重复），`hour` 档按所有声明 `shifts` 资源的窗口交集吸附起点（班次外自动落到下一班次；未声明 `shifts` 的资源不约束，无共同班次时不吸附）。
 - **`oas-prompt-input`（conversation 族）**：新增提示词输入组件——多行自增高、Enter 提交/Shift+Enter 换行、loading 发送/停止、建议项、禁用/只读/长度、prefix/actions/footer 插槽，事件 `oas-submit` / `oas-stop` / `oas-suggestion-select`。
 - **工程**：`api:scan/api:gen` 新增公开方法表（JSDoc 方法自动入 manifest/文档）；Playwright 新增 WebKit smoke 子集（8 个代表页）与 prompt-input 键盘提交交互。
-- **文档**：新增 AI 会话接入 recipe（prompt-input + message-scroller：流式、停止、失败重试），补 scheduler 原生日期窗口托管示例。
+- **文档**：新增 AI 会话接入 recipe（prompt-input + message-scroller：流式、停止、失败重试），补 scheduler 原生日期窗口托管示例；明确 message-scroller 不内建长会话窗口化（虚拟化归 `oas-virtual-list`，scroller 只保留滚动意图/可见性信号）。
 
 ### 交互
 

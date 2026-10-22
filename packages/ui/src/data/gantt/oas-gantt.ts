@@ -1048,6 +1048,24 @@ function parseTaskDate(s: unknown): Date | null {
   return parseISODate(s.trim())
 }
 
+/** 两组已排序日内班次窗口求交集（[start,end) 分钟；无交集返回 []） */
+function intersectShiftWindows(
+  a: Array<{ start: number; end: number }>,
+  b: Array<{ start: number; end: number }>,
+): Array<{ start: number; end: number }> {
+  const out: Array<{ start: number; end: number }> = []
+  let i = 0
+  let j = 0
+  while (i < a.length && j < b.length) {
+    const start = Math.max(a[i]!.start, b[j]!.start)
+    const end = Math.min(a[i]!.end, b[j]!.end)
+    if (start < end) out.push({ start, end })
+    if (a[i]!.end <= b[j]!.end) i++
+    else j++
+  }
+  return out
+}
+
 /** 本地日历日序号（UTC 归一，规避 DST 的 23/25 小时误差）；日期非法返回 null */
 function dayIndex(s: unknown): number | null {
   const d = parseTaskDate(s)
@@ -2158,13 +2176,16 @@ export class OASGantt extends OASElement {
     return ms
   }
 
-  /** 任务的班次窗口（首个带 shifts 的分配资源；多资源交集留待后续） */
+  /** 任务的班次窗口：所有声明 shifts 的分配资源取交集；未声明 shifts 的资源不约束 */
   private shiftWindows(task?: GanttTask): Array<{ start: number; end: number }> | null {
     if (!task?.resources?.length) return null
     const resources = this.resourceCalendars()
+    let acc: Array<{ start: number; end: number }> | null = null
+    let sawShifts = false
     for (const id of task.resources) {
       const shifts = resources.get(id)?.shifts
-      if (!shifts) continue
+      if (shifts === undefined) continue
+      sawShifts = true
       const windows: Array<{ start: number; end: number }> = []
       for (const shift of shifts) {
         const [sh, sm] = shift.start.split(':').map(Number)
@@ -2175,16 +2196,18 @@ export class OASGantt extends OASElement {
         windows.push({ start, end })
       }
       windows.sort((a, b) => a.start - b.start)
-      return windows.length > 0 ? windows : null
+      acc = acc === null ? windows : intersectShiftWindows(acc, windows)
+      if (acc.length === 0) break
     }
-    return null
+    if (!sawShifts) return null
+    return acc ?? []
   }
 
   /** hour 档按资源班次吸附起点：班次内保留，班次间/班次后落到下一个班次起点 */
   private snapToShift(ms: number, task?: GanttTask): number {
     if (this.scaleMode() !== 'hour') return ms
     const windows = this.shiftWindows(task)
-    if (!windows) return ms
+    if (!windows || windows.length === 0) return ms
     const d = new Date(ms)
     const minute = d.getHours() * 60 + d.getMinutes()
     if (windows.some((w) => minute >= w.start && minute < w.end)) return ms

@@ -158,7 +158,7 @@ Assemble a task detail editor with `oas-modal` + `oas-form` (the component only 
 
 - **Task constraints**: `GanttTask.constraint` (`'asap'` default / `'snet'` start-no-earlier-than / `'mso'` must-start-on / `'fnlt'` finish-no-later-than) + `constraintDate`. Under `auto-schedule`: `snet` sets a start floor, `mso` pins the start (not pushed by dependencies), `fnlt` is a soft deadline (no auto-move). Violations (`snet` earlier than the floor / `mso` conflicting with dependencies or off the pin / `fnlt` over deadline) are marked `.conflict` when **`show-critical-path` or `auto-schedule` is on**. Constraints on summary rows are meaningless (dates are derived) → ignored with a one-time warning.
 - **Working-days calendar**: `workdays` (JSON weekday array `[0..6]`, opt-in; absent/empty = any weekday) + `holidays` (**holidays are always non-working**, regardless of `workdays`). `auto-schedule` snaps pushed landing points to the **next working day** (skipping holidays and days outside `workdays`). Changing `workdays`/`holidays` at runtime, or rewriting `tasks`, re-normalizes.
-- **Per-resource calendars**: `resources` (JSON `[{ id, name?, workdays?, holidays?, shifts? }]`) + `GanttTask.resources`. For a task assigned multiple resources, `workdays` is intersected and `holidays` are unioned; `shifts: []` means no available shift. In `hour` scale, `auto-schedule` snaps the start into the first assigned resource with shifts (inside a shift stays; between/after shifts moves to the next shift start; multi-resource shift intersection is future work); day-level scheduling still consumes only workdays/holidays.
+- **Per-resource calendars**: `resources` (JSON `[{ id, name?, workdays?, holidays?, shifts? }]`) + `GanttTask.resources`. For a task assigned multiple resources, `workdays` is intersected and `holidays` are unioned; `shifts: []` means no available shift. In `hour` scale, `auto-schedule` snaps the start into shift windows (inside a shift stays; between/after shifts moves to the next shift start); when a task has multiple resources, the windows of every resource that declares `shifts` are intersected, resources without `shifts` do not constrain, and with no common window the start is not snapped into either side's one-sided shift. Day-level scheduling still consumes only workdays/holidays.
 - **Resource lanes**: `group-by-resource` creates summary lanes from each task's first `resources` entry (lane name uses the resource `name`, falling back to id); multi-resource tasks appear only under their first resource, and unassigned tasks stay top-level. When both `group-by-resource` and `group-by-project` are set, resource lanes win.
 - **Event order**: with `auto-schedule` on and dependent corrections applied, the order is uniformly `oas-reschedule` (dependent corrections) → `oas-tasks-change` (final corrected data), whether the change comes from an interaction commit (drag / keyboard / `updateTask` / `updateTasks`) or the host rewriting `tasks` directly (attribute channel); a drag/keyboard settle then dispatches `oas-task-change` (the dragged task, with `start/end` carrying the **corrected final values**). One operation dispatches `oas-tasks-change` exactly once. Hosts should read `el.tasks` / `detail.task`.
 
@@ -194,6 +194,17 @@ Assemble a task detail editor with `oas-modal` + `oas-form` (the component only 
     scale="hour"
     resources='[{"id":"rh","shifts":[{"start":"09:00","end":"18:00"}]}]'
     tasks='[{"id":"sh1","name":"Overrun","start":"2026-03-02 10:00","end":"2026-03-02 19:00"},{"id":"sh2","name":"Successor","start":"2026-03-02 08:00","end":"2026-03-02 09:00","resources":["rh"],"dependencies":[{"id":"sh1"}]}]'
+    height="180"
+  ></oas-gantt>
+</DemoBlock>
+
+<DemoBlock title="Hour-level shift intersection: A 09-18 × B 11-12; successor lands next day 11:00">
+  <oas-gantt
+    id="gantt-shift-intersect"
+    auto-schedule
+    scale="hour"
+    resources='[{"id":"rha","shifts":[{"start":"09:00","end":"18:00"}]},{"id":"rhb","shifts":[{"start":"11:00","end":"12:00"}]}]'
+    tasks='[{"id":"shi1","name":"Overrun","start":"2026-03-02 10:00","end":"2026-03-02 19:00"},{"id":"shi2","name":"Successor (A+B)","start":"2026-03-02 08:00","end":"2026-03-02 09:00","resources":["rha","rhb"],"dependencies":[{"id":"shi1"}]}]'
     height="180"
   ></oas-gantt>
 </DemoBlock>
