@@ -69,7 +69,7 @@ jobs:
       - run: pnpm exec playwright install --with-deps chromium firefox
       # 全量 e2e 分 6 片并行：大文件（table/sidebar/toolbar）不再集中压满单片关键路径。
       # WebKit 单独 job：它只有 9 条抽样，若混在 shard 6 会因 CI 未安装 webkit 而整片失败。
-      - run: pnpm test:e2e -- --project=docs-site --project=chromium --project=firefox --shard=${{ matrix.shard }}/6
+      - run: pnpm test:e2e --project=docs-site --project=chromium --project=firefox --shard=${{ matrix.shard }}/6
       # RTL 几何门禁（117 组件页 LTR/RTL 差集 sweep，exit 非零即红）——只跑 shard 1，免三片重复
       - name: RTL 几何门禁（仅 shard 1）
         if: matrix.shard == 1
