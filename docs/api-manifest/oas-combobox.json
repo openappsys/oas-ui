@@ -131,7 +131,7 @@
     },
     {
       "name": "oas-input",
-      "detail": "{ value: this.query }"
+      "detail": "{ value: this.query, source: 'search' }"
     },
     {
       "name": "oas-change",

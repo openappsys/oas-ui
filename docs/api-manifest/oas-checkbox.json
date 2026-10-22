@@ -94,6 +94,10 @@
       "detail": "{ checked, value: this.mappedValue(checked) }"
     },
     {
+      "name": "oas-limit-blocked",
+      "detail": "{ value, limit }"
+    },
+    {
       "name": "oas-focus"
     },
     {

@@ -345,3 +345,53 @@ for (const theme of ['light', 'dark'] as const) {
     await page.screenshot({ path: `test-results/visual-review/menubar-rtl-rightmost-${theme}.png` })
   })
 }
+
+// ===== 反馈 #6：文档级快捷键 / Alt 访问键无输入上下文守卫（输入框内被劫持） =====
+test('menubar 输入上下文守卫：输入框内 Ctrl 快捷键与 Alt 访问键不劫持，离开输入框后恢复', async ({ page }) => {
+  await page.goto('/components/menubar.html', { waitUntil: 'domcontentloaded' })
+  await page.waitForFunction(() => !!customElements.get('oas-menubar'))
+  await page.evaluate(() => {
+    document.getElementById('e2e-mb-guard')?.remove()
+    document.getElementById('e2e-mb-input')?.remove()
+    const mb = document.createElement('oas-menubar')
+    mb.id = 'e2e-mb-guard'
+    mb.setAttribute(
+      'items',
+      JSON.stringify([
+        {
+          label: '文件',
+          value: 'file',
+          accessKey: 'f',
+          children: [{ label: '保存', value: 'save', shortcut: 'Ctrl+Shift+S' }],
+        },
+      ]),
+    )
+    document.body.appendChild(mb)
+    const input = document.createElement('input')
+    input.id = 'e2e-mb-input'
+    document.body.appendChild(input)
+    ;(window as unknown as { __mbSelects: string[] }).__mbSelects = []
+    mb.addEventListener('oas-select', (e) => {
+      ;(window as unknown as { __mbSelects: string[] }).__mbSelects.push(String((e as CustomEvent).detail?.value))
+    })
+  })
+
+  const selects = () => page.evaluate(() => (window as unknown as { __mbSelects: string[] }).__mbSelects)
+
+  // 输入框内：快捷键与 Alt 访问键都被守卫让路
+  await page.locator('#e2e-mb-input').focus()
+  await page.keyboard.press('Control+Shift+S')
+  await page.keyboard.press('Alt+f')
+  expect(await selects(), '输入框内不得触发菜单快捷键/访问键').toEqual([])
+  const openedInInput = await page.evaluate(
+    () =>
+      document.querySelector('oas-menubar#e2e-mb-guard')!.shadowRoot!.querySelectorAll('[part="submenu"].open').length,
+  )
+  expect(openedInInput, '输入框内 Alt+F 不得展开菜单').toBe(0)
+
+  // 离开输入框：快捷键恢复（守卫不过度收紧）
+  await page.locator('#e2e-mb-input').blur()
+  await page.keyboard.press('Control+Shift+S')
+  await page.waitForFunction(() => (window as unknown as { __mbSelects: string[] }).__mbSelects.length === 1)
+  expect(await selects()).toEqual(['save'])
+})

@@ -1636,6 +1636,62 @@ describe('OASTabs', () => {
       tabB.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }))
       expect(el.getAttribute('active') ?? 'a').toBe('a')
     })
+
+    it('trigger="hover"：悬停切换不抢焦点（键盘焦点留在原标签）', () => {
+      const el = mount({ trigger: 'hover' })
+      const tabA = el.shadowRoot!.querySelector<HTMLElement>('[role="tab"][data-value="a"]')!
+      const tabB = el.shadowRoot!.querySelector<HTMLElement>('[role="tab"][data-value="b"]')!
+      tabA.focus()
+      expect(el.shadowRoot!.activeElement).toBe(tabA)
+      tabB.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }))
+      expect(el.getAttribute('active')).toBe('b')
+      // update 会重建标签钮：按 data-value 断言焦点归属，而非旧节点引用
+      const focused = el.shadowRoot!.activeElement as HTMLElement | null
+      expect(focused?.getAttribute('data-value'), 'hover 通道不得把焦点抢到新标签').toBe('a')
+    })
+  })
+
+  describe('tab ↔ tabpanel 语义链（同 shadow 内 IDREF）', () => {
+    it('tab 带 aria-controls；shadow 内 .panel 区域承载 role=tabpanel/aria-labelledby/tabindex=0', () => {
+      const el = mount()
+      const tabA = el.shadowRoot!.querySelector<HTMLElement>('[role="tab"][data-value="a"]')!
+      const region = el.shadowRoot!.querySelector<HTMLElement>('.panel')!
+      expect(tabA.id, 'tab 需要稳定 id 供 aria-labelledby 引用').not.toBe('')
+      expect(region.id, 'panel 区域需要稳定 id 供 aria-controls 引用').not.toBe('')
+      expect(tabA.getAttribute('aria-controls'), '同一 shadow 根内的 IDREF（跨根会被 axe 判无效）').toBe(region.id)
+      expect(region.getAttribute('role')).toBe('tabpanel')
+      expect(region.getAttribute('aria-labelledby'), '区域名称指向当前激活 tab').toBe(tabA.id)
+      expect(region.getAttribute('tabindex')).toBe('0')
+      // 面板数据载体不再重复写 tabpanel 语义（避免嵌套 tabpanel + 跨根 IDREF）
+      const panelA = el.querySelector<HTMLElement>('oas-tab-panel[value="a"]')!
+      expect(panelA.hasAttribute('role')).toBe(false)
+    })
+
+    it('id 稳定：多次 update / 切换 active 后 tab↔区域引用不漂移（aria-labelledby 跟随激活 tab）', () => {
+      const el = mount()
+      const tabBefore = el.shadowRoot!.querySelector<HTMLElement>('[role="tab"][data-value="a"]')!
+      const region = el.shadowRoot!.querySelector<HTMLElement>('.panel')!
+      const regionIdBefore = region.id
+      el.setAttribute('active', 'b')
+      const tabA = el.shadowRoot!.querySelector<HTMLElement>('[role="tab"][data-value="a"]')!
+      const tabB = el.shadowRoot!.querySelector<HTMLElement>('[role="tab"][data-value="b"]')!
+      expect(region.id).toBe(regionIdBefore)
+      expect(tabA.id).toBe(tabBefore.id)
+      expect(tabA.getAttribute('aria-controls')).toBe(regionIdBefore)
+      expect(tabB.getAttribute('aria-controls')).toBe(regionIdBefore)
+      expect(region.getAttribute('aria-labelledby'), '切换后名称跟随新激活 tab').toBe(tabB.id)
+    })
+
+    it('宿主显式 panel id 不被改写', () => {
+      const el = new OASTabs()
+      el.innerHTML = `
+        <oas-tab-panel label="A" value="a" id="custom-panel-a"><p>a</p></oas-tab-panel>
+        <oas-tab-panel label="B" value="b"><p>b</p></oas-tab-panel>
+      `
+      document.body.appendChild(el)
+      const panelA = el.querySelector<HTMLElement>('#custom-panel-a')!
+      expect(panelA.id).toBe('custom-panel-a')
+    })
   })
 
   describe('allow-deactivation 取消激活', () => {

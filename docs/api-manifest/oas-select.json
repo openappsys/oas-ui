@@ -215,7 +215,7 @@
   "events": [
     {
       "name": "oas-input",
-      "detail": "{ value: v }"
+      "detail": "{ value: v, source: 'search' }"
     },
     {
       "name": "oas-input-value-change",

@@ -257,7 +257,10 @@ export class OASPromptInput extends OASElement {
       this.valueAttrCache = attrValue
       this.valueCache = attrValue
       textarea.value = attrValue
-    } else if (document.activeElement !== textarea && textarea.value !== this.valueCache) {
+    } else if (this.activeInShadow() !== textarea && textarea.value !== this.valueCache) {
+      // 守卫语义：文本域聚焦中（真实用户正在输入，含输入法组合）不把缓存值回写覆盖。
+      // 必须用 shadow.activeElement——document.activeElement 在 shadow DOM 内是宿主，
+      // 与 textarea 永不相等，会让守卫恒真（永远回写）。
       textarea.value = this.valueCache
     }
     send.className = loading ? 'stop' : 'send'
@@ -270,6 +273,18 @@ export class OASPromptInput extends OASElement {
     this.syncSendState()
     this.renderSuggestions()
     this.syncSlotVisibility()
+  }
+
+  /**
+   * shadow 内当前焦点元素。happy-dom 在元素尚未连接/无焦点记录时
+   * `ShadowRoot.activeElement` 内部引用为 undefined 会抛错，包一层兜底。
+   */
+  private activeInShadow(): Element | null {
+    try {
+      return this.shadow.activeElement
+    } catch {
+      return null
+    }
   }
 
   private syncSendState(): void {

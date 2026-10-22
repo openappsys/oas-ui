@@ -1432,3 +1432,46 @@ describe('OASCascader 属性-方法撞名回归', () => {
     expect(el.getAttribute('value')).toContain('zj')
   })
 })
+
+// ---- I4：清空按钮 / 多选 chip 移除钮键盘可达（Tab 序 + 可读名称 + Enter/Space 触发） ----
+
+describe('OASCascader 清空按钮与 chip 移除钮键盘可达（I4）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('clear-btn 进入 Tab 序（tabIndex 0）、有可读名称、Enter 清空', () => {
+    const el = mount({ clearable: '', value: '["zj","hz"]' })
+    const clearBtn = el.shadowRoot!.querySelector<HTMLElement>('[part="clear"]')!
+    expect(clearBtn.getAttribute('tabindex')).toBe('0')
+    expect(clearBtn.tabIndex).toBe(0)
+    expect((clearBtn.getAttribute('aria-label') ?? '').length).toBeGreaterThan(0)
+    clearBtn.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }))
+    expect(el.getAttribute('value')).toBeNull()
+    expect(el.shadowRoot!.activeElement, '清空后焦点交还 trigger').toBe(trigger(el))
+  })
+
+  it('chip 移除钮进入 Tab 序、有可读名称、Enter 移除该 chip 且不展开面板', () => {
+    const el = mount({ multiple: '', value: '[["zj","hz"],["js","nj"]]' })
+    const chip = el.shadowRoot!.querySelector<HTMLElement>('.chip')!
+    const rm = chip.querySelector<HTMLElement>('.remove')!
+    expect(rm.getAttribute('tabindex')).toBe('0')
+    expect(rm.tabIndex).toBe(0)
+    expect((rm.getAttribute('aria-label') ?? '').length).toBeGreaterThan(0)
+    rm.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }))
+    expect(JSON.parse(el.getAttribute('value') ?? '[]')).toEqual([['js'], ['js', 'nj']])
+    expect(trigger(el).getAttribute('aria-expanded'), '移除 chip 不应冒泡成展开').toBe('false')
+    expect(el.shadowRoot!.activeElement, 'chip 重建后焦点交还 trigger').toBe(trigger(el))
+  })
+
+  it('chip 移除钮 Space 同样移除', () => {
+    const el = mount({ multiple: '', value: '[["zj","hz"],["js","nj"]]' })
+    const rm = el.shadowRoot!.querySelector<HTMLElement>('.chip .remove')!
+    rm.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', bubbles: true, cancelable: true }))
+    expect(JSON.parse(el.getAttribute('value') ?? '[]')).toEqual([['js'], ['js', 'nj']])
+  })
+})

@@ -1,4 +1,5 @@
 import { toISODate } from '../../form/calendar/date-grid.js'
+import { devWarn } from '../../shared/dev-warn.js'
 import type { ResourceItem, ResourceScale, ResourceTask } from './oas-resource.js'
 
 const DAY_MS = 86_400_000
@@ -235,8 +236,16 @@ export function computeUtilization(
     return { rangeStart: '', rangeEnd: '', resources: [], totalLoad: 0, totalCapacity: 0, utilization: 0 }
   }
   if (rangeEnd < rangeStart) [rangeStart, rangeEnd] = [rangeEnd, rangeStart]
-  const dayCount = dayDiff(rangeEnd, rangeStart) + 1
-  if (dayCount > MAX_REPORT_DAYS) rangeEnd = addDays(rangeStart, MAX_REPORT_DAYS - 1)
+  const rawDayCount = dayDiff(rangeEnd, rangeStart) + 1
+  // 超上限：真正限制**计算**（旧实现只夹返回的 rangeEnd，periods 仍按全量算满 →
+  // 报告自相矛盾：rangeEnd 说 5000 天、periods 有上万档）
+  const dayCount = Math.min(rawDayCount, MAX_REPORT_DAYS)
+  if (rawDayCount > MAX_REPORT_DAYS) {
+    rangeEnd = addDays(rangeStart, MAX_REPORT_DAYS - 1)
+    devWarn(
+      `[oas-resource] computeUtilization 报告区间 ${rawDayCount} 天超过上限 ${MAX_REPORT_DAYS} 天，已截断为 ${dayCount} 天（请缩小 rangeStart/rangeEnd）`,
+    )
+  }
 
   const reportRows: ResourceUtilization[] = []
   let totalLoad = 0

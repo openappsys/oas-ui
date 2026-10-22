@@ -1034,3 +1034,80 @@ describe('OASCheckboxGroup value property（get/set）', () => {
     expect(Object.hasOwn(el, 'value')).toBe(false)
   })
 })
+
+// ---- I6：min/max 数量限制拦截信号方向可区分（min 不得冒充 max） ----
+
+describe('OASCheckboxGroup 数量限制拦截信号方向（I6）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  function mountGroup(attrs: Record<string, string> = {}): OASCheckboxGroup {
+    const el = new OASCheckboxGroup()
+    for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v)
+    el.innerHTML = `
+      <oas-checkbox value="a">A</oas-checkbox>
+      <oas-checkbox value="b">B</oas-checkbox>
+      <oas-checkbox value="c">C</oas-checkbox>
+    `
+    document.body.appendChild(el)
+    return el
+  }
+
+  function itemInput(el: OASCheckboxGroup, value: string): HTMLInputElement {
+    return el.querySelector(`oas-checkbox[value="${value}"]`)!.shadowRoot!.querySelector('input')!
+  }
+
+  function collect(el: OASCheckboxGroup): { blocked: unknown[]; exceeded: unknown[] } {
+    const blocked: unknown[] = []
+    const exceeded: unknown[] = []
+    // 只收组自身派发的事件（子项信号不得以同名事件二次穿透到宿主）
+    el.addEventListener('oas-limit-blocked', (e) => {
+      if (e.target === el) blocked.push((e as CustomEvent).detail)
+    })
+    el.addEventListener('oas-exceed-limit', (e) => exceeded.push((e as CustomEvent).detail))
+    return { blocked, exceeded }
+  }
+
+  it('min 下限拦截：组派 oas-limit-blocked(limit=min)，不派 oas-exceed-limit（min+max 并存也不得串味）', () => {
+    const el = mountGroup({ value: '["a"]', min: '1', max: '2' })
+    const { blocked, exceeded } = collect(el)
+    itemInput(el, 'a').click()
+    expect(itemInput(el, 'a').checked, '下限保护：已选项不可取消').toBe(true)
+    expect(blocked).toEqual([{ value: 'a', limit: 'min', min: 1 }])
+    expect(exceeded, 'min 拦截不得冒充 max 越界').toEqual([])
+  })
+
+  it('max 上限拦截：保留 oas-exceed-limit 兼容契约，同时派 oas-limit-blocked(limit=max)', () => {
+    const el = mountGroup({ value: '["a","b"]', max: '2' })
+    const { blocked, exceeded } = collect(el)
+    itemInput(el, 'c').click()
+    expect(exceeded).toEqual([{ value: 'c', max: 2 }])
+    expect(blocked).toEqual([{ value: 'c', limit: 'max', max: 2 }])
+  })
+
+  it('防御回滚路径（程序直改）：min 回滚同样派 limit=min 且不派 exceed-limit', () => {
+    const el = mountGroup({ value: '["a"]', min: '1', max: '2' })
+    const a = el.querySelector('oas-checkbox[value="a"]')!
+    const { blocked, exceeded } = collect(el)
+    a.removeAttribute('checked')
+    a.dispatchEvent(new CustomEvent('oas-change', { detail: { checked: false, value: 'a' } }))
+    expect(a.hasAttribute('checked'), 'min 防御回滚保持勾选').toBe(true)
+    expect(blocked).toEqual([{ value: 'a', limit: 'min', min: 1 }])
+    expect(exceeded).toEqual([])
+  })
+
+  it('防御回滚路径（程序直改）：max 回滚派 exceed-limit 与 limit-blocked(limit=max)', () => {
+    const el = mountGroup({ value: '["a","b"]', max: '2' })
+    const c = el.querySelector('oas-checkbox[value="c"]')!
+    const { blocked, exceeded } = collect(el)
+    c.setAttribute('checked', '')
+    c.dispatchEvent(new CustomEvent('oas-change', { detail: { checked: true, value: 'c' } }))
+    expect(c.hasAttribute('checked'), 'max 防御回滚取消勾选').toBe(false)
+    expect(exceeded).toEqual([{ value: 'c', max: 2 }])
+    expect(blocked).toEqual([{ value: 'c', limit: 'max', max: 2 }])
+  })
+})

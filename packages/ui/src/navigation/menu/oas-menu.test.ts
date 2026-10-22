@@ -1281,8 +1281,10 @@ describe('OASMenu loading 菜单项', () => {
       // 按「剪」应跳到「剪切」
       menu.dispatchEvent(new KeyboardEvent('keydown', { key: '剪', bubbles: true }))
       const cut = el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="cut"]')!
-      // typeahead 定位：该项获得焦点/高亮（active 或 focus）
-      expect(cut.classList.contains('active') || el.shadowRoot!.activeElement === cut).toBe(true)
+      // typeahead 定位：active + aria-activedescendant（焦点留在 ul，不把焦点挪到 li）
+      expect(cut.classList.contains('active'), 'typeahead 应高亮匹配项').toBe(true)
+      expect(menu.getAttribute('aria-activedescendant'), 'typeahead 应同步 activedescendant').toBe(cut.id)
+      expect(el.shadowRoot!.activeElement, 'typeahead 不得把焦点挪到菜单项').toBeFalsy()
     })
   })
 
@@ -2318,5 +2320,224 @@ describe('OASMenu 属性-方法撞名回归', () => {
     const parent = el.shadowRoot!.querySelector<HTMLElement>('[data-value="edit"]')!
     expect(parent.classList.contains('open'), '默认 vertical 选中后收起').toBe(false)
     expect(el.getAttribute('value')).toBe('copy')
+  })
+})
+
+// ===== 读屏语义：aria-activedescendant 模型 =====
+// 缺陷：键盘高亮只切 .active class，焦点停在 ul 上但 AT 完全感知不到当前项
+// （无 aria-activedescendant、菜单项无 id、ul 无 aria-label）。
+// 修法：item 给 id，active 项的 id 写入 ul[aria-activedescendant]；不引入 roving tabindex。
+describe('OASMenu 读屏语义（aria-activedescendant）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  const menuOf = (el: OASMenu): HTMLElement => el.shadowRoot!.querySelector<HTMLElement>('.menu')!
+  const activeOf = (el: OASMenu): HTMLElement | null => el.shadowRoot!.querySelector<HTMLElement>('.item.active')
+  const key = (target: Element, k: string, init: KeyboardEventInit = {}) => {
+    const e = new KeyboardEvent('keydown', { key: k, bubbles: true, cancelable: true, ...init })
+    target.dispatchEvent(e)
+    return e
+  }
+
+  it('ul 保持唯一 tabindex=0、带可访问名称与 aria-orientation；菜单项无 tabindex', () => {
+    const el = mount()
+    const menu = menuOf(el)
+    expect(menu.getAttribute('tabindex'), '焦点容器仍是唯一的 ul').toBe('0')
+    expect(menu.getAttribute('role')).toBe('menu')
+    expect(menu.getAttribute('aria-label'), 'ul 需可访问名称').toBeTruthy()
+    expect(menu.getAttribute('aria-orientation')).toBe('vertical')
+    for (const li of items(el)) {
+      expect(li.hasAttribute('tabindex'), 'activedescendant 模型下菜单项不应有 tabindex').toBe(false)
+    }
+  })
+
+  it('宿主 aria-label 覆盖默认可访问名称', () => {
+    const el = mount({ 'aria-label': '操作菜单' })
+    expect(menuOf(el).getAttribute('aria-label')).toBe('操作菜单')
+  })
+
+  it('ArrowDown 后 aria-activedescendant 指向 active 项且各项有唯一 id', () => {
+    const el = mount()
+    const menu = menuOf(el)
+    key(menu, 'ArrowDown')
+    const first = items(el)[0]!
+    expect(first.id, '菜单项应有 id 供 activedescendant 引用').toBeTruthy()
+    expect(menu.getAttribute('aria-activedescendant')).toBe(first.id)
+    // 唯一性：不能出现重复 id（否则 AT 解析歧义）
+    const ids = items(el).map((li) => li.id)
+    expect(new Set(ids).size).toBe(ids.length)
+  })
+
+  it('多级子菜单：进入后 activedescendant 指向子项，返回后指回父项', () => {
+    const el = mount({ items: NESTED_ITEMS })
+    const menu = menuOf(el)
+    key(menu, 'ArrowDown') // 编辑
+    key(menu, 'ArrowRight') // 进子菜单
+    const copy = el.shadowRoot!.querySelector<HTMLElement>('[data-value="copy"]')!
+    expect(copy.classList.contains('active')).toBe(true)
+    expect(menu.getAttribute('aria-activedescendant')).toBe(copy.id)
+    key(menu, 'ArrowLeft') // 返回
+    const edit = el.shadowRoot!.querySelector<HTMLElement>('[data-value="edit"]')!
+    expect(menu.getAttribute('aria-activedescendant')).toBe(edit.id)
+  })
+
+  it('Space 激活当前项（与 Enter 同语义，不落入 typeahead）', () => {
+    const el = mount()
+    const menu = menuOf(el)
+    key(menu, 'ArrowDown') // 首页
+    const e = key(menu, ' ')
+    expect(e.defaultPrevented, 'Space 应 preventDefault（避免页面滚动）').toBe(true)
+    expect(el.getAttribute('value')).toBe('home')
+  })
+
+  it('Space 命中带子级的当前项时展开子菜单', () => {
+    const el = mount({ items: NESTED_ITEMS })
+    const menu = menuOf(el)
+    key(menu, 'ArrowDown') // 编辑
+    key(menu, ' ')
+    const parent = topItems(el)[0]!
+    expect(parent.classList.contains('open')).toBe(true)
+    expect(activeOf(el)!.textContent).toContain('复制')
+  })
+
+  it('Home / End 跳首末并 preventDefault', () => {
+    const el = mount()
+    const menu = menuOf(el)
+    key(menu, 'ArrowDown')
+    const end = key(menu, 'End')
+    expect(end.defaultPrevented, 'End 应 preventDefault').toBe(true)
+    expect(activeOf(el)).toBe(items(el)[2])
+    const home = key(menu, 'Home')
+    expect(home.defaultPrevented, 'Home 应 preventDefault').toBe(true)
+    expect(activeOf(el)).toBe(items(el)[0])
+  })
+
+  it('disabled / loading 项不作为 activedescendant 目标（导航跳过且不写入）', () => {
+    const el = mount({
+      items: JSON.stringify([
+        { label: '甲', value: 'a' },
+        { label: '乙', value: 'b', disabled: true },
+        { label: '丙', value: 'c' },
+      ]),
+    })
+    const menu = menuOf(el)
+    key(menu, 'ArrowDown')
+    key(menu, 'ArrowDown')
+    const active = activeOf(el)!
+    expect(active.dataset.value, '应跳过 disabled 项').toBe('c')
+    expect(menu.getAttribute('aria-activedescendant')).toBe(active.id)
+  })
+})
+
+// ===== 水平模式键盘轴 + RTL 镜像 =====
+// 缺陷：水平顶层沿用竖排模型——ArrowDown/Up 沿横排移动、ArrowRight 进子菜单；
+// RTL 下子菜单从左侧浮出，键盘却仍 ArrowRight 进 / ArrowLeft 出。
+// 修法：水平顶层左右移动、ArrowDown 进子菜单、ArrowUp/Esc 退出；进出子菜单的键
+// 跟随子菜单浮出侧（LTR=右进左出，RTL=左进右出）。
+describe('OASMenu horizontal 键盘轴与 RTL 镜像', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  const menuOf = (el: OASMenu): HTMLElement => el.shadowRoot!.querySelector<HTMLElement>('.menu')!
+  const activeOf = (el: OASMenu): HTMLElement | null => el.shadowRoot!.querySelector<HTMLElement>('.item.active')
+  const key = (target: Element, k: string) => {
+    const e = new KeyboardEvent('keydown', { key: k, bubbles: true, cancelable: true })
+    target.dispatchEvent(e)
+    return e
+  }
+
+  it('LTR 顶层：ArrowRight/ArrowLeft 沿行移动，不进入子菜单', () => {
+    const el = mount({ items: NESTED_ITEMS, mode: 'horizontal' })
+    const menu = menuOf(el)
+    expect(menu.getAttribute('aria-orientation')).toBe('horizontal')
+    key(menu, 'ArrowDown') // 编辑
+    const right = key(menu, 'ArrowRight')
+    expect(right.defaultPrevented).toBe(true)
+    expect(activeOf(el)!.dataset.value, 'ArrowRight 应沿行移到下一项').toBe('file')
+    expect(topItems(el)[1]!.classList.contains('open'), 'ArrowRight 不应展开子菜单').toBe(false)
+    key(menu, 'ArrowLeft')
+    expect(activeOf(el)!.dataset.value).toBe('edit')
+    expect(topItems(el)[0]!.classList.contains('open')).toBe(false)
+  })
+
+  it('LTR 顶层：ArrowDown 进入子菜单，Escape 退出回父项', () => {
+    const el = mount({ items: NESTED_ITEMS, mode: 'horizontal' })
+    const menu = menuOf(el)
+    key(menu, 'ArrowDown') // 编辑
+    key(menu, 'ArrowRight') // 文件
+    key(menu, 'ArrowDown') // 进子菜单
+    expect(topItems(el)[1]!.classList.contains('open'), 'ArrowDown 应展开子菜单').toBe(true)
+    expect(activeOf(el)!.dataset.value).toBe('new')
+    expect(menu.getAttribute('aria-activedescendant')).toBe(activeOf(el)!.id)
+    const esc = key(menu, 'Escape')
+    expect(esc.defaultPrevented).toBe(true)
+    expect(topItems(el)[1]!.classList.contains('open'), 'Escape 应收起子菜单').toBe(false)
+    expect(activeOf(el)!.dataset.value, '退出后高亮父项').toBe('file')
+  })
+
+  it('子菜单层：ArrowDown/ArrowUp 竖向移动（水平模式子菜单仍是竖排列表）', () => {
+    const el = mount({ items: NESTED_ITEMS, mode: 'horizontal' })
+    const menu = menuOf(el)
+    key(menu, 'ArrowDown') // 编辑
+    key(menu, 'ArrowLeft') // 循环到末项 视图（水平左移）
+    expect(activeOf(el)!.dataset.value).toBe('view')
+    key(menu, 'ArrowRight') // 回到 编辑
+    key(menu, 'ArrowDown') // 进子菜单
+    key(menu, 'ArrowDown') // 复制 → 剪切
+    expect(activeOf(el)!.dataset.value).toBe('cut')
+    key(menu, 'ArrowUp')
+    expect(activeOf(el)!.dataset.value).toBe('copy')
+  })
+
+  it('RTL 顶层：ArrowLeft 沿行前进、ArrowRight 后退', () => {
+    const el = mount({ items: NESTED_ITEMS, mode: 'horizontal', dir: 'rtl' })
+    const menu = menuOf(el)
+    expect(el.hasAttribute('data-rtl'), 'RTL 镜像开关应同步').toBe(true)
+    key(menu, 'ArrowDown') // 编辑（RTL 首项在物理右侧）
+    key(menu, 'ArrowLeft') // 物理左 = DOM 下一项
+    expect(activeOf(el)!.dataset.value).toBe('file')
+    key(menu, 'ArrowRight') // 物理右 = DOM 上一项
+    expect(activeOf(el)!.dataset.value).toBe('edit')
+  })
+
+  it('RTL 子菜单层：ArrowLeft 进二级、ArrowRight 逐级返回（浮出侧镜像）', () => {
+    const el = mount({ items: NESTED_ITEMS, mode: 'horizontal', dir: 'rtl' })
+    const menu = menuOf(el)
+    key(menu, 'ArrowDown') // 编辑
+    key(menu, 'ArrowLeft') // 文件
+    expect(activeOf(el)!.dataset.value).toBe('file')
+    key(menu, 'ArrowDown') // 进入 文件 子菜单
+    expect(topItems(el)[1]!.classList.contains('open')).toBe(true)
+    expect(activeOf(el)!.dataset.value).toBe('new')
+    key(menu, 'ArrowLeft') // RTL 下二级子菜单同向左浮出 → 左键进入
+    expect(activeOf(el)!.dataset.value).toBe('new-file')
+    expect(menu.getAttribute('aria-activedescendant')).toBe(activeOf(el)!.id)
+    key(menu, 'ArrowRight') // 返回上一级
+    expect(activeOf(el)!.dataset.value).toBe('new')
+    key(menu, 'ArrowRight') // 再返回顶层
+    expect(topItems(el)[1]!.classList.contains('open'), 'RTL 应 ArrowRight 逐级退出子菜单').toBe(false)
+    expect(activeOf(el)!.dataset.value).toBe('file')
+  })
+
+  it('竖向模式 RTL：ArrowLeft 进子菜单、ArrowRight 返回（子菜单同向左浮出）', () => {
+    const el = mount({ items: NESTED_ITEMS, dir: 'rtl' })
+    const menu = menuOf(el)
+    key(menu, 'ArrowDown') // 编辑
+    key(menu, 'ArrowLeft') // RTL 进子菜单
+    expect(topItems(el)[0]!.classList.contains('open')).toBe(true)
+    expect(activeOf(el)!.dataset.value).toBe('copy')
+    key(menu, 'ArrowRight')
+    expect(topItems(el)[0]!.classList.contains('open')).toBe(false)
+    expect(activeOf(el)!.dataset.value).toBe('edit')
   })
 })

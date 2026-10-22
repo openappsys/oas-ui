@@ -27,6 +27,9 @@ function warnInvalidSize(raw: string): void {
 export type TabsPanelMode = 'keep' | 'lazy' | 'destroy'
 export type TabsActivation = 'auto' | 'manual'
 
+/** 面板/标签稳定 id 序列（模块级唯一，跨实例不冲突） */
+let tabIdSeq = 0
+
 const VALID_PANEL_MODES: readonly TabsPanelMode[] = ['keep', 'lazy', 'destroy']
 
 /** 非法 panel-mode 归一化：回落 keep 并在 dev 下 console.warn 一次（同值去重） */
@@ -712,6 +715,10 @@ export class OASTabs extends OASElement {
 
   private panels: OASTabPanel[] = []
   private observer: MutationObserver | null = null
+  /** 面板 → 稳定 id（WeakMap：元素移除即释放，重建不漂移） */
+  private panelIds = new WeakMap<Element, string>()
+  /** tabpanel 语义容器（shadow 内 .panel）的稳定 id */
+  private regionId = ''
 
   /** title 悬停提示吸收缓存（value → { 文本, 来源面板 }）：panel title 被吸收后由缓存驱动渲染幂等；
    *  owner 记录吸收来源元素——宿主删除旧面板再建同名 value 新面板时（closable 场景），
@@ -1004,6 +1011,8 @@ export class OASTabs extends OASElement {
     const addable = this.hasAttr('addable')
     const triggerHover = this.getAttr('trigger', 'click') === 'hover'
     const reserveSpace = this.hasAttr('reserve-selected-space')
+    // tabpanel 语义容器（hide-content 纯导航模式不渲染面板区，此时不写 aria-controls）
+    const regionEl = this.shadow.querySelector<HTMLElement>('.panel')
 
     // 重建前捕获 tablist 内焦点归属（动态增删后焦点恢复的依据）
     const focused = this.captureFocused()
@@ -1022,6 +1031,9 @@ export class OASTabs extends OASElement {
     const liveValues = new Set<string>()
     this.panels.forEach((panel, idx) => {
       const value = panel.getAttribute('value') ?? ''
+      // tab ↔ tabpanel 语义链：tab 与 panel 区域的 id 对都在 tabs shadow 内（跨 shadow IDREF
+      // 在 axe/规范中无效），面板数据载体不写 ARIA，由 shadow 内的 .panel 区域承载 tabpanel 语义
+      const panelId = this.panelIdOf(panel)
       liveValues.add(value)
       if (idx === 0) firstValue = value
       const resolvedActive = hasActiveAttr ? active : firstValue
@@ -1036,6 +1048,8 @@ export class OASTabs extends OASElement {
       btn.setAttribute('part', 'tab')
       btn.setAttribute('role', 'tab')
       btn.setAttribute('aria-selected', String(isSelected))
+      btn.id = `${panelId}-tab`
+      if (regionEl) btn.setAttribute('aria-controls', this.panelRegionId())
       if (href) {
         btn.setAttribute('href', href)
         const target = panel.getAttribute('target')
@@ -1173,9 +1187,10 @@ export class OASTabs extends OASElement {
       }
 
       btn.addEventListener('click', () => this.activate(value))
-      // trigger:hover：悬停即切换（disabled 不触发）；mouseenter 不冒泡故逐个绑定
+      // trigger:hover：悬停即切换（disabled 不触发）；不抢焦点（focus:false）——悬停是
+      // 指针通道，若在 activate 末尾聚焦新标签，会把键盘用户的焦点从当前控件上抢走
       if (triggerHover && !disabled) {
-        btn.addEventListener('mouseenter', () => this.activate(value))
+        btn.addEventListener('mouseenter', () => this.activate(value, { focus: false }))
       }
 
       // manager 能力：sortable 拖拽装饰（draggable + 原生 HTML5 拖拽 → oas-reorder）。
@@ -1228,6 +1243,19 @@ export class OASTabs extends OASElement {
       const isActive = selected !== '' && value === selected
       panel.hidden = !isActive
       this.syncPanelContent(panel, value, isActive, panelMode)
+    }
+
+    // tabpanel 语义容器（tabs shadow 内的 .panel）：role/可访问名称/可聚焦入口。
+    // tab 与 panel 同根 → aria-controls / aria-labelledby 均为有效 IDREF（跨 shadow 引用会被
+    // axe 判 aria-valid-attr-value，浏览器无障碍树也不建立关联）。
+    const region = regionEl
+    if (region) {
+      region.id = this.panelRegionId()
+      region.setAttribute('role', 'tabpanel')
+      region.setAttribute('tabindex', '0')
+      const activeTab = selected !== '' ? this.findTabByValue(selected) : null
+      if (activeTab) region.setAttribute('aria-labelledby', activeTab.id)
+      else region.removeAttribute('aria-labelledby')
     }
 
     // 重建后恢复焦点（点击 + / 关闭 / 方向键切换后焦点不丢）
@@ -1765,7 +1793,7 @@ export class OASTabs extends OASElement {
     if (needsManager) warnManagerNotImported()
   }
 
-  private activate(value: string): void {
+  private activate(value: string, opts: { focus?: boolean } = {}): void {
     // disabled 面板不可激活（键盘已跳过；此处防御性守卫，防宿主直接 setAttribute 到 disabled 值时面板错位）
     const panel = this.panels.find((p) => (p.getAttribute('value') ?? '') === value)
     if (panel?.hasAttribute('disabled')) return
@@ -1786,8 +1814,9 @@ export class OASTabs extends OASElement {
     this.setAttribute('active', value)
     this.emit('change', { value })
     this.update()
-    // 激活后焦点落到新激活标签（方向键/点击切换时 roving tabindex 同步）
-    this.findTabByValue(value)?.focus({ preventScroll: true })
+    // 激活后焦点落到新激活标签（方向键/点击切换时 roving tabindex 同步）；
+    // hover 通道传 focus:false，不抢键盘焦点
+    if (opts.focus !== false) this.findTabByValue(value)?.focus({ preventScroll: true })
   }
 
   /**
@@ -1831,6 +1860,22 @@ export class OASTabs extends OASElement {
       // 焦点所在标签已被移除 → 落到当前选中标签
       this.shadow.querySelector<HTMLElement>('[role="tab"][aria-selected="true"]')?.focus({ preventScroll: true })
     }
+  }
+
+  /** 面板稳定 id：按面板元素缓存（每次重建不漂移，元素删除后自然失效） */
+  private panelIdOf(panel: Element): string {
+    let id = this.panelIds.get(panel)
+    if (!id) {
+      id = `oas-tab-panel-${++tabIdSeq}`
+      this.panelIds.set(panel, id)
+    }
+    return id
+  }
+
+  /** tabpanel 语义容器（shadow 内 .panel）稳定 id */
+  private panelRegionId(): string {
+    if (!this.regionId) this.regionId = `oas-tabs-panel-${++tabIdSeq}`
+    return this.regionId
   }
 
   private findTabByValue(value: string): HTMLElement | null {

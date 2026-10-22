@@ -8,11 +8,16 @@ type FormControlWriter = (el: Element, value: string) => void
 
 /**
  * 表单控件注册表：collectFields 收集这些 tag 下带 `name` 的元素，并用其读取器取值。
- * 内置常用控件 + 特殊通道（transfer 用 model-value、switch 用 checked 态），可 registerFormControl 扩展。
+ * 内置常用控件 + 特殊通道（checkbox 用 value property 写入、switch 用 checked 态），可 registerFormControl 扩展。
  */
 const FORM_CONTROLS = new Map<string, FormControlReader>()
 
 const FORM_CONTROL_WRITERS = new Map<string, FormControlWriter>()
+
+/** 控件值通道：value 属性为默认；model-value 通道用于复用该受控属性的复合控件（事件回写也必须走同一属性） */
+type ValueChannel = 'value' | 'model-value'
+
+const FORM_CONTROL_CHANNELS = new Map<string, ValueChannel>()
 
 /** 值安全归一：`[`/`{` 前缀（数组/对象 JSON）重新 stringify，保持合法 JSON */
 function normalizeValue(raw: string): string {
@@ -91,14 +96,20 @@ function writePath(target: Record<string, unknown>, segments: string[], value: s
   ;(cursor as Record<string, unknown>)[last] = value
 }
 
-function register(tags: string[], reader?: FormControlReader, writer?: FormControlWriter): void {
+function register(
+  tags: string[],
+  reader?: FormControlReader,
+  writer?: FormControlWriter,
+  channel: ValueChannel = 'value',
+): void {
   for (const t of tags) {
     FORM_CONTROLS.set(t, reader ?? defaultReader)
     if (writer) FORM_CONTROL_WRITERS.set(t, writer)
+    FORM_CONTROL_CHANNELS.set(t, channel)
   }
 }
 
-// 内置常用控件（默认读 value 属性）
+// 内置常用控件（默认读 value 属性；transfer 的受控值属性即 value，见 transfer.md）
 register([
   'oas-input',
   'oas-textarea',
@@ -113,20 +124,31 @@ register([
   'oas-slider',
   'oas-rate',
   'oas-pin-input',
-  'oas-dynamic-tags',
-  'oas-combobox',
   'oas-picker',
+  'oas-transfer',
 ])
-// 特殊 value 通道
+// combobox：读 value property（无已选值时草稿文本即表单值，datalist 语义）；写仍走 value 属性通道
 register(
-  ['oas-transfer'],
-  (el) => normalizeValue(el.getAttribute('model-value') ?? ''),
-  (el, v) => el.setAttribute('model-value', v),
+  ['oas-combobox'],
+  (el) => {
+    const v = (el as unknown as { value: string | string[] }).value
+    return normalizeValue(typeof v === 'string' ? v : JSON.stringify(v))
+  },
+  (el, v) => el.setAttribute('value', v),
+  'value',
 )
+// 特殊 model-value 通道（动态条目类复合控件只观察 model-value）
 register(
   ['oas-dynamic-input'],
   (el) => normalizeValue(el.getAttribute('model-value') ?? ''),
   (el, v) => el.setAttribute('model-value', v),
+  'model-value',
+)
+register(
+  ['oas-dynamic-tags'],
+  (el) => normalizeValue(el.getAttribute('model-value') ?? ''),
+  (el, v) => el.setAttribute('model-value', v),
+  'model-value',
 )
 register(['oas-checkbox'], undefined, (el, v) => {
   // 走 property setter：true-value/false-value 映射与布尔分发在 setter 内（setAttribute 会绕过，
@@ -147,11 +169,13 @@ export function registerFormControl(
 ): () => void {
   const tag = tagName.toLowerCase()
   FORM_CONTROLS.set(tag, reader ? (el) => reader(el) ?? '' : defaultReader)
+  FORM_CONTROL_CHANNELS.set(tag, 'value')
   if (writer) FORM_CONTROL_WRITERS.set(tag, writer)
   else FORM_CONTROL_WRITERS.delete(tag)
   return () => {
     FORM_CONTROLS.delete(tag)
     FORM_CONTROL_WRITERS.delete(tag)
+    FORM_CONTROL_CHANNELS.delete(tag)
   }
 }
 
@@ -311,11 +335,14 @@ export class OASForm extends OASElement {
       e.preventDefault()
       this.validateAndSubmit()
     })
-    this.addEventListener('oas-input', ((e: CustomEvent<{ value: string }>) => {
+    this.addEventListener('oas-input', ((e: CustomEvent<{ value: string; source?: string }>) => {
       const target = e.composedPath()[0]
       if (target instanceof Element && this.contains(target)) {
+        // 搜索词事件（select/combobox/auto-complete 的过滤输入）不是字段值：
+        // 写回会把已选值换成过滤词（C3 实抓），这里只承接真实输入
+        if (e.detail?.source === 'search') return
         const written = String(e.detail.value)
-        target.setAttribute('value', written)
+        this.writeBackFieldValue(target, written)
         this.emitValuesChange(target.getAttribute('name'), written)
       }
     }) as EventListener)
@@ -329,7 +356,7 @@ export class OASForm extends OASElement {
       const v = detail.value
       // null（空值语义，如 input-number 未填）写空串而非 'null' 字符串
       const written = v === null || v === undefined ? '' : typeof v === 'string' ? v : JSON.stringify(v)
-      target.setAttribute('value', written)
+      this.writeBackFieldValue(target, written)
       this.emitValuesChange(target.getAttribute('name'), written)
     }) as EventListener)
     // 校验触发时机：事件与 effectiveTrigger 匹配的字段做单字段校验（注册在值同步之后，读到的是新值）
@@ -556,6 +583,15 @@ export class OASForm extends OASElement {
   private writeValue(element: Element, value: string): void {
     const writer = FORM_CONTROL_WRITERS.get(element.tagName.toLowerCase()) ?? defaultWriter
     writer(element, value)
+  }
+
+  /** 字段事件回写：model-value 通道控件写 model-value，其余写 value（写错属性会被组件忽略，值静默丢失） */
+  private writeBackFieldValue(element: Element, written: string): void {
+    if (FORM_CONTROL_CHANNELS.get(element.tagName.toLowerCase()) === 'model-value') {
+      this.writeValue(element, written)
+      return
+    }
+    element.setAttribute('value', written)
   }
 
   private snapshotValues(): Record<string, string> {

@@ -2099,3 +2099,230 @@ describe('scheduler 跨日全天 / repeat count+byDay / ICS 增强', () => {
     expect(extra).toContain('TRIGGER:-PT10M')
   })
 })
+
+describe('scheduler 跨日几何 / ICS 类型 / byDay 计数回归（I-1/I-2/I-3/I-5/I-6）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('I-1：资源视图跨日定时事件首日条画到 24:00（不再压成 15 分钟）', () => {
+    const el = mount({
+      view: 'resource',
+      resources: JSON.stringify([{ id: 'r1', title: 'A' }]),
+      'page-show-date': '2026-08-10',
+      'start-hour': '0',
+      'end-hour': '24',
+      events: JSON.stringify([
+        {
+          id: 'n',
+          date: '2026-08-10',
+          endDate: '2026-08-11',
+          title: '夜间',
+          start: '22:00',
+          end: '02:00',
+          resource: 'r1',
+        },
+      ]),
+    })
+    const bar = el.shadowRoot!.querySelector<HTMLElement>('.res-lane[data-resource="r1"] .res-bar')!
+    expect(bar).not.toBeNull()
+    // 22:00 → 24:00 占 24 小时轨道的 2/24
+    expect(Number.parseFloat(bar.style.insetInlineStart)).toBeCloseTo((22 / 24) * 100, 1)
+    expect(Number.parseFloat(bar.style.width)).toBeCloseTo((2 / 24) * 100, 1)
+    // 末日段从 00:00 画到 02:00（首日修复不能把末日一起拉长）
+    const tail = mount({
+      view: 'resource',
+      resources: JSON.stringify([{ id: 'r1', title: 'A' }]),
+      'page-show-date': '2026-08-11',
+      'start-hour': '0',
+      'end-hour': '24',
+      events: JSON.stringify([
+        {
+          id: 'n',
+          date: '2026-08-10',
+          endDate: '2026-08-11',
+          title: '夜间',
+          start: '22:00',
+          end: '02:00',
+          resource: 'r1',
+        },
+      ]),
+    })
+    const tailBar = tail.shadowRoot!.querySelector<HTMLElement>('.res-lane[data-resource="r1"] .res-bar')!
+    expect(Number.parseFloat(tailBar.style.insetInlineStart)).toBeCloseTo(0, 5)
+    expect(Number.parseFloat(tailBar.style.width)).toBeCloseTo((2 / 24) * 100, 1)
+  })
+
+  it('I-1：resource-week 定时块按 [start-hour, end-hour] 夹取（早到不出轨道上方、晚走不溢出底部）', () => {
+    const el = mount({
+      view: 'resource-week',
+      resources: JSON.stringify([{ id: 'r1', title: 'A' }]),
+      'page-show-date': '2026-08-10',
+      'start-hour': '8',
+      'end-hour': '20',
+      events: JSON.stringify([
+        { id: 'early', date: '2026-08-10', title: '早', start: '06:00', end: '07:00', resource: 'r1' },
+        { id: 'late', date: '2026-08-10', title: '晚', start: '19:00', end: '23:00', resource: 'r1' },
+      ]),
+    })
+    const cell = el.shadowRoot!.querySelector<HTMLElement>('.res-cell[data-date="2026-08-10"][data-resource="r1"]')!
+    const early = cell.querySelector<HTMLElement>('.res-ev[data-id="early"]')!
+    // 早于 start-hour 的段钳到轨道顶（top 不得为负）
+    expect(early.style.top).toBe('0px')
+    const late = cell.querySelector<HTMLElement>('.res-ev[data-id="late"]')!
+    // hourH = 24：19:00 起点 top = 11 * 24；轨道剩余 (20-19) * 24 = 24，高度不得溢出
+    expect(Number.parseFloat(late.style.top)).toBeCloseTo(11 * 24, 5)
+    expect(Number.parseFloat(late.style.height)).toBeCloseTo(24, 5)
+  })
+
+  it('I-2：ICS 定时跨日事件 DTEND 落 endDate 当日 end 时刻（floating/tzid/utc 三模式一致）', () => {
+    const now = new Date(Date.UTC(2026, 7, 1, 0, 0, 0))
+    const ev: SchedulerEvent = {
+      id: 'n',
+      date: '2026-08-10',
+      endDate: '2026-08-11',
+      title: '夜间',
+      start: '22:00',
+      end: '02:00',
+    }
+    const floating = eventsToIcs([ev], { now })
+    expect(floating).toContain('DTSTART:20260810T220000')
+    expect(floating).toContain('DTEND:20260811T020000')
+    const tzid = eventsToIcs([ev], { now, timeMode: 'tzid', timezone: 'Asia/Shanghai' })
+    expect(tzid).toContain('DTSTART;TZID=Asia/Shanghai:20260810T220000')
+    expect(tzid).toContain('DTEND;TZID=Asia/Shanghai:20260811T020000')
+    const utc = eventsToIcs([ev], { now, timeMode: 'utc', timezone: 'Asia/Shanghai' })
+    // 08-10 22:00 +08 → 14:00Z；08-11 02:00 +08 → 08-10 18:00Z
+    expect(utc).toContain('DTSTART:20260810T140000Z')
+    expect(utc).toContain('DTEND:20260810T180000Z')
+    // 同日带 start/end 的 DTEND 行为不变
+    const sameDay = eventsToIcs([{ id: 's', date: '2026-08-10', title: 'S', start: '09:00', end: '10:30' }], { now })
+    expect(sameDay).toContain('DTEND:20260810T103000')
+  })
+
+  it('I-3：定时重复事件 EXDATE 按 DTSTART 同款 datetime 输出；全天仍为 VALUE=DATE', () => {
+    const now = new Date(Date.UTC(2026, 7, 1, 0, 0, 0))
+    const timed: SchedulerEvent = {
+      id: 't',
+      date: '2026-08-03',
+      title: 'T',
+      start: '09:00',
+      end: '10:00',
+      repeat: { freq: 'weekly', byDay: [1], exDates: ['2026-08-10'] },
+    }
+    const floating = eventsToIcs([timed], { now })
+    expect(floating).toContain('DTSTART:20260803T090000')
+    expect(floating).toContain('EXDATE:20260810T090000')
+    expect(floating).not.toContain('EXDATE;VALUE=DATE')
+    const utc = eventsToIcs([timed], { now, timeMode: 'utc', timezone: 'Asia/Shanghai' })
+    // 09:00 +08 → 01:00Z
+    expect(utc).toContain('EXDATE:20260810T010000Z')
+    const tzid = eventsToIcs([timed], { now, timeMode: 'tzid', timezone: 'Asia/Shanghai' })
+    expect(tzid).toContain('EXDATE;TZID=Asia/Shanghai:20260810T090000')
+    const allDay = eventsToIcs(
+      [{ id: 'a', date: '2026-08-01', title: 'A', repeat: { freq: 'daily', exDates: ['2026-08-03'] } }],
+      { now },
+    )
+    expect(allDay).toContain('EXDATE;VALUE=DATE:20260803')
+  })
+
+  it('I-6：weekly byDay count 序号按排序后 byDay 计（锚点周三 + 乱序 byDay 不漏发生日）', () => {
+    const render = (byDay: number[]): string[] => {
+      const el = mount({
+        'page-show-date': '2026-08-01',
+        events: JSON.stringify([
+          { id: 'r', date: '2026-08-05', title: '双日', repeat: { freq: 'weekly', byDay, count: 4 } },
+        ]),
+      })
+      return [...el.shadowRoot!.querySelectorAll<HTMLElement>('.day[data-date]')]
+        .filter((d) => d.querySelector('.chip'))
+        .map((d) => d.dataset.date!)
+    }
+    // 周三锚点 + [Mo, We]：08-05(#1) 08-10(#2) 08-12(#3) 08-17(#4)
+    const expected = ['2026-08-05', '2026-08-10', '2026-08-12', '2026-08-17']
+    expect(render([1, 3])).toEqual(expected)
+    expect(render([3, 1]), 'byDay 输入顺序不影响序号').toEqual(expected)
+  })
+
+  it('I-6：weekly byDay count 展开条数与 ICS COUNT 一致（排序不改变次数）', () => {
+    const render = (byDay: number[]): string[] => {
+      const el = mount({
+        'page-show-date': '2026-08-01',
+        events: JSON.stringify([
+          { id: 'r', date: '2026-08-03', title: '双日', repeat: { freq: 'weekly', byDay, count: 3 } },
+        ]),
+      })
+      return [...el.shadowRoot!.querySelectorAll<HTMLElement>('.day[data-date]')]
+        .filter((d) => d.querySelector('.chip'))
+        .map((d) => d.dataset.date!)
+    }
+    const asc = render([1, 3])
+    expect(asc).toEqual(['2026-08-03', '2026-08-05', '2026-08-10'])
+    expect(render([3, 1])).toEqual(asc)
+    const ics = eventsToIcs([
+      { id: 'r', date: '2026-08-03', title: '双日', repeat: { freq: 'weekly', byDay: [3, 1], count: 3 } },
+    ])
+    expect(ics).toContain('BYDAY=MO,WE')
+    // round-trip：本地展开条数必须等于导出 RRULE 的 COUNT（排序不影响本次数）
+    const countFromIcs = Number(/COUNT=(\d+)/.exec(ics)?.[1])
+    expect(countFromIcs).toBe(3)
+    expect(render([3, 1])).toHaveLength(countFromIcs)
+  })
+
+  it('I-5：weekly byDay 提醒落最近发生日（周三），不跳到下周一', () => {
+    vi.useFakeTimers()
+    try {
+      // 周二 08-04 10:00：本周三 08-05 09:00 的提醒应为 08:50
+      vi.setSystemTime(new Date(2026, 7, 4, 10, 0))
+      const el = mount({
+        events: JSON.stringify([
+          {
+            id: 'w',
+            date: '2026-08-03',
+            title: '双日',
+            start: '09:00',
+            remind: 10,
+            repeat: { freq: 'weekly', byDay: [1, 3] },
+          },
+        ]),
+      })
+      const me = el as unknown as { remindAt(ev: unknown): number | null }
+      expect(me.remindAt(el.events[0])).toBe(new Date(2026, 7, 5, 8, 50).getTime())
+      // 已过周三 → 下周一 08-10 08:50
+      vi.setSystemTime(new Date(2026, 7, 6, 10, 0))
+      expect(me.remindAt(el.events[0])).toBe(new Date(2026, 7, 10, 8, 50).getTime())
+      // EXDATE 排除周三 → 直接落到下周一
+      vi.setSystemTime(new Date(2026, 7, 4, 10, 0))
+      el.updateEvent('w', { repeat: { freq: 'weekly', byDay: [1, 3], exDates: ['2026-08-05'] } })
+      expect(me.remindAt(el.events[0])).toBe(new Date(2026, 7, 10, 8, 50).getTime())
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('I-5：weekly byDay + count 用尽后不再调度提醒', () => {
+    vi.useFakeTimers()
+    try {
+      vi.setSystemTime(new Date(2026, 7, 20, 10, 0)) // 已过 08-03/08-05 两次发生日
+      const el = mount({
+        events: JSON.stringify([
+          {
+            id: 'w',
+            date: '2026-08-03',
+            title: '双日',
+            start: '09:00',
+            remind: 10,
+            repeat: { freq: 'weekly', byDay: [1, 3], count: 2 },
+          },
+        ]),
+      })
+      const me = el as unknown as { remindAt(ev: unknown): number | null }
+      expect(me.remindAt(el.events[0])).toBeNull()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+})

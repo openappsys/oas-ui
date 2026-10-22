@@ -683,7 +683,7 @@ export class OASSelect extends OASFormElement {
           aria-haspopup="listbox" aria-expanded="false">
           <span class="prefix" part="prefix" hidden></span>
           <span class="value" part="value"></span>
-          <span class="clear-btn" part="clear" role="button" tabindex="-1" hidden aria-label="">
+          <span class="clear-btn" part="clear" role="button" tabindex="0" hidden aria-label="">
             <svg class="clear-default" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
               <path d="M4 4 L12 12 M12 4 L4 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
             </svg>
@@ -731,10 +731,11 @@ export class OASSelect extends OASFormElement {
         if (delay > 0) {
           this.inputTimer = window.setTimeout(() => {
             this.inputTimer = null
-            this.emit('input', { value: v })
+            // source: 'search' 标记搜索词事件——宿主（oas-form）不得把它当字段值回写（C3）
+            this.emit('input', { value: v, source: 'search' })
           }, delay)
         } else {
-          this.emit('input', { value: v })
+          this.emit('input', { value: v, source: 'search' })
         }
       }
       // input-value 受控镜像：用户输入写回属性（DOM 为真相，宿主可监听/读取），
@@ -749,6 +750,15 @@ export class OASSelect extends OASFormElement {
     this.shadow.querySelector<HTMLButtonElement>('.clear-btn')?.addEventListener('click', (e: MouseEvent) => {
       e.stopPropagation()
       this.clearValue()
+    })
+    // 清空钮在 Tab 序内（role=button 无原生键盘激活），Enter/Space 显式清空；不冒泡成 trigger 展开
+    this.shadow.querySelector<HTMLElement>('.clear-btn')?.addEventListener('keydown', (e: KeyboardEvent) => {
+      if (e.key !== 'Enter' && e.key !== ' ') return
+      e.preventDefault()
+      e.stopPropagation()
+      this.clearValue()
+      // 清空后按钮隐藏（焦点目标消失）——把焦点交还 trigger，键盘用户不丢位置
+      this.triggerEl?.focus()
     })
 
     this.triggerEl?.addEventListener('click', () => this.toggle())
@@ -1841,7 +1851,7 @@ export class OASSelect extends OASFormElement {
     this.syncValidity()
   }
 
-  /** shadow 内真实焦点目标：触发器 button。基类默认选择器会误中隐藏搜索框/清除钮（tabindex=-1），必须覆盖 */
+  /** shadow 内真实焦点目标：触发器 button。基类默认选择器会误中隐藏搜索框/清空钮（同为可聚焦元素），必须覆盖 */
   protected override get innerControl(): HTMLElement | null {
     return this.triggerEl
   }

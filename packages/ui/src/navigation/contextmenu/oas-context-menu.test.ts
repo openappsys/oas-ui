@@ -71,6 +71,32 @@ describe('OASContextMenu', () => {
     expect(anchor(el).hasAttribute('hidden')).toBe(true)
   })
 
+  // ===== 打开后的键盘可达（真实缺陷：show 后不移焦、方向键不可用、Esc 不回焦） =====
+
+  it('打开后焦点进入菜单容器（role=menu），方向键可高亮项', async () => {
+    const el = mount()
+    el.querySelector('div')!.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true }))
+    await Promise.resolve()
+    const menu = el.shadowRoot!.querySelector('oas-menu') as HTMLElement & { shadowRoot: ShadowRoot }
+    const list = menu.shadowRoot.activeElement as HTMLElement | null
+    expect(list, '打开后焦点应落入内层菜单').not.toBeNull()
+    expect(list!.getAttribute('role')).toBe('menu')
+    list!.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true, cancelable: true }))
+    expect(innerMenuRoot(el).querySelector('[part="item"].active')).not.toBeNull()
+  })
+
+  it('Esc 关闭后焦点回到触发源元素', async () => {
+    const el = mount()
+    const target = el.querySelector('div') as HTMLElement
+    target.tabIndex = 0
+    target.focus()
+    target.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true }))
+    await Promise.resolve()
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', cancelable: true }))
+    expect(anchor(el).hasAttribute('hidden')).toBe(true)
+    expect(document.activeElement, '回焦到右键触发源').toBe(target)
+  })
+
   describe('长按触发（移动端）', () => {
     it('长按默认 500ms 打开菜单并定位到触点', async () => {
       vi.useFakeTimers()

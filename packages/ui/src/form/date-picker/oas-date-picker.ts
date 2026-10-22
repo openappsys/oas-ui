@@ -906,7 +906,7 @@ export class OASDatePicker extends OASFormElement {
         <span class="affix-icon prefix-icon" part="prefix-icon" hidden><slot name="prefix-icon"></slot></span>
         <input class="trigger" part="trigger" type="text" role="combobox"
           aria-haspopup="dialog" aria-expanded="false" autocomplete="off" spellcheck="false" />
-        <button class="clear-btn" part="clear" type="button" tabindex="-1" hidden aria-label="">
+        <button class="clear-btn" part="clear" type="button" hidden aria-label="">
           <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">
             <path d="M4 4 L12 12 M12 4 L4 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
           </svg>
@@ -960,9 +960,17 @@ export class OASDatePicker extends OASFormElement {
     // 清除钮：阻止默认失焦（避免先触发 blur 提交）再清空
     const clearBtn = this.shadow.querySelector<HTMLButtonElement>('[part="clear"]')
     clearBtn?.addEventListener('mousedown', (e) => e.preventDefault())
+    // 键盘激活标记：Enter/Space 触发 click 前先置位，清空后把焦点交还 trigger（鼠标路径不抢焦点，避免移动端弹键盘）
+    let clearViaKeyboard = false
+    clearBtn?.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') clearViaKeyboard = true
+    })
     clearBtn?.addEventListener('click', (e) => {
       e.stopPropagation()
+      const viaKeyboard = clearViaKeyboard
+      clearViaKeyboard = false
       this.clearValue()
+      if (viaKeyboard) this.triggerEl?.focus()
     })
     // 面板内点击永不触发「外部点击关闭」：面板交互会重渲 DOM，
     // happy-dom 中已分离节点 composedPath 不完整，需显式阻断冒泡
@@ -2862,8 +2870,7 @@ export class OASDatePicker extends OASFormElement {
   }
 
   /**
-   * shadow 内真实焦点目标：trigger 输入框。当前模板里它是首个 input（基类默认选择器可命中），
-   * 显式覆盖防未来模板重排后误中 tabindex=-1 的清除钮（与 select/tree-select 同约定）
+   * shadow 内真实焦点目标：trigger 输入框。显式覆盖防未来模板重排后误中其他可聚焦元素（清空钮在 Tab 序内）
    */
   protected override get innerControl(): HTMLElement | null {
     return this.triggerEl

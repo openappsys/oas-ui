@@ -116,6 +116,24 @@ test('scheduler 浏览器回归：月/周/agenda 视图渲染与切换 + console
   expect(errors).toEqual([])
 })
 
+test('scheduler DST 翻页：America/New_York 回拨日 day 下一页推进到次日（不原地不动）', async ({ browser }) => {
+  const context = await browser.newContext({ timezoneId: 'America/New_York' })
+  const page = await context.newPage()
+  try {
+    await page.goto('/components/scheduler.html', { waitUntil: 'domcontentloaded' })
+    await page.waitForSelector('#scheduler-week', { timeout: 15000 })
+    const el = page.locator('#scheduler-week')
+    await el.evaluate((host) => {
+      host.setAttribute('view', 'day')
+      host.setAttribute('page-show-date', '2026-11-01')
+    })
+    await el.locator('[part="next"]').click()
+    await expect(el.locator('[part="title"]')).toHaveText('2026-11-02')
+  } finally {
+    await context.close()
+  }
+})
+
 // 资源视图（单日 + 周 × 资源）+ 拖拽创建 + now 线
 test('scheduler RTL 连续条方向键按视觉方向镜像', async ({ page }) => {
   await page.goto('/components/scheduler.html', { waitUntil: 'domcontentloaded' })

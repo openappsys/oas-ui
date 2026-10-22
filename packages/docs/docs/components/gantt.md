@@ -215,7 +215,7 @@
 
 ### 撤销 / 重做（内建 `history`，opt-in）
 
-组件新增 `history`（默认关）：开启后对 `updateTask` / `updateTasks` / `addTask` / `removeTasks` / `moveTask` / `duplicateTask` / 依赖增删改及拖拽提交记录快照，最多 100 步；提供 `undo()` / `redo()` / `canUndo` / `canRedo` / `clearHistory()`，每次撤销/重做/新提交派发 `oas-history-change`（`detail: { canUndo, canRedo, action }`）。关闭 `history` 或宿主整体重写 `tasks` 会清空历史。
+组件新增 `history`（默认关）：开启后对 `updateTask` / `updateTasks` / `addTask` / `removeTasks` / `moveTask` / `duplicateTask` / 依赖增删改及拖拽提交记录快照，最多 100 步；提供 `undo()` / `redo()` / `canUndo` / `canRedo` / `clearHistory()`，每次撤销/重做/新提交派发 `oas-history-change`（`detail: { canUndo, canRedo, action }`）。关闭 `history` 或宿主整体重写 `tasks`（内容有变）会清空历史；把 `oas-tasks-change` 的 `tasks` 原样回写（语义相同，含键序差异）不会清空。
 
 ```ts
 const gantt = document.querySelector('oas-gantt')
@@ -687,7 +687,7 @@ onMounted(async () => {
 | `group-by-project` | 按任务 project 自动生成项目根摘要（行 id 为 `__oas_project__:<project>`），原任务数组不变；windowed 模式要求宿主自行展平，不做自动分组 | `string` | — |
 | `group-by-resource` | 按任务首个 resources 生成资源摘要泳道（资源名取 resources.name，缺省用 id）；多资源任务只出现在首个资源下，未分配任务保持顶层；与 group-by-project 同时开启时资源泳道优先 | `string` | — |
 | `height` | 组件高度 px（默认 320；接受纯数字或 Npx）：映射到自定义属性 --oas-gantt-height。高度挂在内部画布（.gantt）上——宿主自身 height 内联只框定外盒，内部画布高度仍由 height 属性 / --oas-gantt-height 决定（不会被宿主内联 height 拉伸）；整体调高请用 height 属性或 --oas-gantt-height。height 属性在场且为合法值（>0 纯数字或 Npx）时组件接管该变量，写入宿主内联并覆盖宿主自己设置的 --oas-gantt-height；空串/空白按未设置处理；非法值不写该变量、仅清除本实例此前写入的值，宿主 token 不受影响；属性移除后组件写入的值归零清除，高度回落 token 缺省 320 或宿主 CSS，宿主原先内联设置的值不恢复；从未设置 height 属性时组件不写该变量，宿主内联或 class 规则设置的 --oas-gantt-height 完全不受影响 | `string` | `320` |
-| `history` | 内建撤销/重做（布尔，默认关）：记录任务提交快照（最多 100 步），配合 undo()/redo()/canUndo/canRedo/clearHistory()；外部整体重写 tasks 会清空历史 | `string` | — |
+| `history` | 内建撤销/重做（布尔，默认关）：记录任务提交快照（最多 100 步），配合 undo()/redo()/canUndo/canRedo/clearHistory()；外部整体重写 tasks（内容有变）会清空历史，语义相同的回写（含键序差异）不清空 | `string` | — |
 | `holidays` | 假日列表（JSON ["YYYY-MM-DD",…]）：对应列高亮（优先于周末底色）；假日恒为非工作日（与 workdays 是否开启无关），auto-schedule 前推时跳过 | `string` | — |
 | `label-position` | 任务条标签位置：inside 条内 / right 条旁 / left 条左；缺省 none（行名列已承载名称，条旁不再重复渲染）；非法值回落 none | `string` | — |
 | `locale` | 本地化（覆盖 config-provider 注入与全局 locale） | `string` | — |

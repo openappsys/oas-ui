@@ -22,7 +22,7 @@ A standalone menu list with selection state and keyboard navigation.
 
 ## Nested submenu
 
-Menu items with `children` show an expand arrow (›); clicking or hovering expands the submenu, which is rendered indented; press `ArrowRight` to enter and `ArrowLeft` to go back.
+Menu items with `children` show an expand arrow (›); clicking or hovering expands the submenu, which is rendered indented; press `ArrowRight` to enter and `ArrowLeft` to go back (mirrored in RTL: `ArrowLeft` enters, `ArrowRight` goes back).
 
 <DemoBlock title="Nested submenu">
   <oas-space direction="vertical" size="small">
@@ -578,4 +578,8 @@ The menu item `shortcut` field (items JSON) or the `<oas-menu-item shortcut="…
 
 `children` is an optional submenu items array; items with `children` expand their submenu on click/hover, and the selected state only lands on leaf items. `group` children are laid out flat on the same level; group titles are not clickable and skipped in keyboard navigation; `divider` items are not clickable and skipped in keyboard navigation.
 
-Keyboard navigation: arrow keys move (auto-skipping group titles and dividers), Enter selects (items with submenus enter via Enter/ArrowRight), Home / End jump, ArrowLeft returns to the parent; `role="menu"` + `menuitemradio` (submenu parents are `menuitem`), the selected item shows a check mark.
+Keyboard navigation: arrow keys move (auto-skipping group titles, dividers, disabled/loading items), Enter or Space activates (items with submenus enter the submenu), Home / End jump to the first/last item, Escape returns to the parent (collapses open items at the top level); `role="menu"` + `menuitemradio` (submenu parents are `menuitem`), the selected item shows a check mark.
+
+Keyboard axis follows the mode: vertical menus and submenus at any depth use ↑/↓ to move, `ArrowRight` to enter a submenu and `ArrowLeft` to go back; horizontal top level uses ←/→ to move along the row, `ArrowDown` to enter a submenu and `ArrowUp`/Escape to collapse. In RTL the directions mirror (submenus open to the left, so `ArrowLeft` enters and `ArrowRight` goes back).
+
+Screen reader semantics: focus stays on the `role="menu"` list (a single tab stop, no roving tabindex) and the keyboard-active item is exposed via `aria-activedescendant`; the list takes its accessible name from the host `aria-label`, falling back to a default "Navigation" label, and horizontal mode declares `aria-orientation="horizontal"`.

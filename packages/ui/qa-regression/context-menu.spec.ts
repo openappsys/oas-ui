@@ -74,3 +74,52 @@ test('context-menu kind=checkbox：初始勾选回显 + 勾选写回宿主 value
   expect(r.stillOpen, 'checkbox 切换不收起菜单').toBe(true)
   expect(r.out, 'demo 反馈可见').toContain('ruler')
 })
+
+// ===== 反馈 #4：打开后不移焦、方向键不可用、Esc 不回焦 =====
+test('context-menu：打开后焦点入菜单、ArrowDown 高亮、Esc 关闭回焦触发源', async ({ page }) => {
+  await page.goto('/components/context-menu.html', { waitUntil: 'domcontentloaded' })
+  await page.waitForFunction(() => !!customElements.get('oas-context-menu'))
+  await page.evaluate(() => {
+    document.getElementById('e2e-cm-kbd')?.remove()
+    const cm = document.createElement('oas-context-menu')
+    cm.id = 'e2e-cm-kbd'
+    cm.setAttribute(
+      'items',
+      JSON.stringify([
+        { label: '复制', value: 'copy' },
+        { label: '粘贴', value: 'paste' },
+      ]),
+    )
+    const area = document.createElement('div')
+    area.id = 'e2e-cm-area'
+    area.tabIndex = 0
+    area.textContent = '右键区域'
+    area.style.cssText = 'width:220px;height:80px'
+    cm.appendChild(area)
+    cm.style.cssText = 'position: fixed; top: 120px; left: 50%; transform: translateX(-50%); z-index: 2147483000'
+    document.body.appendChild(cm)
+  })
+
+  await page.locator('#e2e-cm-area').click({ button: 'right' })
+  await page.waitForFunction(() => document.querySelector('oas-context-menu#e2e-cm-kbd')?.hasAttribute('open'))
+
+  const focusIn = await page.evaluate(() => {
+    const cm = document.querySelector('oas-context-menu#e2e-cm-kbd')! as HTMLElement & { shadowRoot: ShadowRoot }
+    const menu = cm.shadowRoot.querySelector('oas-menu') as (HTMLElement & { shadowRoot: ShadowRoot }) | null
+    const list = menu?.shadowRoot.activeElement as HTMLElement | null
+    return { inMenu: !!list, role: list?.getAttribute('role') ?? null }
+  })
+  expect(focusIn.inMenu, '右键打开后焦点必须进入菜单').toBe(true)
+  expect(focusIn.role).toBe('menu')
+
+  await page.keyboard.press('ArrowDown')
+  await page.waitForFunction(() => {
+    const cm = document.querySelector('oas-context-menu#e2e-cm-kbd')! as HTMLElement & { shadowRoot: ShadowRoot }
+    const menu = cm.shadowRoot.querySelector('oas-menu') as (HTMLElement & { shadowRoot: ShadowRoot }) | null
+    return !!menu?.shadowRoot.querySelector('[part="item"].active')
+  })
+
+  await page.keyboard.press('Escape')
+  await page.waitForFunction(() => !document.querySelector('oas-context-menu#e2e-cm-kbd')?.hasAttribute('open'))
+  expect(await page.evaluate(() => document.activeElement?.id ?? null), 'Esc 关闭后回焦右键触发源').toBe('e2e-cm-area')
+})

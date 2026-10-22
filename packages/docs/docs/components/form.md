@@ -4,7 +4,7 @@
 
 > **跨 shadow 提交入口**：`oas-form` 在 shadow 内包原生 `<form>`，因此 light DOM 的按钮（含 `oas-button`）不具备原生 submit 语义。请在按钮点击等时机调用组件公开的 `submit()` 方法（如 `this.closest('oas-form').submit()`），它会委托内部 form 的 `requestSubmit()`，保留 submit 事件语义并触发相同的校验与 `oas-submit` / `oas-validate-fail` 派发——**不要**再穿透 `shadowRoot.querySelector('form')` 去调内部 form。
 
-> 数据源是各字段的 `value` 属性（受控模式）。表单校验的字段范围为带 `name` 的 `oas-input` / `oas-textarea` / `oas-select` / `oas-auto-complete` / `oas-cascader` / `oas-tree-select` / `oas-input-number` / `oas-radio` / `oas-radio-group` / `oas-date-picker` / `oas-slider` / `oas-rate` / `oas-pin-input` / `oas-dynamic-tags` / `oas-combobox` / `oas-picker` / `oas-transfer`（`model-value` 通道）/ `oas-dynamic-input`（`model-value` 通道）/ `oas-checkbox` / `oas-switch`（`checked` 通道）。`oas-form` 内建监听字段冒泡的 `oas-input` / `oas-change` 事件，自动写回该字段的 `value` 属性（null 写空串），无需逐字段脚本接线。
+> 数据源是各字段的 `value` 属性（受控模式）。表单校验的字段范围为带 `name` 的 `oas-input` / `oas-textarea` / `oas-select` / `oas-auto-complete` / `oas-cascader` / `oas-tree-select` / `oas-input-number` / `oas-radio` / `oas-radio-group` / `oas-date-picker` / `oas-slider` / `oas-rate` / `oas-pin-input` / `oas-dynamic-tags`（`model-value` 通道）/ `oas-combobox` / `oas-picker` / `oas-transfer` / `oas-dynamic-input`（`model-value` 通道）/ `oas-checkbox` / `oas-switch`（`checked` 通道）。`oas-form` 内建监听字段冒泡的 `oas-input` / `oas-change` 事件，按字段自身的值通道自动写回（默认 `value` 属性、`model-value` 通道控件写 `model-value`；null 写空串），无需逐字段脚本接线。搜索类控件（`oas-select` 远程模式 / `oas-combobox` / `oas-auto-complete`）的过滤输入派发的 `oas-input` 带 `source: 'search'` 标记，表单不把它当字段值回写。
 
 ## 功能展示
 
@@ -260,7 +260,7 @@
 
 ### 初始值与重置
 
-> `initial-values` 挂载后写入对应字段（input 走 `value`、switch 走 `checked`、transfer/dynamic-input 走 `model-value`）；`reset()` 回到初始值并清除校验错误态，全程不派发事件（与原生表单 reset 基线语义一致）。也支持 `initialValues` property 通道（property 优先于 attribute）。
+> `initial-values` 挂载后写入对应字段（input/transfer 走 `value`、switch 走 `checked`、dynamic-tags/dynamic-input 走 `model-value`）；`reset()` 回到初始值并清除校验错误态，全程不派发事件（与原生表单 reset 基线语义一致）。也支持 `initialValues` property 通道（property 优先于 attribute）。
 
 <DemoBlock title="initial-values 与 reset">
   <oas-form id="form-initial" initial-values='{"name":"张三","notify":true}' rules='{"name":[{"required":true,"message":"请输入姓名"}]}' style="width: 340px">

@@ -296,7 +296,7 @@ el.downloadIcs('my.ics', { timeMode: 'utc', timezone: 'Asia/Shanghai' })
 
 - 无 `start` 的事件导出为全天事件（`DTSTART/DTEND;VALUE=DATE`，结束为次日；`endDate` 支持跨日全天）。
 - `timeMode`：`floating`（默认，浮动本地时间）/ `utc`（按 `timezone` 转 UTC，带 `Z`）/ `tzid`（`TZID` + 固定偏移 `VTIMEZONE`，跨 DST 精确转换建议用 `utc`）。
-- `repeat` 映射为 `RRULE:FREQ/INTERVAL/COUNT/BYDAY/BYMONTH/BYMONTHDAY/BYSETPOS/UNTIL`（`until` 含当日），`exDates` 输出 `EXDATE;VALUE=DATE`；`remind` 输出 `VALARM`，`color` 输出 `X-OAS-COLOR`。
+- `repeat` 映射为 `RRULE:FREQ/INTERVAL/COUNT/BYDAY/BYMONTH/BYMONTHDAY/BYSETPOS/UNTIL`（`until` 含当日；`BYDAY` 按 0-6 升序输出），`exDates` 的 `EXDATE` 与 `DTSTART` 同款值类型：全天事件为 `EXDATE;VALUE=DATE:YYYYMMDD`，定时事件为 `EXDATE:YYYYMMDDTHHmmss`（`utc` 模式带 `Z`，`tzid` 模式带 `TZID`）；`remind` 输出 `VALARM`，`color` 输出 `X-OAS-COLOR`。
 - `eventsToIcs(events, { rangeStart, rangeEnd })` 只导出与区间相交的事件；`el.exportIcs(options)` / `el.downloadIcs(filename, options)` 透传同名字段。
 - 文本按 RFC 5545 转义，输出 CRLF 与 75 字节折行；非法日期事件跳过。`now` 选项可固定 `DTSTAMP`。
 

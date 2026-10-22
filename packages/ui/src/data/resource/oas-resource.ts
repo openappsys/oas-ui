@@ -268,12 +268,14 @@ const STYLE = `
 .heat-cell.high {
   background: color-mix(in srgb, var(--oas-color-primary) 68%, var(--oas-color-bg));
 }
-.heat-cell.over {
-  background: var(--oas-resource-load-over-bg, var(--oas-color-danger));
-}
 .heat-cell.unavailable {
   background: transparent;
   box-shadow: inset 0 0 0 1px var(--oas-color-border);
+}
+/* 超载优先于不可用：容量 0 但有负载也算超载（与柱体 / overCount / oas-overload 同口径），
+   规则须排在 .unavailable 之后（同特异性后者胜），否则红色背景被透明底覆盖 */
+.heat-cell.over {
+  background: var(--oas-resource-load-over-bg, var(--oas-color-danger));
 }
 .heat-legend {
   display: flex;
@@ -3215,7 +3217,9 @@ export class OASResource extends OASElement {
           cell.className = 'heat-cell'
           const ratio = cap > 0 ? load / cap : load > 0 ? 2 : 0
           if (cap <= 0) cell.classList.add('unavailable')
-          else if (load > cap) cell.classList.add('over')
+          // 超载判定含「容量 0 但仍有负载」：与柱体 .over、overCount、oas-overload 同口径
+          // （旧实现 cap<=0 只标 unavailable，让 0 容量日的真实超载在热力图里消失）
+          if (load > cap) cell.classList.add('over')
           else if (ratio >= 0.75) cell.classList.add('high')
           else if (ratio >= 0.4) cell.classList.add('mid')
           else if (load > 0) cell.classList.add('low')

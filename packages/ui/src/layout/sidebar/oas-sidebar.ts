@@ -1,4 +1,5 @@
 import { escapeAttr, OASElement } from '@oas-ui/core'
+import { pushEscapeLayer } from '../../shared/overlay-stack.js'
 // 图标渲染走 @oas-ui/icons 运行时查表（registerIcon 自定义优先、内置集兜底，与 oas-icon 同源），
 // 不经 oas-icon 组件模块——避免把整个 <oas-icon> 拉进 sidebar 按需链
 import { lookupIcon } from '@oas-ui/icons/runtime'
@@ -751,6 +752,14 @@ export class OASSidebar extends OASElement {
   private autoExpanded = new Set<string>()
   /** 子元素通道观察器：light DOM 里 oas-sidebar-item/divider 增删或属性/文本变化 → 重解析渲染 */
   private childObserver: MutationObserver | null = null
+  /** 上一次 update 的移动抽屉展开态（打开入焦/关闭回焦的边沿判定） */
+  private drawerPrevOpen = false
+  /** 抽屉打开前的焦点元素（关闭时归还；取自 shadow.activeElement 才能拿到内部触发钮） */
+  private drawerReturnFocus: HTMLElement | null = null
+  /** 共享 Esc 层释放句柄（移动抽屉打开时压栈） */
+  private releaseEscapeLayer: (() => void) | null = null
+  /** 抽屉 dialog 可访问名称是否由本组件写入（关闭时只清除自己写的） */
+  private appliedDrawerLabel = false
 
   /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
   private template(): string {
@@ -785,6 +794,7 @@ export class OASSidebar extends OASElement {
 
     document.addEventListener('keydown', this.handleDocKeydown)
     this.onCleanup(() => document.removeEventListener('keydown', this.handleDocKeydown))
+    this.onCleanup(() => this.releaseDrawerEscape())
 
     // flyout 外部点击关闭（pointerdown 在 shadow 外落到别处即关）
     document.addEventListener('pointerdown', this.handleDocPointerDown, true)
@@ -813,6 +823,12 @@ export class OASSidebar extends OASElement {
     this.onCleanup(() => this.mq?.removeEventListener('change', this.mqListener))
   }
 
+  override disconnectedCallback(): void {
+    // 基类 onCleanup 一次性执行后会清空；断开时主动释放抽屉 Esc 层，重连后由 open 边沿重压
+    this.releaseDrawerEscape()
+    super.disconnectedCallback()
+  }
+
   /**
    * document keydown：Esc 逐层退出（折叠态 flyout 优先于抽屉关闭）+ ctrl/cmd+b 折叠切换
    * （仅 shortcut 属性开启时，避免默认劫持全局键）。类字段引用：addEventListener 规范
@@ -820,12 +836,27 @@ export class OASSidebar extends OASElement {
    */
   private handleDocKeydown = (e: KeyboardEvent): void => {
     if (e.key === 'Escape') {
-      // 折叠态 flyout 优先于抽屉关闭（Esc 逐层退出）
+      // 折叠态 flyout 优先于抽屉关闭（Esc 逐层退出）；移动抽屉的 Esc 走共享层栈
       if (this.flyoutOpen !== null) {
         this.closeAllFlyouts(true)
         return
       }
-      this.closeDrawer()
+    }
+    // 移动抽屉打开时最小焦点约束：Tab/Shift+Tab 在面板内循环（焦点从面板外按 Tab 也拉回面板）
+    if (e.key === 'Tab' && this.mq?.matches && this.hasAttr('drawer-open')) {
+      const focusables = this.drawerFocusables()
+      if (focusables.length === 0) return
+      const active = this.shadow.activeElement as HTMLElement | null
+      const idx = active ? focusables.indexOf(active) : -1
+      e.preventDefault()
+      const next =
+        idx < 0
+          ? e.shiftKey
+            ? focusables.length - 1
+            : 0
+          : (idx + (e.shiftKey ? -1 : 1) + focusables.length) % focusables.length
+      focusables[next]?.focus()
+      return
     }
     if (
       this.hasAttr('shortcut') &&
@@ -837,6 +868,81 @@ export class OASSidebar extends OASElement {
       e.preventDefault()
       this.toggleCollapsed()
     }
+  }
+
+  /** 面板内可聚焦元素（shadow 树 + slotted light DOM；按 DOM 顺序，排除 hidden/disabled/inert） */
+  private drawerFocusables(): HTMLElement[] {
+    const panel = this.shadow.querySelector<HTMLElement>('.panel')
+    const out: HTMLElement[] = []
+    if (!panel) return out
+    const selector =
+      'button:not([disabled]):not([hidden]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+    const walk = (node: Node): void => {
+      if (node instanceof HTMLSlotElement) {
+        for (const n of node.assignedNodes({ flatten: true })) walk(n)
+        return
+      }
+      if (node instanceof HTMLElement) {
+        if (node.matches(selector) && !node.hasAttribute('inert')) out.push(node)
+        if (node.shadowRoot) walk(node.shadowRoot)
+        for (const c of node.children) walk(c)
+        return
+      }
+      if (node instanceof ShadowRoot) {
+        for (const c of node.children) walk(c)
+        return
+      }
+      for (const c of node.childNodes) walk(c)
+    }
+    walk(panel)
+    return out
+  }
+
+  /** 抽屉打开入焦：首个 nav 项优先，空菜单回退关闭钮（均在面板内，保证焦点不落 body） */
+  private focusDrawerInitial(): void {
+    const firstNav = this.shadow.querySelector<HTMLElement>('.nav button.item, .nav [href], .nav [tabindex="0"]')
+    const close = this.shadow.querySelector<HTMLElement>('[part="close"]')
+    ;(firstNav ?? close)?.focus({ preventScroll: true })
+  }
+
+  /**
+   * 打开入焦的幂等保证：浏览器在 click 默认动作里可能把焦点还给被点按钮（触发钮），
+   * 同步 focus 之后再补一个微任务检查——焦点仍在面板外才重新入焦（已入焦不重复）。
+   */
+  private ensureDrawerFocus(): void {
+    if (!this.mq?.matches || !this.hasAttr('drawer-open')) return
+    const panel = this.shadow.querySelector<HTMLElement>('.panel')
+    const active = this.shadow.activeElement as HTMLElement | null
+    if (active && panel?.contains(active)) return
+    this.focusDrawerInitial()
+  }
+
+  /** 抽屉关闭回焦：优先归还打开前焦点，兜底触发钮（必须在设置 aria-hidden 之前调用） */
+  private restoreDrawerFocus(): void {
+    const target = this.drawerReturnFocus
+    this.drawerReturnFocus = null
+    const trigger = this.shadow.querySelector<HTMLElement>('[part="trigger"]')
+    const next = target && target.isConnected ? target : trigger
+    next?.focus({ preventScroll: true })
+  }
+
+  /** 移动抽屉的 Esc 走共享层栈（LIFO：抽屉在 modal 之下时不抢 Esc） */
+  private armDrawerEscape(): void {
+    if (this.releaseEscapeLayer) return
+    this.releaseEscapeLayer = pushEscapeLayer({
+      name: 'sidebar-drawer',
+      active: () =>
+        this.mq?.matches === true && this.hasAttr('drawer-open') && !document.querySelector('oas-modal[visible]'),
+      handle: () => {
+        this.closeDrawer()
+        return true
+      },
+    })
+  }
+
+  private releaseDrawerEscape(): void {
+    this.releaseEscapeLayer?.()
+    this.releaseEscapeLayer = null
   }
 
   /** flyout 外部点击关闭（pointerdown 在 shadow 外落到别处即关）——类字段引用（重连幂等重挂） */
@@ -862,6 +968,8 @@ export class OASSidebar extends OASElement {
     document.addEventListener('pointerdown', this.handleDocPointerDown, true)
     window.addEventListener('scroll', this.handleViewportScrollResize, true)
     window.addEventListener('resize', this.handleViewportScrollResize)
+    // 共享 Esc 层在断开时已释放：抽屉仍处于打开态则重挂（否则重连后 Esc 失效）
+    if (this.hasAttr('drawer-open')) this.armDrawerEscape()
     // mq change 监听恢复（cleanup 摘除后 syncMq 的 media 未变 early-return 不会重挂——
     // 直接补挂（mq 实例在断开期未变，change 回调恢复；媒体变化时 update 的 syncMq 会重建）
     this.mq?.addEventListener('change', this.mqListener)
@@ -1011,12 +1119,34 @@ export class OASSidebar extends OASElement {
     if (mobile) this.dataset.mobile = 'true'
     else delete this.dataset.mobile
 
+    const drawerJustOpened = drawerOpen && !this.drawerPrevOpen
+    const drawerJustClosed = !drawerOpen && this.drawerPrevOpen
+    // 关闭回焦必须在 aria-hidden 落地之前（否则焦点被 aria-hidden 面板吞掉丢到 body）
+    if (drawerJustClosed) this.restoreDrawerFocus()
+
     const panel = this.shadow.querySelector<HTMLElement>('.panel')
     if (panel) {
       panel.classList.toggle('drawer-open', drawerOpen)
-      // 仅移动端做 aria-hidden（桌面面板常驻可见，不能隐藏）
-      if (mobile) panel.setAttribute('aria-hidden', String(!drawerOpen))
-      else panel.removeAttribute('aria-hidden')
+      if (mobile && drawerOpen) {
+        // 移动抽屉按模态对话框暴露：role=dialog + aria-modal + 可访问名称（存于面板内）
+        panel.setAttribute('role', 'dialog')
+        panel.setAttribute('aria-modal', 'true')
+        if (!panel.hasAttribute('aria-label') && !panel.hasAttribute('aria-labelledby')) {
+          panel.setAttribute('aria-label', this.t('sidebar.nav'))
+          this.appliedDrawerLabel = true
+        }
+        panel.removeAttribute('aria-hidden')
+      } else {
+        panel.removeAttribute('role')
+        panel.removeAttribute('aria-modal')
+        if (this.appliedDrawerLabel) {
+          panel.removeAttribute('aria-label')
+          this.appliedDrawerLabel = false
+        }
+        // 仅移动端做 aria-hidden（桌面面板常驻可见，不能隐藏）
+        if (mobile) panel.setAttribute('aria-hidden', 'true')
+        else panel.removeAttribute('aria-hidden')
+      }
     }
     this.shadow.querySelector<HTMLElement>('.mask')?.classList.toggle('open', drawerOpen)
 
@@ -1070,6 +1200,18 @@ export class OASSidebar extends OASElement {
 
     // 移动端抽屉始终展示完整项；桌面折叠态只保留图标项
     this.renderItems(this.hasAttr('collapsed') && !mobile)
+
+    // 打开边沿（nav 已渲染）：记录归还焦点 + 聚焦面板内首项 + 压入 Esc 层
+    if (drawerJustOpened) {
+      this.drawerReturnFocus =
+        (this.shadow.activeElement as HTMLElement | null) ?? (document.activeElement as HTMLElement | null)
+      this.armDrawerEscape()
+      this.focusDrawerInitial()
+      queueMicrotask(() => this.ensureDrawerFocus())
+    } else if (drawerJustClosed) {
+      this.releaseDrawerEscape()
+    }
+    this.drawerPrevOpen = drawerOpen
 
     // rail aria 三件套随 width/resize-min/max 属性变更同步（bind 早期 rect 可能为 0，也不得残留）
     this.syncRailAria()

@@ -1818,6 +1818,28 @@ test('gantt history：更新后撤销/重做，oas-history-change 反馈', async
   ).toBe('2026-03-10')
 })
 
+test('gantt DST 日轴：America/New_York 回拨周 minor 标签不重复（日历日步进）', async ({ browser }) => {
+  const context = await browser.newContext({ timezoneId: 'America/New_York' })
+  const page = await context.newPage()
+  try {
+    await page.goto('/components/gantt.html', { waitUntil: 'domcontentloaded' })
+    await page.waitForSelector('oas-gantt', { timeout: 15000 })
+    const labels = await page.evaluate(() => {
+      const el = document.createElement('oas-gantt')
+      el.setAttribute('scale', 'day')
+      el.setAttribute('tasks', JSON.stringify([{ id: 'dst', name: 'DST', start: '2026-10-30', end: '2026-11-04' }]))
+      document.body.appendChild(el)
+      return [...el.shadowRoot!.querySelectorAll<HTMLElement>('.head-minor .unit')].map((u) =>
+        (u.textContent ?? '').trim(),
+      )
+    })
+    expect(labels.length).toBeGreaterThan(0)
+    expect(new Set(labels).size, 'DST 回拨周日标签不得重复').toBe(labels.length)
+  } finally {
+    await context.close()
+  }
+})
+
 test('gantt 逐资源日历：资源假期/工作日交集驱动前推', async ({ page }) => {
   await page.goto('/components/gantt.html', { waitUntil: 'domcontentloaded' })
   await waitGantt(page, 'gantt-resource-cal')

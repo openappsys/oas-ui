@@ -1120,3 +1120,45 @@ describe('OASTimePicker 属性-方法撞名回归', () => {
     expect(trigger(el).readOnly).toBe(true)
   })
 })
+
+// ---- I4：清空按钮键盘可达（Tab 序 + 可读名称） ----
+
+describe('OASTimePicker 清空按钮键盘可达（I4）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  it('clear-btn 为原生 button 且进入 Tab 序（无 tabindex="-1"）、有可读名称', () => {
+    const el = mount({ value: '09:05:30', clearable: '' })
+    const clearBtn = el.shadowRoot!.querySelector<HTMLButtonElement>('[part="clear"]')!
+    expect(clearBtn.tagName).toBe('BUTTON')
+    expect(clearBtn.hasAttribute('tabindex')).toBe(false)
+    expect(clearBtn.tabIndex).toBe(0)
+    expect((clearBtn.getAttribute('aria-label') ?? '').length).toBeGreaterThan(0)
+  })
+
+  it('面板展开时清空按钮仍可聚焦（不移出 Tab 序）', () => {
+    const el = mount({ value: '09:05:30', clearable: '' })
+    open(el)
+    const clearBtn = el.shadowRoot!.querySelector<HTMLButtonElement>('[part="clear"]')!
+    expect(clearBtn.hidden).toBe(false)
+    expect(clearBtn.tabIndex).toBe(0)
+  })
+
+  it('键盘激活清空后焦点交还 trigger（按钮隐藏不丢焦点）', () => {
+    const el = mount({ value: '09:05:30', clearable: '' })
+    const clearBtn = el.shadowRoot!.querySelector<HTMLButtonElement>('[part="clear"]')!
+    clearBtn.focus()
+    // 原生 button 键盘激活序列：keydown → click
+    clearBtn.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }))
+    clearBtn.click()
+    expect(el.getAttribute('value')).toBeNull()
+    expect(el.shadowRoot!.activeElement, '清空后焦点交还 trigger').toBe(trigger(el))
+  })
+})

@@ -1245,3 +1245,79 @@ describe('OASDropdown 属性-方法撞名回归', () => {
     expect(remove).toHaveBeenCalledWith('pointerup', expect.any(Function))
   })
 })
+
+// ===== 触发器 ARIA + 键盘打开焦点（无障碍缺陷固化） =====
+
+describe('OASDropdown 触发器语义与键盘焦点', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  /** 键盘打开后焦点所在元素：穿透两层 shadow（dropdown → oas-menu → .menu） */
+  function activeMenuList(el: OASDropdown): HTMLElement | null {
+    const menu = el.shadowRoot!.querySelector('oas-menu') as OASMenu
+    const inner = menu?.shadowRoot?.activeElement as HTMLElement | null
+    return inner
+  }
+
+  it('非 split 触发器同步 aria-haspopup=menu 与 aria-expanded', () => {
+    const el = mount()
+    const trigger = el.querySelector('button')!
+    expect(trigger.getAttribute('aria-haspopup')).toBe('menu')
+    expect(trigger.getAttribute('aria-expanded')).toBe('false')
+    trigger.click()
+    expect(trigger.getAttribute('aria-expanded')).toBe('true')
+    trigger.click()
+    expect(trigger.getAttribute('aria-expanded')).toBe('false')
+  })
+
+  it('不覆盖宿主显式 aria-haspopup / aria-expanded', () => {
+    const el = new OASDropdown()
+    el.setAttribute('items', ITEMS)
+    el.innerHTML = `<button aria-haspopup="dialog" aria-expanded="false">操作</button>`
+    document.body.appendChild(el)
+    const trigger = el.querySelector('button')!
+    el.setAttribute('open', '')
+    expect(trigger.getAttribute('aria-haspopup'), '宿主显式属性不被改写').toBe('dialog')
+    expect(trigger.getAttribute('aria-expanded'), '宿主显式 expanded 不被改写').toBe('false')
+    el.removeAttribute('open')
+    expect(trigger.getAttribute('aria-expanded')).toBe('false')
+  })
+
+  it('打开后焦点进入菜单容器，方向键可高亮首项', async () => {
+    const el = mount()
+    ;(el.querySelector('button') as HTMLElement).click()
+    await Promise.resolve()
+    const list = activeMenuList(el)
+    expect(list, '打开后焦点应进入内层菜单').not.toBeNull()
+    expect(list!.getAttribute('role')).toBe('menu')
+    list!.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true, cancelable: true }))
+    const active = innerMenuRoot(el).querySelector<HTMLElement>('[part="item"].active')
+    expect(active, 'ArrowDown 应高亮首项').not.toBeNull()
+  })
+
+  it('Esc 关闭并把焦点还给触发器', async () => {
+    const el = mount()
+    const trigger = el.querySelector('button') as HTMLButtonElement
+    trigger.click()
+    await Promise.resolve()
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', cancelable: true }))
+    expect(el.hasAttribute('open')).toBe(false)
+    expect(el.shadowRoot!.activeElement === trigger || document.activeElement === trigger).toBe(true)
+  })
+
+  it('hover 打开不抢焦点（悬停展开不移动键盘焦点）', async () => {
+    const el = mount({ trigger: 'hover', 'hover-delay': '0' })
+    const outside = document.createElement('button')
+    document.body.appendChild(outside)
+    outside.focus()
+    el.dispatchEvent(new MouseEvent('mouseenter'))
+    await sleep(20)
+    expect(el.hasAttribute('open')).toBe(true)
+    expect(document.activeElement).toBe(outside)
+  })
+})

@@ -101,7 +101,7 @@ describe('OASCombobox', () => {
     input(el).dispatchEvent(new Event('input', { bubbles: true }))
     expect(optionRows(el).length).toBe(1)
     expect(optionRows(el)[0]!.textContent).toContain('香蕉')
-    expect(detail).toEqual({ value: '香' })
+    expect(detail).toEqual({ value: '香', source: 'search' })
   })
 
   it('filterable=false：输入不过滤，全部选项仍渲染', () => {

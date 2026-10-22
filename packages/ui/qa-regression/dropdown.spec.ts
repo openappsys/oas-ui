@@ -623,3 +623,86 @@ test('dropdown reserve-width：预留宽度不得小于最宽 label 的真实渲
   // 若 canvas font 串非法回落到 10px 默认值，minW 会明显小于 widest
   expect(r.minW).toBeGreaterThanOrEqual(r.widest)
 })
+
+// ===== 反馈 #3：非 split 触发器缺 aria-haspopup/expanded；键盘打开后焦点不进菜单 =====
+test('dropdown 非 split 触发器：aria-haspopup/aria-expanded 同步，键盘打开后焦点入菜单、ArrowDown 高亮、Esc 回焦', async ({
+  page,
+}) => {
+  await page.goto('/components/dropdown.html', { waitUntil: 'domcontentloaded' })
+  await page.waitForFunction(() => !!customElements.get('oas-dropdown'))
+  await page.evaluate(() => {
+    document.getElementById('e2e-dd-kbd')?.remove()
+    const dd = document.createElement('oas-dropdown')
+    dd.id = 'e2e-dd-kbd'
+    dd.style.cssText = 'position: fixed; top: 140px; left: 50%; transform: translateX(-50%); z-index: 2147483000'
+    dd.setAttribute(
+      'items',
+      JSON.stringify([
+        { label: '编辑', value: 'edit' },
+        { label: '复制', value: 'copy' },
+      ]),
+    )
+    dd.innerHTML = '<button id="e2e-dd-trigger">操作</button>'
+    document.body.appendChild(dd)
+  })
+  const dd = page.locator('#e2e-dd-kbd')
+  const trigger = page.locator('#e2e-dd-trigger')
+  // 初始语义
+  expect(await trigger.getAttribute('aria-haspopup')).toBe('menu')
+  expect(await trigger.getAttribute('aria-expanded')).toBe('false')
+
+  // 键盘打开：Enter → 菜单出现，焦点进入菜单容器，expanded=true
+  await trigger.focus()
+  await page.keyboard.press('Enter')
+  await page.waitForFunction(() => document.querySelector('oas-dropdown#e2e-dd-kbd')?.hasAttribute('open'))
+  expect(await trigger.getAttribute('aria-expanded')).toBe('true')
+  const focusIn = await page.evaluate(() => {
+    const dd = document.querySelector('oas-dropdown#e2e-dd-kbd')! as HTMLElement & { shadowRoot: ShadowRoot }
+    const menu = dd.shadowRoot.querySelector('oas-menu') as (HTMLElement & { shadowRoot: ShadowRoot }) | null
+    const list = menu?.shadowRoot.activeElement as HTMLElement | null
+    return { role: list?.getAttribute('role') ?? null, inMenu: !!list }
+  })
+  expect(focusIn.inMenu, '键盘打开后焦点必须进入菜单').toBe(true)
+  expect(focusIn.role).toBe('menu')
+
+  // 方向键高亮首项
+  await page.keyboard.press('ArrowDown')
+  await page.waitForFunction(() => {
+    const dd = document.querySelector('oas-dropdown#e2e-dd-kbd')! as HTMLElement & { shadowRoot: ShadowRoot }
+    const menu = dd.shadowRoot.querySelector('oas-menu') as (HTMLElement & { shadowRoot: ShadowRoot }) | null
+    return !!menu?.shadowRoot.querySelector('[part="item"].active')
+  })
+
+  // Esc：关闭并回焦触发器
+  await page.keyboard.press('Escape')
+  await page.waitForFunction(() => !document.querySelector('oas-dropdown#e2e-dd-kbd')?.hasAttribute('open'))
+  expect(await trigger.getAttribute('aria-expanded')).toBe('false')
+  const refocused = await page.evaluate(() => document.activeElement?.id ?? null)
+  expect(refocused, 'Esc 关闭后焦点回到触发器').toBe('e2e-dd-trigger')
+})
+
+test('dropdown 非 split 触发器：hover 展开不移动键盘焦点', async ({ page }) => {
+  await page.goto('/components/dropdown.html', { waitUntil: 'domcontentloaded' })
+  await page.waitForFunction(() => !!customElements.get('oas-dropdown'))
+  await page.evaluate(() => {
+    document.getElementById('e2e-dd-hover')?.remove()
+    const dd = document.createElement('oas-dropdown')
+    dd.id = 'e2e-dd-hover'
+    dd.setAttribute('trigger', 'hover')
+    dd.setAttribute('hover-delay', '0')
+    dd.setAttribute('items', JSON.stringify([{ label: '编辑', value: 'edit' }]))
+    dd.style.cssText = 'position: fixed; top: 140px; left: 40px; z-index: 2147483000'
+    dd.innerHTML = '<button id="e2e-dd-hover-trigger">悬停</button>'
+    document.body.appendChild(dd)
+    const other = document.createElement('button')
+    other.id = 'e2e-outside'
+    other.textContent = '外部'
+    other.style.cssText = 'position: fixed; top: 240px; left: 40px; z-index: 2147483000'
+    document.body.appendChild(other)
+  })
+  await page.locator('#e2e-outside').focus()
+  await page.locator('#e2e-dd-hover-trigger').hover()
+  await page.waitForFunction(() => document.querySelector('oas-dropdown#e2e-dd-hover')?.hasAttribute('open'))
+  const activeId = await page.evaluate(() => document.activeElement?.id ?? null)
+  expect(activeId, 'hover 展开不抢焦点').toBe('e2e-outside')
+})

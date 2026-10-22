@@ -520,7 +520,7 @@ export class OASTimePicker extends OASFormElement {
       <div class="picker" part="picker">
         <input class="trigger" part="trigger" type="text" role="combobox"
           aria-haspopup="listbox" aria-expanded="false" autocomplete="off" spellcheck="false" />
-        <button class="clear-btn" part="clear" type="button" tabindex="-1" hidden aria-label="">
+        <button class="clear-btn" part="clear" type="button" hidden aria-label="">
           <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">
             <path d="M4 4 L12 12 M12 4 L4 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
           </svg>
@@ -557,9 +557,17 @@ export class OASTimePicker extends OASFormElement {
     this.triggerEl?.addEventListener('blur', () => this.commitTyped())
     const clearBtn = this.shadow.querySelector<HTMLButtonElement>('[part="clear"]')
     clearBtn?.addEventListener('mousedown', (e) => e.preventDefault())
+    // 键盘激活标记：Enter/Space 触发 click 前先置位，清空后把焦点交还 trigger（鼠标路径不抢焦点，避免移动端弹键盘）
+    let clearViaKeyboard = false
+    clearBtn?.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') clearViaKeyboard = true
+    })
     clearBtn?.addEventListener('click', (e) => {
       e.stopPropagation()
+      const viaKeyboard = clearViaKeyboard
+      clearViaKeyboard = false
       this.clearValue()
+      if (viaKeyboard) this.triggerEl?.focus()
     })
     // 面板内点击不触发「外部点击确认」：选项点击会重渲列 DOM
     this.dropdown?.addEventListener('click', (e) => e.stopPropagation())

@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import type { ResourceItem, ResourceTask } from './oas-resource.js'
 import {
   buildSkillMatrix,
@@ -55,6 +55,30 @@ describe('resource-utils', () => {
     expect(month.resources[0]!.periods[0]!.start).toBe('2026-08-01')
     const empty = computeUtilization([], [])
     expect(empty).toMatchObject({ rangeStart: '', rangeEnd: '', totalLoad: 0, totalCapacity: 0 })
+  })
+
+  it('computeUtilization 报告区间超上限：真正截断计算（periods 与 rangeEnd 一致）并 devWarn 一次', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    try {
+      const report = computeUtilization([{ id: 'a', name: 'A' }], [], {
+        rangeStart: '2000-01-01',
+        rangeEnd: '2030-01-01',
+      })
+      // 2000-01-01 起 5000 个日历日（含端）→ 末日在 2013-09-08
+      const expectedEnd = new Date(2000, 0, 5000)
+      const iso = (d: Date) =>
+        `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+      expect(report.rangeStart).toBe('2000-01-01')
+      expect(report.rangeEnd).toBe(iso(expectedEnd))
+      const periods = report.resources[0]!.periods
+      expect(periods, 'periods 数量必须与截断后的 range 一致（旧实现算满 10958 天）').toHaveLength(5000)
+      expect(periods[0]!.start).toBe('2000-01-01')
+      expect(periods[periods.length - 1]!.end, '末档右界即 rangeEnd').toBe(report.rangeEnd)
+      expect(warn, '截断时 devWarn 一次').toHaveBeenCalledTimes(1)
+      expect(String(warn.mock.calls[0]![0])).toContain('5000')
+    } finally {
+      warn.mockRestore()
+    }
   })
 
   it('exportResourceCalendars / importResourceCalendars 往返并清洗非法字段', () => {

@@ -715,6 +715,30 @@ describe('OASGantt 行树（WBS）与折叠', () => {
     expect(actions).toContain('redo')
   })
 
+  it('受控回写不清历史：语义相同的整体重写（含键序差异）保留撤销栈，且不记伪提交', () => {
+    const el = mount({
+      tasks: JSON.stringify([{ id: 'a', name: 'A', start: '2026-03-02', end: '2026-03-06', alpha: 1, beta: 2 }]),
+      history: '',
+    })
+    expect(el.updateTask('a', { name: 'A1' })).toBe(true)
+    expect(el.canUndo).toBe(true)
+    const echo = el.tasks // 宿主把 oas-tasks-change 的 tasks 原样写回
+    el.tasks = echo
+    expect(el.canUndo, '逐字节相同的受控回写不清历史').toBe(true)
+    // 键序不同但语义相同（自定义字段顺序打乱）：同样不清理、不追加撤销步
+    el.tasks = echo.map((t) => ({
+      beta: t['beta'],
+      alpha: t['alpha'],
+      end: t.end,
+      start: t.start,
+      name: t.name,
+      id: t.id,
+    }))
+    expect(el.canUndo, '键序差异不算语义变化').toBe(true)
+    expect(el.undo(), '撤销一次即回到 A（回写未追加伪提交）').toBe(true)
+    expect(el.tasks[0]!.name).toBe('A')
+  })
+
   it('group-by-resource 按首个分配资源生成泳道，多资源任务只出现一次', () => {
     const tasks: GanttTask[] = [
       { id: 'a', name: 'A', start: '2026-03-02', end: '2026-03-03', resources: ['r1'] },

@@ -1,4 +1,5 @@
 import { OASElement } from '@oas-ui/core'
+import { lockBodyScroll, pushEscapeLayer } from '../../shared/overlay-stack.js'
 
 /** 滑出方向（横向管宽、纵向管高） */
 export type DrawerPlacement = 'left' | 'right' | 'top' | 'bottom'
@@ -38,21 +39,7 @@ function syncStackZ(): void {
   for (const d of drawerStack) d.applyZ()
 }
 
-/** body 滚动锁（跨抽屉深度计数：最后一个解锁才恢复原值） */
-let scrollLockDepth = 0
-let scrollLockOriginal = ''
-function lockBodyScroll(): void {
-  if (scrollLockDepth === 0) {
-    scrollLockOriginal = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
-  }
-  scrollLockDepth++
-}
-function unlockBodyScroll(): void {
-  if (scrollLockDepth <= 0) return
-  scrollLockDepth--
-  if (scrollLockDepth === 0) document.body.style.overflow = scrollLockOriginal
-}
+/** body 滚动锁走共享设施（与 modal/tour 共用同一计数，避免两套锁互相覆盖原值） */
 
 const STYLE = `
 :host {
@@ -497,6 +484,10 @@ export class OASDrawer extends OASElement {
   private isOpen = false
   private wasOpen = false
   private previousFocus: HTMLElement | null = null
+  /** 共享滚动锁释放句柄（幂等；关闭/断开释放） */
+  private releaseScrollLock: (() => void) | null = null
+  /** 共享 Esc 层释放句柄（打开时压栈、关闭/断开退栈） */
+  private releaseEscapeLayer: (() => void) | null = null
   private pendingCloseSource: DrawerCloseSource = 'external'
   /** title 吸收缓存：宿主原生 title 被移除后的标题真值（null=无标题） */
   private titleCache: string | null = null
@@ -589,14 +580,6 @@ export class OASDrawer extends OASElement {
       ?.addEventListener('slotchange', () => this.update())
 
     const onKey = (e: KeyboardEvent): void => {
-      if (e.key === 'Escape') {
-        // 栈顶且无模态在上才响应（嵌套抽屉逐层关；模态置顶时 Esc 归模态）
-        if (topDrawer() !== this) return
-        if (hasVisibleModal()) return
-        if (this.hasAttr('no-esc-close')) return
-        this.requestClose('esc')
-        return
-      }
       if (e.key === 'Tab') this.trapFocus(e)
     }
     document.addEventListener('keydown', onKey)
@@ -633,10 +616,15 @@ export class OASDrawer extends OASElement {
     this.update()
   }
 
-  /** 断开连接：出栈 + 解锁滚动（防抽屉未 closed 就被移除时残留栈/锁） */
+  /** 断开连接：出栈 + 释放共享锁（防抽屉未 closed 就被移除时残留栈/锁） */
   override disconnectedCallback(): void {
     popStack(this)
-    if (this.wasOpen && !this.hasAttr('no-scroll-lock')) unlockBodyScroll()
+    this.releaseScrollLock?.()
+    this.releaseScrollLock = null
+    this.releaseEscapeLayer?.()
+    this.releaseEscapeLayer = null
+    // 打开态断开：重置边沿标记，重连后 update() 重新走 startOpen（重获滚动锁与 Esc 层）
+    this.isOpen = false
     super.disconnectedCallback()
   }
 
@@ -762,7 +750,20 @@ export class OASDrawer extends OASElement {
     this.isOpen = true
     this.wasOpen = true
     pushStack(this)
-    if (!this.hasAttr('no-scroll-lock')) lockBodyScroll()
+    if (!this.hasAttr('no-scroll-lock') && !this.releaseScrollLock) this.releaseScrollLock = lockBodyScroll()
+    // 共享 Esc 层：仅当自己是栈顶且无可见模态（模态置顶时 Esc 归模态）时消费；
+    // no-esc-close 仍消费（不穿透关掉下层）但不关闭自己
+    if (!this.releaseEscapeLayer) {
+      this.releaseEscapeLayer = pushEscapeLayer({
+        name: 'drawer',
+        active: () => this.hasAttr('visible') && topDrawer() === this && !hasVisibleModal(),
+        handle: () => {
+          if (this.hasAttr('no-esc-close')) return true
+          this.requestClose('esc')
+          return true
+        },
+      })
+    }
     // previousFocus 只在模态语义下记录——no-mask 不抢焦点，关闭时也不得把焦点拉回（对齐 oas-modal.ts:1012-1016 先例）
     if (!this.hasAttr('no-mask')) this.previousFocus = document.activeElement as HTMLElement
     this.emit('open')
@@ -794,6 +795,8 @@ export class OASDrawer extends OASElement {
     // 关闭即出栈：Esc 逐层关与焦点陷阱立即让位下层抽屉（动画结束后不再重复出栈）
     popStack(this)
     syncStackZ()
+    this.releaseEscapeLayer?.()
+    this.releaseEscapeLayer = null
     this.mask?.removeAttribute('data-open')
     this.panel?.removeAttribute('data-open')
     this.panel?.removeAttribute('data-swiping')
@@ -808,7 +811,8 @@ export class OASDrawer extends OASElement {
   private onClosed(): void {
     this.emit('closed')
     this.emit('after-close')
-    if (!this.hasAttr('no-scroll-lock')) unlockBodyScroll()
+    this.releaseScrollLock?.()
+    this.releaseScrollLock = null
     // 焦点归还：仅当自己是最后打开的浮层（栈空且无模态）——不抢下层抽屉焦点；
     // no-mask 从未记录 previousFocus（不抢焦点语义对称），天然不归还
     if (topDrawer() === null && !hasVisibleModal()) {

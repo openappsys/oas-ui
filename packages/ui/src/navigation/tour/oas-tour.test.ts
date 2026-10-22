@@ -733,6 +733,16 @@ describe('B 指示器与生命周期', () => {
     expect(document.body.style.overflow).not.toBe('hidden')
   })
 
+  it('lock-scroll：关闭恢复宿主 inline overflow 原值（不得置空抹掉宿主样式）', () => {
+    document.body.style.overflow = 'scroll'
+    const el = mount({ 'lock-scroll': 'true' })
+    el.setAttribute('open', '')
+    expect(document.body.style.overflow).toBe('hidden')
+    el.removeAttribute('open')
+    expect(document.body.style.overflow, '恢复宿主原值 scroll').toBe('scroll')
+    document.body.removeAttribute('style')
+  })
+
   it('open 受控移除（外部 removeAttribute）也派发 oas-destroy', async () => {
     const el = mount()
     el.setAttribute('open', '')

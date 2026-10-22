@@ -1,12 +1,22 @@
 import { OASElement } from '@oas-ui/core'
 import { getViewport } from '../../overlay/floating/index.js'
+import { pushEscapeLayer } from '../../shared/overlay-stack.js'
 import '../menu/index.js' // 副作用：确保 oas-menu 已注册
 import { OASMenuItem } from '../menu/index.js'
 import type { OASMenu } from '../menu/index.js'
 import type { MenuItem, MenuItemKind } from '../menu/index.js'
 
-const STYLE = `
-:host {
+/** shadow 内当前焦点元素（happy-dom 在无焦点记录时 activeElement 会抛错，包一层兜底） */
+function activeInShadow(root: ShadowRoot | null | undefined): HTMLElement | null {
+  if (!root) return null
+  try {
+    return root.activeElement as HTMLElement | null
+  } catch {
+    return null
+  }
+}
+
+const STYLE = `:host {
   display: inline-block;
   font-family: inherit;
 }
@@ -61,6 +71,10 @@ export class OASContextMenu extends OASElement {
   private prevOpen: boolean | null = null
   /** 上一次 update() 的 open 状态，用于区分「打开瞬间」与「已打开后的属性微调」 */
   private wasOpen = false
+  /** 共享 Esc 层释放句柄 */
+  private releaseEscapeLayer: (() => void) | null = null
+  /** 右键/长按触发源（Esc 关闭后回焦；show(x,y) 无触发源则不回焦） */
+  private contextTarget: HTMLElement | null = null
 
   /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
   private template(): string {
@@ -73,6 +87,16 @@ export class OASContextMenu extends OASElement {
     `
   }
 
+  override disconnectedCallback(): void {
+    // 基类 onCleanup 一次性执行后会清空；断开时主动释放 Esc 层，重连后由 open 边沿重压
+    this.releaseEscapeLayer?.()
+    this.releaseEscapeLayer = null
+    this.contextTarget = null
+    // 打开态断开：重置边沿标记，重连后 update() 重新走打开路径（重压 Esc 层与外点/滚动监听）
+    this.wasOpen = false
+    super.disconnectedCallback()
+  }
+
   /** 缓存节点引用 + 绑定事件 + 注册清理（render 与水合路径共用） */
   private bind(): void {
     this.anchorEl = this.shadow.querySelector('.menu-anchor')
@@ -80,6 +104,7 @@ export class OASContextMenu extends OASElement {
     // 右键触发：阻止原生菜单并定位打开（light DOM 内任意子元素右键均冒泡到 host）
     this.addEventListener('contextmenu', (e: MouseEvent) => {
       e.preventDefault()
+      this.rememberTrigger(e)
       this.show(e.clientX, e.clientY)
     })
     // 移动端长按触发（touch 无右键）：touchstart 计时，超时视为右键
@@ -87,12 +112,11 @@ export class OASContextMenu extends OASElement {
     this.addEventListener('touchmove', this.onTouchMove, { passive: false })
     this.addEventListener('touchend', this.onTouchEnd)
     this.addEventListener('touchcancel', this.onTouchEnd)
-    const onKey = (e: KeyboardEvent): void => {
-      if (e.key === 'Escape') this.close()
-    }
-    document.addEventListener('keydown', onKey)
-    this.onCleanup(() => document.removeEventListener('keydown', onKey))
     this.onCleanup(() => window.clearTimeout(this.longPressTimer))
+    this.onCleanup(() => {
+      this.releaseEscapeLayer?.()
+      this.releaseEscapeLayer = null
+    })
     // 打开时注册的 document/window 监听在 update() 关闭分支移除；此处兜底防断开连接泄漏
     this.onCleanup(() => document.removeEventListener('click', this.handleOutside, true))
     this.onCleanup(() => document.removeEventListener('contextmenu', this.handleDocContext))
@@ -146,6 +170,38 @@ export class OASContextMenu extends OASElement {
     this.removeAttribute('open')
   }
 
+  /** 记录触发源（composedPath[0] 即实际右键/长按的元素，位于 light DOM 内） */
+  private rememberTrigger(e: Event): void {
+    const target = e.composedPath()[0]
+    if (target instanceof HTMLElement && this.contains(target)) this.contextTarget = target
+  }
+
+  /** 压入共享 Esc 层：关闭后把焦点还给触发源，消费后不穿透下层浮层 */
+  private armEscapeLayer(): void {
+    if (this.releaseEscapeLayer) return
+    this.releaseEscapeLayer = pushEscapeLayer({
+      name: 'context-menu',
+      active: () => this.hasAttr('open'),
+      handle: () => {
+        const target = this.contextTarget
+        this.close()
+        if (target && target.isConnected) target.focus({ preventScroll: true })
+        return true
+      },
+    })
+  }
+
+  /**
+   * 聚焦内层菜单容器：菜单方向键监听在 shadow 内 `.menu` ul 上，聚焦 oas-menu 宿主
+   * 不会把键盘事件带进其 shadow 树。ul 自带 role=menu + tabindex=0。
+   */
+  private focusMenu(): void {
+    const menu = this.menuEl as (OASMenu & { shadowRoot?: ShadowRoot | null }) | null
+    if (!menu) return
+    const list = menu.shadowRoot?.querySelector<HTMLElement>('.menu') ?? null
+    ;(list ?? menu).focus({ preventScroll: true })
+  }
+
   protected override update(): void {
     if (!this.menuEl || !this.anchorEl) return
     // 子元素通道观察器（重连后重建；items 属性显式时子元素被忽略，观察器空转无副作用）
@@ -180,11 +236,23 @@ export class OASContextMenu extends OASElement {
         document.addEventListener('click', this.handleOutside, true)
         document.addEventListener('contextmenu', this.handleDocContext)
         if (this.closeOnScrollOn()) window.addEventListener('scroll', this.handleScroll, true)
+        this.armEscapeLayer()
+        this.focusMenu()
       }
     } else {
+      // 关闭前若焦点还在菜单内，先还给触发源（菜单 hidden 后焦点不能丢到 body）
+      const menu = this.menuEl as (OASMenu & { shadowRoot?: ShadowRoot | null }) | null
+      const focusInMenu = !!activeInShadow(menu?.shadowRoot) || activeInShadow(this.shadow) === menu
+      if (focusInMenu) {
+        const target = this.contextTarget
+        if (target && target.isConnected) target.focus({ preventScroll: true })
+      }
       document.removeEventListener('click', this.handleOutside, true)
       document.removeEventListener('contextmenu', this.handleDocContext)
       window.removeEventListener('scroll', this.handleScroll, true)
+      this.releaseEscapeLayer?.()
+      this.releaseEscapeLayer = null
+      this.contextTarget = null
     }
     this.wasOpen = open
   }
@@ -243,6 +311,7 @@ export class OASContextMenu extends OASElement {
   private onTouchStart = (e: TouchEvent): void => {
     const touch = e.touches ? Array.from(e.touches)[0] : undefined
     if (!touch) return
+    this.rememberTrigger(e)
     this.longPressX = touch.clientX
     this.longPressY = touch.clientY
     this.longPressArmed = false

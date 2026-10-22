@@ -22,7 +22,7 @@
 
 ## 多级子菜单
 
-带 `children` 的菜单项显示展开箭头（›），点击或悬停展开子菜单，子菜单缩进展示；键盘 `ArrowRight` 进入、`ArrowLeft` 返回。
+带 `children` 的菜单项显示展开箭头（›），点击或悬停展开子菜单，子菜单缩进展示；键盘 `ArrowRight` 进入、`ArrowLeft` 返回（RTL 下镜像为 `ArrowLeft` 进入、`ArrowRight` 返回）。
 
 <DemoBlock title="多级子菜单">
   <oas-space direction="vertical" size="small">
@@ -578,4 +578,8 @@ onMounted(() => {
 
 `children` 为可选子菜单项数组；有 `children` 的项点击/悬停展开子菜单，选中态只落在叶子项。`group` 的 `children` 平铺展示在同一层，组标题不可点、不参与键盘导航；`divider` 不可点、不参与键盘导航。
 
-键盘导航：方向键移动（自动跳过组标题与分隔线）、Enter 选择（含子菜单的项 Enter/ArrowRight 进入）、Home / End 跳转、ArrowLeft 返回父级；`role="menu"` + `menuitemradio`（子菜单父项为 `menuitem`），选中项显示对勾。
+键盘导航：方向键移动（自动跳过组标题、分隔线、禁用/加载项）、Enter 或 Space 选择（含子菜单的项进入子菜单）、Home / End 跳首末、Esc 返回父级（顶层收起展开项）；`role="menu"` + `menuitemradio`（子菜单父项为 `menuitem`），选中项显示对勾。
+
+键盘轴向按形态区分：竖向菜单与任意层级子菜单用 ↑/↓ 移动、`ArrowRight` 进子菜单、`ArrowLeft` 返回；水平模式顶层改用 ←/→ 沿行移动、`ArrowDown` 进子菜单、`ArrowUp`/Esc 收起。RTL 下方向镜像（子菜单向左浮出，进出改用 `ArrowLeft` 进入、`ArrowRight` 返回）。
+
+读屏语义：焦点始终留在 `role="menu"` 列表上（单一 Tab 落点，不引入 roving tabindex），键盘当前项通过 `aria-activedescendant` 暴露给辅助技术；列表可访问名称取宿主 `aria-label`，未提供时回退默认「导航」，水平模式同时声明 `aria-orientation="horizontal"`。

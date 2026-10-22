@@ -649,3 +649,80 @@ test('sidebar expand-on-hover：键盘 focus 折叠项仍弹出 label tooltip', 
   expect(r.trigger, 'expand-on-hover 下 tooltip 只保留 focus 通道').toBe('focus')
   expect(r.open, '键盘 focus 应打开 label tooltip').toBe(true)
 })
+
+// ===== 反馈 #5：移动抽屉打开不入焦 / 关闭不回焦 / 无焦点约束 / aria-hidden 吞焦点 =====
+test('sidebar 移动抽屉：打开入焦 + role=dialog/aria-modal + Tab 约束 + Esc 关闭回焦触发器', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 800 })
+  await page.goto('/components/sidebar.html', { waitUntil: 'domcontentloaded' })
+  await page.waitForFunction(() => !!customElements.get('oas-sidebar'))
+  await page.evaluate(() => {
+    document.getElementById('e2e-sidebar-mobile')?.remove()
+    const el = document.createElement('oas-sidebar')
+    el.id = 'e2e-sidebar-mobile'
+    el.style.cssText = 'position: fixed; top: 80px; left: 0; z-index: 2147483000'
+    el.setAttribute(
+      'items',
+      JSON.stringify([
+        { label: '收件箱', value: 'inbox', icon: 'star' },
+        { label: '设置', value: 'settings', icon: 'star' },
+      ]),
+    )
+    document.body.appendChild(el)
+  })
+  await page.waitForFunction(() => {
+    const el = document.querySelector('oas-sidebar#e2e-sidebar-mobile') as HTMLElement & { shadowRoot: ShadowRoot }
+    return el?.dataset.mobile === 'true'
+  })
+
+  const host = page.locator('#e2e-sidebar-mobile')
+  await host.locator('[part="trigger"]').click()
+  await page.waitForFunction(() => {
+    const el = document.querySelector('oas-sidebar#e2e-sidebar-mobile') as HTMLElement & { shadowRoot: ShadowRoot }
+    return el.shadowRoot.querySelector('.panel')?.getAttribute('role') === 'dialog'
+  })
+
+  const opened = await page.evaluate(() => {
+    const el = document.querySelector('oas-sidebar#e2e-sidebar-mobile') as HTMLElement & { shadowRoot: ShadowRoot }
+    const panel = el.shadowRoot.querySelector('.panel') as HTMLElement
+    const active = el.shadowRoot.activeElement as HTMLElement | null
+    return {
+      role: panel.getAttribute('role'),
+      modal: panel.getAttribute('aria-modal'),
+      ariaHidden: panel.getAttribute('aria-hidden'),
+      focusInside: !!active && panel.contains(active),
+    }
+  })
+  expect(opened.role).toBe('dialog')
+  expect(opened.modal).toBe('true')
+  expect(opened.ariaHidden, '打开态不得 aria-hidden').toBeNull()
+  expect(opened.focusInside, '打开后焦点必须进入抽屉').toBe(true)
+
+  // Tab 约束：连按 Tab 焦点始终留在面板内
+  for (let i = 0; i < 8; i++) await page.keyboard.press('Tab')
+  const trapped = await page.evaluate(() => {
+    const el = document.querySelector('oas-sidebar#e2e-sidebar-mobile') as HTMLElement & { shadowRoot: ShadowRoot }
+    const panel = el.shadowRoot.querySelector('.panel') as HTMLElement
+    const active = el.shadowRoot.activeElement as HTMLElement | null
+    return { inPanel: !!active && panel.contains(active), activeTag: active?.tagName ?? null }
+  })
+  expect(trapped.inPanel, 'Tab 不得逃逸出抽屉').toBe(true)
+
+  // Esc 关闭：回焦触发器，面板 aria-hidden 且焦点不在面板内
+  await page.keyboard.press('Escape')
+  await page.waitForFunction(
+    () => !document.querySelector('oas-sidebar#e2e-sidebar-mobile')?.hasAttribute('drawer-open'),
+  )
+  const closed = await page.evaluate(() => {
+    const el = document.querySelector('oas-sidebar#e2e-sidebar-mobile') as HTMLElement & { shadowRoot: ShadowRoot }
+    const panel = el.shadowRoot.querySelector('.panel') as HTMLElement
+    const trigger = el.shadowRoot.querySelector('[part="trigger"]') as HTMLElement
+    return {
+      ariaHidden: panel.getAttribute('aria-hidden'),
+      role: panel.getAttribute('role'),
+      focusOnTrigger: el.shadowRoot.activeElement === trigger,
+    }
+  })
+  expect(closed.ariaHidden).toBe('true')
+  expect(closed.role).toBeNull()
+  expect(closed.focusOnTrigger, '关闭后焦点回到触发钮').toBe(true)
+})

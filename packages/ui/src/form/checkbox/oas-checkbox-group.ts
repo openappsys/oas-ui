@@ -218,7 +218,10 @@ export class OASCheckboxGroup extends OASElement {
       else cb.removeAttribute('data-group-size')
       if (groupStatus) cb.setAttribute('data-group-status', groupStatus)
       else cb.removeAttribute('data-group-status')
-      cb.toggleAttribute('data-limit-blocked', this.limitBlockedFor(cb, values))
+      // 方向随属性下发给子项（min/max）：子项点击时回传方向，组据此派发可区分信号
+      const blocked = this.limitBlockedFor(cb, values)
+      if (blocked) cb.setAttribute('data-limit-blocked', blocked)
+      else cb.removeAttribute('data-limit-blocked')
       // 监听只挂一次（WeakSet 去重；移出组的子项由 handleItemChange 的 items 成员守卫兜底）
       if (!this.boundItems.has(cb)) {
         this.boundItems.add(cb)
@@ -243,7 +246,7 @@ export class OASCheckboxGroup extends OASElement {
       const max = this.maxLimit()
       if (max !== null && !current.has(value) && current.size >= max) {
         cb.removeAttribute('checked')
-        this.emit('exceed-limit', { value, max })
+        this.reportLimitBlocked(value, 'max')
         return
       }
       current.add(value)
@@ -252,6 +255,7 @@ export class OASCheckboxGroup extends OASElement {
       const min = this.minLimit()
       if (min !== null && current.has(value) && current.size <= min) {
         cb.toggleAttribute('checked', true)
+        this.reportLimitBlocked(value, 'min')
         return
       }
       current.delete(value)
@@ -261,15 +265,29 @@ export class OASCheckboxGroup extends OASElement {
     this.emit('change', { value: next })
   }
 
-  /** 子项数量限制拦截转发：oas-limit-blocked（子项）→ oas-exceed-limit（组，detail: { value, max }） */
+  /** 子项数量限制拦截转发：子项 oas-limit-blocked → 组级规范化信号（方向可区分；max 另兼容 exceed-limit） */
   private handleLimitBlocked = (e: Event): void => {
     const cb = e.target as OASCheckbox
     if (!this.items.includes(cb)) return
-    const max = this.maxLimit()
-    if (max !== null) {
-      const value = cb.getAttribute('value') ?? ''
-      this.emit('exceed-limit', { value, max })
+    // 子项内部信号不向外穿透：宿主只收组级信号（否则同名事件从子项与组各发一次）
+    e.stopPropagation()
+    const limit = cb.getAttribute('data-limit-blocked') === 'min' ? 'min' : 'max'
+    this.reportLimitBlocked(cb.getAttribute('value') ?? '', limit)
+  }
+
+  /**
+   * 数量限制拦截统一出口（点击拦截与防御回滚共用）：
+   * - min：只派 oas-limit-blocked（detail: { value, limit: 'min', min }）——不得冒充 max 越界；
+   * - max：派 oas-limit-blocked（detail: { value, limit: 'max', max }）+ 既有 oas-exceed-limit 兼容契约。
+   */
+  private reportLimitBlocked(value: string, limit: 'min' | 'max'): void {
+    if (limit === 'min') {
+      this.emit('limit-blocked', { value, limit, min: this.minLimit() })
+      return
     }
+    const max = this.maxLimit()
+    this.emit('exceed-limit', { value, max })
+    this.emit('limit-blocked', { value, limit, max })
   }
 
   /** 全选项（check-all）联动：子项全勾 → 勾选；部分 → 半选；无 → 空态（跳过禁用项） */
@@ -311,16 +329,16 @@ export class OASCheckboxGroup extends OASElement {
       .filter((v) => v !== '')
   }
 
-  /** 组数量限制：max 达上限未选项拦截 / min 达下限已选项拦截（双向对称） */
-  private limitBlockedFor(cb: OASCheckbox, values: string[]): boolean {
-    if (cb.hasAttribute('check-all')) return false
+  /** 组数量限制：max 达上限未选项拦截 / min 达下限已选项拦截（双向对称，返回方向供子项回传） */
+  private limitBlockedFor(cb: OASCheckbox, values: string[]): 'min' | 'max' | null {
+    if (cb.hasAttribute('check-all')) return null
     const value = cb.getAttribute('value') ?? ''
     const checked = values.includes(value)
     const max = this.maxLimit()
-    if (max !== null && !checked && values.length >= max) return true
+    if (max !== null && !checked && values.length >= max) return 'max'
     const min = this.minLimit()
-    if (min !== null && checked && values.length <= min) return true
-    return false
+    if (min !== null && checked && values.length <= min) return 'min'
+    return null
   }
 
   private maxLimit(): number | null {

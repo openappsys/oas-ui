@@ -2176,9 +2176,25 @@ export class OASMenubar extends OASElement {
     }
   }
 
+  /**
+   * 输入上下文判定：事件原始目标（composedPath 首项，穿透 shadow）是否是可编辑控件。
+   * 输入法组合中同样视为输入上下文（Esc/Alt 组合交给输入法）。
+   */
+  private isEditableKeyboardTarget(e: KeyboardEvent): boolean {
+    if (e.isComposing) return true
+    const target = e.composedPath()[0] ?? e.target
+    if (!(target instanceof HTMLElement)) return false
+    const tag = target.tagName
+    return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || target.isContentEditable
+  }
+
   /** 文档级键盘：shortcut 快捷键 + Alt 访问键 + Alt 聚焦 + 子菜单 Tab 焦点陷阱 */
   private handleDocumentKey = (e: KeyboardEvent): void => {
     if (this.isBarDisabled()) return
+    // 输入上下文守卫：焦点在可编辑控件（input/textarea/select/contenteditable）时，
+    // 文档级快捷键与 Alt 访问键必须让路（否则输入框里 Alt+F / Ctrl+Shift+S 被菜单栏劫持）。
+    // 菜单栏自身打开时的 Tab 焦点陷阱不受影响（其焦点在菜单项上，不是可编辑控件）。
+    if (this.isEditableKeyboardTarget(e)) return
     // 快捷键（shortcut 字段）：命中即触发对应项 select（Ctrl+N / Ctrl+Shift+S 等）
     const shortcutItem = this.matchShortcut(e)
     if (shortcutItem) {

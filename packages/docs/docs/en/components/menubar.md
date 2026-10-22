@@ -24,6 +24,8 @@ Leaves with `kind: "action"` render as plain actions (`menuitem`): no checkmark,
 
 The `shortcut` field (e.g. `"Ctrl+N"`): renders a key hint on the right, and auto-binds a `document`-level keydown — pressing the combo selects that item (`preventDefault` blocks the browser default). Binding rules: `modifier+key` combos bind directly; single keys bind only for function keys (F1–F12) — any other single key (letters/digits/Delete etc.) is display-only and not bound.
 
+**Global shortcut semantics**: both `shortcut` and `accessKey` (Alt access keys) are document-level bindings, acting on the whole page rather than only when the menubar is focused. To avoid hijacking input, when focus is inside an editable control (`input` / `textarea` / `select` / `contenteditable`, or during IME composition), document-level shortcuts and Alt access keys always yield to the control and the browser; the menubar's own keyboard navigation (arrow keys / Tab focus trap) only acts on its internal focus and is unaffected by this guard. Keep each shortcut unique within the page; conflicts resolve to the first matched menu item.
+
 <DemoBlock title="Shortcuts">
   <oas-menubar id="menubar-shortcut" onoas-select="menubarShortcutLog(event)" items='[{"label":"File","value":"file","accessKey":"f","children":[{"label":"New","value":"new","shortcut":"Ctrl+N"},{"label":"Open","value":"open","shortcut":"Ctrl+O"},{"type":"divider"},{"label":"Save","value":"save","shortcut":"Ctrl+S","kind":"action"}]}]'></oas-menubar>
   <oas-tag id="menubar-shortcut-result" type="info">Try Ctrl+N / Ctrl+O / Ctrl+S</oas-tag>

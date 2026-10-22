@@ -938,6 +938,30 @@ function pad2(n: number): string {
   return String(n).padStart(2, '0')
 }
 
+/** 两个「日历日」相差的天数（取 UTC 年月日归一，跨 DST 恒为整数，不受 23/25 小时日影响） */
+function calDayDiff(a: Date, b: Date): number {
+  return Math.round(
+    (Date.UTC(a.getFullYear(), a.getMonth(), a.getDate()) - Date.UTC(b.getFullYear(), b.getMonth(), b.getDate())) /
+      86_400_000,
+  )
+}
+
+/** 日历加天：按本地年月日构造（毫秒步进在 DST 日会落到前一天 23:00 / 后一天 01:00） */
+function addCalendarDays(d: Date, days: number): Date {
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate() + days)
+}
+
+/** 以周日为界的周首日（byDay 的 0=周日 与 getDay() 同口径） */
+function weekStartSunday(d: Date): Date {
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate() - d.getDay())
+}
+
+/** weekly 的有效 byDay：去重升序（ICS BYDAY 与顺序无关；COUNT 序号按星期顺序计） */
+function weeklyByDay(rep: SchedulerRepeat, d0: Date): number[] {
+  const raw = rep.byDay?.length ? rep.byDay : [d0.getDay()]
+  return [...new Set(raw)].sort((a, b) => a - b)
+}
+
 function icsDate(d: Date): string {
   return `${d.getFullYear()}${pad2(d.getMonth() + 1)}${pad2(d.getDate())}`
 }
@@ -1085,13 +1109,20 @@ export function eventsToIcs(events: SchedulerEvent[], options: IcsExportOptions 
     const startMin = parseTime(ev.start)
     const allDay = startMin === null
     const endMinRaw = parseTime(ev.end)
-    const timedEnd = startMin === null ? null : Math.max(endMinRaw ?? startMin + 60, startMin + 15)
     const endDate = ev.endDate ? parseISODate(ev.endDate) : null
+    const crossDay = !allDay && !!endDate && endDate.getTime() > day.getTime()
+    // 跨日定时事件：end 是末日当日的时刻，不做「同日最短 15 分钟」夹取（否则 02:00 被抬成 22:15）
+    const timedEnd = allDay
+      ? null
+      : crossDay
+        ? Math.max(endMinRaw ?? startMin!, 0)
+        : Math.max(endMinRaw ?? startMin! + 60, startMin! + 15)
     const nextDay = endDate
       ? new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate() + 1)
       : new Date(day.getFullYear(), day.getMonth(), day.getDate() + 1)
-    const start = allDay ? icsDate(day) : icsDateTime(day, startMin)
-    const end = allDay ? icsDate(nextDay) : icsDateTime(day, timedEnd!)
+    const start = allDay ? icsDate(day) : icsDateTime(day, startMin!)
+    const endDay = crossDay && endDate ? endDate : day
+    const end = allDay ? icsDate(nextDay) : icsDateTime(endDay, timedEnd!)
     let dtStart: string
     let dtEnd: string
     if (allDay) {
@@ -1099,8 +1130,10 @@ export function eventsToIcs(events: SchedulerEvent[], options: IcsExportOptions 
       dtEnd = 'DTEND;VALUE=DATE:' + end
     } else if (timeMode === 'utc') {
       dtStart = 'DTSTART:' + icsUtcStamp(wallToUtc(day, startMin!, options.timezone))
-      const endDay = new Date(day.getFullYear(), day.getMonth(), day.getDate() + Math.floor(timedEnd! / 1440))
-      dtEnd = 'DTEND:' + icsUtcStamp(wallToUtc(endDay, timedEnd! % 1440, options.timezone))
+      // 24:00 仍按「次日 00:00」换算；跨日事件的 end 本身就落在 endDate 当日
+      const endOffset = Math.floor(timedEnd! / 1440)
+      const utcEndDay = new Date(endDay.getFullYear(), endDay.getMonth(), endDay.getDate() + endOffset)
+      dtEnd = 'DTEND:' + icsUtcStamp(wallToUtc(utcEndDay, timedEnd! % 1440, options.timezone))
     } else if (timeMode === 'tzid' && tz) {
       dtStart = 'DTSTART;TZID=' + tz + ':' + start
       dtEnd = 'DTEND;TZID=' + tz + ':' + end
@@ -1121,7 +1154,13 @@ export function eventsToIcs(events: SchedulerEvent[], options: IcsExportOptions 
       const byDay = ev.repeat.byDay
       if (ev.repeat.freq === 'weekly' && byDay?.length) {
         const names = ['SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA']
-        rule += ';BYDAY=' + byDay.map((d) => names[d]).join(',')
+        // BYDAY 与顺序无关：统一升序输出，保证同一规则导出稳定
+        rule +=
+          ';BYDAY=' +
+          [...new Set(byDay)]
+            .sort((a, b) => a - b)
+            .map((d) => names[d])
+            .join(',')
       }
       if (ev.repeat.byMonth?.length) rule += ';BYMONTH=' + ev.repeat.byMonth.join(',')
       if (ev.repeat.byMonthDay?.length) rule += ';BYMONTHDAY=' + ev.repeat.byMonthDay.join(',')
@@ -1134,8 +1173,18 @@ export function eventsToIcs(events: SchedulerEvent[], options: IcsExportOptions 
         else rule += ';UNTIL=' + icsDate(until) + 'T235959'
       }
       lines.push('RRULE:' + rule)
-      if (ev.repeat.exDates?.length) {
-        lines.push('EXDATE;VALUE=DATE:' + ev.repeat.exDates.map((x) => x.replaceAll('-', '')).join(','))
+      const exDates = (ev.repeat.exDates ?? []).map((x) => parseISODate(x)).filter((d): d is Date => d !== null)
+      if (exDates.length) {
+        // EXDATE 的值类型必须与 DTSTART 一致：全天用 DATE，定时事件用同款 datetime（含 utc/tzid 变体）
+        if (allDay) {
+          lines.push('EXDATE;VALUE=DATE:' + exDates.map((d) => icsDate(d)).join(','))
+        } else if (timeMode === 'utc') {
+          lines.push('EXDATE:' + exDates.map((d) => icsUtcStamp(wallToUtc(d, startMin!, options.timezone))).join(','))
+        } else if (timeMode === 'tzid' && tz) {
+          lines.push('EXDATE;TZID=' + tz + ':' + exDates.map((d) => icsDateTime(d, startMin!)).join(','))
+        } else {
+          lines.push('EXDATE:' + exDates.map((d) => icsDateTime(d, startMin!)).join(','))
+        }
       }
     }
     if (ev.color) lines.push('X-OAS-COLOR:' + icsEscape(ev.color))
@@ -1802,11 +1851,12 @@ export class OASScheduler extends OASElement {
   }
 
   private navigate(delta: number): void {
+    // 逐日/逐周推进用日历运算：毫秒步进在 DST 日会落到前一天 23:00（翻页原地不动）
     if (this.viewMode === 'month') this.viewDate = addMonths(this.viewDate, delta)
     else if (this.viewMode === 'week' || this.viewMode === 'resource-week')
-      this.viewDate = new Date(this.viewDate.getTime() + delta * 7 * 86400_000)
-    else if (this.viewMode === 'agenda') this.viewDate = new Date(this.viewDate.getTime() + delta * 28 * 86400_000)
-    else this.viewDate = new Date(this.viewDate.getTime() + delta * 86400_000)
+      this.viewDate = addCalendarDays(this.viewDate, delta * 7)
+    else if (this.viewMode === 'agenda') this.viewDate = addCalendarDays(this.viewDate, delta * 28)
+    else this.viewDate = addCalendarDays(this.viewDate, delta)
     this.renderCurrentView()
   }
 
@@ -1818,13 +1868,13 @@ export class OASScheduler extends OASElement {
     const today = this.todayTz()
     const locale = this.effectiveLocale()
     if (this.titleEl) {
-      const end = new Date(start.getTime() + 27 * 86400_000)
+      const end = addCalendarDays(start, 27)
       this.titleEl.textContent = `${this.fmtTz(start, 'yyyy-MM-dd')} ~ ${this.fmtTz(end, 'MM-dd')}`
     }
     el.innerHTML = ''
     let any = false
     for (let i = 0; i < 28; i++) {
-      const d = new Date(start.getTime() + i * 86400_000)
+      const d = addCalendarDays(start, i)
       const iso = toISODate(d)
       const evs = this.eventsOn(iso)
       if (evs.length === 0) continue
@@ -1881,49 +1931,65 @@ export class OASScheduler extends OASElement {
     const s = parseTime(ev.start)
     if (s === null) return null
     const rawEnd = parseTime(ev.end) ?? s + 60
-    if (!ev.endDate || iso === ev.date) return { start: s, end: Math.max(rawEnd, s + 15) }
+    // endDate 与 date 同日（或缺失）按当日时段处理
+    if (!ev.endDate || ev.endDate <= ev.date) return { start: s, end: Math.max(rawEnd, s + 15) }
+    // 跨日定时事件：首日段到 24:00（end 是末日时刻，不能用于首日；否则 22:00–02:00 会被压成 15 分钟）
+    if (iso === ev.date) return { start: s, end: 1440 }
     if (iso === ev.endDate) return { start: 0, end: Math.max(rawEnd, 15) }
     return { start: 0, end: 1440 }
   }
 
-  /** iso 是否该重复事件的某个发生日（RRULE 子集：daily/weekly 按天数间隔、monthly 按同日；
+  /** 某日历日作为发生日的序号（1 起）；不是发生日返回 null。
+   *  weekly 的 byDay 先去重排序：序号 = 已过整周的槽位数 + 本周槽位 − date 之前的槽位（DTSTART 之前不计，
+   *  否则锚点不在本周首槽时 COUNT 会把锚点前的星期也计入，展开次数与 ICS 不一致） */
+  private occurrenceOrdinal(ev: SchedulerEvent, d: Date): number | null {
+    const rep = ev.repeat
+    if (!rep) return null
+    const d0 = parseISODate(ev.date)
+    if (!d0) return null
+    const dayDiff = calDayDiff(d, d0)
+    if (dayDiff < 0) return null
+    if (rep.byMonth?.length && !rep.byMonth.includes(d.getMonth() + 1)) return null
+    const interval = Math.max(rep.interval ?? 1, 1)
+    if (rep.freq === 'daily') {
+      if (dayDiff % interval !== 0) return null
+      return dayDiff / interval + 1
+    }
+    if (rep.freq === 'weekly') {
+      const byDay = weeklyByDay(rep, d0)
+      if (!byDay.includes(d.getDay())) return null
+      const weekIndex = calDayDiff(weekStartSunday(d), weekStartSunday(d0)) / 7
+      if (weekIndex % interval !== 0) return null
+      const skipped = byDay.filter((day) => day < d0.getDay()).length
+      // 首周 date 之前的槽位不属于发生集（且后续每周同样扣掉这次偏移，槽位总数才与 COUNT 一致）
+      return (weekIndex / interval) * byDay.length + byDay.indexOf(d.getDay()) + 1 - skipped
+    }
+    const monthDiff = d.getFullYear() * 12 + d.getMonth() - (d0.getFullYear() * 12 + d0.getMonth())
+    let dayOk = rep.byMonthDay?.length ? rep.byMonthDay.includes(d.getDate()) : d.getDate() === d0.getDate()
+    if (dayOk && rep.bySetPos && rep.byMonthDay?.length) {
+      const candidates = rep.byMonthDay
+        .map((day) => new Date(d.getFullYear(), d.getMonth(), day))
+        .filter((candidate) => candidate.getMonth() === d.getMonth())
+        .sort((a, b) => a.getDate() - b.getDate())
+      const index = rep.bySetPos > 0 ? rep.bySetPos - 1 : candidates.length + rep.bySetPos
+      dayOk = candidates[index]?.getDate() === d.getDate()
+    }
+    if (!dayOk || monthDiff % interval !== 0) return null
+    return monthDiff / interval + 1
+  }
+
+  /** iso 是否该重复事件的某个发生日（RRULE 子集：daily/weekly 按间隔、monthly 按同日；
    *  weekly 可带 byDay，count 限制发生次数） */
   private isOccurrence(ev: SchedulerEvent, iso: string): boolean {
     const rep = ev.repeat
     if (!rep) return false
-    const d0 = parseISODate(ev.date)
     const d = parseISODate(iso)
-    if (!d0 || !d || d.getTime() < d0.getTime()) return false
+    if (!d) return false
     const until = rep.until ? parseISODate(rep.until) : null
-    if (until && d.getTime() > until.getTime()) return false
+    if (until && calDayDiff(d, until) > 0) return false
     if (rep.exDates?.includes(iso)) return false
-    if (rep.byMonth?.length && !rep.byMonth.includes(d.getMonth() + 1)) return false
-    const interval = Math.max(rep.interval ?? 1, 1)
-    const days = Math.round((d.getTime() - d0.getTime()) / 86400_000)
-    let ordinal: number | null = null
-    if (rep.freq === 'daily') {
-      if (days % interval !== 0) return false
-      ordinal = days / interval + 1
-    } else if (rep.freq === 'weekly') {
-      const byDay = rep.byDay?.length ? rep.byDay : [d0.getDay()]
-      if (!byDay.includes(d.getDay())) return false
-      const weekDiff = Math.floor(days / 7)
-      if (weekDiff % interval !== 0) return false
-      ordinal = Math.floor(weekDiff / interval) * byDay.length + byDay.indexOf(d.getDay()) + 1
-    } else {
-      const monthDiff = d.getFullYear() * 12 + d.getMonth() - (d0.getFullYear() * 12 + d0.getMonth())
-      let dayOk = rep.byMonthDay?.length ? rep.byMonthDay.includes(d.getDate()) : d.getDate() === d0.getDate()
-      if (dayOk && rep.bySetPos && rep.byMonthDay?.length) {
-        const candidates = rep.byMonthDay
-          .map((day) => new Date(d.getFullYear(), d.getMonth(), day))
-          .filter((candidate) => candidate.getMonth() === d.getMonth())
-          .sort((a, b) => a.getDate() - b.getDate())
-        const index = rep.bySetPos > 0 ? rep.bySetPos - 1 : candidates.length + rep.bySetPos
-        dayOk = candidates[index]?.getDate() === d.getDate()
-      }
-      if (!dayOk || monthDiff % interval !== 0) return false
-      ordinal = monthDiff / interval + 1
-    }
+    const ordinal = this.occurrenceOrdinal(ev, d)
+    if (ordinal === null) return false
     return rep.count === undefined || ordinal <= rep.count
   }
 
@@ -1962,81 +2028,96 @@ export class OASScheduler extends OASElement {
     }
   }
 
+  /** 发生日 d 的提醒时刻：发生日本地零点 + start − remind（日历合成，跨 DST 不漂 1 小时） */
+  private remindTimeOn(d: Date, start: number, remind: number): number {
+    return new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0, start - remind).getTime()
+  }
+
   /** 下一发生日的提醒时刻（repeat 事件取今天起最近的发生日；无 repeat 用 date 本身；过期返回 null） */
   private remindAt(ev: SchedulerEvent): number | null {
     const start = parseTime(ev.start) ?? 0
+    const remind = ev.remind!
     if (!ev.repeat) {
       const d = parseISODate(ev.date)
       if (!d) return null
-      const at = d.getTime() + start * 60_000 - ev.remind! * 60_000
+      const at = this.remindTimeOn(d, start, remind)
       return at > Date.now() ? at : null
     }
-    const next = this.nextOccurrence(ev)
-    if (!next) return null
-    let d = next
-    let at = d.getTime() + start * 60_000 - ev.remind! * 60_000
+    let d = this.nextOccurrence(ev)
+    if (!d) return null
+    let at = this.remindTimeOn(d, start, remind)
     if (at <= Date.now()) {
-      // 今天发生日的提醒时刻已过（页面在提醒点后挂载）→ 推进到下一个发生日
-      d = this.advanceOneStep(d, ev.repeat!, parseISODate(ev.date)!.getDate())
-      const until = ev.repeat!.until ? parseISODate(ev.repeat!.until) : null
-      if (until && d.getTime() > until.getTime()) return null
-      at = d.getTime() + start * 60_000 - ev.remind! * 60_000
+      // 今日发生日的提醒时刻已过（页面在提醒点后挂载）→ 取下一个发生日
+      d = this.nextOccurrence(ev, addCalendarDays(d, 1))
+      if (!d) return null
+      at = this.remindTimeOn(d, start, remind)
     }
     return at > Date.now() ? at : null
   }
 
-  /** 发生日按重复规则前进一步（monthly 携带锚定日、跳过无该日的短月） */
-  private advanceOneStep(d: Date, rep: SchedulerRepeat, dayOfMonth: number): Date {
-    const interval = Math.max(rep.interval ?? 1, 1)
-    if (rep.freq === 'daily') return new Date(d.getTime() + interval * 86400_000)
-    if (rep.freq === 'weekly') return new Date(d.getTime() + interval * 7 * 86400_000)
-    return this.nextMonthly(d, interval, dayOfMonth)
-  }
-
-  /** monthly：从某月推进 interval 步，跳过「无锚定日」的短月（如 1-31 跳过 2 月落 3-31） */
-  private nextMonthly(from: Date, interval: number, dayOfMonth: number): Date {
-    let total = from.getFullYear() * 12 + from.getMonth() + Math.max(interval, 1)
-    for (let guard = 0; guard < 36; guard++) {
-      const first = new Date(Math.floor(total / 12), total % 12, 1)
-      if (daysInMonth(first) >= dayOfMonth) return new Date(first.getFullYear(), first.getMonth(), dayOfMonth)
-      total += Math.max(interval, 1)
-    }
-    return from
-  }
-
-  /** repeat 事件从今天起的下一个发生日（按 freq×interval 直接推进，无逐日循环） */
-  private nextOccurrence(ev: SchedulerEvent): Date | null {
-    const rep = ev.repeat!
+  /** repeat 事件从 from（默认今天）起的下一个发生日：遵守 byDay/interval/until/count 并跳过 EXDATE */
+  private nextOccurrence(ev: SchedulerEvent, from?: Date): Date | null {
+    const rep = ev.repeat
+    if (!rep) return null
     const d0 = parseISODate(ev.date)
     if (!d0) return null
-    const until = rep.until ? parseISODate(rep.until) : null
     const interval = Math.max(rep.interval ?? 1, 1)
-    const today = startOfDay(new Date())
-    let d: Date
-    if (rep.freq === 'daily') {
-      const days = Math.max(0, Math.ceil((today.getTime() - d0.getTime()) / 86400_000 / interval) * interval)
-      d = new Date(d0.getTime() + days * 86400_000)
-    } else if (rep.freq === 'weekly') {
-      const weeks = Math.max(0, Math.ceil((today.getTime() - d0.getTime()) / (7 * 86400_000) / interval) * interval)
-      d = new Date(d0.getTime() + weeks * 7 * 86400_000)
-    } else {
-      const monthDiff = Math.max(
-        0,
-        today.getFullYear() * 12 + today.getMonth() - (d0.getFullYear() * 12 + d0.getMonth()),
-      )
-      const steps = Math.ceil(monthDiff / interval) * interval
-      d = this.nextMonthly(
-        // from 用 1 号构造：防「前一步月无锚定日」时 Date 规范化滚入下月、跳过目标发生月
-        new Date(d0.getFullYear(), d0.getMonth() + steps - Math.max(interval, 1), 1),
-        interval,
-        d0.getDate(),
-      )
-      // nextMonthly 的 from 取「目标发生月前一步」，第一次调用即落在目标发生月（含短月跳过）
-      if (d.getTime() < today.getTime()) d = this.nextMonthly(d, interval, d0.getDate())
+    const base = startOfDay(from ?? new Date())
+    const startDay = calDayDiff(base, d0) > 0 ? base : d0
+    const until = rep.until ? parseISODate(rep.until) : null
+    const hit = (d: Date): boolean => {
+      if (until && calDayDiff(d, until) > 0) return false
+      if (rep.exDates?.includes(toISODate(d))) return false
+      const ordinal = this.occurrenceOrdinal(ev, d)
+      return ordinal !== null && (rep.count === undefined || ordinal <= rep.count)
     }
-    if (d.getTime() < today.getTime()) return null
-    if (until && d.getTime() > until.getTime()) return null
-    return d
+    if (rep.freq === 'daily') {
+      const offset = Math.max(0, Math.ceil(calDayDiff(startDay, d0) / interval) * interval)
+      for (let step = offset, guard = 0; guard < 400; step += interval, guard++) {
+        const d = addCalendarDays(d0, step)
+        if (until && calDayDiff(d, until) > 0) return null
+        if (hit(d)) return d
+      }
+      return null
+    }
+    if (rep.freq === 'weekly') {
+      // 按「周 × byDay 槽位」推进：byDay 多日提醒不会漏掉本周后半个槽位
+      const byDay = weeklyByDay(rep, d0)
+      const ws0 = weekStartSunday(d0)
+      const weekGap = Math.floor(calDayDiff(weekStartSunday(startDay), ws0) / 7)
+      let weekIndex = Math.max(0, Math.ceil(weekGap / interval) * interval)
+      for (let guard = 0; guard < 520; weekIndex += interval, guard++) {
+        for (const day of byDay) {
+          const d = addCalendarDays(ws0, weekIndex * 7 + day)
+          if (calDayDiff(d, startDay) < 0) continue
+          if (until && calDayDiff(d, until) > 0) return null
+          if (hit(d)) return d
+        }
+      }
+      return null
+    }
+    // monthly：按锚定日（或 byMonthDay 候选日）逐月推进，跳过无该日的短月
+    const firstMonth = d0.getFullYear() * 12 + d0.getMonth()
+    const baseMonth = startDay.getFullYear() * 12 + startDay.getMonth()
+    const gap = Math.max(0, baseMonth - firstMonth)
+    let monthIndex = firstMonth + Math.ceil(gap / interval) * interval
+    for (let guard = 0; guard < 240; monthIndex += interval, guard++) {
+      const first = new Date(Math.floor(monthIndex / 12), monthIndex % 12, 1)
+      const anchorDays = rep.byMonthDay?.length ? [...rep.byMonthDay].sort((a, b) => a - b) : [d0.getDate()]
+      let candidates = anchorDays
+        .filter((day) => day <= daysInMonth(first))
+        .map((day) => new Date(first.getFullYear(), first.getMonth(), day))
+      if (rep.bySetPos && candidates.length) {
+        const index = rep.bySetPos > 0 ? rep.bySetPos - 1 : candidates.length + rep.bySetPos
+        candidates = candidates[index] ? [candidates[index]!] : []
+      }
+      for (const d of candidates) {
+        if (calDayDiff(d, startDay) < 0) continue
+        if (until && calDayDiff(d, until) > 0) return null
+        if (hit(d)) return d
+      }
+    }
+    return null
   }
 
   override disconnectedCallback(): void {
@@ -3066,8 +3147,16 @@ export class OASScheduler extends OASElement {
             block.dataset.id = ev.id
             block.textContent = ev.title
             if (ev.color) block.style.setProperty('--chip-color', ev.color)
-            block.style.top = `${((seg.start - startH * 60) / 60) * hourH}px`
-            block.style.height = `${Math.max(((seg.end - seg.start) / 60) * hourH, 12)}px`
+            // 与 week/day 同款夹取：早于 start-hour / 晚于 end-hour 的段钳进轨道，且高度不越出轨道剩余空间
+            const dayStart = startH * 60
+            const dayEnd = endH * 60
+            const vs = Math.min(Math.max(seg.start, dayStart), dayEnd)
+            const ve = Math.min(Math.max(seg.end, vs), dayEnd)
+            const top = ((vs - dayStart) / 60) * hourH
+            const trackH = (endH - startH) * hourH
+            const height = Math.min(Math.max(((ve - vs) / 60) * hourH, 12), Math.max(trackH - top, 0))
+            block.style.top = `${top}px`
+            block.style.height = `${height}px`
             block.addEventListener('click', (e) => {
               e.stopPropagation()
               this.emit('event-click', { id: ev.id, event: { ...ev } } satisfies SchedulerEventClickDetail)

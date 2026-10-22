@@ -327,7 +327,7 @@ Move focus with the Tab key: the middle item is skipped; clicking it with a mous
 | `oas-blur` | The checkbox lost focus |
 | `oas-change` | Checked change, `detail: { checked, value }` |
 | `oas-focus` | The checkbox gained focus |
-| `oas-limit-blocked` | Group count-limit block signal (the group re-dispatches it as oas-exceed-limit; no such block when used standalone) |
+| `oas-limit-blocked` | Count-limit block signal (inside a group the group intercepts and re-dispatches its own oas-limit-blocked; hosts should listen on the group); `detail: { value, limit: 'min' \| 'max' }` |
 
 #### Slots
 
@@ -368,6 +368,7 @@ Move focus with the Tab key: the middle item is skipped; clicking it with a mous
 | `oas-change` | Group value change, `detail: { value: string[] }` (includes select-all linkage and in-limit changes) |
 | `oas-exceed-limit` | Out-of-cap check attempt after max is reached, `detail: { value, max }` |
 | `oas-focus` | Any item inside the group gained focus (moves between items do not misfire) |
+| `oas-limit-blocked` | Group-level count-limit block signal (single exit for min/max), `detail: { value, limit: 'min' \| 'max', min?, max? }`; on max it also dispatches oas-exceed-limit for compatibility |
 
 #### Slots
 

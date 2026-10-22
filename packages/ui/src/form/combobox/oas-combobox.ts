@@ -892,7 +892,8 @@ export class OASCombobox extends OASFormElement {
     if (!this.input) return
     if (this.injectDisabled() || this.hasAttr('readonly')) return
     this.query = this.input.value
-    this.emit('input', { value: this.query })
+    // source: 'search' 标记过滤词事件——宿主（oas-form）不得把它当字段值回写（C3）
+    this.emit('input', { value: this.query, source: 'search' })
     // datalist 语义：无选中时草稿即表单值（有选中项时选中值优先，getFormValue 内判定）
     this.syncFormValue()
     this.syncValidity()

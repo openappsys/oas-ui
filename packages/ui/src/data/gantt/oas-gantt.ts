@@ -962,6 +962,29 @@ const SCALE_PAD_START: Record<GanttScale, number> = { hour: 1, day: 1, week: 1, 
 const SCALE_PAD_END: Record<GanttScale, number> = { hour: 6, day: 3, week: 1, month: 1, quarter: 1, year: 1 }
 const DAY_MS = 86_400_000
 
+/**
+ * 按「本地日历日」平移时间戳：保留墙钟时分秒。
+ * 用于 day/week 刻度步进、日期右界（次日零点）、工作日吸附与整日任务工期换算——
+ * 直接 ±n × DAY_MS 在 DST 切换日（23/25 小时）会漂到 01:00/23:00，刻度错位、标签重复、数据被写脏。
+ */
+function addLocalDays(ms: number, n: number): number {
+  const d = new Date(ms)
+  return new Date(
+    d.getFullYear(),
+    d.getMonth(),
+    d.getDate() + n,
+    d.getHours(),
+    d.getMinutes(),
+    d.getSeconds(),
+    d.getMilliseconds(),
+  ).getTime()
+}
+
+/** 本地墙钟（时:分）→ epoch ms：DST 切换日不能「当日零点 + 分钟数」（跳变那段不是 60 分钟/小时） */
+function localWallClockMs(y: number, month: number, day: number, minutes: number): number {
+  return new Date(y, month, day, Math.floor(minutes / 60), minutes % 60).getTime()
+}
+
 /** 空白拖拽判拖阈值（px）：低于此位移视作点按（框选清空 / 不建任务） */
 const MARQUEE_THRESHOLD = 4
 
@@ -1287,7 +1310,7 @@ function sanitizeTasks(
       // 颠倒判定与渲染层 endMsOf 同口径：日精度 end 含当日（区间右缘 = 次日 00:00）
       const startD = parseTaskDate(t.start)!
       const endD = parseTaskDate(endRaw)!
-      const endMs = endRaw.length > 10 ? endD.getTime() : endD.getTime() + DAY_MS
+      const endMs = endRaw.length > 10 ? endD.getTime() : addLocalDays(endD.getTime(), 1)
       let endStr = endRaw
       if (endMs < startD.getTime()) {
         onWarn?.(t.id, `[oas-gantt] 任务 "${t.id}" start 晚于 end（日期颠倒），已自动交换`)
@@ -1350,7 +1373,7 @@ function sanitizeTasks(
         if (e && parseTaskDate(e)) {
           const sD = parseTaskDate(s)!
           const eD = parseTaskDate(e)!
-          const eMs = e.length > 10 ? eD.getTime() : eD.getTime() + DAY_MS
+          const eMs = e.length > 10 ? eD.getTime() : addLocalDays(eD.getTime(), 1)
           if (eMs < sD.getTime()) {
             onWarn?.(`baseline:${t.id}`, `[oas-gantt] 任务 "${t.id}" baseline start 晚于 end，已自动交换`)
             bb.start = e
@@ -1367,6 +1390,24 @@ function sanitizeTasks(
     out.push(t)
   }
   return out
+}
+
+/**
+ * 键序无关的稳定序列化（语义判等用）：对象键排序、数组保序、undefined 值按 JSON 语义省略。
+ * 同 scheduler 的 sameEvents 口径——宿主受控回写常带键序/自定义字段顺序差异，不应被当成数据变更。
+ */
+function stableStringify(v: unknown): string {
+  if (v === undefined) return 'null'
+  if (v === null || typeof v !== 'object') {
+    const s = JSON.stringify(v)
+    return s === undefined ? 'null' : s
+  }
+  if (Array.isArray(v)) return `[${v.map((item) => stableStringify(item)).join(',')}]`
+  const obj = v as Record<string, unknown>
+  const keys = Object.keys(obj)
+    .filter((k) => obj[k] !== undefined)
+    .sort()
+  return `{${keys.map((k) => `${JSON.stringify(k)}:${stableStringify(obj[k])}`).join(',')}}`
 }
 
 /** 选择器 id 转义（宿主 id 可能含引号/方括号，直接拼接会抛 DOMException） */
@@ -1430,6 +1471,8 @@ export class OASGantt extends OASElement {
   private lastTasksSnapshot: GanttTask[] = []
   private lastTasksSignature = ''
   private historyRestoring = false
+  /** `tasks` setter 收到语义相同的受控回写：commitTasks 只刷新基线，不记伪提交 */
+  private historyEcho = false
   private readonly historyLimit = 100
   private expandedAttrCache = ''
   /** 展开集合：null = 未受控（数据 expanded 初始化）；expanded 属性出现后受控 */
@@ -1597,16 +1640,28 @@ export class OASGantt extends OASElement {
     })
   }
   set tasks(v: GanttTask[]) {
-    this._tasks = sanitizeTasks(
+    const next = sanitizeTasks(
       parseJsonArray<GanttTask>(v as unknown),
       (used) => this.allocId(used),
       (key, msg) => this.warnOnce(key, msg),
     )
-    // 外部整体重写视为新基线：清空历史，避免撤销回宿主不认识的旧数据
-    this.resetHistoryState()
+    // 受控回写与当前数据语义相同（键序 / undefined 差异不算变化）：不清历史、也不记伪提交
+    // （宿主常把 oas-tasks-change 的 tasks 原样写回；旧实现无条件重置，导致 ⌘Z 被一次回写清空）
+    this.historyEcho = this.sameTasks(next)
+    this._tasks = next
+    if (!this.historyEcho) {
+      // 外部整体重写视为新基线：清空历史，避免撤销回宿主不认识的旧数据
+      // （须在赋值之后调用：resetHistoryState 以当前 tasks 重建签名，否则 commitTasks 会把本次重写记成一次提交）
+      this.resetHistoryState()
+    }
     // 外部整体重写：收敛幽灵选中/锚点/活动/揭示态由 update() 统一处理（property 与 attribute 一致）；
     // 写回走 commitTasks 单通道（syncTasksAttr 的属性通道已触发一次全量 update，不再手动 update）
     this.commitTasks()
+  }
+
+  /** 语义判等：两边都走清洗结果，忽略键序 / undefined 差异（同 scheduler sameEvents 口径） */
+  private sameTasks(next: TG[]): boolean {
+    return stableStringify(this._tasks) === stableStringify(next)
   }
 
   /** 按 id 单条增量更新（浅合并 patch 后走 sanitize 清洗；找不到或非法 patch 返回 false） */
@@ -1813,16 +1868,25 @@ export class OASGantt extends OASElement {
    * （inInternalWrite），最终由本出口统一派发一次（含联动后的最终数据）。
    */
   private commitTasks(): void {
+    const echo = this.historyEcho
+    this.historyEcho = false
     if (this.historyOn() && !this.historyRestoring) {
       const signature = JSON.stringify(this._tasks)
-      if (this.lastTasksSignature !== '' && signature !== this.lastTasksSignature) {
-        this.undoStack.push(this.lastTasksSnapshot)
-        if (this.undoStack.length > this.historyLimit) this.undoStack.shift()
-        this.redoStack = []
-        this.emitHistoryChange('change')
+      if (echo) {
+        // 语义相同的受控回写：只刷新基线签名（键序可能变了），不追加撤销栈——
+        // 否则一次等价回写会让 ⌘Z 撤到“看起来没变化”的重复快照
+        this.lastTasksSnapshot = this.snapshotTasks()
+        this.lastTasksSignature = signature
+      } else {
+        if (this.lastTasksSignature !== '' && signature !== this.lastTasksSignature) {
+          this.undoStack.push(this.lastTasksSnapshot)
+          if (this.undoStack.length > this.historyLimit) this.undoStack.shift()
+          this.redoStack = []
+          this.emitHistoryChange('change')
+        }
+        this.lastTasksSnapshot = this.snapshotTasks()
+        this.lastTasksSignature = signature
       }
-      this.lastTasksSnapshot = this.snapshotTasks()
-      this.lastTasksSignature = signature
     }
     this.syncTasksAttr()
     this.emitTasksChange()
@@ -2171,7 +2235,8 @@ export class OASGantt extends OASElement {
     let cur = ms
     for (let i = 0; i < SNAP_MAX_DAYS; i++) {
       if (this.isWorkingDay(cur, task)) return cur
-      cur += DAY_MS
+      // 日历日推进（毫秒 +24h 跨 DST 会把 00:00 推成 01:00 / 23:00，吸附结果落不到本地零点）
+      cur = addLocalDays(cur, 1)
     }
     return ms
   }
@@ -2211,11 +2276,14 @@ export class OASGantt extends OASElement {
     const d = new Date(ms)
     const minute = d.getHours() * 60 + d.getMinutes()
     if (windows.some((w) => minute >= w.start && minute < w.end)) return ms
-    const dayStart = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime()
+    const y = d.getFullYear()
+    const mo = d.getMonth()
+    const day = d.getDate()
+    // 班次起点按本地墙钟落位：DST 切换日「零点 + 分钟数」会差 1 小时（09:00 → 10:00 / 08:00）
     for (const w of windows) {
-      if (minute < w.start) return dayStart + w.start * 60_000
+      if (minute < w.start) return localWallClockMs(y, mo, day, w.start)
     }
-    return new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1).getTime() + windows[0]!.start * 60_000
+    return localWallClockMs(y, mo, day + 1, windows[0]!.start)
   }
 
   /**
@@ -2230,7 +2298,7 @@ export class OASGantt extends OASElement {
     if (!d) return null
     const ms = d.getTime()
     const dateOnly = dateStr.length <= 10
-    return { mode, ms, endMs: dateOnly ? ms + DAY_MS : ms, dateOnly }
+    return { mode, ms, endMs: dateOnly ? addLocalDays(ms, 1) : ms, dateOnly }
   }
 
   private weekStart(): number {
@@ -2251,11 +2319,12 @@ export class OASGantt extends OASElement {
 
   // ===== 时间轴模型 =====
 
-  /** 按 scale 步进 n 个单位（month/quarter/year 走日历运算防月末溢出；其余毫秒加减） */
+  /** 按 scale 步进 n 个单位（month/quarter/year 走日历运算防月末溢出；day/week 走日历日防 DST 漂移；
+   *  hour 按绝对小时——跨跳变时本地标签自然跳过一个/重复一小时，是时间轴的正确语义） */
   private static addUnits(d: Date, scale: GanttScale, n: number): Date {
     if (scale === 'hour') return new Date(d.getTime() + n * 3_600_000)
-    if (scale === 'day') return new Date(d.getTime() + n * DAY_MS)
-    if (scale === 'week') return new Date(d.getTime() + n * 7 * DAY_MS)
+    if (scale === 'day') return new Date(addLocalDays(d.getTime(), n))
+    if (scale === 'week') return new Date(addLocalDays(d.getTime(), n * 7))
     const months = n * (scale === 'month' ? 1 : scale === 'quarter' ? 3 : 12)
     return new Date(d.getFullYear(), d.getMonth() + months, 1)
   }
@@ -2271,7 +2340,8 @@ export class OASGantt extends OASElement {
     const s = parseIsoDayMs(this.getAttr('range-start', ''))
     const e = parseIsoDayMs(this.getAttr('range-end', ''))
     if (s === null || e === null || e < s) return null
-    return { startMs: s, endMs: e + DAY_MS }
+    // 次日零点按日历日推进：e + DAY_MS 跨 DST 会停在 23:00/01:00，轴尾与末档边界跟着错位
+    return { startMs: s, endMs: addLocalDays(e, 1) }
   }
 
   private buildUnits(): void {
@@ -2527,7 +2597,7 @@ export class OASGantt extends OASElement {
       const e = parseTaskDate(t.end!)
       if (!e) return startMsOf(t)
       // 日精度 end 含当日（区间右缘 = 次日 00:00）；带时间精度按原值
-      return t.end!.length > 10 ? e.getTime() : e.getTime() + DAY_MS
+      return t.end!.length > 10 ? e.getTime() : addLocalDays(e.getTime(), 1)
     }
     // windowed 要求**扁平行切片**（与 oas-table 同式）：切片即行序——不递归 children、不受 expanded
     // 影响，绝对行号/loaded 全按扁平行计。含层级/展开语义请在宿主侧展平后喂入：本地递归展开会让
@@ -3688,7 +3758,7 @@ export class OASGantt extends OASElement {
         const bs = parseTaskDate(b.start)?.getTime()
         const beParsed = b.end ? parseTaskDate(b.end)?.getTime() : undefined
         if (bs !== undefined) {
-          const be = beParsed !== undefined ? (b.end!.length > 10 ? beParsed : beParsed + DAY_MS) : bs
+          const be = beParsed !== undefined ? (b.end!.length > 10 ? beParsed : addLocalDays(beParsed, 1)) : bs
           const bx1 = this.xOf(bs)
           const bEnd = Math.max(be, bs)
           const bw = Math.max(this.xOf(bEnd) - bx1, 2)
@@ -5468,12 +5538,22 @@ export class OASGantt extends OASElement {
     return parseTaskDate(t.start)?.getTime() ?? 0
   }
 
-  /** 任务区间右缘 ms（exclusive）：里程碑 = 起点；日精度 end 含端 → +DAY_MS */
+  /** 任务区间右缘 ms（exclusive）：里程碑 = 起点；日精度 end 含端 → 次日本地零点 */
   private endMsOfTask(t: TG): number {
     if (t.type === 'milestone' || !t.end) return this.startMsOfTask(t)
     const e = parseTaskDate(t.end)
     if (!e) return this.startMsOfTask(t)
-    return t.end.length > 10 ? e.getTime() : e.getTime() + DAY_MS
+    return t.end.length > 10 ? e.getTime() : addLocalDays(e.getTime(), 1)
+  }
+
+  /** 整日任务（start / end 均日期精度）：工期按日历日计，跨 DST 的绝对毫秒差是 23/25 小时的倍数 */
+  private isWholeDayTask(t: TG): boolean {
+    return typeof t.start === 'string' && t.start.length <= 10 && (t.end === undefined || t.end.length <= 10)
+  }
+
+  /** 按工期平移端点：整日任务按日历日（跨 DST 不漂 1 小时），时间精度按绝对毫秒 */
+  private shiftByDuration(ms: number, duration: number, wholeDay: boolean): number {
+    return wholeDay ? addLocalDays(ms, Math.round(duration / DAY_MS)) : ms + duration
   }
 
   /** 与 buildRows 同源的树结构：childMap（有效父级且本节点非断环）与 hasChildren 集 */
@@ -5777,9 +5857,14 @@ export class OASGantt extends OASElement {
   /**
    * 写回任务起点（保持工期）：里程碑只写 start；显式 milestone 携带矛盾 end 时把 end 归一为 start
    * （与 commitDates 同口径）。返回是否真的改动了数据串（未变则该次排程不算 dirty，防迭代空转）。
+   *
+   * 整日任务的工期是「日历日数」而非绝对毫秒：`duration` 由 endMs - startMs 得到，跨 DST 会带
+   * ±1 小时（如 2 天 = 47h）。直接 `startMsNew + duration` 会写出 23:00/01:00 的时刻字符串，
+   * 故整日任务按日历日推进 end（时间精度任务仍按绝对毫秒）。
    */
   private writeStartKeepingDuration(t: TG, startMsNew: number, duration: number): boolean {
     const datetime = typeof t.start === 'string' && t.start.length > 10
+    const wholeDay = this.isWholeDayTask(t)
     const startStr = this.fmtIso(startMsNew, datetime)
     // 写回域守卫：结果必须能被 parseTaskDate（parseISODate 只收 4 位年）回读，否则
     // `el.tasks = el.tasks` 这类回写会在清洗层静默丢任务。lag 上限之外的第二道防线——
@@ -5792,7 +5877,8 @@ export class OASGantt extends OASElement {
       if (t.end) t.end = startStr
       return true
     }
-    const endStr = this.fmtEnd(startMsNew + duration, datetime)
+    const endEdge = wholeDay ? addLocalDays(startMsNew, Math.round(duration / DAY_MS)) : startMsNew + duration
+    const endStr = this.fmtEnd(endEdge, datetime)
     if (!parseTaskDate(endStr)) return false
     if (t.start === startStr && t.end === endStr) return false
     t.start = startStr
@@ -5877,6 +5963,8 @@ export class OASGantt extends OASElement {
         if (t.disabled === true || hasChildren.has(t.id) || cyclic.has(t.id)) continue
         const startMs = this.startMsOfTask(t)
         const duration = this.endMsOfTask(t) - startMs
+        // 整日任务：工期按日历日计（跨 DST 的绝对毫秒差是 23/25 小时的倍数，不能直接做日加减）
+        const wholeDay = this.isWholeDayTask(t)
         const con = this.constraintOf(t)
         // mso：固定锚点——依赖不得前推；数据偏离约束日则拉回约束日（保持工期），且不再吸附
         if (con && con.mode === 'mso') {
@@ -5903,8 +5991,8 @@ export class OASGantt extends OASElement {
               : type === 'ss'
                 ? this.snapToWorkingDay(pa.startMs + lagMs, t)
                 : type === 'ff'
-                  ? this.snapToWorkingDay(pa.endMs + lagMs, t) - duration
-                  : this.snapToWorkingDay(pa.startMs + lagMs, t) - duration
+                  ? this.shiftByDuration(this.snapToWorkingDay(pa.endMs + lagMs, t), -duration, wholeDay)
+                  : this.shiftByDuration(this.snapToWorkingDay(pa.startMs + lagMs, t), -duration, wholeDay)
           if (need > required) required = need
         }
         // snet：约束下限（只前推不提前）。约束优先：先取 max 再吸附，故吸附结果不会早于约束日

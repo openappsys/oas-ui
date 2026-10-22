@@ -976,6 +976,211 @@ test('menu selectable=false（P2）：纯动作菜单——叶子无勾选态、
   expect(r2.out || '', 'demo 无可见点击反馈').toContain('share')
 })
 
+// ===== 读屏语义 + 键盘模型（aria-activedescendant / 水平轴 / RTL 镜像） =====
+// 缺陷：键盘高亮只切 .active class（读屏不可见）；水平顶层沿用竖排键盘轴；RTL 子菜单向左浮出
+// 但键盘仍右进左出；typeahead 的 el.focus() 对无 tabindex 的 li 是 no-op。
+// 这些在 happy-dom 里测不出「真实焦点 + 可见几何」，必须用真浏览器回归。
+
+/** 在页面注入 fixed 定位的菜单（保证落在视口内，可用键盘/几何探针） */
+async function injectMenu(
+  page: import('@playwright/test').Page,
+  opts: { id: string; mode?: string; items: unknown[]; top?: number; left?: number },
+): Promise<void> {
+  await page.evaluate(async (o) => {
+    const h = document.createElement('oas-menu')
+    h.id = o.id
+    if (o.mode) h.setAttribute('mode', o.mode)
+    h.style.cssText = `position: fixed; top: ${o.top ?? 120}px; left: ${o.left ?? 40}px; z-index: 9999`
+    h.setAttribute('items', JSON.stringify(o.items))
+    document.body.appendChild(h)
+    await new Promise((r) => setTimeout(r, 350))
+    // 真实焦点落到 shadow 内的 ul（菜单的唯一 Tab 落点）
+    h.shadowRoot!.querySelector<HTMLElement>('.menu')!.focus()
+  }, opts)
+}
+
+const A11Y_ITEMS = [
+  { label: '首页', value: 'home' },
+  { label: '关于', value: 'about' },
+  { label: '设置', value: 'settings' },
+]
+
+const AXIS_ITEMS = [
+  {
+    label: '编辑',
+    value: 'edit',
+    children: [
+      { label: '复制', value: 'copy' },
+      { label: '剪切', value: 'cut' },
+    ],
+  },
+  { label: '文件', value: 'file' },
+  { label: '视图', value: 'view' },
+]
+
+test('menu 读屏语义：键盘高亮经 aria-activedescendant 暴露（焦点留在 ul，Space 激活）', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 })
+  await page.goto('/components/menu.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-menu')
+  await injectMenu(page, { id: 'zz-menu-a11y', items: A11Y_ITEMS })
+  await page.keyboard.press('ArrowDown')
+  const st = await page.evaluate(() => {
+    const h = document.querySelector('#zz-menu-a11y') as HTMLElement
+    const root = h.shadowRoot!
+    const menu = root.querySelector<HTMLElement>('.menu')!
+    const ad = menu.getAttribute('aria-activedescendant')
+    const active = root.querySelector<HTMLElement>('.item.active')
+    const list = [...root.querySelectorAll<HTMLElement>('[part="item"]')]
+    const bg = (el: HTMLElement | undefined) => (el ? getComputedStyle(el).backgroundColor : '')
+    return {
+      ad,
+      activeId: active?.id ?? null,
+      activeValue: active?.dataset.value ?? null,
+      adResolves: !!ad && !!root.getElementById(ad)?.classList.contains('active'),
+      focusOnHost: document.activeElement === h,
+      focusOnMenu: root.activeElement === menu,
+      rovingTabindex: list.filter((it) => it.hasAttribute('tabindex')).length,
+      ariaLabel: menu.getAttribute('aria-label'),
+      orientation: menu.getAttribute('aria-orientation'),
+      activeBg: bg(active ?? undefined),
+      idleBg: bg(list.find((it) => it.dataset.value === 'about')),
+      activeVisible: active ? active.getBoundingClientRect().height > 0 : false,
+    }
+  })
+  expect(st.adResolves, `aria-activedescendant=${st.ad} 应解析到当前 active 项（id=${st.activeId}）`).toBe(true)
+  expect(st.ad).toBe(st.activeId)
+  expect(st.activeValue, 'ArrowDown 应从首项开始高亮').toBe('home')
+  expect(st.focusOnHost, '焦点应留在 oas-menu 宿主（shadow 内 ul），不挪到 li').toBe(true)
+  expect(st.focusOnMenu, 'shadow 内焦点应仍是 ul.menu').toBe(true)
+  expect(st.rovingTabindex, '不应引入 roving tabindex（activedescendant 模型）').toBe(0)
+  expect(st.ariaLabel, 'ul 需可访问名称（读屏进入菜单有名称播报）').toBeTruthy()
+  expect(st.orientation, '竖向菜单 aria-orientation=vertical').toBe('vertical')
+  expect(st.activeVisible, '高亮项应真实可见').toBe(true)
+  // 视觉高亮：active 项背景不同于非高亮项（机制绿 + 用户可见高亮）
+  expect(st.activeBg, `高亮背景 ${st.activeBg} 应与普通项 ${st.idleBg} 不同`).not.toBe(st.idleBg)
+  // Space 激活当前项（不得落入 typeahead；value 写回 = 用户可见状态变化）
+  await page.keyboard.press('Space')
+  await page.waitForTimeout(120)
+  expect(await page.evaluate(() => document.querySelector('#zz-menu-a11y')!.getAttribute('value'))).toBe('home')
+  await page.screenshot({ path: 'test-results/visual-review/menu-a11y-activedescendant.png' })
+})
+
+test('menu 水平键盘轴：ArrowRight 沿行移动、ArrowDown 进子菜单、Escape 退出', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 })
+  await page.goto('/components/menu.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-menu')
+  await injectMenu(page, { id: 'zz-menu-axis', mode: 'horizontal', items: AXIS_ITEMS })
+  const read = () =>
+    page.evaluate(() => {
+      const h = document.querySelector('#zz-menu-axis') as HTMLElement
+      const root = h.shadowRoot!
+      const menu = root.querySelector<HTMLElement>('.menu')!
+      const active = root.querySelector<HTMLElement>('.item.active')
+      const parent = root.querySelector<HTMLElement>('.menu > [data-value="edit"]')!
+      const sub = parent.querySelector<HTMLElement>(':scope > .submenu')!
+      const ir = parent.getBoundingClientRect()
+      const sr = sub.getBoundingClientRect()
+      const hit =
+        sr.height > 0 ? document.elementFromPoint(sr.x + sr.width / 2, sr.y + Math.min(sr.height / 2, 20)) : null
+      return {
+        orientation: menu.getAttribute('aria-orientation'),
+        ad: menu.getAttribute('aria-activedescendant'),
+        activeValue: active?.dataset.value ?? null,
+        activeId: active?.id ?? null,
+        open: parent.classList.contains('open'),
+        expanded: parent.getAttribute('aria-expanded'),
+        panelBelow: sr.top >= ir.bottom - 1,
+        panelHitHost: hit === h,
+      }
+    })
+  let st = await read()
+  expect(st.orientation).toBe('horizontal')
+  await page.keyboard.press('ArrowDown') // 无当前项 → 落到首项（编辑）
+  st = await read()
+  expect(st.activeValue, 'ArrowDown 应落到首项').toBe('edit')
+  expect(st.open, '首次 ArrowDown 只落点、不展开').toBe(false)
+  await page.keyboard.press('ArrowRight') // 沿行移动
+  st = await read()
+  expect(st.activeValue, 'ArrowRight 应沿行移到「文件」').toBe('file')
+  expect(st.open, 'ArrowRight 不得展开子菜单（水平轴语义）').toBe(false)
+  expect(st.ad).toBe(st.activeId)
+  // ↑ 回到「编辑」并用 ArrowDown 进子菜单
+  await page.keyboard.press('ArrowLeft')
+  await page.keyboard.press('ArrowDown')
+  st = await read()
+  expect(st.open, 'ArrowDown 应展开当前项子菜单').toBe(true)
+  expect(st.expanded).toBe('true')
+  expect(st.activeValue, '进入后高亮首个子项').toBe('copy')
+  expect(st.ad).toBe(st.activeId)
+  expect(st.panelBelow, '水平一级子菜单应向下浮出（键盘轴与视觉一致）').toBe(true)
+  expect(st.panelHitHost, '子菜单应真实可见（命中菜单宿主）').toBe(true)
+  await page.keyboard.press('Escape')
+  st = await read()
+  expect(st.open, 'Escape 应收起子菜单').toBe(false)
+  expect(st.activeValue, 'Escape 返回父项').toBe('edit')
+  expect(st.ad).toBe(st.activeId)
+  await page.screenshot({ path: 'test-results/visual-review/menu-horizontal-keyboard.png' })
+})
+
+test('menu RTL：子菜单向左浮出且 ArrowLeft 进入 / ArrowRight 退出（水平顶层 ArrowLeft 沿行前进）', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 })
+  await page.goto('/components/menu.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-menu')
+  await page.evaluate(() => document.documentElement.setAttribute('dir', 'rtl'))
+  // 竖向菜单：子菜单向左浮出（inset-inline-start:100% 的 RTL 镜像），验证进出键与视觉同向
+  // 靠右摆放：RTL 面板向左展开才有视口空间（贴左缘会被回折为向右，几何断言失真）
+  await injectMenu(page, { id: 'zz-menu-rtl-kbd', items: AXIS_ITEMS, left: 880 })
+  await page.keyboard.press('ArrowDown')
+  await page.keyboard.press('ArrowLeft') // RTL 进子菜单
+  const st = await page.evaluate(() => {
+    const h = document.querySelector('#zz-menu-rtl-kbd') as HTMLElement
+    const root = h.shadowRoot!
+    const menu = root.querySelector<HTMLElement>('.menu')!
+    const parent = root.querySelector<HTMLElement>('.menu > [data-value="edit"]')!
+    const sub = parent.querySelector<HTMLElement>(':scope > .submenu')!
+    const active = root.querySelector<HTMLElement>('.item.active')
+    const ir = parent.getBoundingClientRect()
+    const sr = sub.getBoundingClientRect()
+    const hit = document.elementFromPoint(Math.max(2, sr.right - 8), sr.top + Math.min(sr.height / 2, 20))
+    return {
+      rtl: h.hasAttribute('data-rtl'),
+      open: parent.classList.contains('open'),
+      activeValue: active?.dataset.value ?? null,
+      ad: menu.getAttribute('aria-activedescendant'),
+      activeId: active?.id ?? null,
+      panelLeftOfItem: Math.abs(sr.right - ir.left) <= 2,
+      panelHitHost: hit === h,
+    }
+  })
+  expect(st.rtl, 'RTL 镜像开关应同步').toBe(true)
+  expect(st.open, 'RTL 下 ArrowLeft 应进子菜单（与左浮出方向同向）').toBe(true)
+  expect(st.activeValue, '进入后高亮首个子项').toBe('copy')
+  expect(st.ad).toBe(st.activeId)
+  expect(st.panelLeftOfItem, 'RTL 子菜单应贴父项左缘向左浮出（键盘方向与视觉一致）').toBe(true)
+  expect(st.panelHitHost, 'RTL 子菜单应真实可见').toBe(true)
+  await page.keyboard.press('ArrowRight')
+  const back = await page.evaluate(() => {
+    const h = document.querySelector('#zz-menu-rtl-kbd') as HTMLElement
+    const root = h.shadowRoot!
+    const parent = root.querySelector<HTMLElement>('.menu > [data-value="edit"]')!
+    const active = root.querySelector<HTMLElement>('.item.active')
+    return { open: parent.classList.contains('open'), activeValue: active?.dataset.value ?? null }
+  })
+  expect(back.open, 'RTL 下 ArrowRight 应退出子菜单').toBe(false)
+  expect(back.activeValue).toBe('edit')
+
+  // 水平 RTL 顶层：ArrowLeft 沿行前进（物理左 = DOM 下一项）
+  await injectMenu(page, { id: 'zz-menu-rtl-row', mode: 'horizontal', items: AXIS_ITEMS, top: 320 })
+  await page.keyboard.press('ArrowDown')
+  await page.keyboard.press('ArrowLeft')
+  const row = await page.evaluate(() => {
+    const h = document.querySelector('#zz-menu-rtl-row') as HTMLElement
+    return h.shadowRoot!.querySelector<HTMLElement>('.item.active')?.dataset.value ?? null
+  })
+  expect(row, 'RTL 水平顶层 ArrowLeft 应前进到 DOM 下一项').toBe('file')
+  await page.screenshot({ path: 'test-results/visual-review/menu-rtl-keyboard.png' })
+})
+
 test('menu persistent（P2）：Vue 下属性存活、选中后子菜单保持展开、value 照常写回', async ({ page }) => {
   await page.goto('/components/menu.html', { waitUntil: 'domcontentloaded' })
   await up(page, '#menu-persistent')

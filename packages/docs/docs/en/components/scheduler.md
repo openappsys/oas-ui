@@ -280,7 +280,7 @@ el.downloadIcs('my.ics', { timeMode: 'utc', timezone: 'Asia/Shanghai' })
 
 - Events without `start` export as all-day events (`DTSTART/DTEND;VALUE=DATE`, end = next day; `endDate` supports multi-day all-day events).
 - `timeMode`: `floating` (default, local wall time) / `utc` (converted with `timezone`, `Z` suffix) / `tzid` (`TZID` plus a fixed-offset `VTIMEZONE`; use `utc` for DST-accurate conversion).
-- `repeat` maps to `RRULE:FREQ/INTERVAL/COUNT/BYDAY/BYMONTH/BYMONTHDAY/BYSETPOS/UNTIL` (`until` is inclusive); `exDates` emits `EXDATE;VALUE=DATE`; `remind` emits `VALARM` and `color` emits `X-OAS-COLOR`.
+- `repeat` maps to `RRULE:FREQ/INTERVAL/COUNT/BYDAY/BYMONTH/BYMONTHDAY/BYSETPOS/UNTIL` (`until` is inclusive, `BYDAY` is emitted in ascending 0-6 order); each `exDates` entry emits an `EXDATE` with the same value type as `DTSTART`: `EXDATE;VALUE=DATE:YYYYMMDD` for all-day events and `EXDATE:YYYYMMDDTHHmmss` for timed events (with `Z` in `utc` mode and `TZID` in `tzid` mode); `remind` emits `VALARM` and `color` emits `X-OAS-COLOR`.
 - `eventsToIcs(events, { rangeStart, rangeEnd })` exports only events intersecting the inclusive range; `el.exportIcs(options)` / `el.downloadIcs(filename, options)` pass the same fields through.
 - Text is RFC 5545 escaped; output uses CRLF and 75-byte folding; invalid-date events are skipped. The `now` option fixes `DTSTAMP`.
 

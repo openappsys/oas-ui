@@ -1,5 +1,6 @@
 import { OASElement } from '@oas-ui/core'
 import { resolveDirection } from '../../shared/direction.js'
+import { lockBodyScroll, pushEscapeLayer } from '../../shared/overlay-stack.js'
 import { computePosition, getViewport, type Placement } from '../../overlay/floating/index.js'
 
 /** 弹层方位：12 向 + center（无目标/对话框模式居中） */
@@ -584,6 +585,17 @@ export class OASTour extends OASElement {
   private advanceTarget: HTMLElement | null = null
   /** document keydown 监听是否已绑定（断开重连由 update 幂等重挂，参照 back-top 的 updateScrollTarget 守卫模式） */
   private keydownBound = false
+  /** 共享滚动锁释放句柄（lock-scroll；幂等） */
+  private releaseScrollLock: (() => void) | null = null
+  /** 共享 Esc 层释放句柄（open 期间压栈） */
+  private releaseEscapeLayer: (() => void) | null = null
+
+  override disconnectedCallback(): void {
+    // 基类 onCleanup 一次性执行后会清空；断开时主动释放滚动锁与 Esc 层，重连后由 open 边沿重获
+    this.restoreScrollLock()
+    this.syncEscapeLayer(false)
+    super.disconnectedCallback()
+  }
 
   /** Vue/React 会把 steps 识别为实例属性走 property 赋值；字符串反射到 attribute 统一解析链路 */
   get steps(): TourStep[] | string {
@@ -687,6 +699,7 @@ export class OASTour extends OASElement {
       this.unbindFollow()
       this.destroyPortal()
       this.restoreScrollLock()
+      this.syncEscapeLayer(false)
       this.unbindAdvance()
       this.unbindKeydown()
     })
@@ -709,9 +722,8 @@ export class OASTour extends OASElement {
 
   private onKey = (e: KeyboardEvent): void => {
     if (!this.hasAttr('open')) return
-    if (e.key === 'Escape') {
-      if (this.getAttr('close-on-press-escape', 'true') !== 'false') this.cancel('esc')
-    } else if (e.key === 'ArrowRight' && this.getAttr('keyboard', 'true') !== 'false') {
+    // Esc 由共享层栈接管（LIFO，避免一次 Esc 连带关闭 modal/drawer 等更上层）
+    if (e.key === 'ArrowRight' && this.getAttr('keyboard', 'true') !== 'false') {
       e.preventDefault()
       this.next()
     } else if (e.key === 'ArrowLeft' && this.getAttr('keyboard', 'true') !== 'false') {
@@ -837,15 +849,38 @@ export class OASTour extends OASElement {
     return true
   }
 
-  /** 锁滚动：打开时锁 body 滚动，关闭恢复原值 */
+  /** 锁滚动：打开时走共享计数锁（与 modal/drawer 共存），关闭/清理释放并恢复宿主原值 */
   private applyScrollLock(open: boolean): void {
-    if (!this.hasAttr('lock-scroll')) return
-    if (open) document.body.style.overflow = 'hidden'
-    else document.body.style.overflow = ''
+    const want = open && this.hasAttr('lock-scroll')
+    if (want) {
+      if (!this.releaseScrollLock) this.releaseScrollLock = lockBodyScroll()
+    } else {
+      this.releaseScrollLock?.()
+      this.releaseScrollLock = null
+    }
   }
   private restoreScrollLock(): void {
-    if (this.hasAttr('lock-scroll') && this.hasAttr('open')) return
-    document.body.style.overflow = ''
+    this.releaseScrollLock?.()
+    this.releaseScrollLock = null
+  }
+
+  /** Esc 层压栈/退栈：open 期间才参与共享 LIFO 栈（关闭向下层让位） */
+  private syncEscapeLayer(open: boolean): void {
+    if (open) {
+      if (this.releaseEscapeLayer) return
+      this.releaseEscapeLayer = pushEscapeLayer({
+        name: 'tour',
+        active: () => this.hasAttr('open'),
+        handle: () => {
+          if (this.getAttr('close-on-press-escape', 'true') === 'false') return true
+          this.cancel('esc')
+          return true
+        },
+      })
+      return
+    }
+    this.releaseEscapeLayer?.()
+    this.releaseEscapeLayer = null
   }
 
   /** append-to 挂载点：overlay + hints 移入目标容器 portal host（样式注入，作用域保真） */
@@ -1561,6 +1596,7 @@ export class OASTour extends OASElement {
     // hints 信标常驻渲染（与 open 无关）
     this.renderHints()
     this.applyScrollLock(open)
+    this.syncEscapeLayer(open)
     this.syncClose()
     this.syncDontShow()
     // 箭头显隐：arrow 布尔属性默认 true（显示），arrow="false" 隐藏（元素与 ::part(arrow) 保留）

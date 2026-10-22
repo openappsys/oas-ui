@@ -233,7 +233,7 @@ describe('OASSelect', () => {
     searchInput.value = '不存在的'
     searchInput.dispatchEvent(new Event('input', { bubbles: true }))
     expect(el.shadowRoot!.querySelectorAll('[role="option"]').length).toBe(3)
-    expect(inputDetail).toEqual({ value: '不存在的' })
+    expect(inputDetail).toEqual({ value: '不存在的', source: 'search' })
   })
 
   it('max-tag-count：多选超过数量折叠为 +N', () => {
@@ -2094,6 +2094,45 @@ describe('OASSelect 长尾组（能力缺口 P2）', () => {
     ;(el.shadowRoot!.querySelector('.create-option') as HTMLElement).click()
     expect(events).toEqual([{ value: '榴莲', label: '榴莲' }])
     expect(el.getAttribute('value')).toBe('榴莲')
+  })
+})
+
+// ---- I4：清空按钮键盘可达（Tab 序 + 可读名称 + Enter/Space 清空） ----
+
+describe('OASSelect 清空按钮键盘可达（I4）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('clear-btn 进入 Tab 序（tabIndex 0）、有可读名称、Enter 清空', () => {
+    const el = mount({ clearable: '', value: 'apple' })
+    const clearBtn = el.shadowRoot!.querySelector<HTMLElement>('[part="clear"]')!
+    expect(clearBtn.getAttribute('tabindex')).toBe('0')
+    expect(clearBtn.tabIndex).toBe(0)
+    expect((clearBtn.getAttribute('aria-label') ?? '').length).toBeGreaterThan(0)
+    clearBtn.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }))
+    expect(el.getAttribute('value')).toBeNull()
+    expect(el.shadowRoot!.querySelector<HTMLElement>('[part="clear"]')!.hidden).toBe(true)
+    expect(el.shadowRoot!.activeElement, '清空后焦点交还 trigger').toBe(trigger(el))
+  })
+
+  it('clear-btn Space 同样清空，且不触发触发器展开', () => {
+    const el = mount({ clearable: '', value: 'banana' })
+    const clearBtn = el.shadowRoot!.querySelector<HTMLElement>('[part="clear"]')!
+    clearBtn.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', bubbles: true, cancelable: true }))
+    expect(el.getAttribute('value')).toBeNull()
+    expect(trigger(el).getAttribute('aria-expanded'), 'Space 不应冒泡成展开').toBe('false')
+  })
+
+  it('面板展开时清空按钮仍在 Tab 序（既有面板键盘流不变）', () => {
+    const el = mount({ clearable: '', value: 'apple', searchable: '' })
+    open(el)
+    expect(trigger(el).getAttribute('aria-expanded')).toBe('true')
+    expect(el.shadowRoot!.querySelector<HTMLElement>('[part="clear"]')!.tabIndex).toBe(0)
   })
 })
 

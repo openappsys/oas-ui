@@ -3817,6 +3817,30 @@ describe('OASResource 可读性能力（opt-in，默认全关）', () => {
     expect(legend?.textContent).toContain('低')
   })
 
+  it('heatmap：容量 0（holiday/workdays/override）且 load>0 → over 优先，与柱体 / oas-overload 同口径', () => {
+    const cases: Array<[string, Record<string, unknown>]> = [
+      ['holidays', { id: 'r1', name: '资源甲', capacity: 1, holidays: ['2026-03-02'] }],
+      ['capacityOverrides', { id: 'r1', name: '资源甲', capacity: 1, capacityOverrides: { '2026-03-02': 0 } }],
+      ['workdays', { id: 'r1', name: '资源甲', capacity: 1, workdays: [0, 2, 3, 4, 5, 6] }],
+    ]
+    for (const [label, resource] of cases) {
+      const el = mount({
+        resources: JSON.stringify([resource]),
+        tasks: JSON.stringify([{ id: 'a', name: '任务A', start: '2026-03-02', end: '2026-03-02', resources: ['r1'] }]),
+        heatmap: '',
+      })
+      const cell = shadowOf(el).querySelector<HTMLElement>('.load[data-resource-id="r1"] .heat-cell')!
+      expect(cell.classList.contains('over'), `${label}：容量 0 + 负载 >0 应计为超载（旧实现只标 unavailable）`).toBe(
+        true,
+      )
+      expect(cell.classList.contains('unavailable'), `${label}：保留不可用底纹标记`).toBe(true)
+    }
+    const el = mount({ resources: JSON.stringify([cases[0]![1]]), tasks: '[]', heatmap: '' })
+    // 同特异性下顺序决定视觉：.heat-cell.over 必须写在 .heat-cell.unavailable 之后，否则红色被透明底覆盖
+    const css = shadowOf(el).querySelector('style')!.textContent ?? ''
+    expect(css.indexOf('.heat-cell.over')).toBeGreaterThan(css.indexOf('.heat-cell.unavailable'))
+  })
+
   it('①-b 三开关各自开启即渲染、互不连带', () => {
     const lv = mount({ resources: RES_OVER, tasks: TASKS_OVER, 'show-load-values': '' })
     expect(shadowOf(lv).querySelectorAll('.load-value').length, '4 个 load>0 的柱都有数字').toBe(4)

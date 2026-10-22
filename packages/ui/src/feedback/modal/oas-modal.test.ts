@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { OASModal } from './index.js'
+import { OASDrawer } from '../drawer/index.js'
 import { iconRegistry } from '@oas-ui/icons/registry'
 import { t } from '@oas-ui/i18n'
 
@@ -1675,5 +1676,71 @@ describe('OASModal media 插槽与 sticky-footer（三期）', () => {
     expect(el.hasAttribute('sticky-footer')).toBe(true)
     el.removeAttribute('sticky-footer')
     expect(el.hasAttribute('sticky-footer')).toBe(false)
+  })
+})
+
+// ===== 跨组件浮层栈（modal × drawer 共享 Esc 层栈 + 统一 body 滚动锁） =====
+
+describe('浮层栈：modal × drawer 交叉', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    document.body.removeAttribute('style')
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+    document.body.removeAttribute('style')
+  })
+
+  function mountDrawer(attrs: Record<string, string> = {}): OASDrawer {
+    const el = new OASDrawer()
+    for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v)
+    document.body.appendChild(el)
+    return el
+  }
+
+  function esc(): void {
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', cancelable: true }))
+  }
+
+  it('同开时一次 Esc 只关一层（modal 层级高于 drawer，先关 modal）', () => {
+    const modal = mount({ visible: '' })
+    const drawer = mountDrawer({ visible: '' })
+    esc()
+    expect(modal.hasAttribute('visible'), 'modal 与抽屉固定层级：modal 在上，Esc 先关 modal').toBe(false)
+    expect(drawer.hasAttribute('visible')).toBe(true)
+    esc()
+    expect(drawer.hasAttribute('visible')).toBe(false)
+  })
+
+  it('modal 后开时 Esc 只关 modal，不穿透关闭下层抽屉', () => {
+    const drawer = mountDrawer({ visible: '' })
+    const modal = mount({ visible: '' })
+    esc()
+    expect(modal.hasAttribute('visible')).toBe(false)
+    expect(drawer.hasAttribute('visible'), 'modal 在上时 Esc 不穿透').toBe(true)
+    esc()
+    expect(drawer.hasAttribute('visible')).toBe(false)
+  })
+
+  it('交叉滚动锁不再互抵消：先关 modal 后 body 仍锁定，drawer 关闭才解锁', () => {
+    const modal = mount({ visible: '' })
+    const drawer = mountDrawer({ visible: '' })
+    expect(document.body.style.overflow).toBe('hidden')
+    modal.removeAttribute('visible')
+    expect(document.body.style.overflow, 'drawer 仍打开时不得解锁').toBe('hidden')
+    drawer.removeAttribute('visible')
+    drawer.shadowRoot!.querySelector('[part="panel"]')!.dispatchEvent(new Event('transitionend'))
+    expect(document.body.style.overflow).toBe('')
+  })
+
+  it('交叉滚动锁恢复宿主 inline 原值（不被置空）', () => {
+    document.body.style.overflow = 'scroll'
+    const modal = mount({ visible: '' })
+    const drawer = mountDrawer({ visible: '' })
+    modal.removeAttribute('visible')
+    drawer.removeAttribute('visible')
+    drawer.shadowRoot!.querySelector('[part="panel"]')!.dispatchEvent(new Event('transitionend'))
+    expect(document.body.style.overflow).toBe('scroll')
   })
 })

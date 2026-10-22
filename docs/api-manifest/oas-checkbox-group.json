@@ -69,12 +69,16 @@
       "name": "oas-blur"
     },
     {
-      "name": "oas-exceed-limit",
-      "detail": "{ value, max }"
-    },
-    {
       "name": "oas-change",
       "detail": "{ value: next } | { value }"
+    },
+    {
+      "name": "oas-limit-blocked",
+      "detail": "{ value, limit, min: this.minLimit() } | { value, limit, max }"
+    },
+    {
+      "name": "oas-exceed-limit",
+      "detail": "{ value, max }"
     }
   ],
   "slots": [

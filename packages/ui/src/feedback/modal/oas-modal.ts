@@ -3,6 +3,7 @@ import { checkCirclePath } from '@oas-ui/icons/icons/check-circle'
 import { errorPath } from '@oas-ui/icons/icons/error'
 import { infoPath } from '@oas-ui/icons/icons/info'
 import { warningPath } from '@oas-ui/icons/icons/warning'
+import { lockBodyScroll, pushEscapeLayer } from '../../shared/overlay-stack.js'
 import { registeredModalCapabilities, onModalCapabilityRegistered } from './oas-modal-capability.js'
 
 export type ModalVariant = 'info' | 'success' | 'warning' | 'error'
@@ -43,42 +44,6 @@ const SHAKE_MS = 360
  */
 const MAXIMIZE_ICON = `<svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true" focusable="false"><rect x="2.75" y="2.75" width="10.5" height="10.5" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>`
 const RESTORE_ICON = `<svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true" focusable="false"><rect x="2.75" y="5.75" width="7.5" height="7.5" rx="1" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M5.5 5.5v-1a2 2 0 0 1 2-2h4.75a2 2 0 0 1 2 2v4.75a2 2 0 0 1-2 2h-1" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>`
-
-/**
- * body 滚动锁（P1，跨实例深度计数，最后一个解锁才恢复原值）。
- * 锁定时 overflow hidden + padding-right 补偿滚动条宽度（防止内容水平跳动）。
- */
-let scrollLockDepth = 0
-let scrollLockOriginalOverflow = ''
-let scrollLockOriginalPadding = ''
-
-/** 滚动条宽度：视口宽 - 文档宽（桌面端约 8-17px，移动端 0） */
-function getScrollbarWidth(): number {
-  if (typeof window === 'undefined' || typeof document.documentElement === 'undefined') return 0
-  const w = window.innerWidth - document.documentElement.clientWidth
-  return w > 0 ? w : 0
-}
-
-function lockBodyScroll(): void {
-  if (scrollLockDepth === 0) {
-    scrollLockOriginalOverflow = document.body.style.overflow
-    scrollLockOriginalPadding = document.body.style.paddingRight
-    document.body.style.overflow = 'hidden'
-    const gap = getScrollbarWidth()
-    document.body.style.paddingRight =
-      gap > 0 ? `calc(${scrollLockOriginalPadding || '0px'} + ${gap}px)` : scrollLockOriginalPadding
-  }
-  scrollLockDepth++
-}
-
-function unlockBodyScroll(): void {
-  if (scrollLockDepth <= 0) return
-  scrollLockDepth--
-  if (scrollLockDepth === 0) {
-    document.body.style.overflow = scrollLockOriginalOverflow
-    document.body.style.paddingRight = scrollLockOriginalPadding
-  }
-}
 
 const STYLE = `
 /* 宿主常驻渲染：显隐由 mask/dialog 的 visibility + opacity 驱动（P3：开合动画需要
@@ -510,7 +475,12 @@ export class OASModal extends OASElement {
   }
 
   override disconnectedCallback(): void {
-    if (this.wasOpen && !this.hasAttr('no-scroll-lock')) unlockBodyScroll()
+    this.releaseScrollLock?.()
+    this.releaseScrollLock = null
+    this.releaseEscapeLayer?.()
+    this.releaseEscapeLayer = null
+    // 打开态断开：重置边沿标记，重连后 update() 会重新走 startOpen（重获滚动锁与 Esc 层）
+    this.isOpen = false
     this.unsubCaps?.()
     this.unsubCaps = undefined
     super.disconnectedCallback()
@@ -533,6 +503,10 @@ export class OASModal extends OASElement {
   }
 
   private previousFocus: HTMLElement | null = null
+  /** 共享滚动锁释放句柄（打开时获取、关闭/断开时释放；幂等） */
+  private releaseScrollLock: (() => void) | null = null
+  /** 共享 Esc 层释放句柄（打开时压栈、关闭/断开时退栈） */
+  private releaseEscapeLayer: (() => void) | null = null
   /** 状态机：isOpen = visible 属性在场；wasOpen = 曾打开过（closing 期间 / 断开兜底解锁判定） */
   private isOpen = false
   private wasOpen = false
@@ -709,14 +683,6 @@ export class OASModal extends OASElement {
     this.onCleanup(() => window.removeEventListener('resize', onResize))
 
     const onKey = (e: KeyboardEvent): void => {
-      if (e.key === 'Escape') {
-        // Esc 开关（P4）+ 仅最上层响应（多实例嵌套逐层关闭）
-        if (!this.hasAttr('visible')) return
-        if (this.hasAttr('no-esc-close')) return
-        if (!this.isTopmost()) return
-        this.close('esc')
-        return
-      }
       if (e.key === 'Enter') {
         // P21 confirm-on-enter：显式开启 + 无文本输入控件 + 焦点不在原生按钮上时回车=确定
         if (this.shouldConfirmOnEnter()) {
@@ -1008,7 +974,20 @@ export class OASModal extends OASElement {
   private startOpen(): void {
     this.isOpen = true
     this.wasOpen = true
-    if (!this.hasAttr('no-scroll-lock')) lockBodyScroll()
+    if (!this.hasAttr('no-scroll-lock') && !this.releaseScrollLock) this.releaseScrollLock = lockBodyScroll()
+    if (!this.releaseEscapeLayer) {
+      this.releaseEscapeLayer = pushEscapeLayer({
+        name: 'modal',
+        // 与 Tab 陷阱同口径：只有 isTopmost（DOM 序最后可见）的 modal 才响应 Esc
+        active: () => this.isTopmost(),
+        // 层栈顶部即当前 modal：no-esc-close 要消费（不能穿透关掉下层），只是不关闭自己
+        handle: () => {
+          if (this.hasAttr('no-esc-close')) return true
+          this.close('esc')
+          return true
+        },
+      })
+    }
     if (!this.hasAttr('no-mask')) {
       // P8 非模态不抢焦点（对齐 HTML dialog.show()，交互留在页面其余部分）
       this.previousFocus = document.activeElement as HTMLElement
@@ -1047,7 +1026,10 @@ export class OASModal extends OASElement {
     // 关闭事件：detail 全量携带来源与动作（P12/A32）；非确定路径保留 oas-cancel 旧语义
     this.emit('close', { source, action: CLOSE_ACTION[source] })
     if (source !== 'ok') this.emit('cancel')
-    if (!this.hasAttr('no-scroll-lock')) unlockBodyScroll()
+    this.releaseScrollLock?.()
+    this.releaseScrollLock = null
+    this.releaseEscapeLayer?.()
+    this.releaseEscapeLayer = null
     this.emitOnAnimEnd(
       () => this.onClosed(),
       () => !this.isOpen,

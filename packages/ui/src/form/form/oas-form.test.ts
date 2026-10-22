@@ -10,6 +10,10 @@ import '../checkbox/index.js'
 import '../cascader/index.js'
 import '../radio/index.js'
 import '../picker/index.js'
+import '../dynamic-tags/index.js'
+import '../select/index.js'
+import '../combobox/index.js'
+import '../auto-complete/index.js'
 function mount(): OASForm {
   const el = new OASForm()
   el.setAttribute(
@@ -93,7 +97,7 @@ describe('OASForm', () => {
     const el = new OASForm()
     el.innerHTML = `
       <oas-switch name="enabled" checked></oas-switch>
-      <oas-transfer name="sel" model-value='["a","b"]'></oas-transfer>
+      <oas-transfer name="sel" value='["a","b"]'></oas-transfer>
       <oas-date-picker name="birth" value="2026-08-27"></oas-date-picker>
       <oas-slider name="age" value="25"></oas-slider>
       <oas-rate name="score" value="4"></oas-rate>
@@ -977,15 +981,15 @@ describe('OASForm initial-values 与 reset', () => {
   }
 
   const FIELDS =
-    '<oas-input name="name" value=""></oas-input><oas-switch name="enabled"></oas-switch><oas-transfer name="tags" model-value=""></oas-transfer>'
+    '<oas-input name="name" value=""></oas-input><oas-switch name="enabled"></oas-switch><oas-transfer name="tags" value=""></oas-transfer>'
 
-  it('initial-values 属性挂载后写入对应字段（input value / switch checked / transfer model-value）', () => {
+  it('initial-values 属性挂载后写入对应字段（input value / switch checked / transfer value）', () => {
     const el = mountForm(FIELDS, {
       'initial-values': JSON.stringify({ name: '张三', enabled: true, tags: ['a', 'b'] }),
     })
     expect(el.querySelector('oas-input')!.getAttribute('value')).toBe('张三')
     expect(el.querySelector('oas-switch')!.hasAttribute('checked')).toBe(true)
-    expect(el.querySelector('oas-transfer')!.getAttribute('model-value')).toBe('["a","b"]')
+    expect(el.querySelector('oas-transfer')!.getAttribute('value')).toBe('["a","b"]')
   })
 
   it('initialValues property 通道生效且优先于 attribute', () => {
@@ -1878,5 +1882,197 @@ describe('OASForm.validate()（公开校验入口，供分步容器等外部门�
   it('无 rules 的空表单返回 true（默认放行，供无校验步骤复用）', async () => {
     const el = mountValidate('<oas-input name="free" value=""></oas-input>')
     await expect(el.validate()).resolves.toBe(true)
+  })
+})
+
+// ---- 复合控件真实值通道：transfer=value / dynamic-tags=model-value（C1/C2） ----
+
+const TRANSFER_DATA = '[{"key":"a","label":"苹果"},{"key":"b","label":"香蕉"}]'
+
+const OPTIONS = JSON.stringify([
+  { label: '苹果', value: 'apple' },
+  { label: '香蕉', value: 'banana' },
+])
+
+function mountChannelForm(fields: string, attrs: Record<string, string> = {}): OASForm {
+  const el = new OASForm()
+  for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v)
+  el.innerHTML = fields
+  document.body.appendChild(el)
+  return el
+}
+
+function submittedValues(el: OASForm): Record<string, string> {
+  let detail: { values: Record<string, string> } | null = null
+  el.addEventListener('oas-submit', (e) => (detail = (e as CustomEvent).detail))
+  el.submit()
+  return detail!.values
+}
+
+describe('OASForm 复合控件真实值通道（C1 transfer / C2 dynamic-tags）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('C1：transfer 读 value 通道（model-value 不参与），声明式初值进提交', () => {
+    const el = mountChannelForm(
+      `<oas-transfer name="tags" data='${TRANSFER_DATA}' value='["a"]' model-value='["b"]'></oas-transfer>`,
+    )
+    expect(el.getValues()).toEqual({ tags: '["a"]' })
+    expect(submittedValues(el)).toEqual({ tags: '["a"]' })
+  })
+
+  it('C1：initial-values 写入 transfer 的 value 属性（不写 model-value）', () => {
+    const el = mountChannelForm(`<oas-transfer name="tags" data='${TRANSFER_DATA}'></oas-transfer>`, {
+      'initial-values': JSON.stringify({ tags: ['a', 'b'] }),
+    })
+    const transfer = el.querySelector('oas-transfer')!
+    expect(transfer.getAttribute('value')).toBe('["a","b"]')
+    expect(transfer.hasAttribute('model-value')).toBe(false)
+    expect(el.getValues()).toEqual({ tags: '["a","b"]' })
+  })
+
+  it('C1：reset 把 transfer 恢复到 value 通道初始值', () => {
+    const el = mountChannelForm(`<oas-transfer name="tags" data='${TRANSFER_DATA}' value='["a"]'></oas-transfer>`)
+    const transfer = el.querySelector('oas-transfer')!
+    transfer.setAttribute('value', '["b"]')
+    el.reset()
+    expect(transfer.getAttribute('value')).toBe('["a"]')
+    expect(el.getValues()).toEqual({ tags: '["a"]' })
+  })
+
+  it('C1：transfer 真实穿梭交互 → oas-values-change + 提交读到新值', () => {
+    const el = mountChannelForm(`<oas-transfer name="tags" data='${TRANSFER_DATA}'></oas-transfer>`)
+    const transfer = el.querySelector('oas-transfer')!
+    const changes: Array<{ name: string; value: string; values: Record<string, string> }> = []
+    el.addEventListener('oas-values-change', (e) => changes.push((e as CustomEvent).detail))
+    ;(transfer.shadowRoot!.querySelector('.listbox.left .option') as HTMLElement).click()
+    ;(transfer.shadowRoot!.querySelector('.to-right') as HTMLButtonElement).click()
+    expect(transfer.getAttribute('value'), '交互后 value 属性同步').toBe('["a"]')
+    expect(changes).toEqual([{ name: 'tags', value: '["a"]', values: { tags: '["a"]' } }])
+    expect(submittedValues(el)).toEqual({ tags: '["a"]' })
+  })
+
+  it('C2：dynamic-tags 读 model-value 通道（value 属性不参与），声明式初值进提交', () => {
+    const el = mountChannelForm(`<oas-dynamic-tags name="tags" model-value='["a"]' value='["b"]'></oas-dynamic-tags>`)
+    expect(el.getValues()).toEqual({ tags: '["a"]' })
+    expect(submittedValues(el)).toEqual({ tags: '["a"]' })
+  })
+
+  it('C2：initial-values 写入 dynamic-tags 的 model-value 属性', () => {
+    const el = mountChannelForm('<oas-dynamic-tags name="tags"></oas-dynamic-tags>', {
+      'initial-values': JSON.stringify({ tags: ['vue', 'svelte'] }),
+    })
+    const tags = el.querySelector('oas-dynamic-tags')!
+    expect(tags.getAttribute('model-value')).toBe('["vue","svelte"]')
+    expect(tags.hasAttribute('value')).toBe(false)
+    expect(el.getValues()).toEqual({ tags: '["vue","svelte"]' })
+  })
+
+  it('C2：reset 把 dynamic-tags 恢复到 model-value 初始值', () => {
+    const el = mountChannelForm('<oas-dynamic-tags name="tags" model-value=\'["vue"]\'></oas-dynamic-tags>')
+    const tags = el.querySelector('oas-dynamic-tags')!
+    tags.setAttribute('model-value', '["react"]')
+    el.reset()
+    expect(tags.getAttribute('model-value')).toBe('["vue"]')
+    expect(el.getValues()).toEqual({ tags: '["vue"]' })
+  })
+
+  it('C2：dynamic-tags 真实输入 Enter 建标签 → oas-values-change + 提交读到新值', () => {
+    const el = mountChannelForm('<oas-dynamic-tags name="tags" model-value="[]"></oas-dynamic-tags>')
+    const tags = el.querySelector('oas-dynamic-tags')!
+    const changes: Array<{ name: string; value: string; values: Record<string, string> }> = []
+    el.addEventListener('oas-values-change', (e) => changes.push((e as CustomEvent).detail))
+    const input = tags.shadowRoot!.querySelector('input')!
+    input.value = 'svelte'
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }))
+    expect(tags.getAttribute('model-value'), '交互回写 model-value 通道').toBe('["svelte"]')
+    expect(changes).toEqual([{ name: 'tags', value: '["svelte"]', values: { tags: '["svelte"]' } }])
+    expect(submittedValues(el)).toEqual({ tags: '["svelte"]' })
+  })
+})
+
+describe('OASForm 搜索词 oas-input 不回写字段值（C3）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('select remote：搜索输入只派发 source=search 的 oas-input，不覆盖已选 value、不派 oas-values-change', () => {
+    const el = mountChannelForm(
+      `<oas-select name="fruit" remote searchable options='${OPTIONS}' value="apple"></oas-select>`,
+    )
+    const select = el.querySelector('oas-select')!
+    let detail: Record<string, unknown> | null = null
+    select.addEventListener('oas-input', (e) => (detail = (e as CustomEvent).detail))
+    let changes = 0
+    el.addEventListener('oas-values-change', () => changes++)
+    ;(select.shadowRoot!.querySelector('button[part="trigger"]') as HTMLElement).click()
+    const search = select.shadowRoot!.querySelector<HTMLInputElement>('[part="search-input"]')!
+    search.value = '香'
+    search.dispatchEvent(new Event('input', { bubbles: true }))
+    expect(detail, 'oas-input detail 带搜索词来源标记').toEqual({ value: '香', source: 'search' })
+    expect(select.getAttribute('value'), '已选值不得被搜索词覆盖').toBe('apple')
+    expect(changes, '搜索词不是值变化').toBe(0)
+    expect(el.getValues()).toEqual({ fruit: 'apple' })
+  })
+
+  it('combobox：过滤输入只派发 source=search 的 oas-input，不覆盖已选 value', () => {
+    const el = mountChannelForm(`<oas-combobox name="fruit" options='${OPTIONS}' value="apple"></oas-combobox>`)
+    const combo = el.querySelector('oas-combobox')!
+    let detail: Record<string, unknown> | null = null
+    combo.addEventListener('oas-input', (e) => (detail = (e as CustomEvent).detail))
+    let changes = 0
+    el.addEventListener('oas-values-change', () => changes++)
+    const input = combo.shadowRoot!.querySelector<HTMLInputElement>('[part="input"]')!
+    input.value = '香'
+    input.dispatchEvent(new Event('input', { bubbles: true }))
+    expect(detail).toEqual({ value: '香', source: 'search' })
+    expect(combo.getAttribute('value'), '已选值不得被过滤词覆盖').toBe('apple')
+    expect(changes).toBe(0)
+    expect(el.getValues()).toEqual({ fruit: 'apple' })
+  })
+
+  it('auto-complete：自由文本即字段值（不带 source 标记，输入回写不丢提交）', () => {
+    const el = mountChannelForm(`<oas-auto-complete name="fruit" options='${OPTIONS}'></oas-auto-complete>`)
+    const ac = el.querySelector('oas-auto-complete')!
+    let detail: Record<string, unknown> | null = null
+    ac.addEventListener('oas-input', (e) => (detail = (e as CustomEvent).detail))
+    let changes = 0
+    el.addEventListener('oas-values-change', () => changes++)
+    const input = ac.shadowRoot!.querySelector<HTMLInputElement>('[part="input"]')!
+    input.value = '香'
+    input.dispatchEvent(new Event('input', { bubbles: true }))
+    expect(detail, 'auto-complete 文本即值，不标搜索来源').toEqual({ value: '香' })
+    expect(ac.getAttribute('value')).toBe('香')
+    expect(changes).toBe(1)
+    expect(el.getValues()).toEqual({ fruit: '香' })
+  })
+
+  it('combobox：无已选值时草稿文本即表单值（submit/getValues 不丢草稿）', () => {
+    const el = mountChannelForm(`<oas-combobox name="fruit" options='${OPTIONS}'></oas-combobox>`)
+    const combo = el.querySelector('oas-combobox')!
+    const input = combo.shadowRoot!.querySelector<HTMLInputElement>('[part="input"]')!
+    input.value = '香'
+    input.dispatchEvent(new Event('input', { bubbles: true }))
+    expect(combo.getAttribute('value'), '草稿不写 value 属性（由 value property 承载）').toBe(null)
+    expect(el.getValues()).toEqual({ fruit: '香' })
+  })
+
+  it('真实文本输入（无 source 标记）照旧回写 value 并派发 oas-values-change', () => {
+    const el = mountChannelForm('<oas-input name="q" value=""></oas-input>')
+    const input = el.querySelector('oas-input')!
+    let detail: { name: string; value: string } | null = null
+    el.addEventListener('oas-values-change', (e) => (detail = (e as CustomEvent).detail))
+    const inner = input.shadowRoot!.querySelector('input')!
+    inner.value = 'abc'
+    inner.dispatchEvent(new Event('input', { bubbles: true }))
+    expect(input.getAttribute('value')).toBe('abc')
+    expect(detail).toEqual({ name: 'q', value: 'abc', values: { q: 'abc' } })
   })
 })

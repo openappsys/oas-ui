@@ -97,4 +97,15 @@ describe('oas-prompt-input', () => {
     expect(send.disabled).toBe(true)
     expect(el.submit()).toBe(false)
   })
+
+  it('焦点在文本域时不回写缓存值（activeElement 判定必须穿透 shadow）', () => {
+    const el = mount()
+    const textarea = el.shadowRoot!.querySelector<HTMLTextAreaElement>('[part="textarea"]')!
+    textarea.focus()
+    expect(el.shadowRoot!.activeElement).toBe(textarea)
+    // 用户直接写 DOM 值但未派发 input（等价于输入法组合/脚本写入）：update 不应抹掉
+    textarea.value = '正在输入'
+    el.setAttribute('placeholder', '新占位')
+    expect(textarea.value, '聚焦中不得被 valueCache 覆盖').toBe('正在输入')
+  })
 })

@@ -8,6 +8,12 @@
 
 - **`oas-chart` 折线/面积/混排的 `circle.dot` 应用 `options.colors`**：此前只改 path/stroke，宿主自定义色时线与数据点异色；现在同一系列线、点同色。
 - **存量裸 `href` 安全收敛**：`oas-float-button`（主钮与 actions）、`oas-attachment`、`oas-tabs`、`oas-notice-bar`、`oas-card`、`oas-list-item`、`oas-breadcrumb`、`oas-anchor`、`oas-pagination` 统一走 `safeUrl`；仅放行 http/https/mailto/tel、blob 对象 URL 与相对地址，其余协议一律退化为非链接/按钮形态。
+- **`oas-form` 值通道对账**：`oas-transfer` 归位 `value` 通道、`oas-dynamic-tags` 归位 `model-value` 通道（修复提交丢值/initial-values 不落视觉/reset 失效）；`oas-select`（remote）与 `oas-combobox` 的搜索输入事件带 `source: 'search'`，form 不再把搜索词当字段值回写；`oas-combobox` 无已选值时草稿文本经 `value` property 正确入表单；`oas-checkbox-group` 的 min/max 拦截统一走组级 `oas-limit-blocked`（detail 带 `limit` 方向），max 场景兼容保留 `oas-exceed-limit`。
+- **夏令时（DST）日历运算**：`oas-gantt` day/week 刻度、范围右界、auto-schedule 工作日/班次吸附与整日工期折算、`oas-scheduler` 翻页/agenda/提醒/下次发生日全部改日历日运算，修复回拨日时间轴错位一天、翻页原地不动、提醒漂移。
+- **`oas-scheduler` 跨日/ICS 修正**：资源视图跨日定时事件首日渲染到 24:00、resource-week 补 `[start-hour,end-hour]` 夹取；ICS 定时跨日事件 `DTEND` 落 `endDate` 当日 `end`，定时事件 `EXDATE` 与 `DTSTART` 值类型一致；weekly `byDay` 的 `COUNT`/本地展开序号一致。
+- **`oas-gantt` 受控回写不清 history**：`tasks` property 语义相同回写（键序无关）不再清空撤销栈。
+- **共享浮层栈**：新增 `overlay-stack`（Esc 后进先出 + 统一计数 body 滚动锁），modal/drawer/tour/dropdown/context-menu/sidebar 接入；多层同开时一次 Esc 只关一层，滚动锁跨组件计数并精确恢复宿主 inline `overflow`；`no-esc-close` 不再穿透到下层。
+- **键盘与可访问性**：`oas-menu` 改 `aria-activedescendant` 读屏模型，水平模式轴向与 RTL 镜像、Space 激活、Home/End、typeahead 假焦点修复；`oas-tabs` hover 不再抢焦点，tab↔tabpanel 语义链补齐；`oas-dropdown` 非 split 触发器补 `aria-haspopup`/`aria-expanded` 且键盘打开后焦点入菜单、Esc 回焦；`oas-context-menu` 打开后焦点入菜单、Esc 回焦触发源；`oas-sidebar` 移动抽屉补 `role=dialog`/`aria-modal` 与打开入焦/关闭回焦/Tab 循环；`oas-menubar` 全局快捷键与 Alt 访问键在可编辑控件内让路；`oas-prompt-input` 焦点守卫穿透 shadow；表单清除钮与 cascader 多选 chip 移除钮进入 Tab 序并支持 Enter/Space。
 
 ## [2.6.3] - 2026-10-22
 

@@ -380,7 +380,9 @@ export class OASCheckbox extends OASFormElement {
       if (this.hasAttr('data-limit-blocked')) {
         e.preventDefault()
         const value = this.getAttr('value', '')
-        this.emit('limit-blocked', { value })
+        // 方向由组下发（data-limit-blocked="min"|"max"）；组外单独使用时按上限语义兜底
+        const limit = this.getAttr('data-limit-blocked') === 'min' ? 'min' : 'max'
+        this.emit('limit-blocked', { value, limit })
       }
     })
     // 焦点事件直通 + focus-visible 镜像（自定义指示器模式下 ring 上移到 .box）

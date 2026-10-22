@@ -710,7 +710,7 @@ export class OASTreeSelect extends OASFormElement {
           aria-haspopup="tree" aria-expanded="false" aria-controls="ts-tree">
           <span class="prefix" part="prefix" hidden></span>
           <span class="value" part="value"></span>
-          <span class="clear-btn" part="clear" role="button" tabindex="-1" hidden aria-label="">
+          <span class="clear-btn" part="clear" role="button" tabindex="0" hidden aria-label="">
             <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">
               <path d="M4 4 L12 12 M12 4 L4 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
             </svg>
@@ -769,6 +769,15 @@ export class OASTreeSelect extends OASFormElement {
     this.shadow.querySelector<HTMLButtonElement>('.clear-btn')?.addEventListener('click', (e) => {
       e.stopPropagation()
       this.clearValue()
+    })
+    // 清空钮在 Tab 序内（role=button 无原生键盘激活），Enter/Space 显式清空；不冒泡成 trigger 展开
+    this.shadow.querySelector<HTMLElement>('.clear-btn')?.addEventListener('keydown', (e: KeyboardEvent) => {
+      if (e.key !== 'Enter' && e.key !== ' ') return
+      e.preventDefault()
+      e.stopPropagation()
+      this.clearValue()
+      // 清空后按钮隐藏（焦点目标消失）——把焦点交还 trigger，键盘用户不丢位置
+      this.triggerEl?.focus()
     })
     // 虚拟滚动：复用 oas-virtual-list 的窗口计算，把每个可见项渲染为节点行
     this.vlist?.addEventListener('oas-item', ((

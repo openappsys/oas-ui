@@ -664,7 +664,7 @@
       "oas-change": "Checked change, `detail: { checked, value }`",
       "oas-focus": "The checkbox gained focus",
       "oas-blur": "The checkbox lost focus",
-      "oas-limit-blocked": "Group count-limit block signal (the group re-dispatches it as oas-exceed-limit; no such block when used standalone)"
+      "oas-limit-blocked": "Count-limit block signal (inside a group the group intercepts and re-dispatches its own oas-limit-blocked; hosts should listen on the group); `detail: { value, limit: 'min' | 'max' }`"
     },
     "slots": {
       "": "Label content (rich text/links allowed)",
@@ -4403,6 +4403,7 @@
     "events": {
       "oas-change": "Group value change, `detail: { value: string[] }` (includes select-all linkage and in-limit changes)",
       "oas-exceed-limit": "Out-of-cap check attempt after max is reached, `detail: { value, max }`",
+      "oas-limit-blocked": "Group-level count-limit block signal (single exit for min/max), `detail: { value, limit: 'min' | 'max', min?, max? }`; on max it also dispatches oas-exceed-limit for compatibility",
       "oas-focus": "Any item inside the group gained focus (moves between items do not misfire)",
       "oas-blur": "Fired when focus leaves the group"
     },
@@ -4597,7 +4598,7 @@
       "show-float": "Show total/free float (boolean, off by default): computed only on a complete dependency graph; the bar gets a total/free float label plus data-total-float/data-free-float in days. Summaries are excluded; windowed mode skips it with a devWarn.",
       "group-by-project": "Group root tasks by project into synthetic summary rows (row id `__oas_project__:<project>`) without mutating the task array; windowed mode requires host-flattened rows",
       "show-variance": "Render a Δ±Nd variance badge after the row name when a baseline exists; exposes data-start-delta/data-end-delta/data-duration-delta/data-progress-delta",
-      "history": "Built-in undo/redo (boolean, off by default): records task commits (max 100), used with undo()/redo()/canUndo/canRedo/clearHistory(); replacing tasks wholesale clears the stack",
+      "history": "Built-in undo/redo (boolean, off by default): records task commits (max 100), used with undo()/redo()/canUndo/canRedo/clearHistory(); replacing tasks wholesale with different content clears the stack (an equivalent write-back does not)",
       "resources": "Per-resource calendars (JSON): [{ id, name?, workdays?, holidays?, shifts? }] used with GanttTask.resources; workdays intersect, holidays union; shifts: [] means no available shift; hour-scale auto-schedule snaps into the first assigned resource with shifts, day scale uses workdays/holidays only",
       "group-by-resource": "Group root tasks into summary lanes by their first resources entry (lane name from resources.name, falling back to id); multi-resource tasks appear only under their first resource; unassigned tasks stay top-level; resource lanes win over group-by-project"
     },

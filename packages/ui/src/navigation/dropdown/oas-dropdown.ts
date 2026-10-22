@@ -4,6 +4,7 @@ import { resolveDirection } from '../../shared/direction.js'
 import { cssVarPx } from '../../shared/css-var.js'
 import { normalizeSizeStrict, ALL_SIZES } from '../../shared/size.js'
 import { measureMaxTextWidth } from '../../shared/measure-text.js'
+import { pushEscapeLayer } from '../../shared/overlay-stack.js'
 import { chevronDownPath } from '@oas-ui/icons/icons/chevron-down'
 import { computePosition, getViewport, type Placement } from '../../overlay/floating/index.js'
 import '../menu/index.js' // 副作用：确保 oas-menu 已注册
@@ -15,8 +16,7 @@ import { devWarn } from '../../shared/dev-warn.js'
 /** 浮层与触发元素的默认间隙（offset 属性缺省值，与 computePosition 的 GAP 一致） */
 const GAP = 8
 /** 箭头中心到面板圆角边的最短距离（箭头默认 12px 菱形） */
-const ARROW_PAD = 8
-/** 开合动画时长（ms）：入场/退场 keyframes 与 JS 退场隐藏延时共用，改这里需同步下方 CSS 的 `animation` 时长 */
+const ARROW_PAD = 8 /** 开合动画时长（ms）：入场/退场 keyframes 与 JS 退场隐藏延时共用，改这里需同步下方 CSS 的 `animation` 时长 */
 const ANIM_MS = 150
 /** hover 触发开/合防抖延时缺省值（ms）：无延时 hover 会闪开闪关 */
 const HOVER_DELAY = 150
@@ -26,6 +26,16 @@ const HOVER_HIDE_DELAY = 100
 type PlacementBase = 'top' | 'bottom' | 'left' | 'right'
 /** 交叉轴对齐后缀：''=居中，start/end=面板边贴合锚点边 */
 type Align = '' | 'start' | 'end'
+
+/** shadow 内当前焦点元素（happy-dom 在无焦点记录时 activeElement 会抛错，包一层兜底） */
+function activeInShadow(root: ShadowRoot | null | undefined): HTMLElement | null {
+  if (!root) return null
+  try {
+    return root.activeElement as HTMLElement | null
+  } catch {
+    return null
+  }
+}
 
 const STYLE = `
 :host {
@@ -279,6 +289,16 @@ export class OASDropdown extends OASElement {
   /** reserve-width 记账：触发器被接管前的 inline min-width（清除时恢复，不吞宿主样式） */
   private appliedReserve = false
   private reservePrevMinWidth: string | null = null
+  /** 共享 Esc 层释放句柄（open 期间压栈） */
+  private releaseEscapeLayer: (() => void) | null = null
+  /** aria-expanded 上次写入值（区分「本组件所有」与「宿主显式」——后者不覆盖） */
+  private ariaExpandedWritten: string | null = null
+  /** 本次打开是否来自 hover 通道（hover 展开不得移动焦点） */
+  private openedByHover = false
+  /** 本次打开是否应把焦点移入菜单（click/键盘/focus 触发；程序化 setAttribute 不移焦） */
+  private focusOnOpen = false
+  /** 程序化归还焦点中：focus 触发模式下回焦会再次触发 focusin，必须抑制重开 */
+  private restoringFocus = false
 
   /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
   private template(): string {
@@ -315,6 +335,7 @@ export class OASDropdown extends OASElement {
         // 触屏降级除外：hover 语义覆盖整个触发区，点按主按钮与箭头一致切换菜单
         this.emit('action', { originalEvent: e })
       } else {
+        this.focusOnOpen = true
         this.toggle()
       }
     }
@@ -330,6 +351,7 @@ export class OASDropdown extends OASElement {
     this.arrowBtn?.addEventListener('click', (e: MouseEvent) => {
       e.stopPropagation()
       if ((!this.hasTrigger('click') && !this.tapToggleOnCoarse()) || this.hasAttr('disabled')) return
+      this.focusOnOpen = true
       this.toggle()
     })
     // hover 触发：悬停宿主（含触发元素）开、移出宿主/浮层面板关；面板入/出也监听，
@@ -347,15 +369,14 @@ export class OASDropdown extends OASElement {
     })
     this.addEventListener('focusin', this.onFocusIn)
     this.addEventListener('focusout', this.onFocusOut)
-    const onKey = (e: KeyboardEvent): void => {
-      if (e.key === 'Escape') this.removeAttribute('open')
-    }
-    document.addEventListener('keydown', onKey)
     this.onCleanup(() => {
       this.unbindCoarseTap?.()
       this.unbindCoarseTap = null
     })
-    this.onCleanup(() => document.removeEventListener('keydown', onKey))
+    this.onCleanup(() => {
+      this.releaseEscapeLayer?.()
+      this.releaseEscapeLayer = null
+    })
     this.onCleanup(() => document.removeEventListener('click', this.handleOutside, true))
     // 滚动/尺寸变化重定位监听（scroll 用 capture 捕获嵌套容器滚动，同 tooltip 的 virtual 跟随）
     this.onCleanup(() => {
@@ -394,6 +415,11 @@ export class OASDropdown extends OASElement {
 
   /** 断开连接时复位滚动跟随标记（监听已由 onCleanup 移除，重连后重新挂载） */
   override disconnectedCallback(): void {
+    // Esc 层在基类 cleanup 一次性执行后不会重挂——断开时主动释放，重连后由 update/open 边沿重压
+    this.releaseEscapeLayer?.()
+    this.releaseEscapeLayer = null
+    // 打开态断开：重置边沿标记，重连后 update() 重新走打开路径（重压 Esc 层与外点/滚动监听）
+    this.wasOpen = false
     super.disconnectedCallback()
     this.scrollFollow = false
   }
@@ -528,7 +554,13 @@ export class OASDropdown extends OASElement {
     if (this.tapToggleOnCoarse()) return // 触屏降级：coarse 下 hover 展开停用（tap 切换接管）
     if (!this.hasTrigger('hover') || this.hasAttr('disabled')) return
     this.clearHoverHide()
-    this.hoverShowTimer = setTimeout(() => this.setOpen(true), this.hoverDelayMs('hover-delay', HOVER_DELAY))
+    this.hoverShowTimer = setTimeout(
+      () => {
+        this.openedByHover = true
+        this.setOpen(true)
+      },
+      this.hoverDelayMs('hover-delay', HOVER_DELAY),
+    )
   }
 
   private onHoverLeave = (e: MouseEvent): void => {
@@ -563,6 +595,7 @@ export class OASDropdown extends OASElement {
   }
 
   private onFocusIn = (): void => {
+    if (this.restoringFocus) return
     if (this.tapToggleOnCoarse()) return // 触屏降级：tap 会 focusin+click 连发，展开统一走 tap 切换
     if (!this.hasTrigger('focus') || this.hasAttr('disabled')) return
     // click+focus 共存：鼠标点击聚焦已由 click 触发接管（随后会 toggle），focusin 只响应键盘/程序化聚焦
@@ -570,6 +603,7 @@ export class OASDropdown extends OASElement {
       this.mouseDown = false
       return
     }
+    this.focusOnOpen = true
     this.setOpen(true)
   }
 
@@ -608,6 +642,66 @@ export class OASDropdown extends OASElement {
     else this.removeAttribute('open')
   }
 
+  /**
+   * 非 split 触发器语义同步：aria-haspopup=menu + aria-expanded 跟随 open。
+   * 宿主显式设置的同名属性不覆盖——aria-expanded 只在「当前值仍是本组件上次写入值」时更新。
+   */
+  private syncTriggerAria(open: boolean): void {
+    const trigger = this.anchor as HTMLElement | null
+    if (!trigger || this.hasAttr('split')) return
+    if (!trigger.hasAttribute('aria-haspopup')) trigger.setAttribute('aria-haspopup', 'menu')
+    const current = trigger.getAttribute('aria-expanded')
+    if (current === null || current === this.ariaExpandedWritten) {
+      const next = String(open)
+      trigger.setAttribute('aria-expanded', next)
+      this.ariaExpandedWritten = next
+    }
+  }
+
+  /** 压入共享 Esc 层：关闭并把焦点还给触发器（若焦点在菜单内），消费后不再穿透下层 */
+  private armEscapeLayer(): void {
+    if (this.releaseEscapeLayer) return
+    this.releaseEscapeLayer = pushEscapeLayer({
+      name: 'dropdown',
+      active: () => this.hasAttr('open'),
+      handle: () => {
+        const menu = this.menuEl as (OASMenu & { shadowRoot?: ShadowRoot | null }) | null
+        const focusInMenu = !!activeInShadow(menu?.shadowRoot) || activeInShadow(this.shadow) === menu
+        this.removeAttribute('open')
+        if (focusInMenu) this.focusTrigger()
+        return true
+      },
+    })
+  }
+
+  /**
+   * 聚焦内层菜单容器：菜单键盘导航监听在 shadow 内的 `.menu` ul 上，只聚焦 oas-menu 宿主
+   * 无法把键盘事件送进其 shadow 树（ArrowDown 不会高亮）。ul 自带 role=menu + tabindex=0。
+   */
+  private focusMenu(): void {
+    const menu = this.menuEl as (OASMenu & { shadowRoot?: ShadowRoot | null }) | null
+    if (!menu) return
+    const list = menu.shadowRoot?.querySelector<HTMLElement>('.menu') ?? null
+    ;(list ?? menu).focus({ preventScroll: true })
+  }
+
+  /** 焦点还给触发器：原生可聚焦元素直接用；自定义元素（oas-button 等）穿透到其 shadow 内按钮 */
+  private focusTrigger(): void {
+    const trigger = this.anchor as HTMLElement | null
+    if (!trigger || !trigger.isConnected) return
+    const native = trigger.matches('button, [href], input, select, textarea, [tabindex]')
+      ? trigger
+      : (trigger.shadowRoot?.querySelector<HTMLElement>('button, [href], input, select, textarea, [tabindex]') ??
+        trigger.querySelector<HTMLElement>('button, [href], [tabindex]'))
+    // focus 触发模式下回焦会同步触发 focusin → 不抑制会把刚关闭的菜单重新打开
+    this.restoringFocus = true
+    try {
+      ;(native ?? trigger).focus({ preventScroll: true })
+    } finally {
+      this.restoringFocus = false
+    }
+  }
+
   protected override update(): void {
     // 子元素通道观察器（重连后重建；items 属性显式时子元素被忽略，观察器空转无副作用）
     this.ensureChildObserver()
@@ -619,6 +713,7 @@ export class OASDropdown extends OASElement {
     // reserve-width：触发器预留最宽选项宽（切值不抖）；items/子元素变化随 update 重测
     this.syncReserveWidth()
     const open = this.hasAttr('open')
+    this.syncTriggerAria(open)
     if (!this.menuEl || !this.anchorEl) return
     // max-height 面板限高：转发内层 oas-menu 既有通道（数字补 px → CSS 变量 → .menu 限高滚动）
     const maxHeight = this.getAttr('max-height', '')
@@ -655,7 +750,21 @@ export class OASDropdown extends OASElement {
       document.addEventListener('click', this.handleOutside, true)
       this.position()
       this.syncScrollFollow(true)
+      // 打开瞬间：压入共享 Esc 层（后进先出，避免一次 Esc 连带关闭其他浮层）
+      if (!this.wasOpen) {
+        this.armEscapeLayer()
+        // 键盘/点击打开时焦点进入菜单容器（hover 展开与程序化 setAttribute 不动焦点）
+        if (this.focusOnOpen && !this.openedByHover) this.focusMenu()
+      }
     } else {
+      // 关闭前若焦点还在菜单内，先还给触发器：菜单随即 hidden，焦点不能丢到 body
+      const menu = this.menuEl as (OASMenu & { shadowRoot?: ShadowRoot | null }) | null
+      const focusInMenu = !!activeInShadow(menu?.shadowRoot) || activeInShadow(this.shadow) === menu
+      if (focusInMenu) this.focusTrigger()
+      this.releaseEscapeLayer?.()
+      this.releaseEscapeLayer = null
+      this.openedByHover = false
+      this.focusOnOpen = false
       if (this.wasOpen) {
         this.playClose()
       } else {

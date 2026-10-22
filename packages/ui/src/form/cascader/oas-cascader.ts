@@ -399,6 +399,11 @@ const STYLE = `
 .chip .remove:hover {
   color: var(--oas-color-text-primary);
 }
+.chip .remove:focus-visible {
+  outline: none;
+  box-shadow: var(--oas-focus-ring);
+  border-radius: var(--oas-radius-sm);
+}
 /* 折叠计数 chip：仅在显式设置 max-tag-count 且需要折叠时插入 */
 .chip-plus {
   display: inline-flex;
@@ -712,7 +717,7 @@ export class OASCascader extends OASElement {
       <div class="wrapper" part="wrapper">
         <button class="trigger" part="trigger" type="button" role="combobox" aria-haspopup="listbox" aria-expanded="false">
           <span class="value" part="value"></span>
-          <span class="clear-btn" part="clear" role="button" tabindex="-1" hidden aria-label="">
+          <span class="clear-btn" part="clear" role="button" tabindex="0" hidden aria-label="">
             <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">
               <path d="M4 4 L12 12 M12 4 L4 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
             </svg>
@@ -752,6 +757,15 @@ export class OASCascader extends OASElement {
     this.shadow.querySelector('.clear-btn')?.addEventListener('click', (e) => {
       e.stopPropagation()
       this.clearValue()
+    })
+    // 清空钮在 Tab 序内（role=button 无原生键盘激活），Enter/Space 显式清空；不冒泡成 trigger 展开
+    this.shadow.querySelector<HTMLElement>('.clear-btn')?.addEventListener('keydown', (e: KeyboardEvent) => {
+      if (e.key !== 'Enter' && e.key !== ' ') return
+      e.preventDefault()
+      e.stopPropagation()
+      this.clearValue()
+      // 清空后按钮隐藏（焦点目标消失）——把焦点交还 trigger，键盘用户不丢位置
+      this.triggerEl?.focus()
     })
     this.searchInputEl?.addEventListener('input', () => this.handleSearchInput())
     this.searchInputEl?.addEventListener('keydown', (e: KeyboardEvent) => this.handleSearchKey(e))
@@ -1932,12 +1946,21 @@ export class OASCascader extends OASElement {
       const rm = document.createElement('span')
       rm.className = 'remove'
       rm.setAttribute('role', 'button')
-      rm.setAttribute('tabindex', '-1')
+      // 键盘可达：chip 移除钮进入 Tab 序，Enter/Space 显式移除（role=button 无原生键盘激活）
+      rm.setAttribute('tabindex', '0')
       rm.setAttribute('aria-label', this.t('select.remove', { label: text }))
       rm.textContent = '×'
       rm.addEventListener('click', (e: MouseEvent) => {
         e.stopPropagation()
         this.toggleCheck(p)
+      })
+      rm.addEventListener('keydown', (e: KeyboardEvent) => {
+        if (e.key !== 'Enter' && e.key !== ' ') return
+        e.preventDefault()
+        e.stopPropagation()
+        this.toggleCheck(p)
+        // chip 重建后原焦点节点已移除——把焦点交还 trigger，键盘用户不丢位置
+        this.triggerEl?.focus()
       })
       chip.append(labelEl, rm)
       valueEl.appendChild(chip)

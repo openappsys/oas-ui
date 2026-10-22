@@ -1535,3 +1535,34 @@ describe('OASTreeSelect 数字 id 节点（与 value 通道口径一致）', () 
     expect(JSON.parse(el.getAttribute('value') ?? '[]')).toEqual(['1', '11'])
   })
 })
+
+// ---- I4：清空按钮键盘可达（Tab 序 + 可读名称 + Enter/Space 清空） ----
+
+describe('OASTreeSelect 清空按钮键盘可达（I4）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('clear-btn 进入 Tab 序（tabIndex 0）、有可读名称、Enter 清空', () => {
+    const el = mount({ clearable: '', value: 'vue' })
+    const clearBtn = el.shadowRoot!.querySelector<HTMLElement>('.clear-btn')!
+    expect(clearBtn.getAttribute('tabindex')).toBe('0')
+    expect(clearBtn.tabIndex).toBe(0)
+    expect((clearBtn.getAttribute('aria-label') ?? '').length).toBeGreaterThan(0)
+    clearBtn.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }))
+    expect(el.getAttribute('value')).toBe('')
+    expect(el.shadowRoot!.activeElement, '清空后焦点交还 trigger').toBe(trigger(el))
+  })
+
+  it('clear-btn Space 同样清空，且不触发触发器展开', () => {
+    const el = mount({ clearable: '', value: 'vue' })
+    const clearBtn = el.shadowRoot!.querySelector<HTMLElement>('.clear-btn')!
+    clearBtn.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', bubbles: true, cancelable: true }))
+    expect(el.getAttribute('value')).toBe('')
+    expect(trigger(el).getAttribute('aria-expanded'), 'Space 不应冒泡成展开').toBe('false')
+  })
+})

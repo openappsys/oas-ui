@@ -1,6 +1,7 @@
 // 复核回归：tabs——历史缺陷固化断言。
 
 import { test, expect } from '@playwright/test'
+import AxeBuilder from '@axe-core/playwright'
 import { up } from './helpers'
 
 test('tabs tab-position=right：tab 内容右对齐（justify-content: flex-end）', async ({ page }) => {
@@ -465,4 +466,105 @@ test('tabs items attribute 变更（value 不变、label/徽标变）→ 可视�
   expect(r.after.badge, '徽标随 items 重建').toBe('9')
   expect(r.active, 'active 按 value 保持').toBe('true')
   expect(r.attr).toContain('Dashboard')
+})
+
+// ===== 反馈 #2：trigger="hover" 悬停抢焦点 =====
+// 曾现缺陷：activate() 末尾无条件 focus 新标签 → 鼠标悬停（无点击）把键盘用户焦点从
+// 当前控件抢到被悬停的标签上。
+test('tabs trigger="hover"：悬停切换标签但不抢焦点', async ({ page }) => {
+  await page.goto('/components/tabs.html', { waitUntil: 'domcontentloaded' })
+  await page.waitForFunction(() => !!customElements.get('oas-tabs'))
+  await page.evaluate(() => {
+    document.getElementById('e2e-tabs-hover')?.remove()
+    const el = document.createElement('oas-tabs')
+    el.id = 'e2e-tabs-hover'
+    el.setAttribute('trigger', 'hover')
+    // 固定到视口内并置顶：文档站固定侧栏/目录会拦截 body 末尾元素的指针事件
+    el.style.cssText = 'position: fixed; top: 140px; left: 50%; transform: translateX(-50%); z-index: 2147483000'
+    el.innerHTML = `
+      <oas-tab-panel label="A" value="a"><p>内容 A</p></oas-tab-panel>
+      <oas-tab-panel label="B" value="b"><p>内容 B</p></oas-tab-panel>
+    `
+    document.body.appendChild(el)
+  })
+  const host = page.locator('#e2e-tabs-hover')
+  await host.locator('[role="tab"][data-value="a"]').focus()
+  await host.locator('[role="tab"][data-value="b"]').hover()
+  await page.waitForFunction(() => document.querySelector('oas-tabs#e2e-tabs-hover')?.getAttribute('active') === 'b')
+  const r = await page.evaluate(() => {
+    const el = document.querySelector('oas-tabs#e2e-tabs-hover')! as HTMLElement & { shadowRoot: ShadowRoot }
+    const active = el.shadowRoot.activeElement as HTMLElement | null
+    return { active: el.getAttribute('active'), focusedValue: active?.getAttribute('data-value') ?? null }
+  })
+  expect(r.active, '悬停应切换 active').toBe('b')
+  expect(r.focusedValue, '悬停通道不得把焦点抢到新标签').toBe('a')
+})
+
+// ===== 反馈 #8：tab ↔ tab-panel 语义链（aria-controls / role=tabpanel / aria-labelledby） =====
+test('tabs 语义链：tab aria-controls ↔ panel role=tabpanel/aria-labelledby，axe 无违规', async ({ page }) => {
+  await page.goto('/components/tabs.html', { waitUntil: 'domcontentloaded' })
+  await page.waitForFunction(() => !!customElements.get('oas-tabs'))
+  await page.evaluate(() => {
+    document.getElementById('e2e-tabs-a11y')?.remove()
+    const el = document.createElement('oas-tabs')
+    el.id = 'e2e-tabs-a11y'
+    el.style.cssText = 'position: fixed; top: 140px; left: 50%; transform: translateX(-50%); z-index: 2147483000'
+    el.innerHTML = `
+      <oas-tab-panel label="概览" value="overview"><p>概览内容</p></oas-tab-panel>
+      <oas-tab-panel label="设置" value="settings"><p>设置内容</p></oas-tab-panel>
+    `
+    el.setAttribute('active', 'overview')
+    document.body.appendChild(el)
+  })
+  await page.waitForFunction(() => {
+    const el = document.querySelector('oas-tabs#e2e-tabs-a11y')
+    return !!el?.shadowRoot?.querySelector('[role="tab"][data-value="overview"]')
+  })
+
+  const r = await page.evaluate(() => {
+    const el = document.querySelector('oas-tabs#e2e-tabs-a11y')! as HTMLElement & { shadowRoot: ShadowRoot }
+    const tab = el.shadowRoot.querySelector('[role="tab"][data-value="overview"]') as HTMLElement
+    const region = el.shadowRoot.querySelector('.panel') as HTMLElement
+    const hostPanels = [...el.querySelectorAll('oas-tab-panel')]
+    return {
+      tabId: tab.id,
+      controls: tab.getAttribute('aria-controls'),
+      regionId: region.id,
+      role: region.getAttribute('role'),
+      labelledby: region.getAttribute('aria-labelledby'),
+      tabindex: region.getAttribute('tabindex'),
+      hostPanels,
+      hostPanelCount: hostPanels.length,
+      hostPanelRoles: hostPanels.map((p) => p.getAttribute('role')),
+      allControls: [...el.shadowRoot.querySelectorAll<HTMLElement>('[role="tab"]')].map((t) =>
+        t.getAttribute('aria-controls'),
+      ),
+    }
+  })
+  expect(r.tabId, 'tab 必须有稳定 id').not.toBe('')
+  expect(r.regionId, 'tabpanel 区域必须有稳定 id').not.toBe('')
+  expect(r.controls, 'tab aria-controls 指向同 shadow 根内的 tabpanel 区域').toBe(r.regionId)
+  expect(r.role).toBe('tabpanel')
+  expect(r.labelledby, 'tabpanel 区域名称指向当前激活 tab').toBe(r.tabId)
+  expect(r.tabindex, 'tabpanel 区域可聚焦进入正文').toBe('0')
+  expect(r.hostPanelCount).toBe(2)
+  expect(
+    r.hostPanelRoles.every((role) => role === null),
+    '数据载体不重复写 tabpanel 角色',
+  ).toBe(true)
+  expect(
+    r.allControls.every((v) => v === r.regionId),
+    '每个 tab 都指向同一 tabpanel 区域（同根 IDREF）',
+  ).toBe(true)
+
+  const a11y = await new AxeBuilder({ page })
+    .include('#e2e-tabs-a11y')
+    // 本用例聚焦标签↔面板语义链；对比度由主题/视觉专项覆盖，且元素覆盖在文档页面上
+    // 背景色随主题变化会引入与语义无关的 color-contrast 噪声
+    .disableRules(['color-contrast'])
+    .analyze()
+  expect(
+    a11y.violations.map((v) => `${v.id}: ${v.nodes.length}`),
+    '语义链不应引入 axe 违规（IDREF 全部在同 shadow 根内解析）',
+  ).toEqual([])
 })

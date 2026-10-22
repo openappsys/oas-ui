@@ -558,6 +558,11 @@ export class OASMenu extends OASElement {
   /** 已展开的子菜单 value 集合（单条展开路径） */
   private expandedSet = new Set<string>()
   private menuEl: HTMLElement | null = null
+  /** aria-activedescendant 引用的菜单项 id 前缀（跨实例唯一，避免同页多实例 id 冲突） */
+  private static uidSeq = 0
+  private readonly uid = `oas-menu-${++OASMenu.uidSeq}`
+  /** 单次渲染内的菜单项 id 序号（renderItems 开头复位） */
+  private itemIdSeq = 0
   /** typeahead 字符缓冲（连续输入定位匹配项） + 超时定时器 */
   private typeaheadBuffer = ''
   private typeaheadTimer: ReturnType<typeof setTimeout> | null = null
@@ -700,6 +705,7 @@ export class OASMenu extends OASElement {
     this.syncSearch()
     this.syncInlineMode()
     this.syncExpandedAttr()
+    this.syncA11y()
     this.renderItems()
     // 渲染后检测水平溢出收纳（horizontal 模式）；requestAnimationFrame 等布局完成
     // （update 在 render 后但 flex 布局可能未完成，clientWidth 此时不可靠）
@@ -712,6 +718,18 @@ export class OASMenu extends OASElement {
   private syncInlineMode(): void {
     this.classList.toggle('oas-menu--inline', this.getAttr('mode') === 'inline')
     this.classList.toggle('oas-menu--accordion', this.hasAttr('accordion'))
+  }
+
+  /**
+   * ul 的可访问名称与方向语义：焦点容器是 shadow 内的 ul（宿主 aria-label 不会跨 shadow 生效），
+   * 读屏需要 ul 自身有名称；水平模式同时声明 aria-orientation（role=menu 缺省为 vertical）。
+   */
+  private syncA11y(): void {
+    const menuEl = this.menuEl
+    if (!menuEl) return
+    const label = this.getAttribute('aria-label') || this.t('navigationMenu.label')
+    if (label) menuEl.setAttribute('aria-label', label)
+    menuEl.setAttribute('aria-orientation', this.getAttr('mode') === 'horizontal' ? 'horizontal' : 'vertical')
   }
 
   /** expanded 受控：expanded 属性（JSON 数组）存在时驱动内部 expanded Set */
@@ -1075,6 +1093,7 @@ export class OASMenu extends OASElement {
     const menuEl = this.menuEl
     if (!menuEl) return
     menuEl.innerHTML = ''
+    this.itemIdSeq = 0
     const items = this.viewItems()
     this.renderLevel(menuEl, items, '', 0)
     this.syncOpen()
@@ -1119,6 +1138,8 @@ export class OASMenu extends OASElement {
       const li = document.createElement(item.href ? 'a' : 'li') as HTMLElement
       li.className = 'item'
       li.setAttribute('part', 'item')
+      // id 供 ul[aria-activedescendant] 引用（读屏可感知键盘当前项；不引入 roving tabindex）
+      li.id = `${this.uid}-item-${++this.itemIdSeq}`
       if (item.href) {
         const href = safeUrl(item.href)
         if (href) li.setAttribute('href', href)
@@ -1512,16 +1533,77 @@ export class OASMenu extends OASElement {
     this.bridgePointer = null
   }
 
-  /** 键盘激活态 → .active class（不重建 DOM） */
+  /** 当前键盘层级的容器 ul（顶层 ul / 逐级子菜单 ul；inline 子菜单在 .inline-sub 包裹层内） */
+  private currentLevelContainer(): HTMLElement | null {
+    let container: HTMLElement | null = this.menuEl
+    for (const value of this.activeStack) {
+      if (!container) return null
+      const parent = Array.from(container.children).find(
+        (el): el is HTMLElement =>
+          el instanceof HTMLElement && el.getAttribute('part') === 'item' && el.dataset.value === value,
+      )
+      if (!parent) return container
+      // 浮出形态：ul 直接挂在父项下；inline 形态：.inline-sub > ul
+      const direct = Array.from(parent.children).find(
+        (el): el is HTMLElement => el instanceof HTMLElement && el.tagName === 'UL',
+      )
+      if (direct) {
+        container = direct
+        continue
+      }
+      const wrap = Array.from(parent.children).find(
+        (el): el is HTMLElement => el instanceof HTMLElement && el.classList.contains('inline-sub'),
+      )
+      const inner = wrap
+        ? Array.from(wrap.children).find((el): el is HTMLElement => el instanceof HTMLElement && el.tagName === 'UL')
+        : undefined
+      if (!inner) return null
+      container = inner
+    }
+    return container
+  }
+
+  /** 当前层级里 value 对应的菜单项元素（只查本层直接子级，排除溢出收纳弹层里的镜像项） */
+  private findActiveEl(value: string): HTMLElement | null {
+    const container = this.currentLevelContainer()
+    if (!container) return null
+    for (const el of Array.from(container.children)) {
+      if (el instanceof HTMLElement && el.getAttribute('part') === 'item' && el.dataset.value === value) return el
+    }
+    return null
+  }
+
+  /**
+   * 键盘激活态 → .active class + ul[aria-activedescendant]（不重建 DOM、不移动焦点）。
+   * 缺陷史：只切 .active class 时读屏完全感知不到键盘当前项（焦点在 ul 上、DOM 内无焦点移动）；
+   * activedescendant 让 AT 跟随高亮项，同时保留「ul 单点 Tab + 方向键导航」的菜单焦点模型。
+   */
   private syncActive(): void {
     if (!this.menuEl) return
     for (const li of this.menuEl.querySelectorAll<HTMLElement>('.item.active')) {
       li.classList.remove('active')
     }
     const current = this.currentItems()[this.activeIndex]
-    if (!current || current.value == null) return
-    const el = this.menuEl.querySelector<HTMLElement>(`[part="item"][data-value="${current.value}"]`)
-    el?.classList.add('active')
+    const el = current?.value != null ? this.findActiveEl(current.value) : null
+    if (!current || !el) {
+      this.menuEl.removeAttribute('aria-activedescendant')
+      return
+    }
+    el.classList.add('active')
+    // 溢出收纳弹层里的镜像项由 syncOverflowCollapse 动态创建（无渲染期 id），此处兜底补发
+    if (!el.id) el.id = `${this.uid}-item-${++this.itemIdSeq}`
+    this.menuEl.setAttribute('aria-activedescendant', el.id)
+    this.scrollActiveIntoView(el)
+  }
+
+  /**
+   * activedescendant 模型下浏览器不会自动把高亮项滚进视野（焦点没移动），键盘导航时手动滚动。
+   * 仅在菜单真正持有焦点时执行：避免挂载/受控更新时把页面滚到菜单处。
+   */
+  private scrollActiveIntoView(el: HTMLElement): void {
+    if (this.shadow.activeElement !== this.menuEl) return
+    if (typeof el.scrollIntoView !== 'function') return
+    el.scrollIntoView({ block: 'nearest' })
   }
 
   /** 选中叶子项后是否收起展开的子菜单。缺省按形态：inline 侧边导航不收（一致）、
@@ -1938,50 +2020,118 @@ export class OASMenu extends OASElement {
     this.activeIndex = enabled[(cur + dir + len) % len]!
   }
 
+  /**
+   * 可导航索引：跳过 disabled / loading，水平顶层另跳过被溢出收纳（display:none）的项——
+   * 否则方向键会把高亮移进收纳弹层里不可见的那一项。
+   */
+  private navigableIndexes(items: MenuItem[]): number[] {
+    const hidden = this.hiddenTopValues()
+    return items
+      .map((i, idx) => (i.disabled || i.loading || (i.value != null && hidden.has(i.value)) ? -1 : idx))
+      .filter((i) => i >= 0)
+  }
+
+  /** 水平顶层被收纳（data-collapsed）项的 value 集合（非水平模式 / 子菜单层恒为空） */
+  private hiddenTopValues(): Set<string> {
+    const out = new Set<string>()
+    if (this.getAttr('mode') !== 'horizontal' || this.activeStack.length > 0 || !this.menuEl) return out
+    for (const el of Array.from(this.menuEl.children)) {
+      if (!(el instanceof HTMLElement) || !el.hasAttribute('data-collapsed')) continue
+      const v = el.dataset.value
+      if (v) out.add(v)
+    }
+    return out
+  }
+
+  /** Enter / Space：有子级则展开进入，否则选中当前叶子（action/radio/checkbox 语义由 select 分流） */
+  private activateActive(): void {
+    const active = this.currentItems()[this.activeIndex]
+    if (!active || active.disabled || active.loading) return
+    if (active.children?.length) {
+      this.enterSubmenu(active)
+      return
+    }
+    const el = active.value != null ? this.findActiveEl(active.value) : null
+    this.select(active, el?.dataset.scope ?? '')
+  }
+
+  /**
+   * 键盘模型（APG menu / menubar 对齐）：
+   * - 竖向菜单 / 任意层子菜单：上下移动、Enter/Space 激活、Home/End 首末、typeahead 定位、Esc 退层
+   * - 水平顶层：左右沿行移动（RTL 镜像）、下开子菜单、上/Esc 收起
+   * - 进出子菜单的键跟随浮出侧：LTR 右键进/左键出，RTL 左键进/右键出
+   */
   private handleKey(e: KeyboardEvent): void {
     // 整单禁用：键盘导航与激活全拦截
     if (this.isDisabled()) return
     const items = this.currentItems()
-    const enabled = items.map((i, idx) => (i.disabled || i.loading ? -1 : idx)).filter((i) => i >= 0)
+    const enabled = this.navigableIndexes(items)
     if (enabled.length === 0) return
-    if (e.key === 'ArrowDown') {
+    const atTop = this.activeStack.length === 0
+    const horizontal = this.getAttr('mode') === 'horizontal'
+    const rtl = isRtl(this)
+    // 物理方向 → DOM 顺序：RTL 横排首项在物理右侧，左右键语义随书写方向镜像
+    const rowDir = (key: string): 1 | -1 => (key === 'ArrowRight' ? (rtl ? -1 : 1) : rtl ? 1 : -1)
+    const enterKey = rtl ? 'ArrowLeft' : 'ArrowRight'
+    const leaveKey = rtl ? 'ArrowRight' : 'ArrowLeft'
+    const active = items[this.activeIndex]
+    const hasChildren = !!active && !active.disabled && !active.loading && !!active.children?.length
+    // 顶层没有可退的层：收起 hover/点击展开但未用键盘进入的子菜单（方向键上 / Esc）
+    const collapseOpenMenus = (): void => {
+      if (this.expandedSet.size === 0) return
+      this.expandedSet = new Set()
+      this.syncOpen()
+    }
+    const isTypeaheadKey = e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey
+
+    if (e.key === 'Home') {
+      e.preventDefault()
+      this.activeIndex = enabled[0]!
+    } else if (e.key === 'End') {
+      e.preventDefault()
+      this.activeIndex = enabled[enabled.length - 1]!
+    } else if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault()
+      this.activateActive()
+    } else if (e.key === 'Escape') {
+      e.preventDefault()
+      if (atTop) collapseOpenMenus()
+      else this.leaveSubmenu()
+    } else if (atTop && horizontal) {
+      if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+        e.preventDefault()
+        this.moveActive(enabled, rowDir(e.key))
+      } else if (e.key === 'ArrowDown') {
+        e.preventDefault()
+        // 无当前项（刚 Tab 进菜单）时先落到首项；已有当前项则进入其子菜单
+        if (this.activeIndex < 0) this.moveActive(enabled, 1)
+        else if (hasChildren) this.enterSubmenu(active!)
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault()
+        if (this.activeIndex < 0) this.moveActive(enabled, -1)
+        else collapseOpenMenus()
+      } else if (isTypeaheadKey) {
+        e.preventDefault()
+        this.typeahead(e.key)
+      } else {
+        return
+      }
+    } else if (e.key === 'ArrowDown') {
       e.preventDefault()
       this.moveActive(enabled, 1)
     } else if (e.key === 'ArrowUp') {
       e.preventDefault()
       this.moveActive(enabled, -1)
-    } else if (e.key === 'ArrowRight') {
+    } else if (e.key === enterKey) {
       e.preventDefault()
-      const active = items[this.activeIndex]
-      if (active && !active.disabled && !active.loading && active.children?.length) {
-        this.enterSubmenu(active)
-      } else {
-        this.moveActive(enabled, 1)
-      }
-    } else if (e.key === 'ArrowLeft') {
+      if (hasChildren) this.enterSubmenu(active!)
+      else if (atTop) this.moveActive(enabled, rowDir(e.key))
+    } else if (e.key === leaveKey) {
       e.preventDefault()
-      if (this.activeStack.length > 0) {
-        this.leaveSubmenu()
-      } else {
-        this.moveActive(enabled, -1)
-      }
-    } else if (e.key === 'Enter') {
-      const active = items[this.activeIndex]
-      if (!active) return
-      e.preventDefault()
-      if (active.disabled || active.loading) return
-      if (active.children?.length) {
-        this.enterSubmenu(active)
-      } else {
-        const activeEl = this.menuEl!.querySelector<HTMLElement>(`[part="item"][data-value="${active.value}"]`)
-        this.select(active, activeEl?.dataset.scope ?? '')
-      }
-    } else if (e.key === 'Home') {
-      this.activeIndex = enabled[0]!
-    } else if (e.key === 'End') {
-      this.activeIndex = enabled[enabled.length - 1]!
-    } else if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
-      // typeahead：可打印字符跳转匹配 label 的项（连续字符缓冲 + 超时重置）
+      if (!atTop) this.leaveSubmenu()
+      else this.moveActive(enabled, rowDir(e.key))
+    } else if (isTypeaheadKey) {
+      // typeahead：只更新高亮与 activedescendant（焦点始终留在 ul，不调用无效的 li.focus()）
       e.preventDefault()
       this.typeahead(e.key)
     } else {
@@ -1999,18 +2149,22 @@ export class OASMenu extends OASElement {
       this.typeaheadBuffer = ''
     }, 500)
     const items = this.currentItems()
+    const hidden = this.hiddenTopValues()
     const buf = this.typeaheadBuffer
-    // 匹配：label startsWith 优先，无则 includes
+    // 匹配：label startsWith 优先，无则 includes（跳过禁用/加载/被收纳项）
     const match = (pred: (s: string) => boolean) =>
-      items.findIndex((i) => !i.disabled && !i.loading && i.label && pred(i.label.toLowerCase()))
+      items.findIndex(
+        (i) =>
+          !i.disabled &&
+          !i.loading &&
+          !(i.value != null && hidden.has(i.value)) &&
+          i.label &&
+          pred(i.label.toLowerCase()),
+      )
     let idx = match((s) => s.startsWith(buf))
     if (idx === -1) idx = match((s) => s.includes(buf))
     if (idx === -1) return
+    // 只记录高亮；aria-activedescendant 由调用方的 syncActive 统一写入
     this.activeIndex = idx
-    const item = items[idx]
-    if (item) {
-      const el = this.menuEl!.querySelector<HTMLElement>(`[part="item"][data-value="${item.value}"]`)
-      el?.focus({ preventScroll: true })
-    }
   }
 }

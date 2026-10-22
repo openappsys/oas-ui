@@ -1746,3 +1746,64 @@ describe('OASSidebar 属性-方法撞名回归', () => {
     expect(el.getAttribute('width')).toBe('300px')
   })
 })
+
+// ===== 移动抽屉焦点管理（打开入焦 / 关闭回焦 / dialog 语义 / Tab 约束） =====
+
+describe('OASSidebar 移动抽屉焦点', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+    stubMatchMedia(true)
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+    vi.unstubAllGlobals()
+  })
+
+  it('打开后聚焦面板内首个可聚焦元素（关闭钮/nav 项），并标记 role=dialog + aria-modal', () => {
+    const el = mount()
+    const trigger = el.shadowRoot!.querySelector<HTMLElement>('[part="trigger"]')!
+    trigger.focus()
+    el.openDrawer()
+    const panel = el.shadowRoot!.querySelector<HTMLElement>('.panel')!
+    expect(panel.getAttribute('role')).toBe('dialog')
+    expect(panel.getAttribute('aria-modal')).toBe('true')
+    expect(panel.hasAttribute('aria-hidden'), '打开的抽屉不能 aria-hidden').toBe(false)
+    const active = el.shadowRoot!.activeElement as HTMLElement | null
+    expect(active, '打开后焦点必须进入抽屉').not.toBeNull()
+    expect(panel.contains(active!)).toBe(true)
+  })
+
+  it('关闭后移除 dialog 语义、aria-hidden=true，焦点回到触发器', () => {
+    const el = mount()
+    const trigger = el.shadowRoot!.querySelector<HTMLElement>('[part="trigger"]')!
+    trigger.focus()
+    el.openDrawer()
+    el.closeDrawer()
+    const panel = el.shadowRoot!.querySelector<HTMLElement>('.panel')!
+    expect(panel.hasAttribute('role')).toBe(false)
+    expect(panel.hasAttribute('aria-modal')).toBe(false)
+    expect(panel.getAttribute('aria-hidden')).toBe('true')
+    expect(el.shadowRoot!.activeElement, '关闭回焦触发器').toBe(trigger)
+  })
+
+  it('Tab 在抽屉内循环（焦点不逃逸到面板外）', () => {
+    const el = mount({
+      items: JSON.stringify([
+        { label: '一', value: 'a' },
+        { label: '二', value: 'b' },
+      ]),
+    })
+    el.openDrawer()
+    const panel = el.shadowRoot!.querySelector<HTMLElement>('.panel')!
+    const focusables = [...panel.querySelectorAll<HTMLElement>('button:not([hidden]):not([disabled])')]
+    expect(focusables.length).toBeGreaterThan(1)
+    const last = focusables[focusables.length - 1]!
+    last.focus()
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', cancelable: true }))
+    const active = el.shadowRoot!.activeElement as HTMLElement | null
+    expect(active).toBe(focusables[0])
+  })
+})

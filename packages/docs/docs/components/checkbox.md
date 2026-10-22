@@ -326,7 +326,7 @@ onMounted(() => {
 | `oas-blur` | 勾选框失去焦点 |
 | `oas-change` | 勾选变化，`detail: { checked, value }` |
 | `oas-focus` | 勾选框获得焦点 |
-| `oas-limit-blocked` | 组数量限制拦截信号（组转发为 oas-exceed-limit；单项独立使用时无此拦截） |
+| `oas-limit-blocked` | 数量限制被拦截（组内由组拦截后改发组级同名事件，宿主应监听组）；`detail: { value, limit: 'min' \| 'max' }` |
 
 #### 插槽
 
@@ -367,6 +367,7 @@ onMounted(() => {
 | `oas-change` | 组值变化，`detail: { value: string[] }`（含全选联动与数量限制内的变化） |
 | `oas-exceed-limit` | 达 max 上限后的越界勾选尝试，`detail: { value, max }` |
 | `oas-focus` | 组内任一子项获得焦点（子项间转移不误报） |
+| `oas-limit-blocked` | 组级数量限制拦截信号（min/max 统一出口），`detail: { value, limit: 'min' \| 'max', min?, max? }`；max 场景同时派发 oas-exceed-limit 兼容旧监听 |
 
 #### 插槽
 

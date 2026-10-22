@@ -1560,3 +1560,67 @@ describe('OASMenubar 属性-方法撞名回归', () => {
     expect(openSubmenus(el).length, '默认选中叶子后收起子菜单').toBe(0)
   })
 })
+
+// ===== 输入上下文守卫：文档级快捷键/访问键不得劫持可编辑控件 =====
+
+describe('OASMenubar 输入上下文守卫', () => {
+  const SHORTCUT_ITEMS = JSON.stringify([
+    {
+      label: '文件',
+      value: 'file',
+      accessKey: 'f',
+      children: [{ label: '保存', value: 'save', shortcut: 'Ctrl+Shift+S' }],
+    },
+  ])
+
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  function mountInput(): HTMLInputElement {
+    const input = document.createElement('input')
+    document.body.appendChild(input)
+    return input
+  }
+
+  it('输入框内 Ctrl+Shift+S 不触发 menubar shortcut', () => {
+    const el = mount({ items: SHORTCUT_ITEMS })
+    const count: string[] = []
+    el.addEventListener('oas-select', (e: Event) => count.push(String((e as CustomEvent).detail?.value)))
+    const input = mountInput()
+    input.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'S', ctrlKey: true, shiftKey: true, bubbles: true, cancelable: true }),
+    )
+    expect(count, '输入框内快捷键应留给宿主/浏览器').toEqual([])
+  })
+
+  it('输入框内 Alt+F 不展开对应顶级菜单', () => {
+    const el = mount()
+    const input = mountInput()
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'f', altKey: true, bubbles: true, cancelable: true }))
+    expect(openSubmenus(el).length, '输入框内 Alt 访问键不劫持').toBe(0)
+  })
+
+  it('textarea / contenteditable 同样受守卫', () => {
+    const el = mount()
+    const area = document.createElement('textarea')
+    const editable = document.createElement('div')
+    editable.tabIndex = 0
+    editable.setAttribute('contenteditable', 'true')
+    editable.textContent = 'x'
+    document.body.append(area, editable)
+    area.dispatchEvent(new KeyboardEvent('keydown', { key: 'e', altKey: true, bubbles: true, cancelable: true }))
+    editable.dispatchEvent(new KeyboardEvent('keydown', { key: 'e', altKey: true, bubbles: true, cancelable: true }))
+    expect(openSubmenus(el).length).toBe(0)
+  })
+
+  it('焦点不在可编辑控件时 Alt 访问键照常工作（守卫不过度收紧）', () => {
+    const el = mount()
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'e', altKey: true, cancelable: true }))
+    expect(openSubmenus(el).length).toBe(1)
+  })
+})

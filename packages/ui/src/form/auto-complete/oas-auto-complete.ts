@@ -582,6 +582,7 @@ export class OASAutoComplete extends OASFormElement {
 
   private applyFilter(): void {
     if (this.injectDisabled() || this.hasAttr('readonly')) return
+    // auto-complete 是自由文本组件：输入文本即字段值（无「搜索词 vs 已选值」双态），不打 search 标记
     this.emit('input', { value: this.query })
     this.activeIndex = 0
     this.renderDropdown(true)
