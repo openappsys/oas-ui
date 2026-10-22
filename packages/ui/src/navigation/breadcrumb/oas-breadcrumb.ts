@@ -2,6 +2,7 @@ import { OASElement } from '@oas-ui/core'
 import { lookupIcon } from '@oas-ui/icons/runtime'
 import { getViewport } from '../../overlay/floating/index.js'
 import { isRtl } from '../../shared/direction.js'
+import { safeUrl } from '../../shared/safe-url.js'
 
 export interface BreadcrumbItem {
   label: string
@@ -490,7 +491,10 @@ export class OASBreadcrumb extends OASElement {
   private parseItems(): BreadcrumbItem[] {
     try {
       const parsed = JSON.parse(this.getAttr('items', '[]'))
-      return Array.isArray(parsed) ? parsed.filter((i): i is BreadcrumbItem => i && typeof i.label === 'string') : []
+      if (!Array.isArray(parsed)) return []
+      return parsed
+        .filter((i): i is BreadcrumbItem => i && typeof i.label === 'string')
+        .map((i) => this.sanitizeItem(i))
     } catch {
       return []
     }
@@ -523,7 +527,7 @@ export class OASBreadcrumb extends OASElement {
       disabled: el.hasAttribute('disabled'),
       active: el.hasAttribute('active'),
     }
-    const href = el.getAttribute('href')
+    const href = safeUrl(el.getAttribute('href'))
     if (href) item.href = href
     const target = el.getAttribute('target')
     if (target) item.target = target
@@ -572,12 +576,27 @@ export class OASBreadcrumb extends OASElement {
     return document.importNode(el, true)
   }
 
+  /** item 递归清洗：顶层与 dropdown 嵌套 href 都过 safeUrl（非法协议移除链接语义） */
+  private sanitizeItem(i: BreadcrumbItem): BreadcrumbItem {
+    const out: BreadcrumbItem = { ...i }
+    if (typeof out.href === 'string') out.href = safeUrl(out.href) || undefined
+    if (Array.isArray(out.dropdown)) {
+      const rows = out.dropdown
+        .filter((r): r is BreadcrumbItem => r && typeof r.label === 'string')
+        .map((r) => this.sanitizeItem(r))
+      out.dropdown = rows.length > 0 ? rows : undefined
+    }
+    return out
+  }
+
   /** dropdown 属性 JSON 归一化（非法/非数组回退空数组） */
   private parseDropdown(raw: string): BreadcrumbItem[] | undefined {
     try {
       const parsed = JSON.parse(raw)
       if (!Array.isArray(parsed)) return undefined
-      const rows = parsed.filter((i): i is BreadcrumbItem => i && typeof i.label === 'string')
+      const rows = parsed
+        .filter((i): i is BreadcrumbItem => i && typeof i.label === 'string')
+        .map((i) => this.sanitizeItem(i))
       return rows.length > 0 ? rows : undefined
     } catch {
       return undefined

@@ -5,6 +5,7 @@ import { closePath } from '@oas-ui/icons/icons/close'
 import { errorPath } from '@oas-ui/icons/icons/error'
 import { infoPath } from '@oas-ui/icons/icons/info'
 import { warningPath } from '@oas-ui/icons/icons/warning'
+import { safeUrl } from '../../shared/safe-url.js'
 
 /**
  * oas-notice-bar —— 通告栏（feedback 族，移动原生形态批）。
@@ -445,12 +446,13 @@ export class OASNoticeBar extends OASElement {
     // action：action-text 缺省无 action；href 在场渲染 <a>（原生导航），缺省 <button>（oas-action-click）
     const actionText = this.getAttr('action-text')
     const hasAction = actionText !== ''
-    const linkMode = this.hasAttr('href')
+    const href = safeUrl(this.getAttr('href', ''))
+    const linkMode = href !== ''
     if (this.actionLinkEl) {
       this.actionLinkEl.hidden = !hasAction || !linkMode
       if (linkMode) {
         this.actionLinkEl.textContent = actionText
-        this.actionLinkEl.setAttribute('href', this.getAttr('href'))
+        this.actionLinkEl.setAttribute('href', href)
       }
     }
     if (this.actionBtnEl) {

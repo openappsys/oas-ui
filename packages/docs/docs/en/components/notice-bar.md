@@ -114,7 +114,7 @@ onMounted(() => {
 | --- | --- | --- | --- |
 | `action-text` | Action label text; the action area is not rendered when absent | — | — |
 | `closable` | Show the close button; clicking dispatches oas-close and hides the bar (set open to restore) | `boolean` | — |
-| `href` | Action link URL: when present the action renders as an `<a>` (native navigation), otherwise as a `<button>` (dispatching oas-action-click); adding/removing it at runtime switches the variant | — | — |
+| `href` | Action link URL: when present the action renders as an `<a>` (native navigation), otherwise as a `<button>` (dispatching oas-action-click); adding/removing it at runtime switches the variant | `string` | — |
 | `icon` | Icon name (oas-icon system); defaults per type, icon="none" hides it, invalid names fall back to the type default; slot="icon" rich content takes priority | — | — |
 | `interval` | items rotation interval (ms, default 4000); invalid/non-positive values fall back to the default | `string` | — |
 | `items` | JSON string array of multiple notices: vertical rotation (crossfade); invalid JSON/empty arrays fall back to the default slot; items take priority over the slot; no auto-rotation under prefers-reduced-motion | — | — |

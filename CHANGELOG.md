@@ -2,6 +2,13 @@
 
 所有显著变更记录于此。
 
+## [未发布]
+
+### 修复
+
+- **`oas-chart` 折线/面积/混排的 `circle.dot` 应用 `options.colors`**：此前只改 path/stroke，宿主自定义色时线与数据点异色；现在同一系列线、点同色。
+- **存量裸 `href` 安全收敛**：`oas-float-button`（主钮与 actions）、`oas-attachment`、`oas-tabs`、`oas-notice-bar`、`oas-card`、`oas-list-item`、`oas-breadcrumb`、`oas-anchor`、`oas-pagination` 统一走 `safeUrl`；仅放行 http/https/mailto/tel、blob 对象 URL 与相对地址，其余协议一律退化为非链接/按钮形态。
+
 ## [2.6.3] - 2026-10-22
 
 ### 构建与性能

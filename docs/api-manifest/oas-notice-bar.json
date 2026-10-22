@@ -38,6 +38,8 @@
     },
     {
       "name": "href",
+      "type": "string",
+      "default": "",
       "observed": true
     },
     {

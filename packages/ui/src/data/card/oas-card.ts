@@ -1,5 +1,6 @@
 import { OASElement } from '@oas-ui/core'
 import { devWarn } from '../../shared/dev-warn.js'
+import { safeUrl } from '../../shared/safe-url.js'
 
 const STYLE = `
 :host {
@@ -489,7 +490,7 @@ export class OASCard extends OASElement {
     this.addEventListener('click', (e: Event) => {
       if (this.hasAttr('disabled')) return
       const interactive = this.hitsInteractive(e)
-      const href = this.getAttr('href', '')
+      const href = safeUrl(this.getAttr('href', ''))
       if (interactive && href !== '') e.preventDefault()
       if (this.hasAttr('selectable') && !this.hasAttr('loading') && !interactive) {
         this.toggleSelected()
@@ -641,7 +642,7 @@ export class OASCard extends OASElement {
     const disabled = this.hasAttr('disabled')
     if (disabled) this.setAttribute('aria-disabled', 'true')
     else this.removeAttribute('aria-disabled')
-    const href = this.getAttr('href', '')
+    const href = safeUrl(this.getAttr('href', ''))
     const link = this.shadow.querySelector<HTMLAnchorElement>('[part="link"]')
     if (link) {
       if (href !== '' && !disabled) {
@@ -649,9 +650,12 @@ export class OASCard extends OASElement {
         const target = this.getAttr('target', '')
         if (target !== '') link.setAttribute('target', target)
         else link.removeAttribute('target')
+        if (target === '_blank') link.setAttribute('rel', 'noopener noreferrer')
+        else link.removeAttribute('rel')
       } else {
         link.removeAttribute('href')
         link.removeAttribute('target')
+        link.removeAttribute('rel')
       }
     }
 

@@ -1,5 +1,6 @@
 import { OASElement } from '@oas-ui/core'
 import { onMeasurable, type MeasureDisposer } from '../../shared/measure-when-visible.js'
+import { isSafeUrl, safeUrl } from '../../shared/safe-url.js'
 
 export interface AnchorItem {
   href: string
@@ -680,6 +681,8 @@ export class OASAnchor extends OASElement {
     const items: AnchorItem[] = []
     for (const child of Array.from(container.children)) {
       if (child.tagName !== 'OAS-ANCHOR-ITEM') continue
+      const rawHref = child.getAttribute('href')
+      if (rawHref !== null && rawHref !== '' && !isSafeUrl(rawHref)) continue
       items.push(this.childToItem(child))
     }
     return items
@@ -688,7 +691,7 @@ export class OASAnchor extends OASElement {
   /** 单个子元素 → 内部 item（默认插槽文本为 title，属性对齐 AnchorItem 字段） */
   private childToItem(el: Element): AnchorItem {
     const item: AnchorItem = {
-      href: el.getAttribute('href') ?? '',
+      href: safeUrl(el.getAttribute('href') ?? ''),
       title: this.childTitle(el),
     }
     const target = el.getAttribute('target')
@@ -737,6 +740,7 @@ export class OASAnchor extends OASElement {
     if (!i || typeof i !== 'object') return false
     const o = i as Record<string, unknown>
     if (typeof o.href !== 'string' || typeof o.title !== 'string') return false
+    if (o.href !== '' && !isSafeUrl(o.href)) return false
     if (o.children !== undefined) {
       if (!Array.isArray(o.children) || !o.children.every((c) => this.isValidItem(c))) return false
     }

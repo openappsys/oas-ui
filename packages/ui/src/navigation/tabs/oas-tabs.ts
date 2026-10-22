@@ -8,6 +8,7 @@ import { morePath } from '@oas-ui/icons/icons/more'
 import { plusPath } from '@oas-ui/icons/icons/plus'
 import { TOUCH_TARGET_CSS } from '../../shared/touch-target.js'
 import { isRtl } from '../../shared/direction.js'
+import { safeUrl } from '../../shared/safe-url.js'
 import { normalizeSizeStrict, ALL_SIZES } from '../../shared/size.js'
 import type { OASTabPanel } from './oas-tab-panel.js'
 import { registeredTabsCapabilities, onTabsCapabilityRegistered } from './oas-tabs-capability.js'
@@ -947,7 +948,11 @@ export class OASTabs extends OASElement {
         if (typeof item.icon === 'string') panel.setAttribute('icon', item.icon)
         if (item.badge != null) panel.setAttribute('badge', String(item.badge))
         if (item.disabled) panel.setAttribute('disabled', '')
-        if (typeof item.href === 'string') panel.setAttribute('href', item.href)
+        if (typeof item.href === 'string') {
+          const href = safeUrl(item.href)
+          if (href) panel.setAttribute('href', href)
+          else panel.removeAttribute('href')
+        }
         if (typeof item.target === 'string') panel.setAttribute('target', item.target)
         if (typeof item.rel === 'string') panel.setAttribute('rel', item.rel)
         if (item.closable) panel.setAttribute('closable', '')
@@ -1024,7 +1029,7 @@ export class OASTabs extends OASElement {
       const disabled = panel.hasAttribute('disabled')
       // tab 即链接：panel 设 href 时渲染 <a>（锚点语义：右键新窗口/中键打开/SEO 可爬）；
       // 否则 button。role=tab 保持不变
-      const href = panel.getAttribute('href')
+      const href = safeUrl(panel.getAttribute('href'))
       const btn = document.createElement(href ? 'a' : 'button') as HTMLElement
       btn.className = 'tab'
       btn.classList.toggle('tab--card', type === 'card')
@@ -1037,6 +1042,7 @@ export class OASTabs extends OASElement {
         const rel = panel.getAttribute('rel')
         if (target) btn.setAttribute('target', target)
         if (rel) btn.setAttribute('rel', rel)
+        else if (target === '_blank') btn.setAttribute('rel', 'noopener noreferrer')
       }
       // tabindex：缺省 roving（仅选中标签进 Tab 顺序，其余 -1；disabled 恒 -1 不可聚焦）；
       // 宿主 tabindex 透传时覆盖 roving——全部标签钮写同值（disabled 恒 -1）

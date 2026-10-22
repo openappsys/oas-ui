@@ -3,6 +3,7 @@ import { lookupIcon } from '@oas-ui/icons/runtime'
 import { isRtl } from '../../shared/direction.js'
 import { normalizeSizeStrict, ALL_SIZES } from '../../shared/size.js'
 import { devWarn } from '../../shared/dev-warn.js'
+import { safeUrl } from '../../shared/safe-url.js'
 
 /** 尺寸档位：xs/small/medium/large/xl 全称（默认 large，对应 48px 常规 FAB 观感）；sm/md/lg 为等价别名 */
 /** 非法 size 告警：回落 large 并在 dev 下 console.warn 一次（同值去重）；sm/md/lg 别名由 shared/size 静默映射，不告警 */
@@ -753,7 +754,7 @@ export class OASFloatButton extends OASElement {
 
   /** 主钮模板（三模式共用） */
   private btnTemplate(): string {
-    const href = this.getAttr('href', '')
+    const href = safeUrl(this.getAttr('href', ''))
     const target = this.getAttr('target', '')
     const disabled = this.injectDisabled()
     let tag = 'button'
@@ -764,7 +765,7 @@ export class OASFloatButton extends OASElement {
         tagAttrs = ' aria-disabled="true"'
       } else {
         tag = 'a'
-        tagAttrs = ` href="${escapeAttr(href)}"${target ? ` target="${escapeAttr(target)}"` : ''}`
+        tagAttrs = ` href="${escapeAttr(href)}"${target ? ` target="${escapeAttr(target)}"` : ''}${target === '_blank' ? ' rel="noopener noreferrer"' : ''}`
       }
     } else if (disabled) {
       tagAttrs = ' type="button" disabled aria-disabled="true"'
@@ -987,13 +988,14 @@ export class OASFloatButton extends OASElement {
     this.rebuildWithFocusRestore(() => {
       menu.innerHTML = ''
       this.actionsList.forEach((action, index) => {
-        const item: HTMLAnchorElement | HTMLButtonElement =
-          action.href != null && action.href !== ''
-            ? Object.assign(document.createElement('a'), {
-                href: action.href,
-                ...(action.target ? { target: action.target } : {}),
-              })
-            : Object.assign(document.createElement('button'), { type: 'button' })
+        const href = safeUrl(action.href)
+        const item: HTMLAnchorElement | HTMLButtonElement = href
+          ? Object.assign(document.createElement('a'), {
+              href,
+              ...(action.target ? { target: action.target } : {}),
+              ...(action.target === '_blank' ? { rel: 'noopener noreferrer' } : {}),
+            })
+          : Object.assign(document.createElement('button'), { type: 'button' })
         item.className = 'item'
         item.setAttribute('part', 'item')
         item.setAttribute('role', 'menuitem')
@@ -1039,14 +1041,14 @@ export class OASFloatButton extends OASElement {
     this.rebuildWithFocusRestore(() => {
       layer.querySelectorAll('.action-btn').forEach((n) => n.remove())
       this.actionsList.forEach((action, index) => {
-        const item: HTMLAnchorElement | HTMLButtonElement =
-          action.href != null && action.href !== ''
-            ? Object.assign(document.createElement('a'), {
-                href: action.href,
-                ...(action.target ? { target: action.target } : {}),
-                rel: 'noopener noreferrer',
-              })
-            : Object.assign(document.createElement('button'), { type: 'button' })
+        const href = safeUrl(action.href)
+        const item: HTMLAnchorElement | HTMLButtonElement = href
+          ? Object.assign(document.createElement('a'), {
+              href,
+              ...(action.target ? { target: action.target } : {}),
+              rel: 'noopener noreferrer',
+            })
+          : Object.assign(document.createElement('button'), { type: 'button' })
         item.className = 'action-btn'
         item.setAttribute('part', 'action-btn')
         item.setAttribute('aria-label', action.label)
@@ -1082,11 +1084,12 @@ export class OASFloatButton extends OASElement {
   /** 菜单项选择：派发 oas-select（链接项附 href）并收起；焦点归还主钮（APG menu 惯例） */
   private selectItem(index: number, action: FloatButtonAction): void {
     const detail: { index: number; label: string; href?: string } = { index, label: action.label }
-    if (action.href) detail.href = action.href
+    const href = safeUrl(action.href)
+    if (href) detail.href = href
     this.emit('select', detail)
     this.closeExpand()
     // 菜单项随面板隐藏会失焦落到 body——回焦主钮保持键盘流连续（链接项由浏览器接管导航，focus 无副作用）
-    if (!action.href) this.btn?.focus()
+    if (!href) this.btn?.focus()
   }
 
   /** 查表渲染图标（内联 SVG，跟随 currentColor） */

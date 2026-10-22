@@ -114,7 +114,7 @@ onMounted(() => {
 | --- | --- | --- | --- |
 | `action-text` | action 操作文字；缺省不渲染 action 区 | — | — |
 | `closable` | 是否显示关闭按钮；点击派发 oas-close 并自隐藏（设 open 恢复） | `boolean` | — |
-| `href` | action 链接地址：在场时 action 渲染为 `<a>`（原生导航），缺省渲染为 `<button>`（派发 oas-action-click）；运行时增删切换形态 | — | — |
+| `href` | action 链接地址：在场时 action 渲染为 `<a>`（原生导航），缺省渲染为 `<button>`（派发 oas-action-click）；运行时增删切换形态 | `string` | — |
 | `icon` | 图标名（oas-icon 体系）；缺省按 type 自动匹配，icon="none" 不显示，非法名回落 type 默认；slot="icon" 富内容优先 | — | — |
 | `interval` | items 轮播间隔（毫秒，默认 4000）；非法/非正数回退默认 | `string` | — |
 | `items` | 多条通告 JSON 字符串数组：纵向轮播（淡入淡出）；非法 JSON/空数组回退默认插槽；items 优先于插槽；prefers-reduced-motion 下不自动轮播 | — | — |

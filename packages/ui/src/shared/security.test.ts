@@ -9,6 +9,15 @@ import { OASSidebar } from '../layout/sidebar/index.js'
 import { OASMenu } from '../navigation/menu/index.js'
 import { OASMenubar } from '../navigation/menubar/index.js'
 import { OASNavigationMenu } from '../navigation/navigation-menu/index.js'
+import { OASFloatButton } from '../navigation/float-button/index.js'
+import { OASTabs } from '../navigation/tabs/index.js'
+import { OASAttachment } from '../conversation/attachment/index.js'
+import { OASNoticeBar } from '../feedback/notice-bar/index.js'
+import { OASCard } from '../data/card/index.js'
+import { OASListItem } from '../data/list/index.js'
+import { OASBreadcrumb } from '../navigation/breadcrumb/index.js'
+import { OASAnchor } from '../navigation/anchor/index.js'
+import { OASPagination } from '../navigation/pagination/index.js'
 
 const PAYLOAD = 'red" onload="window.__oas_xss=1'
 const flush = async (): Promise<void> => {
@@ -27,6 +36,12 @@ function expectNoInjectedAttrs(root: ParentNode): void {
     expect(el.getAttribute('onload'), `${el.tagName} 不应出现 onload`).toBeNull()
     expect(el.getAttribute('onmouseover'), `${el.tagName} 不应出现 onmouseover`).toBeNull()
     expect(el.getAttribute('onclick'), `${el.tagName} 不应出现 onclick`).toBeNull()
+  }
+}
+
+function expectNoJavascriptHref(root: ParentNode): void {
+  for (const anchor of root.querySelectorAll<HTMLAnchorElement>('a[href]')) {
+    expect(anchor.getAttribute('href') ?? '', '不得写入可执行协议 href').not.toMatch(/^javascript:/i)
   }
 }
 
@@ -118,6 +133,79 @@ describe('HTML/SVG 注入安全回归', () => {
     const el = mount(new OASLink(), { href: 'javascript:window.__oas_xss=1' })
     await flush()
     expect(el.shadowRoot!.querySelector('a')!.hasAttribute('href')).toBe(false)
+  })
+
+  it('float-button / attachment / notice-bar / card / list-item 的 javascript: href 退化为非链接', async () => {
+    const payload = 'javascript:window.__oas_xss=1'
+    const floatButton = mount(new OASFloatButton(), { href: payload })
+    const floatMenu = mount(new OASFloatButton(), {
+      mode: 'menu',
+      actions: JSON.stringify([{ label: 'Bad', href: payload }]),
+    })
+    const attachment = mount(new OASAttachment(), { name: 'a.pdf', href: payload })
+    const notice = mount(new OASNoticeBar(), { 'action-text': '打开', href: payload })
+    const card = mount(new OASCard(), { href: payload })
+    const listItem = mount(new OASListItem(), { href: payload })
+    await flush()
+    floatMenu.shadowRoot!.querySelector<HTMLElement>('[part="btn"]')!.click()
+    await flush()
+    for (const el of [floatButton, floatMenu, attachment, notice, card, listItem]) {
+      expectNoJavascriptHref(el.shadowRoot!)
+      expectNoInjectedAttrs(el.shadowRoot!)
+    }
+  })
+
+  it('tabs 的 panel/items javascript: href 不渲染链接 tab', async () => {
+    const payload = 'javascript:window.__oas_xss=1'
+    const el = new OASTabs()
+    el.innerHTML = `<oas-tab-panel label="Bad" value="bad" href="${payload}"><p>x</p></oas-tab-panel>`
+    mount(el)
+    await flush()
+    expectNoJavascriptHref(el.shadowRoot!)
+    expect(el.shadowRoot!.querySelector('[role="tab"]')!.tagName).toBe('BUTTON')
+
+    const viaItems = new OASTabs()
+    viaItems.setAttribute('items', JSON.stringify([{ label: 'Bad', value: 'bad', href: payload }]))
+    mount(viaItems)
+    await flush()
+    expectNoJavascriptHref(viaItems.shadowRoot!)
+    expect(viaItems.shadowRoot!.querySelector('[role="tab"]')!.tagName).toBe('BUTTON')
+  })
+
+  it('breadcrumb / anchor / pagination 的 javascript: href 不写入链接（含 breadcrumb 嵌套 dropdown）', async () => {
+    const payload = 'javascript:window.__oas_xss=1'
+    const breadcrumb = mount(new OASBreadcrumb(), {
+      items: JSON.stringify([
+        { label: '带下拉', dropdown: [{ label: '嵌套坏链', href: payload }] },
+        { label: '顶层', href: payload },
+        { label: '末页' },
+      ]),
+    })
+    const anchor = mount(new OASAnchor(), { items: JSON.stringify([{ href: payload, title: 'Bad' }]) })
+    const anchorChild = new OASAnchor()
+    anchorChild.innerHTML = `<oas-anchor-item href="${payload}">Bad</oas-anchor-item>`
+    mount(anchorChild)
+    const pagination = mount(new OASPagination(), { total: '30', 'href-template': `${payload}?page={page}` })
+    await flush()
+    for (const el of [breadcrumb, anchor, anchorChild, pagination]) {
+      expectNoJavascriptHref(el.shadowRoot!)
+      expectNoInjectedAttrs(el.shadowRoot!)
+    }
+  })
+
+  it('data:/vbscript: 与 blob: 边界：可执行/内联文档协议拦截，同源 blob 对象 URL 放行', async () => {
+    for (const payload of ['data:text/html,<script>1</script>', 'vbscript:msgbox(1)']) {
+      const el = mount(new OASCard(), { href: payload })
+      await flush()
+      expectNoJavascriptHref(el.shadowRoot!)
+      expect(el.shadowRoot!.querySelector('a')?.getAttribute('href') ?? '').not.toMatch(/^(?:data|vbscript):/i)
+    }
+    const blob = mount(new OASAttachment(), {
+      name: 'a.png',
+      href: 'blob:https://example.com/550e8400-e29b-41d4-a716-446655440000',
+    })
+    await flush()
+    expect(blob.shadowRoot!.querySelector('a')?.getAttribute('href')).toContain('blob:https://example.com/')
   })
 
   for (const [name, ctor] of [

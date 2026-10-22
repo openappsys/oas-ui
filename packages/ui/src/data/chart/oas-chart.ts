@@ -517,7 +517,7 @@ export class OASChart extends OASElement {
       out += `<path class="line-path ${cls} animate" d="${path}"${this.colorStyle(color)}></path>`
       pts.forEach((p, i) => {
         const label = this.datumLabel(data.labels[i] ?? '', series.data[i] ?? 0)
-        out += `<circle class="dot ${cls} animate" cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="3.5"><title>${this.escapeAttr(label)}</title></circle>`
+        out += `<circle class="dot ${cls} animate" cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="3.5"${this.colorStyle(color)}><title>${this.escapeAttr(label)}</title></circle>`
       })
     })
     return out
@@ -562,7 +562,7 @@ export class OASChart extends OASElement {
       out += `<path class="line-path ${cls} animate" d="${path}"${this.colorStyle(color)}></path>`
       pts.forEach((p, i) => {
         const label = this.datumLabel(data.labels[i] ?? '', series.data[i] ?? 0)
-        out += `<circle class="dot ${cls} animate" cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="3.5"><title>${this.escapeAttr(label)}</title></circle>`
+        out += `<circle class="dot ${cls} animate" cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="3.5"${this.colorStyle(color)}><title>${this.escapeAttr(label)}</title></circle>`
       })
     })
     return defs + out
@@ -654,7 +654,7 @@ export class OASChart extends OASElement {
       out += `<path class="line-path ${cls} animate" d="${path}"${this.colorStyle(color)}></path>`
       pts.forEach((p, i) => {
         const label = this.datumLabel(data.labels[i] ?? '', series.data[i] ?? 0)
-        out += `<circle class="dot ${cls} animate" cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="3.5"><title>${this.escapeAttr(label)}</title></circle>`
+        out += `<circle class="dot ${cls} animate" cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="3.5"${this.colorStyle(color)}><title>${this.escapeAttr(label)}</title></circle>`
       })
     })
     return out

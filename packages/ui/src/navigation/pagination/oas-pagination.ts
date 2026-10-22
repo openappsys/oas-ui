@@ -2,6 +2,7 @@ import { OASElement, escapeText } from '@oas-ui/core'
 import { normalizeSizeStrict, ALL_SIZES, type OasSize } from '../../shared/size.js'
 import { isRtl } from '../../shared/direction.js'
 import { devWarn } from '../../shared/dev-warn.js'
+import { safeUrl } from '../../shared/safe-url.js'
 
 export type PaginationSize = OasSize
 
@@ -389,12 +390,14 @@ export class OASPagination extends OASElement {
           el.textContent = label
         }
       }
-      if (hrefTemplate !== '' && !bDisabled) {
+      const safeHref = hrefTemplate !== '' && !bDisabled ? safeUrl(this.renderHref(hrefTemplate, targetPage)) : ''
+      if (safeHref !== '') {
         const a = document.createElement('a')
         a.className = 'btn'
         a.setAttribute('part', part)
-        a.href = this.renderHref(hrefTemplate, targetPage)
+        a.href = safeHref
         if (target !== '') a.setAttribute('target', target)
+        if (target === '_blank') a.setAttribute('rel', 'noopener noreferrer')
         a.setAttribute('aria-label', ariaLabel)
         fill(a)
         a.addEventListener('click', (e) => this.onLinkClick(e as MouseEvent, targetPage))

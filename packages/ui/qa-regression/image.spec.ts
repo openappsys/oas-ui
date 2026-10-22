@@ -1,7 +1,7 @@
 // 复核回归：image——历史缺陷固化断言。
 
 import { test, expect } from '@playwright/test'
-import { up } from './helpers'
+import { up, realClick } from './helpers'
 
 test('image-group：容器收集子图为共享图集，点击打开共享预览、prev/next 切换 current、动态增删同步', async ({
   page,
@@ -25,7 +25,7 @@ test('image-group：容器收集子图为共享图集，点击打开共享预览
   expect(collected.ariaLabel).toBe('图集')
 
   // 点击第 2 张 → 共享预览从 2/N 起开；子图自身预览被接管（自身遮罩保持关闭）
-  await page.locator('#image-group-demo oas-image').nth(1).click()
+  await realClick(page, '#image-group-demo oas-image:nth-of-type(2)', null)
   await page.waitForSelector('[data-oas-image-preview-portal]', { timeout: 15000 })
   const opened = await page.evaluate(() => {
     const portal = document.querySelector('[data-oas-image-preview-portal]')!

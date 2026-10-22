@@ -1,4 +1,5 @@
 import { OASElement } from '@oas-ui/core'
+import { safeUrl } from '../../shared/safe-url.js'
 
 /** 附件状态机（独立于 oas-upload 词表：upload 用 pending/uploading/done/error，本组件初始态为 idle、另多 processing 中间态） */
 export type AttachmentState = 'idle' | 'uploading' | 'processing' | 'error' | 'done'
@@ -355,7 +356,7 @@ export class OASAttachment extends OASElement {
 
   /** href 有则把触发器换成 <a>（点击派发 oas-open，浏览器接管导航），无则中性 div */
   private syncTrigger(): void {
-    const href = this.getAttribute('href') ?? ''
+    const href = safeUrl(this.getAttribute('href') ?? '')
     this.boundHref = href
     const current = this.shadow.querySelector('[part="trigger"]')
     if (!current) return
@@ -364,6 +365,7 @@ export class OASAttachment extends OASElement {
       const a = document.createElement('a')
       a.setAttribute('part', 'trigger')
       a.className = 'trigger'
+      a.href = href
       while (current.firstChild) a.appendChild(current.firstChild)
       current.replaceWith(a)
       // 替换产生的新元素不带旧监听：重挂（切换只在 href 有无跨越时发生，不重复）

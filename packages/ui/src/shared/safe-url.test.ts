@@ -6,6 +6,9 @@ describe('safeUrl', () => {
     expect(safeUrl('https://example.com/a?x=1')).toBe('https://example.com/a?x=1')
     expect(safeUrl('mailto:a@b.com')).toBe('mailto:a@b.com')
     expect(safeUrl('tel:+8610000')).toBe('tel:+8610000')
+    expect(safeUrl('blob:https://example.com/550e8400-e29b-41d4-a716-446655440000')).toBe(
+      'blob:https://example.com/550e8400-e29b-41d4-a716-446655440000',
+    )
     expect(safeUrl('/docs/a')).toBe('/docs/a')
     expect(safeUrl('./a')).toBe('./a')
     expect(safeUrl('../a')).toBe('../a')

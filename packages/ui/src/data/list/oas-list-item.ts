@@ -1,4 +1,5 @@
 import { OASElement } from '@oas-ui/core'
+import { safeUrl } from '../../shared/safe-url.js'
 
 const STYLE = `
 :host {
@@ -213,7 +214,7 @@ export class OASListItem extends OASElement {
     this.addEventListener('keydown', (e) => this.handleKeydown(e as KeyboardEvent))
     this.addEventListener('click', (e) => {
       // 链接行：点击 = 原生导航（覆盖 <a> 承担），不派 oas-click（语义分离避免双触发）
-      if (this.hasAttribute('href')) return
+      if (this.linkHref() !== '') return
       if (!this.hasAttribute('clickable')) return
       if (this.hitsInteractive(e)) return
       this.emit('click', { index: this.rowIndex(), item: this.itemData })
@@ -306,7 +307,7 @@ export class OASListItem extends OASElement {
     //（点击=导航，语义分离）——钩子仅驱动高亮态 CSS。
     // role / aria-pressed 组件一律不自设也不删——宿主显式挂的（如想恢复行级按钮语义的
     // role="button" + aria-pressed）原样保留不覆盖（与 card「宿主显式角色不覆盖」口径一致）
-    const linked = this.hasAttribute('href')
+    const linked = this.linkHref() !== ''
     const clickable = this.hasAttribute('clickable') || linked
     this.toggleAttribute('data-clickable', clickable)
     // 焦点：链接行的键盘焦点由内部覆盖 <a> 承担（host 不设 tabindex，避免双 Tab 停靠点）
@@ -328,10 +329,15 @@ export class OASListItem extends OASElement {
     return (this.textContent ?? '').trim()
   }
 
+  /** 链接行 href（协议白名单后；非法协议一律视为无链接） */
+  private linkHref(): string {
+    return safeUrl(this.getAttr('href', ''))
+  }
+
   /** 整行链接覆盖层同步：href 在场渲染 absolute inset-0 的 <a>（z-index 1，位于 .extra 之下） */
   private syncRowLink(): void {
     let a = this.shadow.querySelector<HTMLAnchorElement>('a.row-link')
-    const href = this.getAttr('href', '')
+    const href = this.linkHref()
     if (href === '') {
       a?.remove()
       return
@@ -364,7 +370,7 @@ export class OASListItem extends OASElement {
   /** 键盘可达：Enter / Space 触发行点击（Space 阻止页面滚动）；焦点在行内控件时不接管；
    *  链接行 Enter 导航由内部原生 <a> 承担（preventDefault 会吞掉原生跳转，直接跳过） */
   private handleKeydown(e: KeyboardEvent): void {
-    if (this.hasAttribute('href')) return
+    if (this.linkHref() !== '') return
     if (!this.hasAttribute('clickable')) return
     if (e.key !== 'Enter' && e.key !== ' ') return
     if (this.hitsInteractive(e)) return

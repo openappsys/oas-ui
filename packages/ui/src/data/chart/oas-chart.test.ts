@@ -1049,6 +1049,19 @@ describe('OASChart', () => {
     expect(path.getAttribute('style')).toBe('color:var(--oas-color-primary, #3b82f6)')
   })
 
+  it('options.colors 同时作用于折线与 dot：宿主自定义色时线/点同色', () => {
+    const el = mount({
+      type: 'line',
+      data: SINGLE,
+      options: JSON.stringify({ colors: ['rgb(1, 2, 3)'] }),
+    })
+    const svg = svgOf(el)
+    expect(svg.querySelector('.line-path')!.getAttribute('style')).toBe('color:rgb(1, 2, 3)')
+    const dots = [...svg.querySelectorAll<SVGCircleElement>('circle.dot')]
+    expect(dots.length).toBeGreaterThan(0)
+    for (const dot of dots) expect(dot.getAttribute('style')).toBe('color:rgb(1, 2, 3)')
+  })
+
   // yAxisIndex 契约：仅数字 1 / 字符串 "1"（数值 1）绑右轴，其余非法值归左轴。
   // 此前 `Number(rec.yAxisIndex) === 1` 会把 true / [1] 数值强制转换成 1 误绑右轴。
   it('series.yAxisIndex 非法类型（true / [1]）归左轴，不因数值强制转换误绑右轴', () => {
