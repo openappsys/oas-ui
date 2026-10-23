@@ -2659,8 +2659,8 @@ group 子钮此前为宿主自填 light DOM（`slot="action"`），组件用 `::
 
 ## v2.6.3：gantt 逐资源日历/班次
 
-- **范围**：新增 resources 属性与 GanttTask.resources；资源项支持 workdays、holidays、shifts；新增 `group-by-resource` 资源泳道（按首个分配资源分组，资源名取 name/缺省 id，多资源任务只出现一次，未分配任务保持顶层）。auto-schedule 按任务全部分配资源的工作日取交集、假期取并集后吸附工作日；hour 档按所有声明 shifts 资源的窗口交集吸附起点；未声明 shifts 的资源不约束。shifts: [] 表示资源无可用班次。
-- **语义**：未声明 resources 或任务无资源时回退全局 workdays/holidays；资源缺失 id 忽略。日级排程只消费 workdays/holidays，hour 档班次只吸附起点、不压缩工期；多资源班次取交集，无共同班次时不吸附、不拖到任何一方单边班次。
+- **范围**：新增 resources 属性与 GanttTask.resources；资源项支持 workdays、holidays、shifts；新增 `group-by-resource` 资源泳道（按首个分配资源分组，资源名取 name/缺省 id，多资源任务只出现一次，未分配任务保持顶层）。auto-schedule 按任务全部分配资源的工作日取交集、假期取并集后吸附工作日；hour 档按所有声明 shifts 资源的窗口交集吸附起点；未声明 shifts 的资源不约束。shifts: [] 表示资源无可用班次（日级任务日历同步视为全周不可用）。
+- **语义**：未声明 resources 或任务无资源时回退全局 workdays/holidays；资源缺失 id 忽略。日级排程消费 workdays/holidays；资源 `shifts: []` 或 workdays 交集为空时，该任务的日级日历视为全周不可用（v2.6.3 实现：吸附在 400 天上限内找不到工作日时保持原值，任务可能留在不可用日——已知边界）；hour 档班次只吸附起点、不压缩工期；多资源班次取交集，无共同班次时不吸附、不拖到任何一方单边班次。
 - **兼容**：新字段/属性全部可选；不设置时与旧版完全一致；group-by-resource 与 group-by-project 同时开启时资源泳道优先。
 - **验收**：单测覆盖资源假期、工作日交集、多资源组合、任务 resources 清洗、hour 班次吸附与多资源交集/无交集、资源泳道分组；e2e 覆盖逐资源日历/资源泳道/小时班次 demo；文档 zh/en、API 说明与 CHANGELOG 同步。
 
