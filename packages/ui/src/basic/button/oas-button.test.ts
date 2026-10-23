@@ -1064,11 +1064,11 @@ describe('active / active-tint 选中态', () => {
     const btn = shadowBtn(el)
     expect(btn.style.getPropertyValue('--oas-button-active-tint')).toBe('var(--oas-preset-green-text)')
     expect(btn.style.getPropertyValue('--oas-button-active-tint-text')).toBe('var(--oas-preset-green-text)')
-    // 预设名无法 JS 算亮度：不注入 on 色（走 CSS 兜底 token）
+    // 预设名无法 JS 解析实底色：不参与对比度择优，不注入 on 色（走 CSS 兜底 token）
     expect(btn.style.getPropertyValue('--oas-button-active-tint-on')).toBe('')
   })
 
-  it('active-tint 自定义色：原样注入 + 主题感知文字安全档 + 实底文字按底色亮度取黑/白', () => {
+  it('active-tint 自定义色：原样注入 + 主题感知文字安全档 + 实底文字按 WCAG 对比度取黑/白', () => {
     const el = mount({ 'active-tint': '#7c3aed' })
     const btn = shadowBtn(el)
     expect(btn.style.getPropertyValue('--oas-button-active-tint')).toBe('#7c3aed')

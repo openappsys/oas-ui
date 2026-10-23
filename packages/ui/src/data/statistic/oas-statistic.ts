@@ -126,6 +126,8 @@ export class OASStatistic extends OASElement {
    *  防水合后首次 update 把标题清掉 */
   protected override hydrate(): boolean {
     if (!this.shadow.querySelector('[part="statistic"]')) return false
+    // 旧版 SSR 快照无 value-inner：结构不符时回退重建，避免 update 因缺节点静默失效
+    if (!this.shadow.querySelector('[part="value-inner"]')) return false
     const snapTitle = this.shadow.querySelector('[part="title"] [data-fallback]')?.textContent ?? ''
     if (snapTitle !== '') this.titleCache = snapTitle
     this.bind()
@@ -218,12 +220,16 @@ export class OASStatistic extends OASElement {
     // ---- 数值区：loading 骨架占位 / slot="value" 分发 / Intl 格式化兜底 ----
     const valueEl = this.shadow.querySelector<HTMLElement>('[part="value"]')
     const valueSlot = this.shadow.querySelector<HTMLSlotElement>('slot[name="value"]')
+    const valueInner = this.shadow.querySelector<HTMLElement>('[part="value-inner"]')
     const valueFallback = this.shadow.querySelector<HTMLElement>('[part="value"] [data-fallback]')
     const skeleton = this.shadow.querySelector<HTMLElement>('[part="value"] .skeleton')
-    if (!valueEl || !valueFallback || !skeleton) return
+    if (!valueEl || !valueInner || !valueFallback || !skeleton) return
     const loading = this.hasAttr('loading')
     if (valueSlot) valueFallback.hidden = this.slotHasContent(valueSlot)
     valueFallback.textContent = this.formatNumber()
+    // 骨架与数值互斥：loading 时隐藏整个数值内容容器（含 slot="value" 自定义内容，
+    // 仅隐藏兜底文本挡不住插槽节点），骨架独占数值区；取消 loading 恢复
+    valueInner.hidden = loading
     skeleton.hidden = !loading
   }
 

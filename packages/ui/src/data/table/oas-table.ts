@@ -19,6 +19,8 @@ import {
   type ExportFormat,
 } from './oas-table-export.js'
 import { devWarn } from '../../shared/dev-warn.js'
+// 行键计算（row-key 缺失时按行对象缓存 JSON.stringify 回退，见模块注释）
+import { rowKeyValue } from './oas-table-row-key.js'
 // 服务端行窗口协议（windowed 模式）：与宿主交换行区间的共享契约（类型 + 纯工具），
 // 数据密集型组件统一口径（table / gantt / resource / kanban / scheduler 同源）
 import {
@@ -1161,6 +1163,8 @@ export class OASTableBase extends OASElement {
       'group-by',
       // 单元格溢出提示：纯文本格溢出时 hover 显示全文（表格级单例浮层；"false" 关闭）
       'cell-tooltip',
+      // 宿主 aria-label：命名内部 table（无 caption 机制，宿主命名是唯一通道；见 syncHostAriaLabel）
+      'aria-label',
     ]
   }
 
@@ -1406,6 +1410,11 @@ export class OASTableBase extends OASElement {
    * 全量渲染，防止增量快路径把它吞成 no-op。其余属性同值写入无渲染差异，照常走签名判定。
    */
   override attributeChangedCallback(name: string, oldValue: string | null, newValue: string | null): void {
+    if (name === 'aria-label' && this.hasRendered) {
+      // 可访问名不参与渲染：轻量直写，跳过 update（否则增量快路径会 settleEdit，取消进行中的单元格编辑）
+      this.syncHostAriaLabel()
+      return
+    }
     if (name === 'data' && oldValue === newValue && oldValue !== null && this.hasRendered) {
       this.markRenderDirty()
     }
@@ -1513,10 +1522,9 @@ export class OASTableBase extends OASElement {
     const selectAll = document.createElement('input')
     selectAll.type = 'checkbox'
     selectAll.setAttribute('aria-label', this.t('table.selectAll'))
-    selectAll.checked =
-      flat.length > 0 && flat.every((f) => selected.includes(String(f.row[rowKey] ?? JSON.stringify(f.row))))
+    selectAll.checked = flat.length > 0 && flat.every((f) => selected.includes(rowKeyValue(f.row, rowKey)))
     selectAll.addEventListener('change', () => {
-      const keys = flat.map((f) => String(f.row[rowKey] ?? JSON.stringify(f.row)))
+      const keys = flat.map((f) => rowKeyValue(f.row, rowKey))
       this.setAttribute('selected', selectAll.checked ? keys.join(',') : '')
       this.emit('check', { keys: selectAll.checked ? keys : [] })
       this.runUpdateAndNotify()
@@ -1643,14 +1651,16 @@ export class OASTableBase extends OASElement {
   }
 
   /**
-   * 渲染签名：除 `selected` 外的全部观察属性值 + 环境文案 + 非属性通道版本。
+   * 渲染签名：除 `selected` / `aria-label` 外的全部观察属性值 + 环境文案 + 非属性通道版本。
    * 与上次渲染一致 ⇒ 渲染输入零变化（no-op）或仅选择变化（局部补丁）；
    * 任意其他属性 / 文案 / property 通道变化 ⇒ 签名失配 ⇒ 全量渲染。
+   * `aria-label` 只命名内部 table（syncHostAriaLabel），不改变任何渲染输入——进签名会导致
+   * 仅改名称就整表重建（丢焦点/滚动位置），故排除（与 selected 同理）。
    */
   private renderSignature(): string {
     const parts: string[] = []
     for (const name of (this.constructor as typeof OASTableBase).observedAttributes) {
-      if (name === 'selected') continue
+      if (name === 'selected' || name === 'aria-label') continue
       // 布尔属性「缺席」与「空值」必须区分（setAttribute('x','') 是有效变更，不得与缺席同签名）
       const v = this.getAttribute(name)
       parts.push(v === null ? '\u0000' : `\u0001${v}`)
@@ -1796,11 +1806,24 @@ export class OASTableBase extends OASElement {
     if (!input) return
     const flat = this.flatCache?.flat ?? []
     const rowKey = this.getAttr('row-key', 'key')
-    input.checked = flat.length > 0 && flat.every((f) => next.has(String(f.row[rowKey] ?? JSON.stringify(f.row))))
+    input.checked = flat.length > 0 && flat.every((f) => next.has(rowKeyValue(f.row, rowKey)))
+  }
+
+  /** 宿主 aria-label → 内部 table 可访问名（grid 语义与原生 table 均支持命名）。
+      表格没有 caption 机制（内部 table 由组件渲染，宿主无法写 caption 子元素），宿主命名是
+      唯一通道；缺省不写（不伪造内置文案）。只写 table，表头/单元格 role 链不受影响。 */
+  private syncHostAriaLabel(): void {
+    const table = this.shadow.querySelector('table')
+    if (!table) return
+    const label = this.getAttribute('aria-label')?.trim()
+    if (label) table.setAttribute('aria-label', label)
+    else table.removeAttribute('aria-label')
   }
 
   protected override update(): void {
-    // 增量渲染快路径：渲染签名一致（除 selected 外的输入零变化）时免 O(总量) 扁平化/
+    // 可访问名独立于渲染输入：必须在增量快路径之前同步（否则仅改 aria-label 会被快路径吞掉）。
+    this.syncHostAriaLabel()
+    // 增量渲染快路径：渲染签名一致（除 selected / aria-label 外的输入零变化）时免 O(总量) 扁平化/
     // 汇总重算与整表 DOM 重建——仅 selected 变化走行级局部补丁，完全无变化直接 no-op。
     // 万级数据下「切换选择」从 O(总量) 扁平化 + 全表重建降为 O(渲染行数) 补丁。
     const selectedAttr = this.getAttr('selected', '')
@@ -2299,7 +2322,7 @@ export class OASTableBase extends OASElement {
     const tr = document.createElement('tr')
     tr.className = 'row'
     tr.setAttribute('part', 'row')
-    const key = String(row[rowKey] ?? JSON.stringify(row))
+    const key = rowKeyValue(row, rowKey)
     tr.setAttribute('data-selected', String(selected.includes(key)))
     tr.setAttribute('data-key', key)
     // 绝对数据行号（windowed 为全量绝对行；其余为当前展示集数据行序，0 起，不含 expand/group 行）：
@@ -3331,7 +3354,7 @@ export class OASTableBase extends OASElement {
         flat.push({ row, depth, parent, kind: 'data' })
         const children = row.children
         if (Array.isArray(children) && children.length > 0) {
-          walk(children, depth + 1, String(row[rowKey] ?? JSON.stringify(row)))
+          walk(children, depth + 1, rowKeyValue(row, rowKey))
         }
       }
     }
@@ -3383,7 +3406,7 @@ export class OASTableBase extends OASElement {
       const row = f.row
       const children = row.children
       const hasChildren = Array.isArray(children) && children.length > 0
-      const key = String(row[rowKey] ?? JSON.stringify(row))
+      const key = rowKeyValue(row, rowKey)
       if (!hasChildren && expanded.has(key) && typeof row.expand === 'string' && row.expand.length > 0) {
         out.push({
           row,
@@ -3768,7 +3791,7 @@ export class OASTableBase extends OASElement {
     const rowKey = this.getAttr('row-key', 'key')
     const walk = (nodes: Array<Record<string, unknown>>): Record<string, unknown> | null => {
       for (const row of nodes) {
-        if (String(row[rowKey] ?? JSON.stringify(row)) === key) return row
+        if (rowKeyValue(row, rowKey) === key) return row
         const children = row.children
         if (Array.isArray(children)) {
           const hit = walk(children as Array<Record<string, unknown>>)

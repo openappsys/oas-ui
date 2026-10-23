@@ -1114,7 +1114,7 @@ export class OASButton extends OASElement {
     // active-tint 选中着色（ui-spec §4.1 color 协议）：预设名 → --oas-preset-*-text 档
     // （预设基色对白字对比不达标，实底选中与 toggle-button 同取更深一档）；任意色值原样注入，
     // 文字安全档走主题感知混合（--oas-deep-mix/--oas-deep-sink，light 掺近黑压深 / dark 掺近白提亮）、
-    // 实底文字按底色亮度取黑/白。仅在属性在场时注入，缺省零回归
+    // 实底文字按 WCAG 对比度取黑/白。仅在属性在场时注入，缺省零回归
     const tint = this.getAttr('active-tint', '').trim()
     if (tint) {
       const isPreset = (PRESET_TINTS as readonly string[]).includes(tint)
@@ -1173,7 +1173,7 @@ export class OASButton extends OASElement {
         '--oas-button-color-deep',
         `color-mix(in srgb, ${color} var(--oas-deep-mix, 72%), var(--oas-deep-sink, black))`,
       )
-      // 实心底文字色按底色亮度取黑/白（on-primary 对中间调自定义色可能不可读）
+      // 实心底文字色按 WCAG 对比度取黑/白（on-primary 对中间调自定义色可能不可读）
       this.btn.style.setProperty('--oas-button-on-color', pickOnColor(color))
     } else {
       this.btn.style.removeProperty('--oas-button-color')

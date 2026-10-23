@@ -234,6 +234,10 @@
       "type": "string",
       "default": "true",
       "observed": true
+    },
+    {
+      "name": "aria-label",
+      "observed": true
     }
   ],
   "props": [

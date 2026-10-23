@@ -144,7 +144,7 @@ const STATUS_COLOR: Record<string, string> = {
 }
 
 /**
- * 自定义色实心底的文字色：按相对亮度取深/浅，保证对比可读（共享实现见 `shared/on-color`）。
+ * 自定义色实心底的文字色：按 WCAG 对比度（token 候选回落亮度启发式）取深/浅，保证对比可读（共享实现见 `shared/on-color`）。
  */
 function pickOnColor(color: string): string {
   return pickOnColorBase(color, { dark: '#18181b', light: '#ffffff', fallback: '' })
@@ -153,7 +153,7 @@ function pickOnColor(color: string): string {
 /**
  * color 属性解析：4 语义色 → token + on-color；11 预设名 → --oas-preset-* token
  * （on-color 走 text-on-primary，dark 自动切深字）；其余按任意 CSS 色值注入，
- * 实心文字色用 pickOnColor 按底色亮度取黑/白。
+ * 实心文字色用 pickOnColor 按 WCAG 对比度取黑/白。
  *
  * 感知对比度（≥60）修正：
  * - 预设基色（如 cyan #13c2c2）对白字不达标 → 实底 bg 直接用更深的 -text 档配白字；
@@ -1269,7 +1269,7 @@ const STYLE = `
 }
 
 /* ===== premium 金属质感：金色渐变 + 深金描边；与 color 正交叠加（优先级 premium > color），
-   规则置于全部 color 语义类之后保证覆盖；文字色按金底亮度取深色，dark 下 preset-gold 自动调亮 */
+   规则置于全部 color 语义类之后保证覆盖；文字色固定深色（金底渐变不参与对比度择优），dark 下 preset-gold 自动调亮 */
 .ribbon.premium {
   color: var(--oas-preset-gold);
   background: linear-gradient(

@@ -611,7 +611,7 @@ Node-safe 入口、`@oas-ui/ssr` 渲染器、白名单试点、e2e 四条验收�
 ### 增强（badge 第二轮）
 
 - **badge→standalone 独立徽标**：默认插槽无内容时徽标从 absolute 贴右上角回落为静态行内展示（inline-flex 不塌陷，可独立放在文本流/菜单行）
-- **badge→color 全模式**：count/dot/ribbon 统一支持 4 语义色（token + on-color 白字）、任意 CSS 色值、11 预设名（解析到 --oas-preset-* token）；实心文字色用 pickOnColor 按底色亮度取黑/白；ribbon 保留现有语义色 class 逻辑兼容
+- **badge→color 全模式**：count/dot/ribbon 统一支持 4 语义色（token + on-color 白字）、任意 CSS 色值、11 预设名（解析到 --oas-preset-* token）；实心文字色用 pickOnColor 按 WCAG 对比度在黑/白中择优；ribbon 保留现有语义色 class 逻辑兼容
 - **badge→offset**：`offset="x,y"`（px 数字）叠加到 count/dot 角标右上角定位（现有 translate 基础上平移）；非法值静默忽略
 - **badge→status 状态点**：`status="success|processing|default|error|warning"` 渲染「状态点 + text 文字」行内独立元素（非角标定位）；processing 圆点脉冲（prefers-reduced-motion 停用）；语义色映射 success→success / processing→primary / error→danger / warning→warning / default→text-secondary；与 ribbon/dot/count 互斥（status 优先）
 - **badge→size**：`size="small"` 小尺寸档（count 高度 16→13px 左右、字号更小；dot 8→6px）
@@ -619,7 +619,7 @@ Node-safe 入口、`@oas-ui/ssr` 渲染器、白名单试点、e2e 四条验收�
 - **badge→corner 四角定位**：`corner="top-right|top-left|bottom-right|bottom-left"`（默认 top-right）定位 count/dot 角标；与 offset 关系：corner 快捷定角，offset 在 corner 结果上做屏幕坐标 px 精确微调（x 正向右、y 正向下，与 corner 朝向无关），先定角再平移可叠加；非法值静默回落 top-right
 - **badge→overlap 圆形内收**：包裹圆形内容（如头像）时角标向圆内收进圆边（平移幅度 50%→约 29%，1-√2/2 几何内收）；仅影响角标模式
 - **badge→ribbon-form 形态维度**：`ribbon-form="fold|diagonal|triangle|bookmark|side|seal|banner|flag|rounded|zigzag|arrow"`（默认 fold = 现行直条+折叠，向后兼容）。diagonal 45° 对角斜带跨顶角（宿主需 overflow:hidden 裁切，placement start/end 镜像 ±45°，文字随条旋转）；triangle 角落纯三角形 clip-path + 内嵌小图标（slot="ribbon" 内容）；bookmark 顶边垂挂竖条 + 底部燕尾 V 缺口；side 侧边竖挂（start 左/end 右镜像，折叠角在挂点）；seal 圆形锯齿印章（clip-path 锯齿多边形，文字居中）；banner 顶部横贯横幅（两端折角）；flag 侧燕尾横旗（外端贴卡片边线不探出，内端燕尾 V 缺口朝卡片内侧）；rounded 圆头端横条 / zigzag 锯齿端横条 / arrow 箭头端横条（端部造型装饰端均朝卡片内侧）。十一形态全为 clip-path/CSS 几何，与 placement/color 正交；非法值静默回落 fold
-- **badge→premium 金属质感**：布尔 `premium` 金色金属渐变底（多段亮金→暗金）+ 深金细描边（clip-path 形态沿轮廓 drop-shadow 描边）+ 文字色按金底亮度取深色；与 ribbon-form 正交可叠加；优先级 premium > color > 语义色；dark 主题走 `--oas-preset-gold` token 自动适配
+- **badge→premium 金属质感**：布尔 `premium` 金色金属渐变底（多段亮金→暗金）+ 深金细描边（clip-path 形态沿轮廓 drop-shadow 描边）+ 文字色固定深色（金底渐变不参与对比度择优）；与 ribbon-form 正交可叠加；优先级 premium > color > 语义色；dark 主题走 `--oas-preset-gold` token 自动适配
 - **badge→ribbon-form flag（侧燕尾横旗）**：`ribbon-form="flag"` 横条、外端贴卡片边线不探出，内端燕尾 V 缺口朝卡片内侧（clip-path 多边形在内端切 V 口，placement start/end 镜像）；底部挂点内侧保留折叠角（复用 fold 的 corner 尖三角，因条身 clip-path 会把条外元素裁掉，折叠角置于条身 clip 区域内 bottom 内侧）
 - **badge→rolled 端部卷边**：布尔 `rolled` 给卡片内侧端做卷边效果（内侧端大圆角 + 渐暗渐变模拟卷起圆柱，外端顶卡片边线不再探出；纯 CSS、原创）；独立开关，可叠加 fold / flag / rounded / zigzag / arrow（banner 保留自身双端折角不叠卷边；diagonal/triangle/bookmark/side/seal 静默忽略）
 - **badge→ribbon-size 斜带档位**：`ribbon-size="sm|md|lg"`（默认 sm）给 diagonal 提供三档（带宽/字号/带中心钉点递增，lg 覆盖电商 % off 大斜幅场景）；档位只改 `--oas-badge-diagonal-*` 的 fallback 默认值，宿主自定义属性优先级更高；仅 diagonal 生效，非法值静默回落 sm

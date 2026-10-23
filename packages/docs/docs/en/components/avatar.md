@@ -195,7 +195,7 @@ When `text` has multiple characters (organization or team names), it is no longe
 
 ## Background Color
 
-`color` follows the library-wide color protocol: 4 semantic colors (`primary`/`success`/`warning`/`danger`), 11 preset palette names (`blue`, `geekblue`, `volcano`, …), or any CSS color value. The text color is picked automatically (black/white) for contrast. You can also override the CSS variables `--oas-avatar-bg` / `--oas-avatar-on-color` directly.
+`color` follows the library-wide color protocol: 4 semantic colors (`primary`/`success`/`warning`/`danger`), 11 preset palette names (`blue`, `geekblue`, `volcano`, …), or any CSS color value. The text color is picked by WCAG contrast (black/white). You can also override the CSS variables `--oas-avatar-bg` / `--oas-avatar-on-color` directly.
 
 <DemoBlock title="Background color">
   <oas-avatar color="blue" size="40" text="O"></oas-avatar>

@@ -496,6 +496,12 @@ export class OASCommand extends OASElement {
   /** 当前过滤后可见项（不含分组标题/分隔行），与渲染顺序一一对应 */
   private visibleItems: CommandItem[] = []
   private activeIndex = 0
+  /**
+   * 上一次渲染的可见序列签名（value 序列）。
+   * 列表重建 / 过滤结果变化时 activeIndex 归零，避免 Enter 命中旧索引项；
+   * 仅无关属性触发的重渲染（序列不变）保留方向键高亮。
+   */
+  private visibleSig = ''
   private searchQuery = ''
   private wasOpen = false
   private previousFocus: HTMLElement | null = null
@@ -1288,8 +1294,9 @@ export class OASCommand extends OASElement {
     this.searchEl?.setAttribute('aria-controls', this.listboxId)
     this.visibleItems = []
 
-    // 视图模式：隐藏列表/空态，展示动态插槽
+    // 视图模式：隐藏列表/空态，展示动态插槽（无可见项，下次渲染列表时重新归零）
     if (this.activeView) {
+      this.visibleSig = ''
       this.syncView()
       return
     }
@@ -1299,6 +1306,7 @@ export class OASCommand extends OASElement {
 
     // loading 态：占位行 + aria-busy
     if (this.hasAttr('loading')) {
+      this.visibleSig = ''
       listEl.hidden = false
       if (vlist) vlist.hidden = true
       emptyEl.hidden = true
@@ -1340,6 +1348,7 @@ export class OASCommand extends OASElement {
 
     if (showVirtual) {
       this.visibleItems = visible
+      this.syncVisibleSignature(visible)
       emptyEl.hidden = true
       listEl.hidden = true
       vlist.hidden = false
@@ -1356,6 +1365,10 @@ export class OASCommand extends OASElement {
     listEl.hidden = false
     if (vlist) vlist.hidden = true
     listEl.innerHTML = ''
+
+    // 可见序列签名：过滤结果变化 / 列表重建 → activeIndex 归零（Enter 总命中当前列表正确项）；
+    // 序列未变的无关重渲染保留用户的方向键高亮
+    this.syncVisibleSignature([...recentRows, ...visible.filter((i) => !i.separator)])
 
     if (visible.length === 0 && recentRows.length === 0) {
       this.showEmpty(q0)
@@ -1604,6 +1617,17 @@ export class OASCommand extends OASElement {
     if (!value) return
     const idx = this.visibleItems.findIndex((i) => i.value === value)
     if (idx >= 0) this.activeIndex = idx
+  }
+
+  /**
+   * 可见序列签名比对：序列（value 顺序）变化即视为列表重建/过滤结果变化 → activeIndex 归零。
+   * 只在渲染前调用（随后行渲染用 activeIndex 决定 active/aria-selected）。
+   */
+  private syncVisibleSignature(rows: CommandItem[]): void {
+    const sig = rows.map((i) => i.value).join('\u0000')
+    if (sig === this.visibleSig) return
+    this.visibleSig = sig
+    this.activeIndex = 0
   }
 
   /** 虚拟滚动：让 activeIndex 所在项进入视口（happy-dom 下手动派发 scroll 重算窗口） */

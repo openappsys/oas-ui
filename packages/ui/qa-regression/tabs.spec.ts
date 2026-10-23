@@ -568,3 +568,63 @@ test('tabs 语义链：tab aria-controls ↔ panel role=tabpanel/aria-labelledby
     '语义链不应引入 axe 违规（IDREF 全部在同 shadow 根内解析）',
   ).toEqual([])
 })
+
+// ===== 宿主可访问名转发：aria-label → 内部 tablist =====
+// 内部 tablist 无可见名称来源，不转发则读屏只播报「标签栏」，同页多组 tabs 无法区分。
+test('tabs 宿主 aria-label 转发到内部 tablist、运行时更新生效、axe 无违规', async ({ page }) => {
+  await page.goto('/components/tabs.html', { waitUntil: 'domcontentloaded' })
+  await page.waitForFunction(() => !!customElements.get('oas-tabs'))
+  await page.evaluate(() => {
+    document.getElementById('e2e-tabs-name')?.remove()
+    const el = document.createElement('oas-tabs')
+    el.id = 'e2e-tabs-name'
+    el.setAttribute('aria-label', '账户页标签')
+    el.style.cssText = 'position: fixed; top: 140px; left: 50%; transform: translateX(-50%); z-index: 2147483000'
+    el.innerHTML = `
+      <oas-tab-panel label="概览" value="overview"><p>概览内容</p></oas-tab-panel>
+      <oas-tab-panel label="设置" value="settings"><p>设置内容</p></oas-tab-panel>
+    `
+    el.setAttribute('active', 'overview')
+    document.body.appendChild(el)
+  })
+  await page.waitForFunction(() => {
+    const el = document.querySelector('oas-tabs#e2e-tabs-name')
+    return !!el?.shadowRoot?.querySelector('[role="tablist"][aria-label]')
+  })
+
+  const r = await page.evaluate(() => {
+    const el = document.querySelector('oas-tabs#e2e-tabs-name')! as HTMLElement & { shadowRoot: ShadowRoot }
+    const tablist = el.shadowRoot.querySelector('[role="tablist"]') as HTMLElement
+    const region = el.shadowRoot.querySelector('[role="tabpanel"]') as HTMLElement
+    const tab = el.shadowRoot.querySelector('[role="tab"][data-value="overview"]') as HTMLElement
+    return {
+      inner: tablist.getAttribute('aria-label'),
+      host: el.getAttribute('aria-label'),
+      controls: tab.getAttribute('aria-controls'),
+      labelledby: region.getAttribute('aria-labelledby'),
+      tabId: tab.id,
+      regionId: region.id,
+    }
+  })
+  expect(r.inner, '宿主 aria-label 应转发到内部 tablist').toBe('账户页标签')
+  expect(r.host, '宿主属性保留（Vue 等宿主框架下不剥离）').toBe('账户页标签')
+  expect(r.controls, '语义链不受命名转发影响（aria-controls）').toBe(r.regionId)
+  expect(r.labelledby, '语义链不受命名转发影响（aria-labelledby）').toBe(r.tabId)
+
+  const updated = await page.evaluate(() => {
+    const el = document.querySelector('oas-tabs#e2e-tabs-name')! as HTMLElement & { shadowRoot: ShadowRoot }
+    el.setAttribute('aria-label', '设置页标签')
+    return (el.shadowRoot.querySelector('[role="tablist"]') as HTMLElement).getAttribute('aria-label')
+  })
+  expect(updated, '运行时更新 aria-label 即时转发').toBe('设置页标签')
+
+  const a11y = await new AxeBuilder({ page })
+    .include('#e2e-tabs-name')
+    // 与上方语义链用例同口径：对比度由主题/视觉专项覆盖
+    .disableRules(['color-contrast'])
+    .analyze()
+  expect(
+    a11y.violations.map((v) => `${v.id}: ${v.nodes.length}`),
+    '宿主命名转发不应引入 axe 违规',
+  ).toEqual([])
+})

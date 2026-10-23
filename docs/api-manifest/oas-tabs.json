@@ -127,6 +127,10 @@
       "observed": true
     },
     {
+      "name": "aria-label",
+      "observed": true
+    },
+    {
       "name": "tabindex",
       "observed": true
     }

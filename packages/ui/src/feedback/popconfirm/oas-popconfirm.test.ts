@@ -873,3 +873,97 @@ describe('OASPopconfirm 属性-方法撞名回归', () => {
     expect(pop(el).getAttribute('data-placement')).toBe('top')
   })
 })
+
+// ===== 断开重连（append / re-parent / 路由缓存摘挂）=====
+//
+// 缺陷背景：打开态 remove() → append() 后 cleanup 执行 unregisterLayer（Esc 层出栈），
+// 重连 update 因 wasOpen 仍为 true 跳过「打开瞬间」分支 → Esc 永久失效。修复后 onReconnect
+// 幂等重压 Esc 层/外点/滚动监听，且不把 wasOpen 置 false（避免 applyInitialFocus 抢焦）。
+describe('OASPopconfirm 断开重连（打开态）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  function setViewport(w: number, h: number): void {
+    Object.defineProperty(window, 'innerWidth', { value: w, configurable: true })
+    Object.defineProperty(window, 'innerHeight', { value: h, configurable: true })
+  }
+
+  function stubRect(el: HTMLElement, r: { left: number; top: number; width: number; height: number }): void {
+    el.getBoundingClientRect = () =>
+      ({
+        x: r.left,
+        y: r.top,
+        width: r.width,
+        height: r.height,
+        left: r.left,
+        top: r.top,
+        right: r.left + r.width,
+        bottom: r.top + r.height,
+        toJSON: () => ({}),
+      }) as DOMRect
+  }
+
+  it('打开 → remove → append 后按 Esc 仍关闭（Esc 层重压，reason=esc）', async () => {
+    const el = mount({ open: '', title: '确认？' })
+    await Promise.resolve()
+    const reasons: string[] = []
+    el.addEventListener('oas-open-change', (e: Event) => reasons.push((e as CustomEvent).detail.reason))
+    expect(pop(el).getAttribute('aria-hidden')).toBe('false')
+    el.remove()
+    document.body.appendChild(el)
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
+    expect(el.hasAttribute('open'), '重连后 Esc 应关闭气泡').toBe(false)
+    expect(reasons).toEqual(['esc'])
+  })
+
+  it('重连不抢焦：保持重连前用户焦点（不在重连时重跑初始聚焦）', async () => {
+    const outside = document.createElement('button')
+    outside.id = 'pc-outside-focus'
+    document.body.appendChild(outside)
+    const el = mount({ open: '', title: '确认？' })
+    await Promise.resolve()
+    outside.focus()
+    el.remove()
+    document.body.appendChild(el)
+    expect(document.activeElement, '重连不得抢焦').toBe(outside)
+  })
+
+  it('重连后外点关闭仍生效', async () => {
+    const el = mount({ open: '', title: '确认？' })
+    await Promise.resolve()
+    el.remove()
+    document.body.appendChild(el)
+    document.body.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }))
+    expect(el.hasAttribute('open')).toBe(false)
+  })
+
+  it('重连后滚动跟随重挂（滚动触发重新定位）', async () => {
+    const el = mount({ open: '', title: '确认？', placement: 'bottom', 'auto-adjust-overflow': 'false' })
+    await Promise.resolve()
+    setViewport(1280, 800)
+    stubRect(pop(el), { left: 0, top: 0, width: 200, height: 60 })
+    el.remove()
+    document.body.appendChild(el)
+    // 重连后改锚点矩形：滚动监听若未重挂，面板定位不会更新
+    stubRect(el.querySelector('button')! as HTMLElement, { left: 100, top: 500, width: 80, height: 32 })
+    window.dispatchEvent(new Event('scroll'))
+    await new Promise((resolve) => requestAnimationFrame(() => resolve(undefined)))
+    expect(pop(el).style.left).toBe('40px') // 100 + 80/2 - 200/2
+    expect(pop(el).style.top).toBe('540px') // 500 + 32 + gap 8
+  })
+
+  it('重连后再次断开仍执行 cleanup（Esc 层不泄漏，文档监听不遗留）', async () => {
+    const el = mount({ open: '', title: '确认？' })
+    await Promise.resolve()
+    el.remove()
+    document.body.appendChild(el)
+    el.remove()
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
+    expect(el.hasAttribute('open'), '已断开元素的残留 Esc 层不得再收事件').toBe(true)
+  })
+})

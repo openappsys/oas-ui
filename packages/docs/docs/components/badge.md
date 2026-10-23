@@ -72,7 +72,7 @@
 
 ## 徽标颜色
 
-`color` 支持四种语义色（`primary` / `success` / `warning` / `danger`）、任意 CSS 色值、以及 11 个预设名（`magenta` / `red` / `volcano` / `orange` / `gold` / `lime` / `green` / `cyan` / `blue` / `geekblue` / `purple`，映射 `--oas-preset-*` token，dark 自动调亮）。count / dot / ribbon 三种模式统一生效；实心文字色：语义色 / 预设名走固定 `text-on-*` token，仅任意 CSS 色值按底色亮度取黑/白保证可读。
+`color` 支持四种语义色（`primary` / `success` / `warning` / `danger`）、任意 CSS 色值、以及 11 个预设名（`magenta` / `red` / `volcano` / `orange` / `gold` / `lime` / `green` / `cyan` / `blue` / `geekblue` / `purple`，映射 `--oas-preset-*` token，dark 自动调亮）。count / dot / ribbon 三种模式统一生效；实心文字色：语义色 / 预设名走固定 `text-on-*` token，仅任意 CSS 色值按 WCAG 对比度择优保证可读。
 
 <DemoBlock title="count 语义色">
   <oas-badge value="5" color="primary" style="margin-inline-end: var(--oas-space-4)">
@@ -643,7 +643,7 @@ oas-badge#badge-dyn.bump::part(badge) {
 | --- | --- | --- | --- |
 | `attention` | 吸引动画：`pulse`（外圈脉冲扩散，脉冲色走 `--oas-badge-pulse-color` 自定义属性、默认跟随徽章底色）/ `bounce`（轻微上下弹跳）；仅作用于 count / dot / standalone 徽标（缎带不受影响），`prefers-reduced-motion` 下自动停用 | `BadgeAttention` | — |
 | `bordered` | 白描边：布尔属性，徽标加 2px 背景色描边（box-shadow: 0 0 0 2px var(--oas-color-bg)），从头像/图片背景分离；仅视觉叠加不改定位（与 corner/offset/overlap 联动正常） | `boolean` | — |
-| `color` | 徽标颜色：4 语义色（`primary` / `success` / `warning` / `danger`）、任意 CSS 色值、或 11 个预设名（`magenta` / `red` / `volcano` / `orange` / `gold` / `lime` / `green` / `cyan` / `blue` / `geekblue` / `purple`，映射 `--oas-preset-*` token，dark 自动调亮）。count / dot / ribbon 三种模式统一生效；实心文字色：语义色 / 预设名走固定 `text-on-*` token，仅任意 CSS 色值按底色亮度取黑/白保证可读 | `BadgeColor \| BadgePresetColor` | — |
+| `color` | 徽标颜色：4 语义色（`primary` / `success` / `warning` / `danger`）、任意 CSS 色值、或 11 个预设名（`magenta` / `red` / `volcano` / `orange` / `gold` / `lime` / `green` / `cyan` / `blue` / `geekblue` / `purple`，映射 `--oas-preset-*` token，dark 自动调亮）。count / dot / ribbon 三种模式统一生效；实心文字色：语义色 / 预设名走固定 `text-on-*` token，仅任意 CSS 色值按 WCAG 对比度择优保证可读 | `BadgeColor \| BadgePresetColor` | — |
 | `corner` | 角标四角定位：`top-right`（默认）/ `top-left` / `bottom-right` / `bottom-left`，仅影响 count / dot 角标（ribbon 用 `placement`）；`offset` 在其结果上做屏幕坐标 px 微调（x 正向右、y 正向下，与 corner 朝向无关），先定角再平移可叠加；非法值静默回落 `top-right` | `BadgeCorner` | `top-right` |
 | `dot` | 小圆点模式 | `boolean` | — |
 | `icon` | 徽标内图标：内置图标名（如 check / warning），渲染内联 SVG（1em 跟随徽标字号、装饰性对读屏隐藏）；与 value/dot 互斥（icon 优先） | `string` | — |

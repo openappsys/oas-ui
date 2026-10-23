@@ -287,7 +287,7 @@
   "oas-badge": {
     "attrs": {
       "attention": "Attention animation: `pulse` (an outward pulse ring; the pulse color follows the `--oas-badge-pulse-color` custom property, defaulting to the badge background) / `bounce` (slight up-and-down bounce); applies only to count / dot / standalone badges (the ribbon is unaffected) and is disabled under `prefers-reduced-motion`",
-      "color": "Badge color: the four semantic colors (`primary` / `success` / `warning` / `danger`), any CSS color value, or one of the 11 preset names (`magenta` / `red` / `volcano` / `orange` / `gold` / `lime` / `green` / `cyan` / `blue` / `geekblue` / `purple`, mapped to `--oas-preset-*` tokens, auto-brightened in dark). Applies uniformly across count / dot / ribbon; the solid text color uses a fixed `text-on-*` token for semantic/preset colors, and is picked black/white by background luminance only for arbitrary CSS color values",
+      "color": "Badge color: the four semantic colors (`primary` / `success` / `warning` / `danger`), any CSS color value, or one of the 11 preset names (`magenta` / `red` / `volcano` / `orange` / `gold` / `lime` / `green` / `cyan` / `blue` / `geekblue` / `purple`, mapped to `--oas-preset-*` tokens, auto-brightened in dark). Applies uniformly across count / dot / ribbon; the solid text color uses a fixed `text-on-*` token for semantic/preset colors, and is picked black/white by WCAG contrast only for arbitrary CSS color values",
       "corner": "Corner placement: `top-right` (default) / `top-left` / `bottom-right` / `bottom-left`, affects count / dot corner badges only (the ribbon uses `placement`); `offset` fine-tunes in screen px on top of the corner result (x positive rightward, y positive downward, independent of the corner direction), corner first then shift, they compose; invalid values silently fall back to `top-right`",
       "dot": "Dot mode",
       "max": "Upper limit",
@@ -417,7 +417,7 @@
   "oas-button": {
     "attrs": {
       "active": "Selected state (controlled): present = selected; the host writes back on oas-click (the component does not toggle itself); selected visuals share the button-group selection anchor (aria-pressed), pair with active-tint for a custom tint",
-      "active-tint": "Selected-state tint: the 11 preset names resolve to --oas-preset-*-text tokens (one set per theme); any CSS color is injected as-is; solid selected text color (primary etc.) adapts to background luminance, contrast is the host’s responsibility",
+      "active-tint": "Selected-state tint: the 11 preset names resolve to --oas-preset-*-text tokens (one set per theme); any CSS color is injected as-is; solid selected text color (primary etc.) adapts to WCAG contrast, contrast is the host’s responsibility",
       "auto-insert-space": "CJK auto spacing: inserts a space between two consecutive CJK characters (off by default)",
       "autofocus": "Autofocus: focuses the inner button on mount (native autofocus does not pierce Shadow DOM; the component forwards it)",
       "block": "Fill the full width of the parent container (block level)",
@@ -460,7 +460,7 @@
     },
     "cssVars": {
       "--oas-button-active-tint": "Selected-state tint channel (injected by the active-tint attribute; preset names resolve to --oas-preset-*-text, raw colors as-is); consumed by selected text/border/soft and solid fills",
-      "--oas-button-active-tint-on": "Label color on solid selected fills (primary etc.): custom tints pick black/white by background luminance; falls back to --oas-color-text-on-primary when not injected",
+      "--oas-button-active-tint-on": "Label color on solid selected fills (primary etc.): custom tints pick black/white by WCAG contrast; falls back to --oas-color-text-on-primary when not injected",
       "--oas-button-active-tint-text": "Text-safe variant of the selected tint: theme-aware deepen/lighten mix (toward near-black in light, near-white in dark; presets use the -text token directly) — labels on soft selected fills and text-variant selection",
       "--oas-button-color-deep": "Text-safe deepened variant of the custom `color`: the color-mix used for hover/active and outlined/dashed/filled text (injected by the component via `--oas-deep-mix` / `--oas-deep-sink`; inert without a custom color)",
       "--oas-button-height": "Button height override (falls back to the size-tier value by default); containers needing full-row-height buttons (e.g. swipe-cell actions) inject 100% via ::slotted (built into swipe-cell)"
@@ -2840,6 +2840,7 @@
   },
   "oas-segmented": {
     "attrs": {
+      "aria-label": "Accessible name of the radio group (forwarded to the inner `role=\"radiogroup\"` container; unset by default)",
       "disabled": "Disables the whole segmented control (explicitly, or inherited from the config-provider global disabled injection)",
       "options": "`[{ label, value, disabled? }]` JSON string",
       "value": "Selected value (defaults to the first option; controlled)",
@@ -3289,7 +3290,7 @@
       "description": "Rich description content (takes precedence over the description attribute text)"
     },
     "cssVars": {
-      "--oas-switch-on-color": "Label text color inside the on-track (when `color` overrides the track background, the component injects a dark/light text color by luminance; falls back to `var(--oas-color-bg)`)"
+      "--oas-switch-on-color": "Label text color inside the on-track (when `color` overrides the track background, the component injects a dark/light text color by WCAG contrast; falls back to `var(--oas-color-bg)`)"
     },
     "methods": {
       "focus": "Label click focus delegation: forwards focus to the button inside the shadow root"
@@ -3316,6 +3317,7 @@
   },
   "oas-table": {
     "attrs": {
+      "aria-label": "Accessible name of the table (forwarded to the inner table element; `role=\"grid\"` when grid-navigation is on; unset by default)",
       "bordered": "Full border: draws a grid outline around cells (the outer frame is built in)",
       "checkable": "Row selection: present = multi-select (checkboxes + select-all header); `=\"radio\"` = single-select (mutually exclusive, click again to deselect, no select-all), oas-check detail.keys ≤1",
       "columns": "Column config `[{ key, title, sortable?, width?, align?, fixed?, render?, summary?, editable?, editor?, editOptions?, editComponent?, actions?, type?, currency?, options? }]`, JSON string (declarative attribute channel; property assignment takes precedence); `type` declares the field type (number/currency/select/multi-select/date/checkbox/link/progress/rate) driving default cell rendering and the default editor, `currency` is the currency symbol for currency columns (default ¥), `options` are select/multi-select options `[{ value, label, color? }]`",
@@ -3423,6 +3425,7 @@
   },
   "oas-tabs": {
     "attrs": {
+      "aria-label": "Accessible name of the tablist (forwarded to the inner `role=\"tablist\"` container; unset by default; does not affect the tab↔panel aria-labelledby chain)",
       "active": "The `value` of the active tab",
       "addable": "Shows a + button at the end of the tab bar; clicking fires `oas-add` (the component does not add a panel)",
       "closable": "Shows a close × on every tab; clicking fires `oas-close` (the component does not remove the panel)",

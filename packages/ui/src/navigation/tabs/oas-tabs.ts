@@ -706,6 +706,8 @@ export class OASTabs extends OASElement {
       'hide-content',
       'items',
       'context-menu',
+      // 宿主 aria-label：命名内部 tablist（内部标签栏无可见名称来源，见 update 的转发注释）
+      'aria-label',
       // tabindex 透传（标签钮）：覆盖 roving 缺省，全部标签钮写同值
       'tabindex',
       // 书写方向：dir 变化触发重算 data-rtl 与滚动/方向键镜像
@@ -972,6 +974,27 @@ export class OASTabs extends OASElement {
     }
   }
 
+  /**
+   * 属性变更入口：aria-label 只命名内部 tablist（不改变任何渲染输入），走轻量直写——
+   * 避免整栏重建导致焦点/滚动位置抖动；其余属性照常走 update。
+   */
+  override attributeChangedCallback(name: string, oldValue: string | null, newValue: string | null): void {
+    if (name === 'aria-label' && this.hasRendered) {
+      this.syncTablistAriaLabel()
+      return
+    }
+    super.attributeChangedCallback(name, oldValue, newValue)
+  }
+
+  /** 宿主 aria-label → 内部 tablist（见 update 内注释）；缺省不写 */
+  private syncTablistAriaLabel(): void {
+    const tablist = this.shadow.querySelector<HTMLElement>('.tablist')
+    if (!tablist) return
+    const label = this.getAttribute('aria-label')?.trim()
+    if (label) tablist.setAttribute('aria-label', label)
+    else tablist.removeAttribute('aria-label')
+  }
+
   protected override update(): void {
     // RTL 逻辑方向化钩子：CSS :host([data-rtl]) 写镜像规则（滚动箭头图标翻转等）
     this.toggleAttribute('data-rtl', isRtl(this))
@@ -1021,6 +1044,11 @@ export class OASTabs extends OASElement {
 
     tablist.className = `tablist${vertical ? ' tablist--vertical' : ''}`
     tablist.innerHTML = ''
+    // 宿主 aria-label → 内部 tablist 可访问名：tablist 自身没有可见标签（role=tablist 不接受
+    // caption/legend 关联），宿主命名是唯一通道——同页多组 tabs 靠它区分，读屏不再只播报
+    // 「标签栏」。缺省不写（无内置文案可回落，避免伪造无意义名称）；只写 tablist，
+    // tabpanel 的 aria-labelledby 链保持不变。
+    this.syncTablistAriaLabel()
     // 激活值解析：宿主设了 active 属性就用其值（含 allow-deactivation 取消后的 ''=无选中态）；
     // 未设 active 属性才回退第一项
     const active = this.hasAttr('active') ? this.getAttr('active', '') : ''

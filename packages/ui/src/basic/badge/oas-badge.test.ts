@@ -295,10 +295,11 @@ describe('OASBadge 颜色全模式', () => {
     expect(badge(d)!.style.getPropertyValue('--oas-badge-on-color')).toBe('var(--oas-color-text-on-primary)')
   })
 
-  it('color 任意 CSS 色值：实心文字按底色亮度取黑/白', () => {
+  it('color 任意 CSS 色值：实心文字按 WCAG 对比度取黑/白', () => {
     const el = mount({ value: '5', color: '#16a34a' })
     expect(badge(el)!.style.getPropertyValue('--oas-badge-bg')).toBe('#16a34a')
-    expect(badge(el)!.style.getPropertyValue('--oas-badge-on-color')).toBe('#ffffff')
+    // #16a34a：深字对比 5.39 > 白字 3.30（旧阈值实现误选白字，不达 AA 4.5）
+    expect(badge(el)!.style.getPropertyValue('--oas-badge-on-color')).toBe('#18181b')
     el.setAttribute('color', '#fbbf24')
     expect(badge(el)!.style.getPropertyValue('--oas-badge-on-color')).toBe('#18181b')
   })

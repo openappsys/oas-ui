@@ -166,7 +166,18 @@ const STYLE = `
 
 export class OASSegmented extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['options', 'value', 'disabled', 'disabled-skip', 'size', 'block', 'direction', 'name', 'readonly']
+    return [
+      'options',
+      'value',
+      'disabled',
+      'disabled-skip',
+      'size',
+      'block',
+      'direction',
+      'name',
+      'readonly',
+      'aria-label',
+    ]
   }
 
   /**
@@ -255,6 +266,12 @@ export class OASSegmented extends OASElement {
     const direction = normalizeChoice(this.getAttr('direction', 'horizontal'), 'horizontal', ['horizontal', 'vertical'])
     this.setAttribute('data-direction', direction)
     group.setAttribute('aria-orientation', direction)
+    // 宿主 aria-label → 内部 radiogroup 可访问名：选项文本是每个 radio 的名称，组本身没有
+    // 可见名称来源；宿主命名是唯一通道（同页多组 segmented 靠它区分）。缺省不写（无内置
+    // 文案可回落）；只写 radiogroup，不触碰选项自身的 aria-label（图标项仍用图标名兜底）。
+    const hostLabel = this.getAttribute('aria-label')?.trim()
+    if (hostLabel) group.setAttribute('aria-label', hostLabel)
+    else group.removeAttribute('aria-label')
     if (this.hasAttr('readonly')) group.setAttribute('aria-readonly', 'true')
     else group.removeAttribute('aria-readonly')
 

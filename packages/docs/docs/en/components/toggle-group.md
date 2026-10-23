@@ -209,7 +209,7 @@ Note: the `force` fallback **only writes the `value` attribute and does not disp
 
 ## Selection Color (color)
 
-`color` follows the unified ui-spec protocol: any CSS color value (`#0e7490` / `rgb(...)`, text color auto black/white by luminance) takes precedence; the 11 preset names (`magenta / red / volcano / orange / gold / lime / green / cyan / blue / geekblue / purple`) resolve to `--oas-preset-*` tokens (light/dark adaptive); default is the primary color. Theme-level batch customization goes through the CSS variables `--oas-toggle-color` / `--oas-toggle-on-color`:
+`color` follows the unified ui-spec protocol: any CSS color value (`#0e7490` / `rgb(...)`, text color auto black/white by WCAG contrast) takes precedence; the 11 preset names (`magenta / red / volcano / orange / gold / lime / green / cyan / blue / geekblue / purple`) resolve to `--oas-preset-*` tokens (light/dark adaptive); default is the primary color. Theme-level batch customization goes through the CSS variables `--oas-toggle-color` / `--oas-toggle-on-color`:
 
 <DemoBlock title="Selection color (color)">
   <oas-space size="small">

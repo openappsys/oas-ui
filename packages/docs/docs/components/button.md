@@ -219,7 +219,7 @@
 
 `color` 覆盖 `type` 语义色（任意色值），优先级高于 `type`。
 
-配色优先级：`--oas-button-bg`（宿主注入 CSS 变量，可放渐变）> `color` 属性 > `type` 语义色 > 默认灰底。`outlined` / `filled` / `dashed` / `text` 形态下 `color` 染边框/文字/浅底；实心形态的文字色按底色亮度自动取黑/白（暗色主题同样可读）。
+配色优先级：`--oas-button-bg`（宿主注入 CSS 变量，可放渐变）> `color` 属性 > `type` 语义色 > 默认灰底。`outlined` / `filled` / `dashed` / `text` 形态下 `color` 染边框/文字/浅底；实心形态的文字色按 WCAG 对比度自动择优（暗色主题同样可读）。
 
 自定义色值按原值渲染（不自动改写），请自行确保文字与底色对比度达标（WCAG AA 4.5:1）。
 
@@ -231,7 +231,7 @@
 
 ## 选中态（active / active-tint）
 
-`active` 布尔属性标记选中态（**受控**：组件不自切，宿主监听 `oas-click` 回写），选中视觉与 button-group 选中项同挂点（`aria-pressed`）；`active-tint` 自定义选中着色——11 预设名解析为主题 token（明暗双主题自动适配），任意 CSS 色值原样注入，实底选中的文字色按底色亮度自适应（对比度由宿主负责，WCAG AA 4.5:1）。
+`active` 布尔属性标记选中态（**受控**：组件不自切，宿主监听 `oas-click` 回写），选中视觉与 button-group 选中项同挂点（`aria-pressed`）；`active-tint` 自定义选中着色——11 预设名解析为主题 token（明暗双主题自动适配），任意 CSS 色值原样注入，实底选中的文字色按 WCAG 对比度自适应（对比度由宿主负责，WCAG AA 4.5:1）。
 
 <DemoBlock title="选中态">
   <oas-button active>默认（选中淡底）</oas-button>
@@ -342,7 +342,7 @@
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
 | `active` | 选中态（受控）：布尔属性在场即选中，宿主监听 oas-click 回写（组件不自切）；选中视觉与 button-group 选中项同挂点（aria-pressed），配 active-tint 自定义选中色 | `boolean` | — |
-| `active-tint` | 选中态着色：11 预设名解析为 --oas-preset-*-text 档（明暗主题各一份），任意 CSS 色值原样注入；实底选中（primary 等）文字色按底色亮度自适应，对比度由宿主负责 | `string` | — |
+| `active-tint` | 选中态着色：11 预设名解析为 --oas-preset-*-text 档（明暗主题各一份），任意 CSS 色值原样注入；实底选中（primary 等）文字色按 WCAG 对比度自适应，对比度由宿主负责 | `string` | — |
 | `auto-insert-space` | 中文间自动空格：两个连续汉字间插入空格（排版优化，默认关） | `string` | — |
 | `autofocus` | 自动聚焦：挂载后聚焦内部按钮（原生 autofocus 不穿透 Shadow DOM，组件转发） | `boolean` | — |
 | `block` | 占满父容器宽度（块级） | `boolean` | — |
@@ -394,7 +394,7 @@
 | CSS 变量 | 说明 | 默认值 |
 | --- | --- | --- |
 | `--oas-button-active-tint` | 选中态着色主通道（active-tint 属性注入；预设名解析为 --oas-preset-*-text 档，字面色原样）；消费于选中态文字/描边/淡底与实底 | `var(--oas-color-primary)` |
-| `--oas-button-active-tint-on` | 实底选中（primary 等）的文字色：自定义 tint 按底色亮度取黑/白；未注入时回落 --oas-color-text-on-primary | `var(--oas-color-text-on-primary)` |
+| `--oas-button-active-tint-on` | 实底选中（primary 等）的文字色：自定义 tint 按 WCAG 对比度在黑/白中择优；未注入时回落 --oas-color-text-on-primary | `var(--oas-color-text-on-primary)` |
 | `--oas-button-active-tint-text` | 选中态文字安全档：tint 的主题感知加深/提亮混合（light 掺近黑、dark 掺近白；预设名直接用 -text 档 token）——软底选中与 text 形态选中的文字 | `var(--oas-color-primary-text)` |
 | `--oas-button-bg` | — | `var(--oas-color-primary)` |
 | `--oas-button-color` | — | `var(--oas-color-text-primary)` |

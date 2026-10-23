@@ -44,6 +44,10 @@
       "name": "readonly",
       "type": "boolean",
       "observed": true
+    },
+    {
+      "name": "aria-label",
+      "observed": true
     }
   ],
   "props": [

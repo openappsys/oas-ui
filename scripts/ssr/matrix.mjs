@@ -17,6 +17,7 @@ import { existsSync, readFileSync, readdirSync, writeFileSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { NOT_SSR } from '../../packages/ssr/src/not-ssr.ts'
+import { checkWhitelistCounts, parseWhitelistSource } from './whitelist-count.mjs'
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../..')
 const MANIFEST_DIR = join(ROOT, 'docs/api-manifest')
@@ -32,10 +33,7 @@ const read = (path) => readFileSync(path, 'utf8')
 const exists = (path) => existsSync(path)
 
 function parseWhitelist() {
-  const src = read(SSR_INDEX)
-  const block = src.match(/export const WHITELIST = \[([\s\S]*?)\] as const/)
-  if (!block) throw new Error('无法解析 WHITELIST')
-  return [...block[1].matchAll(/'([^']+)'/g)].map((m) => m[1])
+  return parseWhitelistSource(read(SSR_INDEX))
 }
 
 function parseTagEntry() {
@@ -178,28 +176,16 @@ function renderMarkdown(matrix) {
 }
 
 function checkDocs(whitelist) {
-  const problems = []
-  const checks = [
-    { file: 'docs/ssr.md', count: /共\s*(\d+)\s*tag/ },
-    { file: 'packages/docs/docs/guide/ssr.md', count: /共\s*(\d+)\s*tag/ },
-    { file: 'packages/docs/docs/en/guide/ssr.md', count: /(\d+)\s*tags in total/ },
-  ]
-  for (const { file, count } of checks) {
+  // 数量门禁走共用纯函数（与 whitelist-count.test.mjs 同一实现，避免两套口径漂移）
+  const problems = checkWhitelistCounts({
+    expected: whitelist.length,
+    read: (file) => (exists(join(ROOT, file)) ? read(join(ROOT, file)) : null),
+  })
+  for (const file of ['docs/ssr.md', 'packages/docs/docs/guide/ssr.md', 'packages/docs/docs/en/guide/ssr.md']) {
     const src = read(join(ROOT, file))
-    const m = src.match(count)
-    if (!m) {
-      problems.push(`${file} 缺少白名单数量声明`)
-    } else if (Number(m[1]) !== whitelist.length) {
-      problems.push(`${file} 白名单数量 ${m[1]} != ${whitelist.length}`)
-    }
     for (const tag of whitelist) {
       if (!src.includes(tag)) problems.push(`${file} 缺少白名单 tag：${tag}`)
     }
-  }
-  const roadmap = read(join(ROOT, 'docs/ROADMAP.md'))
-  const roadmapCount = roadmap.match(/当前\s*(\d+)/)
-  if (roadmapCount && Number(roadmapCount[1]) !== whitelist.length) {
-    problems.push(`docs/ROADMAP.md 白名单数量 ${roadmapCount[1]} != ${whitelist.length}`)
   }
   return problems
 }

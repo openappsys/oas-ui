@@ -1029,3 +1029,108 @@ test('popover same-width：面板宽度=触发器宽度（Vue demo 属性存活�
   expect(r.minWidth, 'min-width 内联归零（严格等宽不被默认 min-width 抬杠）').toBe('0px')
   expect(Math.abs(r.panelRectWidth - r.triggerWidth), '渲染矩形严格等宽').toBeLessThanOrEqual(1)
 })
+
+test('popover 打开态断开重连：Esc 与外点仍关闭、焦点不被抢（回归：重连后 Esc 层未重压永久失效）', async ({ page }) => {
+  await page.goto('/components/popover.html', { waitUntil: 'domcontentloaded' })
+  await page.evaluate(() => {
+    const outside = document.createElement('button')
+    outside.id = 'pop-reconnect-outside'
+    outside.textContent = '外部按钮'
+    document.body.insertBefore(outside, document.body.firstChild)
+    const el = document.createElement('oas-popover')
+    el.id = 'pop-reconnect-reg'
+    el.setAttribute('title', '重连回归')
+    el.innerHTML = '<button id="pop-reconnect-trig">触发</button>'
+    document.body.insertBefore(el, document.body.firstChild)
+  })
+  await up(page, '#pop-reconnect-reg')
+
+  const panelAria = () =>
+    page.evaluate(
+      () =>
+        document
+          .querySelector('#pop-reconnect-reg')!
+          .shadowRoot!.querySelector('[part="panel"]')!
+          .getAttribute('aria-hidden') ?? '',
+    )
+  const reconnect = () =>
+    page.evaluate(() => {
+      const el = document.querySelector('#pop-reconnect-reg')!
+      el.remove()
+      document.body.insertBefore(el, document.body.firstChild)
+    })
+
+  // 打开（受控写属性）
+  await page.evaluate(() => document.querySelector('#pop-reconnect-reg')!.setAttribute('open', ''))
+  await page.waitForFunction(
+    () =>
+      document
+        .querySelector('#pop-reconnect-reg')!
+        .shadowRoot!.querySelector('[part="panel"]')!
+        .getAttribute('aria-hidden') === 'false',
+    null,
+    { timeout: 5000 },
+  )
+
+  // 断开重连：面板仍打开（不得被重连重置）
+  await reconnect()
+  expect(await panelAria(), '重连后面板应保持打开').toBe('false')
+
+  // 焦点不被抢：先聚焦外部按钮，再次断开重连 → 焦点仍在外部按钮
+  await page.locator('#pop-reconnect-outside').focus()
+  await reconnect()
+  expect(await page.evaluate(() => document.activeElement?.id ?? ''), '重连不得抢焦').toBe('pop-reconnect-outside')
+
+  // Escape 关闭（真键盘路径：document 级 Esc 栈）
+  await page.keyboard.press('Escape')
+  await page.waitForFunction(() => document.querySelector('#pop-reconnect-reg')?.hasAttribute('open') === false, null, {
+    timeout: 5000,
+  })
+
+  // 再开 → 重连 → 外点关闭（外点监听重挂）
+  await page.evaluate(() => document.querySelector('#pop-reconnect-reg')!.setAttribute('open', ''))
+  await reconnect()
+  await page.evaluate(() => document.body.dispatchEvent(new MouseEvent('click', { bubbles: true })))
+  await page.waitForFunction(() => document.querySelector('#pop-reconnect-reg')?.hasAttribute('open') === false, null, {
+    timeout: 5000,
+  })
+
+  // 嵌套双层同时重连（真实浏览器重插子树会为子孙派发 connectedCallback）：Esc 只关子层
+  await page.evaluate(() => {
+    const parent = document.createElement('oas-popover')
+    parent.id = 'pop-reconnect-parent'
+    parent.setAttribute('title', '父层')
+    parent.innerHTML =
+      '<button>父触发</button><oas-popover id="pop-reconnect-child" title="子层"><button>子触发</button></oas-popover>'
+    document.body.insertBefore(parent, document.body.firstChild)
+  })
+  await up(page, '#pop-reconnect-child')
+  await page.evaluate(() => {
+    document.querySelector('#pop-reconnect-parent')!.setAttribute('open', '')
+    document.querySelector('#pop-reconnect-child')!.setAttribute('open', '')
+  })
+  await page.waitForFunction(
+    () =>
+      document
+        .querySelector('#pop-reconnect-child')!
+        .shadowRoot!.querySelector('[part="panel"]')!
+        .getAttribute('aria-hidden') === 'false',
+    null,
+    { timeout: 5000 },
+  )
+  await page.evaluate(() => {
+    const p = document.querySelector('#pop-reconnect-parent')!
+    p.remove()
+    document.body.insertBefore(p, document.body.firstChild)
+  })
+  await page.keyboard.press('Escape')
+  await page.waitForFunction(
+    () => document.querySelector('#pop-reconnect-child')?.hasAttribute('open') === false,
+    null,
+    { timeout: 5000 },
+  )
+  expect(
+    await page.evaluate(() => document.querySelector('#pop-reconnect-parent')?.hasAttribute('open') ?? false),
+    '嵌套重连后一次 Esc 只关子层，父层保持打开',
+  ).toBe(true)
+})

@@ -33,7 +33,7 @@ function isValidIcon(name: string): boolean {
 }
 
 /**
- * 自定义色实心底的文字色：按相对亮度取深/浅，保证对比可读（共享实现见 `shared/on-color`）。
+ * 自定义色实心底的文字色：按 WCAG 对比度（token 候选回落亮度启发式）取深/浅，保证对比可读（共享实现见 `shared/on-color`）。
  */
 function pickOnColor(color: string): string {
   return pickOnColorBase(color, { dark: '#18181b', light: '#ffffff', fallback: '' })
@@ -181,7 +181,7 @@ button:not([aria-checked='true']) .label {
 button[aria-checked='true'] .label {
   padding-inline-end: calc(var(--thumb-size) + var(--thumb-offset) * 2 + var(--oas-space-1));
   padding-inline-start: var(--oas-space-2);
-  /* color 属性自定义轨道底时经 --oas-switch-on-color 按底色亮度取深/浅（JS 注入）；
+  /* color 属性自定义轨道底时经 --oas-switch-on-color 按 WCAG 对比度取深/浅（JS 注入）；
      无自定义色回落 --oas-color-bg（primary token 深浅主题各自配对达标） */
   color: var(--oas-switch-on-color, var(--oas-color-bg));
 }
@@ -567,7 +567,7 @@ export class OASSwitch extends OASFormElement {
     this.toggleAttribute('data-rtl', isRtl(this))
 
     // 开启态自定义主色：以 --oas-color-primary 变量覆盖（焦点环等派生色一并生效）；
-    // 轨道内 checked 文字色随自定义底色按亮度取深/浅（on-primary/bg 兜底对任意自定义色不保证可读）
+    // 轨道内 checked 文字色随自定义底色按 WCAG 对比度取深/浅（on-primary/bg 兜底对任意自定义色不保证可读）
     const color = this.getAttr('color')
     if (color) {
       btn.style.setProperty('--oas-color-primary', color)

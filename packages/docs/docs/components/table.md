@@ -995,6 +995,7 @@ onMounted(() => {
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
+| `aria-label` | 表格的可访问名（转发到内部 table 元素；开启 grid-navigation 时为 `role="grid"`；缺省不设置） | — | — |
 | `bordered` | 完整边框：单元格网格描边（外框由组件自带） | — | — |
 | `cell-tooltip` | 单元格溢出提示（默认开启，`"false"` 关闭）：纯文本单元格溢出（scrollWidth > clientWidth）时 hover 显示全文浮层——表格级单例浮层（token 反色，暗色可读），滚动/重渲染自动隐藏；富内容格与已有原生 title 的 ellipsis 列豁免（避免双重提示） | `string` | `true` |
 | `checkable` | 行选择开关：存在即多选（复选框 + 全选头）；`="radio"` 单选（点选互斥、再点取消、无全选头），oas-check detail.keys ≤1 | `string` | — |

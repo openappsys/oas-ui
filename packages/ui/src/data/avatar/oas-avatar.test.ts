@@ -367,14 +367,30 @@ describe('OASAvatar color（背景色统一协议）', () => {
     expect(el.style.getPropertyValue('--oas-avatar-on-color')).toBe('var(--oas-color-text-on-primary)')
   })
 
-  it('任意色值：原值注入，文字色按亮度自动取黑/白（pickOnColor 协议）', () => {
+  it('任意色值：原值注入，文字色按 WCAG 对比度自动取黑/白（pickOnColor 协议）', () => {
     const el = new OASAvatar()
     el.setAttribute('color', '#ff6b00')
     document.body.appendChild(el)
     expect(el.style.getPropertyValue('--oas-avatar-bg')).toBe('#ff6b00')
-    expect(el.style.getPropertyValue('--oas-avatar-on-color')).toBe('#ffffff')
+    // 橙底深字对比 6.21 > 白字 2.86（按 WCAG 对比度择色，不再按 WCAG 对比度阈值一刀切）
+    expect(el.style.getPropertyValue('--oas-avatar-on-color')).toBe('#18181b')
     el.setAttribute('color', '#eeeeee')
     expect(el.style.getPropertyValue('--oas-avatar-on-color')).toBe('#18181b')
+  })
+
+  it('中间色调：on-color 取对比度更高的一侧（#3b82f6 深字 / #767676 白字）', () => {
+    const el = new OASAvatar()
+    document.body.appendChild(el)
+    el.setAttribute('color', '#3b82f6')
+    expect(el.style.getPropertyValue('--oas-avatar-bg')).toBe('#3b82f6')
+    expect(el.style.getPropertyValue('--oas-avatar-on-color')).toBe('#18181b')
+    el.setAttribute('color', '#767676')
+    expect(el.style.getPropertyValue('--oas-avatar-on-color')).toBe('#ffffff')
+    // 文字层仍可读：part="text" 渲染首字符，on 色经宿主 CSS 变量继承到文字
+    el.setAttribute('text', '张')
+    const text = el.shadowRoot!.querySelector<HTMLElement>('[part="text"]')!
+    expect(text.textContent).toBe('张')
+    expect(text.hidden).toBe(false)
   })
 
   it('无 color 属性时清除变量（回落默认 primary token）', () => {

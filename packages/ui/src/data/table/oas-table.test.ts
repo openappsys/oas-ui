@@ -916,6 +916,21 @@ describe('OASTable 行内编辑（inline editing）', () => {
     expect(input!.getAttribute('aria-label')).toContain('张三')
   })
 
+  it('宿主改 aria-label 不取消进行中的单元格编辑', () => {
+    const el = editMount()
+    const td = cells(el)[0]!
+    td.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }))
+    const input = td.querySelector<HTMLInputElement>('input.cell-editor')!
+    expect(input).not.toBeNull()
+    input.value = '李四'
+    input.dispatchEvent(new Event('input', { bubbles: true }))
+    el.setAttribute('aria-label', '用户表格')
+    expect(el.shadowRoot!.querySelector('table')!.getAttribute('aria-label')).toBe('用户表格')
+    expect(td.querySelector('input.cell-editor'), '编辑不被取消').toBe(input)
+    expect(td.getAttribute('data-editing')).toBe('true')
+    expect(input.value).toBe('李四')
+  })
+
   it('可编辑格内交互组件（oas-button）双击不进入编辑（排除清单与行点击同源，修复前误入）', () => {
     // 缺陷固化：双击进编辑前的排除清单（input,select,textarea,button,a）命中不了 <oas-button>
     // 宿主——可编辑列行内嵌 oas-button（如自定义操作内容）时，双击会误判为「双击编辑」进入编辑态。
@@ -3585,5 +3600,111 @@ describe('OASTable 属性-方法撞名回归', () => {
     scrollWrap(el).dispatchEvent(new Event('scroll'))
     await flushRaf()
     expect(rows(el)[0]!.textContent).toContain('行4')
+  })
+})
+
+// ===== 宿主可访问名转发（宿主 aria-label → 内部 table） =====
+// table 没有 caption 机制（内部 table 由组件渲染，宿主无法写 caption 子元素），grid 语义下
+// 也没有其它名称来源；宿主 aria-label 是唯一命名通道（原生 table 与 role=grid 均支持命名）。
+describe('table 宿主 aria-label 转发', () => {
+  function tableOf(el: OASTable): HTMLTableElement {
+    return el.shadowRoot!.querySelector('table')!
+  }
+
+  it('宿主 aria-label 转发到内部 table；缺省不写（不伪造内置文案）', () => {
+    const el = mount()
+    expect(tableOf(el).hasAttribute('aria-label')).toBe(false)
+    el.setAttribute('aria-label', '用户列表')
+    expect(tableOf(el).getAttribute('aria-label')).toBe('用户列表')
+  })
+
+  it('运行时更新/移除即时生效，且不触发整表重建（行节点身份保持）', () => {
+    const el = mount()
+    const firstRow = rows(el)[0]!
+    el.setAttribute('aria-label', '用户列表')
+    expect(tableOf(el).getAttribute('aria-label')).toBe('用户列表')
+    expect(rows(el)[0], '仅命名变化不应重建行').toBe(firstRow)
+    el.setAttribute('aria-label', '订单列表')
+    expect(tableOf(el).getAttribute('aria-label')).toBe('订单列表')
+    el.removeAttribute('aria-label')
+    expect(tableOf(el).hasAttribute('aria-label'), '移除宿主标签后不应残留内部命名').toBe(false)
+  })
+
+  it('grid-navigation：role=grid 的表获得宿主可访问名，表头/单元格 role 链不变', () => {
+    const el = mount({ 'grid-navigation': '', 'aria-label': '用户网格' })
+    const table = tableOf(el)
+    expect(table.getAttribute('role')).toBe('grid')
+    expect(table.getAttribute('aria-label')).toBe('用户网格')
+    expect(table.querySelector('thead th')!.getAttribute('role')).toBe('columnheader')
+    expect(table.querySelector('tbody tr.row td')!.getAttribute('role')).toBe('gridcell')
+  })
+})
+
+// ===== 行键回退路径性能（row-key 缺失时按行对象缓存 JSON.stringify 结果） =====
+// 5000 行渲染时回退键曾被重复计算约 1 万次（visibleFlat 与 buildRow 各一遍）；
+// 缓存后同一行对象在一次渲染管线内只序列化一次，行对象内容变化仍须宿主换新对象
+// （与 row-key 语义一致：键由数据内容派生，内容原地变更不重算）。
+describe('table 行键回退缓存', () => {
+  /** 仅统计以「探测行对象」为参数的 JSON.stringify 调用（data 序列化等非行参数不计） */
+  function countRowStringify(spy: { mock: { calls: unknown[][] } }): number {
+    return spy.mock.calls.filter((call) => {
+      const arg = call[0] as { __probe?: boolean } | null | undefined
+      return !!arg && typeof arg === 'object' && arg.__probe === true
+    }).length
+  }
+
+  it('无 row-key 的一次全量渲染：每个行对象只 stringify 一次（可见行与行渲染共用同一回退键）', () => {
+    const data = Array.from({ length: 20 }, (_, i) => ({ __probe: true, name: `行${i}` }))
+    const el = new OASTable()
+    el.setAttribute('columns', COLUMNS)
+    const spy = vi.spyOn(JSON, 'stringify')
+    let count = -1
+    try {
+      el.setAttribute('data', JSON.stringify(data)) // 数组参数不计入行对象统计
+      document.body.appendChild(el)
+      count = countRowStringify(spy)
+    } finally {
+      spy.mockRestore()
+    }
+    expect(rows(el).length).toBe(data.length)
+    expect(count, '20 行应只 stringify 20 次（修复前可见行 + 行渲染各一次 = 40）').toBe(data.length)
+  })
+
+  it('row-key 命中时零回退：不为任何行对象调用 JSON.stringify', () => {
+    const data = Array.from({ length: 10 }, (_, i) => ({ __probe: true, key: `k${i}`, name: `行${i}` }))
+    const el = new OASTable()
+    el.setAttribute('columns', COLUMNS)
+    const spy = vi.spyOn(JSON, 'stringify')
+    let count = -1
+    try {
+      el.setAttribute('data', JSON.stringify(data))
+      document.body.appendChild(el)
+      count = countRowStringify(spy)
+    } finally {
+      spy.mockRestore()
+    }
+    expect(rows(el).length).toBe(data.length)
+    expect(count, 'row-key 存在的路径不应走回退序列化').toBe(0)
+  })
+
+  it('跨渲染复用：仅选择变化（增量补丁路径）对同一批行对象零 stringify', () => {
+    const data = Array.from({ length: 10 }, (_, i) => ({ __probe: true, name: `行${i}` }))
+    const el = new OASTable()
+    el.setAttribute('columns', COLUMNS)
+    el.setAttribute('checkable', '')
+    el.setAttribute('data', JSON.stringify(data))
+    document.body.appendChild(el)
+    const keys = rows(el).map((r) => r.getAttribute('data-key')!)
+    expect(keys.length).toBe(data.length)
+    const spy = vi.spyOn(JSON, 'stringify')
+    let count = -1
+    try {
+      // 仅 selected 变化 → 增量快路径（不重解析 data），表头全选态复用 flat 缓存中的同一批行对象
+      el.setAttribute('selected', keys.join(','))
+      count = countRowStringify(spy)
+    } finally {
+      spy.mockRestore()
+    }
+    expect(count, '同一批行对象的回退键已缓存，增量路径应零 stringify').toBe(0)
   })
 })

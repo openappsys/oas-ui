@@ -644,6 +644,7 @@ onMounted(async () => {
 | `addable` | 标签栏末尾显示 + 按钮，点击派发 `oas-add`（组件不自动新增面板） | `boolean` | — |
 | `allow-deactivation` | 允许点击当前激活标签取消激活（无选中态）；默认重复点击已激活标签保持激活 | `boolean` | — |
 | `animated` | 选中态过渡 + 面板淡入动画（只动 color/border/opacity，不碰 layout） | `boolean` | — |
+| `aria-label` | 标签栏的可访问名（转发到内部 `role="tablist"` 容器；缺省不设置；不影响 tab↔panel 的 aria-labelledby 链） | — | — |
 | `centered` | 标签栏整体居中（横向时） | `boolean` | — |
 | `closable` | 每个标签显示关闭 ×，点击派发 `oas-close`（组件不自动删除） | `boolean` | — |
 | `context-menu` | 标签右键操作菜单（新建/关闭/关闭其他/关闭左侧所有/关闭右侧所有/关闭全部；新建派发 oas-add，关闭类按目标集合逐个派发 oas-close） | `boolean` | — |

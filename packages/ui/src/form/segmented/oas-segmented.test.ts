@@ -398,3 +398,37 @@ describe('OASSegmented value property（get/set）', () => {
     expect(Object.hasOwn(el, 'value')).toBe(false)
   })
 })
+
+// ===== 宿主可访问名转发（宿主 aria-label → 内部 radiogroup） =====
+// 内部 radiogroup 自身无可见名称（选项文本是每个 radio 的名称，不是组名）；宿主 aria-label
+// 是唯一命名通道，不转发则读屏只播报「单选组」而无上下文。
+describe('segmented 宿主 aria-label 转发', () => {
+  function groupOf(el: OASSegmented): HTMLElement {
+    return el.shadowRoot!.querySelector('[role="radiogroup"]')!
+  }
+
+  it('宿主 aria-label 转发到内部 radiogroup；缺省不写（无内置文案可回落）', () => {
+    const el = mount()
+    expect(groupOf(el).hasAttribute('aria-label')).toBe(false)
+    el.setAttribute('aria-label', '时间粒度')
+    expect(groupOf(el).getAttribute('aria-label')).toBe('时间粒度')
+  })
+
+  it('运行时更新/清空即时生效，空白串按缺省处理', () => {
+    const el = mount({ 'aria-label': '时间粒度' })
+    expect(groupOf(el).getAttribute('aria-label')).toBe('时间粒度')
+    el.setAttribute('aria-label', '视图切换')
+    expect(groupOf(el).getAttribute('aria-label')).toBe('视图切换')
+    el.setAttribute('aria-label', '   ')
+    expect(groupOf(el).hasAttribute('aria-label')).toBe(false)
+    el.setAttribute('aria-label', '')
+    expect(groupOf(el).hasAttribute('aria-label')).toBe(false)
+  })
+
+  it('转发不影响 radiogroup 既有语义属性（orientation / readonly）', () => {
+    const el = mount({ direction: 'vertical', readonly: '', 'aria-label': '时间粒度' })
+    expect(groupOf(el).getAttribute('aria-orientation')).toBe('vertical')
+    expect(groupOf(el).getAttribute('aria-readonly')).toBe('true')
+    expect(groupOf(el).getAttribute('aria-label')).toBe('时间粒度')
+  })
+})

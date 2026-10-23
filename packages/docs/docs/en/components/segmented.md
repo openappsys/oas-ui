@@ -116,6 +116,7 @@ onMounted(() => {
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
+| `aria-label` | Accessible name of the radio group (forwarded to the inner `role="radiogroup"` container; unset by default) | — | — |
 | `block` | Fill the parent width (options share equally) | — | — |
 | `direction` | Orientation: `horizontal` (default) / `vertical` (mirrors aria-orientation and axis keys) | `string` | `horizontal` |
 | `disabled` | Disables the whole segmented control (explicitly, or inherited from the config-provider global disabled injection) | `boolean` | — |

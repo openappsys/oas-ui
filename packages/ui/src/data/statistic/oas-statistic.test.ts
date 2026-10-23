@@ -15,6 +15,15 @@ function valueEl(el: OASStatistic): HTMLElement {
   return el.shadowRoot!.querySelector('[part="value"]')!
 }
 
+/** 数值区内容容器（slot + Intl 兜底文本同在此容器内；骨架是其兄弟节点） */
+function valueInner(el: OASStatistic): HTMLElement {
+  return el.shadowRoot!.querySelector('[part="value-inner"]')!
+}
+
+function skeleton(el: OASStatistic): HTMLElement {
+  return el.shadowRoot!.querySelector('oas-skeleton')!
+}
+
 function text(el: OASStatistic): string {
   return el.shadowRoot!.querySelector<HTMLElement>('[part="statistic"]')!.textContent!
 }
@@ -80,10 +89,12 @@ describe('OASStatistic', () => {
 
   it('loading 渲染骨架占位，非 loading 渲染数值', () => {
     const el = mount({ value: '123', loading: '' })
-    const skeleton = el.shadowRoot!.querySelector('oas-skeleton')!
-    expect(skeleton.hasAttribute('hidden')).toBe(false)
+    expect(skeleton(el).hasAttribute('hidden')).toBe(false)
+    // 骨架与数值不得并存：加载中数值区内容必须隐藏（曾只切骨架，数值文本与骨架同框）
+    expect(valueInner(el).hidden, 'loading 时数值区内容应隐藏').toBe(true)
     el.removeAttribute('loading')
-    expect(el.shadowRoot!.querySelector('oas-skeleton')!.hasAttribute('hidden')).toBe(true)
+    expect(skeleton(el).hasAttribute('hidden')).toBe(true)
+    expect(valueInner(el).hidden, '取消 loading 后数值区内容应恢复').toBe(false)
     expect(valueEl(el).textContent).toContain('123')
   })
 
@@ -240,10 +251,40 @@ describe('OASStatistic', () => {
   it('loading 时骨架显示、value 区内容隐藏；取消后恢复', () => {
     const el = mount({ value: '123', loading: '' })
     expect(el.shadowRoot!.querySelector('oas-skeleton')).not.toBeNull()
-    expect(el.shadowRoot!.querySelector('oas-skeleton')!.hasAttribute('hidden')).toBe(false)
+    expect(skeleton(el).hasAttribute('hidden')).toBe(false)
+    // 数值区内容（含 Intl 兜底文本）必须真正不可见，而非仅 textContent 仍在 DOM
+    expect(valueInner(el).hidden).toBe(true)
+    // 兜底文本照常计算（隐藏靠容器，数据不变）
+    expect(valueEl(el).querySelector<HTMLElement>('[data-fallback]')!.textContent).toBe('123')
     el.removeAttribute('loading')
-    expect(el.shadowRoot!.querySelector('oas-skeleton')!.hasAttribute('hidden')).toBe(true)
+    expect(skeleton(el).hasAttribute('hidden')).toBe(true)
+    expect(valueInner(el).hidden).toBe(false)
     expect(partEl(el, 'value').textContent).toContain('123')
+  })
+
+  it('loading 时 slot="value" 自定义数值内容同样隐藏（骨架独占数值区）', async () => {
+    const el = mount({ value: '123', loading: '' })
+    const custom = document.createElement('span')
+    custom.id = 'stat-custom-value'
+    custom.textContent = '自定义'
+    custom.setAttribute('slot', 'value')
+    el.appendChild(custom)
+    await new Promise((r) => setTimeout(r, 0))
+    expect(valueInner(el).hidden, 'slot 自定义内容不得与骨架并存').toBe(true)
+    expect(el.querySelector('#stat-custom-value'), '宿主 slot 节点不被搬走').toBe(custom)
+    el.removeAttribute('loading')
+    expect(valueInner(el).hidden).toBe(false)
+  })
+
+  it('loading 切换是幂等的（重复设置同一状态不改变可见性）', () => {
+    const el = mount({ value: '7', loading: '' })
+    el.setAttribute('loading', '')
+    expect(valueInner(el).hidden).toBe(true)
+    expect(skeleton(el).hasAttribute('hidden')).toBe(false)
+    el.removeAttribute('loading')
+    el.removeAttribute('loading')
+    expect(valueInner(el).hidden).toBe(false)
+    expect(skeleton(el).hasAttribute('hidden')).toBe(true)
   })
 
   // ---- DSD 水合：快照标题区恢复吸收缓存 ----
@@ -259,6 +300,20 @@ describe('OASStatistic', () => {
     document.body.appendChild(el)
     expect(partEl(el, 'title').textContent).toContain('快照标题')
     expect(el.hasAttribute('title')).toBe(false)
+  })
+
+  it('水合：快照 loading 态首帧即保持骨架与数值互斥（数值区隐藏）', () => {
+    const ref = mount({ value: '42', loading: '' })
+    const snap = ref.shadowRoot!.innerHTML
+    ref.remove()
+
+    const el = new OASStatistic()
+    el.shadowRoot!.innerHTML = `<meta data-oas-ssr="oas-statistic" data-oas-ssr-v="1">${snap}`
+    el.setAttribute('value', '42')
+    el.setAttribute('loading', '')
+    document.body.appendChild(el)
+    expect(valueInner(el).hidden, '水合后 loading 态数值区应隐藏').toBe(true)
+    expect(skeleton(el).hasAttribute('hidden')).toBe(false)
   })
 
   it('内部 part 的 hidden 显隐有 CSS 兜底（作者层 display 规则不得压过 hidden 属性）', () => {

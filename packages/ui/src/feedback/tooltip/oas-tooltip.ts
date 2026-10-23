@@ -816,7 +816,7 @@ export class OAStooltip extends OASElement {
     this.tipEl.style.setProperty('--oas-tooltip-color', on)
   }
 
-  /** 任意色值实心底的文字色：按相对亮度取深/浅（共享实现见 `shared/on-color`；不可解析回落白字 token） */
+  /** 任意色值实心底的文字色：按 WCAG 对比度（token 候选回落亮度启发式）取深/浅（共享实现见 `shared/on-color`；不可解析回落白字 token） */
   private pickOnColor(color: string): string {
     return pickOnColorBase(color, {
       dark: 'var(--oas-color-text-primary)',

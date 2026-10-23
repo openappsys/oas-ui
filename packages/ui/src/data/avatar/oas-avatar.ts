@@ -44,7 +44,7 @@ function resolveSize(raw: string): number {
 }
 
 /**
- * 自定义色实心底的文字色：按相对亮度取深/浅，保证对比可读（共享实现见 `shared/on-color`）。
+ * 自定义色实心底的文字色：按 WCAG 对比度在深/浅之间取对比度更高者（共享实现见 `shared/on-color`）。
  */
 function pickOnColor(color: string): string {
   return pickOnColorBase(color, { dark: '#18181b', light: '#ffffff', fallback: '' })
@@ -53,7 +53,7 @@ function pickOnColor(color: string): string {
 /**
  * color 属性解析（ui-spec §4.1 统一协议）：
  * 4 语义色 → token + on-token；11 预设名 → --oas-preset-* token（dark 自动切深字）；
- * 其余按任意 CSS 色值注入，文字色用 pickOnColor 按底色亮度取黑/白（解析不了回落 on-primary token）。
+ * 其余按任意 CSS 色值注入，文字色用 pickOnColor 按底色对比度取黑/白（解析不了回落 on-primary token）。
  */
 function resolveAvatarColor(color: string): { bg: string; on: string } {
   const semantic: Record<string, [string, string]> = {

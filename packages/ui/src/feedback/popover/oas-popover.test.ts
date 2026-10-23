@@ -3012,3 +3012,102 @@ describe('OASPopover 属性-方法撞名回归', () => {
     expect(el.hasAttribute('open')).toBe(false)
   })
 })
+
+// ===== 断开重连（append / re-parent / 路由缓存摘挂）=====
+//
+// 缺陷背景：打开态 remove() → append() 后，disconnectedCallback 的 cleanup 执行了
+// unregisterLayer（Esc 层出栈），重连 update 因 wasOpen 仍为 true 跳过「打开瞬间」分支，
+// Esc 层不再重压 → Esc 永久失效。修复后 onReconnect 幂等重压，且不得把 wasOpen 置 false
+// （否则 update 走打开瞬间分支跑 applyInitialFocus，重连时抢走用户焦点）。
+describe('OASPopover 断开重连（打开态）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => unmountAll())
+
+  it('打开 → remove → append 后按 Esc 仍关闭（Esc 层重压）', () => {
+    const el = mount({ open: '', title: 'x' })
+    expect(panelOf(el).getAttribute('aria-hidden')).toBe('false')
+    el.remove()
+    document.body.appendChild(el)
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+    expect(el.hasAttribute('open'), '重连后 Esc 应关闭面板').toBe(false)
+  })
+
+  it('重连不抢焦：initial-focus 只在打开瞬间执行，重连保持用户当前焦点', () => {
+    const target = document.createElement('button')
+    target.id = 'pop-af-target'
+    document.body.appendChild(target)
+    const outside = document.createElement('button')
+    outside.id = 'pop-outside-focus'
+    document.body.appendChild(outside)
+    const el = mount({ open: '', 'initial-focus': '#pop-af-target' })
+    expect(document.activeElement, '打开瞬间聚焦 initial-focus 目标').toBe(target)
+    outside.focus()
+    el.remove()
+    document.body.appendChild(el)
+    expect(document.activeElement, '重连不得抢焦').toBe(outside)
+  })
+
+  it('重连后外点关闭仍生效', () => {
+    const el = mount({ open: '', title: 'x' })
+    el.remove()
+    document.body.appendChild(el)
+    document.body.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    expect(el.hasAttribute('open')).toBe(false)
+  })
+
+  it('重连后滚动跟随重挂（close-on-scroll 仍能关闭）', async () => {
+    const el = mount({ open: '', 'close-on-scroll': '', title: 'x', placement: 'bottom' })
+    stubPanelRect(panelOf(el), 200, 60)
+    stubRect(el.querySelector('button')!, { left: 400, top: 300, width: 80, height: 32 })
+    setViewport(1280, 800)
+    el.remove()
+    document.body.appendChild(el)
+    setScrollY(300)
+    window.dispatchEvent(new Event('scroll'))
+    await new Promise((resolve) => requestAnimationFrame(() => resolve(undefined)))
+    expect(el.hasAttribute('open'), '重连后滚动监听应已恢复').toBe(false)
+  })
+
+  it('重连后 modal 焦点陷阱恢复（Tab 不再逃逸到面板外）', () => {
+    const outside = document.createElement('button')
+    outside.id = 'pop-trap-outside'
+    document.body.appendChild(outside)
+    const el = mount({ open: '', modal: '', title: 'x' })
+    el.innerHTML = '<button>触发</button><button slot="content" id="pop-trap-in">面板内</button>'
+    el.setAttribute('open', '')
+    el.remove()
+    document.body.appendChild(el)
+    outside.focus()
+    const ev = new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true })
+    document.dispatchEvent(ev)
+    const inner = el.querySelector<HTMLElement>('#pop-trap-in')!
+    expect(ev.defaultPrevented, '焦点在面板外时 Tab 应被拦截').toBe(true)
+    // happy-dom 会把 shadow 内焦点 retarget 到宿主，回退 shadowRoot.activeElement 取真实焦点
+    expect(el.shadowRoot!.activeElement ?? document.activeElement).toBe(inner)
+  })
+
+  it('重连后再次断开仍执行 cleanup（Esc 层不泄漏，文档监听不遗留）', () => {
+    const el = mount({ open: '', title: 'x' })
+    el.remove()
+    document.body.appendChild(el)
+    el.remove()
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+    expect(el.hasAttribute('open'), '已断开元素的残留 Esc 层不得再收事件').toBe(true)
+  })
+
+  it('嵌套双层同时重连：Esc 仍按层级先关子层（重压顺序 = 连接顺序）', () => {
+    const { parent, child } = mountNested()
+    parent.remove()
+    document.body.appendChild(parent)
+    // happy-dom 不为重插子树的子孙派发 connectedCallback，显式重插子层模拟浏览器
+    // 「父先子后」的连接顺序（真实浏览器子树重连由 qa-regression 覆盖）
+    child.remove()
+    parent.appendChild(child)
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+    expect(child.hasAttribute('open'), '子层应由一次 Esc 关闭').toBe(false)
+    expect(parent.hasAttribute('open'), '父层保持打开').toBe(true)
+  })
+})

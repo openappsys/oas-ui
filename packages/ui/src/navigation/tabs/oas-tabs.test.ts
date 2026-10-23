@@ -2300,3 +2300,61 @@ describe('onReconnect 面板 MutationObserver 重建（cleanup disconnect + 置 
     expect(host.resizeObserver, '重连后溢出 ResizeObserver 重建（null 守卫生效）').not.toBeNull()
   })
 })
+
+// ===== 宿主可访问名转发（宿主 aria-label → 内部 tablist） =====
+// 内部 tablist 没有可见标签来源（role=tablist 不能关联宿主文档里的标题），宿主 aria-label
+// 是唯一命名通道：不转发则读屏只播报「标签栏」而无上下文，同页多组 tabs 无法区分。
+describe('tabs 宿主 aria-label 转发', () => {
+  function mountLabeled(attrs: Record<string, string> = {}): OASTabs {
+    const el = new OASTabs()
+    for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v)
+    el.innerHTML = `
+      <oas-tab-panel label="概览" value="a"><p>内容一</p></oas-tab-panel>
+      <oas-tab-panel label="设置" value="b"><p>内容二</p></oas-tab-panel>
+    `
+    document.body.appendChild(el)
+    return el
+  }
+
+  function tablistOf(el: OASTabs): HTMLElement {
+    return el.shadowRoot!.querySelector('[role="tablist"]')!
+  }
+
+  it('宿主 aria-label 转发到内部 tablist；缺省不写（无内置文案可回落）', () => {
+    const el = mountLabeled()
+    expect(tablistOf(el).hasAttribute('aria-label')).toBe(false)
+    el.setAttribute('aria-label', '账户页标签')
+    expect(tablistOf(el).getAttribute('aria-label')).toBe('账户页标签')
+  })
+
+  it('运行时更新/清空即时生效，空白串按缺省处理', () => {
+    const el = mountLabeled({ 'aria-label': '账户页标签' })
+    expect(tablistOf(el).getAttribute('aria-label')).toBe('账户页标签')
+    el.setAttribute('aria-label', '设置页标签')
+    expect(tablistOf(el).getAttribute('aria-label')).toBe('设置页标签')
+    el.setAttribute('aria-label', '   ')
+    expect(tablistOf(el).hasAttribute('aria-label')).toBe(false)
+    el.setAttribute('aria-label', '')
+    expect(tablistOf(el).hasAttribute('aria-label')).toBe(false)
+  })
+
+  it('转发不破坏 tab ↔ tabpanel 链（aria-controls / role=tabpanel / aria-labelledby 不变）', () => {
+    const el = mountLabeled({ 'aria-label': '账户页标签', active: 'b' })
+    const region = el.shadowRoot!.querySelector<HTMLElement>('[role="tabpanel"]')!
+    const active = el.shadowRoot!.querySelector<HTMLElement>('[role="tab"][data-value="b"]')!
+    expect(tablistOf(el).getAttribute('aria-label')).toBe('账户页标签')
+    expect(active.getAttribute('aria-controls')).toBe(region.id)
+    expect(region.getAttribute('aria-labelledby')).toBe(active.id)
+    expect(region.hasAttribute('aria-label'), 'tabpanel 不应被宿主标签覆盖（名称仍来自激活 tab）').toBe(false)
+  })
+
+  it('运行时改 aria-label 不重建标签钮（焦点/滚动位置不因命名变化抖动）', () => {
+    const el = mountLabeled({ 'aria-label': '账户页标签' })
+    const tab = el.shadowRoot!.querySelector<HTMLElement>('[role="tab"][data-value="a"]')!
+    const tablist = tablistOf(el)
+    el.setAttribute('aria-label', '设置页标签')
+    expect(tablistOf(el)).toBe(tablist)
+    expect(el.shadowRoot!.querySelector('[role="tab"][data-value="a"]'), '仅命名变化不应重建标签钮').toBe(tab)
+    expect(tablist.getAttribute('aria-label')).toBe('设置页标签')
+  })
+})

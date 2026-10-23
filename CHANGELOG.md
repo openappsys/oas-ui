@@ -6,12 +6,26 @@
 
 ### 变更
 
+- **宿主可访问名转发**：`oas-tabs`（tablist）、`oas-segmented`（radiogroup）、`oas-table`（grid）新增宿主 `aria-label` → 内部角色容器转发，运行时更新即时生效；缺省不设置。修复宿主 `aria-label` 在 shadow 内失效导致读屏无名的问题；`oas-tabs` 改名不重建标签钮、`oas-table` 改名不重建数据行。
+- **共享前景色按对比度择优**：`shared/on-color` 由亮度阈值 0.35 改为按 WCAG 对比度在黑/白候选中取更高者（候选不可解析时回落旧启发式）。`oas-avatar`、`oas-badge`、`oas-button`、`oas-switch`、`oas-toggle-group`、`oas-toggle-button` 等实底消费方的前景色可能由白转深（对比度提升）；`#ff6b00`、`#16a34a` 等中间色调更可读。`oas-tooltip` 的候选为 token 时仍走旧亮度启发式（对比度择优仅支持可解析实底色）。
+- **`oas-command` 列表变化重置高亮**：可见项 value 序列变化时 `activeIndex` 归零，修复过滤/受控回写/items 重建后 Enter 命中旧索引的竞态；无关属性重渲染保留当前高亮。
+- **`oas-statistic` loading 互斥**：加载态隐藏整个数值内容容器（含 `slot="value"` 自定义内容），只显示骨架；取消 loading 恢复。修正原先骨架与数值并存的视觉缺陷与假绿测试。
+- **`oas-popover` / `oas-popconfirm` 重连恢复**：打开态 `remove()` 再 `append()` 后幂等重压 Esc 层、重挂外点/滚动监听（popover 另恢复 modal 焦点陷阱），不抢焦点；同时修复二次断开时清理注册未复位导致的 Esc 层滞留。
+- **`oas-table` 行 key 回退缓存**：无 `row-key` 时按行对象 WeakMap 缓存 `JSON.stringify` 回退 key（同一对象只序列化一次），20 行全量渲染的 stringify 调用由 40 次降到 20 次、选中变化增量路径由 10 次降到 0；`row-key` 命中路径零 stringify。
+
 - **`oas-bottom-navigation` 语义修正**：不再伪装成无 panel 的 `tablist`——容器改 `role="navigation"`，当前项改 `aria-current="page"`（原 `role="tab"` / `aria-selected` 移除；`aria-disabled` 与视觉不变）。键盘模型同步改为 navigation 惯例：全部可用项 Tab 可达（原 roving tabindex 仅激活项可聚焦），方向键/Home/End 保留为增强焦点移动。宿主 `aria-label` 转发到内部 navigation 地标（同页多实例可区分，缺省回落内置文案）。读屏语义更准；依赖 `aria-selected` 选择器的宿主样式需改为 `aria-current`。
 - **受控 `open` 回声抑制统一**：`oas-date-picker` / `oas-time-picker` / `oas-cascader` / `oas-combobox` / `oas-color-picker` / `oas-dropdown` / `oas-tooltip` / `oas-popover` / `oas-hover-card` / `oas-popconfirm` 在宿主自己增删 `open` 属性吸收状态时**不再回派 `oas-open-change`**（host 已知，避免双向绑定回环）；组件内部用户交互（点击/hover/focus/Esc/外点/确认/取消）导致的开关照常派发；tooltip 的 `source`/`reason` 与 popconfirm 的 `reason` 内部路径语义不变（宿主写属性不再产生 `source='attribute'` / `reason='api'`）。以上浮层（含 select / tree-select）受控口径一致；`context-menu` / `command` / `menubar` 保留各自「外部可写并派发」的既有声明式设计（文档已明确），不在本次迁移范围。父浮层级联关闭嵌套子浮层同样按宿主写属性口径静默（子层不派发事件）。
 - **浮层二次断连监听清理**：`oas-dropdown` / `oas-context-menu` / `oas-sidebar` / `oas-tour` 在 `disconnectedCallback` 幂等移除 document/window 级监听（外点、scroll/resize、快捷键、滚动跟随），修复「打开态断开 → 重连 → 再断开」后监听残留；首轮断连/重连行为不变。
 - **`oas-backdrop` 开启完成事件归位 after-\* 家族**：动画完成加发规范名 `oas-after-open`，`oas-after-show` 保留为兼容别名（DEP-EVENT-0006，不排期移除）。
 - **配置注入通道统一**：`injectValue` 在 provider 同名 attribute 之后增加 `config` JSON 兜底（`{"oas-tag":{"size":"small"}}`）——`config-provider` 的 JSON 通道不再只有 `oas-button` 消费。当前经注入通道消费的键为 `size`（全库 23 个组件）；`variant` 仍只有 `oas-button` 消费，其余键随组件接入逐步生效。
 - **`oas-gantt` 不可排程守卫**：任务日历为空（资源 `shifts: []` 或 workdays 交集为空）时，auto-schedule 依赖推进**不再把任务排进不可用日**（旧行为会把任务落到该资源不可用的日子，测试数据里表现为周六）——保持原日期、devWarn 一次并打 `.conflict` 标记（生产环境也可见）；下游按冻结日期排程，依赖违约照常在前驱标出；`mso` 显式锚点不受此守卫影响。
+
+### 工程
+
+- **`perf:size` 发布产物裸导入门禁**：未声明的裸导入直接 FAIL 并列出说明符/文件；浏览器端包（ui/core/i18n/icons/ssr/theme）零第三方，`@oas-ui/ssr` 的 `happy-dom` 为唯一例外；`@oas-ui/next` / `@oas-ui/nuxt` 适配器的 peer 依赖（react/react-dom/@nuxt/kit）按包声明放行。新增 `--self-test` 覆盖红绿两侧。
+- **体积相对断言**：`table/core` 链必须严格小于主链 `table`（失败信息含两者数值），绝对值预算保留。
+- **`qa:audit` 事件只断 length 维度入 `--check`**：新增 `--max-event-len`（默认 105），阈值定位为防增量而非清零。
+- **SSR 白名单计数门禁**：`pnpm ssr:check` 校验 `WHITELIST` 长度与 `docs/ssr.md`、中/英文 guide 的计数一致（`docs/ROADMAP.md` 可选），计数声明缺失/改写也失败。
 
 ### 修复
 

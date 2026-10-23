@@ -695,6 +695,9 @@ export class OASPopover extends OASElement {
   private destroyed = false
   /** P13 关闭后焦点归还目标（property 通道，优先于 final-focus 选择器属性） */
   finalFocusEl: HTMLElement | null = null
+  /** 本连接周期的清理函数是否已注册（基类 disconnectedCallback 会执行并清空 cleanupFns，
+   *  重连需重挂；本标志防同一连接周期重复注册） */
+  private lifecycleBound = false
 
   /**
    * 能力注入：构造时快照已注册能力 + connected 期订阅晚加入（注册可能晚于元素构造——
@@ -721,6 +724,27 @@ export class OASPopover extends OASElement {
     this.unsubCaps?.()
     this.unsubCaps = undefined
     super.disconnectedCallback()
+    // 基类已执行并清空 cleanupFns（Esc 栈 / 外点 / 计时器 / modal 锁 / 滚动跟随全部摘除）：
+    // 复位「已注册」标记供重连重挂；焦点陷阱监听已被 cleanup 摘除，trapBound 同步复位，
+    // 否则重连后 syncModal 认为陷阱仍在而永不重挂（Tab 逃逸）。复位放在 super 之后——
+    // super 内的 cleanup 以 trapBound 为条件摘监听，提前复位会漏摘。
+    this.lifecycleBound = false
+    this.trapBound = false
+  }
+
+  /**
+   * 断开重连（append/re-parent/路由缓存摘挂）：基类 cleanup 已摘除文档级监听，这里幂等重挂。
+   * 打开态重连是关键路径——Esc 层随断开被 unregisterLayer 移出模块栈，而 update() 的
+   * 「打开瞬间」分支被 wasOpen=true 跳过，不重压则 Esc 永久失效。
+   * 注意：不把 wasOpen 置 false——那会让 update() 走打开瞬间分支跑 applyInitialFocus，
+   * 重连时抢走用户当前焦点（重连不是打开动作）。
+   */
+  protected override onReconnect(): void {
+    this.bindLifecycle()
+    if (!this.panel || !this.hasAttr('open')) return
+    registerLayer(this)
+    if (!this.hasAttr('virtual')) document.addEventListener('click', this.handleOutside, true)
+    this.syncScrollFollow(true)
   }
 
   /** 幂等注入：按 name 去重，已注入的能力不重复 addController */
@@ -849,8 +873,7 @@ export class OASPopover extends OASElement {
       this.toggle()
     })
     // 外部点击关闭（面板移入 body 后 composedPath 仍含面板自身，见 handleOutside）
-    this.onCleanup(() => unregisterLayer(this))
-    this.onCleanup(() => document.removeEventListener('click', this.handleOutside, true))
+    this.bindLifecycle()
     // 关闭按钮（P5：统一走可取消关闭入口）
     this.closeBtn?.addEventListener('click', () => {
       if (this.closeWith('close-btn')) this.restoreFocus()
@@ -889,6 +912,21 @@ export class OASPopover extends OASElement {
       if (!this.hasAttr('modal')) return
       this.closeWith('backdrop')
     })
+  }
+
+  /**
+   * 连接期清理注册（Esc 层 / 外点 / 计时器 / modal 锁与焦点陷阱 / 滚动跟随 / portal 兜底）。
+   *
+   * 基类 disconnectedCallback 执行并清空 cleanupFns，重连（onReconnect）必须重新注册，
+   * 否则第二次断开时 Esc 层滞留模块栈、文档监听与计时器无主。lifecycleBound 守卫同一
+   * 连接周期只注册一次（bind 与水合路径都可能进、重连再进不叠）。
+   */
+  private bindLifecycle(): void {
+    if (this.lifecycleBound) return
+    this.lifecycleBound = true
+    // 外部点击关闭（面板移入 body 后 composedPath 仍含面板自身，见 handleOutside）+ Esc 栈
+    this.onCleanup(() => unregisterLayer(this))
+    this.onCleanup(() => document.removeEventListener('click', this.handleOutside, true))
     // 计时器统一清理（hover 防抖 + 通用延迟 + 退场隐藏 + auto-close），断开连接无孤儿。
     // （contextmenu 能力的触屏长按计时器由该 controller 自管：hostDisconnected 清理）
     this.onCleanup(() => {

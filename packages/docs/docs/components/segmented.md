@@ -116,6 +116,7 @@ onMounted(() => {
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
+| `aria-label` | 单选组的可访问名（转发到内部 `role="radiogroup"` 容器；缺省不设置） | — | — |
 | `block` | 铺满父容器（各项等宽均分） | — | — |
 | `direction` | 排列方向：`horizontal`（默认）/ `vertical`（联动 aria-orientation 与轴向键） | `string` | `horizontal` |
 | `disabled` | 禁用整个分段控件（自身显式禁用，或经 config-provider 全局禁用注入继承） | `boolean` | — |

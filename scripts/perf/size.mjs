@@ -17,6 +17,16 @@
  * 预算断言：超预算打印 FAIL 并以非零退出（CI 已在 .github/workflows/ci.yml 接线 `pnpm perf:size`）。
  * 预算定档依据：2026-08-12 首测值上浮 ~15%（量纲取整），注释写明各条实测与余量。
  *
+ * 结构门禁（同样非零退出）：
+ *   - 裸导入：发布产物只允许相对导入 + `@oas-ui/*` 工作区包；其余裸导入必须列进
+ *     EXTERNAL_IMPORT_ALLOW（当前仅 `@oas-ui/ssr` 的 happy-dom）——否则图遍历会静默跳过、
+ *     体积少算而不报红。改动例外须同步 docs/engineering.md「零第三方」口径。
+ *   - `/core` 链退化：table/core gzip 必须严格小于主链 table，绝对值预算之外再锁相对关系。
+ *   - 可选层零泄漏：theme 可选层文件 / 图标全量注册表不得进任何基础链闭包。
+ *
+ * 自测（不依赖已构建 dist，覆盖上述判定函数的红绿两侧）：
+ *   `node scripts/perf/size.mjs --self-test`
+ *
  * 产物：docs/perf-baseline.json 的 `size` section（与 render-bench.mjs 各自 merge，互不覆盖）。
  *   ⚠️ 该基线是**入库文件**，本工具默认「只测不写」：gzip 字节跨 zlib 版本/平台存在差异，
  *   若每次运行都写入，会污染工作树（本地跑一次就脏一个 tracked 文件），并让读这份基线的
@@ -43,7 +53,8 @@ function brotli(buf) {
 
 // ---------- 模块图遍历（按发布产物静态解析 import） ----------
 const FROM_RE = /from\s*["']([^"']+)["']/g
-const SIDE_IMPORT_RE = /^\s*import\s*["']([^"']+)["']/gm
+// 语句边界（行首 / ; { } 之后的 import），避免把注释/字符串里的示例 import 当真导入
+const SIDE_IMPORT_RE = /(?:^|[;{}])\s*import\s*["']([^"']+)["']/gm
 const DYNAMIC_IMPORT_RE = /import\(\s*["']([^"']+)["']\s*\)/g
 
 function extractSpecs(code) {
@@ -136,19 +147,156 @@ function measureFiles(files) {
   return { files: files.length, rawBytes: raw, gzipBytes: gz, brotliBytes: br }
 }
 
-/** 遍历目录收集 .js 文件（含子目录，排除 .map/.d.ts） */
-function collectJs(dir) {
+/** 遍历目录收集 .js 文件（含子目录，排除 .map/.d.ts）；exts 可放宽，供裸导入扫描覆盖 .mjs/.cjs */
+function collectJs(dir, exts = ['.js']) {
   const out = []
   for (const name of readdirSync(dir)) {
     const full = join(dir, name)
     if (statSync(full).isDirectory()) {
-      out.push(...collectJs(full))
-    } else if (full.endsWith('.js')) {
+      out.push(...collectJs(full, exts))
+    } else if (exts.some((ext) => full.endsWith(ext))) {
       out.push(full)
     }
   }
   return out
 }
+
+// ---------- 门禁核心函数（纯函数，`--self-test` 覆盖） ----------
+// 模块说明符合法字符集：不含空白/引号/括号/逗号——`from` 出现在字符串或属性名里
+// （如 `setAttribute("data-from", …)`）时，正则捕获到的不是模块说明符，靠这道形状检查挡掉。
+const MODULE_SPECIFIER_RE = /^[A-Za-z0-9@_.~:/+-]+$/
+// `from` 紧贴这些字符时不是模块导入（`"from"` 属性名 / `data-from` / `obj.from`）
+const INVALID_BEFORE_FROM = new Set(['"', "'", '-', '.', '`'])
+
+/**
+ * 已声明的外部依赖例外（唯一权威；改动必须同步 docs/engineering.md 的「零第三方」口径）。
+ * 约束：按「包 + 说明符」精确匹配，不做包名前缀放宽。
+ */
+const EXTERNAL_IMPORT_ALLOW = [
+  {
+    pkg: 'ssr',
+    spec: 'happy-dom',
+    reason: '服务端 DOM shim：仅 @oas-ui/ssr 在 Node 端渲染时安装全局 DOM，不进浏览器产物',
+  },
+  {
+    pkg: 'next',
+    spec: 'react',
+    reason: 'Next.js 适配器 peer 依赖：构建/服务端渲染时由宿主提供',
+  },
+  {
+    pkg: 'next',
+    spec: 'react-dom/server',
+    reason: 'Next.js 适配器 peer 依赖：服务端静态渲染入口，由宿主提供',
+  },
+  {
+    pkg: 'nuxt',
+    spec: '@nuxt/kit',
+    reason: 'Nuxt 模块适配器 peer 依赖：构建期由 Nuxt 提供',
+  },
+]
+/** 允许使用 `node:` 内建模块的包（Node 端运行时包） */
+const NODE_BUILTIN_PKGS = new Set(['ssr'])
+
+function isDeclaredExternal(pkg, spec) {
+  if (NODE_BUILTIN_PKGS.has(pkg) && spec.startsWith('node:')) return true
+  return EXTERNAL_IMPORT_ALLOW.some((allow) => allow.pkg === pkg && allow.spec === spec)
+}
+
+/** 提取静态 import 说明符及其位置（区分 from 子句与副作用导入，供裸导入判定使用） */
+function extractSpecifiers(code) {
+  const out = []
+  for (const [re, anchored] of [
+    [FROM_RE, false],
+    [SIDE_IMPORT_RE, true],
+  ]) {
+    re.lastIndex = 0
+    let m
+    while ((m = re.exec(code))) out.push({ spec: m[1], index: m.index, anchored })
+  }
+  return out
+}
+
+/**
+ * 判定一段发布产物代码里的「未解析裸导入」。
+ * 返回违规说明符数组（去重）；相对导入与 @oas-ui/* 工作区包不算外部依赖。
+ */
+function staticImportViolations(code, pkg) {
+  const out = []
+  const seen = new Set()
+  for (const { spec, index, anchored } of extractSpecifiers(code)) {
+    if (!spec || spec.startsWith('.') || spec.startsWith('@oas-ui/')) continue
+    if (!anchored && INVALID_BEFORE_FROM.has(code[index - 1])) continue
+    if (!MODULE_SPECIFIER_RE.test(spec)) continue
+    if (isDeclaredExternal(pkg, spec)) continue
+    if (seen.has(spec)) continue
+    seen.add(spec)
+    out.push(spec)
+  }
+  return out
+}
+
+/** `/core` 链必须严格小于主链 table（同口径 gzip 字节），退化即返回错误文案 */
+function checkCoreChain(coreBytes, tableBytes) {
+  if (!Number.isFinite(coreBytes) || !Number.isFinite(tableBytes)) {
+    return `FAIL [core 链] 缺少体积数据：table/core=${coreBytes} / table=${tableBytes}`
+  }
+  if (coreBytes >= tableBytes) {
+    return `FAIL [core 链退化] table/core ${fmtKB(coreBytes)}（${coreBytes} B）≥ 主链 table ${fmtKB(tableBytes)}（${tableBytes} B）：/core 是主路径子集，必须严格小于主链`
+  }
+  return null
+}
+
+/** 自测：`node scripts/perf/size.mjs --self-test`（不跑体积测量；`pnpm perf:size` 会先跑它，判定函数红绿两侧因此进 CI） */
+function runSelfTest() {
+  const results = []
+  const check = (name, actual, expected) => {
+    const ok = actual === expected
+    results.push({ name, ok })
+    console.log(`${ok ? 'PASS' : 'FAIL'} [self-test] ${name}${ok ? '' : `：期望 ${expected}，实得 ${actual}`}`)
+  }
+  // 任务 A：裸导入门禁
+  check('相对导入放行', staticImportViolations("import './dep.js'", 'ui').length, 0)
+  check('@oas-ui 工作区包放行', staticImportViolations("import { x } from '@oas-ui/core'", 'ui').length, 0)
+  check('未声明裸导入报错', staticImportViolations("import pad from 'left-pad'", 'ui').join(','), 'left-pad')
+  check('副作用裸导入报错', staticImportViolations("import 'polyfill-x'", 'ui').join(','), 'polyfill-x')
+  check(
+    'happy-dom 在 ui 包报错',
+    staticImportViolations("import { Window } from 'happy-dom'", 'ui').join(','),
+    'happy-dom',
+  )
+  check(
+    'happy-dom 在 ssr 包放行（已声明例外）',
+    staticImportViolations("import { Window } from 'happy-dom'", 'ssr').length,
+    0,
+  )
+  check('node: 内建在 ssr 包放行', staticImportViolations("import { readFileSync } from 'node:fs'", 'ssr').length, 0)
+  check(
+    'node: 内建在浏览器包报错',
+    staticImportViolations("import { readFileSync } from 'node:fs'", 'ui').join(','),
+    'node:fs',
+  )
+  check(
+    '字符串/属性名中的 from 不误报',
+    staticImportViolations('n.setAttribute("data-from", t.task.id)\nconst v = el.getAttribute("from")', 'ui').length,
+    0,
+  )
+  // 任务 B：/core 链必须小于主链
+  check('core 小于 table 通过', checkCoreChain(61 * 1024, 93 * 1024), null)
+  check('core 等于 table 报错', checkCoreChain(93 * 1024, 93 * 1024) !== null, true)
+  check('core 大于 table 报错', checkCoreChain(100 * 1024, 93 * 1024) !== null, true)
+  const message = checkCoreChain(100 * 1024, 93 * 1024) ?? ''
+  check('退化信息含两者数值', message.includes('100.0 KB') && message.includes('93.0 KB'), true)
+
+  const failed = results.filter((r) => !r.ok)
+  if (failed.length) {
+    console.error(`[perf:size] self-test 失败 ${failed.length}/${results.length} 项`)
+    process.exit(1)
+  }
+  console.log(`[perf:size] self-test 通过 ${results.length}/${results.length} 项`)
+  process.exit(0)
+}
+
+if (process.argv.includes('--self-test')) runSelfTest()
 
 // ---------- 预检：dist 必须先构建 ----------
 if (!existsSync(join(UI_DIST, 'index.js'))) {
@@ -220,6 +368,48 @@ const cdn = {
   rawBytes: cdnBuf.length,
   gzipBytes: gzip(cdnBuf),
   brotliBytes: brotli(cdnBuf),
+}
+
+// ---------- 1.5 裸导入门禁（发布产物不得引入未声明的外部依赖） ----------
+// 为什么必须显式报错：resolveSpec 只解析相对路径与 @oas-ui/*，外部裸导入一律返回 null，
+// 图遍历会**静默跳过**——若 ui 链混入外部包，体积断言少算而不报红（门禁形同虚设）。
+// 口径：允许相对导入、@oas-ui/* 工作区包、EXTERNAL_IMPORT_ALLOW 精确声明的例外；
+// 其余裸导入 = FAIL，并列出说明符 + 文件。
+// 覆盖边界：只查静态 import/export（与体积口径一致）；动态 import() 属运行时按需下载，不计入初始负载，
+// 也不在本门禁范围。
+function packageOfFile(file) {
+  const rel = relative(join(ROOT, 'packages'), file).replaceAll('\\', '/')
+  return rel.split('/')[0]
+}
+
+const publishedJs = [
+  ...new Set([
+    ...['ui', 'core', 'i18n', 'icons', 'ssr', 'next', 'nuxt'].flatMap((pkg) =>
+      collectJs(join(ROOT, 'packages', pkg, 'dist'), ['.js', '.mjs', '.cjs']),
+    ),
+    join(ROOT, 'packages/theme/glass-fluid.js'),
+  ]),
+]
+
+let fail = false
+console.log('\n=== 裸导入门禁（发布产物：相对导入 + @oas-ui/* + 已声明例外） ===')
+const importViolations = []
+for (const file of publishedJs) {
+  const pkg = packageOfFile(file)
+  for (const spec of staticImportViolations(readFileSync(file, 'utf8'), pkg)) {
+    importViolations.push({ file: relative(ROOT, file).replaceAll('\\', '/'), pkg, spec })
+  }
+}
+if (importViolations.length) {
+  fail = true
+  for (const v of importViolations) {
+    console.error(`FAIL [裸导入] ${v.file}：'${v.spec}'（所在包 @oas-ui/${v.pkg}）不是已声明外部依赖`)
+  }
+  console.error(
+    '  未解析的依赖不会被计入体积（会少算而不报红）：改成相对/工作区导入，或在 EXTERNAL_IMPORT_ALLOW 声明并同步 docs/engineering.md',
+  )
+} else {
+  console.log(`PASS 扫描 ${publishedJs.length} 个发布 JS 文件：无未声明外部依赖`)
 }
 
 const packageRows = [
@@ -350,7 +540,6 @@ const BUDGETS = [
 ]
 
 console.log('\n=== 体积预算断言（全量类=天花板制；单组件链/theme=绝对值制；90% 预警线） ===')
-let fail = false
 const WARN_RATIO = 0.9
 const budgetResults = []
 for (const b of BUDGETS) {
@@ -372,6 +561,19 @@ for (const b of BUDGETS) {
     warn,
     basis: b.basis,
   })
+}
+
+// ---------- 3.1 /core 链退化断言：table/core 必须严格小于主链 table ----------
+// 绝对值上限（70 KB）挡不住「core 也涨到接近主链」的退化；这里硬断言两者关系，
+// basis 文案里写明的「须小于主链」由此从注释变成可执行断言。
+const coreChainError = checkCoreChain(componentMeasures.tableCore.gzipBytes, componentMeasures.table.gzipBytes)
+if (coreChainError) {
+  fail = true
+  console.error(coreChainError)
+} else {
+  console.log(
+    `PASS [core 链] table/core ${fmtKB(componentMeasures.tableCore.gzipBytes)} < 主链 table ${fmtKB(componentMeasures.table.gzipBytes)}`,
+  )
 }
 
 // ---------- 4. 写入基线（默认只测不写：基线是入库文件，见头部说明） ----------

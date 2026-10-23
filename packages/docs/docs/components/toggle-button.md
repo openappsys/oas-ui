@@ -90,7 +90,7 @@ onMounted(() => {
 
 ## 选中色（color）
 
-`color` 按 ui-spec 统一协议解析：任意 CSS 色值（实底文字色按亮度自动取黑/白）优先；11 预设名（`magenta / red / volcano / orange / gold / lime / green / cyan / blue / geekblue / purple`）解析为 `--oas-preset-*` token（明暗主题自适应）；缺省主色。主题级批量定制走 CSS 变量 `--oas-toggle-color` / `--oas-toggle-on-color`：
+`color` 按 ui-spec 统一协议解析：任意 CSS 色值（实底文字色按 WCAG 对比度自动择优）优先；11 预设名（`magenta / red / volcano / orange / gold / lime / green / cyan / blue / geekblue / purple`）解析为 `--oas-preset-*` token（明暗主题自适应）；缺省主色。主题级批量定制走 CSS 变量 `--oas-toggle-color` / `--oas-toggle-on-color`：
 
 <DemoBlock title="选中色">
   <oas-space size="small">

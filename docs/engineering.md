@@ -22,7 +22,7 @@
 
 **废弃 API 台账**：`docs/deprecations.json` 是别名/事件双发/已移除墓碑的唯一机器可读来源；`pnpm deprecations:gen` 生成 `docs/deprecations.md`，`pnpm deprecations:check` 校验 `normalizeLegacyAlias` 调用、canonical 存在性与 removeIn 版本纪律。移除版本由用户定，AI 不擅自填写或执行移除。
 
-**断言质量审计**：`pnpm qa:audit` 输出无 `expect` 文件、无条件 `test.skip(true)`、固定 `waitForTimeout`、弱断言与事件只断 length 的分布；`pnpm qa:audit:check` 以当前基线为上限，新增假绿或等待膨胀会红灯。它不是覆盖率替代品，只负责让“测了但没断言”可见。
+**断言质量审计**：`pnpm qa:audit` 输出无 `expect` 文件、无条件 `test.skip(true)`、固定 `waitForTimeout`、弱断言与事件只断 length 的分布；`pnpm qa:audit:check` 以当前基线为上限，新增假绿或等待膨胀会红灯。三个维度各自独立设限（`--max-wait` / `--max-weak` / `--max-event-len`，默认 440 / 1930 / 105）。**阈值是防增量，不是要求清零**——历史存量按基线锁住，总量超过基线即红灯（基线已含约 5% 余量）；确属合理新增才调阈值，并在提交说明写清理由。它不是覆盖率替代品，只负责让“测了但没断言”可见。
 
 **Vitest 运行模式**：默认逐文件隔离（Vitest 5 + happy-dom，每文件独立环境）。**关闭隔离不可用（2026-09 尝试已回退）**：`poolOptions` 在 Vitest 4 已移除（曾被误设为 `poolOptions.forks.isolate=false`——死配置，全量仍逐文件建环境）；改顶层 `isolate: false` 真正关闭后，跨文件模块状态共享直接击穿 18 条测试（capability 注册表 late-join 污染 / vi.mock 的 computePositionMock 泄漏 / hover-card 计时态等）——本套件大量用例依赖「每文件全新模块图」（vi.mock 模块替换、能力注册表、locale 全局态、matchMedia 桩），为 ~15% 的 wall 节省逐个扶正不值得，已回退为默认隔离。后续若确需提速，先按「模块级全局态清单」（capability 注册表 / vi.mock / setLocale / 桩）逐类做环境自清理，再评估开关。
 
@@ -78,9 +78,13 @@
 - **工作流**：改组件页 / 侧栏分组 / guide 页后跑 `pnpm llms:gen`；`pnpm llms:check` 已在 CI 强制：`gen --check`（校验 `llms.txt` 与磁盘一致 + 断言 `public/` 无残留 `.md` 镜像）+ `git diff --exit-code` 比对入库版本——CI 先跑 `pnpm build` 会重写 `public/llms.txt`，仅「生成 vs 磁盘」比对会**恒绿失效**，故必须叠加 git diff（详见 `scripts/llms/gen.mjs` 头注）。
 - **脚本**：`scripts/llms/gen.mjs`（`--check` 校验磁盘一致 + public 无残留镜像；`SITE_URL` 环境变量可覆盖站点绝对前缀）。已接进 docs 的 `build` 与 `dev`：前置 gen 生成 `llms.txt`/`llms-full.txt` 并**清理 `public/` 历史 `.md` 镜像**；每页 `.md` 镜像由构建期 `buildEnd` 写 dist，**dev 不生成**（避免路由冲突）。
 
+### SSR 白名单计数门禁（CI 强制）
+
+`pnpm ssr:check` 两步：先 `node --test scripts/ssr/whitelist-count.test.mjs` 自测判定函数（一致的绿侧 + 各类不一致/缺声明的红侧），再 `node scripts/ssr/matrix.mjs --check` 做全量校验。**数量是硬校验**：`packages/ssr/src/index.ts` 的 `WHITELIST` 长度必须等于 `docs/ssr.md`、中/英文 guide 的「共 N tag / N tags in total」，以及 `docs/ROADMAP.md` 的「当前 N」（可选：没写不校验）；计数声明被改写或删除同样失败——不允许靠去掉数字绕过门禁。tag 清单逐项存在性由同一 check 负责（`docs/ssr.md` + 两份 guide 必须列出每个白名单 tag）。改 `WHITELIST` 后未同步文档即红灯；判定实现与数量来源清单集中在 `scripts/ssr/whitelist-count.mjs`（纯函数、无第三方依赖）。
+
 ### 性能基准（vision §5.8 性能领先）
 
-- **体积基准（CI 强制）**：`pnpm perf:size`。基于 `pnpm build` 后的发布产物 dist 统计各包体积（ui 全量入口链 / cdn.js / theme / core / i18n / icons / ssr）+ button/table/form 单组件按需链（静态 import 图遍历，验证 tree-shaking 叙事），超预算非零退出；预算定档依据见 `docs/perf-baseline.md` §4，基线数据与断言结果写入 `docs/perf-baseline.json`（生成物，勿手改）。已在 `.github/workflows/ci.yml` test job 接线（build 之后，且**排在 `stats:check` 之后**——本工具会写基线，先跑会让读基线的统计校验误报）。**默认只测不写**：基线是入库文件，确需更新数据时显式加 `--update-baseline`（gzip 字节跨 zlib/平台有差异，随手写入只会污染工作树）。
+- **体积基准（CI 强制）**：`pnpm perf:size`。基于 `pnpm build` 后的发布产物 dist 统计各包体积（ui 全量入口链 / cdn.js / theme / core / i18n / icons / ssr）+ button/table/form 单组件按需链（静态 import 图遍历，验证 tree-shaking 叙事），超预算非零退出；预算定档依据见 `docs/perf-baseline.md` §4，基线数据与断言结果写入 `docs/perf-baseline.json`（生成物，勿手改）。已在 `.github/workflows/ci.yml` test job 接线（build 之后，且**排在 `stats:check` 之后**——本工具会写基线，先跑会让读基线的统计校验误报）。**默认只测不写**：基线是入库文件，确需更新数据时显式加 `--update-baseline`（gzip 字节跨 zlib/平台有差异，随手写入只会污染工作树）。**发布产物裸导入门禁**：图遍历只解析相对路径与 `@oas-ui/*`，其余裸导入会被静默跳过（体积少算而不报红），因此脚本显式扫描全部发布 JS：未声明的裸导入一律 FAIL 并列出说明符 + 文件；例外界限以脚本内 `EXTERNAL_IMPORT_ALLOW` 为唯一权威（当前仅 `@oas-ui/ssr` 的 `happy-dom`，以及该 Node 端包允许 `node:` 内建）。`table/core` 链另有「必须严格小于主链 `table`」的硬断言（绝对值预算之外再锁相对关系，失败信息含两者数值）。判定函数自测（不依赖 dist）：`node scripts/perf/size.mjs --self-test`。
 - **渲染基准（本地/发布前）**：`pnpm perf:bench`。happy-dom 环境测代表性组件首渲染与增量更新耗时（100 次迭代取均值/中位数），量级断言防退化。渲染耗时波动大，**不进 CI**；发布前本地跑一遍核对。同样**默认只测不写**，更新基线加 `--update-baseline`。
 - **自评摘要**：`docs/perf-baseline.md` §3（体积/渲染对自身基线与预算的自评）。
 - **发布前核对流程**：改动组件/依赖/构建配置后，发布前依次跑 `pnpm build && pnpm perf:size && pnpm perf:bench`；超预算或渲染 p95 明显退化时，在发布说明中给出原因与后续优化计划。
@@ -136,7 +140,7 @@
 
 - TypeScript strict；无 `any`（有理由时注释）
 - 组件对外类型集中导出：每个组件导出 `ButtonProps`（属性）与事件类型 `ButtonEventMap`
-- 无框架依赖：`packages/*` 运行时零第三方依赖（devDependencies 允许工具）
+- 无框架依赖：`packages/*` 浏览器端运行时零第三方依赖（devDependencies 允许工具）。**唯一例外**：Node 端 `@oas-ui/ssr` 依赖 `happy-dom`（首次渲染时把 DOM 全局装到 `globalThis`，供组件类求值与注册；不进浏览器产物）。例外清单以 `scripts/perf/size.mjs` 的 `EXTERNAL_IMPORT_ALLOW` 为准（`node:` 内建由同文件 `NODE_BUILTIN_PKGS` 单独声明；`next`/`nuxt` 适配器的 peer 依赖按包声明放行）——`pnpm perf:size` 扫描全部发布产物 JS（含两种适配器），出现未声明的裸导入即红灯（否则图遍历会跳过它、体积门禁少算而不报红）。
 - 提交信息：conventional commits（`feat:` `fix:` `test:` `docs:` `refactor:`），中文描述
 - 不提交 secrets、不提交 node_modules/dist
 - CSS `!important` 只用于「语义硬不变量」：`hidden` 不渲染、visually-hidden 不可见、reduced-motion 停动画等宿主本就不该覆盖的声明——它是对外防御（宿主全局 reset/工具类），跨树级联中内层树 important 优先是规范预留通道。**视觉默认值**（颜色/间距/hover 等可被主题化的表现）绝不用；组件内部规则互抢时用 important 压是层级失控信号，先重构选择器/结构（如 slot 不出盒、flex 化内容器）

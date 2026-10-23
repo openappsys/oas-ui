@@ -183,3 +183,34 @@ test('avatar-group 间距：spacing 属性注入叠距变量、成员描边防�
   expect(r.overlap).toBe('4px')
   expect(r.ring).not.toBe('none')
 })
+
+test('avatar 中间色调前景色：按 WCAG 对比度取深/浅（#3b82f6 深字 / #767676 白字）', async ({ page }) => {
+  // 固化：旧实现按亮度阈值 0.35 一刀切，#3b82f6 误选白字（对比 3.68 < AA 4.5）；
+  // 改为对比度择色后深字 4.82。断言落在真实计算色（不只变量字符串）。
+  await page.goto('/components/avatar.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-avatar[color="#7c3aed"]')
+  const r = await page.evaluate(() => {
+    const host = document.querySelector('oas-avatar[color="#7c3aed"]') as HTMLElement
+    const read = () => ({
+      on: host.style.getPropertyValue('--oas-avatar-on-color').trim(),
+      fg: getComputedStyle(host).color,
+      bg: getComputedStyle(host).backgroundColor,
+    })
+    host.setAttribute('color', '#3b82f6')
+    const blue = read()
+    host.setAttribute('color', '#767676')
+    const gray = read()
+    host.setAttribute('text', '张')
+    const textEl = host.shadowRoot!.querySelector('[part="text"]') as HTMLElement
+    return { blue, gray, textHidden: textEl.hidden, textColor: getComputedStyle(textEl).color }
+  })
+  expect(r.blue.bg).toBe('rgb(59, 130, 246)')
+  expect(r.blue.on).toBe('#18181b')
+  expect(r.blue.fg, '中蓝底应取深字（对比 4.82）').toBe('rgb(24, 24, 27)')
+  expect(r.gray.bg).toBe('rgb(118, 118, 118)')
+  expect(r.gray.on).toBe('#ffffff')
+  expect(r.gray.fg, '中灰底白字对比 4.54 > 深字 3.90').toBe('rgb(255, 255, 255)')
+  // 文字层真实取到该前景色，且未被隐藏
+  expect(r.textHidden).toBe(false)
+  expect(r.textColor).toBe('rgb(255, 255, 255)')
+})

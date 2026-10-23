@@ -142,6 +142,82 @@ describe('OASCommand', () => {
     expect(el.hasAttribute('open')).toBe(false)
   })
 
+  // ============ activeIndex 与过滤结果竞态（Enter 命中旧索引） ============
+
+  /** 重排样本：过滤 'file' 后顺序变为 File A → File B → Zulu（keywords 命中的排最后） */
+  const REORDER_ITEMS = JSON.stringify([
+    { label: 'Zulu', value: 'zulu', keywords: ['file'] },
+    { label: 'Yankee', value: 'yankee' },
+    { label: 'Xray', value: 'xray' },
+    { label: 'File A', value: 'file-a' },
+    { label: 'File B', value: 'file-b' },
+  ])
+
+  it('过滤结果重排：activeIndex 归零，Enter 命中当前首项而非旧索引项', () => {
+    const el = mount({ open: '', items: REORDER_ITEMS })
+    let detail: unknown
+    el.addEventListener('oas-select', (e: Event) => (detail = (e as CustomEvent).detail))
+    // 旧索引 1 = Yankee
+    arrow(el, 'ArrowDown')
+    expect(options(el)[1]!.getAttribute('data-value')).toBe('yankee')
+    // 受控 value 外部回写（非输入事件路径）：结果重排且长度变化
+    el.setAttribute('value', 'file')
+    expect(options(el).map((o) => o.getAttribute('data-value'))).toEqual(['file-a', 'file-b', 'zulu'])
+    // 旧 activeIndex=1 会落到 File B；归零后应是首项 File A
+    expect(options(el)[0]!.classList.contains('active')).toBe(true)
+    expect(options(el)[1]!.classList.contains('active')).toBe(false)
+    arrow(el, 'Enter')
+    expect(detail).toEqual({ value: 'file-a' })
+  })
+
+  it('过滤结果缩短：activeIndex 夹取到有效范围（0），Enter 命中当前首项', () => {
+    const el = mount({ open: '' })
+    let detail: unknown
+    el.addEventListener('oas-select', (e: Event) => (detail = (e as CustomEvent).detail))
+    arrow(el, 'ArrowDown')
+    arrow(el, 'ArrowDown')
+    expect(options(el)[2]!.classList.contains('active')).toBe(true)
+    // 缩到 1 项：旧索引 2 越界
+    el.setAttribute('value', '撤销')
+    expect(options(el).map((o) => o.getAttribute('data-value'))).toEqual(['undo'])
+    expect(options(el)[0]!.classList.contains('active')).toBe(true)
+    arrow(el, 'Enter')
+    expect(detail).toEqual({ value: 'undo' })
+  })
+
+  it('items 列表重建：activeIndex 归零，Enter 命中新列表首项', () => {
+    const el = mount({ open: '' })
+    let detail: unknown
+    el.addEventListener('oas-select', (e: Event) => (detail = (e as CustomEvent).detail))
+    arrow(el, 'ArrowDown')
+    arrow(el, 'ArrowDown')
+    expect(options(el)[2]!.getAttribute('data-value')).toBe('save')
+    el.setAttribute(
+      'items',
+      JSON.stringify([
+        { label: '甲', value: 'a' },
+        { label: '乙', value: 'b' },
+        { label: '丙', value: 'c' },
+        { label: '丁', value: 'd' },
+      ]),
+    )
+    expect(options(el)[0]!.classList.contains('active')).toBe(true)
+    // 键盘上下移动语义不变：归零后 ArrowDown 落到第二项
+    arrow(el, 'ArrowDown')
+    expect(options(el)[1]!.classList.contains('active')).toBe(true)
+    arrow(el, 'Enter')
+    expect(detail).toEqual({ value: 'b' })
+  })
+
+  it('列表未变化的重渲染不清除方向键高亮（仅结果变化才归零）', () => {
+    const el = mount({ open: '' })
+    arrow(el, 'ArrowDown')
+    expect(options(el)[1]!.classList.contains('active')).toBe(true)
+    // 与列表内容无关的属性变化 → update/renderList 重跑，但不该抹掉当前高亮
+    el.setAttribute('close-on-select', 'false')
+    expect(options(el)[1]!.classList.contains('active')).toBe(true)
+  })
+
   it('点击选项同样选中并关闭', () => {
     const el = mount({ open: '' })
     let detail: unknown

@@ -999,6 +999,7 @@ The full endpoint URLs far exceed the column width (long unbreakable strings): h
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
+| `aria-label` | Accessible name of the table (forwarded to the inner table element; `role="grid"` when grid-navigation is on; unset by default) | — | — |
 | `bordered` | Full border: draws a grid outline around cells (the outer frame is built in) | — | — |
 | `cell-tooltip` | Cell overflow tooltip (on by default, `"false"` to disable): when a plain-text cell overflows (scrollWidth > clientWidth), hover shows the full text in a floating layer — one table-level singleton tooltip (token inverse colors, readable in dark mode), auto-hidden on scroll/re-render; rich-content cells and ellipsis columns with a native title are exempt (no double tooltip) | `string` | `true` |
 | `checkable` | Row selection: present = multi-select (checkboxes + select-all header); `="radio"` = single-select (mutually exclusive, click again to deselect, no select-all), oas-check detail.keys ≤1 | `string` | — |

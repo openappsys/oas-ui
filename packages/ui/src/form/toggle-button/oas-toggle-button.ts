@@ -29,7 +29,7 @@ function normalizeChoice(raw: string, fallback: string, valid: readonly string[]
 }
 
 /**
- * 自定义选中色的实底文字色：按相对亮度取深/浅，保证对比可读（共享实现见 `shared/on-color`）。
+ * 自定义选中色的实底文字色：按 WCAG 对比度（token 候选回落亮度启发式）取深/浅，保证对比可读（共享实现见 `shared/on-color`）。
  */
 function pickOnColor(color: string): string {
   return pickOnColorBase(color, { dark: '#18181b', light: '#ffffff', fallback: '' })

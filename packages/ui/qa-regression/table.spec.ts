@@ -1,6 +1,7 @@
 // 复核回归：table——历史缺陷固化断言。
 
 import { test, expect } from '@playwright/test'
+import AxeBuilder from '@axe-core/playwright'
 import { up } from './helpers'
 
 test('table SPA 导航后数据不丢（Vue property 赋值反射到 attribute）', async ({ page }) => {
@@ -2395,4 +2396,82 @@ test('table windowed 聚焦后横向滚动不被回锚拉回：每帧 scrollLeft
   expect(vertical.scrollTop, '纵向滚动位置保持（不被钳回 0）').toBe(400)
   await page.evaluate(() => document.querySelector('#qa-windowed-hscroll')?.remove())
   expect(consoleIssues, 'console 零告警（error + [oas-table] warning 口径）').toEqual([])
+})
+
+// ===== 宿主可访问名转发：aria-label → 内部 table（grid 语义同样命名） =====
+// 表格无 caption 机制（内部 table 由组件渲染，宿主无法写 caption 子元素）；宿主 aria-label
+// 是唯一命名通道，不转发则读屏只能播报「表格」而无上下文。
+test('table 宿主 aria-label 转发到内部 table（role=grid）、运行时更新生效、axe 无违规', async ({ page }) => {
+  await page.goto('/components/table.html', { waitUntil: 'domcontentloaded' })
+  await page.waitForFunction(() => !!customElements.get('oas-table'))
+  await page.evaluate(() => {
+    document.getElementById('e2e-table-name')?.remove()
+    const el = document.createElement('oas-table')
+    el.id = 'e2e-table-name'
+    el.setAttribute('aria-label', '用户列表')
+    el.setAttribute('grid-navigation', '')
+    el.setAttribute(
+      'columns',
+      JSON.stringify([
+        { key: 'name', title: '姓名' },
+        { key: 'age', title: '年龄' },
+      ]),
+    )
+    el.setAttribute(
+      'data',
+      JSON.stringify([
+        { key: 'u1', name: '张三', age: 30 },
+        { key: 'u2', name: '李四', age: 25 },
+      ]),
+    )
+    el.style.cssText = 'position: fixed; top: 140px; left: 50%; transform: translateX(-50%); z-index: 2147483000'
+    document.body.appendChild(el)
+  })
+  await page.waitForFunction(() => {
+    const el = document.querySelector('oas-table#e2e-table-name')
+    return !!el?.shadowRoot?.querySelector('table[role="grid"][aria-label]')
+  })
+
+  const r = await page.evaluate(() => {
+    const el = document.querySelector('oas-table#e2e-table-name')! as HTMLElement & { shadowRoot: ShadowRoot }
+    const table = el.shadowRoot.querySelector('table') as HTMLElement
+    return {
+      inner: table.getAttribute('aria-label'),
+      host: el.getAttribute('aria-label'),
+      role: table.getAttribute('role'),
+      rowCount: el.shadowRoot.querySelectorAll('tbody tr[data-key]').length,
+      headerRole: el.shadowRoot.querySelector('thead th')?.getAttribute('role') ?? null,
+      cellRole: el.shadowRoot.querySelector('tbody tr[data-key] td')?.getAttribute('role') ?? null,
+    }
+  })
+  expect(r.inner, '宿主 aria-label 应转发到内部 table').toBe('用户列表')
+  expect(r.host, '宿主属性保留（宿主框架下不剥离）').toBe('用户列表')
+  expect(r.role, 'grid-navigation 语义保持不变').toBe('grid')
+  expect(r.headerRole, '表头 role 链不变').toBe('columnheader')
+  expect(r.cellRole, '单元格 role 链不变').toBe('gridcell')
+  expect(r.rowCount, '数据行正常渲染').toBe(2)
+
+  const updated = await page.evaluate(() => {
+    const el = document.querySelector('oas-table#e2e-table-name')! as HTMLElement & { shadowRoot: ShadowRoot }
+    const table = el.shadowRoot.querySelector('table') as HTMLElement
+    // 仅命名变化不应重建数据行（行节点身份保持，滚动/焦点不丢）——先取节点再改名
+    const row = el.shadowRoot.querySelector('tbody tr[data-key]') as HTMLElement
+    el.setAttribute('aria-label', '订单列表')
+    return {
+      inner: table.getAttribute('aria-label'),
+      rowSame: el.shadowRoot.querySelector('tbody tr[data-key]') === row,
+    }
+  })
+  expect(updated.inner, '运行时更新 aria-label 即时转发').toBe('订单列表')
+  expect(updated.rowSame, '仅命名变化不重建行').toBe(true)
+
+  const a11y = await new AxeBuilder({ page })
+    .include('#e2e-table-name')
+    // 对比度由主题/视觉专项覆盖（dynamic 元素背景随主题变化会引入无关噪声）
+    .disableRules(['color-contrast'])
+    .analyze()
+  expect(
+    a11y.violations.map((v) => `${v.id}: ${v.nodes.length}`),
+    '宿主命名转发不应引入 axe 违规',
+  ).toEqual([])
 })

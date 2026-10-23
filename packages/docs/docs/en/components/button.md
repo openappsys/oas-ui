@@ -219,7 +219,7 @@ Setting `href` renders a native link (`<a>`); `target` controls how it opens (`_
 
 `color` overrides the `type` semantic color with any color value.
 
-Color priority: `--oas-button-bg` (host-injected CSS variable, gradients allowed) > `color` attribute > `type` semantic color > default gray. In `outlined` / `filled` / `dashed` / `text` variants, `color` tints the border/text/light background; for solid buttons the text color is picked black or white by background luminance (stays readable in dark mode).
+Color priority: `--oas-button-bg` (host-injected CSS variable, gradients allowed) > `color` attribute > `type` semantic color > default gray. In `outlined` / `filled` / `dashed` / `text` variants, `color` tints the border/text/light background; for solid buttons the text color is picked black or white by WCAG contrast (stays readable in dark mode).
 
 Custom color values are rendered as-is (never rewritten) — make sure the text/background contrast meets WCAG AA (4.5:1).
 
@@ -231,7 +231,7 @@ Custom color values are rendered as-is (never rewritten) — make sure the text/
 
 ## Selected state (active / active-tint)
 
-The `active` boolean attribute marks the selected state (**controlled**: the component does not toggle itself; the host writes back on `oas-click`). Selected visuals share the button-group selection anchor (`aria-pressed`). `active-tint` customizes the selected color — the 11 preset names resolve to theme tokens (light/dark adapted automatically), any CSS color is injected as-is, and the solid selected text color adapts to background luminance (contrast is the host's responsibility, WCAG AA 4.5:1).
+The `active` boolean attribute marks the selected state (**controlled**: the component does not toggle itself; the host writes back on `oas-click`). Selected visuals share the button-group selection anchor (`aria-pressed`). `active-tint` customizes the selected color — the 11 preset names resolve to theme tokens (light/dark adapted automatically), any CSS color is injected as-is, and the solid selected text color adapts to WCAG contrast (contrast is the host's responsibility, WCAG AA 4.5:1).
 
 <DemoBlock title="Selected state">
   <oas-button active>Default (soft selected tint)</oas-button>
@@ -342,7 +342,7 @@ Clicking "Submit" fires the native `submit` event (the demo calls `preventDefaul
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
 | `active` | Selected state (controlled): present = selected; the host writes back on oas-click (the component does not toggle itself); selected visuals share the button-group selection anchor (aria-pressed), pair with active-tint for a custom tint | `boolean` | — |
-| `active-tint` | Selected-state tint: the 11 preset names resolve to --oas-preset-*-text tokens (one set per theme); any CSS color is injected as-is; solid selected text color (primary etc.) adapts to background luminance, contrast is the host’s responsibility | `string` | — |
+| `active-tint` | Selected-state tint: the 11 preset names resolve to --oas-preset-*-text tokens (one set per theme); any CSS color is injected as-is; solid selected text color (primary etc.) adapts to WCAG contrast, contrast is the host’s responsibility | `string` | — |
 | `auto-insert-space` | CJK auto spacing: inserts a space between two consecutive CJK characters (off by default) | `string` | — |
 | `autofocus` | Autofocus: focuses the inner button on mount (native autofocus does not pierce Shadow DOM; the component forwards it) | `boolean` | — |
 | `block` | Fill the full width of the parent container (block level) | `boolean` | — |
@@ -394,7 +394,7 @@ Clicking "Submit" fires the native `submit` event (the demo calls `preventDefaul
 | CSS Variable | Description | Default |
 | --- | --- | --- |
 | `--oas-button-active-tint` | Selected-state tint channel (injected by the active-tint attribute; preset names resolve to --oas-preset-*-text, raw colors as-is); consumed by selected text/border/soft and solid fills | `var(--oas-color-primary)` |
-| `--oas-button-active-tint-on` | Label color on solid selected fills (primary etc.): custom tints pick black/white by background luminance; falls back to --oas-color-text-on-primary when not injected | `var(--oas-color-text-on-primary)` |
+| `--oas-button-active-tint-on` | Label color on solid selected fills (primary etc.): custom tints pick black/white by WCAG contrast; falls back to --oas-color-text-on-primary when not injected | `var(--oas-color-text-on-primary)` |
 | `--oas-button-active-tint-text` | Text-safe variant of the selected tint: theme-aware deepen/lighten mix (toward near-black in light, near-white in dark; presets use the -text token directly) — labels on soft selected fills and text-variant selection | `var(--oas-color-primary-text)` |
 | `--oas-button-bg` | — | `var(--oas-color-primary)` |
 | `--oas-button-color` | — | `var(--oas-color-text-primary)` |

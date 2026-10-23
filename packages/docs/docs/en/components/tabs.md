@@ -645,6 +645,7 @@ When present, `tabindex` is forwarded to every tab button (overriding the defaul
 | `addable` | Shows a + button at the end of the tab bar; clicking fires `oas-add` (the component does not add a panel) | `boolean` | — |
 | `allow-deactivation` | Allow clicking the active tab to deactivate it (no selection); by default clicking the active tab keeps it active | `boolean` | — |
 | `animated` | Selection transition + panel fade-in (animates color/border/opacity only, no layout) | `boolean` | — |
+| `aria-label` | Accessible name of the tablist (forwarded to the inner `role="tablist"` container; unset by default; does not affect the tab↔panel aria-labelledby chain) | — | — |
 | `centered` | Center the tab bar (when horizontal) | `boolean` | — |
 | `closable` | Shows a close × on every tab; clicking fires `oas-close` (the component does not remove the panel) | `boolean` | — |
 | `context-menu` | Right-click action menu on tabs (New / Close / Close others / Close all to the left / Close all to the right / Close all; New fires oas-add, each close fires oas-close once per target tab) | `boolean` | — |

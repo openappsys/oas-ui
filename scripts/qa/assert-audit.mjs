@@ -9,11 +9,15 @@
  * - 只断言存在/大于 0/truthy 的弱断言；
  * - 事件只断言 length 的模式（启发式）。
  *
+ * 阈值口径：`--check` 的上限**是防增量，不是要求清零**——历史存量按基线锁住，
+ * 新增一条就让总数越过上限即红灯；确属合理新增（如新组件补了一组事件断言）才调阈值，
+ * 并在提交说明里写清为什么。三个维度各自独立设限（等待/弱断言/事件只断 length）。
+ *
  * 用法：
  *   node scripts/qa/assert-audit.mjs
  *   node scripts/qa/assert-audit.mjs --json
  *   node scripts/qa/assert-audit.mjs --check
- *   node scripts/qa/assert-audit.mjs --check --max-wait 400 --max-weak 380
+ *   node scripts/qa/assert-audit.mjs --check --max-wait 400 --max-weak 380 --max-event-len 105
  */
 import { readFileSync, readdirSync } from 'node:fs'
 import { dirname, join, relative, resolve } from 'node:path'
@@ -93,16 +97,26 @@ export function summarize(results) {
 
 function argValue(name, fallback) {
   const index = process.argv.indexOf(name)
-  return index >= 0 && process.argv[index + 1] ? Number(process.argv[index + 1]) : fallback
+  if (index < 0) return fallback
+  const raw = process.argv[index + 1]
+  const value = Number(raw)
+  // 非数字会让 `count > NaN` 恒 false（静默关掉维度），必须显式报错
+  if (!raw || !Number.isFinite(value) || value < 0) {
+    console.error(`[qa:audit] ${name} 需要非负数字，收到 ${raw ?? '(空)'}`)
+    process.exit(1)
+  }
+  return value
 }
 
 function main() {
   const results = audit()
   const summary = summarize(results)
   const check = process.argv.includes('--check')
-  // 阈值带约 5% 余量，避免新增一两条合规断言就顶线失败；继续增长仍会被挡下
+  // 阈值带约一成余量（96 → 105），避免新增一两条合规断言就顶线失败；继续增长仍会被挡下。
+  // 口径：防增量，不是要求清零（见文件头）。
   const maxWait = argValue('--max-wait', 440)
   const maxWeak = argValue('--max-weak', 1930)
+  const maxEventLen = argValue('--max-event-len', 105)
 
   if (process.argv.includes('--json')) {
     console.log(JSON.stringify({ summary, results }, null, 2))
@@ -130,6 +144,9 @@ function main() {
   }
 
   if (check) {
+    console.log(
+      `[qa:audit] 阈值（防增量，非清零）：waitForTimeout ≤ ${maxWait}；弱断言 ≤ ${maxWeak}；事件只断 length ≤ ${maxEventLen}`,
+    )
     const problems = []
     if (summary.zeroExpectFiles > 0) problems.push(`无 expect 文件 ${summary.zeroExpectFiles}`)
     if (summary.unconditionalSkips > 0) {
@@ -140,6 +157,9 @@ function main() {
     }
     if (summary.weakAssertions > maxWeak) {
       problems.push(`弱断言 ${summary.weakAssertions} > ${maxWeak}`)
+    }
+    if (summary.eventLengthOnly > maxEventLen) {
+      problems.push(`事件只断 length ${summary.eventLengthOnly} > ${maxEventLen}`)
     }
     if (problems.length) {
       console.error(`[qa:audit] 未通过：${problems.join('；')}`)

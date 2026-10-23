@@ -366,6 +366,9 @@ export class OASPopconfirm extends OASElement {
   /** 面板/标题区 id（aria 关联） */
   private readonly panelId = `oas-popconfirm-pop-${++uid}`
   private readonly titleId = `oas-popconfirm-title-${uid}`
+  /** 本连接周期的清理函数是否已注册（基类 disconnectedCallback 会执行并清空 cleanupFns，
+   *  重连需重挂；本标志防同一连接周期重复注册） */
+  private lifecycleBound = false
 
   /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
   private template(): string {
@@ -449,6 +452,17 @@ export class OASPopconfirm extends OASElement {
     }
 
     // 清理：Esc 栈 / 外点监听 / 计时器 / 滚动跟随（断开连接无孤儿）
+    this.bindLifecycle()
+  }
+
+  /**
+   * 连接期清理注册（Esc 栈 / 外点监听 / 计时器 / 滚动跟随）。
+   * 基类 disconnectedCallback 执行并清空 cleanupFns，重连必须重新注册，
+   * 否则第二次断开时 Esc 层滞留模块栈、文档监听与计时器无主。
+   */
+  private bindLifecycle(): void {
+    if (this.lifecycleBound) return
+    this.lifecycleBound = true
     this.onCleanup(() => unregisterLayer(this))
     this.onCleanup(() => document.removeEventListener('click', this.handleOutside, true))
     this.onCleanup(() => {
@@ -459,6 +473,26 @@ export class OASPopconfirm extends OASElement {
       window.removeEventListener('scroll', this.onScroll, { capture: true })
       window.removeEventListener('resize', this.onScroll)
     })
+  }
+
+  /** 断开连接：基类 cleanup 摘除文档级监听后复位连接期状态，供重连幂等重挂 */
+  override disconnectedCallback(): void {
+    super.disconnectedCallback()
+    this.lifecycleBound = false
+    this.scrollFollow = false
+  }
+
+  /**
+   * 断开重连（append/re-parent/路由缓存摘挂）：重挂清理注册位，打开态重压 Esc 层与外点/滚动监听。
+   * 打开态重连时 update() 的「打开瞬间」分支被 wasOpen=true 跳过，不重压 Esc 会永久失效。
+   * 不把 wasOpen 置 false——那会触发打开瞬间分支的 applyInitialFocus，重连时抢焦点。
+   */
+  protected override onReconnect(): void {
+    this.bindLifecycle()
+    if (!this.popoverEl || !this.hasAttr('open')) return
+    registerLayer(this)
+    if (!this.isVirtual()) document.addEventListener('click', this.handleOutside, true)
+    this.syncScrollFollow(true)
   }
 
   protected override render(): void {

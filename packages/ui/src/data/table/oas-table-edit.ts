@@ -5,6 +5,8 @@ import { isTruthyCell } from './oas-table.js'
 // 行内交互宿主排除清单：双击进编辑判定与行点击共用同一份（单一事实来源，
 // 见 oas-table-interactive.js 的维护纪律注释——库内新增交互型组件须同步该清单）
 import { ROW_INTERACTIVE_EXCLUSION } from './oas-table-interactive.js'
+// 行键计算（与 oas-table 同源：row-key 缺失时按行对象缓存 JSON.stringify 回退）
+import { rowKeyValue } from './oas-table-row-key.js'
 
 /**
  * 行内编辑能力（edit 能力包）：把「编辑 + 校验 machinery」从 OASTableBase 外置为
@@ -956,7 +958,7 @@ export class TableEditController implements ReactiveController, TableEditCapabil
   ): Record<string, unknown> | null {
     const rowKey = this.hostEl.getAttribute('row-key') ?? 'key'
     for (const row of nodes) {
-      if (String(row[rowKey] ?? JSON.stringify(row)) === key) return row
+      if (rowKeyValue(row, rowKey) === key) return row
       const children = row.children
       if (Array.isArray(children)) {
         const hit = this.findDataRow(key, children as Array<Record<string, unknown>>)

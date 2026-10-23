@@ -347,3 +347,56 @@ test('popconfirm coarse 降级：trigger=hover 触屏 tap 切换开合 + 外点�
     await ctx.close()
   }
 })
+
+test('popconfirm 打开态断开重连：Esc 仍关闭、焦点不被抢（回归：重连后 Esc 层未重压）', async ({ page }) => {
+  await page.goto('/components/popconfirm.html', { waitUntil: 'domcontentloaded' })
+  await page.evaluate(() => {
+    const outside = document.createElement('button')
+    outside.id = 'pc-reconnect-outside'
+    outside.textContent = '外部按钮'
+    document.body.insertBefore(outside, document.body.firstChild)
+  })
+  await mountReg(page, 'pc-reconnect-reg')
+
+  const aria = () =>
+    page.evaluate(
+      () =>
+        document
+          .querySelector('#pc-reconnect-reg')!
+          .shadowRoot!.querySelector('[part="popover"]')!
+          .getAttribute('aria-hidden') ?? '',
+    )
+  const reconnect = () =>
+    page.evaluate(() => {
+      const el = document.querySelector('#pc-reconnect-reg')!
+      el.remove()
+      document.body.insertBefore(el, document.body.firstChild)
+    })
+
+  // 真实点击打开（页面存在 demo 遮罩层，pointer 点击会被 curtain 拦截——用元素 click() 走同一点击处理）
+  await page.evaluate(() => (document.querySelector('#pc-reconnect-reg > button') as HTMLElement).click())
+  await page.waitForFunction(
+    () =>
+      document
+        .querySelector('#pc-reconnect-reg')!
+        .shadowRoot!.querySelector('[part="popover"]')!
+        .getAttribute('aria-hidden') === 'false',
+    null,
+    { timeout: 5000 },
+  )
+
+  // 断开重连：气泡保持打开
+  await reconnect()
+  expect(await aria(), '重连后气泡应保持打开').toBe('false')
+
+  // 焦点不被抢：先聚焦外部按钮，再次断开重连 → 焦点仍在外部按钮
+  await page.locator('#pc-reconnect-outside').focus()
+  await reconnect()
+  expect(await page.evaluate(() => document.activeElement?.id ?? ''), '重连不得抢焦').toBe('pc-reconnect-outside')
+
+  // Escape 关闭
+  await page.keyboard.press('Escape')
+  await page.waitForFunction(() => document.querySelector('#pc-reconnect-reg')?.hasAttribute('open') === false, null, {
+    timeout: 5000,
+  })
+})

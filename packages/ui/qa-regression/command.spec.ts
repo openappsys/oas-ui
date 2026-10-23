@@ -54,6 +54,57 @@ test('command 基础回归：open 打开、过滤驱动可见行、方向键高�
   expect(r.selected, 'Enter 应派发 oas-select 并携带选中 value').toBeTruthy()
 })
 
+// 键盘竞态回归：过滤结果重排后 activeIndex 必须归零，Enter 命中当前列表项而非旧索引项
+test('command 键盘回归：过滤结果重排后 Enter 命中当前首项（不落旧 activeIndex）', async ({ page }) => {
+  await page.goto('/components/command.html', { waitUntil: 'domcontentloaded' })
+  await page.waitForSelector('#command-basic', { state: 'attached', timeout: 15000 })
+  await page.waitForFunction(() => document.querySelector('#command-basic')?.shadowRoot != null, null, {
+    timeout: 15000,
+  })
+  await page.evaluate(() => {
+    const cmd = document.querySelector('#command-basic') as HTMLElement
+    ;(window as unknown as { __cmdSelected: string }).__cmdSelected = ''
+    cmd.addEventListener('oas-select', (e) => {
+      ;(window as unknown as { __cmdSelected: string }).__cmdSelected = (e as CustomEvent).detail?.value ?? ''
+    })
+    cmd.setAttribute('open', '')
+  })
+  const rows = () =>
+    page.evaluate(() =>
+      [...document.querySelector('#command-basic')!.shadowRoot!.querySelectorAll('.option')].map(
+        (o) => o.getAttribute('data-value') ?? '',
+      ),
+    )
+  const active = () =>
+    page.evaluate(
+      () =>
+        document
+          .querySelector('#command-basic')!
+          .shadowRoot!.querySelector('.option.active')
+          ?.getAttribute('data-value') ?? '',
+    )
+
+  const input = page.locator('#command-basic input.search')
+  await input.focus()
+  // 过滤出多结果，真实方向键选中第 2 项（open-file）
+  await input.fill('文件')
+  await expect.poll(rows, { timeout: 5000 }).toEqual(['new-file', 'open-file', 'save'])
+  await page.keyboard.press('ArrowDown')
+  await expect.poll(active, { timeout: 5000 }).toBe('open-file')
+
+  // 宿主回写受控 value（外部过滤结果重排/缩短，非输入事件路径）→ 结果变 ['undo', 'redo']
+  await page.evaluate(() => document.querySelector('#command-basic')!.setAttribute('value', 'ctrl'))
+  await expect.poll(rows, { timeout: 5000 }).toEqual(['undo', 'redo'])
+  // 旧索引 1 会落到 redo；归零后高亮首项 undo
+  await expect.poll(active, { timeout: 5000 }).toBe('undo')
+
+  // 真实键盘 Enter：命中当前首项 undo
+  await page.keyboard.press('Enter')
+  await expect
+    .poll(() => page.evaluate(() => (window as unknown as { __cmdSelected: string }).__cmdSelected), { timeout: 5000 })
+    .toBe('undo')
+})
+
 // 移动端专项：coarse 下选项行最小高度 ≥44px（触控目标抬升）
 test('command 移动端：coarse 下选项行最小高度 ≥44px（--oas-touch-target-min）', async ({ browser }) => {
   const ctx = await browser.newContext({ viewport: { width: 375, height: 667 }, hasTouch: true, isMobile: true })

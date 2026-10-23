@@ -195,7 +195,7 @@
 
 ## 背景色
 
-`color` 走全库统一颜色协议：4 个语义色（`primary`/`success`/`warning`/`danger`）、11 个预设色板名（`blue`/`geekblue`/`volcano` 等）或任意 CSS 色值；文字色按底色亮度自动取黑/白保证对比度。也可直接覆盖 CSS 变量 `--oas-avatar-bg` / `--oas-avatar-on-color`。
+`color` 走全库统一颜色协议：4 个语义色（`primary`/`success`/`warning`/`danger`）、11 个预设色板名（`blue`/`geekblue`/`volcano` 等）或任意 CSS 色值；文字色按 WCAG 对比度自动择优（黑/白）保证可读。也可直接覆盖 CSS 变量 `--oas-avatar-bg` / `--oas-avatar-on-color`。
 
 <DemoBlock title="背景色 color">
   <oas-avatar color="blue" size="40" text="O"></oas-avatar>
