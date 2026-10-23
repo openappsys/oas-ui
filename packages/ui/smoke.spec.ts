@@ -12,6 +12,11 @@ const PAGES = readdirSync(resolve(import.meta.dirname, '../docs/docs/components'
 // 文件内 test 并行：每页 1 test 曾串行共享 1 个 worker；各 test 独立 page + 独立监听
 test.describe.configure({ mode: 'parallel' })
 
+test('e2e 构建不注入外部统计脚本（不依赖外网 GTM）', async ({ request }) => {
+  const html = await (await request.get('/')).text()
+  expect(html).not.toContain('googletagmanager.com/gtag/js')
+})
+
 for (const page of PAGES) {
   test(`demo 冒烟：${page}`, async ({ page: p }) => {
     const errors: string[] = []

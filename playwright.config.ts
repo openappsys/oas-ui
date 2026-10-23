@@ -64,7 +64,7 @@ export default defineConfig({
     // 默认用 scripts/e2e/serve-dist.mjs 而非 `vitepress preview`：后者硬编码 brotli(质量 11)
     // 逐响应压缩（实测 100KB 资源 76ms vs 不压缩 0.8ms，~100x），单线程 CPU 打满 → 高并发下
     // 响应排队/超时（历史误判为「preview 崩溃」）。localhost 无需压缩。E2E_SERVE=preview 可切回。
-    command: `${E2E_SKIP_BUILD ? '' : 'pnpm --filter @oas-ui/docs run build && '}${
+    command: `${E2E_SKIP_BUILD ? '' : 'cross-env OAS_DOCS_ANALYTICS=0 pnpm --filter @oas-ui/docs run build && '}${
       process.env.E2E_SERVE === 'preview'
         ? `pnpm --filter @oas-ui/docs run preview --port ${E2E_PORT}`
         : `node scripts/e2e/serve-dist.mjs packages/docs/docs/.vitepress/dist ${E2E_PORT}`

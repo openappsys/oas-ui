@@ -82,6 +82,7 @@ async function main() {
       cwd: ROOT,
       stdio: 'inherit',
       shell: IS_WIN,
+      env: { ...process.env, OAS_DOCS_ANALYTICS: '0' },
     })
     if (b.status !== 0) {
       console.error('✖ docs build 失败，终止')

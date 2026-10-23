@@ -377,9 +377,10 @@ export default defineConfig({
   } catch (e) {}
 })()`,
     ] as [string, Record<string, string>, string],
-    // Google Analytics 4（统计 ID G-RXS142HBXF）——仅生产构建注入；dev 环境（vitepress dev，NODE_ENV=development）不加载
+    // Google Analytics 4（统计 ID G-RXS142HBXF）——仅生产构建注入；dev 环境（vitepress dev）不加载
+    // e2e 构建显式设置 OAS_DOCS_ANALYTICS=0，避免测试依赖外网 GTM；正式生产构建仍默认注入
     // SPA 路由切换的 page_view 由 theme 里 router.afterEach 补充（同样仅 PROD）
-    ...(process.env.NODE_ENV === 'production'
+    ...(process.env.NODE_ENV === 'production' && process.env.OAS_DOCS_ANALYTICS !== '0'
       ? [
           [
             'script',
