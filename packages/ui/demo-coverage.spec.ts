@@ -202,6 +202,7 @@ const INTERACTIONS: Array<[string, string]> = [
 //   click         真实点击第一个匹配（不可见时回落 DOM click，浮层/隐藏态 handler 仍会执行）
 //   click:n<idx>  点击第 idx 个匹配
 //   domclick      直接 el.click()（绕过 mouseenter 副作用 / <a href> 跳转）
+//   hover         真实鼠标悬停（内部 hover 通道；受控写属性静默后事件探针走真实交互）
 //   rightclick    右键（contextmenu）
 //   fill:<v>      填充第一个匹配
 //   fillall:<v>   填充所有匹配（如 pin-input 逐格）
@@ -592,8 +593,10 @@ const COMPONENT_STEPS: Record<string, Array<[string, string, string?]>> = {
     ['#command-views [part="option"]', 'domclick', '进视图 → oas-view-change'],
   ],
   'hover-card': [
-    ['oas-button:has-text("显示") button', 'domclick', '受控显示 → oas-open-change'],
-    ['oas-button:has-text("隐藏") button', 'domclick', '受控隐藏 → oas-open-change'],
+    // 受控按钮（宿主写 open 属性）按统一口径静默；事件探针改走内部 hover 通道。
+    // 悬停锚点子元素（宿主自定义元素可能是零尺寸 inline，直接 hover 宿主不稳）
+    ['oas-hover-card:not([disabled]) > oas-button', 'hover', '悬停锚点 → oas-open-change（内部交互）'],
+    ['oas-hover-card:not([disabled])', 'rmattr:open', '复位悬停卡（重复探针可重新走开合）'],
   ],
   menubar: [
     ['oas-menubar [part="top-item"]', 'domclick', 'DOM click 避开 mouseenter 展开与 click 收起的抵消'],
@@ -814,6 +817,13 @@ async function runSteps(page: Page, steps: Array<[string, string, string?]>): Pr
         }
       } else if (act.startsWith('press:')) {
         await page.keyboard.press(act.slice(6))
+      } else if (act === 'hover') {
+        // 悬停内部通道（mouseenter 不冒泡，直接派发到锚点，避免滚动容器/粘性头遮挡导致真实 hover 不稳）；
+        // 受控写属性静默后，事件探针必须走组件内部交互
+        const el = page.locator(sel).first()
+        if (await el.count()) {
+          await el.evaluate((e) => e.dispatchEvent(new MouseEvent('mouseenter', { bubbles: false })))
+        }
       } else if (act === 'rightclick') {
         const el = page.locator(sel).first()
         if (await el.count()) {

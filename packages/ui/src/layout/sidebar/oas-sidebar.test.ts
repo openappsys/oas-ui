@@ -1807,3 +1807,44 @@ describe('OASSidebar 移动抽屉焦点', () => {
     expect(active).toBe(focusables[0])
   })
 })
+
+// ===== 二次断连：全局监听幂等移除 =====
+//
+// 基类 onCleanup 首次 disconnect 执行后清空；onReconnect 会重新挂 document keydown/pointerdown
+// 与 window scroll/resize，二次 disconnect 必须再摘一次。
+describe('OASSidebar 二次断连全局监听清理', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+    stubMatchMedia(false)
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+    vi.unstubAllGlobals()
+    vi.restoreAllMocks()
+  })
+
+  it('重连后再断开：document keydown/pointerdown 与 window scroll/resize 监听被移除', () => {
+    const el = mount()
+    el.remove()
+    document.body.appendChild(el) // 重连：onReconnect 重挂全局监听
+    const docRemove = vi.spyOn(document, 'removeEventListener')
+    const winRemove = vi.spyOn(window, 'removeEventListener')
+    el.remove()
+    expect(docRemove).toHaveBeenCalledWith('keydown', expect.any(Function))
+    expect(docRemove).toHaveBeenCalledWith('pointerdown', expect.any(Function), true)
+    expect(winRemove).toHaveBeenCalledWith('scroll', expect.any(Function), true)
+    expect(winRemove).toHaveBeenCalledWith('resize', expect.any(Function))
+  })
+
+  it('二次断开后 ctrl+b 不再切换折叠（监听确实摘除）', () => {
+    const el = mount({ shortcut: '' })
+    el.remove()
+    document.body.appendChild(el)
+    el.remove()
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'b', ctrlKey: true, cancelable: true }))
+    expect(el.hasAttribute('collapsed'), '残留监听会切换折叠').toBe(false)
+  })
+})

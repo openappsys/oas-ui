@@ -91,7 +91,13 @@ test('popover virtual：virtual-x/virtual-y 定位 + 锚点元素跟随 + oas-op
   expect(attrs.y).toBe('90')
 
   // 按坐标打开：placement=right → 面板左缘 = 160 + 8（gap），垂直居中于锚点
-  await point.evaluate((e) => e.setAttribute('open', ''))
+  await point.evaluate((e) => {
+    ;(window as any).__popOpenCount = 0
+    e.addEventListener('oas-open-change', () => {
+      ;(window as any).__popOpenCount++
+    })
+    e.setAttribute('open', '')
+  })
   const panel = point.locator('[part="panel"]')
   await expect(panel).toHaveAttribute('aria-hidden', 'false')
   await expect(panel).toHaveAttribute('data-placement', 'right')
@@ -99,10 +105,10 @@ test('popover virtual：virtual-x/virtual-y 定位 + 锚点元素跟随 + oas-op
   expect(Math.abs(box.x - 168)).toBeLessThanOrEqual(2)
   expect(Math.abs(box.y - (90 - box.height / 2))).toBeLessThanOrEqual(2)
 
-  // oas-open-change 可见反馈：demo 状态 tag 回显 open
-  await page.waitForFunction(() => document.getElementById('pop-point-status')?.textContent === 'open: true', null, {
-    timeout: 5000,
-  })
+  // 宿主写 open 属性静默：不得回派 oas-open-change（受控吸收）
+  await page.waitForTimeout(100)
+  const popOpenCount = await page.evaluate(() => (window as any).__popOpenCount ?? -1)
+  expect(popOpenCount, '宿主写 open 属性不得回派 oas-open-change').toBe(0)
 
   // 外部点击不关闭（虚拟模式生命周期由宿主控制）
   await page.mouse.click(5, 5)
@@ -861,9 +867,11 @@ test('popover P20/P21/P22/P25：contextmenu 光标定位 + dismiss-on-select + d
     } as MouseEvent)
   })
   await expect(panel.locator('[part="panel"]')).toHaveAttribute('aria-hidden', 'false')
-  await page.waitForFunction(() => document.getElementById('pop-render-status')?.textContent === 'open: true', null, {
-    timeout: 5000,
-  })
+  await page.waitForFunction(
+    () => document.getElementById('pop-render-status')?.textContent?.startsWith('open: true'),
+    null,
+    { timeout: 5000 },
+  )
   await page.evaluate(() => {
     ;(window as unknown as { popPanelHide: () => void }).popPanelHide()
   })

@@ -2,7 +2,7 @@
 
 移动端底部导航栏：`role="navigation"` + 当前项 `aria-current="page"` 同步（视图导航，不伪装成无 panel 的 tablist），全部可用项 Tab 可达、方向键/Home/End 为增强焦点移动、Enter/Space 选中，激活项主色 + 图标，顶部细分隔线。
 
-> 默认是静态布局；需要固定到屏幕底部时加 `fixed` 属性（`position: fixed; bottom: 0`，建议放在 `body` 直接子级避免被滚动容器带偏）。
+> 默认是静态布局；需要固定到屏幕底部时加 `fixed` 属性（`position: fixed; bottom: 0`，建议放在 `body` 直接子级避免被滚动容器带偏）。同页有多个底部导航时，给每个宿主加不同的 `aria-label`（如 `主导航` / `商城导航`）——它转发到内部 `role="navigation"` 容器，避免多个导航地标同名。
 
 ## 基础用法
 
@@ -163,6 +163,7 @@ onMounted(() => {
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
+| `aria-label` | 导航地标的可访问名（转发到内部 `role="navigation"` 容器；同页多个实例时用于区分 landmark，缺省用内置文案） | — | — |
 | `fixed` | 固定到视口底部（`position: fixed; bottom: 0`） | `boolean` | — |
 | `hide-on-scroll` | 滚动隐藏（需配合 `fixed`）：页面向下滚动时导航条 `translateY(100%)` 滑出隐藏、向上滚动滑回显示（滚动差 >4px 判方向，transition 只动 transform）；纯视觉收起，不加 `aria-hidden`（tab 语义与键盘焦点保持可达），滚回即恢复；非 fixed 无效果 | `boolean` | — |
 | `items` | 导航项 JSON | `string` | `[]` |

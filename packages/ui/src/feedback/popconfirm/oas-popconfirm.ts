@@ -347,6 +347,10 @@ export class OASPopconfirm extends OASElement {
   private prevOpen: boolean | null = null
   /** 待消费的 open 变化来源（内部路径先记录，update 派发 open-change 时消费清空） */
   private pendingReason: OpenChangeReason | null = null
+  /** 内部写 open 属性期间置位（attributeChangedCallback 不标记宿主来源） */
+  private internalOpenWrite = false
+  /** 本次 open 变化来自宿主直接写属性（吸收状态，不回派 oas-open-change） */
+  private openFromHost = false
   /** title 吸收缓存：宿主原生 title 被移除后的标题真值（null=无标题） */
   private titleCache: string | null = null
   /** description 文本缓存（非原生属性，无吸收需求；水合恢复用） */
@@ -478,6 +482,30 @@ export class OASPopconfirm extends OASElement {
     return true
   }
 
+  /**
+   * open 属性变化分发：宿主直接写属性（增删 open）视为「吸收状态」——更新视觉但不回派
+   * oas-open-change（宿主已知，避免受控双向绑定回环）；组件内部触发（trigger/ok/cancel/
+   * Esc/外点/show()/hide() 等经 writeOpenAttr 写入）照常派发。首帧渲染前不置位
+   * （append 前的属性是初始值，非迁移）。
+   */
+  override attributeChangedCallback(name: string, oldValue: string | null, newValue: string | null): void {
+    if (name === 'open' && oldValue !== newValue && this.hasRendered && !this.internalOpenWrite) {
+      this.openFromHost = true
+    }
+    super.attributeChangedCallback(name, oldValue, newValue)
+  }
+
+  /** 内部 open 属性写入：置位 internalOpenWrite，attributeChangedCallback 不标记宿主来源 */
+  private writeOpenAttr(open: boolean): void {
+    this.internalOpenWrite = true
+    try {
+      if (open) this.setAttribute('open', '')
+      else this.removeAttribute('open')
+    } finally {
+      this.internalOpenWrite = false
+    }
+  }
+
   // —— 公开 API ——
 
   /** 打开气泡（等价 open 属性；oas-open-change reason='api'） */
@@ -557,7 +585,7 @@ export class OASPopconfirm extends OASElement {
 
   private applyOpen(reason: OpenChangeReason): void {
     this.pendingReason = reason
-    this.setAttribute('open', '')
+    this.writeOpenAttr(true)
   }
 
   /** 关闭请求：记录来源 → 移除 open 属性（公开供模块级 Esc 栈调用；非文档化 API） */
@@ -576,7 +604,7 @@ export class OASPopconfirm extends OASElement {
 
   private applyClose(reason: OpenChangeReason): void {
     this.pendingReason = reason
-    this.removeAttribute('open')
+    this.writeOpenAttr(false)
   }
 
   private clearOpenTimer(): void {
@@ -943,10 +971,11 @@ export class OASPopconfirm extends OASElement {
     const theme = this.themeAttr()
     if (theme === 'default') this.popoverEl.removeAttribute('data-theme')
     else this.popoverEl.setAttribute('data-theme', theme)
-    // open 状态迁移 → oas-open-change（任何来源：内部动作 / 宿主直改属性 / show()/hide()）
-    if (this.prevOpen !== null && this.prevOpen !== open) {
+    // open 状态迁移 → oas-open-change（内部动作/show()/hide() 派发；宿主直接写属性静默吸收）
+    if (this.prevOpen !== null && this.prevOpen !== open && !this.openFromHost) {
       this.emit('open-change', { open, reason: this.pendingReason ?? 'api' })
     }
+    this.openFromHost = false
     this.pendingReason = null
     this.prevOpen = open
     // 箭头显隐

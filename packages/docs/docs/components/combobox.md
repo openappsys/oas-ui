@@ -91,7 +91,7 @@
   <span id="cb-open-output" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); min-width: 180px"></span>
 </DemoBlock>
 
-`open` 属性为受控展开状态（组件内部开合同步写回属性），任何开合迁移都派发 `oas-open-change`（`detail.open` 布尔）——联动场景（如随外部按钮/快捷键展开）由宿主驱动属性实现。
+`open` 属性为受控展开状态（组件内部交互会同步写回属性并派发 `oas-open-change`，`detail.open` 布尔）；宿主直接写 `open` 属性吸收状态时组件静默不回派（host 已知，避免双向绑定回环）——联动场景（如随外部按钮/快捷键展开）由宿主驱动属性实现。
 
 ## 大数据量（虚拟滚动）
 
@@ -222,6 +222,8 @@ onMounted(() => {
     if (!openEl) return
     if (openEl.hasAttribute('open')) openEl.removeAttribute('open')
     else openEl.setAttribute('open', '')
+    // 宿主直接写属性属受控吸收：组件静默（避免双向绑定回环）；内部交互仍会派发事件
+    if (openOut) openOut.textContent = '宿主写属性：静默不回派 oas-open-change'
   })
 
   // 多选 demo：chips 增删 + 事件回显
@@ -324,7 +326,7 @@ onMounted(() => {
 | `oas-clear` | 点击清空按钮，单选 `detail: { value }`（清空前的值）；多选 `detail: { value: string[] }`（清空前的数组） |
 | `oas-exceed-limit` | 多选达 max-count 上限后的越界选择尝试，`detail: { value, max }` |
 | `oas-input` | 输入过滤词，`detail: { value }` |
-| `oas-open-change` | 展开状态迁移（受控 setAttribute 与内部开合都派发），`detail: { open }` |
+| `oas-open-change` | 内部交互导致的开合派发，`detail: { open }`；宿主直接写 open 属性静默不回派 |
 
 #### CSS 变量
 

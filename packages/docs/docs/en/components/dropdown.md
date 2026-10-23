@@ -193,7 +193,7 @@ The `open` attribute is controlled: an external button can set/remove `open` to 
 
 ## Open-change event
 
-The component fires `oas-open-change` (`detail: { open }`) whenever it opens or closes itself (click / hover / focus / Esc / outside click / select) — the host can sync state in controlled mode (same semantics as tooltip / popover; externally writing `open` also triggers it).
+The component fires `oas-open-change` (`detail: { open }`) whenever it opens or closes itself (click / hover / focus / Esc / outside click / select) — the host can sync state in controlled mode. When the host writes the `open` attribute directly to absorb the state, the component stays silent (the host already knows — this avoids two-way binding loops), matching tooltip / popover / combobox.
 
 <DemoBlock title="oas-open-change event">
   <oas-space size="small">
@@ -524,7 +524,7 @@ onMounted(() => {
 | Event | Description |
 | --- | --- |
 | `oas-action` | Main button clicked in split mode, `detail: { originalEvent }` |
-| `oas-open-change` | Popover open state changed, `detail: { open: boolean }` (including external setAttribute; controlled loop) |
+| `oas-open-change` | Emitted for internal-interaction open/close changes, `detail: { open: boolean }`; host-written `open` attributes are absorbed silently |
 | `oas-select` | An item was selected, `detail: { value }` |
 
 #### Slots

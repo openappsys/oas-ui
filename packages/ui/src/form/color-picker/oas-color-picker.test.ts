@@ -111,7 +111,7 @@ describe('OASColorPicker 一期增强', () => {
 
   // ---------- A8 open 受控 ----------
 
-  it('初始无事件；setAttribute open 打开并派发 oas-open-change{open:true}', () => {
+  it('受控回声抑制：宿主 setAttribute open 展开但静默（不派发 oas-open-change）', () => {
     const el = mount()
     const events: boolean[] = []
     el.addEventListener('oas-open-change', (e) => {
@@ -122,10 +122,10 @@ describe('OASColorPicker 一期增强', () => {
     expect(isOpen(el)).toBe(true)
     expect(panelEl(el).classList.contains('open')).toBe(true)
     expect(trigger(el).getAttribute('aria-expanded')).toBe('true')
-    expect(events).toEqual([true])
+    expect(events).toEqual([])
   })
 
-  it('removeAttribute open 关闭并派发 oas-open-change{open:false}', () => {
+  it('受控回声抑制：宿主 removeAttribute open 收起且静默；此后内部关闭仍派发', () => {
     const el = mount({ open: '' })
     const events: boolean[] = []
     el.addEventListener('oas-open-change', (e) => {
@@ -133,6 +133,13 @@ describe('OASColorPicker 一期增强', () => {
     })
     el.removeAttribute('open')
     expect(panelEl(el).classList.contains('open')).toBe(false)
+    expect(events).toEqual([])
+    // 宿主写回展开（静默）→ 内部 Esc 关闭必须照常派发 false（抑制标志不得残留）
+    el.setAttribute('open', '')
+    expect(panelEl(el).classList.contains('open')).toBe(true)
+    expect(events).toEqual([])
+    trigger(el).dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+    expect(isOpen(el)).toBe(false)
     expect(events).toEqual([false])
   })
 

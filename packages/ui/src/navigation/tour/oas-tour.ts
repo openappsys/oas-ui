@@ -594,6 +594,17 @@ export class OASTour extends OASElement {
     // 基类 onCleanup 一次性执行后会清空；断开时主动释放滚动锁与 Esc 层，重连后由 open 边沿重获
     this.restoreScrollLock()
     this.syncEscapeLayer(false)
+    // 重连后 update 重挂的 keydown/滚动跟随监听不再有 cleanup 兜底，组件自身幂等再摘一次
+    this.unbindKeydown()
+    this.unbindFollow()
+    // 挂起的等待/打字机计时器与 advance 监听：断开即清，防回调在断开后重新挂监听
+    this.clearTypewriter()
+    if (this.waitTimer) {
+      clearTimeout(this.waitTimer)
+      this.waitTimer = null
+    }
+    this.advanceTarget?.removeEventListener('click', this.onAdvance)
+    this.advanceTarget = null
     super.disconnectedCallback()
   }
 

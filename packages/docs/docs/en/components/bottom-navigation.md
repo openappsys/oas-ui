@@ -2,7 +2,7 @@
 
 A mobile bottom navigation bar: `role="navigation"` with the current item marked `aria-current="page"` (view navigation — not a tablist without panels); every enabled item is Tab-reachable, arrow keys/Home/End move focus as an enhancement, Enter/Space selects; the active item uses the primary color plus an icon, with a thin top divider.
 
-> The layout is static by default; add the `fixed` attribute to pin it to the bottom of the screen (`position: fixed; bottom: 0` — preferably as a direct child of `body` to avoid being carried away by a scroll container).
+> The layout is static by default; add the `fixed` attribute to pin it to the bottom of the screen (`position: fixed; bottom: 0` — preferably as a direct child of `body` to avoid being carried away by a scroll container). When several bottom navigations share a page, give each host a distinct `aria-label` (e.g. `Main navigation` / `Shop navigation`) — it is forwarded to the inner `role="navigation"` container so landmarks do not share the same name.
 
 ## Basic usage
 
@@ -163,6 +163,7 @@ Pure CSS variable openings (no attribute); dark mode picks up tokens automatical
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
+| `aria-label` | Accessible name of the navigation landmark (forwarded to the inner `role="navigation"` container; use it to distinguish landmarks when several instances share a page; falls back to the built-in label) | — | — |
 | `fixed` | Pin to the viewport bottom (`position: fixed; bottom: 0`) | `boolean` | — |
 | `hide-on-scroll` | Hide on scroll (requires `fixed`): slides out with `translateY(100%)` while scrolling down and slides back while scrolling up (a scroll delta >4px decides the direction; the transition animates transform only). A purely visual collapse without `aria-hidden` (tab semantics and keyboard focus stay reachable), restored on scroll-back; no effect when not fixed | `boolean` | — |
 | `items` | Navigation items JSON | `string` | `[]` |

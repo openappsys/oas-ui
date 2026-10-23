@@ -249,19 +249,80 @@ describe('OAStooltip', () => {
     expect(t.style.left).toBe('')
   })
 
-  it('open 变化派发 oas-open-change（受控 setAttribute 双向）', async () => {
+  it('宿主直接写 open 属性静默吸收（不回派 oas-open-change）', async () => {
     const el = mount({ content: 'x' })
     await Promise.resolve()
     const fired: Array<Record<string, unknown>> = []
     el.addEventListener('oas-open-change', (e) => fired.push((e as CustomEvent).detail as Record<string, unknown>))
     el.setAttribute('open', '')
     await Promise.resolve()
+    expect(fired, '宿主打开不应回声').toEqual([])
     el.removeAttribute('open')
     await Promise.resolve()
-    // P9：受控（外部 setAttribute）路径 source/reason = attribute
-    expect(fired).toEqual([
-      { open: true, source: 'attribute', reason: 'attribute' },
-      { open: false, source: 'attribute', reason: 'attribute' },
+    expect(fired, '宿主关闭不应回声').toEqual([])
+    expect(el.hasAttribute('open')).toBe(false)
+  })
+
+  it('内部交互（hover/focus/click）打开仍派发 open-change，source 非 attribute', async () => {
+    const hoverEl = mount({ content: 'x' })
+    await Promise.resolve()
+    const hoverDetail: Array<{ open: boolean; source: string; reason: string }> = []
+    hoverEl.addEventListener('oas-open-change', (e) =>
+      hoverDetail.push((e as CustomEvent).detail as { open: boolean; source: string; reason: string }),
+    )
+    const hoverBtn = hoverEl.querySelector('button')!
+    hoverBtn.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }))
+    await Promise.resolve()
+    hoverBtn.dispatchEvent(new MouseEvent('mouseleave', { bubbles: true }))
+    await Promise.resolve()
+    expect(hoverDetail).toEqual([
+      { open: true, source: 'hover', reason: '' },
+      { open: false, source: 'hover', reason: '' },
+    ])
+
+    const focusEl = mount({ trigger: 'focus', content: 'x' })
+    await Promise.resolve()
+    const focusDetail: Array<{ source: string }> = []
+    focusEl.addEventListener('oas-open-change', (e) =>
+      focusDetail.push((e as CustomEvent).detail as { source: string }),
+    )
+    ;(focusEl.querySelector('button') as HTMLElement).dispatchEvent(new FocusEvent('focusin', { bubbles: true }))
+    await Promise.resolve()
+    expect(focusDetail.map((d) => d.source)).toEqual(['focus'])
+
+    const clickEl = mount({ trigger: 'click', content: 'x' })
+    await Promise.resolve()
+    const clickDetail: Array<{ open: boolean; source: string }> = []
+    clickEl.addEventListener('oas-open-change', (e) =>
+      clickDetail.push((e as CustomEvent).detail as { open: boolean; source: string }),
+    )
+    ;(clickEl.querySelector('button') as HTMLElement).click()
+    await Promise.resolve()
+    expect(clickDetail).toEqual([{ open: true, source: 'click', reason: '' }])
+    expect(clickDetail.every((d) => d.source !== 'attribute')).toBe(true)
+  })
+
+  it('宿主属性写入吸收后，残留 source 不污染下一次交互事件', async () => {
+    const el = mount({ trigger: 'click hover', content: 'x' })
+    await Promise.resolve()
+    const btn = el.querySelector('button')!
+    // 首次 hover 打开（事件派发并清空 source）
+    btn.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }))
+    await Promise.resolve()
+    // 打开状态下再次 mouseenter：setOpen(true,'hover') 同值不写属性，仅暂存 source
+    btn.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }))
+    const fired: Array<{ open: boolean; source: string; reason: string }> = []
+    el.addEventListener('oas-open-change', (e) =>
+      fired.push((e as CustomEvent).detail as { open: boolean; source: string; reason: string }),
+    )
+    // 宿主直接关闭：静默，且清空暂存的 'hover'
+    el.removeAttribute('open')
+    await Promise.resolve()
+    expect(fired).toEqual([])
+    btn.click()
+    await Promise.resolve()
+    expect(fired, '下一次交互 source 必须是 click 而非残留的 hover').toEqual([
+      { open: true, source: 'click', reason: '' },
     ])
   })
 

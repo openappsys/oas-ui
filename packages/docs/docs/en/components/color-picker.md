@@ -91,7 +91,7 @@ With `clearable`, an open panel shows a clear button: clearing empties `value` a
   <span id="cp-ctrl-output" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)"></span>
 </DemoBlock>
 
-The `open` attribute is the single source of truth (controlled both ways): external `setAttribute/removeAttribute('open')` and internal clicks / outside clicks / `Esc` converge on it, and every change emits `oas-open-change` (detail `{ open }`). Setting `open` initially does not emit.
+The `open` attribute is the single source of truth (controlled both ways): internal clicks / outside clicks / `Esc` emit `oas-open-change` (detail `{ open }`); when the host writes `setAttribute/removeAttribute('open')` directly to absorb the state, the component does not echo it back (the host already knows — this avoids two-way binding loops). Setting `open` initially does not emit.
 
 ## Eyedropper
 
@@ -167,8 +167,14 @@ onMounted(() => {
   on('cp-alpha', 'oas-change', (e) => out('cp-alpha-output', `oas-change: ${e.detail.value}`))
   on('cp-clear', 'oas-clear', (e) => out('cp-clear-output', `oas-clear: removed ${e.detail.value}`))
   on('cp-ctrl', 'oas-open-change', (e) => out('cp-ctrl-output', `oas-open-change: ${e.detail.open}`))
-  on('cp-open-btn', 'click', () => document.getElementById('cp-ctrl')?.setAttribute('open', ''))
-  on('cp-close-btn', 'click', () => document.getElementById('cp-ctrl')?.removeAttribute('open'))
+  on('cp-open-btn', 'click', () => {
+    document.getElementById('cp-ctrl')?.setAttribute('open', '')
+    out('cp-ctrl-output', 'Host-written attribute: no oas-open-change echo')
+  })
+  on('cp-close-btn', 'click', () => {
+    document.getElementById('cp-ctrl')?.removeAttribute('open')
+    out('cp-ctrl-output', 'Host-written attribute: no oas-open-change echo')
+  })
   on('cp-edge', 'oas-open-change', (e) =>
     out('cp-edge-output', `Open: panel placement ${e.target.shadowRoot?.querySelector('[part="panel"]')?.getAttribute('data-placement') ?? ''}, stays inside the viewport`),
   )
@@ -241,7 +247,7 @@ onMounted(() => {
 | --- | --- |
 | `oas-change` | Color change, `detail: { value }` |
 | `oas-clear` | Emitted after "clear" is clicked; `detail: { value }` holds the previous value; `oas-change` follows (detail.value is the new value / empty string) |
-| `oas-open-change` | Emitted when panel visibility changes, `detail: { open }` (not emitted in inline mode) |
+| `oas-open-change` | Emitted for internal-interaction open/close changes, `detail: { open }`; host-written `open` attributes are absorbed silently (not emitted in inline mode) |
 
 #### Slots
 

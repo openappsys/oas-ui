@@ -315,6 +315,7 @@
   },
   "oas-bottom-navigation": {
     "attrs": {
+      "aria-label": "导航地标的可访问名（转发到内部 `role=\"navigation\"` 容器；同页多个实例时用于区分 landmark，缺省用内置文案）",
       "fixed": "固定到视口底部（`position: fixed; bottom: 0`）",
       "hide-on-scroll": "滚动隐藏（需配合 `fixed`）：页面向下滚动时导航条 `translateY(100%)` 滑出隐藏、向上滚动滑回显示（滚动差 >4px 判方向，transition 只动 transform）；纯视觉收起，不加 `aria-hidden`（tab 语义与键盘焦点保持可达），滚回即恢复；非 fixed 无效果",
       "items": "导航项 JSON",
@@ -601,7 +602,7 @@
     },
     "events": {
       "oas-change": "选择变化，`detail: { value }`（路径数组）",
-      "oas-open-change": "展开状态翻转，`detail: { open }`",
+      "oas-open-change": "内部交互导致的开合派发，`detail: { open }`；宿主直接写 open 属性静默不回派",
       "oas-search": "filterable 输入，`detail: { value }`",
       "oas-clear": "点击清空按钮，`detail` 为清空前的值",
       "oas-focus": "触发器聚焦时派发，`detail.value` 与 oas-change 同形状（组件内焦点转移不误报）",
@@ -743,7 +744,7 @@
     "events": {
       "oas-change": "颜色变化，`detail: { value }`",
       "oas-clear": "点击「清除」后派发，`detail: { value }` 为清除前的旧值；随后派发 `oas-change`（detail.value 为新值/空串）",
-      "oas-open-change": "面板展开状态变化时派发，`detail: { open }`（inline 模式不派发）"
+      "oas-open-change": "内部交互导致的开合派发，`detail: { open }`；宿主直接写 open 属性静默不回派（inline 模式不派发）"
     },
     "slots": {
       "trigger": "自定义触发器（替代默认色块按钮）"
@@ -778,7 +779,7 @@
       "oas-change": "选中/清空/移除变化，单选 `detail: { value }`；多选 `detail: { value: string[], options: Array<Option|null> }`（对齐 oas-select 多选口径）",
       "oas-clear": "点击清空按钮，单选 `detail: { value }`（清空前的值）；多选 `detail: { value: string[] }`（清空前的数组）",
       "oas-input": "输入过滤词，`detail: { value }`",
-      "oas-open-change": "展开状态迁移（受控 setAttribute 与内部开合都派发），`detail: { open }`",
+      "oas-open-change": "内部交互导致的开合派发，`detail: { open }`；宿主直接写 open 属性静默不回派",
       "oas-exceed-limit": "多选达 max-count 上限后的越界选择尝试，`detail: { value, max }`"
     },
     "slots": {},
@@ -1125,7 +1126,7 @@
     "events": {
       "oas-action": "拆分模式下点击主按钮，`detail: { originalEvent }`",
       "oas-select": "选择某项，`detail: { value }`",
-      "oas-open-change": "浮层开合变化，`detail: { open: boolean }`（含外部 setAttribute 触发，受控闭环）"
+      "oas-open-change": "内部交互导致的开合派发，`detail: { open: boolean }`；宿主直接写 open 属性静默不回派"
     },
     "slots": {
       "": "下拉菜单内容（菜单项 / 分组）"
@@ -1488,7 +1489,7 @@
       "width": "宽度定制：数值（px）或 `trigger`/`target`（与触发器同宽）；未设置走 CSS min-width"
     },
     "events": {
-      "oas-open-change": "open 状态变化（显示/关闭）时派发，`detail: { open }`"
+      "oas-open-change": "内部交互导致的开合派发，`detail: { open }`；宿主直接写 open 属性静默不回派"
     },
     "slots": {
       "": "触发器（首个非 `slot=\"content\"` 子元素），hover/focus 触发",
@@ -2432,7 +2433,7 @@
     "events": {
       "oas-cancel": "仅点击「取消」按钮时派发（Esc / 外部点击走 `oas-open-change` 的 reason），`detail: { source: this, event: e }`",
       "oas-ok": "点击「确定」，随后气泡自动收起",
-      "oas-open-change": "open 状态变化时派发，`detail: { open, reason }`（reason: `ok`/`cancel`/`esc`/`outside`/`trigger`/`api`）"
+      "oas-open-change": "内部交互导致的开合派发，`detail: { open, reason }`（reason: `ok`/`cancel`/`esc`/`outside`/`trigger`/`api`）；宿主直接写 open 属性静默不回派"
     },
     "slots": {
       "title": "标题富内容插槽，有内容时覆盖 title 属性文案",
@@ -2492,7 +2493,7 @@
       "same-width": "面板宽度 = 触发器宽度（严格等宽；显式 width 优先）"
     },
     "events": {
-      "oas-open-change": "open 状态变化，`detail: { open }`",
+      "oas-open-change": "内部交互导致的开合派发，`detail: { open }`；宿主直接写 open 属性静默不回派",
       "oas-before-close": "关闭请求前派发（各关闭入口汇聚：trigger/outside/escape/close-btn/declarative/backdrop/auto/dismiss/scroll），`cancelable`，`detail: { source }`，preventDefault 阻止关闭"
     },
     "slots": {
@@ -3670,7 +3671,7 @@
       "width": "浮层宽度：数字（px）/ `\"trigger\"`（与触发元素同宽）/ 任意 CSS 值；仍受 `--oas-tooltip-max-width`（默认 240px）封顶"
     },
     "events": {
-      "oas-open-change": "open 状态变化（显示/隐藏）时派发，`detail: { open, source, reason }`"
+      "oas-open-change": "内部交互导致的开合派发，`detail: { open, source, reason }`；宿主直接写 open 属性静默不回派；公开 setOpen() 未传 source 时兜底 source='attribute'"
     },
     "slots": {
       "": "触发元素（hover/focus 触发）；`virtual` 虚拟模式下可省略",

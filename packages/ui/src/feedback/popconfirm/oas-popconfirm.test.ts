@@ -287,10 +287,10 @@ describe('OASPopconfirm', () => {
       el.addEventListener('oas-open-change', (e: Event) => reasons.push((e as CustomEvent).detail.reason))
       ;(el.shadowRoot!.querySelector('[part="ok"]') as HTMLElement).click()
       expect(reasons).toEqual(['ok'])
-      // 宿主直改 open 重开（reason=api 是设计内行为）后再点取消
+      // 宿主直改 open 重开（静默吸收，不回派）后再点取消
       el.setAttribute('open', '')
       ;(el.shadowRoot!.querySelector('[part="cancel"]') as HTMLElement).click()
-      expect(reasons).toEqual(['ok', 'api', 'cancel'])
+      expect(reasons).toEqual(['ok', 'cancel'])
     })
 
     it('Esc 关闭 → reason=esc', async () => {
@@ -313,13 +313,26 @@ describe('OASPopconfirm', () => {
       expect(reasons).toEqual(['outside'])
     })
 
-    it('宿主直接改 open 属性 → 派发 reason=api', async () => {
+    it('宿主直接写/删 open：静默吸收，不回派 oas-open-change', async () => {
       const el = mount({})
       await Promise.resolve()
       const details: unknown[] = []
       el.addEventListener('oas-open-change', (e: Event) => details.push((e as CustomEvent).detail))
       el.setAttribute('open', '')
-      expect(details).toEqual([{ open: true, reason: 'api' }])
+      expect(pop(el).getAttribute('aria-hidden'), '宿主写 open 面板照常打开').toBe('false')
+      el.removeAttribute('open')
+      expect(pop(el).getAttribute('aria-hidden'), '宿主删 open 面板照常关闭').toBe('true')
+      expect(details, '宿主写属性是吸收状态，不回派（避免受控双向绑定回环）').toEqual([])
+    })
+
+    it('宿主静默写 open 后内部 Esc 关闭仍派发（内部路径不消音）', async () => {
+      const el = mount({})
+      await Promise.resolve()
+      const details: unknown[] = []
+      el.addEventListener('oas-open-change', (e: Event) => details.push((e as CustomEvent).detail))
+      el.setAttribute('open', '')
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
+      expect(details).toEqual([{ open: false, reason: 'esc' }])
     })
 
     it('show()/hide() 方法 → reason=api', async () => {
@@ -335,14 +348,16 @@ describe('OASPopconfirm', () => {
       ])
     })
 
-    it('重复同值 setAttribute 不重复派发', async () => {
+    it('宿主重复同值写 open 不回派（静默吸收，零派发）', async () => {
       const el = mount({})
       await Promise.resolve()
-      let count = 0
-      el.addEventListener('oas-open-change', () => count++)
+      const details: unknown[] = []
+      el.addEventListener('oas-open-change', (e: Event) => details.push((e as CustomEvent).detail))
       el.setAttribute('open', '')
       el.setAttribute('open', '')
-      expect(count).toBe(1)
+      el.removeAttribute('open')
+      el.removeAttribute('open')
+      expect(details).toEqual([])
     })
   })
 

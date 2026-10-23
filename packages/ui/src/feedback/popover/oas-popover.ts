@@ -590,6 +590,10 @@ export class OASPopover extends OASElement {
   private wasOpen = false
   /** 上次 open 状态（null = 未初始化，首帧不派发事件，同 tooltip） */
   private prevOpen: boolean | null = null
+  /** 组件内部写 open 属性期间置位：attributeChangedCallback 据此区分内部写入 */
+  private internalOpenWrite = false
+  /** 本次 update 的 open 迁移来自宿主直接属性写入：吸收状态、不回派 oas-open-change */
+  private openFromHost = false
   /** 内容是否已写入过（fresh 冻结语义：关闭状态非 fresh 时不重写内容，首次连接需写以覆盖 SSR 初始值） */
   private contentWritten = false
   /** title 吸收缓存：宿主原生 title 被移除后的标题真值（null=无标题）。
@@ -991,10 +995,32 @@ export class OASPopover extends OASElement {
     else this.requestOpen()
   }
 
-  /** open 状态写入（受控 setAttribute 与各触发路径都汇聚到这里，更新统一派发 oas-open-change） */
+  /**
+   * open 属性变化分发：宿主直接写属性（增删 open）视为「吸收状态」——更新视觉但不回派
+   * oas-open-change（宿主已知，避免受控双向绑定回环）；组件内部触发（点击/外点/Esc 等经
+   * writeOpenAttr 写入）照常派发。首帧渲染前不置位（append 前的属性是初始值，非迁移）。
+   */
+  override attributeChangedCallback(name: string, oldValue: string | null, newValue: string | null): void {
+    if (name === 'open' && oldValue !== newValue && this.hasRendered && !this.internalOpenWrite) {
+      this.openFromHost = true
+    }
+    super.attributeChangedCallback(name, oldValue, newValue)
+  }
+
+  /** 内部 open 属性写入：置位 internalOpenWrite，attributeChangedCallback 不标记宿主来源 */
+  private writeOpenAttr(open: boolean): void {
+    this.internalOpenWrite = true
+    try {
+      if (open) this.setAttribute('open', '')
+      else this.removeAttribute('open')
+    } finally {
+      this.internalOpenWrite = false
+    }
+  }
+
+  /** open 状态写入（组件内部触发路径汇聚到这里；宿主直接写属性走吸收分支，不回派事件） */
   private setOpen(open: boolean): void {
-    if (open) this.setAttribute('open', '')
-    else this.removeAttribute('open')
+    this.writeOpenAttr(open)
   }
 
   /**
@@ -1006,7 +1032,7 @@ export class OASPopover extends OASElement {
   closeWith(source: string): boolean {
     if (!this.hasAttr('open')) return false
     if (!this.emit('before-close', { source }, { cancelable: true })) return false
-    this.removeAttribute('open')
+    this.writeOpenAttr(false)
     return true
   }
 
@@ -1875,7 +1901,10 @@ export class OASPopover extends OASElement {
     })
   }
 
-  /** 父层关闭时级联关闭嵌套子浮层（popover / tooltip / hover-card / dropdown / popconfirm） */
+  /** 父层关闭时级联关闭嵌套子浮层（popover / tooltip / hover-card / dropdown / popconfirm）。
+   *  语义口径：父层移除子层 open 属性等同「宿主写属性」，子层静默吸收、不回派 oas-open-change
+   *  （与全库受控口径一致；宿主需感知级联结果时观察子层 open 属性或用 MutationObserver）。
+   *  不做 hover-card 组内那种内部写：父层无法安全调用异类组件的私有写入口。 */
   private closeNested(): void {
     this.querySelectorAll<HTMLElement>(
       'oas-popover, oas-tooltip, oas-hover-card, oas-dropdown, oas-popconfirm',
@@ -1935,10 +1964,11 @@ export class OASPopover extends OASElement {
     // 箭头显隐：arrow 布尔属性默认 true（显示），arrow="false" 隐藏；元素与 ::part(arrow) 保留
     const arrowEl = this.panel.querySelector<HTMLElement>('[data-popper-arrow]')
     if (arrowEl) arrowEl.hidden = !this.showArrow()
-    // open 状态迁移 → oas-open-change（受控 setAttribute 与点击触发都会走到这里，同 tooltip）
-    if (this.prevOpen !== null && this.prevOpen !== open) {
+    // open 状态迁移 → oas-open-change（内部触发派发；宿主直接写属性静默吸收，同 tooltip）
+    if (this.prevOpen !== null && this.prevOpen !== open && !this.openFromHost) {
       this.emit('open-change', { open })
     }
+    this.openFromHost = false
     this.prevOpen = open
     if (open) {
       if (!this.wasOpen) {

@@ -47,6 +47,10 @@
     {
       "name": "pill",
       "observed": true
+    },
+    {
+      "name": "aria-label",
+      "observed": true
     }
   ],
   "props": [],

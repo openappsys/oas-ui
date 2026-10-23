@@ -614,6 +614,10 @@ export class OASCascader extends OASElement {
   }
 
   private lastOpenState = false
+  /** 组件内部正在写 open 属性（区分宿主受控写入；内部写入仍派发 open-change） */
+  private internalOpenWrite = false
+  /** 本次 update 的 open 变化来自宿主属性写入（不回派 open-change） */
+  private openFromHost = false
   private activePath: string[] = []
   private activePanel = 0
   private activeRow = 0
@@ -1151,10 +1155,24 @@ export class OASCascader extends OASElement {
 
   // ---------- 开合（受控 open 属性为唯一状态源） ----------
 
+  /** 组件内部写 open（用户交互路径）：标记为内部写入，事件照常派发 */
   private setOpen(open: boolean): void {
     if (this.hasAttr('open') === open) return
-    if (open) this.setAttribute('open', '')
-    else this.removeAttribute('open')
+    this.internalOpenWrite = true
+    try {
+      if (open) this.setAttribute('open', '')
+      else this.removeAttribute('open')
+    } finally {
+      this.internalOpenWrite = false
+    }
+  }
+
+  /** 受控 open：宿主直接写属性吸收状态时不回派 oas-open-change（host 已知，避免双向绑定回环） */
+  override attributeChangedCallback(name: string, oldValue: string | null, newValue: string | null): void {
+    if (name === 'open' && oldValue !== newValue && this.hasRendered && !this.internalOpenWrite) {
+      this.openFromHost = true
+    }
+    super.attributeChangedCallback(name, oldValue, newValue)
   }
 
   private toggle(): void {
@@ -1166,7 +1184,11 @@ export class OASCascader extends OASElement {
   private syncDropdown(): void {
     const dropdown = this.dropdown
     const trigger = this.triggerEl
-    if (!dropdown || !trigger) return
+    if (!dropdown || !trigger) {
+      // 早退也要复位宿主写入标记，防残留吞掉下一次内部交互事件（对齐 dropdown）
+      this.openFromHost = false
+      return
+    }
     const open = this.isOpen()
     const transitioned = open !== this.lastOpenState
     dropdown.classList.toggle('open', open)
@@ -1198,7 +1220,8 @@ export class OASCascader extends OASElement {
       this.sheetEl?.removeAttribute('open')
     }
     this.lastOpenState = open
-    if (transitioned) this.emit('open-change', { open })
+    if (transitioned && !this.openFromHost) this.emit('open-change', { open })
+    this.openFromHost = false
   }
 
   /** 移动形态判定：触屏（coarse pointer）或窄视口（<768px）→ 面板由 bottom-sheet 底部抽屉承载 */

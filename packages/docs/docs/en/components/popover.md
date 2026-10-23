@@ -620,7 +620,7 @@ With `dismiss-on-select`, any click inside the panel (including slot content) co
 
 ## Controlled display
 
-The `open` attribute is controlled: an external button can set/remove `open` to control visibility (clicking outside / pressing Esc still closes it).
+The `open` attribute is controlled: an external button can set/remove `open` to control visibility (clicking outside / pressing Esc still closes it). When the host writes the `open` attribute directly to absorb the state, `oas-open-change` is not echoed back (the host already knows — this avoids two-way binding loops); internal click/outside/Esc changes still emit.
 
 <DemoBlock title="Controlled display (open attribute)">
   <oas-space size="small">
@@ -672,11 +672,22 @@ onMounted(() => {
       point.setAttribute('virtual-y', String(y))
       point.setAttribute('open', '')
     }
-    window.popPointHide = () => point.removeAttribute('open')
-    // oas-open-change visible feedback: status tag echoes open
     const st = document.getElementById('pop-point-status')
+    window.popPointHide = () => {
+      point.removeAttribute('open')
+      if (st) st.textContent = 'open: false (host-written attribute: silent)'
+    }
+    // Host script writes the open attribute to drive visibility silently; update the status tag directly
+    // (event echo only covers internal interactions)
+    if (st) {
+      const show = window.popPointShow
+      window.popPointShow = (x, y) => {
+        show(x, y)
+        st.textContent = 'open: true (host-written attribute: silent)'
+      }
+    }
     point.addEventListener('oas-open-change', (e) => {
-      if (st) st.textContent = `open: ${e.detail.open}`
+      if (st) st.textContent = `oas-open-change: ${e.detail.open}`
     })
   }
 
@@ -761,10 +772,14 @@ onMounted(() => {
       panel.setAttribute('virtual-x', String(e.clientX))
       panel.setAttribute('virtual-y', String(e.clientY + 12))
       panel.setAttribute('open', '')
+      panelStatus.textContent = 'open: true (host-written attribute: silent)'
     }
-    window.popPanelHide = () => panel.removeAttribute('open')
+    window.popPanelHide = () => {
+      panel.removeAttribute('open')
+      panelStatus.textContent = 'open: false (host-written attribute: silent)'
+    }
     panel.addEventListener('oas-open-change', (e) => {
-      panelStatus.textContent = `open: ${e.detail.open}`
+      panelStatus.textContent = `oas-open-change: ${e.detail.open}`
     })
   }
 })
@@ -841,7 +856,7 @@ onMounted(() => {
 | Event | Description |
 | --- | --- |
 | `oas-before-close` | Emitted before a close request (all close entries converge here: trigger/outside/escape/close-btn/declarative/backdrop/auto/dismiss/scroll), `cancelable`, `detail: { source }`; preventDefault blocks the close |
-| `oas-open-change` | open state changed, `detail: { open }` |
+| `oas-open-change` | Emitted for internal-interaction open/close changes, `detail: { open }`; host-written `open` attributes are absorbed silently |
 
 #### Slots
 

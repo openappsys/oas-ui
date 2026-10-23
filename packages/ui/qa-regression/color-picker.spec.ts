@@ -241,19 +241,36 @@ test('color-picker hex 输入：非法值红框不生效，合法值提交并派
   expect(ok.feedback).toBe('oas-change: #336699')
 })
 
-test('color-picker 受控 open：外部按钮开/关 + oas-open-change 可见反馈；readonly 拒开', async ({ page }) => {
+test('color-picker 受控 open：外部按钮开/关静默、内部交互派发；readonly 拒开', async ({ page }) => {
   await page.goto('/components/color-picker.html', { waitUntil: 'domcontentloaded' })
   await up(page, '#cp-ctrl')
   await up(page, '#cp-readonly')
 
+  // 独立计数器（不依赖 demo 文案，避免被静默提示覆盖导致恒真）
   await page.evaluate(() => {
+    ;(window as any).__cpOpenCount = 0
+    document.querySelector('#cp-ctrl')!.addEventListener('oas-open-change', () => {
+      ;(window as any).__cpOpenCount++
+    })
     ;(document.querySelector('#cp-open-btn') as HTMLElement).click()
   })
   await page.waitForFunction(() => document.querySelector('#cp-ctrl')?.hasAttribute('open') === true, null, {
     timeout: 5000,
   })
-  const opened = await page.evaluate(() => document.querySelector('#cp-ctrl-output')?.textContent ?? '')
-  expect(opened).toContain('oas-open-change: true')
+  await page.waitForTimeout(100)
+  expect(await page.evaluate(() => (window as any).__cpOpenCount), '宿主外部写 open 不回派事件').toBe(0)
+
+  // 受控态下内部交互（点击触发器请求关闭）仍派发事件
+  await page.evaluate(() => {
+    const el = document.querySelector('#cp-ctrl')!
+    ;(el.shadowRoot!.querySelector('[part="trigger"]') as HTMLElement).click()
+  })
+  await page.waitForFunction(
+    () => (document.querySelector('#cp-ctrl-output')?.textContent ?? '').includes('oas-open-change: false'),
+    null,
+    { timeout: 5000 },
+  )
+  expect(await page.evaluate(() => (window as any).__cpOpenCount), '内部交互仍派发一次').toBe(1)
 
   await page.evaluate(() => {
     ;(document.querySelector('#cp-close-btn') as HTMLElement).click()
@@ -261,8 +278,7 @@ test('color-picker 受控 open：外部按钮开/关 + oas-open-change 可见反
   await page.waitForFunction(() => document.querySelector('#cp-ctrl')?.hasAttribute('open') === false, null, {
     timeout: 5000,
   })
-  const closed = await page.evaluate(() => document.querySelector('#cp-ctrl-output')?.textContent ?? '')
-  expect(closed).toContain('oas-open-change: false')
+  expect(await page.evaluate(() => (window as any).__cpOpenCount), '外部关闭静默，不新增事件').toBe(1)
 
   // readonly：点击不打开、无 open 属性
   await page.evaluate(() => {

@@ -164,6 +164,19 @@ describe('OASPopover', () => {
       expect(panelOf(child).getAttribute('aria-hidden')).toBe('true')
       expect(panelOf(parent).getAttribute('aria-hidden')).toBe('false')
     })
+
+    it('父层内部关闭级联子层：父派发 open-change，子层按宿主写属性口径静默', () => {
+      const { parent, child } = mountNested()
+      const parentEvents: boolean[] = []
+      const childEvents: boolean[] = []
+      parent.addEventListener('oas-open-change', (e: Event) => parentEvents.push((e as CustomEvent).detail.open))
+      child.addEventListener('oas-open-change', (e: Event) => childEvents.push((e as CustomEvent).detail.open))
+      // 内部关闭入口（公开 closeWith）：父层事件照常派发，级联移除子层 open 等同宿主写属性
+      expect(parent.closeWith('escape')).toBe(true)
+      expect(parentEvents).toEqual([false])
+      expect(childEvents, '级联关闭静默（子层视为宿主写属性）').toEqual([])
+      expect(child.hasAttribute('open')).toBe(false)
+    })
   })
 
   describe('虚拟触发（virtual，同 tooltip）', () => {
@@ -260,14 +273,37 @@ describe('OASPopover', () => {
       expect(p.style.left).toBe('')
     })
 
-    it('open 变化派发 oas-open-change（detail.open 布尔）', () => {
+    it('宿主直接写 open 属性静默吸收（不回派 oas-open-change）', () => {
       const el = mount({ title: 'x' })
       const opened: boolean[] = []
       el.addEventListener('oas-open-change', (e) => opened.push((e as CustomEvent<{ open: boolean }>).detail.open))
       el.setAttribute('open', '')
-      expect(opened).toEqual([true])
+      expect(opened, '宿主打开不应回声').toEqual([])
       el.removeAttribute('open')
-      expect(opened).toEqual([true, false])
+      expect(opened, '宿主关闭不应回声').toEqual([])
+    })
+
+    it('内部交互（点击触发器/外点/Esc）关闭仍派发 oas-open-change', async () => {
+      const clickEl = mount({ title: 'x' })
+      const clickDetail: Array<{ open: boolean }> = []
+      clickEl.addEventListener('oas-open-change', (e) =>
+        clickDetail.push((e as CustomEvent).detail as { open: boolean }),
+      )
+      ;(clickEl.querySelector('button') as HTMLElement).click()
+      expect(clickDetail).toEqual([{ open: true }])
+      // 外点关闭
+      document.body.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      expect(clickDetail).toEqual([{ open: true }, { open: false }])
+      await sleep(220)
+      clickEl.remove()
+
+      // Esc 关闭：宿主先静默打开，再由内部 Esc 关闭派发
+      const escEl = mount({ open: '', title: 'x' })
+      const escDetail: Array<{ open: boolean }> = []
+      escEl.addEventListener('oas-open-change', (e) => escDetail.push((e as CustomEvent).detail as { open: boolean }))
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+      expect(escDetail).toEqual([{ open: false }])
+      await sleep(220)
     })
   })
 

@@ -94,7 +94,18 @@ export class OASContextMenu extends OASElement {
     this.contextTarget = null
     // 打开态断开：重置边沿标记，重连后 update() 重新走打开路径（重压 Esc 层与外点/滚动监听）
     this.wasOpen = false
+    // 重连后 update 重挂的全局监听不再有 cleanup 兜底，必须在组件自身幂等摘除
+    this.detachGlobalListeners()
+    // 长按计时器挂起时断开：清掉，防超时后 show() 再次挂监听
+    window.clearTimeout(this.longPressTimer)
     super.disconnectedCallback()
+  }
+
+  /** 幂等摘除 document/window 全局监听（onCleanup 与 disconnectedCallback 共用，重复调用无副作用） */
+  private detachGlobalListeners(): void {
+    document.removeEventListener('click', this.handleOutside, true)
+    document.removeEventListener('contextmenu', this.handleDocContext)
+    window.removeEventListener('scroll', this.handleScroll, true)
   }
 
   /** 缓存节点引用 + 绑定事件 + 注册清理（render 与水合路径共用） */
@@ -118,9 +129,8 @@ export class OASContextMenu extends OASElement {
       this.releaseEscapeLayer = null
     })
     // 打开时注册的 document/window 监听在 update() 关闭分支移除；此处兜底防断开连接泄漏
-    this.onCleanup(() => document.removeEventListener('click', this.handleOutside, true))
-    this.onCleanup(() => document.removeEventListener('contextmenu', this.handleDocContext))
-    this.onCleanup(() => window.removeEventListener('scroll', this.handleScroll, true))
+    // （detachGlobalListeners 同时被 disconnectedCallback 调用，二次断连幂等摘除）
+    this.onCleanup(() => this.detachGlobalListeners())
     this.menuEl?.addEventListener('oas-select', (e: Event) => {
       const detail = (e as CustomEvent).detail as { value: string; checked?: boolean; kind?: string }
       // checkbox 勾选项（detail 带 checked 字段）：勾选切换不收起（对齐 menu 惯例「连续勾选」），

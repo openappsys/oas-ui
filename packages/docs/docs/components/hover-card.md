@@ -206,7 +206,7 @@ hover / 聚焦触发，浮层可悬停不闪关的富内容预览卡片。支持
 
 ## 受控显示与事件
 
-`open` 属性受控显隐；显隐变化派发 `oas-open-change`（`detail: { open }`）。hover / focus 触发仍叠加生效。
+`open` 属性受控显隐：内部交互（hover / focus / 点击）导致的变化派发 `oas-open-change`（`detail: { open }`）；宿主直接写/删 `open` 属性吸收状态时静默不回派（host 已知，避免双向绑定回环）。
 
 <DemoBlock title="受控显示（open + oas-open-change）">
   <oas-space size="small">
@@ -289,7 +289,7 @@ onMounted(() => {
 
 | 事件 | 说明 |
 | --- | --- |
-| `oas-open-change` | open 状态变化（显示/关闭）时派发，`detail: { open }` |
+| `oas-open-change` | 内部交互导致的开合派发，`detail: { open }`；宿主直接写 open 属性静默不回派 |
 
 #### 插槽
 

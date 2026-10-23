@@ -325,6 +325,7 @@
   },
   "oas-bottom-navigation": {
     "attrs": {
+      "aria-label": "Accessible name of the navigation landmark (forwarded to the inner `role=\"navigation\"` container; use it to distinguish landmarks when several instances share a page; falls back to the built-in label)",
       "fixed": "Pin to the viewport bottom (`position: fixed; bottom: 0`)",
       "hide-on-scroll": "Hide on scroll (requires `fixed`): slides out with `translateY(100%)` while scrolling down and slides back while scrolling up (a scroll delta >4px decides the direction; the transition animates transform only). A purely visual collapse without `aria-hidden` (tab semantics and keyboard focus stay reachable), restored on scroll-back; no effect when not fixed",
       "items": "Navigation items JSON",
@@ -616,7 +617,7 @@
     },
     "events": {
       "oas-change": "Selection change, `detail: { value }` (path array)",
-      "oas-open-change": "Open state flips, `detail: { open }`",
+      "oas-open-change": "Emitted for internal-interaction open/close changes, `detail: { open }`; host-written `open` attributes are absorbed silently",
       "oas-search": "Fires on filterable input, `detail: { value }`",
       "oas-clear": "Fires on clear-button click; `detail` is the pre-clear value",
       "oas-focus": "Dispatched on trigger focus; `detail.value` shares the oas-change shape (inner focus moves do not false-fire)",
@@ -769,7 +770,7 @@
     "events": {
       "oas-change": "Color change, `detail: { value }`",
       "oas-clear": "Emitted after \"clear\" is clicked; `detail: { value }` holds the previous value; `oas-change` follows (detail.value is the new value / empty string)",
-      "oas-open-change": "Emitted when panel visibility changes, `detail: { open }` (not emitted in inline mode)"
+      "oas-open-change": "Emitted for internal-interaction open/close changes, `detail: { open }`; host-written `open` attributes are absorbed silently (not emitted in inline mode)"
     },
     "slots": {
       "trigger": "Custom trigger (replaces the default swatch button)"
@@ -811,7 +812,7 @@
       "oas-change": "Selection/clear/removal change; single `detail: { value }`; multiple `detail: { value: string[], options: Array<Option|null> }` (mirrors the oas-select multiple contract)",
       "oas-clear": "Clear button clicked; single `detail: { value }` (value before clearing); multiple `detail: { value: string[] }` (array before clearing)",
       "oas-input": "Filter keyword typed, `detail: { value }`",
-      "oas-open-change": "Open state transition (both controlled setAttribute and internal toggles dispatch), `detail: { open }`",
+      "oas-open-change": "Emitted for internal-interaction open/close changes, `detail: { open }`; host-written `open` attributes are absorbed silently",
       "oas-exceed-limit": "Selection attempt beyond the multiple max-count limit, `detail: { value, max }`"
     },
     "slots": {},
@@ -1169,7 +1170,7 @@
     "events": {
       "oas-action": "Main button clicked in split mode, `detail: { originalEvent }`",
       "oas-select": "An item was selected, `detail: { value }`",
-      "oas-open-change": "Popover open state changed, `detail: { open: boolean }` (including external setAttribute; controlled loop)"
+      "oas-open-change": "Emitted for internal-interaction open/close changes, `detail: { open: boolean }`; host-written `open` attributes are absorbed silently"
     },
     "slots": {
       "": "Dropdown menu content (items / groups)"
@@ -1541,7 +1542,7 @@
       "width": "Width customization: number (px) or `trigger`/`target` (same width as the trigger); falls back to CSS min-width"
     },
     "events": {
-      "oas-open-change": "Dispatched when the open state changes, `detail: { open }`"
+      "oas-open-change": "Emitted for internal-interaction open/close changes, `detail: { open }`; host-written `open` attributes are absorbed silently"
     },
     "slots": {
       "": "Trigger (first non-`slot=\"content\"` child), triggered on hover/focus",
@@ -2540,7 +2541,7 @@
     "events": {
       "oas-cancel": "Dispatched only when the Cancel button is clicked (Esc / outside click go through the `oas-open-change` reason), `detail: { source: this, event: e }`",
       "oas-ok": "Clicked \"OK\"; the bubble then collapses automatically",
-      "oas-open-change": "Emitted when the open state changes, `detail: { open, reason }` (reason: `ok`/`cancel`/`esc`/`outside`/`trigger`/`api`)"
+      "oas-open-change": "Emitted for internal-interaction open/close changes, `detail: { open, reason }` (reason: `ok`/`cancel`/`esc`/`outside`/`trigger`/`api`); host-written `open` attributes are absorbed silently"
     },
     "slots": {
       "title": "Rich title content slot; overrides the title attribute text when present",
@@ -2606,7 +2607,7 @@
       "same-width": "Panel width equals the trigger width (strict equality; explicit width takes precedence)"
     },
     "events": {
-      "oas-open-change": "open state changed, `detail: { open }`",
+      "oas-open-change": "Emitted for internal-interaction open/close changes, `detail: { open }`; host-written `open` attributes are absorbed silently",
       "oas-before-close": "Emitted before a close request (all close entries converge here: trigger/outside/escape/close-btn/declarative/backdrop/auto/dismiss/scroll), `cancelable`, `detail: { source }`; preventDefault blocks the close"
     },
     "slots": {
@@ -3852,7 +3853,7 @@
       "width": "Popup width: a number (px) / `\"trigger\"` (same width as the trigger) / any CSS value; still capped by `--oas-tooltip-max-width` (default 240px)"
     },
     "events": {
-      "oas-open-change": "Fired when the `open` state changes (show/hide), `detail: { open, source, reason }`"
+      "oas-open-change": "Emitted for internal-interaction open/close changes, `detail: { open, source, reason }`; host-written `open` attributes are absorbed silently; the public setOpen() call falls back to source='attribute' when no source is passed"
     },
     "slots": {
       "": "Trigger element (hover/focus trigger); optional in `virtual` mode",

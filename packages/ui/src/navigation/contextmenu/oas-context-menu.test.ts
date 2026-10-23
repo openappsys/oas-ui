@@ -547,3 +547,43 @@ describe('oas-context-menu kind=checkbox 勾选项链路（value 下传/写回/�
     expect(el.hasAttribute('open'), 'action 项点击后关闭').toBe(false)
   })
 })
+
+// ===== 二次断连：全局监听幂等移除 =====
+//
+// 基类 onCleanup 首次 disconnect 执行后清空；重连后的 update() 会重新挂
+// document click/contextmenu 与 window scroll，二次 disconnect 必须再摘一次。
+describe('OASContextMenu 二次断连全局监听清理', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    vi.useRealTimers()
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+    vi.useRealTimers()
+    vi.restoreAllMocks()
+  })
+
+  it('重连后再断开：document click/contextmenu 与 window scroll 监听被移除', () => {
+    const el = mount()
+    el.show(10, 10)
+    el.remove()
+    document.body.appendChild(el) // 重连：update 重新挂载全局监听
+    const docRemove = vi.spyOn(document, 'removeEventListener')
+    const winRemove = vi.spyOn(window, 'removeEventListener')
+    el.remove()
+    expect(docRemove).toHaveBeenCalledWith('click', expect.any(Function), true)
+    expect(docRemove).toHaveBeenCalledWith('contextmenu', expect.any(Function))
+    expect(winRemove).toHaveBeenCalledWith('scroll', expect.any(Function), true)
+  })
+
+  it('二次断开后 document click 不再关闭菜单（监听确实摘除）', () => {
+    const el = mount()
+    el.show(10, 10)
+    el.remove()
+    document.body.appendChild(el)
+    el.remove()
+    document.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    expect(el.hasAttribute('open'), '残留监听会关闭菜单').toBe(true)
+  })
+})

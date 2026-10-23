@@ -91,7 +91,7 @@
   <span id="cp-ctrl-output" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)"></span>
 </DemoBlock>
 
-`open` 属性为唯一真源（受控双向）：外部 `setAttribute/removeAttribute('open')` 与内部点击/外部点击/Esc 统一收敛，任何变化派发 `oas-open-change`（detail `{ open }`）；初始带 `open` 不派发。
+`open` 属性为唯一真源（受控双向）：内部点击/外部点击/Esc 导致的开合派发 `oas-open-change`（detail `{ open }`）；宿主直接 `setAttribute/removeAttribute('open')` 吸收状态时不回派（host 已知，避免双向绑定回环）；初始带 `open` 不派发。
 
 ## 吸管取色
 
@@ -167,8 +167,14 @@ onMounted(() => {
   on('cp-alpha', 'oas-change', (e) => out('cp-alpha-output', `oas-change: ${e.detail.value}`))
   on('cp-clear', 'oas-clear', (e) => out('cp-clear-output', `oas-clear: 已清除 ${e.detail.value}`))
   on('cp-ctrl', 'oas-open-change', (e) => out('cp-ctrl-output', `oas-open-change: ${e.detail.open}`))
-  on('cp-open-btn', 'click', () => document.getElementById('cp-ctrl')?.setAttribute('open', ''))
-  on('cp-close-btn', 'click', () => document.getElementById('cp-ctrl')?.removeAttribute('open'))
+  on('cp-open-btn', 'click', () => {
+    document.getElementById('cp-ctrl')?.setAttribute('open', '')
+    out('cp-ctrl-output', '宿主写属性：静默不回派 oas-open-change')
+  })
+  on('cp-close-btn', 'click', () => {
+    document.getElementById('cp-ctrl')?.removeAttribute('open')
+    out('cp-ctrl-output', '宿主写属性：静默不回派 oas-open-change')
+  })
   on('cp-edge', 'oas-open-change', (e) =>
     out('cp-edge-output', `打开：面板定位 ${e.target.shadowRoot?.querySelector('[part="panel"]')?.getAttribute('data-placement') ?? ''}，保持在视口内`),
   )
@@ -241,7 +247,7 @@ onMounted(() => {
 | --- | --- |
 | `oas-change` | 颜色变化，`detail: { value }` |
 | `oas-clear` | 点击「清除」后派发，`detail: { value }` 为清除前的旧值；随后派发 `oas-change`（detail.value 为新值/空串） |
-| `oas-open-change` | 面板展开状态变化时派发，`detail: { open }`（inline 模式不派发） |
+| `oas-open-change` | 内部交互导致的开合派发，`detail: { open }`；宿主直接写 open 属性静默不回派（inline 模式不派发） |
 
 #### 插槽
 

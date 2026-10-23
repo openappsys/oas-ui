@@ -344,6 +344,10 @@ export class OASHoverCard extends OASElement {
   private hideTimer: ReturnType<typeof setTimeout> | null = null
   /** 上次 open 状态（null = 未初始化，首帧不派发 oas-open-change） */
   private prevOpen: boolean | null = null
+  /** 内部写 open 属性期间置位（attributeChangedCallback 不标记宿主来源） */
+  private internalOpenWrite = false
+  /** 本次 open 变化来自宿主直接写属性（吸收状态，不回派 oas-open-change） */
+  private openFromHost = false
   /** 最近一次 open 状态变化时刻（延迟组判断「连续悬停」用） */
   private recentOpenAt = 0
   /** append-to：portal host 容器（目标容器内的 div + 独立 shadow，样式作用域保真） */
@@ -440,6 +444,29 @@ export class OASHoverCard extends OASElement {
 
   // —— 触发 ——
 
+  /**
+   * open 属性变化分发：宿主直接写属性（增删 open）视为「吸收状态」——更新视觉但不回派
+   * oas-open-change（宿主已知，避免受控双向绑定回环）；组件内部触发（hover/focus/click/
+   * Esc/外点等经 writeOpenAttr 写入）照常派发。首帧渲染前不置位（append 前的属性是初始值）。
+   */
+  override attributeChangedCallback(name: string, oldValue: string | null, newValue: string | null): void {
+    if (name === 'open' && oldValue !== newValue && this.hasRendered && !this.internalOpenWrite) {
+      this.openFromHost = true
+    }
+    super.attributeChangedCallback(name, oldValue, newValue)
+  }
+
+  /** 内部 open 属性写入：置位 internalOpenWrite，attributeChangedCallback 不标记宿主来源 */
+  private writeOpenAttr(open: boolean): void {
+    this.internalOpenWrite = true
+    try {
+      if (open) this.setAttribute('open', '')
+      else this.removeAttribute('open')
+    } finally {
+      this.internalOpenWrite = false
+    }
+  }
+
   /** 触屏检测（pointer: coarse），与 select 的 isMobileSheet/tooltip 同一模式 */
   private isCoarsePointer(): boolean {
     if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return false
@@ -455,8 +482,7 @@ export class OASHoverCard extends OASElement {
     if (!this.isCoarsePointer()) return
     if (this.hasAttr('disabled')) return
     this.cancelPending()
-    if (this.hasAttr('open')) this.removeAttribute('open')
-    else this.setAttribute('open', '')
+    this.writeOpenAttr(!this.hasAttr('open'))
   }
 
   /** 外点关闭（触屏场景必需）：tap 切换打开时，命中锚点与卡片之外的点击即关。
@@ -467,7 +493,7 @@ export class OASHoverCard extends OASElement {
     const path = e.composedPath()
     if (path.includes(this)) return
     if (this.card && path.includes(this.card)) return
-    this.removeAttribute('open')
+    this.writeOpenAttr(false)
   }
 
   /** 外点关闭监听随开合同步（仅 coarse 形态启用；fine pointer 行为不变） */
@@ -493,14 +519,14 @@ export class OASHoverCard extends OASElement {
         for (const other of members) {
           if (other === this) continue
           other.cancelPending()
-          if (other.hasAttr('open')) other.removeAttribute('open')
+          if (other.hasAttr('open')) other.writeOpenAttr(false)
         }
         // 组内连续悬停（有成员刚开/开着）→ 跳过 open-delay 立即打开
         const otherRecent = [...members].some(
           (o) => o !== this && (o.hasAttr('open') || Date.now() - o.recentOpenAt < 600),
         )
         if (otherRecent) {
-          this.setAttribute('open', '')
+          this.writeOpenAttr(true)
           return
         }
       }
@@ -581,7 +607,7 @@ export class OASHoverCard extends OASElement {
     if (this.showTimer) return
     this.showTimer = setTimeout(() => {
       this.showTimer = null
-      if (!this.hasAttr('disabled')) this.setAttribute('open', '')
+      if (!this.hasAttr('disabled')) this.writeOpenAttr(true)
     }, this.openDelayMs())
   }
 
@@ -589,7 +615,7 @@ export class OASHoverCard extends OASElement {
     if (this.hideTimer) return
     this.hideTimer = setTimeout(() => {
       this.hideTimer = null
-      this.removeAttribute('open')
+      this.writeOpenAttr(false)
     }, this.closeDelayMs())
   }
 
@@ -680,11 +706,13 @@ export class OASHoverCard extends OASElement {
     this.card.classList.toggle('arrow-merge', this.hasAttr('arrow-merge'))
     this.syncWidth()
     this.syncGroup()
-    // open 状态迁移（受控 setAttribute 与 hover/focus 触发都会走到这里）→ oas-open-change
+    // open 状态迁移（内部触发经 writeOpenAttr 写入 → 派发；宿主直接写属性静默吸收）。
+    // recentOpenAt 对任何来源的变化都更新（延迟组「连续悬停」判定的既有语义不变）
     if (this.prevOpen !== null && this.prevOpen !== open) {
       this.recentOpenAt = Date.now()
-      this.emit('open-change', { open })
+      if (!this.openFromHost) this.emit('open-change', { open })
     }
+    this.openFromHost = false
     this.prevOpen = open
     if (open) {
       this.position()

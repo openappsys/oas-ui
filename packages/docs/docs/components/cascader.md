@@ -139,7 +139,7 @@
   </oas-space>
 </DemoBlock>
 
-`open` 属性为展开状态的唯一数据源（受控）：组件内外的开合都写回该属性，并在任何状态翻转时派发 `oas-open-change`（`detail.open`）；宿主可拦截事件回写实现完全受控。`Esc` 关闭时焦点返回触发器。
+`open` 属性为展开状态的唯一数据源（受控）：组件内部交互导致的开关会写回该属性并派发 `oas-open-change`（`detail.open`）；宿主直接写/删 `open` 属性吸收状态时静默不回派（host 已知，避免双向绑定回环）。`Esc` 关闭时焦点返回触发器。
 
 ## 空态
 
@@ -295,8 +295,11 @@ onMounted(() => {
   const state = document.getElementById('cs-open-state')
   btn?.addEventListener('click', () => {
     if (!controlled) return
-    if (controlled.hasAttribute('open')) controlled.removeAttribute('open')
-    else controlled.setAttribute('open', '')
+    const willOpen = !controlled.hasAttribute('open')
+    if (willOpen) controlled.setAttribute('open', '')
+    else controlled.removeAttribute('open')
+    // 宿主直接写属性属受控吸收（静默）；状态标签直接更新，事件回声只覆盖内部交互
+    if (state) state.textContent = willOpen ? 'open: true（宿主写属性：静默）' : 'open: false（宿主写属性：静默）'
   })
   controlled?.addEventListener('oas-open-change', (e) => {
     if (state) state.textContent = `open: ${e.detail.open}`
@@ -416,7 +419,7 @@ onMounted(() => {
 | `oas-change` | 选择变化，`detail: { value }`（路径数组） |
 | `oas-clear` | 点击清空按钮，`detail` 为清空前的值 |
 | `oas-focus` | 触发器聚焦时派发，`detail.value` 与 oas-change 同形状（组件内焦点转移不误报） |
-| `oas-open-change` | 展开状态翻转，`detail: { open }` |
+| `oas-open-change` | 内部交互导致的开合派发，`detail: { open }`；宿主直接写 open 属性静默不回派 |
 | `oas-search` | filterable 输入，`detail: { value }` |
 
 #### 插槽

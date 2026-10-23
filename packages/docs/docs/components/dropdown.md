@@ -193,7 +193,7 @@ items 项支持 `children` 数组级联子菜单（任意层级），hover / 点
 
 ## 开合事件反馈
 
-组件自己开关（点击 / 悬停 / 聚焦 / Esc / 外部点击 / 选中）都会派发 `oas-open-change`（`detail: { open }`），受控模式下宿主据此同步状态（与 tooltip / popover 语义一致，外部写 `open` 同样触发）。
+组件自己开关（点击 / 悬停 / 聚焦 / Esc / 外部点击 / 选中）都会派发 `oas-open-change`（`detail: { open }`），受控模式下宿主据此同步状态；宿主直接写 `open` 属性吸收状态时静默不回派（host 已知，避免双向绑定回环），与 tooltip / popover / combobox 等浮层口径一致。
 
 <DemoBlock title="oas-open-change 事件">
   <oas-space size="small">
@@ -523,7 +523,7 @@ onMounted(() => {
 | 事件 | 说明 |
 | --- | --- |
 | `oas-action` | 拆分模式下点击主按钮，`detail: { originalEvent }` |
-| `oas-open-change` | 浮层开合变化，`detail: { open: boolean }`（含外部 setAttribute 触发，受控闭环） |
+| `oas-open-change` | 内部交互导致的开合派发，`detail: { open: boolean }`；宿主直接写 open 属性静默不回派 |
 | `oas-select` | 选择某项，`detail: { value }` |
 
 #### 插槽

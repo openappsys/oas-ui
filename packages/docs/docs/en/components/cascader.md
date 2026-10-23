@@ -139,7 +139,7 @@ Tags wrap by default; explicitly setting `max-tag-count` folds them into `+N` by
   </oas-space>
 </DemoBlock>
 
-The `open` attribute is the single source of truth for the expanded state (controlled): open/close from inside or outside is written back to it, and `oas-open-change` (`detail.open`) is emitted on every flip; hosts may intercept the event to take full control. `Esc` closes and returns focus to the trigger.
+The `open` attribute is the single source of truth for the expanded state (controlled): internal-interaction open/close changes are written back to it and emit `oas-open-change` (`detail.open`); when the host writes/removes the `open` attribute directly to absorb the state, the component stays silent (the host already knows — this avoids two-way binding loops). `Esc` closes and returns focus to the trigger.
 
 ## Empty
 
@@ -295,8 +295,11 @@ onMounted(() => {
   const state = document.getElementById('cs-open-state')
   btn?.addEventListener('click', () => {
     if (!controlled) return
-    if (controlled.hasAttribute('open')) controlled.removeAttribute('open')
-    else controlled.setAttribute('open', '')
+    const willOpen = !controlled.hasAttribute('open')
+    if (willOpen) controlled.setAttribute('open', '')
+    else controlled.removeAttribute('open')
+    // Host-written attributes are absorbed silently; update the status tag directly
+    if (state) state.textContent = willOpen ? 'open: true (host-written attribute: silent)' : 'open: false (host-written attribute: silent)'
   })
   controlled?.addEventListener('oas-open-change', (e) => {
     if (state) state.textContent = `open: ${e.detail.open}`
@@ -416,7 +419,7 @@ On touch screens (coarse pointer) or narrow viewports (<768px), the multi-level 
 | `oas-change` | Selection change, `detail: { value }` (path array) |
 | `oas-clear` | Fires on clear-button click; `detail` is the pre-clear value |
 | `oas-focus` | Dispatched on trigger focus; `detail.value` shares the oas-change shape (inner focus moves do not false-fire) |
-| `oas-open-change` | Open state flips, `detail: { open }` |
+| `oas-open-change` | Emitted for internal-interaction open/close changes, `detail: { open }`; host-written `open` attributes are absorbed silently |
 | `oas-search` | Fires on filterable input, `detail: { value }` |
 
 #### Slots

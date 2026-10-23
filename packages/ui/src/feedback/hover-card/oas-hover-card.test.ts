@@ -307,16 +307,31 @@ describe('OASHoverCard', () => {
 
   // —— oas-open-change ——
 
-  it('受控 open 变化派发 oas-open-change 双向', async () => {
+  it('受控 open：宿主写/删 open 静默吸收（不回派 oas-open-change），面板态照常切换', async () => {
     const el = mount({ content: 'x' })
     await Promise.resolve()
     const fired: Array<{ open: boolean }> = []
     el.addEventListener('oas-open-change', (e) => fired.push((e as CustomEvent<{ open: boolean }>).detail))
     el.setAttribute('open', '')
     await Promise.resolve()
+    expect(card(el).getAttribute('aria-hidden'), '宿主写 open 面板照常打开').toBe('false')
     el.removeAttribute('open')
     await Promise.resolve()
-    expect(fired).toEqual([{ open: true }, { open: false }])
+    expect(card(el).getAttribute('aria-hidden'), '宿主删 open 面板照常关闭').toBe('true')
+    expect(fired, '宿主写属性是吸收状态，不回派（避免受控双向绑定回环）').toEqual([])
+  })
+
+  it('focus 触发派发 oas-open-change（内部路径不受宿主静默吸收影响）', async () => {
+    const el = mount({ content: 'x', 'open-delay': '0', 'close-delay': '0' })
+    await Promise.resolve()
+    const fired: boolean[] = []
+    el.addEventListener('oas-open-change', (e) => fired.push((e as CustomEvent<{ open: boolean }>).detail.open))
+    anchorOf(el).dispatchEvent(new FocusEvent('focusin'))
+    vi.advanceTimersByTime(1)
+    expect(fired).toEqual([true])
+    anchorOf(el).dispatchEvent(new FocusEvent('focusout'))
+    vi.advanceTimersByTime(1)
+    expect(fired).toEqual([true, false])
   })
 
   it('hover 触发也会派发 oas-open-change', async () => {
@@ -577,6 +592,20 @@ describe('OASHoverCard', () => {
     expect(card(c).getAttribute('aria-hidden')).toBe('true')
     vi.advanceTimersByTime(400)
     expect(card(c).getAttribute('aria-hidden')).toBe('false')
+  })
+
+  it('组内连续悬停关闭前一个成员仍派发 oas-open-change（内部交互不消音）', async () => {
+    const a = mount({ title: 'A', group: 'g3', 'open-delay': '0' })
+    const b = mount({ title: 'B', group: 'g3', 'open-delay': '0' })
+    await Promise.resolve()
+    const fired: boolean[] = []
+    a.addEventListener('oas-open-change', (e) => fired.push((e as CustomEvent<{ open: boolean }>).detail.open))
+    anchorOf(a).dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }))
+    vi.advanceTimersByTime(1)
+    expect(fired).toEqual([true])
+    // 移到 b：a 被内部关闭（不是宿主直写属性）→ 照常派发 false
+    anchorOf(b).dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }))
+    expect(fired).toEqual([true, false])
   })
 
   // —— 箭头 merge 模式（直角三角贴角共边，对齐 tooltip/popover 形态） ——

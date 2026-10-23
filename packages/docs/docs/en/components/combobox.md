@@ -91,7 +91,7 @@ Options with a `group` field render group titles (not selectable) with indented 
   <span id="cb-open-output" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); min-width: 180px"></span>
 </DemoBlock>
 
-The `open` attribute is the controlled open state (internal open/close writes back to it); every transition dispatches `oas-open-change` (`detail.open` boolean) — linked scenarios (opening via external buttons/shortcuts) are implemented by the host driving the attribute.
+The `open` attribute is the controlled open state (internal interactions write it back and dispatch `oas-open-change`, `detail.open` boolean); when the host writes the `open` attribute directly to absorb the state, the component stays silent (the host already knows — this avoids two-way binding loops). Linked scenarios (opening via external buttons/shortcuts) are implemented by the host driving the attribute.
 
 ## Large Data (Virtual Scroll)
 
@@ -221,6 +221,8 @@ onMounted(() => {
     if (!openEl) return
     if (openEl.hasAttribute('open')) openEl.removeAttribute('open')
     else openEl.setAttribute('open', '')
+    // Host-written attributes are absorbed silently (avoids two-way binding loops); internal interactions still emit
+    if (openOut) openOut.textContent = 'Host-written attribute: no oas-open-change echo'
   })
 
   // multiple demo: tag add/remove + event echo
@@ -323,7 +325,7 @@ Programmatic read/write of the current value goes through the public `value` pro
 | `oas-clear` | Clear button clicked; single `detail: { value }` (value before clearing); multiple `detail: { value: string[] }` (array before clearing) |
 | `oas-exceed-limit` | Selection attempt beyond the multiple max-count limit, `detail: { value, max }` |
 | `oas-input` | Filter keyword typed, `detail: { value }` |
-| `oas-open-change` | Open state transition (both controlled setAttribute and internal toggles dispatch), `detail: { open }` |
+| `oas-open-change` | Emitted for internal-interaction open/close changes, `detail: { open }`; host-written `open` attributes are absorbed silently |
 
 #### CSS Variables
 

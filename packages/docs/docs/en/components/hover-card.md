@@ -206,7 +206,7 @@ Triggers sharing the same `group` value share delays: moving the pointer between
 
 ## Controlled display & events
 
-The `open` attribute controls visibility; visibility changes dispatch `oas-open-change` (`detail: { open }`). Hover/focus triggers still apply in addition.
+The `open` attribute controls visibility: internal interactions (hover / focus / click) dispatch `oas-open-change` (`detail: { open }`); when the host writes/removes the `open` attribute directly to absorb the state, the component stays silent (the host already knows — this avoids two-way binding loops).
 
 <DemoBlock title="Controlled display (open + oas-open-change)">
   <oas-space size="small">
@@ -289,7 +289,7 @@ Hover is unreliable on touch devices (`pointer: coarse`): the hover card automat
 
 | Event | Description |
 | --- | --- |
-| `oas-open-change` | Dispatched when the open state changes, `detail: { open }` |
+| `oas-open-change` | Emitted for internal-interaction open/close changes, `detail: { open }`; host-written `open` attributes are absorbed silently |
 
 #### Slots
 

@@ -14,7 +14,7 @@
 
 ## 受控显示
 
-`open` 属性受控；显隐变化派发 `oas-open-change`，`detail.reason` 标明来源（`trigger` / `ok` / `cancel` / `esc` / `outside` / `api`）。
+`open` 属性受控；内部交互（`trigger` / `ok` / `cancel` / `esc` / `outside` / API 调用）导致的变化派发 `oas-open-change`，`detail.reason` 标明来源；宿主直接写/删 `open` 属性吸收状态时静默不回派（host 已知，避免双向绑定回环）。
 
 <DemoBlock title="受控显示（oas-open-change）">
   <oas-space size="small" align="center">
@@ -215,6 +215,8 @@ onMounted(async () => {
   window.pcCtrl = (open) => {
     if (open) pc.setAttribute('open', '')
     else pc.removeAttribute('open')
+    // 宿主直接写属性属受控吸收（静默）；状态标签直接更新，事件回声只覆盖内部交互
+    status.textContent = open ? 'opened（宿主写属性：静默）' : 'closed（宿主写属性：静默）'
   }
 
   // 异步确认：监听 oas-ok → 同步置 ok-loading（阻止本次关闭）→ 完成后关闭
@@ -310,7 +312,7 @@ onMounted(async () => {
 | --- | --- |
 | `oas-cancel` | 仅点击「取消」按钮时派发（Esc / 外部点击走 `oas-open-change` 的 reason），`detail: { source: this, event: e }` |
 | `oas-ok` | 点击「确定」，随后气泡自动收起，`detail: { source: this, event: e }` |
-| `oas-open-change` | open 状态变化时派发，`detail: { open, reason }`（reason: `ok`/`cancel`/`esc`/`outside`/`trigger`/`api`） |
+| `oas-open-change` | 内部交互导致的开合派发，`detail: { open, reason }`（reason: `ok`/`cancel`/`esc`/`outside`/`trigger`/`api`）；宿主直接写 open 属性静默不回派 |
 
 #### 插槽
 

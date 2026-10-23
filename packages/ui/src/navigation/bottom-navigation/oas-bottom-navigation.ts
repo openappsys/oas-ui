@@ -238,10 +238,24 @@ const STYLE = `
  */
 export class OASBottomNavigation extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['items', 'value', 'fixed', 'hide-on-scroll', 'safe-area', 'layout', 'show-label', 'shift', 'pill']
+    return [
+      'items',
+      'value',
+      'fixed',
+      'hide-on-scroll',
+      'safe-area',
+      'layout',
+      'show-label',
+      'shift',
+      'pill',
+      // 宿主 aria-label 命名导航地标（同页多个实例时避免 landmark 同名）；转发到内部容器
+      'aria-label',
+    ]
   }
 
   private itemsList: BottomNavItem[] = []
+  /** 子元素通道数据签名（仅数据变化才重建按钮，aria-label 等属性变化不触发重建） */
+  private lastChildSig = ''
   private buttons: HTMLButtonElement[] = []
   private tablist: HTMLElement | null = null
   private lastItemsRaw = ''
@@ -304,11 +318,18 @@ export class OASBottomNavigation extends OASElement {
     const valueChanged = valueRaw !== this.lastValueRaw
     this.lastValueRaw = valueRaw
     // 双通道：items 属性显式设置时数据驱动优先；否则解析子元素收敛到同一 items 模型渲染。
-    // 子元素通道下 itemsRaw 恒为 ''（itemsChanged 恒 false），须每次 update 都重渲染；
-    // items 通道仍走增量（raw 变化才重建，保持按钮引用供 roving 焦点）
-    if (this.hasAttribute('items')) this.parseItems()
-    else this.parseChildItems()
-    if (itemsChanged || !this.hasAttribute('items')) {
+    // 两通道都走增量：仅 items/子元素实际变化才重建按钮；aria-label 等非数据属性变化只刷新语义，
+    // 避免重建导致焦点/滚动位置丢失（navigation 语义下按钮引用应稳定）
+    let childChanged = false
+    if (this.hasAttribute('items')) {
+      this.parseItems()
+    } else {
+      this.parseChildItems()
+      const sig = JSON.stringify(this.itemsList)
+      childChanged = sig !== this.lastChildSig
+      this.lastChildSig = sig
+    }
+    if (itemsChanged || childChanged) {
       this.renderItems()
     } else {
       // 外部改 value 只刷新选中态，不移动焦点（navigation 语义，非 roving）
@@ -435,7 +456,8 @@ export class OASBottomNavigation extends OASElement {
     const tablist = this.tablist
     if (!tablist) return
     tablist.setAttribute('role', 'navigation')
-    tablist.setAttribute('aria-label', this.t('bottomNavigation.nav'))
+    // 宿主 aria-label 优先（同页多个 navigation landmark 需唯一可访问名）；缺省回落内置文案
+    tablist.setAttribute('aria-label', this.getAttribute('aria-label')?.trim() || this.t('bottomNavigation.nav'))
     const activeIdx = this.activeIndex()
     this.buttons.forEach((btn, i) => {
       const item = this.itemsList[i]

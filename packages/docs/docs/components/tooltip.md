@@ -567,7 +567,7 @@
 
 ## 事件来源（oas-open-change）
 
-`oas-open-change` 的 `detail` 携带 `{ open, source, reason }`：`source` 为触发通道（`hover` / `focus` / `click` / `contextmenu` / `touch` / `key` / `escape` / `outside` / `scroll` / `auto-close` / `attribute`），`reason` 为原因细化（如 `escape-key` / `outside-pointer` / `timeout` / `long-press`）。外部受控 `setAttribute` 路径 source 为 `attribute`。
+`oas-open-change` 的 `detail` 携带 `{ open, source, reason }`：`source` 为触发通道（`hover` / `focus` / `click` / `contextmenu` / `touch` / `key` / `escape` / `outside` / `scroll` / `auto-close`），`reason` 为原因细化（如 `escape-key` / `outside-pointer` / `timeout` / `long-press`）。宿主直接写 `open` 属性（受控 setAttribute）吸收状态时不回派事件（host 已知，避免双向绑定回环）。
 
 <DemoBlock title="事件来源反馈">
   <oas-tooltip id="tt-evt" trigger="click" content="悬停 / 点击 / Esc 关闭试试来源" placement="bottom">
@@ -792,7 +792,7 @@ onMounted(() => {
 
 | 事件 | 说明 |
 | --- | --- |
-| `oas-open-change` | open 状态变化（显示/隐藏）时派发，`detail: { open, source, reason }` |
+| `oas-open-change` | 内部交互导致的开合派发，`detail: { open, source, reason }`；宿主直接写 open 属性静默不回派；公开 setOpen() 未传 source 时兜底 source='attribute' |
 
 #### 插槽
 
@@ -819,4 +819,4 @@ onMounted(() => {
 | `--oas-tooltip-easing` | `ease` |
 | `--oas-tooltip-max-width` | `240px` |
 
-`oas-open-change`：`open` 状态变化（显示/隐藏）时派发，`detail: { open, source, reason }`（`source` 为触发通道，`reason` 为具体原因；外部受控写属性时 `source` 为 `attribute`）。hover / focus 触发显隐；`role="tooltip"`，浮层 `pointer-events: none` 不拦截交互。
+`oas-open-change`：内部交互导致的开合派发，`detail: { open, source, reason }`（`source` 为触发通道，`reason` 为具体原因）；宿主直接写 `open` 属性静默吸收不回派（公开 `setOpen()` 未传 `source` 时兜底 `attribute`）。hover / focus 触发显隐；`role="tooltip"`，浮层 `pointer-events: none` 不拦截交互。

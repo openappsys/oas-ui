@@ -6,8 +6,9 @@
 
 ### 变更
 
-- **`oas-bottom-navigation` 语义修正**：不再伪装成无 panel 的 `tablist`——容器改 `role="navigation"`，当前项改 `aria-current="page"`（原 `role="tab"` / `aria-selected` 移除；`aria-disabled` 与视觉不变）。键盘模型同步改为 navigation 惯例：全部可用项 Tab 可达（原 roving tabindex 仅激活项可聚焦），方向键/Home/End 保留为增强焦点移动。读屏语义更准；依赖 `aria-selected` 选择器的宿主样式需改为 `aria-current`。
-- **受控 `open` 回声抑制**：`oas-date-picker` / `oas-time-picker` 在宿主自己增删 `open` 属性吸收状态时**不再回派 `oas-open-change`**（host 已知，避免双向绑定回环）；手势开合（点击/Esc/外点）照常派发，与 `oas-select` / `oas-tree-select` 的静默吸收口径一致（combobox / dropdown / tooltip 等其余浮层的外部写入仍派发，属历史不一致，另行立项统一）。
+- **`oas-bottom-navigation` 语义修正**：不再伪装成无 panel 的 `tablist`——容器改 `role="navigation"`，当前项改 `aria-current="page"`（原 `role="tab"` / `aria-selected` 移除；`aria-disabled` 与视觉不变）。键盘模型同步改为 navigation 惯例：全部可用项 Tab 可达（原 roving tabindex 仅激活项可聚焦），方向键/Home/End 保留为增强焦点移动。宿主 `aria-label` 转发到内部 navigation 地标（同页多实例可区分，缺省回落内置文案）。读屏语义更准；依赖 `aria-selected` 选择器的宿主样式需改为 `aria-current`。
+- **受控 `open` 回声抑制统一**：`oas-date-picker` / `oas-time-picker` / `oas-cascader` / `oas-combobox` / `oas-color-picker` / `oas-dropdown` / `oas-tooltip` / `oas-popover` / `oas-hover-card` / `oas-popconfirm` 在宿主自己增删 `open` 属性吸收状态时**不再回派 `oas-open-change`**（host 已知，避免双向绑定回环）；组件内部用户交互（点击/hover/focus/Esc/外点/确认/取消）导致的开关照常派发；tooltip 的 `source`/`reason` 与 popconfirm 的 `reason` 内部路径语义不变（宿主写属性不再产生 `source='attribute'` / `reason='api'`）。以上浮层（含 select / tree-select）受控口径一致；`context-menu` / `command` / `menubar` 保留各自「外部可写并派发」的既有声明式设计（文档已明确），不在本次迁移范围。父浮层级联关闭嵌套子浮层同样按宿主写属性口径静默（子层不派发事件）。
+- **浮层二次断连监听清理**：`oas-dropdown` / `oas-context-menu` / `oas-sidebar` / `oas-tour` 在 `disconnectedCallback` 幂等移除 document/window 级监听（外点、scroll/resize、快捷键、滚动跟随），修复「打开态断开 → 重连 → 再断开」后监听残留；首轮断连/重连行为不变。
 - **`oas-backdrop` 开启完成事件归位 after-\* 家族**：动画完成加发规范名 `oas-after-open`，`oas-after-show` 保留为兼容别名（DEP-EVENT-0006，不排期移除）。
 - **配置注入通道统一**：`injectValue` 在 provider 同名 attribute 之后增加 `config` JSON 兜底（`{"oas-tag":{"size":"small"}}`）——`config-provider` 的 JSON 通道不再只有 `oas-button` 消费。当前经注入通道消费的键为 `size`（全库 23 个组件）；`variant` 仍只有 `oas-button` 消费，其余键随组件接入逐步生效。
 - **`oas-gantt` 不可排程守卫**：任务日历为空（资源 `shifts: []` 或 workdays 交集为空）时，auto-schedule 依赖推进**不再把任务排进不可用日**（旧行为会把任务落到该资源不可用的日子，测试数据里表现为周六）——保持原日期、devWarn 一次并打 `.conflict` 标记（生产环境也可见）；下游按冻结日期排程，依赖违约照常在前驱标出；`mso` 显式锚点不受此守卫影响。

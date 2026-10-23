@@ -567,7 +567,7 @@ The entry animation duration / easing / name are CSS variables (set them on the 
 
 ## Event source (oas-open-change)
 
-`oas-open-change`'s `detail` now carries `{ open, source, reason }`: `source` is the trigger channel (`hover` / `focus` / `click` / `contextmenu` / `touch` / `key` / `escape` / `outside` / `scroll` / `auto-close` / `attribute`), `reason` refines the cause (e.g. `escape-key` / `outside-pointer` / `timeout` / `long-press`). External controlled `setAttribute` paths report `attribute`.
+`oas-open-change`'s `detail` carries `{ open, source, reason }`: `source` is the trigger channel (`hover` / `focus` / `click` / `contextmenu` / `touch` / `key` / `escape` / `outside` / `scroll` / `auto-close`), `reason` refines the cause (e.g. `escape-key` / `outside-pointer` / `timeout` / `long-press`). When the host writes the `open` attribute (controlled setAttribute) to absorb the state, no event is echoed back (the host already knows — this avoids two-way binding loops).
 
 <DemoBlock title="Event source feedback">
   <oas-tooltip id="tt-evt" trigger="click" content="Hover / click / Esc to try the sources" placement="bottom">
@@ -792,7 +792,7 @@ onMounted(() => {
 
 | Event | Description |
 | --- | --- |
-| `oas-open-change` | Fired when the `open` state changes (show/hide), `detail: { open, source, reason }` |
+| `oas-open-change` | Emitted for internal-interaction open/close changes, `detail: { open, source, reason }`; host-written `open` attributes are absorbed silently; the public setOpen() call falls back to source='attribute' when no source is passed |
 
 #### Slots
 
@@ -819,4 +819,4 @@ onMounted(() => {
 | `--oas-tooltip-easing` | `ease` |
 | `--oas-tooltip-max-width` | `240px` |
 
-`oas-open-change`: fired when the `open` state changes (show/hide), `detail: { open, source, reason }` (`source` is the trigger channel, `reason` the concrete cause; for external controlled attribute writes `source` is `attribute`). Shown/hidden on hover or focus; `role="tooltip"`, the popup uses `pointer-events: none` so it never blocks interactions.
+`oas-open-change`: fired for internal-interaction open/close changes, `detail: { open, source, reason }` (`source` is the trigger channel, `reason` the concrete cause); host-written `open` attributes are absorbed silently (the public `setOpen()` calls without a `source` fall back to `attribute`). Shown/hidden on hover or focus; `role="tooltip"`, the popup uses `pointer-events: none` so it never blocks interactions.

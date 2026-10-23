@@ -43,6 +43,24 @@ test('bottom-navigation 点击选中：aria-current 同步、选中色可见、v
   expect(controlled.selectedText, '外部设 value="mine" → 选中「我的」').toBe('我的')
 })
 
+test('bottom-navigation aria-label：宿主命名转发到内部 navigation（同页多实例可区分）', async ({ page }) => {
+  await page.goto('/components/bottom-navigation.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#bn-ctrl')
+  const labels = await page.evaluate(() => {
+    const host = document.querySelector('#bn-ctrl') as HTMLElement
+    host.setAttribute('aria-label', '商城底部导航')
+    const inner = host.shadowRoot!.querySelector('[part="tablist"]')
+    return {
+      host: host.getAttribute('aria-label'),
+      inner: inner?.getAttribute('aria-label'),
+      role: inner?.getAttribute('role'),
+    }
+  })
+  expect(labels.role).toBe('navigation')
+  expect(labels.inner, '宿主 aria-label 应转发到内部 navigation').toBe('商城底部导航')
+  expect(labels.host, '宿主 aria-label 保留（由宿主维护）').toBe('商城底部导航')
+})
+
 test('bottom-navigation 禁用项：aria-disabled 同步，点击不选中不派发', async ({ page }) => {
   await page.goto('/components/bottom-navigation.html', { waitUntil: 'domcontentloaded' })
   await up(page, '#bn-decl')

@@ -793,21 +793,17 @@ export class OASSidebar extends OASElement {
     this.shadow.querySelector('[part="toggle"]')?.addEventListener('click', () => this.toggleCollapsed())
 
     document.addEventListener('keydown', this.handleDocKeydown)
-    this.onCleanup(() => document.removeEventListener('keydown', this.handleDocKeydown))
     this.onCleanup(() => this.releaseDrawerEscape())
 
     // flyout 外部点击关闭（pointerdown 在 shadow 外落到别处即关）
     document.addEventListener('pointerdown', this.handleDocPointerDown, true)
-    this.onCleanup(() => document.removeEventListener('pointerdown', this.handleDocPointerDown, true))
 
     // flyout 打开期间页面滚动/缩放：关闭（fixed 定位脱锚，对齐浮层组件 close-on-scroll 惯例）；
     // 组件内部滚动（.nav 滚动 / flyout 自身超长滚动）不关——锚点未位移，仅放行内部滚动源
     window.addEventListener('scroll', this.handleViewportScrollResize, true)
     window.addEventListener('resize', this.handleViewportScrollResize)
-    this.onCleanup(() => {
-      window.removeEventListener('scroll', this.handleViewportScrollResize, true)
-      window.removeEventListener('resize', this.handleViewportScrollResize)
-    })
+    // 全局监听统一由 detachGlobalListeners 幂等摘除（onReconnect 重挂后二次断开同样兜底）
+    this.onCleanup(() => this.detachGlobalListeners())
 
     // 菜单键盘导航：↑/↓ 在可见项间移动焦点（Home/End 跳首末；Enter/Space 走原生 button 激活）
     const nav = this.shadow.querySelector('.nav')
@@ -820,13 +816,25 @@ export class OASSidebar extends OASElement {
     this.syncRailAria()
 
     this.syncMq()
-    this.onCleanup(() => this.mq?.removeEventListener('change', this.mqListener))
   }
 
   override disconnectedCallback(): void {
     // 基类 onCleanup 一次性执行后会清空；断开时主动释放抽屉 Esc 层，重连后由 open 边沿重压
     this.releaseDrawerEscape()
+    // onReconnect 重挂的 document/window/mq 监听不再有 cleanup 兜底，组件自身幂等再摘一次
+    this.detachGlobalListeners()
     super.disconnectedCallback()
+  }
+
+  /** 幂等摘除全局监听（onCleanup 与 disconnectedCallback 共用；重连后 onReconnect 重挂也不残留） */
+  private detachGlobalListeners(): void {
+    document.removeEventListener('keydown', this.handleDocKeydown)
+    document.removeEventListener('pointerdown', this.handleDocPointerDown, true)
+    document.removeEventListener('pointermove', this.onRailDrag)
+    document.removeEventListener('pointerup', this.endRailDrag)
+    window.removeEventListener('scroll', this.handleViewportScrollResize, true)
+    window.removeEventListener('resize', this.handleViewportScrollResize)
+    this.mq?.removeEventListener('change', this.mqListener)
   }
 
   /**

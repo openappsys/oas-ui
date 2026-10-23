@@ -440,6 +440,10 @@ export class OASCombobox extends OASFormElement {
   private _options: Option[] = []
   /** 上次 open 状态（null = 未初始化，首帧不派发 oas-open-change） */
   private prevOpen: boolean | null = null
+  /** 本次 update 的 open 变化是否来自宿主直接写属性（宿主已知状态，不回派事件） */
+  private openFromHost = false
+  /** 组件内部正在写宿主 open 属性（attributeChangedCallback 据此不视作宿主写入） */
+  private internalOpenWrite = false
   /** 初始 value 基线（form.reset 恢复目标；null = 空基线）：初始渲染/受控写入跟随 value 属性刷新 */
   private initialValue: string | null = null
   /** 用户交互脏标记（对齐原生 dirty value 语义）：置位后基线冻结，reset 恢复基线并清脏 */
@@ -577,7 +581,32 @@ export class OASCombobox extends OASFormElement {
     return true
   }
 
+  /**
+   * 受控 open 回声抑制：宿主直接写属性吸收状态时不回派 oas-open-change（宿主已知，
+   * 避免双向绑定回环）；组件内部交互（点击/键盘/触屏）仍照常派发。
+   */
+  override attributeChangedCallback(name: string, oldValue: string | null, newValue: string | null): void {
+    if (name === 'open' && oldValue !== newValue && this.hasRendered && !this.internalOpenWrite) {
+      this.openFromHost = true
+    }
+    super.attributeChangedCallback(name, oldValue, newValue)
+  }
+
+  /** 组件内部写宿主 open 属性：标记内部写入，attributeChangedCallback 不视作宿主写入 */
+  private writeOpenAttr(open: boolean): void {
+    this.internalOpenWrite = true
+    try {
+      if (open) this.setAttribute('open', '')
+      else this.removeAttribute('open')
+    } finally {
+      this.internalOpenWrite = false
+    }
+  }
+
   protected override update(): void {
+    // 消费宿主写入标记（同步复位：属性写入无 open 迁移时也不留脏标志）
+    const openFromHost = this.openFromHost
+    this.openFromHost = false
     // 移动形态同步：coarse pointer（触屏）或窄视口（<768px）→ bottom-sheet 底部抽屉承载
     this.syncMobileMode()
     this.parseOptions()
@@ -592,8 +621,8 @@ export class OASCombobox extends OASFormElement {
     // 仅「收起→展开」迁移时滚动跟随选中项（宿主在展开期间的属性变更不拉扯视口）
     const opening = this.prevOpen === false && open
 
-    // open 状态迁移 → oas-open-change（受控 setAttribute 与组件内部开合都会走到这里）
-    if (this.prevOpen !== null && this.prevOpen !== open) {
+    // open 状态迁移 → oas-open-change（仅内部交互引起的变化派发；宿主写属性静默）
+    if (this.prevOpen !== null && this.prevOpen !== open && !openFromHost) {
       this.emit('open-change', { open })
     }
     this.prevOpen = open
@@ -859,11 +888,11 @@ export class OASCombobox extends OASFormElement {
 
   private openPanel(): void {
     if (this.injectDisabled() || this.hasAttr('readonly')) return
-    if (!this.hasAttr('open')) this.setAttribute('open', '')
+    if (!this.hasAttr('open')) this.writeOpenAttr(true)
   }
 
   private closePanel(): void {
-    if (this.hasAttr('open')) this.removeAttribute('open')
+    if (this.hasAttr('open')) this.writeOpenAttr(false)
   }
 
   /** 失焦/Esc/点击外部时回退：单选恢复为当前选中项 label（默认非破坏）；多选仅丢弃过滤词（输入框清空） */
@@ -899,7 +928,7 @@ export class OASCombobox extends OASFormElement {
     this.syncValidity()
     // 输入视为展开交互（焦点必然在输入框）
     this.activeIndex = 0
-    if (!this.hasAttr('open')) this.setAttribute('open', '')
+    if (!this.hasAttr('open')) this.writeOpenAttr(true)
     else this.renderListbox()
   }
 

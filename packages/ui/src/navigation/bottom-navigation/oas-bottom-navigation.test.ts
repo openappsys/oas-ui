@@ -57,6 +57,30 @@ describe('OASBottomNavigation', () => {
     expect(tabs(el2)[0]!.getAttribute('aria-current')).toBe('page')
   })
 
+  it('宿主 aria-label 命名导航地标（同页多实例可区分），缺省回落内置文案', () => {
+    const el = mount({ 'aria-label': '主站底部导航' })
+    expect(list(el).getAttribute('aria-label')).toBe('主站底部导航')
+    // 运行时更新同样生效（aria-label 已入观察集）
+    el.setAttribute('aria-label', '商城底部导航')
+    expect(list(el).getAttribute('aria-label')).toBe('商城底部导航')
+    // 空值回落内置文案
+    el.setAttribute('aria-label', '')
+    expect(list(el).getAttribute('aria-label')).toBe('底部导航')
+  })
+
+  it('aria-label 更新不重建子元素通道按钮（非数据属性变化只刷新语义，焦点/引用稳定）', () => {
+    const el = mountChildren(`
+      <oas-bottom-navigation-item value="home" icon="user">首页</oas-bottom-navigation-item>
+      <oas-bottom-navigation-item value="search" icon="search">搜索</oas-bottom-navigation-item>
+    `)
+    const first = tabs(el)[0]!
+    first.focus()
+    el.setAttribute('aria-label', '主站底部导航')
+    expect(tabs(el)[0], '按钮引用不应重建').toBe(first)
+    expect(el.shadowRoot!.activeElement, '焦点不应丢失').toBe(first)
+    expect(list(el).getAttribute('aria-label')).toBe('主站底部导航')
+  })
+
   it('navigation 语义：全部可用项进 Tab 序（不用 tablist 的 roving 模型），方向键为增强', () => {
     const el = mount({ value: 'search' })
     const ts = tabs(el)

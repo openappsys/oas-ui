@@ -363,7 +363,7 @@ describe('OASCombobox 能力补齐：group / size / status / filter / open / vir
     expect(input(el).getAttribute('aria-expanded')).toBe('false')
   })
 
-  it('oas-open-change：内部开合与宿主驱动都派发（首帧挂载不派发）', () => {
+  it('oas-open-change：内部交互开合派发、宿主写属性静默（首帧挂载不派发）', () => {
     const el = mount()
     const events: boolean[] = []
     el.addEventListener('oas-open-change', (e: Event) => events.push((e as CustomEvent).detail.open))
@@ -379,6 +379,31 @@ describe('OASCombobox 能力补齐：group / size / status / filter / open / vir
     open(el)
     input(el).dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
     expect(events).toEqual([true, false, true, false])
+  })
+
+  it('受控回声抑制：宿主写/删 open 静默（不派发 oas-open-change），面板态照常切换', () => {
+    const el = mount()
+    const events: boolean[] = []
+    el.addEventListener('oas-open-change', (e: Event) => events.push((e as CustomEvent).detail.open))
+    // 宿主写 open：面板展开、aria 同步，但不回派事件（状态已由宿主掌握）
+    el.setAttribute('open', '')
+    expect(input(el).getAttribute('aria-expanded')).toBe('true')
+    expect(el.shadowRoot!.querySelector('.dropdown')!.classList.contains('open')).toBe(true)
+    expect(optionRows(el).length).toBe(3)
+    // 宿主删 open：收起，同样静默
+    el.removeAttribute('open')
+    expect(input(el).getAttribute('aria-expanded')).toBe('false')
+    expect(events).toEqual([])
+    // 内部交互照常派发：聚焦展开 → true，选中关闭 → false
+    open(el)
+    expect(events).toEqual([true])
+    optionRows(el)[1]!.click()
+    expect(events).toEqual([true, false])
+    // 宿主写入后紧随内部关闭：抑制标志不得残留（Esc 仍派发 false）
+    el.setAttribute('open', '')
+    expect(events).toEqual([true, false])
+    input(el).dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+    expect(events).toEqual([true, false, false])
   })
 
   // ---- readonly ----

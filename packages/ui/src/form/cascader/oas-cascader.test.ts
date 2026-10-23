@@ -537,15 +537,18 @@ describe('OASCascader 受控 open', () => {
     document.body.innerHTML = ''
   })
 
-  it('open 属性展开面板，宿主设置也派发 oas-open-change', () => {
+  it('受控 open：宿主设置属性展开面板但不回派 oas-open-change；内部关闭仍派发', () => {
     const el = mount()
-    let detail: unknown
-    el.addEventListener('oas-open-change', (e: Event) => (detail = (e as CustomEvent).detail))
+    const events: boolean[] = []
+    el.addEventListener('oas-open-change', (e: Event) => events.push((e as CustomEvent).detail.open))
     el.setAttribute('open', '')
     expect(dropdown(el).classList.contains('open')).toBe(true)
     expect(trigger(el).getAttribute('aria-expanded')).toBe('true')
     expect(panels(el).length).toBe(1)
-    expect(detail).toEqual({ open: true })
+    expect(events, '宿主写 open 不得回派').toEqual([])
+    // 内部交互（点击触发器关闭）照常派发
+    trigger(el).click()
+    expect(events).toEqual([false])
   })
 
   it('点击触发器关闭：移除 open 属性并派发事件', () => {

@@ -14,7 +14,7 @@ Click the trigger to open the bubble; OK / the cancel button / Esc / clicking ou
 
 ## Controlled visibility
 
-The `open` attribute is controlled; visibility changes emit `oas-open-change` whose `detail.reason` tells the source (`trigger` / `ok` / `cancel` / `esc` / `outside` / `api`).
+The `open` attribute is controlled; internal interactions (`trigger` / `ok` / `cancel` / `esc` / `outside` / API calls) emit `oas-open-change` whose `detail.reason` tells the source; when the host writes/removes the `open` attribute directly to absorb the state, the component stays silent (the host already knows — this avoids two-way binding loops).
 
 <DemoBlock title="Controlled visibility (oas-open-change)">
   <oas-space size="small" align="center">
@@ -215,6 +215,8 @@ onMounted(async () => {
   window.pcCtrl = (open) => {
     if (open) pc.setAttribute('open', '')
     else pc.removeAttribute('open')
+    // Host-written attributes are absorbed silently; update the status tag directly (event echo covers internal interactions)
+    status.textContent = open ? 'opened (host-written attribute: silent)' : 'closed (host-written attribute: silent)'
   }
 
   // Async confirmation: oas-ok -> set ok-loading synchronously (holds auto-close) -> close when done
@@ -257,8 +259,11 @@ onMounted(async () => {
   const virtXyStatus = document.getElementById('pc-virt-xy-status')
   window.pcVirtPointToggle = (e) => {
     e.stopPropagation()
-    if (virtXy?.hasAttribute('open')) virtXy.removeAttribute('open')
-    else virtXy?.setAttribute('open', '')
+    const willOpen = !virtXy?.hasAttribute('open')
+    if (willOpen) virtXy?.setAttribute('open', '')
+    else virtXy?.removeAttribute('open')
+    if (virtXyStatus)
+      virtXyStatus.textContent = willOpen ? 'opened (host-written attribute: silent)' : 'closed (host-written attribute: silent)'
   }
   virtXy?.addEventListener('oas-open-change', (e) => {
     if (virtXyStatus) virtXyStatus.textContent = e.detail.open ? 'opened (virtual-x/y)' : 'closed'
@@ -310,7 +315,7 @@ onMounted(async () => {
 | --- | --- |
 | `oas-cancel` | Dispatched only when the Cancel button is clicked (Esc / outside click go through the `oas-open-change` reason), `detail: { source: this, event: e }` |
 | `oas-ok` | Clicked "OK"; the bubble then collapses automatically, `detail: { source: this, event: e }` |
-| `oas-open-change` | Emitted when the open state changes, `detail: { open, reason }` (reason: `ok`/`cancel`/`esc`/`outside`/`trigger`/`api`) |
+| `oas-open-change` | Emitted for internal-interaction open/close changes, `detail: { open, reason }` (reason: `ok`/`cancel`/`esc`/`outside`/`trigger`/`api`); host-written `open` attributes are absorbed silently |
 
 #### Slots
 

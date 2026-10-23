@@ -37,7 +37,7 @@ test('tooltip virtual 坐标跟随：鼠标移入画布 tooltip 跟随显示、�
   await page.waitForTimeout(300)
   const box = await canvas.boundingBox()
 
-  // 监听 oas-open-change 计数（demo 可见反馈：状态 tag 跟随中/未跟随）
+  // 监听 oas-open-change 计数：follow-cursor demo 由宿主脚本写 open 属性（受控吸收，静默不回派）
   await page.evaluate(() => {
     ;(window as any).__tipOpenCount = 0
     document.querySelector('#tt-follow')!.addEventListener('oas-open-change', () => {
@@ -66,7 +66,7 @@ test('tooltip virtual 坐标跟随：鼠标移入画布 tooltip 跟随显示、�
       inViewport: tb.top >= 0 && tb.left >= 0 && tb.bottom <= window.innerHeight && tb.right <= window.innerWidth,
     }
   })
-  expect(r.openCount, '鼠标移入应派发 oas-open-change').toBeGreaterThan(0)
+  expect(r.openCount, '宿主写 open 属性静默（受控吸收，不回派 oas-open-change）').toBe(0)
   expect(r.status, 'demo 状态 tag 应有可见反馈').toContain('跟随')
   expect(r.content).toContain('坐标') // 内容实时更新
   expect(r.placement).toBe('bottom')

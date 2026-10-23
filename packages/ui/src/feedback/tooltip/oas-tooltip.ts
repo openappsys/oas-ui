@@ -322,6 +322,10 @@ export class OAStooltip extends OASElement {
   private unbindCoarseTap: (() => void) | null = null
   /** 上次 open 状态（null = 未初始化，首帧不派发事件） */
   private prevOpen: boolean | null = null
+  /** 组件内部写 open 属性期间置位：attributeChangedCallback 据此区分内部写入 */
+  private internalOpenWrite = false
+  /** 本次 update 的 open 迁移来自宿主直接属性写入：吸收状态、不回派 oas-open-change */
+  private openFromHost = false
   /** Esc 关闭后 restoreFocus 的 focusin 会重新触发打开——关闭瞬间置位，忽略下一条 focusin */
   private suppressFocusOpen = false
   /** virtual-anchor 元素跟随的监听是否已挂 */
@@ -550,6 +554,29 @@ export class OAStooltip extends OASElement {
   }
 
   /**
+   * open 属性变化分发：宿主直接写属性（增删 open）视为「吸收状态」——更新视觉但不回派
+   * oas-open-change（宿主已知，避免受控双向绑定回环）；组件内部触发（hover/focus/click/Esc
+   * 等经 writeOpenAttr 写入）照常派发。首帧渲染前不置位（append 前的属性是初始值，非迁移）。
+   */
+  override attributeChangedCallback(name: string, oldValue: string | null, newValue: string | null): void {
+    if (name === 'open' && oldValue !== newValue && this.hasRendered && !this.internalOpenWrite) {
+      this.openFromHost = true
+    }
+    super.attributeChangedCallback(name, oldValue, newValue)
+  }
+
+  /** 内部 open 属性写入：置位 internalOpenWrite，attributeChangedCallback 不标记宿主来源 */
+  private writeOpenAttr(open: boolean): void {
+    this.internalOpenWrite = true
+    try {
+      if (open) this.setAttribute('open', '')
+      else this.removeAttribute('open')
+    } finally {
+      this.internalOpenWrite = false
+    }
+  }
+
+  /**
    * 触发入口。虚拟模式（virtual）不绑定宿主元素，open 完全受外部控制，
    * 因此任何宿主 hover/focus 都不得改 open。manual trigger 时 handler 已过滤。
    * source/reason 记录打开原因供 oas-open-change detail（emit 后清空）。
@@ -566,9 +593,9 @@ export class OAStooltip extends OASElement {
       // 状态未变时不重复写属性：同值 setAttribute 也会触发 attributeChangedCallback
       // （Chromium 实测），click → focusin 路径会多跑一次 update/重定位，
       // 与 hover 单开的落点产生分歧
-      if (!this.hasAttr('open')) this.setAttribute('open', '')
+      if (!this.hasAttr('open')) this.writeOpenAttr(true)
     } else if (this.hasAttr('open')) {
-      this.removeAttribute('open')
+      this.writeOpenAttr(false)
       lastCloseAt = Date.now()
     }
   }
@@ -867,15 +894,18 @@ export class OAStooltip extends OASElement {
     this.syncWidth()
     this.syncDescribedBy(open)
     this.syncAutoClose(open)
-    // open 状态迁移（受控 setAttribute 与触发都会走到这里）→ oas-open-change
-    if (this.prevOpen !== null && this.prevOpen !== open) {
-      // detail 携带触发来源/原因（P9）：无 source 记录 = 外部受控 setAttribute 路径
+    // open 状态迁移（内部触发会派发；宿主直接写属性静默吸收）→ oas-open-change
+    if (this.prevOpen !== null && this.prevOpen !== open && !this.openFromHost) {
+      // detail 携带触发来源/原因（P9）；内部路径必有 source 记录。
+      // 宿主写属性静默后此分支正常不可达，'attribute' 保留为防御兜底（内部写入口均显式传 source）
       const source = this.lastSource || 'attribute'
       const reason = this.lastReason || (source === 'attribute' ? 'attribute' : '')
       this.emit('open-change', { open, source, reason })
-      this.lastSource = ''
-      this.lastReason = ''
     }
+    // 宿主写入（含同值无迁移）一律清空暂存 source/reason，避免污染下一次交互事件
+    this.lastSource = ''
+    this.lastReason = ''
+    this.openFromHost = false
     this.prevOpen = open
     // 模块级浮层栈（Esc 关闭用）：打开注册、关闭注销
     if (open) registerTip(this)

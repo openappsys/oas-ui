@@ -109,7 +109,7 @@ hover/active 为 `color-mix()` 派生值（随 primary 联动，light 掺黑压�
 
 - 自定义元素标签：`<oas-*>`（如 `oas-button`）
 - 自定义事件：`oas-*` 前缀 + 动词（`oas-click` `oas-change` `oas-clear`），`detail` 携带数据，`bubbles: true, composed: true`
-- **语义家族优先**：同语义事件全库同名——开合动画完成统一 `after-open` / `after-close`（`after-*` 家族；`opened` / `closed` / `after-show` 为兼容别名）、数量超限统一 `exceed-limit`（`exceed` 为兼容别名）；**开合状态变化**统一 `open-change`。受控属性写入不回派事件（防双向绑定回环）是表单浮层（select / tree-select / date-picker / time-picker）的目标口径；combobox / color-picker / dropdown / tooltip 等当前仍在外部写 `open` 时派发（历史不一致，迁移另行立项，宿主不得依赖某一族静默）。历史双名按「规范名 + 兼容别名双发」过渡，别名在 API 表标注【兼容别名】
+- **语义家族优先**：同语义事件全库同名——开合动画完成统一 `after-open` / `after-close`（`after-*` 家族；`opened` / `closed` / `after-show` 为兼容别名）、数量超限统一 `exceed-limit`（`exceed` 为兼容别名）；**开合状态变化**统一 `open-change`。受控属性写入不回派事件（防双向绑定回环）覆盖以下浮层：select / tree-select / date-picker / time-picker / cascader / combobox / color-picker / dropdown / tooltip / popover / hover-card / popconfirm——宿主直接写 `open` 属性静默吸收，组件内部交互导致的开关照常派发。例外：`context-menu` / `command` / `menubar` 按各自组件文档的「外部可写并派发」声明执行（不套用本口径）。历史双名按「规范名 + 兼容别名双发」过渡，别名在 API 表标注【兼容别名】
 - **ok 与 confirm 分工**：对话框类（modal/drawer/popconfirm）确定按钮用 `ok`；选择器类（date-picker/time-picker）确认选择用 `confirm`——按钮语义不同，不强行同名
 - **`loading` 语义约定**：布尔在场语义为主流（存在=加载中）；两处例外按组件语义读值——skeleton 的 `loading` 为值布尔默认真（`"false"` 渲染内容插槽）、sidebar 的 `loading` 值为骨架行数（默认 4）
 - 暴露样式点：组件根元素 `::part(host)`，交互元素 `::part(button)` / `::part(input)` 等；语义部件名全部小写连字符

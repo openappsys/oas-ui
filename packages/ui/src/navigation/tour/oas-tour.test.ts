@@ -1004,3 +1004,44 @@ describe('OASTour 属性-方法撞名回归', () => {
     expect(el.hasAttribute('open')).toBe(true)
   })
 })
+
+// ===== 二次断连：全局监听幂等移除 =====
+//
+// 基类 onCleanup 首次 disconnect 执行后清空；重连后的 update() 会重新挂 document keydown
+// 与 window scroll/resize/scrollend 跟随，二次 disconnect 必须再摘一次。
+describe('OASTour 二次断连全局监听清理', () => {
+  it('重连后再断开：document keydown 与 window scroll/resize/scrollend 监听被移除', async () => {
+    const el = mount()
+    el.setAttribute('open', '')
+    await tick()
+    el.remove()
+    document.body.appendChild(el) // 重连：update 重新挂载 keydown/跟随监听
+    await tick()
+    const docRemove = vi.spyOn(document, 'removeEventListener')
+    const winRemove = vi.spyOn(window, 'removeEventListener')
+    el.remove()
+    expect(docRemove).toHaveBeenCalledWith('keydown', expect.any(Function))
+    expect(winRemove).toHaveBeenCalledWith('scroll', expect.any(Function), expect.objectContaining({ capture: true }))
+    expect(winRemove).toHaveBeenCalledWith('resize', expect.any(Function))
+    expect(winRemove).toHaveBeenCalledWith('scrollend', expect.any(Function))
+    expect((el as unknown as { keydownBound: boolean }).keydownBound).toBe(false)
+  })
+
+  it('二次断开后 ArrowRight 不再推进步骤（监听确实摘除）', async () => {
+    const el = mount()
+    el.setAttribute('open', '')
+    await tick()
+    el.remove()
+    document.body.appendChild(el)
+    await tick()
+    // 重连后监听应已恢复：方向键正常推进/后退
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight' }))
+    expect(el.getAttribute('current'), '重连后方向键恢复').toBe('1')
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft' }))
+    expect(el.getAttribute('current')).toBe('0')
+    // 二次断开后派发方向键不得再改动已脱离实例
+    el.remove()
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight' }))
+    expect(el.getAttribute('current'), '残留监听会继续推进步骤').toBe('0')
+  })
+})

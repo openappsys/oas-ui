@@ -590,13 +590,45 @@ describe('OASDropdown oas-open-change 事件', () => {
     expect(log).toEqual([true, false])
   })
 
-  it('受控 setAttribute 同样触发（同 tooltip/popover 语义），无变化不派发', () => {
+  it('受控回声抑制：宿主直接写 open 属性不派发（host 已知，避免双向绑定回环）', () => {
     const el = mount()
     const log: boolean[] = []
     el.addEventListener('oas-open-change', (e) => log.push((e as CustomEvent<{ open: boolean }>).detail.open))
     el.setAttribute('open', '')
     el.setAttribute('open', '') // 无状态迁移不派发
     el.removeAttribute('open')
+    expect(log).toEqual([])
+  })
+
+  it('内部交互照常派发，宿主跟随写回属性不重复派发', () => {
+    const el = mount()
+    const log: boolean[] = []
+    el.addEventListener('oas-open-change', (e) => log.push((e as CustomEvent<{ open: boolean }>).detail.open))
+    ;(el.querySelector('button') as HTMLElement).click()
+    expect(log, '点击打开派发一次').toEqual([true])
+    // 受控宿主收到事件后把 open 属性写回：属性已是同值/或先移除，均不得回派
+    el.removeAttribute('open')
+    expect(log, '宿主跟随写回不回声').toEqual([true])
+    ;(el.querySelector('button') as HTMLElement).click()
+    expect(log, '继续交互仍派发').toEqual([true, true])
+  })
+
+  it('宿主写入后状态基线同步：随后内部关闭照常派发', () => {
+    const el = mount()
+    const log: boolean[] = []
+    el.addEventListener('oas-open-change', (e) => log.push((e as CustomEvent<{ open: boolean }>).detail.open))
+    el.setAttribute('open', '')
+    expect(log, '宿主打开不回声').toEqual([])
+    ;(el.querySelector('button') as HTMLElement).click() // 内部关闭（受控宿主已把状态置为打开）
+    expect(log, '内部关闭派发 false').toEqual([false])
+  })
+
+  it('外点关闭仍派发 oas-open-change（内部写入不被抑制）', () => {
+    const el = mount()
+    const log: boolean[] = []
+    el.addEventListener('oas-open-change', (e) => log.push((e as CustomEvent<{ open: boolean }>).detail.open))
+    ;(el.querySelector('button') as HTMLElement).click()
+    document.body.dispatchEvent(new MouseEvent('click', { bubbles: true }))
     expect(log).toEqual([true, false])
   })
 
@@ -605,7 +637,7 @@ describe('OASDropdown oas-open-change 事件', () => {
     const log: boolean[] = []
     el.addEventListener('oas-open-change', (e) => log.push((e as CustomEvent<{ open: boolean }>).detail.open))
     el.removeAttribute('open')
-    expect(log).toEqual([false])
+    expect(log, '宿主移除 open 属性属受控写入，不回声').toEqual([])
   })
 
   it('选择菜单项关闭也派发 oas-open-change', async () => {
@@ -1243,6 +1275,42 @@ describe('OASDropdown 属性-方法撞名回归', () => {
     const remove = vi.spyOn(anchor, 'removeEventListener')
     el.remove()
     expect(remove).toHaveBeenCalledWith('pointerup', expect.any(Function))
+  })
+})
+
+// ===== 二次断连：全局监听幂等移除 =====
+//
+// 基类 onCleanup 首次 disconnect 执行后清空；重连后的 update() 会重新 addEventListener，
+// 二次 disconnect 必须由组件自己再摘一次，否则 document/window 上残留已脱离的实例。
+describe('OASDropdown 二次断连全局监听清理', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+    vi.restoreAllMocks()
+  })
+
+  it('重连后再断开：document click 与 window scroll/resize 监听被移除', () => {
+    const el = mount({ open: '' })
+    el.remove()
+    document.body.appendChild(el) // 重连：update 重新挂载外点/滚动监听
+    const docRemove = vi.spyOn(document, 'removeEventListener')
+    const winRemove = vi.spyOn(window, 'removeEventListener')
+    el.remove()
+    expect(docRemove).toHaveBeenCalledWith('click', expect.any(Function), true)
+    expect(winRemove).toHaveBeenCalledWith('scroll', expect.any(Function), expect.objectContaining({ capture: true }))
+    expect(winRemove).toHaveBeenCalledWith('resize', expect.any(Function))
+  })
+
+  it('二次断开后 document click 不再关闭菜单（监听确实摘除）', () => {
+    const el = mount({ open: '' })
+    el.remove()
+    document.body.appendChild(el)
+    el.remove()
+    document.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    expect(el.hasAttribute('open'), '残留监听会移除 open').toBe(true)
   })
 })
 

@@ -591,6 +591,10 @@ export class OASColorPicker extends OASElement {
   private hasValue = false
   /** open 状态机当前值（open 属性为准；首帧不派发 oas-open-change） */
   private openSynced = false
+  /** 本次 update 的 open 变化是否来自宿主直接写属性（宿主已知状态，不回派事件） */
+  private openFromHost = false
+  /** 组件内部正在写宿主 open 属性（attributeChangedCallback 据此不视作宿主写入） */
+  private internalOpenWrite = false
   private booted = false
   private placementWarned = false
   /** designer 能力 controller（经能力注册表注入；无则模板不渲染 2D/渐变区、mode=gradient 静默失效） */
@@ -831,7 +835,32 @@ export class OASColorPicker extends OASElement {
     return true
   }
 
+  /**
+   * 受控 open 回声抑制：宿主直接写属性吸收状态时不回派 oas-open-change（宿主已知，
+   * 避免双向绑定回环）；组件内部交互（点击/键盘/触屏）仍照常派发。
+   */
+  override attributeChangedCallback(name: string, oldValue: string | null, newValue: string | null): void {
+    if (name === 'open' && oldValue !== newValue && this.hasRendered && !this.internalOpenWrite) {
+      this.openFromHost = true
+    }
+    super.attributeChangedCallback(name, oldValue, newValue)
+  }
+
+  /** 组件内部写宿主 open 属性：标记内部写入，attributeChangedCallback 不视作宿主写入 */
+  private writeOpenAttr(open: boolean): void {
+    this.internalOpenWrite = true
+    try {
+      if (open) this.setAttribute('open', '')
+      else this.removeAttribute('open')
+    } finally {
+      this.internalOpenWrite = false
+    }
+  }
+
   protected override update(): void {
+    // 消费宿主写入标记（同步复位：属性写入无 open 迁移时也不留脏标志）
+    const openFromHost = this.openFromHost
+    this.openFromHost = false
     const locked = this.isLocked()
     const inline = this.isInline()
 
@@ -841,7 +870,8 @@ export class OASColorPicker extends OASElement {
       if (this.openSynced !== open) {
         this.openSynced = open
         this.syncPanelOpen(open)
-        if (this.booted && this.isConnected) this.emit('open-change', { open })
+        // 宿主直接写属性吸收状态时不回派（宿主已知）；内部交互照常派发
+        if (this.booted && this.isConnected && !openFromHost) this.emit('open-change', { open })
       }
     } else {
       this.openSynced = true
@@ -1102,13 +1132,12 @@ export class OASColorPicker extends OASElement {
 
   private toggleOpen(): void {
     if (this.isLocked() || this.isInline()) return
-    if (this.hasAttr('open')) this.removeAttribute('open')
-    else this.setAttribute('open', '')
+    this.writeOpenAttr(!this.hasAttr('open'))
   }
 
   private closeByKeyboard(): void {
     if (this.isLocked() || this.isInline()) return
-    this.removeAttribute('open')
+    this.writeOpenAttr(false)
   }
 
   private syncPanelOpen(open: boolean): void {

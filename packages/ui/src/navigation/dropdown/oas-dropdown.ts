@@ -299,6 +299,10 @@ export class OASDropdown extends OASElement {
   private focusOnOpen = false
   /** 程序化归还焦点中：focus 触发模式下回焦会再次触发 focusin，必须抑制重开 */
   private restoringFocus = false
+  /** 内部 writeOpenAttr 写入进行中：attributeChangedCallback 不得把本次变化误判为宿主受控写入 */
+  private internalOpenWrite = false
+  /** 本次 update 由宿主直接写 open 属性触发：受控回声明知状态，不回派 oas-open-change */
+  private openFromHost = false
 
   /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
   private template(): string {
@@ -396,7 +400,7 @@ export class OASDropdown extends OASElement {
       this.setAttribute('value', detail.value)
       this.emit('select', { value: detail.value })
       // hide-on-click=false 时不关闭（多选/勾选场景）；默认选中即关
-      if (this.getAttr('hide-on-click', 'true') !== 'false') this.removeAttribute('open')
+      if (this.getAttr('hide-on-click', 'true') !== 'false') this.writeOpenAttr(false)
     })
   }
 
@@ -413,15 +417,47 @@ export class OASDropdown extends OASElement {
     return true
   }
 
-  /** 断开连接时复位滚动跟随标记（监听已由 onCleanup 移除，重连后重新挂载） */
+  /**
+   * 断开连接时幂等复位（监听已由首次 onCleanup 摘除；重连后 update 重挂的监听
+   * 在二次断开时不再有 cleanup 兜底，必须在组件自身再摘一次）。
+   */
   override disconnectedCallback(): void {
     // Esc 层在基类 cleanup 一次性执行后不会重挂——断开时主动释放，重连后由 update/open 边沿重压
     this.releaseEscapeLayer?.()
     this.releaseEscapeLayer = null
     // 打开态断开：重置边沿标记，重连后 update() 重新走打开路径（重压 Esc 层与外点/滚动监听）
     this.wasOpen = false
+    this.detachGlobalListeners()
+    // 挂起的 hover/退场 timer 可能在断开后触发并重新挂监听：断开即清空
+    if (this.hoverShowTimer) clearTimeout(this.hoverShowTimer)
+    if (this.hoverHideTimer) clearTimeout(this.hoverHideTimer)
+    if (this.closeAnimTimer) clearTimeout(this.closeAnimTimer)
+    this.hoverShowTimer = null
+    this.hoverHideTimer = null
+    this.closeAnimTimer = null
     super.disconnectedCallback()
-    this.scrollFollow = false
+  }
+
+  /** 幂等摘除 document/window 全局监听（onCleanup 与 disconnectedCallback 共用，重复调用无副作用） */
+  private detachGlobalListeners(): void {
+    document.removeEventListener('click', this.handleOutside, true)
+    this.syncScrollFollow(false)
+    if (this.scrollRaf) {
+      if (typeof cancelAnimationFrame === 'function') cancelAnimationFrame(this.scrollRaf)
+      this.scrollRaf = 0
+    }
+  }
+
+  /**
+   * 受控 open 回声抑制：宿主直接写 open 属性时，状态变化由宿主发起（host 已知），
+   * 本次 update 不回派 oas-open-change，避免受控双向绑定回环；内部交互（点击/外点/Esc/
+   * 选中/滚动关闭）经 writeOpenAttr 写入，标记后照常派发。
+   */
+  override attributeChangedCallback(name: string, oldValue: string | null, newValue: string | null): void {
+    if (name === 'open' && oldValue !== newValue && this.hasRendered && !this.internalOpenWrite) {
+      this.openFromHost = true
+    }
+    super.attributeChangedCallback(name, oldValue, newValue)
   }
 
   /**
@@ -512,15 +548,29 @@ export class OASDropdown extends OASElement {
   }
 
   private toggle(): void {
-    if (this.hasAttr('open')) this.removeAttribute('open')
-    else this.setAttribute('open', '')
+    this.writeOpenAttr(!this.hasAttr('open'))
+  }
+
+  /**
+   * 内部 open 写入唯一入口：标记来源后写宿主属性，attributeChangedCallback 据此区分
+   * 「受控回声」与「用户交互」；同值不写（无状态迁移，避免无谓 update）。
+   */
+  private writeOpenAttr(open: boolean): void {
+    if (open === this.hasAttr('open')) return
+    this.internalOpenWrite = true
+    try {
+      if (open) this.setAttribute('open', '')
+      else this.removeAttribute('open')
+    } finally {
+      this.internalOpenWrite = false
+    }
   }
 
   private handleOutside = (e: MouseEvent): void => {
     if (!this.hasAttr('open')) return
     const path = e.composedPath()
     if (!path.includes(this) && !path.some((n) => n instanceof Node && this.shadow.contains(n))) {
-      this.removeAttribute('open')
+      this.writeOpenAttr(false)
     }
   }
 
@@ -638,8 +688,7 @@ export class OASDropdown extends OASElement {
 
   /** open 状态写入（hover/focus 触发入口；click/Esc/外部点击/选中直接改属性，更新统一派发事件） */
   private setOpen(open: boolean): void {
-    if (open) this.setAttribute('open', '')
-    else this.removeAttribute('open')
+    this.writeOpenAttr(open)
   }
 
   /**
@@ -667,7 +716,7 @@ export class OASDropdown extends OASElement {
       handle: () => {
         const menu = this.menuEl as (OASMenu & { shadowRoot?: ShadowRoot | null }) | null
         const focusInMenu = !!activeInShadow(menu?.shadowRoot) || activeInShadow(this.shadow) === menu
-        this.removeAttribute('open')
+        this.writeOpenAttr(false)
         if (focusInMenu) this.focusTrigger()
         return true
       },
@@ -714,7 +763,11 @@ export class OASDropdown extends OASElement {
     this.syncReserveWidth()
     const open = this.hasAttr('open')
     this.syncTriggerAria(open)
-    if (!this.menuEl || !this.anchorEl) return
+    if (!this.menuEl || !this.anchorEl) {
+      // 未走到状态迁移比较点也必须复位，避免残留标记吞掉下一次合法事件
+      this.openFromHost = false
+      return
+    }
     // max-height 面板限高：转发内层 oas-menu 既有通道（数字补 px → CSS 变量 → .menu 限高滚动）
     const maxHeight = this.getAttr('max-height', '')
     if (maxHeight) this.menuEl.setAttribute('max-height', maxHeight)
@@ -731,11 +784,12 @@ export class OASDropdown extends OASElement {
     if (this.arrowEl) {
       this.arrowEl.toggleAttribute('hidden', this.getAttr('arrow', 'true') === 'false')
     }
-    // open 状态迁移 → oas-open-change（受控 setAttribute 与 click/hover/focus 触发都会走到这里，同 tooltip/popover）
-    if (this.prevOpen !== null && this.prevOpen !== open) {
+    // open 状态迁移 → oas-open-change（click/hover/focus 触发都会走到这里；宿主受控写入不回派）
+    if (this.prevOpen !== null && this.prevOpen !== open && !this.openFromHost) {
       this.emit('open-change', { open })
     }
     this.prevOpen = open
+    this.openFromHost = false
     if (open) {
       // 含 leading 克隆节点的项无法 JSON 序列化：走 menu 的 items property 对象通道；纯数据仍走 JSON attribute
       if (this.itemsList.some((i) => i.leading && i.leading.length > 0)) {
@@ -973,7 +1027,7 @@ export class OASDropdown extends OASElement {
   private onScrollTick(): void {
     if (!this.anchorEl || !this.hasAttr('open')) return
     if (this.hasAttr('close-on-scroll')) {
-      this.removeAttribute('open')
+      this.writeOpenAttr(false)
     } else {
       this.position()
     }

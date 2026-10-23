@@ -622,7 +622,7 @@
 
 ## 受控显示
 
-`open` 属性受控：外部按钮设置 / 移除 `open` 控制显隐（点击外部 / Esc 仍会关闭）。
+`open` 属性受控：外部按钮设置 / 移除 `open` 控制显隐（点击外部 / Esc 仍会关闭）。宿主直接写 `open` 属性吸收状态时不回派 `oas-open-change`（host 已知，避免双向绑定回环）；内部点击/外点/Esc 导致的开合照常派发。
 
 <DemoBlock title="受控显示（open 属性）">
   <oas-space size="small">
@@ -681,14 +681,22 @@ onMounted(() => {
         pointMark.style.opacity = '1'
       }
     }
+    const st = document.getElementById('pop-point-status')
     window.popPointHide = () => {
       point.removeAttribute('open')
       if (pointMark) pointMark.style.opacity = '0'
+      if (st) st.textContent = 'open: false（宿主写属性：静默）'
     }
-    // oas-open-change 可见反馈：状态 tag 回显 open
-    const st = document.getElementById('pop-point-status')
+    // 宿主脚本直接写 open 属性能静默驱动显隐；状态 tag 直接更新（事件回声只覆盖内部交互）
+    if (st) {
+      const show = window.popPointShow
+      window.popPointShow = (x, y) => {
+        show(x, y)
+        st.textContent = 'open: true（宿主写属性：静默）'
+      }
+    }
     point.addEventListener('oas-open-change', (e) => {
-      if (st) st.textContent = `open: ${e.detail.open}`
+      if (st) st.textContent = `oas-open-change: ${e.detail.open}`
     })
   }
 
@@ -773,10 +781,14 @@ onMounted(() => {
       panel.setAttribute('virtual-x', String(e.clientX))
       panel.setAttribute('virtual-y', String(e.clientY + 12))
       panel.setAttribute('open', '')
+      panelStatus.textContent = 'open: true（宿主写属性：静默）'
     }
-    window.popPanelHide = () => panel.removeAttribute('open')
+    window.popPanelHide = () => {
+      panel.removeAttribute('open')
+      panelStatus.textContent = 'open: false（宿主写属性：静默）'
+    }
     panel.addEventListener('oas-open-change', (e) => {
-      panelStatus.textContent = `open: ${e.detail.open}`
+      panelStatus.textContent = `oas-open-change: ${e.detail.open}`
     })
   }
 })
@@ -853,7 +865,7 @@ onMounted(() => {
 | 事件 | 说明 |
 | --- | --- |
 | `oas-before-close` | 关闭请求前派发（各关闭入口汇聚：trigger/outside/escape/close-btn/declarative/backdrop/auto/dismiss/scroll），`cancelable`，`detail: { source }`，preventDefault 阻止关闭 |
-| `oas-open-change` | open 状态变化，`detail: { open }` |
+| `oas-open-change` | 内部交互导致的开合派发，`detail: { open }`；宿主直接写 open 属性静默不回派 |
 
 #### 插槽
 
