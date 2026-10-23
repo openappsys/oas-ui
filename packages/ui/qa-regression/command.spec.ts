@@ -130,3 +130,42 @@ test('command 移动端：coarse 下选项行最小高度 ≥44px（--oas-touch-
     await ctx.close()
   }
 })
+
+test('command 非虚拟列表：键盘移动到视口外时活动行滚入可视区', async ({ page }) => {
+  await page.goto('/components/command.html', { waitUntil: 'domcontentloaded' })
+  await page.waitForFunction(() => !!customElements.get('oas-command'))
+  await page.evaluate(() => {
+    document.querySelector('#command-scroll-e2e')?.remove()
+    const el = document.createElement('oas-command')
+    el.id = 'command-scroll-e2e'
+    el.setAttribute('hotkey', 'false')
+    el.setAttribute(
+      'items',
+      JSON.stringify(Array.from({ length: 40 }, (_, i) => ({ label: `Item ${i}`, value: `v${i}` }))),
+    )
+    el.setAttribute('open', '')
+    document.body.appendChild(el)
+  })
+  await page.waitForFunction(
+    () => (document.querySelector('#command-scroll-e2e')?.shadowRoot?.querySelectorAll('.option').length ?? 0) > 0,
+  )
+  const input = page.locator('#command-scroll-e2e input.search')
+  await input.focus()
+  for (let i = 0; i < 18; i++) await page.keyboard.press('ArrowDown')
+  await page.waitForTimeout(100)
+  const r = await page.evaluate(() => {
+    const root = document.querySelector('#command-scroll-e2e')!.shadowRoot!
+    const list = root.querySelector<HTMLElement>('.list')!
+    const active = root.querySelector<HTMLElement>('.option.active')!
+    return {
+      scrollTop: list.scrollTop,
+      activeTop: active.getBoundingClientRect().top,
+      activeBottom: active.getBoundingClientRect().bottom,
+      listTop: list.getBoundingClientRect().top,
+      listBottom: list.getBoundingClientRect().bottom,
+    }
+  })
+  expect(r.scrollTop).toBeGreaterThan(0)
+  expect(r.activeTop).toBeGreaterThanOrEqual(r.listTop - 1)
+  expect(r.activeBottom).toBeLessThanOrEqual(r.listBottom + 1)
+})

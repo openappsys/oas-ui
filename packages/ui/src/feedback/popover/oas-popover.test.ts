@@ -283,6 +283,20 @@ describe('OASPopover', () => {
       expect(opened, '宿主关闭不应回声').toEqual([])
     })
 
+    it('oas-open-change 内同步反向写 open 不被外层旧状态覆盖', () => {
+      const el = mount()
+      const events: boolean[] = []
+      el.addEventListener('oas-open-change', (e) => {
+        const open = (e as CustomEvent<{ open: boolean }>).detail.open
+        events.push(open)
+        if (open) el.removeAttribute('open')
+      })
+      ;(el.querySelector('button') as HTMLElement).click()
+      expect(el.hasAttribute('open')).toBe(false)
+      expect(events).toEqual([true, false])
+      expect(panelOf(el).getAttribute('aria-hidden')).toBe('true')
+    })
+
     it('内部交互（点击触发器/外点/Esc）关闭仍派发 oas-open-change', async () => {
       const clickEl = mount({ title: 'x' })
       const clickDetail: Array<{ open: boolean }> = []

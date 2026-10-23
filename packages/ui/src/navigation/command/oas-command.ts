@@ -1633,16 +1633,28 @@ export class OASCommand extends OASElement {
   /** 虚拟滚动：让 activeIndex 所在项进入视口（happy-dom 下手动派发 scroll 重算窗口） */
   private scrollActiveIntoView(): void {
     const vlist = this.vlist
-    if (!vlist || vlist.hidden) return
-    const vp = vlist.shadowRoot?.querySelector<HTMLElement>('.viewport')
-    if (!vp) return
-    const ih = this.virtualItemHeight()
-    const top = this.activeIndex * ih
-    const vh = vp.clientHeight || 240
-    const cur = vp.scrollTop
-    if (top < cur) vp.scrollTop = Math.max(0, top)
-    else if (top + ih > cur + vh) vp.scrollTop = Math.max(0, top + ih - vh)
-    vp.dispatchEvent(new Event('scroll'))
+    if (vlist && !vlist.hidden) {
+      const vp = vlist.shadowRoot?.querySelector<HTMLElement>('.viewport')
+      if (!vp) return
+      const ih = this.virtualItemHeight()
+      const top = this.activeIndex * ih
+      const vh = vp.clientHeight || 240
+      const cur = vp.scrollTop
+      if (top < cur) vp.scrollTop = Math.max(0, top)
+      else if (top + ih > cur + vh) vp.scrollTop = Math.max(0, top + ih - vh)
+      vp.dispatchEvent(new Event('scroll'))
+      return
+    }
+    // 非虚拟列表共用同一键盘模型：activeIndex 同样要滚进容器可视区
+    const list = this.listEl
+    if (!list || list.hidden) return
+    const row = list.querySelector<HTMLElement>(`[part="option"][data-index="${this.activeIndex}"]`)
+    if (!row) return
+    const rowH = row.offsetHeight || 0
+    if (row.offsetTop < list.scrollTop) list.scrollTop = row.offsetTop
+    else if (row.offsetTop + rowH > list.scrollTop + list.clientHeight) {
+      list.scrollTop = row.offsetTop + rowH - list.clientHeight
+    }
   }
 
   // ==================== footer ====================

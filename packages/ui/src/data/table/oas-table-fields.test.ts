@@ -57,6 +57,22 @@ describe('OASTable 列字段类型系统（column type）', () => {
     setLocale('zh-CN')
   })
 
+  it('表头跟随列 align；数值/货币列默认右对齐', () => {
+    const el = mount({
+      columns: JSON.stringify([
+        { key: 'name', title: '名称' },
+        { key: 'age', title: '年龄', align: 'center' },
+        { key: 'score', title: '分数', type: 'number' },
+      ]),
+      data: JSON.stringify([{ name: 'A', age: 1, score: 2 }]),
+    })
+    const head = (key: string) => el.shadowRoot!.querySelector(`th[data-key="${key}"]`)!
+    expect(head('name').classList.contains('align-center')).toBe(false)
+    expect(head('name').classList.contains('align-right')).toBe(false)
+    expect(head('age').classList.contains('align-center')).toBe(true)
+    expect(head('score').classList.contains('align-right')).toBe(true)
+  })
+
   it('type=number：千分位展示 + 右对齐', () => {
     const el = mount({
       columns: JSON.stringify([{ key: 'v', title: '数值', type: 'number' }]),

@@ -71,6 +71,8 @@
   </div>
 </DemoBlock>
 
+表头与数据单元格共用同一列 `align`；`type: "number"` / `type: "currency"` 未显式设置时默认右对齐，便于数值纵向比对。多级表头的分组标题仍居中。
+
 ## 受控排序与行选中
 
 <DemoBlock title="初始排序与选中">

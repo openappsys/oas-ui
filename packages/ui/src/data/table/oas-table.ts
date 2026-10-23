@@ -521,8 +521,8 @@ tr.spacer td {
 .check-cell input {
   accent-color: var(--oas-color-primary);
 }
-td.align-center { text-align: center; }
-td.align-right { text-align: right; }
+th.align-center, td.align-center { text-align: center; }
+th.align-right, td.align-right { text-align: end; }
 /* 展开/收起按钮（树形 + 可展开行共用） */
 .toggle {
   width: 20px;
@@ -1443,6 +1443,8 @@ export class OASTableBase extends OASElement {
 
   /** 表头单元格填充：标题 + 可排队列排序箭头/序号 + 可过滤列过滤触发器（扁平与多行叶子共用） */
   private fillHeaderCell(th: HTMLElement, col: TableColumn): void {
+    const align = col.align ?? (col.type === 'number' || col.type === 'currency' ? 'right' : undefined)
+    if (align) th.classList.add(`align-${align}`)
     if (col.headerTemplate) {
       // 自定义列头：克隆模板内容作为 th 基础内容（静态，不随行插值）
       th.appendChild(col.headerTemplate.content.cloneNode(true) as DocumentFragment)

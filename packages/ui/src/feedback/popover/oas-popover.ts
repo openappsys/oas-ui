@@ -2003,9 +2003,7 @@ export class OASPopover extends OASElement {
     const arrowEl = this.panel.querySelector<HTMLElement>('[data-popper-arrow]')
     if (arrowEl) arrowEl.hidden = !this.showArrow()
     // open 状态迁移 → oas-open-change（内部触发派发；宿主直接写属性静默吸收，同 tooltip）
-    if (this.prevOpen !== null && this.prevOpen !== open && !this.openFromHost) {
-      this.emit('open-change', { open })
-    }
+    const openChanged = this.prevOpen !== null && this.prevOpen !== open && !this.openFromHost
     this.openFromHost = false
     this.prevOpen = open
     if (open) {
@@ -2061,5 +2059,8 @@ export class OASPopover extends OASElement {
       this.syncScrollFollow(false)
     }
     this.wasOpen = open
+    // 全部 DOM 状态提交后再派发：监听器内同步反向写 open 会触发嵌套 update，
+    // 外层不得在事件后继续用旧 open 覆盖，避免受控回写时序失配。
+    if (openChanged) this.emit('open-change', { open })
   }
 }
