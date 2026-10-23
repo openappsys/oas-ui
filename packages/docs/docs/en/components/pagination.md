@@ -375,6 +375,7 @@ onMounted(() => {
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
+| `aria-label` | Host accessible name for the inner navigation landmark; empty falls back to “Pagination” | — | — |
 | `current` | Current page (controlled; flipping updates this attribute) | `string` | `1` |
 | `disabled` | Disables everything: all page buttons with aria-disabled, plus the page-size dropdown and jumper input | `boolean` | — |
 | `hide-on-single` | Hides the whole component when there is a single page (pageCount ≤ 1) | `boolean` | — |

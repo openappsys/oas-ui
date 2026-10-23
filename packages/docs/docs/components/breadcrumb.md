@@ -306,6 +306,7 @@ onMounted(() => {
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
 | `active-last` | 末项保持可点击：当前页（末项）带 `href` 时渲染为链接（仍带 `aria-current="page"`） | `boolean` | — |
+| `aria-label` | 宿主可访问名，优先命名内部 navigation landmark；空值回退默认「面包屑」 | — | — |
 | `collapse-text` | 自定义折叠省略号的文本（默认 `…`） | `string` | `…` |
 | `collapsed` | 折叠模式：items 数量超过 `max-items` 时中间项折叠为 `…`，点击展开下拉 | `boolean` | — |
 | `color` | 视觉变体：当前项与链接 hover 使用指定语义色（`primary`/`success`/`warning`/`danger`/`info`） | `string` | — |

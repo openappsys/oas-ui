@@ -47,6 +47,7 @@
   },
   "oas-index-bar": {
     "attrs": {
+      "aria-label": "宿主可访问名，优先命名内部 navigation landmark；空值回退默认「字母索引导航」",
       "sections": "分节列表 JSON：`[{ key, title?, items: [{ label, value? }] }]`；字母侧栏从 sections 自动派生（key 唯一，重复保留首个），`title` 缺省回退 `key`，条目 `value` 缺省回退 `label`",
       "height": "列表区固定高度（px），超出时列表内部滚动；缺省时列表自适应内容高、滚动联动监听视口",
       "sticky": "分节头吸顶（默认 true）；显式 `sticky=\"false\"` 关闭"
@@ -59,6 +60,7 @@
   },
   "oas-anchor": {
     "attrs": {
+      "aria-label": "宿主可访问名，优先命名内部 navigation landmark；空值回退默认「锚点导航」",
       "active": "当前高亮 href（受控：外部设置/清除立即生效；滚动联动接管后回写）",
       "items": "锚点项 JSON；项支持 `children` 多级嵌套、`target`（如 `_blank`）、`targetOffset` 项级落点偏移",
       "offset": "高亮判定偏移（px）：章节顶越检测线的提前量",
@@ -359,6 +361,7 @@
   },
   "oas-breadcrumb": {
     "attrs": {
+      "aria-label": "宿主可访问名，优先命名内部 navigation landmark；空值回退默认「面包屑」",
       "active-last": "末项保持可点击：当前页（末项）带 `href` 时渲染为链接（仍带 `aria-current=\"page\"`）",
       "collapse-text": "自定义折叠省略号的文本（默认 `…`）",
       "collapsed": "折叠模式：items 数量超过 `max-items` 时中间项折叠为 `…`，点击展开下拉",
@@ -2240,6 +2243,7 @@
   },
   "oas-navigation-menu": {
     "attrs": {
+      "aria-label": "宿主可访问名，优先命名内部 navigation landmark；空值回退默认「导航」",
       "items": "导航项 JSON（层级结构；叶子项可带 `description` 描述与 `icon` 图标渲染大面板链接卡）",
       "value": "受控打开项（顶级触发器 value，空字符串 = 关闭；存在时打开态以属性为准，交互仅派发 `oas-change` 由宿主更新）",
       "delay-duration": "hover 开合延迟（毫秒），默认 200；点击/键盘立即生效不受影响",
@@ -2360,6 +2364,7 @@
   },
   "oas-pagination": {
     "attrs": {
+      "aria-label": "宿主可访问名，优先命名内部 navigation landmark；空值回退默认「分页」",
       "current": "当前页（受控，翻页会更新该属性）",
       "page-size": "每页条数",
       "page-sizes": "每页条数下拉选项（JSON 数组），如 `[10,20,50]`；切换后回到第 1 页",

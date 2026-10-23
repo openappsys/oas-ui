@@ -25,6 +25,10 @@
       "observed": true
     },
     {
+      "name": "aria-label",
+      "observed": true
+    },
+    {
       "name": "target-offset",
       "type": "string",
       "default": "",

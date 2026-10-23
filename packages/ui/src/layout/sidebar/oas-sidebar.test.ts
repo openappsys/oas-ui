@@ -1608,6 +1608,21 @@ describe('OASSidebar 图标通道与着色', () => {
     expect(el3.shadowRoot!.querySelector<HTMLElement>('[part="head"]')!.hidden).toBe(false)
   })
 
+  it('footer slot 位于滚动 body 之外，可承载常驻页脚', () => {
+    const el = mount({})
+    const footer = document.createElement('div')
+    footer.setAttribute('slot', 'footer')
+    footer.textContent = '成员筛选'
+    el.appendChild(footer)
+    const foot = el.shadowRoot!.querySelector<HTMLElement>('[part="foot"]')!
+    const slot = foot.querySelector<HTMLSlotElement>('slot[name="footer"]')!
+    expect(slot, 'footer slot 应位于 foot 容器内').not.toBeNull()
+    expect(
+      el.shadowRoot!.querySelector('[part="body"] slot:not([name])'),
+      '默认菜单内容仍由滚动 body 承载',
+    ).not.toBeNull()
+  })
+
   it('hide-toggle + 空 header：移动抽屉打开时头部保留（关闭按钮可见），关闭后收起', () => {
     stubMatchMedia(true)
     const el = mount({ 'hide-toggle': '' })

@@ -27,6 +27,10 @@
       "observed": true
     },
     {
+      "name": "aria-label",
+      "observed": true
+    },
+    {
       "name": "orientation",
       "type": "string",
       "default": "horizontal",

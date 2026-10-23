@@ -131,6 +131,8 @@ describe('OASNavigationMenu', () => {
     expect(nav(el).getAttribute('role')).toBe('navigation')
     expect(nav(el).getAttribute('aria-label')).toBe('导航')
     expect(topItems(el).length).toBe(3)
+    const labeled = mount({ 'aria-label': '站点导航' })
+    expect(nav(labeled).getAttribute('aria-label')).toBe('站点导航')
     expect(topItems(el)[0]!.getAttribute('role')).toBeNull()
     expect(topItems(el)[0]!.tagName).toBe('BUTTON')
   })

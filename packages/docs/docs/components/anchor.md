@@ -363,6 +363,7 @@ onMounted(() => {
 | `affix` | 启用吸附（sticky 定位，随滚动视口/容器吸附） | `boolean` | — |
 | `affix-offset` | 吸附时距滚动视口顶部的距离（px） | `string` | `0` |
 | `animation` | 平滑滚动开关（默认 true；`false` 立即定位） | `string` | `true` |
+| `aria-label` | 宿主可访问名，优先命名内部 navigation landmark；空值回退默认「锚点导航」 | — | — |
 | `block` | 滚动落点对齐：`start` / `center` / `end` / `nearest`（目标已可见则不滚动，最小滚动量；在上方对齐顶部、在下方对齐底部） | `ScrollBlock` | `start` |
 | `bounds` | 触发边界（px，默认 5）：章节顶越检测线的额外提前量，避免高亮抖动 | `string` | `5` |
 | `direction` | 布局方向：`vertical` / `horizontal` | `string` | `vertical` |

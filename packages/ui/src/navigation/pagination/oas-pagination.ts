@@ -239,6 +239,7 @@ export class OASPagination extends OASElement {
       'current',
       'siblings',
       'pager-count',
+      'aria-label',
       'show-total',
       'page-sizes',
       'show-jumper',
@@ -356,7 +357,7 @@ export class OASPagination extends OASElement {
         this.hidSelf = !this.hasAttribute('hidden')
         if (this.hidSelf) this.setAttribute('hidden', '')
       }
-      group.setAttribute('aria-label', this.t('pagination.nav'))
+      group.setAttribute('aria-label', this.getAttribute('aria-label')?.trim() || this.t('pagination.nav'))
       group.innerHTML = ''
       return
     }
@@ -367,7 +368,7 @@ export class OASPagination extends OASElement {
     }
 
     // 内置文案走 locale registry（setLocale 切换自动刷新）
-    group.setAttribute('aria-label', this.t('pagination.nav'))
+    group.setAttribute('aria-label', this.getAttribute('aria-label')?.trim() || this.t('pagination.nav'))
     group.innerHTML = ''
     // 导航钮工厂：链接模式（href-template）渲染 <a>；disabled/边界禁用降级 span（不可点）；
     // 默认渲染 button。事件统一由 goto 处理（链接模式在 before-change veto 时阻止原生导航）

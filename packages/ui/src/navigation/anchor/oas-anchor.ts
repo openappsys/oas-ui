@@ -177,6 +177,7 @@ export class OASAnchor extends OASElement {
       'active',
       'offset',
       'scroll-container',
+      'aria-label',
       'target-offset',
       'direction',
       'affix',
@@ -274,7 +275,7 @@ export class OASAnchor extends OASElement {
     const nav = this.shadow.querySelector<HTMLElement>('.nav')
     if (!nav) return
     // 导航 aria-label locale 驱动（setLocale 切换自动重刷）
-    nav.setAttribute('aria-label', this.t('anchor.nav'))
+    nav.setAttribute('aria-label', this.getAttribute('aria-label')?.trim() || this.t('anchor.nav'))
     // 子元素通道：items 属性未显式设置时监听 light DOM 子元素变化（重连后重建观察器）
     this.ensureChildObserver()
     // 双通道指纹：items 属性显式设置时取属性原串，否则用子元素解析结果的稳定序列化

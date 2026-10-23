@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
-import { createOverlay, destroyOverlay } from './index.js'
+import { createOverlay, destroyOverlay, removeOverlay } from './index.js'
 
 describe('overlay 管理器', () => {
   beforeEach(() => {
@@ -38,6 +38,17 @@ describe('overlay 管理器', () => {
     await Promise.resolve()
     el.click()
     expect(inner).toBe(1)
+    expect(outside).toBe(0)
+  })
+
+  it('二次 removeOverlay 不残留 document 级 outside 监听', async () => {
+    let outside = 0
+    const el = document.createElement('div')
+    createOverlay(el, { onOutside: () => outside++ })
+    await Promise.resolve()
+    removeOverlay(el)
+    removeOverlay(el) // 模拟断连清理重复执行
+    document.body.click()
     expect(outside).toBe(0)
   })
 

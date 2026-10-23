@@ -244,6 +244,8 @@ describe('OASIndexBar', () => {
     const el = mount()
     expect(bar(el).getAttribute('role')).toBe('navigation')
     expect(bar(el).getAttribute('aria-label')).toBe('字母索引导航')
+    const labeled = mount({ 'aria-label': '通讯录索引' })
+    expect(bar(labeled).getAttribute('aria-label')).toBe('通讯录索引')
   })
 
   it('首字母初始高亮 aria-current=true，其余 false', () => {

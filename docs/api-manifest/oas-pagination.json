@@ -33,6 +33,10 @@
       "observed": true
     },
     {
+      "name": "aria-label",
+      "observed": true
+    },
+    {
       "name": "show-total",
       "type": "boolean",
       "observed": true

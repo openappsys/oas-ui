@@ -177,6 +177,7 @@ onMounted(() => {
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
+| `aria-label` | Host accessible name for the inner navigation landmark; empty falls back to “Navigation” | — | — |
 | `arrow` | Pointer arrow on the popup, shown by default; `arrow="false"` hides it | `string` | `true` |
 | `backdrop` | Show an overlay when open (clicking the overlay closes) | `boolean` | — |
 | `columns` | Panel grid columns, default 2 (mega-panel multi-column link cards) | `string` | `2` |

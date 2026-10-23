@@ -47,6 +47,7 @@
   },
   "oas-index-bar": {
     "attrs": {
+      "aria-label": "Host accessible name for the inner navigation landmark; empty falls back to “Alphabet index navigation”",
       "sections": "Sections JSON: `[{ key, title?, items: [{ label, value? }] }]`; the letter rail is derived from sections (keys are unique, the first duplicate wins), `title` falls back to `key`, and an item's `value` falls back to `label`",
       "height": "Fixed height of the list area in px; when it overflows the list scrolls internally. When unset the list grows with its content and the scroll spy watches the viewport",
       "sticky": "Sticky section headers (default true); explicitly set `sticky=\"false\"` to disable"
@@ -59,6 +60,7 @@
   },
   "oas-anchor": {
     "attrs": {
+      "aria-label": "Host accessible name for the inner navigation landmark; empty falls back to “Anchor navigation”",
       "active": "Currently highlighted href (controlled: external set/remove takes effect immediately; the scroll spy writes it back)",
       "items": "Anchor items JSON; items support `children` (multi-level nesting), `target` (e.g. `_blank`) and per-item `targetOffset`",
       "offset": "Highlight detection offset in px: how early a section's top crosses the detection line",
@@ -369,6 +371,7 @@
   },
   "oas-breadcrumb": {
     "attrs": {
+      "aria-label": "Host accessible name for the inner navigation landmark; empty falls back to “Breadcrumb”",
       "active-last": "Keep the last item clickable: when the current (last) item has `href`, render it as a link (still carrying `aria-current=\"page\"`)",
       "collapse-text": "Custom text for the collapse ellipsis (default `…`)",
       "collapsed": "Collapse mode: when there are more items than `max-items`, middle items collapse into `…`; click to expand the dropdown",
@@ -2338,6 +2341,7 @@
   },
   "oas-navigation-menu": {
     "attrs": {
+      "aria-label": "Host accessible name for the inner navigation landmark; empty falls back to “Navigation”",
       "items": "Navigation items JSON (hierarchical; leaf items can carry `description` text and an `icon` to render mega-panel link cards)",
       "value": "Controlled open item (top-level trigger value; empty string = closed; when present the open state follows the attribute and interactions only dispatch `oas-change` for the host to update)",
       "delay-duration": "Hover open/close delay in ms, default 200; clicks and keyboard are immediate",
@@ -2464,6 +2468,7 @@
   },
   "oas-pagination": {
     "attrs": {
+      "aria-label": "Host accessible name for the inner navigation landmark; empty falls back to “Pagination”",
       "current": "Current page (controlled; flipping updates this attribute)",
       "page-size": "Records per page",
       "page-sizes": "Page-size dropdown options (JSON array), e.g. `[10,20,50]`; switching resets to page 1",

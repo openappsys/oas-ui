@@ -364,6 +364,7 @@ export class OASBreadcrumb extends OASElement {
       'collapsed',
       'max-items',
       'ellipsis',
+      'aria-label',
       'items-before-collapse',
       'items-after-collapse',
       'collapse-text',
@@ -420,7 +421,7 @@ export class OASBreadcrumb extends OASElement {
     // 子元素通道：items 属性未显式设置时监听 light DOM 子元素变化（重连后重建观察器）
     this.ensureChildObserver()
     // 导航 aria-label locale 驱动（setLocale 切换自动重刷）
-    nav.setAttribute('aria-label', this.t('breadcrumb.nav'))
+    nav.setAttribute('aria-label', this.getAttribute('aria-label')?.trim() || this.t('breadcrumb.nav'))
     // ellipsis：单行省略模式（nav 容器不换行 + 链接文本各自省略）
     nav.classList.toggle('ellipsis', this.hasAttr('ellipsis'))
     this.syncSize(nav)

@@ -363,6 +363,7 @@ onMounted(() => {
 | `affix` | Enable affix (sticky positioning, sticks to the scroll viewport/container) | `boolean` | — |
 | `affix-offset` | Distance from the scroll viewport top when affixed (px) | `string` | `0` |
 | `animation` | Smooth scroll switch (default true; `false` jumps instantly) | `string` | `true` |
+| `aria-label` | Host accessible name for the inner navigation landmark; empty falls back to “Anchor navigation” | — | — |
 | `block` | Scroll landing alignment: `start` / `center` / `end` / `nearest` (does not scroll when the target is already fully visible — minimal scroll; aligns to top when above, to bottom when below) | `ScrollBlock` | `start` |
 | `bounds` | Trigger boundary (px, default 5): extra lead for a section's top crossing the detection line, avoids highlight flicker | `string` | `5` |
 | `direction` | Layout direction: `vertical` / `horizontal` | `string` | `vertical` |

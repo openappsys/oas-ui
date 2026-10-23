@@ -47,6 +47,13 @@ describe('OASBreadcrumb', () => {
     expect(el.shadowRoot!.querySelector('[part="current"]')).not.toBeNull()
   })
 
+  it('宿主 aria-label 优先命名内部 navigation landmark', () => {
+    const el = mountWith({ 'aria-label': '产品导航' })
+    expect(el.shadowRoot!.querySelector('nav')!.getAttribute('aria-label')).toBe('产品导航')
+    el.setAttribute('aria-label', '')
+    expect(el.shadowRoot!.querySelector('nav')!.getAttribute('aria-label')).toBe('面包屑')
+  })
+
   it('点击链接派发 oas-select', async () => {
     const el = mount()
     let detail: unknown

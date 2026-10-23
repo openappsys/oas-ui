@@ -31,6 +31,10 @@
       "observed": true
     },
     {
+      "name": "aria-label",
+      "observed": true
+    },
+    {
       "name": "items-before-collapse",
       "type": "string",
       "default": "",

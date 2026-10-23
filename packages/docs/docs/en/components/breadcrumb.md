@@ -306,6 +306,7 @@ Font size follows the outer context (inherited) by default; override with the CS
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
 | `active-last` | Keep the last item clickable: when the current (last) item has `href`, render it as a link (still carrying `aria-current="page"`) | `boolean` | — |
+| `aria-label` | Host accessible name for the inner navigation landmark; empty falls back to “Breadcrumb” | — | — |
 | `collapse-text` | Custom text for the collapse ellipsis (default `…`) | `string` | `…` |
 | `collapsed` | Collapse mode: when there are more items than `max-items`, middle items collapse into `…`; click to expand the dropdown | `boolean` | — |
 | `color` | Visual variant: the current item and link hover use the specified semantic color (`primary`/`success`/`warning`/`danger`/`info`) | `string` | — |

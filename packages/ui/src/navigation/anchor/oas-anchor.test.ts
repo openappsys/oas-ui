@@ -116,6 +116,9 @@ describe('OASAnchor', () => {
     const nav = el.shadowRoot!.querySelector('nav')!
     expect(nav.getAttribute('aria-label')).toBe('锚点导航')
     expect(linksOf(el).length).toBe(3)
+
+    const labeled = mount({ 'aria-label': '文章目录' })
+    expect(labeled.shadowRoot!.querySelector('nav')!.getAttribute('aria-label')).toBe('文章目录')
   })
 
   it('点击链接派发 oas-change（含新旧值）并标记当前项', () => {

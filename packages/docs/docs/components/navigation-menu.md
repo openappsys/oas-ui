@@ -177,6 +177,7 @@ onMounted(() => {
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
+| `aria-label` | 宿主可访问名，优先命名内部 navigation landmark；空值回退默认「导航」 | — | — |
 | `arrow` | 弹出层指向箭头，默认显示；`arrow="false"` 隐藏 | `string` | `true` |
 | `backdrop` | 打开时显示遮罩（点击遮罩关闭） | `boolean` | — |
 | `columns` | 面板网格列数，默认 2（大面板多列链接卡） | `string` | `2` |

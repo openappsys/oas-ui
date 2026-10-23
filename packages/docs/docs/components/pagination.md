@@ -375,6 +375,7 @@ onMounted(() => {
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
+| `aria-label` | 宿主可访问名，优先命名内部 navigation landmark；空值回退默认「分页」 | — | — |
 | `current` | 当前页（受控，翻页会更新该属性） | `string` | `1` |
 | `disabled` | 全局禁用：分页钮全部禁用并带 aria-disabled，每页条数下拉与跳转输入框禁用 | `boolean` | — |
 | `hide-on-single` | 单页（pageCount ≤ 1）时整个组件不渲染 | `boolean` | — |

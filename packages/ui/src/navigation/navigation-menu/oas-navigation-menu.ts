@@ -683,6 +683,7 @@ export class OASNavigationMenu extends OASElement {
       'value',
       'delay-duration',
       'skip-delay-duration',
+      'aria-label',
       'orientation',
       'columns',
       'backdrop',
@@ -899,7 +900,7 @@ export class OASNavigationMenu extends OASElement {
     // 双通道：items 属性显式设置时数据驱动优先；否则解析子元素收敛到同一 items 模型渲染
     this.itemsList = this.hasAttribute('items') ? this.parseItems() : this.parseChildItems()
     this.pruneState()
-    this.navEl?.setAttribute('aria-label', this.t('navigationMenu.label'))
+    this.navEl?.setAttribute('aria-label', this.getAttribute('aria-label')?.trim() || this.t('navigationMenu.label'))
     this.renderBar()
     const open = this.effectiveOpen()
     if (open && this.findItem(open)?.children?.length) {

@@ -38,6 +38,13 @@ describe('OASPagination', () => {
     expect(el.shadowRoot!.querySelector('[part="page"][aria-current="true"]')!.textContent).toBe('1')
   })
 
+  it('宿主 aria-label 优先命名内部 navigation landmark', () => {
+    const el = mount({ 'aria-label': '结果分页' })
+    expect(el.shadowRoot!.querySelector('[part="group"]')!.getAttribute('aria-label')).toBe('结果分页')
+    el.setAttribute('aria-label', '')
+    expect(el.shadowRoot!.querySelector('[part="group"]')!.getAttribute('aria-label')).toBe('分页')
+  })
+
   it('下一页切换并派发 oas-change', () => {
     const el = mount({ current: '1' })
     let detail: unknown
