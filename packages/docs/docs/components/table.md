@@ -71,7 +71,7 @@
   </div>
 </DemoBlock>
 
-表头与数据单元格共用同一列 `align`；`type: "number"` / `type: "currency"` 未显式设置时默认右对齐，便于数值纵向比对。多级表头的分组标题仍居中。
+表头默认 `header-align="follow"`，与数据单元格共用同一列 `align`；`type: "number"` / `type: "currency"` 未显式设置时默认右对齐，便于数值纵向比对。也可在表格级设 `header-align="left|center|right|default"` 全局覆盖，或在 `columns` 的列配置用 `headerAlign`、子元素用 `header-align` 逐列覆盖；`default` 表示交还浏览器默认（UA 的 th 居中）。多级表头的分组标题仍居中。
 
 ## 受控排序与行选中
 
@@ -1016,6 +1016,7 @@ onMounted(() => {
 | `filter-values` | 受控列过滤值（JSON 对象：列 key → 选中值标量） | `string` | — |
 | `grid-navigation` | 键盘网格导航：role=grid，数据区单停靠点 + 方向键在单元格间漫游（Home/End/PageUp-Down，Enter/Space 激活格内控件） | `boolean` | — |
 | `group-by` | 分组视图：按字段值分节渲染（分节头 = 字段值 + 组内计数 + 折叠箭头，点击折叠/展开该组，默认全展开）；组间按字段值首次出现序、组内排序生效；空值行归入「（空）」组；与 merge 列 / span-method / row-draggable 同用时告警一次并降级为普通渲染；可与 column-virtual / 虚拟滚动并用（分节头整行 colSpan 全宽） | `string` | — |
+| `header-align` | 表头对齐：`follow`（跟随列，默认）/ `left` / `center` / `right` / `default`（浏览器默认 UA 居中）；列级 `headerAlign` / `<oas-table-column header-align>` 优先 | `string` | `follow` |
 | `height` | 虚拟滚动视口高度（px）；设置后仅渲染可见窗口行 + 首尾占位行 | `string` | `320` |
 | `hover` | 行 hover 底色开关（仅视觉，不影响选中行为），`"false"` 关闭 | — | — |
 | `indent-size` | 树形数据每级缩进量（px） | `string` | `24` |

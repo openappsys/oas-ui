@@ -230,6 +230,12 @@
       "observed": true
     },
     {
+      "name": "header-align",
+      "type": "string",
+      "default": "follow",
+      "observed": true
+    },
+    {
       "name": "cell-tooltip",
       "type": "string",
       "default": "true",

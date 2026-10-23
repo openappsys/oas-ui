@@ -65,7 +65,7 @@ Each size only changes the default cell padding and font size, all via CSS varia
 
 ## Column Alignment and Width
 
-Header cells follow the same column `align` as body cells; `type: "number"` / `type: "currency"` default to right alignment when no explicit align is set. Group headers in multi-level headers stay centered.
+Headers default to `header-align="follow"` and share the column `align` with body cells; `type: "number"` / `type: "currency"` default to right alignment when no explicit align is set. Override globally on the table with `header-align="left|center|right|default"`, or per column with `headerAlign` in `columns` / `header-align` on a child element; `default` returns control to the browser (UA th centering). Group headers in multi-level headers stay centered.
 
 <DemoBlock title="Alignment and width">
   <div style="width: 100%">
@@ -1020,6 +1020,7 @@ The full endpoint URLs far exceed the column width (long unbreakable strings): h
 | `filter-values` | Controlled column filter values (JSON object: column key → selected scalar value) | `string` | — |
 | `grid-navigation` | Keyboard grid navigation: role=grid, single Tab stop for the data region, arrow keys roam cells (Home/End/PageUp-Down, Enter/Space activate in-cell controls) | `boolean` | — |
 | `group-by` | Grouped view: render sections by field value (section header = value + row count + collapse arrow, click to collapse/expand, expanded by default); groups ordered by first occurrence, sorting applies within groups; empty values fall into the "(empty)" group; combined with merge columns / span-method / row-draggable it warns once and degrades to plain rendering; works with column-virtual / virtual scrolling (section header spans the full width) | `string` | — |
+| `header-align` | Header alignment: `follow` (default, follows the column) / `left` / `center` / `right` / `default` (browser UA centering); per-column `headerAlign` / `<oas-table-column header-align>` wins | `string` | `follow` |
 | `height` | Virtual scroll viewport height (px); when set, only visible-window rows plus head/tail placeholders are rendered | `string` | `320` |
 | `hover` | Row hover background switch (purely visual), `"false"` disables | — | — |
 | `indent-size` | Per-level indent of tree data in px | `string` | `24` |

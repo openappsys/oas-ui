@@ -57,20 +57,32 @@ describe('OASTable 列字段类型系统（column type）', () => {
     setLocale('zh-CN')
   })
 
-  it('表头跟随列 align；数值/货币列默认右对齐', () => {
+  it('表头支持 follow/left/center/right/default 与表格级 header-align', () => {
     const el = mount({
       columns: JSON.stringify([
         { key: 'name', title: '名称' },
         { key: 'age', title: '年龄', align: 'center' },
         { key: 'score', title: '分数', type: 'number' },
+        { key: 'left', title: '左', headerAlign: 'left' },
+        { key: 'right', title: '右', headerAlign: 'right' },
+        { key: 'default', title: '默认', headerAlign: 'default' },
       ]),
-      data: JSON.stringify([{ name: 'A', age: 1, score: 2 }]),
+      data: JSON.stringify([{ name: 'A', age: 1, score: 2, left: 3, right: 4, default: 5 }]),
     })
     const head = (key: string) => el.shadowRoot!.querySelector(`th[data-key="${key}"]`)!
-    expect(head('name').classList.contains('align-center')).toBe(false)
-    expect(head('name').classList.contains('align-right')).toBe(false)
+    expect(head('name').classList.contains('align-left')).toBe(true)
     expect(head('age').classList.contains('align-center')).toBe(true)
     expect(head('score').classList.contains('align-right')).toBe(true)
+    expect(head('left').classList.contains('align-left')).toBe(true)
+    expect(head('right').classList.contains('align-right')).toBe(true)
+    expect(head('default').classList.contains('align-default')).toBe(true)
+
+    const global = mount({
+      'header-align': 'center',
+      columns: JSON.stringify([{ key: 'name', title: '名称' }]),
+      data: JSON.stringify([{ name: 'A' }]),
+    })
+    expect(global.shadowRoot!.querySelector('th[data-key="name"]')!.classList.contains('align-center')).toBe(true)
   })
 
   it('type=number：千分位展示 + 右对齐', () => {

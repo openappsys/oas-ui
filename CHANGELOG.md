@@ -11,7 +11,7 @@
 ### 变更
 
 - **导航 landmark 宿主命名**：`oas-breadcrumb` / `oas-pagination` / `oas-anchor` / `oas-index-bar` / `oas-navigation-menu` 新增宿主 `aria-label` 优先转发到内部 navigation landmark，空值回退 i18n 默认名，便于同页多个导航地标注解区分。
-- **`oas-table` 表头跟随列对齐**：表头叶列与数据单元格共用 `align`；`number` / `currency` 未显式设置时默认右对齐，提升数值列纵向可比性；多级表头分组标题仍居中。
+- **`oas-table` 表头对齐可配置**：新增表格级 `header-align` 与列级 `headerAlign` / `<oas-table-column header-align>`，支持 `follow`（默认，跟随列）/ `left` / `center` / `right` / `default`（浏览器默认）；`number` / `currency` 默认 `follow` 时右对齐，多级表头分组标题仍居中。
 - **`oas-command` 非虚拟列表键盘滚动**：非虚拟模式下方向键移动 `activeIndex` 时同样将活动行滚入列表视口，与虚拟模式行为对齐。
 - **`oas-popover` 受控时序**：`oas-open-change` 改到 DOM 状态提交后派发，监听器内同步反向写 `open` 不再被外层旧状态覆盖。
 - **宿主可访问名转发**：`oas-tabs`（tablist）、`oas-segmented`（radiogroup）、`oas-table`（grid）新增宿主 `aria-label` → 内部角色容器转发，运行时更新即时生效；缺省不设置。修复宿主 `aria-label` 在 shadow 内失效导致读屏无名的问题；`oas-tabs` 改名不重建标签钮、`oas-table` 改名不重建数据行。

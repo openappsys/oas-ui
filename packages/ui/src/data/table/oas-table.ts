@@ -47,6 +47,8 @@ export const tableRenderDiagnostics = {
   visibleBuilds: 0,
 }
 
+export type TableHeaderAlign = 'follow' | 'left' | 'center' | 'right' | 'default'
+
 export interface TableColumn {
   key: string
   title: string
@@ -55,6 +57,11 @@ export interface TableColumn {
   sortable?: boolean
   width?: string
   align?: 'left' | 'center' | 'right'
+  /**
+   * 表头对齐：follow（跟随列，默认）/ left / center / right / default（浏览器默认）。
+   * 未设置时沿用表格级 header-align；per-column 优先。
+   */
+  headerAlign?: TableHeaderAlign
   /** 固定列：'left' | 'right'（配合 sticky 定位实现横向滚动时固定） */
   fixed?: 'left' | 'right'
   /** 单元格渲染钩子：返回字符串（按 `data-*` 值或富内容标记渲染）或一个 Node/HTMLElement（tag/avatar/badge 等） */
@@ -521,8 +528,11 @@ tr.spacer td {
 .check-cell input {
   accent-color: var(--oas-color-primary);
 }
+th.align-left { text-align: start; }
 th.align-center, td.align-center { text-align: center; }
 th.align-right, td.align-right { text-align: end; }
+/* 浏览器默认：还原 UA 的 th 居中，不跟随列也不强制 start */
+th.align-default { text-align: revert; }
 /* 展开/收起按钮（树形 + 可展开行共用） */
 .toggle {
   width: 20px;
@@ -1161,6 +1171,8 @@ export class OASTableBase extends OASElement {
       'column-virtual',
       // 分组视图：按字段值分节渲染（分节头参与行虚拟滚动；与 merge 列 / span-method 互斥——告警降级）
       'group-by',
+      // 表头对齐：follow（跟随列，默认）/ left / center / right / default（浏览器默认）；列级 headerAlign 优先
+      'header-align',
       // 单元格溢出提示：纯文本格溢出时 hover 显示全文（表格级单例浮层；"false" 关闭）
       'cell-tooltip',
       // 宿主 aria-label：命名内部 table（无 caption 机制，宿主命名是唯一通道；见 syncHostAriaLabel）
@@ -1441,10 +1453,22 @@ export class OASTableBase extends OASElement {
     `
   }
 
+  /** 解析表头对齐：列级优先，其次表格级 header-align，默认跟随列 */
+  private resolveHeaderAlign(col: TableColumn): TableHeaderAlign {
+    const raw = (col.headerAlign ?? this.getAttr('header-align', 'follow')).trim().toLowerCase()
+    return raw === 'left' || raw === 'center' || raw === 'right' || raw === 'default' ? raw : 'follow'
+  }
+
   /** 表头单元格填充：标题 + 可排队列排序箭头/序号 + 可过滤列过滤触发器（扁平与多行叶子共用） */
   private fillHeaderCell(th: HTMLElement, col: TableColumn): void {
-    const align = col.align ?? (col.type === 'number' || col.type === 'currency' ? 'right' : undefined)
-    if (align) th.classList.add(`align-${align}`)
+    const mode = this.resolveHeaderAlign(col)
+    if (mode === 'default') {
+      th.classList.add('align-default')
+    } else {
+      const align =
+        mode === 'follow' ? (col.align ?? (col.type === 'number' || col.type === 'currency' ? 'right' : 'left')) : mode
+      th.classList.add(`align-${align}`)
+    }
     if (col.headerTemplate) {
       // 自定义列头：克隆模板内容作为 th 基础内容（静态，不随行插值）
       th.appendChild(col.headerTemplate.content.cloneNode(true) as DocumentFragment)
@@ -4670,6 +4694,8 @@ export class OASTableBase extends OASElement {
     if (width) col.width = width
     const align = el.getAttribute('align')
     if (align) col.align = align as TableColumn['align']
+    const headerAlign = el.getAttribute('header-align')
+    if (headerAlign) col.headerAlign = headerAlign as TableHeaderAlign
     const fixed = el.getAttribute('fixed')
     if (fixed) col.fixed = fixed as TableColumn['fixed']
     const editor = el.getAttribute('editor')
@@ -4743,6 +4769,7 @@ export class OASTableBase extends OASElement {
         'sortable',
         'width',
         'align',
+        'header-align',
         'fixed',
         'hidden',
         'serial-number',
