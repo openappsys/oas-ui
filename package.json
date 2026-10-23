@@ -11,7 +11,8 @@
   "scripts": {
     "predev": "pnpm -r --filter @oas-ui/ui... build && pnpm --filter @oas-ui/theme build",
     "dev": "cross-env CI=true pnpm --parallel --filter @oas-ui/core --filter @oas-ui/i18n --filter @oas-ui/icons --filter @oas-ui/theme --filter @oas-ui/ui --filter @oas-ui/docs dev",
-    "build": "pnpm -r build",
+    "build": "pnpm -r build && node scripts/check-exports.mjs",
+    "exports:check": "node scripts/check-exports.mjs",
     "test": "vitest run",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "test:e2e": "playwright test",
