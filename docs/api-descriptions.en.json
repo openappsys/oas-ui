@@ -3011,7 +3011,7 @@
     },
     "slots": {
       "": "Menu item content (default slot text; direct `<oas-sidebar-item>` children recursively become nested `children`)",
-      "footer": "Custom sidebar footer content",
+      "footer": "Persistent sidebar footer (sticky; hidden when empty)",
       "header": "Custom sidebar header content"
     },
     "cssVars": {

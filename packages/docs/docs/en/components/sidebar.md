@@ -325,6 +325,33 @@ The `width` attribute overrides the expanded width (defaults to the `--oas-sideb
   </div>
 </DemoBlock>
 
+## Persistent footer (footer slot)
+
+Content in `slot="footer"` is pinned to the bottom of the sidebar viewport: it stays visible while a long nav scrolls, which suits member filters, version labels and similar actions. An empty footer is hidden automatically and takes no bottom space.
+
+<DemoBlock title="footer slot (persistent footer with a long nav)">
+  <div style="height: 300px; width: 100%; display: flex">
+    <oas-sidebar id="sidebar-footer-slot" style="height: 100%">
+      <oas-sidebar-item value="m1" icon="star">Menu 1</oas-sidebar-item>
+      <oas-sidebar-item value="m2" icon="star">Menu 2</oas-sidebar-item>
+      <oas-sidebar-item value="m3" icon="star">Menu 3</oas-sidebar-item>
+      <oas-sidebar-item value="m4" icon="star">Menu 4</oas-sidebar-item>
+      <oas-sidebar-item value="m5" icon="star">Menu 5</oas-sidebar-item>
+      <oas-sidebar-item value="m6" icon="star">Menu 6</oas-sidebar-item>
+      <oas-sidebar-item value="m7" icon="star">Menu 7</oas-sidebar-item>
+      <oas-sidebar-item value="m8" icon="star">Menu 8</oas-sidebar-item>
+      <oas-sidebar-item value="m9" icon="star">Menu 9</oas-sidebar-item>
+      <oas-sidebar-item value="m10" icon="star">Menu 10</oas-sidebar-item>
+      <div slot="footer" style="padding: 8px 12px; border-top: 1px solid var(--oas-color-border); font-size: var(--oas-font-size-sm)">
+        Member filter (persistent)
+      </div>
+    </oas-sidebar>
+    <div style="flex: 1; min-width: 0; padding: var(--oas-space-4); background: var(--oas-color-bg)">
+      Scroll the nav on the left; the footer stays visible.
+    </div>
+  </div>
+</DemoBlock>
+
 ## Combining with oas-layout
 
 `oas-sidebar` can be used directly as the sider of `oas-layout` (slot="sider").
@@ -435,7 +462,7 @@ Besides the `items` JSON, items can be declared with `<oas-sidebar-item>` / `<oa
 | Name | Description |
 | --- | --- |
 | default | Menu item content (default slot text; direct `<oas-sidebar-item>` children recursively become nested `children`) |
-| `footer` | Custom sidebar footer content |
+| `footer` | Persistent sidebar footer (sticky; hidden when empty) |
 | `header` | Custom sidebar header content |
 
 #### CSS Variables

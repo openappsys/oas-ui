@@ -726,3 +726,123 @@ test('sidebar 移动抽屉：打开入焦 + role=dialog/aria-modal + Tab 约束 
   expect(closed.role).toBeNull()
   expect(closed.focusOnTrigger, '关闭后焦点回到触发钮').toBe(true)
 })
+
+// footer 常驻：sticky 在 .panel 滚动容器内钉底；空 footer 不占位；移动抽屉同样生效
+test('sidebar footer：桌面滚动全程钉底，空 footer 不占位', async ({ page }) => {
+  await page.goto('/components/sidebar.html', { waitUntil: 'domcontentloaded' })
+  await page.waitForFunction(() => !!customElements.get('oas-sidebar'))
+  const r = await page.evaluate(async () => {
+    const make = (withFooter: boolean) => {
+      const el = document.createElement('oas-sidebar')
+      el.style.cssText = 'position:fixed;left:20px;top:20px;width:220px;height:400px;z-index:99999'
+      el.setAttribute(
+        'items',
+        JSON.stringify(
+          Array.from({ length: 30 }, (_, i) => ({ label: `菜单 ${i + 1}`, value: `m${i + 1}`, icon: 'star' })),
+        ),
+      )
+      if (withFooter) {
+        const footer = document.createElement('div')
+        footer.setAttribute('slot', 'footer')
+        footer.textContent = '成员筛选'
+        footer.style.cssText = 'padding:8px;border-top:1px solid var(--oas-color-border)'
+        el.appendChild(footer)
+      }
+      document.body.appendChild(el)
+      return el
+    }
+    const frame = () => new Promise((res) => requestAnimationFrame(() => requestAnimationFrame(() => res(null))))
+    const el = make(true)
+    await frame()
+    const panel = el.shadowRoot!.querySelector<HTMLElement>('.panel')!
+    const foot = el.shadowRoot!.querySelector<HTMLElement>('[part="foot"]')!
+    const read = () => {
+      const p = panel.getBoundingClientRect()
+      const f = foot.getBoundingClientRect()
+      return {
+        scrollTop: Math.round(panel.scrollTop),
+        visible: f.top < p.bottom && f.bottom > p.top,
+        pinned: Math.abs(f.bottom - p.bottom) <= 1,
+        inside: f.left >= p.left - 1 && f.right <= p.right + 1,
+      }
+    }
+    const top = read()
+    panel.scrollTop = panel.scrollHeight / 2
+    await frame()
+    const mid = read()
+    panel.scrollTop = panel.scrollHeight
+    await frame()
+    const end = read()
+    const empty = make(false)
+    await frame()
+    const emptyFoot = empty.shadowRoot!.querySelector<HTMLElement>('[part="foot"]')!
+    const emptyInfo = { hidden: emptyFoot.hidden, display: getComputedStyle(emptyFoot).display }
+    empty.remove()
+    el.remove()
+    return { top, mid, end, empty: emptyInfo }
+  })
+  for (const [pos, v] of Object.entries({ top: r.top, mid: r.mid, end: r.end })) {
+    expect(v.visible, `${pos}: footer 可见`).toBe(true)
+    expect(v.pinned, `${pos}: footer 钉在 panel 底边`).toBe(true)
+    expect(v.inside, `${pos}: footer 在 panel 内（移动抽屉同构）`).toBe(true)
+  }
+  expect(r.empty.hidden, '空 footer 隐藏').toBe(true)
+  expect(r.empty.display, '空 footer 不占 display').toBe('none')
+})
+
+test('sidebar footer：移动抽屉滚动时仍钉底且在抽屉内', async ({ page }) => {
+  await page.setViewportSize({ width: 500, height: 700 })
+  await page.goto('/components/sidebar.html', { waitUntil: 'domcontentloaded' })
+  await page.waitForFunction(() => !!customElements.get('oas-sidebar'))
+  const r = await page.evaluate(async () => {
+    const el = document.createElement('oas-sidebar') as HTMLElement & {
+      openDrawer(): void
+      closeDrawer(): void
+    }
+    el.setAttribute(
+      'items',
+      JSON.stringify(
+        Array.from({ length: 30 }, (_, i) => ({ label: `菜单 ${i + 1}`, value: `m${i + 1}`, icon: 'star' })),
+      ),
+    )
+    const footer = document.createElement('div')
+    footer.setAttribute('slot', 'footer')
+    footer.textContent = '成员筛选'
+    footer.style.cssText = 'padding:8px'
+    el.appendChild(footer)
+    document.body.appendChild(el)
+    await new Promise((res) => requestAnimationFrame(() => requestAnimationFrame(() => res(null))))
+    el.openDrawer()
+    await new Promise((res) => setTimeout(res, 300))
+    const panel = el.shadowRoot!.querySelector<HTMLElement>('.panel')!
+    const foot = el.shadowRoot!.querySelector<HTMLElement>('[part="foot"]')!
+    const read = () => {
+      const p = panel.getBoundingClientRect()
+      const f = foot.getBoundingClientRect()
+      return {
+        scrollTop: Math.round(panel.scrollTop),
+        visible: f.top < p.bottom && f.bottom > p.top,
+        pinned: Math.abs(f.bottom - p.bottom) <= 1,
+        inside: f.left >= p.left - 1 && f.right <= p.right + 1 && f.top >= p.top - 1,
+        mobile: el.hasAttribute('data-mobile'),
+        drawerOpen: el.hasAttribute('drawer-open'),
+      }
+    }
+    const top = read()
+    panel.scrollTop = panel.scrollHeight / 2
+    await new Promise((res) => requestAnimationFrame(() => requestAnimationFrame(() => res(null))))
+    const mid = read()
+    panel.scrollTop = panel.scrollHeight
+    await new Promise((res) => requestAnimationFrame(() => requestAnimationFrame(() => res(null))))
+    const end = read()
+    el.closeDrawer()
+    el.remove()
+    return { top, mid, end }
+  })
+  expect(r.top.mobile && r.top.drawerOpen, '移动抽屉已打开').toBe(true)
+  for (const [pos, v] of Object.entries({ top: r.top, mid: r.mid, end: r.end })) {
+    expect(v.visible, `${pos}: footer 可见`).toBe(true)
+    expect(v.pinned, `${pos}: footer 钉在抽屉底边`).toBe(true)
+    expect(v.inside, `${pos}: footer 在抽屉内`).toBe(true)
+  }
+})

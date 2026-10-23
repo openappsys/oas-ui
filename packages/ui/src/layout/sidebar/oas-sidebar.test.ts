@@ -1608,19 +1608,24 @@ describe('OASSidebar 图标通道与着色', () => {
     expect(el3.shadowRoot!.querySelector<HTMLElement>('[part="head"]')!.hidden).toBe(false)
   })
 
-  it('footer slot 位于滚动 body 之外，可承载常驻页脚', () => {
+  it('footer slot：空 footer 隐藏；有内容时 sticky 钉底（真实滚动几何在 e2e）', async () => {
     const el = mount({})
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    expect(css, 'footer 常驻需 sticky 钉底').toMatch(/\.foot\s*\{[^}]*position:\s*sticky[^}]*bottom:\s*0/)
+    const foot = el.shadowRoot!.querySelector<HTMLElement>('[part="foot"]')!
+    expect(foot.hidden, '空 footer 不占底部空白').toBe(true)
+    expect(el.shadowRoot!.querySelector('[part="body"] slot:not([name])'), '默认菜单内容仍由 body 承载').not.toBeNull()
+
     const footer = document.createElement('div')
     footer.setAttribute('slot', 'footer')
     footer.textContent = '成员筛选'
     el.appendChild(footer)
-    const foot = el.shadowRoot!.querySelector<HTMLElement>('[part="foot"]')!
-    const slot = foot.querySelector<HTMLSlotElement>('slot[name="footer"]')!
-    expect(slot, 'footer slot 应位于 foot 容器内').not.toBeNull()
-    expect(
-      el.shadowRoot!.querySelector('[part="body"] slot:not([name])'),
-      '默认菜单内容仍由滚动 body 承载',
-    ).not.toBeNull()
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    expect(foot.hidden, 'footer 有内容时显示').toBe(false)
+
+    footer.remove()
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    expect(foot.hidden, 'footer 内容移除后重新隐藏').toBe(true)
   })
 
   it('hide-toggle + 空 header：移动抽屉打开时头部保留（关闭按钮可见），关闭后收起', () => {

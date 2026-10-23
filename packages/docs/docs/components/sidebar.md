@@ -325,6 +325,33 @@
   </div>
 </DemoBlock>
 
+## 常驻页脚（footer 插槽）
+
+`slot="footer"` 的内容会钉在侧栏可视区底部：导航超屏滚动时页脚仍常驻可见，适合成员筛选、版本号等操作；`footer` 为空时自动隐藏，不占底部空白。
+
+<DemoBlock title="footer 插槽（长导航滚动时页脚常驻）">
+  <div style="height: 300px; width: 100%; display: flex">
+    <oas-sidebar id="sidebar-footer-slot" style="height: 100%">
+      <oas-sidebar-item value="m1" icon="star">菜单 1</oas-sidebar-item>
+      <oas-sidebar-item value="m2" icon="star">菜单 2</oas-sidebar-item>
+      <oas-sidebar-item value="m3" icon="star">菜单 3</oas-sidebar-item>
+      <oas-sidebar-item value="m4" icon="star">菜单 4</oas-sidebar-item>
+      <oas-sidebar-item value="m5" icon="star">菜单 5</oas-sidebar-item>
+      <oas-sidebar-item value="m6" icon="star">菜单 6</oas-sidebar-item>
+      <oas-sidebar-item value="m7" icon="star">菜单 7</oas-sidebar-item>
+      <oas-sidebar-item value="m8" icon="star">菜单 8</oas-sidebar-item>
+      <oas-sidebar-item value="m9" icon="star">菜单 9</oas-sidebar-item>
+      <oas-sidebar-item value="m10" icon="star">菜单 10</oas-sidebar-item>
+      <div slot="footer" style="padding: 8px 12px; border-top: 1px solid var(--oas-color-border); font-size: var(--oas-font-size-sm)">
+        成员筛选（常驻）
+      </div>
+    </oas-sidebar>
+    <div style="flex: 1; min-width: 0; padding: var(--oas-space-4); background: var(--oas-color-bg)">
+      滚动左侧导航，底部「成员筛选」保持可见。
+    </div>
+  </div>
+</DemoBlock>
+
 ## 与 oas-layout 配合
 
 `oas-sidebar` 可直接作为 `oas-layout` 的 sider（slot="sider"）使用。
@@ -436,7 +463,7 @@
 | 名称 | 说明 |
 | --- | --- |
 | 默认 | 菜单项内容（默认插槽文本；直接子元素 `<oas-sidebar-item>` 递归为嵌套 children） |
-| `footer` | 侧栏底部自定义内容 |
+| `footer` | 常驻侧栏底部（sticky 钉底；空槽自动隐藏） |
 | `header` | 侧栏顶部自定义内容 |
 
 #### CSS 变量

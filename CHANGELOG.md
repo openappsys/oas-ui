@@ -39,6 +39,7 @@
 
 ### 修复
 
+- **`oas-sidebar` footer 常驻**：`slot="footer"` 原先在滚动容器 `.panel` 内随内容滚走，长导航时页脚不可见。现改为 `position: sticky; bottom: 0` 钉在侧栏可视区底部（桌面与移动抽屉同一套），空 footer 经 `slotchange` 自动隐藏、不再占底部空白；补桌面/移动抽屉真实滚动几何回归。
 - **`oas-chart` 折线/面积/混排的 `circle.dot` 应用 `options.colors`**：此前只改 path/stroke，宿主自定义色时线与数据点异色；现在同一系列线、点同色。
 - **存量裸 `href` 安全收敛**：`oas-float-button`（主钮与 actions）、`oas-attachment`、`oas-tabs`、`oas-notice-bar`、`oas-card`、`oas-list-item`、`oas-breadcrumb`、`oas-anchor`、`oas-pagination` 统一走 `safeUrl`；仅放行 http/https/mailto/tel、blob 对象 URL 与相对地址，其余协议一律退化为非链接/按钮形态。
 - **`oas-form` 值通道对账**：`oas-transfer` 归位 `value` 通道、`oas-dynamic-tags` 归位 `model-value` 通道（修复提交丢值/initial-values 不落视觉/reset 失效）；`oas-select`（remote）与 `oas-combobox` 的搜索输入事件带 `source: 'search'`，form 不再把搜索词当字段值回写；`oas-combobox` 无已选值时草稿文本经 `value` property 正确入表单；`oas-checkbox-group` 的 min/max 拦截统一走组级 `oas-limit-blocked`（detail 带 `limit` 方向），max 场景兼容保留 `oas-exceed-limit`。

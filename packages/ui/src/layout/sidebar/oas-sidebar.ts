@@ -214,8 +214,18 @@ aside {
   padding: var(--oas-space-3, 12px);
 }
 .foot {
+  /* 常驻页脚：留在 .panel 滚动容器内，sticky 以 panel 为参照钉底（桌面/移动抽屉同一套）。
+     不能把 .foot 移出 .panel：移动抽屉 panel 是 fixed，footer 会掉进页面流。 */
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
   margin-top: auto;
   padding: var(--oas-space-3, 12px);
+  /* 不透明背景：导航内容从 footer 下方穿过 */
+  background: var(--oas-sidebar-bg, var(--oas-color-bg-hover));
+}
+.foot[hidden] {
+  display: none;
 }
 /* 菜单 */
 .nav {
@@ -789,6 +799,8 @@ export class OASSidebar extends OASElement {
     this.shadow.querySelector('[part="close"]')?.addEventListener('click', () => this.closeDrawer())
     // header 槽内容增删 → 重新判定头部是否塌陷（hide-toggle + 空槽）
     this.shadow.querySelector('slot[name="header"]')?.addEventListener('slotchange', () => this.update())
+    // footer 槽内容增删 → 空 footer 隐藏（避免 sticky 后底部常驻空白带）
+    this.shadow.querySelector('slot[name="footer"]')?.addEventListener('slotchange', () => this.update())
     this.shadow.querySelector('[part="trigger"]')?.addEventListener('click', () => this.openDrawer())
     this.shadow.querySelector('[part="toggle"]')?.addEventListener('click', () => this.toggleCollapsed())
 
@@ -1113,6 +1125,20 @@ export class OASSidebar extends OASElement {
     items[next]?.focus()
   }
 
+  /** 具名插槽是否有可感知内容（元素或非空文本；注释/纯空白的 footer 视为空） */
+  private hasSlotContent(name: string): boolean {
+    const slot = this.shadow.querySelector<HTMLSlotElement>(`slot[name="${name}"]`)
+    return (
+      slot
+        ?.assignedNodes({ flatten: true })
+        .some(
+          (node) =>
+            node.nodeType === 1 /* Element */ ||
+            (node.nodeType === 3 /* Text */ && (node.textContent ?? '').trim() !== ''),
+        ) ?? false
+    )
+  }
+
   protected override update(): void {
     // RTL 书写方向标记（移动抽屉滑入方向/阴影投影/rail 拖拽语义镜像用；见 shared/direction 消费约定）
     this.toggleAttribute('data-rtl', isRtl(this))
@@ -1167,18 +1193,10 @@ export class OASSidebar extends OASElement {
     // 头部塌陷：hide-toggle 且 header 槽为空时（关闭按钮也隐藏）不留纯占位；
     // 移动抽屉打开时关闭按钮需要容器，保留头部。
     const head = this.shadow.querySelector<HTMLElement>('[part="head"]')
-    if (head) {
-      const headerSlot = this.shadow.querySelector<HTMLSlotElement>('slot[name="header"]')
-      const hasHeaderContent =
-        headerSlot
-          ?.assignedNodes({ flatten: true })
-          .some(
-            (node) =>
-              node.nodeType === 1 /* Element */ ||
-              (node.nodeType === 3 /* Text */ && (node.textContent ?? '').trim() !== ''),
-          ) ?? false
-      head.hidden = this.hasAttr('hide-toggle') && !hasHeaderContent && !drawerOpen
-    }
+    if (head) head.hidden = this.hasAttr('hide-toggle') && !this.hasSlotContent('header') && !drawerOpen
+    // 常驻 footer：空槽时连 padding 一起隐藏，避免 sticky 后底部常驻空白带
+    const foot = this.shadow.querySelector<HTMLElement>('[part="foot"]')
+    if (foot) foot.hidden = !this.hasSlotContent('footer')
 
     // 内置文案走 locale registry（setLocale 切换自动重刷 update）
     this.shadow.querySelector<HTMLElement>('.nav')?.setAttribute('aria-label', this.t('sidebar.nav'))

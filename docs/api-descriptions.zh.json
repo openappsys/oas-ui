@@ -2874,7 +2874,7 @@
     },
     "slots": {
       "": "菜单项内容（默认插槽文本；直接子元素 `<oas-sidebar-item>` 递归为嵌套 children）",
-      "footer": "侧栏底部自定义内容",
+      "footer": "常驻侧栏底部（sticky 钉底；空槽自动隐藏）",
       "header": "侧栏顶部自定义内容"
     },
     "cssVars": {
