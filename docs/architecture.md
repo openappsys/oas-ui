@@ -83,6 +83,7 @@ effect(() => {
   - **决策修订（v1.9）**：数据组件新增 attribute（JSON 字符串）回退通道，property 优先——动机是 DSD 序列化需要声明式内容（SSR 快照含数据行）。属性通道统一经 attribute 解析（property setter 反射到 attribute，`parse()` 从 attribute 读 JSON 并容错非法值回退空态），避免 attr↔prop 双向漂移。`data`/`columns` 等语义与 DOM API 重名的属性名，宿主框架 property 赋值正常命中实例属性；attribute 通道仅作声明式/SSR 场景的序列化载体。
 - **受控/非受控**：表单类组件支持"属性驱动"（外部绑 `value`）与"内部 state"双模式，对齐 React 心智。
 - **清理钩子**：基类提供 `disconnectedCallback` 统一 teardown 注册（计时器、全局监听、浮层引用），防止泄漏。
+- **重连语义**：组件在 `bind()` 绑定 `document/window` 级监听（Esc、外点关闭、scroll/resize 跟随、快捷键等）时，必须在 `onReconnect` 重挂（基类清理是一次性的，`remove()` 再 `append()` 后监听丢失即交互失效）。浮层族（modal/drawer/dropdown/context-menu/sidebar/tour）的 Esc 层与滚动锁已在 `disconnectedCallback` 主动释放、重连后由 open 边沿重获。
 - **事件命名**：一律 `oas-*` 前缀 CustomEvent，payload 挂 `detail`，bubbles + composed（穿透 Shadow DOM）。
 - **跨 Shadow DOM 的 ARIA 关联**：idref（`aria-describedby`/`aria-labelledby`）不能穿透 shadow 边界。方案：core 提供 id 生成器；表单错误提示优先用 `aria-live` region 播报 + `aria-invalid` 标记，跨组件 idref 场景由 form 容器在 light DOM 侧协调。
 - **overlay 管理器**：浮层栈、z-index 语义 token（`--oas-z-tooltip/popover/modal/message`）、点击外部关闭；Esc 层栈与 body 滚动锁由 `@oas-ui/ui` 的 `shared/overlay-stack` 提供（modal/drawer/tour/dropdown/context-menu/sidebar 共用），tooltip/message 等轻提示不走该栈。

@@ -24,7 +24,7 @@ const warnedConfig = new Set<string>()
  *   组件经 core `readConfigValue(el, tag, key)` 就近读取；顶层键 `disabledExempt`（tag 数组）
  *   用于整类豁免全局禁用；非法 JSON 忽略 + dev 告警（同值去重）
  * - direction：全局方向注入（ltr/rtl），设置时写入宿主 `dir` 属性（CSS direction
- *   继承穿透 light/shadow 子树）；组件可经 `injectValue('direction')` 消费；非法值回落 ltr + dev 告警
+ *   继承穿透 light/shadow 子树）；组件经 CSS/`dir` 感知方向（无 injectValue 消费点）；非法值回落 ltr + dev 告警
  * - z-index：浮层全局起始值，设置时在宿主写 `--oas-z-index-base`（CSS 变量穿透 shadow，
  *   浮层组件 `calc(var(--oas-z-index-base, 0) + var(--oas-z-X, <层默认值>))` 消费——
  *   各层在起始值上按层默认值偏移叠加，层间顺序保持）；非法值（非正整数）忽略 + dev 告警

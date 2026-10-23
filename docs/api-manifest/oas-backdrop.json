@@ -56,6 +56,9 @@
       "name": "oas-after-show"
     },
     {
+      "name": "oas-after-open"
+    },
+    {
       "name": "oas-after-close"
     }
   ],

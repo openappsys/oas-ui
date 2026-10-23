@@ -16,6 +16,7 @@ import {
   findConfigProvider,
   subscribeConfigProvider,
   injectDisabled as resolveInjectedDisabled,
+  readConfigValue,
 } from './config-context.js'
 
 /**
@@ -268,9 +269,9 @@ export abstract class OASElement extends HTMLElement {
    * 就近读取注入值（config-provider 机制）。
    *
    * 读取顺序：自身属性 > 表单级尺寸通道（仅 key='size'：oas-form 的 size 下发为字段宿主
-   * `data-form-size`，P2 表级尺寸立项）> 最近 config-provider 属性 > 全局默认值。
-   * 沿 DOM 祖先链找最近的 <oas-config-provider>，读取其同名属性；
-   * 自身属性优先（自身显式设置了就不读注入值），无注入则回退 defaultValue。
+   * `data-form-size`，P2 表级尺寸立项）> 最近 config-provider 同名属性 > provider `config`
+   * JSON（`{"oas-tag":{key:value}}`）> 全局默认值。
+   * 沿 DOM 祖先链找最近的 <oas-config-provider>；自身属性优先（自身显式设置了就不读注入值）。
    */
   protected injectValue(key: string, defaultValue: string): string {
     const own = this.getAttribute(key)
@@ -282,6 +283,9 @@ export abstract class OASElement extends HTMLElement {
     const provider = findConfigProvider(this)
     const injected = provider?.getAttribute(key)
     if (injected != null && injected !== '') return injected
+    // 统一注入通道：provider 同名 attribute 优先；`config` JSON（{"oas-tag":{key:value}}）兜底
+    const fromConfig = readConfigValue(this, this.tagName.toLowerCase(), key)
+    if (fromConfig != null && fromConfig !== '') return String(fromConfig)
     return defaultValue
   }
 

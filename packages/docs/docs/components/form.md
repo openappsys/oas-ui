@@ -591,7 +591,7 @@ onMounted(() => {
 | `layout` | 布局模式：`vertical`（默认，竖排）/ `grid`（24 列栅格）；非枚举值回退 `vertical`；存在 `inline` 属性时优先 | `string` | `vertical` |
 | `rules` | 校验规则 JSON：`{ 字段名: [{ required, message, minLength, maxLength, pattern }] }` | `Rules \| string` | — |
 | `scroll-to-first-error` | 校验失败后聚焦首个错误字段并平滑滚动进视口（prefers-reduced-motion 时瞬跳） | `boolean` | — |
-| `size` | 表级尺寸档：经 data-form-size 通道下发表内全部字段（字段自身显式 size 优先，form-associated 字段动态跟随） | — | — |
+| `size` | 表级尺寸档：经 data-form-size 通道下发表内全部字段（字段自身显式 size 优先，form-associated 字段动态跟随）。边界：`data-form-size` 是静态/检视通道——直接改字段宿主的该属性不触发即时响应；动态跟随只发生在 `oas-form` 的 size 下发路径 | — | — |
 | `validate-messages` | 按规则类型覆盖 locale 默认校验文案（property/JSON 双通道，支持 ${min}/${max}/${value} 插值，default 兜底） | `ValidateMessages \| string` | — |
 | `validate-trigger` | 字段级即时校验触发时机：`input`（默认，边输入边校验）/ `blur` / `change`；规则 `validateTrigger` 可逐字段覆盖；提交始终全量校验 | `string` | `input` |
 

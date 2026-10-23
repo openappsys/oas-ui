@@ -201,6 +201,18 @@
       "migration": "listen for oas-exceed-limit"
     },
     {
+      "id": "DEP-EVENT-0006",
+      "tag": "oas-backdrop",
+      "surface": "event",
+      "legacy": "oas-after-show",
+      "canonical": "oas-after-open",
+      "kind": "alias",
+      "state": "announced",
+      "removeIn": null,
+      "warning": "none",
+      "migration": "listen for oas-after-open"
+    },
+    {
       "id": "DEP-REMOVED-0001",
       "tag": "oas-popover",
       "surface": "attribute",

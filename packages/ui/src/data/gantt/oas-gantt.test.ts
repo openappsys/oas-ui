@@ -4858,6 +4858,104 @@ describe('OASGantt 依赖联动排程（auto-schedule）', () => {
     expect(seen).toEqual([['t']])
   })
 
+  it('shifts: [] 资源不可用：依赖推进不得排进非工作日，保持原日期并 devWarn 一次', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const el = mount({
+      'auto-schedule': '',
+      resources: JSON.stringify([{ id: 'r1', name: 'R1', shifts: [] }]),
+      tasks: JSON.stringify([
+        { id: 'd', name: 'D', start: '2026-03-06', end: '2026-03-06' }, // 右缘 03-07（周六）
+        { id: 't', name: 'T', start: '2026-03-02', end: '2026-03-04', resources: ['r1'], dependencies: [{ id: 'd' }] },
+      ]),
+    })
+    const seen = watchReschedule(el)
+    el.updateTask('t', { start: '2026-03-02', end: '2026-03-04' })
+    expect(taskOf(el, 't').start, '不可排程任务保持原日期（旧实现前推到周六 03-07）').toBe('2026-03-02')
+    expect(taskOf(el, 't').end).toBe('2026-03-04')
+    expect(seen, '不发生移动就不派发 reschedule').toEqual([])
+    expect(
+      warn.mock.calls.filter((c) => String(c[0]).includes('不可排程')).length,
+      'devWarn 一次（不逐任务刷屏）',
+    ).toBe(1)
+    // 生产环境 devWarn 静默——冻结必须可见：不可排程任务并入违约集打 .conflict；
+    // 依赖随之违约（T 早于 D 右缘），负总时差落在前驱 D 上（既有 CPM 归因），同样可见
+    const bar = el.shadowRoot!.querySelector('.bar[data-id="t"]')
+    expect(bar?.classList.contains('conflict'), '不可排程任务应打 conflict 标记（冻结可见）').toBe(true)
+    expect(
+      el.shadowRoot!.querySelector('.bar[data-id="d"]')?.classList.contains('conflict'),
+      '依赖违约在前驱上标出（负总时差归因）',
+    ).toBe(true)
+    warn.mockRestore()
+  })
+
+  it('workdays 交集为空同样不可排程（守卫与 conflict 标记一致）', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const el = mount({
+      'auto-schedule': '',
+      resources: JSON.stringify([
+        { id: 'r1', name: 'R1', workdays: [1, 2] },
+        { id: 'r2', name: 'R2', workdays: [4, 5] },
+      ]),
+      tasks: JSON.stringify([
+        { id: 'd', name: 'D', start: '2026-03-06', end: '2026-03-06' },
+        {
+          id: 't',
+          name: 'T',
+          start: '2026-03-02',
+          end: '2026-03-04',
+          resources: ['r1', 'r2'],
+          dependencies: [{ id: 'd' }],
+        },
+      ]),
+    })
+    el.updateTask('t', { start: '2026-03-02', end: '2026-03-04' })
+    expect(taskOf(el, 't').start, 'workdays 交集为空 = 不可排程，保持原日期').toBe('2026-03-02')
+    expect(el.shadowRoot!.querySelector('.bar[data-id="t"]')?.classList.contains('conflict')).toBe(true)
+    warn.mockRestore()
+  })
+
+  it('shifts: [] 资源不可用：snet 下限同样被守卫（保持原日期，待 conflict 标记）', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const el = mount({
+      'auto-schedule': '',
+      resources: JSON.stringify([{ id: 'r1', name: 'R1', shifts: [] }]),
+      tasks: JSON.stringify([
+        {
+          id: 't',
+          name: 'T',
+          start: '2026-03-02',
+          end: '2026-03-03',
+          resources: ['r1'],
+          constraint: 'snet',
+          constraintDate: '2026-03-10',
+        },
+      ]),
+    })
+    // snet 只前推不提前；但空日历无可吸附日——守卫拦截，保持原日期
+    expect(taskOf(el, 't').start).toBe('2026-03-02')
+    warn.mockRestore()
+  })
+
+  it('shifts: [] 资源不可用：mso 显式约束优先（用户锚点不受日历守卫拦截）', () => {
+    const el = mount({
+      'auto-schedule': '',
+      resources: JSON.stringify([{ id: 'r1', name: 'R1', shifts: [] }]),
+      tasks: JSON.stringify([
+        {
+          id: 't',
+          name: 'T',
+          start: '2026-03-03',
+          end: '2026-03-04',
+          resources: ['r1'],
+          constraint: 'mso',
+          constraintDate: '2026-03-07',
+        },
+      ]),
+    })
+    // mso 是显式用户约束：资源不可用也要拉回锚点（守卫只拦依赖推进，不拦显式约束）
+    expect(taskOf(el, 't').start).toBe('2026-03-07')
+  })
+
   it('级联：拖 A 后 B/C 逐级顺延；工期保持；一次操作只发一次 oas-tasks-change + reschedule 一次', () => {
     const el = mount({
       'auto-schedule': '',

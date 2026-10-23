@@ -109,11 +109,12 @@ hover/active 为 `color-mix()` 派生值（随 primary 联动，light 掺黑压�
 
 - 自定义元素标签：`<oas-*>`（如 `oas-button`）
 - 自定义事件：`oas-*` 前缀 + 动词（`oas-click` `oas-change` `oas-clear`），`detail` 携带数据，`bubbles: true, composed: true`
-- **语义家族优先**：同语义事件全库同名——关闭动画完成统一 `after-close`（`after-*` 家族；`closed` 为兼容别名）、数量超限统一 `exceed-limit`（`exceed` 为兼容别名）。历史双名按「规范名 + 兼容别名双发」过渡，别名在 API 表标注【兼容别名】
+- **语义家族优先**：同语义事件全库同名——开合动画完成统一 `after-open` / `after-close`（`after-*` 家族；`opened` / `closed` / `after-show` 为兼容别名）、数量超限统一 `exceed-limit`（`exceed` 为兼容别名）；**开合状态变化**统一 `open-change`。受控属性写入不回派事件（防双向绑定回环）是表单浮层（select / tree-select / date-picker / time-picker）的目标口径；combobox / color-picker / dropdown / tooltip 等当前仍在外部写 `open` 时派发（历史不一致，迁移另行立项，宿主不得依赖某一族静默）。历史双名按「规范名 + 兼容别名双发」过渡，别名在 API 表标注【兼容别名】
 - **ok 与 confirm 分工**：对话框类（modal/drawer/popconfirm）确定按钮用 `ok`；选择器类（date-picker/time-picker）确认选择用 `confirm`——按钮语义不同，不强行同名
 - **`loading` 语义约定**：布尔在场语义为主流（存在=加载中）；两处例外按组件语义读值——skeleton 的 `loading` 为值布尔默认真（`"false"` 渲染内容插槽）、sidebar 的 `loading` 值为骨架行数（默认 4）
 - 暴露样式点：组件根元素 `::part(host)`，交互元素 `::part(button)` / `::part(input)` 等；语义部件名全部小写连字符
 - 属性命名：kebab-case（HTML 属性 `type` `size` `disabled` `loading`），对齐主流组件库用户心智
+- **值通道命名**：表单类组件的值属性统一 `value`（对齐原生表单控件与框架无关心智）。`model-value` 仅 `dynamic-input` / `dynamic-tags` 两个存量组件作为历史例外保留（不排期移除，宿主按组件 API 表使用）；新组件一律 `value`，不得再引入 `model-value`
 - **原生全局属性吸收**：`title` 等原生全局属性作组件 API 时，组件读取渲染进可见区域后**必须从宿主移除**（参照 `oas-card` 的吸收状态机：属性在场=宿主意图→更新缓存并移除；属性缺席=缓存驱动渲染幂等；SSR 白名单组件 hydrate 时从快照恢复缓存）——残留在宿主上会触发浏览器原生悬浮提示（与可见内容重复的视觉干扰，且原生 tooltip 不可控、可访问性无保证）。新组件 API 起名时优先避开原生全局属性名（`title` `label` `hidden` 等）
 
 ### 2.3 状态一致性

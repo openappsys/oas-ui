@@ -484,6 +484,17 @@ describe('OASTimePicker', () => {
     expect(expanded(el)).toBe('false')
   })
 
+  it('受控回声抑制：宿主写 open 属性不派发 oas-open-change（host 已知，避免双向绑定回环）', () => {
+    const el = mount({ value: '09:05:30' })
+    const events: boolean[] = []
+    el.addEventListener('oas-open-change', (e: Event) => events.push((e as CustomEvent).detail.open))
+    el.setAttribute('open', '')
+    expect(expanded(el)).toBe('true')
+    el.removeAttribute('open')
+    expect(expanded(el)).toBe('false')
+    expect(events, '宿主写 open 属性不得回派 open-change').toEqual([])
+  })
+
   it('非受控：开合均派发 oas-open-change', () => {
     const el = mount({ value: '09:05:30' })
     const events: boolean[] = []

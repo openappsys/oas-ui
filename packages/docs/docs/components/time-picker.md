@@ -130,7 +130,7 @@ readonly 下面板可展开浏览，点选 / 此刻 / 预设 / 清除 / 手输�
   <button id="time-picker-open-toggle" type="button">展开 / 收起</button>
 </DemoBlock>
 
-`open` 属性在场为受控模式：手势只派发 `oas-open-change`，开合由宿主增删属性决定；确认提交（`Enter` / 外部点击 / 此刻）时派发 `oas-confirm`（与 `oas-change` 并行）。
+`open` 属性在场为受控模式：手势只派发 `oas-open-change`，开合由宿主增删属性决定；宿主自己增删 `open` 属性不回派事件（host 已知，避免双向绑定回环）。确认提交（`Enter` / 外部点击 / 此刻）时派发 `oas-confirm`（与 `oas-change` 并行）。
 
 ## 禁用
 
@@ -204,7 +204,7 @@ readonly 下面板可展开浏览，点选 / 此刻 / 预设 / 清除 / 手输�
 | `oas-clear` | 清除，`detail: { value }` 为清空前的值 |
 | `oas-confirm` | 确认提交时派发（Enter/外部点击/此刻，与 `oas-change` 并行），`detail: { value: detail }` |
 | `oas-focus` | 组件整体获焦 |
-| `oas-open-change` | 开合变化，`detail: { open }`（受控/非受控均派发） |
+| `oas-open-change` | 开合变化，`detail: { open }`；宿主直接写 open 属性吸收状态不回派（防双向绑定回环） |
 
 #### CSS 变量
 

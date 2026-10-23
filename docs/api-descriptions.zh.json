@@ -267,7 +267,8 @@
     "events": {
       "oas-click": "点击遮罩，`detail.originalEvent` 为原始点击事件",
       "oas-after-close": "关闭动画完成后派发（规范渠道，与 after-* 族一致）；`detail` 无；滚动解锁在此之前已完成，节点卸载（元素自移除）在此之后",
-      "oas-after-show": "进入动画完成后派发（规范名，对齐 after-* 家族），`detail` 无；reduced-motion 下立即派发"
+      "oas-after-open": "进入动画完成后派发（规范名，对齐 modal/drawer 的 after-* 家族），`detail` 无；reduced-motion 下立即派发",
+      "oas-after-show": "【兼容别名】同 `oas-after-open`（DEP-EVENT-0006），新代码请监听规范名"
     },
     "slots": {
       "": "遮罩内容"
@@ -991,7 +992,7 @@
       "oas-confirm": "datetime / datetimerange 点确定提交时派发（与 `oas-change` 并行）",
       "oas-blur": "组件整体失焦（组件内转移不误报）",
       "oas-focus": "组件整体获焦",
-      "oas-open-change": "开合变化，`detail: { open }`（受控/非受控均派发）"
+      "oas-open-change": "开合变化，`detail: { open }`；宿主直接写 open 属性吸收状态不回派（防双向绑定回环）"
     },
     "slots": {
       "template[slot=\"cell\"]": "`template[slot=\"cell\"]` 克隆进每个日格，`[data-cell-date]` 自动绑定日期数字（与 `oas-cell-render` 双通道）",
@@ -3467,7 +3468,7 @@
       "oas-confirm": "确认提交时派发（Enter/外部点击/此刻，与 `oas-change` 并行）",
       "oas-blur": "组件整体失焦（组件内转移不误报）",
       "oas-focus": "组件整体获焦",
-      "oas-open-change": "开合变化，`detail: { open }`（受控/非受控均派发）"
+      "oas-open-change": "开合变化，`detail: { open }`；宿主直接写 open 属性吸收状态不回派（防双向绑定回环）"
     },
     "slots": {},
     "props": {

@@ -47,7 +47,7 @@
   <oas-space>
     <oas-button type="primary" onclick="openAnimBackdrop()">打开（观察淡入淡出）</oas-button>
   </oas-space>
-  <p>打开/关闭播放 opacity 淡入淡出（动画只走 transform/opacity），过渡结束派发 <code>oas-after-show</code> / <code>oas-after-close</code>；<code>prefers-reduced-motion</code> 下跳过过渡。</p>
+  <p>打开/关闭播放 opacity 淡入淡出（动画只走 transform/opacity），过渡结束派发 <code>oas-after-open</code>（兼容别名 <code>oas-after-show</code>）/ <code>oas-after-close</code>；<code>prefers-reduced-motion</code> 下跳过过渡。</p>
 </DemoBlock>
 
 ## 不可关闭遮罩（persistent）
@@ -110,7 +110,7 @@ onMounted(async () => {
       el.removeAttribute('open')
       toast.info({ title: '遮罩被点击，已关闭', duration: 2000 })
     })
-    if (opts.onAfterShow) el.addEventListener('oas-after-show', opts.onAfterShow)
+    if (opts.onAfterShow) el.addEventListener('oas-after-open', opts.onAfterShow)
     if (opts.onAfterClose) el.addEventListener('oas-after-close', opts.onAfterClose)
     // 先设 open 再挂载：组件在 !open 时连接会自动卸载，顺序颠倒会导致被立即移除
     el.setAttribute('open', '')
@@ -131,7 +131,7 @@ onMounted(async () => {
     })
   window.openAnimBackdrop = () =>
     openBackdrop('backdrop-anim', {
-      onAfterShow: () => toast.info({ title: '遮罩已完全显示（oas-after-show）', duration: 2000 }),
+      onAfterShow: () => toast.info({ title: '遮罩已完全显示（oas-after-open）', duration: 2000 }),
       onAfterClose: () => toast.success({ title: '遮罩已完全关闭（oas-after-close）', duration: 2000 }),
     })
 })
@@ -160,7 +160,8 @@ onMounted(async () => {
 | 事件 | 说明 |
 | --- | --- |
 | `oas-after-close` | 关闭动画完成后派发（规范渠道，与 after-* 族一致）；`detail` 无；滚动解锁在此之前已完成，节点卸载（元素自移除）在此之后 |
-| `oas-after-show` | 进入动画完成后派发（规范名，对齐 after-* 家族），`detail` 无；reduced-motion 下立即派发 |
+| `oas-after-open` | 进入动画完成后派发（规范名，对齐 modal/drawer 的 after-* 家族），`detail` 无；reduced-motion 下立即派发 |
+| `oas-after-show` | 【兼容别名】同 `oas-after-open`（DEP-EVENT-0006），新代码请监听规范名 |
 | `oas-click` | 点击遮罩，`detail.originalEvent` 为原始点击事件 |
 
 #### 插槽

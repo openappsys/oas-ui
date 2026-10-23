@@ -96,7 +96,7 @@ const STYLE = `
 .tab:hover {
   color: var(--oas-color-text-primary);
 }
-.tab[aria-selected='true'] {
+.tab[aria-current='page'] {
   color: var(--oas-bottom-navigation-active-color, var(--oas-color-primary));
   font-weight: 500;
 }
@@ -160,15 +160,15 @@ const STYLE = `
 :host([data-shift]) .tab-label {
   transition: transform var(--oas-transition-base) var(--oas-ease-out);
 }
-:host([data-shift]) .tab[aria-selected='true'] .icon-wrap {
+:host([data-shift]) .tab[aria-current='page'] .icon-wrap {
   transform: translateY(-2px) scale(1.08);
 }
-:host([data-shift]) .tab[aria-selected='true'] .tab-label {
+:host([data-shift]) .tab[aria-current='page'] .tab-label {
   transform: scale(1.05);
 }
 /* icon-only 紧凑形态：show-label=active 时未选中项只显示 icon（label 视觉隐藏、不进无障碍树），
    选中项保留文字；可访问名由 syncState 的 aria-label 补位（取该项 label 文本，读屏不受影响） */
-:host([data-show-label='active']) .tab:not([aria-selected='true']) .tab-label {
+:host([data-show-label='active']) .tab:not([aria-current='page']) .tab-label {
   display: none;
 }
 /* safe-area：仅 fixed 模式加底部安全区内边距（刘海屏 home 指示条避让），非 fixed 无效果 */
@@ -217,7 +217,7 @@ const STYLE = `
  * - `fixed`：布尔，置顶 fixed 底部（默认静态，demo 用 static + 说明）
  * - `hide-on-scroll`：布尔，需配合 `fixed`——向下滚动时导航条 `translateY(100%)` 滑出隐藏、
  *   向上滚动滑回显示（滚动差 >4px 判方向，transition 只动 transform）；纯视觉收起，
- *   不加 `aria-hidden`（tab 语义与键盘焦点保持可达），滚回即恢复；非 fixed 无效果
+ *   不加 `aria-hidden`（导航项语义与键盘焦点保持可达），滚回即恢复；非 fixed 无效果
  * - `layout`：`stacked`（默认，icon 上文字下）/ `horizontal`（icon 左文字右，同一行）；
  *   非法值回落 stacked 并告警（同值去重）
  * - `show-label`：label 展示模式——`true`（默认，全部项显示文字）/ `active`（icon-only 紧凑形态：
@@ -232,7 +232,7 @@ const STYLE = `
  *
  * 事件：`oas-change` detail `{ value }`
  *
- * 语义：`role="tablist"` + 每项 `role="tab"` + `aria-selected`；
+ * 语义：`role="navigation"` + 当前项 `aria-current="page"`（视图导航，不伪装无 panel 的 tablist）；
  * 键盘左右/上下移动焦点（roving tabindex，跳过 disabled），Enter/Space 选中；
  * Home/End 首尾。顶部细分隔线，激活项主色 + 图标。
  */
@@ -246,7 +246,6 @@ export class OASBottomNavigation extends OASElement {
   private tablist: HTMLElement | null = null
   private lastItemsRaw = ''
   private lastValueRaw: string | null = null
-  private focusIndex = 0
   /** label 展示模式（CSS 钩子 data-show-label + aria-label 补位判定；update 时随属性归一化） */
   private labelMode: BottomNavLabelMode = 'true'
   /** hide-on-scroll 方向判定的滚动基线（null = 未登记，启用时以当前滚动位置为新基线） */
@@ -312,10 +311,8 @@ export class OASBottomNavigation extends OASElement {
     if (itemsChanged || !this.hasAttribute('items')) {
       this.renderItems()
     } else {
-      if (valueChanged) {
-        // 外部改 value：roving 焦点跟随激活项
-        this.focusIndex = this.resolveInitialFocus(valueRaw)
-      }
+      // 外部改 value 只刷新选中态，不移动焦点（navigation 语义，非 roving）
+      void valueChanged
       this.syncState()
     }
   }
@@ -402,7 +399,6 @@ export class OASBottomNavigation extends OASElement {
     if (!tablist) return
     tablist.innerHTML = ''
     this.buttons = []
-    this.focusIndex = this.resolveInitialFocus(this.getAttr('value'))
     for (const item of this.itemsList) {
       const btn = document.createElement('button')
       btn.className = 'tab'
@@ -438,15 +434,17 @@ export class OASBottomNavigation extends OASElement {
   private syncState(): void {
     const tablist = this.tablist
     if (!tablist) return
-    tablist.setAttribute('role', 'tablist')
+    tablist.setAttribute('role', 'navigation')
     tablist.setAttribute('aria-label', this.t('bottomNavigation.nav'))
     const activeIdx = this.activeIndex()
     this.buttons.forEach((btn, i) => {
       const item = this.itemsList[i]
       if (!item) return
       const isSelected = i === activeIdx && !item.disabled
-      btn.setAttribute('role', 'tab')
-      btn.setAttribute('aria-selected', String(isSelected))
+      // 视图导航语义：不伪装成无 panel 的 tab；当前项用 aria-current 标记
+      btn.removeAttribute('role')
+      if (isSelected) btn.setAttribute('aria-current', 'page')
+      else btn.removeAttribute('aria-current')
       btn.setAttribute('aria-disabled', String(item.disabled ?? false))
       // icon-only 形态 a11y 补位：active 模式未选中项 label 被 CSS display:none 隐藏
       // （不进无障碍树），每项可访问名改由 aria-label 承载（取该项 label 文本）
@@ -455,8 +453,9 @@ export class OASBottomNavigation extends OASElement {
       } else {
         btn.removeAttribute('aria-label')
       }
-      if (item.disabled) btn.tabIndex = -1
-      else btn.tabIndex = i === this.focusIndex ? 0 : -1
+      // navigation landmark 语义：所有可用项都进 Tab 序（非 tablist 的 roving 模型）；
+      // 方向键/Home/End 只作增强移动焦点（handleKey），不剥夺 Tab 可达性
+      btn.tabIndex = item.disabled ? -1 : 0
     })
   }
 
@@ -478,7 +477,7 @@ export class OASBottomNavigation extends OASElement {
    * （重连/属性增删后基线重设，避免方向误判）。
    *
    * aria 语义：隐藏是**纯视觉收起**（translateY 滑出视口），不加 aria-hidden——
-   * tab 语义与键盘焦点保持可达，滚回即恢复，对齐「视觉隐藏而非语义移除」。
+   * 导航项语义与键盘焦点保持可达，滚回即恢复，对齐「视觉隐藏而非语义移除」。
    */
   private syncHideOnScroll(): void {
     const enabled = this.hasAttr('fixed') && this.hasAttr('hide-on-scroll')
@@ -516,19 +515,11 @@ export class OASBottomNavigation extends OASElement {
     this.classList.toggle('oas-bottom-navigation--hidden', delta > 0)
   }
 
-  private resolveInitialFocus(selected: string): number {
-    const idx = this.itemsList.findIndex((it) => it.value === selected && !it.disabled)
-    if (idx >= 0) return idx
-    const first = this.itemsList.findIndex((it) => !it.disabled)
-    return first >= 0 ? first : 0
-  }
-
   private select(item: BottomNavItem): void {
     if (item.disabled) return
     if (this.getAttr('value') === item.value) return
     this.setAttribute('value', item.value)
     this.emit('change', { value: item.value })
-    // update() 里 value 变化会令 roving 焦点跟随激活项，无需按引用反查下标
     this.update()
   }
 
@@ -540,15 +531,20 @@ export class OASBottomNavigation extends OASElement {
     // RTL 镜像：水平轴方向键换向（flex 视觉序随书写方向反转），竖向键不受影响
     const fwd = isRtl(this) ? 'ArrowLeft' : 'ArrowRight'
     const back = isRtl(this) ? 'ArrowRight' : 'ArrowLeft'
+    // 焦点游标取真实焦点（全部可用项均 tabbable）；无焦点时以选中项为基线
+    // （方向键是增强：Tab 进来的焦点天然在项上；程序化派发/容器持焦时从选中项起步）
+    let activeIdx = this.buttons.indexOf(this.shadow.activeElement as HTMLButtonElement)
+    if (activeIdx < 0) activeIdx = this.buttons.findIndex((b) => b.getAttribute('aria-current') === 'page')
     if (e.key === fwd || e.key === 'ArrowDown') {
       e.preventDefault()
-      this.move(1, enabled)
+      this.moveFrom(activeIdx, 1, enabled)
     } else if (e.key === back || e.key === 'ArrowUp') {
       e.preventDefault()
-      this.move(-1, enabled)
+      this.moveFrom(activeIdx, -1, enabled)
     } else if (e.key === 'Enter' || e.key === ' ') {
+      if (activeIdx < 0) return
       e.preventDefault()
-      const item = items[this.focusIndex]
+      const item = items[activeIdx]
       if (item) this.select(item)
     } else if (e.key === 'Home') {
       e.preventDefault()
@@ -559,16 +555,20 @@ export class OASBottomNavigation extends OASElement {
     }
   }
 
-  private move(dir: 1 | -1, enabled: number[]): void {
-    const cur = enabled.indexOf(this.focusIndex)
-    const next = enabled[(cur + dir + enabled.length) % enabled.length]
+  private moveFrom(activeIdx: number, dir: 1 | -1, enabled: number[]): void {
+    // 基线不可用（如选中项被禁用）时按方向落到首/末可用项
+    const cur = enabled.indexOf(activeIdx)
+    const next =
+      cur < 0
+        ? dir > 0
+          ? enabled[0]
+          : enabled[enabled.length - 1]
+        : enabled[(cur + dir + enabled.length) % enabled.length]
     if (next === undefined) return
     this.focusAt(next)
   }
 
   private focusAt(index: number): void {
-    this.focusIndex = index
-    this.syncState()
     this.buttons[index]?.focus()
   }
 

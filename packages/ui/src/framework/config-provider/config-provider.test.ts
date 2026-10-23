@@ -245,6 +245,32 @@ describe('oas-config-provider', () => {
       expect(btnEl.classList.contains('filled')).toBe(false)
     })
 
+    it('config JSON 通道对任意 injectValue 组件生效（统一注入通道）', () => {
+      const cp = document.createElement('oas-config-provider')
+      cp.setAttribute('config', '{"oas-tag":{"size":"small"}}')
+      const tag = document.createElement('oas-tag')
+      tag.textContent = '标签'
+      cp.appendChild(tag)
+      document.body.appendChild(cp)
+      expect(tag.shadowRoot!.querySelector('.tag')!.classList.contains('small')).toBe(true)
+    })
+
+    it('config JSON 兜底优先级：provider 同名 attribute 与组件自身属性均优先于 config JSON', () => {
+      const cp = document.createElement('oas-config-provider')
+      cp.setAttribute('config', '{"oas-tag":{"size":"small"}}')
+      cp.setAttribute('size', 'large')
+      const tag = document.createElement('oas-tag')
+      tag.textContent = '标签'
+      cp.appendChild(tag)
+      const own = document.createElement('oas-tag')
+      own.setAttribute('size', 'medium')
+      own.textContent = '自带'
+      cp.appendChild(own)
+      document.body.appendChild(cp)
+      expect(tag.shadowRoot!.querySelector('.tag')!.classList.contains('large'), 'provider attribute 优先').toBe(true)
+      expect(own.shadowRoot!.querySelector('.tag')!.classList.contains('medium'), '组件自身属性优先').toBe(true)
+    })
+
     it('无 config 或键缺失时回落默认 solid', () => {
       const cp = document.createElement('oas-config-provider')
       cp.setAttribute('config', '{"oas-tag":{"size":"large"}}')

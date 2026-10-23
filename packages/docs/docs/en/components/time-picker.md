@@ -130,7 +130,7 @@ Under `readonly` the panel still opens for browsing, but picking, Now, presets, 
   <button id="time-picker-open-toggle" type="button">Toggle open</button>
 </DemoBlock>
 
-With the `open` attribute present the picker runs in controlled mode: gestures only emit `oas-open-change`, and opening/closing is decided by the host adding or removing the attribute; confirm actions (Enter, outside click, Now) emit `oas-confirm` alongside `oas-change`.
+With the `open` attribute present the picker runs in controlled mode: gestures only emit `oas-open-change`, and opening/closing is decided by the host adding or removing the attribute. Host-written `open` attributes do not echo `oas-open-change` back (the host already knows — this avoids two-way binding loops). Confirm actions (Enter, outside click, Now) emit `oas-confirm` alongside `oas-change`.
 
 ## Disabled
 
@@ -204,7 +204,7 @@ Programmatic read/write of the current value goes through the public `value` pro
 | `oas-clear` | Clear, `detail: { value }` is the previous value |
 | `oas-confirm` | Emitted on confirm actions (Enter / outside click / Now, alongside `oas-change`), `detail: { value: detail }` |
 | `oas-focus` | The component as a whole gains focus |
-| `oas-open-change` | Open state change, `detail: { open }` (both controlled and uncontrolled) |
+| `oas-open-change` | Open state change, `detail: { open }`; host-written `open` attributes do not echo back (avoids two-way binding loops) |
 
 #### CSS Variables
 

@@ -21,6 +21,7 @@
 | `DEP-EVENT-0003` | `oas-drawer` | event | `oas-closed` | `oas-after-close` | announced | 未定 |
 | `DEP-EVENT-0004` | `oas-drawer` | event | `oas-opened` | `oas-after-open` | announced | 未定 |
 | `DEP-EVENT-0005` | `oas-upload` | event | `oas-exceed` | `oas-exceed-limit` | announced | 未定 |
+| `DEP-EVENT-0006` | `oas-backdrop` | event | `oas-after-show` | `oas-after-open` | announced | 未定 |
 | `DEP-REMOVED-0001` | `oas-popover` | attribute | `arrow-point-at-center` | — | removed | 未定 |
 | `DEP-REMOVED-0002` | `oas-table` | method | `exportFileName` | `export-file-name / exportData(format, { fileName })` | removed | 未定 |
 | `DEP-REMOVED-0003` | `@oas-ui/icons` | export | `iconRegistry / iconNames (root entry)` | `@oas-ui/icons/registry` | removed | 未定 |

@@ -1,18 +1,18 @@
 // 复核回归：bottom-navigation——移动端底部导航首份回归固化。
-// 覆盖：点击 tab → aria-selected 选中态可见（选中/未选中颜色区分）+ 受控 value 写回 + oas-change
+// 覆盖：点击项 → aria-current 选中态可见（选中/未选中颜色区分）+ 受控 value 写回 + oas-change
 // demo 可见反馈、外部设 value 受控切换、禁用项点击不选中、badge 角标渲染（items 通道）。
 
 import { test, expect } from '@playwright/test'
 import { up } from './helpers'
 
-test('bottom-navigation 点击选中：aria-selected 同步、选中色可见、value 写回 + oas-change 反馈', async ({ page }) => {
+test('bottom-navigation 点击选中：aria-current 同步、选中色可见、value 写回 + oas-change 反馈', async ({ page }) => {
   await page.goto('/components/bottom-navigation.html', { waitUntil: 'domcontentloaded' })
   await up(page, '#bn-ctrl')
   const tabState = () =>
     page.evaluate(() => {
       const host = document.querySelector('#bn-ctrl') as HTMLElement
       const tabs = [...host.shadowRoot!.querySelectorAll<HTMLElement>('.tab')]
-      const selected = tabs.find((t) => t.getAttribute('aria-selected') === 'true')
+      const selected = tabs.find((t) => t.getAttribute('aria-current') === 'page')
       return {
         value: host.getAttribute('value'),
         selectedText: selected?.textContent?.trim(),
@@ -54,7 +54,7 @@ test('bottom-navigation 禁用项：aria-disabled 同步，点击不选中不派
     return {
       disabledText: disabled?.textContent?.trim(),
       value: host.getAttribute('value'),
-      selectedText: tabs.find((t) => t.getAttribute('aria-selected') === 'true')?.textContent?.trim(),
+      selectedText: tabs.find((t) => t.getAttribute('aria-current') === 'page')?.textContent?.trim(),
     }
   })
   expect(state.disabledText, '禁用项应存在且为「发现」').toBe('发现')

@@ -1615,6 +1615,8 @@ export class OASGantt extends OASElement {
   private warnedWindowedReparent = false
   /** windowed 切片越界（window-start + 装载行数 > total）告警去重（实例级一次） */
   private warnedWindowedOverflow = false
+  /** auto-schedule 遇到空日历（shifts: [] / workdays 交集为空）不可排程告警（实例级一次，不逐任务刷屏） */
+  private warnedUnschedulable = false
 
   /** windowed 下行重排禁用告警（一次）：切片内同级 index 对全量无意义，重排由宿主在全量上处理 */
   private warnWindowedReparent(): void {
@@ -3241,13 +3243,19 @@ export class OASGantt extends OASElement {
         )
       }
       this.criticalIds = new Set()
-      this.conflictIds = this.deadlineConflictIds()
+      // 空日历判定是纯本地（资源日历 + workdays 交集），不需要全量依赖图，windowed 下同样有效；
+      // conflict 口径与非 windowed 一致：仅 auto-schedule / show-critical-path 开启时标注
+      this.conflictIds = new Set([...this.deadlineConflictIds(), ...(confOn ? this.unschedulableIds() : [])])
       this.totalFloatMs = new Map()
       this.freeFloatMs = new Map()
     } else {
       const cp = needCpm ? this.criticalPathIds() : null
       this.criticalIds = cpOn && cp ? cp.critical : new Set()
-      this.conflictIds = new Set([...(confOn && cp ? cp.conflict : []), ...this.deadlineConflictIds()])
+      this.conflictIds = new Set([
+        ...(confOn && cp ? cp.conflict : []),
+        ...this.deadlineConflictIds(),
+        ...(confOn ? this.unschedulableIds() : []),
+      ])
       this.totalFloatMs = floatOn && cp ? cp.totalFloat : new Map()
       this.freeFloatMs = floatOn && cp ? cp.freeFloat : new Map()
     }
@@ -5825,6 +5833,21 @@ export class OASGantt extends OASElement {
     return { critical, conflict, totalFloat, freeFloat }
   }
 
+  /** 不可排程任务集：任务日历显式为空（资源 shifts: [] / workdays 交集为空）。
+   *  这类任务 auto-schedule 保持原日期（见 reschedule 守卫），必须用 .conflict 标记让「冻结」可见；
+   *  摘要行日期派生不参与。判定是纯本地的（资源日历 + workdays），windowed 下同样有效 */
+  private unschedulableIds(): Set<string> {
+    const out = new Set<string>()
+    const hasChildren = new Set<string>()
+    for (const t of this._tasks) if (t.parent) hasChildren.add(t.parent)
+    for (const t of this._tasks) {
+      if (hasChildren.has(t.id)) continue
+      const days = this.taskCalendar(t).days
+      if (days !== null && days.size === 0) out.add(t.id)
+    }
+    return out
+  }
+
   /** 截止日违约集：结束日晚于 deadline（日精度按含端日期比较；时刻精度按 ms） */
   private deadlineConflictIds(): Set<string> {
     const out = new Set<string>()
@@ -5975,6 +5998,23 @@ export class OASGantt extends OASElement {
             dirty = true
           }
           continue
+        }
+        // 显式空日历（资源 shifts: [] / workdays 交集为空）= 资源不可用、不可排程：
+        // 吸附上限内找不到工作日时 snap 原样返回，会把任务排进不可用日——
+        // 宁可不移动（保持原日期）也不落非法日；snet 下限同样被守卫跳过；mso 显式锚点在
+        // 上游已处理，不受此守卫影响。不可排程任务经 unschedulableIds 并入违约集打 .conflict
+        // 标记（生产环境 devWarn 静默时仍可见）；下游任务按冻结日期排程（锚点是原日期）
+        {
+          const calDays = this.taskCalendar(t).days
+          if (calDays !== null && calDays.size === 0) {
+            if (!this.warnedUnschedulable) {
+              this.warnedUnschedulable = true
+              devWarn(
+                '[oas-gantt] auto-schedule：任务日历为空（资源 shifts: [] 或 workdays 交集为空），不可排程的任务保持原日期并以 conflict 标出',
+              )
+            }
+            continue
+          }
         }
         let required = startMs
         for (const d of t.dependencies ?? []) {

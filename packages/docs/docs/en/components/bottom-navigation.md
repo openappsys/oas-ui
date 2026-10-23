@@ -1,6 +1,6 @@
 # BottomNavigation
 
-A mobile bottom navigation bar: `role="tablist"` with each item `role="tab"` + synced `aria-selected`; arrow keys move focus (roving tabindex), Enter/Space selects; the active item uses the primary color plus an icon, with a thin top divider.
+A mobile bottom navigation bar: `role="navigation"` with the current item marked `aria-current="page"` (view navigation — not a tablist without panels); every enabled item is Tab-reachable, arrow keys/Home/End move focus as an enhancement, Enter/Space selects; the active item uses the primary color plus an icon, with a thin top divider.
 
 > The layout is static by default; add the `fixed` attribute to pin it to the bottom of the screen (`position: fixed; bottom: 0` — preferably as a direct child of `body` to avoid being carried away by a scroll container).
 
@@ -219,4 +219,4 @@ Pure CSS variable openings (no attribute); dark mode picks up tokens automatical
 | `disabled` | Disabled (not selectable, skipped by keyboard)          | `boolean`|
 | `badge`    | Top-right corner badge (number/text overlaid on the icon; not rendered when unset) | `string` |
 
-Behavior: `role="tablist"` + `role="tab"` + synced `aria-selected` / `aria-disabled`; roving tabindex keeps only the active item focusable; arrow keys (left/right or up/down) cycle focus among available items (Home/End jump to the ends), Enter/Space selects the focused item; clicking an already-active item does not re-fire; empty `items` renders an empty tablist without errors. The active item uses the primary color plus an icon (built-in inline SVG following `currentColor`), with a thin top divider; `badge` renders a top-right corner badge (overlaid on the icon, badge tokens); `fixed` + `safe-area` adds bottom safe-area padding.
+Behavior: `role="navigation"` + synced `aria-current="page"` / `aria-disabled`; every enabled item is Tab-reachable (`tabindex=0`, disabled items excluded); arrow keys (left/right or up/down) and Home/End cycle focus among available items as an enhancement (with nothing focused, the selected item is the baseline), Enter/Space selects the focused item; clicking an already-active item does not re-fire; empty `items` renders an empty container without errors. The active item uses the primary color plus an icon (built-in inline SVG following `currentColor`), with a thin top divider; `badge` renders a top-right corner badge (overlaid on the icon, badge tokens); `fixed` + `safe-area` adds bottom safe-area padding.

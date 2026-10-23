@@ -277,7 +277,8 @@
     "events": {
       "oas-click": "Backdrop clicked, `detail.originalEvent` is the original click event",
       "oas-after-close": "Emitted after the close animation finishes (canonical, aligned with the after-* family); no `detail`. Scroll unlock has already happened before this; node removal (the element removes itself) happens after this",
-      "oas-after-show": "Emitted after the enter animation finishes (canonical, aligned with the after-* family); no `detail`; emitted immediately under reduced motion"
+      "oas-after-open": "Emitted after the enter animation finishes (canonical, aligned with modal/drawer's after-* family); no `detail`; emitted immediately under reduced motion",
+      "oas-after-show": "[Compat alias] Same as `oas-after-open` (DEP-EVENT-0006); new code should listen to the canonical name"
     },
     "slots": {
       "": "Backdrop content"
@@ -1031,7 +1032,7 @@
       "oas-confirm": "Emitted when datetime/datetimerange submits via the confirm button (alongside `oas-change`)",
       "oas-blur": "The component as a whole loses focus (internal moves do not fire)",
       "oas-focus": "The component as a whole gains focus",
-      "oas-open-change": "Open state change, `detail: { open }` (both controlled and uncontrolled)"
+      "oas-open-change": "Open state change, `detail: { open }`; host-written `open` attributes do not echo back (avoids two-way binding loops)"
     },
     "slots": {
       "template[slot=\"cell\"]": "`template[slot=\"cell\"]` is cloned into each day cell; `[data-cell-date]` binds the day number (dual channel with `oas-cell-render`)",
@@ -3644,7 +3645,7 @@
       "oas-confirm": "Emitted on confirm actions (Enter / outside click / Now, alongside `oas-change`)",
       "oas-blur": "The component as a whole loses focus (internal moves do not fire)",
       "oas-focus": "The component as a whole gains focus",
-      "oas-open-change": "Open state change, `detail: { open }` (both controlled and uncontrolled)"
+      "oas-open-change": "Open state change, `detail: { open }`; host-written `open` attributes do not echo back (avoids two-way binding loops)"
     },
     "slots": {},
     "props": {

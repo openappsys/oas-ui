@@ -821,17 +821,16 @@ export class OASDatePicker extends OASFormElement {
   }
 
   /**
-   * 受控 open：属性即真相——在场=展开、移除=收起（宿主手势只派发
-   * oas-open-change 通知宿主，由宿主决定是否增删属性，组件不强制写回）。
+   * 受控 open：属性即真相——在场=展开、移除=收起。宿主手势只派发
+   * oas-open-change 通知宿主，由宿主决定是否增删属性，组件不强制写回；
+   * 宿主自己写属性吸收状态时不回派事件（host 已知，避免双向绑定回环）。
    */
   override attributeChangedCallback(name: string, oldValue: string | null, newValue: string | null): void {
     if (name === 'open' && oldValue !== newValue && this.hasRendered) {
       if (newValue !== null && !this.openState) {
         this.bootPanel(false)
-        this.emit('open-change', { open: true })
       } else if (newValue === null && this.openState) {
         this.closeSync()
-        this.emit('open-change', { open: false })
       }
     }
     super.attributeChangedCallback(name, oldValue, newValue)

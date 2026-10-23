@@ -1,6 +1,6 @@
 # BottomNavigation 底部导航
 
-移动端底部导航栏：`role="tablist"` + 每项 `role="tab"` + `aria-selected` 同步，键盘左右移动焦点（roving tabindex）、Enter/Space 选中，激活项主色 + 图标，顶部细分隔线。
+移动端底部导航栏：`role="navigation"` + 当前项 `aria-current="page"` 同步（视图导航，不伪装成无 panel 的 tablist），全部可用项 Tab 可达、方向键/Home/End 为增强焦点移动、Enter/Space 选中，激活项主色 + 图标，顶部细分隔线。
 
 > 默认是静态布局；需要固定到屏幕底部时加 `fixed` 属性（`position: fixed; bottom: 0`，建议放在 `body` 直接子级避免被滚动容器带偏）。
 
@@ -219,4 +219,4 @@ onMounted(() => {
 | `disabled` | 禁用（不可选中、键盘跳过）                         | `boolean` |
 | `badge`  | 右上角标（数字/文本，叠在 icon 上；未设置不渲染）   | `string` |
 
-行为：`role="tablist"` + `role="tab"` + `aria-selected` / `aria-disabled` 同步；roving tabindex 仅激活项可聚焦；方向键（左右/上下）在可用项间循环移动焦点（Home/End 首尾），Enter/Space 选中当前焦点项；点击已激活项不重复派发；空 `items` 渲染空 tablist 不报错。激活项主色 + 图标（内置图标内联 SVG，跟随 currentColor），顶部细分隔线；`badge` 右上角标（叠在 icon 上，走 badge token）；`fixed` + `safe-area` 加底部安全区内边距。
+行为：`role="navigation"` + 当前项 `aria-current="page"`、`aria-disabled` 同步；全部可用项 Tab 可达（`tabindex=0`，禁用项除外），方向键（左右/上下）与 Home/End 在可用项间循环移动焦点（增强，无焦点时以选中项为基线），Enter/Space 选中当前焦点项；点击已激活项不重复派发；空 `items` 渲染空容器不报错。激活项主色 + 图标（内置图标内联 SVG，跟随 currentColor），顶部细分隔线；`badge` 右上角标（叠在 icon 上，走 badge token）；`fixed` + `safe-area` 加底部安全区内边距。

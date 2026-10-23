@@ -227,7 +227,7 @@ The panel can still be opened and browsed (keyboard navigation works), but no in
   <button id="date-picker-open-toggle" type="button">Toggle open</button>
 </DemoBlock>
 
-With the `open` attribute present the picker is controlled: gestures only emit `oas-open-change`; the host decides by adding/removing the attribute.
+With the `open` attribute present the picker is controlled: gestures only emit `oas-open-change`; the host decides by adding/removing the attribute. Host-written `open` attributes do not echo `oas-open-change` back (the host already knows — this avoids two-way binding loops).
 
 <DemoBlock title="Range partial selection (oas-calendar-change)">
   <oas-date-picker id="date-picker-calendar-change" type="daterange" default-value="2026-08-01"></oas-date-picker>
@@ -333,7 +333,7 @@ Programmatic read/write of the current value goes through the public `value` pro
 | `oas-clear` | Clear, `detail: { value }` is the previous value |
 | `oas-confirm` | Emitted when datetime/datetimerange submits via the confirm button (alongside `oas-change`), `detail: { value }` |
 | `oas-focus` | The component as a whole gains focus |
-| `oas-open-change` | Open state change, `detail: { open }` (both controlled and uncontrolled) |
+| `oas-open-change` | Open state change, `detail: { open }`; host-written `open` attributes do not echo back (avoids two-way binding loops) |
 
 #### Slots
 

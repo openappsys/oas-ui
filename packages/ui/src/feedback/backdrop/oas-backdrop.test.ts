@@ -205,12 +205,14 @@ describe('OASBackdrop', () => {
       expect(el.hasAttribute('data-shown')).toBe(true)
     })
 
-    it('动画结束派发 oas-after-show', async () => {
+    it('动画结束派发规范名 oas-after-open + 兼容别名 oas-after-show（双发过渡）', async () => {
       const el = mount({ open: '' })
       const events: string[] = []
+      el.addEventListener('oas-after-open', () => events.push('after-open'))
       el.addEventListener('oas-after-show', () => events.push('after-show'))
       await waitAnim()
-      expect(events).toEqual(['after-show'])
+      // 双发顺序与 modal/drawer 家族先例一致：兼容别名在前、规范名在后
+      expect(events).toEqual(['after-show', 'after-open'])
     })
 
     it('open=false 播放退场（data-closing）后卸载并派发 oas-after-close', async () => {
@@ -243,16 +245,17 @@ describe('OASBackdrop', () => {
       const el = new OASBackdrop()
       el.setAttribute('open', '')
       const events: string[] = []
+      el.addEventListener('oas-after-open', () => events.push('after-open'))
       el.addEventListener('oas-after-show', () => events.push('after-show'))
       el.addEventListener('oas-after-close', () => events.push('after-close'))
       document.body.appendChild(el)
-      // 进入立即落可见态 + after-show
+      // 进入立即落可见态 + after-show/after-open 双发（兼容别名在前、规范名在后）
       expect(el.hasAttribute('data-shown')).toBe(true)
-      expect(events).toEqual(['after-show'])
+      expect(events).toEqual(['after-show', 'after-open'])
       el.removeAttribute('open')
       // 退出立即卸载 + after-close
       expect(document.body.contains(el)).toBe(false)
-      expect(events).toEqual(['after-show', 'after-close'])
+      expect(events).toEqual(['after-show', 'after-open', 'after-close'])
       vi.unstubAllGlobals()
     })
 

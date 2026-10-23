@@ -107,7 +107,7 @@ OAS-UI 提供 145 个框架无关的 Web Components 组件，按用途划分为 
 - [BackTop 回到顶部](/components/back-top) —— 固定于视口角落的回到顶部按钮，点击平滑滚动到页面顶部。
 - [Tour 引导](/components/tour) —— 分步功能引导，带全屏遮罩与目标高亮。
 - [Tabs 标签页](/components/tabs) —— 标签式内容切换，支持键盘方向键导航；未激活面板通过 `hidden` 隐藏。`oas-tabs` + `oas-tab-panel` 配套使用。
-- [BottomNavigation 底部导航](/components/bottom-navigation) —— 移动端底部导航栏：`role="tablist"` + 每项 `role="tab"` + `aria-selected` 同步，键盘左右移动焦点（roving tabindex）、Enter/Space 选中，激活项主色 + 图标，顶部细分隔线。
+- [BottomNavigation 底部导航](/components/bottom-navigation) —— 移动端底部导航栏：`role="navigation"` + 当前项 `aria-current="page"` 同步，全部可用项 Tab 可达、方向键增强移动焦点、Enter/Space 选中，激活项主色 + 图标，顶部细分隔线。
 - [Pagination 分页](/components/pagination) —— 数据分页导航，支持页码省略、前后翻页、自定义相邻页码数、总数展示、每页条数切换与快速跳转。
 - [Steps 步骤条](/components/steps) —— 引导用户按流程完成任务的步骤指示器，支持等待 / 进行中 / 完成 / 错误四种状态、纵向排布与可点击跳转。
 - [Stepper 步骤面板](/components/stepper) —— 步骤驱动的分步内容面板一体机：头部步骤条（可点击跳步）+ 联动内容面板（仅当前步显示），向导 / 表单分步 / 结账流程场景；`oas-stepper` + `oas-stepper-panel` 配套（同构 tabs 的 value 关联模式）。

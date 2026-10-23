@@ -37,30 +37,33 @@ describe('OASBottomNavigation', () => {
     document.body.innerHTML = ''
   })
 
-  it('渲染 tablist 语义 + aria-label（内置文案走 t()）', () => {
+  it('导航语义：容器 role=navigation，当前项 aria-current=page（不伪装无 panel 的 tablist）', () => {
     const el = mount()
-    expect(list(el).getAttribute('role')).toBe('tablist')
+    expect(list(el).getAttribute('role')).toBe('navigation')
     expect(list(el).getAttribute('aria-label')).toBe('底部导航')
     const ts = tabs(el)
     expect(ts.length).toBe(3)
-    expect(ts[0]!.getAttribute('role')).toBe('tab')
+    expect(ts[0]!.getAttribute('role')).toBeNull()
+    expect(ts[0]!.getAttribute('aria-current')).toBe('page')
+    expect(ts[1]!.getAttribute('aria-current')).toBeNull()
   })
 
-  it('aria-selected 跟随 value，未指定默认选中第一项', () => {
+  it('aria-current 跟随 value，未指定默认选中第一项', () => {
     const el = mount({ value: 'search' })
     const ts = tabs(el)
-    expect(ts[0]!.getAttribute('aria-selected')).toBe('false')
-    expect(ts[1]!.getAttribute('aria-selected')).toBe('true')
+    expect(ts[0]!.getAttribute('aria-current')).toBeNull()
+    expect(ts[1]!.getAttribute('aria-current')).toBe('page')
     const el2 = mount()
-    expect(tabs(el2)[0]!.getAttribute('aria-selected')).toBe('true')
+    expect(tabs(el2)[0]!.getAttribute('aria-current')).toBe('page')
   })
 
-  it('roving tabindex：仅激活项可聚焦', () => {
+  it('navigation 语义：全部可用项进 Tab 序（不用 tablist 的 roving 模型），方向键为增强', () => {
     const el = mount({ value: 'search' })
     const ts = tabs(el)
-    expect(ts[0]!.tabIndex).toBe(-1)
-    expect(ts[1]!.tabIndex).toBe(0)
-    expect(ts[2]!.tabIndex).toBe(-1)
+    expect(
+      ts.map((t) => t.tabIndex),
+      'navigation landmark 内所有可用项都应 Tab 可达',
+    ).toEqual([0, 0, 0])
   })
 
   it('点击选中派发 oas-change { value }', () => {
@@ -70,7 +73,7 @@ describe('OASBottomNavigation', () => {
     tabs(el)[2]!.click()
     expect(el.getAttribute('value')).toBe('mine')
     expect(detail).toEqual({ value: 'mine' })
-    expect(tabs(el)[2]!.getAttribute('aria-selected')).toBe('true')
+    expect(tabs(el)[2]!.getAttribute('aria-current')).toBe('page')
   })
 
   it('点击已选中项不重复派发', () => {
@@ -143,10 +146,10 @@ describe('OASBottomNavigation', () => {
     expect(svgs[0]!.getAttribute('viewBox')).toBe('0 0 16 16')
   })
 
-  it('空 items 渲染空 tablist 不报错', () => {
+  it('空 items 渲染空容器不报错', () => {
     const el = mount({ items: '[]' })
     expect(tabs(el).length).toBe(0)
-    expect(list(el).getAttribute('role')).toBe('tablist')
+    expect(list(el).getAttribute('role')).toBe('navigation')
   })
 
   it('items 非法 JSON 渲染空容器', () => {
@@ -166,7 +169,7 @@ describe('OASBottomNavigation', () => {
     const first = tabs(el)[0]
     el.setAttribute('value', 'search')
     expect(tabs(el)[0]).toBe(first)
-    expect(tabs(el)[1]!.getAttribute('aria-selected')).toBe('true')
+    expect(tabs(el)[1]!.getAttribute('aria-current')).toBe('page')
     expect(tabs(el)[1]!.tabIndex).toBe(0)
   })
 
@@ -212,11 +215,11 @@ describe('OASBottomNavigation 子元素声明式通道', () => {
     `)
     const ts = tabs(el)
     expect(ts.length).toBe(3)
-    expect(ts[0]!.getAttribute('role')).toBe('tab')
+    expect(ts[0]!.getAttribute('role')).toBeNull()
     expect(ts[0]!.querySelector('.tab-label')!.textContent).toBe('首页')
     expect(ts[0]!.querySelector('svg'), 'icon 注册表名应渲染 SVG').not.toBeNull()
     // 未指定 value 默认选中第一项
-    expect(ts[0]!.getAttribute('aria-selected')).toBe('true')
+    expect(ts[0]!.getAttribute('aria-current')).toBe('page')
     let detail: unknown
     el.addEventListener('oas-change', (e: Event) => (detail = (e as CustomEvent).detail))
     ts[2]!.click()
@@ -277,8 +280,8 @@ describe('OASBottomNavigation 子元素声明式通道', () => {
       { value: 'search' },
     )
     const ts = tabs(el)
-    expect(ts[0]!.getAttribute('aria-selected')).toBe('false')
-    expect(ts[1]!.getAttribute('aria-selected')).toBe('true')
+    expect(ts[0]!.getAttribute('aria-current')).toBeNull()
+    expect(ts[1]!.getAttribute('aria-current')).toBe('page')
     expect(ts[1]!.tabIndex).toBe(0)
   })
 
@@ -397,13 +400,13 @@ describe('OASBottomNavigation 横排布局（layout）', () => {
     document.body.innerHTML = ''
   })
 
-  it('layout="horizontal"：宿主 data-layout=horizontal，tab 结构与语义不变', () => {
+  it('layout="horizontal"：宿主 data-layout=horizontal，结构与导航语义不变', () => {
     const el = mount({ layout: 'horizontal' })
     expect(el.dataset.layout).toBe('horizontal')
     const ts = tabs(el)
     expect(ts.length).toBe(3)
-    expect(list(el).getAttribute('role')).toBe('tablist')
-    expect(ts[0]!.getAttribute('role')).toBe('tab')
+    expect(list(el).getAttribute('role')).toBe('navigation')
+    expect(ts[0]!.getAttribute('role')).toBeNull()
     expect(ts[0]!.querySelector('.icon-wrap')).not.toBeNull()
     expect(ts[0]!.querySelector('.tab-label')).not.toBeNull()
   })
@@ -610,7 +613,7 @@ describe('OASBottomNavigation icon-only 形态（show-label）', () => {
     expect(el.dataset.showLabel).toBe('active')
     const stl = styleText(el)
     expect(stl).toMatch(
-      /:host\(\[data-show-label='active'\]\)\s+\.tab:not\(\[aria-selected='true'\]\)\s+\.tab-label\s*\{[^}]*display:\s*none/,
+      /:host\(\[data-show-label='active'\]\)\s+\.tab:not\(\[aria-current='page'\]\)\s+\.tab-label\s*\{[^}]*display:\s*none/,
     )
   })
 
@@ -629,7 +632,7 @@ describe('OASBottomNavigation icon-only 形态（show-label）', () => {
     const el = mount({ 'show-label': 'active', value: 'home' })
     tabs(el)[2]!.click()
     const ts = tabs(el)
-    expect(ts[2]!.getAttribute('aria-selected')).toBe('true')
+    expect(ts[2]!.getAttribute('aria-current')).toBe('page')
     expect(ts.map((t) => t.getAttribute('aria-label'))).toEqual(['首页', '搜索', '我的'])
   })
 
@@ -706,11 +709,11 @@ describe('OASBottomNavigation shift 选中动效', () => {
     const stl = styleText(mount())
     // 选中项 icon：translateY(-2px) + scale(1.08)
     expect(stl).toMatch(
-      /:host\(\[data-shift\]\)\s+\.tab\[aria-selected='true'\]\s+\.icon-wrap\s*\{[^}]*transform:\s*translateY\(-2px\)\s+scale\(1\.08\)/,
+      /:host\(\[data-shift\]\)\s+\.tab\[aria-current='page'\]\s+\.icon-wrap\s*\{[^}]*transform:\s*translateY\(-2px\)\s+scale\(1\.08\)/,
     )
     // 选中项文字同步微放大
     expect(stl).toMatch(
-      /:host\(\[data-shift\]\)\s+\.tab\[aria-selected='true'\]\s+\.tab-label\s*\{[^}]*transform:\s*scale\(1\.05\)/,
+      /:host\(\[data-shift\]\)\s+\.tab\[aria-current='page'\]\s+\.tab-label\s*\{[^}]*transform:\s*scale\(1\.05\)/,
     )
     // transition 只动 transform 走 token（未选中回落时同样有过渡）
     expect(stl).toMatch(
@@ -722,13 +725,13 @@ describe('OASBottomNavigation shift 选中动效', () => {
     expect(stl).toContain('prefers-reduced-motion')
   })
 
-  it('shift 下切换选中：aria-selected 跟随（CSS 钩子命中新选中项）', () => {
+  it('shift 下切换选中：aria-current 跟随（CSS 钩子命中新选中项）', () => {
     const el = mount({ shift: '', value: 'home' })
     expect(el.hasAttribute('data-shift')).toBe(true)
-    expect(tabs(el)[0]!.getAttribute('aria-selected')).toBe('true')
+    expect(tabs(el)[0]!.getAttribute('aria-current')).toBe('page')
     tabs(el)[2]!.click()
-    expect(tabs(el)[2]!.getAttribute('aria-selected')).toBe('true')
-    expect(tabs(el)[0]!.getAttribute('aria-selected')).toBe('false')
+    expect(tabs(el)[2]!.getAttribute('aria-current')).toBe('page')
+    expect(tabs(el)[0]!.getAttribute('aria-current')).toBeNull()
     expect(el.getAttribute('value')).toBe('mine')
   })
 })
@@ -766,13 +769,13 @@ describe('OASBottomNavigation 胶囊形态（pill）', () => {
     )
   })
 
-  it('pill 不改变语义与交互：tablist/tab 语义、选中切换、写回 value 照旧', () => {
+  it('pill 不改变语义与交互：navigation/aria-current 语义、选中切换、写回 value 照旧', () => {
     const el = mount({ pill: '', value: 'home' })
-    expect(list(el).getAttribute('role')).toBe('tablist')
+    expect(list(el).getAttribute('role')).toBe('navigation')
     expect(tabs(el).length).toBe(3)
-    expect(tabs(el)[0]!.getAttribute('aria-selected')).toBe('true')
+    expect(tabs(el)[0]!.getAttribute('aria-current')).toBe('page')
     tabs(el)[1]!.click()
-    expect(tabs(el)[1]!.getAttribute('aria-selected')).toBe('true')
+    expect(tabs(el)[1]!.getAttribute('aria-current')).toBe('page')
     expect(el.getAttribute('value')).toBe('search')
   })
 

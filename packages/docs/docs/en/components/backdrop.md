@@ -47,7 +47,7 @@ A full-screen semi-transparent overlay with content slot, color/opacity/blur cus
   <oas-space>
     <oas-button type="primary" onclick="openAnimBackdrop()">Open (watch the fade)</oas-button>
   </oas-space>
-  <p>Open/close plays an opacity fade (transform/opacity only); <code>oas-after-show</code> / <code>oas-after-close</code> fire when the transition finishes; skipped under <code>prefers-reduced-motion</code>.</p>
+  <p>Open/close plays an opacity fade (transform/opacity only); <code>oas-after-open</code> (compat alias <code>oas-after-show</code>) / <code>oas-after-close</code> fire when the transition finishes; skipped under <code>prefers-reduced-motion</code>.</p>
 </DemoBlock>
 
 ## Persistent (non-dismissible) backdrop
@@ -110,7 +110,7 @@ onMounted(async () => {
       el.removeAttribute('open')
       toast.info({ title: 'Backdrop clicked, closed', duration: 2000 })
     })
-    if (opts.onAfterShow) el.addEventListener('oas-after-show', opts.onAfterShow)
+    if (opts.onAfterShow) el.addEventListener('oas-after-open', opts.onAfterShow)
     if (opts.onAfterClose) el.addEventListener('oas-after-close', opts.onAfterClose)
     // Set open before mounting: the component auto-unmounts when connected with !open; reversing the order would remove it immediately
     el.setAttribute('open', '')
@@ -131,7 +131,7 @@ onMounted(async () => {
     })
   window.openAnimBackdrop = () =>
     openBackdrop('backdrop-anim', {
-      onAfterShow: () => toast.info({ title: 'Backdrop fully shown (oas-after-show)', duration: 2000 }),
+      onAfterShow: () => toast.info({ title: 'Backdrop fully shown (oas-after-open)', duration: 2000 }),
       onAfterClose: () => toast.success({ title: 'Backdrop fully closed (oas-after-close)', duration: 2000 }),
     })
 })
@@ -160,7 +160,8 @@ onMounted(async () => {
 | Event | Description |
 | --- | --- |
 | `oas-after-close` | Emitted after the close animation finishes (canonical, aligned with the after-* family); no `detail`. Scroll unlock has already happened before this; node removal (the element removes itself) happens after this |
-| `oas-after-show` | Emitted after the enter animation finishes (canonical, aligned with the after-* family); no `detail`; emitted immediately under reduced motion |
+| `oas-after-open` | Emitted after the enter animation finishes (canonical, aligned with modal/drawer's after-* family); no `detail`; emitted immediately under reduced motion |
+| `oas-after-show` | [Compat alias] Same as `oas-after-open` (DEP-EVENT-0006); new code should listen to the canonical name |
 | `oas-click` | Backdrop clicked, `detail.originalEvent` is the original click event |
 
 #### Slots

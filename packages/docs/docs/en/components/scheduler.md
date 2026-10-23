@@ -62,11 +62,11 @@ For events with `remind` (minutes), the component dispatches `oas-remind` (`deta
 
 `view="agenda"` lists events grouped by day for 28 days from the anchor (recurring events expanded): timed events show `start–end`, untimed events are labeled all-day; clicking a row dispatches `oas-event-click`, clicking a day header dispatches `oas-day-click`.
 
-<DemoBlock title="Timezone (affects title/column headers and the today marker)">
+<DemoBlock title="Timezone (affects the today marker and the now line)">
   <oas-scheduler page-show-date="2026-08-10" timezone="Asia/Shanghai" events='[{"date":"2026-08-10","title":"Shanghai standup","start":"09:00","end":"10:00"}]'></oas-scheduler>
 </DemoBlock>
 
-`timezone` accepts an IANA name (e.g. `Asia/Shanghai` / `America/New_York` / `UTC`) and affects date formatting in the title/column headers and the today marker (via `Intl` timeZone); invalid values fall back to local.
+`timezone` accepts an IANA name (e.g. `Asia/Shanghai` / `America/New_York` / `UTC`) and currently only affects the today marker and the now-line position (via `Intl` timeZone); title/column-header formatting always follows the host's local timezone. Invalid values fall back to local. Full timezone-aware formatting (translating column headers and event times into the target zone) requires a dedicated proposal before implementation.
 
 ## Resource Views & Drag-to-Create
 

@@ -592,7 +592,7 @@ onMounted(() => {
 | `layout` | Layout mode: `vertical` (default, stacked) / `grid` (24-column grid); non-enum values fall back to `vertical`; `inline` attribute takes precedence when present | `string` | `vertical` |
 | `rules` | Validation rules JSON: `{ fieldName: [{ required, message, minLength, maxLength, pattern }] }` | `Rules \| string` | — |
 | `scroll-to-first-error` | On validation failure, focus the first invalid field and smooth-scroll it into view (instant jump under prefers-reduced-motion) | `boolean` | — |
-| `size` | Form-level size tier distributed to all fields via the data-form-size channel (a field's own explicit size wins; form-associated fields follow dynamically) | — | — |
+| `size` | Form-level size tier distributed to all fields via the data-form-size channel (a field's own explicit size wins; form-associated fields follow dynamically). Boundary: `data-form-size` is a static/inspection channel — writing it directly on a field host does not react immediately; dynamic following only happens through the `oas-form` size distribution path | — | — |
 | `validate-messages` | Overrides locale-default validation messages per rule type (property/JSON channels, ${min}/${max}/${value} placeholders, default fallback) | `ValidateMessages \| string` | — |
 | `validate-trigger` | When per-field live validation fires: `input` (default, validate as you type) / `blur` / `change`; a rule's `validateTrigger` overrides per field; submission always validates everything | `string` | `input` |
 

@@ -307,7 +307,14 @@ export class OASBackdrop extends OASElement {
   }
 
   /** P4 进入动画：先落 opacity 0（无 data-shown），下一帧加 data-shown 触发淡入过渡；
-   *  prefers-reduced-motion 直接落可见态并立即派发 after-show */
+   *  prefers-reduced-motion 直接落可见态并立即派发完成事件。
+   *  命名规则：开启完成规范名 after-open（对齐 modal/drawer 的 after-* 家族），after-show 为兼容别名双发；
+   *  双发顺序与 modal/drawer 家族先例一致：兼容别名在前、规范名在后 */
+  private emitAfterOpen(): void {
+    this.emit('after-show') // 兼容别名（DEP-EVENT-0006：oas-after-show → oas-after-open）
+    this.emit('after-open')
+  }
+
   private playEnter(): void {
     this.closing = false
     this.removeAttribute('data-closing')
@@ -326,14 +333,14 @@ export class OASBackdrop extends OASElement {
     }
     if (prefersReducedMotion()) {
       this.setAttribute('data-shown', '')
-      this.emit('after-show')
+      this.emitAfterOpen()
       return
     }
     this.showTimer = setTimeout(() => {
       if (this.closing || !this.hasAttr('open')) return
       this.setAttribute('data-shown', '')
       this.afterShowTimer = setTimeout(() => {
-        if (!this.closing && this.hasAttr('open')) this.emit('after-show')
+        if (!this.closing && this.hasAttr('open')) this.emitAfterOpen()
       }, BACKDROP_ANIM_MS)
     }, ENTER_FRAME_MS)
   }

@@ -161,14 +161,14 @@
   "methods": [],
   "events": [
     {
-      "name": "oas-open-change",
-      "detail": "{ open: true } | { open: false } | { open: next }"
-    },
-    {
       "name": "oas-focus"
     },
     {
       "name": "oas-blur"
+    },
+    {
+      "name": "oas-open-change",
+      "detail": "{ open: next } | { open: true } | { open: false }"
     },
     {
       "name": "oas-change",

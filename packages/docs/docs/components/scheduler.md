@@ -62,11 +62,11 @@
 
 `view="agenda"` 从锚点起 28 天按日分组列出事件（重复事件已展开）：定时事件带 `start–end` 时间、无 `start` 标「全天」；点事件行派发 `oas-event-click`、点日头派发 `oas-day-click`。
 
-<DemoBlock title="时区（timezone：影响标题/列头与「今天」标记）">
+<DemoBlock title="时区（timezone：影响「今天」标记与 now 线）">
   <oas-scheduler page-show-date="2026-08-10" timezone="Asia/Shanghai" events='[{"date":"2026-08-10","title":"上海例会","start":"09:00","end":"10:00"}]'></oas-scheduler>
 </DemoBlock>
 
-`timezone` 接受 IANA 时区名（如 `Asia/Shanghai` / `America/New_York` / `UTC`），影响标题/列头的日期格式化与「今天」标记（经 `Intl` timeZone）；非法时区回落本地。
+`timezone` 接受 IANA 时区名（如 `Asia/Shanghai` / `America/New_York` / `UTC`），当前只影响「今天」标记与 now 线的判定（经 `Intl` timeZone）；标题/列头的日期格式化始终按宿主本地时区。非法时区回落本地。需要全量时区格式化（列头/事件时间换算到目标时区）时先评估需求，再立项实现。
 
 ## 资源视图与拖拽创建
 
