@@ -234,6 +234,7 @@ const componentSidebar: DefaultTheme.SidebarItem[] = [
     items: [
       { text: 'Table 表格', link: '/components/table' },      { text: 'Tree 树', link: '/components/tree' },
       { text: 'VirtualList 虚拟列表', link: '/components/virtual-list' },
+      { text: 'JSONViewer JSON 查看器', link: '/components/json-viewer' },
       { text: 'Card 卡片', link: '/components/card' },
       { text: 'Avatar 头像', link: '/components/avatar' },
       { text: 'Image 图片', link: '/components/image' },

@@ -436,6 +436,7 @@ const COMPONENT_ENTRIES = [
   { id: 'tableCore', entry: 'data/table/core', spec: '@oas-ui/ui/data/table/core' },
   { id: 'form', entry: 'form/form', spec: '@oas-ui/ui/form/form' },
   { id: 'gantt', entry: 'data/gantt', spec: '@oas-ui/ui/data/gantt' },
+  { id: 'jsonViewer', entry: 'data/json-viewer', spec: '@oas-ui/ui/data/json-viewer' },
 ]
 const componentMeasures = {}
 for (const { id, entry } of COMPONENT_ENTRIES) {
@@ -502,6 +503,13 @@ const BUDGETS = [
     limit: 70 * 1024, // 70 KB（v2.6.2 重定档：任务管理/约束/日历/列虚拟化等能力增量）
     basis:
       'v2.6.2 重定档：实测 gzip 61.1 KB（gantt 任务管理/依赖编辑/约束/工作日日历/列虚拟化/多选等能力增量，链含 core + i18n + virtual-list）；上浮约 15% 定档 70 KB。前一档 46 KB 定档于 2026-10-07（实测 39.6 KB）',
+  },
+  {
+    name: '@oas-ui/ui/data/json-viewer 链 gzip',
+    get: () => componentMeasures.jsonViewer.gzipBytes,
+    limit: 35 * 1024, // 35 KB：实测 gzip 30.9 KB（core + i18n + 组件，无第三方运行时），上浮约 13%
+    basis:
+      '实测 gzip 30.9 KB（链含 core + i18n + 树模型/虚拟窗口/工具栏/搜索/复制；无第三方运行时、无图标全量注册），上浮约 13% 定档 35 KB；PRD 目标 ≤32 KB。',
   },
   {
     name: '@oas-ui/theme index.css gzip',

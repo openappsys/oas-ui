@@ -1755,6 +1755,54 @@
       "": "Key content (text / icons)"
     }
   },
+  "oas-json-viewer": {
+    "attrs": {
+      "text": "Raw JSON text (attribute channel; SSR/DSD friendly)",
+      "expanded": "Controlled expanded path array (JSON string). When present the component only emits events and never writes back",
+      "default-expand-depth": "Initial expand depth: 0 keeps only the root, 1 expands the root (default), and so on",
+      "search": "Search query (case-insensitive substring over keys and primitive values)",
+      "height": "Viewport height in px (default 360)",
+      "row-height": "Fixed row height in px (default 24, minimum 20)",
+      "virtual": "Virtual scrolling switch; auto by default (enabled above 200 visible rows), `false` forces it off",
+      "toolbar": "Toolbar switch; `false` hides search, expand and copy buttons",
+      "copyable": "Copy button switch; `false` hides buttons while copy methods remain available",
+      "search-shortcut": "Intercept Ctrl/Cmd+F to focus search while focus is inside; `false` disables it",
+      "compact": "Compact mode (20px rows, 11px type and tighter toolbar padding by default)",
+      "indent": "Indent width for copied JSON (default 2)",
+      "aria-label": "Accessible name of the tree (defaults to “JSON tree”)"
+    },
+    "props": {
+      "data": "Object/array channel (property); whichever of data or text was written last wins",
+      "search": "Search query property; writing it reflects the search attribute",
+      "text": "Raw JSON property; writing it clears the data cache",
+      "expanded": "Controlled expanded path array property; writing it sets the expanded attribute"
+    },
+    "events": {
+      "oas-parse-error": "Fired when text cannot be parsed, `detail: { message, line?, column?, source }`",
+      "oas-toggle": "Fired when a node expands/collapses, `detail: { path, expanded }`; controlled mode only emits",
+      "oas-search-change": "Search state changed, `detail: { query, matches, activeIndex }`; activeIndex is -1 when nothing matches",
+      "oas-expanded-change": "Bulk expand/collapse requested, `detail: { paths }`; controlled mode waits for the host to write back",
+      "oas-copy": "Cancelable event before copying, `detail: { path, kind, text }`",
+      "oas-copied": "Fired after a successful copy, `detail: { path, kind, text }`",
+      "oas-copy-error": "Clipboard write failed, `detail: { path, kind, text, error }`"
+    },
+    "methods": {
+      "expandAll": "Expand every container; controlled mode emits oas-expanded-change",
+      "collapseAll": "Collapse every container",
+      "expandToDepth": "Expand to the given depth: 0 leaves only the root, 1 root plus children, and so on",
+      "scrollToPath": "Scroll to a JSONPath and transiently expand folded ancestors",
+      "searchNext": "Jump to the next search match (cyclic)",
+      "searchPrev": "Jump to the previous search match (cyclic)",
+      "copyPath": "Copy the JSONPath (active node by default)",
+      "copyValue": "Copy the value: raw text for primitives, formatted JSON for containers",
+      "copyJson": "Copy the subtree JSON (strings stay quoted)"
+    },
+    "cssVars": {
+      "--oas-json-viewer-height": "Viewport height (default 360px; used when the height attribute is absent)",
+      "--oas-json-viewer-row-height": "Row height (default 24px, accepts CSS lengths; used when row-height/compact is absent)",
+      "--oas-json-viewer-font-size": "Code font size (default 12px)"
+    }
+  },
   "oas-knob": {
     "attrs": {
       "value": "Current value (controlled): out-of-range values are clamped to `[min, max]` and snapped by `step`; written back to the attribute after interaction (hosts can read the latest value directly from the attribute)",

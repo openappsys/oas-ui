@@ -1,0 +1,189 @@
+{
+  "className": "OASJsonViewer",
+  "sourceFile": "packages/ui/src/data/json-viewer/oas-json-viewer.ts",
+  "attrs": [
+    {
+      "name": "text",
+      "observed": true
+    },
+    {
+      "name": "expanded",
+      "observed": true
+    },
+    {
+      "name": "default-expand-depth",
+      "type": "string",
+      "default": "1",
+      "observed": true
+    },
+    {
+      "name": "search",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "height",
+      "type": "string",
+      "default": "360",
+      "observed": true
+    },
+    {
+      "name": "row-height",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "virtual",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "toolbar",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "copyable",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "search-shortcut",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "compact",
+      "observed": true
+    },
+    {
+      "name": "indent",
+      "type": "string",
+      "default": "2",
+      "observed": true
+    },
+    {
+      "name": "aria-label",
+      "observed": true
+    }
+  ],
+  "props": [
+    {
+      "name": "data",
+      "type": "JsonValue",
+      "api": true
+    },
+    {
+      "name": "text",
+      "type": "string",
+      "api": true
+    },
+    {
+      "name": "search",
+      "type": "string",
+      "api": true
+    },
+    {
+      "name": "expanded",
+      "type": "string[]",
+      "api": true
+    }
+  ],
+  "methods": [
+    {
+      "name": "expandAll",
+      "signature": "expandAll(): void",
+      "description": "全部展开（受控派发 oas-expanded-change）"
+    },
+    {
+      "name": "collapseAll",
+      "signature": "collapseAll(): void",
+      "description": "全部收起"
+    },
+    {
+      "name": "expandToDepth",
+      "signature": "expandToDepth(depth: number): void",
+      "description": "展开到指定深度：0 只留根，1 根+子级，依此类推"
+    },
+    {
+      "name": "scrollToPath",
+      "signature": "scrollToPath(path: string): void",
+      "description": "滚动到指定 path（自动展开折叠祖先）"
+    },
+    {
+      "name": "searchNext",
+      "signature": "searchNext(): void",
+      "description": "跳到下一个搜索命中（循环）"
+    },
+    {
+      "name": "searchPrev",
+      "signature": "searchPrev(): void",
+      "description": "跳到上一个搜索命中（循环）"
+    },
+    {
+      "name": "copyPath",
+      "signature": "copyPath(path: string): Promise<boolean>",
+      "description": "复制 JSONPath（默认当前活动节点）"
+    },
+    {
+      "name": "copyValue",
+      "signature": "copyValue(path: string): Promise<boolean>",
+      "description": "复制值：原始值原文，容器格式化 JSON"
+    },
+    {
+      "name": "copyJson",
+      "signature": "copyJson(path: string): Promise<boolean>",
+      "description": "复制子树 JSON"
+    }
+  ],
+  "events": [
+    {
+      "name": "oas-parse-error"
+    },
+    {
+      "name": "oas-toggle",
+      "detail": "{ path, expanded } satisfies JsonViewerToggleDetail"
+    },
+    {
+      "name": "oas-search-change",
+      "detail": "{ query, matches: this.searchMatches.length, activeIndex: this.searchMatches.length ? this.activeMatch : -1, } satisfies JsonViewerSearchChangeDetail"
+    },
+    {
+      "name": "oas-expanded-change",
+      "detail": "{ paths } satisfies JsonViewerExpandedChangeDetail"
+    },
+    {
+      "name": "oas-copy",
+      "detail": "{ path, kind, text } satisfies JsonViewerCopyDetail"
+    },
+    {
+      "name": "oas-copied",
+      "detail": "{ path, kind, text } satisfies JsonViewerCopyDetail"
+    },
+    {
+      "name": "oas-copy-error",
+      "detail": "{ path, kind, text, error } satisfies JsonViewerCopyDetail & { error: unknown }"
+    }
+  ],
+  "slots": [],
+  "cssVars": [
+    {
+      "name": "--oas-json-viewer-height",
+      "default": "360px"
+    },
+    {
+      "name": "--oas-json-viewer-row-height",
+      "default": "24px"
+    },
+    {
+      "name": "--oas-json-viewer-font-size",
+      "default": "12px"
+    }
+  ],
+  "unresolved": []
+}

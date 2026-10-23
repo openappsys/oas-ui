@@ -5,6 +5,37 @@
 
 ---
 
+## 未发布：N01 JSON 查看器 🚧
+
+### 功能定义
+
+新增只读 JSON 树查看器 `oas-json-viewer`（data 族）：面向「粘贴/加载 JSON 后浏览、搜索、复制路径、大文件滚动」场景，为后续「输入 JSON → 格式化 → 左右对照」工具页提供可嵌入的浏览积木。不负责编辑、Schema 校验、查询执行或差异对比（Diff 归 N02）。
+
+### 详细需求
+
+- **根与层级约定**：始终渲染根行（对象/数组根显示 `{…} N keys` / `[…] N items`）+ 根下第一层子行；根 `aria-level=1`。对象子行显示 `"key":`，数组子行显示 `[i]`；原始值根也占一行。`default-expand-depth=1` 表示「根展开、直接子级可见」；`expandToDepth(0)` 只留根行、`expandToDepth(1)` 根 + 子级，依此类推。
+- **数据通道**：`data` property（对象/数组/原始值）+ `text` 属性/property（JSON 原文，声明式/SSR 通道）。**最近一次写入生效**：写 `data` 会移除 `text` 属性（防 SSR 旧快照覆盖）；写 `text` 会清空 `data` 缓存；水合时若 `data` 已在连接前设置则优先，否则解析 `text`。`text` 解析失败进入错误态并派发 `oas-parse-error`（`detail: { message, line?, column?, source }`，纯文本渲染）；之后写 `data` 或合法 `text` 清除错误态。
+- **树与展开**：展开/折叠、`default-expand-depth`（默认 1）、`expanded`（JSONPath 数组）。**`expanded` 属性在场 = 受控**：组件不写回，只派发 `oas-toggle`（`{ path, expanded }`）；属性缺席 = 非受控，内部维护状态。批量方法 `expandAll()` / `collapseAll()` / `expandToDepth(n)` 在受控模式派发 `oas-expanded-change`（`{ paths }`）由宿主回写，非受控直接生效；`scrollToPath(path)` 自动展开折叠祖先。深层 path 的祖先按前缀自动补全。
+- **搜索**：`search` 属性/property（大小写不敏感子串，v1 不做正则）；输入框与属性双向同步。`matches` = 命中节点数（key/value 同时命中算 1），`activeIndex` 0 基、无命中 -1；自动展开命中祖先但不隐藏其他节点；`searchNext()` / `searchPrev()` 循环；设置搜索自动跳第一个命中并滚动；清空搜索恢复「开始搜索时的展开快照 + 搜索期间用户手动 toggle 的增量」。`oas-search-change`（`{ query, matches, activeIndex }`）。
+- **内置 chrome**：顶部工具栏默认开启（`toolbar="false"` 关闭），含搜索框、命中计数、上一个/下一个、全部展开/全部收起、复制当前节点（路径/值/子树 JSON）三个动作；树区域单焦点容器 + `aria-activedescendant`，工具栏控件进 Tab 序。`copyable`（默认 true）只控制复制动作是否显示；`height`（默认 360）是含工具栏的固定视口，内容区占剩余高度。
+- **复制**：方法 `copyPath(path)` / `copyValue(path)` / `copyJson(path)` 在 `copyable=false` 时仍可用。`copyValue`：原始值输出原文（string 不带引号），对象/数组输出格式化 JSON；`copyJson`：一律 JSON（string 带引号，按 `indent`）；`copyPath`：单引号 JSONPath（`$['a.b'][0]`，单引号/反斜杠转义），与 `expanded` / `scrollToPath()` 输入格式一致（双向可回传）。点击/方法调用先派发可取消的 `oas-copy`（`{ path, kind, text }`），未被取消则在用户手势内写剪贴板，成功派发 `oas-copied`、失败 `oas-copy-error`。
+- **大文件**：树虚拟滚动（固定行高 + overscan，只渲染可视区）；`height`（默认 360）、`row-height`（默认 24）、`virtual`（默认自动：可见节点 > 200 启用，`virtual="false"` 强制关闭）；`scrollToPath()` 定位。解析在主线程（超大文件建议宿主预解析后传 `data`）。
+- **展示**：类型色走 token；值一律渲染完整文本（DOM 中保留全文保证读屏可读），单行 `text-overflow: ellipsis` + `title` 提示，不引入动态行高/浮层；`indent`（默认 2）、紧凑模式（更小字号/行距，显式 `row-height` 优先）；暗色/RTL 逻辑属性；宿主 `aria-label` 转发命名树。
+- **A11y/键盘**：`role="tree"` + `treeitem`、`aria-expanded` / `aria-level` / `aria-posinset` / `aria-setsize`；单焦点容器 + `aria-activedescendant`；↑/↓ 移动、→ 展开/进子级、← 收起/回父级、Home/End 首尾、Enter/Space 切换；`Ctrl/Cmd+F` **仅 focus-within 时**聚焦搜索（`search-shortcut="false"` 关闭，多实例只响应焦点所在实例）；读屏可感知类型与路径。
+- **SSR/DSD**：`text` 属性参与 SSR 快照与水合，水合不重建；`data` property 不反射 attribute。
+- **i18n**：错误/空态/复制反馈/搜索计数/工具栏标签走 locale key；10 个语言包同步补 key（非中英语言先用英文兜底），保持 locale-completeness 测试通过。
+
+### 非目标
+
+编辑、Schema 校验、JMESPath/JSONPath 查询执行、JSON diff/左右对照、远程加载、Worker 解析、折叠状态持久化、Markdown 渲染。
+
+### 验收标准
+
+- 单测：解析/错误恢复、`data`/`text` 双源、展开受控/非受控、搜索与计数、复制路径转义、虚拟窗口边界、键盘模型、SSR 水合。
+- e2e：10k 节点滚动时 DOM 行数有界、搜索跳转命中、复制路径反馈、真实键盘、axe 零严重违规、暗色/RTL。
+- 文档 zh/en（含 API/demo）、`api:check` 双向 0、CHANGELOG `[未发布]`、PRD/ROADMAP 同步。
+- 包体：`data/json-viewer` 按需链 gzip 实测 30.9 KB（链含 core + i18n + 组件），目标 ≤ 32 KB、`perf:size` 预算 35 KB；零第三方运行时依赖。
+
 ## v2.6.3：date-picker 范围手输 + sidebar 行内容渲染 + barcode 扩展 🚧
 
 ### 功能定义

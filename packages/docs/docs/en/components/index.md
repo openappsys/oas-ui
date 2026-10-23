@@ -133,6 +133,7 @@ OAS-UI provides 145 framework-agnostic Web Components, organized into 9 groups b
 - [Table](/en/components/table) —— Displays structured data in a row-and-column grid with sorting, row selection, multi-select, and a loading state. It can be wired together with a pagination component.
 - [Tree](/en/components/tree) —— Displays hierarchical data with support for selection, expansion, multi-select, lazy loading, and node drag-and-drop.
 - [VirtualList](/en/components/virtual-list) —— Renders large data lists into the viewport window: only visible items (plus a top/bottom buffer) are rendered, with head/tail padding placeholders to support the scroll height, and scroll events throttled via rAF. It is a generic rendering primitive reused by table / tree.
+- [JSONViewer](/en/components/json-viewer) —— A read-only JSON tree with collapse/expand, search, JSONPath copy, fixed-row virtual scrolling, keyboard and screen-reader support.
 - [Card](/en/components/card) —— An information container that groups a set of related content.
 - [Avatar](/en/components/avatar) —— Displays a user or object avatar, supporting both text-placeholder and image forms.
 - [Image](/en/components/image) —— Displays image resources, with an optional built-in preview feature.

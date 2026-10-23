@@ -691,6 +691,13 @@ const COMPONENT_STEPS: Record<string, Array<[string, string, string?]>> = {
     ['clipboard', 'grant'],
     ['oas-code [part="copy"]', 'click', '授权后 → oas-copy'],
   ],
+  'json-viewer': [
+    ['oas-json-viewer [part="search"]', 'fill:a', '搜索输入 → oas-search-change'],
+    ['oas-json-viewer [part="expand-all"]', 'click', '全部展开 → oas-expanded-change'],
+    ['oas-json-viewer [part="copy-path"]', 'domclick', '无权限复制 → oas-copy / oas-copy-error'],
+    ['clipboard', 'grant'],
+    ['oas-json-viewer [part="copy-value"]', 'domclick', '授权后复制 → oas-copied'],
+  ],
   collapse: [['oas-collapse-item [part="head"]', 'click', '点头部切换 → oas-change']],
   qrcode: [['#qrcode-status [part="refresh"]', 'click', '过期态点刷新按钮 → oas-refresh']],
   watermark: [['#wm-tamper-simulate', 'click', '模拟篡改删层 → oas-remove']],

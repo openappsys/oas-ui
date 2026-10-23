@@ -1689,6 +1689,54 @@
       "": "按键内容（文本 / 图标等）"
     }
   },
+  "oas-json-viewer": {
+    "attrs": {
+      "text": "JSON 原文（attribute 通道；SSR/DSD 可用）",
+      "expanded": "受控展开的节点 path 数组（JSON 字符串）；属性在场即受控，组件只派发事件不写回",
+      "default-expand-depth": "初始展开深度：0 只显示根，1 展开根（默认），依此类推",
+      "search": "搜索关键词（大小写不敏感子串，匹配对象键与原始值）",
+      "height": "视口高度（px，默认 360）",
+      "row-height": "固定行高（px，默认 24，最小 20）",
+      "virtual": "虚拟滚动开关；默认自动（可见行超过 200 时启用），`false` 强制关闭",
+      "toolbar": "工具栏开关；`false` 隐藏搜索、展开与复制按钮",
+      "copyable": "复制按钮开关；`false` 只隐藏按钮，复制方法仍可调用",
+      "search-shortcut": "组件内聚焦时拦截 Ctrl/Cmd+F 聚焦搜索框；`false` 关闭",
+      "compact": "紧凑模式（默认行高 20、字号 11px、更小工具栏内边距）",
+      "indent": "复制容器 JSON 时的缩进空格数（默认 2）",
+      "aria-label": "树的可读名称（默认「JSON 树」）"
+    },
+    "props": {
+      "data": "对象/数组通道（property）；与 text 最近写入者生效",
+      "search": "搜索关键词 property；写入反射 search 属性",
+      "text": "JSON 原文 property；写入时清空 data 缓存",
+      "expanded": "受控展开 path 数组 property；写入等价于设置 expanded 属性"
+    },
+    "events": {
+      "oas-parse-error": "text 解析失败时派发，`detail: { message, line?, column?, source }`",
+      "oas-toggle": "展开/收起时派发，`detail: { path, expanded }`；受控模式只派发不写回",
+      "oas-search-change": "搜索状态变化，`detail: { query, matches, activeIndex }`；无命中 activeIndex 为 -1",
+      "oas-expanded-change": "批量展开/收起被调用，`detail: { paths }`；受控模式等待宿主写回",
+      "oas-copy": "复制前派发，可取消，`detail: { path, kind, text }`",
+      "oas-copied": "复制成功后派发，`detail: { path, kind, text }`",
+      "oas-copy-error": "剪贴板写入失败，`detail: { path, kind, text, error }`"
+    },
+    "methods": {
+      "expandAll": "展开全部容器节点；受控模式派发 oas-expanded-change",
+      "collapseAll": "收起全部容器节点",
+      "expandToDepth": "展开到指定深度：0 只留根，1 根+子级，依此类推",
+      "scrollToPath": "滚动到指定 JSONPath，并临时展开折叠祖先",
+      "searchNext": "跳到下一个搜索命中（循环）",
+      "searchPrev": "跳到上一个搜索命中（循环）",
+      "copyPath": "复制 JSONPath（默认当前活动节点）",
+      "copyValue": "复制值：原始值原文，容器格式化 JSON",
+      "copyJson": "复制子树 JSON（字符串带引号）"
+    },
+    "cssVars": {
+      "--oas-json-viewer-height": "视口高度（默认 360px；未设置 height 属性时生效）",
+      "--oas-json-viewer-row-height": "行高（默认 24px，支持 CSS 长度；未设置 row-height/compact 时生效）",
+      "--oas-json-viewer-font-size": "代码字号（默认 12px）"
+    }
+  },
   "oas-knob": {
     "attrs": {
       "value": "当前值（受控）：越界自动夹取到 `[min, max]` 并按 `step` 吸附；交互后写回属性（宿主可直接读属性取最新值）",

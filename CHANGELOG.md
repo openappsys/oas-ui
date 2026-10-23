@@ -4,6 +4,10 @@
 
 ## [未发布]
 
+### 新增
+
+- **`oas-json-viewer` JSON 查看器**：只读 JSON 树，支持折叠/展开（`expanded` 受控或非受控）、大小写不敏感搜索与命中导航、JSONPath / 原始值 / 子树 JSON 复制、固定行高虚拟滚动、键盘导航与 `aria-activedescendant` 读屏语义。`text` attribute（SSR/DSD）与 `data` property 双通道，非法文本错误态可自恢复；10 个语言包补齐工具栏文案。
+
 ### 变更
 
 - **宿主可访问名转发**：`oas-tabs`（tablist）、`oas-segmented`（radiogroup）、`oas-table`（grid）新增宿主 `aria-label` → 内部角色容器转发，运行时更新即时生效；缺省不设置。修复宿主 `aria-label` 在 shadow 内失效导致读屏无名的问题；`oas-tabs` 改名不重建标签钮、`oas-table` 改名不重建数据行。

@@ -422,6 +422,7 @@ import './data/tree/index.js'
 import './data/table/edit/index.js'
 import './data/table/index.js'
 import './data/virtual-list/index.js'
+import './data/json-viewer/index.js'
 import './data/countdown/index.js'
 import './data/statistic/index.js'
 import './data/ellipsis/index.js'
@@ -553,6 +554,26 @@ export {
   type ScrollToIndexAlign,
   type ScrollToIndexOptions,
 } from './data/virtual-list/index.js'
+export {
+  OASJsonViewer,
+  buildJsonTree,
+  collectAncestorPaths,
+  encodeJsonPath,
+  flattenVisible,
+  parseJsonPath,
+  searchJson,
+  serializeJson,
+  serializeValue,
+  type JsonKind,
+  type JsonNode,
+  type JsonRow,
+  type JsonValue,
+  type JsonViewerToggleDetail,
+  type JsonViewerExpandedChangeDetail,
+  type JsonViewerSearchChangeDetail,
+  type JsonViewerParseErrorDetail,
+  type JsonViewerCopyDetail,
+} from './data/json-viewer/index.js'
 export { OASCountdown, formatDuration } from './data/countdown/oas-countdown.js'
 export { OASStatistic } from './data/statistic/oas-statistic.js'
 export { OASEllipsis } from './data/ellipsis/oas-ellipsis.js'

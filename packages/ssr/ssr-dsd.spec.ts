@@ -424,6 +424,11 @@ test.beforeAll(async () => {
       '<div style="background: var(--oas-color-bg-hover); height: 100%">比例容器</div>',
     ),
     renderToString('oas-virtual-list', { height: '100', 'item-height': '20', items: VL_ITEMS }),
+    renderToString('oas-json-viewer', {
+      text: '{"name":"张三","tags":["a","b"]}',
+      height: '160',
+      'default-expand-depth': '1',
+    }),
   ])
 
   // —— DSD 批次 4：导航布局组件快照 ——
@@ -929,13 +934,17 @@ test('真水合：upgrade 后 shadow 未被重建（style DOM 引用保持同一
   // upgrade 前：确认指纹 meta 存在，并保存 shadow 内 style 元素的 DOM 引用（跨 evaluate 保留）
   const preMeta = await page.evaluate(
     (tags) => {
-      const w = window as unknown as Window & { __ssrStyleRef: Record<string, Element | null> }
+      const w = window as unknown as Window & {
+        __ssrStyleRef: Record<string, Element | null>
+        __jvRowsRef?: Element | null
+      }
       w.__ssrStyleRef = {}
       const out: Record<string, boolean> = {}
       for (const t of tags) {
         const shadow = document.querySelector(t)?.shadowRoot
         if (!shadow) continue
         w.__ssrStyleRef[t] = shadow.querySelector('style')
+        if (t === 'oas-json-viewer') w.__jvRowsRef = shadow.querySelector('[part="rows"]')
         out[t] = shadow.querySelector('meta[data-oas-ssr]') !== null
       }
       return out
@@ -952,13 +961,17 @@ test('真水合：upgrade 后 shadow 未被重建（style DOM 引用保持同一
   // 指纹 meta 已移除（hydrate 成功后清理，防二次误判）
   const postHydrate = await page.evaluate(
     (tags) => {
-      const w = window as unknown as Window & { __ssrStyleRef: Record<string, Element | null> }
-      const out: Record<string, { sameStyle: boolean; metaRemoved: boolean }> = {}
+      const w = window as unknown as Window & {
+        __ssrStyleRef: Record<string, Element | null>
+        __jvRowsRef?: Element | null
+      }
+      const out: Record<string, { sameStyle: boolean; metaRemoved: boolean; sameRows?: boolean }> = {}
       for (const t of tags) {
         const shadow = document.querySelector(t)?.shadowRoot
         out[t] = {
           sameStyle: shadow?.querySelector('style') === w.__ssrStyleRef[t],
           metaRemoved: shadow?.querySelector('meta[data-oas-ssr]') === null,
+          ...(t === 'oas-json-viewer' ? { sameRows: shadow?.querySelector('[part="rows"]') === w.__jvRowsRef } : {}),
         }
       }
       return out
@@ -968,6 +981,9 @@ test('真水合：upgrade 后 shadow 未被重建（style DOM 引用保持同一
   for (const t of WHITELIST) {
     expect(postHydrate[t]!.sameStyle, `${t} 真水合：style 应保持同一 DOM 对象`).toBe(true)
     expect(postHydrate[t]!.metaRemoved, `${t} 指纹 meta 应被移除`).toBe(true)
+    if (t === 'oas-json-viewer') {
+      expect(postHydrate[t]!.sameRows, `${t} 真水合：SSR 行容器应复用而非重建`).toBe(true)
+    }
   }
 
   const after = await layoutOf(page, LAYOUT_STABLE_TAGS)

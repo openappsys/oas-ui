@@ -115,7 +115,7 @@ oas-ui/
 | ------------- | ------------------------------------------------------------------------------------------------------------------------ |
 | `basic/`      | badge, button, button-group, divider, icon, kbd, label, link, space, tag, typography, visually-hidden                     |
 | `form/`       | auto-complete, calendar, cascader, checkbox, color-picker, combobox, date-picker, dynamic-input, dynamic-tags, editable, form, form-item, input, input-number, mentions, pin-input, radio, rate, segmented, select, slider, switch, textarea, time-picker, toggle-button, toggle-group, transfer, tree-select, upload |
-| `data/`       | avatar, avatar-group, card, carousel, chart, code, collapse, comment, countdown, descriptions, ellipsis, equation, gradient-text, image, image-group, list, log, marquee, number-animation, qrcode, statistic, table, timeline, tree, virtual-list, watermark |
+| `data/`       | avatar, avatar-group, card, carousel, chart, code, collapse, comment, countdown, descriptions, ellipsis, equation, gradient-text, image, image-group, json-viewer, list, log, marquee, number-animation, qrcode, statistic, table, timeline, tree, virtual-list, watermark |
 | `feedback/`   | alert, backdrop, bottom-sheet, confirm, drawer, empty, hover-card, loading-bar, message, modal, notification, popconfirm, popover, progress, result, skeleton, snackbar, spin, toast, tooltip |
 | `navigation/` | affix, anchor, app-bar, back-top, bottom-navigation, breadcrumb, command, contextmenu, dropdown, float-button, menu, menubar, navigation-menu, page-header, pagination, speed-dial, stepper, steps, tabs, toolbar, tour |
 | `layout/`     | aspect-ratio, container, flex, grid, layout, masonry, scroll-area, sidebar, splitter                                      |
