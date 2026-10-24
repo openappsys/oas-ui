@@ -81,3 +81,45 @@ test('log 搜索过滤：无命中显示「无匹配」空态（locale），暗�
   expect(emptyText.hidden).toBe(false)
   expect(emptyText.text).toContain('无匹配日志')
 })
+
+test('log ANSI 着色：demo 颜色生效、转义码不泄漏、宿主可覆盖 16 色变量', async ({ page }) => {
+  await page.goto('/components/log.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#log-ansi')
+  await page.waitForFunction(
+    () => document.querySelector('#log-ansi')!.shadowRoot!.querySelectorAll('[part="row"]').length === 7,
+    { timeout: 10000 },
+  )
+  const r = await page.evaluate(() => {
+    const el = document.querySelector('#log-ansi')! as HTMLElement & {
+      shadowRoot: ShadowRoot
+    }
+    const lines = Array.from(el.shadowRoot.querySelectorAll('[part="line"]')) as HTMLElement[]
+    const blue = lines[0]!.querySelector<HTMLElement>('.ansi-fg-blue')!
+    const before = getComputedStyle(blue).color
+    // 文档承诺：宿主可在 oas-log 上覆盖 16 色变量
+    el.style.setProperty('--ansi-blue', 'rgb(0, 255, 0)')
+    const after = getComputedStyle(blue).color
+    const redBg = lines[3]!.querySelector<HTMLElement>('.ansi-bg-red')!
+    const rgbFg = lines[4]!.querySelector<HTMLElement>('.ansi-rgb-fg')!
+    return {
+      texts: lines.map((l) => l.textContent ?? ''),
+      before,
+      after,
+      redBg: getComputedStyle(redBg).backgroundColor,
+      redFg: getComputedStyle(redBg).color,
+      hasRgbFg: Boolean(rgbFg),
+      rgbFgColor: rgbFg ? getComputedStyle(rgbFg).color : '',
+    }
+  })
+  // 显示文本无转义控制字符
+  expect(r.texts.every((t) => !t.includes('\u001b'))).toBe(true)
+  // 红底白字：背景走标准 ANSI 固定色，前景自动择优
+  expect(r.redBg).toBe('rgb(205, 49, 49)')
+  expect(r.redFg).toBe('rgb(255, 255, 255)')
+  // 256 / truecolor 前景走主题校正后的 rgb（非透明/非继承）
+  expect(r.hasRgbFg).toBe(true)
+  expect(r.rgbFgColor).not.toBe('')
+  // 宿主覆盖 --ansi-blue 后立即生效
+  expect(r.before).not.toBe(r.after)
+  expect(r.after).toBe('rgb(0, 255, 0)')
+})

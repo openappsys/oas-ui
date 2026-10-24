@@ -51,6 +51,11 @@
       "type": "string",
       "default": "",
       "observed": true
+    },
+    {
+      "name": "ansi",
+      "type": "boolean",
+      "observed": true
     }
   ],
   "props": [

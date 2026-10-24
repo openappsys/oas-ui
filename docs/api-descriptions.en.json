@@ -2001,7 +2001,8 @@
       "loading": "Loading state (viewport overlay + spinner + aria-busy)",
       "offset-bottom": "Distance from the bottom that counts as reaching it (px, fires `oas-require-more` with from=bottom, default 0)",
       "offset-top": "Distance from the top that counts as reaching it (px, fires `oas-require-more` with from=top, default 0)",
-      "keyword": "Search filter keyword: when non-empty, only matching lines are shown (case-insensitive) and matched fragments get a mark highlight (same visual system as highlight); line numbers / levels stay aligned to the original indices, clearing restores all lines without modifying the host's lines"
+      "keyword": "Search filter keyword: when non-empty, only matching lines are shown (case-insensitive) and matched fragments get a mark highlight (same visual system as highlight); line numbers / levels stay aligned to the original indices, clearing restores all lines without modifying the host's lines",
+      "ansi": "Parse and render ANSI SGR escape sequences per line (boolean, off by default): 16-color foreground/background (30-37/90-97/40-47/100-107, light-dark() palette), 256 colors (38;5;n/48;5;n) and truecolor (38;2;r;g;b/48;2;r;g;b, inline style), plus bold/dim/italic/underline/inverse and reset; non-SGR CSI/OSC/multi-byte ESC sequences and C0 control characters are stripped to prevent leakage (tabs preserved); the ANSI foreground overrides the per-line levels semantic color, keyword/highlight marks still apply (inheriting the ANSI foreground)"
     },
     "events": {
       "oas-require-more": "Fired once when scrolling enters the top/bottom threshold edge (not repeatedly while staying, re-arms after leaving), `detail: { from: \"top\" | \"bottom\" }`; for loading history/new entries",

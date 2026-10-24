@@ -1011,6 +1011,18 @@ describe('@oas-ui/ssr renderToString', () => {
     expect(empty).toContain('暂无日志')
   })
 
+  it('oas-log：ansi 属性与含 SGR 的行可服务端渲染（保留属性、不抛错）', async () => {
+    const html = await renderToString(
+      'oas-log',
+      { lines: JSON.stringify(['\u001b[31mERROR\u001b[0m ok']), ansi: '', 'line-number': '' },
+      '',
+      { locale: 'zh-CN' },
+    )
+    expect(html).toContain('ansi')
+    expect(html).toContain('ERROR')
+    expect(html).toContain('ok')
+  })
+
   it('oas-masonry：columns/gap 落到内联样式（column-count/column-gap）', async () => {
     const html = await renderToString('oas-masonry', { columns: '3', gap: '12' }, '<div>卡一</div>')
     expect(html).toContain('<template shadowrootmode="open">')

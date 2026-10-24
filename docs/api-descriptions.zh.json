@@ -1927,7 +1927,8 @@
       "loading": "加载态（视口浮层 + spinner + aria-busy）",
       "offset-bottom": "距底部多远视为触底（px，触发 `oas-require-more` 的 from=bottom，默认 0）",
       "offset-top": "距顶部多远视为触顶（px，触发 `oas-require-more` 的 from=top，默认 0）",
-      "keyword": "搜索过滤关键字：非空时只显示命中行（大小写不敏感），命中片段包 mark 高亮（同 highlight 视觉体系）；行号/levels 按原始索引对齐，清空/移除恢复全部行，不改宿主 lines"
+      "keyword": "搜索过滤关键字：非空时只显示命中行（大小写不敏感），命中片段包 mark 高亮（同 highlight 视觉体系）；行号/levels 按原始索引对齐，清空/移除恢复全部行，不改宿主 lines",
+      "ansi": "解析并渲染行内 ANSI SGR 转义序列（布尔，默认关）：16 色前景/背景（30-37/90-97/40-47/100-107，light-dark() 色板）、256 色（38;5;n/48;5;n）与 truecolor（38;2;r;g;b/48;2;r;g;b，inline style），加粗/暗淡/斜体/下划线/反显与 reset；非 SGR 的 CSI/OSC/多字节 ESC 与 C0 控制字符剔除防泄漏（保留制表符）；ANSI 前景色优先于行 levels 语义色，keyword/highlight 命中 mark 仍生效（继承 ANSI 前景色）"
     },
     "events": {
       "oas-require-more": "滚动进入顶部/底部阈值区边缘派发一次（停留不连发、离开复位），`detail: { from: \"top\" | \"bottom\" }`；宿主上翻拉历史/下拉拉新",

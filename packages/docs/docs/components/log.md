@@ -90,6 +90,23 @@
   </p>
 </DemoBlock>
 
+## ANSI 着色
+
+<DemoBlock title="ANSI 转义序列着色">
+  <oas-log id="log-ansi" ansi line-number style="height: 220px; width: 100%; background: var(--oas-color-bg); border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md)"></oas-log>
+  <p style="width: 100%; margin: var(--oas-space-2) 0 0; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">
+    设置 <code>ansi</code> 后每行解析 ANSI SGR 转义序列：16 / 256 / truecolor 前景与背景色 + 加粗 / 暗淡 / 斜体 / 下划线 / 反显，转义码从显示文本中剔除；ANSI 前景色优先于 <code>levels</code> 行语义色，<code>keyword</code> / <code>highlight</code> 命中 mark 仍生效并继承 ANSI 前景色。色板走 <code>light-dark()</code> 双主题，暗色自动切换可读色。
+  </p>
+</DemoBlock>
+
+支持范围与边界：
+
+- **前景 / 背景**：16 色 `30-37` / `90-97`（亮色）/ `40-47` / `100-107`，走组件内置 `light-dark()` 色板（CSS class，浅色 / 暗色各一套可读值，可用 CSS 变量 `--ansi-*` 覆盖单色，设在 `oas-log` 元素上）；`38;5;n` / `48;5;n`（256 色）与 `38;2;r;g;b` / `48;2;r;g;b`（truecolor）按 inline style 渲染，前景色额外按浅 / 暗主题的感知对比度自动校正，彩色背景按对比度择优（16 色背景保证黑 / 白至少一档达标；任意 truecolor 背景只择优，极端中间色可能需宿主显式前景）。
+- **样式**：`1` 加粗、`2` 暗淡、`3` 斜体、`4` 下划线、`7` 反显；`0` 整体复位，`22` / `23` / `24` / `27` 逐项关闭（`39` / `49` 清除前景 / 背景恢复继承色）。
+- **组合优先级**：片段有 ANSI 前景色时以 ANSI 为准（覆盖行 `levels` 语义色）；无 ANSI 前景色的片段仍走 `levels` / 宿主文字色。`keyword` / `highlight` 命中的 mark 包在 ANSI 片段内层，继承其前景色，高亮不丢色。
+- **安全与性能**：转义序列解析为纯文本片段 + class / inline style 渲染，全程不走 `innerHTML`，恶意文本（`<script>`、引号、`&`）按字面显示；非 SGR 的 CSI / OSC / 多字节 ESC 与 C0 控制字符一并剔除（保留制表符），不会泄漏到 DOM。未识别 / 非法参数忽略，不影响后续文本。解析仅在行内容或通道变化时执行，通道未变时追加日志零重建。
+- **边界**：keyword 过滤按可见文本匹配（开启 `ansi` 时先剥离转义序列），不会因颜色码漏命中；定位/高亮仍按剔除后的片段处理。SGR 状态按行重置（颜色不跨行延续），多行彩色输出请每行自带转义序列。16 色色板按页面底色 `--oas-color-bg` 校正；放进 elevated 背景或叠加 `dim` 时若需更高对比度，可覆盖 `--ansi-*` 变量。不做终端模拟（输入、光标、OSC 8 超链接）。
+
 ## 加载态与 scrollTo
 
 <DemoBlock title="loading + scrollTo()">
@@ -204,6 +221,21 @@ onMounted(() => {
       ]
     }
 
+    // ANSI 着色：\u001b 转义写在 JS 字符串里（不落不可见控制字符进 md 源码）
+    const ansi = document.querySelector('#log-ansi')
+    if (ansi) {
+      const E = '\u001b['
+      ansi.lines = [
+        `${E}1;34mINFO${E}0m  服务启动完成，监听 :5175`,
+        `${E}32m✔${E}0m 编译通过 ${E}90m(2.3s)${E}0m`,
+        `${E}33mWARN${E}0m  磁盘占用 ${E}1m82%${E}0m，建议清理`,
+        `${E}31m✖${E}0m 部署失败：${E}41;97m ECONNREFUSED ${E}0m node-3:5175`,
+        `${E}38;5;39mhttps://example.dev/build/1234${E}0m`,
+        `${E}38;2;186;85;211mtruecolor 洋红诊断信息${E}0m（38;2;r;g;b）`,
+        `${E}4mhttps://oas-ui.dev${E}0m ${E}7m 反显片段 ${E}0m 结束`,
+      ]
+    }
+
     const levels = document.querySelector('#log-levels')
     if (levels) {
       levels.lines = [
@@ -299,6 +331,7 @@ onMounted(() => {
 - `scrollTo('top' | 'bottom' | number)`：滚动视口到顶/底/指定像素位置，供外部"回到底部"按钮调用。
 - `loading`：加载浮层遮罩视口，同步 `aria-busy`，文案走 locale（`loading.loading`）。
 - `levels` / `highlight` / `keyword`：行级别语义色 / 行级关键词·正则高亮 / 搜索过滤通道（JSON 属性，语法见上方 demo）。`keyword` 非空时只显示命中行（大小写不敏感），命中片段包 mark 高亮；过滤不改宿主 `lines`，行号与级别仍按原始索引对齐，清空即恢复。
+- `ansi`：ANSI SGR 转义序列着色开关（默认关），支持 16 / 256 / truecolor 前景背景与常用样式，详见「ANSI 着色」一节。
 
 顶部插入历史行时 reconcile 按行内容 key 对齐：已有行节点复用、行号自动重排、视口阅读位置自动补偿。
 
@@ -310,6 +343,7 @@ onMounted(() => {
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
+| `ansi` | 解析并渲染行内 ANSI SGR 转义序列（布尔，默认关）：16 色前景/背景（30-37/90-97/40-47/100-107，light-dark() 色板）、256 色（38;5;n/48;5;n）与 truecolor（38;2;r;g;b/48;2;r;g;b，inline style），加粗/暗淡/斜体/下划线/反显与 reset；非 SGR 的 CSI/OSC/多字节 ESC 与 C0 控制字符剔除防泄漏（保留制表符）；ANSI 前景色优先于行 levels 语义色，keyword/highlight 命中 mark 仍生效（继承 ANSI 前景色） | `boolean` | — |
 | `auto-scroll` | 追加后自动滚动到底（仅贴底时滚动） | `string` | `true` |
 | `empty-text` | 空态文案（覆盖 locale 默认值） | — | — |
 | `highlight` | 行高亮规则（JSON 数组）：字符串=字面关键词；`{ text }` / `{ pattern, flags }` = 正则；命中片段包 mark 底色（warning token） | `string` | — |

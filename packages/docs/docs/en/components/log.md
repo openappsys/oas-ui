@@ -90,6 +90,23 @@ Provide data via the `lines` property (or the `lines` attribute as a JSON string
   </p>
 </DemoBlock>
 
+## ANSI Coloring
+
+<DemoBlock title="ANSI escape sequence coloring">
+  <oas-log id="log-ansi" ansi line-number style="height: 220px; width: 100%; background: var(--oas-color-bg); border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md)"></oas-log>
+  <p style="width: 100%; margin: var(--oas-space-2) 0 0; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">
+    With <code>ansi</code> set, each line is parsed for ANSI SGR escape sequences: 16 / 256 / truecolor foreground and background colors plus bold / dim / italic / underline / inverse; escape codes are stripped from the displayed text. The ANSI foreground takes precedence over the <code>levels</code> semantic line color, and <code>keyword</code> / <code>highlight</code> marks still apply (inheriting the ANSI foreground). The palette uses <code>light-dark()</code> so dark mode switches to readable colors automatically.
+  </p>
+</DemoBlock>
+
+Scope and boundaries:
+
+- **Foreground / background**: 16 colors `30-37` / `90-97` (bright) / `40-47` / `100-107`, rendered via the built-in `light-dark()` palette (CSS classes, one readable set per theme, overridable per color with the `--ansi-*` CSS variables set on the `oas-log` element); `38;5;n` / `48;5;n` (256 colors) and `38;2;r;g;b` / `48;2;r;g;b` (truecolor) are rendered as inline styles, with foreground colors auto-corrected for perceptual contrast in each theme and colored backgrounds picking the best foreground (16-color backgrounds guarantee at least one of black / white passes; arbitrary truecolor backgrounds can only be optimized, extreme mid-tones may need an explicit host foreground).
+- **Styles**: `1` bold, `2` dim, `3` italic, `4` underline, `7` inverse; `0` resets everything, `22` / `23` / `24` / `27` turn each style off (`39` / `49` clear the foreground / background back to inherited colors).
+- **Precedence**: a segment with an ANSI foreground color wins (overriding the `levels` semantic line color); segments without an ANSI foreground keep the `levels` / host text color. `keyword` / `highlight` marks are wrapped inside the ANSI segment and inherit its foreground, so highlighting never loses the color.
+- **Safety & performance**: sequences are parsed into plain-text segments rendered with classes / inline styles — `innerHTML` is never used, so hostile text (`<script>`, quotes, `&`) is displayed literally; non-SGR CSI / OSC / multi-byte ESC sequences and C0 control characters are stripped as well (tabs are preserved) and never leak into the DOM. Unknown / invalid parameters are ignored without affecting the rest of the line. Parsing only runs when a line's content or a channel changes; appends perform zero rebuilds while channels stay unchanged.
+- **Boundaries**: keyword filtering matches the visible text (escape sequences are stripped first when `ansi` is on), so color codes cannot hide a match; SGR state resets per line (colors do not carry across lines), so multi-line colored output should include escapes on each line. The 16-color palette is tuned against the page background `--oas-color-bg`; on elevated backgrounds or with `dim`, override the `--ansi-*` variables if stricter contrast is needed. No terminal emulation (input, cursor, OSC 8 hyperlinks).
+
 ## Loading and scrollTo
 
 <DemoBlock title="loading + scrollTo()">
@@ -202,6 +219,21 @@ onMounted(() => {
       ]
     }
 
+    // ANSI coloring: \u001b escapes live in JS strings (no invisible control chars in the md source)
+    const ansi = document.querySelector('#log-ansi')
+    if (ansi) {
+      const E = '\u001b['
+      ansi.lines = [
+        `${E}1;34mINFO${E}0m  service started, listening on :5175`,
+        `${E}32m✔${E}0m build passed ${E}90m(2.3s)${E}0m`,
+        `${E}33mWARN${E}0m  disk usage ${E}1m82%${E}0m, cleanup recommended`,
+        `${E}31m✖${E}0m deploy failed: ${E}41;97m ECONNREFUSED ${E}0m node-3:5175`,
+        `${E}38;5;39mhttps://example.dev/build/1234${E}0m`,
+        `${E}38;2;186;85;211mtruecolor magenta diagnostics${E}0m (38;2;r;g;b)`,
+        `${E}4mhttps://oas-ui.dev${E}0m ${E}7m inverse segment ${E}0m done`,
+      ]
+    }
+
     const levels = document.querySelector('#log-levels')
     if (levels) {
       levels.lines = [
@@ -297,6 +329,7 @@ Font size follows the outer context (inherited) by default; override with the CS
 - `scrollTo('top' | 'bottom' | number)`: scrolls the viewport to top / bottom / a pixel offset, for external "back to bottom" buttons.
 - `loading`: overlay mask on the viewport, syncs `aria-busy`; copy follows the locale (`loading.loading`).
 - `levels` / `highlight` / `keyword`: per-line level semantic colors / keyword·regex highlight / search filter channels (JSON attributes, see demos above). A non-empty `keyword` shows only matching lines (case-insensitive) and highlights matched fragments with a mark span; filtering never modifies the host's `lines`, line numbers and levels stay aligned to the original indices, and clearing restores everything.
+- `ansi`: ANSI SGR escape sequence coloring switch (off by default), supporting 16 / 256 / truecolor foreground and background colors plus common styles — see the "ANSI Coloring" section.
 
 When history lines are prepended, the reconcile aligns rows by content key: existing row nodes are reused, line numbers re-flow, and the viewport reading position is compensated automatically.
 
@@ -308,6 +341,7 @@ When history lines are prepended, the reconcile aligns rows by content key: exis
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
+| `ansi` | Parse and render ANSI SGR escape sequences per line (boolean, off by default): 16-color foreground/background (30-37/90-97/40-47/100-107, light-dark() palette), 256 colors (38;5;n/48;5;n) and truecolor (38;2;r;g;b/48;2;r;g;b, inline style), plus bold/dim/italic/underline/inverse and reset; non-SGR CSI/OSC/multi-byte ESC sequences and C0 control characters are stripped to prevent leakage (tabs preserved); the ANSI foreground overrides the per-line levels semantic color, keyword/highlight marks still apply (inheriting the ANSI foreground) | `boolean` | — |
 | `auto-scroll` | Auto-scroll to bottom on append (only when stuck to the bottom) | `string` | `true` |
 | `empty-text` | Empty state text (overrides the locale default) | — | — |
 | `highlight` | Line highlight rules (JSON array): string = literal keyword; `{ text }` / `{ pattern, flags }` = regex; matches are wrapped with a mark background (warning token) | `string` | — |

@@ -12,6 +12,8 @@
 
 - **`oas-diff-viewer` 文本差异查看器**：零第三方依赖的只读文本 Diff，行级 Myers + 词级高亮，`unified` / `split` 双视图（窄容器自动降级），未修改区块 `context` 折叠与 `expandAll()` / `collapseAll()`，对齐行虚拟滚动，`old-text` / `new-text` 双文本通道与 `stats` / `oas-diff-change` / `oas-hunk-toggle`，完整键盘与 `role="grid"` 读屏语义；`ignore-whitespace`、`max-edits` 降级、`wrap` 折行、10 个语言包文案同步；新增主题 token `--oas-color-diff-*`（不透明增删底色/词级高亮/行号文字）；纳入 SSR/DSD 白名单。
 
+- **`oas-log` ANSI 着色**：新增 opt-in `ansi` 属性，解析每行 ANSI SGR 转义序列（16 / 256 / truecolor 前景与背景，加粗 / 暗淡 / 斜体 / 下划线 / 反显），转义码与非 SGR 的 CSI / OSC / 多字节 ESC / C0 控制字符从显示文本剔除（保留制表符）；16 色走 `light-dark()` 双主题可读色板（CSS 变量 `--ansi-*` 可覆盖单色），256 / truecolor 前景按感知对比度自动校正浅色与暗色取值，彩色背景按对比度择优（16 色背景保证至少一档黑 / 白达标）；与 `keyword` / `highlight` / `levels` 组合不丢色，搜索按可见文本匹配，通道未变时追加日志零重建。
+
 ### 变更
 
 - **导航 landmark 宿主命名**：`oas-breadcrumb` / `oas-pagination` / `oas-anchor` / `oas-index-bar` / `oas-navigation-menu` 新增宿主 `aria-label` 优先转发到内部 navigation landmark，空值回退 i18n 默认名，便于同页多个导航地标注解区分。
