@@ -2520,6 +2520,42 @@ test('table Pro 第二批：虚拟滚动帧后区域装饰 / roving tabindex / a
   expect(after.selected, '滚动帧后选区装饰仍在').toBeGreaterThan(0)
   expect(after.aria, '滚动帧后 aria-selected 仍在').toBeGreaterThan(0)
   expect(after.stops, '滚动帧后仍无额外停靠点').toBe(0)
+
+  // 列窗口（column-virtual）横向滚动同样走手写重建，不派发 oas-scroll：childList 观察兜底
+  await up(page, '#table-col-virtual')
+  await page.waitForFunction(
+    () => document.querySelector('#table-col-virtual')!.shadowRoot!.querySelectorAll('tr.row').length > 0,
+    null,
+    { timeout: 10000 },
+  )
+  await page.evaluate(() => {
+    const el = document.querySelector('#table-col-virtual')! as HTMLElement & {
+      setCapabilityOptions(name: string, options: unknown): void
+    }
+    el.setCapabilityOptions('range', {
+      enabled: true,
+      selection: { start: { row: 0, col: 'name' }, end: { row: 1, col: 'level' } },
+    })
+  })
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () => document.querySelector('#table-col-virtual')!.shadowRoot!.querySelectorAll('td.range-selected').length,
+      ),
+    )
+    .toBeGreaterThan(0)
+  await page.evaluate(() => {
+    const wrap = document.querySelector('#table-col-virtual')!.shadowRoot!.querySelector('.table-scroll') as HTMLElement
+    wrap.scrollLeft = 300
+    wrap.dispatchEvent(new Event('scroll'))
+  })
+  await page.waitForTimeout(150)
+  expect(
+    await page.evaluate(
+      () => document.querySelector('#table-col-virtual')!.shadowRoot!.querySelectorAll('td.range-selected').length,
+    ),
+    '列窗口滚动后选区装饰仍在',
+  ).toBeGreaterThan(0)
 })
 
 test('table Pro 第二批：区域选择/复制、行详情、Shift 扩展与编辑撤销共存', async ({ page }) => {

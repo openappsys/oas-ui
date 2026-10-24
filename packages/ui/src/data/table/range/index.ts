@@ -138,6 +138,7 @@ class RangeSelectionController {
   private connected = false
   private dragging = false
   private keys: RangeKeys | null = null
+  private observer: MutationObserver | null = null
   /** 最近一次从 capability options 读取的快照对象（同一对象不重复导入） */
   private lastSeen: RangeSelection | null | undefined
   private dragAnchor: PositionKey | null = null
@@ -163,8 +164,9 @@ class RangeSelectionController {
     this.host.shadowRoot.addEventListener('keydown', this.onKeyDown as EventListener, true)
     this.host.shadowRoot.addEventListener('focusin', this.onFocusIn as EventListener)
     this.host.shadowRoot.addEventListener('paste', this.onPaste as EventListener)
-    // 虚拟滚动帧直接重建 tbody（不走 update 周期），需在 oas-scroll 后重新装饰
-    this.host.addEventListener('oas-scroll', this.onScroll as EventListener)
+    // 虚拟滚动 / 列窗口 / resize 等手写重建路径不经过 update 周期：用 childList 观察统一重装饰
+    this.observer = new MutationObserver(() => this.onDomRebuilt())
+    this.observer.observe(this.host.shadowRoot, { childList: true, subtree: true })
     // 拖拽可能在表格外释放（shadowRoot 收不到 pointerup）：window 级兜底复位，避免 dragging 永久残留
     window.addEventListener('pointerup', this.onWindowPointerUp)
     window.addEventListener('pointercancel', this.onWindowPointerUp)
@@ -181,7 +183,8 @@ class RangeSelectionController {
     this.host.shadowRoot.removeEventListener('keydown', this.onKeyDown as EventListener, true)
     this.host.shadowRoot.removeEventListener('focusin', this.onFocusIn as EventListener)
     this.host.shadowRoot.removeEventListener('paste', this.onPaste as EventListener)
-    this.host.removeEventListener('oas-scroll', this.onScroll as EventListener)
+    this.observer?.disconnect()
+    this.observer = null
     window.removeEventListener('pointerup', this.onWindowPointerUp)
     window.removeEventListener('pointercancel', this.onWindowPointerUp)
     window.removeEventListener('selectstart', this.onWindowSelectStart)
@@ -220,8 +223,8 @@ class RangeSelectionController {
     return resolveSelection(this.host, this.keys)
   }
 
-  /** 表格虚拟滚动帧重建 tbody 后重新装饰（滚动帧不走 update，hostUpdated 不会触发） */
-  private onScroll = (): void => {
+  /** 表格手写重建（虚拟滚动/列窗口/resize）后重新装饰；childList 观察覆盖所有路径 */
+  private onDomRebuilt = (): void => {
     const options = this.options()
     if (!options.enabled || !this.painted) return
     this.syncDom()
