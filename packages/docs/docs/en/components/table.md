@@ -1211,6 +1211,7 @@ Rules match the first hit in array order and support field / cell-value / `when`
 
 | Method | Signature | Description |
 | --- | --- | --- |
+| `setCapabilityOptions` | `setCapabilityOptions(name: string, options: unknown): void` | Pro capability options entry: e.g. `table.setCapabilityOptions('format', rules)`; writes options and triggers a re-render |
 | `effectiveColumns` | `effectiveColumns(): TableColumn[]` | Effective columns: filtered and ordered by column-keys (controlled visible set + order); falls back to all leaf columns when column-keys is absent (backward compatible) |
 | `getColumns` | `getColumns(): TableColumn[]` | All current column definitions (including group columns; a base table API readable by the capability controller / host) |
 | `translateText` | `translateText(key: string, params?: Record<string, string \| number>): string` | Translate built-in copy (nearest config-provider / locale; the capability controller and external custom templates look up text here) |

@@ -3284,6 +3284,9 @@
       "oas-row-reorder": "行拖拽/Alt+↑↓ 重排，`detail: { from, to, row }`（to 为移除被拖行后的插入位；组件不改 data）",
       "oas-window-request": "windowed 模式下期望的行窗口未被已装载区间覆盖时派发，detail: { start, end, reason }（半开区间、绝对行下标；reason 为 init / scroll / resize / data）；同一期望区间不重复派发"
     },
+    "methods": {
+      "setCapabilityOptions": "Pro 能力通用选项入口：如 `table.setCapabilityOptions('format', rules)`；写入后触发重渲染"
+    },
     "slots": {
       "template[slot=\"empty\"]": "空态富内容（优先于 empty-text 与默认空态文案）",
       "template[slot=\"filter-icon\"]": "自定义可过滤列表头的触发图标"

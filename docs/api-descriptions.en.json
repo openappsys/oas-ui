@@ -3439,6 +3439,7 @@
       "template[slot=\"filter-icon\"]": "Custom filter trigger icon in filterable column headers"
     },
     "methods": {
+      "setCapabilityOptions": "Pro capability options entry: e.g. `table.setCapabilityOptions('format', rules)`; writes options and triggers a re-render",
       "effectiveColumns": "Effective columns: filtered and ordered by column-keys (controlled visible set + order); falls back to all leaf columns when column-keys is absent (backward compatible)",
       "getColumns": "All current column definitions (including group columns; a base table API readable by the capability controller / host)",
       "translateText": "Translate built-in copy (nearest config-provider / locale; the capability controller and external custom templates look up text here)",

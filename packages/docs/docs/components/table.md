@@ -1200,6 +1200,7 @@ applyViewState(table, saved)
 
 | 方法 | 签名 | 说明 |
 | --- | --- | --- |
+| `setCapabilityOptions` | `setCapabilityOptions(name: string, options: unknown): void` | Pro 能力通用选项入口：如 `table.setCapabilityOptions('format', rules)`；写入后触发重渲染 |
 | `effectiveColumns` | `effectiveColumns(): TableColumn[]` | 有效列：按 column-keys（受控显示集合+顺序）过滤排序；无 column-keys 时回落全部叶子列（向后兼容）。 |
 | `getColumns` | `getColumns(): TableColumn[]` | 当前全部列定义（含组列；表格基础 API，能力 controller / 宿主可读） |
 | `translateText` | `translateText(key: string, params?: Record<string, string \| number>): string` | 翻译内置文案（就近 config-provider / locale；能力 controller 与外部自定义模板经此取词）。 |

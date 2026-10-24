@@ -277,6 +277,11 @@
   ],
   "methods": [
     {
+      "name": "setCapabilityOptions",
+      "signature": "setCapabilityOptions(name: string, options: unknown): void",
+      "description": "Pro 能力通用选项入口：如 `table.setCapabilityOptions('format', rules)`。"
+    },
+    {
       "name": "effectiveColumns",
       "signature": "effectiveColumns(): TableColumn[]",
       "description": "有效列：按 column-keys（受控显示集合+顺序）过滤排序；无 column-keys 时回落全部叶子列（向后兼容）。"
