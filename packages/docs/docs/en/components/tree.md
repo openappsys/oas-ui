@@ -235,6 +235,33 @@ Node content can be provided as a static skeleton via `template[slot="node"]` (t
 
 With `directory`, the tree renders in a file-browser style: nodes with `children` (or not yet loaded under lazy) show a folder icon, nodes with `isLeaf` / no `children` show a file icon; the folder icon switches between collapsed / expanded, and the depth-based indent and hover row highlight follow the row styles. Combine with `tree-lines` to show ancestor guide lines.
 
+## File Explorer Recipe
+
+A file explorer does not need a new component: use `oas-tree directory` as the body and compose the toolbar, breadcrumb, upload, context menu and selected-path display on the host side. The demo shows the directory tree, expand/collapse, breadcrumb, selected path and the inline-rename entry point.
+
+<DemoBlock title="Directory tree + toolbar + breadcrumb + selected path">
+  <div style="width: 100%">
+    <div style="display:flex;gap:var(--oas-space-2);flex-wrap:wrap;align-items:center;margin-bottom:var(--oas-space-2)">
+      <oas-button id="tree-explorer-expand" size="small">Expand all</oas-button>
+      <oas-button id="tree-explorer-collapse" size="small">Collapse all</oas-button>
+      <span id="tree-explorer-path" style="color:var(--oas-color-text-secondary);font-size:var(--oas-font-size-sm)">No node selected</span>
+    </div>
+    <oas-breadcrumb id="tree-explorer-crumb" separator="chevron-right" items='[{"label":"Root"}]' style="margin-bottom:var(--oas-space-2)"></oas-breadcrumb>
+    <oas-tree
+      id="tree-explorer-tree"
+      directory
+      tree-lines
+      can-rename
+      selectable
+      height="220"
+      data='[{"key":"src","label":"src","children":[{"key":"components","label":"components","children":[{"key":"button.tsx","label":"button.tsx","isLeaf":true},{"key":"tree.tsx","label":"tree.tsx","isLeaf":true}]},{"key":"index.ts","label":"index.ts","isLeaf":true}]},{"key":"assets","label":"assets","children":[{"key":"logo.svg","label":"logo.svg","isLeaf":true}]},{"key":"package.json","label":"package.json","isLeaf":true},{"key":"README.md","label":"README.md","isLeaf":true}]'
+    ></oas-tree>
+    <p style="color:var(--oas-color-text-secondary);font-size:var(--oas-font-size-sm);margin:var(--oas-space-2) 0 0">
+      Select a node, then double-click its label or press F2 to rename. Upload, new-folder and context menu are composed by the host with `oas-upload` / `oas-context-menu`.
+    </p>
+  </div>
+</DemoBlock>
+
 ## Node Renaming
 
 <DemoBlock title="Inline renaming (double-click or F2, Enter commits / Esc cancels)">
@@ -554,6 +581,50 @@ onMounted(() => {
     const { checked, values } = e.detail
     const el = document.querySelector('#tree-check-all-status')
     if (el) el.textContent = checked ? `All selected: ${values.join(', ') || '(no checkable nodes)'}` : 'Selection cleared'
+  })
+  // File explorer recipe: toolbar + selected path + breadcrumb
+  const explorerTree = document.querySelector('#tree-explorer-tree')
+  const explorerPath = document.querySelector('#tree-explorer-path')
+  const explorerCrumb = document.querySelector('#tree-explorer-crumb')
+  const explorerData = () => JSON.parse(explorerTree?.getAttribute('data') || '[]')
+  const labelPath = (nodes, key, trail = []) => {
+    for (const node of nodes) {
+      const next = [...trail, node.label]
+      if (node.key === key) return next
+      const hit = node.children ? labelPath(node.children, key, next) : null
+      if (hit) return hit
+    }
+    return null
+  }
+  const syncCrumb = (key) => {
+    if (!explorerCrumb) return
+    const labels = key ? labelPath(explorerData(), key) || [] : []
+    explorerCrumb.setAttribute(
+      'items',
+      JSON.stringify([{ label: 'Root' }, ...labels.map((label) => ({ label }))]),
+    )
+  }
+  document.querySelector('#tree-explorer-expand')?.addEventListener('click', () => explorerTree?.expandAll())
+  document.querySelector('#tree-explorer-collapse')?.addEventListener('click', () => explorerTree?.collapseAll())
+  explorerTree?.addEventListener('oas-select', (e) => {
+    if (explorerPath) explorerPath.textContent = e.detail.selected ? `Selected: ${e.detail.key}` : 'No node selected'
+    syncCrumb(e.detail.selected ? e.detail.key : '')
+  })
+  // Rename events write back to data (tree data is host-controlled; the component only emits intent)
+  explorerTree?.addEventListener('oas-node-rename', (e) => {
+    const { key, label } = e.detail
+    const data = explorerData()
+    const rename = (nodes) =>
+      nodes.map((node) =>
+        node.key === key
+          ? { ...node, label }
+          : node.children
+            ? { ...node, children: rename(node.children) }
+            : node,
+      )
+    explorerTree.setAttribute('data', JSON.stringify(rename(data)))
+    if (explorerPath) explorerPath.textContent = `Selected: ${label}`
+    syncCrumb(key)
   })
 })
 </script>

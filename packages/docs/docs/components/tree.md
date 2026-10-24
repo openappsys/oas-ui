@@ -235,6 +235,33 @@ tree.allowDrag = (node) => node.key !== 'item-1' // 该节点不可被拖动
 
 设置 `directory` 后按文件浏览器风格渲染：有 `children`（或懒加载下未加载）的节点显示文件夹图标，`isLeaf` / 无 `children` 的节点显示文件图标；文件夹按展开 / 收起切换图标，层级缩进与 hover 高亮行沿用行样式。可叠加 `tree-lines` 显示祖辈引导线。
 
+## 文件浏览器组合（recipe）
+
+文件资源管理器不需要新组件：用 `oas-tree directory` 作为主体，宿主侧组合工具栏、面包屑、上传、右键菜单与选中路径即可。下例演示目录树 + 展开/收起 + 面包屑 + 选中路径 + 内联重命名入口。
+
+<DemoBlock title="目录树 + 工具栏 + 面包屑 + 选中路径">
+  <div style="width: 100%">
+    <div style="display:flex;gap:var(--oas-space-2);flex-wrap:wrap;align-items:center;margin-bottom:var(--oas-space-2)">
+      <oas-button id="tree-explorer-expand" size="small">全部展开</oas-button>
+      <oas-button id="tree-explorer-collapse" size="small">全部收起</oas-button>
+      <span id="tree-explorer-path" style="color:var(--oas-color-text-secondary);font-size:var(--oas-font-size-sm)">未选中节点</span>
+    </div>
+    <oas-breadcrumb id="tree-explorer-crumb" separator="chevron-right" items='[{"label":"根目录"}]' style="margin-bottom:var(--oas-space-2)"></oas-breadcrumb>
+    <oas-tree
+      id="tree-explorer-tree"
+      directory
+      tree-lines
+      can-rename
+      selectable
+      height="220"
+      data='[{"key":"src","label":"src","children":[{"key":"components","label":"components","children":[{"key":"button.tsx","label":"button.tsx","isLeaf":true},{"key":"tree.tsx","label":"tree.tsx","isLeaf":true}]},{"key":"index.ts","label":"index.ts","isLeaf":true}]},{"key":"assets","label":"assets","children":[{"key":"logo.svg","label":"logo.svg","isLeaf":true}]},{"key":"package.json","label":"package.json","isLeaf":true},{"key":"README.md","label":"README.md","isLeaf":true}]'
+    ></oas-tree>
+    <p style="color:var(--oas-color-text-secondary);font-size:var(--oas-font-size-sm);margin:var(--oas-space-2) 0 0">
+      选中节点后可双击 label 或按 F2 重命名；上传、新建文件夹、右键菜单分别由宿主组合 `oas-upload` / `oas-context-menu` 提供。
+    </p>
+  </div>
+</DemoBlock>
+
 ## 节点重命名
 
 <DemoBlock title="内联重命名（双击或 F2，Enter 提交 / Esc 取消）">
@@ -552,6 +579,50 @@ onMounted(() => {
     const { checked, values } = e.detail
     const el = document.querySelector('#tree-check-all-status')
     if (el) el.textContent = checked ? `已全选：${values.join('、') || '（无可勾选节点）'}` : '已取消全选'
+  })
+  // 文件浏览器 recipe：工具栏 + 选中路径 + 面包屑
+  const explorerTree = document.querySelector('#tree-explorer-tree')
+  const explorerPath = document.querySelector('#tree-explorer-path')
+  const explorerCrumb = document.querySelector('#tree-explorer-crumb')
+  const explorerData = () => JSON.parse(explorerTree?.getAttribute('data') || '[]')
+  const labelPath = (nodes, key, trail = []) => {
+    for (const node of nodes) {
+      const next = [...trail, node.label]
+      if (node.key === key) return next
+      const hit = node.children ? labelPath(node.children, key, next) : null
+      if (hit) return hit
+    }
+    return null
+  }
+  const syncCrumb = (key) => {
+    if (!explorerCrumb) return
+    const labels = key ? labelPath(explorerData(), key) || [] : []
+    explorerCrumb.setAttribute(
+      'items',
+      JSON.stringify([{ label: '根目录' }, ...labels.map((label) => ({ label }))]),
+    )
+  }
+  document.querySelector('#tree-explorer-expand')?.addEventListener('click', () => explorerTree?.expandAll())
+  document.querySelector('#tree-explorer-collapse')?.addEventListener('click', () => explorerTree?.collapseAll())
+  explorerTree?.addEventListener('oas-select', (e) => {
+    if (explorerPath) explorerPath.textContent = e.detail.selected ? `已选中：${e.detail.key}` : '未选中节点'
+    syncCrumb(e.detail.selected ? e.detail.key : '')
+  })
+  // 重命名事件回写 data（tree 数据由宿主控制，组件只派发意图）
+  explorerTree?.addEventListener('oas-node-rename', (e) => {
+    const { key, label } = e.detail
+    const data = explorerData()
+    const rename = (nodes) =>
+      nodes.map((node) =>
+        node.key === key
+          ? { ...node, label }
+          : node.children
+            ? { ...node, children: rename(node.children) }
+            : node,
+      )
+    explorerTree.setAttribute('data', JSON.stringify(rename(data)))
+    if (explorerPath) explorerPath.textContent = `已选中：${label}`
+    syncCrumb(key)
   })
 })
 </script>
