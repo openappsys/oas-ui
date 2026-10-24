@@ -130,12 +130,19 @@
 
 ### 非目标
 
-条件格式规则、视图状态持久化、撤销/重做、区域选择/剪贴板 UI、主从详情面板；这些列为后续候选，不在本版。
+撤销/重做、区域选择/剪贴板 UI、主从详情面板、条件格式规则编辑器 UI、视图状态持久化 UI；这些列为后续候选。
 
 ### 验收标准
 
 - 单测：透视聚合/合计、公式优先级与安全边界、查询嵌套/算子、TSV 转义。
-- `perf:size` 新增 advanced 链预算；docs zh/en 示例与 API 说明；无 table 运行时依赖（纯函数入口）。
+- `perf:size` 新增 advanced / format / view 链预算；docs zh/en 示例与 API 说明；无 table 运行时依赖（纯函数/能力入口）。
+
+### Pro 能力（第一批）
+
+- **`table/format` 条件格式**：`compileConditionalFormat` 规则引擎（字段/单元格值/`when` 公式、`applyTo: 'cell' | 'row'`、首命中）；`setConditionalFormat()` 写入宿主 capability options，装饰链按 `decorateOrder` 与 edit 共存；规则变化重渲染。
+- **`table/view` 视图状态**：`captureViewState()` / `applyViewState()`，覆盖列显隐/顺序/宽度、排序、过滤、分页、分组、展开、吸顶/表头/尺寸；只保存结构态，不含选中与编辑草稿。
+- 两者均为独立子路径，默认 table 链不加载；`perf:size` 立独立预算并断言默认链零泄漏。
+- 验收：单测条件匹配/样式应用/与 edit 共存/视图往返；docs demo 可点击应用与恢复；暗色/console/a11y 通过。
 
 ## v2.6.4：table 默认入口切换（未发布）✅
 

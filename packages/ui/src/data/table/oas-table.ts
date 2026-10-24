@@ -161,6 +161,12 @@ export interface TableEditDetail {
  * （oas-table-capability.js）注入后，buildRow 的 editable/actions 分支委托给
  * 本接口方法；未注入能力时编辑相关 UI 静默缺失并在 dev 下告警一次。
  */
+export interface TableCellDecorator {
+  decorateCell(td: HTMLTableCellElement, col: TableColumn, row: Record<string, unknown>, rowIndex: number): void
+  /** 装饰顺序：数字小的先执行（edit=10 / format=20 / range=30） */
+  decorateOrder?: number
+}
+
 export interface TableEditCapability {
   /** 可编辑列单元格装饰：焦点可达 + 铅笔图标 + 进入编辑交互（Enter/F2/双击）；
       仅当表格级 editable 与列级 editable 都开启时生效 */
@@ -1214,6 +1220,10 @@ export class OASTableBase extends OASElement {
   private _expandable = false
   /** 行内编辑能力 controller（经能力注册表注入；无则编辑相关渲染挂接跳过 + dev 告警） */
   private editCap: TableEditCapability | null = null
+  /** 按 decorateOrder 排序的单元格装饰链（edit / format / range 等能力） */
+  private cellDecorators: TableCellDecorator[] = []
+  /** 通用能力选项（Pro 能力通过 setCapabilityOptions 注入规则/配置，触发重渲染） */
+  private capabilityOptions = new Map<string, unknown>()
   /** 已注入能力名（attachCapabilities 幂等去重） */
   private attachedCaps = new Set<string>()
   /** 能力晚加入订阅的退订函数（connected 期订阅、disconnected 退订防泄漏） */
@@ -1324,6 +1334,11 @@ export class OASTableBase extends OASElement {
       const controller = factory(this)
       this.addController(controller)
       if (name === 'edit') this.editCap = controller as unknown as TableEditCapability
+      const decorator = controller as unknown as TableCellDecorator
+      if (typeof decorator.decorateCell === 'function') {
+        this.cellDecorators.push(decorator)
+        this.cellDecorators.sort((a, b) => (a.decorateOrder ?? 100) - (b.decorateOrder ?? 100))
+      }
       attached = true
     }
     // 晚注册能力：已渲染的表格立即重建一次，让新能力的单元格装饰（如 editable-cell）生效
@@ -1331,6 +1346,20 @@ export class OASTableBase extends OASElement {
       this.markRenderDirty()
       this.runUpdateAndNotify()
     }
+  }
+
+  /**
+   * Pro 能力通用选项入口：如 `table.setCapabilityOptions('format', rules)`。
+   * 写入后标记重渲染，装饰链按新配置重刷。
+   */
+  setCapabilityOptions(name: string, options: unknown): void {
+    this.capabilityOptions.set(name, options)
+    this.markRenderDirty()
+    this.runUpdateAndNotify()
+  }
+
+  getCapabilityOptions<T = unknown>(name: string): T | undefined {
+    return this.capabilityOptions.get(name) as T | undefined
   }
 
   /**
@@ -2532,11 +2561,10 @@ export class OASTableBase extends OASElement {
         td.classList.add('cell-ellipsis')
         td.title = this.cellText(col, row)
       }
-      // 可编辑单元格装饰（焦点可达 + 铅笔图标 + Enter/F2/双击进入编辑）委托 edit 能力：
-      // 未 import 编辑能力（无 controller）时静默跳过，表格级 editable 与列级 editable
-      // 双重要求在能力内部判定
-      if (col.editable) this.editCap?.decorateCell(td, col)
+      // 单元格装饰链（edit=10 / format=20 / range=30 等按 decorateOrder 排序）：
+      // 能力内部自行判定是否命中；未 import 对应能力时链为空，零开销
       tr.appendChild(td)
+      for (const decorator of this.cellDecorators) decorator.decorateCell(td, col, row, index)
     }
     if (this._expandable) {
       // 可展开行：行尾展开/收起按钮。rowExpandable 谓词（property 函数通道）返回 false 的行

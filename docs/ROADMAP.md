@@ -12,6 +12,7 @@
 | **N04 日志 ANSI（可行子集）** | `oas-log` 新增 opt-in `ansi`：16 / 256 / truecolor 前景背景、常用样式、非 SGR 控制序列剔除、`light-dark()` 双主题感知对比度校正；不做终端模拟 / PTY / OSC 8 | ✅ 已完成（未发版） |
 | **N05 文件浏览器 recipe** | `oas-tree directory` + 宿主工具栏 / 面包屑 / 选中路径 / `oas-node-rename` 回写组合方案（zh / en 文档）；不新建独立文件树组件 | ✅ 已完成（未发版） |
 | **N06 数据网格高级能力** | 新增 `@oas-ui/ui/data/table/advanced` 纯函数入口：透视、安全公式列、查询构建器、TSV；主 `table` / `table/edit` 边界不变（v2.6.4 起 `table/core` 为 deprecated 别名），条件格式 / 视图状态 / 撤销重做列为后续候选 | ✅ 已完成（未发版） |
+| **N06 Pro 能力（第一批）** | `@oas-ui/ui/data/table/format` 条件格式（规则引擎 + 单元格/整行装饰）、`@oas-ui/ui/data/table/view` 视图状态捕获/应用；独立子路径、默认不加载 | 🚧 第一批完成（未发版） |
 
 ## v2.6.4（未发布）
 

@@ -35,4 +35,12 @@ export {
   type QueryNode,
   type QueryOperator,
 } from './query.js'
+export {
+  compileConditionalFormat,
+  evaluateConditionalFormat,
+  type ConditionalMatch,
+  type ConditionalOperator,
+  type ConditionalRule,
+  type ConditionalStyle,
+} from './conditional.js'
 export { parseTsv, toTsv, type TsvColumn } from './clipboard.js'

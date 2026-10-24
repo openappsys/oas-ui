@@ -42,8 +42,10 @@
 | 组件   | 入口                        | 文件数 | gzip       |
 | ------ | --------------------------- | ------ | ---------- |
 | button | `@oas-ui/ui/basic/button` | 13     | 26.6 KB    |
-| table  | `@oas-ui/ui/data/table`   | 39     | 64.1 KB    |
-| table/advanced | `@oas-ui/ui/data/table/advanced` | 4 | 4.9 KB |
+| table  | `@oas-ui/ui/data/table`   | 39     | 65.0 KB    |
+| table/advanced | `@oas-ui/ui/data/table/advanced` | 4 | 5.5 KB |
+| table/format | `@oas-ui/ui/data/table/format` | 2 | 4.7 KB |
+| table/view | `@oas-ui/ui/data/table/view` | 1 | 0.6 KB |
 | form   | `@oas-ui/ui/form/form`    | 11     | 26.0 KB    |
 | gantt  | `@oas-ui/ui/data/gantt`   | 18     | 61.1 KB    |
 
@@ -107,7 +109,7 @@
 | dist/cdn.js               | 731.6 KB  | 770 KB（天花板）      | 2026-10-07 定档：预留后续版本能力增长空间；预警线 693 KB                                     |
 | @oas-ui/ui 全量入口链   | 1,063.7 KB  | 1140 KB（天花板）     | cdn 天花板 × 链/单文件实测比 ≈1.73（逐文件求和上界）；预警线 1026 KB                          |
 | button 链                 | 26.6 KB   | 30 KB（绝对值）       | 2026-10-08 重定档（图标库 opt-in 卸掉整套图标）；实测上浮约 15%                                |
-| table 链                  | 64.1 KB   | 74 KB（绝对值）       | 2026-10-24 重定档（v2.6.4 默认入口不含 edit：core + virtual-list + i18n + 分页 + 导出/移动降级/列设置） |
+| table 链                  | 65.0 KB   | 74 KB（绝对值）       | 2026-10-24 重定档（v2.6.4 默认入口不含 edit：core + virtual-list + i18n + 分页 + 导出/移动降级/列设置） |
 | form 链                   | 26.0 KB   | 29 KB（绝对值）       | 实测上浮约 15%                                                                                |
 | gantt 链                  | 61.1 KB   | 70 KB（绝对值）       | v2.6.2 重定档（任务管理/约束/日历/列虚拟化等能力增量；gantt + core + i18n + virtual-list）    |
 | @oas-ui/theme index.css | 1.7 KB    | 4 KB（绝对值）        | 实测上浮约 14%（预设 -text token + dark 语义色修复后）                                        |
@@ -117,7 +119,7 @@
 
 > `@oas-ui/ui/data/table/core` 自 v2.6.4 起是默认入口的 deprecated 别名（v2.6.5 移除），不再单独计量。
 
-> **Headroom（v2.6.4 实测）**：CDN 38.7 KB、全量入口 76.6 KB、table 9.9 KB、theme index 2.3 KB、glass-fluid 0.4 KB。下一版新增能力前先做预算评审；低于 3% headroom 的入口默认不加功能，先做瘦身或独立子包。
+> **Headroom（v2.6.4 实测）**：CDN 38.7 KB、全量入口 76.6 KB、table 9.0 KB、theme index 2.3 KB、glass-fluid 0.4 KB。下一版新增能力前先做预算评审；低于 3% headroom 的入口默认不加功能，先做瘦身或独立子包。
 
 > 规则：**新增 L3 能力子包 / 可选运行时须配独立绝对值档**（见 `docs/architecture.md` §3.1）；可选层文件不参与全量天花板（不进 union，由 §4 泄漏断言保证）。另有**图标全量注册表零进入**断言：`packages/icons/dist/registry.js` 不得出现在任何基础链闭包（锁死"按需链不背整套图标"）。
 

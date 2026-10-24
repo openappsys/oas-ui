@@ -512,6 +512,8 @@ windowed 模式下**本地排序 / 筛选 / 分组 / 分页 / 树形展开 / 合
 <script setup>
 import { onMounted } from 'vue'
 import { filterRows, formulaColumn, pivotTable } from '@oas-ui/ui/data/table/advanced'
+import { setConditionalFormat } from '@oas-ui/ui/data/table/format'
+import { applyViewState, captureViewState } from '@oas-ui/ui/data/table/view'
 
 // column-virtual demo：60 列指标 × 40 行（数据量大走客户端注入，SSR 输出空表壳）
 onMounted(() => {
@@ -879,6 +881,26 @@ onMounted(() => {
       advancedPivot.data = result.rows
     }
   })
+
+  // Pro：条件格式 + 视图状态
+  const proTable = document.querySelector('#table-pro')
+  let proSaved = null
+  if (proTable) {
+    customElements.whenDefined('oas-table').then(() => {
+      proSaved = captureViewState(proTable)
+    })
+  }
+  document.querySelector('#table-pro-format')?.addEventListener('click', () => {
+    if (!proTable) return
+    setConditionalFormat(proTable, [
+      { field: 'amount', op: 'gte', value: 100, style: { color: '#b91c1c', backgroundColor: '#fef2f2', className: 'is-high' } },
+    ])
+  })
+  document.querySelector('#table-pro-reset')?.addEventListener('click', () => {
+    if (!proTable) return
+    if (proSaved) applyViewState(proTable, proSaved)
+    setConditionalFormat(proTable, [])
+  })
 })
 </script>
 
@@ -1088,7 +1110,38 @@ const { columns: pivotColumns, rows: pivotRows } = pivotTable({
 })
 ```
 
-后续可扩展的高级能力（尚未实现）：条件格式规则、视图状态持久化（列显隐 / 顺序 / 宽度）、撤销/重做、区域选择与剪贴板、主从详情面板。
+后续可扩展的高级能力（尚未实现）：条件格式规则编辑器 UI、视图状态持久化 UI、撤销/重做、区域选择与剪贴板、主从详情面板。
+
+## Pro 能力：条件格式与视图状态
+
+两个能力各自独立 import，按需加载、不污染默认 table：
+
+```ts
+import { setConditionalFormat } from '@oas-ui/ui/data/table/format'
+import { applyViewState, captureViewState } from '@oas-ui/ui/data/table/view'
+
+setConditionalFormat(table, [
+  { field: 'amount', op: 'gte', value: 100, style: { color: '#b91c1c', className: 'is-high' } },
+])
+const saved = captureViewState(table)
+applyViewState(table, saved)
+```
+
+<DemoBlock title="Pro 能力：条件格式 + 视图状态">
+  <div style="width: 100%">
+    <div style="display:flex;gap:var(--oas-space-2);flex-wrap:wrap;margin-bottom:var(--oas-space-2)">
+      <oas-button id="table-pro-format" size="small">高亮金额 ≥ 100</oas-button>
+      <oas-button id="table-pro-reset" size="small">恢复视图并清除格式</oas-button>
+    </div>
+    <oas-table
+      id="table-pro"
+      columns='[{"key":"name","title":"名称","width":"140px"},{"key":"team","title":"团队"},{"key":"amount","title":"金额","align":"right","type":"number"}]'
+      data='[{"name":"Alpha","team":"平台","amount":120},{"name":"Beta","team":"数据","amount":80},{"name":"Gamma","team":"平台","amount":150},{"name":"Delta","team":"设计","amount":40}]'
+    ></oas-table>
+  </div>
+</DemoBlock>
+
+条件格式规则按数组顺序首个命中生效，支持字段/单元格值/`when` 公式与 `applyTo: 'row'`；视图状态只保存列显隐、顺序、宽度、排序、过滤、分页、分组等结构态，不包含选中与编辑草稿。
 
 ## API
 

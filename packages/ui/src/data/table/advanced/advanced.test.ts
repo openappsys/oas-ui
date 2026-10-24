@@ -1,5 +1,16 @@
 import { describe, expect, it } from 'vitest'
-import { compileFormula, compileQuery, filterRows, formulaColumn, parseTsv, pivot, pivotTable, toTsv } from './index.js'
+import {
+  compileConditionalFormat,
+  compileFormula,
+  compileQuery,
+  evaluateConditionalFormat,
+  filterRows,
+  formulaColumn,
+  parseTsv,
+  pivot,
+  pivotTable,
+  toTsv,
+} from './index.js'
 
 const SALES = [
   { region: '华东', product: 'A', amount: 10 },
@@ -235,5 +246,45 @@ describe('toTsv / parseTsv', () => {
       ['c', 'd'],
     ])
     expect(parseTsv('a\t\tb')).toEqual([['a', '', 'b']])
+  })
+})
+
+describe('conditional format', () => {
+  const rules = [
+    { field: 'amount', op: 'gte' as const, value: 20, style: { color: '#b91c1c', className: 'danger' } },
+    { field: 'name', op: 'contains' as const, value: 'VIP', style: { backgroundColor: '#fef3c7' } },
+    { when: 'amount < 0', style: { fontStyle: 'italic' as const } },
+  ]
+
+  it('按字段条件命中首个规则并返回样式', () => {
+    const match = evaluateConditionalFormat(rules, { amount: 30, name: 'x' }, 'amount', 30)
+    expect(match).toEqual({ style: { color: '#b91c1c', className: 'danger' }, applyTo: 'cell' })
+  })
+
+  it('缺省字段时按当前单元格值匹配；支持 notEmpty', () => {
+    const cellRules = [
+      { op: 'gte' as const, value: 10, style: { color: 'red' } },
+      { op: 'notEmpty' as const, style: { color: 'blue' } },
+    ]
+    const evaluate = compileConditionalFormat(cellRules)
+    expect(evaluate({}, 'price', 12)?.style.color).toBe('red')
+    expect(evaluate({}, 'price', 5)?.style.color).toBe('blue')
+    expect(evaluate({}, 'price', '')?.style.color).toBeUndefined()
+  })
+
+  it('when 公式优先；语法错误规则跳过不抛错', () => {
+    expect(evaluateConditionalFormat(rules, { amount: -1, name: 'x' }, 'amount', -1)?.style.fontStyle).toBe('italic')
+    const broken = compileConditionalFormat([{ when: 'amount +', style: { color: 'red' } }])
+    expect(broken({ amount: 1 }, 'amount', 1)).toBeNull()
+  })
+
+  it('applyTo=row 透传', () => {
+    const match = evaluateConditionalFormat(
+      [{ field: 'amount', op: 'gt', value: 0, applyTo: 'row', style: { backgroundColor: '#eee' } }],
+      { amount: 1 },
+      'amount',
+      1,
+    )
+    expect(match?.applyTo).toBe('row')
   })
 })

@@ -16,6 +16,8 @@
 
 - **`oas-table` advanced 高级能力入口**：新增独立子路径 `@oas-ui/ui/data/table/advanced`，提供纯函数 / 列工厂：`pivot` / `pivotTable` 透视矩阵与表格列、`compileFormula` / `formulaColumn` 无 `eval` 的安全公式列、`compileQuery` / `filterRows` 查询构建器、`toTsv` / `parseTsv` 表格区域导出解析；不注册自定义元素、不引入编辑/表单控件，主 `table` / `table/core` / `table/edit` 边界不变。
 
+- **`oas-table` Pro 能力第一批**：新增独立子路径 `@oas-ui/ui/data/table/format`（条件格式：规则引擎、单元格/整行装饰、`when` 公式）与 `@oas-ui/ui/data/table/view`（视图状态捕获/应用：列显隐/顺序/宽度、排序、过滤、分页、分组等结构态）；默认 table 链不加载，`setConditionalFormat` / `captureViewState` / `applyViewState` 按需使用。
+
 ### 变更
 
 - **table 默认入口改为基础表格（v2.6.4）**：`@oas-ui/ui/data/table` 不再默认包含行内编辑；使用 `editable` / `actions` 需显式 `import '@oas-ui/ui/data/table/edit'`。`@oas-ui/ui` 全量入口与 CDN 数据族仍包含编辑。`@oas-ui/ui/data/table/core` 标记 deprecated（等价默认入口），v2.6.5 移除；迁移时把 `table/core` 改为 `table` 即可。

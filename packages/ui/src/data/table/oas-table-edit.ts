@@ -83,6 +83,7 @@ const OVERLAY_EDITOR_TAGS: ReadonlySet<string> = new Set(['oas-select', 'oas-dat
 const MULTI_SELECT_EDITOR_TAG = 'oas-select'
 
 export class TableEditController implements ReactiveController, TableEditCapability {
+  readonly decorateOrder = 10
   private hostEl: HTMLElement & TableEditHost
   private editState: EditState | null = null
   /** click 委托绑定的稳定 <table> 节点（重连幂等） */

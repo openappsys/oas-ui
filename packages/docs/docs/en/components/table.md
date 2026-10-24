@@ -512,6 +512,8 @@ Listen to `oas-sort-change`, then set `loading` and re-request remote paginated/
 <script setup>
 import { onMounted } from 'vue'
 import { filterRows, formulaColumn, pivotTable } from '@oas-ui/ui/data/table/advanced'
+import { setConditionalFormat } from '@oas-ui/ui/data/table/format'
+import { applyViewState, captureViewState } from '@oas-ui/ui/data/table/view'
 
 // column-virtual demo: 60 metric columns × 40 rows (client-side injection for large data)
 onMounted(() => {
@@ -885,6 +887,31 @@ onMounted(() => {
       advancedPivot.data = result.rows
     }
   })
+
+  // Pro: conditional formatting + view state
+  const proTable = document.querySelector('#table-pro')
+  let proSaved = null
+  if (proTable) {
+    customElements.whenDefined('oas-table').then(() => {
+      proSaved = captureViewState(proTable)
+    })
+  }
+  document.querySelector('#table-pro-format')?.addEventListener('click', () => {
+    if (!proTable) return
+    setConditionalFormat(proTable, [
+      {
+        field: 'amount',
+        op: 'gte',
+        value: 100,
+        style: { color: '#b91c1c', backgroundColor: '#fef2f2', className: 'is-high' },
+      },
+    ])
+  })
+  document.querySelector('#table-pro-reset')?.addEventListener('click', () => {
+    if (!proTable) return
+    if (proSaved) applyViewState(proTable, proSaved)
+    setConditionalFormat(proTable, [])
+  })
 })
 </script>
 
@@ -1094,7 +1121,38 @@ const { columns: pivotColumns, rows: pivotRows } = pivotTable({
 })
 ```
 
-Further advanced capabilities (not implemented yet): conditional formatting rules, persisted view state (column visibility / order / width), undo/redo, range selection and clipboard, master-detail panels.
+Further advanced capabilities (not implemented yet): conditional-format rule editor UI, view-state persistence UI, undo/redo, range selection and clipboard, master-detail panels.
+
+## Pro Capabilities: Conditional Formatting and View State
+
+Each capability is imported independently, so the default table stays lean:
+
+```ts
+import { setConditionalFormat } from '@oas-ui/ui/data/table/format'
+import { applyViewState, captureViewState } from '@oas-ui/ui/data/table/view'
+
+setConditionalFormat(table, [
+  { field: 'amount', op: 'gte', value: 100, style: { color: '#b91c1c', className: 'is-high' } },
+])
+const saved = captureViewState(table)
+applyViewState(table, saved)
+```
+
+<DemoBlock title="Pro capabilities: conditional formatting + view state">
+  <div style="width: 100%">
+    <div style="display:flex;gap:var(--oas-space-2);flex-wrap:wrap;margin-bottom:var(--oas-space-2)">
+      <oas-button id="table-pro-format" size="small">Highlight amount ≥ 100</oas-button>
+      <oas-button id="table-pro-reset" size="small">Restore view and clear format</oas-button>
+    </div>
+    <oas-table
+      id="table-pro"
+      columns='[{"key":"name","title":"Name","width":"140px"},{"key":"team","title":"Team"},{"key":"amount","title":"Amount","align":"right","type":"number"}]'
+      data='[{"name":"Alpha","team":"Platform","amount":120},{"name":"Beta","team":"Data","amount":80},{"name":"Gamma","team":"Platform","amount":150},{"name":"Delta","team":"Design","amount":40}]'
+    ></oas-table>
+  </div>
+</DemoBlock>
+
+Rules match the first hit in array order and support field / cell-value / `when` formula conditions plus `applyTo: 'row'`. View state only stores structural state (column visibility/order/width, sort, filter, pagination, grouping), not selection or editing drafts.
 
 ## API
 
