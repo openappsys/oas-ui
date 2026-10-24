@@ -89,6 +89,29 @@ CSS 规范限制：`::part()` 伪元素后**只能接伪类**（`:hover` / `:foc
 
 内置 10 种之外的新语言：以 `zh-CN` 语言包的消息为模板 → `...zhCN.messages` 全量继承后逐 key 替换 → 把 `messages` 标注为 `Locale`（类型护栏：缺 key 编译期报错）→ RTL 语言标 `dir: 'rtl'` → `registerLocale` 注册 → `setLocale` 切换。**完整 step-by-step 示例见 `@oas-ui/i18n` 包 README「自定义语言包」节**。自定义包的按需分包走宿主自己的动态 `import()`（`loadLocale()` 只认内置 10 种包名）。
 
+### 用 `link:` / workspace 引用 ui 时，`setLocale()` 为什么不生效？
+
+宿主以 `link:`（或 pnpm workspace）引用 `@oas-ui/ui` 时，ui 内部的 `@oas-ui/i18n` 与宿主从 registry 直接依赖的 `@oas-ui/i18n` 可能是**两份模块实例**：对宿主那份调用 `setLocale()` 切不到 ui 组件使用的实例，内置文案会回落 raw key（如 `popconfirm.ok`）。
+
+根因是 locale registry 与 core translator 钩子原先存在**模块级变量**里。现在两者都挂到 `globalThis` 的 `Symbol.for` 版本键上，同一进程内所有副本共享同一份 locale / translator 状态；因此 link 场景**不需要改 import**，原有 `import { setLocale } from '@oas-ui/i18n'` 直接生效。
+
+仍建议宿主构建去重，减少重复代码与包体（不是正确性必需）：
+
+```ts
+// Vite（含 Nuxt 的 vite 配置）
+export default defineConfig({
+  resolve: {
+    dedupe: ['@oas-ui/i18n', '@oas-ui/core'],
+  },
+})
+```
+
+- pnpm 可用 `overrides` 固定 `@oas-ui/i18n` 版本，或让 link 目标与宿主共用同一副本；
+- 去重后确认 `pnpm why @oas-ui/i18n` 只剩一份；
+- `@oas-ui/core` 也建议一起去重（translator 钩子在 core 里）。
+
+发布态（ui 与 i18n 为同版本 registry 包）通常只有一份实例，无需额外配置。
+
 ### 内置支持哪些语言？可以按需加载吗？
 
 内置 10 种：`zh-CN`（默认）、`en`、`ja`、`ko`、`de`、`fr`、`es`、`pt`、`ru`、`ar`（RTL）。主入口只带 `zh-CN`，其余**按需加载**，不会进首屏：

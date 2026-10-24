@@ -1,4 +1,4 @@
-import { describe, it, expect, afterEach } from 'vitest'
+import { describe, it, expect, afterEach, vi } from 'vitest'
 import {
   setTranslator,
   getTranslator,
@@ -96,5 +96,14 @@ describe('translator 钩子', () => {
       expect(getTranslator()).toBeNull()
       expect(getLocaleTranslator('__test-locale-3__')?.('k')).toBe('l:k')
     })
+  })
+
+  it('重复模块副本共享 translator 状态（globalThis 单例）', async () => {
+    setTranslator(() => 'A')
+    vi.resetModules()
+    const again = await import('./translator.js')
+    expect(again.getTranslator()?.('x'), '新副本应读到旧副本注入的 translator').toBe('A')
+    again.setTranslator(() => 'B')
+    expect(getTranslator()?.('x'), '旧副本应读到新副本的更新').toBe('B')
   })
 })

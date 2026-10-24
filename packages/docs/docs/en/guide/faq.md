@@ -128,6 +128,29 @@ without any global setup.
 
 For languages beyond the built-in 10: use the `zh-CN` pack's messages as a template → spread `...zhCN.messages` to inherit all keys and replace them one by one → tag `messages` as a `Locale` (type guardrail: missing keys fail at compile time) → mark `dir: 'rtl'` for RTL languages → `registerLocale` → `setLocale`. See the `@oas-ui/i18n` package README, "Custom locale packs" section, for the full step-by-step example. Ship custom packs with your own dynamic `import()` for code splitting (`loadLocale()` only maps the 10 built-in names).
 
+### Why does `setLocale()` not work when ui is linked via `link:` / workspace?
+
+When the host references `@oas-ui/ui` through `link:` (or a pnpm workspace), the `@oas-ui/i18n` resolved inside ui and the one the host depends on from the registry can be **two module instances**: calling `setLocale()` on the host's copy does not reach the instance used by ui components, so built-in texts fall back to raw keys (e.g. `popconfirm.ok`).
+
+The root cause was that the locale registry and the core translator hook lived in **module-level variables**. Both now live on `globalThis` under versioned `Symbol.for` keys, so every copy in the same process shares one locale / translator state. In a linked setup **no import change is needed**: the existing `import { setLocale } from '@oas-ui/i18n'` works.
+
+Deduplicating in the host build is still recommended to avoid duplicate code and bundle weight (not required for correctness):
+
+```ts
+// Vite (also the vite config of Nuxt)
+export default defineConfig({
+  resolve: {
+    dedupe: ['@oas-ui/i18n', '@oas-ui/core'],
+  },
+})
+```
+
+- With pnpm, pin `@oas-ui/i18n` via `overrides`, or make the link target and host share one copy;
+- After deduplication, `pnpm why @oas-ui/i18n` should report a single copy;
+- Deduplicating `@oas-ui/core` as well is recommended (the translator hook lives in core).
+
+In a published setup (ui and i18n are same-version registry packages) there is normally a single instance, so no extra configuration is needed.
+
 ### Which languages are built in? Can they be loaded on demand?
 
 Ten locales ship built in: `zh-CN` (default), `en`, `ja`, `ko`, `de`, `fr`, `es`,

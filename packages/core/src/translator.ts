@@ -13,16 +13,30 @@
  */
 export type Translator = (key: string, params?: Record<string, string | number>) => string
 
-let translator: Translator | null = null
+interface TranslatorState {
+  translator: Translator | null
+  listeners: Set<() => void>
+  localeTranslators: Map<string, Translator>
+}
 
-const listeners = new Set<() => void>()
-
-const localeTranslators = new Map<string, Translator>()
+/**
+ * 单例状态挂到 globalThis：`link:` / workspace / 依赖提升失败时，同一进程可能出现
+ * 多份 @oas-ui/core 模块实例；模块级 let 会让各副本各存一份 translator，i18n 注入
+ * 只更新其中一份，组件仍回落 raw key。用 Symbol.for 共享同一状态，所有副本读写同一槽位。
+ * 状态结构变更时 bump key 的版本号（v1 → v2），避免跨大版本误共享。
+ */
+const STATE_KEY = Symbol.for('@oas-ui/core/translator/v1')
+const globalStore = globalThis as unknown as { [key: symbol]: unknown }
+function createState(): TranslatorState {
+  return { translator: null, listeners: new Set(), localeTranslators: new Map() }
+}
+const state: TranslatorState = (globalStore[STATE_KEY] as TranslatorState | undefined) ?? createState()
+if (!globalStore[STATE_KEY]) globalStore[STATE_KEY] = state
 
 /** 注入/清除翻译函数（locale 切换时由 i18n 包调用），会通知所有监听者 */
 export function setTranslator(fn: Translator | null): void {
-  translator = fn
-  for (const cb of listeners) {
+  state.translator = fn
+  for (const cb of state.listeners) {
     // 广播隔离：单个监听者（组件刷新回调）抛错不阻断其余监听者收通知，
     // 否则一个组件的文案刷新异常会让全库 locale 切换失效
     try {
@@ -34,21 +48,21 @@ export function setTranslator(fn: Translator | null): void {
 }
 
 export function getTranslator(): Translator | null {
-  return translator
+  return state.translator
 }
 
 /** 注册某个 locale 名对应的翻译函数（i18n 包在 registerLocale 时调用） */
 export function registerLocaleTranslator(name: string, fn: Translator): void {
-  localeTranslators.set(name, fn)
+  state.localeTranslators.set(name, fn)
 }
 
 /** 读取某个 locale 名的翻译函数，未注册返回 null */
 export function getLocaleTranslator(name: string): Translator | null {
-  return localeTranslators.get(name) ?? null
+  return state.localeTranslators.get(name) ?? null
 }
 
 /** 订阅 translator 变化（locale 切换），返回取消订阅函数 */
 export function onTranslatorChange(cb: () => void): () => void {
-  listeners.add(cb)
-  return () => listeners.delete(cb)
+  state.listeners.add(cb)
+  return () => state.listeners.delete(cb)
 }

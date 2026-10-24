@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
 import {
   registerLocale,
   setLocale,
@@ -98,5 +98,16 @@ describe('locale registry', () => {
     // 已注册后再取直接返回（不重复加载）
     expect(await loadLocale('ja')).toBe(ja)
     await expect(loadLocale('xx' as never)).rejects.toThrow()
+  })
+
+  it('重复模块副本共享 locale 状态（globalThis 单例）', async () => {
+    setLocale(enLocale)
+    vi.resetModules()
+    const again = await import('./registry.js')
+    expect(again.getLocaleName(), '新副本应读到旧副本切换的 locale').toBe('en')
+    expect(again.t('modal.ok')).toBe('OK')
+    again.setLocale('zh-CN')
+    expect(getLocaleName(), '旧副本应读到新副本的切换').toBe('zh-CN')
+    expect(t('modal.ok')).toBe('确定')
   })
 })

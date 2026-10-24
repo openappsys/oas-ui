@@ -14,12 +14,27 @@ import { setTranslator, registerLocaleTranslator } from '@oas-ui/core'
 import { zhCN } from './locales/zh-CN.js'
 import type { Locale, LocaleKey, LocaleMessages, LocaleName, LocaleParams } from './types.js'
 
-const locales = new Map<string, Locale>()
-const listeners = new Set<(name: string) => void>()
+interface RegistryState {
+  locales: Map<string, Locale>
+  listeners: Set<(name: string) => void>
+  current: Locale | null
+}
+
+/**
+ * 单例状态挂到 globalThis：`link:` / workspace / 依赖提升失败时，同一进程可能出现
+ * 多份 @oas-ui/i18n 模块实例；模块级 Map/Set/current 会让各副本各存一份 locale，
+ * 宿主 setLocale 只更新其中一份，组件仍回落 raw key。用 Symbol.for 共享同一状态。
+ * 状态结构变更时 bump key 的版本号（v1 → v2），避免跨大版本误共享。
+ */
+const STATE_KEY = Symbol.for('@oas-ui/i18n/registry/v1')
+const globalStore = globalThis as unknown as { [key: symbol]: unknown }
+function createState(): RegistryState {
+  return { locales: new Map(), listeners: new Set(), current: null }
+}
+const state: RegistryState = (globalStore[STATE_KEY] as RegistryState | undefined) ?? createState()
+if (!globalStore[STATE_KEY]) globalStore[STATE_KEY] = state
 
 const defaultLocale: Locale = { name: 'zh-CN', messages: zhCN }
-locales.set(defaultLocale.name, defaultLocale)
-let current: Locale = defaultLocale
 
 /** 用指定语言包翻译（供 config-provider 按 locale 名取翻译器复用） */
 function translateIn(messages: LocaleMessages, key: string, params?: LocaleParams): string {
@@ -33,7 +48,7 @@ function translateIn(messages: LocaleMessages, key: string, params?: LocaleParam
 
 /** 注册语言包（同名覆盖），并登记"按 locale 名"的翻译器供 config-provider 注入 */
 export function registerLocale(locale: Locale): void {
-  locales.set(locale.name, locale)
+  state.locales.set(locale.name, locale)
   registerLocaleTranslator(locale.name, (key, params) => translateIn(locale.messages, key, params))
 }
 
@@ -45,28 +60,29 @@ export function registerLocale(locale: Locale): void {
  */
 export function setLocale(nameOrLocale: string | Locale): string {
   if (typeof nameOrLocale === 'string') {
-    const found = locales.get(nameOrLocale)
+    const found = state.locales.get(nameOrLocale)
     if (!found) {
       throw new Error(`[oas-ui/i18n] 未注册的 locale「${nameOrLocale}」，请先 registerLocale() 或直接传入语言包对象`)
     }
-    current = found
+    state.current = found
   } else {
     registerLocale(nameOrLocale)
-    current = nameOrLocale
+    state.current = nameOrLocale
   }
   syncTranslator()
-  for (const cb of listeners) cb(current.name)
+  const current = state.current ?? defaultLocale
+  for (const cb of state.listeners) cb(current.name)
   return current.name
 }
 
 /** 当前生效的 locale */
 export function getLocale(): Locale {
-  return current
+  return state.current ?? defaultLocale
 }
 
 /** 当前生效的 locale name */
 export function getLocaleName(): string {
-  return current.name
+  return getLocale().name
 }
 
 /**
@@ -74,7 +90,10 @@ export function getLocaleName(): string {
  * 语言包未标注 dir 时回落 ltr。
  */
 export function getDirection(nameOrLocale?: string | Locale): 'ltr' | 'rtl' {
-  const locale = typeof nameOrLocale === 'string' ? locales.get(nameOrLocale) : (nameOrLocale ?? current)
+  const locale =
+    typeof nameOrLocale === 'string'
+      ? state.locales.get(nameOrLocale)
+      : (nameOrLocale ?? state.current ?? defaultLocale)
   return locale?.dir === 'rtl' ? 'rtl' : 'ltr'
 }
 
@@ -101,7 +120,7 @@ const loaders: Record<LocaleName, () => Promise<{ default: Locale }>> = {
  * 纯异步：`await loadLocale('ja'); setLocale('ja')`。
  */
 export async function loadLocale(name: LocaleName): Promise<Locale> {
-  const registered = locales.get(name)
+  const registered = state.locales.get(name)
   if (registered) return registered
   const loader = loaders[name]
   if (!loader) {
@@ -115,13 +134,14 @@ export async function loadLocale(name: LocaleName): Promise<Locale> {
 
 /** 翻译：key + 可选插值参数（{count} 等）；未知 key 回退返回 key 本身 */
 export function t(key: LocaleKey, params?: LocaleParams): string {
+  const current = state.current ?? defaultLocale
   return translateIn(current.messages, key, params)
 }
 
 /** 订阅 locale 切换（回调收到新 locale name），返回取消订阅函数 */
 export function onLocaleChange(cb: (name: string) => void): () => void {
-  listeners.add(cb)
-  return () => listeners.delete(cb)
+  state.listeners.add(cb)
+  return () => state.listeners.delete(cb)
 }
 
 /** 把当前翻译能力注入 core（OASElement.t 的委托目标） */
@@ -129,6 +149,8 @@ function syncTranslator(): void {
   setTranslator((key: string, params?: Record<string, string | number>) => t(key as LocaleKey, params))
 }
 
-// 模块加载即注入默认 zh-CN 翻译器，组件开箱即用中文
-registerLocale(defaultLocale)
+// 模块加载即注入默认 zh-CN 翻译器，组件开箱即用中文；
+// 重复模块副本共享 globalThis 状态，只有第一份注册默认包，后续副本复用。
+if (!state.locales.has(defaultLocale.name)) registerLocale(defaultLocale)
+if (!state.current) state.current = state.locales.get(defaultLocale.name) ?? defaultLocale
 syncTranslator()

@@ -31,6 +31,8 @@ setLocale('ja')
 
 组件内置文案（确认按钮、校验消息等）随 locale 全局切换。`oas-config-provider` 支持就近注入，无需全局设置。日期/数字格式化走原生 `Intl`（`Intl.DateTimeFormat` / `Intl.NumberFormat`），新增语言无需额外翻译；RTL 语言（`ar`）在语言包中标注 `dir: 'rtl'`，`getDirection()` 可查询方向。
 
+> **用 `link:` / workspace 引用 `@oas-ui/ui` 时**：ui 与宿主可能各解析一份 `@oas-ui/i18n`。locale registry 与 core translator 已挂到 `globalThis` 版本化 `Symbol.for` 键，同一进程的副本共享状态，`setLocale()` 无需改 import；仍建议在 Vite 配 `resolve.dedupe: ['@oas-ui/i18n', '@oas-ui/core']`（或 pnpm `overrides`）减少重复包体。发布态同版本 registry 包无此问题。
+
 ### 自定义语言包（内置 10 种之外）
 
 以 `zh-CN` 为模板逐步落地（`zh-CN` 是 key 全集的单一事实源，以下每一步都有编译期或运行时护栏）：
@@ -100,6 +102,8 @@ setLocale('ja')
 ```
 
 Built-in component texts (confirm buttons, validation messages, etc.) switch globally with the locale. `oas-config-provider` supports local injection without global setup. Date/number formatting goes through native `Intl` (`Intl.DateTimeFormat` / `Intl.NumberFormat`), so new locales need no extra translations; RTL locales (`ar`) are tagged `dir: 'rtl'` in the pack, and `getDirection()` reports the direction.
+
+> **When ui is linked via `link:` / workspace**: the host and `@oas-ui/ui` may resolve two copies of `@oas-ui/i18n`. The locale registry and core translator now live on `globalThis` under versioned `Symbol.for` keys, so copies in the same process share state and `setLocale()` works without changing imports. Deduplicating via Vite `resolve.dedupe: ['@oas-ui/i18n', '@oas-ui/core']` (or pnpm `overrides`) is still recommended to avoid duplicate bundle weight. Same-version registry packages have a single instance, so this only affects linked/workspace setups.
 
 ### Custom locale packs (beyond the built-in 10)
 
