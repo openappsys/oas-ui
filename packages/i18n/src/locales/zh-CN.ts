@@ -512,6 +512,7 @@ export const zhCN = {
   'jsonViewer.copyFailed': '复制失败',
   'jsonViewer.empty': '无数据',
   'jsonViewer.parseError': 'JSON 解析失败',
+  'jsonViewer.tooDeep': '嵌套层级过深，无法渲染；请先裁剪数据或改用宿主侧解析',
   'jsonViewer.matches': '{current}/{total}',
   'jsonViewer.noMatches': '无匹配',
   'jsonViewer.tree': 'JSON 树',

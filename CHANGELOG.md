@@ -41,6 +41,8 @@
 
 ### 修复
 
+- **`oas-diff-viewer` PageDown 步进**：按整屏可见行数移动（原先额外减 1 行），活动行仍自动滚入视口；文档补充 split 行 `data-op="replace"`、真实增删 op 在两侧单元格的定制约定。
+- **`oas-json-viewer` 复制反馈/深嵌套/同值回写**：`toolbar="false"` 时复制成功/失败改为右下角浮层提示（`part="copy-status"`，1.6s 自动隐藏），不再因工具栏隐藏而静默；超深嵌套建树/遍历栈溢出转为可恢复错误态（新增 locale key，不向宿主抛 `RangeError`），超深子树序列化失败派发 `oas-copy-error`；重复写同值 `text` / `expanded` 也强制刷新一次，修复受控回写边界。
 - **`oas-sidebar` footer 常驻**：`slot="footer"` 原先在滚动容器 `.panel` 内随内容滚走，长导航时页脚不可见。现改为 `position: sticky; bottom: 0` 钉在侧栏可视区底部（桌面与移动抽屉同一套），空 footer 经 `slotchange` 自动隐藏、不再占底部空白；补桌面/移动抽屉真实滚动几何回归。
 - **`oas-chart` 折线/面积/混排的 `circle.dot` 应用 `options.colors`**：此前只改 path/stroke，宿主自定义色时线与数据点异色；现在同一系列线、点同色。
 - **存量裸 `href` 安全收敛**：`oas-float-button`（主钮与 actions）、`oas-attachment`、`oas-tabs`、`oas-notice-bar`、`oas-card`、`oas-list-item`、`oas-breadcrumb`、`oas-anchor`、`oas-pagination` 统一走 `safeUrl`；仅放行 http/https/mailto/tel、blob 对象 URL 与相对地址，其余协议一律退化为非链接/按钮形态。

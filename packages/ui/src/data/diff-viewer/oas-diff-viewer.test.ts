@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { t } from '@oas-ui/i18n'
 import { OASDiffViewer } from './index.js'
 import type { DiffViewerChangeDetail, DiffViewerHunkToggleDetail } from './index.js'
 
@@ -50,7 +51,7 @@ describe('OASDiffViewer 基础渲染', () => {
     const stats = el.shadowRoot!
     expect(stats.querySelector('[part="added"]')!.textContent).toBe('+2')
     expect(stats.querySelector('[part="removed"]')!.textContent).toBe('\u22121')
-    expect(stats.querySelector('[part="summary"]')!.textContent).toBe('2 处差异')
+    expect(stats.querySelector('[part="summary"]')!.textContent).toBe(t('diffViewer.hunks', { count: 2 }))
     expect(viewport(el).getAttribute('aria-rowcount')).toBe(String(rowEls(el).length))
     expect(viewport(el).getAttribute('aria-colcount')).toBe('3')
     expect(rowEls(el)[0]!.getAttribute('aria-rowindex')).toBe('1')
@@ -65,11 +66,11 @@ describe('OASDiffViewer 基础渲染', () => {
   it('相同内容标记无差异，空内容显示空态', () => {
     const same = mount({ 'old-text': 'a\nb', 'new-text': 'a\nb' })
     expect(same.stats).toEqual({ added: 0, removed: 0, unchanged: 2, hunks: 0 })
-    expect(same.shadowRoot!.querySelector('[part="status"]')!.textContent).toBe('两侧内容相同')
+    expect(same.shadowRoot!.querySelector('[part="status"]')!.textContent).toBe(t('diffViewer.identical'))
     expect(rowEls(same)).toHaveLength(2)
 
     const empty = mount()
-    expect(empty.shadowRoot!.querySelector('[part="placeholder"]')!.textContent).toBe('暂无可对比内容')
+    expect(empty.shadowRoot!.querySelector('[part="placeholder"]')!.textContent).toBe(t('diffViewer.empty'))
     expect(viewport(empty).getAttribute('role')).toBe('group')
     expect(empty.shadowRoot!.querySelector('[part="rows"]')!.hasAttribute('role')).toBe(false)
   })
@@ -96,7 +97,7 @@ describe('OASDiffViewer 基础渲染', () => {
     const el = mount({ 'old-text': before, 'new-text': after, 'max-edits': '3' })
     expect(el.degraded).toBe(true)
     expect(el.hasAttribute('data-degraded')).toBe(true)
-    expect(el.shadowRoot!.querySelector('[part="status"]')!.textContent).toBe('差异过大，已按整块替换显示')
+    expect(el.shadowRoot!.querySelector('[part="status"]')!.textContent).toBe(t('diffViewer.degraded'))
   })
 
   it('toolbar=false 隐藏工具栏，aria-label 转发到 viewport', () => {
@@ -104,7 +105,7 @@ describe('OASDiffViewer 基础渲染', () => {
     expect(el.shadowRoot!.querySelector<HTMLElement>('[part="toolbar"]')!.hidden).toBe(true)
     expect(viewport(el).getAttribute('aria-label')).toBe('配置对比')
     const fallback = mount({ 'old-text': 'a', 'new-text': 'b' })
-    expect(viewport(fallback).getAttribute('aria-label')).toBe('差异对比')
+    expect(viewport(fallback).getAttribute('aria-label')).toBe(t('diffViewer.table'))
   })
 })
 
@@ -122,7 +123,7 @@ describe('OASDiffViewer 折叠', () => {
     const events: DiffViewerHunkToggleDetail[] = []
     el.addEventListener('oas-hunk-toggle', (event) => events.push((event as CustomEvent).detail))
     const button = foldEls(el)[0]!.querySelector<HTMLButtonElement>('[part="fold-toggle"]')!
-    expect(button.textContent).toBe('展开 6 行未修改')
+    expect(button.textContent).toBe(t('diffViewer.expandFold', { count: 6 }))
     expect(button.getAttribute('aria-expanded')).toBe('false')
     button.click()
     expect(foldEls(el)).toHaveLength(1)
@@ -194,7 +195,7 @@ describe('OASDiffViewer 视图与键盘', () => {
     const head = el.shadowRoot!.querySelector<HTMLElement>('[part="split-head"]')!
     expect(head.hidden).toBe(false)
     expect(head.querySelector('[part="before-label"]')!.textContent).toBe('旧版')
-    expect(head.querySelector('[part="after-label"]')!.textContent).toBe('修改后')
+    expect(head.querySelector('[part="after-label"]')!.textContent).toBe(t('diffViewer.after'))
     expect(rowEls(el)).toHaveLength(3)
     expect(rowEls(el)[1]!.querySelector('[part="before-code"]')!.textContent).toBe('\u2212old-b')
     expect(rowEls(el)[1]!.querySelector('[part="after-code"]')!.textContent).toBe('')
@@ -242,6 +243,25 @@ describe('OASDiffViewer 视图与键盘', () => {
     expect(active.getAttribute('data-op')).toBe('delete')
     expect(viewport(el).scrollTop).toBeGreaterThan(0)
     expect(el.scrollToChange(99)).toBe(false)
+  })
+
+  it('PageDown 按整屏行数移动（不额外少走一行）', () => {
+    const before = Array.from({ length: 100 }, (_, i) => `line-${i}`).join('\n')
+    const after = before.replace('line-50', 'changed-50')
+    const el = mount({
+      'old-text': before,
+      'new-text': after,
+      height: '220',
+      'row-height': '20',
+      context: '500',
+    })
+    const host = viewport(el)
+    host.focus()
+    host.dispatchEvent(new KeyboardEvent('keydown', { key: 'Home', bubbles: true }))
+    host.dispatchEvent(new KeyboardEvent('keydown', { key: 'PageDown', bubbles: true }))
+    const active = el.shadowRoot!.querySelector('[part="row"].active')!
+    // viewportHeight 回退为 height - 40 = 180；180 / 20 = 9
+    expect(Number(active.getAttribute('data-index'))).toBe(9)
   })
 
   it('split 模式下 scrollToChange 映射到合并后的并排行', () => {

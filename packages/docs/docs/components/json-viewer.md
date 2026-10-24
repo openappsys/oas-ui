@@ -67,7 +67,7 @@ await viewer.copyJson()   // "hello"
 
 ## 错误态与恢复
 
-非法 `text` 显示错误面板并派发 `oas-parse-error`，包含 `message` 与可定位的 `line` / `column`；写入合法 `data` 或 `text` 后自动恢复。
+非法 `text` 显示错误面板并派发 `oas-parse-error`，包含 `message` 与可定位的 `line` / `column`；写入合法 `data` 或 `text` 后自动恢复。嵌套层级过深导致建树/遍历栈溢出时同样进入可恢复错误态（文案走 locale key），不向宿主抛 `RangeError`；复制超深子树失败时派发 `oas-copy-error` 并显示失败提示。
 
 <DemoBlock title="解析失败 → 写入合法数据恢复">
   <div style="display:flex;gap:var(--oas-space-2);margin-bottom:var(--oas-space-3)">
@@ -82,7 +82,7 @@ await viewer.copyJson()   // "hello"
 `compact` 紧凑模式（默认行高 20、字号 11px）、`toolbar="false"` 隐藏工具栏、`copyable="false"` 隐藏复制按钮、`search-shortcut="false"` 关闭快捷键、`indent` 控制复制 JSON 的缩进空格数、`aria-label` 命名树。下例同时设置 `height`、`row-height`、`default-expand-depth="2"` 与 `virtual="false"`。
 
 <DemoBlock title="紧凑只读面板">
-  <oas-json-viewer id="jv-compact" compact toolbar="false" copyable="false" search-shortcut="false" indent="4" default-expand-depth="2" height="220" row-height="22" virtual="false" aria-label="构建配置" text='{"build":{"target":"es2022","minify":true,"sourcemap":false},"plugins":["a","b"]}'></oas-json-viewer>
+  <oas-json-viewer id="jv-compact" style="width: 100%" compact toolbar="false" copyable="false" search-shortcut="false" indent="4" default-expand-depth="2" height="220" row-height="22" virtual="false" aria-label="构建配置" text='{"build":{"target":"es2022","minify":true,"sourcemap":false},"plugins":["a","b"]}'></oas-json-viewer>
 </DemoBlock>
 
 ## 键盘与可访问性
@@ -100,7 +100,7 @@ await viewer.copyJson()   // "hello"
 
 ## 主题与部件
 
-颜色全部走 CSS 变量 token，暗色主题自动跟随；可用 `::part()` 定制 `viewer`、`toolbar`、`viewport`、`row`、`key`、`value`、`twisty`、`error` 等部件。RTL 下缩进使用逻辑属性，JSON 文本保持字符方向隔离。
+颜色全部走 CSS 变量 token，暗色主题自动跟随；可用 `::part()` 定制 `viewer`、`toolbar`、`viewport`、`row`、`key`、`value`、`twisty`、`error`、`copy-status` 等部件。`toolbar="false"` 时复制结果通过右下角浮层提示（`part="copy-status"`）。RTL 下缩进使用逻辑属性，JSON 文本保持字符方向隔离。
 
 <script>
 if (typeof window !== 'undefined') {

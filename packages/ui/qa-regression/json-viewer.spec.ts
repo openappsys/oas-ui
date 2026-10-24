@@ -182,6 +182,26 @@ test('json-viewer CSS 变量在未设置 height/row-height 属性时生效', asy
   expect(size.row).toBe(32)
 })
 
+test('json-viewer toolbar=false 工具栏隐藏且复制反馈浮层可见', async ({ page }) => {
+  await page.goto('/components/json-viewer.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#jv-compact')
+  const display = await page.evaluate(
+    () =>
+      getComputedStyle(document.querySelector('#jv-compact')!.shadowRoot!.querySelector('[part="toolbar"]')!).display,
+  )
+  expect(display).toBe('none')
+  const flash = await page.evaluate(async () => {
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText: async () => {} }, configurable: true })
+    const el = document.querySelector('#jv-compact') as HTMLElement & { copyPath(path: string): Promise<boolean> }
+    const ok = await el.copyPath('$')
+    const node = el.shadowRoot!.querySelector<HTMLElement>('[part="copy-status"]')!
+    return { ok, hidden: node.hidden, text: node.textContent }
+  })
+  expect(flash.ok).toBe(true)
+  expect(flash.hidden).toBe(false)
+  expect(flash.text).toBeTruthy()
+})
+
 test('json-viewer 基础与错误态 axe 零违规', async ({ page }) => {
   await page.goto('/components/json-viewer.html', { waitUntil: 'domcontentloaded' })
   await up(page, '#jv-basic')

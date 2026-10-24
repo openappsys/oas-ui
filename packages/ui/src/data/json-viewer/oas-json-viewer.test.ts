@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { t } from '@oas-ui/i18n'
 import { OASJsonViewer } from './index.js'
-import type { JsonViewerToggleDetail } from './index.js'
+import type { JsonValue, JsonViewerToggleDetail } from './index.js'
 
 function mount(attrs: Record<string, string> = {}): OASJsonViewer {
   const el = new OASJsonViewer()
@@ -60,6 +61,17 @@ describe('OASJsonViewer 数据通道', () => {
     expect(paths(el)).toEqual(['$', "$['b']"])
   })
 
+  it('重复写同值 text / expanded 仍触发一次更新（受控回写边界）', () => {
+    const el = mount({ text: '{"a":1}' })
+    const spy = vi.spyOn(el as unknown as { runUpdateAndNotify: () => void }, 'runUpdateAndNotify')
+    el.text = '{"a":1}'
+    expect(spy).toHaveBeenCalledTimes(1)
+    el.setAttribute('expanded', '["$"]')
+    spy.mockClear()
+    el.expanded = ['$']
+    expect(spy).toHaveBeenCalledTimes(1)
+  })
+
   it('非法 text：错误态 + oas-parse-error；写 data 后恢复', () => {
     const el = new OASJsonViewer()
     const errors: unknown[] = []
@@ -72,6 +84,19 @@ describe('OASJsonViewer 数据通道', () => {
     el.data = { ok: 1 }
     expect(el.shadowRoot!.querySelector('[part="error"]')).toBeNull()
     expect(paths(el)).toEqual(['$', "$['ok']"])
+  })
+
+  it('超深嵌套不向外抛错，转为可恢复错误态', () => {
+    let deep: JsonValue = 'leaf'
+    for (let i = 0; i < 50_000; i++) deep = { a: deep }
+    const el = mount()
+    expect(() => {
+      el.data = deep
+    }).not.toThrow()
+    expect(el.shadowRoot!.querySelector('[part="error"]')).not.toBeNull()
+    expect(el.shadowRoot!.querySelector('[part="error"]')!.textContent).toContain(t('jsonViewer.tooDeep'))
+    el.data = { shallow: true }
+    expect(el.shadowRoot!.querySelector('[part="error"]')).toBeNull()
   })
 
   it('compact 默认行高 20，显式 row-height 优先', () => {
@@ -369,6 +394,16 @@ describe('OASJsonViewer 搜索与复制', () => {
     expect(await el.copyPath()).toBe(false)
     expect(errors).toHaveLength(1)
     expect(el.shadowRoot!.querySelector('[part="status"]')!.textContent).toBe('复制失败')
+  })
+
+  it('toolbar=false 时复制反馈显示在浮层（不依赖工具栏可见）', async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined)
+    vi.stubGlobal('navigator', { clipboard: { writeText } })
+    const el = mount({ text: '{"a":1}', toolbar: 'false' })
+    await el.copyPath('$')
+    const flash = el.shadowRoot!.querySelector<HTMLElement>('[part="copy-status"]')!
+    expect(flash.hidden).toBe(false)
+    expect(flash.textContent).toBe(t('jsonViewer.copied'))
   })
 
   it('复制值/JSON：原始值去引号，JSON 带引号；copyable=false 仍可调用方法', async () => {

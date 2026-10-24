@@ -78,7 +78,7 @@ log.level = "info"'
   ></oas-diff-viewer>
 </DemoBlock>
 
-容器宽度小于 `split-min-width` 时自动降级为行内视图（`mode` 属性值不变），避免窄屏下每侧都不可读。
+容器宽度小于 `split-min-width` 时自动降级为行内视图（`mode` 属性值不变），避免窄屏下每侧都不可读。并排行的 `data-op` 统一为 `replace`，真实增删操作在 `before-code` / `after-code` 单元格的 `data-op` 上；外部 `::part()` 定制请读取单元格。
 
 ## 折叠与批量操作
 

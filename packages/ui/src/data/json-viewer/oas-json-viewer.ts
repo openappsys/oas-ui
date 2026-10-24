@@ -52,6 +52,7 @@ const STYLE = `
 }
 :host([hidden]) { display: none; }
 .viewer {
+  position: relative;
   display: flex;
   flex-direction: column;
   height: var(--_oas-jv-height, var(--oas-json-viewer-height, 360px));
@@ -71,6 +72,7 @@ const STYLE = `
   background: var(--oas-color-bg-elevated, var(--oas-color-bg));
   flex: none;
 }
+.toolbar[hidden] { display: none; }
 .search {
   flex: 1 1 140px;
   min-width: 80px;
@@ -96,6 +98,22 @@ const STYLE = `
   white-space: nowrap;
 }
 .status[data-state='error'] { color: var(--oas-color-danger-text); }
+.copy-status {
+  position: absolute;
+  inset-block-end: 8px;
+  inset-inline-end: 12px;
+  z-index: 2;
+  padding: 3px 10px;
+  border: 1px solid var(--oas-color-border);
+  border-radius: var(--oas-radius-sm);
+  background: var(--oas-color-bg-elevated);
+  color: var(--oas-color-success-text);
+  font-size: .9em;
+  box-shadow: var(--oas-shadow-sm);
+  pointer-events: none;
+}
+.copy-status[data-state='error'] { color: var(--oas-color-danger-text); }
+.copy-status[hidden] { display: none; }
 .btn {
   height: 28px;
   padding: 0 8px;
@@ -270,6 +288,8 @@ export class OASJsonViewer extends OASElement {
   private toolbarEl: HTMLElement | null = null
   private searchEl: HTMLInputElement | null = null
   private statusEl: HTMLElement | null = null
+  private copyStatusEl: HTMLElement | null = null
+  private copyStatusTimer: ReturnType<typeof setTimeout> | null = null
   private rowHeightCache = 0
 
   /**
@@ -299,11 +319,17 @@ export class OASJsonViewer extends OASElement {
     return this.getAttribute('text') ?? ''
   }
   set text(value: string) {
+    const same = this.getAttribute('text') === value
     this.hasData = false
     this.dataValue = null
     this.sourceDirty = true
     this.resetRowIds()
-    this.setAttribute('text', value)
+    if (same) {
+      // 宿主重复写同值（受控回写/重试）仍触发一次更新，避免“属性没变就不渲染”的边界
+      if (this.hasRendered) this.runUpdateAndNotify()
+    } else {
+      this.setAttribute('text', value)
+    }
   }
 
   /**
@@ -325,7 +351,14 @@ export class OASJsonViewer extends OASElement {
     return this.parseExpandedAttr()
   }
   set expanded(paths: string[]) {
-    this.setAttribute('expanded', JSON.stringify(paths))
+    const next = JSON.stringify(paths)
+    if (this.getAttribute('expanded') === next) {
+      // 受控模式同值回写：清掉搜索临时展开并强制刷新，避免内部快照与属性脱节
+      this.transientExpanded.clear()
+      if (this.hasRendered) this.runUpdateAndNotify()
+    } else {
+      this.setAttribute('expanded', next)
+    }
   }
 
   override attributeChangedCallback(name: string, oldValue: string | null, newValue: string | null): void {
@@ -363,10 +396,15 @@ export class OASJsonViewer extends OASElement {
           <button class="btn" part="copy-json" type="button"></button>
         </div>
         <div class="viewport" part="viewport" role="tree" tabindex="0"></div>
+        <span class="copy-status" part="copy-status" role="status" aria-live="polite" hidden></span>
         <div class="measure" aria-hidden="true"></div>
       </div>
     `
     this.bind()
+    this.onCleanup(() => {
+      if (this.copyStatusTimer) clearTimeout(this.copyStatusTimer)
+      this.copyStatusTimer = null
+    })
     this.update()
   }
 
@@ -394,6 +432,7 @@ export class OASJsonViewer extends OASElement {
     this.toolbarEl = this.shadow.querySelector('[part="toolbar"]')
     this.searchEl = this.shadow.querySelector('[part="search"]')
     this.statusEl = this.shadow.querySelector('[part="status"]')
+    this.copyStatusEl = this.shadow.querySelector('[part="copy-status"]')
 
     const on = (part: string, fn: () => void) => {
       const el = this.shadow.querySelector<HTMLElement>(`[part="${part}"]`)
@@ -479,37 +518,42 @@ export class OASJsonViewer extends OASElement {
     this.sourceDirty = false
     this.sourceReady = true
     this.parseError = null
-    if (this.hasData) {
-      this.root = buildJsonTree(this.dataValue)
-      this.lastErrorSource = ''
-    } else {
-      const text = this.getAttribute('text')
-      if (text === null || text.trim() === '') {
-        this.root = null
-        return
-      }
-      try {
+    let source = ''
+    try {
+      if (this.hasData) {
+        this.root = buildJsonTree(this.dataValue)
+        this.lastErrorSource = ''
+      } else {
+        const text = this.getAttribute('text')
+        if (text === null || text.trim() === '') {
+          this.root = null
+          return
+        }
+        source = text
         this.root = buildJsonTree(JSON.parse(text))
         this.lastErrorSource = ''
-      } catch (error) {
-        const message = error instanceof Error ? error.message : String(error)
-        const detail = this.parseErrorMessage(message, text)
-        this.parseError = detail
-        this.root = null
-        if (this.lastErrorSource !== text) {
-          this.lastErrorSource = text
-          this.emit('parse-error', detail)
-        }
-        return
       }
+      if (!this.root) return
+      this.nodeByPath.clear()
+      const walk = (node: JsonNode): void => {
+        this.nodeByPath.set(node.path, node)
+        for (const child of node.children ?? []) walk(child)
+      }
+      walk(this.root)
+    } catch (error) {
+      const raw = error instanceof Error ? error.message : String(error)
+      // 深嵌套会在建树/遍历时触发 RangeError：转为可恢复错误态，而不是抛给宿主
+      const message = error instanceof RangeError ? this.t('jsonViewer.tooDeep') : raw
+      const detail = this.parseErrorMessage(message, source)
+      this.parseError = detail
+      this.root = null
+      const key = source || `data:${message}`
+      if (this.lastErrorSource !== key) {
+        this.lastErrorSource = key
+        this.emit('parse-error', detail)
+      }
+      return
     }
-    if (!this.root) return
-    this.nodeByPath.clear()
-    const walk = (node: JsonNode): void => {
-      this.nodeByPath.set(node.path, node)
-      for (const child of node.children ?? []) walk(child)
-    }
-    walk(this.root)
     if (!this.nodeByPath.has(this.activePath)) this.activePath = '$'
     this.searchAppliedQuery = ''
   }
@@ -1060,14 +1104,31 @@ export class OASJsonViewer extends OASElement {
   async copyValue(path: string = this.activePath): Promise<boolean> {
     const node = this.nodeByPath.get(path)
     if (!node) return false
-    return this.copy(path, 'value', serializeValue(node.value, this.indentSize()))
+    const text = this.serializeForCopy(path, 'value', () => serializeValue(node.value, this.indentSize()))
+    if (text === null) return false
+    return this.copy(path, 'value', text)
   }
 
   /** 复制子树 JSON */
   async copyJson(path: string = this.activePath): Promise<boolean> {
     const node = this.nodeByPath.get(path)
     if (!node) return false
-    return this.copy(path, 'json', serializeJson(node.value, this.indentSize()))
+    const text = this.serializeForCopy(path, 'json', () => serializeJson(node.value, this.indentSize()))
+    if (text === null) return false
+    return this.copy(path, 'json', text)
+  }
+
+  /** 序列化兜底：超深子树触发 RangeError 时转为复制失败，不向宿主抛错 */
+  private serializeForCopy(path: string, kind: JsonViewerCopyDetail['kind'], serialize: () => string): string | null {
+    try {
+      return serialize()
+    } catch (error) {
+      this.emit('copy-error', { path, kind, text: '', error } satisfies JsonViewerCopyDetail & {
+        error: unknown
+      })
+      this.setCopyStatus(this.t('jsonViewer.copyFailed'), true)
+      return null
+    }
   }
 
   private async copy(path: string, kind: JsonViewerCopyDetail['kind'], text: string): Promise<boolean> {
@@ -1091,10 +1152,28 @@ export class OASJsonViewer extends OASElement {
   }
 
   private setCopyStatus(text: string, error = false): void {
-    if (!this.statusEl) return
-    this.statusEl.textContent = text
-    if (error) this.statusEl.setAttribute('data-state', 'error')
-    else this.statusEl.removeAttribute('data-state')
+    if (this.statusEl) {
+      this.statusEl.textContent = text
+      if (error) this.statusEl.setAttribute('data-state', 'error')
+      else this.statusEl.removeAttribute('data-state')
+    }
+    // 工具栏隐藏时用浮层承担可见反馈（toolbar="false" 仍能感知复制成功/失败）
+    if (!this.copyStatusEl) return
+    if (this.copyStatusTimer) {
+      clearTimeout(this.copyStatusTimer)
+      this.copyStatusTimer = null
+    }
+    const overlay = this.getAttr('toolbar', '') === 'false' && text !== ''
+    this.copyStatusEl.hidden = !overlay
+    this.copyStatusEl.textContent = text
+    if (error) this.copyStatusEl.setAttribute('data-state', 'error')
+    else this.copyStatusEl.removeAttribute('data-state')
+    if (overlay) {
+      this.copyStatusTimer = setTimeout(() => {
+        if (this.copyStatusEl) this.copyStatusEl.hidden = true
+        this.copyStatusTimer = null
+      }, 1600)
+    }
   }
 }
 

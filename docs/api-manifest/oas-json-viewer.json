@@ -158,16 +158,16 @@
       "detail": "{ paths } satisfies JsonViewerExpandedChangeDetail"
     },
     {
+      "name": "oas-copy-error",
+      "detail": "{ path, kind, text: '', error } satisfies JsonViewerCopyDetail & { error: unknown } | { path, kind, text, error } satisfies JsonViewerCopyDetail & { error: unknown }"
+    },
+    {
       "name": "oas-copy",
       "detail": "{ path, kind, text } satisfies JsonViewerCopyDetail"
     },
     {
       "name": "oas-copied",
       "detail": "{ path, kind, text } satisfies JsonViewerCopyDetail"
-    },
-    {
-      "name": "oas-copy-error",
-      "detail": "{ path, kind, text, error } satisfies JsonViewerCopyDetail & { error: unknown }"
     }
   ],
   "slots": [],

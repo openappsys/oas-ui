@@ -67,7 +67,7 @@ Fixed-row virtualization turns on automatically above 200 visible rows, keeping 
 
 ## Error state and recovery
 
-Invalid `text` shows an error panel and emits `oas-parse-error` with `message` plus locatable `line` / `column`. Writing valid `data` or `text` recovers automatically.
+Invalid `text` shows an error panel and emits `oas-parse-error` with `message` plus locatable `line` / `column`. Writing valid `data` or `text` recovers automatically. Extremely deep nesting that overflows the build/walk stack also enters this recoverable error state (localized message) instead of throwing `RangeError` at the host; copy failures on over-deep subtrees emit `oas-copy-error` and show the failure notice.
 
 <DemoBlock title="Parse failure → recover with valid data">
   <div style="display:flex;gap:var(--oas-space-2);margin-bottom:var(--oas-space-3)">
@@ -82,7 +82,7 @@ Invalid `text` shows an error panel and emits `oas-parse-error` with `message` p
 Use `compact` for tighter spacing (20px rows and 11px type by default), `toolbar="false"` to hide the toolbar, `copyable="false"` to hide copy buttons, `search-shortcut="false"` to disable the shortcut, `indent` for copied JSON indentation and `aria-label` to name the tree. The example below also sets `height`, `row-height`, `default-expand-depth="2"` and `virtual="false"`.
 
 <DemoBlock title="Compact read-only panel">
-  <oas-json-viewer id="jv-compact" compact toolbar="false" copyable="false" search-shortcut="false" indent="4" default-expand-depth="2" height="220" row-height="22" virtual="false" aria-label="Build configuration" text='{"build":{"target":"es2022","minify":true,"sourcemap":false},"plugins":["a","b"]}'></oas-json-viewer>
+  <oas-json-viewer id="jv-compact" style="width: 100%" compact toolbar="false" copyable="false" search-shortcut="false" indent="4" default-expand-depth="2" height="220" row-height="22" virtual="false" aria-label="Build configuration" text='{"build":{"target":"es2022","minify":true,"sourcemap":false},"plugins":["a","b"]}'></oas-json-viewer>
 </DemoBlock>
 
 ## Keyboard and accessibility
@@ -100,7 +100,7 @@ The tree container is a single tab stop and uses `aria-activedescendant` for the
 
 ## Theme and parts
 
-All colors use CSS variable tokens and follow dark mode automatically. Style `viewer`, `toolbar`, `viewport`, `row`, `key`, `value`, `twisty` and `error` with `::part()`. Indentation uses logical properties in RTL, while JSON text keeps bidi isolation.
+All colors use CSS variable tokens and follow dark mode automatically. Style `viewer`, `toolbar`, `viewport`, `row`, `key`, `value`, `twisty`, `error` and `copy-status` with `::part()`. With `toolbar="false"`, copy feedback appears in a bottom-end floating `part="copy-status"` notice. Indentation uses logical properties in RTL, while JSON text keeps bidi isolation.
 
 <script>
 if (typeof window !== 'undefined') {

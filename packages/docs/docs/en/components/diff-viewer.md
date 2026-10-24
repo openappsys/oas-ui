@@ -78,7 +78,7 @@ log.level = "info"'
   ></oas-diff-viewer>
 </DemoBlock>
 
-When the container is narrower than `split-min-width`, the viewer degrades to unified (the `mode` attribute keeps its value) so neither side becomes unreadable.
+When the container is narrower than `split-min-width`, the viewer degrades to unified (the `mode` attribute keeps its value) so neither side becomes unreadable. Split rows use `data-op="replace"`; the real insert/delete op lives on each `before-code` / `after-code` cell — read the cell when styling via `::part()`.
 
 ## Folding and bulk actions
 

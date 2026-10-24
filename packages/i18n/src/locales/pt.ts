@@ -509,6 +509,7 @@ export const pt: LocaleMessages = {
   'jsonViewer.copyFailed': 'Copy failed',
   'jsonViewer.empty': 'No data',
   'jsonViewer.parseError': 'Invalid JSON',
+  'jsonViewer.tooDeep': 'Nested too deeply to render; trim the data or parse it on the host side',
   'jsonViewer.matches': '{current}/{total}',
   'jsonViewer.noMatches': 'No matches',
   'jsonViewer.tree': 'JSON tree',

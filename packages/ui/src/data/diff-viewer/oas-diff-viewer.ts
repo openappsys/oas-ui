@@ -715,7 +715,7 @@ export class OASDiffViewer extends OASElement {
     if (event.target !== this.viewportEl) return
     const rows = this.visibleRows()
     if (rows.length === 0) return
-    const page = this.hasAttr('wrap') ? 5 : Math.max(1, Math.floor(this.viewportHeight() / this.rowHeightPx()) - 1)
+    const page = this.hasAttr('wrap') ? 5 : Math.max(1, Math.floor(this.viewportHeight() / this.rowHeightPx()))
     let next: number | null = null
     if (event.key === 'ArrowDown') next = this.activeIndex + 1
     else if (event.key === 'ArrowUp') next = this.activeIndex - 1
