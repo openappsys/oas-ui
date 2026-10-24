@@ -34,7 +34,7 @@
 - 单测：解析/错误恢复、`data`/`text` 双源、展开受控/非受控、搜索与计数、复制路径转义、虚拟窗口边界、键盘模型、SSR 水合。
 - e2e：10k 节点滚动时 DOM 行数有界、搜索跳转命中、复制路径反馈、真实键盘、axe 零严重违规、暗色/RTL。
 - 文档 zh/en（含 API/demo）、`api:check` 双向 0、CHANGELOG `[未发布]`、PRD/ROADMAP 同步。
-- 包体：`data/json-viewer` 按需链 gzip 实测 30.9 KB（链含 core + i18n + 组件），目标 ≤ 32 KB、`perf:size` 预算 35 KB；零第三方运行时依赖。
+- 包体：`data/json-viewer` 按需链 gzip 实测 31.5 KB（链含 core + i18n + 组件），目标 ≤ 32 KB、`perf:size` 预算 35 KB；零第三方运行时依赖。
 
 ## 未发布：N02 文本 Diff 查看器 ✅
 

@@ -508,9 +508,9 @@ const BUDGETS = [
   {
     name: '@oas-ui/ui/data/json-viewer 链 gzip',
     get: () => componentMeasures.jsonViewer.gzipBytes,
-    limit: 35 * 1024, // 35 KB：实测 gzip 30.9 KB（core + i18n + 组件，无第三方运行时），上浮约 13%
+    limit: 35 * 1024, // 35 KB：实测 gzip 31.5 KB（core + i18n + 组件，无第三方运行时），上浮约 10%
     basis:
-      '实测 gzip 30.9 KB（链含 core + i18n + 树模型/虚拟窗口/工具栏/搜索/复制；无第三方运行时、无图标全量注册），上浮约 13% 定档 35 KB；PRD 目标 ≤32 KB。',
+      '实测 gzip 31.5 KB（链含 core + i18n + 树模型/虚拟窗口/工具栏/搜索/复制/复制浮层；无第三方运行时、无图标全量注册），上浮约 10% 定档 35 KB；PRD 目标 ≤32 KB。',
   },
   {
     name: '@oas-ui/ui/data/diff-viewer 链 gzip',
