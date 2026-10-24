@@ -1350,8 +1350,8 @@ Listens to `oas-window-request`, aborts stale requests and fills `data` / `windo
 | `oas-check` | Checkbox selection change, `detail: { keys: string[] }` |
 | `oas-column-order` | Fired after column drag reorder, `detail: { keys }` (new column order) |
 | `oas-column-resize` | Fired after a column width drag, `detail: { key, width }` |
-| `oas-edit` | Inline edit submitted (Enter / blur / operation column save), `detail: { rowIndex, key, column, value }`; in controlled mode the component does not write back `data` |
-| `oas-edit-cancel` | Inline edit cancelled (Esc / operation column cancel / empty submit restores), `detail: { rowIndex, key, column, value }` (`value` is the original value) |
+| `oas-edit` | Inline edit submitted (Enter / blur / operation column save), `detail: { rowIndex, key, column, value, oldValue, oldRawValue }` (`oldValue` is the pre-submit string value, `oldRawValue` keeps the original shape such as number / boolean / string[]); in controlled mode the component does not write back `data` |
+| `oas-edit-cancel` | Inline edit cancelled (Esc / operation column cancel / empty submit restores), `detail: { rowIndex, key, column, value, oldValue, oldRawValue }` (`value` / `oldValue` are the original value; `oldRawValue` keeps the original shape) |
 | `oas-expand` | Row expand/collapse (tree child rows or expandable content rows), `detail: { key, expanded }` |
 | `oas-export` | Export triggered (button or exportData), `detail: { format, fileName, rowCount }` |
 | `oas-filter-change` | Fired when a column filter value changes, `detail: { filters }` (filters maps a column key to its selected scalar value) |

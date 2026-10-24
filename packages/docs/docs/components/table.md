@@ -1339,8 +1339,8 @@ const source = createWindowedSource(table, {
 | `oas-check` | 复选框选中变化，`detail: { keys: string[] }` |
 | `oas-column-order` | 列拖拽重排后派发，`detail: { keys }`（新列序） |
 | `oas-column-resize` | 列宽拖拽调整后派发，`detail: { key, width }` |
-| `oas-edit` | 行内编辑提交（Enter/失焦/操作列保存），`detail: { rowIndex, key, column, value }`；受控模式组件不回写 `data` |
-| `oas-edit-cancel` | 行内编辑取消（Esc/操作列取消/空值提交还原），`detail: { rowIndex, key, column, value }`（value 为原值） |
+| `oas-edit` | 行内编辑提交（Enter/失焦/操作列保存），`detail: { rowIndex, key, column, value, oldValue, oldRawValue }`（oldValue 为提交前字符串值，oldRawValue 为编辑前原始形态，如 number / boolean / string[]）；受控模式组件不回写 `data` |
+| `oas-edit-cancel` | 行内编辑取消（Esc/操作列取消/空值提交还原），`detail: { rowIndex, key, column, value, oldValue, oldRawValue }`（value / oldValue 均为原值，oldRawValue 为原始形态） |
 | `oas-expand` | 行展开/收起（树形子行或可展开内容行），`detail: { key, expanded }` |
 | `oas-export` | 导出触发（按钮或 exportData），`detail: { format, fileName, rowCount }` |
 | `oas-filter-change` | 列过滤值变化时派发，`detail: { filters }`（filters 为列 key → 选中值标量的对象） |
