@@ -29,6 +29,11 @@
 | `--oas-color-success`        | `#16a34a`        | `#4ade80`        | 成功               |
 | `--oas-color-warning`        | `#d97706`        | `#fbbf24`        | 警告               |
 | `--oas-color-danger`         | `#dc2626`        | `#fbb2b2`        | 危险/删除          |
+| `--oas-color-diff-add-bg`    | `#e8f6ec`        | `#40524d`        | Diff 新增行底（不透明；HC `#d7f5e1`） |
+| `--oas-color-diff-add-word-bg` | `#bee5cc`      | `#43795b`        | Diff 新增词级高亮底（HC `#a6e6bd`） |
+| `--oas-color-diff-del-bg`    | `#fbe9e9`        | `#564d53`        | Diff 删除行底（HC `#ffe3e3`） |
+| `--oas-color-diff-del-word-bg` | `#f5c2c2`      | `#84696e`        | Diff 删除词级高亮底（HC `#ffc2c2`） |
+| `--oas-color-diff-gutter-text` | `#52525b`      | `#e4e4e7`        | Diff 行号文字（HC `#262626`） |
 | `--oas-color-text-primary`   | `#18181b`        | `#fafafa`        | 主文字             |
 | `--oas-color-text-secondary` | `#71717a`        | `#c6c6ce`        | 次级文字           |
 | `--oas-color-text-secondary-strong` | `color-mix(secondary 88%, primary)` | `=secondary` | 次级文字安全档（弱化底色 bg-hover 上的次级文字——secondary on bg-hover 仅 4.39 不达 AA，本档实测 5.15；普通底色仍用 secondary） |

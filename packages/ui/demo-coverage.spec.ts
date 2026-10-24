@@ -698,6 +698,10 @@ const COMPONENT_STEPS: Record<string, Array<[string, string, string?]>> = {
     ['clipboard', 'grant'],
     ['oas-json-viewer [part="copy-value"]', 'domclick', '授权后复制 → oas-copied'],
   ],
+  'diff-viewer': [
+    ['oas-diff-viewer [part="fold-toggle"]', 'click', '点折叠块 → oas-hunk-toggle'],
+    ['#dv-update', 'click', '更新内容 → oas-diff-change'],
+  ],
   collapse: [['oas-collapse-item [part="head"]', 'click', '点头部切换 → oas-change']],
   qrcode: [['#qrcode-status [part="refresh"]', 'click', '过期态点刷新按钮 → oas-refresh']],
   watermark: [['#wm-tamper-simulate', 'click', '模拟篡改删层 → oas-remove']],

@@ -10,6 +10,8 @@
 
 - **`oas-json-viewer` JSON 查看器**：只读 JSON 树，支持折叠/展开（`expanded` 受控或非受控）、大小写不敏感搜索与命中导航、JSONPath / 原始值 / 子树 JSON 复制、固定行高虚拟滚动、键盘导航与 `aria-activedescendant` 读屏语义。`text` attribute（SSR/DSD）与 `data` property 双通道，非法文本错误态可自恢复；10 个语言包补齐工具栏文案。
 
+- **`oas-diff-viewer` 文本差异查看器**：零第三方依赖的只读文本 Diff，行级 Myers + 词级高亮，`unified` / `split` 双视图（窄容器自动降级），未修改区块 `context` 折叠与 `expandAll()` / `collapseAll()`，对齐行虚拟滚动，`old-text` / `new-text` 双文本通道与 `stats` / `oas-diff-change` / `oas-hunk-toggle`，完整键盘与 `role="grid"` 读屏语义；`ignore-whitespace`、`max-edits` 降级、`wrap` 折行、10 个语言包文案同步；新增主题 token `--oas-color-diff-*`（不透明增删底色/词级高亮/行号文字）；纳入 SSR/DSD 白名单。
+
 ### 变更
 
 - **导航 landmark 宿主命名**：`oas-breadcrumb` / `oas-pagination` / `oas-anchor` / `oas-index-bar` / `oas-navigation-menu` 新增宿主 `aria-label` 优先转发到内部 navigation landmark，空值回退 i18n 默认名，便于同页多个导航地标注解区分。

@@ -1,0 +1,177 @@
+{
+  "className": "OASDiffViewer",
+  "sourceFile": "packages/ui/src/data/diff-viewer/oas-diff-viewer.ts",
+  "attrs": [
+    {
+      "name": "old-text",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "new-text",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "mode",
+      "type": "string",
+      "default": "unified",
+      "observed": true
+    },
+    {
+      "name": "context",
+      "type": "string",
+      "default": "3",
+      "observed": true
+    },
+    {
+      "name": "ignore-whitespace",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "max-edits",
+      "type": "string",
+      "default": "1000",
+      "observed": true
+    },
+    {
+      "name": "split-min-width",
+      "type": "string",
+      "default": "640",
+      "observed": true
+    },
+    {
+      "name": "show-line-numbers",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "old-label",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "new-label",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "toolbar",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "height",
+      "type": "string",
+      "default": "480",
+      "observed": true
+    },
+    {
+      "name": "row-height",
+      "type": "string",
+      "default": "22",
+      "observed": true
+    },
+    {
+      "name": "virtual",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "virtual-threshold",
+      "type": "string",
+      "default": "2000",
+      "observed": true
+    },
+    {
+      "name": "wrap",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "aria-label",
+      "observed": true
+    }
+  ],
+  "props": [
+    {
+      "name": "oldText",
+      "type": "string",
+      "api": true
+    },
+    {
+      "name": "newText",
+      "type": "string",
+      "api": true
+    },
+    {
+      "name": "stats",
+      "type": "DiffStats",
+      "api": true
+    },
+    {
+      "name": "degraded",
+      "type": "boolean"
+    }
+  ],
+  "methods": [
+    {
+      "name": "expandAll",
+      "signature": "expandAll(): void",
+      "description": "展开全部未修改区块（每个折叠区间派发一次 `oas-hunk-toggle`，`expanded: true`）"
+    },
+    {
+      "name": "collapseAll",
+      "signature": "collapseAll(): void",
+      "description": "收起全部未修改区块（每个被收起的折叠区间派发一次 `oas-hunk-toggle`，`expanded: false`）"
+    },
+    {
+      "name": "scrollToChange",
+      "signature": "scrollToChange(index: number): boolean",
+      "description": "滚动到指定变更块并聚焦其首行；越界返回 false"
+    }
+  ],
+  "events": [
+    {
+      "name": "oas-diff-change"
+    },
+    {
+      "name": "oas-hunk-toggle",
+      "detail": "{ index: fold.hunkIndex, expanded, start: fold.start, count: fold.count, } satisfies DiffViewerHunkToggleDetail"
+    }
+  ],
+  "slots": [],
+  "cssVars": [
+    {
+      "name": "--oas-diff-viewer-height",
+      "default": "480px"
+    },
+    {
+      "name": "--oas-diff-viewer-row-height",
+      "default": "22px"
+    },
+    {
+      "name": "--oas-diff-viewer-add-bg",
+      "default": "var(--oas-color-diff-add-bg)"
+    },
+    {
+      "name": "--oas-diff-viewer-del-bg",
+      "default": "var(--oas-color-diff-del-bg)"
+    },
+    {
+      "name": "--oas-diff-viewer-add-word-bg",
+      "default": "var(--oas-color-diff-add-word-bg)"
+    },
+    {
+      "name": "--oas-diff-viewer-del-word-bg",
+      "default": "var(--oas-color-diff-del-word-bg)"
+    }
+  ],
+  "unresolved": []
+}

@@ -1,8 +1,8 @@
 {
   "schema": 1,
   "totals": {
-    "components": 210,
-    "whitelist": 163,
+    "components": 211,
+    "whitelist": 164,
     "noSsr": 47
   },
   "components": [
@@ -3144,6 +3144,23 @@
       "parent": null,
       "note": null,
       "entry": "@oas-ui/ui/data/json-viewer",
+      "hasTemplate": false,
+      "hasHydrate": true,
+      "unitTest": true,
+      "dsdFixture": true,
+      "docsZh": true,
+      "docsEn": true
+    },
+    {
+      "tag": "oas-diff-viewer",
+      "family": "data",
+      "dir": "data/diff-viewer",
+      "className": "OASDiffViewer",
+      "ssr": "whitelist",
+      "reason": null,
+      "parent": null,
+      "note": null,
+      "entry": "@oas-ui/ui/data/diff-viewer",
       "hasTemplate": false,
       "hasHydrate": true,
       "unitTest": true,

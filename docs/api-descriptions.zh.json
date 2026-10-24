@@ -4867,5 +4867,40 @@
     "slots": {
       "icon": "工具图标"
     }
+  },
+  "oas-diff-viewer": {
+    "attrs": {
+      "aria-label": "差异表格的可读名称（默认「差异对比」）",
+      "context": "折叠时每侧保留的未修改行数（默认 3；0 只保留变更行本身）",
+      "height": "视口高度（px，默认 480）",
+      "ignore-whitespace": "比较前归一空白（连续空白折叠、行首尾裁剪），显示仍为原文",
+      "max-edits": "行级编辑距离上限（默认 1000）；超出时降级为整块替换并提示",
+      "mode": "视图模式：`unified`（行内，默认）/ `split`（并排）",
+      "new-label": "并排视图新文本列头文案（默认「修改后」）",
+      "new-text": "新文本（attribute 通道；SSR/DSD 可用）",
+      "old-label": "并排视图旧文本列头文案（默认「修改前」）",
+      "old-text": "旧文本（attribute 通道；SSR/DSD 可用）",
+      "row-height": "固定行高（px，默认 22，最小 12）",
+      "show-line-numbers": "行号开关；`false` 隐藏行号单元格",
+      "split-min-width": "并排视图最小容器宽度（px，默认 640）；不足时自动降级行内",
+      "toolbar": "工具栏开关；`false` 隐藏统计与批量按钮",
+      "virtual": "虚拟滚动：默认自动（对齐行超过 virtual-threshold 时启用），`true` 强制开启，`false` 关闭",
+      "virtual-threshold": "自动启用虚拟滚动的对齐行数阈值（默认 2000）",
+      "wrap": "长行折行；折行时退出虚拟滚动，行高随内容自适应"
+    },
+    "props": {
+      "newText": "新文本 property；写入反射 `new-text` 属性",
+      "oldText": "旧文本 property；写入反射 `old-text` 属性",
+      "stats": "差异统计（只读）：`{ added, removed, unchanged, hunks }`"
+    },
+    "events": {
+      "oas-diff-change": "数据更新后派发，`detail: { added, removed, unchanged, hunks }`",
+      "oas-hunk-toggle": "折叠块展开/收起后派发，`detail: { index, expanded, start, count }`"
+    },
+    "methods": {
+      "expandAll": "展开全部未修改区块",
+      "collapseAll": "收起全部未修改区块",
+      "scrollToChange": "滚动到指定变更块并聚焦其首行；越界返回 false"
+    }
   }
 }

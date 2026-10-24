@@ -185,6 +185,7 @@ export const WHITELIST = [
   'oas-aspect-ratio',
   'oas-virtual-list',
   'oas-json-viewer',
+  'oas-diff-viewer',
   // —— DSD 批次 4：导航布局组件白名单化 ——
   'oas-tabs',
   'oas-tab-panel',
@@ -396,6 +397,7 @@ const TAG_ENTRY: Record<WhiteListTag, string> = {
   'oas-aspect-ratio': '@oas-ui/ui/layout/aspect-ratio',
   'oas-virtual-list': '@oas-ui/ui/data/virtual-list',
   'oas-json-viewer': '@oas-ui/ui/data/json-viewer',
+  'oas-diff-viewer': '@oas-ui/ui/data/diff-viewer',
   // —— DSD 批次 4：导航布局组件（layout 多 tag 目录一次装载注册全部） ——
   'oas-tabs': '@oas-ui/ui/navigation/tabs',
   'oas-tab-panel': '@oas-ui/ui/navigation/tabs',

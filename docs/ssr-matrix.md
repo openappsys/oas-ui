@@ -2,8 +2,8 @@
 
 > 生成物：`pnpm ssr:matrix`。禁止手改；改数据源后重新生成。
 
-- 组件：210
-- SSR 白名单：163
+- 组件：211
+- SSR 白名单：164
 - 有意不 SSR：47
 
 | tag | 族 | 源目录 | SSR | 原因 | 父件 | entry | template | hydrate | 单测 | DSD e2e | 文档 zh/en |
@@ -193,6 +193,7 @@
 | `oas-table-column` | data | `data/table` | ⛔ 不 SSR | subcomponent | oas-table | — | — | — | — | — | —/— |
 | `oas-virtual-list` | data | `data/virtual-list` | ✅ 白名单 | — | — | `@oas-ui/ui/data/virtual-list` | ✅ | ✅ | ✅ | ✅ | ✅/✅ |
 | `oas-json-viewer` | data | `data/json-viewer` | ✅ 白名单 | — | — | `@oas-ui/ui/data/json-viewer` | — | ✅ | ✅ | ✅ | ✅/✅ |
+| `oas-diff-viewer` | data | `data/diff-viewer` | ✅ 白名单 | — | — | `@oas-ui/ui/data/diff-viewer` | — | ✅ | ✅ | ✅ | ✅/✅ |
 | `oas-countdown` | data | `data/countdown` | ✅ 白名单 | — | — | `@oas-ui/ui/data/countdown` | ✅ | ✅ | ✅ | ✅ | ✅/✅ |
 | `oas-statistic` | data | `data/statistic` | ✅ 白名单 | — | — | `@oas-ui/ui/data/statistic` | ✅ | ✅ | ✅ | ✅ | ✅/✅ |
 | `oas-ellipsis` | data | `data/ellipsis` | ✅ 白名单 | — | — | `@oas-ui/ui/data/ellipsis` | ✅ | ✅ | ✅ | ✅ | ✅/✅ |

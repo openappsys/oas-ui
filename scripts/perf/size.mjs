@@ -437,6 +437,7 @@ const COMPONENT_ENTRIES = [
   { id: 'form', entry: 'form/form', spec: '@oas-ui/ui/form/form' },
   { id: 'gantt', entry: 'data/gantt', spec: '@oas-ui/ui/data/gantt' },
   { id: 'jsonViewer', entry: 'data/json-viewer', spec: '@oas-ui/ui/data/json-viewer' },
+  { id: 'diffViewer', entry: 'data/diff-viewer', spec: '@oas-ui/ui/data/diff-viewer' },
 ]
 const componentMeasures = {}
 for (const { id, entry } of COMPONENT_ENTRIES) {
@@ -510,6 +511,13 @@ const BUDGETS = [
     limit: 35 * 1024, // 35 KB：实测 gzip 30.9 KB（core + i18n + 组件，无第三方运行时），上浮约 13%
     basis:
       '实测 gzip 30.9 KB（链含 core + i18n + 树模型/虚拟窗口/工具栏/搜索/复制；无第三方运行时、无图标全量注册），上浮约 13% 定档 35 KB；PRD 目标 ≤32 KB。',
+  },
+  {
+    name: '@oas-ui/ui/data/diff-viewer 链 gzip',
+    get: () => componentMeasures.diffViewer.gzipBytes,
+    limit: 34 * 1024, // 34 KB：实测 gzip 29.9 KB（core + i18n + 自研 Myers/折叠/并排），上浮约 14%
+    basis:
+      '实测 gzip 30.6 KB（链含 core + i18n + 自研 Myers 行级差异/词级高亮/折叠/并排/虚拟窗口；无第三方 diff 依赖、无图标全量注册），上浮约 11% 定档 34 KB；PRD 目标 ≤32 KB。',
   },
   {
     name: '@oas-ui/theme index.css gzip',

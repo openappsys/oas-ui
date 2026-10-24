@@ -184,6 +184,7 @@
   "oas-table-column",
   "oas-virtual-list",
   "oas-json-viewer",
+  "oas-diff-viewer",
   "oas-countdown",
   "oas-statistic",
   "oas-ellipsis",

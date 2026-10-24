@@ -58,6 +58,11 @@
   --oas-color-warning-text: #a75c05;
   --oas-color-danger-text: #d82525;
   --oas-color-info-text: #0e7490;
+  --oas-color-diff-add-bg: #e8f6ec;
+  --oas-color-diff-add-word-bg: #bee5cc;
+  --oas-color-diff-del-bg: #fbe9e9;
+  --oas-color-diff-del-word-bg: #f5c2c2;
+  --oas-color-diff-gutter-text: #52525b;
   --oas-deep-mix: 72%;
   --oas-deep-sink: black;
   --oas-font-size-xs: 12px;
@@ -167,6 +172,11 @@ html.dark {
   --oas-color-warning-text: #fbbf24;
   --oas-color-danger-text: #fbb2b2;
   --oas-color-info-text: #22d3ee;
+  --oas-color-diff-add-bg: #40524d;
+  --oas-color-diff-add-word-bg: #43795b;
+  --oas-color-diff-del-bg: #564d53;
+  --oas-color-diff-del-word-bg: #84696e;
+  --oas-color-diff-gutter-text: #e4e4e7;
   --oas-deep-mix: 38%;
   --oas-deep-sink: var(--oas-color-text-primary);
 }
@@ -187,6 +197,11 @@ html.dark {
   --oas-color-text-secondary: #262626;
   --oas-color-text-secondary-strong: var(--oas-color-text-secondary);
   --oas-color-text-disabled: #595959;
+  --oas-color-diff-add-bg: #d7f5e1;
+  --oas-color-diff-add-word-bg: #a6e6bd;
+  --oas-color-diff-del-bg: #ffe3e3;
+  --oas-color-diff-del-word-bg: #ffc2c2;
+  --oas-color-diff-gutter-text: #262626;
   --oas-color-border: #000000;
   --oas-color-bg: #ffffff;
   --oas-color-bg-elevated: #ffffff;

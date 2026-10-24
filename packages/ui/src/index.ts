@@ -423,6 +423,7 @@ import './data/table/edit/index.js'
 import './data/table/index.js'
 import './data/virtual-list/index.js'
 import './data/json-viewer/index.js'
+import './data/diff-viewer/index.js'
 import './data/countdown/index.js'
 import './data/statistic/index.js'
 import './data/ellipsis/index.js'
@@ -554,6 +555,29 @@ export {
   type ScrollToIndexAlign,
   type ScrollToIndexOptions,
 } from './data/virtual-list/index.js'
+export {
+  OASDiffViewer,
+  buildDiffRows,
+  buildSplitRows,
+  diffLines,
+  inlineSegments,
+  layoutRows,
+  layoutSplitRows,
+  splitLines,
+  type DiffFoldRow,
+  type DiffHunk,
+  type DiffLayout,
+  type DiffLine,
+  type DiffLineRow,
+  type DiffOp,
+  type DiffSegment,
+  type DiffStats,
+  type SplitLayout,
+  type SplitLineRow,
+  type SplitRow,
+  type DiffViewerChangeDetail,
+  type DiffViewerHunkToggleDetail,
+} from './data/diff-viewer/index.js'
 export {
   OASJsonViewer,
   buildJsonTree,

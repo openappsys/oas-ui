@@ -5,7 +5,7 @@
 
 ---
 
-## 未发布：N01 JSON 查看器 🚧
+## 未发布：N01 JSON 查看器 ✅
 
 ### 功能定义
 
@@ -35,6 +35,37 @@
 - e2e：10k 节点滚动时 DOM 行数有界、搜索跳转命中、复制路径反馈、真实键盘、axe 零严重违规、暗色/RTL。
 - 文档 zh/en（含 API/demo）、`api:check` 双向 0、CHANGELOG `[未发布]`、PRD/ROADMAP 同步。
 - 包体：`data/json-viewer` 按需链 gzip 实测 30.9 KB（链含 core + i18n + 组件），目标 ≤ 32 KB、`perf:size` 预算 35 KB；零第三方运行时依赖。
+
+## 未发布：N02 文本 Diff 查看器 🚧
+
+### 功能定义
+
+新增只读文本差异查看器 `oas-diff-viewer`（data 族）：面向「配置对比 / 提示词版本对比 / 格式化 JSON 对照」场景，输入两段文本，输出行级差异，支持行内与并排两种视图、未修改区块折叠、行级 + 词级高亮。不负责编辑、合并、接受/拒绝、三方对比、结构级 JSON diff（JSON 走格式化文本）、语法高亮、搜索与远程加载。
+
+### 详细需求
+
+- **数据通道**：`old-text` / `new-text` 属性（文本，声明式/SSR 通道）；property 为 `oldText` / `newText`（避免与 DOM `before()` / `after()` 方法冲突，写入反射同名属性）；缺省空串。两侧都为空白 → 空态提示；内容相同 → 「无差异」提示（仍渲染行号与统计 0/0）。`old-label` / `new-label` 覆盖并排视图列头，缺省走 i18n「修改前 / 修改后」。
+- **算法**：按行切分（`\r\n` / `\r` 归一为 `\n`，末尾换行不额外产生空行），行级 Myers 差异（O(ND)，共同前后缀先裁剪）；超过 `max-edits`（默认 1000）时降级为「整块替换」并置 `data-degraded` + 读屏提示，不阻塞主线程。`ignore-whitespace`（默认 false）开启时比较前归一空白（连续空白折叠、行首尾裁剪），但显示仍为原文。
+- **词级高亮**：对成对的删除/新增行做共同前缀/后缀裁剪，仅高亮变化片段；token 化覆盖 ASCII 词、数字、标点、空白与 CJK 单字，避免整行标红；一行对多行时（行数不等的替换块）只做行级高亮，不做跨行词级对齐。
+- **折叠**：相邻未修改行超过 `context`（默认 3，两侧各保留行数）时折叠中间部分，渲染「展开 N 行未修改」按钮；`context=0` 只保留变更行本身。按钮可 Tab 聚焦、`aria-expanded` 同步、回车由原生按钮行为展开；方法 `expandAll()` / `collapseAll()` 为每个发生变化的折叠区间各派发一次 `oas-hunk-toggle`（`detail: { index, expanded, start, count }`，`index` 为变更块序号）；单块展开后焦点交还视口。数据更新后折叠状态重置。
+- **视图**：`mode="unified" | "split"`（默认 `unified`）。`split` 用单一滚动容器 + 对齐行渲染左右两列（天然同步滚动）；容器宽度小于 `split-min-width`（默认 640）时自动降级 `unified`（`mode` 属性值不变，形态跟随可用宽度）。行号 `show-line-numbers`（默认 true）在 unified 下同时显示旧/新行号，空位占位。
+- **长文件**：统一以「对齐行」为虚拟单位（固定 `row-height`，默认 22），渲染行数超过 `virtual-threshold`（默认 2000）自动启用窗口渲染，折叠块作为单个虚拟行；`virtual="true"` 强制开启、`"false"` 关闭；`height`（默认 480）为含工具栏的固定视口。
+- **统计与事件**：工具栏显示 `+N` / `−N` 与变更块数量（`toolbar="false"` 关闭），`added` / `removed` / `unchanged` / `hunks` 通过只读 property `stats` 暴露；`old-text` / `new-text` 更新（含首次挂载）后派发 `oas-diff-change`（`detail: { added, removed, unchanged, hunks }`）。
+- **A11y/键盘**：`role="grid"` + `row` + `gridcell`（并排为四列：旧行号/旧内容/新行号/新内容；隐藏行号时为两列）；行号 `aria-hidden`，变更行带「新增行 N / 删除行 M」可访问名称；`+` / `−` 前缀文字、背景色与可访问名称多通道表达，不单靠颜色。单焦点容器 + `aria-activedescendant`：↑/↓ 移动行、Home/End 首尾、PageUp/PageDown 翻页、Enter/Space 展开/收起当前折叠块；折叠按钮进 Tab 序。宿主 `aria-label` 转发命名表格。
+- **展示**：新增/删除背景与词级高亮走 token（暗色变体同步，文本对比度 ≥ 4.5:1）；`wrap`（默认 false）控制长行折行，折行时行高按内容自适应并退出虚拟窗口；RTL 下逻辑属性镜像，split 的旧文本列保持在起始侧。
+- **SSR/DSD**：`old-text` / `new-text` 参与 SSR 快照；水合复用 shadow 骨架与行容器（行节点按客户端数据重建），DSD 场景下不重建 shadow。
+- **i18n**：空态/无差异/折叠按钮/统计标签/列头/行可访问名称由 locale key 提供；10 个语言包同步补 key（非中英先用英文兜底），保持 locale-completeness 测试通过。
+
+### 非目标
+
+编辑、合并、接受/拒绝变更、三方 diff、结构级 JSON diff、语法高亮、搜索/过滤、patch 导入导出、远程加载、Worker 计算、状态持久化、Markdown 渲染。
+
+### 验收标准
+
+- 单测：行切分与换行归一、Myers 结果与参考 LCS 随机对拍、词级高亮（CJK/空白/整行替换/多行替换）、折叠区间计算（context=0/默认/边界）、split 行对齐、降级路径、SSR 快照。
+- e2e：unified/split 切换、折叠块展开收起、真实键盘（方向键/PageUp/End/Enter）、2000+ 行虚拟窗口 DOM 行数有界、窄容器降级、axe 零严重违规、暗色/RTL。
+- 文档 zh/en（含 API/demo）、`api:check` 双向 0、CHANGELOG `[未发布]`、PRD/ROADMAP 同步。
+- 包体：`data/diff-viewer` 按需链 gzip 实测 30.6 KB（链含 core + i18n + 组件），目标 ≤ 32 KB、`perf:size` 预算 34 KB；零第三方运行时依赖。
 
 ## v2.6.3：date-picker 范围手输 + sidebar 行内容渲染 + barcode 扩展 🚧
 

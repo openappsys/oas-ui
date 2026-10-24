@@ -134,6 +134,7 @@ OAS-UI 提供 145 个框架无关的 Web Components 组件，按用途划分为 
 - [Tree 树](/components/tree) —— 用于展示层级数据，支持选中、展开、多选、懒加载与节点拖拽。
 - [VirtualList 虚拟列表](/components/virtual-list) —— 用于大数据量列表的视口窗口渲染：只渲染可见项（含上下缓冲），首尾 padding 占位撑起滚动高度，滚动事件按 rAF 节流。通用渲染原语，供 table / tree 复用。
 - [JSONViewer JSON 查看器](/components/json-viewer) —— 只读 JSON 树：折叠展开、搜索、JSONPath 复制、固定行高虚拟滚动、键盘与读屏支持。
+- [DiffViewer 文本差异](/components/diff-viewer) —— 只读文本 Diff：行级 + 词级高亮、行内/并排、未修改折叠、虚拟滚动、键盘与读屏支持。
 - [Card 卡片](/components/card) —— 用于承载一组相关内容的信息容器。
 - [Avatar 头像](/components/avatar) —— 用于展示用户或对象头像，支持文字占位与图片两种形态。
 - [Image 图片](/components/image) —— 用于展示图片资源，支持可选预览能力。

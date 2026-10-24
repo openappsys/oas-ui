@@ -5135,5 +5135,40 @@
     "slots": {
       "icon": "Tool icon"
     }
+  },
+  "oas-diff-viewer": {
+    "attrs": {
+      "aria-label": "Accessible name of the diff table (defaults to “Diff”)",
+      "context": "Unchanged lines kept on each side when folding (default 3; 0 keeps only the changed lines)",
+      "height": "Viewport height in px (default 480)",
+      "ignore-whitespace": "Normalize whitespace before comparing (collapse runs, trim line edges) while displaying the original text",
+      "max-edits": "Line-level edit-distance cap (default 1000); beyond it the viewer degrades to block replacement and shows a notice",
+      "mode": "View mode: `unified` (default) / `split`",
+      "new-label": "Header text for the new-text split column (defaults to “After”)",
+      "new-text": "New text (attribute channel; SSR/DSD friendly)",
+      "old-label": "Header text for the old-text split column (defaults to “Before”)",
+      "old-text": "Old text (attribute channel; SSR/DSD friendly)",
+      "row-height": "Fixed row height in px (default 22, minimum 12)",
+      "show-line-numbers": "Line-number toggle; `false` hides the line-number cells",
+      "split-min-width": "Minimum container width in px for split view (default 640); narrower containers fall back to unified",
+      "toolbar": "Toolbar toggle; `false` hides stats and bulk actions",
+      "virtual": "Virtual scrolling: auto by default (enabled when aligned rows exceed virtual-threshold), `true` forces it on, `false` turns it off",
+      "virtual-threshold": "Aligned-row threshold for enabling virtual scrolling (default 2000)",
+      "wrap": "Wrap long lines; wrapping disables virtual scrolling and lets row height follow content"
+    },
+    "props": {
+      "newText": "New-text property; writes reflect the `new-text` attribute",
+      "oldText": "Old-text property; writes reflect the `old-text` attribute",
+      "stats": "Diff statistics (read-only): `{ added, removed, unchanged, hunks }`"
+    },
+    "events": {
+      "oas-diff-change": "Dispatched after data updates, `detail: { added, removed, unchanged, hunks }`",
+      "oas-hunk-toggle": "Dispatched after a fold expands/collapses, `detail: { index, expanded, start, count }`"
+    },
+    "methods": {
+      "expandAll": "Expand all unchanged regions",
+      "collapseAll": "Collapse all unchanged regions",
+      "scrollToChange": "Scroll to the given change block and focus its first row; returns false when out of range"
+    }
   }
 }
