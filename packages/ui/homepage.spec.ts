@@ -267,6 +267,12 @@ test.describe('官网首页（重设计版）', () => {
 
   test('SPA 路由切换 GA page_view 补发（onAfterRouteChanged 回归）', async ({ page }) => {
     await page.goto('/', { waitUntil: 'domcontentloaded' })
+    // e2e 构建默认 OAS_DOCS_ANALYTICS=0（不加载外部 GTM），此时没有 dataLayer；
+    // 该用例只在启用统计的构建里可验证，避免把测试环境配置当成产品缺陷。
+    const hasAnalytics = await page.evaluate(() =>
+      Array.isArray((window as unknown as { dataLayer?: unknown }).dataLayer),
+    )
+    test.skip(!hasAnalytics, 'e2e 构建关闭 analytics，GA page_view 由生产构建覆盖')
     await page.waitForFunction(() => Array.isArray(window.dataLayer))
     // 点击站点内真实链接，走 VitePress Router 的 SPA 切换（hero CTA 用 window.location
     // 整页跳转，不经过 Router；用链接才能验证 onAfterRouteChange 的 page_view 补发）
