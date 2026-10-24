@@ -7,7 +7,7 @@
 | 范围 | 内容 | 状态 |
 | --- | --- | --- |
 | **N01 JSON 查看器** | 新组件 `oas-json-viewer`（data 族）：`data`/`text` 双通道、折叠树、搜索、JSONPath 复制、树虚拟滚动、完整键盘/a11y、SSR 水合；只读，不含编辑/校验/查询/Diff | ✅ 已完成（未发版） |
-| **N02 文本 Diff 查看器** | 新组件 `oas-diff-viewer`（data 族）：`old-text`/`new-text` 双文本、行内/并排、未修改折叠、行级 + 词级高亮、行号/统计、只读、键盘/a11y、SSR；JSON 走格式化文本，不做结构 diff/编辑/合并 | 🚧 进行中 |
+| **N02 文本 Diff 查看器** | 新组件 `oas-diff-viewer`（data 族）：`old-text`/`new-text` 双文本、行内/并排、未修改折叠、行级 + 词级高亮、行号/统计、只读、键盘/a11y、SSR；JSON 走格式化文本，不做结构 diff/编辑/合并 | ✅ 已完成（未发版） |
 
 ## v2.6.3（已发布）
 

@@ -36,7 +36,7 @@
 - 文档 zh/en（含 API/demo）、`api:check` 双向 0、CHANGELOG `[未发布]`、PRD/ROADMAP 同步。
 - 包体：`data/json-viewer` 按需链 gzip 实测 30.9 KB（链含 core + i18n + 组件），目标 ≤ 32 KB、`perf:size` 预算 35 KB；零第三方运行时依赖。
 
-## 未发布：N02 文本 Diff 查看器 🚧
+## 未发布：N02 文本 Diff 查看器 ✅
 
 ### 功能定义
 
