@@ -238,9 +238,17 @@ export function createMasterDetail(table: HTMLElement, options: MasterDetailOpti
   table.addEventListener('keydown', onKeydown)
   options.panel.addEventListener('keydown', onKeydown)
   // 普通表鼠标点行后焦点不在表格内：window 冒泡兜底，Esc 仍能关闭详情
+  // （多实例会同时响应同一次 Esc；宿主需要独立关闭时自行在 onSelect 里判断）
   window.addEventListener('keydown', onKeydown)
 
-  observer = new MutationObserver(() => highlight())
+  observer = new MutationObserver(() => {
+    // 排序/过滤/虚拟滚动重建后刷新渲染下标（数据未变时行对象与面板不必重绘）
+    if (selected) {
+      const index = rowIndexByKey(selected.key)
+      if (index >= 0 && index !== selected.rowIndex) selected = { ...selected, rowIndex: index }
+    }
+    highlight()
+  })
   observer.observe(table.shadowRoot as ShadowRoot, { childList: true, subtree: true })
   const dataObserver = new MutationObserver(() => refresh())
   dataObserver.observe(table, { attributes: true, attributeFilter: ['data'] })

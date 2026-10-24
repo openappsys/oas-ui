@@ -2509,7 +2509,7 @@ test('table Pro 第二批：虚拟滚动帧后区域装饰 / roving tabindex / a
   expect(before.aria, 'grid-navigation 下选中格应有 aria-selected').toBeGreaterThan(0)
   expect(before.stops, 'grid-navigation 下 range 不新增 td 停靠点').toBe(0)
 
-  // 真实滚动帧：tbody 全量重建且不走 update，装饰必须由 oas-scroll 钩子恢复
+  // 真实滚动帧：tbody 全量重建且不走 update，装饰必须由 childList 观察兜底恢复
   await page.evaluate(() => {
     const wrap = document.querySelector('#table-virtual')!.shadowRoot!.querySelector('.table-scroll') as HTMLElement
     wrap.scrollTop = 80

@@ -123,6 +123,23 @@ describe('table/range 区域选择 + 剪贴板', () => {
     expect(changes).toHaveLength(3)
   })
 
+  it('交互宿主内按下不启动选区（composedPath 穿透嵌套组件）', () => {
+    const el = mount()
+    enableRangeSelection(el)
+    const td = cell(el, 0, 'name')
+    const nested = document.createElement('div')
+    const innerRoot = nested.attachShadow({ mode: 'open' })
+    innerRoot.innerHTML = '<input />'
+    td.appendChild(nested)
+    innerRoot
+      .querySelector('input')!
+      .dispatchEvent(
+        new PointerEvent('pointerdown', { bubbles: true, composed: true, cancelable: true, button: 0, pointerId: 1 }),
+      )
+    expect(getRangeSelection(el)).toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('td.range-selected')).toHaveLength(0)
+  })
+
   it('拖拽跨格后表格外释放能复位，不残留 dragging', () => {
     const el = mount()
     enableRangeSelection(el)
@@ -134,6 +151,9 @@ describe('table/range 区域选择 + 剪贴板', () => {
       start: { row: 0, col: 'name' },
       end: { row: 1, col: 'age' },
     })
+    const selectStart = new Event('selectstart', { bubbles: true, cancelable: true })
+    window.dispatchEvent(selectStart)
+    expect(selectStart.defaultPrevented, '拖拽中抑制页面文本选择').toBe(true)
     // 表格外释放：window 兜底复位 dragging，之后 focusin 能重新收敛为单格
     window.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, pointerId: 1 }))
     cell(el, 0, 'name').focus()
@@ -185,7 +205,7 @@ describe('table/range 区域选择 + 剪贴板', () => {
     expect(events[1]).toBeNull()
   })
 
-  it('grid-navigation 下不新增 td 停靠点，并同步 aria-selected', () => {
+  it('grid-navigation 下不新增 td 停靠点，并同步 aria-selected / aria-multiselectable', () => {
     const el = mount()
     el.setAttribute('grid-navigation', '')
     enableRangeSelection(el)
@@ -194,6 +214,21 @@ describe('table/range 区域选择 + 剪贴板', () => {
     expect(stops).toHaveLength(0)
     expect(cell(el, 0, 'name').getAttribute('aria-selected')).toBe('true')
     expect(cell(el, 0, 'name').getAttribute('role')).toBe('gridcell')
+    const grid = el.shadowRoot!.querySelector('[role="grid"]')
+    expect(grid?.getAttribute('aria-multiselectable')).toBe('true')
+    enableRangeSelection(el, false)
+    expect(el.shadowRoot!.querySelector('[role="grid"]')?.hasAttribute('aria-multiselectable')).toBe(false)
+  })
+
+  it('RTL 下左右方向键翻转（ArrowRight 向左移动）', () => {
+    const el = mount()
+    el.style.direction = 'rtl'
+    enableRangeSelection(el)
+    setRangeSelection(el, { row: 0, col: 'age' })
+    cell(el, 0, 'age').dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true, cancelable: true }),
+    )
+    expect(getRangeSelection(el)).toEqual({ start: { row: 0, col: 'name' }, end: { row: 0, col: 'name' } })
   })
 
   it('外部选区在行尚未渲染时挂起，数据到达后自动落地', () => {
@@ -206,6 +241,12 @@ describe('table/range 区域选择 + 剪贴板', () => {
     el.data = [{ id: 'a', name: 'A' }]
     expect(getRangeSelection(el)).toEqual({ start: { row: 0, col: 'name' }, end: { row: 0, col: 'name' } })
     expect(cell(el, 0, 'name').classList.contains('range-selected')).toBe(true)
+  })
+
+  it('未升级元素调用 enable/set 抛错，不静默失效', () => {
+    const div = document.createElement('div')
+    expect(() => enableRangeSelection(div)).toThrow(/需要已升级的 oas-table/)
+    expect(() => setRangeSelection(div, { row: 0, col: 'name' })).toThrow(/需要已升级的 oas-table/)
   })
 
   it('windowed：行离开窗口后选区解析为 null，装饰清零并派发清空事件', () => {

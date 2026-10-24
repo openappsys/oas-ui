@@ -229,6 +229,20 @@ describe('table/history 撤销重做', () => {
     disableHistory(el)
   })
 
+  it('无 row-key 记录后行被删除：undo 不复活幽灵行/不覆盖无关行', () => {
+    const el = new OASTable()
+    el.setAttribute('columns', JSON.stringify([{ key: 'name', title: '名称' }]))
+    el.setAttribute('data', JSON.stringify([{ name: 'A' }, { name: 'B' }]))
+    document.body.appendChild(el)
+    enableHistory(el)
+    // 编辑 A 后宿主删除了该行：数据只剩 B
+    el.data = [{ name: 'B' }]
+    emitEdit(el, { rowIndex: 0, key: '{"name":"A"}', column: 'name', oldValue: 'A', value: 'A2', oldRawValue: 'A' })
+    undo(el)
+    expect(el.data).toEqual([{ name: 'B' }])
+    disableHistory(el)
+  })
+
   it('未升级/非表格元素调用 enableHistory 抛错，不静默失效', () => {
     expect(() => enableHistory(document.createElement('div'))).toThrow(/需要已升级的 oas-table/)
   })

@@ -24,6 +24,9 @@ export interface WindowedSource {
  * 纯宿主侧 helper，不进入 table 运行时。已装载区间按实际返回行数计覆盖；服务端部分页会自动补齐。
  */
 export function createWindowedSource(table: HTMLElement, options: WindowedSourceOptions): WindowedSource {
+  if (!(table as HTMLElement).shadowRoot) {
+    throw new Error('[oas-table] createWindowedSource 需要已升级的 oas-table 元素（请先 import 表格入口）')
+  }
   let controller: AbortController | null = null
   let loaded: { start: number; end: number } | null = null
   let lastRequest: { start: number; end: number } | null = null

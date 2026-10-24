@@ -1219,7 +1219,7 @@ setRangeSelection(table, { row: 0, col: 'name' }, { row: 2, col: 'amount' })
 const tsv = await copyRange(table) // Ctrl/Cmd+C 同效
 ```
 
-选区内部以**行键 + 列 key** 锚定（建议提供唯一 `row-key`）：排序、过滤、重新渲染后仍跟随原行；行离开 windowed 窗口时选区自动失效，只能复制当前已装载切片。支持点击、拖拽、程序化设置、方向键移动、`Shift+方向键` 扩展、`Esc` 清空与 `Ctrl/Cmd+C` 复制；`Ctrl/Cmd+V` 派发 `oas-range-paste`（detail `{ start, startKey, rows, text }`，宿主按行键/坐标写回）。启用后表格内采用 roving tabindex（仅焦点格可 Tab 进入；`grid-navigation` 下由网格统一停靠）。column-virtual 只复制当前已渲染列，`span-method` 合并列可能缺格。事件：`oas-range-change`（detail 为 `RangeSelection | null`，清空/窗口越界时 null）/ `oas-range-copy` / `oas-range-paste`。
+选区内部以**行键 + 列 key** 锚定（建议提供唯一 `row-key`）：排序、过滤、重新渲染后仍跟随原行；行离开 windowed 窗口时选区自动失效，只能复制当前已装载切片。支持点击、拖拽、程序化设置、方向键移动、`Shift+方向键` 扩展、`Esc` 清空与 `Ctrl/Cmd+C` 复制；`Ctrl/Cmd+V` 派发 `oas-range-paste`（detail `{ start, startKey, rows, text }`，宿主按行键/坐标写回）。启用后表格内采用 roving tabindex（仅焦点格可 Tab 进入；`grid-navigation` 下由网格统一停靠）。column-virtual 下滚出窗口的列在 TSV 中以空列占位，`span-method` 合并列可能缺格。事件：`oas-range-change`（detail 为 `RangeSelection | null`，清空/窗口越界时 null）/ `oas-range-copy` / `oas-range-paste`。
 
 ### 撤销/重做（`table/history`）
 

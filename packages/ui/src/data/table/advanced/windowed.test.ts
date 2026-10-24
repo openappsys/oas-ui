@@ -82,6 +82,12 @@ describe('createWindowedSource', () => {
     source.destroy()
   })
 
+  it('未升级元素抛错', () => {
+    expect(() => createWindowedSource(document.createElement('div'), { fetchRows: async () => [] })).toThrow(
+      /需要已升级的 oas-table/,
+    )
+  })
+
   it('部分页自动向后补齐同一窗口（不把缺口误判为已覆盖）', async () => {
     const el = mount()
     const fetchRows = vi.fn(async ({ start, end }: { start: number; end: number; signal: AbortSignal }) => {

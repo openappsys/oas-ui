@@ -4,12 +4,12 @@
     "method": "gzip = zlib gzipSync；brotli = zlib.brotliCompressSync q11；单组件链 = 静态 import 图遍历 + 逐文件压缩求和（上界估计）",
     "packages": {
       "@oas-ui/ui": {
-        "distTotalBytes": 39195181,
+        "distTotalBytes": 39197092,
         "browserJs": {
           "files": 452,
-          "rawBytes": 10209873,
-          "gzipBytes": 2443214,
-          "brotliBytes": 1905800
+          "rawBytes": 10210367,
+          "gzipBytes": 2443510,
+          "brotliBytes": 1906027
         },
         "fullEntry": {
           "files": 479,
@@ -605,9 +605,9 @@
         "entry": "data/table/advanced",
         "spec": "@oas-ui/ui/data/table/advanced",
         "files": 8,
-        "rawBytes": 17450,
-        "gzipBytes": 6963,
-        "brotliBytes": 6099,
+        "rawBytes": 17587,
+        "gzipBytes": 7093,
+        "brotliBytes": 6195,
         "fileList": [
           "packages/ui/dist/data/table/advanced/index.js",
           "packages/ui/dist/data/table/advanced/clipboard.js",
@@ -647,9 +647,9 @@
         "entry": "data/table/range",
         "spec": "@oas-ui/ui/data/table/range",
         "files": 4,
-        "rawBytes": 16205,
-        "gzipBytes": 5193,
-        "brotliBytes": 4517,
+        "rawBytes": 16318,
+        "gzipBytes": 5291,
+        "brotliBytes": 4581,
         "fileList": [
           "packages/ui/dist/data/table/range/index.js",
           "packages/ui/dist/data/table/oas-table-interactive.js",
@@ -661,9 +661,9 @@
         "entry": "data/table/history",
         "spec": "@oas-ui/ui/data/table/history",
         "files": 4,
-        "rawBytes": 6315,
-        "gzipBytes": 2973,
-        "brotliBytes": 2548,
+        "rawBytes": 6442,
+        "gzipBytes": 3005,
+        "brotliBytes": 2580,
         "fileList": [
           "packages/ui/dist/data/table/history/index.js",
           "packages/ui/dist/data/table/oas-table-row-key.js",
@@ -675,9 +675,9 @@
         "entry": "data/table/detail",
         "spec": "@oas-ui/ui/data/table/detail",
         "files": 3,
-        "rawBytes": 6858,
-        "gzipBytes": 2909,
-        "brotliBytes": 2457,
+        "rawBytes": 6975,
+        "gzipBytes": 2945,
+        "brotliBytes": 2492,
         "fileList": [
           "packages/ui/dist/data/table/detail/index.js",
           "packages/ui/dist/data/table/oas-table-row-key.js",
@@ -890,7 +890,7 @@
       },
       {
         "name": "@oas-ui/ui/data/table/advanced 链 gzip",
-        "actualBytes": 6963,
+        "actualBytes": 7093,
         "limitBytes": 8192,
         "warnAtBytes": 7373,
         "pass": true,
@@ -917,16 +917,16 @@
       },
       {
         "name": "@oas-ui/ui/data/table/range 链 gzip",
-        "actualBytes": 5193,
+        "actualBytes": 5291,
         "limitBytes": 6144,
         "warnAtBytes": 5530,
         "pass": true,
         "warn": false,
-        "basis": "实测 gzip 5.1 KB（区域选择 capability + 键锚定 + roving tabindex + 交互宿主穿透 + TSV 复制/粘贴），上浮约 18% 定档 6 KB"
+        "basis": "实测 gzip 5.2 KB（区域选择 capability + 键锚定 + roving tabindex + 交互宿主穿透 + TSV 复制/粘贴），上浮约 16% 定档 6 KB"
       },
       {
         "name": "@oas-ui/ui/data/table/history 链 gzip",
-        "actualBytes": 2973,
+        "actualBytes": 3005,
         "limitBytes": 3584,
         "warnAtBytes": 3226,
         "pass": true,
@@ -935,12 +935,12 @@
       },
       {
         "name": "@oas-ui/ui/data/table/detail 链 gzip",
-        "actualBytes": 2909,
+        "actualBytes": 2945,
         "limitBytes": 3584,
         "warnAtBytes": 3226,
         "pass": true,
         "warn": false,
-        "basis": "实测 gzip 2.8 KB（主从详情宿主侧 helper + 树形行定位 / 焦点兜底 / 交互宿主穿透，无 table 运行时依赖），上浮约 25% 定档 3.5 KB"
+        "basis": "实测 gzip 2.9 KB（主从详情宿主侧 helper + 树形行定位 / 焦点兜底 / 交互宿主穿透，无 table 运行时依赖），上浮约 21% 定档 3.5 KB"
       }
     ]
   },

@@ -42,13 +42,13 @@
 | 组件   | 入口                        | 文件数 | gzip       |
 | ------ | --------------------------- | ------ | ---------- |
 | button | `@oas-ui/ui/basic/button` | 13     | 26.6 KB    |
-| table  | `@oas-ui/ui/data/table`   | 39     | 65.0 KB    |
+| table  | `@oas-ui/ui/data/table`   | 29     | 65.2 KB    |
 | table/advanced | `@oas-ui/ui/data/table/advanced` | 8 | 6.9 KB |
 | table/format | `@oas-ui/ui/data/table/format` | 5 | 4.7 KB |
 | table/view | `@oas-ui/ui/data/table/view` | 1 | 0.6 KB |
-| table/range | `@oas-ui/ui/data/table/range` | 3 | 5.1 KB |
-| table/history | `@oas-ui/ui/data/table/history` | 3 | 2.9 KB |
-| table/detail | `@oas-ui/ui/data/table/detail` | 1 | 2.8 KB |
+| table/range | `@oas-ui/ui/data/table/range` | 4 | 5.2 KB |
+| table/history | `@oas-ui/ui/data/table/history` | 4 | 2.9 KB |
+| table/detail | `@oas-ui/ui/data/table/detail` | 3 | 2.9 KB |
 | form   | `@oas-ui/ui/form/form`    | 11     | 26.0 KB    |
 | gantt  | `@oas-ui/ui/data/gantt`   | 18     | 61.1 KB    |
 

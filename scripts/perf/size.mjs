@@ -558,7 +558,7 @@ const BUDGETS = [
     get: () => componentMeasures.tableRange.gzipBytes,
     limit: 6 * 1024,
     basis:
-      '实测 gzip 5.1 KB（区域选择 capability + 键锚定 + roving tabindex + 交互宿主穿透 + TSV 复制/粘贴），上浮约 18% 定档 6 KB',
+      '实测 gzip 5.2 KB（区域选择 capability + 键锚定 + roving tabindex + 交互宿主穿透 + TSV 复制/粘贴），上浮约 16% 定档 6 KB',
   },
   {
     name: '@oas-ui/ui/data/table/history 链 gzip',
@@ -572,7 +572,7 @@ const BUDGETS = [
     get: () => componentMeasures.tableDetail.gzipBytes,
     limit: 3.5 * 1024,
     basis:
-      '实测 gzip 2.8 KB（主从详情宿主侧 helper + 树形行定位 / 焦点兜底 / 交互宿主穿透，无 table 运行时依赖），上浮约 25% 定档 3.5 KB',
+      '实测 gzip 2.9 KB（主从详情宿主侧 helper + 树形行定位 / 焦点兜底 / 交互宿主穿透，无 table 运行时依赖），上浮约 21% 定档 3.5 KB',
   },
 ]
 

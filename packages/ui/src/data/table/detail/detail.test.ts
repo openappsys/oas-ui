@@ -185,6 +185,23 @@ describe('table/detail 主从详情', () => {
     detail.destroy()
   })
 
+  it('同一行重复点击不重复派发；destroy 幂等', () => {
+    const { table, panel } = mount()
+    const detail = createMasterDetail(table, {
+      panel,
+      label: '详情',
+      render: (row) => `${row.row.name}`,
+    })
+    const events: unknown[] = []
+    table.addEventListener('oas-detail-change', (event) => events.push((event as CustomEvent).detail))
+    rowClick(table, { id: 'a', name: 'Alpha' }, 'a')
+    rowClick(table, { id: 'a', name: 'Alpha' }, 'a')
+    expect(events).toHaveLength(1)
+    detail.destroy()
+    expect(() => detail.destroy()).not.toThrow()
+    expect(panel.textContent).toBe('')
+  })
+
   it('嵌套自定义组件内的 Escape 不关闭详情（composedPath 穿透 retarget）', () => {
     const { table, panel } = mount()
     const detail = createMasterDetail(table, {

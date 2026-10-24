@@ -93,7 +93,11 @@ function applyValue(host: HistoryHost, detail: EditDetail, target: unknown, othe
       ['sort-key', 'filter-values', 'page', 'page-size', 'group-by', 'pagination'].some((attr) =>
         host.hasAttribute(attr),
       ) || rows.some((row) => Array.isArray(row.children))
-    if (!transformed) path = [detail.rowIndex]
+    // 记录后行被删除/移位：下标存在且该行仍持有「另一侧编辑值」才回退，避免覆盖无关行
+    const candidate = rows[detail.rowIndex]
+    const otherMatches =
+      candidate !== undefined && other != null && String(candidate[detail.column] ?? '') === String(other)
+    if (!transformed && otherMatches) path = [detail.rowIndex]
   }
   if (!path) return
   host.data = replaceAtPath(rows, path, detail.column, target)

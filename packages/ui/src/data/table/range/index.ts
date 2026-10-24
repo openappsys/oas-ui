@@ -295,19 +295,11 @@ class RangeSelectionController {
     return { key, col }
   }
 
-  private isInteractive(target: HTMLElement | null): boolean {
-    return Boolean(
-      target &&
-        typeof target.closest === 'function' &&
-        target.closest('input, select, textarea, button, a, [role="button"], [role="link"], [contenteditable="true"]'),
-    )
-  }
-
   private onPointerDown = (event: PointerEvent): void => {
     if (event.button !== 0 || !this.options().enabled) return
     const target = event.target as HTMLElement | null
     const td = target?.closest<HTMLElement>('td[data-col]')
-    if (!td || this.isInteractive(target)) return
+    if (!td || isInteractiveEvent(event)) return
     const position = this.cellPositionOf(td)
     if (!position) return
     this.dragging = true
@@ -540,7 +532,9 @@ function controllerOf(table: HTMLElement): RangeSelectionController | null {
 /** 启用/关闭区域选择（关闭时保留锚定，便于再次开启；装饰与键盘交互同步停用） */
 export function enableRangeSelection(table: HTMLElement, enabled = true): void {
   const host = table as RangeHost
-  if (typeof host.getCapabilityOptions !== 'function') return
+  if (typeof host.getCapabilityOptions !== 'function') {
+    throw new Error('[oas-table] enableRangeSelection 需要已升级的 oas-table 元素（请先 import 表格入口）')
+  }
   const current = host.getCapabilityOptions<RangeSelectionOptions>('range') ?? { enabled: false }
   host.setCapabilityOptions('range', { ...current, enabled })
 }
@@ -548,7 +542,9 @@ export function enableRangeSelection(table: HTMLElement, enabled = true): void {
 /** 设置/清除选区；设置会自动启用区域选择。坐标按当前可见行/列给出，内部以行键 + 列 key 锚定。 */
 export function setRangeSelection(table: HTMLElement, start: CellPosition | null, end?: CellPosition): void {
   const host = table as RangeHost
-  if (typeof host.getCapabilityOptions !== 'function') return
+  if (typeof host.getCapabilityOptions !== 'function') {
+    throw new Error('[oas-table] setRangeSelection 需要已升级的 oas-table 元素（请先 import 表格入口）')
+  }
   const current = host.getCapabilityOptions<RangeSelectionOptions>('range') ?? { enabled: false }
   if (!start) {
     host.setCapabilityOptions('range', { ...current, selection: null })
