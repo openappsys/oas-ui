@@ -3268,8 +3268,8 @@
     },
     "events": {
       "oas-check": "复选框选中变化，`detail: { keys: string[] }`",
-      "oas-edit": "行内编辑提交（Enter/失焦/操作列保存），`detail: { rowIndex, key, column, value }`；受控模式组件不回写 `data`",
-      "oas-edit-cancel": "行内编辑取消（Esc/操作列取消/空值提交还原），`detail: { rowIndex, key, column, value }`（value 为原值）",
+      "oas-edit": "行内编辑提交（Enter/失焦/操作列保存），`detail: { rowIndex, key, column, value, oldValue, oldRawValue }`（oldValue 为提交前字符串值，oldRawValue 为编辑前原始形态，如 number / boolean / string[]）；受控模式组件不回写 `data`",
+      "oas-edit-cancel": "行内编辑取消（Esc/操作列取消/空值提交还原），`detail: { rowIndex, key, column, value, oldValue, oldRawValue }`（value / oldValue 均为原值，oldRawValue 为原始形态）",
       "oas-expand": "行展开/收起（树形子行或可展开内容行），`detail: { key, expanded }`",
       "oas-row-click": "点击行（非 checkable 时同时切换选中），`detail: { row, key }`",
       "oas-scroll": "虚拟滚动滚动事件（rAF 节流），`detail: { scrollTop, start, end }`",

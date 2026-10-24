@@ -916,6 +916,19 @@ describe('OASTable 行内编辑（inline editing）', () => {
     expect(input!.getAttribute('aria-label')).toContain('张三')
   })
 
+  it('oas-edit oldRawValue 保留 number 原类型（真实编辑路径）', () => {
+    const el = editMount()
+    let detail: { oldValue?: string; oldRawValue?: unknown; value?: string } | undefined
+    el.addEventListener('oas-edit', (e: Event) => (detail = (e as CustomEvent).detail))
+    cells(el)[1]!.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }))
+    const input = cellInput(el, 0, 1)!
+    input.value = '31'
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
+    expect(detail?.oldValue).toBe('30')
+    expect(detail?.oldRawValue).toBe(30)
+    expect((el.data[0] as { age: unknown }).age).toBe(31)
+  })
+
   it('宿主改 aria-label 不取消进行中的单元格编辑', () => {
     const el = editMount()
     const td = cells(el)[0]!
@@ -1008,7 +1021,14 @@ describe('OASTable 行内编辑（inline editing）', () => {
     // 非受控：组件自行回写 data 属性
     expect(el.getAttribute('data')).toContain('"张四"')
     expect(cells(el)[0]!.textContent).toBe('张四')
-    expect(detail).toEqual({ rowIndex: 0, key: '张三', column: 'name', value: '张四' })
+    expect(detail).toEqual({
+      rowIndex: 0,
+      key: '张三',
+      column: 'name',
+      value: '张四',
+      oldValue: '张三',
+      oldRawValue: '张三',
+    })
     // 编辑态退出：编辑器移除、表头高亮清除
     expect(el.shadowRoot!.querySelector('input.cell-editor')).toBeNull()
     expect(el.shadowRoot!.querySelector('th[data-editing-col="true"]')).toBeNull()
@@ -1024,7 +1044,14 @@ describe('OASTable 行内编辑（inline editing）', () => {
     input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
     expect(el.getAttribute('data')).not.toContain('"张四"')
     expect(cells(el)[0]!.textContent).toBe('张三')
-    expect(detail).toEqual({ rowIndex: 0, key: '张三', column: 'name', value: '张三' })
+    expect(detail).toEqual({
+      rowIndex: 0,
+      key: '张三',
+      column: 'name',
+      value: '张三',
+      oldValue: '张三',
+      oldRawValue: '张三',
+    })
   })
 
   const validateMount = (): OASTable => {
@@ -1080,7 +1107,14 @@ describe('OASTable 行内编辑（inline editing）', () => {
     expect(el.getAttribute('data')).toContain('"张三"')
     expect(el.getAttribute('data')).not.toContain('"张四"')
     expect(cells(el)[0]!.textContent).toBe('张三')
-    expect(detail).toEqual({ rowIndex: 0, key: '张三', column: 'name', value: '张三' })
+    expect(detail).toEqual({
+      rowIndex: 0,
+      key: '张三',
+      column: 'name',
+      value: '张三',
+      oldValue: '张三',
+      oldRawValue: '张三',
+    })
   })
 
   it('exitEdit 重画尊重 render/cellTemplate（Esc 取消后单元格保持富内容，不裸值）', () => {
@@ -1114,7 +1148,14 @@ describe('OASTable 行内编辑（inline editing）', () => {
     input.dispatchEvent(new FocusEvent('focusout', { bubbles: true }))
     expect(el.getAttribute('data')).toContain('"张四"')
     expect(cells(el)[0]!.textContent).toBe('张四')
-    expect(detail).toEqual({ rowIndex: 0, key: '张三', column: 'name', value: '张四' })
+    expect(detail).toEqual({
+      rowIndex: 0,
+      key: '张三',
+      column: 'name',
+      value: '张四',
+      oldValue: '张三',
+      oldRawValue: '张三',
+    })
   })
 
   it('blur 空值 → 取消（非破坏）：数据不变、派发 oas-edit-cancel', () => {
@@ -1127,7 +1168,14 @@ describe('OASTable 行内编辑（inline editing）', () => {
     input.dispatchEvent(new FocusEvent('focusout', { bubbles: true }))
     expect(el.getAttribute('data')).not.toContain('"张四"')
     expect(cells(el)[0]!.textContent).toBe('张三')
-    expect(detail).toEqual({ rowIndex: 0, key: '张三', column: 'name', value: '张三' })
+    expect(detail).toEqual({
+      rowIndex: 0,
+      key: '张三',
+      column: 'name',
+      value: '张三',
+      oldValue: '张三',
+      oldRawValue: '张三',
+    })
   })
 
   it('数字列编辑：新值按原类型转数字回写', () => {
@@ -1151,7 +1199,14 @@ describe('OASTable 行内编辑（inline editing）', () => {
     expect(el.getAttribute('data')).toContain('"backend"')
     // 展示用选项 label
     expect(cells(el)[3]!.textContent).toBe('后端工程师')
-    expect(detail).toEqual({ rowIndex: 0, key: '张三', column: 'position', value: 'backend' })
+    expect(detail).toEqual({
+      rowIndex: 0,
+      key: '张三',
+      column: 'position',
+      value: 'backend',
+      oldValue: 'frontend',
+      oldRawValue: 'frontend',
+    })
   })
 
   it('受控模式（edit-controlled）：提交不回写 data，仅派发 oas-edit；宿主回写后重渲染', () => {
@@ -1164,7 +1219,14 @@ describe('OASTable 行内编辑（inline editing）', () => {
     input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
     // 受控：组件不自动回写 data
     expect(el.getAttribute('data')).not.toContain('"张四"')
-    expect(detail).toEqual({ rowIndex: 0, key: '张三', column: 'name', value: '张四' })
+    expect(detail).toEqual({
+      rowIndex: 0,
+      key: '张三',
+      column: 'name',
+      value: '张四',
+      oldValue: '张三',
+      oldRawValue: '张三',
+    })
     // 宿主监听 oas-edit 自行更新 data → 重渲染新值
     el.setAttribute(
       'data',
@@ -1210,7 +1272,14 @@ describe('OASTable 行内编辑（inline editing）', () => {
     actionTd.querySelector<HTMLButtonElement>('.action-btn.danger')!.click()
     expect(cells(el)[0]!.textContent).toBe('张三')
     expect(el.getAttribute('data')).toContain('"张三"')
-    expect(detail).toEqual({ rowIndex: 0, key: '张三', column: 'name', value: '张三' })
+    expect(detail).toEqual({
+      rowIndex: 0,
+      key: '张三',
+      column: 'name',
+      value: '张三',
+      oldValue: '张三',
+      oldRawValue: '张三',
+    })
   })
 
   it('键盘：聚焦可编辑单元格按 Enter / F2 进入编辑', () => {

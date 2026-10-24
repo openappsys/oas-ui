@@ -171,7 +171,7 @@
   </div>
 </DemoBlock>
 
-设置 `editable` 开启行内编辑，列配置 `editable: true` 标记可编辑列（`editor: 'input'` 文本输入 / `editor: 'select'` 下拉选择 + `editOptions`），`actions: true` 渲染操作列（编辑/保存/取消按钮）。双击单元格或聚焦后按 Enter / F2 进入编辑：Enter 或失焦提交、Esc 取消；提交派发 `oas-edit`（`detail: { rowIndex, key, column, value }`），取消派发 `oas-edit-cancel`。空值提交默认还原旧值（非破坏）。
+设置 `editable` 开启行内编辑，列配置 `editable: true` 标记可编辑列（`editor: 'input'` 文本输入 / `editor: 'select'` 下拉选择 + `editOptions`），`actions: true` 渲染操作列（编辑/保存/取消按钮）。双击单元格或聚焦后按 Enter / F2 进入编辑：Enter 或失焦提交、Esc 取消；提交派发 `oas-edit`（`detail: { rowIndex, key, column, value, oldValue, oldRawValue }`），取消派发 `oas-edit-cancel`（同样带旧值字段）。空值提交默认还原旧值（非破坏）。
 
 > **行内编辑能力（自 v2.6.4 起按需引入）**：默认入口 `@oas-ui/ui/data/table` 只含基础表格，**不再内置编辑**；使用 `editable` / `actions` 时需显式 `import '@oas-ui/ui/data/table/edit'`（import 即注册），否则编辑配置静默失效并 dev 告警。全量入口 `@oas-ui/ui` 与 CDN 数据族包仍内含编辑能力（下方 demo 走全量入口，无需额外 import）。`@oas-ui/ui/data/table/core` 自 v2.6.4 起是默认入口的 deprecated 别名（v2.6.5 移除），新代码不要再使用。
 
@@ -514,6 +514,9 @@ import { onMounted } from 'vue'
 import { filterRows, formulaColumn, pivotTable } from '@oas-ui/ui/data/table/advanced'
 import { setConditionalFormat } from '@oas-ui/ui/data/table/format'
 import { applyViewState, captureViewState } from '@oas-ui/ui/data/table/view'
+import { copyRange, enableRangeSelection, setRangeSelection } from '@oas-ui/ui/data/table/range'
+import { enableHistory, redo, undo } from '@oas-ui/ui/data/table/history'
+import { createMasterDetail } from '@oas-ui/ui/data/table/detail'
 
 // column-virtual demo：60 列指标 × 40 行（数据量大走客户端注入，SSR 输出空表壳）
 onMounted(() => {
@@ -884,10 +887,35 @@ onMounted(() => {
 
   // Pro：条件格式 + 视图状态
   const proTable = document.querySelector('#table-pro')
+  const proStatus = document.querySelector('#table-pro-status')
+  const proPanel = document.querySelector('#table-pro-detail')
   let proSaved = null
   if (proTable) {
     customElements.whenDefined('oas-table').then(() => {
       proSaved = captureViewState(proTable)
+      enableRangeSelection(proTable)
+      enableHistory(proTable)
+      if (proPanel) {
+        createMasterDetail(proTable, {
+          panel: proPanel,
+          label: '行详情',
+          emptyText: '点击任意行查看详情；Ctrl/Cmd+C 复制选区',
+          render: (detail) => `${detail.row.name} · ${detail.row.team} · 金额 ${detail.row.amount}`,
+        })
+      }
+    })
+    proTable.addEventListener('oas-range-change', (event) => {
+      const detail = event.detail
+      if (!proStatus) return
+      if (!detail) {
+        proStatus.textContent = '已清空选区'
+        return
+      }
+      const rows = detail.end.row - detail.start.row + 1
+      proStatus.textContent = `已选 ${rows} 行 · ${detail.start.col} → ${detail.end.col}`
+    })
+    proTable.addEventListener('oas-range-paste', (event) => {
+      if (proStatus) proStatus.textContent = `粘贴事件：${event.detail.rows.length} 行（由宿主写回数据）`
     })
   }
   document.querySelector('#table-pro-format')?.addEventListener('click', () => {
@@ -900,6 +928,21 @@ onMounted(() => {
     if (!proTable) return
     if (proSaved) applyViewState(proTable, proSaved)
     setConditionalFormat(proTable, [])
+  })
+  document.querySelector('#table-pro-range')?.addEventListener('click', () => {
+    if (!proTable) return
+    setRangeSelection(proTable, { row: 0, col: 'name' }, { row: 1, col: 'team' })
+  })
+  document.querySelector('#table-pro-copy')?.addEventListener('click', async () => {
+    if (!proTable) return
+    const text = await copyRange(proTable)
+    if (proStatus) proStatus.textContent = text ? `已复制：${text.replaceAll('\n', ' / ')}` : '先选择区域'
+  })
+  document.querySelector('#table-pro-undo')?.addEventListener('click', () => {
+    if (proTable && proStatus) proStatus.textContent = undo(proTable) ? '已撤销' : '没有可撤销操作'
+  })
+  document.querySelector('#table-pro-redo')?.addEventListener('click', () => {
+    if (proTable && proStatus) proStatus.textContent = redo(proTable) ? '已重做' : '没有可重做操作'
   })
 })
 </script>
@@ -1075,6 +1118,8 @@ onMounted(() => {
 - **公式列**：`formulaColumn()` / `compileFormula()`，安全表达式解析（字段、四则、比较、逻辑、`IF` / `ROUND` / `MIN` / `MAX` / `SUM` / `CONCAT` 等），不使用 `eval` / `Function`
 - **查询构建器**：`compileQuery()` / `filterRows()`，支持 `and` / `or` 任意嵌套与 `eq` / `contains` / `in` / `between` / `exists` 等算子
 - **TSV**：`toTsv()` / `parseTsv()`，用于表格区域导出与粘贴
+- **撤销栈**：`createHistory()` 通用命令栈（undo / redo / canUndo / canRedo / subscribe / limit）
+- **windowed 数据源助手**：`createWindowedSource()` 接管 `oas-window-request`、补齐短页、中止过期请求
 
 > 查询算子的比较/范围按数值处理；文本匹配默认不区分大小写（`caseSensitive: true` 可开启）；TSV 导出会把单元格内的换行/制表符压成空格。
 
@@ -1110,38 +1155,113 @@ const { columns: pivotColumns, rows: pivotRows } = pivotTable({
 })
 ```
 
-后续可扩展的高级能力（尚未实现）：条件格式规则编辑器 UI、视图状态持久化 UI、撤销/重做、区域选择与剪贴板、主从详情面板。
+条件格式规则编辑器 UI、视图状态持久化 UI 仍由宿主实现；区域选择、撤销/重做与主从详情见下文 Pro 能力第二批。
 
-## Pro 能力：条件格式与视图状态
+## Pro 能力：条件格式 / 视图 / 选区 / 历史 / 主从
 
-两个能力各自独立 import，按需加载、不污染默认 table：
+各能力独立 import，按需加载、不污染默认 table：
 
 ```ts
 import { setConditionalFormat } from '@oas-ui/ui/data/table/format'
 import { applyViewState, captureViewState } from '@oas-ui/ui/data/table/view'
+import { copyRange, enableRangeSelection } from '@oas-ui/ui/data/table/range'
+import { enableHistory } from '@oas-ui/ui/data/table/history'
+import { createMasterDetail } from '@oas-ui/ui/data/table/detail'
 
 setConditionalFormat(table, [
   { field: 'amount', op: 'gte', value: 100, style: { color: '#b91c1c', className: 'is-high' } },
 ])
 const saved = captureViewState(table)
 applyViewState(table, saved)
+
+enableRangeSelection(table)
+enableHistory(table)
+createMasterDetail(table, { panel, label: '详情', render: (detail) => `${detail.row.name}` })
 ```
 
-<DemoBlock title="Pro 能力：条件格式 + 视图状态">
+<DemoBlock title="Pro 能力：格式 / 视图 / 选区 / 历史 / 主从">
   <div style="width: 100%">
     <div style="display:flex;gap:var(--oas-space-2);flex-wrap:wrap;margin-bottom:var(--oas-space-2)">
       <oas-button id="table-pro-format" size="small">高亮金额 ≥ 100</oas-button>
       <oas-button id="table-pro-reset" size="small">恢复视图并清除格式</oas-button>
+      <oas-button id="table-pro-range" size="small">选中 A1:B2</oas-button>
+      <oas-button id="table-pro-copy" size="small">复制选区</oas-button>
+      <oas-button id="table-pro-undo" size="small">撤销</oas-button>
+      <oas-button id="table-pro-redo" size="small">重做</oas-button>
+      <span id="table-pro-status" role="status" aria-live="polite" style="color:var(--oas-color-text-secondary);font-size:var(--oas-font-size-sm)">—</span>
     </div>
     <oas-table
       id="table-pro"
-      columns='[{"key":"name","title":"名称","width":"140px"},{"key":"team","title":"团队"},{"key":"amount","title":"金额","align":"right","type":"number"}]'
-      data='[{"name":"Alpha","team":"平台","amount":120},{"name":"Beta","team":"数据","amount":80},{"name":"Gamma","team":"平台","amount":150},{"name":"Delta","team":"设计","amount":40}]'
+      editable
+      row-key="id"
+      columns='[{"key":"id","title":"ID","hidden":true},{"key":"name","title":"名称","width":"140px","editable":true},{"key":"team","title":"团队"},{"key":"amount","title":"金额","align":"right","type":"number"}]'
+      data='[{"id":"a","name":"Alpha","team":"平台","amount":120},{"id":"b","name":"Beta","team":"数据","amount":80},{"id":"c","name":"Gamma","team":"平台","amount":150},{"id":"d","name":"Delta","team":"设计","amount":40}]'
     ></oas-table>
+    <div
+      id="table-pro-detail"
+      role="region"
+      aria-label="行详情"
+      aria-live="polite"
+      style="margin-top:var(--oas-space-3);min-height:56px;padding:var(--oas-space-3);border:1px solid var(--oas-color-border);border-radius:var(--oas-radius-md);color:var(--oas-color-text-secondary);font-size:var(--oas-font-size-sm)"
+    ></div>
   </div>
 </DemoBlock>
 
 条件格式规则按数组顺序首个命中生效，支持字段/单元格值/`when` 公式与 `applyTo: 'row'`；视图状态只保存列显隐、顺序、宽度、排序、过滤、分页、分组等结构态，不包含选中与编辑草稿。
+
+### 区域选择与剪贴板（`table/range`）
+
+```ts
+import { copyRange, enableRangeSelection, setRangeSelection } from '@oas-ui/ui/data/table/range'
+
+enableRangeSelection(table) // 开启点击/拖拽选区
+setRangeSelection(table, { row: 0, col: 'name' }, { row: 2, col: 'amount' })
+const tsv = await copyRange(table) // Ctrl/Cmd+C 同效
+```
+
+选区内部以**行键 + 列 key** 锚定（建议提供唯一 `row-key`）：排序、过滤、重新渲染后仍跟随原行；行离开 windowed 窗口时选区自动失效，只能复制当前已装载切片。支持点击、拖拽、程序化设置、方向键移动、`Shift+方向键` 扩展、`Esc` 清空与 `Ctrl/Cmd+C` 复制；`Ctrl/Cmd+V` 派发 `oas-range-paste`（detail `{ start, startKey, rows, text }`，宿主按行键/坐标写回）。启用后表格内采用 roving tabindex（仅焦点格可 Tab 进入；`grid-navigation` 下由网格统一停靠）。column-virtual 只复制当前已渲染列，`span-method` 合并列可能缺格。事件：`oas-range-change`（detail 为 `RangeSelection | null`，清空/窗口越界时 null）/ `oas-range-copy` / `oas-range-paste`。
+
+### 撤销/重做（`table/history`）
+
+```ts
+import { enableHistory, redo, undo } from '@oas-ui/ui/data/table/history'
+
+enableHistory(table) // 记录非受控 oas-edit（依赖 detail.oldValue）；焦点在表格内时 Ctrl/Cmd+Z / Shift+Z / Y
+undo(table)
+redo(table)
+```
+
+`oas-edit` 新增 `oldValue`（字符串）与 `oldRawValue`（编辑前原始形态，number / boolean / string[] 等，撤销按原类型回写）。历史按 `oas-edit.detail.key` 定位数据行（`rowIndex` 是可见行坐标，排序/过滤后会漂移），因此建议配置稳定唯一的 `row-key`。无 `row-key` 时仅在无排序/过滤/分页场景按 `rowIndex` 回退；编辑行键字段且新旧值不唯一时仍会入栈，但撤销可能无法唯一定位（静默不写）。树形子行按 `children` 递归定位。`edit-controlled` 与 windowed 模式的数据归宿主，本能力不自动记录。历史变化派发 `oas-history-change`（`detail: { canUndo, canRedo }`）。
+
+### 主从详情（`table/detail`）
+
+```ts
+import { createMasterDetail } from '@oas-ui/ui/data/table/detail'
+
+const detail = createMasterDetail(table, {
+  panel: document.querySelector('#order-detail'),
+  label: '订单详情',
+  emptyText: '点击行查看详情',
+  render: (detail) => `${detail.row.name} · ${detail.row.amount}`,
+})
+detail.select(0) // 按可见行下标选中；null 清空
+detail.destroy()
+```
+
+点击行渲染到宿主面板（面板内容由 helper 全量管理，布局/关闭按钮建议放在面板外；每张表一个实例），选中行以 `tr[data-detail-selected]` 高亮；`Enter` 打开当前焦点行、`Esc` 关闭并回到原行（启用 range 且存在选区时，第一次 Esc 先清选区）。`data` 变化（含行内编辑回写）按行键刷新详情，选中行消失则清空（刷新不派发 `oas-detail-change`，仅选中变化派发）。`oas-detail-change`（detail 为 `{ row, key, rowIndex }` 或 `null`；`rowIndex` 为当前渲染窗口下标，稳定身份请用 `key`）。
+
+### windowed 数据源助手
+
+```ts
+import { createWindowedSource } from '@oas-ui/ui/data/table/advanced'
+
+const source = createWindowedSource(table, {
+  fetchRows: async ({ start, end, signal }) => api.list({ start, end, signal }),
+})
+// source.refresh() / source.destroy()
+```
+
+监听 `oas-window-request`，中止过期请求并回填 `data` / `window-start` / `total`；满足 windowed 协议，不引入运行时依赖（需配合 `height` 开启虚拟滚动）。`windowSize` 应不大于服务端单次返回上限；服务端单次返回不足时自动向后补齐同一窗口（按实际行数计覆盖）。`fetchRows` 返回裸数组时必须提供 `total`（options 或表格 `total` 属性），否则 windowed 不激活。请求失败派发 `oas-window-error`（detail `{ start, end, error }`）。
 
 ## API
 

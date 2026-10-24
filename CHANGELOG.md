@@ -18,8 +18,11 @@
 
 - **`oas-table` Pro 能力第一批**：新增独立子路径 `@oas-ui/ui/data/table/format`（条件格式：规则引擎、单元格/整行装饰、`when` 公式）与 `@oas-ui/ui/data/table/view`（视图状态捕获/应用：列显隐/顺序/宽度、排序、过滤、分页、分组等结构态）；默认 table 链不加载，`setConditionalFormat` / `captureViewState` / `applyViewState` 按需使用。
 
+- **`oas-table` Pro 能力第二批**：新增独立子路径 `@oas-ui/ui/data/table/range`（区域选择 + TSV 剪贴板：点击/拖拽、方向键移动、`Shift+方向键` 扩展、`Esc` 清空、`Ctrl/Cmd+C` 复制、`Ctrl/Cmd+V` 派发 `oas-range-paste`；选区以行键 + 列 key 锚定、roving tabindex、windowed 窗口外失效）、`@oas-ui/ui/data/table/history`（撤销/重做：按行键回写、键盘快捷键、受控/windowed 让位、`oas-history-change`）与 `@oas-ui/ui/data/table/detail`（主从详情宿主侧 helper：行点击/`Enter` 打开、`Esc` 关闭回焦、`data` 变化刷新）；`table/advanced` 增补 `createHistory` 通用撤销栈与 `createWindowedSource` windowed 数据源助手。默认 table 链不加载。
+
 ### 变更
 
+- **`oas-table` 编辑事件补充旧值**：`oas-edit` / `oas-edit-cancel` 的 `detail` 新增 `oldValue`（提交前字符串值）与 `oldRawValue`（编辑前原始形态，保留 number / boolean / string[] 类型）；既有字段不变。
 - **table 默认入口改为基础表格（v2.6.4）**：`@oas-ui/ui/data/table` 不再默认包含行内编辑；使用 `editable` / `actions` 需显式 `import '@oas-ui/ui/data/table/edit'`。`@oas-ui/ui` 全量入口与 CDN 数据族仍包含编辑。`@oas-ui/ui/data/table/core` 标记 deprecated（等价默认入口），v2.6.5 移除；迁移时把 `table/core` 改为 `table` 即可。
 - **`gear` 图标重绘**：原「3/4 圆 + 三根短线」与 `refresh` 视觉同族、易被误认为刷新；改为 8 齿外轮廓 + 中心圆孔的标准齿轮，16 / 32 / 96px 下均可辨识。
 - **导航 landmark 宿主命名**：`oas-breadcrumb` / `oas-pagination` / `oas-anchor` / `oas-index-bar` / `oas-navigation-menu` 新增宿主 `aria-label` 优先转发到内部 navigation landmark，空值回退 i18n 默认名，便于同页多个导航地标注解区分。

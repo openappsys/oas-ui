@@ -57,6 +57,8 @@ interface EditState {
   td: HTMLTableCellElement
   /** 编辑前原值（字符串形态） */
   oldValue: string
+  /** 编辑前的原始数据形态（number / boolean / string[] 等在撤销回写时保持类型） */
+  oldRawValue: unknown
   /** 编辑器类型：input / select（原生通道）/ component（editComponent 组件通道）/ overlay（浮层组件通道） */
   editor: 'input' | 'select' | 'component' | 'overlay'
   /** component 态的编辑器元素（value 属性语义的任意 WC） */
@@ -281,6 +283,8 @@ export class TableEditController implements ReactiveController, TableEditCapabil
     const row = this.findDataRow(key) ?? {}
     // 编辑前原值（字符串形态）：multi-select 数组天然 join 为逗号形态展示
     const oldValue = String(row[colKey] ?? '')
+    const rawValue = row[colKey]
+    const oldRawValue = Array.isArray(rawValue) ? [...rawValue] : rawValue
     const displayIndex = this.displayIndexOf(tr)
     // 编辑器分派：editComponent 显式指定（浮层名单内走浮层通道，否则通用组件通道）>
     // 列 type 专属编辑器（checkbox 开关 / select 原生通道 / multi-select 浮层多选）>
@@ -330,6 +334,7 @@ export class TableEditController implements ReactiveController, TableEditCapabil
       row,
       td,
       oldValue,
+      oldRawValue,
       editor: kind,
       componentEl: kind === 'component' || kind === 'overlay' ? (editor as HTMLElement) : null,
       multiEditor: multiOverlay,
@@ -867,8 +872,18 @@ export class TableEditController implements ReactiveController, TableEditCapabil
     }
   }
 
-  private editDetail(st: EditState, value: string): { rowIndex: number; key: string; column: string; value: string } {
-    return { rowIndex: st.displayIndex, key: st.key, column: st.colKey, value }
+  private editDetail(
+    st: EditState,
+    value: string,
+  ): { rowIndex: number; key: string; column: string; value: string; oldValue: string; oldRawValue: unknown } {
+    return {
+      rowIndex: st.displayIndex,
+      key: st.key,
+      column: st.colKey,
+      value,
+      oldValue: st.oldValue,
+      oldRawValue: st.oldRawValue,
+    }
   }
 
   /** 编辑结束后焦点还给单元格（非受控提交已重建，需重查） */

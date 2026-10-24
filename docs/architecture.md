@@ -141,7 +141,7 @@ oas-ui/
 
 - 包含关系：L1 ⊃ L2；L1 包含全部 L3 能力，L2 **不默认含 L3**（v2.6.4 起）。`/core` 自 v2.6.4 起是 L2 的 deprecated 别名，v2.6.5 移除。
 - 注册语义：能力型 L3 import 即注册、晚加入自愈（已挂载元素自动补齐）；纯函数型 L3（`table/advanced`）不注册元素/能力，只导出函数。
-- L3 现有实例：`table/edit`、`table/advanced`（纯函数）、`table/format`（条件格式）、`table/view`（视图状态）、`tabs/manager`、`modal/prompt`、`popover/contextmenu`、`color-picker/designer`；Pro 能力（`table/range` / `table/history` / `table/detail`）按同一模型规划。
+- L3 现有实例：`table/edit`、`table/advanced`（纯函数）、`table/format`（条件格式）、`table/view`（视图状态）、`table/range`（区域选择，渲染后同步整表选区、不占单元格装饰链）、`table/history`（撤销重做）、`table/detail`（主从详情宿主侧 helper）、`tabs/manager`、`modal/prompt`、`popover/contextmenu`、`color-picker/designer`。
   - **量化决策（2026-10-24，v2.6.4）**：默认入口 `data/table` 改为基础表格，编辑能力外置为 `table/edit`；全量入口 `@oas-ui/ui` 显式补 edit。旧 `table/core` 保留为 deprecated 别名一个版本，v2.6.5 删除。
   - **历史决策（2026-10-08）**：v2.5.0 曾定「L2 主路径默认含能力、`/core` 为纯核」；该结论已被 v2.6.4 的按需模型替代。
 - 体积纪律：L3 与 L2 的共享常量/判定落在零依赖叶子模块；L3 不得被 L2 默认 import，各 L3 立独立预算档。

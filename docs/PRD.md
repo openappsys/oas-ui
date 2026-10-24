@@ -130,7 +130,7 @@
 
 ### 非目标
 
-撤销/重做、区域选择/剪贴板 UI、主从详情面板、条件格式规则编辑器 UI、视图状态持久化 UI；这些列为后续候选。
+条件格式规则编辑器 UI、视图状态持久化 UI（存储由宿主决定）；区域选择 / 撤销重做 / 主从详情见下方 Pro 能力（第二批）。
 
 ### 验收标准
 
@@ -143,6 +143,15 @@
 - **`table/view` 视图状态**：`captureViewState()` / `applyViewState()`，覆盖列显隐/顺序/宽度、排序、过滤、分页、分组、展开、吸顶/表头/尺寸；只保存结构态，不含选中与编辑草稿。
 - 两者均为独立子路径，默认 table 链不加载；`perf:size` 立独立预算并断言默认链零泄漏。
 - 验收：单测条件匹配/样式应用/与 edit 共存/视图往返；docs demo 可点击应用与恢复；暗色/console/a11y 通过。
+
+### Pro 能力（第二批）
+
+- **`table/range` 区域选择 + 剪贴板**：点击/拖拽选区、方向键移动、`Shift+方向键` 扩展、`Esc` 清空、`Ctrl/Cmd+C` 复制 TSV、`Ctrl/Cmd+V` 派发 `oas-range-paste`（宿主写回数据）；选区以**行键 + 列 key** 锚定，排序/过滤/重渲染后跟随原行，windowed 窗口外自动失效；roving tabindex（仅焦点格可 Tab 进入）；事件 `oas-range-change` / `oas-range-copy` / `oas-range-paste`。
+- **`table/history` 撤销/重做**：`enableHistory()` 记录非受控 `oas-edit`（新增 `detail.oldValue` / `oldRawValue`），按行键定位数据行（含树形子行；行键字段本身被编辑时按另一侧值唯一定位），撤销保留 number / boolean / string[] 原类型；`Ctrl/Cmd+Z` / `Shift+Z` / `Y`（输入框内让位）；`edit-controlled` 与 windowed 不自动记录；`oas-history-change`。
+- **`table/detail` 主从详情**：`createMasterDetail()` 宿主侧胶水，点击行（checkable 表用 `oas-cell-click` 补齐）/`Enter` 打开、`Esc` 关闭并回焦；选中行 `tr[data-detail-selected]` 高亮；`data` 变化按行键刷新详情，行从数据中消失才清空（滚出渲染窗口不清空）；面板内容由 helper 管理。
+- **advanced 增补**：`createHistory()` 通用撤销栈、`createWindowedSource()` windowed 数据源助手（覆盖区间去重、中止过期请求、`refresh` / `destroy`、`oas-window-error`）。
+- 四个入口均为独立子路径，默认 table 链不加载；`perf:size` 立独立预算并断言默认链零泄漏。
+- 验收：单测覆盖键锚定/键盘扩展/复制粘贴/窗口失效/撤销边界/详情刷新；docs Pro demo 真点、暗色、console 零告警、a11y 通过。
 
 ## v2.6.4：table 默认入口切换（未发布）✅
 

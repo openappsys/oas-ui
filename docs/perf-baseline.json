@@ -1,21 +1,21 @@
 {
   "size": {
-    "generatedAt": "2026-10-24",
+    "generatedAt": "2026-10-25",
     "method": "gzip = zlib gzipSync；brotli = zlib.brotliCompressSync q11；单组件链 = 静态 import 图遍历 + 逐文件压缩求和（上界估计）",
     "packages": {
       "@oas-ui/ui": {
-        "distTotalBytes": 38835867,
+        "distTotalBytes": 39195181,
         "browserJs": {
-          "files": 439,
-          "rawBytes": 10131029,
-          "gzipBytes": 2414396,
-          "brotliBytes": 1880775
+          "files": 452,
+          "rawBytes": 10209873,
+          "gzipBytes": 2443214,
+          "brotliBytes": 1905800
         },
         "fullEntry": {
           "files": 479,
-          "rawBytes": 3607709,
-          "gzipBytes": 979801,
-          "brotliBytes": 842119,
+          "rawBytes": 3620728,
+          "gzipBytes": 984406,
+          "brotliBytes": 846174,
           "fileList": [
             "packages/ui/dist/index.js",
             "packages/icons/dist/register.js",
@@ -500,9 +500,9 @@
         },
         "cdn": {
           "files": 1,
-          "rawBytes": 3003020,
-          "gzipBytes": 651213,
-          "brotliBytes": 447545
+          "rawBytes": 3012685,
+          "gzipBytes": 654762,
+          "brotliBytes": 450453
         }
       },
       "@oas-ui/theme": {
@@ -514,21 +514,21 @@
       },
       "@oas-ui/core": {
         "files": 7,
-        "rawBytes": 33496,
-        "gzipBytes": 14103,
-        "brotliBytes": 11630
+        "rawBytes": 34210,
+        "gzipBytes": 14501,
+        "brotliBytes": 11976
       },
       "@oas-ui/i18n": {
         "files": 23,
-        "rawBytes": 236194,
-        "gzipBytes": 73813,
-        "brotliBytes": 62939
+        "rawBytes": 237262,
+        "gzipBytes": 74275,
+        "brotliBytes": 63342
       },
       "@oas-ui/icons": {
         "files": 52,
-        "rawBytes": 25064,
-        "gzipBytes": 13230,
-        "brotliBytes": 11279
+        "rawBytes": 25416,
+        "gzipBytes": 13387,
+        "brotliBytes": 11429
       },
       "@oas-ui/ssr": {
         "files": 3,
@@ -542,9 +542,9 @@
         "entry": "basic/button",
         "spec": "@oas-ui/ui/basic/button",
         "files": 14,
-        "rawBytes": 76319,
-        "gzipBytes": 23707,
-        "brotliBytes": 19894,
+        "rawBytes": 77033,
+        "gzipBytes": 24105,
+        "brotliBytes": 20240,
         "fileList": [
           "packages/ui/dist/basic/button/index.js",
           "packages/ui/dist/basic/button/oas-button.js",
@@ -565,10 +565,10 @@
       "table": {
         "entry": "data/table",
         "spec": "@oas-ui/ui/data/table",
-        "files": 49,
-        "rawBytes": 322434,
-        "gzipBytes": 96071,
-        "brotliBytes": 81540,
+        "files": 29,
+        "rawBytes": 216464,
+        "gzipBytes": 66719,
+        "brotliBytes": 56203,
         "fileList": [
           "packages/ui/dist/data/table/index.js",
           "packages/i18n/dist/index.js",
@@ -580,33 +580,13 @@
           "packages/core/dist/escape.js",
           "packages/core/dist/form-element.js",
           "packages/core/dist/oas-element.js",
-          "packages/ui/dist/data/table/edit/index.js",
-          "packages/ui/dist/form/select/index.js",
-          "packages/ui/dist/form/select/oas-option.js",
-          "packages/ui/dist/form/select/oas-select.js",
-          "packages/ui/dist/feedback/bottom-sheet/index.js",
-          "packages/ui/dist/feedback/bottom-sheet/oas-bottom-sheet.js",
-          "packages/ui/dist/data/virtual-list/index.js",
-          "packages/ui/dist/data/virtual-list/oas-virtual-list.js",
-          "packages/ui/dist/data/virtual-list/dynamic-height.js",
-          "packages/ui/dist/shared/json-array.js",
-          "packages/ui/dist/shared/touch-target.js",
-          "packages/ui/dist/shared/css-var.js",
-          "packages/ui/dist/shared/measure-text.js",
-          "packages/ui/dist/shared/mobile-sheet.js",
-          "packages/ui/dist/overlay/floating/floating.js",
+          "packages/ui/dist/navigation/pagination/index.js",
+          "packages/ui/dist/navigation/pagination/oas-pagination.js",
           "packages/ui/dist/shared/direction.js",
-          "packages/ui/dist/form/switch/index.js",
-          "packages/ui/dist/basic/icon/index.js",
-          "packages/ui/dist/basic/icon/oas-icon.js",
-          "packages/icons/dist/runtime.js",
-          "packages/ui/dist/shared/icon-hint.js",
           "packages/ui/dist/shared/dev-warn.js",
-          "packages/ui/dist/form/switch/oas-switch.js",
+          "packages/ui/dist/shared/safe-url.js",
           "packages/ui/dist/shared/size.js",
-          "packages/ui/dist/shared/on-color.js",
-          "packages/ui/dist/data/table/oas-table-edit.js",
-          "packages/icons/dist/icons/edit.js",
+          "packages/ui/dist/data/table/oas-table-column-settings.js",
           "packages/ui/dist/data/table/oas-table.js",
           "packages/icons/dist/icons/download.js",
           "packages/ui/dist/data/table/oas-table-row-key.js",
@@ -614,59 +594,103 @@
           "packages/ui/dist/data/table/oas-table-interactive.js",
           "packages/ui/dist/data/table/oas-table-capability.js",
           "packages/ui/dist/shared/window-data.js",
-          "packages/ui/dist/navigation/pagination/index.js",
-          "packages/ui/dist/navigation/pagination/oas-pagination.js",
-          "packages/ui/dist/shared/safe-url.js",
-          "packages/ui/dist/data/table/oas-table-column-settings.js",
+          "packages/ui/dist/data/virtual-list/oas-virtual-list.js",
+          "packages/ui/dist/data/virtual-list/dynamic-height.js",
+          "packages/ui/dist/shared/json-array.js",
+          "packages/ui/dist/overlay/floating/floating.js",
           "packages/ui/dist/data/table/oas-table-column.js"
         ]
       },
-      "tableCore": {
-        "entry": "data/table/core",
-        "spec": "@oas-ui/ui/data/table/core",
-        "files": 29,
-        "rawBytes": 213835,
-        "gzipBytes": 65600,
-        "brotliBytes": 55237,
+      "tableAdvanced": {
+        "entry": "data/table/advanced",
+        "spec": "@oas-ui/ui/data/table/advanced",
+        "files": 8,
+        "rawBytes": 17450,
+        "gzipBytes": 6963,
+        "brotliBytes": 6099,
         "fileList": [
-          "packages/ui/dist/data/table/core/index.js",
-          "packages/i18n/dist/index.js",
-          "packages/i18n/dist/registry.js",
-          "packages/i18n/dist/locales/zh-CN.js",
-          "packages/core/dist/index.js",
-          "packages/core/dist/config-context.js",
-          "packages/core/dist/translator.js",
-          "packages/core/dist/escape.js",
-          "packages/core/dist/form-element.js",
-          "packages/core/dist/oas-element.js",
-          "packages/ui/dist/navigation/pagination/index.js",
-          "packages/ui/dist/navigation/pagination/oas-pagination.js",
-          "packages/ui/dist/shared/direction.js",
-          "packages/ui/dist/shared/dev-warn.js",
-          "packages/ui/dist/shared/safe-url.js",
-          "packages/ui/dist/shared/size.js",
-          "packages/ui/dist/data/table/oas-table-column-settings.js",
-          "packages/ui/dist/data/table/oas-table.js",
-          "packages/icons/dist/icons/download.js",
-          "packages/ui/dist/data/table/oas-table-row-key.js",
-          "packages/ui/dist/data/table/oas-table-export.js",
+          "packages/ui/dist/data/table/advanced/index.js",
+          "packages/ui/dist/data/table/advanced/clipboard.js",
+          "packages/ui/dist/data/table/advanced/windowed.js",
+          "packages/ui/dist/data/table/advanced/history.js",
+          "packages/ui/dist/data/table/advanced/conditional.js",
+          "packages/ui/dist/data/table/advanced/query.js",
+          "packages/ui/dist/data/table/advanced/formula.js",
+          "packages/ui/dist/data/table/advanced/pivot.js"
+        ]
+      },
+      "tableFormat": {
+        "entry": "data/table/format",
+        "spec": "@oas-ui/ui/data/table/format",
+        "files": 5,
+        "rawBytes": 12624,
+        "gzipBytes": 4854,
+        "brotliBytes": 4194,
+        "fileList": [
+          "packages/ui/dist/data/table/format/index.js",
+          "packages/ui/dist/data/table/oas-table-capability.js",
+          "packages/ui/dist/data/table/advanced/conditional.js",
+          "packages/ui/dist/data/table/advanced/query.js",
+          "packages/ui/dist/data/table/advanced/formula.js"
+        ]
+      },
+      "tableView": {
+        "entry": "data/table/view",
+        "spec": "@oas-ui/ui/data/table/view",
+        "files": 1,
+        "rawBytes": 1319,
+        "gzipBytes": 649,
+        "brotliBytes": 560,
+        "fileList": ["packages/ui/dist/data/table/view/index.js"]
+      },
+      "tableRange": {
+        "entry": "data/table/range",
+        "spec": "@oas-ui/ui/data/table/range",
+        "files": 4,
+        "rawBytes": 16205,
+        "gzipBytes": 5193,
+        "brotliBytes": 4517,
+        "fileList": [
+          "packages/ui/dist/data/table/range/index.js",
           "packages/ui/dist/data/table/oas-table-interactive.js",
           "packages/ui/dist/data/table/oas-table-capability.js",
-          "packages/ui/dist/shared/window-data.js",
-          "packages/ui/dist/data/virtual-list/oas-virtual-list.js",
-          "packages/ui/dist/data/virtual-list/dynamic-height.js",
-          "packages/ui/dist/shared/json-array.js",
-          "packages/ui/dist/overlay/floating/floating.js",
-          "packages/ui/dist/data/table/oas-table-column.js"
+          "packages/ui/dist/data/table/advanced/clipboard.js"
+        ]
+      },
+      "tableHistory": {
+        "entry": "data/table/history",
+        "spec": "@oas-ui/ui/data/table/history",
+        "files": 4,
+        "rawBytes": 6315,
+        "gzipBytes": 2973,
+        "brotliBytes": 2548,
+        "fileList": [
+          "packages/ui/dist/data/table/history/index.js",
+          "packages/ui/dist/data/table/oas-table-row-key.js",
+          "packages/ui/dist/data/table/oas-table-interactive.js",
+          "packages/ui/dist/data/table/advanced/history.js"
+        ]
+      },
+      "tableDetail": {
+        "entry": "data/table/detail",
+        "spec": "@oas-ui/ui/data/table/detail",
+        "files": 3,
+        "rawBytes": 6858,
+        "gzipBytes": 2909,
+        "brotliBytes": 2457,
+        "fileList": [
+          "packages/ui/dist/data/table/detail/index.js",
+          "packages/ui/dist/data/table/oas-table-row-key.js",
+          "packages/ui/dist/data/table/oas-table-interactive.js"
         ]
       },
       "form": {
         "entry": "form/form",
         "spec": "@oas-ui/ui/form/form",
         "files": 11,
-        "rawBytes": 76534,
-        "gzipBytes": 27538,
-        "brotliBytes": 22904,
+        "rawBytes": 78316,
+        "gzipBytes": 28398,
+        "brotliBytes": 23653,
         "fileList": [
           "packages/ui/dist/form/form/index.js",
           "packages/i18n/dist/index.js",
@@ -685,9 +709,9 @@
         "entry": "data/gantt",
         "spec": "@oas-ui/ui/data/gantt",
         "files": 18,
-        "rawBytes": 220123,
-        "gzipBytes": 65173,
-        "brotliBytes": 54392,
+        "rawBytes": 221905,
+        "gzipBytes": 66033,
+        "brotliBytes": 55141,
         "fileList": [
           "packages/ui/dist/data/gantt/index.js",
           "packages/i18n/dist/index.js",
@@ -713,9 +737,9 @@
         "entry": "data/json-viewer",
         "spec": "@oas-ui/ui/data/json-viewer",
         "files": 13,
-        "rawBytes": 93268,
-        "gzipBytes": 32283,
-        "brotliBytes": 27037,
+        "rawBytes": 95050,
+        "gzipBytes": 33143,
+        "brotliBytes": 27786,
         "fileList": [
           "packages/ui/dist/data/json-viewer/index.js",
           "packages/i18n/dist/index.js",
@@ -736,9 +760,9 @@
         "entry": "data/diff-viewer",
         "spec": "@oas-ui/ui/data/diff-viewer",
         "files": 12,
-        "rawBytes": 88893,
-        "gzipBytes": 31378,
-        "brotliBytes": 26368,
+        "rawBytes": 90675,
+        "gzipBytes": 32238,
+        "brotliBytes": 27117,
         "fileList": [
           "packages/ui/dist/data/diff-viewer/index.js",
           "packages/i18n/dist/index.js",
@@ -758,7 +782,7 @@
     "budgets": [
       {
         "name": "dist/cdn.js gzip",
-        "actualBytes": 651213,
+        "actualBytes": 654762,
         "limitBytes": 788480,
         "warnAtBytes": 709632,
         "pass": true,
@@ -767,7 +791,7 @@
       },
       {
         "name": "@oas-ui/ui 全量入口链 gzip",
-        "actualBytes": 979801,
+        "actualBytes": 984406,
         "limitBytes": 1167360,
         "warnAtBytes": 1050624,
         "pass": true,
@@ -776,7 +800,7 @@
       },
       {
         "name": "@oas-ui/ui/basic/button 链 gzip",
-        "actualBytes": 23707,
+        "actualBytes": 24105,
         "limitBytes": 30720,
         "warnAtBytes": 27648,
         "pass": true,
@@ -785,16 +809,16 @@
       },
       {
         "name": "@oas-ui/ui/data/table 链 gzip",
-        "actualBytes": 96071,
-        "limitBytes": 110592,
-        "warnAtBytes": 99533,
+        "actualBytes": 66719,
+        "limitBytes": 75776,
+        "warnAtBytes": 68198,
         "pass": true,
         "warn": false,
-        "basis": "实测 gzip 93.2 KB（图标库 opt-in 后：链含 core+virtual-list+i18n+oas-pagination + 列导出/移动降级/编辑器依赖，但不再背全量图标 ~9 KB），上浮约 15% 定档 108 KB；前档 116 KB 定档于 2026-10-05（101 KB 实测）"
+        "basis": "实测 gzip 65.0 KB（v2.6.4 默认入口 = 基础表格，不含 edit；链含 core 骨架 + virtual-list + i18n + pagination + 列设置/导出/移动降级，不含编辑器族），上浮约 14% 定档 74 KB；前档 108 KB 为默认入口含 edit 口径"
       },
       {
         "name": "@oas-ui/ui/form/form 链 gzip",
-        "actualBytes": 27538,
+        "actualBytes": 28398,
         "limitBytes": 29696,
         "warnAtBytes": 26726,
         "pass": true,
@@ -803,7 +827,7 @@
       },
       {
         "name": "@oas-ui/ui/data/gantt 链 gzip",
-        "actualBytes": 65173,
+        "actualBytes": 66033,
         "limitBytes": 71680,
         "warnAtBytes": 64512,
         "pass": true,
@@ -812,7 +836,7 @@
       },
       {
         "name": "@oas-ui/ui/data/json-viewer 链 gzip",
-        "actualBytes": 32283,
+        "actualBytes": 33143,
         "limitBytes": 35840,
         "warnAtBytes": 32256,
         "pass": true,
@@ -821,7 +845,7 @@
       },
       {
         "name": "@oas-ui/ui/data/diff-viewer 链 gzip",
-        "actualBytes": 31378,
+        "actualBytes": 32238,
         "limitBytes": 34816,
         "warnAtBytes": 31334,
         "pass": true,
@@ -865,13 +889,58 @@
         "basis": "实测 gzip 约 0.91 KB（皮肤层变量族：预设色板皮肤档；独立可选，不进 union），上浮定档 2 KB"
       },
       {
-        "name": "@oas-ui/ui/data/table/core 链 gzip",
-        "actualBytes": 65600,
-        "limitBytes": 71680,
-        "warnAtBytes": 64512,
+        "name": "@oas-ui/ui/data/table/advanced 链 gzip",
+        "actualBytes": 6963,
+        "limitBytes": 8192,
+        "warnAtBytes": 7373,
         "pass": true,
-        "warn": true,
-        "basis": "实测 gzip 61.3 KB（/core = 主路径减去能力子包 + 图标库 opt-in；须小于主链 table 93.2 KB，退化即报红），上浮约 15% 定档 70 KB"
+        "warn": false,
+        "basis": "实测 gzip 6.9 KB（透视 / 公式 / 查询 / 条件格式 / TSV / 历史栈 / windowed 数据源纯函数，无表单控件与 table 运行时依赖），上浮约 16% 定档 8 KB"
+      },
+      {
+        "name": "@oas-ui/ui/data/table/format 链 gzip",
+        "actualBytes": 4854,
+        "limitBytes": 6144,
+        "warnAtBytes": 5530,
+        "pass": true,
+        "warn": false,
+        "basis": "实测 gzip 4.7 KB（条件格式 capability + 规则引擎，无表单控件；不进入 table 默认链），上浮约 27% 定档 6 KB"
+      },
+      {
+        "name": "@oas-ui/ui/data/table/view 链 gzip",
+        "actualBytes": 649,
+        "limitBytes": 1536,
+        "warnAtBytes": 1382,
+        "pass": true,
+        "warn": false,
+        "basis": "实测 gzip 0.6 KB（视图状态捕获/应用纯函数，无 table 运行时依赖），上浮定档 1.5 KB"
+      },
+      {
+        "name": "@oas-ui/ui/data/table/range 链 gzip",
+        "actualBytes": 5193,
+        "limitBytes": 6144,
+        "warnAtBytes": 5530,
+        "pass": true,
+        "warn": false,
+        "basis": "实测 gzip 5.1 KB（区域选择 capability + 键锚定 + roving tabindex + 交互宿主穿透 + TSV 复制/粘贴），上浮约 18% 定档 6 KB"
+      },
+      {
+        "name": "@oas-ui/ui/data/table/history 链 gzip",
+        "actualBytes": 2973,
+        "limitBytes": 3584,
+        "warnAtBytes": 3226,
+        "pass": true,
+        "warn": false,
+        "basis": "实测 gzip 2.9 KB（撤销/重做栈 + oas-edit 行键/原类型回写 + 树形子行递归 + 交互宿主穿透），上浮约 21% 定档 3.5 KB"
+      },
+      {
+        "name": "@oas-ui/ui/data/table/detail 链 gzip",
+        "actualBytes": 2909,
+        "limitBytes": 3584,
+        "warnAtBytes": 3226,
+        "pass": true,
+        "warn": false,
+        "basis": "实测 gzip 2.8 KB（主从详情宿主侧 helper + 树形行定位 / 焦点兜底 / 交互宿主穿透，无 table 运行时依赖），上浮约 25% 定档 3.5 KB"
       }
     ]
   },

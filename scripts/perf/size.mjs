@@ -419,6 +419,9 @@ const COMPONENT_ENTRIES = [
   { id: 'tableAdvanced', entry: 'data/table/advanced', spec: '@oas-ui/ui/data/table/advanced' },
   { id: 'tableFormat', entry: 'data/table/format', spec: '@oas-ui/ui/data/table/format' },
   { id: 'tableView', entry: 'data/table/view', spec: '@oas-ui/ui/data/table/view' },
+  { id: 'tableRange', entry: 'data/table/range', spec: '@oas-ui/ui/data/table/range' },
+  { id: 'tableHistory', entry: 'data/table/history', spec: '@oas-ui/ui/data/table/history' },
+  { id: 'tableDetail', entry: 'data/table/detail', spec: '@oas-ui/ui/data/table/detail' },
   { id: 'form', entry: 'form/form', spec: '@oas-ui/ui/form/form' },
   { id: 'gantt', entry: 'data/gantt', spec: '@oas-ui/ui/data/gantt' },
   { id: 'jsonViewer', entry: 'data/json-viewer', spec: '@oas-ui/ui/data/json-viewer' },
@@ -534,9 +537,9 @@ const BUDGETS = [
   {
     name: '@oas-ui/ui/data/table/advanced 链 gzip',
     get: () => componentMeasures.tableAdvanced.gzipBytes,
-    limit: 6.5 * 1024, // 6.5 KB（2026-10-25：条件格式引擎并入后实测 5.5 KB）
+    limit: 8 * 1024,
     basis:
-      '实测 gzip 5.5 KB（透视 / 公式 / 查询 / 条件格式 / TSV 纯函数，无表单控件与 table 运行时依赖），上浮约 18% 定档 6.5 KB',
+      '实测 gzip 6.9 KB（透视 / 公式 / 查询 / 条件格式 / TSV / 历史栈 / windowed 数据源纯函数，无表单控件与 table 运行时依赖），上浮约 16% 定档 8 KB',
   },
   {
     name: '@oas-ui/ui/data/table/format 链 gzip',
@@ -549,6 +552,27 @@ const BUDGETS = [
     get: () => componentMeasures.tableView.gzipBytes,
     limit: 1.5 * 1024, // 1.5 KB（2026-10-25 首次定档：实测 0.6 KB）
     basis: '实测 gzip 0.6 KB（视图状态捕获/应用纯函数，无 table 运行时依赖），上浮定档 1.5 KB',
+  },
+  {
+    name: '@oas-ui/ui/data/table/range 链 gzip',
+    get: () => componentMeasures.tableRange.gzipBytes,
+    limit: 6 * 1024,
+    basis:
+      '实测 gzip 5.1 KB（区域选择 capability + 键锚定 + roving tabindex + 交互宿主穿透 + TSV 复制/粘贴），上浮约 18% 定档 6 KB',
+  },
+  {
+    name: '@oas-ui/ui/data/table/history 链 gzip',
+    get: () => componentMeasures.tableHistory.gzipBytes,
+    limit: 3.5 * 1024,
+    basis:
+      '实测 gzip 2.9 KB（撤销/重做栈 + oas-edit 行键/原类型回写 + 树形子行递归 + 交互宿主穿透），上浮约 21% 定档 3.5 KB',
+  },
+  {
+    name: '@oas-ui/ui/data/table/detail 链 gzip',
+    get: () => componentMeasures.tableDetail.gzipBytes,
+    limit: 3.5 * 1024,
+    basis:
+      '实测 gzip 2.8 KB（主从详情宿主侧 helper + 树形行定位 / 焦点兜底 / 交互宿主穿透，无 table 运行时依赖），上浮约 25% 定档 3.5 KB',
   },
 ]
 
@@ -580,11 +604,14 @@ for (const b of BUDGETS) {
 // 自 v2.6.4 起 table/core 是默认入口的 deprecated 别名（v2.6.5 移除），不再单独计量；
 // 原先「core 严格小于 table」的断言随双入口语义一并退役，避免别名与主入口等量时误报。
 
-// ---------- 3.2 Pro 子路径零泄漏：默认 table 链不得包含 advanced/format/view ----------
+// ---------- 3.2 Pro 子路径零泄漏：默认 table 链不得包含 advanced/format/view/range/history/detail ----------
 for (const [id, segment] of [
   ['tableAdvanced', 'advanced'],
   ['tableFormat', 'format'],
   ['tableView', 'view'],
+  ['tableRange', 'range'],
+  ['tableHistory', 'history'],
+  ['tableDetail', 'detail'],
 ]) {
   const leaked = componentMeasures.table.fileList.filter((file) => file.includes(`data/table/${segment}/`))
   if (leaked.length > 0) {

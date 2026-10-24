@@ -40,7 +40,7 @@ export const ROW_INTERACTIVE_EXCLUSION = [
   'input',
   'select',
   'textarea',
-  // 可编辑宿主（行内富文本/直编容器）
+  // 可编辑宿主（行内富文本/直编容器；contenteditable 任意取值）
   '[contenteditable]',
   // ARIA 交互角色白名单（widget / composite / window 三类；不含任何表格结构角色）
   '[role="button"]',
@@ -101,3 +101,16 @@ export const ROW_INTERACTIVE_EXCLUSION = [
   // 业务逃生口：自定义交互内容容器标注即豁免
   '[data-oas-row-click-ignore]',
 ].join(', ')
+
+/**
+ * 事件路径上是否经过交互宿主（composedPath 穿透 shadow retargeting）。
+ * 嵌套自定义组件（oas-input/oas-select 等）内部事件的 target 会被重定向到宿主，
+ * 单靠 `event.target.closest()` 无法识别；键盘/粘贴/关闭手势统一用本判定。
+ */
+export function isInteractiveEvent(event: Event): boolean {
+  const path = typeof event.composedPath === 'function' ? event.composedPath() : []
+  for (const node of path) {
+    if (node instanceof Element && node.matches(ROW_INTERACTIVE_EXCLUSION)) return true
+  }
+  return false
+}

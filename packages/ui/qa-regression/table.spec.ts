@@ -2475,3 +2475,158 @@ test('table 宿主 aria-label 转发到内部 table（role=grid）、运行时�
     '宿主命名转发不应引入 axe 违规',
   ).toEqual([])
 })
+
+test('table Pro 第二批：虚拟滚动帧后区域装饰 / roving tabindex / aria-selected 保持', async ({ page }) => {
+  await page.goto('/components/table.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#table-virtual')
+  await page.waitForFunction(
+    () => document.querySelector('#table-virtual')!.shadowRoot!.querySelectorAll('tr.row').length > 0,
+    null,
+    { timeout: 10000 },
+  )
+  const counts = () =>
+    page.evaluate(() => {
+      const el = document.querySelector('#table-virtual')!
+      return {
+        selected: el.shadowRoot!.querySelectorAll('td.range-selected').length,
+        aria: el.shadowRoot!.querySelectorAll('td[aria-selected="true"]').length,
+        stops: [...el.shadowRoot!.querySelectorAll<HTMLElement>('td[data-col]')].filter((td) => td.tabIndex === 0)
+          .length,
+      }
+    })
+  await page.evaluate(() => {
+    const el = document.querySelector('#table-virtual')! as HTMLElement & {
+      setCapabilityOptions(name: string, options: unknown): void
+    }
+    el.setAttribute('grid-navigation', '')
+    el.setCapabilityOptions('range', {
+      enabled: true,
+      selection: { start: { row: 0, col: 'id' }, end: { row: 1, col: 'name' } },
+    })
+  })
+  await expect.poll(async () => (await counts()).selected).toBeGreaterThan(0)
+  const before = await counts()
+  expect(before.aria, 'grid-navigation 下选中格应有 aria-selected').toBeGreaterThan(0)
+  expect(before.stops, 'grid-navigation 下 range 不新增 td 停靠点').toBe(0)
+
+  // 真实滚动帧：tbody 全量重建且不走 update，装饰必须由 oas-scroll 钩子恢复
+  await page.evaluate(() => {
+    const wrap = document.querySelector('#table-virtual')!.shadowRoot!.querySelector('.table-scroll') as HTMLElement
+    wrap.scrollTop = 80
+    wrap.dispatchEvent(new Event('scroll'))
+  })
+  await page.waitForTimeout(150)
+  const after = await counts()
+  expect(after.selected, '滚动帧后选区装饰仍在').toBeGreaterThan(0)
+  expect(after.aria, '滚动帧后 aria-selected 仍在').toBeGreaterThan(0)
+  expect(after.stops, '滚动帧后仍无额外停靠点').toBe(0)
+})
+
+test('table Pro 第二批：区域选择/复制、行详情、Shift 扩展与编辑撤销共存', async ({ page }) => {
+  await page.goto('/components/table.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#table-pro')
+  await page.waitForFunction(
+    () => document.querySelector('#table-pro')!.shadowRoot!.querySelectorAll('tr.row').length === 4,
+    null,
+    { timeout: 10000 },
+  )
+
+  await page.locator('#table-pro-range').click()
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () => document.querySelector('#table-pro')!.shadowRoot!.querySelectorAll('td.range-selected').length,
+      ),
+    )
+    .toBe(4)
+  const status = () => page.evaluate(() => document.querySelector('#table-pro-status')?.textContent ?? '')
+  expect(await status()).toContain('2 行')
+
+  await page.locator('#table-pro-copy').click()
+  await expect.poll(status).toContain('已复制')
+
+  // 点击行 → 主从详情（DOM click，避开滚动/坐标造成的落点漂移）
+  await page.evaluate(() => {
+    const el = document.querySelector('#table-pro')!
+    const td = el.shadowRoot!.querySelectorAll('tr.row')[1]!.querySelector('td[data-col="name"]') as HTMLElement
+    td.click()
+  })
+  await expect
+    .poll(() => page.evaluate(() => document.querySelector('#table-pro-detail')?.textContent ?? ''))
+    .toContain('Beta')
+  expect(
+    await page.evaluate(
+      () => document.querySelector('#table-pro')!.shadowRoot!.querySelectorAll('tr[data-detail-selected]').length,
+    ),
+  ).toBe(1)
+
+  // 编辑态 Esc 只取消编辑，不关闭详情（详情 Esc 对输入目标 / defaultPrevented 让位）
+  await page.evaluate(() => {
+    const el = document.querySelector('#table-pro')!
+    const td = el.shadowRoot!.querySelectorAll('tr.row')[1]!.querySelector('td[data-col="name"]') as HTMLElement
+    td.dispatchEvent(new MouseEvent('dblclick', { bubbles: true, composed: true }))
+  })
+  const editorForCancel = page.locator('#table-pro .cell-editor').first()
+  await editorForCancel.waitFor({ state: 'visible', timeout: 5000 })
+  await editorForCancel.press('Escape')
+  await expect(page.locator('#table-pro .cell-editor')).toHaveCount(0)
+  await expect
+    .poll(() => page.evaluate(() => document.querySelector('#table-pro-detail')?.textContent ?? ''))
+    .toContain('Beta')
+
+  // Shift+方向键扩展选区（焦点在首行名称格）
+  await page.evaluate(() => {
+    const el = document.querySelector('#table-pro')!
+    const td = el.shadowRoot!.querySelector('tr.row td[data-col="name"]') as HTMLElement
+    td.focus()
+  })
+  await page.keyboard.press('Shift+ArrowDown')
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () => document.querySelector('#table-pro')!.shadowRoot!.querySelectorAll('td.range-selected').length,
+      ),
+    )
+    .toBe(2)
+
+  // 双击编辑当前选中行（原生 dblclick 兜底路径）：输入 → 提交 → 详情刷新 → 撤销
+  await page.evaluate(() => {
+    const el = document.querySelector('#table-pro')!
+    const td = el.shadowRoot!.querySelectorAll('tr.row')[1]!.querySelector('td[data-col="name"]') as HTMLElement
+    td.dispatchEvent(new MouseEvent('dblclick', { bubbles: true, composed: true }))
+  })
+  const editor = page.locator('#table-pro .cell-editor').first()
+  await editor.waitFor({ state: 'visible', timeout: 5000 })
+  await editor.fill('BetaZ')
+  await editor.press('Enter')
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () =>
+          document
+            .querySelector('#table-pro')!
+            .shadowRoot!.querySelectorAll('tr.row')[1]!
+            .querySelector('td[data-col="name"]')?.textContent,
+      ),
+    )
+    .toBe('BetaZ')
+  await expect
+    .poll(() => page.evaluate(() => document.querySelector('#table-pro-detail')?.textContent ?? ''))
+    .toContain('BetaZ')
+
+  await page.locator('#table-pro-undo').click()
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () =>
+          document
+            .querySelector('#table-pro')!
+            .shadowRoot!.querySelectorAll('tr.row')[1]!
+            .querySelector('td[data-col="name"]')?.textContent,
+      ),
+    )
+    .toBe('Beta')
+  await expect
+    .poll(() => page.evaluate(() => document.querySelector('#table-pro-detail')?.textContent ?? ''))
+    .toContain('Beta')
+})

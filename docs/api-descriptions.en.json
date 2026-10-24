@@ -3418,8 +3418,8 @@
     },
     "events": {
       "oas-check": "Checkbox selection change, `detail: { keys: string[] }`",
-      "oas-edit": "Inline edit submitted (Enter / blur / operation column save), `detail: { rowIndex, key, column, value }`; in controlled mode the component does not write back `data`",
-      "oas-edit-cancel": "Inline edit cancelled (Esc / operation column cancel / empty submit restores), `detail: { rowIndex, key, column, value }` (`value` is the original value)",
+      "oas-edit": "Inline edit submitted (Enter / blur / operation column save), `detail: { rowIndex, key, column, value, oldValue, oldRawValue }` (`oldValue` is the pre-submit string value, `oldRawValue` keeps the original shape such as number / boolean / string[]); in controlled mode the component does not write back `data`",
+      "oas-edit-cancel": "Inline edit cancelled (Esc / operation column cancel / empty submit restores), `detail: { rowIndex, key, column, value, oldValue, oldRawValue }` (`value` / `oldValue` are the original value; `oldRawValue` keeps the original shape)",
       "oas-expand": "Row expand/collapse (tree child rows or expandable content rows), `detail: { key, expanded }`",
       "oas-row-click": "Row click (also toggles selection when not checkable), `detail: { row, key }`",
       "oas-scroll": "Virtual scroll event (rAF throttled), `detail: { scrollTop, start, end }`",

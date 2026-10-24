@@ -3,6 +3,7 @@ import {
   compileConditionalFormat,
   compileFormula,
   compileQuery,
+  createHistory,
   evaluateConditionalFormat,
   filterRows,
   formulaColumn,
@@ -286,5 +287,38 @@ describe('conditional format', () => {
       1,
     )
     expect(match?.applyTo).toBe('row')
+  })
+})
+
+describe('createHistory', () => {
+  it('push/undo/redo/canUndo/canRedo/clear 与 limit', () => {
+    const stack = createHistory(2)
+    const seen: string[] = []
+    stack.push({ label: 'a', undo: () => seen.push('undo-a'), redo: () => seen.push('redo-a') })
+    stack.push({ label: 'b', undo: () => seen.push('undo-b'), redo: () => seen.push('redo-b') })
+    stack.push({ label: 'c', undo: () => seen.push('undo-c'), redo: () => seen.push('redo-c') })
+    expect(stack.size).toBe(2)
+    expect(stack.canUndo()).toBe(true)
+    expect(stack.undo()).toBe(true)
+    expect(seen).toEqual(['undo-c'])
+    expect(stack.redo()).toBe(true)
+    expect(seen).toEqual(['undo-c', 'redo-c'])
+    stack.clear()
+    expect(stack.canUndo()).toBe(false)
+    expect(stack.canRedo()).toBe(false)
+  })
+
+  it('新 push 清空 redo，subscribe 可取消', () => {
+    const stack = createHistory()
+    const states: boolean[] = []
+    const off = stack.subscribe((s) => states.push(s.canRedo))
+    stack.push({ undo: () => {}, redo: () => {} })
+    stack.undo()
+    expect(states).toEqual([false, true])
+    stack.push({ undo: () => {}, redo: () => {} })
+    expect(states.at(-1)).toBe(false)
+    off()
+    stack.push({ undo: () => {}, redo: () => {} })
+    expect(states).toHaveLength(3)
   })
 })

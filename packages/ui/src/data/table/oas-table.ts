@@ -152,6 +152,10 @@ export interface TableEditDetail {
   key: string
   column: string
   value: string
+  /** 提交前的旧值（oas-edit 为提交前值；oas-edit-cancel 为原值，取消时与 value 相同） */
+  oldValue?: string
+  /** 编辑前的原始数据形态（保留 number / boolean / string[] 等类型，供撤销精确回写） */
+  oldRawValue?: unknown
 }
 
 /**

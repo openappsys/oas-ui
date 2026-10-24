@@ -43,4 +43,11 @@ export {
   type ConditionalRule,
   type ConditionalStyle,
 } from './conditional.js'
+export { createHistory, type HistoryEntry, type HistoryStack } from './history.js'
+export {
+  createWindowedSource,
+  type WindowedRequest,
+  type WindowedSource,
+  type WindowedSourceOptions,
+} from './windowed.js'
 export { parseTsv, toTsv, type TsvColumn } from './clipboard.js'
