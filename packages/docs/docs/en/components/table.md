@@ -511,6 +511,7 @@ Listen to `oas-sort-change`, then set `loading` and re-request remote paginated/
 
 <script setup>
 import { onMounted } from 'vue'
+import { filterRows, formulaColumn, pivotTable } from '@oas-ui/ui/data/table/advanced'
 
 // column-virtual demo: 60 metric columns × 40 rows (client-side injection for large data)
 onMounted(() => {
@@ -827,6 +828,63 @@ onMounted(() => {
     const el = document.querySelector('#table-row-drag-feedback')
     if (el) el.textContent = `${from} → ${to}`
   })
+
+  // Advanced entry demo: formula column + query filter + pivot (assign properties after upgrade)
+  customElements.whenDefined('oas-table').then(() => {
+    const advancedSource = document.querySelector('#table-advanced-source')
+    const advancedPivot = document.querySelector('#table-advanced-pivot')
+    const advancedStatus = document.querySelector('#table-advanced-status')
+    const advancedSales = [
+      { region: 'East', product: 'A', amount: 120, qty: 3 },
+      { region: 'East', product: 'B', amount: 80, qty: 2 },
+      { region: 'South', product: 'A', amount: 150, qty: 1 },
+      { region: 'South', product: 'B', amount: 60, qty: 4 },
+      { region: 'North', product: 'A', amount: 90, qty: 2 },
+      { region: 'North', product: 'B', amount: 110, qty: 3 },
+    ]
+    if (advancedSource) {
+      advancedSource.columns = [
+        { key: 'region', title: 'Region' },
+        { key: 'product', title: 'Product' },
+        { key: 'amount', title: 'Price', align: 'right', type: 'number' },
+        { key: 'qty', title: 'Qty', align: 'right', type: 'number' },
+        formulaColumn({
+          key: 'total',
+          title: 'Total',
+          expression: 'amount * qty',
+          align: 'right',
+          format: (value) => `$${value}`,
+        }),
+      ]
+      advancedSource.data = advancedSales
+      let advancedFiltered = false
+      document.querySelector('#table-advanced-filter')?.addEventListener('click', () => {
+        advancedFiltered = !advancedFiltered
+        const rows = advancedFiltered
+          ? filterRows(advancedSales, { field: 'amount', op: 'gte', value: 100 })
+          : advancedSales
+        advancedSource.data = rows
+        document.querySelector('#table-advanced-filter')?.setAttribute('aria-pressed', String(advancedFiltered))
+        if (advancedStatus) {
+          advancedStatus.textContent = advancedFiltered
+            ? `Amount ≥ 100: ${rows.length} rows`
+            : `All ${rows.length} rows`
+        }
+      })
+    }
+    if (advancedPivot) {
+      const result = pivotTable({
+        rows: advancedSales,
+        rowField: 'region',
+        columnField: 'product',
+        valueField: 'qty',
+        rowLabel: 'Region',
+        totalLabel: 'Total',
+      })
+      advancedPivot.columns = result.columns
+      advancedPivot.data = result.rows
+    }
+  })
 })
 </script>
 
@@ -992,6 +1050,51 @@ Inline editing per type: `number` / `currency` / `link` use a native input (nume
 </DemoBlock>
 
 The full endpoint URLs far exceed the column width (long unbreakable strings): hover any overflowing cell to read the full text in the tooltip; it hides as soon as the pointer leaves.
+
+## Advanced Capabilities (advanced entry)
+
+`@oas-ui/ui/data/table/advanced` is an optional entry with pure helpers / column factories. It registers no custom elements and pulls in no editing or form controls; combine it with `@oas-ui/ui/data/table/edit` when editing is needed. It currently provides:
+
+- **Pivot**: `pivot()` returns a pivot matrix; `pivotTable()` returns `columns` / `data` ready for `oas-table`
+- **Formula columns**: `formulaColumn()` / `compileFormula()` parse a safe expression language (fields, arithmetic, comparison, logic, `IF` / `ROUND` / `MIN` / `MAX` / `SUM` / `CONCAT`, etc.) without `eval` / `Function`
+- **Query builder**: `compileQuery()` / `filterRows()` with nested `and` / `or` and operators such as `eq` / `contains` / `in` / `between` / `exists`
+- **TSV**: `toTsv()` / `parseTsv()` for exporting and pasting table regions
+
+> Comparison / range operators use numeric semantics; text matching is case-insensitive by default (`caseSensitive: true` enables it); TSV export collapses tabs / newlines inside a cell to spaces.
+
+<DemoBlock title="advanced entry: pivot + formula column + query filter">
+  <div style="display:flex;gap:var(--oas-space-4);flex-wrap:wrap;width:100%">
+    <div style="flex:1 1 360px;min-width:320px">
+      <div style="display:flex;gap:var(--oas-space-2);align-items:center;flex-wrap:wrap;margin-bottom:var(--oas-space-2)">
+        <oas-button id="table-advanced-filter" size="small" aria-pressed="false">Amount ≥ 100</oas-button>
+        <span id="table-advanced-status" style="color:var(--oas-color-text-secondary);font-size:var(--oas-font-size-sm)">All 6 rows</span>
+      </div>
+      <oas-table id="table-advanced-source" height="240" row-height="32" bordered></oas-table>
+    </div>
+    <div style="flex:1 1 360px;min-width:320px">
+      <p style="margin:0 0 var(--oas-space-2);color:var(--oas-color-text-secondary);font-size:var(--oas-font-size-sm)">Pivot: region × product (sum of qty)</p>
+      <oas-table id="table-advanced-pivot" height="240" row-height="32" bordered></oas-table>
+    </div>
+  </div>
+</DemoBlock>
+
+```js
+import { filterRows, formulaColumn, pivotTable } from '@oas-ui/ui/data/table/advanced'
+
+const columns = [
+  { key: 'region', title: 'Region' },
+  formulaColumn({ key: 'total', title: 'Total', expression: 'amount * qty', align: 'right' }),
+]
+const rows = filterRows(sales, { field: 'amount', op: 'gte', value: 100 })
+const { columns: pivotColumns, rows: pivotRows } = pivotTable({
+  rows: sales,
+  rowField: 'region',
+  columnField: 'product',
+  valueField: 'qty',
+})
+```
+
+Further advanced capabilities (not implemented yet): conditional formatting rules, persisted view state (column visibility / order / width), undo/redo, range selection and clipboard, master-detail panels.
 
 ## API
 

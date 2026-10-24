@@ -67,7 +67,77 @@
 - 文档 zh/en（含 API/demo）、`api:check` 双向 0、CHANGELOG `[未发布]`、PRD/ROADMAP 同步。
 - 包体：`data/diff-viewer` 按需链 gzip 实测 30.6 KB（链含 core + i18n + 组件），目标 ≤ 32 KB、`perf:size` 预算 34 KB；零第三方运行时依赖。
 
-## v2.6.3：date-picker 范围手输 + sidebar 行内容渲染 + barcode 扩展 🚧
+## 未发布：N04 日志 ANSI 着色（可行子集）✅
+
+### 功能定义
+
+在既有 `oas-log` 上增加 opt-in `ansi` 属性：把日志行中的 ANSI SGR 序列解析为颜色/样式，同时保持纯文本日志的默认行为不变。不做终端模拟器（输入、光标、PTY、OSC 8 超链接），不引入运行时依赖。
+
+### 详细需求
+
+- **解析范围**：16 色前景/背景（`30-37` / `90-97` / `40-47` / `100-107`）、256 色（`38;5;n` / `48;5;n`）、truecolor（`38;2;r;g;b` / `48;2;r;g;b`）；加粗/暗淡/斜体/下划线/反显与 `0` / `22` / `23` / `24` / `27` / `39` / `49` 复位。未识别参数忽略，不影响后续文本。
+- **控制字符**：非 SGR 的 CSI/OSC/DCS、多字节 ESC、行尾半截序列、孤立 ESC 与 C0 控制字符从显示文本剔除（保留制表符）；全程 `textContent` / class / inline style，不走 `innerHTML`。
+- **可读性**：16 色前景走 `light-dark()` 双主题色板，全部前景 ≥62 感知对比度；256/truecolor 前景按浅/暗主题校正；16 色背景保证黑/白至少一档 ≥60，彩色背景自动择优；宿主可在 `oas-log` 上覆盖 `--ansi-*`。
+- **组合**：ANSI 前景优先于行 `levels` 语义色；`keyword` / `highlight` 命中仍包 `mark`，跨转义边界也保留；keyword 过滤按可见文本匹配。
+- **增量**：reconcile 用原始文本对齐；过滤态顶部插入时按 viewMap 漂移重算行号/levels；通道未变时追加零重建。
+- **边界**：SGR 状态按行重置；任意 truecolor 背景只能择优、极端中间色可能需宿主显式前景；elevated 背景/`dim` 下可覆盖变量。
+
+### 非目标
+
+终端模拟、输入/PTY、光标控制、OSC 8 超链接、跨行 SGR 状态延续、`aria-live` 流式播报策略。
+
+### 验收标准
+
+- 单测：转义剔除、16/256/truecolor、样式开关、inverse、跨片段 mark、viewMap 漂移、色板守卫、恶意文本。
+- e2e：demo 颜色生效、无转义泄漏、宿主覆盖变量、暗色/浅色 a11y、keyword/levels 组合。
+- 文档 zh/en、API 语料/manifest、CHANGELOG `[未发布]`、ROADMAP 同步。
+
+## 未发布：N05 文件浏览器组合（recipe）✅
+
+### 功能定义
+
+不新建独立文件树组件；用 `oas-tree directory` 作为主体，由宿主组合工具栏、面包屑、选中路径、上传/右键菜单入口与内联重命名，形成文件资源管理器 recipe。
+
+### 详细需求
+
+- `directory` 文件/文件夹图标；`height` 虚拟滚动；`tree-lines` 层级引导线。
+- 工具栏展开/收起；面包屑显示根到当前节点的 label 链；选中路径状态。
+- `can-rename` + `oas-node-rename` 宿主回写 `data`，Enter 提交 / Esc 取消；宿主不改数据则保持旧值。
+- 上传、新建文件夹、右键菜单由宿主组合 `oas-upload` / `oas-context-menu`，本 recipe 只给出组合边界。
+
+### 非目标
+
+独立文件树组件、内置上传/右键菜单 UI、远程文件系统协议、权限模型。
+
+### 验收标准
+
+- zh/en 文档 demo 可展开/收起、选中、重命名并联动面包屑；暗色与 a11y 通过。
+- 不新增组件/事件/API；`oas-tree` 行为不变。
+
+## 未发布：N06 数据网格高级能力（advanced 入口）✅
+
+### 功能定义
+
+新增独立子路径 `@oas-ui/ui/data/table/advanced`，提供纯函数/列工厂增强 `oas-table`，不注册自定义元素、不引入编辑与表单控件。主 `table` / `table/core` / `table/edit` 边界不变。
+
+### 详细需求
+
+- **透视**：`pivot()` 按行/列字段聚合（sum/avg/count/min/max），输出矩阵与行列合计；空值（null / undefined / ''）忽略，`count` 只计有效值；`pivotTable()` 直接产出 `columns` / `data`，省略 `columnField` 时只输出一列汇总。
+- **公式列**：`compileFormula()` / `formulaColumn()` 安全表达式（字段、四则、比较、逻辑、`IF`/`ROUND`/`MIN`/`MAX`/`SUM`/`CONCAT`/`COALESCE`/`LEN` 等），不使用 `eval` / `Function`；不访问原型链。
+- **查询构建器**：`compileQuery()` / `filterRows()` 支持 `and`/`or` 任意嵌套与 `eq`/`ne`/`gt`/`gte`/`lt`/`lte`/`contains`/`startsWith`/`endsWith`/`in`/`between`/`exists`/`empty`。
+- **TSV**：`toTsv()` / `parseTsv()` 导出与解析表格区域。
+- 需要编辑时组合 `table/edit`；本入口默认不引入编辑依赖。
+
+### 非目标
+
+条件格式规则、视图状态持久化、撤销/重做、区域选择/剪贴板 UI、主从详情面板；这些列为后续候选，不在本版。
+
+### 验收标准
+
+- 单测：透视聚合/合计、公式优先级与安全边界、查询嵌套/算子、TSV 转义。
+- `perf:size` 新增 advanced 链预算；docs zh/en 示例与 API 说明；无 table 运行时依赖（纯函数入口）。
+
+## v2.6.3：date-picker 范围手输 + sidebar 行内容渲染 + barcode 扩展 ✅
 
 ### 功能定义
 

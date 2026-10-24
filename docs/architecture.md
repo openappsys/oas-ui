@@ -141,7 +141,7 @@ oas-ui/
 
 - 包含关系：L1 ⊃ L2 ⊃ L3（能力）；`/core` = L2 − L3。
 - 注册语义三层一致：import 即注册、晚加入自愈（已挂载元素自动补齐）。
-- L3 现有实例：`table/edit`、`tabs/manager`、`modal/prompt`、`popover/contextmenu`、`color-picker/designer`；大表面组件（如 scheduler）按同机制以子路径隔离体积。
+- L3 现有实例：`table/edit`、`table/advanced`（纯函数能力入口，不注册元素）、`tabs/manager`、`modal/prompt`、`popover/contextmenu`、`color-picker/designer`；大表面组件（如 scheduler）按同机制以子路径隔离体积。
   - **量化决策（2026-10-08）**：table 链重依赖集中在**编辑器族**（约占主链 1/3，已由 `table/edit` 隔离，`/core` 即得纯核）；`export`（~1.3KB）与移动降级（~3KB）体积小、**不再细分**。结论：维持 L2 主路径默认含能力（v2.5.0 定案），不为小收益增设 L3。
 - 体积纪律：core 与能力包的共享常量/判定落在零依赖叶子模块，任一侧引用都不会把另一侧拖进 bundle。
 
@@ -161,7 +161,7 @@ oas-ui/
 | `@oas-ui/theme/glass.css`       | 否               | 无玻璃材质（回落基础样式）            | 无                     | 材质皮肤消费者   |
 | `@oas-ui/theme/glass-fluid.js`  | 否               | 无指针高光（其余玻璃层不受影响）      | 无                     | 动态材质消费者   |
 | `@oas-ui/theme/skins.css`       | 否               | 无预设皮肤                            | 无                     | 皮肤消费者       |
-| L3 能力子包（`table/edit` 等）  | **是**（含于 L1） | 主路径已含；`/core` 用户显式补引      | `warnEditNotImported`  | 纯核瘦身消费者   |
+| L3 能力子包（`table/edit` 等）  | **是**（含于 L1；`table/advanced` 纯函数入口除外） | 主路径已含；`/core` 用户显式补引；advanced 始终按需 import | `warnEditNotImported`  | 纯核瘦身消费者   |
 
 > 原则：**整包级可选层**（材质/皮肤/运行时，独立文件）不进 union；**L3 能力子包**必须含于 L1（否则 CDN 一把梭消费者用不到该能力）。两类"可选"不可混同。
 

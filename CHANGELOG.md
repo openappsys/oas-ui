@@ -14,8 +14,11 @@
 
 - **`oas-log` ANSI 着色**：新增 opt-in `ansi` 属性，解析每行 ANSI SGR 转义序列（16 / 256 / truecolor 前景与背景，加粗 / 暗淡 / 斜体 / 下划线 / 反显），转义码与非 SGR 的 CSI / OSC / 多字节 ESC / C0 控制字符从显示文本剔除（保留制表符）；16 色走 `light-dark()` 双主题可读色板（CSS 变量 `--ansi-*` 可覆盖单色），256 / truecolor 前景按感知对比度自动校正浅色与暗色取值，彩色背景按对比度择优（16 色背景保证至少一档黑 / 白达标）；与 `keyword` / `highlight` / `levels` 组合不丢色，搜索按可见文本匹配，通道未变时追加日志零重建。
 
+- **`oas-table` advanced 高级能力入口**：新增独立子路径 `@oas-ui/ui/data/table/advanced`，提供纯函数 / 列工厂：`pivot` / `pivotTable` 透视矩阵与表格列、`compileFormula` / `formulaColumn` 无 `eval` 的安全公式列、`compileQuery` / `filterRows` 查询构建器、`toTsv` / `parseTsv` 表格区域导出解析；不注册自定义元素、不引入编辑/表单控件，主 `table` / `table/core` / `table/edit` 边界不变。
+
 ### 变更
 
+- **`gear` 图标重绘**：原「3/4 圆 + 三根短线」与 `refresh` 视觉同族、易被误认为刷新；改为 8 齿外轮廓 + 中心圆孔的标准齿轮，16 / 32 / 96px 下均可辨识。
 - **导航 landmark 宿主命名**：`oas-breadcrumb` / `oas-pagination` / `oas-anchor` / `oas-index-bar` / `oas-navigation-menu` 新增宿主 `aria-label` 优先转发到内部 navigation landmark，空值回退 i18n 默认名，便于同页多个导航地标注解区分。
 - **`oas-table` 表头对齐可配置**：新增表格级 `header-align` 与列级 `headerAlign` / `<oas-table-column header-align>`，支持 `follow`（默认，跟随列）/ `left` / `center` / `right` / `default`（浏览器默认）；`number` / `currency` 默认 `follow` 时右对齐，多级表头分组标题仍居中。
 - **`oas-command` 非虚拟列表键盘滚动**：非虚拟模式下方向键移动 `activeIndex` 时同样将活动行滚入列表视口，与虚拟模式行为对齐。

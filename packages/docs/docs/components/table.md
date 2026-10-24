@@ -511,6 +511,7 @@ windowed 模式下**本地排序 / 筛选 / 分组 / 分页 / 树形展开 / 合
 
 <script setup>
 import { onMounted } from 'vue'
+import { filterRows, formulaColumn, pivotTable } from '@oas-ui/ui/data/table/advanced'
 
 // column-virtual demo：60 列指标 × 40 行（数据量大走客户端注入，SSR 输出空表壳）
 onMounted(() => {
@@ -823,6 +824,61 @@ onMounted(() => {
     const el = document.querySelector('#table-row-drag-feedback')
     if (el) el.textContent = `${from} → ${to}`
   })
+
+  // advanced 入口 demo：公式列 + 查询过滤 + 透视（等自定义元素升级后再赋 property）
+  customElements.whenDefined('oas-table').then(() => {
+    const advancedSource = document.querySelector('#table-advanced-source')
+    const advancedPivot = document.querySelector('#table-advanced-pivot')
+    const advancedStatus = document.querySelector('#table-advanced-status')
+    const advancedSales = [
+      { region: '华东', product: 'A', amount: 120, qty: 3 },
+      { region: '华东', product: 'B', amount: 80, qty: 2 },
+      { region: '华南', product: 'A', amount: 150, qty: 1 },
+      { region: '华南', product: 'B', amount: 60, qty: 4 },
+      { region: '华北', product: 'A', amount: 90, qty: 2 },
+      { region: '华北', product: 'B', amount: 110, qty: 3 },
+    ]
+    if (advancedSource) {
+      advancedSource.columns = [
+        { key: 'region', title: '区域' },
+        { key: 'product', title: '产品' },
+        { key: 'amount', title: '单价', align: 'right', type: 'number' },
+        { key: 'qty', title: '数量', align: 'right', type: 'number' },
+        formulaColumn({
+          key: 'total',
+          title: '金额',
+          expression: 'amount * qty',
+          align: 'right',
+          format: (value) => `¥${value}`,
+        }),
+      ]
+      advancedSource.data = advancedSales
+      let advancedFiltered = false
+      document.querySelector('#table-advanced-filter')?.addEventListener('click', () => {
+        advancedFiltered = !advancedFiltered
+        const rows = advancedFiltered
+          ? filterRows(advancedSales, { field: 'amount', op: 'gte', value: 100 })
+          : advancedSales
+        advancedSource.data = rows
+        document.querySelector('#table-advanced-filter')?.setAttribute('aria-pressed', String(advancedFiltered))
+        if (advancedStatus) {
+          advancedStatus.textContent = advancedFiltered ? `金额 ≥ 100：${rows.length} 行` : `全部 ${rows.length} 行`
+        }
+      })
+    }
+    if (advancedPivot) {
+      const result = pivotTable({
+        rows: advancedSales,
+        rowField: 'region',
+        columnField: 'product',
+        valueField: 'qty',
+        rowLabel: '区域',
+        totalLabel: '合计',
+      })
+      advancedPivot.columns = result.columns
+      advancedPivot.data = result.rows
+    }
+  })
 })
 </script>
 
@@ -988,6 +1044,51 @@ onMounted(() => {
 </DemoBlock>
 
 访问地址列的完整 URL 远超列宽（长串不可断行）：悬停任一溢出格即可在浮层中查看全文，移开即隐藏。
+
+## 高级能力（advanced 入口）
+
+`@oas-ui/ui/data/table/advanced` 是独立可选入口，提供纯函数 / 列工厂，不注册自定义元素、不引入编辑与表单控件；需要编辑时再组合 `@oas-ui/ui/data/table/edit`。当前包含：
+
+- **透视**：`pivot()` 生成透视矩阵，`pivotTable()` 直接产出可喂给 `oas-table` 的 `columns` / `data`
+- **公式列**：`formulaColumn()` / `compileFormula()`，安全表达式解析（字段、四则、比较、逻辑、`IF` / `ROUND` / `MIN` / `MAX` / `SUM` / `CONCAT` 等），不使用 `eval` / `Function`
+- **查询构建器**：`compileQuery()` / `filterRows()`，支持 `and` / `or` 任意嵌套与 `eq` / `contains` / `in` / `between` / `exists` 等算子
+- **TSV**：`toTsv()` / `parseTsv()`，用于表格区域导出与粘贴
+
+> 查询算子的比较/范围按数值处理；文本匹配默认不区分大小写（`caseSensitive: true` 可开启）；TSV 导出会把单元格内的换行/制表符压成空格。
+
+<DemoBlock title="advanced 入口：透视 + 公式列 + 查询过滤">
+  <div style="display:flex;gap:var(--oas-space-4);flex-wrap:wrap;width:100%">
+    <div style="flex:1 1 360px;min-width:320px">
+      <div style="display:flex;gap:var(--oas-space-2);align-items:center;flex-wrap:wrap;margin-bottom:var(--oas-space-2)">
+        <oas-button id="table-advanced-filter" size="small" aria-pressed="false">金额 ≥ 100</oas-button>
+        <span id="table-advanced-status" style="color:var(--oas-color-text-secondary);font-size:var(--oas-font-size-sm)">全部 6 行</span>
+      </div>
+      <oas-table id="table-advanced-source" height="240" row-height="32" bordered></oas-table>
+    </div>
+    <div style="flex:1 1 360px;min-width:320px">
+      <p style="margin:0 0 var(--oas-space-2);color:var(--oas-color-text-secondary);font-size:var(--oas-font-size-sm)">透视：区域 × 产品（数量求和）</p>
+      <oas-table id="table-advanced-pivot" height="240" row-height="32" bordered></oas-table>
+    </div>
+  </div>
+</DemoBlock>
+
+```js
+import { filterRows, formulaColumn, pivotTable } from '@oas-ui/ui/data/table/advanced'
+
+const columns = [
+  { key: 'region', title: '区域' },
+  formulaColumn({ key: 'total', title: '金额', expression: 'amount * qty', align: 'right' }),
+]
+const rows = filterRows(sales, { field: 'amount', op: 'gte', value: 100 })
+const { columns: pivotColumns, rows: pivotRows } = pivotTable({
+  rows: sales,
+  rowField: 'region',
+  columnField: 'product',
+  valueField: 'qty',
+})
+```
+
+后续可扩展的高级能力（尚未实现）：条件格式规则、视图状态持久化（列显隐 / 顺序 / 宽度）、撤销/重做、区域选择与剪贴板、主从详情面板。
 
 ## API
 

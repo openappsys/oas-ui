@@ -434,6 +434,7 @@ const COMPONENT_ENTRIES = [
   { id: 'button', entry: 'basic/button', spec: '@oas-ui/ui/basic/button' },
   { id: 'table', entry: 'data/table', spec: '@oas-ui/ui/data/table' },
   { id: 'tableCore', entry: 'data/table/core', spec: '@oas-ui/ui/data/table/core' },
+  { id: 'tableAdvanced', entry: 'data/table/advanced', spec: '@oas-ui/ui/data/table/advanced' },
   { id: 'form', entry: 'form/form', spec: '@oas-ui/ui/form/form' },
   { id: 'gantt', entry: 'data/gantt', spec: '@oas-ui/ui/data/gantt' },
   { id: 'jsonViewer', entry: 'data/json-viewer', spec: '@oas-ui/ui/data/json-viewer' },
@@ -552,6 +553,12 @@ const BUDGETS = [
     limit: 70 * 1024, // 70 KB（/core 纯核路径，2026-10-08 重定档：图标库 opt-in 后实测 60.9 KB）
     basis:
       '实测 gzip 61.3 KB（/core = 主路径减去能力子包 + 图标库 opt-in；须小于主链 table 93.2 KB，退化即报红），上浮约 15% 定档 70 KB',
+  },
+  {
+    name: '@oas-ui/ui/data/table/advanced 链 gzip',
+    get: () => componentMeasures.tableAdvanced.gzipBytes,
+    limit: 6 * 1024, // 6 KB（2026-10-24 首次定档：实测 4.7 KB）
+    basis: '实测 gzip 4.7 KB（透视 / 公式 / 查询 / TSV 纯函数，无表单控件与 table 运行时依赖），上浮约 27% 定档 6 KB',
   },
 ]
 
