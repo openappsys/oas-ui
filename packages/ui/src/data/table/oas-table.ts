@@ -219,9 +219,9 @@ function warnInvalidSize(raw: string): void {
   devWarn(`[oas-table] 非法 size "${raw}"，已回落 medium；合法值：small/medium/large`)
 }
 
-/** 编辑能力未注入的告警文案（仅纯核入口 data/table/core 消费者会触发；主路径已默认内含能力） */
+/** 编辑能力未注入的告警文案（默认入口 data/table 与 core 别名消费者会触发；全量入口已内含能力） */
 const EDIT_CAPABILITY_HINT =
-  '[oas-table] 行内编辑能力未注入：检测到 editable/editor/actions 配置但能力缺失，相关配置已静默失效。主路径 @oas-ui/ui/data/table 已默认内含该能力；仅纯核路径 data/table/core 需要显式 import "@oas-ui/ui/data/table/edit"（import 即注册）或改从主路径引入。'
+  '[oas-table] 行内编辑能力未注入：检测到 editable/editor/actions 配置但能力缺失，相关配置已静默失效。自 v2.6.4 起默认入口 @oas-ui/ui/data/table 不再内含编辑，请显式 import "@oas-ui/ui/data/table/edit"（import 即注册）；全量入口 @oas-ui/ui 已包含该能力。'
 
 /** 行拖拽 + 虚拟滚动不兼容的告警文案（虚拟模式仅渲染窗口行，拖拽重排的 from/to 语义不可靠） */
 const ROW_DRAG_VIRTUAL_HINT =
@@ -1317,12 +1317,19 @@ export class OASTableBase extends OASElement {
 
   /** 幂等注入：按 name 去重，已注入的能力不重复 addController */
   private attachCapabilities(): void {
+    let attached = false
     for (const { name, factory } of registeredTableCapabilities()) {
       if (this.attachedCaps.has(name)) continue
       this.attachedCaps.add(name)
       const controller = factory(this)
       this.addController(controller)
       if (name === 'edit') this.editCap = controller as unknown as TableEditCapability
+      attached = true
+    }
+    // 晚注册能力：已渲染的表格立即重建一次，让新能力的单元格装饰（如 editable-cell）生效
+    if (attached && this.hasRendered) {
+      this.markRenderDirty()
+      this.runUpdateAndNotify()
     }
   }
 

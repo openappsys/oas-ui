@@ -18,6 +18,7 @@
 
 ### 变更
 
+- **table 默认入口改为基础表格（v2.6.4）**：`@oas-ui/ui/data/table` 不再默认包含行内编辑；使用 `editable` / `actions` 需显式 `import '@oas-ui/ui/data/table/edit'`。`@oas-ui/ui` 全量入口与 CDN 数据族仍包含编辑。`@oas-ui/ui/data/table/core` 标记 deprecated（等价默认入口），v2.6.5 移除；迁移时把 `table/core` 改为 `table` 即可。
 - **`gear` 图标重绘**：原「3/4 圆 + 三根短线」与 `refresh` 视觉同族、易被误认为刷新；改为 8 齿外轮廓 + 中心圆孔的标准齿轮，16 / 32 / 96px 下均可辨识。
 - **导航 landmark 宿主命名**：`oas-breadcrumb` / `oas-pagination` / `oas-anchor` / `oas-index-bar` / `oas-navigation-menu` 新增宿主 `aria-label` 优先转发到内部 navigation landmark，空值回退 i18n 默认名，便于同页多个导航地标注解区分。
 - **`oas-table` 表头对齐可配置**：新增表格级 `header-align` 与列级 `headerAlign` / `<oas-table-column header-align>`，支持 `follow`（默认，跟随列）/ `left` / `center` / `right` / `default`（浏览器默认）；`number` / `currency` 默认 `follow` 时右对齐，多级表头分组标题仍居中。
@@ -46,6 +47,7 @@
 
 ### 修复
 
+- **i18n / core 单例状态跨模块副本共享（link 双实例）**：`@oas-ui/i18n` 的 locale registry 与 `@oas-ui/core` 的 translator 钩子原先存在模块级变量里；`link:` / workspace 下解析出两份模块时，宿主 `setLocale()` 只更新其中一份，组件内置文案回落 raw key。现将状态挂到 `globalThis` 的版本化 `Symbol.for` 键（`@oas-ui/i18n/registry/v1`、`@oas-ui/core/translator/v1`），同一进程内所有副本共享 locale / translator；无需改 import 或新增公开 API。宿主仍建议用 `resolve.dedupe` / pnpm `overrides` 去重以减少重复包体。补双模块副本单测。
 - **`oas-diff-viewer` PageDown 步进**：按整屏可见行数移动（原先额外减 1 行），活动行仍自动滚入视口；文档补充 split 行 `data-op="replace"`、真实增删 op 在两侧单元格的定制约定。
 - **`oas-json-viewer` 复制反馈/深嵌套/同值回写**：`toolbar="false"` 时复制成功/失败改为右下角浮层提示（`part="copy-status"`，1.6s 自动隐藏），不再因工具栏隐藏而静默；超深嵌套建树/遍历栈溢出转为可恢复错误态（新增 locale key，不向宿主抛 `RangeError`），超深子树序列化失败派发 `oas-copy-error`；重复写同值 `text` / `expanded` 也强制刷新一次，修复受控回写边界。
 - **`oas-sidebar` footer 常驻**：`slot="footer"` 原先在滚动容器 `.panel` 内随内容滚走，长导航时页脚不可见。现改为 `position: sticky; bottom: 0` 钉在侧栏可视区底部（桌面与移动抽屉同一套），空 footer 经 `slotchange` 自动隐藏、不再占底部空白；补桌面/移动抽屉真实滚动几何回归。

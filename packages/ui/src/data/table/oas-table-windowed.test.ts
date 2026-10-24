@@ -2,6 +2,8 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { setLocale } from '@oas-ui/i18n'
 import '@oas-ui/i18n'
 import { OASTable } from './index.js'
+// v2.6.4 起默认入口不含编辑；本文件覆盖编辑交互，显式注册。
+import './edit/index.js'
 
 /**
  * windowed（服务端行窗口模式）机制测试。

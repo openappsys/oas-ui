@@ -173,7 +173,7 @@ In the column config, `fixed: 'left' | 'right'` makes that column's header and c
 
 Set `editable` to enable inline editing; mark editable columns with `editable: true` on the column config (`editor: 'input'` for text / `editor: 'select'` for a dropdown with `editOptions`), and `actions: true` renders an operation column (Edit / Save / Cancel buttons). Double-click a cell, or focus it and press Enter / F2, to start editing: Enter or blur submits, Esc cancels; submit emits `oas-edit` (`detail: { rowIndex, key, column, value }`), cancel emits `oas-edit-cancel`. Submitting an empty value restores the original (non-destructive by default).
 
-> **Inline editing ships with the main entry**: the main entry `@oas-ui/ui/data/table` already bundles the editing capability (import registers it) — no explicit import needed (the demos below use the full entry, which also includes it). If you want a lean core without the editing machinery, import the pure-core entry `@oas-ui/ui/data/table/core` instead — it omits the capability, so `<oas-table editable>` silently no-ops with a dev hint; explicitly `import '@oas-ui/ui/data/table/edit'` (import registers it) or switch back to the main entry. (The editor is the heaviest part of the table chain — the pure core saves about **one third**; exact figures vary by version — see the repo's `docs/perf-baseline.md`.)
+> **Inline editing is opt-in since v2.6.4**: the default entry `@oas-ui/ui/data/table` only provides the base table and **no longer bundles editing**. When using `editable` / `actions`, explicitly `import '@oas-ui/ui/data/table/edit'` (import registers it); otherwise editing silently no-ops with a dev hint. The full entry `@oas-ui/ui` and CDN family bundles still include editing (the demos below use the full entry, so no extra import is needed). `@oas-ui/ui/data/table/core` is a deprecated alias of the default entry since v2.6.4 and will be removed in v2.6.5 — do not use it in new code.
 
 Editable cells come with perceptible affordances: hovering or focusing (focus-visible) a cell reveals a subtle background tint and a pencil icon at the top-right (the icon never intercepts interaction), and the cell carries a `title` hint ("Double-click to edit"). Three ways to start editing: double-click, or focus the cell and press Enter / F2.
 
@@ -650,8 +650,8 @@ onMounted(() => {
   }
 
   // Inline editing demo: feedback
-  // (docs load the full entry @oas-ui/ui, which bundles the editing capability; consumers of the
-  //  pure-core entry data/table/core must explicitly `import '@oas-ui/ui/data/table/edit'` to
+  // (docs load the full entry @oas-ui/ui, which explicitly bundles editing; consumers of the
+  //  default entry data/table must explicitly `import '@oas-ui/ui/data/table/edit'` to
   //  enable editing — otherwise the table stays silently non-editable)
   const editTable = document.querySelector('#table-edit')
   editTable?.addEventListener('oas-edit', (e) => {

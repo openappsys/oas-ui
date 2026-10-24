@@ -21,8 +21,8 @@
  *   - 裸导入：发布产物只允许相对导入 + `@oas-ui/*` 工作区包；其余裸导入必须列进
  *     EXTERNAL_IMPORT_ALLOW（当前仅 `@oas-ui/ssr` 的 happy-dom）——否则图遍历会静默跳过、
  *     体积少算而不报红。改动例外须同步 docs/engineering.md「零第三方」口径。
- *   - `/core` 链退化：table/core gzip 必须严格小于主链 table，绝对值预算之外再锁相对关系。
  *   - 可选层零泄漏：theme 可选层文件 / 图标全量注册表不得进任何基础链闭包。
+ *   - `table/core` 自 v2.6.4 起为 deprecated 别名，不再单独计量（v2.6.5 移除）。
  *
  * 自测（不依赖已构建 dist，覆盖上述判定函数的红绿两侧）：
  *   `node scripts/perf/size.mjs --self-test`
@@ -235,17 +235,6 @@ function staticImportViolations(code, pkg) {
   return out
 }
 
-/** `/core` 链必须严格小于主链 table（同口径 gzip 字节），退化即返回错误文案 */
-function checkCoreChain(coreBytes, tableBytes) {
-  if (!Number.isFinite(coreBytes) || !Number.isFinite(tableBytes)) {
-    return `FAIL [core 链] 缺少体积数据：table/core=${coreBytes} / table=${tableBytes}`
-  }
-  if (coreBytes >= tableBytes) {
-    return `FAIL [core 链退化] table/core ${fmtKB(coreBytes)}（${coreBytes} B）≥ 主链 table ${fmtKB(tableBytes)}（${tableBytes} B）：/core 是主路径子集，必须严格小于主链`
-  }
-  return null
-}
-
 /** 自测：`node scripts/perf/size.mjs --self-test`（不跑体积测量；`pnpm perf:size` 会先跑它，判定函数红绿两侧因此进 CI） */
 function runSelfTest() {
   const results = []
@@ -280,12 +269,6 @@ function runSelfTest() {
     staticImportViolations('n.setAttribute("data-from", t.task.id)\nconst v = el.getAttribute("from")', 'ui').length,
     0,
   )
-  // 任务 B：/core 链必须小于主链
-  check('core 小于 table 通过', checkCoreChain(61 * 1024, 93 * 1024), null)
-  check('core 等于 table 报错', checkCoreChain(93 * 1024, 93 * 1024) !== null, true)
-  check('core 大于 table 报错', checkCoreChain(100 * 1024, 93 * 1024) !== null, true)
-  const message = checkCoreChain(100 * 1024, 93 * 1024) ?? ''
-  check('退化信息含两者数值', message.includes('100.0 KB') && message.includes('93.0 KB'), true)
 
   const failed = results.filter((r) => !r.ok)
   if (failed.length) {
@@ -433,7 +416,6 @@ console.log('\n=== 单组件按需引入链（入口 + 依赖静态 import 闭�
 const COMPONENT_ENTRIES = [
   { id: 'button', entry: 'basic/button', spec: '@oas-ui/ui/basic/button' },
   { id: 'table', entry: 'data/table', spec: '@oas-ui/ui/data/table' },
-  { id: 'tableCore', entry: 'data/table/core', spec: '@oas-ui/ui/data/table/core' },
   { id: 'tableAdvanced', entry: 'data/table/advanced', spec: '@oas-ui/ui/data/table/advanced' },
   { id: 'form', entry: 'form/form', spec: '@oas-ui/ui/form/form' },
   { id: 'gantt', entry: 'data/gantt', spec: '@oas-ui/ui/data/gantt' },
@@ -488,9 +470,9 @@ const BUDGETS = [
   {
     name: '@oas-ui/ui/data/table 链 gzip',
     get: () => componentMeasures.table.gzipBytes,
-    limit: 108 * 1024, // 108 KB（2026-10-08 重定档：图标库 opt-in 后实测 93.2 KB）
+    limit: 74 * 1024, // 74 KB（2026-10-24 重定档：默认入口去掉 edit 后实测 64.1 KB）
     basis:
-      '实测 gzip 93.2 KB（图标库 opt-in 后：链含 core+virtual-list+i18n+oas-pagination + 列导出/移动降级/编辑器依赖，但不再背全量图标 ~9 KB），上浮约 15% 定档 108 KB；前档 116 KB 定档于 2026-10-05（101 KB 实测）',
+      '实测 gzip 64.1 KB（v2.6.4 默认入口 = 基础表格，不含 edit；链含 core 骨架 + virtual-list + i18n + pagination + 列设置/导出/移动降级，不含编辑器族），上浮约 15% 定档 74 KB；前档 108 KB 为默认入口含 edit 口径',
   },
   {
     name: '@oas-ui/ui/form/form 链 gzip',
@@ -548,17 +530,10 @@ const BUDGETS = [
     basis: '实测 gzip 约 0.91 KB（皮肤层变量族：预设色板皮肤档；独立可选，不进 union），上浮定档 2 KB',
   },
   {
-    name: '@oas-ui/ui/data/table/core 链 gzip',
-    get: () => componentMeasures.tableCore.gzipBytes,
-    limit: 70 * 1024, // 70 KB（/core 纯核路径，2026-10-08 重定档：图标库 opt-in 后实测 60.9 KB）
-    basis:
-      '实测 gzip 61.3 KB（/core = 主路径减去能力子包 + 图标库 opt-in；须小于主链 table 93.2 KB，退化即报红），上浮约 15% 定档 70 KB',
-  },
-  {
     name: '@oas-ui/ui/data/table/advanced 链 gzip',
     get: () => componentMeasures.tableAdvanced.gzipBytes,
     limit: 6 * 1024, // 6 KB（2026-10-24 首次定档：实测 4.7 KB）
-    basis: '实测 gzip 4.7 KB（透视 / 公式 / 查询 / TSV 纯函数，无表单控件与 table 运行时依赖），上浮约 27% 定档 6 KB',
+    basis: '实测 gzip 4.9 KB（透视 / 公式 / 查询 / TSV 纯函数，无表单控件与 table 运行时依赖），上浮约 22% 定档 6 KB',
   },
 ]
 
@@ -586,18 +561,9 @@ for (const b of BUDGETS) {
   })
 }
 
-// ---------- 3.1 /core 链退化断言：table/core 必须严格小于主链 table ----------
-// 绝对值上限（70 KB）挡不住「core 也涨到接近主链」的退化；这里硬断言两者关系，
-// basis 文案里写明的「须小于主链」由此从注释变成可执行断言。
-const coreChainError = checkCoreChain(componentMeasures.tableCore.gzipBytes, componentMeasures.table.gzipBytes)
-if (coreChainError) {
-  fail = true
-  console.error(coreChainError)
-} else {
-  console.log(
-    `PASS [core 链] table/core ${fmtKB(componentMeasures.tableCore.gzipBytes)} < 主链 table ${fmtKB(componentMeasures.table.gzipBytes)}`,
-  )
-}
+// ---------- 3.1 /core 链 ----------
+// 自 v2.6.4 起 table/core 是默认入口的 deprecated 别名（v2.6.5 移除），不再单独计量；
+// 原先「core 严格小于 table」的断言随双入口语义一并退役，避免别名与主入口等量时误报。
 
 // ---------- 4. 写入基线（默认只测不写：基线是入库文件，见头部说明） ----------
 if (process.argv.includes('--update-baseline')) {

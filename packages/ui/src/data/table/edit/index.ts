@@ -13,12 +13,17 @@ import '../../../form/select/index.js'
  * import 即注册：本模块求值即把编辑能力 controller 工厂写入 table 能力注册表，
  * 后续构造的 <oas-table>（OASTableBase 遍历注册表注入）自动获得行内编辑能力。
  *
- * 主路径入口（data/table/index）已默认 import 本模块，其消费者无需显式引用；
- * 仅纯核入口（data/table/core）不含本能力——用到 `editable`/`actions` 配置时需显式
- * import 本模块（否则配置静默失效并 dev 告警一次，见 oas-table.ts 的 warnEditNotImported）。
- * 全量入口（@oas-ui/ui）与 CDN 数据族包同样已内含。
+ * 自 v2.6.4 起默认入口（data/table/index）**不含**本能力：使用 `editable`/`actions`
+ * 时需显式 import 本模块（否则配置静默失效并 dev 告警一次，见 oas-table.ts 的 warnEditNotImported）。
+ * 全量入口（@oas-ui/ui）与 CDN 数据族包显式包含本能力；`data/table/core` 是默认入口的
+ * deprecated 别名（v2.6.5 移除）。
  */
-registerTableCapability('edit', (host) => createEditController(host as HTMLElement & TableEditHost))
+/** 幂等注册编辑能力；`@oas-ui/ui` 全量入口显式调用，保证打包时不被 tree-shaking 丢弃 */
+export function registerTableEditCapability(): void {
+  registerTableCapability('edit', (host) => createEditController(host as HTMLElement & TableEditHost))
+}
+
+registerTableEditCapability()
 
 export { TableEditController, createEditController }
 export type { TableEditHost }

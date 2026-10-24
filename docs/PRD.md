@@ -118,7 +118,7 @@
 
 ### 功能定义
 
-新增独立子路径 `@oas-ui/ui/data/table/advanced`，提供纯函数/列工厂增强 `oas-table`，不注册自定义元素、不引入编辑与表单控件。主 `table` / `table/core` / `table/edit` 边界不变。
+新增独立子路径 `@oas-ui/ui/data/table/advanced`，提供纯函数/列工厂增强 `oas-table`，不注册自定义元素、不引入编辑与表单控件。主 `table` / `table/core` / `table/edit` 边界不变（v2.6.4 起 `table` 默认去 edit、`table/core` 转 deprecated 别名，见 v2.6.4 段）。
 
 ### 详细需求
 
@@ -136,6 +136,34 @@
 
 - 单测：透视聚合/合计、公式优先级与安全边界、查询嵌套/算子、TSV 转义。
 - `perf:size` 新增 advanced 链预算；docs zh/en 示例与 API 说明；无 table 运行时依赖（纯函数入口）。
+
+## v2.6.4：table 默认入口切换（未发布）✅
+
+### 功能定义
+
+`@oas-ui/ui/data/table` 从「基础表格 + 编辑」改为**基础表格**；编辑能力改为显式 `@oas-ui/ui/data/table/edit`。`@oas-ui/ui/data/table/core` 保留为 deprecated 别名，v2.6.5 删除。Pro 能力（format/view/range/history/detail）继续按 L3 子路径规划，默认不加载。
+
+### 详细需求
+
+- `table` 默认入口不 import edit，`editable` / `actions` 未补 edit 时静默失效 + dev 告警。
+- `table/edit` 保持 import 即注册；与 `table` / `table/core` 组合可用（core 为别名）。
+- `@oas-ui/ui` 全量入口、CDN 数据族仍显式包含 edit，行为不变。
+- `table/core` 为 `table` 的 re-export，JSDoc `@deprecated`，文档标注 v2.6.5 移除。
+- 默认入口 budget 按纯核实测重定档；移除 table/core 独立预算与 core<main 断言。
+
+### 非目标
+
+不新增 Pro 能力 UI；不改 `oas-table` 公开属性/事件；不改变全量入口能力集合。
+
+### 验收标准
+
+- entry/core-entry 测试：默认入口无 edit；显式 edit 后编辑可用；core alias 与默认入口同一构造器。
+- perf：table 默认链实测约 64 KB；`table` 链不包含 edit/Pro；全量入口仍含 edit。
+- docs zh/en、architecture、ROADMAP、CHANGELOG 同步；`api:check`/`llms:check` 通过。
+
+## v2.6.5：移除 table/core（计划）📋
+
+删除 `@oas-ui/ui/data/table/core` 与相关文档/预算/测试；迁移路径统一为 `@oas-ui/ui/data/table`（需要编辑时补 `table/edit`）。
 
 ## v2.6.3：date-picker 范围手输 + sidebar 行内容渲染 + barcode 扩展 ✅
 

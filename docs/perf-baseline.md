@@ -42,8 +42,8 @@
 | 组件   | 入口                        | 文件数 | gzip       |
 | ------ | --------------------------- | ------ | ---------- |
 | button | `@oas-ui/ui/basic/button` | 13     | 26.6 KB    |
-| table  | `@oas-ui/ui/data/table`   | 47     | 101.9 KB   |
-| table/core（纯核路径） | `@oas-ui/ui/data/table/core` | 27 | 66.9 KB |
+| table  | `@oas-ui/ui/data/table`   | 39     | 64.1 KB    |
+| table/advanced | `@oas-ui/ui/data/table/advanced` | 4 | 4.9 KB |
 | form   | `@oas-ui/ui/form/form`    | 11     | 26.0 KB    |
 | gantt  | `@oas-ui/ui/data/gantt`   | 18     | 61.1 KB    |
 
@@ -56,13 +56,13 @@
 
 ## 3. 自评摘要
 
-### 体积（2026-10-08）
+### 体积（2026-10-24）
 
 | 口径           | 实测                                         | 自评                                                                                        |
 | -------------- | -------------------------------------------- | ------------------------------------------------------------------------------------------- |
 | 全量           | cdn.js 731.6 KB；全量入口链 1,063.7 KB（上界） | 天花板 770/1140 KB 内随能力增长，预警线 693/1026 KB（§4）                                     |
 | 按需（button） | 26.6 KB（含 core；图标仅精确 path）          | 预算 29 KB 的 **86%**；图标库 opt-in 后卸掉整套图标（34.1→26.6 KB）                           |
-| 按需（table）  | 101.9 KB（链含 core + virtual-list + i18n + 分页 + 导出/移动降级/编辑器通道） | 预算 108 KB 的 86%；`/core` 纯核路径为瘦身消费者预留（见 architecture §3.1）              |
+| 按需（table）  | 64.1 KB（默认入口不含 edit；链含 core + virtual-list + i18n + 分页 + 导出/移动降级/列设置） | 预算 74 KB 的 87%；需要编辑时显式引 `table/edit`（v2.6.4 起）                                |
 | 主题           | 1.7 KB gzip（index.css）                     | 一套语义 token 变量即全部主题成本；组件样式内联进组件，无独立样式文件                        |
 | 可选运行时     | glass-fluid.js 8.1 KB gzip（独立档）         | 预算 8.5 KB 的 92%（已达 WARN 预警线）；独立可选、不进 union                                |
 | 图标集         | 组件链只含精确 path；全量集 13.0 KB gzip     | 图标库 opt-in：全量入口自动注册（开箱即用），按需链不背整套                                   |
@@ -87,7 +87,7 @@
 1. **体积**：按需口径（26.0~61.1 KB/组件）保持轻量；全量口径在两层制预算内随组件能力增长，纪律由单组件链绝对值预算守住。
 2. **渲染**：合成环境数据仅作退化监测；真实浏览器基线待补。
 3. **已完成 / 已知优化方向**：
-   - **图标库 opt-in（已完成 2026-10-08）**：全量集从组件链解耦——组件链只含自身所需图标 path（不再背整套 47 图标），全量入口 `@oas-ui/ui` 自动注册保持开箱即用；按需模式用内置图名需 `import '@oas-ui/icons/register'` 一次。收益：button 34.1→25.0、table 101.6→101.9 KB；
+   - **图标库 opt-in（已完成 2026-10-08）**：全量集从组件链解耦——组件链只含自身所需图标 path（不再背整套 47 图标），全量入口 `@oas-ui/ui` 自动注册保持开箱即用；按需模式用内置图名需 `import '@oas-ui/icons/register'` 一次。收益：button 34.1→25.0、table 101.6→101.9 KB（v2.6.4 默认入口去 edit 后 64.1 KB）；
    - 提供官方按需打包配置示例，帮助消费者吃到 tree-shaking；
    - 新 L3 能力子包（大表面能力）按同机制以子路径隔离体积（见 `docs/architecture.md` §3.1）。
 
@@ -107,16 +107,17 @@
 | dist/cdn.js               | 731.6 KB  | 770 KB（天花板）      | 2026-10-07 定档：预留后续版本能力增长空间；预警线 693 KB                                     |
 | @oas-ui/ui 全量入口链   | 1,063.7 KB  | 1140 KB（天花板）     | cdn 天花板 × 链/单文件实测比 ≈1.73（逐文件求和上界）；预警线 1026 KB                          |
 | button 链                 | 26.6 KB   | 30 KB（绝对值）       | 2026-10-08 重定档（图标库 opt-in 卸掉整套图标）；实测上浮约 15%                                |
-| table 链                  | 101.9 KB   | 108 KB（绝对值）      | 2026-10-08 重定档（同上）；含 core + virtual-list + i18n + 分页 + 导出/移动降级/编辑器通道      |
+| table 链                  | 64.1 KB   | 74 KB（绝对值）       | 2026-10-24 重定档（v2.6.4 默认入口不含 edit：core + virtual-list + i18n + 分页 + 导出/移动降级/列设置） |
 | form 链                   | 26.0 KB   | 29 KB（绝对值）       | 实测上浮约 15%                                                                                |
 | gantt 链                  | 61.1 KB   | 70 KB（绝对值）       | v2.6.2 重定档（任务管理/约束/日历/列虚拟化等能力增量；gantt + core + i18n + virtual-list）    |
 | @oas-ui/theme index.css | 1.7 KB    | 4 KB（绝对值）        | 实测上浮约 14%（预设 -text token + dark 语义色修复后）                                        |
 | @oas-ui/theme glass-fluid.js | 8.1 KB | 8.5 KB（绝对值）      | 可选运行时独立档（注册表 + 注入样式表 + 指针高光；已达 WARN 预警线，新增大改前先瘦身评估）    |
 | @oas-ui/theme glass.css   | 3.0 KB    | 6 KB（绝对值）        | 可选玻璃静态层独立档（surface 半透明 token + 折光边 + 阴影）                                   |
 | @oas-ui/theme skins.css   | 0.9 KB    | 2 KB（绝对值）        | 可选皮肤层独立档（预设色板皮肤变量族）                                                        |
-| @oas-ui/ui/data/table/core 链 | 66.9 KB | 70 KB（绝对值）  | `/core` 纯核路径独立档（主路径减能力 + 图标 opt-in；须小于主链 table 101.9 KB）                 |
 
-> **Headroom（v2.6.2 实测）**：CDN 38.7 KB、全量入口 76.6 KB、table 6.1 KB、table/core 3.0 KB、theme index 2.3 KB、glass-fluid 0.4 KB。下一版新增能力前先做预算评审；低于 3% headroom 的入口默认不加功能，先做瘦身或独立子包。
+> `@oas-ui/ui/data/table/core` 自 v2.6.4 起是默认入口的 deprecated 别名（v2.6.5 移除），不再单独计量。
+
+> **Headroom（v2.6.4 实测）**：CDN 38.7 KB、全量入口 76.6 KB、table 9.9 KB、theme index 2.3 KB、glass-fluid 0.4 KB。下一版新增能力前先做预算评审；低于 3% headroom 的入口默认不加功能，先做瘦身或独立子包。
 
 > 规则：**新增 L3 能力子包 / 可选运行时须配独立绝对值档**（见 `docs/architecture.md` §3.1）；可选层文件不参与全量天花板（不进 union，由 §4 泄漏断言保证）。另有**图标全量注册表零进入**断言：`packages/icons/dist/registry.js` 不得出现在任何基础链闭包（锁死"按需链不背整套图标"）。
 

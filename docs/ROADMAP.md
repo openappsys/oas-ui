@@ -11,7 +11,19 @@
 | **N03 Markdown 渲染器** | 独立项目 `oas-markdown`：安全、零依赖 Markdown → HTML（标题/段落/引用/列表/代码/行内/链接图片，HTML 转义 + URL 白名单）；代码高亮 / 目录锚点 / 流式渲染留后续 | 🚧 v0.1 已启动（独立仓） |
 | **N04 日志 ANSI（可行子集）** | `oas-log` 新增 opt-in `ansi`：16 / 256 / truecolor 前景背景、常用样式、非 SGR 控制序列剔除、`light-dark()` 双主题感知对比度校正；不做终端模拟 / PTY / OSC 8 | ✅ 已完成（未发版） |
 | **N05 文件浏览器 recipe** | `oas-tree directory` + 宿主工具栏 / 面包屑 / 选中路径 / `oas-node-rename` 回写组合方案（zh / en 文档）；不新建独立文件树组件 | ✅ 已完成（未发版） |
-| **N06 数据网格高级能力** | 新增 `@oas-ui/ui/data/table/advanced` 纯函数入口：透视、安全公式列、查询构建器、TSV；主 `table` / `table/core` / `table/edit` 边界不变，条件格式 / 视图状态 / 撤销重做列为后续候选 | ✅ 已完成（未发版） |
+| **N06 数据网格高级能力** | 新增 `@oas-ui/ui/data/table/advanced` 纯函数入口：透视、安全公式列、查询构建器、TSV；主 `table` / `table/edit` 边界不变（v2.6.4 起 `table/core` 为 deprecated 别名），条件格式 / 视图状态 / 撤销重做列为后续候选 | ✅ 已完成（未发版） |
+
+## v2.6.4（未发布）
+
+| 范围 | 内容 | 状态 |
+| --- | --- | --- |
+| **table 默认入口语义切换** | `@oas-ui/ui/data/table` 改为基础表格（不含 edit）；编辑改为显式 `@oas-ui/ui/data/table/edit`；`@oas-ui/ui` 全量入口保留 edit；`table/core` 标记 deprecated，v2.6.5 移除 | ✅ 已完成（未发版） |
+
+## v2.6.5（计划）
+
+| 范围 | 内容 | 状态 |
+| --- | --- | --- |
+| **移除 table/core 别名** | 删除 `@oas-ui/ui/data/table/core`；迁移路径统一为 `@oas-ui/ui/data/table` | 📋 计划 |
 
 ## v2.6.3（已发布）
 

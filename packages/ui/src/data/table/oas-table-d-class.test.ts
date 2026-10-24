@@ -2,6 +2,8 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { setLocale } from '@oas-ui/i18n'
 import '@oas-ui/i18n'
 import { OASTable } from './index.js'
+// v2.6.4 起默认入口不含编辑；本文件覆盖编辑交互，显式注册。
+import './edit/index.js'
 
 // D 类能力缺口（oas-table）：
 // - D9 `grid-navigation`：role=grid 语义 + 单停靠点 Tab 序 + 方向键漫游（Home/End/PageUp-Down）

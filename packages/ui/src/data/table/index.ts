@@ -1,6 +1,5 @@
-// 主路径默认含行内编辑能力（能力包 import 即注册，与全量入口/族包行为一致）；
-// 纯核瘦身走 `@oas-ui/ui/data/table/core` 子路径（不含能力，见 ./core/index.ts）。
-import './edit/index.js'
+// 默认入口 = 基础表格（不含编辑能力）；编辑能力在 `@oas-ui/ui/data/table/edit` 按需 import。
+// `@oas-ui/ui/data/table/core` 自 v2.6.4 起为 deprecated 别名（等价本入口），v2.6.5 移除。
 import '@oas-ui/i18n'
 import '../../navigation/pagination/index.js'
 import { OASTableColumn } from './oas-table-column.js'
@@ -24,9 +23,10 @@ import { registerTableCapability, registeredTableCapabilities, hasTableCapabilit
  * 组装后的 OASTable：核心骨架 + 能力控制器。
  * 当前 = 核心骨架 + 列设置能力（列拖拽重排 + 列宽调整，经 ReactiveController 注入）。
  *
- * 行内编辑（editable/editor/actions）为独立能力包（按需子路径
- * `@oas-ui/ui/data/table/edit`，import 即注册）：核心入口不依赖它——未 import 时
- * 编辑配置静默失效并 dev 告警。全量入口（@oas-ui/ui）与 CDN 数据族包已内含编辑能力。
+ * 默认入口自 v2.6.4 起不再内含行内编辑：编辑（editable/editor/actions）是独立能力包
+ * `@oas-ui/ui/data/table/edit`，按需 import；未 import 时编辑配置静默失效并 dev 告警。
+ * 全量入口（@oas-ui/ui）与 CDN 数据族包仍显式包含编辑能力。
+ * `@oas-ui/ui/data/table/core` 为 deprecated 别名（等价本入口），v2.6.5 移除。
  */
 class OASTable extends OASTableBase {
   private colSettings: ReturnType<typeof createColumnSettingsController>

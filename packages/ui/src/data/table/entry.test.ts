@@ -1,13 +1,13 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { setLocale } from '@oas-ui/i18n'
 import { OASTable } from './index.js'
+// v2.6.4 起默认入口不含编辑；本文件验证「默认 table + 显式 edit」组合。
+import './edit/index.js'
 
-// 本文件验证「主路径入口语义」（v2.5.0 L3 子路径语义修正）：
-// 主路径 index.js 顶部 import 编辑能力包（import 即注册），因此经
-// `@oas-ui/ui/data/table` 引入时行内编辑能力默认就位——editable / actions 配置
-// 直接可用，无需再显式引能力包（恢复 2.4.0 语义）。
-// 纯核（/core 子路径不含能力）的边界由 ./core-entry.test.ts 单独覆盖。
-// vitest 按文件隔离模块图，本文件独享一份「index 即含能力」的注册表起点。
+// 本文件验证「默认入口 + 显式编辑能力」：`@oas-ui/ui/data/table` 提供基础表格，
+// `@oas-ui/ui/data/table/edit` import 即注册编辑能力；二者组合后 editable / actions 直接可用。
+// 纯默认入口（无 edit）的边界由 ./core-entry.test.ts（core 现为 deprecated alias）覆盖。
+// vitest 按文件隔离模块图，本文件显式 import edit 会注册能力，不能与「无 edit」断言同文件。
 
 const EDIT_COLUMNS = JSON.stringify([
   { key: 'name', title: '姓名', editable: true },
@@ -29,7 +29,7 @@ function cells(el: OASTable): HTMLElement[] {
   return [...el.shadowRoot!.querySelectorAll('tr.row td')] as HTMLElement[]
 }
 
-describe('OASTable 主路径入口（index 内含编辑能力）', () => {
+describe('OASTable 默认入口 + 显式编辑能力（index + edit）', () => {
   beforeEach(() => {
     document.body.innerHTML = ''
     setLocale('zh-CN')

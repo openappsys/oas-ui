@@ -145,17 +145,11 @@ For a single event use `useOasEvent<Detail>(ref, 'oas-submit', handler)`. Both h
 | `oas-color-picker` | 2D color field / gradient designer (`mode="gradient"`) | `@oas-ui/ui/form/color-picker/designer` |
 
 ```ts
-import '@oas-ui/ui/data/table' // the main entry already includes inline editing
+import '@oas-ui/ui/data/table' // base table (no inline editing)
+import '@oas-ui/ui/data/table/edit' // add inline editing when needed
 ```
 
-If you prefer a lean core, import the new `/core` path of these components instead (e.g. `@oas-ui/ui/data/table/core`) — it omits the capabilities above, so the related options silently no-op with a dev-mode warning once; add the capability sub-path explicitly (import registers it) or switch back to the main entry when you need them:
-
-```ts
-import '@oas-ui/ui/data/table/core' // pure core: no inline editing
-import '@oas-ui/ui/data/table/edit' // explicit capability import (core path only)
-```
-
-Import order does not matter: capabilities registered later are retroactively applied to **already-mounted** elements. The full entry `@oas-ui/ui` and the CDN family bundles already include every capability — no extra imports needed there.
+Since v2.6.4 the default entry only provides the base form; heavy capabilities are opt-in. `@oas-ui/ui/data/table/core` is a deprecated alias of the default entry (removed in v2.6.5) — do not use it in new code. Import order does not matter: capabilities registered later are retroactively applied to **already-mounted** elements. The full entry `@oas-ui/ui` and the CDN family bundles already include every capability — no extra imports needed there.
 
 > Want to see it live? The repo ships a [Playground](https://github.com/openappsys/oas-ui/tree/main/packages/playground) for React / Vue — run `pnpm dev:react` / `pnpm dev:vue` inside `packages/playground` (or `pnpm --filter @oas-ui/playground dev:react` from the repo root).
 

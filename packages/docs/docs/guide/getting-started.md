@@ -145,17 +145,11 @@ function Demo() {
 | `oas-color-picker` | 2D 色域 / 渐变设计器（`mode="gradient"`） | `@oas-ui/ui/form/color-picker/designer` |
 
 ```ts
-import '@oas-ui/ui/data/table' // 主路径已内含行内编辑能力
+import '@oas-ui/ui/data/table' // 基础表格（不含行内编辑）
+import '@oas-ui/ui/data/table/edit' // 需要行内编辑时显式引入
 ```
 
-偏好纯核瘦身的消费者可改用各组件新增的 `/core` 纯核路径（如 `@oas-ui/ui/data/table/core`）——它不含上述能力，对应配置静默失效并在 dev 下告警一次；需要时显式补引能力子包（import 即注册）或换回主路径：
-
-```ts
-import '@oas-ui/ui/data/table/core' // 纯核：不含行内编辑
-import '@oas-ui/ui/data/table/edit' // 显式补引能力（仅 core 路径需要）
-```
-
-引入顺序随意：能力注册对**已挂载**的组件元素也会自动补齐（晚加入自愈）。全量入口 `@oas-ui/ui` 与 CDN 族包已内含全部能力，无需额外引用。
+自 v2.6.4 起默认入口只含基础形态，重型能力按需补引；`@oas-ui/ui/data/table/core` 是默认入口的 deprecated 别名（v2.6.5 移除），新代码不要使用。引入顺序随意：能力注册对**已挂载**的组件元素也会自动补齐（晚加入自愈）。全量入口 `@oas-ui/ui` 与 CDN 族包已内含全部能力，无需额外引用。
 
 > 想看实际效果？仓库里有搭配使用 React / Vue 的 [Playground](https://github.com/openappsys/oas-ui/tree/main/packages/playground)，在 `packages/playground` 目录下 `pnpm dev:react` / `pnpm dev:vue` 即可本地运行（或在仓库根目录用 `pnpm --filter @oas-ui/playground dev:react`）。
 

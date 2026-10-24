@@ -173,7 +173,7 @@
 
 设置 `editable` 开启行内编辑，列配置 `editable: true` 标记可编辑列（`editor: 'input'` 文本输入 / `editor: 'select'` 下拉选择 + `editOptions`），`actions: true` 渲染操作列（编辑/保存/取消按钮）。双击单元格或聚焦后按 Enter / F2 进入编辑：Enter 或失焦提交、Esc 取消；提交派发 `oas-edit`（`detail: { rowIndex, key, column, value }`），取消派发 `oas-edit-cancel`。空值提交默认还原旧值（非破坏）。
 
-> **行内编辑能力（主路径已默认内含）**：主路径 `@oas-ui/ui/data/table` 已内置编辑能力（import 即注册），无需显式引用（下方 demo 走全量入口同样已内含）。若想保留不带编辑 machinery 的纯核瘦身，可改从纯核入口 `@oas-ui/ui/data/table/core` 引入——它不含该能力，此时 `<oas-table editable>` 静默失效并 dev 告警，需显式 `import '@oas-ui/ui/data/table/edit'`（import 即注册）或换回主路径。（编辑器是 table 链最重的一块，改纯核约省**三分之一**；具体体积随版本变化，见仓库 `docs/perf-baseline.md`。）
+> **行内编辑能力（自 v2.6.4 起按需引入）**：默认入口 `@oas-ui/ui/data/table` 只含基础表格，**不再内置编辑**；使用 `editable` / `actions` 时需显式 `import '@oas-ui/ui/data/table/edit'`（import 即注册），否则编辑配置静默失效并 dev 告警。全量入口 `@oas-ui/ui` 与 CDN 数据族包仍内含编辑能力（下方 demo 走全量入口，无需额外 import）。`@oas-ui/ui/data/table/core` 自 v2.6.4 起是默认入口的 deprecated 别名（v2.6.5 移除），新代码不要再使用。
 
 可编辑单元格自带可感知线索：hover 或键盘聚焦（focus-visible）时显示淡底色与右上角铅笔图标（图标不拦截交互），悬停有 `title` 提示「双击编辑」；三种方式进入编辑——双击、聚焦后按 Enter、聚焦后按 F2。
 
@@ -647,7 +647,7 @@ onMounted(() => {
   }
 
   // 行内编辑 demo：编辑反馈
-  // （docs 页走全量入口 @oas-ui/ui，编辑能力已内含；纯核入口 data/table/core 消费者
+  // （docs 页走全量入口 @oas-ui/ui，编辑能力已显式内含；默认入口 data/table 消费者
   //   需显式 `import '@oas-ui/ui/data/table/edit'` 后编辑能力才会启用，否则表格静默不可编辑）
   const editTable = document.querySelector('#table-edit')
   editTable?.addEventListener('oas-edit', (e) => {
