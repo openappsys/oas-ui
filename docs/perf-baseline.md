@@ -42,13 +42,13 @@
 | 组件   | 入口                        | 文件数 | gzip       |
 | ------ | --------------------------- | ------ | ---------- |
 | button | `@oas-ui/ui/basic/button` | 13     | 26.6 KB    |
-| table  | `@oas-ui/ui/data/table`   | 29     | 65.2 KB    |
-| table/advanced | `@oas-ui/ui/data/table/advanced` | 8 | 6.9 KB |
+| table  | `@oas-ui/ui/data/table`   | 29     | 66.2 KB    |
+| table/advanced | `@oas-ui/ui/data/table/advanced` | 8 | 7.0 KB |
 | table/format | `@oas-ui/ui/data/table/format` | 5 | 4.7 KB |
-| table/view | `@oas-ui/ui/data/table/view` | 1 | 0.6 KB |
-| table/range | `@oas-ui/ui/data/table/range` | 4 | 5.2 KB |
-| table/history | `@oas-ui/ui/data/table/history` | 4 | 2.9 KB |
-| table/detail | `@oas-ui/ui/data/table/detail` | 3 | 2.9 KB |
+| table/view | `@oas-ui/ui/data/table/view` | 1 | 1.0 KB |
+| table/range | `@oas-ui/ui/data/table/range` | 6 | 11.6 KB |
+| table/history | `@oas-ui/ui/data/table/history` | 4 | 3.4 KB |
+| table/detail | `@oas-ui/ui/data/table/detail` | 3 | 3.4 KB |
 | form   | `@oas-ui/ui/form/form`    | 11     | 26.0 KB    |
 | gantt  | `@oas-ui/ui/data/gantt`   | 18     | 61.1 KB    |
 
@@ -67,7 +67,7 @@
 | -------------- | -------------------------------------------- | ------------------------------------------------------------------------------------------- |
 | 全量           | cdn.js 731.6 KB；全量入口链 1,063.7 KB（上界） | 天花板 770/1140 KB 内随能力增长，预警线 693/1026 KB（§4）                                     |
 | 按需（button） | 26.6 KB（含 core；图标仅精确 path）          | 预算 29 KB 的 **86%**；图标库 opt-in 后卸掉整套图标（34.1→26.6 KB）                           |
-| 按需（table）  | 64.1 KB（默认入口不含 edit；链含 core + virtual-list + i18n + 分页 + 导出/移动降级/列设置） | 预算 74 KB 的 87%；需要编辑时显式引 `table/edit`（v2.6.4 起）                                |
+| 按需（table）  | 66.2 KB（默认入口不含 edit；链含 core + virtual-list + i18n + 分页 + 导出/移动降级/列设置） | 预算 74 KB 的 89%；需要编辑时显式引 `table/edit`（v2.6.4 起）                                |
 | 主题           | 1.7 KB gzip（index.css）                     | 一套语义 token 变量即全部主题成本；组件样式内联进组件，无独立样式文件                        |
 | 可选运行时     | glass-fluid.js 8.1 KB gzip（独立档）         | 预算 8.5 KB 的 92%（已达 WARN 预警线）；独立可选、不进 union                                |
 | 图标集         | 组件链只含精确 path；全量集 13.0 KB gzip     | 图标库 opt-in：全量入口自动注册（开箱即用），按需链不背整套                                   |
@@ -112,7 +112,7 @@
 | dist/cdn.js               | 731.6 KB  | 770 KB（天花板）      | 2026-10-07 定档：预留后续版本能力增长空间；预警线 693 KB                                     |
 | @oas-ui/ui 全量入口链   | 1,063.7 KB  | 1140 KB（天花板）     | cdn 天花板 × 链/单文件实测比 ≈1.73（逐文件求和上界）；预警线 1026 KB                          |
 | button 链                 | 26.6 KB   | 30 KB（绝对值）       | 2026-10-08 重定档（图标库 opt-in 卸掉整套图标）；实测上浮约 15%                                |
-| table 链                  | 65.2 KB   | 74 KB（绝对值）       | 2026-10-24 重定档（v2.6.4 默认入口不含 edit：core + virtual-list + i18n + 分页 + 导出/移动降级/列设置） |
+| table 链                  | 66.2 KB   | 74 KB（绝对值）       | 2026-10-24 重定档（v2.6.4 默认入口不含 edit：core + virtual-list + i18n + 分页 + 导出/移动降级/列设置） |
 | form 链                   | 26.0 KB   | 29 KB（绝对值）       | 实测上浮约 15%                                                                                |
 | gantt 链                  | 61.1 KB   | 70 KB（绝对值）       | v2.6.2 重定档（任务管理/约束/日历/列虚拟化等能力增量；gantt + core + i18n + virtual-list）    |
 | @oas-ui/theme index.css | 1.7 KB    | 4 KB（绝对值）        | 实测上浮约 14%（预设 -text token + dark 语义色修复后）                                        |

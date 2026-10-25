@@ -1,6 +1,9 @@
 import { createHistory, createSequenceEntry, type HistoryEntry, type HistoryStack } from '../advanced/history.js'
 import { rowKeyValue } from '../oas-table-row-key.js'
 import { isInteractiveEvent } from '../oas-table-interactive.js'
+import type { RangeWriteChange, RangeWriteDetail } from '../oas-table-range-write.js'
+
+export type { RangeWriteChange, RangeWriteDetail } from '../oas-table-range-write.js'
 
 export interface HistoryOptions {
   /** 监听表格 shadow 内的 Ctrl/Cmd+Z / Ctrl/Cmd+Shift+Z / Ctrl+Y（默认开启） */
@@ -10,25 +13,6 @@ export interface HistoryOptions {
   rangeWrites?: boolean
   /** windowed 表格也自动记录（默认关闭；受控 edit-controlled 始终不自动记录） */
   windowed?: boolean
-}
-
-/** `oas-range-write` 单格变更：宿主已把 value 写入数据，撤销需要恢复 oldValue / oldRawValue */
-export interface RangeWriteChange {
-  /** 行键（按 row-key 属性定位数据行） */
-  key: string
-  column: string
-  /** 已写入的新值（保留原始类型） */
-  value: unknown
-  /** 写入前的展示值（字符串）；oldValue 与 oldRawValue 都缺省的变更跳过不记录 */
-  oldValue?: string
-  /** 写入前的原始类型值（number / boolean / string[] 等），撤销精确回写 */
-  oldRawValue?: unknown
-}
-
-/** `oas-range-write` 事件契约：range 能力在宿主完成批量写入后派发，history 据此合成一条 undo/redo 事务 */
-export interface RangeWriteDetail {
-  kind: 'paste' | 'cut' | 'fill'
-  changes: RangeWriteChange[]
 }
 
 interface HistoryHost extends HTMLElement {
@@ -201,6 +185,14 @@ function cellCommand(host: HistoryHost, snapshot: EditDetail): HistoryEntry {
   }
 }
 
+function sameRawValue(a: unknown, b: unknown): boolean {
+  if (Object.is(a, b)) return true
+  if (Array.isArray(a) && Array.isArray(b)) {
+    return a.length === b.length && a.every((value, index) => Object.is(value, b[index]))
+  }
+  return false
+}
+
 /**
  * 启用编辑历史（默认记录非受控 `oas-edit` 与 `oas-range-write`；受控编辑 edit-controlled 跳过）。
  * 键盘快捷键作用于表格 shadow 内，输入框聚焦时不拦截。
@@ -236,7 +228,7 @@ export function enableHistory(table: HTMLElement, options: HistoryOptions = {}):
       const hasOldRaw = Object.prototype.hasOwnProperty.call(change, 'oldRawValue')
       // 无旧值无法还原；与 oas-edit 同口径跳过无变化单元格（避免大面积无差别回写）
       if (change.oldValue == null && !hasOldRaw) continue
-      if (change.oldValue === change.value) continue
+      if (hasOldRaw ? sameRawValue(change.oldRawValue, change.value) : change.oldValue === change.value) continue
       commands.push(cellCommand(host, { ...change }))
     }
     if (commands.length === 0) return

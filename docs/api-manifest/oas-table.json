@@ -292,6 +292,11 @@
       "description": "当前全部列定义（含组列；表格基础 API，能力 controller / 宿主可读）"
     },
     {
+      "name": "getDisplaySnapshot",
+      "signature": "getDisplaySnapshot(): TableDisplaySnapshot | null",
+      "description": "展示集只读快照：供 range 等能力按行键解析离窗坐标与扁平滚动位置；map 复用缓存，调用方不得修改"
+    },
+    {
       "name": "translateText",
       "signature": "translateText(key: string, params?: Record<string, string | number>): string",
       "description": "翻译内置文案（就近 config-provider / locale；能力 controller 与外部自定义模板经此取词）。"

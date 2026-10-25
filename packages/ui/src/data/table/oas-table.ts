@@ -1245,6 +1245,8 @@ export class OASTableBase extends OASElement {
     display: FlatRow[]
     ordinals: number[]
     logicalRows: number
+    /** range 首次请求时惰性构建；默认 table 不为 Pro 能力额外分配索引 */
+    metadata?: TableDisplaySnapshot
   } | null = null
   /** 汇总值缓存：scope + flat 来源键 + 配置签名 → computeSummary 结果。
       数据/筛选/分组未变、仅选择变化时不重算（选择不参与 sum/avg/count 聚合） */
@@ -1794,6 +1796,26 @@ export class OASTableBase extends OASElement {
       if (display[i]!.kind === 'data') ord++
     }
     return { ordinals, logicalRows: ord }
+  }
+
+  /** 展示集结构元数据：行键 → 数据行序 / 扁平滚动序；只在 visibleFlat 重建时计算一次 */
+  private computeDisplayMetadata(display: FlatRow[], rowKey: string, ordinals: number[]): TableDisplaySnapshot {
+    const rowIndexByKey = new Map<string, number>()
+    const flatIndexByKey = new Map<string, number>()
+    const keysByIndex: string[] = []
+    const keys: string[] = []
+    const offset = this.windowedOn() ? this._winMode.windowStart : 0
+    for (let index = 0; index < display.length; index++) {
+      const flat = display[index]!
+      if (flat.kind !== 'data') continue
+      const key = rowKeyValue(flat.row, rowKey)
+      const absolute = ordinals[index]! + offset
+      if (!rowIndexByKey.has(key)) rowIndexByKey.set(key, absolute)
+      if (!flatIndexByKey.has(key)) flatIndexByKey.set(key, this.windowedOn() ? absolute : index)
+      if (keysByIndex[absolute] === undefined) keysByIndex[absolute] = key
+      keys.push(key)
+    }
+    return { fingerprint: keys.join('\u0001'), rowIndexByKey, flatIndexByKey, flatCount: display.length, keysByIndex }
   }
 
   /**
@@ -2867,6 +2889,14 @@ export class OASTableBase extends OASElement {
   /** 当前全部列定义（含组列；表格基础 API，能力 controller / 宿主可读） */
   getColumns(): TableColumn[] {
     return this._columns
+  }
+
+  /** 展示集只读快照：供 range 等能力按行键解析离窗坐标与扁平滚动位置；map 复用缓存，调用方不得修改 */
+  getDisplaySnapshot(): TableDisplaySnapshot | null {
+    const cache = this.visibleCache
+    if (!cache) return null
+    cache.metadata ??= this.computeDisplayMetadata(cache.display, this.getAttr('row-key', 'key'), cache.ordinals)
+    return cache.metadata
   }
 
   /** 翻译内置文案（就近 config-provider / locale；能力 controller 与外部自定义模板经此取词）。
@@ -4045,14 +4075,14 @@ export class OASTableBase extends OASElement {
   }
 
   /**
-   * windowed 重渲染前的焦点锚点捕获（I3）：update / 滚动帧清空 tbody 会连带拆掉聚焦单元格，
+   * windowed 与本地虚拟重渲染前的焦点锚点捕获（I3）：update / 滚动帧清空 tbody 会连带拆掉聚焦单元格，
    * 宿主回填切片（window-start / data 变化）后焦点曾静默丢失。记录聚焦行的**绝对行键**
    * （row-key 值，缺失回落绝对行号）与矩阵列号。仅捕获网格单元格焦点（TD）——行内编辑器 /
    * 控件焦点不在捕获范围（其取消语义由 settleEdit / 既有渲染管线承担）。
    */
   private captureWindowedFocusAnchor(): void {
     this.focusAnchor = null
-    if (!this.windowedOn()) return
+    if (!this.windowedOn() && !this.isVirtual()) return
     const focused = this.shadow.activeElement as HTMLElement | null
     if (!focused || focused.tagName !== 'TD') return
     const tr = focused.closest('tr.row') as HTMLTableRowElement | null
@@ -4083,7 +4113,7 @@ export class OASTableBase extends OASElement {
   private restoreWindowedFocusAnchor(scrollFrame: boolean): void {
     const anchor = this.focusAnchor
     this.focusAnchor = null
-    if (!anchor || !this.hasAttr('grid-navigation')) return
+    if (!anchor) return
     const rows = this.dragRows()
     // 行定位优先按 row-key 值（数据语义稳定，排序/换窗后仍成立）；无 row-key 命中回落绝对行号
     let row = anchor.key !== '' ? rows.findIndex((tr) => tr.getAttribute('data-key') === anchor.key) : -1
@@ -4091,15 +4121,23 @@ export class OASTableBase extends OASElement {
     if (row < 0) return
     const td = this.gridCellAt(row, anchor.col)
     if (!td) return
-    if (this.shadow.activeElement !== td) {
-      if (scrollFrame) {
-        td.focus({ preventScroll: true })
-      } else {
-        td.focus()
-        this.scrollCellIntoView(td)
+    // 非 grid-navigation 的普通 TD 默认不可聚焦；保留 -1 作为程序聚焦入口（不增加 Tab 停靠点）
+    if (!td.hasAttribute('tabindex')) td.tabIndex = -1
+    try {
+      if (this.shadow.activeElement !== td) {
+        // range 等能力可识别系统恢复聚焦，避免把它当用户导航而重置多格选区
+        td.setAttribute('data-oas-focus-restore', '')
+        if (scrollFrame) {
+          td.focus({ preventScroll: true })
+        } else {
+          td.focus()
+          this.scrollCellIntoView(td)
+        }
       }
+    } finally {
+      td.removeAttribute('data-oas-focus-restore')
     }
-    this.gridPos = { row, col: anchor.col }
+    if (this.hasAttr('grid-navigation')) this.gridPos = { row, col: anchor.col }
   }
 
   /** 可导航单元格矩阵：当前渲染的数据行 × 该行 td 列表（column-virtual 占位格不入矩阵——
@@ -5112,6 +5150,15 @@ function buildBadgeNode(label: string, color?: string): HTMLElement {
     badge.style.setProperty('--_badge-border', `color-mix(in srgb, ${color} 40%, transparent)`)
   }
   return badge
+}
+
+/** 展示集只读快照（windowed 下索引为全量绝对行号；map 复用缓存，调用方不得修改） */
+export interface TableDisplaySnapshot {
+  fingerprint: string
+  rowIndexByKey: ReadonlyMap<string, number>
+  flatIndexByKey: ReadonlyMap<string, number>
+  flatCount: number
+  keysByIndex: readonly string[]
 }
 
 /** 扁平行：树形/可展开行/分节头统一渲染单位 */

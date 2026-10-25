@@ -3442,6 +3442,7 @@
       "setCapabilityOptions": "Pro capability options entry: e.g. `table.setCapabilityOptions('format', rules)`; writes options and triggers a re-render",
       "effectiveColumns": "Effective columns: filtered and ordered by column-keys (controlled visible set + order); falls back to all leaf columns when column-keys is absent (backward compatible)",
       "getColumns": "All current column definitions (including group columns; a base table API readable by the capability controller / host)",
+      "getDisplaySnapshot": "Readonly display-set snapshot for range capabilities: maps row keys to absolute data-row and flat scroll indices (windowed offsets included), with a structural fingerprint and keysByIndex. Built lazily and shared; callers must not mutate the returned maps",
       "translateText": "Translate built-in copy (nearest config-provider / locale; the capability controller and external custom templates look up text here)",
       "paintCell": "Repaint the cell as regular display content: clears it and mounts cellNode (respecting rich content from render/cellTemplate)",
       "notifyEdit": "Dispatch the edit result event (commit/cancel; detail is assembled by the edit capability). The event name is written as a literal here",

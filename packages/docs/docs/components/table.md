@@ -510,12 +510,12 @@ windowed 模式下**本地排序 / 筛选 / 分组 / 分页 / 树形展开 / 合
 </DemoBlock>
 
 <script setup>
-import { onMounted } from 'vue'
+import { onBeforeUnmount, onMounted } from 'vue'
 import { filterRows, formulaColumn, pivotTable } from '@oas-ui/ui/data/table/advanced'
 import { setConditionalFormat } from '@oas-ui/ui/data/table/format'
-import { applyViewState, captureViewState } from '@oas-ui/ui/data/table/view'
-import { copyRange, enableRangeSelection, setRangeSelection } from '@oas-ui/ui/data/table/range'
-import { enableHistory, redo, undo } from '@oas-ui/ui/data/table/history'
+import { applyViewState, captureViewState, loadViewState, saveViewState } from '@oas-ui/ui/data/table/view'
+import { addRangeSelection, applyRangePaste, copyRange, cutRange, enableRangeSelection, fillRange, setRangeSelection } from '@oas-ui/ui/data/table/range'
+import { disableHistory, enableHistory, redo, undo } from '@oas-ui/ui/data/table/history'
 import { createMasterDetail } from '@oas-ui/ui/data/table/detail'
 
 // column-virtual demo：60 列指标 × 40 行（数据量大走客户端注入，SSR 输出空表壳）
@@ -889,14 +889,19 @@ onMounted(() => {
   const proTable = document.querySelector('#table-pro')
   const proStatus = document.querySelector('#table-pro-status')
   const proPanel = document.querySelector('#table-pro-detail')
+  const proViewAdapter = {
+    getItem: (key) => localStorage.getItem(key),
+    setItem: (key, value) => localStorage.setItem(key, value),
+  }
   let proSaved = null
+  let proDetail = null
   if (proTable) {
     customElements.whenDefined('oas-table').then(() => {
       proSaved = captureViewState(proTable)
       enableRangeSelection(proTable)
       enableHistory(proTable)
       if (proPanel) {
-        createMasterDetail(proTable, {
+        proDetail = createMasterDetail(proTable, {
           panel: proPanel,
           label: '行详情',
           emptyText: '点击任意行查看详情；Ctrl/Cmd+C 复制选区',
@@ -933,6 +938,43 @@ onMounted(() => {
     if (!proTable) return
     setRangeSelection(proTable, { row: 0, col: 'name' }, { row: 1, col: 'team' })
   })
+  document.querySelector('#table-pro-multi')?.addEventListener('click', () => {
+    if (!proTable) return
+    setRangeSelection(proTable, { row: 0, col: 'name' })
+    addRangeSelection(proTable, { row: 2, col: 'team' })
+    if (proStatus) proStatus.textContent = '已追加两个选区：Alpha 名称 + Gamma 团队'
+  })
+  document.querySelector('#table-pro-cut')?.addEventListener('click', async () => {
+    if (!proTable) return
+    const text = await cutRange(proTable)
+    if (proStatus) proStatus.textContent = text ? `已剪切：${text.replaceAll('\n', ' / ')}` : '先选择区域'
+  })
+  document.querySelector('#table-pro-paste')?.addEventListener('click', () => {
+    if (!proTable) return
+    setRangeSelection(proTable, { row: 0, col: 'name' }, { row: 1, col: 'team' })
+    const changed = applyRangePaste(proTable, 'AlphaX\t130\nBetaX\t90')
+    if (proStatus) proStatus.textContent = `已写回 ${changed} 格（oas-range-write）`
+  })
+  document.querySelector('#table-pro-fill')?.addEventListener('click', () => {
+    if (!proTable) return
+    setRangeSelection(proTable, { row: 0, col: 'amount' }, { row: 2, col: 'amount' })
+    const changed = fillRange(proTable, { mode: 'series', cells: 1 })
+    if (proStatus) proStatus.textContent = `已序列填充 ${changed} 格`
+  })
+  document.querySelector('#table-pro-save')?.addEventListener('click', () => {
+    if (!proTable) return
+    if (proStatus) proStatus.textContent = saveViewState(proTable, proViewAdapter) ? '已保存视图到 localStorage' : '保存失败'
+  })
+  document.querySelector('#table-pro-load')?.addEventListener('click', () => {
+    if (!proTable) return
+    if (proStatus) proStatus.textContent = loadViewState(proTable, proViewAdapter) ? '已恢复视图' : '没有可恢复的视图'
+  })
+  document.querySelector('#table-pro-detail-key')?.addEventListener('click', () => {
+    if (proDetail) proDetail.selectByKey('c')
+  })
+  document.querySelector('#table-pro-detail-close')?.addEventListener('click', () => {
+    if (proDetail) proDetail.close()
+  })
   document.querySelector('#table-pro-copy')?.addEventListener('click', async () => {
     if (!proTable) return
     const text = await copyRange(proTable)
@@ -943,6 +985,10 @@ onMounted(() => {
   })
   document.querySelector('#table-pro-redo')?.addEventListener('click', () => {
     if (proTable && proStatus) proStatus.textContent = redo(proTable) ? '已重做' : '没有可重做操作'
+  })
+  onBeforeUnmount(() => {
+    proDetail?.destroy()
+    if (proTable) disableHistory(proTable)
   })
 })
 </script>
@@ -1155,7 +1201,7 @@ const { columns: pivotColumns, rows: pivotRows } = pivotTable({
 })
 ```
 
-条件格式规则编辑器 UI、视图状态持久化 UI 仍由宿主实现；区域选择、撤销/重做与主从详情见下文 Pro 能力第二批。
+条件格式规则编辑器与视图配置面板仍由宿主实现；`table/view` 提供持久化适配器。区域选择、撤销/重做与主从详情见下文 Pro 能力第二、三批。
 
 ## Pro 能力：条件格式 / 视图 / 选区 / 历史 / 主从
 
@@ -1185,6 +1231,14 @@ createMasterDetail(table, { panel, label: '详情', render: (detail) => `${detai
       <oas-button id="table-pro-format" size="small">高亮金额 ≥ 100</oas-button>
       <oas-button id="table-pro-reset" size="small">恢复视图并清除格式</oas-button>
       <oas-button id="table-pro-range" size="small">选中 A1:B2</oas-button>
+      <oas-button id="table-pro-multi" size="small">追加多选区</oas-button>
+      <oas-button id="table-pro-cut" size="small">剪切选区</oas-button>
+      <oas-button id="table-pro-paste" size="small">粘贴写回</oas-button>
+      <oas-button id="table-pro-fill" size="small">序列填充</oas-button>
+      <oas-button id="table-pro-save" size="small">保存视图</oas-button>
+      <oas-button id="table-pro-load" size="small">恢复视图</oas-button>
+      <oas-button id="table-pro-detail-key" size="small">按 key 选 Gamma</oas-button>
+      <oas-button id="table-pro-detail-close" size="small">关闭详情</oas-button>
       <oas-button id="table-pro-copy" size="small">复制选区</oas-button>
       <oas-button id="table-pro-undo" size="small">撤销</oas-button>
       <oas-button id="table-pro-redo" size="small">重做</oas-button>
@@ -1219,7 +1273,19 @@ setRangeSelection(table, { row: 0, col: 'name' }, { row: 2, col: 'amount' })
 const tsv = await copyRange(table) // Ctrl/Cmd+C 同效
 ```
 
-选区内部以**行键 + 列 key** 锚定（建议提供唯一 `row-key`）：排序、过滤、重新渲染后仍跟随原行；行离开 windowed 窗口时选区自动失效，只能复制当前已装载切片。支持点击、拖拽、程序化设置、方向键移动、`Shift+方向键` 扩展、`Esc` 清空与 `Ctrl/Cmd+C` 复制；`Ctrl/Cmd+V` 派发 `oas-range-paste`（detail `{ start, startKey, rows, text }`，宿主按行键/坐标写回）。启用后表格内采用 roving tabindex（仅焦点格可 Tab 进入；`grid-navigation` 下由网格统一停靠）。column-virtual 下滚出窗口的列在 TSV 中以空列占位，`span-method` 合并列可能缺格。事件：`oas-range-change`（detail 为 `RangeSelection | null`，清空/窗口越界时 null）/ `oas-range-copy` / `oas-range-paste`。
+选区内部以**行键 + 列 key** 锚定（建议提供唯一 `row-key`）：排序、过滤、重新渲染后仍跟随原行；公开 `row` 坐标统一为 `data-row-index` 展示集行号（windowed 为全量绝对行号），与 `oas-cell-click` / `oas-edit` 一致。windowed 下离开窗口的行仅不装饰，**逻辑选区保留**，复制/剪切只处理当前已渲染单元格，并支持跨窗口扩展；本地虚拟滚动在展示集结构不变时同样保留离窗锚点，纯单元格编辑不会误清选区；过滤/排序/分页/分组折叠/数据变化后按行键重定位，无法定位则清空，分组头与展开内容使用独立扁平滚动坐标。支持点击、拖拽、Ctrl/Cmd 追加多选区、Ctrl+A 选当前已渲染单元格、方向键/Home/End/PageUp/PageDown、`Shift+方向键` 扩展（到边界时本地虚拟滚动或 `oas-window-request`）、`Esc` 清空与 `Ctrl/Cmd+C` 复制；`Ctrl/Cmd+V` 派发 `oas-range-paste`（detail `{ start, startKey, rows, text }`）。启用后表格内采用 roving tabindex（仅焦点格可 Tab 进入；`grid-navigation` 下由网格统一停靠），并有 `aria-live` 选区播报。column-virtual 下滚出窗口的列在 TSV 中以空列占位，`span-method` 合并列可能缺格。
+
+```ts
+import { addRangeSelection, applyRangePaste, cutRange, fillRange, selectByKey } from '@oas-ui/ui/data/table/range'
+
+selectByKey(table, { key: 'a', col: 'name' }, { key: 'c', col: 'age' }) // 按行键选择
+addRangeSelection(table, { row: 0, col: 'name' }, { row: 1, col: 'age' }) // Ctrl 追加多选区
+const tsv = await cutRange(table) // 复制并清空（uncontrolled）
+applyRangePaste(table, 'X\t9\nY\t8', { skipEmpty: true }) // 从活动选区左上角写回
+fillRange(table, { mode: 'series', cells: 2 }) // 以方向边界行为源做数值序列填充
+```
+
+多选区复制按矩形分块并以空行分隔，`header: true` 只给第一个非空块带表头。事件：`oas-range-change`（活动选区或 `null`）、`oas-range-copy`（含 `selections`）、`oas-range-paste`（含 `startKey`）、`oas-range-write`（`{ kind: 'paste'|'cut'|'fill', changes: [{ key, column, value, oldValue, oldRawValue }] }`，统一供 history 合并成一条撤销事务）。
 
 ### 撤销/重做（`table/history`）
 
@@ -1231,7 +1297,19 @@ undo(table)
 redo(table)
 ```
 
-`oas-edit` 新增 `oldValue`（字符串）与 `oldRawValue`（编辑前原始形态，number / boolean / string[] 等，撤销按原类型回写）。历史按 `oas-edit.detail.key` 定位数据行（`rowIndex` 是可见行坐标，排序/过滤后会漂移），因此建议配置稳定唯一的 `row-key`。无 `row-key` 时仅在无排序/过滤/分页场景按 `rowIndex` 回退；编辑行键字段且新旧值不唯一时仍会入栈，但撤销可能无法唯一定位（静默不写）。树形子行按 `children` 递归定位。`edit-controlled` 与 windowed 模式的数据归宿主，本能力不自动记录。历史变化派发 `oas-history-change`（`detail: { canUndo, canRedo }`）。
+`oas-edit` 新增 `oldValue`（字符串）与 `oldRawValue`（编辑前原始形态，number / boolean / string[] 等，撤销按原类型回写）。历史按 `oas-edit.detail.key` 定位数据行（`rowIndex` 是可见行坐标，排序/过滤后会漂移），因此建议配置稳定唯一的 `row-key`。无 `row-key` 时仅在无排序/过滤/分页场景按 `rowIndex` 回退；编辑行键字段且新旧值不唯一时仍会入栈，但撤销可能无法唯一定位（静默不写）。树形子行按 `children` 递归定位。`edit-controlled` 与 windowed 模式的数据归宿主，本能力不自动记录；`enableHistory(table, { windowed: true })` 可显式开启当前切片内撤销。历史变化派发 `oas-history-change`（`detail: { canUndo, canRedo }`）。
+
+```ts
+import { recordHistory, withHistoryBatch } from '@oas-ui/ui/data/table/history'
+
+recordHistory(table, { undo: () => restoreA(), redo: () => restoreB() }) // 受控场景显式记录
+withHistoryBatch(table, () => {
+  recordHistory(table, { undo: undoA, redo: redoA })
+  recordHistory(table, { undo: undoB, redo: redoB })
+}) // 合并为一条撤销：undo 逆序、redo 正序
+```
+
+`oas-range-write`（paste/cut/fill）默认按 changes 合并为一条事务；`options.rangeWrites = false` 可关闭。
 
 ### 主从详情（`table/detail`）
 
@@ -1245,10 +1323,27 @@ const detail = createMasterDetail(table, {
   render: (detail) => `${detail.row.name} · ${detail.row.amount}`,
 })
 detail.select(0) // 按可见行下标选中；null 清空
+detail.selectByKey('c') // 按行键选中（含树形子行；未渲染也保留）
+detail.close() // 触发 onClose 一次
 detail.destroy()
 ```
 
-点击行渲染到宿主面板（面板内容由 helper 全量管理，布局/关闭按钮建议放在面板外；每张表一个实例），选中行以 `tr[data-detail-selected]` 高亮；`Enter` 打开当前焦点行、`Esc` 关闭并回到原行（启用 range 且存在选区时，第一次 Esc 先清选区）。`data` 变化（含行内编辑回写）按行键刷新详情，选中行消失则清空（刷新不派发 `oas-detail-change`，仅选中变化派发）。`oas-detail-change`（detail 为 `{ row, key, rowIndex }` 或 `null`；`rowIndex` 为当前渲染窗口下标，稳定身份请用 `key`）。
+点击行渲染到宿主面板（面板内容由 helper 全量管理，布局/关闭按钮建议放在面板外；建议每张表一个实例），选中行以 `tr[data-detail-selected]` 高亮；`Enter` 打开当前焦点行、`Esc` 关闭并回到原行（启用 range 且存在选区时，第一次 Esc 先清选区）。`data` 变化（含行内编辑回写）按行键刷新详情，选中行消失则清空（刷新不派发 `oas-detail-change`，仅选中变化派发）；windowed 换窗不等于删除，选中与面板保留，明确删除时由宿主调用 `close()`。多实例时 Esc 只关闭**最近激活**的实例，该实例关闭/销毁后回退到仍选中的上一个实例；`closeOnEscape: false` 可禁用 Esc，`onClose` 仅在真正关闭时回调一次。`oas-detail-change`（detail 为 `{ row, key, rowIndex }` 或 `null`；`rowIndex` 为当前渲染窗口下标，稳定身份请用 `key`）。
+
+### 视图持久化适配器（`table/view`）
+
+```ts
+import { saveViewState, loadViewState } from '@oas-ui/ui/data/table/view'
+
+const localStorageAdapter = {
+  getItem: (key) => localStorage.getItem(key),
+  setItem: (key, value) => localStorage.setItem(key, value),
+}
+saveViewState(table, localStorageAdapter, 'orders-view') // 第三参可指定 key；写入 { version: 1, state }
+loadViewState(table, localStorageAdapter, 'orders-view') // 缺省/坏 JSON/version!=1/字段类型非法时返回 false 且不改表格
+```
+
+适配器由宿主注入（localStorage / sessionStorage / 服务端均可），保存 `{ version: 1, state }`，不含选中与编辑草稿；保存只要求 `setItem`，读取要求 `getItem`，多表可用第三参隔离 key。恢复是**完整快照语义**：快照未包含的排序/过滤/列宽等旧状态会一并清除；`captureViewState` / `applyViewState` 负责结构态捕获与恢复。
 
 ### windowed 数据源助手
 
@@ -1323,6 +1418,7 @@ const source = createWindowedSource(table, {
 | `setCapabilityOptions` | `setCapabilityOptions(name: string, options: unknown): void` | Pro 能力通用选项入口：如 `table.setCapabilityOptions('format', rules)`；写入后触发重渲染 |
 | `effectiveColumns` | `effectiveColumns(): TableColumn[]` | 有效列：按 column-keys（受控显示集合+顺序）过滤排序；无 column-keys 时回落全部叶子列（向后兼容）。 |
 | `getColumns` | `getColumns(): TableColumn[]` | 当前全部列定义（含组列；表格基础 API，能力 controller / 宿主可读） |
+| `getDisplaySnapshot` | `getDisplaySnapshot(): TableDisplaySnapshot \| null` | 展示集只读快照：供 range 等能力按行键解析离窗坐标与扁平滚动位置；map 复用缓存，调用方不得修改 |
 | `translateText` | `translateText(key: string, params?: Record<string, string \| number>): string` | 翻译内置文案（就近 config-provider / locale；能力 controller 与外部自定义模板经此取词）。 |
 | `paintCell` | `paintCell(td: HTMLTableCellElement, col: TableColumn, row: Record<string, unknown>): void` | 重绘单元格为常规展示内容：清空后按 cellNode 挂载（尊重 render/cellTemplate 富内容）。 |
 | `notifyEdit` | `notifyEdit(kind: 'edit' \| 'edit-cancel', detail: TableEditDetail): void` | 派发编辑结果事件（提交/取消；detail 由 edit 能力组好）。事件名以字面量书写在此， |

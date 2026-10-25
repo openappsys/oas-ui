@@ -2666,3 +2666,413 @@ test('table Pro 第二批：区域选择/复制、行详情、Shift 扩展与编
     .poll(() => page.evaluate(() => document.querySelector('#table-pro-detail')?.textContent ?? ''))
     .toContain('Beta')
 })
+
+test('table Pro 第三批：多选区剪切、粘贴写回与填充都合并为单条历史事务', async ({ page }) => {
+  const consoleIssues: string[] = []
+  page.on('console', (m) => {
+    // Firefox 的滚动性能提示是浏览器级噪声，与组件行为无关；其它 warning 仍全部计入
+    if (m.type() === 'error' || (m.type() === 'warning' && !m.text().includes('scroll-linked positioning effect'))) {
+      consoleIssues.push(`${m.type()}: ${m.text()}`)
+    }
+  })
+  page.on('pageerror', (error) => consoleIssues.push(`pageerror: ${error.message}`))
+  await page.goto('/components/table.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#table-pro')
+  await page.waitForFunction(
+    () => document.querySelector('#table-pro')!.shadowRoot!.querySelectorAll('tr.row').length === 4,
+    null,
+    { timeout: 10000 },
+  )
+  const status = () => page.evaluate(() => document.querySelector('#table-pro-status')?.textContent ?? '')
+  const data = () => page.evaluate(() => (document.querySelector('#table-pro') as any).data)
+
+  // 两个矩形：复制与剪切口径一致；撤销一次恢复两个单元格，而不是拆成两条历史
+  await page.locator('#table-pro-multi').click()
+  await expect.poll(status).toContain('两个选区')
+  await page.locator('#table-pro-copy').click()
+  await expect.poll(status).toContain('已复制')
+  await page.locator('#table-pro-cut').click()
+  await expect.poll(status).toContain('已剪切')
+  await expect.poll(async () => (await data())[0].name).toBe('')
+  await expect.poll(async () => (await data())[2].team).toBe('')
+  await page.locator('#table-pro-undo').click()
+  await expect.poll(async () => (await data())[0].name).toBe('Alpha')
+  await expect.poll(async () => (await data())[2].team).toBe('平台')
+
+  // 粘贴 2×2：一次 undo 同时恢复名称和团队，不错位到 amount 列
+  await page.locator('#table-pro-paste').click()
+  await expect.poll(status).toContain('已写回 4 格')
+  await expect.poll(async () => (await data())[0].name).toBe('AlphaX')
+  await expect.poll(async () => (await data())[1].name).toBe('BetaX')
+  expect((await data())[0].team).toBe('130')
+  expect((await data())[1].team).toBe('90')
+  await page.locator('#table-pro-undo').click()
+  await expect.poll(async () => (await data())[0].name).toBe('Alpha')
+  await expect.poll(async () => (await data())[1].name).toBe('Beta')
+  expect((await data())[0].team).toBe('平台')
+  expect((await data())[1].team).toBe('数据')
+
+  // 序列填充只写目标格；undo/redo 各自一次完成
+  await page.locator('#table-pro-fill').click()
+  await expect.poll(status).toContain('已序列填充 1 格')
+  await expect.poll(async () => (await data())[3].amount).toBe(151)
+  await page.locator('#table-pro-undo').click()
+  await expect.poll(async () => (await data())[3].amount).toBe(40)
+  await page.locator('#table-pro-redo').click()
+  await expect.poll(async () => (await data())[3].amount).toBe(151)
+  expect(consoleIssues).toEqual([])
+})
+
+test('table Pro 第三批：视图精确恢复与按行键详情可见可用', async ({ page }) => {
+  await page.goto('/components/table.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#table-pro')
+  await page.waitForFunction(
+    () => document.querySelector('#table-pro')!.shadowRoot!.querySelectorAll('tr.row').length === 4,
+    null,
+    { timeout: 10000 },
+  )
+  const status = () => page.evaluate(() => document.querySelector('#table-pro-status')?.textContent ?? '')
+  await page.locator('#table-pro-save').click()
+  await expect.poll(status).toContain('已保存视图')
+  await page.evaluate(() => {
+    const el = document.querySelector('#table-pro')! as HTMLElement & {
+      columns: Array<{ key?: string; width?: string }>
+    }
+    el.setAttribute('sort-key', 'name')
+    el.setAttribute('sort-order', 'desc')
+    el.columns = el.columns.map((column) => ({ ...column, width: '240px' }))
+  })
+  await page.locator('#table-pro-load').click()
+  await expect.poll(status).toContain('已恢复视图')
+  const restored = await page.evaluate(() => {
+    const el = document.querySelector('#table-pro')! as HTMLElement & {
+      columns: Array<{ key?: string; width?: string }>
+    }
+    return {
+      sortKey: el.getAttribute('sort-key'),
+      sortOrder: el.getAttribute('sort-order'),
+      widths: el.columns.map((column) => column.width),
+    }
+  })
+  expect(restored.sortKey).toBeNull()
+  expect(restored.sortOrder).toBeNull()
+  expect(restored.widths).toEqual([undefined, '140px', undefined, undefined])
+
+  await page.locator('#table-pro-detail-key').click()
+  await expect
+    .poll(() => page.evaluate(() => document.querySelector('#table-pro-detail')?.textContent ?? ''))
+    .toContain('Gamma')
+  await page.locator('#table-pro-detail-close').click()
+  await expect
+    .poll(() => page.evaluate(() => document.querySelector('#table-pro-detail')?.textContent ?? ''))
+    .toContain('点击任意行')
+})
+
+test('table Pro 第三批：windowed 越界请求带 margin，回填后选区与焦点落到目标绝对行', async ({ page }) => {
+  await page.goto('/components/table.html', { waitUntil: 'domcontentloaded' })
+  await page.waitForFunction(() => customElements.get('oas-table') != null, null, { timeout: 15000 })
+  await page.evaluate(() => {
+    const el = document.createElement('oas-table')
+    el.id = 'qa-pro-windowed-range'
+    el.setAttribute('windowed', '')
+    el.setAttribute('total', '100')
+    el.setAttribute('window-start', '50')
+    el.setAttribute('height', '80')
+    el.setAttribute('row-height', '40')
+    el.setAttribute('row-key', 'id')
+    el.setAttribute('columns', JSON.stringify([{ key: 'name', title: '名称' }]))
+    el.setAttribute(
+      'data',
+      JSON.stringify([
+        { id: 'r50', name: 'R50' },
+        { id: 'r51', name: 'R51' },
+      ]),
+    )
+    ;(document.querySelector('.vp-doc') ?? document.body).appendChild(el)
+    const wrap = el.shadowRoot!.querySelector('.table-scroll') as HTMLElement
+    wrap.scrollTop = 50 * 40
+    wrap.dispatchEvent(new Event('scroll'))
+  })
+  await page.waitForFunction(() => {
+    const el = document.querySelector('#qa-pro-windowed-range')
+    return !!el?.shadowRoot?.querySelector('tr[data-row-index="51"]')
+  })
+
+  await page.evaluate(() => {
+    const el = document.querySelector('#qa-pro-windowed-range')! as HTMLElement & {
+      setCapabilityOptions(name: string, options: unknown): void
+    }
+    ;(window as any).__proRangeRequests = []
+    ;(window as any).__proRangeChanges = []
+    ;(window as any).__proWindowHandled = false
+    el.addEventListener('oas-range-change', (event) => {
+      ;(window as any).__proRangeChanges.push((event as CustomEvent).detail)
+    })
+    el.addEventListener('oas-window-request', (event) => {
+      const detail = (event as CustomEvent).detail
+      ;(window as any).__proRangeRequests.push(detail)
+      if ((window as any).__proWindowHandled) return
+      ;(window as any).__proWindowHandled = true
+      el.setAttribute('window-start', String(detail.start))
+      el.setAttribute(
+        'data',
+        JSON.stringify(
+          Array.from({ length: detail.end - detail.start }, (_, index) => ({
+            id: `r${detail.start + index}`,
+            name: `R${detail.start + index}`,
+          })),
+        ),
+      )
+    })
+    el.setCapabilityOptions('range', {
+      enabled: true,
+      selection: { start: { row: 51, col: 'name' }, end: { row: 51, col: 'name' } },
+    })
+    const td = el.shadowRoot!.querySelector('tr[data-row-index="51"] td[data-col="name"]') as HTMLElement
+    td.focus()
+    td.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        key: 'ArrowDown',
+        shiftKey: true,
+        bubbles: true,
+        composed: true,
+        cancelable: true,
+      }),
+    )
+  })
+  await page.waitForFunction(() =>
+    (window as any).__proRangeChanges.some(
+      (selection: any) => selection?.start?.row === 51 && selection?.end?.row === 52,
+    ),
+  )
+  const result = await page.evaluate(() => {
+    const el = document.querySelector('#qa-pro-windowed-range')!
+    const active = el.shadowRoot!.activeElement as HTMLElement | null
+    return {
+      requests: (window as any).__proRangeRequests,
+      focusText: el.shadowRoot!.querySelector('tr[data-row-index="52"] td.range-focus')?.textContent,
+      activeRow: active?.closest('tr')?.getAttribute('data-row-index'),
+    }
+  })
+  expect(result.requests).toContainEqual({ start: 44, end: 61, reason: 'scroll' })
+  expect(result.focusText).toBe('R52')
+  expect(result.activeRow).toBe('52')
+
+  // 表格恢复焦点不得触发 range 的 focusin 单格重置：多格选区在后续滚动帧仍保持
+  await page.evaluate(() => {
+    ;(window as any).__proRangeChanges = []
+    const el = document.querySelector('#qa-pro-windowed-range')!
+    const wrap = el.shadowRoot!.querySelector('.table-scroll') as HTMLElement
+    wrap.scrollTop = 53 * 40
+    wrap.dispatchEvent(new Event('scroll'))
+  })
+  // 等真实滚动帧结束再取状态，避免把帧前的旧选区当成修复成功
+  await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))))
+  const afterScroll = await page.evaluate(() => {
+    const el = document.querySelector('#qa-pro-windowed-range')!
+    return {
+      events: (window as any).__proRangeChanges,
+      selected: el.shadowRoot!.querySelectorAll('td.range-selected').length,
+    }
+  })
+  expect(afterScroll.selected).toBe(2)
+  expect(afterScroll.events).not.toContainEqual({ start: { row: 52, col: 'name' }, end: { row: 52, col: 'name' } })
+  if (afterScroll.events.length > 0) {
+    expect(afterScroll.events.at(-1)).toEqual({ start: { row: 51, col: 'name' }, end: { row: 52, col: 'name' } })
+  }
+  await page.evaluate(() => document.querySelector('#qa-pro-windowed-range')?.remove())
+})
+
+test('table Pro 第三批：本地虚拟 Ctrl+Home 与 pending 取消不会延迟劫持选区', async ({ page }) => {
+  await page.goto('/components/table.html', { waitUntil: 'domcontentloaded' })
+  await page.waitForFunction(() => customElements.get('oas-table') != null, null, { timeout: 15000 })
+  await page.evaluate(() => {
+    const el = document.createElement('oas-table')
+    el.id = 'qa-pro-virtual-home'
+    el.setAttribute('height', '80')
+    el.setAttribute('row-height', '40')
+    el.setAttribute('row-key', 'id')
+    el.setAttribute('columns', JSON.stringify([{ key: 'name', title: '名称' }]))
+    el.setAttribute(
+      'data',
+      JSON.stringify(Array.from({ length: 100 }, (_, index) => ({ id: `r${index}`, name: `R${index}` }))),
+    )
+    ;(document.querySelector('.vp-doc') ?? document.body).appendChild(el)
+    const wrap = el.shadowRoot!.querySelector('.table-scroll') as HTMLElement
+    wrap.scrollTop = 99 * 40
+    wrap.dispatchEvent(new Event('scroll'))
+  })
+  await page.waitForFunction(
+    () => !!document.querySelector('#qa-pro-virtual-home')?.shadowRoot?.querySelector('tr[data-row-index="99"]'),
+  )
+  await page.evaluate(() => {
+    const el = document.querySelector('#qa-pro-virtual-home')! as HTMLElement & {
+      setCapabilityOptions(name: string, options: unknown): void
+    }
+    el.setCapabilityOptions('range', {
+      enabled: true,
+      selection: { start: { row: 99, col: 'name' }, end: { row: 99, col: 'name' } },
+    })
+    const td = el.shadowRoot!.querySelector('tr[data-row-index="99"] td[data-col="name"]') as HTMLElement
+    td.focus()
+    td.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Home', ctrlKey: true, bubbles: true, composed: true, cancelable: true }),
+    )
+  })
+  await page.waitForFunction(() => {
+    const el = document.querySelector('#qa-pro-virtual-home')!
+    const wrap = el.shadowRoot!.querySelector('.table-scroll') as HTMLElement
+    return wrap.scrollTop < 40 && !!el.shadowRoot!.querySelector('tr[data-row-index="0"] td.range-focus')
+  })
+  const home = await page.evaluate(() => {
+    const el = document.querySelector('#qa-pro-virtual-home')!
+    return {
+      selected: el.shadowRoot!.querySelector('tr[data-row-index="0"] td.range-focus')?.textContent,
+      activeRow: (el.shadowRoot!.activeElement as HTMLElement | null)?.closest('tr')?.getAttribute('data-row-index'),
+    }
+  })
+  expect(home.selected).toBe('R0')
+  expect(home.activeRow).toBe('0')
+
+  await page.evaluate(() => {
+    const el = document.querySelector('#qa-pro-virtual-home')!
+    const wrap = el.shadowRoot!.querySelector('.table-scroll') as HTMLElement
+    wrap.scrollTop = 99 * 40
+    wrap.dispatchEvent(new Event('scroll'))
+  })
+  await page.waitForFunction(
+    () => !!document.querySelector('#qa-pro-virtual-home')?.shadowRoot?.querySelector('tr[data-row-index="99"]'),
+  )
+
+  // 再次从末行 Shift+Ctrl+Home 后，用户改滚到中部：旧 pending 不得再改选区
+  await page.evaluate(() => {
+    const el = document.querySelector('#qa-pro-virtual-home')! as HTMLElement & {
+      setCapabilityOptions(name: string, options: unknown): void
+    }
+    ;(window as any).__homeRangeChanges = []
+    el.addEventListener('oas-range-change', (event) =>
+      (window as any).__homeRangeChanges.push((event as CustomEvent).detail),
+    )
+    el.setCapabilityOptions('range', {
+      enabled: true,
+      selection: { start: { row: 99, col: 'name' }, end: { row: 99, col: 'name' } },
+    })
+    const td = el.shadowRoot!.querySelector('tr[data-row-index="99"] td[data-col="name"]') as HTMLElement
+    td.focus()
+    td.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        key: 'Home',
+        ctrlKey: true,
+        shiftKey: true,
+        bubbles: true,
+        composed: true,
+        cancelable: true,
+      }),
+    )
+    const wrap = el.shadowRoot!.querySelector('.table-scroll') as HTMLElement
+    wrap.scrollTop = 50 * 40
+    wrap.dispatchEvent(new Event('scroll'))
+  })
+  await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))))
+  const selection = await page.evaluate(() => {
+    const el = document.querySelector('#qa-pro-virtual-home')!
+    return {
+      events: (window as any).__homeRangeChanges,
+      hasHomeFocus: !!el.shadowRoot!.querySelector('tr[data-row-index="0"] td.range-focus'),
+    }
+  })
+  expect(selection.events.at(-1)).toEqual({ start: { row: 99, col: 'name' }, end: { row: 99, col: 'name' } })
+  expect(selection.hasHomeFocus).toBe(false)
+  await page.evaluate(() => document.querySelector('#qa-pro-virtual-home')?.remove())
+})
+
+test('table Pro 第三批：虚拟表 Ctrl+End / Shift+Ctrl+End 在浏览器 maxScroll 夹取后仍落地', async ({ page }) => {
+  await page.goto('/components/table.html', { waitUntil: 'domcontentloaded' })
+  await page.waitForFunction(() => customElements.get('oas-table') != null, null, { timeout: 15000 })
+  await page.evaluate(() => {
+    const el = document.createElement('oas-table')
+    el.id = 'qa-pro-virtual-end'
+    el.setAttribute('height', '400')
+    el.setAttribute('row-height', '40')
+    el.setAttribute('row-key', 'id')
+    el.setAttribute('columns', JSON.stringify([{ key: 'name', title: '名称' }]))
+    el.setAttribute(
+      'data',
+      JSON.stringify(Array.from({ length: 100 }, (_, index) => ({ id: `r${index}`, name: `R${index}` }))),
+    )
+    ;(document.querySelector('.vp-doc') ?? document.body).appendChild(el)
+    ;(el as HTMLElement & { setCapabilityOptions(name: string, options: unknown): void }).setCapabilityOptions(
+      'range',
+      {
+        enabled: true,
+        selection: { start: { row: 0, col: 'name' }, end: { row: 0, col: 'name' } },
+      },
+    )
+    ;(window as any).__endRangeChanges = []
+    el.addEventListener('oas-range-change', (event) =>
+      (window as any).__endRangeChanges.push((event as CustomEvent).detail),
+    )
+    const td = el.shadowRoot!.querySelector('tr[data-row-index="0"] td[data-col="name"]') as HTMLElement
+    td.focus()
+    td.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'End', ctrlKey: true, bubbles: true, composed: true, cancelable: true }),
+    )
+  })
+  await page.waitForFunction(() => {
+    const el = document.querySelector('#qa-pro-virtual-end')!
+    const wrap = el.shadowRoot!.querySelector('.table-scroll') as HTMLElement
+    const last = wrap.scrollHeight - wrap.clientHeight
+    return wrap.scrollTop === last && !!el.shadowRoot!.querySelector('tr[data-row-index="99"] td.range-focus')
+  })
+  const end = await page.evaluate(() => {
+    const el = document.querySelector('#qa-pro-virtual-end')!
+    return {
+      changes: (window as any).__endRangeChanges,
+      activeRow: (el.shadowRoot!.activeElement as HTMLElement | null)?.closest('tr')?.getAttribute('data-row-index'),
+      scrollTop: (el.shadowRoot!.querySelector('.table-scroll') as HTMLElement).scrollTop,
+    }
+  })
+  expect(end.changes.at(-1)).toEqual({ start: { row: 99, col: 'name' }, end: { row: 99, col: 'name' } })
+  expect(end.activeRow).toBe('99')
+  expect(end.scrollTop).toBeLessThan(99 * 40)
+
+  await page.evaluate(() => {
+    const el = document.querySelector('#qa-pro-virtual-end')!
+    const wrap = el.shadowRoot!.querySelector('.table-scroll') as HTMLElement
+    wrap.scrollTop = 0
+    wrap.dispatchEvent(new Event('scroll'))
+  })
+  await page.waitForFunction(
+    () => !!document.querySelector('#qa-pro-virtual-end')?.shadowRoot?.querySelector('tr[data-row-index="0"]'),
+  )
+
+  await page.evaluate(() => {
+    const el = document.querySelector('#qa-pro-virtual-end')! as HTMLElement & {
+      setCapabilityOptions(name: string, options: unknown): void
+    }
+    el.setCapabilityOptions('range', {
+      enabled: true,
+      selection: { start: { row: 0, col: 'name' }, end: { row: 0, col: 'name' } },
+    })
+    const td = el.shadowRoot!.querySelector('tr[data-row-index="0"] td[data-col="name"]') as HTMLElement
+    td.focus()
+    td.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        key: 'End',
+        ctrlKey: true,
+        shiftKey: true,
+        bubbles: true,
+        composed: true,
+        cancelable: true,
+      }),
+    )
+  })
+  await page.waitForFunction(() => {
+    const el = document.querySelector('#qa-pro-virtual-end')!
+    return (
+      (window as any).__endRangeChanges.at(-1)?.start?.row === 0 &&
+      (window as any).__endRangeChanges.at(-1)?.end?.row === 99
+    )
+  })
+  await page.evaluate(() => document.querySelector('#qa-pro-virtual-end')?.remove())
+})

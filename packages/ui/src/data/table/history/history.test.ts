@@ -482,4 +482,18 @@ describe('table/history 撤销重做', () => {
     emitRangeWrite(el, { kind: 'paste', changes: [] })
     expect(canUndo(el)).toBe(false)
   })
+
+  it('oas-range-write：oldRawValue 与 value 原类型同值时不入栈', () => {
+    const el = mount([{ id: 'a', name: 'A', score: 1, enabled: true }])
+    enableHistory(el)
+    emitRangeWrite(el, {
+      kind: 'paste',
+      changes: [
+        { key: 'a', column: 'score', value: 1, oldValue: '1', oldRawValue: 1 },
+        { key: 'a', column: 'enabled', value: true, oldValue: 'true', oldRawValue: true },
+        { key: 'a', column: 'tags', value: ['x', 'y'], oldValue: 'x,y', oldRawValue: ['x', 'y'] },
+      ],
+    })
+    expect(canUndo(el)).toBe(false)
+  })
 })

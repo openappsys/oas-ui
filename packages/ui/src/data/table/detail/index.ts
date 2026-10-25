@@ -30,7 +30,7 @@ export interface MasterDetailOptions {
 export interface MasterDetail {
   /** 以可见行下标选中/清空；越界或行不存在时清空 */
   select(rowIndex: number | null): void
-  /** 按行键选中（递归 children 查找）；行未渲染时保留选中（rowIndex = -1）；key 不存在时清空 */
+  /** 按行键选中（递归 children 查找）；行未渲染时保留选中（rowIndex = -1）；普通模式 key 不存在时清空，windowed 未装载/不存在时不改变当前选中 */
   selectByKey(key: string): void
   /** 清空选中（等价 select(null)） */
   close(): void
@@ -53,9 +53,34 @@ const styleRefs = new WeakMap<ShadowRoot, { node: HTMLStyleElement; count: numbe
 
 /**
  * 最近激活实例（最近一次成功选中者）的 Esc 关闭入口。
- * window 兜底 Esc 只让该实例响应，多实例互不牵连；destroy 时若指向自己则清除。
+ * window 兜底 Esc 只让该实例响应；关闭/销毁后回退到仍选中的上一个实例。
  */
 let activeEscapeClose: (() => void) | null = null
+const escapeActivation: Array<{ close: () => void; table: HTMLElement }> = []
+const detailHosts = new Map<HTMLElement, number>()
+
+function registerDetailHost(host: HTMLElement): void {
+  detailHosts.set(host, (detailHosts.get(host) ?? 0) + 1)
+}
+
+function unregisterDetailHost(host: HTMLElement): void {
+  const count = (detailHosts.get(host) ?? 0) - 1
+  if (count <= 0) detailHosts.delete(host)
+  else detailHosts.set(host, count)
+}
+
+function activateEscape(close: () => void, table: HTMLElement): void {
+  const index = escapeActivation.findIndex((item) => item.close === close)
+  if (index >= 0) escapeActivation.splice(index, 1)
+  escapeActivation.push({ close, table })
+  activeEscapeClose = close
+}
+
+function deactivateEscape(close: () => void): void {
+  const index = escapeActivation.findIndex((item) => item.close === close)
+  if (index >= 0) escapeActivation.splice(index, 1)
+  if (activeEscapeClose === close) activeEscapeClose = escapeActivation[escapeActivation.length - 1]?.close ?? null
+}
 
 function acquireStyle(root: ShadowRoot): void {
   const existing = styleRefs.get(root)
@@ -87,7 +112,7 @@ function rowsOf(table: HTMLElement): HTMLTableRowElement[] {
  * 主从详情胶水：点击行 → 渲染到宿主面板；行高亮挂在 `tr[data-detail-selected]`。
  *
  * 纯宿主侧 helper（不注册能力、不改表格数据）：面板布局、关闭按钮、数据来源由宿主决定。
- * 渲染后行节点会重建，用 MutationObserver 重新标记当前选中行。
+ * 渲染后行节点会重建，用 MutationObserver 重新标记当前选中行；宿主卸载时必须调用 destroy 释放监听与实例引用。
  */
 export function createMasterDetail(table: HTMLElement, options: MasterDetailOptions): MasterDetail {
   const root = table.shadowRoot
@@ -105,6 +130,8 @@ export function createMasterDetail(table: HTMLElement, options: MasterDetailOpti
   const panelOriginalAriaLabel = options.panel.getAttribute('aria-label')
 
   acquireStyle(root)
+  registerDetailHost(table)
+  registerDetailHost(options.panel)
 
   const highlight = (): void => {
     for (const tr of rowsOf(table)) {
@@ -170,16 +197,17 @@ export function createMasterDetail(table: HTMLElement, options: MasterDetailOpti
       selected = next
       highlight()
       renderPanel()
-      if (escEnabled) activeEscapeClose = escapeClose
+      if (escEnabled) activateEscape(escapeClose, table)
       return
     }
     selected = sameKey && options.collapsible ? null : next
+    if (!selected) deactivateEscape(escapeClose)
     highlight()
     renderPanel()
     emit()
     if (selected) {
       // 成功选中：本实例成为「最近激活」，window 兜底 Esc 优先关它
-      if (escEnabled) activeEscapeClose = escapeClose
+      if (escEnabled) activateEscape(escapeClose, table)
     } else if (previous) {
       // 从有选中变为无选中：通知关闭（onSelect 已派发清空，此处补充被关闭的详情）
       options.onClose?.(previous)
@@ -191,11 +219,18 @@ export function createMasterDetail(table: HTMLElement, options: MasterDetailOpti
     if (!selected) return
     const row = findRow(selected.key)
     if (!row) {
+      // windowed 的切片换窗只是「不在当前装载区间」，不是数据删除：保留选中（rowIndex=-1）
+      if (table.hasAttribute('windowed')) {
+        selected = { ...selected, rowIndex: -1 }
+        highlight()
+        renderPanel()
+        return
+      }
       apply(null)
       return
     }
     const rowIndex = rowsOf(table).findIndex((tr) => tr.getAttribute('data-key') === selected?.key)
-    selected = rowIndex >= 0 ? { ...selected, row, rowIndex } : { ...selected, row }
+    selected = rowIndex >= 0 ? { ...selected, row, rowIndex } : { ...selected, row, rowIndex: -1 }
     highlight()
     renderPanel()
   }
@@ -236,23 +271,38 @@ export function createMasterDetail(table: HTMLElement, options: MasterDetailOpti
     apply(null)
     const tr = rowsOf(table).find((item) => item.getAttribute('data-key') === key)
     const target = tr?.querySelector<HTMLElement>('td[data-col]')
-    // 纯表格（无 range/grid-navigation/editable）的 td 不可聚焦：临时给 -1 让焦点能归位
-    if (target && !target.hasAttribute('tabindex')) target.tabIndex = -1
-    target?.focus()
+    if (!target) return
+    // 系统恢复聚焦：range 不应把它当作用户进入单元格而重建单格选区
+    target.setAttribute('data-oas-focus-restore', '')
+    try {
+      // 普通 TD 保留 -1 作为程序聚焦入口；移除它会让 Chromium 同步失焦
+      if (!target.hasAttribute('tabindex')) target.tabIndex = -1
+      target.focus()
+    } finally {
+      target.removeAttribute('data-oas-focus-restore')
+    }
   }
 
   const onKeydown = (event: Event): void => {
-    if (!escEnabled) return
-    if ((event as KeyboardEvent).key !== 'Escape' || !selected) return
+    if (!escEnabled || (event as KeyboardEvent).key !== 'Escape' || !selected) return
+    // 同表多实例只让最近激活者处理；其它表的活动实例不影响本地按键
+    const active = escapeActivation[escapeActivation.length - 1]
+    if (active && active.table === table && active.close !== escapeClose) return
     // 行内编辑器 / 面板内输入框的 Esc 归控件（取消编辑），不关闭详情、不抢焦
     if (event.defaultPrevented || isInputTarget(event.target) || isInteractiveEvent(event)) return
     event.preventDefault()
+    event.stopPropagation()
     escapeClose()
   }
 
-  /** window 冒泡兜底：只有最近激活（最近一次成功选中）的实例响应，多实例互不牵连 */
+  /** window 冒泡兜底：只有最近激活实例响应；事件来自其它已注册表格/面板时不跨实例串台 */
   const onWindowKeydown = (event: Event): void => {
     if (activeEscapeClose !== escapeClose) return
+    const path = event.composedPath()
+    for (const host of detailHosts.keys()) {
+      if (host === table || host === options.panel) continue
+      if (path.includes(host)) return
+    }
     onKeydown(event)
   }
 
@@ -286,7 +336,7 @@ export function createMasterDetail(table: HTMLElement, options: MasterDetailOpti
     // 排序/过滤/虚拟滚动重建后刷新渲染下标（数据未变时行对象与面板不必重绘）
     if (selected) {
       const index = rowIndexByKey(selected.key)
-      if (index >= 0 && index !== selected.rowIndex) selected = { ...selected, rowIndex: index }
+      if (index !== selected.rowIndex) selected = { ...selected, rowIndex: index }
     }
     highlight()
   })
@@ -298,6 +348,7 @@ export function createMasterDetail(table: HTMLElement, options: MasterDetailOpti
 
   return {
     select(rowIndex) {
+      if (destroyed) return
       if (rowIndex === null) {
         apply(null)
         return
@@ -306,8 +357,18 @@ export function createMasterDetail(table: HTMLElement, options: MasterDetailOpti
       apply(detail)
     },
     selectByKey(key) {
+      if (destroyed) return
       const row = findRow(key)
       if (!row) {
+        if (table.hasAttribute('windowed')) {
+          // 未装载的 windowed 切片：不当作删除，保留当前选中/忽略此次选择
+          if (selected && selected.key === key) {
+            selected = { ...selected, rowIndex: -1 }
+            highlight()
+            renderPanel()
+          }
+          return
+        }
         apply(null)
         return
       }
@@ -315,6 +376,7 @@ export function createMasterDetail(table: HTMLElement, options: MasterDetailOpti
       apply({ row, key, rowIndex: rowIndexByKey(key) })
     },
     close() {
+      if (destroyed) return
       apply(null)
     },
     get selected() {
@@ -332,8 +394,10 @@ export function createMasterDetail(table: HTMLElement, options: MasterDetailOpti
       observer?.disconnect()
       observer = null
       dataObserver.disconnect()
-      // 若自己是当前活动实例，清除活动标记（window 兜底 Esc 不再指向本实例）
-      if (activeEscapeClose === escapeClose) activeEscapeClose = null
+      // 移除自己的激活记录；仍有选中实例时回退到上一个最近激活者
+      deactivateEscape(escapeClose)
+      unregisterDetailHost(table)
+      unregisterDetailHost(options.panel)
       for (const tr of rowsOf(table)) tr.removeAttribute('data-detail-selected')
       options.panel.textContent = ''
       // 恢复 helper 写入前的 role/aria-label（宿主自带值原样还原，原本无值则移除）

@@ -146,12 +146,25 @@
 
 ### Pro 能力（第二批）
 
-- **`table/range` 区域选择 + 剪贴板**：点击/拖拽选区、方向键移动、`Shift+方向键` 扩展、`Esc` 清空、`Ctrl/Cmd+C` 复制 TSV、`Ctrl/Cmd+V` 派发 `oas-range-paste`（宿主写回数据）；选区以**行键 + 列 key** 锚定，排序/过滤/重渲染后跟随原行，windowed 窗口外自动失效；roving tabindex（仅焦点格可 Tab 进入）；事件 `oas-range-change` / `oas-range-copy` / `oas-range-paste`。
+- **`table/range` 区域选择 + 剪贴板**：点击/拖拽选区、方向键移动、`Shift+方向键` 扩展、`Esc` 清空、`Ctrl/Cmd+C` 复制 TSV、`Ctrl/Cmd+V` 派发 `oas-range-paste`（宿主写回数据）；选区以**行键 + 列 key** 锚定，排序/过滤/重渲染后跟随原行，windowed 窗口外仅不装饰（逻辑选区保留并支持跨窗口扩展）；roving tabindex（仅焦点格可 Tab 进入）；事件 `oas-range-change` / `oas-range-copy` / `oas-range-paste`。
 - **`table/history` 撤销/重做**：`enableHistory()` 记录非受控 `oas-edit`（新增 `detail.oldValue` / `oldRawValue`），按行键定位数据行（含树形子行；行键字段本身被编辑时按另一侧值唯一定位），撤销保留 number / boolean / string[] 原类型；`Ctrl/Cmd+Z` / `Shift+Z` / `Y`（输入框内让位）；`edit-controlled` 与 windowed 不自动记录；`oas-history-change`。
 - **`table/detail` 主从详情**：`createMasterDetail()` 宿主侧胶水，点击行（checkable 表用 `oas-cell-click` 补齐）/`Enter` 打开、`Esc` 关闭并回焦；选中行 `tr[data-detail-selected]` 高亮；`data` 变化按行键刷新详情，行从数据中消失才清空（滚出渲染窗口不清空）；面板内容由 helper 管理。
 - **advanced 增补**：`createHistory()` 通用撤销栈、`createWindowedSource()` windowed 数据源助手（覆盖区间去重、中止过期请求、`refresh` / `destroy`、`oas-window-error`）。
 - 四个入口均为独立子路径，默认 table 链不加载；`perf:size` 立独立预算并断言默认链零泄漏。
 - 验收：单测覆盖键锚定/键盘扩展/复制粘贴/窗口失效/撤销边界/详情刷新；docs Pro demo 真点、暗色、console 零告警、a11y 通过。
+
+### Pro 能力（第三批：组件侧闭环）
+
+- **range 剪贴板闭环**：`copyRange` 支持表头；`cutRange`（复制+清空全部多选区的已渲染格）；`applyRangePaste` 从活动选区左上角写回 TSV（可 coerce/skipEmpty）；`edit-controlled` 只发 `oas-range-write`（含 kind=paste/cut/fill 与新旧值明细），由宿主写回。
+- **选区 API 与多选区**：`selectByKey` / `selectRow` / `selectColumn` / Ctrl+A；Ctrl 追加矩形且同矩形去重，`getRangeSelections`，旧 `getRangeSelection` 仍返回活动选区。公开 `row` 统一为 `data-row-index` 展示集行号（windowed 为全量绝对行号），与 `oas-cell-click` / `oas-edit` 一致。
+- **键盘与窗口**：Home/End/PageUp/PageDown；Shift+方向键到边界时本地虚拟滚动或 windowed `oas-window-request`（带 margin + 滚动到目标行），pending 目标行补齐后落地选区与焦点；已装载未渲染行无需等待新 data。windowed 与本地虚拟滚动均保留离窗锚点；非 windowed 直接读表格展示集快照（行键 → 数据行序 / 扁平滚动序），纯单元格编辑不误清选区，分组折叠与重排按行键重定位，分组头/展开内容不混入滚动坐标。
+- **填充柄**：focus 格手柄拖拽复制/序列（按方向记录格数，四方向），`fillRange` API；无位移与 `pointercancel` 不写入，取消恢复源选区，源行缺失不写空串；与 paste/cut 共用 `oas-range-write`。
+- **性能与可访问性**：选区与填充 pointermove 均 rAF 合帧、行列索引缓存、批量写回一次行路径索引、`aria-live` 选区播报（`table.rangeSelection` 全语言包）。
+- **history 受控与事务**：`recordHistory`（任意 `HistoryEntry`）、`withHistoryBatch`（合并为单条撤销）；`enableHistory` 监听 `oas-range-write` 并合并为一条事务（原类型同值不入栈）；`options.windowed` 允许当前切片内撤销；`options.rangeWrites` 可关。
+- **view 持久化适配器**：`saveViewState` / `loadViewState`（宿主注入 adapter、可自定义 key、schemaVersion=1、坏数据/版本不兼容忽略）；恢复为完整快照，缺省字段清旧状态；保存只要求 `setItem`，不内置 UI。
+- **detail 收尾**：`selectByKey`（含树形子行）、`close()` / `onClose`、多实例 Esc 只关最近激活实例（关闭/销毁后回退到仍选中的上一个实例）、windowed 换窗保留选中、`closeOnEscape` 可关、destroy 幂等且方法销毁后 no-op。
+- 全部仍为独立子路径，默认 table 链不加载；预算与零泄漏断言同步。
+- 验收：各包单测 + range 交互 e2e（粘贴写回/填充/多选区/键盘窗口/暗色/console/a11y）通过；不新增 Pro 产品 UI。
 
 ## v2.6.4：table 默认入口切换（未发布）✅
 

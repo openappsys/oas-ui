@@ -477,7 +477,7 @@ const BUDGETS = [
     get: () => componentMeasures.table.gzipBytes,
     limit: 74 * 1024, // 74 KB（2026-10-25：默认入口不含 edit，实测 65.0 KB）
     basis:
-      '实测 gzip 65.0 KB（v2.6.4 默认入口 = 基础表格，不含 edit；链含 core 骨架 + virtual-list + i18n + pagination + 列设置/导出/移动降级，不含编辑器族），上浮约 14% 定档 74 KB；前档 108 KB 为默认入口含 edit 口径',
+      '实测 gzip 66.2 KB（v2.6.4 默认入口 = 基础表格，不含 edit；链含 core 骨架 + virtual-list + i18n + pagination + 列设置/导出/移动降级与展示集快照，不含编辑器族），上浮约 12% 定档 74 KB；前档 108 KB 为默认入口含 edit 口径',
   },
   {
     name: '@oas-ui/ui/form/form 链 gzip',
@@ -539,7 +539,7 @@ const BUDGETS = [
     get: () => componentMeasures.tableAdvanced.gzipBytes,
     limit: 8 * 1024,
     basis:
-      '实测 gzip 6.9 KB（透视 / 公式 / 查询 / 条件格式 / TSV / 历史栈 / windowed 数据源纯函数，无表单控件与 table 运行时依赖），上浮约 16% 定档 8 KB',
+      '实测 gzip 7.0 KB（透视 / 公式 / 查询 / 条件格式 / TSV / 历史栈与事务 / windowed 数据源纯函数，无表单控件与 table 运行时依赖），上浮约 14% 定档 8 KB',
   },
   {
     name: '@oas-ui/ui/data/table/format 链 gzip',
@@ -551,28 +551,28 @@ const BUDGETS = [
     name: '@oas-ui/ui/data/table/view 链 gzip',
     get: () => componentMeasures.tableView.gzipBytes,
     limit: 1.5 * 1024, // 1.5 KB（2026-10-25 首次定档：实测 0.6 KB）
-    basis: '实测 gzip 0.6 KB（视图状态捕获/应用纯函数，无 table 运行时依赖），上浮定档 1.5 KB',
+    basis: '实测 gzip 1.0 KB（完整视图快照 + 可配置 key 的持久化适配器，无 table 运行时依赖），上浮定档 1.5 KB',
   },
   {
     name: '@oas-ui/ui/data/table/range 链 gzip',
     get: () => componentMeasures.tableRange.gzipBytes,
-    limit: 6 * 1024,
+    limit: 13 * 1024,
     basis:
-      '实测 gzip 5.2 KB（区域选择 capability + 键锚定 + roving tabindex + 交互宿主穿透 + TSV 复制/粘贴），上浮约 16% 定档 6 KB',
+      '实测 gzip 11.6 KB（选区 + 多选区 + 剪贴板写回 + 填充柄 + 展示集快照与扁平滚动 + windowed 协议共享链 + 可访问性播报），上浮约 12% 定档 13 KB',
   },
   {
     name: '@oas-ui/ui/data/table/history 链 gzip',
     get: () => componentMeasures.tableHistory.gzipBytes,
-    limit: 3.5 * 1024,
+    limit: 4 * 1024,
     basis:
-      '实测 gzip 2.9 KB（撤销/重做栈 + oas-edit 行键/原类型回写 + 树形子行递归 + 交互宿主穿透），上浮约 21% 定档 3.5 KB',
+      '实测 gzip 3.4 KB（撤销/重做栈 + 受控记录/事务 + oas-edit 行键/原类型回写 + 树形子行递归 + 交互宿主穿透），上浮约 18% 定档 4 KB',
   },
   {
     name: '@oas-ui/ui/data/table/detail 链 gzip',
     get: () => componentMeasures.tableDetail.gzipBytes,
-    limit: 3.5 * 1024,
+    limit: 4 * 1024,
     basis:
-      '实测 gzip 2.9 KB（主从详情宿主侧 helper + 树形行定位 / 焦点兜底 / 交互宿主穿透，无 table 运行时依赖），上浮约 21% 定档 3.5 KB',
+      '实测 gzip 3.4 KB（主从详情宿主侧 helper + 树形行定位 / 焦点兜底 / 多实例 Esc 回退与跨表路由 / 交互宿主穿透，无 table 运行时依赖），上浮约 18% 定档 4 KB',
   },
 ]
 

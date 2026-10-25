@@ -65,13 +65,86 @@ describe('tableView 视图状态', () => {
     expect(columns.find((column) => column.key === 'age')?.width).toBe('80px')
   })
 
-  it('空字符串表示移除属性；未出现字段不变', () => {
+  it('空字符串表示移除属性；未出现字段按快照清除', () => {
     const el = mount()
     el.setAttribute('group-by', 'name')
     applyViewState(el, { sortOrder: '', pageSize: '30' })
     expect(el.hasAttribute('sort-order')).toBe(false)
     expect(el.getAttribute('page-size')).toBe('30')
-    expect(el.getAttribute('group-by')).toBe('name')
+    expect(el.hasAttribute('group-by')).toBe(false)
+  })
+
+  it('恢复无排序/无列宽快照会清除旧状态', () => {
+    const el = mount()
+    el.removeAttribute('sort-key')
+    el.removeAttribute('sort-order')
+    el.columns = el.columns.map((column) => ({ ...column, width: undefined }))
+    const adapter = memoryAdapter()
+    expect(saveViewState(el, adapter)).toBe(true)
+
+    const other = mount()
+    other.setAttribute('sort-key', 'age')
+    other.setAttribute('sort-order', 'desc')
+    other.columns = other.columns.map((column) => ({ ...column, width: '200px' }))
+    expect(loadViewState(other, adapter)).toBe(true)
+    expect(other.hasAttribute('sort-key')).toBe(false)
+    expect(other.hasAttribute('sort-order')).toBe(false)
+    expect(other.columns.every((column) => column.width === undefined)).toBe(true)
+  })
+
+  it('sortKey 非字符串/widths 非字符串均拒绝恢复且不改原状态', () => {
+    const el = mount()
+    const before = captureViewState(el)
+    const badState = { version: 1, state: { sortKey: { bad: true } } }
+    const adapter = memoryAdapter({ 'oas-table-view:v1': JSON.stringify(badState) })
+    expect(loadViewState(el, adapter)).toBe(false)
+    expect(captureViewState(el)).toEqual(before)
+    const badWidthsState = { version: 1, state: { widths: { name: 120 } } }
+    const badWidths = memoryAdapter({ 'oas-table-view:v1': JSON.stringify(badWidthsState) })
+    expect(loadViewState(el, badWidths)).toBe(false)
+    expect(captureViewState(el)).toEqual(before)
+  })
+
+  it('完整快照未包含 columnKeys 时重置为全部列', () => {
+    const el = mount()
+    el.columnKeys = ['name']
+    el.setAttribute('column-keys', JSON.stringify(['name']))
+    applyViewState(el, { pageSize: '10' })
+    expect(el.columnKeys).toEqual([])
+    expect(el.getAttribute('column-keys')).toBe('[]')
+  })
+
+  it('完整快照会清除分组列的旧宽度并保留叶子列宽', () => {
+    const el = new OASTable()
+    el.setAttribute(
+      'columns',
+      JSON.stringify([
+        {
+          key: 'group',
+          title: '分组',
+          width: '200px',
+          children: [{ key: 'name', title: '名称', width: '120px' }],
+        },
+      ]),
+    )
+    el.setAttribute('data', JSON.stringify([{ name: 'A' }]))
+    document.body.appendChild(el)
+    applyViewState(el, { widths: { name: '80px' } })
+    expect(el.columns[0]!.width).toBeUndefined()
+    expect(el.columns[0]!.children?.[0]?.width).toBe('80px')
+  })
+
+  it('支持自定义持久化 key；saveViewState 只要求 setItem', () => {
+    const el = mount()
+    const store: Record<string, string> = {}
+    const writeOnly: ViewStateAdapter = {
+      setItem: (key, value) => {
+        store[key] = value
+      },
+    }
+    expect(saveViewState(el, writeOnly, 'orders-view')).toBe(true)
+    expect(JSON.parse(store['orders-view']!).version).toBe(1)
+    expect(loadViewState(el, memoryAdapter(store), 'orders-view')).toBe(true)
   })
 })
 

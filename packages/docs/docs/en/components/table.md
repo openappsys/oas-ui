@@ -510,12 +510,12 @@ Listen to `oas-sort-change`, then set `loading` and re-request remote paginated/
 </DemoBlock>
 
 <script setup>
-import { onMounted } from 'vue'
+import { onBeforeUnmount, onMounted } from 'vue'
 import { filterRows, formulaColumn, pivotTable } from '@oas-ui/ui/data/table/advanced'
 import { setConditionalFormat } from '@oas-ui/ui/data/table/format'
-import { applyViewState, captureViewState } from '@oas-ui/ui/data/table/view'
-import { copyRange, enableRangeSelection, setRangeSelection } from '@oas-ui/ui/data/table/range'
-import { enableHistory, redo, undo } from '@oas-ui/ui/data/table/history'
+import { applyViewState, captureViewState, loadViewState, saveViewState } from '@oas-ui/ui/data/table/view'
+import { addRangeSelection, applyRangePaste, copyRange, cutRange, enableRangeSelection, fillRange, setRangeSelection } from '@oas-ui/ui/data/table/range'
+import { disableHistory, enableHistory, redo, undo } from '@oas-ui/ui/data/table/history'
 import { createMasterDetail } from '@oas-ui/ui/data/table/detail'
 
 // column-virtual demo: 60 metric columns × 40 rows (client-side injection for large data)
@@ -895,14 +895,19 @@ onMounted(() => {
   const proTable = document.querySelector('#table-pro')
   const proStatus = document.querySelector('#table-pro-status')
   const proPanel = document.querySelector('#table-pro-detail')
+  const proViewAdapter = {
+    getItem: (key) => localStorage.getItem(key),
+    setItem: (key, value) => localStorage.setItem(key, value),
+  }
   let proSaved = null
+  let proDetail = null
   if (proTable) {
     customElements.whenDefined('oas-table').then(() => {
       proSaved = captureViewState(proTable)
       enableRangeSelection(proTable)
       enableHistory(proTable)
       if (proPanel) {
-        createMasterDetail(proTable, {
+        proDetail = createMasterDetail(proTable, {
           panel: proPanel,
           label: 'Row details',
           emptyText: 'Click a row to see details; Ctrl/Cmd+C copies the selection',
@@ -944,6 +949,43 @@ onMounted(() => {
     if (!proTable) return
     setRangeSelection(proTable, { row: 0, col: 'name' }, { row: 1, col: 'team' })
   })
+  document.querySelector('#table-pro-multi')?.addEventListener('click', () => {
+    if (!proTable) return
+    setRangeSelection(proTable, { row: 0, col: 'name' })
+    addRangeSelection(proTable, { row: 2, col: 'team' })
+    if (proStatus) proStatus.textContent = 'Two selections: Alpha name + Gamma team'
+  })
+  document.querySelector('#table-pro-cut')?.addEventListener('click', async () => {
+    if (!proTable) return
+    const text = await cutRange(proTable)
+    if (proStatus) proStatus.textContent = text ? `Cut: ${text.replaceAll('\n', ' / ')}` : 'Select a range first'
+  })
+  document.querySelector('#table-pro-paste')?.addEventListener('click', () => {
+    if (!proTable) return
+    setRangeSelection(proTable, { row: 0, col: 'name' }, { row: 1, col: 'team' })
+    const changed = applyRangePaste(proTable, 'AlphaX\t130\nBetaX\t90')
+    if (proStatus) proStatus.textContent = `Wrote back ${changed} cells (oas-range-write)`
+  })
+  document.querySelector('#table-pro-fill')?.addEventListener('click', () => {
+    if (!proTable) return
+    setRangeSelection(proTable, { row: 0, col: 'amount' }, { row: 2, col: 'amount' })
+    const changed = fillRange(proTable, { mode: 'series', cells: 1 })
+    if (proStatus) proStatus.textContent = `Series-filled ${changed} cells`
+  })
+  document.querySelector('#table-pro-save')?.addEventListener('click', () => {
+    if (!proTable) return
+    if (proStatus) proStatus.textContent = saveViewState(proTable, proViewAdapter) ? 'View saved to localStorage' : 'Save failed'
+  })
+  document.querySelector('#table-pro-load')?.addEventListener('click', () => {
+    if (!proTable) return
+    if (proStatus) proStatus.textContent = loadViewState(proTable, proViewAdapter) ? 'View restored' : 'No view to restore'
+  })
+  document.querySelector('#table-pro-detail-key')?.addEventListener('click', () => {
+    if (proDetail) proDetail.selectByKey('c')
+  })
+  document.querySelector('#table-pro-detail-close')?.addEventListener('click', () => {
+    if (proDetail) proDetail.close()
+  })
   document.querySelector('#table-pro-copy')?.addEventListener('click', async () => {
     if (!proTable) return
     const text = await copyRange(proTable)
@@ -954,6 +996,10 @@ onMounted(() => {
   })
   document.querySelector('#table-pro-redo')?.addEventListener('click', () => {
     if (proTable && proStatus) proStatus.textContent = redo(proTable) ? 'Redone' : 'Nothing to redo'
+  })
+  onBeforeUnmount(() => {
+    proDetail?.destroy()
+    if (proTable) disableHistory(proTable)
   })
 })
 </script>
@@ -1166,7 +1212,7 @@ const { columns: pivotColumns, rows: pivotRows } = pivotTable({
 })
 ```
 
-Conditional-format rule editor UI and view-state persistence UI stay on the host; range selection, undo/redo and master-detail are covered by the second Pro batch below.
+Conditional-format rule editor UI and view configuration panels stay on the host; `table/view` also ships a persistence adapter. Range selection, undo/redo and master-detail are covered by the second and third Pro batches below.
 
 ## Pro Capabilities: Format / View / Range / History / Detail
 
@@ -1196,6 +1242,14 @@ createMasterDetail(table, { panel, label: 'Details', render: (detail) => `${deta
       <oas-button id="table-pro-format" size="small">Highlight amount ≥ 100</oas-button>
       <oas-button id="table-pro-reset" size="small">Restore view and clear format</oas-button>
       <oas-button id="table-pro-range" size="small">Select A1:B2</oas-button>
+      <oas-button id="table-pro-multi" size="small">Append selection</oas-button>
+      <oas-button id="table-pro-cut" size="small">Cut selection</oas-button>
+      <oas-button id="table-pro-paste" size="small">Paste & write back</oas-button>
+      <oas-button id="table-pro-fill" size="small">Series fill</oas-button>
+      <oas-button id="table-pro-save" size="small">Save view</oas-button>
+      <oas-button id="table-pro-load" size="small">Restore view</oas-button>
+      <oas-button id="table-pro-detail-key" size="small">Select Gamma by key</oas-button>
+      <oas-button id="table-pro-detail-close" size="small">Close details</oas-button>
       <oas-button id="table-pro-copy" size="small">Copy range</oas-button>
       <oas-button id="table-pro-undo" size="small">Undo</oas-button>
       <oas-button id="table-pro-redo" size="small">Redo</oas-button>
@@ -1230,7 +1284,19 @@ setRangeSelection(table, { row: 0, col: 'name' }, { row: 2, col: 'amount' })
 const tsv = await copyRange(table) // same as Ctrl/Cmd+C
 ```
 
-Selection is anchored internally by **row key + column key** (a stable, unique `row-key` is recommended): it follows the original rows across sorting, filtering and re-renders; rows that leave the windowed slice invalidate the selection, so only loaded rows can be copied. Supports click, drag, programmatic setting, arrow keys, `Shift+Arrow` extension, `Esc` to clear and `Ctrl/Cmd+C` to copy; `Ctrl/Cmd+V` emits `oas-range-paste` (`detail: { start, startKey, rows, text }`; hosts write back by key/coordinate). Once enabled the table uses a roving tabindex (only the focus cell is reachable by Tab; with `grid-navigation` the grid keeps its single stop). Under column-virtual, columns scrolled out of the window become empty columns in the TSV; `span-method` merged columns may leave gaps. Events: `oas-range-change` (detail is `RangeSelection | null`, null when cleared/out of window) / `oas-range-copy` / `oas-range-paste`.
+Selection is anchored internally by **row key + column key** (a stable, unique `row-key` is recommended): it follows the original rows across sorting, filtering and re-renders. Public `row` coordinates are always the `data-row-index` display-row number (absolute in windowed mode), matching `oas-cell-click` / `oas-edit`. Rows that leave the windowed slice only stop being decorated — the **logical selection is kept**; copy/cut touches only currently rendered cells, and selection can extend across windows. Local virtual scrolling also keeps offscreen anchors while the display-set structure is unchanged, and pure cell edits do not clear them. After filtering/sorting/pagination/group-collapse/data changes it resolves by row key and clears unresolved anchors; group headers and expand rows use a separate flat scroll coordinate. Supports click, drag, Ctrl/Cmd-appended rectangles, Ctrl+A for currently rendered cells, arrows / Home / End / PageUp / PageDown, `Shift+Arrow` extension (local virtual scrolling or `oas-window-request` at the edge), `Esc` to clear and `Ctrl/Cmd+C` to copy; `Ctrl/Cmd+V` emits `oas-range-paste` (`detail: { start, startKey, rows, text }`). Once enabled the table uses a roving tabindex (only the focus cell is reachable by Tab; with `grid-navigation` the grid keeps its single stop) plus an `aria-live` selection announcement. Under column-virtual, columns scrolled out of the window become empty columns in the TSV; `span-method` merged columns may leave gaps.
+
+```ts
+import { addRangeSelection, applyRangePaste, cutRange, fillRange, selectByKey } from '@oas-ui/ui/data/table/range'
+
+selectByKey(table, { key: 'a', col: 'name' }, { key: 'c', col: 'age' }) // select by row key
+addRangeSelection(table, { row: 0, col: 'name' }, { row: 1, col: 'age' }) // append a rectangle
+const tsv = await cutRange(table) // copy and clear (uncontrolled)
+applyRangePaste(table, 'X\t9\nY\t8', { skipEmpty: true }) // write from the active selection's top-left cell
+fillRange(table, { mode: 'series', cells: 2 }) // numeric series from the boundary row in the fill direction
+```
+
+Multi-selection copy is split into blocks separated by blank lines; `header: true` adds a header only to the first non-empty block. Events: `oas-range-change` (active selection or `null`), `oas-range-copy` (includes `selections`), `oas-range-paste` (includes `startKey`), and `oas-range-write` (`{ kind: 'paste'|'cut'|'fill', changes: [{ key, column, value, oldValue, oldRawValue }] }`, which history merges into one undo transaction).
 
 ### Undo / redo (`table/history`)
 
@@ -1242,7 +1308,19 @@ undo(table)
 redo(table)
 ```
 
-`oas-edit` now includes `oldValue` (string) and `oldRawValue` (pre-edit original shape such as number / boolean / string[], so undo keeps the original type). History locates the data row through `oas-edit.detail.key` (`rowIndex` is a visible-row coordinate that drifts after sorting/filtering), so configure a stable unique `row-key`. Without `row-key`, only unsorted/unfiltered/unpaginated tables can fall back to `rowIndex`; editing the row-key field with non-unique old/new values still pushes an entry, but undo may be unable to locate a unique row (silently no-op). Tree child rows are located recursively via `children`. `edit-controlled` and windowed modes keep data on the host and are not recorded automatically. Emits `oas-history-change` (`detail: { canUndo, canRedo }`).
+`oas-edit` now includes `oldValue` (string) and `oldRawValue` (pre-edit original shape such as number / boolean / string[], so undo keeps the original type). History locates the data row through `oas-edit.detail.key` (`rowIndex` is a visible-row coordinate that drifts after sorting/filtering), so configure a stable unique `row-key`. Without `row-key`, only unsorted/unfiltered/unpaginated tables can fall back to `rowIndex`; editing the row-key field with non-unique old/new values still pushes an entry, but undo may be unable to locate a unique row (silently no-op). Tree child rows are located recursively via `children`. `edit-controlled` and windowed modes keep data on the host and are not recorded automatically; `enableHistory(table, { windowed: true })` explicitly enables undo within the loaded slice. Emits `oas-history-change` (`detail: { canUndo, canRedo }`).
+
+```ts
+import { recordHistory, withHistoryBatch } from '@oas-ui/ui/data/table/history'
+
+recordHistory(table, { undo: () => restoreA(), redo: () => restoreB() }) // explicit record for controlled flows
+withHistoryBatch(table, () => {
+  recordHistory(table, { undo: undoA, redo: redoA })
+  recordHistory(table, { undo: undoB, redo: redoB })
+}) // one transaction: undo in reverse, redo in order
+```
+
+`oas-range-write` (paste/cut/fill) is merged into a single transaction by default; `options.rangeWrites = false` disables it.
 
 ### Master-detail (`table/detail`)
 
@@ -1256,10 +1334,27 @@ const detail = createMasterDetail(table, {
   render: (detail) => `${detail.row.name} · ${detail.row.amount}`,
 })
 detail.select(0) // select by visible row index; null clears
+detail.selectByKey('c') // select by row key (tree children included; kept even when not rendered)
+detail.close() // fires onClose once
 detail.destroy()
 ```
 
-Clicking a row renders into the host-provided panel (the helper owns the panel content; keep layout/close buttons outside the panel and use one instance per table); the selected row is marked with `tr[data-detail-selected]`. `Enter` opens the focused row and `Esc` closes, returning focus to the row (with range enabled and an active selection, the first Esc clears the selection). `data` changes (including inline-edit write-backs) refresh the detail by row key, and a vanished selected row clears it (refresh does not emit `oas-detail-change`; only selection changes do). `oas-detail-change` (`{ row, key, rowIndex }` or `null`; `rowIndex` is the current rendered-window index, use `key` for stable identity).
+Clicking a row renders into the host-provided panel (the helper owns the panel content; keep layout/close buttons outside the panel and prefer one instance per table); the selected row is marked with `tr[data-detail-selected]`. `Enter` opens the focused row and `Esc` closes, returning focus to the row (with range enabled and an active selection, the first Esc clears the selection). `data` changes (including inline-edit write-backs) refresh the detail by row key, and a vanished selected row clears it (refresh does not emit `oas-detail-change`; only selection changes do). A windowed slice change is not a deletion: selection and panel content stay, and the host calls `close()` for an explicit deletion. With multiple instances, Esc closes only the **most recently activated** instance, then falls back to the previous still-selected instance after close/destroy; `closeOnEscape: false` disables Esc. `onClose` fires only on a real close. `oas-detail-change` (`{ row, key, rowIndex }` or `null`; `rowIndex` is the current rendered-window index, use `key` for stable identity).
+
+### View-state persistence adapter (`table/view`)
+
+```ts
+import { saveViewState, loadViewState } from '@oas-ui/ui/data/table/view'
+
+const adapter = {
+  getItem: (key) => localStorage.getItem(key),
+  setItem: (key, value) => localStorage.setItem(key, value),
+}
+saveViewState(table, adapter, 'orders-view') // optional key; writes { version: 1, state }
+loadViewState(table, adapter, 'orders-view') // false for missing/bad JSON/version != 1/invalid fields, table untouched
+```
+
+The adapter is host-provided (localStorage / sessionStorage / server); saved state contains `{ version: 1, state }` and excludes selection and edit drafts. Saving only requires `setItem`; loading requires `getItem`. Use the third argument to isolate multiple tables. Restore uses a **complete snapshot**: old sorting/filtering/width state absent from the snapshot is cleared. `captureViewState` / `applyViewState` handle structural state capture and restore.
 
 ### Windowed data source helper
 
@@ -1334,6 +1429,7 @@ Listens to `oas-window-request`, aborts stale requests and fills `data` / `windo
 | `setCapabilityOptions` | `setCapabilityOptions(name: string, options: unknown): void` | Pro capability options entry: e.g. `table.setCapabilityOptions('format', rules)`; writes options and triggers a re-render |
 | `effectiveColumns` | `effectiveColumns(): TableColumn[]` | Effective columns: filtered and ordered by column-keys (controlled visible set + order); falls back to all leaf columns when column-keys is absent (backward compatible) |
 | `getColumns` | `getColumns(): TableColumn[]` | All current column definitions (including group columns; a base table API readable by the capability controller / host) |
+| `getDisplaySnapshot` | `getDisplaySnapshot(): TableDisplaySnapshot \| null` | Readonly display-set snapshot for range capabilities: maps row keys to absolute data-row and flat scroll indices (windowed offsets included), with a structural fingerprint and keysByIndex. Built lazily and shared; callers must not mutate the returned maps |
 | `translateText` | `translateText(key: string, params?: Record<string, string \| number>): string` | Translate built-in copy (nearest config-provider / locale; the capability controller and external custom templates look up text here) |
 | `paintCell` | `paintCell(td: HTMLTableCellElement, col: TableColumn, row: Record<string, unknown>): void` | Repaint the cell as regular display content: clears it and mounts cellNode (respecting rich content from render/cellTemplate) |
 | `notifyEdit` | `notifyEdit(kind: 'edit' \| 'edit-cancel', detail: TableEditDetail): void` | Dispatch the edit result event (commit/cancel; detail is assembled by the edit capability). The event name is written as a literal here |

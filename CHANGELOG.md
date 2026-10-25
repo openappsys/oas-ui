@@ -22,13 +22,13 @@
 
 - **`oas-table` Pro 能力第一批**：新增独立子路径 `@oas-ui/ui/data/table/format`（条件格式：规则引擎、单元格/整行装饰、`when` 公式）与 `@oas-ui/ui/data/table/view`（视图状态捕获/应用：列显隐/顺序/宽度、排序、过滤、分页、分组等结构态）；默认 table 链不加载，`setConditionalFormat` / `captureViewState` / `applyViewState` 按需使用。
 
-- **`oas-table` Pro 能力第二批**：新增独立子路径 `@oas-ui/ui/data/table/range`（区域选择 + TSV 剪贴板：点击/拖拽、方向键移动、`Shift+方向键` 扩展、`Esc` 清空、`Ctrl/Cmd+C` 复制、`Ctrl/Cmd+V` 派发 `oas-range-paste`；选区以行键 + 列 key 锚定、roving tabindex、windowed 窗口外失效）、`@oas-ui/ui/data/table/history`（撤销/重做：按行键回写、键盘快捷键、受控/windowed 让位、`oas-history-change`）与 `@oas-ui/ui/data/table/detail`（主从详情宿主侧 helper：行点击/`Enter` 打开、`Esc` 关闭回焦、`data` 变化刷新）；`table/advanced` 增补 `createHistory` 通用撤销栈与 `createWindowedSource` windowed 数据源助手。默认 table 链不加载。
+- **`oas-table` Pro 能力第二批**：新增独立子路径 `@oas-ui/ui/data/table/range`（区域选择 + TSV 剪贴板：点击/拖拽、方向键移动、`Shift+方向键` 扩展、`Esc` 清空、`Ctrl/Cmd+C` 复制、`Ctrl/Cmd+V` 派发 `oas-range-paste`；选区以行键 + 列 key 锚定、roving tabindex、windowed 离窗仅不装饰）、`@oas-ui/ui/data/table/history`（撤销/重做：按行键回写、键盘快捷键、受控/windowed 让位、`oas-history-change`）与 `@oas-ui/ui/data/table/detail`（主从详情宿主侧 helper：行点击/`Enter` 打开、`Esc` 关闭回焦、`data` 变化刷新）；`table/advanced` 增补 `createHistory` 通用撤销栈与 `createWindowedSource` windowed 数据源助手。默认 table 链不加载。
 
-- **`oas-table` Pro 能力第三批**：`range` 补齐剪贴板闭环（表头复制 / `cutRange` / `applyRangePaste` 写回 / 数值序列 `fillRange` 与填充柄）、多选区（Ctrl 追加矩形）、键盘窗口（Home/End/PageUp/PageDown、越界 pending）、`aria-live` 选区播报；`recordHistory` / `withHistoryBatch` 支持显式命令与单条事务，`enableHistory` 监听 `oas-range-write` 合并为一条撤销；`table/view` 新增 `saveViewState` / `loadViewState` 持久化适配器；`table/detail` 新增 `selectByKey` / `close` / `onClose` 与多实例 Esc（仅最近激活实例）。默认 table 链不加载。
+- **`oas-table` Pro 能力第三批**：`range` 补齐剪贴板闭环（表头复制 / `cutRange` / `applyRangePaste` 写回 / 数值序列 `fillRange` 与填充柄）、多选区（Ctrl 追加矩形）、键盘窗口（Home/End/PageUp/PageDown、越界 pending）、`aria-live` 选区播报；公开 `row` 统一为 `data-row-index` 展示集行号，与单元格事件一致。`recordHistory` / `withHistoryBatch` 支持显式命令与单条事务，`enableHistory` 监听 `oas-range-write` 合并为一条撤销；`table/view` 新增 `saveViewState` / `loadViewState` 持久化适配器（可自定义 key、完整快照恢复）；`table/detail` 新增 `selectByKey` / `close` / `onClose` 与多实例 Esc（最近激活实例优先，关闭后回退）。默认 table 链不加载。
 
 ### 变更
 
-- **`oas-range` windowed 选区语义**：离开当前窗口的行不再使逻辑选区失效；选区仅在已渲染单元格上装饰，复制只含已装载切片，并支持跨窗口扩展（Shift+方向键触发 `oas-window-request`）。
+- **`oas-range` windowed 选区语义**：离开当前窗口的行不再使逻辑选区失效；选区仅在已渲染单元格上装饰，复制/剪切只处理当前已渲染单元格，并支持跨窗口扩展（Shift+方向键触发带 margin 的 `oas-window-request` 并滚动到目标行）。
 - **`oas-table` 编辑事件补充旧值**：`oas-edit` / `oas-edit-cancel` 的 `detail` 新增 `oldValue`（提交前字符串值）与 `oldRawValue`（编辑前原始形态，保留 number / boolean / string[] 类型）；既有字段不变。
 - **table 默认入口改为基础表格（v2.6.4）**：`@oas-ui/ui/data/table` 不再默认包含行内编辑；使用 `editable` / `actions` 需显式 `import '@oas-ui/ui/data/table/edit'`。`@oas-ui/ui` 全量入口与 CDN 数据族仍包含编辑。`@oas-ui/ui/data/table/core` 标记 deprecated（等价默认入口），v2.6.5 移除；迁移时把 `table/core` 改为 `table` 即可。
 - **`gear` 图标重绘**：原「3/4 圆 + 三根短线」与 `refresh` 视觉同族、易被误认为刷新；改为 8 齿外轮廓 + 中心圆孔的标准齿轮，16 / 32 / 96px 下均可辨识。
@@ -68,6 +68,7 @@
 - **`oas-diff-viewer` 单块可再收起 + split 替换行双侧读屏**：展开折叠块后保留 fold 行，可再次单独收起（不再只能 `collapseAll`）；split 替换行的可访问名称同时包含删除侧与新增侧。
 - **`oas-diff-viewer` PageDown 步进**：按整屏可见行数移动（原先额外减 1 行），活动行仍自动滚入视口；文档补充 split 行 `data-op="replace"`、真实增删 op 在两侧单元格的定制约定。
 - **`oas-json-viewer` 复制反馈/深嵌套/同值回写**：`toolbar="false"` 时复制成功/失败改为右下角浮层提示（`part="copy-status"`，1.6s 自动隐藏），不再因工具栏隐藏而静默；超深嵌套建树/遍历栈溢出转为可恢复错误态（新增 locale key，不向宿主抛 `RangeError`），超深子树序列化失败派发 `oas-copy-error`；重复写同值 `text` / `expanded` 也强制刷新一次，修复受控回写边界。
+- **table Pro 坐标与焦点闭环**：本地虚拟滚动与 windowed 的选区统一使用展示集行号，离窗坐标直接读展示集快照（行键 → 数据行序 / 扁平滚动序），纯单元格编辑不误清选区，分组折叠与重排按行键重定位；键盘越界请求带 margin 并滚动到目标行，pendingSelection 等 data 到达再绑定，目标格在 roving tabindex 完成后聚焦，windowed 重建恢复焦点且不坍缩多格选区。填充柄记录真实方向/格数，`pointercancel` 不写入且恢复源选区；视图恢复清除快照外旧状态，history 忽略原类型同值写回。
 - **`oas-sidebar` footer 常驻**：`slot="footer"` 原先在滚动容器 `.panel` 内随内容滚走，长导航时页脚不可见。现改为 `position: sticky; bottom: 0` 钉在侧栏可视区底部（桌面与移动抽屉同一套），空 footer 经 `slotchange` 自动隐藏、不再占底部空白；补桌面/移动抽屉真实滚动几何回归。
 - **`oas-chart` 折线/面积/混排的 `circle.dot` 应用 `options.colors`**：此前只改 path/stroke，宿主自定义色时线与数据点异色；现在同一系列线、点同色。
 - **存量裸 `href` 安全收敛**：`oas-float-button`（主钮与 actions）、`oas-attachment`、`oas-tabs`、`oas-notice-bar`、`oas-card`、`oas-list-item`、`oas-breadcrumb`、`oas-anchor`、`oas-pagination` 统一走 `safeUrl`；仅放行 http/https/mailto/tel、blob 对象 URL 与相对地址，其余协议一律退化为非链接/按钮形态。

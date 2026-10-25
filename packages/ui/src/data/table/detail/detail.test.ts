@@ -3,6 +3,7 @@ import { setLocale } from '@oas-ui/i18n'
 import '@oas-ui/i18n'
 import { OASTable } from '../index.js'
 import { createMasterDetail } from './index.js'
+import { getRangeSelection, setRangeSelection } from '../range/index.js'
 
 function mount(): { table: OASTable; panel: HTMLElement } {
   const table = new OASTable()
@@ -400,7 +401,7 @@ describe('table/detail 主从详情', () => {
     db.destroy()
   })
 
-  it('多实例：destroy 最近激活实例后清除活动标记（window Esc 不再关其它实例）', () => {
+  it('多实例：destroy 最近激活实例后，Esc 回退到仍选中的上一个实例', () => {
     const a = mount()
     const b = mount()
     const da = createMasterDetail(a.table, { panel: a.panel, label: 'A', render: (row) => `${row.row.name}` })
@@ -409,7 +410,7 @@ describe('table/detail 主从详情', () => {
     rowClick(b.table, { id: 'b', name: 'Beta' }, 'b')
     db.destroy()
     window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', cancelable: true }))
-    expect(da.selected).not.toBeNull()
+    expect(da.selected).toBeNull()
     da.destroy()
   })
 
@@ -464,5 +465,139 @@ describe('table/detail 主从详情', () => {
   it('label 为空仍抛错', () => {
     const { table, panel } = mount()
     expect(() => createMasterDetail(table, { panel, label: '  ', render: () => null })).toThrow()
+  })
+})
+
+describe('table/detail windowed 与活动实例收尾', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  it('windowed 换窗不当作删除：保留选中与面板，rowIndex=-1', async () => {
+    const table = new OASTable()
+    table.setAttribute('columns', JSON.stringify([{ key: 'name', title: '名称' }]))
+    table.setAttribute('row-key', 'id')
+    table.setAttribute('windowed', '')
+    table.setAttribute('total', '100')
+    table.setAttribute('window-start', '0')
+    table.setAttribute(
+      'data',
+      JSON.stringify([
+        { id: 'a', name: 'A' },
+        { id: 'b', name: 'B' },
+      ]),
+    )
+    const panel = document.createElement('div')
+    document.body.append(table, panel)
+    const detail = createMasterDetail(table, { panel, label: '详情', render: (row) => String(row.row.name) })
+    rowClick(table, { id: 'b', name: 'B' }, 'b')
+    expect(detail.selected?.key).toBe('b')
+    table.setAttribute('window-start', '2')
+    table.data = [{ id: 'c', name: 'C' }]
+    await vi.waitFor(() => expect(detail.selected?.rowIndex).toBe(-1))
+    expect(detail.selected?.key).toBe('b')
+    expect(panel.textContent).toBe('B')
+    detail.destroy()
+  })
+
+  it('close 清活动标记；destroy 后 select/close 为 no-op', () => {
+    const a = mount()
+    const b = mount()
+    const da = createMasterDetail(a.table, { panel: a.panel, label: 'A', render: (row) => String(row.row.name) })
+    const db = createMasterDetail(b.table, { panel: b.panel, label: 'B', render: (row) => String(row.row.name) })
+    rowClick(a.table, { id: 'a', name: 'Alpha' }, 'a')
+    rowClick(b.table, { id: 'b', name: 'Beta' }, 'b')
+    da.close()
+    expect(da.selected).toBeNull()
+    expect(db.selected?.key).toBe('b')
+    db.destroy()
+    db.select(0)
+    db.close()
+    expect(b.panel.textContent).toBe('')
+  })
+
+  it('最近实例 close 后，window Esc 回退关闭仍选中的上一个实例', () => {
+    const a = mount()
+    const b = mount()
+    const da = createMasterDetail(a.table, { panel: a.panel, label: 'A', render: (row) => String(row.row.name) })
+    const db = createMasterDetail(b.table, { panel: b.panel, label: 'B', render: (row) => String(row.row.name) })
+    rowClick(b.table, { id: 'b', name: 'Beta' }, 'b')
+    rowClick(a.table, { id: 'a', name: 'Alpha' }, 'a')
+    da.close()
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', cancelable: true }))
+    expect(db.selected).toBeNull()
+    da.destroy()
+    db.destroy()
+  })
+
+  it('跨表本地 Esc 只关闭当前表，不被另一个活动实例截获', () => {
+    const a = mount()
+    const b = mount()
+    const da = createMasterDetail(a.table, { panel: a.panel, label: 'A', render: (row) => String(row.row.name) })
+    const db = createMasterDetail(b.table, { panel: b.panel, label: 'B', render: (row) => String(row.row.name) })
+    rowClick(a.table, { id: 'a', name: 'Alpha' }, 'a')
+    rowClick(b.table, { id: 'b', name: 'Beta' }, 'b')
+    a.table.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }))
+    expect(da.selected).toBeNull()
+    expect(db.selected?.key).toBe('b')
+    da.destroy()
+    db.destroy()
+  })
+
+  it('非 windowed 虚拟滚动离开渲染窗口后 rowIndex 归一为 -1', async () => {
+    const table = new OASTable()
+    table.setAttribute('columns', JSON.stringify([{ key: 'name', title: '名称' }]))
+    table.setAttribute('row-key', 'id')
+    table.setAttribute('height', '80')
+    table.setAttribute('row-height', '40')
+    const rows = []
+    for (let row = 0; row < 100; row++) rows.push({ id: `r${row}`, name: `R${row}` })
+    table.setAttribute('data', JSON.stringify(rows))
+    const panel = document.createElement('div')
+    document.body.append(table, panel)
+    const detail = createMasterDetail(table, { panel, label: '详情', render: (row) => String(row.row.name) })
+    const wrap = table.shadowRoot!.querySelector('.table-scroll') as HTMLElement
+    wrap.scrollTop = 99 * 40
+    wrap.dispatchEvent(new Event('scroll'))
+    await vi.waitFor(() => expect(table.shadowRoot!.querySelector('tr[data-row-index="99"]')).toBeTruthy())
+    detail.selectByKey('r99')
+    expect(detail.selected?.rowIndex).toBeGreaterThanOrEqual(0)
+    wrap.scrollTop = 0
+    wrap.dispatchEvent(new Event('scroll'))
+    table.data = rows
+    await vi.waitFor(() => expect(detail.selected?.rowIndex).toBe(-1))
+    expect(detail.selected?.key).toBe('r99')
+    detail.destroy()
+  })
+
+  it('Esc 关闭详情并回焦时不会复活 range 单格选区', () => {
+    const { table, panel } = mount()
+    const detail = createMasterDetail(table, { panel, label: '详情', render: (row) => String(row.row.name) })
+    rowClick(table, { id: 'b', name: 'Beta' }, 'b')
+    setRangeSelection(table, { row: 0, col: 'name' })
+    const td = table.shadowRoot!.querySelector('tr.row td[data-col="name"]') as HTMLElement
+    td.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, composed: true, cancelable: true }))
+    expect(getRangeSelection(table)).toBeNull()
+    expect(detail.selected).not.toBeNull()
+    td.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, composed: true, cancelable: true }))
+    expect(detail.selected).toBeNull()
+    expect(getRangeSelection(table)).toBeNull()
+    detail.destroy()
+  })
+
+  it('同表多实例的 Esc 也只关闭最近激活实例', () => {
+    const { table, panel: firstPanel } = mount()
+    const secondPanel = document.createElement('div')
+    document.body.appendChild(secondPanel)
+    const first = createMasterDetail(table, { panel: firstPanel, label: 'A', render: (row) => String(row.row.name) })
+    const second = createMasterDetail(table, { panel: secondPanel, label: 'B', render: (row) => String(row.row.name) })
+    first.select(0)
+    second.select(1)
+    table.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }))
+    expect(first.selected?.key).toBe('a')
+    expect(second.selected).toBeNull()
+    first.destroy()
+    second.destroy()
   })
 })

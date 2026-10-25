@@ -14,6 +14,7 @@
 | **N06 数据网格高级能力** | 新增 `@oas-ui/ui/data/table/advanced` 纯函数入口：透视、安全公式列、查询构建器、TSV、通用撤销栈、windowed 数据源助手；主 `table` / `table/edit` 边界不变（v2.6.4 起 `table/core` 为 deprecated 别名） | ✅ 已完成（未发版） |
 | **N06 Pro 能力（第一批）** | `@oas-ui/ui/data/table/format` 条件格式（规则引擎 + 单元格/整行装饰）、`@oas-ui/ui/data/table/view` 视图状态捕获/应用；独立子路径、默认不加载 | ✅ 已完成（未发版） |
 | **N06 Pro 能力（第二批）** | `@oas-ui/ui/data/table/range` 区域选择 + TSV 剪贴板（行键锚定 / 键盘扩展 / 粘贴事件）、`table/history` 撤销重做、`table/detail` 主从详情；独立子路径、默认不加载 | ✅ 已完成（未发版） |
+| **N06 Pro 能力（第三批）** | range 剪贴板闭环（表头复制/cut/写回/填充柄/多选区/键盘窗口）、history 受控记录与事务、view 持久化适配器、detail 按行键选中与多实例收尾；全部 headless，不新增 Pro 产品 UI | ✅ 已完成（未发版） |
 
 ## v2.6.4（未发布）
 
