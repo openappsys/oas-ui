@@ -551,6 +551,8 @@ export class OASTree extends OASElement {
   private visibleRootIndex: number[] = []
   /** 每节点 aria-setsize/posinset 元数据（根用全量口径、子用同级已装载数；update 时重建） */
   private ariaMeta = new Map<string, { setsize: number; posinset: number }>()
+  /** Shift 范围选择的锚点 key（多选下最近一次普通/Ctrl 点选；外部清空 selected 后失效自动回退） */
+  private selectionAnchor: string | null = null
 
   // ---------- windowed 复审修复：禁用告警去重 + 回填滚动锚定 ----------
 
@@ -1377,8 +1379,8 @@ export class OASTree extends OASElement {
     }
     row.appendChild(label)
 
-    row.addEventListener('click', () => {
-      this.handleRowClick(node)
+    row.addEventListener('click', (e) => {
+      this.handleRowClick(node, e)
     })
     // 行级 keydown：roving 方向键/展开/勾选（无需跨 shadow 冒泡，虚拟/非虚拟一致可达）
     row.addEventListener('keydown', this.onTreeKeydown)
@@ -1396,7 +1398,7 @@ export class OASTree extends OASElement {
 
   // ---------- 交互（点选 / 勾选 / 展开） ----------
 
-  private handleRowClick(node: TreeNode): void {
+  private handleRowClick(node: TreeNode, modifiers?: Pick<MouseEvent, 'shiftKey' | 'ctrlKey' | 'metaKey'>): void {
     // 双击进重命名的第二击：capture 相位已进入编辑，抑制本次行点击选中（防 multiple 反选）
     if (this.suppressRowSelect) {
       this.suppressRowSelect = false
@@ -1408,25 +1410,61 @@ export class OASTree extends OASElement {
     if (this.treeSelectable() && this.nodeSelectable(node)) {
       if (this.hasAttr('multiple')) {
         const selected = this.currentSelected()
-        const idx = selected.indexOf(id)
-        if (idx >= 0) {
-          selected.splice(idx, 1)
-          this.setAttribute('selected', JSON.stringify(selected))
-          this.emit('select', { key: id, selected: false })
+        if (modifiers?.shiftKey) {
+          // Shift：按可见扁平顺序从锚点范围选择；Ctrl/⌘+Shift 并入现有选择，纯 Shift 替换
+          if (!this.selectionAnchor) {
+            const visibleKeys = new Set(this.visible.map(({ node }) => this.acc.idOf(node)))
+            this.selectionAnchor = [...selected].reverse().find((key) => visibleKeys.has(key)) ?? id
+          }
+          const range = this.selectionRange(id)
+          const next = modifiers.ctrlKey || modifiers.metaKey ? [...new Set([...selected, ...range])] : range
+          // Ctrl+Shift 并入后按可见顺序归一，保证 selectedIds 顺序稳定
+          if (modifiers.ctrlKey || modifiers.metaKey) {
+            const rank = new Map(this.visible.map((row, i) => [this.acc.idOf(row.node), i]))
+            next.sort((a, b) => (rank.get(a) ?? Number.MAX_SAFE_INTEGER) - (rank.get(b) ?? Number.MAX_SAFE_INTEGER))
+          }
+          this.setAttribute('selected', JSON.stringify(next))
+          this.emit('select', { key: id, selected: next.includes(id), selectedIds: next })
         } else {
-          selected.push(id)
-          this.setAttribute('selected', JSON.stringify(selected))
-          this.emit('select', { key: id, selected: true })
+          const idx = selected.indexOf(id)
+          if (idx >= 0) {
+            selected.splice(idx, 1)
+            this.setAttribute('selected', JSON.stringify(selected))
+            this.emit('select', { key: id, selected: false, selectedIds: selected })
+          } else {
+            selected.push(id)
+            this.setAttribute('selected', JSON.stringify(selected))
+            this.emit('select', { key: id, selected: true, selectedIds: selected })
+          }
+          this.selectionAnchor = id
         }
       } else {
         this.setAttribute('selected', id)
-        this.emit('select', { key: id, selected: true })
+        this.selectionAnchor = id
+        this.emit('select', { key: id, selected: true, selectedIds: [id] })
       }
     }
     // expand-trigger='node'：点击节点同时展开/收起（对勾选树同样生效）
     if (this.getAttr('expand-trigger', 'toggle') === 'node') {
       this.toggleExpansion(node)
     }
+  }
+
+  /** Shift 范围选择：按当前可见行（过滤/折叠后）中可选中节点的顺序取闭区间 */
+  private selectionRange(toId: string): string[] {
+    const selectable = this.visible
+      .filter(({ node }) => this.nodeSelectable(node) && !this.nodeDisabled(node))
+      .map(({ node }) => this.acc.idOf(node))
+    const to = selectable.indexOf(toId)
+    if (to < 0) return [toId]
+    const anchor =
+      (this.selectionAnchor && selectable.includes(this.selectionAnchor) ? this.selectionAnchor : undefined) ??
+      [...this.currentSelected()].reverse().find((id) => selectable.includes(id)) ??
+      toId
+    const from = selectable.indexOf(anchor)
+    if (from < 0) return [toId]
+    const [lo, hi] = from <= to ? [from, to] : [to, from]
+    return selectable.slice(lo, hi + 1)
   }
 
   private toggleCheckByKey(id: string): void {

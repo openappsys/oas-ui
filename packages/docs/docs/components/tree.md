@@ -72,7 +72,7 @@
   </div>
 </DemoBlock>
 
-设置 `multiple` 后 `selected` 变为 JSON 字符串数组，点击标签在集合中追加 / 移除（再点已选项取消）。勾选（checkable）与点选（multiple/selected）是两套独立模型，可同时启用。
+设置 `multiple` 后 `selected` 变为 JSON 字符串数组：普通点击切换该项（再点已选项取消）、Ctrl/⌘ 点击切换、**Shift 点击按当前可见顺序从锚点范围选择**（Ctrl/⌘+Shift 并入现有选择，纯 Shift 替换）；`oas-select` 的 `detail` 同时带 `selectedIds` 全量选中集合。勾选（checkable）与点选（multiple/selected）是两套独立模型，可同时启用。
 
 ## 展开行为
 
@@ -726,7 +726,7 @@ windowed 的本地能力边界：**本地 `filter` 与顶部全选（`check-all`
 | `height` | 虚拟滚动视口高度（px）；设置后开启大数据量虚拟化渲染 | `string` | — |
 | `lazy` | 懒加载：无 `children` 且未标记 `isLeaf` / `loaded` 的节点，展开时触发加载 | `boolean` | — |
 | `motion` | 展开/收起高度过渡动画（默认关）：非虚拟模式行容器 max-height 过渡展开/收起，虚拟滚动模式入场降级为淡入、收起即时；时长/缓动走 `--oas-transition-*`，`prefers-reduced-motion` 下停用 | `boolean` | — |
-| `multiple` | 点选多选（Ctrl/⌘ 点击多选；勾选集 selected 为 JSON 数组） | `boolean` | — |
+| `multiple` | 点选多选（Ctrl/⌘ 切换、Shift 范围选择、Ctrl/⌘+Shift 并入；selected 为 JSON 数组） | `boolean` | — |
 | `row-height` | 虚拟化时每行固定高度（px） | `string` | `32` |
 | `selectable` | 整树点选开关，`"false"` 时点击/键盘不选中不派发 oas-select（展开/勾选不受影响） | `string` | `true` |
 | `selected` | 选中节点 key | `string` | — |
@@ -768,7 +768,7 @@ windowed 的本地能力边界：**本地 `filter` 与顶部全选（`check-all`
 | `oas-node-drop` | 节点拖放，`detail: { dragKey, dropKey, position }`，`position` 为 `before` / `after` / `inner`；`dropKey` 为空字符串表示移入根 |
 | `oas-node-rename` | 内联重命名提交（Enter / 失焦），`detail: { key, label, oldLabel }`；数据由宿主受控——组件不改数据模型，宿主监听后更新 `data` 才生效（不更新则保持旧值；Esc 取消不派发） |
 | `oas-node-render` | 每个渲染的节点行派发，`detail: { node, element, level, expanded, selected, checked }`（element 为节点 label 容器，宿主可改写为图标 / 富文本） |
-| `oas-select` | 选中节点，`detail: { key, selected }` |
+| `oas-select` | 选中节点，detail: { key, selected, selectedIds }；selectedIds 为当前选中集合（单选时单元素数组） |
 | `oas-window-request` | windowed 模式下期望根节点窗口未被已装载区间覆盖时派发，detail: { start, end, reason }（半开区间、绝对根序号；reason 为 init / scroll / resize / data）；同一期望区间不重复派发 |
 
 #### 插槽

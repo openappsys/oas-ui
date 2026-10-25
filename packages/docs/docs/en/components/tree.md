@@ -71,7 +71,7 @@ With `checkable` the model is **cascading** (same semantics as `oas-tree-select`
   </div>
 </DemoBlock>
 
-With `multiple`, `selected` becomes a JSON string array and clicking a label appends / removes its key (click again to deselect). Checkboxes (`checkable`) and click-selection (`multiple` / `selected`) are two independent models and can be combined.
+With `multiple`, `selected` becomes a JSON string array: a plain click toggles that key (click again to deselect), Ctrl/⌘-click toggles, and **Shift-click selects a range from the anchor in current visible order** (Ctrl/⌘+Shift adds the range to the existing selection; plain Shift replaces it). The `oas-select` detail also includes `selectedIds` with the full selection set. Checkboxes (`checkable`) and click-selection (`multiple` / `selected`) are two independent models and can be combined.
 
 ## Expansion Behaviour
 
@@ -728,7 +728,7 @@ Boundaries of local capabilities in windowed mode: **local `filter` and top-leve
 | `height` | Virtual scroll viewport height (px); setting it enables virtualized rendering for large data | `string` | — |
 | `lazy` | Lazy loading: nodes without `children` and not marked `isLeaf` / `loaded` trigger loading on expand | `boolean` | — |
 | `motion` | Expand/collapse height transition animation (off by default): non-virtual mode transitions row-container max-height on expand/collapse, virtual-scroll mode degrades to a fade-in on expand with instant collapse; duration/easing follow `--oas-transition-*`, disabled under `prefers-reduced-motion` | `boolean` | — |
-| `multiple` | Click multi-select (Ctrl/⌘-click; selected set is a JSON array) | `boolean` | — |
+| `multiple` | Click multi-select (Ctrl/⌘ toggles, Shift selects a range, Ctrl/⌘+Shift adds a range; selected is a JSON array) | `boolean` | — |
 | `row-height` | Fixed row height when virtualized (px) | `string` | `32` |
 | `selectable` | Whole-tree selection switch; `"false"` stops click/keyboard selection while expand/check keep working | `string` | `true` |
 | `selected` | Key of the selected node | `string` | — |
@@ -770,7 +770,7 @@ Boundaries of local capabilities in windowed mode: **local `filter` and top-leve
 | `oas-node-drop` | Node dropped, `detail: { dragKey, dropKey, position }`; `position` is `before` / `after` / `inner`; an empty-string `dropKey` means moved to the root |
 | `oas-node-rename` | Inline rename committed (Enter / blur), `detail: { key, label, oldLabel }`; data stays host-controlled — the component does not mutate the model, so the new label only shows once the host updates `data` (keeps the old value otherwise; Esc cancel does not emit) |
 | `oas-node-render` | Dispatched for each rendered node row, `detail: { node, element, level, expanded, selected, checked }` (element is the node label container; the host can rewrite it into icon / rich text) |
-| `oas-select` | Node selected, `detail: { key, selected }` |
+| `oas-select` | Node selected, detail: { key, selected, selectedIds }; selectedIds is the current selection set (one element for single-select) |
 | `oas-window-request` | Emitted in windowed mode when the expected root window is not covered by the loaded range; detail: { start, end, reason } (half-open, absolute root indices; reason is init / scroll / resize / data). The same expected window is not emitted twice |
 
 #### Slots

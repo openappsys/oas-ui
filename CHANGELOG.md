@@ -6,6 +6,7 @@
 
 ### 新增
 
+- **`oas-tree` 多选 Shift 范围选择**：`multiple` 下新增 Shift 点击按当前可见顺序（过滤/折叠后）从锚点范围选择，纯 Shift 替换、Ctrl/⌘+Shift 并入现有选择；`oas-select` 的 `detail` 增 `selectedIds`（全量选中集合，单选为单元素数组，旧字段 `key` / `selected` 保持兼容）。范围跳过 disabled / `selectable:false` 节点。
 - **裸导入可解析性门禁**：新增 `pnpm exports:check`，扫描源码 `@oas-ui/*` 导入并按各包 `package.json#exports` 映射校验构建产物存在；`pnpm build` 构建后自动执行，避免发布后子路径 import 失败。
 
 - **`oas-json-viewer` JSON 查看器**：只读 JSON 树，支持折叠/展开（`expanded` 受控或非受控）、大小写不敏感搜索与命中导航、JSONPath / 原始值 / 子树 JSON 复制、固定行高虚拟滚动、键盘导航与 `aria-activedescendant` 读屏语义。`text` attribute（SSR/DSD）与 `data` property 双通道，非法文本错误态可自恢复；10 个语言包补齐工具栏文案。

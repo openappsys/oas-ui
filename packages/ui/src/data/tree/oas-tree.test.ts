@@ -158,7 +158,7 @@ describe('OASTree 展开（expanded JSON 数组）+ 选中', () => {
     let detail: unknown
     el.addEventListener('oas-select', (e: Event) => (detail = (e as CustomEvent).detail))
     rows(el)[0]!.click()
-    expect(detail).toEqual({ key: 'a', selected: true })
+    expect(detail).toEqual({ key: 'a', selected: true, selectedIds: ['a'] })
     expect(el.getAttribute('selected')).toBe('a')
   })
 
@@ -497,9 +497,65 @@ describe('OASTree 点选多选（multiple）', () => {
     rows(el)[0]!.click()
     rows(el)[0]!.click()
     expect(details).toEqual([
-      { key: 'a', selected: true },
-      { key: 'a', selected: false },
+      { key: 'a', selected: true, selectedIds: ['a'] },
+      { key: 'a', selected: false, selectedIds: [] },
     ])
+  })
+
+  it('multiple + Shift：按可见顺序范围选择；纯 Shift 替换，Ctrl+Shift 并入', () => {
+    const data = JSON.stringify(['a', 'b', 'c', 'd', 'e'].map((key) => ({ key, label: key })))
+    const el = mount({ multiple: '', data })
+    const details: Array<{ selectedIds: string[] }> = []
+    el.addEventListener('oas-select', (e: Event) => details.push((e as CustomEvent<{ selectedIds: string[] }>).detail))
+    const click = (i: number, mods: MouseEventInit = {}): void => {
+      rows(el)[i]!.dispatchEvent(new MouseEvent('click', { bubbles: true, ...mods }))
+    }
+    const selected = (): string[] => JSON.parse(el.getAttribute('selected') ?? '[]')
+
+    click(1) // b：锚点
+    click(3, { shiftKey: true }) // b..d，替换
+    expect(selected()).toEqual(['b', 'c', 'd'])
+    expect(details.at(-1)!.selectedIds).toEqual(['b', 'c', 'd'])
+
+    click(4, { shiftKey: true }) // 锚点仍是 b：b..e
+    expect(selected()).toEqual(['b', 'c', 'd', 'e'])
+
+    click(2, { ctrlKey: true }) // 取消 c，并把锚点移到 c
+    expect(selected()).toEqual(['b', 'd', 'e'])
+    click(4, { shiftKey: true, ctrlKey: true }) // c..e 并入现有
+    expect(selected()).toEqual(['b', 'c', 'd', 'e'])
+  })
+
+  it('multiple + Shift：范围跳过 disabled / selectable:false 节点', () => {
+    const data = JSON.stringify([
+      { key: 'a', label: 'a' },
+      { key: 'b', label: 'b', disabled: true },
+      { key: 'c', label: 'c', selectable: false },
+      { key: 'd', label: 'd' },
+    ])
+    const el = mount({ multiple: '', data })
+    rows(el)[0]!.click()
+    rows(el)[3]!.dispatchEvent(new MouseEvent('click', { bubbles: true, shiftKey: true }))
+    expect(JSON.parse(el.getAttribute('selected') ?? '[]')).toEqual(['a', 'd'])
+  })
+
+  it('multiple + Shift：折叠子树不参与可见范围', () => {
+    const data = JSON.stringify([
+      {
+        key: 'a',
+        label: 'a',
+        children: [
+          { key: 'a-1', label: 'a-1' },
+          { key: 'a-2', label: 'a-2' },
+        ],
+      },
+      { key: 'b', label: 'b' },
+      { key: 'c', label: 'c' },
+    ])
+    const el = mount({ multiple: '', data })
+    rows(el)[0]!.click()
+    rows(el)[2]!.dispatchEvent(new MouseEvent('click', { bubbles: true, shiftKey: true }))
+    expect(JSON.parse(el.getAttribute('selected') ?? '[]')).toEqual(['a', 'b', 'c'])
   })
 })
 
@@ -1067,7 +1123,7 @@ describe('OASTree 声明式数据通道 / 水合 / 自定义渲染 / 目录', ()
     let detail: unknown
     snap.addEventListener('oas-select', (e: Event) => (detail = (e as CustomEvent).detail))
     rows(snap)[0]!.click()
-    expect(detail).toEqual({ key: 'a', selected: true })
+    expect(detail).toEqual({ key: 'a', selected: true, selectedIds: ['a'] })
   })
 
   function tpl(slot: string, html: string): HTMLTemplateElement {
@@ -1712,7 +1768,7 @@ describe('OASTree size 五档 / block-node / selectable 整树开关（P2 批）
       el.addEventListener('oas-select', (e: Event) => events.push((e as CustomEvent).detail))
       rows(el)[0]!.click()
       expect(el.getAttribute('selected')).toBe('a')
-      expect(events).toEqual([{ key: 'a', selected: true }])
+      expect(events).toEqual([{ key: 'a', selected: true, selectedIds: ['a'] }])
     })
 
     it('selectable="false"：点击/键盘不选中、不派发 oas-select（selected 属性保持不动）', () => {

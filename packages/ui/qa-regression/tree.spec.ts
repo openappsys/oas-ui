@@ -812,3 +812,35 @@ test('tree windowed 回填滚动锚定：window-start 迁移后视口顶行同�
   expect(r.after, '回填/trim 循环后视口顶行仍是同一绝对根（滚动锚定，不跳行）').toBe(r.before)
   expect(r.scrollTopAfter, '锚定补偿后 scrollTop 与迁移前一致（同一绝对根在同一本地位）').toBe(r.scrollTopBefore)
 })
+
+test('tree multiple：Shift 范围选择与 Ctrl+Shift 并入（真实点击）', async ({ page }) => {
+  await page.goto('/components/tree.html', { waitUntil: 'domcontentloaded' })
+  await page.waitForFunction(() => !!customElements.get('oas-tree'))
+  await page.evaluate(async () => {
+    const el = document.createElement('oas-tree')
+    el.className = 'qa-tree'
+    el.setAttribute('multiple', '')
+    el.setAttribute('selected', '["b"]')
+    el.setAttribute('data', JSON.stringify(['a', 'b', 'c', 'd', 'e'].map((key) => ({ key, label: key }))))
+    document.body.appendChild(el)
+    await new Promise((res) => requestAnimationFrame(() => requestAnimationFrame(() => res(null))))
+  })
+  const tree = page.locator('oas-tree.qa-tree')
+  const rows = tree.locator('[part="row"]')
+  await expect(rows).toHaveCount(5)
+  const selected = (): Promise<string | null> => tree.evaluate((el) => el.getAttribute('selected'))
+
+  // 预选 b 作为锚点；Shift 点 d → 可见顺序 b..d
+  await rows.nth(3).click({ modifiers: ['Shift'] })
+  await expect.poll(selected).toBe('["b","c","d"]')
+
+  // 锚点仍是 b；Shift 点 e → b..e
+  await rows.nth(4).click({ modifiers: ['Shift'] })
+  await expect.poll(selected).toBe('["b","c","d","e"]')
+
+  // Ctrl 点 c 取消并把锚点移到 c；Ctrl+Shift 点 e 把 c..e 并入
+  await rows.nth(2).click({ modifiers: ['Control'] })
+  await expect.poll(selected).toBe('["b","d","e"]')
+  await rows.nth(4).click({ modifiers: ['Control', 'Shift'] })
+  await expect.poll(selected).toBe('["b","c","d","e"]')
+})
