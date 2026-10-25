@@ -3904,7 +3904,7 @@
       "lazy": "懒加载：无 `children` 且未标记 `isLeaf` / `loaded` 的节点，展开时触发加载",
       "row-height": "虚拟化时每行固定高度（px）",
       "selected": "选中节点 key",
-      "multiple": "点选多选（Ctrl/⌘ 切换、Shift 范围选择、Ctrl/⌘+Shift 并入；selected 为 JSON 数组）",
+      "multiple": "点选多选（Ctrl/⌘ 切换、Shift 点击/Shift+↑↓ 范围选择与扩选、Ctrl/⌘+Shift 并入；selected 为 JSON 数组）",
       "check-strategy": "勾选导出策略：`all`（默认）/ `parent` / `child`（checkable 级联时生效）",
       "check-strictly": "勾选父子解联（勾选父级不联动子级）",
       "default-expand-all": "默认展开全部节点（expanded 属性缺席时生效）",

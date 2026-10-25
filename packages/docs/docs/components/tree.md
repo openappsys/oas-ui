@@ -72,7 +72,7 @@
   </div>
 </DemoBlock>
 
-设置 `multiple` 后 `selected` 变为 JSON 字符串数组：普通点击切换该项（再点已选项取消）、Ctrl/⌘ 点击切换、**Shift 点击按当前可见顺序从锚点范围选择**（Ctrl/⌘+Shift 并入现有选择，纯 Shift 替换）；`oas-select` 的 `detail` 同时带 `selectedIds` 全量选中集合。勾选（checkable）与点选（multiple/selected）是两套独立模型，可同时启用。
+设置 `multiple` 后 `selected` 变为 JSON 字符串数组：普通点击切换该项（再点已选项取消）、Ctrl/⌘ 点击切换、**Shift 点击按当前可见顺序从锚点范围选择**（Ctrl/⌘+Shift 并入现有选择，纯 Shift 替换）；**Shift+↑/↓ 按可见顺序把锚点范围扩到当前行**。`oas-select` 的 `detail` 同时带 `selectedIds` 全量选中集合。勾选（checkable）与点选（multiple/selected）是两套独立模型，可同时启用。
 
 ## 展开行为
 
@@ -736,7 +736,7 @@ windowed 的本地能力边界：**本地 `filter` 与顶部全选（`check-all`
 | `height` | 虚拟滚动视口高度（px）；设置后开启大数据量虚拟化渲染 | `string` | — |
 | `lazy` | 懒加载：无 `children` 且未标记 `isLeaf` / `loaded` 的节点，展开时触发加载 | `boolean` | — |
 | `motion` | 展开/收起高度过渡动画（默认关）：非虚拟模式行容器 max-height 过渡展开/收起，虚拟滚动模式入场降级为淡入、收起即时；时长/缓动走 `--oas-transition-*`，`prefers-reduced-motion` 下停用 | `boolean` | — |
-| `multiple` | 点选多选（Ctrl/⌘ 切换、Shift 范围选择、Ctrl/⌘+Shift 并入；selected 为 JSON 数组） | `boolean` | — |
+| `multiple` | 点选多选（Ctrl/⌘ 切换、Shift 点击/Shift+↑↓ 范围选择与扩选、Ctrl/⌘+Shift 并入；selected 为 JSON 数组） | `boolean` | — |
 | `row-height` | 虚拟化时每行固定高度（px） | `string` | `32` |
 | `selectable` | 整树点选开关，`"false"` 时点击/键盘不选中不派发 oas-select（展开/勾选不受影响） | `string` | `true` |
 | `selected` | 选中节点 key | `string` | — |
@@ -789,5 +789,13 @@ windowed 的本地能力边界：**本地 `filter` 与顶部全选（`check-all`
 | `template[slot="node"]` | 节点行静态模板，克隆到每个节点 label 容器；`[data-node-label]` 节点自动绑定节点 label |
 | `template[slot="toggle"]` | 展开按钮静态模板，克隆到每个可展开节点的展开按钮内（替换默认 › 图标） |
 | `template[slot="toggle-loading"]` | 懒加载展开中的指示器（替换 spinner） |
+
+#### CSS 变量
+
+| CSS 变量 | 默认值 |
+| --- | --- |
+| `--oas-tree-drop-inner-bg` | `color-mix(in srgb, var(--oas-color-primary) 12%, transparent)` |
+| `--oas-tree-drop-line-color` | `var(--oas-color-primary)` |
+| `--oas-tree-drop-line-thickness` | `2px` |
 
 > 节点字段说明：`isLeaf: true` 表示显式叶子（懒加载下不显示展开箭头）；`loaded: true` 表示已加载完成（配合 `children` 使用，避免重复触发加载）；`renamable: false` 表示该节点不可重命名（配合 `can-rename`，缺省可重命名）。

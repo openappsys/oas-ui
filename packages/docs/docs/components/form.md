@@ -108,7 +108,7 @@
 
 校验区演示 `rules` 声明的校验规则与失败反馈。
 
-> 校验规则：`{ required, message, minLength, maxLength, pattern, validator, validateTrigger }`（`validator` 为自定义校验函数，函数不可 JSON 序列化，走 `rules` property 通道；`validateTrigger` 字段级覆盖表级触发时机）。校验失败时字段被标记 `aria-invalid`（输入框红边），字段下方显示红字错误提示，并派发 `oas-validate-fail`。
+> 校验规则：`{ required, message, minLength, maxLength, pattern, validator, validateTrigger }`（`validator` 为自定义校验函数，函数不可 JSON 序列化，走 `rules` property 通道；`validateTrigger` 字段级覆盖表级触发时机）。校验失败时字段被标记 `aria-invalid`（输入框红边），字段下方显示红字错误提示，并派发 `oas-validate-fail`。错误文案同时经 `ElementInternals.ariaDescribedByElements` 关联到对应控件（支持该 API 的浏览器；form-associated 自定义控件在 light DOM 也能引用 shadow 内错误节点），不支持时保留 `role=alert` 播报。
 
 ### 必填与格式校验
 

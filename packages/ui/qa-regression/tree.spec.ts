@@ -864,3 +864,28 @@ test('tree 拖拽指示线：CSS 变量覆盖颜色与粗细（真实 computed s
   expect(r!.color, '颜色 token 生效').toBe('rgb(255, 0, 0)')
   expect(r!.height, '粗细 token 生效').toBe('5px')
 })
+
+test('tree multiple：Shift+↑/↓ 键盘扩选（真实键盘）', async ({ page }) => {
+  await page.goto('/components/tree.html', { waitUntil: 'domcontentloaded' })
+  await page.waitForFunction(() => !!customElements.get('oas-tree'))
+  await page.evaluate(async () => {
+    const el = document.createElement('oas-tree')
+    el.className = 'qa-tree-keys'
+    el.setAttribute('multiple', '')
+    const data = JSON.stringify(['a', 'b', 'c', 'd', 'e'].map((key) => ({ key, label: key })))
+    el.setAttribute('data', data)
+    document.body.appendChild(el)
+    await new Promise((res) => requestAnimationFrame(() => requestAnimationFrame(() => res(null))))
+  })
+  const tree = page.locator('oas-tree.qa-tree-keys')
+  const rows = tree.locator('[part="row"]')
+  await rows.nth(0).click()
+  const selected = (): Promise<string | null> => tree.evaluate((el) => el.getAttribute('selected'))
+  await expect.poll(selected).toBe('["a"]')
+  await page.keyboard.press('Shift+ArrowDown')
+  await expect.poll(selected).toBe('["a","b"]')
+  await page.keyboard.press('Shift+ArrowDown')
+  await expect.poll(selected).toBe('["a","b","c"]')
+  await page.keyboard.press('Control+Shift+ArrowDown')
+  await expect.poll(selected).toBe('["a","b","c","d"]')
+})

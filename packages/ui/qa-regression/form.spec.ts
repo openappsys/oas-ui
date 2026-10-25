@@ -283,3 +283,38 @@ test('form 两段式提交：校验失败 → 修正 → 再提交应派发 oas-
   expect(events, '修正后再提交应派发 oas-submit').toContain('submit')
   await expect(page.getByTestId('qa-2stage-modal')).not.toHaveAttribute('visible', '')
 })
+
+// 错误文案在 form-item shadow、控件在 light DOM：aria-describedby 的 IDREF 跨 shadow 不生效，
+// 因此走 ElementInternals.ariaDescribedByElements 直接引用节点（role=alert 仍保留）。
+test('form-item 错误文案经 ElementInternals 关联到控件（可清除）', async ({ page }) => {
+  await page.goto('/components/form.html', { waitUntil: 'domcontentloaded' })
+  await page.waitForFunction(() => !!customElements.get('oas-input'))
+  const r = await page.evaluate(async () => {
+    const item = document.createElement('oas-form-item') as HTMLElement & {
+      setError(message: string | null): void
+    }
+    const input = document.createElement('oas-input')
+    item.appendChild(input)
+    document.body.appendChild(item)
+    await new Promise((res) => requestAnimationFrame(() => requestAnimationFrame(() => res(null))))
+    item.setError('请填写姓名')
+    const internals = (input as unknown as { internals_?: ElementInternals }).internals_
+    const refs = internals?.ariaDescribedByElements ?? []
+    const error = item.shadowRoot!.querySelector<HTMLElement>('[part="error"]')!
+    const out = {
+      supported: !!internals && 'ariaDescribedByElements' in internals,
+      count: refs.length,
+      isError: refs[0] === error,
+      hidden: error.hidden,
+    }
+    item.setError(null)
+    const cleared = (internals?.ariaDescribedByElements ?? []).length
+    item.remove()
+    return { ...out, cleared }
+  })
+  expect(r.supported, '当前浏览器应支持 ariaDescribedByElements').toBe(true)
+  expect(r.count, '错误时应关联 1 个错误节点').toBe(1)
+  expect(r.isError, '关联目标必须是 form-item 的 error 节点').toBe(true)
+  expect(r.hidden, '错误节点可见').toBe(false)
+  expect(r.cleared, '清除后解除关联').toBe(0)
+})

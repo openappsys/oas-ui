@@ -95,10 +95,10 @@
 
 ## 键盘导航
 
-`keyboard` 开启后使用 roving tabindex：视口退出 Tab 序，当前活动行可聚焦；`↑` / `↓` 移动、`Home` / `End` 跳首末、`PageUp` / `PageDown` 翻页，活动行自动滚入视口。`active-index`（property `activeIndex`）是 0 基当前行，越界读取时夹取、空数据为 `-1`；键盘或焦点移动派发 `oas-active-change`（`detail: { index, item }`，宿主写 `active-index` 不回声）。未开启 `keyboard` 时保持原行为（视口本身 Tab 聚焦）。
+`keyboard` 开启后使用 roving tabindex：视口退出 Tab 序，当前活动行可聚焦；`↑` / `↓` 移动、`Home` / `End` 跳首末、`PageUp` / `PageDown` 翻页，活动行自动滚入视口。容器为 `role="listbox"`、活动行为 `role="option"`，宿主 `aria-label` 会转发到列表容器。`active-index`（property `activeIndex`）是 0 基当前行，越界读取时夹取、空数据为 `-1`；键盘或焦点移动派发 `oas-active-change`（`detail: { index, item }`，宿主写 `active-index` 不回声）。未开启 `keyboard` 时保持原行为（视口本身 Tab 聚焦）。
 
 <DemoBlock title="keyboard 键盘行导航">
-  <oas-virtual-list id="vl-keyboard" keyboard height="220" item-height="32" items='[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20]'></oas-virtual-list>
+  <oas-virtual-list id="vl-keyboard" keyboard aria-label="笔记列表" height="220" item-height="32" items='[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20]'></oas-virtual-list>
   <p style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: var(--oas-space-2) 0 0">
     点击列表中的任一行聚焦，按 ↑ / ↓ / Home / End / PageUp / PageDown 移动活动行。
   </p>

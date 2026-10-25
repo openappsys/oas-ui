@@ -287,7 +287,20 @@ export class OASVirtualList extends OASElement {
       if (role) itemsEl.setAttribute('role', role)
       else itemsEl.removeAttribute('role')
     }
-    this.itemRole = this.getAttribute('item-role') ?? ''
+    this.itemRole = this.getAttribute('item-role') ?? (this.keyboardEnabled() ? 'option' : '')
+    // keyboard：列表容器给 listbox 语义，活动行给 option 语义；宿主 aria-label 转发给容器
+    if (this.keyboardEnabled()) {
+      const container = this.viewport ?? itemsEl
+      if (container) {
+        container.setAttribute('role', 'listbox')
+        const label = this.getAttribute('aria-label')
+        if (label) container.setAttribute('aria-label', label)
+        else container.removeAttribute('aria-label')
+      }
+    } else if (this.viewport) {
+      this.viewport.removeAttribute('role')
+      this.viewport.removeAttribute('aria-label')
+    }
   }
 
   /** 按 viewportFocusable 同步视口 tabindex（update 每次幂等执行，消费方任意时序设置均收敛） */

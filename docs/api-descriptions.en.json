@@ -4092,7 +4092,7 @@
       "lazy": "Lazy loading: nodes without `children` and not marked `isLeaf` / `loaded` trigger loading on expand",
       "row-height": "Fixed row height when virtualized (px)",
       "selected": "Key of the selected node",
-      "multiple": "Click multi-select (Ctrl/⌘ toggles, Shift selects a range, Ctrl/⌘+Shift adds a range; selected is a JSON array)",
+      "multiple": "Click multi-select (Ctrl/⌘ toggles, Shift-click/Shift+↑↓ range selection/extension, Ctrl/⌘+Shift adds; selected is a JSON array)",
       "check-strategy": "Check export strategy: `all` (default) / `parent` / `child` (with checkable cascading)",
       "check-strictly": "Decouple parent/child checking",
       "default-expand-all": "Expand all nodes by default (applies when the expanded attribute is absent)",

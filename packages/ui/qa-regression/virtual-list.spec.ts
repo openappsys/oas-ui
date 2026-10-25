@@ -143,6 +143,7 @@ test('virtual-list keyboard：roving tabindex + End/Home/Arrow 真实键盘导�
     el.setAttribute('keyboard', '')
     el.setAttribute('height', '200')
     el.setAttribute('item-height', '24')
+    el.setAttribute('aria-label', '笔记列表')
     document.body.appendChild(el)
     el.items = Array.from({ length: 100 }, (_, i) => i + 1)
     ;(window as unknown as { __activeChanges: Array<{ index: number }> }).__activeChanges = []
@@ -156,6 +157,12 @@ test('virtual-list keyboard：roving tabindex + End/Home/Arrow 真实键盘导�
   const vl = page.locator('oas-virtual-list.qa-vl')
   const active = vl.locator('[part="item"][tabindex="0"]')
   await expect(active).toHaveAttribute('data-index', '0')
+  const semantics = await vl.evaluate((el) => ({
+    role: el.shadowRoot!.querySelector('[part="viewport"]')!.getAttribute('role'),
+    label: el.shadowRoot!.querySelector('[part="viewport"]')!.getAttribute('aria-label'),
+    itemRole: el.shadowRoot!.querySelector('[part="item"]')!.getAttribute('role'),
+  }))
+  expect(semantics).toEqual({ role: 'listbox', label: '笔记列表', itemRole: 'option' })
   await active.focus()
   const activeIndex = (): Promise<string | null> => vl.evaluate((el) => el.getAttribute('active-index'))
   const focusedIndex = (): Promise<string | null> =>

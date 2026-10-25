@@ -257,7 +257,7 @@
     },
     {
       "name": "oas-select",
-      "detail": "{ key: id, selected: next.includes(id), selectedIds: next } | { key: id, selected: false, selectedIds: selected } | { key: id, selected: true, selectedIds: selected } | { key: id, selected: true, selectedIds: [id] }"
+      "detail": "{ key: id, selected: next.includes(id), selectedIds: next } | { key: id, selected: false, selectedIds: selected } | { key: id, selected: true, selectedIds: selected } | { key: id, selected: true, selectedIds: [id] } | { key: to, selected: next.includes(to), selectedIds: next }"
     },
     {
       "name": "oas-check",

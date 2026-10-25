@@ -71,7 +71,7 @@ With `checkable` the model is **cascading** (same semantics as `oas-tree-select`
   </div>
 </DemoBlock>
 
-With `multiple`, `selected` becomes a JSON string array: a plain click toggles that key (click again to deselect), Ctrl/⌘-click toggles, and **Shift-click selects a range from the anchor in current visible order** (Ctrl/⌘+Shift adds the range to the existing selection; plain Shift replaces it). The `oas-select` detail also includes `selectedIds` with the full selection set. Checkboxes (`checkable`) and click-selection (`multiple` / `selected`) are two independent models and can be combined.
+With `multiple`, `selected` becomes a JSON string array: a plain click toggles that key (click again to deselect), Ctrl/⌘-click toggles, and **Shift-click selects a range from the anchor in current visible order** (Ctrl/⌘+Shift adds the range to the existing selection; plain Shift replaces it). **Shift+↑/↓ extends the anchor range to the focused row** (Ctrl/⌘+Shift adds; plain Shift replaces). The `oas-select` detail also includes `selectedIds` with the full selection set. Checkboxes (`checkable`) and click-selection (`multiple` / `selected`) are two independent models and can be combined.
 
 ## Expansion Behaviour
 
@@ -738,7 +738,7 @@ The insertion line and inner-drop highlight can be themed with CSS variables (th
 | `height` | Virtual scroll viewport height (px); setting it enables virtualized rendering for large data | `string` | — |
 | `lazy` | Lazy loading: nodes without `children` and not marked `isLeaf` / `loaded` trigger loading on expand | `boolean` | — |
 | `motion` | Expand/collapse height transition animation (off by default): non-virtual mode transitions row-container max-height on expand/collapse, virtual-scroll mode degrades to a fade-in on expand with instant collapse; duration/easing follow `--oas-transition-*`, disabled under `prefers-reduced-motion` | `boolean` | — |
-| `multiple` | Click multi-select (Ctrl/⌘ toggles, Shift selects a range, Ctrl/⌘+Shift adds a range; selected is a JSON array) | `boolean` | — |
+| `multiple` | Click multi-select (Ctrl/⌘ toggles, Shift-click/Shift+↑↓ range selection/extension, Ctrl/⌘+Shift adds; selected is a JSON array) | `boolean` | — |
 | `row-height` | Fixed row height when virtualized (px) | `string` | `32` |
 | `selectable` | Whole-tree selection switch; `"false"` stops click/keyboard selection while expand/check keep working | `string` | `true` |
 | `selected` | Key of the selected node | `string` | — |
@@ -791,5 +791,13 @@ The insertion line and inner-drop highlight can be themed with CSS variables (th
 | `template[slot="node"]` | Static row template cloned into each node label container; the `[data-node-label]` node is bound to the node label automatically |
 | `template[slot="toggle"]` | Static expand button template cloned into each expandable node's toggle button (replaces the default › icon) |
 | `template[slot="toggle-loading"]` | Lazy-expanding indicator (replaces the spinner) |
+
+#### CSS Variables
+
+| CSS Variable | Default |
+| --- | --- |
+| `--oas-tree-drop-inner-bg` | `color-mix(in srgb, var(--oas-color-primary) 12%, transparent)` |
+| `--oas-tree-drop-line-color` | `var(--oas-color-primary)` |
+| `--oas-tree-drop-line-thickness` | `2px` |
 
 > Node field notes: `isLeaf: true` marks an explicit leaf (no expand arrow under lazy loading); `loaded: true` marks a node as fully loaded (used with `children` to avoid triggering loading repeatedly); `renamable: false` disables renaming for that node (used with `can-rename`; nodes are renameable by default).

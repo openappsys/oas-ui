@@ -6,7 +6,8 @@
 
 ### 新增
 
-- **`oas-virtual-list` 键盘行导航（opt-in `keyboard`）**：roving tabindex + ↑/↓/Home/End/PageUp/PageDown，活动行自动滚入视口；新增 `active-index` / `activeIndex` 与 `oas-active-change`（`detail: { index, item }`，宿主写入不回声）。未开启 `keyboard` 时保持原视口 Tab 聚焦行为。
+- **`oas-virtual-list` 键盘行导航（opt-in `keyboard`）**：roving tabindex + ↑/↓/Home/End/PageUp/PageDown，活动行自动滚入视口；新增 `active-index` / `activeIndex` 与 `oas-active-change`（`detail: { index, item }`，宿主写入不回声）。未开启 `keyboard` 时保持原视口 Tab 聚焦行为。容器为 `role="listbox"`、行为 `role="option"`，宿主 `aria-label` 转发给列表容器。
+- **`oas-tree` 多选 Shift+↑/↓ 键盘扩选**：在已有 Shift 点击范围选择基础上，Shift+↑/↓ 按可见顺序把锚点范围扩到当前行；Ctrl/⌘+Shift 为并入，纯 Shift 为替换。
 - **`oas-tree` 拖拽指示线 token 化**：新增 `--oas-tree-drop-line-color` / `--oas-tree-drop-line-thickness` / `--oas-tree-drop-inner-bg`，不覆盖时保持原 primary 色、2px 与 12% 混合底。
 - **`oas-tree` 多选 Shift 范围选择**：`multiple` 下新增 Shift 点击按当前可见顺序（过滤/折叠后）从锚点范围选择，纯 Shift 替换、Ctrl/⌘+Shift 并入现有选择；`oas-select` 的 `detail` 增 `selectedIds`（全量选中集合，单选为单元素数组，旧字段 `key` / `selected` 保持兼容）。范围跳过 disabled / `selectable:false` 节点。
 - **裸导入可解析性门禁**：新增 `pnpm exports:check`，扫描源码 `@oas-ui/*` 导入并按各包 `package.json#exports` 映射校验构建产物存在；`pnpm build` 构建后自动执行，避免发布后子路径 import 失败。
@@ -56,6 +57,7 @@
 ### 修复
 
 - **i18n / core 单例状态跨模块副本共享（link 双实例）**：`@oas-ui/i18n` 的 locale registry 与 `@oas-ui/core` 的 translator 钩子原先存在模块级变量里；`link:` / workspace 下解析出两份模块时，宿主 `setLocale()` 只更新其中一份，组件内置文案回落 raw key。现将状态挂到 `globalThis` 的版本化 `Symbol.for` 键（`@oas-ui/i18n/registry/v1`、`@oas-ui/core/translator/v1`），同一进程内所有副本共享 locale / translator；无需改 import 或新增公开 API。宿主仍建议用 `resolve.dedupe` / pnpm `overrides` 去重以减少重复包体。补双模块副本单测。
+- **`oas-form-item` 错误文案关联到控件**：错误文案改经 `ElementInternals.ariaDescribedByElements` 关联到对应 form-associated 控件（可直接引用另一棵 shadow 的 error 节点），支持该 API 的浏览器读屏能关联错误；不支持时保留 `role=alert` 播报。此前仅用 `aria-describedby` 的 IDREF 跨 shadow 无法关联。
 - **`oas-diff-viewer` PageDown 步进**：按整屏可见行数移动（原先额外减 1 行），活动行仍自动滚入视口；文档补充 split 行 `data-op="replace"`、真实增删 op 在两侧单元格的定制约定。
 - **`oas-json-viewer` 复制反馈/深嵌套/同值回写**：`toolbar="false"` 时复制成功/失败改为右下角浮层提示（`part="copy-status"`，1.6s 自动隐藏），不再因工具栏隐藏而静默；超深嵌套建树/遍历栈溢出转为可恢复错误态（新增 locale key，不向宿主抛 `RangeError`），超深子树序列化失败派发 `oas-copy-error`；重复写同值 `text` / `expanded` 也强制刷新一次，修复受控回写边界。
 - **`oas-sidebar` footer 常驻**：`slot="footer"` 原先在滚动容器 `.panel` 内随内容滚走，长导航时页脚不可见。现改为 `position: sticky; bottom: 0` 钉在侧栏可视区底部（桌面与移动抽屉同一套），空 footer 经 `slotchange` 自动隐藏、不再占底部空白；补桌面/移动抽屉真实滚动几何回归。

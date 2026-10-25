@@ -1453,6 +1453,26 @@ export class OASTree extends OASElement {
     }
   }
 
+  /** Shift+↑/↓：移动 roving 焦点并把锚点范围扩到当前行；Ctrl/⌘+Shift 为并入 */
+  private extendSelectionByKeyboard(cur: number, dir: 1 | -1, keys: string[], add: boolean): void {
+    const from = keys[cur]!
+    if (!this.selectionAnchor) this.selectionAnchor = from
+    this.navTo(cur, dir, keys)
+    const to = this.rovingKey
+    if (!to || to === from) return
+    const range = this.selectionRange(to)
+    const next = add ? this.orderByVisible([...this.currentSelected(), ...range]) : range
+    this.setAttribute('selected', JSON.stringify(next))
+    this.emit('select', { key: to, selected: next.includes(to), selectedIds: next })
+  }
+
+  /** 按当前可见行顺序归一选中集合（Ctrl+Shift 并入后仍保持稳定顺序） */
+  private orderByVisible(ids: string[]): string[] {
+    const rank = new Map(this.visible.map((row, i) => [this.acc.idOf(row.node), i]))
+    return [...new Set(ids)].sort(
+      (a, b) => (rank.get(a) ?? Number.MAX_SAFE_INTEGER) - (rank.get(b) ?? Number.MAX_SAFE_INTEGER),
+    )
+  }
   /** Shift 范围选择：按当前可见行（过滤/折叠后）中可选中节点的顺序取闭区间 */
   private selectionRange(toId: string): string[] {
     const selectable = this.visible
@@ -2101,14 +2121,15 @@ export class OASTree extends OASElement {
     const idx = keys.indexOf(this.rovingKey ?? '')
     const cur = idx >= 0 ? idx : 0
 
-    if (key === 'ArrowDown') {
+    if (key === 'ArrowDown' || key === 'ArrowUp') {
       e.preventDefault()
-      this.navTo(cur, 1, keys)
-      this.requestWindowForEdge(true)
-    } else if (key === 'ArrowUp') {
-      e.preventDefault()
-      this.navTo(cur, -1, keys)
-      this.requestWindowForEdge(false)
+      const dir = key === 'ArrowDown' ? 1 : -1
+      if (this.hasAttr('multiple') && e.shiftKey) {
+        this.extendSelectionByKeyboard(cur, dir, keys, e.ctrlKey || e.metaKey)
+      } else {
+        this.navTo(cur, dir, keys)
+      }
+      this.requestWindowForEdge(dir === 1)
     } else if (key === (isRtl(this) ? 'ArrowLeft' : 'ArrowRight')) {
       // 展开/深入键：RTL 镜像（展开箭头视觉朝向随书写方向翻转）
       e.preventDefault()

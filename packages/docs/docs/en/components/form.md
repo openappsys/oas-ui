@@ -108,7 +108,7 @@ Fifteen common form components are **form-associated** custom elements (`formAss
 
 The validation area demonstrates `rules`-declared validation rules and failure feedback.
 
-> Validation rules: `{ required, message, minLength, maxLength, pattern, validator, validateTrigger }` (`validator` is a custom validation function; functions are not JSON-serializable, use the `rules` property channel; `validateTrigger` overrides the form-level trigger per field). On failure, the field is marked `aria-invalid` (red-bordered input), an error message is shown in red below the field, and `oas-validate-fail` is dispatched.
+> Validation rules: `{ required, message, minLength, maxLength, pattern, validator, validateTrigger }` (`validator` is a custom validation function; functions are not JSON-serializable, use the `rules` property channel; `validateTrigger` overrides the form-level trigger per field). On failure, the field is marked `aria-invalid` (red-bordered input), an error message is shown in red below the field, and `oas-validate-fail` is dispatched. The error text is also associated with its control via `ElementInternals.ariaDescribedByElements` where supported (so even form-associated custom controls in the light DOM can reference an error node inside a shadow root); unsupported browsers keep the `role="alert"` announcement.
 
 ### Required & Format Validation
 

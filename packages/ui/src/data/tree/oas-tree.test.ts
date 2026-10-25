@@ -539,6 +539,25 @@ describe('OASTree 点选多选（multiple）', () => {
     expect(JSON.parse(el.getAttribute('selected') ?? '[]')).toEqual(['a', 'd'])
   })
 
+  it('multiple + Shift+↑/↓：键盘按可见顺序扩选；Ctrl+Shift 并入', () => {
+    const data = JSON.stringify(['a', 'b', 'c', 'd', 'e'].map((key) => ({ key, label: key })))
+    const el = mount({ multiple: '', data })
+    const press = (row: number, key: string, mods: KeyboardEventInit = {}): void => {
+      rows(el)[row]!.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true, ...mods }))
+    }
+    const selected = (): string[] => JSON.parse(el.getAttribute('selected') ?? '[]')
+
+    press(0, 'ArrowDown', { shiftKey: true })
+    expect(selected()).toEqual(['a', 'b'])
+    press(1, 'ArrowDown', { shiftKey: true })
+    expect(selected()).toEqual(['a', 'b', 'c'])
+
+    // Ctrl 点 d 追加（锚点移到 d），Ctrl+Shift+↑ 从 d 扩到 c，并入为 a..d
+    rows(el)[3]!.dispatchEvent(new MouseEvent('click', { bubbles: true, ctrlKey: true }))
+    press(3, 'ArrowUp', { shiftKey: true, ctrlKey: true })
+    expect(selected()).toEqual(['a', 'b', 'c', 'd'])
+  })
+
   it('multiple + Shift：折叠子树不参与可见范围', () => {
     const data = JSON.stringify([
       {

@@ -244,6 +244,42 @@ export class OASFormItem extends OASElement {
     if (this.errorMsgEl) this.errorMsgEl.textContent = message ?? ''
     this.errorEl.hidden = this.lastError === null
     this.syncStatusIcon()
+    this.syncErrorA11y()
+  }
+
+  /**
+   * 错误文案关联到 form-associated 控件本体。
+   * `aria-describedby` 的 IDREF 跨 shadow 不生效：error 在 form-item shadow、控件在 light DOM，
+   * 所以走 `ElementInternals.ariaDescribedByElements`（可直接引用另一棵 shadow 的节点）。
+   * 不支持/未挂 internals 的控件保留原有 role=alert 播报，不额外降级。
+   */
+  private syncErrorA11y(): void {
+    const control = this.errorControl()
+    const error = this.errorEl
+    if (!control || !error) return
+    let internals: ElementInternals | null = null
+    try {
+      internals = control.attachInternals()
+    } catch {
+      // 已 attach 过的控件不允许重复 attach；OASFormElement 已持有 internals_
+      internals = (control as unknown as { internals_?: ElementInternals }).internals_ ?? null
+    }
+    if (internals && 'ariaDescribedByElements' in internals) {
+      internals.ariaDescribedByElements = this.lastError ? [error] : []
+    }
+  }
+
+  /** 找到应被错误文案描述的第一个表单控件（原生 input 或 form-associated 自定义元素） */
+  private errorControl(): HTMLElement | null {
+    const native = this.querySelector<HTMLElement>('[name], input, select, textarea')
+    if (native) return native
+    return (
+      [...this.children].find(
+        (child): child is HTMLElement =>
+          child instanceof HTMLElement &&
+          typeof (child as unknown as { attachInternals?: unknown }).attachInternals === 'function',
+      ) ?? null
+    )
   }
 
   /** 状态图标（status-icon 开启 + 错误在场时显示 danger 图标；装饰性 aria-hidden，文本已由 error 播报） */

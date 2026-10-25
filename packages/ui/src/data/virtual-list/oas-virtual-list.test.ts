@@ -636,6 +636,14 @@ describe('keyboard 键盘行导航（opt-in）', () => {
     expect(viewport(el).getAttribute('tabindex')).toBe('0')
   })
 
+  it('keyboard 语义：listbox / option，宿主 aria-label 转发给列表容器', () => {
+    const el = mount({ keyboard: '', height: '100', 'item-height': '20', 'aria-label': '笔记列表' })
+    el.items = range(3)
+    expect(viewport(el).getAttribute('role')).toBe('listbox')
+    expect(viewport(el).getAttribute('aria-label')).toBe('笔记列表')
+    expect(items(el).every((x) => x.getAttribute('role') === 'option')).toBe(true)
+  })
+
   it('未开 keyboard 时保持原行为：视口 Tab 聚焦、项不注入 tabindex', () => {
     const el = mount({ height: '100', 'item-height': '20' })
     el.items = range(10)
