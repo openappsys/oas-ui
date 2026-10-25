@@ -306,6 +306,19 @@
       "name": "template[slot=\"toggle-loading\"]"
     }
   ],
-  "cssVars": [],
+  "cssVars": [
+    {
+      "name": "--oas-tree-drop-inner-bg",
+      "default": "color-mix(in srgb, var(--oas-color-primary) 12%, transparent)"
+    },
+    {
+      "name": "--oas-tree-drop-line-thickness",
+      "default": "2px"
+    },
+    {
+      "name": "--oas-tree-drop-line-color",
+      "default": "var(--oas-color-primary)"
+    }
+  ],
   "unresolved": []
 }

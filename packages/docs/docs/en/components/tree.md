@@ -696,6 +696,16 @@ Boundaries of local capabilities in windowed mode: **local `filter` and top-leve
 
 > For the full host recipe (segment fetch, abort in-flight, merge by id, atomic refill) and a runnable example, see [Server-side windowed data](/en/guide/windowed-data).
 
+## Drag Indicator Styling
+
+The insertion line and inner-drop highlight can be themed with CSS variables (the `--oas-*` token system):
+
+| Variable | Default | Description |
+| --- | --- | --- |
+| `--oas-tree-drop-line-color` | `var(--oas-color-primary)` | Insertion line color for before / after |
+| `--oas-tree-drop-line-thickness` | `2px` | Insertion line thickness |
+| `--oas-tree-drop-inner-bg` | primary 12% mix | Background for an inner drop |
+
 ## API
 
 ### oas-tree

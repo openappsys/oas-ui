@@ -844,3 +844,23 @@ test('tree multiple：Shift 范围选择与 Ctrl+Shift 并入（真实点击）'
   await rows.nth(4).click({ modifiers: ['Control', 'Shift'] })
   await expect.poll(selected).toBe('["b","c","d","e"]')
 })
+
+test('tree 拖拽指示线：CSS 变量覆盖颜色与粗细（真实 computed style）', async ({ page }) => {
+  await page.goto('/components/tree.html', { waitUntil: 'domcontentloaded' })
+  await page.waitForFunction(() => !!customElements.get('oas-tree'))
+  const r = await page.evaluate(() => {
+    const tree = document.querySelector('oas-tree') as HTMLElement | null
+    if (!tree) return null
+    const row = tree.shadowRoot!.querySelector<HTMLElement>('[part="row"]')
+    if (!row) return null
+    row.classList.add('drop-before')
+    tree.style.setProperty('--oas-tree-drop-line-color', 'rgb(255, 0, 0)')
+    tree.style.setProperty('--oas-tree-drop-line-thickness', '5px')
+    const cs = getComputedStyle(row, '::before')
+    return { color: cs.backgroundColor, height: cs.height, content: cs.content }
+  })
+  expect(r, 'tree demo 与行存在').not.toBeNull()
+  expect(r!.content, '插入线伪元素生效').not.toBe('none')
+  expect(r!.color, '颜色 token 生效').toBe('rgb(255, 0, 0)')
+  expect(r!.height, '粗细 token 生效').toBe('5px')
+})

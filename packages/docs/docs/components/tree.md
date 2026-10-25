@@ -694,6 +694,16 @@ windowed 的本地能力边界：**本地 `filter` 与顶部全选（`check-all`
 
 > 完整宿主取数配方（分段、取消在途、按 id 合并、原子回填）与可运行示例见 [服务端窗口取数](/guide/windowed-data)。
 
+## 拖拽指示线样式
+
+拖拽落点的插入线与 inner 高亮支持 CSS 变量覆盖（`--oas-*` token 体系）：
+
+| 变量 | 默认值 | 说明 |
+| --- | --- | --- |
+| `--oas-tree-drop-line-color` | `var(--oas-color-primary)` | before / after 插入线颜色 |
+| `--oas-tree-drop-line-thickness` | `2px` | 插入线粗细 |
+| `--oas-tree-drop-inner-bg` | primary 12% 混合底 | inner 落点背景 |
+
 ## API
 
 ### oas-tree

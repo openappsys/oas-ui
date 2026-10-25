@@ -128,7 +128,10 @@ const ROW_STYLE = `
   opacity: 0.5;
 }
 .row.drop-inner {
-  background: color-mix(in srgb, var(--oas-color-primary) 12%, transparent);
+  background: var(
+    --oas-tree-drop-inner-bg,
+    color-mix(in srgb, var(--oas-color-primary) 12%, transparent)
+  );
 }
 .row.drop-before::before,
 .row.drop-after::after {
@@ -136,8 +139,8 @@ const ROW_STYLE = `
   position: absolute;
   left: var(--oas-space-1);
   right: var(--oas-space-1);
-  height: 2px;
-  background: var(--oas-color-primary);
+  height: var(--oas-tree-drop-line-thickness, 2px);
+  background: var(--oas-tree-drop-line-color, var(--oas-color-primary));
 }
 .row.drop-before::before {
   top: 0;

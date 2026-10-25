@@ -841,6 +841,14 @@ describe('OASTree 拖拽（draggable + allowDrop/allowDrag 守卫）', () => {
     return new MouseEvent(type, { bubbles: true, cancelable: true, clientY })
   }
 
+  it('draggable：插入线/落点背景支持 CSS 变量覆盖', () => {
+    const el = mount({ draggable: '' })
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    expect(css).toContain('--oas-tree-drop-line-color')
+    expect(css).toContain('--oas-tree-drop-line-thickness')
+    expect(css).toContain('--oas-tree-drop-inner-bg')
+  })
+
   it('draggable：before/after/inner 三种落点均派发 oas-node-drop', () => {
     const el = mount({ draggable: '', expanded: '["a"]', data: CASCADE_DATA })
     const r = rows(el) // a, a-1, a-2, b
