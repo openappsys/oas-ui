@@ -2,7 +2,17 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { setLocale } from '@oas-ui/i18n'
 import '@oas-ui/i18n'
 import { OASTable } from '../index.js'
-import { canRedo, canUndo, clearHistory, disableHistory, enableHistory, redo, undo } from './index.js'
+import {
+  canRedo,
+  canUndo,
+  clearHistory,
+  disableHistory,
+  enableHistory,
+  recordHistory,
+  redo,
+  undo,
+  withHistoryBatch,
+} from './index.js'
 
 function mount(
   rows: Array<Record<string, unknown>> = [
@@ -30,6 +40,16 @@ function emitEdit(
   },
 ): void {
   el.dispatchEvent(new CustomEvent('oas-edit', { detail }))
+}
+
+function emitRangeWrite(
+  el: OASTable,
+  detail: {
+    kind: 'paste' | 'cut' | 'fill'
+    changes: Array<{ key: string; column: string; value: unknown; oldValue?: string; oldRawValue?: unknown }>
+  },
+): void {
+  el.dispatchEvent(new CustomEvent('oas-range-write', { detail }))
 }
 
 describe('table/history 撤销重做', () => {
@@ -255,5 +275,211 @@ describe('table/history 撤销重做', () => {
     expect(canRedo(el)).toBe(true)
     emitEdit(el, { rowIndex: 0, key: 'a', column: 'name', oldValue: 'A', value: 'A2' })
     expect(canRedo(el)).toBe(false)
+  })
+
+  it('recordHistory：未启用返回 false；启用后显式命令可撤销/重做；重复 enable 不重置既有栈', () => {
+    const el = mount()
+    expect(recordHistory(el, { undo: () => {}, redo: () => {} })).toBe(false)
+    enableHistory(el)
+    const log: string[] = []
+    expect(recordHistory(el, { label: 'a', undo: () => log.push('undo-a'), redo: () => log.push('redo-a') })).toBe(true)
+    el.data = [
+      { id: 'a', name: 'A' },
+      { id: 'b', name: 'B2' },
+    ]
+    emitEdit(el, { rowIndex: 0, key: 'b', column: 'name', oldValue: 'B', value: 'B2' })
+    // 重复 enable：返回既有栈，不清空已记录命令
+    enableHistory(el)
+    expect(undo(el)).toBe(true)
+    expect((el.data[1] as { name: string }).name).toBe('B')
+    expect(undo(el)).toBe(true)
+    expect(log).toEqual(['undo-a'])
+    expect(redo(el)).toBe(true)
+    expect(log).toEqual(['undo-a', 'redo-a'])
+  })
+
+  it('withHistoryBatch：批内子命令合并为一条事务，undo 逆序 / redo 正序', () => {
+    const el = mount()
+    enableHistory(el)
+    const log: string[] = []
+    const command = (name: string): void => {
+      recordHistory(el, {
+        label: name,
+        undo: () => log.push(`undo:${name}`),
+        redo: () => log.push(`redo:${name}`),
+      })
+    }
+    withHistoryBatch(el, () => {
+      command('a')
+      command('b')
+      command('c')
+    })
+    expect(canUndo(el)).toBe(true)
+    undo(el)
+    expect(log).toEqual(['undo:c', 'undo:b', 'undo:a'])
+    expect(canUndo(el)).toBe(false)
+    expect(canRedo(el)).toBe(true)
+    redo(el)
+    expect(log).toEqual(['undo:c', 'undo:b', 'undo:a', 'redo:a', 'redo:b', 'redo:c'])
+  })
+
+  it('withHistoryBatch：批内 oas-edit 自动记录并入同一事务', () => {
+    const el = mount()
+    enableHistory(el)
+    let extraUndone = false
+    withHistoryBatch(el, () => {
+      el.data = [
+        { id: 'a', name: 'A' },
+        { id: 'b', name: 'B2' },
+      ]
+      emitEdit(el, { rowIndex: 1, key: 'b', column: 'name', oldValue: 'B', value: 'B2' })
+      recordHistory(el, { undo: () => (extraUndone = true), redo: () => (extraUndone = false) })
+    })
+    expect(undo(el)).toBe(true)
+    // 逆序：后记录的自定义命令先撤销，oas-edit 后撤销回写旧值
+    expect(extraUndone).toBe(true)
+    expect((el.data[1] as { name: string }).name).toBe('B')
+    expect(canUndo(el)).toBe(false)
+  })
+
+  it('withHistoryBatch：嵌套批次合并到最外层，undo 逆序 / redo 正序', () => {
+    const el = mount()
+    enableHistory(el)
+    const log: string[] = []
+    const command = (name: string): void => {
+      recordHistory(el, { undo: () => log.push(`undo:${name}`), redo: () => log.push(`redo:${name}`) })
+    }
+    withHistoryBatch(el, () => {
+      command('a')
+      withHistoryBatch(el, () => {
+        command('b')
+        withHistoryBatch(el, () => command('c'))
+      })
+      command('d')
+    })
+    undo(el)
+    expect(log).toEqual(['undo:d', 'undo:c', 'undo:b', 'undo:a'])
+    redo(el)
+    expect(log).toEqual(['undo:d', 'undo:c', 'undo:b', 'undo:a', 'redo:a', 'redo:b', 'redo:c', 'redo:d'])
+  })
+
+  it('withHistoryBatch：批内抛错不入栈且异常传播；内层抛错被外层捕获后外层命令仍成批', () => {
+    const el = mount()
+    enableHistory(el)
+    expect(() =>
+      withHistoryBatch(el, () => {
+        recordHistory(el, { undo: () => {}, redo: () => {} })
+        throw new Error('boom')
+      }),
+    ).toThrow('boom')
+    expect(canUndo(el)).toBe(false)
+
+    withHistoryBatch(el, () => {
+      recordHistory(el, { label: 'outer-1', undo: () => {}, redo: () => {} })
+      try {
+        withHistoryBatch(el, () => {
+          recordHistory(el, { label: 'inner', undo: () => {}, redo: () => {} })
+          throw new Error('inner')
+        })
+      } catch {
+        /* 外层吞掉内层错误 */
+      }
+      recordHistory(el, { label: 'outer-2', undo: () => {}, redo: () => {} })
+    })
+    expect(canUndo(el)).toBe(true)
+    undo(el)
+    // 内层抛错的子命令已被丢弃，只剩外层两条合并事务
+    expect(canUndo(el)).toBe(false)
+  })
+
+  it('withHistoryBatch：空批次不入栈；未启用时 fn 照常执行', () => {
+    const el = mount()
+    let called = false
+    const result = withHistoryBatch(el, () => {
+      called = true
+      return 42
+    })
+    expect(result).toBe(42)
+    expect(called).toBe(true)
+    enableHistory(el)
+    withHistoryBatch(el, () => {})
+    expect(canUndo(el)).toBe(false)
+  })
+
+  it('oas-range-write 合并为一条事务：undo 按 changes 逆序恢复原类型，redo 正序', () => {
+    const el = mount([
+      { id: 'a', name: 'A', score: 1 },
+      { id: 'b', name: 'B', score: 2 },
+    ])
+    enableHistory(el)
+    el.data = [
+      { id: 'a', name: 'A2', score: 10 },
+      { id: 'b', name: 'B2', score: 20 },
+    ]
+    emitRangeWrite(el, {
+      kind: 'paste',
+      changes: [
+        { key: 'a', column: 'name', value: 'A2', oldValue: 'A' },
+        { key: 'b', column: 'score', value: 20, oldValue: '2', oldRawValue: 2 },
+      ],
+    })
+    expect(canUndo(el)).toBe(true)
+    expect(undo(el)).toBe(true)
+    expect(el.data).toEqual([
+      { id: 'a', name: 'A', score: 10 },
+      { id: 'b', name: 'B2', score: 2 },
+    ])
+    // 单条事务：一次 undo 全部还原，无剩余可撤销
+    expect(canUndo(el)).toBe(false)
+    expect(canRedo(el)).toBe(true)
+    expect(redo(el)).toBe(true)
+    expect(el.data).toEqual([
+      { id: 'a', name: 'A2', score: 10 },
+      { id: 'b', name: 'B2', score: 20 },
+    ])
+  })
+
+  it('oas-range-write：rangeWrites:false / edit-controlled / windowed 默认不记录', () => {
+    const el = mount()
+    enableHistory(el, { rangeWrites: false })
+    emitRangeWrite(el, { kind: 'fill', changes: [{ key: 'a', column: 'name', value: 'X', oldValue: 'A' }] })
+    expect(canUndo(el)).toBe(false)
+    disableHistory(el)
+
+    enableHistory(el)
+    el.setAttribute('edit-controlled', '')
+    emitRangeWrite(el, { kind: 'paste', changes: [{ key: 'a', column: 'name', value: 'X', oldValue: 'A' }] })
+    expect(canUndo(el)).toBe(false)
+    el.removeAttribute('edit-controlled')
+
+    el.setAttribute('windowed', '')
+    emitRangeWrite(el, { kind: 'cut', changes: [{ key: 'a', column: 'name', value: 'X', oldValue: 'A' }] })
+    expect(canUndo(el)).toBe(false)
+  })
+
+  it('windowed 选项开启后，windowed 表格的 oas-range-write / oas-edit 都记录', () => {
+    const el = mount()
+    el.setAttribute('windowed', '')
+    enableHistory(el, { windowed: true })
+    emitRangeWrite(el, { kind: 'paste', changes: [{ key: 'a', column: 'name', value: 'X', oldValue: 'A' }] })
+    expect(canUndo(el)).toBe(true)
+    disableHistory(el)
+
+    // 独立启用：oas-edit 同样按 options.windowed 决定是否记录
+    enableHistory(el, { windowed: true })
+    el.data = [{ id: 'a', name: 'X' }]
+    emitEdit(el, { rowIndex: 0, key: 'a', column: 'name', oldValue: 'A', value: 'X' })
+    expect(canUndo(el)).toBe(true)
+  })
+
+  it('oas-range-write：缺 column/key/旧值的 change 跳过；全部无效则不入栈', () => {
+    const el = mount()
+    enableHistory(el)
+    emitRangeWrite(el, { kind: 'cut', changes: [{ key: 'a', column: '', value: 'X' }] })
+    expect(canUndo(el)).toBe(false)
+    emitRangeWrite(el, { kind: 'fill', changes: [{ key: 'a', column: 'name', value: 'X' }] })
+    expect(canUndo(el)).toBe(false)
+    emitRangeWrite(el, { kind: 'paste', changes: [] })
+    expect(canUndo(el)).toBe(false)
   })
 })

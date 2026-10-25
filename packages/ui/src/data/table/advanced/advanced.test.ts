@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 import {
   compileConditionalFormat,
   compileFormula,
@@ -12,6 +12,7 @@ import {
   pivotTable,
   toTsv,
 } from './index.js'
+import { createSequenceEntry, type HistoryEntry } from './history.js'
 
 const SALES = [
   { region: '华东', product: 'A', amount: 10 },
@@ -320,5 +321,33 @@ describe('createHistory', () => {
     off()
     stack.push({ undo: () => {}, redo: () => {} })
     expect(states).toHaveLength(3)
+  })
+})
+
+describe('createSequenceEntry', () => {
+  const command = (name: string): HistoryEntry => ({
+    label: name,
+    undo: () => log.push(`undo:${name}`),
+    redo: () => log.push(`redo:${name}`),
+  })
+  let log: string[] = []
+  beforeEach(() => {
+    log = []
+  })
+
+  it('undo 逆序执行子命令，redo 正序执行', () => {
+    const entry = createSequenceEntry([command('a'), command('b'), command('c')], 'batch')
+    expect(entry.label).toBe('batch')
+    entry.undo()
+    expect(log).toEqual(['undo:c', 'undo:b', 'undo:a'])
+    entry.redo()
+    expect(log).toEqual(['undo:c', 'undo:b', 'undo:a', 'redo:a', 'redo:b', 'redo:c'])
+  })
+
+  it('空序列 undo/redo 为空操作；缺省 label 时无 label', () => {
+    const entry = createSequenceEntry([])
+    expect(entry.label).toBeUndefined()
+    expect(() => entry.undo()).not.toThrow()
+    expect(() => entry.redo()).not.toThrow()
   })
 })

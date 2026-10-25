@@ -1,4 +1,4 @@
-import { createHistory, type HistoryStack } from '../advanced/history.js'
+import { createHistory, createSequenceEntry, type HistoryEntry, type HistoryStack } from '../advanced/history.js'
 import { rowKeyValue } from '../oas-table-row-key.js'
 import { isInteractiveEvent } from '../oas-table-interactive.js'
 
@@ -6,6 +6,29 @@ export interface HistoryOptions {
   /** 监听表格 shadow 内的 Ctrl/Cmd+Z / Ctrl/Cmd+Shift+Z / Ctrl+Y（默认开启） */
   keyboard?: boolean
   limit?: number
+  /** 记录 `oas-range-write`（粘贴/剪切/填充的批量写入，合成一条事务），默认开启 */
+  rangeWrites?: boolean
+  /** windowed 表格也自动记录（默认关闭；受控 edit-controlled 始终不自动记录） */
+  windowed?: boolean
+}
+
+/** `oas-range-write` 单格变更：宿主已把 value 写入数据，撤销需要恢复 oldValue / oldRawValue */
+export interface RangeWriteChange {
+  /** 行键（按 row-key 属性定位数据行） */
+  key: string
+  column: string
+  /** 已写入的新值（保留原始类型） */
+  value: unknown
+  /** 写入前的展示值（字符串）；oldValue 与 oldRawValue 都缺省的变更跳过不记录 */
+  oldValue?: string
+  /** 写入前的原始类型值（number / boolean / string[] 等），撤销精确回写 */
+  oldRawValue?: unknown
+}
+
+/** `oas-range-write` 事件契约：range 能力在宿主完成批量写入后派发，history 据此合成一条 undo/redo 事务 */
+export interface RangeWriteDetail {
+  kind: 'paste' | 'cut' | 'fill'
+  changes: RangeWriteChange[]
 }
 
 interface HistoryHost extends HTMLElement {
@@ -16,6 +39,7 @@ interface HistoryHost extends HTMLElement {
 interface HistorySetup {
   history: HistoryStack
   onEdit: (event: Event) => void
+  onRangeWrite: (event: Event) => void
   onKeydown: (event: Event) => void
   unsubscribe: () => void
 }
@@ -24,7 +48,7 @@ interface EditDetail {
   rowIndex?: number
   key?: string
   column?: string
-  value?: string
+  value?: unknown
   oldValue?: string
   oldRawValue?: unknown
 }
@@ -68,8 +92,6 @@ function replaceAtPath(rows: readonly DataRow[], path: readonly number[], column
   return next
 }
 
-const setups = new WeakMap<HTMLElement, HistorySetup>()
-
 /**
  * 按行键定位数据行后写值：`oas-edit` 的 rowIndex 是可见行下标（排序/过滤/分页后会漂移），
  * 只有行键能稳定对应数据行。行键字段自身被编辑（键值变化）时，用「另一侧编辑值」唯一定位；
@@ -103,10 +125,86 @@ function applyValue(host: HistoryHost, detail: EditDetail, target: unknown, othe
   host.data = replaceAtPath(rows, path, detail.column, target)
 }
 
+const setups = new WeakMap<HTMLElement, HistorySetup>()
+/** 进行中的批次帧栈：recordHistory 的子命令先入栈顶帧，最外层批次结束时合并为一条事务 */
+const batchFrames = new WeakMap<HTMLElement, HistoryEntry[][]>()
+
 /**
- * 启用编辑历史（默认记录非受控 `oas-edit`；受控编辑 edit-controlled 的数据归宿主，跳过）。
+ * 显式记录任意命令（宿主自管的写入、远程同步等）：undo/redo 由调用方实现。
+ * 未 `enableHistory` 返回 false；批次进行中并入当前批次（见 withHistoryBatch）。
+ * 不经过 edit-controlled / windowed 闸门——显式调用即宿主自担数据责任。
+ */
+export function recordHistory(table: HTMLElement, entry: HistoryEntry): boolean {
+  const setup = setups.get(table)
+  if (!setup) return false
+  const frames = batchFrames.get(table)
+  const frame = frames?.[frames.length - 1]
+  if (frame) {
+    frame.push(entry)
+    return true
+  }
+  setup.history.push(entry)
+  return true
+}
+
+/**
+ * 批处理：fn 内所有 recordHistory 子命令（含自动记录的 oas-edit / oas-range-write）
+ * 合并为一条事务——undo 按子命令逆序执行，redo 正序；嵌套批次并入最外层；
+ * fn 抛错时本批子命令全部丢弃不入栈，异常继续向上传播。空批次不入栈。
+ * 未启用历史时 fn 照常执行（无可记录命令）。
+ */
+export function withHistoryBatch<T>(table: HTMLElement, fn: () => T): T {
+  const setup = setups.get(table)
+  if (!setup) return fn()
+  const frames = batchFrames.get(table) ?? []
+  batchFrames.set(table, frames)
+  const frame: HistoryEntry[] = []
+  frames.push(frame)
+  try {
+    const result = fn()
+    frames.splice(frames.lastIndexOf(frame), 1)
+    const parent = frames[frames.length - 1]
+    if (parent) parent.push(...frame)
+    else if (frame.length > 0) setup.history.push(createSequenceEntry(frame, frame[0]?.label))
+    return result
+  } catch (error) {
+    // fn 抛错：仅丢弃本批子命令（嵌套时内层已先各自丢弃），不入栈
+    frames.splice(frames.lastIndexOf(frame), 1)
+    throw error
+  }
+}
+
+/**
+ * 自动记录统一闸门：受控编辑（edit-controlled）的数据归宿主，始终不自动记录；
+ * windowed 表格仅在显式开启 options.windowed 后记录。
+ */
+function autoRecordAllowed(table: HTMLElement, windowed: boolean): boolean {
+  if (table.hasAttribute('edit-controlled')) return false
+  return !table.hasAttribute('windowed') || windowed
+}
+
+/** 单格命令（oas-edit 与 range-write changes 共用）：撤销回写编辑前原值，重做回写记录时已提交的值 */
+function cellCommand(host: HistoryHost, snapshot: EditDetail): HistoryEntry {
+  const column = snapshot.column as string
+  const rows = host.data ?? []
+  const rowKey = host.getAttribute('row-key') ?? 'key'
+  const path = snapshot.key != null ? indexPath(rows, snapshot.key, rowKey) : null
+  const current = path ? rowAtPath(rows, path) : null
+  const hasOldRaw = Object.prototype.hasOwnProperty.call(snapshot, 'oldRawValue')
+  // 原始类型：撤销用编辑前原值（number / boolean / string[] 等），重做取记录时已提交的当前值
+  const oldTarget = hasOldRaw ? snapshot.oldRawValue : snapshot.oldValue
+  const newTarget = current ? current[column] : snapshot.value
+  return {
+    label: `edit:${column}`,
+    undo: () => applyValue(host, snapshot, oldTarget, newTarget),
+    redo: () => applyValue(host, snapshot, newTarget, oldTarget),
+  }
+}
+
+/**
+ * 启用编辑历史（默认记录非受控 `oas-edit` 与 `oas-range-write`；受控编辑 edit-controlled 跳过）。
  * 键盘快捷键作用于表格 shadow 内，输入框聚焦时不拦截。
- * 重复调用返回既有栈；如需变更 keyboard / limit，先 `disableHistory` 再启用。
+ * 重复调用返回既有栈（不重置）；如需变更 keyboard / limit 等选项，先 `disableHistory` 再启用。
  */
 export function enableHistory(table: HTMLElement, options: HistoryOptions = {}): HistoryStack {
   const existing = setups.get(table)
@@ -116,27 +214,33 @@ export function enableHistory(table: HTMLElement, options: HistoryOptions = {}):
   }
   const host = table as HistoryHost
   const history = createHistory(options.limit ?? 100)
+  const windowedAllowed = options.windowed ?? false
   const onEdit = (event: Event): void => {
-    if (table.hasAttribute('edit-controlled') || table.hasAttribute('windowed')) return
+    if (!autoRecordAllowed(table, windowedAllowed)) return
     const detail = (event as CustomEvent<EditDetail>).detail
     const column = detail?.column
     if (!detail || !column || detail.oldValue == null || detail.key == null) return
     if (detail.oldValue === detail.value) return
     if (detail.value == null) return
-    const snapshot = { ...detail, column }
-    // 原始类型：撤销用编辑前原值（number / boolean / string[] 等），重做取事件后已提交的当前值
-    const rows = host.data ?? []
-    const rowKey = table.getAttribute('row-key') ?? 'key'
-    const path = snapshot.key != null ? indexPath(rows, snapshot.key, rowKey) : null
-    const current = path ? rowAtPath(rows, path) : null
-    const hasOldRaw = Object.prototype.hasOwnProperty.call(snapshot, 'oldRawValue')
-    const oldTarget = hasOldRaw ? snapshot.oldRawValue : snapshot.oldValue
-    const newTarget = current ? current[column] : snapshot.value
-    history.push({
-      label: `edit:${column}`,
-      undo: () => applyValue(host, snapshot, oldTarget, newTarget),
-      redo: () => applyValue(host, snapshot, newTarget, oldTarget),
-    })
+    recordHistory(table, cellCommand(host, { ...detail, column }))
+  }
+  const onRangeWrite = (event: Event): void => {
+    if (options.rangeWrites === false) return
+    if (!autoRecordAllowed(table, windowedAllowed)) return
+    const detail = (event as CustomEvent<RangeWriteDetail>).detail
+    const changes = detail?.changes
+    if (!Array.isArray(changes)) return
+    const commands: HistoryEntry[] = []
+    for (const change of changes) {
+      if (!change || !change.column || change.key == null) continue
+      const hasOldRaw = Object.prototype.hasOwnProperty.call(change, 'oldRawValue')
+      // 无旧值无法还原；与 oas-edit 同口径跳过无变化单元格（避免大面积无差别回写）
+      if (change.oldValue == null && !hasOldRaw) continue
+      if (change.oldValue === change.value) continue
+      commands.push(cellCommand(host, { ...change }))
+    }
+    if (commands.length === 0) return
+    recordHistory(table, createSequenceEntry(commands, `range:${detail.kind ?? 'write'}`))
   }
   const onKeydown = (event: Event): void => {
     const keyboard = (event as KeyboardEvent).key
@@ -160,8 +264,9 @@ export function enableHistory(table: HTMLElement, options: HistoryOptions = {}):
     table.dispatchEvent(new CustomEvent('oas-history-change', { detail: state }))
   })
   table.addEventListener('oas-edit', onEdit)
+  table.addEventListener('oas-range-write', onRangeWrite)
   host.shadowRoot?.addEventListener('keydown', onKeydown as EventListener)
-  setups.set(table, { history, onEdit, onKeydown, unsubscribe })
+  setups.set(table, { history, onEdit, onRangeWrite, onKeydown, unsubscribe })
   return history
 }
 
@@ -190,6 +295,7 @@ export function disableHistory(table: HTMLElement): void {
   const setup = setups.get(table)
   if (!setup) return
   table.removeEventListener('oas-edit', setup.onEdit)
+  table.removeEventListener('oas-range-write', setup.onRangeWrite)
   ;(table as HistoryHost).shadowRoot?.removeEventListener('keydown', setup.onKeydown as EventListener)
   setup.unsubscribe()
   setups.delete(table)
