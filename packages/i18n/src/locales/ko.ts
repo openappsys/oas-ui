@@ -169,6 +169,7 @@ export const ko: LocaleMessages = {
   'table.loading': '불러오는 중…',
   'table.empty': '데이터 없음',
   'table.selectRow': '{key}행 선택',
+  'table.rangeSelection': '{rows}행 × {cols}열 선택됨',
   'table.expand': '펼치기/접기',
   'table.summary': '합계',
   'table.edit': '편집',

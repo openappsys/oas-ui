@@ -94,3 +94,61 @@ export function applyViewState(table: HTMLElement, state: TableViewState): void 
     else table.setAttribute(attr, value)
   }
 }
+
+/** 视图状态持久化适配器：宿主注入（localStorage / sessionStorage / 自有存储），模块不依赖任何全局 Storage */
+export interface ViewStateAdapter {
+  getItem(key: string): string | null
+  setItem(key: string, value: string): void
+  removeItem?(key: string): void
+}
+
+/** 持久化键（v1 格式：`{"version":1,"state":TableViewState}`） */
+export const VIEW_STATE_KEY = 'oas-table-view:v1'
+
+/** 保存视图状态到 adapter：写入 `{version:1,state}`；序列化/写入失败（配额满等）静默返回 false */
+export function saveViewState(table: HTMLElement, adapter: ViewStateAdapter): boolean {
+  if (typeof adapter?.getItem !== 'function' || typeof adapter.setItem !== 'function') return false
+  try {
+    adapter.setItem(VIEW_STATE_KEY, JSON.stringify({ version: 1, state: captureViewState(table) }))
+    return true
+  } catch {
+    return false
+  }
+}
+
+/**
+ * 从 adapter 恢复视图状态：键缺失 / 坏 JSON / version!=1 / 字段结构非法时
+ * 静默返回 false 且不修改表格；成功应用返回 true。
+ */
+export function loadViewState(table: HTMLElement, adapter: ViewStateAdapter): boolean {
+  if (typeof adapter?.getItem !== 'function') return false
+  let raw: string | null
+  try {
+    raw = adapter.getItem(VIEW_STATE_KEY)
+  } catch {
+    return false
+  }
+  if (raw == null) return false
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(raw)
+  } catch {
+    return false
+  }
+  if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) return false
+  const record = parsed as { version?: unknown; state?: unknown }
+  if (record.version !== 1) return false
+  const state = record.state
+  if (typeof state !== 'object' || state === null || Array.isArray(state)) return false
+  // 字段结构预检：columnKeys 非数组会让 applyViewState 写入脏数据，widths 非对象同理
+  const view = state as TableViewState
+  if (view.columnKeys !== undefined && !Array.isArray(view.columnKeys)) return false
+  if (
+    view.widths !== undefined &&
+    (typeof view.widths !== 'object' || view.widths === null || Array.isArray(view.widths))
+  ) {
+    return false
+  }
+  applyViewState(table, view)
+  return true
+}

@@ -133,6 +133,7 @@ export const en: LocaleMessages = {
   'table.loading': 'Loading…',
   'table.empty': 'No data',
   'table.selectRow': 'Select row {key}',
+  'table.rangeSelection': '{rows} rows × {cols} columns selected',
   'table.expand': 'Expand/Collapse',
   'table.summary': 'Total',
   'table.edit': 'Edit',

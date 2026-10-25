@@ -21,11 +21,19 @@ export interface MasterDetailOptions {
   collapsible?: boolean
   /** 选中变化回调（含清空） */
   onSelect?: (detail: RowDetail | null) => void
+  /** 从「有选中」变为「无选中」时调用一次（collapsible 再点收起、close()/select(null)、Esc、行从数据消失），参数为被关闭的详情 */
+  onClose?: (detail: RowDetail | null) => void
+  /** Esc 是否关闭详情（默认 true；false 时完全不响应 Esc，含 window 兜底） */
+  closeOnEscape?: boolean
 }
 
 export interface MasterDetail {
   /** 以可见行下标选中/清空；越界或行不存在时清空 */
   select(rowIndex: number | null): void
+  /** 按行键选中（递归 children 查找）；行未渲染时保留选中（rowIndex = -1）；key 不存在时清空 */
+  selectByKey(key: string): void
+  /** 清空选中（等价 select(null)） */
+  close(): void
   /** 当前选中（未选中为 null） */
   readonly selected: RowDetail | null
   destroy(): void
@@ -42,6 +50,12 @@ tr.row[data-detail-selected='true'] td:first-child {
 `
 /** 同一 shadowRoot 可能被多个 master-detail 复用：样式引用计数，最后一个销毁时移除 */
 const styleRefs = new WeakMap<ShadowRoot, { node: HTMLStyleElement; count: number }>()
+
+/**
+ * 最近激活实例（最近一次成功选中者）的 Esc 关闭入口。
+ * window 兜底 Esc 只让该实例响应，多实例互不牵连；destroy 时若指向自己则清除。
+ */
+let activeEscapeClose: (() => void) | null = null
 
 function acquireStyle(root: ShadowRoot): void {
   const existing = styleRefs.get(root)
@@ -84,6 +98,11 @@ export function createMasterDetail(table: HTMLElement, options: MasterDetailOpti
   let selected: RowDetail | null = null
   let observer: MutationObserver | null = null
   let destroyed = false
+  // Esc 响应开关：false 时本实例完全不响应 Esc（也不抢占「最近激活」标记，避免压过其它实例后 Esc 全体失效）
+  const escEnabled = options.closeOnEscape !== false
+  // 记录 helper 写入前面板的可访问性属性：destroy 时恢复宿主原值（helper 写入 role/aria-label 会覆盖）
+  const panelOriginalRole = options.panel.getAttribute('role')
+  const panelOriginalAriaLabel = options.panel.getAttribute('aria-label')
 
   acquireStyle(root)
 
@@ -143,6 +162,7 @@ export function createMasterDetail(table: HTMLElement, options: MasterDetailOpti
   }
 
   const apply = (next: RowDetail | null): void => {
+    const previous = selected
     const sameKey = next !== null && selected !== null && next.key === selected.key
     if (!next && !selected) return
     if (sameKey && !options.collapsible) {
@@ -150,12 +170,20 @@ export function createMasterDetail(table: HTMLElement, options: MasterDetailOpti
       selected = next
       highlight()
       renderPanel()
+      if (escEnabled) activeEscapeClose = escapeClose
       return
     }
     selected = sameKey && options.collapsible ? null : next
     highlight()
     renderPanel()
     emit()
+    if (selected) {
+      // 成功选中：本实例成为「最近激活」，window 兜底 Esc 优先关它
+      if (escEnabled) activeEscapeClose = escapeClose
+    } else if (previous) {
+      // 从有选中变为无选中：通知关闭（onSelect 已派发清空，此处补充被关闭的详情）
+      options.onClose?.(previous)
+    }
   }
 
   /** data 变化（含行内编辑回写）后刷新详情内容；数据中行消失才清空（滚出渲染窗口不清空） */
@@ -201,11 +229,9 @@ export function createMasterDetail(table: HTMLElement, options: MasterDetailOpti
     )
   }
 
-  const onKeydown = (event: Event): void => {
-    if ((event as KeyboardEvent).key !== 'Escape' || !selected) return
-    // 行内编辑器 / 面板内输入框的 Esc 归控件（取消编辑），不关闭详情、不抢焦
-    if (event.defaultPrevented || isInputTarget(event.target) || isInteractiveEvent(event)) return
-    event.preventDefault()
+  /** Esc 关闭当前详情并把焦点归还到原行单元格（调用方保证 selected 非空） */
+  const escapeClose = (): void => {
+    if (!selected) return
     const key = selected.key
     apply(null)
     const tr = rowsOf(table).find((item) => item.getAttribute('data-key') === key)
@@ -213,6 +239,21 @@ export function createMasterDetail(table: HTMLElement, options: MasterDetailOpti
     // 纯表格（无 range/grid-navigation/editable）的 td 不可聚焦：临时给 -1 让焦点能归位
     if (target && !target.hasAttribute('tabindex')) target.tabIndex = -1
     target?.focus()
+  }
+
+  const onKeydown = (event: Event): void => {
+    if (!escEnabled) return
+    if ((event as KeyboardEvent).key !== 'Escape' || !selected) return
+    // 行内编辑器 / 面板内输入框的 Esc 归控件（取消编辑），不关闭详情、不抢焦
+    if (event.defaultPrevented || isInputTarget(event.target) || isInteractiveEvent(event)) return
+    event.preventDefault()
+    escapeClose()
+  }
+
+  /** window 冒泡兜底：只有最近激活（最近一次成功选中）的实例响应，多实例互不牵连 */
+  const onWindowKeydown = (event: Event): void => {
+    if (activeEscapeClose !== escapeClose) return
+    onKeydown(event)
   }
 
   const onEnter = (event: Event): void => {
@@ -238,8 +279,8 @@ export function createMasterDetail(table: HTMLElement, options: MasterDetailOpti
   table.addEventListener('keydown', onKeydown)
   options.panel.addEventListener('keydown', onKeydown)
   // 普通表鼠标点行后焦点不在表格内：window 冒泡兜底，Esc 仍能关闭详情
-  // （多实例会同时响应同一次 Esc；宿主需要独立关闭时自行在 onSelect 里判断）
-  window.addEventListener('keydown', onKeydown)
+  // （多实例互不牵连：只有最近激活——最近一次成功选中的——实例响应兜底 Esc）
+  window.addEventListener('keydown', onWindowKeydown)
 
   observer = new MutationObserver(() => {
     // 排序/过滤/虚拟滚动重建后刷新渲染下标（数据未变时行对象与面板不必重绘）
@@ -264,6 +305,18 @@ export function createMasterDetail(table: HTMLElement, options: MasterDetailOpti
       const detail = detailAt(rowIndex)
       apply(detail)
     },
+    selectByKey(key) {
+      const row = findRow(key)
+      if (!row) {
+        apply(null)
+        return
+      }
+      // 行未渲染（滚出窗口/树形未展开）时 rowIndexByKey 返回 -1：保留选中，rowIndex 取 -1
+      apply({ row, key, rowIndex: rowIndexByKey(key) })
+    },
+    close() {
+      apply(null)
+    },
     get selected() {
       return selected
     },
@@ -275,12 +328,19 @@ export function createMasterDetail(table: HTMLElement, options: MasterDetailOpti
       table.removeEventListener('keydown', onEnter)
       table.removeEventListener('keydown', onKeydown)
       options.panel.removeEventListener('keydown', onKeydown)
-      window.removeEventListener('keydown', onKeydown)
+      window.removeEventListener('keydown', onWindowKeydown)
       observer?.disconnect()
       observer = null
       dataObserver.disconnect()
+      // 若自己是当前活动实例，清除活动标记（window 兜底 Esc 不再指向本实例）
+      if (activeEscapeClose === escapeClose) activeEscapeClose = null
       for (const tr of rowsOf(table)) tr.removeAttribute('data-detail-selected')
       options.panel.textContent = ''
+      // 恢复 helper 写入前的 role/aria-label（宿主自带值原样还原，原本无值则移除）
+      if (panelOriginalRole === null) options.panel.removeAttribute('role')
+      else options.panel.setAttribute('role', panelOriginalRole)
+      if (panelOriginalAriaLabel === null) options.panel.removeAttribute('aria-label')
+      else options.panel.setAttribute('aria-label', panelOriginalAriaLabel)
       releaseStyle(table.shadowRoot as ShadowRoot)
       selected = null
     },

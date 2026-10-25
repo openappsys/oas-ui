@@ -243,4 +243,226 @@ describe('table/detail 主从详情', () => {
     expect(panel.textContent).toBe('未选择')
     detail.destroy()
   })
+
+  it('selectByKey：已渲染行按可见下标选中', () => {
+    const { table, panel } = mount()
+    const detail = createMasterDetail(table, {
+      panel,
+      label: '详情',
+      render: (row) => `${row.row.name}`,
+    })
+    const events: unknown[] = []
+    table.addEventListener('oas-detail-change', (event) => events.push((event as CustomEvent).detail))
+    detail.selectByKey('b')
+    expect(panel.textContent).toBe('Beta')
+    expect(detail.selected).toEqual({ row: { id: 'b', name: 'Beta' }, key: 'b', rowIndex: 1 })
+    expect(table.shadowRoot!.querySelector('tr[data-key="b"]')!.hasAttribute('data-detail-selected')).toBe(true)
+    expect(events).toHaveLength(1)
+    detail.destroy()
+  })
+
+  it('selectByKey：递归子行；未展开未渲染时保留选中（rowIndex=-1），展开后刷新下标并补高亮', async () => {
+    const table = new OASTable()
+    table.setAttribute('columns', JSON.stringify([{ key: 'name', title: '名称' }]))
+    table.setAttribute('row-key', 'id')
+    table.setAttribute('data', JSON.stringify([{ id: 'p', name: '父', children: [{ id: 'c', name: '子' }] }]))
+    const panel = document.createElement('div')
+    document.body.append(table, panel)
+    const detail = createMasterDetail(table, {
+      panel,
+      label: '详情',
+      render: (row) => `${row.row.name}`,
+    })
+    // 子行未展开（未渲染）：按行键仍选中，rowIndex 取 -1
+    detail.selectByKey('c')
+    expect(detail.selected).toEqual({ row: { id: 'c', name: '子' }, key: 'c', rowIndex: -1 })
+    expect(panel.textContent).toBe('子')
+    // 展开父行后子行进入渲染窗口：刷新 rowIndex 并重新标记高亮
+    table.setAttribute('expanded', 'p')
+    await vi.waitFor(() => {
+      expect(detail.selected?.rowIndex).toBe(1)
+      expect(table.shadowRoot!.querySelector('tr[data-key="c"]')!.hasAttribute('data-detail-selected')).toBe(true)
+    })
+    detail.destroy()
+  })
+
+  it('selectByKey：key 不存在时清空（等价 select(null)）', () => {
+    const { table, panel } = mount()
+    const closed: unknown[] = []
+    const detail = createMasterDetail(table, {
+      panel,
+      label: '详情',
+      emptyText: '未选择',
+      render: (row) => `${row.row.name}`,
+      onClose: (d) => closed.push(d),
+    })
+    detail.selectByKey('b')
+    detail.selectByKey('nope')
+    expect(detail.selected).toBeNull()
+    expect(panel.textContent).toBe('未选择')
+    expect(closed).toHaveLength(1)
+    // 本就无选中：不触发 onClose
+    detail.selectByKey('nope')
+    expect(closed).toHaveLength(1)
+    detail.destroy()
+  })
+
+  it('close()/onClose：程序关闭、Esc、行消失各触发一次；同键点击/换行/重渲染不触发', async () => {
+    const { table, panel } = mount()
+    const closed: unknown[] = []
+    const detail = createMasterDetail(table, {
+      panel,
+      label: '详情',
+      emptyText: '未选择',
+      render: (row) => `${row.row.name}`,
+      onClose: (d) => closed.push(d),
+    })
+    // 同键重复点击（刷新内容）/ 换行选中：保持选中，不触发
+    detail.selectByKey('a')
+    rowClick(table, { id: 'a', name: 'Alpha' }, 'a')
+    rowClick(table, { id: 'b', name: 'Beta' }, 'b')
+    expect(closed).toHaveLength(0)
+    // 普通重渲染（行对象刷新）：不触发
+    table.data = [
+      { id: 'a', name: 'Alpha2' },
+      { id: 'b', name: 'Beta' },
+    ]
+    await vi.waitFor(() => expect(panel.textContent).toBe('Beta'))
+    expect(closed).toHaveLength(0)
+
+    // 程序关闭：触发一次，参数为被关闭的详情
+    detail.close()
+    expect(detail.selected).toBeNull()
+    expect(closed).toHaveLength(1)
+    expect(closed[0]).toMatchObject({ key: 'b' })
+    // 无选中时 close/select(null)/selectByKey 不触发
+    detail.close()
+    detail.select(null)
+    detail.selectByKey('nope')
+    expect(closed).toHaveLength(1)
+
+    // window 兜底 Esc：触发
+    rowClick(table, { id: 'a', name: 'Alpha2' }, 'a')
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', cancelable: true }))
+    expect(closed).toHaveLength(2)
+
+    // 行从数据消失：触发
+    rowClick(table, { id: 'a', name: 'Alpha2' }, 'a')
+    table.data = [{ id: 'b', name: 'Beta' }]
+    await vi.waitFor(() => expect(detail.selected).toBeNull())
+    expect(closed).toHaveLength(3)
+    detail.destroy()
+  })
+
+  it('collapsible 再点收起与 select 越界清空同样触发 onClose', () => {
+    const { table, panel } = mount()
+    const closed: unknown[] = []
+    const detail = createMasterDetail(table, {
+      panel,
+      label: '详情',
+      emptyText: '未选择',
+      collapsible: true,
+      render: (row) => `${row.row.name}`,
+      onClose: (d) => closed.push(d),
+    })
+    rowClick(table, { id: 'a', name: 'Alpha' }, 'a')
+    rowClick(table, { id: 'a', name: 'Alpha' }, 'a')
+    expect(detail.selected).toBeNull()
+    expect(closed).toHaveLength(1)
+
+    detail.select(1)
+    detail.select(9)
+    expect(detail.selected).toBeNull()
+    expect(closed).toHaveLength(2)
+    detail.destroy()
+  })
+
+  it('多实例：window 兜底 Esc 只关最近激活（最近一次成功选中）的实例', () => {
+    const a = mount()
+    const b = mount()
+    const da = createMasterDetail(a.table, { panel: a.panel, label: 'A', render: (row) => `${row.row.name}` })
+    const db = createMasterDetail(b.table, { panel: b.panel, label: 'B', render: (row) => `${row.row.name}` })
+    const esc = (): void => {
+      window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', cancelable: true }))
+    }
+
+    rowClick(a.table, { id: 'a', name: 'Alpha' }, 'a')
+    rowClick(b.table, { id: 'b', name: 'Beta' }, 'b')
+    esc()
+    // 只关最近激活的 B，A 不被牵连
+    expect(db.selected).toBeNull()
+    expect(da.selected).not.toBeNull()
+    // A 重新成功选中后成为最近激活：Esc 关 A
+    rowClick(a.table, { id: 'a', name: 'Alpha' }, 'a')
+    esc()
+    expect(da.selected).toBeNull()
+    da.destroy()
+    db.destroy()
+  })
+
+  it('多实例：destroy 最近激活实例后清除活动标记（window Esc 不再关其它实例）', () => {
+    const a = mount()
+    const b = mount()
+    const da = createMasterDetail(a.table, { panel: a.panel, label: 'A', render: (row) => `${row.row.name}` })
+    const db = createMasterDetail(b.table, { panel: b.panel, label: 'B', render: (row) => `${row.row.name}` })
+    rowClick(a.table, { id: 'a', name: 'Alpha' }, 'a')
+    rowClick(b.table, { id: 'b', name: 'Beta' }, 'b')
+    db.destroy()
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', cancelable: true }))
+    expect(da.selected).not.toBeNull()
+    da.destroy()
+  })
+
+  it('closeOnEscape=false：表格/面板/window 兜底均不响应 Esc，程序关闭仍可用', () => {
+    const { table, panel } = mount()
+    const detail = createMasterDetail(table, {
+      panel,
+      label: '详情',
+      closeOnEscape: false,
+      render: (row) => `${row.row.name}`,
+    })
+    rowClick(table, { id: 'a', name: 'Alpha' }, 'a')
+    table.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }))
+    panel.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }))
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', cancelable: true }))
+    expect(detail.selected).not.toBeNull()
+    detail.close()
+    expect(detail.selected).toBeNull()
+    detail.destroy()
+  })
+
+  it('destroy 恢复面板 role/aria-label 为 helper 写入前的值（无值则移除）', () => {
+    // 宿主自带属性：helper 覆盖后 destroy 原样还原
+    const owned = mount()
+    owned.panel.setAttribute('role', 'complementary')
+    owned.panel.setAttribute('aria-label', '宿主自带')
+    const d1 = createMasterDetail(owned.table, {
+      panel: owned.panel,
+      label: '详情',
+      render: (row) => `${row.row.name}`,
+    })
+    expect(owned.panel.getAttribute('role')).toBe('complementary')
+    expect(owned.panel.getAttribute('aria-label')).toBe('详情')
+    d1.destroy()
+    expect(owned.panel.getAttribute('role')).toBe('complementary')
+    expect(owned.panel.getAttribute('aria-label')).toBe('宿主自带')
+
+    // 无既有属性：helper 写入 region/label，destroy 后移除
+    const plain = mount()
+    const d2 = createMasterDetail(plain.table, {
+      panel: plain.panel,
+      label: '详情',
+      render: (row) => `${row.row.name}`,
+    })
+    expect(plain.panel.getAttribute('role')).toBe('region')
+    expect(plain.panel.getAttribute('aria-label')).toBe('详情')
+    d2.destroy()
+    expect(plain.panel.getAttribute('role')).toBeNull()
+    expect(plain.panel.getAttribute('aria-label')).toBeNull()
+  })
+
+  it('label 为空仍抛错', () => {
+    const { table, panel } = mount()
+    expect(() => createMasterDetail(table, { panel, label: '  ', render: () => null })).toThrow()
+  })
 })

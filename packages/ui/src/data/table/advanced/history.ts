@@ -16,6 +16,22 @@ export interface HistoryStack {
   readonly size: number
 }
 
+/**
+ * 把多条子命令合并为一条事务：undo 按子命令逆序执行，redo 正序执行。
+ * 供批处理（withHistoryBatch）与 oas-range-write 合成事务复用；空序列为无操作。
+ */
+export function createSequenceEntry(entries: readonly HistoryEntry[], label?: string): HistoryEntry {
+  return {
+    ...(label === undefined ? {} : { label }),
+    undo() {
+      for (let i = entries.length - 1; i >= 0; i--) entries[i]!.undo()
+    },
+    redo() {
+      for (const entry of entries) entry.redo()
+    },
+  }
+}
+
 /** 通用撤销/重做栈（纯内存，无 DOM 依赖；宿主可接任意命令） */
 export function createHistory(limit = 100): HistoryStack {
   const undoStack: HistoryEntry[] = []

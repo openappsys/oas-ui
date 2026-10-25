@@ -169,6 +169,7 @@ export const fr: LocaleMessages = {
   'table.loading': 'Chargement…',
   'table.empty': 'Aucune donnée',
   'table.selectRow': 'Sélectionner la ligne {key}',
+  'table.rangeSelection': '{rows} lignes × {cols} colonnes sélectionnées',
   'table.expand': 'Déplier/Replier',
   'table.summary': 'Total',
   'table.edit': 'Modifier',
