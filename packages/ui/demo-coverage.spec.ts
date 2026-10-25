@@ -1139,7 +1139,7 @@ for (const [name, m] of Object.entries(manifest)) {
           return orig.call(this, ev)
         }
       })
-      await page.goto(`/components/${m.demo}.html`, { waitUntil: 'load' })
+      await page.goto(`/components/${m.demo}.html`, { waitUntil: 'networkidle' })
       // 等组件 upgrade（shadowRoot 出现）再 probe——并行高负载下 attached 立即满足但 upgrade 排队，
       // 探针太早会全部扑空（「已触发: 无」）；backdrop 由交互创建，跳过。
       // 2 核 CI runner 上 6 workers 并发加载时 upgrade 排队可达数秒，超时放宽到 10s

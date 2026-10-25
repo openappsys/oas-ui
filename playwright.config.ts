@@ -9,9 +9,9 @@ const E2E_PORT = process.env.E2E_PORT || '4173'
 // 避免 N 个分片同时写同一 dist 互相踩。
 const E2E_SKIP_BUILD = process.env.E2E_SKIP_BUILD === '1' || !!process.env.CI
 
-// 是否复用已存在的 preview：默认本地复用、CI 不复用。分片编排显式置 0 强制每个实例自起，
-// 端口由编排脚本动态选空闲端口——不复用可避免误连崩溃残留的陈旧 preview（陈旧 dist 陷阱）。
-const E2E_REUSE = process.env.E2E_REUSE != null ? process.env.E2E_REUSE === '1' : !process.env.CI
+// 默认不复用旧 preview：复用会撞上旧 dist 的 GTM/样式/事件契约，造成「磁盘已更新、页面仍旧」的假失败。
+// 仅在显式 E2E_REUSE=1 时复用（加速本地反复跑；由调用者自行保证 preview 为最新构建）。
+const E2E_REUSE = process.env.E2E_REUSE === '1'
 
 // 单次调用的并发：E2E_WORKERS 显式覆盖优先；否则 CI 保底 4（2 核 runner，过多 worker 抢 CPU 反慢）、
 // 本地按 CPU 自适应（留 2 核给单线程 preview server + 系统，上限 12）——本地机器充裕时显著缩短全量时长。

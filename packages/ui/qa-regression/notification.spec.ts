@@ -5,6 +5,8 @@ import { up } from './helpers'
 
 async function ready(page: import('@playwright/test').Page) {
   await page.goto('/components/notification.html', { waitUntil: 'domcontentloaded' })
+  // 等 demo 脚本与组件注册全部完成，避免高并发下 oas-button / shadowRoot 尚未就绪
+  await page.waitForLoadState('networkidle')
   await up(page, 'oas-button')
   await page.waitForFunction(() => typeof (window as any).notification !== 'undefined', null, {
     timeout: 10000,

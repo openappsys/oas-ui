@@ -53,6 +53,7 @@
 - **体积相对断言**：`table/core` 链必须严格小于主链 `table`（失败信息含两者数值），绝对值预算保留。
 - **`qa:audit` 事件只断 length 维度入 `--check`**：新增 `--max-event-len`（默认 105），阈值定位为防增量而非清零。
 - **SSR 白名单计数门禁**：`pnpm ssr:check` 校验 `WHITELIST` 长度与 `docs/ssr.md`、中/英文 guide 的计数一致（`docs/ROADMAP.md` 可选），计数声明缺失/改写也失败。
+- **e2e 稳定性**：demo-coverage 与 notification 改为 `networkidle 就绪后交互；Playwright preview 默认不复用旧服务（仅显式 `E2E_REUSE=1` 才复用），杜绝陈旧 dist 导致的假失败；marquee 采样窗为空时不再把空数组中位数当方向错误；WebKit 补 `oas-form-item` 跨 shadow 错误关联或 `role=alert` 兜底用例。
 
 ### 修复
 

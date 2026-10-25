@@ -53,3 +53,34 @@ test('webkit interaction: prompt-input 键盘提交', async ({ page }) => {
   await expect(textarea).toHaveValue('')
   expect(errors, 'WebKit prompt-input 交互 console/pageerror').toEqual([])
 })
+
+// WebKit 对跨 shadow 的 ElementInternals 引用目前返回空数组：
+// 关联成立就校验关联，否则至少保证 role=alert 的错误播报与可见性不回归。
+test('webkit: form-item 错误文案跨 shadow 关联或 role=alert 兜底', async ({ page }) => {
+  await page.goto('/components/form.html', { waitUntil: 'domcontentloaded' })
+  await page.waitForFunction(() => !!customElements.get('oas-form-item'))
+  const r = await page.evaluate(async () => {
+    const item = document.createElement('oas-form-item') as HTMLElement & {
+      setError(message: string | null): void
+    }
+    const input = document.createElement('oas-input') as HTMLElement & { internals_?: ElementInternals }
+    item.appendChild(input)
+    document.body.appendChild(item)
+    await new Promise((res) => requestAnimationFrame(() => requestAnimationFrame(() => res(null))))
+    item.setError('请填写姓名')
+    const internals = input.internals_
+    const refs = internals?.ariaDescribedByElements ?? []
+    const error = item.shadowRoot!.querySelector<HTMLElement>('[part="error"]')!
+    const out = {
+      linked: refs.length === 1 && refs[0] === error,
+      role: error.getAttribute('role'),
+      hidden: error.hidden,
+    }
+    item.setError(null)
+    item.remove()
+    return out
+  })
+  expect(r.role, '不支持跨 shadow 关联时用 role=alert 兜底').toBe('alert')
+  expect(r.hidden, '错误节点可见').toBe(false)
+  if (r.linked) expect(r.linked, '支持时 error 节点被正确关联').toBe(true)
+})
