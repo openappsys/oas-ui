@@ -133,3 +133,49 @@ test('virtual-list 动态行高：不等高行实测渲染 + 总高修正 + scro
   expect(pos.targetTop).toBeGreaterThanOrEqual(-1)
   expect(pos.targetTop).toBeLessThan(80)
 })
+
+test('virtual-list keyboard：roving tabindex + End/Home/Arrow 真实键盘导航', async ({ page }) => {
+  await page.goto('/components/virtual-list.html', { waitUntil: 'domcontentloaded' })
+  await page.waitForFunction(() => !!customElements.get('oas-virtual-list'))
+  await page.evaluate(async () => {
+    const el = document.createElement('oas-virtual-list') as HTMLElement & { items: number[] }
+    el.className = 'qa-vl'
+    el.setAttribute('keyboard', '')
+    el.setAttribute('height', '200')
+    el.setAttribute('item-height', '24')
+    document.body.appendChild(el)
+    el.items = Array.from({ length: 100 }, (_, i) => i + 1)
+    ;(window as unknown as { __activeChanges: Array<{ index: number }> }).__activeChanges = []
+    el.addEventListener('oas-active-change', (e) => {
+      ;(window as unknown as { __activeChanges: Array<{ index: number }> }).__activeChanges.push(
+        (e as CustomEvent<{ index: number }>).detail,
+      )
+    })
+    await new Promise((res) => requestAnimationFrame(() => requestAnimationFrame(() => res(null))))
+  })
+  const vl = page.locator('oas-virtual-list.qa-vl')
+  const active = vl.locator('[part="item"][tabindex="0"]')
+  await expect(active).toHaveAttribute('data-index', '0')
+  await active.focus()
+  const activeIndex = (): Promise<string | null> => vl.evaluate((el) => el.getAttribute('active-index'))
+  const focusedIndex = (): Promise<string | null> =>
+    vl.evaluate((el) => el.shadowRoot!.activeElement?.getAttribute('data-index') ?? null)
+
+  await page.keyboard.press('End')
+  await expect.poll(activeIndex).toBe('99')
+  await expect.poll(focusedIndex).toBe('99')
+  await expect(vl.locator('[part="item"][data-index="99"]')).toHaveAttribute('tabindex', '0')
+
+  await page.keyboard.press('Home')
+  await expect.poll(activeIndex).toBe('0')
+  await expect.poll(focusedIndex).toBe('0')
+
+  await page.keyboard.press('ArrowDown')
+  await expect.poll(activeIndex).toBe('1')
+  await expect.poll(focusedIndex).toBe('1')
+
+  const changes = await page.evaluate(
+    () => (window as unknown as { __activeChanges: Array<{ index: number }> }).__activeChanges,
+  )
+  expect(changes.map((c) => c.index)).toEqual([99, 0, 1])
+})

@@ -40,6 +40,16 @@
       "type": "string",
       "default": "",
       "observed": true
+    },
+    {
+      "name": "keyboard",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "active-index",
+      "default": "0",
+      "observed": true
     }
   ],
   "props": [
@@ -47,6 +57,10 @@
       "name": "viewportFocusable",
       "type": "boolean",
       "default": "true"
+    },
+    {
+      "name": "activeIndex",
+      "type": "number"
     },
     {
       "name": "items",
@@ -62,6 +76,10 @@
     }
   ],
   "events": [
+    {
+      "name": "oas-active-change",
+      "detail": "{ index: next, item: this.data[next] } | { index, item: this.data[index] }"
+    },
     {
       "name": "oas-item",
       "detail": "{ index: i, item, element: el }"

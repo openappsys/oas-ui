@@ -76,6 +76,10 @@ const STYLE = `
   box-sizing: border-box;
   overflow: hidden;
 }
+.item:focus-visible {
+  outline: 2px solid var(--oas-color-primary);
+  outline-offset: -2px;
+}
 `
 
 /**
@@ -92,14 +96,19 @@ const STYLE = `
  *   取接近真实平均行高的值可减小实测修正幅度
  * - `scroll-target`：外部滚动容器 CSS 选择器（可选）。设置后组件不自带滚动条，
  *   改为监听外部容器的 scroll 并按其 scrollTop 计算窗口（组件本身占满全部内容高度）。
+ * - `keyboard`：opt-in 键盘行导航（↑/↓/Home/End/PageUp/PageDown，roving tabindex；
+ *   视口本身不再 Tab 聚焦，由活动项承载焦点）。
+ * - `active-index`：键盘导航的当前活动行（0 基；越界夹取，空数据为 -1）。
  * - `items`：JSON 字符串形式的数据（可选，property `items` 优先）
  *
  * property：
  * - `items: unknown[]` —— 数据数组（推荐通道，优先级高于 items 属性）
+ * - `activeIndex: number` —— 当前活动行（等价 active-index 属性）
  *
  * 事件（bubbles + composed）：
  * - `oas-scroll`：`{ scrollTop, start, end }`，rAF 节流
  * - `oas-item`：`{ index, item, element }`，每个可见项渲染后派发，宿主可据此绑定内容
+ * - `oas-active-change`：`{ index, item }`，键盘/焦点移动活动行时派发（宿主写 active-index 不回声）
  *
  * slot：
  * - `template[slot="item"]`：可选模板，克隆到每个可见项容器；未提供时默认渲染 String(item)
@@ -116,7 +125,17 @@ const STYLE = `
  */
 export class OASVirtualList extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['height', 'item-height', 'buffer', 'scroll-target', 'items', 'dynamic-height', 'estimated-item-height']
+    return [
+      'height',
+      'item-height',
+      'buffer',
+      'scroll-target',
+      'items',
+      'dynamic-height',
+      'estimated-item-height',
+      'keyboard',
+      'active-index',
+    ]
   }
 
   private data: unknown[] = []
@@ -150,6 +169,16 @@ export class OASVirtualList extends OASElement {
   set viewportFocusable(value: boolean) {
     this.viewportFocusableValue = value !== false
     this.syncViewportFocusable()
+  }
+
+  /** 键盘导航当前活动行（0 基；空数据/越界读取时夹取到有效区间） */
+  get activeIndex(): number {
+    return this.activeIndexValue()
+  }
+
+  set activeIndex(value: number) {
+    const next = Number.isFinite(value) ? Math.trunc(value) : 0
+    this.setAttribute('active-index', String(next))
   }
 
   get items(): unknown[] {
@@ -202,6 +231,7 @@ export class OASVirtualList extends OASElement {
     this.paddingTop = this.shadow.querySelector('.padding-top')
     this.paddingBottom = this.shadow.querySelector('.padding-bottom')
     this.itemsEl = this.shadow.querySelector('.items')
+    this.viewport?.addEventListener('keydown', this.handleKeyboardEvt)
     // 动态行高：行高实测观察器（SSR/无 ResizeObserver 环境安全跳过，退回预估值）
     if (typeof ResizeObserver !== 'undefined' && !this.resizeObserver) {
       this.resizeObserver = new ResizeObserver((entries) => this.handleItemResize(entries))
@@ -238,6 +268,15 @@ export class OASVirtualList extends OASElement {
     // 会被撑高容器拉到全内容高度，页面跟着变 16 万 px）
     if (this.viewport) this.viewport.style.height = `${this.listHeight()}px`
     this.renderWindow()
+    // keyboard：宿主写 active-index / 数据收缩后，活动行可能落在窗口外；滚入视口以便 roving 焦点可达
+    if (this.keyboardEnabled()) this.ensureActiveInWindow()
+  }
+
+  /** 活动行不在当前窗口内时滚入（不抢焦点；宿主写 active-index 仍保持原焦点） */
+  private ensureActiveInWindow(): void {
+    const active = this.activeIndexValue()
+    if (active < 0 || (active >= this.start && active < this.end)) return
+    this.scrollToIndex(active, { align: 'auto' })
   }
 
   /** items-role 透传到 .items 容器、item-role 透传到每个 item（opt-in，供 tree 等虚拟化 ARIA 层级用） */
@@ -254,8 +293,76 @@ export class OASVirtualList extends OASElement {
   /** 按 viewportFocusable 同步视口 tabindex（update 每次幂等执行，消费方任意时序设置均收敛） */
   private syncViewportFocusable(): void {
     if (!this.viewport) return
+    // keyboard 模式：焦点由活动行承载（roving tabindex），视口本身不再进 Tab 序；
+    // 空数据时保留视口可聚焦，避免列表完全不可达。
+    if (this.keyboardEnabled()) {
+      this.viewport.setAttribute('tabindex', this.data.length > 0 ? '-1' : '0')
+      return
+    }
     if (this.viewportFocusableValue) this.viewport.setAttribute('tabindex', '0')
     else this.viewport.removeAttribute('tabindex')
+  }
+
+  private keyboardEnabled(): boolean {
+    return this.hasAttr('keyboard')
+  }
+
+  /** 当前活动行：空数据 -1；越界按最近边界夹取（不回写宿主 attribute） */
+  private activeIndexValue(): number {
+    const count = this.data.length
+    if (count === 0) return -1
+    const raw = Number(this.getAttr('active-index', '0'))
+    const n = Number.isFinite(raw) ? Math.trunc(raw) : 0
+    return Math.min(count - 1, Math.max(0, n))
+  }
+
+  /** 键盘导航：roving tabindex + ↑↓/Home/End/PageUp/PageDown；活动项滚入视口并聚焦 */
+  private handleKeyboardEvt = (e: KeyboardEvent): void => {
+    if (!this.keyboardEnabled() || this.data.length === 0) return
+    if (e.defaultPrevented || e.altKey || e.ctrlKey || e.metaKey) return
+    const current = this.activeIndexValue()
+    const page = Math.max(1, Math.floor(this.listHeight() / this.itemHeightPx()) - 1)
+    let next = current
+    if (e.key === 'ArrowDown') next = current + 1
+    else if (e.key === 'ArrowUp') next = current - 1
+    else if (e.key === 'Home') next = 0
+    else if (e.key === 'End') next = this.data.length - 1
+    else if (e.key === 'PageDown') next = current + page
+    else if (e.key === 'PageUp') next = current - page
+    else return
+    e.preventDefault()
+    next = Math.min(this.data.length - 1, Math.max(0, next))
+    if (next === current) return
+    this.setAttribute('active-index', String(next))
+    this.scrollToIndex(next, { align: 'auto' })
+    this.focusActive()
+    this.emit('active-change', { index: next, item: this.data[next] })
+  }
+
+  /** happy-dom 在无焦点节点时读取 shadow.activeElement 会抛错；浏览器不受影响 */
+  private shadowActiveElement(): Element | null {
+    try {
+      return this.shadow.activeElement
+    } catch {
+      return null
+    }
+  }
+
+  /** 活动项 focus（不触发滚动，滚动已由 scrollToIndex 完成） */
+  private focusActive(): void {
+    const active = this.activeIndexValue()
+    const items = this.itemsEl?.querySelectorAll<HTMLElement>('.item')
+    if (!items) return
+    for (const el of items) el.tabIndex = Number(el.dataset.index) === active ? 0 : -1
+    if (active < 0) return
+    this.itemsEl?.querySelector<HTMLElement>(`.item[data-index="${active}"]`)?.focus({ preventScroll: true })
+  }
+
+  /** 项获得焦点（点击/程序聚焦）：同步活动行并派发；键盘 move 已先写 attr，不会重复派发 */
+  private syncActiveFromFocus(index: number): void {
+    if (!this.keyboardEnabled() || index === this.activeIndexValue()) return
+    this.setAttribute('active-index', String(index))
+    this.emit('active-change', { index, item: this.data[index] })
   }
 
   /**
@@ -408,6 +515,12 @@ export class OASVirtualList extends OASElement {
   private renderItems(): void {
     const itemsEl = this.itemsEl
     if (!itemsEl) return
+    // keyboard：重建窗口会销毁当前聚焦项；若焦点本来就在列表内，重建后把焦点还给活动行
+    const activeElement = this.shadowActiveElement()
+    const hadFocus =
+      this.keyboardEnabled() &&
+      !!activeElement &&
+      (activeElement === this.viewport || !!itemsEl.contains(activeElement))
     // 动态行高：重建前解除旧行观察（节点 detach 后 RO 仍持引用，滚动即泄漏）
     if (this.isDynamic() && this.resizeObserver) {
       for (const child of Array.from(itemsEl.children)) this.resizeObserver.unobserve(child)
@@ -423,6 +536,10 @@ export class OASVirtualList extends OASElement {
       el.setAttribute('part', 'item')
       el.setAttribute('data-index', String(i))
       if (this.itemRole) el.setAttribute('role', this.itemRole)
+      if (this.keyboardEnabled()) {
+        el.tabIndex = i === this.activeIndexValue() ? 0 : -1
+        el.addEventListener('focus', () => this.syncActiveFromFocus(i))
+      }
       // 动态行高不锁高：内容由 ResizeObserver 实测回写；定高模式沿用固定行高
       if (dynamic) {
         this.resizeObserver?.observe(el)
@@ -440,6 +557,7 @@ export class OASVirtualList extends OASElement {
       }
       itemsEl.appendChild(el)
     }
+    if (hadFocus) this.focusActive()
   }
 
   /**

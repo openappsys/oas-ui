@@ -93,6 +93,17 @@
   </div>
 </DemoBlock>
 
+## 键盘导航
+
+`keyboard` 开启后使用 roving tabindex：视口退出 Tab 序，当前活动行可聚焦；`↑` / `↓` 移动、`Home` / `End` 跳首末、`PageUp` / `PageDown` 翻页，活动行自动滚入视口。`active-index`（property `activeIndex`）是 0 基当前行，越界读取时夹取、空数据为 `-1`；键盘或焦点移动派发 `oas-active-change`（`detail: { index, item }`，宿主写 `active-index` 不回声）。未开启 `keyboard` 时保持原行为（视口本身 Tab 聚焦）。
+
+<DemoBlock title="keyboard 键盘行导航">
+  <oas-virtual-list id="vl-keyboard" keyboard height="220" item-height="32" items='[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20]'></oas-virtual-list>
+  <p style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: var(--oas-space-2) 0 0">
+    点击列表中的任一行聚焦，按 ↑ / ↓ / Home / End / PageUp / PageDown 移动活动行。
+  </p>
+</DemoBlock>
+
 ## 自定义滚动容器
 
 <DemoBlock title="scroll-target 外部容器">
@@ -225,12 +236,14 @@ onMounted(() => {
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
+| `active-index` | 键盘导航当前活动行（0 基；越界夹取，空数据为 -1） | `number` | `0` |
 | `buffer` | 上下预渲染项数（超出可视区提前渲染，减少滚动白屏） | `string` | `4` |
 | `dynamic-height` | 动态行高：各行高度可不同（未测行按预估排布，窗口行实测回写逐步修正；视口上方行高变化自动补偿 scrollTop 防跳动） | `boolean` | — |
 | `estimated-item-height` | 动态行高的预估行高（px，缺省沿用 item-height；取接近真实平均行高修正幅度最小） | `string` | — |
 | `height` | 视口高度（px） | `string` | `320` |
 | `item-height` | 每项固定高度（px） | `string` | `36` |
 | `items` | 数据数组（property 通道，优先于 items 属性）；数据 JSON 字符串（属性通道） | `unknown[]` | `[]` |
+| `keyboard` | opt-in 键盘行导航：roving tabindex + ↑/↓/Home/End/PageUp/PageDown | `boolean` | — |
 | `scroll-target` | 外部滚动容器 CSS 选择器；设置后组件不自带滚动条，监听外部滚动 | `string` | — |
 
 #### 方法
@@ -243,6 +256,7 @@ onMounted(() => {
 
 | 事件 | 说明 |
 | --- | --- |
+| `oas-active-change` | 活动行变化（键盘/焦点），detail: { index, item }；宿主写 active-index 不回声 |
 | `oas-item` | 每个可见项渲染后派发，`detail: { index, item, element }` |
 | `oas-scroll` | 滚动事件（rAF 节流），`detail: { scrollTop, start, end }` |
 

@@ -6,6 +6,7 @@
 
 ### 新增
 
+- **`oas-virtual-list` 键盘行导航（opt-in `keyboard`）**：roving tabindex + ↑/↓/Home/End/PageUp/PageDown，活动行自动滚入视口；新增 `active-index` / `activeIndex` 与 `oas-active-change`（`detail: { index, item }`，宿主写入不回声）。未开启 `keyboard` 时保持原视口 Tab 聚焦行为。
 - **`oas-tree` 多选 Shift 范围选择**：`multiple` 下新增 Shift 点击按当前可见顺序（过滤/折叠后）从锚点范围选择，纯 Shift 替换、Ctrl/⌘+Shift 并入现有选择；`oas-select` 的 `detail` 增 `selectedIds`（全量选中集合，单选为单元素数组，旧字段 `key` / `selected` 保持兼容）。范围跳过 disabled / `selectable:false` 节点。
 - **裸导入可解析性门禁**：新增 `pnpm exports:check`，扫描源码 `@oas-ui/*` 导入并按各包 `package.json#exports` 映射校验构建产物存在；`pnpm build` 构建后自动执行，避免发布后子路径 import 失败。
 

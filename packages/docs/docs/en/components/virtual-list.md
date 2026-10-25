@@ -93,6 +93,17 @@ With `dynamic-height`, rows may have different heights: unmeasured rows are laid
   </div>
 </DemoBlock>
 
+## Keyboard Navigation
+
+With `keyboard`, the list uses roving tabindex: the viewport leaves the Tab order and the active row is focusable; `↑` / `↓` move, `Home` / `End` jump to the ends, `PageUp` / `PageDown` page, and the active row scrolls into view. `active-index` (property `activeIndex`) is the 0-based active row, clamped when out of range and `-1` for empty data; keyboard/focus movement emits `oas-active-change` (`detail: { index, item }`; host writes to `active-index` do not echo). Without `keyboard`, the original behavior remains (the viewport itself is Tab-focusable).
+
+<DemoBlock title="keyboard row navigation">
+  <oas-virtual-list id="vl-keyboard" keyboard height="220" item-height="32" items='[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20]'></oas-virtual-list>
+  <p style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: var(--oas-space-2) 0 0">
+    Click a row to focus the list, then use ↑ / ↓ / Home / End / PageUp / PageDown to move the active row.
+  </p>
+</DemoBlock>
+
 ## Custom Scroll Container
 
 <DemoBlock title="scroll-target external container">
@@ -225,12 +236,14 @@ onMounted(() => {
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
+| `active-index` | Active row for keyboard navigation (0-based; clamped out of range, -1 when empty) | `number` | `0` |
 | `buffer` | Number of items pre-rendered above/below (rendered early beyond the visible area to reduce scrolling blanks) | `string` | `4` |
 | `dynamic-height` | Dynamic row height: rows may vary in height (unmeasured rows use the estimate; rendered rows are measured and progressively corrected; scrollTop is auto-compensated when rows above the viewport change) | `boolean` | — |
 | `estimated-item-height` | Estimated row height for dynamic mode (px; defaults to item-height; closest to the real average minimizes corrections) | `string` | — |
 | `height` | Viewport height (px) | `string` | `320` |
 | `item-height` | Fixed height of each item (px) | `string` | `36` |
 | `items` | Data array (property channel, takes precedence over the `items` attribute); data JSON string (attribute channel) | `unknown[]` | `[]` |
+| `keyboard` | Opt-in keyboard row navigation: roving tabindex + ↑/↓/Home/End/PageUp/PageDown | `boolean` | — |
 | `scroll-target` | CSS selector of the external scroll container; when set, the component has no scrollbar of its own and listens to the external scroll | `string` | — |
 
 #### Methods
@@ -243,6 +256,7 @@ onMounted(() => {
 
 | Event | Description |
 | --- | --- |
+| `oas-active-change` | Active row changed (keyboard/focus), detail: { index, item }; host writes to active-index do not echo |
 | `oas-item` | Emitted after each visible item renders, `detail: { index, item, element }` |
 | `oas-scroll` | Scroll event (rAF throttled), `detail: { scrollTop, start, end }` |
 

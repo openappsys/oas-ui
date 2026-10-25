@@ -585,3 +585,61 @@ describe('OASVirtualList 属性-方法撞名回归', () => {
     expect(items(el)[0]!.getAttribute('data-index')).not.toBeNull()
   })
 })
+
+describe('keyboard 键盘行导航（opt-in）', () => {
+  it('roving tabindex + ↑↓/Home/End/PageDown；活动行变化派发 oas-active-change', () => {
+    const el = mount({ keyboard: '', height: '100', 'item-height': '20', buffer: '0' })
+    el.items = range(100)
+    const vp = viewport(el)
+    const item = (i: number): HTMLElement | undefined => items(el).find((x) => x.dataset.index === String(i))
+    expect(vp.getAttribute('tabindex'), '视口退出 Tab 序，由活动项承载').toBe('-1')
+    expect(item(0)?.tabIndex).toBe(0)
+    expect(item(1)?.tabIndex).toBe(-1)
+
+    const changes: Array<{ index: number }> = []
+    el.addEventListener('oas-active-change', (e: Event) => changes.push((e as CustomEvent).detail))
+    const press = (key: string): void => {
+      vp.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true }))
+    }
+    press('ArrowDown')
+    expect(el.activeIndex).toBe(1)
+    expect(item(1)?.tabIndex).toBe(0)
+    expect(item(0)?.tabIndex).toBe(-1)
+    press('End')
+    expect(el.activeIndex).toBe(99)
+    expect(item(99)?.tabIndex, 'End 后底部活动行已渲染并可聚焦').toBe(0)
+    press('Home')
+    expect(el.activeIndex).toBe(0)
+    press('PageDown')
+    expect(el.activeIndex).toBe(4)
+    expect(changes.map((c) => c.index)).toEqual([1, 99, 0, 4])
+  })
+
+  it('宿主写 active-index 不回声；数据收缩时读取值夹取', () => {
+    const el = mount({ keyboard: '', height: '100', 'item-height': '20' })
+    el.items = range(100)
+    let fired = 0
+    el.addEventListener('oas-active-change', () => fired++)
+    el.activeIndex = 50
+    expect(el.activeIndex).toBe(50)
+    expect(fired, '宿主写入不派发').toBe(0)
+    el.items = range(10)
+    expect(el.activeIndex).toBe(9)
+    const active = items(el).find((x) => x.dataset.index === '9')
+    expect(active?.tabIndex).toBe(0)
+  })
+
+  it('空数据：键盘模式保留视口可聚焦，无活动行', () => {
+    const el = mount({ keyboard: '', height: '100', 'item-height': '20' })
+    el.items = []
+    expect(el.activeIndex).toBe(-1)
+    expect(viewport(el).getAttribute('tabindex')).toBe('0')
+  })
+
+  it('未开 keyboard 时保持原行为：视口 Tab 聚焦、项不注入 tabindex', () => {
+    const el = mount({ height: '100', 'item-height': '20' })
+    el.items = range(10)
+    expect(viewport(el).getAttribute('tabindex')).toBe('0')
+    expect(items(el).every((x) => !x.hasAttribute('tabindex'))).toBe(true)
+  })
+})
