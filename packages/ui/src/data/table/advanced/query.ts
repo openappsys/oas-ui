@@ -85,11 +85,13 @@ export function matchCondition(row: Record<string, unknown>, condition: QueryCon
       return asText(value, caseSensitive).endsWith(asText(condition.value, caseSensitive))
     case 'in': {
       const list = Array.isArray(condition.value) ? condition.value : []
-      return list.some((item) =>
-        typeof value === 'number' || typeof item === 'number'
-          ? asNumber(value) === asNumber(item)
-          : asText(value, caseSensitive) === asText(item, caseSensitive),
-      )
+      const hit = (entry: unknown): boolean =>
+        list.some((item) =>
+          typeof entry === 'number' || typeof item === 'number'
+            ? asNumber(entry) === asNumber(item)
+            : asText(entry, caseSensitive) === asText(item, caseSensitive),
+        )
+      return Array.isArray(value) ? value.some(hit) : hit(value)
     }
     case 'between': {
       const [min, max] = Array.isArray(condition.value) ? condition.value : []

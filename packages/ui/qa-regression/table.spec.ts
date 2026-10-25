@@ -3076,3 +3076,77 @@ test('table Pro 第三批：虚拟表 Ctrl+End / Shift+Ctrl+End 在浏览器 max
   })
   await page.evaluate(() => document.querySelector('#qa-pro-virtual-end')?.remove())
 })
+
+test('table advanced：pivotTable data 别名驱动可见透视结果', async ({ page }) => {
+  await page.goto('/components/table.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#table-advanced-pivot')
+  await page.waitForFunction(
+    () => document.querySelector('#table-advanced-pivot')!.shadowRoot!.querySelectorAll('tbody tr.row').length === 3,
+    null,
+    { timeout: 15000 },
+  )
+  const result = await page.evaluate(() => {
+    const el = document.querySelector('#table-advanced-pivot')!
+    return {
+      rows: el.shadowRoot!.querySelectorAll('tbody tr.row').length,
+      text: el.shadowRoot!.textContent ?? '',
+    }
+  })
+  expect(result.rows).toBe(3)
+  expect(result.text).toContain('华东')
+  expect(result.text).toContain('华南')
+  expect(result.text).toContain('华北')
+  expect(result.text).toContain('合计')
+})
+
+test('table Pro 事件支持父级委托并保留 composed', async ({ page }) => {
+  await page.goto('/components/table.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#table-pro')
+  await page.waitForFunction(
+    () => document.querySelector('#table-pro')!.shadowRoot!.querySelectorAll('tr.row').length === 4,
+    null,
+    { timeout: 10000 },
+  )
+  await page.evaluate(() => {
+    const el = document.querySelector('#table-pro')!
+    const parent = el.parentElement!
+    const names = ['oas-range-change', 'oas-range-copy', 'oas-range-write', 'oas-history-change', 'oas-detail-change']
+    ;(window as any).__qaProEvents = []
+    for (const name of names) {
+      parent.addEventListener(name, (event) => {
+        if (event.target !== el) return
+        ;(window as any).__qaProEvents.push({ type: name, bubbles: event.bubbles, composed: event.composed })
+      })
+    }
+  })
+  const received = (name: string) =>
+    page.evaluate((type) => (window as any).__qaProEvents.some((event: any) => event.type === type), name)
+
+  await page.locator('#table-pro-range').click()
+  await expect.poll(() => received('oas-range-change')).toBe(true)
+  await page.locator('#table-pro-copy').click()
+  await expect.poll(() => received('oas-range-copy')).toBe(true)
+  await page.locator('#table-pro-paste').click()
+  await expect.poll(() => received('oas-range-write')).toBe(true)
+  await page.locator('#table-pro-undo').click()
+  await expect.poll(() => received('oas-history-change')).toBe(true)
+  await page.evaluate(() => {
+    const el = document.querySelector('#table-pro')!
+    ;(el.shadowRoot!.querySelector('tr.row td[data-col="name"]') as HTMLElement).click()
+  })
+  await expect.poll(() => received('oas-detail-change')).toBe(true)
+
+  const events = await page.evaluate(() => (window as any).__qaProEvents)
+  for (const name of [
+    'oas-range-change',
+    'oas-range-copy',
+    'oas-range-write',
+    'oas-history-change',
+    'oas-detail-change',
+  ]) {
+    const event = events.find((candidate: any) => candidate.type === name)
+    expect(event, `${name} 应到达父级`).toBeDefined()
+    expect(event.bubbles, name).toBe(true)
+    expect(event.composed, name).toBe(true)
+  }
+})

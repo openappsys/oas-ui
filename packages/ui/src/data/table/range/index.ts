@@ -617,7 +617,7 @@ class RangeSelectionController {
   }
 
   private emitChange(selection: RangeSelection | null): void {
-    this.host.dispatchEvent(new CustomEvent('oas-range-change', { detail: selection }))
+    this.host.dispatchEvent(new CustomEvent('oas-range-change', { detail: selection, bubbles: true, composed: true }))
     this.announce(selection)
   }
 
@@ -971,7 +971,11 @@ class RangeSelectionController {
       const need = expandWindow(targetRow, targetRow + 1, total, WINDOW_MARGIN)
       if (!windowCovered(need, loadedRange(loadedStart, this.host.data?.length ?? 0))) {
         this.host.dispatchEvent(
-          new CustomEvent('oas-window-request', { detail: { start: need.start, end: need.end, reason: 'scroll' } }),
+          new CustomEvent('oas-window-request', {
+            detail: { start: need.start, end: need.end, reason: 'scroll' },
+            bubbles: true,
+            composed: true,
+          }),
         )
       }
     }
@@ -1053,6 +1057,8 @@ class RangeSelectionController {
     this.host.dispatchEvent(
       new CustomEvent<RangePasteDetail>('oas-range-paste', {
         detail: { start: selection.start, startKey, rows: parseTsv(text), text },
+        bubbles: true,
+        composed: true,
       }),
     )
   }
@@ -1342,7 +1348,13 @@ export async function copyRange(table: HTMLElement, options: RangeCopyOptions = 
     /* 剪贴板权限不可用时仍派发事件/返回文本，由宿主自行降级 */
   }
   const selection = controller.getSelection() ?? selections[selections.length - 1]!
-  host.dispatchEvent(new CustomEvent<RangeCopyDetail>('oas-range-copy', { detail: { text, selection, selections } }))
+  host.dispatchEvent(
+    new CustomEvent<RangeCopyDetail>('oas-range-copy', {
+      detail: { text, selection, selections },
+      bubbles: true,
+      composed: true,
+    }),
+  )
   return text
 }
 
@@ -1426,7 +1438,9 @@ function writeRangeChanges(host: RangeHost, kind: RangeWriteKind, changes: Range
     host.setAttribute('data', JSON.stringify(next))
     changes = applied
   }
-  host.dispatchEvent(new CustomEvent<RangeWriteDetail>('oas-range-write', { detail: { kind, changes } }))
+  host.dispatchEvent(
+    new CustomEvent<RangeWriteDetail>('oas-range-write', { detail: { kind, changes }, bubbles: true, composed: true }),
+  )
   return changes.length
 }
 

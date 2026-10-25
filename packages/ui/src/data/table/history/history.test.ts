@@ -85,6 +85,30 @@ describe('table/history 撤销重做', () => {
     ])
   })
 
+  it('oas-history-change 可冒泡到父级且 composed', () => {
+    const el = mount()
+    enableHistory(el)
+    const parent = el.parentElement!
+    const events: CustomEvent[] = []
+    const listener = (event: Event): void => {
+      events.push(event as CustomEvent)
+    }
+    parent.addEventListener('oas-history-change', listener)
+    try {
+      el.data = [
+        { id: 'a', name: 'A' },
+        { id: 'b', name: 'B2' },
+      ]
+      emitEdit(el, { rowIndex: 1, key: 'b', column: 'name', oldValue: 'B', value: 'B2' })
+      expect(events).toHaveLength(1)
+      expect(events[0]!.bubbles).toBe(true)
+      expect(events[0]!.composed).toBe(true)
+    } finally {
+      parent.removeEventListener('oas-history-change', listener)
+      disableHistory(el)
+    }
+  })
+
   it('Ctrl/Cmd+Z / Shift+Z 键盘撤销重做，输入框内不拦截', () => {
     const el = mount()
     enableHistory(el)

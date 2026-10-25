@@ -887,7 +887,7 @@ onMounted(() => {
         totalLabel: 'Total',
       })
       advancedPivot.columns = result.columns
-      advancedPivot.data = result.rows
+      advancedPivot.data = result.data
     }
   })
 
@@ -1178,7 +1178,7 @@ The full endpoint URLs far exceed the column width (long unbreakable strings): h
 - **History stack**: `createHistory()` generic command stack (undo / redo / canUndo / canRedo / subscribe / limit)
 - **Windowed source helper**: `createWindowedSource()` handles `oas-window-request`, fills short pages and aborts stale requests
 
-> Comparison / range operators use numeric semantics; text matching is case-insensitive by default (`caseSensitive: true` enables it); TSV export collapses tabs / newlines inside a cell to spaces.
+> Comparison / range operators use numeric semantics; text matching is case-insensitive by default (`caseSensitive: true` enables it); `in` / `contains` match an array field when any element matches; TSV export collapses tabs / newlines inside a cell to spaces.
 
 <DemoBlock title="advanced entry: pivot + formula column + query filter">
   <div style="display:flex;gap:var(--oas-space-4);flex-wrap:wrap;width:100%">
@@ -1204,7 +1204,7 @@ const columns = [
   formulaColumn({ key: 'total', title: 'Total', expression: 'amount * qty', align: 'right' }),
 ]
 const rows = filterRows(sales, { field: 'amount', op: 'gte', value: 100 })
-const { columns: pivotColumns, rows: pivotRows } = pivotTable({
+const { columns: pivotColumns, data: pivotRows } = pivotTable({
   rows: sales,
   rowField: 'region',
   columnField: 'product',

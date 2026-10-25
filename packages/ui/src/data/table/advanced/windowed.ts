@@ -82,9 +82,12 @@ export function createWindowedSource(table: HTMLElement, options: WindowedSource
           }
         })
         .catch((error: unknown) => {
-          filling = null
+          // 过期请求失败不得清空新请求的 filling（否则会再次拉取/中止新请求）
           if (signal.aborted) return
-          table.dispatchEvent(new CustomEvent('oas-window-error', { detail: { start, end, error } }))
+          filling = null
+          table.dispatchEvent(
+            new CustomEvent('oas-window-error', { detail: { start, end, error }, bubbles: true, composed: true }),
+          )
         })
     }
     step(start)

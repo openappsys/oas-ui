@@ -129,6 +129,31 @@ describe('createWindowedSource', () => {
     source.destroy()
   })
 
+  it('过期请求失败不清空新请求的 filling（同区间不重复拉取）', async () => {
+    const el = mount()
+    let rejectFirst: ((reason?: unknown) => void) | null = null
+    const fetchRows = vi.fn(({ start, end, signal }: { start: number; end: number; signal: AbortSignal }) => {
+      if (start === 0) {
+        return new Promise<never>((_, reject) => {
+          rejectFirst = reject
+        })
+      }
+      // 第二笔在途不返回，保证 filling 还在
+      return new Promise<never>(() => {})
+    })
+    const source = createWindowedSource(el, { fetchRows, windowSize: 5 })
+    await vi.waitFor(() => expect(fetchRows).toHaveBeenCalledTimes(1))
+    el.dispatchEvent(new CustomEvent('oas-window-request', { detail: { start: 10, end: 20 } }))
+    await vi.waitFor(() => expect(fetchRows).toHaveBeenCalledTimes(2))
+    rejectFirst!(new Error('stale failure'))
+    // 等 then 的拒绝传播到 catch，再发同区间请求；否则会把尚未处理的旧拒绝误判成 filling 仍在
+    await Promise.resolve()
+    await Promise.resolve()
+    el.dispatchEvent(new CustomEvent('oas-window-request', { detail: { start: 10, end: 20 } }))
+    expect(fetchRows, '过期失败不得触发同区间第三次请求').toHaveBeenCalledTimes(2)
+    source.destroy()
+  })
+
   it('请求失败派发 oas-window-error', async () => {
     const el = mount()
     const source = createWindowedSource(el, {
@@ -136,9 +161,21 @@ describe('createWindowedSource', () => {
         throw new Error('network')
       },
     })
-    const events: unknown[] = []
-    el.addEventListener('oas-window-error', (event) => events.push((event as CustomEvent).detail))
-    await vi.waitFor(() => expect(events).toHaveLength(1))
-    source.destroy()
+    const events: CustomEvent[] = []
+    const parent = el.parentElement!
+    const listener = (event: Event): void => {
+      events.push(event as CustomEvent)
+    }
+    parent.addEventListener('oas-window-error', listener)
+    try {
+      await vi.waitFor(() => expect(events).toHaveLength(1))
+      expect(events[0]!.detail).toMatchObject({ start: 0, end: 50 })
+      expect(events[0]!.detail.error).toBeInstanceOf(Error)
+      expect(events[0]!.bubbles).toBe(true)
+      expect(events[0]!.composed).toBe(true)
+    } finally {
+      parent.removeEventListener('oas-window-error', listener)
+      source.destroy()
+    }
   })
 })

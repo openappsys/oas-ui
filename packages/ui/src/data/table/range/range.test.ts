@@ -204,6 +204,40 @@ describe('table/range 区域选择 + 剪贴板', () => {
     expect(cell(el, 0, 'name').classList.contains('range-selected')).toBe(true)
   })
 
+  it('Pro range 事件可冒泡到父级且 composed', async () => {
+    const el = mount([
+      { id: 'a', name: 'A', age: 1 },
+      { id: 'b', name: 'B', age: 2 },
+    ])
+    el.setAttribute('row-key', 'id')
+    const parent = el.parentElement!
+    const names = ['oas-range-change', 'oas-range-copy', 'oas-range-paste', 'oas-range-write']
+    const fired: CustomEvent[] = []
+    const listeners = names.map((name) => {
+      const listener = (event: Event): void => {
+        if (event.target === el) fired.push(event as CustomEvent)
+      }
+      parent.addEventListener(name, listener)
+      return { name, listener }
+    })
+    try {
+      setRangeSelection(el, { row: 0, col: 'name' })
+      await copyRange(el)
+      const paste = new Event('paste', { bubbles: true, cancelable: true })
+      Object.defineProperty(paste, 'clipboardData', { value: { getData: () => 'X' } })
+      cell(el, 0, 'name').dispatchEvent(paste)
+      applyRangePaste(el, 'Z')
+      for (const name of names) {
+        const event = fired.find((candidate) => candidate.type === name)
+        expect(event, `${name} 应冒泡到父级`).toBeDefined()
+        expect(event!.bubbles, name).toBe(true)
+        expect(event!.composed, name).toBe(true)
+      }
+    } finally {
+      for (const { name, listener } of listeners) parent.removeEventListener(name, listener)
+    }
+  })
+
   it('清空选区', () => {
     const el = mount()
     setRangeSelection(el, { row: 0, col: 'name' })
@@ -623,12 +657,14 @@ describe('table/range 键盘窗口与跨窗口选区（第三批）', () => {
     document.body.appendChild(el)
     enableRangeSelection(el)
     setRangeSelection(el, { row: 1, col: 'name' })
-    const requests: Array<{ start: number; end: number }> = []
-    el.addEventListener('oas-window-request', (event) => requests.push((event as CustomEvent).detail))
+    const requests: CustomEvent[] = []
+    el.addEventListener('oas-window-request', (event) => requests.push(event as CustomEvent))
     cell(el, 1, 'name').dispatchEvent(
       new KeyboardEvent('keydown', { key: 'ArrowDown', shiftKey: true, bubbles: true, cancelable: true }),
     )
-    expect(requests).toEqual([{ start: 0, end: 11, reason: 'scroll' }])
+    expect(requests.map((event) => event.detail)).toEqual([{ start: 0, end: 11, reason: 'scroll' }])
+    expect(requests[0]!.bubbles).toBe(true)
+    expect(requests[0]!.composed).toBe(true)
     el.setAttribute('window-start', '2')
     el.data = [{ id: 'c', name: 'C' }]
     expect(getRangeSelection(el)).toEqual({ start: { row: 1, col: 'name' }, end: { row: 2, col: 'name' } })

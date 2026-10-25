@@ -54,6 +54,26 @@ describe('table/detail 主从详情', () => {
     detail.destroy()
   })
 
+  it('oas-detail-change 可冒泡到父级且 composed', () => {
+    const { table, panel } = mount()
+    const detail = createMasterDetail(table, { panel, label: '详情', render: (row) => `${row.row.name}` })
+    const parent = table.parentElement!
+    const events: CustomEvent[] = []
+    const listener = (event: Event): void => {
+      events.push(event as CustomEvent)
+    }
+    parent.addEventListener('oas-detail-change', listener)
+    try {
+      rowClick(table, { id: 'a', name: 'Alpha' }, 'a')
+      expect(events).toHaveLength(1)
+      expect(events[0]!.bubbles).toBe(true)
+      expect(events[0]!.composed).toBe(true)
+    } finally {
+      parent.removeEventListener('oas-detail-change', listener)
+      detail.destroy()
+    }
+  })
+
   it('collapsible 再次点击收起；programmatic select 按可见行下标', () => {
     const { table, panel } = mount()
     const detail = createMasterDetail(table, {

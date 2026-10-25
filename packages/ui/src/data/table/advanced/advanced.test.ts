@@ -73,6 +73,7 @@ describe('pivot / pivotTable', () => {
     expect(table.columns[0]!.title).toBe('region')
     expect(table.columns[1]!.render!({ 'pivot:A': 30 })).toBe('¥30')
     expect(table.rows[0]).toEqual({ __row__: '华东', 'pivot:A': 30, 'pivot:B': 5, __total__: 35 })
+    expect(table.data, '同时暴露 oas-table 的 data 别名').toBe(table.rows)
   })
 
   it('空数据返回空矩阵', () => {
@@ -203,6 +204,16 @@ describe('query / filterRows', () => {
     ])
     expect(filterRows(rows, { field: 'missing', op: 'exists' })).toEqual([])
     expect(filterRows(rows, { field: 'tags', op: 'empty' }).map((row) => row.name)).toEqual(['gamma'])
+  })
+
+  it('in 对数组字段按任一元素命中（不是整组字符串化比较）', () => {
+    const list = [
+      { name: 'x', tags: ['a', 'b'] },
+      { name: 'y', tags: ['c'] },
+      { name: 'z', tags: [] },
+    ]
+    expect(filterRows(list, { field: 'tags', op: 'in', value: ['b', 'x'] }).map((row) => row.name)).toEqual(['x'])
+    expect(filterRows(list, { field: 'tags', op: 'in', value: ['c'] }).map((row) => row.name)).toEqual(['y'])
   })
 
   it('支持 and/or 任意嵌套', () => {

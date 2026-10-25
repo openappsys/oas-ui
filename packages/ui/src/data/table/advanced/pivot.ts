@@ -133,6 +133,8 @@ export function pivot<T extends Record<string, unknown>>(options: PivotOptions<T
 export interface PivotTable {
   columns: TableColumn[]
   rows: Array<Record<string, string | number>>
+  /** `oas-table` 的 data 属性别名（与 rows 同一数组） */
+  data: Array<Record<string, string | number>>
 }
 
 /**
@@ -179,5 +181,5 @@ export function pivotTable<T extends Record<string, unknown>>(options: PivotOpti
     if (hasColumnField) row[TOTAL_KEY] = result.rowTotals[rowKey] ?? 0
     return row
   })
-  return { columns, rows }
+  return { columns, rows, data: rows }
 }

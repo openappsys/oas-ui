@@ -184,7 +184,7 @@ export function createMasterDetail(table: HTMLElement, options: MasterDetailOpti
   }
 
   const emit = (): void => {
-    table.dispatchEvent(new CustomEvent('oas-detail-change', { detail: selected }))
+    table.dispatchEvent(new CustomEvent('oas-detail-change', { detail: selected, bubbles: true, composed: true }))
     options.onSelect?.(selected)
   }
 

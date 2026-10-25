@@ -69,6 +69,7 @@
 - **`oas-diff-viewer` PageDown 步进**：按整屏可见行数移动（原先额外减 1 行），活动行仍自动滚入视口；文档补充 split 行 `data-op="replace"`、真实增删 op 在两侧单元格的定制约定。
 - **`oas-json-viewer` 复制反馈/深嵌套/同值回写**：`toolbar="false"` 时复制成功/失败改为右下角浮层提示（`part="copy-status"`，1.6s 自动隐藏），不再因工具栏隐藏而静默；超深嵌套建树/遍历栈溢出转为可恢复错误态（新增 locale key，不向宿主抛 `RangeError`），超深子树序列化失败派发 `oas-copy-error`；重复写同值 `text` / `expanded` 也强制刷新一次，修复受控回写边界。
 - **table Pro 坐标与焦点闭环**：本地虚拟滚动与 windowed 的选区统一使用展示集行号，离窗坐标直接读展示集快照（行键 → 数据行序 / 扁平滚动序），纯单元格编辑不误清选区，分组折叠与重排按行键重定位；键盘越界请求带 margin 并滚动到目标行，pendingSelection 等 data 到达再绑定，目标格在 roving tabindex 完成后聚焦，windowed 重建恢复焦点且不坍缩多格选区。填充柄记录真实方向/格数，`pointercancel` 不写入且恢复源选区；视图恢复清除快照外旧状态，history 忽略原类型同值写回。
+- **table Pro 数据与事件收尾**：`pivotTable()` 同时返回 `rows` 与 `data`（同一数组，直接喂 `oas-table`）；查询 `in` 对数组字段按任一元素命中；过期 windowed 请求失败不再清除新请求的加载态；range / history / detail / windowed 事件统一支持 `bubbles` / `composed` 父级委托。
 - **`oas-sidebar` footer 常驻**：`slot="footer"` 原先在滚动容器 `.panel` 内随内容滚走，长导航时页脚不可见。现改为 `position: sticky; bottom: 0` 钉在侧栏可视区底部（桌面与移动抽屉同一套），空 footer 经 `slotchange` 自动隐藏、不再占底部空白；补桌面/移动抽屉真实滚动几何回归。
 - **`oas-chart` 折线/面积/混排的 `circle.dot` 应用 `options.colors`**：此前只改 path/stroke，宿主自定义色时线与数据点异色；现在同一系列线、点同色。
 - **存量裸 `href` 安全收敛**：`oas-float-button`（主钮与 actions）、`oas-attachment`、`oas-tabs`、`oas-notice-bar`、`oas-card`、`oas-list-item`、`oas-breadcrumb`、`oas-anchor`、`oas-pagination` 统一走 `safeUrl`；仅放行 http/https/mailto/tel、blob 对象 URL 与相对地址，其余协议一律退化为非链接/按钮形态。

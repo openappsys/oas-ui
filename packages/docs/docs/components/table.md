@@ -881,7 +881,7 @@ onMounted(() => {
         totalLabel: '合计',
       })
       advancedPivot.columns = result.columns
-      advancedPivot.data = result.rows
+      advancedPivot.data = result.data
     }
   })
 
@@ -1167,7 +1167,7 @@ onMounted(() => {
 - **撤销栈**：`createHistory()` 通用命令栈（undo / redo / canUndo / canRedo / subscribe / limit）
 - **windowed 数据源助手**：`createWindowedSource()` 接管 `oas-window-request`、补齐短页、中止过期请求
 
-> 查询算子的比较/范围按数值处理；文本匹配默认不区分大小写（`caseSensitive: true` 可开启）；TSV 导出会把单元格内的换行/制表符压成空格。
+> 查询算子的比较/范围按数值处理；文本匹配默认不区分大小写（`caseSensitive: true` 可开启）；`in` / `contains` 对数组字段按任一元素命中；TSV 导出会把单元格内的换行/制表符压成空格。
 
 <DemoBlock title="advanced 入口：透视 + 公式列 + 查询过滤">
   <div style="display:flex;gap:var(--oas-space-4);flex-wrap:wrap;width:100%">
@@ -1193,7 +1193,7 @@ const columns = [
   formulaColumn({ key: 'total', title: '金额', expression: 'amount * qty', align: 'right' }),
 ]
 const rows = filterRows(sales, { field: 'amount', op: 'gte', value: 100 })
-const { columns: pivotColumns, rows: pivotRows } = pivotTable({
+const { columns: pivotColumns, data: pivotRows } = pivotTable({
   rows: sales,
   rowField: 'region',
   columnField: 'product',

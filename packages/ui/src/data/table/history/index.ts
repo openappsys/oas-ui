@@ -253,7 +253,7 @@ export function enableHistory(table: HTMLElement, options: HistoryOptions = {}):
     }
   }
   const unsubscribe = history.subscribe((state) => {
-    table.dispatchEvent(new CustomEvent('oas-history-change', { detail: state }))
+    table.dispatchEvent(new CustomEvent('oas-history-change', { detail: state, bubbles: true, composed: true }))
   })
   table.addEventListener('oas-edit', onEdit)
   table.addEventListener('oas-range-write', onRangeWrite)
