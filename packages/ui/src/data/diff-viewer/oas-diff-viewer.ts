@@ -563,7 +563,15 @@ export class OASDiffViewer extends OASElement {
       } else {
         el.append(this.codeCell(pair.before, 'before-code', true), this.codeCell(pair.after, 'after-code', true))
       }
-      this.annotateRow(el, pair.before ?? pair.after)
+      if (pair.before && pair.after) {
+        // split 替换行两侧都可被读屏命中：同时给删除/新增语义，而不是只暴露删除侧
+        el.setAttribute(
+          'aria-label',
+          `${this.t('diffViewer.removedLine', { n: pair.before.beforeNo ?? 0 })} / ${this.t('diffViewer.addedLine', { n: pair.after.afterNo ?? 0 })}`,
+        )
+      } else {
+        this.annotateRow(el, pair.before ?? pair.after)
+      }
       return el
     }
     const line = row as DiffLineRow
@@ -659,9 +667,12 @@ export class OASDiffViewer extends OASElement {
     button.type = 'button'
     button.className = 'fold-btn'
     button.setAttribute('part', 'fold-toggle')
-    // role=row 内放 button：button 自身保留可聚焦语义，点击/Enter 均可展开
-    button.setAttribute('aria-expanded', 'false')
-    button.textContent = this.t('diffViewer.expandFold', { count: fold.count })
+    // role=row 内放 button：button 自身保留可聚焦语义，点击/Enter 均可展开/收起
+    const expanded = this.expandedFolds.has(fold.index)
+    button.setAttribute('aria-expanded', String(expanded))
+    button.textContent = expanded
+      ? this.t('diffViewer.collapseAll')
+      : this.t('diffViewer.expandFold', { count: fold.count })
     cell.append(button)
     row.append(cell)
     return row

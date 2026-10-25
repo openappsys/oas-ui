@@ -24,8 +24,11 @@
 
 - **`oas-table` Pro 能力第二批**：新增独立子路径 `@oas-ui/ui/data/table/range`（区域选择 + TSV 剪贴板：点击/拖拽、方向键移动、`Shift+方向键` 扩展、`Esc` 清空、`Ctrl/Cmd+C` 复制、`Ctrl/Cmd+V` 派发 `oas-range-paste`；选区以行键 + 列 key 锚定、roving tabindex、windowed 窗口外失效）、`@oas-ui/ui/data/table/history`（撤销/重做：按行键回写、键盘快捷键、受控/windowed 让位、`oas-history-change`）与 `@oas-ui/ui/data/table/detail`（主从详情宿主侧 helper：行点击/`Enter` 打开、`Esc` 关闭回焦、`data` 变化刷新）；`table/advanced` 增补 `createHistory` 通用撤销栈与 `createWindowedSource` windowed 数据源助手。默认 table 链不加载。
 
+- **`oas-table` Pro 能力第三批**：`range` 补齐剪贴板闭环（表头复制 / `cutRange` / `applyRangePaste` 写回 / 数值序列 `fillRange` 与填充柄）、多选区（Ctrl 追加矩形）、键盘窗口（Home/End/PageUp/PageDown、越界 pending）、`aria-live` 选区播报；`recordHistory` / `withHistoryBatch` 支持显式命令与单条事务，`enableHistory` 监听 `oas-range-write` 合并为一条撤销；`table/view` 新增 `saveViewState` / `loadViewState` 持久化适配器；`table/detail` 新增 `selectByKey` / `close` / `onClose` 与多实例 Esc（仅最近激活实例）。默认 table 链不加载。
+
 ### 变更
 
+- **`oas-range` windowed 选区语义**：离开当前窗口的行不再使逻辑选区失效；选区仅在已渲染单元格上装饰，复制只含已装载切片，并支持跨窗口扩展（Shift+方向键触发 `oas-window-request`）。
 - **`oas-table` 编辑事件补充旧值**：`oas-edit` / `oas-edit-cancel` 的 `detail` 新增 `oldValue`（提交前字符串值）与 `oldRawValue`（编辑前原始形态，保留 number / boolean / string[] 类型）；既有字段不变。
 - **table 默认入口改为基础表格（v2.6.4）**：`@oas-ui/ui/data/table` 不再默认包含行内编辑；使用 `editable` / `actions` 需显式 `import '@oas-ui/ui/data/table/edit'`。`@oas-ui/ui` 全量入口与 CDN 数据族仍包含编辑。`@oas-ui/ui/data/table/core` 标记 deprecated（等价默认入口），v2.6.5 移除；迁移时把 `table/core` 改为 `table` 即可。
 - **`gear` 图标重绘**：原「3/4 圆 + 三根短线」与 `refresh` 视觉同族、易被误认为刷新；改为 8 齿外轮廓 + 中心圆孔的标准齿轮，16 / 32 / 96px 下均可辨识。
@@ -53,12 +56,16 @@
 - **体积相对断言**：`table/core` 链必须严格小于主链 `table`（失败信息含两者数值），绝对值预算保留。
 - **`qa:audit` 事件只断 length 维度入 `--check`**：新增 `--max-event-len`（默认 105），阈值定位为防增量而非清零。
 - **SSR 白名单计数门禁**：`pnpm ssr:check` 校验 `WHITELIST` 长度与 `docs/ssr.md`、中/英文 guide 的计数一致（`docs/ROADMAP.md` 可选），计数声明缺失/改写也失败。
-- **e2e 稳定性**：demo-coverage 与 notification 改为 `networkidle 就绪后交互；Playwright preview 默认不复用旧服务（仅显式 `E2E_REUSE=1` 才复用），杜绝陈旧 dist 导致的假失败；marquee 采样窗为空时不再把空数组中位数当方向错误；WebKit 补 `oas-form-item` 跨 shadow 错误关联或 `role=alert` 兜底用例。
+- **e2e 稳定性**：demo-coverage 与 notification 改为 `networkidle` 就绪后交互；Playwright preview 默认不复用旧服务（仅显式 `E2E_REUSE=1` 才复用），杜绝陈旧 dist 导致的假失败；marquee 采样窗为空时不再把空数组中位数当方向错误；WebKit 补 `oas-form-item` 跨 shadow 错误关联或 `role=alert` 兜底用例。
 
 ### 修复
 
 - **i18n / core 单例状态跨模块副本共享（link 双实例）**：`@oas-ui/i18n` 的 locale registry 与 `@oas-ui/core` 的 translator 钩子原先存在模块级变量里；`link:` / workspace 下解析出两份模块时，宿主 `setLocale()` 只更新其中一份，组件内置文案回落 raw key。现将状态挂到 `globalThis` 的版本化 `Symbol.for` 键（`@oas-ui/i18n/registry/v1`、`@oas-ui/core/translator/v1`），同一进程内所有副本共享 locale / translator；无需改 import 或新增公开 API。宿主仍建议用 `resolve.dedupe` / pnpm `overrides` 去重以减少重复包体。补双模块副本单测。
 - **`oas-form-item` 错误文案关联到控件**：错误文案改经 `ElementInternals.ariaDescribedByElements` 关联到对应 form-associated 控件（可直接引用另一棵 shadow 的 error 节点），支持该 API 的浏览器读屏能关联错误；不支持时保留 `role=alert` 播报。此前仅用 `aria-describedby` 的 IDREF 跨 shadow 无法关联。
+- **`oas-tree` 多选键盘扩选不再绕过 selectable**：整树 `selectable="false"` 时 Shift+↑/↓ 不选中，目标节点 `selectable:false` 也不被纳入范围。
+- **`oas-virtual-list` keyboard 支持 scroll-target**：没有内部 viewport 的外部滚动容器模式也能使用键盘行导航（事件在 items 容器承接），并保持 roving tabindex 与活动行聚焦。
+- **`oas-json-viewer` 清空搜索与 `__proto__` 键**：清空搜索现在派发 `oas-search-change`（`{ query: '', matches: 0, activeIndex: -1 }`）；`__proto__` 作为合法 JSON 键按自有属性构建，不再被原型 setter 吞掉。
+- **`oas-diff-viewer` 单块可再收起 + split 替换行双侧读屏**：展开折叠块后保留 fold 行，可再次单独收起（不再只能 `collapseAll`）；split 替换行的可访问名称同时包含删除侧与新增侧。
 - **`oas-diff-viewer` PageDown 步进**：按整屏可见行数移动（原先额外减 1 行），活动行仍自动滚入视口；文档补充 split 行 `data-op="replace"`、真实增删 op 在两侧单元格的定制约定。
 - **`oas-json-viewer` 复制反馈/深嵌套/同值回写**：`toolbar="false"` 时复制成功/失败改为右下角浮层提示（`part="copy-status"`，1.6s 自动隐藏），不再因工具栏隐藏而静默；超深嵌套建树/遍历栈溢出转为可恢复错误态（新增 locale key，不向宿主抛 `RangeError`），超深子树序列化失败派发 `oas-copy-error`；重复写同值 `text` / `expanded` 也强制刷新一次，修复受控回写边界。
 - **`oas-sidebar` footer 常驻**：`slot="footer"` 原先在滚动容器 `.panel` 内随内容滚走，长导航时页脚不可见。现改为 `position: sticky; bottom: 0` 钉在侧栏可视区底部（桌面与移动抽屉同一套），空 footer 经 `slotchange` 自动隐藏、不再占底部空白；补桌面/移动抽屉真实滚动几何回归。

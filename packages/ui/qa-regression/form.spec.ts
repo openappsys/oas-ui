@@ -286,7 +286,7 @@ test('form 两段式提交：校验失败 → 修正 → 再提交应派发 oas-
 
 // 错误文案在 form-item shadow、控件在 light DOM：aria-describedby 的 IDREF 跨 shadow 不生效，
 // 因此走 ElementInternals.ariaDescribedByElements 直接引用节点（role=alert 仍保留）。
-test('form-item 错误文案经 ElementInternals 关联到控件（可清除）', async ({ page }) => {
+test('form-item 错误文案经 ElementInternals 关联到控件（可清除）', async ({ page, browserName }) => {
   await page.goto('/components/form.html', { waitUntil: 'domcontentloaded' })
   await page.waitForFunction(() => !!customElements.get('oas-input'))
   const r = await page.evaluate(async () => {
@@ -314,13 +314,20 @@ test('form-item 错误文案经 ElementInternals 关联到控件（可清除）'
     item.remove()
     return { ...out, cleared }
   })
-  if (r.linked) {
+  if (browserName === 'webkit') {
+    if (r.linked) {
+      expect(r.supported, '当前浏览器应支持 ariaDescribedByElements').toBe(true)
+      expect(r.count, '错误时应关联 1 个错误节点').toBe(1)
+      expect(r.isError, '关联目标必须是 form-item 的 error 节点').toBe(true)
+    } else {
+      // WebKit 对跨 shadow 的 ElementInternals 引用返回空数组：正确行为是回退到 role=alert
+      expect(r.role, '不支持跨 shadow 关联时用 role=alert 兜底').toBe('alert')
+    }
+  } else {
+    // Chromium / Firefox：必须真的建立关联，不能把 role=alert 当成实现成功的借口
     expect(r.supported, '当前浏览器应支持 ariaDescribedByElements').toBe(true)
     expect(r.count, '错误时应关联 1 个错误节点').toBe(1)
     expect(r.isError, '关联目标必须是 form-item 的 error 节点').toBe(true)
-  } else {
-    // WebKit 对跨 shadow 的 ElementInternals 引用返回空数组：正确行为是回退到 role=alert
-    expect(r.role, '不支持跨 shadow 关联时用 role=alert 兜底').toBe('alert')
   }
   expect(r.hidden, '错误节点可见').toBe(false)
   expect(r.cleared, '清除后解除关联').toBe(0)

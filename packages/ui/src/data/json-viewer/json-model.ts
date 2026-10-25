@@ -141,7 +141,7 @@ function normalizeValue(value: unknown, seen = new WeakSet<object>()): JsonValue
     case 'object': {
       if (seen.has(value as object)) return null
       seen.add(value as object)
-      const out: Record<string, JsonValue> = {}
+      const out: Record<string, JsonValue> = Object.create(null)
       for (const [key, item] of Object.entries(value as Record<string, unknown>)) {
         if (item === undefined) continue
         out[key] = normalizeValue(item, seen)

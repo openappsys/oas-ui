@@ -186,3 +186,28 @@ test('virtual-list keyboard：roving tabindex + End/Home/Arrow 真实键盘导�
   )
   expect(changes.map((c) => c.index)).toEqual([99, 0, 1])
 })
+
+test('virtual-list keyboard + scroll-target：无内部 viewport 也能键盘导航', async ({ page }) => {
+  await page.goto('/components/virtual-list.html', { waitUntil: 'domcontentloaded' })
+  await page.waitForFunction(() => !!customElements.get('oas-virtual-list'))
+  await page.evaluate(async () => {
+    const outer = document.createElement('div')
+    outer.id = 'qa-vl-outer'
+    outer.style.cssText = 'height:200px;overflow:auto'
+    const el = document.createElement('oas-virtual-list') as HTMLElement & { items: number[] }
+    el.className = 'qa-vl-target'
+    el.setAttribute('keyboard', '')
+    el.setAttribute('item-height', '24')
+    el.setAttribute('scroll-target', '#qa-vl-outer')
+    outer.appendChild(el)
+    document.body.appendChild(outer)
+    el.items = Array.from({ length: 100 }, (_, i) => i + 1)
+    await new Promise((res) => requestAnimationFrame(() => requestAnimationFrame(() => res(null))))
+  })
+  const vl = page.locator('oas-virtual-list.qa-vl-target')
+  await vl.locator('[part="item"][data-index="0"]').focus()
+  await page.keyboard.press('ArrowDown')
+  await expect.poll(() => vl.evaluate((el) => el.getAttribute('active-index')).then(Number)).toBe(1)
+  await page.keyboard.press('End')
+  await expect.poll(() => vl.evaluate((el) => el.getAttribute('active-index')).then(Number)).toBe(99)
+})

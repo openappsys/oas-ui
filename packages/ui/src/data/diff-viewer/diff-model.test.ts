@@ -219,7 +219,7 @@ describe('buildDiffRows', () => {
     const foldIds = collapsed.folds.map((fold) => fold.index)
     expect(foldIds.length).toBe(2)
     const expanded = buildDiffRows(before, after, { context: 1, expandedFolds: [foldIds[0]!] })
-    expect(expanded.rows.filter((row) => row.kind === 'fold')).toHaveLength(1)
+    expect(expanded.rows.filter((row) => row.kind === 'fold')).toHaveLength(2)
     expect(expanded.rows.some((row) => row.kind === 'line' && row.text === '1')).toBe(true)
   })
 

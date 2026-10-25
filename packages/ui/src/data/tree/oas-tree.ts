@@ -1455,6 +1455,7 @@ export class OASTree extends OASElement {
 
   /** Shift+↑/↓：移动 roving 焦点并把锚点范围扩到当前行；Ctrl/⌘+Shift 为并入 */
   private extendSelectionByKeyboard(cur: number, dir: 1 | -1, keys: string[], add: boolean): void {
+    if (!this.treeSelectable()) return
     const from = keys[cur]!
     if (!this.selectionAnchor) this.selectionAnchor = from
     this.navTo(cur, dir, keys)
@@ -1479,7 +1480,7 @@ export class OASTree extends OASElement {
       .filter(({ node }) => this.nodeSelectable(node) && !this.nodeDisabled(node))
       .map(({ node }) => this.acc.idOf(node))
     const to = selectable.indexOf(toId)
-    if (to < 0) return [toId]
+    if (to < 0) return []
     const anchor =
       (this.selectionAnchor && selectable.includes(this.selectionAnchor) ? this.selectionAnchor : undefined) ??
       [...this.currentSelected()].reverse().find((id) => selectable.includes(id)) ??

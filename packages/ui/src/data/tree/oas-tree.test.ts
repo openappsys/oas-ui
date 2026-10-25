@@ -558,6 +558,24 @@ describe('OASTree 点选多选（multiple）', () => {
     expect(selected()).toEqual(['a', 'b', 'c', 'd'])
   })
 
+  it('multiple + Shift+↑/↓：整树 selectable=false 时不选，目标 selectable:false 不入选', () => {
+    const el = mount({ multiple: '', selectable: 'false' })
+    rows(el)[0]!.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true, shiftKey: true }))
+    expect(el.getAttribute('selected')).toBeNull()
+  })
+
+  it('multiple + Shift+↑/↓：范围跳过 selectable:false，后续可选节点仍可入选', () => {
+    const data = JSON.stringify([
+      { key: 'a', label: 'a' },
+      { key: 'b', label: 'b', selectable: false },
+      { key: 'c', label: 'c' },
+    ])
+    const el = mount({ multiple: '', data })
+    rows(el)[0]!.click()
+    rows(el)[1]!.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true, shiftKey: true }))
+    expect(JSON.parse(el.getAttribute('selected') ?? '[]')).toEqual(['a', 'c'])
+  })
+
   it('multiple + Shift：折叠子树不参与可见范围', () => {
     const data = JSON.stringify([
       {

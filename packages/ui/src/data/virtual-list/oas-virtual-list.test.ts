@@ -644,6 +644,21 @@ describe('keyboard 键盘行导航（opt-in）', () => {
     expect(items(el).every((x) => x.getAttribute('role') === 'option')).toBe(true)
   })
 
+  it('scroll-target 模式：没有内部 viewport 也能用 keyboard 导航', () => {
+    const outer = document.createElement('div')
+    outer.id = 'vl-outer-test'
+    outer.style.cssText = 'height:100px;overflow:auto'
+    document.body.appendChild(outer)
+    const el = mount({ keyboard: '', height: '100', 'item-height': '20', 'scroll-target': '#vl-outer-test' })
+    el.items = range(10)
+    const itemsEl = el.shadowRoot!.querySelector<HTMLElement>('[part="items"]')!
+    expect(el.shadowRoot!.querySelector('[part="viewport"]')).toBeNull()
+    itemsEl.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }))
+    expect(el.activeIndex).toBe(1)
+    itemsEl.dispatchEvent(new KeyboardEvent('keydown', { key: 'End', bubbles: true }))
+    expect(el.activeIndex).toBe(9)
+  })
+
   it('未开 keyboard 时保持原行为：视口 Tab 聚焦、项不注入 tabindex', () => {
     const el = mount({ height: '100', 'item-height': '20' })
     el.items = range(10)

@@ -60,19 +60,20 @@ test('diff-viewer 折叠块点击/键盘展开，批量按钮生效', async ({ p
       detail: (window as unknown as { __toggles: unknown[] }).__toggles[0],
     }
   })
-  expect(afterClick.folds).toBe(before - 1)
+  expect(afterClick.folds).toBe(before)
   expect(afterClick.detail).toMatchObject({ expanded: true })
 
   await page.locator('#dv-expand').click()
   await page.waitForFunction(
-    () => document.querySelector('#dv-fold')!.shadowRoot!.querySelectorAll('[part="fold"]').length === 0,
+    (count) => document.querySelector('#dv-fold')!.shadowRoot!.querySelectorAll('[part="fold"]').length === count,
+    before,
   )
   await page.locator('#dv-collapse').click()
   await page.waitForFunction(
     () => document.querySelector('#dv-fold')!.shadowRoot!.querySelectorAll('[part="fold"]').length > 0,
   )
 
-  // 键盘：Home 后 Enter 展开首个折叠块
+  // 键盘：Home 后 Enter 展开首个折叠块（展开后 fold 仍保留）
   const viewport = page.locator('#dv-fold [part="viewport"]')
   await viewport.focus()
   await page.keyboard.press('Home')
@@ -81,7 +82,7 @@ test('diff-viewer 折叠块点击/键盘展开，批量按钮生效', async ({ p
   )
   await page.keyboard.press('Enter')
   await page.waitForFunction(
-    (count) => document.querySelector('#dv-fold')!.shadowRoot!.querySelectorAll('[part="fold"]').length === count - 1,
+    (count) => document.querySelector('#dv-fold')!.shadowRoot!.querySelectorAll('[part="fold"]').length === count,
     foldsBeforeKey,
   )
   // 展开后焦点交还视口，避免按钮被替换后掉回 body
@@ -111,7 +112,7 @@ test('diff-viewer 折叠按钮上按 Enter 只展开它自己', async ({ page })
   await page.locator('#dv-fold-probe [part="fold-toggle"]').nth(1).focus()
   await page.keyboard.press('Enter')
   await page.waitForFunction(
-    () => (document.querySelector('#dv-fold-probe')?.shadowRoot?.querySelectorAll('[part="fold"]').length ?? 0) === 1,
+    () => (document.querySelector('#dv-fold-probe')?.shadowRoot?.querySelectorAll('[part="fold"]').length ?? 0) === 2,
   )
   const remaining = await page.evaluate(() =>
     document.querySelector('#dv-fold-probe')!.shadowRoot!.querySelector('[part="fold"]')?.getAttribute('data-fold'),

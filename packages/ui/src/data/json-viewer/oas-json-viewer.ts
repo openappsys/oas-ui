@@ -887,11 +887,20 @@ export class OASJsonViewer extends OASElement {
       }
       this.searchMatches = []
       this.activeMatch = -1
+      const previousSearchState = this.lastSearchState
       this.lastSearchState = ''
       this.searchCacheQuery = ''
       this.searchCacheRoot = null
       this.searchAppliedQuery = ''
       this.searchNeedsScroll = false
+      if (previousSearchState) {
+        // 清空搜索也要发一次 matches=0 / activeIndex=-1，宿主才能同步清除命中状态
+        const state = `${query}\u0000${this.searchMatches.length}\u0000${this.activeMatch}`
+        if (state !== previousSearchState) {
+          this.lastSearchState = state
+          this.emit('search-change', { query, matches: 0, activeIndex: -1 })
+        }
+      }
       return
     }
     if (!this.searchBase) {

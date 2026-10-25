@@ -95,7 +95,7 @@ With `dynamic-height`, rows may have different heights: unmeasured rows are laid
 
 ## Keyboard Navigation
 
-With `keyboard`, the list uses roving tabindex: the viewport leaves the Tab order and the active row is focusable; `↑` / `↓` move, `Home` / `End` jump to the ends, `PageUp` / `PageDown` page, and the active row scrolls into view. The container gets `role="listbox"`, rows get `role="option"`, and the host `aria-label` is forwarded to the list container. `active-index` (property `activeIndex`) is the 0-based active row, clamped when out of range and `-1` for empty data; keyboard/focus movement emits `oas-active-change` (`detail: { index, item }`; host writes to `active-index` do not echo). Without `keyboard`, the original behavior remains (the viewport itself is Tab-focusable).
+With `keyboard`, the list uses roving tabindex: the viewport leaves the Tab order and the active row is focusable; `↑` / `↓` move, `Home` / `End` jump to the ends, `PageUp` / `PageDown` page, and the active row scrolls into view. The container gets `role="listbox"`, rows get `role="option"`, and the host `aria-label` is forwarded to the list container; external `scroll-target` containers work too (keydown is handled on the items container). `active-index` (property `activeIndex`) is the 0-based active row, clamped when out of range and `-1` for empty data; keyboard/focus movement emits `oas-active-change` (`detail: { index, item }`; host writes to `active-index` do not echo). Without `keyboard`, the original behavior remains (the viewport itself is Tab-focusable).
 
 <DemoBlock title="keyboard row navigation">
   <oas-button size="small" onclick="document.getElementById('vl-keyboard').setAttribute('active-index','5')">Jump to row 6 (active-index)</oas-button>

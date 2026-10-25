@@ -95,7 +95,7 @@
 
 ## 键盘导航
 
-`keyboard` 开启后使用 roving tabindex：视口退出 Tab 序，当前活动行可聚焦；`↑` / `↓` 移动、`Home` / `End` 跳首末、`PageUp` / `PageDown` 翻页，活动行自动滚入视口。容器为 `role="listbox"`、活动行为 `role="option"`，宿主 `aria-label` 会转发到列表容器。`active-index`（property `activeIndex`）是 0 基当前行，越界读取时夹取、空数据为 `-1`；键盘或焦点移动派发 `oas-active-change`（`detail: { index, item }`，宿主写 `active-index` 不回声）。未开启 `keyboard` 时保持原行为（视口本身 Tab 聚焦）。
+`keyboard` 开启后使用 roving tabindex：视口退出 Tab 序，当前活动行可聚焦；`↑` / `↓` 移动、`Home` / `End` 跳首末、`PageUp` / `PageDown` 翻页，活动行自动滚入视口。容器为 `role="listbox"`、活动行为 `role="option"`，宿主 `aria-label` 会转发到列表容器；`scroll-target` 外部滚动容器模式同样可用（键盘事件在 items 容器承接）。`active-index`（property `activeIndex`）是 0 基当前行，越界读取时夹取、空数据为 `-1`；键盘或焦点移动派发 `oas-active-change`（`detail: { index, item }`，宿主写 `active-index` 不回声）。未开启 `keyboard` 时保持原行为（视口本身 Tab 聚焦）。
 
 <DemoBlock title="keyboard 键盘行导航">
   <oas-button size="small" onclick="document.getElementById('vl-keyboard').setAttribute('active-index','5')">跳到第 6 行（active-index）</oas-button>

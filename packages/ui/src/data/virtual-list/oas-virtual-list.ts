@@ -232,6 +232,8 @@ export class OASVirtualList extends OASElement {
     this.paddingBottom = this.shadow.querySelector('.padding-bottom')
     this.itemsEl = this.shadow.querySelector('.items')
     this.viewport?.addEventListener('keydown', this.handleKeyboardEvt)
+    // scroll-target 模式没有内部 viewport，键盘事件改由 items 容器承接（冒泡同样到达）
+    this.itemsEl?.addEventListener('keydown', this.handleKeyboardEvt)
     // 动态行高：行高实测观察器（SSR/无 ResizeObserver 环境安全跳过，退回预估值）
     if (typeof ResizeObserver !== 'undefined' && !this.resizeObserver) {
       this.resizeObserver = new ResizeObserver((entries) => this.handleItemResize(entries))

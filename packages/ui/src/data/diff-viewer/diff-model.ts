@@ -418,6 +418,8 @@ export function layoutRows(lines: DiffLine[], options: DiffOptions = {}): DiffLa
       }
       folds.push(fold)
       if (expanded.has(runIndex)) {
+        // 展开态也保留 fold 行，用户才能再次单独收起；此前展开后 fold 消失，只能 collapseAll
+        rows.push(fold)
         for (let k = i + head; k < end - tail; k++) {
           firstRowOfLine[k] = rows.length
           rows.push({ ...annotated[k]!, kind: 'line', id: `l-${rows.length}` })

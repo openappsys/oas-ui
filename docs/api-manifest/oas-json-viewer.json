@@ -151,7 +151,7 @@
     },
     {
       "name": "oas-search-change",
-      "detail": "{ query, matches: this.searchMatches.length, activeIndex: this.searchMatches.length ? this.activeMatch : -1, } satisfies JsonViewerSearchChangeDetail"
+      "detail": "{ query, matches: 0, activeIndex: -1 } | { query, matches: this.searchMatches.length, activeIndex: this.searchMatches.length ? this.activeMatch : -1, } satisfies JsonViewerSearchChangeDetail"
     },
     {
       "name": "oas-expanded-change",

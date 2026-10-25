@@ -117,7 +117,7 @@ describe('OASDiffViewer 折叠', () => {
     document.body.innerHTML = ''
   })
 
-  it('默认折叠未修改区块，点击按钮展开并派发事件', () => {
+  it('默认折叠未修改区块，点击按钮展开后可再次单独收起', () => {
     const el = mount({ 'old-text': LONG_BEFORE, 'new-text': LONG_AFTER, context: '2' })
     expect(foldEls(el)).toHaveLength(2)
     const events: DiffViewerHunkToggleDetail[] = []
@@ -126,9 +126,18 @@ describe('OASDiffViewer 折叠', () => {
     expect(button.textContent).toBe(t('diffViewer.expandFold', { count: 6 }))
     expect(button.getAttribute('aria-expanded')).toBe('false')
     button.click()
-    expect(foldEls(el)).toHaveLength(1)
+    // 展开后 fold 行保留（不是消失），才能再次单独收起
+    expect(foldEls(el)).toHaveLength(2)
+    expect(
+      foldEls(el)[0]!.querySelector<HTMLButtonElement>('[part="fold-toggle"]')!.getAttribute('aria-expanded'),
+    ).toBe('true')
     expect(rowEls(el).some((row) => row.querySelector('[part="code"]')!.textContent === 'line-3')).toBe(true)
     expect(events).toEqual([{ index: 0, expanded: true, start: 0, count: 6 }])
+    const collapse = foldEls(el)[0]!.querySelector<HTMLButtonElement>('[part="fold-toggle"]')!
+    expect(collapse.textContent).toBe(t('diffViewer.collapseAll'))
+    collapse.click()
+    expect(foldEls(el)).toHaveLength(2)
+    expect(events.at(-1)).toEqual({ index: 0, expanded: false, start: 0, count: 6 })
   })
 
   it('expandAll / collapseAll 批量切换并派发对应 expanded 事件', () => {
@@ -136,7 +145,7 @@ describe('OASDiffViewer 折叠', () => {
     const events: DiffViewerHunkToggleDetail[] = []
     el.addEventListener('oas-hunk-toggle', (event) => events.push((event as CustomEvent).detail))
     el.expandAll()
-    expect(foldEls(el)).toHaveLength(0)
+    expect(foldEls(el)).toHaveLength(2)
     expect(events).toHaveLength(2)
     expect(events.every((event) => event.expanded)).toBe(true)
     events.length = 0
@@ -156,6 +165,14 @@ describe('OASDiffViewer 折叠', () => {
     expect(foldEls(el)).toHaveLength(foldsBefore)
   })
 
+  it('split 替换行同时暴露删除/新增读屏名称', () => {
+    const el = mount({ 'old-text': 'a', 'new-text': 'b', mode: 'split' })
+    const row = el.shadowRoot!.querySelector<HTMLElement>('[part="row"]')!
+    expect(row.getAttribute('aria-label')).toBe(
+      `${t('diffViewer.removedLine', { n: 1 })} / ${t('diffViewer.addedLine', { n: 1 })}`,
+    )
+  })
+
   it('CSS 变量可被外部样式覆盖（未设置对应属性时）', () => {
     const el = mount({ 'old-text': 'a', 'new-text': 'b' })
     expect(el.style.getPropertyValue('--oas-diff-viewer-height')).toBe('')
@@ -170,7 +187,7 @@ describe('OASDiffViewer 折叠', () => {
   it('数据更新后折叠状态重置', () => {
     const el = mount({ 'old-text': LONG_BEFORE, 'new-text': LONG_AFTER, context: '2' })
     el.expandAll()
-    expect(foldEls(el)).toHaveLength(0)
+    expect(foldEls(el)).toHaveLength(2)
     el.newText = `${LONG_AFTER}\nmore`
     expect(foldEls(el)).toHaveLength(2)
   })
@@ -231,7 +248,7 @@ describe('OASDiffViewer 视图与键盘', () => {
     host.dispatchEvent(new KeyboardEvent('keydown', { key: 'Home', bubbles: true }))
     expect(foldEls(el)).toHaveLength(2)
     host.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
-    expect(foldEls(el)).toHaveLength(1)
+    expect(foldEls(el)).toHaveLength(2)
   })
 
   it('scrollToChange 定位到变更块首行', () => {

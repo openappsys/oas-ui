@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { t } from '@oas-ui/i18n'
-import { OASJsonViewer } from './index.js'
+import { OASJsonViewer, buildJsonTree } from './index.js'
 import type { JsonValue, JsonViewerToggleDetail } from './index.js'
 
 function mount(attrs: Record<string, string> = {}): OASJsonViewer {
@@ -351,6 +351,22 @@ describe('OASJsonViewer 搜索与复制', () => {
     expect(el.shadowRoot!.querySelector('[part="count"]')!.textContent).toBe('无匹配')
     expect(() => el.searchNext()).not.toThrow()
     expect(() => el.searchPrev()).not.toThrow()
+  })
+
+  it('清空搜索：派发一次 matches=0 / activeIndex=-1（宿主可同步清除）', () => {
+    const el = mount({ text: SAMPLE })
+    const changes: Array<{ query: string; matches: number; activeIndex: number }> = []
+    el.addEventListener('oas-search-change', (e) => changes.push((e as CustomEvent).detail))
+    el.setAttribute('search', 'a')
+    expect(changes.length).toBeGreaterThan(0)
+    el.removeAttribute('search')
+    expect(changes.at(-1)).toEqual({ query: '', matches: 0, activeIndex: -1 })
+  })
+
+  it('__proto__ 是合法 JSON 键：保留为自有属性而不是被原型 setter 吞掉', () => {
+    const tree = buildJsonTree(JSON.parse('{"__proto__":{"x":1},"safe":2}'))
+    expect(tree?.children?.map((child) => child.key)).toEqual(['__proto__', 'safe'])
+    expect(tree?.children?.[0]?.children?.[0]?.key).toBe('x')
   })
 
   it('搜索清空：恢复开始搜索时的展开快照，再次搜索重新计算命中', () => {
