@@ -169,6 +169,7 @@ export const pt: LocaleMessages = {
   'table.loading': 'Carregando…',
   'table.empty': 'Sem dados',
   'table.selectRow': 'Selecionar linha {key}',
+  'table.rangeSelection': '{rows} linhas × {cols} colunas selecionadas',
   'table.expand': 'Expandir/Recolher',
   'table.summary': 'Total',
   'table.edit': 'Editar',

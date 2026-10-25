@@ -169,6 +169,7 @@ export const ru: LocaleMessages = {
   'table.loading': 'Загрузка…',
   'table.empty': 'Нет данных',
   'table.selectRow': 'Выбрать строку {key}',
+  'table.rangeSelection': 'Выбрано {rows} строк × {cols} столбцов',
   'table.expand': 'Развернуть/Свернуть',
   'table.summary': 'Итого',
   'table.edit': 'Изменить',

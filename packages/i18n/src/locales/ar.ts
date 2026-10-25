@@ -169,6 +169,7 @@ export const ar: LocaleMessages = {
   'table.loading': 'جارٍ التحميل…',
   'table.empty': 'لا توجد بيانات',
   'table.selectRow': 'تحديد الصف {key}',
+  'table.rangeSelection': 'تم تحديد {rows} صفوف و {cols} أعمدة',
   'table.expand': 'توسيع/طي',
   'table.summary': 'الإجمالي',
   'table.edit': 'تحرير',
