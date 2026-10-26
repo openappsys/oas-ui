@@ -6,7 +6,7 @@
 
 | 范围 | 内容 | 状态 |
 | --- | --- | --- |
-| **N01 JSON 查看器** | 新组件 `oas-json-viewer`（data 族）：`data`/`text` 双通道、折叠树、搜索、JSONPath 复制、树虚拟滚动、完整键盘/a11y、SSR 水合；只读，不含编辑/校验/查询/Diff | ✅ 已发布 v2.6.4 |
+| **N01 JSON 查看器** | 新组件 `oas-json-viewer`（data 族）：`data`/`text` 双通道、折叠树、搜索、JSONPath 复制、树虚拟滚动、完整键盘/a11y、SSR 水合；展开/收起图标支持模板插槽自定义；只读，不含编辑/校验/查询/Diff | ✅ 已发布 v2.6.4 |
 | **N02 文本 Diff 查看器** | 新组件 `oas-diff-viewer`（data 族）：`old-text`/`new-text` 双文本、行内/并排、未修改折叠、行级 + 词级高亮、行号/统计、只读、键盘/a11y、SSR；JSON 走格式化文本，不做结构 diff/编辑/合并 | ✅ 已发布 v2.6.4 |
 | **N04 日志 ANSI（可行子集）** | `oas-log` 新增 opt-in `ansi`：16 / 256 / truecolor 前景背景、常用样式、非 SGR 控制序列剔除、`light-dark()` 双主题感知对比度校正；不做终端模拟 / PTY / OSC 8 | ✅ 已发布 v2.6.4 |
 | **N05 文件浏览器 recipe** | `oas-tree directory` + 宿主工具栏 / 面包屑 / 选中路径 / `oas-node-rename` 回写组合方案（zh / en 文档）；不新建独立文件树组件 | ✅ 已发布 v2.6.4 |

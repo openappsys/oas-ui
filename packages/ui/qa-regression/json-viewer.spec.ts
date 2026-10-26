@@ -209,3 +209,45 @@ test('json-viewer 基础与错误态 axe 零违规', async ({ page }) => {
   const results = await new AxeBuilder({ page }).include('#jv-basic').include('#jv-error').analyze()
   expect(results.violations).toEqual([])
 })
+
+test('json-viewer 自定义展开/收起模板：带框 +/- 切换且叶节点无图标', async ({ page }) => {
+  await page.goto('/components/json-viewer.html', { waitUntil: 'domcontentloaded' })
+  await page.waitForFunction(() => !!customElements.get('oas-json-viewer'))
+  await page.evaluate(() => {
+    const el = document.createElement('oas-json-viewer')
+    el.id = 'qa-jv-toggle'
+    el.setAttribute('text', '{"name":"Ada","nested":{"ok":true}}')
+    el.setAttribute('default-expand-depth', '0')
+    const collapsed = document.createElement('template')
+    collapsed.setAttribute('slot', 'toggle-collapsed')
+    collapsed.innerHTML =
+      '<span class="qa-toggle-icon" part="toggle-icon" style="display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;border:1px solid currentColor;border-radius:3px">+</span>'
+    const expanded = document.createElement('template')
+    expanded.setAttribute('slot', 'toggle-expanded')
+    expanded.innerHTML =
+      '<span class="qa-toggle-icon" part="toggle-icon" style="display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;border:1px solid currentColor;border-radius:3px">−</span>'
+    el.append(collapsed, expanded)
+    document.body.appendChild(el)
+  })
+  const root = page.locator('#qa-jv-toggle [part="row"]').first()
+  await expect(root.locator('.qa-toggle-icon')).toHaveText('+')
+  await expect(root.locator('.qa-toggle-icon')).toHaveCSS('border-top-width', '1px')
+  await root.click()
+  await expect(root.locator('.qa-toggle-icon')).toHaveText('−')
+  await expect(page.locator('#qa-jv-toggle [data-container="false"]').first().locator('.qa-toggle-icon')).toHaveCount(0)
+
+  // 实际 demo：dark / RTL / ::part 覆盖都要真实生效，不能只验证动态 fixture
+  await up(page, '#jv-custom-toggle')
+  await page.evaluate(() => document.documentElement.classList.add('dark'))
+  const demoRoot = page.locator('#jv-custom-toggle [part="row"]').first()
+  const demoIcon = demoRoot.locator('[part="toggle-icon"]')
+  await expect(demoIcon).toHaveText('+')
+  await expect(demoIcon).toBeVisible()
+  await page.addStyleTag({ content: '#jv-custom-toggle::part(toggle-icon){border-color:rgb(255, 0, 0) !important}' })
+  await expect(demoIcon).toHaveCSS('border-top-color', 'rgb(255, 0, 0)')
+  await demoRoot.click()
+  await expect(demoRoot.locator('[part="toggle-icon"]')).toHaveText('−')
+  await page.evaluate(() => (document.documentElement.dir = 'rtl'))
+  await expect(demoRoot.locator('[part="toggle-icon"]')).toBeVisible()
+  await page.evaluate(() => document.querySelector('#qa-jv-toggle')?.remove())
+})

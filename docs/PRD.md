@@ -18,6 +18,7 @@
 - **树与展开**：展开/折叠、`default-expand-depth`（默认 1）、`expanded`（JSONPath 数组）。**`expanded` 属性在场 = 受控**：组件不写回，只派发 `oas-toggle`（`{ path, expanded }`）；属性缺席 = 非受控，内部维护状态。批量方法 `expandAll()` / `collapseAll()` / `expandToDepth(n)` 在受控模式派发 `oas-expanded-change`（`{ paths }`）由宿主回写，非受控直接生效；`scrollToPath(path)` 自动展开折叠祖先。深层 path 的祖先按前缀自动补全。
 - **搜索**：`search` 属性/property（大小写不敏感子串，v1 不做正则）；输入框与属性双向同步。`matches` = 命中节点数（key/value 同时命中算 1），`activeIndex` 0 基、无命中 -1；自动展开命中祖先但不隐藏其他节点；`searchNext()` / `searchPrev()` 循环；设置搜索自动跳第一个命中并滚动；清空搜索恢复「开始搜索时的展开快照 + 搜索期间用户手动 toggle 的增量」。`oas-search-change`（`{ query, matches, activeIndex }`）。
 - **内置 chrome**：顶部工具栏默认开启（`toolbar="false"` 关闭），含搜索框、命中计数、上一个/下一个、全部展开/全部收起、复制当前节点（路径/值/子树 JSON）三个动作；树区域单焦点容器 + `aria-activedescendant`，工具栏控件进 Tab 序。`copyable`（默认 true）只控制复制动作是否显示；`height`（默认 360）是含工具栏的固定视口，内容区占剩余高度。
+- **自定义展开图标**：`template[slot="toggle-collapsed"]` / `template[slot="toggle-expanded"]` 分别提供折叠态与展开态内容，支持文本、SVG 与带框元素；未提供对应模板时回落默认三角形，叶节点不显示图标。模板内容可用 `part="toggle-icon"` 参与 `::part()` 定制。
 - **复制**：方法 `copyPath(path)` / `copyValue(path)` / `copyJson(path)` 在 `copyable=false` 时仍可用。`copyValue`：原始值输出原文（string 不带引号），对象/数组输出格式化 JSON；`copyJson`：一律 JSON（string 带引号，按 `indent`）；`copyPath`：单引号 JSONPath（`$['a.b'][0]`，单引号/反斜杠转义），与 `expanded` / `scrollToPath()` 输入格式一致（双向可回传）。点击/方法调用先派发可取消的 `oas-copy`（`{ path, kind, text }`），未被取消则在用户手势内写剪贴板，成功派发 `oas-copied`、失败 `oas-copy-error`。
 - **大文件**：树虚拟滚动（固定行高 + overscan，只渲染可视区）；`height`（默认 360）、`row-height`（默认 24）、`virtual`（默认自动：可见节点 > 200 启用，`virtual="false"` 强制关闭）；`scrollToPath()` 定位。解析在主线程（超大文件建议宿主预解析后传 `data`）。
 - **展示**：类型色走 token；值一律渲染完整文本（DOM 中保留全文保证读屏可读），单行 `text-overflow: ellipsis` + `title` 提示，不引入动态行高/浮层；`indent`（默认 2）、紧凑模式（更小字号/行距，显式 `row-height` 优先）；暗色/RTL 逻辑属性；宿主 `aria-label` 转发命名树。
@@ -34,7 +35,7 @@
 - 单测：解析/错误恢复、`data`/`text` 双源、展开受控/非受控、搜索与计数、复制路径转义、虚拟窗口边界、键盘模型、SSR 水合。
 - e2e：10k 节点滚动时 DOM 行数有界、搜索跳转命中、复制路径反馈、真实键盘、axe 零严重违规、暗色/RTL。
 - 文档 zh/en（含 API/demo）、`api:check` 双向 0、CHANGELOG `[2.6.4]`、PRD/ROADMAP 同步。
-- 包体：`data/json-viewer` 按需链 gzip 实测 32.4 KB（链含 core + i18n + 组件），初版目标 ≤ 32 KB，`perf:size` 硬预算 35 KB；零第三方运行时依赖。复制反馈浮层与深嵌套容错使本版较初版目标高 0.4 KB，仍在硬预算内；后续优先压缩复制反馈与深嵌套处理路径。
+- 包体：`data/json-viewer` 按需链 gzip 实测 32.5 KB（链含 core + i18n + 组件），初版目标 ≤ 32 KB，`perf:size` 硬预算 35 KB；零第三方运行时依赖。复制反馈浮层、深嵌套容错与图标模板使本版较初版目标高 0.5 KB，仍在硬预算内；后续优先压缩复制反馈与深嵌套处理路径。
 
 ## v2.6.4：N02 文本 Diff 查看器 ✅
 
@@ -192,7 +193,7 @@
 
 ### 发布验收（2026-10-26）
 
-- 全量单测 **11188 passed**；全量 e2e **3826 passed / 46 skipped**（Chromium 全量 + Firefox/WebKit 抽样；1 条 Firefox AI 会话用例首次超时，单独复跑通过）。
+- 全量单测 **11190 passed**；全量 e2e **3828 passed / 46 skipped**（Chromium 全量 + Firefox/WebKit 抽样；1 条 Firefox scroll-area 用例首次失败，单独复跑通过）。
 - `typecheck` / `build` / `api:check` / `stats:check` / `llms:check` / `skill:check` / `deprecations:check` / `ssr:check` / `perf:size` / `format:check` / trace 通过；`perf:bench` 在同一 dist、较大堆复核下全部预算通过。默认 happy-dom 在本机存在 GC 尾延迟，未改预算或基线。
 
 ## v2.6.5：移除 table/core（计划）📋

@@ -186,6 +186,8 @@ const STYLE = `
   border-inline-start: 6px solid currentColor;
   transition: transform var(--oas-transition-fast, 120ms) ease;
 }
+.twisty[data-custom='true'] { width: auto; min-width: 1em; }
+.twisty[data-custom='true']::before { display: none; }
 .row[data-expanded='true'] .twisty::before { transform: rotate(90deg); }
 :host(:dir(rtl)) .row[data-expanded='true'] .twisty::before { transform: rotate(-90deg); }
 .row[data-container='false'] .twisty::before { display: none; }
@@ -823,6 +825,15 @@ export class OASJsonViewer extends OASElement {
     twisty.className = 'twisty'
     twisty.setAttribute('part', 'twisty')
     twisty.setAttribute('aria-hidden', 'true')
+    if (isExpandable(row.node)) {
+      const template = row.expanded
+        ? this.querySelector<HTMLTemplateElement>('template[slot="toggle-expanded"]')
+        : this.querySelector<HTMLTemplateElement>('template[slot="toggle-collapsed"]')
+      if (template) {
+        twisty.setAttribute('data-custom', 'true')
+        twisty.appendChild(template.content.cloneNode(true))
+      }
+    }
     el.appendChild(twisty)
 
     const key = document.createElement('span')

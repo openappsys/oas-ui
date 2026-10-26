@@ -1734,6 +1734,10 @@
       "copyValue": "复制值：原始值原文，容器格式化 JSON",
       "copyJson": "复制子树 JSON（字符串带引号）"
     },
+    "slots": {
+      "template[slot=\"toggle-collapsed\"]": "折叠态图标模板（文本 / SVG / 带框元素均可，未提供时用默认三角形）",
+      "template[slot=\"toggle-expanded\"]": "展开态图标模板（未提供时用默认三角形；叶节点不显示图标）"
+    },
     "cssVars": {
       "--oas-json-viewer-height": "视口高度（默认 360px；未设置 height 属性时生效）",
       "--oas-json-viewer-row-height": "行高（默认 24px，支持 CSS 长度；未设置 row-height/compact 时生效）",

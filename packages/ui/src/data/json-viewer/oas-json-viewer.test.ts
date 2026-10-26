@@ -148,6 +148,29 @@ describe('OASJsonViewer 展开受控/非受控', () => {
     expect(events.at(-1)).toEqual({ path: '$', expanded: false })
   })
 
+  it('toggle-collapsed / toggle-expanded 模板：自定义 + / − 切换，叶节点不渲染图标', () => {
+    const el = new OASJsonViewer()
+    el.setAttribute('text', SAMPLE)
+    el.setAttribute('default-expand-depth', '0')
+    const collapsed = document.createElement('template')
+    collapsed.setAttribute('slot', 'toggle-collapsed')
+    collapsed.innerHTML = '<span class="boxed-plus" part="toggle-icon">+</span>'
+    const expanded = document.createElement('template')
+    expanded.setAttribute('slot', 'toggle-expanded')
+    expanded.innerHTML = '<span class="boxed-minus" part="toggle-icon">−</span>'
+    el.append(collapsed, expanded)
+    document.body.appendChild(el)
+
+    const root = rows(el)[0]!
+    expect(root.querySelector('.boxed-plus')?.textContent).toBe('+')
+    expect(root.querySelector('.boxed-minus')).toBeNull()
+    root.click()
+    expect(rows(el)[0]!.querySelector('.boxed-minus')?.textContent).toBe('−')
+    expect(rows(el)[0]!.querySelector('.boxed-plus')).toBeNull()
+    const leaf = rows(el).find((row) => row.getAttribute('data-path') === "$['name']")!
+    expect(leaf.querySelector('.boxed-plus, .boxed-minus')).toBeNull()
+  })
+
   it('受控：expanded 属性在场只派发事件，不写回属性', () => {
     const el = mount({ text: SAMPLE, 'default-expand-depth': '0', expanded: '[]' })
     const events: JsonViewerToggleDetail[] = []

@@ -1106,6 +1106,19 @@ describe('@oas-ui/ssr renderToString', () => {
     expect(html).not.toContain('data-index="9"')
   })
 
+  it('oas-json-viewer：自定义展开/收起模板进入 DSD 快照', async () => {
+    const html = await renderToString(
+      'oas-json-viewer',
+      { text: '{"name":"Ada","nested":{"ok":true}}', 'default-expand-depth': '0' },
+      '<template slot="toggle-collapsed"><span class="boxed-plus" part="toggle-icon">+</span></template><template slot="toggle-expanded"><span class="boxed-minus" part="toggle-icon">−</span></template>',
+    )
+    expect(html).toContain('<template shadowrootmode="open">')
+    expect(html).toContain('class="boxed-plus"')
+    expect(html).toContain('data-custom="true"')
+    expect(html).toContain('slot="toggle-collapsed"')
+    expect(html).toContain('slot="toggle-expanded"')
+  })
+
   it('数据展示组件非法 JSON 容错：chart/log/virtual-list 空态快照', async () => {
     const chart = await renderToString('oas-chart', { data: '[{bad json' }, '', { locale: 'zh-CN' })
     expect(chart).toContain('<template shadowrootmode="open">')

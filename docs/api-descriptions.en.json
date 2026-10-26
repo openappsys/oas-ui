@@ -1800,6 +1800,10 @@
       "copyValue": "Copy the value: raw text for primitives, formatted JSON for containers",
       "copyJson": "Copy the subtree JSON (strings stay quoted)"
     },
+    "slots": {
+      "template[slot=\"toggle-collapsed\"]": "Collapsed icon template (text, SVG or boxed content; the default triangle is used when absent)",
+      "template[slot=\"toggle-expanded\"]": "Expanded icon template (the default triangle is used when absent; leaf rows render no icon)"
+    },
     "cssVars": {
       "--oas-json-viewer-height": "Viewport height (default 360px; used when the height attribute is absent)",
       "--oas-json-viewer-row-height": "Row height (default 24px, accepts CSS lengths; used when row-height/compact is absent)",

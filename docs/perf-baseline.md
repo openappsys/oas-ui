@@ -51,10 +51,10 @@
 | table/detail | `@oas-ui/ui/data/table/detail` | 3 | 3.4 KB |
 | form   | `@oas-ui/ui/form/form`    | 11     | 26.0 KB    |
 | gantt  | `@oas-ui/ui/data/gantt`   | 18     | 61.1 KB    |
-| json-viewer | `@oas-ui/ui/data/json-viewer` | 13 | 32.4 KB |
+| json-viewer | `@oas-ui/ui/data/json-viewer` | 13 | 32.5 KB |
 | diff-viewer | `@oas-ui/ui/data/diff-viewer` | 12 | 31.6 KB |
 
-> **本版实测说明（2026-10-26）**：`json-viewer` 因复制反馈浮层与深嵌套容错，gzip 32.4 KB，较初版 ≤32 KB 目标高 0.4 KB，但仍低于 35 KB 硬预算；后续优先压缩复制反馈与深嵌套处理路径。`diff-viewer` 实测 31.6 KB，仍满足 ≤32 KB 目标。
+> **本版实测说明（2026-10-26）**：`json-viewer` 因复制反馈浮层、深嵌套容错与图标模板，gzip 32.5 KB，较初版 ≤32 KB 目标高 0.5 KB，但仍低于 35 KB 硬预算；后续优先压缩复制反馈与深嵌套处理路径。`diff-viewer` 实测 31.6 KB，仍满足 ≤32 KB 目标。
 **tree-shaking 叙事成立（2026-10-08 图标库 opt-in 后增强）**：按需引入单组件链 gzip 26.0~61.1 KB，仅为全量入口（1,063.7 KB gzip）的约 **2.5~5.7%**；且**不再背整套图标**——单组件链只含其自身所需的少量图标 path（全量入口仍内含整套图标，开箱即用不变）。
 
 **固定开销拆分**（以 button 链为例）：

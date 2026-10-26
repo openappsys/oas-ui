@@ -13,6 +13,7 @@
 - **裸导入可解析性门禁**：新增 `pnpm exports:check`，扫描源码 `@oas-ui/*` 导入并按各包 `package.json#exports` 映射校验构建产物存在；`pnpm build` 构建后自动执行，避免发布后子路径 import 失败。
 
 - **`oas-json-viewer` JSON 查看器**：只读 JSON 树，支持折叠/展开（`expanded` 受控或非受控）、大小写不敏感搜索与命中导航、JSONPath / 原始值 / 子树 JSON 复制、固定行高虚拟滚动、键盘导航与 `aria-activedescendant` 读屏语义。`text` attribute（SSR/DSD）与 `data` property 双通道，非法文本错误态可自恢复；10 个语言包补齐工具栏文案。
+- **`oas-json-viewer` 自定义展开/收起图标**：新增 `template[slot="toggle-collapsed"]` 与 `template[slot="toggle-expanded"]` 插槽，支持文本、SVG 或带框 `+` / `−`；未提供模板时保留默认三角形，叶节点不显示图标。
 
 - **`oas-diff-viewer` 文本差异查看器**：零第三方依赖的只读文本 Diff，行级 Myers + 词级高亮，`unified` / `split` 双视图（窄容器自动降级），未修改区块 `context` 折叠与 `expandAll()` / `collapseAll()`，对齐行虚拟滚动，`old-text` / `new-text` 双文本通道与 `stats` / `oas-diff-change` / `oas-hunk-toggle`，完整键盘与 `role="grid"` 读屏语义；`ignore-whitespace`、`max-edits` 降级、`wrap` 折行、10 个语言包文案同步；新增主题 token `--oas-color-diff-*`（不透明增删底色/词级高亮/行号文字）；纳入 SSR/DSD 白名单。
 
@@ -58,7 +59,7 @@
 - **SSR 白名单计数门禁**：`pnpm ssr:check` 校验 `WHITELIST` 长度与 `docs/ssr.md`、中/英文 guide 的计数一致（`docs/ROADMAP.md` 可选），计数声明缺失/改写也失败。
 - **e2e 稳定性**：demo-coverage 与 notification 改为 `networkidle` 就绪后交互；Playwright preview 默认不复用旧服务（仅显式 `E2E_REUSE=1` 才复用），杜绝陈旧 dist 导致的假失败；marquee 采样窗为空时不再把空数组中位数当方向错误；WebKit 补 `oas-form-item` 跨 shadow 错误关联或 `role=alert` 兜底用例。
 - **文档与组合方案**：补充 tree 文件浏览器 recipe、i18n link/workspace 双实例 FAQ 与 README 说明，明确 table range 写回与 `edit-controlled` 边界。
-- **发布性能口径**：`json-viewer` 按需链实测 32.4 KB，较初版 ≤32 KB 目标高 0.4 KB，仍低于 35 KB 硬预算；增量来自复制反馈浮层与深嵌套容错，后续优先压缩相关处理路径。`diff-viewer` 实测 31.6 KB，满足 ≤32 KB 目标。`perf:bench` 默认 happy-dom 在本机存在 GC 尾延迟，同一 dist 较大堆复核全部预算通过；未修改预算或基线。
+- **发布性能口径**：`json-viewer` 按需链实测 32.5 KB，较初版 ≤32 KB 目标高 0.5 KB，仍低于 35 KB 硬预算；增量来自复制反馈浮层、深嵌套容错与图标模板，后续优先压缩相关处理路径。`diff-viewer` 实测 31.6 KB，满足 ≤32 KB 目标。`perf:bench` 默认 happy-dom 在本机存在 GC 尾延迟，同一 dist 较大堆复核全部预算通过；未修改预算或基线。
 
 ### 修复
 

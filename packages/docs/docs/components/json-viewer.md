@@ -16,6 +16,21 @@
   <oas-json-viewer id="jv-data" height="260"></oas-json-viewer>
 </DemoBlock>
 
+## 自定义展开/收起图标
+
+用 `template[slot="toggle-collapsed"]` 与 `template[slot="toggle-expanded"]` 分别提供折叠态和展开态内容，可放文本、SVG 或带框元素；未提供对应模板时回落默认三角形，叶节点始终不显示图标。模板内容中的 `part="toggle-icon"` 可配合 `::part(toggle-icon)` 定制样式，也可直接写内联样式。
+
+<DemoBlock title="带框 + / − 图标（点击根行切换）">
+  <oas-json-viewer id="jv-custom-toggle" height="220" default-expand-depth="0" text='{"code":0,"message":"ok","data":{"name":"张三","admin":true}}'>
+    <template slot="toggle-collapsed">
+      <span part="toggle-icon" style="display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border:1px solid currentColor;border-radius:3px">+</span>
+    </template>
+    <template slot="toggle-expanded">
+      <span part="toggle-icon" style="display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border:1px solid currentColor;border-radius:3px">−</span>
+    </template>
+  </oas-json-viewer>
+</DemoBlock>
+
 ## 受控展开
 
 `expanded` 属性在场即进入受控模式：组件只派发 `oas-toggle` / `oas-expanded-change`，不写回属性。宿主更新 `expanded` 后树跟随渲染。路径统一为单引号 JSONPath，例如 `$['data']['users'][0]`。
@@ -251,6 +266,13 @@ if (typeof window !== 'undefined') {
 | `oas-parse-error` | text 解析失败时派发，`detail: { message, line?, column?, source }` |
 | `oas-search-change` | 搜索状态变化，`detail: { query, matches, activeIndex }`；无命中 activeIndex 为 -1 |
 | `oas-toggle` | 展开/收起时派发，`detail: { path, expanded }`；受控模式只派发不写回 |
+
+#### 插槽
+
+| 名称 | 说明 |
+| --- | --- |
+| `template[slot="toggle-collapsed"]` | 折叠态图标模板（文本 / SVG / 带框元素均可，未提供时用默认三角形） |
+| `template[slot="toggle-expanded"]` | 展开态图标模板（未提供时用默认三角形；叶节点不显示图标） |
 
 #### CSS 变量
 

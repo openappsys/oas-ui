@@ -16,6 +16,21 @@ You can also pass an object or array through the `data` property; whichever of `
   <oas-json-viewer id="jv-data" height="260"></oas-json-viewer>
 </DemoBlock>
 
+## Custom expand/collapse icons
+
+Provide `template[slot="toggle-collapsed"]` and `template[slot="toggle-expanded"]` for the collapsed and expanded states. Templates can contain text, SVG or boxed elements; a missing template falls back to the default triangle, and leaf rows never render an icon. Use `part="toggle-icon"` inside a template for `::part(toggle-icon)` styling, or use inline styles.
+
+<DemoBlock title="Boxed + / − icons (click the root row)">
+  <oas-json-viewer id="jv-custom-toggle" height="220" default-expand-depth="0" text='{"code":0,"message":"ok","data":{"name":"Ada","admin":true}}'>
+    <template slot="toggle-collapsed">
+      <span part="toggle-icon" style="display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border:1px solid currentColor;border-radius:3px">+</span>
+    </template>
+    <template slot="toggle-expanded">
+      <span part="toggle-icon" style="display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border:1px solid currentColor;border-radius:3px">−</span>
+    </template>
+  </oas-json-viewer>
+</DemoBlock>
+
 ## Controlled expansion
 
 When the `expanded` attribute is present the component is controlled: it only emits `oas-toggle` / `oas-expanded-change` and never writes the attribute back. Updating `expanded` from the host re-renders the tree. Paths use single-quoted JSONPath, for example `$['data']['users'][0]`.
@@ -251,6 +266,13 @@ The pure model helpers are also exported from `@oas-ui/ui/data/json-viewer` (or 
 | `oas-parse-error` | Fired when text cannot be parsed, `detail: { message, line?, column?, source }` |
 | `oas-search-change` | Search state changed, `detail: { query, matches, activeIndex }`; activeIndex is -1 when nothing matches |
 | `oas-toggle` | Fired when a node expands/collapses, `detail: { path, expanded }`; controlled mode only emits |
+
+#### Slots
+
+| Name | Description |
+| --- | --- |
+| `template[slot="toggle-collapsed"]` | Collapsed icon template (text, SVG or boxed content; the default triangle is used when absent) |
+| `template[slot="toggle-expanded"]` | Expanded icon template (the default triangle is used when absent; leaf rows render no icon) |
 
 #### CSS Variables
 
