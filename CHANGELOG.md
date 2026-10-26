@@ -58,6 +58,7 @@
 - **SSR 白名单计数门禁**：`pnpm ssr:check` 校验 `WHITELIST` 长度与 `docs/ssr.md`、中/英文 guide 的计数一致（`docs/ROADMAP.md` 可选），计数声明缺失/改写也失败。
 - **e2e 稳定性**：demo-coverage 与 notification 改为 `networkidle` 就绪后交互；Playwright preview 默认不复用旧服务（仅显式 `E2E_REUSE=1` 才复用），杜绝陈旧 dist 导致的假失败；marquee 采样窗为空时不再把空数组中位数当方向错误；WebKit 补 `oas-form-item` 跨 shadow 错误关联或 `role=alert` 兜底用例。
 - **文档与组合方案**：补充 tree 文件浏览器 recipe、i18n link/workspace 双实例 FAQ 与 README 说明，明确 table range 写回与 `edit-controlled` 边界。
+- **发布性能口径**：`json-viewer` 按需链实测 32.4 KB，较初版 ≤32 KB 目标高 0.4 KB，仍低于 35 KB 硬预算；增量来自复制反馈浮层与深嵌套容错，后续优先压缩相关处理路径。`diff-viewer` 实测 31.6 KB，满足 ≤32 KB 目标。`perf:bench` 默认 happy-dom 在本机存在 GC 尾延迟，同一 dist 较大堆复核全部预算通过；未修改预算或基线。
 
 ### 修复
 
