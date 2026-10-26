@@ -335,6 +335,17 @@ export class OASVirtualList extends OASElement {
   private handleKeyboardEvt = (e: KeyboardEvent): void => {
     if (!this.keyboardEnabled() || this.data.length === 0) return
     if (e.defaultPrevented || e.altKey || e.ctrlKey || e.metaKey) return
+    // 模板内的输入/可编辑控件保留原生光标与选项导航；composedPath 可穿过嵌套 shadow 找到真实控件
+    const fromEditable = e
+      .composedPath()
+      .some(
+        (node) =>
+          node instanceof HTMLElement &&
+          node.matches(
+            'input, textarea, select, [contenteditable]:not([contenteditable="false"]), [role="textbox"], [role="combobox"], [role="searchbox"]',
+          ),
+      )
+    if (fromEditable) return
     const current = this.activeIndexValue()
     const page = Math.max(1, Math.floor(this.listHeight() / this.itemHeightPx()) - 1)
     let next = current

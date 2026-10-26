@@ -1296,7 +1296,7 @@ applyRangePaste(table, 'X\t9\nY\t8', { skipEmpty: true }) // write from the acti
 fillRange(table, { mode: 'series', cells: 2 }) // numeric series from the boundary row in the fill direction
 ```
 
-Multi-selection copy is split into blocks separated by blank lines; `header: true` adds a header only to the first non-empty block. Events: `oas-range-change` (active selection or `null`), `oas-range-copy` (includes `selections`), `oas-range-paste` (includes `startKey`), and `oas-range-write` (`{ kind: 'paste'|'cut'|'fill', changes: [{ key, column, value, oldValue, oldRawValue }] }`, which history merges into one undo transaction).
+Multi-selection copy is split into blocks separated by blank lines; `header: true` adds a header only to the first non-empty block. Events: `oas-range-change` (active selection or `null`), `oas-range-copy` (includes `selections`), `oas-range-paste` (includes `startKey`), and `oas-range-write` (`{ kind: 'paste'|'cut'|'fill', changes: [{ key, column, value, oldValue, oldRawValue }] }`, which history merges into one undo transaction). `cutRange` / `applyRangePaste` / `fillRange` and the fill handle write directly to `data` in the default uncontrolled mode; with `edit-controlled`, they only emit `oas-range-write` and let the host decide whether to write back. For selection/copy without writes, use `edit-controlled` or do not call the write APIs.
 
 ### Undo / redo (`table/history`)
 

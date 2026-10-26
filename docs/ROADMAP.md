@@ -2,25 +2,25 @@
 
 版本遵循 SemVer。v1.0.0 为首个正式发布。每个版本 = 一个可独立交付/可试用的里程碑。
 
-## 未发布（N 系列）
+## v2.6.4（已发布）
 
 | 范围 | 内容 | 状态 |
 | --- | --- | --- |
-| **N01 JSON 查看器** | 新组件 `oas-json-viewer`（data 族）：`data`/`text` 双通道、折叠树、搜索、JSONPath 复制、树虚拟滚动、完整键盘/a11y、SSR 水合；只读，不含编辑/校验/查询/Diff | ✅ 已完成（未发版） |
-| **N02 文本 Diff 查看器** | 新组件 `oas-diff-viewer`（data 族）：`old-text`/`new-text` 双文本、行内/并排、未修改折叠、行级 + 词级高亮、行号/统计、只读、键盘/a11y、SSR；JSON 走格式化文本，不做结构 diff/编辑/合并 | ✅ 已完成（未发版） |
+| **N01 JSON 查看器** | 新组件 `oas-json-viewer`（data 族）：`data`/`text` 双通道、折叠树、搜索、JSONPath 复制、树虚拟滚动、完整键盘/a11y、SSR 水合；只读，不含编辑/校验/查询/Diff | ✅ 已发布 v2.6.4 |
+| **N02 文本 Diff 查看器** | 新组件 `oas-diff-viewer`（data 族）：`old-text`/`new-text` 双文本、行内/并排、未修改折叠、行级 + 词级高亮、行号/统计、只读、键盘/a11y、SSR；JSON 走格式化文本，不做结构 diff/编辑/合并 | ✅ 已发布 v2.6.4 |
+| **N04 日志 ANSI（可行子集）** | `oas-log` 新增 opt-in `ansi`：16 / 256 / truecolor 前景背景、常用样式、非 SGR 控制序列剔除、`light-dark()` 双主题感知对比度校正；不做终端模拟 / PTY / OSC 8 | ✅ 已发布 v2.6.4 |
+| **N05 文件浏览器 recipe** | `oas-tree directory` + 宿主工具栏 / 面包屑 / 选中路径 / `oas-node-rename` 回写组合方案（zh / en 文档）；不新建独立文件树组件 | ✅ 已发布 v2.6.4 |
+| **N06 数据网格高级能力** | 新增 `@oas-ui/ui/data/table/advanced` 纯函数入口：透视、安全公式列、查询构建器、TSV、通用撤销栈、windowed 数据源助手；主 `table` / `table/edit` 边界不变（v2.6.4 起 `table/core` 为 deprecated 别名） | ✅ 已发布 v2.6.4 |
+| **N06 Pro 能力（第一批）** | `@oas-ui/ui/data/table/format` 条件格式（规则引擎 + 单元格/整行装饰）、`@oas-ui/ui/data/table/view` 视图状态捕获/应用；独立子路径、默认不加载 | ✅ 已发布 v2.6.4 |
+| **N06 Pro 能力（第二批）** | `@oas-ui/ui/data/table/range` 区域选择 + TSV 剪贴板（行键锚定 / 键盘扩展 / 粘贴事件）、`table/history` 撤销重做、`table/detail` 主从详情；独立子路径、默认不加载 | ✅ 已发布 v2.6.4 |
+| **N06 Pro 能力（第三批）** | range 剪贴板闭环（表头复制/cut/写回/填充柄/多选区/键盘窗口）、history 受控记录与事务、view 持久化适配器、detail 按行键选中与多实例收尾；全部 headless，不新增 Pro 产品 UI | ✅ 已发布 v2.6.4 |
+| **table 默认入口语义切换** | `@oas-ui/ui/data/table` 改为基础表格（不含 edit）；编辑改为显式 `@oas-ui/ui/data/table/edit`；`@oas-ui/ui` 全量入口保留 edit；`table/core` 标记 deprecated，v2.6.5 移除 | ✅ 已发布 v2.6.4 |
+
+## 独立项目（不纳入 v2.6.4）
+
+| 范围 | 内容 | 状态 |
+| --- | --- | --- |
 | **N03 Markdown 渲染器** | 独立项目 `oas-markdown`：安全、零依赖 Markdown → HTML（标题/段落/引用/列表/代码/行内/链接图片，HTML 转义 + URL 白名单）；代码高亮 / 目录锚点 / 流式渲染留后续 | 🚧 v0.1 已启动（独立仓） |
-| **N04 日志 ANSI（可行子集）** | `oas-log` 新增 opt-in `ansi`：16 / 256 / truecolor 前景背景、常用样式、非 SGR 控制序列剔除、`light-dark()` 双主题感知对比度校正；不做终端模拟 / PTY / OSC 8 | ✅ 已完成（未发版） |
-| **N05 文件浏览器 recipe** | `oas-tree directory` + 宿主工具栏 / 面包屑 / 选中路径 / `oas-node-rename` 回写组合方案（zh / en 文档）；不新建独立文件树组件 | ✅ 已完成（未发版） |
-| **N06 数据网格高级能力** | 新增 `@oas-ui/ui/data/table/advanced` 纯函数入口：透视、安全公式列、查询构建器、TSV、通用撤销栈、windowed 数据源助手；主 `table` / `table/edit` 边界不变（v2.6.4 起 `table/core` 为 deprecated 别名） | ✅ 已完成（未发版） |
-| **N06 Pro 能力（第一批）** | `@oas-ui/ui/data/table/format` 条件格式（规则引擎 + 单元格/整行装饰）、`@oas-ui/ui/data/table/view` 视图状态捕获/应用；独立子路径、默认不加载 | ✅ 已完成（未发版） |
-| **N06 Pro 能力（第二批）** | `@oas-ui/ui/data/table/range` 区域选择 + TSV 剪贴板（行键锚定 / 键盘扩展 / 粘贴事件）、`table/history` 撤销重做、`table/detail` 主从详情；独立子路径、默认不加载 | ✅ 已完成（未发版） |
-| **N06 Pro 能力（第三批）** | range 剪贴板闭环（表头复制/cut/写回/填充柄/多选区/键盘窗口）、history 受控记录与事务、view 持久化适配器、detail 按行键选中与多实例收尾；全部 headless，不新增 Pro 产品 UI | ✅ 已完成（未发版） |
-
-## v2.6.4（未发布）
-
-| 范围 | 内容 | 状态 |
-| --- | --- | --- |
-| **table 默认入口语义切换** | `@oas-ui/ui/data/table` 改为基础表格（不含 edit）；编辑改为显式 `@oas-ui/ui/data/table/edit`；`@oas-ui/ui` 全量入口保留 edit；`table/core` 标记 deprecated，v2.6.5 移除 | ✅ 已完成（未发版） |
 
 ## v2.6.5（计划）
 
@@ -149,6 +149,7 @@
 | **v2.6.2** | **oas-resource 资源负载 / 泳道视图**（新组件，data 族）：`resources`（含 capacity）+ `tasks`（含 `resources` 分配）→ 资源泳道（共享时间轴）+ 负载直方图（超载高亮）；事件 `oas-overload`/`oas-task-click`/`oas-tasks-change`；纯函数 `levelResources()`（不自动回写）；边界：排程/平衡引擎、资源成本/工时日历、模板一律不做（模板归 oas-ui-templates） | ✅ 已完成 |
 | **v2.6.2** | **发布后规模与生命周期收口**：真实浏览器 Playwright 规模回归（table 10 万行、gantt/resource 大数据、message-scroller 可见性滚动、overlay SPA 重挂监听）；`track-visible` 改 IntersectionObserver + `data-visible`（保留无 IO 回退）；`oas-button` 补 `formenctype`；清理死声明并同步 `perf-baseline.md` | ✅ 已完成 |
 | **v2.6.3** | **调度/排程收口 + AI 会话补件 + 平台质量批**：scheduler 日期窗口托管、跨日连续条（全天/定时、拖动/末端缩放/Alt 键盘/RTL/分层）、时间块双缘编辑、非法区间拦截与单步 undo；gantt 项目分组/偏差徽标、内建 history、逐资源日历与 hour 班次交集；resource 容量日历/技能匹配/优先级均载/热力图/技能矩阵；date-picker 范围手输、sidebar 行内容/头像/分组高亮、barcode 扩至 10 码制；prompt-input 与 message-actions/tool-call；API methods 自动生成、WebKit 抽样、构建期 CSS 注释剥离与堆内存回归 | ✅ 已完成 |
+| **v2.6.4** | **数据查看与表格高级能力 + 平台质量收口**：新增 json-viewer / diff-viewer、log ANSI、table advanced 与 format/view/range/history/detail 独立入口；table 默认入口去 edit、core 转 deprecated；Tree Shift 范围选择、VirtualList keyboard、i18n 双实例共享、Form 错误关联、Sidebar footer 常驻；补齐 SSR/API/性能门禁与中文英文档，修复控制串、嵌套输入控件与移动抽屉焦点边界 | ✅ 已完成 |
 
 > **注（可选工具包）**：`@oas-ui/react` 桥接包**不单独发布**，降级为仓库内可选工具包——React 19 原生「`on` + 全小写字面量」写法（`<oas-button onoas-submit={...}>`）即可监听 `oas-*`；桥接 hooks（`useOasEvent`/`useOasEvents`）供需要 camelCase 惯例 / TS 类型 / React 17-18 兼容的宿主按需使用，不随版本发布、不写入发布清单（详见 PRD）。
 

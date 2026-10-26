@@ -1285,7 +1285,7 @@ applyRangePaste(table, 'X\t9\nY\t8', { skipEmpty: true }) // 从活动选区左�
 fillRange(table, { mode: 'series', cells: 2 }) // 以方向边界行为源做数值序列填充
 ```
 
-多选区复制按矩形分块并以空行分隔，`header: true` 只给第一个非空块带表头。事件：`oas-range-change`（活动选区或 `null`）、`oas-range-copy`（含 `selections`）、`oas-range-paste`（含 `startKey`）、`oas-range-write`（`{ kind: 'paste'|'cut'|'fill', changes: [{ key, column, value, oldValue, oldRawValue }] }`，统一供 history 合并成一条撤销事务）。
+多选区复制按矩形分块并以空行分隔，`header: true` 只给第一个非空块带表头。事件：`oas-range-change`（活动选区或 `null`）、`oas-range-copy`（含 `selections`）、`oas-range-paste`（含 `startKey`）、`oas-range-write`（`{ kind: 'paste'|'cut'|'fill', changes: [{ key, column, value, oldValue, oldRawValue }] }`，统一供 history 合并成一条撤销事务）。`cutRange` / `applyRangePaste` / `fillRange` 与填充柄在默认非受控模式会直接写回 `data`；设置 `edit-controlled` 后仅派发 `oas-range-write`，由宿主决定是否写回。只需选区/复制而不允许写入时，使用 `edit-controlled` 或不调用写入 API。
 
 ### 撤销/重做（`table/history`）
 

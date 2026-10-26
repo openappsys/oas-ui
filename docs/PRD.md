@@ -5,7 +5,7 @@
 
 ---
 
-## 未发布：N01 JSON 查看器 ✅
+## v2.6.4：N01 JSON 查看器 ✅
 
 ### 功能定义
 
@@ -33,10 +33,10 @@
 
 - 单测：解析/错误恢复、`data`/`text` 双源、展开受控/非受控、搜索与计数、复制路径转义、虚拟窗口边界、键盘模型、SSR 水合。
 - e2e：10k 节点滚动时 DOM 行数有界、搜索跳转命中、复制路径反馈、真实键盘、axe 零严重违规、暗色/RTL。
-- 文档 zh/en（含 API/demo）、`api:check` 双向 0、CHANGELOG `[未发布]`、PRD/ROADMAP 同步。
-- 包体：`data/json-viewer` 按需链 gzip 实测 31.5 KB（链含 core + i18n + 组件），目标 ≤ 32 KB、`perf:size` 预算 35 KB；零第三方运行时依赖。
+- 文档 zh/en（含 API/demo）、`api:check` 双向 0、CHANGELOG `[2.6.4]`、PRD/ROADMAP 同步。
+- 包体：`data/json-viewer` 按需链 gzip 实测 32.4 KB（链含 core + i18n + 组件），初版目标 ≤ 32 KB，`perf:size` 硬预算 35 KB；零第三方运行时依赖。复制反馈浮层与深嵌套容错使本版较初版目标高 0.4 KB，仍在硬预算内；后续优先压缩复制反馈与深嵌套处理路径。
 
-## 未发布：N02 文本 Diff 查看器 ✅
+## v2.6.4：N02 文本 Diff 查看器 ✅
 
 ### 功能定义
 
@@ -64,10 +64,10 @@
 
 - 单测：行切分与换行归一、Myers 结果与参考 LCS 随机对拍、词级高亮（CJK/空白/整行替换/多行替换）、折叠区间计算（context=0/默认/边界）、split 行对齐、降级路径、SSR 快照。
 - e2e：unified/split 切换、折叠块展开收起、真实键盘（方向键/PageUp/End/Enter）、2000+ 行虚拟窗口 DOM 行数有界、窄容器降级、axe 零严重违规、暗色/RTL。
-- 文档 zh/en（含 API/demo）、`api:check` 双向 0、CHANGELOG `[未发布]`、PRD/ROADMAP 同步。
-- 包体：`data/diff-viewer` 按需链 gzip 实测 30.6 KB（链含 core + i18n + 组件），目标 ≤ 32 KB、`perf:size` 预算 34 KB；零第三方运行时依赖。
+- 文档 zh/en（含 API/demo）、`api:check` 双向 0、CHANGELOG `[2.6.4]`、PRD/ROADMAP 同步。
+- 包体：`data/diff-viewer` 按需链 gzip 实测 31.6 KB（链含 core + i18n + 组件），目标 ≤ 32 KB、`perf:size` 预算 34 KB；零第三方运行时依赖。
 
-## 未发布：N04 日志 ANSI 着色（可行子集）✅
+## v2.6.4：N04 日志 ANSI 着色（可行子集）✅
 
 ### 功能定义
 
@@ -90,9 +90,9 @@
 
 - 单测：转义剔除、16/256/truecolor、样式开关、inverse、跨片段 mark、viewMap 漂移、色板守卫、恶意文本。
 - e2e：demo 颜色生效、无转义泄漏、宿主覆盖变量、暗色/浅色 a11y、keyword/levels 组合。
-- 文档 zh/en、API 语料/manifest、CHANGELOG `[未发布]`、ROADMAP 同步。
+- 文档 zh/en、API 语料/manifest、CHANGELOG `[2.6.4]`、ROADMAP 同步。
 
-## 未发布：N05 文件浏览器组合（recipe）✅
+## v2.6.4：N05 文件浏览器组合（recipe）✅
 
 ### 功能定义
 
@@ -114,7 +114,7 @@
 - zh/en 文档 demo 可展开/收起、选中、重命名并联动面包屑；暗色与 a11y 通过。
 - 不新增组件/事件/API；`oas-tree` 行为不变。
 
-## 未发布：N06 数据网格高级能力（advanced 入口）✅
+## v2.6.4：N06 数据网格高级能力（advanced 入口）✅
 
 ### 功能定义
 
@@ -166,7 +166,7 @@
 - 全部仍为独立子路径，默认 table 链不加载；预算与零泄漏断言同步。
 - 验收：各包单测 + range 交互 e2e（粘贴写回/填充/多选区/键盘窗口/暗色/console/a11y）通过；不新增 Pro 产品 UI。
 
-## v2.6.4：table 默认入口切换（未发布）✅
+## v2.6.4：table 默认入口切换 ✅
 
 ### 功能定义
 
@@ -187,8 +187,13 @@
 ### 验收标准
 
 - entry/core-entry 测试：默认入口无 edit；显式 edit 后编辑可用；core alias 与默认入口同一构造器。
-- perf：table 默认链实测约 64 KB；`table` 链不包含 edit/Pro；全量入口仍含 edit。
+- perf：table 默认链实测 66.3 KB；`table` 链不包含 edit/Pro；全量入口仍含 edit。
 - docs zh/en、architecture、ROADMAP、CHANGELOG 同步；`api:check`/`llms:check` 通过。
+
+### 发布验收（2026-10-26）
+
+- 全量单测 **11188 passed**；全量 e2e **3826 passed / 46 skipped**（Chromium 全量 + Firefox/WebKit 抽样；1 条 Firefox AI 会话用例首次超时，单独复跑通过）。
+- `typecheck` / `build` / `api:check` / `stats:check` / `llms:check` / `skill:check` / `deprecations:check` / `ssr:check` / `perf:size` / `format:check` / trace 通过；`perf:bench` 在同一 dist、较大堆复核下全部预算通过。默认 happy-dom 在本机存在 GC 尾延迟，未改预算或基线。
 
 ## v2.6.5：移除 table/core（计划）📋
 

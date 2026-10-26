@@ -727,6 +727,67 @@ test('sidebar 移动抽屉：打开入焦 + role=dialog/aria-modal + Tab 约束 
   expect(closed.focusOnTrigger, '关闭后焦点回到触发钮').toBe(true)
 })
 
+test('sidebar 移动抽屉：slotted footer 输入框之间 Tab / Shift+Tab 顺序正确', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 800 })
+  await page.goto('/components/sidebar.html', { waitUntil: 'domcontentloaded' })
+  await page.waitForFunction(() => !!customElements.get('oas-sidebar'))
+  await page.evaluate(() => {
+    const el = document.createElement('oas-sidebar') as HTMLElement & { openDrawer(): void }
+    el.id = 'qa-sidebar-slotted-focus'
+    el.setAttribute('items', JSON.stringify([{ label: '收件箱', value: 'inbox' }]))
+    const first = document.createElement('input')
+    first.slot = 'footer'
+    first.id = 'qa-sidebar-footer-first'
+    first.setAttribute('aria-label', '第一筛选项')
+    const second = document.createElement('input')
+    second.slot = 'footer'
+    second.id = 'qa-sidebar-footer-second'
+    second.setAttribute('aria-label', '第二筛选项')
+    el.append(first, second)
+    document.body.appendChild(el)
+    el.openDrawer()
+  })
+  await page.waitForFunction(() => document.querySelector('#qa-sidebar-slotted-focus')?.hasAttribute('drawer-open'))
+  const first = page.locator('#qa-sidebar-footer-first')
+  const second = page.locator('#qa-sidebar-footer-second')
+  await first.focus()
+  await page.keyboard.press('Tab')
+  await expect(second).toBeFocused()
+  await page.keyboard.press('Shift+Tab')
+  await expect(first).toBeFocused()
+  await page.evaluate(() => document.querySelector('#qa-sidebar-slotted-focus')?.remove())
+})
+
+test('sidebar 移动抽屉：复合 slotted 输入组件与同步入焦不被抢回', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 800 })
+  await page.goto('/components/sidebar.html', { waitUntil: 'domcontentloaded' })
+  await page.waitForFunction(() => !!customElements.get('oas-sidebar') && !!customElements.get('oas-input'))
+  await page.evaluate(() => {
+    const el = document.createElement('oas-sidebar') as HTMLElement & { openDrawer(): void }
+    el.id = 'qa-sidebar-composite-focus'
+    el.setAttribute('items', JSON.stringify([{ label: '收件箱', value: 'inbox' }]))
+    const custom = document.createElement('oas-input')
+    custom.slot = 'footer'
+    custom.id = 'qa-sidebar-custom-input'
+    const next = document.createElement('input')
+    next.slot = 'footer'
+    next.id = 'qa-sidebar-custom-next'
+    next.setAttribute('aria-label', '下一项')
+    el.append(custom, next)
+    document.body.appendChild(el)
+    el.openDrawer()
+    ;(custom.shadowRoot!.querySelector('input') as HTMLInputElement).focus()
+  })
+  const customInput = page.locator('#qa-sidebar-custom-input').locator('input')
+  const next = page.locator('#qa-sidebar-custom-next')
+  await expect(customInput).toBeFocused()
+  await page.keyboard.press('Tab')
+  await expect(next).toBeFocused()
+  await page.keyboard.press('Shift+Tab')
+  await expect(customInput).toBeFocused()
+  await page.evaluate(() => document.querySelector('#qa-sidebar-composite-focus')?.remove())
+})
+
 // footer 常驻：sticky 在 .panel 滚动容器内钉底；空 footer 不占位；移动抽屉同样生效
 test('sidebar footer：桌面滚动全程钉底，空 footer 不占位', async ({ page }) => {
   await page.goto('/components/sidebar.html', { waitUntil: 'domcontentloaded' })

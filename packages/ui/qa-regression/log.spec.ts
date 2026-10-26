@@ -123,3 +123,33 @@ test('log ANSI 着色：demo 颜色生效、转义码不泄漏、宿主可覆盖
   expect(r.before).not.toBe(r.after)
   expect(r.after).toBe('rgb(0, 255, 0)')
 })
+
+test('log ANSI：未终止控制串后接 SGR 不泄漏参数且保留颜色', async ({ page }) => {
+  await page.goto('/components/log.html', { waitUntil: 'domcontentloaded' })
+  await page.waitForFunction(() => !!customElements.get('oas-log'))
+  await page.evaluate(() => {
+    const el = document.createElement('oas-log') as HTMLElement & { lines: string[] }
+    el.id = 'qa-log-osc'
+    el.setAttribute('ansi', '')
+    el.lines = [
+      'a\x1b]0;title\x1b[31mred\x1b[0m',
+      'b\x1bPpayload\x1b[32mgreen\x1b[0m',
+      'c\x1b_payload\x1b[0mred',
+      'd\x1b[31\x1b[0mred',
+    ]
+    document.body.appendChild(el)
+  })
+  await page.waitForFunction(
+    () => document.querySelector('#qa-log-osc')?.shadowRoot?.querySelectorAll('[part="line"]').length === 4,
+  )
+  const result = await page.evaluate(() => {
+    const lines = [...document.querySelector('#qa-log-osc')!.shadowRoot!.querySelectorAll('[part="line"]')]
+    return {
+      texts: lines.map((line) => line.textContent),
+      red: lines[0]!.querySelector('.ansi-fg-red')?.textContent ?? null,
+      green: lines[1]!.querySelector('.ansi-fg-green')?.textContent ?? null,
+    }
+  })
+  expect(result).toEqual({ texts: ['ared', 'bgreen', 'cred', 'dred'], red: 'red', green: 'green' })
+  await page.evaluate(() => document.querySelector('#qa-log-osc')?.remove())
+})

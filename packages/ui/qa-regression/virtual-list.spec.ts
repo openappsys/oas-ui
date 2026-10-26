@@ -211,3 +211,51 @@ test('virtual-list keyboard + scroll-target：无内部 viewport 也能键盘导
   await page.keyboard.press('End')
   await expect.poll(() => vl.evaluate((el) => el.getAttribute('active-index')).then(Number)).toBe(99)
 })
+
+test('virtual-list keyboard：模板输入框内方向键不切换活动行', async ({ page }) => {
+  await page.goto('/components/virtual-list.html', { waitUntil: 'domcontentloaded' })
+  await page.waitForFunction(() => !!customElements.get('oas-virtual-list'))
+  await page.evaluate(() => {
+    const el = document.createElement('oas-virtual-list') as HTMLElement & { items: number[] }
+    el.id = 'qa-vl-input'
+    el.setAttribute('keyboard', '')
+    el.setAttribute('height', '120')
+    el.setAttribute('item-height', '32')
+    const template = document.createElement('template')
+    template.setAttribute('slot', 'item')
+    template.innerHTML = '<input aria-label="行内编辑" value="abc">'
+    el.appendChild(template)
+    document.body.appendChild(el)
+    el.items = [1, 2, 3]
+  })
+  const input = page.locator('#qa-vl-input input').first()
+  await input.focus()
+  await page.keyboard.press('ArrowDown')
+  await expect(input).toBeFocused()
+  await expect.poll(() => page.locator('#qa-vl-input').evaluate((el) => (el as any).activeIndex)).toBe(0)
+  await page.evaluate(() => document.querySelector('#qa-vl-input')?.remove())
+})
+
+test('virtual-list keyboard：自定义输入组件内部方向键不切换活动行', async ({ page }) => {
+  await page.goto('/components/virtual-list.html', { waitUntil: 'domcontentloaded' })
+  await page.waitForFunction(() => !!customElements.get('oas-virtual-list') && !!customElements.get('oas-input'))
+  await page.evaluate(() => {
+    const el = document.createElement('oas-virtual-list') as HTMLElement & { items: number[] }
+    el.id = 'qa-vl-custom-input'
+    el.setAttribute('keyboard', '')
+    el.setAttribute('height', '120')
+    el.setAttribute('item-height', '32')
+    const template = document.createElement('template')
+    template.setAttribute('slot', 'item')
+    template.innerHTML = '<oas-input></oas-input>'
+    el.appendChild(template)
+    document.body.appendChild(el)
+    el.items = [1, 2, 3]
+  })
+  const input = page.locator('#qa-vl-custom-input oas-input').first().locator('input')
+  await input.focus()
+  await page.keyboard.press('ArrowDown')
+  await expect(input).toBeFocused()
+  await expect.poll(() => page.locator('#qa-vl-custom-input').evaluate((el) => (el as any).activeIndex)).toBe(0)
+  await page.evaluate(() => document.querySelector('#qa-vl-custom-input')?.remove())
+})

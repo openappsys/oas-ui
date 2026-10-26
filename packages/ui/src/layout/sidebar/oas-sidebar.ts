@@ -866,7 +866,11 @@ export class OASSidebar extends OASElement {
     if (e.key === 'Tab' && this.mq?.matches && this.hasAttr('drawer-open')) {
       const focusables = this.drawerFocusables()
       if (focusables.length === 0) return
-      const active = this.shadow.activeElement as HTMLElement | null
+      // 组合路径首项是嵌套 shadow 中的真实控件；程序派发到 document 时回退 shadow/document 焦点
+      const [eventTarget] = e.composedPath()
+      const active = (
+        eventTarget instanceof HTMLElement ? eventTarget : (this.shadow.activeElement ?? document.activeElement)
+      ) as HTMLElement | null
       const idx = active ? focusables.indexOf(active) : -1
       e.preventDefault()
       const next =
@@ -932,8 +936,9 @@ export class OASSidebar extends OASElement {
   private ensureDrawerFocus(): void {
     if (!this.mq?.matches || !this.hasAttr('drawer-open')) return
     const panel = this.shadow.querySelector<HTMLElement>('.panel')
-    const active = this.shadow.activeElement as HTMLElement | null
-    if (active && panel?.contains(active)) return
+    const active = (this.shadow.activeElement ?? document.activeElement) as HTMLElement | null
+    // slotted 节点的 DOM 父级是宿主而非 panel；自定义输入宿主被 retarget 时也应视为抽屉内焦点
+    if (active && (panel?.contains(active) || (active !== this && this.contains(active)))) return
     this.focusDrawerInitial()
   }
 

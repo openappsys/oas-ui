@@ -51,7 +51,10 @@
 | table/detail | `@oas-ui/ui/data/table/detail` | 3 | 3.4 KB |
 | form   | `@oas-ui/ui/form/form`    | 11     | 26.0 KB    |
 | gantt  | `@oas-ui/ui/data/gantt`   | 18     | 61.1 KB    |
+| json-viewer | `@oas-ui/ui/data/json-viewer` | 13 | 32.4 KB |
+| diff-viewer | `@oas-ui/ui/data/diff-viewer` | 12 | 31.6 KB |
 
+> **本版实测说明（2026-10-26）**：`json-viewer` 因复制反馈浮层与深嵌套容错，gzip 32.4 KB，较初版 ≤32 KB 目标高 0.4 KB，但仍低于 35 KB 硬预算；后续优先压缩复制反馈与深嵌套处理路径。`diff-viewer` 实测 31.6 KB，仍满足 ≤32 KB 目标。
 **tree-shaking 叙事成立（2026-10-08 图标库 opt-in 后增强）**：按需引入单组件链 gzip 26.0~61.1 KB，仅为全量入口（1,063.7 KB gzip）的约 **2.5~5.7%**；且**不再背整套图标**——单组件链只含其自身所需的少量图标 path（全量入口仍内含整套图标，开箱即用不变）。
 
 **固定开销拆分**（以 button 链为例）：
@@ -105,7 +108,7 @@
 - **全量类 = 天花板制**（cdn.js / 全量入口链）：组件能力持续增强，体积随之增长属预期内行为，天花板只为防灾难性膨胀；达 90% 预警线（WARN，不拦截）时启动瘦身评估或再定档；
 - **单组件链与 theme / 可选运行时 = 绝对值制**（实测 + 上浮约 15~20%）：守住按需引入叙事的纪律，超预算即 FAIL。
 - **可选层零泄漏（结构断言）**：任何可选层文件（`glass-fluid.js` / `glass.css` / `skins.css` 等）都**不得出现在基础链（全量入口链与各单组件链）的可达文件清单**里——新增可选层不必新增预算行，泄漏即报红。
-- **图标全量注册表零进入按需链（结构断言）**：`packages/icons/dist/registry.js` 不得出现在**已测单组件链**（button / table / table-core / form / gantt）闭包（全量入口链内含有属预期——它经 `@oas-ui/icons/register` 注册全量集以开箱即用）。
+- **图标全量注册表零进入按需链（结构断言）**：`packages/icons/dist/registry.js` 不得出现在**已测单组件链**（button / table / form / gantt / advanced / format / view / range / history / detail / json-viewer / diff-viewer）闭包（全量入口链内含有属预期——它经 `@oas-ui/icons/register` 注册全量集以开箱即用）。
 
 | 预算项                    | 实测 gzip | 预算（制式）          | 依据                                                                                          |
 | ------------------------- | --------- | --------------------- | --------------------------------------------------------------------------------------------- |

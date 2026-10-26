@@ -2,7 +2,7 @@
 
 所有显著变更记录于此。
 
-## [未发布]
+## [2.6.4] - 2026-10-26
 
 ### 新增
 
@@ -53,10 +53,11 @@
 ### 工程
 
 - **`perf:size` 发布产物裸导入门禁**：未声明的裸导入直接 FAIL 并列出说明符/文件；浏览器端包（ui/core/i18n/icons/ssr/theme）零第三方，`@oas-ui/ssr` 的 `happy-dom` 为唯一例外；`@oas-ui/next` / `@oas-ui/nuxt` 适配器的 peer 依赖（react/react-dom/@nuxt/kit）按包声明放行。新增 `--self-test` 覆盖红绿两侧。
-- **体积相对断言**：`table/core` 链必须严格小于主链 `table`（失败信息含两者数值），绝对值预算保留。
+- **table/core 体积口径随默认入口按需化退役**：`table/core` 改为默认入口的 deprecated 别名后不再单独计量，原「core 严格小于 table」相对断言与独立预算一并移除；主链绝对值预算保留。
 - **`qa:audit` 事件只断 length 维度入 `--check`**：新增 `--max-event-len`（默认 105），阈值定位为防增量而非清零。
 - **SSR 白名单计数门禁**：`pnpm ssr:check` 校验 `WHITELIST` 长度与 `docs/ssr.md`、中/英文 guide 的计数一致（`docs/ROADMAP.md` 可选），计数声明缺失/改写也失败。
 - **e2e 稳定性**：demo-coverage 与 notification 改为 `networkidle` 就绪后交互；Playwright preview 默认不复用旧服务（仅显式 `E2E_REUSE=1` 才复用），杜绝陈旧 dist 导致的假失败；marquee 采样窗为空时不再把空数组中位数当方向错误；WebKit 补 `oas-form-item` 跨 shadow 错误关联或 `role=alert` 兜底用例。
+- **文档与组合方案**：补充 tree 文件浏览器 recipe、i18n link/workspace 双实例 FAQ 与 README 说明，明确 table range 写回与 `edit-controlled` 边界。
 
 ### 修复
 
@@ -78,6 +79,9 @@
 - **`oas-scheduler` 跨日/ICS 修正**：资源视图跨日定时事件首日渲染到 24:00、resource-week 补 `[start-hour,end-hour]` 夹取；ICS 定时跨日事件 `DTEND` 落 `endDate` 当日 `end`，定时事件 `EXDATE` 与 `DTSTART` 值类型一致；weekly `byDay` 的 `COUNT`/本地展开序号一致。
 - **`oas-gantt` 受控回写不清 history**：`tasks` property 语义相同回写（键序无关）不再清空撤销栈。
 - **`oas-virtual-list` dynamic-height 修复**：重建窗口前解除旧行 ResizeObserver 观察（修复滚动泄漏），动态窗口直接复用 `HeightCache` 前缀视图（去掉每帧 O(n) 复制）。
+- **`oas-log` 未终止控制串边界**：OSC / DCS / APC 与半截 CSI 后接另一段转义序列时，当前控制串整体剔除且后续 SGR 继续解析，不再把 `0;title` / payload 等参数文本显示出来或丢失后续颜色。
+- **`oas-virtual-list` keyboard 输入控件让路**：模板中的 input / textarea / select / contenteditable 等控件保留原生方向键行为，不再被列表导航抢走焦点或切换活动行。
+- **`oas-sidebar` 移动抽屉 slotted 焦点**：Tab 循环优先取 `composedPath()` 的真实控件，必要时回退 `shadow.activeElement` / `document.activeElement`；slotted header/footer 输入控件之间按真实顺序移动，不再误跳面板首项。
 - **`oas-image` 预览下载链接走 `safeUrl`**：危险协议不写入下载 href，合法 blob/相对地址不受影响。
 - **共享浮层栈**：新增 `overlay-stack`（Esc 后进先出 + 统一计数 body 滚动锁），modal/drawer/tour/dropdown/context-menu/sidebar 接入；多层同开时一次 Esc 只关一层，滚动锁跨组件计数并精确恢复宿主 inline `overflow`；`no-esc-close` 不再穿透到下层。
 - **键盘与可访问性**：`oas-menu` 改 `aria-activedescendant` 读屏模型，水平模式轴向与 RTL 镜像、Space 激活、Home/End、typeahead 假焦点修复；`oas-tabs` hover 不再抢焦点，tab↔tabpanel 语义链补齐；`oas-dropdown` 非 split 触发器补 `aria-haspopup`/`aria-expanded` 且键盘打开后焦点入菜单、Esc 回焦；`oas-context-menu` 打开后焦点入菜单、Esc 回焦触发源；`oas-sidebar` 移动抽屉补 `role=dialog`/`aria-modal` 与打开入焦/关闭回焦/Tab 循环；`oas-menubar` 全局快捷键与 Alt 访问键在可编辑控件内让路；`oas-prompt-input` 焦点守卫穿透 shadow；表单清除钮与 cascader 多选 chip 移除钮进入 Tab 序并支持 Enter/Space。
@@ -1256,6 +1260,7 @@
 - 基础运行时 `@oas-ui/core`、主题 token、图标库
 - 新增 Button、Icon、Tag、Badge、Space、Divider、Link、Typography
 
+[2.6.4]: https://github.com/openappsys/oas-ui/compare/v2.6.3...v2.6.4
 [2.6.3]: https://github.com/openappsys/oas-ui/compare/v2.6.2...v2.6.3
 [2.6.1]: https://github.com/openappsys/oas-ui/compare/v2.6.0...v2.6.1
 [2.6.0]: https://github.com/openappsys/oas-ui/releases/tag/v2.6.0

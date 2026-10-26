@@ -580,6 +580,27 @@ describe('OASLog ANSI 着色（ansi 属性）', () => {
     expect(lines[1]!.textContent).toBe('clinkd')
   })
 
+  it('未终止 OSC 遇下一 ESC：整段剔除且后续 SGR 正常解析', () => {
+    const el = mount([`a\x1b]0;title${ESC}31mred${ESC}0m`])
+    el.setAttribute('ansi', '')
+    const line = lineAt(el)
+    expect(line.textContent).toBe('ared')
+    expect(line.querySelector('.ansi-fg-red')?.textContent).toBe('red')
+  })
+
+  it('未终止 DCS/APC/半截 CSI 遇下一 ESC：控制串不泄漏且后续 SGR 正常解析', () => {
+    const el = mount([
+      `a\x1bPpayload${ESC}31mred${ESC}0m`,
+      `b\x1b_payload${ESC}32mgreen${ESC}0m`,
+      `c\x1b[31${ESC}0mred`,
+    ])
+    el.setAttribute('ansi', '')
+    const lines = el.shadowRoot!.querySelectorAll('[part="line"]')
+    expect([...lines].map((line) => line.textContent)).toEqual(['ared', 'bgreen', 'cred'])
+    expect(lines[0]!.querySelector('.ansi-fg-red')?.textContent).toBe('red')
+    expect(lines[1]!.querySelector('.ansi-fg-green')?.textContent).toBe('green')
+  })
+
   it('未终止的 OSC / DCS 控制串吃满行尾，不泄漏控制字符', () => {
     const el = mount(['a\x1b]0;title without terminator', 'b\x1bPpayload without terminator', 'tail\x1b', 'csi\x1b[31'])
     el.setAttribute('ansi', '')

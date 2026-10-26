@@ -615,6 +615,21 @@ describe('keyboard 键盘行导航（opt-in）', () => {
     expect(changes.map((c) => c.index)).toEqual([1, 99, 0, 4])
   })
 
+  it('keyboard 不劫持模板输入控件的方向键', () => {
+    const el = mount({ keyboard: '', height: '100', 'item-height': '20' })
+    const tpl = document.createElement('template')
+    tpl.setAttribute('slot', 'item')
+    tpl.innerHTML = '<input value="abc">'
+    el.appendChild(tpl)
+    el.items = range(3)
+    const input = items(el)[0]!.querySelector('input')!
+    input.focus()
+    const event = new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true, cancelable: true })
+    input.dispatchEvent(event)
+    expect(event.defaultPrevented).toBe(false)
+    expect(el.activeIndex).toBe(0)
+  })
+
   it('宿主写 active-index 不回声；数据收缩时读取值夹取', () => {
     const el = mount({ keyboard: '', height: '100', 'item-height': '20' })
     el.items = range(100)
