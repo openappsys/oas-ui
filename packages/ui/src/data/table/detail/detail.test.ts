@@ -949,7 +949,9 @@ describe('table/detail windowed 未装载键等待', () => {
     detail.selectByKey('y')
     const input = document.createElement('input')
     table.shadowRoot!.appendChild(input)
-    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }))
+    input.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, composed: true, cancelable: true }),
+    )
     table.data = [{ id: 'y', name: 'Yankee' }]
     await vi.waitFor(() => expect(detail.selected?.key).toBe('y'))
     detail.destroy()
