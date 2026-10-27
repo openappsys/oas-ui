@@ -49,7 +49,7 @@ When the slice contains inline expand content (`row.expand`), or expanded rows a
 Host-side recipe (on top of the four steps):
 
 1. **Single-source layout**: which rows carry expansion slots across the full dataset (`visualTotal` = data rows + expansion slots) and the slice's first visual row (`visualStart` = expansion slots before that data row) are maintained in one host-owned place. Once the protocol is active, **expansion is fully host-controlled** — the component's local toggle only emits `oas-expand` without modifying `expanded`; the host listens and writes back `expanded` / `data` / visual attributes to re-render. Never double-write from both sides.
-2. **Prefer the visual fields for fetching**: when the event carries `visualStart` / `visualEnd`, map them back to a data range (intersecting visual slots → owner data rows, padded with a buffer on both sides) instead of using `start` / `end` directly.
+2. **Prefer the visual fields for fetching**: when the event carries `visualStart` / `visualEnd`, map them back to a data range (intersecting visual slots → owner data rows); `createWindowedSource` takes the **union** of the mapped range and the event's data range (the event `start` / `end` is computed by the component and always carries the keyboard target row and the viewport margin), so the host mapping may cover only the visible rows without its own padding.
 3. **Refill visual attributes atomically**: after the fetch completes, write `window-start` + `visual-start` + `data` within the same synchronous step (one snapshot), then `total` + `visual-total` — the component re-renders with the new visual coordinates only after the data is ready, with no "new slice + old visual start" intermediate state.
 4. **Re-evaluate on refill**: the host may change the expansion layout between request and response (expansion count changes move the visual coordinates) — the refill must use the **latest snapshot at response time**, never the stale request-time values.
 
@@ -65,7 +65,9 @@ const adapter = {
   getGeometry(dataStart: number) {
     return { start: slotOf(dataStart), total: DATA_TOTAL + EXPANDED.size }
   },
-  // Map the visible window's visual range back to a data fetch range (±8 rows buffer, same as the component)
+  // Map the visible window's visual range back to a data fetch range (covering just the visible gap is enough:
+  // the helper unions the result with the event's data range, which already carries the keyboard target and
+  // viewport margin; widen it yourself only if you want a wider fetch)
   getDataRange(visualStart: number, visualEnd: number) {
     let lo = Infinity
     let hi = -Infinity
@@ -81,7 +83,7 @@ const adapter = {
 }
 ```
 
-To skip the glue code, `createWindowedSource` from `@oas-ui/ui/data/table/advanced` accepts this adapter directly: it re-evaluates the geometry at init and on every refill and writes `visual-start` / `visual-total` for you, and maps requests through `getDataRange` automatically. An invalid mapping (must be finite with end > start) or invalid geometry (non-finite, `start<0`, `total≤0`, `start>total`, `total<` data total) fetches nothing / writes no wrong visual attributes and dispatches one `oas-window-error` (detail carries the visual range and the original data range). After a geometry failure the table falls back to the local model, and subsequent event visual fields are local-scope only — the helper stops mapping (fetching by the event's `start` / `end` verbatim). After fixing the adapter, call `source.refresh()` to force a refetch and restore the protocol (an ordinary same-window event may be swallowed by the loaded-coverage check). Without `visual` the helper writes no visual attributes at all — behavior is identical to before.
+To skip the glue code, `createWindowedSource` from `@oas-ui/ui/data/table/advanced` accepts this adapter directly: it re-evaluates the geometry at init and on every refill and writes `visual-start` / `visual-total` for you, and maps requests through `getDataRange` automatically — the mapped range is **unioned** with the event's data range (the event `start` / `end` always carries the keyboard target row and the viewport margin; the mapping only fills the visible-row gap, so the host adapter does not need its own padding). An invalid mapping (must be finite with end > start) or invalid geometry (non-finite, `start<0`, `total≤0`, `start>total`, `total<` data total) fetches nothing / writes no wrong visual attributes and dispatches one `oas-window-error` (detail carries the visual range and the original data range). After a geometry failure the table falls back to the local model, and subsequent event visual fields are local-scope only — the helper stops mapping (fetching by the event's `start` / `end` verbatim). Mapping and geometry failures share the same recovery semantics: a **new-window** event retries; for the **same window** call `source.refresh()` to force a refetch — the table's winReq same-window dedupe and the loaded-coverage check may swallow a same-window retry. Without `visual` the helper writes no visual attributes at all — behavior is identical to before.
 
 > In non-virtual windowed mode (no `height`) the protocol only affects "expansion is host-controlled", not the layout: there is no scrollable viewport, and `visual-start` / `visual-total` only govern who owns expansion control.
 

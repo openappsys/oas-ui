@@ -4380,6 +4380,8 @@ test('table advanced：createWindowedSource × 视觉适配器——真实 adapt
       visualTotal: DATA_TOTAL + expandedSet.size,
       /** 测试注入：true 时 getGeometry 返回非法快照（触发 source 视觉降级） */
       broken: false,
+      /** 测试注入：true 时 getDataRange 只映射当前已装载切片（严格 adapter，无 margin） */
+      strict: false,
       rangeCalls: 0,
       errors: [] as Array<Record<string, unknown>>,
       lastFetch: null as { start: number; end: number } | null,
@@ -4397,6 +4399,14 @@ test('table advanced：createWindowedSource × 视觉适配器——真实 adapt
         state.broken ? { start: -1, total: 0 } : { start: state.slotOf(dataStart), total: state.visualTotal },
       getDataRange: (visualStart: number, visualEnd: number) => {
         state.rangeCalls++
+        if (state.strict) {
+          // 严格 adapter：只映射当前已装载切片（无 margin）——并集契约下键盘目标不被吞
+          const ws = Number(state.el.getAttribute('window-start')) || 0
+          const len = ((state.el as HTMLElement & { data: unknown[] }).data as unknown[]).length
+          const result = { start: ws, end: ws + len }
+          state.lastMap = { visualStart, visualEnd, result }
+          return result
+        }
         let lo = Infinity
         let hi = -Infinity
         for (let i = 0; i < state.dataTotal; i++) {
@@ -4639,38 +4649,133 @@ test('table advanced：createWindowedSource × 视觉适配器——真实 adapt
   const degradedMap = (await page.evaluate(() => (window as any).__qaVisualState.rangeCalls as number)) as number
   expect(degradedMap, '降级后不得调用 getDataRange（事件视觉字段是本地口径）').toBe(degradedRangeCalls)
 
-  // 修正 adapter 后 refresh 恢复协议：视觉属性恢复；显式请求重新映射（fetch 区间 = adapter 映射结果）
+  // 修正 adapter 后 refresh 恢复协议：视觉属性恢复 + 重拉落盘（短切片 [220,229)，不触 total）
   await page.evaluate(() => {
     const state = (window as any).__qaVisualState
     state.broken = false
     ;(window as any).__qaVisualSource.source.refresh()
   })
-  await page.waitForFunction(() => (window as any).__qaVisualState.el.getAttribute('visual-total') === '313', null, {
-    timeout: 15000,
-  })
-  // 等恢复期表格自动请求链路沉降，再显式验证映射恢复
-  await page.waitForTimeout(250)
-  await page.evaluate(() => {
-    document
-      .querySelector('#qa-window-visual-table')!
-      .dispatchEvent(
-        new CustomEvent('oas-window-request', { detail: { start: 280, end: 289, visualStart: 296, visualEnd: 306 } }),
-      )
-  })
   await page.waitForFunction(
     () => {
       const state = (window as any).__qaVisualState
+      const f = state.lastFetch as { start: number; end: number } | null
       return (
-        state.lastMap?.visualStart === 296 &&
-        state.lastMap?.visualEnd === 306 &&
-        state.lastFetch?.start === state.lastMap?.result.start &&
-        state.lastFetch?.end === state.lastMap?.result.end
+        state.el.getAttribute('visual-total') === '313' &&
+        !!f &&
+        state.el.getAttribute('window-start') === String(f.start) &&
+        (state.el.data as unknown[]).length === f.end - f.start
       )
     },
     null,
     { timeout: 15000 },
   )
 
+  // 并集契约 × 真实滚动/键盘：strict adapter（只映射当前已装载切片）下，映射 ⊆ 已装载——
+  // 旧实现用映射「替换」事件区间 → 滚动/键盘 need 被覆盖判定静默吞掉（目标行永远取不到）；
+  // 并集契约 fetch = 事件 need ∪ 映射区间。滚动到切片底部等渲染稳定后，ArrowDown 派发
+  // requestWindowForRow（目标 = 渲染底端+1，need 必越出已装载 → 必然派发）；
+  // 映射与取数在 onRequest 内同步完成，断言无竞态。
+  await page.evaluate(() => {
+    const state = (window as any).__qaVisualState
+    state.strict = true
+    const ws = Number(state.el.getAttribute('window-start')) || 0
+    const loadedEnd = ws + (state.el.data as unknown[]).length
+    const wrap = state.el.shadowRoot.querySelector('.table-scroll')
+    wrap.scrollTop = Math.max(0, loadedEnd * 40 - 200)
+    wrap.dispatchEvent(new Event('scroll'))
+  })
+  // 等滚动取数落盘（ws === lastFetch.start 且 len 对齐）→ 切片底部渲染矩阵就绪
+  await page.waitForFunction(
+    () => {
+      const state = (window as any).__qaVisualState
+      const f = state.lastFetch as { start: number; end: number } | null
+      return (
+        !!f &&
+        state.el.getAttribute('window-start') === String(f.start) &&
+        (state.el.data as unknown[]).length === f.end - f.start
+      )
+    },
+    null,
+    { timeout: 15000 },
+  )
+  await page.waitForTimeout(150)
+  await page.waitForFunction(
+    () => (window as any).__qaVisualState.el.shadowRoot.querySelectorAll('tbody tr[data-row-index]').length > 0,
+    null,
+    { timeout: 15000 },
+  )
+  const keyboard = await page.evaluate(() => {
+    const state = (window as any).__qaVisualState
+    const rows = [...state.el.shadowRoot.querySelectorAll('tbody tr[data-row-index]')]
+    const last = rows[rows.length - 1] as HTMLElement
+    const lastAbs = Number(last.getAttribute('data-row-index'))
+    const td = last.querySelector('td[data-col="name"]') as HTMLElement
+    td.focus()
+    td.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true, composed: true, cancelable: true }),
+    )
+    const ws = Number(state.el.getAttribute('window-start')) || 0
+    const loadedEnd = ws + (state.el.data as unknown[]).length
+    const target = lastAbs + 1
+    // requestWindowForRow 的 need = expandWindow(target, target+1, total, 8)
+    const need = { start: Math.max(0, target - 8), end: Math.min(300, target + 9) }
+    return {
+      target,
+      need,
+      loaded: { start: ws, end: loadedEnd },
+      lastFetch: state.lastFetch,
+      lastMapResult: state.lastMap?.result ?? null,
+      strictMappedToLoaded: state.lastMap?.result.start === ws && state.lastMap?.result.end === loadedEnd,
+    }
+  })
+  expect(keyboard.strictMappedToLoaded, 'strict adapter 只映射已装载切片（构造成立）').toBe(true)
+  expect(keyboard.need.end, '键盘目标行越出已装载区间（场景成立：替换会被覆盖判定吞掉）').toBeGreaterThan(
+    keyboard.loaded.end,
+  )
+  expect(keyboard.lastFetch?.start, '并集保留键盘目标：fetch.start = min(need.start, 映射.start)').toBe(
+    Math.min(keyboard.need.start, keyboard.lastMapResult!.start),
+  )
+  expect(keyboard.lastFetch?.end, '并集保留键盘目标：fetch.end = max(need.end, 映射.end)').toBe(
+    Math.max(keyboard.need.end, keyboard.lastMapResult!.end),
+  )
+  // 取数落盘：并集区间真实到达（修复前该请求被吞，切片永不更新）
+  await page.waitForFunction(
+    () => {
+      const state = (window as any).__qaVisualState
+      const f = state.lastFetch as { start: number; end: number } | null
+      return (
+        !!f &&
+        state.el.getAttribute('window-start') === String(f.start) &&
+        (state.el.data as unknown[]).length === f.end - f.start
+      )
+    },
+    null,
+    { timeout: 15000 },
+  )
+
+  // 映射恢复（strict 关闭）：显式请求重新按 adapter 映射（并集：事件区间 ∪ 映射区间）
+  await page.evaluate(() => {
+    const state = (window as any).__qaVisualState
+    state.strict = false
+    document
+      .querySelector('#qa-window-visual-table')!
+      .dispatchEvent(
+        new CustomEvent('oas-window-request', { detail: { start: 240, end: 249, visualStart: 246, visualEnd: 256 } }),
+      )
+  })
+  await page.waitForFunction(
+    () => {
+      const state = (window as any).__qaVisualState
+      const map = state.lastMap
+      if (map?.visualStart !== 246 || map?.visualEnd !== 256) return false
+      return (
+        state.lastFetch?.start === Math.min(240, map.result.start) &&
+        state.lastFetch?.end === Math.max(249, map.result.end)
+      )
+    },
+    null,
+    { timeout: 15000 },
+  )
   expect(issues, 'console 零 error/告警（协议激活与降级恢复均无「只有其一」告警）').toEqual([])
   await page.evaluate(() => {
     document.documentElement.classList.remove('dark')

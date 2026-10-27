@@ -49,7 +49,7 @@ el.addEventListener('oas-window-request', async (event) => {
 宿主侧配方（在四步配方之上叠加）：
 
 1. **布局单源**：全量哪些行带展开槽位（`visualTotal` = 数据行数 + 展开槽位数）、切片首行视觉号（`visualStart` = 该数据行之前的展开槽位数）由宿主一处维护；协议生效后**展开由宿主完全控制**——组件本地点击展开钮只派发 `oas-expand`，不修改 `expanded`，宿主监听后回写 `expanded` / `data` / 视觉属性驱动重渲染，禁止组件与宿主双写。
-2. **视觉字段优先取数**：事件带 `visualStart` / `visualEnd` 时把它们映射回数据区间（相交视觉槽位 → 属主数据行，再前后各扩缓冲），而不是直接用 `start` / `end`。
+2. **视觉字段优先取数**：事件带 `visualStart` / `visualEnd` 时把它们映射回数据区间（相交视觉槽位 → 属主数据行）；`createWindowedSource` 会把映射结果与事件数据区间取**并集**（事件 `start` / `end` 由组件计算，永远携带键盘目标行与视口缓冲 margin），宿主映射可以只给可视行、不必自带缓冲。
 3. **原子回填视觉属性**：完成取数后在同一同步段内写 `window-start` + `visual-start` + `data`（同一快照），再写 `total` + `visual-total`——保证组件在数据就绪后才按新视觉坐标重渲染，不出现「新切片 + 旧视觉起点」的中间态。
 4. **回填时重新求值**：请求与响应之间宿主可能改变了展开布局（展开数变化会移动视觉坐标）——回填必须用**响应时刻**的最新快照，不能复用请求时的旧值。
 
@@ -65,7 +65,8 @@ const adapter = {
   getGeometry(dataStart: number) {
     return { start: slotOf(dataStart), total: DATA_TOTAL + EXPANDED.size }
   },
-  // 请求时把可视窗口的视觉区间映射回数据取数区间（前后各扩 8 行缓冲，与组件同口径）
+  // 请求时把可视窗口的视觉区间映射回数据取数区间（只补可视行缺口即可：
+  // 助手会与事件数据区间取并集，事件已含键盘目标行与视口缓冲；如需更宽取数可自行扩缓冲）
   getDataRange(visualStart: number, visualEnd: number) {
     let lo = Infinity
     let hi = -Infinity
@@ -81,7 +82,7 @@ const adapter = {
 }
 ```
 
-不想手写胶水时，`@oas-ui/ui/data/table/advanced` 的 `createWindowedSource` 可直接接入该适配器：初始化与回填自动重新求值 geometry 并齐写 `visual-start` / `visual-total`，请求自动按 `getDataRange` 映射取数；映射非法（须有限且 end > start）或 geometry 非法（非有限、`start<0`、`total≤0`、`start>total`、`total<` 数据 total）时不拉取/不写错误视觉属性，派发一次 `oas-window-error`（detail 含视觉区间与原始数据区间）。geometry 失败后表格整体回落本地模型，此后事件视觉字段是本地口径、助手不再映射（按事件 `start` / `end` 原样取数）——修正适配器后推荐调用 `source.refresh()` 强制重拉恢复协议（普通同窗口事件可能被已装载覆盖判定吞掉）。不传 `visual` 时助手不写任何视觉属性，行为与此前逐值一致。
+不想手写胶水时，`@oas-ui/ui/data/table/advanced` 的 `createWindowedSource` 可直接接入该适配器：初始化与回填自动重新求值 geometry 并齐写 `visual-start` / `visual-total`，请求自动按 `getDataRange` 映射取数——映射结果与事件数据区间取**并集**（事件 `start` / `end` 永远携带键盘目标行与视口缓冲，映射只补可视行缺口，宿主 adapter 不必自带缓冲）。映射非法（须有限且 end > start）或 geometry 非法（非有限、`start<0`、`total≤0`、`start>total`、`total<` 数据 total）时不拉取/不写错误视觉属性，派发一次 `oas-window-error`（detail 含视觉区间与原始数据区间）。geometry 失败后表格整体回落本地模型，此后事件视觉字段是本地口径、助手不再映射（按事件 `start` / `end` 原样取数）。映射与 geometry 失败的恢复语义相同：**新窗口**事件可重试；**同窗口**推荐调用 `source.refresh()` 强制重拉——表格 winReq 同窗口去重与已装载覆盖判定可能吞掉同窗口重试。不传 `visual` 时助手不写任何视觉属性，行为与此前逐值一致。
 
 > 非虚拟 windowed（无 `height`）下协议只影响「展开由宿主接管」，不改变布局：没有可视窗口滚动，`visual-start` / `visual-total` 仅约束展开控制权归属。
 

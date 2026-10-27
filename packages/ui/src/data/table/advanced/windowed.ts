@@ -72,10 +72,12 @@ const geometrySummary = (geometry: WindowedVisualGeometry): string => {
  *
  * 可选 `visual` 适配器（视觉协议）：初始化与每次响应回填时重新求值 geometry 并齐写
  * visual-start / visual-total（回填时最新快照，与本次数据同一快照）；协议生效（source 水位线与
- * 表格视觉属性一致）时事件带有效视觉字段则优先经 getDataRange 映射数据取数区间，映射非法不拉取
- * 并派发一次 `oas-window-error`（detail 含视觉区间与原始数据区间），修正后可重试。geometry 非法 /
+ * 表格视觉属性按表格同口径截断重验一致）时事件带有效视觉字段则按 getDataRange 映射，取数区间为
+ * 映射结果与事件数据区间的并集（事件 start/end 永远携带键盘目标行与视口缓冲，不被映射裁剪），
+ * 映射非法不拉取并派发一次 `oas-window-error`（detail 含视觉区间与原始数据区间）。geometry 非法 /
  * adapter 抛错 → 视觉属性移除、表格整体回落本地模型，此后事件视觉字段为本地口径、不再映射
- * （按事件 start/end 原样取数），修正后 `refresh()` 重拉恢复协议。
+ * （按事件 start/end 原样取数）。两种失败恢复语义相同：新窗口事件可重试；同窗口推荐 `refresh()`
+ * 强制重拉（winReq 同窗口去重与已装载覆盖判定可能吞掉同窗口重试）。
  */
 export function createWindowedSource(table: HTMLElement, options: WindowedSourceOptions): WindowedSource {
   if (!(table as HTMLElement).shadowRoot) {
@@ -92,11 +94,13 @@ export function createWindowedSource(table: HTMLElement, options: WindowedSource
   const windowSize =
     options.windowSize != null && Number.isFinite(options.windowSize) ? Math.max(1, Math.trunc(options.windowSize)) : 50
 
-  /** 当前数据 total（全量行数）：优先取传入值，否则读表格 total 属性；都缺失返回 null（跳过 total 对比校验） */
+  /** 当前数据 total（全量行数）：优先取传入值，否则读表格 total 属性；都缺失返回 null（跳过 total 对比校验）。
+   *  与表格 readWindowedMode 同口径截断（有限值一律 Math.max(0, trunc)）——total=100.7 时表格按 100 生效，
+   *  geometry total=100 不应被「total<数据 total」误判降级。 */
   const dataTotalOf = (fallback: number | null): number | null => {
-    if (fallback != null && Number.isFinite(fallback)) return fallback
+    if (fallback != null && Number.isFinite(fallback)) return Math.max(0, Math.trunc(fallback))
     const raw = Number(table.getAttribute('total') ?? Number.NaN)
-    return Number.isFinite(raw) ? raw : null
+    return Number.isFinite(raw) ? Math.max(0, Math.trunc(raw)) : null
   }
 
   /** 派发统一失败事件（bubbles + composed），之后同窗口可重试 */
@@ -231,14 +235,24 @@ export function createWindowedSource(table: HTMLElement, options: WindowedSource
     let fetchStart = start
     let fetchEnd = end
     // 视觉协议生效才消费视觉字段：表格已回落本地模型（geometry 失败移除属性 / 宿主移除属性 /
-    // 视觉属性与 source 水位线不一致）时，事件的 visualStart/visualEnd 是本地口径而非宿主全局
-    // 布局——继续映射会按错误坐标拉行。只核对 visual-total 与水位线一致，不核对 visual-start：
-    // 外部合法换切片 / 改 visual-start（同一协议内的快照演进）仍照常映射。无/缺视觉字段同样回落。
+    // 视觉属性与 source 水位线不一致 / 宿主手改属性非法）时，事件的 visualStart/visualEnd 是
+    // 本地口径而非宿主全局布局——继续映射会按错误坐标拉行。按表格当前属性重验：
+    // visual-start 截断后有限、≥0、≤visual-total；visual-total>0、与水位线一致且 ≥ 截断后数据 total。
+    // 不把 visual-start 与水位线比对——外部合法换切片 / 改 visual-start（同一协议内的快照演进）仍照常映射。
+    // 无/缺视觉字段同样回落。
+    const visualStartAttr = truncOrNaN(Number(table.getAttribute('visual-start') ?? Number.NaN))
+    const visualTotalAttr = truncOrNaN(Number(table.getAttribute('visual-total') ?? Number.NaN))
+    const dataTotal = dataTotalOf(null)
     const visualActive =
       lastWritten !== null &&
       table.hasAttribute('visual-start') &&
       table.hasAttribute('visual-total') &&
-      table.getAttribute('visual-total') === String(lastWritten.total)
+      visualTotalAttr === lastWritten.total &&
+      visualTotalAttr > 0 &&
+      (dataTotal == null || visualTotalAttr >= dataTotal) &&
+      Number.isFinite(visualStartAttr) &&
+      visualStartAttr >= 0 &&
+      visualStartAttr <= visualTotalAttr
     if (
       visual &&
       visualActive &&
@@ -275,8 +289,13 @@ export function createWindowedSource(table: HTMLElement, options: WindowedSource
         })
         return
       }
-      fetchStart = mappedStart
-      fetchEnd = mappedEnd
+      // 并集契约：fetch = 事件数据区间 ∪ 映射区间。事件 start/end 由组件计算，永远携带
+      // 键盘目标行（requestWindowForRow 的 need 由目标 abs 决定）与视口缓冲 margin——
+      // 用映射「替换」会在严格 adapter（只映射可视行/已装载区间）下丢失键盘目标，
+      // 且映射结果被 currentLoaded 覆盖时静默吞掉整个请求；并集让两者都保留，
+      // adapter 不再被迫自带 margin。
+      fetchStart = Math.min(start, mappedStart)
+      fetchEnd = Math.max(end, mappedEnd)
     }
     if (filling && fetchStart >= filling.start && fetchEnd <= filling.end) return
     const loaded = currentLoaded()

@@ -387,8 +387,9 @@ describe('createWindowedSource × 视觉适配器', () => {
       expect(events[0]!.visualStart).toBe(0)
       expect(events[0]!.visualEnd).toBeGreaterThan(0)
       expect(layout.getDataRangeCalls[0]).toEqual([events[0]!.visualStart, events[0]!.visualEnd])
-      // fetchRows 收到映射后的数据坐标（行0 占双槽位：视觉 [0,9) 相交的数据行 = [0,8)）
-      expect(fetchRows.mock.calls[0]![0]).toMatchObject({ start: 0, end: 8 })
+      // 并集契约：fetch = 事件区间 ∪ 映射区间。首拉事件 [0,17)（视口+margin）⊇ 映射 [0,8)
+      // （行 0 占双槽位）→ 并集 [0,17)——组件 need（含缓冲）不被映射裁剪
+      expect(fetchRows.mock.calls[0]![0]).toMatchObject({ start: 0, end: 17 })
       // 回填重新求值 geometry：init 一次 + 响应回填一次（同一 dataStart）
       expect(layout.getGeometryCalls).toEqual([0, 0])
       // 回填齐写：window-start + visual-start + data（同一快照）+ total + visual-total
@@ -396,7 +397,7 @@ describe('createWindowedSource × 视觉适配器', () => {
       expect(el.getAttribute('visual-start')).toBe('0')
       expect(el.getAttribute('visual-total')).toBe('210')
       expect(el.getAttribute('total')).toBe('200')
-      expect(el.data).toHaveLength(8)
+      expect(el.data).toHaveLength(17)
       // 回声：回写后不自拉取
       await new Promise((resolve) => setTimeout(resolve, 20))
       expect(fetchRows).toHaveBeenCalledTimes(1)
@@ -423,11 +424,138 @@ describe('createWindowedSource × 视觉适配器', () => {
       // 请求在途时宿主改变展开布局（切片前多一个展开槽位 → 视觉坐标整体 +1）
       layout.extraBefore = 1
       resolveFetch!()
-      await vi.waitFor(() => expect(el.data).toHaveLength(8))
+      await vi.waitFor(() => expect(el.data).toHaveLength(17))
       // 回填重新求值：visual 属性反映最新快照（不是请求时旧值）
       expect(layout.getGeometryCalls.length).toBeGreaterThan(geometryCallsAtRequest)
       expect(el.getAttribute('visual-start')).toBe('1')
       expect(el.getAttribute('visual-total')).toBe('211')
+    } finally {
+      source.destroy()
+    }
+  })
+
+  it('并集契约：严格只返回已装载区间的 adapter 不得吞掉键盘目标行（事件 need ∪ 映射区间）', async () => {
+    // requestWindowForRow 的 start/end 由键盘目标 abs 决定（含 margin）；映射只覆盖可视行。
+    // 旧实现用映射「替换」事件区间：严格 adapter（只映射已装载区间）时映射结果被 currentLoaded
+    // 覆盖 → 静默吞掉，键盘目标行永远取不到。并集契约：fetch = 事件区间 ∪ 映射区间，两者都保留。
+    const el = new OASTable()
+    el.setAttribute('columns', JSON.stringify([{ key: 'name', title: '名称' }]))
+    el.setAttribute('data', '[]')
+    el.setAttribute('height', '80')
+    el.setAttribute('row-height', '40')
+    el.setAttribute('row-key', 'name')
+    el.setAttribute('grid-navigation', '')
+    document.body.appendChild(el)
+    const layout = makeVisualLayout(200, [])
+    let strict = false
+    const adapter = {
+      getGeometry: (dataStart: number) => layout.getGeometry(dataStart),
+      getDataRange: (visualStart: number, visualEnd: number) => {
+        if (strict) {
+          // 严格 adapter：只映射当前已装载切片（无 margin，模拟「宿主不肯多取」）
+          const ws = Number(el.getAttribute('window-start') ?? 0) || 0
+          const len = (el.data as unknown[]).length
+          return { start: ws, end: ws + len }
+        }
+        return layout.getDataRange(visualStart, visualEnd)
+      },
+    }
+    const fetchRows = vi.fn(stubFetch(200))
+    const source = createWindowedSource(el, { fetchRows, total: 200, windowSize: 5, visual: adapter })
+    try {
+      // init：事件 [0,14)（视口+margin）⊇ 映射 [0,6) → 并集 [0,14)
+      await vi.waitFor(() => expect(fetchRows).toHaveBeenCalledTimes(1))
+      expect(fetchRows.mock.calls[0]![0]).toMatchObject({ start: 0, end: 14 })
+      await vi.waitFor(() => expect(el.data).toHaveLength(14))
+      // 切到严格 adapter：映射 = 已装载区间本身
+      strict = true
+      const rows = el.shadowRoot!.querySelectorAll('tbody tr[data-row-index]')
+      const last = rows[rows.length - 1] as HTMLElement
+      const lastAbs = Number(last.getAttribute('data-row-index'))
+      expect(lastAbs, '视口内最后已渲染行').toBeGreaterThan(0)
+      const td = last.querySelector<HTMLElement>('td[data-col="name"]')!
+      td.focus()
+      expect(el.shadowRoot!.activeElement).toBe(td)
+      const before = fetchRows.mock.calls.length
+      // 真实键盘：目标行（lastAbs+1）未渲染 → requestWindowForRow 派发目标 need（事件区间含 margin）
+      td.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true, composed: true, cancelable: true }),
+      )
+      // 修复前：映射 = 已装载 [0,14) 覆盖判定命中 → 静默吞掉，目标行永远取不到（fetch 不增长）
+      // 修复后（并集）：fetch = [min(need.start,0), max(need.end,14))，目标行随取数到达
+      const target = lastAbs + 1
+      const expected = {
+        start: Math.max(0, target - 8),
+        end: Math.min(200, target + 9),
+      }
+      await vi.waitFor(() => expect(fetchRows.mock.calls.length).toBe(before + 1))
+      expect(fetchRows.mock.calls.at(-1)![0], '并集保留键盘目标 need（不被映射裁剪/覆盖吞掉）').toMatchObject({
+        start: Math.min(expected.start, 0),
+        end: Math.max(expected.end, 14),
+      })
+    } finally {
+      source.destroy()
+    }
+  })
+
+  it('水位线属性重验：宿主手改 visual-start 越界后回落事件 start/end（不映射）', async () => {
+    const el = mountVisual()
+    const layout = makeVisualLayout()
+    // fetch 永不 resolve：杜绝回填以 adapter 快照「修复」宿主手改属性带来的级联（调用记录是同步的）
+    const fetchCalls: Array<{ start: number; end: number }> = []
+    const fetchRows = vi.fn(({ start, end }: { start: number; end: number }) => {
+      fetchCalls.push({ start, end })
+      return new Promise<never>(() => {})
+    })
+    const source = createWindowedSource(el, { fetchRows, total: 200, windowSize: 5, visual: layout })
+    try {
+      await vi.waitFor(() => expect(fetchCalls).toHaveLength(1))
+      expect(el.getAttribute('visual-total')).toBe('210')
+      // 宿主手改 visual-start 越界（> visual-total）→ 表格回落本地模型 + source 属性重验失败。
+      // 手改与派发同一同步段：attrs 尚未被任何回填修复，映射与否在 onRequest 内同步可判定
+      el.setAttribute('visual-start', '999')
+      const rangeBefore = layout.getDataRangeCalls.length
+      el.dispatchEvent(
+        new CustomEvent('oas-window-request', { detail: { start: 50, end: 59, visualStart: 55, visualEnd: 65 } }),
+      )
+      expect(layout.getDataRangeCalls.length, 'visual-start 越界 → 不得调用 getDataRange').toBe(rangeBefore)
+      expect(fetchCalls.at(-1), '属性重验失败按事件 start/end 原样取数').toMatchObject({ start: 50, end: 59 })
+      // 负值同样越界
+      el.setAttribute('visual-start', '-5')
+      const rangeBefore2 = layout.getDataRangeCalls.length
+      el.dispatchEvent(
+        new CustomEvent('oas-window-request', { detail: { start: 60, end: 69, visualStart: 66, visualEnd: 76 } }),
+      )
+      expect(layout.getDataRangeCalls.length).toBe(rangeBefore2)
+      expect(fetchCalls.at(-1)).toMatchObject({ start: 60, end: 69 })
+    } finally {
+      source.destroy()
+    }
+  })
+
+  it.each([
+    ['options.total 小数', 100.7, null],
+    ['表格 total 属性小数', null, '100.7'],
+  ])('total 截断口径与表格一致（%s）：geometry total=整数不误降级', async (_label, optionsTotal, attrTotal) => {
+    const el = mountVisual()
+    const errors: CustomEvent[] = []
+    el.addEventListener('oas-window-error', (e) => errors.push(e as CustomEvent))
+    if (attrTotal != null) el.setAttribute('total', attrTotal)
+    // 表格 readWindowedMode 按截断口径读 total=100；geometry total=100（≥100）须视为合法。
+    // 修复前 dataTotalOf 不截断 → 100 < 100.7 → 初始化直接抛错（误降级）
+    const source = createWindowedSource(el, {
+      fetchRows: stubFetch(100.7),
+      ...(optionsTotal != null ? { total: optionsTotal } : {}),
+      windowSize: 5,
+      visual: {
+        getGeometry: () => ({ start: 0, total: 100 }),
+        getDataRange: (visualStart: number, visualEnd: number) => ({ start: visualStart, end: visualEnd }),
+      },
+    })
+    try {
+      expect(el.getAttribute('visual-total'), 'geometry total ≥ 截断后数据 total → 协议生效').toBe('100')
+      await vi.waitFor(() => expect(el.data.length).toBeGreaterThan(0))
+      expect(errors, 'total 小数不得触发误降级').toHaveLength(0)
     } finally {
       source.destroy()
     }
@@ -442,7 +570,7 @@ describe('createWindowedSource × 视觉适配器', () => {
     }))
     const source = createWindowedSource(el, { fetchRows, total: 200, windowSize: 5, visual: layout })
     try {
-      await vi.waitFor(() => expect(el.data).toHaveLength(8))
+      await vi.waitFor(() => expect(el.data).toHaveLength(17))
       const before = fetchRows.mock.calls.length
       await new Promise((resolve) => setTimeout(resolve, 30))
       expect(fetchRows, '回写视觉属性/数据/total 不自拉取').toHaveBeenCalledTimes(before)
@@ -452,8 +580,9 @@ describe('createWindowedSource × 视觉适配器', () => {
       )
       await vi.waitFor(() => expect(fetchRows).toHaveBeenCalledTimes(before + 1))
       expect(layout.getDataRangeCalls.at(-1)).toEqual([33, 43])
-      // 映射：视觉 [33,43) 相交数据行 30..38（行39 属主槽位 43 恰在窗口外）→ 数据 [30,39)
-      expect(fetchRows.mock.calls.at(-1)![0]).toMatchObject({ start: 30, end: 39 })
+      // 并集：视觉 [33,43) 映射 = 数据 [30,39)（行 39 属主槽位 43 恰在窗口外），
+      // 事件区间 [30,40) ⊉ 映射 → 并集 [30,40)（事件 need 的缓冲保留）
+      expect(fetchRows.mock.calls.at(-1)![0]).toMatchObject({ start: 30, end: 40 })
     } finally {
       source.destroy()
     }
@@ -470,7 +599,7 @@ describe('createWindowedSource × 视觉适配器', () => {
     const errors: CustomEvent[] = []
     el.addEventListener('oas-window-error', (e) => errors.push(e as CustomEvent))
     try {
-      await vi.waitFor(() => expect(el.data).toHaveLength(8))
+      await vi.waitFor(() => expect(el.data).toHaveLength(17))
       const before = fetchRows.mock.calls.length
       layout.rangeMode = 'invalid'
       el.dispatchEvent(
@@ -506,7 +635,7 @@ describe('createWindowedSource × 视觉适配器', () => {
     const errors: CustomEvent[] = []
     el.addEventListener('oas-window-error', (e) => errors.push(e as CustomEvent))
     try {
-      await vi.waitFor(() => expect(el.data).toHaveLength(8))
+      await vi.waitFor(() => expect(el.data).toHaveLength(17))
       const before = fetchRows.mock.calls.length
       layout.rangeMode = 'throw'
       el.dispatchEvent(
@@ -532,7 +661,7 @@ describe('createWindowedSource × 视觉适配器', () => {
     const errors: CustomEvent[] = []
     el.addEventListener('oas-window-error', (e) => errors.push(e as CustomEvent))
     try {
-      await vi.waitFor(() => expect(el.data).toHaveLength(8))
+      await vi.waitFor(() => expect(el.data).toHaveLength(17))
       expect(el.getAttribute('visual-total')).toBe('210')
       // geometry 失败：回填移除视觉属性（表格整体回落本地模型）→ source 不得再按宿主布局映射
       layout.geometryMode = 'invalid'
@@ -582,7 +711,7 @@ describe('createWindowedSource × 视觉适配器', () => {
     el.addEventListener('oas-window-error', (e) => errors.push(e as CustomEvent))
     try {
       // 初始回填 total=200 ≤ 210 → 协议正常生效
-      await vi.waitFor(() => expect(el.data).toHaveLength(8))
+      await vi.waitFor(() => expect(el.data).toHaveLength(17))
       expect(el.getAttribute('visual-total')).toBe('210')
       // 服务端 total 涨到 300 > visual-total 210 → 下一笔回填 geometry 非法 → 移除视觉属性 + 一次 error
       serverTotal = 300
@@ -630,7 +759,7 @@ describe('createWindowedSource × 视觉适配器', () => {
     const errors: CustomEvent[] = []
     el.addEventListener('oas-window-error', (e) => errors.push(e as CustomEvent))
     try {
-      await vi.waitFor(() => expect(el.data).toHaveLength(8))
+      await vi.waitFor(() => expect(el.data).toHaveLength(17))
       expect(el.getAttribute('visual-total')).toBe('210')
       // 下一笔回填 geometry 变非法：数据照常回填，视觉属性不写错误值（陈旧值移除）
       geometry = bad
@@ -668,7 +797,7 @@ describe('createWindowedSource × 视觉适配器', () => {
     const errors: CustomEvent[] = []
     el.addEventListener('oas-window-error', (e) => errors.push(e as CustomEvent))
     try {
-      await vi.waitFor(() => expect(el.data).toHaveLength(8))
+      await vi.waitFor(() => expect(el.data).toHaveLength(17))
       layout.geometryMode = 'throw'
       el.dispatchEvent(
         new CustomEvent('oas-window-request', { detail: { start: 30, end: 39, visualStart: 33, visualEnd: 43 } }),
@@ -748,17 +877,17 @@ describe('createWindowedSource × 视觉适配器', () => {
       el.setAttribute('visual-start', '3')
       await new Promise((resolve) => setTimeout(resolve, 20))
       const before = fetchRows.mock.calls.length
-      // 视觉 [6,12) 映射 = 数据 [5,10)（行5..9；行0 双槽位把视觉起点推到 6）→ loaded [0,0) 未覆盖 → 重拉
+      // 视觉 [6,12) 映射 = 数据 [5,11)（行10 的双槽位 [11,13) 仍与窗口相交）；
+      // 并集：事件 [0,5) ∪ 映射 [5,11) = [0,11) → loaded [0,0) 未覆盖 → 重拉
       el.dispatchEvent(
         new CustomEvent('oas-window-request', { detail: { start: 0, end: 5, visualStart: 6, visualEnd: 12 } }),
       )
       await vi.waitFor(() => expect(fetchRows.mock.calls.length).toBe(before + 1))
-      // 视觉 [6,12) 映射 = 数据 [5,11)（行10 的双槽位 [11,13) 仍与窗口相交）
-      expect(fetchRows.mock.calls.at(-1)![0]).toMatchObject({ start: 5, end: 11 })
-      expect(el.data).toHaveLength(6)
-      expect(el.getAttribute('window-start')).toBe('5')
-      // 回填视觉属性以 adapter 当前快照为准（dataStart=5 → visual-start=6，覆盖宿主手改的 3）
-      expect(el.getAttribute('visual-start')).toBe('6')
+      expect(fetchRows.mock.calls.at(-1)![0]).toMatchObject({ start: 0, end: 11 })
+      expect(el.data).toHaveLength(11)
+      expect(el.getAttribute('window-start')).toBe('0')
+      // 回填视觉属性以 adapter 当前快照为准（dataStart=0 → visual-start=0，覆盖宿主手改的 3）
+      expect(el.getAttribute('visual-start')).toBe('0')
       expect(el.getAttribute('visual-total')).toBe('210')
     } finally {
       source.destroy()
@@ -818,7 +947,8 @@ describe('createWindowedSource × 视觉适配器', () => {
     }))
     const source = createWindowedSource(el, { fetchRows, total: 1000, windowSize: 5, visual: layout })
     try {
-      await vi.waitFor(() => expect(el.data).toHaveLength(9))
+      // 并集契约：事件 [0,17) ⊇ 映射 [0,9)（expanded=[] 视觉=数据）→ 首拉 [0,17)
+      await vi.waitFor(() => expect(el.data).toHaveLength(17))
       el.setAttribute('grid-navigation', '')
       const tdOf = (key: string): HTMLElement =>
         el.shadowRoot!.querySelector<HTMLElement>(`tr[data-key="${key}"] td[data-col="name"]`)!
