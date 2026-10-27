@@ -718,4 +718,82 @@ describe('OASTable windowed（服务端行窗口模式）', () => {
     expect(spy, 'update 回填路径保留 scrollIntoView（锚行可见）').toHaveBeenCalled()
     spy.mockRestore()
   })
+
+  // ---- windowed × 行内嵌 expand：expand 行在视觉 flow 中占一根行高、但不占绝对数据行号 ----
+  //
+  // 缺陷固化：renderWindowedBody 曾只按 abs（数据行号）给 display 条目铺位，expand 不递增——
+  // 而 expand 又是独立定高 <tr>，在 DOM flow 中实际多占一行高。后果：expand 与下一数据行
+  // 共享槽位 → 后续行错位、tbody 总高随滚动裁剪漂移、窗口边界下一数据行被误裁剪/误纳入。
+
+  /** windowed+expand 记账回归共用 fixture：行50..55 共 6 行，行51 带 expand 内容且展开 */
+  const mountWindowedExpand = (): { el: OASTable } =>
+    mountWindowed({
+      windowed: '',
+      total: '100',
+      'window-start': '50',
+      height: '200',
+      'row-height': '40',
+      'row-key': 'name',
+      data: JSON.stringify([
+        { name: '行50', age: 20 },
+        { name: '行51', age: 21, expand: '<div>详情51</div>' },
+        { name: '行52', age: 22 },
+        { name: '行53', age: 23 },
+        { name: '行54', age: 24 },
+        { name: '行55', age: 25 },
+      ]),
+      expanded: '行51',
+    })
+
+  /** tbody 总高 = spacer td 的 style.height + 非 spacer tr 的 style.height（windowed 定高记账口径） */
+  const tbodyHeight = (el: OASTable): number =>
+    trsOf(el).reduce((sum, tr) => {
+      if (tr.classList.contains('spacer')) {
+        return sum + parseFloat((tr.firstElementChild as HTMLElement).style.height || '0')
+      }
+      return sum + parseFloat(tr.style.height || '0')
+    }, 0)
+
+  it('windowed × 行内嵌 expand：DOM 顺序与绝对数据行号不受影响，tbody 总高含 expand 槽位（4040）且不随滚动漂移', async () => {
+    const { el } = mountWindowedExpand()
+    const wrap = wrapOf(el)
+    wrap.scrollTop = 2000
+    wrap.dispatchEvent(new Event('scroll'))
+    await flushRaf()
+    // DOM 顺序：行51 → expand-row → 行52（expand 独立 <tr> 紧随数据行占一根行高的视觉槽位）
+    const trs = trsOf(el)
+    const i51 = trs.findIndex((tr) => (tr.textContent ?? '').includes('行51'))
+    expect(trs[i51]!.getAttribute('data-row-index'), '行51 绝对数据行号不变').toBe('51')
+    expect(trs[i51 + 1]!.className, 'expand 内容行紧随行51').toContain('expand-row')
+    expect(trs[i51 + 1]!.hasAttribute('data-row-index'), 'expand 不写绝对数据行号').toBe(false)
+    expect(trs[i51 + 2]!.getAttribute('data-row-index'), '行52 绝对数据行号不被 expand 占用').toBe('52')
+    // 总高 = total*40 + 当前已装载 display 中的 expand 数*40 = 4000 + 40
+    expect(tbodyHeight(el), 'scrollTop=2000 总高含 expand 槽位').toBe(4040)
+    // 滚动后总高稳定（缺陷实现 expand 不入账：4000）
+    wrap.scrollTop = 2280
+    wrap.dispatchEvent(new Event('scroll'))
+    await flushRaf()
+    expect(tbodyHeight(el), 'scrollTop=2280 总高不随滚动漂移').toBe(4040)
+  })
+
+  it('windowed × 行内嵌 expand：窗口边界 culling 按 flow 槽位（下一数据行不被共享槽位误裁剪/误纳入）', async () => {
+    const { el } = mountWindowedExpand()
+    const wrap = wrapOf(el)
+    // 窗口下缘恰落在「共享槽（abs 记账）/flow 槽（实际 DOM flow）」之间：
+    // 可视窗口 [1560,2120)（含 buffer），行52 的 flow 槽位为 [2120,2160) → 不得纳入
+    wrap.scrollTop = 1740
+    wrap.dispatchEvent(new Event('scroll'))
+    await flushRaf()
+    const rendered = rowsOf(el).map((r) => r.getAttribute('data-row-index'))
+    expect(rendered, '只渲染行50、行51（行52 的 flow 槽位在窗口外，不误纳入）').toEqual(['50', '51'])
+    expect(el.shadowRoot!.querySelectorAll('tbody tr.expand-row').length, 'expand 行照常渲染').toBe(1)
+    expect(tbodyHeight(el), '总高 4040（total*40 + expand 槽位）').toBe(4040)
+    const trs = trsOf(el)
+    const lastTr = trs[trs.length - 1]!
+    expect(lastTr.className, '末行是 bottom spacer').toContain('spacer')
+    expect(
+      (lastTr.firstElementChild as HTMLElement).style.height,
+      'bottom spacer = contentH - lastFlowEnd = 4040 - 2120（缺陷实现 1880）',
+    ).toBe('1920px')
+  })
 })

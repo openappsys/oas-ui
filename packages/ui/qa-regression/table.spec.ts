@@ -1949,6 +1949,178 @@ test('table windowed 键盘到已装载末端越界：派发 oas-window-request�
   await page.evaluate(() => document.querySelector('#qa-windowed-kbd')?.remove())
 })
 
+test('table windowed × 行内嵌 expand：expand 占视觉槽位不占数据行号，滚动裁剪下总高稳定（含 dark/console）', async ({
+  page,
+}) => {
+  // 缺陷固化：windowed 虚拟窗口曾只按绝对数据行号（abs）给 display 条目铺位，expand 内容行
+  // 不递增——而 expand 又是独立定高 <tr>，在 DOM flow 中实际多占一行高。后果：expand 与
+  // 下一数据行共享槽位 → 滚动窗口边界把行6 误裁剪出渲染集合、tbody 总高随滚动漂移 40px。
+  // 修复=双坐标记账（abs=数据行号语义不变；flowY=视觉 flow 供 culling/spacer），数据行号、
+  // ARIA、oas-window-request 均不变。
+  // fixture：window-start=0 / total=1000 / height=200 / row-height=40，41 行，行5 expand 且展开
+  // → scrollTop=430 窗口 [240,800)（含 buffer）：expand（flowY=240）在 DOM；
+  //   scrollTop=440 窗口 [280,800)：expand 恰被裁掉，窗口下缘落在「共享槽 / flow 槽」之间。
+  const consoleIssues: string[] = []
+  page.on('console', (m) => {
+    if (m.type() === 'error' || (m.type() === 'warning' && m.text().includes('[oas-table]')))
+      consoleIssues.push(`${m.type()}: ${m.text()}`)
+  })
+  page.on('pageerror', (e) => consoleIssues.push(`pageerror: ${e.message}`))
+  await page.goto('/components/table.html', { waitUntil: 'domcontentloaded' })
+  await page.waitForFunction(() => customElements.get('oas-table') != null, null, { timeout: 15000 })
+  await page.evaluate(() => {
+    const el = document.createElement('oas-table')
+    el.id = 'qa-windowed-expand'
+    el.setAttribute('windowed', '')
+    el.setAttribute('total', '1000')
+    el.setAttribute('window-start', '0')
+    el.setAttribute('height', '200')
+    el.setAttribute('row-height', '40')
+    el.setAttribute('row-key', 'name')
+    el.setAttribute('columns', JSON.stringify([{ key: 'name', title: '名称' }]))
+    el.setAttribute(
+      'data',
+      JSON.stringify(
+        Array.from({ length: 41 }, (_, i) => ({ name: `行${i}`, ...(i === 5 ? { expand: '<div>详情5</div>' } : {}) })),
+      ),
+    )
+    el.setAttribute('expanded', '行5')
+    ;(document.querySelector('.vp-doc') ?? document.body).appendChild(el)
+  })
+  await page.waitForFunction(() => {
+    const el = document.querySelector('#qa-windowed-expand')
+    return !!el?.shadowRoot?.querySelector('tbody tr.row')
+  })
+
+  const scrollTo = (top: number) =>
+    page.evaluate((v) => {
+      const el = document.querySelector('#qa-windowed-expand')!
+      const wrap = el.shadowRoot!.querySelector('.table-scroll') as HTMLElement
+      wrap.scrollTop = v
+      wrap.dispatchEvent(new Event('scroll'))
+    }, top)
+  /** 渲染集合快照：expand 行在否、数据行号集合、ARIA、tbody 总高（style 记账 + 实际 rect 双口径） */
+  const snapshot = () =>
+    page.evaluate(() => {
+      const el = document.querySelector('#qa-windowed-expand')!
+      const trs = [...el.shadowRoot!.querySelectorAll('tbody tr')] as HTMLElement[]
+      const styleSum = trs.reduce(
+        (s, tr) =>
+          s +
+          (tr.classList.contains('spacer')
+            ? parseFloat((tr.firstElementChild as HTMLElement).style.height || '0')
+            : parseFloat(tr.style.height || '0')),
+        0,
+      )
+      const rectSum = trs.reduce((s, tr) => s + Math.round(tr.getBoundingClientRect().height), 0)
+      return {
+        expandInDom: !!el.shadowRoot!.querySelector('tbody tr.expand-row'),
+        rowIndexes: [...el.shadowRoot!.querySelectorAll('tbody tr[data-row-index]')].map((tr) =>
+          tr.getAttribute('data-row-index'),
+        ),
+        ariaCount: el.shadowRoot!.querySelector('table')!.getAttribute('aria-rowcount'),
+        styleSum,
+        rectSum,
+      }
+    })
+
+  // scrollTop=430：rAF 稳定后（锚行 18 在两种记账口径下都渲染；expand 在 430 窗口内必然在场，
+  // 用「scrollTop + 行18 + expand 在场」三条件防上一滚动位置的陈旧渲染插针）
+  await scrollTo(430)
+  await page.waitForFunction(
+    () => {
+      const el = document.querySelector('#qa-windowed-expand')!
+      const wrap = el.shadowRoot!.querySelector('.table-scroll') as HTMLElement
+      const idx = new Set(
+        [...el.shadowRoot!.querySelectorAll('tbody tr[data-row-index]')].map((tr) => tr.getAttribute('data-row-index')),
+      )
+      return wrap.scrollTop === 430 && idx.has('18') && !!el.shadowRoot!.querySelector('tbody tr.expand-row')
+    },
+    null,
+    { timeout: 15000 },
+  )
+  const at430 = await snapshot()
+  expect(at430.expandInDom, 'expand 内容行在 DOM（flow 槽位 240 落在窗口内）').toBe(true)
+  expect(at430.rowIndexes, '行5 已滚出窗口（数据行号集合不含 expand 占号）').not.toContain('5')
+  expect(at430.rowIndexes, '行6 在渲染集合').toContain('6')
+
+  // scrollTop=440：窗口下缘 800 恰在「共享槽 / flow 槽」之间——expand 恰被裁掉
+  //（两种记账口径下 440 都裁 expand，可作「新渲染已完成」的判据，防 430 陈旧 DOM 插针），
+  // 但 tbody 总高必须与 430 一致（contentH = 1000*40 + 1*40 = 40040，缺陷实现少 40），
+  // 且行6 不得被 expand 的共享槽位误裁剪（曾从渲染集合消失）
+  await scrollTo(440)
+  await page.waitForFunction(
+    () => {
+      const el = document.querySelector('#qa-windowed-expand')!
+      const wrap = el.shadowRoot!.querySelector('.table-scroll') as HTMLElement
+      const idx = new Set(
+        [...el.shadowRoot!.querySelectorAll('tbody tr[data-row-index]')].map((tr) => tr.getAttribute('data-row-index')),
+      )
+      return wrap.scrollTop === 440 && idx.has('18') && !el.shadowRoot!.querySelector('tbody tr.expand-row')
+    },
+    null,
+    { timeout: 15000 },
+  )
+  const at440 = await snapshot()
+  expect(at440.expandInDom, 'expand 行被裁出窗口').toBe(false)
+  expect(at440.rowIndexes, '行6 仍在渲染集合（不被 expand 共享槽位误裁剪）').toContain('6')
+  expect(at440.styleSum, 'tbody 记账总高 = 40040（total*40 + expand 槽位 40；缺陷实现 40000）').toBe(40040)
+  expect(at440.rectSum, '实际 rect 高度和与记账一致').toBe(40040)
+  expect(at440.styleSum, 'scrollTop=440 总高与 430 一致（不随滚动漂移）').toBe(at430.styleSum)
+  // expand 不占数据行号 / ARIA：aria-rowcount 仍为全量 total；行6 aria-rowindex = 绝对行号 1 基 7
+  expect(at440.ariaCount, 'aria-rowcount 全量口径不变').toBe('1000')
+  const aria6 = await page.evaluate(() =>
+    document
+      .querySelector('#qa-windowed-expand')!
+      .shadowRoot!.querySelector('tbody tr[data-row-index="6"]')!
+      .getAttribute('aria-rowindex'),
+  )
+  expect(aria6, '行6 aria-rowindex 为绝对行号 1 基（expand 不挤占 ARIA 序号）').toBe('7')
+
+  // dark 主题下重复总高与行号断言（主题只换 token，布局记账必须一致）
+  await page.evaluate(() => document.documentElement.classList.add('dark'))
+  await scrollTo(430)
+  await page.waitForFunction(
+    () => {
+      const el = document.querySelector('#qa-windowed-expand')!
+      const wrap = el.shadowRoot!.querySelector('.table-scroll') as HTMLElement
+      const idx = new Set(
+        [...el.shadowRoot!.querySelectorAll('tbody tr[data-row-index]')].map((tr) => tr.getAttribute('data-row-index')),
+      )
+      return wrap.scrollTop === 430 && idx.has('18') && !!el.shadowRoot!.querySelector('tbody tr.expand-row')
+    },
+    null,
+    { timeout: 15000 },
+  )
+  const dark430 = await snapshot()
+  expect(dark430.expandInDom, 'dark：expand 内容行在 DOM').toBe(true)
+  expect(dark430.styleSum, 'dark：记账总高 40040').toBe(40040)
+  await scrollTo(440)
+  await page.waitForFunction(
+    () => {
+      const el = document.querySelector('#qa-windowed-expand')!
+      const wrap = el.shadowRoot!.querySelector('.table-scroll') as HTMLElement
+      const idx = new Set(
+        [...el.shadowRoot!.querySelectorAll('tbody tr[data-row-index]')].map((tr) => tr.getAttribute('data-row-index')),
+      )
+      return wrap.scrollTop === 440 && idx.has('18') && !el.shadowRoot!.querySelector('tbody tr.expand-row')
+    },
+    null,
+    { timeout: 15000 },
+  )
+  const dark440 = await snapshot()
+  expect(dark440.expandInDom, 'dark：expand 行被裁出窗口').toBe(false)
+  expect(dark440.rowIndexes, 'dark：行6 仍在渲染集合').toContain('6')
+  expect(dark440.styleSum, 'dark：总高与 430 一致').toBe(dark430.styleSum)
+  expect(dark440.rectSum, 'dark：实际 rect 高度和 = 40040').toBe(40040)
+
+  expect(consoleIssues, 'console 零告警（error + [oas-table] warning 口径）').toEqual([])
+  await page.evaluate(() => {
+    document.documentElement.classList.remove('dark')
+    document.querySelector('#qa-windowed-expand')?.remove()
+  })
+})
+
 test('table 万行虚拟滚动：连续选择 20 次渲染行数有界、行节点身份保持、console 零告警（增量渲染回归）', async ({
   page,
 }) => {

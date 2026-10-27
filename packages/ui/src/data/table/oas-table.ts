@@ -2791,6 +2791,12 @@ export class OASTableBase extends OASElement {
    * 已装载切片按绝对行号铺位，窗口外/未装载区域用 spacer 占位——宿主按
    * oas-window-request 回填后经 update 重渲染补齐。条目含行内嵌展开内容行
    * （与既有虚拟滚动同款定高模型：每个 display 条目占一行高）。
+   *
+   * 双坐标记账：abs 仅数据行递增（dataIndex / 绝对数据行号，事件与 ARIA 口径不变）；
+   * flowY 为视觉 flow 坐标——expand 内容行是独立定高 <tr>，在 DOM flow 中实际多占
+   * 一行高，故每个 display 条目（含 expand）都递增 rowHeight。culling / firstY /
+   * lastFlowEnd / spacer 一律按 flowY：若按 abs 记账，expand 会与下一数据行共享槽位，
+   * 后续行错位、tbody 总高随滚动裁剪漂移、窗口边界下一数据行被误裁剪/误纳入。
    */
   private renderWindowedBody(
     body: HTMLElement,
@@ -2804,35 +2810,39 @@ export class OASTableBase extends OASElement {
     const ih = this.rowHeightPx()
     const colSpan = this.columnCount()
     const win = computeVirtualWindow(scrollTop, this.tableHeight(), ih, this._winMode.total)
-    // display 条目 → 绝对行号：数据行占一个绝对行号；expand 内容行贴在前一数据行之后的槽位
-    const items: Array<{ f: FlatRow; absRow: number }> = []
+    const items: Array<{ f: FlatRow; abs: number; flowY: number }> = []
     let abs = this._winMode.windowStart
+    let flowY = this._winMode.windowStart * ih
     for (const f of display) {
-      items.push({ f, absRow: abs })
+      items.push({ f, abs, flowY })
       if (f.kind === 'data') abs++
+      flowY += ih
     }
     const winTop = win.start * ih
     const winBottom = win.end * ih
-    // 先扫描出可视区间内的待渲染条目（topSpacer 高度依赖首个命中条目的绝对位置，须先算好再按
-    // 「topSpacer → 行 → bottomSpacer」的顺序追加，保证 DOM 顺序与全量坐标系一致）
-    const contentH = this._winMode.total * ih
+    // 先扫描出可视区间内的待渲染条目（topSpacer 高度依赖首个命中条目的 flow 坐标，须先算好再按
+    // 「topSpacer → 行 → bottomSpacer」的顺序追加，保证 DOM 顺序与视觉 flow 一致）。
+    // contentH 只按当前已装载 display 中的 expand 计数——windowed 只知道当前切片内容行，
+    // 未装载区域是否展开不可知（不发明全量展开状态推导）。无 expand 时与旧公式逐值等价。
+    const expandCount = items.reduce((n, it) => (it.f.kind === 'expand' ? n + 1 : n), 0)
+    const contentH = this._winMode.total * ih + expandCount * ih
     const rendered: HTMLTableRowElement[] = []
     let firstY = -1
-    let lastEnd = 0
-    for (const { f, absRow } of items) {
-      const y = absRow * ih
+    let lastFlowEnd = 0
+    for (const item of items) {
+      const y = item.flowY
       if (y + ih <= winTop || y >= winBottom) continue
       if (firstY < 0) firstY = y
       const tr =
-        f.kind === 'expand'
-          ? this.buildExpandRow(f)
-          : this.buildRow(f, absRow, rowKey, selected, expanded, layout, absRow)
+        item.f.kind === 'expand'
+          ? this.buildExpandRow(item.f)
+          : this.buildRow(item.f, item.abs, rowKey, selected, expanded, layout, item.abs)
       tr.style.height = `${ih}px`
       rendered.push(tr)
-      lastEnd = y + ih
+      lastFlowEnd = y + ih
     }
     const topHeight = firstY >= 0 ? firstY : Math.min(winTop, contentH)
-    const bottomHeight = Math.max(0, contentH - Math.max(lastEnd, topHeight))
+    const bottomHeight = Math.max(0, contentH - Math.max(lastFlowEnd, topHeight))
     const topSpacer = document.createElement('tr')
     topSpacer.className = 'spacer'
     const topTd = document.createElement('td')
