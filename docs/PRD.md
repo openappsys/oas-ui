@@ -5,7 +5,7 @@
 
 ---
 
-## 未发布：表格 Pro 维护 + JSON 查看器渲染优化
+## 未发布：表格 Pro 维护 + JSON 查看器渲染优化 ✅
 
 ### 功能定义
 
@@ -14,12 +14,12 @@ v2.6.4 后的维护批：补齐 table Pro 能力在 windowed、失败请求与�
 ### 详细需求
 
 - **table/detail：有效 windowed 判定**：`windowed` 属性在场且 `total` 先截断（非有限数按 0）后 `> 0` 才视为生效，与表格 `readWindowedMode` 同口径；`total` 缺失、非法或截断后为 0（含 `0.5`）按普通模式处理。`refresh()` 与 `selectByKey()` 共用该判定。
-- **table/detail：selectByKey 等待与取消**：有效 windowed 且键未装载时挂起等待（纯内部状态，不新增属性/方法/事件）：保留当前选中与面板、不派发 `oas-detail-change`，`data` 到达并命中后落地一次并派发一次选中变化。等待期间旧选中仍随 `data` 刷新（行对象/面板更新，离窗时 `rowIndex=-1`）。`close()`、`select()`、行/单元格点击、`Enter`、`Esc`、`destroy()`、`row-key` 变化，以及再次 `selectByKey()`（新键覆盖旧等待）都会取消等待；取消不补派发等待键的选中事件。
-- **table/detail：pending-only Esc 作用域**：无选中且仅等待时，只有本实例表格/面板内的 `Esc` 取消等待；不注册 window 全局兜底，不抢多实例「最近激活」标记，仍让位 `defaultPrevented`、输入控件与同表其它活动实例。
+- **table/detail：selectByKey 等待与取消**：有效 windowed 且键未装载时挂起等待（纯内部状态，不新增属性/方法/事件）：本次挂起调用不直接改选中/面板、不派发 `oas-detail-change`；等待期间既有选中仍随 `data` 刷新（行对象/面板更新，离窗时 `rowIndex=-1`），不重复派发选中变化；`data` 到达并命中后落地一次并派发一次 `oas-detail-change`。等待没有超时，也没有等待失败事件：键始终不到达时会保持等待，直到取消路径或模式回落。`close()`、`select()`、行/单元格点击、`Enter`、`Esc`、`destroy()`、`row-key` 变化，以及再次 `selectByKey()`（新键覆盖旧等待）都会取消等待；取消不补派发等待键的选中事件。
+- **table/detail：pending-only Esc 作用域**：无选中且仅等待时，只有本实例表格/面板内的 `Esc` 取消等待；不注册 window 全局兜底，不抢多实例「最近激活」标记，仍让位 `defaultPrevented`、输入控件与同表其它活动实例。`closeOnEscape: false` 时完全不响应 Esc；启用 range 且存在活动选区时第一次 Esc 先清选区、等待保留。
 - **table/detail：模式回落顺序**：`total` 回落后同一批 `data` 已含等待键时按普通数据命中落地；不同批先回落后到数据则等待已丢弃，不会复活。普通模式下键不存在仍清空选中并派发关闭。
 - **table/range：tabindex 所有权**：控制器只保存「原值 + 自己最后写入的 `0/-1`」；range 禁用且未交给 grid-navigation 时，仅当当前 `tabindex` 仍等于最后写入值才恢复原值，拥有期间被其它能力改写则保留外部值。grid-navigation 接管时直接放弃记录、不回写陈旧原值。
 - **table/advanced：windowed source 覆盖判定**：每次处理 `oas-window-request` 时，覆盖去重都读表格当前真实切片（`window-start` + `data` 长度，有限数、截断、最小 0 的半开区间），不自存装载区间；宿主外部清空/替换 `data` 或切换 `window-start` 后，同窗口请求会重新拉取。保留在途去重、回声抑制、`refresh()` 强制重拉、`destroy()` 中止过期请求与构造首拉行为。
-- **table/advanced：windowed source 失败重试**：`fetchRows` 同步 `throw` 与 Promise rejection 走同一失败路径：清 `filling` 并派发一次 `oas-window-error`（`detail { start, end, error }`，`bubbles` + `composed`），之后同窗口可重试；过期失败不清新请求的 `filling`。不自动重试，也不改表格 `oas-window-request` 的派发。
+- **table/advanced：windowed source 失败重试**：`fetchRows` 同步 `throw` 与 Promise rejection 走同一失败路径：清在途标记并派发一次 `oas-window-error`（`detail { start, end, error }`，`bubbles` + `composed`），之后同窗口可重试；过期失败不清新请求的在途标记。不自动重试，也不改表格 `oas-window-request` 的派发。
 - **JSON 查看器：滚动/键盘复用可见行**：窗口内滚动、键盘移动与 `scrollToPath()` 收尾复用最近一次完整计算的可见行；`scrollToPath()` 一次公开调用只完整展开一次。数据源/根节点/展开态/搜索态变化都会置脏，回到完整重算。
 - **JSON 查看器：跳过行 DOM 重建**：行渲染签名（可见行数组身份、行容器身份、窗口起止、行高、搜索词、活动路径、自定义 toggle 模板存在性）全部相等时跳过行 DOM 重建，仅更新工具栏/`aria-activedescendant`/`aria-busy`；活动行校正、搜索跳转、空/错误态与模板变更一律重建。
 - **JSON 查看器：activeIndex 与搜索祖先缓存**：每次渲染只计算一次活动行下标（滚动校正与 aria 共用）；搜索命中集重算时同步预计算去重后的祖先展开集，后续重绘只遍历缓存，手动收起仍优先。

@@ -33,8 +33,9 @@ export interface MasterDetail {
   /**
    * 按行键选中（递归 children 查找）；行未渲染时保留选中（rowIndex = -1）。
    * windowed 生效（`windowed` 属性在场且 total 为有限数、截断后 > 0）且键未装载时挂起等待 data 命中——
-   * 等待期间不改选中/面板、不派发 `oas-detail-change`；后续 close()/select()/行或单元格点击/Enter/Esc
-   * 以及再次调用（新键覆盖旧等待）均可取消。无选中时的 Esc 仅在本实例表格/面板内生效（不注册 window 全局兜底）。
+   * 本次挂起调用不直接改选中/面板、不派发事件；等待期间既有选中仍按 data 刷新（不重复派发选中变化）。
+   * 后续 close()/select()/行或单元格点击/Enter/Esc 以及再次调用（新键覆盖旧等待）均可取消。
+   * 无选中时的 Esc 仅在本实例表格/面板内生效（不注册 window 全局兜底）。
    * 普通模式（含 total 缺失/非法或截断后为 0）键不存在时清空选中。
    */
   selectByKey(key: string): void
