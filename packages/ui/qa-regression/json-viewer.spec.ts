@@ -455,4 +455,5 @@ test('json-viewer 纯滚动下自定义 toggle 模板新增/原地更新/移除�
   expect(twisty.text).toBe('')
 
   expect(badWarns, `console/page 零新增 error/warning：${badWarns.join(' | ')}`).toEqual([])
+  await page.evaluate(() => document.querySelector('#qa-jv-toggle-scroll')?.remove())
 })
