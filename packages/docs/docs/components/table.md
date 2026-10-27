@@ -1328,9 +1328,9 @@ detail.close() // 触发 onClose 一次
 detail.destroy()
 ```
 
-点击行渲染到宿主面板（面板内容由 helper 全量管理，布局/关闭按钮建议放在面板外；建议每张表一个实例），选中行以 `tr[data-detail-selected]` 高亮；`Enter` 打开当前焦点行、`Esc` 关闭并回到原行（启用 range 且存在选区时，第一次 Esc 先清选区）。`data` 变化（含行内编辑回写）按行键刷新详情，选中行消失则清空（刷新不派发 `oas-detail-change`，仅选中变化派发）；windowed 换窗不等于删除，选中与面板保留，明确删除时由宿主调用 `close()`。多实例时 Esc 只关闭**最近激活**的实例，该实例关闭/销毁后回退到仍选中的上一个实例；`closeOnEscape: false` 可禁用 Esc，`onClose` 仅在真正关闭时回调一次。`oas-detail-change`（detail 为 `{ row, key, rowIndex }` 或 `null`；`rowIndex` 为当前渲染窗口下标，稳定身份请用 `key`）。
+点击行渲染到宿主面板（面板内容由 helper 全量管理，布局/关闭按钮建议放在面板外；建议每张表一个实例），选中行以 `tr[data-detail-selected]` 高亮；`Enter` 打开当前焦点行、`Esc` 关闭并回到原行（启用 range 且存在选区时，表格内第一次 Esc 先清选区）。`data` 变化（含行内编辑回写）按行键刷新详情，选中行消失则清空（刷新不派发 `oas-detail-change`，仅选中变化派发）；windowed 换窗不等于删除，选中与面板保留，明确删除时由宿主调用 `close()`。多实例时 Esc 只关闭**最近激活**的实例，该实例关闭/销毁后回退到仍选中的上一个实例；`closeOnEscape: false` 可禁用 Esc，`onClose` 仅在真正关闭时回调一次。`oas-detail-change`（detail 为 `{ row, key, rowIndex }` 或 `null`；`rowIndex` 为当前渲染窗口下标，稳定身份请用 `key`）。
 
-`selectByKey()` 在 windowed 生效（`windowed` 属性在场且 `total` 为有限数、截断后 `> 0`；`total` 缺失、非法或截断后为 0 按普通模式）但键未装载时进入等待：本次挂起调用不直接改选中/面板、不派发 `oas-detail-change`，`data` 到达并命中后落地一次并派发一次 `oas-detail-change`。等待期间既有选中仍随 `data` 刷新（行对象/面板更新，离窗时 `rowIndex=-1`），不重复派发选中变化。等待没有超时，也没有等待失败事件：键始终不到达时会保持等待，直到取消路径或模式回落。`close()`、`select()`、行/单元格点击、`Enter`、`Esc`、`destroy()`、`row-key` 变化或再次 `selectByKey()`（新键覆盖旧等待）都会取消等待，取消不补派发等待键的选中事件。无选中时仅**本实例表格/面板内**的 `Esc` 取消等待（不注册 window 全局兜底，也不抢多实例「最近激活」标记），并让位 `defaultPrevented`、输入控件与同表其它活动实例；`closeOnEscape: false` 时完全不响应 Esc，启用 range 且存在活动选区时第一次 Esc 先清选区、等待保留。`total` 回落后同批 `data` 已含等待键仍按普通命中落地；不同批先回落后到数据则等待已丢弃，不会复活。
+`selectByKey()` 在 windowed 生效（`windowed` 属性在场且 `total` 为有限数、截断后 `> 0`；`total` 缺失、非法或截断后为 0 按普通模式）但键未装载时进入等待：本次挂起调用不直接改选中/面板、不派发 `oas-detail-change`，`data` 到达并命中后落地一次并派发一次 `oas-detail-change`。等待期间既有选中仍随 `data` 刷新（行对象/面板更新，离窗时 `rowIndex=-1`），不重复派发选中变化。等待没有超时，也没有等待失败事件：键始终不到达时会保持等待，直到取消路径或模式回落。`close()`、`select()`、行/单元格点击、`Enter`、`Esc`、`destroy()`、`row-key` 变化或再次 `selectByKey()`（新键覆盖旧等待）都会取消等待，取消不补派发等待键的选中事件。无选中时仅**本实例表格/面板内**的 `Esc` 取消等待（不注册 window 全局兜底，也不抢多实例「最近激活」标记），并让位 `defaultPrevented`、输入控件与同表其它活动实例；`closeOnEscape: false` 时完全不响应 Esc，启用 range 且存在活动选区时，表格内第一次 Esc 先清选区、等待保留。`total` 回落后同批 `data` 已含等待键仍按普通命中落地；不同批先回落后到数据则等待已丢弃，不会复活。
 
 ### 视图持久化适配器（`table/view`）
 

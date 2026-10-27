@@ -15,7 +15,7 @@ v2.6.4 后的维护批：补齐 table Pro 能力在 windowed、失败请求与�
 
 - **table/detail：有效 windowed 判定**：`windowed` 属性在场且 `total` 先截断（非有限数按 0）后 `> 0` 才视为生效，与表格 `readWindowedMode` 同口径；`total` 缺失、非法或截断后为 0（含 `0.5`）按普通模式处理。`refresh()` 与 `selectByKey()` 共用该判定。
 - **table/detail：selectByKey 等待与取消**：有效 windowed 且键未装载时挂起等待（纯内部状态，不新增属性/方法/事件）：本次挂起调用不直接改选中/面板、不派发 `oas-detail-change`；等待期间既有选中仍随 `data` 刷新（行对象/面板更新，离窗时 `rowIndex=-1`），不重复派发选中变化；`data` 到达并命中后落地一次并派发一次 `oas-detail-change`。等待没有超时，也没有等待失败事件：键始终不到达时会保持等待，直到取消路径或模式回落。`close()`、`select()`、行/单元格点击、`Enter`、`Esc`、`destroy()`、`row-key` 变化，以及再次 `selectByKey()`（新键覆盖旧等待）都会取消等待；取消不补派发等待键的选中事件。
-- **table/detail：pending-only Esc 作用域**：无选中且仅等待时，只有本实例表格/面板内的 `Esc` 取消等待；不注册 window 全局兜底，不抢多实例「最近激活」标记，仍让位 `defaultPrevented`、输入控件与同表其它活动实例。`closeOnEscape: false` 时完全不响应 Esc；启用 range 且存在活动选区时第一次 Esc 先清选区、等待保留。
+- **table/detail：pending-only Esc 作用域**：无选中且仅等待时，只有本实例表格/面板内的 `Esc` 取消等待；不注册 window 全局兜底，不抢多实例「最近激活」标记，仍让位 `defaultPrevented`、输入控件与同表其它活动实例。`closeOnEscape: false` 时完全不响应 Esc；启用 range 且存在活动选区时，表格内第一次 Esc 先清选区、等待保留。
 - **table/detail：模式回落顺序**：`total` 回落后同一批 `data` 已含等待键时按普通数据命中落地；不同批先回落后到数据则等待已丢弃，不会复活。普通模式下键不存在仍清空选中并派发关闭。
 - **table/range：tabindex 所有权**：控制器只保存「原值 + 自己最后写入的 `0/-1`」；range 禁用且未交给 grid-navigation 时，仅当当前 `tabindex` 仍等于最后写入值才恢复原值，拥有期间被其它能力改写则保留外部值。grid-navigation 接管时直接放弃记录、不回写陈旧原值。
 - **table/advanced：windowed source 覆盖判定**：每次处理 `oas-window-request` 时，覆盖去重都读表格当前真实切片（`window-start` + `data` 长度，有限数、截断、最小 0 的半开区间），不自存装载区间；宿主外部清空/替换 `data` 或切换 `window-start` 后，同窗口请求会重新拉取。保留在途去重、回声抑制、`refresh()` 强制重拉、`destroy()` 中止过期请求与构造首拉行为。
