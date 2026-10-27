@@ -42,6 +42,17 @@ export interface JsonViewerCopyDetail {
   text: string
 }
 
+/** 上次实际行渲染的签名：全部相等时才跳过行 DOM 重建 */
+interface RowRenderSignature {
+  rows: JsonRow[]
+  rowsEl: HTMLElement
+  start: number
+  end: number
+  rowH: number
+  query: string
+  activePath: string
+}
+
 const STYLE = `
 :host {
   display: block;
@@ -274,6 +285,8 @@ export class OASJsonViewer extends OASElement {
   private searchCacheRoot: JsonNode | null = null
   private searchAppliedQuery = ''
   private searchNeedsScroll = false
+  /** 命中集缓存点预计算的祖先展开集（去重），每次重绘只遍历，不重复解析路径 */
+  private searchAutoAncestors: string[] = []
 
   private activePath = '$'
   private scrollOffset = 0
@@ -281,6 +294,12 @@ export class OASJsonViewer extends OASElement {
   private initialized = false
   private rowIds = new Map<string, string>()
   private rowIdSeq = 0
+
+  /** 最近一次真实计算的可见行；仅滚动等「状态未变」的重绘复用 */
+  private lastRows: JsonRow[] | null = null
+  /** 可见行是否需要重新计算（数据源/展开状态/search 状态变化后置脏） */
+  private rowsDirty = true
+  private lastRenderSig: RowRenderSignature | null = null
 
   private viewerEl: HTMLElement | null = null
   private viewportEl: HTMLElement | null = null
@@ -369,6 +388,7 @@ export class OASJsonViewer extends OASElement {
       this.expandedControlled = newValue !== null
       // 宿主改写受控展开时，以属性为唯一数据源；搜索自动展开由其重新计算
       this.transientExpanded.clear()
+      this.rowsDirty = true
     }
     if (name === 'text') {
       this.hasData = false
@@ -459,7 +479,8 @@ export class OASJsonViewer extends OASElement {
       const viewport = this.viewportEl
       const onScroll = (): void => {
         this.scrollOffset = viewport.scrollTop
-        this.renderRows()
+        // 滚动不改变树/展开状态：复用最近一次完整计算的可见行
+        this.renderRows(false, true)
       }
       const onKey = (e: KeyboardEvent): void => this.handleKey(e)
       const onClick = (e: MouseEvent): void => this.handleClick(e)
@@ -479,11 +500,17 @@ export class OASJsonViewer extends OASElement {
 
   protected override update(): void {
     this.expandedControlled = this.hasAttribute('expanded')
-    if (this.expandedControlled) this.expandedSet = new Set(this.parseExpandedAttr())
+    if (this.expandedControlled) {
+      this.expandedSet = new Set(this.parseExpandedAttr())
+      this.rowsDirty = true
+    }
     this.syncData()
     if (!this.initialized && this.root) {
       this.initialized = true
-      if (!this.expandedControlled) this.expandedSet = this.initialExpanded()
+      if (!this.expandedControlled) {
+        this.expandedSet = this.initialExpanded()
+        this.rowsDirty = true
+      }
     }
     if (this.hasAttribute('height')) {
       this.style.setProperty('--_oas-jv-height', `${this.heightPx()}px`)
@@ -519,6 +546,8 @@ export class OASJsonViewer extends OASElement {
     if (this.sourceReady && !this.sourceDirty) return
     this.sourceDirty = false
     this.sourceReady = true
+    // 数据源/根节点变化：可见行必须重新计算，禁止滚动复用陈旧数组
+    this.rowsDirty = true
     this.parseError = null
     let source = ''
     try {
@@ -616,6 +645,8 @@ export class OASJsonViewer extends OASElement {
         for (const ancestor of collectAncestorPaths(path)) this.searchManual.set(ancestor, true)
       }
     }
+    // 展开状态变化：可见行必须重算
+    this.rowsDirty = true
     if (this.expandedControlled) {
       this.emit('toggle', { path, expanded } satisfies JsonViewerToggleDetail)
       // 收起搜索自动展开的祖先时，transient 已移除；立即重绘让用户看到反馈（仍不写回 expanded）
@@ -629,8 +660,85 @@ export class OASJsonViewer extends OASElement {
   }
 
   private visibleRows(): JsonRow[] {
-    if (!this.root) return []
-    return flattenVisible(this.root, (path) => this.isExpanded(path))
+    const rows = this.root ? flattenVisible(this.root, (path) => this.isExpanded(path)) : []
+    // 每次真实计算都刷新缓存，供同状态下的滚动/键盘重绘复用
+    this.lastRows = rows
+    this.rowsDirty = false
+    return rows
+  }
+
+  private renderRows(ensureActive = false, reuseRows = false): void {
+    const viewport = this.viewportEl
+    if (!viewport) return
+    if (!this.root) {
+      // 错误/空态没有 treeitem：保留 tree 角色会触发 aria-required-children
+      viewport.setAttribute('role', 'group')
+      viewport.innerHTML = this.parseError
+        ? `<div class="error" part="error" role="alert">${this.escapeHtml(this.errorText())}</div>`
+        : `<div class="placeholder" part="empty">${this.escapeHtml(this.t('jsonViewer.empty'))}</div>`
+      viewport.removeAttribute('aria-activedescendant')
+      this.innerEl = null
+      this.rowsEl = null
+      // 空/错误态不保留行缓存，避免恢复时命中陈旧签名
+      this.lastRows = null
+      this.rowsDirty = true
+      this.lastRenderSig = null
+      this.syncToolbar()
+      return
+    }
+    if (!this.rowsEl) {
+      viewport.innerHTML =
+        '<div class="inner" part="inner" role="none"><div class="rows" part="rows" role="none"></div></div>'
+      this.innerEl = viewport.querySelector('[part="inner"]')
+      this.rowsEl = viewport.querySelector('[part="rows"]')
+    }
+    if (!this.innerEl || !this.rowsEl) return
+    viewport.setAttribute('role', 'tree')
+    const query = this.getAttr('search', '').trim()
+    this.syncSearch(query)
+    // 状态未变的重绘（滚动等）复用最近一次完整计算的可见行
+    const rows = reuseRows && !this.rowsDirty && this.lastRows ? this.lastRows : this.visibleRows()
+    const rowH = this.rowHeightPx()
+    this.innerEl.style.height = `${rows.length * rowH}px`
+    const shouldEnsure = ensureActive || this.searchNeedsScroll
+    this.searchNeedsScroll = false
+    // activeIndex 只算一次：滚动校正与 aria-activedescendant 共用
+    const activeIndex = rows.findIndex((row) => row.node.path === this.activePath)
+    if (shouldEnsure && activeIndex >= 0) {
+      const viewportH = this.viewportHeight()
+      const top = activeIndex * rowH
+      if (top < this.scrollOffset) viewport.scrollTop = top
+      else if (top + rowH > this.scrollOffset + viewportH) viewport.scrollTop = top + rowH - viewportH
+      this.scrollOffset = viewport.scrollTop
+    }
+    // 滚动校正后再算窗口，避免 active 行被校正到窗口外导致 aria-activedescendant 指向未渲染节点
+    const { start, end } = this.windowBounds(rows.length)
+    const rowsEl = this.rowsEl
+    const sig = this.lastRenderSig
+    const canReuseRows =
+      !shouldEnsure &&
+      sig !== null &&
+      sig.rows === rows &&
+      sig.rowsEl === rowsEl &&
+      sig.start === start &&
+      sig.end === end &&
+      sig.rowH === rowH &&
+      sig.query === query &&
+      sig.activePath === this.activePath
+    if (!canReuseRows) {
+      rowsEl.innerHTML = ''
+      for (let i = start; i < end; i++) {
+        rowsEl.appendChild(this.renderRow(rows[i]!, i, query))
+      }
+      this.lastRenderSig = { rows, rowsEl, start, end, rowH, query, activePath: this.activePath }
+    }
+    if (activeIndex >= start && activeIndex < end) {
+      viewport.setAttribute('aria-activedescendant', this.rowId(this.activePath))
+    } else {
+      viewport.removeAttribute('aria-activedescendant')
+    }
+    viewport.setAttribute('aria-busy', 'false')
+    this.syncToolbar()
   }
 
   private rowHeightPx(): number {
@@ -745,63 +853,6 @@ export class OASJsonViewer extends OASElement {
     this.toggleAttribute('data-compact', this.hasAttribute('compact'))
   }
 
-  private renderRows(ensureActive = false): void {
-    const viewport = this.viewportEl
-    if (!viewport) return
-    if (!this.root) {
-      // 错误/空态没有 treeitem：保留 tree 角色会触发 aria-required-children
-      viewport.setAttribute('role', 'group')
-      viewport.innerHTML = this.parseError
-        ? `<div class="error" part="error" role="alert">${this.escapeHtml(this.errorText())}</div>`
-        : `<div class="placeholder" part="empty">${this.escapeHtml(this.t('jsonViewer.empty'))}</div>`
-      viewport.removeAttribute('aria-activedescendant')
-      this.innerEl = null
-      this.rowsEl = null
-      this.syncToolbar()
-      return
-    }
-    if (!this.rowsEl) {
-      viewport.innerHTML =
-        '<div class="inner" part="inner" role="none"><div class="rows" part="rows" role="none"></div></div>'
-      this.innerEl = viewport.querySelector('[part="inner"]')
-      this.rowsEl = viewport.querySelector('[part="rows"]')
-    }
-    if (!this.innerEl || !this.rowsEl) return
-    viewport.setAttribute('role', 'tree')
-    const query = this.getAttr('search', '').trim()
-    this.syncSearch(query)
-    const rows = this.visibleRows()
-    const rowH = this.rowHeightPx()
-    this.innerEl.style.height = `${rows.length * rowH}px`
-    this.rowsEl.innerHTML = ''
-    const shouldEnsure = ensureActive || this.searchNeedsScroll
-    this.searchNeedsScroll = false
-    if (shouldEnsure) {
-      const activeIndex = rows.findIndex((row) => row.node.path === this.activePath)
-      if (activeIndex >= 0) {
-        const viewportH = this.viewportHeight()
-        const top = activeIndex * rowH
-        if (top < this.scrollOffset) viewport.scrollTop = top
-        else if (top + rowH > this.scrollOffset + viewportH) viewport.scrollTop = top + rowH - viewportH
-        this.scrollOffset = viewport.scrollTop
-      }
-    }
-    // 滚动校正后再算窗口，避免 active 行被校正到窗口外导致 aria-activedescendant 指向未渲染节点
-    const { start, end } = this.windowBounds(rows.length)
-    for (let i = start; i < end; i++) {
-      const row = rows[i]!
-      this.rowsEl.appendChild(this.renderRow(row, i, query))
-    }
-    const activeIndex = rows.findIndex((r) => r.node.path === this.activePath)
-    if (activeIndex >= start && activeIndex < end) {
-      viewport.setAttribute('aria-activedescendant', this.rowId(this.activePath))
-    } else {
-      viewport.removeAttribute('aria-activedescendant')
-    }
-    viewport.setAttribute('aria-busy', 'false')
-    this.syncToolbar()
-  }
-
   private renderRow(row: JsonRow, index: number, query: string): HTMLElement {
     const el = document.createElement('div')
     el.className = 'row'
@@ -883,6 +934,8 @@ export class OASJsonViewer extends OASElement {
 
   private syncSearch(query: string): void {
     if (!query) {
+      // 只有搜索引入的展开被收回时才需要重算；scrollToPath 的 transient 不在 searchBase 分支内清除
+      const hadSearchExpansion = this.searchBase !== null
       if (this.searchBase) {
         if (!this.expandedControlled) {
           const restored = new Set(this.searchBase)
@@ -897,6 +950,7 @@ export class OASJsonViewer extends OASElement {
         this.transientExpanded.clear()
       }
       this.searchMatches = []
+      this.searchAutoAncestors = []
       this.activeMatch = -1
       const previousSearchState = this.lastSearchState
       this.lastSearchState = ''
@@ -904,6 +958,8 @@ export class OASJsonViewer extends OASElement {
       this.searchCacheRoot = null
       this.searchAppliedQuery = ''
       this.searchNeedsScroll = false
+      // 清空搜索会收回自动展开的祖先：可见行必须重算
+      if (hadSearchExpansion) this.rowsDirty = true
       if (previousSearchState) {
         // 清空搜索也要发一次 matches=0 / activeIndex=-1，宿主才能同步清除命中状态
         const state = `${query}\u0000${this.searchMatches.length}\u0000${this.activeMatch}`
@@ -922,6 +978,13 @@ export class OASJsonViewer extends OASElement {
       this.searchMatches = searchJson(this.root!, query)
       this.searchCacheQuery = query
       this.searchCacheRoot = this.root
+      // 与命中集同一缓存点预计算去重的祖先展开集：每次重绘只遍历数组，不重复解析路径
+      const ancestors = new Set<string>()
+      for (const match of this.searchMatches) {
+        for (const ancestor of collectAncestorPaths(match)) ancestors.add(ancestor)
+      }
+      this.searchAutoAncestors = [...ancestors]
+      this.rowsDirty = true
     }
     const queryChanged = this.searchAppliedQuery !== query
     if (queryChanged) {
@@ -932,13 +995,12 @@ export class OASJsonViewer extends OASElement {
         this.activePath = this.searchMatches[0]!
         this.searchNeedsScroll = true
       }
+      this.rowsDirty = true
     }
-    for (const match of this.searchMatches) {
-      for (const ancestor of collectAncestorPaths(match)) {
-        // 搜索期间手动收起的路径，不被本轮自动展开重新顶开
-        if (this.searchManual.get(ancestor) === false) continue
-        this.transientExpanded.add(ancestor)
-      }
+    for (const ancestor of this.searchAutoAncestors) {
+      // 搜索期间手动收起的路径，不被本轮自动展开重新顶开
+      if (this.searchManual.get(ancestor) === false) continue
+      this.transientExpanded.add(ancestor)
     }
     if (this.searchMatches.length && (this.activeMatch < 0 || this.activeMatch >= this.searchMatches.length)) {
       this.activeMatch = 0
@@ -1007,7 +1069,8 @@ export class OASJsonViewer extends OASElement {
     } else {
       return
     }
-    this.renderRows(true)
+    // 本次按键已算过可见行：仅在展开状态未变时复用，避免多算一次
+    this.renderRows(true, true)
   }
 
   private handleHostKey(e: KeyboardEvent): void {
@@ -1069,6 +1132,8 @@ export class OASJsonViewer extends OASElement {
   }
 
   private applyBulk(paths: string[]): void {
+    // 批量展开/收起改变可见行
+    this.rowsDirty = true
     if (this.expandedControlled) {
       this.transientExpanded.clear()
       this.emit('expanded-change', { paths } satisfies JsonViewerExpandedChangeDetail)
@@ -1089,14 +1154,17 @@ export class OASJsonViewer extends OASElement {
     if (!this.nodeByPath.has(canonical)) return
     for (const ancestor of collectAncestorPaths(canonical)) this.transientExpanded.add(ancestor)
     this.activePath = canonical
+    // 祖先展开改变了可见行：先完整计算一次，并保留在 lastRows 供定位后复用
+    this.rowsDirty = true
     this.renderRows()
-    const rows = this.visibleRows()
+    const rows = this.lastRows ?? []
     const index = rows.findIndex((row) => row.node.path === canonical)
     if (index < 0) return
     const viewport = this.viewportEl
     if (viewport) viewport.scrollTop = Math.max(0, index * this.rowHeightPx() - this.viewportHeight() / 2)
     this.scrollOffset = viewport?.scrollTop ?? this.scrollOffset
-    this.renderRows()
+    // 定位后的重绘只更新窗口，不重复 flattenVisible
+    this.renderRows(false, true)
   }
 
   /** 跳到下一个搜索命中（循环） */

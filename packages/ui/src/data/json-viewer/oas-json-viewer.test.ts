@@ -506,4 +506,23 @@ describe('OASJsonViewer 键盘与虚拟滚动', () => {
     const el = mount({ text: '1', 'aria-label': '接口响应' })
     expect(tree(el).getAttribute('aria-label')).toBe('接口响应')
   })
+
+  it('滚动复用的行缓存在搜索/清空搜索后不串态', () => {
+    const values = Array.from({ length: 10_000 }, (_, i) => i)
+    const el = mount({ text: JSON.stringify(values), height: '200', 'row-height': '20' })
+    const viewport = tree(el)
+    viewport.scrollTop = 4000
+    viewport.dispatchEvent(new Event('scroll'))
+    expect(paths(el)[0]).not.toBe('$')
+
+    el.search = '999'
+    expect(viewport.scrollTop).toBeGreaterThan(0)
+    expect(paths(el)).toContain('$[999]')
+
+    el.removeAttribute('search')
+    viewport.scrollTop = 0
+    viewport.dispatchEvent(new Event('scroll'))
+    expect(paths(el)[0]).toBe('$')
+    expect(paths(el).length).toBeLessThan(40)
+  })
 })

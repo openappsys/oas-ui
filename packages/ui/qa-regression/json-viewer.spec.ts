@@ -251,3 +251,136 @@ test('json-viewer 自定义展开/收起模板：带框 +/- 切换且叶节点�
   await expect(demoRoot.locator('[part="toggle-icon"]')).toBeVisible()
   await page.evaluate(() => document.querySelector('#qa-jv-toggle')?.remove())
 })
+
+test('json-viewer 滚动复用行 DOM：同窗口保留节点，跨窗口/键盘/搜索不退化，console 零告警', async ({ page }) => {
+  const badWarns: string[] = []
+  const allow = [
+    /net::ERR_/,
+    /Failed to load resource/,
+    /vite/,
+    /hydrating/,
+    /cookie .*overwritten/i,
+    /scroll-linked positioning effect/i,
+  ]
+  page.on('console', (m) => {
+    if ((m.type() === 'error' || m.type() === 'warning') && !allow.some((re) => re.test(m.text()))) {
+      badWarns.push(`${m.type()}: ${m.text()}`)
+    }
+  })
+  page.on('pageerror', (e) => badWarns.push(`pageerror: ${e.message}`))
+
+  await page.goto('/components/json-viewer.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#jv-large')
+  await page.waitForFunction(
+    () => (document.querySelector('#jv-large')?.shadowRoot?.querySelectorAll('[part="row"]').length ?? 0) > 0,
+  )
+
+  // 同窗口小幅滚动：窗口 start/end 未变时必须复用行 DOM（节点身份不变）
+  const sameWindow = await page.evaluate(() => {
+    const root = document.querySelector('#jv-large')!.shadowRoot!
+    const viewport = root.querySelector<HTMLElement>('[part="viewport"]')!
+    const row = root.querySelector<HTMLElement>('[part="row"]')!
+    const rowH = row.getBoundingClientRect().height
+    const viewportH = viewport.clientHeight || viewport.getBoundingClientRect().height
+    const band = (value: number): number => ((value % rowH) + rowH) % rowH
+    let base = 0
+    let delta = 0
+    // 偏移落在行中部时，小幅滚动不会跨 start/end 边界
+    for (const fraction of [0.5, 0.4, 0.6, 0.3, 0.7, 0.45, 0.55, 0.35, 0.65]) {
+      const offset = rowH * fraction
+      const candidate = 24 * rowH + offset
+      const bottom = band(candidate + viewportH)
+      if (offset > rowH * 0.15 && rowH - offset > rowH * 0.15 && bottom > rowH * 0.2 && rowH - bottom > rowH * 0.2) {
+        base = candidate
+        delta = Math.min(offset, rowH - offset, bottom, rowH - bottom) * 0.5
+        break
+      }
+    }
+    if (!delta) throw new Error('无法构造同窗口滚动幅度')
+    viewport.scrollTop = base
+    viewport.dispatchEvent(new Event('scroll'))
+    const first = root.querySelector('[part="row"]')
+    const paths = [...root.querySelectorAll('[part="row"]')].map((node) => node.getAttribute('data-path'))
+    viewport.scrollTop = base + delta
+    viewport.dispatchEvent(new Event('scroll'))
+    const after = root.querySelector('[part="row"]')
+    return {
+      sameNode: first !== null && first === after,
+      stablePaths:
+        JSON.stringify(paths) ===
+        JSON.stringify([...root.querySelectorAll('[part="row"]')].map((node) => node.getAttribute('data-path'))),
+      rowCount: paths.length,
+      delta,
+    }
+  })
+  expect(sameWindow.rowCount).toBeGreaterThan(0)
+  expect(sameWindow.stablePaths, '同窗口滚动内容应完全一致').toBe(true)
+  expect(sameWindow.sameNode, `同窗口滚动 delta=${sameWindow.delta}px 应保留行 DOM 节点`).toBe(true)
+
+  // 跨窗口滚动：内容与活动指针都要更新，不能复用陈旧 DOM
+  const crossWindow = await page.evaluate(() => {
+    const root = document.querySelector('#jv-large')!.shadowRoot!
+    const viewport = root.querySelector<HTMLElement>('[part="viewport"]')!
+    viewport.scrollTop = viewport.scrollHeight / 2
+    viewport.dispatchEvent(new Event('scroll'))
+    const activeId = viewport.getAttribute('aria-activedescendant')
+    return {
+      first: root.querySelector('[part="row"]')?.getAttribute('data-path'),
+      rows: root.querySelectorAll('[part="row"]').length,
+      activePointerValid: activeId == null || root.getElementById(activeId) != null,
+    }
+  })
+  expect(crossWindow.rows).toBeGreaterThan(0)
+  expect(crossWindow.first).not.toBe('$')
+  expect(crossWindow.activePointerValid).toBe(true)
+
+  // 键盘：活动行与 aria-activedescendant 仍同步
+  const viewport = page.locator('#jv-large [part="viewport"]')
+  await viewport.focus()
+  const activeBefore = await page.evaluate(() =>
+    document.querySelector('#jv-large')!.shadowRoot!.querySelector('[part="row"].active')?.getAttribute('data-path'),
+  )
+  await page.keyboard.press('ArrowDown')
+  const keyboard = await page.evaluate(() => {
+    const root = document.querySelector('#jv-large')!.shadowRoot!
+    const active = root.querySelector('[part="row"].active')
+    const activeId = root.querySelector('[part="viewport"]')!.getAttribute('aria-activedescendant')
+    return {
+      activePath: active?.getAttribute('data-path'),
+      visible: !!active,
+      resolved: activeId ? root.getElementById(activeId)?.getAttribute('data-path') : null,
+    }
+  })
+  expect(keyboard.activePath).not.toBe(activeBefore)
+  expect(keyboard.visible, '活动行必须在虚拟窗口内可见').toBe(true)
+  expect(keyboard.resolved).toBe(keyboard.activePath)
+
+  // 搜索 next：可见 active 行与计数同步
+  await up(page, '#jv-search')
+  await page.waitForFunction(
+    () => (document.querySelector('#jv-search')?.shadowRoot?.querySelectorAll('[part="row"]').length ?? 0) > 0,
+  )
+  const countBefore = await page.evaluate(
+    () => document.querySelector('#jv-search')!.shadowRoot!.querySelector('[part="count"]')?.textContent ?? '',
+  )
+  await page.locator('#jv-search [part="next"]').click()
+  const search = await page.evaluate(() => {
+    const root = document.querySelector('#jv-search')!.shadowRoot!
+    const active = root.querySelector('[part="row"].active')
+    const activeId = root.querySelector('[part="viewport"]')!.getAttribute('aria-activedescendant')
+    return {
+      count: root.querySelector('[part="count"]')?.textContent ?? '',
+      activePath: active?.getAttribute('data-path'),
+      visible: !!active,
+      resolved: activeId ? root.getElementById(activeId)?.getAttribute('data-path') : null,
+    }
+  })
+  expect(countBefore).toMatch(/^\d+\/\d+$/)
+  expect(search.count).toMatch(/^\d+\/\d+$/)
+  expect(search.count).not.toBe(countBefore)
+  expect(search.visible, '搜索 next 后活动命中行必须可见').toBe(true)
+  expect(search.resolved).toBe(search.activePath)
+  expect(search.activePath).toBeTruthy()
+
+  expect(badWarns, `console/page 零新增 error/warning：${badWarns.join(' | ')}`).toEqual([])
+})
