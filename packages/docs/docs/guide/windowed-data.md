@@ -57,14 +57,13 @@ el.addEventListener('oas-window-request', async (event) => {
 // 真实布局的视觉适配器：每 25 行一个展开槽位（宿主全局已知）
 const EXPANDED = new Set([0, 25, 50, 75, 100])
 const DATA_TOTAL = 10000
-const visualTotal = DATA_TOTAL + EXPANDED.size
 
 const slotOf = (i: number) => i + [...EXPANDED].filter((e) => e < i).length
 
 const adapter = {
   // 初始化与每次回填都会被调用：返回当前快照（必须现算现回，不得缓存请求时旧值）
   getGeometry(dataStart: number) {
-    return { start: slotOf(dataStart), total: visualTotal }
+    return { start: slotOf(dataStart), total: DATA_TOTAL + EXPANDED.size }
   },
   // 请求时把可视窗口的视觉区间映射回数据取数区间（前后各扩 8 行缓冲，与组件同口径）
   getDataRange(visualStart: number, visualEnd: number) {
@@ -82,7 +81,7 @@ const adapter = {
 }
 ```
 
-不想手写胶水时，`@oas-ui/ui/data/table/advanced` 的 `createWindowedSource` 可直接接入该适配器：初始化与回填自动重新求值 geometry 并齐写 `visual-start` / `visual-total`，请求自动按 `getDataRange` 映射取数；映射非法（须有限且 end > start）或 geometry 非法（非有限、`start<0`、`total≤0`、`start>total`、`total<` 数据 total）时不拉取/不写错误视觉属性，派发一次 `oas-window-error`（detail 含视觉区间与原始数据区间），修正适配器后同窗口可重试。不传 `visual` 时助手不写任何视觉属性，行为与此前逐值一致。
+不想手写胶水时，`@oas-ui/ui/data/table/advanced` 的 `createWindowedSource` 可直接接入该适配器：初始化与回填自动重新求值 geometry 并齐写 `visual-start` / `visual-total`，请求自动按 `getDataRange` 映射取数；映射非法（须有限且 end > start）或 geometry 非法（非有限、`start<0`、`total≤0`、`start>total`、`total<` 数据 total）时不拉取/不写错误视觉属性，派发一次 `oas-window-error`（detail 含视觉区间与原始数据区间）。geometry 失败后表格整体回落本地模型，此后事件视觉字段是本地口径、助手不再映射（按事件 `start` / `end` 原样取数）——修正适配器后推荐调用 `source.refresh()` 强制重拉恢复协议（普通同窗口事件可能被已装载覆盖判定吞掉）。不传 `visual` 时助手不写任何视觉属性，行为与此前逐值一致。
 
 > 非虚拟 windowed（无 `height`）下协议只影响「展开由宿主接管」，不改变布局：没有可视窗口滚动，`visual-start` / `visual-total` 仅约束展开控制权归属。
 

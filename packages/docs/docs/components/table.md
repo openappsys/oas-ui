@@ -1414,7 +1414,7 @@ const source = createWindowedSource(table, {
 
 时序契约：初始化与**每次响应回填**都重新调用 `getGeometry(dataStart)`（请求与响应之间宿主改变展开布局时用回填时最新快照），回填在 `writing` 内原子写 `window-start` + `visual-start` + `data`、其外写 `total` + `visual-total`——与本次响应同一快照，回声抑制不自拉取。请求事件带有效 `visualStart` / `visualEnd` 时优先按 `getDataRange` 映射取数（无视觉字段回落事件 `start` / `end`）。协议生效后展开由宿主完全控制：监听 `oas-expand` 回写 `expanded` / `data` / 视觉属性（本地点击展开钮只派发事件，不修改 `expanded`），禁止双写。
 
-失败语义：映射非法（非有限 / end ≤ start / `getDataRange` 同步抛错）不 fetch、不残留在途标记、派发一次 `oas-window-error`（detail `{ start, end, visualStart, visualEnd, error }`，含视觉区间与原始数据区间），修正后同窗口可重试；geometry 非法（非有限、start<0、total≤0、start>total、total<数据 total）不写错误视觉属性（陈旧 `visual-start` / `visual-total` 移除、表格整体回落当前模型），数据照常回填并走同一失败事件；初始同步配置错误直接抛给调用方（不写任何属性、不挂监听）。不传 `visual` 不写任何视觉属性，既有行为逐值不变。
+失败语义：映射非法（非有限 / end ≤ start / `getDataRange` 同步抛错）不 fetch、不残留在途标记、派发一次 `oas-window-error`（detail `{ start, end, visualStart, visualEnd, error }`，含视觉区间与原始数据区间），修正后同窗口可重试；geometry 非法（非有限、start<0、total≤0、start>total、total<数据 total）不写错误视觉属性（陈旧 `visual-start` / `visual-total` 移除、表格整体回落当前模型），数据照常回填并走同一失败事件——降级后表格请求携带的是本地口径视觉字段，助手不再映射（按事件 `start` / `end` 原样取数，不按宿主全局布局拉错行），修正适配器后推荐调用 `source.refresh()` 强制重拉恢复协议（普通同窗口事件可能被已装载覆盖判定吞掉）；初始同步配置错误直接抛给调用方（不写任何属性、不挂监听）。不传 `visual` 不写任何视觉属性，既有行为逐值不变。
 
 ## API
 

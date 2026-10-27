@@ -15,7 +15,8 @@ export interface WindowedVisualGeometry {
  * - `getGeometry(dataStart)`：初始化与每次响应回填时同步调用，返回当前快照的 visual-start /
  *   visual-total（实现必须现算现回，不得缓存请求时的旧值——回填要的是响应时刻的布局）。
  * - `getDataRange(visualStart, visualEnd)`：请求时把 `oas-window-request` 的视觉区间映射为
- *   数据取数区间（如把相交视觉槽位投影回属主数据行）；返回须有限且 end > start。
+ *   数据取数区间（如把相交视觉槽位投影回属主数据行）；返回须有限且 end > start，
+ *   负 start / 超出数据 total 的越界由 adapter 自行夹取（source 不代夹）。
  */
 export interface WindowedVisualAdapter {
   getGeometry(dataStart: number): WindowedVisualGeometry
@@ -70,9 +71,11 @@ const geometrySummary = (geometry: WindowedVisualGeometry): string => {
  * 纯宿主侧 helper，不进入 table 运行时。已装载区间按实际返回行数计覆盖；服务端部分页会自动补齐。
  *
  * 可选 `visual` 适配器（视觉协议）：初始化与每次响应回填时重新求值 geometry 并齐写
- * visual-start / visual-total（回填时最新快照，与本次数据同一快照）；请求时事件带有效视觉字段
- * 则优先经 getDataRange 映射数据取数区间，映射非法不拉取并派发一次 `oas-window-error`
- * （detail 含视觉区间与原始数据区间），修正后可重试。
+ * visual-start / visual-total（回填时最新快照，与本次数据同一快照）；协议生效（source 水位线与
+ * 表格视觉属性一致）时事件带有效视觉字段则优先经 getDataRange 映射数据取数区间，映射非法不拉取
+ * 并派发一次 `oas-window-error`（detail 含视觉区间与原始数据区间），修正后可重试。geometry 非法 /
+ * adapter 抛错 → 视觉属性移除、表格整体回落本地模型，此后事件视觉字段为本地口径、不再映射
+ * （按事件 start/end 原样取数），修正后 `refresh()` 重拉恢复协议。
  */
 export function createWindowedSource(table: HTMLElement, options: WindowedSourceOptions): WindowedSource {
   if (!(table as HTMLElement).shadowRoot) {
@@ -101,6 +104,15 @@ export function createWindowedSource(table: HTMLElement, options: WindowedSource
     table.dispatchEvent(new CustomEvent('oas-window-error', { detail, bubbles: true, composed: true }))
   }
 
+  /**
+   * 最近一次成功写入表格的视觉快照（协议生效水位线）：
+   * - 初始化合法 geometry 写入后赋值；每次合法 geometry 回填写入时更新；
+   * - geometry 非法 / adapter 抛错回填（视觉属性被移除、表格整体回落本地模型）时置 null。
+   * onRequest 消费事件视觉字段前必须核对它与表格当前 visual-total 一致——表格回落后事件的
+   * visualStart/visualEnd 是本地口径（数据 total + 本地展开）而非宿主全局布局，继续映射会拉错行。
+   */
+  let lastWritten: WindowedVisualGeometry | null = null
+
   const write = (start: number, rows: unknown[], total?: number): void => {
     // 回填时重新求值 geometry：请求与响应之间宿主可能改变展开布局，必须用响应时刻的最新快照
     //（两个视觉属性写同一份快照，保证与本次回填数据一致）；adapter throw 与非法值走同一失败路径
@@ -125,12 +137,16 @@ export function createWindowedSource(table: HTMLElement, options: WindowedSource
       }
       if (!table.hasAttribute('windowed')) table.setAttribute('windowed', '')
       if (geometry) {
-        // 视觉属性与数据同一快照：visual-start 随切片坐标写（writing 内），visual-total 在数据就绪后写
+        // 视觉属性与数据同一快照：visual-start 随切片坐标写（writing 内），visual-total 在数据就绪后写；
+        // 水位线先记账——visual-total 落位触发的同步请求已可正确消费视觉字段
+        lastWritten = geometry
         if (table.getAttribute('visual-start') !== String(geometry.start)) {
           table.setAttribute('visual-start', String(geometry.start))
         }
       } else if (visual) {
-        // geometry 非法：不写错误视觉属性，移除陈旧属性让表格整体回落当前模型（table 会 devWarn 一次，属预期）
+        // geometry 非法：不写错误视觉属性，移除陈旧属性让表格整体回落当前模型（table 会 devWarn 一次，属预期）；
+        // 协议水位线同时清空——回落后事件视觉字段是本地口径，不得再映射
+        lastWritten = null
         table.removeAttribute('visual-start')
         table.removeAttribute('visual-total')
       }
@@ -214,9 +230,18 @@ export function createWindowedSource(table: HTMLElement, options: WindowedSource
     if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) return
     let fetchStart = start
     let fetchEnd = end
-    // 视觉适配器 + 事件带有效视觉字段 → 优先按视觉区间映射数据取数区间；无/缺视觉字段回落事件 start/end
+    // 视觉协议生效才消费视觉字段：表格已回落本地模型（geometry 失败移除属性 / 宿主移除属性 /
+    // 视觉属性与 source 水位线不一致）时，事件的 visualStart/visualEnd 是本地口径而非宿主全局
+    // 布局——继续映射会按错误坐标拉行。只核对 visual-total 与水位线一致，不核对 visual-start：
+    // 外部合法换切片 / 改 visual-start（同一协议内的快照演进）仍照常映射。无/缺视觉字段同样回落。
+    const visualActive =
+      lastWritten !== null &&
+      table.hasAttribute('visual-start') &&
+      table.hasAttribute('visual-total') &&
+      table.getAttribute('visual-total') === String(lastWritten.total)
     if (
       visual &&
+      visualActive &&
       typeof visualStart === 'number' &&
       Number.isFinite(visualStart) &&
       typeof visualEnd === 'number' &&
@@ -278,6 +303,7 @@ export function createWindowedSource(table: HTMLElement, options: WindowedSource
   // 视觉属性写在 windowed/total 之前：表格尚未进入 windowed 模式时逐个写入不会触发
   // 「只有其一」的回落告警（readVisualProtocol 在非 windowed 下静默），total 最后落位即一次激活
   if (initialGeometry) {
+    lastWritten = initialGeometry
     table.setAttribute('visual-start', String(initialGeometry.start))
     table.setAttribute('visual-total', String(initialGeometry.total))
   }

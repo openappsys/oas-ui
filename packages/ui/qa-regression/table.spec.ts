@@ -4378,6 +4378,12 @@ test('table advanced：createWindowedSource × 视觉适配器——真实 adapt
       expandedSet,
       dataTotal: DATA_TOTAL,
       visualTotal: DATA_TOTAL + expandedSet.size,
+      /** 测试注入：true 时 getGeometry 返回非法快照（触发 source 视觉降级） */
+      broken: false,
+      rangeCalls: 0,
+      errors: [] as Array<Record<string, unknown>>,
+      lastFetch: null as { start: number; end: number } | null,
+      lastMap: null as { visualStart: number; visualEnd: number; result: { start: number; end: number } } | null,
       calls: [] as Array<{ start: number; end: number; visualStart?: number; visualEnd?: number }>,
       slotOf(i: number): number {
         let count = 0
@@ -4387,8 +4393,10 @@ test('table advanced：createWindowedSource × 视觉适配器——真实 adapt
       adapter: null as unknown,
     }
     state.adapter = {
-      getGeometry: (dataStart: number) => ({ start: state.slotOf(dataStart), total: state.visualTotal }),
+      getGeometry: (dataStart: number) =>
+        state.broken ? { start: -1, total: 0 } : { start: state.slotOf(dataStart), total: state.visualTotal },
       getDataRange: (visualStart: number, visualEnd: number) => {
+        state.rangeCalls++
         let lo = Infinity
         let hi = -Infinity
         for (let i = 0; i < state.dataTotal; i++) {
@@ -4399,13 +4407,18 @@ test('table advanced：createWindowedSource × 视觉适配器——真实 adapt
           if (i + 1 > hi) hi = i + 1
         }
         // 与组件同口径：映射结果前后各扩 8 行并夹取（宿主取数更宽，避免边界抖动）
-        return { start: Math.max(0, lo - 8), end: Math.min(state.dataTotal, hi + 8) }
+        const result = { start: Math.max(0, lo - 8), end: Math.min(state.dataTotal, hi + 8) }
+        state.lastMap = { visualStart, visualEnd, result }
+        return result
       },
     }
     ;(window as any).__qaVisualState = state
     el.addEventListener('oas-window-request', (event) => {
       const d = (event as CustomEvent).detail
       state.calls.push({ start: d.start, end: d.end, visualStart: d.visualStart, visualEnd: d.visualEnd })
+    })
+    el.addEventListener('oas-window-error', (event) => {
+      state.errors.push((event as CustomEvent).detail as Record<string, unknown>)
     })
     const fetchRows = ({
       start,
@@ -4414,8 +4427,9 @@ test('table advanced：createWindowedSource × 视觉适配器——真实 adapt
       start: number
       end: number
       signal: AbortSignal
-    }): Promise<{ rows: unknown[]; total: number }> =>
-      new Promise((resolve) =>
+    }): Promise<{ rows: unknown[]; total: number }> => {
+      state.lastFetch = { start, end }
+      return new Promise((resolve) =>
         setTimeout(
           () =>
             resolve({
@@ -4432,6 +4446,7 @@ test('table advanced：createWindowedSource × 视觉适配器——真实 adapt
           10,
         ),
       )
+    }
     const source = createWindowedSource(el, {
       fetchRows,
       total: state.dataTotal,
@@ -4583,7 +4598,80 @@ test('table advanced：createWindowedSource × 视觉适配器——真实 adapt
   expect(dark.ariaCount).toBe('300')
   expect(dark.expandVisible).toBe(true)
 
-  expect(issues, 'console 零 error/告警（协议激活无「只有其一」告警）').toEqual([])
+  // 降级不误映射：geometry 失败 → 视觉属性移除 + 一次 error；此后事件仍带（本地口径的）视觉字段，
+  // source 不得再按宿主全局布局映射（否则会按错误坐标拉行）——必须回落事件 start/end 原样取数
+  await page.evaluate(() => {
+    ;(window as any).__qaVisualState.broken = true
+    document
+      .querySelector('#qa-window-visual-table')!
+      .dispatchEvent(
+        new CustomEvent('oas-window-request', { detail: { start: 210, end: 219, visualStart: 216, visualEnd: 226 } }),
+      )
+  })
+  await page.waitForFunction(
+    () =>
+      (window as any).__qaVisualState.errors.length === 1 &&
+      !(window as any).__qaVisualState.el.hasAttribute('visual-total'),
+    null,
+    { timeout: 15000 },
+  )
+  const degradedAttr = await page.evaluate(
+    () => (window as any).__qaVisualState.el.getAttribute('visual-start') as string | null,
+  )
+  expect(degradedAttr, 'geometry 失败：视觉属性整体回落').toBe(null)
+
+  // 降级后：带本地视觉字段的请求 → 不调用 getDataRange、按事件 start/end 原样取数
+  const degradedRangeCalls = (await page.evaluate(() => (window as any).__qaVisualState.rangeCalls as number)) as number
+  await page.evaluate(() => {
+    document
+      .querySelector('#qa-window-visual-table')!
+      .dispatchEvent(
+        new CustomEvent('oas-window-request', { detail: { start: 220, end: 229, visualStart: 226, visualEnd: 236 } }),
+      )
+  })
+  await page.waitForFunction(
+    () =>
+      (window as any).__qaVisualState.lastFetch?.start === 220 &&
+      (window as any).__qaVisualState.lastFetch?.end === 229,
+    null,
+    { timeout: 15000 },
+  )
+  const degradedMap = (await page.evaluate(() => (window as any).__qaVisualState.rangeCalls as number)) as number
+  expect(degradedMap, '降级后不得调用 getDataRange（事件视觉字段是本地口径）').toBe(degradedRangeCalls)
+
+  // 修正 adapter 后 refresh 恢复协议：视觉属性恢复；显式请求重新映射（fetch 区间 = adapter 映射结果）
+  await page.evaluate(() => {
+    const state = (window as any).__qaVisualState
+    state.broken = false
+    ;(window as any).__qaVisualSource.source.refresh()
+  })
+  await page.waitForFunction(() => (window as any).__qaVisualState.el.getAttribute('visual-total') === '313', null, {
+    timeout: 15000,
+  })
+  // 等恢复期表格自动请求链路沉降，再显式验证映射恢复
+  await page.waitForTimeout(250)
+  await page.evaluate(() => {
+    document
+      .querySelector('#qa-window-visual-table')!
+      .dispatchEvent(
+        new CustomEvent('oas-window-request', { detail: { start: 280, end: 289, visualStart: 296, visualEnd: 306 } }),
+      )
+  })
+  await page.waitForFunction(
+    () => {
+      const state = (window as any).__qaVisualState
+      return (
+        state.lastMap?.visualStart === 296 &&
+        state.lastMap?.visualEnd === 306 &&
+        state.lastFetch?.start === state.lastMap?.result.start &&
+        state.lastFetch?.end === state.lastMap?.result.end
+      )
+    },
+    null,
+    { timeout: 15000 },
+  )
+
+  expect(issues, 'console 零 error/告警（协议激活与降级恢复均无「只有其一」告警）').toEqual([])
   await page.evaluate(() => {
     document.documentElement.classList.remove('dark')
     ;(window as any).__qaVisualSource.source.destroy()

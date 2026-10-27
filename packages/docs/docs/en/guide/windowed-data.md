@@ -57,14 +57,13 @@ Host-side recipe (on top of the four steps):
 // Visual adapter over a real layout: one expansion slot every 25 rows (host-known)
 const EXPANDED = new Set([0, 25, 50, 75, 100])
 const DATA_TOTAL = 10000
-const visualTotal = DATA_TOTAL + EXPANDED.size
 
 const slotOf = (i: number) => i + [...EXPANDED].filter((e) => e < i).length
 
 const adapter = {
   // Called at init and on every refill: return the current snapshot (compute it fresh; never cache request-time values)
   getGeometry(dataStart: number) {
-    return { start: slotOf(dataStart), total: visualTotal }
+    return { start: slotOf(dataStart), total: DATA_TOTAL + EXPANDED.size }
   },
   // Map the visible window's visual range back to a data fetch range (±8 rows buffer, same as the component)
   getDataRange(visualStart: number, visualEnd: number) {
@@ -82,7 +81,7 @@ const adapter = {
 }
 ```
 
-To skip the glue code, `createWindowedSource` from `@oas-ui/ui/data/table/advanced` accepts this adapter directly: it re-evaluates the geometry at init and on every refill and writes `visual-start` / `visual-total` for you, and maps requests through `getDataRange` automatically. An invalid mapping (must be finite with end > start) or invalid geometry (non-finite, `start<0`, `total≤0`, `start>total`, `total<` data total) fetches nothing / writes no wrong visual attributes and dispatches one `oas-window-error` (detail carries the visual range and the original data range); after fixing the adapter the same window can be retried. Without `visual` the helper writes no visual attributes at all — behavior is identical to before.
+To skip the glue code, `createWindowedSource` from `@oas-ui/ui/data/table/advanced` accepts this adapter directly: it re-evaluates the geometry at init and on every refill and writes `visual-start` / `visual-total` for you, and maps requests through `getDataRange` automatically. An invalid mapping (must be finite with end > start) or invalid geometry (non-finite, `start<0`, `total≤0`, `start>total`, `total<` data total) fetches nothing / writes no wrong visual attributes and dispatches one `oas-window-error` (detail carries the visual range and the original data range). After a geometry failure the table falls back to the local model, and subsequent event visual fields are local-scope only — the helper stops mapping (fetching by the event's `start` / `end` verbatim). After fixing the adapter, call `source.refresh()` to force a refetch and restore the protocol (an ordinary same-window event may be swallowed by the loaded-coverage check). Without `visual` the helper writes no visual attributes at all — behavior is identical to before.
 
 > In non-virtual windowed mode (no `height`) the protocol only affects "expansion is host-controlled", not the layout: there is no scrollable viewport, and `visual-start` / `visual-total` only govern who owns expansion control.
 

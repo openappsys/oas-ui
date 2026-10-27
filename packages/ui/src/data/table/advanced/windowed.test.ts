@@ -524,6 +524,88 @@ describe('createWindowedSource × 视觉适配器', () => {
     }
   })
 
+  it('geometry 失败降级后，带本地视觉字段的请求不映射（回落事件 start/end）；修正后 refresh 恢复协议', async () => {
+    const el = mountVisual()
+    const layout = makeVisualLayout()
+    const fetchRows = vi.fn(stubFetch(200))
+    const source = createWindowedSource(el, { fetchRows, total: 200, windowSize: 5, visual: layout })
+    const errors: CustomEvent[] = []
+    el.addEventListener('oas-window-error', (e) => errors.push(e as CustomEvent))
+    try {
+      await vi.waitFor(() => expect(el.data).toHaveLength(8))
+      expect(el.getAttribute('visual-total')).toBe('210')
+      // geometry 失败：回填移除视觉属性（表格整体回落本地模型）→ source 不得再按宿主布局映射
+      layout.geometryMode = 'invalid'
+      el.dispatchEvent(
+        new CustomEvent('oas-window-request', { detail: { start: 30, end: 39, visualStart: 33, visualEnd: 43 } }),
+      )
+      await vi.waitFor(() => expect(errors).toHaveLength(1))
+      expect(el.hasAttribute('visual-total'), 'geometry 失败后视觉属性已移除').toBe(false)
+      // 降级后表格回落本地模型，事件仍可能带（本地口径的）visualStart/visualEnd → 不得调用 getDataRange
+      const rangeCallsBefore = layout.getDataRangeCalls.length
+      const fetchBefore = fetchRows.mock.calls.length
+      el.dispatchEvent(
+        new CustomEvent('oas-window-request', { detail: { start: 50, end: 59, visualStart: 55, visualEnd: 65 } }),
+      )
+      await vi.waitFor(() => expect(fetchRows.mock.calls.length).toBe(fetchBefore + 1))
+      expect(fetchRows.mock.calls.at(-1)![0], '降级后按事件 start/end 原样取数').toMatchObject({ start: 50, end: 59 })
+      expect(layout.getDataRangeCalls.length, '降级后不得调用 getDataRange').toBe(rangeCallsBefore)
+      // 修正后 refresh 恢复协议：视觉属性恢复 → 后续请求重新按视觉区间映射
+      layout.geometryMode = 'ok'
+      source.refresh()
+      await vi.waitFor(() => expect(el.getAttribute('visual-total')).toBe('210'))
+      // 等恢复期表格自动请求链路沉降，再显式验证映射恢复
+      await new Promise((resolve) => setTimeout(resolve, 30))
+      const rangeCallsAfterRecovery = layout.getDataRangeCalls.length
+      expect(rangeCallsAfterRecovery, '恢复后映射重新可用（恢复期回填已触发映射）').toBeGreaterThan(rangeCallsBefore)
+      el.dispatchEvent(
+        new CustomEvent('oas-window-request', { detail: { start: 60, end: 69, visualStart: 66, visualEnd: 76 } }),
+      )
+      // 视觉 [66,76) 经 adapter 映射 = 数据 [60,69)（行60..68；行69 属主槽位 76 恰在窗口外）
+      await vi.waitFor(() => expect(fetchRows.mock.calls.at(-1)![0]).toMatchObject({ start: 60, end: 69 }))
+    } finally {
+      source.destroy()
+    }
+  })
+
+  it('数据 total 超过 visual-total：geometry 回落（total<数据 total 视为非法）且降级后不误映射', async () => {
+    const el = mountVisual()
+    // 宿主布局仍按 200 行建模（visual-total 210），服务端数据 total 后来才变为 300
+    const layout = makeVisualLayout(200)
+    let serverTotal = 200
+    const fetchRows = vi.fn(async ({ start, end }: { start: number; end: number }) => ({
+      rows: Array.from({ length: end - start }, (_, k) => ({ name: `行${start + k}` })),
+      total: serverTotal,
+    }))
+    const source = createWindowedSource(el, { fetchRows, total: 200, windowSize: 5, visual: layout })
+    const errors: CustomEvent[] = []
+    el.addEventListener('oas-window-error', (e) => errors.push(e as CustomEvent))
+    try {
+      // 初始回填 total=200 ≤ 210 → 协议正常生效
+      await vi.waitFor(() => expect(el.data).toHaveLength(8))
+      expect(el.getAttribute('visual-total')).toBe('210')
+      // 服务端 total 涨到 300 > visual-total 210 → 下一笔回填 geometry 非法 → 移除视觉属性 + 一次 error
+      serverTotal = 300
+      el.dispatchEvent(
+        new CustomEvent('oas-window-request', { detail: { start: 30, end: 39, visualStart: 33, visualEnd: 43 } }),
+      )
+      await vi.waitFor(() => expect(errors).toHaveLength(1))
+      expect(el.getAttribute('total'), '回填带新数据 total').toBe('300')
+      expect(el.hasAttribute('visual-total'), '数据 total 超过 visual-total → 整体回落').toBe(false)
+      // 降级后带本地视觉字段的请求不映射
+      const rangeCallsBefore = layout.getDataRangeCalls.length
+      const fetchBefore = fetchRows.mock.calls.length
+      el.dispatchEvent(
+        new CustomEvent('oas-window-request', { detail: { start: 50, end: 59, visualStart: 55, visualEnd: 65 } }),
+      )
+      await vi.waitFor(() => expect(fetchRows.mock.calls.length).toBe(fetchBefore + 1))
+      expect(fetchRows.mock.calls.at(-1)![0], '降级后按事件 start/end 原样取数').toMatchObject({ start: 50, end: 59 })
+      expect(layout.getDataRangeCalls.length, '降级后不得调用 getDataRange').toBe(rangeCallsBefore)
+    } finally {
+      source.destroy()
+    }
+  })
+
   it.each([
     ['start 非有限', { start: Number.NaN, total: 210 }],
     ['total 非有限', { start: 0, total: Number.POSITIVE_INFINITY }],
