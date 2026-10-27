@@ -30,7 +30,12 @@ export interface MasterDetailOptions {
 export interface MasterDetail {
   /** 以可见行下标选中/清空；越界或行不存在时清空 */
   select(rowIndex: number | null): void
-  /** 按行键选中（递归 children 查找）；行未渲染时保留选中（rowIndex = -1）；普通模式 key 不存在时清空，windowed 未装载/不存在时不改变当前选中 */
+  /**
+   * 按行键选中（递归 children 查找）；行未渲染时保留选中（rowIndex = -1）。
+   * windowed 生效（`windowed` 属性在场且 total 为有限正数）且键未装载时挂起等待 data 命中——
+   * 等待期间不改选中/面板、不派发 `oas-detail-change`；后续 close()/select()/行或单元格点击/Enter/Esc
+   * 以及再次调用（新键覆盖旧等待）均可取消。普通模式（含 total 为 0/非法）键不存在时清空选中。
+   */
   selectByKey(key: string): void
   /** 清空选中（等价 select(null)） */
   close(): void
@@ -121,6 +126,8 @@ export function createMasterDetail(table: HTMLElement, options: MasterDetailOpti
     throw new Error('[oas-table] createMasterDetail 需要非空 label（详情面板的可访问名称）')
   }
   let selected: RowDetail | null = null
+  /** windowed 生效但键尚未装载：等待 data 命中后再落地；不改变当前选中/面板、不抢 Esc 激活标记 */
+  let pendingKey: string | null = null
   let observer: MutationObserver | null = null
   let destroyed = false
   // Esc 响应开关：false 时本实例完全不响应 Esc（也不抢占「最近激活」标记，避免压过其它实例后 Esc 全体失效）
@@ -175,6 +182,13 @@ export function createMasterDetail(table: HTMLElement, options: MasterDetailOpti
     return walk(data)
   }
 
+  /** windowed 是否实际生效：与表格 readWindowedMode 同口径（属性在场且 total 为有限正数） */
+  const windowedActive = (): boolean => {
+    if (!table.hasAttribute('windowed')) return false
+    const total = Number(table.getAttribute('total'))
+    return Number.isFinite(total) && total > 0
+  }
+
   const detailAt = (rowIndex: number): RowDetail | null => {
     const tr = rowsOf(table)[rowIndex]
     const key = tr?.getAttribute('data-key')
@@ -189,6 +203,8 @@ export function createMasterDetail(table: HTMLElement, options: MasterDetailOpti
   }
 
   const apply = (next: RowDetail | null): void => {
+    // 任何显式落地（选中/清空/点击/Enter/Esc/close）都优先于未装载键等待
+    pendingKey = null
     const previous = selected
     const sameKey = next !== null && selected !== null && next.key === selected.key
     if (!next && !selected) return
@@ -214,13 +230,29 @@ export function createMasterDetail(table: HTMLElement, options: MasterDetailOpti
     }
   }
 
-  /** data 变化（含行内编辑回写）后刷新详情内容；数据中行消失才清空（滚出渲染窗口不清空） */
+  /** data 变化（含行内编辑回写）后先解析未装载键等待，再刷新详情内容；数据中行消失才清空（滚出渲染窗口不清空） */
   const refresh = (): void => {
+    if (pendingKey !== null) {
+      // 模式已回落普通：等待失去 windowed 语义，放弃 pending，按普通模式刷新
+      if (!windowedActive()) {
+        pendingKey = null
+      } else {
+        const key = pendingKey
+        const pendingRow = findRow(key)
+        if (pendingRow) {
+          pendingKey = null
+          apply({ row: pendingRow, key, rowIndex: rowIndexByKey(key) })
+          return
+        }
+        // 仍是有效 windowed：键只是尚未装载，继续等待
+        return
+      }
+    }
     if (!selected) return
     const row = findRow(selected.key)
     if (!row) {
       // windowed 的切片换窗只是「不在当前装载区间」，不是数据删除：保留选中（rowIndex=-1）
-      if (table.hasAttribute('windowed')) {
+      if (windowedActive()) {
         selected = { ...selected, rowIndex: -1 }
         highlight()
         renderPanel()
@@ -341,8 +373,12 @@ export function createMasterDetail(table: HTMLElement, options: MasterDetailOpti
     highlight()
   })
   observer.observe(table.shadowRoot as ShadowRoot, { childList: true, subtree: true })
-  const dataObserver = new MutationObserver(() => refresh())
-  dataObserver.observe(table, { attributes: true, attributeFilter: ['data'] })
+  const dataObserver = new MutationObserver((records) => {
+    // row-key 改变后旧键的等待失去意义：丢弃 pending（选中既有语义不变）
+    if (records.some((record) => record.attributeName === 'row-key')) pendingKey = null
+    refresh()
+  })
+  dataObserver.observe(table, { attributes: true, attributeFilter: ['data', 'windowed', 'total', 'row-key'] })
 
   renderPanel()
 
@@ -360,23 +396,30 @@ export function createMasterDetail(table: HTMLElement, options: MasterDetailOpti
       if (destroyed) return
       const row = findRow(key)
       if (!row) {
-        if (table.hasAttribute('windowed')) {
-          // 未装载的 windowed 切片：不当作删除，保留当前选中/忽略此次选择
+        if (windowedActive()) {
+          // 未装载的 windowed 切片：不当作删除，挂起等待 data 命中
           if (selected && selected.key === key) {
+            // 已选中的键暂时离窗：只刷新行下标，不重复派发选中变化
+            pendingKey = null
             selected = { ...selected, rowIndex: -1 }
             highlight()
             renderPanel()
+          } else {
+            pendingKey = key
           }
           return
         }
+        pendingKey = null
         apply(null)
         return
       }
       // 行未渲染（滚出窗口/树形未展开）时 rowIndexByKey 返回 -1：保留选中，rowIndex 取 -1
+      pendingKey = null
       apply({ row, key, rowIndex: rowIndexByKey(key) })
     },
     close() {
       if (destroyed) return
+      pendingKey = null
       apply(null)
     },
     get selected() {
@@ -385,6 +428,7 @@ export function createMasterDetail(table: HTMLElement, options: MasterDetailOpti
     destroy() {
       if (destroyed) return
       destroyed = true
+      pendingKey = null
       table.removeEventListener('oas-row-click', onRowClick)
       table.removeEventListener('oas-cell-click', onCellClick)
       table.removeEventListener('keydown', onEnter)

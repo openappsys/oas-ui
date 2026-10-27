@@ -2,7 +2,23 @@
 
 import { test, expect } from '@playwright/test'
 import AxeBuilder from '@axe-core/playwright'
+import { join } from 'node:path'
 import { up } from './helpers'
+
+/**
+ * 把构建产物按稳定前缀暴露给页面：Pro helper（detail / advanced）不在 docs bundle 的全局，
+ * 通过路由映射 packages/ui/dist 后动态 import，保证浏览器回归跑的是真实构建产物。
+ */
+async function serveBuiltUi(page: import('@playwright/test').Page): Promise<void> {
+  await page.route('**/__qa_ui__/**', (route) => {
+    const pathname = new URL(route.request().url()).pathname
+    const relative = decodeURIComponent(pathname.replace(/^\/__qa_ui__\//, ''))
+    return route.fulfill({
+      path: join(process.cwd(), 'packages/ui/dist', relative),
+      contentType: 'text/javascript',
+    })
+  })
+}
 
 test('table SPA 导航后数据不丢（Vue property 赋值反射到 attribute）', async ({ page }) => {
   // 曾现 bug：oas-table 的 data/columns 是 class 字段，Vue SPA 渲染时走 property 赋值而非
@@ -3149,4 +3165,353 @@ test('table Pro 事件支持父级委托并保留 composed', async ({ page }) =>
     expect(event.bubbles, name).toBe(true)
     expect(event.composed, name).toBe(true)
   }
+})
+
+test('table Pro 主从详情：windowed 未装载键等待回填后落地一次，close 取消不落地', async ({ page }) => {
+  // 缺陷固化：selectByKey 只查当前切片，有效 windowed 下未装载键被静默丢弃；total=0/非法时
+  // 又被 hasAttribute('windowed') 误判。修复=有效 windowed 判定（total 有限正数）+ pending 等待。
+  const issues: string[] = []
+  page.on('console', (m) => {
+    if (m.type() === 'error' || (m.type() === 'warning' && !m.text().includes('scroll-linked positioning effect')))
+      issues.push(`${m.type()}: ${m.text()}`)
+  })
+  page.on('pageerror', (error) => issues.push(`pageerror: ${error.message}`))
+  await serveBuiltUi(page)
+  await page.goto('/components/table.html', { waitUntil: 'domcontentloaded' })
+  await page.waitForFunction(() => customElements.get('oas-table') != null, null, { timeout: 15000 })
+
+  const pending = await page.evaluate(async () => {
+    const moduleUrl = '/__qa_ui__/data/table/detail/index.js'
+    const { createMasterDetail } = (await import(moduleUrl)) as {
+      createMasterDetail: (table: HTMLElement, options: Record<string, unknown>) => any
+    }
+    const el = document.createElement('oas-table')
+    el.id = 'qa-detail-pending-table'
+    el.setAttribute('windowed', '')
+    el.setAttribute('total', '100')
+    el.setAttribute('window-start', '0')
+    el.setAttribute('row-key', 'id')
+    el.setAttribute('columns', JSON.stringify([{ key: 'name', title: '名称' }]))
+    el.setAttribute('data', JSON.stringify([{ id: 'a', name: 'Alpha' }]))
+    const panel = document.createElement('div')
+    panel.id = 'qa-detail-pending-panel'
+    ;(document.querySelector('.vp-doc') ?? document.body).append(el, panel)
+    ;(window as any).__qaDetailEvents = 0
+    el.addEventListener('oas-detail-change', () => {
+      ;(window as any).__qaDetailEvents += 1
+    })
+    const detail = createMasterDetail(el, {
+      panel,
+      label: '行详情',
+      emptyText: '未选择',
+      render: (item: { row: Record<string, unknown> }) => String(item.row.name),
+    })
+    ;(window as any).__qaDetail = detail
+    detail.selectByKey('a')
+    detail.selectByKey('z')
+    return {
+      panel: panel.textContent,
+      events: (window as any).__qaDetailEvents,
+      selected: detail.selected?.key,
+      rowIndex: detail.selected?.rowIndex,
+    }
+  })
+  expect(pending.panel, '等待期间保留旧面板').toBe('Alpha')
+  expect(pending.events, '等待期间不派发详情变化').toBe(1)
+  expect(pending.selected).toBe('a')
+  expect(pending.rowIndex).toBe(0)
+
+  await page.evaluate(() => {
+    const el = document.querySelector('#qa-detail-pending-table')!
+    el.setAttribute('window-start', '50')
+    el.setAttribute('data', JSON.stringify([{ id: 'z', name: 'Zulu' }]))
+  })
+  await expect
+    .poll(() => page.evaluate(() => document.querySelector('#qa-detail-pending-panel')?.textContent ?? ''))
+    .toBe('Zulu')
+  const resolved = await page.evaluate(() => {
+    const detail = (window as any).__qaDetail
+    return {
+      events: (window as any).__qaDetailEvents,
+      selected: detail.selected?.key,
+      rowIndex: detail.selected?.rowIndex,
+    }
+  })
+  expect(resolved.events, '回填命中只落地一次（事件总数为 2）').toBe(2)
+  expect(resolved.selected).toBe('z')
+  expect(resolved.rowIndex).toBe(0)
+
+  const afterPending = await page.evaluate(() => {
+    const el = document.querySelector('#qa-detail-pending-table')!
+    const detail = (window as any).__qaDetail
+    detail.close()
+    el.setAttribute('data', JSON.stringify([]))
+    detail.selectByKey('y')
+    const beforeCancel = (window as any).__qaDetailEvents
+    detail.close()
+    return {
+      beforeCancel,
+      events: (window as any).__qaDetailEvents,
+      panel: document.querySelector('#qa-detail-pending-panel')!.textContent,
+    }
+  })
+  expect(afterPending.events, 'close 取消未装载等待且无选中时不额外派发').toBe(afterPending.beforeCancel)
+  expect(afterPending.panel).toBe('未选择')
+
+  await page.evaluate(() => {
+    const el = document.querySelector('#qa-detail-pending-table') as HTMLElement & { data: unknown[] }
+    el.data = [{ id: 'y', name: 'Yankee' }]
+  })
+  await page.waitForTimeout(100)
+  const cancelled = await page.evaluate(() => {
+    const detail = (window as any).__qaDetail
+    const panel = document.querySelector('#qa-detail-pending-panel')!
+    return {
+      panel: panel.textContent,
+      selected: detail.selected,
+      events: (window as any).__qaDetailEvents,
+    }
+  })
+  expect(cancelled.panel, '被 close 取消的等待不得在数据到达后落地').toBe('未选择')
+  expect(cancelled.selected).toBeNull()
+  expect(cancelled.events).toBe(afterPending.beforeCancel)
+  expect(issues, 'console 零 error/告警').toEqual([])
+
+  await page.evaluate(() => {
+    ;(window as any).__qaDetail.destroy()
+    document.querySelector('#qa-detail-pending-table')?.remove()
+    document.querySelector('#qa-detail-pending-panel')?.remove()
+  })
+})
+
+test('table Pro range：无重渲染禁用不覆盖外部新 tabindex，公共禁用恢复普通/editable 语义', async ({ page }) => {
+  // 缺陷固化：savedTabindex 只存原值，关闭时无条件回写会覆盖 range 拥有期间外部能力写入的新值。
+  // 修复=记录原值 + range 最后写入值，仅当前值仍归 range 所有时才恢复。
+  await page.goto('/components/table.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#table-pro')
+  await page.waitForFunction(
+    () => document.querySelector('#table-pro')!.shadowRoot!.querySelectorAll('tr.row').length === 4,
+    null,
+    { timeout: 10000 },
+  )
+  await page.waitForFunction(
+    () =>
+      (
+        document.querySelector('#table-pro') as unknown as {
+          getCapabilityOptions(name: string): { enabled?: boolean } | undefined
+        }
+      ).getCapabilityOptions('range')?.enabled === true,
+    null,
+    { timeout: 10000 },
+  )
+
+  const ownership = await page.evaluate(() => {
+    const el = document.querySelector('#table-pro') as unknown as HTMLElement & {
+      getCapabilityOptions<T>(name: string): T | undefined
+      setCapabilityOptions(name: string, options: unknown): void
+      requestUpdate(): void
+    }
+    const current = el.getCapabilityOptions<{ enabled: boolean }>('range')!
+    el.setCapabilityOptions('range', {
+      ...current,
+      selection: { start: { row: 0, col: 'name' }, end: { row: 0, col: 'name' } },
+    })
+    const td = el.shadowRoot!.querySelector<HTMLElement>('tr.row td[data-col="name"]')!
+    const written = td.getAttribute('tabindex')
+    td.setAttribute('tabindex', '5')
+    const live = el.getCapabilityOptions<{ enabled: boolean }>('range')!
+    live.enabled = false
+    el.requestUpdate()
+    const sameNode = el.shadowRoot!.querySelector('tr.row td[data-col="name"]') === td
+    return { written, external: td.getAttribute('tabindex'), sameNode }
+  })
+  expect(ownership.written, 'range 拥有焦点格时写入 0').toBe('0')
+  expect(ownership.sameNode, '禁用路径不重建 DOM（否则断言不成立）').toBe(true)
+  expect(ownership.external, '外部写入的新 tabindex 必须保留').toBe('5')
+
+  // 公共路径（enableRangeSelection 同款 setCapabilityOptions）：禁用后不残留 range 停靠值
+  const restored = await page.evaluate(() => {
+    const el = document.querySelector('#table-pro') as unknown as HTMLElement & {
+      setCapabilityOptions(name: string, options: unknown): void
+    }
+    el.setCapabilityOptions('range', {
+      enabled: true,
+      selection: { start: { row: 0, col: 'name' }, end: { row: 0, col: 'name' } },
+    })
+    el.setCapabilityOptions('range', { enabled: false })
+    const editable = el.shadowRoot!.querySelector<HTMLElement>('tr.row td[data-col="name"]')!
+    const plain = el.shadowRoot!.querySelector<HTMLElement>('tr.row td[data-col="team"]')!
+    return {
+      editable: editable.getAttribute('tabindex'),
+      plain: plain.getAttribute('tabindex'),
+      // editable 列自身的 tabindex=0 是编辑能力语义，不算 range 残留停靠点
+      plainStops: [...el.shadowRoot!.querySelectorAll<HTMLElement>('td[data-col]')].filter(
+        (td) => td.tabIndex === 0 && td.getAttribute('data-col') !== 'name',
+      ).length,
+      rangeSelected: el.shadowRoot!.querySelectorAll('td.range-selected').length,
+    }
+  })
+  expect(restored.editable, 'editable 单元格恢复原 tabindex=0').toBe('0')
+  expect(restored.plain, '普通单元格无 tabindex').toBeNull()
+  expect(restored.plainStops, '禁用后普通单元格无 range roving 停靠点').toBe(0)
+  expect(restored.rangeSelected, '禁用后选区装饰清除').toBe(0)
+})
+
+test('table advanced：createWindowedSource 外部清空/换窗后重拉，同步失败可重试且无告警', async ({ page }) => {
+  // 缺陷固化：source 自存 loaded 在宿主外部清空/替换 data 后变陈旧吞掉新请求；
+  // fetchRows 同步 throw 绕过 .catch 让 filling 永久残留。修复=按表格当前切片去重 + 统一失败路径。
+  const issues: string[] = []
+  page.on('console', (m) => {
+    if (m.type() === 'error' || (m.type() === 'warning' && !m.text().includes('scroll-linked positioning effect')))
+      issues.push(`${m.type()}: ${m.text()}`)
+  })
+  page.on('pageerror', (error) => issues.push(`pageerror: ${error.message}`))
+  await serveBuiltUi(page)
+  await page.goto('/components/table.html', { waitUntil: 'domcontentloaded' })
+  await page.waitForFunction(() => customElements.get('oas-table') != null, null, { timeout: 15000 })
+
+  await page.evaluate(async () => {
+    const moduleUrl = '/__qa_ui__/data/table/advanced/windowed.js'
+    const { createWindowedSource } = (await import(moduleUrl)) as {
+      createWindowedSource: (table: HTMLElement, options: Record<string, unknown>) => { destroy(): void }
+    }
+    const el = document.createElement('oas-table')
+    el.id = 'qa-window-source-table'
+    el.setAttribute('row-key', 'id')
+    el.setAttribute('columns', JSON.stringify([{ key: 'name', title: '名称' }]))
+    ;(document.querySelector('.vp-doc') ?? document.body).append(el)
+    const state: { mode: 'ok' | 'throw'; calls: Array<{ start: number; end: number }>; errors: unknown[] } = {
+      mode: 'ok',
+      calls: [],
+      errors: [],
+    }
+    ;(window as any).__qaWindowSourceState = state
+    el.addEventListener('oas-window-error', (event) => state.errors.push((event as CustomEvent).detail))
+    const fetchRows = ({
+      start,
+      end,
+    }: {
+      start: number
+      end: number
+      signal: AbortSignal
+    }): Promise<{ rows: unknown[]; total: number }> => {
+      state.calls.push({ start, end })
+      if (state.mode === 'throw') throw new Error('qa sync failure')
+      return new Promise((resolve) =>
+        setTimeout(
+          () =>
+            resolve({
+              rows: Array.from({ length: end - start }, (_, index) => ({
+                id: `r${start + index}`,
+                name: `R${start + index}`,
+              })),
+              total: 100,
+            }),
+          10,
+        ),
+      )
+    }
+    const source = createWindowedSource(el, { fetchRows, windowSize: 5 })
+    ;(window as any).__qaWindowSource = { source, el }
+    await new Promise((resolve) => setTimeout(resolve, 80))
+  })
+  const initial = await page.evaluate(() => {
+    const { el } = (window as any).__qaWindowSource
+    const state = (window as any).__qaWindowSourceState
+    return { calls: state.calls, rows: (el.data as unknown[]).length }
+  })
+  expect(initial.calls, '首拉一次').toHaveLength(1)
+  expect(initial.rows).toBe(5)
+
+  // 宿主外部清空 data → 同窗口请求必须重新拉取（旧 loaded 会吞掉）
+  await page.evaluate(() => {
+    const { el } = (window as any).__qaWindowSource
+    el.setAttribute('data', '[]')
+    el.dispatchEvent(new CustomEvent('oas-window-request', { detail: { start: 0, end: 5 } }))
+  })
+  await page.waitForFunction(() => {
+    const { el } = (window as any).__qaWindowSource
+    const state = (window as any).__qaWindowSourceState
+    return state.calls.length >= 2 && (el.data as unknown[]).length === 5
+  })
+  const reload = await page.evaluate(() => {
+    const { el } = (window as any).__qaWindowSource
+    const state = (window as any).__qaWindowSourceState
+    return { calls: state.calls, first: (el.data as Array<{ name: string }>)[0]?.name }
+  })
+  expect(reload.calls.slice(1).some((call: { start: number; end: number }) => call.start === 0 && call.end === 5)).toBe(
+    true,
+  )
+  expect(reload.first).toBe('R0')
+
+  // 宿主外部换窗 → 原视口请求不被旧区间吞掉
+  await page.evaluate(() => {
+    const { el } = (window as any).__qaWindowSource
+    el.setAttribute('window-start', '40')
+    el.setAttribute(
+      'data',
+      JSON.stringify(Array.from({ length: 5 }, (_, index) => ({ id: `r${40 + index}`, name: `R${40 + index}` }))),
+    )
+  })
+  await page.evaluate(() => {
+    const { el } = (window as any).__qaWindowSource
+    el.dispatchEvent(new CustomEvent('oas-window-request', { detail: { start: 0, end: 5 } }))
+  })
+  await page.waitForFunction(
+    () => {
+      const { el } = (window as any).__qaWindowSource
+      return el.getAttribute('window-start') === '0' && (el.data as Array<{ name: string }>)[0]?.name === 'R0'
+    },
+    null,
+    { timeout: 5000 },
+  )
+
+  // 同步 throw → 一次 oas-window-error，之后同窗口可重试
+  await page.evaluate(() => {
+    const state = (window as any).__qaWindowSourceState
+    state.mode = 'throw'
+    document
+      .querySelector('#qa-window-source-table')!
+      .dispatchEvent(new CustomEvent('oas-window-request', { detail: { start: 10, end: 15 } }))
+  })
+  await page.waitForFunction(() => (window as any).__qaWindowSourceState.errors.length === 1, null, {
+    timeout: 5000,
+  })
+  const failed = await page.evaluate(() => {
+    const error = (window as any).__qaWindowSourceState.errors[0] as {
+      start: number
+      end: number
+      error: unknown
+    }
+    return { start: error.start, end: error.end, isError: error.error instanceof Error }
+  })
+  expect(failed).toEqual({ start: 10, end: 15, isError: true })
+
+  await page.evaluate(() => {
+    const state = (window as any).__qaWindowSourceState
+    state.mode = 'ok'
+    document
+      .querySelector('#qa-window-source-table')!
+      .dispatchEvent(new CustomEvent('oas-window-request', { detail: { start: 10, end: 15 } }))
+  })
+  await page.waitForFunction(
+    () => {
+      const { el } = (window as any).__qaWindowSource
+      return el.getAttribute('window-start') === '10' && (el.data as Array<{ name: string }>)[0]?.name === 'R10'
+    },
+    null,
+    { timeout: 5000 },
+  )
+  const retried = await page.evaluate(() => ({
+    errors: (window as any).__qaWindowSourceState.errors.length,
+    rows: ((window as any).__qaWindowSource.el.data as unknown[]).length,
+  }))
+  expect(retried.errors, '失败只派发一次 error').toBe(1)
+  expect(retried.rows).toBe(5)
+  expect(issues, 'console 零 error/告警（同步异常不逃逸）').toEqual([])
+
+  await page.evaluate(() => {
+    ;(window as any).__qaWindowSource.source.destroy()
+    document.querySelector('#qa-window-source-table')?.remove()
+  })
 })

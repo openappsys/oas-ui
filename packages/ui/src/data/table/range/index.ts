@@ -362,8 +362,8 @@ class RangeSelectionController {
   private dragAnchor: PositionKey | null = null
   /** 键盘移动焦点时抑制 focusin 的「单格重置选区」 */
   private suppressFocus = false
-  /** 本控制器改写过的 tabindex 原值（关闭时精确还原，不吞掉 edit / grid-navigation 的焦点语义） */
-  private savedTabindex = new WeakMap<HTMLElement, string | null>()
+  /** 本控制器拥有的 tabindex：记录元素原值与 range 最后写入的 0/-1，关闭时只在未被外部改写时精确还原 */
+  private savedTabindex = new WeakMap<HTMLElement, { original: string | null; written: string }>()
   /** 是否已绘制过选区/roving tabindex（未启用且未绘制时跳过整表遍历） */
   private painted = false
   /** 外部写入时尚无对应渲染行（连接前/数据未到）：保留快照，后续 update 重试 */
@@ -1156,20 +1156,30 @@ class RangeSelectionController {
         if (td.getAttribute('role') === 'gridcell') td.setAttribute('aria-selected', String(selected))
         if (!manageTabindex) {
           const saved = this.savedTabindex.get(td)
-          if (saved !== undefined) {
-            if (saved === null) td.removeAttribute('tabindex')
-            else td.setAttribute('tabindex', saved)
-            this.savedTabindex.delete(td)
+          if (saved) {
+            if (options.enabled) {
+              // grid-navigation 接管：D9 拥有 tabindex，放弃 range 记录且不回写旧原值
+              this.savedTabindex.delete(td)
+            } else {
+              // range 禁用：只有当前值仍是 range 最后写入值才恢复原值；
+              // 拥有期间外部能力改写则保留外部值（不被陈旧原值覆盖）
+              if (td.getAttribute('tabindex') === saved.written) {
+                if (saved.original === null) td.removeAttribute('tabindex')
+                else td.setAttribute('tabindex', saved.original)
+              }
+              this.savedTabindex.delete(td)
+            }
           }
           continue
         }
-        if (!this.savedTabindex.has(td)) this.savedTabindex.set(td, td.getAttribute('tabindex'))
-        if (isFocus || ((!keys || !hasSelection) && row === 0 && col === firstCol)) {
-          // 行内 roving tabindex：仅焦点格可 Tab 进入，避免逐格 Tab 穿透整表
-          td.tabIndex = 0
-        } else {
-          td.tabIndex = -1
+        let saved = this.savedTabindex.get(td)
+        if (!saved) {
+          saved = { original: td.getAttribute('tabindex'), written: '' }
+          this.savedTabindex.set(td, saved)
         }
+        // 行内 roving tabindex：仅焦点格可 Tab 进入，避免逐格 Tab 穿透整表
+        saved.written = isFocus || ((!keys || !hasSelection) && row === 0 && col === firstCol) ? '0' : '-1'
+        td.setAttribute('tabindex', saved.written)
       }
     }
     this.painted = options.enabled

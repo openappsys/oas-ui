@@ -178,4 +178,116 @@ describe('createWindowedSource', () => {
       source.destroy()
     }
   })
+
+  it('宿主外部清空 data 后同窗口请求重新拉取（不依赖内部 loaded 缓存）', async () => {
+    const el = mount()
+    const fetchRows = vi.fn(async ({ start, end }: { start: number; end: number; signal: AbortSignal }) => ({
+      rows: Array.from({ length: end - start }, (_, index) => ({ name: `${start + index}` })),
+      total: 100,
+    }))
+    const source = createWindowedSource(el, { fetchRows, windowSize: 5 })
+    await vi.waitFor(() => expect(el.data).toHaveLength(5))
+    el.setAttribute('data', '[]')
+    await new Promise((resolve) => setTimeout(resolve, 20))
+    const before = fetchRows.mock.calls.length
+    el.dispatchEvent(new CustomEvent('oas-window-request', { detail: { start: 0, end: 5 } }))
+    await vi.waitFor(() => expect(fetchRows.mock.calls.length).toBe(before + 1))
+    expect(el.data).toHaveLength(5)
+    expect(el.getAttribute('window-start')).toBe('0')
+    source.destroy()
+  })
+
+  it('宿主外部换窗后原视口请求不被旧 loaded 吞掉', async () => {
+    const el = mount()
+    const fetchRows = vi.fn(async ({ start, end }: { start: number; end: number; signal: AbortSignal }) => ({
+      rows: Array.from({ length: end - start }, (_, index) => ({ name: `${start + index}` })),
+      total: 100,
+    }))
+    const source = createWindowedSource(el, { fetchRows, windowSize: 5 })
+    await vi.waitFor(() => expect(el.data).toHaveLength(5))
+    el.setAttribute('window-start', '10')
+    el.setAttribute('data', JSON.stringify(Array.from({ length: 5 }, (_, index) => ({ name: `${10 + index}` }))))
+    await new Promise((resolve) => setTimeout(resolve, 20))
+    const before = fetchRows.mock.calls.length
+    el.dispatchEvent(new CustomEvent('oas-window-request', { detail: { start: 0, end: 5 } }))
+    await vi.waitFor(() => expect(fetchRows.mock.calls.length).toBe(before + 1))
+    expect(fetchRows.mock.calls.at(-1)![0]).toMatchObject({ start: 0, end: 5 })
+    expect(el.getAttribute('window-start')).toBe('0')
+    expect((el.data[0] as { name: string }).name).toBe('0')
+    source.destroy()
+  })
+
+  it('fetchRows 同步 throw 派发 oas-window-error，且同窗口可重试', async () => {
+    const el = mount()
+    let mode: 'ok' | 'throw' = 'ok'
+    const fetchRows = vi.fn(({ start, end }: { start: number; end: number; signal: AbortSignal }) => {
+      if (mode === 'throw') throw new Error('sync network')
+      return Promise.resolve({
+        rows: Array.from({ length: end - start }, (_, index) => ({ name: `${start + index}` })),
+        total: 100,
+      })
+    })
+    const source = createWindowedSource(el, { fetchRows, windowSize: 5 })
+    await vi.waitFor(() => expect(el.data).toHaveLength(5))
+    const errors: CustomEvent[] = []
+    el.addEventListener('oas-window-error', (event) => errors.push(event as CustomEvent))
+
+    mode = 'throw'
+    el.dispatchEvent(new CustomEvent('oas-window-request', { detail: { start: 10, end: 15 } }))
+    await vi.waitFor(() => expect(errors).toHaveLength(1))
+    expect(errors[0]!.detail).toMatchObject({ start: 10, end: 15 })
+    expect(errors[0]!.detail.error).toBeInstanceOf(Error)
+    expect(fetchRows).toHaveBeenCalledTimes(2)
+
+    mode = 'ok'
+    el.dispatchEvent(new CustomEvent('oas-window-request', { detail: { start: 10, end: 15 } }))
+    await vi.waitFor(() => expect(fetchRows).toHaveBeenCalledTimes(3))
+    await vi.waitFor(() => expect((el.data[0] as { name: string }).name).toBe('10'))
+    expect(errors).toHaveLength(1)
+    source.destroy()
+  })
+
+  it('Promise rejection 失败后同窗口可重试', async () => {
+    const el = mount()
+    let fail = false
+    const fetchRows = vi.fn(async ({ start, end }: { start: number; end: number; signal: AbortSignal }) => {
+      if (fail) throw new Error('async network')
+      return {
+        rows: Array.from({ length: end - start }, (_, index) => ({ name: `${start + index}` })),
+        total: 100,
+      }
+    })
+    const source = createWindowedSource(el, { fetchRows, windowSize: 5 })
+    await vi.waitFor(() => expect(el.data).toHaveLength(5))
+    const errors: CustomEvent[] = []
+    el.addEventListener('oas-window-error', (event) => errors.push(event as CustomEvent))
+    fail = true
+    el.dispatchEvent(new CustomEvent('oas-window-request', { detail: { start: 10, end: 15 } }))
+    await vi.waitFor(() => expect(errors).toHaveLength(1))
+    fail = false
+    el.dispatchEvent(new CustomEvent('oas-window-request', { detail: { start: 10, end: 15 } }))
+    await vi.waitFor(() => expect((el.data[0] as { name: string }).name).toBe('10'))
+    expect(fetchRows).toHaveBeenCalledTimes(3)
+    source.destroy()
+  })
+
+  it('在途同窗口只拉一次；destroy 后迟到结果不写回', async () => {
+    const el = mount()
+    const resolvers: Array<(rows: unknown[]) => void> = []
+    const source = createWindowedSource(el, {
+      windowSize: 5,
+      fetchRows: () =>
+        new Promise((resolve) => {
+          resolvers.push((rows) => resolve(rows))
+        }),
+    })
+    await vi.waitFor(() => expect(resolvers).toHaveLength(1))
+    el.dispatchEvent(new CustomEvent('oas-window-request', { detail: { start: 0, end: 5 } }))
+    el.dispatchEvent(new CustomEvent('oas-window-request', { detail: { start: 1, end: 4 } }))
+    expect(resolvers).toHaveLength(1)
+    source.destroy()
+    resolvers[0]!([{ name: 'late' }])
+    await new Promise((resolve) => setTimeout(resolve, 10))
+    expect(el.data).toEqual([])
+  })
 })

@@ -621,3 +621,251 @@ describe('table/detail windowed 与活动实例收尾', () => {
     second.destroy()
   })
 })
+
+/**
+ * 有效 windowed 判定与 selectByKey 未装载键等待。
+ * 有效 windowed = `windowed` 属性在场且 total 为有限正数（与表格 readWindowedMode 同口径）。
+ */
+function mountWindowedDetail(
+  attrs: { total?: string; start?: string; rowKey?: string; data?: Array<Record<string, unknown>> } = {},
+): { table: OASTable; panel: HTMLElement } {
+  const table = new OASTable()
+  table.setAttribute('columns', JSON.stringify([{ key: 'name', title: '名称' }]))
+  table.setAttribute('row-key', attrs.rowKey ?? 'id')
+  table.setAttribute('windowed', '')
+  table.setAttribute('total', attrs.total ?? '100')
+  table.setAttribute('window-start', attrs.start ?? '0')
+  table.setAttribute(
+    'data',
+    JSON.stringify(
+      attrs.data ?? [
+        { id: 'a', name: 'A' },
+        { id: 'b', name: 'B' },
+      ],
+    ),
+  )
+  const panel = document.createElement('div')
+  document.body.append(table, panel)
+  return { table, panel }
+}
+
+describe('table/detail windowed 未装载键等待', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  it('total=0 时按普通模式：不存在的键清空并派发关闭', () => {
+    const { table, panel } = mountWindowedDetail({ total: '0', start: '5' })
+    const closed: unknown[] = []
+    const detail = createMasterDetail(table, {
+      panel,
+      label: '详情',
+      emptyText: '未选择',
+      render: (row) => String(row.row.name),
+      onClose: (item) => closed.push(item),
+    })
+    detail.selectByKey('a')
+    expect(detail.selected?.key).toBe('a')
+    detail.selectByKey('nope')
+    expect(detail.selected).toBeNull()
+    expect(panel.textContent).toBe('未选择')
+    expect(closed).toHaveLength(1)
+    detail.destroy()
+  })
+
+  it('total 非法时按普通模式：data 删除选中行触发 onClose', async () => {
+    const { table, panel } = mountWindowedDetail({ total: 'abc' })
+    const closed: unknown[] = []
+    const detail = createMasterDetail(table, {
+      panel,
+      label: '详情',
+      emptyText: '未选择',
+      render: (row) => String(row.row.name),
+      onClose: (item) => closed.push(item),
+    })
+    detail.selectByKey('a')
+    table.data = [{ id: 'b', name: 'B' }]
+    await vi.waitFor(() => expect(detail.selected).toBeNull())
+    expect(panel.textContent).toBe('未选择')
+    expect(closed).toHaveLength(1)
+    detail.destroy()
+  })
+
+  it('未装载键挂起无事件并保留旧面板，回填命中后自动选中一次', async () => {
+    const { table, panel } = mountWindowedDetail()
+    const events: unknown[] = []
+    const closed: unknown[] = []
+    table.addEventListener('oas-detail-change', (event) => events.push((event as CustomEvent).detail))
+    const detail = createMasterDetail(table, {
+      panel,
+      label: '详情',
+      emptyText: '未选择',
+      render: (row) => String(row.row.name),
+      onClose: (item) => closed.push(item),
+    })
+    detail.selectByKey('a')
+    expect(events).toHaveLength(1)
+    detail.selectByKey('z')
+    expect(detail.selected?.key).toBe('a')
+    expect(panel.textContent).toBe('A')
+    expect(events).toHaveLength(1)
+    expect(closed).toHaveLength(0)
+
+    table.setAttribute('window-start', '50')
+    table.data = [{ id: 'z', name: 'Zulu' }]
+    await vi.waitFor(() => expect(detail.selected).toEqual({ row: { id: 'z', name: 'Zulu' }, key: 'z', rowIndex: 0 }))
+    expect(panel.textContent).toBe('Zulu')
+    expect(events).toHaveLength(2)
+    expect(closed).toHaveLength(0)
+
+    // 回填后同键数据刷新只更新内容，不再重复派发选中变化
+    table.data = [{ id: 'z', name: 'Zulu2' }]
+    await vi.waitFor(() => expect(panel.textContent).toBe('Zulu2'))
+    expect(events).toHaveLength(2)
+    detail.destroy()
+  })
+
+  it('连续 selectByKey 只落地最后一次；先前键的数据到达不得劫持', async () => {
+    const { table, panel } = mountWindowedDetail()
+    const events: unknown[] = []
+    table.addEventListener('oas-detail-change', (event) => events.push((event as CustomEvent).detail))
+    const detail = createMasterDetail(table, { panel, label: '详情', render: (row) => String(row.row.name) })
+    detail.selectByKey('a')
+    detail.selectByKey('z')
+    detail.selectByKey('y')
+    table.data = [{ id: 'y', name: 'Yankee' }]
+    await vi.waitFor(() => expect(detail.selected?.key).toBe('y'))
+    expect(panel.textContent).toBe('Yankee')
+    expect(events).toHaveLength(2)
+
+    table.data = [{ id: 'z', name: 'Zulu' }]
+    await new Promise((resolve) => setTimeout(resolve, 20))
+    expect(detail.selected?.key).toBe('y')
+    expect(panel.textContent).toBe('Yankee')
+    expect(events).toHaveLength(2)
+    detail.destroy()
+  })
+
+  it('close 取消未装载键等待，后续数据到达不再选中', async () => {
+    const { table, panel } = mountWindowedDetail()
+    const events: unknown[] = []
+    const closed: unknown[] = []
+    table.addEventListener('oas-detail-change', (event) => events.push((event as CustomEvent).detail))
+    const detail = createMasterDetail(table, {
+      panel,
+      label: '详情',
+      emptyText: '未选择',
+      render: (row) => String(row.row.name),
+      onClose: (item) => closed.push(item),
+    })
+    detail.selectByKey('a')
+    detail.selectByKey('z')
+    detail.close()
+    expect(detail.selected).toBeNull()
+    expect(closed).toHaveLength(1)
+    const afterClose = events.length
+    table.data = [{ id: 'z', name: 'Zulu' }]
+    await new Promise((resolve) => setTimeout(resolve, 20))
+    expect(detail.selected).toBeNull()
+    expect(panel.textContent).toBe('未选择')
+    expect(events).toHaveLength(afterClose)
+    detail.destroy()
+  })
+
+  it('select 与行/单元格点击取消未装载键等待', async () => {
+    const { table, panel } = mountWindowedDetail()
+    const detail = createMasterDetail(table, { panel, label: '详情', render: (row) => String(row.row.name) })
+    detail.selectByKey('a')
+    detail.selectByKey('z')
+    detail.select(1)
+    table.data = [{ id: 'z', name: 'Zulu' }]
+    await new Promise((resolve) => setTimeout(resolve, 20))
+    expect(detail.selected?.key).toBe('b')
+
+    // 行点击取消：重新等待 z 后点已选中的 a，pending 被覆盖
+    table.data = [
+      { id: 'a', name: 'A' },
+      { id: 'b', name: 'B' },
+    ]
+    detail.selectByKey('z')
+    rowClick(table, { id: 'b', name: 'B' }, 'b')
+    table.data = [{ id: 'z', name: 'Zulu' }]
+    await new Promise((resolve) => setTimeout(resolve, 20))
+    expect(detail.selected?.key).toBe('b')
+    expect(panel.textContent).toBe('B')
+    detail.destroy()
+  })
+
+  it('destroy 取消未装载键等待，后续数据到达不写回', async () => {
+    const { table, panel } = mountWindowedDetail()
+    const detail = createMasterDetail(table, { panel, label: '详情', render: (row) => String(row.row.name) })
+    detail.selectByKey('a')
+    detail.selectByKey('z')
+    detail.destroy()
+    table.data = [{ id: 'z', name: 'Zulu' }]
+    await new Promise((resolve) => setTimeout(resolve, 20))
+    expect(panel.textContent).toBe('')
+  })
+
+  it('模式回落普通后不再等待 pending，并按普通模式清空已删除选中行', async () => {
+    const { table, panel } = mountWindowedDetail()
+    const closed: unknown[] = []
+    const detail = createMasterDetail(table, {
+      panel,
+      label: '详情',
+      emptyText: '未选择',
+      render: (row) => String(row.row.name),
+      onClose: (item) => closed.push(item),
+    })
+    detail.selectByKey('a')
+    detail.selectByKey('z')
+    table.setAttribute('total', '0')
+    expect(detail.selected?.key).toBe('a')
+    table.data = [{ id: 'z', name: 'Zulu' }]
+    await vi.waitFor(() => expect(detail.selected).toBeNull())
+    expect(panel.textContent).toBe('未选择')
+    expect(closed).toHaveLength(1)
+    detail.destroy()
+  })
+
+  it('row-key 改变丢弃 pending，不按新键抢占选中', async () => {
+    const { table, panel } = mountWindowedDetail({
+      data: [
+        { id: 'a', name: 'a' },
+        { id: 'zz', name: 'z' },
+      ],
+    })
+    const detail = createMasterDetail(table, { panel, label: '详情', render: (row) => String(row.row.name) })
+    detail.selectByKey('a')
+    detail.selectByKey('z')
+    table.setAttribute('row-key', 'name')
+    table.data = [
+      { id: 'a', name: 'a2' },
+      { id: 'zz', name: 'z' },
+    ]
+    // 既有 selected 的 windowed 语义不变（旧键在新 row-key 下找不到 → 保留并归一 rowIndex）；
+    // 关键是 pending 已被丢弃，不会按新 row-key 命中 z 抢占选中
+    await vi.waitFor(() => expect(detail.selected?.rowIndex).toBe(-1))
+    expect(detail.selected?.key).toBe('a')
+    expect(panel.textContent).toBe('a')
+    detail.destroy()
+  })
+
+  it('有效 windowed 下再次选择当前未装载键只刷新 rowIndex，不派发事件', async () => {
+    const { table, panel } = mountWindowedDetail()
+    const events: unknown[] = []
+    table.addEventListener('oas-detail-change', (event) => events.push((event as CustomEvent).detail))
+    const detail = createMasterDetail(table, { panel, label: '详情', render: (row) => String(row.row.name) })
+    detail.selectByKey('a')
+    table.setAttribute('window-start', '50')
+    table.data = [{ id: 'z', name: 'Zulu' }]
+    await vi.waitFor(() => expect(detail.selected?.rowIndex).toBe(-1))
+    const afterScroll = events.length
+    detail.selectByKey('a')
+    expect(detail.selected).toEqual({ row: { id: 'a', name: 'A' }, key: 'a', rowIndex: -1 })
+    expect(events).toHaveLength(afterScroll)
+    expect(panel.textContent).toBe('A')
+    detail.destroy()
+  })
+})
