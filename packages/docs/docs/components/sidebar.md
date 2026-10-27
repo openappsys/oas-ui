@@ -179,6 +179,14 @@
   </div>
 </DemoBlock>
 
+嵌套子项同样支持头像：头像已承担行首视觉内容，不再保留空图标占位；普通无图标子项仍保留 18px 缩进占位，避免层级对齐回退。
+
+<DemoBlock title="嵌套头像与无图标子项">
+  <div style="height: 220px; width: 100%">
+    <oas-sidebar id="sidebar-nested-avatar" active="nested-u1" items='[{"label":"成员","value":"members","icon":"user","children":[{"label":"张伟","value":"nested-u1","avatarText":"张","avatarColor":"#e11d48"},{"label":"未分配","value":"nested-unassigned"}]}]'></oas-sidebar>
+  </div>
+</DemoBlock>
+
 子元素声明式通道同样支持：`<oas-sidebar-item avatar="/favicon.svg">` 或 `avatar-text="张" avatar-color="#e11d48"`；属性与 `items` JSON 字段一一对应（`avatar` / `avatarText` / `avatarColor`）。
 
 ## 自定义行内容

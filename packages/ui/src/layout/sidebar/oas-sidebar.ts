@@ -1369,8 +1369,9 @@ export class OASSidebar extends OASElement {
     } else if (item.icon) {
       // 非注册表名下的自定义图标名：回退文本（不静默丢失）
       icon.textContent = item.icon
-    } else if (depth > 0) {
-      // 嵌套无图标项保留图标占位（保持子项文字缩进对齐父项 label 右侧，避免与父项齐平/更靠左）
+    } else if (depth > 0 && !avatar) {
+      // 嵌套无图标且无头像项保留图标占位（保持子项文字缩进对齐父项 label 右侧）；
+      // 头像已承担行首视觉内容，不能再叠加空图标占位与第二个 gap。
       icon.setAttribute('aria-hidden', 'true')
     } else {
       icon.hidden = true

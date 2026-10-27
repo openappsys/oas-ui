@@ -179,6 +179,14 @@ Items support a leading avatar (`part="avatar"`): `avatar` is an image URL and t
   </div>
 </DemoBlock>
 
+Nested items support avatars too: once an avatar provides the leading visual, no empty icon slot is kept. Plain icon-less children still retain their 18px indentation slot, preserving the existing hierarchy alignment.
+
+<DemoBlock title="Nested avatar and icon-less items">
+  <div style="height: 220px; width: 100%">
+    <oas-sidebar id="sidebar-nested-avatar" active="nested-u1" items='[{"label":"Members","value":"members","icon":"user","children":[{"label":"Zhang Wei","value":"nested-u1","avatarText":"Z","avatarColor":"#e11d48"},{"label":"Unassigned","value":"nested-unassigned"}]}]'></oas-sidebar>
+  </div>
+</DemoBlock>
+
 The declarative child channel works the same way: `<oas-sidebar-item avatar="/favicon.svg">` or `avatar-text="Z" avatar-color="#e11d48"`; attributes map one-to-one to the `items` JSON fields (`avatar` / `avatarText` / `avatarColor`).
 
 ## Custom row content

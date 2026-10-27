@@ -6,6 +6,7 @@
 
 ### 修复
 
+- **`oas-sidebar` 嵌套头像子项重复行首占位**：带 `avatar` / `avatarText` 的嵌套子项不再保留 18px 空图标槽，头像与 label 之间只保留一次行 gap；普通无图标子项仍保留缩进占位，既有层级对齐不变。
 - **`oas-table` 主从详情（`table/detail`）未装载键等待**：windowed 生效（`windowed` 属性在场且 `total` 有限、截断后 > 0）时，`selectByKey()` 选中尚未装载的行不再被静默忽略：保留当前选中与面板等待 `data` 到达，命中后落地一次并派发一次 `oas-detail-change`；`close()` / `select()` / 行或单元格点击 / `Enter` / `Esc` / `destroy()` / `row-key` 变化或再次 `selectByKey()` 都会取消等待，取消不补派发等待键的选中事件。无选中时的 `Esc` 只在本实例的表格/面板内取消等待，不注册 window 全局兜底；`closeOnEscape: false` 时完全不响应 Esc，启用 range 且存在活动选区时，表格内第一次 Esc 先清选区、等待保留。`total` 为 0 / 非法 / 截断后为 0 按普通模式处理。
 - **`oas-table` 区域选择（`table/range`）禁用不再覆盖外部 tabindex**：range 只恢复自己最后写入且仍未被改写的 `tabindex`；拥有期间其它能力写入的值原样保留，交由 grid-navigation 接管时也不回写陈旧原值。
 - **`oas-table` windowed 数据源助手（`table/advanced`）**：宿主外部清空 / 替换 `data` 或切换 `window-start` 后，同窗口请求会按表格当前切片重新拉取；`fetchRows` 同步抛错与 Promise 失败现在都会派发一次 `oas-window-error` 并允许同窗口重试（此前同步抛错会留下在途标记，使同窗口不再重试）。

@@ -131,6 +131,52 @@ test('sidebar 嵌套子菜单：无图标子项 label 缩进父项 label 右侧�
   expect(r.childIconWidth, '嵌套图标占位应保留宽度').toBeGreaterThan(0)
   expect(r.indent, '子项 label 应缩进父项 label 右侧（不得齐平/更靠左）').toBeGreaterThan(0)
 })
+test('sidebar 嵌套头像子项：空图标不占布局，普通无图标子项仍保留缩进', async ({ page }) => {
+  await page.goto('/components/sidebar.html', { waitUntil: 'domcontentloaded' })
+  await page.waitForFunction(() => !!customElements.get('oas-sidebar'))
+  const r = await page.evaluate(() => {
+    const el = document.createElement('oas-sidebar')
+    el.setAttribute(
+      'items',
+      JSON.stringify([
+        {
+          label: '成员',
+          value: 'members',
+          icon: 'user',
+          children: [
+            { label: '张伟', value: 'u1', avatarText: '张', avatarColor: '#e11d48' },
+            { label: '未分配', value: 'unassigned' },
+          ],
+        },
+      ]),
+    )
+    document.body.appendChild(el)
+    const row = (value: string) =>
+      el.shadowRoot!.querySelector<HTMLElement>(`[part="submenu"] [data-value="${value}"]`)!
+    const avatarRow = row('u1')
+    const avatar = avatarRow.querySelector<HTMLElement>('[part="avatar"]')!
+    const avatarIcon = avatarRow.querySelector<HTMLElement>('.icon')!
+    const label = avatarRow.querySelector<HTMLElement>('.label')!
+    const plainIcon = row('unassigned').querySelector<HTMLElement>('.icon')!
+    const gap = Number.parseFloat(getComputedStyle(avatarRow).columnGap)
+    return {
+      avatarIconHidden: avatarIcon.hidden,
+      avatarIconDisplay: getComputedStyle(avatarIcon).display,
+      avatarIconWidth: avatarIcon.getBoundingClientRect().width,
+      avatarToLabel: label.getBoundingClientRect().left - avatar.getBoundingClientRect().right,
+      gap,
+      plainIconHidden: plainIcon.hidden,
+      plainIconWidth: plainIcon.getBoundingClientRect().width,
+    }
+  })
+  expect(r.avatarIconHidden, '嵌套头像子项的空图标应隐藏').toBe(true)
+  expect(r.avatarIconDisplay, '隐藏空图标不应参与布局').toBe('none')
+  expect(r.avatarIconWidth, '隐藏空图标宽度应为 0').toBe(0)
+  expect(r.avatarToLabel, '头像与 label 之间只保留一次行 gap').toBeCloseTo(r.gap, 1)
+  expect(r.plainIconHidden, '普通无图标子项仍保留对齐占位').toBe(false)
+  expect(r.plainIconWidth, '普通无图标子项缩进占位仍保持 18px').toBe(18)
+})
+
 test('sidebar 嵌套父项点击折叠子菜单：hidden 真实隐藏（grid 0fr + visibility 动画机制，真实视觉断言）', async ({
   page,
 }) => {

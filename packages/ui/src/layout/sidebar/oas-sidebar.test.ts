@@ -1101,6 +1101,30 @@ describe('OASSidebar 能力补齐批（嵌套/徽标/操作/分隔线/骨架/快
     // 像素级 label 缩进对齐（子 label 缩进父 label 右侧）由 qa-regression e2e 真布局断言覆盖
   })
 
+  it('嵌套头像子项不保留空图标占位，普通无图标子项仍保留对齐占位', () => {
+    stubMatchMedia(false)
+    const el = mount({
+      items: JSON.stringify([
+        {
+          label: '成员',
+          value: 'members',
+          icon: 'user',
+          children: [
+            { label: '张伟', value: 'u1', avatarText: '张', avatarColor: '#e11d48' },
+            { label: '未分配', value: 'unassigned' },
+          ],
+        },
+      ]),
+    })
+    const row = (value: string) =>
+      el.shadowRoot!.querySelector<HTMLElement>(`[part="submenu"] [data-value="${value}"]`)!
+    const avatarIcon = row('u1').querySelector('.icon') as HTMLElement
+    const plainIcon = row('unassigned').querySelector('.icon') as HTMLElement
+    expect(!!row('u1').querySelector('[part="avatar"]'), '头像仍应渲染').toBe(true)
+    expect(avatarIcon.hidden, '头像已承担行首视觉内容，不应再保留空图标占位').toBe(true)
+    expect(plainIcon.hidden, '普通无图标子项仍需占位维持层级缩进').toBe(false)
+  })
+
   it('嵌套子菜单容器类名 .submenu 与嵌套按钮 .item.sub 不冲突（防容器样式串扰到按钮致激活背景溢出面板）', () => {
     stubMatchMedia(false)
     const el = mount({
