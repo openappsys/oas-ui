@@ -15,8 +15,8 @@ export interface WindowedVisualGeometry {
  * - `getGeometry(dataStart)`：初始化与每次响应回填时同步调用，返回当前快照的 visual-start /
  *   visual-total（实现必须现算现回，不得缓存请求时的旧值——回填要的是响应时刻的布局）。
  * - `getDataRange(visualStart, visualEnd)`：请求时把 `oas-window-request` 的视觉区间映射为
- *   数据取数区间（如把相交视觉槽位投影回属主数据行）；返回须有限且 end > start，
- *   负 start / 超出数据 total 的越界由 adapter 自行夹取（source 不代夹）。
+ *   数据取数区间（如把相交视觉槽位投影回属主数据行）；返回须有限且 end > start。
+ *   结果会与事件原始数据区间取并集，adapter 无需自带缓冲；负 start / 越界由 adapter 自行夹取。
  */
 export interface WindowedVisualAdapter {
   getGeometry(dataStart: number): WindowedVisualGeometry
