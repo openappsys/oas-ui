@@ -821,12 +821,155 @@ describe('table/detail windowed 未装载键等待', () => {
     detail.selectByKey('a')
     detail.selectByKey('z')
     table.setAttribute('total', '0')
+    // 先让回落后的刷新跑完（此时 data 未含 z → 丢弃 pending），再让 z 数据到达
+    await new Promise((resolve) => setTimeout(resolve, 20))
     expect(detail.selected?.key).toBe('a')
     table.data = [{ id: 'z', name: 'Zulu' }]
     await vi.waitFor(() => expect(detail.selected).toBeNull())
     expect(panel.textContent).toBe('未选择')
     expect(closed).toHaveLength(1)
     detail.destroy()
+  })
+
+  it('模式回落与 data 命中同批到达时，按普通数据命中落地 pending', async () => {
+    const { table, panel } = mountWindowedDetail()
+    const events: unknown[] = []
+    const closed: unknown[] = []
+    table.addEventListener('oas-detail-change', (event) => events.push((event as CustomEvent).detail))
+    const detail = createMasterDetail(table, {
+      panel,
+      label: '详情',
+      emptyText: '未选择',
+      render: (row) => String(row.row.name),
+      onClose: (item) => closed.push(item),
+    })
+    detail.selectByKey('a')
+    detail.selectByKey('z')
+    // 同一轮 MutationObserver 批次：total 回落普通，但 data 已含 pending 键
+    table.setAttribute('total', '0')
+    table.data = [{ id: 'z', name: 'Zulu' }]
+    await vi.waitFor(() => expect(detail.selected?.key).toBe('z'))
+    expect(detail.selected).toEqual({ row: { id: 'z', name: 'Zulu' }, key: 'z', rowIndex: 0 })
+    expect(panel.textContent).toBe('Zulu')
+    expect(events).toHaveLength(2)
+    expect(closed).toHaveLength(0)
+    detail.destroy()
+  })
+
+  it('total=0.5 截断后按普通模式：不存在键清空、删除选中行 onClose', async () => {
+    const { table, panel } = mountWindowedDetail({ total: '0.5', start: '5' })
+    const closed: unknown[] = []
+    const detail = createMasterDetail(table, {
+      panel,
+      label: '详情',
+      emptyText: '未选择',
+      render: (row) => String(row.row.name),
+      onClose: (item) => closed.push(item),
+    })
+    detail.selectByKey('a')
+    detail.selectByKey('nope')
+    expect(detail.selected).toBeNull()
+    expect(panel.textContent).toBe('未选择')
+    expect(closed).toHaveLength(1)
+
+    detail.selectByKey('a')
+    table.data = [{ id: 'b', name: 'B' }]
+    await vi.waitFor(() => expect(detail.selected).toBeNull())
+    expect(closed).toHaveLength(2)
+    detail.destroy()
+  })
+
+  it('pending 未命中时仍刷新旧选中内容，离窗时保留不清空', async () => {
+    const { table, panel } = mountWindowedDetail()
+    const events: unknown[] = []
+    table.addEventListener('oas-detail-change', (event) => events.push((event as CustomEvent).detail))
+    const detail = createMasterDetail(table, { panel, label: '详情', render: (row) => String(row.row.name) })
+    detail.selectByKey('a')
+    detail.selectByKey('z')
+
+    table.data = [{ id: 'a', name: 'Alpha2' }]
+    await vi.waitFor(() => expect(panel.textContent).toBe('Alpha2'))
+    expect(detail.selected).toEqual({ row: { id: 'a', name: 'Alpha2' }, key: 'a', rowIndex: 0 })
+    expect(events).toHaveLength(1)
+
+    // 旧选中离窗（windowed 有效）：保留选中与最后一次内容，不清空
+    table.data = [{ id: 'c', name: 'C' }]
+    await vi.waitFor(() => expect(detail.selected?.rowIndex).toBe(-1))
+    expect(detail.selected?.key).toBe('a')
+    expect(panel.textContent).toBe('Alpha2')
+    expect(events).toHaveLength(1)
+    detail.destroy()
+  })
+
+  it('无选中时表格/面板内 Esc 取消 pending，回填不落地', async () => {
+    const { table, panel } = mountWindowedDetail()
+    const events: unknown[] = []
+    table.addEventListener('oas-detail-change', (event) => events.push((event as CustomEvent).detail))
+    const detail = createMasterDetail(table, {
+      panel,
+      label: '详情',
+      emptyText: '未选择',
+      render: (row) => String(row.row.name),
+    })
+
+    detail.selectByKey('z')
+    table.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }))
+    table.data = [{ id: 'z', name: 'Zulu' }]
+    await new Promise((resolve) => setTimeout(resolve, 20))
+    expect(detail.selected).toBeNull()
+    expect(panel.textContent).toBe('未选择')
+    expect(events).toHaveLength(0)
+
+    detail.selectByKey('y')
+    panel.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }))
+    table.data = [{ id: 'y', name: 'Yankee' }]
+    await new Promise((resolve) => setTimeout(resolve, 20))
+    expect(detail.selected).toBeNull()
+    expect(panel.textContent).toBe('未选择')
+    expect(events).toHaveLength(0)
+    detail.destroy()
+  })
+
+  it('无选中 pending 的 Esc 仍让位 defaultPrevented 与输入控件', async () => {
+    const { table, panel } = mountWindowedDetail()
+    const detail = createMasterDetail(table, { panel, label: '详情', render: (row) => String(row.row.name) })
+
+    detail.selectByKey('z')
+    const prevented = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true })
+    prevented.preventDefault()
+    table.dispatchEvent(prevented)
+    table.data = [{ id: 'z', name: 'Zulu' }]
+    await vi.waitFor(() => expect(detail.selected?.key).toBe('z'))
+
+    detail.close()
+    table.data = [
+      { id: 'a', name: 'A' },
+      { id: 'b', name: 'B' },
+    ]
+    detail.selectByKey('y')
+    const input = document.createElement('input')
+    table.shadowRoot!.appendChild(input)
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }))
+    table.data = [{ id: 'y', name: 'Yankee' }]
+    await vi.waitFor(() => expect(detail.selected?.key).toBe('y'))
+    detail.destroy()
+  })
+
+  it('同表其他活动实例优先处理 Esc，不取消本实例 pending', async () => {
+    const { table, panel: firstPanel } = mountWindowedDetail()
+    const secondPanel = document.createElement('div')
+    document.body.appendChild(secondPanel)
+    const first = createMasterDetail(table, { panel: firstPanel, label: 'A', render: (row) => String(row.row.name) })
+    const second = createMasterDetail(table, { panel: secondPanel, label: 'B', render: (row) => String(row.row.name) })
+    second.select(1)
+    first.selectByKey('z')
+    table.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }))
+    table.data = [{ id: 'z', name: 'Zulu' }]
+    await vi.waitFor(() => expect(first.selected?.key).toBe('z'))
+    // Esc 优先关闭同表最近激活实例；本实例 pending 未被取消，随后数据到达照常落地
+    expect(second.selected).toBeNull()
+    first.destroy()
+    second.destroy()
   })
 
   it('row-key 改变丢弃 pending，不按新键抢占选中', async () => {

@@ -182,11 +182,12 @@ export function createMasterDetail(table: HTMLElement, options: MasterDetailOpti
     return walk(data)
   }
 
-  /** windowed 是否实际生效：与表格 readWindowedMode 同口径（属性在场且 total 为有限正数） */
+  /** windowed 是否实际生效：与表格 readWindowedMode 同口径（total 先截断，有限正数才生效） */
   const windowedActive = (): boolean => {
     if (!table.hasAttribute('windowed')) return false
-    const total = Number(table.getAttribute('total'))
-    return Number.isFinite(total) && total > 0
+    const raw = Number(table.getAttribute('total'))
+    const total = Number.isFinite(raw) ? Math.trunc(raw) : 0
+    return total > 0
   }
 
   const detailAt = (rowIndex: number): RowDetail | null => {
@@ -233,20 +234,16 @@ export function createMasterDetail(table: HTMLElement, options: MasterDetailOpti
   /** data 变化（含行内编辑回写）后先解析未装载键等待，再刷新详情内容；数据中行消失才清空（滚出渲染窗口不清空） */
   const refresh = (): void => {
     if (pendingKey !== null) {
-      // 模式已回落普通：等待失去 windowed 语义，放弃 pending，按普通模式刷新
-      if (!windowedActive()) {
+      // 先看本批 data 是否已命中 pending 键；命中即落地（即使同批 total 已回落普通）
+      const key = pendingKey
+      const pendingRow = findRow(key)
+      if (pendingRow) {
         pendingKey = null
-      } else {
-        const key = pendingKey
-        const pendingRow = findRow(key)
-        if (pendingRow) {
-          pendingKey = null
-          apply({ row: pendingRow, key, rowIndex: rowIndexByKey(key) })
-          return
-        }
-        // 仍是有效 windowed：键只是尚未装载，继续等待
+        apply({ row: pendingRow, key, rowIndex: rowIndexByKey(key) })
         return
       }
+      // 未命中：仍是有效 windowed 则继续等待，同时继续刷新旧选中；模式回落普通才丢弃等待
+      if (!windowedActive()) pendingKey = null
     }
     if (!selected) return
     const row = findRow(selected.key)
@@ -316,7 +313,9 @@ export function createMasterDetail(table: HTMLElement, options: MasterDetailOpti
   }
 
   const onKeydown = (event: Event): void => {
-    if (!escEnabled || (event as KeyboardEvent).key !== 'Escape' || !selected) return
+    if (!escEnabled || (event as KeyboardEvent).key !== 'Escape') return
+    // 无选中但存在未装载键等待时，本实例表格/面板内 Esc 取消等待（不做全局兜底）
+    if (!selected && pendingKey === null) return
     // 同表多实例只让最近激活者处理；其它表的活动实例不影响本地按键
     const active = escapeActivation[escapeActivation.length - 1]
     if (active && active.table === table && active.close !== escapeClose) return
@@ -324,6 +323,11 @@ export function createMasterDetail(table: HTMLElement, options: MasterDetailOpti
     if (event.defaultPrevented || isInputTarget(event.target) || isInteractiveEvent(event)) return
     event.preventDefault()
     event.stopPropagation()
+    if (!selected) {
+      // 无选中可关闭：Esc 只取消等待，不改面板、不派发事件
+      pendingKey = null
+      return
+    }
     escapeClose()
   }
 

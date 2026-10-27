@@ -3167,7 +3167,9 @@ test('table Pro 事件支持父级委托并保留 composed', async ({ page }) =>
   }
 })
 
-test('table Pro 主从详情：windowed 未装载键等待回填后落地一次，close 取消不落地', async ({ page }) => {
+test('table Pro 主从详情：windowed 未装载键等待回填落地、等待期旧详情刷新、close/Esc 取消与模式回落', async ({
+  page,
+}) => {
   // 缺陷固化：selectByKey 只查当前切片，有效 windowed 下未装载键被静默丢弃；total=0/非法时
   // 又被 hasAttribute('windowed') 误判。修复=有效 windowed 判定（total 有限正数）+ pending 等待。
   const issues: string[] = []
@@ -3220,6 +3222,28 @@ test('table Pro 主从详情：windowed 未装载键等待回填后落地一次�
   expect(pending.events, '等待期间不派发详情变化').toBe(1)
   expect(pending.selected).toBe('a')
   expect(pending.rowIndex).toBe(0)
+
+  // pending 未命中时旧选中仍随 data 刷新（不得因等待提前 return 冻住面板）
+  await page.evaluate(() => {
+    const el = document.querySelector('#qa-detail-pending-table') as HTMLElement & { data: unknown[] }
+    el.data = [{ id: 'a', name: 'Alpha2' }]
+  })
+  await expect
+    .poll(() => page.evaluate(() => document.querySelector('#qa-detail-pending-panel')?.textContent ?? ''))
+    .toBe('Alpha2')
+  const refreshed = await page.evaluate(() => {
+    const detail = (window as any).__qaDetail
+    return {
+      events: (window as any).__qaDetailEvents,
+      selected: detail.selected?.key,
+      name: detail.selected?.row?.name,
+      rowIndex: detail.selected?.rowIndex,
+    }
+  })
+  expect(refreshed.events, '旧详情刷新不派发选中变化').toBe(1)
+  expect(refreshed.selected).toBe('a')
+  expect(refreshed.name).toBe('Alpha2')
+  expect(refreshed.rowIndex).toBe(0)
 
   await page.evaluate(() => {
     const el = document.querySelector('#qa-detail-pending-table')!
@@ -3275,6 +3299,78 @@ test('table Pro 主从详情：windowed 未装载键等待回填后落地一次�
   expect(cancelled.panel, '被 close 取消的等待不得在数据到达后落地').toBe('未选择')
   expect(cancelled.selected).toBeNull()
   expect(cancelled.events).toBe(afterPending.beforeCancel)
+
+  // 无选中时表格内 Esc 取消 pending（本实例表格/面板路径，不做全局 Esc）
+  const afterEsc = await page.evaluate(() => {
+    const el = document.querySelector('#qa-detail-pending-table') as HTMLElement & { data: unknown[] }
+    const detail = (window as any).__qaDetail
+    el.data = []
+    detail.selectByKey('w')
+    el.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }))
+    const beforeData = (window as any).__qaDetailEvents
+    el.data = [{ id: 'w', name: 'Whiskey' }]
+    return { beforeData, events: (window as any).__qaDetailEvents }
+  })
+  await page.waitForTimeout(100)
+  const escCancelled = await page.evaluate(() => {
+    const detail = (window as any).__qaDetail
+    return {
+      selected: detail.selected,
+      panel: document.querySelector('#qa-detail-pending-panel')!.textContent,
+      events: (window as any).__qaDetailEvents,
+    }
+  })
+  expect(escCancelled.selected, '无选中 Esc 取消等待后回填不得选中').toBeNull()
+  expect(escCancelled.panel).toBe('未选择')
+  expect(escCancelled.events).toBe(afterEsc.beforeData)
+
+  // 模式回落普通与 data 命中同批到达：按普通数据命中落地 pending
+  await page.evaluate(() => {
+    const el = document.querySelector('#qa-detail-pending-table') as HTMLElement & { data: unknown[] }
+    const detail = (window as any).__qaDetail
+    el.data = []
+    detail.selectByKey('q')
+    ;(window as any).__qaFallbackBefore = (window as any).__qaDetailEvents
+    el.setAttribute('total', '0')
+    el.data = [{ id: 'q', name: 'Quebec' }]
+  })
+  await expect
+    .poll(() => page.evaluate(() => document.querySelector('#qa-detail-pending-panel')?.textContent ?? ''))
+    .toBe('Quebec')
+  const fallbackHit = await page.evaluate(() => {
+    const detail = (window as any).__qaDetail
+    return {
+      selected: detail.selected?.key,
+      events: (window as any).__qaDetailEvents,
+      before: (window as any).__qaFallbackBefore,
+    }
+  })
+  expect(fallbackHit.selected, '回落普通时 data 已含 pending 键仍应落地').toBe('q')
+  expect(fallbackHit.events, '只落地一次').toBe(fallbackHit.before + 1)
+
+  // total=0.5 截断后为普通模式：不存在的键清空并触发关闭
+  const fractional = await page.evaluate(() => {
+    const el = document.querySelector('#qa-detail-pending-table') as HTMLElement & { data: unknown[] }
+    const detail = (window as any).__qaDetail
+    detail.close()
+    el.setAttribute('total', '0.5')
+    el.data = [{ id: 'r', name: 'R' }]
+    detail.selectByKey('r')
+    const selectedBefore = detail.selected?.key
+    const beforeMiss = (window as any).__qaDetailEvents
+    detail.selectByKey('missing')
+    return {
+      selectedBefore,
+      beforeMiss,
+      events: (window as any).__qaDetailEvents,
+      selected: detail.selected,
+      panel: document.querySelector('#qa-detail-pending-panel')!.textContent,
+    }
+  })
+  expect(fractional.selectedBefore).toBe('r')
+  expect(fractional.selected, 'total=0.5 按普通模式：不存在键清空').toBeNull()
+  expect(fractional.panel).toBe('未选择')
+  expect(fractional.events, '清空派发一次').toBe(fractional.beforeMiss + 1)
   expect(issues, 'console 零 error/告警').toEqual([])
 
   await page.evaluate(() => {
