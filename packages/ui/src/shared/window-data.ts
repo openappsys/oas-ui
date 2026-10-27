@@ -11,6 +11,9 @@
  * - 组件按行高算出可视行窗口，前后各留 `WINDOW_MARGIN` 行缓冲，得到「期望区间」；
  *   若期望区间未被已装载区间覆盖，派发 `oas-window-request`（detail `{ start, end, reason }`，
  *   半开区间、绝对行下标），同一期望区间不重复派发。
+ * - 行内嵌展开内容行（expand）占独立视觉槽位时，切片内存在 expand 条目（或宿主提供可选
+ *   `visual-total` / `visual-start` 视觉协议）则请求区间改由 abs/flow 映射投影（`mapVisualWindowToData`），
+ *   并附带可选 `visualStart` / `visualEnd`（可视窗口的视觉坐标）；start/end 永远是数据坐标。
  * - 非 windowed 模式行为不变（组件持有全量数据本地切窗）。
  */
 
@@ -18,12 +21,16 @@
 export type WindowRequestReason = 'init' | 'scroll' | 'resize' | 'data'
 
 export interface WindowRequestDetail {
-  /** 期望起始行下标（含，相对全量） */
+  /** 期望起始行下标（含，相对全量；永远是数据坐标） */
   start: number
-  /** 期望结束行下标（不含，相对全量） */
+  /** 期望结束行下标（不含，相对全量；永远是数据坐标） */
   end: number
   /** 触发原因 */
   reason: WindowRequestReason
+  /** 可视窗口在视觉坐标系中的起始行（视觉映射 / 视觉协议生效时附带；不是切片 visual-start） */
+  visualStart?: number
+  /** 可视窗口在视觉坐标系中的结束行（不含；附带口径同 visualStart） */
+  visualEnd?: number
 }
 
 /** 行窗口事件名（各组件统一） */
@@ -97,13 +104,48 @@ export function windowCovered(need: { start: number; end: number }, loaded: { st
   return need.start >= loaded.start && need.end <= loaded.end
 }
 
-/** 同一期望区间（用于去重派发） */
+/** 同一期望区间（用于去重派发）：start/end 与视觉字段（visualStart/visualEnd）都相同才算同窗口——
+    视觉协议或 expand flow 映射生效时，视觉字段变化（展开数 / visual-total 变化移动了可视窗口）
+    即使数据 need 相同也要重新派发；未附带视觉字段时（undefined === undefined）退化为纯数据比较 */
 export function sameWindow(
-  a: { start: number; end: number } | null,
-  b: { start: number; end: number } | null,
+  a: { start: number; end: number; visualStart?: number; visualEnd?: number } | null,
+  b: { start: number; end: number; visualStart?: number; visualEnd?: number } | null,
 ): boolean {
   if (a === null || b === null) return a === b
-  return a.start === b.start && a.end === b.end
+  return a.start === b.start && a.end === b.end && a.visualStart === b.visualStart && a.visualEnd === b.visualEnd
+}
+
+/**
+ * 视觉条目（渲染与请求共用的 abs/flow 记账，见各组件 windowed 渲染注释）到数据请求区间的映射：
+ * 找 flowY 与可视窗口 `[vis.start, vis.end) × 行高` 相交的条目，按属主数据行投影——
+ * - data 条目：`[item.abs, item.abs + 1)`（自身）；
+ * - expand 条目：`[item.abs - 1, item.abs)`（回连属主数据行；组件记账中 expand 条目的
+ *   `abs` 已是「下一数据行」的绝对行号，减 1 即属主）。
+ * 取相交条目最小 start / 最大 end，夹到 `[0, total)` 后前后各扩 `margin` 行。
+ * 无相交条目时回退 `expandWindow(vis.start, vis.end, total)`（可视窗口整体投影）。
+ */
+export function mapVisualWindowToData(
+  vis: { start: number; end: number },
+  items: Array<{ kind: string; abs: number; flowY: number }>,
+  itemHeight: number,
+  total: number,
+  margin: number = WINDOW_MARGIN,
+): { start: number; end: number } {
+  const ih = Math.max(1, Number.isFinite(itemHeight) ? itemHeight : 0)
+  const winTop = vis.start * ih
+  const winBottom = vis.end * ih
+  let lo = Infinity
+  let hi = -Infinity
+  for (const item of items) {
+    if (item.flowY + ih <= winTop || item.flowY >= winBottom) continue
+    const s = item.kind === 'expand' ? item.abs - 1 : item.abs
+    const e = item.kind === 'expand' ? item.abs : item.abs + 1
+    if (s < lo) lo = s
+    if (e > hi) hi = e
+  }
+  // 无相交条目（可视区间与已装载切片错开）→ 保留可视窗口整体投影回退
+  if (lo > hi) return expandWindow(vis.start, vis.end, total, margin)
+  return expandWindow(lo, hi, total, margin)
 }
 
 /**

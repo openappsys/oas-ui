@@ -1355,6 +1355,18 @@ describe('table/range 复审边界回归', () => {
     expect(snapshot.flatIndexByKey.get('r51')).toBe(51)
   })
 
+  it('视觉协议（visual-start / visual-total）不改变 getDisplaySnapshot 的绝对数据行号口径', () => {
+    // 视觉协议只迁移渲染 flow 坐标（视觉行号），数据行号（data-row-index / 事件 rowIndex /
+    // displaySnapshot 索引）必须仍是全量绝对数据行号——range 选区坐标与宿主回写都依赖该口径
+    const el = mountWindowed(50, 12)
+    el.setAttribute('visual-start', '80')
+    el.setAttribute('visual-total', '200')
+    const snapshot = el.getDisplaySnapshot()!
+    expect(snapshot.rowIndexByKey.get('r55')).toBe(55)
+    expect(snapshot.flatIndexByKey.get('r55')).toBe(55)
+    expect(snapshot.rowIndexByKey.get('r61')).toBe(61)
+  })
+
   it('setRangeSelection/selectRow 直接解析已装载但未渲染的行', () => {
     const grouped = mountGrouped()
     selectRow(grouped, 30)

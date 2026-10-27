@@ -431,7 +431,7 @@
 
 > 大数据量场景（十万行级）：宿主只喂「可视窗口附近」的行切片，组件**不持有全量数据**——行窗口按滚动位置计算，未被已装载区间覆盖时派发 `oas-window-request`，由宿主回填，形成「滚动 → 请求 → 回填」闭环。
 
-属性 `windowed`（开启）+ `total`（全量行数）+ `window-start`（`data[0]` 的绝对行号）；事件 `oas-window-request`：`detail: { start, end, reason }`（半开区间、绝对行号；`reason` 为 `init` / `scroll` / `resize` / `data`，同一期望区间不重复派发）。
+属性 `windowed`（开启）+ `total`（全量行数）+ `window-start`（`data[0]` 的绝对行号）；事件 `oas-window-request`：`detail: { start, end, reason, visualStart?, visualEnd }`（`start`/`end` 半开区间、绝对**数据行号**，永远是数据坐标；`reason` 为 `init` / `scroll` / `resize` / `data`，同一期望区间——含视觉字段——不重复派发）。
 
 ```html
 <oas-table windowed total="100000" window-start="0" row-key="id" height="360" columns='[…]'></oas-table>
@@ -448,7 +448,16 @@
 
 windowed 模式下**本地排序 / 筛选 / 分组 / 分页 / 树形展开 / 合计 / 合并（`merge`、`span-method`）/ `column-virtual` 交由宿主负责**（组件跳过本地执行并 devWarn）——请监听既有 `oas-sort-change` / `oas-filter-change` / `oas-page-change` 等事件，在全量数据上处理后回填窗口切片。缺省关闭时行为不变。
 
-行内嵌展开（行数据 `expand` 字段）在 windowed 虚拟滚动中占**独立视觉槽位**，但不占绝对数据行号：`data-row-index`、事件行号与 ARIA 口径仍只按数据行计数；可视窗口与滚动总高按 `total + 当前切片内的展开数` 计算，多行展开与已装载的全量末行的展开内容均可见；切片越界（长度超出 `total - window-start`）时越界行及其展开内容不渲染，最后合法数据行的展开内容保留；`oas-window-request` 请求区间仍按 `total` 计。
+行内嵌展开（行数据 `expand` 字段）在 windowed 虚拟滚动中占**独立视觉槽位**，但不占绝对数据行号：`data-row-index`、事件行号与 ARIA 口径仍只按数据行计数；可视窗口与滚动总高按 `total + 当前切片内的展开数` 计算，多行展开与已装载的全量末行的展开内容均可见；切片越界（长度超出 `total - window-start`）时越界行及其展开内容不渲染，最后合法数据行的展开内容保留。切片内存在展开行时，`oas-window-request` 期望区间不再按均匀数据网格猜测，而是把可视窗口按视觉槽位**映射回数据坐标**（覆盖真实可见数据行及其展开属主行），并附带 `visualStart` / `visualEnd`（当前可视窗口的视觉坐标，供宿主视觉取数）——本地展开数变化移动可视区间时，即使数据区间相同也会重新派发。
+
+### 可选视觉协议（visual-total / visual-start）
+
+宿主切片**之前已存在展开行**时（组件只持有切片，无从得知切片前的展开数），可提供可选视觉协议让组件按视觉坐标渲染：
+
+- `visual-total`：全量视觉行数（数据行 + 行内嵌展开内容行），有限正整数（截断取整）且不小于 `total`；
+- `visual-start`：当前切片 `data[0]` 的视觉行号，`0 ≤ visual-start ≤ visual-total`。
+
+两属性**同时有效**才启用（仅 windowed 下生效）：渲染 flow 从 `visual-start × 行高` 起、渲染与滚动总高按 `visual-total` 计。**协议生效后展开由宿主完全控制**——本地点击展开钮只派发 `oas-expand`（devWarn 一次）并不修改 `expanded`，由宿主监听后回写 `expanded` / `data` / visual 属性驱动重渲染。缺失 / 非法 / 只有其一 / `visual-total` 小于数据 `total` 时 devWarn 一次并**整体回落**当前模型（不部分生效）。绝对数据行号（`data-row-index`、事件行号、ARIA、range/displaySnapshot）不受视觉协议影响；`visual-start + 已装载条目数 > visual-total` 时界外条目不渲染并 devWarn 一次。
 
 > 注意：`total` 在此复用为「全量行数」（分页模式语义为「外部数据分页总行数」）；行/列虚拟化需设 `height`（宿主定高）才启用；windowed 的切片须为**扁平行**（组件不递归 `children`）；切片长度超出 `total - window-start` 时越界行不渲染并 devWarn 一次。
 
@@ -1416,8 +1425,10 @@ const source = createWindowedSource(table, {
 | `summary-scope` | 合计行聚合范围：`all`（默认，全量数据）/ `page`（当前页） | `string` | `all` |
 | `table-layout` | 透传表格布局算法（fixed 时列宽严格按 width 声明） | `string` | — |
 | `total` | 外部数据分页总行数（服务端分页）：与 pagination/current/page-size 配合，`data` 只放当前页切片（组件不再内部分页），总数直通分页器；翻页派发 oas-page-change 由宿主换数据；属性缺席或非法值回落内部分页 | `string` | — |
+| `visual-start` | 可选视觉协议（须与 visual-total 同时提供才生效，仅 windowed）：当前切片 data[0] 的视觉行号，0 ≤ visual-start ≤ visual-total。支持切片前已有展开行的宿主场景——生效后渲染 flow 从 visual-start × 行高起、按视觉行号铺位；绝对数据行号（data-row-index / 事件 rowIndex / ARIA / displaySnapshot）不受影响。缺失 / 非法 / 只有其一时 devWarn 一次并整体回落当前窗口模型 | `string` | — |
+| `visual-total` | 可选视觉协议（须与 visual-start 同时提供才生效，仅 windowed）：全量视觉行数（数据行 + 行内嵌展开内容行），有限正整数（截断取整）且不小于 total。生效后渲染与滚动总高按视觉行数计，行展开由宿主完全控制——本地点击展开钮只派发 oas-expand 并 devWarn，不修改 expanded（宿主回写 expanded / data / visual 属性驱动重渲染）。缺失 / 非法 / 只有其一 / 小于 total 时 devWarn 一次并整体回落当前窗口模型 | `string` | — |
 | `window-start` | windowed 模式下 data[0] 在全量数据集中的行下标（绝对行号）：组件按绝对行渲染与占位；非 windowed 时忽略 | `string` | `0` |
-| `windowed` | 服务端行窗口模式（布尔，默认关）：与 total / window-start 配合，宿主只喂可视窗口切片，组件不持有全量数据。开启后按可视行窗口（前后各 8 行缓冲）计算期望区间，未被已装载区间覆盖时派发 oas-window-request 由宿主回填；本地排序/筛选/分组/分页/树形展开交由宿主负责（组件跳过本地执行并 devWarn）。缺省关闭时行为不变 | `boolean` | — |
+| `windowed` | 服务端行窗口模式（布尔，默认关）：与 total / window-start 配合，宿主只喂可视窗口切片，组件不持有全量数据。开启后按可视行窗口（前后各 8 行缓冲）计算期望区间，未被已装载区间覆盖时派发 oas-window-request 由宿主回填；本地排序/筛选/分组/分页/树形展开交由宿主负责（组件跳过本地执行并 devWarn）。切片内含行内嵌展开行时，期望区间按视觉槽位映射覆盖真实可见数据行（含展开属主行）。缺省关闭时行为不变 | `boolean` | — |
 
 #### 方法
 
@@ -1445,7 +1456,7 @@ const source = createWindowedSource(table, {
 | `oas-column-resize` | 列宽拖拽调整后派发，`detail: { key, width }` |
 | `oas-edit` | 行内编辑提交（Enter/失焦/操作列保存），`detail: { rowIndex, key, column, value, oldValue, oldRawValue }`（oldValue 为提交前字符串值，oldRawValue 为编辑前原始形态，如 number / boolean / string[]）；受控模式组件不回写 `data` |
 | `oas-edit-cancel` | 行内编辑取消（Esc/操作列取消/空值提交还原），`detail: { rowIndex, key, column, value, oldValue, oldRawValue }`（value / oldValue 均为原值，oldRawValue 为原始形态） |
-| `oas-expand` | 行展开/收起（树形子行或可展开内容行），`detail: { key, expanded }` |
+| `oas-expand` | 行展开/收起（树形子行或可展开内容行），`detail: { key, expanded }`；视觉协议（visual-total + visual-start）生效时仅作为宿主通道派发（组件不本地改写 expanded） |
 | `oas-export` | 导出触发（按钮或 exportData），`detail: { format, fileName, rowCount }` |
 | `oas-filter-change` | 列过滤值变化时派发，`detail: { filters }`（filters 为列 key → 选中值标量的对象） |
 | `oas-page-change` | 内置分页翻页时派发，`detail: { page, pageSize }` |
@@ -1454,7 +1465,7 @@ const source = createWindowedSource(table, {
 | `oas-row-reorder` | 行拖拽/Alt+↑↓ 重排，`detail: { from, to, row }`（to 为移除被拖行后的插入位；组件不改 data） |
 | `oas-scroll` | 虚拟滚动滚动事件（rAF 节流），`detail: { scrollTop, start, end }` |
 | `oas-sort-change` | 排序变化，`detail: { key, order: 'asc' \| 'desc' \| '' }` |
-| `oas-window-request` | windowed 模式下期望的行窗口未被已装载区间覆盖时派发，detail: { start, end, reason }（半开区间、绝对行下标；reason 为 init / scroll / resize / data）；同一期望区间不重复派发 |
+| `oas-window-request` | windowed 模式下期望的行窗口未被已装载区间覆盖时派发，detail: { start, end, reason, visualStart?, visualEnd }（start/end 半开区间、绝对数据行下标，永远是数据坐标；reason 为 init / scroll / resize / data）。切片内含展开行或视觉协议生效时，期望区间按视觉槽位映射覆盖真实可见数据行（含展开属主行），并附带 visualStart / visualEnd（当前可视窗口的视觉坐标，供宿主视觉取数；不是切片 visual-start）。同一期望区间（含视觉字段）不重复派发 |
 
 #### 插槽
 

@@ -2121,6 +2121,336 @@ test('table windowed × 行内嵌 expand：expand 占视觉槽位不占数据行
   })
 })
 
+test('table windowed × 本地 expand>12：请求按 abs/flow 映射覆盖真实可见行（visualStart/End 附带，dark/console/ARIA）', async ({
+  page,
+}) => {
+  // 缺陷固化：切片内展开数超过 buffer + WINDOW_MARGIN（4+8=12）时，旧请求区间按均匀 data
+  // 网格猜测（vis 在数据 total 上计算）——渲染窗口（视觉坐标）与请求区间坐标系错位，快速
+  // 跨越装载边界滚动会出现视觉重锚。修复=渲染与请求共用 abs/flow 记账：可视窗口按相交条目
+  // 投影回数据坐标（含 expand 属主行），visualStart/visualEnd 附带可视窗口视觉坐标。
+  // fixture：window-start=100 / total=1000 / 41 行全展开（视觉行数 1041）/ scrollTop=4440
+  // → 可视窗口（视觉）[107,120) → 相交投影 min start=103 / max end=110 → [95,118)（旧公式 [99,128)）。
+  const consoleIssues: string[] = []
+  page.on('console', (m) => {
+    if (m.type() === 'error' || (m.type() === 'warning' && m.text().includes('[oas-table]')))
+      consoleIssues.push(`${m.type()}: ${m.text()}`)
+  })
+  page.on('pageerror', (e) => consoleIssues.push(`pageerror: ${e.message}`))
+  await page.goto('/components/table.html', { waitUntil: 'domcontentloaded' })
+  await page.waitForFunction(() => customElements.get('oas-table') != null, null, { timeout: 15000 })
+  await page.evaluate(() => {
+    const el = document.createElement('oas-table')
+    el.id = 'qa-windowed-expand-map'
+    el.setAttribute('windowed', '')
+    el.setAttribute('total', '1000')
+    el.setAttribute('window-start', '100')
+    el.setAttribute('height', '200')
+    el.setAttribute('row-height', '40')
+    el.setAttribute('row-key', 'name')
+    el.setAttribute('columns', JSON.stringify([{ key: 'name', title: '名称' }]))
+    el.setAttribute(
+      'data',
+      JSON.stringify(
+        Array.from({ length: 41 }, (_, i) => ({
+          name: `行${100 + i}`,
+          expand: `<div class="exp">详情${100 + i}</div>`,
+        })),
+      ),
+    )
+    el.setAttribute('expanded', Array.from({ length: 41 }, (_, i) => `行${100 + i}`).join(','))
+    ;(window as any).__winReqDetail = null
+    el.addEventListener('oas-window-request', (e) => {
+      ;(window as any).__winReqDetail = (e as CustomEvent).detail
+    })
+    ;(document.querySelector('.vp-doc') ?? document.body).appendChild(el)
+  })
+  await page.waitForFunction(
+    () => !!document.querySelector('#qa-windowed-expand-map')?.shadowRoot?.querySelector('tbody'),
+  )
+
+  // 滚到装载区中部：可视窗口（视觉坐标）[107,120) → 期望区间按相交条目投影 [95,118)
+  await page.evaluate(() => {
+    const el = document.querySelector('#qa-windowed-expand-map')!
+    const wrap = el.shadowRoot!.querySelector('.table-scroll') as HTMLElement
+    wrap.scrollTop = 4440
+    wrap.dispatchEvent(new Event('scroll'))
+  })
+  await page.waitForFunction(
+    () => {
+      const el = document.querySelector('#qa-windowed-expand-map')!
+      const idx = new Set(
+        [...el.shadowRoot!.querySelectorAll('tbody tr[data-row-index]')].map((tr) => tr.getAttribute('data-row-index')),
+      )
+      return idx.has('104') && idx.has('109')
+    },
+    null,
+    { timeout: 15000 },
+  )
+  const mapped = await page.evaluate(() => (window as any).__winReqDetail)
+  expect(mapped.start, '映射后数据 start=103-8=95（旧均匀网格 99，坐标仍为数据行）').toBe(95)
+  expect(mapped.end, '映射后数据 end=110+8=118').toBe(118)
+  expect(mapped.visualStart, 'visualStart=可视窗口视觉坐标 107').toBe(107)
+  expect(mapped.visualEnd, 'visualEnd=可视窗口视觉坐标 120（不含）').toBe(120)
+  expect(['scroll', 'resize', 'init', 'data'], `reason 合法（实得 ${mapped.reason}）`).toContain(mapped.reason)
+
+  // 渲染真实可见行 + 用户可见反馈：数据行 104..109 与属主 103..109 的 expand 内容行
+  const visible = await page.evaluate(() => {
+    const el = document.querySelector('#qa-windowed-expand-map')!
+    const body = el.shadowRoot!.querySelector('tbody')!
+    return {
+      rowIndexes: [...el.shadowRoot!.querySelectorAll('tbody tr[data-row-index]')].map((tr) =>
+        tr.getAttribute('data-row-index'),
+      ),
+      expandRows: el.shadowRoot!.querySelectorAll('tbody tr.expand-row').length,
+      has103: body.textContent!.includes('详情103'),
+      has109: body.textContent!.includes('详情109'),
+      ariaCount: el.shadowRoot!.querySelector('table')!.getAttribute('aria-rowcount'),
+      aria104: el.shadowRoot!.querySelector('tbody tr[data-row-index="104"]')!.getAttribute('aria-rowindex'),
+      snapshotRow104: (el as any).getDisplaySnapshot()!.rowIndexByKey.get('行104'),
+    }
+  })
+  expect(visible.rowIndexes, '真实可见数据行 104..109（渲染与请求同坐标系）').toEqual([
+    '104',
+    '105',
+    '106',
+    '107',
+    '108',
+    '109',
+  ])
+  expect(visible.expandRows, '可见 expand 内容行 7 根（属主 103..109）').toBe(7)
+  expect(visible.has103, '属主 103 的 expand 内容真实可见').toBe(true)
+  expect(visible.has109, '属主 109 的 expand 内容真实可见').toBe(true)
+  expect(visible.ariaCount, 'aria-rowcount 仍为数据 total 全量口径').toBe('1000')
+  expect(visible.aria104, 'aria-rowindex 仍为绝对数据行号 1 基（expand 不占号）').toBe('105')
+  expect(visible.snapshotRow104, 'displaySnapshot 行键仍解析为绝对数据行号').toBe(104)
+
+  // 真实交互反馈：点击行104 展开钮 → oas-expand 派发 + 本地收起（非协议仍由组件写 expanded）
+  const toggled = await page.evaluate(
+    () =>
+      new Promise((resolve) => {
+        const el = document.querySelector('#qa-windowed-expand-map')!
+        el.addEventListener(
+          'oas-expand',
+          (e) => {
+            resolve({
+              detail: (e as CustomEvent).detail,
+              expandedAttr: el.getAttribute('expanded'),
+            })
+          },
+          { once: true },
+        )
+        ;(el.shadowRoot!.querySelector(
+          'tbody tr[data-row-index="104"] .expand-toggle-cell button.toggle',
+        ) as HTMLElement)!.click()
+      }),
+  )
+  expect((toggled as any).detail, 'oas-expand detail（宿主通道）').toEqual({ key: '行104', expanded: false })
+  expect(
+    ((toggled as any).expandedAttr as string).split(','),
+    '非协议：本地 toggle 照旧写 expanded（行104 已移除）',
+  ).not.toContain('行104')
+
+  // dark 主题：布局记账与行号口径一致（主题只换 token；行104 已收起 → 后续条目上移，
+  // 渲染数据行变为 104..110）
+  await page.evaluate(() => document.documentElement.classList.add('dark'))
+  await page.waitForFunction(
+    () => {
+      const el = document.querySelector('#qa-windowed-expand-map')!
+      return (
+        [...el.shadowRoot!.querySelectorAll('tbody tr[data-row-index]')]
+          .map((tr) => tr.getAttribute('data-row-index'))
+          .join(',') === '104,105,106,107,108,109,110'
+      )
+    },
+    null,
+    { timeout: 15000 },
+  )
+  const dark = await page.evaluate(() => {
+    const el = document.querySelector('#qa-windowed-expand-map')!
+    return {
+      expandRows: el.shadowRoot!.querySelectorAll('tbody tr.expand-row').length,
+      ariaCount: el.shadowRoot!.querySelector('table')!.getAttribute('aria-rowcount'),
+    }
+  })
+  expect(dark.expandRows, 'dark：可见 expand 内容行 6 根（行104 已收起）').toBe(6)
+  expect(dark.ariaCount, 'dark：aria-rowcount 全量口径不变').toBe('1000')
+
+  expect(consoleIssues, 'console 零告警（error + [oas-table] warning 口径）').toEqual([])
+  await page.evaluate(() => {
+    document.documentElement.classList.remove('dark')
+    document.querySelector('#qa-windowed-expand-map')?.remove()
+  })
+})
+
+test('table windowed × 视觉协议（visual-start/visual-total）：flow/总高走视觉坐标、展开由宿主控制（dark/console/ARIA/displaySnapshot）', async ({
+  page,
+}) => {
+  // 可选视觉协议：宿主切片前已有展开行（visual-start=57 表示 data[0] 在视觉行 57），
+  // visual-total=2000 为全量视觉行数。协议生效后 flow 从 57×40 起、渲染 count=2000、
+  // 总高 = 2000×40 = 80000；本地 toggle 不改 expanded（宿主完全控制），只派发 oas-expand。
+  // abs / data-row-index / ARIA / displaySnapshot 仍为数据坐标全量口径。
+  const consoleIssues: string[] = []
+  page.on('console', (m) => {
+    if (m.type() === 'error' || (m.type() === 'warning' && m.text().includes('[oas-table]')))
+      consoleIssues.push(`${m.type()}: ${m.text()}`)
+  })
+  page.on('pageerror', (e) => consoleIssues.push(`pageerror: ${e.message}`))
+  await page.goto('/components/table.html', { waitUntil: 'domcontentloaded' })
+  await page.waitForFunction(() => customElements.get('oas-table') != null, null, { timeout: 15000 })
+  await page.evaluate(() => {
+    const el = document.createElement('oas-table')
+    el.id = 'qa-windowed-visual-proto'
+    el.setAttribute('windowed', '')
+    el.setAttribute('total', '100')
+    el.setAttribute('visual-total', '2000')
+    el.setAttribute('visual-start', '57')
+    el.setAttribute('window-start', '50')
+    el.setAttribute('height', '200')
+    el.setAttribute('row-height', '40')
+    el.setAttribute('row-key', 'name')
+    el.setAttribute('columns', JSON.stringify([{ key: 'name', title: '名称' }]))
+    el.setAttribute(
+      'data',
+      JSON.stringify([
+        { name: '行50', age: 20 },
+        { name: '行51', age: 21, expand: '<div class="exp">详情51</div>' },
+        { name: '行52', age: 22 },
+        { name: '行53', age: 23 },
+        { name: '行54', age: 24 },
+        { name: '行55', age: 25 },
+      ]),
+    )
+    el.setAttribute('expanded', '行51')
+    ;(window as any).__protoReqs = []
+    el.addEventListener('oas-window-request', (e) => {
+      ;(window as any).__protoReqs.push((e as CustomEvent).detail)
+    })
+    ;(document.querySelector('.vp-doc') ?? document.body).appendChild(el)
+  })
+  await page.waitForFunction(
+    () => !!document.querySelector('#qa-windowed-visual-proto')?.shadowRoot?.querySelector('tbody'),
+  )
+
+  // 协议生效：行50 flow = 57×40 = 2280，滚到切片起点全部渲染；请求 start/end 为数据坐标 + 视觉字段
+  await page.evaluate(() => {
+    const el = document.querySelector('#qa-windowed-visual-proto')!
+    const wrap = el.shadowRoot!.querySelector('.table-scroll') as HTMLElement
+    wrap.scrollTop = 2280
+    wrap.dispatchEvent(new Event('scroll'))
+  })
+  await page.waitForFunction(
+    () => {
+      const el = document.querySelector('#qa-windowed-visual-proto')!
+      const idx = [...el.shadowRoot!.querySelectorAll('tbody tr[data-row-index]')].map((tr) =>
+        tr.getAttribute('data-row-index'),
+      )
+      return idx.join(',') === '50,51,52,53,54,55'
+    },
+    null,
+    { timeout: 15000 },
+  )
+  const scrollReq = await page.evaluate(() => (window as any).__protoReqs.at(-1))
+  expect(scrollReq.start, 'start/end 仍为数据坐标（min 相交 50）').toBe(42)
+  expect(scrollReq.end, 'end=数据坐标（max 相交 56 + margin 8）').toBe(64)
+  expect(scrollReq.visualStart, 'visualStart=可视窗口视觉坐标（count=2000）').toBe(53)
+  expect(scrollReq.visualEnd, 'visualEnd=可视窗口视觉坐标').toBe(66)
+  const protoLayout = await page.evaluate(() => {
+    const el = document.querySelector('#qa-windowed-visual-proto')!
+    const trs = [...el.shadowRoot!.querySelectorAll('tbody tr')] as HTMLElement[]
+    const styleSum = trs.reduce(
+      (s, tr) =>
+        s +
+        (tr.classList.contains('spacer')
+          ? parseFloat((tr.firstElementChild as HTMLElement).style.height || '0')
+          : parseFloat(tr.style.height || '0')),
+      0,
+    )
+    const rectSum = trs.reduce((s, tr) => s + Math.round(tr.getBoundingClientRect().height), 0)
+    return {
+      styleSum,
+      rectSum,
+      expandVisible: !!el.shadowRoot!.querySelector('tbody tr.expand-row'),
+      ariaCount: el.shadowRoot!.querySelector('table')!.getAttribute('aria-rowcount'),
+      aria50: el.shadowRoot!.querySelector('tbody tr[data-row-index="50"]')!.getAttribute('aria-rowindex'),
+      snapshotRow51: (el as any).getDisplaySnapshot()!.rowIndexByKey.get('行51'),
+      snapshotFlat51: (el as any).getDisplaySnapshot()!.flatIndexByKey.get('行51'),
+    }
+  })
+  expect(protoLayout.styleSum, '总高 = visual-total×行高 = 80000（视觉坐标权威）').toBe(80000)
+  expect(
+    Math.abs(protoLayout.rectSum - 80000),
+    '实际渲染高度合计与记账一致（±2px 吸收浏览器亚像素舍入）',
+  ).toBeLessThanOrEqual(2)
+  expect(protoLayout.expandVisible, '行51 expand 内容真实可见').toBe(true)
+  expect(protoLayout.ariaCount, 'aria-rowcount 仍为数据 total').toBe('100')
+  expect(protoLayout.aria50, 'aria-rowindex 仍为绝对数据行号 1 基').toBe('51')
+  expect(protoLayout.snapshotRow51, 'displaySnapshot 行键 → 绝对数据行号').toBe(51)
+  expect(protoLayout.snapshotFlat51, 'displaySnapshot 扁平序不占视觉槽位').toBe(51)
+
+  // 协议下本地 toggle = 宿主通道：oas-expand 派发、expanded 不被本地改写、展开行不本地增删
+  const toggled = await page.evaluate(
+    () =>
+      new Promise((resolve) => {
+        const el = document.querySelector('#qa-windowed-visual-proto')!
+        el.addEventListener(
+          'oas-expand',
+          (e) => {
+            resolve({
+              detail: (e as CustomEvent).detail,
+              expandedAttr: el.getAttribute('expanded'),
+              expandInDom: !!el.shadowRoot!.querySelector('tbody tr.expand-row'),
+            })
+          },
+          { once: true },
+        )
+        ;(el.shadowRoot!.querySelector(
+          'tbody tr[data-row-index="51"] .expand-toggle-cell button.toggle',
+        ) as HTMLElement)!.click()
+      }),
+  )
+  expect((toggled as any).detail, 'oas-expand 派发（宿主通道）').toEqual({ key: '行51', expanded: false })
+  expect((toggled as any).expandedAttr, '协议生效：本地不改 expanded（宿主完全控制）').toBe('行51')
+  expect((toggled as any).expandInDom, '展开状态不被本地增删（保持宿主给定状态）').toBe(true)
+  // 宿主回写 expanded（收起 行51）→ 展开行随宿主状态消失（真实可见反馈）
+  await page.evaluate(() => {
+    const el = document.querySelector('#qa-windowed-visual-proto')!
+    el.setAttribute('expanded', '')
+  })
+  await page.waitForFunction(
+    () => !document.querySelector('#qa-windowed-visual-proto')!.shadowRoot!.querySelector('tbody tr.expand-row'),
+    null,
+    { timeout: 15000 },
+  )
+
+  // dark 主题：视觉坐标记账与 ARIA 口径一致
+  await page.evaluate(() => document.documentElement.classList.add('dark'))
+  const dark = await page.evaluate(() => {
+    const el = document.querySelector('#qa-windowed-visual-proto')!
+    const trs = [...el.shadowRoot!.querySelectorAll('tbody tr')] as HTMLElement[]
+    const styleSum = trs.reduce(
+      (s, tr) =>
+        s +
+        (tr.classList.contains('spacer')
+          ? parseFloat((tr.firstElementChild as HTMLElement).style.height || '0')
+          : parseFloat(tr.style.height || '0')),
+      0,
+    )
+    return {
+      styleSum,
+      ariaCount: el.shadowRoot!.querySelector('table')!.getAttribute('aria-rowcount'),
+      rowCount: el.shadowRoot!.querySelectorAll('tbody tr[data-row-index]').length,
+    }
+  })
+  expect(dark.styleSum, 'dark：总高仍为 80000').toBe(80000)
+  expect(dark.ariaCount, 'dark：aria-rowcount 数据 total 不变').toBe('100')
+  expect(dark.rowCount, 'dark：6 个数据行照常渲染').toBe(6)
+  expect(consoleIssues, 'console 零告警（error + [oas-table] warning 口径）').toEqual([])
+  await page.evaluate(() => {
+    document.documentElement.classList.remove('dark')
+    document.querySelector('#qa-windowed-visual-proto')?.remove()
+  })
+})
+
 test('table windowed 越界切片：越界行及其 expand 不进渲染窗口（末行 expand 不抬窗）', async ({ page }) => {
   // 缺陷固化：渲染窗口 count = total + 当前切片 expand 数后，越界行自己的已展开 expand 会抬高
   // winBottom，使 abs >= total 的越界数据行重新渲染——违反既有「越界行不渲染」契约。

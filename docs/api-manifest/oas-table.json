@@ -152,6 +152,18 @@
       "observed": true
     },
     {
+      "name": "visual-total",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "visual-start",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
       "name": "filter-values",
       "type": "string",
       "default": "",
@@ -393,7 +405,7 @@
     },
     {
       "name": "oas-window-request",
-      "detail": "{ start: need.start, end: need.end, reason } | { start: need.start, end: need.end, reason: 'scroll' }"
+      "detail": "{ start: need.start, end: need.end, reason, visualStart: need.visualStart, visualEnd: need.visualEnd, } | { start: need.start, end: need.end, reason } | { start: need.start, end: need.end, reason: 'scroll', visualStart: vis.visualStart, visualEnd: vis.visualEnd, } | { start: need.start, end: need.end, reason: 'scroll' }"
     }
   ],
   "slots": [

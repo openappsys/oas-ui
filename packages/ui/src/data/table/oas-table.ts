@@ -27,6 +27,7 @@ import {
   ROW_WINDOW_EVENT,
   WINDOW_MARGIN,
   expandWindow,
+  mapVisualWindowToData,
   readWindowedMode,
   sameWindow,
   windowCovered,
@@ -273,6 +274,30 @@ const WINDOWED_OPS_HINT =
  */
 const WINDOWED_SPAN_HINT =
   '[oas-table] windowed 模式下 merge 列 / span-method 由宿主负责（跨切片边界的合并会与占位行相互腐蚀）：已跳过本地合并，需要合并请关闭 windowed 或由宿主提供已合并的数据'
+
+/**
+ * 可选视觉协议（visual-total / visual-start）配置无效/不完整的告警文案（实例级去重一次）。
+ * 两属性必须同时有效才启用（缺失一个 / 非法值 / visual-total 小于数据 total 均视为无效），
+ * 整体回落当前数据窗口模型——不部分生效，防宿主误以为视觉坐标已被组件采纳。
+ */
+const VISUAL_PROTOCOL_HINT =
+  '[oas-table] 视觉协议未生效（已整体回落当前窗口模型）：visual-total / visual-start 须同时有效——visual-total 为有限正整数（截断取整）且不小于数据 total，visual-start 为 [0, visual-total] 内的整数'
+
+/**
+ * 视觉协议生效后本地展开被接管为宿主通道的告警文案（实例级去重一次）。
+ * 协议下视觉坐标由宿主权威维护，本地 toggle 不再改写 expanded——只派发 oas-expand
+ * 供宿主回写 expanded / data / visual 属性（组件不发明全量展开状态）。
+ */
+const VISUAL_EXPAND_HINT =
+  '[oas-table] 视觉协议生效：展开由宿主控制——本地 toggle 不修改 expanded，已派发 oas-expand 供宿主回写 expanded / data / visual 属性'
+
+/**
+ * 视觉协议窗口越界告警文案（visual-start + display 条目数 > visual-total；实例级去重一次）。
+ * 界外条目由视觉窗口裁掉不渲染（渲染 count=visual-total），宿主须扩充 visual-total
+ * 或回填更小的切片——曾完全静默会让宿主误以为切片全部可见。
+ */
+const VISUAL_OVERFLOW_HINT =
+  '[oas-table] 视觉窗口越界（visual-start + 已装载条目数 > visual-total）：界外条目不在渲染窗口内，请宿主扩充 visual-total 或回填更小的切片'
 
 /** 编译期一致性：emit 用的字面量 `'window-request'`（拼 `oas-` 前缀）须与共享契约常量一致 */
 const _ROW_WINDOW_EVENT_CHECK: typeof ROW_WINDOW_EVENT = 'oas-window-request'
@@ -1165,6 +1190,11 @@ export class OASTableBase extends OASElement {
       'windowed',
       // windowed：data[0] 在全量中的绝对行下标
       'window-start',
+      // 可选视觉协议（须同时有效才启用）：visual-total=全量视觉行数（数据行 + 行内嵌展开内容行，
+      // ≥ 数据 total）；visual-start=当前 data[0] 的视觉行号。生效后渲染 flow 从 visual-start×行高起、
+      // 渲染 count=visual-total，展开由宿主完全控制（本地 toggle 只发 oas-expand）
+      'visual-total',
+      'visual-start',
       'filter-values',
       'summary-scope',
       'show-header',
@@ -1293,8 +1323,8 @@ export class OASTableBase extends OASElement {
   private cellTooltipEl: HTMLElement | null = null
   /** windowed 模式解析缓存（parse 时刷新）：windowed/total/windowStart/loaded 区间 */
   private _winMode: ReturnType<typeof readWindowedMode> = readWindowedMode(false, 0, 0, 0)
-  /** windowed：最近一次派发的期望区间（同 need 去重；被覆盖后重置允许再派） */
-  private winReq: { start: number; end: number } | null = null
+  /** windowed：最近一次派发的期望区间（同 need 去重；被覆盖后重置允许再派；含视觉字段时一并比较） */
+  private winReq: { start: number; end: number; visualStart?: number; visualEnd?: number } | null = null
   /** windowed：首帧 init 请求是否已派发（之后 data/total/window-start 变更走 data 原因） */
   private winInitDone = false
   /** windowed 跨全量本地操作告警去重（实例级，同 group-by/column-virtual 的 warnOnce 先例） */
@@ -1303,6 +1333,15 @@ export class OASTableBase extends OASElement {
   private winSpanWarned = false
   /** windowed 切片越界（window-start + data.length > total）告警去重（实例级一次） */
   private winSliceWarned = false
+  /** 可选视觉协议解析结果（parse 时刷新；null = 未生效，回落当前数据窗口模型）：
+      total=全量视觉行数（渲染 count/contentH），start=当前切片 data[0] 的视觉行号（flow 基准） */
+  private _visualProto: { total: number; start: number } | null = null
+  /** 视觉协议配置无效/不完整告警去重（实例级一次） */
+  private visualProtoWarned = false
+  /** 视觉协议窗口越界告警去重（实例级一次） */
+  private visualOverflowWarned = false
+  /** 视觉协议下本地展开接管为宿主通道的告警去重（实例级一次） */
+  private visualExpandWarned = false
   /** 当前展示集的数据行总数（aria-rowcount 口径；windowed 走 total 全量）。render 时刷新 */
   private _logicalRowCount = 0
 
@@ -2055,8 +2094,9 @@ export class OASTableBase extends OASElement {
         this.warnWindowedOpsOnce()
       }
       // 按可视行窗口按需请求（首帧 init / 数据变更后 data；覆盖时静默重置，同 need 去重）。
-      // 须在 loading/empty 早退分支之前派发，防止宿主等待初始窗口时组件静默不请求
-      this.requestWindowIfNeeded(this.winInitDone ? 'data' : 'init')
+      // 须在 loading/empty 早退分支之前派发，防止宿主等待初始窗口时组件静默不请求；
+      // display 直传与渲染路径共用同一份展示集（abs/flow 记账与窗口投影同源）
+      this.requestWindowIfNeeded(this.winInitDone ? 'data' : 'init', display)
       this.winInitDone = true
       // merge 列 / span-method 在 windowed 下跳过（跨切片合并与占位行相互腐蚀）——配置在场告警一次
       if (this._spanMethod !== null || this.effectiveColumns().some((c) => c.merge)) {
@@ -2787,17 +2827,51 @@ export class OASTableBase extends OASElement {
   }
 
   /**
-   * windowed 行渲染：可视窗口在「全量 total + 当前切片 expand」的视觉坐标系上计算
-   * （上界与 contentH 一致，末行 expand 不被窗口上界裁掉），
-   * 已装载切片按绝对行号铺位，窗口外/未装载区域用 spacer 占位——宿主按
-   * oas-window-request 回填后经 update 重渲染补齐。条目含行内嵌展开内容行
-   * （与既有虚拟滚动同款定高模型：每个 display 条目占一行高）。
+   * windowed 的 abs/flow 记账（渲染与请求**共用同一映射**）：
+   * - abs 仅数据行递增（dataIndex / 绝对数据行号，事件与 ARIA 口径不变）；
+   * - flowY 为视觉 flow 坐标——expand 内容行是独立定高 <tr>，在 DOM flow 中实际多占
+   *   一行高，故每个 display 条目（含 expand）都递增一行高。expand 条目的 abs 记为
+   *   「下一数据行」的绝对行号（属主 = abs - 1），供请求映射回连属主数据行。
+   * - 视觉总行数：协议生效 = `visual-total`；未生效 = 数据 total + 当前切片合法 expand 数
+   *   （未装载区域是否展开不可知，不发明全量展开状态推导）。
+   * 越界切片守卫（对齐「越界行不渲染」契约）：首个 abs >= total 的数据行起整段截断——
+   * 若不截断，越界行自己的已展开 expand 会抬高视觉行数，把越界行重新渲染出来。
+   */
+  private windowedFlowItems(display: FlatRow[]): {
+    items: Array<{ f: FlatRow; kind: FlatRow['kind']; abs: number; flowY: number }>
+    /** 渲染 count / contentH / 请求可视窗口共用的视觉总行数 */
+    visualTotal: number
+  } {
+    const ih = this.rowHeightPx()
+    const proto = this._visualProto
+    const items: Array<{ f: FlatRow; kind: FlatRow['kind']; abs: number; flowY: number }> = []
+    let abs = this._winMode.windowStart
+    // flow 基准：协议生效从 visual-start×行高 起（切片前已有展开的宿主场景）；
+    // 未生效从 window-start×行高 起（切片前无展开的简化模型）
+    let flowY = (proto ? proto.start : this._winMode.windowStart) * ih
+    for (const f of display) {
+      if (f.kind === 'data' && abs >= this._winMode.total) break
+      // kind 平铺在条目上：请求映射（mapVisualWindowToData）按 kind 区分 data/expand 投影，
+      // 与渲染共用同一份条目（渲染与请求共用 abs/flow 映射）
+      items.push({ f, kind: f.kind, abs, flowY })
+      if (f.kind === 'data') abs++
+      flowY += ih
+    }
+    const expandCount = items.reduce((n, it) => (it.kind === 'expand' ? n + 1 : n), 0)
+    return { items, visualTotal: proto ? proto.total : this._winMode.total + expandCount }
+  }
+
+  /**
+   * windowed 行渲染：可视窗口在视觉坐标系上计算（协议生效 = visual-total；未生效 =
+   * total + 当前切片 expand 数——上界与 contentH 一致，末行 expand 不被窗口上界裁掉），
+   * 已装载切片按绝对数据行号铺位（flow 坐标按上方 windowedFlowItems 记账），窗口外/
+   * 未装载区域用 spacer 占位——宿主按 oas-window-request 回填后经 update 重渲染补齐。
    *
-   * 双坐标记账：abs 仅数据行递增（dataIndex / 绝对数据行号，事件与 ARIA 口径不变）；
-   * flowY 为视觉 flow 坐标——expand 内容行是独立定高 <tr>，在 DOM flow 中实际多占
-   * 一行高，故每个 display 条目（含 expand）都递增 rowHeight。culling / firstY /
-   * lastFlowEnd / spacer 一律按 flowY：若按 abs 记账，expand 会与下一数据行共享槽位，
-   * 后续行错位、tbody 总高随滚动裁剪漂移、窗口边界下一数据行被误裁剪/误纳入。
+   * 双坐标记账：abs 仅数据行递增（data-row-index / 事件 rowIndex / ARIA 口径不变）；
+   * flowY 为视觉 flow 坐标（culling / firstY / lastFlowEnd / spacer 一律按 flowY：若按
+   * abs 记账，expand 会与下一数据行共享槽位，后续行错位、tbody 总高随滚动裁剪漂移）。
+   * 协议生效时 flow 从 visual-start×行高 起、渲染 count=visual-total；未生效时与旧公式
+   * 逐值等价（由既有无协议用例保持）。
    */
   private renderWindowedBody(
     body: HTMLElement,
@@ -2810,33 +2884,21 @@ export class OASTableBase extends OASElement {
   ): void {
     const ih = this.rowHeightPx()
     const colSpan = this.columnCount()
-    const items: Array<{ f: FlatRow; abs: number; flowY: number }> = []
-    let abs = this._winMode.windowStart
-    let flowY = this._winMode.windowStart * ih
-    for (const f of display) {
-      // 越界切片守卫（对齐「越界行不渲染」契约）：首个 abs >= total 的数据行起整段截断——
-      // 若不截断，越界行自己的已展开 expand 会抬高 winBottom（渲染 count 按 total + expand 数），
-      // 把 abs >= total 的越界行重新渲染出来。display 按绝对顺序，expand 紧随其数据行，
-      // 最后合法数据行的 expand（abs == total）在首个越界数据行之前，天然保留。
-      if (f.kind === 'data' && abs >= this._winMode.total) break
-      items.push({ f, abs, flowY })
-      if (f.kind === 'data') abs++
-      flowY += ih
-    }
-    // 渲染窗口的 count 用「total + 当前切片 expand 数」：末行数据的 expand flowY = total*ih，
-    // 若按数据 total 算窗口则 winBottom ≤ total*ih，末行 expand 恒被 culling 裁掉——
-    // 而 contentH 又计入它，底部留下幽灵空白。视觉窗口上界与 contentH 对齐；
-    // 无 expand 时 count 不变、窗口逐值等价。oas-window-request / requestWindowIfNeeded
-    // 的期望区间仍按数据 total 计算，不受此渲染口径影响。
-    const expandCount = items.reduce((n, it) => (it.f.kind === 'expand' ? n + 1 : n), 0)
-    const win = computeVirtualWindow(scrollTop, this.tableHeight(), ih, this._winMode.total + expandCount)
+    const { items, visualTotal } = this.windowedFlowItems(display)
+    // 视觉协议越界（visual-start + display 条目数 > visual-total）：渲染 count=visual-total，
+    // winBottom ≤ visual-total×行高，界外条目天然不在渲染窗口内（视觉窗口负责裁掉）——
+    // 曾完全静默会让宿主误以为切片全部可见，显式提示一次（不改渲染行为）。
+    const proto = this._visualProto
+    if (proto && proto.start + display.length > proto.total) this.warnVisualOverflowOnce()
+    const win = computeVirtualWindow(scrollTop, this.tableHeight(), ih, visualTotal)
     const winTop = win.start * ih
     const winBottom = win.end * ih
     // 先扫描出可视区间内的待渲染条目（topSpacer 高度依赖首个命中条目的 flow 坐标，须先算好再按
     // 「topSpacer → 行 → bottomSpacer」的顺序追加，保证 DOM 顺序与视觉 flow 一致）。
-    // contentH 只按当前已装载 display 中的 expand 计数——windowed 只知道当前切片内容行，
-    // 未装载区域是否展开不可知（不发明全量展开状态推导）。无 expand 时与旧公式逐值等价。
-    const contentH = this._winMode.total * ih + expandCount * ih
+    // contentH = 视觉总行数 × 行高：协议生效 = visual-total×行高；未生效 = (数据 total + 当前
+    // 已装载 display 中的 expand 数)×行高——windowed 只知道当前切片内容行，未装载区域是否
+    // 展开不可知（不发明全量展开状态推导）。无 expand 且无协议时与旧公式逐值等价。
+    const contentH = visualTotal * ih
     const rendered: HTMLTableRowElement[] = []
     let firstY = -1
     let lastFlowEnd = 0
@@ -3538,6 +3600,17 @@ export class OASTableBase extends OASElement {
 
   /** 展开/收起某行（树形子行或可展开内容行共用），派发 oas-expand */
   private toggleExpand(key: string, expanded: boolean): void {
+    // 可选视觉协议生效：展开由宿主完全控制——视觉坐标由宿主权威维护，本地不改 expanded
+    //（宿主监听 oas-expand 回写 expanded / data / visual 属性，属性变更驱动重渲染）。
+    // 只上报意图 + devWarn 一次（不发明全量展开状态推导）。
+    if (this._visualProto) {
+      if (!this.visualExpandWarned) {
+        this.visualExpandWarned = true
+        devWarn(VISUAL_EXPAND_HINT)
+      }
+      this.emit('expand', { key, expanded })
+      return
+    }
     const set = new Set(this.getAttr('expanded', '').split(',').filter(Boolean))
     if (expanded) set.add(key)
     else set.delete(key)
@@ -3655,6 +3728,20 @@ export class OASTableBase extends OASElement {
     devWarn(
       `[oas-table] windowed 切片超出全量范围（window-start ${mode.windowStart} + 装载 ${this._data.length} 行 > total ${mode.total}），越界 ${overflow} 行不在窗口内（虚拟路径按 total 夹取不渲染；非虚拟路径按已装载切片照常渲染）`,
     )
+  }
+
+  /** 视觉协议配置无效/不完整告警（实例级去重一次；回落判定在 readVisualProtocol） */
+  private warnVisualProtocolOnce(): void {
+    if (this.visualProtoWarned) return
+    this.visualProtoWarned = true
+    devWarn(VISUAL_PROTOCOL_HINT)
+  }
+
+  /** 视觉协议窗口越界告警（visual-start + display 条目数 > visual-total；实例级去重一次） */
+  private warnVisualOverflowOnce(): void {
+    if (this.visualOverflowWarned) return
+    this.visualOverflowWarned = true
+    devWarn(VISUAL_OVERFLOW_HINT)
   }
 
   /** 总列数（行拖拽手柄列 + 勾选列 + 数据列 + 可展开行尾列） */
@@ -4568,9 +4655,10 @@ export class OASTableBase extends OASElement {
       this.editCap?.settleEdit()
       body.innerHTML = ''
       if (this.windowedOn()) {
-        // windowed：绝对行号铺位渲染 + 滚动后可视窗口变化按需请求（reason=scroll）
+        // windowed：绝对行号铺位渲染 + 滚动后可视窗口变化按需请求（reason=scroll）；
+        // display 直传：请求映射与渲染共用同一份展示集（abs/flow 记账同源）
         this.renderWindowedBody(body, display, rowKey, selected, expanded, this.computeLayout(), st)
-        this.requestWindowIfNeeded('scroll')
+        this.requestWindowIfNeeded('scroll', display)
       } else {
         this.renderVirtualBody(body, display, rowKey, selected, expanded, this.computeLayout(), st, vis.ordinals)
       }
@@ -4601,32 +4689,84 @@ export class OASTableBase extends OASElement {
   // ==================== windowed：服务端行窗口协议（oas-window-request） ====================
 
   /**
+   * windowed 展示集（请求映射用）：与渲染路径同源（displayWithCache 缓存复用，通常命中）——
+   * windowed 下本地排序/分组恒关，expanded 直读属性。
+   */
+  private windowedDisplay(): FlatRow[] {
+    const expanded = new Set(this.getAttr('expanded', '').split(',').filter(Boolean))
+    return this.displayWithCache([], this.getAttr('row-key', 'key'), '', expanded).display
+  }
+
+  /**
+   * 期望区间 + 可视窗口的视觉坐标（渲染与请求共用 abs/flow 记账）：
+   * - 可视窗口按视觉总行数计算（协议生效 = visual-total；未生效 = 数据 total + 当前切片
+   *   expand 数——与渲染窗口同源，防「渲染窗口与请求区间坐标系不一致」漂移）；
+   * - 切片内存在 expand 条目（或视觉协议生效）时，期望区间由 `mapVisualWindowToData` 把
+   *   可视窗口按 flow 相交条目投影回数据坐标（覆盖真实可见数据行及其 expand 属主行，
+   *   不再按均匀 data 网格猜测）；无 expand 且无协议时保持旧公式（逐值等价，既有用例不变）。
+   * `mapped` 标记映射路径是否生效——生效时派发的 detail 附带 visualStart/visualEnd。
+   */
+  private windowedRequestNeed(
+    scrollTop: number,
+    display: FlatRow[],
+  ): { start: number; end: number; visualStart: number; visualEnd: number; mapped: boolean } {
+    const mode = this._winMode
+    const ih = this.rowHeightPx()
+    const { items, visualTotal } = this.windowedFlowItems(display)
+    const vis = computeVirtualWindow(scrollTop, this.tableHeight(), ih, visualTotal)
+    const mapped = this._visualProto !== null || items.some((it) => it.kind === 'expand')
+    const need = mapped
+      ? mapVisualWindowToData(vis, items, ih, mode.total, WINDOW_MARGIN)
+      : expandWindow(vis.start, vis.end, mode.total, WINDOW_MARGIN)
+    return { start: need.start, end: need.end, visualStart: vis.start, visualEnd: vis.end, mapped }
+  }
+
+  /**
    * 按可视行窗口计算期望区间并按需派发 `oas-window-request`（detail `{ start, end, reason }`，
-   * 半开、绝对行下标）。去重语义：同一期望区间不重复派发；期望区间被已装载区间覆盖时
+   * 半开、绝对行下标；映射路径另附 `visualStart` / `visualEnd` 可视窗口视觉坐标）。
+   * 去重语义：同一期望区间（含视觉字段）不重复派发；期望区间被已装载区间覆盖时
    * 重置去重状态（之后覆盖情况变化可对同一区间再派）。
    * 非虚拟（无 height）windowed：全部已装载行即视口内容，没有滚动进入未装载区的通道——
    * 不外扩请求（否则「请求 margin → 装载 → 更大 margin」发散），初始装载由宿主自理。
    */
-  private requestWindowIfNeeded(reason: WindowRequestReason): void {
+  private requestWindowIfNeeded(reason: WindowRequestReason, display?: FlatRow[]): void {
     const mode = this._winMode
     if (!mode.windowed || !this.isVirtual()) return
     const st = this.wrap?.scrollTop ?? 0
-    const vis = computeVirtualWindow(st, this.tableHeight(), this.rowHeightPx(), mode.total)
-    const need = expandWindow(vis.start, vis.end, mode.total, WINDOW_MARGIN)
+    const need = this.windowedRequestNeed(st, display ?? this.windowedDisplay())
     if (windowCovered(need, mode.loaded)) {
       this.winReq = null
       return
     }
-    if (sameWindow(need, this.winReq)) return
-    // 先记后派：监听器同步回填时去重状态已就位
-    this.winReq = { start: need.start, end: need.end }
-    this.emit('window-request', { start: need.start, end: need.end, reason })
+    const req: { start: number; end: number; visualStart?: number; visualEnd?: number } = {
+      start: need.start,
+      end: need.end,
+    }
+    if (need.mapped) {
+      req.visualStart = need.visualStart
+      req.visualEnd = need.visualEnd
+    }
+    if (sameWindow(req, this.winReq)) return
+    // 先记后派：监听器同步回填时去重状态已就位（winReq 含视觉字段，供同窗口去重比较）
+    this.winReq = req
+    if (need.mapped) {
+      this.emit('window-request', {
+        start: need.start,
+        end: need.end,
+        reason,
+        visualStart: need.visualStart,
+        visualEnd: need.visualEnd,
+      })
+    } else {
+      this.emit('window-request', { start: need.start, end: need.end, reason })
+    }
   }
 
   /**
    * 键盘导航越界（渲染矩阵末端 / 切片边界）：以「目标绝对行」为中心算出期望区间并派发
    * `oas-window-request`（reason=scroll，与滚动同语义：键盘导航隐含滚动意图），使宿主回填后
    * 该行可达；越界不得静默。去重与覆盖判定与 requestWindowIfNeeded 同源（共享 winReq）。
+   * 目标 abs 仍决定数据 need；visualStart/visualEnd 按当前可视窗口补齐（映射路径附带）。
    * 非 windowed / 目标越出 [0,total) / 期望区间已被装载覆盖 → 不派发（返回 false）。
    */
   private requestWindowForRow(absRow: number): boolean {
@@ -4635,9 +4775,28 @@ export class OASTableBase extends OASElement {
     if (absRow < 0 || absRow >= mode.total) return false
     const need = expandWindow(absRow, absRow + 1, mode.total, WINDOW_MARGIN)
     if (windowCovered(need, mode.loaded)) return false
-    if (sameWindow(need, this.winReq)) return true
-    this.winReq = { start: need.start, end: need.end }
-    this.emit('window-request', { start: need.start, end: need.end, reason: 'scroll' })
+    const vis = this.windowedRequestNeed(this.wrap?.scrollTop ?? 0, this.windowedDisplay())
+    const req: { start: number; end: number; visualStart?: number; visualEnd?: number } = {
+      start: need.start,
+      end: need.end,
+    }
+    if (vis.mapped) {
+      req.visualStart = vis.visualStart
+      req.visualEnd = vis.visualEnd
+    }
+    if (sameWindow(req, this.winReq)) return true
+    this.winReq = req
+    if (vis.mapped) {
+      this.emit('window-request', {
+        start: need.start,
+        end: need.end,
+        reason: 'scroll',
+        visualStart: vis.visualStart,
+        visualEnd: vis.visualEnd,
+      })
+    } else {
+      this.emit('window-request', { start: need.start, end: need.end, reason: 'scroll' })
+    }
     return true
   }
 
@@ -4921,6 +5080,42 @@ export class OASTableBase extends OASElement {
       this._data.length,
     )
     if (!this._winMode.windowed) this.winInitDone = false
+    // 可选视觉协议解析（windowed 之上叠加；缺失/非法/只有其一 → devWarn 一次并整体回落）
+    this._visualProto = this.readVisualProtocol()
+  }
+
+  /**
+   * 可选视觉协议（visual-total / visual-start）解析：两属性**同时有效**才启用——
+   * - `visual-total`：全量视觉行数（数据行 + 行内嵌展开内容行），有限、截断取整、>0，
+   *   且不得小于数据 total；
+   * - `visual-start`：当前切片 data[0] 的视觉行号，有限、截断取整、∈ [0, visual-total]。
+   * 仅 windowed 生效（视觉坐标只作用于 windowed 渲染/请求）；两属性都缺席 → 静默不启用
+   * （既有宿主零打扰）；有任一属性在场但不满足上式 → devWarn 一次并整体回落当前模型
+   * （不部分生效，防宿主误以为视觉坐标已被采纳）。
+   */
+  private readVisualProtocol(): { total: number; start: number } | null {
+    if (!this._winMode.windowed) return null
+    const hasTotal = this.hasAttr('visual-total')
+    const hasStart = this.hasAttr('visual-start')
+    if (!hasTotal && !hasStart) return null
+    const totalRaw = Number(this.getAttr('visual-total', ''))
+    const startRaw = Number(this.getAttr('visual-start', ''))
+    const total = Number.isFinite(totalRaw) ? Math.trunc(totalRaw) : Number.NaN
+    const start = Number.isFinite(startRaw) ? Math.trunc(startRaw) : Number.NaN
+    const valid =
+      hasTotal &&
+      hasStart &&
+      Number.isFinite(total) &&
+      total > 0 &&
+      total >= this._winMode.total &&
+      Number.isFinite(start) &&
+      start >= 0 &&
+      start <= total
+    if (!valid) {
+      this.warnVisualProtocolOnce()
+      return null
+    }
+    return { total, start }
   }
 }
 

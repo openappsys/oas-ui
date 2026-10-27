@@ -4,13 +4,17 @@
 
 ## [未发布]
 
+### 新增
+
+- **`oas-table` windowed 视觉映射与可选视觉协议（`visual-total` / `visual-start`）**：行窗口渲染与期望区间请求共用同一份 abs/flow 记账——切片内含行内嵌展开行（或视觉协议生效）时，`oas-window-request` 的期望区间把可视窗口按视觉槽位映射回数据坐标，覆盖真实可见数据行及其展开属主行（不再按均匀数据网格猜测；此前切片展开数超过缓冲 + `WINDOW_MARGIN` = 12 时，快速跨越装载边界的滚动可能出现视觉重锚，本条目收口该缺口）。`start` / `end` 永远是数据坐标；映射生效时 detail 附带可选 `visualStart` / `visualEnd`（当前可视窗口的视觉坐标，供宿主视觉取数）。去重升级为「同窗口」= 数据区间与视觉字段都相同——展开数或 `visual-total` 变化移动可视区间时，即使数据区间相同也重新派发；切片无展开且无协议时派发行为逐值不变。可选视觉协议：`visual-total`（全量视觉行数，不小于 `total`）与 `visual-start`（切片首行视觉行号）**同时有效**才启用——渲染 flow 从 `visual-start × 行高` 起、滚动总高按 `visual-total` 计，支持切片前已有展开行的宿主场景；协议生效后展开由宿主完全控制（本地点击展开钮只派发 `oas-expand` 并 devWarn 一次，不修改 `expanded`）。缺失 / 非法 / 只有其一 / 小于 `total` 时 devWarn 一次并整体回落当前模型；绝对数据行号（`data-row-index`、事件 rowIndex、ARIA、range/displaySnapshot）与非 windowed 路径不变。`advanced/windowed.ts` 数据源助手对视觉字段的适配随后续任务收口。
+
 ### 修复
 
 - **`oas-sidebar` 嵌套头像子项重复行首占位**：带 `avatar` / `avatarText` 的嵌套子项不再保留 18px 空图标槽，头像与 label 之间只保留一次行 gap；普通无图标子项仍保留缩进占位，既有层级对齐不变。
 - **`oas-table` 主从详情（`table/detail`）`selectByKey` 显式等待与可取消**：未命中等待改为显式 opt-in——默认（无选项）在有效 windowed（`windowed` 属性在场且 `total` 有限、截断后 > 0）未命中时保持现状（不改选中/面板、零事件、无可见等待），普通模式未命中仍清空选中；`selectByKey(key, { waitForRow: true })` 在任何模式下未命中都挂起等待 `data` 到达，命中后落地一次并派发一次 `oas-detail-change`。等待只由数据命中、显式取消或 abort 结束：模式、`windowed` 属性、`total` 变化与 MutationObserver 批次不再终止等待（同批与不同批命中结果一致）；普通模式 `data` 删除选中行时 `onClose` 照常触发但等待保留，等待键随后到达仍落地。`selectByKey(key, { signal })` 支持 `AbortSignal`：已 aborted 的信号不建立等待（回落默认语义），等待中 abort 只取消等待（不改选中/面板、不派发事件），自然落地后 abort 无副作用。`close()` / `select()` / 行或单元格点击 / `Enter` / `Esc` / `destroy()` / `row-key` 变化或再次 `selectByKey()`（新键覆盖旧等待）都会取消等待，取消不补派发等待键的选中事件。无选中时的 `Esc` 只在本实例的表格/面板内取消等待，不注册 window 全局兜底；`closeOnEscape: false` 时完全不响应 Esc，启用 range 且存在活动选区时，表格内第一次 Esc 先清选区、等待保留。`total` 为 0 / 非法 / 截断后为 0 按普通模式处理。
 - **`oas-table` 区域选择（`table/range`）禁用不再覆盖外部 tabindex**：range 只恢复自己最后写入且仍未被改写的 `tabindex`；拥有期间其它能力写入的值原样保留，交由 grid-navigation 接管时也不回写陈旧原值。
 - **`oas-table` windowed 数据源助手（`table/advanced`）**：宿主外部清空 / 替换 `data` 或切换 `window-start` 后，同窗口请求会按表格当前切片重新拉取；`fetchRows` 同步抛错与 Promise 失败现在都会派发一次 `oas-window-error` 并允许同窗口重试（此前同步抛错会留下在途标记，使同窗口不再重试）。
-- **`oas-table` windowed 行内嵌 expand 视觉槽位**：`row.expand` 展开内容行不再与下一数据行共享视觉槽位（此前后续行错位、tbody 总高随滚动裁剪漂移、窗口边界行被误裁剪/误纳入）；滚动总高稳定计入当前切片的 expand 槽位，多行展开与已装载的全量末行展开可见；切片越界时越界行及其 expand 不渲染（对齐既有「越界行不渲染」契约），最后合法数据行的 expand 保留。绝对数据行号（`data-row-index`）、ARIA 口径、`oas-window-request` 请求窗口（仍按数据 `total` 计）与非 windowed 路径不变；无 expand 时渲染逐值等价。
+- **`oas-table` windowed 行内嵌 expand 视觉槽位**：`row.expand` 展开内容行不再与下一数据行共享视觉槽位（此前后续行错位、tbody 总高随滚动裁剪漂移、窗口边界行被误裁剪/误纳入）；滚动总高稳定计入当前切片的 expand 槽位，多行展开与已装载的全量末行展开可见；切片越界时越界行及其 expand 不渲染（对齐既有「越界行不渲染」契约），最后合法数据行的 expand 保留。绝对数据行号（`data-row-index`）、ARIA 口径与非 windowed 路径不变；无 expand 时渲染逐值等价（含展开切片的 `oas-window-request` 区间映射随后由「视觉映射与可选视觉协议」条目收口）。
 
 ### 优化
 

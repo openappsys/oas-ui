@@ -22,6 +22,9 @@ interface WinReq {
   start: number
   end: number
   reason: string
+  /** 视觉映射 / 视觉协议生效时附带的可视窗口视觉坐标（旧路径无此字段） */
+  visualStart?: number
+  visualEnd?: number
 }
 
 /** mount（监听器先于连接挂上，首帧 init 请求也能捕获） */
@@ -38,7 +41,7 @@ function mountWindowed(attrs: Record<string, string>): { el: OASTable; reqs: Win
   const reqs: WinReq[] = []
   el.addEventListener('oas-window-request', (e) => {
     const d = (e as CustomEvent).detail
-    reqs.push({ start: d.start, end: d.end, reason: d.reason })
+    reqs.push({ start: d.start, end: d.end, reason: d.reason, visualStart: d.visualStart, visualEnd: d.visualEnd })
   })
   document.body.appendChild(el)
   return { el, reqs }
@@ -888,5 +891,374 @@ describe('OASTable windowed（服务端行窗口模式）', () => {
     } finally {
       warn.mockRestore()
     }
+  })
+})
+
+// ==================== 视觉映射与可选视觉协议（visual-total / visual-start） ====================
+
+/**
+ * 目标：
+ * 1. 本地 expand>12：渲染与请求共用 abs/flow 映射，请求区间覆盖真实可见数据行
+ *    （含 expand 属主行），不再按均匀 data 网格猜测；start/end 永远数据坐标，
+ *    visualStart/visualEnd 为可视窗口的视觉坐标（附加字段）。
+ * 2. 可选 visual-total / visual-start 协议：切片前已有展开的宿主场景——协议生效时
+ *    flow 从 visual-start×行高起、渲染 count=visual-total，展开由宿主完全控制
+ *    （本地 toggle 只发 oas-expand + devWarn，不改 expanded）。
+ * 3. abs / ARIA / displaySnapshot / 焦点 / 非 windowed 路径不变；协议缺失/非法整体回落。
+ */
+
+/** tbody 记账总高（spacer td 的 style.height + 非 spacer tr 的 style.height） */
+function tbodyAccountedHeight(el: OASTable): number {
+  return trsOf(el).reduce((sum, tr) => {
+    if (tr.classList.contains('spacer')) {
+      return sum + parseFloat((tr.firstElementChild as HTMLElement).style.height || '0')
+    }
+    return sum + parseFloat(tr.style.height || '0')
+  }, 0)
+}
+
+describe('OASTable windowed × 视觉映射（expand>12 请求映射）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  it('本地全展开 >12：请求区间按 abs/flow 映射覆盖真实可见行（含 expand 属主），visualStart/End 为可视视觉坐标', async () => {
+    // fixture：window-start=100 / total=1000 / 41 行全部带 expand 且展开 / scrollTop=4440。
+    // 视觉行数 = 1000 + 41 = 1041；可视窗口（视觉坐标）= [107,120) → flow [4280,4800)。
+    // 相交条目：data 104..109 与 expand 103..109（expand 条目回连属主数据行 [abs-1, abs)），
+    // 最小 start=103 / 最大 end=110 → ±margin → 期望 [95,118)（旧均匀 data 网格为 [99,128)）。
+    const { el, reqs } = mountWindowed({
+      windowed: '',
+      total: '1000',
+      'window-start': '100',
+      height: '200',
+      'row-height': '40',
+      'row-key': 'name',
+      data: JSON.stringify(
+        Array.from({ length: 41 }, (_, i) => ({
+          name: `行${100 + i}`,
+          age: 20 + i,
+          expand: `<div>详情${100 + i}</div>`,
+        })),
+      ),
+      expanded: Array.from({ length: 41 }, (_, i) => `行${100 + i}`).join(','),
+    })
+    expect(reqs[0], '首帧 init 请求（无相交条目 → 回退可视窗口区间，附带视觉字段）').toEqual({
+      start: 0,
+      end: 17,
+      reason: 'init',
+      visualStart: 0,
+      visualEnd: 9,
+    })
+    const wrap = wrapOf(el)
+    wrap.scrollTop = 4440
+    wrap.dispatchEvent(new Event('scroll'))
+    await flushRaf()
+    const scrollReq = reqs.find((r) => r.reason === 'scroll')
+    expect(scrollReq, '滚动后应派发 scroll 请求').toBeTruthy()
+    // start/end 仍是数据坐标（覆盖真实可见数据行 104..109 与 expand 属主 103..109）
+    expect(scrollReq!.start, '映射后数据 start=103-8=95（旧均匀网格 99）').toBe(95)
+    expect(scrollReq!.end, '映射后数据 end=110+8=118').toBe(118)
+    // visualStart/visualEnd 为可视窗口的视觉坐标（不是切片 visual-start）
+    expect(scrollReq!.visualStart, '可视窗口视觉起点 107').toBe(107)
+    expect(scrollReq!.visualEnd, '可视窗口视觉终点 120（不含）').toBe(120)
+    // 渲染真实可见行：数据行 104..109 与其 expand（属主行内容在 DOM）
+    expect(
+      rowsOf(el).map((r) => r.getAttribute('data-row-index')),
+      '真实可见数据行 104..109',
+    ).toEqual(['104', '105', '106', '107', '108', '109'])
+    const bodyText = el.shadowRoot!.querySelector('tbody')!.textContent ?? ''
+    expect(bodyText, '可见 expand 属主 103 的内容行在 DOM').toContain('详情103')
+    expect(bodyText, '可见 expand 属主 109 的内容行在 DOM').toContain('详情109')
+  })
+
+  it('展开数变化使可视区间变化时，即使数据 need 相同也重新派发；同窗口（含视觉字段）不重复派发', async () => {
+    // fixture：total=100 / window-start=92 / 8 行全展开（视觉行数 108）/ scrollTop=4120。
+    // 可视窗口（视觉）= [99,108) → 相交条目 min start=95 / max end=100 → [87,100)。
+    // 折叠行92 → 视觉行数 107 → scrollTop 4120 视觉窗口变为 [98,107)，相交映射仍为 [87,100)
+    // （数据 need 相同）→ 视觉字段变化 → 必须重派；再滚动（一切未变）→ 同窗口不重派。
+    const { el, reqs } = mountWindowed({
+      windowed: '',
+      total: '100',
+      'window-start': '92',
+      height: '200',
+      'row-height': '40',
+      'row-key': 'name',
+      data: JSON.stringify(
+        Array.from({ length: 8 }, (_, i) => ({
+          name: `行${92 + i}`,
+          age: 20 + i,
+          expand: `<div>详情${92 + i}</div>`,
+        })),
+      ),
+      expanded: Array.from({ length: 8 }, (_, i) => `行${92 + i}`).join(','),
+    })
+    const wrap = wrapOf(el)
+    wrap.scrollTop = 4120
+    wrap.dispatchEvent(new Event('scroll'))
+    await flushRaf()
+    expect(reqs.at(-1), '折叠前：视觉窗口 [99,108) → 期望 [87,100)').toEqual({
+      start: 87,
+      end: 100,
+      reason: 'scroll',
+      visualStart: 99,
+      visualEnd: 108,
+    })
+    // 宿主回写 expanded（折叠行92）：视觉行数 108→107 → 可视窗口 [99,108)→[98,107)
+    el.setAttribute('expanded', Array.from({ length: 7 }, (_, i) => `行${93 + i}`).join(','))
+    expect(reqs.at(-1), '数据 need 同为 [87,100) 但视觉字段变化 → 必须重派（reason=data）').toEqual({
+      start: 87,
+      end: 100,
+      reason: 'data',
+      visualStart: 98,
+      visualEnd: 107,
+    })
+    // 再触发滚动（位置未变、窗口未变）→ 同窗口（含视觉字段）不重复派发
+    wrap.dispatchEvent(new Event('scroll'))
+    await flushRaf()
+    expect(reqs.filter((r) => r.reason === 'data').length, 'data 原因仅派发一次').toBe(1)
+    expect(reqs.length, '总派发数不变（同窗口去重）').toBe(3)
+  })
+})
+
+describe('OASTable windowed × 可选视觉协议（visual-total / visual-start）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  /** 协议 fixture：visual-start=57 / visual-total=2000 / window-start=50 / data 50..55（行51 expand） */
+  const mountVisual = (extra: Record<string, string> = {}): { el: OASTable; reqs: WinReq[] } =>
+    mountWindowed({
+      windowed: '',
+      total: '100',
+      'visual-total': '2000',
+      'visual-start': '57',
+      'window-start': '50',
+      height: '200',
+      'row-height': '40',
+      'row-key': 'name',
+      data: JSON.stringify([
+        { name: '行50', age: 20 },
+        { name: '行51', age: 21, expand: '<div>详情51</div>' },
+        { name: '行52', age: 22 },
+        { name: '行53', age: 23 },
+        { name: '行54', age: 24 },
+        { name: '行55', age: 25 },
+      ]),
+      expanded: '行51',
+      ...extra,
+    })
+
+  it('协议生效：flow 从 visual-start×行高起、contentH=visual-total×行高；请求附带视觉字段', async () => {
+    const { el, reqs } = mountVisual()
+    // 首帧（scrollTop=0）：可视窗口 [0,9) 与切片（flow 2280 起）无相交 → 回退数据区间 [0,17)
+    expect(reqs[0]).toEqual({ start: 0, end: 17, reason: 'init', visualStart: 0, visualEnd: 9 })
+    const wrap = wrapOf(el)
+    wrap.scrollTop = 2280
+    wrap.dispatchEvent(new Event('scroll'))
+    await flushRaf()
+    // 可视窗口（视觉坐标，count=2000）：[53,66)；相交条目：data50..55 + expand51（属主 50）
+    // → min start=50 / max end=56 → ±margin → [42,64)
+    expect(reqs.at(-1), '请求 start/end 为数据坐标、视觉字段为可视窗口坐标').toEqual({
+      start: 42,
+      end: 64,
+      reason: 'scroll',
+      visualStart: 53,
+      visualEnd: 66,
+    })
+    // 渲染按视觉坐标铺位：data50 flow=57*40=2280 落在窗口内全部渲染；总高 = 2000*40 = 80000
+    expect(tbodyAccountedHeight(el), 'contentH = visual-total × 行高 = 80000（非协议为 4040）').toBe(80000)
+    expect(
+      rowsOf(el).map((r) => r.getAttribute('data-row-index')),
+      '切片数据行全部渲染',
+    ).toEqual(['50', '51', '52', '53', '54', '55'])
+  })
+
+  it('协议生效：abs / data-row-index / aria-rowindex / displaySnapshot 口径不变', async () => {
+    const { el } = mountVisual()
+    // 协议下行50 位于视觉行 57（flow 2280）——滚动到切片起点才有渲染行可断言
+    const wrap = wrapOf(el)
+    wrap.scrollTop = 2280
+    wrap.dispatchEvent(new Event('scroll'))
+    await flushRaf()
+    expect(el.shadowRoot!.querySelector('table')!.getAttribute('aria-rowcount'), 'aria-rowcount 仍为数据 total').toBe(
+      '100',
+    )
+    const idx = [...el.shadowRoot!.querySelectorAll('tbody tr.row')].map((tr) => tr.getAttribute('aria-rowindex'))
+    expect(idx, 'aria-rowindex 仍为绝对数据行号 1 基（51..56，不被视觉行号影响）').toEqual([
+      '51',
+      '52',
+      '53',
+      '54',
+      '55',
+      '56',
+    ])
+    expect(rowsOf(el).map((r) => r.getAttribute('data-row-index'))).toEqual(['50', '51', '52', '53', '54', '55'])
+    const snapshot = el.getDisplaySnapshot()!
+    expect(snapshot.rowIndexByKey.get('行51'), 'displaySnapshot 行键 → 绝对数据行号不变').toBe(51)
+    expect(snapshot.flatIndexByKey.get('行51'), 'displaySnapshot 扁平序仍为数据行口径（expand 不占号）').toBe(51)
+  })
+
+  it('协议生效：本地 toggle 不改 expanded，只发一次 oas-expand + devWarn 一次；未生效仍本地 toggle', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    try {
+      const { el } = mountVisual({ expanded: '' })
+      // 协议下行50 位于视觉行 57（flow 2280）——滚动到切片起点行才渲染、展开钮可达
+      const wrap = wrapOf(el)
+      wrap.scrollTop = 2280
+      wrap.dispatchEvent(new Event('scroll'))
+      await flushRaf()
+      const details: Array<{ key: string; expanded: boolean }> = []
+      el.addEventListener('oas-expand', (e) => details.push((e as CustomEvent).detail))
+      const btn = el.shadowRoot!.querySelector<HTMLElement>('tr[data-key="行51"] .expand-toggle-cell button.toggle')!
+      expect(btn, '行51 有展开钮').toBeTruthy()
+      btn.click()
+      expect(details, '派发一次 oas-expand（宿主通道）').toEqual([{ key: '行51', expanded: true }])
+      expect(el.getAttribute('expanded'), '本地不改 expanded（宿主完全控制）').toBe('')
+      expect(el.shadowRoot!.querySelector('tbody tr.expand-row'), '不本地展开（等宿主回写）').toBeNull()
+      expect(warn.mock.calls.length, 'devWarn 一次').toBe(1)
+      btn.click()
+      expect(details.length, '再次点击仍派发 oas-expand').toBe(2)
+      expect(warn.mock.calls.length, 'devWarn 实例级去重（仍一次）').toBe(1)
+      warn.mockRestore()
+      // 对照：未提供协议 → 本地 toggle 照旧（写 expanded + 本地重渲染展开行）
+      const warn2 = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const el2 = mountWindowed({
+        windowed: '',
+        total: '100',
+        'window-start': '50',
+        height: '200',
+        'row-height': '40',
+        'row-key': 'name',
+        data: JSON.stringify([
+          { name: '行50', age: 20 },
+          { name: '行51', age: 21, expand: '<div>详情51</div>' },
+          { name: '行52', age: 22 },
+          { name: '行53', age: 23 },
+          { name: '行54', age: 24 },
+          { name: '行55', age: 25 },
+        ]),
+        expanded: '',
+      })
+      // 非 windowed 协议模型：flow 从 window-start×40=2000 起，滚到切片起点行才渲染
+      const wrap2 = wrapOf(el2.el)
+      wrap2.scrollTop = 2000
+      wrap2.dispatchEvent(new Event('scroll'))
+      await flushRaf()
+      const btn2 = el2.el.shadowRoot!.querySelector<HTMLElement>(
+        'tr[data-key="行51"] .expand-toggle-cell button.toggle',
+      )!
+      btn2.click()
+      expect(el2.el.getAttribute('expanded'), '未提供协议：本地 toggle 照旧写 expanded').toBe('行51')
+      expect(el2.el.shadowRoot!.querySelector('tbody tr.expand-row'), '未提供协议：本地展开渲染').not.toBeNull()
+      expect(warn2.mock.calls.filter((c) => String(c[0]).includes('视觉协议')).length, '未提供协议：无协议告警').toBe(0)
+      warn2.mockRestore()
+    } finally {
+      vi.restoreAllMocks()
+    }
+  })
+
+  it('协议回落：只有其一 / 非法值 / visual-total < 数据 total → devWarn 一次并整体回落当前模型', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    try {
+      const caseMsgs = (): string[] => warn.mock.calls.map((c) => String(c[0])).filter((m) => m.includes('视觉协议'))
+      // 只有 visual-total（缺 visual-start）
+      const a = mountVisual()
+      a.el.removeAttribute('visual-start')
+      expect(caseMsgs().length, '只有其一 → 告警一次').toBe(1)
+      expect(tbodyAccountedHeight(a.el), '回落当前模型：contentH = total*40 + expand 槽位').toBe(4040)
+      // 非法 visual-total
+      warn.mockClear()
+      const b = mountVisual({ 'visual-total': 'abc' })
+      expect(caseMsgs().length, '非法值 → 告警一次').toBe(1)
+      expect(tbodyAccountedHeight(b.el), '非法值回落：contentH = 4040').toBe(4040)
+      // visual-total < 数据 total
+      warn.mockClear()
+      const c = mountVisual({ 'visual-total': '50' })
+      expect(caseMsgs().length, 'visual-total < 数据 total → 告警一次').toBe(1)
+      expect(trsOf(c.el).length).toBeGreaterThan(0)
+      // 实例级去重：同实例重渲染不重复告警
+      c.el.setAttribute('data', c.el.getAttribute('data')!)
+      expect(caseMsgs().length, '同实例只提示一次').toBe(1)
+      // 两个属性都在场且合法 → 不告警
+      warn.mockClear()
+      mountVisual()
+      expect(caseMsgs().length, '协议合法生效不告警').toBe(0)
+      // 两属性都缺席 → 静默（不告警，保留现有模型）
+      warn.mockClear()
+      mountWindowed({ windowed: '', total: '100', 'window-start': '50', data: JSON.stringify([{ name: '行50' }]) })
+      expect(caseMsgs().length, '协议属性全缺席 → 静默').toBe(0)
+    } finally {
+      warn.mockRestore()
+    }
+  })
+
+  it('协议越界：visual-start + display 条目数 > visual-total → devWarn 一次且界外条目不渲染', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    try {
+      // visual-total=60（≥ 数据 total=60，协议合法）；visual-start=57 + 7 条目（6 数据 + 1 expand）
+      // = 64 > 60 → 越界告警；界外条目（flow ≥ 60*40=2400：data52..55）由视觉窗口裁掉不渲染
+      const { el } = mountVisual({ total: '60', 'visual-total': '60' })
+      const msgs = warn.mock.calls.map((c) => String(c[0])).filter((m) => m.includes('视觉窗口越界'))
+      expect(msgs.length, '越界告警一次').toBe(1)
+      const wrap = wrapOf(el)
+      wrap.scrollTop = 2280
+      wrap.dispatchEvent(new Event('scroll'))
+      await flushRaf()
+      // 可视窗口（count=60）：[53,60) → flow [2120,2400)：data50@2280、expand51@2320、data51@2360 在窗口内；
+      // data52@2400 起全部界外
+      expect(
+        rowsOf(el).map((r) => r.getAttribute('data-row-index')),
+        '界外条目 data52..55 不渲染',
+      ).toEqual(['50', '51'])
+      expect(el.shadowRoot!.querySelector('tbody tr.expand-row'), '窗口内的 expand51 照常渲染').not.toBeNull()
+      // ARIA 全量口径不变
+      expect(el.shadowRoot!.querySelector('table')!.getAttribute('aria-rowcount')).toBe('60')
+      // 重渲染不重复告警
+      el.setAttribute('data', el.getAttribute('data')!)
+      expect(warn.mock.calls.filter((c) => String(c[0]).includes('视觉窗口越界')).length, '仍一次').toBe(1)
+    } finally {
+      warn.mockRestore()
+    }
+  })
+
+  it('协议生效：键盘越界请求的数据 need 仍由目标 abs 决定，visualStart/End 按当前可视窗口补齐', async () => {
+    const { el, reqs } = mountVisual({ 'grid-navigation': '' })
+    const wrap = wrapOf(el)
+    wrap.scrollTop = 2280
+    wrap.dispatchEvent(new Event('scroll'))
+    await flushRaf()
+    expect(reqs.at(-1), '滚动请求先行（可视窗口 [53,66)）').toEqual({
+      start: 42,
+      end: 64,
+      reason: 'scroll',
+      visualStart: 53,
+      visualEnd: 66,
+    })
+    const lastTd = rowsOf(el)[5]!.querySelector<HTMLElement>('td[data-col="name"]')!
+    lastTd.focus()
+    lastTd.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true, composed: true, cancelable: true }),
+    )
+    // 目标绝对行 56 → expandWindow(56,57,100,8) = [48,65)；visualStart/End 按当前可视窗口 [53,66) 补齐
+    expect(reqs.at(-1), '数据 need 由目标 abs 决定，视觉字段补齐').toEqual({
+      start: 48,
+      end: 65,
+      reason: 'scroll',
+      visualStart: 53,
+      visualEnd: 66,
+    })
   })
 })

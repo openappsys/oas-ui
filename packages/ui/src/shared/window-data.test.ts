@@ -7,6 +7,7 @@ import {
   expandWindow,
   windowCovered,
   sameWindow,
+  mapVisualWindowToData,
   readWindowedMode,
   rangeCovered,
   parseIsoDayMs,
@@ -67,6 +68,61 @@ describe('服务端行窗口协议（window-data）', () => {
     expect(sameWindow({ start: 1, end: 2 }, { start: 1, end: 3 })).toBe(false)
     expect(sameWindow(null, null)).toBe(true)
     expect(sameWindow(null, { start: 0, end: 0 })).toBe(false)
+  })
+
+  it('sameWindow：同时比较视觉字段——数据 need 相同但视觉字段变化不算同窗口', () => {
+    expect(
+      sameWindow(
+        { start: 1, end: 2, visualStart: 5, visualEnd: 9 },
+        { start: 1, end: 2, visualStart: 5, visualEnd: 9 },
+      ),
+    ).toBe(true)
+    expect(
+      sameWindow(
+        { start: 1, end: 2, visualStart: 5, visualEnd: 9 },
+        { start: 1, end: 2, visualStart: 6, visualEnd: 9 },
+      ),
+    ).toBe(false)
+    expect(
+      sameWindow(
+        { start: 1, end: 2, visualStart: 5, visualEnd: 9 },
+        { start: 1, end: 2, visualStart: 5, visualEnd: 10 },
+      ),
+    ).toBe(false)
+    // 旧路径（无视觉字段）互相比较退化为纯数据比较；与带视觉字段的窗口比较必不相等
+    expect(sameWindow({ start: 1, end: 2 }, { start: 1, end: 2 })).toBe(true)
+    expect(sameWindow({ start: 1, end: 2 }, { start: 1, end: 2, visualStart: 0, visualEnd: 0 })).toBe(false)
+  })
+
+  it('mapVisualWindowToData：相交条目按属主数据行投影（data=自身 / expand=回连属主）', () => {
+    const ih = 40
+    // 可视窗口 [107,120) → flow [4280,4800)；条目与 table 记账同形（expand 条目的 abs = 下一数据行）
+    const items = [
+      { kind: 'data', abs: 103, flowY: 4240 },
+      { kind: 'expand', abs: 104, flowY: 4280 },
+      { kind: 'data', abs: 104, flowY: 4320 },
+      { kind: 'data', abs: 109, flowY: 4720 },
+      { kind: 'expand', abs: 110, flowY: 4760 },
+      { kind: 'data', abs: 110, flowY: 4800 }, // 恰在窗口下缘（flowY >= winBottom）不纳入
+    ]
+    // min start=103（exp103 回连属主）/ max end=110 → ±8 → [95,118)
+    expect(mapVisualWindowToData({ start: 107, end: 120 }, items, ih, 1000)).toEqual({ start: 95, end: 118 })
+  })
+
+  it('mapVisualWindowToData：夹取到 [0,total) 与无相交回退可视窗口投影', () => {
+    const ih = 40
+    // 末尾 clamp：hi+margin 超出 total（lo=99 / hi=100 → [91,100)）
+    expect(mapVisualWindowToData({ start: 98, end: 100 }, [{ kind: 'data', abs: 99, flowY: 3960 }], ih, 100)).toEqual({
+      start: 91,
+      end: 100,
+    })
+    // 无相交条目 → 回退 expandWindow(vis.start, vis.end, total, margin)
+    expect(mapVisualWindowToData({ start: 50, end: 60 }, [{ kind: 'data', abs: 0, flowY: 0 }], ih, 100)).toEqual({
+      start: 42,
+      end: 68,
+    })
+    // 空条目同样回退
+    expect(mapVisualWindowToData({ start: 0, end: 9 }, [], ih, 1000)).toEqual({ start: 0, end: 17 })
   })
 
   it('readWindowedMode：仅 windowed 属性在场且 total>0 才生效', () => {
