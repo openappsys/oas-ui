@@ -46,6 +46,8 @@ jobs:
       - run: pnpm llms:check
   e2e:
     runs-on: ubuntu-latest
+    env:
+      OAS_DOCS_ANALYTICS: 0
     timeout-minutes: 60
     strategy:
       fail-fast: false
@@ -91,7 +93,10 @@ jobs:
           if-no-files-found: ignore
 
   e2e-webkit:
-    runs-on: ubuntu-latest
+    # Playwright WebKit 依赖 libicu74；ubuntu-26.04 尚未提供兼容包，先固定已验证的 24.04 LTS
+    runs-on: ubuntu-24.04
+    env:
+      OAS_DOCS_ANALYTICS: 0
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
