@@ -3,7 +3,11 @@
 import { test, expect } from '@playwright/test'
 import AxeBuilder from '@axe-core/playwright'
 import { join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { up } from './helpers'
+
+/** packages/ui/dist 真实路径：按本文件位置（packages/ui/qa-regression）解析，从任意 cwd 运行都指向同一份产物 */
+const builtUiDist = fileURLToPath(new URL('../dist', import.meta.url))
 
 /**
  * 把构建产物按稳定前缀暴露给页面：Pro helper（detail / advanced）不在 docs bundle 的全局，
@@ -14,7 +18,7 @@ async function serveBuiltUi(page: import('@playwright/test').Page): Promise<void
     const pathname = new URL(route.request().url()).pathname
     const relative = decodeURIComponent(pathname.replace(/^\/__qa_ui__\//, ''))
     return route.fulfill({
-      path: join(process.cwd(), 'packages/ui/dist', relative),
+      path: join(builtUiDist, relative),
       contentType: 'text/javascript',
     })
   })

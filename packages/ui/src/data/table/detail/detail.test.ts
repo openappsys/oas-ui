@@ -1013,4 +1013,37 @@ describe('table/detail windowed 未装载键等待', () => {
     expect(panel.textContent).toBe('A')
     detail.destroy()
   })
+
+  it('range 活动选区并存：单元格内首次 Esc 先清选区保留 pending，回填后仍落地选中', async () => {
+    // 组合回归：pending 等待 + range 选区并存时的 Esc 归属——首次 Esc 归 range（清选区），
+    // 不消耗 pending；只有 range 选区已清后的后续 Esc 才轮到详情取消等待
+    const { table, panel } = mountWindowedDetail()
+    const events: unknown[] = []
+    table.addEventListener('oas-detail-change', (event) => events.push((event as CustomEvent).detail))
+    const detail = createMasterDetail(table, {
+      panel,
+      label: '详情',
+      emptyText: '未选择',
+      render: (row) => String(row.row.name),
+    })
+    detail.selectByKey('z')
+    setRangeSelection(table, { row: 0, col: 'name' })
+    expect(getRangeSelection(table)).not.toBeNull()
+    expect(events).toHaveLength(0)
+
+    const td = table.shadowRoot!.querySelector('tr.row td[data-col="name"]') as HTMLElement
+    td.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, composed: true, cancelable: true }))
+    // 首次 Esc 归 range：选区清空，pending 未被取消（面板保持空态、零事件）
+    expect(getRangeSelection(table)).toBeNull()
+    expect(detail.selected).toBeNull()
+    expect(panel.textContent).toBe('未选择')
+    expect(events).toHaveLength(0)
+
+    // data 回填 pending 键：等待照常落地选中一次
+    table.data = [{ id: 'z', name: 'Zulu' }]
+    await vi.waitFor(() => expect(detail.selected).toEqual({ row: { id: 'z', name: 'Zulu' }, key: 'z', rowIndex: 0 }))
+    expect(panel.textContent).toBe('Zulu')
+    expect(events).toHaveLength(1)
+    detail.destroy()
+  })
 })
