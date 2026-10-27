@@ -51,6 +51,8 @@ interface RowRenderSignature {
   rowH: number
   query: string
   activePath: string
+  /** 上次渲染时是否存在自定义 toggle 模板（模板内容可在 light DOM 原地变更，必须重建才能重新 clone） */
+  customToggle: boolean
 }
 
 const STYLE = `
@@ -715,8 +717,11 @@ export class OASJsonViewer extends OASElement {
     const { start, end } = this.windowBounds(rows.length)
     const rowsEl = this.rowsEl
     const sig = this.lastRenderSig
+    // 自定义 toggle 模板可从 light DOM 原地变更（无属性变化、无 update），每次渲染都要重新 clone
+    const customToggle = this.hasCustomToggleTemplate()
     const canReuseRows =
       !shouldEnsure &&
+      !customToggle &&
       sig !== null &&
       sig.rows === rows &&
       sig.rowsEl === rowsEl &&
@@ -724,13 +729,15 @@ export class OASJsonViewer extends OASElement {
       sig.end === end &&
       sig.rowH === rowH &&
       sig.query === query &&
-      sig.activePath === this.activePath
+      sig.activePath === this.activePath &&
+      // 上次有模板 / 这次没有（或反之）都必须重建：不能只剩 !customToggle 判断
+      sig.customToggle === customToggle
     if (!canReuseRows) {
       rowsEl.innerHTML = ''
       for (let i = start; i < end; i++) {
         rowsEl.appendChild(this.renderRow(rows[i]!, i, query))
       }
-      this.lastRenderSig = { rows, rowsEl, start, end, rowH, query, activePath: this.activePath }
+      this.lastRenderSig = { rows, rowsEl, start, end, rowH, query, activePath: this.activePath, customToggle }
     }
     if (activeIndex >= start && activeIndex < end) {
       viewport.setAttribute('aria-activedescendant', this.rowId(this.activePath))
@@ -911,6 +918,11 @@ export class OASJsonViewer extends OASElement {
     }
     el.appendChild(value)
     return el
+  }
+
+  /** 是否存在任意自定义 toggle 模板（模板内容不代表渲染签名，命中跳过会留下旧 clone） */
+  private hasCustomToggleTemplate(): boolean {
+    return this.querySelector('template[slot="toggle-expanded"], template[slot="toggle-collapsed"]') !== null
   }
 
   private indentSize(): number {

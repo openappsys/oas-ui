@@ -89,6 +89,28 @@ describe('OASJsonViewer 渲染热路径：可见行复用', () => {
     expect(el.shadowRoot!.querySelector('[part="row"]')).toBe(firstNode)
   })
 
+  it('存在自定义 toggle 模板时：可见行仍复用，但行 DOM 必须重建以重新 clone', () => {
+    const el = new OASJsonViewer()
+    el.setAttribute('text', JSON.stringify(Array.from({ length: 60 }, (_, i) => i)))
+    el.setAttribute('height', '120')
+    el.setAttribute('row-height', '20')
+    const template = document.createElement('template')
+    template.setAttribute('slot', 'toggle-expanded')
+    template.innerHTML = '<span part="toggle-icon">−</span>'
+    el.append(template)
+    document.body.appendChild(el)
+    const viewport = tree(el)
+    const first = rows(el)[0]!
+    expect(first.querySelector('[part="toggle-icon"]')).not.toBeNull()
+
+    perf.flatten = 0
+    viewport.dispatchEvent(new Event('scroll'))
+
+    expect(perf.flatten, '行数组复用不受模板影响').toBe(0)
+    expect(rows(el)[0], '有模板时行 DOM 必须重建').not.toBe(first)
+    expect(rows(el)[0]!.querySelector('[part="toggle-icon"]')?.textContent).toBe('−')
+  })
+
   it('跨窗口滚动仍更新行内容（不复用陈旧 DOM）', () => {
     const el = mount(BIG_ATTRS)
     const viewport = tree(el)

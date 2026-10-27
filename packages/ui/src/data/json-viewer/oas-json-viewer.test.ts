@@ -526,3 +526,72 @@ describe('OASJsonViewer 键盘与虚拟滚动', () => {
     expect(paths(el).length).toBeLessThan(40)
   })
 })
+
+describe('OASJsonViewer 自定义展开模板 + 纯滚动刷新', () => {
+  const SCROLLABLE = JSON.stringify(Array.from({ length: 60 }, (_, i) => i))
+
+  function mountScroller(): OASJsonViewer {
+    return mount({ text: SCROLLABLE, height: '120', 'row-height': '20' })
+  }
+
+  function appendTemplate(el: OASJsonViewer, text: string): HTMLTemplateElement {
+    const template = document.createElement('template')
+    template.setAttribute('slot', 'toggle-expanded')
+    template.innerHTML = `<span part="toggle-icon">${text}</span>`
+    el.append(template)
+    return template
+  }
+
+  function toggleIcon(el: OASJsonViewer): HTMLElement | null {
+    return rows(el)[0]!.querySelector<HTMLElement>('[part="toggle-icon"]')
+  }
+
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('无模板初始 → 纯滚动前新增模板 → 滚动后出现自定义图标', () => {
+    const el = mountScroller()
+    expect(toggleIcon(el)).toBeNull()
+
+    appendTemplate(el, '−')
+    tree(el).dispatchEvent(new Event('scroll'))
+
+    expect(toggleIcon(el)?.textContent).toBe('−')
+    expect(rows(el)[0]!.querySelector('.twisty')!.getAttribute('data-custom')).toBe('true')
+  })
+
+  it('已有模板原地改 content → 纯滚动后文本更新', () => {
+    const el = new OASJsonViewer()
+    el.setAttribute('text', SCROLLABLE)
+    el.setAttribute('height', '120')
+    el.setAttribute('row-height', '20')
+    const template = appendTemplate(el, '旧')
+    document.body.appendChild(el)
+    expect(toggleIcon(el)?.textContent).toBe('旧')
+
+    template.innerHTML = '<span part="toggle-icon">新</span>'
+    tree(el).dispatchEvent(new Event('scroll'))
+
+    expect(toggleIcon(el)?.textContent).toBe('新')
+  })
+
+  it('移除模板 → 纯滚动后自定义图标消失并回落默认三角形', () => {
+    const el = new OASJsonViewer()
+    el.setAttribute('text', SCROLLABLE)
+    el.setAttribute('height', '120')
+    el.setAttribute('row-height', '20')
+    const template = appendTemplate(el, '−')
+    document.body.appendChild(el)
+    expect(toggleIcon(el)?.textContent).toBe('−')
+
+    template.remove()
+    tree(el).dispatchEvent(new Event('scroll'))
+
+    expect(toggleIcon(el)).toBeNull()
+    expect(rows(el)[0]!.querySelector('.twisty')!.getAttribute('data-custom')).toBeNull()
+  })
+})

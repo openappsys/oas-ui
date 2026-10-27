@@ -257,7 +257,6 @@ test('json-viewer 滚动复用行 DOM：同窗口保留节点，跨窗口/键盘
   const allow = [
     /net::ERR_/,
     /Failed to load resource/,
-    /vite/,
     /hydrating/,
     /cookie .*overwritten/i,
     /scroll-linked positioning effect/i,
@@ -381,6 +380,79 @@ test('json-viewer 滚动复用行 DOM：同窗口保留节点，跨窗口/键盘
   expect(search.visible, '搜索 next 后活动命中行必须可见').toBe(true)
   expect(search.resolved).toBe(search.activePath)
   expect(search.activePath).toBeTruthy()
+
+  expect(badWarns, `console/page 零新增 error/warning：${badWarns.join(' | ')}`).toEqual([])
+})
+
+test('json-viewer 纯滚动下自定义 toggle 模板新增/原地更新/移除都刷新（真实 Chromium）', async ({ page }) => {
+  const badWarns: string[] = []
+  const allow = [
+    /net::ERR_/,
+    /Failed to load resource/,
+    /hydrating/,
+    /cookie .*overwritten/i,
+    /scroll-linked positioning effect/i,
+  ]
+  page.on('console', (m) => {
+    if ((m.type() === 'error' || m.type() === 'warning') && !allow.some((re) => re.test(m.text()))) {
+      badWarns.push(`${m.type()}: ${m.text()}`)
+    }
+  })
+  page.on('pageerror', (e) => badWarns.push(`pageerror: ${e.message}`))
+
+  await page.goto('/components/json-viewer.html', { waitUntil: 'domcontentloaded' })
+  await page.waitForFunction(() => !!customElements.get('oas-json-viewer'))
+  await page.evaluate(() => {
+    const el = document.createElement('oas-json-viewer')
+    el.id = 'qa-jv-toggle-scroll'
+    el.setAttribute('text', JSON.stringify(Array.from({ length: 60 }, (_, i) => i)))
+    el.setAttribute('height', '140')
+    el.setAttribute('row-height', '20')
+    el.style.cssText = 'position:fixed;left:16px;top:16px;width:420px;z-index:2147483000'
+    document.body.appendChild(el)
+  })
+  await page.waitForFunction(
+    () =>
+      (document.querySelector('#qa-jv-toggle-scroll')?.shadowRoot?.querySelectorAll('[part="row"]').length ?? 0) > 0,
+  )
+  const icon = page.locator('#qa-jv-toggle-scroll [part="toggle-icon"]')
+  await expect(icon).toHaveCount(0)
+
+  // 无属性/方法调用，只有 scroll 事件：新增模板后图标必须出现
+  await page.evaluate(() => {
+    const el = document.querySelector('#qa-jv-toggle-scroll')!
+    const template = document.createElement('template')
+    template.setAttribute('slot', 'toggle-expanded')
+    template.innerHTML = '<span part="toggle-icon">-</span>'
+    el.append(template)
+    el.shadowRoot!.querySelector<HTMLElement>('[part="viewport"]')!.dispatchEvent(new Event('scroll'))
+  })
+  await expect(icon.first()).toHaveText('-')
+  await expect(icon.first()).toBeVisible()
+
+  // 原地改 template.content：纯 scroll 后文本更新
+  await page.evaluate(() => {
+    const el = document.querySelector('#qa-jv-toggle-scroll')!
+    el.querySelector('template[slot="toggle-expanded"]')!.innerHTML =
+      '<span part="toggle-icon" style="display:inline-block">+</span>'
+    el.shadowRoot!.querySelector<HTMLElement>('[part="viewport"]')!.dispatchEvent(new Event('scroll'))
+  })
+  await expect(icon.first()).toHaveText('+')
+
+  // 移除模板：纯 scroll 后自定义图标消失，回落默认三角形
+  await page.evaluate(() => {
+    const el = document.querySelector('#qa-jv-toggle-scroll')!
+    el.querySelector('template[slot="toggle-expanded"]')!.remove()
+    el.shadowRoot!.querySelector<HTMLElement>('[part="viewport"]')!.dispatchEvent(new Event('scroll'))
+  })
+  await expect(icon).toHaveCount(0)
+  const twisty = await page.evaluate(() => {
+    const root = document.querySelector('#qa-jv-toggle-scroll')!.shadowRoot!
+    const node = root.querySelector<HTMLElement>('[part="row"] .twisty')!
+    return { custom: node.getAttribute('data-custom'), text: node.textContent }
+  })
+  expect(twisty.custom).toBeNull()
+  expect(twisty.text).toBe('')
 
   expect(badWarns, `console/page 零新增 error/warning：${badWarns.join(' | ')}`).toEqual([])
 })
