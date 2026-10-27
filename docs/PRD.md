@@ -28,11 +28,11 @@ v2.6.4 后的维护批：补齐 table Pro 能力在 windowed、失败请求与�
 
 ### 非目标
 
-不定版本号、不标已发布；不改公开 API/属性/事件（视觉仅限 windowed 行内嵌 expand 的槽位布局修复：不改主题、视觉 token 与既有视觉契约）；不新增 Pro 产品 UI；不把 `oas-markdown` 纳入本库；不删除 `table/core` 别名（v2.6.5 计划）；不改 `perf-baseline.json` 或预算档位。
+不定版本号、不标已发布；不改公开 API/属性/事件（视觉仅限 windowed 行内嵌 expand 的槽位布局修复：不改主题、视觉 token 与 expand 行高/边框模型）；不新增 Pro 产品 UI；不把 `oas-markdown` 纳入本库；不删除 `table/core` 别名（v2.6.5 计划）；不改 `perf-baseline.json` 或预算档位。
 
 ### 验收标准
 
-- 单测：detail pending 等待/覆盖/取消/模式回落/同批命中/旧选中刷新/Esc 作用域；range tabindex 所有权与恢复；windowed source 外部清空换窗重拉、同步/异步失败重试、在途去重与 destroy；windowed × 行内嵌 expand 总高记账与边界 culling（scrollTop 变化总高稳定不漂移、1740 边界不误纳入行52、多展开与全量末行 expand 可见、无 expand 逐值等价）；JSON 查看器滚动零重算、行 DOM 身份复用、`scrollToPath` 单次展开、搜索祖先缓存、模板增改删刷新。全量单测 12176 条（`stats:check` 校验计数）。
+- 单测：detail pending 等待/覆盖/取消/模式回落/同批命中/旧选中刷新/Esc 作用域；range tabindex 所有权与恢复；windowed source 外部清空换窗重拉、同步/异步失败重试、在途去重与 destroy；windowed × 行内嵌 expand 总高记账与边界 culling（scrollTop 变化总高稳定不漂移、1740 边界不误纳入行52、多展开与全量末行 expand 可见、无 expand 逐值等价）；JSON 查看器滚动零重算、行 DOM 身份复用、`scrollToPath` 单次展开、搜索祖先缓存、模板增改删刷新。全量 Vitest 与 `stats:check` 均通过。
 - e2e：`qa-regression/table.spec.ts` 与 `qa-regression/json-viewer.spec.ts` 真实 Chromium 用例通过（含 windowed × expand：窗口边界不误裁剪、末行/多展开可见、dark 主题、console/pageerror 零新增告警）。
 - 文档 zh/en 同步（table Pro 正文、PRD/ROADMAP/CHANGELOG/perf 说明）；`api:check` / `llms:check` / `stats:check` / `skill:check` / `lint:md` / `format:check` 通过。
 - 包体：`data/json-viewer` gzip 约 32.8 KB，仍低于 35 KB 硬预算；`perf:size` WARN 为既有预警线，不重定档。
