@@ -1255,37 +1255,38 @@ describe('table/detail selectByKey 显式等待与取消', () => {
     detail.destroy()
   })
 
-  it('自然落地后 abort 无副作用（监听已移除，不残留等待）', async () => {
+  it('自然落地后 abort 无副作用（旧监听已移除，不误清新等待）', async () => {
     const { table, panel } = mountWindowedDetail()
     const events: unknown[] = []
     table.addEventListener('oas-detail-change', (event) => events.push((event as CustomEvent).detail))
     const detail = createMasterDetail(table, { panel, label: '详情', render: (row) => String(row.row.name) })
-    const controller = new AbortController()
-    detail.selectByKey('z', { waitForRow: true, signal: controller.signal })
+    const landed = new AbortController()
+    detail.selectByKey('z', { waitForRow: true, signal: landed.signal })
     table.data = [{ id: 'z', name: 'Zulu' }]
-    await vi.waitFor(() => expect(detail.selected?.key).toBe('z'))
+    await vi.waitFor(() => expect(detail.selected).toEqual({ row: { id: 'z', name: 'Zulu' }, key: 'z', rowIndex: 0 }))
+    expect(panel.textContent).toBe('Zulu')
     const afterLanding = events.length
 
-    // 自然落地后 abort：无任何副作用，也不复活等待
-    controller.abort()
+    // 自然落地后先挂新等待（新 signal），再 abort 旧 signal：
+    // 若旧监听器残留，旧 abort 会经 onWaitAbort 误清新等待，q 回填将不落地——本断言才有判别力
+    const active = new AbortController()
+    detail.selectByKey('q', { waitForRow: true, signal: active.signal })
+    landed.abort()
     expect(detail.selected?.key).toBe('z')
-    expect(events).toHaveLength(afterLanding)
-    table.data = [
-      { id: 'a', name: 'A' },
-      { id: 'b', name: 'B' },
-    ]
-    await new Promise((resolve) => setTimeout(resolve, 20))
-    expect(detail.selected?.key).toBe('z')
+    expect(panel.textContent).toBe('Zulu')
     expect(events).toHaveLength(afterLanding)
 
-    // 落地后再次显式等待 + abort：证明旧监听不残留、新等待独立工作
-    const second = new AbortController()
-    detail.selectByKey('q', { waitForRow: true, signal: second.signal })
-    second.abort()
-    table.data = [{ id: 'a', name: 'A' }]
-    await new Promise((resolve) => setTimeout(resolve, 20))
-    expect(detail.selected?.key).toBe('z')
-    expect(events).toHaveLength(afterLanding)
+    table.data = [{ id: 'q', name: 'Quebec' }]
+    await vi.waitFor(() => expect(detail.selected).toEqual({ row: { id: 'q', name: 'Quebec' }, key: 'q', rowIndex: 0 }))
+    expect(panel.textContent).toBe('Quebec')
+    expect(events).toHaveLength(afterLanding + 1)
+
+    // 新等待也已自然落地：新旧两个 signal 再 abort 均无副作用（监听都已移除）
+    landed.abort()
+    active.abort()
+    expect(detail.selected?.key).toBe('q')
+    expect(panel.textContent).toBe('Quebec')
+    expect(events).toHaveLength(afterLanding + 1)
     detail.destroy()
   })
 

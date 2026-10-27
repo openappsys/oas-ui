@@ -433,12 +433,12 @@ export function createMasterDetail(table: HTMLElement, options: MasterDetailOpti
       const detail = detailAt(rowIndex)
       apply(detail)
     },
-    selectByKey(key, options) {
+    selectByKey(key, waitOptions) {
       if (destroyed) return
       // 新调用先取消旧等待（新键覆盖旧等待；含 aborted signal 的调用）
       clearWait()
       // signal 已 aborted 视同未请求等待：回落默认语义（windowed no-op / 普通清空）
-      const waitForRow = options?.waitForRow === true && options.signal?.aborted !== true
+      const waitForRow = waitOptions?.waitForRow === true && waitOptions.signal?.aborted !== true
       const row = findRow(key)
       if (!row) {
         if (windowedActive()) {
@@ -450,12 +450,12 @@ export function createMasterDetail(table: HTMLElement, options: MasterDetailOpti
             return
           }
           // 未装载的 windowed 切片：默认保持现状（no-op），显式 waitForRow 才挂起等待
-          if (waitForRow) armWait(key, options?.signal)
+          if (waitForRow) armWait(key, waitOptions?.signal)
           return
         }
         if (waitForRow) {
           // 普通模式显式等待：不清空，挂起等待 data 命中
-          armWait(key, options?.signal)
+          armWait(key, waitOptions?.signal)
           return
         }
         apply(null)

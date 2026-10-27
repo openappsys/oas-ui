@@ -1324,9 +1324,10 @@ const detail = createMasterDetail(table, {
   emptyText: '点击行查看详情',
   render: (detail) => `${detail.row.name} · ${detail.row.amount}`,
 })
+const controller = new AbortController() // 取消等待用：controller.abort() 主动取消挂起的等待
 detail.select(0) // 按可见行下标选中；null 清空
 detail.selectByKey('c') // 按行键选中（含树形子行；未渲染也保留；默认未命中不等待）
-detail.selectByKey('z', { waitForRow: true, signal }) // 显式等待：未命中挂起，data 回填后落地一次；signal 可取消
+detail.selectByKey('z', { waitForRow: true, signal: controller.signal }) // 显式等待：未命中挂起，data 回填后落地一次
 detail.close() // 触发 onClose 一次
 detail.destroy()
 ```

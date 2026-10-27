@@ -1335,9 +1335,10 @@ const detail = createMasterDetail(table, {
   emptyText: 'Click a row to see details',
   render: (detail) => `${detail.row.name} · ${detail.row.amount}`,
 })
+const controller = new AbortController() // cancels the pending wait via controller.abort()
 detail.select(0) // select by visible row index; null clears
 detail.selectByKey('c') // select by row key (tree children included; kept even when not rendered; no waiting by default)
-detail.selectByKey('z', { waitForRow: true, signal }) // explicit wait: a missed key pends until data lands it once; signal cancels
+detail.selectByKey('z', { waitForRow: true, signal: controller.signal }) // explicit wait: a missed key pends until data lands it once
 detail.close() // fires onClose once
 detail.destroy()
 ```
