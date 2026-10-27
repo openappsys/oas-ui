@@ -448,7 +448,7 @@
 
 windowed 模式下**本地排序 / 筛选 / 分组 / 分页 / 树形展开 / 合计 / 合并（`merge`、`span-method`）/ `column-virtual` 交由宿主负责**（组件跳过本地执行并 devWarn）——请监听既有 `oas-sort-change` / `oas-filter-change` / `oas-page-change` 等事件，在全量数据上处理后回填窗口切片。缺省关闭时行为不变。
 
-行内嵌展开（行数据 `expand` 字段）在 windowed 虚拟滚动中占**独立视觉槽位**，但不占绝对数据行号：`data-row-index`、事件行号与 ARIA 口径仍只按数据行计数；可视窗口与滚动总高按 `total + 当前切片内的展开数` 计算，多行展开与全量末行的展开内容均可见；`oas-window-request` 请求区间仍按 `total` 计。
+行内嵌展开（行数据 `expand` 字段）在 windowed 虚拟滚动中占**独立视觉槽位**，但不占绝对数据行号：`data-row-index`、事件行号与 ARIA 口径仍只按数据行计数；可视窗口与滚动总高按 `total + 当前切片内的展开数` 计算，多行展开与已装载的全量末行的展开内容均可见；切片越界（长度超出 `total - window-start`）时越界行及其展开内容不渲染，最后合法数据行的展开内容保留；`oas-window-request` 请求区间仍按 `total` 计。
 
 > 注意：`total` 在此复用为「全量行数」（分页模式语义为「外部数据分页总行数」）；行/列虚拟化需设 `height`（宿主定高）才启用；windowed 的切片须为**扁平行**（组件不递归 `children`）；切片长度超出 `total - window-start` 时越界行不渲染并 devWarn 一次。
 

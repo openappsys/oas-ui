@@ -2814,6 +2814,11 @@ export class OASTableBase extends OASElement {
     let abs = this._winMode.windowStart
     let flowY = this._winMode.windowStart * ih
     for (const f of display) {
+      // 越界切片守卫（对齐「越界行不渲染」契约）：首个 abs >= total 的数据行起整段截断——
+      // 若不截断，越界行自己的已展开 expand 会抬高 winBottom（渲染 count 按 total + expand 数），
+      // 把 abs >= total 的越界行重新渲染出来。display 按绝对顺序，expand 紧随其数据行，
+      // 最后合法数据行的 expand（abs == total）在首个越界数据行之前，天然保留。
+      if (f.kind === 'data' && abs >= this._winMode.total) break
       items.push({ f, abs, flowY })
       if (f.kind === 'data') abs++
       flowY += ih

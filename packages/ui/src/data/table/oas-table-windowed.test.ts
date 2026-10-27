@@ -836,4 +836,57 @@ describe('OASTable windowed（服务端行窗口模式）', () => {
     expect(lastTr.className, '末行是 bottom spacer').toContain('spacer')
     expect((lastTr.firstElementChild as HTMLElement).style.height, 'bottom spacer = 0px（缺陷实现 80px）').toBe('0px')
   })
+
+  it('windowed 越界切片：越界行及其 expand 不进渲染窗口，最后合法行的 expand 保留（F3 补口）', async () => {
+    // 缺陷固化：渲染窗口 count 用 total + expandCount 后，越界行自己的已展开 expand 会抬高
+    // winBottom，使 abs >= total 的越界数据行重新渲染——违反既有「越界行不渲染」契约（F3）。
+    // fixture：total=100，切片 [95,105) 越界（末 5 行越界）；行95 expand='合法95'（合法）、
+    // 行100 expand='越界100'（越界行自己的 expand）。滚到装载区底部。
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    try {
+      const { el } = mountWindowed({
+        windowed: '',
+        total: '100',
+        'window-start': '95',
+        height: '200',
+        'row-height': '40',
+        'row-key': 'name',
+        data: JSON.stringify(
+          Array.from({ length: 10 }, (_, i) => ({
+            name: `行${95 + i}`,
+            ...(i === 0 ? { expand: '合法95' } : {}),
+            ...(i === 5 ? { expand: '越界100' } : {}),
+          })),
+        ),
+        expanded: '行95,行100',
+      })
+      const wrap = wrapOf(el)
+      wrap.scrollTop = 3800
+      wrap.dispatchEvent(new Event('scroll'))
+      await flushRaf()
+      // 数据行号仅 95..99：越界行100 不得因 expand 抬窗而重新渲染
+      expect(
+        rowsOf(el).map((r) => r.getAttribute('data-row-index')),
+        '数据行号仅 95..99',
+      ).toEqual(['95', '96', '97', '98', '99'])
+      // 只有合法行95 一个 expand；越界100 的 expand 不随行渲染
+      expect(el.shadowRoot!.querySelectorAll('tbody tr.expand-row').length, '只有合法95一个 expand').toBe(1)
+      // 断言限定 tbody（shadow 整体 textContent 含 style 内中文，不可作子串判据）
+      const bodyText = el.shadowRoot!.querySelector('tbody')!.textContent ?? ''
+      expect(bodyText, '无越界行100 内容').not.toContain('行100')
+      expect(bodyText, '无越界100 expand 内容').not.toContain('越界100')
+      // 合法行95 的 expand 保留
+      expect(bodyText, '合法行 expand 保留').toContain('合法95')
+      // ARIA 全量口径不变
+      expect(el.shadowRoot!.querySelector('table')!.getAttribute('aria-rowcount'), 'aria-rowcount=100').toBe('100')
+      // 既有切片越界 devWarn 仍在（只核对含既有提示，不断言零告警）
+      const msgs = warn.mock.calls.map((c) => String(c[0]))
+      expect(
+        msgs.some((m) => m.includes('超出全量范围')),
+        '既有切片越界 devWarn 仍在',
+      ).toBe(true)
+    } finally {
+      warn.mockRestore()
+    }
+  })
 })

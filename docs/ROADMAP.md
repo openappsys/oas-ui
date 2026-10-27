@@ -9,7 +9,7 @@
 | **table/detail 未装载键等待** | 有效 windowed（`windowed` + `total` 有限且截断后 > 0）下 `selectByKey` 未装载时等待 data 命中、落地一次并派发一次 `oas-detail-change`；close/select/点击/Enter/Esc/destroy/row-key/新键取消；仅等待时 Esc 限本实例表格/面板、无 window 全局兜底；模式回落同批命中优先 | ✅ 已完成（未发布） |
 | **table/range tabindex 所有权** | 禁用 range 仅在仍持有最后写入值时恢复原 tabindex；拥有期间外部改写保留外部值，grid-navigation 接管不回写陈旧原值 | ✅ 已完成（未发布） |
 | **advanced windowed source 维护** | 覆盖判定改读表格当前切片（外部清空/替换 data、换窗后重新拉取）；`fetchRows` 同步 throw 与 rejection 统一清在途标记 + 一次 `oas-window-error`，同窗口可重试 | ✅ 已完成（未发布） |
-| **table windowed × `row.expand` 视觉槽位** | 双坐标记账（数据行号 abs / 视觉 flow）：行内嵌 expand 占独立视觉槽位，滚动总高稳定不漂移，多展开与全量末行 expand 可见；数据行号/ARIA/`oas-window-request` 请求窗口不变 | ✅ 已完成（未发布） |
+| **table windowed × `row.expand` 视觉槽位** | 双坐标记账（数据行号 abs / 视觉 flow）：行内嵌 expand 占独立视觉槽位，滚动总高稳定不漂移，多展开与已装载的全量末行 expand 可见；切片越界时越界行及其 expand 不渲染、最后合法数据行的 expand 保留；数据行号/ARIA/`oas-window-request` 请求窗口不变（请求仍按数据 total，切片展开数 > buffer + WINDOW_MARGIN 时快速跨界可能视觉重锚、回填自愈，不改请求模型） | ✅ 已完成（未发布） |
 | **JSON 查看器渲染热路径** | 滚动/键盘/`scrollToPath` 复用可见行；行渲染签名命中跳过 DOM 重建；activeIndex 单次计算；搜索祖先集缓存；自定义 toggle 模板变更强制重建行 DOM | ✅ 已完成（未发布） |
 | **table/core 迁移准备** | 编辑能力/晚加入测试改走默认入口 `@oas-ui/ui/data/table`；`table/core` 仍是 deprecated 别名，按 v2.6.5 计划移除 | ✅ 已完成（未发布） |
 

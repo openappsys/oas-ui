@@ -2121,6 +2121,94 @@ test('table windowed × 行内嵌 expand：expand 占视觉槽位不占数据行
   })
 })
 
+test('table windowed 越界切片：越界行及其 expand 不进渲染窗口（末行 expand 不抬窗）', async ({ page }) => {
+  // 缺陷固化：渲染窗口 count = total + 当前切片 expand 数后，越界行自己的已展开 expand 会抬高
+  // winBottom，使 abs >= total 的越界数据行重新渲染——违反既有「越界行不渲染」契约。
+  // fixture：total=100 / window-start=95 / 切片 [95,105)（末 5 行越界）/ 行95 expand='合法95'、
+  // 行100 expand='越界100'，两行都预展开；滚到装载区底部（scrollTop=3800）。
+  const consoleIssues: string[] = []
+  const oasWarnings: string[] = []
+  page.on('console', (m) => {
+    if (m.type() === 'error') consoleIssues.push(`error: ${m.text()}`)
+    else if (m.type() === 'warning' && m.text().includes('[oas-table]')) oasWarnings.push(m.text())
+  })
+  page.on('pageerror', (e) => consoleIssues.push(`pageerror: ${e.message}`))
+  await page.goto('/components/table.html', { waitUntil: 'domcontentloaded' })
+  await page.waitForFunction(() => customElements.get('oas-table') != null, null, { timeout: 15000 })
+  await page.evaluate(() => {
+    const el = document.createElement('oas-table')
+    el.id = 'qa-windowed-overflow-expand'
+    el.setAttribute('windowed', '')
+    el.setAttribute('total', '100')
+    el.setAttribute('window-start', '95')
+    el.setAttribute('height', '200')
+    el.setAttribute('row-height', '40')
+    el.setAttribute('row-key', 'name')
+    el.setAttribute('columns', JSON.stringify([{ key: 'name', title: '名称' }]))
+    el.setAttribute(
+      'data',
+      JSON.stringify(
+        Array.from({ length: 10 }, (_, i) => ({
+          name: `行${95 + i}`,
+          ...(i === 0 ? { expand: '合法95' } : {}),
+          ...(i === 5 ? { expand: '越界100' } : {}),
+        })),
+      ),
+    )
+    el.setAttribute('expanded', '行95,行100')
+    ;(document.querySelector('.vp-doc') ?? document.body).appendChild(el)
+  })
+  await page.evaluate(() => {
+    const el = document.querySelector('#qa-windowed-overflow-expand')!
+    const wrap = el.shadowRoot!.querySelector('.table-scroll') as HTMLElement
+    wrap.scrollTop = 3800
+    wrap.dispatchEvent(new Event('scroll'))
+  })
+  // 等滚动帧渲染完成（行99 在两种实现下都渲染，作锚）
+  await page.waitForFunction(
+    () => {
+      const el = document.querySelector('#qa-windowed-overflow-expand')!
+      const wrap = el.shadowRoot!.querySelector('.table-scroll') as HTMLElement
+      const idx = new Set(
+        [...el.shadowRoot!.querySelectorAll('tbody tr[data-row-index]')].map((tr) => tr.getAttribute('data-row-index')),
+      )
+      return wrap.scrollTop === 3800 && idx.has('99')
+    },
+    null,
+    { timeout: 15000 },
+  )
+  const snap = await page.evaluate(() => {
+    const el = document.querySelector('#qa-windowed-overflow-expand')!
+    return {
+      rowIndexes: [...el.shadowRoot!.querySelectorAll('tbody tr[data-row-index]')].map((tr) =>
+        tr.getAttribute('data-row-index'),
+      ),
+      expandTexts: [...el.shadowRoot!.querySelectorAll('tbody tr.expand-row')].map((tr) => tr.textContent ?? ''),
+      bodyText: el.shadowRoot!.querySelector('tbody')!.textContent ?? '',
+      ariaCount: el.shadowRoot!.querySelector('table')!.getAttribute('aria-rowcount'),
+    }
+  })
+  expect(snap.rowIndexes, '数据行号仅 95..99（越界行100 不因 expand 抬窗重新渲染）').toEqual([
+    '95',
+    '96',
+    '97',
+    '98',
+    '99',
+  ])
+  expect(snap.expandTexts, '只有合法行95 一个 expand').toEqual(['合法95'])
+  expect(snap.bodyText, '无越界行100 内容').not.toContain('行100')
+  expect(snap.bodyText, '无越界100 expand 内容').not.toContain('越界100')
+  expect(snap.ariaCount, 'aria-rowcount 仍为全量 total').toBe('100')
+  // pageerror / console error 零；[oas-table] warning 只允许既有「切片越界」提示
+  //（docs 为生产构建时 devWarn 被摇掉 → 通常为空；dev 构建下若出现必须是预期提示）
+  expect(consoleIssues, 'console/pageerror 零 error').toEqual([])
+  expect(
+    oasWarnings.filter((w) => !w.includes('超出全量范围')),
+    '[oas-table] warning 仅允许既有切片越界提示',
+  ).toEqual([])
+  await page.evaluate(() => document.querySelector('#qa-windowed-overflow-expand')?.remove())
+})
+
 test('table windowed × 行内嵌 expand：末行数据的 expand 不被渲染窗口上界裁掉（无幽灵空白）', async ({ page }) => {
   // 缺陷固化：渲染窗口 count 用数据 total 时 win.end ≤ total → winBottom ≤ total*rowHeight，
   // 末行数据的 expand（flowY = total*rowHeight）恒被 culling 裁掉；contentH 又计入它 → 底部幽灵空白。
