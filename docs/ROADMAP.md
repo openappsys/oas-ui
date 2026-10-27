@@ -2,6 +2,16 @@
 
 版本遵循 SemVer。v1.0.0 为首个正式发布。每个版本 = 一个可独立交付/可试用的里程碑。
 
+## 未发布（维护批）
+
+| 范围 | 内容 | 状态 |
+| --- | --- | --- |
+| **table/detail 未装载键等待** | 有效 windowed（`windowed` + `total` 有限且截断后 > 0）下 `selectByKey` 未装载时等待 data 命中并落地一次；close/select/点击/Enter/Esc/destroy/row-key/新键取消；仅等待时 Esc 限本实例表格/面板、无 window 全局兜底；模式回落同批命中优先 | ✅ 已完成（未发布） |
+| **table/range tabindex 所有权** | 禁用 range 仅在仍持有最后写入值时恢复原 tabindex；拥有期间外部改写保留外部值，grid-navigation 接管不回写陈旧原值 | ✅ 已完成（未发布） |
+| **advanced windowed source 维护** | 覆盖判定改读表格当前切片（外部清空/替换 data、换窗后重新拉取）；`fetchRows` 同步 throw 与 rejection 统一清 filling + 一次 `oas-window-error`，同窗口可重试 | ✅ 已完成（未发布） |
+| **JSON 查看器渲染热路径** | 滚动/键盘/`scrollToPath` 复用可见行；行渲染签名命中跳过 DOM 重建；activeIndex 单次计算；搜索祖先集缓存；自定义 toggle 模板变更强制重建行 DOM | ✅ 已完成（未发布） |
+| **table/core 迁移准备** | 编辑能力/晚加入测试改走默认入口 `@oas-ui/ui/data/table`；`table/core` 仍是 deprecated 别名，按 v2.6.5 计划移除 | ✅ 已完成（未发布） |
+
 ## v2.6.4（已发布）
 
 | 范围 | 内容 | 状态 |

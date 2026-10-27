@@ -2,6 +2,18 @@
 
 所有显著变更记录于此。
 
+## [未发布]
+
+### 修复
+
+- **`oas-table` 主从详情（`table/detail`）未装载键等待**：windowed 生效（`windowed` 属性在场且 `total` 有限、截断后 > 0）时，`selectByKey()` 选中尚未装载的行不再被静默忽略：保留当前选中与面板等待 `data` 到达，命中后落地一次；`close()` / `select()` / 行或单元格点击 / `Enter` / `Esc` / `destroy()` / `row-key` 变化或再次 `selectByKey()` 都会取消等待，取消不补派发等待键的选中事件。无选中时的 `Esc` 只在本文档实例的表格/面板内取消等待，不注册 window 全局兜底。`total` 为 0 / 非法 / 截断后为 0 按普通模式处理。
+- **`oas-table` 区域选择（`table/range`）禁用不再覆盖外部 tabindex**：range 只恢复自己最后写入且仍未被改写的 `tabindex`；拥有期间其它能力写入的值原样保留，交由 grid-navigation 接管时也不回写陈旧原值。
+- **`oas-table` windowed 数据源助手（`table/advanced`）**：宿主外部清空 / 替换 `data` 或切换 `window-start` 后，同窗口请求会按表格当前切片重新拉取；`fetchRows` 同步抛错与 Promise 失败现在都会派发一次 `oas-window-error` 并允许同窗口重试（此前同步抛错会留下在途标记，使同窗口不再重试）。
+
+### 优化
+
+- **`oas-json-viewer` 滚动与搜索重绘**：窗口内滚动、键盘移动与 `scrollToPath()` 复用已算可见行，状态未变时跳过行 DOM 重建，搜索祖先展开集按命中缓存——大文件连续滚动 / 搜索跳转更顺滑；自定义 toggle 模板新增、原地更新或移除时仍强制重建行 DOM。公开 API、属性、事件与视觉不变。按需链 gzip 约 32.8 KB（较当前 32.5 KB 增约 0.3 KB），仍低于 35 KB 硬预算；`perf:size` 的 WARN 为既有预警线。
+
 ## [2.6.4] - 2026-10-26
 
 ### 新增
