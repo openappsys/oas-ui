@@ -5,7 +5,7 @@
 ## Contract
 
 - Attributes: `windowed` (enable) + `total` (full row count) + `window-start` (absolute row index of `data[0]`); `data` carries only `[window-start, window-start + data.length)`.
-- Event: `oas-window-request` with `detail: { start, end, reason }` (half-open, absolute row indices; `reason` = `init` / `scroll` / `resize` / `data`). **The same expected window is never emitted twice**; it resets after the window is covered.
+- Event: `oas-window-request` with `detail: { start, end, reason, visualStart?, visualEnd? }` (half-open, absolute row indices; `reason` = `init` / `scroll` / `resize` / `data`). **The same expected window is never emitted twice**; it resets after the window is covered. `start` / `end` are always DATA coordinates; when the slice contains inline expand rows (or the visual protocol is active) the optional `visualStart` / `visualEnd` carry the visible window's visual coordinates, and the range has already been mapped through the visual slots back to data coordinates.
 - Prerequisite: a measurable scroll viewport (`height` or a measurable `max-height`); otherwise no request is emitted (one `devWarn`). A windowed table slice must be **flat** (children are not recursed).
 
 ## Four steps
@@ -41,6 +41,50 @@ el.addEventListener('oas-window-request', async (event) => {
   el.setAttribute('data', JSON.stringify(rows))
 })
 ```
+
+## Visual protocol recipe (inline expand rows / slices starting after expanded rows)
+
+When the slice contains inline expand content (`row.expand`), or expanded rows already exist before the slice start (the "cross-slice" case), the event `start` / `end` is only the component's **clamped projection** over the loaded slice — when the visible window and the slice do not intersect, it fetches rows that are not actually visible. In that case adopt the **visual protocol**: the host owns the real expansion layout (single source), tells the component the total visual row count and the slice's first visual row via `visual-total` / `visual-start`, and fetches by preferring the event's `visualStart` / `visualEnd`.
+
+Host-side recipe (on top of the four steps):
+
+1. **Single-source layout**: which rows carry expansion slots across the full dataset (`visualTotal` = data rows + expansion slots) and the slice's first visual row (`visualStart` = expansion slots before that data row) are maintained in one host-owned place. Once the protocol is active, **expansion is fully host-controlled** — the component's local toggle only emits `oas-expand` without modifying `expanded`; the host listens and writes back `expanded` / `data` / visual attributes to re-render. Never double-write from both sides.
+2. **Prefer the visual fields for fetching**: when the event carries `visualStart` / `visualEnd`, map them back to a data range (intersecting visual slots → owner data rows, padded with a buffer on both sides) instead of using `start` / `end` directly.
+3. **Refill visual attributes atomically**: after the fetch completes, write `window-start` + `visual-start` + `data` within the same synchronous step (one snapshot), then `total` + `visual-total` — the component re-renders with the new visual coordinates only after the data is ready, with no "new slice + old visual start" intermediate state.
+4. **Re-evaluate on refill**: the host may change the expansion layout between request and response (expansion count changes move the visual coordinates) — the refill must use the **latest snapshot at response time**, never the stale request-time values.
+
+```ts
+// Visual adapter over a real layout: one expansion slot every 25 rows (host-known)
+const EXPANDED = new Set([0, 25, 50, 75, 100])
+const DATA_TOTAL = 10000
+const visualTotal = DATA_TOTAL + EXPANDED.size
+
+const slotOf = (i: number) => i + [...EXPANDED].filter((e) => e < i).length
+
+const adapter = {
+  // Called at init and on every refill: return the current snapshot (compute it fresh; never cache request-time values)
+  getGeometry(dataStart: number) {
+    return { start: slotOf(dataStart), total: visualTotal }
+  },
+  // Map the visible window's visual range back to a data fetch range (±8 rows buffer, same as the component)
+  getDataRange(visualStart: number, visualEnd: number) {
+    let lo = Infinity
+    let hi = -Infinity
+    for (let i = 0; i < DATA_TOTAL; i++) {
+      const s = slotOf(i)
+      const len = EXPANDED.has(i) ? 2 : 1
+      if (s + len <= visualStart || s >= visualEnd) continue
+      if (i < lo) lo = i
+      if (i + 1 > hi) hi = i + 1
+    }
+    return { start: Math.max(0, lo - 8), end: Math.min(DATA_TOTAL, hi + 8) }
+  },
+}
+```
+
+To skip the glue code, `createWindowedSource` from `@oas-ui/ui/data/table/advanced` accepts this adapter directly: it re-evaluates the geometry at init and on every refill and writes `visual-start` / `visual-total` for you, and maps requests through `getDataRange` automatically. An invalid mapping (must be finite with end > start) or invalid geometry (non-finite, `start<0`, `total≤0`, `start>total`, `total<` data total) fetches nothing / writes no wrong visual attributes and dispatches one `oas-window-error` (detail carries the visual range and the original data range); after fixing the adapter the same window can be retried. Without `visual` the helper writes no visual attributes at all — behavior is identical to before.
+
+> In non-virtual windowed mode (no `height`) the protocol only affects "expansion is host-controlled", not the layout: there is no scrollable viewport, and `visual-start` / `visual-total` only govern who owns expansion control.
 
 ## Runnable example (local mock server)
 
@@ -477,6 +521,9 @@ gantt / resource also emit `oas-range-request` (`detail: { startMs, endMs, reaso
 - **Refilling less than the expected window**: the component keeps requesting. Return a segment covering `[start, end)` (or a superset).
 - **Replacing the whole dataset**: edit write-backs (`oas-tasks-change`) contain only the slice; a wholesale replace loses unloaded rows.
 - **Forgetting `window-start`**: data and absolute indices drift (wrong rows rendered, wrong ARIA indices).
+- **Fetching with only `start`/`end` while the slice contains expansions**: when the visible window and the slice do not intersect (expanded rows before the slice start), `start`/`end` is only a clamped guess — adopt the visual protocol and prefer `visualStart`/`visualEnd` (see the recipe above).
+- **Double-writing expansion under the protocol**: once `visual-total` / `visual-start` are active, expansion is fully host-controlled (the local toggle only emits `oas-expand`); if the host does not listen and write back, expanding "does nothing". Expansion count changes also move the visual coordinates — the refill must re-evaluate `visual-start` / `visual-total` instead of reusing request-time values.
+- **Visual attributes out of sync with the data**: write `visual-start` in the same synchronous step as `window-start` / `data` (one snapshot), then `total` / `visual-total` — splitting the writes creates a "new slice + old visual start" intermediate state that flashes misaligned rows while scrolling.
 - **Writing other attributes synchronously in the handler** (e.g. `loading`): re-enters update (scrollTop may be transiently clamped to 0 mid-render, causing extra requests). Refill after fetching; if you need a loading state, set it in a microtask or after the fetch resolves.
 - **Fetching per window**: request count grows linearly with scrolling; segment fetching cuts it by an order of magnitude.
 - **No `height`**: no requests are emitted (no scroll viewport) — not a bug, the viewport must exist first.

@@ -457,7 +457,9 @@ When the host's slice **starts after already-expanded rows** (the component only
 - `visual-total`: total number of visual rows (data rows + inline expand content rows), a finite positive integer (truncated) not smaller than `total`;
 - `visual-start`: the visual row number of the current slice's `data[0]`, `0 ≤ visual-start ≤ visual-total`.
 
-Both attributes must be **valid at the same time** to activate (windowed only): the render flow starts at `visual-start × row-height`, and rendering and scroll height follow `visual-total`. **Once active, expansion is fully host-controlled** — clicking the local toggle only emits `oas-expand` (with a one-time devWarn) and does not modify `expanded`; the host listens and writes back `expanded` / `data` / visual attributes to re-render. Missing / invalid / only one of the pair / `visual-total` smaller than the data `total`: devWarn once and **fall back entirely** to the current model (no partial activation). Absolute data row numbers (`data-row-index`, event row numbers, ARIA, range/displaySnapshot) are unaffected by the visual protocol; when `visual-start + loaded entry count > visual-total`, out-of-range entries are not rendered with a one-time devWarn.
+Both attributes must be **valid at the same time** to activate (windowed only): the render flow starts at `visual-start × row-height`, and rendering and scroll height follow `visual-total`. **Once active, expansion is fully host-controlled** — clicking the local toggle only emits `oas-expand` (with a one-time devWarn) and does not modify `expanded`; the host listens and writes back `expanded` / `data` / visual attributes to re-render, and never double-writes from both sides. Missing / invalid / only one of the pair / `visual-total` smaller than the data `total`: devWarn once and **fall back entirely** to the current model (no partial activation). Absolute data row numbers (`data-row-index`, event row numbers, ARIA, range/displaySnapshot) are unaffected by the visual protocol; when `visual-start + loaded entry count > visual-total`, out-of-range entries are not rendered with a one-time devWarn. In non-virtual windowed mode (no `height`) the protocol only affects "expansion is host-controlled", not the layout.
+
+> For the host fetching recipe in visual coordinates (prefer `visualStart` / `visualEnd`, atomic refill of `visual-start` in the same snapshot as the slice, re-evaluating on refill), see "Visual protocol recipe" in [Server-side windowed data](/en/guide/windowed-data); `createWindowedSource` accepts an optional `visual` adapter that performs the mapping and visual-attribute write-back automatically — see "Visual adapter" under the windowed data source helper below.
 
 > Note: `total` is reused here as the "full row count" (in pagination mode it means the external total row count); row/column virtualization requires `height` (host-constrained); the windowed slice must be **flat** (the component does not recurse into `children`); rows beyond `total - window-start` are not rendered and produce a one-time devWarn.
 
@@ -1187,7 +1189,7 @@ The full endpoint URLs far exceed the column width (long unbreakable strings): h
 - **Query builder**: `compileQuery()` / `filterRows()` with nested `and` / `or` and operators such as `eq` / `contains` / `in` / `between` / `exists`
 - **TSV**: `toTsv()` / `parseTsv()` for exporting and pasting table regions
 - **History stack**: `createHistory()` generic command stack (undo / redo / canUndo / canRedo / subscribe / limit)
-- **Windowed source helper**: `createWindowedSource()` handles `oas-window-request`, fills short pages and aborts stale requests
+- **Windowed source helper**: `createWindowedSource()` handles `oas-window-request`, fills short pages and aborts stale requests; an optional `visual` adapter plugs into the visual protocol (visual-range mapped fetching + automatic `visual-start` / `visual-total` write-back)
 
 > Comparison / range operators use numeric semantics; text matching is case-insensitive by default (`caseSensitive: true` enables it); `in` / `contains` match an array field when any element matches; TSV export collapses tabs / newlines inside a cell to spaces.
 
@@ -1385,6 +1387,45 @@ const source = createWindowedSource(table, {
 Listens to `oas-window-request`, aborts stale requests and fills `data` / `window-start` / `total` per the windowed protocol, with no runtime dependency (requires `height` for virtual scrolling). `windowSize` should not exceed the server's per-request limit; short pages are automatically filled forward within the same window (coverage counts actual returned rows). When `fetchRows` returns a bare array, `total` must be provided (via options or the table `total` attribute), otherwise windowed mode stays inactive.
 
 Every `oas-window-request` decides coverage from the table's **current slice** (`window-start` + `data` length, finite, truncated, clamped to a minimum of 0, half-open), with no self-stored loaded range: after the host clears/replaces `data` externally or switches `window-start`, the same-window request is fetched again. In-flight marker dedupe, write echo suppression, forced refetch via `refresh()`, aborting stale requests on `destroy()` and the initial fetch keep their existing behavior. A synchronous `fetchRows` throw and a Promise rejection share one failure path: clear the in-flight marker and emit `oas-window-error` once (`detail: { start, end, error }`, `bubbles` + `composed`), after which the same window can retry; a stale failure does not clear the new request's in-flight marker. No automatic retry, and the table's `oas-window-request` emission is unchanged.
+
+#### Visual adapter (optional `visual`, with the visual protocol)
+
+When the slice contains inline expand content, or expanded rows already exist before the slice start, the event `start` / `end` is only a clamped guess (when the visible window and the slice do not intersect, the actually visible rows are missed). Pass a `visual` adapter to plug the helper into the optional visual protocol (see above), driven by the host's single-source layout:
+
+```ts
+import { createWindowedSource } from '@oas-ui/ui/data/table/advanced'
+
+// Host single source: which rows carry expansion slots across the dataset (one every 25 rows)
+const EXPANDED = new Set([0, 25, 50, 75, 100])
+const DATA_TOTAL = 10000
+const slotOf = (i: number) => i + [...EXPANDED].filter((e) => e < i).length
+
+const source = createWindowedSource(table, {
+  fetchRows: async ({ start, end, signal }) => api.list({ start, end, signal }),
+  total: DATA_TOTAL,
+  visual: {
+    // Called at init and on every response refill: return the current snapshot (compute fresh; never cache request-time values)
+    getGeometry: (dataStart: number) => ({ start: slotOf(dataStart), total: DATA_TOTAL + EXPANDED.size }),
+    // Map the visible window's visual range back to a data fetch range (must be finite with end > start)
+    getDataRange: (visualStart: number, visualEnd: number) => {
+      let lo = Infinity
+      let hi = -Infinity
+      for (let i = 0; i < DATA_TOTAL; i++) {
+        const s = slotOf(i)
+        const len = EXPANDED.has(i) ? 2 : 1
+        if (s + len <= visualStart || s >= visualEnd) continue
+        if (i < lo) lo = i
+        if (i + 1 > hi) hi = i + 1
+      }
+      return { start: Math.max(0, lo - 8), end: Math.min(DATA_TOTAL, hi + 8) }
+    },
+  },
+})
+```
+
+Timing contract: `getGeometry(dataStart)` is re-invoked at init and on **every response refill** (if the host changed the expansion layout between request and response, the refill-time snapshot wins); the refill writes `window-start` + `visual-start` + `data` atomically inside the writing window and `total` + `visual-total` after it — one snapshot per response, with echo suppression and no self-fetching. When the request event carries valid `visualStart` / `visualEnd`, the fetch range is mapped through `getDataRange` first (without visual fields it falls back to the event's `start` / `end`). Once the protocol is active, expansion is fully host-controlled: listen to `oas-expand` and write back `expanded` / `data` / visual attributes (the local toggle only emits the event and does not modify `expanded`); never double-write.
+
+Failure semantics: an invalid mapping (non-finite / end ≤ start / a synchronous `getDataRange` throw) fetches nothing, leaves no in-flight marker, and emits `oas-window-error` once (`detail: { start, end, visualStart, visualEnd, error }`, carrying the visual range and the original data range); the same window can retry after fixing the adapter. Invalid geometry (non-finite, start<0, total≤0, start>total, total< data total) writes no wrong visual attributes (stale `visual-start` / `visual-total` are removed and the table falls back to the current model), the data is still refilled, and the same failure event fires. An invalid initial configuration throws to the caller (no attributes written, no listener attached). Without `visual`, no visual attributes are ever written — existing behavior is unchanged value for value.
 
 ## API
 

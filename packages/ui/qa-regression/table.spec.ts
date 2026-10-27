@@ -4330,3 +4330,263 @@ test('table advanced：createWindowedSource 外部清空/换窗后重拉，同�
     document.querySelector('#qa-window-source-table')?.remove()
   })
 })
+
+test('table advanced：createWindowedSource × 视觉适配器——真实 adapter 驱动协议、协议下焦点回锚（dark/console/ARIA）', async ({
+  page,
+}) => {
+  // 缺陷固化：windowed 视觉协议下（切片含 expand / 切片前已有展开），宿主持有真实展开布局时
+  // source 助手此前只会按事件 start/end 均匀取数、也从不回写 visual-start/visual-total——
+  // 取数区间与可视槽位错位、协议无法被宿主单源驱动。修复=可选 visual 适配器：
+  // 初始化/回填重新求值 geometry 齐写视觉属性；请求带视觉字段时按 adapter 映射数据取数区间。
+  // 本用例以「每 25 行一个展开槽位」的真实布局驱动：滚动取数走视觉映射、聚焦行后宿主回写
+  // expanded/visual-start/data（source.refresh 重拉回填）焦点仍在同一 row-key、ARIA 数据口径不变。
+  const issues: string[] = []
+  page.on('console', (m) => {
+    if (m.type() === 'error' || (m.type() === 'warning' && !m.text().includes('scroll-linked positioning effect')))
+      issues.push(`${m.type()}: ${m.text()}`)
+  })
+  page.on('pageerror', (error) => issues.push(`pageerror: ${error.message}`))
+  await serveBuiltUi(page)
+  await page.goto('/components/table.html', { waitUntil: 'domcontentloaded' })
+  await page.waitForFunction(() => customElements.get('oas-table') != null, null, { timeout: 15000 })
+
+  await page.evaluate(async () => {
+    const moduleUrl = '/__qa_ui__/data/table/advanced/windowed.js'
+    const { createWindowedSource } = (await import(moduleUrl)) as {
+      createWindowedSource: (
+        table: HTMLElement,
+        options: Record<string, unknown>,
+      ) => {
+        refresh(): void
+        destroy(): void
+      }
+    }
+    const el = document.createElement('oas-table')
+    el.id = 'qa-window-visual-table'
+    el.setAttribute('row-key', 'id')
+    el.setAttribute('height', '200')
+    el.setAttribute('row-height', '40')
+    el.setAttribute('grid-navigation', '')
+    el.setAttribute('columns', JSON.stringify([{ key: 'name', title: '名称' }]))
+    ;(document.querySelector('.vp-doc') ?? document.body).append(el)
+
+    // 真实宿主布局：300 行数据，行下标 % 25 === 0 的行带展开内容（全局已知 → visualTotal 可算）
+    const DATA_TOTAL = 300
+    const expandedSet = new Set<number>(Array.from({ length: 12 }, (_, k) => k * 25))
+    const state = {
+      el,
+      expandedSet,
+      dataTotal: DATA_TOTAL,
+      visualTotal: DATA_TOTAL + expandedSet.size,
+      calls: [] as Array<{ start: number; end: number; visualStart?: number; visualEnd?: number }>,
+      slotOf(i: number): number {
+        let count = 0
+        for (const e of this.expandedSet) if (e < i) count++
+        return i + count
+      },
+      adapter: null as unknown,
+    }
+    state.adapter = {
+      getGeometry: (dataStart: number) => ({ start: state.slotOf(dataStart), total: state.visualTotal }),
+      getDataRange: (visualStart: number, visualEnd: number) => {
+        let lo = Infinity
+        let hi = -Infinity
+        for (let i = 0; i < state.dataTotal; i++) {
+          const s = state.slotOf(i)
+          const len = state.expandedSet.has(i) ? 2 : 1
+          if (s + len <= visualStart || s >= visualEnd) continue
+          if (i < lo) lo = i
+          if (i + 1 > hi) hi = i + 1
+        }
+        // 与组件同口径：映射结果前后各扩 8 行并夹取（宿主取数更宽，避免边界抖动）
+        return { start: Math.max(0, lo - 8), end: Math.min(state.dataTotal, hi + 8) }
+      },
+    }
+    ;(window as any).__qaVisualState = state
+    el.addEventListener('oas-window-request', (event) => {
+      const d = (event as CustomEvent).detail
+      state.calls.push({ start: d.start, end: d.end, visualStart: d.visualStart, visualEnd: d.visualEnd })
+    })
+    const fetchRows = ({
+      start,
+      end,
+    }: {
+      start: number
+      end: number
+      signal: AbortSignal
+    }): Promise<{ rows: unknown[]; total: number }> =>
+      new Promise((resolve) =>
+        setTimeout(
+          () =>
+            resolve({
+              rows: Array.from({ length: end - start }, (_, k) => {
+                const index = start + k
+                return {
+                  id: `r${index}`,
+                  name: `R${index}`,
+                  ...(state.expandedSet.has(index) ? { expand: `<div class="exp">详情${index}</div>` } : {}),
+                }
+              }),
+              total: state.dataTotal,
+            }),
+          10,
+        ),
+      )
+    const source = createWindowedSource(el, {
+      fetchRows,
+      total: state.dataTotal,
+      windowSize: 24,
+      visual: state.adapter,
+    })
+    ;(window as any).__qaVisualSource = { source }
+    await new Promise((resolve) => setTimeout(resolve, 120))
+    // 宿主把展开模型同步到表格（协议下 expanded 由宿主单源维护）
+    el.setAttribute('expanded', [...state.expandedSet].map((i: number) => `r${i}`).join(','))
+    await new Promise((resolve) => setTimeout(resolve, 60))
+  })
+
+  // 初始化：visual 属性齐写（切片前已有展开 → visual-start=0、visual-total=312）、首拉按映射取数
+  const initial = await page.evaluate(() => {
+    const state = (window as any).__qaVisualState
+    return {
+      visualStart: state.el.getAttribute('visual-start'),
+      visualTotal: state.el.getAttribute('visual-total'),
+      windowed: state.el.hasAttribute('windowed'),
+      total: state.el.getAttribute('total'),
+      firstCall: state.calls[0],
+      rows: (state.el.data as Array<{ id: string }>).map((r) => r.id),
+    }
+  })
+  expect(initial.visualStart, '初始化齐写 visual-start（切片前已有展开布局快照）').toBe('0')
+  expect(initial.visualTotal, '初始化齐写 visual-total=数据 total + 展开槽位').toBe('312')
+  expect(initial.windowed).toBe(true)
+  expect(initial.total).toBe('300')
+  expect(initial.firstCall!.visualStart, '首拉事件带视觉字段（协议在首拉前已生效）').toBe(0)
+  expect(initial.firstCall!.end, '首拉 end 覆盖初始视口（映射 + margin）').toBeGreaterThan(12)
+  expect(initial.rows[0], '首拉从数据行 0 开始').toBe('r0')
+
+  // 滚动到展开区之后：可视窗口落在数据行 ~130 附近 → 请求按视觉映射覆盖真实可见行
+  await page.evaluate(() => {
+    const el = document.querySelector('#qa-window-visual-table')!
+    const wrap = el.shadowRoot!.querySelector('.table-scroll') as HTMLElement
+    wrap.scrollTop = 130 * 40
+    wrap.dispatchEvent(new Event('scroll'))
+  })
+  await page.waitForFunction(
+    () => {
+      const el = document.querySelector('#qa-window-visual-table') as HTMLElement & { data: Array<{ id: string }> }
+      const ids = el.data.map((r) => r.id)
+      return ids.includes('r120') && ids.includes('r140')
+    },
+    null,
+    { timeout: 15000 },
+  )
+  const scrolled = await page.evaluate(() => {
+    const state = (window as any).__qaVisualState
+    const el = state.el
+    const last = state.calls.at(-1)
+    const rendered = [...el.shadowRoot!.querySelectorAll('tbody tr[data-row-index]')].map((tr: Element) =>
+      Number(tr.getAttribute('data-row-index')),
+    )
+    const renderedCovered = rendered.every((idx: number) =>
+      (state.calls as Array<{ start: number; end: number }>).some((c) => idx >= c.start && idx < c.end),
+    )
+    return { last, renderedCovered }
+  })
+  expect(scrolled.last!.visualStart, '滚动请求带视觉字段（可视窗口视觉坐标）').toBeGreaterThan(0)
+  expect(scrolled.renderedCovered, '真实可见数据行全部落在已请求区间内（映射覆盖可视窗口，不再均匀网格错位）').toBe(
+    true,
+  )
+
+  // 协议下焦点：聚焦 r130 → 本地 toggle（r125 有展开钮）只派发 oas-expand（不改 expanded）
+  const focusBefore = await page.evaluate(() => {
+    const el = document.querySelector('#qa-window-visual-table')!
+    const td = el.shadowRoot!.querySelector<HTMLElement>('tr[data-key="r130"] td[data-col="name"]')!
+    td.focus()
+    return el.shadowRoot!.activeElement === td
+  })
+  expect(focusBefore, '聚焦 r130 单元格').toBe(true)
+
+  const toggled = await page.evaluate(
+    () =>
+      new Promise((resolve) => {
+        const el = document.querySelector('#qa-window-visual-table')!
+        el.addEventListener(
+          'oas-expand',
+          (e) => resolve({ detail: (e as CustomEvent).detail, expandedAttr: el.getAttribute('expanded') }),
+          { once: true },
+        )
+        ;(el.shadowRoot!.querySelector(
+          'tbody tr[data-key="r125"] .expand-toggle-cell button.toggle',
+        ) as HTMLElement)!.click()
+      }),
+  )
+  expect((toggled as any).detail, '协议生效：本地 toggle 只派发 oas-expand（宿主通道）').toEqual({
+    key: 'r125',
+    expanded: false,
+  })
+  expect(((toggled as any).expandedAttr as string).split(','), '本地不修改 expanded（r125 保留、r130 未加入）').toEqual(
+    ['r0', 'r25', 'r50', 'r75', 'r100', 'r125', 'r150', 'r175', 'r200', 'r225', 'r250', 'r275'],
+  )
+
+  // 宿主单源回写：adapter 布局加入 r130 → expanded 属性 → source.refresh 重拉回填（data/视觉属性重写）
+  await page.evaluate(() => {
+    const state = (window as any).__qaVisualState
+    state.expandedSet.add(130)
+    state.visualTotal = state.dataTotal + state.expandedSet.size
+    state.el.setAttribute('expanded', [...state.expandedSet].map((i: number) => `r${i}`).join(','))
+    const td = state.el.shadowRoot!.querySelector('tr[data-key="r130"] td[data-col="name"]') as HTMLElement
+    td.focus()
+    ;(window as any).__qaVisualSource.source.refresh()
+  })
+  await page.waitForFunction(
+    () => {
+      const state = (window as any).__qaVisualState
+      return (
+        state.el.getAttribute('visual-total') === '313' &&
+        !!(state.el.data as Array<{ id: string }>).find((r) => r.id === 'r130' && (r as any).expand)
+      )
+    },
+    null,
+    { timeout: 15000 },
+  )
+  const afterWriteback = await page.evaluate(() => {
+    const state = (window as any).__qaVisualState
+    const el = state.el
+    const active = el.shadowRoot!.activeElement as HTMLElement | null
+    return {
+      visualTotal: el.getAttribute('visual-total'),
+      visualStart: el.getAttribute('visual-start'),
+      ariaCount: el.shadowRoot!.querySelector('table')!.getAttribute('aria-rowcount'),
+      expandVisible: !!el.shadowRoot!.querySelector('tbody tr.expand-row'),
+      focusKey: active?.closest('tr')?.getAttribute('data-key') ?? null,
+      snapshot130: (el as any).getDisplaySnapshot()!.rowIndexByKey.get('r130'),
+    }
+  })
+  expect(afterWriteback.visualTotal, '宿主回写后 visual-total 随 adapter 快照更新（312→313）').toBe('313')
+  expect(afterWriteback.ariaCount, 'aria-rowcount 仍为数据 total 全量口径').toBe('300')
+  expect(afterWriteback.expandVisible, 'r130 展开内容真实渲染').toBe(true)
+  expect(afterWriteback.focusKey, '回写 data/视觉属性后焦点仍在同一 row-key').toBe('r130')
+  expect(afterWriteback.snapshot130, 'displaySnapshot 仍解析绝对数据行号').toBe(130)
+
+  // dark 主题：协议记账与 ARIA 口径一致
+  await page.evaluate(() => document.documentElement.classList.add('dark'))
+  const dark = await page.evaluate(() => {
+    const el = document.querySelector('#qa-window-visual-table')!
+    return {
+      visualTotal: el.getAttribute('visual-total'),
+      ariaCount: el.shadowRoot!.querySelector('table')!.getAttribute('aria-rowcount'),
+      expandVisible: !!el.shadowRoot!.querySelector('tbody tr.expand-row'),
+    }
+  })
+  expect(dark.visualTotal).toBe('313')
+  expect(dark.ariaCount).toBe('300')
+  expect(dark.expandVisible).toBe(true)
+
+  expect(issues, 'console 零 error/告警（协议激活无「只有其一」告警）').toEqual([])
+  await page.evaluate(() => {
+    document.documentElement.classList.remove('dark')
+    ;(window as any).__qaVisualSource.source.destroy()
+    document.querySelector('#qa-window-visual-table')?.remove()
+  })
+})

@@ -4,6 +4,24 @@ export interface WindowedRequest {
   signal: AbortSignal
 }
 
+/** 视觉快照：切片首行的视觉行号 + 全量视觉行数（数据行 + 行内嵌展开内容行） */
+export interface WindowedVisualGeometry {
+  start: number
+  total: number
+}
+
+/**
+ * 视觉适配器（可选）：宿主持有真实展开布局时，把 windowed 的视觉坐标映射交给宿主单源定义。
+ * - `getGeometry(dataStart)`：初始化与每次响应回填时同步调用，返回当前快照的 visual-start /
+ *   visual-total（实现必须现算现回，不得缓存请求时的旧值——回填要的是响应时刻的布局）。
+ * - `getDataRange(visualStart, visualEnd)`：请求时把 `oas-window-request` 的视觉区间映射为
+ *   数据取数区间（如把相交视觉槽位投影回属主数据行）；返回须有限且 end > start。
+ */
+export interface WindowedVisualAdapter {
+  getGeometry(dataStart: number): WindowedVisualGeometry
+  getDataRange(visualStart: number, visualEnd: number): { start: number; end: number }
+}
+
 export interface WindowedSourceOptions {
   /** 拉取 [start, end) 半开区间；返回行数组或 { rows, total } */
   fetchRows(request: WindowedRequest): Promise<unknown[] | { rows: unknown[]; total?: number }>
@@ -11,6 +29,9 @@ export interface WindowedSourceOptions {
   total?: number
   /** 首屏窗口大小（默认 50 行；正整数，应不大于服务端单次返回上限） */
   windowSize?: number
+  /** 视觉适配器（可选）：提供后 source 接管 visual-start / visual-total 属性的回写，
+      并在请求时优先按视觉区间映射数据取数区间；不提供则不写任何视觉属性（既有行为逐值不变） */
+  visual?: WindowedVisualAdapter
 }
 
 export interface WindowedSource {
@@ -19,9 +40,39 @@ export interface WindowedSource {
   destroy(): void
 }
 
+/** 截断取整（对齐表格 readVisualProtocol 的截断口径）；非有限返回 NaN */
+const truncOrNaN = (value: number): number => (Number.isFinite(value) ? Math.trunc(value) : Number.NaN)
+
+/** 安全校验 geometry 数值：非法（非有限、start<0、total<=0、start>total、total<数据 total）返回 null */
+const normalizeGeometry = (
+  geometry: WindowedVisualGeometry,
+  dataTotal: number | null,
+): WindowedVisualGeometry | null => {
+  const start = truncOrNaN(geometry.start)
+  const total = truncOrNaN(geometry.total)
+  if (!Number.isFinite(start) || !Number.isFinite(total)) return null
+  if (start < 0 || total <= 0 || start > total) return null
+  if (dataTotal != null && Number.isFinite(dataTotal) && total < dataTotal) return null
+  return { start, total }
+}
+
+/** Error 消息附带的快照摘要（adapter 可能返回循环结构，只取两个字段原文） */
+const geometrySummary = (geometry: WindowedVisualGeometry): string => {
+  try {
+    return `{ start: ${String(geometry.start)}, total: ${String(geometry.total)} }`
+  } catch {
+    return '[unprintable]'
+  }
+}
+
 /**
  * windowed 表格数据源胶水：监听 `oas-window-request`，中止过期请求并回填 data / window-start / total。
  * 纯宿主侧 helper，不进入 table 运行时。已装载区间按实际返回行数计覆盖；服务端部分页会自动补齐。
+ *
+ * 可选 `visual` 适配器（视觉协议）：初始化与每次响应回填时重新求值 geometry 并齐写
+ * visual-start / visual-total（回填时最新快照，与本次数据同一快照）；请求时事件带有效视觉字段
+ * 则优先经 getDataRange 映射数据取数区间，映射非法不拉取并派发一次 `oas-window-error`
+ * （detail 含视觉区间与原始数据区间），修正后可重试。
  */
 export function createWindowedSource(table: HTMLElement, options: WindowedSourceOptions): WindowedSource {
   if (!(table as HTMLElement).shadowRoot) {
@@ -33,24 +84,69 @@ export function createWindowedSource(table: HTMLElement, options: WindowedSource
   let destroyed = false
   /** 回写属性期间忽略表格反射回来的请求（防止自触发循环） */
   let writing = false
+  const visual = options.visual ?? null
 
   const windowSize =
     options.windowSize != null && Number.isFinite(options.windowSize) ? Math.max(1, Math.trunc(options.windowSize)) : 50
 
+  /** 当前数据 total（全量行数）：优先取传入值，否则读表格 total 属性；都缺失返回 null（跳过 total 对比校验） */
+  const dataTotalOf = (fallback: number | null): number | null => {
+    if (fallback != null && Number.isFinite(fallback)) return fallback
+    const raw = Number(table.getAttribute('total') ?? Number.NaN)
+    return Number.isFinite(raw) ? raw : null
+  }
+
+  /** 派发统一失败事件（bubbles + composed），之后同窗口可重试 */
+  const dispatchError = (detail: Record<string, unknown>): void => {
+    table.dispatchEvent(new CustomEvent('oas-window-error', { detail, bubbles: true, composed: true }))
+  }
+
   const write = (start: number, rows: unknown[], total?: number): void => {
+    // 回填时重新求值 geometry：请求与响应之间宿主可能改变展开布局，必须用响应时刻的最新快照
+    //（两个视觉属性写同一份快照，保证与本次回填数据一致）；adapter throw 与非法值走同一失败路径
+    let geometry: WindowedVisualGeometry | null = null
+    let geometryError: Error | null = null
+    if (visual) {
+      try {
+        geometry = normalizeGeometry(visual.getGeometry(start), dataTotalOf(total ?? null))
+      } catch (error) {
+        geometryError = error instanceof Error ? error : new Error(String(error))
+      }
+      if (!geometry && !geometryError) {
+        geometryError = new Error(
+          `[oas-table] createWindowedSource visual.getGeometry(${start}) 返回非法快照（须有限、start≥0、total>0、start≤total、total≥数据 total）`,
+        )
+      }
+    }
     writing = true
     try {
       if (table.getAttribute('window-start') !== String(start)) {
         table.setAttribute('window-start', String(start))
       }
       if (!table.hasAttribute('windowed')) table.setAttribute('windowed', '')
+      if (geometry) {
+        // 视觉属性与数据同一快照：visual-start 随切片坐标写（writing 内），visual-total 在数据就绪后写
+        if (table.getAttribute('visual-start') !== String(geometry.start)) {
+          table.setAttribute('visual-start', String(geometry.start))
+        }
+      } else if (visual) {
+        // geometry 非法：不写错误视觉属性，移除陈旧属性让表格整体回落当前模型（table 会 devWarn 一次，属预期）
+        table.removeAttribute('visual-start')
+        table.removeAttribute('visual-total')
+      }
       table.setAttribute('data', JSON.stringify(rows))
     } finally {
       writing = false
     }
-    // total 在 writing 外写：让表格在数据就绪后再启用 windowed 并派发真实视口请求（不被回声抑制吞掉）
+    // total / visual-total 在 writing 外写：让表格在数据就绪后再启用 windowed 并派发真实视口请求（不被回声抑制吞掉）
     if (total != null && table.getAttribute('total') !== String(total)) {
       table.setAttribute('total', String(total))
+    }
+    if (geometry && table.getAttribute('visual-total') !== String(geometry.total)) {
+      table.setAttribute('visual-total', String(geometry.total))
+    }
+    if (geometryError) {
+      dispatchError({ start, end: start + rows.length, error: geometryError })
     }
   }
 
@@ -76,9 +172,7 @@ export function createWindowedSource(table: HTMLElement, options: WindowedSource
       // 过期请求失败不得清空新请求的 filling（否则会再次拉取/中止新请求）
       if (signal.aborted) return
       filling = null
-      table.dispatchEvent(
-        new CustomEvent('oas-window-error', { detail: { start, end, error }, bubbles: true, composed: true }),
-      )
+      dispatchError({ start, end, error })
     }
     // 服务端单次返回不足时继续向后补齐同一窗口，并累积成连续切片（window-start 始终为窗口起点）
     const collected: unknown[] = []
@@ -112,21 +206,85 @@ export function createWindowedSource(table: HTMLElement, options: WindowedSource
 
   const onRequest = (event: Event): void => {
     if (destroyed || writing) return
-    const detail = (event as CustomEvent).detail as { start?: number; end?: number } | undefined
+    const detail = (event as CustomEvent).detail as
+      | { start?: number; end?: number; visualStart?: number; visualEnd?: number }
+      | undefined
     if (!detail || typeof detail.start !== 'number' || typeof detail.end !== 'number') return
-    const { start, end } = detail
+    const { start, end, visualStart, visualEnd } = detail
     if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) return
-    if (filling && start >= filling.start && end <= filling.end) return
+    let fetchStart = start
+    let fetchEnd = end
+    // 视觉适配器 + 事件带有效视觉字段 → 优先按视觉区间映射数据取数区间；无/缺视觉字段回落事件 start/end
+    if (
+      visual &&
+      typeof visualStart === 'number' &&
+      Number.isFinite(visualStart) &&
+      typeof visualEnd === 'number' &&
+      Number.isFinite(visualEnd)
+    ) {
+      let mapped: { start: number; end: number } | null = null
+      try {
+        mapped = visual.getDataRange(visualStart, visualEnd)
+      } catch (error) {
+        dispatchError({
+          start,
+          end,
+          visualStart,
+          visualEnd,
+          error: error instanceof Error ? error : new Error(String(error)),
+        })
+        return
+      }
+      const mappedStart = mapped ? truncOrNaN(mapped.start) : Number.NaN
+      const mappedEnd = mapped ? truncOrNaN(mapped.end) : Number.NaN
+      if (!Number.isFinite(mappedStart) || !Number.isFinite(mappedEnd) || mappedEnd <= mappedStart) {
+        // 映射非法：不 fetch、不残留 filling，派发一次错误（含视觉区间与原始数据区间），修正后可重试
+        dispatchError({
+          start,
+          end,
+          visualStart,
+          visualEnd,
+          error: new Error(
+            `[oas-table] createWindowedSource visual.getDataRange(${visualStart}, ${visualEnd}) 返回非法区间（须有限且 end > start）`,
+          ),
+        })
+        return
+      }
+      fetchStart = mappedStart
+      fetchEnd = mappedEnd
+    }
+    if (filling && fetchStart >= filling.start && fetchEnd <= filling.end) return
     const loaded = currentLoaded()
-    if (start >= loaded.start && end <= loaded.end) return
-    load(start, end)
+    if (fetchStart >= loaded.start && fetchEnd <= loaded.end) return
+    load(fetchStart, fetchEnd)
+  }
+
+  // 初始 geometry 先校验：同步配置错误（非法快照 / adapter throw）直接抛给调用方，
+  // 不写任何属性、不挂监听——不留半初始化视觉状态
+  const initialStart = Number(table.getAttribute('window-start') ?? 0) || 0
+  let initialGeometry: WindowedVisualGeometry | null = null
+  if (visual) {
+    const raw = visual.getGeometry(initialStart)
+    const normalized = normalizeGeometry(raw, dataTotalOf(options.total ?? null))
+    if (!normalized) {
+      throw new Error(
+        `[oas-table] createWindowedSource visual.getGeometry(${initialStart}) 初始快照非法：${geometrySummary(raw)}（须有限、start≥0、total>0、start≤total、total≥数据 total）`,
+      )
+    }
+    initialGeometry = normalized
   }
 
   table.addEventListener('oas-window-request', onRequest)
+  // 视觉属性写在 windowed/total 之前：表格尚未进入 windowed 模式时逐个写入不会触发
+  // 「只有其一」的回落告警（readVisualProtocol 在非 windowed 下静默），total 最后落位即一次激活
+  if (initialGeometry) {
+    table.setAttribute('visual-start', String(initialGeometry.start))
+    table.setAttribute('visual-total', String(initialGeometry.total))
+  }
   table.setAttribute('windowed', '')
   if (options.total != null) table.setAttribute('total', String(options.total))
-  // 首屏：监听先挂再写 total，表格同步派发的 init 请求能被接住；未连接/未提供 total 时主动拉窗口
-  const initialStart = Number(table.getAttribute('window-start') ?? 0) || 0
+  // 首屏：监听先挂再写属性，表格同步派发的 init 请求能被接住（协议生效时事件带视觉字段 → 走映射）；
+  // 未连接/未提供 total 时主动拉窗口
   if (!lastRequest) load(initialStart, initialStart + windowSize)
 
   return {

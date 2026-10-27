@@ -5,11 +5,11 @@
 
 ---
 
-## 未发布：异步选中与视觉窗口协议 🚧
+## 未发布：异步选中与视觉窗口协议 ✅
 
 ### 功能定义
 
-维护批二：把 `table/detail` 的 `selectByKey` 未命中等待从「windowed 隐式默认」改为显式 opt-in，并给等待补齐可取消语义（`AbortSignal`）；等待终止只由数据命中、显式取消或 abort 决定，模式与 MutationObserver 批次不再参与。同批还含表格视觉映射与可选视觉协议（见「table：windowed 请求映射与视觉协议」条目）。不新增组件与事件，`selectByKey` 增加可选 `options` 参数；table 新增 `visual-total` / `visual-start` 两个可选属性与 `oas-window-request` detail 的可选视觉字段。版本号未定，不标已发布。
+维护批二：把 `table/detail` 的 `selectByKey` 未命中等待从「windowed 隐式默认」改为显式 opt-in，并给等待补齐可取消语义（`AbortSignal`）；等待终止只由数据命中、显式取消或 abort 决定，模式与 MutationObserver 批次不再参与。同批还含表格视觉映射与可选视觉协议（见「table：windowed 请求映射与视觉协议」条目）及其数据源助手收口（`advanced/windowed.ts` 可选 `visual` 适配器）。不新增组件与事件，`selectByKey` 增加可选 `options` 参数；table 新增 `visual-total` / `visual-start` 两个可选属性与 `oas-window-request` detail 的可选视觉字段；`createWindowedSource` 新增可选 `visual` 适配器选项。版本号未定，不标已发布。
 
 ### 详细需求
 
@@ -18,7 +18,8 @@
 - **table：windowed 请求映射与可选视觉协议（visual-total / visual-start）**：
   - **请求映射（本地 expand>12 收口）**：windowed 虚拟渲染与期望区间请求共用同一份 abs/flow 记账——切片内存在行内嵌展开条目（或视觉协议生效）时，可视窗口先按视觉总行数（协议未生效 = 数据 `total` + 当前切片合法 expand 数；协议生效 = `visual-total`）计算，再把与可视窗口相交的条目按属主数据行投影（data 条目 = 自身 `[abs, abs+1)`；expand 条目回连属主 `[abs-1, abs)`），取最小 start / 最大 end 夹到 `[0, data total)` 后前后各扩 `WINDOW_MARGIN`；无相交条目时回退可视窗口整体投影。请求区间不再按均匀 data 网格猜测——此前切片展开数超过 buffer + WINDOW_MARGIN（4 + 8 = 12）时渲染窗口与请求区间坐标系错位，快速跨越装载边界可能出现视觉重锚，本条目收口该缺口。`start` / `end` **永远是数据坐标**；映射生效时 detail 附带可选 `visualStart` / `visualEnd`（当前可视窗口的视觉坐标，供宿主视觉取数；不是切片 `visual-start`）。去重升级为「同窗口」= `start`/`end` 与 `visualStart`/`visualEnd` 都相同——展开数或 `visual-total` 变化移动可视区间时，即使数据区间相同也重新派发；覆盖判定仍只用数据 loaded。切片无展开且无协议时 detail 与派发行为逐值不变（既有宿主零感知）。
   - **可选视觉协议**：`visual-total`（全量视觉行数 = 数据行 + 行内嵌展开内容行，有限、截断取整、>0 且不小于数据 `total`）与 `visual-start`（当前切片 `data[0]` 的视觉行号，∈ `[0, visual-total]`）**同时有效**才启用（仅 windowed 叠加）。生效后渲染 flow 从 `visual-start × rowHeight` 起、渲染 count 与滚动总高 = `visual-total × rowHeight`——支持「切片前已有展开行」的宿主场景。协议生效后展开由宿主完全控制：本地 toggle 不改 `expanded`，只派发一次 `oas-expand` 并 devWarn 一次（实例级去重），宿主回写 `expanded` / `data` / visual 属性驱动重渲染。缺失 / 非法 / 只有其一 / `visual-total` 小于数据 `total` → devWarn 一次并**整体回落**当前模型（不部分生效）；两属性都缺席 → 静默（既有宿主零打扰）。`visual-start + 已装载条目数 > visual-total` 时 devWarn 一次，界外条目由视觉窗口裁掉不渲染；原数据越界（`abs ≥ total`）截断与末行合法 expand 保留不变。
-  - **不变式**：`abs` 双坐标记账、`data-row-index`、事件 rowIndex、ARIA（`aria-rowcount` = 数据 total、绝对 `aria-rowindex`）、range/displaySnapshot 口径、焦点回锚与非 windowed 路径全部不变；键盘越界请求（`requestWindowForRow`）的数据 need 仍由目标 abs 决定，视觉字段按当前可视窗口补齐。`advanced/windowed.ts` 数据源助手适配（消费视觉字段）由后续任务收口。
+  - **不变式**：`abs` 双坐标记账、`data-row-index`、事件 rowIndex、ARIA（`aria-rowcount` = 数据 total、绝对 `aria-rowindex`）、range/displaySnapshot 口径、焦点回锚与非 windowed 路径全部不变；键盘越界请求（`requestWindowForRow`）的数据 need 仍由目标 abs 决定，视觉字段按当前可视窗口补齐。
+  - **`advanced/windowed.ts` 视觉适配器（收口）**：`createWindowedSource` 新增可选 `visual` 适配器（`getGeometry(dataStart)` 返回当前快照 `visual-start` / `visual-total`，`getDataRange(visualStart, visualEnd)` 把事件视觉区间映射为数据取数区间）——初始化与每次响应回填都重新求值 geometry（请求与响应之间宿主改变展开布局时用回填时最新快照，不缓存请求时旧值），`writing` 内写 `window-start` + `visual-start` + `data`、`writing` 外写 `total` + `visual-total`（与本次响应同一快照，回声抑制不自拉取）；请求带有效视觉字段时优先按 `getDataRange` 映射取数，映射非法（非有限 / end ≤ start / adapter 抛错）不 fetch、不残留 filling、派发一次 `oas-window-error`（detail 含视觉区间与原始数据区间，`bubbles` + `composed`），修正后可重试；geometry 非法（非有限、start<0、total≤0、start>total、total<数据 total）不写错误视觉属性（陈旧属性移除、表格整体回落），走同一 `oas-window-error` 并可重试，初始同步配置错误直接抛给调用方且不留任何半初始化状态；不传 `visual` 不写任何视觉属性（既有行为逐值不变）。此前宿主只能按事件 `start`/`end` 均匀取数（可视窗口与切片不相交时只是夹取猜测）——本地映射已修复切片内的坐标错位，跨切片（切片前已有展开行）由可选协议 + 适配器保证。
 
 ### 非目标
 
@@ -26,8 +27,8 @@
 
 ### 验收标准
 
-- 单测：默认 windowed 未命中 no-op/零事件、`waitForRow` 普通模式等待命中、不同批模式回落仍落地且与同批一致、普通删除选中行 `onClose` 照发但等待保留、`windowed` 属性移除不终止等待、signal 已 aborted/等待中 abort/落地后 abort/destroy 后 abort、多实例 signal 互不扰、既有取消路径（close/select/点击/Enter/Esc/destroy/row-key/新键）全部保留；expand>12 请求映射（scrollTop=4440 → [95,118) + 视觉字段，覆盖真实可见行 104..109 与属主 103..109）、展开数变化同数据 need 重派与同窗口去重、协议生效 flow/总高/abs/ARIA/displaySnapshot 不变、协议下本地 toggle 只发 oas-expand 不改 expanded、协议回落（缺一/非法/小于 total）devWarn 一次、协议越界界外不渲染、键盘越界视觉字段补齐；`mapVisualWindowToData` / `sameWindow` 视觉字段纯函数覆盖。
-- e2e：`qa-regression/table.spec.ts` 真实 Chromium——默认未命中无可见等待（面板/事件不变）、显式等待回填有可见面板反馈、abort 后回填无反馈；expand>12 映射（真实滚动 → 请求 [95,118)+视觉字段 → 渲染 104..109 与属主 expand 可见）与 visual-start 协议（总高 80000、宿主控制展开、ARIA/displaySnapshot 数据口径）两场景，含 dark 主题与 console/pageerror 零新增告警。
+- 单测：默认 windowed 未命中 no-op/零事件、`waitForRow` 普通模式等待命中、不同批模式回落仍落地且与同批一致、普通删除选中行 `onClose` 照发但等待保留、`windowed` 属性移除不终止等待、signal 已 aborted/等待中 abort/落地后 abort/destroy 后 abort、多实例 signal 互不扰、既有取消路径（close/select/点击/Enter/Esc/destroy/row-key/新键）全部保留；expand>12 请求映射（scrollTop=4440 → [95,118) + 视觉字段，覆盖真实可见行 104..109 与属主 103..109）、展开数变化同数据 need 重派与同窗口去重、协议生效 flow/总高/abs/ARIA/displaySnapshot 不变、协议下本地 toggle 只发 oas-expand 不改 expanded、协议回落（缺一/非法/小于 total）devWarn 一次、协议越界界外不渲染、键盘越界视觉字段补齐；`mapVisualWindowToData` / `sameWindow` 视觉字段纯函数覆盖；windowed source 视觉适配器（初始化/回填齐写与重求值、回填用最新 geometry、回声抑制、映射/geometry 非法失败事件与重试、无 visual 旧行为逐值不变、destroy 迟到结果不写、协议下焦点回锚）。
+- e2e：`qa-regression/table.spec.ts` 真实 Chromium——默认未命中无可见等待（面板/事件不变）、显式等待回填有可见面板反馈、abort 后回填无反馈；expand>12 映射（真实滚动 → 请求 [95,118)+视觉字段 → 渲染 104..109 与属主 expand 可见）与 visual-start 协议（总高 80000、宿主控制展开、ARIA/displaySnapshot 数据口径）两场景；`createWindowedSource × 视觉适配器`（真实 adapter 驱动协议取数、滚动请求按视觉映射覆盖真实可见行、协议下本地 toggle 只派发 oas-expand、宿主回写 expanded/visual-start/data 后焦点仍在同一 row-key、ARIA 不变），含 dark 主题与 console/pageerror 零新增告警。
 - 文档 zh/en 同步；`api:check` / `llms:check` / `stats:check` / `lint:md` / `format:check` 通过。
 
 ## 未发布：表格 Pro / JSON 查看器 / Sidebar 维护 ✅

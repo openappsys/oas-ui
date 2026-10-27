@@ -7,7 +7,7 @@
 | 范围 | 内容 | 状态 |
 | --- | --- | --- |
 | **table/detail selectByKey 等待** | 未命中等待改为显式 `waitForRow` opt-in：默认 windowed 未命中恢复 no-op（保留选中/面板、零事件）、普通模式未命中清空；`AbortSignal` 可取消，等待只由数据命中/显式取消/abort 终止（模式、`windowed`/`total` 变化与批次不参与）；close/select/点击/Enter/Esc/destroy/row-key/新键取消；仅等待时 Esc 限本实例表格/面板、无 window 全局兜底 | ✅ 已完成（未发布） |
-| **异步选中与视觉窗口协议** | table/detail `selectByKey` 显式 `waitForRow` + `AbortSignal` 可取消等待（已完成，见上）；表格视觉映射与可选视觉协议已收口（`visual-total` / `visual-start`、`oas-window-request` 视觉字段、expand>12 请求映射，见 PRD 本批）；`advanced/windowed.ts` 数据源助手适配待收口 | 🚧 进行中 |
+| **异步选中与视觉窗口协议** | table/detail `selectByKey` 显式 `waitForRow` + `AbortSignal` 可取消等待（已完成，见上）；表格视觉映射与可选视觉协议已收口（`visual-total` / `visual-start`、`oas-window-request` 视觉字段、expand>12 请求映射，见 PRD 本批）；`advanced/windowed.ts` 数据源助手已接入可选 `visual` 适配器（回填重新求值 geometry 齐写视觉属性、请求优先按视觉区间映射取数、映射/geometry 非法走统一 `oas-window-error` 可重试），本地映射修复切片内坐标错位、跨切片由可选协议保证 | ✅ 已完成（未发布） |
 | **table/range tabindex 所有权** | 禁用 range 仅在仍持有最后写入值时恢复原 tabindex；拥有期间外部改写保留外部值，grid-navigation 接管不回写陈旧原值 | ✅ 已完成（未发布） |
 | **advanced windowed source 维护** | 覆盖判定改读表格当前切片（外部清空/替换 data、换窗后重新拉取）；`fetchRows` 同步 throw 与 rejection 统一清在途标记 + 一次 `oas-window-error`，同窗口可重试 | ✅ 已完成（未发布） |
 | **table windowed × `row.expand` 视觉槽位** | 双坐标记账（数据行号 abs / 视觉 flow）：行内嵌 expand 占独立视觉槽位，滚动总高稳定不漂移，多展开与已装载的全量末行 expand 可见；切片越界时越界行及其 expand 不渲染、最后合法数据行的 expand 保留；数据行号/ARIA 不变（遗留的「请求仍按数据 total 均匀网格猜测、展开数 > buffer + WINDOW_MARGIN 时快速跨界视觉重锚」已由「异步选中与视觉窗口协议」批的请求映射收口） | ✅ 已完成（未发布） |

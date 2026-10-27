@@ -457,7 +457,9 @@ windowed 模式下**本地排序 / 筛选 / 分组 / 分页 / 树形展开 / 合
 - `visual-total`：全量视觉行数（数据行 + 行内嵌展开内容行），有限正整数（截断取整）且不小于 `total`；
 - `visual-start`：当前切片 `data[0]` 的视觉行号，`0 ≤ visual-start ≤ visual-total`。
 
-两属性**同时有效**才启用（仅 windowed 下生效）：渲染 flow 从 `visual-start × 行高` 起、渲染与滚动总高按 `visual-total` 计。**协议生效后展开由宿主完全控制**——本地点击展开钮只派发 `oas-expand`（devWarn 一次）并不修改 `expanded`，由宿主监听后回写 `expanded` / `data` / visual 属性驱动重渲染。缺失 / 非法 / 只有其一 / `visual-total` 小于数据 `total` 时 devWarn 一次并**整体回落**当前模型（不部分生效）。绝对数据行号（`data-row-index`、事件行号、ARIA、range/displaySnapshot）不受视觉协议影响；`visual-start + 已装载条目数 > visual-total` 时界外条目不渲染并 devWarn 一次。
+两属性**同时有效**才启用（仅 windowed 下生效）：渲染 flow 从 `visual-start × 行高` 起、渲染与滚动总高按 `visual-total` 计。**协议生效后展开由宿主完全控制**——本地点击展开钮只派发 `oas-expand`（devWarn 一次）并不修改 `expanded`，由宿主监听后回写 `expanded` / `data` / visual 属性驱动重渲染，禁止组件与宿主双写。缺失 / 非法 / 只有其一 / `visual-total` 小于数据 `total` 时 devWarn 一次并**整体回落**当前模型（不部分生效）。绝对数据行号（`data-row-index`、事件行号、ARIA、range/displaySnapshot）不受视觉协议影响；`visual-start + 已装载条目数 > visual-total` 时界外条目不渲染并 devWarn 一次。非虚拟 windowed（无 `height`）下协议只影响「展开由宿主接管」，不改变布局。
+
+> 视觉坐标下的宿主取数配方（`visualStart` / `visualEnd` 优先、`visual-start` 与切片同一快照原子回填、回填重新求值）见 [服务端窗口取数](/guide/windowed-data) 的「视觉协议宿主配方」；`createWindowedSource` 可传入可选 `visual` 适配器自动完成映射与视觉属性回写，见下文「windowed 数据源助手 · 视觉适配器」。
 
 > 注意：`total` 在此复用为「全量行数」（分页模式语义为「外部数据分页总行数」）；行/列虚拟化需设 `height`（宿主定高）才启用；windowed 的切片须为**扁平行**（组件不递归 `children`）；切片长度超出 `total - window-start` 时越界行不渲染并 devWarn 一次。
 
@@ -1176,7 +1178,7 @@ onMounted(() => {
 - **查询构建器**：`compileQuery()` / `filterRows()`，支持 `and` / `or` 任意嵌套与 `eq` / `contains` / `in` / `between` / `exists` 等算子
 - **TSV**：`toTsv()` / `parseTsv()`，用于表格区域导出与粘贴
 - **撤销栈**：`createHistory()` 通用命令栈（undo / redo / canUndo / canRedo / subscribe / limit）
-- **windowed 数据源助手**：`createWindowedSource()` 接管 `oas-window-request`、补齐短页、中止过期请求
+- **windowed 数据源助手**：`createWindowedSource()` 接管 `oas-window-request`、补齐短页、中止过期请求；可选 `visual` 适配器接入视觉协议（视觉区间映射取数 + `visual-start` / `visual-total` 自动回写）
 
 > 查询算子的比较/范围按数值处理；文本匹配默认不区分大小写（`caseSensitive: true` 可开启）；`in` / `contains` 对数组字段按任一元素命中；TSV 导出会把单元格内的换行/制表符压成空格。
 
@@ -1374,6 +1376,45 @@ const source = createWindowedSource(table, {
 监听 `oas-window-request`，中止过期请求并回填 `data` / `window-start` / `total`；满足 windowed 协议，不引入运行时依赖（需配合 `height` 开启虚拟滚动）。`windowSize` 应不大于服务端单次返回上限；服务端单次返回不足时自动向后补齐同一窗口（按实际返回行数计覆盖）。`fetchRows` 返回裸数组时必须提供 `total`（options 或表格 `total` 属性），否则 windowed 不激活。
 
 每次处理 `oas-window-request` 时，覆盖判定都读表格**当前切片**（`window-start` + `data` 长度，有限数、截断、最小 0 的半开区间），不缓存自身装载状态：宿主外部清空/替换 `data` 或切换 `window-start` 后，同窗口请求会重新拉取；在途标记去重、回写回声抑制、`refresh()` 强制重拉、`destroy()` 中止过期请求与构造首拉行为不变。`fetchRows` 同步抛错与 Promise rejection 走同一失败路径：清在途标记并派发一次 `oas-window-error`（detail `{ start, end, error }`，`bubbles` + `composed`），之后同窗口可重试；过期失败不会清掉新请求的在途标记。不自动重试，也不改表格 `oas-window-request` 的派发。
+
+#### 视觉适配器（可选 `visual`，配合视觉协议）
+
+切片含行内嵌展开内容、或切片前已有展开行时，事件 `start` / `end` 只是夹取猜测（可视窗口与切片不相交时取不到真正可见的行）。传入 `visual` 适配器让助手接入可选视觉协议（见上文），由宿主单源布局驱动取数与视觉属性：
+
+```ts
+import { createWindowedSource } from '@oas-ui/ui/data/table/advanced'
+
+// 宿主单源：全量哪些行带展开槽位（每 25 行一个）
+const EXPANDED = new Set([0, 25, 50, 75, 100])
+const DATA_TOTAL = 10000
+const slotOf = (i: number) => i + [...EXPANDED].filter((e) => e < i).length
+
+const source = createWindowedSource(table, {
+  fetchRows: async ({ start, end, signal }) => api.list({ start, end, signal }),
+  total: DATA_TOTAL,
+  visual: {
+    // 初始化与每次响应回填时都会被调用：返回当前快照（现算现回，不得缓存请求时旧值）
+    getGeometry: (dataStart: number) => ({ start: slotOf(dataStart), total: DATA_TOTAL + EXPANDED.size }),
+    // 请求时把可视窗口的视觉区间映射回数据取数区间（须有限且 end > start）
+    getDataRange: (visualStart: number, visualEnd: number) => {
+      let lo = Infinity
+      let hi = -Infinity
+      for (let i = 0; i < DATA_TOTAL; i++) {
+        const s = slotOf(i)
+        const len = EXPANDED.has(i) ? 2 : 1
+        if (s + len <= visualStart || s >= visualEnd) continue
+        if (i < lo) lo = i
+        if (i + 1 > hi) hi = i + 1
+      }
+      return { start: Math.max(0, lo - 8), end: Math.min(DATA_TOTAL, hi + 8) }
+    },
+  },
+})
+```
+
+时序契约：初始化与**每次响应回填**都重新调用 `getGeometry(dataStart)`（请求与响应之间宿主改变展开布局时用回填时最新快照），回填在 `writing` 内原子写 `window-start` + `visual-start` + `data`、其外写 `total` + `visual-total`——与本次响应同一快照，回声抑制不自拉取。请求事件带有效 `visualStart` / `visualEnd` 时优先按 `getDataRange` 映射取数（无视觉字段回落事件 `start` / `end`）。协议生效后展开由宿主完全控制：监听 `oas-expand` 回写 `expanded` / `data` / 视觉属性（本地点击展开钮只派发事件，不修改 `expanded`），禁止双写。
+
+失败语义：映射非法（非有限 / end ≤ start / `getDataRange` 同步抛错）不 fetch、不残留在途标记、派发一次 `oas-window-error`（detail `{ start, end, visualStart, visualEnd, error }`，含视觉区间与原始数据区间），修正后同窗口可重试；geometry 非法（非有限、start<0、total≤0、start>total、total<数据 total）不写错误视觉属性（陈旧 `visual-start` / `visual-total` 移除、表格整体回落当前模型），数据照常回填并走同一失败事件；初始同步配置错误直接抛给调用方（不写任何属性、不挂监听）。不传 `visual` 不写任何视觉属性，既有行为逐值不变。
 
 ## API
 

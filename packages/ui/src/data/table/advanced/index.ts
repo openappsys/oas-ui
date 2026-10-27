@@ -49,5 +49,7 @@ export {
   type WindowedRequest,
   type WindowedSource,
   type WindowedSourceOptions,
+  type WindowedVisualAdapter,
+  type WindowedVisualGeometry,
 } from './windowed.js'
 export { parseTsv, toTsv, type TsvColumn } from './clipboard.js'

@@ -5,7 +5,7 @@
 ## 契约
 
 - 属性：`windowed`（开启）+ `total`（全量行数）+ `window-start`（`data[0]` 的绝对行号）；`data` 只承载 `[window-start, window-start + data.length)`。
-- 事件：`oas-window-request`，`detail: { start, end, reason }`（半开区间、绝对行号；`reason` = `init` / `scroll` / `resize` / `data`）。**同一期望区间不重复派发**；被覆盖后复位。
+- 事件：`oas-window-request`，`detail: { start, end, reason, visualStart?, visualEnd? }`（半开区间、绝对行号；`reason` = `init` / `scroll` / `resize` / `data`）。**同一期望区间不重复派发**；被覆盖后复位。`start` / `end` 永远是数据坐标；切片含行内嵌展开行（或视觉协议生效）时附带可选 `visualStart` / `visualEnd`——当前可视窗口的视觉坐标，区间已按视觉槽位映射回数据坐标。
 - 前提：必须有可测滚动视口（`height` 或可测 `max-height`），否则组件不派发请求（`devWarn` 一次）。表格 windowed 的切片须为**扁平行**（不递归 `children`）。
 
 ## 四步配方
@@ -41,6 +41,50 @@ el.addEventListener('oas-window-request', async (event) => {
   el.setAttribute('data', JSON.stringify(rows))
 })
 ```
+
+## 视觉协议宿主配方（行内嵌展开 / 切片前已有展开）
+
+切片含行内嵌展开内容（`row.expand`），或切片起点之前已存在展开行（「跨切片」场景）时，事件 `start` / `end` 只是组件按已装载切片投影的**夹取猜测**——可视窗口与切片不相交时会取不到真正可见的行。此时接入**视觉协议**：宿主持有真实展开布局（单源），用 `visual-total` / `visual-start` 告诉组件全量视觉行数与切片首行视觉号，取数优先消费事件的 `visualStart` / `visualEnd`。
+
+宿主侧配方（在四步配方之上叠加）：
+
+1. **布局单源**：全量哪些行带展开槽位（`visualTotal` = 数据行数 + 展开槽位数）、切片首行视觉号（`visualStart` = 该数据行之前的展开槽位数）由宿主一处维护；协议生效后**展开由宿主完全控制**——组件本地点击展开钮只派发 `oas-expand`，不修改 `expanded`，宿主监听后回写 `expanded` / `data` / 视觉属性驱动重渲染，禁止组件与宿主双写。
+2. **视觉字段优先取数**：事件带 `visualStart` / `visualEnd` 时把它们映射回数据区间（相交视觉槽位 → 属主数据行，再前后各扩缓冲），而不是直接用 `start` / `end`。
+3. **原子回填视觉属性**：完成取数后在同一同步段内写 `window-start` + `visual-start` + `data`（同一快照），再写 `total` + `visual-total`——保证组件在数据就绪后才按新视觉坐标重渲染，不出现「新切片 + 旧视觉起点」的中间态。
+4. **回填时重新求值**：请求与响应之间宿主可能改变了展开布局（展开数变化会移动视觉坐标）——回填必须用**响应时刻**的最新快照，不能复用请求时的旧值。
+
+```ts
+// 真实布局的视觉适配器：每 25 行一个展开槽位（宿主全局已知）
+const EXPANDED = new Set([0, 25, 50, 75, 100])
+const DATA_TOTAL = 10000
+const visualTotal = DATA_TOTAL + EXPANDED.size
+
+const slotOf = (i: number) => i + [...EXPANDED].filter((e) => e < i).length
+
+const adapter = {
+  // 初始化与每次回填都会被调用：返回当前快照（必须现算现回，不得缓存请求时旧值）
+  getGeometry(dataStart: number) {
+    return { start: slotOf(dataStart), total: visualTotal }
+  },
+  // 请求时把可视窗口的视觉区间映射回数据取数区间（前后各扩 8 行缓冲，与组件同口径）
+  getDataRange(visualStart: number, visualEnd: number) {
+    let lo = Infinity
+    let hi = -Infinity
+    for (let i = 0; i < DATA_TOTAL; i++) {
+      const s = slotOf(i)
+      const len = EXPANDED.has(i) ? 2 : 1
+      if (s + len <= visualStart || s >= visualEnd) continue
+      if (i < lo) lo = i
+      if (i + 1 > hi) hi = i + 1
+    }
+    return { start: Math.max(0, lo - 8), end: Math.min(DATA_TOTAL, hi + 8) }
+  },
+}
+```
+
+不想手写胶水时，`@oas-ui/ui/data/table/advanced` 的 `createWindowedSource` 可直接接入该适配器：初始化与回填自动重新求值 geometry 并齐写 `visual-start` / `visual-total`，请求自动按 `getDataRange` 映射取数；映射非法（须有限且 end > start）或 geometry 非法（非有限、`start<0`、`total≤0`、`start>total`、`total<` 数据 total）时不拉取/不写错误视觉属性，派发一次 `oas-window-error`（detail 含视觉区间与原始数据区间），修正适配器后同窗口可重试。不传 `visual` 时助手不写任何视觉属性，行为与此前逐值一致。
+
+> 非虚拟 windowed（无 `height`）下协议只影响「展开由宿主接管」，不改变布局：没有可视窗口滚动，`visual-start` / `visual-total` 仅约束展开控制权归属。
 
 ## 可运行示例（本地模拟服务端）
 
@@ -477,6 +521,9 @@ gantt / resource 在可视时间窗接近轴端时还会派发 `oas-range-reques
 - **回填不足期望区间**：宿主只回一小片 → 组件继续请求。请返回覆盖 `[start, end)` 的段（或超集）。
 - **整体替换数据**：编辑回写（`oas-tasks-change`）只含切片；整体替换会丢未装载行。
 - **忘记 `window-start`**：数据与绝对行号错位（渲染到错误行、a11y 行号错误）。
+- **切片含展开却只用 `start`/`end` 取数**：可视窗口与切片不相交时（切片前已有展开行），`start`/`end` 只是夹取猜测——接入视觉协议并优先消费 `visualStart`/`visualEnd`（见上方配方）。
+- **协议下组件与宿主双写展开**：`visual-total` / `visual-start` 生效后展开由宿主完全控制（本地 toggle 只派发 `oas-expand`）；宿主不监听回写，展开就「点了没反应」。同时展开数变化会移动视觉坐标——回填必须重新求值 `visual-start` / `visual-total`，不能复用请求时旧值。
+- **视觉属性与数据不同步写**：`visual-start` 要与 `window-start` / `data` 同一同步段写入（同一快照），`total` / `visual-total` 在其后写——拆开写会出现「新切片 + 旧视觉起点」的中间态，滚动会闪错位。
 - **在事件回调里同步写其它属性**（如 `loading`）：会重入 update（渲染中途 `scrollTop` 可能瞬时归零，并多发请求）。请在取数完成后再回填；确需 loading 等状态，放到微任务或取数完成后再写。
 - **逐窗口取数**：请求数会随滚动线性增长；按段取数可降一个数量级。
 - **无 `height`**：组件不会派发请求（无滚动视口），不是 bug，是需要先给视口。
