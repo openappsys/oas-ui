@@ -1,5 +1,3 @@
-import { loadedRange } from '../../../shared/window-data.js'
-
 export interface WindowedRequest {
   start: number
   end: number
@@ -61,8 +59,11 @@ export function createWindowedSource(table: HTMLElement, options: WindowedSource
    * 宿主可在外部清空/替换 data，source 自存的装载区间会变陈旧并吞掉新请求。
    */
   const currentLoaded = (): { start: number; end: number } => {
+    const rawStart = Number(table.getAttribute('window-start') ?? 0)
+    const start = Number.isFinite(rawStart) ? Math.max(0, Math.trunc(rawStart)) : 0
     const data = (table as unknown as { data?: unknown }).data
-    return loadedRange(Number(table.getAttribute('window-start') ?? 0), Array.isArray(data) ? data.length : 0)
+    const length = Array.isArray(data) ? data.length : 0
+    return { start, end: start + length }
   }
 
   const load = (start: number, end: number): void => {
