@@ -796,4 +796,44 @@ describe('OASTable windowed（服务端行窗口模式）', () => {
       'bottom spacer = contentH - lastFlowEnd = 4040 - 2120（缺陷实现 1880）',
     ).toBe('1920px')
   })
+
+  it('windowed × 行内嵌 expand：末行数据的 expand 不被渲染窗口上界裁掉（winBottom ≤ total*ih 幽灵空白）', async () => {
+    // 缺陷固化：渲染窗口 count 用数据 total 时 win.end ≤ total → winBottom ≤ total*40，
+    // 末行数据的 expand（flowY = total*40）恒被 culling 裁掉；contentH 又计入它 → 底部幽灵空白。
+    // fixture：3 行数据，row0 与末行 row2 都展开（200 视口恰容纳 3 行 + 2 expand = 200px）
+    const { el } = mountWindowed({
+      windowed: '',
+      total: '3',
+      height: '200',
+      'row-height': '40',
+      'row-key': 'name',
+      data: JSON.stringify([
+        { name: '行0', age: 20, expand: '<div>详情0</div>' },
+        { name: '行1', age: 21 },
+        { name: '行2', age: 22, expand: '<div>详情2</div>' },
+      ]),
+      expanded: '行0,行2',
+    })
+    const trs = trsOf(el)
+    // 两个 expand 内容行都渲染（缺陷实现只剩 row0 的：末行 expand 被窗口上界裁掉）
+    expect(el.shadowRoot!.querySelectorAll('tbody tr.expand-row').length, '两个 expand 行都渲染').toBe(2)
+    // 末行 expand 紧随 row2（row2 也要在渲染集合内）
+    const i2 = trs.findIndex((tr) => tr.getAttribute('data-row-index') === '2')
+    expect(i2, '末行数据 row2 在渲染集合').toBeGreaterThanOrEqual(0)
+    expect(trs[i2 + 1]!.className, '最后一个 expand 紧随 row2').toContain('expand-row')
+    expect(trs[i2 + 1]!.textContent, '末行 expand 内容为 row2 的').toContain('详情2')
+    // 数据行号与 ARIA 全量口径不变
+    expect(
+      rowsOf(el).map((r) => r.getAttribute('data-row-index')),
+      '数据行号不被 expand 占用',
+    ).toEqual(['0', '1', '2'])
+    expect(el.shadowRoot!.querySelector('table')!.getAttribute('aria-rowcount'), 'aria-rowcount 仍为数据 total').toBe(
+      '3',
+    )
+    // 总高 = 3*40 + 2*40 = 200（恰等于视口，无滚动）；bottom spacer 为 0（无幽灵空白）
+    expect(tbodyHeight(el), 'tbody 总高 = 200').toBe(200)
+    const lastTr = trs[trs.length - 1]!
+    expect(lastTr.className, '末行是 bottom spacer').toContain('spacer')
+    expect((lastTr.firstElementChild as HTMLElement).style.height, 'bottom spacer = 0px（缺陷实现 80px）').toBe('0px')
+  })
 })

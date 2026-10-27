@@ -2121,6 +2121,93 @@ test('table windowed × 行内嵌 expand：expand 占视觉槽位不占数据行
   })
 })
 
+test('table windowed × 行内嵌 expand：末行数据的 expand 不被渲染窗口上界裁掉（无幽灵空白）', async ({ page }) => {
+  // 缺陷固化：渲染窗口 count 用数据 total 时 win.end ≤ total → winBottom ≤ total*rowHeight，
+  // 末行数据的 expand（flowY = total*rowHeight）恒被 culling 裁掉；contentH 又计入它 → 底部幽灵空白。
+  // fixture：total=3 / height=200 / row-height=40，row0 与末行 row2 都展开——
+  // 视觉内容 3 行 + 2 expand = 200px 恰满视口：两个 expand 可见、bottom spacer=0、总高=200。
+  const consoleIssues: string[] = []
+  page.on('console', (m) => {
+    if (m.type() === 'error' || (m.type() === 'warning' && m.text().includes('[oas-table]')))
+      consoleIssues.push(`${m.type()}: ${m.text()}`)
+  })
+  page.on('pageerror', (e) => consoleIssues.push(`pageerror: ${e.message}`))
+  await page.goto('/components/table.html', { waitUntil: 'domcontentloaded' })
+  await page.waitForFunction(() => customElements.get('oas-table') != null, null, { timeout: 15000 })
+  await page.evaluate(() => {
+    const el = document.createElement('oas-table')
+    el.id = 'qa-windowed-expand-last'
+    el.setAttribute('windowed', '')
+    el.setAttribute('total', '3')
+    el.setAttribute('height', '200')
+    el.setAttribute('row-height', '40')
+    el.setAttribute('row-key', 'name')
+    el.setAttribute('columns', JSON.stringify([{ key: 'name', title: '名称' }]))
+    el.setAttribute(
+      'data',
+      JSON.stringify([
+        { name: '行0', expand: '<div>详情0</div>' },
+        { name: '行1' },
+        { name: '行2', expand: '<div>详情2</div>' },
+      ]),
+    )
+    el.setAttribute('expanded', '行0,行2')
+    ;(document.querySelector('.vp-doc') ?? document.body).appendChild(el)
+  })
+  await page.waitForFunction(() => {
+    const el = document.querySelector('#qa-windowed-expand-last')
+    return !!el?.shadowRoot?.querySelector('tbody tr.row')
+  })
+  const snap = await page.evaluate(() => {
+    const el = document.querySelector('#qa-windowed-expand-last')!
+    const trs = [...el.shadowRoot!.querySelectorAll('tbody tr')] as HTMLElement[]
+    const styleSum = trs.reduce(
+      (s, tr) =>
+        s +
+        (tr.classList.contains('spacer')
+          ? parseFloat((tr.firstElementChild as HTMLElement).style.height || '0')
+          : parseFloat(tr.style.height || '0')),
+      0,
+    )
+    const rectSum = trs.reduce((s, tr) => s + Math.round(tr.getBoundingClientRect().height), 0)
+    const expands = [...el.shadowRoot!.querySelectorAll('tbody tr.expand-row')] as HTMLElement[]
+    const lastTr = trs[trs.length - 1]!
+    return {
+      expandCount: expands.length,
+      expandHeights: expands.map((tr) => tr.getBoundingClientRect().height),
+      lastIsExpand2:
+        expands.length === 2 &&
+        expands[1]!.previousElementSibling?.getAttribute('data-row-index') === '2' &&
+        (expands[1]!.textContent ?? '').includes('详情2'),
+      rowIndexes: [...el.shadowRoot!.querySelectorAll('tbody tr[data-row-index]')].map((tr) =>
+        tr.getAttribute('data-row-index'),
+      ),
+      ariaCount: el.shadowRoot!.querySelector('table')!.getAttribute('aria-rowcount'),
+      bottomSpacer: (lastTr.firstElementChild as HTMLElement).style.height,
+      lastIsSpacer: lastTr.classList.contains('spacer'),
+      styleSum,
+      rectSum,
+    }
+  })
+  expect(snap.expandCount, '两个 expand 内容行都渲染（末行 expand 不被窗口上界裁掉）').toBe(2)
+  // 定高可见：row-height（40）～ +1px 行边框（41）——与「虚拟滚动 + 展开行超高」用例的
+  // 「定高 40 + 1px 行边框」既有口径一致
+  expect(
+    snap.expandHeights.every((h) => h >= 40 && h <= 41),
+    `两个 expand 行均按定高可见（实得 ${snap.expandHeights.join('/')}）`,
+  ).toBe(true)
+  expect(snap.lastIsExpand2, '最后一个 expand 紧随末行 row2 且内容为 row2 的').toBe(true)
+  expect(snap.rowIndexes, '数据行号不被 expand 占用').toEqual(['0', '1', '2'])
+  expect(snap.ariaCount, 'aria-rowcount 仍为数据 total').toBe('3')
+  expect(snap.lastIsSpacer, '末行是 bottom spacer').toBe(true)
+  expect(snap.bottomSpacer, 'bottom spacer = 0px（缺陷实现 80px 幽灵空白）').toBe('0px')
+  expect(snap.styleSum, 'tbody 记账总高 = 200').toBe(200)
+  // 实际 rect 总高 = 200 + 2 根 expand 行各 1px 行边框（既有视觉契约，见上方口径注释）
+  expect(snap.rectSum, 'tbody 实际 rect 总高 = 202（200 + expand 行边框）').toBe(202)
+  expect(consoleIssues, 'console 零告警（error + [oas-table] warning 口径）').toEqual([])
+  await page.evaluate(() => document.querySelector('#qa-windowed-expand-last')?.remove())
+})
+
 test('table 万行虚拟滚动：连续选择 20 次渲染行数有界、行节点身份保持、console 零告警（增量渲染回归）', async ({
   page,
 }) => {

@@ -2787,7 +2787,8 @@ export class OASTableBase extends OASElement {
   }
 
   /**
-   * windowed 行渲染：可视窗口在全量坐标系（total × rowHeight）上计算，
+   * windowed 行渲染：可视窗口在「全量 total + 当前切片 expand」的视觉坐标系上计算
+   * （上界与 contentH 一致，末行 expand 不被窗口上界裁掉），
    * 已装载切片按绝对行号铺位，窗口外/未装载区域用 spacer 占位——宿主按
    * oas-window-request 回填后经 update 重渲染补齐。条目含行内嵌展开内容行
    * （与既有虚拟滚动同款定高模型：每个 display 条目占一行高）。
@@ -2809,7 +2810,6 @@ export class OASTableBase extends OASElement {
   ): void {
     const ih = this.rowHeightPx()
     const colSpan = this.columnCount()
-    const win = computeVirtualWindow(scrollTop, this.tableHeight(), ih, this._winMode.total)
     const items: Array<{ f: FlatRow; abs: number; flowY: number }> = []
     let abs = this._winMode.windowStart
     let flowY = this._winMode.windowStart * ih
@@ -2818,13 +2818,19 @@ export class OASTableBase extends OASElement {
       if (f.kind === 'data') abs++
       flowY += ih
     }
+    // 渲染窗口的 count 用「total + 当前切片 expand 数」：末行数据的 expand flowY = total*ih，
+    // 若按数据 total 算窗口则 winBottom ≤ total*ih，末行 expand 恒被 culling 裁掉——
+    // 而 contentH 又计入它，底部留下幽灵空白。视觉窗口上界与 contentH 对齐；
+    // 无 expand 时 count 不变、窗口逐值等价。oas-window-request / requestWindowIfNeeded
+    // 的期望区间仍按数据 total 计算，不受此渲染口径影响。
+    const expandCount = items.reduce((n, it) => (it.f.kind === 'expand' ? n + 1 : n), 0)
+    const win = computeVirtualWindow(scrollTop, this.tableHeight(), ih, this._winMode.total + expandCount)
     const winTop = win.start * ih
     const winBottom = win.end * ih
     // 先扫描出可视区间内的待渲染条目（topSpacer 高度依赖首个命中条目的 flow 坐标，须先算好再按
     // 「topSpacer → 行 → bottomSpacer」的顺序追加，保证 DOM 顺序与视觉 flow 一致）。
     // contentH 只按当前已装载 display 中的 expand 计数——windowed 只知道当前切片内容行，
     // 未装载区域是否展开不可知（不发明全量展开状态推导）。无 expand 时与旧公式逐值等价。
-    const expandCount = items.reduce((n, it) => (it.f.kind === 'expand' ? n + 1 : n), 0)
     const contentH = this._winMode.total * ih + expandCount * ih
     const rendered: HTMLTableRowElement[] = []
     let firstY = -1
