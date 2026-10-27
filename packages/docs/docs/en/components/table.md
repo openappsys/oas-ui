@@ -448,6 +448,8 @@ Attributes: `windowed` (enable) + `total` (full row count) + `window-start` (abs
 
 In windowed mode **local sort / filter / group / pagination / tree-expand / summary / merge (`merge`, `span-method`) / `column-virtual` are the host's responsibility** (the component skips them with a devWarn) — listen to the existing `oas-sort-change` / `oas-filter-change` / `oas-page-change` events, process the full dataset, then refill the window slice. Off by default: behavior unchanged.
 
+Inline row expansion (the row `expand` field) occupies an **independent visual slot** in windowed virtual scrolling but does not consume an absolute data row number: `data-row-index`, event row numbers and ARIA semantics still count data rows only. The visible window and the scroll height are computed as `total + expansions in the current slice`, so multiple expansions and the expansion of the very last row stay visible; `oas-window-request` ranges still follow `total`.
+
 > Note: `total` is reused here as the "full row count" (in pagination mode it means the external total row count); row/column virtualization requires `height` (host-constrained); the windowed slice must be **flat** (the component does not recurse into `children`); rows beyond `total - window-start` are not rendered and produce a one-time devWarn.
 
 > For the full host recipe (segment fetch, abort in-flight, merge by id, atomic refill) and a runnable example, see [Server-side windowed data](/en/guide/windowed-data).

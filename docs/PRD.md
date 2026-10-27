@@ -9,7 +9,7 @@
 
 ### 功能定义
 
-v2.6.4 后的维护批：补齐 table Pro 能力在 windowed、失败请求与重绘路径上的行为缺口，并降低 JSON 查看器的重绘成本。不新增组件，不改变公开方法签名、属性、事件 detail 与视觉。版本号未定，不标已发布。
+v2.6.4 后的维护批：补齐 table Pro 能力在 windowed、失败请求与重绘路径上的行为缺口，并降低 JSON 查看器的重绘成本。含一处布局修复：windowed 行内嵌 expand（`row.expand` 展开内容行）此前与下一数据行共享视觉槽位，本次改为占独立视觉槽位。不新增组件，不改变公开方法签名、属性、事件 detail；除该布局修复外不改主题/视觉与 token。版本号未定，不标已发布。
 
 ### 详细需求
 
@@ -20,6 +20,7 @@ v2.6.4 后的维护批：补齐 table Pro 能力在 windowed、失败请求与�
 - **table/range：tabindex 所有权**：控制器只保存「原值 + 自己最后写入的 `0/-1`」；range 禁用且未交给 grid-navigation 时，仅当当前 `tabindex` 仍等于最后写入值才恢复原值，拥有期间被其它能力改写则保留外部值。grid-navigation 接管时直接放弃记录、不回写陈旧原值。
 - **table/advanced：windowed source 覆盖判定**：每次处理 `oas-window-request` 时，覆盖去重都读表格当前真实切片（`window-start` + `data` 长度，有限数、截断、最小 0 的半开区间），不自存装载区间；宿主外部清空/替换 `data` 或切换 `window-start` 后，同窗口请求会重新拉取。保留在途去重、回声抑制、`refresh()` 强制重拉、`destroy()` 中止过期请求与构造首拉行为。
 - **table/advanced：windowed source 失败重试**：`fetchRows` 同步 `throw` 与 Promise rejection 走同一失败路径：清在途标记并派发一次 `oas-window-error`（`detail { start, end, error }`，`bubbles` + `composed`），之后同窗口可重试；过期失败不清新请求的在途标记。不自动重试，也不改表格 `oas-window-request` 的派发。
+- **table：windowed 行内嵌 expand 视觉槽位**：`renderWindowedBody` 双坐标记账——`abs` 仅数据行递增（`data-row-index`、事件 rowIndex 与 ARIA 口径不变），flow 坐标对每个 display 条目（含 expand 内容行）递增；culling、首尾 spacer 与 tbody 总高一律按 flow 记账，总高 = `total × rowHeight + 当前已装载切片中的 expand 数 × rowHeight`，不随滚动漂移；渲染窗口条目数 = `total + 当前切片 expand 数`（末行数据的 expand 不被窗口上界裁掉）。无 expand 时与旧公式逐值等价；`oas-window-request` 期望区间、ARIA、range/displaySnapshot 与非 windowed 路径不变；expand 内容按既有定高模型占一行高（富内容归非虚拟模式）。多行展开与全量末行 expand 均可见。
 - **JSON 查看器：滚动/键盘复用可见行**：窗口内滚动、键盘移动与 `scrollToPath()` 收尾复用最近一次完整计算的可见行；`scrollToPath()` 一次公开调用只完整展开一次。数据源/根节点/展开态/搜索态变化都会置脏，回到完整重算。
 - **JSON 查看器：跳过行 DOM 重建**：行渲染签名（可见行数组身份、行容器身份、窗口起止、行高、搜索词、活动路径、自定义 toggle 模板存在性）全部相等时跳过行 DOM 重建，仅更新工具栏/`aria-activedescendant`/`aria-busy`；活动行校正、搜索跳转、空/错误态与模板变更一律重建。
 - **JSON 查看器：activeIndex 与搜索祖先缓存**：每次渲染只计算一次活动行下标（滚动校正与 aria 共用）；搜索命中集重算时同步预计算去重后的祖先展开集，后续重绘只遍历缓存，手动收起仍优先。
@@ -27,12 +28,12 @@ v2.6.4 后的维护批：补齐 table Pro 能力在 windowed、失败请求与�
 
 ### 非目标
 
-不定版本号、不标已发布；不改公开 API/属性/事件/视觉；不新增 Pro 产品 UI；不把 windowed + `row.expand` 写成已修复；不把 `oas-markdown` 纳入本库；不删除 `table/core` 别名（v2.6.5 计划）；不改 `perf-baseline.json` 或预算档位。
+不定版本号、不标已发布；不改公开 API/属性/事件（视觉仅限 windowed 行内嵌 expand 的槽位布局修复：不改主题、视觉 token 与既有视觉契约）；不新增 Pro 产品 UI；不把 `oas-markdown` 纳入本库；不删除 `table/core` 别名（v2.6.5 计划）；不改 `perf-baseline.json` 或预算档位。
 
 ### 验收标准
 
-- 单测：detail pending 等待/覆盖/取消/模式回落/同批命中/旧选中刷新/Esc 作用域；range tabindex 所有权与恢复；windowed source 外部清空换窗重拉、同步/异步失败重试、在途去重与 destroy；JSON 查看器滚动零重算、行 DOM 身份复用、`scrollToPath` 单次展开、搜索祖先缓存、模板增改删刷新。
-- e2e：`qa-regression/table.spec.ts` 与 `qa-regression/json-viewer.spec.ts` 真实 Chromium 用例通过，console/pageerror 零新增告警。
+- 单测：detail pending 等待/覆盖/取消/模式回落/同批命中/旧选中刷新/Esc 作用域；range tabindex 所有权与恢复；windowed source 外部清空换窗重拉、同步/异步失败重试、在途去重与 destroy；windowed × 行内嵌 expand 总高记账与边界 culling（scrollTop 变化总高稳定不漂移、1740 边界不误纳入行52、多展开与全量末行 expand 可见、无 expand 逐值等价）；JSON 查看器滚动零重算、行 DOM 身份复用、`scrollToPath` 单次展开、搜索祖先缓存、模板增改删刷新。全量单测 12176 条（`stats:check` 校验计数）。
+- e2e：`qa-regression/table.spec.ts` 与 `qa-regression/json-viewer.spec.ts` 真实 Chromium 用例通过（含 windowed × expand：窗口边界不误裁剪、末行/多展开可见、dark 主题、console/pageerror 零新增告警）。
 - 文档 zh/en 同步（table Pro 正文、PRD/ROADMAP/CHANGELOG/perf 说明）；`api:check` / `llms:check` / `stats:check` / `skill:check` / `lint:md` / `format:check` 通过。
 - 包体：`data/json-viewer` gzip 约 32.8 KB，仍低于 35 KB 硬预算；`perf:size` WARN 为既有预警线，不重定档。
 
