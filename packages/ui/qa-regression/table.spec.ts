@@ -3518,11 +3518,12 @@ test('table Pro 事件支持父级委托并保留 composed', async ({ page }) =>
   }
 })
 
-test('table Pro 主从详情：windowed 未装载键等待回填落地、等待期旧详情刷新、close/Esc 取消与模式回落', async ({
+test('table Pro 主从详情：selectByKey 显式等待回填落地、默认未命中无可见等待、abort 无反馈、close/Esc 取消', async ({
   page,
 }) => {
   // 缺陷固化：selectByKey 只查当前切片，有效 windowed 下未装载键被静默丢弃；total=0/非法时
-  // 又被 hasAttribute('windowed') 误判。修复=有效 windowed 判定（total 有限正数）+ pending 等待。
+  // 又被 hasAttribute('windowed') 误判。修复=有效 windowed 判定（total 有限正数）+ 显式 waitForRow 等待
+  // （默认未命中 no-op 不产生任何可见反馈；等待可用 AbortSignal 取消，abort 后回填无反馈）。
   const issues: string[] = []
   page.on('console', (m) => {
     if (m.type() === 'error' || (m.type() === 'warning' && !m.text().includes('scroll-linked positioning effect')))
@@ -3561,14 +3562,26 @@ test('table Pro 主从详情：windowed 未装载键等待回填落地、等待�
     })
     ;(window as any).__qaDetail = detail
     detail.selectByKey('a')
-    detail.selectByKey('z')
+    // 默认（无选项）windowed 未命中：no-op——面板保持旧详情、零事件（无可见等待）
+    detail.selectByKey('m')
+    const afterDefaultMiss = {
+      panel: panel.textContent,
+      events: (window as any).__qaDetailEvents,
+      selected: detail.selected?.key,
+    }
+    // 显式 waitForRow 才挂起等待
+    detail.selectByKey('z', { waitForRow: true })
     return {
+      afterDefaultMiss,
       panel: panel.textContent,
       events: (window as any).__qaDetailEvents,
       selected: detail.selected?.key,
       rowIndex: detail.selected?.rowIndex,
     }
   })
+  expect(pending.afterDefaultMiss.panel, '默认未命中保持旧面板（无可见等待）').toBe('Alpha')
+  expect(pending.afterDefaultMiss.events, '默认未命中零事件').toBe(1)
+  expect(pending.afterDefaultMiss.selected).toBe('a')
   expect(pending.panel, '等待期间保留旧面板').toBe('Alpha')
   expect(pending.events, '等待期间不派发详情变化').toBe(1)
   expect(pending.selected).toBe('a')
@@ -3616,12 +3629,37 @@ test('table Pro 主从详情：windowed 未装载键等待回填落地、等待�
   expect(resolved.selected).toBe('z')
   expect(resolved.rowIndex).toBe(0)
 
+  // 显式等待 + AbortSignal：等待中 abort 后回填无任何可见反馈（面板/选中/事件均不变）
+  await page.evaluate(() => {
+    const el = document.querySelector('#qa-detail-pending-table') as HTMLElement & { data: unknown[] }
+    const detail = (window as any).__qaDetail
+    el.data = [{ id: 'z', name: 'Zulu' }]
+    ;(window as any).__qaAbortBefore = (window as any).__qaDetailEvents
+    ;(window as any).__qaAbortCtl = new AbortController()
+    detail.selectByKey('k', { waitForRow: true, signal: (window as any).__qaAbortCtl.signal })
+    ;(window as any).__qaAbortCtl.abort()
+    el.data = [{ id: 'k', name: 'Kilo' }]
+  })
+  await page.waitForTimeout(100)
+  const aborted = await page.evaluate(() => {
+    const detail = (window as any).__qaDetail
+    return {
+      panel: document.querySelector('#qa-detail-pending-panel')!.textContent,
+      selected: detail.selected?.key,
+      events: (window as any).__qaDetailEvents,
+      before: (window as any).__qaAbortBefore,
+    }
+  })
+  expect(aborted.panel, 'abort 后回填不得改写面板（无可见反馈）').toBe('Zulu')
+  expect(aborted.selected, 'abort 后回填不得改写选中').toBe('z')
+  expect(aborted.events, 'abort 后零新增事件').toBe(aborted.before)
+
   const afterPending = await page.evaluate(() => {
     const el = document.querySelector('#qa-detail-pending-table')!
     const detail = (window as any).__qaDetail
     detail.close()
     el.setAttribute('data', JSON.stringify([]))
-    detail.selectByKey('y')
+    detail.selectByKey('y', { waitForRow: true })
     const beforeCancel = (window as any).__qaDetailEvents
     detail.close()
     return {
@@ -3656,7 +3694,7 @@ test('table Pro 主从详情：windowed 未装载键等待回填落地、等待�
     const el = document.querySelector('#qa-detail-pending-table') as HTMLElement & { data: unknown[] }
     const detail = (window as any).__qaDetail
     el.data = []
-    detail.selectByKey('w')
+    detail.selectByKey('w', { waitForRow: true })
     el.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }))
     const beforeData = (window as any).__qaDetailEvents
     el.data = [{ id: 'w', name: 'Whiskey' }]
@@ -3675,12 +3713,12 @@ test('table Pro 主从详情：windowed 未装载键等待回填落地、等待�
   expect(escCancelled.panel).toBe('未选择')
   expect(escCancelled.events).toBe(afterEsc.beforeData)
 
-  // 模式回落普通与 data 命中同批到达：按普通数据命中落地 pending
+  // 模式回落普通与 data 命中同批到达：显式等待不因模式/批次终止，按 data 命中落地
   await page.evaluate(() => {
     const el = document.querySelector('#qa-detail-pending-table') as HTMLElement & { data: unknown[] }
     const detail = (window as any).__qaDetail
     el.data = []
-    detail.selectByKey('q')
+    detail.selectByKey('q', { waitForRow: true })
     ;(window as any).__qaFallbackBefore = (window as any).__qaDetailEvents
     el.setAttribute('total', '0')
     el.data = [{ id: 'q', name: 'Quebec' }]
@@ -3696,7 +3734,7 @@ test('table Pro 主从详情：windowed 未装载键等待回填落地、等待�
       before: (window as any).__qaFallbackBefore,
     }
   })
-  expect(fallbackHit.selected, '回落普通时 data 已含 pending 键仍应落地').toBe('q')
+  expect(fallbackHit.selected, '回落普通时 data 已含等待键仍应落地（批次/模式不终止等待）').toBe('q')
   expect(fallbackHit.events, '只落地一次').toBe(fallbackHit.before + 1)
 
   // total=0.5 截断后为普通模式：不存在的键清空并触发关闭

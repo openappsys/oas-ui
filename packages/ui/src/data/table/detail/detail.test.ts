@@ -623,7 +623,9 @@ describe('table/detail windowed 与活动实例收尾', () => {
 })
 
 /**
- * 有效 windowed 判定与 selectByKey 未装载键等待。
+ * selectByKey 显式等待与可取消语义。
+ * 默认（无选项）：windowed 未命中 no-op（保留当前选中/面板、零事件），普通模式未命中清空选中。
+ * `waitForRow: true`：任何模式下未命中都挂起等待 data 命中；`signal` 已 aborted 不建立等待，等待中 abort 只取消等待。
  * 有效 windowed = `windowed` 属性在场且 total 为有限正数（与表格 readWindowedMode 同口径）。
  */
 function mountWindowedDetail(
@@ -649,7 +651,7 @@ function mountWindowedDetail(
   return { table, panel }
 }
 
-describe('table/detail windowed 未装载键等待', () => {
+describe('table/detail selectByKey 显式等待与取消', () => {
   beforeEach(() => {
     document.body.innerHTML = ''
     setLocale('zh-CN')
@@ -706,7 +708,7 @@ describe('table/detail windowed 未装载键等待', () => {
     })
     detail.selectByKey('a')
     expect(events).toHaveLength(1)
-    detail.selectByKey('z')
+    detail.selectByKey('z', { waitForRow: true })
     expect(detail.selected?.key).toBe('a')
     expect(panel.textContent).toBe('A')
     expect(events).toHaveLength(1)
@@ -732,8 +734,8 @@ describe('table/detail windowed 未装载键等待', () => {
     table.addEventListener('oas-detail-change', (event) => events.push((event as CustomEvent).detail))
     const detail = createMasterDetail(table, { panel, label: '详情', render: (row) => String(row.row.name) })
     detail.selectByKey('a')
-    detail.selectByKey('z')
-    detail.selectByKey('y')
+    detail.selectByKey('z', { waitForRow: true })
+    detail.selectByKey('y', { waitForRow: true })
     table.data = [{ id: 'y', name: 'Yankee' }]
     await vi.waitFor(() => expect(detail.selected?.key).toBe('y'))
     expect(panel.textContent).toBe('Yankee')
@@ -760,7 +762,7 @@ describe('table/detail windowed 未装载键等待', () => {
       onClose: (item) => closed.push(item),
     })
     detail.selectByKey('a')
-    detail.selectByKey('z')
+    detail.selectByKey('z', { waitForRow: true })
     detail.close()
     expect(detail.selected).toBeNull()
     expect(closed).toHaveLength(1)
@@ -777,7 +779,7 @@ describe('table/detail windowed 未装载键等待', () => {
     const { table, panel } = mountWindowedDetail()
     const detail = createMasterDetail(table, { panel, label: '详情', render: (row) => String(row.row.name) })
     detail.selectByKey('a')
-    detail.selectByKey('z')
+    detail.selectByKey('z', { waitForRow: true })
     detail.select(1)
     table.data = [{ id: 'z', name: 'Zulu' }]
     await new Promise((resolve) => setTimeout(resolve, 20))
@@ -788,8 +790,24 @@ describe('table/detail windowed 未装载键等待', () => {
       { id: 'a', name: 'A' },
       { id: 'b', name: 'B' },
     ]
-    detail.selectByKey('z')
+    detail.selectByKey('z', { waitForRow: true })
     rowClick(table, { id: 'b', name: 'B' }, 'b')
+    table.data = [{ id: 'z', name: 'Zulu' }]
+    await new Promise((resolve) => setTimeout(resolve, 20))
+    expect(detail.selected?.key).toBe('b')
+    expect(panel.textContent).toBe('B')
+
+    // Enter 打开焦点行同样取消等待（回填不再落地）
+    table.data = [
+      { id: 'a', name: 'A' },
+      { id: 'b', name: 'B' },
+    ]
+    await vi.waitFor(() => expect(table.shadowRoot!.querySelector('tr[data-key="b"] td[data-col="name"]')).toBeTruthy())
+    detail.selectByKey('z', { waitForRow: true })
+    const enterTd = table.shadowRoot!.querySelector('tr[data-key="b"] td[data-col="name"]') as HTMLElement
+    enterTd.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, composed: true, cancelable: true }),
+    )
     table.data = [{ id: 'z', name: 'Zulu' }]
     await new Promise((resolve) => setTimeout(resolve, 20))
     expect(detail.selected?.key).toBe('b')
@@ -801,37 +819,14 @@ describe('table/detail windowed 未装载键等待', () => {
     const { table, panel } = mountWindowedDetail()
     const detail = createMasterDetail(table, { panel, label: '详情', render: (row) => String(row.row.name) })
     detail.selectByKey('a')
-    detail.selectByKey('z')
+    detail.selectByKey('z', { waitForRow: true })
     detail.destroy()
     table.data = [{ id: 'z', name: 'Zulu' }]
     await new Promise((resolve) => setTimeout(resolve, 20))
     expect(panel.textContent).toBe('')
   })
 
-  it('模式回落普通后不再等待 pending，并按普通模式清空已删除选中行', async () => {
-    const { table, panel } = mountWindowedDetail()
-    const closed: unknown[] = []
-    const detail = createMasterDetail(table, {
-      panel,
-      label: '详情',
-      emptyText: '未选择',
-      render: (row) => String(row.row.name),
-      onClose: (item) => closed.push(item),
-    })
-    detail.selectByKey('a')
-    detail.selectByKey('z')
-    table.setAttribute('total', '0')
-    // 先让回落后的刷新跑完（此时 data 未含 z → 丢弃 pending），再让 z 数据到达
-    await new Promise((resolve) => setTimeout(resolve, 20))
-    expect(detail.selected?.key).toBe('a')
-    table.data = [{ id: 'z', name: 'Zulu' }]
-    await vi.waitFor(() => expect(detail.selected).toBeNull())
-    expect(panel.textContent).toBe('未选择')
-    expect(closed).toHaveLength(1)
-    detail.destroy()
-  })
-
-  it('模式回落与 data 命中同批到达时，按普通数据命中落地 pending', async () => {
+  it('显式等待不因模式回落终止：total 先回落（不同批）data 后到仍落地，与同批结果一致', async () => {
     const { table, panel } = mountWindowedDetail()
     const events: unknown[] = []
     const closed: unknown[] = []
@@ -844,15 +839,87 @@ describe('table/detail windowed 未装载键等待', () => {
       onClose: (item) => closed.push(item),
     })
     detail.selectByKey('a')
-    detail.selectByKey('z')
-    // 同一轮 MutationObserver 批次：total 回落普通，但 data 已含 pending 键
+    detail.selectByKey('z', { waitForRow: true })
+    // 不同批：先回落普通（此时 data 未含 z，等待保留），再让 z 数据到达
     table.setAttribute('total', '0')
+    await new Promise((resolve) => setTimeout(resolve, 20))
+    expect(detail.selected?.key).toBe('a')
     table.data = [{ id: 'z', name: 'Zulu' }]
-    await vi.waitFor(() => expect(detail.selected?.key).toBe('z'))
-    expect(detail.selected).toEqual({ row: { id: 'z', name: 'Zulu' }, key: 'z', rowIndex: 0 })
+    await vi.waitFor(() => expect(detail.selected).toEqual({ row: { id: 'z', name: 'Zulu' }, key: 'z', rowIndex: 0 }))
     expect(panel.textContent).toBe('Zulu')
     expect(events).toHaveLength(2)
     expect(closed).toHaveLength(0)
+    detail.destroy()
+
+    // 同批（total 回落与 data 命中同一 observer 批次）结果一致
+    const same = mountWindowedDetail()
+    const sameEvents: unknown[] = []
+    const sameClosed: unknown[] = []
+    same.table.addEventListener('oas-detail-change', (event) => sameEvents.push((event as CustomEvent).detail))
+    const sameDetail = createMasterDetail(same.table, {
+      panel: same.panel,
+      label: '详情',
+      emptyText: '未选择',
+      render: (row) => String(row.row.name),
+      onClose: (item) => sameClosed.push(item),
+    })
+    sameDetail.selectByKey('a')
+    sameDetail.selectByKey('z', { waitForRow: true })
+    same.table.setAttribute('total', '0')
+    same.table.data = [{ id: 'z', name: 'Zulu' }]
+    await vi.waitFor(() =>
+      expect(sameDetail.selected).toEqual({ row: { id: 'z', name: 'Zulu' }, key: 'z', rowIndex: 0 }),
+    )
+    expect(same.panel.textContent).toBe('Zulu')
+    expect(sameEvents).toHaveLength(2)
+    expect(sameClosed).toHaveLength(0)
+    sameDetail.destroy()
+  })
+
+  it('普通 refresh 删除选中行触发 onClose 但保留 pending，等待键随后到达仍落地', async () => {
+    const { table, panel } = mount()
+    const events: unknown[] = []
+    const closed: unknown[] = []
+    table.addEventListener('oas-detail-change', (event) => events.push((event as CustomEvent).detail))
+    const detail = createMasterDetail(table, {
+      panel,
+      label: '详情',
+      emptyText: '未选择',
+      render: (row) => String(row.row.name),
+      onClose: (item) => closed.push(item),
+    })
+    detail.selectByKey('a')
+    expect(events).toHaveLength(1)
+    detail.selectByKey('z', { waitForRow: true })
+    // 普通模式数据删除选中行：onClose 照发、清空选中，但 pending 不得被清
+    table.data = [{ id: 'b', name: 'B' }]
+    await vi.waitFor(() => expect(detail.selected).toBeNull())
+    expect(panel.textContent).toBe('未选择')
+    expect(closed).toHaveLength(1)
+    expect(events).toHaveLength(2)
+    // 等待键随后到达：仍落地一次
+    table.data = [
+      { id: 'b', name: 'B' },
+      { id: 'z', name: 'Zulu' },
+    ]
+    await vi.waitFor(() => expect(detail.selected).toEqual({ row: { id: 'z', name: 'Zulu' }, key: 'z', rowIndex: 1 }))
+    expect(panel.textContent).toBe('Zulu')
+    expect(events).toHaveLength(3)
+    expect(closed).toHaveLength(1)
+    detail.destroy()
+  })
+
+  it('windowed 属性移除不终止等待，数据到达仍落地', async () => {
+    const { table, panel } = mountWindowedDetail()
+    const detail = createMasterDetail(table, { panel, label: '详情', render: (row) => String(row.row.name) })
+    detail.selectByKey('z', { waitForRow: true })
+    table.removeAttribute('windowed')
+    await new Promise((resolve) => setTimeout(resolve, 20))
+    expect(detail.selected).toBeNull()
+    expect(panel.textContent).toBe('')
+    table.data = [{ id: 'z', name: 'Zulu' }]
+    await vi.waitFor(() => expect(detail.selected).toEqual({ row: { id: 'z', name: 'Zulu' }, key: 'z', rowIndex: 0 }))
+    expect(panel.textContent).toBe('Zulu')
     detail.destroy()
   })
 
@@ -885,7 +952,7 @@ describe('table/detail windowed 未装载键等待', () => {
     table.addEventListener('oas-detail-change', (event) => events.push((event as CustomEvent).detail))
     const detail = createMasterDetail(table, { panel, label: '详情', render: (row) => String(row.row.name) })
     detail.selectByKey('a')
-    detail.selectByKey('z')
+    detail.selectByKey('z', { waitForRow: true })
 
     table.data = [{ id: 'a', name: 'Alpha2' }]
     await vi.waitFor(() => expect(panel.textContent).toBe('Alpha2'))
@@ -912,7 +979,7 @@ describe('table/detail windowed 未装载键等待', () => {
       render: (row) => String(row.row.name),
     })
 
-    detail.selectByKey('z')
+    detail.selectByKey('z', { waitForRow: true })
     table.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }))
     table.data = [{ id: 'z', name: 'Zulu' }]
     await new Promise((resolve) => setTimeout(resolve, 20))
@@ -920,7 +987,7 @@ describe('table/detail windowed 未装载键等待', () => {
     expect(panel.textContent).toBe('未选择')
     expect(events).toHaveLength(0)
 
-    detail.selectByKey('y')
+    detail.selectByKey('y', { waitForRow: true })
     panel.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }))
     table.data = [{ id: 'y', name: 'Yankee' }]
     await new Promise((resolve) => setTimeout(resolve, 20))
@@ -934,7 +1001,7 @@ describe('table/detail windowed 未装载键等待', () => {
     const { table, panel } = mountWindowedDetail()
     const detail = createMasterDetail(table, { panel, label: '详情', render: (row) => String(row.row.name) })
 
-    detail.selectByKey('z')
+    detail.selectByKey('z', { waitForRow: true })
     const prevented = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true })
     prevented.preventDefault()
     table.dispatchEvent(prevented)
@@ -946,7 +1013,7 @@ describe('table/detail windowed 未装载键等待', () => {
       { id: 'a', name: 'A' },
       { id: 'b', name: 'B' },
     ]
-    detail.selectByKey('y')
+    detail.selectByKey('y', { waitForRow: true })
     const input = document.createElement('input')
     table.shadowRoot!.appendChild(input)
     input.dispatchEvent(
@@ -964,7 +1031,7 @@ describe('table/detail windowed 未装载键等待', () => {
     const first = createMasterDetail(table, { panel: firstPanel, label: 'A', render: (row) => String(row.row.name) })
     const second = createMasterDetail(table, { panel: secondPanel, label: 'B', render: (row) => String(row.row.name) })
     second.select(1)
-    first.selectByKey('z')
+    first.selectByKey('z', { waitForRow: true })
     table.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }))
     table.data = [{ id: 'z', name: 'Zulu' }]
     await vi.waitFor(() => expect(first.selected?.key).toBe('z'))
@@ -983,7 +1050,7 @@ describe('table/detail windowed 未装载键等待', () => {
     })
     const detail = createMasterDetail(table, { panel, label: '详情', render: (row) => String(row.row.name) })
     detail.selectByKey('a')
-    detail.selectByKey('z')
+    detail.selectByKey('z', { waitForRow: true })
     table.setAttribute('row-key', 'name')
     table.data = [
       { id: 'a', name: 'a2' },
@@ -1007,7 +1074,7 @@ describe('table/detail windowed 未装载键等待', () => {
     table.data = [{ id: 'z', name: 'Zulu' }]
     await vi.waitFor(() => expect(detail.selected?.rowIndex).toBe(-1))
     const afterScroll = events.length
-    detail.selectByKey('a')
+    detail.selectByKey('a', { waitForRow: true })
     expect(detail.selected).toEqual({ row: { id: 'a', name: 'A' }, key: 'a', rowIndex: -1 })
     expect(events).toHaveLength(afterScroll)
     expect(panel.textContent).toBe('A')
@@ -1026,7 +1093,7 @@ describe('table/detail windowed 未装载键等待', () => {
       emptyText: '未选择',
       render: (row) => String(row.row.name),
     })
-    detail.selectByKey('z')
+    detail.selectByKey('z', { waitForRow: true })
     setRangeSelection(table, { row: 0, col: 'name' })
     expect(getRangeSelection(table)).not.toBeNull()
     expect(events).toHaveLength(0)
@@ -1045,5 +1112,217 @@ describe('table/detail windowed 未装载键等待', () => {
     expect(panel.textContent).toBe('Zulu')
     expect(events).toHaveLength(1)
     detail.destroy()
+  })
+
+  it('默认（无选项）windowed 未命中：no-op、无 pending、零事件；显式 waitForRow 才挂起并命中一次', async () => {
+    const { table, panel } = mountWindowedDetail()
+    const events: unknown[] = []
+    table.addEventListener('oas-detail-change', (event) => events.push((event as CustomEvent).detail))
+    const detail = createMasterDetail(table, {
+      panel,
+      label: '详情',
+      emptyText: '未选择',
+      render: (row) => String(row.row.name),
+    })
+    detail.selectByKey('a')
+    expect(events).toHaveLength(1)
+
+    // 默认未命中：保持现状（不挂起、不清空、零事件），后续数据到达不落地
+    detail.selectByKey('z')
+    expect(detail.selected?.key).toBe('a')
+    expect(panel.textContent).toBe('A')
+    expect(events).toHaveLength(1)
+    table.data = [{ id: 'z', name: 'Zulu' }]
+    await new Promise((resolve) => setTimeout(resolve, 20))
+    expect(detail.selected?.key).toBe('a')
+    expect(panel.textContent).toBe('A')
+    expect(events).toHaveLength(1)
+
+    // 恢复数据后显式等待可正常挂起并命中一次
+    table.data = [
+      { id: 'a', name: 'A' },
+      { id: 'b', name: 'B' },
+    ]
+    await vi.waitFor(() => expect(detail.selected?.row?.name).toBe('A'))
+    detail.selectByKey('w', { waitForRow: true })
+    expect(detail.selected?.key).toBe('a')
+    expect(events).toHaveLength(1)
+    table.data = [
+      { id: 'z', name: 'Zulu' },
+      { id: 'w', name: 'Whiskey' },
+    ]
+    await vi.waitFor(() =>
+      expect(detail.selected).toEqual({ row: { id: 'w', name: 'Whiskey' }, key: 'w', rowIndex: 1 }),
+    )
+    expect(panel.textContent).toBe('Whiskey')
+    expect(events).toHaveLength(2)
+    detail.destroy()
+  })
+
+  it('waitForRow:true 在普通模式也可等待并命中（未命中不清空、保留旧面板）', async () => {
+    const { table, panel } = mount()
+    const events: unknown[] = []
+    const closed: unknown[] = []
+    table.addEventListener('oas-detail-change', (event) => events.push((event as CustomEvent).detail))
+    const detail = createMasterDetail(table, {
+      panel,
+      label: '详情',
+      emptyText: '未选择',
+      render: (row) => String(row.row.name),
+      onClose: (item) => closed.push(item),
+    })
+    detail.selectByKey('a')
+    expect(events).toHaveLength(1)
+    detail.selectByKey('z', { waitForRow: true })
+    expect(detail.selected?.key).toBe('a')
+    expect(panel.textContent).toBe('Alpha')
+    expect(events).toHaveLength(1)
+    expect(closed).toHaveLength(0)
+    table.data = [
+      { id: 'a', name: 'Alpha' },
+      { id: 'z', name: 'Zulu' },
+    ]
+    await vi.waitFor(() => expect(detail.selected).toEqual({ row: { id: 'z', name: 'Zulu' }, key: 'z', rowIndex: 1 }))
+    expect(panel.textContent).toBe('Zulu')
+    expect(events).toHaveLength(2)
+    expect(closed).toHaveLength(0)
+    detail.destroy()
+  })
+
+  it('signal 已 aborted：不建立等待（windowed 保持现状、普通模式按默认清空），回填不落地', async () => {
+    const aborted = new AbortController()
+    aborted.abort()
+
+    // windowed：保持现状（不清空、不等待、零事件）
+    const w = mountWindowedDetail()
+    const wEvents: unknown[] = []
+    w.table.addEventListener('oas-detail-change', (event) => wEvents.push((event as CustomEvent).detail))
+    const wd = createMasterDetail(w.table, { panel: w.panel, label: '详情', render: (row) => String(row.row.name) })
+    wd.selectByKey('a')
+    wd.selectByKey('z', { waitForRow: true, signal: aborted.signal })
+    expect(wd.selected?.key).toBe('a')
+    expect(wEvents).toHaveLength(1)
+    w.table.data = [{ id: 'z', name: 'Zulu' }]
+    await new Promise((resolve) => setTimeout(resolve, 20))
+    expect(wd.selected?.key).toBe('a')
+    expect(wEvents).toHaveLength(1)
+    wd.destroy()
+
+    // 普通模式：不建立等待 → 按默认语义清空
+    const n = mount()
+    const nd = createMasterDetail(n.table, {
+      panel: n.panel,
+      label: '详情',
+      emptyText: '未选择',
+      render: (row) => String(row.row.name),
+    })
+    nd.selectByKey('a')
+    nd.selectByKey('z', { waitForRow: true, signal: aborted.signal })
+    expect(nd.selected).toBeNull()
+    expect(n.panel.textContent).toBe('未选择')
+    nd.destroy()
+  })
+
+  it('等待中 abort 只取消等待：不改选中/面板、零事件、回填不落地', async () => {
+    const { table, panel } = mountWindowedDetail()
+    const events: unknown[] = []
+    const closed: unknown[] = []
+    table.addEventListener('oas-detail-change', (event) => events.push((event as CustomEvent).detail))
+    const detail = createMasterDetail(table, {
+      panel,
+      label: '详情',
+      emptyText: '未选择',
+      render: (row) => String(row.row.name),
+      onClose: (item) => closed.push(item),
+    })
+    detail.selectByKey('a')
+    const controller = new AbortController()
+    detail.selectByKey('z', { waitForRow: true, signal: controller.signal })
+    expect(detail.selected?.key).toBe('a')
+
+    controller.abort()
+    expect(detail.selected?.key).toBe('a')
+    expect(panel.textContent).toBe('A')
+    expect(events).toHaveLength(1)
+    expect(closed).toHaveLength(0)
+
+    table.data = [{ id: 'z', name: 'Zulu' }]
+    await new Promise((resolve) => setTimeout(resolve, 20))
+    expect(detail.selected?.key).toBe('a')
+    expect(panel.textContent).toBe('A')
+    expect(events).toHaveLength(1)
+    expect(closed).toHaveLength(0)
+    detail.destroy()
+  })
+
+  it('自然落地后 abort 无副作用（监听已移除，不残留等待）', async () => {
+    const { table, panel } = mountWindowedDetail()
+    const events: unknown[] = []
+    table.addEventListener('oas-detail-change', (event) => events.push((event as CustomEvent).detail))
+    const detail = createMasterDetail(table, { panel, label: '详情', render: (row) => String(row.row.name) })
+    const controller = new AbortController()
+    detail.selectByKey('z', { waitForRow: true, signal: controller.signal })
+    table.data = [{ id: 'z', name: 'Zulu' }]
+    await vi.waitFor(() => expect(detail.selected?.key).toBe('z'))
+    const afterLanding = events.length
+
+    // 自然落地后 abort：无任何副作用，也不复活等待
+    controller.abort()
+    expect(detail.selected?.key).toBe('z')
+    expect(events).toHaveLength(afterLanding)
+    table.data = [
+      { id: 'a', name: 'A' },
+      { id: 'b', name: 'B' },
+    ]
+    await new Promise((resolve) => setTimeout(resolve, 20))
+    expect(detail.selected?.key).toBe('z')
+    expect(events).toHaveLength(afterLanding)
+
+    // 落地后再次显式等待 + abort：证明旧监听不残留、新等待独立工作
+    const second = new AbortController()
+    detail.selectByKey('q', { waitForRow: true, signal: second.signal })
+    second.abort()
+    table.data = [{ id: 'a', name: 'A' }]
+    await new Promise((resolve) => setTimeout(resolve, 20))
+    expect(detail.selected?.key).toBe('z')
+    expect(events).toHaveLength(afterLanding)
+    detail.destroy()
+  })
+
+  it('destroy 后 abort 不抛、不写回', async () => {
+    const { table, panel } = mountWindowedDetail()
+    const detail = createMasterDetail(table, { panel, label: '详情', render: (row) => String(row.row.name) })
+    const controller = new AbortController()
+    detail.selectByKey('z', { waitForRow: true, signal: controller.signal })
+    detail.destroy()
+    expect(() => controller.abort()).not.toThrow()
+    expect(panel.textContent).toBe('')
+    table.data = [{ id: 'z', name: 'Zulu' }]
+    await new Promise((resolve) => setTimeout(resolve, 20))
+    expect(panel.textContent).toBe('')
+  })
+
+  it('多实例各自 signal 不互扰：abort 实例 A 只取消 A 的等待，B 照常落地', async () => {
+    const a = mountWindowedDetail({ data: [{ id: 'a', name: 'A' }] })
+    const b = mountWindowedDetail({ data: [{ id: 'b', name: 'B' }] })
+    const da = createMasterDetail(a.table, { panel: a.panel, label: 'A', render: (row) => String(row.row.name) })
+    const db = createMasterDetail(b.table, { panel: b.panel, label: 'B', render: (row) => String(row.row.name) })
+    const ctlA = new AbortController()
+    const ctlB = new AbortController()
+    da.selectByKey('z', { waitForRow: true, signal: ctlA.signal })
+    db.selectByKey('z', { waitForRow: true, signal: ctlB.signal })
+
+    ctlA.abort()
+    a.table.data = [{ id: 'z', name: 'Zulu-A' }]
+    await new Promise((resolve) => setTimeout(resolve, 20))
+    expect(da.selected).toBeNull()
+    expect(db.selected).toBeNull()
+
+    b.table.data = [{ id: 'z', name: 'Zulu-B' }]
+    await vi.waitFor(() => expect(db.selected).toEqual({ row: { id: 'z', name: 'Zulu-B' }, key: 'z', rowIndex: 0 }))
+    expect(b.panel.textContent).toBe('Zulu-B')
+    expect(a.panel.textContent).toBe('')
+    da.destroy()
+    db.destroy()
   })
 })

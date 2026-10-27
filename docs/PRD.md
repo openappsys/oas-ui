@@ -5,6 +5,28 @@
 
 ---
 
+## 未发布：异步选中与视觉窗口协议 🚧
+
+### 功能定义
+
+维护批二：把 `table/detail` 的 `selectByKey` 未命中等待从「windowed 隐式默认」改为显式 opt-in，并给等待补齐可取消语义（`AbortSignal`）；等待终止只由数据命中、显式取消或 abort 决定，模式与 MutationObserver 批次不再参与。同批还含视觉窗口协议条目（由后续任务收口后补入本节）。不新增组件与事件，`selectByKey` 增加可选 `options` 参数。版本号未定，不标已发布。
+
+### 详细需求
+
+- **table/detail：selectByKey 显式等待**：新增 `SelectByKeyOptions { waitForRow?: boolean; signal?: AbortSignal }`。默认（无选项）：有效 windowed（`windowed` + `total` 有限且截断后 > 0）未命中恢复 no-op（保留当前选中/面板、零事件、无可见等待），普通模式未命中仍清空选中并触发 `onClose`。`waitForRow: true`：任何模式下未命中都挂起等待 `data` 命中（保留当前选中/面板、不派发事件），命中后落地一次并派发一次 `oas-detail-change`；等待期间既有选中仍随 `data` 刷新（不重复派发）。等待没有超时，也没有等待失败事件。
+- **table/detail：等待终止与可取消**：等待只由 `data` 命中、显式取消或 abort 结束——模式、`windowed` 属性、`total` 变化与 MutationObserver 批次（同批/不同批）不参与终止决策，同批与不同批命中结果一致。`close()`/`select()`/行或单元格点击/`Enter`/`Esc`/`destroy()`/`row-key` 变化/再次 `selectByKey()`（新键覆盖旧等待）均为显式取消。普通模式 `data` 删除选中行走内部 `apply(null, false)`：`onClose` 照发、清空选中，但不清除等待，等待键随后到达仍落地。`signal` 已 aborted 不建立等待（回落默认语义）；等待中 abort 只取消等待（不改选中/面板、零事件）；自然落地后 abort 无副作用；abort 监听以 `{ once: true }` 挂接，并在自然落地、任何取消与 destroy 时移除；多实例各自 signal 互不干扰。无选中时的 Esc 仍限本实例表格/面板内取消等待（不注册 window 全局兜底）。
+- **视觉窗口协议**：待后续任务补充条目（本批收口时更新状态）。
+
+### 非目标
+
+不定版本号、不标已发布；不改属性/事件/主题与视觉 token；不给等待加超时或失败事件；不改默认（无选项）调用在普通模式的清空语义；不 dispatch 子任务外的额外产品面。
+
+### 验收标准
+
+- 单测：默认 windowed 未命中 no-op/零事件、`waitForRow` 普通模式等待命中、不同批模式回落仍落地且与同批一致、普通删除选中行 `onClose` 照发但等待保留、`windowed` 属性移除不终止等待、signal 已 aborted/等待中 abort/落地后 abort/destroy 后 abort、多实例 signal 互不扰、既有取消路径（close/select/点击/Enter/Esc/destroy/row-key/新键）全部保留。
+- e2e：`qa-regression/table.spec.ts` 真实 Chromium——默认未命中无可见等待（面板/事件不变）、显式等待回填有可见面板反馈、abort 后回填无反馈；console/pageerror 零新增告警。
+- 文档 zh/en 同步；`api:check` / `llms:check` / `stats:check` / `lint:md` / `format:check` 通过。
+
 ## 未发布：表格 Pro / JSON 查看器 / Sidebar 维护 ✅
 
 ### 功能定义
@@ -14,9 +36,8 @@ v2.6.4 后的维护批：补齐 table Pro 能力在 windowed、失败请求与�
 ### 详细需求
 
 - **table/detail：有效 windowed 判定**：`windowed` 属性在场且 `total` 先截断（非有限数按 0）后 `> 0` 才视为生效，与表格 `readWindowedMode` 同口径；`total` 缺失、非法或截断后为 0（含 `0.5`）按普通模式处理。`refresh()` 与 `selectByKey()` 共用该判定。
-- **table/detail：selectByKey 等待与取消**：有效 windowed 且键未装载时挂起等待（纯内部状态，不新增属性/方法/事件）：本次挂起调用不直接改选中/面板、不派发 `oas-detail-change`；等待期间既有选中仍随 `data` 刷新（行对象/面板更新，离窗时 `rowIndex=-1`），不重复派发选中变化；`data` 到达并命中后落地一次并派发一次 `oas-detail-change`。等待没有超时，也没有等待失败事件：键始终不到达时会保持等待，直到取消路径或模式回落。`close()`、`select()`、行/单元格点击、`Enter`、`Esc`、`destroy()`、`row-key` 变化，以及再次 `selectByKey()`（新键覆盖旧等待）都会取消等待；取消不补派发等待键的选中事件。
+- **table/detail：selectByKey 等待与取消**：本批的 windowed 隐式等待已由「未发布：异步选中与视觉窗口协议」批改为显式 `waitForRow` opt-in（含 `AbortSignal` 取消与终止决策收口），此处的隐式默认与批次契约描述作废；普通模式键不存在清空选中、未渲染行保留选中（`rowIndex=-1`）的语义不变。
 - **table/detail：pending-only Esc 作用域**：无选中且仅等待时，只有本实例表格/面板内的 `Esc` 取消等待；不注册 window 全局兜底，不抢多实例「最近激活」标记，仍让位 `defaultPrevented`、输入控件与同表其它活动实例。`closeOnEscape: false` 时完全不响应 Esc；启用 range 且存在活动选区时，表格内第一次 Esc 先清选区、等待保留。
-- **table/detail：模式回落顺序**：`total` 回落后同一批 `data` 已含等待键时按普通数据命中落地；不同批先回落后到数据则等待已丢弃，不会复活。普通模式下键不存在仍清空选中并派发关闭。
 - **table/range：tabindex 所有权**：控制器只保存「原值 + 自己最后写入的 `0/-1`」；range 禁用且未交给 grid-navigation 时，仅当当前 `tabindex` 仍等于最后写入值才恢复原值，拥有期间被其它能力改写则保留外部值。grid-navigation 接管时直接放弃记录、不回写陈旧原值。
 - **table/advanced：windowed source 覆盖判定**：每次处理 `oas-window-request` 时，覆盖去重都读表格当前真实切片（`window-start` + `data` 长度，有限数、截断、最小 0 的半开区间），不自存装载区间；宿主外部清空/替换 `data` 或切换 `window-start` 后，同窗口请求会重新拉取。保留在途去重、回声抑制、`refresh()` 强制重拉、`destroy()` 中止过期请求与构造首拉行为。
 - **table/advanced：windowed source 失败重试**：`fetchRows` 同步 `throw` 与 Promise rejection 走同一失败路径：清在途标记并派发一次 `oas-window-error`（`detail { start, end, error }`，`bubbles` + `composed`），之后同窗口可重试；过期失败不清新请求的在途标记。不自动重试，也不改表格 `oas-window-request` 的派发。
@@ -33,7 +54,7 @@ v2.6.4 后的维护批：补齐 table Pro 能力在 windowed、失败请求与�
 
 ### 验收标准
 
-- 单测：detail pending 等待/覆盖/取消/模式回落/同批命中/旧选中刷新/Esc 作用域；range tabindex 所有权与恢复；windowed source 外部清空换窗重拉、同步/异步失败重试、在途去重与 destroy；windowed × 行内嵌 expand 总高记账与边界 culling（scrollTop 变化总高稳定不漂移、1740 边界不误纳入行52、多展开与已装载的全量末行 expand 可见、越界切片不渲染越界行及其 expand、无 expand 逐值等价由既有用例保持）；JSON 查看器滚动零重算、行 DOM 身份复用、`scrollToPath` 单次展开、搜索祖先缓存、模板增改删刷新；sidebar 嵌套头像与普通无图标子项的分支行为。全量 Vitest 与 `stats:check` 均通过。
+- 单测：detail 显式等待/覆盖/取消/终止收口/旧选中刷新/Esc 作用域；range tabindex 所有权与恢复；windowed source 外部清空换窗重拉、同步/异步失败重试、在途去重与 destroy；windowed × 行内嵌 expand 总高记账与边界 culling（scrollTop 变化总高稳定不漂移、1740 边界不误纳入行52、多展开与已装载的全量末行 expand 可见、越界切片不渲染越界行及其 expand、无 expand 逐值等价由既有用例保持）；JSON 查看器滚动零重算、行 DOM 身份复用、`scrollToPath` 单次展开、搜索祖先缓存、模板增改删刷新；sidebar 嵌套头像与普通无图标子项的分支行为。全量 Vitest 与 `stats:check` 均通过。
 - e2e：`qa-regression/table.spec.ts`、`qa-regression/json-viewer.spec.ts` 与 `qa-regression/sidebar.spec.ts` 真实 Chromium 用例通过（含 windowed × expand 边界；sidebar 嵌套头像空图标 `display:none`、宽 0、头像到 label 仅一次 gap，普通无图标子项占位与缩进不变；dark 主题、console/pageerror 零新增告警）。
 - 文档 zh/en 同步（table Pro 正文、PRD/ROADMAP/CHANGELOG/perf 说明）；`api:check` / `llms:check` / `stats:check` / `skill:check` / `lint:md` / `format:check` 通过。
 - 包体：`data/json-viewer` gzip 约 32.8 KB，仍低于 35 KB 硬预算；`perf:size` WARN 为既有预警线，不重定档。

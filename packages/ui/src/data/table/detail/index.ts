@@ -27,18 +27,27 @@ export interface MasterDetailOptions {
   closeOnEscape?: boolean
 }
 
+export interface SelectByKeyOptions {
+  /** 键未命中时是否挂起等待 data 到达（默认 false：windowed 未命中保持现状，普通模式未命中清空选中） */
+  waitForRow?: boolean
+  /** 取消等待的信号：已 aborted 时不建立等待；等待中 abort 只取消等待（不改选中/面板、不派发事件） */
+  signal?: AbortSignal
+}
+
 export interface MasterDetail {
   /** 以可见行下标选中/清空；越界或行不存在时清空 */
   select(rowIndex: number | null): void
   /**
    * 按行键选中（递归 children 查找）；行未渲染时保留选中（rowIndex = -1）。
-   * windowed 生效（`windowed` 属性在场且 total 为有限数、截断后 > 0）且键未装载时挂起等待 data 命中——
-   * 本次挂起调用不直接改选中/面板、不派发事件；等待期间既有选中仍按 data 刷新（不重复派发选中变化）。
-   * 后续 close()/select()/行或单元格点击/Enter/Esc 以及再次调用（新键覆盖旧等待）均可取消。
+   * 默认（`waitForRow: false`）：windowed 未命中为 no-op（保留当前选中/面板、零事件），普通模式未命中清空选中。
+   * `waitForRow: true`：任何模式下未命中都挂起等待 data 命中（`signal` 已 aborted 时除外）；
+   * 挂起不改变选中/面板、不派发事件；命中后落地一次并派发一次 oas-detail-change。
+   * 等待只由 data 命中、显式取消或 abort 结束：模式/windowed 属性/total 变化与 MutationObserver 批次不参与终止；
+   * 后续 close()/select()/行或单元格点击/Enter/Esc/destroy/row-key 变化以及再次调用（新键覆盖旧等待）均可取消。
+   * `signal` 以 `{ once: true }` 监听 abort，并在自然落地、任何取消与 destroy 时移除。
    * 无选中时的 Esc 仅在本实例表格/面板内生效（不注册 window 全局兜底）。
-   * 普通模式（含 total 缺失/非法或截断后为 0）键不存在时清空选中。
    */
-  selectByKey(key: string): void
+  selectByKey(key: string, options?: SelectByKeyOptions): void
   /** 清空选中（等价 select(null)） */
   close(): void
   /** 当前选中（未选中为 null） */
@@ -128,10 +137,37 @@ export function createMasterDetail(table: HTMLElement, options: MasterDetailOpti
     throw new Error('[oas-table] createMasterDetail 需要非空 label（详情面板的可访问名称）')
   }
   let selected: RowDetail | null = null
-  /** windowed 生效但键尚未装载：等待 data 命中后再落地；不改变当前选中/面板、不抢 Esc 激活标记 */
+  /** 显式 waitForRow 挂起的等待键：只由 data 命中、显式取消或 abort 结束 */
   let pendingKey: string | null = null
+  /** 等待关联的 abort 信号（`{ once: true }` 监听；自然落地/任何取消/destroy 时移除） */
+  let waitSignal: AbortSignal | null = null
   let observer: MutationObserver | null = null
   let destroyed = false
+
+  /** 等待中 abort：只取消等待，不改 selected/panel、不派发事件 */
+  const onWaitAbort = (): void => {
+    waitSignal = null
+    pendingKey = null
+  }
+
+  /** 显式取消等待（自然落地/取消路径/destroy 共用）：移除 abort 监听并清空 pending */
+  const clearWait = (): void => {
+    if (waitSignal) {
+      waitSignal.removeEventListener('abort', onWaitAbort)
+      waitSignal = null
+    }
+    pendingKey = null
+  }
+
+  /** 建立等待：signal 存在时挂 abort 监听（调用方保证 signal 未 aborted） */
+  const armWait = (key: string, signal: AbortSignal | undefined): void => {
+    pendingKey = key
+    if (signal) {
+      waitSignal = signal
+      signal.addEventListener('abort', onWaitAbort, { once: true })
+    }
+  }
+
   // Esc 响应开关：false 时本实例完全不响应 Esc（也不抢占「最近激活」标记，避免压过其它实例后 Esc 全体失效）
   const escEnabled = options.closeOnEscape !== false
   // 记录 helper 写入前面板的可访问性属性：destroy 时恢复宿主原值（helper 写入 role/aria-label 会覆盖）
@@ -205,9 +241,10 @@ export function createMasterDetail(table: HTMLElement, options: MasterDetailOpti
     options.onSelect?.(selected)
   }
 
-  const apply = (next: RowDetail | null): void => {
-    // 任何显式落地（选中/清空/点击/Enter/Esc/close）都优先于未装载键等待
-    pendingKey = null
+  const apply = (next: RowDetail | null, cancelWait = true): void => {
+    // 任何显式落地（选中/清空/点击/Enter/Esc/close）都优先于未装载键等待；
+    // 普通 refresh 的数据删除走 apply(null, false)：清选中并触发 onClose，但保留等待
+    if (cancelWait) clearWait()
     const previous = selected
     const sameKey = next !== null && selected !== null && next.key === selected.key
     if (!next && !selected) return
@@ -233,19 +270,16 @@ export function createMasterDetail(table: HTMLElement, options: MasterDetailOpti
     }
   }
 
-  /** data 变化（含行内编辑回写）后先解析未装载键等待，再刷新详情内容；数据中行消失才清空（滚出渲染窗口不清空） */
+  /** data 变化（含行内编辑回写）后先解析显式等待，再刷新详情内容；数据中行消失才清空（滚出渲染窗口不清空） */
   const refresh = (): void => {
     if (pendingKey !== null) {
-      // 先看本批 data 是否已命中 pending 键；命中即落地（即使同批 total 已回落普通）
+      // 任何模式下 data 命中即落地（等待终止只看数据，模式/total/批次不参与决策）；未命中则保留等待
       const key = pendingKey
       const pendingRow = findRow(key)
       if (pendingRow) {
-        pendingKey = null
         apply({ row: pendingRow, key, rowIndex: rowIndexByKey(key) })
         return
       }
-      // 未命中：仍是有效 windowed 则继续等待，同时继续刷新旧选中；模式回落普通才丢弃等待
-      if (!windowedActive()) pendingKey = null
     }
     if (!selected) return
     const row = findRow(selected.key)
@@ -257,7 +291,8 @@ export function createMasterDetail(table: HTMLElement, options: MasterDetailOpti
         renderPanel()
         return
       }
-      apply(null)
+      // 普通模式数据删除：清选中并触发 onClose，但不得取消等待（等待键随后到达仍落地）
+      apply(null, false)
       return
     }
     const rowIndex = rowsOf(table).findIndex((tr) => tr.getAttribute('data-key') === selected?.key)
@@ -327,7 +362,7 @@ export function createMasterDetail(table: HTMLElement, options: MasterDetailOpti
     event.stopPropagation()
     if (!selected) {
       // 无选中可关闭：Esc 只取消等待，不改面板、不派发事件
-      pendingKey = null
+      clearWait()
       return
     }
     escapeClose()
@@ -380,8 +415,8 @@ export function createMasterDetail(table: HTMLElement, options: MasterDetailOpti
   })
   observer.observe(table.shadowRoot as ShadowRoot, { childList: true, subtree: true })
   const dataObserver = new MutationObserver((records) => {
-    // row-key 改变后旧键的等待失去意义：丢弃 pending（选中既有语义不变）
-    if (records.some((record) => record.attributeName === 'row-key')) pendingKey = null
+    // row-key 改变是显式取消（旧键空间的等待失去意义）；data/windowed/total 只触发刷新，不终止等待
+    if (records.some((record) => record.attributeName === 'row-key')) clearWait()
     refresh()
   })
   dataObserver.observe(table, { attributes: true, attributeFilter: ['data', 'windowed', 'total', 'row-key'] })
@@ -398,34 +433,40 @@ export function createMasterDetail(table: HTMLElement, options: MasterDetailOpti
       const detail = detailAt(rowIndex)
       apply(detail)
     },
-    selectByKey(key) {
+    selectByKey(key, options) {
       if (destroyed) return
+      // 新调用先取消旧等待（新键覆盖旧等待；含 aborted signal 的调用）
+      clearWait()
+      // signal 已 aborted 视同未请求等待：回落默认语义（windowed no-op / 普通清空）
+      const waitForRow = options?.waitForRow === true && options.signal?.aborted !== true
       const row = findRow(key)
       if (!row) {
         if (windowedActive()) {
-          // 未装载的 windowed 切片：不当作删除，挂起等待 data 命中
           if (selected && selected.key === key) {
             // 已选中的键暂时离窗：只刷新行下标，不重复派发选中变化
-            pendingKey = null
             selected = { ...selected, rowIndex: -1 }
             highlight()
             renderPanel()
-          } else {
-            pendingKey = key
+            return
           }
+          // 未装载的 windowed 切片：默认保持现状（no-op），显式 waitForRow 才挂起等待
+          if (waitForRow) armWait(key, options?.signal)
           return
         }
-        pendingKey = null
+        if (waitForRow) {
+          // 普通模式显式等待：不清空，挂起等待 data 命中
+          armWait(key, options?.signal)
+          return
+        }
         apply(null)
         return
       }
       // 行未渲染（滚出窗口/树形未展开）时 rowIndexByKey 返回 -1：保留选中，rowIndex 取 -1
-      pendingKey = null
       apply({ row, key, rowIndex: rowIndexByKey(key) })
     },
     close() {
       if (destroyed) return
-      pendingKey = null
+      clearWait()
       apply(null)
     },
     get selected() {
@@ -434,7 +475,7 @@ export function createMasterDetail(table: HTMLElement, options: MasterDetailOpti
     destroy() {
       if (destroyed) return
       destroyed = true
-      pendingKey = null
+      clearWait()
       table.removeEventListener('oas-row-click', onRowClick)
       table.removeEventListener('oas-cell-click', onCellClick)
       table.removeEventListener('keydown', onEnter)
