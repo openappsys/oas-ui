@@ -4523,15 +4523,7 @@ test('table advanced：createWindowedSource × 视觉适配器——真实 adapt
     true,
   )
 
-  // 协议下焦点：聚焦 r130 → 本地 toggle（r125 有展开钮）只派发 oas-expand（不改 expanded）
-  const focusBefore = await page.evaluate(() => {
-    const el = document.querySelector('#qa-window-visual-table')!
-    const td = el.shadowRoot!.querySelector<HTMLElement>('tr[data-key="r130"] td[data-col="name"]')!
-    td.focus()
-    return el.shadowRoot!.activeElement === td
-  })
-  expect(focusBefore, '聚焦 r130 单元格').toBe(true)
-
+  // 先操作仍在窗口内的 r125 展开钮；随后 focus r130 可能触发浏览器滚动并把 r125 裁出窗口
   const toggled = await page.evaluate(
     () =>
       new Promise((resolve) => {
@@ -4550,6 +4542,15 @@ test('table advanced：createWindowedSource × 视觉适配器——真实 adapt
     key: 'r125',
     expanded: false,
   })
+
+  // 协议下焦点：聚焦 r130，随后由宿主回写展开布局并验证焦点回锚
+  const focusBefore = await page.evaluate(() => {
+    const el = document.querySelector('#qa-window-visual-table')!
+    const td = el.shadowRoot!.querySelector<HTMLElement>('tr[data-key="r130"] td[data-col="name"]')!
+    td.focus()
+    return el.shadowRoot!.activeElement === td
+  })
+  expect(focusBefore, '聚焦 r130 单元格').toBe(true)
   expect(((toggled as any).expandedAttr as string).split(','), '本地不修改 expanded（r125 保留、r130 未加入）').toEqual(
     ['r0', 'r25', 'r50', 'r75', 'r100', 'r125', 'r150', 'r175', 'r200', 'r225', 'r250', 'r275'],
   )

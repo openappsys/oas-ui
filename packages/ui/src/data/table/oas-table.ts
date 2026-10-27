@@ -1334,7 +1334,7 @@ export class OASTableBase extends OASElement {
   /** windowed 切片越界（window-start + data.length > total）告警去重（实例级一次） */
   private winSliceWarned = false
   /** 可选视觉协议解析结果（parse 时刷新；null = 未生效，回落当前数据窗口模型）：
-      total=全量视觉行数（渲染 count/contentH），start=当前切片 data[0] 的视觉行号（flow 基准） */
+      视觉总量用于渲染 count/contentH；start 为当前切片 data[0] 的视觉行号（flow 基准） */
   private _visualProto: { total: number; start: number } | null = null
   /** 视觉协议配置无效/不完整告警去重（实例级一次） */
   private visualProtoWarned = false
