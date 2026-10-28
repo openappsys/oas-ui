@@ -9,7 +9,8 @@ import { ensureShim } from './shim.js'
  * SSR locale 请求局部化：冷/热并发、全局态与清理。
  *
  * 验收语义（renderToString 显式 opts.locale）：
- * - 显式 locale 只影响本次请求与嵌套子树——不改全局 locale、不触发 locale/translator 广播、
+ * - 显式 locale 只影响本次请求与嵌套子树——不改全局 locale、渲染段不触发 locale/translator
+ *   广播（i18n registry 一次性装载副作用除外，可数且发生在首个显式渲染的 await 边界）、
  *   不输出 provider 包装；
  * - 未传 locale 保持旧行为：沿用调用时全局 locale；
  * - 冷加载并发（真实 import 竞态窗口）与热并发（全部命中缓存）都不得把语言串到其它请求上；
@@ -39,8 +40,8 @@ function forbidKey(locale: Locale): LocaleText {
   return locale === 'zh-CN' ? TEXT.en : TEXT.zh
 }
 
-/** 默认空态文案走本次 locale（不带 slot 内容，action 具名插槽不占默认通道） */
-function expectEmptyLocale(html: string, locale: Locale, marker: string): void {
+/** 默认空态文案走本次 locale（不带 slot 内容，action 具名插槽不占默认通道）；rawKey 为组件所属 locale key（兜底拦截） */
+function expectEmptyLocale(html: string, locale: Locale, marker: string, rawKey = 'empty.noData'): void {
   expect(html, `${marker} 应携带自身 attribute marker`).toContain(marker)
   const want = localeText(locale).empty
   const forbid: Locale = locale === 'zh-CN' ? 'en' : 'zh-CN'
@@ -49,7 +50,7 @@ function expectEmptyLocale(html: string, locale: Locale, marker: string): void {
   // 不输出临时 provider 包装
   expect(html).not.toContain('<oas-config-provider')
   // raw key 泄漏兜底（未注册时 t() 回退返回 key）
-  expect(html).not.toContain('empty.noData')
+  expect(html).not.toContain(rawKey)
 }
 
 /** tag.close 翻译路径（closable 关闭按钮 aria-label） */
@@ -117,14 +118,18 @@ describe('@oas-ui/ssr renderToString locale 请求局部化', () => {
       if (tag === 'oas-tag') {
         // 翻译路径 tag.close
         expectTagLocale(html, locale, `data-req="req-${i}"`)
-      } else {
-        // 翻译路径 empty.noData / transfer.empty（同 key 双组件）
+      } else if (tag === 'oas-empty') {
+        // 翻译路径 empty.noData（raw key 兜底查所属 key）
         expectEmptyLocale(html, locale, `data-req="req-${i}"`)
+      } else {
+        // 翻译路径 transfer.empty——与 empty.noData 中文渲染值同为「暂无数据」（英文 No data），
+        // raw key 兜底必须按组件所属 key 校验，防止「not-contain 恰好只拦另一 key」的假绿
+        expectEmptyLocale(html, locale, `data-req="req-${i}"`, 'transfer.empty')
       }
     }
   })
 
-  it('全局 locale 不被显式 locale 改写：显式渲染前后全局 locale 不变、locale/translator 广播为 0', async () => {
+  it('全局 locale 不被显式 locale 改写：显式渲染前后全局 locale 不变、渲染段 locale/translator 广播为 0', async () => {
     // 先切全局 en（自传语言包：自动注册 + 一次广播，属测试前置，不计入显式 SSR 广播）
     setLocale(enPack)
     expect(getLocaleName()).toBe('en')
@@ -149,7 +154,8 @@ describe('@oas-ui/ssr renderToString locale 请求局部化', () => {
       }
       // 显式 locale 不改全局 locale
       expect(getLocaleName()).toBe('en')
-      // 显式 SSR 期间 locale / translator 广播为 0
+      // 显式 SSR 的渲染段不触发 locale / translator 广播（registry 一次性装载副作用除外：
+      // 计数起点在首个显式 renderToString 之后，装载早于本用例）
       expect(localeBroadcasts).toBe(0)
       expect(translatorBroadcasts).toBe(0)
       // 随后不传 locale 的渲染仍用全局 locale（en）

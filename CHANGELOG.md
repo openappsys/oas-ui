@@ -4,10 +4,6 @@
 
 ## [未发布]
 
-### 修复
-
-- **`@oas-ui/ssr` locale 请求局部化**：`renderToString` 的显式 `opts.locale` 改为只影响本次调用及嵌套子树——渲染器在共享 document 内创建本次调用独立的临时 `<oas-config-provider locale>`，目标元素挂其下同步渲染（输出不含 provider 包装），`try/finally` 清理；不再全局 `setLocale`（不改全局 locale、不触发 locale/translator 广播），i18n registry 装载与内置 zh-CN / en 语言包注册收敛为单一 ready Promise。此前并发渲染（同一轮 `Promise.all` 混合多语言，冷加载时尤甚）存在 setLocale 与渲染错位配对：请求串语言、全局 locale 被永久改写并多次广播。未传 `locale` 保持旧行为：沿用调用时全局 locale。
-
 ### 新增
 
 - **`oas-table` windowed 视觉映射与可选视觉协议（`visual-total` / `visual-start`）**：行窗口渲染与期望区间请求共用同一份 abs/flow 记账——切片内含行内嵌展开行（或视觉协议生效）时，`oas-window-request` 的期望区间把可视窗口按视觉槽位映射回数据坐标，覆盖真实可见数据行及其展开属主行（不再按均匀数据网格猜测；此前切片展开数超过缓冲 + `WINDOW_MARGIN` = 12 时，快速跨越装载边界的滚动可能出现视觉重锚，本条目已收口该缺口，跨切片场景由下条可选协议保证）。`start` / `end` 永远是数据坐标；映射生效时 detail 附带可选 `visualStart` / `visualEnd`（当前可视窗口的视觉坐标，供宿主视觉取数）。去重升级为「同窗口」= 数据区间与视觉字段都相同——展开数或 `visual-total` 变化移动可视区间时，即使数据区间相同也重新派发；切片无展开且无协议时派发行为逐值不变。可选视觉协议：`visual-total`（全量视觉行数，不小于 `total`）与 `visual-start`（切片首行视觉行号）**同时有效**才启用——渲染 flow 从 `visual-start × 行高` 起、滚动总高按 `visual-total` 计，支持切片前已有展开行的宿主场景；协议生效后展开由宿主完全控制（本地点击展开钮只派发 `oas-expand` 并 devWarn 一次，不修改 `expanded`）。缺失 / 非法 / 只有其一 / 小于 `total` 时 devWarn 一次并整体回落当前模型；绝对数据行号（`data-row-index`、事件 rowIndex、ARIA、range/displaySnapshot）与非 windowed 路径不变。
@@ -15,6 +11,7 @@
 
 ### 修复
 
+- **`@oas-ui/ssr` locale 请求局部化**：`renderToString` 的显式 `opts.locale` 改为只影响本次调用及嵌套子树——渲染器在共享 document 内创建本次调用独立的临时 `<oas-config-provider locale>`，目标元素挂其下同步渲染（输出不含 provider 包装），`try/finally` 清理；不再全局 `setLocale`（不改全局 locale、渲染段不触发 locale/translator 广播，i18n registry 一次性装载副作用除外），i18n registry 装载与内置 zh-CN / en 语言包注册收敛为单一 ready Promise。此前并发渲染（同一轮 `Promise.all` 混合多语言，冷加载时尤甚）存在 setLocale 与渲染错位配对：请求串语言、全局 locale 被永久改写并多次广播。未传 `locale` 保持旧行为：沿用调用时全局 locale。
 - **`oas-sidebar` 嵌套头像子项重复行首占位**：带 `avatar` / `avatarText` 的嵌套子项不再保留 18px 空图标槽，头像与 label 之间只保留一次行 gap；普通无图标子项仍保留缩进占位，既有层级对齐不变。
 - **`oas-table` 主从详情（`table/detail`）`selectByKey` 显式等待与可取消**：未命中等待改为显式 opt-in——默认（无选项）在有效 windowed（`windowed` 属性在场且 `total` 有限、截断后 > 0）未命中时保持现状（不改选中/面板、零事件、无可见等待），普通模式未命中仍清空选中；`selectByKey(key, { waitForRow: true })` 在任何模式下未命中都挂起等待 `data` 到达，命中后落地一次并派发一次 `oas-detail-change`。等待只由数据命中、显式取消或 abort 结束：模式、`windowed` 属性、`total` 变化与 MutationObserver 批次不再终止等待（同批与不同批命中结果一致）；普通模式 `data` 删除选中行时 `onClose` 照常触发但等待保留，等待键随后到达仍落地。`selectByKey(key, { signal })` 支持 `AbortSignal`：已 aborted 的信号不建立等待（回落默认语义），等待中 abort 只取消等待（不改选中/面板、不派发事件），自然落地后 abort 无副作用。`close()` / `select()` / 行或单元格点击 / `Enter` / `Esc` / `destroy()` / `row-key` 变化或再次 `selectByKey()`（新键覆盖旧等待）都会取消等待，取消不补派发等待键的选中事件。无选中时的 `Esc` 只在本实例的表格/面板内取消等待，不注册 window 全局兜底；`closeOnEscape: false` 时完全不响应 Esc，启用 range 且存在活动选区时，表格内第一次 Esc 先清选区、等待保留。`total` 为 0 / 非法 / 截断后为 0 按普通模式处理。
 - **`oas-table` 区域选择（`table/range`）禁用不再覆盖外部 tabindex**：range 只恢复自己最后写入且仍未被改写的 `tabindex`；拥有期间其它能力写入的值原样保留，交由 grid-navigation 接管时也不回写陈旧原值。

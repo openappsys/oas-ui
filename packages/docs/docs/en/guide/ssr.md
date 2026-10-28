@@ -179,7 +179,8 @@ for the rendering itself.
 > `<oas-config-provider locale>` inside the shared DOM, mounts the target
 > element under it and renders synchronously (the output contains no provider
 > wrapper), then removes both in a `try/finally`. It never changes the global
-> locale and never broadcasts locale/translator events. Omitting `locale`
+> locale, and the rendering segment never broadcasts locale/translator events
+> (the one-time i18n registry load is the only side effect). Omitting `locale`
 > keeps the old behavior: the global locale at call time (the host-side
 > `setLocale()` semantics are unchanged). Concurrent requests (mixed languages
 > in a single `Promise.all`, cold and hot) are fully independent with no

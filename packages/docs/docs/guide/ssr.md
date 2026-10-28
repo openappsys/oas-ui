@@ -88,7 +88,7 @@ const html = await renderToString('oas-button', { type: 'primary', size: 'large'
 >
 > 进程级副作用声明：渲染器首次调用会把 happy-dom 的 `document` / `customElements` / `HTMLElement` 等全局安装到 `globalThis`（组件类求值与注册的必需环境）。若你的 Node 进程另有全局 DOM 方案（其他 SSR 库、测试框架环境），请先评估共存——无法覆盖全局时渲染器会抛明确错误。
 >
-> **locale 请求局部化**：显式 `locale` 只影响本次调用及嵌套子树——渲染器在共享 DOM 内创建本次调用独立的临时 `<oas-config-provider locale>`，目标元素挂其下同步渲染（输出不含 provider 包装），返回前清理两者；不改全局 locale、不触发 locale/translator 广播。未传 `locale` 保持旧行为：沿用调用时全局 locale（全局 `setLocale()` 语义不变）。并发请求（同一轮 `Promise.all` 里混合多语言、冷加载与热渲染）各自独立，无交错窗口，无需在服务端做任何加锁。
+> **locale 请求局部化**：显式 `locale` 只影响本次调用及嵌套子树——渲染器在共享 DOM 内创建本次调用独立的临时 `<oas-config-provider locale>`，目标元素挂其下同步渲染（输出不含 provider 包装），返回前清理两者；不改全局 locale、渲染段不触发 locale/translator 广播（i18n registry 一次性装载副作用除外）。未传 `locale` 保持旧行为：沿用调用时全局 locale（全局 `setLocale()` 语义不变）。并发请求（同一轮 `Promise.all` 里混合多语言、冷加载与热渲染）各自独立，无交错窗口，无需在服务端做任何加锁。
 
 ### Nuxt（推荐：`@oas-ui/nuxt` 插件）
 
