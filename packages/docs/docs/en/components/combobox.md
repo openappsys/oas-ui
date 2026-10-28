@@ -207,8 +207,10 @@ onMounted(() => {
     // creates an own property that shadows the setter (custom filtering silently fails)
     whenTagDefined('oas-combobox', () => {
       filterEl.filter = (option, query) => {
-        // label full-pinyin prefix match; value (pinyin initials pg/xj/cz) matched as a
-        // subsequence ('pg' hits pingguo — startsWith could not honor the initials promise)
+        // Implementation semantics: label substring match; value (pinyin initials
+        // pg/xj/cz) matched as a subsequence
+        // ('pg' hits pingguo via subsequence p..g — startsWith could not honor the
+        // initials promise and always showed "no matches")
         const q = query.toLowerCase()
         if (option.label.toLowerCase().includes(q)) return true
         let i = 0

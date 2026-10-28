@@ -206,8 +206,8 @@ onMounted(() => {
     // 升级守卫：filter 是 function 型 property，升级前写入会被自有属性遮蔽（自定义过滤静默失效）
     whenTagDefined('oas-combobox', () => {
       filterEl.filter = (option, query) => {
-        // label 全拼前缀命中；value（拼音缩写 pg/xj/cz）按子序列对齐命中
-        // （'pg' 的子序列 p..g 命中 pingguo——startsWith 无法兑现缩写承诺，曾长期「无匹配选项」）
+        // 实现语义：label 子串命中；value（拼音缩写 pg/xj/cz）按子序列命中
+        // （'pg' 以子序列 p..g 命中 pingguo——startsWith 无法兑现缩写承诺，曾长期「无匹配选项」）
         const q = query.toLowerCase()
         if (option.label.toLowerCase().includes(q)) return true
         let i = 0

@@ -66,7 +66,7 @@ test('docs 守卫 demo：combobox cb-filter 拼音首字母过滤真实生效（
   await page.goto('/components/combobox.html', { waitUntil: 'domcontentloaded' })
   await up(page, '#cb-filter')
   await assertNoExpando(page, '#cb-filter', 'filter')
-  // 输入 'pg'：默认 label 包含匹配对「苹果」不命中；只有 demo 写入的自定义过滤（value 拼音缩写前缀）能命中
+  // 输入 'pg'：默认 label 包含匹配对「苹果」不命中；只有 demo 写入的自定义过滤（value 拼音缩写按子序列命中）能命中
   await page.locator('#cb-filter').locator('input[part="input"]').fill('pg')
   const labels = await page
     .waitForFunction(

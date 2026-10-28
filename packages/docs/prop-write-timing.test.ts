@@ -56,17 +56,13 @@ const NATIVE_PROPS = new Set([
   'translate',
 ])
 
-interface ScriptFinding extends Finding {
-  blockLine: number
-}
-
 /** 提取 md 里的 <script> 块（返回 { code, startLine }），并同时返回剥掉 script/代码围栏后的 HTML 文本 */
 function extractScripts(content: string): { scripts: Array<{ code: string; startLine: number }>; html: string } {
   const scripts: Array<{ code: string; startLine: number }> = []
   const html = content
     .replace(/```[\s\S]*?```/g, (m) => '\n'.repeat(m.split('\n').length - 1)) // 代码围栏不是真实 DOM
-    .replace(/<script[^>]*>[\s\S]*?<\/script>/g, (m, ...rest) => {
-      const offset = (rest[rest.length - 1] as number) ?? 0
+    .replace(/<script[^>]*>[\s\S]*?<\/script>/g, (m, offset: number) => {
+      // 无捕获组：replace 回调第 2 参即匹配起点 offset（此前误取 rest 末位的整体字符串，startLine 恒 1）
       scripts.push({
         code: m.slice(m.indexOf('>') + 1, m.lastIndexOf('<')),
         startLine: content.slice(0, offset).split('\n').length,
@@ -109,7 +105,7 @@ const HELPER_GUARD_RE = /whenTagDefined\s*\(\s*['"][^'"]+['"]\s*,/
 /** 扫描单个 script 块，返回裸写 findings */
 export function scanScript(
   code: string,
-  opts: { file: string; startLine: number; idTags: Map<string, string>; html: string },
+  opts: { file: string; startLine: number; idTags: Map<string, string> },
 ): Finding[] {
   const findings: Finding[] = []
   const lines = code.split('\n')
@@ -130,9 +126,7 @@ export function scanScript(
   let awaitGuardArmed = false
 
   for (let i = 0; i < lines.length; i++) {
-    const raw = lines[i]!
-    const line = raw
-    const depthBefore = stack.length
+    const line = lines[i]!
 
     // await 多行武装：await Promise.all( 开启 / 单行 await + whenDefined 直接武装本作用域
     if (/\bawait\b[^;]*whenDefined/.test(line) && stack.length > 0) {
@@ -222,7 +216,6 @@ export function scanScript(
         }
       }
     }
-    void depthBefore
   }
   return findings
 }
@@ -233,7 +226,7 @@ export function scanMarkdown(content: string, file: string): Finding[] {
   const idTags = buildIdTagMap(html)
   const findings: Finding[] = []
   for (const s of scripts) {
-    findings.push(...scanScript(s.code, { file, startLine: s.startLine, idTags, html }))
+    findings.push(...scanScript(s.code, { file, startLine: s.startLine, idTags }))
   }
   // whenTagDefined 的 tag 必须真实出现在本页 HTML（防拼写错误 → 永不定义 → 静默空 demo）
   const helperRe = /whenTagDefined\s*\(\s*['"]([^'"]+)['"]/g
@@ -356,6 +349,33 @@ describe('docs demo 升级前裸 property 写入防回流', () => {
     expect(hits.length, '同步裸写应判红').toBe(1)
     expect(hits[0]!.prop).toBe('data')
     expect(hits[0]!.receiver).toContain('oas-transfer')
+  })
+
+  test('自测：finding.line 必须是 md 文件内的绝对行号（非块内相对行号/恒 1）', () => {
+    // script 前垫 6 行：script 开标签在文件第 7 行，`el.data = …` 落在文件第 11 行
+    const page = [
+      '前言段落',
+      '',
+      '<DemoBlock>',
+      '  <oas-transfer id="t-line"></oas-transfer>',
+      '</DemoBlock>',
+      '',
+      '<script setup>',
+      'import { onMounted } from "vue"',
+      'onMounted(() => {',
+      '  const el = document.getElementById("t-line")',
+      '  el.data = [{ key: "a" }]',
+      '})',
+      '</script>',
+      '',
+    ].join('\n')
+    const hits = scanMarkdown(page, 'fixture')
+    expect(hits.length, '同步裸写应判红').toBe(1)
+    expect(hits[0]!.line, '行号必须是文件内绝对行号（script 开标签第 7 行，写入在其后第 4 行）').toBe(11)
+    expect(
+      new Set(scanMarkdown(`${page}\n\n${page}`, 'fixture').map((h) => h.line)).size,
+      '两个 script 块的同型写入行号不得相同（证明非恒 1）',
+    ).toBe(2)
   })
 
   test('自测：守卫块/事件回调/异步路径/普通对象/原生属性/不可解析目标不误伤', () => {
