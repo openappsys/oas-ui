@@ -114,6 +114,25 @@ function loadBaseline(): { pages: Record<string, PageCounts> } {
   }
 }
 
+// ---------- 基线 totals 求和不变量 ----------
+// totals 六项计数（below30/45/60、ratio、exempt、skipped）必须等于逐页（pages）求和：
+// 防手改 totals 与逐页脱节、防基线残留已删页面的陈旧条目（陈旧页会让求和偏离 totals 即红）。
+// `sampled` 不按同一规则：它是含 ≥60 分样本的总采样数，pages 条目本就不记录 sampled。
+const TOTAL_KEYS = ['below30', 'below45', 'below60', 'ratio', 'exempt', 'skipped'] as const
+
+function totalsMismatch(baseline: {
+  totals: Record<string, number>
+  pages: Record<string, Record<string, number>>
+}): string[] {
+  const sum: Record<string, number> = Object.fromEntries(TOTAL_KEYS.map((k) => [k, 0]))
+  for (const counts of Object.values(baseline.pages ?? {})) {
+    for (const k of TOTAL_KEYS) sum[k]! += counts[k] ?? 0
+  }
+  return TOTAL_KEYS.filter((k) => (baseline.totals?.[k] ?? 0) !== sum[k]).map(
+    (k) => `${k}: totals=${baseline.totals?.[k] ?? 0} vs pages 求和=${sum[k]}`,
+  )
+}
+
 /** 禁用色 token 取不到/格式不合法时的哨兵：调用方必须红灯，禁止静默当「无豁免」或「全豁免」 */
 const DISABLED_COLOR_MISSING = '__missing__'
 
@@ -450,5 +469,47 @@ test('生成对比度基线（CONTRAST_BASELINE=update --workers=1 -g 生成对�
     pages,
   }
   writeFileSync(BASELINE_FILE, `${JSON.stringify(out, null, 2)}\n`)
+  // 生成后立刻校验求和不变量：totals 与逐页必须严格一致（结构性保证，防生成逻辑漂移）
+  const mismatch = totalsMismatch(JSON.parse(readFileSync(BASELINE_FILE, 'utf8')))
+  expect(mismatch, `新生成的基线 totals 与 pages 求和不一致：${mismatch.join('；')}`).toEqual([])
   expect(Object.keys(pages).length).toBeGreaterThan(0)
+})
+
+// ---------- totals 求和不变量门禁 ----------
+// 门禁本体：已提交基线的六项计数必须等于逐页求和。手改 totals / 基线残留已删页面的陈旧条目 /
+// 生成逻辑漂移都会让两侧脱节，这里显式红灯而不是静默放行。
+test('a11y 基线 totals 求和不变量：六项计数等于逐页求和（sampled 不按同一规则）', () => {
+  const baseline = loadBaseline() as unknown as {
+    totals: Record<string, number>
+    pages: Record<string, Record<string, number>>
+  }
+  expect(Object.keys(baseline.pages ?? {}).length, '基线应包含逐页条目（空基线 = 门禁空转）').toBeGreaterThan(0)
+  const mismatch = totalsMismatch(baseline)
+  expect(
+    mismatch,
+    `基线 totals 与 pages 求和不一致（防手改 totals / 残留已删页面的陈旧条目）：${mismatch.join('；')}。` +
+      '修复：CONTRAST_BASELINE=update 重新生成，或手工把 totals 改回与逐页一致。',
+  ).toEqual([])
+})
+
+// 反证自测：篡改 totals 必须被上面的不变量判红——证明门禁真的会咬人，不是恒真检查。
+test('a11y 基线不变量自检：篡改 totals 必须被判红（checker 反证）', () => {
+  const baseline = loadBaseline() as unknown as {
+    totals: Record<string, number>
+    pages: Record<string, Record<string, number>>
+  }
+  // ① 抬高 totals.below60 → 求和校验必须发现
+  const inflated = { ...baseline, totals: { ...baseline.totals, below60: (baseline.totals.below60 ?? 0) + 7 } }
+  const m1 = totalsMismatch(inflated)
+  expect(
+    m1.some((m) => m.startsWith('below60:')),
+    '抬高 totals.below60 必须产生 below60 不一致',
+  ).toBe(true)
+  // ② 删除一个有计数的页（模拟残留清理后忘了同步 totals）→ 求和变小必须被发现
+  const withCount = Object.entries(baseline.pages).find(([, c]) => (c.ratio ?? 0) > 0)
+  expect(withCount, '基线里应存在 ratio>0 的页（否则本反证选样失效）').toBeTruthy()
+  const removed: Record<string, Record<string, number>> = { ...baseline.pages }
+  delete removed[withCount![0]!]
+  const m2 = totalsMismatch({ totals: baseline.totals, pages: removed })
+  expect(m2.length, '删除有计数的页后 totals 不再等于求和，必须报不一致').toBeGreaterThan(0)
 })

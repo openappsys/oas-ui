@@ -119,113 +119,121 @@
 
 <script setup>
 import { onMounted } from 'vue'
+// 升级守卫共享 helper：oas-* property 写入必须晚于组件定义（升级前写入会产生
+// 自有属性、遮蔽升级后的 setter，数据静默丢失）。静态防回流见 packages/docs/prop-write-timing.test.ts
+import { whenTagDefined } from '../.vitepress/theme/when-defined'
 
 onMounted(() => {
-  // 基础：1000 条定高渲染
-  const basic = document.querySelector('#vl-basic')
-  if (basic) basic.items = Array.from({ length: 1000 }, (_, i) => `第 ${i + 1} 条`)
+  whenTagDefined('oas-virtual-list', () => {
+    // 基础：1000 条定高渲染
+    const basic = document.querySelector('#vl-basic')
+    if (basic) basic.items = Array.from({ length: 1000 }, (_, i) => `第 ${i + 1} 条`)
 
-  // 自定义条目内容：oas-item 事件绑定
-  const itemList = document.querySelector('#vl-item')
-  if (itemList) {
-    const rows = Array.from({ length: 500 }, (_, i) => ({
-      id: i + 1,
-      label: `任务 #${i + 1}`,
-      status: ['进行中', '已完成', '待开始'][i % 3],
-    }))
-    itemList.items = rows
-    itemList.addEventListener('oas-item', (e) => {
-      const { item, element } = e.detail
-      element.textContent = `${item.id} · ${item.label} · ${item.status}`
-    })
-  }
-
-  // 滚动事件窗口展示
-  const scroller = document.querySelector('#vl-scroll')
-  if (scroller) {
-    scroller.items = Array.from({ length: 200 }, (_, i) => i + 1)
-    scroller.addEventListener('oas-scroll', (e) => {
-      const { scrollTop, start, end } = e.detail
-      document.querySelector('#vl-window').textContent = `${start}–${end}`
-      document.querySelector('#vl-scrolltop').textContent = String(scrollTop)
-    })
-  }
-
-  // 自定义滚动容器
-  const target = document.querySelector('#vl-target')
-  if (target) target.items = Array.from({ length: 500 }, (_, i) => `记录 ${i + 1}`)
-
-  // 滚动到指定项：索引输入 + 对齐方式
-  const jump = document.querySelector('#vl-jump')
-  if (jump) {
-    jump.items = Array.from({ length: 1000 }, (_, i) => `条目 ${i + 1}`)
-    jump.addEventListener('oas-scroll', (e) => {
-      const top = document.querySelector('#vl-jump-top')
-      if (top) top.textContent = String(e.detail.scrollTop)
-    })
-    const jumpBtn = document.querySelector('#vl-jump-btn')
-    jumpBtn?.addEventListener('click', () => {
-      // whenDefined 守卫：方法调用必须晚于自定义元素升级
-      customElements.whenDefined('oas-virtual-list').then(() => {
-        const raw = Number(document.querySelector('#vl-jump-index')?.value)
-        const index = Math.min(Math.max(1, Math.trunc(raw) || 1), 1000) - 1
-        const align = document.querySelector('#vl-jump-align')?.value ?? 'auto'
-        jump.scrollToIndex(index, { align })
+    // 自定义条目内容：oas-item 事件绑定
+    const itemList = document.querySelector('#vl-item')
+    if (itemList) {
+      const rows = Array.from({ length: 500 }, (_, i) => ({
+        id: i + 1,
+        label: `任务 #${i + 1}`,
+        status: ['进行中', '已完成', '待开始'][i % 3],
+      }))
+      // 先绑事件再写 items：items 写入同步触发首帧渲染与 oas-item，
+      // 后绑监听会漏掉首帧行内容（守卫后写入必达 setter，时序从「升级时渲染」变为「写入即渲染」）
+      itemList.addEventListener('oas-item', (e) => {
+        const { item, element } = e.detail
+        element.textContent = `${item.id} · ${item.label} · ${item.status}`
       })
-    })
-  }
+      itemList.items = rows
+    }
 
-  // 渲染缓冲对比：统计实际渲染到 DOM 的项数
-  const buf0 = document.querySelector('#vl-buffer-0')
-  const buf8 = document.querySelector('#vl-buffer-8')
-  const bufItems = Array.from({ length: 100 }, (_, i) => `缓冲项 ${i + 1}`)
-  const refreshBufferCounts = () => {
-    const countOf = (el) => (el && el.shadowRoot ? el.shadowRoot.querySelectorAll('[part="item"]').length : 0)
-    const c0 = document.querySelector('#vl-buffer-0-count')
-    const c8 = document.querySelector('#vl-buffer-8-count')
-    if (c0) c0.textContent = String(countOf(buf0))
-    if (c8) c8.textContent = String(countOf(buf8))
-  }
-  if (buf0) {
-    buf0.items = bufItems
-    buf0.addEventListener('oas-scroll', refreshBufferCounts)
-  }
-  if (buf8) {
-    buf8.items = bufItems
-    buf8.addEventListener('oas-scroll', refreshBufferCounts)
-  }
-  refreshBufferCounts()
+    // 滚动事件窗口展示
+    const scroller = document.querySelector('#vl-scroll')
+    if (scroller) {
+      scroller.items = Array.from({ length: 200 }, (_, i) => i + 1)
+      scroller.addEventListener('oas-scroll', (e) => {
+        const { scrollTop, start, end } = e.detail
+        document.querySelector('#vl-window').textContent = `${start}–${end}`
+        document.querySelector('#vl-scrolltop').textContent = String(scrollTop)
+      })
+    }
 
-  // 动态行高：不等高卡片行混排（标题 + 行数不一的描述文本）
-  const dyn = document.querySelector('#vl-dyn')
-  if (dyn) {
-    const rows = Array.from({ length: 80 }, (_, i) => ({
-      title: `事项 ${i + 1}`,
-      lines: (i % 3) + 1,
-      tag: ['常规', '重点', '加急'][i % 3],
-    }))
-    dyn.items = rows
-    dyn.addEventListener('oas-item', (e) => {
-      const { item, element } = e.detail
-      element.style.padding = 'var(--oas-space-2) var(--oas-space-3)'
-      element.style.borderBottom = '1px solid var(--oas-color-border)'
-      element.style.boxSizing = 'border-box'
-      const head = document.createElement('div')
-      head.style.cssText = 'display:flex;justify-content:space-between;font-weight:500'
-      head.innerHTML = `<span></span><span style="color:var(--oas-color-primary);font-size:var(--oas-font-size-xs)"></span>`
-      head.children[0].textContent = item.title
-      head.children[1].textContent = item.tag
-      element.appendChild(head)
-      for (let k = 0; k < item.lines; k++) {
-        const p = document.createElement('div')
-        p.style.cssText = 'color:var(--oas-color-text-secondary);font-size:var(--oas-font-size-sm);line-height:1.5'
-        p.textContent = `描述第 ${k + 1} 行：高度随行数变化`
-        element.appendChild(p)
-      }
-    })
-    const jumpBtn = document.querySelector('#vl-dyn-jump')
-    jumpBtn?.addEventListener('click', () => dyn.scrollToIndex(40, { align: 'start' }))
-  }
+    // 自定义滚动容器
+    const target = document.querySelector('#vl-target')
+    if (target) target.items = Array.from({ length: 500 }, (_, i) => `记录 ${i + 1}`)
+
+    // 滚动到指定项：索引输入 + 对齐方式
+    const jump = document.querySelector('#vl-jump')
+    if (jump) {
+      jump.items = Array.from({ length: 1000 }, (_, i) => `条目 ${i + 1}`)
+      jump.addEventListener('oas-scroll', (e) => {
+        const top = document.querySelector('#vl-jump-top')
+        if (top) top.textContent = String(e.detail.scrollTop)
+      })
+      const jumpBtn = document.querySelector('#vl-jump-btn')
+      jumpBtn?.addEventListener('click', () => {
+        // whenDefined 守卫：方法调用必须晚于自定义元素升级
+        customElements.whenDefined('oas-virtual-list').then(() => {
+          const raw = Number(document.querySelector('#vl-jump-index')?.value)
+          const index = Math.min(Math.max(1, Math.trunc(raw) || 1), 1000) - 1
+          const align = document.querySelector('#vl-jump-align')?.value ?? 'auto'
+          jump.scrollToIndex(index, { align })
+        })
+      })
+    }
+
+    // 渲染缓冲对比：统计实际渲染到 DOM 的项数
+    const buf0 = document.querySelector('#vl-buffer-0')
+    const buf8 = document.querySelector('#vl-buffer-8')
+    const bufItems = Array.from({ length: 100 }, (_, i) => `缓冲项 ${i + 1}`)
+    const refreshBufferCounts = () => {
+      const countOf = (el) => (el && el.shadowRoot ? el.shadowRoot.querySelectorAll('[part="item"]').length : 0)
+      const c0 = document.querySelector('#vl-buffer-0-count')
+      const c8 = document.querySelector('#vl-buffer-8-count')
+      if (c0) c0.textContent = String(countOf(buf0))
+      if (c8) c8.textContent = String(countOf(buf8))
+    }
+    if (buf0) {
+      buf0.items = bufItems
+      buf0.addEventListener('oas-scroll', refreshBufferCounts)
+    }
+    if (buf8) {
+      buf8.items = bufItems
+      buf8.addEventListener('oas-scroll', refreshBufferCounts)
+    }
+    refreshBufferCounts()
+
+    // 动态行高：不等高卡片行混排（标题 + 行数不一的描述文本）
+    const dyn = document.querySelector('#vl-dyn')
+    if (dyn) {
+      const rows = Array.from({ length: 80 }, (_, i) => ({
+        title: `事项 ${i + 1}`,
+        lines: (i % 3) + 1,
+        tag: ['常规', '重点', '加急'][i % 3],
+      }))
+      // 先绑事件再写 items（同 #vl-item：写入同步触发首帧渲染与 oas-item）
+      dyn.addEventListener('oas-item', (e) => {
+        const { item, element } = e.detail
+        element.style.padding = 'var(--oas-space-2) var(--oas-space-3)'
+        element.style.borderBottom = '1px solid var(--oas-color-border)'
+        element.style.boxSizing = 'border-box'
+        const head = document.createElement('div')
+        head.style.cssText = 'display:flex;justify-content:space-between;font-weight:500'
+        head.innerHTML = `<span></span><span style="color:var(--oas-color-primary);font-size:var(--oas-font-size-xs)"></span>`
+        head.children[0].textContent = item.title
+        head.children[1].textContent = item.tag
+        element.appendChild(head)
+        for (let k = 0; k < item.lines; k++) {
+          const p = document.createElement('div')
+          p.style.cssText = 'color:var(--oas-color-text-secondary);font-size:var(--oas-font-size-sm);line-height:1.5'
+          p.textContent = `描述第 ${k + 1} 行：高度随行数变化`
+          element.appendChild(p)
+        }
+      })
+      dyn.items = rows
+      const jumpBtn = document.querySelector('#vl-dyn-jump')
+      jumpBtn?.addEventListener('click', () => dyn.scrollToIndex(40, { align: 'start' }))
+    }
+  })
 })
 </script>
 

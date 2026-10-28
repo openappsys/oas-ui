@@ -429,6 +429,7 @@ Listen to `oas-change`; `detail.value` is a string for single select and an arra
 
 <script setup>
 import { onMounted } from 'vue'
+import { whenTagDefined } from '../../.vitepress/theme/when-defined'
 onMounted(() => {
   // reserve-width demo: show the trigger width after switching (locked vs control)
   const reserveOut = document.getElementById('sel-reserve-out')
@@ -542,9 +543,13 @@ onMounted(() => {
   // Custom filtering demo: filterMethod matches both value and label (pinyin-initial rules work the same way)
   const filterEl = document.getElementById('select-filter')
   if (filterEl) {
-    filterEl.filterMethod = (query, option) =>
-      option.value.includes(query.toLowerCase()) ||
-      option.label.toLowerCase().includes(query.toLowerCase())
+    // Upgrade guard: filterMethod is a function-typed property; writing it before upgrade
+    // creates an own property that shadows the setter
+    whenTagDefined('oas-select', () => {
+      filterEl.filterMethod = (query, option) =>
+        option.value.includes(query.toLowerCase()) ||
+        option.label.toLowerCase().includes(query.toLowerCase())
+    })
   }
 
   // Remote debounce demo: the component already merges dispatches at debounce=300; the host just consumes oas-input

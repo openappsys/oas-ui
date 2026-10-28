@@ -164,166 +164,175 @@ Table-style transfer (multi-column info) works the same way: render the left dat
 
 <script setup>
 import { onMounted } from 'vue'
+// 升级守卫共享 helper：oas-* property 写入必须晚于组件定义（升级前写入会产生
+// 自有属性、遮蔽升级后的 setter，数据静默丢失）。静态防回流见 packages/docs/prop-write-timing.test.ts
+import { whenTagDefined } from '../../.vitepress/theme/when-defined'
 onMounted(() => {
-  const basic = document.getElementById('transfer-basic')
-  if (basic) basic.data = [
-    { key: 'a', label: 'Apple' },
-    { key: 'b', label: 'Banana' },
-    { key: 'c', label: 'Orange' },
-    { key: 'd', label: 'Grape', disabled: true },
-  ]
-  const preset = document.getElementById('transfer-preset')
-  if (preset) preset.data = [
-    { key: 'a', label: 'Apple' },
-    { key: 'b', label: 'Banana' },
-    { key: 'c', label: 'Orange' },
-  ]
-  const search = document.getElementById('transfer-search')
-  if (search) search.data = [
-    { key: 'a', label: 'Apple' },
-    { key: 'b', label: 'Banana' },
-    { key: 'c', label: 'Orange' },
-    { key: 'd', label: 'Strawberry' },
-    { key: 'e', label: 'Watermelon' },
-  ]
-  const cs = document.getElementById('transfer-casesensitive')
-  if (cs) cs.data = [
-    { key: 'a', label: 'Apple' },
-    { key: 'b', label: 'apricot' },
-    { key: 'c', label: 'Banana' },
-  ]
-  const oneway = document.getElementById('transfer-oneway')
-  if (oneway) oneway.data = [
-    { key: 'a', label: 'Apple' },
-    { key: 'b', label: 'Banana' },
-    { key: 'c', label: 'Orange' },
-    { key: 'd', label: 'Strawberry' },
-  ]
-  const virtual = document.getElementById('transfer-virtual')
-  if (virtual) virtual.data = Array.from({ length: 10000 }, (_, i) => ({ key: 'k' + i, label: 'Item ' + i }))
-
-  // pagination: 12 items, page-size=2
-  const page = document.getElementById('transfer-page')
-  if (page)
-    page.data = Array.from({ length: 12 }, (_, i) => ({
-      key: 'p' + i,
-      label: `Candidate ${i + 1}`,
-    }))
-
-  // scroll event: reachBottom feedback
-  const sc = document.getElementById('transfer-scroll')
-  if (sc) {
-    sc.data = Array.from({ length: 40 }, (_, i) => ({ key: 's' + i, label: `Entry ${i + 1}` }))
-    const out = document.getElementById('transfer-scroll-output')
-    sc.addEventListener('oas-scroll', (e) => {
-      const d = e.detail
-      out.textContent = `oas-scroll: ${d.side} ${d.direction} (scrollTop=${Math.round(d.scrollTop)}${d.reachBottom ? ', reached bottom' : ''})`
-    })
-  }
-  const el = document.getElementById('transfer-event')
-  if (el) {
-    el.data = [
+  whenTagDefined('oas-transfer', () => {
+    const basic = document.getElementById('transfer-basic')
+    if (basic) basic.data = [
+      { key: 'a', label: 'Apple' },
+      { key: 'b', label: 'Banana' },
+      { key: 'c', label: 'Orange' },
+      { key: 'd', label: 'Grape', disabled: true },
+    ]
+    const preset = document.getElementById('transfer-preset')
+    if (preset) preset.data = [
       { key: 'a', label: 'Apple' },
       { key: 'b', label: 'Banana' },
       { key: 'c', label: 'Orange' },
     ]
-    const out = document.getElementById('transfer-output')
-    el.addEventListener('oas-change', (e) => {
-      out.textContent = `oas-change: [${e.detail.value.join(', ')}]`
-    })
-  }
-
-  // target-sort + drag sorting
-  const sort = document.getElementById('transfer-sort')
-  if (sort) {
-    sort.data = [
+    const search = document.getElementById('transfer-search')
+    if (search) search.data = [
       { key: 'a', label: 'Apple' },
       { key: 'b', label: 'Banana' },
       { key: 'c', label: 'Orange' },
-      { key: 'd', label: 'Grape' },
+      { key: 'd', label: 'Strawberry' },
+      { key: 'e', label: 'Watermelon' },
     ]
-    const out = document.getElementById('transfer-output')
-    sort.addEventListener('oas-change', (e) => {
-      out.textContent = `value after drag sort: [${e.detail.value.join(', ')}]`
-    })
-  }
-  const unshift = document.getElementById('transfer-unshift')
-  if (unshift) unshift.data = [
-    { key: 'a', label: 'Apple' },
-    { key: 'b', label: 'Banana' },
-    { key: 'c', label: 'Orange' },
-  ]
-
-  // simple
-  const simple = document.getElementById('transfer-simple')
-  if (simple) simple.data = [
-    { key: 'a', label: 'Apple' },
-    { key: 'b', label: 'Banana' },
-    { key: 'c', label: 'Orange' },
-  ]
-
-  // item slot
-  const item = document.getElementById('transfer-item')
-  if (item) item.data = [
-    { key: 'a', label: 'Admin' },
-    { key: 'b', label: 'Developer' },
-    { key: 'c', label: 'Tester' },
-    { key: 'd', label: 'Guest' },
-  ]
-
-  // empty slot (empty data shows the slot content)
-  const emptyEl = document.getElementById('transfer-empty')
-  if (emptyEl) emptyEl.data = []
-
-  // disabled
-  const dis = document.getElementById('transfer-disabled')
-  if (dis) dis.data = [
-    { key: 'a', label: 'Apple' },
-    { key: 'b', label: 'Banana' },
-    { key: 'c', label: 'Orange' },
-  ]
-
-  // select & search events
-  const evts = document.getElementById('transfer-events')
-  if (evts) {
-    evts.data = [
+    const cs = document.getElementById('transfer-casesensitive')
+    if (cs) cs.data = [
+      { key: 'a', label: 'Apple' },
+      { key: 'b', label: 'apricot' },
+      { key: 'c', label: 'Banana' },
+    ]
+    const oneway = document.getElementById('transfer-oneway')
+    if (oneway) oneway.data = [
       { key: 'a', label: 'Apple' },
       { key: 'b', label: 'Banana' },
       { key: 'c', label: 'Orange' },
       { key: 'd', label: 'Strawberry' },
     ]
-    const out = document.getElementById('transfer-events-output')
-    evts.addEventListener('oas-select-change', (e) => {
-      out.textContent = `oas-select-change: ${e.detail.side} [${e.detail.selected.join(', ')}]`
-    })
-    evts.addEventListener('oas-search', (e) => {
-      out.textContent = `oas-search: ${e.detail.side} "${e.detail.query}"`
-    })
-  }
+    const virtual = document.getElementById('transfer-virtual')
+    if (virtual) virtual.data = Array.from({ length: 10000 }, (_, i) => ({ key: 'k' + i, label: 'Item ' + i }))
 
-  // Tree composition: tree checks → transfer value linkage (leaf items)
-  const tree = document.getElementById('transfer-tree')
-  const panel = document.getElementById('transfer-tree-panel')
-  if (tree && panel) {
-    const leaves = [
-      { key: 'fe-1', label: 'Alice' },
-      { key: 'fe-2', label: 'Bob' },
-      { key: 'be-1', label: 'Carol' },
-      { key: 'be-2', label: 'Dave' },
-      { key: 'pm-1', label: 'Eve' },
+    // pagination: 12 items, page-size=2
+    const page = document.getElementById('transfer-page')
+    if (page)
+      page.data = Array.from({ length: 12 }, (_, i) => ({
+        key: 'p' + i,
+        label: `Candidate ${i + 1}`,
+      }))
+
+    // scroll event: reachBottom feedback
+    const sc = document.getElementById('transfer-scroll')
+    if (sc) {
+      sc.data = Array.from({ length: 40 }, (_, i) => ({ key: 's' + i, label: `Entry ${i + 1}` }))
+      const out = document.getElementById('transfer-scroll-output')
+      sc.addEventListener('oas-scroll', (e) => {
+        const d = e.detail
+        out.textContent = `oas-scroll: ${d.side} ${d.direction} (scrollTop=${Math.round(d.scrollTop)}${d.reachBottom ? ', reached bottom' : ''})`
+      })
+    }
+    const el = document.getElementById('transfer-event')
+    if (el) {
+      el.data = [
+        { key: 'a', label: 'Apple' },
+        { key: 'b', label: 'Banana' },
+        { key: 'c', label: 'Orange' },
+      ]
+      const out = document.getElementById('transfer-output')
+      el.addEventListener('oas-change', (e) => {
+        out.textContent = `oas-change: [${e.detail.value.join(', ')}]`
+      })
+    }
+
+    // target-sort + drag sorting
+    const sort = document.getElementById('transfer-sort')
+    if (sort) {
+      sort.data = [
+        { key: 'a', label: 'Apple' },
+        { key: 'b', label: 'Banana' },
+        { key: 'c', label: 'Orange' },
+        { key: 'd', label: 'Grape' },
+      ]
+      const out = document.getElementById('transfer-output')
+      sort.addEventListener('oas-change', (e) => {
+        out.textContent = `value after drag sort: [${e.detail.value.join(', ')}]`
+      })
+    }
+    const unshift = document.getElementById('transfer-unshift')
+    if (unshift) unshift.data = [
+      { key: 'a', label: 'Apple' },
+      { key: 'b', label: 'Banana' },
+      { key: 'c', label: 'Orange' },
     ]
-    tree.data = [
-      { key: 'fe', label: 'Frontend', children: [leaves[0], leaves[1]] },
-      { key: 'be', label: 'Backend', children: [leaves[2], leaves[3]] },
-      { key: 'pm', label: 'Product', children: [leaves[4]] },
+
+    // simple
+    const simple = document.getElementById('transfer-simple')
+    if (simple) simple.data = [
+      { key: 'a', label: 'Apple' },
+      { key: 'b', label: 'Banana' },
+      { key: 'c', label: 'Orange' },
     ]
-    panel.data = leaves
-    const leafKeys = new Set(leaves.map((i) => i.key))
-    tree.addEventListener('oas-check', () => {
-      const checked = JSON.parse(tree.getAttribute('checked') || '[]')
-      panel.setAttribute('value', JSON.stringify(checked.filter((k) => leafKeys.has(k))))
-    })
-  }
+
+    // item slot
+    const item = document.getElementById('transfer-item')
+    if (item) item.data = [
+      { key: 'a', label: 'Admin' },
+      { key: 'b', label: 'Developer' },
+      { key: 'c', label: 'Tester' },
+      { key: 'd', label: 'Guest' },
+    ]
+
+    // empty slot (empty data shows the slot content)
+    const emptyEl = document.getElementById('transfer-empty')
+    if (emptyEl) emptyEl.data = []
+
+    // disabled
+    const dis = document.getElementById('transfer-disabled')
+    if (dis) dis.data = [
+      { key: 'a', label: 'Apple' },
+      { key: 'b', label: 'Banana' },
+      { key: 'c', label: 'Orange' },
+    ]
+
+    // select & search events
+    const evts = document.getElementById('transfer-events')
+    if (evts) {
+      evts.data = [
+        { key: 'a', label: 'Apple' },
+        { key: 'b', label: 'Banana' },
+        { key: 'c', label: 'Orange' },
+        { key: 'd', label: 'Strawberry' },
+      ]
+      const out = document.getElementById('transfer-events-output')
+      evts.addEventListener('oas-select-change', (e) => {
+        out.textContent = `oas-select-change: ${e.detail.side} [${e.detail.selected.join(', ')}]`
+      })
+      evts.addEventListener('oas-search', (e) => {
+        out.textContent = `oas-search: ${e.detail.side} "${e.detail.query}"`
+      })
+    }
+
+    // Tree composition: tree checks → transfer value linkage (leaf items)
+    const tree = document.getElementById('transfer-tree')
+    const panel = document.getElementById('transfer-tree-panel')
+    if (tree && panel) {
+      const leaves = [
+        { key: 'fe-1', label: 'Alice' },
+        { key: 'fe-2', label: 'Bob' },
+        { key: 'be-1', label: 'Carol' },
+        { key: 'be-2', label: 'Dave' },
+        { key: 'pm-1', label: 'Eve' },
+      ]
+      // tree is a different tag (oas-tree): its own upgrade guard (same chunk today,
+      // but guard independently against future code-splitting)
+      whenTagDefined('oas-tree', () => {
+        tree.data = [
+          { key: 'fe', label: 'Frontend', children: [leaves[0], leaves[1]] },
+          { key: 'be', label: 'Backend', children: [leaves[2], leaves[3]] },
+          { key: 'pm', label: 'Product', children: [leaves[4]] },
+        ]
+      })
+      panel.data = leaves
+      const leafKeys = new Set(leaves.map((i) => i.key))
+      tree.addEventListener('oas-check', () => {
+        const checked = JSON.parse(tree.getAttribute('checked') || '[]')
+        panel.setAttribute('value', JSON.stringify(checked.filter((k) => leafKeys.has(k))))
+      })
+    }
+  })
 })
 </script>
 

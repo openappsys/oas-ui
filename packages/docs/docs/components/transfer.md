@@ -164,166 +164,174 @@
 
 <script setup>
 import { onMounted } from 'vue'
+// 升级守卫共享 helper：oas-* property 写入必须晚于组件定义（升级前写入会产生
+// 自有属性、遮蔽升级后的 setter，数据静默丢失）。静态防回流见 packages/docs/prop-write-timing.test.ts
+import { whenTagDefined } from '../.vitepress/theme/when-defined'
 onMounted(() => {
-  const basic = document.getElementById('transfer-basic')
-  if (basic) basic.data = [
-    { key: 'a', label: '苹果' },
-    { key: 'b', label: '香蕉' },
-    { key: 'c', label: '橙子' },
-    { key: 'd', label: '葡萄', disabled: true },
-  ]
-  const preset = document.getElementById('transfer-preset')
-  if (preset) preset.data = [
-    { key: 'a', label: '苹果' },
-    { key: 'b', label: '香蕉' },
-    { key: 'c', label: '橙子' },
-  ]
-  const search = document.getElementById('transfer-search')
-  if (search) search.data = [
-    { key: 'a', label: '苹果' },
-    { key: 'b', label: '香蕉' },
-    { key: 'c', label: '橙子' },
-    { key: 'd', label: '草莓' },
-    { key: 'e', label: '西瓜' },
-  ]
-  const cs = document.getElementById('transfer-casesensitive')
-  if (cs) cs.data = [
-    { key: 'a', label: 'Apple' },
-    { key: 'b', label: 'apricot' },
-    { key: 'c', label: 'Banana' },
-  ]
-  const oneway = document.getElementById('transfer-oneway')
-  if (oneway) oneway.data = [
-    { key: 'a', label: '苹果' },
-    { key: 'b', label: '香蕉' },
-    { key: 'c', label: '橙子' },
-    { key: 'd', label: '草莓' },
-  ]
-  const virtual = document.getElementById('transfer-virtual')
-  if (virtual) virtual.data = Array.from({ length: 10000 }, (_, i) => ({ key: 'k' + i, label: '项目 ' + i }))
-
-  // 分页：12 项数据，page-size=2
-  const page = document.getElementById('transfer-page')
-  if (page)
-    page.data = Array.from({ length: 12 }, (_, i) => ({
-      key: 'p' + i,
-      label: `候选 ${i + 1}`,
-    }))
-
-  // 滚动事件：reachBottom 反馈
-  const sc = document.getElementById('transfer-scroll')
-  if (sc) {
-    sc.data = Array.from({ length: 40 }, (_, i) => ({ key: 's' + i, label: `条目 ${i + 1}` }))
-    const out = document.getElementById('transfer-scroll-output')
-    sc.addEventListener('oas-scroll', (e) => {
-      const d = e.detail
-      out.textContent = `oas-scroll: ${d.side} ${d.direction}（scrollTop=${Math.round(d.scrollTop)}${d.reachBottom ? '，已到底' : ''}）`
-    })
-  }
-  const el = document.getElementById('transfer-event')
-  if (el) {
-    el.data = [
+  whenTagDefined('oas-transfer', () => {
+    const basic = document.getElementById('transfer-basic')
+    if (basic) basic.data = [
+      { key: 'a', label: '苹果' },
+      { key: 'b', label: '香蕉' },
+      { key: 'c', label: '橙子' },
+      { key: 'd', label: '葡萄', disabled: true },
+    ]
+    const preset = document.getElementById('transfer-preset')
+    if (preset) preset.data = [
       { key: 'a', label: '苹果' },
       { key: 'b', label: '香蕉' },
       { key: 'c', label: '橙子' },
     ]
-    const out = document.getElementById('transfer-output')
-    el.addEventListener('oas-change', (e) => {
-      out.textContent = `oas-change: [${e.detail.value.join(', ')}]`
-    })
-  }
-
-  // target-sort + 拖拽排序
-  const sort = document.getElementById('transfer-sort')
-  if (sort) {
-    sort.data = [
+    const search = document.getElementById('transfer-search')
+    if (search) search.data = [
       { key: 'a', label: '苹果' },
       { key: 'b', label: '香蕉' },
       { key: 'c', label: '橙子' },
-      { key: 'd', label: '葡萄' },
+      { key: 'd', label: '草莓' },
+      { key: 'e', label: '西瓜' },
     ]
-    const out = document.getElementById('transfer-output')
-    sort.addEventListener('oas-change', (e) => {
-      out.textContent = `拖拽排序后 value: [${e.detail.value.join(', ')}]`
-    })
-  }
-  const unshift = document.getElementById('transfer-unshift')
-  if (unshift) unshift.data = [
-    { key: 'a', label: '苹果' },
-    { key: 'b', label: '香蕉' },
-    { key: 'c', label: '橙子' },
-  ]
-
-  // simple
-  const simple = document.getElementById('transfer-simple')
-  if (simple) simple.data = [
-    { key: 'a', label: '苹果' },
-    { key: 'b', label: '香蕉' },
-    { key: 'c', label: '橙子' },
-  ]
-
-  // item 插槽
-  const item = document.getElementById('transfer-item')
-  if (item) item.data = [
-    { key: 'a', label: '管理员' },
-    { key: 'b', label: '开发' },
-    { key: 'c', label: '测试' },
-    { key: 'd', label: '访客' },
-  ]
-
-  // empty 插槽（空数据展示插槽内容）
-  const emptyEl = document.getElementById('transfer-empty')
-  if (emptyEl) emptyEl.data = []
-
-  // disabled
-  const dis = document.getElementById('transfer-disabled')
-  if (dis) dis.data = [
-    { key: 'a', label: '苹果' },
-    { key: 'b', label: '香蕉' },
-    { key: 'c', label: '橙子' },
-  ]
-
-  // 选中与搜索事件
-  const evts = document.getElementById('transfer-events')
-  if (evts) {
-    evts.data = [
+    const cs = document.getElementById('transfer-casesensitive')
+    if (cs) cs.data = [
+      { key: 'a', label: 'Apple' },
+      { key: 'b', label: 'apricot' },
+      { key: 'c', label: 'Banana' },
+    ]
+    const oneway = document.getElementById('transfer-oneway')
+    if (oneway) oneway.data = [
       { key: 'a', label: '苹果' },
       { key: 'b', label: '香蕉' },
       { key: 'c', label: '橙子' },
       { key: 'd', label: '草莓' },
     ]
-    const out = document.getElementById('transfer-events-output')
-    evts.addEventListener('oas-select-change', (e) => {
-      out.textContent = `oas-select-change: ${e.detail.side} [${e.detail.selected.join(', ')}]`
-    })
-    evts.addEventListener('oas-search', (e) => {
-      out.textContent = `oas-search: ${e.detail.side} "${e.detail.query}"`
-    })
-  }
+    const virtual = document.getElementById('transfer-virtual')
+    if (virtual) virtual.data = Array.from({ length: 10000 }, (_, i) => ({ key: 'k' + i, label: '项目 ' + i }))
 
-  // 树形数据穿梭组合：tree 勾选 → transfer value 联动（叶子项）
-  const tree = document.getElementById('transfer-tree')
-  const panel = document.getElementById('transfer-tree-panel')
-  if (tree && panel) {
-    const leaves = [
-      { key: 'fe-1', label: '张三' },
-      { key: 'fe-2', label: '李四' },
-      { key: 'be-1', label: '王五' },
-      { key: 'be-2', label: '赵六' },
-      { key: 'pm-1', label: '孙七' },
+    // 分页：12 项数据，page-size=2
+    const page = document.getElementById('transfer-page')
+    if (page)
+      page.data = Array.from({ length: 12 }, (_, i) => ({
+        key: 'p' + i,
+        label: `候选 ${i + 1}`,
+      }))
+
+    // 滚动事件：reachBottom 反馈
+    const sc = document.getElementById('transfer-scroll')
+    if (sc) {
+      sc.data = Array.from({ length: 40 }, (_, i) => ({ key: 's' + i, label: `条目 ${i + 1}` }))
+      const out = document.getElementById('transfer-scroll-output')
+      sc.addEventListener('oas-scroll', (e) => {
+        const d = e.detail
+        out.textContent = `oas-scroll: ${d.side} ${d.direction}（scrollTop=${Math.round(d.scrollTop)}${d.reachBottom ? '，已到底' : ''}）`
+      })
+    }
+    const el = document.getElementById('transfer-event')
+    if (el) {
+      el.data = [
+        { key: 'a', label: '苹果' },
+        { key: 'b', label: '香蕉' },
+        { key: 'c', label: '橙子' },
+      ]
+      const out = document.getElementById('transfer-output')
+      el.addEventListener('oas-change', (e) => {
+        out.textContent = `oas-change: [${e.detail.value.join(', ')}]`
+      })
+    }
+
+    // target-sort + 拖拽排序
+    const sort = document.getElementById('transfer-sort')
+    if (sort) {
+      sort.data = [
+        { key: 'a', label: '苹果' },
+        { key: 'b', label: '香蕉' },
+        { key: 'c', label: '橙子' },
+        { key: 'd', label: '葡萄' },
+      ]
+      const out = document.getElementById('transfer-output')
+      sort.addEventListener('oas-change', (e) => {
+        out.textContent = `拖拽排序后 value: [${e.detail.value.join(', ')}]`
+      })
+    }
+    const unshift = document.getElementById('transfer-unshift')
+    if (unshift) unshift.data = [
+      { key: 'a', label: '苹果' },
+      { key: 'b', label: '香蕉' },
+      { key: 'c', label: '橙子' },
     ]
-    tree.data = [
-      { key: 'fe', label: '前端组', children: [leaves[0], leaves[1]] },
-      { key: 'be', label: '后端组', children: [leaves[2], leaves[3]] },
-      { key: 'pm', label: '产品组', children: [leaves[4]] },
+
+    // simple
+    const simple = document.getElementById('transfer-simple')
+    if (simple) simple.data = [
+      { key: 'a', label: '苹果' },
+      { key: 'b', label: '香蕉' },
+      { key: 'c', label: '橙子' },
     ]
-    panel.data = leaves
-    const leafKeys = new Set(leaves.map((i) => i.key))
-    tree.addEventListener('oas-check', () => {
-      const checked = JSON.parse(tree.getAttribute('checked') || '[]')
-      panel.setAttribute('value', JSON.stringify(checked.filter((k) => leafKeys.has(k))))
-    })
-  }
+
+    // item 插槽
+    const item = document.getElementById('transfer-item')
+    if (item) item.data = [
+      { key: 'a', label: '管理员' },
+      { key: 'b', label: '开发' },
+      { key: 'c', label: '测试' },
+      { key: 'd', label: '访客' },
+    ]
+
+    // empty 插槽（空数据展示插槽内容）
+    const emptyEl = document.getElementById('transfer-empty')
+    if (emptyEl) emptyEl.data = []
+
+    // disabled
+    const dis = document.getElementById('transfer-disabled')
+    if (dis) dis.data = [
+      { key: 'a', label: '苹果' },
+      { key: 'b', label: '香蕉' },
+      { key: 'c', label: '橙子' },
+    ]
+
+    // 选中与搜索事件
+    const evts = document.getElementById('transfer-events')
+    if (evts) {
+      evts.data = [
+        { key: 'a', label: '苹果' },
+        { key: 'b', label: '香蕉' },
+        { key: 'c', label: '橙子' },
+        { key: 'd', label: '草莓' },
+      ]
+      const out = document.getElementById('transfer-events-output')
+      evts.addEventListener('oas-select-change', (e) => {
+        out.textContent = `oas-select-change: ${e.detail.side} [${e.detail.selected.join(', ')}]`
+      })
+      evts.addEventListener('oas-search', (e) => {
+        out.textContent = `oas-search: ${e.detail.side} "${e.detail.query}"`
+      })
+    }
+
+    // 树形数据穿梭组合：tree 勾选 → transfer value 联动（叶子项）
+    const tree = document.getElementById('transfer-tree')
+    const panel = document.getElementById('transfer-tree-panel')
+    // tree 是另一个标签（oas-tree）：独立升级守卫（当前与 transfer 同 chunk，防未来拆包漂移）
+    if (tree && panel) {
+      const leaves = [
+        { key: 'fe-1', label: '张三' },
+        { key: 'fe-2', label: '李四' },
+        { key: 'be-1', label: '王五' },
+        { key: 'be-2', label: '赵六' },
+        { key: 'pm-1', label: '孙七' },
+      ]
+      whenTagDefined('oas-tree', () => {
+        tree.data = [
+          { key: 'fe', label: '前端组', children: [leaves[0], leaves[1]] },
+          { key: 'be', label: '后端组', children: [leaves[2], leaves[3]] },
+          { key: 'pm', label: '产品组', children: [leaves[4]] },
+        ]
+      })
+      panel.data = leaves
+      const leafKeys = new Set(leaves.map((i) => i.key))
+      tree.addEventListener('oas-check', () => {
+        const checked = JSON.parse(tree.getAttribute('checked') || '[]')
+        panel.setAttribute('value', JSON.stringify(checked.filter((k) => leafKeys.has(k))))
+      })
+    }
+  })
 })
 </script>
 

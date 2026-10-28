@@ -262,11 +262,15 @@
 <script setup>
 import { onMounted } from 'vue'
 import { loadLocale } from '@oas-ui/i18n'
+import { whenTagDefined } from '../.vitepress/theme/when-defined'
 onMounted(() => {
   // locale 覆盖 demo 需要目标语言包已注册（按需加载 en 包）
   loadLocale('en')
   const el = document.getElementById('calendar-disabled-date')
-  el.disabledDate = (d) => d.getDay() === 0 || d.getDay() === 6
+  // 升级守卫：升级前写 disabledDate 会产生自有属性遮蔽 setter（周末禁用静默失效）
+  whenTagDefined('oas-calendar', () => {
+    if (el) el.disabledDate = (d) => d.getDay() === 0 || d.getDay() === 6
+  })
 
   // range 范围选择 demo：显示选中区间
   const rangeCal = document.getElementById('calendar-range')

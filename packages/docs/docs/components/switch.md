@@ -167,6 +167,7 @@
 
 <script setup>
 import { onMounted } from 'vue'
+import { whenTagDefined } from '../.vitepress/theme/when-defined'
 onMounted(() => {
   // 值映射 demo：展示 change detail.value
   const valueEl = document.getElementById('switch-value')
@@ -179,13 +180,16 @@ onMounted(() => {
   const beforeEl = document.getElementById('switch-before')
   const beforeInfo = document.getElementById('switch-before-info')
   if (beforeEl) {
-    beforeEl.beforeChange = async (next) => {
-      if (next) return true
-      beforeInfo.textContent = '正在确认…'
-      await new Promise((r) => setTimeout(r, 800))
-      beforeInfo.textContent = '已确认，切换完成'
-      return true
-    }
+    // 升级守卫：beforeChange 是 function 型 property，升级前写入会被自有属性遮蔽
+    whenTagDefined('oas-switch', () => {
+      beforeEl.beforeChange = async (next) => {
+        if (next) return true
+        beforeInfo.textContent = '正在确认…'
+        await new Promise((r) => setTimeout(r, 800))
+        beforeInfo.textContent = '已确认，切换完成'
+        return true
+      }
+    })
   }
 
   // 事件 demo：change / focus / blur

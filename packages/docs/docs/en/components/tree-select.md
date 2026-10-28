@@ -298,6 +298,7 @@ Listen to `oas-change`: `detail.value` is a string for single select and an arra
 
 <script setup>
 import { onMounted } from 'vue'
+import { whenTagDefined } from '../../.vitepress/theme/when-defined'
 onMounted(() => {
   const echo = (elId, outId) => {
     const el = document.getElementById(elId)
@@ -331,19 +332,23 @@ onMounted(() => {
   // lazy demo: expand a region, then merge children back after a delay (host owns the data; spinner clears after options re-set)
   const tsLazy = document.getElementById('ts-lazy')
   if (tsLazy) {
-    tsLazy.load = ({ value }) => {
-      setTimeout(() => {
-        const children =
-          value === 'east'
-            ? [
-                { label: 'Shanghai', value: 'sh', isLeaf: true },
-                { label: 'Jiangsu', value: 'js', isLeaf: true },
-              ]
-            : [{ label: 'Beijing', value: 'bj', isLeaf: true }]
-        const current = JSON.parse(tsLazy.getAttribute('options') || '[]')
-        tsLazy.options = current.map((n) => (n.value === value ? { ...n, children } : n))
-      }, 500)
-    }
+    // Upgrade guard: load/options are function/array-typed properties; writing them before
+    // upgrade creates own properties that shadow the setters
+    whenTagDefined('oas-tree-select', () => {
+      tsLazy.load = ({ value }) => {
+        setTimeout(() => {
+          const children =
+            value === 'east'
+              ? [
+                  { label: 'Shanghai', value: 'sh', isLeaf: true },
+                  { label: 'Jiangsu', value: 'js', isLeaf: true },
+                ]
+              : [{ label: 'Beijing', value: 'bj', isLeaf: true }]
+          const current = JSON.parse(tsLazy.getAttribute('options') || '[]')
+          tsLazy.options = current.map((n) => (n.value === value ? { ...n, children } : n))
+        }, 500)
+      }
+    })
   }
 
   // controlled open demo: host writes the open attribute back
@@ -420,7 +425,8 @@ onMounted(() => {
     return roots
   }
   const tsFlat = document.getElementById('ts-flat')
-  if (tsFlat) tsFlat.options = toTree(flatNodes)
+  // Upgrade guard: writing options before upgrade creates an own property that shadows the setter
+  if (tsFlat) whenTagDefined('oas-tree-select', () => (tsFlat.options = toTree(flatNodes)))
 
   // events demo: oas-change feedback
   const el = document.getElementById('tree-event')
@@ -440,7 +446,11 @@ onMounted(() => {
         value: `m-${i}-${j}`,
       })),
     }))
-    tsVirtual.options = roots
+    // Upgrade guard: writing options before upgrade creates an own property that shadows
+    // the setter (the 10k-node tree would silently stay blank)
+    whenTagDefined('oas-tree-select', () => {
+      tsVirtual.options = roots
+    })
     document.getElementById('ts-expand-all')?.addEventListener('click', () => {
       tsVirtual.setAttribute('expanded', JSON.stringify(roots.map((r) => r.value)))
     })

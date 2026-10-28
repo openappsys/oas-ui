@@ -2,13 +2,6 @@ import { test, expect } from '@playwright/test'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 
-// window 全局扩展（theme/index.ts 异步挂 message/notification；GA 注入 dataLayer）
-declare global {
-  interface Window {
-    dataLayer?: Array<Record<string, unknown>>
-  }
-}
-
 // 官网首页（home 布局）专属 e2e
 // 自动收集型 spec（smoke/visual 等）只扫 components 目录，不含首页
 // qa-regression.spec.ts 不另加断言：防复发铁律针对「修的 bug」，本 spec 即固化载体
@@ -265,35 +258,41 @@ test.describe('官网首页（重设计版）', () => {
     await expect(footer.locator('.hf-col')).toHaveCount(3)
   })
 
-  test('SPA 路由切换 GA page_view 补发（onAfterRouteChanged 回归）', async ({ page }) => {
+  // SPA 路由 GA page_view 补发回归（确定性 stub，不依赖外网 GTM）：
+  // e2e 构建固定 OAS_DOCS_ANALYTICS=0（不加载外部 gtag.js），旧实现此时 test.skip 静默跳过——
+  // 路由钩子从未被验证（假绿）。钩子注册（theme enhanceApp）与外部脚本可达性是两件事：
+  // 这里用 addInitScript 注入与 gtag.js inline 引导等价的确定性 dataLayer/gtag stub，
+  // 验证主题注册的 onAfterRouteChange 在 SPA 路由切换时补发 page_view。
+  test('SPA 路由切换 GA page_view 补发（确定性 dataLayer/gtag stub，不依赖外网）', async ({ page }) => {
+    // 与真实 gtag.js 引导同构：dataLayer 数组 + 把参数原样入队的 gtag 函数
+    await page.addInitScript(() => {
+      const w = window as unknown as { dataLayer?: unknown[][]; gtag?: (...args: unknown[]) => void }
+      w.dataLayer = []
+      w.gtag = (...args: unknown[]) => {
+        w.dataLayer!.push(args)
+      }
+    })
     await page.goto('/', { waitUntil: 'domcontentloaded' })
-    // e2e 构建默认 OAS_DOCS_ANALYTICS=0（不加载外部 GTM），此时没有 dataLayer；
-    // 该用例只在启用统计的构建里可验证，避免把测试环境配置当成产品缺陷。
-    const hasAnalytics = await page.evaluate(() =>
-      Array.isArray((window as unknown as { dataLayer?: unknown }).dataLayer),
-    )
-    test.skip(!hasAnalytics, 'e2e 构建关闭 analytics，GA page_view 由生产构建覆盖')
-    await page.waitForFunction(() => Array.isArray(window.dataLayer))
+    const configCalls = () =>
+      page.evaluate(() => {
+        const dl = (window as unknown as { dataLayer?: unknown[][] }).dataLayer ?? []
+        return dl.filter(
+          (entry) =>
+            Array.isArray(entry) && entry[0] === 'config' && typeof entry[1] === 'string' && entry[1].length > 0,
+        )
+      })
+    // 首载不补发：钩子以当前 pathname 初始化，VitePress 首载回调按同路径去重跳过
+    expect(await configCalls(), '首页整载不应补发 page_view（首屏由 inline config 承担）').toEqual([])
     // 点击站点内真实链接，走 VitePress Router 的 SPA 切换（hero CTA 用 window.location
     // 整页跳转，不经过 Router；用链接才能验证 onAfterRouteChange 的 page_view 补发）
     const link = page.locator('.home-footer a[href="/guide/getting-started"]').first()
     await link.waitFor({ state: 'attached' })
     await link.click()
     await page.waitForURL(/guide\/getting-started/)
+    // 严格断言：恰好一条 config，且 page_path 指向 SPA 落点（钩子未注册/去重失效都会红）
     await expect
-      .poll(async () =>
-        page.evaluate(() => {
-          const dl = window.dataLayer ?? []
-          return dl.some(
-            (entry) =>
-              entry[0] === 'config' &&
-              typeof entry[2] === 'object' &&
-              entry[2] !== null &&
-              'page_path' in (entry[2] as object),
-          )
-        }),
-      )
-      .toBe(true)
+      .poll(configCalls, { timeout: 15000 })
+      .toEqual([['config', 'G-RXS142HBXF', { page_path: '/guide/getting-started' }]])
   })
 
   test('SPA 导航回首页后滚动入场动画可触发（回归：首载非首页时 reveal 永不显示）', async ({ page }) => {

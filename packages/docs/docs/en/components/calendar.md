@@ -261,9 +261,14 @@ Keyboard: `↑`/`↓`/`←`/`→` to move within the grid (auto-paging across mo
 
 <script setup>
 import { onMounted } from 'vue'
+import { whenTagDefined } from '../../.vitepress/theme/when-defined'
 onMounted(() => {
   const el = document.getElementById('calendar-disabled-date')
-  el.disabledDate = (d) => d.getDay() === 0 || d.getDay() === 6
+  // Upgrade guard: writing disabledDate before upgrade creates an own property that shadows
+  // the setter (weekend-disabling would silently fail)
+  whenTagDefined('oas-calendar', () => {
+    if (el) el.disabledDate = (d) => d.getDay() === 0 || d.getDay() === 6
+  })
 
   // Range selection demo: display the selected range
   const rangeCal = document.getElementById('calendar-range')

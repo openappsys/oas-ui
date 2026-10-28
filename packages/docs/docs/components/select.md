@@ -429,6 +429,7 @@
 
 <script setup>
 import { onMounted } from 'vue'
+import { whenTagDefined } from '../.vitepress/theme/when-defined'
 onMounted(() => {
   // reserve-width demo：切换选中项后显示触发器宽度（锁宽 vs 对照）
   const reserveOut = document.getElementById('sel-reserve-out')
@@ -542,9 +543,12 @@ onMounted(() => {
   // 自定义过滤 demo：filterMethod 同时匹配 value 与 label（拼音首字母等自定义规则同理）
   const filterEl = document.getElementById('select-filter')
   if (filterEl) {
-    filterEl.filterMethod = (query, option) =>
-      option.value.includes(query.toLowerCase()) ||
-      option.label.toLowerCase().includes(query.toLowerCase())
+    // 升级守卫：filterMethod 是 function 型 property，升级前写入会被自有属性遮蔽
+    whenTagDefined('oas-select', () => {
+      filterEl.filterMethod = (query, option) =>
+        option.value.includes(query.toLowerCase()) ||
+        option.label.toLowerCase().includes(query.toLowerCase())
+    })
   }
 
   // 远程防抖 demo：组件已按 debounce=300 合并派发，宿主直接消费 oas-input

@@ -178,6 +178,7 @@ Listen to `oas-input` (filter keyword), `oas-change` (selection), `oas-clear` (c
 
 <script setup>
 import { onMounted } from 'vue'
+import { whenTagDefined } from '../../.vitepress/theme/when-defined'
 onMounted(() => {
   const el = document.getElementById('cb-event')
   const out = document.getElementById('cb-output')
@@ -202,10 +203,23 @@ onMounted(() => {
   const filterEl = document.getElementById('cb-filter')
   const filterOut = document.getElementById('cb-filter-output')
   if (filterEl) {
-    filterEl.filter = (option, query) => {
-      const q = query.toLowerCase()
-      return option.value.startsWith(q) || option.label.includes(query)
-    }
+    // Upgrade guard: `filter` is a function-typed property; writing it before upgrade
+    // creates an own property that shadows the setter (custom filtering silently fails)
+    whenTagDefined('oas-combobox', () => {
+      filterEl.filter = (option, query) => {
+        // label full-pinyin prefix match; value (pinyin initials pg/xj/cz) matched as a
+        // subsequence ('pg' hits pingguo — startsWith could not honor the initials promise)
+        const q = query.toLowerCase()
+        if (option.label.toLowerCase().includes(q)) return true
+        let i = 0
+        for (const ch of q) {
+          i = option.value.indexOf(ch, i)
+          if (i < 0) return false
+          i++
+        }
+        return true
+      }
+    })
     filterEl.addEventListener('oas-input', (e) => {
       filterOut.textContent = `Query: ${e.detail.value}`
     })

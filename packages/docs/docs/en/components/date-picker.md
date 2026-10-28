@@ -358,6 +358,7 @@ Keyboard: `Enter` / `↓` to open; arrows plus `Home`/`End`/`PageUp`/`PageDown` 
 
 <script setup>
 import { onMounted } from 'vue'
+import { whenTagDefined } from '../../.vitepress/theme/when-defined'
 onMounted(() => {
   const el = document.getElementById('date-picker-event')
   const out = document.getElementById('date-picker-output')
@@ -385,25 +386,31 @@ onMounted(() => {
   sc?.addEventListener('oas-change', (e) => {
     scOut.textContent = `oas-change: ${e.detail.value}`
   })
-  sc.shortcuts = [
-    { label: 'Today', getValue: () => new Date() },
-    {
-      label: 'Tomorrow',
-      getValue: () => {
-        const d = new Date()
-        d.setDate(d.getDate() + 1)
-        return d
+  whenTagDefined('oas-date-picker', () => {
+    sc.shortcuts = [
+      { label: 'Today', getValue: () => new Date() },
+      {
+        label: 'Tomorrow',
+        getValue: () => {
+          const d = new Date()
+          d.setDate(d.getDate() + 1)
+          return d
+        },
       },
-    },
-    { label: 'Fixed 2026-08-10', value: '2026-08-10' },
-  ]
+      { label: 'Fixed 2026-08-10', value: '2026-08-10' },
+    ]
+  })
 
   const dd = document.getElementById('date-picker-disabled-date')
-  dd.disabledDate = (d) => {
-    const t = new Date()
-    t.setHours(0, 0, 0, 0)
-    return d < t
-  }
+  // Upgrade guard: writing disabledDate before upgrade creates an own property that
+  // shadows the setter (the disabling rule silently fails)
+  whenTagDefined('oas-date-picker', () => {
+    dd.disabledDate = (d) => {
+      const t = new Date()
+      t.setHours(0, 0, 0, 0)
+      return d < t
+    }
+  })
 
   // Cell rendering: inject the template via JS (an inline <template slot="cell"> is swallowed by the
   // Vue compile pipeline, especially in dev). The template only provides the day-number skeleton;

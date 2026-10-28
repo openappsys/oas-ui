@@ -292,6 +292,7 @@
 
 <script setup>
 import { onMounted } from 'vue'
+import { whenTagDefined } from '../.vitepress/theme/when-defined'
 onMounted(() => {
   const el = document.getElementById('slider-event')
   const out = document.getElementById('slider-output')
@@ -312,8 +313,11 @@ onMounted(() => {
   // formatTooltip 函数通道：Intl 货币格式化（优先于 format 模板串）
   const fnEl = document.getElementById('slider-fn-format')
   if (fnEl) {
-    fnEl.formatTooltip = (v) =>
-      new Intl.NumberFormat('zh-CN', { style: 'currency', currency: 'CNY', maximumFractionDigits: 0 }).format(v)
+    // 升级守卫：formatTooltip 是 function 型 property，升级前写入会被自有属性遮蔽
+    whenTagDefined('oas-slider', () => {
+      fnEl.formatTooltip = (v) =>
+        new Intl.NumberFormat('zh-CN', { style: 'currency', currency: 'CNY', maximumFractionDigits: 0 }).format(v)
+    })
   }
 
   // scrub / 双击复位 demo：实时反馈当前值（oas-input 过程值 / oas-change 提交值 / 复位提示）

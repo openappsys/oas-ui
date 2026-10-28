@@ -298,6 +298,7 @@
 
 <script setup>
 import { onMounted } from 'vue'
+import { whenTagDefined } from '../.vitepress/theme/when-defined'
 onMounted(() => {
   const echo = (elId, outId) => {
     const el = document.getElementById(elId)
@@ -331,19 +332,22 @@ onMounted(() => {
   // 懒加载 demo：展开大区后延时回填城市（宿主负责数据管理，重设 options 后 spinner 消失）
   const tsLazy = document.getElementById('ts-lazy')
   if (tsLazy) {
-    tsLazy.load = ({ value }) => {
-      setTimeout(() => {
-        const children =
-          value === 'east'
-            ? [
-                { label: '上海', value: 'sh', isLeaf: true },
-                { label: '江苏', value: 'js', isLeaf: true },
-              ]
-            : [{ label: '北京', value: 'bj', isLeaf: true }]
-        const current = JSON.parse(tsLazy.getAttribute('options') || '[]')
-        tsLazy.options = current.map((n) => (n.value === value ? { ...n, children } : n))
-      }, 500)
-    }
+    // 升级守卫：load/options 是 function/数组型 property，升级前写入会被自有属性遮蔽
+    whenTagDefined('oas-tree-select', () => {
+      tsLazy.load = ({ value }) => {
+        setTimeout(() => {
+          const children =
+            value === 'east'
+              ? [
+                  { label: '上海', value: 'sh', isLeaf: true },
+                  { label: '江苏', value: 'js', isLeaf: true },
+                ]
+              : [{ label: '北京', value: 'bj', isLeaf: true }]
+          const current = JSON.parse(tsLazy.getAttribute('options') || '[]')
+          tsLazy.options = current.map((n) => (n.value === value ? { ...n, children } : n))
+        }, 500)
+      }
+    })
   }
 
   // 受控开合 demo：宿主回写 open 属性
@@ -420,7 +424,8 @@ onMounted(() => {
     return roots
   }
   const tsFlat = document.getElementById('ts-flat')
-  if (tsFlat) tsFlat.options = toTree(flatNodes)
+  // 升级守卫：options 升级前写入会被自有属性遮蔽（扁平数据树静默失效）
+  if (tsFlat) whenTagDefined('oas-tree-select', () => (tsFlat.options = toTree(flatNodes)))
 
   // 事件 demo：oas-change 反馈
   const el = document.getElementById('tree-event')
@@ -440,7 +445,10 @@ onMounted(() => {
         value: `m-${i}-${j}`,
       })),
     }))
-    tsVirtual.options = roots
+    // 升级守卫：options 升级前写入会被自有属性遮蔽（万级节点静默空白）
+    whenTagDefined('oas-tree-select', () => {
+      tsVirtual.options = roots
+    })
     document.getElementById('ts-expand-all')?.addEventListener('click', () => {
       tsVirtual.setAttribute('expanded', JSON.stringify(roots.map((r) => r.value)))
     })

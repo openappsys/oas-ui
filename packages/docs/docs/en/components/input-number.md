@@ -223,12 +223,17 @@ Scrubbing is not enabled on coarse pointers (tap focuses and raises the keyboard
 
 <script setup>
 import { onMounted } from 'vue'
+import { whenTagDefined } from '../../.vitepress/theme/when-defined'
 onMounted(() => {
   // function formatter/parser demo: fully custom format (function channel)
   const fnEl = document.getElementById('num-fn-format')
   if (fnEl) {
-    fnEl.formatter = (v) => `≈ ${v.toLocaleString()} pcs`
-    fnEl.parser = (s) => Number(s.replace(/[^0-9.\-]/g, ''))
+    // Upgrade guard: formatter/parser are function-typed properties; writing them before
+    // upgrade creates own properties that shadow the setters
+    whenTagDefined('oas-input-number', () => {
+      fnEl.formatter = (v) => `≈ ${v.toLocaleString()} pcs`
+      fnEl.parser = (s) => Number(s.replace(/[^0-9.\-]/g, ''))
+    })
   }
 
   // scrub demo: show the committed value (oas-change)

@@ -167,6 +167,7 @@ Controlled usage: when the host owns the state, bind the `checked` attribute and
 
 <script setup>
 import { onMounted } from 'vue'
+import { whenTagDefined } from '../../.vitepress/theme/when-defined'
 onMounted(() => {
   // Value mapping demo: shows change detail.value
   const valueEl = document.getElementById('switch-value')
@@ -180,13 +181,17 @@ onMounted(() => {
   const beforeEl = document.getElementById('switch-before')
   const beforeInfo = document.getElementById('switch-before-info')
   if (beforeEl) {
-    beforeEl.beforeChange = async (next) => {
-      if (next) return true
-      beforeInfo.textContent = 'Confirming…'
-      await new Promise((r) => setTimeout(r, 800))
-      beforeInfo.textContent = 'Confirmed, toggle applied'
-      return true
-    }
+    // Upgrade guard: beforeChange is a function-typed property; writing it before upgrade
+    // creates an own property that shadows the setter
+    whenTagDefined('oas-switch', () => {
+      beforeEl.beforeChange = async (next) => {
+        if (next) return true
+        beforeInfo.textContent = 'Confirming…'
+        await new Promise((r) => setTimeout(r, 800))
+        beforeInfo.textContent = 'Confirmed, toggle applied'
+        return true
+      }
+    })
   }
 
   // Events demo: change / focus / blur

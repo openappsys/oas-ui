@@ -292,6 +292,7 @@ The slider has no built-in visible label (avoiding duplication with the form lab
 
 <script setup>
 import { onMounted } from 'vue'
+import { whenTagDefined } from '../../.vitepress/theme/when-defined'
 onMounted(() => {
   const el = document.getElementById('slider-event')
   const out = document.getElementById('slider-output')
@@ -312,8 +313,12 @@ onMounted(() => {
   // formatTooltip function channel: Intl currency formatting (takes precedence over format)
   const fnEl = document.getElementById('slider-fn-format')
   if (fnEl) {
-    fnEl.formatTooltip = (v) =>
-      new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(v)
+    // Upgrade guard: formatTooltip is a function-typed property; writing it before upgrade
+    // creates an own property that shadows the setter
+    whenTagDefined('oas-slider', () => {
+      fnEl.formatTooltip = (v) =>
+        new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(v)
+    })
   }
 
   // scrub / double-click reset demo: live value feedback (oas-input in-progress / oas-change committed / reset note)

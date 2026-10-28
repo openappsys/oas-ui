@@ -119,113 +119,122 @@ When `scroll-target` (a CSS selector) is set, the component does not provide its
 
 <script setup>
 import { onMounted } from 'vue'
+// 升级守卫共享 helper：oas-* property 写入必须晚于组件定义（升级前写入会产生
+// 自有属性、遮蔽升级后的 setter，数据静默丢失）。静态防回流见 packages/docs/prop-write-timing.test.ts
+import { whenTagDefined } from '../../.vitepress/theme/when-defined'
 
 onMounted(() => {
-  // Basic: 1000 fixed-height items
-  const basic = document.querySelector('#vl-basic')
-  if (basic) basic.items = Array.from({ length: 1000 }, (_, i) => `Item ${i + 1}`)
+  whenTagDefined('oas-virtual-list', () => {
+    // Basic: 1000 fixed-height items
+    const basic = document.querySelector('#vl-basic')
+    if (basic) basic.items = Array.from({ length: 1000 }, (_, i) => `Item ${i + 1}`)
 
-  // Custom item content bound via the oas-item event
-  const itemList = document.querySelector('#vl-item')
-  if (itemList) {
-    const rows = Array.from({ length: 500 }, (_, i) => ({
-      id: i + 1,
-      label: `Task #${i + 1}`,
-      status: ['In Progress', 'Done', 'Pending'][i % 3],
-    }))
-    itemList.items = rows
-    itemList.addEventListener('oas-item', (e) => {
-      const { item, element } = e.detail
-      element.textContent = `${item.id} · ${item.label} · ${item.status}`
-    })
-  }
-
-  // Scroll event window display
-  const scroller = document.querySelector('#vl-scroll')
-  if (scroller) {
-    scroller.items = Array.from({ length: 200 }, (_, i) => i + 1)
-    scroller.addEventListener('oas-scroll', (e) => {
-      const { scrollTop, start, end } = e.detail
-      document.querySelector('#vl-window').textContent = `${start}–${end}`
-      document.querySelector('#vl-scrolltop').textContent = String(scrollTop)
-    })
-  }
-
-  // Custom scroll container
-  const target = document.querySelector('#vl-target')
-  if (target) target.items = Array.from({ length: 500 }, (_, i) => `Record ${i + 1}`)
-
-  // Scroll to a specific item: index input + alignment
-  const jump = document.querySelector('#vl-jump')
-  if (jump) {
-    jump.items = Array.from({ length: 1000 }, (_, i) => `Item ${i + 1}`)
-    jump.addEventListener('oas-scroll', (e) => {
-      const top = document.querySelector('#vl-jump-top')
-      if (top) top.textContent = String(e.detail.scrollTop)
-    })
-    const jumpBtn = document.querySelector('#vl-jump-btn')
-    jumpBtn?.addEventListener('click', () => {
-      // whenDefined guard: method calls must happen after the custom element upgrades
-      customElements.whenDefined('oas-virtual-list').then(() => {
-        const raw = Number(document.querySelector('#vl-jump-index')?.value)
-        const index = Math.min(Math.max(1, Math.trunc(raw) || 1), 1000) - 1
-        const align = document.querySelector('#vl-jump-align')?.value ?? 'auto'
-        jump.scrollToIndex(index, { align })
+    // Custom item content bound via the oas-item event
+    const itemList = document.querySelector('#vl-item')
+    if (itemList) {
+      const rows = Array.from({ length: 500 }, (_, i) => ({
+        id: i + 1,
+        label: `Task #${i + 1}`,
+        status: ['In Progress', 'Done', 'Pending'][i % 3],
+      }))
+      // Bind the event before writing items: the write synchronously triggers the first
+      // render and oas-item; a later-bound listener would miss the first-frame rows
+      itemList.addEventListener('oas-item', (e) => {
+        const { item, element } = e.detail
+        element.textContent = `${item.id} · ${item.label} · ${item.status}`
       })
-    })
-  }
+      itemList.items = rows
+    }
 
-  // Render buffer comparison: count items actually rendered to the DOM
-  const buf0 = document.querySelector('#vl-buffer-0')
-  const buf8 = document.querySelector('#vl-buffer-8')
-  const bufItems = Array.from({ length: 100 }, (_, i) => `Buffer item ${i + 1}`)
-  const refreshBufferCounts = () => {
-    const countOf = (el) => (el && el.shadowRoot ? el.shadowRoot.querySelectorAll('[part="item"]').length : 0)
-    const c0 = document.querySelector('#vl-buffer-0-count')
-    const c8 = document.querySelector('#vl-buffer-8-count')
-    if (c0) c0.textContent = String(countOf(buf0))
-    if (c8) c8.textContent = String(countOf(buf8))
-  }
-  if (buf0) {
-    buf0.items = bufItems
-    buf0.addEventListener('oas-scroll', refreshBufferCounts)
-  }
-  if (buf8) {
-    buf8.items = bufItems
-    buf8.addEventListener('oas-scroll', refreshBufferCounts)
-  }
-  refreshBufferCounts()
+    // Scroll event window display
+    const scroller = document.querySelector('#vl-scroll')
+    if (scroller) {
+      scroller.items = Array.from({ length: 200 }, (_, i) => i + 1)
+      scroller.addEventListener('oas-scroll', (e) => {
+        const { scrollTop, start, end } = e.detail
+        document.querySelector('#vl-window').textContent = `${start}–${end}`
+        document.querySelector('#vl-scrolltop').textContent = String(scrollTop)
+      })
+    }
 
-  // Dynamic height: mixed card rows (title + variable description lines)
-  const dyn = document.querySelector('#vl-dyn')
-  if (dyn) {
-    const rows = Array.from({ length: 80 }, (_, i) => ({
-      title: `Item ${i + 1}`,
-      lines: (i % 3) + 1,
-      tag: ['Normal', 'Priority', 'Urgent'][i % 3],
-    }))
-    dyn.items = rows
-    dyn.addEventListener('oas-item', (e) => {
-      const { item, element } = e.detail
-      element.style.padding = 'var(--oas-space-2) var(--oas-space-3)'
-      element.style.borderBottom = '1px solid var(--oas-color-border)'
-      element.style.boxSizing = 'border-box'
-      const head = document.createElement('div')
-      head.style.cssText = 'display:flex;justify-content:space-between;font-weight:500'
-      head.innerHTML = `<span></span><span style="color:var(--oas-color-primary);font-size:var(--oas-font-size-xs)"></span>`
-      head.children[0].textContent = item.title
-      head.children[1].textContent = item.tag
-      element.appendChild(head)
-      for (let k = 0; k < item.lines; k++) {
-        const p = document.createElement('div')
-        p.style.cssText = 'color:var(--oas-color-text-secondary);font-size:var(--oas-font-size-sm);line-height:1.5'
-        p.textContent = `Description line ${k + 1}: height varies with content`
-        element.appendChild(p)
-      }
-    })
-    const jumpBtn = document.querySelector('#vl-dyn-jump')
-    jumpBtn?.addEventListener('click', () => dyn.scrollToIndex(40, { align: 'start' }))
-  }
+    // Custom scroll container
+    const target = document.querySelector('#vl-target')
+    if (target) target.items = Array.from({ length: 500 }, (_, i) => `Record ${i + 1}`)
+
+    // Scroll to a specific item: index input + alignment
+    const jump = document.querySelector('#vl-jump')
+    if (jump) {
+      jump.items = Array.from({ length: 1000 }, (_, i) => `Item ${i + 1}`)
+      jump.addEventListener('oas-scroll', (e) => {
+        const top = document.querySelector('#vl-jump-top')
+        if (top) top.textContent = String(e.detail.scrollTop)
+      })
+      const jumpBtn = document.querySelector('#vl-jump-btn')
+      jumpBtn?.addEventListener('click', () => {
+        // whenDefined guard: method calls must happen after the custom element upgrades
+        customElements.whenDefined('oas-virtual-list').then(() => {
+          const raw = Number(document.querySelector('#vl-jump-index')?.value)
+          const index = Math.min(Math.max(1, Math.trunc(raw) || 1), 1000) - 1
+          const align = document.querySelector('#vl-jump-align')?.value ?? 'auto'
+          jump.scrollToIndex(index, { align })
+        })
+      })
+    }
+
+    // Render buffer comparison: count items actually rendered to the DOM
+    const buf0 = document.querySelector('#vl-buffer-0')
+    const buf8 = document.querySelector('#vl-buffer-8')
+    const bufItems = Array.from({ length: 100 }, (_, i) => `Buffer item ${i + 1}`)
+    const refreshBufferCounts = () => {
+      const countOf = (el) => (el && el.shadowRoot ? el.shadowRoot.querySelectorAll('[part="item"]').length : 0)
+      const c0 = document.querySelector('#vl-buffer-0-count')
+      const c8 = document.querySelector('#vl-buffer-8-count')
+      if (c0) c0.textContent = String(countOf(buf0))
+      if (c8) c8.textContent = String(countOf(buf8))
+    }
+    if (buf0) {
+      buf0.items = bufItems
+      buf0.addEventListener('oas-scroll', refreshBufferCounts)
+    }
+    if (buf8) {
+      buf8.items = bufItems
+      buf8.addEventListener('oas-scroll', refreshBufferCounts)
+    }
+    refreshBufferCounts()
+
+    // Dynamic height: mixed card rows (title + variable description lines)
+    const dyn = document.querySelector('#vl-dyn')
+    if (dyn) {
+      const rows = Array.from({ length: 80 }, (_, i) => ({
+        title: `Item ${i + 1}`,
+        lines: (i % 3) + 1,
+        tag: ['Normal', 'Priority', 'Urgent'][i % 3],
+      }))
+      // Bind the event before writing items (same as #vl-item: the write synchronously
+      // triggers the first render and oas-item)
+      dyn.addEventListener('oas-item', (e) => {
+        const { item, element } = e.detail
+        element.style.padding = 'var(--oas-space-2) var(--oas-space-3)'
+        element.style.borderBottom = '1px solid var(--oas-color-border)'
+        element.style.boxSizing = 'border-box'
+        const head = document.createElement('div')
+        head.style.cssText = 'display:flex;justify-content:space-between;font-weight:500'
+        head.innerHTML = `<span></span><span style="color:var(--oas-color-primary);font-size:var(--oas-font-size-xs)"></span>`
+        head.children[0].textContent = item.title
+        head.children[1].textContent = item.tag
+        element.appendChild(head)
+        for (let k = 0; k < item.lines; k++) {
+          const p = document.createElement('div')
+          p.style.cssText = 'color:var(--oas-color-text-secondary);font-size:var(--oas-font-size-sm);line-height:1.5'
+          p.textContent = `Description line ${k + 1}: height varies with content`
+          element.appendChild(p)
+        }
+      })
+      dyn.items = rows
+      const jumpBtn = document.querySelector('#vl-dyn-jump')
+      jumpBtn?.addEventListener('click', () => dyn.scrollToIndex(40, { align: 'start' }))
+    }
+  })
 })
 </script>
 

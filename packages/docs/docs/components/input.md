@@ -158,6 +158,7 @@
 
 <script setup>
 import { onMounted } from 'vue'
+import { whenTagDefined } from '../.vitepress/theme/when-defined'
 onMounted(() => {
   const el = document.getElementById('input-event')
   const out = document.getElementById('input-output')
@@ -237,8 +238,11 @@ onMounted(() => {
   const fmt = document.getElementById('input-format')
   const fmtOut = document.getElementById('input-format-output')
   if (fmt) {
-    fmt.formatter = (v) => v.replace(/\B(?=(\d{3})+(?!\d))/g, ',')
-    fmt.parser = (v) => v.replace(/,/g, '')
+    // 升级守卫：formatter/parser 是 function 型 property，升级前写入会被自有属性遮蔽
+    whenTagDefined('oas-input', () => {
+      fmt.formatter = (v) => v.replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+      fmt.parser = (v) => v.replace(/,/g, '')
+    })
     fmt.addEventListener('oas-input', (e) => {
       fmtOut.textContent = `原始值: ${e.detail.value}`
     })

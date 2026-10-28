@@ -11,9 +11,11 @@ test('navigation-menu 箭头跟随触发器：面板箭头 --arrow-x 随触发�
     host.scrollIntoView({ block: 'center' })
     await new Promise((res) => setTimeout(res, 300))
     const triggers = [...host.shadowRoot!.querySelectorAll<HTMLElement>('[aria-expanded]')]
-    const t0 = triggers[0]
-    const t1 = triggers[1]
-    if (!t0 || !t1) return { skip: true as const }
+    // 前提失败必须红：demo 结构变化导致触发器缺失时，把实况带回 Node 侧显式断言失败，
+    // 不得 if(skip)return 静默跳过（假绿）。
+    if (triggers.length < 2) return { triggerCount: triggers.length, x1: '', x2: '' }
+    const t0 = triggers[0]!
+    const t1 = triggers[1]!
     t0.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }))
     await new Promise((res) => setTimeout(res, 450))
     const arrow1 = host.shadowRoot!.querySelector<HTMLElement>('.arrow, [class*="arrow"]')
@@ -24,9 +26,12 @@ test('navigation-menu 箭头跟随触发器：面板箭头 --arrow-x 随触发�
     await new Promise((res) => setTimeout(res, 450))
     const arrow2 = host.shadowRoot!.querySelector<HTMLElement>('.arrow, [class*="arrow"]')
     const x2 = arrow2 ? arrow2.style.getPropertyValue('--arrow-x') : ''
-    return { skip: false as const, x1, x2 }
+    return { triggerCount: triggers.length, x1, x2 }
   })
-  if (r.skip) return // demo 结构变化时跳过而非误报
+  expect(
+    r.triggerCount,
+    '前提：#nav-arrow demo 应提供至少两个触发器（结构变化必须显式失败，不得静默跳过）',
+  ).toBeGreaterThanOrEqual(2)
   expect(r.x1, '箭头变量应被 JS 写入（非空）').not.toBe('')
   expect(r.x2, '箭头变量应被 JS 写入（非空）').not.toBe('')
   expect(r.x1, '箭头位置应随触发器切换而变化').not.toBe(r.x2)

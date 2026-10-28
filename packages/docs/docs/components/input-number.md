@@ -223,12 +223,16 @@ el.parser = (s) => Number(s.replace(/[^0-9.\-]/g, ''))
 
 <script setup>
 import { onMounted } from 'vue'
+import { whenTagDefined } from '../.vitepress/theme/when-defined'
 onMounted(() => {
   // 函数式 formatter/parser demo：千分位 + 前后缀的完全自定义格式（函数通道）
   const fnEl = document.getElementById('num-fn-format')
   if (fnEl) {
-    fnEl.formatter = (v) => `≈ ${v.toLocaleString()} 件`
-    fnEl.parser = (s) => Number(s.replace(/[^0-9.\-]/g, ''))
+    // 升级守卫：formatter/parser 是 function 型 property，升级前写入会被自有属性遮蔽
+    whenTagDefined('oas-input-number', () => {
+      fnEl.formatter = (v) => `≈ ${v.toLocaleString()} 件`
+      fnEl.parser = (s) => Number(s.replace(/[^0-9.\-]/g, ''))
+    })
   }
 
   // scrub demo：提交后显示当前值（oas-change）

@@ -358,6 +358,7 @@ readonly 下面板可展开浏览、单元格可键盘导航，但点选 / 快�
 
 <script setup>
 import { onMounted } from 'vue'
+import { whenTagDefined } from '../.vitepress/theme/when-defined'
 onMounted(() => {
   const el = document.getElementById('date-picker-event')
   const out = document.getElementById('date-picker-output')
@@ -388,26 +389,31 @@ onMounted(() => {
   sc?.addEventListener('oas-change', (e) => {
     scOut.textContent = `oas-change: ${e.detail.value}`
   })
-  sc.shortcuts = [
-    { label: '今天', getValue: () => new Date() },
-    {
-      label: '明天',
-      getValue: () => {
-        const d = new Date()
-        d.setDate(d.getDate() + 1)
-        return d
+  whenTagDefined('oas-date-picker', () => {
+    sc.shortcuts = [
+      { label: '今天', getValue: () => new Date() },
+      {
+        label: '明天',
+        getValue: () => {
+          const d = new Date()
+          d.setDate(d.getDate() + 1)
+          return d
+        },
       },
-    },
-    { label: '固定 2026-08-10', value: '2026-08-10' },
-  ]
+      { label: '固定 2026-08-10', value: '2026-08-10' },
+    ]
+  })
 
   // 禁用过去日期（disabled-date 走 property）
   const dd = document.getElementById('date-picker-disabled-date')
-  dd.disabledDate = (d) => {
-    const t = new Date()
-    t.setHours(0, 0, 0, 0)
-    return d < t
-  }
+  // 升级守卫：升级前写 disabledDate 会被自有属性遮蔽（禁用规则静默失效）
+  whenTagDefined('oas-date-picker', () => {
+    dd.disabledDate = (d) => {
+      const t = new Date()
+      t.setHours(0, 0, 0, 0)
+      return d < t
+    }
+  })
 
   // 单元格渲染：模板经 JS 注入（内联 <template slot="cell"> 会被 Vue 编译管线吞空，dev 下尤甚），
   // 模板只提供日期数字骨架；标记点由 oas-cell-render 只给固定几天追加（幂等）
