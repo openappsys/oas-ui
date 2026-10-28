@@ -95,21 +95,40 @@ export function proLeakViolations(registry, defaultTableChainFileList) {
 }
 
 /**
+ * 登记表中出现过的 family 集合（去重、保持首次出现顺序）。
+ * perf:size 的族包收集清单**唯一来源**——不得在脚本里另手工维护第二份族包清单
+ * （两处手工同步会漂移；typo family 会被派生进收集清单并因 map 缺失 fail closed）。
+ */
+export function registryFamilies(registry) {
+  return [...new Set(registry.map((item) => item.family).filter(Boolean))]
+}
+
+/**
  * CDN 族包包含关系判定（族包构建输入 vs 登记表）。
  *
  * `familySources`：`{ [family]: string[] | null }`——各 `dist/cdn/<family>.js.map` 的
  * `sources` 数组（bundler 实际解析的输入模块，即真实静态图；IIFE bundle 本体无静态
- * import 可遍历，sourcemap 是唯一精确的构建输入证据）。`null`/缺键 = 族包 sourcemap
- * 缺失或不可解析 → 对该族所有登记条目报 `no-map`（fail closed：禁用 sourcemap 或改
- * 产物布局必须同步此门禁，不允许静默跳过）。
- *
+ * import 可遍历，sourcemap 是唯一精确的构建输入证据）。判定对**登记表自身不完整**
+ * 也不静默：
+ * - 条目缺 `family` 字段 → `{ reason: 'missing-family' }`（登记不完整，不得跳过）；
+ * - family 不在 `familySources` 键集 → `{ reason: 'unknown-family' }`（收集清单与
+ *   登记表脱节，正常接线下不应发生——收集清单应由 `registryFamilies` 派生）；
+ * - family 的值为 null/非数组（map 缺失或不可解析）→ `{ reason: 'no-map' }`
+ *   （fail closed：禁用 sourcemap 或改产物布局必须同步此门禁）；
  * - capability 不在族包输入 → `{ reason: 'missing' }`；
  * - helper 在族包输入 → `{ reason: 'leaked' }`。
  */
 export function familyInclusionViolations(registry, familySources) {
   const out = []
   for (const item of registry) {
-    if (!item.family) continue
+    if (!item.family) {
+      out.push({ item, family: null, reason: 'missing-family' })
+      continue
+    }
+    if (!(item.family in familySources)) {
+      out.push({ item, family: item.family, reason: 'unknown-family' })
+      continue
+    }
     const sources = familySources[item.family]
     if (!Array.isArray(sources)) {
       out.push({ item, family: item.family, reason: 'no-map' })

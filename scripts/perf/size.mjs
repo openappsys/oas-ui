@@ -60,6 +60,7 @@ import {
   familyInclusionViolations,
   proLeakViolations,
   budgetCoverageViolations,
+  registryFamilies,
 } from './lib/l3-registry.mjs'
 import { checkPerfDocs } from './lib/baseline-docs.mjs'
 import { happyDomLabel } from './lib/render-budgets.mjs'
@@ -361,8 +362,8 @@ function runSelfTest() {
         'tA@data:leaked',
       )
       check(
-        '族包包含：sourcemap 缺失 fail closed 报 no-map',
-        famReasons(familyInclusionViolations(TREG_FAM, {})),
+        '族包包含：sourcemap 不可解析（键存在但非数组）报 no-map',
+        famReasons(familyInclusionViolations(TREG_FAM, { data: null })),
         'tE@data:no-map,tA@data:no-map',
       )
       check(
@@ -371,6 +372,23 @@ function runSelfTest() {
         familyInclusionViolations(TREG_FAM, { data: ['D:' + '\\repo\\packages\\ui\\src\\data\\table\\edit\\index.ts'] })
           .length,
         0,
+      )
+      check(
+        '族包包含：条目缺 family 报 missing-family（不静默跳过）',
+        famReasons(
+          familyInclusionViolations([{ id: 'tN', entry: 'data/table/view', kind: 'helper', measured: false }], FAM_OK),
+        ),
+        'tN@null:missing-family',
+      )
+      check(
+        '族包包含：未知 family 报 unknown-family（收集清单与登记表脱节）',
+        famReasons(familyInclusionViolations(TREG_FAM, { other: [] })),
+        'tE@data:unknown-family,tA@data:unknown-family',
+      )
+      check(
+        '族包清单：registryFamilies 派生去重保序（缺 family 不产生族）',
+        registryFamilies([{ family: 'b' }, { family: 'a' }, { family: 'b' }, { id: 'x' }]).join(','),
+        'b,a',
       )
     }
     // render.env.happyDom 独立刷新（perf:size --update-baseline 不重写渲染测量数据）
@@ -830,11 +848,12 @@ for (const item of L3_REGISTRY) {
 // ---------- 3.4 CDN 族包包含关系（真实静态图 = 族包 sourcemap 的构建输入 sources） ----------
 // 族包产物（dist/cdn/<family>.js）是自包含 IIFE bundle，无静态 import 可遍历；
 // 其 .map 的 sources 数组是 bundler 实际解析的输入模块清单，即精确的构建输入图。
-// 注册型 L3 缺席族包 = CDN 一把梭消费者拿不到能力；helper 型混入 = 死重。map 缺失 fail closed。
+// 族包收集清单由登记表 family 集合派生（registryFamilies），不另手工维护第二份清单；
+// 登记缺 family / 未知 family / map 缺失一律显式违规（fail closed），不静默跳过。
 {
-  const FAMILY_BUNDLES = ['data', 'navigation', 'feedback', 'form']
+  const FAMILY_BUNDLES = registryFamilies(L3_REGISTRY)
   const familySources = {}
-  let mapBroken = false
+  const brokenMaps = []
   for (const family of FAMILY_BUNDLES) {
     const mapPath = join(UI_DIST, 'cdn', `${family}.js.map`)
     try {
@@ -842,32 +861,29 @@ for (const item of L3_REGISTRY) {
       if (!Array.isArray(familySources[family])) throw new Error('sources 不是数组')
     } catch (error) {
       familySources[family] = null
-      mapBroken = true
-      fail = true
-      console.error(
-        `FAIL [族包包含关系] dist/cdn/${family}.js.map 不可解析（${error.message}）：` +
-          '无法核对族包构建输入，请 pnpm build 重建 dist（勿禁用族包 sourcemap）',
-      )
+      brokenMaps.push({ family, error: String(error?.message ?? error) })
     }
   }
   const violations = familyInclusionViolations(L3_REGISTRY, familySources)
+  const printed = new Set()
   for (const { item, family, reason } of violations) {
     fail = true
-    if (reason === 'missing') {
-      console.error(
-        `FAIL [族包包含关系] 注册型 L3 ${item.id}（${item.entry}）不在 ${family} 族包构建输入：` +
-          'CDN 一把梭消费者声明对应属性时能力静默失效',
-      )
-    } else if (reason === 'leaked') {
-      console.error(
-        `FAIL [族包包含关系] helper 型 L3 ${item.id}（${item.entry}）混入 ${family} 族包构建输入：` +
-          '无 HTML/属性触发面，进族包即死重',
-      )
+    const detail = {
+      'missing-family': `登记条目 ${item.id} 缺少 family 字段：无法核对 CDN 族包包含关系（登记表不完整）`,
+      'unknown-family': `登记条目 ${item.id} 的 family '${family}' 不在族包收集清单：登记表与族包收集脱节（清单应由 L3_REGISTRY 的 family 集合派生）`,
+      'no-map': `${family} 族包 sourcemap 不可解析（${brokenMaps.find((b) => b.family === family)?.error ?? '未知原因'}）：无法核对 ${item.id}（${item.entry}）的族包包含关系，请 pnpm build 重建 dist（勿禁用族包 sourcemap）`,
+      missing: `注册型 L3 ${item.id}（${item.entry}）不在 ${family} 族包构建输入：CDN 一把梭消费者声明对应属性时能力静默失效`,
+      leaked: `helper 型 L3 ${item.id}（${item.entry}）混入 ${family} 族包构建输入：无 HTML/属性触发面，进族包即死重`,
+    }[reason]
+    const message = `FAIL [族包包含关系] ${detail}`
+    if (!printed.has(message)) {
+      printed.add(message)
+      console.error(message)
     }
   }
-  if (!violations.length && !mapBroken) {
+  if (!violations.length) {
     console.log(
-      `PASS [族包包含关系] ${FAMILY_BUNDLES.length} 个族包 × 登记表 ${L3_REGISTRY.filter((i) => i.family).length} 个 L3（注册型在族包、helper 不在）`,
+      `PASS [族包包含关系] ${FAMILY_BUNDLES.length} 个族包 × 登记表 ${L3_REGISTRY.length} 个 L3（注册型在族包、helper 不在，全部条目有 family 且族包可核对）`,
     )
   }
 }
