@@ -40,7 +40,7 @@
 ### 详细需求
 
 - **旧行为缺陷**：显式 locale 经全局 i18n registry `setLocale()` 切换，`await` 边界后渲染；同一轮 `Promise.all` 中多请求（冷加载的真实 import 竞态窗口尤甚）会把 setLocale 与渲染错位配对——请求串语言（zh 输出 en 文案）、并把进程级全局 locale 永久改写、触发多次 locale/translator 广播。
-- **新语义**：单一 i18n ready Promise 装载 registry 并注册内置 zh-CN / en 语言包（所有并发请求共享同一份，无第二条冷加载路径）；显式 locale 时确保 config-provider 组件已装载，在共享 document 内创建**本次调用独立的临时 `<oas-config-provider locale>`**，目标元素挂其下，组件 `t()` 就近读取 provider 翻译器同步渲染（嵌套子组件同源），输出不含 provider 包装；`try/finally` 清理目标元素与临时 provider（含渲染异常中断路径）。**不调用 `setLocale`**：不改全局 locale、不触发 locale/translator 广播。
+- **新语义**：单一 i18n ready Promise 装载 registry 并注册内置 zh-CN / en 语言包（所有并发请求共享同一份，无第二条冷加载路径）；显式 locale 时确保 config-provider 组件已装载，在共享 document 内创建**本次调用独立的临时 `<oas-config-provider locale>`**，目标元素挂其下，组件 `t()` 就近读取 provider 翻译器同步渲染（嵌套子组件同源），输出不含 provider 包装；`try/finally` 清理目标元素与临时 provider（含渲染异常中断路径）。**不调用 `setLocale`**：不改全局 locale、渲染段不触发 locale/translator 广播（i18n registry 一次性装载副作用除外）。
 - **同步临界区**：临时 provider 创建、目标渲染、嵌套 DSD 序列化、快照提取全程同步无 await；渲染后的并发准备（装载/ready）都在 await 边界之前收口。冷加载并发不被无意义串行化（无全局 mutex、无 AsyncLocalStorage），不为未来 RTL 强加 direction。
 
 ### 非目标

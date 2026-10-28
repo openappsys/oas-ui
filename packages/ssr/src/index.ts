@@ -68,7 +68,8 @@
  *
  * locale 请求局部化：显式 `opts.locale` 只影响本次调用及嵌套子树——内部用本次调用独立的
  * 临时 `<oas-config-provider locale>` 就近注入（渲染段同步、输出不含 provider 包装、
- * `try/finally` 清理），不改全局 locale、不触发 locale/translator 广播；未传 locale 保持
+ * `try/finally` 清理），不改全局 locale、渲染段不触发 locale/translator 广播
+ * （i18n registry 一次性装载副作用除外）；未传 locale 保持
  * 旧行为（沿用调用时全局 locale）。多请求并发（含冷加载）逐请求语言正确，无需加锁。
  *
  * Node 安全说明：本模块的静态导入只含纯数据（i18n 语言包）与 happy-dom（shim），
@@ -522,7 +523,8 @@ let i18nReady: Promise<typeof import('@oas-ui/i18n')> | null = null
  * 之后所有并发请求共享这一份 Promise——不再有第二条冷加载路径。幂等。
  *
  * 注意：这里只 registerLocale，不 setLocale——显式 locale 走本次调用的临时 provider，
- * 不动全局 locale、不触发 locale/translator 广播（旧行为里唯一的 setLocale 全局切换
+ * 不动全局 locale、渲染段不触发 locale/translator 广播（唯一的广播副作用是首次
+ * import 触发的一次性 syncTranslator 装载；旧行为里唯一的 setLocale 全局切换
  * 已从渲染器移除，宿主侧的全局 setLocale 语义不受影响）。
  */
 function ensureI18nReady(): Promise<typeof import('@oas-ui/i18n')> {
