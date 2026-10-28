@@ -3,6 +3,11 @@ import '@oas-ui/i18n'
 // 若使用内置图名，需自行 `import '@oas-ui/icons/register'` 一次（见 docs）。
 import '@oas-ui/icons/register'
 
+// 唯一透传的 registry API：CDN IIFE 场景切语言用（中文 `setLocale('zh-CN')`；英文动态 import
+// 同版本纯数据 `@oas-ui/i18n/dist/en.js` 后 `setLocale(module.default)`）。其余 registry API
+// （loadLocale/t/onLocaleChange/registerLocale…）不进导出面——CDN 消费方走 OASUI.setLocale 单一入口。
+export { setLocale } from '@oas-ui/i18n'
+
 import './basic/button/index.js'
 import './basic/icon/index.js'
 import './basic/tag/index.js'

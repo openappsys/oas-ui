@@ -63,6 +63,23 @@
 
 > **CDN 路径入口说明**：组件目录下的 `oas-*.js` 是纯类定义（供打包器 tree-shaking），**不含注册副作用**；会执行 `customElements.define` 的是 `index.js`。CDN 直引请用上面的整包 `cdn.js` 或按需短路径（走 exports map 自动落到 `index.js`），**不要直引 `dist/basic/button/oas-button.js`**（import 成功但元素不注册、页面不渲染）。
 
+### CDN 切换组件内置文案（i18n）
+
+CDN IIFE 暴露唯一一个 registry API：`OASUI.setLocale`。内置默认中文；切英文需动态 import 与 IIFE **同版本**的纯数据语言包（内部相对引用 `locales/en.js`），再把语言包对象交给 `setLocale`：
+
+```html
+<script src="https://unpkg.com/@oas-ui/ui@2/dist/cdn.js"></script>
+<script type="module">
+  // 英文：同版本纯数据 en.js（无 registry 副作用），成功后可缓存复用
+  const en = await import('https://unpkg.com/@oas-ui/i18n@2/dist/en.js')
+  OASUI.setLocale(en.default) // 已挂载组件即时刷新（popconfirm/empty/table 空态等）
+  // 中文：内置默认包已注册，按名同步切回
+  OASUI.setLocale('zh-CN')
+</script>
+```
+
+只暴露 `setLocale` 一个入口（`loadLocale`/`t`/`onLocaleChange` 等不进 CDN 导出面）；语言包版本务必与 `@oas-ui/ui` 同版，避免「新组件 + 旧语言包」。完整做法（成功缓存/失败重试/慢响应竞态）可参考[官方模板 admin-pro/cdn](https://github.com/openappsys/oas-ui-templates) 的 `i18n.js`。
+
 ## 安装（npm / pnpm / yarn）
 
 ```bash

@@ -63,6 +63,23 @@ For multiple components, add one short path each — **only the components you u
 
 > **CDN entry-point note**: the `oas-*.js` files under each component directory are pure class definitions (for bundler tree-shaking) and do **not** register anything; `customElements.define` runs in `index.js`. For direct CDN usage, use the full `cdn.js` above or the on-demand short path (resolved to `index.js` via the exports map). Do **not** import `dist/basic/button/oas-button.js` directly — the import succeeds but the element never registers, so nothing renders.
 
+### Switching built-in component texts on CDN (i18n)
+
+The CDN IIFE exposes exactly one registry API: `OASUI.setLocale`. The default is Chinese; for English, dynamically import the pure-data locale pack pinned to the **same version** as the IIFE (it relatively imports `locales/en.js`) and hand the locale object to `setLocale`:
+
+```html
+<script src="https://unpkg.com/@oas-ui/ui@2/dist/cdn.js"></script>
+<script type="module">
+  // English: same-version pure-data en.js (no registry side effects); cache it after success
+  const en = await import('https://unpkg.com/@oas-ui/i18n@2/dist/en.js')
+  OASUI.setLocale(en.default) // mounted components refresh instantly (popconfirm/empty/table empty state, etc.)
+  // Chinese: the built-in default pack is already registered; switch back by name, synchronously
+  OASUI.setLocale('zh-CN')
+</script>
+```
+
+Only `setLocale` is exposed (`loadLocale`/`t`/`onLocaleChange` etc. are not part of the CDN export surface); keep the locale pack version in lockstep with `@oas-ui/ui` to avoid "new components + stale locale pack". For the full recipe (success caching / failure retry / slow-response race), see the `i18n.js` of the [official admin-pro/cdn template](https://github.com/openappsys/oas-ui-templates).
+
 ## Install (npm / pnpm / yarn)
 
 ```bash

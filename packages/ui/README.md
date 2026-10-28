@@ -27,6 +27,15 @@ CDN 一键引入：
 <oas-button type="primary">Hello OAS-UI</oas-button>
 ```
 
+切换组件内置文案（popconfirm/空态等）：`OASUI.setLocale` —— 中文 `OASUI.setLocale('zh-CN')`；英文动态 import 同版本纯数据语言包后 `OASUI.setLocale(mod.default)`：
+
+```html
+<script type="module">
+  const en = await import('https://unpkg.com/@oas-ui/i18n@2/dist/en.js')
+  OASUI.setLocale(en.default)
+</script>
+```
+
 包管理方式：
 
 ```html
@@ -91,6 +100,15 @@ CDN, one-liner:
 <script type="module" src="https://unpkg.com/@oas-ui/ui@2/dist/cdn.js"></script>
 
 <oas-button type="primary">Hello OAS-UI</oas-button>
+```
+
+Switching built-in component texts (popconfirm/empty state, etc.): `OASUI.setLocale` — Chinese via `OASUI.setLocale('zh-CN')`; English via dynamically importing the same-version pure-data locale pack and calling `OASUI.setLocale(mod.default)`:
+
+```html
+<script type="module">
+  const en = await import('https://unpkg.com/@oas-ui/i18n@2/dist/en.js')
+  OASUI.setLocale(en.default)
+</script>
 ```
 
 Via a package manager:

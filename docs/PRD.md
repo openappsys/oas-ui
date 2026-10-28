@@ -76,6 +76,29 @@
 - `pnpm release:check:test` 接入 CI test job，防 workflow/脚本漂移。
 - 工程文档（docs/engineering.md §5）同步两 job 时序与权限模型。
 
+## 未发布：CDN i18n（组件内置文案切换）✅
+
+### 功能定义
+
+CDN IIFE 此前内联了 i18n registry 但无切换入口，宿主只能消费恒为 zh-CN 的内置文案。本批给主入口 `@oas-ui/ui` 与 9 个 CDN 族包新增**唯一** registry 透传导出 `setLocale`（IIFE 全局 `OASUI.setLocale`）；不新增组件、事件、属性，不改 `ssr.ts` 与 SSR 白名单。配套：官方模板 admin-pro/cdn 与 cdn-mpa 接入同一链路。版本号未定，不标已发布。
+
+### 详细需求
+
+- **导出面**：仅新增 `setLocale`；`loadLocale` / `t` / `onLocaleChange` / `registerLocale` / `getLocale` / `getLocaleName` / `getDirection` 及语言包本体不进主入口与族包导出面。registry/core 的 globalThis 单例复用，不重写 registry。
+- **切换语义**：中文 `setLocale('zh-CN')`（IIFE 内联 registry 已默认注册，同步生效）；英文由宿主动态 import 与 IIFE **同版本**的纯数据 `@oas-ui/i18n/dist/en.js`（内部相对引用 `locales/en.js`，无 registry 副作用）后 `setLocale(module.default)`。已挂载组件经 translator 广播即时刷新；不做同步壳层 API 的 async 化。
+- **宿主侧契约（官方模板落地）**：成功 Promise/对象缓存（重复切换零下载）；失败不永久缓存、下次切换自动重试；慢英文包返回前用户已切回中文的迟到结果不得覆盖中文；MPA 切语言仍为「写 storage + 整页 reload」，组件 registry 在页面加载时按当前语言对齐。
+- **模板工程配套**：e2e 离线 mock 按真实文件路径回填 unpkg 请求（theme/ui/i18n 三 pin 各回各的真实产物，不得把所有请求当 cdn.js）；`bump-cdn` 同时校验/改写 html 的 theme/ui 与 i18n.js 的语言包版本，避免「新组件 + 旧语言包」。
+
+### 非目标
+
+不导出 loadLocale/全部语言包/t/getDirection/onLocaleChange；不改 ssr.ts 与 SSR locale 语义；不改 React/Vue/Svelte 模板；不在 i18n 包内新增「远程加载器」，语言包获取始终由宿主动态 import 完成。
+
+### 验收标准
+
+- e2e（`packages/ui/qa-regression/cdn-i18n.spec.ts`，真实 dist 产物，chromium + firefox）：真实 cdn.js IIFE 加载后 `OASUI.setLocale` 存在且导出面不扩大（loadLocale/t/onLocaleChange/registerLocale 均为 undefined）；ESM `dist/index.js` 只新增 setLocale 导出；feedback 族包同口径抽验；已挂载 popconfirm/empty 中文 → 英文（真实 en.js + 相对 locales/en.js）→ 中文即时刷新，全程无 raw key / pageerror / console error。
+- 模板 e2e（admin-pro/cdn + cdn-mpa，Chromium + Firefox 真实交互）：部门删除 popconfirm 英文 OK/Cancel、中文确定/取消；en-US 首访与刷新一致；延迟英文包先切英文再切中文释放后仍中文；首载 404 组件维持中文、重试成功切英文；console 零告警；`bump-cdn --check` 对 stale i18n pin exit 1。
+- 主仓全量验证：build / typecheck / 全量单测 / 全量 e2e / api:check / llms:check / stats / skill:check / perf:size / lint / format 通过。
+
 ## 未发布：表格 Pro / JSON 查看器 / Sidebar 维护 ✅
 
 ### 功能定义
