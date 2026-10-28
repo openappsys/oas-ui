@@ -4,6 +4,10 @@
 
 ## [未发布]
 
+### 修复
+
+- **`@oas-ui/ssr` locale 请求局部化**：`renderToString` 的显式 `opts.locale` 改为只影响本次调用及嵌套子树——渲染器在共享 document 内创建本次调用独立的临时 `<oas-config-provider locale>`，目标元素挂其下同步渲染（输出不含 provider 包装），`try/finally` 清理；不再全局 `setLocale`（不改全局 locale、不触发 locale/translator 广播），i18n registry 装载与内置 zh-CN / en 语言包注册收敛为单一 ready Promise。此前并发渲染（同一轮 `Promise.all` 混合多语言，冷加载时尤甚）存在 setLocale 与渲染错位配对：请求串语言、全局 locale 被永久改写并多次广播。未传 `locale` 保持旧行为：沿用调用时全局 locale。
+
 ### 新增
 
 - **`oas-table` windowed 视觉映射与可选视觉协议（`visual-total` / `visual-start`）**：行窗口渲染与期望区间请求共用同一份 abs/flow 记账——切片内含行内嵌展开行（或视觉协议生效）时，`oas-window-request` 的期望区间把可视窗口按视觉槽位映射回数据坐标，覆盖真实可见数据行及其展开属主行（不再按均匀数据网格猜测；此前切片展开数超过缓冲 + `WINDOW_MARGIN` = 12 时，快速跨越装载边界的滚动可能出现视觉重锚，本条目已收口该缺口，跨切片场景由下条可选协议保证）。`start` / `end` 永远是数据坐标；映射生效时 detail 附带可选 `visualStart` / `visualEnd`（当前可视窗口的视觉坐标，供宿主视觉取数）。去重升级为「同窗口」= 数据区间与视觉字段都相同——展开数或 `visual-total` 变化移动可视区间时，即使数据区间相同也重新派发；切片无展开且无协议时派发行为逐值不变。可选视觉协议：`visual-total`（全量视觉行数，不小于 `total`）与 `visual-start`（切片首行视觉行号）**同时有效**才启用——渲染 flow 从 `visual-start × 行高` 起、滚动总高按 `visual-total` 计，支持切片前已有展开行的宿主场景；协议生效后展开由宿主完全控制（本地点击展开钮只派发 `oas-expand` 并 devWarn 一次，不修改 `expanded`）。缺失 / 非法 / 只有其一 / 小于 `total` 时 devWarn 一次并整体回落当前模型；绝对数据行号（`data-row-index`、事件 rowIndex、ARIA、range/displaySnapshot）与非 windowed 路径不变。

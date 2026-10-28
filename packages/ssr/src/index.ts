@@ -66,6 +66,11 @@
  * // => '<oas-button type="primary"><template shadowrootmode="open">…</template>提交</oas-button>'
  * ```
  *
+ * locale 请求局部化：显式 `opts.locale` 只影响本次调用及嵌套子树——内部用本次调用独立的
+ * 临时 `<oas-config-provider locale>` 就近注入（渲染段同步、输出不含 provider 包装、
+ * `try/finally` 清理），不改全局 locale、不触发 locale/translator 广播；未传 locale 保持
+ * 旧行为（沿用调用时全局 locale）。多请求并发（含冷加载）逐请求语言正确，无需加锁。
+ *
  * Node 安全说明：本模块的静态导入只含纯数据（i18n 语言包）与 happy-dom（shim），
  * 不经过 @oas-ui/core/i18n registry——那些模块求值 `class extends HTMLElement` 需要全局
  * HTMLElement 已就位，故全部走首次 renderToString 内的动态 import（shim 先装好再装载）。
@@ -278,7 +283,7 @@ export type WhiteListTag = (typeof WHITELIST)[number]
 export type RenderLocale = 'zh-CN' | 'en'
 
 export interface RenderToStringOptions {
-  /** 内置文案语言。不传则沿用当前全局 locale（默认 zh-CN） */
+  /** 内置文案语言。显式传入只影响本次调用及嵌套子树；不传则沿用当前全局 locale（默认 zh-CN） */
   locale?: RenderLocale
 }
 
@@ -509,16 +514,34 @@ function ensureTag(tag: string): Promise<void> {
   return loading
 }
 
-let i18nApi: typeof import('@oas-ui/i18n') | null = null
+let i18nReady: Promise<typeof import('@oas-ui/i18n')> | null = null
 
 /**
- * 装载 i18n registry（纯数据模块，但保持动态 import 以便首次调用时装载，避免无谓的启动开销）。幂等。
+ * 单一 i18n ready Promise：首次显式 locale 渲染时装载 i18n registry 并注册内置
+ * zh-CN / en 两个 RenderLocale 语言包（按名翻译器供临时 config-provider 就近注入使用），
+ * 之后所有并发请求共享这一份 Promise——不再有第二条冷加载路径。幂等。
+ *
+ * 注意：这里只 registerLocale，不 setLocale——显式 locale 走本次调用的临时 provider，
+ * 不动全局 locale、不触发 locale/translator 广播（旧行为里唯一的 setLocale 全局切换
+ * 已从渲染器移除，宿主侧的全局 setLocale 语义不受影响）。
  */
-async function ensureI18n(): Promise<typeof import('@oas-ui/i18n')> {
-  if (!i18nApi) {
-    i18nApi = await import('@oas-ui/i18n')
+function ensureI18nReady(): Promise<typeof import('@oas-ui/i18n')> {
+  if (!i18nReady) {
+    // i18n → core → `class OASElement extends HTMLElement`：类求值需要 shim 全局先就位
+    ensureShim()
+    i18nReady = import('@oas-ui/i18n')
+      .then((api) => {
+        api.registerLocale(LOCALES['zh-CN'])
+        api.registerLocale(LOCALES['en'])
+        return api
+      })
+      .catch((e) => {
+        // 装载失败不缓存 rejected ready Promise：失败后重置，后续请求可重试（对齐旧 ensureI18n 语义）
+        i18nReady = null
+        throw e
+      })
   }
-  return i18nApi
+  return i18nReady
 }
 
 /**
@@ -547,45 +570,65 @@ export async function renderToString(
   // 嵌套序列化前置：slotHTML 里出现的白名单子组件 tag 也需已装载（否则子组件不 upgrade，
   // shadowRoot 为空 → 无法序列化其 shadow 内容）。非白名单子组件不装载、按原始标记输出。
   await ensureNestedTags(slotHTML)
-  if (opts.locale) await applyLocale(opts.locale)
+  if (opts.locale) {
+    await ensureI18nReady()
+    // 本次调用的临时 provider 依赖 config-provider 组件已注册（findConfigProvider 按 tag 名就近查找）
+    await ensureTag('oas-config-provider')
+  }
 
-  // 注意：applyLocale（setLocale 是进程级全局态）之后的渲染段全程同步、无 await——
-  // 单线程下多请求交错调用时 locale 不会被串。未来改动请勿在此区间插入 await。
+  // 显式 locale 路径（本轮改动语义）：locale 只影响本次请求及嵌套子树——在共享 document 内
+  // 创建本次调用独立的临时 <oas-config-provider locale>，目标元素挂其下，组件 t() 就近读取
+  // provider 的 locale 翻译器。渲染前后的准备（临时 provider 创建 / 装载）都在 await 之后完成，
+  // 下面的临界区全程同步、无 await（create → 挂载 → render/update → 嵌套 DSD → 快照提取），
+  // 且每个请求的临时 provider 相互独立，单线程下多请求交错调用互不串语言，无需全局 mutex。
+  // 未传 locale 保持旧行为：沿用调用时全局 locale（i18n registry 的全局 translator），不建 provider。
   const { document } = ensureShim()
-  const el = document.createElement(tag)
-  for (const [name, value] of Object.entries(attrs)) {
-    el.setAttribute(name, value)
+  let el: HTMLElement | null = null
+  let provider: HTMLElement | null = null
+  try {
+    if (opts.locale) {
+      provider = document.createElement('oas-config-provider')
+      provider.setAttribute('locale', opts.locale)
+    }
+    el = document.createElement(tag)
+    for (const [name, value] of Object.entries(attrs)) {
+      el.setAttribute(name, value)
+    }
+    if (slotHTML) {
+      el.innerHTML = slotHTML
+    }
+
+    // appendChild 触发 connectedCallback → render() + update()（与浏览器首帧行为一致）
+    const host = document.body ?? document.documentElement
+    // 目标必须挂在 provider 之下：t() 沿祖先链就近读取 locale 注入（含 slot 内嵌套子组件）
+    host.appendChild(provider ?? el)
+    if (provider) provider.appendChild(el)
+
+    // 嵌套递归序列化：把 light DOM 里所有已 upgrade 的自定义元素（shadowRoot 非空者）
+    // 的 shadowRoot.innerHTML + 指纹包成 <template shadowrootmode="open"> 插到该子元素内容最前。
+    // happy-dom 序列化 template 元素时包含其 content（已探测验证），故无需手写序列化。
+    injectNestedDSD(el, document)
+
+    // shadowRoot 序列化为 DSD template 内容；宿主标签手动序列化：
+    // happy-dom 的属性序列化只转义 & 与 "，不转义 < / >（属性值内的 < 可逃逸出属性），
+    // 故这里自行做完整转义，同时保留组件在宿主侧同步的属性（如 oas-tag 的 role/tabindex）。
+    const shadowHtml = el.shadowRoot?.innerHTML ?? ''
+    const attrsHtml: string[] = []
+    for (let i = 0; i < el.attributes.length; i++) {
+      const attr = el.attributes.item(i)
+      if (!attr) continue
+      attrsHtml.push(` ${attr.name}="${escapeAttr(attr.value)}"`)
+    }
+    const tagName = el.tagName.toLowerCase()
+    // light DOM 用处理后的 el.innerHTML（保留组件对 light DOM 的同步，如 tabs 给非激活
+    // panel 加 hidden、checkbox-group 给子项同步 checked），而非原始 slotHTML 入参
+    const lightHtml = el.innerHTML
+    return `<${tagName}${attrsHtml.join('')}><template shadowrootmode="open">${fingerprintFor(tagName)}${shadowHtml}</template>${lightHtml}</${tagName}>`
+  } finally {
+    // try/finally 清理本次调用的临时 DOM（含异常中断路径），绝不把 provider / 目标宿主留在共享 document
+    el?.remove()
+    provider?.remove()
   }
-  if (slotHTML) {
-    el.innerHTML = slotHTML
-  }
-
-  // appendChild 触发 connectedCallback → render() + update()（与浏览器首帧行为一致）
-  const host = document.body ?? document.documentElement
-  host.appendChild(el)
-
-  // 嵌套递归序列化：把 light DOM 里所有已 upgrade 的自定义元素（shadowRoot 非空者）
-  // 的 shadowRoot.innerHTML + 指纹包成 <template shadowrootmode="open"> 插到该子元素内容最前。
-  // happy-dom 序列化 template 元素时包含其 content（已探测验证），故无需手写序列化。
-  injectNestedDSD(el, document)
-
-  // shadowRoot 序列化为 DSD template 内容；宿主标签手动序列化：
-  // happy-dom 的属性序列化只转义 & 与 "，不转义 < / >（属性值内的 < 可逃逸出属性），
-  // 故这里自行做完整转义，同时保留组件在宿主侧同步的属性（如 oas-tag 的 role/tabindex）。
-  const shadowHtml = el.shadowRoot?.innerHTML ?? ''
-  const attrsHtml: string[] = []
-  for (let i = 0; i < el.attributes.length; i++) {
-    const attr = el.attributes.item(i)
-    if (!attr) continue
-    attrsHtml.push(` ${attr.name}="${escapeAttr(attr.value)}"`)
-  }
-  const tagName = el.tagName.toLowerCase()
-  // light DOM 用处理后的 el.innerHTML（保留组件对 light DOM 的同步，如 tabs 给非激活
-  // panel 加 hidden、checkbox-group 给子项同步 checked），而非原始 slotHTML 入参
-  const lightHtml = el.innerHTML
-  el.remove()
-
-  return `<${tagName}${attrsHtml.join('')}><template shadowrootmode="open">${fingerprintFor(tagName)}${shadowHtml}</template>${lightHtml}</${tagName}>`
 }
 
 /**
@@ -632,12 +675,4 @@ function injectNestedDSD(el: HTMLElement, document: Document): void {
 /** 属性值 HTML 转义（& " < >），防止注入闭合引号/标签 */
 function escapeAttr(value: string): string {
   return value.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-}
-
-/** registerLocale + setLocale：先注册语言包再按名切换（与 @oas-ui/i18n 约定一致） */
-async function applyLocale(locale: RenderLocale): Promise<void> {
-  const { registerLocale, setLocale } = await ensureI18n()
-  const pack = LOCALES[locale]
-  registerLocale(pack)
-  setLocale(pack.name)
 }

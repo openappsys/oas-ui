@@ -172,10 +172,18 @@ for the rendering itself.
 > `globalThis` (required for component class evaluation and registration). If
 > your Node process uses another global DOM solution (other SSR libraries, test
 > framework environments), evaluate coexistence first — the renderer throws a
-> clear error when globals cannot be installed. Also, the `locale` option
-> switches via the global i18n registry; the rendering segment runs
-> synchronously, so there is no interleaving window between requests on a single
-> thread.
+> clear error when globals cannot be installed.
+>
+> **Request-scoped locale**: an explicit `locale` affects only that call and its
+> nested subtree — the renderer creates a per-call temporary
+> `<oas-config-provider locale>` inside the shared DOM, mounts the target
+> element under it and renders synchronously (the output contains no provider
+> wrapper), then removes both in a `try/finally`. It never changes the global
+> locale and never broadcasts locale/translator events. Omitting `locale`
+> keeps the old behavior: the global locale at call time (the host-side
+> `setLocale()` semantics are unchanged). Concurrent requests (mixed languages
+> in a single `Promise.all`, cold and hot) are fully independent with no
+> interleaving window and require no server-side locking.
 
 ### Nuxt (recommended: the `@oas-ui/nuxt` module)
 

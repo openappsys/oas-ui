@@ -2,8 +2,9 @@
  * @oas-ui/nuxt SSR helper —— `renderOasToString` / `useOasRender`。
  *
  * `renderToString` 的薄包装：渲染器首次调用时会自行装载 happy-dom DOM shim（进程级副作用，
- * 见 @oas-ui/ssr 的声明）并动态装载白名单组件目录，后续调用仅为渲染本身。locale 经全局
- * i18n registry 切换，渲染段同步执行，单线程下多请求无交错窗口。
+ * 见 @oas-ui/ssr 的声明）并动态装载白名单组件目录，后续调用仅为渲染本身。显式 `locale` 选项
+ * 只影响本次调用及嵌套子树（渲染器内部用本次调用独立的临时 config-provider，渲染段同步、
+ * 不改全局 locale、不广播）；未传 locale 沿用调用时全局 locale。并发请求各自独立，无交错窗口。
  *
  * 用法（module 已注册后自动导入，server/api 与 server components 直接调用）：
  * ```ts

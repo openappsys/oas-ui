@@ -31,6 +31,28 @@
 - e2e：`qa-regression/table.spec.ts` 真实 Chromium——默认未命中无可见等待（面板/事件不变）、显式等待回填有可见面板反馈、abort 后回填无反馈；expand>12 映射（真实滚动 → 请求 [95,118)+视觉字段 → 渲染 104..109 与属主 expand 可见）与 visual-start 协议（总高 80000、宿主控制展开、ARIA/displaySnapshot 数据口径）两场景；`createWindowedSource × 视觉适配器`（真实 adapter 驱动协议取数、滚动请求按视觉映射覆盖真实可见行、协议下本地 toggle 只派发 oas-expand、宿主回写 expanded/visual-start/data 后焦点仍在同一 row-key、ARIA 不变），含 dark 主题与 console/pageerror 零新增告警。
 - 文档 zh/en 同步；`api:check` / `llms:check` / `stats:check` / `lint:md` / `format:check` 通过。
 
+## 未发布：SSR locale 请求局部化 ✅
+
+### 功能定义
+
+服务端并发正确性修复：`renderToString(tag, attrs, slotHTML, opts)` 的显式 `opts.locale` 从「全局 `setLocale` 切换 + 渲染段同步」改为**请求局部化**——显式 locale 只影响本次调用及嵌套子树；未传 `locale` 保持旧行为（沿用调用时全局 locale）。不新增组件与事件，不改变白名单与快照格式。
+
+### 详细需求
+
+- **旧行为缺陷**：显式 locale 经全局 i18n registry `setLocale()` 切换，`await` 边界后渲染；同一轮 `Promise.all` 中多请求（冷加载的真实 import 竞态窗口尤甚）会把 setLocale 与渲染错位配对——请求串语言（zh 输出 en 文案）、并把进程级全局 locale 永久改写、触发多次 locale/translator 广播。
+- **新语义**：单一 i18n ready Promise 装载 registry 并注册内置 zh-CN / en 语言包（所有并发请求共享同一份，无第二条冷加载路径）；显式 locale 时确保 config-provider 组件已装载，在共享 document 内创建**本次调用独立的临时 `<oas-config-provider locale>`**，目标元素挂其下，组件 `t()` 就近读取 provider 翻译器同步渲染（嵌套子组件同源），输出不含 provider 包装；`try/finally` 清理目标元素与临时 provider（含渲染异常中断路径）。**不调用 `setLocale`**：不改全局 locale、不触发 locale/translator 广播。
+- **同步临界区**：临时 provider 创建、目标渲染、嵌套 DSD 序列化、快照提取全程同步无 await；渲染后的并发准备（装载/ready）都在 await 边界之前收口。冷加载并发不被无意义串行化（无全局 mutex、无 AsyncLocalStorage），不为未来 RTL 强加 direction。
+
+### 非目标
+
+不改未传 `opts.locale` 的旧语义；不引入全局 mutex / AsyncLocalStorage；不新增 provider 包装输出、事件或属性；不动 SSR 白名单与 DSD 快照格式（指纹版本不变）。
+
+### 验收标准
+
+- 新增 `packages/ssr/src/locale-concurrency.test.ts`（RED→GREEN）：32 次冷并发 + 96 次热并发（zh-CN/en 混合、多翻译路径 empty.noData/tag.close/transfer.empty）逐请求 marker 核对语言与嵌套子树；全局 locale 改写与广播次数为 0；成功/人为异常路径后 shim document 无临时 provider/目标宿主且后续请求可继续；测试稳定抓出旧实现（无随机偶发）。
+- e2e：`packages/ssr/ssr-dsd.spec.ts` 新增并发混合多语言静态快照用例（16 请求逐 marker 核对禁 JS 可见语言与嵌套关闭按钮 aria-label，console/pageerror 零告警）。
+- 文档：`docs/ssr.md` + 中英 guide locale 语义段同步；`ssr:check` / `llms:check` / `api:check` / `typecheck` / `build` / 全量 `test` / 全量 e2e 通过。
+
 ## 未发布：表格 Pro / JSON 查看器 / Sidebar 维护 ✅
 
 ### 功能定义

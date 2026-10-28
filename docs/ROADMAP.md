@@ -14,6 +14,7 @@
 | **JSON 查看器渲染热路径** | 滚动/键盘/`scrollToPath` 复用可见行；行渲染签名命中跳过 DOM 重建；activeIndex 单次计算；搜索祖先集缓存；自定义 toggle 模板变更强制重建行 DOM | ✅ 已完成（未发布） |
 | **table/core 迁移准备** | 编辑能力/晚加入测试改走默认入口 `@oas-ui/ui/data/table`；`table/core` 仍是 deprecated 别名，按 v2.6.5 计划移除 | ✅ 已完成（未发布） |
 | **sidebar 嵌套头像行首槽位** | 带头像的嵌套子项隐藏空图标占位，避免重复间距；普通无图标子项保留 18px 缩进占位 | ✅ 已完成（未发布） |
+| **SSR locale 请求局部化** | 显式 `opts.locale` 只影响本次调用及嵌套子树：本次调用独立临时 config-provider 就近注入同步渲染，输出不含 provider 包装，不改全局 locale、零广播，`try/finally` 清理；未传 locale 保持旧行为（调用时全局 locale）。冷/热并发混合多语言逐请求正确，无全局 mutex | ✅ 已完成（未发布） |
 
 ## v2.6.4（已发布）
 

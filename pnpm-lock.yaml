@@ -325,6 +325,9 @@ importers:
 
   packages/ssr:
     dependencies:
+      '@oas-ui/core':
+        specifier: workspace:*
+        version: link:../core
       '@oas-ui/i18n':
         specifier: workspace:*
         version: link:../i18n

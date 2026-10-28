@@ -731,6 +731,21 @@ test.beforeAll(async () => {
     renderToString('oas-traffic-lights'),
   ])
 
+  // —— local（locale 请求局部化）并发补位：冷加载后同一轮 Promise.all 混合多语言真实用户路径 ——
+  // 16 个显式 locale 请求（zh-CN / en 交替 + 嵌套 oas-tag closable）逐请求 marker + 语言双绑定，
+  // 服务端串语言会在浏览器里直接变成可见的错反语言（禁 JS 静态快照即验收）。
+  const localeConc = await Promise.all(
+    Array.from({ length: 16 }, (_, i) => {
+      const locale = i % 2 === 0 ? 'zh-CN' : 'en'
+      return renderToString(
+        'oas-empty',
+        { 'data-req': `loc-${i}`, 'data-locale': locale },
+        `<oas-tag slot="action" closable>文本 ${i}</oas-tag>`,
+        { locale },
+      )
+    }),
+  )
+
   dsdHtml = `<!doctype html>
 <html lang="zh-CN">
 <head>
@@ -766,6 +781,7 @@ ${[
   ...nestedSnaps,
   ...wbSnaps,
   ...extraSnaps,
+  ...localeConc,
 ].join('\n')}
 </body>
 </html>`
@@ -915,6 +931,35 @@ test('禁 JS 可视：DSD 快照解析即附加 shadow root 并渲染关键结�
   // 禁 JS 下无未捕获异常
   expect(pageErrors).toEqual([])
   await page.screenshot({ path: SCREENSHOT.noJs, fullPage: true })
+})
+
+test('locale 请求局部化：并发混合多语言静态快照逐请求语言正确（禁 JS 解析后可见）', async ({ page }) => {
+  await openPage(page)
+  // 禁 JS：纯静态 DSD 快照即验收——oas-empty 默认空态文案逐请求语言正确
+  for (let i = 0; i < 16; i++) {
+    const locale = i % 2 === 0 ? 'zh-CN' : 'en'
+    const want = locale === 'zh-CN' ? '暂无数据' : 'No data'
+    await expect(page.locator(`oas-empty[data-req="loc-${i}"][data-locale="${locale}"]`), `请求 ${i}`).toContainText(
+      want,
+    )
+    // 嵌套 oas-tag（装饰性 closable 关闭按钮）随同一请求的临时 provider 取翻译
+    const closeLabel = await page
+      .locator(`oas-empty[data-req="loc-${i}"] oas-tag button[part="close"]`)
+      .getAttribute('aria-label')
+    expect(closeLabel, `请求 ${i} 嵌套关闭按钮`).toBe(locale === 'zh-CN' ? '关闭' : 'Close')
+  }
+  // 整页无另一语言 revenge：en 请求不含中文空态文案，zh 请求不含英文空态文案
+  const count = await page.evaluate(() => {
+    let bad = 0
+    for (const host of document.querySelectorAll('oas-empty[data-req^="loc-"]')) {
+      const locale = host.getAttribute('data-locale')
+      const text = host.textContent ?? ''
+      const badText = locale === 'zh-CN' ? 'No data' : '暂无数据'
+      if (text.includes(badText)) bad++
+    }
+    return bad
+  })
+  expect(count).toBe(0)
 })
 
 test('upgrade 无错：注入 ui bundle 后升级复用 DSD root，无 NotSupportedError、console 零 error', async ({ page }) => {
