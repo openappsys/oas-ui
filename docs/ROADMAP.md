@@ -17,6 +17,7 @@
 | **SSR locale 请求局部化** | 显式 `opts.locale` 只影响本次调用及嵌套子树：本次调用独立临时 config-provider 就近注入同步渲染，输出不含 provider 包装，不改全局 locale、零广播，`try/finally` 清理；未传 locale 保持旧行为（调用时全局 locale）。冷/热并发混合多语言逐请求正确，无全局 mutex | ✅ 已完成（未发布） |
 | **Release 同 SHA 质量门禁** | release workflow 拆为 verify-quality → publish：verify 只接受同 SHA、同仓库完整 CI（ci.yml）completed+success（pending/failure/空结果/非 CI workflow 一律 fail closed）；publish 固定 checkout 验证 SHA + 完整历史，先跑 `release:check` 严格模式（tag 必须解析到 HEAD、HEAD==GITHUB_SHA、非 semver 拒绝）再 build/api:check/发布；权限各自最小（verify 不给 publish 额外权限），本地「tag≠HEAD 仅警告」兼容 | ✅ 已完成（未发布） |
 | **CDN i18n（组件内置文案切换）** | 主入口 `@oas-ui/ui` 与 9 个 CDN 族包新增唯一 registry 透传导出 `setLocale`（IIFE 暴露为 `OASUI.setLocale`；`loadLocale`/`t`/`onLocaleChange` 等不进导出面，不改 ssr.ts）：中文 `setLocale('zh-CN')` 同步切；英文动态 import 与 IIFE 同版本的纯数据 `@oas-ui/i18n/dist/en.js` 后 `setLocale(module.default)`（成功缓存、失败可重试、迟到结果由宿主 gate）。官方模板 admin-pro/cdn 与 cdn-mpa 接入同链路（离线 mock 按真实文件路径回填、bump-cdn 同时校验 theme/ui/i18n 三个 pin） | ✅ 已完成（未发布） |
+| **form/combobox 未升级读取** | `oas-form` 读取文档序中尚未升级的 `oas-combobox` 时按空值 `''` 处理，不再把 `undefined` 送入 `startsWith` 导致崩溃；`packages/ui/qa-regression/form-unupgraded-combobox.spec.ts` 在 Chromium + Firefox 锁定零 pageerror 与空值读取语义 | ✅ 已完成（未发布） |
 
 ## v2.6.4（已发布）
 
