@@ -71,12 +71,12 @@ const md = `# 废弃 API 台账
 
 > 生成物：\`pnpm deprecations:gen\`。禁止手改；改 \`docs/deprecations.json\` 后重新生成。
 > 当前版本：${currentVersion}。\`removeIn\` 为空表示长期兼容或尚未排期；非空必须是高于当前版本的 major。
-> 唯一例外：\`package-export\` 面可经用户批准携带 \`minorException\`（必填非空 approvedBy 与 reason）以「经批准的 minor 提升」移除——仅限同 major 且严格高于当前版本的合法 x.y.z，单点豁免、不构成先例；组件 API 面（attribute/prop/event/method/css-var/export）不适用，checker 一律拒绝。
+> 唯一例外：\`package-export\` 面可经用户批准携带 \`minorException\`（必填非空 approvedBy 与 reason）以「经批准的非 major 提升」移除——正向定义：removeIn 为同 major 且严格高于当前版本的合法 x.y.z（兼容 patch 提升与 minor 提升），单点豁免、不构成先例；组件 API 面（attribute/prop/event/method/css-var/export）不适用，checker 一律拒绝。
 
 | ID | 组件/入口 | 面 | 旧写法 | 迁移目标 | 状态 | 移除版本 |
 | --- | --- | --- | --- | --- | --- | --- |
 ${rows}
-${exceptionNotes ? `\n**经批准的 minor 提升例外**（单点豁免，仅限同 major 且严格高于当前版本的合法 x.y.z）：\n\n${exceptionNotes}\n` : ''}`
+${exceptionNotes ? `\n**经批准的非 major 提升例外**（单点豁免，removeIn 须为同 major 且严格高于当前版本的合法 x.y.z）：\n\n${exceptionNotes}\n` : ''}`
 
 if (problems.length) {
   console.error(`[deprecations] ${problems.length} 个问题：`)

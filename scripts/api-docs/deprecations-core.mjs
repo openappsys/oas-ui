@@ -3,10 +3,11 @@
  *
  * 规则：
  * - removeIn 版本纪律：非空必须是高于当前版本的 major；
- * - 唯一豁免（经批准的 minor 提升）：`package-export` 面可携带 `minorException`（经
+ * - 唯一豁免（经批准的非 major 提升）：`package-export` 面可携带 `minorException`（经
  *   用户批准，必填非空 approvedBy 与 reason），把 removeIn 放宽到「同 major 且严格高于
- *   currentVersion 的合法 x.y.z」；更高 major 走普通 major 规则；同版本 / patch 同级
- *   或降级 / 更低 minor / 更低 major / 非法版本即使携带 minorException 也一律拒绝。
+ *   currentVersion 的合法 x.y.z」（兼容 patch 提升与 minor 提升）；更高 major 走普通
+ *   major 规则；同版本、更低版本（更低 minor 或 patch 同级/降级）与非法版本（缺段 /
+ *   v 前缀 / prerelease / 非数字文本）即使携带 minorException 也一律拒绝。
  *   该豁免**不适用且永不适用**于任何组件 API 面（attribute/prop/event/method/css-var/
  *   export），普通 minor/patch 移除一律拒绝；
  * - manifest 对账：非 '@' tag 的 alias，canonical 必须出现在对应组件的 API 清单里；
@@ -78,10 +79,10 @@ export function collectProblems({ entries = [], currentVersion, manifest = {}, s
     }
 
     // 版本纪律：removeIn 只能是 null 或高于当前版本的 major；唯一豁免是 package-export
-    // 面经用户批准的「minor 提升例外」——同 major 且严格高于 currentVersion 的合法
-    // x.y.z（DEP-EXPORT-0001 先例：2.6.4 → 2.6.5）。更高 major 由普通 major 规则放行；
-    // 同版本 / patch 同级或降级 / 更低 minor / 更低 major / 非法版本即使携带
-    // minorException 也拒绝。
+    // 面经用户批准的「非 major 提升例外」——removeIn 为同 major 且严格高于 currentVersion
+    // 的合法 x.y.z，兼容 patch 提升与 minor 提升（DEP-EXPORT-0001 先例：2.6.4 → 2.6.5）。
+    // 更高 major 由普通 major 规则放行；同版本、更低版本（更低 minor 或 patch 同级/降级）
+    // 与非法版本（缺段 / v 前缀 / prerelease / 非数字文本）即使携带 minorException 也拒绝。
     if (entry.removeIn != null) {
       const target = parseXyz(entry.removeIn)
       const allowed =
@@ -94,7 +95,7 @@ export function collectProblems({ entries = [], currentVersion, manifest = {}, s
       if (!allowed) {
         problems.push(
           `${entry.id} removeIn=${entry.removeIn} 必须是高于 ${currentVersion} 的 major` +
-            `（经批准的 minor 提升例外仅限「同 major 且严格高于 ${currentVersion}」的合法 x.y.z，须携带含批准方与理由的 minorException）`,
+            `（经批准的非 major 提升例外仅限「同 major 且严格高于 ${currentVersion}」的合法 x.y.z，须携带含批准方与理由的 minorException）`,
         )
       }
     }
