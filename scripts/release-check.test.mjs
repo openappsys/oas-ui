@@ -8,6 +8,8 @@
  *   CI 严格模式（`--require-tag-head`）下 lightweight/annotated tag 均正确解引用、
  *   tag 验证后移动阻断、HEAD ≠ GITHUB_SHA 阻断、tag 缺失阻断；
  *   本地模式保持原 warning 兼容（tag ≠ HEAD 不拦截）；版本 / CHANGELOG / 非 semver 阻断；
+ *   `--verify-ci` 以假 gh 可执行文件（PATH 注入）做集成 mock：成功 JSON 放行、
+ *   workflow_runs 形状异常 fail closed、gh 缺失 fail closed；
  * - `.github/workflows/release.yml` 静态断言：verify-quality → publish 依赖、
  *   checkout 固定验证 SHA + 完整历史、严格 release:check 先于 build/api:check/发布、
  *   两 job 权限各自最小（verify 不给 publish 额外权限）。
@@ -18,7 +20,7 @@ import assert from 'node:assert/strict'
 import { execFileSync, spawnSync } from 'node:child_process'
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { dirname, join, resolve } from 'node:path'
+import { delimiter, dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { after, test } from 'node:test'
 
@@ -68,11 +70,16 @@ function commitMore(dir) {
   git(dir, 'commit', '-q', '-m', 'b')
 }
 
-/** 子进程跑真实脚本，捕获退出码与输出（绝不改真实仓库：cwd 恒为 fixture；spawnSync 同时拿 stdout/stderr） */
+/** 子进程跑真实脚本，捕获退出码与输出（绝不改真实仓库：cwd 恒为 fixture；spawnSync 同时拿 stdout/stderr）。
+ * 默认剥离 GITHUB_SHA / GITHUB_REPOSITORY：GitHub Actions 会向所有步骤注入它们，
+ * 泄漏进 fixture 子进程会让「移动前应放行」等用例在 CI 必红（显式传值的用例经 env 叠加不受影响）。 */
 function runScript(args, { dir, env = {} } = {}) {
+  const inherited = { ...process.env }
+  delete inherited.GITHUB_SHA
+  delete inherited.GITHUB_REPOSITORY
   const r = spawnSync(process.execPath, [SCRIPT, ...args], {
     cwd: dir ?? ROOT,
-    env: { ...process.env, ...env },
+    env: { ...inherited, ...env },
     encoding: 'utf8',
     stdio: ['ignore', 'pipe', 'pipe'],
   })
@@ -100,6 +107,7 @@ const greenRun = (over = {}) => ({
   head_repository: { full_name: REPO },
   status: 'completed',
   conclusion: 'success',
+  run_number: 3,
   html_url: `https://github.com/${REPO}/actions/runs/7`,
   ...over,
 })
@@ -253,11 +261,12 @@ test('CHANGELOG 缺目标段 → 阻断', () => {
   assert.match(r.stderr, /CHANGELOG/)
 })
 
-test('非 semver 版本直接失败（含 prerelease / 短版本 / 任意文本）', () => {
+test('非 semver 版本直接失败（含 prerelease / 短版本 / 任意文本），并给出明确原因', () => {
   const dir = initRepo()
   for (const bad of ['2.6', 'abc', '2.6.5-beta.1', 'v2.6.5-extra']) {
     const r = runScript([bad], { dir })
     assert.notEqual(r.status, 0, `非 x.y.z 目标「${bad}」应直接失败`)
+    assert.match(r.stderr, /不是合法的 x\.y\.z 目标版本/, `「${bad}」应有明确拒绝原因，而非只打印用法`)
   }
 })
 
@@ -278,6 +287,76 @@ test('--verify-ci：gh 不可用 → fail closed（查不到证据不放行）',
   })
   assert.notEqual(r.status, 0)
   assert.match(r.stderr, /gh/)
+})
+
+// ---------- release-check.mjs CLI：--verify-ci 假 gh 集成 mock（PATH 注入，覆盖 CLI 胶水） ----------
+
+/**
+ * 在临时目录写一个假 gh（Windows 走 gh.cmd——无 shell 的 spawn 在 Windows 只找 gh.exe，
+ * 生产实现经 shell 解析 gh 以兼容 gh.cmd shim；POSIX 走带执行位的 sh 脚本）。
+ * 假 gh 把收到的参数原样写入 gh-args.txt（供断言 URL 胶水），再输出 fixture.json。
+ */
+function writeFakeGh(binDir, fixtureObj) {
+  writeFileSync(join(binDir, 'fixture.json'), JSON.stringify(fixtureObj))
+  writeFileSync(
+    join(binDir, 'gh.cmd'),
+    ['@echo off', '(echo %*)>"%~dp0gh-args.txt"', 'type "%~dp0fixture.json"', ''].join('\r\n'),
+  )
+  const sh = [
+    '#!/bin/sh',
+    'printf \'%s\\n\' "$*" > "$(dirname "$0")/gh-args.txt"',
+    'cat "$(dirname "$0")/fixture.json"',
+    '',
+  ].join('\n')
+  writeFileSync(join(binDir, 'gh'), sh, { mode: 0o755 })
+}
+
+test('--verify-ci 集成：假 gh 返回同 SHA 完整 CI 绿 JSON → 放行，且查询 URL 带对 repo 与 SHA', () => {
+  const dir = initRepo()
+  const bin = mkdtempSync(join(tmpdir(), 'fake-gh-'))
+  createdDirs.push(bin)
+  writeFakeGh(bin, { workflow_runs: [greenRun()] })
+  const r = runScript(['--verify-ci'], {
+    dir,
+    env: {
+      GITHUB_REPOSITORY: REPO,
+      GITHUB_SHA: SHA,
+      PATH: `${bin}${delimiter}${process.env.PATH ?? ''}`,
+    },
+  })
+  assert.equal(r.status, 0, `假 gh 的成功 JSON 应放行：\nstdout=${r.stdout}\nstderr=${r.stderr}`)
+  assert.match(r.stdout, /已跑绿/)
+  assert.match(r.stdout, /放行/)
+  const args = readFileSync(join(bin, 'gh-args.txt'), 'utf8')
+  assert.ok(args.includes(`repos/${REPO}/actions/runs`), `URL 应指向本仓库：${args}`)
+  assert.ok(args.includes(`head_sha=${SHA}`), `URL 应按目标 SHA 过滤：${args}`)
+})
+
+test('--verify-ci 集成：workflow_runs 缺字段 / 形状异常 / 条目缺字段 → fail closed', () => {
+  const dir = initRepo()
+  const bin = mkdtempSync(join(tmpdir(), 'fake-gh-'))
+  createdDirs.push(bin)
+  for (const [label, bad] of [
+    ['缺 workflow_runs 字段', {}],
+    ['workflow_runs 非数组', { workflow_runs: 'ci-green' }],
+    ['run 条目缺字段', { workflow_runs: [{}] }],
+  ]) {
+    writeFakeGh(bin, bad)
+    const r = runScript(['--verify-ci'], {
+      dir,
+      env: {
+        GITHUB_REPOSITORY: REPO,
+        GITHUB_SHA: SHA,
+        PATH: `${bin}${delimiter}${process.env.PATH ?? ''}`,
+      },
+    })
+    assert.notEqual(r.status, 0, `「${label}」不应放行`)
+    assert.match(
+      r.stderr,
+      /空|没有任何/,
+      `「${label}」应给出判定原因，而非只报 gh 调用失败（stderr=${r.stderr.slice(0, 120)}）`,
+    )
+  }
 })
 
 // ---------- .github/workflows/release.yml：静态行为断言 ----------

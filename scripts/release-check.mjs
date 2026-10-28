@@ -64,12 +64,22 @@ function verifyCi() {
     )
     process.exit(1)
   }
+  // 形状白名单：sha 必须 40 位 hex、repo 必须 owner/name——既是 fail closed，
+  // 也保证下面经 shell 调用 gh 时 URL 里不含任何可注入元字符
+  if (!/^[0-9a-f]{40}$/i.test(sha) || !/^[\w.-]+\/[\w.-]+$/.test(repo)) {
+    console.error(`✗ [verify-ci] GITHUB_REPOSITORY / GITHUB_SHA 形状非法（repo=${repo}）——fail closed`)
+    process.exit(1)
+  }
   let runs
   try {
-    const out = execFileSync('gh', ['api', `repos/${repo}/actions/runs?head_sha=${sha}&per_page=100`], {
+    const url = `repos/${repo}/actions/runs?head_sha=${sha}&per_page=100`
+    // 经 shell 解析 gh：Windows 上 gh 常以 gh.cmd shim 安装，无 shell 的 spawn 只找 gh.exe；
+    // URL 加引号防 shell 元字符（? & 已由上面的形状白名单保证只可能是合法字面量）
+    const out = execFileSync('gh', ['api', `"${url}"`], {
       encoding: 'utf8',
       maxBuffer: 64 * 1024 * 1024,
       stdio: ['ignore', 'pipe', 'pipe'],
+      shell: true,
     })
     runs = JSON.parse(out).workflow_runs
   } catch (err) {
@@ -100,6 +110,11 @@ function main() {
   const requireTagHead = args.includes('--require-tag-head')
   const version = parseReleaseVersion(args[0])
   if (!version) {
+    if (args[0] !== undefined) {
+      console.error(
+        `✗ 「${args[0]}」不是合法的 x.y.z 目标版本——非 semver tag 直接失败（不支持 prerelease / 短版本 / 其他写法）`,
+      )
+    }
     console.error('用法：node scripts/release-check.mjs <目标版本，如 2.5.4> [--require-tag-head]')
     process.exit(1)
   }
