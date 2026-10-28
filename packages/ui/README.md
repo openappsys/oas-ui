@@ -22,7 +22,7 @@ CDN 一键引入：
 
 ```html
 <link rel="stylesheet" href="https://unpkg.com/@oas-ui/theme@2/index.css" />
-<script type="module" src="https://unpkg.com/@oas-ui/ui@2/dist/cdn.js"></script>
+<script src="https://unpkg.com/@oas-ui/ui@2/dist/cdn.js"></script>
 
 <oas-button type="primary">Hello OAS-UI</oas-button>
 ```
@@ -97,7 +97,7 @@ CDN, one-liner:
 
 ```html
 <link rel="stylesheet" href="https://unpkg.com/@oas-ui/theme@2/index.css" />
-<script type="module" src="https://unpkg.com/@oas-ui/ui@2/dist/cdn.js"></script>
+<script src="https://unpkg.com/@oas-ui/ui@2/dist/cdn.js"></script>
 
 <oas-button type="primary">Hello OAS-UI</oas-button>
 ```

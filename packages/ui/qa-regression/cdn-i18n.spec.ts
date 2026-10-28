@@ -20,6 +20,62 @@ async function mockI18nEsm(page: import('@playwright/test').Page): Promise<void>
   })
 }
 
+/** ui ESM 与 workspace 依赖回填：dist 产物的裸导入在路由层重写为映射 URL（import map 在
+ *  Firefox 的 setContent 文档不生效，路由重写双引擎行为一致）。只改写真实 import/from
+ *  语句——字符串字面量（Symbol.for 键、devWarn 提示、报错文案）保持原样。 */
+function rewriteBareSpecifiers(js: string): string {
+  return js.replace(
+    /(from\s*|import\s*\(\s*|import\s*)(['"])(@oas-ui\/[a-z0-9/@._-]+)\2/g,
+    (whole, head: string, quote: string, spec: string) => {
+      let mapped: string
+      if (spec === '@oas-ui/core') mapped = '/__oas-pkg__/core/index.js'
+      else if (spec.startsWith('@oas-ui/core/')) mapped = '/__oas-pkg__/core/' + spec.slice('@oas-ui/core/'.length)
+      else if (spec === '@oas-ui/i18n') mapped = '/__oas-pkg__/i18n/index.js'
+      // i18n 子路径（语言包/registry）：注释示例与真实导入一并正确解析
+      else if (spec.startsWith('@oas-ui/i18n/')) mapped = '/__oas-pkg__/i18n/' + spec.slice('@oas-ui/i18n/'.length)
+      else if (spec === '@oas-ui/icons/register') mapped = '/__oas-pkg__/icons/register.js'
+      else if (spec === '@oas-ui/icons/runtime') mapped = '/__oas-pkg__/icons/runtime.js'
+      else if (spec.startsWith('@oas-ui/icons/icons/'))
+        mapped = '/__oas-icons-icons__/' + spec.slice('@oas-ui/icons/icons/'.length)
+      else if (spec.startsWith('@oas-ui/ui/')) mapped = '/__oas-ui-esm__/' + spec.slice('@oas-ui/ui/'.length)
+      else throw new Error(`ESM 测试未映射的裸导入：${spec}`)
+      return `${head}${quote}${mapped}${quote}`
+    },
+  )
+}
+
+async function mockUiEsm(page: import('@playwright/test').Page): Promise<void> {
+  const packagesDist = process.cwd() + '/packages'
+  const readJs = (filePath: string): string => rewriteBareSpecifiers(readFileSync(filePath, 'utf8'))
+  await page.route('**/__oas-ui-esm__/**', (route) => {
+    const rel = route.request().url().split('/__oas-ui-esm__/')[1]?.split('?')[0] ?? ''
+    const file = /\.[a-z]+$/.test(rel) ? rel : `${rel}.js`
+    return route.fulfill({
+      body: readJs(join(packagesDist, 'ui/dist', file)),
+      contentType: 'text/javascript; charset=utf-8',
+    })
+  })
+  await page.route('**/__oas-pkg__/**', (route) => {
+    const raw = route.request().url().split('/__oas-pkg__/')[1] ?? ''
+    const segments = (raw.split('?')[0] ?? '').split('/')
+    const pkg = segments[0] ?? ''
+    const rest = segments.slice(1).join('/')
+    const file = /\.[a-z]+$/.test(rest) ? rest : `${rest}.js`
+    return route.fulfill({
+      body: readJs(join(packagesDist, pkg, 'dist', file)),
+      contentType: 'text/javascript; charset=utf-8',
+    })
+  })
+  await page.route('**/__oas-icons-icons__/**', (route) => {
+    const rel = route.request().url().split('/__oas-icons-icons__/')[1]?.split('?')[0] ?? ''
+    const file = /\.[a-z]+$/.test(rel) ? rel : `${rel}.js`
+    return route.fulfill({
+      body: readJs(join(packagesDist, 'icons/dist/icons', file)),
+      contentType: 'text/javascript; charset=utf-8',
+    })
+  })
+}
+
 /** 收集 console error 与页面异常 */
 function collectErrors(page: import('@playwright/test').Page): string[] {
   const errors: string[] = []
@@ -110,7 +166,61 @@ test('cdn.js IIFE：setLocale 存在且导出面不扩大；popconfirm/empty 中
   expect(errors, '全程无 console error / pageerror').toEqual([])
 })
 
-test('ESM 主入口（dist/index.js）只新增 setLocale 导出，未导出其余 registry API', async () => {
+test('ESM 主入口（dist/index.js）真实导入：namespace 只含 setLocale，注册组件并可切换文案', async ({ page }) => {
+  const errors = collectErrors(page)
+  await mockI18nEsm(page)
+  await mockUiEsm(page)
+  await page.goto('/404.html')
+  // 正文预置组件——import dist/index.js 即注册并升级（中文默认）；裸导入由路由层重写解析
+  await page.setContent(`<!doctype html><html><body style="margin:0">
+    <oas-popconfirm id="pc" title="删除该部门？"><oas-button>删除</oas-button></oas-popconfirm>
+    <oas-empty id="empty"></oas-empty>
+  </body></html>`)
+
+  // 真实动态 import 实际构建产物 dist/index.js（浏览器解析全部裸导入与相对导入）
+  const surface = await page.evaluate(async () => {
+    const specifier = '/__oas-ui-esm__/index.js'
+    const mod = (await import(specifier)) as unknown as Record<string, unknown>
+    ;(globalThis as Record<string, unknown>).__esmIndex = mod
+    return { names: Object.keys(mod).sort(), setLocaleType: typeof mod.setLocale }
+  })
+  expect(surface.setLocaleType, 'ESM 主入口应导出 setLocale').toBe('function')
+  const banned = [
+    'loadLocale',
+    't',
+    'onLocaleChange',
+    'registerLocale',
+    'getLocale',
+    'getLocaleName',
+    'getDirection',
+    // 已知语言包/内部导出不得泄漏进主入口
+    'en',
+    'zhCN',
+  ]
+  for (const name of banned) {
+    expect(surface.names, `ESM 主入口不得导出 ${name}`).not.toContain(name)
+  }
+  expect(await readTexts(page)).toEqual({ ok: '确定', cancel: '取消', empty: '暂无数据' })
+
+  // ESM setLocale × 同一条真实 en.js 纯数据链路：组件内置文案跟切
+  await page.evaluate(async () => {
+    const enSpecifier = '/__oas-i18n-esm__/en.js'
+    const en = (await import(enSpecifier)) as { default: unknown }
+    ;((globalThis as Record<string, unknown>).__esmIndex as { setLocale: (l: unknown) => unknown }).setLocale(
+      en.default,
+    )
+  })
+  expect(await readTexts(page)).toEqual({ ok: 'OK', cancel: 'Cancel', empty: 'No data' })
+
+  // 按名切回中文（同步）
+  await page.evaluate(() => {
+    ;((globalThis as Record<string, unknown>).__esmIndex as { setLocale: (l: string) => unknown }).setLocale('zh-CN')
+  })
+  expect(await readTexts(page)).toEqual({ ok: '确定', cancel: '取消', empty: '暂无数据' })
+  expect(errors, '全程无 console error / pageerror').toEqual([])
+})
+
+test('（补充）ESM 主入口静态文本：setLocale 透传存在、其余 registry API 零出现', async () => {
   const src = readFileSync(join(UI_ROOT, 'dist/index.js'), 'utf8')
   expect(src).toMatch(/export\s*\{[^}]*\bsetLocale\b[^}]*\}/)
   for (const banned of [

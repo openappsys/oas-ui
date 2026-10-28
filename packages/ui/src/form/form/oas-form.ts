@@ -127,11 +127,15 @@ register([
   'oas-picker',
   'oas-transfer',
 ])
-// combobox：读 value property（无已选值时草稿文本即表单值，datalist 语义）；写仍走 value 属性通道
+// combobox：读 value property（无已选值时草稿文本即表单值，datalist 语义）；写仍走 value 属性通道。
+// 未升级元素（真实 CDN 文档序升级：oas-form 先于子级 combobox 升级，模板 e2e 实抓）没有
+// value property——undefined 不得进 normalizeValue（JSON.stringify(undefined) 得 undefined
+// → raw.startsWith 崩溃，整表挂载失败），按空值处理。
 register(
   ['oas-combobox'],
   (el) => {
-    const v = (el as unknown as { value: string | string[] }).value
+    const v = (el as unknown as { value?: string | string[] }).value
+    if (v === undefined) return ''
     return normalizeValue(typeof v === 'string' ? v : JSON.stringify(v))
   },
   (el, v) => el.setAttribute('value', v),
