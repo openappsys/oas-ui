@@ -140,7 +140,7 @@ oas-ui/
 规则：
 
 - 包含关系：L1 ⊇ L2；**注册型 L3 必须含于 L1**（否则 CDN 一把梭消费者声明对应属性时能力静默失效），**纯函数/宿主侧 helper 型 L3 不进 L1/CDN**（无 HTML 触发面，进 union 即死重，按需显式 import）；L2 **不默认含 L3**（v2.6.4 起）。过渡别名 `/core` 已于 v2.6.5 删除（未发布）。
-- 注册语义：注册型 L3 import 即注册、晚加入自愈（已挂载元素自动补齐）；helper 型 L3 不注册元素/能力，只导出函数由宿主代码调用（`format` / `range` 内部虽调用能力注册表，但激活唯一入口是导出函数，仍属 helper 类）。
+- 注册语义：注册型 L3 import 即注册、晚加入自愈（已挂载元素自动补齐）；helper 型 L3 的**激活唯一入口是导出函数**（可含 import 期惰性注册，但没有 HTML/属性触发面），宿主不调用导出函数则无效果（`format` / `range` 内部虽调用能力注册表，仍属 helper 类）。
 - L3 现有实例（登记表 = `scripts/perf/lib/l3-registry.mjs`，单一登记源驱动 `perf:size` 结构门禁）：
   - **注册型（含于 L1/CDN）**：`table/edit`、`tabs/manager`、`modal/prompt`、`popover/contextmenu`、`color-picker/designer`；
   - **helper 型（不进 L1/CDN）**：`table/advanced`（透视/公式/查询/条件格式/TSV/历史栈/windowed 纯函数）、`table/format`（条件格式）、`table/view`（视图状态）、`table/range`（区域选择）、`table/history`（撤销重做）、`table/detail`（主从详情宿主侧 helper）。
@@ -153,7 +153,7 @@ oas-ui/
 
 **层间演进与一致性门禁（并入 CI，`perf:size` 强制）**：
 
-- 关系不变量：L1 ⊇ L2；注册型 L3 含于 L1、helper 型 L3 不进 L1，L2 不默认含 L3；过渡别名 `/core` 已删除（v2.6.5，用户批准的单点例外，见上文）；
+- 关系不变量：L1 ⊇ L2；注册型 L3 含于 L1 **与所属 CDN 族包**（`perf:size` 按 `dist/cdn/<family>.js.map` 的构建输入逐一断言）、helper 型 L3 不进 L1/族包，L2 不默认含 L3；过渡别名 `/core` 已删除（v2.6.5，用户批准的单点例外，见上文）；
 - **可选层零泄漏**：`perf:size` 断言所有可选层文件（`theme/glass-fluid.js` / `theme/glass.css` / `theme/skins.css` 等）**不出现在**全量入口链与任一单组件链的可达闭包内；
 - **L2 不吸 L3**：`table` 默认链不得包含 edit 或任何 Pro 能力子路径；table 家族 L3 独立计量；
 - **登记表驱动**：L3 分类与包含关系以 `scripts/perf/lib/l3-registry.mjs` 为单一登记源，判定函数红绿两侧进 `perf:size --self-test`，live dist 断言随构建把关；

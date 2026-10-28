@@ -8,42 +8,59 @@
  *   即可触发（含迟到自愈）。若缺席 L1/CDN，「一把梭」消费者声明对应属性时能力静默失效——
  *   **必须含于 L1**。当前实例：`table/edit`、`tabs/manager`、`modal/prompt`、
  *   `popover/contextmenu`、`color-picker/designer`。
- * - `kind: 'helper'`（纯函数/宿主侧 helper 型）：只导出函数，必须由宿主代码显式调用才能
- *   生效（无 HTML/属性触发面）。CDN 无 JS 的消费方式根本调不到这些函数，进 union 即死重——
- *   **不得进入 L1/CDN**，按需显式 import。当前实例：table 家族 Pro 能力
- *   `advanced / format / view / range / history / detail`。
- *   注：`format` / `range` 内部虽调用 `registerTableCapability`，但其激活唯一入口是
- *   导出函数（setConditionalFormat / setRangeSelection…），宿主不调用则注册表项无效果，
- *   故按 helper 归类。
+ * - `kind: 'helper'`（纯函数/宿主侧 helper 型）：**激活唯一入口是导出函数，必须由宿主
+ *   代码显式调用才能生效；可含 import 期惰性注册，但没有 HTML/属性触发面**（CDN 无 JS
+ *   的消费方式调不到这些函数），进 L1/CDN union 即死重——**不得进入 L1/CDN**，按需显式
+ *   import。当前实例：table 家族 Pro 能力 `advanced / format / view / range / history /
+ *   detail`。注：`format` / `range` 内部虽调用 `registerTableCapability`，宿主不调用
+ *   导出函数则注册表项无效果，故按 helper 归类。
+ *
+ * `family`：所属 CDN 族包（`dist/cdn/<family>.js`）。族包产物是自包含 IIFE bundle
+ * （无静态 import 可遍历），其 `.map` 的 `sources` 数组即 bundler 实际解析的构建输入
+ * 模块清单——`familyInclusionViolations` 以它为「真实静态图」断言：
+ * - 注册型 L3 **必须在**所属族包的构建输入里（缺 = CDN 一把梭消费者拿不到能力）；
+ * - helper 型 L3 **必须不在**（在 = 无触发面的死重混进族包）。
  *
  * `measured: true` 的条目必须在 `scripts/perf/size.mjs` 拥有独立按需链测量
  * （COMPONENT_ENTRIES）与独立预算档（BUDGETS 带 `componentId` 标签）——table 家族的
  * L3 全部独立计量；非 table 的 capability L3（manager/prompt/contextmenu/designer）
- * 体量小且随宿主组件链计量，只做 L1 包含断言，不立独立预算档。
+ * 体量小且随宿主组件链计量，只做 L1 与族包包含断言，不立独立预算档。
  *
- * 消费方：`scripts/perf/size.mjs`（对 live dist 图断言）与 perf-baseline 文档生成。
+ * 消费方：`scripts/perf/size.mjs`（对 live dist 断言）与 perf-baseline 文档生成。
  * 登记表变更须同步 `docs/architecture.md` §3.1 的登记表文案（文档数值由生成块保证）。
  */
 export const L3_REGISTRY = [
   // —— table 家族（独立计量 + 独立预算档） ——
-  { id: 'tableEdit', entry: 'data/table/edit', kind: 'capability', measured: true },
-  { id: 'tableAdvanced', entry: 'data/table/advanced', kind: 'helper', measured: true },
-  { id: 'tableFormat', entry: 'data/table/format', kind: 'helper', measured: true },
-  { id: 'tableView', entry: 'data/table/view', kind: 'helper', measured: true },
-  { id: 'tableRange', entry: 'data/table/range', kind: 'helper', measured: true },
-  { id: 'tableHistory', entry: 'data/table/history', kind: 'helper', measured: true },
-  { id: 'tableDetail', entry: 'data/table/detail', kind: 'helper', measured: true },
-  // —— 非 table 注册型 L3（只做 L1 包含断言；不立独立预算档） ——
-  { id: 'tabsManager', entry: 'navigation/tabs/manager', kind: 'capability', measured: false },
-  { id: 'modalPrompt', entry: 'feedback/modal/prompt', kind: 'capability', measured: false },
-  { id: 'popoverContextmenu', entry: 'feedback/popover/contextmenu', kind: 'capability', measured: false },
-  { id: 'colorPickerDesigner', entry: 'form/color-picker/designer', kind: 'capability', measured: false },
+  { id: 'tableEdit', entry: 'data/table/edit', family: 'data', kind: 'capability', measured: true },
+  { id: 'tableAdvanced', entry: 'data/table/advanced', family: 'data', kind: 'helper', measured: true },
+  { id: 'tableFormat', entry: 'data/table/format', family: 'data', kind: 'helper', measured: true },
+  { id: 'tableView', entry: 'data/table/view', family: 'data', kind: 'helper', measured: true },
+  { id: 'tableRange', entry: 'data/table/range', family: 'data', kind: 'helper', measured: true },
+  { id: 'tableHistory', entry: 'data/table/history', family: 'data', kind: 'helper', measured: true },
+  { id: 'tableDetail', entry: 'data/table/detail', family: 'data', kind: 'helper', measured: true },
+  // —— 非 table 注册型 L3（只做 L1/族包包含断言；不立独立预算档） ——
+  { id: 'tabsManager', entry: 'navigation/tabs/manager', family: 'navigation', kind: 'capability', measured: false },
+  { id: 'modalPrompt', entry: 'feedback/modal/prompt', family: 'feedback', kind: 'capability', measured: false },
+  {
+    id: 'popoverContextmenu',
+    entry: 'feedback/popover/contextmenu',
+    family: 'feedback',
+    kind: 'capability',
+    measured: false,
+  },
+  {
+    id: 'colorPickerDesigner',
+    entry: 'form/color-picker/designer',
+    family: 'form',
+    kind: 'capability',
+    measured: false,
+  },
 ]
 
 const normalize = (file) => file.replaceAll('\\', '/')
 
-/** L3 入口在 dist 文件清单中的判定标记（collectGraph 只收集 .js，路径形如 packages/ui/dist/<entry>/…） */
-const chainMarkerOf = (item) => `dist/${item.entry}/`
+/** L3 入口在 dist 文件/构建输入清单中的判定标记（collectGraph 只收集 .js；sourcemap sources 为模块路径） */
+const chainMarkerOf = (item) => `/${item.entry}/`
 
 /**
  * L1 包含关系判定（全量入口链 vs 登记表）。
@@ -73,6 +90,34 @@ export function proLeakViolations(registry, defaultTableChainFileList) {
     if (!item.entry.startsWith('data/table/')) continue
     const leaked = files.filter((file) => file.includes(chainMarkerOf(item)))
     if (leaked.length > 0) out.push({ item, reason: 'leaked', files: leaked })
+  }
+  return out
+}
+
+/**
+ * CDN 族包包含关系判定（族包构建输入 vs 登记表）。
+ *
+ * `familySources`：`{ [family]: string[] | null }`——各 `dist/cdn/<family>.js.map` 的
+ * `sources` 数组（bundler 实际解析的输入模块，即真实静态图；IIFE bundle 本体无静态
+ * import 可遍历，sourcemap 是唯一精确的构建输入证据）。`null`/缺键 = 族包 sourcemap
+ * 缺失或不可解析 → 对该族所有登记条目报 `no-map`（fail closed：禁用 sourcemap 或改
+ * 产物布局必须同步此门禁，不允许静默跳过）。
+ *
+ * - capability 不在族包输入 → `{ reason: 'missing' }`；
+ * - helper 在族包输入 → `{ reason: 'leaked' }`。
+ */
+export function familyInclusionViolations(registry, familySources) {
+  const out = []
+  for (const item of registry) {
+    if (!item.family) continue
+    const sources = familySources[item.family]
+    if (!Array.isArray(sources)) {
+      out.push({ item, family: item.family, reason: 'no-map' })
+      continue
+    }
+    const inBundle = sources.some((source) => normalize(String(source)).includes(chainMarkerOf(item)))
+    if (item.kind === 'capability' && !inBundle) out.push({ item, family: item.family, reason: 'missing' })
+    if (item.kind === 'helper' && inBundle) out.push({ item, family: item.family, reason: 'leaked' })
   }
   return out
 }

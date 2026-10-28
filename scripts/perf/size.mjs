@@ -23,12 +23,13 @@
  *     体积少算而不报红。改动例外须同步 docs/engineering.md「零第三方」口径。
  *   - 可选层零泄漏：theme 可选层文件 / 图标全量注册表不得进任何基础链闭包。
  *   - 已移除入口零残留：`data/table/core` 别名已删除（DEP-EXPORT-0001），dist 不得残留。
- *   - L3 分层登记（lib/l3-registry.mjs 单一登记表）：注册型 L3 必须含于 L1、纯函数/宿主
- *     helper 型 L3 不得混入 L1、默认 table 链零 L3（含 edit）、table 家族 L3 独立计量且
- *     各有独立预算档。
+ *   - L3 分层登记（lib/l3-registry.mjs 单一登记表）：注册型 L3 必须含于 L1 与所属 CDN
+ *     族包（族包 sourcemap 构建输入 = 真实静态图）、纯函数/宿主 helper 型 L3 不得混入
+ *     L1/族包、默认 table 链零 L3（含 edit）、table 家族 L3 独立计量且各有独立预算档。
  *   - 性能档案一致性（lib/baseline-docs.mjs）：perf-baseline.md 生成块 ↔ JSON、JSON ↔
  *     渲染阈值库、JSON env ↔ 实装 happy-dom 版本、JSON 预算 pass 自洽——只报红不自动刷新，
- *     刷新走 `perf:size/bench --update-baseline` + `pnpm perf:docs`。
+ *     刷新走 `perf:size/bench --update-baseline` + `pnpm perf:docs`；`perf:size
+ *     --update-baseline` 会顺带把 render.env.happyDom 独立同步为实装版本（不动渲染耗时数据）。
  *
  * 自测（不依赖已构建 dist，覆盖上述判定函数的红绿两侧）：
  *   `node scripts/perf/size.mjs --self-test`
@@ -43,9 +44,25 @@
 import { readFileSync, writeFileSync, readdirSync, statSync, existsSync, realpathSync } from 'node:fs'
 import { dirname, join, resolve, relative } from 'node:path'
 import { gzipSync, brotliCompressSync, constants } from 'node:zlib'
-import { ROOT, writeSection, fmtKB, fmtBytes, today } from './lib/baseline.mjs'
-import { L3_REGISTRY, l1InclusionViolations, proLeakViolations, budgetCoverageViolations } from './lib/l3-registry.mjs'
+import {
+  ROOT,
+  BASELINE_PATH,
+  loadBaseline,
+  saveBaseline,
+  writeSection,
+  fmtKB,
+  fmtBytes,
+  today,
+} from './lib/baseline.mjs'
+import {
+  L3_REGISTRY,
+  l1InclusionViolations,
+  familyInclusionViolations,
+  proLeakViolations,
+  budgetCoverageViolations,
+} from './lib/l3-registry.mjs'
 import { checkPerfDocs } from './lib/baseline-docs.mjs'
+import { happyDomLabel } from './lib/render-budgets.mjs'
 
 const UI_DIST = join(ROOT, 'packages/ui/dist')
 
@@ -243,6 +260,19 @@ function staticImportViolations(code, pkg) {
   return out
 }
 
+/**
+ * 只把 `render.env.happyDom` 刷新为实装版本，其余 render 数据（generatedAt/scenarios/
+ * budgets/耗时）一律不动——happy-dom 升版后 `perf:size --update-baseline` 可独立消除
+ * env 漂移，不必为了一个版本号跑 perf:bench 重写全部耗时测量（避免测量噪声进基线）。
+ * 返回是否发生了修改；无 render 节（从未跑过 perf:bench）时不创建、返回 false。
+ */
+function patchRenderHappyDom(baseline, label) {
+  const env = baseline.render?.env
+  if (!env || env.happyDom === label) return false
+  baseline.render.env = { ...env, happyDom: label }
+  return true
+}
+
 /** 自测：`node scripts/perf/size.mjs --self-test`（不跑体积测量；`pnpm perf:size` 会先跑它，判定函数红绿两侧因此进 CI） */
 function runSelfTest() {
   const results = []
@@ -309,6 +339,64 @@ function runSelfTest() {
       'tE:unmeasured,tE:no-budget',
     )
     check('独立预算：已测量已预算放行', budgetCoverageViolations(TREG, ['tE', 'tA'], ['tE', 'tA']).length, 0)
+    // CDN 族包包含关系（真实静态图 = 族包 sourcemap 的构建输入 sources）
+    {
+      const TREG_FAM = [
+        { id: 'tE', entry: 'data/table/edit', family: 'data', kind: 'capability', measured: true },
+        { id: 'tA', entry: 'data/table/advanced', family: 'data', kind: 'helper', measured: true },
+      ]
+      const FAM_OK = { data: ['../../src/data/table/edit/index.ts', '../../src/data/table/index.ts'] }
+      const famReasons = (violations) => violations.map((v) => `${v.item.id}@${v.family}:${v.reason}`).join(',')
+      check('族包包含：capability 在族包构建输入放行', familyInclusionViolations(TREG_FAM, FAM_OK).length, 0)
+      check(
+        '族包包含：capability 缺席族包报 missing',
+        famReasons(familyInclusionViolations(TREG_FAM, { data: ['../../src/data/table/index.ts'] })),
+        'tE@data:missing',
+      )
+      check(
+        '族包包含：helper 混入族包报 leaked',
+        famReasons(
+          familyInclusionViolations(TREG_FAM, { data: [...FAM_OK.data, '../../src/data/table/advanced/pivot.ts'] }),
+        ),
+        'tA@data:leaked',
+      )
+      check(
+        '族包包含：sourcemap 缺失 fail closed 报 no-map',
+        famReasons(familyInclusionViolations(TREG_FAM, {})),
+        'tE@data:no-map,tA@data:no-map',
+      )
+      check(
+        '族包包含：Windows 反斜杠 sources 归一后判定',
+        // 拼接构造盘符路径（约定守卫禁硬编码绝对路径字面量）
+        familyInclusionViolations(TREG_FAM, { data: ['D:' + '\\repo\\packages\\ui\\src\\data\\table\\edit\\index.ts'] })
+          .length,
+        0,
+      )
+    }
+    // render.env.happyDom 独立刷新（perf:size --update-baseline 不重写渲染测量数据）
+    {
+      const baseline = {
+        render: {
+          generatedAt: '2026-10-28',
+          env: { runtime: 'node v26', happyDom: 'happy-dom@20.x', iterations: 100 },
+          scenarios: { 'select-options-update': { medianMs: 4.9, p95Ms: 59.8 } },
+          budgets: [{ id: 'select-options-update', budgetMs: 160 }],
+        },
+      }
+      check('env 刷新：旧版本被更新', patchRenderHappyDom(baseline, 'happy-dom@21.0.3'), true)
+      check('env 刷新：happyDom 已更新', baseline.render.env.happyDom, 'happy-dom@21.0.3')
+      check('env 刷新：scenarios 原值未动', baseline.render.scenarios['select-options-update'].p95Ms, 59.8)
+      check(
+        'env 刷新：budgets/generatedAt 未动',
+        `${baseline.render.generatedAt}/${baseline.render.budgets[0].budgetMs}`,
+        '2026-10-28/160',
+      )
+      const same = { render: { env: { happyDom: 'happy-dom@21.0.3' }, scenarios: {} } }
+      check('env 刷新：已一致时不动并返回 false', patchRenderHappyDom(same, 'happy-dom@21.0.3'), false)
+      const noRender = { size: {} }
+      check('env 刷新：无 render 节时不创建', patchRenderHappyDom(noRender, 'happy-dom@21.0.3'), false)
+      check('env 刷新：无 render 节时基线未被改动', noRender.render, undefined)
+    }
   }
 
   const failed = results.filter((r) => !r.ok)
@@ -538,9 +626,9 @@ const BUDGETS = [
     kind: 'absolute',
     componentId: 'tableEdit',
     get: () => componentMeasures.tableEdit.gzipBytes,
-    limit: 104 * 1024, // 104 KB（2026-10-28 首次独立定档：实测 89.7 KB）
+    limit: 104 * 1024, // 104 KB（2026-10-28 首次独立定档：实测 89.7 KB 上浮约 16% 取整）
     basis:
-      '实测 gzip 89.7 KB / 43 文件（首次独立计量：链含 edit 控制器 + 编辑器族 + select/switch 浮层编辑通道 + i18n；edit 链大于默认 table 链是「编辑器族依赖浮层组件」的合理结果，也正是默认入口不含 edit 的原因）；上浮约 15% 定档 104 KB',
+      '实测 gzip 89.7 KB / 43 文件（首次独立计量：链含 edit 控制器 + 编辑器族 + select/switch 浮层编辑通道 + i18n；edit 链大于默认 table 链是「编辑器族依赖浮层组件」的合理结果，也正是默认入口不含 edit 的原因）；上浮约 16% 定档 104 KB（89.7×1.16≈104，取整）',
   },
   {
     name: '@oas-ui/ui/form/form 链 gzip',
@@ -739,7 +827,52 @@ for (const item of L3_REGISTRY) {
     )
 }
 
-// ---------- 3.4 性能档案一致性（脚本/JSON/Markdown 单一真源；只报红不自动刷新，见 lib/baseline-docs.mjs） ----------
+// ---------- 3.4 CDN 族包包含关系（真实静态图 = 族包 sourcemap 的构建输入 sources） ----------
+// 族包产物（dist/cdn/<family>.js）是自包含 IIFE bundle，无静态 import 可遍历；
+// 其 .map 的 sources 数组是 bundler 实际解析的输入模块清单，即精确的构建输入图。
+// 注册型 L3 缺席族包 = CDN 一把梭消费者拿不到能力；helper 型混入 = 死重。map 缺失 fail closed。
+{
+  const FAMILY_BUNDLES = ['data', 'navigation', 'feedback', 'form']
+  const familySources = {}
+  let mapBroken = false
+  for (const family of FAMILY_BUNDLES) {
+    const mapPath = join(UI_DIST, 'cdn', `${family}.js.map`)
+    try {
+      familySources[family] = JSON.parse(readFileSync(mapPath, 'utf8')).sources
+      if (!Array.isArray(familySources[family])) throw new Error('sources 不是数组')
+    } catch (error) {
+      familySources[family] = null
+      mapBroken = true
+      fail = true
+      console.error(
+        `FAIL [族包包含关系] dist/cdn/${family}.js.map 不可解析（${error.message}）：` +
+          '无法核对族包构建输入，请 pnpm build 重建 dist（勿禁用族包 sourcemap）',
+      )
+    }
+  }
+  const violations = familyInclusionViolations(L3_REGISTRY, familySources)
+  for (const { item, family, reason } of violations) {
+    fail = true
+    if (reason === 'missing') {
+      console.error(
+        `FAIL [族包包含关系] 注册型 L3 ${item.id}（${item.entry}）不在 ${family} 族包构建输入：` +
+          'CDN 一把梭消费者声明对应属性时能力静默失效',
+      )
+    } else if (reason === 'leaked') {
+      console.error(
+        `FAIL [族包包含关系] helper 型 L3 ${item.id}（${item.entry}）混入 ${family} 族包构建输入：` +
+          '无 HTML/属性触发面，进族包即死重',
+      )
+    }
+  }
+  if (!violations.length && !mapBroken) {
+    console.log(
+      `PASS [族包包含关系] ${FAMILY_BUNDLES.length} 个族包 × 登记表 ${L3_REGISTRY.filter((i) => i.family).length} 个 L3（注册型在族包、helper 不在）`,
+    )
+  }
+}
+
+// ---------- 3.5 性能档案一致性（脚本/JSON/Markdown 单一真源；只报红不自动刷新，见 lib/baseline-docs.mjs） ----------
 {
   const problems = checkPerfDocs(ROOT)
   if (problems.length) {
@@ -792,6 +925,16 @@ if (process.argv.includes('--update-baseline')) {
   })
 
   console.log(`\n基线已写入 docs/perf-baseline.json`)
+
+  // render.env.happyDom 独立同步：happy-dom 升版后无需为版本号跑 perf:bench 重写全部
+  // 耗时测量（避免测量噪声进基线）；scenarios/budgets/generatedAt 一律不动。
+  const baseline = loadBaseline()
+  if (patchRenderHappyDom(baseline, happyDomLabel(ROOT))) {
+    saveBaseline(baseline)
+    console.log(
+      `[perf:size] render.env.happyDom 已同步为 ${baseline.render.env.happyDom}（渲染耗时数据未动；需要刷新耗时请跑 pnpm perf:bench --update-baseline）`,
+    )
+  }
 } else {
   console.log(`\n[perf:size] 仅测量，未改写入库基线（确需更新请加 --update-baseline）`)
 }

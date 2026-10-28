@@ -34,9 +34,18 @@ export const RENDER_BUDGETS = [
  * 若未重新生成基线，perf:size 会红，提示重跑 perf:bench --update-baseline。
  */
 export function installedHappyDomVersion(root) {
-  const pkg = JSON.parse(readFileSync(join(root, 'node_modules/happy-dom/package.json'), 'utf8'))
+  const pkgPath = join(root, 'node_modules/happy-dom/package.json')
+  let raw
+  try {
+    raw = readFileSync(pkgPath, 'utf8')
+  } catch (error) {
+    throw new Error(
+      `[perf] 读取不到 happy-dom 包描述文件（${pkgPath}）：请先在仓库根目录执行 pnpm install（原始错误：${error?.code ?? error?.message ?? error}）`,
+    )
+  }
+  const pkg = JSON.parse(raw)
   if (typeof pkg.version !== 'string' || !pkg.version) {
-    throw new Error(`[perf] node_modules/happy-dom/package.json 缺少 version 字段`)
+    throw new Error(`[perf] ${pkgPath} 缺少 version 字段，happy-dom 安装异常：请重试 pnpm install`)
   }
   return pkg.version
 }

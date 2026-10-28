@@ -62,7 +62,7 @@
 - @oas-ui/core 基类运行时 ≈ 13.5 KB gzip；
 - 图标：**仅含自身所需的精确 path**（不再含全量注册表）——2026-10-08 图标库 opt-in 后，button 链 **34.1 → 26.6 KB**（卸掉整套 47 图标 ≈ 9.5 KB）；全量入口 `@oas-ui/ui` 仍自动注册全量集，开箱即用不变。
 
-**table 分层计量（2026-10-28 收口）**：默认入口 `data/table`（不含 edit/Pro）与各能力子路径独立计量、各有独立预算档；`table/edit` 为注册型 L3，**含于 L1 全量入口与 CDN 族包**（编辑器族依赖浮层组件，链大于默认 table 链正是默认入口不含 edit 的原因）；`advanced / format / view / range / history / detail` 为纯函数/宿主侧 helper 型 L3，**不进 L1/CDN**（无 HTML 触发面，按需显式 import）。登记表与结构门禁见 `scripts/perf/lib/l3-registry.mjs`（`perf:size` 强制）。
+**table 分层计量（2026-10-28 收口）**：默认入口 `data/table`（不含 edit/Pro）与各能力子路径独立计量、各有独立预算档；`table/edit` 为注册型 L3，**含于 L1 全量入口与 CDN 族包**（编辑器族依赖浮层组件，链大于默认 table 链正是默认入口不含 edit 的原因）；`advanced / format / view / range / history / detail` 为纯函数/宿主侧 helper 型 L3（激活唯一入口是导出函数，可含 import 期惰性注册但无 HTML/属性触发面），**不进 L1/CDN**（按需显式 import）。登记表与结构门禁见 `scripts/perf/lib/l3-registry.mjs`（`perf:size` 强制，含各 CDN 族包构建输入逐一断言）。
 
 ## 3. 自评摘要
 
@@ -123,7 +123,7 @@
 | @oas-ui/ui 全量入口链 gzip | 965.0 KB | 1140.0 KB（天花板） | 天花板制：实测 gzip 984.6 KB（并入 workbench 构件族后），上浮约 15% 定档 1140 KB；前档 1080 KB 定档于 2026-10-07（917.7 KB 实测），再前档 1024 KB 定档于 2026-10-05（890.9 KB 实测） |
 | @oas-ui/ui/basic/button 链 gzip | 23.5 KB | 30.0 KB（绝对值） | 实测 gzip 26.7 KB（2026-10-12：dev-warn 统一告警通道（101 处 console.warn 迁移，含模块本体）+ 当批行为修复增量；此前 25.0 KB 为图标库 opt-in 后口径），上浮约 12% 定档 30 KB；前档 29 KB 定档于 2026-10-08（25.0 KB 实测），再前档 39 KB 定档于 2026-10-05（33.5 KB 实测，含全量图标注册表） |
 | @oas-ui/ui/data/table 链 gzip | 67.6 KB | 74.0 KB（绝对值） | 实测 gzip 66.2 KB（v2.6.4 默认入口 = 基础表格，不含 edit；链含 core 骨架 + virtual-list + i18n + pagination + 列设置/导出/移动降级与展示集快照，不含编辑器族），上浮约 12% 定档 74 KB；前档 108 KB 为默认入口含 edit 口径 |
-| @oas-ui/ui/data/table/edit 链 gzip | 89.7 KB | 104.0 KB（绝对值） | 实测 gzip 89.7 KB / 43 文件（首次独立计量：链含 edit 控制器 + 编辑器族 + select/switch 浮层编辑通道 + i18n；edit 链大于默认 table 链是「编辑器族依赖浮层组件」的合理结果，也正是默认入口不含 edit 的原因）；上浮约 15% 定档 104 KB |
+| @oas-ui/ui/data/table/edit 链 gzip | 89.7 KB | 104.0 KB（绝对值） | 实测 gzip 89.7 KB / 43 文件（首次独立计量：链含 edit 控制器 + 编辑器族 + select/switch 浮层编辑通道 + i18n；edit 链大于默认 table 链是「编辑器族依赖浮层组件」的合理结果，也正是默认入口不含 edit 的原因）；上浮约 16% 定档 104 KB（89.7×1.16≈104，取整） |
 | @oas-ui/ui/form/form 链 gzip | 27.8 KB | 29.0 KB（绝对值） | 实测 gzip 25.6 KB（四批合并后；含 core + i18n），上浮约 15% 定档 29 KB；前档 28 KB 定档于 2026-10-05（24.8 KB 实测） |
 | @oas-ui/ui/data/gantt 链 gzip | 65.6 KB | 70.0 KB（绝对值） | v2.6.2 重定档：实测 gzip 61.1 KB（gantt 任务管理/依赖编辑/约束/工作日日历/列虚拟化/多选等能力增量，链含 core + i18n + virtual-list）；上浮约 15% 定档 70 KB。前一档 46 KB 定档于 2026-10-07（实测 39.6 KB） |
 | @oas-ui/ui/data/json-viewer 链 gzip | 32.8 KB | 35.0 KB（绝对值） | 实测 gzip 31.5 KB（链含 core + i18n + 树模型/虚拟窗口/工具栏/搜索/复制/复制浮层；无第三方运行时、无图标全量注册），上浮约 10% 定档 35 KB；PRD 目标 ≤32 KB。 |
