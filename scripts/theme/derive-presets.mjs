@@ -377,20 +377,20 @@ console.log('mode   name     旧值      新值      目标底min  elevated  相
 for (const mode of MODES) {
   const { values, changes, unsolved } = derive(mode)
   if (!changes.length && !unsolved.length) {
-    console.log(`${mode}  —        无变更`)
-    continue
+    console.log(`${mode.padEnd(6)} —        无变更`)
+  } else {
+    for (const c of changes) {
+      const ds = ADJACENT_PRESET_PAIRS.filter(([a, b]) => a === c.name || b === c.name)
+        .map(([a, b]) => `${a}↔${b}=${dist(values[a], values[b]).toFixed(1)}`)
+        .join(' ')
+      console.log(
+        `${mode.padEnd(6)} ${c.name.padEnd(9)} ${c.from.padEnd(9)} ${c.to.padEnd(9)} ${minTargetScore(c.to, mode)
+          .toFixed(1)
+          .padStart(8)}  ${elevatedScore(c.to, mode).toFixed(1).padStart(7)}  ${ds.padEnd(22)} ${c.reason}`,
+      )
+    }
+    for (const u of unsolved) console.log(`${mode.padEnd(6)} 无解：${u}`)
   }
-  for (const c of changes) {
-    const ds = ADJACENT_PRESET_PAIRS.filter(([a, b]) => a === c.name || b === c.name)
-      .map(([a, b]) => `${a}↔${b}=${dist(values[a], values[b]).toFixed(1)}`)
-      .join(' ')
-    console.log(
-      `${mode.padEnd(6)} ${c.name.padEnd(9)} ${c.from.padEnd(9)} ${c.to.padEnd(9)} ${minTargetScore(c.to, mode)
-        .toFixed(1)
-        .padStart(8)}  ${elevatedScore(c.to, mode).toFixed(1).padStart(7)}  ${ds.padEnd(22)} ${c.reason}`,
-    )
-  }
-  for (const u of unsolved) console.log(`${mode.padEnd(6)} 无解：${u}`)
   const semantic = deriveSemantic(mode)
   for (const c of semantic.changes) {
     console.log(

@@ -653,9 +653,9 @@ const BUDGETS = [
     kind: 'absolute',
     componentId: 'form',
     get: () => componentMeasures.form.gzipBytes,
-    limit: 29 * 1024, // 29 KB（2026-10-07 重定档：四批后实测 25.6 KB 触前档 90%）
+    limit: 29 * 1024, // 29 KB（2026-10-07 重定档；2026-10-29 动态 label observer 后仅余 38 B，已饱和）
     basis:
-      '实测 gzip 25.6 KB（四批合并后；含 core + i18n），上浮约 15% 定档 29 KB；前档 28 KB 定档于 2026-10-05（24.8 KB 实测）',
+      '实测 gzip 25.6 KB（四批合并后；含 core + i18n），上浮约 15% 定档 29 KB；前档 28 KB 定档于 2026-10-05（24.8 KB 实测）。2026-10-29：新增外部 label 动态 observer 后实测 gzip 29658 B / 预算 29696 B（余量仅 38 B，已饱和）；后续 form 链任何扩展前必须先评估/瘦身或按流程重新定档，禁止把余量当常量',
   },
   {
     name: '@oas-ui/ui/data/gantt 链 gzip',

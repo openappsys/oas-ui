@@ -1,21 +1,21 @@
 {
   "size": {
-    "generatedAt": "2026-10-28",
+    "generatedAt": "2026-10-29",
     "method": "gzip = zlib gzipSync；brotli = zlib.brotliCompressSync q11；单组件链 = 静态 import 图遍历 + 逐文件压缩求和（上界估计）",
     "packages": {
       "@oas-ui/ui": {
-        "distTotalBytes": 39565980,
+        "distTotalBytes": 39591586,
         "browserJs": {
           "files": 451,
-          "rawBytes": 10282053,
-          "gzipBytes": 2464369,
-          "brotliBytes": 1922514
+          "rawBytes": 10286383,
+          "gzipBytes": 2465682,
+          "brotliBytes": 1923793
         },
         "fullEntry": {
           "files": 479,
-          "rawBytes": 3634126,
-          "gzipBytes": 988194,
-          "brotliBytes": 849448,
+          "rawBytes": 3638124,
+          "gzipBytes": 989426,
+          "brotliBytes": 850413,
           "fileList": [
             "packages/ui/dist/index.js",
             "packages/icons/dist/register.js",
@@ -500,9 +500,9 @@
         },
         "cdn": {
           "files": 1,
-          "rawBytes": 3023684,
-          "gzipBytes": 658483,
-          "brotliBytes": 452895
+          "rawBytes": 3025126,
+          "gzipBytes": 658937,
+          "brotliBytes": 453451
         }
       },
       "@oas-ui/theme": {
@@ -514,9 +514,9 @@
       },
       "@oas-ui/core": {
         "files": 6,
-        "rawBytes": 32582,
-        "gzipBytes": 13559,
-        "brotliBytes": 11202
+        "rawBytes": 36580,
+        "gzipBytes": 14791,
+        "brotliBytes": 12167
       },
       "@oas-ui/i18n": {
         "files": 23,
@@ -542,9 +542,9 @@
         "entry": "basic/button",
         "spec": "@oas-ui/ui/basic/button",
         "files": 14,
-        "rawBytes": 77033,
-        "gzipBytes": 24105,
-        "brotliBytes": 20240,
+        "rawBytes": 81031,
+        "gzipBytes": 25337,
+        "brotliBytes": 21205,
         "fileList": [
           "packages/ui/dist/basic/button/index.js",
           "packages/ui/dist/basic/button/oas-button.js",
@@ -566,9 +566,9 @@
         "entry": "data/table",
         "spec": "@oas-ui/ui/data/table",
         "files": 29,
-        "rawBytes": 224783,
-        "gzipBytes": 69206,
-        "brotliBytes": 58285,
+        "rawBytes": 228781,
+        "gzipBytes": 70438,
+        "brotliBytes": 59250,
         "fileList": [
           "packages/ui/dist/data/table/index.js",
           "packages/i18n/dist/index.js",
@@ -605,9 +605,9 @@
         "entry": "data/table/edit",
         "spec": "@oas-ui/ui/data/table/edit",
         "files": 43,
-        "rawBytes": 308418,
-        "gzipBytes": 91849,
-        "brotliBytes": 77849,
+        "rawBytes": 312416,
+        "gzipBytes": 93081,
+        "brotliBytes": 78814,
         "fileList": [
           "packages/ui/dist/data/table/edit/index.js",
           "packages/ui/dist/form/select/index.js",
@@ -743,9 +743,9 @@
         "entry": "form/form",
         "spec": "@oas-ui/ui/form/form",
         "files": 11,
-        "rawBytes": 78376,
-        "gzipBytes": 28426,
-        "brotliBytes": 23674,
+        "rawBytes": 82374,
+        "gzipBytes": 29658,
+        "brotliBytes": 24639,
         "fileList": [
           "packages/ui/dist/form/form/index.js",
           "packages/i18n/dist/index.js",
@@ -764,9 +764,9 @@
         "entry": "data/gantt",
         "spec": "@oas-ui/ui/data/gantt",
         "files": 18,
-        "rawBytes": 225823,
-        "gzipBytes": 67134,
-        "brotliBytes": 56104,
+        "rawBytes": 229821,
+        "gzipBytes": 68366,
+        "brotliBytes": 57069,
         "fileList": [
           "packages/ui/dist/data/gantt/index.js",
           "packages/i18n/dist/index.js",
@@ -792,9 +792,9 @@
         "entry": "data/json-viewer",
         "spec": "@oas-ui/ui/data/json-viewer",
         "files": 13,
-        "rawBytes": 96957,
-        "gzipBytes": 33617,
-        "brotliBytes": 28216,
+        "rawBytes": 100955,
+        "gzipBytes": 34849,
+        "brotliBytes": 29181,
         "fileList": [
           "packages/ui/dist/data/json-viewer/index.js",
           "packages/i18n/dist/index.js",
@@ -815,9 +815,9 @@
         "entry": "data/diff-viewer",
         "spec": "@oas-ui/ui/data/diff-viewer",
         "files": 12,
-        "rawBytes": 91036,
-        "gzipBytes": 32319,
-        "brotliBytes": 27183,
+        "rawBytes": 95034,
+        "gzipBytes": 33551,
+        "brotliBytes": 28148,
         "fileList": [
           "packages/ui/dist/data/diff-viewer/index.js",
           "packages/i18n/dist/index.js",
@@ -838,7 +838,7 @@
       {
         "name": "dist/cdn.js gzip",
         "kind": "ceiling",
-        "actualBytes": 658483,
+        "actualBytes": 658937,
         "limitBytes": 788480,
         "warnAtBytes": 709632,
         "pass": true,
@@ -848,7 +848,7 @@
       {
         "name": "@oas-ui/ui 全量入口链 gzip",
         "kind": "ceiling",
-        "actualBytes": 988194,
+        "actualBytes": 989426,
         "limitBytes": 1167360,
         "warnAtBytes": 1050624,
         "pass": true,
@@ -859,7 +859,7 @@
         "name": "@oas-ui/ui/basic/button 链 gzip",
         "kind": "absolute",
         "componentId": "button",
-        "actualBytes": 24105,
+        "actualBytes": 25337,
         "limitBytes": 30720,
         "warnAtBytes": 27648,
         "pass": true,
@@ -870,7 +870,7 @@
         "name": "@oas-ui/ui/data/table 链 gzip",
         "kind": "absolute",
         "componentId": "table",
-        "actualBytes": 69206,
+        "actualBytes": 70438,
         "limitBytes": 75776,
         "warnAtBytes": 68198,
         "pass": true,
@@ -881,7 +881,7 @@
         "name": "@oas-ui/ui/data/table/edit 链 gzip",
         "kind": "absolute",
         "componentId": "tableEdit",
-        "actualBytes": 91849,
+        "actualBytes": 93081,
         "limitBytes": 106496,
         "warnAtBytes": 95846,
         "pass": true,
@@ -892,18 +892,18 @@
         "name": "@oas-ui/ui/form/form 链 gzip",
         "kind": "absolute",
         "componentId": "form",
-        "actualBytes": 28426,
+        "actualBytes": 29658,
         "limitBytes": 29696,
         "warnAtBytes": 26726,
         "pass": true,
         "warn": true,
-        "basis": "实测 gzip 25.6 KB（四批合并后；含 core + i18n），上浮约 15% 定档 29 KB；前档 28 KB 定档于 2026-10-05（24.8 KB 实测）"
+        "basis": "实测 gzip 25.6 KB（四批合并后；含 core + i18n），上浮约 15% 定档 29 KB；前档 28 KB 定档于 2026-10-05（24.8 KB 实测）。2026-10-29：新增外部 label 动态 observer 后实测 gzip 29658 B / 预算 29696 B（余量仅 38 B，已饱和）；后续 form 链任何扩展前必须先评估/瘦身或按流程重新定档，禁止把余量当常量"
       },
       {
         "name": "@oas-ui/ui/data/gantt 链 gzip",
         "kind": "absolute",
         "componentId": "gantt",
-        "actualBytes": 67134,
+        "actualBytes": 68366,
         "limitBytes": 71680,
         "warnAtBytes": 64512,
         "pass": true,
@@ -914,7 +914,7 @@
         "name": "@oas-ui/ui/data/json-viewer 链 gzip",
         "kind": "absolute",
         "componentId": "jsonViewer",
-        "actualBytes": 33617,
+        "actualBytes": 34849,
         "limitBytes": 35840,
         "warnAtBytes": 32256,
         "pass": true,
@@ -925,7 +925,7 @@
         "name": "@oas-ui/ui/data/diff-viewer 链 gzip",
         "kind": "absolute",
         "componentId": "diffViewer",
-        "actualBytes": 32319,
+        "actualBytes": 33551,
         "limitBytes": 34816,
         "warnAtBytes": 31334,
         "pass": true,
