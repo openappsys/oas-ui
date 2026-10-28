@@ -4,8 +4,10 @@
  * 证明的是判定行为本身（纯函数，fixture 注入），而非「读一遍真仓库恰好一致」：
  * - removeIn 版本纪律：非空必须是高于当前版本的 major；普通 API 面（attribute/event/
  *   method/…）的 minor/patch 移除一律拒绝——checker 对普通 minor 移除保持失败；
- * - 单点例外：仅 `package-export` 面可携带 `minorException`（用户批准 + 必填理由）
- *   换取非 major 的 removeIn；该豁免不得泛化到任何组件 API 面；
+ * - 单点例外（经批准的 minor 提升）：仅 `package-export` 面可携带 `minorException`
+ *   （必填非空 approvedBy + reason）换取「同 major 且严格高于 currentVersion 的合法
+ *   x.y.z」removeIn；更高 major 走普通 major 规则；同版本/降级/更低 minor/非法版本
+ *   即使带 minorException 也一律拒绝；该豁免不得泛化到任何组件 API 面；
  * - package-export 面形状：tag 必须是包名，legacy/canonical 必须落在该包路径下；
  * - 既有判定不回归：重复 id、canonical 必须在 manifest、normalizeLegacyAlias 调用
  *   必须登记。
@@ -43,7 +45,7 @@ const attrEntry = {
   migration: 'prefix -> prefix-text',
 }
 
-/** Task 4A 的单点例外条目（package-export，经用户批准的 minor 移除） */
+/** Task 4A 的单点例外条目（package-export，经用户批准的 minor 提升 2.6.4 → 2.6.5） */
 const exportEntry = {
   id: 'DEP-EXPORT-0001',
   tag: '@oas-ui/ui',
@@ -98,14 +100,51 @@ test('minorException 泛化防护：普通 API 面携带 minorException → 拒�
   assert.match(joined, /major/, '版本纪律问题也应同时存在')
 })
 
-test('minorException 缺理由 / 空白理由 → 拒绝（批准必须携带理由）', () => {
-  for (const bad of [undefined, null, {}, { approvedBy: '用户' }, { reason: '   ' }, '口头批准']) {
+test('minorException 缺批准方 / 缺理由 / 空白 → 拒绝（approvedBy 与 reason 均须非空字符串）', () => {
+  const bads = [
+    undefined,
+    null,
+    {},
+    { approvedBy: '用户' },
+    { reason: '   ' },
+    { reason: '有理由但缺批准方' },
+    { approvedBy: '   ', reason: 'x' },
+    { approvedBy: 42, reason: 'x' },
+    '口头批准',
+  ]
+  for (const bad of bads) {
     const problems = run([{ ...exportEntry, minorException: bad }])
     assert.ok(
       problems.some((p) => /minorException/.test(p)),
       `minorException=${JSON.stringify(bad)} 应被拒：${problems.join(' | ')}`,
     )
+    assert.equal(isApprovedMinorException({ ...exportEntry, minorException: bad }), false)
   }
+})
+
+test('例外只允许「同 major 且严格高于 currentVersion」的合法 x.y.z minor 提升', () => {
+  // 接受：同 major、版本严格更高（patch 或 minor 更高），豁免齐全
+  for (const ok of ['2.6.5', '2.6.10', '2.7.0', '2.7.3']) {
+    const problems = run([{ ...exportEntry, removeIn: ok }])
+    assert.deepEqual(problems, [], `removeIn=${ok}（同 major 严格更高 + 豁免）应接受：${problems.join(' | ')}`)
+  }
+  // 拒绝：同版本 / patch 降级 / 更低 minor / 更低 major / 非法版本——即使带 minorException
+  for (const bad of ['2.6.4', '2.6.3', '2.5.9', '1.9.0', '2.6', '2.6.5-beta.1', 'abc', 'v2.6.5', '']) {
+    const problems = run([{ ...exportEntry, removeIn: bad }])
+    assert.equal(
+      problems.length,
+      1,
+      `removeIn=${JSON.stringify(bad)}（即使带豁免）应恰有一条拒绝：${problems.join(' | ')}`,
+    )
+    assert.match(problems[0], /major/)
+    assert.match(problems[0], /minor 提升/, '拒绝原因应说明例外仅限经批准的 minor 提升')
+  }
+})
+
+test('更高 major 走普通 major 规则：无需豁免即放行（豁免只作用于 minor 提升路径）', () => {
+  const { minorException, ...bare } = exportEntry
+  assert.deepEqual(run([{ ...bare, removeIn: '3.0.0' }]), [], '3.0.0 应由 major 规则放行，无需豁免')
+  assert.deepEqual(run([{ ...exportEntry, removeIn: '3.0.0' }]), [], '3.0.0 带豁免同样放行')
 })
 
 test('package-export 形状：tag 必须是包名，legacy/canonical 必须落在该包路径下', () => {

@@ -6,7 +6,7 @@
 
 ### 移除
 
-- **`@oas-ui/ui/data/table/core` 兼容别名删除（v2.6.5，用户批准的 minor 单点例外）**：迁移只需把 `import ... from '@oas-ui/ui/data/table/core'` 改为 `@oas-ui/ui/data/table`（默认入口自 v2.6.4 起与 core 完全等价；需要行内编辑时再补 `@oas-ui/ui/data/table/edit`）。删除范围：源码别名入口、`core-entry.test.ts`、文档/预算注释；`table` 默认入口与显式 `table/edit` 语义不变。提前一个 minor 移除的理由：等价别名（非独立 API 面）且 v2.6.4 已预告，例外登记于 `docs/deprecations.json` DEP-EXPORT-0001（`minorException` 字段，含批准方与理由）；`deprecations:check` 仅对 `package-export` 面放行该豁免，组件 API 面的 minor 移除仍一律拒绝（正反用例见 `scripts/api-docs/deprecations.test.mjs`，接入 CI `pnpm deprecations:test`）。防回归：`core-removed.test.ts`（src 零残留）+ `perf:size` 已移除入口零残留门禁（exports 通配 `./*` 下 dist 不得残留旧入口文件）。
+- **`@oas-ui/ui/data/table/core` 兼容别名删除（v2.6.5，用户批准的 minor 单点例外）**：迁移只需把 `import ... from '@oas-ui/ui/data/table/core'` 改为 `@oas-ui/ui/data/table`（默认入口自 v2.6.4 起与 core 完全等价；需要行内编辑时再补 `@oas-ui/ui/data/table/edit`）。删除范围：源码别名入口、`core-entry.test.ts`、文档/预算注释；`table` 默认入口与显式 `table/edit` 语义不变。提前一个 minor 移除的理由：等价别名（非独立 API 面）且 v2.6.4 已预告，例外登记于 `docs/deprecations.json` DEP-EXPORT-0001（`minorException` 字段，含批准方与理由）；`deprecations:check` 仅对 `package-export` 面放行「经批准的 minor 提升」豁免（同 major 且严格高于当前版本的合法 x.y.z），组件 API 面的 minor 移除仍一律拒绝（正反用例见 `scripts/api-docs/deprecations.test.mjs`，接入 CI `pnpm deprecations:test`）。防回归：`core-removed.test.ts`（src 零残留）+ `perf:size` 已移除入口零残留门禁（exports 通配 `./*` 下 dist 不得残留旧入口文件）。
 
 ### 新增
 

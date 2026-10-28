@@ -303,7 +303,7 @@ v2.6.4 后的维护批：补齐 table Pro 能力在 windowed、失败请求与�
 
 删除 `@oas-ui/ui/data/table/core` 与相关文档/预算/测试；迁移路径统一为 `@oas-ui/ui/data/table`（需要编辑时补 `table/edit`）。
 
-- **SemVer 单点例外（用户批准）**：别名删除落在 minor 而非 major——它是默认入口的等价别名（re-export 同一构造器，非独立 API 面），v2.6.4 已随默认入口语义切换预告移除。例外登记于 `docs/deprecations.json` DEP-EXPORT-0001（`minorException`），`deprecations:check` 仅对 `package-export` 面放行，组件 API 面的 minor 移除仍一律拒绝。
+- **SemVer 单点例外（用户批准）**：别名删除落在 minor 而非 major——它是默认入口的等价别名（re-export 同一构造器，非独立 API 面），v2.6.4 已随默认入口语义切换预告移除。例外登记于 `docs/deprecations.json` DEP-EXPORT-0001（`minorException`，必填批准方与理由），`deprecations:check` 仅对 `package-export` 面放行「经批准的 minor 提升」（同 major 且严格高于当前版本的合法 x.y.z），组件 API 面的 minor 移除仍一律拒绝。
 - 防回归：`core-removed.test.ts`（src 层）+ `perf:size` 已移除入口零残留门禁（dist 层）；checker 正反用例在 `scripts/api-docs/deprecations.test.mjs`。
 - 验收：table 单测全绿；`deprecations:check` / `exports:check` / `typecheck` / `build` / `api:check` / `llms:check` / `perf:size` 通过；全量 e2e 通过。历史 v2.6.4 段与 CHANGELOG 已发布段不改写。
 

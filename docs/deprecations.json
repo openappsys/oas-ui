@@ -3,7 +3,7 @@
   "library": "@oas-ui/ui",
   "currentVersion": "2.6.4",
   "policy": {
-    "removeIn": "null 表示长期兼容或尚未排期；非空必须是高于 currentVersion 的 major。唯一豁免：package-export 面可经用户批准携带 minorException（必填理由）在非 major 移除（单点例外，不构成先例）；组件 API 面的 minor/patch 移除一律拒绝",
+    "removeIn": "null 表示长期兼容或尚未排期；非空必须是高于 currentVersion 的 major。唯一豁免：package-export 面可经用户批准携带 minorException（必填非空 approvedBy 与 reason），以「经批准的 minor 提升」移除——仅限同 major 且严格高于 currentVersion 的合法 x.y.z（单点例外，不构成先例）；组件 API 面的 minor/patch 移除一律拒绝",
     "state": ["silent-compat", "warned", "announced", "removed"],
     "sourceOfTruth": "docs/api-manifest/*.json + packages/ui/src + docs/api-descriptions.{zh,en}.json"
   },

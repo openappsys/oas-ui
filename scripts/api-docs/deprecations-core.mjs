@@ -3,10 +3,12 @@
  *
  * 规则：
  * - removeIn 版本纪律：非空必须是高于当前版本的 major；
- * - 唯一豁免（单点例外）：`package-export` 面可携带 `minorException`（经用户批准、
- *   必填非空 reason）换取非 major 的 removeIn——仅限「默认入口等价别名」类的包导出
- *   路径移除；该豁免**不适用且永不适用**于任何组件 API 面（attribute/prop/event/
- *   method/css-var/export），普通 minor 移除一律拒绝；
+ * - 唯一豁免（经批准的 minor 提升）：`package-export` 面可携带 `minorException`（经
+ *   用户批准，必填非空 approvedBy 与 reason），把 removeIn 放宽到「同 major 且严格高于
+ *   currentVersion 的合法 x.y.z」；更高 major 走普通 major 规则；同版本 / patch 同级
+ *   或降级 / 更低 minor / 更低 major / 非法版本即使携带 minorException 也一律拒绝。
+ *   该豁免**不适用且永不适用**于任何组件 API 面（attribute/prop/event/method/css-var/
+ *   export），普通 minor/patch 移除一律拒绝；
  * - manifest 对账：非 '@' tag 的 alias，canonical 必须出现在对应组件的 API 清单里；
  * - 源码对账：normalizeLegacyAlias(primary, legacy) 调用必须登记（state ≠ removed）。
  */
@@ -14,9 +16,17 @@
 /** 允许携带 minorException 的唯一面 */
 export const MINOR_EXCEPTION_SURFACE = 'package-export'
 
+/** 严格 x.y.z 解析（三段纯数字，无 v 前缀 / prerelease / 缺段）；非法返回 null */
+function parseXyz(version) {
+  const match = /^(\d+)\.(\d+)\.(\d+)$/.exec(String(version))
+  return match ? [Number(match[1]), Number(match[2]), Number(match[3])] : null
+}
+
 /**
- * 单点例外判定：package-export 面 + 显式 minorException 对象（含非空 reason）。
- * 任何其他面（组件 API）携带 minorException 一律不算例外——checker 仍按 major 纪律拒绝。
+ * 单点例外判定：package-export 面 + 显式 minorException 对象（approvedBy 与 reason
+ * 均为非空字符串）。任何其他面（组件 API）携带 minorException 一律不算例外——
+ * checker 仍按 major 纪律拒绝；版本形状由 collectProblems 另行校验（仅限同 major
+ * 且严格高于 currentVersion 的合法 x.y.z）。
  */
 export function isApprovedMinorException(entry) {
   return (
@@ -24,6 +34,8 @@ export function isApprovedMinorException(entry) {
     entry.minorException != null &&
     typeof entry.minorException === 'object' &&
     !Array.isArray(entry.minorException) &&
+    typeof entry.minorException.approvedBy === 'string' &&
+    entry.minorException.approvedBy.trim() !== '' &&
     typeof entry.minorException.reason === 'string' &&
     entry.minorException.reason.trim() !== ''
   )
@@ -36,7 +48,7 @@ export function isApprovedMinorException(entry) {
 export function collectProblems({ entries = [], currentVersion, manifest = {}, sourceCalls = [] }) {
   const problems = []
   const ids = new Set()
-  const currentMajor = Number(String(currentVersion).split('.')[0])
+  const currentXyz = parseXyz(currentVersion)
 
   for (const entry of entries) {
     if (ids.has(entry.id)) problems.push(`重复 id：${entry.id}`)
@@ -54,26 +66,36 @@ export function collectProblems({ entries = [], currentVersion, manifest = {}, s
       }
     }
 
-    // 豁免泛化防护：minorException 仅限 package-export 面，且必须有非空理由
+    // 豁免泛化防护：minorException 仅限 package-export 面，且必须有非空批准方与理由
     if (entry.minorException != null && entry.surface !== MINOR_EXCEPTION_SURFACE) {
       problems.push(
         `${entry.id} minorException 仅限 ${MINOR_EXCEPTION_SURFACE} 面（${entry.surface} 不得豁免 minor 移除）`,
       )
     } else if (entry.minorException != null && !isApprovedMinorException(entry)) {
-      problems.push(`${entry.id} minorException 必须是含非空 reason 的对象（经批准的例外须记录理由与批准方）`)
+      problems.push(
+        `${entry.id} minorException 必须是含非空 approvedBy 与 reason 的对象（经批准的例外须记录批准方与理由）`,
+      )
     }
 
-    // 版本纪律：removeIn 只能是 null 或高于当前版本的 major；唯一豁免是
-    // package-export 面经用户批准的单点例外（DEP-EXPORT-0001 先例）
+    // 版本纪律：removeIn 只能是 null 或高于当前版本的 major；唯一豁免是 package-export
+    // 面经用户批准的「minor 提升例外」——同 major 且严格高于 currentVersion 的合法
+    // x.y.z（DEP-EXPORT-0001 先例：2.6.4 → 2.6.5）。更高 major 由普通 major 规则放行；
+    // 同版本 / patch 同级或降级 / 更低 minor / 更低 major / 非法版本即使携带
+    // minorException 也拒绝。
     if (entry.removeIn != null) {
-      const major = Number(String(entry.removeIn).split('.')[0])
-      if (!Number.isFinite(major) || major <= currentMajor) {
-        if (!isApprovedMinorException(entry)) {
-          problems.push(
-            `${entry.id} removeIn=${entry.removeIn} 必须是高于 ${currentVersion} 的 major` +
-              `（非 major 移除仅限经用户批准的 ${MINOR_EXCEPTION_SURFACE} 单点例外，见台账 minorException）`,
-          )
-        }
+      const target = parseXyz(entry.removeIn)
+      const allowed =
+        currentXyz != null &&
+        target != null &&
+        (target[0] > currentXyz[0] ||
+          (target[0] === currentXyz[0] &&
+            (target[1] > currentXyz[1] || (target[1] === currentXyz[1] && target[2] > currentXyz[2])) &&
+            isApprovedMinorException(entry)))
+      if (!allowed) {
+        problems.push(
+          `${entry.id} removeIn=${entry.removeIn} 必须是高于 ${currentVersion} 的 major` +
+            `（经批准的 minor 提升例外仅限「同 major 且严格高于 ${currentVersion}」的合法 x.y.z，须携带含批准方与理由的 minorException）`,
+        )
       }
     }
 
