@@ -59,16 +59,18 @@ const NATIVE_PROPS = new Set([
 /** 提取 md 里的 <script> 块（返回 { code, startLine }），并同时返回剥掉 script/代码围栏后的 HTML 文本 */
 function extractScripts(content: string): { scripts: Array<{ code: string; startLine: number }>; html: string } {
   const scripts: Array<{ code: string; startLine: number }> = []
-  const html = content
-    .replace(/```[\s\S]*?```/g, (m) => '\n'.repeat(m.split('\n').length - 1)) // 代码围栏不是真实 DOM
-    .replace(/<script[^>]*>[\s\S]*?<\/script>/g, (m, offset: number) => {
-      // 无捕获组：replace 回调第 2 参即匹配起点 offset（此前误取 rest 末位的整体字符串，startLine 恒 1）
-      scripts.push({
-        code: m.slice(m.indexOf('>') + 1, m.lastIndexOf('<')),
-        startLine: content.slice(0, offset).split('\n').length,
-      })
-      return '\n'.repeat(m.split('\n').length - 1)
+  // 先把代码围栏替换为「等量换行」的中间串（行数不变、字节数变）：后续提取 script 与
+  // 绝对行号计算必须都用同一中间串——offset 是中间串里的位置，混用原始 content 会在
+  // 「script 前有代码围栏」时行号错位（围栏正文字节被删，offset 比原始位置小）。
+  const intermediate = content.replace(/```[\s\S]*?```/g, (m) => '\n'.repeat(m.split('\n').length - 1))
+  const html = intermediate.replace(/<script[^>]*>[\s\S]*?<\/script>/g, (m, offset: number) => {
+    // 无捕获组：replace 回调第 2 参即匹配起点 offset（此前误取 rest 末位的整体字符串，startLine 恒 1）
+    scripts.push({
+      code: m.slice(m.indexOf('>') + 1, m.lastIndexOf('<')),
+      startLine: intermediate.slice(0, offset).split('\n').length,
     })
+    return '\n'.repeat(m.split('\n').length - 1)
+  })
   return { scripts, html }
 }
 
@@ -376,6 +378,37 @@ describe('docs demo 升级前裸 property 写入防回流', () => {
       new Set(scanMarkdown(`${page}\n\n${page}`, 'fixture').map((h) => h.line)).size,
       '两个 script 块的同型写入行号不得相同（证明非恒 1）',
     ).toBe(2)
+  })
+
+  test('自测：script 前有代码围栏时行号仍为绝对行号，且围栏内 DOM 不产生可解析目标', () => {
+    // 围栏（3-5 行）在 script 之前：围栏替换为等量换行后字节数变短——
+    // 若行号用原始 content 切 offset（中间串位置）会错位，必须用同一中间串
+    const page = [
+      '# 标题',
+      '',
+      '```html',
+      '<oas-transfer id="t-fence-ghost"></oas-transfer>',
+      '```',
+      '',
+      '<oas-transfer id="t-fence"></oas-transfer>',
+      '',
+      '<script setup>',
+      'import { onMounted } from "vue"',
+      'onMounted(() => {',
+      '  const el = document.getElementById("t-fence")',
+      '  el.data = [{ key: "a" }]',
+      '  const ghost = document.getElementById("t-fence-ghost")',
+      '  if (ghost) ghost.data = []',
+      '})',
+      '</script>',
+      '',
+    ].join('\n')
+    const hits = scanMarkdown(page, 'fixture')
+    expect(
+      hits.length === 1 && hits[0]!.line === 13,
+      `真实元素裸写应恰报 1 条、绝对行号 13（script 开标签第 9 行 + 4），实际 ${JSON.stringify(hits)}`,
+    ).toBe(true)
+    // 't-fence-ghost' 只存在于围栏内（围栏不是真实 DOM，已从 html 剥离）——对其裸写不可解析，不得误报
   })
 
   test('自测：守卫块/事件回调/异步路径/普通对象/原生属性/不可解析目标不误伤', () => {
