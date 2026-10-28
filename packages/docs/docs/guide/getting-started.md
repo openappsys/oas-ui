@@ -149,7 +149,7 @@ import '@oas-ui/ui/data/table' // 基础表格（不含行内编辑）
 import '@oas-ui/ui/data/table/edit' // 需要行内编辑时显式引入
 ```
 
-自 v2.6.4 起默认入口只含基础形态，重型能力按需补引；`@oas-ui/ui/data/table/core` 是默认入口的 deprecated 别名（v2.6.5 移除），新代码不要使用。引入顺序随意：能力注册对**已挂载**的组件元素也会自动补齐（晚加入自愈）。全量入口 `@oas-ui/ui` 与 CDN 族包已内含全部能力，无需额外引用。
+自 v2.6.4 起默认入口只含基础形态，重型能力按需补引；旧别名 `@oas-ui/ui/data/table/core` 已于 v2.6.5 移除（尚未发布），迁移：把 `table/core` 改为 `table`（需要编辑时补 `table/edit`）。引入顺序随意：能力注册对**已挂载**的组件元素也会自动补齐（晚加入自愈）。全量入口 `@oas-ui/ui` 与 CDN 族包已内含全部能力，无需额外引用。
 
 > 想看实际效果？仓库里有搭配使用 React / Vue 的 [Playground](https://github.com/openappsys/oas-ui/tree/main/packages/playground)，在 `packages/playground` 目录下 `pnpm dev:react` / `pnpm dev:vue` 即可本地运行（或在仓库根目录用 `pnpm --filter @oas-ui/playground dev:react`）。
 

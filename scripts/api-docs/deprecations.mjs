@@ -5,7 +5,9 @@
  * - 台账唯一来源：docs/deprecations.json
  * - 源码对账：normalizeLegacyAlias(primary, legacy) 调用必须登记
  * - manifest 对账：alias 的 canonical 必须出现在对应 tag 的 attrs/props/events/methods
- * - 版本纪律：removeIn 只能是 null 或高于当前版本的 major
+ * - 版本纪律：removeIn 只能是 null 或高于当前版本的 major；唯一豁免是 `package-export`
+ *   面经用户批准的单点例外（`minorException`，见 deprecations-core.mjs 与台账
+ *   DEP-EXPORT-0001）——组件 API 面的 minor/patch 移除一律拒绝。
  *
  * 用法：
  *   node scripts/api-docs/deprecations.mjs          # 写 docs/deprecations.md
@@ -14,6 +16,7 @@
 import { existsSync, readFileSync, readdirSync, writeFileSync } from 'node:fs'
 import { dirname, join, relative, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { collectProblems, isApprovedMinorException } from './deprecations-core.mjs'
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../..')
 const LEDGER = join(ROOT, 'docs/deprecations.json')
@@ -29,37 +32,7 @@ for (const tag of JSON.parse(readFileSync(join(MANIFEST_DIR, 'index.json'), 'utf
   if (existsSync(file)) manifest[tag] = JSON.parse(readFileSync(file, 'utf8'))
 }
 
-const problems = []
-const ids = new Set()
-for (const entry of ledger.entries) {
-  if (ids.has(entry.id)) problems.push(`重复 id：${entry.id}`)
-  ids.add(entry.id)
-  if (entry.removeIn != null) {
-    const major = Number(String(entry.removeIn).split('.')[0])
-    const currentMajor = Number(String(currentVersion).split('.')[0])
-    if (!Number.isFinite(major) || major <= currentMajor) {
-      problems.push(`${entry.id} removeIn=${entry.removeIn} 必须是高于 ${currentVersion} 的 major`)
-    }
-  }
-  if (entry.tag.startsWith('@')) continue
-  const man = manifest[entry.tag]
-  if (!man) {
-    problems.push(`${entry.id} tag 不存在于 manifest：${entry.tag}`)
-    continue
-  }
-  if (entry.state === 'removed' || !entry.canonical) continue
-  const names =
-    entry.surface === 'event'
-      ? new Set(man.events.map((e) => e.name))
-      : entry.surface === 'method'
-        ? new Set((man.methods ?? []).map((m) => m.name))
-        : new Set([...man.attrs.map((a) => a.name), ...man.props.map((p) => p.name)])
-  if (!names.has(entry.canonical)) {
-    problems.push(`${entry.id} canonical ${entry.canonical} 不在 ${entry.tag} 的 API 中`)
-  }
-}
-
-// 源码 normalizeLegacyAlias 调用对账
+// 源码 normalizeLegacyAlias 调用扫描
 const sourceCalls = []
 function walk(dir) {
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
@@ -79,23 +52,7 @@ function walk(dir) {
 }
 walk(join(ROOT, 'packages/ui/src'))
 
-for (const call of sourceCalls) {
-  const tags = Object.entries(manifest)
-    .filter(([, man]) => man.sourceFile === call.file)
-    .map(([tag]) => tag)
-  const hit = ledger.entries.some(
-    (entry) =>
-      tags.includes(entry.tag) &&
-      entry.legacy === call.legacy &&
-      entry.canonical === call.canonical &&
-      entry.state !== 'removed',
-  )
-  if (!hit) {
-    problems.push(
-      `未登记别名：${call.file} :: ${call.legacy} -> ${call.canonical}（tag: ${tags.join(', ') || '未知'}）`,
-    )
-  }
-}
+const problems = collectProblems({ entries: ledger.entries, currentVersion, manifest, sourceCalls })
 
 const rows = ledger.entries
   .map(
@@ -103,15 +60,23 @@ const rows = ledger.entries
       `| \`${e.id}\` | \`${e.tag}\` | ${e.surface} | \`${e.legacy}\` | ${e.canonical ? `\`${e.canonical}\`` : '—'} | ${e.state} | ${e.removeIn ?? '未定'} |`,
   )
   .join('\n')
+const exceptionNotes = ledger.entries
+  .filter(isApprovedMinorException)
+  .map(
+    (e) =>
+      `- \`${e.id}\`（${e.legacy}，removeIn ${e.removeIn}）：${e.minorException.reason}（批准：${e.minorException.approvedBy ?? '未记录'}）`,
+  )
+  .join('\n')
 const md = `# 废弃 API 台账
 
 > 生成物：\`pnpm deprecations:gen\`。禁止手改；改 \`docs/deprecations.json\` 后重新生成。
 > 当前版本：${currentVersion}。\`removeIn\` 为空表示长期兼容或尚未排期；非空必须是高于当前版本的 major。
+> 唯一例外：\`package-export\` 面可经用户批准携带 \`minorException\`（必填理由）在非 major 版本移除——单点豁免，不构成先例；组件 API 面（attribute/prop/event/method/css-var/export）不适用，checker 一律拒绝。
 
 | ID | 组件/入口 | 面 | 旧写法 | 迁移目标 | 状态 | 移除版本 |
 | --- | --- | --- | --- | --- | --- | --- |
 ${rows}
-`
+${exceptionNotes ? `\n**经批准的 minor 移除例外**（单点豁免）：\n\n${exceptionNotes}\n` : ''}`
 
 if (problems.length) {
   console.error(`[deprecations] ${problems.length} 个问题：`)

@@ -149,7 +149,7 @@ import '@oas-ui/ui/data/table' // base table (no inline editing)
 import '@oas-ui/ui/data/table/edit' // add inline editing when needed
 ```
 
-Since v2.6.4 the default entry only provides the base form; heavy capabilities are opt-in. `@oas-ui/ui/data/table/core` is a deprecated alias of the default entry (removed in v2.6.5) — do not use it in new code. Import order does not matter: capabilities registered later are retroactively applied to **already-mounted** elements. The full entry `@oas-ui/ui` and the CDN family bundles already include every capability — no extra imports needed there.
+Since v2.6.4 the default entry only provides the base form; heavy capabilities are opt-in. The old alias `@oas-ui/ui/data/table/core` was removed in v2.6.5 (unreleased) — migrate by replacing `table/core` with `table` (add `table/edit` when you need editing). Import order does not matter: capabilities registered later are retroactively applied to **already-mounted** elements. The full entry `@oas-ui/ui` and the CDN family bundles already include every capability — no extra imports needed there.
 
 > Want to see it live? The repo ships a [Playground](https://github.com/openappsys/oas-ui/tree/main/packages/playground) for React / Vue — run `pnpm dev:react` / `pnpm dev:vue` inside `packages/playground` (or `pnpm --filter @oas-ui/playground dev:react` from the repo root).
 

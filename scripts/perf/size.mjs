@@ -22,7 +22,7 @@
  *     EXTERNAL_IMPORT_ALLOW（当前仅 `@oas-ui/ssr` 的 happy-dom）——否则图遍历会静默跳过、
  *     体积少算而不报红。改动例外须同步 docs/engineering.md「零第三方」口径。
  *   - 可选层零泄漏：theme 可选层文件 / 图标全量注册表不得进任何基础链闭包。
- *   - `table/core` 自 v2.6.4 起为 deprecated 别名，不再单独计量（v2.6.5 移除）。
+ *   - 已移除入口零残留：`data/table/core` 别名已删除（DEP-EXPORT-0001），dist 不得残留。
  *
  * 自测（不依赖已构建 dist，覆盖上述判定函数的红绿两侧）：
  *   `node scripts/perf/size.mjs --self-test`
@@ -600,9 +600,23 @@ for (const b of BUDGETS) {
   })
 }
 
-// ---------- 3.1 /core 链 ----------
-// 自 v2.6.4 起 table/core 是默认入口的 deprecated 别名（v2.6.5 移除），不再单独计量；
-// 原先「core 严格小于 table」的断言随双入口语义一并退役，避免别名与主入口等量时误报。
+// ---------- 3.1 已移除入口零残留 ----------
+// `@oas-ui/ui/data/table/core` 兼容别名已删除（v2.6.5，用户批准的 minor 单点例外，
+// 见 docs/deprecations.json DEP-EXPORT-0001）：package exports 的 `./*` 通配会把任何
+// dist 残留重新变成可 import 入口，因此删除后必须保证 dist / dist/types 零残留。
+// （原先「core 严格小于 table」的预算断言随双入口语义一并退役。）
+for (const residue of ['data/table/core', join('types', 'data/table/core')]) {
+  const residueDir = join(UI_DIST, residue)
+  if (existsSync(residueDir)) {
+    fail = true
+    console.error(
+      `FAIL [已移除入口零残留] ${relative(ROOT, residueDir)} 不应存在：` +
+        'data/table/core 已于 v2.6.5 移除（DEP-EXPORT-0001），请 pnpm build 重建 dist 或检查源码回流',
+    )
+  } else {
+    console.log(`PASS [已移除入口零残留] ${relative(ROOT, residueDir)} 不存在`)
+  }
+}
 
 // ---------- 3.2 Pro 子路径零泄漏：默认 table 链不得包含 advanced/format/view/range/history/detail ----------
 for (const [id, segment] of [

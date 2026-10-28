@@ -1,5 +1,6 @@
 // 默认入口 = 基础表格（不含编辑能力）；编辑能力在 `@oas-ui/ui/data/table/edit` 按需 import。
-// `@oas-ui/ui/data/table/core` 自 v2.6.4 起为 deprecated 别名（等价本入口），v2.6.5 移除。
+// 旧别名 `@oas-ui/ui/data/table/core` 已于 v2.6.5 移除（DEP-EXPORT-0001，用户批准的
+// minor 单点例外），迁移路径统一为本入口；防回归见 core-removed.test.ts。
 import '@oas-ui/i18n'
 import '../../navigation/pagination/index.js'
 import { OASTableColumn } from './oas-table-column.js'
@@ -27,7 +28,7 @@ import { registerTableCapability, registeredTableCapabilities, hasTableCapabilit
  * 默认入口自 v2.6.4 起不再内含行内编辑：编辑（editable/editor/actions）是独立能力包
  * `@oas-ui/ui/data/table/edit`，按需 import；未 import 时编辑配置静默失效并 dev 告警。
  * 全量入口（@oas-ui/ui）与 CDN 数据族包仍显式包含编辑能力。
- * `@oas-ui/ui/data/table/core` 为 deprecated 别名（等价本入口），v2.6.5 移除。
+ * 旧别名 `@oas-ui/ui/data/table/core` 已于 v2.6.5 移除（DEP-EXPORT-0001）。
  */
 class OASTable extends OASTableBase {
   private colSettings: ReturnType<typeof createColumnSettingsController>

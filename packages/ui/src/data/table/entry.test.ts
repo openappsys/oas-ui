@@ -6,7 +6,8 @@ import './edit/index.js'
 
 // 本文件验证「默认入口 + 显式编辑能力」：`@oas-ui/ui/data/table` 提供基础表格，
 // `@oas-ui/ui/data/table/edit` import 即注册编辑能力；二者组合后 editable / actions 直接可用。
-// 纯默认入口（无 edit）的边界由 ./core-entry.test.ts（core 现为 deprecated alias）覆盖。
+// 纯默认入口（无 edit）的边界由 ./oas-table-edit-capability.test.ts 覆盖；
+// 旧别名 data/table/core 已于 v2.6.5 移除（DEP-EXPORT-0001），防回归见 core-removed.test.ts。
 // vitest 按文件隔离模块图，本文件显式 import edit 会注册能力，不能与「无 edit」断言同文件。
 
 const EDIT_COLUMNS = JSON.stringify([

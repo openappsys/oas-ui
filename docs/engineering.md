@@ -20,7 +20,7 @@
 
 **命名约定**：组件单测 `packages/ui/src/<组>/<组件>/oas-xxx.test.ts`（Vitest + happy-dom）；e2e spec 集中在 `packages/ui/*.spec.ts`，按职责命名：`a11y.spec.ts`（axe 审计 + 感知对比度门禁）、`smoke.spec.ts`（全页渲染无 JS 错误/告警）、`console-sweep.spec.ts`（每页 console 零告警零报错门禁）、`qa-regression/`（历次复核缺陷固化回归，按组件一文件：`qa-regression/<组件>.spec.ts`，跨组件/全局场景进 `misc.spec.ts`，共享工具在 `helpers.ts`；覆盖选中态可见性/纵向布局/圆角合并/hover 可读性/addon 属性存活/点击不滚动/demo 事件反馈）、`dark.spec.ts`（暗色冒烟）、`demo.spec.ts`/`code.spec.ts`（demo 渲染与示例代码）、`interaction.spec.ts`/`onoas*.spec.ts`（交互/事件绑定）、`visual.spec.ts`（全页截图）。qa-regression 按组件拆文件是 Playwright 文件级并行的要求：单巨石文件只能独占一个 worker 串行执行，拆开后多 worker 真并行。DSD 验收 spec 例外地在 `packages/ssr/ssr-dsd.spec.ts`：渲染器在 ssr 侧、被验组件库在 ui 侧，依赖方向为 ssr → ui，放 ui 会形成构建环；Playwright 的 `testDir` 为 `packages/`，该 spec 同样进 chromium 全量（firefox 抽样面不变）。
 
-**废弃 API 台账**：`docs/deprecations.json` 是别名/事件双发/已移除墓碑的唯一机器可读来源；`pnpm deprecations:gen` 生成 `docs/deprecations.md`，`pnpm deprecations:check` 校验 `normalizeLegacyAlias` 调用、canonical 存在性与 removeIn 版本纪律。移除版本由用户定，AI 不擅自填写或执行移除。
+**废弃 API 台账**：`docs/deprecations.json` 是别名/事件双发/已移除墓碑的唯一机器可读来源；`pnpm deprecations:gen` 生成 `docs/deprecations.md`，`pnpm deprecations:check` 校验 `normalizeLegacyAlias` 调用、canonical 存在性与 removeIn 版本纪律。移除版本由用户定，AI 不擅自填写或执行移除。removeIn 默认必须是高于当前版本的 major；**唯一豁免**是 `package-export` 面经用户批准携带 `minorException`（必填理由）的单点例外（先例：DEP-EXPORT-0001 `data/table/core` 于 2.6.5 删除）——组件 API 面的 minor/patch 移除一律拒绝，判定规则自测 `pnpm deprecations:test`（已接入 CI）。
 
 **断言质量审计**：`pnpm qa:audit` 输出无 `expect` 文件、无条件 `test.skip(true)`、固定 `waitForTimeout`、弱断言与事件只断 length 的分布；`pnpm qa:audit:check` 以当前基线为上限，新增假绿或等待膨胀会红灯。三个维度各自独立设限（`--max-wait` / `--max-weak` / `--max-event-len`，默认 440 / 1930 / 105）。**阈值是防增量，不是要求清零**——历史存量按基线锁住，总量超过基线即红灯（基线已含约 5% 余量）；确属合理新增才调阈值，并在提交说明写清理由。它不是覆盖率替代品，只负责让“测了但没断言”可见。
 

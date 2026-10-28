@@ -31,6 +31,7 @@
     "ssr:check": "node --test scripts/ssr/whitelist-count.test.mjs && node scripts/ssr/matrix.mjs --check",
     "deprecations:gen": "node scripts/api-docs/deprecations.mjs",
     "deprecations:check": "node scripts/api-docs/deprecations.mjs --check",
+    "deprecations:test": "node --test scripts/api-docs/deprecations.test.mjs",
     "manual-pages:check": "node scripts/api-docs/check-manual-pages.mjs",
     "scaffold:component": "node scripts/scaffold/component.mjs",
     "scaffold:check": "node --test scripts/scaffold/component.test.mjs",

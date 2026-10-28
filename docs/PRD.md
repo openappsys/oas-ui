@@ -299,9 +299,13 @@ v2.6.4 后的维护批：补齐 table Pro 能力在 windowed、失败请求与�
 - 全量单测 **11190 passed**；全量 e2e **3828 passed / 46 skipped**（Chromium 全量 + Firefox/WebKit 抽样；1 条 Firefox scroll-area 用例首次失败，单独复跑通过）。
 - `typecheck` / `build` / `api:check` / `stats:check` / `llms:check` / `skill:check` / `deprecations:check` / `ssr:check` / `perf:size` / `format:check` / trace 通过；`perf:bench` 在同一 dist、较大堆复核下全部预算通过。默认 happy-dom 在本机存在 GC 尾延迟，未改预算或基线。
 
-## v2.6.5：移除 table/core（计划）📋
+## v2.6.5：移除 table/core ✅（未发布）
 
 删除 `@oas-ui/ui/data/table/core` 与相关文档/预算/测试；迁移路径统一为 `@oas-ui/ui/data/table`（需要编辑时补 `table/edit`）。
+
+- **SemVer 单点例外（用户批准）**：别名删除落在 minor 而非 major——它是默认入口的等价别名（re-export 同一构造器，非独立 API 面），v2.6.4 已随默认入口语义切换预告移除。例外登记于 `docs/deprecations.json` DEP-EXPORT-0001（`minorException`），`deprecations:check` 仅对 `package-export` 面放行，组件 API 面的 minor 移除仍一律拒绝。
+- 防回归：`core-removed.test.ts`（src 层）+ `perf:size` 已移除入口零残留门禁（dist 层）；checker 正反用例在 `scripts/api-docs/deprecations.test.mjs`。
+- 验收：table 单测全绿；`deprecations:check` / `exports:check` / `typecheck` / `build` / `api:check` / `llms:check` / `perf:size` 通过；全量 e2e 通过。历史 v2.6.4 段与 CHANGELOG 已发布段不改写。
 
 ## v2.6.3：date-picker 范围手输 + sidebar 行内容渲染 + barcode 扩展 ✅
 

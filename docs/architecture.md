@@ -127,7 +127,7 @@ oas-ui/
 
 ### 3.1 打包分层模型（L1 / L2 / L3）
 
-按需打包的三层入口模型：v2.4.1 拆出第三层（组件内能力子包）；v2.6.4 定稿按需语义（默认入口 = 基础形态，L3 能力显式 import；`/core` 转为 deprecated 别名）。
+按需打包的三层入口模型：v2.4.1 拆出第三层（组件内能力子包）；v2.6.4 定稿按需语义（默认入口 = 基础形态，L3 能力显式 import）；v2.6.5 移除过渡别名 `/core`（见下文单点例外）。
 
 **术语规范**：「L1 / L2 / L3」为**开发者语境**（本文档、PRD/ROADMAP、源码注释、提交信息）的架构术语，唯一定义锚点即本节；**用户语境**（组件文档、guide、CHANGELOG、API 描述、demo）一律用功能名「默认入口 / 能力子路径」，不出现层号——层号对使用者不承载可操作信息，对开发者携带层序语义。
 
@@ -135,14 +135,15 @@ oas-ui/
 | --------- | -------------------------------------------------------------------- | ---------------------------------------------------- | -------------------------------------- |
 | L1 全量层 | `@oas-ui/ui`、CDN 族包                                               | 全部组件 + 全部能力（含 edit/Pro）                   | 一把梭消费、原型 / CDN 场景            |
 | L2 组件层 | `@oas-ui/ui/<族>/<组件>`（如 `data/table`）                           | 单组件基础形态；重型能力按需补引                     | 按需 tree-shaking 的常规消费           |
-| L3 能力层 | `@oas-ui/ui/<族>/<组件>/<能力>`（如 `data/table/edit`）                | 组件内重型/可选能力独立成包；`/core` = deprecated 别名 | 需要该能力的消费者显式补引；大表面隔离 |
+| L3 能力层 | `@oas-ui/ui/<族>/<组件>/<能力>`（如 `data/table/edit`）                | 组件内重型/可选能力独立成包                           | 需要该能力的消费者显式补引；大表面隔离 |
 
 规则：
 
-- 包含关系：L1 ⊃ L2；L1 包含全部 L3 能力，L2 **不默认含 L3**（v2.6.4 起）。`/core` 自 v2.6.4 起是 L2 的 deprecated 别名，v2.6.5 移除。
+- 包含关系：L1 ⊃ L2；L1 包含全部 L3 能力，L2 **不默认含 L3**（v2.6.4 起）。过渡别名 `/core` 已于 v2.6.5 删除（未发布）。
 - 注册语义：能力型 L3 import 即注册、晚加入自愈（已挂载元素自动补齐）；纯函数型 L3（`table/advanced`）不注册元素/能力，只导出函数。
 - L3 现有实例：`table/edit`、`table/advanced`（纯函数）、`table/format`（条件格式）、`table/view`（视图状态）、`table/range`（区域选择，渲染后同步整表选区、不占单元格装饰链）、`table/history`（撤销重做）、`table/detail`（主从详情宿主侧 helper）、`tabs/manager`、`modal/prompt`、`popover/contextmenu`、`color-picker/designer`。
   - **量化决策（2026-10-24，v2.6.4）**：默认入口 `data/table` 改为基础表格，编辑能力外置为 `table/edit`；全量入口 `@oas-ui/ui` 显式补 edit。旧 `table/core` 保留为 deprecated 别名一个版本，v2.6.5 删除。
+  - **单点例外（2026-10-28，v2.6.5，用户批准）**：`table/core` 删除落在 minor（2.6.5）而非下一个 major。理由：它是默认入口的**等价别名**（re-export 同一构造器，非独立 API 面），且 v2.6.4 发布时已随默认入口语义切换预告移除。此例外已登记 `docs/deprecations.json` DEP-EXPORT-0001（`minorException` 字段），`deprecations:check` 仅对 `package-export` 面放行该豁免——**组件 API 面（attribute/prop/event/method/css-var/export）的 minor/patch 移除一律拒绝**，本例外不构成先例。
   - **历史决策（2026-10-08）**：v2.5.0 曾定「L2 主路径默认含能力、`/core` 为纯核」；该结论已被 v2.6.4 的按需模型替代。
 - 体积纪律：L3 与 L2 的共享常量/判定落在零依赖叶子模块；L3 不得被 L2 默认 import，各 L3 立独立预算档。
 
@@ -150,9 +151,9 @@ oas-ui/
 
 **层间演进与一致性门禁（并入 CI）**：
 
-- 关系不变量：L1 ⊇ L2；L1 包含全部 L3，L2 不默认含 L3；`/core` 为 deprecated 别名（v2.6.4，v2.6.5 移除）；
+- 关系不变量：L1 ⊇ L2；L1 包含全部 L3，L2 不默认含 L3；过渡别名 `/core` 已删除（v2.6.5，用户批准的单点例外，见上文）；
 - **可选层零泄漏**：`perf:size` 断言所有可选层文件（`theme/glass-fluid.js` / `theme/glass.css` / `theme/skins.css` 等）**不出现在**全量入口链与任一单组件链的可达闭包内；
-- **L2 不吸 L3**：`table` 链（含 `table/core` deprecated 别名）不得包含 `table/edit` 或 Pro 能力；各 L3 链独立计量；
+- **L2 不吸 L3**：`table` 链不得包含 `table/edit` 或 Pro 能力；各 L3 链独立计量；
 - **新增 L3 / 可选运行时须配独立体积预算档**（见 `docs/perf-baseline.md` §4）。
 
 **可选层登记表**（新增可选层须登记；机制复用既有 `registerXxx` 能力注册 + `warnXxx` dev 告警先例）：

@@ -128,7 +128,7 @@
 | @oas-ui/theme glass.css   | 3.0 KB    | 6 KB（绝对值）        | 可选玻璃静态层独立档（surface 半透明 token + 折光边 + 阴影）                                   |
 | @oas-ui/theme skins.css   | 0.9 KB    | 2 KB（绝对值）        | 可选皮肤层独立档（预设色板皮肤变量族）                                                        |
 
-> `@oas-ui/ui/data/table/core` 自 v2.6.4 起是默认入口的 deprecated 别名（v2.6.5 移除），不再单独计量。
+> `@oas-ui/ui/data/table/core` 兼容别名已删除（v2.6.5 未发布，DEP-EXPORT-0001 单点例外），不再单独计量；`perf:size` 含 dist 零残留门禁。历史计量口径（删除前各版本）不变。
 
 > **Headroom（v2.6.4 实测）**：CDN 38.7 KB、全量入口 76.6 KB、table 9.0 KB、theme index 2.3 KB、glass-fluid 0.4 KB。下一版新增能力前先做预算评审；低于 3% headroom 的入口默认不加功能，先做瘦身或独立子包。
 

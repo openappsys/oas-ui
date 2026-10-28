@@ -41,7 +41,7 @@
 
 | 范围 | 内容 | 状态 |
 | --- | --- | --- |
-| **移除 table/core 别名** | 删除 `@oas-ui/ui/data/table/core`；迁移路径统一为 `@oas-ui/ui/data/table` | 📋 计划 |
+| **移除 table/core 别名** | 删除 `@oas-ui/ui/data/table/core`；迁移路径统一为 `@oas-ui/ui/data/table`（需要编辑时补 `table/edit`） | ✅ 已完成（未发布；用户批准的 minor 单点例外，DEP-EXPORT-0001） |
 
 ## v2.6.3（已发布）
 

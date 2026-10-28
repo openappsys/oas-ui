@@ -15,8 +15,8 @@ import '../../../form/select/index.js'
  *
  * 自 v2.6.4 起默认入口（data/table/index）**不含**本能力：使用 `editable`/`actions`
  * 时需显式 import 本模块（否则配置静默失效并 dev 告警一次，见 oas-table.ts 的 warnEditNotImported）。
- * 全量入口（@oas-ui/ui）与 CDN 数据族包显式包含本能力；`data/table/core` 是默认入口的
- * deprecated 别名（v2.6.5 移除）。
+ * 全量入口（@oas-ui/ui）与 CDN 数据族包显式包含本能力；旧别名 `data/table/core` 已于
+ * v2.6.5 移除（DEP-EXPORT-0001），迁移路径统一为默认入口 `data/table`。
  */
 /** 幂等注册编辑能力；`@oas-ui/ui` 全量入口显式调用，保证打包时不被 tree-shaking 丢弃 */
 export function registerTableEditCapability(): void {

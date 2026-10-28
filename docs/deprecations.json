@@ -3,7 +3,7 @@
   "library": "@oas-ui/ui",
   "currentVersion": "2.6.4",
   "policy": {
-    "removeIn": "null 表示长期兼容或尚未排期；非空必须是高于 currentVersion 的 major 版本",
+    "removeIn": "null 表示长期兼容或尚未排期；非空必须是高于 currentVersion 的 major。唯一豁免：package-export 面可经用户批准携带 minorException（必填理由）在非 major 移除（单点例外，不构成先例）；组件 API 面的 minor/patch 移除一律拒绝",
     "state": ["silent-compat", "warned", "announced", "removed"],
     "sourceOfTruth": "docs/api-manifest/*.json + packages/ui/src + docs/api-descriptions.{zh,en}.json"
   },
@@ -259,6 +259,22 @@
       "removeIn": null,
       "warning": "none",
       "migration": "removed; use --oas-glass-refraction-strength if needed"
+    },
+    {
+      "id": "DEP-EXPORT-0001",
+      "tag": "@oas-ui/ui",
+      "surface": "package-export",
+      "legacy": "@oas-ui/ui/data/table/core",
+      "canonical": "@oas-ui/ui/data/table",
+      "kind": "alias",
+      "state": "removed",
+      "removeIn": "2.6.5",
+      "warning": "none",
+      "migration": "import from @oas-ui/ui/data/table（需要编辑能力时补 @oas-ui/ui/data/table/edit）",
+      "minorException": {
+        "approvedBy": "用户（2026-10-28，发布前明确批准）",
+        "reason": "默认入口的等价别名（非独立 API 面，re-export 同一构造器），v2.6.4 已随默认入口语义切换预告 v2.6.5 移除；经用户批准提前一个 minor 移除，属单点例外，不构成任何先例"
+      }
     }
   ]
 }
