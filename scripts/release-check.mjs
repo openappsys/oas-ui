@@ -72,15 +72,19 @@ function verifyCi() {
   }
   let runs
   try {
+    // gh 解析分平台：Windows 上 gh 常以 gh.cmd shim 安装，无 shell 的 spawn 只找 gh.exe
+    // → 须经 shell 且用整条命令字符串（args 数组 + shell 在 Node ≥24 触发 DEP0190）、URL 加引号；
+    //   其余平台直接 spawn：无 shell、无手写引号。repo/sha 已过形状白名单，两种形态都无注入面。
+    const onWindows = process.platform === 'win32'
     const url = `repos/${repo}/actions/runs?head_sha=${sha}&per_page=100`
-    // 经 shell 解析 gh：Windows 上 gh 常以 gh.cmd shim 安装，无 shell 的 spawn 只找 gh.exe；
-    // URL 加引号防 shell 元字符（? & 已由上面的形状白名单保证只可能是合法字面量）
-    const out = execFileSync('gh', ['api', `"${url}"`], {
+    const ghOpts = {
       encoding: 'utf8',
       maxBuffer: 64 * 1024 * 1024,
       stdio: ['ignore', 'pipe', 'pipe'],
-      shell: true,
-    })
+    }
+    const out = onWindows
+      ? execFileSync(`gh api "${url}"`, { ...ghOpts, shell: true })
+      : execFileSync('gh', ['api', url], ghOpts)
     runs = JSON.parse(out).workflow_runs
   } catch (err) {
     const detail = String((err && err.stderr) || err.message || err)

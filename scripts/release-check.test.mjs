@@ -329,7 +329,7 @@ test('--verify-ci 集成：假 gh 返回同 SHA 完整 CI 绿 JSON → 放行，
   assert.match(r.stdout, /放行/)
   const args = readFileSync(join(bin, 'gh-args.txt'), 'utf8')
   assert.ok(args.includes(`repos/${REPO}/actions/runs`), `URL 应指向本仓库：${args}`)
-  assert.ok(args.includes(`head_sha=${SHA}`), `URL 应按目标 SHA 过滤：${args}`)
+  assert.ok(args.includes(`head_sha=${SHA}&per_page=100`), `查询串必须完整（跨 shell 不截断）：${args}`)
 })
 
 test('--verify-ci 集成：workflow_runs 缺字段 / 形状异常 / 条目缺字段 → fail closed', () => {
