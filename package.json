@@ -38,6 +38,7 @@
     "stats:gen": "node scripts/stats/gen.mjs",
     "stats:check": "node scripts/stats/gen.mjs && git diff --exit-code -- packages/docs/docs/.vitepress/generated/stats.json",
     "perf:size": "node scripts/perf/size.mjs --self-test && node scripts/perf/size.mjs",
+    "perf:docs": "node scripts/perf/gen-baseline-docs.mjs",
     "perf:bench": "node scripts/perf/render-bench.mjs",
     "release:check": "node scripts/release-check.mjs",
     "release:check:test": "node --test scripts/release-check.test.mjs",

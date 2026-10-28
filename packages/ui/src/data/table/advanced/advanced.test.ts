@@ -150,6 +150,59 @@ describe('formula / formulaColumn', () => {
     expect(compileFormula('__proto__')({})).toBeUndefined()
   })
 
+  // 以下为公式求值器的行为钉子（瘦身重构前固化现状：这些面此前无直接断言）
+  it('支持 UPPER / LOWER 文本函数', () => {
+    expect(compileFormula('UPPER(name)')({ name: 'ann' })).toBe('ANN')
+    expect(compileFormula('LOWER(name)')({ name: 'Ann' })).toBe('ann')
+    expect(compileFormula('UPPER(missing)')({})).toBe('')
+  })
+
+  it('支持一元 + / - / ! 运算', () => {
+    expect(compileFormula('-price')({ price: 3 })).toBe(-3)
+    expect(compileFormula('+price')({ price: 3 })).toBe(3)
+    expect(compileFormula('!flag')({ flag: true })).toBe(false)
+    expect(compileFormula('!missing')({})).toBe(true)
+    expect(compileFormula('2 ^ -1')({})).toBe(0.5)
+    // 现状语义：一元负号绑定先于幂（-(2 ^ 2)），与 Excel 不同、与直觉递归下降一致
+    expect(compileFormula('-2 ^ 2')({})).toBe(-4)
+  })
+
+  it('字符串转义：\\n / \\t / 引号', () => {
+    expect(compileFormula('"a\\nb"')({})).toBe('a\nb')
+    expect(compileFormula('"a\\tb"')({})).toBe('a\tb')
+    expect(compileFormula('LEN("a\\nb")')({})).toBe(3)
+  })
+
+  it('相等比较：任一侧为数字按数值比较，否则按文本比较', () => {
+    expect(compileFormula('level == 10')({ level: '10' })).toBe(true)
+    expect(compileFormula('10 == "10"')({})).toBe(true)
+    expect(compileFormula('name == "ann"')({ name: 'Ann' })).toBe(false)
+    expect(compileFormula('name != "Ann"')({ name: 'Ann' })).toBe(false)
+    expect(compileFormula('missing == ""')({})).toBe(true)
+  })
+
+  it('比较运算：双方皆文本按字典序，任一侧数字按数值', () => {
+    expect(compileFormula('a < b')({ a: 'apple', b: 'banana' })).toBe(true)
+    expect(compileFormula('a >= b')({ a: 'banana', b: 'apple' })).toBe(true)
+    expect(compileFormula('age >= 18')({ age: '20' })).toBe(true)
+    expect(compileFormula('age >= 18')({ age: '9' })).toBe(false)
+    expect(compileFormula('price > 9')({ price: 'abc' })).toBe(false)
+  })
+
+  it('除以零 / 模零返回 null，不抛错；formulaColumn 渲染为空串', () => {
+    expect(compileFormula('1 / 0')({})).toBeNull()
+    expect(compileFormula('5 % 0')({})).toBeNull()
+    const column = formulaColumn({ key: 'd', title: 'D', expression: '1 / qty' })
+    expect(column.render!({ qty: 0 })).toBe('')
+  })
+
+  it('字符串 + 数字按文本拼接（任一侧为字符串即拼接），其余算术按数值', () => {
+    expect(compileFormula('name + 1')({ name: 'a' })).toBe('a1')
+    // 现状语义：两个数字字符串相加同样走文本拼接（+ 只要看到 string 就拼接）
+    expect(compileFormula('a + b')({ a: '1', b: '2' })).toBe('12')
+    expect(compileFormula('"x" - 1')({})).toBe(-1)
+  })
+
   it('语法错误抛 SyntaxError', () => {
     expect(() => compileFormula('1 +')).toThrow(SyntaxError)
     expect(() => compileFormula('unknown(1)')).toThrow(SyntaxError)

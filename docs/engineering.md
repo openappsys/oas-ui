@@ -85,10 +85,11 @@
 
 ### 性能基准（vision §5.8 性能领先）
 
-- **体积基准（CI 强制）**：`pnpm perf:size`。基于 `pnpm build` 后的发布产物 dist 统计各包体积（ui 全量入口链 / cdn.js / theme / core / i18n / icons / ssr）+ button/table/form 单组件按需链（静态 import 图遍历，验证 tree-shaking 叙事），超预算非零退出；预算定档依据见 `docs/perf-baseline.md` §4，基线数据与断言结果写入 `docs/perf-baseline.json`（生成物，勿手改）。已在 `.github/workflows/ci.yml` test job 接线（build 之后，且**排在 `stats:check` 之后**——本工具会写基线，先跑会让读基线的统计校验误报）。**默认只测不写**：基线是入库文件，确需更新数据时显式加 `--update-baseline`（gzip 字节跨 zlib/平台有差异，随手写入只会污染工作树）。**发布产物裸导入门禁**：图遍历只解析相对路径与 `@oas-ui/*`，其余裸导入会被静默跳过（体积少算而不报红），因此脚本显式扫描全部发布 JS：未声明的裸导入一律 FAIL 并列出说明符 + 文件；例外界限以脚本内 `EXTERNAL_IMPORT_ALLOW` 为唯一权威（当前仅 `@oas-ui/ssr` 的 `happy-dom`，以及该 Node 端包允许 `node:` 内建）。`table/core` 自 v2.6.4 起是默认入口的 deprecated 别名，不再单独计量；原「core 严格小于 table」的相对断言随双入口语义退役。判定函数自测（不依赖 dist）：`node scripts/perf/size.mjs --self-test`。
-- **渲染基准（本地/发布前）**：`pnpm perf:bench`。happy-dom 环境测代表性组件首渲染与增量更新耗时（100 次迭代取均值/中位数），量级断言防退化。渲染耗时波动大，**不进 CI**；发布前本地跑一遍核对。同样**默认只测不写**，更新基线加 `--update-baseline`。
-- **自评摘要**：`docs/perf-baseline.md` §3（体积/渲染对自身基线与预算的自评）。
-- **发布前核对流程**：改动组件/依赖/构建配置后，发布前依次跑 `pnpm build && pnpm perf:size && pnpm perf:bench`；超预算或渲染 p95 明显退化时，在发布说明中给出原因与后续优化计划。
+- **体积基准（CI 强制）**：`pnpm perf:size`。基于 `pnpm build` 后的发布产物 dist 统计各包体积（ui 全量入口链 / cdn.js / theme / core / i18n / icons / ssr）+ button/table 等单组件按需链（静态 import 图遍历，验证 tree-shaking 叙事），超预算非零退出；预算定档依据见 `docs/perf-baseline.md` §4，基线数据与断言结果写入 `docs/perf-baseline.json`（生成物，勿手改）。已在 `.github/workflows/ci.yml` test job 接线（build 之后，且**排在 `stats:check` 之后**——本工具会写基线，先跑会让读基线的统计校验误报）。**默认只测不写**：基线是入库文件，确需更新数据时显式加 `--update-baseline`（gzip 字节跨 zlib/平台有差异，随手写入只会污染工作树）。**发布产物裸导入门禁**：图遍历只解析相对路径与 `@oas-ui/*`，其余裸导入会被静默跳过（体积少算而不报红），因此脚本显式扫描全部发布 JS：未声明的裸导入一律 FAIL 并列出说明符 + 文件；例外界限以脚本内 `EXTERNAL_IMPORT_ALLOW` 为唯一权威（当前仅 `@oas-ui/ssr` 的 `happy-dom`，以及该 Node 端包允许 `node:` 内建）。**L3 分层门禁（2026-10-28 起）**：`scripts/perf/lib/l3-registry.mjs` 是 L3 能力子路径的单一登记表（注册型/helper 型分类、是否独立计量），驱动包含关系断言——注册型 L3 必须含于 L1、helper 型 L3 不得混入 L1、默认 table 链零 L3（含 edit）、table 家族 L3 独立计量且各有 `componentId` 预算档；新增 L3 先登记再实现。判定函数自测（不依赖 dist，红绿两侧）：`node scripts/perf/size.mjs --self-test`。`table/core` 别名已于 v2.6.5 移除（DEP-EXPORT-0001）且不再单独计量，dist 零残留由结构门禁把关。
+- **性能档案单一真源（2026-10-28 起，CI 强制）**：`perf:size` 内置档案一致性校验——`docs/perf-baseline.md` 的数据表是**生成块**（`pnpm perf:docs` 刷新，禁止手改块内数字），与 JSON 逐一比对；JSON `render.budgets` 必须等于渲染阈值库 `scripts/perf/lib/render-budgets.mjs`（select 选项更新 160 ms 等定档只改这一处）；JSON `render.env.happyDom` 必须等于实装版本（perf:bench 运行时读取，不再硬编码）；预算 `pass` 布尔与 actual/limit 自洽。任一漂移即 FAIL，**只报红不自动刷新**——刷新必须显式走 `perf:size/bench --update-baseline` + `pnpm perf:docs`，防止测量噪音静默洗白退化。
+- **渲染基准（本地/发布前）**：`pnpm perf:bench`。happy-dom 环境测代表性组件首渲染与增量更新耗时（100 次迭代取均值/中位数），量级断言防退化；阈值单一真源同上。渲染耗时波动大，**不进 CI**；发布前本地跑一遍核对。同样**默认只测不写**，更新基线加 `--update-baseline`。
+- **自评摘要**：`docs/perf-baseline.md` §3（体积/渲染对自身基线与预算的自评；具体数字以生成块与 JSON 为准）。
+- **发布前核对流程**：改动组件/依赖/构建配置后，发布前依次跑 `pnpm build && pnpm perf:size && pnpm perf:bench`（需要刷新文档数据时再 `--update-baseline` + `pnpm perf:docs`）；超预算或渲染 p95 明显退化时，在发布说明中给出原因与后续优化计划。
 - **注意**：渲染基准用 happy-dom 合成环境（无排版/合成管线），数值只用于相对对比与退化监测，不代表真实浏览器首帧数字；如需真实基线，另用 Playwright/Lighthouse 采集。
 
 ## 5. 发布流程（v1.0 启用）

@@ -23,6 +23,12 @@
  *     体积少算而不报红。改动例外须同步 docs/engineering.md「零第三方」口径。
  *   - 可选层零泄漏：theme 可选层文件 / 图标全量注册表不得进任何基础链闭包。
  *   - 已移除入口零残留：`data/table/core` 别名已删除（DEP-EXPORT-0001），dist 不得残留。
+ *   - L3 分层登记（lib/l3-registry.mjs 单一登记表）：注册型 L3 必须含于 L1、纯函数/宿主
+ *     helper 型 L3 不得混入 L1、默认 table 链零 L3（含 edit）、table 家族 L3 独立计量且
+ *     各有独立预算档。
+ *   - 性能档案一致性（lib/baseline-docs.mjs）：perf-baseline.md 生成块 ↔ JSON、JSON ↔
+ *     渲染阈值库、JSON env ↔ 实装 happy-dom 版本、JSON 预算 pass 自洽——只报红不自动刷新，
+ *     刷新走 `perf:size/bench --update-baseline` + `pnpm perf:docs`。
  *
  * 自测（不依赖已构建 dist，覆盖上述判定函数的红绿两侧）：
  *   `node scripts/perf/size.mjs --self-test`
@@ -38,6 +44,8 @@ import { readFileSync, writeFileSync, readdirSync, statSync, existsSync, realpat
 import { dirname, join, resolve, relative } from 'node:path'
 import { gzipSync, brotliCompressSync, constants } from 'node:zlib'
 import { ROOT, writeSection, fmtKB, fmtBytes, today } from './lib/baseline.mjs'
+import { L3_REGISTRY, l1InclusionViolations, proLeakViolations, budgetCoverageViolations } from './lib/l3-registry.mjs'
+import { checkPerfDocs } from './lib/baseline-docs.mjs'
 
 const UI_DIST = join(ROOT, 'packages/ui/dist')
 
@@ -270,6 +278,39 @@ function runSelfTest() {
     0,
   )
 
+  // 任务 B：L3 分层登记判定（红绿两侧；判定函数来自 lib/l3-registry.mjs，live dist 断言见主流程 3.2/3.3）
+  {
+    const TREG = [
+      { id: 'tE', entry: 'data/table/edit', kind: 'capability', measured: true },
+      { id: 'tA', entry: 'data/table/advanced', kind: 'helper', measured: true },
+    ]
+    const reasons = (violations) => violations.map((v) => `${v.item.id}:${v.reason}`).join(',')
+    check('L1 包含：capability 在链内放行', l1InclusionViolations(TREG, ['p/ui/dist/data/table/edit/x.js']).length, 0)
+    check('L1 包含：capability 缺席报 missing', reasons(l1InclusionViolations(TREG, [])), 'tE:missing')
+    check(
+      'L1 包含：helper 混入 union 报 leaked（capability 缺席一并报）',
+      reasons(l1InclusionViolations(TREG, ['p/ui/dist/data/table/advanced/x.js'])),
+      'tE:missing,tA:leaked',
+    )
+    check(
+      'L1 包含：Windows 反斜杠路径归一后判定',
+      l1InclusionViolations(TREG, ['p\\ui\\dist\\data\\table\\edit\\x.js']).length,
+      0,
+    )
+    check(
+      'L2 零泄漏：默认链含 edit 报 leaked',
+      reasons(proLeakViolations(TREG, ['p/ui/dist/data/table/edit/index.js'])),
+      'tE:leaked',
+    )
+    check('L2 零泄漏：默认链干净放行', proLeakViolations(TREG, ['p/ui/dist/data/table/index.js']).length, 0)
+    check(
+      '独立预算：measured 未测量/未预算报双违规',
+      reasons(budgetCoverageViolations(TREG, ['tA'], ['tA'])),
+      'tE:unmeasured,tE:no-budget',
+    )
+    check('独立预算：已测量已预算放行', budgetCoverageViolations(TREG, ['tE', 'tA'], ['tE', 'tA']).length, 0)
+  }
+
   const failed = results.filter((r) => !r.ok)
   if (failed.length) {
     console.error(`[perf:size] self-test 失败 ${failed.length}/${results.length} 项`)
@@ -416,6 +457,9 @@ console.log('\n=== 单组件按需引入链（入口 + 依赖静态 import 闭�
 const COMPONENT_ENTRIES = [
   { id: 'button', entry: 'basic/button', spec: '@oas-ui/ui/basic/button' },
   { id: 'table', entry: 'data/table', spec: '@oas-ui/ui/data/table' },
+  // table/edit：注册型 L3（import 即注册编辑能力）；v2.6.4 起默认 table 不含 edit，
+  // L1/CDN 显式包含——独立计量是「默认不含 edit/Pro」叙事的量化前提（L3 登记表驱动）
+  { id: 'tableEdit', entry: 'data/table/edit', spec: '@oas-ui/ui/data/table/edit' },
   { id: 'tableAdvanced', entry: 'data/table/advanced', spec: '@oas-ui/ui/data/table/advanced' },
   { id: 'tableFormat', entry: 'data/table/format', spec: '@oas-ui/ui/data/table/format' },
   { id: 'tableView', entry: 'data/table/view', spec: '@oas-ui/ui/data/table/view' },
@@ -452,7 +496,9 @@ const BUDGETS = [
     // 全量类预算 = 天花板制（2026-08-23 定夺）：组件能力持续增强，体积随之增长属预期内行为，
     // 天花板只为防灾难性膨胀；达 90% 预警线提前亮黄，触发时启动瘦身评估或再定档。
     // 增长纪律由单组件链预算（绝对值制）与按需叙事守住。
+    // kind 参与生成文档与 JSON 自洽校验（ceiling=天花板制 / absolute=绝对值制）。
     name: 'dist/cdn.js gzip',
+    kind: 'ceiling',
     get: () => cdn.gzipBytes,
     limit: 770 * 1024, // 770 KB 天花板（2026-10-08 重定档：workbench 批并入后实测 665.4 KB 触前档 90%）
     basis:
@@ -460,6 +506,7 @@ const BUDGETS = [
   },
   {
     name: '@oas-ui/ui 全量入口链 gzip',
+    kind: 'ceiling',
     get: () => fullEntry.gzipBytes,
     limit: 1140 * 1024, // 1140 KB（≈1.11 MB）天花板（2026-10-08 重定档：workbench 批并入后实测 984.6 KB 触前档 90%）
     basis:
@@ -467,6 +514,8 @@ const BUDGETS = [
   },
   {
     name: '@oas-ui/ui/basic/button 链 gzip',
+    kind: 'absolute',
+    componentId: 'button',
     get: () => componentMeasures.button.gzipBytes,
     limit: 30 * 1024, // 30 KB（2026-10-12 重定档：dev-warn 统一告警通道入链，实测 26.7 KB）
     basis:
@@ -474,13 +523,29 @@ const BUDGETS = [
   },
   {
     name: '@oas-ui/ui/data/table 链 gzip',
+    kind: 'absolute',
+    componentId: 'table',
     get: () => componentMeasures.table.gzipBytes,
     limit: 74 * 1024, // 74 KB（2026-10-25：默认入口不含 edit，实测 65.0 KB）
     basis:
       '实测 gzip 66.2 KB（v2.6.4 默认入口 = 基础表格，不含 edit；链含 core 骨架 + virtual-list + i18n + pagination + 列设置/导出/移动降级与展示集快照，不含编辑器族），上浮约 12% 定档 74 KB；前档 108 KB 为默认入口含 edit 口径',
   },
   {
+    // table/edit：注册型 L3（L1/CDN 含、默认 table 不含）。2026-10-28 首次独立定档：
+    // 此前 edit 混在「默认入口含 edit」的旧 table 档里，默认入口去 edit 后没有独立档，
+    // L3 登记表（lib/l3-registry.mjs）要求 measured L3 必须有独立预算档。
+    name: '@oas-ui/ui/data/table/edit 链 gzip',
+    kind: 'absolute',
+    componentId: 'tableEdit',
+    get: () => componentMeasures.tableEdit.gzipBytes,
+    limit: 104 * 1024, // 104 KB（2026-10-28 首次独立定档：实测 89.7 KB）
+    basis:
+      '实测 gzip 89.7 KB / 43 文件（首次独立计量：链含 edit 控制器 + 编辑器族 + select/switch 浮层编辑通道 + i18n；edit 链大于默认 table 链是「编辑器族依赖浮层组件」的合理结果，也正是默认入口不含 edit 的原因）；上浮约 15% 定档 104 KB',
+  },
+  {
     name: '@oas-ui/ui/form/form 链 gzip',
+    kind: 'absolute',
+    componentId: 'form',
     get: () => componentMeasures.form.gzipBytes,
     limit: 29 * 1024, // 29 KB（2026-10-07 重定档：四批后实测 25.6 KB 触前档 90%）
     basis:
@@ -488,6 +553,8 @@ const BUDGETS = [
   },
   {
     name: '@oas-ui/ui/data/gantt 链 gzip',
+    kind: 'absolute',
+    componentId: 'gantt',
     get: () => componentMeasures.gantt.gzipBytes,
     limit: 70 * 1024, // 70 KB（v2.6.2 重定档：任务管理/约束/日历/列虚拟化等能力增量）
     basis:
@@ -495,6 +562,8 @@ const BUDGETS = [
   },
   {
     name: '@oas-ui/ui/data/json-viewer 链 gzip',
+    kind: 'absolute',
+    componentId: 'jsonViewer',
     get: () => componentMeasures.jsonViewer.gzipBytes,
     limit: 35 * 1024, // 35 KB：实测 gzip 31.5 KB（core + i18n + 组件，无第三方运行时），上浮约 10%
     basis:
@@ -502,6 +571,8 @@ const BUDGETS = [
   },
   {
     name: '@oas-ui/ui/data/diff-viewer 链 gzip',
+    kind: 'absolute',
+    componentId: 'diffViewer',
     get: () => componentMeasures.diffViewer.gzipBytes,
     limit: 34 * 1024, // 34 KB：实测 gzip 29.9 KB（core + i18n + 自研 Myers/折叠/并排），上浮约 14%
     basis:
@@ -509,6 +580,7 @@ const BUDGETS = [
   },
   {
     name: '@oas-ui/theme index.css gzip',
+    kind: 'absolute',
     get: () => theme.gzipBytes,
     limit: 4 * 1024, // 4 KB（2026-10-05 重定档：skins.css 皮肤层变量 + 阴影精修，实测 3.52 KB）
     basis:
@@ -516,6 +588,7 @@ const BUDGETS = [
   },
   {
     name: '@oas-ui/theme glass-fluid.js gzip',
+    kind: 'absolute',
     get: () => fluidJs.gzipBytes,
     limit: 8.5 * 1024, // 8.5 KB（2026-10-07 重定档：B 档 + 修复批后实测 7.81 KB）
     basis:
@@ -523,6 +596,7 @@ const BUDGETS = [
   },
   {
     name: '@oas-ui/theme glass.css gzip',
+    kind: 'absolute',
     get: () => glassCss.gzipBytes,
     limit: 6 * 1024, // 6 KB（可选玻璃静态层，首次定档 2026-10-08；实测约 4.42 KB）
     basis:
@@ -530,31 +604,40 @@ const BUDGETS = [
   },
   {
     name: '@oas-ui/theme skins.css gzip',
+    kind: 'absolute',
     get: () => skinsCss.gzipBytes,
     limit: 2 * 1024, // 2 KB（可选皮肤层，首次定档 2026-10-08；实测约 0.91 KB）
     basis: '实测 gzip 约 0.91 KB（皮肤层变量族：预设色板皮肤档；独立可选，不进 union），上浮定档 2 KB',
   },
   {
     name: '@oas-ui/ui/data/table/advanced 链 gzip',
+    kind: 'absolute',
+    componentId: 'tableAdvanced',
     get: () => componentMeasures.tableAdvanced.gzipBytes,
     limit: 8 * 1024,
     basis:
-      '实测 gzip 7.0 KB（透视 / 公式 / 查询 / 条件格式 / TSV / 历史栈与事务 / windowed 数据源纯函数，无表单控件与 table 运行时依赖），上浮约 14% 定档 8 KB',
+      '首档 2026-10-25：实测 7.0 KB 上浮约 14% 定档 8 KB。2026-10-28 收口：视觉适配器协议批使链增至 8146 B（余量仅 46 B 触顶）；无行为变化瘦身（公式解析器 class → 模块函数，消除产物方法名税）后实测 8011 B、余量 181 B（约 2.2%，仍处 90% WARN 预警区，未抬预算）。逐文件归因见 perf-baseline.json：windowed 1996 B（视觉协议，行为密集勿轻动）、formula 2317 B、其余 ~3700 B；再次扩展前必须先做包体评估或瘦身，不得把剩余空间当作常量',
   },
   {
     name: '@oas-ui/ui/data/table/format 链 gzip',
+    kind: 'absolute',
+    componentId: 'tableFormat',
     get: () => componentMeasures.tableFormat.gzipBytes,
     limit: 6 * 1024, // 6 KB（2026-10-25 首次定档：实测 4.7 KB）
     basis: '实测 gzip 4.7 KB（条件格式 capability + 规则引擎，无表单控件；不进入 table 默认链），上浮约 27% 定档 6 KB',
   },
   {
     name: '@oas-ui/ui/data/table/view 链 gzip',
+    kind: 'absolute',
+    componentId: 'tableView',
     get: () => componentMeasures.tableView.gzipBytes,
     limit: 1.5 * 1024, // 1.5 KB（2026-10-25 首次定档：实测 0.6 KB）
     basis: '实测 gzip 1.0 KB（完整视图快照 + 可配置 key 的持久化适配器，无 table 运行时依赖），上浮定档 1.5 KB',
   },
   {
     name: '@oas-ui/ui/data/table/range 链 gzip',
+    kind: 'absolute',
+    componentId: 'tableRange',
     get: () => componentMeasures.tableRange.gzipBytes,
     limit: 13 * 1024,
     basis:
@@ -562,6 +645,8 @@ const BUDGETS = [
   },
   {
     name: '@oas-ui/ui/data/table/history 链 gzip',
+    kind: 'absolute',
+    componentId: 'tableHistory',
     get: () => componentMeasures.tableHistory.gzipBytes,
     limit: 4 * 1024,
     basis:
@@ -569,6 +654,8 @@ const BUDGETS = [
   },
   {
     name: '@oas-ui/ui/data/table/detail 链 gzip',
+    kind: 'absolute',
+    componentId: 'tableDetail',
     get: () => componentMeasures.tableDetail.gzipBytes,
     limit: 4 * 1024,
     basis:
@@ -591,6 +678,8 @@ for (const b of BUDGETS) {
   )
   budgetResults.push({
     name: b.name,
+    kind: b.kind,
+    componentId: b.componentId,
     actualBytes: actual,
     limitBytes: b.limit,
     warnAtBytes,
@@ -600,7 +689,68 @@ for (const b of BUDGETS) {
   })
 }
 
-// ---------- 3.1 已移除入口零残留 ----------
+// ---------- 3.2 L2 默认链零 L3（登记表驱动：含 edit——v2.6.4「默认不含 edit」此前漏断言） ----------
+for (const { item, files } of proLeakViolations(L3_REGISTRY, componentMeasures.table.fileList)) {
+  fail = true
+  console.error(`FAIL [Pro 零泄漏] table 默认链包含 ${item.id}（${item.entry}）：${files.join(', ')}`)
+}
+for (const item of L3_REGISTRY) {
+  if (!item.entry.startsWith('data/table/')) continue
+  console.log(`PASS [Pro 零泄漏] table 默认链不含 ${item.id}`)
+}
+
+// ---------- 3.3 L1 包含关系与独立预算覆盖（登记表 = lib/l3-registry.mjs，规则见该模块头注释） ----------
+// 关系不变量（docs/architecture.md §3.1）：注册型 L3 必须含于 L1（CDN 一把梭消费者可用）；
+// 纯函数/宿主侧 helper 型 L3 不得混入 L1（无触发面，进 union 即死重）；table 家族 L3 独立计量 + 独立预算档。
+for (const { item, reason } of l1InclusionViolations(L3_REGISTRY, fullEntry.fileList)) {
+  fail = true
+  if (reason === 'missing') {
+    console.error(
+      `FAIL [L1 包含关系] 注册型 L3 ${item.id}（${item.entry}）不在全量入口链：CDN/L1 消费者声明对应属性时能力静默失效`,
+    )
+  } else {
+    console.error(
+      `FAIL [L1 包含关系] helper 型 L3 ${item.id}（${item.entry}）混入全量入口链：无宿主调用面，进 union 即死重`,
+    )
+  }
+}
+for (const item of L3_REGISTRY) {
+  console.log(
+    `PASS [L1 包含关系] ${item.kind === 'capability' ? '注册型（须在 L1）' : 'helper 型（须不在 L1）'} ${item.id}`,
+  )
+}
+{
+  const violations = budgetCoverageViolations(
+    L3_REGISTRY,
+    Object.keys(componentMeasures),
+    BUDGETS.map((b) => b.componentId).filter(Boolean),
+  )
+  for (const { item, reason } of violations) {
+    fail = true
+    console.error(
+      reason === 'unmeasured'
+        ? `FAIL [独立预算] 登记为独立计量的 L3 ${item.id} 缺少按需链测量（COMPONENT_ENTRIES 无 '${item.id}'）`
+        : `FAIL [独立预算] L3 ${item.id} 缺少独立预算档（BUDGETS 无 componentId='${item.id}' 条目）`,
+    )
+  }
+  if (!violations.length)
+    console.log(
+      `PASS [独立预算] table 家族 ${L3_REGISTRY.filter((i) => i.measured).length} 个 L3 均独立计量且各有独立预算档`,
+    )
+}
+
+// ---------- 3.4 性能档案一致性（脚本/JSON/Markdown 单一真源；只报红不自动刷新，见 lib/baseline-docs.mjs） ----------
+{
+  const problems = checkPerfDocs(ROOT)
+  if (problems.length) {
+    fail = true
+    for (const problem of problems) console.error(`FAIL [性能档案一致性] ${problem}`)
+  } else {
+    console.log('PASS [性能档案一致性] perf-baseline.md 生成块 / JSON / 渲染阈值库 / 实装 happy-dom 版本一致')
+  }
+}
+
+// ---------- 3.x 已移除入口零残留 ----------
 // `@oas-ui/ui/data/table/core` 兼容别名已删除（v2.6.5，用户批准的 minor 单点例外，
 // 见 docs/deprecations.json DEP-EXPORT-0001）：package exports 的 `./*` 通配会把任何
 // dist 残留重新变成可 import 入口，因此删除后必须保证 dist / dist/types 零残留。
@@ -615,24 +765,6 @@ for (const residue of ['data/table/core', join('types', 'data/table/core')]) {
     )
   } else {
     console.log(`PASS [已移除入口零残留] ${relative(ROOT, residueDir)} 不存在`)
-  }
-}
-
-// ---------- 3.2 Pro 子路径零泄漏：默认 table 链不得包含 advanced/format/view/range/history/detail ----------
-for (const [id, segment] of [
-  ['tableAdvanced', 'advanced'],
-  ['tableFormat', 'format'],
-  ['tableView', 'view'],
-  ['tableRange', 'range'],
-  ['tableHistory', 'history'],
-  ['tableDetail', 'detail'],
-]) {
-  const leaked = componentMeasures.table.fileList.filter((file) => file.includes(`data/table/${segment}/`))
-  if (leaked.length > 0) {
-    fail = true
-    console.error(`FAIL [Pro 零泄漏] table 默认链包含 ${id}：${leaked.join(', ')}`)
-  } else {
-    console.log(`PASS [Pro 零泄漏] table 默认链不含 ${id}`)
   }
 }
 

@@ -139,9 +139,11 @@ oas-ui/
 
 规则：
 
-- 包含关系：L1 ⊃ L2；L1 包含全部 L3 能力，L2 **不默认含 L3**（v2.6.4 起）。过渡别名 `/core` 已于 v2.6.5 删除（未发布）。
-- 注册语义：能力型 L3 import 即注册、晚加入自愈（已挂载元素自动补齐）；纯函数型 L3（`table/advanced`）不注册元素/能力，只导出函数。
-- L3 现有实例：`table/edit`、`table/advanced`（纯函数）、`table/format`（条件格式）、`table/view`（视图状态）、`table/range`（区域选择，渲染后同步整表选区、不占单元格装饰链）、`table/history`（撤销重做）、`table/detail`（主从详情宿主侧 helper）、`tabs/manager`、`modal/prompt`、`popover/contextmenu`、`color-picker/designer`。
+- 包含关系：L1 ⊇ L2；**注册型 L3 必须含于 L1**（否则 CDN 一把梭消费者声明对应属性时能力静默失效），**纯函数/宿主侧 helper 型 L3 不进 L1/CDN**（无 HTML 触发面，进 union 即死重，按需显式 import）；L2 **不默认含 L3**（v2.6.4 起）。过渡别名 `/core` 已于 v2.6.5 删除（未发布）。
+- 注册语义：注册型 L3 import 即注册、晚加入自愈（已挂载元素自动补齐）；helper 型 L3 不注册元素/能力，只导出函数由宿主代码调用（`format` / `range` 内部虽调用能力注册表，但激活唯一入口是导出函数，仍属 helper 类）。
+- L3 现有实例（登记表 = `scripts/perf/lib/l3-registry.mjs`，单一登记源驱动 `perf:size` 结构门禁）：
+  - **注册型（含于 L1/CDN）**：`table/edit`、`tabs/manager`、`modal/prompt`、`popover/contextmenu`、`color-picker/designer`；
+  - **helper 型（不进 L1/CDN）**：`table/advanced`（透视/公式/查询/条件格式/TSV/历史栈/windowed 纯函数）、`table/format`（条件格式）、`table/view`（视图状态）、`table/range`（区域选择）、`table/history`（撤销重做）、`table/detail`（主从详情宿主侧 helper）。
   - **量化决策（2026-10-24，v2.6.4）**：默认入口 `data/table` 改为基础表格，编辑能力外置为 `table/edit`；全量入口 `@oas-ui/ui` 显式补 edit。旧 `table/core` 保留为 deprecated 别名一个版本，v2.6.5 删除。
   - **单点例外（2026-10-28，v2.6.5，用户批准）**：`table/core` 删除落在 minor（2.6.5）而非下一个 major。理由：它是默认入口的**等价别名**（re-export 同一构造器，非独立 API 面），且 v2.6.4 发布时已随默认入口语义切换预告移除。此例外已登记 `docs/deprecations.json` DEP-EXPORT-0001（`minorException` 字段），`deprecations:check` 仅对 `package-export` 面放行该豁免，且仅限「同 major、严格高于当前版本的合法 x.y.z」的 minor 提升——**组件 API 面（attribute/prop/event/method/css-var/export）的 minor/patch 移除一律拒绝**，本例外不构成先例。
   - **历史决策（2026-10-08）**：v2.5.0 曾定「L2 主路径默认含能力、`/core` 为纯核」；该结论已被 v2.6.4 的按需模型替代。
@@ -149,12 +151,13 @@ oas-ui/
 
 **新增 L3 的判据（何时把能力拆为子包）**：① 该能力**成本显著**（单独引入会明显抬高主链，或依赖某重组件）；② 存在**不需要它**的消费者群；③ 拆出后能独立按需 import，且不破坏 L2 API。满足即拆；L3 不得反向被 L2 默认 import。
 
-**层间演进与一致性门禁（并入 CI）**：
+**层间演进与一致性门禁（并入 CI，`perf:size` 强制）**：
 
-- 关系不变量：L1 ⊇ L2；L1 包含全部 L3，L2 不默认含 L3；过渡别名 `/core` 已删除（v2.6.5，用户批准的单点例外，见上文）；
+- 关系不变量：L1 ⊇ L2；注册型 L3 含于 L1、helper 型 L3 不进 L1，L2 不默认含 L3；过渡别名 `/core` 已删除（v2.6.5，用户批准的单点例外，见上文）；
 - **可选层零泄漏**：`perf:size` 断言所有可选层文件（`theme/glass-fluid.js` / `theme/glass.css` / `theme/skins.css` 等）**不出现在**全量入口链与任一单组件链的可达闭包内；
-- **L2 不吸 L3**：`table` 链不得包含 `table/edit` 或 Pro 能力；各 L3 链独立计量；
-- **新增 L3 / 可选运行时须配独立体积预算档**（见 `docs/perf-baseline.md` §4）。
+- **L2 不吸 L3**：`table` 默认链不得包含 edit 或任何 Pro 能力子路径；table 家族 L3 独立计量；
+- **登记表驱动**：L3 分类与包含关系以 `scripts/perf/lib/l3-registry.mjs` 为单一登记源，判定函数红绿两侧进 `perf:size --self-test`，live dist 断言随构建把关；
+- **新增 L3 / 可选运行时须登记并配独立体积预算档**（登记表 + `docs/perf-baseline.md` §4）。
 
 **可选层登记表**（新增可选层须登记；机制复用既有 `registerXxx` 能力注册 + `warnXxx` dev 告警先例）：
 
@@ -163,9 +166,10 @@ oas-ui/
 | `@oas-ui/theme/glass.css`       | 否               | 无玻璃材质（回落基础样式）            | 无                     | 材质皮肤消费者   |
 | `@oas-ui/theme/glass-fluid.js`  | 否               | 无指针高光（其余玻璃层不受影响）      | 无                     | 动态材质消费者   |
 | `@oas-ui/theme/skins.css`       | 否               | 无预设皮肤                            | 无                     | 皮肤消费者       |
-| L3 能力子包（`table/edit` 等）  | **是**（含于 L1；`table/advanced` 纯函数入口除外） | 默认入口不含；显式 import 才启用；advanced 始终按需 import | `warnEditNotImported`  | 按需能力消费者   |
+| 注册型 L3（`table/edit` 等 5 个） | **是**（含于 L1/CDN 族包） | 默认入口不含；显式 import 才启用 | `warnEditNotImported`  | 按需能力消费者   |
+| helper 型 L3（table 6 个 Pro 子路径） | 否（无 HTML 触发面，进 union 即死重） | 默认入口不含；宿主显式 import 并调用导出函数 | 无 | 按需能力消费者   |
 
-> 原则：**整包级可选层**（材质/皮肤/运行时，独立文件）不进 union；**L3 能力子包**必须含于 L1（否则 CDN 一把梭消费者用不到该能力）。两类"可选"不可混同。
+> 原则：**整包级可选层**（材质/皮肤/运行时，独立文件）不进 union；**注册型 L3** 必须含于 L1（否则 CDN 一把梭消费者用不到该能力）；**helper 型 L3** 不进 union（宿主代码显式调用，CDN 无 JS 场景本就调不到）。三类"可选"不可混同。
 
 **效果层扩展点（预留锚点）**：新增"效果/材质运行时"（如指针高光、实时材质）一律按**既有运行时注册表机制**挂接——单文档命中（`composedPath`）+ surface 注册表 + 按注册表注入/降级，`glass-fluid.js` 即首个实例。**不预设抽象层**：等第二个运行时真实出现再按 §3.1「JS 运行时的包归属」的触发条件收敛，避免为不存在的第二实现投机泛化。
 

@@ -1,7 +1,8 @@
 /**
  * table 高级能力入口（`@oas-ui/ui/data/table/advanced`）
  *
- * 纯函数 / 列工厂，不注册自定义元素、不引入表单控件：
+ * 纯函数 / 列工厂，不注册自定义元素、不引入表单控件（分层归类：helper 型 L3，
+ * 不进 L1/CDN union——无 HTML 触发面，见 scripts/perf/lib/l3-registry.mjs 登记表）：
  * - `pivot` / `pivotTable`：透视矩阵与可直接喂给 oas-table 的 columns/data
  * - `compileFormula` / `formulaColumn`：无 eval 的安全计算公式列
  * - `compileQuery` / `filterRows`：查询构建器 AST → 行谓词

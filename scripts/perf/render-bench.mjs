@@ -25,6 +25,8 @@ import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { Window } from 'happy-dom'
 import { ROOT, writeSection, today } from './lib/baseline.mjs'
+// 渲染阈值单一真源（lib 内含 select 160ms 等定档依据）；happy-dom 版本读实装包而非手写
+import { RENDER_BUDGETS, happyDomLabel } from './lib/render-budgets.mjs'
 
 const UI_DIST = join(ROOT, 'packages/ui/dist')
 
@@ -260,21 +262,16 @@ run('table-data-update', 'table 数据更新', tableUpdate)
 run('select-options-update', 'select 选项更新', selectUpdate)
 
 // ---------- 预算断言（量级防退化） ----------
-// 阈值 = 2026-08-12 多轮实测 p95 的约 3~5 倍取整（happy-dom 下耗时跨轮次波动明显，
-// 如 table 数据更新 p95 曾见 7.6~43 ms），取"量级"而非"精确"：只挡明显退化。
+// 阈值单一真源 = lib/render-budgets.mjs（含各档定档依据与 2026-10-19 select 160ms 放宽记录），
+// 本脚本只消费；perf:size 校验 JSON/文档与该库一致。
 // 本基准不进 CI（见 .github/workflows/ci.yml 注释），本地/发布前核对用。
-const RENDER_BUDGETS = [
-  { id: 'button-first-render', budgetMs: 5 },
-  { id: 'input-first-render', budgetMs: 15 },
-  { id: 'table-100rows-first-render', budgetMs: 50 },
-  { id: 'select-100opt-first-render', budgetMs: 50 },
-  { id: 'tabs-10panel-first-render', budgetMs: 15 },
-  { id: 'form-10field-first-render', budgetMs: 40 },
-  { id: 'table-data-update', budgetMs: 50 },
-  // 2026-10-19：Windows + happy-dom 下 p95 受 GC 尾延迟支配（median ~5ms，p95 58–148ms），
-  // 50ms 本机护栏已不稳定；仍保留 median/mean 输出供趋势观察，预算只防数量级退化。
-  { id: 'select-options-update', budgetMs: 160 },
-]
+const RENDER_BUDGET_IDS = new Set(RENDER_BUDGETS.map((b) => b.id))
+for (const id of Object.keys(scenarios)) {
+  if (!RENDER_BUDGET_IDS.has(id)) {
+    console.error(`[perf:bench] 场景 '${id}' 不在 lib/render-budgets.mjs 阈值表中：先在阈值库登记，再测量。`)
+    process.exit(1)
+  }
+}
 
 console.log('\n=== 渲染预算断言 ===')
 let fail = false
@@ -285,7 +282,7 @@ const budgetResults = RENDER_BUDGETS.map((b) => {
   console.log(
     `${ok ? 'PASS' : 'FAIL'} ${s.label.padEnd(22)} p95 ${String(s.p95Ms).padStart(7)} ms / 预算 ${String(b.budgetMs).padStart(3)} ms`,
   )
-  return { id: b.id, label: s.label, budgetMs: b.budgetMs, p95Ms: s.p95Ms, pass: ok }
+  return { id: b.id, label: b.label, budgetMs: b.budgetMs, p95Ms: s.p95Ms, pass: ok }
 })
 
 // ---------- 写入基线（merge，保留 size section；默认只测不写，见头部说明） ----------
@@ -294,7 +291,8 @@ if (process.argv.includes('--update-baseline')) {
     generatedAt: today(),
     env: {
       runtime: `node ${process.version}`,
-      happyDom: 'happy-dom@20.x',
+      // 真实实装版本（读 node_modules/happy-dom/package.json）；perf:size 校验 JSON 与实装一致
+      happyDom: happyDomLabel(ROOT),
       iterations: ITERATIONS,
       note: 'happy-dom 合成环境，非真实浏览器渲染口径；耗时仅供相对对比与退化监测',
     },
