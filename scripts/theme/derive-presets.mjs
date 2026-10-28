@@ -24,6 +24,7 @@ import { fileURLToPath } from 'node:url'
 import {
   ADJACENT_PRESET_PAIRS,
   PRESET_NAMES,
+  SEMANTIC_TEXT_NAMES,
   TEXT_ELEVATED_MIN_SCORE,
   TEXT_MAX_HUE_DRIFT,
   TEXT_MIN_DISTANCE,
@@ -33,9 +34,12 @@ import {
   hexToOklch,
   hueDiff,
   okDistance,
+  oklchToHex,
   parseElevatedBg,
   parsePresetTokens,
+  parseSemanticTokens,
   presetTextHexAt,
+  semanticAnchorHue,
   textBgChecks,
   textBgs,
   textChecksPass,
@@ -52,6 +56,8 @@ const SAFE_DIR = { light: -1, dark: 1 }
 const CSS = readFileSync(join(ROOT, 'packages/theme/index.css'), 'utf8')
 const tokens = parsePresetTokens(CSS)
 const ELEVATED = parseElevatedBg(CSS)
+// 语义色 -text（success/warning/danger/info）与预设色板同一套规则；info 无色板本色，锚点取双主题色相中值
+const SEMANTIC = parseSemanticTokens(CSS)
 
 // 相邻对按 PRESET_NAMES 声明序（色相环序）归一，仅用于稳定遍历顺序（判据对称）。
 const ORDER = Object.fromEntries(PRESET_NAMES.map((name, i) => [name, i]))
@@ -209,6 +215,74 @@ function derive(mode) {
   return { values, changes, unsolved }
 }
 
+/** 语义 -text 审计：与预设同一口径（目标底 ≥65 / bg-elevated ≥60 / 锁色相 ≤12°） */
+function auditSemantic(mode) {
+  const rows = SEMANTIC_TEXT_NAMES.map((name) => {
+    const hex = SEMANTIC[mode].text[name]
+    return {
+      name,
+      hex,
+      minScore: minTargetScore(hex, mode),
+      elevated: elevatedScore(hex, mode),
+      drift: hueDiff(semanticAnchorHue(SEMANTIC[mode], name), hexToOklch(hex).h),
+    }
+  })
+  const violations = [
+    ...rows
+      .filter((r) => r.minScore < TEXT_MIN_SCORE)
+      .map((r) => `semantic ${r.name} 目标底感知分 ${r.minScore.toFixed(1)} < ${TEXT_MIN_SCORE}`),
+    ...rows
+      .filter((r) => r.elevated < TEXT_ELEVATED_MIN_SCORE)
+      .map(
+        (r) =>
+          `semantic ${r.name} 在 bg-elevated(${ELEVATED[mode]}) 上感知分 ${r.elevated.toFixed(1)} < ${TEXT_ELEVATED_MIN_SCORE}`,
+      ),
+    ...rows
+      .filter((r) => r.drift > TEXT_MAX_HUE_DRIFT)
+      .map((r) => `semantic ${r.name} 色相漂移 ${r.drift.toFixed(1)}° > ${TEXT_MAX_HUE_DRIFT}°`),
+  ]
+  return { rows, violations }
+}
+
+/** 语义 -text 推导：保当前色相/彩度，沿安全方向（light 压深 / dark 提亮）找最近达标档 */
+function deriveSemantic(mode) {
+  const unsolved = []
+  const changes = []
+  for (const name of SEMANTIC_TEXT_NAMES) {
+    const current = SEMANTIC[mode].text[name]
+    const checks = textBgChecks(mode, ELEVATED[mode])
+    const anchorHue = semanticAnchorHue(SEMANTIC[mode], name)
+    const drift = (hex) => hueDiff(anchorHue, hexToOklch(hex).h)
+    if (textChecksPass(current, checks) && drift(current) <= TEXT_MAX_HUE_DRIFT) continue
+    const lch = hexToOklch(current)
+    const dir = mode === 'light' ? -0.0005 : 0.0005
+    let found = null
+    for (let i = 1; i <= 600; i++) {
+      const L = lch.L + i * dir
+      if (L < 0 || L > 1) break
+      const cand = oklchToHex({ L, C: lch.C, h: lch.h })
+      if (textChecksPass(cand, checks) && drift(cand) <= TEXT_MAX_HUE_DRIFT) {
+        found = cand
+        break
+      }
+    }
+    if (!found) {
+      unsolved.push(`${mode} semantic ${name}：同色相下无满足全部底约束的 L 区间`)
+      continue
+    }
+    changes.push({
+      mode,
+      name,
+      from: current,
+      to: found,
+      min: minTargetScore(found, mode),
+      elevated: elevatedScore(found, mode),
+      reason: '语义 -text 底约束 / 锁色相',
+    })
+  }
+  return { changes, unsolved }
+}
+
 /** 审计：逐预设目标底 / bg-elevated 感知分 + 色相漂移 + 逐对色距，列出违例 */
 function audit() {
   const out = {}
@@ -230,6 +304,7 @@ function audit() {
       pair: `${a}↔${b}`,
       distance: dist(tokens[mode].text[a], tokens[mode].text[b]),
     }))
+    const semantic = auditSemantic(mode)
     const violations = [
       ...rows
         .filter((r) => r.minScore < TEXT_MIN_SCORE)
@@ -246,8 +321,9 @@ function audit() {
       ...pairs
         .filter((p) => p.distance < TEXT_MIN_DISTANCE)
         .map((p) => `${p.pair} 色距 ${p.distance.toFixed(1)} < ${TEXT_MIN_DISTANCE}`),
+      ...semantic.violations,
     ]
-    out[mode] = { rows, pairs, violations }
+    out[mode] = { rows, pairs, semantic, violations }
   }
   return out
 }
@@ -270,6 +346,17 @@ for (const mode of MODES) {
   console.log('相邻对     色距')
   for (const p of report[mode].pairs) {
     console.log(`${p.pair.padEnd(10)} ${p.distance.toFixed(1)}${p.distance < TEXT_MIN_DISTANCE ? '  ✗' : ''}`)
+  }
+  console.log('语义 -text  text      目标底min  elevated   色相漂移（锚点锁定）')
+  for (const r of report[mode].semantic.rows) {
+    const scores = bgs.map((bg) => contrastScore(r.hex, bg).toFixed(1)).join(' / ')
+    const flag =
+      r.minScore < TEXT_MIN_SCORE || r.elevated < TEXT_ELEVATED_MIN_SCORE || r.drift > TEXT_MAX_HUE_DRIFT ? '  ✗' : ''
+    console.log(
+      `${r.name.padEnd(10)} ${r.hex}  ${scores.padEnd(15)} min=${r.minScore.toFixed(1).padStart(5)}  ${r.elevated
+        .toFixed(1)
+        .padStart(5)}  ${r.drift.toFixed(1).padStart(5)}°${flag}`,
+    )
   }
   if (report[mode].violations.length) {
     hasViolation = true
@@ -304,4 +391,13 @@ for (const mode of MODES) {
     )
   }
   for (const u of unsolved) console.log(`${mode.padEnd(6)} 无解：${u}`)
+  const semantic = deriveSemantic(mode)
+  for (const c of semantic.changes) {
+    console.log(
+      `${mode.padEnd(6)} ${c.name.padEnd(9)} ${c.from.padEnd(9)} ${c.to.padEnd(9)} ${c.min
+        .toFixed(1)
+        .padStart(8)}  ${c.elevated.toFixed(1).padStart(7)}  ${'—'.padEnd(22)} 语义：${c.reason}`,
+    )
+  }
+  for (const u of semantic.unsolved) console.log(`${mode.padEnd(6)} 无解：${u}`)
 }

@@ -8,20 +8,45 @@ import { perceptualContrast, relativeLuminance } from '../theme/oklab'
 // 自动收集全部 demo 页（与 smoke/console-sweep 同机制）：新组件默认进 axe 审计。
 // EXCLUDE_PAGES = a11y 专项批次债务台账（页 → 违规类型 + 设计冲突说明），修复一页出一页；当前为空：
 // 设计级冲突已全部收口——可点/可选容器不再挂缺省交互角色（card/list），折叠按钮移出 separator（splitter），
-// 图形语义落到 <svg> 自身（qrcode），跨 shadow 的 ID 引用改走页面级规则豁免（stepper）。
+// 图形语义落到 <svg> 自身（qrcode），跨 shadow 的 ID 引用改走节点级豁免（stepper，规则本身保持启用）。
 const EXCLUDE_PAGES = new Set<string>([])
 
-// 页面级规则豁免：仅用于「工具静态分析够不到、且有等价断言兜底」的单页误报，逐条写明理由与兜底位置。
-// ⚠️ 爆炸半径：axe 的 disableRules 只能**整规则**禁用——如下面 stepper 那条 aria-valid-attr-value 豁免，
-//   会一并放行该页**其它**「ARIA 属性取值非法」的情形。等价强度兜底见 qa-regression/stepper.spec.ts：
-//   「全量 aria-* 取值合法性」断言（token 值集合 + 引用目标存在 + 未知名非空）覆盖「值合法」，
-//   「aria-controls 指向真实 panel」断言覆盖引用存在性。新增豁免必须确认旁泄风险可接受且有等价兜底，
-//   禁止当过闸逃生舱用。
-const PAGE_RULE_EXEMPTIONS: Record<string, string[]> = {
-  // stepper：tab 的 aria-controls 指向的 panel 由组件跨 shadow 生成，axe 静态分析无法验证该 ID 引用
-  //   （getElementById 实测可查到 panel 节点）；兜底见 qa-regression/stepper.spec.ts 的
-  //   aria-controls 存在性断言 + 全量 aria-* 取值合法性断言
-  'stepper.html': ['aria-valid-attr-value'],
+// 页面级规则豁免：仅用于「工具静态分析够不到、且有等价断言兜底」的单页误报。当前为空——
+// 历史 stepper 的整规则豁免（aria-valid-attr-value）已收窄为下方节点级豁免：axe 没有 per-node
+// disable，故保持规则启用、在断言层只剔除「同一条误报的指定节点」，其余违规照常判红。
+// 新增页面级豁免必须确认旁泄风险可接受且有等价兜底，禁止当过闸逃生舱用。
+const PAGE_RULE_EXEMPTIONS: Record<string, string[]> = {}
+
+/**
+ * 节点级豁免：只放行「指定规则 × 指定节点选择器 × 指定失败摘要」的违规节点，规则本身保持启用。
+ * 命中后还必须通过 `idref: true` 的页面级真实性校验（见 verifyExemptedAriaControls）——
+ * 证明这条误报确实是跨 shadow 的 stepper tab→panel 引用，而不是把任意非法 aria-controls 一并放行。
+ * 等价强度兜底仍在 qa-regression/stepper.spec.ts：全量 aria-* 取值合法性 + aria-controls 目标存在性。
+ */
+interface NodeRuleExemption {
+  rule: string
+  /** axe node.target 末段（跨 shadow 时为 shadow 内选择器）必须匹配 */
+  target: RegExp
+  /** failureSummary 必须精确匹配；`idref: true` 时第 1 个捕获组须为被引用的 ID */
+  summary: RegExp
+  /** 命中后校验：引用方必须是 stepper shadow 内的 role=tab，目标必须是另一棵树里的 role=tabpanel */
+  idref?: boolean
+  reason: string
+}
+
+const PAGE_NODE_EXEMPTIONS: Record<string, NodeRuleExemption[]> = {
+  'stepper.html': [
+    {
+      rule: 'aria-valid-attr-value',
+      // tab 由 oas-stepper 在 shadow 内生成（id 形如 oas-stepper-<n>-tab-<i>）
+      target: /^#oas-stepper-\d+-tab-\d+$/,
+      // 仅「aria-controls 取值无效」这一条；同节点其它 ARIA 属性非法不会命中
+      summary: /^Fix all of the following:\s+Invalid ARIA attribute value: aria-controls="([^"]+)"$/,
+      idref: true,
+      reason:
+        'tab 的 aria-controls 指向 light DOM 的 oas-stepper-panel，axe 静态分析不跨 shadow 验证 IDREF（实测目标存在）',
+    },
+  ],
 }
 const PAGES = readdirSync(resolve(import.meta.dirname, '../docs/docs/components'))
   .filter((f) => f.endsWith('.md') && f !== 'index.md')
@@ -251,6 +276,119 @@ function runAxe(page: Page, exemptions: string[] = []) {
     .analyze()
 }
 
+// ---------- 节点级豁免（替代整规则豁免）：只剔除指定误报节点，规则保持启用 ----------
+interface AxeViolationNode {
+  target: unknown
+  failureSummary?: string
+  html?: string
+}
+interface AxeViolation {
+  id: string
+  impact: string | null
+  help: string
+  nodes: AxeViolationNode[]
+}
+interface AppliedNodeExemption {
+  rule: string
+  target: string
+  targetId: string
+  reason: string
+  idref?: string
+}
+
+/** axe 的 target 可能是嵌套数组（跨 shadow：[[hostSelector, shadowSelector]]），展平取末段 */
+function flattenTarget(target: unknown): string[] {
+  if (Array.isArray(target)) return target.flatMap((v) => flattenTarget(v))
+  return [String(target)]
+}
+
+function splitNodeExemptions(
+  violations: AxeViolation[],
+  exemptions: NodeRuleExemption[],
+): { violations: AxeViolation[]; applied: AppliedNodeExemption[] } {
+  const kept: AxeViolation[] = []
+  const applied: AppliedNodeExemption[] = []
+  for (const violation of violations) {
+    const rules = exemptions.filter((e) => e.rule === violation.id)
+    if (rules.length === 0) {
+      kept.push(violation)
+      continue
+    }
+    const remaining: AxeViolationNode[] = []
+    for (const node of violation.nodes) {
+      const target = flattenTarget(node.target).at(-1) ?? ''
+      const summary = (node.failureSummary ?? '').trim()
+      const match = rules.find((e) => e.target.test(target) && e.summary.test(summary))
+      if (!match) {
+        remaining.push(node)
+        continue
+      }
+      const idref = match.idref ? match.summary.exec(summary)?.[1] : undefined
+      applied.push({
+        rule: violation.id,
+        target,
+        targetId: target.replace(/^#/, ''),
+        reason: match.reason,
+        idref,
+      })
+    }
+    // 同一规则下未命中的节点保留（节点级剔除，不是整条违规放行）
+    if (remaining.length > 0) kept.push({ ...violation, nodes: remaining })
+  }
+  return { violations: kept, applied }
+}
+
+/**
+ * 节点级豁免的真实性校验：命中的每个 aria-controls 引用都必须能在 flat tree（含全部 shadow root）里
+ * 找到目标，且满足「stepper shadow 内的 role=tab → 另一棵树的 role=tabpanel」这一具体跨 shadow 形态。
+ * 任何一项不满足即判红——防止把「页面里随便一个 aria-controls 写错」也塞进豁免。
+ */
+async function verifyExemptedAriaControls(page: Page, applied: AppliedNodeExemption[]): Promise<string[]> {
+  const items = applied
+    .filter((a) => a.rule === 'aria-valid-attr-value')
+    .map((a) => ({ idref: a.idref ?? '', targetId: a.targetId, reason: a.reason }))
+  if (items.length === 0) return []
+  return page.evaluate((entries) => {
+    const all: Element[] = []
+    const walk = (root: Document | ShadowRoot): void => {
+      for (const el of Array.from(root.querySelectorAll('*'))) {
+        all.push(el)
+        if (el.shadowRoot) walk(el.shadowRoot)
+      }
+    }
+    walk(document)
+    const byId = new Map<string, Element>()
+    for (const el of all) if (el.id) byId.set(el.id, el)
+    const issues: string[] = []
+    for (const { idref, targetId } of entries) {
+      if (!idref) {
+        issues.push(`#${targetId}: 豁免摘要缺少 aria-controls 目标 ID`)
+        continue
+      }
+      const panel = byId.get(idref)
+      if (!panel) {
+        issues.push(`#${targetId}: aria-controls 目标 #${idref} 不存在（不得放行真实错误）`)
+        continue
+      }
+      const tab = all.find((el) => el.id === targetId)
+      if (!tab) {
+        issues.push(`#${targetId}: 豁免节点不存在`)
+        continue
+      }
+      if (tab.getAttribute('role') !== 'tab') issues.push(`#${targetId}: 豁免节点不是 role=tab`)
+      if (tab.getAttribute('aria-controls') !== idref) issues.push(`#${targetId}: aria-controls 与失败摘要不一致`)
+      if (panel.getAttribute('role') !== 'tabpanel') issues.push(`#${idref}: 目标不是 role=tabpanel`)
+      if (tab.getRootNode() === panel.getRootNode()) {
+        issues.push(`#${targetId}: 引用方与目标同根（不是跨 shadow 误报，应修真实引用）`)
+      }
+      const tree = tab.getRootNode()
+      const host = 'host' in tree ? (tree as ShadowRoot).host : null
+      if (!host || host.localName !== 'oas-stepper') issues.push(`#${targetId}: 引用方不在 oas-stepper shadow 内`)
+    }
+    return issues
+  }, items)
+}
+
 /** 等 DOM 静止（无变更 250ms，最长 cap）后再审计：虚拟列表/骨架/异步渲染在渲染中途测到的节点数会漂移 */
 async function waitForStableDom(page: Page, capMs = 1500): Promise<void> {
   await page.evaluate(
@@ -322,9 +460,14 @@ test.describe('无障碍审计（axe，零严重违规）', () => {
       await waitForStableDom(p)
       if (TIMER_FROZEN_PAGES.has(name)) await freezeTimers(p)
       const exemptions = PAGE_RULE_EXEMPTIONS[name] ?? []
+      const nodeExemptions = PAGE_NODE_EXEMPTIONS[name] ?? []
       // 防绕过守卫：color-contrast 必须始终参与扫描（感知对比度门禁依赖它提供 fg/bg 实测色），
-      // 任何页面都不允许把它列进豁免
+      // 任何页面都不允许把它列进豁免（页面级 / 节点级都不得豁免）
       expect(exemptions, 'color-contrast 不得进页面级规则豁免').not.toContain('color-contrast')
+      expect(
+        nodeExemptions.map((e) => e.rule),
+        'color-contrast 不得进节点级豁免',
+      ).not.toContain('color-contrast')
       const baseline = loadBaseline().pages
       const tol = PAGE_TOLERANCE[name] ?? CONTRAST_TOLERANCE
 
@@ -336,12 +479,23 @@ test.describe('无障碍审计（axe，零严重违规）', () => {
         }
         const results = (await runAxe(p, exemptions)) as unknown as AxeResultsLike
 
+        // 节点级豁免：规则保持启用，只剔除已证明为工具误报的指定节点；其余违规照常判红
+        const split = splitNodeExemptions(results.violations as unknown as AxeViolation[], nodeExemptions)
+        if (nodeExemptions.length > 0) {
+          expect(
+            split.applied.length,
+            `${name} [${theme}]：节点级豁免必须实际命中（陈旧豁免会静默放行其它违规，须同步删除）`,
+          ).toBeGreaterThan(0)
+          const exemptionIssues = await verifyExemptedAriaControls(p, split.applied)
+          expect(exemptionIssues, `${name} [${theme}]：节点级豁免必须对应真实的跨 shadow 引用`).toEqual([])
+        }
+
         // 语义/键盘/ARIA 断言（两主题都查）
-        const serious = (results.violations as unknown as Array<{ id: string; impact: string | null; help: string }>)
+        const serious = split.violations
           .filter((v) => v.id !== 'color-contrast' && ['critical', 'serious'].includes(v.impact ?? ''))
           .map((v) => `${v.id}: ${v.help}`)
         if (serious.length) {
-          const detail = results.violations
+          const detail = split.violations
             .filter((v) => v.id !== 'color-contrast')
             .map((v) => ({
               id: v.id,
@@ -412,6 +566,51 @@ test('感知对比度门禁自检：注入低对比文本能被捕获且指标�
   expect(scoreOf('#f4f4f5', '#ffffff')!, '浅字浅底应判定为低分').toBeLessThan(30)
   expect(scoreOf('#18181b', '#ffffff')!, '深字浅底应判定为高分').toBeGreaterThan(75)
   expect(scoreOf('#ffffff', '#18181b')!, '浅字深底应为高绝对值').toBeGreaterThan(75)
+})
+
+// 节点级豁免自检：证明 stepper 的 ARIA 豁免只放行「跨 shadow 的 aria-controls 引用」这一种误报，
+// 同页其它非法 ARIA 取值仍会被 axe 抓到（整规则豁免会让它们一并漏检——这是本用例存在的理由）。
+test('节点级豁免自检：stepper 页注入其它非法 ARIA 取值必须被 axe 抓到（整规则豁免会漏检）', async ({ page: p }) => {
+  await p.goto('/components/stepper.html', { waitUntil: 'networkidle' })
+  await waitForStableDom(p)
+  await p.evaluate(() => {
+    const block = document.querySelector('.demo-block')
+    const canary = document.createElement('div')
+    canary.id = 'aria-valid-canary'
+    canary.setAttribute('role', 'checkbox')
+    canary.setAttribute('aria-checked', 'maybe') // 非法 token：合法值只有 true/false/mixed
+    canary.textContent = '非法 ARIA 取值自检'
+    block?.appendChild(canary)
+  })
+  const results = (await runAxe(p, PAGE_RULE_EXEMPTIONS['stepper.html'] ?? [])) as unknown as AxeResultsLike
+  const exemptions = PAGE_NODE_EXEMPTIONS['stepper.html'] ?? []
+  const split = splitNodeExemptions(results.violations as unknown as AxeViolation[], exemptions)
+  const canary = split.violations
+    .filter((v) => v.id === 'aria-valid-attr-value')
+    .flatMap((v) => v.nodes)
+    .find((n) => JSON.stringify(n.target).includes('aria-valid-canary'))
+  expect(canary, '规则必须保持启用：页级整规则豁免会让 aria-checked="maybe" 这类非法值静默漏检').toBeTruthy()
+  expect(
+    split.applied.some((a) => a.targetId.includes('aria-valid-canary')),
+    '其它节点的非法 ARIA 值不得落进 stepper 的节点级豁免',
+  ).toBe(false)
+
+  // 反证二：同形状（tab + aria-controls）但目标不存在时，真实性校验必须拒绝放行
+  await p.evaluate(() => {
+    const tablist = document.querySelector('oas-stepper')!.shadowRoot!.querySelector('.tablist')!
+    const fake = document.createElement('button')
+    fake.id = 'oas-stepper-999-tab-9'
+    fake.setAttribute('role', 'tab')
+    fake.setAttribute('aria-controls', 'definitely-missing-panel')
+    tablist.appendChild(fake)
+  })
+  const fakeResults = (await runAxe(p)) as unknown as AxeResultsLike
+  const fakeSplit = splitNodeExemptions(fakeResults.violations as unknown as AxeViolation[], exemptions)
+  const fakeIssues = await verifyExemptedAriaControls(p, fakeSplit.applied)
+  expect(
+    fakeIssues.some((issue) => issue.includes('definitely-missing-panel')),
+    '同形状但目标不存在的 aria-controls 必须被真实性校验拒绝，不得被豁免吞掉',
+  ).toBe(true)
 })
 
 // 基线生成（显式执行）：CONTRAST_BASELINE=update 单 worker 跑本用例，逐页实测后重写基线文件

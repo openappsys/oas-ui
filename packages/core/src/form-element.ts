@@ -19,6 +19,20 @@ import { OASElement } from './oas-element.js'
  *
  * 注意：原生校验链（checkValidity/reportValidity）需组件按各自规则调 `setValidity`，本批不做。
  */
+/** 外部 label 所在的树作用域（light DOM 文档 / 组件所在的 shadow root） */
+type LabelTreeRoot = Document | ShadowRoot
+
+interface LabelWatch {
+  observer: MutationObserver
+  /** 该根作用域内已连接的表单控件（共享一个 observer，不按控件重复监听） */
+  elements: Set<OASFormElement>
+}
+
+/** 节点是否可作为 label 观察根（Document nodeType=9 / ShadowRoot=11） */
+function isLabelTreeRoot(root: Node): root is LabelTreeRoot {
+  return root.nodeType === Node.DOCUMENT_NODE || root.nodeType === Node.DOCUMENT_FRAGMENT_NODE
+}
+
 export abstract class OASFormElement extends OASElement {
   /** 浏览器在 customElements.define 时读取；沿静态原型链继承到各组件类 */
   static formAssociated = true
@@ -26,6 +40,15 @@ export abstract class OASFormElement extends OASElement {
   private internals_: ElementInternals | null = null
 
   private formDisabled = false
+
+  /**
+   * 外部 label 观察器登记表：**每个树作用域一个** MutationObserver（同一文档里的几十个控件共用，
+   * 不按控件重复监听）。作用域随控件连接建立、最后一个控件断开时释放；重连重新建立。
+   */
+  private static labelWatches = new Map<LabelTreeRoot, LabelWatch>()
+
+  /** 本控件当前登记在哪个树作用域的观察器（断开时精确注销，防重连/换根残留） */
+  private labelWatchRoot: LabelTreeRoot | null = null
 
   constructor() {
     super()
@@ -140,10 +163,12 @@ export abstract class OASFormElement extends OASElement {
   override connectedCallback(): void {
     super.connectedCallback()
     this.addEventListener('click', this.onClickForwardFocus)
+    this.watchExternalLabels()
   }
 
   override disconnectedCallback(): void {
     this.removeEventListener('click', this.onClickForwardFocus)
+    this.unwatchExternalLabels()
     super.disconnectedCallback()
   }
 
@@ -168,41 +193,134 @@ export abstract class OASFormElement extends OASElement {
    * 不能用 aria-labelledby 跨 shadow 引用 light DOM 的 label id（跨根 IDREF 不解析，axe 判无名），
    * 故复制文本（在 shadow 树内可解析）。优先级遵循原生：外部 label > 组件内建命名回退；
    * 外部 label 移除后只清理自己设置的（组件下次 update 恢复其回退名）。
+   *
+   * 动态性：文本变化 / `for` 改指向 / label 增删由共享 MutationObserver 即时重算（见 watchExternalLabels），
+   * 不要求宿主再触发一次组件 update。写入前比对现值（同文本零写入），避免 observer 抖动与重复 attr 变更。
    */
   private syncInnerLabelledBy(): void {
     const inner = this.innerControl
     if (!inner) return
-    const labels = this.associatedLabels()
-    if (labels.length > 0) {
-      const text = labels
+    let text = ''
+    try {
+      text = this.associatedLabels()
         .map((l) => (l.textContent ?? '').replace(/\s+/g, ' ').trim())
         .filter(Boolean)
         .join(' ')
-      if (text) {
-        inner.setAttribute('aria-label', text)
-        inner.setAttribute('data-fa-label', '')
-        return
-      }
+    } catch {
+      // 关联解析异常（异常 id / 受限环境）按「无关联」降级：清除自己写入的旧名称，绝不留脏
+      text = ''
     }
-    if (inner.hasAttribute('data-fa-label')) {
-      inner.removeAttribute('aria-label')
-      inner.removeAttribute('data-fa-label')
+    if (text) {
+      if (inner.getAttribute('aria-label') === text && inner.hasAttribute('data-fa-label')) return
+      inner.setAttribute('aria-label', text)
+      inner.setAttribute('data-fa-label', '')
+      return
     }
+    if (!inner.hasAttribute('data-fa-label')) return
+    inner.removeAttribute('aria-label')
+    inner.removeAttribute('data-fa-label')
   }
 
-  /** 关联 label 解析：优先原生 internals.labels（for 指向 + 祖先包裹）；无 ElementInternals 环境手动解析（行为一致） */
+  /**
+   * 关联 label 解析：以**控件自身所在的树作用域**内 `for` 指向 + 祖先包裹为准（DOM 查询即时一致）。
+   *
+   * 不读 `internals.labels` 做命名：Firefox 的 live list 在 `label.for` 改指向后同一任务内仍是旧值，
+   * 会读到已解除关联的 label 文本（Chromium 即时更新，跨引擎行为不一致）。同根查询跨引擎同步，
+   * shadow 内控件也能关联同 shadow 的 label；跨 shadow 的 IDREF 按规范不解析，不做越界兜底。
+   */
   private associatedLabels(): HTMLLabelElement[] {
-    const fromInternals = this.labels
-    if (fromInternals && fromInternals.length > 0) {
-      return [...fromInternals].filter((n): n is HTMLLabelElement => n instanceof HTMLLabelElement)
-    }
-    const out: HTMLLabelElement[] = []
-    if (this.id) {
-      out.push(...document.querySelectorAll<HTMLLabelElement>(`label[for="${CSS.escape(this.id)}"]`))
+    const found = new Set<HTMLLabelElement>()
+    const root = this.getRootNode()
+    if (this.id && isLabelTreeRoot(root)) {
+      for (const label of root.querySelectorAll<HTMLLabelElement>(`label[for="${CSS.escape(this.id)}"]`)) {
+        found.add(label)
+      }
     }
     const wrapping = this.closest('label')
-    if (wrapping) out.push(wrapping)
-    return out
+    if (wrapping) found.add(wrapping)
+    return [...found]
+  }
+
+  /** 连接时登记到所在树作用域的共享 observer；换根先注销旧的（重连/搬移幂等） */
+  private watchExternalLabels(): void {
+    const root = this.getRootNode()
+    if (!isLabelTreeRoot(root)) return
+    if (this.labelWatchRoot && this.labelWatchRoot !== root) this.unwatchExternalLabels()
+    this.labelWatchRoot = root
+    OASFormElement.retainLabelRoot(root, this)
+    // observer 只覆盖后续变更：连接前已存在的关联在此立即补一次（写入去重，不产生多余 attr 变更）
+    this.syncInnerLabelledBy()
+  }
+
+  /** 断开时精确注销；最后一个控件离开该根时才停掉 observer（生命周期完整、无泄漏） */
+  private unwatchExternalLabels(): void {
+    const root = this.labelWatchRoot
+    if (!root) return
+    this.labelWatchRoot = null
+    OASFormElement.releaseLabelRoot(root, this)
+  }
+
+  private static retainLabelRoot(root: LabelTreeRoot, el: OASFormElement): void {
+    let watch = OASFormElement.labelWatches.get(root)
+    if (!watch) {
+      const elements = new Set<OASFormElement>()
+      const observer = new MutationObserver((records) => {
+        // 只关心会影响命名关系的变更（label 文本/增删/for、控件自身 id）；无关的 DOM churn 直接返回。
+        // 命中后重算该根内全部控件：写入去重，控件数量有限，远小于「每控件一个 observer + 精确路由」的常驻成本。
+        try {
+          if (!OASFormElement.labelMutationsRelevant(records, elements)) return
+        } catch {
+          /* 判定异常按「相关」处理，宁可多做不可漏刷新 */
+        }
+        for (const target of elements) {
+          try {
+            target.syncInnerLabelledBy()
+          } catch {
+            /* 单个控件解析失败不影响其余 */
+          }
+        }
+      })
+      // 写入只落在 shadow 内层的 aria-label/data-fa-label（不在此观察范围内），不会自激循环。
+      observer.observe(root, {
+        subtree: true,
+        childList: true,
+        characterData: true,
+        attributes: true,
+        attributeFilter: ['for', 'id'],
+      })
+      watch = { observer, elements }
+      OASFormElement.labelWatches.set(root, watch)
+    }
+    watch.elements.add(el)
+  }
+
+  /** 一批变更是否可能改变「控件 ↔ label」关系（属性只观察 for/id，故 id 只看已登记控件自身） */
+  private static labelMutationsRelevant(records: MutationRecord[], elements: Set<OASFormElement>): boolean {
+    return records.some((record) => {
+      if (record.type === 'attributes') {
+        return record.attributeName === 'for' || elements.has(record.target as OASFormElement)
+      }
+      const target =
+        record.target.nodeType === Node.ELEMENT_NODE ? (record.target as Element) : record.target.parentElement
+      if (target?.closest('label')) return true
+      return (
+        record.type === 'childList' &&
+        [...record.addedNodes, ...record.removedNodes].some(
+          (node) =>
+            node.nodeType === Node.ELEMENT_NODE &&
+            ((node as Element).localName === 'label' || !!(node as Element).querySelector('label')),
+        )
+      )
+    })
+  }
+
+  private static releaseLabelRoot(root: LabelTreeRoot, el: OASFormElement): void {
+    const watch = OASFormElement.labelWatches.get(root)
+    if (!watch) return
+    watch.elements.delete(el)
+    if (watch.elements.size > 0) return
+    watch.observer.disconnect()
+    OASFormElement.labelWatches.delete(root)
   }
 
   /** 基类触发的更新统一收尾：内层命名转发随属性/关联变化重同步（组件 update 之后执行，避免被组件命名逻辑覆盖） */

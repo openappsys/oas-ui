@@ -200,6 +200,210 @@ describe('OASFormElement（form-associated 公共机制）', () => {
   })
 })
 
+/** 等 MutationObserver 回调（happy-dom 在微任务末尾派发；macrotask 兜底） */
+const settle = (): Promise<void> => new Promise((resolve) => setTimeout(resolve, 0))
+
+describe('OASFormElement 外部 label 动态刷新（共享 observer，覆盖文本 / for / 增删）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  function labelledFixture(labelText: string, attrs: Record<string, string> = {}) {
+    const form = document.createElement('form')
+    document.body.appendChild(form)
+    const label = document.createElement('label')
+    label.textContent = labelText
+    form.appendChild(label)
+    const el = mount({ name: 'dyn', ...attrs })
+    form.appendChild(el)
+    label.htmlFor = el.id = 'dyn-target'
+    el.setAttribute('value', 'v') // 首次同步（关联建立后触发一次 update）
+    const inner = el.shadowRoot!.querySelector('input')!
+    return { form, label, el, inner }
+  }
+
+  it('label 文本变化即时刷新内层 aria-label（不依赖组件 update）', async () => {
+    const { label, inner, form } = labelledFixture('旧名称')
+    expect(inner.getAttribute('aria-label')).toBe('旧名称')
+    label.textContent = '新名称'
+    await settle()
+    expect(inner.getAttribute('aria-label'), 'label 文本变化应立即同步到读屏名称').toBe('新名称')
+    form.remove()
+  })
+
+  it('label 内嵌节点文本变化（childList/characterData）同样即时刷新', async () => {
+    const { label, inner, form } = labelledFixture('初始')
+    label.innerHTML = '<span>嵌套</span>名称'
+    await settle()
+    expect(inner.getAttribute('aria-label')).toBe('嵌套名称')
+    label.querySelector('span')!.textContent = '更新'
+    await settle()
+    expect(inner.getAttribute('aria-label')).toBe('更新名称')
+    form.remove()
+  })
+
+  it('label for 改指向：旧控件清理自己写入的名字，新控件立即接管', async () => {
+    const { label, inner, form } = labelledFixture('字段标签')
+    const other = mount({ name: 'other' })
+    other.id = 'dyn-other'
+    other.setAttribute('value', 'x')
+    const otherInner = other.shadowRoot!.querySelector('input')!
+    expect(inner.getAttribute('aria-label')).toBe('字段标签')
+    expect(otherInner.hasAttribute('aria-label')).toBe(false)
+
+    label.htmlFor = 'dyn-other'
+    await settle()
+    expect(inner.hasAttribute('aria-label'), '旧关联方必须清理（防旧名称残留）').toBe(false)
+    expect(otherInner.getAttribute('aria-label')).toBe('字段标签')
+    form.remove()
+  })
+
+  it('label 增删即时生效：后挂 label 命名、移除后清理', async () => {
+    const el = mount({})
+    el.id = 'dyn-added'
+    el.setAttribute('value', 'x')
+    const inner = el.shadowRoot!.querySelector('input')!
+    expect(inner.hasAttribute('aria-label')).toBe(false)
+
+    const label = document.createElement('label')
+    label.htmlFor = 'dyn-added'
+    label.textContent = '后挂标签'
+    document.body.appendChild(label)
+    await settle()
+    expect(inner.getAttribute('aria-label')).toBe('后挂标签')
+
+    label.remove()
+    await settle()
+    expect(inner.hasAttribute('aria-label'), 'label 移除后不得残留旧名称').toBe(false)
+  })
+
+  it('for 失联即时清理、重新指回恢复：外部 label 优先覆盖组件回退名', async () => {
+    const { label, inner, form } = labelledFixture('随 id 联动')
+    expect(inner.getAttribute('aria-label')).toBe('随 id 联动')
+    label.htmlFor = ''
+    await settle()
+    expect(inner.hasAttribute('aria-label')).toBe(false)
+
+    inner.setAttribute('aria-label', '组件回退名')
+    label.htmlFor = 'dyn-target'
+    await settle()
+    expect(inner.getAttribute('aria-label'), '重新关联后外部 label 优先覆盖组件回退名').toBe('随 id 联动')
+    form.remove()
+  })
+
+  it('控件 id 变化即时重算：旧 for 失效清理，按新 id 重新关联', async () => {
+    const { label, el, inner, form } = labelledFixture('跟随 id')
+    label.htmlFor = 'dyn-renamed'
+    el.id = 'dyn-renamed'
+    await settle()
+    expect(inner.getAttribute('aria-label')).toBe('跟随 id')
+
+    el.id = 'dyn-renamed-again'
+    await settle()
+    expect(inner.hasAttribute('aria-label'), 'id 改动导致 for 失联后必须清理').toBe(false)
+    form.remove()
+  })
+
+  it('祖先包裹 label：文本变化同样即时刷新（无 for 的关联形态）', async () => {
+    const wrapper = document.createElement('label')
+    wrapper.textContent = '包裹标签'
+    document.body.appendChild(wrapper)
+    const el = mount({})
+    wrapper.appendChild(el)
+    const inner = el.shadowRoot!.querySelector('input')!
+    // 包裹关联不需要 id：连接时即应转发
+    expect(inner.getAttribute('aria-label')).toBe('包裹标签')
+    wrapper.firstChild!.textContent = '包裹标签（改）'
+    await settle()
+    expect(inner.getAttribute('aria-label')).toBe('包裹标签（改）')
+    wrapper.remove()
+  })
+
+  it('不信任 internals.labels 的陈旧快照：for 改指向后立即按 DOM 解析（Firefox live list 延迟回归）', () => {
+    const { label, inner, el, form } = labelledFixture('旧标签')
+    expect(inner.getAttribute('aria-label')).toBe('旧标签')
+    // Firefox 实测：label.for 改指向后同一任务内 internals.labels 仍是旧节点
+    ;(el as unknown as { internals_: unknown }).internals_ = { labels: [label], setFormValue: vi.fn() }
+    label.htmlFor = 'another-field'
+    el.setAttribute('value', 'after-retarget')
+    expect(inner.hasAttribute('aria-label'), '陈旧 internals.labels 不得让已解除关联的旧名称残留').toBe(false)
+    form.remove()
+  })
+
+  it('同文本重复写不抖动：文本不变时只写一次 aria-label（去重）', async () => {
+    const { label, inner } = labelledFixture('稳定名称')
+    const setSpy = vi.spyOn(inner, 'setAttribute')
+    label.appendChild(document.createTextNode(' '))
+    await settle()
+    label.appendChild(document.createTextNode(''))
+    await settle()
+    expect(setSpy.mock.calls.filter(([name]) => name === 'aria-label')).toHaveLength(0)
+    setSpy.mockRestore()
+  })
+
+  it('共享单一 observer：同根多控件只建一个，最后一个断开才释放；重连后恢复观察', async () => {
+    document.body.innerHTML = ''
+    const Original = window.MutationObserver
+    let created = 0
+    let disconnected = 0
+    class SpyObserver extends Original {
+      constructor(callback: MutationCallback) {
+        super(callback)
+        created++
+      }
+      override disconnect(): void {
+        disconnected++
+        super.disconnect()
+      }
+    }
+    vi.stubGlobal('MutationObserver', SpyObserver)
+    try {
+      const a = mount({})
+      const b = mount({})
+      expect(created, '同根多控件共享一个 observer（不按控件重复监听）').toBe(1)
+      a.remove()
+      expect(disconnected, '仍有控件连接时不得释放').toBe(0)
+      b.remove()
+      expect(disconnected, '最后一个控件断开后释放 observer').toBe(1)
+
+      document.body.appendChild(b)
+      expect(created, '重连后重新建立观察').toBe(2)
+      const label = document.createElement('label')
+      b.id = 'reconnect-target'
+      label.htmlFor = 'reconnect-target'
+      label.textContent = '重连标签'
+      document.body.appendChild(label)
+      await settle()
+      expect(b.shadowRoot!.querySelector('input')!.getAttribute('aria-label')).toBe('重连标签')
+      b.remove()
+    } finally {
+      vi.unstubAllGlobals()
+    }
+  })
+
+  it('关联解析异常降级：不抛错且清除自身写入的旧名称（不让异常打断 observer 回调）', async () => {
+    const { label, inner, form } = labelledFixture('异常前名称')
+    expect(inner.getAttribute('aria-label')).toBe('异常前名称')
+    vi.stubGlobal('CSS', {
+      escape: () => {
+        throw new Error('boom')
+      },
+    })
+    try {
+      label.textContent = '异常后名称'
+      await settle()
+      expect(inner.hasAttribute('aria-label'), '解析异常按「无关联」降级，清除旧名称而不是留脏').toBe(false)
+    } finally {
+      vi.unstubAllGlobals()
+      form.remove()
+    }
+  })
+})
+
 describe('OASFormElement 表单级尺寸通道（formSizeCallback）', () => {
   it('回调下发尺寸 → injectValue("size") 读取下发值；自身 size 属性恒优先；null 解除', () => {
     const el = new FixtureInput()

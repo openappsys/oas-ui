@@ -792,6 +792,143 @@ test('form-associated：time-picker 单值/范围提交与 required', async ({ p
   expect(r.reqInvalid, 'required 无选中 checkValidity 为 false').toBe(false)
 })
 
+// 外部 label 动态刷新矩阵：直连表单 / 弹窗 / 表格行内编辑三种承载形态。
+// 背景：label 文本与 for 可被宿主随时改（i18n 切换、条件字段、行列重绑），旧实现只在组件 update 时
+// 复制一次文本——改名后读屏仍读旧名、解除关联后旧名残留。core 统一观察后本用例锁死：文本改 / for 改 /
+// label 增删都即时反映到 shadow 内真实控件的可访问名，label 点击仍聚焦内部控件。
+test('form-associated：外部 label 动态刷新矩阵（直连 / 弹窗 / 表格行内编辑）即时同步可访问名', async ({ page }) => {
+  // ---- 1. 直连表单：文本改 / 增删 / for 解绑 ----
+  await page.goto('/components/input.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#input-form-username')
+  const direct = await page.evaluate(async () => {
+    const tick = () => new Promise((res) => setTimeout(res, 0))
+    const el = document.querySelector('#input-form-username') as HTMLElement & { shadowRoot: ShadowRoot }
+    const label = document.querySelector('label[for="input-form-username"]') as HTMLLabelElement
+    const inner = el.shadowRoot.querySelector('input')!
+    const read = () => inner.getAttribute('aria-label')
+    const initial = read()
+
+    label.textContent = '直连动态标签'
+    await tick()
+    const afterText = read()
+
+    const extra = document.createElement('label')
+    extra.htmlFor = el.id
+    extra.textContent = '（补充）'
+    label.after(extra)
+    await tick()
+    const afterAdd = read()
+
+    label.htmlFor = 'another-field'
+    extra.htmlFor = 'another-field'
+    await tick()
+    const afterUnbind = read()
+
+    label.htmlFor = el.id
+    extra.remove()
+    label.textContent = '直连最终名'
+    await tick()
+    const afterRebind = read()
+
+    label.click()
+    await tick()
+    const focused = el.shadowRoot.activeElement === inner
+
+    label.remove()
+    await tick()
+    const afterRemove = read()
+    return { initial, afterText, afterAdd, afterUnbind, afterRebind, focused, afterRemove }
+  })
+  expect(direct.initial, '直连：初始 label 文本已转发为可访问名').toBeTruthy()
+  expect(direct.afterText, '直连：label 文本变化即时刷新').toBe('直连动态标签')
+  expect(direct.afterAdd, '直连：后加 label 立即并入可访问名').toBe('直连动态标签 （补充）')
+  expect(direct.afterUnbind, '直连：for 解绑后不得残留旧名称').toBeNull()
+  expect(direct.afterRebind, '直连：for 重新指向后恢复（外部 label 优先）').toBe('直连最终名')
+  expect(direct.focused, '直连：点击 label 聚焦 shadow 内真实控件').toBe(true)
+  expect(direct.afterRemove, '直连：label 移除后清理自己写入的名称').toBeNull()
+
+  // ---- 2. 弹窗形态：modal 内输入框，label 文本变化与点击同步 ----
+  await page.goto('/components/modal.html', { waitUntil: 'domcontentloaded' })
+  await page.evaluate(() => document.querySelector('#modal-focus')!.setAttribute('visible', ''))
+  await page.waitForFunction(() => {
+    const el = document.querySelector('#modal-task-name') as HTMLElement | null
+    return !!el && el.getBoundingClientRect().height > 0
+  })
+  await up(page, '#modal-task-name')
+  const modal = await page.evaluate(async () => {
+    const tick = () => new Promise((res) => setTimeout(res, 0))
+    const host = document.querySelector('#modal-focus')!
+    const el = document.querySelector('#modal-task-name') as HTMLElement & { shadowRoot: ShadowRoot }
+    const inner = el.shadowRoot.querySelector('input')!
+    const label = document.createElement('label')
+    label.htmlFor = el.id
+    label.textContent = '弹窗任务名'
+    el.before(label)
+    await tick()
+    const afterAdd = inner.getAttribute('aria-label')
+    label.textContent = '弹窗任务名（已改名）'
+    await tick()
+    const afterText = inner.getAttribute('aria-label')
+    label.click()
+    await tick()
+    const focused = el.shadowRoot.activeElement === inner
+    label.remove()
+    await tick()
+    const afterRemove = inner.getAttribute('aria-label')
+    host.removeAttribute('visible')
+    return { afterAdd, afterText, focused, afterRemove }
+  })
+  expect(modal.afterAdd, '弹窗：后挂 label 立即命名内部控件').toBe('弹窗任务名')
+  expect(modal.afterText, '弹窗：label 文本变化即时刷新').toBe('弹窗任务名（已改名）')
+  expect(modal.focused, '弹窗：点击 label 聚焦内部控件').toBe(true)
+  expect(modal.afterRemove, '弹窗：label 移除后清理').toBeNull()
+
+  // ---- 3. 表格行内编辑：组件编辑器（editComponent=oas-input）在 table shadow 内，
+  //         同根 label 动态刷新且不覆盖表格注入的既有命名 ----
+  await page.goto('/components/table.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#table-edit-component')
+  await page.evaluate(() => {
+    const table = document.querySelector('#table-edit-component') as HTMLElement & { shadowRoot: ShadowRoot }
+    const td = table.shadowRoot.querySelector('td.editable-cell') as HTMLElement
+    td.dispatchEvent(new MouseEvent('dblclick', { bubbles: true, composed: true }))
+  })
+  await page.waitForFunction(() => {
+    const table = document.querySelector('#table-edit-component') as HTMLElement & { shadowRoot: ShadowRoot }
+    return !!table.shadowRoot!.querySelector('oas-input.cell-editor-component')
+  })
+  const result = await page.evaluate(async () => {
+    const tick = () => new Promise((res) => setTimeout(res, 0))
+    const table = document.querySelector('#table-edit-component') as HTMLElement & { shadowRoot: ShadowRoot }
+    const editor = table.shadowRoot!.querySelector('oas-input.cell-editor-component') as HTMLElement & {
+      shadowRoot: ShadowRoot
+    }
+    const inner = editor.shadowRoot.querySelector('input')!
+    const hostName = editor.getAttribute('aria-label')
+    editor.id = 'qa-inline-editor'
+    const label = document.createElement('label')
+    label.htmlFor = 'qa-inline-editor'
+    label.textContent = '行内姓名'
+    editor.before(label)
+    await tick()
+    const afterAdd = inner.getAttribute('aria-label')
+    label.textContent = '行内姓名（已改名）'
+    await tick()
+    const afterText = inner.getAttribute('aria-label')
+    label.click()
+    await tick()
+    const focused = editor.shadowRoot.activeElement === inner
+    label.remove()
+    await tick()
+    const afterRemove = inner.getAttribute('aria-label')
+    return { hostName, afterAdd, afterText, focused, afterRemove }
+  })
+  expect(result.hostName, '表格：既有单元格命名（表格注入的 aria-label）不被动态 label 观察覆盖').toBeTruthy()
+  expect(result.afterAdd, '表格行内编辑：同根 label 立即命名编辑器').toBe('行内姓名')
+  expect(result.afterText, '表格行内编辑：label 文本变化即时刷新').toBe('行内姓名（已改名）')
+  expect(result.focused, '表格行内编辑：点击 label 聚焦编辑器内部控件').toBe(true)
+  expect(result.afterRemove, '表格行内编辑：label 移除后清理').toBeNull()
+})
+
 test('form-associated：upload 文件 FormData 与 label 点击激活文件选择', async ({ page }) => {
   await page.goto('/components/upload.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-upload')

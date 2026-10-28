@@ -74,7 +74,8 @@
   --oas-preset-geekblue-text: #2544db;
   --oas-preset-purple-text: #722ed1;
 
-  /* 语义色 -text：文字承载面达标深色（≥60 双底实测；填充面用本色） */
+  /* 语义色 -text：文字承载面达标档（与预设同一规则：目标底 ≥65 / bg-elevated ≥60 / 锁色相；
+     规则与守卫见 docs/ui-spec.md §1.2、packages/theme/oklab.ts；填充面用本色） */
   --oas-color-success-text: #11813a;
   --oas-color-warning-text: #a75c05;
   --oas-color-danger-text: #d82525;
@@ -218,11 +219,12 @@ html.dark {
   --oas-preset-blue-text: #c2ddff;
   --oas-preset-geekblue-text: #a9c1ff;
   --oas-preset-purple-text: #d3bbf2;
-  /* 语义 -text dark：本色已达标，同值 */
+  /* 语义 -text dark：success/warning/danger 本色已达标，同值；info 原 #22d3ee 在 elevated #3f3f46
+     仅 59.96（<60 硬闸），按 ui-spec §1.2 同一规则保色相提亮一档到 #26d5f0（61.1） */
   --oas-color-success-text: #4ade80;
   --oas-color-warning-text: #fbbf24;
   --oas-color-danger-text: #fbb2b2;
-  --oas-color-info-text: #22d3ee;
+  --oas-color-info-text: #26d5f0;
   /* 差异查看：暗色下的不透明新增/删除底色与行号文字 */
   --oas-color-diff-add-bg: #40524d;
   --oas-color-diff-add-word-bg: #43795b;

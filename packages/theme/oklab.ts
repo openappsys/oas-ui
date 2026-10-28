@@ -283,6 +283,52 @@ export function textBgs(mode: 'light' | 'dark'): readonly string[] {
   return mode === 'light' ? LIGHT_TEXT_BGS : DARK_TEXT_BGS
 }
 
+// ---------- 语义色 `-text`：纳入同一派生/审计规则 ----------
+/**
+ * 语义色 `-text` 名称。success/warning/danger 的本色 token（`--oas-color-<name>`）存在，
+ * 色相锚取本色；info **没有**本色 token（填充面用 `--oas-color-info-text` 自身），
+ * 故以 INFO_TEXT_HUE_ANCHOR 锁色相（见下）。
+ */
+export const SEMANTIC_TEXT_NAMES = ['success', 'warning', 'danger', 'info'] as const
+export type SemanticTextName = (typeof SEMANTIC_TEXT_NAMES)[number]
+
+/**
+ * info 无色板本色 token，取 light/dark 现有 `info-text` 色相（223.1° / 211.5°）的中值作锚：
+ * 两主题各自可漂移 ≤ TEXT_MAX_HUE_DRIFT，且不会出现「只改一侧色相导致双主题不是同一语义色」。
+ */
+export const INFO_TEXT_HUE_ANCHOR = 217.3
+
+export interface SemanticTokens {
+  /** 本色锚（info 缺省：无 `--oas-color-info`） */
+  base: Partial<Record<SemanticTextName, string>>
+  text: Record<SemanticTextName, string>
+}
+
+function parseSemanticBlock(block: string): SemanticTokens {
+  const base: Partial<Record<SemanticTextName, string>> = {}
+  const text = {} as Record<SemanticTextName, string>
+  for (const name of SEMANTIC_TEXT_NAMES) {
+    // 冒号紧跟色名：`--oas-color-success:` 不会匹配 `--oas-color-success-text:`
+    const b = block.match(new RegExp(`--oas-color-${name}:\\s*(#[0-9a-fA-F]{6})\\b`))
+    if (b?.[1]) base[name] = b[1]
+    const t = block.match(new RegExp(`--oas-color-${name}-text:\\s*(#[0-9a-fA-F]{6})\\b`))
+    text[name] = assertHex(t?.[1], `--oas-color-${name}-text`)
+  }
+  return { base, text }
+}
+
+/** 解析 index.css 的 light / dark 两套语义色 `-text`（与预设色板同一审计口径） */
+export function parseSemanticTokens(cssText: string): { light: SemanticTokens; dark: SemanticTokens } {
+  const { light, dark } = splitThemeBlocks(cssText)
+  return { light: parseSemanticBlock(light), dark: parseSemanticBlock(dark) }
+}
+
+/** 语义 `-text` 的色相锚：有本色用本色色相，info 用统一锚点 */
+export function semanticAnchorHue(tokens: SemanticTokens, name: SemanticTextName): number {
+  const base = tokens.base[name]
+  return base ? hexToOklch(base).h : INFO_TEXT_HUE_ANCHOR
+}
+
 /**
  * `-text` 的完整底约束：既有目标底（≥ TEXT_MIN_SCORE）+ bg-elevated（≥ TEXT_ELEVATED_MIN_SCORE）。
  * 同一底色取更严的分值去重（light 的 bg-elevated 即白底，与目标底重合）。

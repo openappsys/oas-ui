@@ -17,6 +17,7 @@ import { dirname, join } from 'node:path'
 import {
   ADJACENT_PRESET_PAIRS,
   PRESET_NAMES,
+  SEMANTIC_TEXT_NAMES,
   TEXT_ELEVATED_MIN_SCORE,
   TEXT_MAX_HUE_DRIFT,
   TEXT_MIN_DISTANCE,
@@ -27,7 +28,11 @@ import {
   okDistance,
   parseElevatedBg,
   parsePresetTokens,
+  parseSemanticTokens,
+  semanticAnchorHue,
+  textBgChecks,
   textBgs,
+  type SemanticTokens,
 } from '../../theme/oklab'
 
 const here = dirname(fileURLToPath(import.meta.url))
@@ -250,6 +255,64 @@ describe('theme 预设 -text 档：相邻易混组 ΔE_OK ≥ 8（gold↔orange 
     // 历史缺陷的确低于下限（该组对若被"改回去"必然 RED）
     expect(okDistance(hexToOklch('#357f11'), hexToOklch('#5a7a0a'))).toBeLessThan(TEXT_MIN_DISTANCE)
     expect(okDistance(hexToOklch('#b3c4fb'), hexToOklch('#b8d6ff'))).toBeLessThan(TEXT_MIN_DISTANCE)
+  })
+})
+
+// ---------- theme 语义 -text 档：并入与预设同一套派生规则（不再靠「≥60 双底口径」口头约定） ----------
+// 语义色 -text 的 info 曾长期卡在 bg-elevated 硬闸边缘（#22d3ee 在 dark #3f3f46 上 59.96 < 60，
+// 文档记为存量欠账 57.9）。这里把 success/warning/danger/info 全部纳入：目标底 ≥65、bg-elevated ≥60、
+// 锁色相 ≤12°。info 无色板本色，锚点取双主题现有色相中值（INFO_TEXT_HUE_ANCHOR）。
+const SEMANTIC = parseSemanticTokens(THEME_CSS)
+
+/** 语义 -text 违规明细（空数组 = 通过） */
+function semanticViolations(mode: ThemeMode, tokens: SemanticTokens = SEMANTIC[mode]): string[] {
+  const checks = textBgChecks(mode, ELEVATED[mode])
+  const out: string[] = []
+  for (const name of SEMANTIC_TEXT_NAMES) {
+    const hex = tokens.text[name]
+    for (const c of checks) {
+      const score = contrastScore(hex, c.bg)
+      if (score >= c.min) continue
+      const label = c.min === TEXT_ELEVATED_MIN_SCORE && c.bg === ELEVATED[mode] ? `bg-elevated(${c.bg})` : c.bg
+      out.push(`${mode} ${name}-text ${hex}：${label} 感知分 ${score.toFixed(1)} < ${c.min}`)
+    }
+    const drift = hueDiff(semanticAnchorHue(tokens, name), hexToOklch(hex).h)
+    if (drift > TEXT_MAX_HUE_DRIFT) {
+      out.push(`${mode} ${name}-text ${hex}：色相漂移 ${drift.toFixed(1)}° > ${TEXT_MAX_HUE_DRIFT}°`)
+    }
+  }
+  return out
+}
+
+function withSemantic(
+  mode: ThemeMode,
+  overrides: Partial<Record<(typeof SEMANTIC_TEXT_NAMES)[number], string>>,
+): SemanticTokens {
+  return { base: SEMANTIC[mode].base, text: { ...SEMANTIC[mode].text, ...overrides } }
+}
+
+describe('theme 语义 -text 档：与预设同一派生规则（双底 ≥65 / bg-elevated ≥60 / 锁色相 ≤12°）', () => {
+  for (const mode of THEME_MODES) {
+    it(`${mode}：全部语义 -text 目标底与 bg-elevated 达标`, () => {
+      expect(
+        semanticViolations(mode),
+        '语义 -text 不达标（文字承载面不可读）：按 ui-spec §1.2 规则重新取亮度档，禁止手调绕过',
+      ).toEqual([])
+    })
+  }
+
+  it('守卫自身有效：注入低对比语义值被捕获、当前值不误报', () => {
+    expect(semanticViolations('light', withSemantic('light', { warning: '#ffd666' }))).not.toEqual([])
+    expect(semanticViolations('light')).toEqual([])
+  })
+
+  it('bg-elevated 约束独立：历史 info-text #22d3ee 双底达标、仅 elevated 底不达标（证明非重复覆盖）', () => {
+    const debt = semanticViolations('dark', withSemantic('dark', { info: '#22d3ee' }))
+    expect(debt.some((v) => v.startsWith('dark info-text') && v.includes('bg-elevated'))).toBe(true)
+    expect(
+      debt.some((v) => v.startsWith('dark info-text') && v.includes('色相漂移')),
+      '该历史值仍满足锁色相',
+    ).toBe(false)
   })
 })
 

@@ -50,10 +50,11 @@ test('stepper：每个 tab 的 aria-controls 指向真实存在的 panel id（�
   expect(r.missing, 'aria-controls 指向的 panel id 必须真实存在（axe 静态分析够不到，由此断言兜底）').toEqual([])
 })
 
-test('stepper：demo 全量 aria-* 取值合法性（页级豁免 aria-valid-attr-value 的等价强度兜底）', async ({ page }) => {
-  // 背景：a11y.spec 对 stepper.html 整规则豁免 aria-valid-attr-value（axe 的 disableRules
-  // 只能整规则禁）——该页其它「ARIA 取值非法」也会被放行。本断言遍历 demo 区全部元素
-  // （含 shadow root）逐个 aria-* 校验取值，补上等价强度的兜底；豁免设计取舍见 a11y.spec 头注。
+test('stepper：demo 全量 aria-* 取值合法性（节点级豁免的等价强度兜底）', async ({ page }) => {
+  // 背景：a11y.spec 对 stepper.html 的 aria-valid-attr-value 采用「节点级豁免」——规则保持启用，
+  // 只剔除已证明为跨 shadow 误报的 tab aria-controls 节点（见 a11y.spec PAGE_NODE_EXEMPTIONS）。
+  // 本断言仍遍历 demo 区全部元素（含 shadow root）逐个 aria-* 校验取值，作为等价强度兜底：
+  // 即使 axe 的节点筛选逻辑未来漂移，取值合法性/引用存在性也由这里独立看守。
   await page.goto('/components/stepper.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-stepper')
   const r = await page.evaluate(() => {
