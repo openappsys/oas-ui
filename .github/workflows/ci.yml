@@ -22,6 +22,8 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm format:check
       - run: pnpm skill:check
+      # 发布门禁自测：release-gate 判定矩阵 + release-check 严格/本地模式 + release.yml 静态断言
+      - run: pnpm release:check:test
       - run: pnpm test
       # 断言质量基线：新增无 expect / 无条件 skip / 固定等待膨胀会红灯
       - run: pnpm qa:audit:check

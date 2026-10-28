@@ -15,6 +15,7 @@
 | **table/core 迁移准备** | 编辑能力/晚加入测试改走默认入口 `@oas-ui/ui/data/table`；`table/core` 仍是 deprecated 别名，按 v2.6.5 计划移除 | ✅ 已完成（未发布） |
 | **sidebar 嵌套头像行首槽位** | 带头像的嵌套子项隐藏空图标占位，避免重复间距；普通无图标子项保留 18px 缩进占位 | ✅ 已完成（未发布） |
 | **SSR locale 请求局部化** | 显式 `opts.locale` 只影响本次调用及嵌套子树：本次调用独立临时 config-provider 就近注入同步渲染，输出不含 provider 包装，不改全局 locale、零广播，`try/finally` 清理；未传 locale 保持旧行为（调用时全局 locale）。冷/热并发混合多语言逐请求正确，无全局 mutex | ✅ 已完成（未发布） |
+| **Release 同 SHA 质量门禁** | release workflow 拆为 verify-quality → publish：verify 只接受同 SHA、同仓库完整 CI（ci.yml）completed+success（pending/failure/空结果/非 CI workflow 一律 fail closed）；publish 固定 checkout 验证 SHA + 完整历史，先跑 `release:check` 严格模式（tag 必须解析到 HEAD、HEAD==GITHUB_SHA、非 semver 拒绝）再 build/api:check/发布；权限各自最小（verify 不给 publish 额外权限），本地「tag≠HEAD 仅警告」兼容 | ✅ 已完成（未发布） |
 
 ## v2.6.4（已发布）
 

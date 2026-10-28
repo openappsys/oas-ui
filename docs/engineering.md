@@ -96,13 +96,15 @@
 1. 全绿：test / typecheck / build / e2e
 2. PRD 版本段更新（含测试数）+ ROADMAP 状态
 3. CHANGELOG 记录（conventional commits 生成）
-4. 版本号同步各包 `package.json`，**打 tag 前必跑 `pnpm release:check <版本号>`**（版本一致性硬校验：6 发布包版本 == tag 版本 + CHANGELOG 段齐全 + tag 指向提交版本一致；pre-push 钩子对推 v* tag 重复校验拦截），打 tag，`git push --tags`（**CI 通道**：tag 触发自动 build + publish；**本地通道**：tag 仅作版本标记，发布走下方 `pnpm release`）
+4. 版本号同步各包 `package.json`，**打 tag 前必跑 `pnpm release:check <版本号>`**（版本一致性硬校验：6 发布包版本 == tag 版本 + CHANGELOG 段齐全 + tag 指向提交版本一致；pre-push 钩子对推 v* tag 重复校验拦截），打 tag，`git push --tags`（**CI 通道**：tag 触发自动 build + publish，另有两道远端同 SHA 门禁，见下方「两种发布通道 → CI」；**本地通道**：tag 仅作版本标记，发布走下方 `pnpm release`）
 
 ### 两种发布通道
 
 **CI（首选，OIDC Trusted Publishing，免 token）**：
 
-- 推 `v*` tag → `.github/workflows/release.yml` 自动 build + api:check + `pnpm -r publish`
+- 推 `v*` tag → `.github/workflows/release.yml` 自动 build + api:check + publish
+- **同 SHA 质量门禁（verify-quality → publish 两 job 串行）**：`verify-quality` 先查 GitHub API——只接受 `github.sha` 对应、**同仓库**、`ci.yml` 完整 run `completed + success`；其他 SHA / pending / queued / failure / 空结果 / 非 CI workflow 一律 fail closed（无等待、无重试、无跳过通道；判定矩阵在 `scripts/release-gate.mjs`，CLI 入口 `node scripts/release-check.mjs --verify-ci`）。`publish` 依赖 verify，checkout **固定在验证通过的 `github.sha`**（非 tag ref）且 `fetch-depth: 0`，发布前置 `pnpm release:check <去掉 v 的版本> --require-tag-head`（CI 严格模式：tag v<版本> 必须已存在且解析——lightweight/annotated 均可——到 HEAD；HEAD 还须等于 `GITHUB_SHA`（checkout 漂移防护）；任何不一致直接失败），再 build → api:check → publish-skip-existing（幂等保留）→ GitHub Release；非 semver tag 直接失败。**权限最小化**：顶层 `permissions: {}`，verify 仅 `contents: read` + `actions: read`，publish 仅 `contents: write` + `id-token: write`（verify 不给 publish 任何额外权限）
+- **门禁自测**：`pnpm release:check:test`（node:test，fixture git 仓库跑真实脚本）覆盖 CI run 判定矩阵、两种 tag 类型、tag 验证后移动阻断、HEAD≠GITHUB_SHA 阻断、版本/CHANGELOG/非 semver 阻断，并对 release.yml 做静态断言（needs 依赖、固定验证 SHA + 完整 checkout、严格 release:check 顺序、最小权限）；已接入 CI test job 防漂移
 - 硬性要求（npm 官方）：**仓库托管在 GitHub**（GitHub-hosted runner）；Node ≥ 22.18 + npm CLI ≥ 11.5.1（workflow 已升级）；各包 `package.json` 的 `repository.url` 必须与 GitHub 仓库精确一致。
 - ⚠️ **适用范围**：本通道仅适用于**仓库托管在 GitHub** 的场景。若源码托管在**非 GitHub 的私有 / 内网仓库**（如自托管 Gitea），此通道不适用（无 GitHub-hosted runner、无 GitHub Actions），应走下方「**本地**」通道发布。
 - 一次性配置（npm 网页操作）：每个可发布包（core/i18n/icons/ssr/theme/ui）→ Settings → Trusted Publisher → GitHub Actions → 填 GitHub org/user + 仓库名 + `release.yml`；**全新包首版可能需先手动发布一次**才能配置

@@ -53,6 +53,29 @@
 - e2e：`packages/ssr/ssr-dsd.spec.ts` 新增并发混合多语言静态快照用例（16 请求逐 marker 核对禁 JS 可见语言与嵌套关闭按钮 aria-label，console/pageerror 零告警）。
 - 文档：`docs/ssr.md` + 中英 guide locale 语义段同步；`ssr:check` / `llms:check` / `api:check` / `typecheck` / `build` / 全量 `test` / 全量 e2e 通过。
 
+## 未发布：Release 同 SHA 质量门禁 ✅
+
+### 功能定义
+
+发布链架构决策：`.github/workflows/release.yml` 从单 publish job 拆为 **verify-quality → publish** 两 job——发布前必须证明「tag 指向的提交在**同一仓库**有**完整 CI（ci.yml）completed + success** 记录」，且发布内容固定在验证通过的那个提交上；本地 `release:check` 的「tag ≠ HEAD 仅警告」语义保持兼容。
+
+### 详细需求
+
+- **verify-quality（fail closed）**：只接受同仓库、`github.sha` 对应、`ci.yml` 完整 run `completed + success`；其他 SHA / pending / queued / failure / cancelled / 空结果 / 非 CI workflow 一律不放行（无等待、无重试、无跳过通道）；判定矩阵为纯函数（`scripts/release-gate.mjs`），CLI 入口 `node scripts/release-check.mjs --verify-ci`。
+- **publish（依赖 verify）**：checkout 固定 `github.sha`（非 tag ref）+ `fetch-depth: 0`；发布前置 `pnpm release:check <去掉 v 的版本> --require-tag-head`（CI 严格模式）：tag v<版本> 必须存在且解析（lightweight/annotated 均可）到 HEAD，HEAD 必须等于 GITHUB_SHA（checkout 漂移防护），任何不一致直接失败；非 semver tag 直接失败。严格校验先于 build / api:check / OIDC 发布执行；`publish-skip-existing` 幂等保留。
+- **权限最小化**：顶层 `permissions: {}`；verify-quality 仅 `contents: read` + `actions: read`；publish 仅 `contents: write`（GitHub Release）+ `id-token: write`（OIDC Trusted Publishing）——verify 不给 publish 任何额外权限。
+- **本地兼容**：本地（打 tag 前 / 复核）模式保持原语义——版本/CHANGELOG 硬校验不变，tag 存在但不指向 HEAD 仅警告并列出 gap 提交清单，不拦截；无 tag 时本地流程照常可用。
+
+### 非目标
+
+不重复全量 e2e（发布质量由 CI workflow 的绿色结论覆盖）；不提供任何跳过门禁的后门（无 SKIP / force 类开关）；不改变 npm 发布方式（仍 OIDC Trusted Publishing）与 `publish-skip-existing` 幂等语义。
+
+### 验收标准
+
+- `scripts/release-check.test.mjs`（node:test，fixture git 仓库 + 子进程跑真实脚本）覆盖：同 SHA 绿放行、其他 SHA / pending / failure / cancelled / 空结果 / 非 CI workflow / 异仓库 head 阻断、lightweight/annotated 两种 tag 解引用、tag 验证后移动阻断（本地仅警告）、HEAD≠GITHUB_SHA 阻断、tag 缺失阻断、版本/CHANGELOG 不一致阻断、非 semver 拒绝；并对 release.yml 做静态断言（needs 依赖、固定验证 SHA + 完整 checkout、严格 release:check 顺序、最小权限）。
+- `pnpm release:check:test` 接入 CI test job，防 workflow/脚本漂移。
+- 工程文档（docs/engineering.md §5）同步两 job 时序与权限模型。
+
 ## 未发布：表格 Pro / JSON 查看器 / Sidebar 维护 ✅
 
 ### 功能定义
