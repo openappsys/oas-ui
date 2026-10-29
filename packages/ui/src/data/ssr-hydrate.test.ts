@@ -323,7 +323,7 @@ describe('data 展示组件 DSD 真水合批次 3', () => {
       // 指纹 meta 已移除
       expect(el.shadowRoot!.querySelector('meta[data-oas-ssr]')).toBeNull()
       // 关键结构仍在
-      expect(el.shadowRoot!.querySelector(f.probe)).not.toBeNull()
+      expect(el.shadowRoot!.querySelectorAll(f.probe).length).toBeGreaterThanOrEqual(1)
       // 快照确实含关键结构（保证用例在测真水合而非空快照；纯 slot 骨架组件无内联样式）
       if (f.hasStyle !== false) expect(snap).toContain('<style>')
       expect(snap).not.toContain('data-oas-ssr')
@@ -336,7 +336,7 @@ describe('data 展示组件 DSD 真水合批次 3', () => {
       f.setup?.(el)
       document.body.appendChild(el)
       // render 重建出完整结构，指纹被重建清掉
-      expect(el.shadowRoot!.querySelector(f.probe)).not.toBeNull()
+      expect(el.shadowRoot!.querySelectorAll(f.probe).length).toBeGreaterThanOrEqual(1)
       expect(el.shadowRoot!.querySelector('meta[data-oas-ssr]')).toBeNull()
     })
   }
@@ -356,9 +356,9 @@ describe('data 展示组件 DSD 真水合批次 3', () => {
     expect(copies.length, '水合后克隆份不翻倍（幂等重建）').toBe(1)
     expect(copies[0]!.textContent).toContain('滚动内容')
     expect(
-      mq.shadowRoot!.querySelector('.group.clone slot[name="oas-marquee-copy"]'),
+      mq.shadowRoot!.querySelectorAll('.group.clone slot[name="oas-marquee-copy"]').length,
       '克隆组内是具名 slot',
-    ).not.toBeNull()
+    ).toBe(1)
   })
 
   it('交互可触发：水合后 collapse 点击面板切换、carousel 点击箭头切换、image 点击打开预览', () => {
@@ -417,7 +417,7 @@ describe('data 展示组件 DSD 真水合批次 3', () => {
       { label: '二月', value: 200 },
     ]
     document.body.appendChild(chart)
-    expect(chart.shadowRoot!.querySelectorAll('svg path').length).toBeGreaterThan(0)
+    expect(chart.shadowRoot!.querySelectorAll('svg path').length).toBeGreaterThanOrEqual(1)
 
     // oas-virtual-list：property items 优先于 items 属性
     const vl = new OASVirtualList()
@@ -475,7 +475,7 @@ describe('SSR 白名单收口：image-group / swipe-cell 真水合契约', () =>
     expect(JSON.parse(inner.getAttribute('preview-src-list') ?? '[]')).toEqual(['/a.png', '/b.png'])
 
     const child = el.querySelectorAll('oas-image')[0]!
-    expect(child.shadowRoot!.querySelector('style')).not.toBeNull()
+    expect(child.shadowRoot!.querySelectorAll('style').length).toBe(1)
     const childStyle = child.shadowRoot!.querySelector('style')
     el.setAttribute('infinite', '')
     expect(el.querySelectorAll('oas-image')[0]).toBe(child)
@@ -527,9 +527,9 @@ describe('SSR 白名单收口：image-group / swipe-cell 真水合契约', () =>
     setup(el)
     document.body.appendChild(el)
 
-    expect(el.shadowRoot!.querySelector('[part="actions"]'), '回退后应有 actions 容器').not.toBeNull()
-    expect(el.shadowRoot!.querySelector('[part="actions-start"]')).not.toBeNull()
-    expect(el.shadowRoot!.querySelector('[part="root"]')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('[part="actions"]').length, '回退后应有 actions 容器').toBe(1)
+    expect(el.shadowRoot!.querySelectorAll('[part="actions-start"]').length).toBe(1)
+    expect(el.shadowRoot!.querySelectorAll('[part="root"]').length).toBe(1)
     expect(el.shadowRoot!.querySelector('meta[data-oas-ssr]')).toBeNull()
 
     const actions = el.shadowRoot!.querySelector<HTMLElement>('[part="actions"]')!

@@ -91,7 +91,7 @@ describe('conversation 组件 DSD 真水合', () => {
 
       expect(el.shadowRoot!.querySelector('style')).toBe(styleRef)
       expect(el.shadowRoot!.querySelector('meta[data-oas-ssr]')).toBeNull()
-      expect(el.shadowRoot!.querySelector(f.probe)).not.toBeNull()
+      expect(el.shadowRoot!.querySelectorAll(f.probe).length).toBeGreaterThanOrEqual(1)
       expect(snap).toContain('<style>')
       expect(snap).not.toContain('data-oas-ssr')
     })
@@ -102,7 +102,7 @@ describe('conversation 组件 DSD 真水合', () => {
       el.shadowRoot!.innerHTML = `<meta data-oas-ssr="${tag}" data-oas-ssr-v="1"><span>broken</span>`
       f.setup(el)
       document.body.appendChild(el)
-      expect(el.shadowRoot!.querySelector(f.probe)).not.toBeNull()
+      expect(el.shadowRoot!.querySelectorAll(f.probe).length).toBeGreaterThanOrEqual(1)
       expect(el.shadowRoot!.querySelector('meta[data-oas-ssr]')).toBeNull()
     })
   }
@@ -176,7 +176,7 @@ describe('conversation 组件 DSD 真水合', () => {
       '<meta data-oas-ssr="oas-tool-call" data-oas-ssr-v="1"><style></style><div part="tool"><button part="head" type="button"></button></div>'
     document.body.appendChild(el)
 
-    expect(el.shadowRoot!.querySelector('[part="body"]'), '回退后应有 body').not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('[part="body"]').length, '回退后应有 body').toBe(1)
     expect(el.shadowRoot!.querySelectorAll('.section').length).toBe(2)
     expect(el.shadowRoot!.querySelector('[part="args"]')!.textContent).toContain('scheduler')
     expect(el.shadowRoot!.querySelector('[part="result"]')!.textContent).toContain('scheduler')

@@ -318,7 +318,7 @@ describe('导航布局组件 DSD 真水合批次 4', () => {
       // 指纹 meta 已移除
       expect(el.shadowRoot!.querySelector('meta[data-oas-ssr]')).toBeNull()
       // 关键结构仍在
-      expect(el.shadowRoot!.querySelector(f.probe)).not.toBeNull()
+      expect(el.shadowRoot!.querySelectorAll(f.probe).length).toBeGreaterThanOrEqual(1)
       // 快照确实含关键结构（保证用例在测真水合而非空快照）
       if (f.hasStyle !== false) expect(snap).toContain('<style>')
       expect(snap).not.toContain('data-oas-ssr')
@@ -331,7 +331,7 @@ describe('导航布局组件 DSD 真水合批次 4', () => {
       f.setup?.(el)
       document.body.appendChild(el)
       // render 重建出完整结构，指纹被重建清掉
-      expect(el.shadowRoot!.querySelector(f.probe)).not.toBeNull()
+      expect(el.shadowRoot!.querySelectorAll(f.probe).length).toBeGreaterThanOrEqual(1)
       expect(el.shadowRoot!.querySelector('meta[data-oas-ssr]')).toBeNull()
     })
   }

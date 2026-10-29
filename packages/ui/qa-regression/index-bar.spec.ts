@@ -153,7 +153,7 @@ test('index-bar 侧栏拖拽：按下经过字母即跳转分节', async ({ page
   for (let i = 1; i <= 5; i++) {
     const b = (await letters.nth(i).boundingBox())!
     await page.mouse.move(b.x + b.width / 2, b.y + b.height / 2)
-    await page.waitForTimeout(60)
+    await page.evaluate(() => new Promise<void>((r) => requestAnimationFrame(() => requestAnimationFrame(() => r()))))
   }
   await page.mouse.up()
 

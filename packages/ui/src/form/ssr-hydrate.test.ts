@@ -331,7 +331,7 @@ describe('form 组件 DSD 真水合批次 1', () => {
       // 指纹 meta 已移除
       expect(el.shadowRoot!.querySelector('meta[data-oas-ssr]')).toBeNull()
       // 关键结构仍在
-      expect(el.shadowRoot!.querySelector(f.probe)).not.toBeNull()
+      expect(el.shadowRoot!.querySelectorAll(f.probe).length).toBeGreaterThanOrEqual(1)
       // 快照确实含 style 与关键结构（保证用例在测真水合而非空快照）
       expect(snap).toContain('<style>')
       expect(snap).not.toContain('data-oas-ssr')
@@ -344,7 +344,7 @@ describe('form 组件 DSD 真水合批次 1', () => {
       f.setup?.(el)
       document.body.appendChild(el)
       // render 重建出完整结构，指纹被重建清掉
-      expect(el.shadowRoot!.querySelector(f.probe)).not.toBeNull()
+      expect(el.shadowRoot!.querySelectorAll(f.probe).length).toBeGreaterThanOrEqual(1)
       expect(el.shadowRoot!.querySelector('meta[data-oas-ssr]')).toBeNull()
     })
   }
@@ -479,7 +479,7 @@ describe('SSR 白名单收口：swatch / picker 真水合契约', () => {
     document.body.appendChild(el)
 
     const button = el.shadowRoot!.querySelector<HTMLButtonElement>('button[part="swatch"]')
-    expect(button, '回退后应为真实 button 骨架').not.toBeNull()
+    expect(button?.tagName, '回退后应为真实 button 骨架').toBe('BUTTON')
     expect(el.shadowRoot!.querySelector('meta[data-oas-ssr]')).toBeNull()
     // 关键属性同步只在 bind 成功后才成立
     expect(button!.getAttribute('aria-pressed')).toBe('true')

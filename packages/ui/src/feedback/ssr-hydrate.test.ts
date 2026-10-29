@@ -160,7 +160,7 @@ describe('feedback 组件 DSD 真水合批次 2', () => {
       // 指纹 meta 已移除
       expect(el.shadowRoot!.querySelector('meta[data-oas-ssr]')).toBeNull()
       // 关键结构仍在
-      expect(el.shadowRoot!.querySelector(f.probe)).not.toBeNull()
+      expect(el.shadowRoot!.querySelectorAll(f.probe).length).toBeGreaterThanOrEqual(1)
       // 快照确实含 style 与关键结构（保证用例在测真水合而非空快照）
       expect(snap).toContain('<style>')
       expect(snap).not.toContain('data-oas-ssr')
@@ -173,7 +173,7 @@ describe('feedback 组件 DSD 真水合批次 2', () => {
       f.setup?.(el)
       document.body.appendChild(el)
       // render 重建出完整结构，指纹被重建清掉
-      expect(el.shadowRoot!.querySelector(f.probe)).not.toBeNull()
+      expect(el.shadowRoot!.querySelectorAll(f.probe).length).toBeGreaterThanOrEqual(1)
       expect(el.shadowRoot!.querySelector('meta[data-oas-ssr]')).toBeNull()
     })
   }
@@ -338,14 +338,14 @@ describe('SSR 白名单收口：pull-refresh / notice-bar 真水合契约', () =
       el.shadowRoot!.innerHTML = `<meta data-oas-ssr="oas-notice-bar"${attr}>${snap}`
       setup?.(el)
       const snapStyle = el.shadowRoot!.querySelector('style')
-      expect(snapStyle, '快照应含 style（下方引用比对的前提）').not.toBeNull()
+      expect(snapStyle?.tagName, '快照应含 style（下方引用比对的前提）').toBe('STYLE')
       document.body.appendChild(el)
 
       // 回退 render：shadow 被整体重建（style 不是快照里的同一 DOM 对象），meta 清掉
       expect(el.shadowRoot!.querySelector('style'), `版本 ${version} 应回退 render`).not.toBe(snapStyle)
       expect(el.shadowRoot!.querySelector('meta[data-oas-ssr]'), `版本 ${version} 应回退`).toBeNull()
       expect(el.shadowRoot!.querySelectorAll('[part="action"]').length).toBe(2)
-      expect(el.shadowRoot!.querySelector('oas-marquee')).not.toBeNull()
+      expect(el.shadowRoot!.querySelectorAll('oas-marquee').length).toBe(1)
       let close = 0
       el.addEventListener('oas-close', () => close++)
       el.shadowRoot!.querySelector<HTMLButtonElement>('[part="close"]')!.click()
@@ -364,9 +364,9 @@ describe('SSR 白名单收口：pull-refresh / notice-bar 真水合契约', () =
       '<meta data-oas-ssr="oas-notice-bar" data-oas-ssr-v="1"><style></style><div part="bar"></div>'
     document.body.appendChild(el)
 
-    expect(el.shadowRoot!.querySelector('[part="content"]'), '回退后应有 content 容器').not.toBeNull()
-    expect(el.shadowRoot!.querySelector('[part="carousel"]')).not.toBeNull()
-    expect(el.shadowRoot!.querySelector('oas-marquee')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('[part="content"]').length, '回退后应有 content 容器').toBe(1)
+    expect(el.shadowRoot!.querySelectorAll('[part="carousel"]').length).toBe(1)
+    expect(el.shadowRoot!.querySelectorAll('oas-marquee').length).toBe(1)
     expect(el.shadowRoot!.querySelectorAll('[part="action"]').length).toBe(2)
     expect(el.shadowRoot!.querySelector('.item-text')!.textContent).toBe('系统维护通知')
     let close = 0
@@ -382,10 +382,10 @@ describe('SSR 白名单收口：pull-refresh / notice-bar 真水合契约', () =
       '<meta data-oas-ssr="oas-pull-refresh" data-oas-ssr-v="1"><style></style><div part="root"></div>'
     document.body.appendChild(el)
 
-    expect(el.shadowRoot!.querySelector('[part="track"]')).not.toBeNull()
-    expect(el.shadowRoot!.querySelector('[part="indicator"]')).not.toBeNull()
-    expect(el.shadowRoot!.querySelector('[part="content"]')).not.toBeNull()
-    expect(el.shadowRoot!.querySelector('[part="label"]')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('[part="track"]').length).toBe(1)
+    expect(el.shadowRoot!.querySelectorAll('[part="indicator"]').length).toBe(1)
+    expect(el.shadowRoot!.querySelectorAll('[part="content"]').length).toBe(1)
+    expect(el.shadowRoot!.querySelectorAll('[part="label"]').length).toBe(1)
 
     const root = el.shadowRoot!.querySelector<HTMLElement>('[part="root"]')!
     const events: unknown[] = []
