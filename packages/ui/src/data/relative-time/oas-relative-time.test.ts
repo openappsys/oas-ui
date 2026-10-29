@@ -372,18 +372,21 @@ describe('OASRelativeTime SSR / 水合', () => {
     el.shadowRoot!.innerHTML = '<meta data-oas-ssr="oas-relative-time" data-oas-ssr-v="1"><span>broken</span>'
     el.setAttribute('value', String(NOW - 3 * MINUTE))
     document.body.appendChild(el)
-    expect(el.shadowRoot!.querySelector('[part="time"]')).not.toBeNull()
+    expect(el.shadowRoot!.querySelector('[part="time"]')?.tagName).toBe('TIME')
     expect(el.shadowRoot!.querySelector('meta[data-oas-ssr]')).toBeNull()
     expect(text(el)).toBe('3分钟前')
   })
 
-  it('SSR 渲染路径（template/render/hydrate）不引用 document / window / globalThis', () => {
+  it('SSR 渲染路径（template/render/hydrate/renderTime）不引用 document / window / globalThis', () => {
     const src = readFileSync(join(import.meta.dirname, 'oas-relative-time.ts'), 'utf8')
     const start = src.indexOf('private template(')
-    const end = src.indexOf('protected override update(')
+    // 切片覆盖到 schedule 之前：含 template / render / hydrate / onReconnect / bind / update / renderTime
+    const end = src.indexOf('private schedule(')
     expect(start).toBeGreaterThan(-1)
     expect(end).toBeGreaterThan(start)
     const renderPath = src.slice(start, end)
+    // 守卫切片必须真的含 renderTime，否则「SSR 渲染路径」名不副实
+    expect(renderPath).toContain('private renderTime(')
     expect(renderPath).not.toMatch(/\bdocument\b|\bwindow\b|\bglobalThis\b|localStorage|matchMedia/)
   })
 

@@ -278,9 +278,14 @@ export class InfiniteScrollController {
       this.bind()
     } else {
       this.root = nextRoot
-      this.content = this.resolveContent(nextRoot, nextViewport)
     }
     this.attached = true
+    if (!switching) {
+      // 同一 viewport 重挂：content getter 仍可能指向宿主替换的新容器。
+      // 直接赋值会让 refreshContent 因「引用未变」提前返回、旧容器的监听/观察残留，
+      // 这里统一走 refreshContent 重绑内容侧 load/error、ResizeObserver 与 MutationObserver。
+      this.refreshContent()
+    }
     if (firstAttach) {
       this.userScrolled = false
       if (this.options.reverse) {
@@ -294,7 +299,14 @@ export class InfiniteScrollController {
     return true
   }
 
-  /** 解绑滚动根并中止在途请求；保留 complete/error 状态（可重新 attach） */
+  /**
+   * 解绑滚动根并中止在途请求；保留 complete/error 状态（可重新 attach）。
+   *
+   * 语义注记：`top` 未补偿封锁（blocked）**不跨 detach 保持**——detach 是一次环境重置
+   * （视口/内容/锚点/预期 scrollTop 全部清空），若保留封锁，重挂后停在顶部会一直无法
+   * 自动续载，只能靠离开边缘或显式 `load()` 恢复。重挂后仍由 `armed=false` 阻止立刻发起
+   * 请求，封锁只在本次加载周期内生效。
+   */
   detach(): void {
     if (this.disposed || this.detaching) return
     // 先拆环境再 abort/emitState：onStateChange(idle) 内宿主调 update/attach 时
@@ -312,6 +324,8 @@ export class InfiniteScrollController {
       for (const edge of EDGE_ORDER) {
         const rt = this.edges[edge]
         this.abortEdge(edge)
+        // blocked 属于「本次加载周期内同几何位置的防循环」，不跨 detach 保持（见 JSDoc）
+        rt.blocked = false
         if (rt.status === 'loading') {
           rt.status = 'idle'
           // 被 detach 中止的加载不算「同一位置已请求过」：重新 attach 后必须能再次自动加载

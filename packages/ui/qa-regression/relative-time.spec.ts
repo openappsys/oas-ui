@@ -36,7 +36,11 @@ test('relative-time：真实页面相对文案 / datetime / 自动刷新 / 空�
   // property 通道（Date）：脚本注入后生效
   const dateProp = await readTime(page, '#relative-time-date')
   expect(dateProp.text).toContain('5分钟前')
-  expect(dateProp.datetime).not.toBeNull()
+  // datetime 是动态值（demo 注入 Date.now()-5min），断言格式 + 与期望时刻的偏差，而不是只判非空
+  expect(dateProp.datetime, 'datetime 应为 UTC ISO 8601').toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/)
+  const dateMs = Date.parse(dateProp.datetime!)
+  expect(Number.isNaN(dateMs), `datetime 应可解析：${dateProp.datetime}`).toBe(false)
+  expect(Math.abs(dateMs - (Date.now() - 5 * 60 * 1000)), 'datetime 应为注入的 5 分钟前').toBeLessThan(90_000)
 
   // 非法值：安全空态，不显示 raw key / NaN
   const invalid = await readTime(page, 'oas-relative-time[value="not-a-date"]')
@@ -53,9 +57,9 @@ test('relative-time：真实页面相对文案 / datetime / 自动刷新 / 空�
     )
   await expect.poll(autoText, { message: '等待 demo 注入 value 后渲染秒级文案' }).toMatch(/秒/)
   const first = await autoText()
-  await page.waitForTimeout(1300)
+  // 轮询等文案变化，替代固定 1300ms 等待：秒级节流最多 1s，留足余量但不写死睡眠
+  await expect.poll(autoText, { message: 'auto-refresh 应逐秒刷新', timeout: 5_000 }).not.toBe(first)
   const second = await autoText()
-  expect(second, 'auto-refresh 应逐秒刷新').not.toBe(first)
   expect(second).toMatch(/秒/)
 
   // dark：相对时间文字跟随 --oas-color-text-secondary 反转且仍可读
@@ -67,7 +71,8 @@ test('relative-time：真实页面相对文案 / datetime / 自动刷新 / 空�
     })
   const lightColor = await color()
   await page.evaluate(() => document.documentElement.classList.add('dark'))
-  await page.waitForTimeout(300)
+  // 轮询等 computed color 真正变化（代替固定 300ms 等待）
+  await expect.poll(color, { message: 'dark 下颜色应随 token 反转', timeout: 3_000 }).not.toBe(lightColor)
   const darkColor = await color()
   expect(lightColor).not.toBe('')
   expect(darkColor, 'dark 下颜色应随 token 反转').not.toBe(lightColor)

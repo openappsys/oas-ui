@@ -139,7 +139,7 @@ Combined with `before-upload`, the hook runs first (validation/transform) and th
 
 ## File Size Limit (max-size)
 
-`max-size` accepts bytes or a unit form (`512KB` / `2MB` / `1GB`); IEC aliases (`2KiB` / `1MiB` / `1GiB` / `2TB`) are accepted too and all units are parsed in base 1024. Oversized files are rejected with `oas-exceed-limit` (`detail.type === 'size'`, including the `maxSize` in bytes). A non-empty but unparsable value (e.g. `2ZB`) means "unlimited" and emits a one-time `devWarn` in development (never silently ignored).
+`max-size` accepts bytes or a unit form (`512KB` / `2MB` / `1GB`); it also accepts the IEC forms `KiB` / `MiB` / `GiB` / `TiB` / `PiB` / `EiB` plus `TB`, all parsed in base 1024 (`1.5TiB`, `2PiB`, `1EiB` all work). Oversized files are rejected with `oas-exceed-limit` (`detail.type === 'size'`, including the `maxSize` in bytes). Invalid forms and boundaries: a non-empty but unparsable value (e.g. `2ZB`) means "unlimited" and emits a one-time `devWarn` **in development only** (deduplicated by string); production builds shake the warning away, so in production an invalid value is **silently unlimited** (documented behavior). A product that overflows double precision (huge number × `TB`) is clamped to `Number.MAX_SAFE_INTEGER`; a positive form that rounds to 0 (e.g. `0.4B`) is treated as 1 byte; an explicit `0` still means "unlimited".
 
 > **Size display and units**: file sizes in list rows, the `[data-item-size]` binding, and the preview overlay use IEC units (`B` / `KiB` / `MiB` / `GiB` / `TiB` / `PiB` / `EiB`, base 1024) — the `B` tier rounds to an integer, other tiers use one fixed decimal; for example `2048` bytes renders as `2.0 KiB`, and `1.5 GiB` is no longer clamped to `1536.0 MB`. The `max-size` input forms `KB` / `MB` / `GB` are still parsed in base 1024; the numeric semantics match, only the display labels follow IEC (`KiB` / `MiB` / `GiB`).
 
@@ -449,7 +449,7 @@ The current form value is available through the public `value` property for read
 | `headers` | Extra request headers (JSON string) | — | — |
 | `list-type` | List style: `list` (default) / `picture` (rows with thumbnails) / `picture-card` (card thumbnail wall) | `string` | `list` |
 | `max` | Maximum number of files | `string` | `0` |
-| `max-size` | Per-file size limit (bytes or `2KB`/`2KiB`/`1MB`/`1GiB`/`2TB`, all parsed in base 1024; unparsable non-empty values mean "unlimited" plus a devWarn); over limit fires oas-exceed size form | `string` | — |
+| `max-size` | Per-file size limit (bytes, or `2KB` / `2KiB` / `1MB` / `1GiB` / `1TiB` / `1PiB` / `1EiB` / `2TB`, all parsed in base 1024); unparsable non-empty values mean "unlimited" and only warn via devWarn in development (silent in production builds); a product that overflows is clamped to MAX_SAFE_INTEGER and `0.4B` counts as 1 byte; over limit fires oas-exceed size form | `string` | — |
 | `method` | HTTP method (default POST) | `string` | `POST` |
 | `multiple` | Multiple selection | `boolean` | — |
 | `name` | Form field name for the file (default `file`) | `string` | — |

@@ -26,6 +26,7 @@ jobs:
       - run: pnpm release:check:test
       - run: pnpm test
       # 断言质量基线：新增无 expect / 无条件 skip / 固定等待膨胀会红灯
+      # 阈值 = 历史债快照（2026-10-29 实测，无余量）；不得每批静默抬阈值
       - run: pnpm qa:audit:check
       # typecheck 依赖各 workspace 包的 d.ts（build 产物 dist/types）——必须 build 之后跑
       - run: pnpm build

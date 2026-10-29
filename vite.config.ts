@@ -1,13 +1,20 @@
 import { defineConfig } from 'vite'
 import { resolve } from 'node:path'
 
+// ad-hoc 根目录调试/脚本用（不是 docs、CDN 或 playground 的构建配置，那些各自有独立 config）。
+// 注意：字符串 alias 是前缀匹配，子路径必须先于包名映射，否则 `@oas-ui/core/format-byte`
+// 会被拼成 `core/src/index.ts/format-byte`；这里用数组形式明确匹配顺序（与 packages/ui/vite.cdn.config.ts 同口径）。
 export default defineConfig({
   resolve: {
-    alias: {
-      '@oas-ui/ui': resolve(import.meta.dirname, 'packages/ui/src/index.ts'),
-      '@oas-ui/core': resolve(import.meta.dirname, 'packages/core/src/index.ts'),
-      '@oas-ui/theme': resolve(import.meta.dirname, 'packages/theme/index.css'),
-      '@oas-ui/icons': resolve(import.meta.dirname, 'packages/icons/src/index.ts'),
-    },
+    alias: [
+      {
+        find: '@oas-ui/core/format-byte',
+        replacement: resolve(import.meta.dirname, 'packages/core/src/format-byte.ts'),
+      },
+      { find: '@oas-ui/ui', replacement: resolve(import.meta.dirname, 'packages/ui/src/index.ts') },
+      { find: '@oas-ui/core', replacement: resolve(import.meta.dirname, 'packages/core/src/index.ts') },
+      { find: '@oas-ui/theme', replacement: resolve(import.meta.dirname, 'packages/theme/index.css') },
+      { find: '@oas-ui/icons', replacement: resolve(import.meta.dirname, 'packages/icons/src/index.ts') },
+    ],
   },
 })

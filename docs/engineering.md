@@ -22,7 +22,7 @@
 
 **废弃 API 台账**：`docs/deprecations.json` 是别名/事件双发/已移除墓碑的唯一机器可读来源；`pnpm deprecations:gen` 生成 `docs/deprecations.md`，`pnpm deprecations:check` 校验 `normalizeLegacyAlias` 调用、canonical 存在性与 removeIn 版本纪律。移除版本由用户定，AI 不擅自填写或执行移除。removeIn 默认必须是高于当前版本的 major；**唯一豁免**是 `package-export` 面经用户批准携带 `minorException`（必填非空 approvedBy 与 reason）的「经批准的非 major 提升」——仅限同 major 且严格高于当前版本的合法 x.y.z（兼容 patch 与 minor 提升；先例：DEP-EXPORT-0001 `data/table/core` 于 2.6.5 删除）；组件 API 面的 minor/patch 移除一律拒绝，判定规则自测 `pnpm deprecations:test`（已接入 CI）。
 
-**断言质量审计**：`pnpm qa:audit` 输出无 `expect` 文件、无条件 `test.skip(true)`、固定 `waitForTimeout`、弱断言与事件只断 length 的分布；`pnpm qa:audit:check` 以当前基线为上限，新增假绿或等待膨胀会红灯。三个维度各自独立设限（`--max-wait` / `--max-weak` / `--max-event-len`，默认 440 / 1930 / 105）。**阈值是防增量，不是要求清零**——历史存量按基线锁住，总量超过基线即红灯（基线已含约 5% 余量）；确属合理新增才调阈值，并在提交说明写清理由。它不是覆盖率替代品，只负责让“测了但没断言”可见。
+**断言质量审计**：`pnpm qa:audit` 输出无 `expect` 文件、无条件 `test.skip(true)`、固定 `waitForTimeout`、弱断言与事件只断 length 的分布；`pnpm qa:audit:check` 以当前基线为上限，新增假绿或等待膨胀会红灯。三个维度各自独立设限（`--max-wait` / `--max-weak` / `--max-event-len`，默认 440 / 1967 / 105，2026-10-29 历史债快照）。**阈值是防增量，不是要求清零**——阈值等于实测存量（不再预留余量），任何新增即红灯；确属合理新增才调阈值，并在提交说明写清理由，**不得每批静默抬阈值**（存量收口作为 deferred 记在 `sdd/progress.md`）。它不是覆盖率替代品，只负责让“测了但没断言”可见。
 
 **Vitest 运行模式**：默认逐文件隔离（Vitest 5 + happy-dom，每文件独立环境）。**关闭隔离不可用（2026-09 尝试已回退）**：`poolOptions` 在 Vitest 4 已移除（曾被误设为 `poolOptions.forks.isolate=false`——死配置，全量仍逐文件建环境）；改顶层 `isolate: false` 真正关闭后，跨文件模块状态共享直接击穿 18 条测试（capability 注册表 late-join 污染 / vi.mock 的 computePositionMock 泄漏 / hover-card 计时态等）——本套件大量用例依赖「每文件全新模块图」（vi.mock 模块替换、能力注册表、locale 全局态、matchMedia 桩），为 ~15% 的 wall 节省逐个扶正不值得，已回退为默认隔离。后续若确需提速，先按「模块级全局态清单」（capability 注册表 / vi.mock / setLocale / 桩）逐类做环境自清理，再评估开关。
 

@@ -663,8 +663,8 @@ function warnInvalidMaxSize(raw: string): void {
   if (warnedMaxSize.has(raw)) return
   warnedMaxSize.add(raw)
   devWarn(
-    `[oas-upload] max-size "${raw}" 无法解析，已按「不限制」处理；` +
-      '支持字节数或 B / KB / KiB / MB / MiB / GB / GiB / TB（均按 1024 进制）',
+    `[oas-upload] max-size "${raw}" 无法解析，已按「不限制」处理（生产构建不告警）；` +
+      '支持字节数或 B / KB / KiB / MB / MiB / GB / GiB / TB / TiB / PiB / EiB（均按 1024 进制）',
   )
 }
 
@@ -1550,14 +1550,20 @@ export class OASUpload extends OASFormElement {
   }
 
   /**
-   * max-size 解析：纯数字按字节；支持 `B` / `KB` / `KiB` / `MB` / `MiB` / `GB` / `GiB` / `TB`
-   * （不区分大小写，全部按 1024 进制——`KB` 与 `KiB` 同值，只认数值不认 SI 语义）。
-   * 非空但无法解析时按「不限制」处理并 devWarn（同一非法字符串只告警一次，避免刷屏）。
+   * max-size 解析：纯数字按字节；支持 `B` / `KB` / `KiB` / `MB` / `MiB` / `GB` / `GiB` /
+   * `TB` / `TiB` / `PiB` / `EiB`（不区分大小写，全部按 1024 进制——`KB` 与 `KiB` 同值，
+   * 只认数值不认 SI 语义）。
+   * - 非空但无法解析时按「不限制」处理并 devWarn（同一非法字符串只告警一次，避免刷屏）；
+   *   生产构建里 devWarn 被摇掉，因此生产环境是「静默不限制」——文档明示行为。
+   * - 乘积溢出双精度（极大数字 × TB 等）夹到 `Number.MAX_SAFE_INTEGER`：宁可拒绝超大文件，
+   *   也不能让上限退化成「不限制」。
+   * - 舍入后 <= 0 的正数写法（如 `0.4B`）按 1 字节：最小上限语义不变，不退化成不限制；
+   *   显式 `0` 仍是「不限制」。
    */
   private maxSizeBytes(): number {
     const raw = this.getAttr('max-size', '').trim()
     if (!raw) return 0
-    const m = /^(\d+(?:\.\d+)?)\s*(kib|mib|gib|kb|mb|gb|tb|b)?$/i.exec(raw)
+    const m = /^(\d+(?:\.\d+)?)\s*(kib|mib|gib|tib|pib|eib|kb|mb|gb|tb|b)?$/i.exec(raw)
     if (!m) {
       warnInvalidMaxSize(raw)
       return 0
@@ -1573,12 +1579,20 @@ export class OASUpload extends OASFormElement {
       gb: 1024 ** 3,
       gib: 1024 ** 3,
       tb: 1024 ** 4,
+      tib: 1024 ** 4,
+      pib: 1024 ** 5,
+      eib: 1024 ** 6,
     }
     if (!Number.isFinite(n)) {
       warnInvalidMaxSize(raw)
       return 0
     }
-    return Math.round(n * (mult[unit] ?? 1))
+    const bytes = n * (mult[unit] ?? 1)
+    if (!Number.isFinite(bytes)) return Number.MAX_SAFE_INTEGER
+    const rounded = Math.round(bytes)
+    // n > 0 却舍入到 0（0.4B）：按 1 字节，避免「写了上限却等于没写」；显式 0 保持不限制
+    if (rounded <= 0 && n > 0) return 1
+    return rounded
   }
 
   private commitFiles(added: File[]): void {

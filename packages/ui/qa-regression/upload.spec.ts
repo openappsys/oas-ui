@@ -106,6 +106,30 @@ test('upload max-size 接受 IEC 写法：2KiB 真实拦截 3KiB 文件（不再
   expect(r.rejected).toBe(1)
   expect(r.type).toBe('size')
   expect(r.maxSize).toBe(2048)
+
+  // 同一提交的边界收口：`0.4B` 舍入到 0 后必须按 1 字节生效，而不是静默变成「不限制」
+  const sub = await page.evaluate(async () => {
+    if (!customElements.get('oas-upload')) await customElements.whenDefined('oas-upload')
+    const host = document.createElement('oas-upload') as HTMLElement & { files: unknown[] }
+    host.setAttribute('max-size', '0.4B')
+    host.style.cssText = 'display:block;width:320px;position:fixed;top:80px;left:20px;z-index:9999;'
+    document.body.appendChild(host)
+    let maxSize: number | undefined
+    host.addEventListener('oas-exceed-limit', (e) => {
+      maxSize = ((e as CustomEvent).detail as { maxSize?: number }).maxSize
+    })
+    const dt = new DataTransfer()
+    dt.items.add(new File([new ArrayBuffer(2)], 'two-bytes.bin', { type: 'application/octet-stream' }))
+    host
+      .shadowRoot!.querySelector('.zone')!
+      .dispatchEvent(new DragEvent('drop', { dataTransfer: dt, bubbles: true, cancelable: true }))
+    await new Promise((res) => setTimeout(res, 50))
+    const result = { files: host.files.length, maxSize }
+    host.remove()
+    return result
+  })
+  expect(sub.files, '2 字节超过 0.4B（按 1 字节）上限，不得入列').toBe(0)
+  expect(sub.maxSize, '0.4B 应按 1 字节而不是不限制').toBe(1)
 })
 
 test('upload 拖拽 drop：真实拖放文件到拖拽区即渲染', async ({ page }) => {

@@ -907,6 +907,90 @@ describe('createInfiniteScroll', () => {
     controller.destroy()
   })
 
+  it('attach 同 viewport 重挂：content getter 指向新容器时重绑内容侧观察', () => {
+    const observed = new Set<Element>()
+    class FakeResizeObserver {
+      constructor(_cb: () => void) {}
+      observe(el: Element) {
+        observed.add(el)
+      }
+      unobserve(el: Element) {
+        observed.delete(el)
+      }
+      disconnect() {
+        observed.clear()
+      }
+    }
+    vi.stubGlobal('ResizeObserver', FakeResizeObserver)
+    const { el, state } = mountViewport({ scrollTop: 0, scrollHeight: 300, clientHeight: 100 })
+    const first = document.createElement('div')
+    el.append(first)
+    let list = first
+    list.append(mountItem(state, 'a', () => 0))
+    const controller = createInfiniteScroll({
+      root: el,
+      content: () => list,
+      direction: 'top',
+      load: async () => ({}),
+    })
+    controller.attach()
+    expect(observed.has(first), 'attach 后应观察 content 容器').toBe(true)
+
+    // 宿主替换列表容器后原样重挂（同一 viewport）：不能只换引用而留下旧容器的观察
+    first.remove()
+    const second = document.createElement('div')
+    el.append(second)
+    list = second
+    expect(controller.attach(el)).toBe(true)
+    expect(observed.has(second), '重挂后必须观察新 content 容器').toBe(true)
+    expect(observed.has(first), '旧容器的观察应解除').toBe(false)
+    controller.destroy()
+  })
+
+  it('detach 不保留 top 未补偿封锁：重新 attach 后内容增长可再次自动续载', async () => {
+    const { el, state } = mountViewport({ scrollTop: 0, scrollHeight: 300, clientHeight: 100 })
+    const list = document.createElement('div')
+    el.append(list)
+    list.append(mountItem(state, 'a', () => 0))
+
+    let call = 0
+    const load = vi.fn(async () => {
+      call += 1
+      if (call === 1) {
+        // 首次：增长但稳定 key 丢失 → 无法补偿 → 进入 blocked
+        list.replaceChildren(
+          mountItem(state, 'x', () => 0),
+          mountItem(state, 'y', () => 50),
+        )
+        state.scrollHeight = 400
+      } else {
+        // 重挂后的第二次：正常 prepend 并补偿
+        list.prepend(mountItem(state, 'z', () => 0))
+        state.scrollHeight = 450
+      }
+      return {}
+    })
+    const controller = createInfiniteScroll({ root: el, content: () => list, direction: 'top', load })
+    controller.attach()
+    await flushMicrotasks()
+    expect(load).toHaveBeenCalledTimes(1)
+
+    // blocked 期间：停在顶部 + 内容增长也不续载
+    state.scrollHeight = 420
+    controller.update()
+    expect(load).toHaveBeenCalledTimes(1)
+
+    // 摘挂是一次环境重置：blocked 不跨 re-attach 保持，否则重挂后永久停在顶部
+    controller.detach()
+    controller.attach(el)
+    controller.update()
+    state.scrollHeight = 500
+    controller.update()
+    await flushMicrotasks()
+    expect(load, '重挂后增长应重新武装并允许一次自动续载').toHaveBeenCalledTimes(2)
+    controller.destroy()
+  })
+
   it('异步撑高：ResizeObserver 触发继续补偿；用户滚动后释放锚点不再补偿', async () => {
     let roCallback: (() => void) | null = null
     class FakeResizeObserver {

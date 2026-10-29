@@ -84,11 +84,11 @@ async function nextFrames(page: import('@playwright/test').Page): Promise<void> 
   )
 }
 
-/** 收集 console error 与页面异常（零告警门禁） */
+/** 收集 console error / warning 与页面异常（零告警门禁） */
 function collectErrors(page: import('@playwright/test').Page): string[] {
   const errors: string[] = []
   page.on('console', (msg) => {
-    if (msg.type() === 'error') errors.push(msg.text())
+    if (msg.type() === 'error' || msg.type() === 'warning') errors.push(msg.text())
   })
   page.on('pageerror', (err) => errors.push(String(err)))
   return errors

@@ -25,8 +25,10 @@ export default defineConfig({
   // 各自独立 cacheDir 根治
   cacheDir: 'node_modules/.vite-vue',
   // workspace linked 包（@oas-ui/ui / @oas-ui/theme）走 dist ESM 直服：
-  // 排除预构建，ui dist 重建后 dev 立即生效
+  // 排除预构建，ui dist 重建后 dev 立即生效。
+  // `@oas-ui/core/format-byte` 是 ui dist 引用的独立子路径模块，同样要排除，
+  // 否则 ui 重建后旧预构建缓存会让 Upload 继续吃旧 helper。
   optimizeDeps: {
-    exclude: ['@oas-ui/ui', '@oas-ui/theme'],
+    exclude: ['@oas-ui/ui', '@oas-ui/theme', '@oas-ui/core/format-byte'],
   },
 })

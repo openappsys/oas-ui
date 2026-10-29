@@ -652,6 +652,63 @@ describe('OASUpload max-size', () => {
     expect(tibDetail.maxSize).toBe(2 * 1024 ** 4)
   })
 
+  it('max-size 支持 TiB / PiB / EiB（均按 1024 进制，1.5TiB = 1.5×1024⁴）', () => {
+    const tib = mount({ 'max-size': '1.5TiB' })
+    let tibDetail: any
+    tib.addEventListener('oas-exceed', (e: Event) => (tibDetail = (e as CustomEvent).detail))
+    // 不真实分配 TB 级内存：fixture 只覆写 size（组件只读 File.size）
+    const over = makeFile('over.bin', 'application/octet-stream')
+    Object.defineProperty(over, 'size', { value: 1.5 * 1024 ** 4 + 1 })
+    pick(tib, [over])
+    expect(tib.files.length).toBe(0)
+    expect(tibDetail?.maxSize).toBe(1.5 * 1024 ** 4)
+
+    const pib = mount({ 'max-size': '2PiB' })
+    let pibDetail: any
+    pib.addEventListener('oas-exceed', (e: Event) => (pibDetail = (e as CustomEvent).detail))
+    const over2 = makeFile('over2.bin', 'application/octet-stream')
+    Object.defineProperty(over2, 'size', { value: 2 * 1024 ** 5 + 1 })
+    pick(pib, [over2])
+    expect(pibDetail?.maxSize).toBe(2 * 1024 ** 5)
+
+    const eib = mount({ 'max-size': '1EiB' })
+    let eibDetail: any
+    eib.addEventListener('oas-exceed', (e: Event) => (eibDetail = (e as CustomEvent).detail))
+    const over3 = makeFile('over3.bin', 'application/octet-stream')
+    // 1024⁶ 已超双精度整数精度，+1 不可表示：用 2 EiB 作为超限样本
+    Object.defineProperty(over3, 'size', { value: 2 * 1024 ** 6 })
+    pick(eib, [over3])
+    expect(eibDetail?.maxSize).toBe(1024 ** 6)
+  })
+
+  it('max-size 乘积溢出（极大数字 × TB → Infinity）夹到 MAX_SAFE_INTEGER，不变成「不限制」', () => {
+    // 1e308 本身是有限数，×1024⁴ 后超出双精度范围 → 旧实现 Math.round(Infinity) 让上限失效
+    const el = mount({ 'max-size': `${'1'}${'0'.repeat(308)}TB` })
+    let detail: any
+    el.addEventListener('oas-exceed', (e: Event) => (detail = (e as CustomEvent).detail))
+    const huge = makeFile('huge.bin', 'application/octet-stream')
+    Object.defineProperty(huge, 'size', { value: 1e20 })
+    pick(el, [huge])
+    expect(el.files.length, '上限溢出不应退化为无限制').toBe(0)
+    expect(detail?.maxSize).toBe(Number.MAX_SAFE_INTEGER)
+  })
+
+  it('max-size 舍入到 0（0.4B）按 1 字节生效；显式 0 仍是「不限制」', () => {
+    const sub = mount({ 'max-size': '0.4B' })
+    let detail: any
+    sub.addEventListener('oas-exceed', (e: Event) => (detail = (e as CustomEvent).detail))
+    // 1 字节正好等于按 1 字节处理后的上限，不应被拒
+    pick(sub, [makeFile('one.bin', 'application/octet-stream', 1)])
+    expect(sub.files.length).toBe(1)
+    pick(sub, [makeFile('two.bin', 'application/octet-stream', 2)])
+    expect(sub.files.length, '0.4B 不应退化为无限制').toBe(1)
+    expect(detail?.maxSize).toBe(1)
+
+    const zero = mount({ 'max-size': '0' })
+    pick(zero, [makeFile('ok.bin', 'application/octet-stream', 1024)])
+    expect(zero.files.length, '显式 0 仍表示不限制').toBe(1)
+  })
+
   it('max-size 无法解析时 devWarn 一次（不静默放行），语义明确为「不限制」', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     try {

@@ -9,7 +9,7 @@
 
 ### 功能定义
 
-新增 `@oas-ui/core/format-byte` 纯函数 `formatByte(bytes, { locale, unitSystem, precision })`，作为全库唯一的字节量格式化实现；`oas-upload` 的文件大小显示从旧 `KB`（1024 进制但标签写作 KB）迁移为默认 IEC（`KiB`/`MiB`，1024 进制）。这是用户已批准的可见文案变化（`2.0 KB` → `2.0 KiB`），不改文件大小计算、上传/校验/裁剪行为，不迁移其他组件。
+新增 `@oas-ui/core/format-byte` 纯函数 `formatByte(bytes, { locale, unitSystem, precision })`，作为全库唯一的字节量格式化实现；`oas-upload` 的文件大小显示从旧 `KB`（1024 进制但标签写作 KB）迁移为默认 IEC（`KiB`/`MiB`，1024 进制）。这是用户已批准的可见文案变化（`2.0 KB` → `2.0 KiB`），不改大小计算与上传/校验/裁剪主流程（仅扩展 `max-size` 的可解析写法），不迁移其他组件。
 
 ### 详细契约
 
@@ -18,16 +18,16 @@
 - **精度语义**：`B` 档取整（`512.6` → `513 B`）；非 `B` 档固定 `precision` 位小数（默认 `1`，即 `2.0 KiB`、`5.0 MiB`），保留 Upload 原有的定点小数意图。分组分隔关闭，输出文本只受 locale 小数点/数字字形影响。
 - **边界**：`0` / `-0` → `0 B`；负数保留符号（`-2.0 KiB`，按绝对值选档进位）；`NaN` / `±Infinity` / 非 number → `''`（空串，不渲染 `NaN`/`Infinity`）。
 - **导出与运行环境**：仅经 `@oas-ui/core/format-byte` 子路径导出，不进 `@oas-ui/core` 主入口；模块零 DOM 引用，Node 可直接导入。
-- **Upload 迁移**：`formatSize` 私有实现删除，三处显示（预览浮层、`template[slot="item"]` 绑定、默认行/卡片）统一调用 `formatByte(sizeOf(entry))`（IEC + 1 位小数）；回显记录 `size` 与真实 `File.size` 同口径，不改任何上传行为。`max-size` 解析补 IEC 别名 `KiB` / `MiB` / `GiB` / `TB`（与 `KB` / `MB` / `GB` 同为 1024 进制）——用户照新的显示文案书写即可生效；非空但无法解析的值（如 `2ZB`）按「不限制」处理并 `devWarn` 一次（同一字符串去重），不再静默放行。
+- **Upload 迁移**：`formatSize` 私有实现删除，三处显示（预览浮层、`template[slot="item"]` 绑定、默认行/卡片）统一调用 `formatByte(sizeOf(entry))`（IEC + 1 位小数）；回显记录 `size` 与真实 `File.size` 同口径，不改大小计算与上传主流程，仅扩展 `max-size` 的可解析写法。`max-size` 同时接受 IEC 写法 `KiB` / `MiB` / `GiB` / `TiB` / `PiB` / `EiB` 与 `TB`（`KB` / `MB` / `GB` 保留），均按 1024 进制解析——用户照新的显示文案书写即可生效。边界语义：非空但无法解析的值（如 `2ZB`）按「不限制」处理并 `devWarn` 一次（同一字符串去重）；`devWarn` **只在开发环境输出**（生产构建被摇掉），因此生产中的非法值是**静默不限制**，这是文档明示行为；乘积溢出双精度（极大数字 × `TB`）夹到 `Number.MAX_SAFE_INTEGER`，正数写法舍入到 0（如 `0.4B`）按 1 字节，显式 `0` 仍是「不限制」——溢出与舍零都不允许把上限静默变成「无限制」。
 
 ### 非目标
 
-不新增组件、属性、事件、插槽或公开方法；不改 `max-size` 的世界观（仍只认 1024 进制，不引入 SI 解析模式），不改变数量/大小上限的判定与事件形态；不迁移 attachment 等仅承载展示文案的组件；不引入第二份字节格式化实现；不做 SI 自动探测、bit 单位、科学计数或可配置单位表。
+不新增组件、属性、事件、插槽或公开方法；`max-size` 仍只按 1024 进制解析（不引入 SI 解析模式），不改变数量/大小上限的判定与事件形态；不迁移 attachment 等仅承载展示文案的组件；不引入第二份字节格式化实现；不做 SI 自动探测、bit 单位、科学计数或可配置单位表。
 
 ### 验收标准
 
-- 单测：IEC/SI 阈值与进位边界、`0` / 小数 / 极大 / 负数 / 非法 / 非有限、`precision` 0/1/多位/非法、locale（`de-DE` 小数点、结构非法与 `xx-YY` 不受支持均回落 `en-US`）、`options: null`、默认值；Node 环境直接 `import '@oas-ui/core/format-byte'` 与调用不引用 DOM（显式断言无 `document`）；Upload 列表/模板绑定/预览浮层显示 `KiB`/`MiB` 且旧断言按新契约重算并注明原因；`max-size` 的 `2KiB` 生效、未知单位 devWarn 且不静默降级。
-- qa-regression：真实文档页 Upload 大小文案为 IEC 单位（chromium + firefox），`max-size="2KiB"` 真实拦截、未知单位只在 devWarn 后按不限制放行，dark 主题可读，console 无意外告警。
+- 单测：IEC/SI 阈值与进位边界、`0` / 小数 / 极大 / 负数 / 非法 / 非有限、`precision` 0/1/多位/非法、locale（`de-DE` 小数点、结构非法与 `xx-YY` 不受支持均回落 `en-US`）、`options: null`、默认值；Node 环境直接 `import '@oas-ui/core/format-byte'` 与调用不引用 DOM（显式断言无 `document`）；Upload 列表/模板绑定/预览浮层显示 `KiB`/`MiB` 且旧断言按新契约重算并注明原因；`max-size` 的 `2KiB` / `1.5TiB` / `2PiB` / `1EiB` 生效、未知单位 devWarn 且不静默降级、乘积溢出夹到 `MAX_SAFE_INTEGER`、`0.4B` 按 1 字节、显式 `0` 仍不限制。
+- qa-regression：真实文档页 Upload 大小文案为 IEC 单位（chromium + firefox），`max-size="2KiB"` 真实拦截、未知单位只在开发环境 devWarn 后按不限制放行（生产构建无告警，属明示行为），dark 主题可读，console 无意外告警。
 - 文档：CHANGELOG `[未发布] / 变更` 记录 KB→KiB 可见变化；upload 中英文页与 API 描述说明 IEC 单位；`@oas-ui/core` README 补 helper 用法；PRD/ROADMAP 登记；全量 test/typecheck/build/e2e/perf:size/api/llms/stats/skill/ssr/lint/format 通过。
 
 ---
@@ -72,7 +72,7 @@
 - **根与内容**：`root` 支持 Element / 惰性 getter / null；ScrollArea 宿主自动解析 shadow `[part~="viewport"]`。`content` 可显式指定内容容器，默认 root（slotted 内容）；静态 root 下 content getter 仍在 update 与结果落地时刷新，宿主整体替换列表容器后按 key 在新容器重查补偿。无 DOM/SSR：attach 返回 false，update no-op，手动 load 仍可用。
 - **方向/阈值**：`direction: 'bottom' | 'top' | 'both'`（默认 bottom，非法回退）；`threshold` px（默认 0，负数/非法回退 0）；`reverse: true` 等价 top + attach 初始滚到底（优先于 direction，rAF 再校正一次，读者滚动后不抢回）。
 - **状态机**：每 edge 独立 `idle | loading | error | complete`。同 edge 在途去重；不同 edge 可并发；`complete` 后不再自动加载；error 只回调一次，自动 update 不重试，`retry(edge?)` 成功后恢复；`reset()` 中止在途、清空 complete/error/loads 并重新武装；`destroy()` 中止并静默回 idle，此后所有命令 no-op。destroy/reset/complete 后迟到结果按请求代际丢弃，不写状态、不触发回调（含 onLoadStart 内 destroy 不发请求、onLoadEnd 内 destroy 不发 onComplete）。
-- **触发与续载**：到达边缘且 armed 时自动触发；离开边缘、内容增长、reset 后重新武装。加载结果带来内容高度增长才允许自动续载，空结果不循环；top 增长但锚点未产生实际补偿时，停在边缘期间封锁自动续载，离开边缘 / reset / 显式 load 后恢复。
+- **触发与续载**：到达边缘且 armed 时自动触发；离开边缘、内容增长、reset 后重新武装。加载结果带来内容高度增长才允许自动续载，空结果不循环；top 增长但锚点未产生实际补偿时，停在边缘期间封锁自动续载，离开边缘 / reset / 显式 load 后恢复。该封锁不跨 `detach()` 保持（detach 是环境重置，保留会让重挂后停在顶部永久失去自动续载）；同一 viewport 的 `attach()` 重挂会重解析 content getter 并重绑内容侧监听/观察。
 - **prepend 保位**：top 触发前记录首个可见内容项视口 y 与稳定 key（`keyAttribute` 默认 `data-key`，缺失回落 id）；结果落地后按锚点位移补偿 scrollTop；宿主重渲染替换节点按 key 重查；ResizeObserver/资源 load 捕获处理异步撑高；程序补偿的 scroll 回声不释放，读者真实滚动接管后释放。
 - **回调**：load 注入 `{ edge, direction, signal, retry }`；onLoadStart / onLoadEnd(event, result) / onError / onStateChange / onComplete；返回 `false` / `{ complete: true }` / `{ hasMore: false }` 等价 complete。回调抛错隔离为 devWarn，不破坏状态机。
 
@@ -82,7 +82,7 @@
 
 ### 验收标准
 
-- 单测：方向/阈值/非法值、双 edge 并发与同 edge 去重、complete、error/retry、reset/destroy 迟到结果、onLoadStart/onLoadEnd 内销毁、detach 的 idle 回调内 update 不新起请求、回调次数与状态序列、keyed prepend 保位、静态 root + content getter 容器替换后补偿、未补偿封锁、异步撑高 + 用户滚动释放、scroll 回声、reverse、ScrollArea shadow viewport、root=null/手动 load。
+- 单测：方向/阈值/非法值、双 edge 并发与同 edge 去重、complete、error/retry、reset/destroy 迟到结果、onLoadStart/onLoadEnd 内销毁、detach 的 idle 回调内 update 不新起请求、回调次数与状态序列、keyed prepend 保位、静态 root + content getter 容器替换后补偿、同一 viewport 重挂重绑内容侧观察、未补偿封锁及其不跨 detach 保持、异步撑高 + 用户滚动释放、scroll 回声、reverse、ScrollArea shadow viewport、root=null/手动 load。
 - qa-regression（Chromium + Firefox）：真实滚动 prepend/replaceList 锚点、用户滚到顶第二次加载、异步撑高、亚像素距底、滚轮到底、destroy 后监听清空、console 零告警。
 - 全量 test/typecheck/build/API/llms/stats/skill/lint/format/trace/perf:size 通过。
 

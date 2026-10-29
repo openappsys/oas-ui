@@ -41,6 +41,6 @@ React / Vue 各维护一份页面，**结构完全一致**（同一份清单，d
 
 ## 缓存说明
 
-- 两个 vite config 已配 `optimizeDeps.exclude: ['@oas-ui/ui', '@oas-ui/theme']`（linked 包走 dist ESM 直服），ui dist 重建后 dev 立即生效，无需清缓存。
+- 两个 vite config 已配 `optimizeDeps.exclude: ['@oas-ui/ui', '@oas-ui/theme', '@oas-ui/core/format-byte']`（linked 包与其子路径模块走 dist ESM 直服），ui / core dist 重建后 dev 立即生效，无需清缓存。
 - React / Vue 两个 dev server 共用 `node_modules/.vite` 会互相失效对方的预构建缓存（React 缓存 react.js、Vue 缓存 vue.js），因此各自独立 `cacheDir`（`.vite-react` / `.vite-vue`）根治。
 - 兜底：若 dev 页面仍异常（新属性不生效、504 白屏），删除对应 `node_modules/.vite-*` 缓存目录并重启 dev server。
