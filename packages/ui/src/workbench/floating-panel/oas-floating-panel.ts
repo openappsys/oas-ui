@@ -297,7 +297,7 @@ function deepActiveElement(): HTMLElement | null {
  * - `panel-title`：标题文本（`title` 插槽覆盖）；避开原生 `title` 属性
  * - `movable`：标题栏拖动 + 框体聚焦时方向键移动
  * - `resizable`：八向手柄（四边 + 四角）+ Shift+方向键缩放
- * - `boundary`：`viewport`（默认）或 CSS 选择器（在自身根树内解析）；只约束拖动/缩放/键盘交互
+ * - `boundary`：`viewport`（默认）或 CSS 选择器（先在自身根树解析，未命中回退 `document`）；只约束拖动/缩放/键盘交互
  * - `boundary-padding`：边界内缩像素（非负；非法回落 0）
  * - `min` / `max`：`宽,高`（min 缺省 160,96；max 缺省不限制；min > max 以 min 为准）
  * - `initial-focus`：打开时聚焦的选择器（light DOM 或 shadow 内；找不到回退框体）
@@ -353,8 +353,14 @@ export class OASFloatingPanel extends OASElement {
   private interaction: InteractionState | null = null
   private rafId = 0
 
+  /** 标题栏实测观察器（富标题撑高时把实测 px 写回 host token；断开释放、重连重挂） */
+  private titlebarObserver: ResizeObserver | null = null
+
   /** 首帧即打开（属性在连接时已存在）：不抢焦点（SSR/DSD 与文档页多实例场景避免载入即滚焦） */
   private initiallyOpen = false
+
+  /** 首帧即打开不建立焦点归还基线：断开重连也不补 previousFocus */
+  private skipFocusBaseline = false
 
   private static warnedBoundaries = new Set<string>()
 
@@ -377,6 +383,8 @@ export class OASFloatingPanel extends OASElement {
 
   override disconnectedCallback(): void {
     this.cancelInteraction()
+    this.titlebarObserver?.disconnect()
+    this.titlebarObserver = null
     this.releaseEscapeLayer?.()
     this.releaseEscapeLayer = null
     this.escapeLayer = null
@@ -389,10 +397,12 @@ export class OASFloatingPanel extends OASElement {
   /** 断开重连：重新登记叠放并恢复 Esc 层（不抢焦点、不重建 shadow） */
   protected override onReconnect(): void {
     if (isSsrRuntime()) return
+    this.observeTitlebar()
     this.stackUnregister ??= this.stack.register(this.stackMember)
     if (!this.hasAttr('open')) return
     // 断开期间改 open 的边沿副作用被 isConnected 守卫跳过，这里补齐 Esc 层 / 叠放 / 焦点基线
-    this.previousFocus ??= deepActiveElement()
+    // 首帧即打开从未抢过焦点，不建立归还基线（否则关闭会把焦点送回重连时抓到的任意元素）
+    if (!this.skipFocusBaseline) this.previousFocus ??= deepActiveElement()
     this.attachEscapeLayer()
     this.stack.activate(this.stackMember)
     this.stackMember.applyFront(this.stack.isFront(this.stackMember))
@@ -440,11 +450,43 @@ export class OASFloatingPanel extends OASElement {
 
     if (isSsrRuntime()) return
 
+    this.observeTitlebar()
     // 静态交互绑定：同一 handler/target 重复 add 规范去重（重连幂等）
     this.frameEl?.addEventListener('pointerdown', this.onFramePointerDown)
     this.frameEl?.addEventListener('keydown', this.onFrameKeydown)
     this.titlebarEl?.addEventListener('pointerdown', this.onTitlebarPointerDown)
     for (const handle of this.handleEls) handle.addEventListener('pointerdown', this.onHandlePointerDown)
+  }
+
+  /**
+   * 观察标题栏实测高度：富标题插槽撑高 > 默认 token 时，整段上侧/上角手柄会被标题栏（z-index: 2）
+   * 盖住，顶部与两个上角缩放失效。客户端把实测内容高写回 host 的
+   * `--oas-floating-panel-titlebar-height`（px），n/ne/nw 手柄随之下移。
+   *
+   * SSR 快照仍用默认 token（服务端不测量，无差异帧）；断开释放观察器，重连重挂。
+   */
+  private observeTitlebar(): void {
+    if (isSsrRuntime() || typeof ResizeObserver === 'undefined') return
+    const bar = this.titlebarEl
+    if (!bar) return
+    this.titlebarObserver ??= new ResizeObserver(() => this.syncTitlebarHeight())
+    this.titlebarObserver.observe(bar)
+    // 首连/重连立即补测一次：RO 首次回调在下一帧，水合后不必等一帧
+    this.syncTitlebarHeight()
+  }
+
+  private syncTitlebarHeight(): void {
+    const bar = this.titlebarEl
+    if (!bar || !this.isConnected) return
+    // clientHeight 排除 1px 下边框：token 是 content-box 的 min-height，
+    // 写「整高（含边框）」会让标题栏每帧再长 1px，形成 RO 无限循环
+    const height = bar.clientHeight
+    // 关闭态 display:none 实测 0：不覆盖默认 token（打开后 RO 会再回调）
+    if (height <= 0) return
+    const next = `${height}px`
+    // 同值不重写（防 RO 自激循环）；同时覆盖宿主在断开期间移除/改写内联 token 的情况
+    if (this.style.getPropertyValue('--oas-floating-panel-titlebar-height') === next) return
+    this.style.setProperty('--oas-floating-panel-titlebar-height', next)
   }
 
   protected override render(): void {
@@ -553,6 +595,7 @@ export class OASFloatingPanel extends OASElement {
     this.frameEl?.setAttribute('data-open', '')
     const skipFocus = this.initiallyOpen
     this.initiallyOpen = false
+    this.skipFocusBaseline = skipFocus
     // 断开期间改属性只同步内部状态与属性；Esc 层 / 叠放 / 焦点副作用留给 onReconnect 补齐，
     // 否则会挂上脱离文档也被 document 捕获的「幽灵 Esc 层」，还会把焦点抢到未连接元素
     if (!isSsrRuntime() && this.isConnected) {
@@ -915,11 +958,13 @@ export class OASFloatingPanel extends OASElement {
         height: root?.clientHeight || window.innerHeight,
       }
     }
-    // 选择器限定在自身根树：面板嵌在 shadow DOM 里时，ownerDocument 查不到同树的边界元素
+    // 选择器限定在自身根树：面板嵌在 shadow DOM 里时，ownerDocument 查不到同树的边界元素；
+    // 根树优先（同 id 优先绑定同一棵树里的元素），未命中再回退 document（面板在 shadow、边界在页面上）
     const root = this.getRootNode() as ParentNode | null
     let boundaryHost: Element | null = null
     try {
       boundaryHost = root?.querySelector?.(name) ?? null
+      if (!boundaryHost && typeof document !== 'undefined') boundaryHost = document.querySelector(name)
     } catch {
       boundaryHost = null
     }

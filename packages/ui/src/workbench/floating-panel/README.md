@@ -57,6 +57,16 @@
 | 触屏（`pointer: coarse`） | 手柄/关闭钮 44px；标题栏（含关闭钮）层级高于手柄，上侧/上角手柄从标题栏下沿起算 |
 | 断开期间改 `open` | 只更新内部状态与 `data-open`；Esc 层 / 叠放 / 焦点基线副作用被 `isConnected` 守卫跳过，重连由 `onReconnect` 补齐 |
 
+**coarse 缩放带代价**：上侧/上角手柄从标题栏下沿起算；coarse 下内容顶部约 44px 是 `n` 手柄
+缩放带，默认最小尺寸 `160×96` 时标题栏 + 缩放带几乎占满面板，内容区几乎不可点。触屏建议用更大
+`min`（如 `240,180`），或整体关闭 `resizable`（`n`/`s` 边缩放没有单边开关）。手势语义不变。
+
+**富标题实测**：`title` 插槽把标题栏撑高时，客户端用 `ResizeObserver` 实测标题栏内容高
+（`clientHeight`，天然排除 1px 下边框）并写回 host 的 `--oas-floating-panel-titlebar-height`（px），
+`n`/`ne`/`nw` 手柄随之下移。写入只在实测值变化 ≥1px 时发生，且实测 0（关闭态 `display:none`）
+直接跳过，避免 RO 自激循环。SSR 快照仍用默认 token，服务端不测量、无差异帧；断开释放观察器，
+重连重挂。
+
 焦点：打开时聚焦 `initial-focus`（light DOM 或 shadow 内首个命中），缺省聚焦面板框体；关闭时归还
 打开前元素（仍连接时）。键盘：面板框体可聚焦，方向键移动、`Shift` + 方向键缩放（8px/步），
 焦点在输入类控件内时不拦截。
@@ -66,10 +76,11 @@
 - 打开态挂：document Esc 层（共享 `overlay-stack`，后开的子浮层优先消费）、面板 pointerdown 置前、
   进行中手势的 document 监听、rAF 合并帧。
 - 断开连接：释放 Esc 层、移除 document/window 监听、取消 rAF、取消进行中手势（回起始 rect、零事件）、
-  从叠放登记摘除；**保留 `open` 属性与 rect**（状态在宿主属性，不在内部）。
-- 重连：重新登记叠放（打开态重新置前）与 Esc、恢复交互监听，不重建 shadow/内部状态；进行中手势
-  不跨摘挂续传。
-- SSR（`window.__OAS_SSR__`）：不登记叠放、不挂 document/window 监听、不抢焦点、不测量边界。
+  断开标题栏 `ResizeObserver`、从叠放登记摘除；**保留 `open` 属性与 rect**（状态在宿主属性，不在内部）。
+- 重连：重新登记叠放（打开态重新置前）与 Esc、恢复交互监听、重挂标题栏观察器，不重建 shadow/内部状态；
+  进行中手势不跨摘挂续传。
+- SSR（`window.__OAS_SSR__`）：不登记叠放、不挂 document/window 监听、不抢焦点、不测量边界、
+  不建标题栏观察器（快照用默认标题栏 token）。
 
 ## 5. SSR / 水合
 

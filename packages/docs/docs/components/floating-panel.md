@@ -10,6 +10,10 @@
 
 触屏（`pointer: coarse`）下手柄与关闭钮热区放大到 44px：标题栏（含关闭钮）始终位于手柄之上，上侧/上角手柄从标题栏下沿起算，因此拖标题栏和点关闭不会被缩放手柄抢走。
 
+放大热区有代价：coarse 下内容顶部约 44px 是 `n` 手柄的缩放带；若沿用最小尺寸 `160×96`，标题栏与缩放带几乎占满面板，内容区几乎不可点。触屏建议用更大的 `min`（如 `240,180`），或关闭 `n`/`s` 边缩放（组件没有单边手柄开关，需整体不开启 `resizable`）。手势语义不变。
+
+富标题（`title` 插槽）撑高标题栏时，客户端用 `ResizeObserver` 实测标题栏高度并写回 `--oas-floating-panel-titlebar-height`（px），上侧/上角手柄随之下移；SSR 快照仍用默认 token，服务端不测量。
+
 <DemoBlock title="可移动 / 可缩放的悬浮面板">
   <div style="position: relative; min-height: 260px">
     <oas-floating-panel id="fp-basic" open movable resizable panel-title="图层" rect="0,0,380,230">
@@ -130,14 +134,15 @@
 
 <DemoBlock title="title 插槽（富标题）">
   <div style="position: relative; min-height: 210px">
-    <oas-floating-panel id="fp-slot" open rect="0,0,340,170">
-      <span slot="title" style="display: inline-flex; align-items: center; gap: var(--oas-space-1)">
+    <oas-floating-panel id="fp-slot" open resizable rect="0,0,340,170">
+      <span slot="title" style="display: inline-flex; align-items: center; gap: var(--oas-space-1); min-height: 48px">
         <oas-tag>已同步</oas-tag>
         <strong>素材检查器</strong>
       </span>
-      <p style="margin: 0">标题由 <strong>title</strong> 插槽提供，屏幕阅读器读到的名称同步更新。</p>
+      <p style="margin: 0">标题由 <strong>title</strong> 插槽提供（此处 48px 高）；上侧/上角手柄从标题栏下沿起算，仍可拖动缩放。</p>
     </oas-floating-panel>
   </div>
+  <p id="fp-slot-out" style="margin: var(--oas-space-2) 0 0; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">拖动上边或上角观察 oas-resize。</p>
 </DemoBlock>
 
 <script setup>
@@ -209,6 +214,9 @@ onMounted(() => {
   })
   document.getElementById('fp-nest')?.addEventListener('oas-before-close', (e) => {
     out('fp-nest-out', `面板 oas-before-close → reason=${e.detail.reason}（子浮层已先消费过 Esc 时才会到这里）`)
+  })
+  document.getElementById('fp-slot')?.addEventListener('oas-resize', (e) => {
+    out('fp-slot-out', `oas-resize（edge=${e.detail.edge}）→ ${e.detail.rect.width}×${e.detail.rect.height}`)
   })
 })
 </script>

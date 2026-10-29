@@ -1,4 +1,5 @@
 import { OASFloatingPanel } from './oas-floating-panel.js'
+import type { PanelRect } from './geometry.js'
 
 if (!customElements.get('oas-floating-panel')) {
   customElements.define('oas-floating-panel', OASFloatingPanel)
@@ -21,8 +22,8 @@ export type { BoundaryRect, KeyboardDirection, PanelRect, ResizeEdge, SizeLimits
 export interface FloatingPanelProps {
   /** 打开态（唯一状态源；外部写属性静默吸收） */
   open?: boolean
-  /** `x,y,width,height`（相对宿主锚点的像素坐标；缺省 48,48,420,300） */
-  rect?: string
+  /** `x,y,width,height`（相对宿主锚点的像素坐标；缺省 48,48,420,300）；同时接受对象与同格式字符串 */
+  rect?: string | PanelRect
   /** 标题文本（title 插槽覆盖） */
   'panel-title'?: string
   /** 标题栏拖动 + 框体聚焦时方向键移动 */

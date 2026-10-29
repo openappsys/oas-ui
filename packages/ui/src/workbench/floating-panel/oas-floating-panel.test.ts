@@ -4,6 +4,7 @@ import en from '@oas-ui/i18n/en'
 import zhCN from '@oas-ui/i18n/zh-CN'
 import '@oas-ui/i18n'
 import { OASFloatingPanel } from './index.js'
+import type { FloatingPanelProps } from './index.js'
 import { floatingPanelStack } from './panel-stack.js'
 import { DEFAULT_RECT } from './geometry.js'
 import { pushEscapeLayer } from '../../shared/overlay-stack.js'
@@ -136,6 +137,13 @@ describe('OASFloatingPanel 结构', () => {
     expect(el.getAttribute('rect')).toBe('12,31,260,180')
     expect(el.rect).toEqual({ x: 12, y: 31, width: 260, height: 180 })
     expect(frameStyle(el)).toEqual({ left: '12px', top: '31px', width: '260px', height: '180px' })
+  })
+
+  it('FloatingPanelProps.rect 同时接受对象与字符串（与访问器放宽一致）', () => {
+    const asObject: FloatingPanelProps = { rect: { x: 0, y: 0, width: 100, height: 80 } }
+    const asString: FloatingPanelProps = { rect: '0,0,100,80' }
+    expect(asObject.rect).toEqual({ x: 0, y: 0, width: 100, height: 80 })
+    expect(asString.rect).toBe('0,0,100,80')
   })
 
   it('min / max 约束外部 rect；min > max 以 min 为准', () => {
@@ -982,6 +990,93 @@ describe('OASFloatingPanel 强制色与 coarse 样式契约', () => {
   })
 })
 
+// ===== 标题栏实测高度（fix round 2） =====
+
+describe('OASFloatingPanel 标题栏高度实测', () => {
+  class FakeRO implements ResizeObserver {
+    static instances: FakeRO[] = []
+    readonly targets = new Set<Element>()
+    disconnected = false
+    constructor(private readonly cb: ResizeObserverCallback) {
+      FakeRO.instances.push(this)
+    }
+    observe(target: Element): void {
+      this.disconnected = false
+      this.targets.add(target)
+    }
+    unobserve(target: Element): void {
+      this.targets.delete(target)
+    }
+    disconnect(): void {
+      this.targets.clear()
+      this.disconnected = true
+    }
+    trigger(): void {
+      this.cb([], this)
+    }
+  }
+
+  const TOKEN = '--oas-floating-panel-titlebar-height'
+
+  function stubHeight(el: HTMLElement, height: number): void {
+    Object.defineProperty(el, 'clientHeight', { configurable: true, value: height })
+  }
+
+  beforeEach(() => {
+    FakeRO.instances = []
+    vi.stubGlobal('ResizeObserver', FakeRO as unknown as typeof ResizeObserver)
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('富标题实测高度写回 host token；重复回调不重写；断开释放、重连重挂', () => {
+    const el = mount({ open: '' })
+    const bar = titlebar(el)
+    // happy-dom 无布局：模拟 48px 富标题实测值
+    stubHeight(bar, 48)
+    const ro = FakeRO.instances[0]!
+    expect(ro.targets.has(bar), '观察标题栏本体').toBe(true)
+
+    ro.trigger()
+    expect(el.style.getPropertyValue(TOKEN), '写回 px 实测值').toBe('48px')
+
+    const setSpy = vi.spyOn(el.style, 'setProperty')
+    ro.trigger()
+    expect(setSpy, '同值重复回调不重写（防 RO 循环）').not.toHaveBeenCalled()
+    setSpy.mockRestore()
+
+    // 宿主移除内联 token 后再次实测：必须补写（同值判定看实际内联值，不看缓存）
+    el.style.removeProperty(TOKEN)
+    ro.trigger()
+    expect(el.style.getPropertyValue(TOKEN)).toBe('48px')
+
+    el.remove()
+    expect(ro.disconnected, '断开释放观察器').toBe(true)
+    document.body.appendChild(el)
+    const reconnected = FakeRO.instances.at(-1)!
+    expect(reconnected).not.toBe(ro)
+    expect(reconnected.targets.has(titlebar(el)), '重连重挂').toBe(true)
+    expect(el.style.getPropertyValue(TOKEN)).toBe('48px')
+  })
+
+  it('实测为 0（关闭态 display:none）不写 token，保留默认 36px', () => {
+    const el = mount()
+    const bar = titlebar(el)
+    stubHeight(bar, 0)
+    FakeRO.instances[0]!.trigger()
+    expect(el.style.getPropertyValue(TOKEN)).toBe('')
+  })
+
+  it('SSR 运行段不建观察器、不写实测 token（快照仍用默认 token）', () => {
+    ;(window as Window & { __OAS_SSR__?: boolean }).__OAS_SSR__ = true
+    const el = mount({ open: '' })
+    expect(FakeRO.instances).toHaveLength(0)
+    expect(el.style.getPropertyValue(TOKEN)).toBe('')
+  })
+})
+
 // ===== 断开期间改 open（独立复核 I5） =====
 
 describe('OASFloatingPanel 断开期间改 open', () => {
@@ -1004,6 +1099,21 @@ describe('OASFloatingPanel 断开期间改 open', () => {
     pressEscape()
     expect(events.filter((e) => e.type === 'oas-before-close')).toHaveLength(1)
     expect(el.hasAttribute('open')).toBe(false)
+  })
+
+  it('首帧即打开的断开重连不补 previousFocus：关闭不把焦点送回任意旧元素', () => {
+    const before = document.createElement('button')
+    document.body.appendChild(before)
+    before.focus()
+    // 首帧即打开：不抢焦点，previousFocus 保持为空
+    const el = mount({ open: '' })
+    expect(activeInner()).toBe(before)
+
+    el.remove()
+    document.body.appendChild(el)
+    closeBtn(el).focus()
+    el.close()
+    expect(activeInner(), '不得归还到重连时抓到的旧焦点').not.toBe(before)
   })
 
   it('断开时关闭：不触 stack.refresh / 不归还焦点；重连保持关闭且无 Esc 层', () => {
@@ -1106,6 +1216,31 @@ describe('OASFloatingPanel 边界解析', () => {
     flushFrame()
     fire(document, 'pointerup', { x: 9999, y: 9999 })
     expect(el.getAttribute('rect'), '夹在同根树的边界内').toBe('100,80,100,80')
+  })
+
+  it('面板在 shadow 根内、边界只在 document：回退 document 查询（同 id 根树优先）', () => {
+    const shadowHost = document.createElement('div')
+    document.body.appendChild(shadowHost)
+    const root = shadowHost.attachShadow({ mode: 'open' })
+    const docBound = document.createElement('div')
+    docBound.id = 'fp-scope-doc-bounds'
+    document.body.appendChild(docBound)
+
+    const el = new OASFloatingPanel()
+    el.setAttribute('open', '')
+    el.setAttribute('movable', '')
+    el.setAttribute('boundary', '#fp-scope-doc-bounds')
+    el.setAttribute('rect', '10,10,100,80')
+    el.setAttribute('min', '40,40')
+    root.appendChild(el)
+
+    stubRect(el, { x: 0, y: 0, width: 0, height: 0 })
+    stubRect(docBound, { x: 0, y: 0, width: 200, height: 160 })
+    fire(titlebar(el), 'pointerdown', { x: 10, y: 10 })
+    fire(document, 'pointermove', { x: 9999, y: 9999 })
+    flushFrame()
+    fire(document, 'pointerup', { x: 9999, y: 9999 })
+    expect(el.getAttribute('rect'), '同根树未命中时回退 document 边界').toBe('100,80,100,80')
   })
 
   it('未命中 boundary 选择器只告警一次，且告警台账有界', () => {

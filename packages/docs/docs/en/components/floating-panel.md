@@ -10,6 +10,10 @@ The panel **does not portal**: the host is a zero-size anchor (`position: relati
 
 On touch devices (`pointer: coarse`) handles and the close button grow to 44px: the title bar (including the close button) always sits above the handles, and the top/top-corner handles start below the title bar — so dragging the bar and tapping close are never stolen by a resize handle.
 
+The larger hit areas have a cost: under coarse pointers roughly the top 44px of the content area is the `n` resize band. With the default minimum size `160×96`, the title bar plus that band covers nearly the whole panel and the content is barely clickable. For touch, use a larger `min` (for example `240,180`) or disable `n`/`s` edge resizing (the component has no per-handle switch; leave `resizable` off entirely). Gesture semantics are unchanged.
+
+When a rich `title` slot makes the title bar taller, the client measures the title bar with `ResizeObserver` and writes the height back to `--oas-floating-panel-titlebar-height` (px), moving the top/top-corner handles down. SSR snapshots keep the default token; the server does not measure.
+
 <DemoBlock title="Movable / resizable panel">
   <div style="position: relative; min-height: 260px">
     <oas-floating-panel id="fp-basic" open movable resizable panel-title="Layers" rect="0,0,380,230">
@@ -130,14 +134,15 @@ The default slot carries the content; the `title` slot overrides the title text 
 
 <DemoBlock title="title slot (rich title)">
   <div style="position: relative; min-height: 210px">
-    <oas-floating-panel id="fp-slot" open rect="0,0,340,170">
-      <span slot="title" style="display: inline-flex; align-items: center; gap: var(--oas-space-1)">
+    <oas-floating-panel id="fp-slot" open resizable rect="0,0,340,170">
+      <span slot="title" style="display: inline-flex; align-items: center; gap: var(--oas-space-1); min-height: 48px">
         <oas-tag>Synced</oas-tag>
         <strong>Asset inspector</strong>
       </span>
-      <p style="margin: 0">The title comes from the <strong>title</strong> slot; the accessible name updates accordingly.</p>
+      <p style="margin: 0">The title comes from the <strong>title</strong> slot (48px tall here); top/top-corner handles start below the title bar and still resize.</p>
     </oas-floating-panel>
   </div>
+  <p id="fp-slot-out" style="margin: var(--oas-space-2) 0 0; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">Drag the top edge or a top corner to see oas-resize.</p>
 </DemoBlock>
 
 <script setup>
@@ -209,6 +214,9 @@ onMounted(() => {
   })
   document.getElementById('fp-nest')?.addEventListener('oas-before-close', (e) => {
     out('fp-nest-out', `panel oas-before-close → reason=${e.detail.reason} (reached only after the child overlay consumed Esc)`)
+  })
+  document.getElementById('fp-slot')?.addEventListener('oas-resize', (e) => {
+    out('fp-slot-out', `oas-resize (edge=${e.detail.edge}) → ${e.detail.rect.width}×${e.detail.rect.height}`)
   })
 })
 </script>

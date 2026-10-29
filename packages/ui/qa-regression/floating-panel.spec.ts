@@ -8,7 +8,11 @@
 
 import { test, expect } from '@playwright/test'
 import AxeBuilder from '@axe-core/playwright'
+import { fileURLToPath } from 'node:url'
 import { up } from './helpers'
+
+/** packages/ui/dist/cdn.js：自包含构建产物，独立 fixture 页可直接加载（不依赖文档站模块图） */
+const builtCdn = fileURLToPath(new URL('../dist/cdn.js', import.meta.url))
 
 type ConsolePage = import('@playwright/test').Page & { __oasConsole: string[] }
 type PanelEl = HTMLElement & { show(): void; close(): boolean; bringToFront(): void }
@@ -34,6 +38,19 @@ async function gotoPage(page: import('@playwright/test').Page, keep: string | st
       if (el.hasAttribute('open')) el.close()
     }
   }, keepIds)
+}
+
+/** 独立真实页面：只放首帧即打开的面板，再加载真实构建产物（不经过文档 demo 页、不关闭任何面板） */
+async function openFirstFramePage(page: import('@playwright/test').Page, body: string): Promise<void> {
+  await page.route('**/__qa_floating_cdn__/**', (route) =>
+    route.fulfill({ path: builtCdn, contentType: 'text/javascript' }),
+  )
+  // 真实 origin 锚点：setContent 后根相对模块说明符才能解析（about:blank 下 import 失败）
+  await page.goto('/404.html')
+  await page.setContent(
+    `<!doctype html><html lang="zh-CN"><body style="margin:0;padding:0">${body}<script type="module">import '/__qa_floating_cdn__/cdn.js'</script></body></html>`,
+  )
+  await page.waitForFunction(() => customElements.get('oas-floating-panel') != null)
 }
 
 /** 读取面板框体几何（视口坐标） */
@@ -138,6 +155,70 @@ test('四边 / 四角缩放：se 放大、w 左扩、n 上扩', async ({ page })
 
   await dragShadow(page, 'fp-basic', { part: 'handle', edge: 'n' }, 0, -20)
   await expect.poll(() => rectAttr(page, 'fp-basic')).toBe('-30,-20,450,280')
+})
+
+test('富标题 48px：上侧/上角手柄带可命中，顶边拖拽可缩放', async ({ page }) => {
+  await gotoPage(page, '#fp-slot')
+  // 等 ResizeObserver 把实测标题栏高度写回 host token（关闭态/初测 0 不写）
+  await expect
+    .poll(
+      () =>
+        page.evaluate(() => {
+          const host = document.getElementById('fp-slot')!
+          const value = Number.parseFloat(
+            getComputedStyle(host).getPropertyValue('--oas-floating-panel-titlebar-height'),
+          )
+          return Number.isFinite(value) ? value : 0
+        }),
+      { message: '富标题实测高度写回 token' },
+    )
+    .toBeGreaterThan(40)
+
+  const probe = await page.evaluate(() => {
+    const host = document.getElementById('fp-slot')!
+    host.scrollIntoView({ block: 'center' })
+    const root = host.shadowRoot!
+    const bar = root.querySelector<HTMLElement>('[part="titlebar"]')!
+    const br = bar.getBoundingClientRect()
+    const centerOf = (edge: string) => {
+      const el = root.querySelector<HTMLElement>(`[part="handle"][data-edge="${edge}"]`)!
+      const r = el.getBoundingClientRect()
+      const point = { x: r.left + r.width / 2, y: r.top + r.height / 2 }
+      const hit = root.elementFromPoint(point.x, point.y) as HTMLElement | null
+      return {
+        top: r.top,
+        hitPart: hit?.closest('[part]')?.getAttribute('part') ?? null,
+        hitEdge: hit?.closest<HTMLElement>('[part="handle"]')?.dataset.edge ?? null,
+      }
+    }
+    return {
+      barHeight: br.height,
+      barBottom: br.bottom,
+      n: centerOf('n'),
+      ne: centerOf('ne'),
+      nw: centerOf('nw'),
+    }
+  })
+  expect(probe.barHeight, '富标题撑高标题栏').toBeGreaterThan(40)
+  for (const edge of ['n', 'ne', 'nw'] as const) {
+    expect(probe[edge].hitPart, `${edge} 手柄带命中手柄（实测 ${JSON.stringify(probe[edge])}）`).toBe('handle')
+    expect(probe[edge].hitEdge).toBe(edge)
+    expect(probe[edge].top, `${edge} 手柄从标题栏下沿起算`).toBeGreaterThanOrEqual(probe.barBottom - 1.5)
+  }
+
+  // 顶边拖拽：真实指针 resize（修复前手柄被标题栏盖住，这里完全不响应）
+  await dragShadow(page, 'fp-slot', { part: 'handle', edge: 'n' }, 0, -20)
+  await expect
+    .poll(
+      async () => {
+        const rect = (await rectAttr(page, 'fp-slot'))!.split(',').map(Number)
+        // Firefox 的指针坐标在分数像素边缘会差 1px：断言「向上扩了约 20px」而非精确值
+        return Math.abs(rect[1]! + 20) <= 2 && Math.abs(rect[3]! - 190) <= 2 && rect[0] === 0 && rect[2] === 340
+      },
+      { message: '顶边拖拽提交 resize（y/height 变化约 20px）' },
+    )
+    .toBe(true)
+  await expect(page.locator('#fp-slot-out')).toContainText('oas-resize')
 })
 
 test('受控回写：拖拽事件后宿主把 rect 吸附到 10px 网格', async ({ page }) => {
@@ -246,21 +327,35 @@ test('Esc 顺序跟随置前：A 开、B 开、点 A 置前后 Esc 关闭 A', as
   await expect.poll(() => panelOpen(page, 'fp-b')).toBe(false)
 })
 
-test('首帧即打开的单个面板落在最前档（+1），不是基准档', async ({ page }) => {
-  await gotoPage(page)
-  const z = await page.evaluate(() => {
-    const frame = document.getElementById('fp-basic')!.shadowRoot!.querySelector<HTMLElement>('[part="frame"]')!
+test('首帧即打开的单个面板落在最前档（+1）：页面只有该面板', async ({ page }) => {
+  // 真实场景：HTML 里只有一块 open 面板，upgrade 时即为「首帧打开」，不调用 close() 清场
+  await openFirstFramePage(
+    page,
+    `<div style="position:relative;min-height:240px">
+      <oas-floating-panel id="fp-first" open panel-title="首帧面板" rect="20,20,300,160">
+        <p style="margin:0">页面只有这一块面板。</p>
+      </oas-floating-panel>
+    </div>`,
+  )
+  await up(page, '#fp-first')
+  const state = await page.evaluate(() => {
+    const panels = [...document.querySelectorAll('oas-floating-panel')]
+    const frame = document.getElementById('fp-first')!.shadowRoot!.querySelector<HTMLElement>('[part="frame"]')!
     const cs = getComputedStyle(frame)
     const num = (name: string, fallback: number) => {
       const value = Number.parseFloat(cs.getPropertyValue(name))
       return Number.isFinite(value) ? value : fallback
     }
     return {
+      panels: panels.length,
+      openPanels: panels.filter((el) => el.hasAttribute('open')).length,
       actual: Number(cs.zIndex),
       expected: num('--oas-z-index-base', 0) + num('--oas-z-overlay', 1040) + 1,
     }
   })
-  expect(z.actual, `首帧打开的计算 z（实际 ${z.actual}，期望 ${z.expected}）`).toBe(z.expected)
+  expect(state.panels, '页面只有首帧打开的那一块面板').toBe(1)
+  expect(state.openPanels).toBe(1)
+  expect(state.actual, `首帧打开的计算 z（实际 ${state.actual}，期望 ${state.expected}）`).toBe(state.expected)
 })
 
 test('断开期间改 open：不残留幽灵 Esc 层，Esc 仍关闭可见面板；重连补齐', async ({ page }) => {
@@ -356,6 +451,47 @@ test('dark 主题 + reduced-motion + console 零告警', async ({ page }) => {
   expect((page as ConsolePage).__oasConsole).toEqual([])
 })
 
+test('forced-colors：框体与关闭钮焦点环真实可见（outline 兜底）', async ({ page }) => {
+  await gotoPage(page, '#fp-basic')
+  await page.emulateMedia({ forcedColors: 'active' })
+  await page.evaluate(() => {
+    const host = document.getElementById('fp-basic')!
+    host.scrollIntoView({ block: 'center' })
+    ;(host.shadowRoot!.querySelector('[part="frame"]') as HTMLElement).focus()
+  })
+  // 键盘 Tab 触发 :focus-visible（脚本聚焦不保证匹配），真实读计算样式
+  await page.keyboard.press('Tab')
+  const read = (part: 'close' | 'frame') =>
+    page.evaluate((target) => {
+      const root = document.getElementById('fp-basic')!.shadowRoot!
+      const el = root.querySelector<HTMLElement>(`[part="${target}"]`)!
+      const cs = getComputedStyle(el)
+      return {
+        focused: root.activeElement === el,
+        focusVisible: el.matches(':focus-visible'),
+        outlineStyle: cs.outlineStyle,
+        outlineWidth: Number.parseFloat(cs.outlineWidth),
+        outlineColor: cs.outlineColor,
+        boxShadow: cs.boxShadow,
+      }
+    }, part)
+
+  const closeState = await read('close')
+  expect(closeState.focused, 'Tab 进入关闭钮').toBe(true)
+  expect(closeState.focusVisible).toBe(true)
+  expect(closeState.outlineStyle, '强制色下关闭钮 outline 兜底').toBe('solid')
+  expect(closeState.outlineWidth).toBeGreaterThanOrEqual(2)
+  expect(closeState.outlineColor).not.toMatch(/transparent|rgba\(0, 0, 0, 0\)/)
+
+  await page.keyboard.press('Shift+Tab')
+  const frameState = await read('frame')
+  expect(frameState.focused, 'Shift+Tab 回到框体').toBe(true)
+  expect(frameState.focusVisible).toBe(true)
+  expect(frameState.outlineStyle, '强制色下框体 outline 兜底').toBe('solid')
+  expect(frameState.outlineWidth).toBeGreaterThanOrEqual(2)
+  expect(frameState.boxShadow, 'box-shadow 被系统禁用，只剩 outline').toBe('none')
+})
+
 test('axe：面板无 critical/serious 违规', async ({ page }) => {
   await gotoPage(page, ['#fp-basic', '#fp-ctrl', '#fp-nest'])
   const results = await new AxeBuilder({ page }).include('#fp-basic').include('#fp-ctrl').include('#fp-nest').analyze()
@@ -428,7 +564,9 @@ test.describe('coarse 指针热区', () => {
     await expect.poll(() => rectAttr(page, 'fp-basic'), '触摸拖动提交 oas-move').toBe('60,40,380,230')
     await expect(page.locator('#fp-basic-out')).toContainText('oas-move')
 
-    // 点关闭钮（真实触摸 tap）：CDP 触屏事件经浏览器手势识别合成 click
+    // 点关闭钮（真实触摸 tap）：先等两帧让上一次触摸的 pointer capture / rAF 提交完全收敛，
+    // 再发 touchStart（CDP 触屏事件经浏览器手势识别合成 click）
+    await page.evaluate(() => new Promise<void>((r) => requestAnimationFrame(() => requestAnimationFrame(() => r()))))
     const closePoint = await page.evaluate(() => {
       const close = document.getElementById('fp-basic')!.shadowRoot!.querySelector<HTMLElement>('[part="close"]')!
       const r = close.getBoundingClientRect()
