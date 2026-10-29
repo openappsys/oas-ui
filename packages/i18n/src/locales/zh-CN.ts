@@ -503,6 +503,8 @@ export const zhCN = {
   'actionBar.progress': '任务进度',
   'actionBar.cancel': '取消任务',
   'actionBar.seek': '跳转到指定帧',
+  'floatingPanel.label': '悬浮面板',
+  'floatingPanel.close': '关闭面板',
   // json-viewer
   'jsonViewer.search': '搜索 JSON',
   'jsonViewer.prev': '上一个匹配',

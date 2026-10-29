@@ -290,6 +290,8 @@ export const WHITELIST = [
   'oas-task-progress-well',
   'oas-transport-well',
   'oas-music-well',
+  // —— workbench 悬浮面板（非模态工具窗；close 态 display:none 直出，open 态属性决定位置） ——
+  'oas-floating-panel',
   // —— SSR 白名单收口：移动端/会话剩余 standalone 九件（swatch-group / bottom-sheet 仍不纳入） ——
   'oas-message-actions',
   'oas-tool-call',
@@ -548,6 +550,7 @@ const TAG_ENTRY: Record<WhiteListTag, string> = {
   'oas-task-progress-well': '@oas-ui/ui/workbench/action-bar',
   'oas-transport-well': '@oas-ui/ui/workbench/action-bar',
   'oas-music-well': '@oas-ui/ui/workbench/action-bar',
+  'oas-floating-panel': '@oas-ui/ui/workbench/floating-panel',
   // —— SSR 白名单收口：conversation / form / feedback / data / navigation 九件 ——
   'oas-message-actions': '@oas-ui/ui/conversation/message-actions',
   'oas-tool-call': '@oas-ui/ui/conversation/tool-call',

@@ -500,6 +500,8 @@ export const ja: LocaleMessages = {
   'actionBar.progress': 'タスクの進行状況',
   'actionBar.cancel': 'タスクをキャンセル',
   'actionBar.seek': 'フレームへ移動',
+  'floatingPanel.label': 'フローティングパネル',
+  'floatingPanel.close': 'パネルを閉じる',
   // json-viewer
   'jsonViewer.search': 'Search JSON',
   'jsonViewer.prev': 'Previous match',

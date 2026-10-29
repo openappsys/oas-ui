@@ -241,6 +241,10 @@ const COMPONENT_STEPS: Record<string, Array<[string, string, string?]>> = {
     ['oas-action-bar-button [part="button"]', 'click', '点命令按钮 → oas-action'],
     ['oas-task-progress-well [part="well-cancel"]', 'click', '点任务井取消 → oas-cancel'],
   ],
+  'floating-panel': [
+    ['#fp-basic [part="titlebar"]', 'scrolldrag', '真实指针拖标题栏 → oas-move'],
+    ['#fp-basic [part="handle"][data-edge="se"]', 'scrolldrag', '真实指针拖 se 手柄 → oas-resize'],
+  ],
   grid: [['oas-grid[collapsed-rows] [part="collapse-tail-btn"]', 'click', '点折叠尾格展开 → oas-collapse']],
   swatch: [['oas-swatch-group:not([disabled]) oas-swatch:not([disabled])', 'click', '点色板 → 组 oas-change']],
   scheduler: [
@@ -887,6 +891,17 @@ async function runSteps(page: Page, steps: Array<[string, string, string?]>): Pr
           await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
           await page.mouse.down()
           await page.mouse.move(box.x + box.width / 2 + 80, box.y + box.height / 2, { steps: 6 })
+          await page.mouse.up()
+        }
+      } else if (act === 'scrolldrag') {
+        // 先滚入视口再真拖：长页面上通用探针可能已把页面滚到别处，直接 mouse 事件会落到视口外
+        const el = page.locator(sel).first()
+        if (await el.count()) {
+          await el.evaluate((e) => (e as HTMLElement).scrollIntoView({ block: 'center' }))
+          const box = (await el.boundingBox())!
+          await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
+          await page.mouse.down()
+          await page.mouse.move(box.x + box.width / 2 + 80, box.y + box.height / 2 + 40, { steps: 6 })
           await page.mouse.up()
         }
       } else if (act.startsWith('dragdown:')) {

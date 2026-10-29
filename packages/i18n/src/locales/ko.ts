@@ -500,6 +500,8 @@ export const ko: LocaleMessages = {
   'actionBar.progress': '작업 진행률',
   'actionBar.cancel': '작업 취소',
   'actionBar.seek': '프레임으로 이동',
+  'floatingPanel.label': '플로팅 패널',
+  'floatingPanel.close': '패널 닫기',
   // json-viewer
   'jsonViewer.search': 'Search JSON',
   'jsonViewer.prev': 'Previous match',

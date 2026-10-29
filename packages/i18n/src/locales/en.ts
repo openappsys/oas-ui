@@ -428,6 +428,8 @@ export const en: LocaleMessages = {
   'actionBar.progress': 'Task progress',
   'actionBar.cancel': 'Cancel task',
   'actionBar.seek': 'Seek to frame',
+  'floatingPanel.label': 'Floating panel',
+  'floatingPanel.close': 'Close panel',
   // json-viewer
   'jsonViewer.search': 'Search JSON',
   'jsonViewer.prev': 'Previous match',

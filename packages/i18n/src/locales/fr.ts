@@ -500,6 +500,8 @@ export const fr: LocaleMessages = {
   'actionBar.progress': 'Progression de la tâche',
   'actionBar.cancel': 'Annuler la tâche',
   'actionBar.seek': "Aller à l'image",
+  'floatingPanel.label': 'Panneau flottant',
+  'floatingPanel.close': 'Fermer le panneau',
   // json-viewer
   'jsonViewer.search': 'Search JSON',
   'jsonViewer.prev': 'Previous match',

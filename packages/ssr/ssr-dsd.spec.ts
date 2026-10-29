@@ -57,6 +57,14 @@ const NOTICE_PAGE_URL = pathToFileURL(NOTICE_PAGE).href
 /** 滚动正文标记（唯一串：禁 JS 下按 innerText 计数即可判定是否重复渲染） */
 const NOTICE_SCROLL_TEXT = '滚动通告正文标记'
 
+/**
+ * floating-panel 打开态 DSD 快照专用页：验证禁 JS 即可见标题与位置（位置由 rect 属性纯函数直出），
+ * 以及客户端 upgrade 后真水合不重建（style 同一对象、指纹 meta 被消费、几何不变）。
+ */
+const FLOATING_PAGE = join(ARTIFACT_DIR, 'floating-panel-dsd.html')
+const FLOATING_PAGE_URL = pathToFileURL(FLOATING_PAGE).href
+const FLOATING_TITLE = 'SSR 悬浮面板标题'
+
 /** 直接执行 guide 当前脚本，避免测试自带另一份实现而假绿；key=null 用于无存储场景。 */
 function systemThemeHeadScript(key: string | null): string {
   const guide = readFileSync(join(REPO_ROOT, 'packages', 'docs', 'docs', 'guide', 'theming.md'), 'utf8')
@@ -738,6 +746,9 @@ test.beforeAll(async () => {
     renderToString('oas-task-progress-well', { label: '构建任务', progress: '60', detail: '编译中 42/70' }, '', {
       locale: 'zh-CN',
     }),
+    // 悬浮面板取关闭态（无 open → 宿主 display:none，零布局足迹；打开态位置/标题由属性纯函数直出，
+    // 由下方 FLOATING_PAGE 专项夹具验证禁 JS 可见与真水合不重建）
+    renderToString('oas-floating-panel', {}, '<p>悬浮面板内容</p>', { locale: 'zh-CN' }),
   ])
 
   // —— 新增白名单件：scope-bar / attachment-group / transport-well / music-well ——
@@ -957,6 +968,36 @@ ${[
     ${noticeScrollable}
     ${noticeItems}
   </div>
+</body>
+</html>`,
+    'utf8',
+  )
+
+  // —— 6) floating-panel 打开态：禁 JS 可见标题/位置 + 水合不重建 ——
+  const floatingSnap = await renderToString(
+    'oas-floating-panel',
+    {
+      id: 'fp-dsd',
+      open: '',
+      rect: '40,24,320,200',
+      'panel-title': FLOATING_TITLE,
+      movable: '',
+      resizable: '',
+    },
+    '<p>面板内容</p>',
+    { locale: 'zh-CN' },
+  )
+  writeFileSync(
+    FLOATING_PAGE,
+    `<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <title>floating-panel DSD 快照</title>
+  <style>${themeCss}</style>
+</head>
+<body style="font-family: system-ui, sans-serif; padding: 24px; margin: 0;">
+  ${floatingSnap}
 </body>
 </html>`,
     'utf8',
@@ -1704,6 +1745,83 @@ test('stepper 真水合：DSD 快照升级后面板显隐联动可交互（点�
     .locator('oas-stepper-panel')
     .evaluateAll((els) => els.some((el) => !(el as HTMLElement).hidden))
   expect(anyVisible, 'current=2 无匹配面板，全部面板应收起').toBe(false)
+})
+
+test('floating-panel DSD：禁 JS 可见标题与位置，upgrade 后真水合不重建、几何不变', async ({ page }) => {
+  const pageErrors: string[] = []
+  const consoleErrors: string[] = []
+  page.on('pageerror', (e) => pageErrors.push(e.message))
+  page.on('console', (m) => {
+    if (m.type() === 'error' || m.type() === 'warning') consoleErrors.push(`${m.type()}: ${m.text()}`)
+  })
+
+  await page.goto(FLOATING_PAGE_URL, { waitUntil: 'load' })
+
+  // 快照态（未注入 bundle）：禁用 JS 也可见标题与位置
+  const snapshot = await page.evaluate(() => {
+    const host = document.querySelector<HTMLElement>('oas-floating-panel#fp-dsd')!
+    const root = host.shadowRoot!
+    const frame = root.querySelector<HTMLElement>('[part="frame"]')!
+    const title = root.querySelector<HTMLElement>('[part="title"]')!
+    const box = frame.getBoundingClientRect()
+    const style = root.querySelector('style')
+    ;(window as unknown as { __fpStyleRef?: Element | null }).__fpStyleRef = style
+    return {
+      open: host.hasAttribute('open'),
+      title: title.textContent?.trim() ?? '',
+      labelledby: frame.getAttribute('aria-labelledby'),
+      titleId: title.id,
+      ariaModal: frame.getAttribute('aria-modal'),
+      box: { x: box.x, y: box.y, width: box.width, height: box.height },
+      meta: root.querySelector('meta[data-oas-ssr]') !== null,
+      styleSame: style !== null,
+    }
+  })
+  expect(snapshot.open).toBe(true)
+  expect(snapshot.title).toBe(FLOATING_TITLE)
+  expect(snapshot.titleId.length).toBeGreaterThan(0)
+  expect(snapshot.labelledby).toBe(snapshot.titleId)
+  expect(snapshot.ariaModal).toBe('false')
+  // 位置由 rect 属性直出（页面 padding 24 + rect 40/24 → 视口 64/48）
+  expect(snapshot.box.width).toBeCloseTo(320, 1)
+  expect(snapshot.box.height).toBeCloseTo(200, 1)
+  expect(snapshot.box.x).toBeCloseTo(64, 1)
+  expect(snapshot.box.y).toBeCloseTo(48, 1)
+  expect(snapshot.meta, '水合前快照含指纹 meta').toBe(true)
+  expect(snapshot.styleSame).toBe(true)
+
+  // 注入 bundle：真水合接管（不重建 shadow）
+  await page.addScriptTag({ path: UI_BUNDLE, type: 'module' })
+  await page.evaluate(async () => {
+    await customElements.whenDefined('oas-floating-panel')
+  })
+  await page.waitForTimeout(300)
+
+  const hydrated = await page.evaluate(() => {
+    const host = document.querySelector<HTMLElement>('oas-floating-panel#fp-dsd')!
+    const root = host.shadowRoot!
+    const frame = root.querySelector<HTMLElement>('[part="frame"]')!
+    const title = root.querySelector<HTMLElement>('[part="title"]')!
+    const box = frame.getBoundingClientRect()
+    const w = window as unknown as { __fpStyleRef?: Element | null }
+    return {
+      sameStyle: root.querySelector('style') === w.__fpStyleRef,
+      metaRemoved: root.querySelector('meta[data-oas-ssr]') === null,
+      title: title.textContent?.trim() ?? '',
+      dataOpen: frame.hasAttribute('data-open'),
+      box: { x: box.x, y: box.y, width: box.width, height: box.height },
+    }
+  })
+  expect(hydrated.sameStyle, '真水合：style 保持同一 DOM 对象').toBe(true)
+  expect(hydrated.metaRemoved, '指纹 meta 被消费').toBe(true)
+  expect(hydrated.title).toBe(FLOATING_TITLE)
+  expect(hydrated.dataOpen, '升级后打开态钩子同步').toBe(true)
+  expect(hydrated.box.width).toBeCloseTo(320, 1)
+  expect(hydrated.box.height).toBeCloseTo(200, 1)
+  expect(Math.abs(hydrated.box.x - snapshot.box.x)).toBeLessThanOrEqual(1)
+  expect(Math.abs(hydrated.box.y - snapshot.box.y)).toBeLessThanOrEqual(1)
+  expect(pageErrors).toEqual([])
+  expect(consoleErrors).toEqual([])
 })
 
 test('渲染器边界：非白名单抛错、快照属性完整 HTML 转义、快照含真水合指纹', async () => {

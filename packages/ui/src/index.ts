@@ -77,6 +77,7 @@ import './workbench/titlebar/index.js'
 import './workbench/statusbar/index.js'
 import './workbench/inspector/index.js'
 import './workbench/action-bar/index.js'
+import './workbench/floating-panel/index.js'
 export {
   OASTitlebar,
   OASTrafficLights,
@@ -137,6 +138,21 @@ export type {
   ActionBarCancelDetail,
   ActionBarEventMap,
 } from './workbench/action-bar/index.js'
+export {
+  OASFloatingPanel,
+  type FloatingPanelActionSource,
+  type FloatingPanelActivateDetail,
+  type FloatingPanelActivateSource,
+  type FloatingPanelBeforeCloseDetail,
+  type FloatingPanelCloseReason,
+  type FloatingPanelMoveDetail,
+  type FloatingPanelOpenChangeDetail,
+  type FloatingPanelResizeDetail,
+  type FloatingPanelTransformSource,
+  type PanelRect,
+  type ResizeEdge,
+} from './workbench/floating-panel/index.js'
+export type { FloatingPanelProps, FloatingPanelEventMap } from './workbench/floating-panel/index.js'
 
 import './form/input/index.js'
 import './form/textarea/index.js'

@@ -500,6 +500,8 @@ export const ar: LocaleMessages = {
   'actionBar.progress': 'تقدم المهمة',
   'actionBar.cancel': 'إلغاء المهمة',
   'actionBar.seek': 'الانتقال إلى الإطار',
+  'floatingPanel.label': 'لوحة عائمة',
+  'floatingPanel.close': 'إغلاق اللوحة',
   // json-viewer
   'jsonViewer.search': 'Search JSON',
   'jsonViewer.prev': 'Previous match',

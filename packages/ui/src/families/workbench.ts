@@ -13,6 +13,7 @@ import '../workbench/titlebar/index.js'
 import '../workbench/statusbar/index.js'
 import '../workbench/inspector/index.js'
 import '../workbench/action-bar/index.js'
+import '../workbench/floating-panel/index.js'
 
 // 唯一透传的 registry API（与全量入口一致）：OASUI.setLocale 切语言；其余 registry API 不进导出面
 export { setLocale } from '@oas-ui/i18n'

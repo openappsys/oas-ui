@@ -500,6 +500,8 @@ export const ru: LocaleMessages = {
   'actionBar.progress': 'Ход задачи',
   'actionBar.cancel': 'Отменить задачу',
   'actionBar.seek': 'Перейти к кадру',
+  'floatingPanel.label': 'Плавающая панель',
+  'floatingPanel.close': 'Закрыть панель',
   // json-viewer
   'jsonViewer.search': 'Search JSON',
   'jsonViewer.prev': 'Previous match',

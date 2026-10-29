@@ -241,6 +241,7 @@ export { OASStatisticWell } from './workbench/action-bar/oas-statistic-well.js'
 export { OASTaskProgressWell } from './workbench/action-bar/oas-task-progress-well.js'
 export { OASTransportWell } from './workbench/action-bar/oas-transport-well.js'
 export { OASMusicWell } from './workbench/action-bar/oas-music-well.js'
+export { OASFloatingPanel } from './workbench/floating-panel/oas-floating-panel.js'
 
 // ---------- framework ----------
 export { OASConfigProvider } from './framework/config-provider/oas-config-provider.js'
