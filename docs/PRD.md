@@ -50,7 +50,13 @@
 - **安全降级**：坏 JSON、非对象、版本/模式/形状不符、`getItem`/`setItem` 抛异常均忽略存储并回落默认/显式值，不抛错、不刷告警。
 - **key 与实例语义**：改 `storage-key` 不自动重载（只影响后续写入）；不监听 `storage` 事件，同 key 在线实例不 live sync；恢复只在首次连接尝试一次，断开重连保留内存态。
 - **SSR / 水合**：服务端渲染（`__OAS_SSR__`）与 DSD 水合同步阶段不读写存储；恢复延迟到微任务，水合首帧结构与快照零差异，随后按存储恢复且不重建 shadow。
-- **修复**：multi 模式连接前设置的显式 `collapsed` 属性此前被首渲染 `pruneCollapsed` 误删，现仅在确实清理越界折叠态时移除属性。
+- **修复**：multi 模式连接前设置的显式 `collapsed` 属性此前被首渲染 `pruneCollapsed` 误删，现仅在确实清理越界折叠态时移除属性；mount 期派发一次 `oas-collapse`（`{ collapsed: true, side: 'left' }`），与 legacy 显式折叠对齐，不派发 `oas-resize`。
+- **零交互不写快照（fix round 1）**：首连开始置 `persistSuppressed`，恢复/无 key/SSR/无快照各分支在恢复微任务 `finally`（或无微任务分支的连接末尾）解除；`schedulePersist` / `flushPersist` 抑制期直接返回。mount 期显式 `collapsed` 引发的内部折叠、升级前 own `sizes` 回收触发的 setter 都不得覆盖已有快照；无快照时不得新建 key。用户交互后恢复正常写入。
+- **写入语义收口（fix round 1）**：`schedulePersist` 捕获当次 key，120ms 窗口内改 `storage-key` 时本次写回旧 key（后续交互写新 key）；key 被移除则取消本次写入。flush 前比较 `lastWrittenSnapshot` + `lastWrittenKey`，相同快照不重复 `setItem`；恢复成功时把原始字符串记为已写内容。
+- **恢复只尝试一次 + 复位基线（fix round 1）**：首连无 key 后补 key 不恢复；恢复微任务前断开（即使同任务重连）标记 aborted，不恢复且不再重试。双击复位基线始终为显式初始属性（否则默认值/均分），恢复不改变基线；复位作为用户操作会写回存储（文档明示，不静默）。
+- **`percent:0` 拒绝（fix round 1）**：legacy 快照 `percent` 必须 `> 0 && <= 100`；`0` 在组件里会回落 50，存 0 显 50 属不一致，按形状不符整体忽略。
+- **水合限定（fix round 1）**：DSD 水合同步阶段不访问存储、legacy 形态 shadow 不重建；multi 的既有水合架构不改，文档只承诺 legacy 形态的“不重建 shadow”。
+- **Deferred（M9，既有相邻缺陷）**：multi 删除第三面板后折叠索引 1 残留 / 重建 flex 的既有问题不在本批修复，控制器裁定仅登记；本批不改代码。
 
 ### 非目标
 
@@ -58,7 +64,7 @@
 
 ### 验收标准
 
-- 单测：legacy/multi 恢复、显式属性优先矩阵、折叠前尺寸往返、坏 JSON/版本/模式/形状/面板数不匹配、get/set 异常、恢复零事件与用户事件次数、改 key 不重载、同 key 不 live sync、写入合并、SSR 标记零访问；DSD 水合同步阶段零存储访问且恢复不重建 shadow；SSR `renderToString` 零读写。
+- 单测：legacy/multi 恢复、显式属性优先矩阵、折叠前尺寸往返、坏 JSON/版本/模式/形状/面板数不匹配（含 `percent:0`、multi 负数/总和 0、折叠索引越界/非整数、缺/非法 prev）、get/set 异常、恢复零事件与用户事件次数、改 key 不重载、同 key 不 live sync、写入合并、SSR 标记零访问；零交互不写快照（显式 collapsed / own sizes / 无快照不建 key）、断开时 flush、调度捕获 key、相同快照去重、双击复位基线、恢复只尝试一次（补 key / microtask 前断连）、multi 初始折叠事件次数、恢复后 ARIA 与折叠按钮文案；DSD 水合同步阶段零存储访问且 legacy shadow 不重建；SSR `renderToString` 零读写。
 - qa-regression（Chromium + Firefox）：真实拖拽 → localStorage 版本化快照 → 刷新恢复；显式初值优先；改 key 不重载；折叠前尺寸刷新恢复（legacy + multi）；多次 pointermove 只落盘一次；dark/RTL 下恢复比例一致、console 零告警。
 - 文档：splitter.md zh/en 新增「尺寸持久化（storage-key）」与双 demo；API 表由 `pnpm api:scan && pnpm api:gen` 生成；CHANGELOG / PRD / ROADMAP 记录；全量 test/typecheck/build/e2e/perf:size/api/llms/stats/skill/lint/format/trace 通过。
 

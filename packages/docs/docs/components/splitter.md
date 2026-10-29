@@ -167,7 +167,7 @@ min / max 支持像素值：`200px` 后缀按像素夹取（相对容器宽度�
 
 ## 尺寸持久化（storage-key）
 
-可选 `storage-key` 开启尺寸持久化（不设则不读写任何存储）：拖拽 / 键盘调整 / 折叠后把版本化快照写入 `localStorage`，刷新后恢复；写入会合并，拖拽期间不会每个 `pointermove` 都同步写。显式初始 `percent` / `sizes` 属性优先于存储，恢复过程不派发 `oas-resize` / `oas-collapse`。改 `storage-key` 不会自动重载，同一 key 的其他在线实例也不会实时同步。坏 JSON、版本/形状不符与存储读写异常均安全降级；SSR / 水合阶段不访问存储。
+可选 `storage-key` 开启尺寸持久化（不设则不读写任何存储）：拖拽 / 键盘调整 / 折叠后把版本化快照写入 `localStorage`，刷新后恢复；写入会合并，拖拽期间不会每个 `pointermove` 都同步写（窗口内改 key 时本次仍写调度时捕获的旧 key；相同快照不重复写）。显式初始 `percent` / `sizes` 属性优先于存储，恢复过程不派发 `oas-resize` / `oas-collapse`；mount 期显式折叠、升级前 `sizes` property 回收属于零交互，不会覆盖已有快照，也不会在无快照时新建 key。恢复只在首次连接尝试一次：首连无 key 事后补 key、或恢复微任务前断开重连都不会补恢复；改 `storage-key` 不会自动重载，同一 key 的其他在线实例也不会实时同步。双击复位以**显式初始属性（未显式时为默认值）**为基线，不是恢复值；复位属于用户操作，结果会写回存储。坏 JSON、版本/形状不符、`percent:0` 与存储读写异常均安全降级；SSR 全程不访问存储，DSD 水合同步阶段不访问存储（legacy 形态 shadow 不重建；multi 的既有水合架构不变）。
 
 <DemoBlock title="storage-key 刷新恢复（两面板）">
   <oas-space direction="vertical" size="small" style="width: 100%">

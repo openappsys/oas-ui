@@ -243,6 +243,46 @@ test('splitter storage-key：真实拖拽落盘 → 刷新恢复；显式初值�
   expect(Number(keyChanged.before)).toBeCloseTo(dragged.after, 1)
   expect(keyChanged.after, '改 storage-key 不得自动重载').toBe(keyChanged.before)
 
+  // mount 期显式 collapsed 零交互不得覆盖已有快照；无快照不得新建 key
+  const mountSuppressed = await page.evaluate(async (key) => {
+    const raw = localStorage.getItem(key)
+    const el = document.createElement('oas-splitter') as HTMLElement & { shadowRoot: ShadowRoot }
+    el.setAttribute('storage-key', key)
+    el.setAttribute('collapsed', '')
+    el.setAttribute('collapsible', '')
+    el.innerHTML = '<div slot="left">左</div><div slot="right">右</div>'
+    document.body.appendChild(el)
+    await new Promise((r) => setTimeout(r, 260))
+    const after = localStorage.getItem(key)
+    el.remove()
+    return { raw, after, same: raw === after }
+  }, PERSIST_KEY)
+  expect(mountSuppressed.same, 'mount 期显式 collapsed 不得覆盖已有快照').toBe(true)
+
+  const freshKey = `${PERSIST_KEY}-fresh`
+  const fresh = await page.evaluate(async (key) => {
+    localStorage.removeItem(key)
+    const el = document.createElement('oas-splitter') as HTMLElement & { shadowRoot: ShadowRoot }
+    el.setAttribute('storage-key', key)
+    el.setAttribute('collapsed', '')
+    el.setAttribute('collapsible', '')
+    el.innerHTML = '<div slot="left">左</div><div slot="right">右</div>'
+    document.body.appendChild(el)
+    await new Promise((r) => setTimeout(r, 220))
+    const onMount = localStorage.getItem(key)
+    const btn = el.shadowRoot
+      .querySelector('[part="splitter"]')!
+      .parentElement!.querySelector(':scope > .collapse-btn') as HTMLButtonElement
+    btn.click()
+    await new Promise((r) => setTimeout(r, 180))
+    const afterUser = localStorage.getItem(key)
+    el.remove()
+    localStorage.removeItem(key)
+    return { onMount, afterUser }
+  }, freshKey)
+  expect(fresh.onMount, '无快照时 mount 不得新建 key').toBeNull()
+  expect(fresh.afterUser, '用户交互后应创建快照').not.toBeNull()
+
   // dark / RTL 不改变恢复后的比例、console 零告警
   await page.evaluate(() => document.documentElement.classList.add('dark'))
   await page.waitForTimeout(250)

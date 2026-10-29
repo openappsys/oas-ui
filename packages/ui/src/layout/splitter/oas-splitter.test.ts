@@ -349,16 +349,28 @@ describe('OASSplitter', () => {
     expect(el.getAttribute('sizes')).toBe('0,0,100')
   })
 
-  it('multiple：连接前设置的初始 collapsed 属性生效（不被首渲染 prune 吞掉）', () => {
+  it('multiple：连接前设置的初始 collapsed 属性生效（不被首渲染 prune 吞掉）+ mount 事件次数', () => {
     const el = new OASSplitter()
     el.innerHTML = `<div>一</div><div>二</div><div>三</div>`
     el.setAttribute('sizes', '30,40,30')
     el.setAttribute('collapsible', '')
     el.setAttribute('collapsed', '')
+    let collapse = 0
+    let resize = 0
+    let detail: unknown
+    el.addEventListener('oas-collapse', (e: Event) => {
+      collapse++
+      detail = (e as CustomEvent).detail
+    })
+    el.addEventListener('oas-resize', () => resize++)
     document.body.appendChild(el)
     expect(el.hasAttribute('collapsed'), '显式 collapsed 属性应保留').toBe(true)
     expect((el.shadowRoot!.querySelectorAll('.pane')[0] as HTMLElement).style.flex).toBe('0 0 0%')
     expect(el.getAttribute('sizes')).toBe('0,70,30')
+    // 与 legacy 显式 collapsed 对齐：mount 期派发一次 oas-collapse，不派发 oas-resize
+    expect(collapse).toBe(1)
+    expect(detail).toEqual({ collapsed: true, side: 'left' })
+    expect(resize).toBe(0)
   })
 
   it('multiple：子元素增删自动同步分隔条数量', async () => {
@@ -901,9 +913,12 @@ describe('OASSplitter storage-key（opt-in 尺寸持久化）', () => {
     el.addEventListener('oas-resize', () => resize++)
     el.addEventListener('oas-collapse', () => collapse++)
     document.body.appendChild(el)
+    const styleRef = el.shadowRoot!.querySelector('style')
     await settle()
     expect(el.getAttribute('percent')).toBe('60')
     expect((el.shadowRoot!.querySelector('.pane') as HTMLElement).style.flex).toBe('0 0 60%')
+    expect(el.shadowRoot!.querySelector('[part="splitter"]')!.getAttribute('aria-valuenow')).toBe('60')
+    expect(el.shadowRoot!.querySelector('style'), 'CSR 恢复不得重建 shadow').toBe(styleRef)
     expect(resize, '恢复不得派发 oas-resize').toBe(0)
     expect(collapse, '恢复不得派发 oas-collapse').toBe(0)
     // 用户操作仍只派发一次
@@ -953,6 +968,55 @@ describe('OASSplitter storage-key（opt-in 尺寸持久化）', () => {
     expect((fallback.shadowRoot!.querySelector('.pane') as HTMLElement).style.flex).toBe('0 0 50%')
   })
 
+  it('mount 期显式 collapsed + 已有快照：零交互不得覆盖存储', async () => {
+    const raw = JSON.stringify({ v: 1, mode: 'legacy', percent: 60, collapsed: [0], prev: { 0: 60 } })
+    window.localStorage.setItem(KEY, raw)
+    const el = mountWith({ 'storage-key': KEY, collapsed: '', collapsible: '' })
+    document.body.appendChild(el)
+    await settle(200)
+    expect(window.localStorage.getItem(KEY), 'mount 期折叠不得写回存储').toBe(raw)
+    // 用户交互后恢复写入
+    key(el, 'ArrowRight')
+    await settle(180)
+    expect(window.localStorage.getItem(KEY)).not.toBe(raw)
+  })
+
+  it('upgrade 前 own sizes + 已有快照：回收触发的 setter 不得覆盖存储', async () => {
+    const raw = JSON.stringify({ v: 1, mode: 'multi', sizes: [20, 30, 50], collapsed: [], prev: {} })
+    window.localStorage.setItem(KEY, raw)
+    const el = new OASSplitter()
+    el.setAttribute('storage-key', KEY)
+    el.innerHTML = `<div>一</div><div>二</div><div>三</div>`
+    Object.defineProperty(el, 'sizes', {
+      value: '40,30,30',
+      writable: true,
+      configurable: true,
+      enumerable: true,
+    })
+    document.body.appendChild(el)
+    await settle(200)
+    expect(el.getAttribute('sizes'), '显式 own sizes 仍优先').toBe('[40,30,30]')
+    expect(window.localStorage.getItem(KEY), 'own sizes 回收不得写回存储').toBe(raw)
+    // 用户交互后恢复写入
+    Object.defineProperty(el, 'clientWidth', { value: 1000, configurable: true })
+    const mid = el.shadowRoot!.querySelectorAll('[part="splitter"]')[1]!
+    mid.dispatchEvent(pointer('pointerdown', 700))
+    document.dispatchEvent(pointer('pointermove', 760))
+    document.dispatchEvent(pointer('pointerup', 760))
+    await settle(180)
+    expect(window.localStorage.getItem(KEY)).not.toBe(raw)
+  })
+
+  it('无快照时 mount 不新建 key；用户交互后才创建', async () => {
+    const el = mountWith({ 'storage-key': KEY, collapsed: '', collapsible: '' })
+    document.body.appendChild(el)
+    await settle(200)
+    expect(window.localStorage.getItem(KEY), 'mount 期不得创建空快照').toBeNull()
+    collapseBtnOf(el).click()
+    await settle(180)
+    expect(snapshotOf(window.localStorage.getItem(KEY))).toMatchObject({ v: 1, mode: 'legacy' })
+  })
+
   it.each([
     ['坏 JSON', '{bad-json'],
     ['非对象', '[1,2,3]'],
@@ -960,7 +1024,18 @@ describe('OASSplitter storage-key（opt-in 尺寸持久化）', () => {
     ['模式不符', JSON.stringify({ v: 1, mode: 'multi', sizes: [20, 80] })],
     ['形状不符（percent 非数字）', JSON.stringify({ v: 1, mode: 'legacy', percent: '80' })],
     ['形状不符（越界 percent）', JSON.stringify({ v: 1, mode: 'legacy', percent: 180 })],
+    ['形状不符（percent:0）', JSON.stringify({ v: 1, mode: 'legacy', percent: 0 })],
     ['形状不符（collapsed 非数组）', JSON.stringify({ v: 1, mode: 'legacy', percent: 80, collapsed: '0' })],
+    [
+      '形状不符（collapsed 越界）',
+      JSON.stringify({ v: 1, mode: 'legacy', percent: 80, collapsed: [1], prev: { 1: 80 } }),
+    ],
+    [
+      '形状不符（collapsed 非整数）',
+      JSON.stringify({ v: 1, mode: 'legacy', percent: 80, collapsed: ['0'], prev: { 0: 80 } }),
+    ],
+    ['形状不符（缺 prev）', JSON.stringify({ v: 1, mode: 'legacy', percent: 80, collapsed: [0], prev: {} })],
+    ['形状不符（prev 非法）', JSON.stringify({ v: 1, mode: 'legacy', percent: 80, collapsed: [0], prev: { 0: -5 } })],
   ])('坏存储安全降级：%s → 默认 50、不抛', async (_name, raw) => {
     window.localStorage.setItem(KEY, raw)
     const el = mountWith({ 'storage-key': KEY })
@@ -968,6 +1043,30 @@ describe('OASSplitter storage-key（opt-in 尺寸持久化）', () => {
     await settle()
     expect(el.getAttribute('percent') ?? '50').toBe('50')
     expect((el.shadowRoot!.querySelector('.pane') as HTMLElement).style.flex).toBe('0 0 50%')
+  })
+
+  it.each([
+    ['sizes 负数', JSON.stringify({ v: 1, mode: 'multi', sizes: [10, -10, 100], collapsed: [], prev: {} })],
+    ['sizes 总和 0', JSON.stringify({ v: 1, mode: 'multi', sizes: [0, 0, 0], collapsed: [], prev: {} })],
+    [
+      'collapsed 越界（末面板不可折叠）',
+      JSON.stringify({ v: 1, mode: 'multi', sizes: [10, 20, 70], collapsed: [2], prev: { 2: 10 } }),
+    ],
+    [
+      'collapsed 非整数',
+      JSON.stringify({ v: 1, mode: 'multi', sizes: [10, 20, 70], collapsed: [0.5], prev: { 0.5: 10 } }),
+    ],
+    ['collapsed 缺 prev', JSON.stringify({ v: 1, mode: 'multi', sizes: [0, 70, 30], collapsed: [0], prev: {} })],
+    ['prev 非法', JSON.stringify({ v: 1, mode: 'multi', sizes: [0, 70, 30], collapsed: [0], prev: { 0: -10 } })],
+    ['prev 键非法', JSON.stringify({ v: 1, mode: 'multi', sizes: [0, 70, 30], collapsed: [0], prev: { x: 30 } })],
+  ])('multi 坏存储安全降级：%s → 均分、不抛', async (_name, raw) => {
+    window.localStorage.setItem(KEY, raw)
+    const el = mountWith({ 'storage-key': KEY }, `<div>一</div><div>二</div><div>三</div>`)
+    expect(() => document.body.appendChild(el)).not.toThrow()
+    await settle()
+    const panes = el.shadowRoot!.querySelectorAll('.pane')
+    expect(el.getAttribute('sizes')).toBeNull()
+    expect(parseFloat((panes[0] as HTMLElement).style.flex.split(' ')[2] ?? '')).toBeCloseTo(100 / 3, 1)
   })
 
   it('storage get/set 异常安全降级：读取回默认，写入失败不影响拖拽', async () => {
@@ -979,10 +1078,12 @@ describe('OASSplitter storage-key（opt-in 尺寸持久化）', () => {
       throw new Error('quota exceeded')
     })
     try {
-      const el = mountWith({ 'storage-key': KEY, percent: '50' })
+      const el = mountWith({ 'storage-key': KEY })
       expect(() => document.body.appendChild(el)).not.toThrow()
       await settle()
-      expect(el.getAttribute('percent')).toBe('50')
+      // 无显式 percent：真正验证 getItem 抛异常时回落默认 50（布局而非属性写入）
+      expect(el.getAttribute('percent')).toBeNull()
+      expect((el.shadowRoot!.querySelector('.pane') as HTMLElement).style.flex).toBe('0 0 50%')
       Object.defineProperty(el, 'clientWidth', { value: 1000, configurable: true })
       const splitter = el.shadowRoot!.querySelector('[part="splitter"]')!
       expect(() => {
@@ -1052,10 +1153,13 @@ describe('OASSplitter storage-key（opt-in 尺寸持久化）', () => {
     await settle()
     expect(restored.hasAttribute('collapsed')).toBe(true)
     expect((restored.shadowRoot!.querySelector('.pane') as HTMLElement).style.flex).toBe('0 0 0%')
+    expect(restored.shadowRoot!.querySelector('[part="splitter"]')!.getAttribute('aria-valuenow')).toBe('40')
+    expect(collapseBtnOf(restored).getAttribute('aria-label'), '恢复折叠态后按钮应翻转为展开').toBe('展开面板')
     expect(collapseEvents, '恢复折叠态不得派发 oas-collapse').toBe(0)
     collapseBtnOf(restored).click()
     expect(restored.hasAttribute('collapsed')).toBe(false)
     expect((restored.shadowRoot!.querySelector('.pane') as HTMLElement).style.flex).toBe('0 0 40%')
+    expect(collapseBtnOf(restored).getAttribute('aria-label')).toBe('收起面板')
   })
 
   it('折叠前尺寸持久化：multi 刷新恢复折叠态，展开回到折叠前比例', async () => {
@@ -1167,6 +1271,108 @@ describe('OASSplitter storage-key（opt-in 尺寸持久化）', () => {
     } finally {
       set.mockRestore()
     }
+  })
+
+  it('disconnectedCallback：合并窗口内 remove 立即 flush 一次，之后不再补写', async () => {
+    const el = mountWith({ 'storage-key': KEY, percent: '50' })
+    document.body.appendChild(el)
+    await settle()
+    const set = vi.spyOn(window.localStorage, 'setItem')
+    try {
+      key(el, 'ArrowRight')
+      expect(set.mock.calls.length).toBe(0)
+      el.remove()
+      expect(set.mock.calls.length, '断开时应 flush 待写').toBe(1)
+      expect(snapshotOf(window.localStorage.getItem(KEY))).toMatchObject({ percent: 51 })
+      await settle(180)
+      expect(set.mock.calls.length).toBe(1)
+    } finally {
+      set.mockRestore()
+    }
+  })
+
+  it('schedule 时捕获 key：窗口内改 storage-key 本次写回旧 key', async () => {
+    const el = mountWith({ 'storage-key': KEY, percent: '50' })
+    document.body.appendChild(el)
+    await settle()
+    key(el, 'ArrowRight')
+    el.setAttribute('storage-key', `${KEY}-b`)
+    await settle(180)
+    expect(snapshotOf(window.localStorage.getItem(KEY)), '本次写回旧 key').toMatchObject({ percent: 51 })
+    expect(window.localStorage.getItem(`${KEY}-b`), '不得凭空写新 key').toBeNull()
+    // 后续交互写新 key
+    key(el, 'ArrowRight')
+    await settle(180)
+    expect(snapshotOf(window.localStorage.getItem(`${KEY}-b`))).toMatchObject({ percent: 52 })
+  })
+
+  it('相同快照不重复 setItem（lastWritten 比较）', async () => {
+    const el = mountWith({ 'storage-key': KEY, percent: '50' })
+    document.body.appendChild(el)
+    await settle()
+    const set = vi.spyOn(window.localStorage, 'setItem')
+    try {
+      key(el, 'ArrowRight')
+      await settle(180)
+      expect(set.mock.calls.length).toBe(1)
+      // 回到相同最终态（51）：不应再写
+      key(el, 'ArrowLeft')
+      key(el, 'ArrowRight')
+      await settle(180)
+      expect(set.mock.calls.length, '相同快照不得重复写').toBe(1)
+    } finally {
+      set.mockRestore()
+    }
+  })
+
+  it('双击复位基线=显式初始属性/默认，不随恢复改变；复位结果持久化', async () => {
+    // 无显式：存储 60 → 恢复 60，双击回默认 50，并作为用户操作写回 50
+    window.localStorage.setItem(KEY, JSON.stringify({ v: 1, mode: 'legacy', percent: 60 }))
+    const restored = mountWith({ 'storage-key': KEY })
+    document.body.appendChild(restored)
+    await settle()
+    expect(restored.getAttribute('percent')).toBe('60')
+    restored
+      .shadowRoot!.querySelector('[part="splitter"]')!
+      .dispatchEvent(new MouseEvent('dblclick', { bubbles: true }))
+    expect(restored.getAttribute('percent'), '恢复不改变复位基线（默认 50）').toBe('50')
+    await settle(180)
+    expect(snapshotOf(window.localStorage.getItem(KEY)), '复位结果按用户操作持久化').toMatchObject({ percent: 50 })
+    restored.remove()
+
+    // 显式 30：基线 30，不被存储 60 改变
+    window.localStorage.setItem(KEY, JSON.stringify({ v: 1, mode: 'legacy', percent: 60 }))
+    const explicit = mountWith({ 'storage-key': KEY, percent: '30' })
+    document.body.appendChild(explicit)
+    await settle()
+    key(explicit, 'ArrowRight')
+    explicit
+      .shadowRoot!.querySelector('[part="splitter"]')!
+      .dispatchEvent(new MouseEvent('dblclick', { bubbles: true }))
+    expect(explicit.getAttribute('percent')).toBe('30')
+    await settle(180)
+    expect(snapshotOf(window.localStorage.getItem(KEY))).toMatchObject({ percent: 30 })
+  })
+
+  it('恢复只尝试一次：首连无 key 后加 key 不恢复', async () => {
+    window.localStorage.setItem(KEY, JSON.stringify({ v: 1, mode: 'legacy', percent: 70 }))
+    const el = mountWith({})
+    document.body.appendChild(el)
+    await settle()
+    el.setAttribute('storage-key', KEY)
+    await settle(200)
+    expect(el.getAttribute('percent') ?? '50', '首连无 key 后加 key 不恢复').toBe('50')
+    expect((el.shadowRoot!.querySelector('.pane') as HTMLElement).style.flex).toBe('0 0 50%')
+  })
+
+  it('恢复只尝试一次：microtask 前断开重连不恢复', async () => {
+    window.localStorage.setItem(KEY, JSON.stringify({ v: 1, mode: 'legacy', percent: 70 }))
+    const el = mountWith({ 'storage-key': KEY })
+    document.body.appendChild(el)
+    el.remove()
+    document.body.appendChild(el)
+    await settle(200)
+    expect(el.getAttribute('percent') ?? '50', 'microtask 前断开重连不恢复').toBe('50')
   })
 
   it('SSR 渲染标记下零存储访问（读写均跳过）', async () => {

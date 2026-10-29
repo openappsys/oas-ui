@@ -387,7 +387,7 @@ describe('导航布局组件 DSD 真水合批次 4', () => {
     expect(pg.getAttribute('current')).toBe('2')
   })
 
-  it('splitter storage-key：DSD 升级同步阶段不访问存储（首帧与快照一致），微任务后再恢复', async () => {
+  it('splitter storage-key（legacy 形态）：DSD 升级同步阶段不访问存储（首帧与快照一致、shadow 不重建），微任务后再恢复', async () => {
     const storageKey = 'oas-splitter-hydrate-test'
     window.localStorage.clear()
     window.localStorage.setItem(

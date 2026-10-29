@@ -199,14 +199,23 @@ export class OASSplitter extends OASElement {
 
   /** 存储恢复只在首次连接尝试一次（改 key 不自动重载；同 key 在线实例不 live sync） */
   private storageRestoreScheduled = false
+  /** 首连恢复微任务是否仍在途/是否在 microtask 前断开（断开重连不再尝试恢复） */
+  private storageRestorePending = false
+  private storageRestoreAborted = false
   /** 首次连接前的显式初始属性快照（内部折叠/布局会写回属性，之后不能再据此判断“显式”） */
   private explicitInitialCaptured = false
   private explicitPercent = false
   private explicitSizes: number[] | null = null
   private explicitCollapsed = false
-  /** 写入合并定时器与待写标记（拖拽期间合并 setItem） */
+  /** 首连恢复完成前抑制持久化：mount 期显式折叠 / own sizes 回收是零交互，不得覆盖已有快照 */
+  private persistSuppressed = false
+  /** 写入合并定时器、待写标记与调度时捕获的 key（窗口内改 key 本次仍写旧 key） */
   private persistTimer: ReturnType<typeof setTimeout> | null = null
   private persistPending = false
+  private persistKey: string | null = null
+  /** 上次成功写入的快照字符串与 key（相同快照不重复 setItem） */
+  private lastWrittenSnapshot: string | null = null
+  private lastWrittenKey: string | null = null
 
   override attributeChangedCallback(name: string, oldValue: string | null, newValue: string | null): void {
     this.lastAttr = name
@@ -219,6 +228,10 @@ export class OASSplitter extends OASElement {
    * accessor，setter 不再执行、attribute 也没写入 → 连接后布局丢失。删除 own 并回收到 setter。
    */
   override connectedCallback(): void {
+    const firstConnect = !this.storageRestoreScheduled
+    // 首连恢复完成前抑制持久化：mount 期显式 collapsed / own sizes 回收会写回属性并触发
+    // schedulePersist，但那是零交互，不得覆盖已有快照。
+    if (firstConnect) this.persistSuppressed = true
     // 必须在 super（首渲染）前采集：multi 首渲染折叠会把内部 sizes 写回属性，
     // 之后再读属性会误把组件自写值当成“显式初始属性”而压过存储。
     if (!this.explicitInitialCaptured) {
@@ -243,21 +256,36 @@ export class OASSplitter extends OASElement {
     }
     // 延迟到微任务恢复：SSR/DSD 水合的同步首帧与快照零差异，hydrate() 内不访问存储；
     // 只在首次连接尝试（改 key 不自动重载）。
-    if (this.storageRestoreScheduled) return
+    if (!firstConnect) return
     this.storageRestoreScheduled = true
     const key = this.storageKeyValue()
-    if (key === '' || isServerRender()) return
+    if (key === '' || isServerRender()) {
+      // 无 key / SSR：没有恢复微任务，本帧结束即可正常持久化
+      this.persistSuppressed = false
+      return
+    }
+    this.storageRestorePending = true
     queueMicrotask(() => {
-      if (!this.isConnected) return
-      if (this.storageKeyValue() !== key) return
-      this.restoreSnapshot(key)
+      try {
+        // microtask 前曾断开（即使同任务重连）不恢复；恢复只尝试一次
+        if (this.storageRestoreAborted) return
+        if (!this.isConnected) return
+        if (this.storageKeyValue() !== key) return
+        this.restoreSnapshot(key)
+      } finally {
+        this.storageRestorePending = false
+        this.persistSuppressed = false
+      }
     })
   }
 
   override disconnectedCallback(): void {
-    // 未到合并窗口的用户变更在断开前落盘（SSR 环境 flushPersist 内部会跳过）
+    // microtask 前断开：本次首连恢复作废（重连不再尝试）
+    if (this.storageRestorePending) this.storageRestoreAborted = true
+    // 未到合并窗口的用户变更在断开前落盘（SSR/首连恢复抑制期内部会跳过）
     this.flushPersist()
     this.persistPending = false
+    this.persistKey = null
     super.disconnectedCallback()
   }
 
@@ -309,8 +337,13 @@ export class OASSplitter extends OASElement {
    * pointerup 通过 flushPersist 立即落盘，避免每个 pointermove 都触发 localStorage 同步写。
    */
   private schedulePersist(): void {
-    if (!this.isConnected || this.storageKeyValue() === '' || isServerRender()) return
+    if (this.persistSuppressed || !this.isConnected || isServerRender()) return
+    const key = this.storageKeyValue()
+    if (key === '') return
+    // 窗口内改 key：先把在途写入按捕获的旧 key flush，再为新 key 重新调度
+    if (this.persistTimer != null && this.persistKey !== key) this.flushPersist()
     this.persistPending = true
+    this.persistKey = key
     if (this.persistTimer != null) return
     this.persistTimer = setTimeout(() => {
       this.persistTimer = null
@@ -318,18 +351,25 @@ export class OASSplitter extends OASElement {
     }, PERSIST_DELAY)
   }
 
-  /** 立即落盘待写快照（无待写/无 key/SSR 时 no-op；get/set 异常静默降级） */
+  /** 立即落盘待写快照（无待写/无 key/SSR/恢复抑制期 no-op；get/set 异常静默降级） */
   private flushPersist(): void {
+    if (this.persistSuppressed) return
     if (this.persistTimer != null) {
       clearTimeout(this.persistTimer)
       this.persistTimer = null
     }
     if (!this.persistPending) return
     this.persistPending = false
-    const key = this.storageKeyValue()
-    if (key === '' || isServerRender()) return
+    // 本次写入使用调度时捕获的 key（改 key 后本次仍写旧 key）；key 被移除则视为退出持久化
+    const key = this.persistKey
+    this.persistKey = null
+    if (!key || this.storageKeyValue() === '' || isServerRender()) return
+    const raw = JSON.stringify(this.buildSnapshot())
+    if (raw === this.lastWrittenSnapshot && key === this.lastWrittenKey) return
     try {
-      window.localStorage.setItem(key, JSON.stringify(this.buildSnapshot()))
+      window.localStorage.setItem(key, raw)
+      this.lastWrittenSnapshot = raw
+      this.lastWrittenKey = key
     } catch {
       /* 隐私模式/配额/存储不可用：静默降级，内存布局仍有效 */
     }
@@ -364,7 +404,8 @@ export class OASSplitter extends OASElement {
     if (collapsed.some((index) => prev[String(index)] === undefined)) return null
     if (this.mode === 'legacy') {
       const percent = data.percent
-      if (typeof percent !== 'number' || !Number.isFinite(percent) || percent < 0 || percent > 100) return null
+      // percent:0 与组件语义不一致（0 在 legacy 会回落 50），直接拒绝避免“存 0 显 50”
+      if (typeof percent !== 'number' || !Number.isFinite(percent) || percent <= 0 || percent > 100) return null
       return { v: STORAGE_VERSION, mode: 'legacy', percent, collapsed, prev }
     }
     const sizes = data.sizes
@@ -417,6 +458,9 @@ export class OASSplitter extends OASElement {
     }
     const snapshot = this.parseSnapshot(data)
     if (!snapshot) return
+    // 恢复成功的原始快照即“已写内容”：之后用户操作回到同一状态无需重复 setItem
+    this.lastWrittenSnapshot = raw
+    this.lastWrittenKey = key
     this.applySnapshot(snapshot)
   }
 
