@@ -10,7 +10,7 @@
  * - 选档后再次校验 `max >= rawMax`，浮点尾差（0.4000000000000001）顺延下一合法档；
  * - 有效有限渲染域内的极值仍返回有限可渲染结果：上溢（≈MAX_VALUE）钳到 MAX_VALUE +
  *   等分 step，下溢（最小次正规）用 MIN_VALUE 作步长；非有限 rawMax 用文档化零哨兵；
- * - 非法 locale（zh_CN / 自定义名 / 空串）回退运行环境默认 locale，不让 Chart.update 抛异常。
+ * - 非法 locale（zh_CN / 自定义名 / 非 ASCII / 空串）固定回退 en-US，不让 Chart.update 抛异常。
  */
 
 export interface ChartTicks {
@@ -39,28 +39,47 @@ function snap(value: number): number {
   return Number(value.toPrecision(15))
 }
 
+/**
+ * 取当前量级的十进制单位（10^floor(log10(value))）。
+ *
+ * 次正规区（指数 ≤ -324）`10 ** -324 === 0`：用 `MIN_VALUE` 作为有限近似单位
+ * （1×MIN ≈ 1e-324），避免 niceStep / nextNiceStep 因除零退化。
+ */
+function decimalUnit(value: number): number {
+  const exponent = Math.floor(Math.log10(value))
+  return exponent <= -324 ? Number.MIN_VALUE : 10 ** exponent
+}
+
 /** 取不小于 rough 的最小 nice 步长；零 / 负 / 非有限值返回 0 */
 export function niceStep(rough: number): number {
   if (!Number.isFinite(rough) || rough <= 0) return 0
-  const exponent = Math.floor(Math.log10(rough))
-  const power = 10 ** exponent
+  const unit = decimalUnit(rough)
   // 除法可能产生 2.5000000000000004 这样的尾差：先按 1e-9 归一化再比档位，
   // 保证 0.2/4、90/4 这类输入仍落在 5 / 25 档，而不是被抬到下一档。
-  const fraction = Math.round((rough / power) * 1e9) / 1e9
+  const fraction = Math.round((rough / unit) * 1e9) / 1e9
   const mantissa = NICE_MANTISSAS.find((m) => fraction <= m) ?? 10
-  return snap(mantissa * power)
+  return snap(mantissa * unit)
 }
 
-/** 序列中的下一档（1 → 2 → 2.5 → 5 → 10 → 20 …），用于浮点尾差顺延 */
+/**
+ * 序列中的下一档（1 → 2 → 2.5 → 5 → 10 → 20 …）。
+ *
+ * 不重建 `10 ** exponent`（次正规区会下溢为 0），而是按当前 step 的 mantissa 档位
+ * 乘对应倍率：1→2（×2）、2→2.5（×1.25）、2.5→5 / 5→10 / 10→20（×2）。
+ * 返回值在有限域内始终 > step；只有 step 乘 2 真溢出时才返回 Infinity。
+ */
 function nextNiceStep(step: number): number {
-  const exponent = Math.floor(Math.log10(step))
-  const power = 10 ** exponent
-  if (!Number.isFinite(power) || power === 0) return Number.POSITIVE_INFINITY
-  const fraction = Math.round((step / power) * 1e9) / 1e9
-  const index = NICE_MANTISSAS.findIndex((m) => fraction <= m)
-  if (index < 0) return Number.POSITIVE_INFINITY
-  const next = index + 1 < NICE_MANTISSAS.length ? NICE_MANTISSAS[index + 1]! : 20
-  return snap(next * power)
+  const unit = decimalUnit(step)
+  const fraction = Math.round((step / unit) * 1e9) / 1e9
+  const index = Math.max(
+    0,
+    NICE_MANTISSAS.findIndex((m) => fraction <= m),
+  )
+  const multiplier = index === 1 ? 1.25 : 2
+  const candidate = snap(step * multiplier)
+  // 次正规区 2.5×MIN 等档位不可精确表示，×1.25 可能被舍入回原值：
+  // 退化为 ×2 保证 next 严格前进（仍有限，除非真正溢出）。
+  return candidate > step ? candidate : snap(step * 2)
 }
 
 /**
@@ -115,12 +134,15 @@ function usesScientific(step: number): boolean {
   return Number.isFinite(step) && step > 0 && (step >= SCIENTIFIC_MAX_STEP || step < SCIENTIFIC_MIN_STEP)
 }
 
+/** 非法 locale 的固定回退 locale：不依赖运行环境默认值，保证 SSR/客户端快照一致 */
+const FALLBACK_LOCALE = 'en-US'
+
 /** Intl.NumberFormat 缓存：locale|notation|精度 键控，每轴每档复用同一构造结果 */
 const formatterCache = new Map<string, Intl.NumberFormat>()
 
 /**
- * 构造（或复用）formatter。非法 locale（zh_CN / 自定义名 / 空串）只回退一次到运行环境
- * 默认 locale，绝不把未校验 locale 再交给 Intl 二次抛 RangeError。
+ * 构造（或复用）formatter。非法 locale（zh_CN / 自定义名 / 非 ASCII / 空串）只回退一次到
+ * 固定 en-US（保证 SSR 与客户端一致），绝不把未校验 locale 再交给 Intl 二次抛 RangeError。
  */
 function formatterFor(locale: string, scientific: boolean, digits: number): Intl.NumberFormat {
   const key = `${locale}\u0000${scientific ? 'sci' : 'std'}\u0000${digits}`
@@ -136,7 +158,7 @@ function formatterFor(locale: string, scientific: boolean, digits: number): Intl
   try {
     formatter = new Intl.NumberFormat(locale, options)
   } catch {
-    formatter = new Intl.NumberFormat(undefined, options)
+    formatter = new Intl.NumberFormat(FALLBACK_LOCALE, options)
   }
   formatterCache.set(key, formatter)
   return formatter

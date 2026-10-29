@@ -520,18 +520,36 @@ describe('OASChart', () => {
 
   // 回归：非法 BCP-47 locale（zh_CN 下划线）或自定义名会让 Intl.NumberFormat 抛 RangeError。
   // 此前异常从 Chart.update 冒出 → 整图空白；现 formatTick 回退默认 locale，图表照常渲染。
-  it.each(['zh_CN', 'custom-locale'])('provider locale=%s（非法）：刻度回退默认 locale，图表仍渲染', (locale) => {
-    const el = mountInProvider(locale, {
-      type: 'bar',
-      data: JSON.stringify([{ label: 'a', value: 0.2 }]),
-    })
-    expect(svgOf(el).querySelectorAll('rect.bar').length).toBe(1)
-    const labels = [...svgOf(el).querySelectorAll('text.axis-text')].map((t) => t.textContent ?? '')
-    expect(labels).toHaveLength(5)
-    expect(
-      labels.some((l) => /0[.,]05/.test(l)),
-      `刻度仍可读：${labels.join('|')}`,
-    ).toBe(true)
+  it.each(['zh_CN', 'custom-locale', '中文-locale'])(
+    'provider locale=%s（非法）：刻度回退 default，图表仍渲染',
+    (locale) => {
+      const el = mountInProvider(locale, {
+        type: 'bar',
+        data: JSON.stringify([{ label: 'a', value: 0.2 }]),
+      })
+      expect(svgOf(el).querySelectorAll('rect.bar').length).toBe(1)
+      const labels = [...svgOf(el).querySelectorAll('text.axis-text')].map((t) => t.textContent ?? '')
+      expect(labels).toHaveLength(5)
+      expect(
+        labels.some((l) => /0[.,]05/.test(l)),
+        `刻度仍可读：${labels.join('|')}`,
+      ).toBe(true)
+    },
+  )
+
+  it('type=radar options.max 非有限（Infinity / NaN）：normalize 丢弃并回退 nice 序列', () => {
+    for (const max of [Number.POSITIVE_INFINITY, Number.NaN]) {
+      const el = mount({
+        type: 'radar',
+        data: JSON.stringify({ labels: ['甲', '乙'], series: [{ name: 'S', data: [50, 90] }] }),
+      })
+      el.options = { max }
+      const svg = svgOf(el)
+      expect([...svg.querySelectorAll('text.axis-text')].map((t) => t.textContent)).toEqual(['25', '50', '75', '100'])
+      for (const dot of svg.querySelectorAll('circle.dot')) {
+        expect(Number.isFinite(Number(dot.getAttribute('cy')))).toBe(true)
+      }
+    }
   })
 
   it('type=radar radarShape=circle：网格换同心圆（无 polygon 网格）', () => {

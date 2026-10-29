@@ -121,8 +121,7 @@ describe('niceTicks', () => {
     ['1.7e308', 1.7e308],
     ['Number.MAX_VALUE', Number.MAX_VALUE],
     ['1e308', 1e308],
-    ['5e-324（最小次正规）', 5e-324],
-    ['Number.MIN_VALUE', Number.MIN_VALUE],
+    ['5e-324 === Number.MIN_VALUE（最小次正规）', Number.MIN_VALUE],
     ['1e-320', 1e-320],
   ])('极值 %s：max 严格 ≥ rawMax 且 values 全有限', (_label, raw) => {
     const ticks = niceTicks(raw)
@@ -130,6 +129,29 @@ describe('niceTicks', () => {
     expect(ticks.max).toBeGreaterThanOrEqual(raw)
     expect(ticks.step).toBeGreaterThan(0)
     expect(ticks.values).toHaveLength(5)
+    expect(ticks.values[0]).toBe(0)
+    expect(ticks.values.every(Number.isFinite)).toBe(true)
+    expect(ticks.values[ticks.values.length - 1]).toBe(ticks.max)
+    for (let i = 1; i < ticks.values.length; i++) {
+      expect(ticks.values[i]!).toBeGreaterThan(ticks.values[i - 1]!)
+    }
+  })
+
+  // 回归（fix round 2）：5..10 × MIN_VALUE 曾因 nextNiceStep 里 10 ** -324 === 0
+  // 返回 Infinity，被 overflowTicks 误判为 MAX_VALUE。次正规档必须逐档推进：
+  // 2×MIN → 2.5×MIN → 5×MIN → 10×MIN → 20×MIN，顶格不得跳到 MAX_VALUE。
+  it.each([
+    ['2×MIN', 2 * Number.MIN_VALUE],
+    ['5×MIN', 5 * Number.MIN_VALUE],
+    ['8×MIN', 8 * Number.MIN_VALUE],
+    ['10×MIN', 10 * Number.MIN_VALUE],
+  ])('次正规 %s：不误判上溢，顶格有限且 ≤ rawMax×10', (_label, raw) => {
+    const ticks = niceTicks(raw)
+    expect(ticks.max).toBeGreaterThanOrEqual(raw)
+    expect(ticks.max).toBeLessThan(Number.MAX_VALUE)
+    expect(ticks.max).toBeLessThan(1e-300)
+    expect(ticks.max).toBeLessThanOrEqual(raw * 10)
+    expect(ticks.values[0]).toBe(0)
     expect(ticks.values.every(Number.isFinite)).toBe(true)
     expect(ticks.values[ticks.values.length - 1]).toBe(ticks.max)
     for (let i = 1; i < ticks.values.length; i++) {
@@ -146,10 +168,11 @@ describe('niceTicks', () => {
       return seed / 4294967296
     }
     let checked = 0
-    for (let i = 0; i < 240; i++) {
+    for (let i = 0; i < 320; i++) {
       const mantissa = 1 + rand() * 9
-      const exponent = Math.floor(rand() * 620) - 315
-      const raw = mantissa * 10 ** exponent
+      const exponent = Math.floor(rand() * 633) - 324 // -324..308
+      // 10 ** -324 === 0（次正规 1e-324 不可表示）；用 MIN_VALUE 作为有限近似单位。
+      const raw = exponent === -324 ? mantissa * Number.MIN_VALUE : mantissa * 10 ** exponent
       if (!Number.isFinite(raw) || raw <= 0) continue
       checked++
       const ticks = niceTicks(raw)
@@ -162,8 +185,12 @@ describe('niceTicks', () => {
       for (let k = 1; k < ticks.values.length; k++) {
         expect(ticks.values[k]!, `raw=${raw} 第 ${k} 档`).toBeGreaterThan(ticks.values[k - 1]!)
       }
+      // 合理上界：正常量程顶格不超过 rawMax×10；只有合法 MAX_VALUE 钳制例外。
+      if (ticks.max !== Number.MAX_VALUE) {
+        expect(ticks.max, `raw=${raw} 顶格上界`).toBeLessThanOrEqual(raw * 10)
+      }
     }
-    expect(checked).toBeGreaterThan(200)
+    expect(checked).toBeGreaterThan(300)
   })
 })
 
@@ -212,10 +239,12 @@ describe('formatTick', () => {
   // 回归：provider 可注入 zh_CN（下划线）或任意自定义 locale，Intl.NumberFormat 会抛
   // RangeError 并让 Chart.update 整体中断（空白图）。formatTick 必须回退默认 locale
   // 且不得拿未校验 locale 二次构造。
-  it('非法 locale（zh_CN / 自定义名 / 空串）不抛，回退默认 locale', () => {
-    for (const bad of ['zh_CN', 'custom-locale', '']) {
+  it('非法 locale（zh_CN / 自定义名 / 非 ASCII / 空串）不抛，固定回退 en-US', () => {
+    for (const bad of ['zh_CN', 'custom-locale', '中文-locale', '']) {
       expect(() => formatTick(0.05, 0.05, bad), bad).not.toThrow()
-      expect(formatTick(0.05, 0.05, bad), bad).toMatch(/0[.,]05/)
+      // 固定 fallback（en-US）保证 SSR 与客户端不依赖运行环境默认 locale
+      expect(formatTick(0.05, 0.05, bad), bad).toBe(formatTick(0.05, 0.05, 'en-US'))
+      expect(formatTick(0.05, 0.05, bad), bad).toBe('0.05')
     }
   })
 

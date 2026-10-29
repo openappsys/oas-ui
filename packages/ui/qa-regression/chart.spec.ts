@@ -557,7 +557,7 @@ test('chart 非法 provider locale：zh_CN / 自定义名仍渲染刻度且零 p
       provider.remove()
       return { labels, bars }
     }
-    return { zhCn: make('zh_CN'), custom: make('custom-locale') }
+    return { zhCn: make('zh_CN'), custom: make('custom-locale'), nonAscii: make('中文-locale') }
   })
   for (const [name, chart] of Object.entries(r)) {
     expect(chart.bars, `${name} 仍渲染柱体`).toBe(1)
