@@ -417,6 +417,123 @@ test('chart 柱状图与混合宽度标签：真实包围盒不叠字、不越�
   expect(r.mixed.rendered, '混合宽度不因长标签全部消失').toBeGreaterThanOrEqual(5)
 })
 
+// Task 8A：小数 / 科学计数刻度的真实文字包围盒不得越出 viewBox（左轴、右轴、radar 三处留白），
+// 且 dark / RTL 下刻度几何不变（颜色 token 与方向不参与坐标计算）。
+test('chart 小数/科学计数刻度：真实 getBBox 不越出 viewBox（左轴/右轴/radar），dark/RTL 零告警', async ({ page }) => {
+  const consoleNoise: string[] = []
+  page.on('console', (m) => {
+    if (m.type() === 'error' || m.type() === 'warning') consoleNoise.push(`${m.type()}: ${m.text()}`)
+  })
+  page.on('pageerror', (e) => consoleNoise.push(`pageerror: ${e.message}`))
+
+  await page.goto('/components/chart.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-chart')
+  const r = await page.evaluate(async () => {
+    await document.fonts.ready
+    const cases = [
+      {
+        name: 'decimal',
+        type: 'line',
+        data: JSON.stringify([
+          { label: 'a', value: 0.0025 },
+          { label: 'b', value: 0.01 },
+        ]),
+      },
+      {
+        name: 'scientific',
+        type: 'line',
+        data: JSON.stringify([
+          { label: 'a', value: 2.5e8 },
+          { label: 'b', value: 1e9 },
+        ]),
+      },
+      {
+        name: 'tiny',
+        type: 'line',
+        data: JSON.stringify([
+          { label: 'a', value: 1e-5 },
+          { label: 'b', value: 4e-5 },
+        ]),
+      },
+      {
+        name: 'dual',
+        type: 'bar',
+        options: '{"yAxis":[{"name":"L"},{"name":"R"}]}',
+        data: JSON.stringify({
+          labels: ['a'],
+          series: [
+            { name: 'A', data: [0.2] },
+            { name: 'B', data: [0.01], yAxisIndex: 1 },
+          ],
+        }),
+      },
+      {
+        name: 'radar',
+        type: 'radar',
+        options: '{"max":0.01}',
+        data: JSON.stringify({ labels: ['甲', '乙', '丙'], series: [{ name: 'S', data: [0.005, 0.008, 0.003] }] }),
+      },
+    ] as const
+
+    const measure = (c: (typeof cases)[number]) => {
+      const el = document.createElement('oas-chart')
+      el.setAttribute('type', c.type)
+      if ('options' in c) el.setAttribute('options', c.options)
+      el.setAttribute('data', c.data)
+      document.body.appendChild(el)
+      const svg = el.shadowRoot!.querySelector('svg')!
+      const texts = [...svg.querySelectorAll('text.axis-text')] as SVGTextElement[]
+      const boxes = texts.map((t) => {
+        const b = t.getBBox()
+        return { text: t.textContent ?? '', x: b.x, y: b.y, w: b.width, h: b.height }
+      })
+      const outside = boxes
+        .filter((b) => b.x < -0.5 || b.x + b.w > 520.5 || b.y < -0.5 || b.y + b.h > 280.5)
+        .map((b) => `${b.text}@${b.x.toFixed(1)},${b.y.toFixed(1)}+${b.w.toFixed(1)}x${b.h.toFixed(1)}`)
+      el.remove()
+      return {
+        name: c.name,
+        labels: boxes.map((b) => b.text),
+        left: texts.filter((t) => t.getAttribute('text-anchor') === 'end').map((t) => t.textContent ?? ''),
+        right: texts.filter((t) => t.getAttribute('text-anchor') === 'start').map((t) => t.textContent ?? ''),
+        boxes: boxes.map((b) => `${b.text}|${b.x.toFixed(2)}|${b.y.toFixed(2)}`),
+        outside,
+      }
+    }
+
+    const light = cases.map(measure)
+    document.documentElement.classList.add('dark')
+    const dark = cases.map(measure)
+    document.documentElement.classList.remove('dark')
+    document.documentElement.setAttribute('dir', 'rtl')
+    const rtl = cases.map(measure)
+    document.documentElement.removeAttribute('dir')
+    return { light, dark, rtl }
+  })
+
+  expect(
+    r.light.map((m) => m.outside),
+    '五类刻度文字包围盒全部在 520×280 viewBox 内',
+  ).toEqual([[], [], [], [], []])
+  const measureOf = (name: string) => r.light.find((m) => m.name === name)!
+  expect(measureOf('decimal').left, '小数刻度 0.0025 档').toEqual(['0', '0.0025', '0.005', '0.0075', '0.01'])
+  expect(measureOf('scientific').left, '大步长科学计数（≥1e6 档）').toEqual(['0', '2.5E8', '5E8', '7.5E8', '1E9'])
+  expect(measureOf('tiny').left, '极小小步长科学计数（<1e-4 档）').toEqual(['0', '1E-5', '2E-5', '3E-5', '4E-5'])
+  expect(measureOf('dual').left, '双轴左轴小数刻度').toEqual(['0', '0.05', '0.1', '0.15', '0.2'])
+  expect(measureOf('dual').right, '双轴右轴小数刻度').toEqual(['0', '0.0025', '0.005', '0.0075', '0.01'])
+  // radar 刻度沿顶轴标注（x = cx + 5，anchor=start），故落在 right 分组
+  expect(measureOf('radar').right, 'radar 小数刻度').toEqual(['0.0025', '0.005', '0.0075', '0.01'])
+  expect(
+    r.dark.map((m) => m.boxes),
+    'dark 主题下刻度几何与 light 相同',
+  ).toEqual(r.light.map((m) => m.boxes))
+  expect(
+    r.rtl.map((m) => m.boxes),
+    'dir=rtl 下刻度几何与 light 相同（图表坐标与书写方向正交）',
+  ).toEqual(r.light.map((m) => m.boxes))
+  expect(consoleNoise, '刻度渲染零 console 告警/错误').toEqual([])
+})
+
 // RTL 回归：抽稀（步长/落点）、柱组居中、xLabelRotate 旋转三处都必须是纯几何，不随宿主书写方向变化；
 // svg direction 钉死 ltr 后 text-anchor start/end 语义不翻转（旋转标签的 start 锚点在 RTL 下不得变成 end）。
 test('chart 密集标签/旋转/柱组居中：dir=rtl 与 ltr 逐项几何相同，锚点与文字方向不翻转', async ({ page }) => {

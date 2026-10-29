@@ -1,4 +1,6 @@
-import { OASElement, escapeText, escapeAttr } from '@oas-ui/core'
+import { OASElement, escapeText, escapeAttr, findConfigProvider } from '@oas-ui/core'
+import { getLocaleName } from '@oas-ui/i18n'
+import { formatTick, niceTicks, type ChartTicks } from './ticks.js'
 
 export type ChartType = 'line' | 'bar' | 'pie' | 'area' | 'donut' | 'stacked-bar' | 'radar' | 'polar-area'
 
@@ -228,6 +230,12 @@ const H = 280
 const PAD = { l: 42, r: 12, t: 16, b: 30 }
 /** 双轴模式右缘留白（对称左轴刻度列宽） */
 const PAD_R_DUAL = 42
+/** y 轴刻度档数（区间数）；radar 4 层网格同口径 */
+const TICK_SEGMENTS = 4
+/** y 轴刻度文字与轴线的间距（user 单位，既有值） */
+const TICK_GAP = 8
+/** 字形抗锯齿余量：按标签实测宽推导留白时在贴边处留 2 user 单位，不靠拍脑袋加宽 */
+const TICK_EDGE = 2
 /** x 轴旋转标签：轴基线到标签锚点的间距（user 单位） */
 const X_LABEL_GAP = 10
 /** x 轴旋转标签：行高余量（font-size 12px 的布局行盒 ≈14px，用于算底留白与竖排占宽） */
@@ -370,14 +378,15 @@ export class OASChart extends OASElement {
     const cy = H / 2
     const r = Math.min(W, H) / 2 - 40
 
-    // 量程：options.max 优先（全局统一量程，4 等分）；缺省 niceTicks
+    // 量程：options.max 优先（全局统一量程，4 等分）；缺省走共用 nice 刻度
+    const locale = this.tickLocale()
     let scaleMax: number
     let step: number
     if (options.max != null && options.max > 0) {
       scaleMax = options.max
       step = options.max / 4
     } else {
-      const ticks = this.niceTicks(this.maxValue(data))
+      const ticks = niceTicks(this.maxValue(data), TICK_SEGMENTS)
       scaleMax = ticks.max
       step = ticks.step
     }
@@ -412,10 +421,11 @@ export class OASChart extends OASElement {
       out += `<line class="radar-axis" x1="${cx}" y1="${cy}" x2="${p.x.toFixed(1)}" y2="${p.y.toFixed(1)}"></line>`
     }
 
-    // 刻度值沿顶轴标注（i=1..4 档）；options.max 非 4 倍数时步长为小数，用 formatTick 精确保留（避免 Math.round 失真/重复）
+    // 刻度值沿顶轴标注（i=1..4 档）；精度随 step 动态化（共享 ticks.formatTick），
+    // options.max 非 4 倍数时同样精确保留（避免 Math.round 失真/重复）
     for (let i = 1; i <= 4; i++) {
       const y = cy - r * (i / 4)
-      out += `<text class="axis-text" x="${cx + 5}" y="${(y + 3).toFixed(1)}" text-anchor="start">${this.formatTick(step * i)}</text>`
+      out += `<text class="axis-text" x="${cx + 5}" y="${(y + 3).toFixed(1)}" text-anchor="start">${formatTick(step * i, step, locale)}</text>`
     }
 
     // 维度名：顶点外侧（按方位选 text-anchor 与基线偏移）。
@@ -459,12 +469,13 @@ export class OASChart extends OASElement {
     data: ChartData,
     options: ChartOptions,
   ): {
+    plotL: number
     padR: number
     plotW: number
     plotH: number
     dual: boolean
     xLabel: { rot: number; padB: number; padR: number; y: number }
-    ticksFor: (axis: 0 | 1) => { max: number; step: number; values: number[] }
+    ticksFor: (axis: 0 | 1) => ChartTicks
     yAt: (axis: 0 | 1, v: number) => number
     grid: (plotH: number) => string
   } {
@@ -473,38 +484,59 @@ export class OASChart extends OASElement {
     const hasLeft = data.series.some((s) => this.axisOf(s) === 0)
     const hasRight = data.series.some((s) => this.axisOf(s) === 1)
     const dual = this.isDualAxis(options) && hasLeft && hasRight
-    const padR = dual ? Math.max(PAD_R_DUAL, xLabel.padR) : xLabel.padR
-    const plotW = W - PAD.l - padR
-    const left = dual ? this.alignTicksTo(this.maxForAxis(data, 0), 4) : this.niceTicks(this.maxValue(data))
-    // alignTicks：以主轴档数（左轴刻度数 - 1 段）为锚，副轴同档数重算 niceStep
-    const right = dual ? this.alignTicksTo(this.maxForAxis(data, 1), left.values.length - 1) : null
-    const ticksFor = (axis: 0 | 1): { max: number; step: number; values: number[] } =>
-      axis === 1 && right ? right : left
+    const left = dual
+      ? niceTicks(this.maxForAxis(data, 0), TICK_SEGMENTS)
+      : niceTicks(this.maxValue(data), TICK_SEGMENTS)
+    // alignTicks：以主轴档数（左轴刻度数 - 1 段）为锚，副轴同档数重算 nice 步长。
+    // 两轴共用同一 nice 序列与标签精度推导；右轴 raw max 10 → 2.5 档 / 顶格 10（契约接受 10→10）。
+    const right = dual ? niceTicks(this.maxForAxis(data, 1), left.values.length - 1) : null
+    const locale = this.tickLocale()
+    const leftLabels = left.values.map((v) => formatTick(v, left.step, locale))
+    const rightLabels = right ? right.values.map((v) => formatTick(v, right.step, locale)) : []
+    // 标签按需留白：左侧刻度列宽由实际格式化文本推导（小数/科学计数不再压出 viewBox）；
+    // 双轴右缘对称推导，单轴仍用 PAD.r / 旋转标签的 xLabel.padR。
+    const plotL = Math.max(PAD.l, this.tickLabelGutter(leftLabels))
+    const padR = dual ? Math.max(PAD_R_DUAL, xLabel.padR, this.tickLabelGutter(rightLabels)) : xLabel.padR
+    const plotW = Math.max(1, W - plotL - padR)
+    const ticksFor = (axis: 0 | 1): ChartTicks => (axis === 1 && right ? right : left)
     const yAt = (axis: 0 | 1, v: number): number => {
       const t = ticksFor(axis)
       return PAD.t + plotH - (t.max > 0 ? (v / t.max) * plotH : 0)
     }
     const grid = (ph: number): string =>
-      dual
-        ? this.renderGrid(left, ph, {
-            padR,
-            rightTicks: right,
-            names: [options.yAxis?.[0]?.name, options.yAxis?.[1]?.name],
-          })
-        : this.renderGrid(left, ph)
-    return { padR, plotW, plotH, dual, xLabel, ticksFor, yAt, grid }
+      this.renderGrid(left, ph, {
+        padL: plotL,
+        padR,
+        rightTicks: right,
+        rightLabels,
+        leftLabels,
+        names: dual ? [options.yAxis?.[0]?.name, options.yAxis?.[1]?.name] : undefined,
+      })
+    return { plotL, padR, plotW, plotH, dual, xLabel, ticksFor, yAt, grid }
+  }
+
+  /** 刻度列宽：最宽标签 + 轴间距 + 字形余量（user 单位，跟随实际格式化文本） */
+  private tickLabelGutter(labels: string[]): number {
+    const maxW = labels.reduce((m, s) => Math.max(m, this.estimateLabelWidth(s)), 0)
+    return maxW + TICK_GAP + TICK_EDGE
+  }
+
+  /** 图表刻度 locale：就近 config-provider 注入优先，否则全局 locale */
+  private tickLocale(): string {
+    const injected = findConfigProvider(this)?.getAttribute('locale')
+    return injected && injected !== '' ? injected : getLocaleName()
   }
 
   /** 折线图：网格 + y 刻度 + x 分类 + 每系列 path + 数据点 title */
   private renderLine(data: ChartData, options: ChartOptions): string {
-    const { plotW, plotH, xLabel, yAt, grid } = this.axisContext(data, options)
+    const { plotL, plotW, plotH, xLabel, yAt, grid } = this.axisContext(data, options)
     const n = data.labels.length
 
     let out = grid(plotH)
-    out += this.renderXLabels(data.labels, plotW, 'top', xLabel)
+    out += this.renderXLabels(data.labels, plotL, plotW, 'top', xLabel)
 
     const stepX = n > 1 ? plotW / (n - 1) : plotW / 2
-    const xAt = (i: number): number => PAD.l + (n > 1 ? i * stepX : stepX)
+    const xAt = (i: number): number => plotL + (n > 1 ? i * stepX : stepX)
 
     data.series.forEach((series, si) => {
       const cls = SWATCH_CLASSES[si % SWATCH_CLASSES.length]!
@@ -525,11 +557,11 @@ export class OASChart extends OASElement {
 
   /** 面积图：折线 + 闭合到基线的半透明填充（多系列叠加显示） */
   private renderArea(data: ChartData, options: ChartOptions): string {
-    const { plotW, plotH, xLabel, yAt, grid } = this.axisContext(data, options)
+    const { plotL, plotW, plotH, xLabel, yAt, grid } = this.axisContext(data, options)
     const n = data.labels.length
 
     let out = grid(plotH)
-    out += this.renderXLabels(data.labels, plotW, 'top', xLabel)
+    out += this.renderXLabels(data.labels, plotL, plotW, 'top', xLabel)
 
     // 渐变填充（可选）：每系列一个垂直 linearGradient（顶部系列色 0.35 → 底部全透明），
     // id 模块级递增防同页多实例冲突；area-path 用内联 style 覆盖 CSS 的 currentColor+opacity
@@ -537,7 +569,7 @@ export class OASChart extends OASElement {
     let defs = ''
 
     const stepX = n > 1 ? plotW / (n - 1) : plotW / 2
-    const xAt = (i: number): number => PAD.l + (n > 1 ? i * stepX : stepX)
+    const xAt = (i: number): number => plotL + (n > 1 ? i * stepX : stepX)
     const baseY = PAD.t + plotH
 
     data.series.forEach((series, si) => {
@@ -595,14 +627,14 @@ export class OASChart extends OASElement {
    * 原始系列下标（与图例顺序一致）。area 层为半透明纯色填充（gradient 仅纯 area 型支持）。
    */
   private renderCombo(data: ChartData, options: ChartOptions, topType: 'line' | 'bar' | 'area'): string {
-    const { plotW, plotH, xLabel, ticksFor, yAt, grid } = this.axisContext(data, options)
+    const { plotL, plotW, plotH, xLabel, ticksFor, yAt, grid } = this.axisContext(data, options)
     const n = data.labels.length
 
     let out = grid(plotH)
-    out += this.renderXLabels(data.labels, plotW, 'middle', xLabel)
+    out += this.renderXLabels(data.labels, plotL, plotW, 'middle', xLabel)
 
     const bandW = plotW / n
-    const xAt = (i: number): number => PAD.l + i * bandW + bandW / 2
+    const xAt = (i: number): number => plotL + i * bandW + bandW / 2
     const baseY = PAD.t + plotH
 
     const resolved = data.series.map((series, si) => ({
@@ -630,7 +662,7 @@ export class OASChart extends OASElement {
       const ticks = ticksFor(this.axisOf(series))
       series.data.forEach((v, i) => {
         const h = ticks.max > 0 ? Math.max(0, (v / ticks.max) * plotH) : 0
-        const x = PAD.l + i * bandW + offset + bi * (barW + gap)
+        const x = plotL + i * bandW + offset + bi * (barW + gap)
         const y = baseY - h
         const label = this.datumLabel(data.labels[i] ?? '', v)
         out += `<rect class="bar ${cls} animate" x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${Math.max(1, barW).toFixed(1)}" height="${h.toFixed(1)}" rx="2"${this.colorStyle(color)}><title>${this.escapeAttr(label)}</title></rect>`
@@ -662,12 +694,12 @@ export class OASChart extends OASElement {
 
   /** 柱状图：网格 + 分组柱 rect + x 分类 + title */
   private renderBars(data: ChartData, options: ChartOptions): string {
-    const { plotW, plotH, xLabel, ticksFor, grid } = this.axisContext(data, options)
+    const { plotL, plotW, plotH, xLabel, ticksFor, grid } = this.axisContext(data, options)
     const n = data.labels.length
     const m = data.series.length
 
     let out = grid(plotH)
-    out += this.renderXLabels(data.labels, plotW, 'middle', xLabel)
+    out += this.renderXLabels(data.labels, plotL, plotW, 'middle', xLabel)
 
     const bandW = plotW / n
     const gap = m > 1 ? 1 : 0
@@ -681,7 +713,7 @@ export class OASChart extends OASElement {
       const ticks = ticksFor(this.axisOf(series))
       series.data.forEach((v, i) => {
         const h = ticks.max > 0 ? Math.max(0, (v / ticks.max) * plotH) : 0
-        const x = PAD.l + i * bandW + offset + si * (barW + gap)
+        const x = plotL + i * bandW + offset + si * (barW + gap)
         const y = PAD.t + plotH - h
         const label = this.datumLabel(data.labels[i] ?? '', v)
         out += `<rect class="bar ${cls} animate" x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${Math.max(1, barW).toFixed(1)}" height="${h.toFixed(1)}" rx="2"${this.colorStyle(color)}><title>${this.escapeAttr(label)}</title></rect>`
@@ -693,7 +725,6 @@ export class OASChart extends OASElement {
   /** 堆叠柱状图：每分类各系列自底向上堆叠，柱高=分类合计，刻度按合计计算 */
   private renderStackedBars(data: ChartData, options: ChartOptions): string {
     const xLabel = this.xLabelLayout(data.labels, options)
-    const plotW = W - PAD.l - xLabel.padR
     const plotH = H - PAD.t - xLabel.padB
     const n = data.labels.length
     const m = data.series.length
@@ -703,12 +734,16 @@ export class OASChart extends OASElement {
       0,
       ...data.labels.map((_, i) => data.series.reduce((acc, s) => acc + Math.max(0, s.data[i] ?? 0), 0)),
     )
-    const ticks = this.niceTicks(stackMax)
+    const ticks = niceTicks(stackMax, TICK_SEGMENTS)
+    const locale = this.tickLocale()
+    const labels = ticks.values.map((v) => formatTick(v, ticks.step, locale))
+    const plotL = Math.max(PAD.l, this.tickLabelGutter(labels))
+    const plotW = Math.max(1, W - plotL - xLabel.padR)
     const bandW = plotW / n
     const barW = bandW * 0.6
 
-    let out = this.renderGrid(ticks, plotH)
-    out += this.renderXLabels(data.labels, plotW, 'middle', xLabel)
+    let out = this.renderGrid(ticks, plotH, { padL: plotL, padR: xLabel.padR, leftLabels: labels })
+    out += this.renderXLabels(data.labels, plotL, plotW, 'middle', xLabel)
 
     data.labels.forEach((_, i) => {
       let acc = 0
@@ -718,7 +753,7 @@ export class OASChart extends OASElement {
         const color = options.colors?.[si]
         const h = ticks.max > 0 ? (v / ticks.max) * plotH : 0
         const y = PAD.t + plotH - acc - h
-        const x = PAD.l + i * bandW + (bandW - barW) / 2
+        const x = plotL + i * bandW + (bandW - barW) / 2
         const title = this.datumLabel(data.labels[i] ?? '', v)
         out += `<rect class="bar ${cls} animate" x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${Math.max(1, barW).toFixed(1)}" height="${h.toFixed(1)}" rx="2"${this.colorStyle(color)}><title>${this.escapeAttr(title)}</title></rect>`
         acc += h
@@ -847,26 +882,37 @@ export class OASChart extends OASElement {
    * 避免双网格视觉混乱；轴名渲染在轴顶。刻度档数两轴一致（alignTicks 锚定））
    */
   private renderGrid(
-    ticks: { max: number; step: number; values: number[] },
+    ticks: ChartTicks,
     plotH: number,
-    opts?: { padR?: number; rightTicks?: { max: number; step: number } | null; names?: [string?, string?] },
+    opts?: {
+      padL?: number
+      padR?: number
+      rightTicks?: ChartTicks | null
+      leftLabels?: string[]
+      rightLabels?: string[]
+      names?: [string?, string?]
+    },
   ): string {
+    const padL = opts?.padL ?? PAD.l
     const padR = opts?.padR ?? PAD.r
     const right = opts?.rightTicks ?? null
     const names = opts?.names
+    const locale = this.tickLocale()
+    const leftLabels = opts?.leftLabels ?? ticks.values.map((v) => formatTick(v, ticks.step, locale))
+    const rightLabels = opts?.rightLabels ?? (right ? right.values.map((v) => formatTick(v, right.step, locale)) : [])
     let out = ''
     const lines = ticks.values.length
     for (let i = 0; i < lines; i++) {
       const ratio = i / (lines - 1)
       const y = PAD.t + plotH - ratio * plotH
-      out += `<line class="axis-line" x1="${PAD.l}" y1="${y.toFixed(1)}" x2="${W - padR}" y2="${y.toFixed(1)}"></line>`
-      out += `<text class="axis-text" x="${PAD.l - 8}" y="${(y + 4).toFixed(1)}" text-anchor="end">${Math.round(ticks.step * i)}</text>`
+      out += `<line class="axis-line" x1="${padL}" y1="${y.toFixed(1)}" x2="${W - padR}" y2="${y.toFixed(1)}"></line>`
+      out += `<text class="axis-text" x="${padL - TICK_GAP}" y="${(y + 4).toFixed(1)}" text-anchor="end">${leftLabels[i] ?? ''}</text>`
       if (right) {
-        out += `<text class="axis-text" x="${W - padR + 8}" y="${(y + 4).toFixed(1)}" text-anchor="start">${Math.round(right.step * i)}</text>`
+        out += `<text class="axis-text" x="${W - padR + TICK_GAP}" y="${(y + 4).toFixed(1)}" text-anchor="start">${rightLabels[i] ?? ''}</text>`
       }
     }
     if (names?.[0]) {
-      out += `<text class="axis-name" x="${PAD.l}" y="10" text-anchor="start">${this.escapeText(names[0])}</text>`
+      out += `<text class="axis-name" x="${padL}" y="10" text-anchor="start">${this.escapeText(names[0])}</text>`
     }
     if (names?.[1]) {
       out += `<text class="axis-name" x="${W - padR}" y="10" text-anchor="end">${this.escapeText(names[1])}</text>`
@@ -900,6 +946,7 @@ export class OASChart extends OASElement {
    */
   private renderXLabels(
     labels: string[],
+    plotL: number,
     plotW: number,
     anchor: 'top' | 'middle',
     layout: { rot: number; y: number } = { rot: 0, y: H - 8 },
@@ -918,7 +965,7 @@ export class OASChart extends OASElement {
     for (let i = 0; i < n; i += step) idx.push(i)
     const last = n - 1
     const cxOf = (i: number): number =>
-      anchor === 'middle' ? PAD.l + i * bandW + bandW / 2 : n > 1 ? PAD.l + (i * plotW) / (n - 1) : PAD.l + plotW / 2
+      anchor === 'middle' ? plotL + i * bandW + bandW / 2 : n > 1 ? plotL + (i * plotW) / (n - 1) : plotL + plotW / 2
     const leftEdge = 0
     const rightEdge = W
     const widthOf = (i: number): number => this.estimateLabelWidth(labels[i] ?? '')
@@ -1005,30 +1052,10 @@ export class OASChart extends OASElement {
     return `${label}: ${value}`
   }
 
-  /** 刻度数值格式化：整数原样；非整数保留至多 2 位小数（避免浮点噪声，同时不丢精度） */
-  private formatTick(v: number): string {
-    if (Number.isInteger(v)) return String(v)
-    return String(Math.round(v * 100) / 100)
-  }
-
   private maxValue(data: ChartData): number {
     let max = 0
     for (const s of data.series) for (const v of s.data) max = Math.max(max, Number(v) || 0)
     return max
-  }
-
-  /** 生成 nice 刻度：max 上取整为 4 等分的整步长 */
-  private niceTicks(rawMax: number): { max: number; step: number; values: number[] } {
-    return this.alignTicksTo(rawMax, 4)
-  }
-
-  /** 以段数为锚重算 nice 刻度（双轴 alignTicks：副轴按主轴档数同档重算，消除刻度错位误读） */
-  private alignTicksTo(rawMax: number, segments: number): { max: number; step: number; values: number[] } {
-    const max = Math.max(0, rawMax)
-    if (max === 0) return { max: 0, step: 0, values: Array.from({ length: segments + 1 }, () => 0) }
-    const step = Math.ceil(max / segments)
-    const top = step * segments
-    return { max: top, step, values: Array.from({ length: segments + 1 }, (_, i) => i * step) }
   }
 
   /** 双轴声明检测：options.yAxis 第 2 项存在（仅声明；实际启用还需两侧均有绑定系列，见 axisContext） */

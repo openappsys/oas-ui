@@ -976,6 +976,41 @@ describe('@oas-ui/ssr renderToString', () => {
     expect(html).toContain('<rect class="bar')
   })
 
+  // Task 8A：小数刻度与科学计数在 SSR 快照中必须同步直出（Node Intl 纯计算，同客户端模板）。
+  it('oas-chart：小数量程与科学计数刻度 SSR 直出（0.0025 档 / 2.5E8 档）', async () => {
+    const decimal = await renderToString(
+      'oas-chart',
+      {
+        type: 'line',
+        data: JSON.stringify([
+          { label: 'a', value: 0.0025 },
+          { label: 'b', value: 0.01 },
+        ]),
+      },
+      '',
+      { locale: 'zh-CN' },
+    )
+    expect(decimal).toContain('<template shadowrootmode="open">')
+    expect(decimal).toContain('>0.0025<')
+    expect(decimal).toContain('>0.0075<')
+    expect(decimal, '旧整步刻度 0/1/2/3/4 不再出现').not.toContain('>4<')
+
+    const large = await renderToString(
+      'oas-chart',
+      {
+        type: 'bar',
+        data: JSON.stringify([
+          { label: 'a', value: 2.5e8 },
+          { label: 'b', value: 1e9 },
+        ]),
+      },
+      '',
+      { locale: 'zh-CN' },
+    )
+    expect(large).toContain('>2.5E8<')
+    expect(large).toContain('>1E9<')
+  })
+
   it('oas-code：正则高亮同步直出（token span + 行号），copyable 默认显示复制按钮', async () => {
     const html = await renderToString('oas-code', { code: 'const a = 1', language: 'js', 'show-line-number': '' }, '', {
       locale: 'zh-CN',

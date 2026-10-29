@@ -292,7 +292,7 @@ describe('OASChart', () => {
     expect(y1 - cy).toBeCloseTo(r, 0)
   })
 
-  it('type=radar 缺省量程走 niceTicks：刻度顶 = 上取整档', () => {
+  it('type=radar 缺省量程走 nice 序列：顶格 90 → 100（契约接受的顶格放大）', () => {
     const el = mount({
       type: 'radar',
       data: JSON.stringify({ labels: ['甲', '乙'], series: [{ name: 'S', data: [50, 90] }] }),
@@ -300,10 +300,18 @@ describe('OASChart', () => {
     const dots = [...svgOf(el).querySelectorAll('circle.dot')]
     const cy = 140
     const r = Math.min(520, 280) / 2 - 40
-    // max 90 → niceTicks step = ceil(90/4)=23，量程顶 = 92；顶点按 值/92 线性落半径
-    // 「甲」在顶轴（-90°）；「乙」在正下方（90°，双维度等角 180°）——用距圆心的径向距离断言
-    expect(cy - Number(dots[0]!.getAttribute('cy'))).toBeCloseTo(r * (50 / 92), 0)
-    expect(Math.abs(Number(dots[1]!.getAttribute('cy')) - cy)).toBeCloseTo(r * (90 / 92), 0)
+    // 旧契约：niceTicks step = ceil(90/4)=23，量程顶 92。新契约步长序列仅
+    // 1/2/2.5/5/10×10^n：90/4=22.5 → 25，量程顶 100（brief 明确接受 90→100）。
+    // 顶点按 值/100 线性落半径：「甲」在顶轴（-90°），「乙」在正下方（90°，双维 180°）。
+    expect(cy - Number(dots[0]!.getAttribute('cy'))).toBeCloseTo(r * (50 / 100), 0)
+    expect(Math.abs(Number(dots[1]!.getAttribute('cy')) - cy)).toBeCloseTo(r * (90 / 100), 0)
+    // 刻度值随新顶格：25/50/75/100（旧为 23/46/69/92）
+    expect([...svgOf(el).querySelectorAll('text.axis-text')].map((t) => t.textContent)).toEqual([
+      '25',
+      '50',
+      '75',
+      '100',
+    ])
   })
 
   // 缺陷回归：options.max 非 4 倍数时 step 为小数，此前 Math.round 会产出重复/失真刻度
@@ -316,6 +324,170 @@ describe('OASChart', () => {
     })
     const ticks = [...svgOf(el).querySelectorAll('text.axis-text')].map((t) => t.textContent)
     expect(ticks).toEqual(['2.5', '5', '7.5', '10'])
+  })
+
+  // 小数刻度（Task 8A）：nice 步长序列仅 1/2/2.5/5/10×10^n，标签精度随步长动态化。
+  it('type=line 小数量程 0.01：y 轴步长 0.0025、标签保留四位小数，数据顶到轴顶', () => {
+    const el = mount({
+      type: 'line',
+      data: JSON.stringify([
+        { label: 'a', value: 0.0025 },
+        { label: 'b', value: 0.01 },
+      ]),
+    })
+    const svg = svgOf(el)
+    const labels = [...svg.querySelectorAll('text.axis-text')]
+    expect(labels.map((t) => t.textContent)).toEqual(['0', '0.0025', '0.005', '0.0075', '0.01'])
+    // 0.01 值顶到 PAD.t（旧契约步长 ceil(0.01/4)=1、量程顶 4，数据全压底）
+    const dots = [...svg.querySelectorAll('circle.dot')]
+    expect(Number(dots[1]!.getAttribute('cy'))).toBeCloseTo(16, 0)
+  })
+
+  it('type=bar 小数量程 0.2：y 轴步长 0.05、标签为小数（不再整步抬到 4）', () => {
+    const el = mount({
+      type: 'bar',
+      data: JSON.stringify([
+        { label: 'a', value: 0.05 },
+        { label: 'b', value: 0.2 },
+      ]),
+    })
+    const labels = [...svgOf(el).querySelectorAll('text.axis-text')]
+    expect(labels.map((t) => t.textContent)).toEqual(['0', '0.05', '0.1', '0.15', '0.2'])
+  })
+
+  it('顶格契约：raw max 90 → 100（nice 步长 25），数据不再按 92 落位', () => {
+    const el = mount({
+      type: 'line',
+      data: JSON.stringify([
+        { label: 'a', value: 50 },
+        { label: 'b', value: 90 },
+      ]),
+    })
+    const svg = svgOf(el)
+    expect([...svg.querySelectorAll('text.axis-text')].map((t) => t.textContent)).toEqual([
+      '0',
+      '25',
+      '50',
+      '75',
+      '100',
+    ])
+    const dots = [...svg.querySelectorAll('circle.dot')]
+    // 90/100 × 234 → y = 16 + 23.4 = 39.4（约）；旧 92 量程为 41.2
+    expect(Number(dots[1]!.getAttribute('cy'))).toBeCloseTo(16 + 234 - (90 / 100) * 234, 0)
+  })
+
+  it('浮点噪声：0.3 量程 → 0.1 步长，标签不出现 0.30000000000000004', () => {
+    const el = mount({
+      type: 'line',
+      data: JSON.stringify([
+        { label: 'a', value: 0.1 },
+        { label: 'b', value: 0.3 },
+      ]),
+    })
+    const labels = [...svgOf(el).querySelectorAll('text.axis-text')].map((t) => t.textContent ?? '')
+    expect(labels).toEqual(['0', '0.1', '0.2', '0.3', '0.4'])
+    expect(labels.some((l) => l.includes('0000000'))).toBe(false)
+  })
+
+  it('科学计数：大步长量程用紧凑科学计数标签', () => {
+    const el = mount({
+      type: 'line',
+      data: JSON.stringify([
+        { label: 'a', value: 2.5e8 },
+        { label: 'b', value: 1e9 },
+      ]),
+    })
+    const svg = svgOf(el)
+    expect([...svg.querySelectorAll('text.axis-text')].map((t) => t.textContent)).toEqual([
+      '0',
+      '2.5E8',
+      '5E8',
+      '7.5E8',
+      '1E9',
+    ])
+    const dots = [...svg.querySelectorAll('circle.dot')]
+    expect(Number(dots[1]!.getAttribute('cy'))).toBeCloseTo(16, 0)
+  })
+
+  it('科学计数：极小小步长（<1e-4）同样紧凑，避免 0.00001 撑爆标签列', () => {
+    const el = mount({
+      type: 'line',
+      data: JSON.stringify([
+        { label: 'a', value: 1e-5 },
+        { label: 'b', value: 4e-5 },
+      ]),
+    })
+    expect([...svgOf(el).querySelectorAll('text.axis-text')].map((t) => t.textContent)).toEqual([
+      '0',
+      '1E-5',
+      '2E-5',
+      '3E-5',
+      '4E-5',
+    ])
+  })
+
+  it('标签按需留白：左侧小数刻度按标签宽度扩 padL，文字不越出 viewBox', () => {
+    const el = mount({
+      type: 'line',
+      data: JSON.stringify([
+        { label: 'a', value: 0.0025 },
+        { label: 'b', value: 0.01 },
+      ]),
+    })
+    const svg = svgOf(el)
+    const ticks = [...svg.querySelectorAll('text.axis-text')] as SVGTextElement[]
+    // 0.0025 估算宽 41.5 > 旧固定左留白可容纳的 34，必须按需扩展
+    for (const t of ticks) {
+      const left = Number(t.getAttribute('x')) - estWidth(t.textContent ?? '')
+      expect(left, `刻度 ${t.textContent} 左缘不越出 viewBox`).toBeGreaterThanOrEqual(0)
+    }
+    // 网格线随 padL 右移（x1 不再是固定 42），右缘仍为单轴 508
+    for (const line of svg.querySelectorAll('line.axis-line')) {
+      expect(Number(line.getAttribute('x1'))).toBeGreaterThan(42)
+      expect(Number(line.getAttribute('x2'))).toBe(508)
+    }
+  })
+
+  it('双轴小数刻度：左右轴各自动态精度，右轴按标签宽度留白（不越出 viewBox）', () => {
+    const el = mount({
+      type: 'line',
+      options: '{"yAxis":[{"name":"L"},{"name":"R"}]}',
+      data: JSON.stringify({
+        labels: ['a'],
+        series: [
+          { name: 'A', data: [0.2] },
+          { name: 'B', data: [0.01], yAxisIndex: 1 },
+        ],
+      }),
+    })
+    const svg = svgOf(el)
+    const texts = [...svg.querySelectorAll('text.axis-text')] as SVGTextElement[]
+    const left = texts.filter((t) => t.getAttribute('text-anchor') === 'end')
+    const right = texts.filter((t) => t.getAttribute('text-anchor') === 'start')
+    expect(left.map((t) => t.textContent)).toEqual(['0', '0.05', '0.1', '0.15', '0.2'])
+    expect(right.map((t) => t.textContent)).toEqual(['0', '0.0025', '0.005', '0.0075', '0.01'])
+    for (const t of right) {
+      const edge = Number(t.getAttribute('x')) + estWidth(t.textContent ?? '')
+      expect(edge, `右轴刻度 ${t.textContent} 右缘不越出 viewBox`).toBeLessThanOrEqual(520)
+    }
+    // 右轴留白按 0.0075 标签宽（41.5）+ 间距 + 余量扩展；网格右缘随之左移
+    for (const line of svg.querySelectorAll('line.axis-line')) {
+      expect(Number(line.getAttribute('x2'))).toBeLessThan(478)
+    }
+  })
+
+  it('type=radar options.max 小数量程：刻度按动态精度保留四位小数', () => {
+    const el = mount({
+      type: 'radar',
+      options: '{"max":0.01}',
+      data: JSON.stringify({ labels: ['甲', '乙', '丙'], series: [{ name: 'S', data: [0.005, 0.008, 0.003] }] }),
+    })
+    expect([...svgOf(el).querySelectorAll('text.axis-text')].map((t) => t.textContent)).toEqual([
+      '0.0025',
+      '0.005',
+      '0.0075',
+      '0.01',
+    ])
   })
 
   it('type=radar radarShape=circle：网格换同心圆（无 polygon 网格）', () => {
@@ -525,12 +697,14 @@ describe('OASChart', () => {
       }),
     })
     const svg = svgOf(el)
-    // 左轴 raw max 100 → step 25 top 100；右轴 raw max 10 → 以主轴档数（4 段）为锚重算 niceStep：step 3 top 12
+    // 左轴 raw max 100 → nice 序列 step 25 / top 100；右轴 raw max 10 → 以主轴档数（4 段）为锚
+    // 共用同一 nice 序列：10/4=2.5 正落在序列档，step 2.5 / top 10（旧 ceil 口径为 step 3 / top 12）。
+    // 契约明确接受右轴 10 → 10：数据 10 顶到轴顶，不再留 2 格空量程。
     const texts = [...svg.querySelectorAll('text.axis-text')]
     const left = texts.filter((t) => t.getAttribute('text-anchor') === 'end')
     const right = texts.filter((t) => t.getAttribute('text-anchor') === 'start')
     expect(left.map((t) => t.textContent)).toEqual(['0', '25', '50', '75', '100'])
-    expect(right.map((t) => t.textContent)).toEqual(['0', '3', '6', '9', '12'])
+    expect(right.map((t) => t.textContent)).toEqual(['0', '2.5', '5', '7.5', '10'])
     // 右轴刻度贴右缘（x = W - 42 + 8 = 486）
     for (const t of right) expect(Number(t.getAttribute('x'))).toBe(486)
     // 网格右缘扩到双轴 padR（x2 = 520 - 42 = 478；单轴是 508）
@@ -571,9 +745,10 @@ describe('OASChart', () => {
     })
     const bars = [...svgOf(el).querySelectorAll('rect.bar')]
     const plotH = 234
-    // 左轴量程 100：A 值 100 满高；右轴量程 12（step 3×4）：B 值 10 → 高 10/12×234
+    // 左轴量程 100：A 值 100 满高；右轴量程 10（2.5×4）：B 值 10 → 满高（旧量程 12 时为 10/12×234）
     expect(Number(bars[1]!.getAttribute('y'))).toBeCloseTo(16, 0) // A 值 100 → 顶到 PAD.t
-    expect(Number(bars[3]!.getAttribute('height'))).toBeCloseTo((10 / 12) * plotH, 0)
+    expect(Number(bars[3]!.getAttribute('height'))).toBeCloseTo((10 / 10) * plotH, 0)
+    expect(Number(bars[3]!.getAttribute('y'))).toBeCloseTo(16, 0) // B 值 10 同样顶到 PAD.t
     // 对照：若误用左轴量程 100，高度会是 10/100×234=23.4——明显不同
     expect(Number(bars[3]!.getAttribute('height'))).toBeGreaterThan(100)
   })
@@ -591,8 +766,9 @@ describe('OASChart', () => {
       }),
     })
     const dots = [...svgOf(el).querySelectorAll('circle.dot')]
-    // B 值 10（右轴量程 12）→ y = 16 + 234 - 10/12×234 = 155；若误用左轴（量程 100）→ y = 230.6
-    expect(Number(dots[3]!.getAttribute('cy'))).toBeCloseTo(16 + 234 - (10 / 12) * 234, 0)
+    // B 值 10（右轴量程 10，新契约 10→10）→ y = 16 + 234 - 10/10×234 = 16；
+    // 若误用左轴（量程 100）→ y = 230.6；旧右轴量程 12 时为 155。
+    expect(Number(dots[3]!.getAttribute('cy'))).toBeCloseTo(16 + 234 - (10 / 10) * 234, 0)
   })
 
   it('缺省单轴：无右轴刻度、网格右缘 508（行为不变）', () => {
@@ -891,8 +1067,9 @@ describe('OASChart', () => {
       }),
     })
     const dots = [...svgOf(el).querySelectorAll('circle.dot')]
-    // 右轴量程 12（raw max 10 → step 3 × 4）；值 10 → y = 16+234-10/12×234 = 155
-    expect(Number(dots[dots.length - 1]!.getAttribute('cy'))).toBeCloseTo(16 + 234 - (10 / 12) * 234, 0)
+    // 右轴量程 10（raw max 10 → nice 序列 step 2.5 × 4）；值 10 → y = 16+234-10/10×234 = 16
+    // （旧 ceil 量程 12 时为 155；契约接受 10→10）
+    expect(Number(dots[dots.length - 1]!.getAttribute('cy'))).toBeCloseTo(16 + 234 - (10 / 10) * 234, 0)
   })
 
   it('type=stacked-bar 多系列堆叠（段高之和=分类总高，不超绘图区）', () => {
@@ -906,7 +1083,9 @@ describe('OASChart', () => {
     const hA = Number(a.getAttribute('height'))
     const yB = Number(b.getAttribute('y'))
     const hB = Number(b.getAttribute('height'))
-    expect(yB + hB).toBeCloseTo(yA, 1)
+    // 新 nice 量程（分类合计 max 28 → step 10 / 顶格 40）下段边出现 0.1 user 单位的
+    // toFixed(1) 舍入差（y 与 height 各自取整），远低于 1 显示像素；用 0.2 容差而非放宽到整数档。
+    expect(Math.abs(yB + hB - yA), '堆叠段边缘首尾相接（允许 0.1 渲染舍入）').toBeLessThanOrEqual(0.2)
     // 柱体不超出绘图区：顶 ≥ PAD.t(16)、底 ≤ PAD.t + plotH(250)
     expect(yB).toBeGreaterThanOrEqual(16)
     expect(yA + hA).toBeLessThanOrEqual(250)
