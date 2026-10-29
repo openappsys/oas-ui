@@ -188,7 +188,7 @@ for the rendering itself.
 
 ### First-paint anti-flicker for system themes
 
-The server snapshot of `<oas-config-provider theme="system">` is deterministically `data-theme="light"`; it does not access shared storage or register media-query listeners. Client hydration corrects it using explicit stored preference > system > light fallback. When using system themes with DSD, place this synchronous bootstrap in `<head>` and keep its key identical to the provider's; for a provider without a key, use `const key = null` so only the MQL is read and storage is never accessed. It corrects the root and matching providers as they are parsed, keeping the first frame consistent with hydration. After the observer stops at DOMContentLoaded, root continues following the MQL and, with a key, corresponding localStorage events, without writing storage. Same-document reselection emits no storage event, so the script watches both requested `theme` and effective `data-theme`: a requested system write directly sets the head preference to system, while an effective change only synchronizes root without restoring stale storage or rewriting the provider in the callback. When a provider switches explicitly from `system` to `light` / `dark` (or a custom theme name), the script mirrors that provider's new effective theme to root and keeps following its later explicit changes (no fallback to the head preference after handover), so root cannot stay on the last system theme. Every root/provider write is guarded by a current-value comparison to prevent observer self-triggering or loops. Add it only when system theming is used; the default global theme is unchanged.
+The server snapshot of `<oas-config-provider theme="system">` is deterministically `data-theme="light"`; it does not access shared storage or register media-query listeners. Client hydration corrects it using explicit stored preference > system > light fallback. When using system themes with DSD, place this synchronous bootstrap in `<head>` and keep its key identical to the provider's; for a provider without a key, use `const key = null` so only the MQL is read and storage is never accessed. It corrects the root and matching providers as they are parsed, keeping the first frame consistent with hydration. After the observer stops at DOMContentLoaded, root continues following the MQL and, with a key, corresponding localStorage events, without writing storage. Same-document reselection emits no storage event, so the script watches both requested `theme` and effective `data-theme`: a requested system write directly sets the head preference to system, while an effective change only synchronizes root without restoring stale storage or rewriting the provider in the callback. When a provider switches explicitly from `system` to `light` / `dark` (or a custom theme name), the script mirrors that provider's new effective theme to root and keeps following its later explicit changes (no fallback to the head preference after handover), so root cannot stay on the last system theme. While that handed-over provider stays connected with requested≠system, its effective theme is the sole root authority: MQL/storage changes still update other system providers but never pull root back to the old preference. Root returns to the MQL only when the provider disconnects or goes back to `system`. Every root/provider write is guarded by a current-value comparison to prevent observer self-triggering or loops. Add it only when system theming is used; the default global theme is unchanged.
 
 ```html
 <script>
@@ -221,9 +221,19 @@ The server snapshot of `<oas-config-provider theme="system">` is deterministical
     const syncRoot = (theme) => {
       if (theme && document.documentElement.dataset.theme !== theme) document.documentElement.dataset.theme = theme
     }
+    // Handover authority: a still-connected handed-over provider with requested≠system and an effective theme.
+    // While it exists, its effective theme is the sole root authority; MQL/storage may still update other
+    // system providers but must not pull root back to the old preference.
+    const handedOverOwner = () => {
+      for (const el of document.querySelectorAll('oas-config-provider')) {
+        if (handedOver.has(el) && el.isConnected && el.getAttribute('theme') !== 'system' && el.dataset.theme) return el
+      }
+      return null
+    }
     const apply = () => {
       const theme = effective()
-      syncRoot(theme)
+      const owner = handedOverOwner()
+      syncRoot(owner ? owner.dataset.theme : theme)
       document.querySelectorAll('oas-config-provider').forEach((el) => {
         if (matchesProvider(el) && el.dataset.theme !== theme) el.dataset.theme = theme
       })
@@ -253,10 +263,13 @@ The server snapshot of `<oas-config-provider theme="system">` is deterministical
             apply()
           } else if (record.oldValue === 'system' || handedOver.has(el)) {
             handedOver.add(el)
-            syncRoot(el.dataset.theme)
+            const owner = handedOverOwner()
+            if (owner) syncRoot(owner.dataset.theme)
           }
         } else if (record.attributeName === 'data-theme') {
-          if (matchesProvider(el) || handedOver.has(el)) syncRoot(el.dataset.theme)
+          const owner = handedOverOwner()
+          if (owner) syncRoot(owner.dataset.theme)
+          else if (matchesProvider(el)) syncRoot(el.dataset.theme)
         }
       }
     })

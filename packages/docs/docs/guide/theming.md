@@ -26,7 +26,7 @@ document.documentElement.dataset.theme = 'high-contrast'
 
 需要记住用户选择时才添加 `theme-storage-key`，不会因引入组件库而默认读写存储或启用全局 system。存储 JSON 为 `{"theme":"light"}` / `{"theme":"dark"}` / `{"theme":"system"}`。首次恢复时显式 light/dark 优先于系统；之后重新选择 system 会覆盖旧偏好并恢复跟随系统。
 
-SSR 对 system 确定性输出 `data-theme="light"`，服务端不访问 localStorage 或媒体查询。若使用 SSR/DSD，把下面同步脚本放入 `<head>`（在首屏绘制前执行），并让脚本 key 与 provider 完全一致；无 key provider 把 `const key` 改为 `null`，此时只读 MQL、storage get/set 均为 0。脚本会同时校正根节点和对应 system provider，避免水合前后闪变；初始 observer 可在 DOMContentLoaded 结束，但 MQL 监听会持续同步 root，有 key 时也会同步对应 localStorage 事件，且不写 storage。同文档重选不会触发 storage 事件，因此脚本同时观察 requested `theme` 与 effective `data-theme`：requested=system 直接把 head preference 更新为 system，effective 变化只同步 root，不在回调中重读旧 storage 或回写 provider；provider 从 system 显式切到 light / dark（或自定义主题名）时，脚本把该 provider 的新 effective 镜像到 root 并继续跟随它后续的显式主题（交接后不再回落到 head preference），避免 root 滞留最后一个系统主题；root/provider 写入前均比较现值，避免 Observer 自激或循环。纯客户端页面不需要这段引导。
+SSR 对 system 确定性输出 `data-theme="light"`，服务端不访问 localStorage 或媒体查询。若使用 SSR/DSD，把下面同步脚本放入 `<head>`（在首屏绘制前执行），并让脚本 key 与 provider 完全一致；无 key provider 把 `const key` 改为 `null`，此时只读 MQL、storage get/set 均为 0。脚本会同时校正根节点和对应 system provider，避免水合前后闪变；初始 observer 可在 DOMContentLoaded 结束，但 MQL 监听会持续同步 root，有 key 时也会同步对应 localStorage 事件，且不写 storage。同文档重选不会触发 storage 事件，因此脚本同时观察 requested `theme` 与 effective `data-theme`：requested=system 直接把 head preference 更新为 system，effective 变化只同步 root，不在回调中重读旧 storage 或回写 provider；provider 从 system 显式切到 light / dark（或自定义主题名）时，脚本把该 provider 的新 effective 镜像到 root 并继续跟随它后续的显式主题（交接后不再回落到 head preference），避免 root 滞留最后一个系统主题；只要该已交接 provider 仍连接且 requested≠system，它的 effective 就是 root 唯一权威——MQL/storage 变化仍更新其它 system provider，但不会把 root 抢回旧 preference；provider 断开或恢复 system 才把 root 交还 MQL。root/provider 写入前均比较现值，避免 Observer 自激或循环。纯客户端页面不需要这段引导。
 
 ```html
 <!-- body 内的 provider -->
@@ -68,9 +68,18 @@ SSR 对 system 确定性输出 `data-theme="light"`，服务端不访问 localSt
     const syncRoot = (theme) => {
       if (theme && document.documentElement.dataset.theme !== theme) document.documentElement.dataset.theme = theme
     }
+    // 交接权威：仍连接、requested≠system 且有 effective 的已交接 provider。它存在时该 provider 的
+    // effective 是 root 唯一权威；MQL/storage 仍可更新其它 system provider，但不得把 root 抢回旧 preference。
+    const handedOverOwner = () => {
+      for (const el of document.querySelectorAll('oas-config-provider')) {
+        if (handedOver.has(el) && el.isConnected && el.getAttribute('theme') !== 'system' && el.dataset.theme) return el
+      }
+      return null
+    }
     const apply = () => {
       const theme = effective()
-      syncRoot(theme)
+      const owner = handedOverOwner()
+      syncRoot(owner ? owner.dataset.theme : theme)
       document.querySelectorAll('oas-config-provider').forEach((el) => {
         if (matchesProvider(el) && el.dataset.theme !== theme) el.dataset.theme = theme
       })
@@ -100,10 +109,13 @@ SSR 对 system 确定性输出 `data-theme="light"`，服务端不访问 localSt
             apply()
           } else if (record.oldValue === 'system' || handedOver.has(el)) {
             handedOver.add(el)
-            syncRoot(el.dataset.theme)
+            const owner = handedOverOwner()
+            if (owner) syncRoot(owner.dataset.theme)
           }
         } else if (record.attributeName === 'data-theme') {
-          if (matchesProvider(el) || handedOver.has(el)) syncRoot(el.dataset.theme)
+          const owner = handedOverOwner()
+          if (owner) syncRoot(owner.dataset.theme)
+          else if (matchesProvider(el)) syncRoot(el.dataset.theme)
         }
       }
     })

@@ -30,10 +30,11 @@ test('back-top append-to 不触发 SSR 水合告警（组件 chunk 先于水合 
 test('back-top 暗色页面三种 theme 变体真实 computed 外观（light 是浅色表面、不隐式继承）', async ({
   page,
 }, testInfo) => {
-  // 回归：`[data-theme="light"]` 在 v2.6.5 起是真实生效的全局浅色规则（此前只在 :root/:host 上
+  // 回归：`[data-theme="light"]` 自本版起是真实生效的全局浅色规则（此前只在 :root/:host 上
   // 无对手，组件默认 data-theme=light 看起来像「跟随页面」）。默认 theme=light 在 html.dark
   // 页面因此渲染为浅色表面——这是文档既有语义（light=浅色表面），必须显式锁住，避免被
-  // 误当回归改回隐式继承；同时锁 primary/dark 两变体在暗色下的真实取值与可读性。
+  // 误当回归改回隐式继承；同时锁 primary/dark 两变体在暗色下的真实取值与可读性（dark 是
+  // 自动反色变体，暗色页呈亮底深字，不能用于取得深色外观）。
   const errors: string[] = []
   page.on('pageerror', (e) => errors.push(e.message))
   page.on('console', (m) => {

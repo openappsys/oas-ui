@@ -411,6 +411,112 @@ test('theme-editor 文档站 html.dark（无 data-theme 祖先）：双套导出
   expect(errors).toEqual([])
 })
 
+test('theme-editor 运行时切根 class 暗色：旧桶内联不污染另一桶导出，dark 桶真实落预览', async ({ page }, testInfo) => {
+  // 回归：挂载时是 light（无 html.dark），编辑 light 桶后运行时 add('dark')——ThemeEditor 不观察根 class
+  // 时旧桶内联值滞留，dark 桶导出/预览会读到 light 的值（双套退化为同一套）。真实浏览器双引擎回归。
+  const errors: string[] = []
+  page.on('pageerror', (e) => errors.push(e.message))
+  page.on('console', (m) => {
+    if (m.type() === 'error') errors.push(m.text())
+  })
+  await page.goto('/components/theme-editor.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#te-default')
+  await page.evaluate(() => {
+    document.documentElement.classList.remove('dark', 'dark-theme', 'theme-dark')
+    document.documentElement.removeAttribute('data-theme')
+  })
+
+  const mountedLight = await page.evaluate(() => {
+    const editor = document.querySelector('#te-default') as HTMLElement & {
+      editingTheme: string
+      importJson(data: Record<string, string>): void
+      exportThemes(): { light: Record<string, string>; dark: Record<string, string> }
+    }
+    editor.editingTheme = 'light'
+    editor.importJson({ '--oas-color-primary': '#112233', '--oas-color-bg': '#fefefe' })
+    // dark 桶先写好：运行时切暗色后应当直接落这个值
+    editor.editingTheme = 'dark'
+    editor.importJson({ '--oas-color-primary': '#334455' })
+    editor.editingTheme = 'light'
+    const themes = editor.exportThemes()
+    return {
+      inline: editor.style.getPropertyValue('--oas-color-primary'),
+      lightPrimary: themes.light['--oas-color-primary'],
+      darkPrimary: themes.dark['--oas-color-primary'],
+      darkBg: themes.dark['--oas-color-bg'],
+    }
+  })
+  expect(mountedLight).toEqual({
+    inline: '#112233',
+    lightPrimary: '#112233',
+    darkPrimary: '#334455',
+    darkBg: '#18181b',
+  })
+
+  // 运行时 add('dark')：同步导出必须已经 reconcile（不等 observer），暗色桶落预览
+  const switched = await page.evaluate(() => {
+    const editor = document.querySelector('#te-default') as HTMLElement & {
+      exportThemes(): { light: Record<string, string>; dark: Record<string, string> }
+    }
+    document.documentElement.classList.add('dark')
+    const themes = editor.exportThemes()
+    return {
+      lightPrimary: themes.light['--oas-color-primary'],
+      darkPrimary: themes.dark['--oas-color-primary'],
+      lightBg: themes.light['--oas-color-bg'],
+      darkBg: themes.dark['--oas-color-bg'],
+      inline: editor.style.getPropertyValue('--oas-color-primary'),
+    }
+  })
+  expect(switched).toEqual({
+    lightPrimary: '#112233',
+    darkPrimary: '#334455',
+    lightBg: '#fefefe',
+    darkBg: '#18181b',
+    inline: '#334455',
+  })
+
+  await page.waitForFunction(
+    () =>
+      getComputedStyle(document.querySelector('#te-default') as HTMLElement)
+        .getPropertyValue('--oas-color-primary')
+        .trim() === '#334455',
+    undefined,
+    { timeout: 5000 },
+  )
+  await page.locator('#te-default').screenshot({ path: testInfo.outputPath('runtime-dark-reconcile.png') })
+
+  // 运行时 remove('dark')：light 桶回到预览，dark 桶导出不被清空
+  const restored = await page.evaluate(async () => {
+    const editor = document.querySelector('#te-default') as HTMLElement & {
+      exportThemes(): { light: Record<string, string>; dark: Record<string, string> }
+    }
+    document.documentElement.classList.remove('dark')
+    await new Promise((resolve) => setTimeout(resolve, 50))
+    const themes = editor.exportThemes()
+    return {
+      inline: editor.style.getPropertyValue('--oas-color-primary'),
+      computed: getComputedStyle(editor).getPropertyValue('--oas-color-primary').trim(),
+      inlineBg: editor.style.getPropertyValue('--oas-color-bg'),
+      lightPrimary: themes.light['--oas-color-primary'],
+      darkPrimary: themes.dark['--oas-color-primary'],
+      lightBg: themes.light['--oas-color-bg'],
+      darkBg: themes.dark['--oas-color-bg'],
+    }
+  })
+  expect(restored).toEqual({
+    inline: '#112233',
+    computed: '#112233',
+    inlineBg: '#fefefe',
+    lightPrimary: '#112233',
+    darkPrimary: '#334455',
+    lightBg: '#fefefe',
+    darkBg: '#18181b',
+  })
+  await page.screenshot({ path: testInfo.outputPath('runtime-light-restored.png'), fullPage: false })
+  expect(errors).toEqual([])
+})
+
 test('theme-editor 数字输入非法态真实可见（computed 红边，不是只加 class）', async ({ page }, testInfo) => {
   await page.goto('/components/theme-editor.html', { waitUntil: 'domcontentloaded' })
   await up(page, '#te-default')

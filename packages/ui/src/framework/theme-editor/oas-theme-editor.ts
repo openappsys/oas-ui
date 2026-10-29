@@ -520,7 +520,8 @@ interface GroupRef {
  *   变量不存在时跳过；非法 JSON 回退默认集
  * - `preset` 属性/`applyPreset()` 应用内置预设主题（compact/comfortable/default，
  *   只调尺寸族 token），写入当前编辑桶，由 reset() 按桶清除
- * - `editing-theme` 只选择 light/dark 编辑桶；实际预览仍由 ConfigProvider/有效主题决定
+ * - `editing-theme` 只选择 light/dark 编辑桶；实际预览仍由 ConfigProvider/有效主题决定；
+ *   运行时根 `class`（`html.dark` 等）变化会自动 reconcile 内联预览并在导出/读取前对齐
  *
  * 事件：`oas-change` detail `{ token, value, theme }`
  * 方法：旧扁平 API 只作用当前编辑桶；`exportThemes()` / `importThemes()` 读写双套数据
@@ -554,10 +555,31 @@ export class OASThemeEditor extends OASElement {
     dark: new Map<string, string>(),
   }
   private lastPreviewTheme: ThemeEditorTheme | null = null
+  /** 观察文档根 class（VitePress 式 html.dark）：运行时 add/remove 不会触发属性回调，需主动 reconcile。 */
+  private classObserver: MutationObserver | null = null
   private invalidPresetWarned = new Set<string>()
   private invalidImportKeyWarned = new Set<string>()
   private filtering = false
   private preFilterOpen = new Map<string, boolean>()
+
+  override connectedCallback(): void {
+    super.connectedCallback()
+    this.bindPreviewObserver()
+  }
+
+  override disconnectedCallback(): void {
+    this.classObserver?.disconnect()
+    this.classObserver = null
+    super.disconnectedCallback()
+  }
+
+  private bindPreviewObserver(): void {
+    const root = this.ownerDocument?.documentElement
+    if (!root) return
+    this.classObserver?.disconnect()
+    this.classObserver = new MutationObserver(() => this.update())
+    this.classObserver.observe(root, { attributes: true, attributeFilter: ['class'] })
+  }
 
   protected override render(): void {
     this.shadow.innerHTML = `
@@ -623,6 +645,7 @@ export class OASThemeEditor extends OASElement {
    * 导出当前编辑桶为 CSS 文本（`:root { --oas-*: value; ... }`，与 exportJson 同源）。
    */
   exportCss(): string {
+    this.syncPreviewTheme()
     const lines: string[] = []
     for (const row of this.rows) {
       const value = this.readValue(row.def.name)
@@ -651,6 +674,7 @@ export class OASThemeEditor extends OASElement {
       return
     }
     const theme = this.editingTheme
+    this.syncPreviewTheme()
     const root = this.themeRoot()
     const preview = this.previewTheme()
     this.resolvedValues[theme].clear()
@@ -678,6 +702,7 @@ export class OASThemeEditor extends OASElement {
       devWarn('[oas-theme-editor] importThemes 入参必须是仅含 light/dark 的扁平字符串 token map，已整体忽略')
       return
     }
+    this.syncPreviewTheme()
     const next: Record<ThemeEditorTheme, Map<string, string>> = {
       light: new Map<string, string>(Object.entries(themes.light)),
       dark: new Map<string, string>(Object.entries(themes.dark)),
@@ -738,6 +763,7 @@ export class OASThemeEditor extends OASElement {
   }
 
   private applyPresetTokens(kind: 'compact' | 'comfortable'): void {
+    this.syncPreviewTheme()
     const root = this.themeRoot()
     const theme = this.editingTheme
     const preview = this.previewTheme()
@@ -964,6 +990,7 @@ export class OASThemeEditor extends OASElement {
   }
 
   private applyValue(def: ThemeTokenDef, value: string, clearDraft = false): void {
+    this.syncPreviewTheme()
     const theme = this.editingTheme
     this.overrides[theme].set(def.name, value)
     this.resolvedValues[theme].clear()
@@ -1007,6 +1034,9 @@ export class OASThemeEditor extends OASElement {
   }
 
   private exportThemeJson(theme: ThemeEditorTheme): ThemeTokenMap {
+    // 运行时根 class 变化不会触发属性回调：读取/导出前先让内联预览与实际预览桶对齐，
+    // 否则非预览桶导出会读到上一桶残留的内联值（双套退化为同一套）。
+    this.syncPreviewTheme()
     if (theme !== this.previewTheme()) this.captureResolvedValues(theme)
     const out: ThemeTokenMap = {}
     for (const row of this.rows) {

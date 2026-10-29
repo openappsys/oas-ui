@@ -89,7 +89,7 @@ When `target` is unset the component auto-detects the nearest scrollable ancesto
 
 `theme` three variants: `light` (default) / `primary` / `dark` (auto-inverted in dark theme to keep contrast).
 
-`light` is a **light surface**, not "follow the page": on a dark page the default button still renders a white surface with dark text (the explicit `data-theme="light"` rule has been effective since v2.6.5). Use `theme="dark"` explicitly if a dark look is wanted. `primary` has no theme block of its own and inherits the page `--oas-color-primary` and its on-color.
+`light` is a **light surface**, not "follow the page": on any page (including dark ones) the default button renders a light surface with dark text (the explicit `data-theme="light"` rule has been effective since this release). `primary` has no theme block of its own and inherits the page `--oas-color-primary` and its on-color — on a dark page, use `primary` or override the relevant tokens when you want a dark button. `dark` is the **auto-inverted variant**: on a dark page it inverts to a light surface with dark text, so it cannot be used to get a dark look.
 
 <DemoBlock title="Theme variants">
   <oas-back-top visible theme="primary" bottom="400px" right="96px"></oas-back-top>

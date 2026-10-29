@@ -89,7 +89,7 @@
 
 `theme` 三种主题变体：`light`（默认）/ `primary` / `dark`（dark 主题下自动反色保持对比）。
 
-`light` 是**浅色表面**而不是「跟随页面」：暗色页面里默认按钮仍渲染白底深字（显式 `data-theme="light"` 规则，v2.6.5 起真实生效）；需要暗色外观请显式 `theme="dark"`。`primary` 没有自身主题块，继承页面 `--oas-color-primary` 与 on 色。
+`light` 是**浅色表面**而不是「跟随页面」：任何页面下（含暗色页）默认按钮都渲染浅底深字（显式 `data-theme="light"` 规则自本版起真实生效）。`primary` 没有自身主题块，继承页面 `--oas-color-primary` 与 on 色——暗色页面想要深色按钮，用 `primary` 或覆盖对应 token。`dark` 是**自动反色变体**：暗色页面里会反色成亮底深字，不能用来取得深色外观。
 
 <DemoBlock title="主题变体">
   <oas-back-top visible theme="primary" bottom="400px" right="96px"></oas-back-top>

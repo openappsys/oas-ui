@@ -55,6 +55,11 @@ describe('system 主题 head 引导（四份文档）', () => {
       expect(script.normalized, `${script.file} root 写入前比较现值`).toContain(
         'document.documentElement.dataset.theme !== theme',
       )
+      expect(script.normalized, `${script.file} 交接 provider 是 root 唯一权威`).toContain('const handedOverOwner')
+      expect(script.normalized, `${script.file} 断开即交还 MQL`).toContain('el.isConnected')
+      expect(script.normalized, `${script.file} MQL/storage 不得抢回 root`).toContain(
+        'syncRoot(owner ? owner.dataset.theme : theme)',
+      )
       expect(script.normalized, `${script.file} 不写 storage`).not.toMatch(/localStorage\.setItem/)
     }
   })

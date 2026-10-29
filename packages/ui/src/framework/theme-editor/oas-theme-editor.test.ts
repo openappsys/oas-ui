@@ -928,6 +928,63 @@ describe('OASThemeEditor 预览桶：根 class 式暗色回退', () => {
     el.importJson({ '--oas-color-primary': '#778899' })
     expect(el.style.getPropertyValue('--oas-color-primary'), '显式 light 祖先下 dark 桶不落预览').toBe('#0b6cff')
   })
+
+  // 回归：运行时 add/remove html.dark 不会触发 attributeChangedCallback，旧桶内联值若不被回收，
+  // 新预览桶的 computed（导出/预览）会读到上一桶的值——双套导出退化为同一套。
+  const tick = () => new Promise((resolve) => setTimeout(resolve, 0))
+
+  it('运行时切暗色：exportThemes 先 reconcile，旧桶内联不污染另一桶导出', () => {
+    const el = mount()
+    el.editingTheme = 'light'
+    el.importJson({ '--oas-color-primary': '#112233', '--oas-color-bg': '#fefefe' })
+    el.editingTheme = 'dark'
+    el.importJson({ '--oas-color-primary': '#334455' })
+    el.editingTheme = 'light'
+    expect(el.style.getPropertyValue('--oas-color-primary')).toBe('#112233')
+
+    root.classList.add('dark')
+    // 同步导出：observer 尚未跑，导出/读取前也必须先切到 dark 预览桶
+    const themes = el.exportThemes()
+    expect(themes.light['--oas-color-primary'], 'light 桶保持自身 overrides').toBe('#112233')
+    expect(themes.dark['--oas-color-primary'], 'dark 桶不得复用旧 light 内联值').toBe('#334455')
+    expect(themes.dark['--oas-color-bg'] ?? '', 'dark 未编辑的 token 不得读到 light 内联值').not.toBe('#fefefe')
+    expect(el.style.getPropertyValue('--oas-color-primary'), '导出本身也应完成 reconcile').toBe('#334455')
+  })
+
+  it('运行时 add/remove 根 class：预览内联值在两个桶间真实切换，导出始终分套', async () => {
+    const el = mount()
+    el.editingTheme = 'light'
+    el.importJson({ '--oas-color-primary': '#112233' })
+    el.editingTheme = 'dark'
+    el.importJson({ '--oas-color-primary': '#334455', '--oas-color-bg': '#18181b' })
+    el.editingTheme = 'light'
+
+    root.classList.add('dark')
+    await tick()
+    expect(el.style.getPropertyValue('--oas-color-primary'), '运行时暗色后 dark 桶落预览').toBe('#334455')
+    expect(el.exportThemes()).toMatchObject({
+      light: { '--oas-color-primary': '#112233' },
+      dark: { '--oas-color-primary': '#334455' },
+    })
+
+    root.classList.remove('dark')
+    await tick()
+    expect(el.style.getPropertyValue('--oas-color-primary'), '移除暗色后 light 桶回到预览').toBe('#112233')
+    expect(el.style.getPropertyValue('--oas-color-bg'), 'dark 桶其它内联 token 也必须回收').toBe('')
+    expect(el.exportThemes()).toMatchObject({
+      light: { '--oas-color-primary': '#112233' },
+      dark: { '--oas-color-primary': '#334455' },
+    })
+  })
+
+  it('断开连接后停止观察根 class，不再触发 update', async () => {
+    const el = mount()
+    const update = vi.spyOn(el as unknown as { update: () => void }, 'update')
+    el.remove()
+    root.classList.add('dark')
+    await tick()
+    expect(update).not.toHaveBeenCalled()
+  })
 })
 
 // ---------------------------------------------------------------------------

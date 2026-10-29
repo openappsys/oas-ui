@@ -13,12 +13,13 @@
 
 ### 详细需求
 
-- **back-top 可见语义（Ruling）**：`theme="light"`（默认）是浅色表面，暗色页面不隐式继承页面 token；`primary` 无自身主题块继续继承页面 token；`dark` 在暗色页面反色为亮底深字。保留组件文档既有语义，不改回隐式继承；CHANGELOG 记录可见行为变化；暗色页三变体真实 computed 外观回归锁住取值（含 `data-glass` 无关的几何不变）。
-- **ThemeEditor 预览桶**：最近 `[data-theme]` 祖先优先（`dark` → dark 桶；`light` / `high-contrast` / 自定义主题名 → light 桶）；无 `[data-theme]` 祖先时回退根 class 式暗色（`dark` / `dark-theme` / `theme-dark`），文档站 `html.dark` 无需迁移。`.dark` 下双套导出必须不同、编辑 dark 桶必须落预览；高对比/自定义主题按 light 桶预览作为文档化边界。
-- **system head 引导交接**：provider 从 system 显式切到 light/dark（或自定义主题名）时，脚本把该 provider 的新 effective 镜像到 root 并继续跟随其后续显式主题；恢复 system 重新交还 MQL。观察 `theme` 需 `attributeOldValue` 识别离开 system，所有 root/provider 写入先比较现值防自激。中英文 theming / SSR 四份脚本规范化后必须完全一致。
+- **back-top 可见语义（Ruling）**：`theme="light"`（默认）是浅色表面，暗色页面不隐式继承页面 token；`primary` 无自身主题块继续继承页面 token；`dark` 是自动反色变体，暗色页面反色为亮底深字，不能用于取得深色外观——暗色页要深色按钮请用 `primary` 或覆盖对应 token。保留组件文档既有语义，不改回隐式继承；CHANGELOG 记录可见行为变化；暗色页三变体真实 computed 外观回归锁住取值（含 `data-glass` 无关的几何不变）。
+- **ThemeEditor 预览桶**：最近 `[data-theme]` 祖先优先（`dark` → dark 桶；`light` / `high-contrast` / 自定义主题名 → light 桶）；无 `[data-theme]` 祖先时回退根 class 式暗色（`dark` / `dark-theme` / `theme-dark`），文档站 `html.dark` 无需迁移。`.dark` 下双套导出必须不同、编辑 dark 桶必须落预览；高对比/自定义主题按 light 桶预览作为文档化边界。运行时 add/remove 根 class 必须被观察（`document.documentElement` 的 `class`，断开时 disconnect、重连重挂）：变化后 reconcile 内联预览，导出/读取/导入/编辑/预设入口动作前先 `syncPreviewTheme()`——旧桶内联值不得污染另一桶的导出或预览。
+- **system head 引导交接**：provider 从 system 显式切到 light/dark（或自定义主题名）时，脚本把该 provider 的新 effective 镜像到 root 并继续跟随其后续显式主题；恢复 system 重新交还 MQL。只要已交接 provider 仍连接且 requested≠system，其 effective 是 root 唯一权威：MQL/storage 可更新其它 system provider，但不得改 root；provider 断开或恢复 system 才交还。观察 `theme` 需 `attributeOldValue` 识别离开 system，所有 root/provider 写入先比较现值防自激。中英文 theming / SSR 四份脚本规范化后必须完全一致。
 - **switch checked loading**：spinner 颜色改为 `var(--oas-switch-on-color, var(--oas-color-text-on-primary))`，与轨道内文案同源；自定义浅色轨（如 `#fde68a`）在 glass + loading 下必须实色可见，扩现有自定义色 fixture 并显式断言 `data-glass` / glass token 在场（避免无玻璃时空跑假绿）。
 - **ThemeEditor 交互收口**：同一行色板/滑块写入合法值后清 `is-invalid` 并回填新值；切桶/双套导入/reset 等外部同步仍保留非法草稿。数字输入 `.is-invalid` 补可见 danger 红边 + 内描边（不只 class）。
-- **文档边界**：ThemeEditor 明确任意 `--*` 变量可导入（未列入 `token` 也可生效但不渲染编辑行，拼写错误不校验）；PRD 36 格口径改为「36 个采样格 = 21 个不同输入组合（15 个不同分数）」；spinner「修复前 16.3」改为可复现模型（自定义浅色轨 + 0.6 组透明度 + 感知分对比）。
+- **文档边界**：ThemeEditor 明确任意 `--*` 变量可导入（未列入 `token` 也可生效但不渲染编辑行，拼写错误不校验）；PRD 36 格口径改为「36 个采样格 = 21 个可区分结果档、15 个不同分数」；spinner「修复前 16.3」改为可复现模型（自定义浅色轨 + 0.6 组透明度 + 感知分对比）。自定义中色轨 loading 不宣称统一 35 门限：浅色轨 `#fde68a` 沿用 disabled/loading 档 35，中色轨 `#16a34a` 实测定档 15（light ≈31.3 / dark ≈20.4，仅防 spinner 完全不可见），口径见下节。
+- **perf 预算风险（本批同步）**：`form` 链 gzip 实测 29692 B / 预算 29696 B（余量 4 B，全库最危险档）；预算上限不抬，本批只同步 basis 并标记——后续 form 链任何扩展前必须先评估/瘦身或按流程重新定档，禁止把余量当常量。`glass.css` 实测 3516 B / 6000 B 上限，basis 同步为主险项之外的常规复核。
 
 ### 非目标
 
@@ -26,8 +27,8 @@
 
 ### 验收标准
 
-- 单测：switch spinner 吃 on 色；ThemeEditor 根 class 预览桶（含等价命名与 `[data-theme]` 优先）、同行合法写入清草稿；四份 head 脚本规范化一致 + JS 可解析 + 交接契约。
-- `packages/ui/qa-regression/`（Chromium + Firefox）：back-top 暗色三变体 computed、ThemeEditor `.dark` 双套导出/落预览、数字非法态可见红边、同行草稿清除、glass 自定义色 + loading spinner 实色/可见；`packages/ssr/ssr-dsd.spec.ts`（Chromium DSD）锁 system→light→dark→system 的 root/provider 联合状态与真实 token。
+- 单测：switch spinner 吃 on 色；ThemeEditor 根 class 预览桶（含等价命名与 `[data-theme]` 优先）、运行时 add/remove 根 class 的双桶导出/预览切换与断开停止观察、同行合法写入清草稿；四份 head 脚本规范化一致 + JS 可解析 + 交接权威契约。
+- `packages/ui/qa-regression/`（Chromium + Firefox）：back-top 暗色三变体 computed、ThemeEditor `.dark` 双套导出/落预览与运行时切根 class 回归、数字非法态可见红边、同行草稿清除、glass 自定义色 + loading spinner 实色/可见；`packages/ssr/ssr-dsd.spec.ts`（Chromium DSD）锁 system→显式 dark / 显式 light 双向交接、MQL/storage 不改 root、provider 断开交还与真实 token。
 - perf 档案按 `perf:size --update-baseline` + `perf:docs` 重生成（不手改）；全量 test / typecheck / build / perf:size / api / llms / stats / skill / lint / format / trace 通过。
 
 ---
@@ -85,14 +86,15 @@
 
 `oas-switch` 轨道内文案在玻璃层下建立独立真实对比度矩阵：2 主题 × 2 checked 状态 × 3 种真实身后底色（页面 / 灰卡 / `bg-elevated`）× 3 种交互态（静止 / hover / press）共 36 个采样格；静止与 hover 每格感知分 ≥60，press 每格 ≥45。版本号未定，不标已发布。
 
-口径说明（诚实计数）：36 个采样格实际只覆盖 **21 个不同输入组合（15 个不同分数）**——checked 轨道为不透明 primary（玻璃档只整体加深），3 种身后底色不改变 checked 格的实际混色；同一主题/状态内不同底色的 unchecked 采样也常落在同一分数档。采样计数与「每格真实取样」不变，禁用它把「格数」当作独立视觉结论。
+口径说明（诚实计数）：36 个采样格实际只覆盖 **21 个可区分结果档、15 个不同分数**——checked 轨道为不透明 primary（玻璃档只整体加深），3 种身后底色不改变 checked 格的实际混色；同一主题/状态内不同底色的 unchecked 采样也常落在同一分数档。采样计数与「每格真实取样」不变，禁用它把「格数」当作独立视觉结论。
 
 ### 详细需求
 
 - **真实采样**：每格使用真实 shadow DOM 中的 `unchecked-text` / `checked-text`、真实轨道计算色、真实容器计算底色与真实 sheen token；半透明轨道与半透明卡片逐层 alpha 合成，不假定玻璃不透明。press 必须由真实指针按下产生 `:active` 后采样 `--oas-glass-sheen-press`，不得改 class 或复用 hover 样本。
 - **计数不变量**：总数恰好 36，每格名称唯一；null / 无法解析 / 缺文字 / 状态不符直接失败，禁止 filter 后少样本仍绿。
 - **修复点**：选中态轨道内文案从半透明 `--oas-color-bg` 改为实色 `--oas-color-text-on-primary`；浅色玻璃档新增 `--oas-glass-switch-track-mix: 88%`，让开启态轨道按比例掺黑，抵消白色 sheen 叠底后的对比度损失。dark 与 `prefers-reduced-transparency` 回退 100%，无玻璃层原色零变化。自定义 `color` 在 glass 下把该 mix 钉为 100%（移除 color 时清 inline 回退），保持原轨道色与 `pickOnColor` 基于原色择 on 字的既有口径。
-- **loading/自定义色可读性**：checked loading spinner 原先固定 `--oas-color-text-on-primary`（light 为白）；glass 下轨道是半透明/浅色表面，白 spinner 在浅色自定义轨上几乎不可读。可复现模型：`color="#fde68a"` + `checked` + `loading` + glass，0.6 组透明度合成到页面底后 spinner 与轨道感知分仅约 7.8（dark 页面 0.0）；现 spinner 与轨道内文案同源取 `--oas-switch-on-color`（无自定义色回落实色 on-primary），同模型提升到约 63.4（dark 约 45.8）并纳入真实浏览器回归。disabled/loading 另做真实 computed 回归（不进入 36 格矩阵，disabled/loading 非交互态门限 35，仅防透明度塌陷）。
+- **loading/自定义色可读性**：checked loading spinner 原先固定 `--oas-color-text-on-primary`（light 为白）；glass 下轨道是半透明/浅色表面，白 spinner 在浅色自定义轨上几乎不可读。可复现模型：`color="#fde68a"` + `checked` + `loading` + glass，0.6 组透明度合成到页面底后 spinner 与轨道感知分仅约 7.8（dark 页面 0.0）；现 spinner 与轨道内文案同源取 `--oas-switch-on-color`（无自定义色回落实色 on-primary），同模型提升到约 63.4（dark 约 45.8）并纳入真实浏览器回归。disabled/loading 另做真实 computed 回归（不进入 36 格矩阵；主题默认 disabled/loading 门限 35，实测 light 57.3 / dark 37.2，仅防透明度塌陷）。**自定义中色轨口径**：`#16a34a` 轨 + loading 实际量级为 light ≈31.3 / dark ≈20.4（`pickOnColor` 取深色 on 色 `#18181b`，深字在绿色轨上本就低于浅色轨），回归门限定 15，只保证 spinner 实色可见、不承诺统一 35——浅色自定义轨 `#fde68a` 仍走 35 档。
+- **局部 provider × glass mix 继承边界（不扩大 token 作用域）**：`--oas-glass-*`（含 `--oas-glass-switch-track-mix`）只在 `:root[data-glass]` / `:root.dark[data-glass]` 层声明。暗色页面里嵌套显式 `data-theme="light"` 的局部 provider 不会重新绑定 glass mix，其子树 switch 继承根节点的 dark 100%（而非 light 88%）——这是既有单层玻璃 token 作用域的文档化边界，不新增局部 provider 选择器、不把 glass token 下沉到组件或局部 provider。另：glass.css 实测 3516 B / 6 KB 上限，仍属可选层常规余量，与 form 链 4 B 零余量风险分开管理。
 - **范围纪律**：自定义 `color` 与不可控复杂背景不纳入 36 格，不新增第二套颜色算法；保留 40×22 几何、键盘/指针、动态高光注入/清理、RTL、disabled/loading 与组件消费点纪律；不改 ConfigProvider / ThemeEditor。
 
 ### 非目标

@@ -4,18 +4,18 @@
     "method": "gzip = zlib gzipSync；brotli = zlib.brotliCompressSync q11；单组件链 = 静态 import 图遍历 + 逐文件压缩求和（上界估计）",
     "packages": {
       "@oas-ui/ui": {
-        "distTotalBytes": 40020454,
+        "distTotalBytes": 40046469,
         "browserJs": {
           "files": 451,
-          "rawBytes": 10398621,
-          "gzipBytes": 2495390,
-          "brotliBytes": 1948415
+          "rawBytes": 10405158,
+          "gzipBytes": 2496634,
+          "brotliBytes": 1949428
         },
         "fullEntry": {
           "files": 479,
-          "rawBytes": 3648416,
-          "gzipBytes": 991767,
-          "brotliBytes": 852499,
+          "rawBytes": 3649083,
+          "gzipBytes": 991904,
+          "brotliBytes": 852631,
           "fileList": [
             "packages/ui/dist/index.js",
             "packages/icons/dist/register.js",
@@ -500,9 +500,9 @@
         },
         "cdn": {
           "files": 1,
-          "rawBytes": 3034246,
-          "gzipBytes": 661144,
-          "brotliBytes": 454898
+          "rawBytes": 3034833,
+          "gzipBytes": 661262,
+          "brotliBytes": 455095
         }
       },
       "@oas-ui/theme": {
@@ -838,7 +838,7 @@
       {
         "name": "dist/cdn.js gzip",
         "kind": "ceiling",
-        "actualBytes": 661144,
+        "actualBytes": 661262,
         "limitBytes": 788480,
         "warnAtBytes": 709632,
         "pass": true,
@@ -848,7 +848,7 @@
       {
         "name": "@oas-ui/ui 全量入口链 gzip",
         "kind": "ceiling",
-        "actualBytes": 991767,
+        "actualBytes": 991904,
         "limitBytes": 1167360,
         "warnAtBytes": 1050624,
         "pass": true,
@@ -897,7 +897,7 @@
         "warnAtBytes": 26726,
         "pass": true,
         "warn": true,
-        "basis": "实测 gzip 25.6 KB（四批合并后；含 core + i18n），上浮约 15% 定档 29 KB；前档 28 KB 定档于 2026-10-05（24.8 KB 实测）。2026-10-29：新增外部 label 动态 observer 后实测 gzip 29658 B / 预算 29696 B（余量仅 38 B，已饱和）；后续 form 链任何扩展前必须先评估/瘦身或按流程重新定档，禁止把余量当常量"
+        "basis": "实测 gzip 29692 B / 预算 29696 B（余量仅 4 B，全库最危险档；链含 core + i18n；四批合并后 25.6 KB 上浮约 15% 定档 29 KB，前档 28 KB 定档于 2026-10-05 24.8 KB 实测）。预算上限不抬高：2026-10-29 新增外部 label 动态 observer 后已饱和，后续 form 链任何扩展前必须先评估/瘦身或按流程重新定档，禁止把余量当常量"
       },
       {
         "name": "@oas-ui/ui/data/gantt 链 gzip",
@@ -960,7 +960,7 @@
         "warnAtBytes": 5530,
         "pass": true,
         "warn": false,
-        "basis": "本次实测 gzip 3.43 KB（3509 B，2026-10-29；玻璃静态层新增 switch 轨道加深 token 后复核：surface 半透明 token + 折光边 + 阴影 + switch mix；独立可选，不进 union），保留 6 KB 上限"
+        "basis": "本次实测 gzip 3516 B（2026-10-29；玻璃静态层新增 switch 轨道加深 token 后复核：surface 半透明 token + 折光边 + 阴影 + switch mix；独立可选，不进 union），保留 6 KB 上限"
       },
       {
         "name": "@oas-ui/theme skins.css gzip",

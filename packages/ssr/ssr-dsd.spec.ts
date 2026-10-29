@@ -811,12 +811,18 @@ ${[
     '<span style="display:block;padding:24px;background:var(--oas-color-bg);color:var(--oas-color-text-primary)">System DSD</span>'
   const systemProvider = await renderToString(
     'oas-config-provider',
-    { theme: 'system', 'theme-storage-key': 'ssr-system-theme' },
+    { id: 'system-primary', theme: 'system', 'theme-storage-key': 'ssr-system-theme' },
     systemSlot,
+  )
+  // 同 key 的第二个 system provider：交接后仍应跟随 MQL/storage，但不得把 root 抢回 preference。
+  const systemSecondaryProvider = await renderToString(
+    'oas-config-provider',
+    { id: 'system-secondary', theme: 'system', 'theme-storage-key': 'ssr-system-theme' },
+    '<span style="display:block;padding:24px;background:var(--oas-color-bg);color:var(--oas-color-text-primary)">System DSD secondary</span>',
   )
   const systemNoKeyProvider = await renderToString('oas-config-provider', { theme: 'system' }, systemSlot)
   for (const [path, provider, key] of [
-    [SYSTEM_THEME_PAGE, systemProvider, 'ssr-system-theme'],
+    [SYSTEM_THEME_PAGE, `${systemProvider}${systemSecondaryProvider}`, 'ssr-system-theme'],
     [SYSTEM_THEME_NO_KEY_PAGE, systemNoKeyProvider, null],
   ] as const) {
     writeFileSync(
@@ -1734,7 +1740,7 @@ test('config-provider system DSD：同步 head 防闪校正与水合前后有效
       }),
     )
   })
-  expect(await page.locator('oas-config-provider').getAttribute('data-theme')).toBe('dark')
+  expect(await page.locator('#system-primary').getAttribute('data-theme')).toBe('dark')
   expect(await page.locator('html').getAttribute('data-theme')).toBe('dark')
 
   await page.evaluate(() => {
@@ -1884,7 +1890,7 @@ test('config-provider system 同文档重选：stored dark + OS light 后 root/p
   expect(consoleProblems).toEqual([])
 })
 
-test('config-provider 离开 system：显式 light/dark 交接时 root 与 provider 联合同步', async ({ page }) => {
+test('config-provider 交接 dark 后 MQL/storage 不得抢回 root：system 兄弟仍跟随系统', async ({ page }) => {
   const consoleProblems: string[] = []
   page.on('pageerror', (error) => consoleProblems.push(error.message))
   page.on('console', (message) => {
@@ -1895,49 +1901,143 @@ test('config-provider 离开 system：显式 light/dark 交接时 root 与 provi
   await upgradeUi(page)
 
   const state = () =>
-    page.evaluate(() => ({
-      requested: document.querySelector('oas-config-provider')!.getAttribute('theme'),
-      provider: document.querySelector('oas-config-provider')!.getAttribute('data-theme'),
-      root: document.documentElement.dataset.theme,
-      rootBg: getComputedStyle(document.documentElement).getPropertyValue('--oas-color-bg').trim(),
-    }))
-  const waitJoint = async (theme: 'light' | 'dark') => {
+    page.evaluate(() => {
+      const owner = document.querySelector('#system-primary')!
+      const sibling = document.querySelector('#system-secondary')!
+      return {
+        ownerRequested: owner.getAttribute('theme'),
+        ownerEffective: owner.getAttribute('data-theme'),
+        siblingRequested: sibling.getAttribute('theme'),
+        siblingEffective: sibling.getAttribute('data-theme'),
+        root: document.documentElement.dataset.theme,
+        rootBg: getComputedStyle(document.documentElement).getPropertyValue('--oas-color-bg').trim(),
+      }
+    })
+  const waitJoint = async (want: { owner: 'light' | 'dark'; sibling: 'light' | 'dark'; root: 'light' | 'dark' }) => {
     await page.waitForFunction(
-      (want) =>
-        document.querySelector('oas-config-provider')?.getAttribute('data-theme') === want &&
-        document.documentElement.dataset.theme === want &&
+      (expected) =>
+        document.querySelector('#system-primary')?.getAttribute('data-theme') === expected.owner &&
+        document.querySelector('#system-secondary')?.getAttribute('data-theme') === expected.sibling &&
+        document.documentElement.dataset.theme === expected.root &&
         getComputedStyle(document.documentElement).getPropertyValue('--oas-color-bg').trim() ===
-          (want === 'dark' ? '#18181b' : '#ffffff'),
-      theme,
+          (expected.root === 'dark' ? '#18181b' : '#ffffff'),
+      want,
       { timeout: 5000 },
     )
   }
   const setRequested = (theme: string) =>
-    page.evaluate((next) => document.querySelector('oas-config-provider')!.setAttribute('theme', next), theme)
+    page.evaluate((next) => document.querySelector('#system-primary')!.setAttribute('theme', next), theme)
+  const fireStoredTheme = (theme: string) =>
+    page.evaluate((next) => {
+      const raw = JSON.stringify({ theme: next })
+      // 合成事件也要具备真实前提：先更新存储，provider/引导重读到的才是同一合法偏好。
+      localStorage.setItem('ssr-system-theme', raw)
+      window.dispatchEvent(
+        new StorageEvent('storage', { key: 'ssr-system-theme', newValue: raw, storageArea: localStorage }),
+      )
+    }, theme)
 
-  // 起点：system 跟随 OS dark
-  expect(await state()).toMatchObject({ requested: 'system', provider: 'dark', root: 'dark', rootBg: '#18181b' })
+  // 起点：两个 system provider 都跟随 OS dark
+  expect(await state()).toMatchObject({
+    ownerRequested: 'system',
+    ownerEffective: 'dark',
+    siblingRequested: 'system',
+    siblingEffective: 'dark',
+    root: 'dark',
+    rootBg: '#18181b',
+  })
 
-  // 离开 system → light：provider 新 effective 必须镜像到 root（旧缺陷：root 滞留 dark，页面深色/子树浅色）
-  await setRequested('light')
-  await waitJoint('light')
-  expect(await state()).toMatchObject({ requested: 'light', provider: 'light', root: 'light', rootBg: '#ffffff' })
-  await page.screenshot({ path: join(ARTIFACT_DIR, 'config-provider-explicit-light.png'), fullPage: true })
-
-  // 交接后继续跟随显式主题（不再回落到 head preference）
+  // 交接：显式 dark（与 OS 同值也必须建立权威，不能靠值差判断）
   await setRequested('dark')
-  await waitJoint('dark')
-  expect(await state()).toMatchObject({ requested: 'dark', provider: 'dark', root: 'dark', rootBg: '#18181b' })
-  await page.screenshot({ path: join(ARTIFACT_DIR, 'config-provider-explicit-dark.png'), fullPage: true })
+  await waitJoint({ owner: 'dark', sibling: 'dark', root: 'dark' })
 
-  await setRequested('light')
-  await waitJoint('light')
-
-  // 回到 system：重新交还 MQL（OS 仍 dark）
-  await setRequested('system')
-  await waitJoint('dark')
+  // MQL 切 light：交接 provider + root 保持 dark；同 key 的 system 兄弟仍跟随 MQL
   await page.emulateMedia({ colorScheme: 'light' })
-  await waitJoint('light')
+  await waitJoint({ owner: 'dark', sibling: 'light', root: 'dark' })
+  await page.screenshot({ path: join(ARTIFACT_DIR, 'config-provider-handover-mql-light.png'), fullPage: true })
+
+  // MQL 切回 dark
+  await page.emulateMedia({ colorScheme: 'dark' })
+  await waitJoint({ owner: 'dark', sibling: 'dark', root: 'dark' })
+
+  // 同 key storage 写 light：system 兄弟更新，root 仍由交接 provider 的 dark 唯一决定
+  await fireStoredTheme('light')
+  await waitJoint({ owner: 'dark', sibling: 'light', root: 'dark' })
+  await page.screenshot({ path: join(ARTIFACT_DIR, 'config-provider-handover-storage-light.png'), fullPage: true })
+
+  // 恢复 storage 为 system：兄弟回到跟随 OS dark（root 仍是 dark，无从区分）——先切 OS light 证明 MQL 仍驱动兄弟
+  await fireStoredTheme('system')
+  await page.emulateMedia({ colorScheme: 'light' })
+  await waitJoint({ owner: 'dark', sibling: 'light', root: 'dark' })
+
+  // provider 断开：交还 MQL。先切一次 OS 并等待页面处理，再切回，确保 root 真的由后续 MQL 事件驱动
+  await page.evaluate(() => document.querySelector('#system-primary')!.remove())
+  await page.emulateMedia({ colorScheme: 'dark' })
+  await page.waitForFunction(
+    () => document.querySelector('#system-secondary')?.getAttribute('data-theme') === 'dark',
+    undefined,
+    { timeout: 5000 },
+  )
+  await page.emulateMedia({ colorScheme: 'light' })
+  await page.waitForFunction(
+    () =>
+      document.documentElement.dataset.theme === 'light' &&
+      getComputedStyle(document.documentElement).getPropertyValue('--oas-color-bg').trim() === '#ffffff',
+    undefined,
+    { timeout: 5000 },
+  )
+  expect(consoleProblems).toEqual([])
+})
+
+test('config-provider 交接 light 后 OS dark / 同键 storage dark 不得抢回 root', async ({ page }) => {
+  const consoleProblems: string[] = []
+  page.on('pageerror', (error) => consoleProblems.push(error.message))
+  page.on('console', (message) => {
+    if (message.type() === 'error' || message.type() === 'warning') consoleProblems.push(message.text())
+  })
+  await page.emulateMedia({ colorScheme: 'dark' })
+  await page.goto(SYSTEM_THEME_PAGE_URL, { waitUntil: 'load' })
+  await upgradeUi(page)
+
+  const waitJoint = async (owner: 'light' | 'dark', sibling: 'light' | 'dark', root: 'light' | 'dark') => {
+    await page.waitForFunction(
+      (expected) =>
+        document.querySelector('#system-primary')?.getAttribute('data-theme') === expected.owner &&
+        document.querySelector('#system-secondary')?.getAttribute('data-theme') === expected.sibling &&
+        document.documentElement.dataset.theme === expected.root &&
+        getComputedStyle(document.documentElement).getPropertyValue('--oas-color-bg').trim() ===
+          (expected.root === 'dark' ? '#18181b' : '#ffffff'),
+      { owner, sibling, root },
+      { timeout: 5000 },
+    )
+  }
+
+  expect(await page.locator('html').getAttribute('data-theme')).toBe('dark')
+
+  // 反向：OS dark 下显式 light 交接
+  await page.evaluate(() => document.querySelector('#system-primary')!.setAttribute('theme', 'light'))
+  await waitJoint('light', 'dark', 'light')
+  await page.screenshot({ path: join(ARTIFACT_DIR, 'config-provider-handover-explicit-light.png'), fullPage: true })
+
+  // OS 切 light：兄弟跟随 light；root 仍 light
+  await page.emulateMedia({ colorScheme: 'light' })
+  await waitJoint('light', 'light', 'light')
+
+  // 同 key storage 写 dark：兄弟变 dark，root 保持交接 provider 的 light
+  await page.evaluate(() => {
+    const raw = JSON.stringify({ theme: 'dark' })
+    localStorage.setItem('ssr-system-theme', raw)
+    window.dispatchEvent(
+      new StorageEvent('storage', { key: 'ssr-system-theme', newValue: raw, storageArea: localStorage }),
+    )
+  })
+  await waitJoint('light', 'dark', 'light')
+  await page.screenshot({ path: join(ARTIFACT_DIR, 'config-provider-handover-storage-dark.png'), fullPage: true })
+
+  // 恢复 system：root 交还 MQL（OS 仍 light）
+  await page.evaluate(() => document.querySelector('#system-primary')!.setAttribute('theme', 'system'))
+  await page.emulateMedia({ colorScheme: 'dark' })
+  await waitJoint('dark', 'dark', 'dark')
   expect(consoleProblems).toEqual([])
 })
 

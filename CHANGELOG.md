@@ -19,10 +19,10 @@
 
 ### 修复
 
-- **`oas-theme-editor` 根 class 式暗色下的预览桶误判**：`previewTheme()` 原先只认最近 `[data-theme]` 祖先，文档站（VitePress `html.dark`，无 `data-theme`）暗色页被当成 light——双套导出两桶相同、编辑 dark 桶不落预览。现无 `[data-theme]` 祖先时回退根 class 式暗色（`dark` / `dark-theme` / `theme-dark`）；显式 `[data-theme]` 祖先仍优先，`high-contrast` / 自定义主题名按 light 桶（两桶模型不臆造第三桶）。
+- **`oas-theme-editor` 根 class 式暗色下的预览桶误判与运行时切换不回收**：`previewTheme()` 原先只认最近 `[data-theme]` 祖先，文档站（VitePress `html.dark`，无 `data-theme`）暗色页被当成 light——双套导出两桶相同、编辑 dark 桶不落预览。现无 `[data-theme]` 祖先时回退根 class 式暗色（`dark` / `dark-theme` / `theme-dark`）；显式 `[data-theme]` 祖先仍优先，`high-contrast` / 自定义主题名按 light 桶（两桶模型不臆造第三桶）。运行时 add/remove 根 class 不会触发属性回调：组件观察 `document.documentElement` 的 `class`（断开时 disconnect，重连重挂），变化后 reconcile 内联预览；`exportThemes()` / `exportJson()` / `exportCss()` / 导入/编辑/预设等读取或写入入口在动作前先 `syncPreviewTheme()`——旧桶内联值不再污染另一桶导出/预览，dark 桶真实落预览。
 - **`oas-theme-editor` 同行合法写入清除胶粘非法草稿**：非法文本/数字草稿后用同一行色板或滑块写入合法值时，清 `is-invalid` 并回填新值（此前草稿永久保留，值显示与实际写入不一致）；切桶/双套导入/reset 等外部同步仍按既有口径保留非法草稿，不打断编辑。
 - **`oas-theme-editor` 数字输入非法态可见**：`.is-invalid` 原先只覆盖颜色文本框，数字输入仅加 class 无视觉；现两者统一 danger 色 1px 边框 + 内描边。
-- **system 主题 `<head>` 引导：provider 离开 system 后 root 滞留旧主题**：中英文 theming / SSR guide 的四份脚本按 requested `theme` 变化交接——provider 从 `system` 显式切到 `light` / `dark`（或自定义主题名）时，把该 provider 的新 effective 镜像到 root 并继续跟随其后续显式主题（`attributeOldValue` 识别离开 system，写入前比较现值防 Observer 自激）；恢复 `system` 时重新交还 MQL。此前 root 停留在最后一个系统主题，页面底色与 provider 子树分裂。
+- **system 主题 `<head>` 引导：provider 离开 system 后 root 滞留旧主题 / 交接后被 MQL 抢回**：中英文 theming / SSR guide 的四份脚本按 requested `theme` 变化交接——provider 从 `system` 显式切到 `light` / `dark`（或自定义主题名）时，把该 provider 的新 effective 镜像到 root 并继续跟随其后续显式主题（`attributeOldValue` 识别离开 system，写入前比较现值防 Observer 自激）；恢复 `system` 时重新交还 MQL。只要该已交接 provider 仍连接且 requested≠system，它的 effective 就是 root 唯一权威：MQL / 同键 storage 事件仍更新其它 system provider，但不得把 root 抢回旧 preference；provider 断开或恢复 system 才交还 MQL。此前 root 停留在最后一个系统主题（页面底色与 provider 子树分裂），交接后一次系统配色切换又会把 root 拉回旧 preference。DSD 回归覆盖 system→显式 dark / 显式 light 双向、emulateMedia 明暗往返、同键 storage 事件与 provider 断开交还，root/provider 始终联合、真实 token 底色一致。
 - **`@oas-ui/ssr` locale 请求局部化**：`renderToString` 的显式 `opts.locale` 改为只影响本次调用及嵌套子树——渲染器在共享 document 内创建本次调用独立的临时 `<oas-config-provider locale>`，目标元素挂其下同步渲染（输出不含 provider 包装），`try/finally` 清理；不再全局 `setLocale`（不改全局 locale、渲染段不触发 locale/translator 广播，i18n registry 一次性装载副作用除外），i18n registry 装载与内置 zh-CN / en 语言包注册收敛为单一 ready Promise。此前并发渲染（同一轮 `Promise.all` 混合多语言，冷加载时尤甚）存在 setLocale 与渲染错位配对：请求串语言、全局 locale 被永久改写并多次广播。未传 `locale` 保持旧行为：沿用调用时全局 locale。
 - **`oas-sidebar` 嵌套头像子项重复行首占位**：带 `avatar` / `avatarText` 的嵌套子项不再保留 18px 空图标槽，头像与 label 之间只保留一次行 gap；普通无图标子项仍保留缩进占位，既有层级对齐不变。
 - **`oas-table` 主从详情（`table/detail`）`selectByKey` 显式等待与可取消**：未命中等待改为显式 opt-in——默认（无选项）在有效 windowed（`windowed` 属性在场且 `total` 有限、截断后 > 0）未命中时保持现状（不改选中/面板、零事件、无可见等待），普通模式未命中仍清空选中；`selectByKey(key, { waitForRow: true })` 在任何模式下未命中都挂起等待 `data` 到达，命中后落地一次并派发一次 `oas-detail-change`。等待只由数据命中、显式取消或 abort 结束：模式、`windowed` 属性、`total` 变化与 MutationObserver 批次不再终止等待（同批与不同批命中结果一致）；普通模式 `data` 删除选中行时 `onClose` 照常触发但等待保留，等待键随后到达仍落地。`selectByKey(key, { signal })` 支持 `AbortSignal`：已 aborted 的信号不建立等待（回落默认语义），等待中 abort 只取消等待（不改选中/面板、不派发事件），自然落地后 abort 无副作用。`close()` / `select()` / 行或单元格点击 / `Enter` / `Esc` / `destroy()` / `row-key` 变化或再次 `selectByKey()`（新键覆盖旧等待）都会取消等待，取消不补派发等待键的选中事件。无选中时的 `Esc` 只在本实例的表格/面板内取消等待，不注册 window 全局兜底；`closeOnEscape: false` 时完全不响应 Esc，启用 range 且存在活动选区时，表格内第一次 Esc 先清选区、等待保留。`total` 为 0 / 非法 / 截断后为 0 按普通模式处理。
@@ -32,7 +32,7 @@
 
 ### 变更
 
-- **`oas-back-top` 默认 `theme="light"` 在暗色页面呈现浅色表面（可见行为变化）**：`[data-theme="light"]` 自本版起是真实生效的全局浅色 token 规则（此前只在 `:root`/`:host` 上无对手，组件默认写 `data-theme="light"` 看起来像跟随页面）。因此暗色页面里默认（`theme="light"`）按钮渲染白底深字，而不是继承暗色。该语义与组件既有文档一致（`light` = 浅色表面），本版不改回隐式继承：需要暗色外观请显式 `theme="dark"`（暗色页面自动反色为亮底深字），`primary` 无自身主题块、继续继承页面 token。已补暗色页面 light/primary/dark 三变体真实 computed 外观回归。
+- **`oas-back-top` 默认 `theme="light"` 在暗色页面呈现浅色表面（可见行为变化）**：`[data-theme="light"]` 自本版起是真实生效的全局浅色 token 规则（此前只在 `:root`/`:host` 上无对手，组件默认写 `data-theme="light"` 看起来像跟随页面）。因此暗色页面里默认（`theme="light"`）按钮渲染白底深字，而不是继承暗色：`light` 永远是浅色表面。该语义与组件既有文档一致，本版不改回隐式继承；暗色页面需要深色按钮请用 `primary`（无自身主题块、继承页面 `--oas-color-primary` 与 on 色）或覆盖对应 token——`dark` 是自动反色变体，在暗色页面会反色为亮底深字，不能用来取得深色外观。已补暗色页面 light/primary/dark 三变体真实 computed 外观回归。
 
 ### 优化
 

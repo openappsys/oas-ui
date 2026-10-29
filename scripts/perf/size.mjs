@@ -653,9 +653,9 @@ const BUDGETS = [
     kind: 'absolute',
     componentId: 'form',
     get: () => componentMeasures.form.gzipBytes,
-    limit: 29 * 1024, // 29 KB（2026-10-07 重定档；2026-10-29 动态 label observer 后仅余 38 B，已饱和）
+    limit: 29 * 1024, // 29 KB（2026-10-07 重定档；2026-10-29 动态 label observer 后实测 29692 B / 上限 29696 B，余量 4 B——全库最危险预算）
     basis:
-      '实测 gzip 25.6 KB（四批合并后；含 core + i18n），上浮约 15% 定档 29 KB；前档 28 KB 定档于 2026-10-05（24.8 KB 实测）。2026-10-29：新增外部 label 动态 observer 后实测 gzip 29658 B / 预算 29696 B（余量仅 38 B，已饱和）；后续 form 链任何扩展前必须先评估/瘦身或按流程重新定档，禁止把余量当常量',
+      '实测 gzip 29692 B / 预算 29696 B（余量仅 4 B，全库最危险档；链含 core + i18n；四批合并后 25.6 KB 上浮约 15% 定档 29 KB，前档 28 KB 定档于 2026-10-05 24.8 KB 实测）。预算上限不抬高：2026-10-29 新增外部 label 动态 observer 后已饱和，后续 form 链任何扩展前必须先评估/瘦身或按流程重新定档，禁止把余量当常量',
   },
   {
     name: '@oas-ui/ui/data/gantt 链 gzip',
@@ -704,9 +704,9 @@ const BUDGETS = [
     name: '@oas-ui/theme glass.css gzip',
     kind: 'absolute',
     get: () => glassCss.gzipBytes,
-    limit: 6 * 1024, // 6 KB（可选玻璃静态层，首次定档 2026-10-08；本次实测约 3.5 KB）
+    limit: 6 * 1024, // 6 KB（可选玻璃静态层，首次定档 2026-10-08；本次实测 3516 B）
     basis:
-      '本次实测 gzip 3.43 KB（3509 B，2026-10-29；玻璃静态层新增 switch 轨道加深 token 后复核：surface 半透明 token + 折光边 + 阴影 + switch mix；独立可选，不进 union），保留 6 KB 上限',
+      '本次实测 gzip 3516 B（2026-10-29；玻璃静态层新增 switch 轨道加深 token 后复核：surface 半透明 token + 折光边 + 阴影 + switch mix；独立可选，不进 union），保留 6 KB 上限',
   },
   {
     name: '@oas-ui/theme skins.css gzip',
