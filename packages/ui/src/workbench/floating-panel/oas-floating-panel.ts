@@ -2,7 +2,7 @@ import { OASElement } from '@oas-ui/core'
 import { closePath } from '@oas-ui/icons/icons/close'
 import { isRtl } from '../../shared/direction.js'
 import { devWarn } from '../../shared/dev-warn.js'
-import { pushEscapeLayer } from '../../shared/overlay-stack.js'
+import { pushEscapeLayer, promoteEscapeLayer, type OverlayEscapeLayer } from '../../shared/overlay-stack.js'
 import { isSsrRuntime } from '../../shared/ssr-runtime.js'
 import {
   DEFAULT_RECT,
@@ -31,8 +31,8 @@ export type FloatingPanelCloseReason = 'show' | 'close-button' | 'esc' | 'method
 export type FloatingPanelActionSource = 'user' | 'api'
 /** 移动/缩放来源 */
 export type FloatingPanelTransformSource = 'pointer' | 'keyboard'
-/** 激活来源 */
-export type FloatingPanelActivateSource = 'pointer' | 'api' | 'open'
+/** 激活来源（open 边沿只更新叠放顺序，不派发 activate） */
+export type FloatingPanelActivateSource = 'pointer' | 'api'
 
 export interface FloatingPanelBeforeCloseDetail {
   reason: FloatingPanelCloseReason
@@ -64,6 +64,9 @@ const BASE_Z = 'calc(var(--oas-z-index-base, 0) + var(--oas-z-overlay, 1040))'
 const FRONT_Z = 'calc(var(--oas-z-index-base, 0) + var(--oas-z-overlay, 1040) + 1)'
 
 const EDGES: readonly ResizeEdge[] = ['n', 's', 'e', 'w', 'ne', 'nw', 'se', 'sw']
+
+/** 未命中 boundary 告警台账上限（防宿主拼字符串撑爆静态 Set） */
+const MAX_WARNED_BOUNDARIES = 32
 
 /** 标题 id 序号（同页多实例唯一；SSR 快照保留服务端 id） */
 let titleUid = 0
@@ -105,13 +108,15 @@ const STYLE = `
   box-shadow: var(--oas-floating-panel-shadow, var(--oas-shadow-lg)), var(--oas-focus-ring);
 }
 .titlebar {
+  position: relative;
+  z-index: 2;
   display: flex;
   align-items: center;
   gap: var(--oas-space-1);
   flex: 0 0 auto;
   min-height: var(--oas-floating-panel-titlebar-height, 36px);
   padding-inline: var(--oas-space-2);
-  border-block-end: 1px solid var(--oas-color-border);
+  border-block-end: 1px solid var(--oas-floating-panel-titlebar-border-color, var(--oas-color-border));
 }
 :host([movable]) .titlebar {
   cursor: move;
@@ -181,12 +186,12 @@ const STYLE = `
 }
 .handle[data-edge='e'],
 .handle[data-edge='w'] {
-  top: var(--oas-floating-panel-handle-size, 8px);
+  top: var(--oas-floating-panel-titlebar-height, 36px);
   bottom: var(--oas-floating-panel-handle-size, 8px);
   width: var(--oas-floating-panel-handle-size, 8px);
 }
 .handle[data-edge='n'] {
-  top: 0;
+  top: var(--oas-floating-panel-titlebar-height, 36px);
   cursor: ns-resize;
 }
 .handle[data-edge='s'] {
@@ -209,12 +214,12 @@ const STYLE = `
   height: var(--oas-floating-panel-handle-size, 8px);
 }
 .handle[data-edge='ne'] {
-  top: 0;
+  top: var(--oas-floating-panel-titlebar-height, 36px);
   right: 0;
   cursor: nesw-resize;
 }
 .handle[data-edge='nw'] {
-  top: 0;
+  top: var(--oas-floating-panel-titlebar-height, 36px);
   left: 0;
   cursor: nwse-resize;
 }
@@ -232,6 +237,20 @@ const STYLE = `
   :host {
     --oas-floating-panel-handle-size: 44px;
     --oas-floating-panel-close-size: var(--oas-touch-target-min, 44px);
+    /* 标题栏与关闭钮同高，顶部手柄从标题栏下沿起算才不侵占拖拽/关闭热区 */
+    --oas-floating-panel-titlebar-height: var(--oas-touch-target-min, 44px);
+  }
+}
+@media (forced-colors: active) {
+  /* 强制色下 box-shadow 被系统禁用：只留 outline: none 会让焦点环完全消失（WCAG 2.4.7）。
+     回退实线 outline；关闭钮内缩，避免被框体 overflow 裁切 */
+  .frame:focus-visible {
+    outline: 2px solid;
+    outline-offset: 2px;
+  }
+  .close:focus-visible {
+    outline: 2px solid;
+    outline-offset: -2px;
   }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -271,17 +290,19 @@ function deepActiveElement(): HTMLElement | null {
  * 开合/位置都由宿主属性驱动（`open` / `rect`），指针与键盘等价可操作。
  *
  * 属性（kebab-case）：
- * - `open`：布尔，打开态（唯一状态源；外部写属性静默吸收，内部交互/方法写属性并派发 open-change）
- * - `rect`：`x,y,width,height`（相对宿主锚点的像素坐标；缺省 48,48,420,300）
+ * - `open`：布尔 presence（存在即打开，`open="false"` 仍为打开）；唯一状态源（外部写属性静默吸收，
+ *   内部交互/方法写属性并派发 open-change）
+ * - `rect`：`x,y,width,height`（相对宿主锚点的像素坐标；缺省 48,48,420,300）；property 同时接受
+ *   对象与同格式字符串（字符串原样走 attribute 通道）
  * - `panel-title`：标题文本（`title` 插槽覆盖）；避开原生 `title` 属性
  * - `movable`：标题栏拖动 + 框体聚焦时方向键移动
  * - `resizable`：八向手柄（四边 + 四角）+ Shift+方向键缩放
- * - `boundary`：`viewport`（默认）或 CSS 选择器；只约束拖动/缩放/键盘交互
+ * - `boundary`：`viewport`（默认）或 CSS 选择器（在自身根树内解析）；只约束拖动/缩放/键盘交互
  * - `boundary-padding`：边界内缩像素（非负；非法回落 0）
  * - `min` / `max`：`宽,高`（min 缺省 160,96；max 缺省不限制；min > max 以 min 为准）
  * - `initial-focus`：打开时聚焦的选择器（light DOM 或 shadow 内；找不到回退框体）
  *
- * 方法：`show()` / `close(): boolean` / `bringToFront()`。
+ * 方法：`show()` / `close(): boolean` / `bringToFront()`（置前同时把 Esc 层提到栈顶）。
  *
  * 事件：`oas-before-close`（可取消）/ `oas-open-change` / `oas-move` / `oas-resize` / `oas-activate`。
  *
@@ -323,6 +344,7 @@ export class OASFloatingPanel extends OASElement {
   private isOpen = false
   private previousFocus: HTMLElement | null = null
   private releaseEscapeLayer: (() => void) | null = null
+  private escapeLayer: OverlayEscapeLayer | null = null
   private stackUnregister: (() => void) | null = null
 
   /** 内部动作的待派发状态（外部写属性不设置 → 静默吸收） */
@@ -357,6 +379,7 @@ export class OASFloatingPanel extends OASElement {
     this.cancelInteraction()
     this.releaseEscapeLayer?.()
     this.releaseEscapeLayer = null
+    this.escapeLayer = null
     this.stackUnregister?.()
     this.stackUnregister = null
     // 打开态与位置保存在宿主属性：断开不清状态，重连由 onReconnect 重挂交互
@@ -367,10 +390,12 @@ export class OASFloatingPanel extends OASElement {
   protected override onReconnect(): void {
     if (isSsrRuntime()) return
     this.stackUnregister ??= this.stack.register(this.stackMember)
-    if (this.hasAttr('open')) {
-      this.attachEscapeLayer()
-      this.stack.activate(this.stackMember)
-    }
+    if (!this.hasAttr('open')) return
+    // 断开期间改 open 的边沿副作用被 isConnected 守卫跳过，这里补齐 Esc 层 / 叠放 / 焦点基线
+    this.previousFocus ??= deepActiveElement()
+    this.attachEscapeLayer()
+    this.stack.activate(this.stackMember)
+    this.stackMember.applyFront(this.stack.isFront(this.stackMember))
   }
 
   // ===== 渲染 / 水合 =====
@@ -428,15 +453,19 @@ export class OASFloatingPanel extends OASElement {
     this.update()
   }
 
-  /** 真水合：校验框体/标题/内容槽/八个手柄后接管，不重建 shadow */
+  /** 真水合：校验框体/标题栏/标题/关闭钮/内容槽/八个手柄后接管，不重建 shadow */
   protected override hydrate(): boolean {
     if (!this.shadow.querySelector('[part="frame"]')) return false
+    if (!this.shadow.querySelector('[part="titlebar"]')) return false
     if (!this.shadow.querySelector('[part="title"]')) return false
+    if (!this.shadow.querySelector('[part="close"]')) return false
     if (!this.shadow.querySelector('[part="content"]')) return false
     if (!this.shadow.querySelector('slot[name="title"]')) return false
     if (this.shadow.querySelectorAll('[part="handle"]').length !== EDGES.length) return false
     const title = this.shadow.querySelector<HTMLElement>('[part="title"]')
     this.titleId = title?.id || `oas-floating-panel-title-${++titleUid}`
+    // 快照标题缺 id：补写回 DOM，否则 aria-labelledby 指向不存在的 IDREF
+    if (title && !title.id) title.id = this.titleId
     this.bind()
     return true
   }
@@ -457,6 +486,15 @@ export class OASFloatingPanel extends OASElement {
     this.syncTitle()
     this.syncCloseButton()
     this.syncOpenState()
+    this.syncFrontLayer()
+  }
+
+  /**
+   * 首帧补写叠放层级：`connectedCallback` 先登记再渲染，登记时 `frameEl` 尚不存在，
+   * `applyFront(true)` 无处落笔——render/update 之后必须按叠放态补一次（首帧打开的单面板要 +1）。
+   */
+  private syncFrontLayer(): void {
+    this.stackMember.applyFront(this.stack.isFront(this.stackMember))
   }
 
   private limits(): SizeLimits {
@@ -515,7 +553,9 @@ export class OASFloatingPanel extends OASElement {
     this.frameEl?.setAttribute('data-open', '')
     const skipFocus = this.initiallyOpen
     this.initiallyOpen = false
-    if (!isSsrRuntime()) {
+    // 断开期间改属性只同步内部状态与属性；Esc 层 / 叠放 / 焦点副作用留给 onReconnect 补齐，
+    // 否则会挂上脱离文档也被 document 捕获的「幽灵 Esc 层」，还会把焦点抢到未连接元素
+    if (!isSsrRuntime() && this.isConnected) {
       this.attachEscapeLayer()
       this.stack.activate(this.stackMember)
       if (!skipFocus) {
@@ -531,9 +571,13 @@ export class OASFloatingPanel extends OASElement {
     this.cancelInteraction()
     this.releaseEscapeLayer?.()
     this.releaseEscapeLayer = null
-    if (!isSsrRuntime()) {
+    this.escapeLayer = null
+    if (!isSsrRuntime() && this.isConnected) {
       this.stack.refresh()
       this.restoreFocus()
+    } else {
+      // 未连接时归还焦点会把焦点移到脱离文档的元素上；关闭已成事实，基线一并丢弃
+      this.previousFocus = null
     }
     this.flushPendingOpenChange(false)
   }
@@ -547,13 +591,17 @@ export class OASFloatingPanel extends OASElement {
 
   // ===== 开合 API =====
 
-  /** 当前打开态（与 `open` 属性同源） */
+  /** 当前打开态（与 `open` 属性同源；attribute 通道是 presence 语义，`open="false"` 仍为打开） */
   get open(): boolean {
     return this.hasAttr('open')
   }
 
+  /** 对齐族内 presence 约定：空串（静态 `<oas-floating-panel open>` 经框架 property 通道）为真，
+   *  仅 false / 'false' / null 收起。公开类型保持 boolean（attribute 通道本就不看具体值） */
   set open(value: boolean) {
-    this.toggleAttribute('open', value === true)
+    const raw = value as unknown
+    const on = raw !== false && raw !== 'false' && raw != null
+    this.toggleAttribute('open', on)
   }
 
   /** 当前 rect（属性 → 归一化；拖动中的视觉矩形在提交后才进入属性） */
@@ -561,7 +609,14 @@ export class OASFloatingPanel extends OASElement {
     return this.currentRect()
   }
 
+  /** 写 rect：对象走格式化归一化；字符串原样走 attribute 通道（Vue 静态模板的 property 赋值同义，
+   *  公开类型保持 PanelRect——attribute 通道本就只接受字符串） */
   set rect(value: PanelRect) {
+    const raw = value as unknown
+    if (typeof raw === 'string') {
+      this.setAttribute('rect', raw)
+      return
+    }
     this.setAttribute('rect', formatRect(normalizeRect(value, this.limits())))
   }
 
@@ -577,7 +632,7 @@ export class OASFloatingPanel extends OASElement {
 
   /**
    * 关闭请求：先派发可取消 `oas-before-close`，被 preventDefault 时保持打开（零属性写入、零 open-change）。
-   * 返回是否已处于关闭态（已关闭也返回 true）。
+   * 返回是否已关闭：本来已关闭直接 true（不派发任何事件），被否决返回 false。
    */
   close(): boolean {
     return this.requestClose('method', 'api')
@@ -592,10 +647,11 @@ export class OASFloatingPanel extends OASElement {
     return true
   }
 
-  /** 置前（族内恒定 overlay 档 + 0/1；已是最前不重复派发 activate） */
+  /** 置前（族内恒定 overlay 档 + 0/1，并把本面板 Esc 层提到栈顶；已是最前不重复派发 activate） */
   bringToFront(): void {
     if (!this.hasAttr('open')) return
     if (this.stack.activate(this.stackMember)) {
+      this.raiseEscapeLayer()
       this.emit('activate', { rect: this.currentRect(), source: 'api' satisfies FloatingPanelActivateSource })
     }
   }
@@ -612,7 +668,7 @@ export class OASFloatingPanel extends OASElement {
 
   private attachEscapeLayer(): void {
     if (this.releaseEscapeLayer) return
-    this.releaseEscapeLayer = pushEscapeLayer({
+    const layer: OverlayEscapeLayer = {
       name: 'floating-panel',
       active: () => this.hasAttr('open'),
       handle: () => {
@@ -624,14 +680,23 @@ export class OASFloatingPanel extends OASElement {
         this.requestClose('esc', 'user')
         return true
       },
-    })
+    }
+    this.escapeLayer = layer
+    this.releaseEscapeLayer = pushEscapeLayer(layer)
+  }
+
+  /** 置前时把本面板 Esc 层提到栈顶：一次 Esc 应关视觉最前，而不是后打开的那个 */
+  private raiseEscapeLayer(): void {
+    if (this.escapeLayer) promoteEscapeLayer(this.escapeLayer)
   }
 
   // ===== 指针：移动 / 缩放 =====
 
-  private onFramePointerDown = (): void => {
+  private onFramePointerDown = (e: PointerEvent): void => {
     if (!this.hasAttr('open')) return
+    if (e.button !== 0 || e.isPrimary === false) return
     if (this.stack.activate(this.stackMember)) {
+      this.raiseEscapeLayer()
       this.emit('activate', { rect: this.currentRect(), source: 'pointer' satisfies FloatingPanelActivateSource })
     }
   }
@@ -839,23 +904,31 @@ export class OASFloatingPanel extends OASElement {
     const raw = this.getAttr('boundary', 'viewport').trim()
     const name = raw === '' ? 'viewport' : raw
     if (name.toLowerCase() === 'viewport') {
-      if (typeof window === 'undefined') return null
+      if (typeof window === 'undefined' || typeof document === 'undefined') return null
       const hostRect = this.getBoundingClientRect()
+      const root = document.documentElement
       return {
         x: -hostRect.left,
         y: -hostRect.top,
-        width: window.innerWidth,
-        height: window.innerHeight,
+        // clientWidth/Height 排除滚动条（innerWidth 会把纵向滚动条算进横向可用宽度，右侧永远差一条）
+        width: root?.clientWidth || window.innerWidth,
+        height: root?.clientHeight || window.innerHeight,
       }
     }
+    // 选择器限定在自身根树：面板嵌在 shadow DOM 里时，ownerDocument 查不到同树的边界元素
+    const root = this.getRootNode() as ParentNode | null
     let boundaryHost: Element | null = null
     try {
-      boundaryHost = this.ownerDocument?.querySelector(name) ?? null
+      boundaryHost = root?.querySelector?.(name) ?? null
     } catch {
       boundaryHost = null
     }
     if (!boundaryHost) {
       if (!OASFloatingPanel.warnedBoundaries.has(name)) {
+        // 告警台账有界：宿主把用户输入直接拼进 boundary 时不得让 Set 无限增长
+        if (OASFloatingPanel.warnedBoundaries.size >= MAX_WARNED_BOUNDARIES) {
+          OASFloatingPanel.warnedBoundaries.clear()
+        }
         OASFloatingPanel.warnedBoundaries.add(name)
         devWarn(`[oas-floating-panel] boundary 选择器未命中「${name}」，本次不夹取边界`)
       }

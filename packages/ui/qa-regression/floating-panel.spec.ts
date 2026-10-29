@@ -231,6 +231,60 @@ test('子浮层 Esc 优先级：先关 dropdown、再关面板', async ({ page }
   await expect.poll(() => panelOpen(page, 'fp-nest')).toBe(false)
 })
 
+test('Esc 顺序跟随置前：A 开、B 开、点 A 置前后 Esc 关闭 A', async ({ page }) => {
+  await gotoPage(page, ['#fp-a', '#fp-b'])
+  await page.evaluate(() => document.getElementById('fp-a')!.scrollIntoView({ block: 'center' }))
+  const a = await frameBox(page, 'fp-a')
+  await page.mouse.click(a.x + 20, a.y + 12)
+  await expect(page.locator('#fp-front-out')).toContainText('fp-a 置前')
+
+  await page.keyboard.press('Escape')
+  await expect.poll(() => panelOpen(page, 'fp-a'), 'Esc 关闭刚置前的 A').toBe(false)
+  expect(await panelOpen(page, 'fp-b'), 'B 保持打开').toBe(true)
+
+  await page.keyboard.press('Escape')
+  await expect.poll(() => panelOpen(page, 'fp-b')).toBe(false)
+})
+
+test('首帧即打开的单个面板落在最前档（+1），不是基准档', async ({ page }) => {
+  await gotoPage(page)
+  const z = await page.evaluate(() => {
+    const frame = document.getElementById('fp-basic')!.shadowRoot!.querySelector<HTMLElement>('[part="frame"]')!
+    const cs = getComputedStyle(frame)
+    const num = (name: string, fallback: number) => {
+      const value = Number.parseFloat(cs.getPropertyValue(name))
+      return Number.isFinite(value) ? value : fallback
+    }
+    return {
+      actual: Number(cs.zIndex),
+      expected: num('--oas-z-index-base', 0) + num('--oas-z-overlay', 1040) + 1,
+    }
+  })
+  expect(z.actual, `首帧打开的计算 z（实际 ${z.actual}，期望 ${z.expected}）`).toBe(z.expected)
+})
+
+test('断开期间改 open：不残留幽灵 Esc 层，Esc 仍关闭可见面板；重连补齐', async ({ page }) => {
+  await gotoPage(page, '#fp-a')
+  // B 断开后再打开：旧实现会把 Esc 层压进 document 栈，一次 Esc 被不可见面板吞掉
+  await page.evaluate(() => {
+    const b = document.getElementById('fp-b')!
+    const parent = b.parentElement!
+    b.remove()
+    b.setAttribute('open', '')
+    ;(window as unknown as { __fpB?: { b: HTMLElement; parent: Element } }).__fpB = { b, parent }
+  })
+  await page.keyboard.press('Escape')
+  await expect.poll(() => panelOpen(page, 'fp-a'), 'Esc 关闭可见的 A，而非吞进断开面板').toBe(false)
+
+  // 重连：onReconnect 补齐 Esc 层与最前层级，再按一次 Esc 关闭 B
+  await page.evaluate(() => {
+    const stored = (window as unknown as { __fpB?: { b: HTMLElement; parent: Element } }).__fpB!
+    stored.parent.appendChild(stored.b)
+  })
+  await page.keyboard.press('Escape')
+  await expect.poll(() => panelOpen(page, 'fp-b')).toBe(false)
+})
+
 test('键盘等价路径：方向键移动 / Shift+方向键缩放 / RTL 镜像', async ({ page }) => {
   await gotoPage(page, ['#fp-key', '#fp-rtl'])
   // 首帧即打开不抢焦点；关闭后 show 走 opened 边沿 → initial-focus 生效
@@ -327,5 +381,64 @@ test.describe('coarse 指针热区', () => {
     expect(sizes.handle.h).toBeGreaterThanOrEqual(44)
     expect(sizes.close.w).toBeGreaterThanOrEqual(44)
     expect(sizes.close.h).toBeGreaterThanOrEqual(44)
+  })
+
+  test('标题栏/关闭钮不被 44px 手柄覆盖：真实触摸拖动可移动、点关闭可关闭', async ({ page }) => {
+    await gotoPage(page)
+    const probe = await page.evaluate(() => {
+      const host = document.getElementById('fp-basic')!
+      host.scrollIntoView({ block: 'center' })
+      const root = host.shadowRoot!
+      const bar = root.querySelector<HTMLElement>('[part="titlebar"]')!
+      const close = root.querySelector<HTMLElement>('[part="close"]')!
+      const br = bar.getBoundingClientRect()
+      const cr = close.getBoundingClientRect()
+      const barPoint = { x: br.left + br.width / 2, y: br.top + br.height / 2 }
+      const closePoint = { x: cr.left + cr.width / 2, y: cr.top + cr.height / 2 }
+      const hit = (point: { x: number; y: number }) => {
+        const el = root.elementFromPoint(point.x, point.y) as HTMLElement | null
+        return {
+          tag: el?.tagName.toLowerCase() ?? null,
+          part: el?.closest('[part]')?.getAttribute('part') ?? null,
+          edge: el?.closest<HTMLElement>('[part="handle"]')?.dataset.edge ?? null,
+        }
+      }
+      return { barPoint, closePoint, bar: hit(barPoint), close: hit(closePoint) }
+    })
+    expect(probe.bar.edge, `标题栏中心不得命中手柄（命中 ${JSON.stringify(probe.bar)}）`).toBeNull()
+    expect(probe.bar.part).not.toBe('handle')
+    expect(probe.close.edge, `关闭钮中心不得命中手柄（命中 ${JSON.stringify(probe.close)}）`).toBeNull()
+    expect(probe.close.part, '关闭钮中心命中关闭钮自身').toBe('close')
+
+    // 真实触摸拖标题栏（CDP 触屏事件走命中测试与真实 pointer 流）
+    const cdp = await page.context().newCDPSession(page)
+    const start = probe.barPoint
+    await cdp.send('Input.dispatchTouchEvent', {
+      type: 'touchStart',
+      touchPoints: [{ x: start.x, y: start.y, id: 1 }],
+    })
+    for (let step = 1; step <= 4; step++) {
+      await cdp.send('Input.dispatchTouchEvent', {
+        type: 'touchMove',
+        touchPoints: [{ x: start.x + step * 15, y: start.y + step * 10, id: 1 }],
+      })
+      await page.waitForTimeout(16)
+    }
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] })
+    await expect.poll(() => rectAttr(page, 'fp-basic'), '触摸拖动提交 oas-move').toBe('60,40,380,230')
+    await expect(page.locator('#fp-basic-out')).toContainText('oas-move')
+
+    // 点关闭钮（真实触摸 tap）：CDP 触屏事件经浏览器手势识别合成 click
+    const closePoint = await page.evaluate(() => {
+      const close = document.getElementById('fp-basic')!.shadowRoot!.querySelector<HTMLElement>('[part="close"]')!
+      const r = close.getBoundingClientRect()
+      return { x: r.left + r.width / 2, y: r.top + r.height / 2 }
+    })
+    await cdp.send('Input.dispatchTouchEvent', {
+      type: 'touchStart',
+      touchPoints: [{ x: closePoint.x, y: closePoint.y, id: 2 }],
+    })
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] })
+    await expect.poll(() => panelOpen(page, 'fp-basic'), '触摸点关闭钮可关闭').toBe(false)
   })
 })

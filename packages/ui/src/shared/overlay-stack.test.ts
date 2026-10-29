@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach } from 'vitest'
-import { lockBodyScroll, pushEscapeLayer } from './overlay-stack.js'
+import { lockBodyScroll, promoteEscapeLayer, pushEscapeLayer } from './overlay-stack.js'
 
 /**
  * 共享浮层栈（Esc 层栈 + body 滚动锁）单元测试。
@@ -162,6 +162,30 @@ describe('overlay-stack：Esc 层栈', () => {
     const e = pressEscape()
     expect(calls).toEqual([])
     expect(e.defaultPrevented).toBe(false)
+  })
+
+  it('promote：把已压栈的层移到栈顶（Esc 顺序跟随视觉最前，而非打开先后）', () => {
+    const calls: string[] = []
+    const a = { handle: () => (calls.push('a'), true) }
+    const b = { handle: () => (calls.push('b'), true) }
+    releases.push(pushEscapeLayer(a))
+    releases.push(pushEscapeLayer(b))
+    pressEscape()
+    expect(calls).toEqual(['b'])
+
+    expect(promoteEscapeLayer(a)).toBe(true)
+    pressEscape()
+    expect(calls).toEqual(['b', 'a'])
+
+    // 已在栈顶：幂等
+    expect(promoteEscapeLayer(a)).toBe(true)
+    pressEscape()
+    expect(calls).toEqual(['b', 'a', 'a'])
+    // 释放后 promote 不再生效（不复活幽灵层）
+    releases[1]!()
+    expect(promoteEscapeLayer(b)).toBe(false)
+    pressEscape()
+    expect(calls).toEqual(['b', 'a', 'a', 'a'])
   })
 })
 

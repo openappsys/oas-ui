@@ -836,4 +836,349 @@ describe('OASFloatingPanel 断开 / 重连 / 激活', () => {
     ])
     fire(document, 'pointerup', { x: 20, y: 20 })
   })
+
+  it('onFramePointerDown 只接受主键主指针（右键 / 第二指针不置前）', () => {
+    const a = mount({ open: '', rect: '0,0,200,150' })
+    const b = mount({ open: '', rect: '10,10,200,150' })
+    const events = record(a)
+    fire(frame(a), 'pointerdown', { x: 5, y: 5, button: 2 })
+    expect(frame(b).style.zIndex, '右键不置前').toContain('+ 1')
+    fire(frame(a), 'pointerdown', { x: 5, y: 5, primary: false })
+    expect(frame(b).style.zIndex, '第二指针不置前').toContain('+ 1')
+    fire(frame(a), 'pointerdown', { x: 5, y: 5 })
+    expect(frame(a).style.zIndex).toContain('+ 1')
+    expect(events.filter((e) => e.type === 'oas-activate')).toHaveLength(1)
+  })
+})
+
+// ===== Esc 层级跟随视觉最前（独立复核 I1） =====
+
+describe('OASFloatingPanel Esc 层级跟随置前', () => {
+  it('A 开、B 开、A 置前（api）后 Esc 关闭 A，再 Esc 关闭 B', () => {
+    const a = mount({ open: '', rect: '0,0,200,150' })
+    const b = mount({ open: '', rect: '10,10,200,150' })
+    expect(frame(b).style.zIndex, '后开的 B 在最前').toContain('+ 1')
+
+    a.bringToFront()
+    pressEscape()
+    expect(a.hasAttribute('open'), 'Esc 关闭视觉最前的 A').toBe(false)
+    expect(b.hasAttribute('open')).toBe(true)
+
+    pressEscape()
+    expect(b.hasAttribute('open')).toBe(false)
+  })
+
+  it('pointerdown 置前后 Esc 同样关闭刚置前的面板', () => {
+    const a = mount({ open: '', rect: '0,0,200,150' })
+    const b = mount({ open: '', rect: '10,10,200,150' })
+    fire(titlebar(a), 'pointerdown', { x: 20, y: 20 })
+    fire(document, 'pointerup', { x: 20, y: 20 })
+    pressEscape()
+    expect(a.hasAttribute('open')).toBe(false)
+    expect(b.hasAttribute('open')).toBe(true)
+  })
+
+  it('置前不重复压层：反复激活后 Esc 仍只关最前的一个', () => {
+    const a = mount({ open: '', rect: '0,0,200,150' })
+    const b = mount({ open: '', rect: '10,10,200,150' })
+    for (let i = 0; i < 3; i++) a.bringToFront()
+    const events = record(b)
+    pressEscape()
+    expect(a.hasAttribute('open')).toBe(false)
+    expect(events, 'B 不因重复激活多出 Esc 层').toEqual([])
+    expect(b.hasAttribute('open')).toBe(true)
+  })
+})
+
+// ===== 首帧层级（独立复核 I4） =====
+
+describe('OASFloatingPanel 首帧层级', () => {
+  it('单面板首帧即打开：computed z 为最前档（+1），非基准档', () => {
+    const only = mount({ open: '', rect: '0,0,200,150' })
+    expect(frame(only).style.zIndex).toContain('+ 1')
+
+    only.close()
+    expect(frame(only).style.zIndex).not.toContain('+ 1')
+    only.show()
+    expect(frame(only).style.zIndex).toContain('+ 1')
+  })
+
+  it('首帧打开 + 关闭态邻面板：打开者最前，登记顺序不抢首帧层级', () => {
+    const closed = mount({ rect: '0,0,200,150' })
+    const opened = mount({ open: '', rect: '10,10,200,150' })
+    expect(frame(opened).style.zIndex).toContain('+ 1')
+    expect(frame(closed).style.zIndex).not.toContain('+ 1')
+  })
+})
+
+// ===== property 通道语义（独立复核 I3 / Minor） =====
+
+describe('OASFloatingPanel property 通道', () => {
+  it('rect setter 兼容字符串（走 attribute 通道，与宿主 setAttribute 同义）', () => {
+    const el = mount({ open: '' })
+    // Vue 对自定义元素的 property 通道：`'rect' in el` 为 true → 直接赋值（静态字符串来自模板）
+    ;(el as { rect: unknown }).rect = '0,0,380,230'
+    expect(el.getAttribute('rect')).toBe('0,0,380,230')
+    expect(el.rect).toEqual({ x: 0, y: 0, width: 380, height: 230 })
+    expect(frameStyle(el)).toEqual({ left: '0px', top: '0px', width: '380px', height: '230px' })
+
+    // 非法串与 setAttribute 行为一致：属性保留原文、渲染回落缺省
+    ;(el as { rect: unknown }).rect = 'bad'
+    expect(el.getAttribute('rect')).toBe('bad')
+    expect(frameStyle(el).width).toBe(`${DEFAULT_RECT.width}px`)
+  })
+
+  it('open setter 对齐族内 presence 约定：空串/非 "false" 为真，false/"false"/null 为假', () => {
+    const el = mount()
+    ;(el as { open: unknown }).open = ''
+    expect(el.hasAttribute('open')).toBe(true)
+    ;(el as { open: unknown }).open = 'true'
+    expect(el.hasAttribute('open')).toBe(true)
+    ;(el as { open: unknown }).open = 'false'
+    expect(el.hasAttribute('open')).toBe(false)
+    ;(el as { open: unknown }).open = null
+    expect(el.hasAttribute('open')).toBe(false)
+    ;(el as { open: unknown }).open = true
+    expect(el.hasAttribute('open')).toBe(true)
+    ;(el as { open: unknown }).open = false
+    expect(el.hasAttribute('open')).toBe(false)
+    // attribute 通道是 presence 语义：open="false" 仍为打开
+    el.setAttribute('open', 'false')
+    expect(el.open).toBe(true)
+  })
+})
+
+// ===== coarse / forced-colors 样式契约（独立复核 C1 / I2） =====
+
+describe('OASFloatingPanel 强制色与 coarse 样式契约', () => {
+  it('标题栏（含关闭钮）层级高于手柄，顶部手柄从标题栏下沿起算', () => {
+    const css = styleText(mount({ open: '', movable: '', resizable: '' }))
+    expect(css, '标题栏建立层叠上下文并压过手柄').toMatch(/\.titlebar\s*\{[^}]*position:\s*relative[^}]*z-index:\s*2/)
+    expect(css, '手柄保持在标题栏之下').toMatch(/\.handle\s*\{[^}]*z-index:\s*1/)
+    for (const edge of ['n', 'ne', 'nw']) {
+      expect(css, `${edge} 手柄从标题栏下沿起算`).toMatch(
+        new RegExp(`\\.handle\\[data-edge='${edge}'\\]\\s*\\{[^}]*top:\\s*var\\(--oas-floating-panel-titlebar-height`),
+      )
+    }
+    expect(css, 'coarse 下标题栏高度与关闭钮同为触控目标').toMatch(
+      /@media \(pointer: coarse\)[\s\S]*--oas-floating-panel-titlebar-height:/,
+    )
+  })
+
+  it('forced-colors：框体与关闭钮焦点环用 outline 兜底（box-shadow 被禁用）', () => {
+    const css = styleText(mount({ open: '' }))
+    const start = css.indexOf('@media (forced-colors: active)')
+    expect(start, '存在 forced-colors 回退块').toBeGreaterThan(-1)
+    const block = css.slice(start)
+    expect(block, '框体焦点 outline 兜底').toMatch(/\.frame:focus-visible\s*\{[^}]*outline:\s*2px solid/)
+    expect(block, '关闭钮焦点 outline 兜底').toMatch(/\.close:focus-visible\s*\{[^}]*outline:\s*2px solid/)
+  })
+
+  it('标题栏分隔线走 CSS 变量 token（可被宿主覆盖）', () => {
+    const css = styleText(mount({ open: '' }))
+    expect(css).toMatch(
+      /border-block-end:\s*1px solid var\(--oas-floating-panel-titlebar-border-color,\s*var\(--oas-color-border\)\)/,
+    )
+  })
+})
+
+// ===== 断开期间改 open（独立复核 I5） =====
+
+describe('OASFloatingPanel 断开期间改 open', () => {
+  it('断开时打开：不挂幽灵 Esc 层、不抢焦点；重连补齐 Esc 与最前层级', () => {
+    const before = document.createElement('button')
+    document.body.appendChild(before)
+    before.focus()
+    const el = mount()
+    const events = record(el)
+
+    el.remove()
+    el.setAttribute('open', '')
+    expect(activeInner(), '断开时打开不抢焦点').toBe(before)
+    pressEscape()
+    expect(events, '无幽灵 Esc 层').toEqual([])
+
+    document.body.appendChild(el)
+    expect(frame(el).style.zIndex, '重连补写最前层级').toContain('+ 1')
+    expect(activeInner(), '重连不抢焦点').toBe(before)
+    pressEscape()
+    expect(events.filter((e) => e.type === 'oas-before-close')).toHaveLength(1)
+    expect(el.hasAttribute('open')).toBe(false)
+  })
+
+  it('断开时关闭：不触 stack.refresh / 不归还焦点；重连保持关闭且无 Esc 层', () => {
+    const before = document.createElement('button')
+    document.body.appendChild(before)
+    before.focus()
+    const el = mount({ open: '' })
+    const events = record(el)
+
+    el.remove()
+    el.removeAttribute('open')
+    expect(activeInner()).toBe(before)
+    document.body.appendChild(el)
+    expect(el.hasAttribute('open')).toBe(false)
+    expect(frame(el).hasAttribute('data-open')).toBe(false)
+    expect(frame(el).style.zIndex).not.toContain('+ 1')
+    pressEscape()
+    expect(events).toEqual([])
+  })
+
+  it('断开时开 → 关：重连不残留 Esc 层与焦点副作用', () => {
+    const before = document.createElement('button')
+    document.body.appendChild(before)
+    before.focus()
+    const el = mount()
+    const events = record(el)
+
+    el.remove()
+    el.setAttribute('open', '')
+    el.removeAttribute('open')
+    document.body.appendChild(el)
+    expect(activeInner()).toBe(before)
+    pressEscape()
+    expect(events).toEqual([])
+    expect(el.hasAttribute('open')).toBe(false)
+  })
+})
+
+// ===== 边界解析（独立复核 Minor） =====
+
+describe('OASFloatingPanel 边界解析', () => {
+  function stubRect(el: Element, rect: { x: number; y: number; width: number; height: number }): void {
+    vi.spyOn(el, 'getBoundingClientRect').mockReturnValue({
+      ...rect,
+      left: rect.x,
+      top: rect.y,
+      right: rect.x + rect.width,
+      bottom: rect.y + rect.height,
+      toJSON: () => rect,
+    } as DOMRect)
+  }
+
+  it('viewport 用 documentElement.clientWidth/Height（排除滚动条），不放大到 innerWidth', () => {
+    const el = mount({ open: '', movable: '', rect: '10,10,100,80', min: '40,40' })
+    stubRect(el, { x: 0, y: 0, width: 0, height: 0 })
+    const elRoot = document.documentElement
+    const originalWidth = Object.getOwnPropertyDescriptor(elRoot, 'clientWidth')
+    const originalHeight = Object.getOwnPropertyDescriptor(elRoot, 'clientHeight')
+    Object.defineProperty(elRoot, 'clientWidth', { configurable: true, value: 800 })
+    Object.defineProperty(elRoot, 'clientHeight', { configurable: true, value: 600 })
+    try {
+      fire(titlebar(el), 'pointerdown', { x: 10, y: 10 })
+      fire(document, 'pointermove', { x: 9999, y: 9999 })
+      flushFrame()
+      fire(document, 'pointerup', { x: 9999, y: 9999 })
+      expect(el.getAttribute('rect')).toBe('700,520,100,80')
+    } finally {
+      if (originalWidth) Object.defineProperty(elRoot, 'clientWidth', originalWidth)
+      else delete (elRoot as unknown as { clientWidth?: number }).clientWidth
+      if (originalHeight) Object.defineProperty(elRoot, 'clientHeight', originalHeight)
+      else delete (elRoot as unknown as { clientHeight?: number }).clientHeight
+    }
+  })
+
+  it('boundary 选择器在同根树内解析（shadow 内边界优先于 document 同名元素）', () => {
+    const shadowHost = document.createElement('div')
+    document.body.appendChild(shadowHost)
+    const root = shadowHost.attachShadow({ mode: 'open' })
+    const shadowBound = document.createElement('div')
+    shadowBound.id = 'fp-scope-bounds'
+    root.appendChild(shadowBound)
+
+    const docBound = document.createElement('div')
+    docBound.id = 'fp-scope-bounds'
+    document.body.appendChild(docBound)
+
+    const el = new OASFloatingPanel()
+    el.setAttribute('open', '')
+    el.setAttribute('movable', '')
+    el.setAttribute('boundary', '#fp-scope-bounds')
+    el.setAttribute('rect', '10,10,100,80')
+    el.setAttribute('min', '40,40')
+    root.appendChild(el)
+
+    stubRect(el, { x: 0, y: 0, width: 0, height: 0 })
+    stubRect(shadowBound, { x: 0, y: 0, width: 200, height: 160 })
+    stubRect(docBound, { x: 0, y: 0, width: 900, height: 900 })
+    fire(titlebar(el), 'pointerdown', { x: 10, y: 10 })
+    fire(document, 'pointermove', { x: 9999, y: 9999 })
+    flushFrame()
+    fire(document, 'pointerup', { x: 9999, y: 9999 })
+    expect(el.getAttribute('rect'), '夹在同根树的边界内').toBe('100,80,100,80')
+  })
+
+  it('未命中 boundary 选择器只告警一次，且告警台账有界', () => {
+    const el = mount({ open: '' })
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    el.setAttribute('boundary', '#fp-missing-once')
+    ;(el as unknown as { resolveBoundary(): unknown }).resolveBoundary()
+    ;(el as unknown as { resolveBoundary(): unknown }).resolveBoundary()
+    const messages = warn.mock.calls.filter((call) => String(call[0]).includes('#fp-missing-once'))
+    expect(messages, '同名选择器只告警一次').toHaveLength(1)
+
+    for (let i = 0; i < 40; i++) {
+      el.setAttribute('boundary', `#fp-missing-${i}`)
+      ;(el as unknown as { resolveBoundary(): unknown }).resolveBoundary()
+    }
+    const warned = (OASFloatingPanel as unknown as { warnedBoundaries: Set<string> }).warnedBoundaries
+    expect(warned.size, '告警台账有界（不随宿主输入无限增长）').toBeLessThanOrEqual(32)
+  })
+})
+
+// ===== 水合（独立复核 Minor） =====
+
+describe('OASFloatingPanel 水合', () => {
+  const META = '<meta data-oas-ssr="oas-floating-panel" data-oas-ssr-v="1">'
+
+  function captureSnapshot(): string {
+    const el = mount({ open: '', rect: '40,24,320,200', 'panel-title': '水合面板', movable: '', resizable: '' })
+    const html = el.shadowRoot!.innerHTML
+    el.remove()
+    return html
+  }
+
+  function upgrade(
+    snapshot: string,
+    attrs: Record<string, string> = { open: '', 'panel-title': '水合面板' },
+  ): OASFloatingPanel {
+    const el = new OASFloatingPanel()
+    for (const [key, value] of Object.entries(attrs)) el.setAttribute(key, value)
+    el.shadowRoot!.innerHTML = `${META}${snapshot}`
+    document.body.appendChild(el)
+    return el
+  }
+
+  it('真水合接管：shadow 不重建、指纹移除、标题 id 与 aria-labelledby 一致', () => {
+    const snapshot = captureSnapshot()
+    const el = upgrade(snapshot)
+    const style = el.shadowRoot!.querySelector('style')
+    expect(style, 'shadow 未重建（style 节点保留）').not.toBeNull()
+    expect(el.shadowRoot!.querySelector('meta[data-oas-ssr]')).toBeNull()
+    expect(frame(el)).toBeTruthy()
+    expect(handles(el)).toHaveLength(8)
+    const title = titleEl(el)
+    expect(title.id).not.toBe('')
+    expect(frame(el).getAttribute('aria-labelledby')).toBe(title.id)
+  })
+
+  it('快照标题缺 id：水合时补写新 id，aria-labelledby 不悬空', () => {
+    const snapshot = captureSnapshot().replace(/\sid="oas-floating-panel-title-\d+"/, '')
+    const el = upgrade(snapshot)
+    const title = titleEl(el)
+    expect(title.id, '补写标题 id').toMatch(/^oas-floating-panel-title-/)
+    expect(frame(el).getAttribute('aria-labelledby')).toBe(title.id)
+  })
+
+  it('快照缺 titlebar / 关闭钮：回退 render 全量重建', () => {
+    const snapshot = captureSnapshot()
+    const noTitlebar = upgrade(snapshot.replace('part="titlebar"', 'part="broken-titlebar"'))
+    expect(noTitlebar.shadowRoot!.querySelector('[part="titlebar"]')).not.toBeNull()
+    expect(noTitlebar.shadowRoot!.querySelector('meta[data-oas-ssr]')).toBeNull()
+    noTitlebar.remove()
+
+    const noClose = upgrade(snapshot.replace(/<button class="close"[\s\S]*?<\/button>/, ''))
+    expect(noClose.shadowRoot!.querySelectorAll('[part="close"]')).toHaveLength(1)
+    expect(noClose.shadowRoot!.querySelector('meta[data-oas-ssr]')).toBeNull()
+  })
 })

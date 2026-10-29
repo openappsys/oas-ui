@@ -155,6 +155,21 @@ describe('clampToBoundary / moveBy', () => {
     expect(moveBy(rect(200, 100, 200, 100), -999, -999, b, 0)).toEqual(rect(200, 100, 200, 100))
     expect(moveBy(rect(200, 100, 200, 100), 999, 999, b, 0)).toEqual(rect(400, 300, 200, 100))
   })
+
+  it('小数边界（真实 getBoundingClientRect 亚像素）：先取整边界再夹，舍入不越界', () => {
+    // 上界 0.6 + 300.7 - 100 = 201.3：round 会得 201（安全），但 201.6 场景会 round 成 202 越界 0.4
+    const fractional = { x: 0.6, y: 0.4, width: 301.3, height: 200.9 }
+    const moved = moveBy(rect(0, 0, 100, 80), 999, 999, fractional, 0)
+    expect(moved).toEqual(rect(201, 121, 100, 80))
+    expect(moved.x + moved.width).toBeLessThanOrEqual(fractional.x + fractional.width)
+    expect(moved.y + moved.height).toBeLessThanOrEqual(fractional.y + fractional.height)
+    // 下界同理：ceil 后不小于边界原点
+    const inward = moveBy(rect(0, 0, 100, 80), -999, -999, fractional, 0)
+    expect(inward.x).toBe(1)
+    expect(inward.y).toBe(1)
+    expect(inward.x).toBeGreaterThanOrEqual(fractional.x)
+    expect(inward.y).toBeGreaterThanOrEqual(fractional.y)
+  })
 })
 
 describe('resizeBy：四边与四角', () => {
@@ -210,6 +225,35 @@ describe('resizeBy：四边与四角', () => {
       rect(100, 100, 220, 170),
     )
     expect(resizeBy(base, 'w', -20, 0, limits, null, -10)).toEqual(rect(80, 100, 220, 150))
+  })
+
+  it('小数拖动位移贴边界：取整后仍不越界（整数边输出）', () => {
+    const b = { x: 0, y: 0, width: 300, height: 250 }
+    const roomy = resolveLimits('100,80', '2000,2000')
+    // 西缘左移 0.5px：对边（右=300）固定，round(x)=101 与 round(width)=200 曾相加得 301
+    const west = resizeBy(rect(100, 100, 200, 150), 'w', 0.5, 0, roomy, b, 0)
+    expect(west.x + west.width).toBe(300)
+    expect(west.x).toBe(101)
+    // 北缘同理：对边（下=250）固定
+    const north = resizeBy(rect(100, 100, 200, 150), 'n', 0, 0.5, roomy, b, 0)
+    expect(north.y + north.height).toBe(250)
+    expect(north.y).toBe(101)
+  })
+
+  it('小数边界：东/南缘 floor、西/北缘 ceil，取整后不越界', () => {
+    const fractional = { x: 0.4, y: 0.7, width: 500.6, height: 400.5 }
+    const east = resizeBy(base, 'e', 999, 0, resolveLimits('100,80', '2000,2000'), fractional, 0)
+    expect(east.x + east.width).toBeLessThanOrEqual(fractional.x + fractional.width)
+    expect(east.x + east.width).toBe(501)
+    const south = resizeBy(base, 's', 0, 999, resolveLimits('100,80', '2000,2000'), fractional, 0)
+    expect(south.y + south.height).toBeLessThanOrEqual(fractional.y + fractional.height)
+    expect(south.y + south.height).toBe(401)
+    const west = resizeBy(base, 'w', -999, 0, resolveLimits('100,80', '2000,2000'), fractional, 0)
+    expect(west.x).toBeGreaterThanOrEqual(fractional.x)
+    expect(west.x).toBe(1)
+    const north = resizeBy(base, 'n', 0, -999, resolveLimits('100,80', '2000,2000'), fractional, 0)
+    expect(north.y).toBeGreaterThanOrEqual(fractional.y)
+    expect(north.y).toBe(1)
   })
 })
 

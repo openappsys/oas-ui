@@ -122,6 +122,7 @@ OAS-UI provides 146 framework-agnostic Web Components, organized into 9 groups b
 - [StatusBar](/en/components/statusbar) —— A bottom silent status strip: left/right segmented cells + clickable + background-activity spinner + warning/error semantic colors; complementary to `oas-footer`: statusbar carries status vocabulary (counts/selection/sync state), footer is the substantive page footer.
 - [Inspector](/en/components/inspector) —— A right-side (or left-side) object editing panel: pill tab strip + collapsible sections + label/control rows; `role="complementary"`, complementary to `oas-sidebar` (navigation menus): inspector examines and edits object properties.
 - [ActionBar](/en/components/action-bar) —— A bottom command strip + readout wells container: command buttons + statistic/task-progress/media-transport/music readout wells, multiple surfaces (charcoal/dark/light); complementary to `oas-toolbar` (toolbar role).
+- [FloatingPanel](/en/components/floating-panel) —— A non-modal tool window driven by host attributes (`open` / `rect`): title-bar drag, eight-way resize, constant-overlay family stacking (only the frontmost tier), pointer and keyboard equivalent; no portal, no backdrop, no focus trap.
 
 ## Data Display
 

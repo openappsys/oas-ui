@@ -20,6 +20,13 @@
   才按 `boundary` + `boundary-padding` 夹取。好处是 SSR 与客户端首帧一致（服务端不测量、不改写宿主坐标）。
 - **RTL**：`rect` 始终是物理坐标（拖拽是物理行为）。RTL 只镜像**键盘水平语义**：
   `ArrowRight` 朝书写前进方向（RTL 下 `x` 减小）；`Shift+ArrowRight` 在该侧扩展宽度。
+- **键盘缩放映射（固定为「方向键移动被拖动的边」）**：`Shift+→` / `Shift+↓` 放大
+  （LTR 推东缘、RTL 推西缘；南缘下移），`Shift+←` / `Shift+↑` 缩小（LTR 西缘右移、
+  RTL 东缘左移；北缘下移）。垂直方向不随 RTL 镜像。
+- **边界取整**：真实 `getBoundingClientRect()` 带亚像素，边界先 `ceil`/`floor` 再夹取，
+  避免最终 `round` 越过边界 <1px；`boundary` 选择器在自身 `getRootNode()` 内解析
+  （面板嵌在 shadow DOM 时也能找到同树边界）；`viewport` 用 `documentElement.clientWidth/Height`
+  （排除滚动条）。
 
 ## 2. 叠放协议
 
@@ -29,6 +36,10 @@
   「最前」= 队尾中第一个仍打开的面板。
 - 打开即置前（不派发 `activate`，属状态边沿）；面板内 pointerdown 或 `bringToFront()` 置前并派发
   `oas-activate`（`source` = `pointer` / `api`）。
+- **Esc 顺序跟随视觉最前**：每块面板的 Esc 层在置前时 `promote` 到栈顶，一次 Esc 关的是刚置前的
+  那块，而不是「最后打开」的那块；同层不重复压栈（反复激活不会叠加层）。
+- **首帧层级**：登记发生在 render 之前，`applyFront(true)` 当时无 frame 可写；`update()` 末尾按
+  叠放态补写一次，因此单面板首帧即打开也落在最前档（+1）。
 - 最前面板关闭或被断开摘除时，由下一个仍打开的面板接任最前；无候选时族内无最前（全部回基准档）。
 
 ## 3. 交互与取消路径
@@ -43,6 +54,8 @@
 | 零位移 | 不写属性、不派发事件 |
 | 关闭钮 / Esc / `close()` | 先派发可取消 `oas-before-close`；`preventDefault()` → 不关闭、不写属性、不发 `open-change` |
 | 外部写 `open` / `rect` | 静默吸收（不派发 `open-change` / `move` / `resize`） |
+| 触屏（`pointer: coarse`） | 手柄/关闭钮 44px；标题栏（含关闭钮）层级高于手柄，上侧/上角手柄从标题栏下沿起算 |
+| 断开期间改 `open` | 只更新内部状态与 `data-open`；Esc 层 / 叠放 / 焦点基线副作用被 `isConnected` 守卫跳过，重连由 `onReconnect` 补齐 |
 
 焦点：打开时聚焦 `initial-focus`（light DOM 或 shadow 内首个命中），缺省聚焦面板框体；关闭时归还
 打开前元素（仍连接时）。键盘：面板框体可聚焦，方向键移动、`Shift` + 方向键缩放（8px/步），

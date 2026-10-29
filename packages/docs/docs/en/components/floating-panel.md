@@ -8,6 +8,8 @@ The panel **does not portal**: the host is a zero-size anchor (`position: relati
 
 `open` shows the panel, `panel-title` sets the title, `movable` / `resizable` enable dragging and eight-way resizing (four edges + four corners). Release commits `rect` and dispatches `oas-move` / `oas-resize`.
 
+On touch devices (`pointer: coarse`) handles and the close button grow to 44px: the title bar (including the close button) always sits above the handles, and the top/top-corner handles start below the title bar — so dragging the bar and tapping close are never stolen by a resize handle.
+
 <DemoBlock title="Movable / resizable panel">
   <div style="position: relative; min-height: 260px">
     <oas-floating-panel id="fp-basic" open movable resizable panel-title="Layers" rect="0,0,380,230">
@@ -44,7 +46,7 @@ The `open` attribute is the single source of truth: `show()` / `close()` only wr
 
 ## Controlled write-back
 
-`detail.rect` on `oas-move` / `oas-resize` is the exact committed rectangle; hosts can write `rect` back to enforce constraints such as grid snapping (controlled loop).
+`detail.rect` on `oas-move` / `oas-resize` is the exact committed rectangle; hosts can write `rect` back to enforce constraints such as grid snapping (controlled loop). The `rect` property accepts both an object `{ x, y, width, height }` and a string `"x,y,width,height"` — the string goes straight through the attribute channel, identical to `setAttribute('rect', ...)` (so Vue static templates assigning through the property channel don't lose the value).
 
 <DemoBlock title="Drag → event → host writes rect back (10px grid)">
   <div style="position: relative; min-height: 240px">
@@ -57,7 +59,7 @@ The `open` attribute is the single source of truth: `show()` / `close()` only wr
 
 ## Stacking
 
-Panels in the same family share a fixed overlay tier: only the frontmost panel gets +1 — z-index never grows with open count. Clicking anywhere in a panel or calling `bringToFront()` raises it and dispatches `oas-activate`.
+Panels in the same family share a fixed overlay tier: only the frontmost panel gets +1 — z-index never grows with open count. Clicking anywhere in a panel or calling `bringToFront()` raises it and dispatches `oas-activate`. A panel that is open on first frame (SSR / initial controlled state) also lands on the front tier instead of the base tier.
 
 <DemoBlock title="Two panels, bring to front">
   <div style="position: relative; min-height: 260px">
@@ -82,7 +84,7 @@ Panels in the same family share a fixed overlay tier: only the frontmost panel g
 
 ## Keyboard and focus
 
-The frame is focusable: arrow keys move, `Shift` + arrows resize (8px per step), equivalent to pointer input; horizontal semantics mirror in RTL. `initial-focus` chooses the focus target on open (falling back to the frame); focus returns to the previously focused element on close.
+The frame is focusable: arrow keys move, `Shift` + arrows resize (8px per step), equivalent to pointer input. The resize mapping always moves the dragged edge: `Shift+→` / `Shift+↓` grow (LTR pushes the east edge, RTL the west edge; the south edge moves down), `Shift+←` / `Shift+↑` shrink (LTR moves the west edge right, RTL the east edge left; the north edge moves down). RTL mirrors horizontal semantics only; vertical stays fixed. `initial-focus` chooses the focus target on open (falling back to the frame); focus returns to the previously focused element on close.
 
 <DemoBlock title="Keyboard move / resize + initial-focus">
   <div style="position: relative; min-height: 240px">
@@ -96,7 +98,7 @@ The frame is focusable: arrow keys move, `Shift` + arrows resize (8px per step),
 
 ## Nested overlay Esc priority
 
-Overlays inside the panel (such as `oas-dropdown`) push a later Esc layer: the first Esc closes only the child overlay, the panel stays open; a second Esc closes the panel.
+Overlays inside the panel (such as `oas-dropdown`) push a later Esc layer: the first Esc closes only the child overlay, the panel stays open; a second Esc closes the panel. When several panels of the same family are open, Esc closes the **visually frontmost** (most recently activated) one, not the last opened one — clicking / `bringToFront()` also promotes that panel's Esc layer to the top.
 
 <DemoBlock title="Dropdown consumes Esc first">
   <div style="position: relative; min-height: 250px">
@@ -227,7 +229,7 @@ onMounted(() => {
 | `movable` | Drag by the title bar; arrow keys move while the frame is focused (8px per step) | `boolean` | — |
 | `open` | Open state (single source of truth); show()/close() only write it, host writes are absorbed silently (no oas-open-change) | `boolean` | — |
 | `panel-title` | Title text (overridden by the title slot); avoids the native title attribute | — | — |
-| `rect` | Position and size x,y,width,height relative to the host anchor (default 48,48,420,300; rounded) | `PanelRect` | — |
+| `rect` | Position and size x,y,width,height relative to the host anchor (default 48,48,420,300; rounded); the property also accepts an object or a string of the same format | `PanelRect` | — |
 | `resizable` | Eight resize handles (four edges + four corners); Shift + arrows resize while the frame is focused | `boolean` | — |
 
 #### Methods
@@ -235,8 +237,8 @@ onMounted(() => {
 | Method | Signature | Description |
 | --- | --- | --- |
 | `show` | `show(): void` | Opens the panel (writes the open attribute; when already open it only raises the panel without re-dispatching oas-open-change) |
-| `close` | `close(): boolean` | Requests close and returns whether the panel is closed; dispatches cancelable oas-before-close first, and returns false while keeping it open when prevented (no attribute write, no open-change) |
-| `bringToFront` | `bringToFront(): void` | Raises the panel within the family; no duplicate oas-activate when already frontmost |
+| `close` | `close(): boolean` | Requests close: dispatches cancelable oas-before-close first; returns false and stays open when prevented (no attribute write, no open-change). Returns whether the panel is closed — already closed returns true without dispatching |
+| `bringToFront` | `bringToFront(): void` | Raises the panel within the family and promotes its Esc layer to the top; no duplicate oas-activate when already frontmost |
 
 #### Events
 
@@ -265,6 +267,7 @@ onMounted(() => {
 | `--oas-floating-panel-handle-size` | `8px` |
 | `--oas-floating-panel-radius` | `var(--oas-radius-md)` |
 | `--oas-floating-panel-shadow` | `var(--oas-shadow-lg)` |
+| `--oas-floating-panel-titlebar-border-color` | `var(--oas-color-border)` |
 | `--oas-floating-panel-titlebar-height` | `36px` |
 
 <style>

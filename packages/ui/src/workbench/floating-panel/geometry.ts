@@ -151,12 +151,13 @@ export function clampToBoundary(
   const out: PanelRect = { x: round(rect.x), y: round(rect.y), width: round(rect.width), height: round(rect.height) }
   if (!boundary || boundary.width <= 0 || boundary.height <= 0) return out
   const pad = normalizePadding(padding)
-  const minX = boundary.x + pad
-  const maxX = boundary.x + boundary.width - pad - out.width
-  const minY = boundary.y + pad
-  const maxY = boundary.y + boundary.height - pad - out.height
-  out.x = round(maxX < minX ? minX : Math.min(maxX, Math.max(minX, out.x)))
-  out.y = round(maxY < minY ? minY : Math.min(maxY, Math.max(minY, out.y)))
+  // 边界先取整再夹：真实 getBoundingClientRect 常带亚像素，round(小数上界) 会越过边界 <1px
+  const minX = Math.ceil(boundary.x + pad)
+  const maxX = Math.floor(boundary.x + boundary.width - pad - out.width)
+  const minY = Math.ceil(boundary.y + pad)
+  const maxY = Math.floor(boundary.y + boundary.height - pad - out.height)
+  out.x = maxX < minX ? minX : Math.min(maxX, Math.max(minX, out.x))
+  out.y = maxY < minY ? minY : Math.min(maxY, Math.max(minY, out.y))
   return out
 }
 
@@ -232,13 +233,13 @@ export function resizeBy(
   width = right - left
   height = bottom - top
 
-  // 边界夹取：只夹被拖动的边；随后若与 min 冲突则 min 优先（允许溢出边界）
+  // 边界夹取：只夹被拖动的边；边界先取整（ceil/floor），随后若与 min 冲突则 min 优先（允许溢出边界）
   if (boundary && boundary.width > 0 && boundary.height > 0) {
     const pad = normalizePadding(padding)
-    if (west) left = Math.max(left, boundary.x + pad)
-    if (east) right = Math.min(right, boundary.x + boundary.width - pad)
-    if (north) top = Math.max(top, boundary.y + pad)
-    if (south) bottom = Math.min(bottom, boundary.y + boundary.height - pad)
+    if (west) left = Math.max(left, Math.ceil(boundary.x + pad))
+    if (east) right = Math.min(right, Math.floor(boundary.x + boundary.width - pad))
+    if (north) top = Math.max(top, Math.ceil(boundary.y + pad))
+    if (south) bottom = Math.min(bottom, Math.floor(boundary.y + boundary.height - pad))
     if (right - left < minWidth) {
       if (west) left = right - minWidth
       else right = left + minWidth
@@ -249,12 +250,38 @@ export function resizeBy(
     }
   }
 
-  return {
-    x: round(left),
-    y: round(top),
-    width: round(right - left),
-    height: round(bottom - top),
+  // 输出取整为整数边：先定左右/上下整数边再算宽高，避免 round(left)+round(width) 比 round(right) 多 1px
+  let outX = round(left)
+  let outY = round(top)
+  let outRight = round(right)
+  let outBottom = round(bottom)
+
+  // 最终边界闸门：小数指针位移取整后仍可能越界 1px，按整数边再夹一次（min 优先，允许溢出边界）
+  if (boundary && boundary.width > 0 && boundary.height > 0) {
+    const pad = normalizePadding(padding)
+    const minLeft = Math.ceil(boundary.x + pad)
+    const maxRight = Math.floor(boundary.x + boundary.width - pad)
+    const minTop = Math.ceil(boundary.y + pad)
+    const maxBottom = Math.floor(boundary.y + boundary.height - pad)
+    if (east) {
+      outRight = Math.min(outRight, maxRight)
+      if (outRight - outX < minWidth) outRight = outX + minWidth
+    }
+    if (south) {
+      outBottom = Math.min(outBottom, maxBottom)
+      if (outBottom - outY < minHeight) outBottom = outY + minHeight
+    }
+    if (west) {
+      outX = Math.max(outX, minLeft)
+      if (outRight - outX < minWidth) outX = outRight - minWidth
+    }
+    if (north) {
+      outY = Math.max(outY, minTop)
+      if (outBottom - outY < minHeight) outY = outBottom - minHeight
+    }
   }
+
+  return { x: outX, y: outY, width: outRight - outX, height: outBottom - outY }
 }
 
 function normalizeStep(step: number | undefined): number {
@@ -294,9 +321,9 @@ export function keyboardMove(rect: PanelRect, key: string, options: KeyboardOpti
 }
 
 /**
- * 键盘缩放（Shift + 方向键），与指针等价：
- * - LTR：→ 扩东缘 / ← 收东缘（西缘推进）；RTL 镜像（→ 扩西缘 / ← 收西缘）
- * - ↓ 扩南缘 / ↑ 收南缘（北缘推进）
+ * 键盘缩放（Shift + 方向键），与指针等价——方向键移动的是「被拖动的边」：
+ * - 水平：→ 放大（LTR 推东缘外移 / RTL 推西缘外移），← 缩小（LTR 西缘右移 / RTL 东缘左移）
+ * - 垂直：↓ 放大（南缘下移），↑ 缩小（北缘下移）；垂直不随 RTL 镜像
  * 返回 null 表示按键不归本组件处理。
  */
 export function keyboardResize(rect: PanelRect, key: string, options: KeyboardOptions = {}): PanelRect | null {

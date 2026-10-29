@@ -10,7 +10,8 @@
  * 本模块是唯一收口点：
  * - Esc 层栈：后进先出，最上层消费后 preventDefault + stopImmediatePropagation；
  *   `handle()` 返回 false 表示「本层不处理」交给下一层；`active()` 为 false 时整层跳过
- *   （抽屉在可见模态之下时不抢 Esc）。
+ *   （抽屉在可见模态之下时不抢 Esc）；`promoteEscapeLayer()` 让非模态族把已压栈的层提到栈顶
+ *   （Esc 顺序跟随视觉置前，而非打开先后）。
  * - body 滚动锁：跨组件引用计数，最后一个释放时精确恢复宿主 inline 原值
  *   （overflow + padding-right 滚动条补偿）。
  */
@@ -65,6 +66,23 @@ export function pushEscapeLayer(layer: OverlayEscapeLayer): () => void {
       escapeListenerBound = false
     }
   }
+}
+
+/**
+ * 把已压栈的 Esc 层移到栈顶（幂等）。
+ *
+ * 适用场景：同一族多个非模态面板按「打开先后」压层，但用户点 A 把它置前后，视觉最前的是 A，
+ * 一次 Esc 应当关 A 而不是后开的 B——Esc 顺序必须跟随激活顺序，不能停留在打开顺序。
+ * 未压栈（已释放）时返回 false，不会凭空复活幽灵层。
+ */
+export function promoteEscapeLayer(layer: OverlayEscapeLayer): boolean {
+  const idx = escapeLayers.indexOf(layer)
+  if (idx < 0) return false
+  if (idx !== escapeLayers.length - 1) {
+    escapeLayers.splice(idx, 1)
+    escapeLayers.push(layer)
+  }
+  return true
 }
 
 /** 引用计数状态 */

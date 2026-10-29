@@ -4946,7 +4946,7 @@
   "oas-floating-panel": {
     "attrs": {
       "open": "打开态（唯一状态源）；show()/close() 只写该属性，宿主直接写属性静默吸收（不派发 oas-open-change）",
-      "rect": "位置与尺寸 x,y,width,height（相对宿主锚点的像素坐标；缺省 48,48,420,300；输出取整）",
+      "rect": "位置与尺寸 x,y,width,height（相对宿主锚点的像素坐标；缺省 48,48,420,300；输出取整）；property 同时接受对象与同格式字符串",
       "panel-title": "标题文本（title 插槽覆盖）；避开原生 title 属性",
       "movable": "标题栏拖动；框体聚焦时方向键移动（8px/步）",
       "resizable": "八向缩放手柄（四边 + 四角）；框体聚焦时 Shift + 方向键缩放",
@@ -4969,8 +4969,8 @@
     },
     "methods": {
       "show": "打开面板（写 open 属性；已打开时仅置前，不重复派发 oas-open-change）",
-      "close": "请求关闭并返回是否已关闭；先派发可取消 oas-before-close，被 preventDefault 时返回 false 且保持打开（零属性写入、零 open-change）",
-      "bringToFront": "族内置前；已是最前时不重复派发 oas-activate"
+      "close": "关闭请求：先派发可取消 oas-before-close；被 preventDefault 时返回 false 且保持打开（零属性写入、零 open-change）。返回是否已关闭——本来已关闭直接返回 true（不派发事件）",
+      "bringToFront": "族内置前并把本面板 Esc 层提到栈顶；已是最前时不重复派发 oas-activate"
     }
   }
 }

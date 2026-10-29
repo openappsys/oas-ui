@@ -5206,7 +5206,7 @@
   "oas-floating-panel": {
     "attrs": {
       "open": "Open state (single source of truth); show()/close() only write it, host writes are absorbed silently (no oas-open-change)",
-      "rect": "Position and size x,y,width,height relative to the host anchor (default 48,48,420,300; rounded)",
+      "rect": "Position and size x,y,width,height relative to the host anchor (default 48,48,420,300; rounded); the property also accepts an object or a string of the same format",
       "panel-title": "Title text (overridden by the title slot); avoids the native title attribute",
       "movable": "Drag by the title bar; arrow keys move while the frame is focused (8px per step)",
       "resizable": "Eight resize handles (four edges + four corners); Shift + arrows resize while the frame is focused",
@@ -5229,8 +5229,8 @@
     },
     "methods": {
       "show": "Opens the panel (writes the open attribute; when already open it only raises the panel without re-dispatching oas-open-change)",
-      "close": "Requests close and returns whether the panel is closed; dispatches cancelable oas-before-close first, and returns false while keeping it open when prevented (no attribute write, no open-change)",
-      "bringToFront": "Raises the panel within the family; no duplicate oas-activate when already frontmost"
+      "close": "Requests close: dispatches cancelable oas-before-close first; returns false and stays open when prevented (no attribute write, no open-change). Returns whether the panel is closed — already closed returns true without dispatching",
+      "bringToFront": "Raises the panel within the family and promotes its Esc layer to the top; no duplicate oas-activate when already frontmost"
     }
   }
 }

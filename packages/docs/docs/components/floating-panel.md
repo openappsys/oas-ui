@@ -8,6 +8,8 @@
 
 `open` 打开面板，`panel-title` 设标题，`movable` / `resizable` 开启拖动与八向缩放（四边 + 四角）。拖动标题栏移动、拖动边缘缩放，松手后提交 `rect` 并派发 `oas-move` / `oas-resize`。
 
+触屏（`pointer: coarse`）下手柄与关闭钮热区放大到 44px：标题栏（含关闭钮）始终位于手柄之上，上侧/上角手柄从标题栏下沿起算，因此拖标题栏和点关闭不会被缩放手柄抢走。
+
 <DemoBlock title="可移动 / 可缩放的悬浮面板">
   <div style="position: relative; min-height: 260px">
     <oas-floating-panel id="fp-basic" open movable resizable panel-title="图层" rect="0,0,380,230">
@@ -44,7 +46,7 @@
 
 ## 受控回写
 
-`oas-move` / `oas-resize` 的 `detail.rect` 是提交后的精确矩形；宿主可在事件里回写 `rect` 做网格吸附等约束（受控闭环）。
+`oas-move` / `oas-resize` 的 `detail.rect` 是提交后的精确矩形；宿主可在事件里回写 `rect` 做网格吸附等约束（受控闭环）。`rect` property 同时接受对象 `{ x, y, width, height }` 与字符串 `"x,y,width,height"`——后者原样走 attribute 通道，与宿主 `setAttribute('rect', ...)` 同义（Vue 静态模板经 property 通道赋值时不丢值）。
 
 <DemoBlock title="拖动 → 事件 → 宿主回写 rect（10px 网格吸附）">
   <div style="position: relative; min-height: 240px">
@@ -57,7 +59,7 @@
 
 ## 叠放与置前
 
-同族面板共享恒定 overlay 档：只有「最前」面板 +1，其余为基准档——**z-index 不随 open 次数增长**。点击面板任意位置或调用 `bringToFront()` 置前并派发 `oas-activate`。
+同族面板共享恒定 overlay 档：只有「最前」面板 +1，其余为基准档——**z-index 不随 open 次数增长**。点击面板任意位置或调用 `bringToFront()` 置前并派发 `oas-activate`。首帧即打开（SSR / 首屏受控态）的面板同样落在最前档，不会停在基准档。
 
 <DemoBlock title="两面板置前">
   <div style="position: relative; min-height: 260px">
@@ -82,7 +84,7 @@
 
 ## 键盘与焦点
 
-面板框体可聚焦：方向键移动、`Shift` + 方向键缩放（8px/步），与指针等价；RTL 下水平语义镜像。`initial-focus` 指定打开时的焦点目标（找不到回退框体）；关闭时焦点归还打开前元素。
+面板框体可聚焦：方向键移动、`Shift` + 方向键缩放（8px/步），与指针等价。缩放方向映射固定为「方向键移动被拖动的边」：`Shift+→` / `Shift+↓` 放大（LTR 推东缘、RTL 推西缘；南缘下移），`Shift+←` / `Shift+↑` 缩小（LTR 西缘右移、RTL 东缘左移；北缘下移）。RTL 只镜像水平语义，垂直方向不变。`initial-focus` 指定打开时的焦点目标（找不到回退框体）；关闭时焦点归还打开前元素。
 
 <DemoBlock title="键盘移动 / 缩放 + initial-focus">
   <div style="position: relative; min-height: 240px">
@@ -96,7 +98,7 @@
 
 ## 子浮层 Esc 优先级
 
-面板内的浮层（如 `oas-dropdown`）会压入更晚的 Esc 层：第一次 Esc 只关闭子浮层，面板保持打开；再按 Esc 才关闭面板。
+面板内的浮层（如 `oas-dropdown`）会压入更晚的 Esc 层：第一次 Esc 只关闭子浮层，面板保持打开；再按 Esc 才关闭面板。多个同族面板同开时，Esc 关闭的是**视觉最前**（最近置前）的那一块，而不是最后打开的那一块——点击/`bringToFront()` 置前会同步把该面板的 Esc 层提到栈顶。
 
 <DemoBlock title="下拉菜单优先消费 Esc">
   <div style="position: relative; min-height: 250px">
@@ -227,7 +229,7 @@ onMounted(() => {
 | `movable` | 标题栏拖动；框体聚焦时方向键移动（8px/步） | `boolean` | — |
 | `open` | 打开态（唯一状态源）；show()/close() 只写该属性，宿主直接写属性静默吸收（不派发 oas-open-change） | `boolean` | — |
 | `panel-title` | 标题文本（title 插槽覆盖）；避开原生 title 属性 | — | — |
-| `rect` | 位置与尺寸 x,y,width,height（相对宿主锚点的像素坐标；缺省 48,48,420,300；输出取整） | `PanelRect` | — |
+| `rect` | 位置与尺寸 x,y,width,height（相对宿主锚点的像素坐标；缺省 48,48,420,300；输出取整）；property 同时接受对象与同格式字符串 | `PanelRect` | — |
 | `resizable` | 八向缩放手柄（四边 + 四角）；框体聚焦时 Shift + 方向键缩放 | `boolean` | — |
 
 #### 方法
@@ -235,8 +237,8 @@ onMounted(() => {
 | 方法 | 签名 | 说明 |
 | --- | --- | --- |
 | `show` | `show(): void` | 打开面板（写 open 属性；已打开时仅置前，不重复派发 oas-open-change） |
-| `close` | `close(): boolean` | 请求关闭并返回是否已关闭；先派发可取消 oas-before-close，被 preventDefault 时返回 false 且保持打开（零属性写入、零 open-change） |
-| `bringToFront` | `bringToFront(): void` | 族内置前；已是最前时不重复派发 oas-activate |
+| `close` | `close(): boolean` | 关闭请求：先派发可取消 oas-before-close；被 preventDefault 时返回 false 且保持打开（零属性写入、零 open-change）。返回是否已关闭——本来已关闭直接返回 true（不派发事件） |
+| `bringToFront` | `bringToFront(): void` | 族内置前并把本面板 Esc 层提到栈顶；已是最前时不重复派发 oas-activate |
 
 #### 事件
 
@@ -265,6 +267,7 @@ onMounted(() => {
 | `--oas-floating-panel-handle-size` | `8px` |
 | `--oas-floating-panel-radius` | `var(--oas-radius-md)` |
 | `--oas-floating-panel-shadow` | `var(--oas-shadow-lg)` |
+| `--oas-floating-panel-titlebar-border-color` | `var(--oas-color-border)` |
 | `--oas-floating-panel-titlebar-height` | `36px` |
 
 <style>

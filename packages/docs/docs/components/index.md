@@ -122,6 +122,7 @@ OAS-UI 提供 146 个框架无关的 Web Components 组件，按用途划分为 
 - [StatusBar 状态栏](/components/statusbar) —— 底部静默信息条：左右分段单元格 + 可点击 + 后台活动旋转指示 + 警告/错误级语义色；与 `oas-footer` 分工：statusbar 承载状态词汇（计数/选中/同步态），footer 做实体页脚。
 - [Inspector 属性检查器](/components/inspector) —— 右侧（或左侧）对象编辑面板：tab 条 + 可折叠分节 + 标签/控件行；`role="complementary"`，与 `oas-sidebar`（导航菜单）分工：inspector 检查并编辑对象属性。
 - [ActionBar 动作条](/components/action-bar) —— 底部命令条 + 读数井容器：命令按钮组 + 统计/任务进度/媒体传输/音乐节拍读数井，多种表面（charcoal/dark/light）；与 `oas-toolbar`（工具栏角色）分工。
+- [FloatingPanel 悬浮面板](/components/floating-panel) —— 非模态工具窗：宿主属性驱动 `open` / `rect`，标题栏拖动 + 八向缩放 + 族内恒定 overlay 叠放（只有最前一档），指针与键盘等价可操作；不做 portal、无遮罩与焦点陷阱。
 
 ## 数据展示组件
 

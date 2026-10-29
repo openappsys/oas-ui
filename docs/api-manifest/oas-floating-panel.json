@@ -73,7 +73,7 @@
     {
       "name": "bringToFront",
       "signature": "bringToFront(): void",
-      "description": "置前（族内恒定 overlay 档 + 0/1；已是最前不重复派发 activate）"
+      "description": "置前（族内恒定 overlay 档 + 0/1，并把本面板 Esc 层提到栈顶；已是最前不重复派发 activate）"
     }
   ],
   "events": [
@@ -126,6 +126,10 @@
     {
       "name": "--oas-floating-panel-titlebar-height",
       "default": "36px"
+    },
+    {
+      "name": "--oas-floating-panel-titlebar-border-color",
+      "default": "var(--oas-color-border)"
     },
     {
       "name": "--oas-floating-panel-close-size",
