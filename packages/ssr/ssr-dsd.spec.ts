@@ -45,30 +45,18 @@ const FLICKER_PAGE_URL = pathToFileURL(FLICKER_PAGE).href
 /** system 主题 DSD + 同步 head 防闪专用页（与 theming/SSR guide 的最小引导保持同一状态机）。 */
 const SYSTEM_THEME_PAGE = join(ARTIFACT_DIR, 'config-provider-system-theme.html')
 const SYSTEM_THEME_PAGE_URL = pathToFileURL(SYSTEM_THEME_PAGE).href
-const SYSTEM_THEME_HEAD_SCRIPT = `(() => {
-  const key = 'ssr-system-theme'
-  const media = window.matchMedia('(prefers-color-scheme: dark)')
-  let preference = 'system'
-  try {
-    const saved = JSON.parse(localStorage.getItem(key) || 'null')
-    if (saved && ['light', 'dark', 'system'].includes(saved.theme)) preference = saved.theme
-  } catch {}
-  const effective = () => preference === 'system' ? (media.matches ? 'dark' : 'light') : preference
-  const apply = () => {
-    const theme = effective()
-    document.documentElement.dataset.theme = theme
-    document.querySelectorAll('oas-config-provider[theme="system"][theme-storage-key="' + key + '"]').forEach((el) => {
-      el.dataset.theme = theme
-    })
+const SYSTEM_THEME_NO_KEY_PAGE = join(ARTIFACT_DIR, 'config-provider-system-no-key-theme.html')
+const SYSTEM_THEME_NO_KEY_PAGE_URL = pathToFileURL(SYSTEM_THEME_NO_KEY_PAGE).href
+
+/** 直接执行 guide 当前脚本，避免测试自带另一份实现而假绿；key=null 用于无存储场景。 */
+function systemThemeHeadScript(key: string | null): string {
+  const guide = readFileSync(join(REPO_ROOT, 'packages', 'docs', 'docs', 'guide', 'theming.md'), 'utf8')
+  const match = guide.match(/<script>\s*([\s\S]*?)<\/script>/)
+  if (!match?.[1]?.includes("const key = 'oas-app-theme'")) {
+    throw new Error('[ssr-dsd] theming guide 缺少可执行的 system head 引导')
   }
-  apply()
-  const observer = new MutationObserver(apply)
-  observer.observe(document.documentElement, { childList: true, subtree: true })
-  document.addEventListener('DOMContentLoaded', () => {
-    apply()
-    observer.disconnect()
-  }, { once: true })
-})()`
+  return match[1].replace("const key = 'oas-app-theme'", `const key = ${JSON.stringify(key)}`)
+}
 
 /** 闪动页 ellipsis 用文本：300px 容器 + 2 行内必然溢出（触发校正） */
 const LONG_TEXT =
@@ -819,16 +807,24 @@ ${[
   buildFlickerPage(affixFlickerSnap, ellipsisFlickerSnap, scrollAreaFlickerSnap, themeCss)
 
   // —— 4) config-provider system：SSR 固定 light，同步 head 在 upgrade 前校正为真实系统/存储偏好 ——
+  const systemSlot =
+    '<span style="display:block;padding:24px;background:var(--oas-color-bg);color:var(--oas-color-text-primary)">System DSD</span>'
   const systemProvider = await renderToString(
     'oas-config-provider',
     { theme: 'system', 'theme-storage-key': 'ssr-system-theme' },
-    '<span style="display:block;padding:24px;background:var(--oas-color-bg);color:var(--oas-color-text-primary)">System DSD</span>',
+    systemSlot,
   )
-  writeFileSync(
-    SYSTEM_THEME_PAGE,
-    `<!doctype html><html lang="zh-CN" data-theme="light"><head><meta charset="utf-8"><title>system theme DSD</title><style>${themeCss}</style><script>${SYSTEM_THEME_HEAD_SCRIPT}</script></head><body>${systemProvider}</body></html>`,
-    'utf8',
-  )
+  const systemNoKeyProvider = await renderToString('oas-config-provider', { theme: 'system' }, systemSlot)
+  for (const [path, provider, key] of [
+    [SYSTEM_THEME_PAGE, systemProvider, 'ssr-system-theme'],
+    [SYSTEM_THEME_NO_KEY_PAGE, systemNoKeyProvider, null],
+  ] as const) {
+    writeFileSync(
+      path,
+      `<!doctype html><html lang="zh-CN" data-theme="light"><head><meta charset="utf-8"><title>system theme DSD</title><style>${themeCss}</style><script>${systemThemeHeadScript(key)}</script></head><body>${provider}</body></html>`,
+      'utf8',
+    )
+  }
 })
 
 async function openPage(page: Page): Promise<void> {
@@ -1623,6 +1619,30 @@ test('测量组件闪动治理：affix/ellipsis/scroll-area upgrade 首帧与快
   expect(result.secondFrame.scrollArea.thumbHeight).not.toBe('')
 })
 
+async function trackThemeStorageCalls(page: Page): Promise<void> {
+  await page.addInitScript(() => {
+    const w = window as unknown as Window & { __themeStorageCalls: { getItem: number; setItem: number } }
+    w.__themeStorageCalls = { getItem: 0, setItem: 0 }
+    const getItem = Storage.prototype.getItem
+    const setItem = Storage.prototype.setItem
+    Storage.prototype.getItem = function (key: string): string | null {
+      w.__themeStorageCalls.getItem++
+      return getItem.call(this, key)
+    }
+    Storage.prototype.setItem = function (key: string, value: string): void {
+      w.__themeStorageCalls.setItem++
+      setItem.call(this, key, value)
+    }
+  })
+}
+
+function themeStorageCalls(page: Page): Promise<{ getItem: number; setItem: number }> {
+  return page.evaluate(
+    () =>
+      (window as unknown as Window & { __themeStorageCalls: { getItem: number; setItem: number } }).__themeStorageCalls,
+  )
+}
+
 test('config-provider system DSD：同步 head 防闪校正与水合前后有效主题一致', async ({ page }) => {
   const pageErrors: string[] = []
   const consoleErrors: string[] = []
@@ -1630,6 +1650,7 @@ test('config-provider system DSD：同步 head 防闪校正与水合前后有效
   page.on('console', (message) => {
     if (message.type() === 'error') consoleErrors.push(message.text())
   })
+  await trackThemeStorageCalls(page)
   await page.emulateMedia({ colorScheme: 'dark' })
   await page.goto(SYSTEM_THEME_PAGE_URL, { waitUntil: 'load' })
 
@@ -1682,8 +1703,130 @@ test('config-provider system DSD：同步 head 防闪校正与水合前后有效
 
   await page.emulateMedia({ colorScheme: 'light' })
   await page.waitForFunction(
-    () => document.querySelector('oas-config-provider')?.getAttribute('data-theme') === 'light',
+    () =>
+      document.querySelector('oas-config-provider')?.getAttribute('data-theme') === 'light' &&
+      document.documentElement.dataset.theme === 'light',
   )
+
+  // DOMContentLoaded 之后：localStorage 事件仍须联合驱动 root + provider，sessionStorage 必须隔离。
+  await page.evaluate(() => {
+    window.dispatchEvent(
+      new StorageEvent('storage', {
+        key: 'ssr-system-theme',
+        newValue: JSON.stringify({ theme: 'dark' }),
+        storageArea: localStorage,
+      }),
+    )
+  })
+  await page.waitForFunction(
+    () =>
+      document.querySelector('oas-config-provider')?.getAttribute('data-theme') === 'dark' &&
+      document.documentElement.dataset.theme === 'dark',
+  )
+  await page.evaluate(() => {
+    window.dispatchEvent(
+      new StorageEvent('storage', {
+        key: 'ssr-system-theme',
+        newValue: JSON.stringify({ theme: 'light' }),
+        storageArea: sessionStorage,
+      }),
+    )
+  })
+  expect(await page.locator('oas-config-provider').getAttribute('data-theme')).toBe('dark')
+  expect(await page.locator('html').getAttribute('data-theme')).toBe('dark')
+
+  await page.evaluate(() => {
+    window.dispatchEvent(
+      new StorageEvent('storage', {
+        key: 'ssr-system-theme',
+        newValue: JSON.stringify({ theme: 'system' }),
+        storageArea: localStorage,
+      }),
+    )
+  })
+  await page.waitForFunction(
+    () =>
+      document.querySelector('oas-config-provider')?.getAttribute('data-theme') === 'light' &&
+      document.documentElement.dataset.theme === 'light',
+  )
+  await page.emulateMedia({ colorScheme: 'dark' })
+  await page.waitForFunction(
+    () =>
+      document.querySelector('oas-config-provider')?.getAttribute('data-theme') === 'dark' &&
+      document.documentElement.dataset.theme === 'dark',
+  )
+  const calls = await themeStorageCalls(page)
+  expect(calls.getItem).toBeGreaterThan(0)
+  expect(calls.setItem, 'head 引导只读偏好，不写 storage').toBe(0)
+  expect(pageErrors).toEqual([])
+  expect(consoleErrors).toEqual([])
+})
+
+test('config-provider system 无 key DSD：只读 MQL、storage 零访问，dark 首帧与水合一致', async ({ page }) => {
+  const pageErrors: string[] = []
+  const consoleErrors: string[] = []
+  page.on('pageerror', (error) => pageErrors.push(error.message))
+  page.on('console', (message) => {
+    if (message.type() === 'error') consoleErrors.push(message.text())
+  })
+  await trackThemeStorageCalls(page)
+  await page.emulateMedia({ colorScheme: 'dark' })
+  await page.goto(SYSTEM_THEME_NO_KEY_PAGE_URL, { waitUntil: 'load' })
+
+  const before = await page.evaluate(() => {
+    const provider = document.querySelector('oas-config-provider')!
+    const w = window as Window & { __systemNoKeyStyleRef?: Element | null }
+    w.__systemNoKeyStyleRef = provider.shadowRoot!.querySelector('style')
+    return {
+      requested: provider.getAttribute('theme'),
+      effective: provider.getAttribute('data-theme'),
+      rootEffective: document.documentElement.dataset.theme,
+      bg: getComputedStyle(provider.querySelector('span')!).backgroundColor,
+    }
+  })
+  expect(before).toMatchObject({ requested: 'system', effective: 'dark', rootEffective: 'dark' })
+  await page.screenshot({
+    path: join(ARTIFACT_DIR, 'config-provider-system-no-key-before-upgrade.png'),
+    fullPage: true,
+  })
+
+  await upgradeUi(page)
+  const after = await page.evaluate(() => {
+    const provider = document.querySelector('oas-config-provider')!
+    const w = window as Window & { __systemNoKeyStyleRef?: Element | null }
+    return {
+      requested: provider.getAttribute('theme'),
+      effective: provider.getAttribute('data-theme'),
+      rootEffective: document.documentElement.dataset.theme,
+      bg: getComputedStyle(provider.querySelector('span')!).backgroundColor,
+      styleSame: provider.shadowRoot!.querySelector('style') === w.__systemNoKeyStyleRef,
+      metaRemoved: provider.shadowRoot!.querySelector('meta[data-oas-ssr]') === null,
+    }
+  })
+  expect(after).toMatchObject({
+    requested: 'system',
+    effective: 'dark',
+    rootEffective: 'dark',
+    bg: before.bg,
+    styleSame: true,
+    metaRemoved: true,
+  })
+  await page.screenshot({ path: join(ARTIFACT_DIR, 'config-provider-system-no-key-after-upgrade.png'), fullPage: true })
+
+  // observer 已在 DOMContentLoaded 结束，但 root 与 provider 必须继续共同跟随 MQL。
+  await page.emulateMedia({ colorScheme: 'light' })
+  await page.waitForFunction(
+    () =>
+      document.querySelector('oas-config-provider')?.getAttribute('data-theme') === 'light' &&
+      document.documentElement.dataset.theme === 'light',
+  )
+  await page.emulateMedia({ colorScheme: 'dark' })
+  await page.waitForFunction(
+    () =>
+      document.querySelector('oas-config-provider')?.getAttribute('data-theme') === 'dark' &&
+      document.documentElement.dataset.theme === 'dark',
+  )
+  expect(await themeStorageCalls(page)).toEqual({ getItem: 0, setItem: 0 })
   expect(pageErrors).toEqual([])
   expect(consoleErrors).toEqual([])
 })

@@ -55,6 +55,7 @@ describe('oas-config-provider system theme / storage', () => {
   beforeEach(() => {
     document.body.innerHTML = ''
     window.localStorage.clear()
+    window.sessionStorage.clear()
   })
 
   afterEach(() => {
@@ -63,6 +64,7 @@ describe('oas-config-provider system theme / storage', () => {
     document.body.innerHTML = ''
     vi.restoreAllMocks()
     window.localStorage.clear()
+    window.sessionStorage.clear()
   })
 
   it('兼容边界：缺失/空 theme 保持继承，显式 light/dark/high-contrast/custom 原样写入', () => {
@@ -183,7 +185,7 @@ describe('oas-config-provider system theme / storage', () => {
     expect(get).toHaveBeenCalledTimes(1)
 
     get.mockRestore()
-    vi.spyOn(window.localStorage, 'setItem').mockImplementation(() => {
+    const set = vi.spyOn(window.localStorage, 'setItem').mockImplementation(() => {
       throw new DOMException('full', 'QuotaExceededError')
     })
     cp.setAttribute('theme', 'dark')
@@ -191,28 +193,125 @@ describe('oas-config-provider system theme / storage', () => {
     cp.setAttribute('theme', 'system')
     media.setDark(true)
     expect(cp.getAttribute('data-theme')).toBe('dark')
+    set.mockRestore()
   })
 
   it('storage 事件恢复同键显式偏好，忽略其他键与非法值', () => {
     stubSystemMedia(false)
     const cp = mountTheme('system', 'theme-test')
     window.dispatchEvent(
-      new StorageEvent('storage', { key: 'theme-test', newValue: JSON.stringify({ theme: 'dark' }) }),
+      new StorageEvent('storage', {
+        key: 'theme-test',
+        newValue: JSON.stringify({ theme: 'dark' }),
+        storageArea: window.localStorage,
+      }),
     )
     expect(cp.getAttribute('data-theme')).toBe('dark')
 
-    window.dispatchEvent(new StorageEvent('storage', { key: 'other', newValue: JSON.stringify({ theme: 'light' }) }))
+    window.dispatchEvent(
+      new StorageEvent('storage', {
+        key: 'other',
+        newValue: JSON.stringify({ theme: 'light' }),
+        storageArea: window.localStorage,
+      }),
+    )
     expect(cp.getAttribute('data-theme')).toBe('dark')
 
-    window.dispatchEvent(new StorageEvent('storage', { key: 'theme-test', newValue: '{bad' }))
+    window.dispatchEvent(
+      new StorageEvent('storage', { key: 'theme-test', newValue: '{bad', storageArea: window.localStorage }),
+    )
     expect(cp.getAttribute('data-theme')).toBe('light')
   })
 
-  it('重复 update 不累积 MQL/storage 监听，disconnect 清理且 reconnect 恢复', () => {
+  it('sessionStorage 同键与 clear 事件均隔离，不能覆盖 localStorage 偏好', () => {
+    stubSystemMedia(false)
+    window.localStorage.setItem('theme-test', JSON.stringify({ theme: 'dark' }))
+    window.sessionStorage.setItem('theme-test', JSON.stringify({ theme: 'light' }))
+    const cp = mountTheme('system', 'theme-test')
+    expect(cp.getAttribute('data-theme')).toBe('dark')
+
+    window.dispatchEvent(
+      new StorageEvent('storage', {
+        key: 'theme-test',
+        newValue: JSON.stringify({ theme: 'light' }),
+        storageArea: window.sessionStorage,
+      }),
+    )
+    expect(cp.getAttribute('data-theme')).toBe('dark')
+
+    window.dispatchEvent(new StorageEvent('storage', { key: null, newValue: null, storageArea: window.sessionStorage }))
+    expect(cp.getAttribute('data-theme')).toBe('dark')
+
+    window.dispatchEvent(new StorageEvent('storage', { key: null, newValue: null, storageArea: window.localStorage }))
+    expect(cp.getAttribute('data-theme'), '仅 localStorage clear 才清除恢复偏好').toBe('light')
+    window.sessionStorage.clear()
+  })
+
+  it('真实换 key A→B→空→A：冲突恢复、旧事件隔离、无 key 零读写且监听平衡', () => {
+    stubSystemMedia(false)
+    window.localStorage.setItem('theme-a', JSON.stringify({ theme: 'dark' }))
+    window.localStorage.setItem('theme-b', JSON.stringify({ theme: 'light' }))
+    const get = vi.spyOn(window.localStorage, 'getItem')
+    const set = vi.spyOn(window.localStorage, 'setItem')
+    const addWindow = vi.spyOn(window, 'addEventListener')
+    const removeWindow = vi.spyOn(window, 'removeEventListener')
+    const cp = mountTheme('system', 'theme-a')
+    const adds = () => addWindow.mock.calls.filter(([type]) => type === 'storage').length
+    const removes = () => removeWindow.mock.calls.filter(([type]) => type === 'storage').length
+    expect(cp.getAttribute('data-theme')).toBe('dark')
+
+    cp.setAttribute('theme-storage-key', 'theme-b')
+    expect(cp.getAttribute('data-theme')).toBe('light')
+    expect(get).toHaveBeenCalledWith('theme-b')
+
+    window.dispatchEvent(
+      new StorageEvent('storage', {
+        key: 'theme-a',
+        newValue: JSON.stringify({ theme: 'dark' }),
+        storageArea: window.localStorage,
+      }),
+    )
+    expect(cp.getAttribute('data-theme'), '旧 key A 的事件不得影响 B').toBe('light')
+    window.dispatchEvent(
+      new StorageEvent('storage', {
+        key: 'theme-b',
+        newValue: JSON.stringify({ theme: 'dark' }),
+        storageArea: window.localStorage,
+      }),
+    )
+    expect(cp.getAttribute('data-theme'), '新 key B 的监听正常恢复').toBe('dark')
+
+    const callsBeforeNoKey = { get: get.mock.calls.length, set: set.mock.calls.length }
+    cp.setAttribute('theme-storage-key', '')
+    expect(cp.getAttribute('data-theme')).toBe('light')
+    cp.setAttribute('size', 'small')
+    window.dispatchEvent(
+      new StorageEvent('storage', {
+        key: 'theme-b',
+        newValue: JSON.stringify({ theme: 'dark' }),
+        storageArea: window.localStorage,
+      }),
+    )
+    expect(get.mock.calls.length, '无 key 阶段不读').toBe(callsBeforeNoKey.get)
+    expect(set.mock.calls.length, '无 key 阶段不写').toBe(callsBeforeNoKey.set)
+    expect(cp.getAttribute('data-theme')).toBe('light')
+
+    cp.setAttribute('theme-storage-key', 'theme-a')
+    expect(cp.getAttribute('data-theme')).toBe('dark')
+    expect(adds()).toBe(3)
+    expect(removes()).toBe(2)
+    cp.remove()
+    expect(adds()).toBe(3)
+    expect(removes()).toBe(3)
+  })
+
+  it('两轮以上 disconnect/reconnect：detached 零更新零通知，MQL/storage add/remove 最终平衡', () => {
     const media = stubSystemMedia(false)
     const addWindow = vi.spyOn(window, 'addEventListener')
     const removeWindow = vi.spyOn(window, 'removeEventListener')
     const cp = mountTheme('system', 'theme-test')
+    const notify = vi.fn()
+    const unsubscribe = subscribeConfigProvider(cp, notify)
     const storageAdds = () => addWindow.mock.calls.filter(([type]) => type === 'storage').length
     const storageRemoves = () => removeWindow.mock.calls.filter(([type]) => type === 'storage').length
 
@@ -222,17 +321,41 @@ describe('oas-config-provider system theme / storage', () => {
     expect(media.add).toHaveBeenCalledTimes(1)
     expect(storageAdds()).toBe(1)
 
-    cp.remove()
-    expect(media.remove).toHaveBeenCalledTimes(1)
-    expect(storageRemoves()).toBe(1)
-    media.setDark(true)
-    expect(cp.getAttribute('data-theme')).toBe('light')
+    const detach = (round: number, nextDark: boolean) => {
+      const effective = cp.getAttribute('data-theme')
+      notify.mockClear()
+      cp.remove()
+      expect(media.remove, `第 ${round} 次断连清理 MQL`).toHaveBeenCalledTimes(round)
+      expect(storageRemoves(), `第 ${round} 次断连清理 storage`).toBe(round)
+      media.setDark(nextDark)
+      window.dispatchEvent(
+        new StorageEvent('storage', {
+          key: 'theme-test',
+          newValue: JSON.stringify({ theme: nextDark ? 'dark' : 'light' }),
+          storageArea: window.localStorage,
+        }),
+      )
+      expect(cp.getAttribute('data-theme'), `第 ${round} 次 detached 后 effective 不变`).toBe(effective)
+      expect(notify, `第 ${round} 次 detached 后不通知`).not.toHaveBeenCalled()
+    }
 
+    detach(1, true)
     document.body.appendChild(cp)
+    expect(cp.getAttribute('data-theme')).toBe('dark')
     expect(media.add).toHaveBeenCalledTimes(2)
     expect(storageAdds()).toBe(2)
-    media.setDark(false)
+
+    detach(2, false)
+    document.body.appendChild(cp)
     expect(cp.getAttribute('data-theme')).toBe('light')
-    expect(media.add).toHaveBeenCalledTimes(2)
+    expect(media.add).toHaveBeenCalledTimes(3)
+    expect(storageAdds()).toBe(3)
+
+    detach(3, true)
+    expect(media.add).toHaveBeenCalledTimes(3)
+    expect(media.remove).toHaveBeenCalledTimes(3)
+    expect(storageAdds()).toBe(3)
+    expect(storageRemoves()).toBe(3)
+    unsubscribe()
   })
 })

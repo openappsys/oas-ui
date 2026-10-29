@@ -92,27 +92,35 @@ const html = await renderToString('oas-button', { type: 'primary', size: 'large'
 
 ### system 主题首屏防闪
 
-`<oas-config-provider theme="system">` 的服务端快照固定为 `data-theme="light"`，不访问共享 storage、不注册媒体查询监听；客户端水合后按「显式存储 > 系统 > 浅色兜底」校正。使用 system + DSD 时在 `<head>` 放以下同步引导，key 必须与 provider 相同；它会校正根节点及后续解析到的同 key provider，保证首帧与水合一致。该脚本仅在使用 system 时按需加入，不改变默认全局主题。
+`<oas-config-provider theme="system">` 的服务端快照固定为 `data-theme="light"`，不访问共享 storage、不注册媒体查询监听；客户端水合后按「显式存储 > 系统 > 浅色兜底」校正。使用 system + DSD 时在 `<head>` 放以下同步引导，key 必须与 provider 相同；无 key provider 改为 `const key = null`，只读 MQL 且 storage 零访问。脚本会校正根节点及后续解析到的对应 provider，保证首帧与水合一致；observer 在 DOMContentLoaded 结束后，root 仍持续跟随 MQL，有 key 时还跟随对应 localStorage 事件，且不写 storage。该脚本仅在使用 system 时按需加入，不改变默认全局主题。
 
 ```html
 <script>
   ;(() => {
+    // 无 key provider 改为 null；此时只读 MQL，不访问 storage。
     const key = 'oas-app-theme'
     const media = window.matchMedia('(prefers-color-scheme: dark)')
+    const readPreference = (raw) => {
+      try {
+        const saved = JSON.parse(raw || 'null')
+        return saved && ['light', 'dark', 'system'].includes(saved.theme) ? saved.theme : 'system'
+      } catch {
+        return 'system'
+      }
+    }
     let preference = 'system'
-    try {
-      const saved = JSON.parse(localStorage.getItem(key) || 'null')
-      if (saved && ['light', 'dark', 'system'].includes(saved.theme)) preference = saved.theme
-    } catch {}
+    if (key) {
+      try {
+        preference = readPreference(localStorage.getItem(key))
+      } catch {}
+    }
     const effective = () => (preference === 'system' ? (media.matches ? 'dark' : 'light') : preference)
     const apply = () => {
       const theme = effective()
       document.documentElement.dataset.theme = theme
-      document
-        .querySelectorAll('oas-config-provider[theme="system"][theme-storage-key="' + key + '"]')
-        .forEach((el) => {
-          el.dataset.theme = theme
-        })
+      document.querySelectorAll('oas-config-provider[theme="system"]').forEach((el) => {
+        if ((el.getAttribute('theme-storage-key') || null) === key) el.dataset.theme = theme
+      })
     }
     apply()
     const observer = new MutationObserver(apply)
@@ -125,6 +133,18 @@ const html = await renderToString('oas-button', { type: 'primary', size: 'large'
       },
       { once: true },
     )
+    media.addEventListener('change', apply)
+    if (key) {
+      window.addEventListener('storage', (event) => {
+        try {
+          if (event.storageArea !== localStorage || (event.key !== key && event.key !== null)) return
+        } catch {
+          return
+        }
+        preference = readPreference(event.newValue)
+        apply()
+      })
+    }
   })()
 </script>
 ```

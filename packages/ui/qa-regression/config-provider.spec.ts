@@ -191,17 +191,28 @@ test('config-provider system/storage：emulateMedia 实时切换、显式存储�
 test('config-provider 主题 demo：System 点击与 Light 键盘操作有真实可见 token 反馈', async ({ page }, testInfo) => {
   const errors: string[] = []
   page.on('pageerror', (error) => errors.push(error.message))
-  await page.emulateMedia({ colorScheme: 'dark' })
+  await page.emulateMedia({ colorScheme: 'light' })
   await page.goto('/components/config-provider.html', { waitUntil: 'domcontentloaded' })
   await up(page, '#cp-theme')
+
+  // 先制造真实 light 初态，再仅切系统偏好（此时显式 light 不跟随），最后点击 System → dark。
+  const light = page.getByRole('button', { name: '浅色', exact: true })
+  await light.click()
+  await page.waitForFunction(() => document.querySelector('#cp-theme')?.getAttribute('data-theme') === 'light')
+  await page.emulateMedia({ colorScheme: 'dark' })
+  expect(await page.locator('#cp-theme').evaluate((el) => getComputedStyle(el).backgroundColor)).toBe(
+    'rgb(255, 255, 255)',
+  )
 
   await page.getByRole('button', { name: '跟随系统', exact: true }).click()
   await page.waitForFunction(() => document.querySelector('#cp-theme')?.getAttribute('data-theme') === 'dark')
   expect(await page.locator('#cp-theme').getAttribute('theme')).toBe('system')
+  expect(await page.evaluate(() => localStorage.getItem('oas-docs-config-theme'))).toBe(
+    JSON.stringify({ theme: 'system' }),
+  )
   expect(await page.locator('#cp-theme').evaluate((el) => getComputedStyle(el).backgroundColor)).toBe('rgb(24, 24, 27)')
   await page.locator('#cp-theme').screenshot({ path: testInfo.outputPath('demo-system-dark.png') })
 
-  const light = page.getByRole('button', { name: '浅色', exact: true })
   await light.focus()
   await page.keyboard.press('Enter')
   await page.waitForFunction(() => document.querySelector('#cp-theme')?.getAttribute('data-theme') === 'light')

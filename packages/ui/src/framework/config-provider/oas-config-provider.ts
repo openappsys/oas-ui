@@ -77,19 +77,20 @@ export class OASConfigProvider extends OASElement {
   private readonly onStoredThemeChange = (event: StorageEvent): void => {
     const key = this.getAttr('theme-storage-key')
     if (!key || (event.key !== key && event.key !== null) || this.getAttr('theme') !== 'system') return
+    try {
+      // 同键 sessionStorage 与 sessionStorage.clear 不得清除/覆盖 localStorage 恢复偏好。
+      if (event.storageArea !== window.localStorage) return
+    } catch {
+      return
+    }
     this.restoredTheme = parseStoredTheme(event.newValue)
     this.requestUpdate()
   }
 
-  constructor() {
-    super()
-    this.onCleanup(() => {
-      this.unbindSystemMedia()
-      this.unbindStorage()
-      this.themeConnectionInitialized = false
-      this.lastStorageKey = ''
-      this.restoredTheme = null
-    })
+  override disconnectedCallback(): void {
+    // 基类每次断连都会清空 cleanupFns；主题清理必须在每个连接周期直接执行，不能只注册一次。
+    this.cleanupTheme()
+    super.disconnectedCallback()
   }
 
   override attributeChangedCallback(name: string, oldValue: string | null, newValue: string | null): void {
@@ -205,6 +206,14 @@ export class OASConfigProvider extends OASElement {
     } else if ((requested !== 'system' || !storageKey) && this.listeningStorageKey) {
       this.unbindStorage()
     }
+  }
+
+  private cleanupTheme(): void {
+    this.unbindSystemMedia()
+    this.unbindStorage()
+    this.themeConnectionInitialized = false
+    this.lastStorageKey = ''
+    this.restoredTheme = null
   }
 
   private unbindSystemMedia(): void {

@@ -27,7 +27,7 @@ document.documentElement.dataset.theme = 'high-contrast'
 
 Add `theme-storage-key` only when the user's choice should be remembered. Importing the library does not implicitly access storage or enable global system theming. The stored JSON is `{"theme":"light"}`, `{"theme":"dark"}`, or `{"theme":"system"}`. An explicit light/dark preference wins during the initial restore; choosing system afterwards replaces the old preference and resumes following the OS.
 
-SSR deterministically emits `data-theme="light"` for system and never accesses localStorage or media queries on the server. With SSR/DSD, place the following synchronous script in `<head>` so it runs before the first paint, and keep its key identical to the provider's. It corrects both the root and matching system providers to prevent a theme flash during hydration. Client-only pages do not need this bootstrap.
+SSR deterministically emits `data-theme="light"` for system and never accesses localStorage or media queries on the server. With SSR/DSD, place the following synchronous script in `<head>` so it runs before the first paint, and keep its key identical to the provider's. For a provider without a key, set `const key` to `null`; only the MQL is read and storage get/set calls stay at zero. It corrects both the root and matching system providers to prevent a theme flash during hydration. The initial observer may stop at DOMContentLoaded, while the MQL listener keeps root synchronized for the page lifetime; with a key, corresponding localStorage events are also synchronized, without writing storage. Client-only pages do not need this bootstrap.
 
 ```html
 <!-- Provider in <body> -->
@@ -41,25 +41,33 @@ Synchronous bootstrap in `<head>`:
 ```html
 <script>
   ;(() => {
+    // Use null for a provider without a key: only the MQL is read; storage is never accessed.
     const key = 'oas-app-theme'
     const media = window.matchMedia('(prefers-color-scheme: dark)')
+    const readPreference = (raw) => {
+      try {
+        const saved = JSON.parse(raw || 'null')
+        return saved && ['light', 'dark', 'system'].includes(saved.theme) ? saved.theme : 'system'
+      } catch {
+        return 'system'
+      }
+    }
     let preference = 'system'
-    try {
-      const saved = JSON.parse(localStorage.getItem(key) || 'null')
-      if (saved && ['light', 'dark', 'system'].includes(saved.theme)) preference = saved.theme
-    } catch {}
+    if (key) {
+      try {
+        preference = readPreference(localStorage.getItem(key))
+      } catch {}
+    }
     const effective = () => (preference === 'system' ? (media.matches ? 'dark' : 'light') : preference)
     const apply = () => {
       const theme = effective()
       document.documentElement.dataset.theme = theme
-      document
-        .querySelectorAll('oas-config-provider[theme="system"][theme-storage-key="' + key + '"]')
-        .forEach((el) => {
-          el.dataset.theme = theme
-        })
+      document.querySelectorAll('oas-config-provider[theme="system"]').forEach((el) => {
+        if ((el.getAttribute('theme-storage-key') || null) === key) el.dataset.theme = theme
+      })
     }
     apply()
-    // The body is not parsed yet in <head>; correct DSD providers as they appear, before the first paint.
+    // The observer only handles the first paint; MQL/storage listeners keep root synchronized for the page lifetime.
     const observer = new MutationObserver(apply)
     observer.observe(document.documentElement, { childList: true, subtree: true })
     document.addEventListener(
@@ -70,6 +78,18 @@ Synchronous bootstrap in `<head>`:
       },
       { once: true },
     )
+    media.addEventListener('change', apply)
+    if (key) {
+      window.addEventListener('storage', (event) => {
+        try {
+          if (event.storageArea !== localStorage || (event.key !== key && event.key !== null)) return
+        } catch {
+          return
+        }
+        preference = readPreference(event.newValue)
+        apply()
+      })
+    }
   })()
 </script>
 ```

@@ -26,7 +26,7 @@ document.documentElement.dataset.theme = 'high-contrast'
 
 需要记住用户选择时才添加 `theme-storage-key`，不会因引入组件库而默认读写存储或启用全局 system。存储 JSON 为 `{"theme":"light"}` / `{"theme":"dark"}` / `{"theme":"system"}`。首次恢复时显式 light/dark 优先于系统；之后重新选择 system 会覆盖旧偏好并恢复跟随系统。
 
-SSR 对 system 确定性输出 `data-theme="light"`，服务端不访问 localStorage 或媒体查询。若使用 SSR/DSD，把下面同步脚本放入 `<head>`（在首屏绘制前执行），并让脚本 key 与 provider 完全一致；它会同时校正根节点和同 key 的 system provider，避免水合前后闪变。纯客户端页面不需要这段引导。
+SSR 对 system 确定性输出 `data-theme="light"`，服务端不访问 localStorage 或媒体查询。若使用 SSR/DSD，把下面同步脚本放入 `<head>`（在首屏绘制前执行），并让脚本 key 与 provider 完全一致；无 key provider 把 `const key` 改为 `null`，此时只读 MQL、storage get/set 均为 0。脚本会同时校正根节点和对应 system provider，避免水合前后闪变；初始 observer 可在 DOMContentLoaded 结束，但 MQL 监听会持续同步 root，有 key 时也会同步对应 localStorage 事件，且不写 storage。纯客户端页面不需要这段引导。
 
 ```html
 <!-- body 内的 provider -->
@@ -40,25 +40,33 @@ SSR 对 system 确定性输出 `data-theme="light"`，服务端不访问 localSt
 ```html
 <script>
   ;(() => {
+    // 无 key provider 改为 null；此时只读 MQL，不访问 storage。
     const key = 'oas-app-theme'
     const media = window.matchMedia('(prefers-color-scheme: dark)')
+    const readPreference = (raw) => {
+      try {
+        const saved = JSON.parse(raw || 'null')
+        return saved && ['light', 'dark', 'system'].includes(saved.theme) ? saved.theme : 'system'
+      } catch {
+        return 'system'
+      }
+    }
     let preference = 'system'
-    try {
-      const saved = JSON.parse(localStorage.getItem(key) || 'null')
-      if (saved && ['light', 'dark', 'system'].includes(saved.theme)) preference = saved.theme
-    } catch {}
+    if (key) {
+      try {
+        preference = readPreference(localStorage.getItem(key))
+      } catch {}
+    }
     const effective = () => (preference === 'system' ? (media.matches ? 'dark' : 'light') : preference)
     const apply = () => {
       const theme = effective()
       document.documentElement.dataset.theme = theme
-      document
-        .querySelectorAll('oas-config-provider[theme="system"][theme-storage-key="' + key + '"]')
-        .forEach((el) => {
-          el.dataset.theme = theme
-        })
+      document.querySelectorAll('oas-config-provider[theme="system"]').forEach((el) => {
+        if ((el.getAttribute('theme-storage-key') || null) === key) el.dataset.theme = theme
+      })
     }
     apply()
-    // head 执行时 body 尚未解析；observer 在 DSD provider 出现时、首帧绘制前同步校正。
+    // observer 只负责首屏前校正；MQL/storage 监听在页面生命周期内持续拥有并同步 root。
     const observer = new MutationObserver(apply)
     observer.observe(document.documentElement, { childList: true, subtree: true })
     document.addEventListener(
@@ -69,6 +77,18 @@ SSR 对 system 确定性输出 `data-theme="light"`，服务端不访问 localSt
       },
       { once: true },
     )
+    media.addEventListener('change', apply)
+    if (key) {
+      window.addEventListener('storage', (event) => {
+        try {
+          if (event.storageArea !== localStorage || (event.key !== key && event.key !== null)) return
+        } catch {
+          return
+        }
+        preference = readPreference(event.newValue)
+        apply()
+      })
+    }
   })()
 </script>
 ```

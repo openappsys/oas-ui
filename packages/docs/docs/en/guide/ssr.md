@@ -188,27 +188,35 @@ for the rendering itself.
 
 ### First-paint anti-flicker for system themes
 
-The server snapshot of `<oas-config-provider theme="system">` is deterministically `data-theme="light"`; it does not access shared storage or register media-query listeners. Client hydration corrects it using explicit stored preference > system > light fallback. When using system themes with DSD, place this synchronous bootstrap in `<head>` and keep its key identical to the provider's. It corrects the root and matching providers as they are parsed, keeping the first frame consistent with hydration. Add it only when system theming is used; the default global theme is unchanged.
+The server snapshot of `<oas-config-provider theme="system">` is deterministically `data-theme="light"`; it does not access shared storage or register media-query listeners. Client hydration corrects it using explicit stored preference > system > light fallback. When using system themes with DSD, place this synchronous bootstrap in `<head>` and keep its key identical to the provider's; for a provider without a key, use `const key = null` so only the MQL is read and storage is never accessed. It corrects the root and matching providers as they are parsed, keeping the first frame consistent with hydration. After the observer stops at DOMContentLoaded, root continues following the MQL and, with a key, corresponding localStorage events, without writing storage. Add it only when system theming is used; the default global theme is unchanged.
 
 ```html
 <script>
   ;(() => {
+    // Use null for a provider without a key: only the MQL is read; storage is never accessed.
     const key = 'oas-app-theme'
     const media = window.matchMedia('(prefers-color-scheme: dark)')
+    const readPreference = (raw) => {
+      try {
+        const saved = JSON.parse(raw || 'null')
+        return saved && ['light', 'dark', 'system'].includes(saved.theme) ? saved.theme : 'system'
+      } catch {
+        return 'system'
+      }
+    }
     let preference = 'system'
-    try {
-      const saved = JSON.parse(localStorage.getItem(key) || 'null')
-      if (saved && ['light', 'dark', 'system'].includes(saved.theme)) preference = saved.theme
-    } catch {}
+    if (key) {
+      try {
+        preference = readPreference(localStorage.getItem(key))
+      } catch {}
+    }
     const effective = () => (preference === 'system' ? (media.matches ? 'dark' : 'light') : preference)
     const apply = () => {
       const theme = effective()
       document.documentElement.dataset.theme = theme
-      document
-        .querySelectorAll('oas-config-provider[theme="system"][theme-storage-key="' + key + '"]')
-        .forEach((el) => {
-          el.dataset.theme = theme
-        })
+      document.querySelectorAll('oas-config-provider[theme="system"]').forEach((el) => {
+        if ((el.getAttribute('theme-storage-key') || null) === key) el.dataset.theme = theme
+      })
     }
     apply()
     const observer = new MutationObserver(apply)
@@ -221,6 +229,18 @@ The server snapshot of `<oas-config-provider theme="system">` is deterministical
       },
       { once: true },
     )
+    media.addEventListener('change', apply)
+    if (key) {
+      window.addEventListener('storage', (event) => {
+        try {
+          if (event.storageArea !== localStorage || (event.key !== key && event.key !== null)) return
+        } catch {
+          return
+        }
+        preference = readPreference(event.newValue)
+        apply()
+      })
+    }
   })()
 </script>
 ```
