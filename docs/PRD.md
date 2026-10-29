@@ -5,6 +5,36 @@
 
 ---
 
+## 未发布：工作台悬浮面板 oas-floating-panel（Task 12）✅
+
+### 功能定义
+
+新增 workbench 族 `oas-floating-panel`：一块**非模态**、可移动/可缩放的悬浮面板（调色板 / 图层 / 日志 / 监视器等工具窗语义），宿主属性即状态（`open` / `rect`），指针与键盘等价可操作，同族多实例叠放恒定 overlay 档。不做 portal/teleport、不做布局持久化、不做窗口管理器（平铺/吸附/最小化）、不做模态遮罩。
+
+### 详细契约
+
+- **开合（受控属性 + 命令式动作）**：`open` 布尔属性是唯一状态源；`show()` / `close()` 只写该属性（`close()` 返回是否已关闭）。组件内部交互（关闭钮 / Esc / 方法）派发 `oas-open-change`；宿主直接写 `open` 属性静默吸收（不派发 `open-change`，防双向绑定回环）。`close()` / 关闭钮 / Esc 先派发可取消 `oas-before-close`，`preventDefault()` 即保持打开状态、不写属性、不派发 `open-change`。
+- **事件 detail（固定结构）**：`oas-before-close` → `{ reason, source }`；`oas-open-change` → `{ open, reason, source }`；`oas-move` / `oas-resize` → `{ rect, source }`（resize 另带 `edge`）；`oas-activate` → `{ rect, source }`。`reason` ∈ `show | close-button | esc | method`，`source` ∈ `user | api`，移动/缩放 `source` ∈ `pointer | keyboard`，激活 `source` ∈ `pointer | api | open`。
+- **几何**：`rect="x,y,width,height"`（相对宿主锚点的像素坐标，逗号或空格分隔）；宿主零尺寸、`position: relative`，面板框体 `position: absolute` 相对锚点定位（不 portal、不改宿主 DOM 层级、随容器滚动）。缺省 `48,48,420,300`。`min` / `max` 为 `"宽,高"`（缺省 `min="160,96"`、`max` 不限制）；`min > max` 时以 `min` 为准（退化规则文档化）；非法/非有限值回落，输出取整。外部写 `rect` 立即生效且静默；边界夹取只作用于用户交互（拖动/缩放/键盘），不改写宿主显式写入的坐标。
+- **边界**：`boundary` 缺省 `viewport`（当前视口，按宿主锚点换算）；也可给 CSS 选择器，按该元素的 `getBoundingClientRect()` 夹取；`boundary-padding` 非负像素内缩（非法回落 0）。边界元素缺失或零尺寸时不夹取（dev 告警一次）。SSR 段不测量、不夹取。
+- **指针**：`movable` 时标题栏拖动；`resizable` 时八向手柄（四边 + 四角）。仅接受主指针与首个 pointerId（第二指针忽略）；`setPointerCapture` 失败回退 document 监听；`pointerup` 提交（属性写入 + 单次 move/resize），`pointercancel` / `window blur` / 交互中 Esc 取消（回到起始 rect、零事件、面板不关闭），`lostpointercapture` 视为结束并提交；零位移零事件。断开连接清理监听/rAF 并取消进行中手势。
+- **键盘**：面板框体可聚焦（`tabindex="0"`，`role="dialog"` + `aria-modal="false"`）。方向键移动、`Shift` + 方向键缩放，步长 8px；RTL 下水平语义镜像（右方向键朝书写前进方向）。焦点在可编辑控件内时不拦截方向键。
+- **激活与叠放**：族内恒定 overlay 档（`--oas-z-overlay`，基准值 + 0/1），仅「最前」面板 +1，`z-index` 不随 open 次数增长；`bringToFront()` / 面板内 pointerdown 置前并派发 `oas-activate`。多实例并列、断开摘除并由下一个打开的面板接任最前。
+- **焦点**：打开时聚焦 `initial-focus` 选择器（找不到回退面板框体），关闭时焦点归还打开前的元素（仍在文档内时）。
+- **SSR/DSD**：模板/位置由属性纯函数决定，服务端不测量；`open` 快照禁 JS 可见标题与位置，`hydrate()` 校验框体/标题/手柄结构后接管，不重建 shadow；渲染段不挂 document/window 监听、不注册叠放、不抢焦点。
+- **无障碍**：`role="dialog"` + `aria-modal="false"` + 标题 `aria-labelledby`（无标题时回落 i18n `aria-label`）；关闭钮有 i18n 名称；手柄 `aria-hidden`（键盘等价路径为 Shift + 方向键）；`prefers-reduced-motion` 下过渡降级。
+
+### 非目标
+
+不做 portal/teleport、`append-to`、布局持久化（storage）、窗口管理器（吸附/平铺/最小化/最大化）、模态遮罩与焦点陷阱、多显示器坐标、跨文档拖拽；不接管宿主导航/滚动；不新增全局单例浮层宿主。
+
+### 验收标准
+
+- 单测：`geometry`（四边/四角、极小边界、min>max、RTL 键位、取整、非法值）、`panel-stack`（置前顺序、多实例、断开摘除、z 不随次数增长）、开合事件矩阵（受控/非受控、before-close 否决零事件、detail 精确）、指针（第二指针/捕获失败/取消/失焦/Esc 中断）、键盘替代路径、焦点进入与归还、断连重连、SSR 快照与 hydrate。
+- qa-regression（Chromium + Firefox 抽样）：真实拖拽、四边/四角缩放、两面板置前、子浮层（dropdown）Esc 优先级、受控回写、coarse 44px 热区、dark、reduced-motion、axe、console 零告警。
+- 文档：中英组件页 + 侧栏；`## API` 由 `api:scan && api:gen` 生成（方法手工表）；10 语言文案；SSR 白名单 174 → 175 与 DSD fixture；CHANGELOG `[未发布]`。
+- 门禁：focused/full `pnpm test`、typecheck、build、全量 e2e、perf:size、api/llms/stats/skill/ssr/lint/format/deprecations/qa:audit/trace。
+
 ## 未发布：Next / Nuxt 生产 fixture 与真实浏览器性能基线（Task 11）✅
 
 ### 功能定义

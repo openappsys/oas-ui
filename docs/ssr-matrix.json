@@ -1,8 +1,8 @@
 {
   "schema": 1,
   "totals": {
-    "components": 212,
-    "whitelist": 174,
+    "components": 213,
+    "whitelist": 175,
     "noSsr": 38
   },
   "components": [
@@ -821,6 +821,23 @@
       "dsdFixture": true,
       "docsZh": false,
       "docsEn": false
+    },
+    {
+      "tag": "oas-floating-panel",
+      "family": "workbench",
+      "dir": "workbench/floating-panel",
+      "className": "OASFloatingPanel",
+      "ssr": "whitelist",
+      "reason": null,
+      "parent": null,
+      "note": null,
+      "entry": "@oas-ui/ui/workbench/floating-panel",
+      "hasTemplate": true,
+      "hasHydrate": true,
+      "unitTest": true,
+      "dsdFixture": true,
+      "docsZh": true,
+      "docsEn": true
     },
     {
       "tag": "oas-input",

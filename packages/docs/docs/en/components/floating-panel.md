@@ -1,0 +1,274 @@
+# FloatingPanel
+
+A non-modal workbench tool window: draggable, resizable and stackable (palettes, layers, logs, monitors). `open` and `rect` are the controlled state; pointer and keyboard are equivalent. Panels in the same family share a fixed overlay tier — z-index never grows with open/close cycles.
+
+The panel **does not portal**: the host is a zero-size anchor (`position: relative`) and the frame is `position: absolute` against it, so `rect` is the pixel offset from that anchor. The panel follows its container when scrolling and never touches host DOM hierarchy. Do not place the host inside an `overflow: hidden` clipping container or a `transform` ancestor that creates a containing block.
+
+## Basic usage
+
+`open` shows the panel, `panel-title` sets the title, `movable` / `resizable` enable dragging and eight-way resizing (four edges + four corners). Release commits `rect` and dispatches `oas-move` / `oas-resize`.
+
+<DemoBlock title="Movable / resizable panel">
+  <div style="position: relative; min-height: 260px">
+    <oas-floating-panel id="fp-basic" open movable resizable panel-title="Layers" rect="0,0,380,230">
+      <p style="margin: 0 0 var(--oas-space-2)">Drag the title bar to move; drag edges or corners to resize.</p>
+      <div style="display: flex; gap: var(--oas-space-1_5); flex-wrap: wrap">
+        <oas-tag>Background</oas-tag>
+        <oas-tag>Line art</oas-tag>
+        <oas-tag>Notes</oas-tag>
+      </div>
+    </oas-floating-panel>
+  </div>
+  <p id="fp-basic-out" style="margin: var(--oas-space-2) 0 0; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">Move or resize to see oas-move / oas-resize feedback.</p>
+</DemoBlock>
+
+## Controlled open state and cancellation
+
+The `open` attribute is the single source of truth: `show()` / `close()` only write it, and host writes are absorbed silently. The close button, Esc and `close()` all dispatch a cancelable `oas-before-close` first — `preventDefault()` keeps the panel open with no attribute write and no `oas-open-change`.
+
+<DemoBlock title="show() / close() with before-close interception">
+  <div style="display: flex; gap: var(--oas-space-2); align-items: center; margin-block-end: var(--oas-space-3)">
+    <oas-button id="fp-open" size="small">show()</oas-button>
+    <oas-button id="fp-close" size="small">close()</oas-button>
+    <label style="display: inline-flex; align-items: center; gap: var(--oas-space-1); font-size: var(--oas-font-size-sm)">
+      <input id="fp-veto" type="checkbox" /> Intercept close
+    </label>
+  </div>
+  <div style="position: relative; min-height: 220px">
+    <oas-floating-panel id="fp-ctrl" open panel-title="Export settings" rect="0,0,340,180">
+      <p style="margin: 0">Click "close()" or the close button; tick "Intercept close" to see before-close veto the request.</p>
+    </oas-floating-panel>
+  </div>
+  <p id="fp-ctrl-out" style="margin: var(--oas-space-2) 0 0; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">Waiting for interaction.</p>
+</DemoBlock>
+
+## Controlled write-back
+
+`detail.rect` on `oas-move` / `oas-resize` is the exact committed rectangle; hosts can write `rect` back to enforce constraints such as grid snapping (controlled loop).
+
+<DemoBlock title="Drag → event → host writes rect back (10px grid)">
+  <div style="position: relative; min-height: 240px">
+    <oas-floating-panel id="fp-drag" open movable panel-title="Snap to 10px" rect="0,0,320,190">
+      <p style="margin: 0">Drag the title bar; on release the host snaps the position to a 10px grid.</p>
+    </oas-floating-panel>
+  </div>
+  <p id="fp-drag-out" style="margin: var(--oas-space-2) 0 0; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">Waiting for drag.</p>
+</DemoBlock>
+
+## Stacking
+
+Panels in the same family share a fixed overlay tier: only the frontmost panel gets +1 — z-index never grows with open count. Clicking anywhere in a panel or calling `bringToFront()` raises it and dispatches `oas-activate`.
+
+<DemoBlock title="Two panels, bring to front">
+  <div style="position: relative; min-height: 260px">
+    <oas-floating-panel id="fp-a" open panel-title="Layer A" rect="0,0,260,150"></oas-floating-panel>
+    <oas-floating-panel id="fp-b" open panel-title="Layer B" rect="120,60,260,150"></oas-floating-panel>
+  </div>
+  <p id="fp-front-out" style="margin: var(--oas-space-2) 0 0; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">Click either panel to bring it to front.</p>
+</DemoBlock>
+
+## Boundaries and size limits
+
+`boundary` defaults to `viewport`; a CSS selector clamps interactions to that element's rectangle. `boundary-padding` insets it. Boundaries only constrain drag/resize/keyboard — host-written coordinates are never rewritten. `min` / `max` take `width,height`; when `min > max`, `min` wins.
+
+<DemoBlock title="Drag inside a container (boundary + min/max)">
+  <div id="fp-bounds" style="position: relative; width: 100%; box-sizing: border-box; min-height: 260px; border: 1px dashed var(--oas-color-border); border-radius: var(--oas-radius-md)">
+    <oas-floating-panel id="fp-bound" open movable resizable boundary="#fp-bounds" boundary-padding="8" min="180,120" max="320,220" panel-title="Clamped to the dashed box" rect="16,16,260,180">
+      <p style="margin: 0">Dragging stops at the dashed edges; resizing stops at min/max.</p>
+    </oas-floating-panel>
+  </div>
+  <p id="fp-bound-out" style="margin: var(--oas-space-2) 0 0; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">Position is clamped while dragging.</p>
+</DemoBlock>
+
+## Keyboard and focus
+
+The frame is focusable: arrow keys move, `Shift` + arrows resize (8px per step), equivalent to pointer input; horizontal semantics mirror in RTL. `initial-focus` chooses the focus target on open (falling back to the frame); focus returns to the previously focused element on close.
+
+<DemoBlock title="Keyboard move / resize + initial-focus">
+  <div style="position: relative; min-height: 240px">
+    <oas-floating-panel id="fp-key" open movable resizable initial-focus="#fp-key-target" panel-title="Keyboard ready" rect="0,0,340,190">
+      <input id="fp-key-target" placeholder="Focused on open" style="width: 100%; box-sizing: border-box; margin-block-end: var(--oas-space-2)" />
+      <p style="margin: 0; font-size: var(--oas-font-size-sm); color: var(--oas-color-text-secondary)">Tab to the frame (title bar), then use arrows to move and Shift + arrows to resize.</p>
+    </oas-floating-panel>
+  </div>
+  <p id="fp-key-out" style="margin: var(--oas-space-2) 0 0; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">Waiting for keyboard input.</p>
+</DemoBlock>
+
+## Nested overlay Esc priority
+
+Overlays inside the panel (such as `oas-dropdown`) push a later Esc layer: the first Esc closes only the child overlay, the panel stays open; a second Esc closes the panel.
+
+<DemoBlock title="Dropdown consumes Esc first">
+  <div style="position: relative; min-height: 250px">
+    <oas-floating-panel id="fp-nest" open panel-title="With child overlay" rect="0,0,340,200">
+      <oas-dropdown id="fp-nest-dd" items='[{"label":"Duplicate","value":"copy"},{"label":"Delete","value":"delete"}]'>
+        <oas-button size="small">Open dropdown</oas-button>
+      </oas-dropdown>
+      <p style="margin: var(--oas-space-2) 0 0; font-size: var(--oas-font-size-sm); color: var(--oas-color-text-secondary)">Open the dropdown and press Esc: it closes first, the panel stays.</p>
+    </oas-floating-panel>
+  </div>
+  <p id="fp-nest-out" style="margin: var(--oas-space-2) 0 0; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">Waiting for the dropdown.</p>
+</DemoBlock>
+
+## RTL
+
+`dir="rtl"` enables the `data-rtl` hook; drag/resize stay physical while horizontal keyboard semantics mirror (right arrow moves toward the reading direction).
+
+<DemoBlock title="RTL keyboard mirroring">
+  <div dir="rtl" style="position: relative; min-height: 220px">
+    <oas-floating-panel id="fp-rtl" open movable resizable panel-title="لوحة الطبقات" rect="0,0,320,170">
+      <p style="margin: 0">Arrow keys and Shift + arrows mirror under RTL.</p>
+    </oas-floating-panel>
+  </div>
+</DemoBlock>
+
+## Slots
+
+The default slot carries the content; the `title` slot overrides the title text (rich titles still feed `aria-labelledby`).
+
+<DemoBlock title="title slot (rich title)">
+  <div style="position: relative; min-height: 210px">
+    <oas-floating-panel id="fp-slot" open rect="0,0,340,170">
+      <span slot="title" style="display: inline-flex; align-items: center; gap: var(--oas-space-1)">
+        <oas-tag>Synced</oas-tag>
+        <strong>Asset inspector</strong>
+      </span>
+      <p style="margin: 0">The title comes from the <strong>title</strong> slot; the accessible name updates accordingly.</p>
+    </oas-floating-panel>
+  </div>
+</DemoBlock>
+
+<script setup>
+import { onMounted } from 'vue'
+
+onMounted(() => {
+  const out = (id, text) => {
+    const el = document.getElementById(id)
+    if (el) el.textContent = text
+  }
+
+  const basic = document.getElementById('fp-basic')
+  basic?.addEventListener('oas-move', (e) => {
+    out('fp-basic-out', `oas-move → source=${e.detail.source}, rect=${e.detail.rect.x},${e.detail.rect.y},${e.detail.rect.width},${e.detail.rect.height}`)
+  })
+  basic?.addEventListener('oas-resize', (e) => {
+    out('fp-basic-out', `oas-resize → edge=${e.detail.edge}, rect=${e.detail.rect.x},${e.detail.rect.y},${e.detail.rect.width},${e.detail.rect.height}`)
+  })
+
+  const ctrl = document.getElementById('fp-ctrl')
+  const veto = document.getElementById('fp-veto')
+  document.getElementById('fp-open')?.addEventListener('click', () => {
+    ctrl?.show()
+  })
+  document.getElementById('fp-close')?.addEventListener('click', () => {
+    const closed = ctrl?.close()
+    if (!closed) out('fp-ctrl-out', 'close() → vetoed by before-close, still open')
+  })
+  ctrl?.addEventListener('oas-before-close', (e) => {
+    if (veto?.checked) {
+      e.preventDefault()
+      out('fp-ctrl-out', `oas-before-close → reason=${e.detail.reason} (preventDefault: kept open)`)
+    } else {
+      out('fp-ctrl-out', `oas-before-close → reason=${e.detail.reason} (allowed)`)
+    }
+  })
+  ctrl?.addEventListener('oas-open-change', (e) => {
+    out('fp-ctrl-out', `oas-open-change → open=${e.detail.open}, reason=${e.detail.reason}, source=${e.detail.source}`)
+  })
+
+  const drag = document.getElementById('fp-drag')
+  drag?.addEventListener('oas-move', (e) => {
+    const r = e.detail.rect
+    const snapped = `${Math.round(r.x / 10) * 10},${Math.round(r.y / 10) * 10},${r.width},${r.height}`
+    drag.setAttribute('rect', snapped)
+    out('fp-drag-out', `oas-move ${r.x},${r.y} → host wrote rect="${snapped}"`)
+  })
+
+  for (const id of ['fp-a', 'fp-b']) {
+    document.getElementById(id)?.addEventListener('oas-activate', (e) => {
+      out('fp-front-out', `${id} raised (source=${e.detail.source})`)
+    })
+  }
+
+  const bound = document.getElementById('fp-bound')
+  bound?.addEventListener('oas-move', (e) => {
+    out('fp-bound-out', `oas-move → ${e.detail.rect.x},${e.detail.rect.y}`)
+  })
+
+  document.getElementById('fp-key')?.addEventListener('oas-move', (e) => {
+    out('fp-key-out', `oas-move (keyboard) → ${e.detail.rect.x},${e.detail.rect.y}`)
+  })
+  document.getElementById('fp-key')?.addEventListener('oas-resize', (e) => {
+    out('fp-key-out', `oas-resize (keyboard, edge=${e.detail.edge}) → ${e.detail.rect.width}×${e.detail.rect.height}`)
+  })
+
+  document.getElementById('fp-nest-dd')?.addEventListener('oas-open-change', (e) => {
+    out('fp-nest-out', `dropdown open=${e.detail.open}; panel open=${document.getElementById('fp-nest')?.hasAttribute('open')}`)
+  })
+  document.getElementById('fp-nest')?.addEventListener('oas-before-close', (e) => {
+    out('fp-nest-out', `panel oas-before-close → reason=${e.detail.reason} (reached only after the child overlay consumed Esc)`)
+  })
+})
+</script>
+
+## API
+
+### oas-floating-panel
+
+#### Attributes
+
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `boundary` | Interaction boundary: viewport (default) or a CSS selector; only drag/resize/keyboard are clamped, host-written coordinates are untouched | `string` | `viewport` |
+| `boundary-padding` | Boundary inset in pixels (non-negative; invalid falls back to 0) | `string` | `0` |
+| `initial-focus` | Selector to focus on open (light DOM or shadow; falls back to the frame) | — | — |
+| `max` | Maximum size width,height (unbounded by default) | — | — |
+| `min` | Minimum size width,height (default 160,96; min wins when min > max) | — | — |
+| `movable` | Drag by the title bar; arrow keys move while the frame is focused (8px per step) | `boolean` | — |
+| `open` | Open state (single source of truth); show()/close() only write it, host writes are absorbed silently (no oas-open-change) | `boolean` | — |
+| `panel-title` | Title text (overridden by the title slot); avoids the native title attribute | — | — |
+| `rect` | Position and size x,y,width,height relative to the host anchor (default 48,48,420,300; rounded) | `PanelRect` | — |
+| `resizable` | Eight resize handles (four edges + four corners); Shift + arrows resize while the frame is focused | `boolean` | — |
+
+#### Methods
+
+| Method | Signature | Description |
+| --- | --- | --- |
+| `show` | `show(): void` | Opens the panel (writes the open attribute; when already open it only raises the panel without re-dispatching oas-open-change) |
+| `close` | `close(): boolean` | Requests close and returns whether the panel is closed; dispatches cancelable oas-before-close first, and returns false while keeping it open when prevented (no attribute write, no open-change) |
+| `bringToFront` | `bringToFront(): void` | Raises the panel within the family; no duplicate oas-activate when already frontmost |
+
+#### Events
+
+| Event | Description |
+| --- | --- |
+| `oas-activate` | Dispatched when the panel is raised; detail { rect, source } (source = pointer \| api) |
+| `oas-before-close` | Dispatched before a close request (close button / Esc / close()) and cancelable (preventDefault keeps it open with no open-change); detail { reason, source } |
+| `oas-move` | Dispatched when a pointer or keyboard move commits; detail { rect, source } (source = pointer \| keyboard; zero movement dispatches nothing) |
+| `oas-open-change` | Dispatched when an internal action changes the open state; detail { open, reason, source } (host writes to open are absorbed silently) |
+| `oas-resize` | Dispatched when a pointer or keyboard resize commits; detail { rect, source, edge } |
+
+#### Slots
+
+| Name | Description |
+| --- | --- |
+| default | Panel content |
+| `title` | Rich title channel (overrides panel-title text; still feeds aria-labelledby) |
+
+#### CSS Variables
+
+| CSS Variable | Default |
+| --- | --- |
+| `--oas-floating-panel-bg` | `var(--oas-color-bg-elevated)` |
+| `--oas-floating-panel-border-color` | `var(--oas-color-border)` |
+| `--oas-floating-panel-close-size` | `var(--oas-control-height-sm, 24px)` |
+| `--oas-floating-panel-handle-size` | `8px` |
+| `--oas-floating-panel-radius` | `var(--oas-radius-md)` |
+| `--oas-floating-panel-shadow` | `var(--oas-shadow-lg)` |
+| `--oas-floating-panel-titlebar-height` | `36px` |
+
+<style>
+.vp-doc .demo-block oas-floating-panel {
+  box-shadow: var(--oas-shadow-md);
+}
+</style>

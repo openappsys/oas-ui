@@ -4942,5 +4942,35 @@
     },
     "events": {},
     "slots": {}
+  },
+  "oas-floating-panel": {
+    "attrs": {
+      "open": "打开态（唯一状态源）；show()/close() 只写该属性，宿主直接写属性静默吸收（不派发 oas-open-change）",
+      "rect": "位置与尺寸 x,y,width,height（相对宿主锚点的像素坐标；缺省 48,48,420,300；输出取整）",
+      "panel-title": "标题文本（title 插槽覆盖）；避开原生 title 属性",
+      "movable": "标题栏拖动；框体聚焦时方向键移动（8px/步）",
+      "resizable": "八向缩放手柄（四边 + 四角）；框体聚焦时 Shift + 方向键缩放",
+      "boundary": "交互边界：viewport（默认）或 CSS 选择器；只夹取拖动/缩放/键盘，不改写宿主写入的坐标",
+      "boundary-padding": "边界内缩像素（非负；非法回落 0）",
+      "min": "最小尺寸 宽,高（缺省 160,96；min > max 时以 min 为准）",
+      "max": "最大尺寸 宽,高（缺省不限制）",
+      "initial-focus": "打开时聚焦的选择器（light DOM 或 shadow 内；找不到回退面板框体）"
+    },
+    "events": {
+      "oas-before-close": "关闭请求（关闭钮 / Esc / close()）前派发，可取消（preventDefault 保持打开且不派发 open-change）；detail { reason, source }",
+      "oas-open-change": "组件内部动作改变开合态时派发；detail { open, reason, source }（外部写 open 属性静默吸收）",
+      "oas-move": "指针或键盘移动提交时派发；detail { rect, source }（source = pointer | keyboard；零位移不派发）",
+      "oas-resize": "指针或键盘缩放提交时派发；detail { rect, source, edge }",
+      "oas-activate": "面板置前时派发；detail { rect, source }（source = pointer | api）"
+    },
+    "slots": {
+      "": "面板内容",
+      "title": "标题富内容通道（覆盖 panel-title 文本，仍参与 aria-labelledby）"
+    },
+    "methods": {
+      "show": "打开面板（写 open 属性；已打开时仅置前，不重复派发 oas-open-change）",
+      "close": "请求关闭并返回是否已关闭；先派发可取消 oas-before-close，被 preventDefault 时返回 false 且保持打开（零属性写入、零 open-change）",
+      "bringToFront": "族内置前；已是最前时不重复派发 oas-activate"
+    }
   }
 }

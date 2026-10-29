@@ -2,8 +2,8 @@
 
 > 生成物：`pnpm ssr:matrix`。禁止手改；改数据源后重新生成。
 
-- 组件：212
-- SSR 白名单：174
+- 组件：213
+- SSR 白名单：175
 - 有意不 SSR：38
 
 | tag | 族 | 源目录 | SSR | 原因 | 父件 | entry | template | hydrate | 单测 | DSD e2e | 文档 zh/en |
@@ -56,6 +56,7 @@
 | `oas-task-progress-well` | workbench | `workbench/action-bar` | ✅ 白名单 | — | — | `@oas-ui/ui/workbench/action-bar` | ✅ | ✅ | — | ✅ | —/— |
 | `oas-transport-well` | workbench | `workbench/action-bar` | ✅ 白名单 | — | — | `@oas-ui/ui/workbench/action-bar` | ✅ | ✅ | — | ✅ | —/— |
 | `oas-music-well` | workbench | `workbench/action-bar` | ✅ 白名单 | — | — | `@oas-ui/ui/workbench/action-bar` | ✅ | ✅ | — | ✅ | —/— |
+| `oas-floating-panel` | workbench | `workbench/floating-panel` | ✅ 白名单 | — | — | `@oas-ui/ui/workbench/floating-panel` | ✅ | ✅ | ✅ | ✅ | ✅/✅ |
 | `oas-input` | form | `form/input` | ✅ 白名单 | — | — | `@oas-ui/ui/form/input` | ✅ | ✅ | ✅ | ✅ | ✅/✅ |
 | `oas-textarea` | form | `form/textarea` | ✅ 白名单 | — | — | `@oas-ui/ui/form/textarea` | ✅ | ✅ | ✅ | ✅ | ✅/✅ |
 | `oas-checkbox` | form | `form/checkbox` | ✅ 白名单 | — | — | `@oas-ui/ui/form/checkbox` | ✅ | ✅ | ✅ | ✅ | ✅/✅ |

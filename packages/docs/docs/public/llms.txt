@@ -147,6 +147,7 @@
 - [StatusBar 状态栏](https://oas-ui.dev/components/statusbar): 底部静默信息条：左右分段单元格 + 可点项 + 后台活动旋转指示 + 告警/进度语义色。
 - [Inspector 属性检视面板](https://oas-ui.dev/components/inspector): 右侧（可左）属性编辑面板：tab 条 + 可折叠分节 + 标签/控件行。
 - [ActionBar 操作栏](https://oas-ui.dev/components/action-bar): 底部命令条 + 读数井（容器 role="group" + aria-label）：命令按钮组 + 统计/任务进度/媒体运输/音乐节奏读数井，三表体（charcoal/dark/light）。
+- [FloatingPanel 悬浮面板](https://oas-ui.dev/components/floating-panel): 工作台里的非模态工具窗：可拖动、可缩放、可置前的悬浮面板（调色板 / 图层 / 日志 / 监视器等）。open 与 rect 是受控状态，指针与键盘等价可操作；同族多实例叠放恒定 overlay 档，不随开合次数增长。
 
 ## 数据展示组件
 

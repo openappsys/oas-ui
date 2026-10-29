@@ -226,6 +226,7 @@ const componentSidebar: DefaultTheme.SidebarItem[] = [
       { text: 'StatusBar 状态栏', link: '/components/statusbar' },
       { text: 'Inspector 属性检视面板', link: '/components/inspector' },
       { text: 'ActionBar 操作栏', link: '/components/action-bar' },
+      { text: 'FloatingPanel 悬浮面板', link: '/components/floating-panel' },
     ],
   },
   {

@@ -1,0 +1,140 @@
+{
+  "className": "OASFloatingPanel",
+  "sourceFile": "packages/ui/src/workbench/floating-panel/oas-floating-panel.ts",
+  "attrs": [
+    {
+      "name": "open",
+      "observed": true
+    },
+    {
+      "name": "rect",
+      "observed": true
+    },
+    {
+      "name": "panel-title",
+      "observed": true
+    },
+    {
+      "name": "movable",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "resizable",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "boundary",
+      "type": "string",
+      "default": "viewport",
+      "observed": true
+    },
+    {
+      "name": "boundary-padding",
+      "type": "string",
+      "default": "0",
+      "observed": true
+    },
+    {
+      "name": "min",
+      "observed": true
+    },
+    {
+      "name": "max",
+      "observed": true
+    },
+    {
+      "name": "initial-focus",
+      "observed": true
+    }
+  ],
+  "props": [
+    {
+      "name": "open",
+      "type": "boolean"
+    },
+    {
+      "name": "rect",
+      "type": "PanelRect"
+    }
+  ],
+  "methods": [
+    {
+      "name": "show",
+      "signature": "show(): void",
+      "description": "打开（已打开时仅置前，不重复派发 open-change）"
+    },
+    {
+      "name": "close",
+      "signature": "close(): boolean",
+      "description": "关闭请求：先派发可取消 `oas-before-close`，被 preventDefault 时保持打开（零属性写入、零 open-change）。"
+    },
+    {
+      "name": "bringToFront",
+      "signature": "bringToFront(): void",
+      "description": "置前（族内恒定 overlay 档 + 0/1；已是最前不重复派发 activate）"
+    }
+  ],
+  "events": [
+    {
+      "name": "oas-open-change",
+      "detail": "{ open, reason: pending.reason, source: pending.source }"
+    },
+    {
+      "name": "oas-before-close",
+      "detail": "{ reason, source }"
+    },
+    {
+      "name": "oas-activate",
+      "detail": "{ rect: this.currentRect(), source: 'api' satisfies FloatingPanelActivateSource } | { rect: this.currentRect(), source: 'pointer' satisfies FloatingPanelActivateSource }"
+    },
+    {
+      "name": "oas-move",
+      "detail": "{ rect, source: 'pointer' satisfies FloatingPanelTransformSource } | { rect, source: 'keyboard' satisfies FloatingPanelTransformSource }"
+    },
+    {
+      "name": "oas-resize",
+      "detail": "{ rect, source: 'pointer', edge: edge! } satisfies FloatingPanelResizeDetail | { rect, source: 'keyboard', edge: edge! } satisfies FloatingPanelResizeDetail"
+    }
+  ],
+  "slots": [
+    {
+      "name": ""
+    },
+    {
+      "name": "title"
+    }
+  ],
+  "cssVars": [
+    {
+      "name": "--oas-floating-panel-bg",
+      "default": "var(--oas-color-bg-elevated)"
+    },
+    {
+      "name": "--oas-floating-panel-border-color",
+      "default": "var(--oas-color-border)"
+    },
+    {
+      "name": "--oas-floating-panel-radius",
+      "default": "var(--oas-radius-md)"
+    },
+    {
+      "name": "--oas-floating-panel-shadow",
+      "default": "var(--oas-shadow-lg)"
+    },
+    {
+      "name": "--oas-floating-panel-titlebar-height",
+      "default": "36px"
+    },
+    {
+      "name": "--oas-floating-panel-close-size",
+      "default": "var(--oas-control-height-sm, 24px)"
+    },
+    {
+      "name": "--oas-floating-panel-handle-size",
+      "default": "8px"
+    }
+  ],
+  "unresolved": []
+}

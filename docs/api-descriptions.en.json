@@ -5202,5 +5202,35 @@
     },
     "events": {},
     "slots": {}
+  },
+  "oas-floating-panel": {
+    "attrs": {
+      "open": "Open state (single source of truth); show()/close() only write it, host writes are absorbed silently (no oas-open-change)",
+      "rect": "Position and size x,y,width,height relative to the host anchor (default 48,48,420,300; rounded)",
+      "panel-title": "Title text (overridden by the title slot); avoids the native title attribute",
+      "movable": "Drag by the title bar; arrow keys move while the frame is focused (8px per step)",
+      "resizable": "Eight resize handles (four edges + four corners); Shift + arrows resize while the frame is focused",
+      "boundary": "Interaction boundary: viewport (default) or a CSS selector; only drag/resize/keyboard are clamped, host-written coordinates are untouched",
+      "boundary-padding": "Boundary inset in pixels (non-negative; invalid falls back to 0)",
+      "min": "Minimum size width,height (default 160,96; min wins when min > max)",
+      "max": "Maximum size width,height (unbounded by default)",
+      "initial-focus": "Selector to focus on open (light DOM or shadow; falls back to the frame)"
+    },
+    "events": {
+      "oas-before-close": "Dispatched before a close request (close button / Esc / close()) and cancelable (preventDefault keeps it open with no open-change); detail { reason, source }",
+      "oas-open-change": "Dispatched when an internal action changes the open state; detail { open, reason, source } (host writes to open are absorbed silently)",
+      "oas-move": "Dispatched when a pointer or keyboard move commits; detail { rect, source } (source = pointer | keyboard; zero movement dispatches nothing)",
+      "oas-resize": "Dispatched when a pointer or keyboard resize commits; detail { rect, source, edge }",
+      "oas-activate": "Dispatched when the panel is raised; detail { rect, source } (source = pointer | api)"
+    },
+    "slots": {
+      "": "Panel content",
+      "title": "Rich title channel (overrides panel-title text; still feeds aria-labelledby)"
+    },
+    "methods": {
+      "show": "Opens the panel (writes the open attribute; when already open it only raises the panel without re-dispatching oas-open-change)",
+      "close": "Requests close and returns whether the panel is closed; dispatches cancelable oas-before-close first, and returns false while keeping it open when prevented (no attribute write, no open-change)",
+      "bringToFront": "Raises the panel within the family; no duplicate oas-activate when already frontmost"
+    }
   }
 }
