@@ -157,6 +157,7 @@ A skin only overrides `--oas-color-primary`; the derived steps (`-hover` / `-act
 
 - the material needs backdrop contrast—richest over colorful gradients/photos, recedes on flat same-hue backgrounds (text stays legible via token safe tiers); busy photo/video backdrops do not guarantee contrast, so raise alpha or disable the glass layer locally when needed;
 - text safety is a hard constraint: the dark tier uses low-alpha, high-transparency surfaces (translucency is the signature look of dark glass; alpha tiers are calibrated together with text tiers; perceptual-contrast gate ≥60, see the gallery);
+- the switch in-track label has a separate 36-cell gate (2 themes × 2 checked states × 3 real backdrops × 3 interactions; rest/hover ≥60, press ≥45); the checked label uses the solid on-primary color, and the light glass track is slightly deepened via `--oas-glass-switch-track-mix`;
 - blur applies only to container-level surfaces (rows/long lists are excluded to avoid the cost of blurring large areas);
 - disabled under the `high-contrast` theme (solid accessibility tier wins);
 - under `prefers-reduced-transparency: reduce`, falls back to solid surfaces (no blur, edge ring, or dynamic highlight);

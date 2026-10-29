@@ -276,7 +276,8 @@ onMounted(() => {
 
 | CSS 变量 | 说明 | 默认值 |
 | --- | --- | --- |
+| `--oas-glass-switch-track-mix` | 开启态轨道底中 `--oas-color-primary` 的占比（玻璃层下发，<100% 时按比例掺黑加深；非玻璃层/实心回退为 100%） | `100%` |
 | `--oas-switch-height` | — | `22px` |
-| `--oas-switch-on-color` | 开启态轨道内文字色（`color` 自定义轨道底色时组件按 WCAG 对比度注入深/浅文字；缺省回落 `var(--oas-color-bg)`） | `var(--oas-color-bg)` |
+| `--oas-switch-on-color` | 开启态轨道内文字色（`color` 自定义轨道底色时组件按 WCAG 对比度注入深/浅文字；缺省回落 `var(--oas-color-text-on-primary)`） | `var(--oas-color-text-on-primary)` |
 | `--oas-switch-thumb-size` | — | `18px` |
 | `--oas-switch-width` | — | `40px` |

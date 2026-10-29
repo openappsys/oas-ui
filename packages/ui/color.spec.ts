@@ -99,8 +99,10 @@ test('switch color：开启态轨道按自定义色渲染', async ({ page }) => 
     })),
   )
   expect(r.length).toBeGreaterThanOrEqual(2)
-  expect(r[0]!.bg, 'color=#16a34a 轨道色').toBe('rgb(22, 163, 74)')
-  expect(r[1]!.bg, 'color=#dc2626 轨道色').toBe('rgb(220, 38, 38)')
+  // 轨道底色经 --oas-glass-switch-track-mix 的 color-mix 计算（无玻璃层 100% = 原色）；
+  // 浏览器把 color-mix 结果序列化为 color(srgb …)，按归一化色值比较，不断字符串。
+  expectColorClose(r[0]!.bg, [22, 163, 74], 'color=#16a34a 轨道色')
+  expectColorClose(r[1]!.bg, [220, 38, 38], 'color=#dc2626 轨道色')
 })
 
 test('avatar badge-color：徽标按语义色渲染', async ({ page }) => {
@@ -137,5 +139,5 @@ test('自定义色在暗色主题仍生效（tag solid + switch 轨道）', asyn
     const el = document.querySelector('oas-switch[color]')!
     return getComputedStyle(el.shadowRoot!.querySelector('button')!).backgroundColor
   })
-  expect(swBg, 'dark 下 switch 轨道仍按自定义色').toBe('rgb(22, 163, 74)')
+  expectColorClose(swBg, [22, 163, 74], 'dark 下 switch 轨道仍按自定义色')
 })

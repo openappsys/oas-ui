@@ -150,8 +150,12 @@
       "default": "18px"
     },
     {
+      "name": "--oas-glass-switch-track-mix",
+      "default": "100%"
+    },
+    {
       "name": "--oas-switch-on-color",
-      "default": "var(--oas-color-bg)"
+      "default": "var(--oas-color-text-on-primary)"
     }
   ],
   "unresolved": []

@@ -52,6 +52,28 @@
 - `packages/ui/qa-regression/config-provider.spec.ts` 在 Chromium + Firefox 锁嵌套 computed token、emulateMedia 实时切换、reload 恢复、demo 点击/键盘可见反馈、dark/console 与截图；`packages/ssr/ssr-dsd.spec.ts` 锁 head 防闪及水合前后有效主题、几何与 shadow 引用一致。
 - 文档与 API 同步；全量 test / typecheck / build / e2e / perf:size / api / llms / stats / skill / lint / format / trace 通过。
 
+## 未发布：switch 玻璃轨道内文案 36 格对比度矩阵 ✅
+
+### 功能定义
+
+`oas-switch` 轨道内文案在玻璃层下建立独立真实对比度矩阵：2 主题 × 2 checked 状态 × 3 种真实身后底色（页面 / 灰卡 / `bg-elevated`）× 3 种交互态（静止 / hover / press）共 36 格；静止与 hover 每格感知分 ≥60，press 每格 ≥45。版本号未定，不标已发布。
+
+### 详细需求
+
+- **真实采样**：每格使用真实 shadow DOM 中的 `unchecked-text` / `checked-text`、真实轨道计算色、真实容器计算底色与真实 sheen token；半透明轨道与半透明卡片逐层 alpha 合成，不假定玻璃不透明。press 必须由真实指针按下产生 `:active` 后采样 `--oas-glass-sheen-press`，不得改 class 或复用 hover 样本。
+- **计数不变量**：总数恰好 36，每格名称唯一；null / 无法解析 / 缺文字 / 状态不符直接失败，禁止 filter 后少样本仍绿。
+- **修复点**：选中态轨道内文案从半透明 `--oas-color-bg` 改为实色 `--oas-color-text-on-primary`；浅色玻璃档新增 `--oas-glass-switch-track-mix: 88%`，让开启态轨道按比例掺黑，抵消白色 sheen 叠底后的对比度损失。dark 与 `prefers-reduced-transparency` 回退 100%，无玻璃层原色零变化。
+- **范围纪律**：自定义 `color` 与不可控复杂背景不纳入 36 格，不新增第二套颜色算法；保留 40×22 几何、键盘/指针、动态高光注入/清理、RTL、disabled/loading 与组件消费点纪律；不改 ConfigProvider / ThemeEditor。
+
+### 非目标
+
+不把任意宿主复杂背景纳入保证范围；不扩大为全部控件的统一矩阵；不改变 glass-fluid 运行时的高光生成机制。
+
+### 验收标准
+
+- `packages/ui/qa-regression/glass.spec.ts` 在 Chromium + Firefox 真实浏览器锁 36 格矩阵、样本计数/唯一性/维度分解、press 真实 `:active` 与更强 sheen、console 零告警及 light/dark 截图；switch/glass 单测锁文字回落实色 token、轨道加深消费与 glass.css 明暗/实心回退值。
+- 文档同步 glass/theming 中英文 guide、API 描述与 PRD/ROADMAP；全量 test / typecheck / build / e2e / perf:size / api / llms / stats / skill / lint / format / trace 通过。
+
 ## 未发布：异步选中与视觉窗口协议 ✅
 
 ### 功能定义
@@ -2679,7 +2701,7 @@ OASElement 的 render 生命周期只首连一次（`rendered` 门闩），组�
 - `prefers-reduced-motion: reduce` 不启用；粗指针（`pointer: coarse`）不接（触屏无 hover 语义）；`high-contrast` 不启用；无 `data-glass` 时零监听零开销；
 - 性能：单文档监听 + rAF 合批 + passive 监听；每帧至多一次 rect 读取；命中判定走事件 `composedPath`（不查表不遍历）；
 - 实心按钮命中后运行时写标记与坐标变量以驱动 hover 高光，按压态由 CSS 换边缘内描边（不提亮）；
-- 已知缺口（挂账）：`oas-switch` 选中态轨道内文案随选中态换底，其对比度组合矩阵不在本批门禁内（slider 把手高光为纯装饰，同理不入门禁）。
+- 本批挂账的 `oas-switch` 选中态轨道内文案已由「未发布：switch 玻璃轨道内文案 36 格对比度矩阵」批收口（2 主题 × 2 checked × 3 真实底色 × 3 交互态，静止/hover ≥60、press ≥45）；slider 把手高光仍为纯装饰，不入门禁。
 - 更强的「随交互变形」形态（拖拽中塑性形变、随背景内容变化的实时高光）不在 v1。
 
 ### 验收

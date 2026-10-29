@@ -46,6 +46,11 @@
     0 0 0 1px rgba(0, 0, 0, 0.08), 0 8px 16px -4px rgba(0, 0, 0, 0.1), 0 24px 48px -8px rgba(0, 0, 0, 0.2);
   --oas-glass-blur: blur(18px) saturate(1.6);
   --oas-glass-ring: rgba(255, 255, 255, 0.55);
+  /* switch 选中态轨道底加深比例（百分比 = --oas-color-primary 占比）：
+     开启态轨道内文案是实色 on-primary（白色），浅色玻璃下 hover/press 的白色 sheen
+     会把轨道提亮到白字临界；88% 使静止/hover/press 三态都留出对比度余量。
+     非玻璃层不定义 → 组件回落 100%（原色零变化）；custom color 仍按内联 primary 混合。 */
+  --oas-glass-switch-track-mix: 88%;
   /* 动态流动感：指针镜面高光（运行时 glass-fluid.js 写 --oas-glass-px/py，并把高光样式表
      经 adoptedStyleSheets 注入组件 shadow 根；高光层置文字之下，alpha 刻意压低——不拉低文字对比度） */
   --oas-glass-sheen: rgba(255, 255, 255, 0.28);
@@ -81,6 +86,9 @@
   --oas-shadow-lg: 0 8px 16px -4px rgba(0, 0, 0, 0.5), 0 24px 48px -8px rgba(0, 0, 0, 0.65);
   --oas-glass-blur: blur(20px) saturate(1.7);
   --oas-glass-ring: rgba(255, 255, 255, 0.5);
+  /* dark 选中态轨道为亮主色 + 深色 on-primary 文案，白 sheen 提亮反而增大对比；
+     显式回落 100% 防止继承 light 段的加深比例（同一 :root 同时命中两段） */
+  --oas-glass-switch-track-mix: 100%;
   /* 动态流动感高光（暗色）：仍低于浅色档，避免暗面板上过曝与文字对比度波动 */
   --oas-glass-sheen: rgba(255, 255, 255, 0.2);
   --oas-glass-sheen-size: 180px;
@@ -103,6 +111,8 @@
     --oas-glass-ring: transparent;
     --oas-glass-sheen: transparent;
     --oas-glass-sheen-press: transparent;
+    /* 实心回退下不保留玻璃档的选中轨道加深（与未引 glass.css 完全一致） */
+    --oas-glass-switch-track-mix: 100%;
   }
   :root[data-glass][data-theme="dark"]:not([data-theme="high-contrast"]),
   :root.dark[data-glass]:not([data-theme="high-contrast"]) {
@@ -117,5 +127,6 @@
     --oas-glass-ring: transparent;
     --oas-glass-sheen: transparent;
     --oas-glass-sheen-press: transparent;
+    --oas-glass-switch-track-mix: 100%;
   }
 }

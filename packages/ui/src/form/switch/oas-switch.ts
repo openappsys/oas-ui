@@ -105,7 +105,11 @@ button.xl {
   --label-font: var(--oas-font-size-lg);
 }
 button[aria-checked='true'] {
-  background: var(--oas-color-primary);
+  /* 开启态轨道底：默认即 --oas-color-primary。玻璃档由 glass.css 下发
+     --oas-glass-switch-track-mix（<100% 时按比例掺黑加深），给半透明文字之外的
+     白色轨道内文案留出 hover/press sheen 叠底后的对比度余量；无玻璃层回落 100%，
+     原色零变化。custom color 经内联 --oas-color-primary 在同一处参与混合，不另开颜色算法。 */
+  background: color-mix(in srgb, var(--oas-color-primary) var(--oas-glass-switch-track-mix, 100%), black);
 }
 button:focus-visible {
   outline: none;
@@ -182,8 +186,9 @@ button[aria-checked='true'] .label {
   padding-inline-end: calc(var(--thumb-size) + var(--thumb-offset) * 2 + var(--oas-space-1));
   padding-inline-start: var(--oas-space-2);
   /* color 属性自定义轨道底时经 --oas-switch-on-color 按 WCAG 对比度取深/浅（JS 注入）；
-     无自定义色回落 --oas-color-bg（primary token 深浅主题各自配对达标） */
-  color: var(--oas-switch-on-color, var(--oas-color-bg));
+   * 无自定义色回落 --oas-color-text-on-primary（实色 on 色）。不得回落 --oas-color-bg：
+   * glass 档该 token 是半透明白/黑（alpha <1），文字会与轨道混色，选中态感知对比度不达标。 */
+  color: var(--oas-switch-on-color, var(--oas-color-text-on-primary));
 }
 /* 轨道外侧文案（size=xs/small 时展示） */
 .outside-label {

@@ -278,7 +278,8 @@ onMounted(() => {
 
 | CSS Variable | Description | Default |
 | --- | --- | --- |
+| `--oas-glass-switch-track-mix` | Share of `--oas-color-primary` in the on-track background (provided by the glass layer; below 100% mixes in black for extra contrast; 100% without glass or in the solid fallback) | `100%` |
 | `--oas-switch-height` | — | `22px` |
-| `--oas-switch-on-color` | Label text color inside the on-track (when `color` overrides the track background, the component injects a dark/light text color by WCAG contrast; falls back to `var(--oas-color-bg)`) | `var(--oas-color-bg)` |
+| `--oas-switch-on-color` | Label text color inside the on-track (when `color` overrides the track background, the component injects a dark/light text color by WCAG contrast; falls back to `var(--oas-color-text-on-primary)`) | `var(--oas-color-text-on-primary)` |
 | `--oas-switch-thumb-size` | — | `18px` |
 | `--oas-switch-width` | — | `40px` |

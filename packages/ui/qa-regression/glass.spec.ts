@@ -2,7 +2,7 @@
 // 方法：已知纯底背板上的半透明 surface 做 alpha 合成求有效底色，对 surface 文字色跑
 // 感知对比度（与 a11y.spec 同源 oklab 评分）——亮蓝/品红/深青三类代表背板 × 明暗双主题。
 
-import { test, expect } from '@playwright/test'
+import { test, expect, type Page } from '@playwright/test'
 import { perceptualContrast, relativeLuminance } from '../../theme/oklab'
 import { GLASS_REGISTRY } from '../../theme/glass-fluid.js'
 
@@ -28,6 +28,7 @@ function parseRgba(s: string): [number, number, number, number] | null {
 /** 归一化任意计算色值 → [r,g,b,a]（0-255）：hex / color(srgb r g b [/ a]) / rgb(a)。
  *  color-mix 计算值经浏览器序列化为 `color(srgb …)`，只匹配 `rgba?()` 会静默漏采（假绿）。 */
 function parseSrgb(s: string): [number, number, number, number] | null {
+  if (s.trim() === 'transparent') return [0, 0, 0, 0]
   // Lightning CSS 可能把半透明色压缩为 #rgba / #rrggbbaa；必须保留 alpha 归一化。
   const hex = s.match(/^#([0-9a-f]{3,4}|[0-9a-f]{6}|[0-9a-f]{8})$/i)
   if (hex) {
@@ -894,5 +895,447 @@ test.describe('玻璃材质与动态高光（跨浏览器一致）', () => {
       return getComputedStyle(inner).filter
     })
     expect(filter).toBe('none')
+  })
+})
+
+// ---------------------------------------------------------------------------
+// switch 轨道内文案 36 格真实对比度矩阵
+//
+// 固定 2 主题 × 2 checked × 3 真实身后底色（页面 / 灰卡 / bg-elevated）× 3 交互态
+// （静止 / hover / press）= 36。每格使用真实 shadow DOM 文字色、真实轨道计算色、
+// 真实容器计算底色与真实主题 sheen token；半透明轨道与半透明 backplate 一律逐层
+// alpha 合成，不假定玻璃不透明。press 必须由真实指针按下产生 :active 后采样
+// --oas-glass-sheen-press（不是改 class / 复用 hover）。
+// ---------------------------------------------------------------------------
+
+type SwitchTheme = 'light' | 'dark'
+type SwitchChecked = 'checked' | 'unchecked'
+type SwitchBackdrop = 'page' | 'gray' | 'elevated'
+type SwitchInteraction = 'static' | 'hover' | 'press'
+
+interface SwitchProbe {
+  id: string
+  theme: SwitchTheme
+  checked: SwitchChecked
+  backdrop: SwitchBackdrop
+}
+
+interface SwitchSample {
+  name: string
+  theme: SwitchTheme
+  checked: SwitchChecked
+  backdrop: SwitchBackdrop
+  state: SwitchInteraction
+  fg: string
+  track: string
+  backdropLayer: string
+  baseBg: string
+  litBg: string
+  sheen: string
+  sheenAlpha: number
+  baseScore: number
+  litScore: number
+  score: number
+  threshold: number
+  marker: boolean
+  active: boolean
+  afterBg: string
+}
+
+/** 每个矩阵格必须可解析；null / 空值直接失败，禁止静默漏采。 */
+function mustColor(raw: string, what: string): [number, number, number, number] {
+  const parsed = parseSrgb((raw ?? '').trim())
+  if (!parsed) throw new Error(`${what} 无法解析色值（禁止漏采）：${JSON.stringify(raw)}`)
+  return parsed
+}
+
+function rgbCss(rgb: [number, number, number]): string {
+  return `rgb(${rgb[0]}, ${rgb[1]}, ${rgb[2]})`
+}
+
+/** 前景（可能带 alpha）压到底色后的实际呈现色与该底色的感知对比度。 */
+function contrastOn(fg: [number, number, number, number], bg: [number, number, number]): number {
+  const text = composite(fg, bg)
+  return Math.abs(perceptualContrast(relativeLuminance(text), relativeLuminance(bg)))
+}
+
+/** 逐格真实取样 + 合成。所有失败（缺节点/缺文字/无法解析/状态不符）都抛错。 */
+async function sampleSwitchCell(page: Page, probe: SwitchProbe, state: SwitchInteraction): Promise<SwitchSample> {
+  const raw = await page.evaluate(
+    ({ id }) => {
+      const stage = document.getElementById('sw-glass-matrix')
+      const host = document.getElementById(id) as HTMLElement | null
+      const root = host?.shadowRoot
+      const btn = root?.querySelector('button') as HTMLButtonElement | null
+      const label = root?.querySelector<HTMLElement>('.label')
+      const card = host?.parentElement
+      if (!stage || !host || !btn || !label || !card) {
+        return { missing: `stage/host/button/label/card 不完整（${id}）` }
+      }
+      const lr = label.getBoundingClientRect()
+      const after = getComputedStyle(btn, '::after')
+      return {
+        theme: document.documentElement.classList.contains('dark') ? 'dark' : 'light',
+        stageBg: getComputedStyle(stage).backgroundColor,
+        cardBg: getComputedStyle(card).backgroundColor,
+        track: getComputedStyle(btn).backgroundColor,
+        fg: getComputedStyle(label).color,
+        sheen: getComputedStyle(host).getPropertyValue('--oas-glass-sheen').trim(),
+        sheenPress: getComputedStyle(host).getPropertyValue('--oas-glass-sheen-press').trim(),
+        labelHidden: label.hidden,
+        labelText: label.textContent ?? '',
+        labelWidth: lr.width,
+        labelHeight: lr.height,
+        hostChecked: host.hasAttribute('checked'),
+        ariaChecked: btn.getAttribute('aria-checked'),
+        marker: btn.hasAttribute('data-glass-fluid'),
+        active: btn.matches(':active'),
+        afterBg: after.backgroundImage,
+        afterContent: after.content,
+      }
+    },
+    { id: probe.id },
+  )
+
+  if ('missing' in raw) throw new Error(`[${probe.id}] ${raw.missing}`)
+
+  const name = `${probe.theme}/${probe.checked}/${probe.backdrop}/${state}`
+  if (raw.theme !== probe.theme) throw new Error(`[${name}] 主题不符：实际 ${raw.theme}`)
+  if (raw.labelHidden || raw.labelText === '') throw new Error(`[${name}] 轨道内文案缺失（不得用无文字样本凑数）`)
+  if (raw.labelText !== (probe.checked === 'checked' ? '开' : '关')) {
+    throw new Error(`[${name}] 轨道内文案不符：${JSON.stringify(raw.labelText)}`)
+  }
+  if (raw.labelWidth <= 0 || raw.labelHeight <= 0) throw new Error(`[${name}] 轨道内文案无可见盒`)
+  if (raw.hostChecked !== (probe.checked === 'checked')) throw new Error(`[${name}] checked 状态被取样过程改变`)
+  if (raw.ariaChecked !== String(probe.checked === 'checked')) throw new Error(`[${name}] aria-checked 不同步`)
+
+  if (state === 'static' && raw.marker) throw new Error(`[${name}] 静止态不得带运行时高光标记`)
+  if (state === 'hover' && (!raw.marker || raw.active)) {
+    throw new Error(`[${name}] hover 必须由真实指针命中（marker=${raw.marker} active=${raw.active}）`)
+  }
+  if (state === 'press' && (!raw.marker || !raw.active)) {
+    throw new Error(`[${name}] press 必须由真实指针按下产生 :active（marker=${raw.marker} active=${raw.active}）`)
+  }
+  if (state !== 'static' && (!raw.afterContent || raw.afterContent === 'none')) {
+    throw new Error(`[${name}] 高光伪元素未生成（content=${JSON.stringify(raw.afterContent)}）`)
+  }
+  if (state !== 'static' && !raw.afterBg.includes('radial-gradient')) {
+    throw new Error(`[${name}] 高光层缺少 radial-gradient：${JSON.stringify(raw.afterBg)}`)
+  }
+
+  const pageBg = mustColor(raw.stageBg, `${name} 页面底`)
+  if (pageBg[3] !== 1) throw new Error(`[${name}] 页面底必须不透明，实际 ${JSON.stringify(raw.stageBg)}`)
+  const pageRgb: [number, number, number] = [pageBg[0], pageBg[1], pageBg[2]]
+
+  let backdropLayer = pageRgb
+  if (probe.backdrop !== 'page') {
+    const card = mustColor(raw.cardBg, `${name} ${probe.backdrop} 卡片底`)
+    if (card[3] <= 0) throw new Error(`[${name}] ${probe.backdrop} 卡片底不可见`)
+    backdropLayer = composite(card, pageRgb)
+  }
+
+  const track = mustColor(raw.track, `${name} 轨道底`)
+  const baseBg = composite(track, backdropLayer)
+
+  const fg = mustColor(raw.fg, `${name} 前景色`)
+  const baseScore = contrastOn(fg, baseBg)
+  let litBg = baseBg
+  let litScore = baseScore
+  let sheenAlpha = 0
+
+  if (state !== 'static') {
+    const sheen = mustColor(state === 'hover' ? raw.sheen : raw.sheenPress, `${name} sheen 色`)
+    if (sheen[3] <= 0) throw new Error(`[${name}] ${state} sheen alpha 必须 >0（为 0 则门禁空转）`)
+    sheenAlpha = sheen[3]
+    litBg = composite(sheen, baseBg)
+    litScore = contrastOn(fg, litBg)
+  }
+
+  return {
+    name,
+    theme: probe.theme,
+    checked: probe.checked,
+    backdrop: probe.backdrop,
+    state,
+    fg: raw.fg,
+    track: raw.track,
+    backdropLayer: rgbCss(backdropLayer),
+    baseBg: rgbCss(baseBg),
+    litBg: rgbCss(litBg),
+    sheen: state === 'static' ? 'n/a' : state === 'hover' ? raw.sheen : raw.sheenPress,
+    sheenAlpha,
+    baseScore,
+    litScore,
+    // hover/press 取「高光叠底」与「无高光基线」的较差者（与既有玻璃门禁同口径）
+    score: state === 'static' ? baseScore : Math.min(baseScore, litScore),
+    threshold: state === 'press' ? 45 : 60,
+    marker: raw.marker,
+    active: raw.active,
+    afterBg: raw.afterBg,
+  }
+}
+
+test.describe('switch 玻璃轨道内文案 36 格真实对比度矩阵', () => {
+  test('2 主题 × 2 checked × 3 真实底色 × 3 交互态全部达标（样本必须恰好 36）', async ({ page }, testInfo) => {
+    const badWarns: string[] = []
+    const allow = [
+      /net::ERR_/,
+      /Failed to load resource/,
+      /vite/,
+      /hydrating/,
+      /cookie .*overwritten/i,
+      /scroll-linked positioning effect/i,
+      /Google Analytics|gtag/i,
+    ]
+    page.on('console', (m) => {
+      if ((m.type() === 'error' || m.type() === 'warning') && !allow.some((re) => re.test(m.text()))) {
+        badWarns.push(`${m.type()}: ${m.text()}`)
+      }
+    })
+    page.on('pageerror', (err) => badWarns.push(`pageerror: ${err.message}`))
+
+    await page.goto(PAGE, { waitUntil: 'domcontentloaded' })
+    await page.waitForFunction(() => document.documentElement.hasAttribute('data-glass'), undefined, {
+      timeout: 15000,
+    })
+    await page.evaluate(() => document.documentElement.setAttribute('data-glass', ''))
+
+    const rows: SwitchSample[] = []
+    const themes: SwitchTheme[] = ['light', 'dark']
+    const checkedStates: SwitchChecked[] = ['unchecked', 'checked']
+    const backdrops: SwitchBackdrop[] = ['page', 'gray', 'elevated']
+
+    for (const theme of themes) {
+      await page.evaluate((next) => {
+        document.documentElement.classList.toggle('dark', next === 'dark')
+        document.documentElement.removeAttribute('data-theme')
+      }, theme)
+      await page.waitForTimeout(250)
+
+      const probes = await page.evaluate(
+        ({ theme: currentTheme, checkedStates: checks, backdrops: kinds }) => {
+          document.getElementById('sw-glass-matrix')?.remove()
+          const stage = document.createElement('div')
+          stage.id = 'sw-glass-matrix'
+          stage.style.cssText = [
+            'position:fixed',
+            'inset:0',
+            'z-index:2147483640',
+            'display:grid',
+            'grid-template-columns:repeat(3,1fr)',
+            'grid-auto-rows:1fr',
+            'gap:24px',
+            'padding:48px',
+            'box-sizing:border-box',
+            'background:var(--vp-c-bg)',
+          ].join(';')
+          document.body.appendChild(stage)
+          const out: Array<{ id: string; theme: string; checked: string; backdrop: string }> = []
+          for (const checked of checks) {
+            for (const backdrop of kinds) {
+              const card = document.createElement('div')
+              card.dataset.backdrop = backdrop
+              card.style.cssText = [
+                'display:flex',
+                'align-items:center',
+                'justify-content:center',
+                'min-height:120px',
+                'border-radius:12px',
+                'padding:24px',
+                'box-sizing:border-box',
+                `background:${
+                  backdrop === 'page'
+                    ? 'transparent'
+                    : backdrop === 'gray'
+                      ? 'var(--oas-color-bg-hover)'
+                      : 'var(--oas-color-bg-elevated)'
+                }`,
+              ].join(';')
+              const sw = document.createElement('oas-switch')
+              const id = `sw-glass-${checked}-${backdrop}`
+              sw.id = id
+              if (checked === 'checked') sw.setAttribute('checked', '')
+              sw.setAttribute('checked-text', '开')
+              sw.setAttribute('unchecked-text', '关')
+              card.appendChild(sw)
+              stage.appendChild(card)
+              out.push({ id, theme: currentTheme, checked, backdrop })
+            }
+          }
+          return out
+        },
+        { theme, checkedStates, backdrops },
+      )
+
+      const ids = probes.map((p) => p.id)
+      await page.waitForFunction(
+        (list: string[]) =>
+          list.every((id) => document.getElementById(id)?.shadowRoot?.querySelector('button[part="switch"]')),
+        ids,
+        { timeout: 15000 },
+      )
+      await page.evaluate(
+        () => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))),
+      )
+
+      // 静止：指针移出所有 surface，等高光淡出与颜色过渡结束
+      await page.mouse.move(1, 1)
+      await page.waitForTimeout(250)
+      for (const id of ids) {
+        const p = probes.find((x) => x.id === id)!
+        rows.push(await sampleSwitchCell(page, p as SwitchProbe, 'static'))
+      }
+      await page.locator('#sw-glass-matrix').screenshot({
+        path: testInfo.outputPath(`switch-glass-${theme}-static.png`),
+      })
+      for (const id of ['sw-glass-unchecked-page', 'sw-glass-checked-page']) {
+        await page
+          .locator(`#${id}`)
+          .locator('..')
+          .screenshot({ path: testInfo.outputPath(`switch-glass-${theme}-${id}-static.png`) })
+      }
+
+      // hover：真实指针移到轨道内文案中央（高光最坏位置）
+      let hoverShot = false
+      for (const id of ids) {
+        const p = probes.find((x) => x.id === id)!
+        const point = await page.evaluate((probeId) => {
+          const label = document.getElementById(probeId)!.shadowRoot!.querySelector<HTMLElement>('.label')!
+          const r = label.getBoundingClientRect()
+          return { x: r.left + r.width / 2, y: r.top + r.height / 2 }
+        }, id)
+        await page.mouse.move(point.x, point.y)
+        await page.waitForFunction(
+          (probeId) => {
+            const btn = document.getElementById(probeId)?.shadowRoot?.querySelector('button')
+            return !!btn?.hasAttribute('data-glass-fluid')
+          },
+          id,
+          { timeout: 5000 },
+        )
+        await page.waitForTimeout(180)
+        rows.push(await sampleSwitchCell(page, p as SwitchProbe, 'hover'))
+        if (!hoverShot) {
+          hoverShot = true
+          await page.locator('#sw-glass-matrix').screenshot({
+            path: testInfo.outputPath(`switch-glass-${theme}-hover.png`),
+          })
+        }
+        if (id === 'sw-glass-checked-page') {
+          await page
+            .locator(`#${id}`)
+            .locator('..')
+            .screenshot({ path: testInfo.outputPath(`switch-glass-${theme}-hover-checked-card.png`) })
+        }
+      }
+
+      // press：真实按下 → 等 :active → 采样 press token；移开后抬起，避免切换状态
+      let pressShot = false
+      for (const id of ids) {
+        const p = probes.find((x) => x.id === id)!
+        const point = await page.evaluate((probeId) => {
+          const label = document.getElementById(probeId)!.shadowRoot!.querySelector<HTMLElement>('.label')!
+          const r = label.getBoundingClientRect()
+          return { x: r.left + r.width / 2, y: r.top + r.height / 2 }
+        }, id)
+        await page.mouse.move(point.x, point.y)
+        await page.waitForFunction(
+          (probeId) => {
+            const btn = document.getElementById(probeId)?.shadowRoot?.querySelector('button')
+            return !!btn?.hasAttribute('data-glass-fluid')
+          },
+          id,
+          { timeout: 5000 },
+        )
+        await page.mouse.down()
+        await page.waitForFunction(
+          (probeId) => {
+            const btn = document.getElementById(probeId)?.shadowRoot?.querySelector('button')
+            return !!btn?.hasAttribute('data-glass-fluid') && btn.matches(':active')
+          },
+          id,
+          { timeout: 5000 },
+        )
+        await page.waitForTimeout(180)
+        rows.push(await sampleSwitchCell(page, p as SwitchProbe, 'press'))
+        if (!pressShot) {
+          pressShot = true
+          await page.locator('#sw-glass-matrix').screenshot({
+            path: testInfo.outputPath(`switch-glass-${theme}-press.png`),
+          })
+        }
+        if (id === 'sw-glass-checked-page') {
+          await page
+            .locator(`#${id}`)
+            .locator('..')
+            .screenshot({ path: testInfo.outputPath(`switch-glass-${theme}-press-checked-card.png`) })
+        }
+        await page.mouse.move(1, 1)
+        await page.mouse.up()
+        await page.waitForTimeout(60)
+      }
+
+      await page.evaluate(() => document.getElementById('sw-glass-matrix')?.remove())
+      await page.mouse.move(1, 1)
+    }
+
+    // 先输出完整矩阵（BASE 失败时也能拿到逐格证据），再断言
+    console.log(`[SWITCH_GLASS_MATRIX]${JSON.stringify(rows)}`)
+    await testInfo.attach('switch-glass-matrix.json', {
+      body: JSON.stringify(rows, null, 2),
+      contentType: 'application/json',
+    })
+
+    expect(rows, '36 格必须全部采样（禁止 filter 后少样本仍绿）').toHaveLength(36)
+    expect(new Set(rows.map((r) => r.name)).size, '每格名称必须唯一').toBe(36)
+    const count = (key: keyof SwitchSample): Record<string, number> =>
+      rows.reduce<Record<string, number>>((acc, row) => {
+        const value = String(row[key])
+        acc[value] = (acc[value] ?? 0) + 1
+        return acc
+      }, {})
+    expect(count('theme'), '主题维度必须 2 × 18').toEqual({ light: 18, dark: 18 })
+    expect(count('checked'), 'checked 维度必须 2 × 18').toEqual({ unchecked: 18, checked: 18 })
+    expect(count('backdrop'), '真实底色维度必须 3 × 12').toEqual({ page: 12, gray: 12, elevated: 12 })
+    expect(count('state'), '交互态维度必须 3 × 12').toEqual({ static: 12, hover: 12, press: 12 })
+
+    for (const theme of themes) {
+      const staticBgs = new Set(
+        rows.filter((r) => r.theme === theme && r.checked === 'unchecked' && r.state === 'static').map((r) => r.baseBg),
+      )
+      expect(staticBgs.size, `${theme} 三种真实底色不得全部采样成同一色`).toBeGreaterThanOrEqual(2)
+    }
+
+    for (const row of rows) {
+      expect.soft(Number.isFinite(row.score), `${row.name} 分数必须可计算`).toBe(true)
+      expect
+        .soft(
+          row.score,
+          `${row.name} 分数 ${row.score.toFixed(1)} 应 ≥${row.threshold}（fg ${row.fg} on ${row.litBg}，底色 ${row.backdropLayer}）`,
+        )
+        .toBeGreaterThanOrEqual(row.threshold)
+    }
+
+    // press 必须是更强 sheen，且与 hover 的真实伪元素底色不同（不是复用 hover 样本）
+    for (const theme of themes) {
+      for (const checked of checkedStates) {
+        for (const backdrop of backdrops) {
+          const hover = rows.find(
+            (r) => r.theme === theme && r.checked === checked && r.backdrop === backdrop && r.state === 'hover',
+          )!
+          const press = rows.find(
+            (r) => r.theme === theme && r.checked === checked && r.backdrop === backdrop && r.state === 'press',
+          )!
+          expect
+            .soft(press.sheenAlpha, `${theme}/${checked}/${backdrop} press sheen 应强于 hover`)
+            .toBeGreaterThan(hover.sheenAlpha)
+          expect
+            .soft(press.afterBg, `${theme}/${checked}/${backdrop} press 不得复用 hover 伪元素`)
+            .not.toBe(hover.afterBg)
+        }
+      }
+    }
+
+    expect(badWarns, `console 应零告警：${badWarns.join(' | ')}`).toEqual([])
   })
 })

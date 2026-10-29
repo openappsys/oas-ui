@@ -156,6 +156,7 @@ document.documentElement.dataset.skin = 'emerald' // violet | emerald | rose | a
 
 - 材质依赖背景反差——页面有色彩层次（渐变/图片）时质感最强，纯色同色相背景上减弱（文字仍走 token 安全档可读）；照片/视频等 busy 背景不保证对比度，必要时提高 alpha 或局部关闭玻璃；
 - 文字安全是硬约束：dark 档 surface 用低 alpha 高透（深色玻璃的材质感主场；alpha 档与文字档联动标定，感知对比度实测门禁 ≥60 分，见「磨砂玻璃画廊」）；
+- switch 轨道内文案按 2 主题 × 2 checked × 3 真实底色 × 3 交互态的 36 格矩阵单独门禁（静止/hover ≥60、press ≥45）；选中态文字使用实色 on-primary，浅色玻璃轨道经 `--oas-glass-switch-track-mix` 微调加深；
 - blur 只上容器级 surface（行级/长列表不接，避免大面积模糊的性能成本）；
 - `high-contrast` 主题下不启用（实心可访问性档优先）；
 - `prefers-reduced-transparency: reduce` 下回退实心 surface（关闭模糊/折光边/动态高光）；

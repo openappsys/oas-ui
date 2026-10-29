@@ -203,6 +203,8 @@ describe('玻璃跨浏览器一致性：不依赖浏览器专属位移滤镜', (
     const ALLOWED = [
       /--oas-glass-blur/,
       /--oas-glass-ring/,
+      // switch 选中态轨道加深比例：glass.css 下发，非玻璃层回落 100%（只消费变量，无规则体）
+      /--oas-glass-switch-track-mix/,
       /^\/\*/, // 块注释行
       /^\*/,
       /^\/\//, // 行注释
@@ -243,5 +245,18 @@ describe('玻璃跨浏览器一致性：不依赖浏览器专属位移滤镜', (
     const darkIdx = css.indexOf('[data-theme="dark"]')
     expect(darkIdx).toBeGreaterThan(0)
     expect(css.slice(darkIdx), 'dark 段应有独立 sheen 档').toContain('--oas-glass-sheen:')
+  })
+
+  it('switch 选中态轨道加深比例：浅色 88%、dark/实心回退 100%（同一 :root 同时命中明暗段）', () => {
+    const css = readFileSync(resolve(import.meta.dirname, '../../../../packages/theme/glass.css'), 'utf8')
+    const darkIdx = css.indexOf('[data-theme="dark"]')
+    const lightPart = css.slice(0, darkIdx)
+    const darkPart = css.slice(darkIdx, css.indexOf('prefers-reduced-transparency'))
+    const reducedPart = css.slice(css.indexOf('prefers-reduced-transparency'))
+    expect(lightPart).toContain('--oas-glass-switch-track-mix: 88%')
+    expect(darkPart, 'dark 必须显式回落 100%，否则继承 light 的加深比例').toContain(
+      '--oas-glass-switch-track-mix: 100%',
+    )
+    expect(reducedPart.match(/--oas-glass-switch-track-mix: 100%/g), '实心回退明暗两段都要回落').toHaveLength(2)
   })
 })

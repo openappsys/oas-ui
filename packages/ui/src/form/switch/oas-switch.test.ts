@@ -385,6 +385,21 @@ describe('OASSwitch', () => {
     expect(style).toContain('var(--oas-switch-thumb-size, 18px)')
   })
 
+  it('开启态文字回落实色 on-primary（glass 的 --oas-color-bg 半透明，禁止再作文字色）', () => {
+    mount()
+    const style = document.querySelector('oas-switch')!.shadowRoot!.querySelector('style')!.textContent!
+    expect(style).toContain('var(--oas-switch-on-color, var(--oas-color-text-on-primary))')
+    expect(style, '开启态文字不得回落半透明 bg token').not.toContain('var(--oas-switch-on-color, var(--oas-color-bg))')
+  })
+
+  it('开启态轨道消费 --oas-glass-switch-track-mix（无玻璃层回落 100%，原色零变化）', () => {
+    mount()
+    const style = document.querySelector('oas-switch')!.shadowRoot!.querySelector('style')!.textContent!
+    expect(style).toContain(
+      'color-mix(in srgb, var(--oas-color-primary) var(--oas-glass-switch-track-mix, 100%), black)',
+    )
+  })
+
   // ===== 块级拉伸热区：宿主被显式拉宽时整行可点（对齐 iOS 设置项点击语义） =====
 
   it('块级拉伸时点击宿主自身空白区可切换（宿主 click 委托 toggle）', () => {
