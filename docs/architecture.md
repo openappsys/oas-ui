@@ -175,6 +175,14 @@ oas-ui/
 
 **JS 运行时的包归属（决策记录 2026-10-08）**：可选 JS 运行时（当前仅 `glass-fluid.js`）**暂留 `@oas-ui/theme` 子路径，不为单文件新建发布包**——拆包只有语义纯度收益、**零体积收益**（本就不进 union），却带来发布拓扑成本（`release-check` 包清单、OIDC Trusted Publisher、构建/dev 链路接线）。**拆包触发条件**（任一命中即报批拆分）：**T1** 效果运行时族出现第二个 JS 成员（族外首个 runtime 立项即算）；**T2** `glass-fluid.js` 需拆多文件或实测超其独立预算档 2 倍；**T3** 出现「只要效果层、不要 token」的真实解耦消费需求。**硬规则**：届时若拆，**必须保留 `@oas-ui/theme/glass-fluid.js` 为 re-export shim**（`export * from '@oas-ui/<新包>'`），不得硬删——把可避免的 breaking 消解掉。
 
+### 3.2 SSR 验收 fixture 与真实浏览器基线（独立依赖图）
+
+- **位置与隔离**：`packages/ssr/fixtures/{next,nuxt}` 是生产构建验收 fixture。每个 fixture 是**独立单包 workspace**（自带 `package.json` + `pnpm-lock.yaml` + 仅含 `allowBuilds` 的 `pnpm-workspace.yaml`），**不是根 workspace 成员**：根 `pnpm-workspace.yaml` 保持 `packages/*`，层级不匹配；根 install/build 不触碰 fixture，fixture 也不会进入 `@oas-ui/ssr` 的 npm `files`（仍只有 `dist` + LICENSE）。
+- **依赖获取**：fixture 用 `link:` 指向主仓 `packages/*` 的构建产物（`@oas-ui/ssr` / `ui` / `theme` / `i18n` / `next` / `nuxt`），因此 **先 `pnpm build` 主仓**；依赖版本由 fixture 自己的 lockfile 锁定（Next 16.x / Nuxt 4.x / React 19 / Vue 3），CI 用 `--frozen-lockfile`。
+- **执行边界**：fixture e2e 文件命名 `*.e2e.ts`，由独立 `playwright.ssr.config.ts` 收集（端口 4301/4302）；根 `playwright.config.ts` 只收 `*.spec.ts`，全量 e2e 不会带上 fixture。CI 使用独立 job（root install/build → fixture install/build → fixture e2e）。
+- **全局 DOM shim 的进程边界**：`@oas-ui/ssr` 首次渲染把 happy-dom 的 `window`/`document`/`HTMLElement` 装到 `globalThis`（组件类求值需要）。与框架 SSR 同进程会改变框架的环境探测（Nuxt 实测：DSD 请求后 Vue 页面 500 `history is not defined`）。Nuxt fixture 因此把 DSD 渲染放进常驻 `worker_threads` worker；生产接入同栈时应采用 worker/子进程/独立服务隔离，而不是在同一进程混跑。
+- **性能基线**：`scripts/perf/browser-bench.mjs` + `docs/perf-browser-baseline.json` 记录真实 Chromium 的 CSR/DSD 首屏数据（原始样本 + 每轮 min/median/p95 + 环境元数据）。它是**观测档案，不是预算**：数值回归只 WARN，只有测量无效（构建失败/选择器缺失/样本不足/pageerror/console error）才非零退出；性能预算仍由 `perf:size` 负责。
+
 ## 4. 构建与产物
 
 - library mode：`es`（ESM），`preserveModules` 保持每组件独立文件，`sideEffects` 白名单仅含注册入口与 CSS，支持 tree-shaking

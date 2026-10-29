@@ -40,6 +40,9 @@ jobs:
       # 渲染基准（pnpm perf:bench）耗时波动大（happy-dom + 共享 runner 抖动），不进 CI，
       # 发布前本地跑一遍核对即可（见 docs/engineering.md §4 性能基准）。
       - run: pnpm perf:size
+      # 真实浏览器基线的完整性校验（只读 JSON：可解析 / 样本数 / 环境元数据齐全）。
+      # 性能数值本身不阻断发布；不在此 job 跑浏览器测量（耗时/噪声），需要刷新走本地 --update-baseline。
+      - run: pnpm perf:browser:check
       - run: pnpm api:check
       # 废弃 API 台账：别名必须登记，canonical 必须存在，removeIn 不得倒退；
       # 判定规则自测（含 package-export 单点例外的正反两侧）
@@ -49,6 +52,58 @@ jobs:
       - run: pnpm ssr:check
       # /llms.txt 防漂移（llmstxt.org 规范；由 docs 侧栏 + 组件 md 生成，入库的是精选索引）
       - run: pnpm llms:check
+  ssr-fixtures:
+    # Next / Nuxt 生产构建 fixture：独立 job，不并入 e2e 分片（fixture 不在根 workspace，
+    # 需要单独 install/build；E2E 端口 4301/4302 与文档站 4173 隔离）。
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      NEXT_TELEMETRY_DISABLED: 1
+      NUXT_TELEMETRY_DISABLED: 1
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      # fixture 通过 link: 消费主仓构建产物（dist），必须先 build 主仓
+      - run: pnpm build
+      - name: Install Next fixture
+        working-directory: packages/ssr/fixtures/next
+        run: pnpm install --frozen-lockfile
+      - name: Build Next fixture
+        working-directory: packages/ssr/fixtures/next
+        run: pnpm build
+      - name: Install Nuxt fixture
+        working-directory: packages/ssr/fixtures/nuxt
+        run: pnpm install --frozen-lockfile
+      - name: Build Nuxt fixture
+        working-directory: packages/ssr/fixtures/nuxt
+        run: pnpm build
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('pnpm-lock.yaml') }}
+      - run: pnpm exec playwright install --with-deps chromium
+      # 零重试（playwright.ssr.config.ts retries:0）：任何 flake 按真实问题处理
+      - name: Fixture e2e (Next)
+        run: SSR_FIXTURE=next pnpm test:e2e:ssr --project=next
+      - name: Fixture e2e (Nuxt)
+        run: SSR_FIXTURE=nuxt pnpm test:e2e:ssr --project=nuxt
+      - name: Upload fixture artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssr-fixtures-artifacts
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7
+          if-no-files-found: ignore
+
   e2e:
     runs-on: ubuntu-latest
     env:

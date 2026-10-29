@@ -5,6 +5,28 @@
 
 ---
 
+## 未发布：Next / Nuxt 生产 fixture 与真实浏览器性能基线（Task 11）✅
+
+### 功能定义
+
+把 SSR 契约从「happy-dom 合成渲染 + 文档级 smoke」推进到**真实框架生产构建 + 真实浏览器**：新增 Next.js App Router（Next 16 / React 19）与 Nuxt 4（Vue 3）两个独立 fixture，覆盖冷/热混合 locale、禁 JS DSD、真水合不重建、`oas-tool-call` 单次交互与 console/pageerror 零；并新增只观测、不阻断的真实 Chromium 性能基线。不改组件行为与 SSR 白名单。
+
+### 详细契约
+
+- **fixture 隔离**：`packages/ssr/fixtures/{next,nuxt}` 各自独立 `package.json` + `pnpm-lock.yaml`（`--frozen-lockfile`），不属于根 workspace（根仍 `packages/*`），根 install/build 不安装/构建；不进入 `@oas-ui/ssr` npm `files`。fixture 通过 `link:` 消费主仓构建产物，先决条件为主仓 `pnpm build`。
+- **Next.js**：生产 `next build` + `next start`（4301）。页面用 `@oas-ui/ssr` 的 `renderToString` 产 DSD，`dangerouslySetInnerHTML` 进 RSC 流；客户端在 `useEffect` 内先注册 en / ar 语言包再 `import('@oas-ui/ui')`（避免水合把 en/ar 文案改回默认 zh-CN），并把 `<oas-config-provider locale>` 持久化在页面中。每个请求动态渲染（`force-dynamic`），同一请求内 4 个组件并发生成，证明 locale 请求局部、无全局锁。
+- **Nuxt**：生产 `nuxt build` + `node .output/server/index.mjs`（4302）。DSD 页由 Nitro 路由原样输出 HTML（不经过 Vue `v-html` 水合，避免客户端重设 `innerHTML` 冲掉解析期 shadow root）；DSD 渲染放在常驻 worker 线程（happy-dom 全局 shim 与 Vue SSR 进程隔离），Vue 模板页覆盖 `@oas-ui/nuxt` 的 isCustomElement 配置与客户端注册。Nuxt 4 的 isCustomElement 注入修正为写 `nuxt.options.vue.compilerOptions`（保留 `vite:extendConfig` 兼容早期 Nuxt 3）。
+- **locale 矩阵**：同一进程连续请求 `zh-CN` → `en-US`（渲染层归一到内置 `en`）→ `ar`（RTL）→ 再回 `zh-CN`（热）；逐 ID 校验 `empty` / `table` / `select` / `tool-call` 文案且其他语言文案不泄漏。
+- **DSD / 水合证据**：`javaScriptEnabled:false` 下逐 ID 断言 shadow 文本/结构存在、组件未注册（文本只能来自服务端）；延迟客户端脚本后给快照 shadow 内 `<style>` 打标，注册完成后标记仍在（shadow root 不重建）、指纹 `meta[data-oas-ssr]` 被消费（`hydrate()` 接管而非 `render()` 回退）。
+- **交互与告警**：`oas-tool-call` 真实点击展开/收起，每次点击恰好一次 `oas-toggle`（detail `{open,name}`），`aria-expanded`/`open`/body 可见性同步；三 locale 导航 console error/warning 与 pageerror 均为零。
+- **性能基线（只观测）**：`scripts/perf/browser-bench.mjs` 固定生产 dist + Chromium + `workers=1`；CSR 5 warmup + 3×30，DSD 2 warmup + 3×15；记录 LCP/FCP/DCL/load/首批渲染/DOM 节点数/传输体积，保存原始样本与每轮 min/median/p95，写入 `docs/perf-browser-baseline.json`（含 Node/pnpm/OS/CPU/Chromium/Playwright 元数据）。**数值永不阻断**，只有构建失败/选择器缺失/样本不足/pageerror/console error 非零退出；`pnpm perf:browser:check` 只校验基线完整并接入 CI。
+
+### 验收标准
+
+- fixture：各自 `pnpm install --frozen-lockfile` → `pnpm build` → e2e（Chromium，零重试）全部通过；Next/Nuxt 首屏 light/dark 真截图（禁 JS 与水合后各一张）。
+- 主仓：`pnpm test`、`typecheck`、`build`、`perf:size`、`perf:browser:check`、api/llms/stats/skill/ssr/lint/format/deprecations/qa:audit/trace 全绿；全量 e2e 由控制器另行执行。
+- 文档：`engineering.md`（fixture 安装/构建/CI 与性能观测带宽）、`architecture.md`（隔离与 shim 进程边界）、`ROADMAP.md` / `CHANGELOG.md` 同步；README 说明 fixture 不随发布包分发。
+
 ## 未发布：SSR 白名单收口九件与跨引擎 DSD（Task 10）✅
 
 ### 功能定义

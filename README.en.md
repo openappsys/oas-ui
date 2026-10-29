@@ -60,7 +60,7 @@ import '@oas-ui/ui/basic/button'
 Web Components interoperate with every framework out of the box; these official plugins close the gap on SSR and developer experience:
 
 ```bash
-pnpm add @oas-ui/nuxt   # Nuxt 3 module: isCustomElement + theme injection + SSR helper
+pnpm add @oas-ui/nuxt   # Nuxt 3/4 module: isCustomElement + theme injection + SSR helper
 pnpm add @oas-ui/next   # Next.js: RSC OasComponent + OasRegistry client registration bootstrap
 ```
 
@@ -72,6 +72,8 @@ Official starter templates (reusable admin / dashboard scenarios): [oas-ui-templ
 
 SSR / DSD guide: the [SSR page](https://oas-ui.dev/guide/ssr) on the docs site and the `@oas-ui/ssr` package.
 
+> The SSR acceptance fixtures (`packages/ssr/fixtures/{next,nuxt}`) are repository-only production-build and real-browser checks: installed and built independently, **never shipped in any npm package**, and not part of the root workspace install/build.
+
 ## Package Layout
 
 | Package | Description |
@@ -82,7 +84,7 @@ SSR / DSD guide: the [SSR page](https://oas-ui.dev/guide/ssr) on the docs site a
 | `packages/icons` | Inline SVG icon set (tree-shakable, no icon fonts) |
 | `packages/ui` | 145 components (9 source family dirs: basic / conversation / data / feedback / form / framework / layout / navigation / workbench; presented as 9 groups on the docs site) |
 | `packages/ssr` | DSD snapshot renderer + Node-safe entry + true hydration |
-| `packages/nuxt` | Nuxt 3 integration plugin |
+| `packages/nuxt` | Nuxt 3/4 integration plugin |
 | `packages/next` | Next.js (RSC) integration plugin |
 | `packages/docs` | Vitepress docs site (English & Chinese) |
 

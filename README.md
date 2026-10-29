@@ -60,7 +60,7 @@ import '@oas-ui/ui/basic/button'
 Web Components 本身与任何框架互操作；以下官方插件补齐 SSR 与开发体验：
 
 ```bash
-pnpm add @oas-ui/nuxt   # Nuxt 3 module：isCustomElement + theme 注入 + SSR helper
+pnpm add @oas-ui/nuxt   # Nuxt 3/4 module：isCustomElement + theme 注入 + SSR helper
 pnpm add @oas-ui/next   # Next.js：RSC OasComponent + OasRegistry 客户端注册引导
 ```
 
@@ -71,6 +71,8 @@ pnpm add @oas-ui/next   # Next.js：RSC OasComponent + OasRegistry 客户端注�
 官方示例模板（多套可直接复用的后台 / 中后台场景）：[oas-ui-templates.com](https://oas-ui-templates.com)。
 
 SSR / DSD 指南见文档站 [SSR 页](https://oas-ui.dev/guide/ssr)与 `@oas-ui/ssr` 包。
+
+> SSR 验收 fixture（`packages/ssr/fixtures/{next,nuxt}`）只用于仓库内的生产构建与真实浏览器验收：独立安装/构建，**不随任何 npm 包分发**，也不参与根 workspace 的全量安装与构建。
 
 AI agent 使用入口：
 
@@ -88,7 +90,7 @@ AI agent 使用入口：
 | `packages/icons` | 内联 SVG 图标集（可 tree-shake，无图标字体） |
 | `packages/ui` | 145 个组件（9 个源码族目录：basic / conversation / data / feedback / form / framework / layout / navigation / workbench；文档站按 9 个分组呈现） |
 | `packages/ssr` | DSD 快照渲染器 + Node-safe 入口 + 真水合 |
-| `packages/nuxt` | Nuxt 3 集成插件 |
+| `packages/nuxt` | Nuxt 3/4 集成插件 |
 | `packages/next` | Next.js（RSC）集成插件 |
 | `packages/docs` | Vitepress 文档站（中英双语） |
 
