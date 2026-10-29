@@ -37,7 +37,7 @@
   "events": [
     {
       "name": "oas-action",
-      "detail": "{ key: action.key, messageId: this.getAttr('message-id', '') || undefined, } satisfies MessageActionDetail"
+      "detail": "{ key, messageId: this.getAttr('message-id', '') || undefined, } satisfies MessageActionDetail"
     }
   ],
   "slots": [],

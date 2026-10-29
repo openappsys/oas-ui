@@ -101,12 +101,34 @@ export class OASMessageActions extends OASElement {
 
   protected override hydrate(): boolean {
     if (!this.shadow.querySelector('[part="actions"]')) return false
+    // 恢复已渲染内容的 raw 缓存：update 据此跳过 innerHTML 重建、采纳快照按钮节点
+    this.actionsRaw = this.getAttr('actions', '')
     this.bind()
     return true
   }
 
+  protected override onReconnect(): void {
+    // 监听挂在 shadow 内按钮容器上（随元素保留），重入 bind 仅为缓存引用；
+    // 委托 handler 同引用，addEventListener 规范去重，不会双绑。
+    this.bind()
+  }
+
   private bind(): void {
     this.actionsEl = this.shadow.querySelector<HTMLElement>('[part="actions"]')
+    this.actionsEl?.addEventListener('click', this.onActionClick)
+  }
+
+  /** 事件委托：快照按钮（无内联监听）与水合后新建按钮共用同一条绑定 */
+  private onActionClick = (e: Event): void => {
+    const target = e.target as Element | null
+    const button = target?.closest?.('button.action') as HTMLButtonElement | null
+    if (!button || button.disabled) return
+    const key = button.dataset.key ?? ''
+    if (!key) return
+    this.emit('action', {
+      key,
+      messageId: this.getAttr('message-id', '') || undefined,
+    } satisfies MessageActionDetail)
   }
 
   protected override update(): void {
@@ -134,13 +156,7 @@ export class OASMessageActions extends OASElement {
       button.title = action.title ?? action.label
       button.disabled = this.hasAttr('disabled') || action.disabled === true
       if (action.active) button.setAttribute('aria-pressed', 'true')
-      button.addEventListener('click', () => {
-        if (button.disabled) return
-        this.emit('action', {
-          key: action.key,
-          messageId: this.getAttr('message-id', '') || undefined,
-        } satisfies MessageActionDetail)
-      })
+      // 点击走 bind() 的容器委托，保证水合采纳的快照按钮同样可交互且不双绑
       box.appendChild(button)
     }
     this.syncDisabled(box)
