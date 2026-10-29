@@ -4,18 +4,18 @@
     "method": "gzip = zlib gzipSync；brotli = zlib.brotliCompressSync q11；单组件链 = 静态 import 图遍历 + 逐文件压缩求和（上界估计）",
     "packages": {
       "@oas-ui/ui": {
-        "distTotalBytes": 40241080,
+        "distTotalBytes": 40359566,
         "browserJs": {
-          "files": 454,
-          "rawBytes": 10441584,
-          "gzipBytes": 2507807,
-          "brotliBytes": 1958646
+          "files": 457,
+          "rawBytes": 10461875,
+          "gzipBytes": 2515169,
+          "brotliBytes": 1963825
         },
         "fullEntry": {
-          "files": 480,
-          "rawBytes": 3658197,
-          "gzipBytes": 994576,
-          "brotliBytes": 854997,
+          "files": 484,
+          "rawBytes": 3670360,
+          "gzipBytes": 1000103,
+          "brotliBytes": 859567,
           "fileList": [
             "packages/ui/dist/index.js",
             "packages/icons/dist/register.js",
@@ -222,6 +222,7 @@
             "packages/ui/dist/basic/icon/oas-icon.js",
             "packages/ui/dist/shared/icon-hint.js",
             "packages/ui/dist/form/upload/oas-upload.js",
+            "packages/core/dist/format-byte.js",
             "packages/ui/dist/form/tree-select/index.js",
             "packages/ui/dist/form/tree-select/oas-tree-select.js",
             "packages/ui/dist/feedback/bottom-sheet/index.js",
@@ -391,6 +392,9 @@
             "packages/ui/dist/data/resource/index.js",
             "packages/ui/dist/data/resource/resource-utils.js",
             "packages/ui/dist/data/resource/oas-resource.js",
+            "packages/ui/dist/data/relative-time/index.js",
+            "packages/ui/dist/data/relative-time/oas-relative-time.js",
+            "packages/ui/dist/data/relative-time/relative-time.js",
             "packages/ui/dist/data/qrcode/index.js",
             "packages/ui/dist/data/qrcode/oas-qrcode.js",
             "packages/ui/dist/data/qrcode/shapes.js",
@@ -501,9 +505,9 @@
         },
         "cdn": {
           "files": 1,
-          "rawBytes": 3041955,
-          "gzipBytes": 663719,
-          "brotliBytes": 456786
+          "rawBytes": 3047832,
+          "gzipBytes": 665727,
+          "brotliBytes": 457938
         }
       },
       "@oas-ui/theme": {
@@ -514,10 +518,10 @@
         }
       },
       "@oas-ui/core": {
-        "files": 6,
-        "rawBytes": 36580,
-        "gzipBytes": 14791,
-        "brotliBytes": 12167
+        "files": 7,
+        "rawBytes": 41736,
+        "gzipBytes": 17329,
+        "brotliBytes": 14251
       },
       "@oas-ui/i18n": {
         "files": 23,
@@ -533,9 +537,9 @@
       },
       "@oas-ui/ssr": {
         "files": 3,
-        "rawBytes": 41686,
-        "gzipBytes": 13306,
-        "brotliBytes": 10896
+        "rawBytes": 41988,
+        "gzipBytes": 13430,
+        "brotliBytes": 10976
       }
     },
     "components": {
@@ -744,9 +748,9 @@
         "entry": "layout/scroll-area/infinite",
         "spec": "@oas-ui/ui/layout/scroll-area/infinite",
         "files": 3,
-        "rawBytes": 13366,
-        "gzipBytes": 3916,
-        "brotliBytes": 3412,
+        "rawBytes": 14811,
+        "gzipBytes": 4232,
+        "brotliBytes": 3690,
         "fileList": [
           "packages/ui/dist/layout/scroll-area/infinite/index.js",
           "packages/ui/dist/layout/scroll-area/infinite/infinite-scroll.js",
@@ -852,7 +856,7 @@
       {
         "name": "dist/cdn.js gzip",
         "kind": "ceiling",
-        "actualBytes": 663719,
+        "actualBytes": 665727,
         "limitBytes": 788480,
         "warnAtBytes": 709632,
         "pass": true,
@@ -862,7 +866,7 @@
       {
         "name": "@oas-ui/ui 全量入口链 gzip",
         "kind": "ceiling",
-        "actualBytes": 994576,
+        "actualBytes": 1000103,
         "limitBytes": 1167360,
         "warnAtBytes": 1050624,
         "pass": true,
@@ -1056,7 +1060,7 @@
         "name": "@oas-ui/ui/layout/scroll-area/infinite 链 gzip",
         "kind": "absolute",
         "componentId": "infiniteScroll",
-        "actualBytes": 3916,
+        "actualBytes": 4232,
         "limitBytes": 5120,
         "warnAtBytes": 4608,
         "pass": true,

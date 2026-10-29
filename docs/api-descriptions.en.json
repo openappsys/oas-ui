@@ -4235,7 +4235,7 @@
       "headers": "Extra request headers (JSON string)",
       "data": "Extra form fields (JSON string, submitted with the file)",
       "with-credentials": "Cross-origin credentials",
-      "max-size": "Per-file size limit (bytes, or `2KB` / `2KiB` / `1MB` / `1GiB` / `1TiB` / `1PiB` / `1EiB` / `2TB`, all parsed in base 1024); unparsable non-empty values mean \"unlimited\" and only warn via devWarn in development (silent in production builds); when the multiplication result overflows it is clamped to MAX_SAFE_INTEGER and `0.4B` counts as 1 byte; over limit fires oas-exceed size form",
+      "max-size": "Per-file size limit (bytes, or `2KB` / `2KiB` / `1MB` / `1GiB` / `1TiB` / `1PiB` / `1EiB` / `2TB`, all parsed in base 1024); unparsable non-empty values mean \"unlimited\" and only warn via devWarn in development (silent in production builds); when the multiplication result or the numeric literal itself exceeds the representable double range it is clamped to MAX_SAFE_INTEGER and `0.4B` counts as 1 byte; over limit fires oas-exceed size form",
       "directory": "Directory upload (recursive folder intake)",
       "paste": "Paste upload (off by default; clipboard files enter the list when on)",
       "show-file-list": "File list visibility (`\"false\"` hides it, keeping only the drop zone)",

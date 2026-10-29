@@ -139,7 +139,7 @@ el.customRequest = ({ file, name, action, onProgress, onSuccess, onError }) => {
 
 ## 文件大小限制（max-size）
 
-`max-size` 支持字节数或带单位写法（`512KB` / `2MB` / `1GB`）；同时接受 IEC 写法 `KiB` / `MiB` / `GiB` / `TiB` / `PiB` / `EiB` 与 `TB`，均按 1024 进制解析（`1.5TiB`、`2PiB`、`1EiB` 都有效）。超限拒绝并派发 `oas-exceed-limit`（`detail.type === 'size'`，含 `maxSize` 字节数）。非法写法与边界：非空但无法解析（如 `2ZB`）按「不限制」处理，**开发环境**发一次 `devWarn`（同一字符串去重，不静默放行）；生产构建会摇掉 `devWarn`，因此生产中的非法值是**静默不限制**（明示行为）。乘积溢出双精度（极大数字 × `TB`）夹到 `Number.MAX_SAFE_INTEGER`；`0.4B` 这类舍入到 0 的正数写法按 1 字节；显式 `0` 仍表示不限制。
+`max-size` 支持字节数或带单位写法（`512KB` / `2MB` / `1GB`）；同时接受 IEC 写法 `KiB` / `MiB` / `GiB` / `TiB` / `PiB` / `EiB` 与 `TB`，均按 1024 进制解析（`1.5TiB`、`2PiB`、`1EiB` 都有效）。超限拒绝并派发 `oas-exceed-limit`（`detail.type === 'size'`，含 `maxSize` 字节数）。非法写法与边界：非空但无法解析（如 `2ZB`）按「不限制」处理，**开发环境**发一次 `devWarn`（同一字符串去重，不静默放行）；生产构建会摇掉 `devWarn`，因此生产中的非法值是**静默不限制**（明示行为）。乘积溢出双精度（极大数字 × `TB`）与数字本身超出双精度可表示范围（超长数字字面量）都夹到 `Number.MAX_SAFE_INTEGER`；`0.4B` 这类舍入到 0 的正数写法按 1 字节；显式 `0` 仍表示不限制。
 
 > **大小显示与单位**：列表行、`[data-item-size]` 绑定与预览浮层中的文件大小按 IEC 单位显示（`B` / `KiB` / `MiB` / `GiB` / `TiB` / `PiB` / `EiB`，1024 进制）——`B` 档取整，非 `B` 档固定 1 位小数；例如 `2048` 字节显示为 `2.0 KiB`，`1.5 GiB` 不再封顶显示为 `1536.0 MB`。`max-size` 的输入写法 `KB` / `MB` / `GB` 仍按 1024 进制解析；两者数值口径一致，只是显示标签采用 IEC（`KiB` / `MiB` / `GiB`）。
 
@@ -448,7 +448,7 @@ onMounted(async () => {
 | `headers` | 附加请求头（JSON 字符串） | — | — |
 | `list-type` | 列表样式：`list`（默认）/ `picture`（列表带小缩略图）/ `picture-card`（卡片缩略图墙） | `string` | `list` |
 | `max` | 最大文件数 | `string` | `0` |
-| `max-size` | 单文件大小上限（字节，或 `2KB` / `2KiB` / `1MB` / `1GiB` / `1TiB` / `1PiB` / `1EiB` / `2TB`，均按 1024 进制解析）；非空但无法解析按「不限制」，仅在开发环境 devWarn（生产构建无告警）；乘积溢出夹到 MAX_SAFE_INTEGER，`0.4B` 按 1 字节；超限派 oas-exceed size 形态 | `string` | — |
+| `max-size` | 单文件大小上限（字节，或 `2KB` / `2KiB` / `1MB` / `1GiB` / `1TiB` / `1PiB` / `1EiB` / `2TB`，均按 1024 进制解析）；非空但无法解析按「不限制」，仅在开发环境 devWarn（生产构建无告警）；乘积溢出或数字本身超出双精度可表示范围都夹到 MAX_SAFE_INTEGER，`0.4B` 按 1 字节；超限派 oas-exceed size 形态 | `string` | — |
 | `method` | HTTP 方法（默认 POST） | `string` | `POST` |
 | `multiple` | 多选 | `boolean` | — |
 | `name` | 上传文件的表单字段名（默认 `file`） | `string` | — |

@@ -18,7 +18,7 @@
 - **精度语义**：`B` 档取整（`512.6` → `513 B`）；非 `B` 档固定 `precision` 位小数（默认 `1`，即 `2.0 KiB`、`5.0 MiB`），保留 Upload 原有的定点小数意图。分组分隔关闭，输出文本只受 locale 小数点/数字字形影响。
 - **边界**：`0` / `-0` → `0 B`；负数保留符号（`-2.0 KiB`，按绝对值选档进位）；`NaN` / `±Infinity` / 非 number → `''`（空串，不渲染 `NaN`/`Infinity`）。
 - **导出与运行环境**：仅经 `@oas-ui/core/format-byte` 子路径导出，不进 `@oas-ui/core` 主入口；模块零 DOM 引用，Node 可直接导入。
-- **Upload 迁移**：`formatSize` 私有实现删除，三处显示（预览浮层、`template[slot="item"]` 绑定、默认行/卡片）统一调用 `formatByte(sizeOf(entry))`（IEC + 1 位小数）；回显记录 `size` 与真实 `File.size` 同口径，不改大小计算与上传主流程，仅扩展 `max-size` 的可解析写法。`max-size` 同时接受 IEC 写法 `KiB` / `MiB` / `GiB` / `TiB` / `PiB` / `EiB` 与 `TB`（`KB` / `MB` / `GB` 保留），均按 1024 进制解析——用户照新的显示文案书写即可生效。边界语义：非空但无法解析的值（如 `2ZB`）按「不限制」处理并 `devWarn` 一次（同一字符串去重）；`devWarn` **只在开发环境输出**（生产构建被摇掉），因此生产中的非法值是**静默不限制**，这是文档明示行为；解析层与乘积层溢出（`≥309` 位数字字面量解析为 `Infinity`、极大数字 × `TB`）都视为可表示上限，夹到 `Number.MAX_SAFE_INTEGER`，正数写法舍入到 0（如 `0.4B`）按 1 字节，显式 `0` 仍是「不限制」——溢出与舍零都不允许把上限静默变成「无限制」。
+- **Upload 迁移**：`formatSize` 私有实现删除，三处显示（预览浮层、`template[slot="item"]` 绑定、默认行/卡片）统一调用 `formatByte(sizeOf(entry))`（IEC + 1 位小数）；回显记录 `size` 与真实 `File.size` 同口径，不改大小计算与上传主流程，仅扩展 `max-size` 的可解析写法。`max-size` 同时接受 IEC 写法 `KiB` / `MiB` / `GiB` / `TiB` / `PiB` / `EiB` 与 `TB`（`KB` / `MB` / `GB` 保留），均按 1024 进制解析——用户照新的显示文案书写即可生效。边界语义：非空但无法解析的值（如 `2ZB`）按「不限制」处理并 `devWarn` 一次（同一字符串去重）；`devWarn` **只在开发环境输出**（生产构建被摇掉），因此生产中的非法值是**静默不限制**，这是文档明示行为；解析层与乘积层溢出（超长数字字面量超出双精度可表示范围、极大数字 × `TB`）都视为可表示上限，夹到 `Number.MAX_SAFE_INTEGER`，正数写法舍入到 0（如 `0.4B`）按 1 字节，显式 `0` 仍是「不限制」——溢出与舍零都不允许把上限静默变成「无限制」。
 
 ### 非目标
 
@@ -26,7 +26,7 @@
 
 ### 验收标准
 
-- 单测：IEC/SI 阈值与进位边界、`0` / 小数 / 极大 / 负数 / 非法 / 非有限、`precision` 0/1/多位/非法、locale（`de-DE` 小数点、结构非法与 `xx-YY` 不受支持均回落 `en-US`）、`options: null`、默认值；Node 环境直接 `import '@oas-ui/core/format-byte'` 与调用不引用 DOM（显式断言无 `document`）；Upload 列表/模板绑定/预览浮层显示 `KiB`/`MiB` 且旧断言按新契约重算并注明原因；`max-size` 的 `2KiB` / `1.5TiB` / `2PiB` / `1EiB` 生效、未知单位 devWarn 且不静默降级、乘积溢出夹到 `MAX_SAFE_INTEGER`、`0.4B` 按 1 字节、显式 `0` 仍不限制。
+- 单测：IEC/SI 阈值与进位边界、`0` / 小数 / 极大 / 负数 / 非法 / 非有限、`precision` 0/1/多位/非法、locale（`de-DE` 小数点、结构非法与 `xx-YY` 不受支持均回落 `en-US`）、`options: null`、默认值；Node 环境直接 `import '@oas-ui/core/format-byte'` 与调用不引用 DOM（显式断言无 `document`）；Upload 列表/模板绑定/预览浮层显示 `KiB`/`MiB` 且旧断言按新契约重算并注明原因；`max-size` 的 `2KiB` / `1.5TiB` / `2PiB` / `1EiB` 生效、未知单位 devWarn 且不静默降级、解析层与乘积层溢出都夹到 `MAX_SAFE_INTEGER`、`0.4B` 按 1 字节、显式 `0` 仍不限制。
 - qa-regression：真实文档页 Upload 大小文案为 IEC 单位（chromium + firefox），`max-size="2KiB"` 真实拦截、未知单位只在开发环境 devWarn 后按不限制放行（生产构建无告警，属明示行为），dark 主题可读，console 无意外告警。
 - 文档：CHANGELOG `[未发布] / 变更` 记录 KB→KiB 可见变化；upload 中英文页与 API 描述说明 IEC 单位；`@oas-ui/core` README 补 helper 用法；PRD/ROADMAP 登记；全量 test/typecheck/build/e2e/perf:size/api/llms/stats/skill/ssr/lint/format 通过。
 
