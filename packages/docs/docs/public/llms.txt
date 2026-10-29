@@ -200,7 +200,7 @@
 
 - [ConfigProvider 全局配置](https://oas-ui.dev/components/config-provider): 全局配置的注入入口，统一管理包裹子树的 locale / size / theme / config / direction / z-index / disabled。
 - [App 消息上下文容器](https://oas-ui.dev/components/app): message / notification / loadingBar 等命令式 API 的宿主容器。app 容器存在时，消息挂载到 app 内（而非 document.body）；可与 config-provider 配套使用。
-- [ThemeEditor 主题编辑器](https://oas-ui.dev/components/theme-editor): 实时编辑 --oas-* 主题 token，编辑即时写入宿主 CSS 变量，子树实时继承预览。
+- [ThemeEditor 主题编辑器](https://oas-ui.dev/components/theme-editor): 实时编辑 --oas-* 主题 token，编辑即时写入宿主 CSS 变量，子树实时继承预览。light/dark 各存一套独立 overrides，可在两套间切换编辑而不互相污染。
 
 ## Optional
 

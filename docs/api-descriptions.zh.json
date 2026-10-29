@@ -3503,12 +3503,22 @@
   "oas-theme-editor": {
     "attrs": {
       "token": "自定义要编辑的 token 列表（CSS 变量名）",
-      "preset": "内置预设主题：`compact`（紧凑，control-height -4px、space 按比例收缩）/ `comfortable`（宽松，+4px、space 按比例放大）/ `default`（等价 reset，清除已写入内联变量）；非法值忽略并 dev 告警"
+      "preset": "内置预设主题：`compact`（紧凑，control-height -4px、space 按比例收缩）/ `comfortable`（宽松，+4px、space 按比例放大）/ `default`（等价 reset，清除当前编辑桶）；非法值忽略并 dev 告警",
+      "editing-theme": "选择 light/dark 编辑桶，默认 light，非法值安全回落 light；只决定编辑/导入/导出目标，不控制实际预览主题"
     },
     "events": {
-      "oas-change": "编辑任一 token，`detail: { token, value }`"
+      "oas-change": "用户编辑任一 token，`detail: { token, value, theme }`；theme 为实际 editingTheme"
     },
-    "slots": {}
+    "slots": {},
+    "methods": {
+      "exportJson": "导出 editingTheme 当前桶的扁平 token map，不改成双主题嵌套结构",
+      "exportCss": "导出 editingTheme 当前桶的 `:root` CSS 文本，与 exportJson 同源",
+      "exportThemes": "导出明确 `{ light, dark }` 双套扁平 token map",
+      "importJson": "只导入 editingTheme 当前桶；保持旧扁平结构与合并非 `--` 键忽略语义",
+      "importThemes": "原子导入双套数据：先完整校验仅含 light/dark 的形状与全部字符串 token 值，再一次性替换；任何非法项均无部分写入",
+      "applyPreset": "对 editingTheme 当前桶应用内置预设，只调尺寸族 token，不额外派发事件",
+      "reset": "`reset(theme?)` 只清指定 light/dark 桶；省略时只清当前 editingTheme 桶，不影响另一套"
+    }
   },
   "oas-time-picker": {
     "attrs": {

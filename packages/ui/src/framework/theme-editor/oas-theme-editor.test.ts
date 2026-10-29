@@ -1,5 +1,17 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import '@oas-ui/i18n'
+import { setLocale, type Locale } from '@oas-ui/i18n'
+import zhCN from '@oas-ui/i18n/zh-CN'
+import en from '@oas-ui/i18n/en'
+import ja from '@oas-ui/i18n/ja'
+import ko from '@oas-ui/i18n/ko'
+import de from '@oas-ui/i18n/de'
+import fr from '@oas-ui/i18n/fr'
+import es from '@oas-ui/i18n/es'
+import pt from '@oas-ui/i18n/pt'
+import ru from '@oas-ui/i18n/ru'
+import ar from '@oas-ui/i18n/ar'
+import '../config-provider/index.js'
 import { OASThemeEditor } from './index.js'
 import { parseCssColorToHex } from './oas-theme-editor.js'
 
@@ -83,6 +95,10 @@ function searchInput(el: OASThemeEditor): HTMLInputElement {
   return el.shadowRoot!.querySelector<HTMLInputElement>('.search')!
 }
 
+function editingThemeSelect(el: OASThemeEditor): HTMLSelectElement {
+  return el.shadowRoot!.querySelector<HTMLSelectElement>('.editing-theme')!
+}
+
 function groups(el: OASThemeEditor): HTMLDetailsElement[] {
   return [...el.shadowRoot!.querySelectorAll('details[part="group"]')] as HTMLDetailsElement[]
 }
@@ -145,7 +161,7 @@ describe('OASThemeEditor', () => {
     input.value = '#ff0000'
     input.dispatchEvent(new Event('input', { bubbles: true }))
     expect(el.style.getPropertyValue('--oas-color-primary')).toBe('#ff0000')
-    expect(detail).toEqual({ token: '--oas-color-primary', value: '#ff0000' })
+    expect(detail).toEqual({ token: '--oas-color-primary', value: '#ff0000', theme: 'light' })
     expect(rowFor(el, '--oas-color-primary')!.querySelector('.value')!.textContent).toBe('#ff0000')
   })
 
@@ -157,7 +173,7 @@ describe('OASThemeEditor', () => {
     input.value = '16'
     input.dispatchEvent(new Event('input', { bubbles: true }))
     expect(el.style.getPropertyValue('--oas-font-size-md')).toBe('16px')
-    expect(detail).toEqual({ token: '--oas-font-size-md', value: '16px' })
+    expect(detail).toEqual({ token: '--oas-font-size-md', value: '16px', theme: 'light' })
   })
 
   it('数字输入空值/非法值不写入不派发', () => {
@@ -524,5 +540,258 @@ describe('OASThemeEditor 组折叠与搜索', () => {
     expect(rowFor(el, '--oas-font-size-md')!.style.display).toBe('')
     expect(groupFor(el, '颜色')!.style.display).toBe('')
     expect(fontSizeGroup.open).toBe(false)
+  })
+})
+
+describe('OASThemeEditor light/dark 双套编辑', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+    vi.restoreAllMocks()
+  })
+
+  function editColor(el: OASThemeEditor, value: string): void {
+    const input = colorInput(rowFor(el, '--oas-color-primary')!)
+    input.value = value
+    input.dispatchEvent(new Event('input', { bubbles: true }))
+  }
+
+  it('editingTheme 默认/非法值回落 light，property、attribute 与选择器受控同步', () => {
+    const el = mount({ 'editing-theme': 'sepia' })
+    expect(el.editingTheme).toBe('light')
+    expect(editingThemeSelect(el).value).toBe('light')
+
+    el.editingTheme = 'dark'
+    expect(el.getAttribute('editing-theme')).toBe('dark')
+    expect(editingThemeSelect(el).value).toBe('dark')
+
+    el.setAttribute('editing-theme', 'light')
+    expect(el.editingTheme).toBe('light')
+    expect(editingThemeSelect(el).value).toBe('light')
+
+    const select = editingThemeSelect(el)
+    select.value = 'dark'
+    select.dispatchEvent(new Event('change', { bubbles: true }))
+    expect(el.editingTheme).toBe('dark')
+    expect(el.getAttribute('editing-theme')).toBe('dark')
+  })
+
+  it('light/dark overrides 独立，旧扁平导出/导入只作用当前编辑桶且旧事件消费者仍可读 token/value', () => {
+    const el = mount()
+    const legacyDetails: Array<{ token: string; value: string }> = []
+    const details: Array<{ token: string; value: string; theme: string }> = []
+    el.addEventListener('oas-change', (event) => {
+      const detail = (event as CustomEvent<{ token: string; value: string; theme: string }>).detail
+      legacyDetails.push({ token: detail.token, value: detail.value })
+      details.push(detail)
+    })
+
+    editColor(el, '#111111')
+    el.importJson({ '--oas-space-2': '10px' })
+    el.editingTheme = 'dark'
+    el.importJson({ '--oas-space-2': '14px' })
+    editColor(el, '#222222')
+
+    expect(el.style.getPropertyValue('--oas-color-primary')).toBe('#111111')
+    expect(el.style.getPropertyValue('--oas-space-2')).toBe('10px')
+    expect(el.exportJson()).not.toHaveProperty('light')
+    expect(el.exportJson()).not.toHaveProperty('dark')
+    expect(el.exportJson()['--oas-color-primary']).toBe('#222222')
+    expect(el.exportJson()['--oas-space-2']).toBe('14px')
+    expect(el.exportCss()).toContain('--oas-color-primary: #222222;')
+    expect(legacyDetails).toEqual([
+      { token: '--oas-color-primary', value: '#111111' },
+      { token: '--oas-color-primary', value: '#222222' },
+    ])
+    expect(details.map((detail) => detail.theme)).toEqual(['light', 'dark'])
+
+    el.editingTheme = 'light'
+    expect(el.exportJson()['--oas-color-primary']).toBe('#111111')
+    expect(el.exportJson()['--oas-space-2']).toBe('10px')
+  })
+
+  it('编辑桶不控制预览：ConfigProvider 明暗切换应用对应桶，事件仍标真实编辑桶', () => {
+    const cp = document.createElement('oas-config-provider')
+    cp.setAttribute('theme', 'light')
+    document.body.appendChild(cp)
+    const el = new OASThemeEditor()
+    for (const [key, value] of Object.entries(DEFAULT_VARS)) cp.style.setProperty(key, value)
+    cp.appendChild(el)
+    const themes: string[] = []
+    el.addEventListener('oas-change', (event) => themes.push((event as CustomEvent<{ theme: string }>).detail.theme))
+
+    editColor(el, '#111111')
+    el.editingTheme = 'dark'
+    editColor(el, '#222222')
+    expect(cp.style.getPropertyValue('--oas-color-primary')).toBe('#111111')
+    expect(cp.dataset.theme).toBe('light')
+
+    cp.setAttribute('theme', 'dark')
+    expect(cp.dataset.theme).toBe('dark')
+    expect(el.editingTheme).toBe('dark')
+    expect(cp.style.getPropertyValue('--oas-color-primary')).toBe('#222222')
+
+    cp.setAttribute('theme', 'light')
+    expect(cp.dataset.theme).toBe('light')
+    expect(el.editingTheme).toBe('dark')
+    expect(cp.style.getPropertyValue('--oas-color-primary')).toBe('#111111')
+    expect(themes).toEqual(['light', 'dark'])
+  })
+
+  it('exportThemes/importThemes 双套往返，替换提交且旧 import/preset/reset/双套导入均不额外派发事件', () => {
+    const source = mount()
+    let fired = 0
+    source.addEventListener('oas-change', () => fired++)
+    source.importThemes({
+      light: { '--oas-color-primary': '#111111', '--oas-space-2': '10px' },
+      dark: { '--oas-color-primary': '#222222', '--oas-space-2': '14px' },
+    })
+    const exported = source.exportThemes()
+    expect(exported.light['--oas-color-primary']).toBe('#111111')
+    expect(exported.light['--oas-space-2']).toBe('10px')
+    expect(exported.dark['--oas-color-primary']).toBe('#222222')
+    expect(exported.dark['--oas-space-2']).toBe('14px')
+
+    const target = mount()
+    target.addEventListener('oas-change', () => fired++)
+    target.importThemes(exported)
+    expect(target.exportThemes()).toEqual(exported)
+    target.importJson({ '--oas-color-primary': '#333333' })
+    target.applyPreset('compact')
+    target.reset()
+    expect(fired).toBe(0)
+  })
+
+  it('importThemes 对未知主题/非对象/非法 token/嵌套坏值原子失败，两套导出与内联预览逐字不变', () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const el = mount()
+    el.importThemes({
+      light: { '--oas-color-primary': '#111111', '--oas-space-2': '10px' },
+      dark: { '--oas-color-primary': '#222222', '--oas-space-2': '14px' },
+    })
+    const beforeThemes = JSON.stringify(el.exportThemes())
+    const beforeInline = el.style.cssText
+    const invalidInputs: unknown[] = [
+      null,
+      [],
+      '{ "light": {}, "dark": {} }',
+      { light: {} },
+      { light: {}, dark: {}, sepia: {} },
+      { light: [], dark: {} },
+      { light: { 'color-primary': '#333333' }, dark: {} },
+      { light: { '--oas-color-primary': '#333333' }, dark: { '--oas-space-2': { value: '18px' } } },
+      { light: { '--oas-color-primary': '#333333' }, dark: { '--oas-space-2': 18 } },
+    ]
+
+    for (const input of invalidInputs) {
+      el.importThemes(input as never)
+      expect(JSON.stringify(el.exportThemes()), `非法输入应保持两套不变：${JSON.stringify(input)}`).toBe(beforeThemes)
+      expect(el.style.cssText).toBe(beforeInline)
+    }
+  })
+
+  it('reset() 省略参数只清当前桶，reset(theme) 可清非当前桶且两套互不影响', () => {
+    const cp = document.createElement('oas-config-provider')
+    cp.setAttribute('theme', 'light')
+    document.body.appendChild(cp)
+    const el = new OASThemeEditor()
+    for (const [key, value] of Object.entries(DEFAULT_VARS)) cp.style.setProperty(key, value)
+    cp.appendChild(el)
+    el.importJson({ '--oas-color-primary': '#111111' })
+    el.editingTheme = 'dark'
+    el.importJson({ '--oas-color-primary': '#222222' })
+
+    el.reset()
+    expect(cp.style.getPropertyValue('--oas-color-primary')).toBe('#111111')
+    cp.setAttribute('theme', 'dark')
+    expect(cp.style.getPropertyValue('--oas-color-primary')).toBe('')
+
+    cp.setAttribute('theme', 'light')
+    expect(cp.style.getPropertyValue('--oas-color-primary')).toBe('#111111')
+    el.reset('light')
+    expect(cp.style.getPropertyValue('--oas-color-primary')).toBe('')
+    expect(el.editingTheme).toBe('dark')
+  })
+
+  it('preset 只写当前编辑桶，清另一套不影响当前实际预览', () => {
+    const el = mount()
+    el.applyPreset('compact')
+    expect(el.style.getPropertyValue('--oas-control-height-md')).toBe('28px')
+    el.editingTheme = 'dark'
+    el.applyPreset('comfortable')
+    expect(el.style.getPropertyValue('--oas-control-height-md')).toBe('28px')
+    expect(el.exportThemes().dark['--oas-control-height-md']).toBe('36px')
+
+    el.reset('dark')
+    expect(el.style.getPropertyValue('--oas-control-height-md')).toBe('28px')
+    el.applyPreset('default')
+    expect(el.style.getPropertyValue('--oas-control-height-md')).toBe('28px')
+    el.reset('light')
+    expect(el.style.getPropertyValue('--oas-control-height-md')).toBe('')
+  })
+
+  it('切换编辑桶、双套导入与 reset 保持搜索/折叠/行节点/焦点，非法中间输入不被重写', () => {
+    const el = mount({ token: '["--oas-color-primary","--oas-font-size-md"]' })
+    const row = rowFor(el, '--oas-color-primary')!
+    const text = colorTextInput(row)
+    const search = searchInput(el)
+    search.value = 'primary'
+    search.dispatchEvent(new Event('input', { bubbles: true }))
+    const colorGroup = groupFor(el, '颜色')!
+    colorGroup.open = false
+    text.focus()
+    text.value = 'not-a-color'
+    text.dispatchEvent(new Event('input', { bubbles: true }))
+
+    el.editingTheme = 'dark'
+    expect(rowFor(el, '--oas-color-primary')).toBe(row)
+    expect(colorTextInput(row)).toBe(text)
+    expect(searchInput(el)).toBe(search)
+    expect(search.value).toBe('primary')
+    expect(colorGroup.open).toBe(false)
+    expect(el.shadowRoot!.activeElement).toBe(text)
+    expect(text.value).toBe('not-a-color')
+    expect(text.classList.contains('is-invalid')).toBe(true)
+
+    el.importThemes({
+      light: { '--oas-color-primary': '#111111' },
+      dark: { '--oas-color-primary': '#222222' },
+    })
+    expect(rowFor(el, '--oas-color-primary')).toBe(row)
+    expect(search.value).toBe('primary')
+    expect(colorGroup.open).toBe(false)
+    expect(el.shadowRoot!.activeElement).toBe(text)
+    expect(text.value).toBe('not-a-color')
+
+    el.reset()
+    expect(rowFor(el, '--oas-color-primary')).toBe(row)
+    expect(search.value).toBe('primary')
+    expect(colorGroup.open).toBe(false)
+    expect(el.shadowRoot!.activeElement).toBe(text)
+    expect(text.value).toBe('not-a-color')
+  })
+
+  it('10 个 locale 的编辑桶选择器均有翻译，不暴露 raw locale key', () => {
+    const packs: Locale[] = [zhCN, en, ja, ko, de, fr, es, pt, ru, ar]
+    for (const pack of packs) {
+      setLocale(pack)
+      const el = mount({ token: '["--oas-color-primary"]' })
+      const select = editingThemeSelect(el)
+      const label = select.getAttribute('aria-label') ?? ''
+      const options = [...select.options].map((option) => option.textContent?.trim() ?? '')
+      expect(label, pack.name).not.toBe('')
+      expect(label, pack.name).not.toContain('themeEditor.')
+      expect(options, pack.name).toHaveLength(2)
+      for (const text of options) {
+        expect(text, pack.name).not.toBe('')
+        expect(text, pack.name).not.toContain('themeEditor.')
+      }
+      el.remove()
+    }
   })
 })

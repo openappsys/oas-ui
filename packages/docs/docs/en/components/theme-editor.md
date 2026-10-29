@@ -1,14 +1,23 @@
 # ThemeEditor
 
-Edit `--oas-*` theme tokens in real time: edits are written to host CSS variables immediately, so the subtree previews them live. Color token rows use a dual channel of swatch + text box (the swatch only carries `#rrggbb`; the text box can edit any CSS color function such as `rgb()`/`oklch()`/`color-mix()` without corrupting the original value); numeric token rows link a range slider with a number input. The panel has a search box that filters by token name, collapsible groups, built-in compact / comfortable presets, and export / import / reset tools.
+Edit `--oas-*` theme tokens in real time: edits are written to host CSS variables immediately, so the subtree previews them live. Light and dark keep independent overrides, so either bucket can be edited without polluting the other. Color token rows use a dual channel of swatch + text box (the swatch only carries `#rrggbb`; the text box can edit any CSS color function such as `rgb()`/`oklch()`/`color-mix()` without corrupting the original value); numeric token rows link a range slider with a number input. The panel has a search box that filters by token name, collapsible groups, built-in compact / comfortable presets, and export / import / reset tools.
 
 ## Default token set
 
 Shows the full set of default theme tokens (the semantic tokens from `@oas-ui/theme`); undefined variables are skipped automatically.
 
 <DemoBlock title="Default token set">
-  <oas-theme-editor id="te-default" style="max-width: 440px; width: 100%; border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-lg); padding: var(--oas-space-4)"></oas-theme-editor>
+  <oas-theme-editor id="te-default" editing-theme="light" style="max-width: 440px; width: 100%; border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-lg); padding: var(--oas-space-4)"></oas-theme-editor>
 </DemoBlock>
+
+## Independent light/dark editing
+
+The Editing theme selector maps to `editing-theme` / `editingTheme`, defaults to `light`, and safely falls back to `light` for invalid values. It only selects the editing bucket; **it is not a second theme switch**. The actual preview still follows the nearest ConfigProvider or effective `data-theme`.
+
+- Light and dark keep independent overrides. Editing a bucket that is not currently previewed updates only that bucket and leaves the page's inline variables unchanged.
+- Switching the provider's effective theme applies the corresponding bucket without changing the selected editing bucket. Change events always carry the actual editing `theme`.
+- Switching buckets, importing both buckets, and resetting do not rebuild token rows: the search query, group fold state, and inline focus remain intact, and invalid in-progress input is not unnecessarily overwritten.
+- Even before the other bucket has been previewed, dual export reads its computed defaults through a temporary hidden probe instead of reusing values from the current theme. The probe is destroyed immediately afterwards.
 
 ## Editing color function values
 
@@ -27,7 +36,7 @@ Color token rows are a dual channel of swatch + text box:
 
 ## Integration with ConfigProvider
 
-When the editor is inside a `<oas-config-provider>`, the write target switches to the nearest provider element — the whole subtree (including Shadow DOM) inherits edited tokens live. The button on the right toggles the provider's dark theme to verify edited values still override the theme.
+When the editor is inside a `<oas-config-provider>`, the write target switches to the nearest provider element — the whole subtree (including Shadow DOM) inherits the overrides for the currently effective theme bucket. The button on the right toggles the provider's dark theme, demonstrating that the preview follows light/dark while the selected editing bucket remains independent.
 
 <DemoBlock title="Live preview in a ConfigProvider subtree">
   <oas-config-provider id="te-cp" theme="" style="display: block; width: 100%">
@@ -64,7 +73,7 @@ Numeric token rows link a range slider with a number input (min / max / step com
 - `comfortable`: control-height +4px per tier, space scaled up proportionally
 - `default`: equivalent to `reset()`, clears the written inline variables
 
-Applied tokens are recorded in writtenTokens and cleared together by `reset()`.
+Presets write only to the current editing bucket. `reset()` without an argument clears that bucket; `reset('light' | 'dark')` clears the named bucket without affecting the other one.
 
 <DemoBlock title="Switching presets">
   <oas-space style="margin-bottom: var(--oas-space-3)">
@@ -86,15 +95,18 @@ Groups are collapsible via details/summary (open by default). The search box at 
 
 ## Export / import / reset
 
-- `exportJson()` returns the current token set as JSON; `exportCss()` returns `:root { ... }` CSS text (same source)
-- `importJson(json)` applies a token set to the themeRoot (non-`--` keys are ignored with a warning); the panel refreshes in place without losing focus
-- `reset()` clears the inline variables written by the editor and restores the default theme values
+- Legacy `exportJson()` / `exportCss()` still return a flat token map / CSS for the current editing bucket only. Legacy `importJson(json)` likewise merges only into that bucket (non-`--` keys are ignored with a warning).
+- New `exportThemes()` returns an explicit `{ light, dark }` pair of flat maps. New `importThemes(themes)` validates the complete shape and every token before replacing both buckets in one commit; any invalid item causes no partial writes.
+- `reset()` clears only the current editing bucket; `reset('light' | 'dark')` clears only the named bucket.
+- Legacy import, applyPreset, and reset emit no extra events. User edits dispatch `oas-change` with `{ token, value, theme }`.
 
 <DemoBlock title="Export / import / reset">
-  <oas-button size="small" type="primary" onclick="teExport()">Export JSON</oas-button>
-  <oas-button size="small" onclick="teExportCss()">Export CSS</oas-button>
-  <oas-button size="small" onclick="teImport()">Import sample JSON</oas-button>
-  <oas-button size="small" onclick="teReset()">Reset editor</oas-button>
+  <oas-button size="small" type="primary" onclick="teExport()">Export current JSON</oas-button>
+  <oas-button size="small" onclick="teExportCss()">Export current CSS</oas-button>
+  <oas-button size="small" onclick="teImport()">Import current sample</oas-button>
+  <oas-button size="small" onclick="teExportThemes()">Export both themes</oas-button>
+  <oas-button size="small" onclick="teImportThemes()">Import both themes</oas-button>
+  <oas-button size="small" onclick="teReset()">Reset current bucket</oas-button>
   <pre id="te-json" style="width: 100%; max-height: 320px; overflow: auto; margin: var(--oas-space-3) 0 0; padding: var(--oas-space-3); background: var(--oas-color-bg-hover); border-radius: var(--oas-radius-md); font-size: var(--oas-font-size-xs); line-height: 1.6">Click a button to view the result</pre>
 </DemoBlock>
 
@@ -120,7 +132,20 @@ onMounted(() => {
     const el = document.getElementById('te-default')
     const data = { '--oas-color-primary': '#7c3aed', '--oas-font-size-md': '15px' }
     el?.importJson(data)
-    document.getElementById('te-json').textContent = `Imported:\n` + JSON.stringify(data, null, 2)
+    document.getElementById('te-json').textContent = `Imported into current bucket:\n` + JSON.stringify(data, null, 2)
+  }
+  window.teExportThemes = () => {
+    const el = document.getElementById('te-default')
+    document.getElementById('te-json').textContent = JSON.stringify(el?.exportThemes() ?? {}, null, 2)
+  }
+  window.teImportThemes = () => {
+    const el = document.getElementById('te-default')
+    const data = {
+      light: { '--oas-color-primary': '#7c3aed', '--oas-font-size-md': '15px' },
+      dark: { '--oas-color-primary': '#c4b5fd', '--oas-font-size-md': '16px' },
+    }
+    el?.importThemes(data)
+    document.getElementById('te-json').textContent = `Atomically imported both buckets:\n` + JSON.stringify(data, null, 2)
   }
   window.teReset = () => {
     document.getElementById('te-default')?.reset()
@@ -143,23 +168,26 @@ onMounted(() => {
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `preset` | Built-in preset theme: `compact` (tight; control-height -4px, space scaled down proportionally) / `comfortable` (roomy; +4px, space scaled up proportionally) / `default` (equivalent to reset; clears written inline variables). Invalid values are ignored with a dev warning | — | — |
+| `editing-theme` | Selects the light/dark editing bucket (default light; invalid values safely fall back to light). It only selects the edit/import/export target and never controls the actual preview theme | `ThemeEditorTheme` | — |
+| `preset` | Built-in preset theme: `compact` (tight; control-height -4px, space scaled down proportionally) / `comfortable` (roomy; +4px, space scaled up proportionally) / `default` (equivalent to reset; clears the current editing bucket). Invalid values are ignored with a dev warning | — | — |
 | `token` | Custom list of tokens to edit (CSS variable names) | — | — |
 
 #### Methods
 
 | Method | Signature | Description |
 | --- | --- | --- |
-| `exportJson` | `exportJson(): Record<string, string>` | Export the current token set as JSON (`{ '--oas-*': value }`, with live computed values) |
-| `exportCss` | `exportCss(): string` | Export the current token set as CSS text (`:root { --oas-*: value; ... }`, same source as exportJson) |
-| `importJson` | `importJson(json: Record<string, unknown> \| string): void` | Apply a token set to the themeRoot: `{ '--oas-*': value }`; keys not starting with `--` are ignored with a dev warning |
-| `applyPreset` | `applyPreset(name: string): void` | Apply a built-in preset theme. Only size-family tokens are set (control-height / space); colors are untouched |
-| `reset` | `reset(): void` | Reset: clears the inline CSS variables this component wrote to the host and restores the default theme values |
+| `exportJson` | `exportJson(): ThemeTokenMap` | Export the flat token map for the current editingTheme bucket; the legacy shape is not changed into nested themes |
+| `exportThemes` | `exportThemes(): ThemeEditorSnapshot` | Export an explicit `{ light, dark }` pair of flat token maps |
+| `exportCss` | `exportCss(): string` | Export `:root` CSS text for the current editingTheme bucket, from the same source as exportJson |
+| `importJson` | `importJson(json: Record<string, unknown> \| string): void` | Import only into the current editingTheme bucket, preserving the legacy flat shape, merge behavior, and non-`--` key warnings |
+| `importThemes` | `importThemes(themes: ThemeEditorSnapshot): void` | Atomically import both buckets: validate the exact light/dark shape and every string token value before one replacement commit; any invalid item leaves both buckets untouched |
+| `applyPreset` | `applyPreset(name: string): void` | Apply a built-in preset to the current editingTheme bucket, changing only size-family tokens and emitting no extra event |
+| `reset` | `reset(theme?: ThemeEditorTheme): void` | `reset(theme?)` clears only the named light/dark bucket; without an argument it clears only the current editingTheme bucket and leaves the other bucket intact |
 
 #### Events
 
 | Event | Description |
 | --- | --- |
-| `oas-change` | Editing any token, `detail: { token, value }` |
+| `oas-change` | A user edits a token, `detail: { token, value, theme }`; theme is the actual editingTheme |
 
-Behavior: tokens are read from the computed style of the host (or the nearest `oas-config-provider`); edits are written back to the host immediately via `style.setProperty`, and the subtree inherits them live. Inside a config-provider, writes go to the nearest provider (inherited by the whole subtree). Color rows are a swatch + text box dual channel: the swatch only carries values parseable to `#rrggbb` (color functions such as `rgb()`/`oklch()` are converted to hex; unparseable values like `color-mix()` containing `var()` disable the swatch); the text box always keeps the original value editable (any CSS color function) and invalid input is neither written nor dispatched, showing a red outline. Numeric rows link a range slider with a number input (min/max/step from the token definition) and write back with the original unit; empty or invalid numeric input is neither written nor dispatched. Groups are collapsible via details/summary (open by default); the search box filters rows by token name substring. Presets only touch size-family tokens (control-height / space); applied tokens are recorded in writtenTokens and cleared together by `reset()`.
+Behavior: tokens are read from the computed style of the host (or nearest `oas-config-provider`). Light/dark overrides are stored independently; only the effective theme bucket is applied to the preview, and editingTheme never controls the provider theme. Color rows combine a swatch with a text box that preserves arbitrary CSS color functions; invalid input is neither written nor dispatched and shows a red outline. Numeric rows link a range slider with a number input and preserve the original unit; empty or invalid input is neither written nor dispatched. Groups use collapsible details/summary and the search box filters by token name. Bucket switches, dual imports, and resets sync in place without rebuilding rows. Presets write only size-family tokens in the current editing bucket, and reset clears by bucket.

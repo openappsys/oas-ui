@@ -6,6 +6,7 @@
 
 | 范围 | 内容 | 状态 |
 | --- | --- | --- |
+| **ThemeEditor light/dark 双套编辑与原子导入导出** | 新增 `editing-theme`（默认/非法回落 light，只选编辑桶不控制预览）与独立 light/dark overrides；旧扁平导入导出/preset/reset 保持当前桶语义，`reset(theme?)` 支持单套清除；新增 `exportThemes()` / 原子 `importThemes()`（完整校验后一次提交，非法项零部分写入）；用户事件补真实 `theme`，切桶/导入/reset 保持搜索/折叠/焦点；10 locale，中英档案同步，继续 NOT_SSR | ✅ 已完成（未发布） |
 | **ConfigProvider 系统自动主题与可选存储** | 新增 `theme="system"`（requested/effective 分离、MQL 实时通知）与可选 `theme-storage-key`（显式偏好恢复/保存、异常降级、重选 system 解除旧覆盖）；SSR 确定性 light + storage/MQL 零访问 + 同步 head 防闪；监听断连清理/重连恢复；显式 light 完整 token 支持嵌套 dark 局部回浅；缺失/空 theme 与显式主题名旧语义不变 | ✅ 已完成（未发布） |
 | **table/detail selectByKey 等待** | 未命中等待改为显式 `waitForRow` opt-in：默认 windowed 未命中恢复 no-op（保留选中/面板、零事件）、普通模式未命中清空；`AbortSignal` 可取消，等待只由数据命中/显式取消/abort 终止（模式、`windowed`/`total` 变化与批次不参与）；close/select/点击/Enter/Esc/destroy/row-key/新键取消；仅等待时 Esc 限本实例表格/面板、无 window 全局兜底 | ✅ 已完成（未发布） |
 | **异步选中与视觉窗口协议** | table/detail `selectByKey` 显式 `waitForRow` + `AbortSignal` 可取消等待（已完成，见上）；表格视觉映射与可选视觉协议已收口（`visual-total` / `visual-start`、`oas-window-request` 视觉字段、expand>12 请求映射，见 PRD 本批）；`advanced/windowed.ts` 数据源助手已接入可选 `visual` 适配器（回填重新求值 geometry 齐写视觉属性、请求优先按视觉区间映射取数、映射/geometry 非法走统一 `oas-window-error` 可重试），本地映射修复切片内坐标错位、跨切片由可选协议保证 | ✅ 已完成（未发布） |

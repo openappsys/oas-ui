@@ -9,24 +9,43 @@
     {
       "name": "preset",
       "observed": true
+    },
+    {
+      "name": "editing-theme",
+      "observed": true
     }
   ],
-  "props": [],
+  "props": [
+    {
+      "name": "editingTheme",
+      "type": "ThemeEditorTheme"
+    }
+  ],
   "methods": [
     {
       "name": "exportJson",
-      "signature": "exportJson(): Record<string, string>",
-      "description": "导出当前 token 集 JSON（`{ '--oas-*': value }`，值为实时 computed 值）。"
+      "signature": "exportJson(): ThemeTokenMap",
+      "description": "导出当前编辑桶的扁平 token map（非预览桶时优先使用本桶 overrides）。"
+    },
+    {
+      "name": "exportThemes",
+      "signature": "exportThemes(): ThemeEditorSnapshot",
+      "description": "导出 light/dark 双套扁平 token map。"
     },
     {
       "name": "exportCss",
       "signature": "exportCss(): string",
-      "description": "导出当前 token 集为 CSS 文本（`:root { --oas-*: value; ... }`，与 exportJson 同源）。"
+      "description": "导出当前编辑桶为 CSS 文本（`:root { --oas-*: value; ... }`，与 exportJson 同源）。"
     },
     {
       "name": "importJson",
       "signature": "importJson(json: Record<string, unknown> | string): void",
       "description": "应用 token 集到 themeRoot：`{ '--oas-*': value }`，非 `--` 开头键忽略并 dev 告警"
+    },
+    {
+      "name": "importThemes",
+      "signature": "importThemes(themes: ThemeEditorSnapshot): void",
+      "description": "原子导入 light/dark 双套数据：先完整校验形状和全部 token，再替换两套 overrides。"
     },
     {
       "name": "applyPreset",
@@ -35,14 +54,14 @@
     },
     {
       "name": "reset",
-      "signature": "reset(): void",
-      "description": "重置：清除本组件写入宿主的内联 CSS 变量，恢复默认主题值。"
+      "signature": "reset(theme?: ThemeEditorTheme): void",
+      "description": "重置指定编辑桶；省略时只清当前 editingTheme。清另一套不改实际预览。"
     }
   ],
   "events": [
     {
       "name": "oas-change",
-      "detail": "{ token: def.name, value }"
+      "detail": "{ token: def.name, value, theme }"
     }
   ],
   "slots": [],

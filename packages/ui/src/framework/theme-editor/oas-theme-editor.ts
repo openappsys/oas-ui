@@ -2,6 +2,13 @@ import { OASElement } from '@oas-ui/core'
 import { devWarn } from '../../shared/dev-warn.js'
 
 export type ThemeTokenType = 'color' | 'number'
+export type ThemeEditorTheme = 'light' | 'dark'
+export type ThemeTokenMap = Record<string, string>
+
+export interface ThemeEditorSnapshot {
+  light: ThemeTokenMap
+  dark: ThemeTokenMap
+}
 
 export interface ThemeTokenDef {
   /** CSS 变量名，如 --oas-color-primary */
@@ -261,6 +268,18 @@ const STYLE = `
   flex-direction: column;
   gap: var(--oas-space-3);
 }
+.editing-theme {
+  align-self: flex-start;
+  height: var(--oas-control-height-sm);
+  box-sizing: border-box;
+  padding: 0 var(--oas-space-2);
+  border: 1px solid var(--oas-color-border);
+  border-radius: var(--oas-radius-sm);
+  background: var(--oas-color-bg);
+  color: var(--oas-color-text-primary);
+  font-family: inherit;
+  font-size: var(--oas-font-size-sm);
+}
 .search {
   width: 100%;
   height: var(--oas-control-height-sm);
@@ -497,24 +516,41 @@ interface GroupRef {
  * - `token` 属性自定义要编辑的 token 列表（JSON 字符串数组），缺省读默认集；
  *   变量不存在时跳过；非法 JSON 回退默认集
  * - `preset` 属性/`applyPreset()` 应用内置预设主题（compact/comfortable/default，
- *   只调尺寸族 token），写入记录进 writtenTokens 由 reset() 一并清除
+ *   只调尺寸族 token），写入当前编辑桶，由 reset() 按桶清除
+ * - `editing-theme` 只选择 light/dark 编辑桶；实际预览仍由 ConfigProvider/有效主题决定
  *
- * 事件：`oas-change` detail `{ token, value }`
- * 方法：`exportJson()` 导出当前 token 集；`exportCss()` 导出 :root CSS 文本；
- *       `importJson(json)` 应用 token 集；`reset()` 清除已写入的内联变量
+ * 事件：`oas-change` detail `{ token, value, theme }`
+ * 方法：旧扁平 API 只作用当前编辑桶；`exportThemes()` / `importThemes()` 读写双套数据
  */
 export class OASThemeEditor extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['token', 'preset']
+    return ['token', 'preset', 'editing-theme']
+  }
+
+  /** Vue/React 走 property 赋值时反射到 attribute，统一解析与更新链路 */
+  get editingTheme(): ThemeEditorTheme {
+    return this.getAttr('editing-theme') === 'dark' ? 'dark' : 'light'
+  }
+  set editingTheme(value: ThemeEditorTheme) {
+    this.setAttribute('editing-theme', value)
   }
 
   private groupsEl: HTMLElement | null = null
   private searchEl: HTMLInputElement | null = null
+  private editingThemeEl: HTMLSelectElement | null = null
   private rows: TokenRow[] = []
   private groups: GroupRef[] = []
   private lastTokenRaw: string | null = null
   private lastPresetRaw: string | null = null
-  private writtenTokens = new Set<string>()
+  private overrides: Record<ThemeEditorTheme, Map<string, string>> = {
+    light: new Map<string, string>(),
+    dark: new Map<string, string>(),
+  }
+  private resolvedValues: Record<ThemeEditorTheme, Map<string, string>> = {
+    light: new Map<string, string>(),
+    dark: new Map<string, string>(),
+  }
+  private lastPreviewTheme: ThemeEditorTheme | null = null
   private invalidPresetWarned = new Set<string>()
   private invalidImportKeyWarned = new Set<string>()
   private filtering = false
@@ -524,17 +560,33 @@ export class OASThemeEditor extends OASElement {
     this.shadow.innerHTML = `
       <style>${STYLE}</style>
       <div class="wrap" part="editor" role="group" aria-label="${this.t('themeEditor.label')}">
+        <select class="editing-theme" part="editing-theme" aria-label="${this.t('themeEditor.editingTheme')}">
+          <option value="light">${this.t('themeEditor.light')}</option>
+          <option value="dark">${this.t('themeEditor.dark')}</option>
+        </select>
         <input class="search" part="search" type="text" placeholder="${this.t('themeEditor.search')}" aria-label="${this.t('themeEditor.search')}" spellcheck="false">
         <div class="groups" part="groups"></div>
       </div>
     `
     this.groupsEl = this.shadow.querySelector('.groups')
     this.searchEl = this.shadow.querySelector('.search')
+    this.editingThemeEl = this.shadow.querySelector('.editing-theme')
     this.searchEl?.addEventListener('input', () => this.applyFilter())
+    this.editingThemeEl?.addEventListener('change', () => {
+      this.editingTheme = this.editingThemeEl?.value === 'dark' ? 'dark' : 'light'
+    })
     this.update()
   }
 
   protected override update(): void {
+    this.syncPreviewTheme()
+    const editingThemeEl = this.editingThemeEl
+    if (editingThemeEl) {
+      editingThemeEl.value = this.editingTheme
+      editingThemeEl.setAttribute('aria-label', this.t('themeEditor.editingTheme'))
+      editingThemeEl.options[0]!.textContent = this.t('themeEditor.light')
+      editingThemeEl.options[1]!.textContent = this.t('themeEditor.dark')
+    }
     const tokenRaw = this.getAttr('token')
     if (tokenRaw !== this.lastTokenRaw) {
       this.lastTokenRaw = tokenRaw
@@ -550,19 +602,22 @@ export class OASThemeEditor extends OASElement {
   }
 
   /**
-   * 导出当前 token 集 JSON（`{ '--oas-*': value }`，值为实时 computed 值）。
+   * 导出当前编辑桶的扁平 token map（非预览桶时优先使用本桶 overrides）。
    */
-  exportJson(): Record<string, string> {
-    const out: Record<string, string> = {}
-    for (const row of this.rows) {
-      const value = this.readValue(row.def.name)
-      if (value) out[row.def.name] = value
+  exportJson(): ThemeTokenMap {
+    return this.exportThemeJson(this.editingTheme)
+  }
+
+  /** 导出 light/dark 双套扁平 token map。 */
+  exportThemes(): ThemeEditorSnapshot {
+    return {
+      light: this.exportThemeJson('light'),
+      dark: this.exportThemeJson('dark'),
     }
-    return out
   }
 
   /**
-   * 导出当前 token 集为 CSS 文本（`:root { --oas-*: value; ... }`，与 exportJson 同源）。
+   * 导出当前编辑桶为 CSS 文本（`:root { --oas-*: value; ... }`，与 exportJson 同源）。
    */
   exportCss(): string {
     const lines: string[] = []
@@ -592,7 +647,9 @@ export class OASThemeEditor extends OASElement {
       devWarn('[oas-theme-editor] importJson 入参必须是对象（token -> value 映射），已忽略')
       return
     }
+    const theme = this.editingTheme
     const root = this.themeRoot()
+    const preview = this.previewTheme()
     for (const [key, value] of Object.entries(data as Record<string, unknown>)) {
       if (!key.startsWith('--')) {
         if (!this.invalidImportKeyWarned.has(key)) {
@@ -601,10 +658,36 @@ export class OASThemeEditor extends OASElement {
         }
         continue
       }
-      root.style.setProperty(key, String(value))
-      this.writtenTokens.add(key)
+      const normalized = String(value)
+      this.overrides[theme].set(key, normalized)
+      if (theme === preview) root.style.setProperty(key, normalized)
     }
     for (const row of this.rows) this.syncRow(row)
+  }
+
+  /**
+   * 原子导入 light/dark 双套数据：先完整校验形状和全部 token，再替换两套 overrides。
+   * 任一未知主题、非法 token 名或非字符串/嵌套值都整体忽略，不产生部分写入。
+   */
+  importThemes(themes: ThemeEditorSnapshot): void {
+    if (!this.validThemeSnapshot(themes)) {
+      devWarn('[oas-theme-editor] importThemes 入参必须是仅含 light/dark 的扁平字符串 token map，已整体忽略')
+      return
+    }
+    const next: Record<ThemeEditorTheme, Map<string, string>> = {
+      light: new Map<string, string>(Object.entries(themes.light)),
+      dark: new Map<string, string>(Object.entries(themes.dark)),
+    }
+    const preview = this.previewTheme()
+    const inlineTheme = this.lastPreviewTheme ?? preview
+    const previousTokens = [...this.overrides[inlineTheme].keys()]
+    this.overrides = next
+    this.resolvedValues.light.clear()
+    this.resolvedValues.dark.clear()
+    this.removeInlineTokens(previousTokens)
+    this.lastPreviewTheme = preview
+    this.applyInlineOverrides(preview)
+    this.syncValues()
   }
 
   /**
@@ -620,14 +703,15 @@ export class OASThemeEditor extends OASElement {
   }
 
   /**
-   * 重置：清除本组件写入宿主的内联 CSS 变量，恢复默认主题值。
+   * 重置指定编辑桶；省略时只清当前 editingTheme。清另一套不改实际预览。
    */
-  reset(): void {
-    const root = this.themeRoot()
-    for (const name of this.writtenTokens) {
-      root.style.removeProperty(name)
-    }
-    this.writtenTokens.clear()
+  reset(theme?: ThemeEditorTheme): void {
+    const target = theme ?? this.editingTheme
+    if (target !== 'light' && target !== 'dark') return
+    if (target === this.previewTheme()) this.removeInlineTokens(this.overrides[target].keys())
+    for (const name of this.overrides[target].keys()) this.resolvedValues[target].delete(name)
+    this.overrides[target].clear()
+    this.lastPreviewTheme = this.previewTheme()
     this.update()
   }
 
@@ -651,15 +735,19 @@ export class OASThemeEditor extends OASElement {
 
   private applyPresetTokens(kind: 'compact' | 'comfortable'): void {
     const root = this.themeRoot()
+    const theme = this.editingTheme
+    const preview = this.previewTheme()
     const spaceScale = kind === 'compact' ? 0.75 : 1.25
     const controlDelta = kind === 'compact' ? -4 : 4
     for (const [token, base] of Object.entries(PRESET_SPACE)) {
-      root.style.setProperty(token, `${Math.round(base * spaceScale)}px`)
-      this.writtenTokens.add(token)
+      const value = `${Math.round(base * spaceScale)}px`
+      this.overrides[theme].set(token, value)
+      if (theme === preview) root.style.setProperty(token, value)
     }
     for (const [token, base] of Object.entries(PRESET_CONTROL_HEIGHT)) {
-      root.style.setProperty(token, `${base + controlDelta}px`)
-      this.writtenTokens.add(token)
+      const value = `${base + controlDelta}px`
+      this.overrides[theme].set(token, value)
+      if (theme === preview) root.style.setProperty(token, value)
     }
     // 就地刷新面板（不整棵重建，不丢输入焦点）
     for (const row of this.rows) this.syncRow(row)
@@ -844,11 +932,17 @@ export class OASThemeEditor extends OASElement {
         swatch.disabled = true
         swatch.classList.add('swatch-neutral')
       }
-      if (row.colorText) row.colorText.value = value
+      if (row.colorText) {
+        const preserveInvalidDraft =
+          this.shadow.activeElement === row.colorText && row.colorText.classList.contains('is-invalid')
+        if (!preserveInvalidDraft) row.colorText.value = value
+      }
     } else {
       const num = parseFloat(value)
       if (!Number.isNaN(num)) {
-        row.control.value = String(num)
+        const preserveInvalidDraft =
+          this.shadow.activeElement === row.control && Number.isNaN(parseFloat(row.control.value))
+        if (!preserveInvalidDraft) row.control.value = String(num)
         if (row.slider) {
           row.slider.value = String(this.clampNum(num, row.def.min, row.def.max))
         }
@@ -857,10 +951,10 @@ export class OASThemeEditor extends OASElement {
   }
 
   private applyValue(def: ThemeTokenDef, value: string): void {
-    const root = this.themeRoot()
-    root.style.setProperty(def.name, value)
-    this.writtenTokens.add(def.name)
-    this.emit('change', { token: def.name, value })
+    const theme = this.editingTheme
+    this.overrides[theme].set(def.name, value)
+    if (theme === this.previewTheme()) this.themeRoot().style.setProperty(def.name, value)
+    this.emit('change', { token: def.name, value, theme })
     // 就地刷新值显示，避免整棵重建导致输入焦点丢失
     const row = this.rows.find((r) => r.def.name === def.name)
     if (row) this.syncRow(row, value)
@@ -898,6 +992,55 @@ export class OASThemeEditor extends OASElement {
     this.filtering = filtering
   }
 
+  private exportThemeJson(theme: ThemeEditorTheme): ThemeTokenMap {
+    if (theme !== this.previewTheme()) this.captureResolvedValues(theme)
+    const out: ThemeTokenMap = {}
+    for (const row of this.rows) {
+      const value = this.readValue(row.def.name, theme)
+      if (value) out[row.def.name] = value
+    }
+    return out
+  }
+
+  private validThemeSnapshot(value: unknown): value is ThemeEditorSnapshot {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) return false
+    const record = value as Record<string, unknown>
+    const keys = Object.keys(record)
+    if (keys.length !== 2 || keys.some((key) => key !== 'light' && key !== 'dark')) return false
+    for (const theme of ['light', 'dark'] as const) {
+      const bucket = record[theme]
+      if (!bucket || typeof bucket !== 'object' || Array.isArray(bucket)) return false
+      for (const [token, tokenValue] of Object.entries(bucket as Record<string, unknown>)) {
+        if (!token.startsWith('--') || token.length <= 2 || typeof tokenValue !== 'string') return false
+      }
+    }
+    return true
+  }
+
+  /** 实际预览桶只读有效 data-theme；editingTheme 不参与这个判定。 */
+  private previewTheme(): ThemeEditorTheme {
+    const themed = this.themeRoot().closest('[data-theme]')
+    return themed?.getAttribute('data-theme') === 'dark' ? 'dark' : 'light'
+  }
+
+  private syncPreviewTheme(): void {
+    const preview = this.previewTheme()
+    if (preview === this.lastPreviewTheme) return
+    if (this.lastPreviewTheme) this.removeInlineTokens(this.overrides[this.lastPreviewTheme].keys())
+    this.lastPreviewTheme = preview
+    this.applyInlineOverrides(preview)
+  }
+
+  private removeInlineTokens(tokens: Iterable<string>): void {
+    const root = this.themeRoot()
+    for (const token of tokens) root.style.removeProperty(token)
+  }
+
+  private applyInlineOverrides(theme: ThemeEditorTheme): void {
+    const root = this.themeRoot()
+    for (const [token, value] of this.overrides[theme]) root.style.setProperty(token, value)
+  }
+
   /**
    * 写读目标：位于 oas-config-provider 内部时写最近 provider（整个子树继承），
    * 否则写宿主自身。
@@ -907,8 +1050,44 @@ export class OASThemeEditor extends OASElement {
     return (provider as HTMLElement | null) ?? this
   }
 
-  private readValue(name: string): string {
-    return getComputedStyle(this.themeRoot()).getPropertyValue(name).trim()
+  /**
+   * 用同级隐藏 probe 读取非预览套的 computed 默认值。probe 自带目标 data-theme，
+   * 不改 provider；只复制非编辑器写入的内联 token，避免当前套 override 泄漏，finally 销毁。
+   */
+  private captureResolvedValues(theme: ThemeEditorTheme): void {
+    if (theme === this.previewTheme()) return
+    const root = this.themeRoot()
+    const parent = root.parentNode
+    if (!parent) return
+    const tokens = new Set(this.resolveGroups().flatMap((group) => group.tokens.map((token) => token.name)))
+    const edited = new Set([...this.overrides.light.keys(), ...this.overrides.dark.keys()])
+    const probe = document.createElement('div')
+    probe.hidden = true
+    probe.setAttribute('aria-hidden', 'true')
+    probe.dataset.theme = theme
+    for (const token of tokens) {
+      const inline = root.style.getPropertyValue(token)
+      if (inline && !edited.has(token)) probe.style.setProperty(token, inline)
+    }
+    parent.appendChild(probe)
+    try {
+      const computed = getComputedStyle(probe)
+      for (const token of tokens) this.resolvedValues[theme].set(token, computed.getPropertyValue(token).trim())
+    } finally {
+      probe.remove()
+    }
+  }
+
+  private readValue(name: string, theme: ThemeEditorTheme = this.editingTheme): string {
+    const override = this.overrides[theme].get(name)
+    if (override !== undefined) return override
+    if (theme === this.previewTheme()) {
+      const value = getComputedStyle(this.themeRoot()).getPropertyValue(name).trim()
+      if (value) this.resolvedValues[theme].set(name, value)
+      return value
+    }
+    if (!this.resolvedValues[theme].has(name)) this.captureResolvedValues(theme)
+    return this.resolvedValues[theme].get(name) ?? ''
   }
 
   private resolveGroups(): TokenGroup[] {

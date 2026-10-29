@@ -5,6 +5,30 @@
 
 ---
 
+## 未发布：ThemeEditor light/dark 双套编辑与原子导入导出 ✅
+
+### 功能定义
+
+`oas-theme-editor` 新增 `editing-theme` / `editingTheme`（仅 `light` / `dark`，默认与非法回落均为 `light`）与双套 `exportThemes()` / `importThemes()`。light/dark 各自保存独立 overrides；编辑桶只决定编辑、旧扁平导入导出、预设与默认 reset 的目标，实际预览仍由 ConfigProvider / 有效 `data-theme` 决定。
+
+### 详细需求
+
+- **旧 API 兼容**：`token` / `preset` 与扁平 `exportJson()` / `exportCss()` / `importJson()` 结构不变，只作用当前编辑桶；旧 `{ token, value }` 事件消费者继续可读。用户编辑的 `oas-change` 增加真实 `theme` 字段，旧 import / applyPreset / reset 不额外派发事件。
+- **双套与预览边界**：两套 overrides 独立写入；编辑非预览桶不改当前内联变量，provider 明暗切换应用对应桶且不反写 editingTheme。双套导出读取各套真实 computed 默认值与自身 overrides，不按页面当前明暗猜测。
+- **原子双套导入**：`importThemes()` 只接受明确 `{ light, dark }` 扁平字符串 token map；先完整校验主题形状、未知主题、token 名与全部值，再一次性替换两套。非对象、缺套、未知主题、非法 token、非字符串或嵌套坏值均整体失败，两套导出与内联预览逐字不变。
+- **reset 与状态保持**：`reset(theme?)` 传 light/dark 只清指定套，省略只清当前 editingTheme 套；preset 同样只写当前套。切桶、双套导入与 reset 不重建行，搜索、折叠与行内焦点保持，非法中间输入不被无谓重写。选择器支持受控属性、property 与键盘操作，新增文案覆盖 10 locale。
+- **SSR 边界**：ThemeEditor 继续 NOT_SSR，不把双套编辑引入 SSR 白名单。
+
+### 非目标
+
+不改 ConfigProvider 状态机或 switch，不扩大任意主题名、多实例同步或原内联值快照重构，不改变旧扁平 API 为双主题嵌套结构。
+
+### 验收标准
+
+- theme-editor 单测覆盖双桶独立、旧 API/事件兼容、原子失败、reset/preset、provider 预览来源、搜索/折叠/焦点与 10 locale；既有 SSR NOT_SSR 测试保持通过。
+- `packages/ui/qa-regression/theme-editor.spec.ts` 在真实浏览器锁双套编辑、键盘切桶、provider 明暗切换、未访问 dark 的真实默认值导出、原子失败无部分写入、dark/console 与截图。
+- 组件中英文页、PRD/ROADMAP、API 描述与 10 locale 同步；全量 test / typecheck / build / e2e / perf:size / api / llms / stats / skill / lint / format / trace 通过。
+
 ## 未发布：ConfigProvider 系统自动主题与可选存储 ✅
 
 ### 功能定义
