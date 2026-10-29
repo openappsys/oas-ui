@@ -1710,6 +1710,8 @@ test('config-provider system DSD：同步 head 防闪校正与水合前后有效
 
   // DOMContentLoaded 之后：localStorage 事件仍须联合驱动 root + provider，sessionStorage 必须隔离。
   await page.evaluate(() => {
+    // synthetic 事件也要具备真实前提：先更新存储，observer 重读到的才是同一合法偏好。
+    localStorage.setItem('ssr-system-theme', JSON.stringify({ theme: 'dark' }))
     window.dispatchEvent(
       new StorageEvent('storage', {
         key: 'ssr-system-theme',
@@ -1736,6 +1738,7 @@ test('config-provider system DSD：同步 head 防闪校正与水合前后有效
   expect(await page.locator('html').getAttribute('data-theme')).toBe('dark')
 
   await page.evaluate(() => {
+    localStorage.setItem('ssr-system-theme', JSON.stringify({ theme: 'system' }))
     window.dispatchEvent(
       new StorageEvent('storage', {
         key: 'ssr-system-theme',
@@ -1757,7 +1760,7 @@ test('config-provider system DSD：同步 head 防闪校正与水合前后有效
   )
   const calls = await themeStorageCalls(page)
   expect(calls.getItem).toBeGreaterThan(0)
-  expect(calls.setItem, 'head 引导只读偏好，不写 storage').toBe(0)
+  expect(calls.setItem, '仅测试夹具两次同步真实存储；head 引导自身不写 storage').toBe(2)
   expect(pageErrors).toEqual([])
   expect(consoleErrors).toEqual([])
 })
@@ -1829,6 +1832,56 @@ test('config-provider system 无 key DSD：只读 MQL、storage 零访问，dark
   expect(await themeStorageCalls(page)).toEqual({ getItem: 0, setItem: 0 })
   expect(pageErrors).toEqual([])
   expect(consoleErrors).toEqual([])
+})
+
+test('config-provider system 同文档重选：stored dark + OS light 后 root/provider 联合同步', async ({ page }) => {
+  const consoleProblems: string[] = []
+  page.on('pageerror', (error) => consoleProblems.push(error.message))
+  page.on('console', (message) => {
+    if (message.type() === 'error' || message.type() === 'warning') consoleProblems.push(message.text())
+  })
+  await page.addInitScript(() => {
+    localStorage.setItem('ssr-system-theme', JSON.stringify({ theme: 'dark' }))
+  })
+  await page.emulateMedia({ colorScheme: 'light' })
+  await page.goto(SYSTEM_THEME_PAGE_URL, { waitUntil: 'load' })
+  await upgradeUi(page)
+
+  const state = () =>
+    page.evaluate(() => ({
+      provider: document.querySelector('oas-config-provider')!.getAttribute('data-theme'),
+      root: document.documentElement.dataset.theme,
+      stored: localStorage.getItem('ssr-system-theme'),
+    }))
+  expect(await state()).toEqual({ provider: 'dark', root: 'dark', stored: JSON.stringify({ theme: 'dark' }) })
+  await page.screenshot({ path: join(ARTIFACT_DIR, 'config-provider-system-before-reselect.png'), fullPage: true })
+
+  const waitJoint = async (theme: 'light' | 'dark') => {
+    await page.waitForFunction(
+      (want) =>
+        document.querySelector('oas-config-provider')?.getAttribute('data-theme') === want &&
+        document.documentElement.dataset.theme === want,
+      theme,
+      { timeout: 5000 },
+    )
+  }
+
+  // 关键路径只用真实同值 attribute 写入；不得用本窗口收不到的手工 storage 事件替代。
+  await page.evaluate(() => document.querySelector('oas-config-provider')!.setAttribute('theme', 'system'))
+  await waitJoint('light')
+  expect(await state()).toEqual({ provider: 'light', root: 'light', stored: JSON.stringify({ theme: 'system' }) })
+  await page.screenshot({ path: join(ARTIFACT_DIR, 'config-provider-system-after-reselect-light.png'), fullPage: true })
+
+  await page.emulateMedia({ colorScheme: 'dark' })
+  await waitJoint('dark')
+  await page.screenshot({ path: join(ARTIFACT_DIR, 'config-provider-system-after-reselect-dark.png'), fullPage: true })
+  await page.emulateMedia({ colorScheme: 'light' })
+  await waitJoint('light')
+  await page.screenshot({
+    path: join(ARTIFACT_DIR, 'config-provider-system-after-reselect-final-light.png'),
+    fullPage: true,
+  })
+  expect(consoleProblems).toEqual([])
 })
 
 test('SSR 内置图标集已注册：内置图名的 oas-icon 快照含图标路径（icon opt-in 服务端注册回归锁）', async () => {

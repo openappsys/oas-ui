@@ -188,7 +188,7 @@ for the rendering itself.
 
 ### First-paint anti-flicker for system themes
 
-The server snapshot of `<oas-config-provider theme="system">` is deterministically `data-theme="light"`; it does not access shared storage or register media-query listeners. Client hydration corrects it using explicit stored preference > system > light fallback. When using system themes with DSD, place this synchronous bootstrap in `<head>` and keep its key identical to the provider's; for a provider without a key, use `const key = null` so only the MQL is read and storage is never accessed. It corrects the root and matching providers as they are parsed, keeping the first frame consistent with hydration. After the observer stops at DOMContentLoaded, root continues following the MQL and, with a key, corresponding localStorage events, without writing storage. Add it only when system theming is used; the default global theme is unchanged.
+The server snapshot of `<oas-config-provider theme="system">` is deterministically `data-theme="light"`; it does not access shared storage or register media-query listeners. Client hydration corrects it using explicit stored preference > system > light fallback. When using system themes with DSD, place this synchronous bootstrap in `<head>` and keep its key identical to the provider's; for a provider without a key, use `const key = null` so only the MQL is read and storage is never accessed. It corrects the root and matching providers as they are parsed, keeping the first frame consistent with hydration. After the observer stops at DOMContentLoaded, root continues following the MQL and, with a key, corresponding localStorage events, without writing storage. Same-document reselection emits no storage event, so the script watches the provider's effective `data-theme`, restores the current valid preference, and hands it off to root. Every root/provider write is guarded by a current-value comparison to prevent observer self-triggering or loops. Add it only when system theming is used; the default global theme is unchanged.
 
 ```html
 <script>
@@ -204,18 +204,23 @@ The server snapshot of `<oas-config-provider theme="system">` is deterministical
         return 'system'
       }
     }
-    let preference = 'system'
-    if (key) {
+    const restorePreference = () => {
+      if (!key) return 'system'
       try {
-        preference = readPreference(localStorage.getItem(key))
-      } catch {}
+        return readPreference(localStorage.getItem(key))
+      } catch {
+        return 'system'
+      }
     }
+    let preference = restorePreference()
     const effective = () => (preference === 'system' ? (media.matches ? 'dark' : 'light') : preference)
+    const matchesProvider = (el) =>
+      el.getAttribute('theme') === 'system' && (el.getAttribute('theme-storage-key') || null) === key
     const apply = () => {
       const theme = effective()
-      document.documentElement.dataset.theme = theme
+      if (document.documentElement.dataset.theme !== theme) document.documentElement.dataset.theme = theme
       document.querySelectorAll('oas-config-provider[theme="system"]').forEach((el) => {
-        if ((el.getAttribute('theme-storage-key') || null) === key) el.dataset.theme = theme
+        if (matchesProvider(el) && el.dataset.theme !== theme) el.dataset.theme = theme
       })
     }
     apply()
@@ -229,6 +234,17 @@ The server snapshot of `<oas-config-provider theme="system">` is deterministical
       },
       { once: true },
     )
+    // Same-document reselection emits no storage event: observe provider effective state and restore the valid preference.
+    const effectiveObserver = new MutationObserver((records) => {
+      if (!records.some((record) => record.target instanceof Element && matchesProvider(record.target))) return
+      preference = restorePreference()
+      apply()
+    })
+    effectiveObserver.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['data-theme'],
+      subtree: true,
+    })
     media.addEventListener('change', apply)
     if (key) {
       window.addEventListener('storage', (event) => {

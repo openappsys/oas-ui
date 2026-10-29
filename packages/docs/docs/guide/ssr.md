@@ -92,7 +92,7 @@ const html = await renderToString('oas-button', { type: 'primary', size: 'large'
 
 ### system 主题首屏防闪
 
-`<oas-config-provider theme="system">` 的服务端快照固定为 `data-theme="light"`，不访问共享 storage、不注册媒体查询监听；客户端水合后按「显式存储 > 系统 > 浅色兜底」校正。使用 system + DSD 时在 `<head>` 放以下同步引导，key 必须与 provider 相同；无 key provider 改为 `const key = null`，只读 MQL 且 storage 零访问。脚本会校正根节点及后续解析到的对应 provider，保证首帧与水合一致；observer 在 DOMContentLoaded 结束后，root 仍持续跟随 MQL，有 key 时还跟随对应 localStorage 事件，且不写 storage。该脚本仅在使用 system 时按需加入，不改变默认全局主题。
+`<oas-config-provider theme="system">` 的服务端快照固定为 `data-theme="light"`，不访问共享 storage、不注册媒体查询监听；客户端水合后按「显式存储 > 系统 > 浅色兜底」校正。使用 system + DSD 时在 `<head>` 放以下同步引导，key 必须与 provider 相同；无 key provider 改为 `const key = null`，只读 MQL 且 storage 零访问。脚本会校正根节点及后续解析到的对应 provider，保证首帧与水合一致；observer 在 DOMContentLoaded 结束后，root 仍持续跟随 MQL，有 key 时还跟随对应 localStorage 事件，且不写 storage。同文档重选不会触发 storage 事件，脚本会观察 provider 的 effective `data-theme`，重读当前合法偏好后交接 root；所有写入先比较现值，避免 Observer 自激或循环。该脚本仅在使用 system 时按需加入，不改变默认全局主题。
 
 ```html
 <script>
@@ -108,18 +108,23 @@ const html = await renderToString('oas-button', { type: 'primary', size: 'large'
         return 'system'
       }
     }
-    let preference = 'system'
-    if (key) {
+    const restorePreference = () => {
+      if (!key) return 'system'
       try {
-        preference = readPreference(localStorage.getItem(key))
-      } catch {}
+        return readPreference(localStorage.getItem(key))
+      } catch {
+        return 'system'
+      }
     }
+    let preference = restorePreference()
     const effective = () => (preference === 'system' ? (media.matches ? 'dark' : 'light') : preference)
+    const matchesProvider = (el) =>
+      el.getAttribute('theme') === 'system' && (el.getAttribute('theme-storage-key') || null) === key
     const apply = () => {
       const theme = effective()
-      document.documentElement.dataset.theme = theme
+      if (document.documentElement.dataset.theme !== theme) document.documentElement.dataset.theme = theme
       document.querySelectorAll('oas-config-provider[theme="system"]').forEach((el) => {
-        if ((el.getAttribute('theme-storage-key') || null) === key) el.dataset.theme = theme
+        if (matchesProvider(el) && el.dataset.theme !== theme) el.dataset.theme = theme
       })
     }
     apply()
@@ -133,6 +138,17 @@ const html = await renderToString('oas-button', { type: 'primary', size: 'large'
       },
       { once: true },
     )
+    // 同文档重选不会发 storage 事件：观察 provider effective，重读合法偏好后交接 root。
+    const effectiveObserver = new MutationObserver((records) => {
+      if (!records.some((record) => record.target instanceof Element && matchesProvider(record.target))) return
+      preference = restorePreference()
+      apply()
+    })
+    effectiveObserver.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['data-theme'],
+      subtree: true,
+    })
     media.addEventListener('change', apply)
     if (key) {
       window.addEventListener('storage', (event) => {
