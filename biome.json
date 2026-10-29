@@ -19,6 +19,7 @@
       "!docs/api-manifest/**",
       "!docs/api-descriptions.*.json",
       "!*.vue",
+      "!packages/ssr/fixtures/next/next-env.d.ts",
       "!wrangler.jsonc",
       "!.markdownlint-cli2.jsonc"
     ]

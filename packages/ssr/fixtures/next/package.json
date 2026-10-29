@@ -1,0 +1,28 @@
+{
+  "name": "oas-ui-ssr-fixture-next",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "T11 fixture：Next.js App Router 生产构建下的 @oas-ui/next DSD 验收（不随 npm 包分发）",
+  "scripts": {
+    "build": "next build",
+    "start": "next start -p 4301 -H 127.0.0.1",
+    "dev": "next dev -p 4301 -H 127.0.0.1",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "dependencies": {
+    "@oas-ui/i18n": "link:../../../i18n",
+    "@oas-ui/ssr": "link:../..",
+    "@oas-ui/theme": "link:../../../theme",
+    "@oas-ui/ui": "link:../../../ui",
+    "next": "16.4.3",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.18.0",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "typescript": "^5.9.3"
+  }
+}

@@ -17,3 +17,11 @@ test-results/
 packages/playground/dist-react/
 packages/playground/dist-vue/
 packages/docs/docs/public/llms-full.txt
+
+# SSR fixture（独立安装/构建，不随发布包分发，也不参与根 workspace）
+packages/ssr/fixtures/*/node_modules/
+packages/ssr/fixtures/next/.next/
+packages/ssr/fixtures/nuxt/.nuxt/
+packages/ssr/fixtures/nuxt/.output/
+packages/ssr/fixtures/nuxt/public/vendor/
+packages/ssr/fixtures/nuxt/server/theme-css.generated.mjs

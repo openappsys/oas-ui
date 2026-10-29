@@ -1,0 +1,5 @@
+# fixture 自身的单包 workspace 根（不是 monorepo 成员）：
+# pnpm 12 的项目级设置只能写在最近的 pnpm-workspace.yaml；省略 packages 字段 = 只包含本目录根包。
+# 根仓库的 pnpm-workspace.yaml（packages/*）不匹配本目录，根 install/build 不会碰 fixture。
+allowBuilds:
+  esbuild: true
