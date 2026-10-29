@@ -3,7 +3,7 @@
 // 感知对比度（与 a11y.spec 同源 oklab 评分）——亮蓝/品红/深青三类代表背板 × 明暗双主题。
 
 import { test, expect, type Page } from '@playwright/test'
-import { perceptualContrast, relativeLuminance } from '../../theme/oklab'
+import { linearToSrgb, oklabToLinearRgb, oklchToOklab, perceptualContrast, relativeLuminance } from '../../theme/oklab'
 import { GLASS_REGISTRY } from '../../theme/glass-fluid.js'
 
 const PAGE = '/guide/glass.html'
@@ -25,10 +25,12 @@ function parseRgba(s: string): [number, number, number, number] | null {
   return [parts[0]!, parts[1]!, parts[2]!, parts.length > 3 ? parts[3]! : 1]
 }
 
-/** 归一化任意计算色值 → [r,g,b,a]（0-255）：hex / color(srgb r g b [/ a]) / rgb(a)。
- *  color-mix 计算值经浏览器序列化为 `color(srgb …)`，只匹配 `rgba?()` 会静默漏采（假绿）。 */
+/** 归一化任意计算色值 → [r,g,b,a]（0-255）：hex / color(srgb …) / rgb(a) / oklab() / oklch()。
+ *  color-mix 计算值可能经浏览器序列化为 `color(srgb …)` 或 `oklab(…)`（Chromium 对混黑结果
+ *  会给 oklab），只匹配一种会静默漏采（假绿）。 */
 function parseSrgb(s: string): [number, number, number, number] | null {
   if (s.trim() === 'transparent') return [0, 0, 0, 0]
+  const clamp = (v: number): number => Math.max(0, Math.min(255, Math.round(v)))
   // Lightning CSS 可能把半透明色压缩为 #rgba / #rrggbbaa；必须保留 alpha 归一化。
   const hex = s.match(/^#([0-9a-f]{3,4}|[0-9a-f]{6}|[0-9a-f]{8})$/i)
   if (hex) {
@@ -42,6 +44,26 @@ function parseSrgb(s: string): [number, number, number, number] | null {
   }
   const cs = s.match(/color\(srgb\s+([\d.]+)\s+([\d.]+)\s+([\d.]+)(?:\s*\/\s*([\d.]+))?\)/)
   if (cs) return [Number(cs[1]) * 255, Number(cs[2]) * 255, Number(cs[3]) * 255, cs[4] != null ? Number(cs[4]) : 1]
+  const ok = s.match(/^oklab\(\s*([-\d.]+)\s+([-\d.]+)\s+([-\d.]+)(?:\s*\/\s*([\d.]+))?\s*\)$/i)
+  if (ok) {
+    const lin = oklabToLinearRgb({ L: Number(ok[1]), a: Number(ok[2]), b: Number(ok[3]) })
+    return [
+      clamp(linearToSrgb(lin[0])),
+      clamp(linearToSrgb(lin[1])),
+      clamp(linearToSrgb(lin[2])),
+      ok[4] != null ? Number(ok[4]) : 1,
+    ]
+  }
+  const lch = s.match(/^oklch\(\s*([-\d.]+)\s+([-\d.]+)\s+([-\d.]+)(?:\s*\/\s*([\d.]+))?\s*\)$/i)
+  if (lch) {
+    const lin = oklabToLinearRgb(oklchToOklab({ L: Number(lch[1]), C: Number(lch[2]), h: Number(lch[3]) }))
+    return [
+      clamp(linearToSrgb(lin[0])),
+      clamp(linearToSrgb(lin[1])),
+      clamp(linearToSrgb(lin[2])),
+      lch[4] != null ? Number(lch[4]) : 1,
+    ]
+  }
   const m = s.match(/rgba?\(([^)]+)\)/)
   if (!m) return null
   const p = m[1]!
@@ -959,6 +981,65 @@ function contrastOn(fg: [number, number, number, number], bg: [number, number, n
   return Math.abs(perceptualContrast(relativeLuminance(text), relativeLuminance(bg)))
 }
 
+/** 从实际伪元素 backgroundImage 提取首个颜色（radial-gradient 的中心 sheen 色）。
+ *  只信 `--oas-glass-sheen*` token 会在 :active 规则被硬编码时假绿——实际渲染色才是门禁依据。 */
+function extractGradientColor(backgroundImage: string): [number, number, number, number] | null {
+  const m = backgroundImage.match(/(?:rgba?\([^)]*\)|color\(srgb[^)]*\)|#[0-9a-f]{3,8})/i)
+  return m ? parseSrgb(m[0]) : null
+}
+
+/** WCAG 2.x 相对亮度（用于自定义色实底文字 ≥4.5 的回归；与感知分门禁分开）。 */
+function wcagLuminance(rgb: [number, number, number]): number {
+  const f = (v: number): number => {
+    const c = v / 255
+    return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4
+  }
+  return 0.2126 * f(rgb[0]) + 0.7152 * f(rgb[1]) + 0.0722 * f(rgb[2])
+}
+
+function wcagRatio(a: [number, number, number], b: [number, number, number]): number {
+  const hi = Math.max(wcagLuminance(a), wcagLuminance(b))
+  const lo = Math.min(wcagLuminance(a), wcagLuminance(b))
+  return (hi + 0.05) / (lo + 0.05)
+}
+
+/** 组透明度（button[disabled] opacity .6）下的实际像素：整组先渲染再与身后页面混合。 */
+function fadeOver(
+  color: [number, number, number, number],
+  opacity: number,
+  bg: [number, number, number],
+): [number, number, number] {
+  return composite([color[0], color[1], color[2], color[3] * opacity], bg)
+}
+
+/** 与 console-sweep 同口径的白名单：只放行资源/引擎噪声；GA 只认外部 gtag.js 资源 URL。
+ *  不得用 /gtag/i 或 /Google Analytics/ 整词吞掉一等方（组件/文档代码）告警。 */
+const BENIGN_CONSOLE = [
+  /net::ERR_/,
+  /Failed to load resource/,
+  /vite/,
+  /hydrating/,
+  /scroll-linked positioning effect/i,
+  /googletagmanager\.com\/gtag\/js/,
+  // Firefox 对 GA4 cookie 的 benign 引擎警告（精确到 _ga_ cookie 覆盖，不吞一等方 gtag 文案告警）
+  /The value of the attribute .*cookie .*_ga_.* has been overwritten/i,
+]
+
+function watchConsole(page: Page): string[] {
+  const bad: string[] = []
+  page.on('console', (m) => {
+    if ((m.type() === 'error' || m.type() === 'warning') && !BENIGN_CONSOLE.some((re) => re.test(m.text()))) {
+      bad.push(`${m.type()}: ${m.text()}`)
+    }
+  })
+  page.on('pageerror', (err) => bad.push(`pageerror: ${err.message}`))
+  return bad
+}
+
+/** disabled/loading 是非交互态（WCAG 对比豁免）且整组 opacity .6；本门禁只防透明度塌陷，
+ *  不把豁免态抬到正文档（实测 light 57.3 / dark 37.2，修复前 spinner 仅 16.3）。 */
+const DISABLED_LOADING_MIN_SCORE = 35
+
 /** 逐格真实取样 + 合成。所有失败（缺节点/缺文字/无法解析/状态不符）都抛错。 */
 async function sampleSwitchCell(page: Page, probe: SwitchProbe, state: SwitchInteraction): Promise<SwitchSample> {
   const raw = await page.evaluate(
@@ -1044,10 +1125,22 @@ async function sampleSwitchCell(page: Page, probe: SwitchProbe, state: SwitchInt
   let sheenAlpha = 0
 
   if (state !== 'static') {
-    const sheen = mustColor(state === 'hover' ? raw.sheen : raw.sheenPress, `${name} sheen 色`)
-    if (sheen[3] <= 0) throw new Error(`[${name}] ${state} sheen alpha 必须 >0（为 0 则门禁空转）`)
-    sheenAlpha = sheen[3]
-    litBg = composite(sheen, baseBg)
+    const token = mustColor(state === 'hover' ? raw.sheen : raw.sheenPress, `${name} sheen token`)
+    // 实际渲染色以伪元素 backgroundImage 为准（防 :active 规则换硬编码后只信 token 假绿）
+    const rendered = extractGradientColor(raw.afterBg)
+    if (!rendered) throw new Error(`[${name}] 无法从伪元素背景提取 sheen 色：${JSON.stringify(raw.afterBg)}`)
+    if (rendered[3] <= 0) throw new Error(`[${name}] ${state} 伪元素 sheen alpha 必须 >0（为 0 则门禁空转）`)
+    const dr = Math.abs(rendered[0] - token[0])
+    const dg = Math.abs(rendered[1] - token[1])
+    const db = Math.abs(rendered[2] - token[2])
+    const da = Math.abs(rendered[3] - token[3])
+    if (dr > 2 || dg > 2 || db > 2 || da > 0.01) {
+      throw new Error(
+        `[${name}] 伪元素 sheen 与 token 不一致（防止硬编码假绿）：pseudo=${JSON.stringify(rendered)} token=${JSON.stringify(token)} bg=${JSON.stringify(raw.afterBg)}`,
+      )
+    }
+    sheenAlpha = rendered[3]
+    litBg = composite(rendered, baseBg)
     litScore = contrastOn(fg, litBg)
   }
 
@@ -1077,22 +1170,7 @@ async function sampleSwitchCell(page: Page, probe: SwitchProbe, state: SwitchInt
 
 test.describe('switch 玻璃轨道内文案 36 格真实对比度矩阵', () => {
   test('2 主题 × 2 checked × 3 真实底色 × 3 交互态全部达标（样本必须恰好 36）', async ({ page }, testInfo) => {
-    const badWarns: string[] = []
-    const allow = [
-      /net::ERR_/,
-      /Failed to load resource/,
-      /vite/,
-      /hydrating/,
-      /cookie .*overwritten/i,
-      /scroll-linked positioning effect/i,
-      /Google Analytics|gtag/i,
-    ]
-    page.on('console', (m) => {
-      if ((m.type() === 'error' || m.type() === 'warning') && !allow.some((re) => re.test(m.text()))) {
-        badWarns.push(`${m.type()}: ${m.text()}`)
-      }
-    })
-    page.on('pageerror', (err) => badWarns.push(`pageerror: ${err.message}`))
+    const badWarns = watchConsole(page)
 
     await page.goto(PAGE, { waitUntil: 'domcontentloaded' })
     await page.waitForFunction(() => document.documentElement.hasAttribute('data-glass'), undefined, {
@@ -1115,6 +1193,8 @@ test.describe('switch 玻璃轨道内文案 36 格真实对比度矩阵', () => 
       const probes = await page.evaluate(
         ({ theme: currentTheme, checkedStates: checks, backdrops: kinds }) => {
           document.getElementById('sw-glass-matrix')?.remove()
+          // 页面底取文档站真实 --vp-c-bg（dark 为 #1b1b1f，与库页面 token #18181b 口径略不同）；
+          // 这是「页面底」真实采样，不替换成库 surface token。
           const stage = document.createElement('div')
           stage.id = 'sw-glass-matrix'
           stage.style.cssText = [
@@ -1334,6 +1414,227 @@ test.describe('switch 玻璃轨道内文案 36 格真实对比度矩阵', () => 
             .not.toBe(hover.afterBg)
         }
       }
+    }
+
+    expect(badWarns, `console 应零告警：${badWarns.join(' | ')}`).toEqual([])
+  })
+})
+
+test.describe('switch 玻璃态自定义色 / disabled / loading 可读性', () => {
+  test('自定义 color 不被玻璃轨道 mix 混深（light/dark computed 原色 + WCAG ≥4.5 + console 零告警）', async ({
+    page,
+  }, testInfo) => {
+    const badWarns = watchConsole(page)
+    await page.goto(PAGE, { waitUntil: 'domcontentloaded' })
+    await page.waitForFunction(() => document.documentElement.hasAttribute('data-glass'), undefined, {
+      timeout: 15000,
+    })
+    const themes: SwitchTheme[] = ['light', 'dark']
+
+    for (const theme of themes) {
+      await page.evaluate((next) => {
+        document.documentElement.classList.toggle('dark', next === 'dark')
+        document.documentElement.removeAttribute('data-theme')
+        document.getElementById('sw-custom-stage')?.remove()
+        const stage = document.createElement('div')
+        stage.id = 'sw-custom-stage'
+        stage.style.cssText =
+          'position:fixed;inset:0;z-index:2147483640;display:flex;align-items:center;justify-content:center;background:var(--vp-c-bg)'
+        const sw = document.createElement('oas-switch')
+        sw.id = 'sw-custom-color'
+        sw.setAttribute('color', '#16a34a')
+        sw.setAttribute('checked', '')
+        sw.setAttribute('checked-text', '开')
+        stage.appendChild(sw)
+        document.body.appendChild(stage)
+      }, theme)
+      await page.waitForFunction(
+        () => !!document.getElementById('sw-custom-color')?.shadowRoot?.querySelector('button[part="switch"]'),
+        undefined,
+        { timeout: 15000 },
+      )
+      await page.waitForTimeout(150)
+
+      const read = () =>
+        page.evaluate(() => {
+          const stage = document.getElementById('sw-custom-stage')!
+          const host = document.getElementById('sw-custom-color')!
+          const btn = host.shadowRoot!.querySelector('button') as HTMLButtonElement
+          const label = host.shadowRoot!.querySelector<HTMLElement>('.label')!
+          return {
+            pageBg: getComputedStyle(stage).backgroundColor,
+            track: getComputedStyle(btn).backgroundColor,
+            fg: getComputedStyle(label).color,
+            mixInline: btn.style.getPropertyValue('--oas-glass-switch-track-mix').trim(),
+            labelHidden: label.hidden,
+            labelText: label.textContent ?? '',
+            labelWidth: label.getBoundingClientRect().width,
+          }
+        })
+      const r = await read()
+      const pageBg = mustColor(r.pageBg, `${theme} 自定义色页面底`)
+      if (pageBg[3] !== 1) throw new Error(`${theme} 自定义色页面底必须不透明`)
+      const track = mustColor(r.track, `${theme} 自定义色轨道`)
+      const fg = mustColor(r.fg, `${theme} 自定义色文字`)
+      expect(r.labelHidden, `${theme} 自定义色轨道文案应可见`).toBe(false)
+      expect(r.labelText).toBe('开')
+      expect(r.labelWidth).toBeGreaterThan(0)
+      expect(r.mixInline, `${theme} 自定义色必须把玻璃轨道 mix 钉为 100%（不混深）`).toBe('100%')
+      expect(track[3], `${theme} 自定义色轨道应不透明`).toBe(1)
+      expect(Math.abs(track[0] - 22), `${theme} 自定义色 R 通道`).toBeLessThanOrEqual(1)
+      expect(Math.abs(track[1] - 163), `${theme} 自定义色 G 通道`).toBeLessThanOrEqual(1)
+      expect(Math.abs(track[2] - 74), `${theme} 自定义色 B 通道`).toBeLessThanOrEqual(1)
+      expect(
+        wcagRatio([track[0], track[1], track[2]], [fg[0], fg[1], fg[2]]),
+        `${theme} 自定义色 on 色 WCAG 对比应 ≥4.5（track=${r.track} fg=${r.fg}）`,
+      ).toBeGreaterThanOrEqual(4.5)
+
+      await page.locator('#sw-custom-stage').screenshot({
+        path: testInfo.outputPath(`switch-glass-custom-${theme}.png`),
+      })
+
+      if (theme === 'light') {
+        // 移除 color 后必须清除 inline 钉值，回到主题默认轨道（88% mix）
+        await page.evaluate(() => document.getElementById('sw-custom-color')!.removeAttribute('color'))
+        await page.waitForTimeout(100)
+        const cleared = await read()
+        expect(cleared.mixInline, '移除 color 后 inline mix 必须清除').toBe('')
+        const defaultTrack = mustColor(cleared.track, '默认轨道色')
+        expect(
+          Math.abs(defaultTrack[0] - 22) > 2 ||
+            Math.abs(defaultTrack[1] - 163) > 2 ||
+            Math.abs(defaultTrack[2] - 74) > 2,
+          '移除 color 后应回到主题默认轨道，而不是残留自定义绿',
+        ).toBe(true)
+      }
+
+      await page.evaluate(() => document.getElementById('sw-custom-stage')?.remove())
+    }
+
+    expect(badWarns, `console 应零告警：${badWarns.join(' | ')}`).toEqual([])
+  })
+
+  test('disabled/loading 在玻璃 token 变更后真实 computed 仍可读（不进入 36 格，console 零告警）', async ({
+    page,
+  }, testInfo) => {
+    const badWarns = watchConsole(page)
+    await page.goto(PAGE, { waitUntil: 'domcontentloaded' })
+    await page.waitForFunction(() => document.documentElement.hasAttribute('data-glass'), undefined, {
+      timeout: 15000,
+    })
+    const themes: SwitchTheme[] = ['light', 'dark']
+
+    for (const theme of themes) {
+      await page.evaluate((next) => {
+        document.documentElement.classList.toggle('dark', next === 'dark')
+        document.documentElement.removeAttribute('data-theme')
+        document.getElementById('sw-state-stage')?.remove()
+        const stage = document.createElement('div')
+        stage.id = 'sw-state-stage'
+        stage.style.cssText =
+          'position:fixed;inset:0;z-index:2147483640;display:flex;align-items:center;justify-content:center;gap:48px;background:var(--vp-c-bg)'
+        for (const [id, attr] of [
+          ['sw-disabled-state', 'disabled'],
+          ['sw-loading-state', 'loading'],
+        ] as const) {
+          const sw = document.createElement('oas-switch')
+          sw.id = id
+          sw.setAttribute('checked', '')
+          sw.setAttribute('checked-text', '开')
+          sw.setAttribute(attr, '')
+          stage.appendChild(sw)
+        }
+        document.body.appendChild(stage)
+      }, theme)
+      await page.waitForFunction(
+        () =>
+          !!document.getElementById('sw-disabled-state')?.shadowRoot?.querySelector('button[part="switch"]') &&
+          !!document.getElementById('sw-loading-state')?.shadowRoot?.querySelector('button[part="switch"]'),
+        undefined,
+        { timeout: 15000 },
+      )
+      await page.waitForTimeout(150)
+
+      const raw = await page.evaluate(() => {
+        const stage = document.getElementById('sw-state-stage')!
+        const pageBg = getComputedStyle(stage).backgroundColor
+        const read = (id: string) => {
+          const host = document.getElementById(id)!
+          const btn = host.shadowRoot!.querySelector('button') as HTMLButtonElement
+          const label = host.shadowRoot!.querySelector<HTMLElement>('.label')!
+          const spinner = host.shadowRoot!.querySelector<HTMLElement>('.spinner')!
+          const cs = getComputedStyle(btn)
+          return {
+            track: cs.backgroundColor,
+            fg: getComputedStyle(label).color,
+            opacity: Number(cs.opacity),
+            disabled: btn.disabled,
+            labelHidden: label.hidden,
+            labelText: label.textContent ?? '',
+            labelWidth: label.getBoundingClientRect().width,
+            spinnerHidden: spinner.hidden,
+            spinnerColor: getComputedStyle(spinner).color,
+            spinnerBorder: getComputedStyle(spinner).borderLeftColor,
+            mixComputed: cs.getPropertyValue('--oas-glass-switch-track-mix').trim(),
+            mixInline: btn.style.getPropertyValue('--oas-glass-switch-track-mix').trim(),
+          }
+        }
+        return { pageBg, disabled: read('sw-disabled-state'), loading: read('sw-loading-state') }
+      })
+
+      const pageBg = mustColor(raw.pageBg, `${theme} disabled/loading 页面底`)
+      expect(pageBg[3]).toBe(1)
+      const pageRgb: [number, number, number] = [pageBg[0], pageBg[1], pageBg[2]]
+      const expectedMix = theme === 'light' ? '88%' : '100%'
+
+      const disabledTrack = mustColor(raw.disabled.track, `${theme} disabled 轨道`)
+      const disabledFg = mustColor(raw.disabled.fg, `${theme} disabled 文字`)
+      expect(raw.disabled.disabled, `${theme} disabled button`).toBe(true)
+      expect(raw.disabled.opacity, `${theme} disabled opacity`).toBeCloseTo(0.6, 2)
+      expect(raw.disabled.labelHidden, `${theme} disabled 文案应可见`).toBe(false)
+      expect(raw.disabled.labelText).toBe('开')
+      expect(raw.disabled.labelWidth).toBeGreaterThan(0)
+      expect(raw.disabled.spinnerHidden, `${theme} disabled spinner 应隐藏`).toBe(true)
+      expect(raw.disabled.mixComputed, `${theme} disabled 默认轨道 mix`).toBe(expectedMix)
+      expect(raw.disabled.mixInline, `${theme} disabled 不得留自定义色 inline mix`).toBe('')
+      const disabledTrackEff = fadeOver(disabledTrack, raw.disabled.opacity, pageRgb)
+      const disabledFgEff = fadeOver(disabledFg, raw.disabled.opacity, pageRgb)
+      const disabledScore = Math.abs(
+        perceptualContrast(relativeLuminance(disabledFgEff), relativeLuminance(disabledTrackEff)),
+      )
+      expect(
+        disabledScore,
+        `${theme} disabled 文案感知分 ${disabledScore.toFixed(1)} 应 ≥${DISABLED_LOADING_MIN_SCORE}（track=${raw.disabled.track} fg=${raw.disabled.fg} opacity=${raw.disabled.opacity}）`,
+      ).toBeGreaterThanOrEqual(DISABLED_LOADING_MIN_SCORE)
+
+      const loadingTrack = mustColor(raw.loading.track, `${theme} loading 轨道`)
+      const loadingSpinner = mustColor(raw.loading.spinnerColor, `${theme} loading spinner`)
+      const loadingBorder = mustColor(raw.loading.spinnerBorder, `${theme} loading spinner border`)
+      expect(raw.loading.disabled, `${theme} loading button 应禁点`).toBe(true)
+      expect(raw.loading.opacity, `${theme} loading opacity`).toBeCloseTo(0.6, 2)
+      expect(raw.loading.labelHidden, `${theme} loading 轨道文案应隐藏（spinner 对侧）`).toBe(true)
+      expect(raw.loading.spinnerHidden, `${theme} loading spinner 应显示`).toBe(false)
+      expect(loadingSpinner[3], `${theme} loading spinner 颜色应实色（不得半透明）`).toBe(1)
+      expect(
+        Math.abs(loadingBorder[0] - loadingSpinner[0]) <= 1 &&
+          Math.abs(loadingBorder[1] - loadingSpinner[1]) <= 1 &&
+          Math.abs(loadingBorder[2] - loadingSpinner[2]) <= 1,
+        `${theme} spinner border 应等于 currentColor`,
+      ).toBe(true)
+      const loadingTrackEff = fadeOver(loadingTrack, raw.loading.opacity, pageRgb)
+      const loadingSpinnerEff = fadeOver(loadingSpinner, raw.loading.opacity, pageRgb)
+      const loadingScore = Math.abs(
+        perceptualContrast(relativeLuminance(loadingSpinnerEff), relativeLuminance(loadingTrackEff)),
+      )
+      expect(
+        loadingScore,
+        `${theme} loading spinner 感知分 ${loadingScore.toFixed(1)} 应 ≥${DISABLED_LOADING_MIN_SCORE}（track=${raw.loading.track} spinner=${raw.loading.spinnerColor}）`,
+      ).toBeGreaterThanOrEqual(DISABLED_LOADING_MIN_SCORE)
+
+      await page.locator('#sw-state-stage').screenshot({
+        path: testInfo.outputPath(`switch-glass-disabled-loading-${theme}.png`),
+      })
+      await page.evaluate(() => document.getElementById('sw-state-stage')?.remove())
     }
 
     expect(badWarns, `console 应零告警：${badWarns.join(' | ')}`).toEqual([])

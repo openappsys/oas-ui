@@ -136,5 +136,5 @@ onBeforeUnmount(() => {
 - 高光层落在「surface 背景之上、文字之下」（`isolation: isolate` + 负 `z-index`），镜面反射不冲淡标签文字；
 - 作用域与按压：hover 镜面高光对所有玻璃面与按钮生效（含**实心语义色/自定义色按钮** primary/success/warning/danger/has-color）；**实心按钮的按压改用边缘内描边（box-shadow inset，不提亮铺底）**——白高光铺底会把白字对比度压到门限下，边缘描边不冲淡文字（与 Apple 镜面描边 / Fluent 内凹的按压常态一致）；玻璃面的按压仍是更强的高光色（真增强）；
 - 对比度门禁：玻璃面 hover 按主题页面底（light `#fff` / dark `#18181b`）合成取最坏 ≥60、按压 ≥45；**实心按钮 hover（瞬态大字档）≥45**，其静止/按压基线（底不被提亮）≥60；半透明表面若落在极端宿主底色上，文字对比度由宿主负责。
-- switch 轨道内文案的独立矩阵已纳入门禁：2 主题 × 2 checked × 3 真实底色（页面 / 灰卡 / `bg-elevated`）× 3 交互态（静止 / hover / press）共 36 格，静止/hover ≥60、press ≥45。选中态文字回落实色 `--oas-color-text-on-primary`；浅色玻璃轨道由 `--oas-glass-switch-track-mix` 略作加深，抵消白色 sheen 叠底后的对比度损失（dark 与实心回退为 100%，原色零变化）。
+- switch 轨道内文案的独立矩阵已纳入门禁：2 主题 × 2 checked × 3 真实底色（页面 / 灰卡 / `bg-elevated`）× 3 交互态（静止 / hover / press）共 36 格，静止/hover ≥60、press ≥45。选中态文字回落实色 `--oas-color-text-on-primary`；浅色玻璃轨道由 `--oas-glass-switch-track-mix` 略作加深，抵消白色 sheen 叠底后的对比度损失（dark 与实心回退为 100%，原色零变化）。自定义 `color` 在本层会把该 mix 钉为 100%，保持原轨道色与按原色择 on 文字的既有口径；checked loading spinner 也走实色 on-primary，不在半透明轨道上使用半透明 `--oas-color-bg`。
 - 边界：指针静止时滚动页面，高光坐标不随元素位移更新（移动指针即恢复）；slider 把手高光在 overlay 态（拖动中/聚焦/`show-tooltip`/自定义把手 `data-custom-thumb`）不显示，按压环也仅在「按下未移动」时可见。

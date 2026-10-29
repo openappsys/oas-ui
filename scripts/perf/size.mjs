@@ -704,9 +704,9 @@ const BUDGETS = [
     name: '@oas-ui/theme glass.css gzip',
     kind: 'absolute',
     get: () => glassCss.gzipBytes,
-    limit: 6 * 1024, // 6 KB（可选玻璃静态层，首次定档 2026-10-08；实测约 4.42 KB）
+    limit: 6 * 1024, // 6 KB（可选玻璃静态层，首次定档 2026-10-08；本次实测约 3.5 KB）
     basis:
-      '实测 gzip 约 3.04 KB（玻璃静态层：surface 半透明 token + 折光边 + 阴影；独立可选，不进 union），保留 6 KB 上限',
+      '本次实测 gzip 3.43 KB（3509 B，2026-10-29；玻璃静态层新增 switch 轨道加深 token 后复核：surface 半透明 token + 折光边 + 阴影 + switch mix；独立可选，不进 union），保留 6 KB 上限',
   },
   {
     name: '@oas-ui/theme skins.css gzip',

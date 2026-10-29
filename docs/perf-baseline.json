@@ -955,12 +955,12 @@
       {
         "name": "@oas-ui/theme glass.css gzip",
         "kind": "absolute",
-        "actualBytes": 3111,
+        "actualBytes": 3509,
         "limitBytes": 6144,
         "warnAtBytes": 5530,
         "pass": true,
         "warn": false,
-        "basis": "实测 gzip 约 3.04 KB（玻璃静态层：surface 半透明 token + 折光边 + 阴影；独立可选，不进 union），保留 6 KB 上限"
+        "basis": "本次实测 gzip 3.43 KB（3509 B，2026-10-29；玻璃静态层新增 switch 轨道加深 token 后复核：surface 半透明 token + 折光边 + 阴影 + switch mix；独立可选，不进 union），保留 6 KB 上限"
       },
       {
         "name": "@oas-ui/theme skins.css gzip",

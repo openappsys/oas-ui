@@ -153,11 +153,14 @@ describe('OASSwitch', () => {
     expect(el.classList.contains('has-outside-label')).toBe(false)
   })
 
-  it('color 内联样式：--oas-color-primary 覆盖，移除属性后清除', () => {
+  it('color 内联样式：--oas-color-primary 覆盖 + 玻璃轨道 mix 钉 100%，移除属性后清除', () => {
     const el = mount({ color: '#16a34a', checked: '' })
     expect(sw(el).style.getPropertyValue('--oas-color-primary')).toBe('#16a34a')
+    // 自定义色是实底轨道：必须钉住 100%，不得被玻璃档 88% 混深（pickOnColor 仍按原色择 on 色）
+    expect(sw(el).style.getPropertyValue('--oas-glass-switch-track-mix')).toBe('100%')
     el.removeAttribute('color')
     expect(sw(el).style.getPropertyValue('--oas-color-primary')).toBe('')
+    expect(sw(el).style.getPropertyValue('--oas-glass-switch-track-mix')).toBe('')
   })
 
   // ===== label 外部标签（本批新增） =====
@@ -398,6 +401,14 @@ describe('OASSwitch', () => {
     expect(style).toContain(
       'color-mix(in srgb, var(--oas-color-primary) var(--oas-glass-switch-track-mix, 100%), black)',
     )
+  })
+
+  it('开启态 loading spinner 用实色 on-primary（glass 半透明 bg 会把 spinner 压到不可读）', () => {
+    mount()
+    const style = document.querySelector('oas-switch')!.shadowRoot!.querySelector('style')!.textContent!
+    const rule = style.match(/button\[aria-checked='true'\] \.spinner\s*\{[^}]*\}/)?.[0] ?? ''
+    expect(rule, 'checked spinner 规则应存在').toContain('var(--oas-color-text-on-primary)')
+    expect(rule, 'checked spinner 不得再回落到半透明 bg token').not.toContain('var(--oas-color-bg)')
   })
 
   // ===== 块级拉伸热区：宿主被显式拉宽时整行可点（对齐 iOS 设置项点击语义） =====

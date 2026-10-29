@@ -318,7 +318,9 @@ button:not([aria-checked='true']) .spinner {
 }
 button[aria-checked='true'] .spinner {
   inset-inline-start: calc(var(--thumb-offset) + 2px);
-  color: var(--oas-color-bg);
+  /* loading 时轨道内文字隐藏，spinner 是主要可读指示：用实色 on-primary。
+   * 不得回落 --oas-color-bg：glass 档该 token 半透明，叠在轨道上感知分仅 16.3（不可读）。 */
+  color: var(--oas-color-text-on-primary);
 }
 @keyframes oas-spin {
   to {
@@ -576,12 +578,16 @@ export class OASSwitch extends OASFormElement {
     const color = this.getAttr('color')
     if (color) {
       btn.style.setProperty('--oas-color-primary', color)
+      // 自定义色是实底轨道：钉住 100%，不参与玻璃档 88% 混深（pickOnColor 仍按原色择 on 色）
+      btn.style.setProperty('--oas-glass-switch-track-mix', '100%')
       const on = pickOnColor(color)
       if (on) btn.style.setProperty('--oas-switch-on-color', on)
       else btn.style.removeProperty('--oas-switch-on-color')
     } else {
       btn.style.removeProperty('--oas-color-primary')
       btn.style.removeProperty('--oas-switch-on-color')
+      // 清除 inline 钉值，恢复 glass.css 的主题档（浅色 88% / dark 100%）
+      btn.style.removeProperty('--oas-glass-switch-track-mix')
     }
   }
 

@@ -58,11 +58,14 @@
 
 `oas-switch` 轨道内文案在玻璃层下建立独立真实对比度矩阵：2 主题 × 2 checked 状态 × 3 种真实身后底色（页面 / 灰卡 / `bg-elevated`）× 3 种交互态（静止 / hover / press）共 36 格；静止与 hover 每格感知分 ≥60，press 每格 ≥45。版本号未定，不标已发布。
 
+口径说明：checked 轨道为不透明 primary（玻璃档只整体加深），3 种身后底色不会改变 checked 格得分；36 格按主题/状态/底色去重后实际为 21 个可区分分数组（底色维度只对 unchecked 生效，数值相同的组进一步收敛）。
+
 ### 详细需求
 
 - **真实采样**：每格使用真实 shadow DOM 中的 `unchecked-text` / `checked-text`、真实轨道计算色、真实容器计算底色与真实 sheen token；半透明轨道与半透明卡片逐层 alpha 合成，不假定玻璃不透明。press 必须由真实指针按下产生 `:active` 后采样 `--oas-glass-sheen-press`，不得改 class 或复用 hover 样本。
 - **计数不变量**：总数恰好 36，每格名称唯一；null / 无法解析 / 缺文字 / 状态不符直接失败，禁止 filter 后少样本仍绿。
-- **修复点**：选中态轨道内文案从半透明 `--oas-color-bg` 改为实色 `--oas-color-text-on-primary`；浅色玻璃档新增 `--oas-glass-switch-track-mix: 88%`，让开启态轨道按比例掺黑，抵消白色 sheen 叠底后的对比度损失。dark 与 `prefers-reduced-transparency` 回退 100%，无玻璃层原色零变化。
+- **修复点**：选中态轨道内文案从半透明 `--oas-color-bg` 改为实色 `--oas-color-text-on-primary`；浅色玻璃档新增 `--oas-glass-switch-track-mix: 88%`，让开启态轨道按比例掺黑，抵消白色 sheen 叠底后的对比度损失。dark 与 `prefers-reduced-transparency` 回退 100%，无玻璃层原色零变化。自定义 `color` 在 glass 下把该 mix 钉为 100%（移除 color 时清 inline 回退），保持原轨道色与 `pickOnColor` 基于原色择 on 字的既有口径。
+- **loading/自定义色可读性**：checked loading spinner 从半透明 `--oas-color-bg` 改为实色 `--oas-color-text-on-primary`（glass 下半透明 spinner 在轨道上感知分仅 16.3）；disabled/loading 另做真实 computed 回归（不进入 36 格，disabled/loading 非交互态门限 35，仅防透明度塌陷）。
 - **范围纪律**：自定义 `color` 与不可控复杂背景不纳入 36 格，不新增第二套颜色算法；保留 40×22 几何、键盘/指针、动态高光注入/清理、RTL、disabled/loading 与组件消费点纪律；不改 ConfigProvider / ThemeEditor。
 
 ### 非目标
