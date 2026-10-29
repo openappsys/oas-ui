@@ -2,7 +2,7 @@
   "components": 151,
   "cdnGzipKB": 650.1,
   "locales": 10,
-  "tests": 12551,
+  "tests": 12566,
   "version": "2.6.4",
   "perf": {
     "cdnGzipKB": 650.1,

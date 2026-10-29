@@ -238,9 +238,20 @@ export class OASPullRefresh extends OASElement {
     this.update()
   }
 
-  /** 真水合：校验 SSR 快照结构（滚动盒存在）后接管，跳过 shadow 重建 */
+  /**
+   * 真水合：校验 SSR 快照的关键子结构（root/track/indicator/content/label/arrow）后接管，
+   * 跳过 shadow 重建。只验 root 会让缺 track/indicator 的残破快照被静默接管——
+   * bind() 空引用 → 手势位移与文案全部失效（下拉无任何可见反馈）。
+   * 快照版本闸门由基类 tryHydrate() 统一负责。
+   */
   protected override hydrate(): boolean {
-    if (!this.shadow.querySelector('[part="root"]')) return false
+    const root = this.shadow.querySelector('[part="root"]')
+    const track = this.shadow.querySelector('[part="track"]')
+    const indicator = this.shadow.querySelector('[part="indicator"]')
+    const content = this.shadow.querySelector('[part="content"]')
+    const label = this.shadow.querySelector('[part="label"]')
+    const arrow = this.shadow.querySelector('[part="arrow"]')
+    if (!root || !track || !indicator || !content || !label || !arrow) return false
     this.bind()
     return true
   }

@@ -183,8 +183,20 @@ export class OASToolCall extends OASElement {
     this.update()
   }
 
+  /**
+   * 真水合：校验 SSR 快照的关键子结构（tool/head/body + args/result 两段 + 头部文本槽）后接管，
+   * 跳过 shadow 重建。只验 head 会让缺 body/section 的残破快照被静默接管——
+   * bind() 空引用 → 展开态没有内容区、点击无可见反馈。快照版本闸门由基类 tryHydrate() 统一负责。
+   */
   protected override hydrate(): boolean {
-    if (!this.shadow.querySelector('[part="head"]')) return false
+    const tool = this.shadow.querySelector('[part="tool"]')
+    const head = this.shadow.querySelector('[part="head"]')
+    const body = this.shadow.querySelector('[part="body"]')
+    const name = this.shadow.querySelector('[part="name"]')
+    const sections = this.shadow.querySelectorAll('.section')
+    const argsPre = this.shadow.querySelector('[part="args"]')
+    const resultPre = this.shadow.querySelector('[part="result"]')
+    if (!tool || !head || !body || !name || sections.length !== 2 || !argsPre || !resultPre) return false
     this.bind()
     return true
   }

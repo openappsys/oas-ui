@@ -313,6 +313,10 @@ const LOCALES: Record<RenderLocale, Locale> = {
 /**
  * 真水合指纹：DSD 快照格式版本。快照语义/结构升级时递增，
  * 旧版本快照在升级后的组件上会因 hydrate() 结构校验不符而回退重渲染（正确性优先）。
+ *
+ * 必须与 `@oas-ui/core` 的 `SSR_SNAPSHOT_VERSION` 严格相等（组件 upgrade 时按它做版本闸门）；
+ * 两处漂移会让快照全部退回 render（可用但不水合），由 `src/index.test.ts` 的相等断言锁定。
+ * 这里不静态 import core —— core 主入口求值 `class extends HTMLElement`，会破坏本模块的 Node 安全。
  */
 const SNAPSHOT_FORMAT_VERSION = '1'
 

@@ -181,6 +181,37 @@ test('index-bar 条目点击：oas-item-click 详情写入可见反馈', async (
   await expect(page.locator('#ib-item-out')).toHaveText(/section: "A"/, { timeout: 5000 })
 })
 
+test('index-bar 无障碍：分节容器 role=group + aria-labelledby 指向自身分节头（generic 禁命名）', async ({ page }) => {
+  await page.goto('/components/index-bar.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#ib-basic')
+
+  const a11y = await page.evaluate(() => {
+    const root = document.querySelector('#ib-basic')!.shadowRoot!
+    const sections = [...root.querySelectorAll<HTMLElement>('[part="section"]')]
+    return sections.map((sec) => {
+      const idref = sec.getAttribute('aria-labelledby')
+      const target = idref ? root.getElementById(idref) : null
+      return {
+        role: sec.getAttribute('role'),
+        idref,
+        targetIsOwnHeader:
+          target != null && target === sec.querySelector('[part="section-header"]') && target.id === idref,
+        headerRole: target?.getAttribute('role') ?? '',
+        headerLevel: target?.getAttribute('aria-level') ?? '',
+      }
+    })
+  })
+  expect(a11y.length).toBeGreaterThan(0)
+  for (const sec of a11y) {
+    // aria-labelledby 挂在无 role 的 div 上是 generic 禁命名（名称会被 AT 丢弃）
+    expect(sec.role).toBe('group')
+    expect(sec.idref, 'aria-labelledby 必须有值').toBeTruthy()
+    expect(sec.targetIsOwnHeader, 'aria-labelledby 必须指向本节分节头').toBe(true)
+    expect(sec.headerRole).toBe('heading')
+    expect(sec.headerLevel).toBe('2')
+  }
+})
+
 test('index-bar RTL：侧栏位于 inline-end（LTR 右 / RTL 左）', async ({ page }) => {
   await page.goto('/components/index-bar.html', { waitUntil: 'domcontentloaded' })
   await up(page, '#ib-basic')

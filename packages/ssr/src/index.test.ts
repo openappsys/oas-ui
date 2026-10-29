@@ -77,6 +77,16 @@ describe('@oas-ui/ssr renderToString', () => {
     expect(empty).toContain('<meta data-oas-ssr="oas-empty" data-oas-ssr-v="1">')
   })
 
+  it('快照版本与 @oas-ui/core 的 hydration 版本闸门一致（两处常量不得漂移）', async () => {
+    // 渲染器不静态 import core（core 主入口求值 class extends HTMLElement 会破坏 Node 安全），
+    // 版本号是两处字面量——此处用真实快照 + core 导出常量做相等断言，防止只改一处。
+    // 动态 import：core 求值需要 shim 全局（happy-dom 环境已就绪，renderToString 之前也装过 shim）。
+    const { SSR_SNAPSHOT_VERSION } = await import('@oas-ui/core')
+    expect(SSR_SNAPSHOT_VERSION).toBe('1')
+    const snap = await renderToString('oas-button', {}, '确定')
+    expect(snap).toContain(`data-oas-ssr-v="${SSR_SNAPSHOT_VERSION}"`)
+  })
+
   it('oas-tag：关闭按钮 aria-label 走 locale', async () => {
     const html = await renderToString('oas-tag', { type: 'success', closable: 'true' }, '新功能')
     expect(html).toContain('<template shadowrootmode="open">')
@@ -1547,5 +1557,25 @@ describe('@oas-ui/ssr renderToString', () => {
 
   it('theme-editor 排除：开发工具组件 SSR 意义低，不在白名单', async () => {
     await expect(renderToString('oas-theme-editor')).rejects.toThrow(/非白名单 tag「oas-theme-editor」/)
+  })
+
+  it('oas-notice-bar scrollable：SSR 不物化内嵌 marquee，正文只出现一次（禁 JS 快照不翻倍）', async () => {
+    // 渲染器只序列化宿主 light DOM（shadow 内嵌套元素不会被递归包成 DSD）：若 SSR 段把宿主内容
+    // 物化进 oas-marquee，快照里的「源份 + marquee 克隆份」会被浏览器当普通内容渲染成两行。
+    const html = await renderToString('oas-notice-bar', { scrollable: '' }, '滚动通告正文')
+    expect(html.match(/滚动通告正文/g)?.length, '正文在快照里只出现一次').toBe(1)
+    // 单份正文由 probe 的默认 slot 投影承载（probe 不得 hidden），marquee 保持隐藏且不物化
+    expect(html).toContain('<div class="probe"><slot></slot></div>')
+    expect(html).toContain('part="marquee" hidden=""')
+    expect(html).not.toContain('滚动通告正文<div data-oas-marquee-copy')
+
+    // items 模式不受影响：正文走 item-text（probe 隐藏、marquee 隐藏），不物化 marquee
+    const items = await renderToString('oas-notice-bar', { items: '["单条通告"]' }, '')
+    expect(items).toContain('<span class="item-text">单条通告</span>')
+    expect(items).toContain('class="probe" hidden=""')
+    // marquee 在此模式下隐藏；其空克隆包裹节点（marquee 自身首帧产物）不得带正文
+    expect(items).not.toContain(
+      '<div data-oas-marquee-copy="" slot="oas-marquee-copy" aria-hidden="true" inert="">单条通告',
+    )
   })
 })

@@ -69,6 +69,7 @@ form-associated：有 `name` 时 FormData 提交 JSON 数组字符串；`form.re
 
 - 触屏/鼠标：滚轮列原生惯性滚动 + 吸附居中，滚动中实时高亮最近项，落停提交；
 - 键盘：列可聚焦（`role="listbox"`），↑/↓ 逐项移动、Home/End 跳首/末可用项（跳过禁用项）；
+- 读屏：列以 `aria-activedescendant` 指向当前选中项，option id 带实例前缀（同页多个 picker 不串号）；空列不写该引用（无项可指）。
 
 ## API
 

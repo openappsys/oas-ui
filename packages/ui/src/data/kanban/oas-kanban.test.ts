@@ -1170,7 +1170,7 @@ describe('OASKanban', () => {
       el.setAttribute('cards', JSON.stringify(SWIM_CARDS))
       // 泳道结构快照（与 update() 产物同构）
       el.shadowRoot!.innerHTML =
-        '<meta data-oas-ssr="oas-kanban"><div class="kanban swimlane"><div class="lane-header"></div><div class="lane" data-lane="high"><div class="lane-body"><div class="lane-cell" data-column="todo"></div></div></div></div>'
+        '<meta data-oas-ssr="oas-kanban" data-oas-ssr-v="1"><div class="kanban swimlane"><div class="lane-header"></div><div class="lane" data-lane="high"><div class="lane-body"><div class="lane-cell" data-column="todo"></div></div></div></div>'
       document.body.appendChild(el)
       // 水合接管成功：render() 未跑（shadow 无新增 <style>，只有 update() 重建板体内容）
       expect(el.shadowRoot!.querySelector('style'), '水合路径不重建 shadow（无新 <style>）').toBeNull()
@@ -1183,7 +1183,7 @@ describe('OASKanban', () => {
       el.setAttribute('columns', JSON.stringify(COLUMNS))
       el.setAttribute('cards', JSON.stringify(CARDS))
       el.shadowRoot!.innerHTML =
-        '<meta data-oas-ssr="oas-kanban"><div class="kanban"><div class="column" data-key="todo"><div class="column-head"></div><div class="column-body"></div></div></div>'
+        '<meta data-oas-ssr="oas-kanban" data-oas-ssr-v="1"><div class="kanban"><div class="column" data-key="todo"><div class="column-head"></div><div class="column-body"></div></div></div>'
       document.body.appendChild(el)
       expect(el.shadowRoot!.querySelector('style'), '水合路径不重建 shadow（无新 <style>）').toBeNull()
       expect(el.shadowRoot!.querySelector('meta[data-oas-ssr]')).toBeNull()

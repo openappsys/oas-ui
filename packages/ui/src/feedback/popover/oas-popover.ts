@@ -5,6 +5,7 @@ import { closePath } from '@oas-ui/icons/icons/close'
 import { computePosition, getViewport, type Placement } from '../../overlay/floating/index.js'
 import { registeredPopoverCapabilities, onPopoverCapabilityRegistered } from './oas-popover-capability.js'
 import { devWarn } from '../../shared/dev-warn.js'
+import { isSsrRuntime } from '../../shared/ssr-runtime.js'
 
 /** 面板与触发器的默认间距（offset 主轴缺省值，与 computePosition 的 GAP 一致） */
 const GAP = 8
@@ -1230,7 +1231,7 @@ export class OASPopover extends OASElement {
    *  virtual（宿主自管触发器）与 render-panel（无触发语义）跳过；
    *  SSR 渲染端跳过（快照为关闭态骨架，浏览器水合后 bind/update 补齐——同测量组件未校正态惯例） */
   private syncAnchorAria(showPanel: boolean): void {
-    if (typeof window !== 'undefined' && (window as unknown as Record<string, unknown>).__OAS_SSR__ === true) return
+    if (isSsrRuntime()) return
     const anchor = this.anchor
     if (!anchor || !(anchor instanceof HTMLElement)) return
     if (this.hasAttr('virtual') || this.hasAttr('render-panel') || anchor === this) return

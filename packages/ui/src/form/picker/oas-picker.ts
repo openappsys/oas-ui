@@ -122,6 +122,9 @@ const DEFAULT_VISIBLE_COUNT = 5
 /** 滚动落停判定：最后一次 scroll 后无新事件的静默窗口（scrollend 不兼容环境的兜底） */
 const SETTLE_MS = 100
 
+/** 实例序号：option id 必须跨实例唯一（同页多个 picker 的 aria-activedescendant 不得互相串） */
+let uid = 0
+
 /** 条目合法性：对象且 label 为字符串（合法 JSON 但非法元素——null/数字/缺 label——一律过滤，与 index-bar 防御口径一致） */
 function isValidItem(it: unknown): it is PickerItem {
   return it != null && typeof it === 'object' && typeof (it as PickerItem).label === 'string'
@@ -141,6 +144,23 @@ export class OASPicker extends OASFormElement {
   private emitReady = false
   /** 上一帧已渲染结构指纹：水合恢复后同指纹只同步选中/滚动，不重建快照列 */
   private lastStructureKey: string | null = null
+  /** 实例 uid：option id 前缀（同页多实例唯一） */
+  private readonly uid = ++uid
+
+  /** option 元素 id（实例隔离）：`oas-picker-<uid>-<列>-<项>` */
+  private itemId(columnIndex: number, itemIndex: number): string {
+    return `oas-picker-${this.uid}-${columnIndex}-${itemIndex}`
+  }
+
+  /**
+   * 同步列的 aria-activedescendant：空列不得写 IDREF（无 option 时引用悬空，读屏指向不存在的元素）。
+   * 返回 null 表示应移除属性。
+   */
+  private activeDescendantId(columnIndex: number, itemCount: number, selected: number): string | null {
+    if (itemCount === 0) return null
+    const idx = Math.min(Math.max(0, selected), itemCount - 1)
+    return this.itemId(columnIndex, idx)
+  }
 
   get value(): string[] {
     return this.currentValues()
@@ -386,12 +406,14 @@ export class OASPicker extends OASFormElement {
         if (!it) return
         it.style.height = `${h}px`
         it.textContent = item.label
-        it.id = `oas-picker-item-${i}-${j}`
+        it.id = this.itemId(i, j)
         it.setAttribute('aria-selected', String(j === sel))
         if (item.disabled) it.setAttribute('aria-disabled', 'true')
         else it.removeAttribute('aria-disabled')
       })
-      el.setAttribute('aria-activedescendant', `oas-picker-item-${i}-${sel}`)
+      const activeId = this.activeDescendantId(i, col.items.length, sel)
+      if (activeId) el.setAttribute('aria-activedescendant', activeId)
+      else el.removeAttribute('aria-activedescendant')
     })
   }
 
@@ -424,14 +446,15 @@ export class OASPicker extends OASFormElement {
       it.className = 'item'
       it.setAttribute('part', 'item')
       it.setAttribute('role', 'option')
-      it.id = `oas-picker-item-${index}-${j}`
+      it.id = this.itemId(index, j)
       it.style.height = `${h}px`
       it.textContent = item.label
       it.setAttribute('aria-selected', String(j === sel))
       if (item.disabled) it.setAttribute('aria-disabled', 'true')
       el.appendChild(it)
     })
-    el.setAttribute('aria-activedescendant', `oas-picker-item-${index}-${sel}`)
+    const activeId = this.activeDescendantId(index, col.items.length, sel)
+    if (activeId) el.setAttribute('aria-activedescendant', activeId)
 
     const bottom = document.createElement('div')
     bottom.className = 'spacer'
@@ -510,7 +533,9 @@ export class OASPicker extends OASFormElement {
     if (!col) return
     const items = col.querySelectorAll('.item')
     items.forEach((it, j) => it.setAttribute('aria-selected', String(j === idx)))
-    col.setAttribute('aria-activedescendant', `oas-picker-item-${colIdx}-${idx}`)
+    const activeId = this.activeDescendantId(colIdx, items.length, idx)
+    if (activeId) col.setAttribute('aria-activedescendant', activeId)
+    else col.removeAttribute('aria-activedescendant')
   }
 
   /** 提交选中：变化才回写/派发（天然防程序性回环）；级联截断路径并重建子列 */

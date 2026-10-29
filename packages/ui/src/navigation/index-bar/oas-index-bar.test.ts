@@ -208,12 +208,15 @@ describe('OASIndexBar', () => {
     expect(letters(el).map((b) => b.dataset.key)).toEqual(['A', 'B', 'C'])
   })
 
-  it('section 以 aria-labelledby 关联分节头', () => {
+  it('section 以 aria-labelledby 关联分节头（命名容器必须是 role=group，generic 禁命名）', () => {
     const el = mount()
     const sec = sectionEls(el)[0]!
     const header = sec.querySelector('[part="section-header"]')!
     expect(sec.getAttribute('aria-labelledby')).toBe(header.id)
     expect(header.id).toBeTruthy()
+    // aria-labelledby 挂在无角色的 div 上是「generic 禁命名」（axe aria-prohibited-attr 类）：
+    // 分节容器显式 role=group，命名才被 AT 接受
+    expect(sec.getAttribute('role')).toBe('group')
   })
 
   // ---------- height / sticky ----------

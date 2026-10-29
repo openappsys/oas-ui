@@ -467,6 +467,27 @@ describe('SSR 白名单收口：swatch / picker 真水合契约', () => {
     expect(changes).toHaveLength(1)
     expect(el.getAttribute('value')).toBe('["orange","二"]')
   })
+
+  // —— fix round 2：swatch 关键子结构校验（只验 part 命中会接管非按钮残破快照） ——
+
+  it('swatch：快照 part="swatch" 挂在非 button 元素上时回退 render（否则 bind 空引用、点击无事件）', () => {
+    const el = new OASSwatch()
+    el.setAttribute('color', 'blue')
+    el.setAttribute('selected', '')
+    el.shadowRoot!.innerHTML =
+      '<meta data-oas-ssr="oas-swatch" data-oas-ssr-v="1"><style></style><div part="swatch"></div>'
+    document.body.appendChild(el)
+
+    const button = el.shadowRoot!.querySelector<HTMLButtonElement>('button[part="swatch"]')
+    expect(button, '回退后应为真实 button 骨架').not.toBeNull()
+    expect(el.shadowRoot!.querySelector('meta[data-oas-ssr]')).toBeNull()
+    // 关键属性同步只在 bind 成功后才成立
+    expect(button!.getAttribute('aria-pressed')).toBe('true')
+    const colors: string[] = []
+    el.addEventListener('oas-click', (e: Event) => colors.push((e as CustomEvent).detail.color))
+    button!.click()
+    expect(colors).toEqual(['blue'])
+  })
 })
 
 describe('数据组件 JSON attribute 数据通道', () => {

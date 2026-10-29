@@ -25,7 +25,9 @@ import { isSsrRuntime } from '../../shared/ssr-runtime.js'
  *   （克隆 `<slot>` 在 light DOM 不分配、渲染为空），因此本组件把宿主内容**深克隆物化**为
  *   marquee 的 light DOM 源份（隐藏 probe `<slot>` 充当 slotchange 探针）。局限：克隆份处于
  *   本组件 shadow 内，页面样式表的 class 选择器不作用于滚动副本（行内 style 保留）——
- *   滚动内容建议用纯文本或行内样式；cloneNode 不复制事件监听——副本内交互元素可见但不可交互
+ *   滚动内容建议用纯文本或行内样式；cloneNode 不复制事件监听——副本内交互元素可见但不可交互。
+ *   SSR 快照不物化 marquee（渲染器只序列化宿主 light DOM，物化份会被当普通内容直出成两遍）：
+ *   快照走 probe 的单份插槽投影，升级后 update 切到 marquee 并重新物化。
  * - `items`：JSON 字符串数组——多条通告纵向轮播（淡出 → 换文本 → 淡入，间隔 `interval`
  *   毫秒，默认 4000，非法回退默认）；`prefers-reduced-motion` 下不自动轮播（静态显示第一条）；
  *   非法 JSON / 非数组 / 空数组回退默认插槽单条内容；items 优先于默认插槽；仅插槽单条模式下
@@ -48,7 +50,8 @@ import { isSsrRuntime } from '../../shared/ssr-runtime.js'
  *
  * a11y：容器 `role="region"` + aria-label（i18n `noticeBar.regionLabel`）；关闭按钮
  * aria-label（i18n）；图标 aria-hidden；自动轮播时内容区 `aria-live="off"`（不打扰读屏），
- * 静态态（单条/reduced-motion）为 `polite`。
+ * 静态态（单条/reduced-motion）为 `polite`。SSR 段拿不到 `prefers-reduced-motion`（Node 无 MQL），
+ * 多条 items 的快照恒为 `aria-live="off"`，升级后按真实偏好收敛（reduced-motion 下不自动轮播 → polite）。
  */
 
 export type NoticeBarType = 'info' | 'success' | 'warning' | 'error'
@@ -383,16 +386,40 @@ export class OASNoticeBar extends OASElement {
     this.bind()
   }
 
-  /** 真水合：校验 SSR 快照结构（bar 容器存在）后直接接管，跳过 shadow 重建 */
+  /**
+   * 真水合：校验 SSR 快照的关键子结构后直接接管，跳过 shadow 重建。
+   *
+   * 判定要覆盖「结构可用」而不只是顶层容器：bar 命中但 content/carousel/marquee/action 双形态缺失时，
+   * bind() 会拿到一堆空引用、update() 静默失效（通告栏空白且不可关），必须回退 render。
+   * 快照版本闸门由基类 tryHydrate() 统一负责（data-oas-ssr-v 严格相等）。
+   */
   protected override hydrate(): boolean {
-    if (!this.shadow.querySelector('[part="bar"]')) return false
+    const bar = this.shadow.querySelector('[part="bar"]')
+    const content = this.shadow.querySelector('[part="content"]')
+    const carousel = this.shadow.querySelector('[part="carousel"]')
+    const marquee = this.shadow.querySelector('oas-marquee')
+    const probe = this.shadow.querySelector('.probe')
+    const itemText = this.shadow.querySelector('.item-text')
+    const actions = this.shadow.querySelectorAll('[part="action"]')
+    const close = this.shadow.querySelector('[part="close"]')
+    if (!bar || !content || !carousel || !marquee || !probe || !itemText || actions.length !== 2 || !close) {
+      return false
+    }
     this.bind()
     // 恢复快照已渲染内容的内部缓存：update 不得重写图标 innerHTML / 条目文本 / marquee 物化内容
     this.lastItemsRaw = this.getAttr('items')
     this.lastTextSet = this.itemTextEl?.textContent ?? ''
     this.lastIconContent = this.iconFallback?.innerHTML ?? ''
-    this.lastScrollSig = this.scrollSignature()
+    // SSR 段不物化 marquee（正文走 probe 的单份 slot 投影，否则渲染器会把宿主 light DOM 的克隆份
+    // 一并序列化 → 禁 JS 时正文出现两遍）。这里必须清空物化指纹，保证升级后首次 update
+    // 在 scrollMode 下重新物化——只做前面一半会得到空白通告栏。
+    this.lastScrollSig = this.isScrollMode() ? '' : this.scrollSignature()
     return true
+  }
+
+  /** 当前是否滚动模式（items 优先；scrollable 仅在插槽单条模式生效） */
+  private isScrollMode(): boolean {
+    return this.parseItems().length === 0 && this.hasAttr('scrollable')
   }
 
   protected override onReconnect(): void {
@@ -442,10 +469,15 @@ export class OASNoticeBar extends OASElement {
       this.lastTextSet = ''
     }
 
-    // 三通道显隐：probe（插槽投影）/ carousel（items 轮播）/ marquee（scrollable 走马灯）
-    if (this.probeEl) this.probeEl.hidden = itemsMode || scrollMode
+    // 三通道显隐：probe（插槽投影）/ carousel（items 轮播）/ marquee（scrollable 走马灯）。
+    // SSR 段特例：渲染器只序列化宿主 light DOM（shadow 内嵌套元素的 light DOM 会被原样快照，
+    // 但不会递归给内嵌 oas-marquee 附 DSD），若此刻物化 marquee，禁 JS 快照会把「源份 + 克隆份」
+    // 一起当普通内容渲染——正文出现两遍、bar 高度翻倍、overflow 裁剪失效。
+    // 故 SSR 段保持 probe 投影（正文单份）与空 marquee；升级后 update 再切回 marquee 并物化。
+    const ssr = isSsrRuntime()
+    if (this.probeEl) this.probeEl.hidden = itemsMode || (scrollMode && !ssr)
     if (this.carouselEl) this.carouselEl.hidden = !itemsMode
-    if (this.scrollEl) this.scrollEl.hidden = !scrollMode
+    if (this.scrollEl) this.scrollEl.hidden = !scrollMode || ssr
 
     // items 条目文本（索引越界钳制；相同文本不重写，不与淡入淡出过渡打架）
     if (itemsMode && this.itemTextEl) {
@@ -460,8 +492,9 @@ export class OASNoticeBar extends OASElement {
     // 轮播计时器：条件指纹变化才重启（reduced-motion / 单条 / 关闭态 / 断开连接均不自动轮播）
     this.syncCarousel(itemsMode, items.length)
 
-    // scrollable：宿主内容物化进内嵌 marquee（slotchange 与属性变化共用此通道）
-    if (scrollMode) this.syncScrollContent()
+    // scrollable：宿主内容物化进内嵌 marquee（slotchange 与属性变化共用此通道）。
+    // SSR 段不物化（见上方三通道注释）：快照必须维持 probe 单份投影。
+    if (scrollMode && !ssr) this.syncScrollContent()
 
     // 图标：slot 富内容优先；icon="none" 隐藏；icon 属性名优先于 type 默认（非法名回落）
     if (this.iconEl) {

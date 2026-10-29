@@ -88,6 +88,12 @@ onMounted(() => {
 })
 </script>
 
+## 无障碍
+
+- 列表为 `role="region"`（可读名称走 i18n `indexBar.listLabel`），字母侧栏为 `role="navigation"`（`aria-label` 属性可覆盖，默认「字母索引导航」）。
+- 每个分节容器 `role="group"` + `aria-labelledby` 指向本节分节头（`role="heading"` + `aria-level="2"`）：命名落在有角色的容器上，读屏才能按节朗读；无角色的 div 属 generic、命名会被忽略。
+- 字母按钮是原生 `<button>`（aria-current 标记当前节），↑/↓ 移动焦点、Home/End 首尾、Enter/Space 跳转。
+
 ## API
 
 ### oas-index-bar

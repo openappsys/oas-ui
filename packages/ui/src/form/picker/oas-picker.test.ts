@@ -104,6 +104,42 @@ describe('OASPicker', () => {
       const el = mount({ columns: '{bad json' })
       expect(cols(el).length).toBe(0)
     })
+
+    it('空列不写悬空 aria-activedescendant（IDREF 必须指向存在的 option）', () => {
+      const el = mount({
+        columns: JSON.stringify([
+          { key: 'empty', label: '空列', items: [] },
+          { key: 'fruit', label: '水果', items: [{ label: '苹果', value: 'apple' }] },
+        ]),
+      })
+      const [empty, fruit] = cols(el) as [HTMLElement, HTMLElement]
+      expect(empty.querySelectorAll('.item').length).toBe(0)
+      // 无 option 时不得留悬空引用（读屏会指向不存在的元素）
+      expect(empty.getAttribute('aria-activedescendant')).toBeNull()
+      // 有 option 的列仍正常同步
+      const idref = fruit.getAttribute('aria-activedescendant')
+      expect(idref).toBeTruthy()
+      expect(fruit.querySelector(`#${idref}`)?.getAttribute('role')).toBe('option')
+    })
+
+    it('option id 带实例 uid：同页多个 picker 的 IDREF 不互相串（文档 id 唯一）', () => {
+      const attrs = { columns: COLUMNS }
+      const a = mount(attrs)
+      const b = mount(attrs)
+      const idsOf = (el: OASPicker): string[] => cols(el).flatMap((col) => items(col).map((it) => it.id))
+      const aIds = idsOf(a)
+      const bIds = idsOf(b)
+      expect(aIds.length).toBeGreaterThan(0)
+      expect(new Set([...aIds, ...bIds]).size, '两个实例的 option id 不得重复').toBe(aIds.length + bIds.length)
+      // 各自的 aria-activedescendant 必须落在自身 shadow 内
+      for (const el of [a, b]) {
+        for (const col of cols(el)) {
+          const idref = col.getAttribute('aria-activedescendant')
+          expect(idref).toBeTruthy()
+          expect(col.querySelector(`#${idref}`)).not.toBeNull()
+        }
+      }
+    })
   })
 
   describe('选中与事件', () => {

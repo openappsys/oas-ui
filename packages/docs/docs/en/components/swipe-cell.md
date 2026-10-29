@@ -82,6 +82,8 @@ At most one swipe item is open within the same document at a time: once an item 
 
 `threshold` sets the release snap distance (default 40px; a drag beyond it snaps open, otherwise it bounces back); `disabled` disables all gestures; `open` is readable and writable for controlled or programmatic open/close (true when either side is open). Programmatic `open` changes dispatch `oas-open` / `oas-close`; the `open-side` attribute (or same-named property) selects/reads which side opens—setting `open-side` together with `open` opens that side, and `detail.side` reports which.
 
+`open` is a declarative input; the visual open state depends on the measured width of that side. If the target side has no `slot="actions"` (or `slot="actions-start"`) content, `open` is kept but produces no visual open state and `open-side` stays empty; once that side gains content it takes effect with the real width. Read the actual open side from `open-side`.
+
 <DemoBlock title="threshold and disabled">
   <div style="width: 100%; display: flex; flex-direction: column; gap: var(--oas-space-2)">
     <oas-swipe-cell threshold="100">

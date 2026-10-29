@@ -304,6 +304,40 @@ describe('OASElement', () => {
       el.remove()
     })
 
+    it('快照版本缺失：回退 render()（跨版本静默错配防护，不得凭 tag 命中就接管）', () => {
+      const { dsdRoot, preSpan } = makeDsdRoot('<meta data-oas-ssr="oas-dsd-hydrate"><span id="label">旧快照</span>')
+      DsdHydrateFixture.dsdRoot = dsdRoot
+
+      const el = document.createElement('oas-dsd-hydrate') as DsdHydrateFixture
+      document.body.appendChild(el)
+
+      expect(el.hydrateCalls, '版本缺失不得进 hydrate').toBe(0)
+      expect(el.renderCount).toBe(1)
+      expect(dsdRoot.querySelector('#label')).not.toBe(preSpan)
+      expect(dsdRoot.querySelector('meta[data-oas-ssr]')).toBeNull()
+
+      el.remove()
+    })
+
+    it('快照版本不等（旧版 / 未来版）：回退 render()，结构正确可用', () => {
+      for (const version of ['0', '999']) {
+        const { dsdRoot, preSpan } = makeDsdRoot(
+          `<meta data-oas-ssr="oas-dsd-hydrate" data-oas-ssr-v="${version}"><span id="label">旧快照</span>`,
+        )
+        DsdHydrateFixture.dsdRoot = dsdRoot
+
+        const el = document.createElement('oas-dsd-hydrate') as DsdHydrateFixture
+        document.body.appendChild(el)
+
+        expect(el.hydrateCalls, `版本 ${version} 不得进 hydrate`).toBe(0)
+        expect(el.renderCount).toBe(1)
+        expect(dsdRoot.querySelector('#label')).not.toBe(preSpan)
+        expect(dsdRoot.querySelector('meta[data-oas-ssr]')).toBeNull()
+
+        el.remove()
+      }
+    })
+
     it('指纹 tag 不匹配（快照属于别的组件）：回退 render() 重建', () => {
       const { dsdRoot, preSpan } = makeDsdRoot(
         '<meta data-oas-ssr="oas-button" data-oas-ssr-v="1"><span id="label">ssr 快照</span>',

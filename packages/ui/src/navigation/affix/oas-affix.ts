@@ -1,5 +1,6 @@
 import { OASElement } from '@oas-ui/core'
 import { devWarn } from '../../shared/dev-warn.js'
+import { isSsrRuntime } from '../../shared/ssr-runtime.js'
 
 export type AffixPosition = 'top' | 'bottom'
 
@@ -262,7 +263,7 @@ export class OASAffix extends OASElement {
     if (!this.wrap || !this.placeholder) return
     // SSR 渲染端不做吸顶预判：无法得知真实布局（渲染环境 rect 恒 0），快照恒为未校正态；
     // 浏览器端水合后 rAF 校正时「脱流与占位同帧」，文档流高度不变、后续元素不闪动
-    if ((window as unknown as Record<string, unknown>).__OAS_SSR__) return
+    if (isSsrRuntime()) return
     const offset = Number(this.getAttr('offset', '0')) || 0
     const position = normalizePosition(this.getAttr('position', 'top') as AffixPosition)
     const container = this.resolveContainer()

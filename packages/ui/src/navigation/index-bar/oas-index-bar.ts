@@ -183,6 +183,10 @@ const warnedSections = new Set<string>()
  * 交互：点按 / 拖拽（pointer capture）字母跳转（`prefers-reduced-motion` 下瞬跳）；
  * 列表/视口滚动 scrollspy 高亮最近一个越顶分节；键盘 ↑/↓ 移动字母焦点、Home/End 首尾、Enter/Space 跳转；
  * 条目为原生 button（Enter/Space 点击）。
+ *
+ * a11y：列表 `role="region"`（i18n `indexBar.listLabel`）、侧栏 `role="navigation"`（`aria-label` 覆盖）；
+ * 分节容器 `role="group"` + `aria-labelledby` 指向本节分节头（`role="heading"` + `aria-level="2"`）——
+ * 命名必须落在有角色的容器上，无角色的 div 是 generic，名称会被 AT 丢弃。
  */
 export class OASIndexBar extends OASElement {
   static override get observedAttributes(): string[] {
@@ -441,6 +445,9 @@ export class OASIndexBar extends OASElement {
     const sec = document.createElement('div')
     sec.className = 'section'
     sec.setAttribute('part', 'section')
+    // 分节容器用 aria-labelledby 指到自己的分节头（读屏按节朗读）；无角色的 div 是
+    // 「generic 禁命名」，命名会被 AT 忽略，故显式 role="group" 承接这个名称
+    sec.setAttribute('role', 'group')
     const header = document.createElement('div')
     header.className = 'section-header'
     header.setAttribute('part', 'section-header')

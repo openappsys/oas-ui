@@ -142,6 +142,22 @@ describe('OASSwipeCell', () => {
     expect(offset(el)).toBe('0px')
   })
 
+  it('open 在目标侧不可达时保留属性但不产生视觉开态（open-side 为空；该侧出现内容后自动生效）', () => {
+    // 受控输入语义：open 是宿主/服务端声明，测量只决定视觉；不得因宽度 0 抹掉宿主的受控状态
+    const el = mount({ open: '' }, '<div class="row">仅内容</div>')
+    expect(el.hasAttribute('open'), 'open 属性保留').toBe(true)
+    expect(el.hasAttribute('open-side'), '未落定开侧 → 不写 open-side').toBe(false)
+    expect(offset(el), '无可见开态（偏移 0）').toBe('0px')
+
+    // 补上该侧操作区 + 桩出宽度后，同一 open 输入按真实宽度生效
+    el.innerHTML = '<div class="row">仅内容</div><button slot="actions">删除</button>'
+    stubActionsWidth(el, 80)
+    // happy-dom 无布局：直接派发 slotchange 模拟浏览器内容就位（生产路径由浏览器异步派发）
+    el.shadowRoot!.querySelector('slot[name="actions"]')!.dispatchEvent(new Event('slotchange'))
+    expect(el.getAttribute('open-side')).toBe('end')
+    expect(offset(el)).not.toBe('0px')
+  })
+
   // ---------- 方向判定 ----------
 
   it('横向接管：|dx|>|dy| 且 |dx|>8 → setPointerCapture + preventDefault', () => {

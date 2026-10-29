@@ -163,4 +163,29 @@ describe('conversation 组件 DSD 真水合', () => {
     button.click()
     expect(n).toBe(1)
   })
+
+  // —— fix round 2：tool-call 关键子结构校验（只验 head 会接管缺 body/args/result 的残破快照） ——
+
+  it('tool-call：快照只有 tool/head（缺 body 与 args/result 两段）时回退 render，展开可用', () => {
+    const el = new OASToolCall()
+    el.setAttribute('name', 'search_docs')
+    el.setAttribute('args', '{"query":"scheduler"}')
+    el.setAttribute('result', '["scheduler"]')
+    el.setAttribute('open', '')
+    el.shadowRoot!.innerHTML =
+      '<meta data-oas-ssr="oas-tool-call" data-oas-ssr-v="1"><style></style><div part="tool"><button part="head" type="button"></button></div>'
+    document.body.appendChild(el)
+
+    expect(el.shadowRoot!.querySelector('[part="body"]'), '回退后应有 body').not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('.section').length).toBe(2)
+    expect(el.shadowRoot!.querySelector('[part="args"]')!.textContent).toContain('scheduler')
+    expect(el.shadowRoot!.querySelector('[part="result"]')!.textContent).toContain('scheduler')
+    expect(el.shadowRoot!.querySelector('meta[data-oas-ssr]')).toBeNull()
+
+    const seen: Array<{ open: boolean; name: string }> = []
+    el.addEventListener('oas-toggle', (event) => seen.push((event as CustomEvent).detail))
+    el.shadowRoot!.querySelector<HTMLButtonElement>('[part="head"]')!.click()
+    expect(seen).toEqual([{ open: false, name: 'search_docs' }])
+    expect(el.shadowRoot!.querySelector<HTMLElement>('[part="body"]')!.hidden).toBe(true)
+  })
 })

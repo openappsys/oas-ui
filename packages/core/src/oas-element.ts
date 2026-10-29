@@ -19,6 +19,10 @@ import {
   readConfigValue,
 } from './config-context.js'
 
+/** SSR（DSD）快照格式版本：`@oas-ui/ssr` 写入 `data-oas-ssr-v`，`tryHydrate()` 严格相等校验（缺失/不等回退 render）。
+ *  快照语义变更时递增，并同步 `packages/ssr/src/index.ts`（`src/index.test.ts` 有相等断言）。 */
+export const SSR_SNAPSHOT_VERSION = '1'
+
 /**
  * ReactiveController —— 宿主（OASElement）能力注入协议。
  *
@@ -174,17 +178,15 @@ export abstract class OASElement extends HTMLElement {
   }
 
   /**
-   * 尝试 DSD 真水合。判定依据：shadow 内存在 SSR 指纹 `meta[data-oas-ssr]`，
-   * 且其值与自身 tag（小写）一致 → 视为有效快照，交由子类 hydrate() 接管。
-   *
-   * 误判防御：指纹缺失/不匹配、hydrate() 返回 false 或抛异常，一律回退 false，
-   * 由调用方走 render() 重建。指纹 meta 仅在水合成功后移除（防止二次误判）；
-   * 回退 render() 时 innerHTML 重建会自然清掉指纹。
+   * 尝试 DSD 真水合：指纹 `meta[data-oas-ssr]` 的 tag 与自身一致、且 `data-oas-ssr-v` 与
+   * `SSR_SNAPSHOT_VERSION` 严格相等才交由子类 `hydrate()` 接管；否则（含版本缺失/不等、
+   * hydrate 返回 false 或抛异常）回退 `render()` 重建。成功后移除指纹防二次误判。
    */
   private tryHydrate(): boolean {
     const meta = this.shadow.querySelector('meta[data-oas-ssr]')
     if (!meta) return false
     if (meta.getAttribute('data-oas-ssr') !== this.tagName.toLowerCase()) return false
+    if (meta.getAttribute('data-oas-ssr-v') !== SSR_SNAPSHOT_VERSION) return false
 
     let ok = false
     try {
@@ -200,14 +202,8 @@ export abstract class OASElement extends HTMLElement {
   }
 
   /**
-   * 本次连接是否为 DSD 真水合接管。
-   *
-   * 供子类 update() 查询"本次连接是否是水合场景"：水合接管成功后（hydrate() 返回 true）
-   * 返回 true，断开连接时复位。纯 CSR（无 DSD 快照指纹或回退 render()）始终返回 false。
-   *
-   * 用途：测量组件（affix/ellipsis/scroll-area 等）在 update() 里同步测量并立即写布局态，
-   * SSR 快照无法预知这些运行时状态；水合首帧若照常同步写入会产生与快照的差异帧（闪动），
-   * 子类可在 wasHydrated() 时把布局相关写入延迟到首帧后（requestAnimationFrame）。
+   * 本次连接是否为 DSD 真水合接管（水合成功 true，断开复位；纯 CSR 恒 false）。
+   * 测量组件据此把布局写入延到首帧后，避免与快照的差异帧（闪动）。
    */
   protected wasHydrated(): boolean {
     return this.hydrated

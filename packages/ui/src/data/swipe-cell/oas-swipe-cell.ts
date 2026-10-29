@@ -16,6 +16,11 @@ import { isSsrRuntime } from '../../shared/ssr-runtime.js'
  * 程序置 `true` 时按可用侧取默认，end 优先）；`open-side` 反射当前/目标开侧（`start`|`end`）。`oas-open` 事件
  * `detail` 带 `{ side }`。同一手势可双向拖动、跨 0 端到端切换侧；同 cell 内互斥（仅一侧开）。
  *
+ * `open` 的权威边界（受控输入 vs 实际开侧）：`open` 是宿主/服务端声明式输入，视觉开态由「该侧实测宽度 > 0」
+ * 决定。若目标侧没有 `slot="actions"` / `slot="actions-start"` 内容（或该侧被 CSS 隐到 0 宽），`open` 属性
+ * 保留但不产生视觉开态——属性不跟着视觉改，避免「隐藏容器里测量为 0」把宿主的受控状态抹掉；该侧内容
+ * 出现后 slotchange 触发 update，按真实宽度自动生效。读当前实际开侧请用 `open-side`（由组件写入）。
+ *
  * 手势方向门槛 8px：pointermove 仅当 |dx|>|dy| 且 |dx|>8 才接管（setPointerCapture + preventDefault），
  * 否则放行纵向滚动。CSS `touch-action: pan-y` 保证纵向原生滚动不受干扰。
  *
@@ -217,9 +222,17 @@ export class OASSwipeCell extends OASElement {
     this.update()
   }
 
-  /** 真水合：校验 SSR 快照结构（内容层存在）后接管，跳过 shadow 重建 */
+  /**
+   * 真水合：校验 SSR 快照的关键子结构（root/content/actions/actions-start）后接管，跳过 shadow 重建。
+   * 只验内容层会让缺操作区容器的残破快照被静默接管——measureElement 恒 0 → 该侧不可开、
+   * 按钮无处露出（手势与键盘都无反馈）。快照版本闸门由基类 tryHydrate() 统一负责。
+   */
   protected override hydrate(): boolean {
-    if (!this.shadow.querySelector('[part="content"]')) return false
+    const root = this.shadow.querySelector('[part="root"]')
+    const content = this.shadow.querySelector('[part="content"]')
+    const actions = this.shadow.querySelector('[part="actions"]')
+    const actionsStart = this.shadow.querySelector('[part="actions-start"]')
+    if (!root || !content || !actions || !actionsStart) return false
     this.bind()
     return true
   }

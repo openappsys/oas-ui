@@ -957,7 +957,7 @@ describe('OASKnob', () => {
     const ref = mount({ value: '60' })
     const el = new OASKnob()
     el.setAttribute('value', '60')
-    el.shadowRoot!.innerHTML = `<meta data-oas-ssr="oas-knob">` + ref.shadowRoot!.innerHTML
+    el.shadowRoot!.innerHTML = `<meta data-oas-ssr="oas-knob" data-oas-ssr-v="1">` + ref.shadowRoot!.innerHTML
     document.body.appendChild(el)
     expect(el.shadowRoot!.querySelector('meta[data-oas-ssr]')).toBeNull()
     expect(el.shadowRoot!.querySelector('[part="frame"]')).toBeTruthy()

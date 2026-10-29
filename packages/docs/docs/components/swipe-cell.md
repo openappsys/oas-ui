@@ -82,6 +82,8 @@ actions 默认挂 inline-end 侧（LTR 右侧，左滑露出）；`side="start"`
 
 `threshold` 控制释放吸附阈值（默认 40px，位移超过即吸附到开态，否则回弹）；`disabled` 全禁手势；`open` 可读写用于受控或程序化开合（任一侧开着即为真）。程序化改 `open` 会派发 `oas-open` / `oas-close`；`open-side` 属性（或同名 property）指定/读取开哪一侧——置 `open-side` 与 `open` 即开该侧，事件 `detail.side` 告知是哪侧。
 
+`open` 是声明式输入、视觉开态取决于该侧实测宽度：目标侧没有 `slot="actions"`（或 `slot="actions-start"`）内容时，`open` 保留但不产生视觉开态，`open-side` 为空；该侧内容加入后自动按真实宽度生效。要读「当前实际开侧」请用 `open-side`。
+
 <DemoBlock title="threshold 与 disabled">
   <div style="width: 100%; display: flex; flex-direction: column; gap: var(--oas-space-2)">
     <oas-swipe-cell threshold="100">

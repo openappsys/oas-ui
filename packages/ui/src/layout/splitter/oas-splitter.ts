@@ -6,6 +6,7 @@ import { chevronUpPath } from '@oas-ui/icons/icons/chevron-up'
 import { isRtl } from '../../shared/direction.js'
 import { parseJsonArray } from '../../shared/json-array.js'
 import { devWarn } from '../../shared/dev-warn.js'
+import { isSsrRuntime } from '../../shared/ssr-runtime.js'
 
 const STYLE = `
 :host {
@@ -142,10 +143,7 @@ type SplitterSnapshot = {
   prev?: Record<string, number>
 }
 
-/** SSR（服务端渲染）环境：不读写存储，快照保持属性态 */
-function isServerRender(): boolean {
-  return typeof window === 'undefined' || (window as unknown as Record<string, unknown>).__OAS_SSR__ === true
-}
+/** SSR（服务端渲染）环境判定统一走 shared/ssr-runtime：本地不再保留第二份实现 */
 
 export class OASSplitter extends OASElement {
   static override get observedAttributes(): string[] {
@@ -259,7 +257,7 @@ export class OASSplitter extends OASElement {
     if (!firstConnect) return
     this.storageRestoreScheduled = true
     const key = this.storageKeyValue()
-    if (key === '' || isServerRender()) {
+    if (key === '' || isSsrRuntime()) {
       // 无 key / SSR：没有恢复微任务，本帧结束即可正常持久化
       this.persistSuppressed = false
       return
@@ -337,7 +335,7 @@ export class OASSplitter extends OASElement {
    * pointerup 通过 flushPersist 立即落盘，避免每个 pointermove 都触发 localStorage 同步写。
    */
   private schedulePersist(): void {
-    if (this.persistSuppressed || !this.isConnected || isServerRender()) return
+    if (this.persistSuppressed || !this.isConnected || isSsrRuntime()) return
     const key = this.storageKeyValue()
     if (key === '') return
     // 窗口内改 key：先把在途写入按捕获的旧 key flush，再为新 key 重新调度
@@ -363,7 +361,7 @@ export class OASSplitter extends OASElement {
     // 本次写入使用调度时捕获的 key（改 key 后本次仍写旧 key）；key 被移除则视为退出持久化
     const key = this.persistKey
     this.persistKey = null
-    if (!key || this.storageKeyValue() === '' || isServerRender()) return
+    if (!key || this.storageKeyValue() === '' || isSsrRuntime()) return
     const raw = JSON.stringify(this.buildSnapshot())
     if (raw === this.lastWrittenSnapshot && key === this.lastWrittenKey) return
     try {

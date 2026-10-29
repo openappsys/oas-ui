@@ -218,7 +218,7 @@ describe('OASAttachment', () => {
     const el = document.createElement('oas-attachment') as OASAttachment
     // DSD 场景：快照在元素连接前已存在于 shadow root（浏览器解析 <template shadowrootmode> 产物）
     el.shadowRoot!.innerHTML =
-      '<meta data-oas-ssr="oas-attachment"><div class="attachment" part="attachment"><div class="trigger" part="trigger"></div></div>'
+      '<meta data-oas-ssr="oas-attachment" data-oas-ssr-v="1"><div class="attachment" part="attachment"><div class="trigger" part="trigger"></div></div>'
     document.body.appendChild(el)
     // 水合成功：指纹被移除、骨架保留（未被 innerHTML 重建覆盖）
     expect(el.shadowRoot!.querySelector('meta[data-oas-ssr]')).toBeNull()

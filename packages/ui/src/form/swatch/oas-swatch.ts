@@ -167,9 +167,16 @@ export class OASSwatch extends OASElement {
     this.update()
   }
 
-  /** 真水合：校验 SSR 快照结构（swatch 按钮存在）后直接接管 */
+  /**
+   * 真水合：校验 SSR 快照的关键子结构（唯一 swatch 按钮 + 样式表）后直接接管。
+   * 只验 `[part="swatch"]` 会被「part 挂在 div 上 / 重复 part」的残破快照骗过——
+   * bind() 拿到 null 后 update 全静默，色块无填充色、无 aria、点击无事件。
+   * 快照版本闸门由基类 tryHydrate() 统一负责。
+   */
   protected override hydrate(): boolean {
-    if (!this.shadow.querySelector('[part="swatch"]')) return false
+    const buttons = this.shadow.querySelectorAll('button[part="swatch"]')
+    if (buttons.length !== 1) return false
+    if (!this.shadow.querySelector('style')) return false
     this.bind()
     return true
   }

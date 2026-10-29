@@ -326,4 +326,73 @@ describe('SSR 白名单收口：pull-refresh / notice-bar 真水合契约', () =
     el.shadowRoot!.querySelector<HTMLButtonElement>('[part="close"]')!.click()
     expect(n).toBe(0)
   })
+
+  // —— fix round 2：快照版本闸门 + 关键子结构校验（只验顶层容器会静默接管残破快照） ——
+
+  it('notice-bar：快照版本缺失/不等时回退 render（跨版本静默错配防护），结构完整且关闭可用', async () => {
+    for (const version of [null, '0', '999']) {
+      const setup = FIXTURES.find((f) => f.name === 'notice-bar')!.setup
+      const snap = captureSnapshot(OASNoticeBar, setup)
+      const el = new OASNoticeBar()
+      const attr = version === null ? '' : ` data-oas-ssr-v="${version}"`
+      el.shadowRoot!.innerHTML = `<meta data-oas-ssr="oas-notice-bar"${attr}>${snap}`
+      setup?.(el)
+      const snapStyle = el.shadowRoot!.querySelector('style')
+      expect(snapStyle, '快照应含 style（下方引用比对的前提）').not.toBeNull()
+      document.body.appendChild(el)
+
+      // 回退 render：shadow 被整体重建（style 不是快照里的同一 DOM 对象），meta 清掉
+      expect(el.shadowRoot!.querySelector('style'), `版本 ${version} 应回退 render`).not.toBe(snapStyle)
+      expect(el.shadowRoot!.querySelector('meta[data-oas-ssr]'), `版本 ${version} 应回退`).toBeNull()
+      expect(el.shadowRoot!.querySelectorAll('[part="action"]').length).toBe(2)
+      expect(el.shadowRoot!.querySelector('oas-marquee')).not.toBeNull()
+      let close = 0
+      el.addEventListener('oas-close', () => close++)
+      el.shadowRoot!.querySelector<HTMLButtonElement>('[part="close"]')!.click()
+      expect(close, `版本 ${version} 回退后关闭仍可用`).toBe(1)
+
+      el.remove()
+    }
+  })
+
+  it('notice-bar：快照只有 bar 容器（缺 content/carousel/marquee/action 双形态）时回退 render', () => {
+    const el = new OASNoticeBar()
+    el.setAttribute('closable', '')
+    el.setAttribute('items', '["系统维护通知"]')
+    // 旧校验只认 [part="bar"] → 会被静默接管：bind() 全空引用、update 静默失效（通告栏空白）
+    el.shadowRoot!.innerHTML =
+      '<meta data-oas-ssr="oas-notice-bar" data-oas-ssr-v="1"><style></style><div part="bar"></div>'
+    document.body.appendChild(el)
+
+    expect(el.shadowRoot!.querySelector('[part="content"]'), '回退后应有 content 容器').not.toBeNull()
+    expect(el.shadowRoot!.querySelector('[part="carousel"]')).not.toBeNull()
+    expect(el.shadowRoot!.querySelector('oas-marquee')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('[part="action"]').length).toBe(2)
+    expect(el.shadowRoot!.querySelector('.item-text')!.textContent).toBe('系统维护通知')
+    let close = 0
+    el.addEventListener('oas-close', () => close++)
+    el.shadowRoot!.querySelector<HTMLButtonElement>('[part="close"]')!.click()
+    expect(close).toBe(1)
+  })
+
+  it('pull-refresh：快照只有 root（缺 track/indicator/content/label）时回退 render，下拉仍可派发', () => {
+    const el = new OASPullRefresh()
+    el.innerHTML = '<p>列表内容</p>'
+    el.shadowRoot!.innerHTML =
+      '<meta data-oas-ssr="oas-pull-refresh" data-oas-ssr-v="1"><style></style><div part="root"></div>'
+    document.body.appendChild(el)
+
+    expect(el.shadowRoot!.querySelector('[part="track"]')).not.toBeNull()
+    expect(el.shadowRoot!.querySelector('[part="indicator"]')).not.toBeNull()
+    expect(el.shadowRoot!.querySelector('[part="content"]')).not.toBeNull()
+    expect(el.shadowRoot!.querySelector('[part="label"]')).not.toBeNull()
+
+    const root = el.shadowRoot!.querySelector<HTMLElement>('[part="root"]')!
+    const events: unknown[] = []
+    el.addEventListener('oas-refresh', () => events.push(1))
+    root.dispatchEvent(pointer('pointerdown', 10))
+    root.dispatchEvent(pointer('pointermove', 130))
+    root.dispatchEvent(pointer('pointerup', 130))
+    expect(events).toHaveLength(1)
+  })
 })

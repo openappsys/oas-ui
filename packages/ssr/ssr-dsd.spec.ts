@@ -48,6 +48,15 @@ const SYSTEM_THEME_PAGE_URL = pathToFileURL(SYSTEM_THEME_PAGE).href
 const SYSTEM_THEME_NO_KEY_PAGE = join(ARTIFACT_DIR, 'config-provider-system-no-key-theme.html')
 const SYSTEM_THEME_NO_KEY_PAGE_URL = pathToFileURL(SYSTEM_THEME_NO_KEY_PAGE).href
 
+/**
+ * notice-bar scrollable SSR 快照专用页：同一宽度下并排「scrollable + 插槽正文」与「单条 items」两个
+ * 夹具——前者用于验证禁 JS 时正文只渲染一次、bar 高度与单条 items 一致；后者是期望值的基准。
+ */
+const NOTICE_PAGE = join(ARTIFACT_DIR, 'notice-bar-scrollable.html')
+const NOTICE_PAGE_URL = pathToFileURL(NOTICE_PAGE).href
+/** 滚动正文标记（唯一串：禁 JS 下按 innerText 计数即可判定是否重复渲染） */
+const NOTICE_SCROLL_TEXT = '滚动通告正文标记'
+
 /** 直接执行 guide 当前脚本，避免测试自带另一份实现而假绿；key=null 用于无存储场景。 */
 function systemThemeHeadScript(key: string | null): string {
   const guide = readFileSync(join(REPO_ROOT, 'packages', 'docs', 'docs', 'guide', 'theming.md'), 'utf8')
@@ -918,6 +927,40 @@ ${[
       'utf8',
     )
   }
+
+  // —— 5) notice-bar scrollable：SSR 不物化内嵌 marquee（正文单份）+ 与单条 items 同高 ——
+  // 渲染器只序列化宿主 light DOM；若 SSR 段把正文物化进 shadow 内 oas-marquee，快照会把
+  // 「源份 + marquee 克隆份」当普通内容渲染 → 正文两行、bar 高度翻倍、overflow 裁剪失效。
+  const noticeScrollable = await renderToString(
+    'oas-notice-bar',
+    { id: 'nb-scrollable', scrollable: '' },
+    NOTICE_SCROLL_TEXT,
+    { locale: 'zh-CN' },
+  )
+  const noticeItems = await renderToString(
+    'oas-notice-bar',
+    { id: 'nb-items', items: JSON.stringify(['单条通告正文']) },
+    '',
+    { locale: 'zh-CN' },
+  )
+  writeFileSync(
+    NOTICE_PAGE,
+    `<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <title>notice-bar scrollable DSD 快照</title>
+  <style>${themeCss}</style>
+</head>
+<body style="font-family: system-ui, sans-serif; padding: 24px; margin: 0;">
+  <div style="width: 420px; display: flex; flex-direction: column; gap: 12px;">
+    ${noticeScrollable}
+    ${noticeItems}
+  </div>
+</body>
+</html>`,
+    'utf8',
+  )
 })
 
 async function openPage(page: Page): Promise<void> {
@@ -1060,6 +1103,143 @@ test('禁 JS 可视：DSD 快照解析即附加 shadow root 并渲染关键结�
   // 禁 JS 下无未捕获异常
   expect(pageErrors).toEqual([])
   await page.screenshot({ path: SCREENSHOT.noJs, fullPage: true })
+})
+
+/**
+ * notice-bar scrollable 快照验收（真实浏览器）：SSR 不物化内嵌 marquee。
+ *
+ * 缺陷形态：SSR 段把宿主内容克隆进 shadow 内的 `<oas-marquee>`，而渲染器只序列化宿主 light DOM、
+ * 不处理 shadow 内嵌套元素——浏览器把「源份 + marquee 克隆份」当普通内容渲染，正文出现两行、
+ * bar 高度翻倍、overflow 裁剪失效（既有夹具全用 items 模式、marquee 隐藏，绕开了该路径）。
+ * 期望：禁 JS 时正文只出现一次（probe 的默认 slot 投影），bar 高度与单条 items 夹具一致；
+ * 升级后 marquee 才物化（probe 隐藏、marquee 可见、滚动动画生效），bar 高度不跳变。
+ */
+test('notice-bar scrollable SSR：禁 JS 正文只出现一次、bar 高度与单条 items 一致；升级后仍单行且滚动生效', async ({
+  page,
+}) => {
+  const consoleProblems: string[] = []
+  page.on('pageerror', (e) => consoleProblems.push(e.message))
+  page.on('console', (m) => {
+    if (m.type() === 'error' || m.type() === 'warning') consoleProblems.push(m.text())
+  })
+  await page.goto(NOTICE_PAGE_URL, { waitUntil: 'load' })
+
+  const snapshot = await page.evaluate((marker) => {
+    const w = window as unknown as Window & { __noticeStyleRef?: Element | null }
+    const scrollable = document.querySelector<HTMLElement>('#nb-scrollable')!
+    const items = document.querySelector<HTMLElement>('#nb-items')!
+    w.__noticeStyleRef = scrollable.shadowRoot!.querySelector('style')
+
+    // 扁平树可见文本计数：宿主走 shadow，`<slot>` 展开 assignedNodes，display:none 子树跳过——
+    // 这就是「用户实际看到的正文」，不依赖 innerText 的引擎实现差异。
+    let visibleText = ''
+    const walk = (node: Node): void => {
+      if (node.nodeType === 3) {
+        visibleText += node.textContent ?? ''
+        return
+      }
+      if (node.nodeType !== 1) return
+      const el = node as Element
+      const style = getComputedStyle(el)
+      if (style.display === 'none' || style.visibility === 'hidden') return
+      if (el.tagName === 'SLOT') {
+        for (const n of (el as HTMLSlotElement).assignedNodes({ flatten: true })) walk(n)
+        return
+      }
+      const shadow = (el as HTMLElement).shadowRoot
+      for (const child of shadow ? shadow.childNodes : el.childNodes) walk(child)
+    }
+    walk(scrollable)
+
+    const bar = scrollable.shadowRoot!.querySelector<HTMLElement>('[part="bar"]')!
+    const barItems = items.shadowRoot!.querySelector<HTMLElement>('[part="bar"]')!
+    const marquee = scrollable.shadowRoot!.querySelector<HTMLElement>('oas-marquee')!
+    return {
+      occurrences: visibleText.split(marker).length - 1,
+      scrollableBarH: bar.getBoundingClientRect().height,
+      itemsBarH: barItems.getBoundingClientRect().height,
+      probeHidden: scrollable.shadowRoot!.querySelector<HTMLElement>('.probe')!.hidden,
+      marqueeHidden: marquee.hidden,
+      marqueeText: marquee.textContent ?? '',
+      hostHeight: scrollable.getBoundingClientRect().height,
+    }
+  }, NOTICE_SCROLL_TEXT)
+
+  // ① 禁 JS 正文只出现一次（缺陷态为 2：源份 + marquee 克隆份）
+  expect(snapshot.occurrences, '禁 JS 快照正文只渲染一次').toBe(1)
+  // 正文确实可见（不得为了去重把通告栏做成空白）
+  expect(snapshot.hostHeight).toBeGreaterThan(0)
+  // ② 与单条 items 夹具同高（单行）：缺陷态因两行而翻倍
+  expect(
+    Math.abs(snapshot.scrollableBarH - snapshot.itemsBarH),
+    `scrollable bar 高度 ${snapshot.scrollableBarH} 应与单条 items ${snapshot.itemsBarH} 一致（±1px）`,
+  ).toBeLessThanOrEqual(1)
+  // 快照语义：正文走 probe 单份投影，marquee 保持隐藏且不物化
+  expect(snapshot.probeHidden).toBe(false)
+  expect(snapshot.marqueeHidden).toBe(true)
+  expect(snapshot.marqueeText).not.toContain(NOTICE_SCROLL_TEXT)
+  await page.screenshot({ path: join(ARTIFACT_DIR, 'notice-bar-scrollable-no-js-light.png'), fullPage: true })
+  await page.evaluate(() => document.documentElement.classList.add('dark'))
+  await page.waitForTimeout(80)
+  await page.screenshot({ path: join(ARTIFACT_DIR, 'notice-bar-scrollable-no-js-dark.png'), fullPage: true })
+  await page.evaluate(() => document.documentElement.classList.remove('dark'))
+
+  await upgradeUi(page)
+
+  const after = await page.evaluate((marker) => {
+    const w = window as unknown as Window & { __noticeStyleRef?: Element | null }
+    const scrollable = document.querySelector<HTMLElement>('#nb-scrollable')!
+    const marquee = scrollable.shadowRoot!.querySelector<HTMLElement>('oas-marquee')!
+    const bar = scrollable.shadowRoot!.querySelector<HTMLElement>('[part="bar"]')!
+    const text = marquee.textContent ?? ''
+    return {
+      styleSame: scrollable.shadowRoot!.querySelector('style') === w.__noticeStyleRef,
+      metaRemoved: scrollable.shadowRoot!.querySelector('meta[data-oas-ssr]') === null,
+      probeHidden: scrollable.shadowRoot!.querySelector<HTMLElement>('.probe')!.hidden,
+      marqueeHidden: marquee.hidden,
+      // marquee 机制本身是「源份 + 1 份克隆」：2 份即正常，>2 说明水合后又叠加了一份物化
+      copies: text.split(marker).length - 1,
+      cloneWrappers: marquee.querySelectorAll(':scope > [data-oas-marquee-copy]').length,
+      barH: bar.getBoundingClientRect().height,
+    }
+  }, NOTICE_SCROLL_TEXT)
+
+  // 真水合：shadow 未重建、指纹移除
+  expect(after.styleSame).toBe(true)
+  expect(after.metaRemoved).toBe(true)
+  // ③ 升级后仍只一份正文：1 份源内容 + auto-fill 克隆份（marquee 自身机制，份数由容器/内容宽决定）
+  expect(after.probeHidden, '升级后正文切回 marquee').toBe(true)
+  expect(after.marqueeHidden).toBe(false)
+  expect(after.cloneWrappers, '升级后 marquee 已物化（auto-fill 至少 1 份克隆）').toBeGreaterThanOrEqual(1)
+  expect(after.copies, '正文源份只有 1 份（克隆份数之外不叠加）').toBe(1 + after.cloneWrappers)
+  expect(after.barH, '升级后 bar 高度不跳变（仍单行）').toBeLessThanOrEqual(snapshot.scrollableBarH + 1)
+  // 滚动动画真实生效（marquee 测量后写入时长；RO 回调可能晚于 upgrade 微任务，故轮询复核）
+  await expect
+    .poll(
+      () =>
+        page.evaluate(() => {
+          const marquee = document
+            .querySelector<HTMLElement>('#nb-scrollable')!
+            .shadowRoot!.querySelector('oas-marquee')!
+          const track = marquee.shadowRoot?.querySelector<HTMLElement>('[part="track"]')
+          const anim = track?.getAnimations()[0]
+          return anim ? Number(anim.effect?.getTiming().duration) : 0
+        }),
+      { timeout: 5000 },
+    )
+    .toBeGreaterThan(0)
+  expect(consoleProblems).toEqual([])
+  await page.screenshot({
+    path: join(ARTIFACT_DIR, 'notice-bar-scrollable-after-upgrade-light.png'),
+    fullPage: true,
+  })
+  await page.evaluate(() => document.documentElement.classList.add('dark'))
+  await page.waitForTimeout(120)
+  await page.screenshot({
+    path: join(ARTIFACT_DIR, 'notice-bar-scrollable-after-upgrade-dark.png'),
+    fullPage: true,
+  })
+  await page.evaluate(() => document.documentElement.classList.remove('dark'))
 })
 
 test('locale 请求局部化：并发混合多语言静态快照逐请求语言正确（禁 JS 解析后可见）', async ({ page }) => {

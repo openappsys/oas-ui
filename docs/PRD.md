@@ -14,11 +14,12 @@
 ### 详细契约
 
 - **快照确定性**：渲染路径不在 SSR 段启动真实计时器/滚动联动/document 广播监听；`__OAS_SSR__` 标记用于区分 happy-dom shim 与真实浏览器。快照结构只由属性决定——picker 列、选中与初始滚动位来自 `value`（不测量；无 JS 时列仍可原生滚动，但选中换算/回写不生效，快照只呈现初始选中位）；swipe-cell 内容层偏移 0（关闭视觉）直出，宿主显式给 `open` 时 SSR 宽度 0 也不得删除该属性（升级后按真实宽度校正）；index-bar 分节/字母节点与 header UID 原样保留；image-group 在 `update()` 内同步收集子图（不等 slotchange 微任务）。
-- **可访问性快照**：notice-bar 多条 items 自动轮播时内容区 `aria-live="off"`（不打扰读屏），单条/reduced-motion 静态态为 `polite`。
-- **真水合**：全部 9 个组件 `hydrate()` 缓存与 `render()` 相同的节点引用并恢复内部 raw 缓存，`update()` 不重建快照结构；缺关键结构时返回 false 回退全量重建（index-bar 逐节校验条目数，message-actions 校验按钮数，image-group 校验共享预览宿主）。连接态计时器与 document/滚动/手势监听断开清理、重连重新登记清理（fix round 1 修 notice-bar 重连后 cleanup 丢失、pull-refresh/swipe-cell 手势中断后状态卡死）；进行中手势不跨摘挂续传——按取消处理回弹、不派发事件；单次点击/手势/滚动落停只派发一次事件。
+- **可访问性快照**：notice-bar 多条 items 自动轮播时内容区 `aria-live="off"`（不打扰读屏），单条/reduced-motion 静态态为 `polite`；SSR 段无法感知 `prefers-reduced-motion`（Node 无 MQL），多条 items 的快照恒为 `aria-live="off"`，升级后按真实偏好收敛。
+- **真水合**：全部 9 个组件 `hydrate()` 缓存与 `render()` 相同的节点引用并恢复内部 raw 缓存，`update()` 不重建快照结构；快照指纹版本（`data-oas-ssr-v`）必须与运行时 `SSR_SNAPSHOT_VERSION` 严格相等，缺失或不等一律回退 render（跨版本错配不得静默接管）；缺关键结构/关键子结构时返回 false 回退全量重建（index-bar 逐节校验条目数，message-actions 校验按钮数，image-group 校验共享预览宿主，notice-bar/pull-refresh/swipe-cell/swatch/tool-call 校验关键 part 与数量）。连接态计时器与 document/滚动/手势监听断开清理、重连重新登记清理（fix round 1 修 notice-bar 重连后 cleanup 丢失、pull-refresh/swipe-cell 手势中断后状态卡死）；进行中手势不跨摘挂续传——按取消处理回弹、不派发事件；单次点击/手势/滚动落停只派发一次事件。
 - **DSD fixture 与矩阵**：`ssr-dsd.spec.ts` 为每个新 tag 增加确定性 fixture；`ssr-matrix.json/md`、`docs/ssr.md`、中英 `guide/ssr.md`、ROADMAP 计数同步为 174。
 - **跨引擎 smoke**：新建 `packages/ssr/ssr-dsd-cross-engine.spec.ts`，覆盖 A/B/C 各一个代表 tag + `oas-button` 对照，断言禁 JS 关键文本、upgrade 后 shadow 不重建（style 引用保持）、指纹移除、单次交互一次事件（500ms 后显式复核）、console 零 error/warning；Chromium 显式忽略该 spec（由主 DSD spec 覆盖），Firefox/WebKit 各跑一次。WebKit 无 DSD 能力时断言 `shadowRoot === null`，注入 bundle 后以 CSR 渲染替代路径验证同样关键文本/事件（不断言空 light DOM 文本）。
 - **fix round 1（独立复核）**：index-bar 程序化平滑滚动落定后若目标不可达（短内容 + 固定高度、scrollTop 未接近目标）保持用户选中项，不得跑 scrollspy 回退并二次派发 `oas-change`；notice-bar 拆「具名 handler 幂等绑定」与「幂等 cleanup 注册」，重连重新登记（二次断开零孤儿计时器）；pull-refresh/swipe-cell 手势中被摘挂按取消复位（pointerState/phase/data-dragging、drag 镜像），重连后完整手势仍恰好一次事件；跨引擎 spec 无 DSD 守卫分支改为 `shadowRoot===null` + CSR 关键文本断言；index-bar fixture 改为真正可滚动列表。
+- **fix round 2（交叉复核）**：① `oas-notice-bar[scrollable]` 的 DSD 快照不再物化内嵌 `<oas-marquee>`（渲染器只序列化宿主 light DOM，物化的「源份 + 克隆份」会被当普通内容直出 → 禁 JS 时正文两行、bar 高度翻倍、overflow 裁剪失效）；SSR 段保留 probe 单份插槽投影、`hydrate()` 在 scrollMode 下清空 `lastScrollSig` 保证升级后重新物化（不做则通告栏空白）。② `tryHydrate()` 增加快照版本闸门：`data-oas-ssr-v` 与 `SSR_SNAPSHOT_VERSION` 严格相等才接管，缺失/不等回退 render；notice-bar / pull-refresh / swipe-cell / swatch / tool-call 的 `hydrate()` 补关键子结构校验（≥2 个 part / 数量），残破快照不再静默接管。③ 收口：`isSsrRuntime` 唯一实现（splitter / affix / popover 旧副本迁走）；index-bar 分节容器改 `role="group"`（generic 禁命名）；picker 空列不写悬空 `aria-activedescendant`、option id 加实例 uid；notice-bar `aria-live` 的 SSR 口径与 swipe-cell `open` 在目标侧不可达时的残留语义如实写进文档。
 
 ### 非目标
 
@@ -26,7 +27,7 @@
 
 ### 验收标准
 
-- 单测：5 个 family `ssr-hydrate`（conversation 新建 + form/feedback/data/navigation 增补）覆盖真水合接管、缺结构回退、update 不重建、单次交互一次事件、断开重连恢复；`packages/ssr/src` 全绿；`packages/ssr/ssr-dsd.spec.ts` 新增 9 tag fixture。
+- 单测：5 个 family `ssr-hydrate`（conversation 新建 + form/feedback/data/navigation 增补）覆盖真水合接管、缺结构回退、快照版本闸门、update 不重建、单次交互一次事件、断开重连恢复；`packages/ssr/src` 全绿（含 scrollable 快照正文单份与版本常量相等断言）；`packages/ssr/ssr-dsd.spec.ts` 新增 9 tag fixture + notice-bar scrollable 真实浏览器快照（正文一次、高度同单条 items、升级后可滚）。
 - 门禁：`ssr:check` 212 组件 = 174 白名单 + 38 不 SSR（白名单/不 SSR 总数守恒）；api/llms/stats/skill/lint/format/deprecations/qa:audit 全绿。
 - 浏览器：跨引擎 smoke 在 Chromium（主 spec）/ Firefox / WebKit 通过；受影响组件页 smoke/console 零告警；dark 截图核对 A 批与 C 批各一。
 

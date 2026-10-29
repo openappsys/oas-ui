@@ -514,4 +514,33 @@ describe('SSR 白名单收口：image-group / swipe-cell 真水合契约', () =>
     expect(events).toEqual([{ side: 'end' }])
     expect(el.getAttribute('open-side')).toBe('end')
   })
+
+  // —— fix round 2：关键子结构校验（只验顶层容器会静默接管残破快照） ——
+
+  it('swipe-cell：快照只有 root/content（缺 actions 双容器）时回退 render，横滑仍可开', () => {
+    const setup = (e: OASElement): void => {
+      e.innerHTML = '<div>列表项内容</div><button slot="actions">删除</button>'
+    }
+    const el = new OASSwipeCell()
+    el.shadowRoot!.innerHTML =
+      '<meta data-oas-ssr="oas-swipe-cell" data-oas-ssr-v="1"><style></style><div part="root"><div part="content"></div></div>'
+    setup(el)
+    document.body.appendChild(el)
+
+    expect(el.shadowRoot!.querySelector('[part="actions"]'), '回退后应有 actions 容器').not.toBeNull()
+    expect(el.shadowRoot!.querySelector('[part="actions-start"]')).not.toBeNull()
+    expect(el.shadowRoot!.querySelector('[part="root"]')).not.toBeNull()
+    expect(el.shadowRoot!.querySelector('meta[data-oas-ssr]')).toBeNull()
+
+    const actions = el.shadowRoot!.querySelector<HTMLElement>('[part="actions"]')!
+    actions.getBoundingClientRect = () =>
+      ({ x: 0, y: 0, top: 0, left: 0, right: 80, bottom: 40, width: 80, height: 40 }) as DOMRect
+    const events: Array<{ side: string }> = []
+    el.addEventListener('oas-open', (e: Event) => events.push((e as CustomEvent).detail))
+    const content = el.shadowRoot!.querySelector<HTMLElement>('[part="content"]')!
+    content.dispatchEvent(pointer('pointerdown', 200))
+    content.dispatchEvent(pointer('pointermove', 100))
+    content.dispatchEvent(pointer('pointerup', 100))
+    expect(events).toEqual([{ side: 'end' }])
+  })
 })

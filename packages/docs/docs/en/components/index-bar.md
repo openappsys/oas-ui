@@ -88,6 +88,12 @@ onMounted(() => {
 })
 </script>
 
+## Accessibility
+
+- The list is `role="region"` (accessible name from i18n `indexBar.listLabel`); the letter rail is `role="navigation"` (`aria-label` overrides it, defaulting to the localized "letter index navigation").
+- Every section container is `role="group"` + `aria-labelledby` pointing at its own header (`role="heading"` + `aria-level="2"`). The name must live on a role-bearing container — a plain `div` is generic and the name is dropped by assistive technology.
+- Letter buttons are native `<button>`s (`aria-current` marks the active section); ↑/↓ move focus, Home/End jump to the ends, Enter/Space activates.
+
 ## API
 
 ### oas-index-bar

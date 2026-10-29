@@ -540,7 +540,15 @@ into the SSR output stream and the browser parser attaches the DSD templates.
   target is unreachable (no second `oas-change`); image-group collects child
   images synchronously inside `update()`. notice-bar sets `aria-live="off"` while
   auto-rotating items (so it does not interrupt screen readers) and `polite` for
-  a single item / reduced-motion. Connected timers and document/scroll/gesture
+  a single item / reduced-motion; the SSR pass cannot evaluate
+  `prefers-reduced-motion`, so a multi-item snapshot always carries
+  `aria-live="off"` and converges to the real preference after upgrade.
+  notice-bar's `scrollable` mode also does not materialize its embedded
+  `<oas-marquee>` during SSR: the renderer serializes the host light DOM only, so
+  the snapshot keeps the single default-slot projection (probe) and hydrates the
+  marquee on upgrade — otherwise the source copy plus the marquee clone would
+  both render as plain content (duplicated text, doubled bar height, broken
+  overflow clipping). Connected timers and document/scroll/gesture
   listeners are cleaned up on disconnect and their cleanup is re-registered on
   reconnect; an in-flight gesture is not resumed across a detach (it is treated
   as cancelled: rebound, zero events); one interaction dispatches exactly one
@@ -552,7 +560,9 @@ into the SSR output stream and the browser parser attaches the DSD templates.
   the flicker mitigation.
 - True hydration: upgrade skips the shadow rebuild (DOM references are kept),
   only caching nodes, binding events, and running incremental `update()`;
-  snapshot structure mismatches fall back to a full re-render.
+  a missing or mismatched snapshot fingerprint version (`data-oas-ssr-v` vs the
+  runtime `SSR_SNAPSHOT_VERSION`) or a structure mismatch falls back to a full
+  re-render.
 
 ## Why
 
