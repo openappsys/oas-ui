@@ -116,8 +116,8 @@ describe('createInfiniteScroll', () => {
     controller.destroy()
   })
 
-  it('bottom 含 1px 亚像素容差（小数几何/DPR 1.25）；top 仍严格 <= threshold', () => {
-    // 199.94 / 300 / 100：距底 0.06px，浏览器在 DPR 1.25 下常见此残留
+  it('bottom 含 1px 亚像素容差（小数/取整几何）；top 仍严格 <= threshold', () => {
+    // 199.94 / 300 / 100：距底 0.06px，浏览器在亚像素/取整几何下常见此残留
     const sub = mountViewport({ scrollTop: 199.94, scrollHeight: 300, clientHeight: 100 })
     const subLoad = vi.fn(async (_ctx: InfiniteScrollLoadContext) => ({}))
     const subController = createInfiniteScroll({ root: sub.el, load: subLoad })
@@ -576,6 +576,42 @@ describe('createInfiniteScroll', () => {
     completeController.destroy()
   })
 
+  it('detach 的 idle 回调内 update 不新起请求；迟到结果不回调', async () => {
+    const { el, state } = mountViewport({ scrollTop: 100, scrollHeight: 300, clientHeight: 100 })
+    const pending = deferred<Record<string, never>>()
+    const onLoadEnd = vi.fn()
+    let idleUpdates = 0
+    let controller!: ReturnType<typeof createInfiniteScroll>
+    const load = vi.fn((_ctx: InfiniteScrollLoadContext) => pending.promise)
+    controller = createInfiniteScroll({
+      root: el,
+      load,
+      onLoadEnd,
+      onStateChange: ({ state: edgeState }) => {
+        if (edgeState.status === 'idle') {
+          idleUpdates += 1
+          // 旧实现 detach 先 emit 再拆环境：这里 update 会重新发起请求
+          controller.update()
+        }
+      },
+    })
+    controller.attach()
+    state.scrollTop = 200
+    controller.update()
+    expect(load).toHaveBeenCalledTimes(1)
+
+    controller.detach()
+    expect(idleUpdates).toBe(1)
+    expect(load).toHaveBeenCalledTimes(1)
+    expect(controller.viewport).toBeNull()
+
+    pending.resolve({})
+    await flushMicrotasks()
+    expect(onLoadEnd).toHaveBeenCalledTimes(0)
+    expect(controller.state.bottom.status).toBe('idle')
+    controller.destroy()
+  })
+
   it('onLoadStart 内 reset：代际已推进，不发起请求', async () => {
     const { el, state } = mountViewport({ scrollTop: 100, scrollHeight: 300, clientHeight: 100 })
     const load = vi.fn(async (_ctx: InfiniteScrollLoadContext) => ({}))
@@ -781,6 +817,93 @@ describe('createInfiniteScroll', () => {
 
     expect(state.scrollTop).toBe(60)
     expect(list.querySelector('[data-key="a"]')!.getBoundingClientRect().top).toBe(0)
+    controller.destroy()
+  })
+
+  it('静态 root + content getter：加载中替换列表容器仍补偿，loads 不增长', async () => {
+    const { el, state } = mountViewport({ scrollTop: 0, scrollHeight: 300, clientHeight: 100 })
+    const first = document.createElement('div')
+    el.append(first)
+    let anchorTop = 0
+    first.append(mountItem(state, 'a', () => anchorTop))
+    let list = first
+
+    const load = vi.fn(async (_ctx: InfiniteScrollLoadContext) => {
+      // 宿主重挂列表：root 不变，content getter 指向全新容器
+      first.remove()
+      const second = document.createElement('div')
+      list = second
+      el.append(second)
+      anchorTop = 60
+      second.prepend(
+        mountItem(state, 'x', () => 0),
+        mountItem(state, 'a', () => anchorTop),
+      )
+      state.scrollHeight = 360
+      return {}
+    })
+    const controller = createInfiniteScroll({
+      root: el,
+      content: () => list,
+      direction: 'top',
+      load,
+    })
+    controller.attach()
+    await flushMicrotasks()
+
+    expect(load).toHaveBeenCalledTimes(1)
+    expect(state.scrollTop).toBe(60)
+    expect(list.querySelector('[data-key="a"]')!.getBoundingClientRect().top).toBe(0)
+    expect(controller.state.top.loads).toBe(1)
+
+    // 防御：内容已增长但不能再在 scrollTop=0 处自动续载
+    controller.update()
+    await flushRaf()
+    expect(load).toHaveBeenCalledTimes(1)
+    controller.destroy()
+  })
+
+  it('top 增长但锚点丢失：停在顶部期间停止自动续载，离开顶部后恢复', async () => {
+    const { el, state } = mountViewport({ scrollTop: 0, scrollHeight: 300, clientHeight: 100 })
+    const list = document.createElement('div')
+    el.append(list)
+    list.append(mountItem(state, 'a', () => 0))
+
+    const load = vi.fn(async (_ctx: InfiniteScrollLoadContext) => {
+      // 新内容落地但稳定 key 丢失：无法补偿，必须就地停住
+      list.replaceChildren(
+        mountItem(state, 'x', () => 0),
+        mountItem(state, 'y', () => 50),
+      )
+      state.scrollHeight = 400
+      return {}
+    })
+    const controller = createInfiniteScroll({
+      root: el,
+      content: () => list,
+      direction: 'top',
+      load,
+    })
+    controller.attach()
+    await flushMicrotasks()
+    expect(load).toHaveBeenCalledTimes(1)
+    expect(state.scrollTop).toBe(0)
+
+    controller.update()
+    await flushRaf()
+    expect(load).toHaveBeenCalledTimes(1)
+
+    // 离开顶部解除封锁
+    state.scrollTop = 100
+    controller.update()
+    expect(load).toHaveBeenCalledTimes(1)
+
+    // 再次回顶：允许一次新的自动加载（第二次结果无增长，不再续）
+    state.scrollTop = 0
+    controller.update()
+    expect(load).toHaveBeenCalledTimes(2)
+    await flushMicrotasks()
+    expect(load).toHaveBeenCalledTimes(2)
     controller.destroy()
   })
 

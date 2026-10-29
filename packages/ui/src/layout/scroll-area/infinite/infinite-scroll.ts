@@ -94,6 +94,8 @@ interface EdgeRuntime {
   loads: number
   /** 自动触发武装：同一位置只自动请求一次，离开边缘/内容增长/重置后重新武装 */
   armed: boolean
+  /** top 加载增长但锚点未补偿：停在边缘期间禁止自动续载，离开边缘/reset/显式 load 才解除 */
+  blocked: boolean
   abort: AbortController | null
   /** 请求代际：reset/complete/destroy 后旧结果一律丢弃 */
   generation: number
@@ -120,6 +122,7 @@ function makeEdge(): EdgeRuntime {
     error: null,
     loads: 0,
     armed: true,
+    blocked: false,
     abort: null,
     generation: 0,
     startHeight: 0,
@@ -164,7 +167,7 @@ function resolveElement(target: InfiniteScrollContent | InfiniteScrollRoot): Ele
  * 不渲染任何 DOM，只消费既有滚动根（`oas-scroll-area` / 任意滚动元素）：
  * - 方向 `top` / `bottom` / `both`，双边缘各自维护 loading / error / complete；
  * - 同一边缘在途去重，不同边缘可并发；到底后不再自动加载；`bottom` 判定含 1px
- *   亚像素容差（小数 scrollTop / DPR 1.25），`top` 保持 `scrollTop <= threshold`；
+ *   亚像素容差（小数 scrollTop / 亚像素取整几何），`top` 保持 `scrollTop <= threshold`；
  * - `load()` 省略 edge 时：`direction=top` / `reverse` 取 top，否则（含 `both`）取 bottom；
  *   已进入 error 的边缘必须显式 `retry(edge)`（或 `retry()` 重试全部 error 边缘）；
  * - `load()` / `retry()` / `complete()` / `reset()` / `destroy()` 全命令面；
@@ -190,6 +193,8 @@ export class InfiniteScrollController {
   private mo: MutationObserver | null = null
   private observedAnchor: Element | null = null
   private anchor: Anchor | null = null
+  /** 本次 top 锚定是否已产生实际 scrollTop 位移（MutationObserver 先于结果落地补偿也算） */
+  private anchorMoved = false
   private attached = false
   private disposed = false
   private updating = false
@@ -198,6 +203,8 @@ export class InfiniteScrollController {
   private expectedScrollTop: number | null = null
   private lastHeight = -1
   private userScrolled = false
+  /** detach 收尾守卫：清环境后 emitState 期间宿主调 update/attach 不得重新起请求 */
+  private detaching = false
   /** root 为惰性 getter 时 update 才需要重解析（静态元素 attach 时解析一次即可） */
   private rootIsDynamic = false
   /** 仅在锚点活跃期间观察的异步资源（图片/视频）；releaseAnchor 时全部解除，防跨加载泄漏 */
@@ -245,7 +252,7 @@ export class InfiniteScrollController {
    * 返回是否解析到可用滚动视口。
    */
   attach(root?: InfiniteScrollRoot): boolean {
-    if (this.disposed) return false
+    if (this.disposed || this.detaching) return false
     if (root !== undefined) {
       this.rootOption = root
       this.rootIsDynamic = typeof root === 'function'
@@ -289,26 +296,33 @@ export class InfiniteScrollController {
 
   /** 解绑滚动根并中止在途请求；保留 complete/error 状态（可重新 attach） */
   detach(): void {
-    if (this.disposed) return
-    for (const edge of EDGE_ORDER) {
-      const rt = this.edges[edge]
-      this.abortEdge(edge)
-      if (rt.status === 'loading') {
-        rt.status = 'idle'
-        // 被 detach 中止的加载不算「同一位置已请求过」：重新 attach 后必须能再次自动加载
-        // （error/complete 语义不受影响，仍保持不复活——只有 loading 被复位）
-        rt.armed = true
-        this.emitState(edge)
+    if (this.disposed || this.detaching) return
+    // 先拆环境再 abort/emitState：onStateChange(idle) 内宿主调 update/attach 时
+    // 已无 viewport 且 detaching 守卫生效，不能在本方法内部新起请求。
+    this.detaching = true
+    try {
+      this.releaseAnchor()
+      this.unbind()
+      this.attached = false
+      this.root = null
+      this.vp = null
+      this.content = null
+      this.expectedScrollTop = null
+      this.lastHeight = -1
+      for (const edge of EDGE_ORDER) {
+        const rt = this.edges[edge]
+        this.abortEdge(edge)
+        if (rt.status === 'loading') {
+          rt.status = 'idle'
+          // 被 detach 中止的加载不算「同一位置已请求过」：重新 attach 后必须能再次自动加载
+          // （error/complete 语义不受影响，仍保持不复活——只有 loading 被复位）
+          rt.armed = true
+          this.emitState(edge)
+        }
       }
+    } finally {
+      this.detaching = false
     }
-    this.releaseAnchor()
-    this.unbind()
-    this.attached = false
-    this.root = null
-    this.vp = null
-    this.content = null
-    this.expectedScrollTop = null
-    this.lastHeight = -1
   }
 
   /**
@@ -316,9 +330,12 @@ export class InfiniteScrollController {
    * 宿主也可在数据或布局变化后主动调用（幂等）。
    */
   update(): void {
-    if (this.disposed || this.updating) return
-    // 静态 root 在 attach 时已解析完成，update 无需每次重跑 resolveViewport/内容解析
-    if (this.attached && this.rootIsDynamic) this.retarget()
+    if (this.disposed || this.updating || this.detaching) return
+    if (this.attached) {
+      // 静态 root 只需刷新 content getter（列表容器可能被宿主替换）；惰性 root 仍需整体重定向
+      if (this.rootIsDynamic) this.retarget()
+      else this.refreshContent()
+    }
     const vp = this.vp
     if (!vp) return
     this.updating = true
@@ -329,8 +346,11 @@ export class InfiniteScrollController {
         if (!this.enabled(edge)) continue
         const rt = this.edges[edge]
         const atEdge = this.isAtEdge(edge)
-        if (!atEdge) rt.armed = true
-        if (atEdge && rt.armed) void this.startLoad(edge, false, false)
+        if (!atEdge) {
+          rt.armed = true
+          rt.blocked = false
+        }
+        if (atEdge && !rt.blocked && rt.armed) void this.startLoad(edge, false, false)
       }
     } finally {
       this.updating = false
@@ -384,6 +404,7 @@ export class InfiniteScrollController {
       rt.error = null
       rt.loads = 0
       rt.armed = true
+      rt.blocked = false
       rt.startHeight = 0
       rt.startTop = 0
     }
@@ -406,6 +427,7 @@ export class InfiniteScrollController {
       rt.error = null
       rt.loads = 0
       rt.armed = false
+      rt.blocked = false
       rt.startHeight = 0
       rt.startTop = 0
     }
@@ -426,7 +448,7 @@ export class InfiniteScrollController {
   /**
    * 指定边缘当前是否处于阈值内（无 viewport 时 false）。
    *
-   * 底部额外留 1px 容差：浏览器在亚像素几何（小数 scrollTop / DPR 1.25 等）下，
+   * 底部额外留 1px 容差：浏览器在亚像素/取整几何（小数 scrollTop 等）下，
    * 「已滚到底」的实测值常残留 0.1~0.9px，精确 `<= 0` 会让用户永远到不了底。
    * 顶部保持 `scrollTop <= threshold` 语义不变（顶部 0 是精确可表达的边界）。
    */
@@ -440,12 +462,15 @@ export class InfiniteScrollController {
   // ---------- 加载状态机 ----------
 
   private async startLoad(edge: InfiniteScrollEdge, retry: boolean, explicit: boolean): Promise<boolean> {
-    if (this.disposed) return false
+    if (this.disposed || this.detaching) return false
     const rt = this.edges[edge]
     if (rt.status === 'loading' || rt.status === 'complete') return false
     if (rt.status === 'error' && !retry) return false
     if (!explicit) {
-      if (!this.enabled(edge) || !rt.armed || !this.isAtEdge(edge)) return false
+      if (!this.enabled(edge) || rt.blocked || !rt.armed || !this.isAtEdge(edge)) return false
+    } else {
+      // 显式 load/retry 代表宿主主动意图：解除「未补偿待离开边缘」的自动续载封锁
+      rt.blocked = false
     }
 
     this.abortEdge(edge)
@@ -499,28 +524,37 @@ export class InfiniteScrollController {
 
     const result = normalizeResult(raw)
     const grew = this.vp ? this.vp.scrollHeight > rt.startHeight + 0.5 : false
+    // top 结果落地先补偿锚点，再落状态：onStateChange/onLoadEnd 内宿主调 update 时
+    // armed/blocked 已是最终值，不能先放行自动续载。
+    const anchorFound = edge === 'top' ? this.applyAnchor() : false
+    // 纵深防御：top 增长但锚点没产生实际位移（容器替换/节点丢失）时停止自动续载，
+    // 避免 scrollTop 仍停在 0 时 frame/mutation 反复触发同一位置加载。
+    // anchorMoved 覆盖「MutationObserver 已先于 load 结果补偿」的路径。
+    const topCompensated = anchorFound && this.anchorMoved
+    const autoContinue = grew && (edge !== 'top' || topCompensated)
     rt.loads += 1
     rt.abort = null
     if (result.complete === true) {
       rt.status = 'complete'
       rt.error = null
       rt.armed = false
+      if (edge === 'top') rt.blocked = false
     } else {
       rt.status = 'idle'
       rt.error = null
-      // 有内容增长才允许自动续载（阈值内继续填）；无增长时保持解除武装，避免空结果死循环
-      rt.armed = grew
+      // 有内容增长且（bottom 或 top 已补偿）才允许自动续载；空结果/未补偿不循环
+      rt.armed = autoContinue
+      if (edge === 'top') rt.blocked = grew && !topCompensated
     }
     this.emitState(edge)
     if (this.disposed || rt.generation !== generation) return true
     this.safe(() => this.options.onLoadEnd?.(context, result))
-    // onLoadEnd 内 destroy/reset：不再写锚点、不再发 complete、不再排下一轮
+    // onLoadEnd 内 destroy/reset：不再发 complete、不再排下一轮
     if (this.disposed || rt.generation !== generation) return true
 
-    if (edge === 'top') this.applyAnchor()
     if (result.complete === true) {
       this.safe(() => this.options.onComplete?.({ edge }))
-    } else if (grew) {
+    } else if (autoContinue) {
       this.scheduleFrame(() => this.update())
     }
     return true
@@ -577,7 +611,8 @@ export class InfiniteScrollController {
     }
     if (viewport === this.vp) {
       this.root = root
-      this.content = this.resolveContent(root, viewport)
+      // 同一 viewport 下 content getter 仍可能返回被宿主替换的新容器：必须重绑内容监听
+      this.refreshContent()
       return
     }
     this.detach()
@@ -588,6 +623,64 @@ export class InfiniteScrollController {
     this.attached = true
   }
 
+  /**
+   * 刷新 content 容器（静态 root 也适用）。
+   *
+   * 宿主可能用「同一滚动根 + 重新创建的列表容器」重渲染：root 不变但
+   * `content: () => listEl` 已指向新节点。只换 content 并重绑内容侧监听，
+   * 保留 anchor 记录，供 applyAnchor 在新容器里按 key 重查后继续补偿。
+   */
+  private refreshContent(): void {
+    const vp = this.vp
+    if (!this.attached || !vp) return
+    const next = this.resolveContent(this.root, vp)
+    if (next === this.content) return
+    const prev = this.content
+    if (prev && prev !== vp) {
+      prev.removeEventListener('load', this.handleResource, true)
+      prev.removeEventListener('error', this.handleResource, true)
+      if (this.ro) {
+        try {
+          this.ro.unobserve(prev)
+        } catch {
+          /* 忽略 */
+        }
+      }
+    }
+    this.mo?.disconnect()
+    this.mo = null
+    // 旧容器的锚点/资源观察随容器替换失效；anchor 记录保留，稍后按 key 在新容器重查
+    this.clearObservations()
+    this.content = next
+    this.bindContent()
+    if (this.anchor && next?.contains(this.anchor.el)) this.observeWithAnchor(this.anchor.el)
+  }
+
+  /** 只绑定内容侧监听/观察（viewport 滚动监听由 bind 负责，refreshContent 不重复添加） */
+  private bindContent(): void {
+    const vp = this.vp
+    const content = this.content
+    if (!vp || !content) return
+    if (content !== vp) {
+      content.addEventListener('load', this.handleResource, true)
+      content.addEventListener('error', this.handleResource, true)
+      if (this.ro) {
+        try {
+          this.ro.observe(content)
+        } catch {
+          /* 忽略 */
+        }
+      }
+    }
+    if (typeof MutationObserver !== 'undefined') {
+      this.mo?.disconnect()
+      this.mo = new MutationObserver(this.handleMutation)
+      this.mo.observe(content, { childList: true })
+      // content 可能是嵌套 wrapper：同时观察 root 的直接子节点变化，容器被整体替换时也能刷新
+      if (this.root && this.root !== content) this.mo.observe(this.root, { childList: true })
+    }
+  }
+
   private bind(): void {
     const vp = this.vp
     if (!vp) return
@@ -595,20 +688,12 @@ export class InfiniteScrollController {
     // 资源 load/error 不冒泡：必须 capture 才能从滚动根捕获内部图片/视频撑高
     vp.addEventListener('load', this.handleResource, true)
     vp.addEventListener('error', this.handleResource, true)
-    if (this.content && this.content !== vp) {
-      this.content.addEventListener('load', this.handleResource, true)
-      this.content.addEventListener('error', this.handleResource, true)
-    }
     if (typeof ResizeObserver !== 'undefined') {
       this.ro = new ResizeObserver(this.handleResize)
       this.ro.observe(vp)
-      if (this.content && this.content !== vp) this.ro.observe(this.content)
-      if (this.anchor) this.observeWithAnchor(this.anchor.el)
     }
-    if (typeof MutationObserver !== 'undefined' && this.content) {
-      this.mo = new MutationObserver(this.handleMutation)
-      this.mo.observe(this.content, { childList: true })
-    }
+    this.bindContent()
+    if (this.anchor) this.observeWithAnchor(this.anchor.el)
   }
 
   private unbind(): void {
@@ -628,6 +713,21 @@ export class InfiniteScrollController {
     this.mo = null
     this.observedAnchor = null
     this.observedResources.clear()
+  }
+
+  /** 仅解除锚点/资源观察，保留 anchor 记录（容器替换后仍可按 key 重查） */
+  private clearObservations(): void {
+    if (this.ro) {
+      for (const el of this.observedResources) {
+        try {
+          this.ro.unobserve(el)
+        } catch {
+          /* 忽略 */
+        }
+      }
+    }
+    this.observedResources.clear()
+    this.observedAnchor = null
   }
 
   /** 观察锚点/锚点侧的异步资源；统一记账，releaseAnchor 时一次性解除 */
@@ -687,9 +787,11 @@ export class InfiniteScrollController {
     if (!vp) return
     const height = vp.scrollHeight
     if (this.lastHeight >= 0 && height > this.lastHeight + 0.5) {
-      // 内容增长（含异步撑高）：已从边缘离开后重新武装，允许下一次进入阈值时报一次
+      // 内容增长（含异步撑高）：已从边缘离开后重新武装，允许下一次进入阈值时报一次；
+      // 但 top 未补偿封锁必须保持，否则容器替换后 scrollTop=0 会被增长反复解除武装而循环
       for (const edge of EDGE_ORDER) {
-        if (this.edges[edge].status === 'idle') this.edges[edge].armed = true
+        const rt = this.edges[edge]
+        if (rt.status === 'idle' && !rt.blocked) rt.armed = true
       }
     }
     this.lastHeight = height
@@ -716,8 +818,9 @@ export class InfiniteScrollController {
    * key 属性优先（宿主重渲染替换节点后仍能找回同一行），无 key 回落 id / 元素引用。
    */
   private captureAnchor(): void {
-    // 每次顶部加载都重新选锚：先解除上一轮观察，避免多轮资源观察叠加
+    // 每次顶部加载都重新选锚：先解除上一轮观察并按最新 content getter 重绑容器
     this.releaseAnchor()
+    this.refreshContent()
     const vp = this.vp
     const content = this.content
     if (!vp || !content) return
@@ -739,19 +842,25 @@ export class InfiniteScrollController {
       viewportY: anchorEl.getBoundingClientRect().top - vpTop,
     }
     this.anchor = anchor
+    this.anchorMoved = false
     this.observedAnchor = anchorEl
     this.observeWithAnchor(anchorEl)
   }
 
-  /** 顶部结果落地后按锚点视口位移补偿 scrollTop（keyed 替换后按 key 重查） */
-  private applyAnchor(): void {
+  /**
+   * 顶部结果落地后按锚点视口位移补偿 scrollTop（keyed 替换后按 key 重查）。
+   * 返回锚点是否在当前容器内找到；实际位移累计到 `anchorMoved`（供续载防御判定）。
+   */
+  private applyAnchor(): boolean {
+    // 结果落地与 update 时都先按最新 content getter 刷新容器（静态 root 同样适用）
+    this.refreshContent()
     const vp = this.vp
     const anchor = this.anchor
-    if (!vp || !anchor) return
+    if (!vp || !anchor) return false
     const el = this.findAnchor(anchor)
     if (!el || !el.isConnected) {
       this.releaseAnchor()
-      return
+      return false
     }
     if (el !== anchor.el) {
       // keyed 重查命中新节点：观察目标同步迁移，旧节点在 releaseAnchor 前不再持有观察
@@ -766,19 +875,23 @@ export class InfiniteScrollController {
       anchor.el = el
       this.observeWithAnchor(el)
     }
+    const before = vp.scrollTop
     const drift = el.getBoundingClientRect().top - vp.getBoundingClientRect().top - anchor.viewportY
     // 0.5px 死区：亚像素读数不反复写 scrollTop
     if (Math.abs(drift) > 0.5) this.writeScrollTop(vp, vp.scrollTop + drift)
+    if (Math.abs(vp.scrollTop - before) > 0.5) this.anchorMoved = true
+    return true
   }
 
   private findAnchor(anchor: Anchor): Element | null {
-    // 快路径：原节点仍在文档且 key 未变（未重渲染的常见情况）直接复用，避免全量扫描
-    if (anchor.el.isConnected) {
+    const content = this.content
+    const inContent = (el: Element): boolean => !content || content.contains(el)
+    // 快路径：原节点仍在当前容器且 key 未变（未重渲染的常见情况）直接复用，避免全量扫描
+    if (anchor.el.isConnected && inContent(anchor.el)) {
       const attr = anchor.keyAttr
       const value = attr ? anchor.el.getAttribute(attr) : anchor.el.id
       if (anchor.key === null || value === anchor.key) return anchor.el
     }
-    const content = this.content
     if (content && anchor.key !== null) {
       const attr = anchor.keyAttr
       // 不用属性选择器拼串：自定义 keyAttribute 不需要转义，避免非法属性名让 querySelector 抛错
@@ -787,23 +900,14 @@ export class InfiniteScrollController {
         if (value === anchor.key) return node
       }
     }
-    return anchor.el.isConnected ? anchor.el : null
+    return anchor.el.isConnected && inContent(anchor.el) ? anchor.el : null
   }
 
   /** 释放保位锚：一并解除锚点与资源观察（资源集合仅属于当前这次锚定，不能跨加载残留） */
   private releaseAnchor(): void {
-    if (this.ro) {
-      for (const el of this.observedResources) {
-        try {
-          this.ro.unobserve(el)
-        } catch {
-          /* 忽略 */
-        }
-      }
-    }
-    this.observedResources.clear()
-    this.observedAnchor = null
+    this.clearObservations()
     this.anchor = null
+    this.anchorMoved = false
   }
 
   // ---------- 调度 / 回调隔离 ----------
