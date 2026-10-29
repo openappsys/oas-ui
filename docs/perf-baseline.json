@@ -4,18 +4,18 @@
     "method": "gzip = zlib gzipSync；brotli = zlib.brotliCompressSync q11；单组件链 = 静态 import 图遍历 + 逐文件压缩求和（上界估计）",
     "packages": {
       "@oas-ui/ui": {
-        "distTotalBytes": 40475458,
+        "distTotalBytes": 40857541,
         "browserJs": {
-          "files": 458,
-          "rawBytes": 10482530,
-          "gzipBytes": 2519866,
-          "brotliBytes": 1967860
+          "files": 462,
+          "rawBytes": 10564907,
+          "gzipBytes": 2542481,
+          "brotliBytes": 1986392
         },
         "fullEntry": {
-          "files": 485,
-          "rawBytes": 3678060,
-          "gzipBytes": 1001720,
-          "brotliBytes": 861088,
+          "files": 489,
+          "rawBytes": 3709237,
+          "gzipBytes": 1010731,
+          "brotliBytes": 868981,
           "fileList": [
             "packages/ui/dist/index.js",
             "packages/icons/dist/register.js",
@@ -165,6 +165,10 @@
             "packages/ui/dist/shared/css-var.js",
             "packages/ui/dist/shared/measure-text.js",
             "packages/ui/dist/shared/coarse-tap.js",
+            "packages/ui/dist/workbench/floating-panel/index.js",
+            "packages/ui/dist/workbench/floating-panel/oas-floating-panel.js",
+            "packages/ui/dist/workbench/floating-panel/panel-stack.js",
+            "packages/ui/dist/workbench/floating-panel/geometry.js",
             "packages/ui/dist/workbench/action-bar/index.js",
             "packages/ui/dist/workbench/action-bar/oas-music-well.js",
             "packages/ui/dist/workbench/action-bar/oas-transport-well.js",
@@ -506,9 +510,9 @@
         },
         "cdn": {
           "files": 1,
-          "rawBytes": 3054063,
-          "gzipBytes": 667203,
-          "brotliBytes": 459224
+          "rawBytes": 3079091,
+          "gzipBytes": 673916,
+          "brotliBytes": 463924
         }
       },
       "@oas-ui/theme": {
@@ -526,9 +530,9 @@
       },
       "@oas-ui/i18n": {
         "files": 23,
-        "rawBytes": 239272,
-        "gzipBytes": 74955,
-        "brotliBytes": 63934
+        "rawBytes": 240242,
+        "gzipBytes": 75199,
+        "brotliBytes": 64111
       },
       "@oas-ui/icons": {
         "files": 52,
@@ -538,9 +542,9 @@
       },
       "@oas-ui/ssr": {
         "files": 3,
-        "rawBytes": 43115,
-        "gzipBytes": 13809,
-        "brotliBytes": 11346
+        "rawBytes": 47017,
+        "gzipBytes": 15057,
+        "brotliBytes": 12413
       }
     },
     "components": {
@@ -572,9 +576,9 @@
         "entry": "data/table",
         "spec": "@oas-ui/ui/data/table",
         "files": 29,
-        "rawBytes": 228718,
-        "gzipBytes": 70391,
-        "brotliBytes": 59215,
+        "rawBytes": 228804,
+        "gzipBytes": 70414,
+        "brotliBytes": 59234,
         "fileList": [
           "packages/ui/dist/data/table/index.js",
           "packages/i18n/dist/index.js",
@@ -611,9 +615,9 @@
         "entry": "data/table/edit",
         "spec": "@oas-ui/ui/data/table/edit",
         "files": 43,
-        "rawBytes": 313117,
-        "gzipBytes": 93106,
-        "brotliBytes": 78844,
+        "rawBytes": 313203,
+        "gzipBytes": 93129,
+        "brotliBytes": 78863,
         "fileList": [
           "packages/ui/dist/data/table/edit/index.js",
           "packages/ui/dist/form/select/index.js",
@@ -762,9 +766,9 @@
         "entry": "form/form",
         "spec": "@oas-ui/ui/form/form",
         "files": 11,
-        "rawBytes": 82331,
-        "gzipBytes": 29613,
-        "brotliBytes": 24609,
+        "rawBytes": 82417,
+        "gzipBytes": 29636,
+        "brotliBytes": 24628,
         "fileList": [
           "packages/ui/dist/form/form/index.js",
           "packages/i18n/dist/index.js",
@@ -783,9 +787,9 @@
         "entry": "data/gantt",
         "spec": "@oas-ui/ui/data/gantt",
         "files": 18,
-        "rawBytes": 229758,
-        "gzipBytes": 68319,
-        "brotliBytes": 57034,
+        "rawBytes": 229844,
+        "gzipBytes": 68342,
+        "brotliBytes": 57053,
         "fileList": [
           "packages/ui/dist/data/gantt/index.js",
           "packages/i18n/dist/index.js",
@@ -811,9 +815,9 @@
         "entry": "data/json-viewer",
         "spec": "@oas-ui/ui/data/json-viewer",
         "files": 13,
-        "rawBytes": 100892,
-        "gzipBytes": 34802,
-        "brotliBytes": 29146,
+        "rawBytes": 100978,
+        "gzipBytes": 34825,
+        "brotliBytes": 29165,
         "fileList": [
           "packages/ui/dist/data/json-viewer/index.js",
           "packages/i18n/dist/index.js",
@@ -834,9 +838,9 @@
         "entry": "data/diff-viewer",
         "spec": "@oas-ui/ui/data/diff-viewer",
         "files": 12,
-        "rawBytes": 94971,
-        "gzipBytes": 33504,
-        "brotliBytes": 28113,
+        "rawBytes": 95057,
+        "gzipBytes": 33527,
+        "brotliBytes": 28132,
         "fileList": [
           "packages/ui/dist/data/diff-viewer/index.js",
           "packages/i18n/dist/index.js",
@@ -857,7 +861,7 @@
       {
         "name": "dist/cdn.js gzip",
         "kind": "ceiling",
-        "actualBytes": 667203,
+        "actualBytes": 673916,
         "limitBytes": 788480,
         "warnAtBytes": 709632,
         "pass": true,
@@ -867,7 +871,7 @@
       {
         "name": "@oas-ui/ui 全量入口链 gzip",
         "kind": "ceiling",
-        "actualBytes": 1001720,
+        "actualBytes": 1010731,
         "limitBytes": 1167360,
         "warnAtBytes": 1050624,
         "pass": true,
@@ -889,7 +893,7 @@
         "name": "@oas-ui/ui/data/table 链 gzip",
         "kind": "absolute",
         "componentId": "table",
-        "actualBytes": 70391,
+        "actualBytes": 70414,
         "limitBytes": 75776,
         "warnAtBytes": 68198,
         "pass": true,
@@ -900,7 +904,7 @@
         "name": "@oas-ui/ui/data/table/edit 链 gzip",
         "kind": "absolute",
         "componentId": "tableEdit",
-        "actualBytes": 93106,
+        "actualBytes": 93129,
         "limitBytes": 106496,
         "warnAtBytes": 95846,
         "pass": true,
@@ -911,7 +915,7 @@
         "name": "@oas-ui/ui/form/form 链 gzip",
         "kind": "absolute",
         "componentId": "form",
-        "actualBytes": 29613,
+        "actualBytes": 29636,
         "limitBytes": 29696,
         "warnAtBytes": 26726,
         "pass": true,
@@ -922,7 +926,7 @@
         "name": "@oas-ui/ui/data/gantt 链 gzip",
         "kind": "absolute",
         "componentId": "gantt",
-        "actualBytes": 68319,
+        "actualBytes": 68342,
         "limitBytes": 71680,
         "warnAtBytes": 64512,
         "pass": true,
@@ -933,7 +937,7 @@
         "name": "@oas-ui/ui/data/json-viewer 链 gzip",
         "kind": "absolute",
         "componentId": "jsonViewer",
-        "actualBytes": 34802,
+        "actualBytes": 34825,
         "limitBytes": 35840,
         "warnAtBytes": 32256,
         "pass": true,
@@ -944,7 +948,7 @@
         "name": "@oas-ui/ui/data/diff-viewer 链 gzip",
         "kind": "absolute",
         "componentId": "diffViewer",
-        "actualBytes": 33504,
+        "actualBytes": 33527,
         "limitBytes": 34816,
         "warnAtBytes": 31334,
         "pass": true,
