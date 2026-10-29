@@ -127,9 +127,41 @@ const STYLE = `
 
 type SplitterMode = 'legacy' | 'multi'
 
+/** 尺寸持久化快照版本（结构变更时递增，旧版本整体忽略） */
+const STORAGE_VERSION = 1
+/** 写入合并延迟：拖拽/连击期间多次变更合并为一次同步写（pointerup 会立即 flush） */
+const PERSIST_DELAY = 120
+
+/** 版本化快照：legacy 存 percent，multi 存 sizes；折叠态附折叠索引与折叠前尺寸 */
+type SplitterSnapshot = {
+  v: number
+  mode: SplitterMode
+  percent?: number
+  sizes?: number[]
+  collapsed?: number[]
+  prev?: Record<string, number>
+}
+
+/** SSR（服务端渲染）环境：不读写存储，快照保持属性态 */
+function isServerRender(): boolean {
+  return typeof window === 'undefined' || (window as unknown as Record<string, unknown>).__OAS_SSR__ === true
+}
+
 export class OASSplitter extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['percent', 'min', 'max', 'vertical', 'collapsible', 'collapsed', 'lazy', 'sizes', 'disabled', 'snap']
+    return [
+      'percent',
+      'min',
+      'max',
+      'vertical',
+      'collapsible',
+      'collapsed',
+      'lazy',
+      'sizes',
+      'disabled',
+      'snap',
+      'storage-key',
+    ]
   }
 
   /** 布局模式：legacy（slot=left/right 两面板）/ multi（直接子元素即面板） */
@@ -165,6 +197,17 @@ export class OASSplitter extends OASElement {
   private lastAttr = ''
   private renderedOnce = false
 
+  /** 存储恢复只在首次连接尝试一次（改 key 不自动重载；同 key 在线实例不 live sync） */
+  private storageRestoreScheduled = false
+  /** 首次连接前的显式初始属性快照（内部折叠/布局会写回属性，之后不能再据此判断“显式”） */
+  private explicitInitialCaptured = false
+  private explicitPercent = false
+  private explicitSizes: number[] | null = null
+  private explicitCollapsed = false
+  /** 写入合并定时器与待写标记（拖拽期间合并 setItem） */
+  private persistTimer: ReturnType<typeof setTimeout> | null = null
+  private persistPending = false
+
   override attributeChangedCallback(name: string, oldValue: string | null, newValue: string | null): void {
     this.lastAttr = name
     super.attributeChangedCallback(name, oldValue, newValue)
@@ -176,6 +219,14 @@ export class OASSplitter extends OASElement {
    * accessor，setter 不再执行、attribute 也没写入 → 连接后布局丢失。删除 own 并回收到 setter。
    */
   override connectedCallback(): void {
+    // 必须在 super（首渲染）前采集：multi 首渲染折叠会把内部 sizes 写回属性，
+    // 之后再读属性会误把组件自写值当成“显式初始属性”而压过存储。
+    if (!this.explicitInitialCaptured) {
+      this.explicitInitialCaptured = true
+      this.explicitPercent = this.hasAttribute('percent')
+      this.explicitSizes = this.parseSizes(this.getAttr('sizes', ''))
+      this.explicitCollapsed = this.hasAttribute('collapsed')
+    }
     super.connectedCallback()
     if (Object.prototype.hasOwnProperty.call(this, 'sizes')) {
       const own = (this as unknown as { sizes?: unknown }).sizes
@@ -185,9 +236,29 @@ export class OASSplitter extends OASElement {
         // attribute 尚未落盘，initialSizes 已被固化为均分；先重置基线标志，让下方 setter 写
         // attribute 触发的 update → ensureSizes 用回收值重新采集，双击复位回预设比例而非均分
         this.sizesInitialized = false
+        const parsedOwn = this.parseSizes(own as unknown)
+        if (parsedOwn) this.explicitSizes = parsedOwn
         this.sizes = own as number[] | string
       }
     }
+    // 延迟到微任务恢复：SSR/DSD 水合的同步首帧与快照零差异，hydrate() 内不访问存储；
+    // 只在首次连接尝试（改 key 不自动重载）。
+    if (this.storageRestoreScheduled) return
+    this.storageRestoreScheduled = true
+    const key = this.storageKeyValue()
+    if (key === '' || isServerRender()) return
+    queueMicrotask(() => {
+      if (!this.isConnected) return
+      if (this.storageKeyValue() !== key) return
+      this.restoreSnapshot(key)
+    })
+  }
+
+  override disconnectedCallback(): void {
+    // 未到合并窗口的用户变更在断开前落盘（SSR 环境 flushPersist 内部会跳过）
+    this.flushPersist()
+    this.persistPending = false
+    super.disconnectedCallback()
   }
 
   /**
@@ -213,6 +284,7 @@ export class OASSplitter extends OASElement {
     }
     this.setAttribute('sizes', JSON.stringify(parsed.map((s) => Math.round(s * 100) / 100)))
     if (this.hasRendered) this.update()
+    this.schedulePersist()
   }
 
   /** 非法 sizes property 告警（同实例同值只告警一次，避免受控重试刷屏） */
@@ -223,6 +295,188 @@ export class OASSplitter extends OASElement {
     devWarn(
       '[oas-splitter] sizes property 收到非法/空数据（应为百分比数组、逗号分隔百分比或其 JSON 字符串），已忽略并保留既有 sizes 属性',
     )
+  }
+
+  // ---------- 尺寸持久化（storage-key，opt-in） ----------
+
+  /** 当前持久化键（空串 = 不启用） */
+  private storageKeyValue(): string {
+    return this.getAttr('storage-key', '')
+  }
+
+  /**
+   * 调度合并写入：拖拽/连续键盘变更只在延迟窗口末尾同步写一次；
+   * pointerup 通过 flushPersist 立即落盘，避免每个 pointermove 都触发 localStorage 同步写。
+   */
+  private schedulePersist(): void {
+    if (!this.isConnected || this.storageKeyValue() === '' || isServerRender()) return
+    this.persistPending = true
+    if (this.persistTimer != null) return
+    this.persistTimer = setTimeout(() => {
+      this.persistTimer = null
+      this.flushPersist()
+    }, PERSIST_DELAY)
+  }
+
+  /** 立即落盘待写快照（无待写/无 key/SSR 时 no-op；get/set 异常静默降级） */
+  private flushPersist(): void {
+    if (this.persistTimer != null) {
+      clearTimeout(this.persistTimer)
+      this.persistTimer = null
+    }
+    if (!this.persistPending) return
+    this.persistPending = false
+    const key = this.storageKeyValue()
+    if (key === '' || isServerRender()) return
+    try {
+      window.localStorage.setItem(key, JSON.stringify(this.buildSnapshot()))
+    } catch {
+      /* 隐私模式/配额/存储不可用：静默降级，内存布局仍有效 */
+    }
+  }
+
+  /** 版本化快照：legacy 存 percent；multi 存 sizes；折叠态附折叠索引与折叠前尺寸 */
+  private buildSnapshot(): SplitterSnapshot {
+    const round = (n: number): number => Math.round(n * 100) / 100
+    const collapsed = [...this.collapsedPanels].sort((a, b) => a - b)
+    const prev: Record<string, number> = {}
+    for (const index of collapsed) {
+      const value = this.collapsedPrev.get(index)
+      if (value != null) prev[String(index)] = round(value)
+    }
+    if (this.mode === 'legacy') {
+      const percent = Number(this.getAttr('percent', '50')) || 50
+      return { v: STORAGE_VERSION, mode: 'legacy', percent: round(percent), collapsed, prev }
+    }
+    return { v: STORAGE_VERSION, mode: 'multi', sizes: this.sizesData.map(round), collapsed, prev }
+  }
+
+  /** 解析/校验快照：版本、模式、形状任一不符整体忽略（安全降级） */
+  private parseSnapshot(raw: unknown): SplitterSnapshot | null {
+    if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) return null
+    const data = raw as Record<string, unknown>
+    if (data.v !== STORAGE_VERSION || data.mode !== this.mode) return null
+    const collapsed = this.parseSnapshotCollapsed(data.collapsed)
+    if (collapsed === null) return null
+    const prev = this.parseSnapshotPrev(data.prev)
+    if (prev === null) return null
+    // 折叠态必须带折叠前尺寸（展开还原依据），缺失视为形状不符整体忽略
+    if (collapsed.some((index) => prev[String(index)] === undefined)) return null
+    if (this.mode === 'legacy') {
+      const percent = data.percent
+      if (typeof percent !== 'number' || !Number.isFinite(percent) || percent < 0 || percent > 100) return null
+      return { v: STORAGE_VERSION, mode: 'legacy', percent, collapsed, prev }
+    }
+    const sizes = data.sizes
+    if (!Array.isArray(sizes) || sizes.length !== this.panes.length || sizes.length < 2) return null
+    if (sizes.some((n) => typeof n !== 'number' || !Number.isFinite(n) || n < 0)) return null
+    if (sizes.reduce((a, b) => a + (b as number), 0) <= 0) return null
+    return { v: STORAGE_VERSION, mode: 'multi', sizes: (sizes as number[]).slice(), collapsed, prev }
+  }
+
+  /** 折叠索引校验：越界/非整数整体拒绝（面板数变化后不半套应用） */
+  private parseSnapshotCollapsed(raw: unknown): number[] | null {
+    if (raw === undefined) return []
+    if (!Array.isArray(raw)) return null
+    const limit = this.mode === 'legacy' ? 1 : Math.max(0, this.panes.length - 1)
+    const out: number[] = []
+    for (const n of raw) {
+      if (typeof n !== 'number' || !Number.isInteger(n) || n < 0 || n >= limit) return null
+      if (!out.includes(n)) out.push(n)
+    }
+    return out
+  }
+
+  /** 折叠前尺寸表校验：键为非负整数、值为有限非负数 */
+  private parseSnapshotPrev(raw: unknown): Record<string, number> | null {
+    if (raw === undefined) return {}
+    if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) return null
+    const out: Record<string, number> = {}
+    for (const [key, value] of Object.entries(raw)) {
+      if (!/^\d+$/.test(key)) return null
+      if (typeof value !== 'number' || !Number.isFinite(value) || value < 0) return null
+      out[key] = value
+    }
+    return out
+  }
+
+  /** 读取并应用合法快照；任何读取/解析异常安全降级 */
+  private restoreSnapshot(key: string): void {
+    let raw: string | null = null
+    try {
+      raw = window.localStorage.getItem(key)
+    } catch {
+      return
+    }
+    if (raw == null) return
+    let data: unknown
+    try {
+      data = JSON.parse(raw)
+    } catch {
+      return
+    }
+    const snapshot = this.parseSnapshot(data)
+    if (!snapshot) return
+    this.applySnapshot(snapshot)
+  }
+
+  /** 显式初始 sizes 是否有效（连接前采集；数量与当前面板数一致才视为受控初值） */
+  private hasExplicitSizes(): boolean {
+    return this.explicitSizes !== null && this.explicitSizes.length === this.panes.length
+  }
+
+  /**
+   * 应用快照（恢复零事件）：显式初始属性 > 合法存储 > 默认值；
+   * 只写属性/内部态并同步视觉与 aria，不派发 oas-resize / oas-collapse。
+   */
+  private applySnapshot(snapshot: SplitterSnapshot): void {
+    let layoutRestored = false
+    if (snapshot.mode === 'legacy') {
+      if (!this.explicitPercent && snapshot.percent != null) {
+        this.setAttribute('percent', String(Math.round(snapshot.percent * 100) / 100))
+        layoutRestored = true
+      }
+    } else if (snapshot.sizes && !this.hasExplicitSizes()) {
+      this.sizesData = snapshot.sizes.slice()
+      this.writeBackSizes()
+      layoutRestored = true
+    }
+
+    const collapsed = snapshot.collapsed ?? []
+    const applyCollapsed = collapsed.length > 0 && !this.explicitCollapsed
+    if (applyCollapsed) {
+      // 布局未采用存储（显式 sizes/percent 胜出）时，折叠前尺寸取当前显式布局；采用存储时取快照 prev
+      this.collapsedPanels = new Set(collapsed)
+      this.collapsedPrev = new Map(
+        collapsed.map((index) => [index, layoutRestored ? snapshot.prev![String(index)]! : this.panelSize(index)]),
+      )
+    } else if (this.mode === 'multi' && layoutRestored) {
+      // 显式 collapsed 属性胜出但布局来自存储：折叠前尺寸跟随恢复后的布局（存储为折叠态时用其 prev）
+      for (const index of this.collapsedPanels) {
+        const current = this.sizesData[index] ?? 0
+        const restored = current > 0 ? current : snapshot.prev?.[String(index)]
+        if (restored != null) this.collapsedPrev.set(index, restored)
+      }
+    }
+    // 折叠面板尺寸归零并让给右邻（显式 collapsed 属性与存储折叠共用同一归一化，
+    // 避免恢复的非折叠 sizes 覆盖初始折叠时已转给右邻的尺寸）
+    if (this.mode === 'multi' && this.collapsedPanels.size > 0) {
+      let changed = false
+      for (const index of this.collapsedPanels) {
+        const size = this.sizesData[index] ?? 0
+        if (size > 0) {
+          this.sizesData[index + 1] = (this.sizesData[index + 1] ?? 0) + size
+          this.sizesData[index] = 0
+          changed = true
+        }
+      }
+      if (changed) this.writeBackSizes()
+    }
+    if (applyCollapsed) this.setAttribute('collapsed', '')
+
+    this.applyPercent()
+    this.syncCollapseButtons()
+    this.syncAria()
   }
 
   /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
@@ -379,13 +633,17 @@ export class OASSplitter extends OASElement {
 
   /** 面板被移除时清掉越界折叠态 */
   private pruneCollapsed(n: number): void {
+    let pruned = false
     for (const i of [...this.collapsedPanels]) {
       if (i >= n) {
         this.collapsedPanels.delete(i)
         this.collapsedPrev.delete(i)
+        pruned = true
       }
     }
-    if (this.collapsedPanels.size === 0) this.removeAttribute('collapsed')
+    // 仅在确实清掉越界折叠态后才移除 collapsed 属性：首渲染 multi 的显式 collapsed 属性
+    // 需要保留给随后 syncCollapsedFromAttr（否则初始折叠态被吞）
+    if (pruned && this.collapsedPanels.size === 0) this.removeAttribute('collapsed')
   }
 
   /**
@@ -566,6 +824,8 @@ export class OASSplitter extends OASElement {
     this.removeAttribute('dragging')
     document.removeEventListener('pointermove', this.onDrag)
     document.removeEventListener('pointerup', this.endDrag)
+    // 松手立即落盘（拖拽期间只合并调度，pointerup 前不产生逐帧同步写）
+    this.flushPersist()
   }
 
   // ---------- 调整落盘 ----------
@@ -647,6 +907,7 @@ export class OASSplitter extends OASElement {
     this.setAttribute('percent', String(clamped))
     this.emit('resize', { percent: clamped })
     this.applyPercent()
+    this.schedulePersist()
   }
 
   /** multi：相邻两面板此消彼长（配对和守恒），写回 sizes 属性 */
@@ -659,6 +920,7 @@ export class OASSplitter extends OASElement {
     const sizes = this.sizes.slice()
     this.emit('resize', { percent: sizes[index], index, sizes })
     this.applyPercent()
+    this.schedulePersist()
   }
 
   /** 双击复位：回初始 percent / 初始相邻两面板比例（折叠态一并展开） */
@@ -679,6 +941,7 @@ export class OASSplitter extends OASElement {
     const sizes = this.sizes.slice()
     this.emit('resize', { percent: sizes[index], index, sizes })
     this.applyPercent()
+    this.schedulePersist()
   }
 
   /** min/max 夹取：pairSum 非空时保证相邻另一面板不小于 min */
@@ -788,6 +1051,7 @@ export class OASSplitter extends OASElement {
     this.applyPercent()
     this.syncCollapseButtons()
     this.syncAria()
+    this.schedulePersist()
   }
 
   /** 外部 `collapsed` 属性同步：属性存在→折叠首条分隔条面板；移除→全部展开 */

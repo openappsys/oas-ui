@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
 import type { OASElement } from '@oas-ui/core'
 import { OASTabs, OASTabPanel } from './tabs/index.js'
 import { OASBottomNavigation } from '../navigation/bottom-navigation/index.js'
@@ -385,6 +385,40 @@ describe('导航布局组件 DSD 真水合批次 4', () => {
     pg.shadowRoot!.querySelector<HTMLElement>('[part="next"]')!.click()
     expect(pgDetail).toEqual({ page: 2 })
     expect(pg.getAttribute('current')).toBe('2')
+  })
+
+  it('splitter storage-key：DSD 升级同步阶段不访问存储（首帧与快照一致），微任务后再恢复', async () => {
+    const storageKey = 'oas-splitter-hydrate-test'
+    window.localStorage.clear()
+    window.localStorage.setItem(
+      storageKey,
+      JSON.stringify({ v: 1, mode: 'legacy', percent: 70, collapsed: [], prev: {} }),
+    )
+    const setup = (e: OASElement): void => {
+      e.setAttribute('storage-key', storageKey)
+    }
+    const snap = captureSnapshot(OASSplitter, setup)
+    // 参照实例的延迟恢复微任务先跑完，避免污染后续 getItem 计数
+    await new Promise((r) => setTimeout(r, 0))
+
+    const get = vi.spyOn(window.localStorage, 'getItem')
+    try {
+      const { el, styleRef } = upgradeFromSnapshot(OASSplitter, snap, setup)
+      // appendChild 的同步水合阶段：零存储访问、percent 保持快照默认 50
+      expect(get, '水合同步阶段不得访问存储').not.toHaveBeenCalled()
+      expect(el.shadowRoot!.querySelector('style')).toBe(styleRef)
+      expect(el.getAttribute('percent')).toBeNull()
+      expect((el.shadowRoot!.querySelector('.pane') as HTMLElement).style.flex).toBe('0 0 50%')
+
+      await new Promise((r) => setTimeout(r, 0))
+      // 水合完成后由微任务恢复，且不重建 shadow
+      expect(el.getAttribute('percent')).toBe('70')
+      expect((el.shadowRoot!.querySelector('.pane') as HTMLElement).style.flex).toBe('0 0 70%')
+      expect(el.shadowRoot!.querySelector('style')).toBe(styleRef)
+    } finally {
+      get.mockRestore()
+      window.localStorage.clear()
+    }
   })
 
   it('交互可触发：水合后 splitter 方向键调整 percent、dropdown 点击触发展开、speed-dial 展开', () => {

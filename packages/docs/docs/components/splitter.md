@@ -165,6 +165,31 @@ min / max 支持像素值：`200px` 后缀按像素夹取（相对容器宽度�
   </div>
 </DemoBlock>
 
+## 尺寸持久化（storage-key）
+
+可选 `storage-key` 开启尺寸持久化（不设则不读写任何存储）：拖拽 / 键盘调整 / 折叠后把版本化快照写入 `localStorage`，刷新后恢复；写入会合并，拖拽期间不会每个 `pointermove` 都同步写。显式初始 `percent` / `sizes` 属性优先于存储，恢复过程不派发 `oas-resize` / `oas-collapse`。改 `storage-key` 不会自动重载，同一 key 的其他在线实例也不会实时同步。坏 JSON、版本/形状不符与存储读写异常均安全降级；SSR / 水合阶段不访问存储。
+
+<DemoBlock title="storage-key 刷新恢复（两面板）">
+  <oas-space direction="vertical" size="small" style="width: 100%">
+    <oas-tag type="info">拖拽或折叠后刷新页面，尺寸与折叠态会恢复；清空对应 localStorage key 可重置</oas-tag>
+    <div style="height: 200px; width: 100%">
+      <oas-splitter id="splitter-persist-demo" storage-key="oas-splitter-docs-persist" collapsible>
+        <div slot="left" style="height: 100%; display: flex; align-items: center; justify-content: center">左面板</div>
+      </oas-splitter>
+    </div>
+  </oas-space>
+</DemoBlock>
+
+<DemoBlock title="多面板 storage-key 刷新恢复">
+  <div style="height: 200px; width: 100%">
+    <oas-splitter id="splitter-persist-multi" storage-key="oas-splitter-docs-persist-multi" collapsible>
+      <div style="height: 100%; display: flex; align-items: center; justify-content: center">面板一</div>
+      <div style="height: 100%; display: flex; align-items: center; justify-content: center">面板二</div>
+      <div style="height: 100%; display: flex; align-items: center; justify-content: center">面板三</div>
+    </oas-splitter>
+  </div>
+</DemoBlock>
+
 ## 调整事件
 
 <DemoBlock title="oas-resize 事件">
@@ -217,6 +242,7 @@ onMounted(() => {
 | `percent` | 上一面板占比（%） | `string` | `50` |
 | `sizes` | 多面板模式各面板占比（属性为 CSV 或 JSON 数组，如 `30,40,30`）；panel 数与面板数不匹配时按均分渲染 | `number[] \| string` | `[]` |
 | `snap` | 拖拽吸附档位：逗号分隔百分比或像素值；拖到档位 ±8px 内吸附，键盘方向键在档位间落档 | `string` | — |
+| `storage-key` | 可选 localStorage 持久化键（不设不读写存储）：保存 `{ v: 1, mode, percent \| sizes, collapsed, prev }` 版本化快照，刷新恢复尺寸与折叠前尺寸；显式初始 percent/sizes 优先，恢复不派发事件，坏 JSON / 版本或形状不符 / 存储异常安全降级，改 key 不自动重载 | `string` | — |
 | `vertical` | 垂直方向：面板上下堆叠，分隔条横向，键盘用 ArrowUp/Down | `boolean` | — |
 
 #### 事件

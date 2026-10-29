@@ -35,6 +35,35 @@
 
 ---
 
+## 未发布：Splitter opt-in 尺寸持久化（Task 8B）✅
+
+### 功能定义
+
+`oas-splitter` 新增可选 `storage-key`：显式开启后把尺寸与折叠态持久化到 `localStorage`，刷新/重连新实例恢复；不设 key 时零存储访问。覆盖 legacy（`percent`）与 multi（`sizes`）以及折叠前面板尺寸。版本号未定，不标已发布。
+
+### 详细需求
+
+- **opt-in 与优先级**：无 `storage-key`（缺失/空串）不读写存储。首次连接时按「显式初始属性 > 合法存储 > 默认值」决定布局：连接前采集显式 `percent` / `sizes` / `collapsed`（内部首渲染折叠会写回 sizes，不能事后读属性判断）；显式 `percent` 或数量匹配的显式 `sizes` 胜出时不套用存储布局；显式 `collapsed` 存在时不套用存储折叠态，但折叠前尺寸按恢复后的布局重新采集。
+- **版本化快照**：`{ v: 1, mode: 'legacy' | 'multi', percent?, sizes?, collapsed: number[], prev: Record<string, number> }`。legacy 存 `percent`；multi 存完整 `sizes`；`collapsed` 为折叠面板索引，`prev` 为折叠前尺寸（展开还原依据，折叠索引缺失对应 prev 视为形状不符）。`v`、`mode` 与当前模式、数组长度（multi 必须等于面板数）、数值有限非负、总和 > 0 任一不符整体忽略。
+- **恢复零事件、事件次数不变**：恢复只写属性/内部态并同步视觉与 ARIA，不派发 `oas-resize` / `oas-collapse`；用户后续拖拽 / 方向键 / 折叠的事件次数与未启用持久化时一致。
+- **写入合并**：拖拽与连续键盘调整通过延迟窗口合并，`pointermove` 期间不产生每次同步 `setItem`；`pointerup` 立即 flush 一次；断开连接时 flush 待写。`set` 异常（隐私模式/配额）静默降级，内存布局仍生效。
+- **安全降级**：坏 JSON、非对象、版本/模式/形状不符、`getItem`/`setItem` 抛异常均忽略存储并回落默认/显式值，不抛错、不刷告警。
+- **key 与实例语义**：改 `storage-key` 不自动重载（只影响后续写入）；不监听 `storage` 事件，同 key 在线实例不 live sync；恢复只在首次连接尝试一次，断开重连保留内存态。
+- **SSR / 水合**：服务端渲染（`__OAS_SSR__`）与 DSD 水合同步阶段不读写存储；恢复延迟到微任务，水合首帧结构与快照零差异，随后按存储恢复且不重建 shadow。
+- **修复**：multi 模式连接前设置的显式 `collapsed` 属性此前被首渲染 `pruneCollapsed` 误删，现仅在确实清理越界折叠态时移除属性。
+
+### 非目标
+
+不新增其他 Splitter 能力（不改 `percent`/`sizes` 契约、不加跨实例 live sync、不加 storage 事件监听、不做服务端读取）；不改 Chart。
+
+### 验收标准
+
+- 单测：legacy/multi 恢复、显式属性优先矩阵、折叠前尺寸往返、坏 JSON/版本/模式/形状/面板数不匹配、get/set 异常、恢复零事件与用户事件次数、改 key 不重载、同 key 不 live sync、写入合并、SSR 标记零访问；DSD 水合同步阶段零存储访问且恢复不重建 shadow；SSR `renderToString` 零读写。
+- qa-regression（Chromium + Firefox）：真实拖拽 → localStorage 版本化快照 → 刷新恢复；显式初值优先；改 key 不重载；折叠前尺寸刷新恢复（legacy + multi）；多次 pointermove 只落盘一次；dark/RTL 下恢复比例一致、console 零告警。
+- 文档：splitter.md zh/en 新增「尺寸持久化（storage-key）」与双 demo；API 表由 `pnpm api:scan && pnpm api:gen` 生成；CHANGELOG / PRD / ROADMAP 记录；全量 test/typecheck/build/e2e/perf:size/api/llms/stats/skill/lint/format/trace 通过。
+
+---
+
 ## 未发布：主题组合收口（back-top / ThemeEditor / system head 引导 / switch loading）✅
 
 ### 功能定义

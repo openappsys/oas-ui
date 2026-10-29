@@ -165,6 +165,31 @@ Each direct child element becomes a panel, with dividers automatically inserted 
   </div>
 </DemoBlock>
 
+## Size persistence (storage-key)
+
+The optional `storage-key` enables size persistence (without it no storage is read or written): after drag / keyboard adjustment / collapse a versioned snapshot is saved to `localStorage` and restored on reload; writes are coalesced so dragging does not synchronously write on every `pointermove`. Explicit initial `percent` / `sizes` attributes take precedence over storage, and restoration never fires `oas-resize` / `oas-collapse`. Changing `storage-key` does not reload automatically, and other live instances with the same key are not synced. Bad JSON, version/shape mismatches and storage read/write exceptions degrade safely; SSR / hydration does not access storage.
+
+<DemoBlock title="storage-key restore on reload (two panels)">
+  <oas-space direction="vertical" size="small" style="width: 100%">
+    <oas-tag type="info">Drag or collapse, then reload — size and collapsed state are restored; clear the matching localStorage key to reset</oas-tag>
+    <div style="height: 200px; width: 100%">
+      <oas-splitter id="splitter-persist-demo" storage-key="oas-splitter-docs-persist" collapsible>
+        <div slot="left" style="height: 100%; display: flex; align-items: center; justify-content: center">Left panel</div>
+      </oas-splitter>
+    </div>
+  </oas-space>
+</DemoBlock>
+
+<DemoBlock title="multi-panel storage-key restore on reload">
+  <div style="height: 200px; width: 100%">
+    <oas-splitter id="splitter-persist-multi" storage-key="oas-splitter-docs-persist-multi" collapsible>
+      <div style="height: 100%; display: flex; align-items: center; justify-content: center">Panel 1</div>
+      <div style="height: 100%; display: flex; align-items: center; justify-content: center">Panel 2</div>
+      <div style="height: 100%; display: flex; align-items: center; justify-content: center">Panel 3</div>
+    </oas-splitter>
+  </div>
+</DemoBlock>
+
 ## Resize event
 
 <DemoBlock title="oas-resize event">
@@ -217,6 +242,7 @@ onMounted(() => {
 | `percent` | Ratio of the preceding panel (%) | `string` | `50` |
 | `sizes` | Multi-panel mode panel ratios (attribute accepts CSV or a JSON array, e.g. `30,40,30`); when the count mismatches the panel count, panels render with an equal split | `number[] \| string` | `[]` |
 | `snap` | Drag snap stops: comma-separated percentages or pixel values; dragging within ±8px of a stop snaps to it, arrow keys jump between stops | `string` | — |
+| `storage-key` | Optional localStorage key (no storage access without it): saves a versioned `{ v: 1, mode, percent \| sizes, collapsed, prev }` snapshot and restores sizes plus pre-collapse sizes on reload; explicit initial percent/sizes win, restoration fires no events, bad JSON / version or shape mismatch / storage exceptions degrade safely, and changing the key never reloads | `string` | — |
 | `vertical` | Vertical direction: panels stack top-to-bottom, divider is horizontal, keyboard uses ArrowUp/Down | `boolean` | — |
 
 #### Events

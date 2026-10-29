@@ -3252,7 +3252,8 @@
       "sizes": "Multi-panel mode panel ratios (attribute accepts CSV or a JSON array, e.g. `30,40,30`); when the count mismatches the panel count, panels render with an equal split",
       "vertical": "Vertical direction: panels stack top-to-bottom, divider is horizontal, keyboard uses ArrowUp/Down",
       "disabled": "Freezes resizing: drag/keyboard/dblclick disabled, normal cursor, aria-disabled",
-      "snap": "Drag snap stops: comma-separated percentages or pixel values; dragging within ±8px of a stop snaps to it, arrow keys jump between stops"
+      "snap": "Drag snap stops: comma-separated percentages or pixel values; dragging within ±8px of a stop snaps to it, arrow keys jump between stops",
+      "storage-key": "Optional localStorage key (no storage access without it): saves a versioned `{ v: 1, mode, percent | sizes, collapsed, prev }` snapshot and restores sizes plus pre-collapse sizes on reload; explicit initial percent/sizes win, restoration fires no events, bad JSON / version or shape mismatch / storage exceptions degrade safely, and changing the key never reloads"
     },
     "events": {
       "oas-collapse": "Fired when the collapse button toggles, `detail: { collapsed, side }` (side=left means the panel before the divider)",

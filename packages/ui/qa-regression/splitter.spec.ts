@@ -127,6 +127,276 @@ test('splitter disabled：真实拖拽与键盘均冻结、aria-disabled、光�
   expect(r.dataDisabled, '禁用态应镜像 data-disabled 供样式消费').toBe(true)
 })
 
+// —— Task 8B：storage-key opt-in 尺寸持久化（真实刷新恢复 / 优先级 / 写入合并） ——
+const PERSIST_KEY = 'oas-splitter-docs-persist'
+const PERSIST_MULTI_KEY = 'oas-splitter-docs-persist-multi'
+
+async function openPersistDemo(page: import('@playwright/test').Page): Promise<void> {
+  // 先等首屏动态模块装载完成再 reload：Firefox 会把导航中止的动态 import 记为 console error
+  await page.goto('/components/splitter.html', { waitUntil: 'load' })
+  await page.waitForFunction(
+    () => document.querySelector('#splitter-persist-demo')?.shadowRoot?.querySelector('[part="splitter"]') != null,
+    undefined,
+    { timeout: 15000 },
+  )
+  await page.evaluate(
+    ([legacy, multi]: [string, string]) => {
+      localStorage.removeItem(legacy)
+      localStorage.removeItem(`${legacy}-b`)
+      localStorage.removeItem(multi)
+    },
+    [PERSIST_KEY, PERSIST_MULTI_KEY] as [string, string],
+  )
+  await page.reload({ waitUntil: 'load' })
+  await page.waitForFunction(
+    () => {
+      const sp = document.querySelector('#splitter-persist-demo')
+      return sp?.shadowRoot?.querySelector('[part="splitter"]') != null
+    },
+    undefined,
+    { timeout: 15000 },
+  )
+}
+
+test('splitter storage-key：真实拖拽落盘 → 刷新恢复；显式初值优先；改 key 不重载；dark/RTL 一致', async ({ page }) => {
+  const noise: string[] = []
+  page.on('console', (m) => {
+    if (m.type() === 'error' || m.type() === 'warning') noise.push(m.text())
+  })
+  page.on('pageerror', (e) => noise.push(e.message))
+
+  await openPersistDemo(page)
+  const dragged = await page.evaluate(async (key) => {
+    const sp = document.querySelector('#splitter-persist-demo') as HTMLElement & { shadowRoot: ShadowRoot }
+    const sep = sp.shadowRoot.querySelector('[part="splitter"]') as HTMLElement
+    const rect = sep.getBoundingClientRect()
+    const cx = rect.x + rect.width / 2
+    const cy = rect.y + rect.height / 2
+    const before = Number(sp.getAttribute('percent') ?? '50')
+    sep.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, clientX: cx, clientY: cy, button: 0 }))
+    for (let i = 1; i <= 8; i++) {
+      document.dispatchEvent(new PointerEvent('pointermove', { bubbles: true, clientX: cx + i * 12, clientY: cy }))
+      await new Promise((r) => setTimeout(r, 16))
+    }
+    document.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, clientX: cx + 96, clientY: cy }))
+    await new Promise((r) => setTimeout(r, 80))
+    const pane = sp.shadowRoot.querySelector('.pane') as HTMLElement
+    return {
+      before,
+      after: Number(sp.getAttribute('percent')),
+      flex: pane.style.flex,
+      raw: localStorage.getItem(key),
+    }
+  }, PERSIST_KEY)
+
+  expect(dragged.after, '真实拖拽应改写 percent').toBeGreaterThan(dragged.before)
+  const snapshot = JSON.parse(dragged.raw ?? 'null') as { v: number; mode: string; percent: number }
+  expect(snapshot, '应写入版本化快照').toMatchObject({ v: 1, mode: 'legacy' })
+  expect(snapshot.percent).toBeCloseTo(dragged.after, 1)
+
+  await page.reload({ waitUntil: 'load' })
+  await page.waitForFunction(
+    () => document.querySelector('#splitter-persist-demo')?.shadowRoot?.querySelector('[part="splitter"]') != null,
+    undefined,
+    { timeout: 15000 },
+  )
+  await page.waitForTimeout(150)
+  const restored = await page.evaluate(() => {
+    const sp = document.querySelector('#splitter-persist-demo') as HTMLElement & { shadowRoot: ShadowRoot }
+    const pane = sp.shadowRoot.querySelector('.pane') as HTMLElement
+    return { percent: Number(sp.getAttribute('percent') ?? '50'), flex: pane.style.flex }
+  })
+  expect(restored.percent, '刷新后应恢复存储尺寸').toBeCloseTo(dragged.after, 1)
+  expect(restored.flex).toContain(`${Math.round(restored.percent * 100) / 100}%`)
+
+  // 显式初始属性优先于存储
+  const explicit = await page.evaluate(async (key) => {
+    const el = document.createElement('oas-splitter') as HTMLElement & { shadowRoot: ShadowRoot }
+    el.setAttribute('storage-key', key)
+    el.setAttribute('percent', '30')
+    el.innerHTML = '<div slot="left">左</div><div slot="right">右</div>'
+    document.body.appendChild(el)
+    await new Promise((r) => setTimeout(r, 120))
+    const pane = el.shadowRoot.querySelector('.pane') as HTMLElement
+    const out = { percent: el.getAttribute('percent'), flex: pane.style.flex }
+    el.remove()
+    return out
+  }, PERSIST_KEY)
+  expect(explicit.percent, '显式 percent 不得被存储覆盖').toBe('30')
+  expect(explicit.flex).toBe('0 0 30%')
+
+  // 改 key 不自动重载
+  const keyChanged = await page.evaluate(async (key) => {
+    localStorage.setItem(`${key}-b`, JSON.stringify({ v: 1, mode: 'legacy', percent: 20 }))
+    const el = document.createElement('oas-splitter') as HTMLElement & { shadowRoot: ShadowRoot }
+    el.setAttribute('storage-key', key)
+    el.innerHTML = '<div slot="left">左</div><div slot="right">右</div>'
+    document.body.appendChild(el)
+    await new Promise((r) => setTimeout(r, 120))
+    const before = el.getAttribute('percent')
+    el.setAttribute('storage-key', `${key}-b`)
+    await new Promise((r) => setTimeout(r, 300))
+    const after = el.getAttribute('percent')
+    el.remove()
+    return { before, after }
+  }, PERSIST_KEY)
+  expect(Number(keyChanged.before)).toBeCloseTo(dragged.after, 1)
+  expect(keyChanged.after, '改 storage-key 不得自动重载').toBe(keyChanged.before)
+
+  // dark / RTL 不改变恢复后的比例、console 零告警
+  await page.evaluate(() => document.documentElement.classList.add('dark'))
+  await page.waitForTimeout(250)
+  const darkPercent = await page.evaluate(() => {
+    const sp = document.querySelector('#splitter-persist-demo')
+    return Number(sp?.getAttribute('percent') ?? '50')
+  })
+  expect(darkPercent).toBeCloseTo(restored.percent, 1)
+  await page.evaluate(() => document.documentElement.setAttribute('dir', 'rtl'))
+  await page.waitForTimeout(150)
+  const rtlPercent = await page.evaluate(() => {
+    const sp = document.querySelector('#splitter-persist-demo')
+    return Number(sp?.getAttribute('percent') ?? '50')
+  })
+  expect(rtlPercent).toBeCloseTo(restored.percent, 1)
+  expect(noise, '持久化链路 console 零告警').toEqual([])
+})
+
+test('splitter storage-key：折叠前尺寸刷新恢复（legacy）+ 多面板 sizes 完整往返', async ({ page }) => {
+  await openPersistDemo(page)
+  const collapsed = await page.evaluate(async () => {
+    const sp = document.querySelector('#splitter-persist-demo') as HTMLElement & { shadowRoot: ShadowRoot }
+    sp.scrollIntoView({ block: 'center' })
+    const sep = sp.shadowRoot.querySelector('[part="splitter"]') as HTMLElement
+    for (let i = 0; i < 10; i++) {
+      sep.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true }))
+    }
+    await new Promise((r) => setTimeout(r, 200))
+    const btn = sep.parentElement?.querySelector(':scope > .collapse-btn') as HTMLButtonElement
+    btn.click()
+    await new Promise((r) => setTimeout(r, 220))
+    const pane = sp.shadowRoot.querySelector('.pane') as HTMLElement
+    return {
+      percent: sp.getAttribute('percent'),
+      collapsed: sp.hasAttribute('collapsed'),
+      flex: pane.style.flex,
+      raw: localStorage.getItem('oas-splitter-docs-persist'),
+    }
+  })
+  expect(collapsed.collapsed, '折叠应回写 collapsed 属性').toBe(true)
+  expect(collapsed.flex, '折叠面板尺寸归零').toBe('0 0 0%')
+  const snap = JSON.parse(collapsed.raw ?? 'null') as {
+    v: number
+    mode: string
+    percent: number
+    collapsed: number[]
+    prev: Record<string, number>
+  }
+  expect(snap, '折叠快照含版本/模式/折叠索引/折叠前尺寸').toMatchObject({
+    v: 1,
+    mode: 'legacy',
+    percent: 40,
+    collapsed: [0],
+  })
+  expect(snap.prev['0']).toBe(40)
+
+  await page.reload({ waitUntil: 'load' })
+  await page.waitForFunction(
+    () => {
+      const sp = document.querySelector('#splitter-persist-demo')
+      return sp?.shadowRoot?.querySelector('[part="splitter"]') != null && sp.hasAttribute('collapsed')
+    },
+    undefined,
+    { timeout: 15000 },
+  )
+  const expanded = await page.evaluate(async () => {
+    const sp = document.querySelector('#splitter-persist-demo') as HTMLElement & { shadowRoot: ShadowRoot }
+    const sep = sp.shadowRoot.querySelector('[part="splitter"]') as HTMLElement
+    const btn = sep.parentElement?.querySelector(':scope > .collapse-btn') as HTMLButtonElement
+    btn.click()
+    await new Promise((r) => setTimeout(r, 80))
+    const pane = sp.shadowRoot.querySelector('.pane') as HTMLElement
+    return { percent: Number(sp.getAttribute('percent')), flex: pane.style.flex }
+  })
+  expect(expanded.percent, '展开后回到折叠前 percent').toBe(40)
+  expect(expanded.flex).toBe('0 0 40%')
+
+  // 多面板：真实拖拽中间分隔条 → 刷新完整往返
+  const multi = await page.evaluate(async (key) => {
+    const sp = document.querySelector('#splitter-persist-multi') as HTMLElement & { shadowRoot: ShadowRoot }
+    sp.scrollIntoView({ block: 'center' })
+    await new Promise((r) => setTimeout(r, 150))
+    const sep = sp.shadowRoot.querySelectorAll('[part="splitter"]')[1] as HTMLElement
+    const rect = sep.getBoundingClientRect()
+    const cx = rect.x + rect.width / 2
+    const cy = rect.y + rect.height / 2
+    sep.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, clientX: cx, clientY: cy, button: 0 }))
+    document.dispatchEvent(new PointerEvent('pointermove', { bubbles: true, clientX: cx + 40, clientY: cy }))
+    document.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, clientX: cx + 40, clientY: cy }))
+    await new Promise((r) => setTimeout(r, 80))
+    return { sizes: sp.getAttribute('sizes'), raw: localStorage.getItem(key) }
+  }, PERSIST_MULTI_KEY)
+  const multiSnap = JSON.parse(multi.raw ?? 'null') as { v: number; mode: string; sizes: number[] }
+  expect(multiSnap).toMatchObject({ v: 1, mode: 'multi' })
+  expect(multiSnap.sizes.length, '多面板快照应含全部面板').toBe(3)
+
+  await page.reload({ waitUntil: 'load' })
+  await page.waitForFunction(
+    () => document.querySelector('#splitter-persist-multi')?.shadowRoot?.querySelector('[part="splitter"]') != null,
+    undefined,
+    { timeout: 15000 },
+  )
+  await page.waitForTimeout(150)
+  const multiRestored = await page.evaluate(() => {
+    const sp = document.querySelector('#splitter-persist-multi') as HTMLElement & { shadowRoot: ShadowRoot }
+    const panes = sp.shadowRoot.querySelectorAll('.pane')
+    return {
+      sizes: sp.getAttribute('sizes'),
+      flexes: Array.from(panes).map((p) => (p as HTMLElement).style.flex),
+    }
+  })
+  expect(multiRestored.sizes, '多面板 sizes 刷新后完整恢复').toBe(multi.sizes)
+  expect(multiRestored.flexes.length).toBe(3)
+})
+
+test('splitter storage-key：拖拽写入合并（多次 pointermove 只落盘一次）', async ({ page }) => {
+  await page.addInitScript(() => {
+    const w = window as unknown as { __oasSplitterWrites?: number }
+    w.__oasSplitterWrites = 0
+    const original = Storage.prototype.setItem
+    Storage.prototype.setItem = function (key: string, value: string) {
+      if (String(key).startsWith('oas-splitter-')) w.__oasSplitterWrites = (w.__oasSplitterWrites ?? 0) + 1
+      return original.call(this, key, value)
+    }
+  })
+  await openPersistDemo(page)
+  const r = await page.evaluate(async () => {
+    const w = window as unknown as { __oasSplitterWrites?: number }
+    w.__oasSplitterWrites = 0
+    const sp = document.querySelector('#splitter-persist-demo') as HTMLElement & { shadowRoot: ShadowRoot }
+    sp.scrollIntoView({ block: 'center' })
+    await new Promise((r) => setTimeout(r, 200))
+    const sep = sp.shadowRoot.querySelector('[part="splitter"]') as HTMLElement
+    const rect = sep.getBoundingClientRect()
+    const cx = rect.x + rect.width / 2
+    const cy = rect.y + rect.height / 2
+    sep.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, clientX: cx, clientY: cy, button: 0 }))
+    for (let i = 1; i <= 12; i++) {
+      document.dispatchEvent(new PointerEvent('pointermove', { bubbles: true, clientX: cx + i * 8, clientY: cy }))
+    }
+    const during = w.__oasSplitterWrites ?? 0
+    document.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, clientX: cx + 96, clientY: cy }))
+    await new Promise((r) => setTimeout(r, 160))
+    return {
+      during,
+      total: w.__oasSplitterWrites ?? 0,
+      raw: localStorage.getItem('oas-splitter-docs-persist'),
+    }
+  })
+  expect(r.during, 'pointermove 阶段不得逐帧同步写').toBe(0)
+  expect(r.total, 'pointerup 合并落盘一次').toBe(1)
+  expect(JSON.parse(r.raw ?? 'null')).toMatchObject({ v: 1, mode: 'legacy' })
+})
+
 // —— PRD D18：snap 吸附档位（拖拽 ±8px 阈值内吸附 + 键盘在档位间落档） ——
 test('splitter snap：拖拽靠近档位吸附（snap="25,50,75"），键盘在档位间落档（PRD D18）', async ({ page }) => {
   await page.goto('/components/splitter.html', { waitUntil: 'domcontentloaded' })

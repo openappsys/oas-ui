@@ -55,6 +55,12 @@
       "type": "string",
       "default": "",
       "observed": true
+    },
+    {
+      "name": "storage-key",
+      "type": "string",
+      "default": "",
+      "observed": true
     }
   ],
   "props": [

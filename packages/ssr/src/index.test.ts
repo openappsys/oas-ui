@@ -1178,6 +1178,34 @@ describe('@oas-ui/ssr renderToString', () => {
     expect(vl).not.toContain('part="item"')
   })
 
+  // Task 8B：Splitter 持久化在 SSR 端不访问存储，快照与显式属性一致。
+  it('oas-splitter：storage-key 在 SSR 零存储访问，快照确定', async () => {
+    const { window: win } = ensureShim()
+    const get = vi.spyOn(win.localStorage, 'getItem')
+    const set = vi.spyOn(win.localStorage, 'setItem')
+    try {
+      win.localStorage.setItem('oas-splitter-ssr', JSON.stringify({ v: 1, mode: 'legacy', percent: 70 }))
+      get.mockClear()
+      set.mockClear()
+      const html = await renderToString(
+        'oas-splitter',
+        { percent: '40', 'storage-key': 'oas-splitter-ssr' },
+        '<div slot="left">左</div><div slot="right">右</div>',
+      )
+      expect(html).toContain('<template shadowrootmode="open">')
+      expect(html).toContain('storage-key="oas-splitter-ssr"')
+      expect(html).toContain('percent="40"')
+      // 快照为属性态（不因存储 70 改写宿主/布局；happy-dom 序列化 flex 长写）
+      expect(html).toContain('flex-basis: 40%')
+      expect(get, 'SSR 渲染不得读取存储').not.toHaveBeenCalled()
+      expect(set, 'SSR 渲染不得写入存储').not.toHaveBeenCalled()
+    } finally {
+      get.mockRestore()
+      set.mockRestore()
+      win.localStorage.clear()
+    }
+  })
+
   // ---- 嵌套递归序列化（子活 1）：light DOM 子组件 shadow 内容递归包成嵌套 DSD ----
 
   it('嵌套序列化：descriptions > descriptions-item（label 文本禁 JS 可见 + 子组件指纹）', async () => {

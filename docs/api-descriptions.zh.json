@@ -3105,7 +3105,8 @@
       "sizes": "多面板模式各面板占比（属性为 CSV 或 JSON 数组，如 `30,40,30`）；panel 数与面板数不匹配时按均分渲染",
       "vertical": "垂直方向：面板上下堆叠，分隔条横向，键盘用 ArrowUp/Down",
       "disabled": "禁用拖拽/键盘/双击调整：光标常态 + aria-disabled，面板尺寸冻结",
-      "snap": "拖拽吸附档位：逗号分隔百分比或像素值；拖到档位 ±8px 内吸附，键盘方向键在档位间落档"
+      "snap": "拖拽吸附档位：逗号分隔百分比或像素值；拖到档位 ±8px 内吸附，键盘方向键在档位间落档",
+      "storage-key": "可选 localStorage 持久化键（不设不读写存储）：保存 `{ v: 1, mode, percent | sizes, collapsed, prev }` 版本化快照，刷新恢复尺寸与折叠前尺寸；显式初始 percent/sizes 优先，恢复不派发事件，坏 JSON / 版本或形状不符 / 存储异常安全降级，改 key 不自动重载"
     },
     "events": {
       "oas-collapse": "折叠按钮切换，`detail: { collapsed, side }`（side=left 指分隔条前一侧）",
