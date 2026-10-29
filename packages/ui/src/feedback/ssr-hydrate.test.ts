@@ -9,6 +9,8 @@ import { OASBackdrop } from './backdrop/index.js'
 import { OASModal } from './modal/index.js'
 import { OASDrawer } from './drawer/index.js'
 import { OASPopconfirm } from './popconfirm/index.js'
+import { OASPullRefresh } from './pull-refresh/index.js'
+import { OASNoticeBar } from './notice-bar/index.js'
 
 /**
  * feedback 组件 DSD 真水合批次 2 单测（对应 SSR 白名单化改造）。
@@ -94,6 +96,27 @@ const FIXTURES: Fixture[] = [
     cls: OASPopconfirm,
     setup: (e) => e.setAttribute('title', '确认删除？'),
     probe: '[part="popover"]',
+  },
+  // —— SSR 白名单收口：pull-refresh / notice-bar ——
+  {
+    name: 'pull-refresh',
+    cls: OASPullRefresh,
+    setup: (e) => {
+      e.setAttribute('threshold', '60')
+      e.innerHTML = '<p>列表内容</p>'
+    },
+    probe: '[part="root"]',
+  },
+  {
+    name: 'notice-bar',
+    cls: OASNoticeBar,
+    setup: (e) => {
+      e.setAttribute('type', 'warning')
+      e.setAttribute('closable', '')
+      e.setAttribute('items', '["系统维护通知"]')
+      e.setAttribute('action-text', '查看')
+    },
+    probe: '[part="bar"]',
   },
 ]
 
@@ -216,5 +239,91 @@ describe('feedback 组件 DSD 真水合批次 2', () => {
     }).el
     ;(pc.querySelector('button') as HTMLElement).click()
     expect(pc.shadowRoot!.querySelector('[part="popover"]')!.getAttribute('aria-hidden')).toBe('false')
+  })
+})
+
+describe('SSR 白名单收口：pull-refresh / notice-bar 真水合契约', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  function pointer(type: string, y: number, pointerId = 1): PointerEvent {
+    return new PointerEvent(type, {
+      bubbles: true,
+      cancelable: true,
+      composed: true,
+      button: 0,
+      pointerId,
+      clientX: 10,
+      clientY: y,
+    })
+  }
+
+  it('pull-refresh：水合后一次下拉手势只派发一次 oas-refresh，并停驻刷新态', () => {
+    const setup = FIXTURES.find((f) => f.name === 'pull-refresh')!.setup
+    const snap = captureSnapshot(OASPullRefresh, setup)
+    const { el } = upgradeFromSnapshot(OASPullRefresh, snap, setup)
+    const root = el.shadowRoot!.querySelector<HTMLElement>('[part="root"]')!
+
+    const events: unknown[] = []
+    el.addEventListener('oas-refresh', () => events.push(1))
+    root.dispatchEvent(pointer('pointerdown', 10))
+    root.dispatchEvent(pointer('pointermove', 130))
+    root.dispatchEvent(pointer('pointerup', 130))
+    expect(events).toHaveLength(1)
+    expect(el.getAttribute('data-state')).toBe('refreshing')
+  })
+
+  it('pull-refresh：success 计时器断开清理、重连恢复（不永久卡在 success）', async () => {
+    const setup = (e: OASElement): void => {
+      e.setAttribute('refreshing', '')
+      e.innerHTML = '<p>列表内容</p>'
+    }
+    const snap = captureSnapshot(OASPullRefresh, setup)
+    const { el } = upgradeFromSnapshot(OASPullRefresh, snap, setup)
+    el.removeAttribute('refreshing')
+    expect(el.getAttribute('data-state')).toBe('success')
+
+    // 断开：onCleanup 清掉 success 计时器；重连必须恢复计时，最终回到 idle
+    el.remove()
+    document.body.appendChild(el)
+    expect(el.getAttribute('data-state')).toBe('success')
+    await new Promise((r) => setTimeout(r, 700))
+    expect(el.getAttribute('data-state')).toBe('idle')
+  })
+
+  it('notice-bar：水合后单次点击关闭只派发一次 oas-close（退场中/已关闭均不重复）', async () => {
+    const setup = FIXTURES.find((f) => f.name === 'notice-bar')!.setup
+    const snap = captureSnapshot(OASNoticeBar, setup)
+    const { el } = upgradeFromSnapshot(OASNoticeBar, snap, setup)
+    const close = el.shadowRoot!.querySelector<HTMLButtonElement>('[part="close"]')!
+
+    let n = 0
+    el.addEventListener('oas-close', () => n++)
+    close.click()
+    close.click()
+    await new Promise((r) => setTimeout(r, 250))
+    close.click()
+    expect(n).toBe(1)
+    expect(el.hidden).toBe(true)
+  })
+
+  it('notice-bar：退场中断开、重连后落定关闭态（不残留 data-closing）', async () => {
+    const setup = FIXTURES.find((f) => f.name === 'notice-bar')!.setup
+    const snap = captureSnapshot(OASNoticeBar, setup)
+    const { el } = upgradeFromSnapshot(OASNoticeBar, snap, setup)
+
+    el.shadowRoot!.querySelector<HTMLButtonElement>('[part="close"]')!.click()
+    expect(el.hasAttribute('data-closing')).toBe(true)
+    el.remove()
+    document.body.appendChild(el)
+    expect(el.hasAttribute('data-closing')).toBe(false)
+    expect(el.hidden).toBe(true)
+
+    // 重连完成后再点关闭不应重复派发（closed 守卫已复位为最终态）
+    let n = 0
+    el.addEventListener('oas-close', () => n++)
+    el.shadowRoot!.querySelector<HTMLButtonElement>('[part="close"]')!.click()
+    expect(n).toBe(0)
   })
 })

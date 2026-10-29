@@ -83,6 +83,11 @@ function prefersReducedMotion(): boolean {
   return typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches === true
 }
 
+/** SSR shim 同样提供 window/document；只认渲染器显式标记，渲染段不得启动真实计时器 */
+function isSsrRuntime(): boolean {
+  return typeof window === 'undefined' || (window as Window & { __OAS_SSR__?: boolean }).__OAS_SSR__ === true
+}
+
 const STYLE = `
 :host {
   display: block;
@@ -359,6 +364,11 @@ export class OASNoticeBar extends OASElement {
   protected override hydrate(): boolean {
     if (!this.shadow.querySelector('[part="bar"]')) return false
     this.bind()
+    // 恢复快照已渲染内容的内部缓存：update 不得重写图标 innerHTML / 条目文本 / marquee 物化内容
+    this.lastItemsRaw = this.getAttr('items')
+    this.lastTextSet = this.itemTextEl?.textContent ?? ''
+    this.lastIconContent = this.iconFallback?.innerHTML ?? ''
+    this.lastScrollSig = this.scrollSignature()
     return true
   }
 
@@ -366,6 +376,9 @@ export class OASNoticeBar extends OASElement {
     // 轮播计时器在断开时已被 onCleanup 清理；复位指纹使重连后的 update 重启计时器
     // （连接前后 isConnected 均为 true，指纹不含差异，必须显式复位）
     this.lastCarKey = ''
+    // 退场过渡中被摘挂：closeTimer 已清理但 closing 仍为 true，重连后必须落定，
+    // 否则再次 close() 会被 closing 守卫永久拦截、data-closing 残留。
+    if (this.closing && this.closeTimer === null) this.finalizeClose()
   }
 
   protected override update(): void {
@@ -435,9 +448,11 @@ export class OASNoticeBar extends OASElement {
         if (!hasCustom && !none) {
           // icon 属性（动态名）走 lookupIcon（自定义注册优先、内置集兜底）；无有效名回落语义 path 常量
           const iconContent = (iconAttr !== '' ? lookupIcon(iconAttr) : undefined) ?? SEMANTIC_ICONS[type]
-          if (iconContent !== this.lastIconContent) {
-            this.lastIconContent = iconContent
-            this.iconFallback.innerHTML = `<svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">${iconContent}</svg>`
+          // 比较完整标记（而非仅 path）：水合恢复 lastIconContent=快照 innerHTML 后同值不重写
+          const markup = `<svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">${iconContent}</svg>`
+          if (markup !== this.lastIconContent) {
+            this.lastIconContent = markup
+            this.iconFallback.innerHTML = markup
           }
         }
       }
@@ -488,13 +503,16 @@ export class OASNoticeBar extends OASElement {
    */
   private syncCarousel(itemsMode: boolean, count: number): void {
     const reduced = prefersReducedMotion()
-    const active = itemsMode && count > 1 && !reduced && !this.hidden && this.isConnected
-    this.carouselEl?.setAttribute('aria-live', active ? 'off' : 'polite')
-    const key = `${active}|${count}|${this.getAttr('interval')}|${reduced}`
+    // aria-live 只取决于「是否会自动轮播」的确定性条件（不含连接态/SSR），快照与升级首帧一致；
+    // 真实计时器仅在浏览器且连接时启动（SSR 渲染段不留下计时器副作用）。
+    const auto = itemsMode && count > 1 && !reduced && !this.hidden
+    const run = auto && this.isConnected && !isSsrRuntime()
+    this.carouselEl?.setAttribute('aria-live', auto ? 'off' : 'polite')
+    const key = `${run}|${count}|${this.getAttr('interval')}|${reduced}`
     if (key === this.lastCarKey) return
     this.lastCarKey = key
     this.stopCarousel()
-    if (active) {
+    if (run) {
       this.carTimer = setInterval(() => this.advance(), resolveIntervalMs(this.getAttr('interval')))
     }
   }
@@ -554,17 +572,29 @@ export class OASNoticeBar extends OASElement {
   private syncScrollContent(): void {
     const mq = this.scrollEl
     if (!mq) return
-    const nodes = Array.from(this.childNodes).filter((n) => {
+    const nodes = this.scrollContentNodes()
+    const sig = this.scrollSignature()
+    if (sig === this.lastScrollSig) return
+    this.lastScrollSig = sig
+    mq.textContent = ''
+    for (const n of nodes) mq.appendChild(n.cloneNode(true))
+  }
+
+  /** 参与 marquee 物化的宿主节点：默认插槽内容（具名 slot 内容与纯空白文本除外） */
+  private scrollContentNodes(): Node[] {
+    return Array.from(this.childNodes).filter((n) => {
       // 元素：带 slot 属性的是具名插槽内容（如 icon），不进滚动内容
       if (n.nodeType === 1) return !(n as Element).hasAttribute('slot')
       // 文本：纯空白节点跳过
       return (n.textContent ?? '').trim() !== ''
     })
-    const sig = nodes.map((n) => (n.nodeType === 1 ? (n as Element).outerHTML : n.textContent)).join('\u0002')
-    if (sig === this.lastScrollSig) return
-    this.lastScrollSig = sig
-    mq.textContent = ''
-    for (const n of nodes) mq.appendChild(n.cloneNode(true))
+  }
+
+  /** marquee 物化内容指纹（水合时从快照恢复，属性变化只重估不重建同内容） */
+  private scrollSignature(): string {
+    return this.scrollContentNodes()
+      .map((n) => (n.nodeType === 1 ? (n as Element).outerHTML : n.textContent))
+      .join('\u0002')
   }
 
   /**

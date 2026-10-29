@@ -241,6 +241,20 @@ export class OASPullRefresh extends OASElement {
     return true
   }
 
+  /**
+   * 断开重连：重绑手势监听（同 handler 去重）并恢复被 onCleanup 清掉的 success 计时器。
+   * 不恢复会让「success 停留期间被摘挂」的实例永久停在 success 视觉。
+   */
+  protected override onReconnect(): void {
+    this.bind()
+    if (this.phase === 'success' && this.successTimer === null) {
+      this.successTimer = setTimeout(() => {
+        this.successTimer = null
+        this.springBack()
+      }, SUCCESS_MS)
+    }
+  }
+
   protected override update(): void {
     if (!this.scrollEl) return
     // 初始位移归一：首帧写确定值 translateY(0px)（宿主/测试不经手势也能稳定读取位移）
