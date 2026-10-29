@@ -78,7 +78,13 @@ export default defineConfig({
     { name: 'docs-site', use: {}, testMatch: /homepage\.spec\.ts/ },
     // 组件全量（默认 project 跑除 homepage 外的所有 spec，含 packages/ssr 的 dsd 验收 spec）
     // ——改 oas-* 组件源码时跑
-    { name: 'chromium', use: {}, testIgnore: /(homepage|webkit)\.spec\.ts/ },
+    // 跨引擎 DSD 最小 smoke 只在 Firefox / WebKit 各跑一次（Chromium 由 ssr-dsd.spec.ts 覆盖），
+    // 故 chromium 显式忽略该 spec——不复制全量、不让抽样翻倍。
+    {
+      name: 'chromium',
+      use: {},
+      testIgnore: /(homepage|webkit|ssr-dsd-cross-engine)\.spec\.ts/,
+    },
     // Firefox 抽样覆盖：全量 e2e 在 Firefox 上跑会翻倍耗时——不值。只挑能暴露
     // 浏览器专有渲染/兼容问题的 spec（视觉截图、全页冒烟、浏览器相关回归），
     // 交互密集或时序敏感的 spec（interaction/a11y/demo/onoas 等）留在 chromium
@@ -94,7 +100,13 @@ export default defineConfig({
         // navigator.language 与 chromium 一致（intl.accept_languages 是其真实来源，实测生效）。
         firefoxUserPrefs: { 'intl.accept_languages': 'zh-CN' },
       },
-      testMatch: [/visual\.spec\.ts/, /smoke\.spec\.ts/, /qa-regression\/.*\.spec\.ts/],
+      testMatch: [
+        /visual\.spec\.ts/,
+        /smoke\.spec\.ts/,
+        /qa-regression\/.*\.spec\.ts/,
+        // 跨引擎 DSD 最小 smoke（与 webkit 项目共用同一份 spec；不改变其它抽样范围）
+        /ssr-dsd-cross-engine\.spec\.ts/,
+      ],
       // 交叉浏览器抽样：Firefox 在本地 12-worker 混合并发下易被 CPU 饿死而超时（隔离单跑全绿，
       // 2026-10-10 实抓 modal/glass 批量伪失败）。放宽超时 + 多一次重试吸收负载抖动，
       // 不改门禁实质（真失败重试仍失败）。
@@ -106,7 +118,8 @@ export default defineConfig({
     {
       name: 'webkit',
       use: { browserName: 'webkit' },
-      testMatch: /webkit\.spec\.ts/,
+      // WebKit 只跑代表性页面 smoke + 跨引擎 DSD 最小 smoke（不全量复制 Chromium 套件）
+      testMatch: [/webkit\.spec\.ts/, /ssr-dsd-cross-engine\.spec\.ts/],
       timeout: 120_000,
       retries: 1,
     },

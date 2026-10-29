@@ -748,6 +748,91 @@ test.beforeAll(async () => {
     renderToString('oas-traffic-lights'),
   ])
 
+  // —— SSR 白名单收口九件：conversation / form / feedback / data / navigation ——
+  // 布局稳定性约定：全部同步确定性渲染；picker 初始滚动位由 value 属性决定（SSR 不测量）；
+  // swipe-cell 取关闭态（无 open 属性 → 内容层偏移 0，升级前后宿主几何一致；展开态宽度测量
+  // 只属于升级后校正）；pull-refresh 用宿主 style 给高度约束（root height:100%）；
+  // index-bar 固定 height 走列表内滚动，scrollspy 监听在 SSR 不挂载；image-group 子图用
+  // 1×1 PNG data-uri 且走嵌套递归序列化（子 oas-image 的 shadow 内容禁 JS 亦可见）；
+  // notice-bar 取单条 items（不启动轮播计时器），关闭/操作按钮均可见态。
+  const finalSnaps = await Promise.all([
+    renderToString(
+      'oas-message-actions',
+      {
+        actions: JSON.stringify([
+          { key: 'copy', label: '复制' },
+          { key: 'retry', label: '重试', title: '重新请求' },
+        ]),
+        'message-id': 'm1',
+      },
+      '',
+      { locale: 'zh-CN' },
+    ),
+    renderToString(
+      'oas-tool-call',
+      {
+        name: 'search_docs',
+        summary: '搜索 API 文档',
+        status: 'success',
+        args: '{"query":"scheduler"}',
+        result: '["scheduler"]',
+        open: '',
+      },
+      '',
+      { locale: 'zh-CN' },
+    ),
+    renderToString('oas-swatch', { color: 'blue', size: 'large', shape: 'circle', selected: '', label: '主色' }),
+    renderToString(
+      'oas-picker',
+      {
+        columns: JSON.stringify([
+          {
+            key: 'fruit',
+            label: '水果',
+            items: [
+              { label: '苹果', value: 'apple' },
+              { label: '香蕉', value: 'banana' },
+              { label: '橙子', value: 'orange' },
+            ],
+          },
+          { key: 'num', label: '数量', items: [{ label: '一' }, { label: '二' }, { label: '三' }] },
+        ]),
+        value: '["banana","二"]',
+      },
+      '',
+      { locale: 'zh-CN' },
+    ),
+    renderToString('oas-pull-refresh', { threshold: '60', style: 'height:160px' }, '<p>下拉刷新内容</p>', {
+      locale: 'zh-CN',
+    }),
+    renderToString(
+      'oas-notice-bar',
+      { type: 'warning', closable: '', items: '["系统维护通知"]', 'action-text': '查看' },
+      '',
+      { locale: 'zh-CN' },
+    ),
+    renderToString(
+      'oas-image-group',
+      {},
+      `<oas-image src="${PNG_1PX}" alt="图一"></oas-image><oas-image src="${PNG_1PX}" alt="图二"></oas-image>`,
+    ),
+    renderToString('oas-swipe-cell', {}, '<div>列表项内容</div><button slot="actions">删除</button>', {
+      locale: 'zh-CN',
+    }),
+    renderToString(
+      'oas-index-bar',
+      {
+        sections: JSON.stringify([
+          { key: 'A', title: 'A', items: [{ label: '安' }, { label: '爱' }] },
+          { key: 'B', title: 'B', items: [{ label: '波' }, { label: '白' }] },
+        ]),
+        height: '200',
+      },
+      '',
+      { locale: 'zh-CN' },
+    ),
+  ])
+
   // —— local（locale 请求局部化）并发补位：冷加载后同一轮 Promise.all 混合多语言真实用户路径 ——
   // 16 个显式 locale 请求（zh-CN / en 交替 + 嵌套 oas-tag closable）逐请求 marker + 语言双绑定，
   // 服务端串语言会在浏览器里直接变成可见的错反语言（禁 JS 静态快照即验收）。
@@ -798,6 +883,7 @@ ${[
   ...nestedSnaps,
   ...wbSnaps,
   ...extraSnaps,
+  ...finalSnaps,
   ...localeConc,
 ].join('\n')}
 </body>
@@ -1399,7 +1485,10 @@ test('数据展示组件事件可触发：upgrade 后 oas-carousel 切换 / oas-
     w.__imgPreview = 0
     document.querySelector('oas-image')?.addEventListener('oas-preview', () => w.__imgPreview++)
   })
-  await page.locator('oas-image .previewable').click()
+  // 页面现有多个 oas-image（批次 3 独立实例 + 白名单收口 image-group 的子图），
+  // 单图预览交互用例锁定首个独立实例。
+  const standaloneImage = page.locator('oas-image').first()
+  await standaloneImage.locator('.previewable').click()
   // 预览打开后遮罩 teleport 到 body 门户（data-oas-image-preview-portal），不在宿主 shadow 内
   await expect(page.locator('[data-oas-image-preview-portal] [part="preview-mask"]')).toBeVisible()
   await expect
@@ -1407,7 +1496,7 @@ test('数据展示组件事件可触发：upgrade 后 oas-carousel 切换 / oas-
     .toBe(1)
   // Esc 关闭还原（门户移除、遮罩回到宿主 shadow 并恢复 hidden）
   await page.keyboard.press('Escape')
-  await expect(page.locator('oas-image [part="preview-mask"]')).toBeHidden()
+  await expect(standaloneImage.locator('[part="preview-mask"]')).toBeHidden()
 
   // oas-countdown：走时递减（读初始值后等待，值不再相等；格式恒为 HH:mm:ss）
   const initial = await page.locator('oas-countdown [part="display"]').first().textContent()

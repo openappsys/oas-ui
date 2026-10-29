@@ -5,6 +5,31 @@
 
 ---
 
+## 未发布：SSR 白名单收口九件与跨引擎 DSD（Task 10）✅
+
+### 功能定义
+
+把移动端/会话剩余 9 个 standalone 组件纳入 `@oas-ui/ssr` 白名单：conversation `oas-message-actions` / `oas-tool-call`、form `oas-swatch` / `oas-picker`、feedback `oas-pull-refresh` / `oas-notice-bar`、data `oas-image-group` / `oas-swipe-cell`、navigation `oas-index-bar`（白名单 165 → 174，NOT_SSR 47 → 38）。`oas-swatch-group`（swatch 组语义容器）与 `oas-bottom-sheet`（宿主受控浮层）保持不纳入。新增一个最小跨引擎 DSD smoke，在 Firefox 与 WebKit 各跑一次。
+
+### 详细契约
+
+- **快照确定性**：渲染路径不在 SSR 段启动真实计时器/滚动联动/document 广播监听；`__OAS_SSR__` 标记用于区分 happy-dom shim 与真实浏览器。快照结构只由属性决定——picker 列、选中与初始滚动位来自 `value`（不测量）；swipe-cell 关闭态直出，SSR 宽度 0 不得删除 `open` 属性；index-bar 分节/字母节点与 header UID 原样保留；image-group 在 `update()` 内同步收集子图（不等 slotchange 微任务）。
+- **真水合**：全部 9 个组件 `hydrate()` 缓存与 `render()` 相同的节点引用并恢复内部 raw 缓存，`update()` 不重建快照结构；缺关键结构时返回 false 回退全量重建。定时器、手势与 document 监听断开清理、重连恢复；单次点击/手势/滚动落停只派发一次事件。
+- **DSD fixture 与矩阵**：`ssr-dsd.spec.ts` 为每个新 tag 增加确定性 fixture；`ssr-matrix.json/md`、`docs/ssr.md`、中英 `guide/ssr.md`、ROADMAP 计数同步为 174。
+- **跨引擎 smoke**：新建 `packages/ssr/ssr-dsd-cross-engine.spec.ts`，覆盖 A/B/C 各一个代表 tag + `oas-button` 对照，断言禁 JS 关键文本、upgrade 后 shadow 不重建（style 引用保持）、指纹移除、单次交互一次事件、console 零 error/warning；Chromium 显式忽略该 spec（由主 DSD spec 覆盖），Firefox/WebKit 各跑一次。WebKit 无 DSD 能力时用显式能力守卫并保留 light DOM 文本/升级断言。
+
+### 非目标
+
+不扩大 `oas-swatch-group` / `oas-bottom-sheet`；不新增组件属性/事件/插槽；不改变主 DSD spec 的全量断言范围与现有 Firefox/WebKit 抽样规则（仅新增该最小 spec）；不为其余 NOT_SSR 子件/命令式组件立项。
+
+### 验收标准
+
+- 单测：5 个 family `ssr-hydrate`（conversation 新建 + form/feedback/data/navigation 增补）覆盖真水合接管、缺结构回退、update 不重建、单次交互一次事件、断开重连恢复；`packages/ssr/src` 全绿；`packages/ssr/ssr-dsd.spec.ts` 新增 9 tag fixture。
+- 门禁：`ssr:check` 212 组件 = 174 白名单 + 38 不 SSR（白名单/不 SSR 总数守恒）；api/llms/stats/skill/lint/format/deprecations/qa:audit 全绿。
+- 浏览器：跨引擎 smoke 在 Chromium（主 spec）/ Firefox / WebKit 通过；受影响组件页 smoke/console 零告警；dark 截图核对 A 批与 C 批各一。
+
+---
+
 ## 未发布：字节格式化 helper 与 Upload IEC 迁移（Task 9C）✅
 
 ### 功能定义

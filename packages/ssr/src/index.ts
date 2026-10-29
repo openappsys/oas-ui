@@ -104,7 +104,11 @@ import { ensureShim } from './shim.js'
  * 同 calendar/kanban/table/qrcode 类，同步确定性渲染、无测量依赖）+
  * SSR 白名单补位批次 2（form 收尾 knob/questionnaire + conversation 五件 bubble/attachment/
  * message-scroller/marker/message-row + workbench 构件族 titlebar/statusbar/inspector/action-bar
- * 及各自子件，纯展示/骨架直出快照，全部组件有 hydrate() 真水合覆写）。
+ * 及各自子件，纯展示/骨架直出快照，全部组件有 hydrate() 真水合覆写）+
+ * SSR 白名单收口九件（conversation message-actions/tool-call、form swatch/picker、
+ * feedback pull-refresh/notice-bar、data image-group/swipe-cell、navigation index-bar：
+ * 数据走 JSON attribute 声明式通道；定时器/手势/document 监听断开清理、重连恢复；
+ * 测量只用于升级后校正，SSR 快照结构由属性决定。swatch-group 与 bottom-sheet 仍不纳入）。
  */
 export const WHITELIST = [
   'oas-button',
@@ -281,6 +285,16 @@ export const WHITELIST = [
   'oas-task-progress-well',
   'oas-transport-well',
   'oas-music-well',
+  // —— SSR 白名单收口：移动端/会话剩余 standalone 九件（swatch-group / bottom-sheet 仍不纳入） ——
+  'oas-message-actions',
+  'oas-tool-call',
+  'oas-swatch',
+  'oas-picker',
+  'oas-pull-refresh',
+  'oas-notice-bar',
+  'oas-image-group',
+  'oas-swipe-cell',
+  'oas-index-bar',
 ] as const
 
 export type WhiteListTag = (typeof WHITELIST)[number]
@@ -496,6 +510,17 @@ const TAG_ENTRY: Record<WhiteListTag, string> = {
   'oas-task-progress-well': '@oas-ui/ui/workbench/action-bar',
   'oas-transport-well': '@oas-ui/ui/workbench/action-bar',
   'oas-music-well': '@oas-ui/ui/workbench/action-bar',
+  // —— SSR 白名单收口：conversation / form / feedback / data / navigation 九件 ——
+  'oas-message-actions': '@oas-ui/ui/conversation/message-actions',
+  'oas-tool-call': '@oas-ui/ui/conversation/tool-call',
+  // swatch 与 swatch-group 同目录；group 仍不纳入白名单（仅随目录注册）
+  'oas-swatch': '@oas-ui/ui/form/swatch',
+  'oas-picker': '@oas-ui/ui/form/picker',
+  'oas-pull-refresh': '@oas-ui/ui/feedback/pull-refresh',
+  'oas-notice-bar': '@oas-ui/ui/feedback/notice-bar',
+  'oas-image-group': '@oas-ui/ui/data/image-group',
+  'oas-swipe-cell': '@oas-ui/ui/data/swipe-cell',
+  'oas-index-bar': '@oas-ui/ui/navigation/index-bar',
 }
 
 /** 已装载的组件目录 import promise（按 tag 缓存；Node ESM 模块缓存兜底去重）。 */

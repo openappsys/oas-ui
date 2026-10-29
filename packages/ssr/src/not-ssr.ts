@@ -112,23 +112,6 @@ export const NOT_SSR: readonly NotSsrEntry[] = [
     note: '宿主受控浮层容器，服务端直出展开态无意义',
   },
   { tag: 'oas-theme-editor', reason: 'dev-tool', note: '开发期主题编辑面板' },
-
-  // SSR 尚未立项
-  { tag: 'oas-image-group', reason: 'pending' },
-  { tag: 'oas-index-bar', reason: 'pending' },
-  { tag: 'oas-notice-bar', reason: 'pending' },
-  { tag: 'oas-picker', reason: 'pending', note: '需先补 template()' },
-  { tag: 'oas-pull-refresh', reason: 'pending' },
-  { tag: 'oas-swipe-cell', reason: 'pending' },
-  { tag: 'oas-swatch', reason: 'pending' },
-
-  // conversation 组件尚未补 template()/DSD
-  {
-    tag: 'oas-message-actions',
-    reason: 'conversation-pending',
-    note: '需先补 template()',
-  },
-  { tag: 'oas-tool-call', reason: 'conversation-pending', note: '需先补 template()' },
 ]
 
 export const NOT_SSR_TAGS: ReadonlySet<string> = new Set(NOT_SSR.map((entry) => entry.tag))

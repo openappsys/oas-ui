@@ -3,8 +3,8 @@
 > 生成物：`pnpm ssr:matrix`。禁止手改；改数据源后重新生成。
 
 - 组件：212
-- SSR 白名单：165
-- 有意不 SSR：47
+- SSR 白名单：174
+- 有意不 SSR：38
 
 | tag | 族 | 源目录 | SSR | 原因 | 父件 | entry | template | hydrate | 单测 | DSD e2e | 文档 zh/en |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -63,7 +63,7 @@
 | `oas-radio` | form | `form/radio` | ✅ 白名单 | — | — | `@oas-ui/ui/form/radio` | ✅ | ✅ | ✅ | ✅ | ✅/✅ |
 | `oas-radio-group` | form | `form/radio` | ✅ 白名单 | — | — | `@oas-ui/ui/form/radio` | ✅ | ✅ | — | ✅ | —/— |
 | `oas-switch` | form | `form/switch` | ✅ 白名单 | — | — | `@oas-ui/ui/form/switch` | ✅ | ✅ | ✅ | ✅ | ✅/✅ |
-| `oas-picker` | form | `form/picker` | ⛔ 不 SSR | pending | — | — | — | ✅ | ✅ | — | ✅/✅ |
+| `oas-picker` | form | `form/picker` | ✅ 白名单 | — | — | `@oas-ui/ui/form/picker` | — | ✅ | ✅ | ✅ | ✅/✅ |
 | `oas-slider` | form | `form/slider` | ✅ 白名单 | — | — | `@oas-ui/ui/form/slider` | ✅ | ✅ | ✅ | ✅ | ✅/✅ |
 | `oas-knob` | form | `form/knob` | ✅ 白名单 | — | — | `@oas-ui/ui/form/knob` | ✅ | ✅ | ✅ | ✅ | ✅/✅ |
 | `oas-input-number` | form | `form/input-number` | ✅ 白名单 | — | — | `@oas-ui/ui/form/input-number` | ✅ | ✅ | ✅ | ✅ | ✅/✅ |
@@ -93,7 +93,7 @@
 | `oas-dynamic-tags` | form | `form/dynamic-tags` | ✅ 白名单 | — | — | `@oas-ui/ui/form/dynamic-tags` | ✅ | ✅ | ✅ | ✅ | ✅/✅ |
 | `oas-editable` | form | `form/editable` | ✅ 白名单 | — | — | `@oas-ui/ui/form/editable` | ✅ | ✅ | ✅ | ✅ | ✅/✅ |
 | `oas-segmented` | form | `form/segmented` | ✅ 白名单 | — | — | `@oas-ui/ui/form/segmented` | ✅ | ✅ | ✅ | ✅ | ✅/✅ |
-| `oas-swatch` | form | `form/swatch` | ⛔ 不 SSR | pending | — | — | ✅ | ✅ | ✅ | — | ✅/✅ |
+| `oas-swatch` | form | `form/swatch` | ✅ 白名单 | — | — | `@oas-ui/ui/form/swatch` | ✅ | ✅ | ✅ | ✅ | ✅/✅ |
 | `oas-swatch-group` | form | `form/swatch` | ⛔ 不 SSR | subcomponent | oas-swatch | — | ✅ | ✅ | — | — | —/— |
 | `oas-message` | feedback | `feedback/message` | ⛔ 不 SSR | imperative | — | — | — | — | — | — | ✅/✅ |
 | `oas-notification` | feedback | `feedback/notification` | ⛔ 不 SSR | imperative | — | — | — | — | — | — | ✅/✅ |
@@ -105,8 +105,8 @@
 | `oas-bottom-sheet` | feedback | `feedback/bottom-sheet` | ⛔ 不 SSR | client-only | — | — | ✅ | ✅ | ✅ | — | ✅/✅ |
 | `oas-popconfirm` | feedback | `feedback/popconfirm` | ✅ 白名单 | — | — | `@oas-ui/ui/feedback/popconfirm` | ✅ | ✅ | ✅ | ✅ | ✅/✅ |
 | `oas-alert` | feedback | `feedback/alert` | ✅ 白名单 | — | — | `@oas-ui/ui/feedback/alert` | ✅ | ✅ | ✅ | ✅ | ✅/✅ |
-| `oas-notice-bar` | feedback | `feedback/notice-bar` | ⛔ 不 SSR | pending | — | — | ✅ | ✅ | ✅ | — | ✅/✅ |
-| `oas-pull-refresh` | feedback | `feedback/pull-refresh` | ⛔ 不 SSR | pending | — | — | ✅ | ✅ | ✅ | — | ✅/✅ |
+| `oas-notice-bar` | feedback | `feedback/notice-bar` | ✅ 白名单 | — | — | `@oas-ui/ui/feedback/notice-bar` | ✅ | ✅ | ✅ | ✅ | ✅/✅ |
+| `oas-pull-refresh` | feedback | `feedback/pull-refresh` | ✅ 白名单 | — | — | `@oas-ui/ui/feedback/pull-refresh` | ✅ | ✅ | ✅ | ✅ | ✅/✅ |
 | `oas-progress` | feedback | `feedback/progress` | ✅ 白名单 | — | — | `@oas-ui/ui/feedback/progress` | ✅ | ✅ | ✅ | ✅ | ✅/✅ |
 | `oas-loading-bar` | feedback | `feedback/loading-bar` | ⛔ 不 SSR | imperative | — | — | — | — | — | — | ✅/✅ |
 | `oas-spin` | feedback | `feedback/spin` | ✅ 白名单 | — | — | `@oas-ui/ui/feedback/spin` | ✅ | ✅ | ✅ | ✅ | ✅/✅ |
@@ -156,7 +156,7 @@
 | `oas-tour` | navigation | `navigation/tour` | ✅ 白名单 | — | — | `@oas-ui/ui/navigation/tour` | ✅ | ✅ | ✅ | ✅ | ✅/✅ |
 | `oas-bottom-navigation` | navigation | `navigation/bottom-navigation` | ✅ 白名单 | — | — | `@oas-ui/ui/navigation/bottom-navigation` | ✅ | ✅ | ✅ | ✅ | ✅/✅ |
 | `oas-bottom-navigation-item` | navigation | `navigation/bottom-navigation` | ⛔ 不 SSR | subcomponent | oas-bottom-navigation | — | — | — | — | — | —/— |
-| `oas-index-bar` | navigation | `navigation/index-bar` | ⛔ 不 SSR | pending | — | — | ✅ | ✅ | ✅ | — | ✅/✅ |
+| `oas-index-bar` | navigation | `navigation/index-bar` | ✅ 白名单 | — | — | `@oas-ui/ui/navigation/index-bar` | ✅ | ✅ | ✅ | ✅ | ✅/✅ |
 | `oas-stepper` | navigation | `navigation/stepper` | ✅ 白名单 | — | — | `@oas-ui/ui/navigation/stepper` | ✅ | ✅ | ✅ | ✅ | ✅/✅ |
 | `oas-stepper-panel` | navigation | `navigation/stepper` | ✅ 白名单 | — | — | `@oas-ui/ui/navigation/stepper` | ✅ | ✅ | ✅ | ✅ | —/— |
 | `oas-steps` | navigation | `navigation/steps` | ✅ 白名单 | — | — | `@oas-ui/ui/navigation/steps` | ✅ | ✅ | ✅ | ✅ | ✅/✅ |
@@ -170,7 +170,7 @@
 | `oas-avatar` | data | `data/avatar` | ✅ 白名单 | — | — | `@oas-ui/ui/data/avatar` | ✅ | ✅ | ✅ | ✅ | ✅/✅ |
 | `oas-avatar-group` | data | `data/avatar-group` | ✅ 白名单 | — | — | `@oas-ui/ui/data/avatar-group` | ✅ | ✅ | ✅ | ✅ | —/— |
 | `oas-image` | data | `data/image` | ✅ 白名单 | — | — | `@oas-ui/ui/data/image` | ✅ | ✅ | ✅ | ✅ | ✅/✅ |
-| `oas-image-group` | data | `data/image-group` | ⛔ 不 SSR | pending | — | — | ✅ | ✅ | ✅ | — | —/— |
+| `oas-image-group` | data | `data/image-group` | ✅ 白名单 | — | — | `@oas-ui/ui/data/image-group` | ✅ | ✅ | ✅ | ✅ | —/— |
 | `oas-qrcode` | data | `data/qrcode` | ✅ 白名单 | — | — | `@oas-ui/ui/data/qrcode` | ✅ | ✅ | ✅ | ✅ | ✅/✅ |
 | `oas-barcode` | data | `data/barcode` | ✅ 白名单 | — | — | `@oas-ui/ui/data/barcode` | ✅ | ✅ | ✅ | ✅ | ✅/✅ |
 | `oas-watermark` | data | `data/watermark` | ✅ 白名单 | — | — | `@oas-ui/ui/data/watermark` | ✅ | ✅ | ✅ | ✅ | ✅/✅ |
@@ -207,15 +207,15 @@
 | `oas-log` | data | `data/log` | ✅ 白名单 | — | — | `@oas-ui/ui/data/log` | ✅ | ✅ | ✅ | ✅ | ✅/✅ |
 | `oas-comment` | data | `data/comment` | ✅ 白名单 | — | — | `@oas-ui/ui/data/comment` | ✅ | ✅ | ✅ | ✅ | ✅/✅ |
 | `oas-highlight` | data | `data/highlight` | ✅ 白名单 | — | — | `@oas-ui/ui/data/highlight` | ✅ | ✅ | ✅ | ✅ | ✅/✅ |
-| `oas-swipe-cell` | data | `data/swipe-cell` | ⛔ 不 SSR | pending | — | — | ✅ | ✅ | ✅ | — | ✅/✅ |
+| `oas-swipe-cell` | data | `data/swipe-cell` | ✅ 白名单 | — | — | `@oas-ui/ui/data/swipe-cell` | ✅ | ✅ | ✅ | ✅ | ✅/✅ |
 | `oas-bubble` | conversation | `conversation/bubble` | ✅ 白名单 | — | — | `@oas-ui/ui/conversation/bubble` | ✅ | ✅ | ✅ | ✅ | ✅/✅ |
 | `oas-attachment` | conversation | `conversation/attachment` | ✅ 白名单 | — | — | `@oas-ui/ui/conversation/attachment` | ✅ | ✅ | ✅ | ✅ | ✅/✅ |
 | `oas-attachment-group` | conversation | `conversation/attachment` | ✅ 白名单 | — | — | `@oas-ui/ui/conversation/attachment` | ✅ | ✅ | ✅ | ✅ | —/— |
 | `oas-message-scroller` | conversation | `conversation/message-scroller` | ✅ 白名单 | — | — | `@oas-ui/ui/conversation/message-scroller` | ✅ | ✅ | ✅ | ✅ | ✅/✅ |
 | `oas-marker` | conversation | `conversation/marker` | ✅ 白名单 | — | — | `@oas-ui/ui/conversation/marker` | ✅ | ✅ | ✅ | ✅ | ✅/✅ |
 | `oas-message-row` | conversation | `conversation/message-row` | ✅ 白名单 | — | — | `@oas-ui/ui/conversation/message-row` | ✅ | ✅ | ✅ | ✅ | ✅/✅ |
-| `oas-message-actions` | conversation | `conversation/message-actions` | ⛔ 不 SSR | conversation-pending | — | — | — | ✅ | ✅ | — | ✅/✅ |
-| `oas-tool-call` | conversation | `conversation/tool-call` | ⛔ 不 SSR | conversation-pending | — | — | — | ✅ | ✅ | — | ✅/✅ |
+| `oas-message-actions` | conversation | `conversation/message-actions` | ✅ 白名单 | — | — | `@oas-ui/ui/conversation/message-actions` | — | ✅ | ✅ | ✅ | ✅/✅ |
+| `oas-tool-call` | conversation | `conversation/tool-call` | ✅ 白名单 | — | — | `@oas-ui/ui/conversation/tool-call` | — | ✅ | ✅ | ✅ | ✅/✅ |
 | `oas-prompt-input` | conversation | `conversation/prompt-input` | ✅ 白名单 | — | — | `@oas-ui/ui/conversation/prompt-input` | — | ✅ | ✅ | ✅ | ✅/✅ |
 | `oas-config-provider` | framework | `framework/config-provider` | ✅ 白名单 | — | — | `@oas-ui/ui/framework/config-provider` | ✅ | ✅ | — | ✅ | ✅/✅ |
 | `oas-app` | framework | `framework/app` | ✅ 白名单 | — | — | `@oas-ui/ui/framework/app` | ✅ | ✅ | — | ✅ | ✅/✅ |
