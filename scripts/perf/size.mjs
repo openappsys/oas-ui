@@ -25,7 +25,8 @@
  *   - 已移除入口零残留：`data/table/core` 别名已删除（DEP-EXPORT-0001），dist 不得残留。
  *   - L3 分层登记（lib/l3-registry.mjs 单一登记表）：注册型 L3 必须含于 L1 与所属 CDN
  *     族包（族包 sourcemap 构建输入 = 真实静态图）、纯函数/宿主 helper 型 L3 不得混入
- *     L1/族包、默认 table 链零 L3（含 edit）、table 家族 L3 独立计量且各有独立预算档。
+ *     L1/族包、默认 table 链零 L3（含 edit）、登记为 measured 的 L3（table 家族 +
+ *     layout/scroll-area/infinite）独立计量且各有独立预算档。
  *   - 性能档案一致性（lib/baseline-docs.mjs）：perf-baseline.md 生成块 ↔ JSON、JSON ↔
  *     渲染阈值库、JSON env ↔ 实装 happy-dom 版本、JSON 预算 pass 自洽——只报红不自动刷新，
  *     刷新走 `perf:size/bench --update-baseline` + `pnpm perf:docs`；`perf:size
@@ -572,6 +573,12 @@ const COMPONENT_ENTRIES = [
   { id: 'tableRange', entry: 'data/table/range', spec: '@oas-ui/ui/data/table/range' },
   { id: 'tableHistory', entry: 'data/table/history', spec: '@oas-ui/ui/data/table/history' },
   { id: 'tableDetail', entry: 'data/table/detail', spec: '@oas-ui/ui/data/table/detail' },
+  // layout 家族 helper 型 L3：无限滚动 headless 控制器（不进 L1/layout 族包）
+  {
+    id: 'infiniteScroll',
+    entry: 'layout/scroll-area/infinite',
+    spec: '@oas-ui/ui/layout/scroll-area/infinite',
+  },
   { id: 'form', entry: 'form/form', spec: '@oas-ui/ui/form/form' },
   { id: 'gantt', entry: 'data/gantt', spec: '@oas-ui/ui/data/gantt' },
   { id: 'jsonViewer', entry: 'data/json-viewer', spec: '@oas-ui/ui/data/json-viewer' },
@@ -767,6 +774,17 @@ const BUDGETS = [
     basis:
       '实测 gzip 3.4 KB（主从详情宿主侧 helper + 树形行定位 / 焦点兜底 / 多实例 Esc 回退与跨表路由 / 交互宿主穿透，无 table 运行时依赖），上浮约 18% 定档 4 KB',
   },
+  {
+    // layout 家族 helper 型 L3（不进 L1/layout 族包）：无限滚动 headless 控制器。
+    // 独立档的意义：证明「消费 scroll-area 但不把控制器塞进组件/族包」的按需叙事。
+    name: '@oas-ui/ui/layout/scroll-area/infinite 链 gzip',
+    kind: 'absolute',
+    componentId: 'infiniteScroll',
+    get: () => componentMeasures.infiniteScroll.gzipBytes,
+    limit: 5 * 1024, // 5 KB（2026-10-29 首次定档：实测 3916 B / 3.8 KB，上浮约 31% 取整）
+    basis:
+      '实测 gzip 3916 B / 3.8 KB / 3 文件（2026-10-29 首次独立定档；headless 控制器：滚动/尺寸/资源监听、双边缘状态机、prepend 锚定与 keyed 重查、ResizeObserver 资源补偿；仅 dev-warn 一个共享依赖，无滚动引擎/无自定义元素），上浮约 31% 定档 5 KB 绝对值',
+  },
 ]
 
 console.log('\n=== 体积预算断言（全量类=天花板制；单组件链/theme=绝对值制；90% 预警线） ===')
@@ -841,7 +859,7 @@ for (const item of L3_REGISTRY) {
   }
   if (!violations.length)
     console.log(
-      `PASS [独立预算] table 家族 ${L3_REGISTRY.filter((i) => i.measured).length} 个 L3 均独立计量且各有独立预算档`,
+      `PASS [独立预算] ${L3_REGISTRY.filter((i) => i.measured).length} 个 measured L3 均独立计量且各有独立预算档`,
     )
 }
 

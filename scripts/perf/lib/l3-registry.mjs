@@ -12,7 +12,8 @@
  *   代码显式调用才能生效；可含 import 期惰性注册，但没有 HTML/属性触发面**（CDN 无 JS
  *   的消费方式调不到这些函数），进 L1/CDN union 即死重——**不得进入 L1/CDN**，按需显式
  *   import。当前实例：table 家族 Pro 能力 `advanced / format / view / range / history /
- *   detail`。注：`format` / `range` 内部虽调用 `registerTableCapability`，宿主不调用
+ *   detail`，以及 layout 家族的 `scroll-area/infinite`（无限滚动 headless 控制器）。
+ *   注：`format` / `range` 内部虽调用 `registerTableCapability`，宿主不调用
  *   导出函数则注册表项无效果，故按 helper 归类。
  *
  * `family`：所属 CDN 族包（`dist/cdn/<family>.js`）。族包产物是自包含 IIFE bundle
@@ -23,8 +24,9 @@
  *
  * `measured: true` 的条目必须在 `scripts/perf/size.mjs` 拥有独立按需链测量
  * （COMPONENT_ENTRIES）与独立预算档（BUDGETS 带 `componentId` 标签）——table 家族的
- * L3 全部独立计量；非 table 的 capability L3（manager/prompt/contextmenu/designer）
- * 体量小且随宿主组件链计量，只做 L1 与族包包含断言，不立独立预算档。
+ * L3 全部独立计量，layout 家族的 `scroll-area/infinite` 亦独立计量；非 table 的
+ * capability L3（manager/prompt/contextmenu/designer）体量小且随宿主组件链计量，
+ * 只做 L1 与族包包含断言，不立独立预算档。
  *
  * 消费方：`scripts/perf/size.mjs`（对 live dist 断言）与 perf-baseline 文档生成。
  * 登记表变更须同步 `docs/architecture.md` §3.1 的登记表文案（文档数值由生成块保证）。
@@ -54,6 +56,16 @@ export const L3_REGISTRY = [
     family: 'form',
     kind: 'capability',
     measured: false,
+  },
+  // —— layout 家族 helper 型 L3（独立计量 + 独立预算档） ——
+  // 无限滚动 headless 控制器：激活唯一入口是 createInfiniteScroll/InfiniteScrollController 导出函数，
+  // 无 HTML/属性触发面；进 L1/layout 族包即死重，必须显式 import。
+  {
+    id: 'infiniteScroll',
+    entry: 'layout/scroll-area/infinite',
+    family: 'layout',
+    kind: 'helper',
+    measured: true,
   },
 ]
 

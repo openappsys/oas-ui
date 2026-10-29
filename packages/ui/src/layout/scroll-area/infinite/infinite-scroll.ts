@@ -163,7 +163,10 @@ function resolveElement(target: InfiniteScrollContent | InfiniteScrollRoot): Ele
  *
  * 不渲染任何 DOM，只消费既有滚动根（`oas-scroll-area` / 任意滚动元素）：
  * - 方向 `top` / `bottom` / `both`，双边缘各自维护 loading / error / complete；
- * - 同一边缘在途去重，不同边缘可并发；到底后不再自动加载；
+ * - 同一边缘在途去重，不同边缘可并发；到底后不再自动加载；`bottom` 判定含 1px
+ *   亚像素容差（小数 scrollTop / DPR 1.25），`top` 保持 `scrollTop <= threshold`；
+ * - `load()` 省略 edge 时：`direction=top` / `reverse` 取 top，否则（含 `both`）取 bottom；
+ *   已进入 error 的边缘必须显式 `retry(edge)`（或 `retry()` 重试全部 error 边缘）；
  * - `load()` / `retry()` / `complete()` / `reset()` / `destroy()` 全命令面；
  * - `top` 加载前记录锚点，结果落地后按锚点视口位移补偿 scrollTop（keyed 替换可重查），
  *   ResizeObserver / 资源 load 捕获继续处理异步撑高，直到读者真实滚动接管；
@@ -195,6 +198,10 @@ export class InfiniteScrollController {
   private expectedScrollTop: number | null = null
   private lastHeight = -1
   private userScrolled = false
+  /** root 为惰性 getter 时 update 才需要重解析（静态元素 attach 时解析一次即可） */
+  private rootIsDynamic = false
+  /** 仅在锚点活跃期间观察的异步资源（图片/视频）；releaseAnchor 时全部解除，防跨加载泄漏 */
+  private readonly observedResources = new Set<Element>()
 
   constructor(options: InfiniteScrollOptions) {
     if (typeof options?.load !== 'function') {
@@ -207,6 +214,7 @@ export class InfiniteScrollController {
     this.thresholdValue = Number.isFinite(threshold) && threshold > 0 ? threshold : 0
     this.keyAttr = options.keyAttribute === '' ? null : (options.keyAttribute ?? 'data-key')
     this.rootOption = options.root ?? null
+    this.rootIsDynamic = typeof this.rootOption === 'function'
   }
 
   /** 生效方向（reverse 时恒为 top） */
@@ -238,7 +246,10 @@ export class InfiniteScrollController {
    */
   attach(root?: InfiniteScrollRoot): boolean {
     if (this.disposed) return false
-    if (root !== undefined) this.rootOption = root
+    if (root !== undefined) {
+      this.rootOption = root
+      this.rootIsDynamic = typeof root === 'function'
+    }
     const nextRoot = this.currentRoot()
     const nextViewport = resolveViewport(nextRoot)
     if (!nextViewport) {
@@ -284,6 +295,9 @@ export class InfiniteScrollController {
       this.abortEdge(edge)
       if (rt.status === 'loading') {
         rt.status = 'idle'
+        // 被 detach 中止的加载不算「同一位置已请求过」：重新 attach 后必须能再次自动加载
+        // （error/complete 语义不受影响，仍保持不复活——只有 loading 被复位）
+        rt.armed = true
         this.emitState(edge)
       }
     }
@@ -303,7 +317,8 @@ export class InfiniteScrollController {
    */
   update(): void {
     if (this.disposed || this.updating) return
-    if (this.attached) this.retarget()
+    // 静态 root 在 attach 时已解析完成，update 无需每次重跑 resolveViewport/内容解析
+    if (this.attached && this.rootIsDynamic) this.retarget()
     const vp = this.vp
     if (!vp) return
     this.updating = true
@@ -408,12 +423,18 @@ export class InfiniteScrollController {
     this.expectedScrollTop = null
   }
 
-  /** 指定边缘当前是否处于阈值内（无 viewport 时 false） */
+  /**
+   * 指定边缘当前是否处于阈值内（无 viewport 时 false）。
+   *
+   * 底部额外留 1px 容差：浏览器在亚像素几何（小数 scrollTop / DPR 1.25 等）下，
+   * 「已滚到底」的实测值常残留 0.1~0.9px，精确 `<= 0` 会让用户永远到不了底。
+   * 顶部保持 `scrollTop <= threshold` 语义不变（顶部 0 是精确可表达的边界）。
+   */
   isAtEdge(edge: InfiniteScrollEdge): boolean {
     const vp = this.vp
     if (!vp) return false
     if (edge === 'top') return vp.scrollTop <= this.thresholdValue
-    return vp.scrollHeight - vp.scrollTop - vp.clientHeight <= this.thresholdValue
+    return vp.scrollHeight - vp.scrollTop - vp.clientHeight <= this.thresholdValue + 1
   }
 
   // ---------- 加载状态机 ----------
@@ -462,7 +483,11 @@ export class InfiniteScrollController {
       rt.error = error
       rt.armed = false
       rt.abort = null
-      if (edge === 'top') this.releaseAnchor()
+      if (edge === 'top') {
+        // 失败前若内容已落地位移（宿主部分渲染后抛错），先补偿再释放，避免读者被上移的内容顶走
+        this.applyAnchor()
+        this.releaseAnchor()
+      }
       this.emitState(edge)
       if (this.disposed || rt.generation !== generation) return false
       this.safe(() => this.options.onError?.({ ...context, error }))
@@ -578,10 +603,7 @@ export class InfiniteScrollController {
       this.ro = new ResizeObserver(this.handleResize)
       this.ro.observe(vp)
       if (this.content && this.content !== vp) this.ro.observe(this.content)
-      if (this.anchor) {
-        this.ro.observe(this.anchor.el)
-        this.observedAnchor = this.anchor.el
-      }
+      if (this.anchor) this.observeWithAnchor(this.anchor.el)
     }
     if (typeof MutationObserver !== 'undefined' && this.content) {
       this.mo = new MutationObserver(this.handleMutation)
@@ -605,6 +627,18 @@ export class InfiniteScrollController {
     this.mo?.disconnect()
     this.mo = null
     this.observedAnchor = null
+    this.observedResources.clear()
+  }
+
+  /** 观察锚点/锚点侧的异步资源；统一记账，releaseAnchor 时一次性解除 */
+  private observeWithAnchor(el: Element): void {
+    if (!this.ro) return
+    try {
+      this.ro.observe(el)
+      this.observedResources.add(el)
+    } catch {
+      /* 不可观察：忽略 */
+    }
   }
 
   // ---------- 滚动 / 尺寸 / 变化通道 ----------
@@ -639,13 +673,10 @@ export class InfiniteScrollController {
   private handleResource = (event: Event): void => {
     if (this.disposed) return
     const target = event.target as Node | null
-    if (target && this.ro && target.nodeType === 1) {
-      // 异步资源（图片/视频）尺寸变化：锚点活跃时纳入观察，资源撑高后由 RO 继续补偿
-      try {
-        this.ro.observe(target as Element)
-      } catch {
-        /* 已销毁或不可观察：忽略 */
-      }
+    // 异步资源（图片/视频）尺寸变化只在锚点活跃时纳入观察：无锚点时观察没有消费者，
+    // 且资源集合会跨加载累积（releaseAnchor 统一解除，见 observedResources）
+    if (target && this.anchor && target.nodeType === 1) {
+      this.observeWithAnchor(target as Element)
     }
     if (this.anchor) this.applyAnchor()
     this.update()
@@ -685,6 +716,8 @@ export class InfiniteScrollController {
    * key 属性优先（宿主重渲染替换节点后仍能找回同一行），无 key 回落 id / 元素引用。
    */
   private captureAnchor(): void {
+    // 每次顶部加载都重新选锚：先解除上一轮观察，避免多轮资源观察叠加
+    this.releaseAnchor()
     const vp = this.vp
     const content = this.content
     if (!vp || !content) return
@@ -705,22 +738,9 @@ export class InfiniteScrollController {
       keyAttr: keyFromAttr ? attr : null,
       viewportY: anchorEl.getBoundingClientRect().top - vpTop,
     }
-    if (this.observedAnchor && this.ro && this.observedAnchor !== anchorEl) {
-      try {
-        this.ro.unobserve(this.observedAnchor)
-      } catch {
-        /* 忽略 */
-      }
-    }
     this.anchor = anchor
-    if (this.ro) {
-      try {
-        this.ro.observe(anchorEl)
-        this.observedAnchor = anchorEl
-      } catch {
-        /* 忽略 */
-      }
-    }
+    this.observedAnchor = anchorEl
+    this.observeWithAnchor(anchorEl)
   }
 
   /** 顶部结果落地后按锚点视口位移补偿 scrollTop（keyed 替换后按 key 重查） */
@@ -733,13 +753,31 @@ export class InfiniteScrollController {
       this.releaseAnchor()
       return
     }
-    anchor.el = el
+    if (el !== anchor.el) {
+      // keyed 重查命中新节点：观察目标同步迁移，旧节点在 releaseAnchor 前不再持有观察
+      if (this.ro) {
+        try {
+          this.ro.unobserve(anchor.el)
+        } catch {
+          /* 忽略 */
+        }
+      }
+      this.observedResources.delete(anchor.el)
+      anchor.el = el
+      this.observeWithAnchor(el)
+    }
     const drift = el.getBoundingClientRect().top - vp.getBoundingClientRect().top - anchor.viewportY
     // 0.5px 死区：亚像素读数不反复写 scrollTop
     if (Math.abs(drift) > 0.5) this.writeScrollTop(vp, vp.scrollTop + drift)
   }
 
   private findAnchor(anchor: Anchor): Element | null {
+    // 快路径：原节点仍在文档且 key 未变（未重渲染的常见情况）直接复用，避免全量扫描
+    if (anchor.el.isConnected) {
+      const attr = anchor.keyAttr
+      const value = attr ? anchor.el.getAttribute(attr) : anchor.el.id
+      if (anchor.key === null || value === anchor.key) return anchor.el
+    }
     const content = this.content
     if (content && anchor.key !== null) {
       const attr = anchor.keyAttr
@@ -752,14 +790,18 @@ export class InfiniteScrollController {
     return anchor.el.isConnected ? anchor.el : null
   }
 
+  /** 释放保位锚：一并解除锚点与资源观察（资源集合仅属于当前这次锚定，不能跨加载残留） */
   private releaseAnchor(): void {
-    if (this.observedAnchor && this.ro) {
-      try {
-        this.ro.unobserve(this.observedAnchor)
-      } catch {
-        /* 忽略 */
+    if (this.ro) {
+      for (const el of this.observedResources) {
+        try {
+          this.ro.unobserve(el)
+        } catch {
+          /* 忽略 */
+        }
       }
     }
+    this.observedResources.clear()
     this.observedAnchor = null
     this.anchor = null
   }

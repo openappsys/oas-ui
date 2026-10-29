@@ -24,8 +24,8 @@
 <!-- BEGIN:generated:perf-baseline:packages -->
 | 包 | 文件数 | raw | gzip | brotli |
 | --- | --- | --- | --- | --- |
-| @oas-ui/ui（dist 总大小，含 map/d.ts） | — | 38.31 MB | — | — |
-| @oas-ui/ui（浏览器可加载 JS） | 452 | 10184.1 KB | 2445.4 KB | — |
+| @oas-ui/ui（dist 总大小，含 map/d.ts） | — | 38.38 MB | — | — |
+| @oas-ui/ui（浏览器可加载 JS） | 454 | 10196.9 KB | 2449.0 KB | — |
 | @oas-ui/ui（全量入口链 `import '@oas-ui/ui'`） | 480 | 3572.5 KB | 971.3 KB | — |
 | @oas-ui/ui（dist/cdn.js 单文件全量 bundle） | 1 | 2970.7 KB | 648.2 KB | 446.1 KB |
 | @oas-ui/theme（index.css） | 1 | 7.8 KB | 1.9 KB | — |
@@ -49,6 +49,7 @@
 | tableRange | `@oas-ui/ui/data/table/range` | 6 | 40.5 KB | 11.9 KB |
 | tableHistory | `@oas-ui/ui/data/table/history` | 4 | 8.0 KB | 3.5 KB |
 | tableDetail | `@oas-ui/ui/data/table/detail` | 3 | 9.3 KB | 3.7 KB |
+| infiniteScroll | `@oas-ui/ui/layout/scroll-area/infinite` | 3 | 13.1 KB | 3.8 KB |
 | form | `@oas-ui/ui/form/form` | 11 | 80.6 KB | 29.0 KB |
 | gantt | `@oas-ui/ui/data/gantt` | 18 | 224.5 KB | 66.8 KB |
 | jsonViewer | `@oas-ui/ui/data/json-viewer` | 13 | 98.7 KB | 34.1 KB |
@@ -138,6 +139,7 @@
 | @oas-ui/ui/data/table/range 链 gzip | 11.9 KB | 13.0 KB（绝对值） | 实测 gzip 11.6 KB（选区 + 多选区 + 剪贴板写回 + 填充柄 + 展示集快照与扁平滚动 + windowed 协议共享链 + 可访问性播报），上浮约 12% 定档 13 KB |
 | @oas-ui/ui/data/table/history 链 gzip | 3.5 KB | 4.0 KB（绝对值） | 实测 gzip 3.4 KB（撤销/重做栈 + 受控记录/事务 + oas-edit 行键/原类型回写 + 树形子行递归 + 交互宿主穿透），上浮约 18% 定档 4 KB |
 | @oas-ui/ui/data/table/detail 链 gzip | 3.7 KB | 4.0 KB（绝对值） | 实测 gzip 3.4 KB（主从详情宿主侧 helper + 树形行定位 / 焦点兜底 / 多实例 Esc 回退与跨表路由 / 交互宿主穿透，无 table 运行时依赖），上浮约 18% 定档 4 KB |
+| @oas-ui/ui/layout/scroll-area/infinite 链 gzip | 3.8 KB | 5.0 KB（绝对值） | 实测 gzip 3916 B / 3.8 KB / 3 文件（2026-10-29 首次独立定档；headless 控制器：滚动/尺寸/资源监听、双边缘状态机、prepend 锚定与 keyed 重查、ResizeObserver 资源补偿；仅 dev-warn 一个共享依赖，无滚动引擎/无自定义元素），上浮约 31% 定档 5 KB 绝对值 |
 <!-- END:generated:perf-baseline:budgets -->
 
 > `@oas-ui/ui/data/table/core` 兼容别名已删除（v2.6.5 未发布，DEP-EXPORT-0001 单点例外），不再单独计量；`perf:size` 含 dist 零残留门禁。历史计量口径（删除前各版本）不变。

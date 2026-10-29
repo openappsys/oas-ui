@@ -4,12 +4,12 @@
     "method": "gzip = zlib gzipSync；brotli = zlib.brotliCompressSync q11；单组件链 = 静态 import 图遍历 + 逐文件压缩求和（上界估计）",
     "packages": {
       "@oas-ui/ui": {
-        "distTotalBytes": 40175037,
+        "distTotalBytes": 40241080,
         "browserJs": {
-          "files": 452,
-          "rawBytes": 10428519,
-          "gzipBytes": 2504139,
-          "brotliBytes": 1955433
+          "files": 454,
+          "rawBytes": 10441584,
+          "gzipBytes": 2507807,
+          "brotliBytes": 1958646
         },
         "fullEntry": {
           "files": 480,
@@ -740,6 +740,19 @@
           "packages/ui/dist/data/table/oas-table-row-key.js"
         ]
       },
+      "infiniteScroll": {
+        "entry": "layout/scroll-area/infinite",
+        "spec": "@oas-ui/ui/layout/scroll-area/infinite",
+        "files": 3,
+        "rawBytes": 13366,
+        "gzipBytes": 3916,
+        "brotliBytes": 3412,
+        "fileList": [
+          "packages/ui/dist/layout/scroll-area/infinite/index.js",
+          "packages/ui/dist/layout/scroll-area/infinite/infinite-scroll.js",
+          "packages/ui/dist/shared/dev-warn.js"
+        ]
+      },
       "form": {
         "entry": "form/form",
         "spec": "@oas-ui/ui/form/form",
@@ -1038,6 +1051,17 @@
         "pass": true,
         "warn": true,
         "basis": "实测 gzip 3.4 KB（主从详情宿主侧 helper + 树形行定位 / 焦点兜底 / 多实例 Esc 回退与跨表路由 / 交互宿主穿透，无 table 运行时依赖），上浮约 18% 定档 4 KB"
+      },
+      {
+        "name": "@oas-ui/ui/layout/scroll-area/infinite 链 gzip",
+        "kind": "absolute",
+        "componentId": "infiniteScroll",
+        "actualBytes": 3916,
+        "limitBytes": 5120,
+        "warnAtBytes": 4608,
+        "pass": true,
+        "warn": false,
+        "basis": "实测 gzip 3916 B / 3.8 KB / 3 文件（2026-10-29 首次独立定档；headless 控制器：滚动/尺寸/资源监听、双边缘状态机、prepend 锚定与 keyed 重查、ResizeObserver 资源补偿；仅 dev-warn 一个共享依赖，无滚动引擎/无自定义元素），上浮约 31% 定档 5 KB 绝对值"
       }
     ]
   },
