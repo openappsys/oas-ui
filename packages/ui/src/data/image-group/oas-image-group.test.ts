@@ -247,6 +247,23 @@ describe('OASImageGroup', () => {
     expect(pq(g, '[part="preview-counter"]').textContent).toBe('2/3')
   })
 
+  it('DSD 回退：快照缺共享预览宿主时 render 全量重建', () => {
+    const ref = mount(wall(['/a.png']))
+    const snapshot = ref.shadowRoot!.innerHTML
+    ref.remove()
+
+    const el = new OASImageGroup()
+    el.innerHTML = wall(['/a.png'])
+    el.shadowRoot!.innerHTML = `<meta data-oas-ssr="oas-image-group" data-oas-ssr-v="1">${snapshot}`
+    // 删除关键子结构（共享预览宿主）
+    el.shadowRoot!.querySelector('oas-image')!.remove()
+    document.body.appendChild(el)
+
+    expect(el.shadowRoot!.querySelector('meta[data-oas-ssr]')).toBeNull()
+    expect(el.shadowRoot!.querySelector('oas-image[part="preview-host"]')).not.toBeNull()
+    expect(innerList(el)).toEqual(['/a.png'])
+  })
+
   it('双指捏合缩放经共享预览宿主透传生效（图集预览与单图同机制）', () => {
     const g = mount(wall(['/a.png', '/b.png', '/c.png']))
     clickChild(g, 0)

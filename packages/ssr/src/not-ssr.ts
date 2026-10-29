@@ -11,16 +11,12 @@
  * - imperative：命令式 API 动态创建，初始 DOM 中不存在实例；
  * - dev-tool：开发期工具，SSR 价值低；
  * - client-only：宿主受控的客户端浮层/容器；
- * - pending：SSR 尚未立项，后续可推进；
- * - conversation-pending：conversation 组件尚未补 template()/DSD。
+ * - pending：SSR 尚未立项，后续可推进（scaffold 新建组件的默认登记原因）。
+ *
+ * 注：conversation 组件已全部收口到 WHITELIST，历史上的 `conversation-pending`
+ * 原因已删除（不再保留无引用的死类型）。
  */
-export type NotSsrReason =
-  | 'subcomponent'
-  | 'imperative'
-  | 'dev-tool'
-  | 'client-only'
-  | 'pending'
-  | 'conversation-pending'
+export type NotSsrReason = 'subcomponent' | 'imperative' | 'dev-tool' | 'client-only' | 'pending'
 
 export interface NotSsrEntry {
   /** 组件 tag，例如 oas-menu-item */

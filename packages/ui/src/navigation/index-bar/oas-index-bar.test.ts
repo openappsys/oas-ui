@@ -353,6 +353,33 @@ describe('OASIndexBar', () => {
     expect(changes.map((c) => c.key)).toEqual(['C'])
   })
 
+  it('平滑滚动落定但目标不可达（短内容 + 固定高度）：保持用户选中项、不二次派发 oas-change', () => {
+    // 真实浏览器实抓：列表 scrollHeight <= clientHeight 时 scrollTop 写不进去，
+    // 动画落定的 handleScroll 会把高亮算回第 0 节并二次派发 oas-change。
+    stubReducedMotion(false)
+    const raf = stubRafManual()
+    const el = mount({ height: '300' })
+    const listEl = list(el)
+    // 写不进 scrollTop 的列表（等价不可滚动）
+    Object.defineProperty(listEl, 'scrollTop', { get: () => 0, set: () => {}, configurable: true })
+    stubRect(listEl, rect(0))
+    const secs = sectionEls(el)
+    // 三节全部完整可见：A 贴顶、B/C 依次在下方（scrollTop 无法移动）
+    stubRect(secs[0]!, rect(0))
+    stubRect(secs[1]!, rect(80))
+    stubRect(secs[2]!, rect(160))
+    const changes: Array<{ key: string }> = []
+    el.addEventListener('oas-change', (e) => changes.push((e as CustomEvent).detail))
+    letters(el)[1]!.click() // 跳 B
+    expect(activeLetter(el)).toBe('B')
+    raf.run(performance.now() + 400) // 动画落定
+    expect(activeLetter(el), '目标不可达时落定后保持用户选中项，不得回退首节').toBe('B')
+    expect(
+      changes.map((c) => c.key),
+      '只派发点击那一次',
+    ).toEqual(['B'])
+  })
+
   // ---------- scrollspy ----------
 
   it('列表滚动联动：高亮最近一个越顶分节并派发 oas-change', () => {
@@ -616,6 +643,25 @@ describe('OASIndexBar', () => {
 
     el.setAttribute('sections', JSON.stringify([{ key: 'Z', items: [{ label: 'Zed' }] }]))
     expect(letters(el).map((b) => b.textContent)).toEqual(['Z'])
+  })
+
+  it('DSD 回退：快照每节条目数与数据不符时 render 全量重建（仅比 section/letter 数量不够）', () => {
+    const ref = new OASIndexBar()
+    ref.setAttribute('sections', SECTIONS)
+    document.body.appendChild(ref)
+    const snapshot = ref.shadowRoot!.innerHTML
+    ref.remove()
+
+    const el = new OASIndexBar()
+    el.setAttribute('sections', SECTIONS)
+    el.shadowRoot!.innerHTML = `<meta data-oas-ssr="oas-index-bar" data-oas-ssr-v="1">${snapshot}`
+    // 破坏「每节条目数」：删掉首节一个条目（section/letter 数量仍与数据一致）
+    el.shadowRoot!.querySelector('.section .item')!.remove()
+    document.body.appendChild(el)
+
+    expect(el.shadowRoot!.querySelector('meta[data-oas-ssr]')).toBeNull()
+    expect(items(el).map((b) => b.textContent)).toEqual(['Alice', 'Amy', 'Bob', 'Cara'])
+    expect(letters(el).length).toBe(3)
   })
 
   it('DSD 回退：快照缺关键结构时 render 全量重建', () => {

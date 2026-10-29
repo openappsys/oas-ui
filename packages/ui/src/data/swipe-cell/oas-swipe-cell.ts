@@ -1,5 +1,6 @@
 import { OASElement } from '@oas-ui/core'
 import { isRtl } from '../../shared/direction.js'
+import { isSsrRuntime } from '../../shared/ssr-runtime.js'
 
 /**
  * oas-swipe-cell —— 列表项横向滑动操作（data 族）。**支持单侧与双侧**。
@@ -34,11 +35,6 @@ const BROADCAST_EVENT = 'oas-swipe-cell-open'
 
 /** 开侧（null = 关） */
 type OpenSide = 'start' | 'end' | null
-
-/** SSR shim 同样提供 window/document；渲染段不挂 document 级广播监听 */
-function isSsrRuntime(): boolean {
-  return typeof window === 'undefined' || (window as Window & { __OAS_SSR__?: boolean }).__OAS_SSR__ === true
-}
 
 const STYLE = `
 :host {
@@ -230,6 +226,9 @@ export class OASSwipeCell extends OASElement {
 
   /** 断开重连：重绑宿主级监听（幂等；render 与内部状态不重建，开态保留） */
   protected override onReconnect(): void {
+    // 手势进行中被摘挂：drag 不清理会让 onPointerDown 的 `if (this.drag) return`
+    // 永久拦死后续滑动（data-dragging 也会残留）；先复位再重绑
+    this.resetDrag()
     this.bind()
   }
 
@@ -260,8 +259,19 @@ export class OASSwipeCell extends OASElement {
         this.shadow.querySelector(`slot[name="${name}"]`)?.removeEventListener('slotchange', this.onSlotChange)
       }
       document.removeEventListener(BROADCAST_EVENT, this.onBroadcast)
+      // 手势中摘挂：复位拖拽态（防 data-dragging 残留；重连由 onReconnect 再兜底一次）
+      this.resetDrag()
       this.removeOpenListeners()
     })
+  }
+
+  /** 复位进行中手势（断开清理 / 重连）：清 drag 快照、释放指针捕获、移除 data-dragging */
+  private resetDrag(): void {
+    const drag = this.drag
+    this.drag = null
+    this.dragPhysical = 0
+    if (drag) this.release(drag.pointerId)
+    this.removeAttribute('data-dragging')
   }
 
   protected override update(): void {

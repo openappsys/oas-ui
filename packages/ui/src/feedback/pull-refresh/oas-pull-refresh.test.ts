@@ -522,6 +522,31 @@ describe('OASPullRefresh', () => {
     expect(stateOf(el)).toBe('idle')
   })
 
+  // ---------- 断开重连 ----------
+
+  it('手势中摘挂重连：手势态复位，重连后完整下拉仍恰好派发一次 oas-refresh', () => {
+    const el = mount()
+    const events = recordRefresh(el)
+    const root = scroller(el)
+    // 手势进行到一半（已接管 → phase=pulling + data-dragging）
+    root.dispatchEvent(pointer('pointerdown', 0, 9))
+    root.dispatchEvent(pointer('pointermove', 130, 9))
+    expect(stateOf(el)).toBe('pulling')
+    expect(el.hasAttribute('data-dragging')).toBe(true)
+
+    el.remove()
+    document.body.appendChild(el)
+
+    // 重连必须复位手势态：否则 phase 卡 pulling → onPointerDown 永久被 phase 守卫拦下
+    expect(el.hasAttribute('data-dragging'), '重连后拖拽镜像清除').toBe(false)
+    expect(stateOf(el), '重连后回 idle（不卡 pulling）').toBe('idle')
+    expect(pullOf(el)).toBe(0)
+
+    drag(el, [130], 10)
+    expect(events).toHaveLength(1)
+    expect(stateOf(el)).toBe('refreshing')
+  })
+
   // ---------- 样式 token ----------
 
   it('配色只走 CSS 变量 token（无硬编码色值），暗色随 token 适配', () => {

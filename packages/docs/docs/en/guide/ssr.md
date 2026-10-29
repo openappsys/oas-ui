@@ -531,12 +531,20 @@ into the SSR output stream and the browser parser attaches the DSD templates.
   `tool-call`, form `swatch` / `picker`, feedback `pull-refresh` / `notice-bar`,
   data `image-group` / `swipe-cell`, and navigation `index-bar`. Snapshot
   structure is driven purely by attributes: picker derives its columns, selection
-  and initial scroll position from `value` (no measurement), swipe-cell snapshots
-  the closed state and never drops `open` because the SSR width is 0, index-bar
-  reuses the snapshot section/letter nodes (header UIDs stay stable), and
-  image-group collects child images synchronously inside `update()`. Timers,
-  gestures and document listeners are cleaned up on disconnect and restored on
-  reconnect; one interaction dispatches exactly one event.
+  and initial scroll position from `value` (no measurement — without JavaScript
+  the columns still scroll natively, but selection mapping/write-back does not
+  run, so the snapshot only shows the initial selection); swipe-cell renders the content layer at offset 0 and never
+  drops a host-provided `open` because the SSR width is 0 (width is corrected
+  after upgrade); index-bar reuses the snapshot section/letter nodes (header UIDs
+  stay stable) and keeps the user-selected section when a programmatic jump
+  target is unreachable (no second `oas-change`); image-group collects child
+  images synchronously inside `update()`. notice-bar sets `aria-live="off"` while
+  auto-rotating items (so it does not interrupt screen readers) and `polite` for
+  a single item / reduced-motion. Connected timers and document/scroll/gesture
+  listeners are cleaned up on disconnect and their cleanup is re-registered on
+  reconnect; an in-flight gesture is not resumed across a detach (it is treated
+  as cancelled: rebound, zero events); one interaction dispatches exactly one
+  event.
 - The snapshots of the layout-measuring components
   (affix / ellipsis / scroll-area) are the un-measured state (happy-dom reports
   all-zero layout), the first frame after upgrade matches the snapshot, and the

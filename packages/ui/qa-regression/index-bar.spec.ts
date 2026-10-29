@@ -36,6 +36,74 @@ test('index-bar 点字母跳转：滚动到分节、高亮迁移、分节头吸�
   )
 })
 
+test('index-bar 点字母落定：可滚动 fixture 只派发一次；短内容 + 固定高度（目标不可达）保持选中项、500ms 后仍仅 1 次', async ({
+  page,
+}) => {
+  await page.goto('/components/index-bar.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#ib-basic')
+
+  // 动态夹具：不依赖文档页 demo 数据，锁定两种真实几何
+  await page.evaluate(() => {
+    const make = (id: string, height: string, perSection: number, sections: number) => {
+      const el = document.createElement('oas-index-bar')
+      el.id = id
+      el.setAttribute('height', height)
+      el.setAttribute(
+        'sections',
+        JSON.stringify(
+          Array.from({ length: sections }, (_, s) => ({
+            key: String.fromCharCode(65 + s),
+            title: String.fromCharCode(65 + s),
+            items: Array.from({ length: perSection }, (_, i) => ({
+              label: `${String.fromCharCode(65 + s)}${i}`,
+            })),
+          })),
+        ),
+      )
+      document.body.appendChild(el)
+    }
+    // 可滚动：3 节 × 12 条目，height=200（点 B 可达，列表内 scrollTop > 0）
+    make('ib-qa-scrollable', '200', 12, 3)
+    // 不可滚动：2 节 × 1 条目，height=320（内容远短于固定高度，scrollTop 写不进去）
+    make('ib-qa-unreachable', '320', 1, 2)
+  })
+  await up(page, '#ib-qa-scrollable')
+  await up(page, '#ib-qa-unreachable')
+
+  for (const fixture of [
+    { id: 'ib-qa-scrollable', scrollable: true },
+    { id: 'ib-qa-unreachable', scrollable: false },
+  ]) {
+    await page.evaluate((id) => {
+      const w = window as unknown as Window & { __ibEvents: Array<{ key: string }> }
+      w.__ibEvents = []
+      document.getElementById(id)?.addEventListener('oas-change', (e) => w.__ibEvents.push((e as CustomEvent).detail))
+    }, fixture.id)
+
+    // 点击字母 B（第二个）：真实指针点击（pointerdown → jumpTo → 平滑滚动落定）
+    await page.locator(`#${fixture.id} [part="letter"]`).nth(1).click()
+    // 500ms > 动画 300ms：轮询窗口内的「一次」不是侥幸，落定后仍是用户选中项
+    await page.waitForTimeout(500)
+
+    const state = await page.evaluate((id) => {
+      const w = window as unknown as Window & { __ibEvents: Array<{ key: string }> }
+      const host = document.getElementById(id)!
+      const root = host.shadowRoot!
+      const list = root.querySelector('[part="list"]') as HTMLElement
+      const active = root.querySelector('[part="letter"][aria-current="true"]') as HTMLElement | null
+      return { events: w.__ibEvents, active: active?.textContent ?? null, scrollTop: list.scrollTop }
+    }, fixture.id)
+
+    expect(state.events, `${fixture.id}：点击后 500ms 事件仍恰好 1 次（不得回退二次派发）`).toEqual([{ key: 'B' }])
+    expect(state.active, `${fixture.id}：aria-current 保持目标 B`).toBe('B')
+    if (fixture.scrollable) {
+      expect(state.scrollTop, `${fixture.id}：可滚动列表应真实滚动`).toBeGreaterThan(0)
+    } else {
+      expect(state.scrollTop, `${fixture.id}：短内容 scrollTop 恒 0（目标不可达）`).toBe(0)
+    }
+  }
+})
+
 test('index-bar 滚动联动：scrollspy 高亮最近越顶分节 + oas-change demo 可见反馈', async ({ page }) => {
   await page.goto('/components/index-bar.html', { waitUntil: 'domcontentloaded' })
   await up(page, '#ib-events')

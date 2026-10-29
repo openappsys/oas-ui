@@ -383,6 +383,31 @@ describe('OASNoticeBar', () => {
     expect(itemText(el).textContent).toBe('r2')
   })
 
+  it('断开重连：cleanup 登记随连接重建（首连/断开/重连/再断开零孤儿计时器）', () => {
+    const el = mount({ items: '["c1","c2"]', interval: DEMO_INTERVAL })
+    expect(vi.getTimerCount(), '首连启动轮播计时器').toBe(1)
+    el.remove()
+    expect(vi.getTimerCount(), '断开清理轮播计时器').toBe(0)
+    document.body.appendChild(el)
+    expect(vi.getTimerCount(), '重连重启轮播计时器').toBe(1)
+    el.remove()
+    // onCleanup 只在 bind 内注册，基类断开清空 cleanupFns 后不重登记 → 二次断开留下孤儿 setInterval
+    expect(vi.getTimerCount(), '二次断开必须清理重连后新开的计时器').toBe(0)
+  })
+
+  it('关闭退场中被摘挂：重连落定，closeTimer 不孤儿', () => {
+    const el = mount({ closable: '' }, '通告')
+    closeBtn(el).click()
+    expect(el.hasAttribute('data-closing')).toBe(true)
+    expect(vi.getTimerCount(), '退场过渡计时器').toBe(1)
+    el.remove()
+    expect(vi.getTimerCount(), '断开清理 closeTimer').toBe(0)
+    document.body.appendChild(el)
+    expect(el.hasAttribute('data-closing'), '重连落定退场（不残留 data-closing）').toBe(false)
+    expect(el.hidden).toBe(true)
+    expect(vi.getTimerCount()).toBe(0)
+  })
+
   // ---------- DSD 真水合 ----------
 
   it('DSD 真水合：快照接管（shadow 不重建、指纹移除、交互可用）', () => {

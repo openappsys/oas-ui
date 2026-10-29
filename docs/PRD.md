@@ -13,10 +13,12 @@
 
 ### 详细契约
 
-- **快照确定性**：渲染路径不在 SSR 段启动真实计时器/滚动联动/document 广播监听；`__OAS_SSR__` 标记用于区分 happy-dom shim 与真实浏览器。快照结构只由属性决定——picker 列、选中与初始滚动位来自 `value`（不测量）；swipe-cell 关闭态直出，SSR 宽度 0 不得删除 `open` 属性；index-bar 分节/字母节点与 header UID 原样保留；image-group 在 `update()` 内同步收集子图（不等 slotchange 微任务）。
-- **真水合**：全部 9 个组件 `hydrate()` 缓存与 `render()` 相同的节点引用并恢复内部 raw 缓存，`update()` 不重建快照结构；缺关键结构时返回 false 回退全量重建。定时器、手势与 document 监听断开清理、重连恢复；单次点击/手势/滚动落停只派发一次事件。
+- **快照确定性**：渲染路径不在 SSR 段启动真实计时器/滚动联动/document 广播监听；`__OAS_SSR__` 标记用于区分 happy-dom shim 与真实浏览器。快照结构只由属性决定——picker 列、选中与初始滚动位来自 `value`（不测量；无 JS 时列仍可原生滚动，但选中换算/回写不生效，快照只呈现初始选中位）；swipe-cell 内容层偏移 0（关闭视觉）直出，宿主显式给 `open` 时 SSR 宽度 0 也不得删除该属性（升级后按真实宽度校正）；index-bar 分节/字母节点与 header UID 原样保留；image-group 在 `update()` 内同步收集子图（不等 slotchange 微任务）。
+- **可访问性快照**：notice-bar 多条 items 自动轮播时内容区 `aria-live="off"`（不打扰读屏），单条/reduced-motion 静态态为 `polite`。
+- **真水合**：全部 9 个组件 `hydrate()` 缓存与 `render()` 相同的节点引用并恢复内部 raw 缓存，`update()` 不重建快照结构；缺关键结构时返回 false 回退全量重建（index-bar 逐节校验条目数，message-actions 校验按钮数，image-group 校验共享预览宿主）。连接态计时器与 document/滚动/手势监听断开清理、重连重新登记清理（fix round 1 修 notice-bar 重连后 cleanup 丢失、pull-refresh/swipe-cell 手势中断后状态卡死）；进行中手势不跨摘挂续传——按取消处理回弹、不派发事件；单次点击/手势/滚动落停只派发一次事件。
 - **DSD fixture 与矩阵**：`ssr-dsd.spec.ts` 为每个新 tag 增加确定性 fixture；`ssr-matrix.json/md`、`docs/ssr.md`、中英 `guide/ssr.md`、ROADMAP 计数同步为 174。
-- **跨引擎 smoke**：新建 `packages/ssr/ssr-dsd-cross-engine.spec.ts`，覆盖 A/B/C 各一个代表 tag + `oas-button` 对照，断言禁 JS 关键文本、upgrade 后 shadow 不重建（style 引用保持）、指纹移除、单次交互一次事件、console 零 error/warning；Chromium 显式忽略该 spec（由主 DSD spec 覆盖），Firefox/WebKit 各跑一次。WebKit 无 DSD 能力时用显式能力守卫并保留 light DOM 文本/升级断言。
+- **跨引擎 smoke**：新建 `packages/ssr/ssr-dsd-cross-engine.spec.ts`，覆盖 A/B/C 各一个代表 tag + `oas-button` 对照，断言禁 JS 关键文本、upgrade 后 shadow 不重建（style 引用保持）、指纹移除、单次交互一次事件（500ms 后显式复核）、console 零 error/warning；Chromium 显式忽略该 spec（由主 DSD spec 覆盖），Firefox/WebKit 各跑一次。WebKit 无 DSD 能力时断言 `shadowRoot === null`，注入 bundle 后以 CSR 渲染替代路径验证同样关键文本/事件（不断言空 light DOM 文本）。
+- **fix round 1（独立复核）**：index-bar 程序化平滑滚动落定后若目标不可达（短内容 + 固定高度、scrollTop 未接近目标）保持用户选中项，不得跑 scrollspy 回退并二次派发 `oas-change`；notice-bar 拆「具名 handler 幂等绑定」与「幂等 cleanup 注册」，重连重新登记（二次断开零孤儿计时器）；pull-refresh/swipe-cell 手势中被摘挂按取消复位（pointerState/phase/data-dragging、drag 镜像），重连后完整手势仍恰好一次事件；跨引擎 spec 无 DSD 守卫分支改为 `shadowRoot===null` + CSR 关键文本断言；index-bar fixture 改为真正可滚动列表。
 
 ### 非目标
 

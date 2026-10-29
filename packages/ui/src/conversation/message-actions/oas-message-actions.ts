@@ -100,9 +100,14 @@ export class OASMessageActions extends OASElement {
   }
 
   protected override hydrate(): boolean {
-    if (!this.shadow.querySelector('[part="actions"]')) return false
+    const box = this.shadow.querySelector<HTMLElement>('[part="actions"]')
+    if (!box) return false
+    // 关键子结构：快照按钮数必须与 actions 数据一致（缺按钮即视为结构不符 → 回退 render；
+    // 否则 update 的 innerHTML 守卫会以 childElementCount>0 采纳残缺快照，交互候选丢失）
+    const raw = this.getAttr('actions', '')
+    if (box.querySelectorAll('button.action').length !== this.parseActions(raw).length) return false
     // 恢复已渲染内容的 raw 缓存：update 据此跳过 innerHTML 重建、采纳快照按钮节点
-    this.actionsRaw = this.getAttr('actions', '')
+    this.actionsRaw = raw
     this.bind()
     return true
   }

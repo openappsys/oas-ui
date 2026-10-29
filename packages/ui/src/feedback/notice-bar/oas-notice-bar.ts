@@ -6,6 +6,7 @@ import { errorPath } from '@oas-ui/icons/icons/error'
 import { infoPath } from '@oas-ui/icons/icons/info'
 import { warningPath } from '@oas-ui/icons/icons/warning'
 import { safeUrl } from '../../shared/safe-url.js'
+import { isSsrRuntime } from '../../shared/ssr-runtime.js'
 
 /**
  * oas-notice-bar —— 通告栏（feedback 族，移动原生形态批）。
@@ -81,11 +82,6 @@ function resolveIntervalMs(raw: string): number {
 /** prefers-reduced-motion 探测（happy-dom 等环境可能缺失 matchMedia） */
 function prefersReducedMotion(): boolean {
   return typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches === true
-}
-
-/** SSR shim 同样提供 window/document；只认渲染器显式标记，渲染段不得启动真实计时器 */
-function isSsrRuntime(): boolean {
-  return typeof window === 'undefined' || (window as Window & { __OAS_SSR__?: boolean }).__OAS_SSR__ === true
 }
 
 const STYLE = `
@@ -297,10 +293,15 @@ export class OASNoticeBar extends OASElement {
   private lastItemsRaw: string | null = null
   /** 上一帧写入的条目文本：相同不重写（不与淡入淡出过渡打架） */
   private lastTextSet = ''
-  /** 上一帧渲染的图标 path 内容：相同不重写 innerHTML */
+  /** 上一帧渲染的图标完整标记（`<svg>` 包裹 path）：相同不重写 innerHTML */
   private lastIconContent = ''
   /** 上一帧物化进 marquee 的宿主内容指纹：相同不重建 */
   private lastScrollSig = ''
+  /**
+   * cleanup 登记幂等标记。基类 disconnectedCallback 执行后会清空 cleanupFns，
+   * 重连必须重新登记（否则重连后新开的计时器在二次断开时无人清理 → 孤儿）。
+   */
+  private cleanupRegistered = false
 
   /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
   private template(): string {
@@ -320,7 +321,7 @@ export class OASNoticeBar extends OASElement {
     `
   }
 
-  /** 缓存节点引用 + 绑定事件（render 与水合路径共用） */
+  /** 缓存节点引用 + 绑定事件（render / hydrate / 重连共用；具名 handler 保证重入不双绑） */
   private bind(): void {
     this.barEl = this.shadow.querySelector<HTMLElement>('[part="bar"]')
     this.iconEl = this.shadow.querySelector<HTMLElement>('[part="icon"]')
@@ -333,16 +334,38 @@ export class OASNoticeBar extends OASElement {
     this.actionBtnEl = this.shadow.querySelector<HTMLButtonElement>('button.action')
     this.closeBtnEl = this.shadow.querySelector<HTMLButtonElement>('[part="close"]')
 
-    this.actionBtnEl?.addEventListener('click', () => this.emit('action-click'))
-    this.closeBtnEl?.addEventListener('click', () => this.close())
+    this.actionBtnEl?.addEventListener('click', this.onActionClick)
+    this.closeBtnEl?.addEventListener('click', this.onCloseClick)
     // 默认插槽：内容增减时重刷（scrollable 模式下据此物化进 marquee；同时影响 probe 显隐）。
     // 注意选择器带 .probe 前缀——shadow 里 icon 具名 slot 在前，裸 querySelector('slot') 会抓错
-    this.shadow.querySelector('.probe slot')?.addEventListener('slotchange', () => this.update())
+    this.shadow.querySelector('.probe slot')?.addEventListener('slotchange', this.onSlotChange)
     // icon 插槽：内容增减切换默认图标显隐
-    this.shadow.querySelector('slot[name="icon"]')?.addEventListener('slotchange', () => this.update())
+    this.shadow.querySelector('slot[name="icon"]')?.addEventListener('slotchange', this.onSlotChange)
 
-    // 断开连接时清理计时器（防孤儿定时器）；重连后由 update 依据连接态指纹重启轮播
+    this.ensureCleanup()
+  }
+
+  private onActionClick = (): void => {
+    this.emit('action-click')
+  }
+
+  private onCloseClick = (): void => {
+    this.close()
+  }
+
+  private onSlotChange = (): void => {
+    this.update()
+  }
+
+  /**
+   * 登记断开清理（幂等）：拆「具名 handler 幂等绑定」与「幂等 cleanup 注册」——
+   * 重连时 bind() 会被再调用，但 cleanupFns 已被基类清空，必须重新登记才能真正生效。
+   */
+  private ensureCleanup(): void {
+    if (this.cleanupRegistered) return
+    this.cleanupRegistered = true
     this.onCleanup(() => {
+      this.cleanupRegistered = false
       if (this.closeTimer) {
         clearTimeout(this.closeTimer)
         this.closeTimer = null
@@ -373,6 +396,10 @@ export class OASNoticeBar extends OASElement {
   }
 
   protected override onReconnect(): void {
+    // 断开时 bind 挂的 shadow 内监听随节点保留（addEventListener 同 handler 去重，不会双绑），
+    // 但 onCleanup 登记已被基类清空 → 必须重入 bind() 重新登记清理，否则重连后新开的
+    // 轮播计时器在二次断开时成孤儿。
+    this.bind()
     // 轮播计时器在断开时已被 onCleanup 清理；复位指纹使重连后的 update 重启计时器
     // （连接前后 isConnected 均为 true，指纹不含差异，必须显式复位）
     this.lastCarKey = ''

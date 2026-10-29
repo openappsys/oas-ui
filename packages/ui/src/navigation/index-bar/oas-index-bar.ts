@@ -2,6 +2,7 @@ import { OASElement } from '@oas-ui/core'
 import { isRtl } from '../../shared/direction.js'
 import { parseJsonArray } from '../../shared/json-array.js'
 import { devWarn } from '../../shared/dev-warn.js'
+import { isSsrRuntime } from '../../shared/ssr-runtime.js'
 
 /** 索引栏条目数据 */
 export interface IndexBarItem {
@@ -158,11 +159,6 @@ function prefersReducedMotion(): boolean {
   }
 }
 
-/** SSR shim 同样提供 window/document；渲染段不挂滚动联动监听（升级后由客户端绑定） */
-function isSsrRuntime(): boolean {
-  return typeof window === 'undefined' || (window as Window & { __OAS_SSR__?: boolean }).__OAS_SSR__ === true
-}
-
 let uid = 0
 
 /** sections property 通道非法输入告警去重（同值只告警一次） */
@@ -236,6 +232,8 @@ export class OASIndexBar extends OASElement {
   private scrollRafId = 0
   /** 程序化平滑滚动进行中：抑制 scrollspy 改写高亮（避免动画途中被中间分节抢走） */
   private spySuppressed = false
+  /** 程序化平滑滚动的目标 scrollTop（null = 无进行中程序化滚动；落定判定目标是否可达） */
+  private spyTarget: number | null = null
 
   /** 拖拽态 */
   private dragging = false
@@ -333,6 +331,12 @@ export class OASIndexBar extends OASElement {
     const sections = [...list.querySelectorAll<HTMLElement>('.section')]
     const letters = [...bar.querySelectorAll<HTMLButtonElement>('.letter')]
     if (sections.length !== this.sectionsData.length || letters.length !== this.sectionsData.length) return false
+    // 每节条目数必须与数据一致：仅比 section/letter 数量会漏掉「条目缺失」的快照，
+    // 接管后点击/跳转按 data-* 索引找条目会落空（静默失效）
+    for (let i = 0; i < sections.length; i++) {
+      const count = sections[i]!.querySelectorAll('.section-items > .item').length
+      if (count !== this.sectionsData[i]!.items.length) return false
+    }
     this.bind()
     this.sectionEls = sections
     this.letterEls = letters
@@ -543,6 +547,7 @@ export class OASIndexBar extends OASElement {
       this.scrollRafId = 0
     }
     this.spySuppressed = false
+    this.spyTarget = null
     this.dragging = false
     this.dragPointerId = null
     this.dragIndex = -1
@@ -621,6 +626,7 @@ export class OASIndexBar extends OASElement {
     const to = Math.max(0, y)
     if (prefersReducedMotion() || Math.abs(to - from) < 1) {
       this.writeScroll(root, to)
+      this.spyTarget = null
       return
     }
     if (this.scrollRafId) {
@@ -629,6 +635,7 @@ export class OASIndexBar extends OASElement {
     }
     // 动画期间抑制 scrollspy，避免高亮被途经的中间分节抢走；落定后再交回滚动联动
     this.spySuppressed = true
+    this.spyTarget = to
     const duration = 300
     const start = performance.now()
     const ease = (t: number): number => (t < 0.5 ? 4 * t ** 3 : 1 - Math.pow(-2 * t + 2, 3) / 2)
@@ -640,6 +647,11 @@ export class OASIndexBar extends OASElement {
       } else {
         this.scrollRafId = 0
         this.spySuppressed = false
+        const target = this.spyTarget
+        this.spyTarget = null
+        // 落定判定：目标不可达（短内容 + 固定高度时 scrollTop 写不进去、或列表已滚到底）
+        // 时保持用户选中的分节，不得跑 scrollspy——否则会算回第 0 节并二次派发 oas-change
+        if (target !== null && Math.abs(this.readScroll(root) - target) > 1) return
         this.handleScroll()
       }
     }

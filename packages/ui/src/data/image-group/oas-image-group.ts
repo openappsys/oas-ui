@@ -1,11 +1,7 @@
 import { OASElement } from '@oas-ui/core'
 import '../image/index.js'
 import type { OASImage } from '../image/oas-image.js'
-
-/** SSR shim 同样提供 window/document；只认渲染器显式标记，服务端不挂异步观察器 */
-function isSsrRuntime(): boolean {
-  return typeof window === 'undefined' || (window as Window & { __OAS_SSR__?: boolean }).__OAS_SSR__ === true
-}
+import { isSsrRuntime } from '../../shared/ssr-runtime.js'
 
 const STYLE = `
 :host {
@@ -157,9 +153,11 @@ export class OASImageGroup extends OASElement {
     this.update()
   }
 
-  /** 真水合：校验 SSR 快照结构（group 骨架存在）后直接接管，跳过 shadow 重建 */
+  /** 真水合：校验 SSR 快照结构（group 骨架 + 共享预览宿主）后直接接管，跳过 shadow 重建 */
   protected override hydrate(): boolean {
-    if (!this.shadow.querySelector('[part="group"]')) return false
+    const group = this.shadow.querySelector('[part="group"]')
+    const host = this.shadow.querySelector('oas-image[part="preview-host"]')
+    if (!group || !host) return false
     this.bind()
     return true
   }

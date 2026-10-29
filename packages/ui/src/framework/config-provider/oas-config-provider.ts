@@ -1,5 +1,6 @@
 import { OASElement, notifyConfigProviders } from '@oas-ui/core'
 import { devWarn } from '../../shared/dev-warn.js'
+import { isSsrRuntime } from '../../shared/ssr-runtime.js'
 
 const STYLE = `
 :host {
@@ -16,11 +17,6 @@ const warnedConfig = new Set<string>()
 
 const SYSTEM_THEME_QUERY = '(prefers-color-scheme: dark)'
 type StoredTheme = 'light' | 'dark' | 'system'
-
-/** SSR shim 同样提供 window/document；只认渲染器显式标记，不能把 shim 当真实浏览器。 */
-function isSsrRuntime(): boolean {
-  return typeof window === 'undefined' || (window as Window & { __OAS_SSR__?: boolean }).__OAS_SSR__ === true
-}
 
 /** 存储协议仅接受 { theme: 'light' | 'dark' | 'system' }；坏 JSON/其他形态一律视为无偏好。 */
 function parseStoredTheme(raw: string | null): StoredTheme | null {

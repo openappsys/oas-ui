@@ -46,6 +46,27 @@ describe('oas-message-actions', () => {
     expect(remove!.disabled).toBe(true)
   })
 
+  it('DSD 回退：快照按钮数与 actions 不符时 render 全量重建（关键子结构校验）', () => {
+    const actions = JSON.stringify([
+      { key: 'copy', label: '复制' },
+      { key: 'retry', label: '重试' },
+    ])
+    const ref = mount({ actions })
+    const snapshot = ref.shadowRoot!.innerHTML
+    ref.remove()
+
+    const el = new OASMessageActions()
+    el.setAttribute('actions', actions)
+    el.shadowRoot!.innerHTML = `<meta data-oas-ssr="oas-message-actions" data-oas-ssr-v="1">${snapshot}`
+    // 快照按钮缺失（actions 仍声明两条）
+    el.shadowRoot!.querySelector('button.action')!.remove()
+    document.body.appendChild(el)
+
+    expect(el.shadowRoot!.querySelector('meta[data-oas-ssr]')).toBeNull()
+    const buttons = [...el.shadowRoot!.querySelectorAll<HTMLButtonElement>('button.action')]
+    expect(buttons.map((b) => b.textContent)).toEqual(['复制', '重试'])
+  })
+
   it('label 按文本渲染，不注入 HTML', () => {
     const el = mount({ actions: JSON.stringify([{ key: 'x', label: '<img src=x onerror=alert(1)>' }]) })
     const button = el.shadowRoot!.querySelector<HTMLButtonElement>('.action')!

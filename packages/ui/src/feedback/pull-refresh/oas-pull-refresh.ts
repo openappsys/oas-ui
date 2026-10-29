@@ -225,7 +225,11 @@ export class OASPullRefresh extends OASElement {
     // 原生 touchmove（passive:false）：pan-y 下垂直手势归浏览器——顶部下拉（dy>0）必须
     // preventDefault 阻断浏览器接管（否则 pointercancel 打断 pointer 序列，移动仿真实抓 idle 不动）
     this.scrollEl?.addEventListener('touchmove', this.onTouchMove, { passive: false })
-    this.onCleanup(() => this.clearSuccessTimer())
+    // 断开清理：success 计时器 + 进行中手势（摘挂即取消，见 abortGesture）
+    this.onCleanup(() => {
+      this.clearSuccessTimer()
+      this.abortGesture()
+    })
   }
 
   protected override render(): void {
@@ -244,9 +248,12 @@ export class OASPullRefresh extends OASElement {
   /**
    * 断开重连：重绑手势监听（同 handler 去重）并恢复被 onCleanup 清掉的 success 计时器。
    * 不恢复会让「success 停留期间被摘挂」的实例永久停在 success 视觉。
+   * 同时复位进行中手势：断开时 pointerState/phase 不会自动归位，重连后 phase 卡 pulling
+   * 会让 onPointerDown 的 phase 守卫永久拦下后续下拉（手势永久失效）。
    */
   protected override onReconnect(): void {
     this.bind()
+    this.abortGesture()
     if (this.phase === 'success' && this.successTimer === null) {
       this.successTimer = setTimeout(() => {
         this.successTimer = null
@@ -367,6 +374,16 @@ export class OASPullRefresh extends OASElement {
     if (!st?.taken) return
     this.toggleAttribute('data-dragging', false)
     this.release(st.pointerId)
+  }
+
+  /**
+   * 中断进行中手势（断开清理 / 重连复位）：清指针态与 data-dragging 镜像，走回弹归位。
+   * 幂等：无手势且非 pulling 时零副作用。
+   */
+  private abortGesture(): void {
+    if (!this.pointerState && this.phase !== 'pulling') return
+    this.finishDrag()
+    this.springBack()
   }
 
   // ---------- 状态机 ----------

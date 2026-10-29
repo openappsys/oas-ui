@@ -517,6 +517,31 @@ describe('OASSwipeCell', () => {
     expect(styleText(mount())).toContain(':host([hidden])')
   })
 
+  // ---------- 断开重连 ----------
+
+  it('手势中摘挂重连：drag 态复位，重连后完整横滑仍开合并派发一次 oas-open', () => {
+    const el = mount()
+    stubActionsWidth(el, 80)
+    const opens: unknown[] = []
+    el.addEventListener('oas-open', (e) => opens.push((e as CustomEvent).detail))
+    const c = content(el)
+    // 手势进行到一半（已判定横轴 → data-dragging + drag 非空）
+    c.dispatchEvent(pointer('pointerdown', 200, 10))
+    c.dispatchEvent(pointer('pointermove', 120, 10))
+    expect(el.hasAttribute('data-dragging')).toBe(true)
+
+    el.remove()
+    document.body.appendChild(el)
+
+    // 重连必须清 drag：否则 onPointerDown 的 `if (this.drag) return` 永久拦死后续手势
+    expect(el.hasAttribute('data-dragging'), '重连后拖拽镜像清除').toBe(false)
+
+    swipe(el, 200, 120, 10)
+    expect(el.hasAttribute('open')).toBe(true)
+    expect(el.getAttribute('open-side')).toBe('end')
+    expect(opens).toEqual([{ side: 'end' }])
+  })
+
   // ---------- DSD 真水合 ----------
 
   it('DSD 真水合：快照 + 指纹接管（shadow 不重建、结构保持、交互仍可用）', () => {
