@@ -102,6 +102,32 @@
   <p id="fp-key-out" style="margin: var(--oas-space-2) 0 0; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">等待键盘操作。</p>
 </DemoBlock>
 
+## 内容溢出与滚动
+
+内容超出面板时内容区自然滚动（`overflow: auto`）。这时内容区会补 `tabindex="0"`：键盘用户 Tab 到内容区后用方向键 / PageDown 滚动，焦点环走 `--oas-focus-ring`。内容不溢出时不加 `tabindex`——不产生空的 Tab 停靠点；面板缩放、内容变化、开合都会重新判定。
+
+<DemoBlock title="内容溢出：滚动区键盘可达">
+  <div style="position: relative; min-height: 260px">
+    <oas-floating-panel id="fp-scroll" open resizable panel-title="构建日志" rect="0,0,320,200">
+      <ol style="margin: 0; padding-inline-start: var(--oas-space-4); font-size: var(--oas-font-size-sm); color: var(--oas-color-text-secondary)">
+        <li>解析依赖图 …… 完成</li>
+        <li>编译 core …… 完成</li>
+        <li>编译 i18n …… 完成</li>
+        <li>编译 icons …… 完成</li>
+        <li>编译 theme …… 完成</li>
+        <li>编译 ui …… 完成</li>
+        <li>生成类型声明 …… 完成</li>
+        <li>打包 CDN 产物 …… 完成</li>
+        <li>校验导出面 …… 完成</li>
+        <li>生成文档站点 …… 完成</li>
+        <li>产物大小预算校验 …… 通过</li>
+        <li>构建结束：12 个任务全部完成</li>
+      </ol>
+    </oas-floating-panel>
+  </div>
+  <p id="fp-scroll-out" style="margin: var(--oas-space-2) 0 0; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">内容超出面板：Tab 到内容区后用方向键滚动；放大面板后内容区不再占 Tab 位。</p>
+</DemoBlock>
+
 ## 子浮层 Esc 优先级
 
 面板内的浮层（如 `oas-dropdown`）会压入更晚的 Esc 层：第一次 Esc 只关闭子浮层，面板保持打开；再按 Esc 才关闭面板。多个同族面板同开时，Esc 关闭的是**视觉最前**（最近置前）的那一块，而不是最后打开的那一块——点击/`bringToFront()` 置前会同步把该面板的 Esc 层提到栈顶。

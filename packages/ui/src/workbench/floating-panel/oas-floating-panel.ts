@@ -170,6 +170,12 @@ const STYLE = `
   overflow: auto;
   padding: var(--oas-space-3);
 }
+/* 键盘可达（axe: scrollable-region-focusable）：内容真实溢出时脚本补 tabindex=0，
+   焦点环走既有 token；用 inset 画在滚动口内侧，不被框体 overflow:hidden 裁掉 */
+.content:focus-visible {
+  outline: none;
+  box-shadow: inset var(--oas-focus-ring);
+}
 .handle {
   position: absolute;
   z-index: 1;
@@ -249,6 +255,11 @@ const STYLE = `
     outline-offset: 2px;
   }
   .close:focus-visible {
+    outline: 2px solid;
+    outline-offset: -2px;
+  }
+  /* 内容滚动区同样回退实线 outline（inset box-shadow 在强制色下被禁用） */
+  .content:focus-visible {
     outline: 2px solid;
     outline-offset: -2px;
   }
@@ -338,6 +349,7 @@ export class OASFloatingPanel extends OASElement {
   private titleSlotEl: HTMLSlotElement | null = null
   private closeBtnEl: HTMLButtonElement | null = null
   private contentEl: HTMLElement | null = null
+  private contentSlotEl: HTMLSlotElement | null = null
   private handleEls: HTMLElement[] = []
 
   private titleId = ''
@@ -356,8 +368,11 @@ export class OASFloatingPanel extends OASElement {
   private interaction: InteractionState | null = null
   private rafId = 0
 
-  /** 标题栏实测观察器（富标题撑高时把实测 px 写回 host token；断开释放、重连重挂） */
-  private titlebarObserver: ResizeObserver | null = null
+  /** 布局实测观察器（标题栏高度 + 内容溢出判定；断开释放、重连重挂） */
+  private layoutObserver: ResizeObserver | null = null
+
+  /** 当前被观察的内容节点（slotchange 后重算差集，避免重复 observe/漏摘） */
+  private observedContentNodes = new Set<Element>()
 
   /** 首帧即打开（属性在连接时已存在）：不抢焦点（SSR/DSD 与文档页多实例场景避免载入即滚焦） */
   private initiallyOpen = false
@@ -386,8 +401,9 @@ export class OASFloatingPanel extends OASElement {
 
   override disconnectedCallback(): void {
     this.cancelInteraction()
-    this.titlebarObserver?.disconnect()
-    this.titlebarObserver = null
+    this.layoutObserver?.disconnect()
+    this.layoutObserver = null
+    this.observedContentNodes.clear()
     this.releaseEscapeLayer?.()
     this.releaseEscapeLayer = null
     this.escapeLayer = null
@@ -400,7 +416,7 @@ export class OASFloatingPanel extends OASElement {
   /** 断开重连：重新登记叠放并恢复 Esc 层（不抢焦点、不重建 shadow） */
   protected override onReconnect(): void {
     if (isSsrRuntime()) return
-    this.observeTitlebar()
+    this.observeLayout()
     this.stackUnregister ??= this.stack.register(this.stackMember)
     if (!this.hasAttr('open')) return
     // 断开期间改 open 的边沿副作用被 isConnected 守卫跳过，这里补齐 Esc 层 / 叠放 / 焦点基线
@@ -445,15 +461,18 @@ export class OASFloatingPanel extends OASElement {
     this.titleSlotEl = this.shadow.querySelector<HTMLSlotElement>('slot[name="title"]')
     this.closeBtnEl = this.shadow.querySelector<HTMLButtonElement>('[part="close"]')
     this.contentEl = this.shadow.querySelector('[part="content"]')
+    this.contentSlotEl = this.contentEl?.querySelector<HTMLSlotElement>('slot') ?? null
     this.handleEls = [...this.shadow.querySelectorAll<HTMLElement>('[part="handle"]')]
 
     this.closeBtnEl?.addEventListener('click', this.onCloseClick)
     // 标题插槽内容增减影响 aria-labelledby 与兜底名称
     this.titleSlotEl?.addEventListener('slotchange', this.onSlotChange)
+    // 内容插槽分配变化：重新收集被观察的内容节点并复判溢出
+    this.contentSlotEl?.addEventListener('slotchange', this.onContentSlotChange)
 
     if (isSsrRuntime()) return
 
-    this.observeTitlebar()
+    this.observeLayout()
     // 静态交互绑定：同一 handler/target 重复 add 规范去重（重连幂等）
     this.frameEl?.addEventListener('pointerdown', this.onFramePointerDown)
     this.frameEl?.addEventListener('keydown', this.onFrameKeydown)
@@ -462,20 +481,66 @@ export class OASFloatingPanel extends OASElement {
   }
 
   /**
-   * 观察标题栏实测高度：富标题插槽撑高 > 默认 token 时，整段上侧/上角手柄会被标题栏（z-index: 2）
-   * 盖住，顶部与两个上角缩放失效。客户端把实测内容高写回 host 的
-   * `--oas-floating-panel-titlebar-height`（px），n/ne/nw 手柄随之下移。
+   * 布局实测观察器（客户端）：同时服务两件事——
+   * 1. 标题栏实测高度：富标题插槽撑高 > 默认 token 时，整段上侧/上角手柄会被标题栏（z-index: 2）
+   *    盖住，顶部与两个上角缩放失效。把实测内容高写回 host 的
+   *    `--oas-floating-panel-titlebar-height`（px），n/ne/nw 手柄随之下移。
+   * 2. 内容溢出复判：面板尺寸变化（拖动缩放 / 宿主改 rect）或内容块尺寸变化时，
+   *    重新决定内容滚动区是否补 tabindex（见 syncContentFocusable）。
    *
-   * SSR 快照仍用默认 token（服务端不测量，无差异帧）；断开释放观察器，重连重挂。
+   * SSR 快照仍用默认 token、不含客户端测量；断开释放观察器，重连重挂。
    */
-  private observeTitlebar(): void {
+  private observeLayout(): void {
     if (isSsrRuntime() || typeof ResizeObserver === 'undefined') return
+    this.layoutObserver ??= new ResizeObserver(() => {
+      this.syncTitlebarHeight()
+      this.syncContentFocusable()
+    })
     const bar = this.titlebarEl
-    if (!bar) return
-    this.titlebarObserver ??= new ResizeObserver(() => this.syncTitlebarHeight())
-    this.titlebarObserver.observe(bar)
+    if (bar) this.layoutObserver.observe(bar)
+    this.observeContent()
     // 首连/重连立即补测一次：RO 首次回调在下一帧，水合后不必等一帧
     this.syncTitlebarHeight()
+    this.syncContentFocusable()
+  }
+
+  /**
+   * 观察内容盒与已分配的内容元素：
+   * - `.content` 盒变化 → 面板被缩放/改 rect，滚动口尺寸变了；
+   * - 已分配内容元素变化 → 内容块（图片加载、列表变长、富文本增高）自身高度变了，
+   *   `.content` 盒不变但 scrollHeight 变了，只观察盒会漏判。
+   * 文本节点无法被 RO 观察，靠 slotchange（节点增删替换）重收集 + update() 复判兜底。
+   */
+  private observeContent(): void {
+    const box = this.contentEl
+    const observer = this.layoutObserver
+    if (!box || !observer) return
+    observer.observe(box)
+    const next = new Set<Element>()
+    for (const node of this.contentSlotEl?.assignedNodes() ?? []) {
+      if (node.nodeType === Node.ELEMENT_NODE) next.add(node as Element)
+    }
+    for (const el of this.observedContentNodes) {
+      if (!next.has(el)) observer.unobserve(el)
+    }
+    for (const el of next) observer.observe(el)
+    this.observedContentNodes = next
+  }
+
+  /**
+   * 滚动区键盘可达性（axe: scrollable-region-focusable）：内容真实溢出（纵向或横向）才补
+   * tabindex=0，否则移除——不可滚动时不留空 Tab 停靠点（同 list body / resource scroller 口径）。
+   * 关闭态（宿主 display:none）滚动区不可见，恒移除；SSR 段不测量（快照不含客户端判定结果）。
+   */
+  private syncContentFocusable(): void {
+    const box = this.contentEl
+    if (!box) return
+    const overflow =
+      !isSsrRuntime() &&
+      this.hasAttr('open') &&
+      (box.scrollHeight > box.clientHeight + 1 || box.scrollWidth > box.clientWidth + 1)
+    if (overflow) box.setAttribute('tabindex', '0')
+    else box.removeAttribute('tabindex')
   }
 
   private syncTitlebarHeight(): void {
@@ -532,6 +597,8 @@ export class OASFloatingPanel extends OASElement {
     this.syncCloseButton()
     this.syncOpenState()
     this.syncFrontLayer()
+    // 放在最后：open/rect 变更后按最新布局判定内容滚动区是否可聚焦
+    this.syncContentFocusable()
   }
 
   /**
@@ -717,6 +784,11 @@ export class OASFloatingPanel extends OASElement {
 
   private onSlotChange = (): void => {
     this.update()
+  }
+
+  private onContentSlotChange = (): void => {
+    this.observeContent()
+    this.syncContentFocusable()
   }
 
   // ===== Esc 层 =====

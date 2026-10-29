@@ -633,16 +633,109 @@ test('嵌套组件 shadow 内焦点：close() 后回到打开前元素（独立 
   expect(result.returned, `关闭后焦点回到打开前按钮（实际 ${result.active}）`).toBe(true)
 })
 
-test('axe：面板无 critical/serious 违规（含无标题面板）', async ({ page }) => {
-  await gotoPage(page, ['#fp-basic', '#fp-ctrl', '#fp-nest', '#fp-plain'])
+test('axe：面板无 critical/serious 违规（含无标题 / 内容溢出面板）', async ({ page }) => {
+  await gotoPage(page, ['#fp-basic', '#fp-ctrl', '#fp-nest', '#fp-plain', '#fp-scroll'])
   const results = await new AxeBuilder({ page })
     .include('#fp-basic')
     .include('#fp-ctrl')
     .include('#fp-nest')
     .include('#fp-plain')
+    .include('#fp-scroll')
     .analyze()
   const blocking = results.violations.filter((v) => v.impact === 'critical' || v.impact === 'serious')
   expect(blocking.map((v) => `${v.id}: ${v.help}`)).toEqual([])
+  // 内容溢出时滚动区必须键盘可达（溢出 demo 真溢出，不允许靠缩内容规避）
+  expect(
+    results.violations.filter((v) => v.id === 'scrollable-region-focusable').map((v) => v.id),
+    'axe scrollable-region-focusable 零违规',
+  ).toEqual([])
+})
+
+test('内容溢出：滚动区可 Tab 聚焦并键盘滚动；不溢出时无 Tab 停靠点', async ({ page }) => {
+  await gotoPage(page, ['#fp-scroll', '#fp-ctrl'])
+
+  const contentState = (id: string) =>
+    page.evaluate((panelId) => {
+      const content = document.getElementById(panelId)!.shadowRoot!.querySelector<HTMLElement>('[part="content"]')!
+      return {
+        tabindex: content.getAttribute('tabindex'),
+        scrollTop: content.scrollTop,
+        scrollHeight: content.scrollHeight,
+        clientHeight: content.clientHeight,
+      }
+    }, id)
+
+  // 不溢出的面板不占 Tab 位（不留空停靠点）
+  expect((await contentState('fp-ctrl')).tabindex, '不溢出无 tabindex').toBeNull()
+
+  // 内容变化检测：不改 rect，追加高内容块后自动补 tabindex；移除后回退
+  await page.evaluate(() => {
+    const ctrl = document.getElementById('fp-ctrl')!
+    const block = document.createElement('div')
+    block.id = 'fp-ctrl-extra'
+    block.style.height = '600px'
+    block.textContent = '追加的高内容块'
+    ctrl.appendChild(block)
+  })
+  await expect
+    .poll(async () => (await contentState('fp-ctrl')).tabindex, { message: '内容变高后补 tabindex' })
+    .toBe('0')
+  await page.evaluate(() => document.getElementById('fp-ctrl-extra')!.remove())
+  await expect
+    .poll(async () => (await contentState('fp-ctrl')).tabindex, { message: '内容移除后撤 tabindex' })
+    .toBeNull()
+
+  const overflowing = await contentState('fp-scroll')
+  expect(
+    overflowing.scrollHeight,
+    `溢出 demo 必须真实溢出（scrollHeight ${overflowing.scrollHeight} / clientHeight ${overflowing.clientHeight}）`,
+  ).toBeGreaterThan(overflowing.clientHeight + 1)
+  expect(overflowing.tabindex, '溢出时补 tabindex=0').toBe('0')
+
+  // 真实键盘路径：框体聚焦后 Tab（关闭钮 → 内容区）
+  await page.evaluate(() => {
+    const host = document.getElementById('fp-scroll')!
+    host.scrollIntoView({ block: 'center' })
+    ;(host.shadowRoot!.querySelector('[part="frame"]') as HTMLElement).focus()
+  })
+  await page.keyboard.press('Tab')
+  await page.keyboard.press('Tab')
+  const focused = await page.evaluate(() => {
+    let active: Element | null = document.activeElement
+    while (active?.shadowRoot?.activeElement) active = active.shadowRoot.activeElement
+    return { part: active?.getAttribute('part') ?? null, ring: active ? getComputedStyle(active).boxShadow : 'none' }
+  })
+  expect(focused.part, '键盘 Tab 落到内容滚动区').toBe('content')
+  expect(focused.ring, '焦点环可见（复用 --oas-focus-ring，不新增颜色）').not.toBe('none')
+
+  const before = (await contentState('fp-scroll')).scrollTop
+  await page.keyboard.press('PageDown')
+  await expect
+    .poll(async () => (await contentState('fp-scroll')).scrollTop, { message: '键盘可直接滚动内容区' })
+    .toBeGreaterThan(before)
+
+  // 放大到内容不再溢出：tabindex 移除（不留下永久 Tab 停靠点）
+  await page.evaluate(() => document.getElementById('fp-scroll')!.setAttribute('rect', '0,0,320,420'))
+  await expect
+    .poll(async () => (await contentState('fp-scroll')).tabindex, { message: '不再溢出时移除 tabindex' })
+    .toBeNull()
+  expect((await contentState('fp-scroll')).scrollHeight).toBeLessThanOrEqual(
+    (await contentState('fp-scroll')).clientHeight + 1,
+  )
+
+  // 缩回溢出尺寸：tabindex 重新补上（判定随布局变化）
+  await page.evaluate(() => document.getElementById('fp-scroll')!.setAttribute('rect', '0,0,320,200'))
+  await expect
+    .poll(async () => (await contentState('fp-scroll')).tabindex, { message: '再次溢出时补回 tabindex' })
+    .toBe('0')
+
+  // 关闭态：不可见滚动区不留 Tab 停靠点；重开按实测复判
+  await page.evaluate(() => document.getElementById('fp-scroll')!.removeAttribute('open'))
+  await expect
+    .poll(async () => (await contentState('fp-scroll')).tabindex, { message: '关闭时移除 tabindex' })
+    .toBeNull()
+  await page.evaluate(() => document.getElementById('fp-scroll')!.setAttribute('open', ''))
+  await expect.poll(async () => (await contentState('fp-scroll')).tabindex, { message: '重开复判（仍溢出）' }).toBe('0')
 })
 
 test.describe('coarse 指针热区', () => {

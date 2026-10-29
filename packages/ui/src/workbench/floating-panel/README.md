@@ -85,16 +85,27 @@
 因此内容里**嵌套组件 shadow 内**的焦点同样归还，不会丢到 `body`；用户已把焦点移到面板外则不抢。
 键盘：面板框体可聚焦，方向键移动、`Shift` + 方向键缩放（8px/步），焦点在输入类控件内时不拦截。
 
+**内容滚动区（键盘可达，axe: `scrollable-region-focusable`）**：内容区 `.content` 是滚动口
+（`overflow: auto`）。只有在**真实溢出**（`scrollHeight > clientHeight + 1` 或
+`scrollWidth > clientWidth + 1`）且面板打开时才补 `tabindex="0"`，键盘用户可 Tab 到内容区用方向键 /
+PageDown 滚动；不溢出、或面板关闭（`display: none`，滚动区不可见）时移除该属性——**不引入永久 Tab
+停靠点**（同 `oas-list` body / `oas-resource` scroller 口径）。判定时机：`update()`（开合/`rect` 变更）、
+内容槽 `slotchange`、以及 ResizeObserver（同时观察内容盒与已分配内容元素——面板缩放改内容盒尺寸，
+图片加载/列表变长改内容块尺寸，二者都会改变是否溢出）。写 `tabindex` 不触发重排，不产生布局抖动。
+焦点环复用 `--oas-focus-ring`（`box-shadow: inset`，画在滚动口内侧不被框体 `overflow: hidden` 裁掉），
+forced-colors 下回退 `outline: 2px solid`；不新增颜色 token。SSR 快照不含客户端测量，故不含 `tabindex`。
+
 ## 4. 清理与重连
 
 - 打开态挂：document Esc 层（共享 `overlay-stack`，后开的子浮层优先消费）、面板 pointerdown 置前、
   进行中手势的 document 监听、rAF 合并帧。
 - 断开连接：释放 Esc 层、移除 document/window 监听、取消 rAF、取消进行中手势（回起始 rect、零事件）、
-  断开标题栏 `ResizeObserver`、从叠放登记摘除；**保留 `open` 属性与 rect**（状态在宿主属性，不在内部）。
-- 重连：重新登记叠放（打开态重新置前）与 Esc、恢复交互监听、重挂标题栏观察器，不重建 shadow/内部状态；
-  进行中手势不跨摘挂续传。
+  断开布局 `ResizeObserver`（标题栏高度 + 内容溢出）并清空被观察内容节点、从叠放登记摘除；
+  **保留 `open` 属性与 rect**（状态在宿主属性，不在内部）。
+- 重连：重新登记叠放（打开态重新置前）与 Esc、恢复交互监听、重挂布局观察器（重新观察内容盒 +
+  已分配内容元素并按实测复判溢出），不重建 shadow/内部状态；进行中手势不跨摘挂续传。
 - SSR（`window.__OAS_SSR__`）：不登记叠放、不挂 document/window 监听、不抢焦点、不测量边界、
-  不建标题栏观察器（快照用默认标题栏 token）。
+  不建布局观察器、不按测量写 `tabindex`（快照用默认标题栏 token）。
 
 ## 5. SSR / 水合
 
@@ -113,7 +124,9 @@
 
 - `geometry.test.ts`：解析/夹取/移动/缩放/键盘/RTL/退化。
 - `panel-stack.test.ts`：置前顺序、多实例、断开接任、z 值恒定。
-- `oas-floating-panel.test.ts`：开合事件矩阵、before-close、指针/键盘/焦点/清理/重连、属性回写。
+- `oas-floating-panel.test.ts`：开合事件矩阵、before-close、指针/键盘/焦点/清理/重连、属性回写、
+  内容滚动区溢出判定（溢出才 `tabindex`、亚像素容差、slotchange 重收集、关闭/重连复判）。
 - `packages/ui/qa-regression/floating-panel.spec.ts`：真实浏览器拖拽/缩放/置前/子浮层 Esc/受控回写/
-  coarse/dark/reduced-motion/axe/console。
+  coarse/dark/reduced-motion/axe（含内容溢出面板 `scrollable-region-focusable` 零违规）/
+  键盘 Tab 到内容区并真实滚动/console。
 - `packages/ssr`：白名单计数、DSD fixture（禁 JS 可见 + 真水合不重建）。

@@ -1206,6 +1206,148 @@ describe('OASFloatingPanel 标题栏高度实测', () => {
   })
 })
 
+// ===== 内容滚动区键盘可达（fix round 4：axe scrollable-region-focusable） =====
+
+describe('OASFloatingPanel 内容滚动区键盘可达', () => {
+  class FakeRO implements ResizeObserver {
+    static instances: FakeRO[] = []
+    readonly targets = new Set<Element>()
+    disconnected = false
+    constructor(private readonly cb: ResizeObserverCallback) {
+      FakeRO.instances.push(this)
+    }
+    observe(target: Element): void {
+      this.disconnected = false
+      this.targets.add(target)
+    }
+    unobserve(target: Element): void {
+      this.targets.delete(target)
+    }
+    disconnect(): void {
+      this.targets.clear()
+      this.disconnected = true
+    }
+    trigger(): void {
+      this.cb([], this)
+    }
+  }
+
+  function stubMetrics(el: HTMLElement, box: { scroll?: number; client?: number }): void {
+    Object.defineProperty(el, 'scrollHeight', { configurable: true, value: box.scroll ?? 0 })
+    Object.defineProperty(el, 'clientHeight', { configurable: true, value: box.client ?? 0 })
+    Object.defineProperty(el, 'scrollWidth', { configurable: true, value: 0 })
+    Object.defineProperty(el, 'clientWidth', { configurable: true, value: 0 })
+  }
+
+  const content = (el: OASFloatingPanel): HTMLElement => el.shadowRoot!.querySelector<HTMLElement>('[part="content"]')!
+
+  beforeEach(() => {
+    FakeRO.instances = []
+    vi.stubGlobal('ResizeObserver', FakeRO as unknown as typeof ResizeObserver)
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('真实溢出才补 tabindex=0；不溢出移除（不留空 Tab 停靠点）', () => {
+    const el = mount({ open: '' }, '<p>内容</p>')
+    const box = content(el)
+    // happy-dom 无布局：初始 0/0 不溢出 → 无 tabindex
+    expect(box.hasAttribute('tabindex'), '不溢出不加 tabindex').toBe(false)
+
+    stubMetrics(box, { scroll: 400, client: 120 })
+    FakeRO.instances[0]!.trigger()
+    expect(box.getAttribute('tabindex'), '溢出补 tabindex（键盘可滚动）').toBe('0')
+
+    stubMetrics(box, { scroll: 120, client: 120 })
+    FakeRO.instances[0]!.trigger()
+    expect(box.hasAttribute('tabindex'), '尺寸变大不再溢出时移除 tabindex').toBe(false)
+  })
+
+  it('观察到 1px 亚像素容差不误判：scroll 比 client 大 1 不算溢出', () => {
+    const el = mount({ open: '' }, '<p>内容</p>')
+    const box = content(el)
+    stubMetrics(box, { scroll: 121, client: 120 })
+    FakeRO.instances[0]!.trigger()
+    expect(box.hasAttribute('tabindex')).toBe(false)
+    stubMetrics(box, { scroll: 122, client: 120 })
+    FakeRO.instances[0]!.trigger()
+    expect(box.getAttribute('tabindex')).toBe('0')
+  })
+
+  it('观察内容盒与已分配内容元素；内容块尺寸变化重新判定溢出', () => {
+    const el = mount({ open: '' }, '<div class="block">内容</div>')
+    const ro = FakeRO.instances[0]!
+    const box = content(el)
+    const block = el.querySelector<HTMLElement>('.block')!
+    expect(ro.targets.has(box), '观察内容盒（面板缩放）').toBe(true)
+    expect(ro.targets.has(block), '观察已分配内容元素（内容块变大）').toBe(true)
+
+    stubMetrics(box, { scroll: 300, client: 100 })
+    ro.trigger()
+    expect(box.getAttribute('tabindex')).toBe('0')
+  })
+
+  it('slotchange 重新收集已分配元素（新增内容块也被观察）', () => {
+    const el = mount({ open: '' }, '<p>a</p>')
+    const ro = FakeRO.instances[0]!
+    const added = document.createElement('section')
+    el.appendChild(added)
+    const slot = el.shadowRoot!.querySelector<HTMLSlotElement>('[part="content"] slot')!
+    slot.dispatchEvent(new Event('slotchange'))
+    expect(ro.targets.has(added), '新分配的节点纳入观察').toBe(true)
+  })
+
+  it('关闭态不补 tabindex（不可见滚动区无意义），重新打开复判', () => {
+    const el = mount({ open: '' }, '<p>内容</p>')
+    const box = content(el)
+    stubMetrics(box, { scroll: 400, client: 120 })
+    FakeRO.instances[0]!.trigger()
+    expect(box.getAttribute('tabindex')).toBe('0')
+
+    el.removeAttribute('open')
+    expect(box.hasAttribute('tabindex'), '关闭时移除 tabindex').toBe(false)
+
+    el.setAttribute('open', '')
+    expect(box.getAttribute('tabindex'), '重新打开按实测复判').toBe('0')
+  })
+
+  it('断开释放观察器、重连重挂并复判溢出', () => {
+    const el = mount({ open: '' }, '<p>内容</p>')
+    const box = content(el)
+    stubMetrics(box, { scroll: 400, client: 120 })
+    const ro = FakeRO.instances[0]!
+    ro.trigger()
+    expect(box.getAttribute('tabindex')).toBe('0')
+
+    el.remove()
+    expect(ro.disconnected, '断开释放观察器').toBe(true)
+
+    document.body.appendChild(el)
+    const reconnected = FakeRO.instances.at(-1)!
+    expect(reconnected).not.toBe(ro)
+    expect(reconnected.targets.has(content(el)), '重连重挂内容盒').toBe(true)
+    expect(box.getAttribute('tabindex'), '重连后按实测复判（仍溢出）').toBe('0')
+  })
+
+  it('SSR 运行段不建观察器、不写 tabindex（快照不含客户端测量）', () => {
+    ;(window as Window & { __OAS_SSR__?: boolean }).__OAS_SSR__ = true
+    const el = mount({ open: '' }, '<p>内容</p>')
+    expect(FakeRO.instances).toHaveLength(0)
+    expect(content(el).hasAttribute('tabindex')).toBe(false)
+  })
+
+  it('内容区 :focus-visible 走既有 focus ring token（forced-colors 用 outline 兜底）', () => {
+    const css = styleText(mount({ open: '' }))
+    expect(css, '滚动区焦点环复用 --oas-focus-ring').toMatch(/\.content:focus-visible\s*\{[^}]*var\(--oas-focus-ring\)/)
+    const forced = css.slice(css.indexOf('@media (forced-colors: active)'))
+    expect(forced, '强制色下 box-shadow 被禁用，outline 兜底').toMatch(
+      /\.content:focus-visible\s*\{[^}]*outline:\s*2px solid/,
+    )
+  })
+})
+
 // ===== 断开期间改 open（独立复核 I5） =====
 
 describe('OASFloatingPanel 断开期间改 open', () => {

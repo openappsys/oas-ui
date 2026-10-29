@@ -102,6 +102,32 @@ The frame is focusable: arrow keys move, `Shift` + arrows resize (8px per step),
   <p id="fp-key-out" style="margin: var(--oas-space-2) 0 0; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">Waiting for keyboard input.</p>
 </DemoBlock>
 
+## Overflow and scrolling
+
+Content taller than the panel scrolls inside the content area (`overflow: auto`). The content area then gets `tabindex="0"`: keyboard users can Tab to it and scroll with arrow keys / PageDown, with a focus ring from `--oas-focus-ring`. When nothing overflows no `tabindex` is added — the panel never introduces an empty Tab stop, and the decision is re-evaluated on resize, content changes and open/close.
+
+<DemoBlock title="Overflow: keyboard-scrollable content">
+  <div style="position: relative; min-height: 260px">
+    <oas-floating-panel id="fp-scroll" open resizable panel-title="Build log" rect="0,0,320,200">
+      <ol style="margin: 0; padding-inline-start: var(--oas-space-4); font-size: var(--oas-font-size-sm); color: var(--oas-color-text-secondary)">
+        <li>Resolve dependency graph … done</li>
+        <li>Compile core … done</li>
+        <li>Compile i18n … done</li>
+        <li>Compile icons … done</li>
+        <li>Compile theme … done</li>
+        <li>Compile ui … done</li>
+        <li>Emit type declarations … done</li>
+        <li>Bundle CDN artifacts … done</li>
+        <li>Check export surface … done</li>
+        <li>Build documentation site … done</li>
+        <li>Check artifact size budget … pass</li>
+        <li>Build finished: 12 of 12 tasks done</li>
+      </ol>
+    </oas-floating-panel>
+  </div>
+  <p id="fp-scroll-out" style="margin: var(--oas-space-2) 0 0; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">Content overflows: Tab into it and scroll with arrow keys; make the panel taller and it stops taking a Tab stop.</p>
+</DemoBlock>
+
 ## Nested overlay Esc priority
 
 Overlays inside the panel (such as `oas-dropdown`) push a later Esc layer: the first Esc closes only the child overlay, the panel stays open; a second Esc closes the panel. When several panels of the same family are open, Esc closes the **visually frontmost** (most recently activated) one, not the last opened one — clicking / `bringToFront()` also promotes that panel's Esc layer to the top.
