@@ -5,6 +5,32 @@
 
 ---
 
+## 未发布：无限滚动 headless 控制器（Task 9A）✅
+
+### 功能定义
+
+新增 `packages/ui/src/layout/scroll-area/infinite` 无渲染控制器（`createInfiniteScroll` / `InfiniteScrollController`），消费 `oas-scroll-area` shadow viewport 或任意滚动根，为「上拉加载更多 / 下拉加载历史」提供方向、阈值、双边缘状态机与 prepend 保位。不新增自定义元素、不复制滚动引擎、不改既有组件行为。
+
+### 详细契约
+
+- **根与内容**：`root` 支持 Element / 惰性 getter / null；ScrollArea 宿主自动解析 shadow `[part~="viewport"]`。`content` 可显式指定内容容器，默认 root（slotted 内容）。无 DOM/SSR：attach 返回 false，update no-op，手动 load 仍可用。
+- **方向/阈值**：`direction: 'bottom' | 'top' | 'both'`（默认 bottom，非法回退）；`threshold` px（默认 0，负数/非法回退 0）；`reverse: true` 等价 top + attach 初始滚到底（优先于 direction，rAF 再校正一次，读者滚动后不抢回）。
+- **状态机**：每 edge 独立 `idle | loading | error | complete`。同 edge 在途去重；不同 edge 可并发；`complete` 后不再自动加载；error 只回调一次，自动 update 不重试，`retry(edge?)` 成功后恢复；`reset()` 中止在途、清空 complete/error/loads 并重新武装；`destroy()` 中止并静默回 idle，此后所有命令 no-op。destroy/reset/complete 后迟到结果按请求代际丢弃，不写状态、不触发回调（含 onLoadStart 内 destroy 不发请求、onLoadEnd 内 destroy 不发 onComplete）。
+- **触发与续载**：到达边缘且 armed 时自动触发；离开边缘、内容增长、reset 后重新武装。加载结果带来内容高度增长才允许自动续载，空结果不循环。
+- **prepend 保位**：top 触发前记录首个可见内容项视口 y 与稳定 key（`keyAttribute` 默认 `data-key`，缺失回落 id）；结果落地后按锚点位移补偿 scrollTop；宿主重渲染替换节点按 key 重查；ResizeObserver/资源 load 捕获处理异步撑高；程序补偿的 scroll 回声不释放，读者真实滚动接管后释放。
+- **回调**：load 注入 `{ edge, direction, signal, retry }`；onLoadStart / onLoadEnd(event, result) / onError / onStateChange / onComplete；返回 `false` / `{ complete: true }` / `{ hasMore: false }` 等价 complete。回调抛错隔离为 devWarn，不破坏状态机。
+
+### 非目标
+
+不新增视觉组件/文档页/demo；不做虚拟化、粘底跟随、Pull-to-refresh；不接管滚动条、滚轮、拖拽；不改变 `oas-scroll-area` 既有属性/事件。
+
+### 验收标准
+
+- 单测：方向/阈值/非法值、双 edge 并发与同 edge 去重、complete、error/retry、reset/destroy 迟到结果、onLoadStart/onLoadEnd 内销毁、回调次数与状态序列、keyed prepend 保位、异步撑高 + 用户滚动释放、scroll 回声、reverse、ScrollArea shadow viewport、root=null/手动 load。
+- 全量 test/typecheck/build/API/llms/stats/skill/lint/format/trace/perf:size 通过；无新增文档页，不跑全量 e2e。
+
+---
+
 ## 未发布：chart 小数刻度与标签留白（Task 8A）✅
 
 ### 功能定义
