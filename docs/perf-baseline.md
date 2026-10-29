@@ -24,10 +24,10 @@
 <!-- BEGIN:generated:perf-baseline:packages -->
 | 包 | 文件数 | raw | gzip | brotli |
 | --- | --- | --- | --- | --- |
-| @oas-ui/ui（dist 总大小，含 map/d.ts） | — | 38.19 MB | — | — |
-| @oas-ui/ui（浏览器可加载 JS） | 451 | 10161.3 KB | 2438.1 KB | — |
-| @oas-ui/ui（全量入口链 `import '@oas-ui/ui'`） | 479 | 3563.6 KB | 968.7 KB | — |
-| @oas-ui/ui（dist/cdn.js 单文件全量 bundle） | 1 | 2963.7 KB | 645.8 KB | 444.4 KB |
+| @oas-ui/ui（dist 总大小，含 map/d.ts） | — | 38.31 MB | — | — |
+| @oas-ui/ui（浏览器可加载 JS） | 452 | 10184.1 KB | 2445.4 KB | — |
+| @oas-ui/ui（全量入口链 `import '@oas-ui/ui'`） | 480 | 3572.5 KB | 971.3 KB | — |
+| @oas-ui/ui（dist/cdn.js 单文件全量 bundle） | 1 | 2970.7 KB | 648.2 KB | 446.1 KB |
 | @oas-ui/theme（index.css） | 1 | 7.8 KB | 1.9 KB | — |
 | @oas-ui/core | 6 | 35.7 KB | 14.4 KB | — |
 | @oas-ui/i18n | 23 | 233.7 KB | 73.2 KB | — |
@@ -119,8 +119,8 @@
 <!-- BEGIN:generated:perf-baseline:budgets -->
 | 预算项 | 实测 gzip | 预算（制式） | 依据 |
 | --- | --- | --- | --- |
-| dist/cdn.js gzip | 645.8 KB | 770.0 KB（天花板） | 天花板制：实测 gzip 665.4 KB（并入 workbench 构件族后；含 gantt/barcode/chart 扩展/glass/图标 opt-in），上浮约 15% 定档 770 KB；前档 730 KB 定档于 2026-10-07（628.7 KB 实测），再前档 700 KB 定档于 2026-10-05（608.5 KB 实测） |
-| @oas-ui/ui 全量入口链 gzip | 968.7 KB | 1140.0 KB（天花板） | 天花板制：实测 gzip 984.6 KB（并入 workbench 构件族后），上浮约 15% 定档 1140 KB；前档 1080 KB 定档于 2026-10-07（917.7 KB 实测），再前档 1024 KB 定档于 2026-10-05（890.9 KB 实测） |
+| dist/cdn.js gzip | 648.2 KB | 770.0 KB（天花板） | 天花板制：实测 gzip 665.4 KB（并入 workbench 构件族后；含 gantt/barcode/chart 扩展/glass/图标 opt-in），上浮约 15% 定档 770 KB；前档 730 KB 定档于 2026-10-07（628.7 KB 实测），再前档 700 KB 定档于 2026-10-05（608.5 KB 实测） |
+| @oas-ui/ui 全量入口链 gzip | 971.3 KB | 1140.0 KB（天花板） | 天花板制：实测 gzip 984.6 KB（并入 workbench 构件族后），上浮约 15% 定档 1140 KB；前档 1080 KB 定档于 2026-10-07（917.7 KB 实测），再前档 1024 KB 定档于 2026-10-05（890.9 KB 实测） |
 | @oas-ui/ui/basic/button 链 gzip | 24.7 KB | 30.0 KB（绝对值） | 实测 gzip 26.7 KB（2026-10-12：dev-warn 统一告警通道（101 处 console.warn 迁移，含模块本体）+ 当批行为修复增量；此前 25.0 KB 为图标库 opt-in 后口径），上浮约 12% 定档 30 KB；前档 29 KB 定档于 2026-10-08（25.0 KB 实测），再前档 39 KB 定档于 2026-10-05（33.5 KB 实测，含全量图标注册表） |
 | @oas-ui/ui/data/table 链 gzip | 68.8 KB | 74.0 KB（绝对值） | 实测 gzip 66.2 KB（v2.6.4 默认入口 = 基础表格，不含 edit；链含 core 骨架 + virtual-list + i18n + pagination + 列设置/导出/移动降级与展示集快照，不含编辑器族），上浮约 12% 定档 74 KB；前档 108 KB 为默认入口含 edit 口径 |
 | @oas-ui/ui/data/table/edit 链 gzip | 91.0 KB | 104.0 KB（绝对值） | 实测 gzip 89.7 KB / 43 文件（首次独立计量：链含 edit 控制器 + 编辑器族 + select/switch 浮层编辑通道 + i18n；edit 链大于默认 table 链是「编辑器族依赖浮层组件」的合理结果，也正是默认入口不含 edit 的原因）；上浮约 16% 定档 104 KB（89.7×1.16≈104，取整） |

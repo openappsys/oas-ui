@@ -4,18 +4,18 @@
     "method": "gzip = zlib gzipSync；brotli = zlib.brotliCompressSync q11；单组件链 = 静态 import 图遍历 + 逐文件压缩求和（上界估计）",
     "packages": {
       "@oas-ui/ui": {
-        "distTotalBytes": 40046469,
+        "distTotalBytes": 40175037,
         "browserJs": {
-          "files": 451,
-          "rawBytes": 10405158,
-          "gzipBytes": 2496634,
-          "brotliBytes": 1949428
+          "files": 452,
+          "rawBytes": 10428519,
+          "gzipBytes": 2504139,
+          "brotliBytes": 1955433
         },
         "fullEntry": {
-          "files": 479,
-          "rawBytes": 3649083,
-          "gzipBytes": 991904,
-          "brotliBytes": 852631,
+          "files": 480,
+          "rawBytes": 3658197,
+          "gzipBytes": 994576,
+          "brotliBytes": 854997,
           "fileList": [
             "packages/ui/dist/index.js",
             "packages/icons/dist/register.js",
@@ -440,6 +440,7 @@
             "packages/ui/dist/data/code/oas-code.js",
             "packages/ui/dist/data/chart/index.js",
             "packages/ui/dist/data/chart/oas-chart.js",
+            "packages/ui/dist/data/chart/ticks.js",
             "packages/ui/dist/data/carousel/index.js",
             "packages/ui/dist/data/carousel/oas-carousel.js",
             "packages/ui/dist/data/card/index.js",
@@ -500,9 +501,9 @@
         },
         "cdn": {
           "files": 1,
-          "rawBytes": 3034833,
-          "gzipBytes": 661262,
-          "brotliBytes": 455095
+          "rawBytes": 3041955,
+          "gzipBytes": 663719,
+          "brotliBytes": 456786
         }
       },
       "@oas-ui/theme": {
@@ -838,7 +839,7 @@
       {
         "name": "dist/cdn.js gzip",
         "kind": "ceiling",
-        "actualBytes": 661262,
+        "actualBytes": 663719,
         "limitBytes": 788480,
         "warnAtBytes": 709632,
         "pass": true,
@@ -848,7 +849,7 @@
       {
         "name": "@oas-ui/ui 全量入口链 gzip",
         "kind": "ceiling",
-        "actualBytes": 991904,
+        "actualBytes": 994576,
         "limitBytes": 1167360,
         "warnAtBytes": 1050624,
         "pass": true,
