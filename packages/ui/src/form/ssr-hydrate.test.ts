@@ -27,6 +27,8 @@ import { OASDynamicTags } from './dynamic-tags/index.js'
 import { OASEditable } from './editable/index.js'
 import { OASForm } from './form/index.js'
 import { OASFormItem } from './form-item/index.js'
+import { OASSwatch } from './swatch/index.js'
+import { OASPicker } from './picker/index.js'
 
 /**
  * form 组件 DSD 真水合批次 1 单测（对应 SSR 白名单化改造）。
@@ -58,6 +60,18 @@ const OPTIONS = JSON.stringify([
 const TREE_OPTIONS = JSON.stringify([
   { label: '节点 A', value: 'a', children: [{ label: '子节点 1', value: 'a-1' }] },
   { label: '节点 B', value: 'b' },
+])
+const PICKER_COLUMNS = JSON.stringify([
+  {
+    key: 'fruit',
+    label: '水果',
+    items: [
+      { label: '苹果', value: 'apple' },
+      { label: '香蕉', value: 'banana' },
+      { label: '橙子', value: 'orange' },
+    ],
+  },
+  { key: 'num', label: '数量', items: [{ label: '一' }, { label: '二' }, { label: '三' }] },
 ])
 
 const FIXTURES: Fixture[] = [
@@ -254,6 +268,27 @@ const FIXTURES: Fixture[] = [
     setup: (e) => e.setAttribute('label', '姓名'),
     probe: '.field',
   },
+  // —— SSR 白名单收口：swatch / picker ——
+  {
+    name: 'swatch',
+    cls: OASSwatch,
+    setup: (e) => {
+      e.setAttribute('color', 'blue')
+      e.setAttribute('size', 'large')
+      e.setAttribute('shape', 'circle')
+      e.setAttribute('selected', '')
+    },
+    probe: '[part="swatch"]',
+  },
+  {
+    name: 'picker',
+    cls: OASPicker,
+    setup: (e) => {
+      e.setAttribute('columns', PICKER_COLUMNS)
+      e.setAttribute('value', '["banana","二"]')
+    },
+    probe: '.wheels',
+  },
 ]
 
 /** 渲染一个参照实例并返回其 shadow 快照（SSR 场景等价物） */
@@ -373,6 +408,64 @@ describe('form 组件 DSD 真水合批次 1', () => {
     const tg = upgradeFromSnapshot(OASToggleGroup, tgSnap, (e) => e.setAttribute('items', items)).el
     tg.shadowRoot!.querySelectorAll<HTMLButtonElement>('[part="item"]')[1]!.click()
     expect(tg.getAttribute('value')).toBe('week')
+  })
+})
+
+describe('SSR 白名单收口：swatch / picker 真水合契约', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('swatch：水合后单次点击只派发一次 oas-click，属性更新复用同一按钮节点', () => {
+    const setup = FIXTURES.find((f) => f.name === 'swatch')!.setup!
+    const snap = captureSnapshot(OASSwatch, setup)
+    const { el } = upgradeFromSnapshot(OASSwatch, snap, setup)
+    const button = el.shadowRoot!.querySelector<HTMLButtonElement>('[part="swatch"]')!
+
+    el.setAttribute('selected', '')
+    expect(el.shadowRoot!.querySelector('[part="swatch"]')).toBe(button)
+
+    const colors: string[] = []
+    el.addEventListener('oas-click', (e: Event) => colors.push((e as CustomEvent).detail.color))
+    button.click()
+    expect(colors).toEqual(['blue'])
+  })
+
+  it('picker：水合采纳快照列节点（不重建）、初始滚动位由 value 属性决定', () => {
+    const setup = FIXTURES.find((f) => f.name === 'picker')!.setup!
+    const snap = captureSnapshot(OASPicker, setup)
+
+    const el = new OASPicker()
+    el.shadowRoot!.innerHTML = `<meta data-oas-ssr="oas-picker" data-oas-ssr-v="1">${snap}`
+    setup(el)
+    // 注入后、连接前：快照列节点即为水合应采纳的节点
+    const snapshotCols = [...el.shadowRoot!.querySelectorAll<HTMLElement>('.column')]
+    expect(snapshotCols.length).toBe(2)
+
+    document.body.appendChild(el)
+
+    const cols = [...el.shadowRoot!.querySelectorAll<HTMLElement>('.column')]
+    expect(cols[0]).toBe(snapshotCols[0])
+    expect(cols[1]).toBe(snapshotCols[1])
+    // value=["banana","二"] → 两列均落停在索引 1（item-height 36）
+    expect(cols[0]!.scrollTop).toBe(36)
+    expect(cols[1]!.scrollTop).toBe(36)
+    expect(cols[0]!.querySelectorAll('[role="option"]')[1]!.getAttribute('aria-selected')).toBe('true')
+  })
+
+  it('picker：水合后单次滚动落定只派发一次 oas-change（监听不重复绑定）', async () => {
+    const setup = FIXTURES.find((f) => f.name === 'picker')!.setup!
+    const snap = captureSnapshot(OASPicker, setup)
+    const { el } = upgradeFromSnapshot(OASPicker, snap, setup)
+    const changes: unknown[] = []
+    el.addEventListener('oas-change', (e: Event) => changes.push((e as CustomEvent).detail))
+
+    const col = el.shadowRoot!.querySelectorAll<HTMLElement>('.column')[0]!
+    col.scrollTop = 72
+    col.dispatchEvent(new Event('scroll'))
+    await new Promise((r) => setTimeout(r, 160))
+    expect(changes).toHaveLength(1)
+    expect(el.getAttribute('value')).toBe('["orange","二"]')
   })
 })
 

@@ -27,6 +27,8 @@ import { OASGradientText } from './gradient-text/index.js'
 import { OASAspectRatio } from '../layout/aspect-ratio/index.js'
 import { OASVirtualList } from './virtual-list/index.js'
 import { OASBarcode } from './barcode/index.js'
+import { OASImageGroup } from './image-group/index.js'
+import { OASSwipeCell } from './swipe-cell/index.js'
 
 /**
  * data 展示组件 DSD 真水合批次 3 单测（对应 SSR 白名单化改造）。
@@ -260,6 +262,25 @@ const FIXTURES: Fixture[] = [
     },
     probe: 'svg[part="barcode"]',
   },
+  // —— SSR 白名单收口：image-group / swipe-cell ——
+  {
+    name: 'image-group',
+    cls: OASImageGroup,
+    setup: (e) => {
+      e.innerHTML = '<oas-image src="/a.png"></oas-image><oas-image src="/b.png"></oas-image>'
+    },
+    probe: '[part="group"]',
+  },
+  {
+    name: 'swipe-cell',
+    cls: OASSwipeCell,
+    setup: (e) => {
+      e.setAttribute('open', '')
+      e.setAttribute('open-side', 'end')
+      e.innerHTML = '<div>列表项内容</div><button slot="actions">删除</button>'
+    },
+    probe: '[part="content"]',
+  },
 ]
 
 /** 渲染一个参照实例并返回其 shadow 快照（SSR 场景等价物） */
@@ -414,5 +435,83 @@ describe('data 展示组件 DSD 真水合批次 3', () => {
     badLog.setAttribute('lines', 'not-json')
     document.body.appendChild(badLog)
     expect(badLog.shadowRoot!.querySelectorAll('.row').length).toBe(0)
+  })
+})
+
+describe('SSR 白名单收口：image-group / swipe-cell 真水合契约', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  function pointer(type: string, x: number, y = 10, pointerId = 1): PointerEvent {
+    return new PointerEvent(type, {
+      bubbles: true,
+      cancelable: true,
+      composed: true,
+      button: 0,
+      pointerId,
+      clientX: x,
+      clientY: y,
+    })
+  }
+
+  it('image-group：水合即同步收集子图（不依赖 MutationObserver 微任务），嵌套子图节点不被重建', () => {
+    const setup = FIXTURES.find((f) => f.name === 'image-group')!.setup!
+    const snap = captureSnapshot(OASImageGroup, setup)
+    // 同步序列化阶段（非微任务）快照就必须含共享预览宿主的图集列表
+    expect(snap).toContain('preview-src-list')
+
+    const el = new OASImageGroup()
+    el.shadowRoot!.innerHTML = `<meta data-oas-ssr="oas-image-group" data-oas-ssr-v="1">${snap}`
+    setup(el)
+    document.body.appendChild(el)
+
+    const inner = el.shadowRoot!.querySelector('oas-image')!
+    expect(JSON.parse(inner.getAttribute('preview-src-list') ?? '[]')).toEqual(['/a.png', '/b.png'])
+
+    // update() 自身必须能重建图集列表（不依赖 slotchange/MutationObserver 的异步时序）
+    inner.removeAttribute('preview-src-list')
+    el.requestUpdate()
+    expect(JSON.parse(inner.getAttribute('preview-src-list') ?? '[]')).toEqual(['/a.png', '/b.png'])
+
+    const child = el.querySelectorAll('oas-image')[0]!
+    expect(child.shadowRoot!.querySelector('style')).not.toBeNull()
+    const childStyle = child.shadowRoot!.querySelector('style')
+    el.setAttribute('infinite', '')
+    expect(el.querySelectorAll('oas-image')[0]).toBe(child)
+    expect(child.shadowRoot!.querySelector('style')).toBe(childStyle)
+  })
+
+  it('swipe-cell：SSR 宽度为 0 时不得删除 open 属性（测量只用于升级后校正）', () => {
+    const setup = FIXTURES.find((f) => f.name === 'swipe-cell')!.setup!
+    const snap = captureSnapshot(OASSwipeCell, setup)
+    const { el } = upgradeFromSnapshot(OASSwipeCell, snap, setup)
+
+    // happy-dom 无布局，actions 宽度恒 0：open / open-side 必须原样保留
+    expect(el.hasAttribute('open')).toBe(true)
+    expect(el.getAttribute('open-side')).toBe('end')
+    el.setAttribute('threshold', '50')
+    expect(el.hasAttribute('open')).toBe(true)
+    expect(el.getAttribute('open-side')).toBe('end')
+  })
+
+  it('swipe-cell：水合后一次横滑只派发一次 oas-open（监听不重复绑定）', () => {
+    const closed = (e: OASElement): void => {
+      e.innerHTML = '<div>列表项内容</div><button slot="actions">删除</button>'
+    }
+    const snap = captureSnapshot(OASSwipeCell, closed)
+    const { el } = upgradeFromSnapshot(OASSwipeCell, snap, closed)
+    const actions = el.shadowRoot!.querySelector<HTMLElement>('[part="actions"]')!
+    actions.getBoundingClientRect = () =>
+      ({ x: 0, y: 0, top: 0, left: 0, right: 80, bottom: 40, width: 80, height: 40 }) as DOMRect
+
+    const events: Array<{ side: string }> = []
+    el.addEventListener('oas-open', (e: Event) => events.push((e as CustomEvent).detail))
+    const content = el.shadowRoot!.querySelector<HTMLElement>('[part="content"]')!
+    content.dispatchEvent(pointer('pointerdown', 200))
+    content.dispatchEvent(pointer('pointermove', 100))
+    content.dispatchEvent(pointer('pointerup', 100))
+    expect(events).toEqual([{ side: 'end' }])
+    expect(el.getAttribute('open-side')).toBe('end')
   })
 })

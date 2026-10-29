@@ -139,6 +139,8 @@ export class OASPicker extends OASFormElement {
   private scrollTimer: ReturnType<typeof setTimeout> | null = null
   /** 落停提交是否允许派发（初始定位/程序性写入期间抑制） */
   private emitReady = false
+  /** 上一帧已渲染结构指纹：水合恢复后同指纹只同步选中/滚动，不重建快照列 */
+  private lastStructureKey: string | null = null
 
   get value(): string[] {
     return this.currentValues()
@@ -280,9 +282,28 @@ export class OASPicker extends OASFormElement {
   }
 
   protected override hydrate(): boolean {
-    if (!this.shadow.querySelector('.wheels')) return false
+    const wheels = this.shadow.querySelector<HTMLElement>('.wheels')
+    if (!wheels) return false
+    // 结构校验：快照列数/各列项数必须与当前属性解析结果一致，否则回退 render 全量重建
+    const { cols } = this.resolveAll()
+    const colEls = [...wheels.querySelectorAll<HTMLElement>('.column')]
+    if (colEls.length !== cols.length) return false
+    if (colEls.some((col, i) => col.querySelectorAll('.item').length !== cols[i]!.items.length)) return false
     this.bind()
+    // 恢复结构指纹：update 只做选中/滚动同步，保留快照列节点与初始滚动位
+    this.lastStructureKey = this.structureKey()
     return true
+  }
+
+  /** 结构指纹：决定列 DOM 是否需要重建（数据源 / 尺寸档 / 禁用态） */
+  private structureKey(): string {
+    return [
+      this.getAttr('columns'),
+      this.getAttr('options'),
+      this.itemHeightPx(),
+      this.visibleCountValue(),
+      this.hasAttr('disabled') ? '1' : '0',
+    ].join('\u0001')
   }
 
   protected override onReconnect(): void {
@@ -308,16 +329,70 @@ export class OASPicker extends OASFormElement {
     const count = this.visibleCountValue()
     const spacer = ((count - 1) / 2) * h
     const disabled = this.hasAttr('disabled')
-    wheels.innerHTML = ''
-    cols.forEach((col, i) => {
-      wheels.appendChild(this.buildColumn(col, i, h, count, spacer, disabled))
-    })
-    // 初始定位：滚动位落定到选中项（instant，不派发——emitReady 在定位后开启）
+    const key = this.structureKey()
+    const existing = wheels.querySelectorAll<HTMLElement>('.column')
+    const sameStructure =
+      key === this.lastStructureKey &&
+      existing.length === cols.length &&
+      ![...existing].some((col, i) => col.querySelectorAll('.item').length !== cols[i]!.items.length)
+    if (sameStructure) {
+      // 水合/属性增量：只同步选中态与列 chrome，采纳快照节点（不重建列结构）
+      this.syncColumns(wheels, cols, h, count, spacer, disabled)
+    } else {
+      this.lastStructureKey = key
+      wheels.innerHTML = ''
+      cols.forEach((col, i) => {
+        wheels.appendChild(this.buildColumn(col, i, h, count, spacer, disabled))
+      })
+    }
+    // 初始/受控定位：滚动位由 value 属性决定（仅写 scrollTop，不依赖真实布局测量），
+    // 定位期间抑制落停事件——emitReady 在定位后开启。
     this.emitReady = false
     cols.forEach((_, i) => this.scrollToIndex(i, this.selectedIdx[i] ?? 0, false))
     this.emitReady = true
     this.syncFormValue()
     this.syncValidity()
+  }
+
+  /** 结构不变时按属性同步已有列（标签/尺寸/禁用/选中/ARIA），不重建节点 */
+  private syncColumns(
+    wheels: HTMLElement,
+    cols: PickerColumn[],
+    h: number,
+    count: number,
+    spacer: number,
+    disabled: boolean,
+  ): void {
+    const colEls = wheels.querySelectorAll<HTMLElement>('.column')
+    cols.forEach((col, i) => {
+      const el = colEls[i]
+      if (!el) return
+      el.style.height = `${count * h}px`
+      el.dataset.index = String(i)
+      el.setAttribute('role', 'listbox')
+      el.setAttribute('tabindex', '0')
+      el.setAttribute('aria-label', col.label ?? this.t('picker.columnLabel', { index: i + 1 }))
+      if (disabled) el.setAttribute('aria-disabled', 'true')
+      else el.removeAttribute('aria-disabled')
+
+      const spacers = el.querySelectorAll<HTMLElement>('.spacer')
+      if (spacers[0]) spacers[0].style.height = `${spacer}px`
+      if (spacers[1]) spacers[1].style.height = `${spacer}px`
+
+      const sel = this.selectedIdx[i] ?? 0
+      const items = el.querySelectorAll<HTMLElement>('.item')
+      col.items.forEach((item, j) => {
+        const it = items[j]
+        if (!it) return
+        it.style.height = `${h}px`
+        it.textContent = item.label
+        it.id = `oas-picker-item-${i}-${j}`
+        it.setAttribute('aria-selected', String(j === sel))
+        if (item.disabled) it.setAttribute('aria-disabled', 'true')
+        else it.removeAttribute('aria-disabled')
+      })
+      el.setAttribute('aria-activedescendant', `oas-picker-item-${i}-${sel}`)
+    })
   }
 
   private buildColumn(

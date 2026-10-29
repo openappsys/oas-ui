@@ -26,6 +26,7 @@ import { OASLayout, OASHeader, OASSider, OASContent, OASFooter } from '../layout
 import { OASSidebar } from '../layout/sidebar/index.js'
 import { OASContainer } from '../layout/container/index.js'
 import { OASGrid, OASGridItem } from '../layout/grid/index.js'
+import { OASIndexBar } from './index-bar/index.js'
 
 /**
  * 导航布局组件 DSD 真水合批次 4 单测（对应 SSR 白名单化改造）。
@@ -74,6 +75,10 @@ const TOUR_STEPS = JSON.stringify([
 const BREADCRUMB_ITEMS = JSON.stringify([
   { label: '首页', href: '/' },
   { label: '详情', href: '/detail' },
+])
+const INDEX_SECTIONS = JSON.stringify([
+  { key: 'A', title: 'A', items: [{ label: '安' }, { label: '爱' }] },
+  { key: 'B', title: 'B', items: [{ label: '波' }, { label: '白' }] },
 ])
 
 const FIXTURES: Fixture[] = [
@@ -260,6 +265,16 @@ const FIXTURES: Fixture[] = [
     cls: OASGridItem,
     setup: (e) => e.setAttribute('span', '12'),
     probe: 'slot',
+  },
+  // —— SSR 白名单收口：index-bar ——
+  {
+    name: 'index-bar',
+    cls: OASIndexBar,
+    setup: (e) => {
+      e.setAttribute('sections', INDEX_SECTIONS)
+      e.setAttribute('height', '200')
+    },
+    probe: '[part="root"]',
   },
 ]
 
@@ -449,5 +464,72 @@ describe('导航布局组件 DSD 真水合批次 4', () => {
     const sd = upgradeFromSnapshot(OASSpeedDial, sdSnap, (e) => e.setAttribute('actions', '[{"label":"分享"}]')).el
     sd.shadowRoot!.querySelector<HTMLElement>('[part="fab"]')!.click()
     expect(sd.hasAttribute('open')).toBe(true)
+  })
+})
+
+describe('SSR 白名单收口：index-bar 真水合契约', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  const setup = (e: OASElement): void => {
+    e.setAttribute('sections', INDEX_SECTIONS)
+    e.setAttribute('height', '200')
+  }
+
+  it('水合采纳快照列表/字母节点（不重建），header id 与 aria-labelledby 在更新后保持稳定', () => {
+    const snap = captureSnapshot(OASIndexBar, setup)
+
+    const el = new OASIndexBar()
+    el.shadowRoot!.innerHTML = `<meta data-oas-ssr="oas-index-bar" data-oas-ssr-v="1">${snap}`
+    setup(el)
+    const snapshotSections = [...el.shadowRoot!.querySelectorAll<HTMLElement>('.section')]
+    const snapshotLetters = [...el.shadowRoot!.querySelectorAll<HTMLButtonElement>('.letter')]
+    const header = snapshotSections[0]!.querySelector<HTMLElement>('.section-header')!
+    const headerId = header.id
+    expect(headerId).not.toBe('')
+
+    document.body.appendChild(el)
+
+    const sections = [...el.shadowRoot!.querySelectorAll<HTMLElement>('.section')]
+    const letters = [...el.shadowRoot!.querySelectorAll<HTMLButtonElement>('.letter')]
+    expect(sections[0]).toBe(snapshotSections[0])
+    expect(letters[0]).toBe(snapshotLetters[0])
+    expect(header.id).toBe(headerId)
+    expect(sections[0]!.getAttribute('aria-labelledby')).toBe(headerId)
+
+    // 非结构属性变化：仍不得重建（UID 不漂移）
+    el.setAttribute('height', '300')
+    expect(el.shadowRoot!.querySelectorAll<HTMLElement>('.section')[0]).toBe(snapshotSections[0])
+    expect(header.id).toBe(headerId)
+    expect(sections[0]!.getAttribute('aria-labelledby')).toBe(headerId)
+  })
+
+  it('水合首帧不派发 oas-change；单次点击字母只派发一次（监听不重复绑定）', () => {
+    const snap = captureSnapshot(OASIndexBar, setup)
+    const el = new OASIndexBar()
+    el.shadowRoot!.innerHTML = `<meta data-oas-ssr="oas-index-bar" data-oas-ssr-v="1">${snap}`
+    setup(el)
+    const changes: Array<{ key: string }> = []
+    el.addEventListener('oas-change', (e: Event) => changes.push((e as CustomEvent).detail))
+    document.body.appendChild(el)
+    expect(changes).toEqual([])
+
+    const letters = el.shadowRoot!.querySelectorAll<HTMLButtonElement>('.letter')
+    letters[1]!.click()
+    expect(changes).toEqual([{ key: 'B' }])
+    expect(letters[1]!.getAttribute('aria-current')).toBe('true')
+  })
+
+  it('水合后条目点击只派发一次 oas-item-click（列表委托绑定生效）', () => {
+    const snap = captureSnapshot(OASIndexBar, setup)
+    const { el } = upgradeFromSnapshot(OASIndexBar, snap, setup)
+    const events: Array<{ value: string; label: string; section: string }> = []
+    el.addEventListener('oas-item-click', (e: Event) =>
+      events.push((e as CustomEvent).detail as { value: string; label: string; section: string }),
+    )
+    const item = el.shadowRoot!.querySelectorAll<HTMLButtonElement>('.section .item')[2]!
+    item.click()
+    expect(events).toEqual([{ value: '波', label: '波', section: 'B' }])
   })
 })

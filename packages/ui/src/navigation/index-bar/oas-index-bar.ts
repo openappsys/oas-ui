@@ -158,6 +158,11 @@ function prefersReducedMotion(): boolean {
   }
 }
 
+/** SSR shim 同样提供 window/document；渲染段不挂滚动联动监听（升级后由客户端绑定） */
+function isSsrRuntime(): boolean {
+  return typeof window === 'undefined' || (window as Window & { __OAS_SSR__?: boolean }).__OAS_SSR__ === true
+}
+
 let uid = 0
 
 /** sections property 通道非法输入告警去重（同值只告警一次） */
@@ -268,17 +273,44 @@ export class OASIndexBar extends OASElement {
     `
   }
 
-  /** 缓存节点引用 + 绑定事件（render 与水合路径共用） */
+  /** 缓存节点引用 + 绑定事件（render / hydrate / 重连共用；同 handler 重入去重） */
   private bind(): void {
     this.rootEl = this.shadow.querySelector<HTMLElement>('.root')
     this.listEl = this.shadow.querySelector<HTMLElement>('.list')
     this.barEl = this.shadow.querySelector<HTMLElement>('.bar')
-    this.barEl?.addEventListener('keydown', (e) => this.handleKey(e as KeyboardEvent))
+    this.barEl?.addEventListener('keydown', this.onBarKeydown)
     this.barEl?.addEventListener('pointerdown', this.handlePointerDown)
     this.barEl?.addEventListener('pointermove', this.handlePointerMove)
     this.barEl?.addEventListener('pointerup', this.handlePointerUp)
     this.barEl?.addEventListener('pointercancel', this.handlePointerUp)
+    // 条目/字母均用父容器委托：水合采纳的快照节点没有内联监听，委托保证交互可恢复且不双绑
+    this.listEl?.addEventListener('click', this.handleListItemClick)
+    this.barEl?.addEventListener('click', this.handleLetterClick)
     this.onCleanup(() => this.detachSpy())
+  }
+
+  private onBarKeydown = (e: Event): void => this.handleKey(e as KeyboardEvent)
+
+  private handleListItemClick = (e: Event): void => {
+    const target = e.target as Element | null
+    const btn = target?.closest?.('button.item') as HTMLButtonElement | null
+    if (!btn) return
+    const sectionIndex = Number(btn.dataset.sectionIndex ?? '-1')
+    const itemIndex = Number(btn.dataset.itemIndex ?? '-1')
+    const section = this.sectionsData[sectionIndex]
+    const item = section?.items[itemIndex]
+    if (!section || !item) return
+    this.emit('item-click', { value: item.value, label: item.label, section: section.key })
+  }
+
+  private handleLetterClick = (e: Event): void => {
+    // 指针交互（或拖拽）由 pointerdown/move 处理；仅键盘激活（detail=0）走 click
+    if ((e as MouseEvent).detail !== 0) return
+    const target = e.target as Element | null
+    const btn = target?.closest?.('button.letter') as HTMLButtonElement | null
+    if (!btn) return
+    const index = this.letterEls.indexOf(btn)
+    if (index >= 0) this.jumpTo(index, true)
   }
 
   protected override render(): void {
@@ -287,11 +319,34 @@ export class OASIndexBar extends OASElement {
     this.update()
   }
 
-  /** 真水合：校验 SSR 快照结构（root 存在）后接管，跳过 shadow 重建；内容由 update 增量重建 */
+  /**
+   * 真水合：校验 SSR 快照结构（root + 分节/字母数量与数据一致）后接管，跳过 shadow 重建。
+   * 采纳快照节点并恢复 sectionsData/lastSectionsRaw——update 不再 rebuild，header id（含 UID）
+   * 与 aria-labelledby 原样稳定；交互由 bind() 的父容器委托恢复。
+   */
   protected override hydrate(): boolean {
-    if (!this.shadow.querySelector('.root')) return false
+    const root = this.shadow.querySelector<HTMLElement>('.root')
+    const list = this.shadow.querySelector<HTMLElement>('.list')
+    const bar = this.shadow.querySelector<HTMLElement>('.bar')
+    if (!root || !list || !bar) return false
+    this.parseSections()
+    const sections = [...list.querySelectorAll<HTMLElement>('.section')]
+    const letters = [...bar.querySelectorAll<HTMLButtonElement>('.letter')]
+    if (sections.length !== this.sectionsData.length || letters.length !== this.sectionsData.length) return false
     this.bind()
+    this.sectionEls = sections
+    this.letterEls = letters
+    this.lastSectionsRaw = this.getAttr('sections', '[]')
+    const focused = letters.findIndex((btn) => btn.tabIndex === 0)
+    this.focusIndex = focused >= 0 ? focused : 0
+    // 首帧高亮按初始位置收敛且不派发 oas-change（与 SSR render 首帧语义一致）
+    this.initialized = false
     return true
+  }
+
+  /** 断开重连：滚动联动已被 onCleanup 摘除，update 会据连接态重新 attachSpy */
+  protected override onReconnect(): void {
+    this.bind()
   }
 
   protected override update(): void {
@@ -394,17 +449,16 @@ export class OASIndexBar extends OASElement {
     const wrap = document.createElement('div')
     wrap.className = 'section-items'
     wrap.setAttribute('part', 'section-items')
-    for (const item of section.items) {
+    section.items.forEach((item, itemIndex) => {
       const btn = document.createElement('button')
       btn.type = 'button'
       btn.className = 'item'
       btn.setAttribute('part', 'item')
       btn.textContent = item.label
-      btn.addEventListener('click', () =>
-        this.emit('item-click', { value: item.value, label: item.label, section: section.key }),
-      )
+      btn.dataset.sectionIndex = String(index)
+      btn.dataset.itemIndex = String(itemIndex)
       wrap.appendChild(btn)
-    }
+    })
     sec.appendChild(wrap)
     this.sectionEls.push(sec)
     return sec
@@ -419,10 +473,6 @@ export class OASIndexBar extends OASElement {
     btn.dataset.key = section.key
     btn.setAttribute('aria-current', 'false')
     btn.tabIndex = index === this.focusIndex ? 0 : -1
-    btn.addEventListener('click', (e) => {
-      // 指针交互（或拖拽）由 pointerdown/move 处理；仅键盘激活（detail=0）走 click
-      if ((e as MouseEvent).detail === 0) this.jumpTo(index, true)
-    })
     this.letterEls.push(btn)
     return btn
   }
@@ -474,6 +524,8 @@ export class OASIndexBar extends OASElement {
   }
 
   private attachSpy(): void {
+    // SSR 渲染段不挂 window/滚动监听：扫描联动只属于升级后的客户端校正
+    if (isSsrRuntime()) return
     const root = this.spyRoot()
     if (this.spyRootEl === root) return
     this.detachSpy()

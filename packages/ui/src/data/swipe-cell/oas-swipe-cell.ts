@@ -35,6 +35,11 @@ const BROADCAST_EVENT = 'oas-swipe-cell-open'
 /** 开侧（null = 关） */
 type OpenSide = 'start' | 'end' | null
 
+/** SSR shim 同样提供 window/document；渲染段不挂 document 级广播监听 */
+function isSsrRuntime(): boolean {
+  return typeof window === 'undefined' || (window as Window & { __OAS_SSR__?: boolean }).__OAS_SSR__ === true
+}
+
 const STYLE = `
 :host {
   display: block;
@@ -243,7 +248,7 @@ export class OASSwipeCell extends OASElement {
     for (const name of ['actions', 'actions-start']) {
       this.shadow.querySelector(`slot[name="${name}"]`)?.addEventListener('slotchange', this.onSlotChange)
     }
-    document.addEventListener(BROADCAST_EVENT, this.onBroadcast)
+    if (!isSsrRuntime()) document.addEventListener(BROADCAST_EVENT, this.onBroadcast)
     this.onCleanup(() => {
       this.contentEl?.removeEventListener('pointerdown', this.onPointerDown)
       this.contentEl?.removeEventListener('pointermove', this.onPointerMove)
@@ -294,12 +299,20 @@ export class OASSwipeCell extends OASElement {
     let want: OpenSide = null
     if (this.hasAttr('open')) want = this.normalizeSide(this.getAttr('open-side', '')) ?? this.defaultSide()
     if (disabled) want = null
-    // 目标侧无操作区 → 不可开
+    // 目标侧无操作区 → 不可开（宽度测量只用于升级后校正）
     if (want && (want === 'end' ? this.endWidth : this.startWidth) <= 0) want = null
 
     const emit = this.syncedOnce
-    if (want !== this.currentSide) this.applyOpenSide(want, emit)
-    else {
+    if (want !== this.currentSide) {
+      // SSR 快照宽度恒 0：open 属性是服务端权威输入，不得因测量为 0 被删除/改写。
+      // 此时只保持关闭视觉等待升级后测量校正；属性原样留给浏览器端 update 生效。
+      if (want === null && this.currentSide === null && this.hasAttr('open') && !disabled) {
+        this.syncTranslation()
+        this.syncOpenListeners()
+      } else {
+        this.applyOpenSide(want, emit)
+      }
+    } else {
       this.syncTranslation()
       this.syncOpenListeners()
     }

@@ -2,6 +2,11 @@ import { OASElement } from '@oas-ui/core'
 import '../image/index.js'
 import type { OASImage } from '../image/oas-image.js'
 
+/** SSR shim 同样提供 window/document；只认渲染器显式标记，服务端不挂异步观察器 */
+function isSsrRuntime(): boolean {
+  return typeof window === 'undefined' || (window as Window & { __OAS_SSR__?: boolean }).__OAS_SSR__ === true
+}
+
 const STYLE = `
 :host {
   display: block;
@@ -89,47 +94,62 @@ export class OASImageGroup extends OASElement {
     `
   }
 
-  /** 缓存节点引用 + 绑定事件 + 注册清理（render 与水合路径共用） */
+  /** 缓存节点引用 + 绑定事件 + 注册清理（render 与水合路径共用；同 handler 重入去重） */
   private bind(): void {
     this.inner = this.shadow.querySelector<OASImage>('oas-image')
-    this.shadow.querySelector('slot')?.addEventListener('slotchange', () => this.syncAll())
+    this.shadow.querySelector('slot')?.addEventListener('slotchange', this.onSlotChange)
 
     if (this.inner) {
-      // 打开预览：原样转发 detail（src 为当前张地址）
-      this.inner.addEventListener('oas-preview', (e: Event) => {
-        e.stopPropagation()
-        this.emit('preview', (e as CustomEvent).detail)
-      })
-      // 翻页/跳转 → 受控契约：反射 current + 派发 oas-change {current, prev}
-      this.inner.addEventListener('oas-preview-nav', (e: Event) => {
-        e.stopPropagation()
-        const { index } = (e as CustomEvent).detail as { index: number }
-        const prev = this.lastIndex
-        this.lastIndex = index
-        this.reflectCurrent(index)
-        this.emit('change', { current: index, prev })
-      })
-      // 内部开合事件是宿主实现细节，不向外泄漏（容器对外暴露 oas-preview 与 oas-change，见类文档）
-      this.inner.addEventListener('oas-preview-change', (e: Event) => e.stopPropagation())
+      this.inner.addEventListener('oas-preview', this.onInnerPreview)
+      this.inner.addEventListener('oas-preview-nav', this.onInnerNav)
+      this.inner.addEventListener('oas-preview-change', this.onInnerPreviewChange)
     }
 
     // 捕获阶段拦截组内子图点击：子图自身 preview 被接管，点击走组图集
     this.addEventListener('click', this.onCaptureClick, true)
 
-    // 子图动态增删 + 收集相关属性变化 → 模板透传 + 图集列表同步
-    this.observer = new MutationObserver(() => this.syncAll())
-    this.observer.observe(this, {
-      childList: true,
-      subtree: true,
-      attributes: true,
-      attributeFilter: ['src', 'preview-src', 'preview-src-list'],
-    })
+    // 子图动态增删 + 收集相关属性变化 → 模板透传 + 图集列表同步。
+    // SSR 渲染段不挂异步观察器（快照同步确定性由 update → syncCollection 保证）。
+    this.observer?.disconnect()
+    this.observer = null
+    if (!isSsrRuntime()) {
+      this.observer = new MutationObserver(this.onMutation)
+      this.observer.observe(this, {
+        childList: true,
+        subtree: true,
+        attributes: true,
+        attributeFilter: ['src', 'preview-src', 'preview-src-list'],
+      })
+    }
 
     this.onCleanup(() => {
       this.observer?.disconnect()
       this.observer = null
     })
   }
+
+  private onSlotChange = (): void => this.syncAll()
+
+  private onMutation = (): void => this.syncAll()
+
+  /** 打开预览：原样转发 detail（src 为当前张地址） */
+  private onInnerPreview = (e: Event): void => {
+    e.stopPropagation()
+    this.emit('preview', (e as CustomEvent).detail)
+  }
+
+  /** 翻页/跳转 → 受控契约：反射 current + 派发 oas-change {current, prev} */
+  private onInnerNav = (e: Event): void => {
+    e.stopPropagation()
+    const { index } = (e as CustomEvent).detail as { index: number }
+    const prev = this.lastIndex
+    this.lastIndex = index
+    this.reflectCurrent(index)
+    this.emit('change', { current: index, prev })
+  }
+
+  /** 内部开合事件是宿主实现细节，不向外泄漏（容器对外暴露 oas-preview 与 oas-change） */
+  private onInnerPreviewChange = (e: Event): void => e.stopPropagation()
 
   protected override render(): void {
     this.shadow.innerHTML = this.template()
@@ -142,6 +162,12 @@ export class OASImageGroup extends OASElement {
     if (!this.shadow.querySelector('[part="group"]')) return false
     this.bind()
     return true
+  }
+
+  /** 断开重连：观察器已被 onCleanup 摘除，重挂并立即重算图集（子图在断开期间可能变化） */
+  protected override onReconnect(): void {
+    this.bind()
+    this.syncAll()
   }
 
   /** 捕获阶段点击拦截：命中已收集子图则接管（阻断其单图预览），从该子图索引起开 */
@@ -270,6 +296,10 @@ export class OASImageGroup extends OASElement {
 
     // 自定义工具栏模板透传（首次挂载早于 slotchange/观察器微任务，先克隆进共享宿主）
     this.syncToolbarTpl()
+
+    // 图集收集是 update 的同步职责：服务端序列化紧跟 render，等不到 slotchange 微任务；
+    // 升级后 update 重算同一列表（读属性、写宿主 attribute），不重建任何结构。
+    this.syncCollection()
 
     // infinite 透传共享宿主
     if (this.inner) {
