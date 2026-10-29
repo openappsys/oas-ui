@@ -168,7 +168,7 @@ onMounted(() => {
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `editing-theme` | Selects the light/dark editing bucket (default light; invalid values safely fall back to light). It only selects the edit/import/export target and never controls the actual preview theme | `ThemeEditorTheme` | — |
+| `editing-theme` | Selects the light/dark editing bucket (default light; invalid values safely fall back to light). It only selects the edit/import/export target and never controls the actual preview theme | `ThemeEditorTheme` | `light` |
 | `preset` | Built-in preset theme: `compact` (tight; control-height -4px, space scaled down proportionally) / `comfortable` (roomy; +4px, space scaled up proportionally) / `default` (equivalent to reset; clears the current editing bucket). Invalid values are ignored with a dev warning | — | — |
 | `token` | Custom list of tokens to edit (CSS variable names) | — | — |
 

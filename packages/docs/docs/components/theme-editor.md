@@ -168,7 +168,7 @@ document.getElementById('te-preset-status').textContent = name
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
-| `editing-theme` | 选择 light/dark 编辑桶，默认 light，非法值安全回落 light；只决定编辑/导入/导出目标，不控制实际预览主题 | `ThemeEditorTheme` | — |
+| `editing-theme` | 选择 light/dark 编辑桶，默认 light，非法值安全回落 light；只决定编辑/导入/导出目标，不控制实际预览主题 | `ThemeEditorTheme` | `light` |
 | `preset` | 内置预设主题：`compact`（紧凑，control-height -4px、space 按比例收缩）/ `comfortable`（宽松，+4px、space 按比例放大）/ `default`（等价 reset，清除当前编辑桶）；非法值忽略并 dev 告警 | — | — |
 | `token` | 自定义要编辑的 token 列表（CSS 变量名） | — | — |
 

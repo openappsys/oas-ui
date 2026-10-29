@@ -667,6 +667,31 @@ describe('OASThemeEditor light/dark 双套编辑', () => {
     expect(fired).toBe(0)
   })
 
+  it('importThemes 是 replace 而非 merge：快照省略的两套旧 key 与当前 DOM 旧值都删除', () => {
+    const el = mount()
+    el.importThemes({
+      light: { '--oas-color-primary': '#111111', '--oas-space-2': '10px' },
+      dark: { '--oas-color-primary': '#222222', '--oas-space-2': '14px' },
+    })
+    expect(el.style.getPropertyValue('--oas-color-primary')).toBe('#111111')
+    expect(el.style.getPropertyValue('--oas-space-2')).toBe('10px')
+
+    el.importThemes({
+      light: { '--oas-color-success': '#333333' },
+      dark: { '--oas-color-warning': '#444444' },
+    })
+    const exported = el.exportThemes()
+    expect(exported.light['--oas-color-primary']).not.toBe('#111111')
+    expect(exported.light['--oas-space-2']).not.toBe('10px')
+    expect(exported.dark['--oas-color-primary']).not.toBe('#222222')
+    expect(exported.dark['--oas-space-2']).not.toBe('14px')
+    expect(exported.light['--oas-color-success']).toBe('#333333')
+    expect(exported.dark['--oas-color-warning']).toBe('#444444')
+    expect(el.style.getPropertyValue('--oas-color-primary')).toBe('')
+    expect(el.style.getPropertyValue('--oas-space-2')).toBe('')
+    expect(el.style.getPropertyValue('--oas-color-success')).toBe('#333333')
+  })
+
   it('importThemes 对未知主题/非对象/非法 token/嵌套坏值原子失败，两套导出与内联预览逐字不变', () => {
     vi.spyOn(console, 'warn').mockImplementation(() => {})
     const el = mount()
@@ -693,6 +718,26 @@ describe('OASThemeEditor light/dark 双套编辑', () => {
       expect(JSON.stringify(el.exportThemes()), `非法输入应保持两套不变：${JSON.stringify(input)}`).toBe(beforeThemes)
       expect(el.style.cssText).toBe(beforeInline)
     }
+  })
+
+  it('reset 在有效主题已变但 editor 尚未 update 时先 reconcile，不残留上一预览桶内联值', () => {
+    const cp = document.createElement('oas-config-provider')
+    cp.setAttribute('theme', 'light')
+    document.body.appendChild(cp)
+    const el = new OASThemeEditor()
+    for (const [key, value] of Object.entries(DEFAULT_VARS)) cp.style.setProperty(key, value)
+    cp.appendChild(el)
+    el.importJson({ '--oas-color-primary': '#111111' })
+    el.editingTheme = 'dark'
+    el.importJson({ '--oas-color-primary': '#222222' })
+    el.editingTheme = 'light'
+    expect(cp.style.getPropertyValue('--oas-color-primary')).toBe('#111111')
+
+    cp.dataset.theme = 'dark'
+    el.reset()
+
+    expect(cp.dataset.theme).toBe('dark')
+    expect(cp.style.getPropertyValue('--oas-color-primary')).toBe('#222222')
   })
 
   it('reset() 省略参数只清当前桶，reset(theme) 可清非当前桶且两套互不影响', () => {
@@ -774,6 +819,37 @@ describe('OASThemeEditor light/dark 双套编辑', () => {
     expect(colorGroup.open).toBe(false)
     expect(el.shadowRoot!.activeElement).toBe(text)
     expect(text.value).toBe('not-a-color')
+  })
+
+  it('数字非法草稿在 select 持焦切桶、双套导入与 reset 时保留且不按桶另存', () => {
+    const el = mount({ token: '["--oas-font-size-md"]' })
+    const row = rowFor(el, '--oas-font-size-md')!
+    const input = numberInput(row)
+    input.value = ''
+    input.dispatchEvent(new Event('input', { bubbles: true }))
+    expect(input.classList.contains('is-invalid')).toBe(true)
+
+    const select = editingThemeSelect(el)
+    select.focus()
+    select.value = 'dark'
+    select.dispatchEvent(new Event('change', { bubbles: true }))
+    expect(el.shadowRoot!.activeElement).toBe(select)
+    expect(numberInput(row)).toBe(input)
+    expect(input.value).toBe('')
+    expect(input.classList.contains('is-invalid')).toBe(true)
+
+    el.importThemes({
+      light: { '--oas-font-size-md': '15px' },
+      dark: { '--oas-font-size-md': '16px' },
+    })
+    expect(input.value).toBe('')
+    el.reset()
+    expect(input.value).toBe('')
+
+    select.value = 'light'
+    select.dispatchEvent(new Event('change', { bubbles: true }))
+    expect(numberInput(row)).toBe(input)
+    expect(input.value).toBe('')
   })
 
   it('10 个 locale 的编辑桶选择器均有翻译，不暴露 raw locale key', () => {

@@ -529,7 +529,7 @@ export class OASThemeEditor extends OASElement {
 
   /** Vue/React 走 property 赋值时反射到 attribute，统一解析与更新链路 */
   get editingTheme(): ThemeEditorTheme {
-    return this.getAttr('editing-theme') === 'dark' ? 'dark' : 'light'
+    return this.getAttr('editing-theme', 'light') === 'dark' ? 'dark' : 'light'
   }
   set editingTheme(value: ThemeEditorTheme) {
     this.setAttribute('editing-theme', value)
@@ -650,6 +650,7 @@ export class OASThemeEditor extends OASElement {
     const theme = this.editingTheme
     const root = this.themeRoot()
     const preview = this.previewTheme()
+    this.resolvedValues[theme].clear()
     for (const [key, value] of Object.entries(data as Record<string, unknown>)) {
       if (!key.startsWith('--')) {
         if (!this.invalidImportKeyWarned.has(key)) {
@@ -708,10 +709,10 @@ export class OASThemeEditor extends OASElement {
   reset(theme?: ThemeEditorTheme): void {
     const target = theme ?? this.editingTheme
     if (target !== 'light' && target !== 'dark') return
+    this.syncPreviewTheme()
     if (target === this.previewTheme()) this.removeInlineTokens(this.overrides[target].keys())
-    for (const name of this.overrides[target].keys()) this.resolvedValues[target].delete(name)
+    this.resolvedValues[target].clear()
     this.overrides[target].clear()
-    this.lastPreviewTheme = this.previewTheme()
     this.update()
   }
 
@@ -737,6 +738,7 @@ export class OASThemeEditor extends OASElement {
     const root = this.themeRoot()
     const theme = this.editingTheme
     const preview = this.previewTheme()
+    this.resolvedValues[theme].clear()
     const spaceScale = kind === 'compact' ? 0.75 : 1.25
     const controlDelta = kind === 'compact' ? -4 : 4
     for (const [token, base] of Object.entries(PRESET_SPACE)) {
@@ -835,6 +837,7 @@ export class OASThemeEditor extends OASElement {
     slider.setAttribute('aria-label', def.name)
     control.addEventListener('input', () => {
       const parsed = parseFloat(control.value)
+      control.classList.toggle('is-invalid', Number.isNaN(parsed))
       if (Number.isNaN(parsed)) return
       this.applyValue(def, `${parsed}${unit}`)
     })
@@ -933,15 +936,13 @@ export class OASThemeEditor extends OASElement {
         swatch.classList.add('swatch-neutral')
       }
       if (row.colorText) {
-        const preserveInvalidDraft =
-          this.shadow.activeElement === row.colorText && row.colorText.classList.contains('is-invalid')
+        const preserveInvalidDraft = row.colorText.classList.contains('is-invalid')
         if (!preserveInvalidDraft) row.colorText.value = value
       }
     } else {
       const num = parseFloat(value)
       if (!Number.isNaN(num)) {
-        const preserveInvalidDraft =
-          this.shadow.activeElement === row.control && Number.isNaN(parseFloat(row.control.value))
+        const preserveInvalidDraft = row.control.classList.contains('is-invalid')
         if (!preserveInvalidDraft) row.control.value = String(num)
         if (row.slider) {
           row.slider.value = String(this.clampNum(num, row.def.min, row.def.max))
@@ -953,6 +954,7 @@ export class OASThemeEditor extends OASElement {
   private applyValue(def: ThemeTokenDef, value: string): void {
     const theme = this.editingTheme
     this.overrides[theme].set(def.name, value)
+    this.resolvedValues[theme].clear()
     if (theme === this.previewTheme()) this.themeRoot().style.setProperty(def.name, value)
     this.emit('change', { token: def.name, value, theme })
     // 就地刷新值显示，避免整棵重建导致输入焦点丢失
@@ -1051,8 +1053,8 @@ export class OASThemeEditor extends OASElement {
   }
 
   /**
-   * 用同级隐藏 probe 读取非预览套的 computed 默认值。probe 自带目标 data-theme，
-   * 不改 provider；只复制非编辑器写入的内联 token，避免当前套 override 泄漏，finally 销毁。
+   * 用同级隐藏 probe 读取非预览套的 computed 值。plain div 复制 root 的属性/class/id 与内联上下文，
+   * 去掉两桶编辑器写入后设目标 data-theme，再只应用目标桶 overrides；不改 root，finally 销毁重复 id。
    */
   private captureResolvedValues(theme: ThemeEditorTheme): void {
     if (theme === this.previewTheme()) return
@@ -1062,13 +1064,15 @@ export class OASThemeEditor extends OASElement {
     const tokens = new Set(this.resolveGroups().flatMap((group) => group.tokens.map((token) => token.name)))
     const edited = new Set([...this.overrides.light.keys(), ...this.overrides.dark.keys()])
     const probe = document.createElement('div')
+    for (const attr of root.attributes) {
+      if (attr.name !== 'style' && attr.name !== 'data-theme') probe.setAttribute(attr.name, attr.value)
+    }
+    probe.style.cssText = root.style.cssText
+    for (const token of edited) probe.style.removeProperty(token)
     probe.hidden = true
     probe.setAttribute('aria-hidden', 'true')
     probe.dataset.theme = theme
-    for (const token of tokens) {
-      const inline = root.style.getPropertyValue(token)
-      if (inline && !edited.has(token)) probe.style.setProperty(token, inline)
-    }
+    for (const [token, value] of this.overrides[theme]) probe.style.setProperty(token, value)
     parent.appendChild(probe)
     try {
       const computed = getComputedStyle(probe)

@@ -166,3 +166,161 @@ test('theme-editor 双套编辑：键盘切桶不劫持预览、provider 应用�
   expect(errors).toEqual([])
   expect(unexpectedWarnings).toEqual([])
 })
+
+test('theme-editor 非预览导出与切到该主题后导出等价：primary 改动驱动 hover/active 派生值', async ({
+  page,
+}, testInfo) => {
+  const errors: string[] = []
+  page.on('pageerror', (error) => errors.push(error.message))
+  page.on('console', (message) => {
+    if (message.type() === 'error') errors.push(message.text())
+  })
+  await page.goto('/components/theme-editor.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#te-in-cp')
+  const values = await page.evaluate(() => {
+    const cp = document.querySelector('#te-cp') as HTMLElement
+    const editor = document.querySelector('#te-in-cp') as any
+    cp.setAttribute('theme', 'light')
+    editor.editingTheme = 'dark'
+    editor.importJson({ '--oas-color-primary': '#334455' })
+    const nonPreview = editor.exportThemes().dark
+    cp.setAttribute('theme', 'dark')
+    const preview = editor.exportThemes().dark
+    return {
+      nonPreviewPrimary: nonPreview['--oas-color-primary'],
+      previewPrimary: preview['--oas-color-primary'],
+      nonPreviewHover: nonPreview['--oas-color-primary-hover'],
+      previewHover: preview['--oas-color-primary-hover'],
+      nonPreviewActive: nonPreview['--oas-color-primary-active'],
+      previewActive: preview['--oas-color-primary-active'],
+    }
+  })
+  expect(values.nonPreviewPrimary).toBe('#334455')
+  expect(values.previewPrimary).toBe('#334455')
+  expect(values.nonPreviewHover).toBe(values.previewHover)
+  expect(values.nonPreviewActive).toBe(values.previewActive)
+  await page.locator('#te-cp').screenshot({ path: testInfo.outputPath('nonpreview-preview-equivalence.png') })
+  expect(errors).toEqual([])
+})
+
+test('theme-editor 非预览派生缓存：目标桶写入与 reset 后均按新 primary/default 重算', async ({ page }) => {
+  await page.goto('/components/theme-editor.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#te-in-cp')
+  const values = await page.evaluate(() => {
+    const cp = document.querySelector('#te-cp') as HTMLElement
+    const editor = document.querySelector('#te-in-cp') as any
+    cp.setAttribute('theme', 'light')
+    editor.editingTheme = 'dark'
+    editor.importJson({ '--oas-color-primary': '#334455' })
+    editor.exportThemes()
+    editor.importJson({ '--oas-color-primary': '#445566' })
+    const hoverInput = () =>
+      [...editor.shadowRoot.querySelectorAll('[part="row"]')]
+        .find((row: HTMLElement) => row.textContent.includes('--oas-color-primary-hover'))
+        .querySelector('input.color-text').value
+    const afterWriteUi = hoverInput()
+    const afterWriteExport = editor.exportThemes().dark
+    editor.reset('dark')
+    const afterResetUi = hoverInput()
+    const afterResetExport = editor.exportThemes().dark
+    return {
+      afterWriteUi,
+      afterWriteHover: afterWriteExport['--oas-color-primary-hover'],
+      afterResetUi,
+      afterResetHover: afterResetExport['--oas-color-primary-hover'],
+      afterResetPrimary: afterResetExport['--oas-color-primary'],
+    }
+  })
+  expect(values.afterWriteUi).toBe(values.afterWriteHover)
+  expect(values.afterResetUi).toBe(values.afterResetHover)
+  expect(values.afterResetPrimary).toBe('#9ecdff')
+})
+
+test('theme-editor 非预览 probe 保留嵌套 provider/root 上下文，原属性/style 不变且同步清理', async ({
+  page,
+}, testInfo) => {
+  const errors: string[] = []
+  page.on('pageerror', (error) => errors.push(error.message))
+  page.on('console', (message) => {
+    if (message.type() === 'error') errors.push(message.text())
+  })
+  await page.goto('/components/theme-editor.html', { waitUntil: 'domcontentloaded' })
+  await page.evaluate(() => {
+    const style = document.createElement('style')
+    style.textContent = `
+      #ctx-outer[data-skin="brand"] > #ctx-root.context-root[data-skin="compact"] {
+        --oas-color-primary: #010203;
+      }
+    `
+    document.head.appendChild(style)
+    const outer = document.createElement('oas-config-provider')
+    outer.id = 'ctx-outer'
+    outer.dataset.skin = 'brand'
+    outer.setAttribute('theme', 'dark')
+    const root = document.createElement('oas-config-provider')
+    root.id = 'ctx-root'
+    root.className = 'context-root'
+    root.dataset.skin = 'compact'
+    root.setAttribute('theme', 'light')
+    root.style.setProperty('--oas-space-2', '11px')
+    root.appendChild(document.createElement('oas-theme-editor'))
+    outer.appendChild(root)
+    document.body.appendChild(outer)
+  })
+  await up(page, '#ctx-root oas-theme-editor')
+  const values = await page.evaluate(() => {
+    const outer = document.querySelector('#ctx-outer') as HTMLElement
+    const root = document.querySelector('#ctx-root') as HTMLElement
+    const editor = root.querySelector('oas-theme-editor') as any
+    const beforeAttributes = root.getAttributeNames().map((name) => [name, root.getAttribute(name)])
+    const beforeStyle = root.style.cssText
+    const beforeChildCount = outer.children.length
+    const nonPreview = editor.exportThemes().dark
+    const afterAttributes = root.getAttributeNames().map((name) => [name, root.getAttribute(name)])
+    const result = {
+      nonPreviewPrimary: nonPreview['--oas-color-primary'],
+      nonPreviewSpace: nonPreview['--oas-space-2'],
+      beforeAttributes,
+      afterAttributes,
+      beforeStyle,
+      afterStyle: root.style.cssText,
+      beforeChildCount,
+      afterChildCount: outer.children.length,
+      rootIdCount: document.querySelectorAll('#ctx-root').length,
+    }
+    root.setAttribute('theme', 'dark')
+    const preview = editor.exportThemes().dark
+    return { ...result, previewPrimary: preview['--oas-color-primary'], previewSpace: preview['--oas-space-2'] }
+  })
+  expect(values.nonPreviewPrimary).toBe('#010203')
+  expect(values.previewPrimary).toBe('#010203')
+  expect(values.nonPreviewSpace).toBe('11px')
+  expect(values.previewSpace).toBe('11px')
+  expect(values.afterAttributes).toEqual(values.beforeAttributes)
+  expect(values.afterStyle).toBe(values.beforeStyle)
+  expect(values.afterChildCount).toBe(values.beforeChildCount)
+  expect(values.rootIdCount).toBe(1)
+  await page.locator('#ctx-root').screenshot({ path: testInfo.outputPath('probe-root-context-dark.png') })
+  expect(errors).toEqual([])
+})
+
+test('theme-editor 非法草稿：真实键盘切桶让 select 持焦也不重写颜色/数字中间输入', async ({ page }) => {
+  await page.goto('/components/theme-editor.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#te-default')
+  const select = page.locator('#te-default .editing-theme')
+  const colorText = page.locator('#te-default .color-text').first()
+  await colorText.fill('not-a-color')
+  await select.focus()
+  await page.keyboard.press('ArrowDown')
+  await page.waitForFunction(() => (document.querySelector('#te-default') as any).editingTheme === 'dark')
+  await expect(colorText).toHaveValue('not-a-color')
+  await expect(colorText).toHaveClass(/is-invalid/)
+
+  const numberInput = page.locator('#te-default input[type="number"]').first()
+  await numberInput.fill('')
+  await select.focus()
+  await page.keyboard.press('ArrowUp')
+  await page.waitForFunction(() => (document.querySelector('#te-default') as any).editingTheme === 'light')
+  await expect(numberInput).toHaveValue('')
+  await expect(numberInput).toHaveClass(/is-invalid/)
+})

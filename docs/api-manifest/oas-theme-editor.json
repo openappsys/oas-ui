@@ -12,6 +12,7 @@
     },
     {
       "name": "editing-theme",
+      "default": "light",
       "observed": true
     }
   ],
