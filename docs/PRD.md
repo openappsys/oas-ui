@@ -14,9 +14,11 @@
 ### 详细需求
 
 - **nice 序列唯一**：内部 `packages/ui/src/data/chart/ticks.ts` 产出 `{ max, step, values }`；步长只允许 `1 / 2 / 2.5 / 5 / 10 × 10^n`，阈值向上切换（0.01 → 0.0025、0.2 → 0.05、90 → 25、10 → 2.5）。双轴以主轴档数为锚，副轴同段数共用同一序列；radar 固定 4 层网格、堆叠柱按分类合计同口径。
-- **接受并记录顶格变化**：raw max 90 → 顶格 100（旧 ceil 为 92）；双轴右轴 raw max 10 → 顶格 10（旧 ceil 为 12）。属于新契约的可见行为，回归按新量程重算并注明。
+- **接受并记录顶格变化**：raw max 90 → 顶格 100（旧 ceil 为 92）；双轴右轴 raw max 10 → 顶格 10（旧 ceil 为 12）。属于新契约的可见行为，回归按新量程重算并注明。**任意量程顶格都可能上取接近 2 倍**（如 133→200、1206→2000），文档中英明示；需要更紧顶格时宿主先归一到 nice 边界。
 - **动态精度 + 去显示层 Math.round**：标签用 `Intl.NumberFormat` 的 `maximumFractionDigits` 由步长推导（25 → 0 位、2.5 → 1 位、0.05 → 2 位、0.0025 → 4 位），locale 感知小数分隔符；移除 `renderGrid` / radar 标签层的 `Math.round`。步长 ≥1e6 或 <1e-4 时用科学计数（`2.5E8` / `1E-5`，0 仍显示 `0`），避免长数字撑爆轴列。
 - **浮点噪声收口**：`values` 按 15 位有效数字归一化（0.1×3 不再产出 0.30000000000000004），标签层再由 Intl 精度收口。
+- **尾差与极值严格性（fix round 1）**：选档后再次校验 `max >= rawMax`，浮点尾差（0.4000000000000001 / 4.0000000001 / 10.0000000001）顺延下一合法 nice 档（0.1→0.2、1→2、2.5→5），不得返回 max<rawMax。有效有限渲染域内极值仍给有限结果：上溢（1.7e308 / MAX_VALUE）钳到 `MAX_VALUE` + 等分 step，下溢（5e-324 / MIN_VALUE）用 `MIN_VALUE` 作步长；非有限 rawMax 用文档化零哨兵；`values` 必须全有限、严格递增、末值 = max。`formatTick` 非有限 value 返回显式哨兵 `—`（不再静默显示 0）。
+- **locale 健壮性（fix round 1）**：`Intl.NumberFormat` 构造缓存（locale|notation|精度 键控）；非法 locale（`zh_CN` 下划线 / 任意自定义名 / 空串）只回退一次运行环境默认 locale，不再用未校验 locale 二次构造，Chart.update 不得抛 RangeError 致空白图。provider `de-DE` 断言 `0,05`；SSR 同 locale 可区分默认 locale。`ar` 等跨 ICU 科学计数只断言可渲染/非空，不锁死字形，不新增公共格式 API。
 - **标签按需留白**：左轴 `padL` 与双轴右轴 `padR` 均由该轴实际格式化标签的最宽值 + 既有轴间距 + 2 user 单位字形余量推导，网格线/绘图区随之收缩；不靠任意硬编码像素加宽，不新增公共配置。单轴右缘与旋转 x 标签留白规则不变。
 - **SSR/水合**：Node 侧 Intl 纯计算，DSD 快照与客户端同一模板；SSR 显式 locale 走请求局部 provider，刻度小数/科学计数文案一致。
 
@@ -26,9 +28,9 @@
 
 ### 验收标准
 
-- 单测：`ticks.test.ts`（0.01 / 0.2 / 90 / 10、双轴段数、浮点噪声、科学计数、locale 精度、零/非法输入）+ chart 集成断言（小数刻度、radar、双轴小数与留白、旧几何按新契约重算并注明）；SSR 快照含 `0.0025` / `2.5E8`；`pnpm test` 全绿。
-- qa-regression（Chromium + Firefox）：真实 `getBBox` 证明左轴 / 双轴右轴 / radar 的小数与科学计数标签不越出 520×280 viewBox，dark / RTL 几何不变、console 零告警。
-- 文档：chart.md zh/en「边界」同步新刻度契约与 90→100 / 10→10；CHANGELOG / PRD / ROADMAP 记录；全量 build / e2e / perf:size / api / llms / stats / skill / lint / format / trace 通过。
+- 单测：`ticks.test.ts`（0.01 / 0.2 / 90 / 10、双轴段数、浮点噪声、科学计数、locale 精度、零/非法输入、浮点尾差顺延、上溢/下溢/非有限极值、固定种子随机量级的 max≥rawMax + values 有限性）+ chart 集成断言（小数刻度、radar、双轴小数与留白、provider de-DE `0,05`、非法 provider locale 仍渲染、stacked 0/10/20/30/40 + 最大合计比例、旧几何按新契约重算并注明）；SSR 快照含 `0.0025` / `2.5E8` / de-DE `0,05`；`pnpm test` 全绿。
+- qa-regression（Chromium + Firefox）：真实 `getBBox` 证明左轴 / 双轴右轴 / radar 的小数与科学计数标签不越出 520×280 viewBox，dark / RTL 几何不变、console 零告警；非法 provider locale（`zh_CN` / 自定义名）真实浏览器仍渲染且零 pageerror。
+- 文档：chart.md zh/en「边界」同步新刻度契约、90→100 / 10→10、任意量程近 2 倍顶格与 locale/ICU 边界；CHANGELOG / PRD / ROADMAP 记录；全量 build / e2e / perf:size / api / llms / stats / skill / lint / format / trace 通过。perf 档案数字统一留到批次 Task 8 final 的 `perf:size --update-baseline` + `perf:docs`，本批不手改 stale 数字。
 
 ---
 

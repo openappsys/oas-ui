@@ -534,6 +534,42 @@ test('chart 小数/科学计数刻度：真实 getBBox 不越出 viewBox（左�
   expect(consoleNoise, '刻度渲染零 console 告警/错误').toEqual([])
 })
 
+// 回归：provider 可注入非法 BCP-47 locale（zh_CN）或任意自定义名，Intl.NumberFormat 会抛
+// RangeError；此前异常从 Chart.update 冒出导致整图空白。现 formatTick 回退默认 locale，
+// 真实浏览器下必须仍渲染刻度且零 pageerror。
+test('chart 非法 provider locale：zh_CN / 自定义名仍渲染刻度且零 pageerror', async ({ page }) => {
+  const pageErrors: string[] = []
+  page.on('pageerror', (e) => pageErrors.push(e.message))
+  await page.goto('/components/chart.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-chart')
+  const r = await page.evaluate(() => {
+    const make = (locale: string) => {
+      const provider = document.createElement('oas-config-provider')
+      provider.setAttribute('locale', locale)
+      document.body.appendChild(provider)
+      const el = document.createElement('oas-chart')
+      el.setAttribute('type', 'bar')
+      el.setAttribute('data', JSON.stringify([{ label: 'a', value: 0.2 }]))
+      provider.appendChild(el)
+      const svg = el.shadowRoot!.querySelector('svg')!
+      const labels = [...svg.querySelectorAll('text.axis-text')].map((t) => t.textContent ?? '')
+      const bars = svg.querySelectorAll('rect.bar').length
+      provider.remove()
+      return { labels, bars }
+    }
+    return { zhCn: make('zh_CN'), custom: make('custom-locale') }
+  })
+  for (const [name, chart] of Object.entries(r)) {
+    expect(chart.bars, `${name} 仍渲染柱体`).toBe(1)
+    expect(chart.labels, `${name} 仍有 5 个刻度`).toHaveLength(5)
+    expect(
+      chart.labels.some((l) => /0[.,]05/.test(l)),
+      `${name} 刻度回退后仍可读：${chart.labels.join('|')}`,
+    ).toBe(true)
+  }
+  expect(pageErrors, '非法 locale 不冒泡为 pageerror').toEqual([])
+})
+
 // RTL 回归：抽稀（步长/落点）、柱组居中、xLabelRotate 旋转三处都必须是纯几何，不随宿主书写方向变化；
 // svg direction 钉死 ltr 后 text-anchor start/end 语义不翻转（旋转标签的 start 锚点在 RTL 下不得变成 end）。
 test('chart 密集标签/旋转/柱组居中：dir=rtl 与 ltr 逐项几何相同，锚点与文字方向不翻转', async ({ page }) => {

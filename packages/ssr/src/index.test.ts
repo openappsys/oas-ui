@@ -1009,6 +1009,17 @@ describe('@oas-ui/ssr renderToString', () => {
     )
     expect(large).toContain('>2.5E8<')
     expect(large).toContain('>1E9<')
+
+    // locale 可区分性：SSR 的 RenderLocale 仍只有 zh-CN/en，这里用 provider 子树注入
+    // de-DE（真实 config-provider 通道），断言小数分隔符为逗号而非默认点号。
+    const deData = JSON.stringify([{ label: 'a', value: 0.2 }])
+    const de = await renderToString(
+      'oas-config-provider',
+      { locale: 'de-DE' },
+      `<oas-chart type="bar" data='${deData}'></oas-chart>`,
+    )
+    expect(de).toContain('>0,05<')
+    expect(de).not.toContain('>0.05<')
   })
 
   it('oas-code：正则高亮同步直出（token span + 行号），copyable 默认显示复制按钮', async () => {

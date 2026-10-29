@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { setLocale } from '@oas-ui/i18n'
 import en from '@oas-ui/i18n/en'
 import '@oas-ui/i18n'
+import { OASConfigProvider } from '../../framework/config-provider/index.js'
 import { OASChart } from './index.js'
 
 const SINGLE = JSON.stringify([
@@ -27,6 +28,17 @@ function mount(attrs: Record<string, string> = {}): OASChart {
 
 function svgOf(el: OASChart): SVGSVGElement {
   return el.shadowRoot!.querySelector('svg')!
+}
+
+/** 在 config-provider 子树内挂载 chart（刻度 locale 走就近 provider 注入） */
+function mountInProvider(locale: string, attrs: Record<string, string> = {}): OASChart {
+  const provider = new OASConfigProvider()
+  provider.setAttribute('locale', locale)
+  document.body.appendChild(provider)
+  const el = new OASChart()
+  for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v)
+  provider.appendChild(el)
+  return el
 }
 
 /** 与组件 estimateLabelWidth 同口径的独立复算（用于断言占位） */
@@ -426,7 +438,9 @@ describe('OASChart', () => {
     ])
   })
 
-  it('标签按需留白：左侧小数刻度按标签宽度扩 padL，文字不越出 viewBox', () => {
+  // 宽度断言是「估算模型」自校验（不依赖真实字体度量）；真实裁切由
+  // qa-regression/chart.spec.ts 的 getBBox 在 Chromium/Firefox 双引擎覆盖。
+  it('标签按需留白（估算模型）：左侧小数刻度按标签宽度扩 padL', () => {
     const el = mount({
       type: 'line',
       data: JSON.stringify([
@@ -439,7 +453,7 @@ describe('OASChart', () => {
     // 0.0025 估算宽 41.5 > 旧固定左留白可容纳的 34，必须按需扩展
     for (const t of ticks) {
       const left = Number(t.getAttribute('x')) - estWidth(t.textContent ?? '')
-      expect(left, `刻度 ${t.textContent} 左缘不越出 viewBox`).toBeGreaterThanOrEqual(0)
+      expect(left, `估算模型：刻度 ${t.textContent} 左缘不越出 viewBox`).toBeGreaterThanOrEqual(0)
     }
     // 网格线随 padL 右移（x1 不再是固定 42），右缘仍为单轴 508
     for (const line of svg.querySelectorAll('line.axis-line')) {
@@ -448,7 +462,7 @@ describe('OASChart', () => {
     }
   })
 
-  it('双轴小数刻度：左右轴各自动态精度，右轴按标签宽度留白（不越出 viewBox）', () => {
+  it('双轴小数刻度（估算模型）：左右轴各自动态精度，右轴按标签宽度留白', () => {
     const el = mount({
       type: 'line',
       options: '{"yAxis":[{"name":"L"},{"name":"R"}]}',
@@ -468,7 +482,7 @@ describe('OASChart', () => {
     expect(right.map((t) => t.textContent)).toEqual(['0', '0.0025', '0.005', '0.0075', '0.01'])
     for (const t of right) {
       const edge = Number(t.getAttribute('x')) + estWidth(t.textContent ?? '')
-      expect(edge, `右轴刻度 ${t.textContent} 右缘不越出 viewBox`).toBeLessThanOrEqual(520)
+      expect(edge, `估算模型：右轴刻度 ${t.textContent} 右缘不越出 viewBox`).toBeLessThanOrEqual(520)
     }
     // 右轴留白按 0.0075 标签宽（41.5）+ 间距 + 余量扩展；网格右缘随之左移
     for (const line of svg.querySelectorAll('line.axis-line')) {
@@ -488,6 +502,36 @@ describe('OASChart', () => {
       '0.0075',
       '0.01',
     ])
+  })
+
+  it('provider locale=de-DE：刻度小数分隔符为逗号（0,05），与默认 locale 可区分', () => {
+    const el = mountInProvider('de-DE', {
+      type: 'bar',
+      data: JSON.stringify([{ label: 'a', value: 0.2 }]),
+    })
+    expect([...svgOf(el).querySelectorAll('text.axis-text')].map((t) => t.textContent)).toEqual([
+      '0',
+      '0,05',
+      '0,1',
+      '0,15',
+      '0,2',
+    ])
+  })
+
+  // 回归：非法 BCP-47 locale（zh_CN 下划线）或自定义名会让 Intl.NumberFormat 抛 RangeError。
+  // 此前异常从 Chart.update 冒出 → 整图空白；现 formatTick 回退默认 locale，图表照常渲染。
+  it.each(['zh_CN', 'custom-locale'])('provider locale=%s（非法）：刻度回退默认 locale，图表仍渲染', (locale) => {
+    const el = mountInProvider(locale, {
+      type: 'bar',
+      data: JSON.stringify([{ label: 'a', value: 0.2 }]),
+    })
+    expect(svgOf(el).querySelectorAll('rect.bar').length).toBe(1)
+    const labels = [...svgOf(el).querySelectorAll('text.axis-text')].map((t) => t.textContent ?? '')
+    expect(labels).toHaveLength(5)
+    expect(
+      labels.some((l) => /0[.,]05/.test(l)),
+      `刻度仍可读：${labels.join('|')}`,
+    ).toBe(true)
   })
 
   it('type=radar radarShape=circle：网格换同心圆（无 polygon 网格）', () => {
@@ -1074,8 +1118,11 @@ describe('OASChart', () => {
 
   it('type=stacked-bar 多系列堆叠（段高之和=分类总高，不超绘图区）', () => {
     const el = mount({ type: 'stacked-bar', data: MULTI })
-    const bars = svgOf(el).querySelectorAll('.bar')
+    const svg = svgOf(el)
+    const bars = svg.querySelectorAll('.bar')
     expect(bars.length).toBe(6)
+    // 分类合计 [15, 28, 27] → nice 序列 step 10 / 顶格 40，刻度直接可断言
+    expect([...svg.querySelectorAll('text.axis-text')].map((t) => t.textContent)).toEqual(['0', '10', '20', '30', '40'])
     // 分类「一月」：系列 A(10) 在底、系列 B(5) 叠其上
     const a = bars[0]!
     const b = bars[1]!
@@ -1083,9 +1130,12 @@ describe('OASChart', () => {
     const hA = Number(a.getAttribute('height'))
     const yB = Number(b.getAttribute('y'))
     const hB = Number(b.getAttribute('height'))
-    // 新 nice 量程（分类合计 max 28 → step 10 / 顶格 40）下段边出现 0.1 user 单位的
-    // toFixed(1) 舍入差（y 与 height 各自取整），远低于 1 显示像素；用 0.2 容差而非放宽到整数档。
-    expect(Math.abs(yB + hB - yA), '堆叠段边缘首尾相接（允许 0.1 渲染舍入）').toBeLessThanOrEqual(0.2)
+    // y 与 height 各自 toFixed(1)：段边最多 0.1 user 单位舍入差（远低于 1 显示像素）；
+    // 理论容差 0.15，不放宽到整数档。
+    expect(Math.abs(yB + hB - yA), '堆叠段边缘首尾相接（≤0.1 渲染舍入）').toBeLessThanOrEqual(0.15)
+    // 最大分类合计 28 / 顶格 40 → 最高柱顶 = 250 - 28/40×234 = 86.2（属性已 toFixed(1)）
+    const topOfTallest = Math.min(...[...bars].map((bar) => Number(bar.getAttribute('y'))))
+    expect(Math.abs(250 - topOfTallest - (28 / 40) * 234), '最大合计占量程比例').toBeLessThanOrEqual(0.15)
     // 柱体不超出绘图区：顶 ≥ PAD.t(16)、底 ≤ PAD.t + plotH(250)
     expect(yB).toBeGreaterThanOrEqual(16)
     expect(yA + hA).toBeLessThanOrEqual(250)

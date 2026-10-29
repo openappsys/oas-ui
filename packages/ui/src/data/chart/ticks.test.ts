@@ -95,9 +95,75 @@ describe('niceTicks', () => {
   })
 
   it('零 / 非法 / 负数：0 步长与全零刻度（保持档数，避免除零）', () => {
-    for (const bad of [0, -5, Number.NaN, Number.POSITIVE_INFINITY]) {
+    for (const bad of [0, -5, Number.NaN, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY]) {
       expect(niceTicks(bad), String(bad)).toEqual({ max: 0, step: 0, values: [0, 0, 0, 0, 0] })
     }
+  })
+
+  // 回归：rough = rawMax / segments 的浮点尾差（如 0.4000000000000001/4 = 0.10000000000000003）
+  // 曾被 1e-9 归一化吸到 0.1 档，导致 max=0.4 < rawMax。选档后必须再校验 max >= rawMax，
+  // 不满足时顺延下一合法 nice 档（0.1 → 0.2、1 → 2、2.5 → 5）。
+  it.each([
+    ['0.4000000000000001', 0.4000000000000001, 0.2, 0.8],
+    ['4.0000000001', 4.0000000001, 2, 8],
+    ['10.0000000001', 10.0000000001, 5, 20],
+  ])('浮点尾差 %s：顺延下一合法档，max 严格 ≥ rawMax', (_label, raw, step, max) => {
+    const ticks = niceTicks(raw)
+    expect(ticks.step).toBe(step)
+    expect(ticks.max).toBe(max)
+    expect(ticks.max).toBeGreaterThanOrEqual(raw)
+    expect(ticks.values.every(Number.isFinite)).toBe(true)
+  })
+
+  // 有效有限渲染域：普通 double 上界 / 下界都要给有限可渲染结果；超出域或非有限 raw
+  // 明确降级（上溢钳到 MAX_VALUE + 等分 step；非有限 raw 用文档化零哨兵）。
+  it.each([
+    ['1.7e308', 1.7e308],
+    ['Number.MAX_VALUE', Number.MAX_VALUE],
+    ['1e308', 1e308],
+    ['5e-324（最小次正规）', 5e-324],
+    ['Number.MIN_VALUE', Number.MIN_VALUE],
+    ['1e-320', 1e-320],
+  ])('极值 %s：max 严格 ≥ rawMax 且 values 全有限', (_label, raw) => {
+    const ticks = niceTicks(raw)
+    expect(Number.isFinite(ticks.max)).toBe(true)
+    expect(ticks.max).toBeGreaterThanOrEqual(raw)
+    expect(ticks.step).toBeGreaterThan(0)
+    expect(ticks.values).toHaveLength(5)
+    expect(ticks.values.every(Number.isFinite)).toBe(true)
+    expect(ticks.values[ticks.values.length - 1]).toBe(ticks.max)
+    for (let i = 1; i < ticks.values.length; i++) {
+      expect(ticks.values[i]!).toBeGreaterThan(ticks.values[i - 1]!)
+    }
+  })
+
+  // 属性式覆盖：随机量级（含次正规与接近 MAX_VALUE）都必须满足 max >= rawMax、
+  // step > 0、values 全有限且严格递增。固定 LCG 种子保证可复现。
+  it('随机量级属性：max ≥ rawMax、values 有限且严格递增', () => {
+    let seed = 123456789
+    const rand = (): number => {
+      seed = (seed * 1664525 + 1013904223) % 4294967296
+      return seed / 4294967296
+    }
+    let checked = 0
+    for (let i = 0; i < 240; i++) {
+      const mantissa = 1 + rand() * 9
+      const exponent = Math.floor(rand() * 620) - 315
+      const raw = mantissa * 10 ** exponent
+      if (!Number.isFinite(raw) || raw <= 0) continue
+      checked++
+      const ticks = niceTicks(raw)
+      expect(ticks.max, `raw=${raw}`).toBeGreaterThanOrEqual(raw)
+      expect(Number.isFinite(ticks.max), `raw=${raw}`).toBe(true)
+      expect(ticks.step, `raw=${raw}`).toBeGreaterThan(0)
+      expect(ticks.values.every(Number.isFinite), `raw=${raw}`).toBe(true)
+      expect(ticks.values[0], `raw=${raw}`).toBe(0)
+      expect(ticks.values[ticks.values.length - 1], `raw=${raw}`).toBe(ticks.max)
+      for (let k = 1; k < ticks.values.length; k++) {
+        expect(ticks.values[k]!, `raw=${raw} 第 ${k} 档`).toBeGreaterThan(ticks.values[k - 1]!)
+      }
+    }
+    expect(checked).toBeGreaterThan(200)
   })
 })
 
@@ -141,5 +207,30 @@ describe('formatTick', () => {
     expect(formatTick(1000000, 1000000, 'zh-CN')).toBe('1E6')
     expect(formatTick(250000, 250000, 'zh-CN')).toBe('250000')
     expect(formatTick(0.0001, 0.0001, 'zh-CN')).toBe('0.0001')
+  })
+
+  // 回归：provider 可注入 zh_CN（下划线）或任意自定义 locale，Intl.NumberFormat 会抛
+  // RangeError 并让 Chart.update 整体中断（空白图）。formatTick 必须回退默认 locale
+  // 且不得拿未校验 locale 二次构造。
+  it('非法 locale（zh_CN / 自定义名 / 空串）不抛，回退默认 locale', () => {
+    for (const bad of ['zh_CN', 'custom-locale', '']) {
+      expect(() => formatTick(0.05, 0.05, bad), bad).not.toThrow()
+      expect(formatTick(0.05, 0.05, bad), bad).toMatch(/0[.,]05/)
+    }
+  })
+
+  it('非有限 value 用显式哨兵，不再静默显示 0', () => {
+    for (const bad of [Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY, Number.NaN]) {
+      expect(formatTick(bad, 1, 'zh-CN'), String(bad)).toBe('—')
+    }
+  })
+
+  // 跨 ICU：ar 等 locale 的科学计数字形（阿拉伯数字 / 指数符号）可能随 ICU 版本不同，
+  // 测试只锁「可渲染、非空、不是零」，不锁死具体字形；正式轴标签仍按 locale 输出。
+  it('ar 科学计数只断言可渲染，不锁 ICU 字形', () => {
+    const out = formatTick(2.5e8, 2.5e8, 'ar')
+    expect(out.length).toBeGreaterThan(0)
+    expect(out).not.toBe('0')
+    expect(() => formatTick(2.5e8, 2.5e8, 'ar')).not.toThrow()
   })
 })
