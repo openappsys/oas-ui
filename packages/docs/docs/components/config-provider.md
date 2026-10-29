@@ -43,14 +43,17 @@ config-provider 的 `locale` 就近优先于全局 `setLocale()`：包裹内的�
 
 ## Theme 注入
 
-config-provider 的 `theme` 会写入 `data-theme` 到自身，包裹的子树（含 Shadow DOM）继承对应主题 token。
+config-provider 的 `theme` 会将实际生效主题写入自身 `data-theme`，包裹的子树（含 Shadow DOM）继承对应主题 token。`theme="system"` 跟随 `prefers-color-scheme`，同时保留 `theme="system"` 作为请求值；显式 `light` / `dark` / `high-contrast` / 自定义主题名行为不变，缺失或空 `theme` 仍删除局部 `data-theme` 并继承外层。
 
-<DemoBlock title="Theme 注入">
+可选 `theme-storage-key` 用 localStorage 保存当前显式选择，JSON 形如 `{"theme":"system"}`（合法值为 `light` / `dark` / `system`）。仅在 `theme="system"` 首次连接时恢复存储：合法 `light` / `dark` 优先于系统默认值，重选 `system` 会保存该选择并重新跟随系统。无 key 不读写；坏值和存储异常安全降级。SSR 固定输出浅色，浏览器水合后按同一优先级校正；首屏防闪脚本见[主题指南](/guide/theming#系统主题与可选存储)。
+
+<DemoBlock title="Theme 注入与跟随系统">
   <oas-space>
-    <oas-button type="primary" onclick="setCpTheme('')">浅色</oas-button>
+    <oas-button type="primary" onclick="setCpTheme('light')">浅色</oas-button>
     <oas-button onclick="setCpTheme('dark')">深色</oas-button>
+    <oas-button onclick="setCpTheme('system')">跟随系统</oas-button>
   </oas-space>
-  <oas-config-provider id="cp-theme" theme="" style="margin-top: 16px; display: block; padding: 16px; border-radius: 8px; background: var(--oas-color-bg)">
+  <oas-config-provider id="cp-theme" theme="system" theme-storage-key="oas-docs-config-theme" style="margin-top: 16px; display: block; padding: 16px; border-radius: 8px; background: var(--oas-color-bg)">
     <oas-space>
       <oas-button type="primary">主题按钮</oas-button>
       <oas-tag>跟随主题</oas-tag>
@@ -234,7 +237,8 @@ onMounted(async () => {
 | `disabled` | 全局禁用：子树内已接入注入的表单族控件未显式设置 `disabled` 时统一禁用；组件级逃逸用 `disabled-skip` 属性、整类逃逸用 config JSON 顶层 `disabledExempt` | — | — |
 | `locale` | 包裹子树的内置文案语言（需已注册），就近优先于全局 `setLocale()` | — | — |
 | `size` | 包裹组件的默认尺寸，组件自身未显式设置时生效 | — | — |
-| `theme` | 包裹子树的主题，写入 `data-theme` | — | — |
+| `theme` | 包裹子树的请求主题，实际生效值写入 `data-theme`；`system` 跟随 `prefers-color-scheme`，缺失/空值继承外层，显式主题名优先于系统与存储 | — | — |
+| `theme-storage-key` | 可选 localStorage 键，保存/恢复 `{"theme":"light"\|"dark"\|"system"}` 显式偏好；仅 system 首次连接/换键时恢复，无键不读写，坏值与异常安全降级 | — | — |
 | `z-index` | 浮层全局起始值（正整数）；写入宿主 `--oas-z-index-base`，子树内浮层 z-index 统一抬升；非法值忽略 + dev 告警 | `string` | — |
 
 #### 插槽

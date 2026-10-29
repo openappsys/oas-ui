@@ -43,14 +43,17 @@ Components inside use the injected `size` unless they set it explicitly; explici
 
 ## Theme injection
 
-The config-provider's `theme` writes `data-theme` onto itself, and the wrapped subtree (including Shadow DOM) inherits the corresponding theme tokens.
+The config-provider writes the effective theme to its own `data-theme`, and the wrapped subtree (including Shadow DOM) inherits the corresponding theme tokens. `theme="system"` follows `prefers-color-scheme` while preserving `system` as the requested value. Explicit `light` / `dark` / `high-contrast` / custom theme names keep their existing behavior; a missing or empty `theme` still removes the local `data-theme` and inherits from the outer context.
 
-<DemoBlock title="Theme injection">
+The optional `theme-storage-key` persists the current explicit choice in localStorage as JSON such as `{"theme":"system"}` (valid values: `light` / `dark` / `system`). Storage is restored only on the first connection with `theme="system"`: a valid explicit `light` / `dark` overrides the system default, and choosing `system` again stores that choice and resumes following the OS. No key means no storage access; invalid values and storage exceptions fall back safely. SSR deterministically outputs light, then hydration applies the same priority on the client. See the [theming guide](/en/guide/theming#system-theme-and-optional-storage) for the first-paint anti-flicker script.
+
+<DemoBlock title="Theme injection and system following">
   <oas-space>
-    <oas-button type="primary" onclick="setCpTheme('')">Light</oas-button>
+    <oas-button type="primary" onclick="setCpTheme('light')">Light</oas-button>
     <oas-button onclick="setCpTheme('dark')">Dark</oas-button>
+    <oas-button onclick="setCpTheme('system')">System</oas-button>
   </oas-space>
-  <oas-config-provider id="cp-theme" theme="" style="margin-top: 16px; display: block; padding: 16px; border-radius: 8px; background: var(--oas-color-bg)">
+  <oas-config-provider id="cp-theme" theme="system" theme-storage-key="oas-docs-config-theme" style="margin-top: 16px; display: block; padding: 16px; border-radius: 8px; background: var(--oas-color-bg)">
     <oas-space>
       <oas-button type="primary">Theme button</oas-button>
       <oas-tag>Follows theme</oas-tag>
@@ -234,7 +237,8 @@ onMounted(async () => {
 | `disabled` | Global disable: form-family controls inside the subtree that consume the injection are disabled unless they set `disabled` explicitly; escape a single component with the `disabled-skip` attribute, or escape a whole class with the `disabledExempt` top-level config JSON key | — | — |
 | `locale` | Language for built-in copy in the wrapped subtree (must be registered); takes precedence over global `setLocale()` | — | — |
 | `size` | Default size for wrapped components, applied when a component doesn't set it explicitly | — | — |
-| `theme` | Theme for the wrapped subtree, written to `data-theme` | — | — |
+| `theme` | Requested theme for the wrapped subtree; the effective value is written to `data-theme`; `system` follows `prefers-color-scheme`, missing/empty values inherit, and explicit names win over system and storage | — | — |
+| `theme-storage-key` | Optional localStorage key for `{"theme":"light"\|"dark"\|"system"}` explicit preferences; restored only on the initial system connection/key change, no access without a key, invalid values and exceptions fall back safely | — | — |
 | `z-index` | Global starting value for floating layers (positive integer); writes `--oas-z-index-base` on the host, lifting all floating layers in the subtree; invalid values are ignored with a dev warning | `string` | — |
 
 #### Slots

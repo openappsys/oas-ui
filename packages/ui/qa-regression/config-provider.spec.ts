@@ -80,3 +80,133 @@ test('config-provider theme 与 direction：theme 翻转子树 token（背景色
   const dir = await page.evaluate(() => document.querySelector('#cp-direction')!.getAttribute('dir'))
   expect(dir, 'direction="rtl" → 宿主 dir 属性（CSS 方向沿子树继承）').toBe('rtl')
 })
+
+test('config-provider 嵌套 dark → 局部 light/system=light 的真实 computed token 回到浅色', async ({ page }) => {
+  const errors: string[] = []
+  page.on('pageerror', (error) => errors.push(error.message))
+  await page.emulateMedia({ colorScheme: 'light' })
+  await page.goto('/components/config-provider.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#cp-theme')
+  await page.evaluate(() => {
+    const outer = document.createElement('div')
+    outer.id = 'theme-dark-outer'
+    outer.dataset.theme = 'dark'
+    const explicit = document.createElement('oas-config-provider')
+    explicit.id = 'theme-light-inner'
+    explicit.setAttribute('theme', 'light')
+    const system = document.createElement('oas-config-provider')
+    system.id = 'theme-system-light-inner'
+    system.setAttribute('theme', 'system')
+    outer.append(explicit, system)
+    document.body.appendChild(outer)
+  })
+  await up(page, '#theme-light-inner')
+  await up(page, '#theme-system-light-inner')
+
+  const tokens = await page.evaluate(() => {
+    const read = (selector: string) => {
+      const el = document.querySelector(selector)!
+      const style = getComputedStyle(el)
+      return {
+        requested: el.getAttribute('theme'),
+        effective: el.getAttribute('data-theme'),
+        bg: style.getPropertyValue('--oas-color-bg').trim(),
+        text: style.getPropertyValue('--oas-color-text-primary').trim(),
+        scheme: style.colorScheme,
+      }
+    }
+    return {
+      outer: read('#theme-dark-outer'),
+      explicit: read('#theme-light-inner'),
+      system: read('#theme-system-light-inner'),
+    }
+  })
+  expect(tokens.outer.bg).not.toBe('#ffffff')
+  for (const value of [tokens.explicit, tokens.system]) {
+    expect(value.effective).toBe('light')
+    expect(['#fff', '#ffffff']).toContain(value.bg)
+    expect(value.text).toBe('#18181b')
+    expect(value.scheme).toBe('light')
+  }
+  expect(errors).toEqual([])
+})
+
+test('config-provider system/storage：emulateMedia 实时切换、显式存储优先、重选 system 与 reload 恢复', async ({
+  page,
+}, testInfo) => {
+  const errors: string[] = []
+  const warnings: string[] = []
+  page.on('pageerror', (error) => errors.push(error.message))
+  page.on('console', (message) => {
+    if (message.type() === 'error') errors.push(message.text())
+    if (message.type() === 'warning' && !message.text().includes('scroll-linked positioning effect')) {
+      warnings.push(message.text())
+    }
+  })
+  await page.emulateMedia({ colorScheme: 'light' })
+  await page.addInitScript(() => {
+    document.addEventListener('DOMContentLoaded', () => {
+      const cp = document.createElement('oas-config-provider')
+      cp.id = 'cp-system-storage'
+      cp.setAttribute('theme', 'system')
+      cp.setAttribute('theme-storage-key', 'qa-system-theme')
+      cp.style.cssText =
+        'display:block;position:fixed;inset:0;z-index:10000;padding:24px;background:var(--oas-color-bg);color:var(--oas-color-text-primary)'
+      cp.textContent = 'System theme storage fixture'
+      document.body.appendChild(cp)
+    })
+  })
+  await page.goto('/components/config-provider.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#cp-system-storage')
+  const effective = () => page.locator('#cp-system-storage').getAttribute('data-theme')
+  expect(await effective()).toBe('light')
+  expect(await page.locator('#cp-system-storage').getAttribute('theme')).toBe('system')
+  await expect(page.locator('#cp-system-storage')).toHaveText('System theme storage fixture')
+  await page.locator('#cp-system-storage').screenshot({ path: testInfo.outputPath('system-light.png') })
+
+  await page.emulateMedia({ colorScheme: 'dark' })
+  await page.waitForFunction(() => document.querySelector('#cp-system-storage')?.getAttribute('data-theme') === 'dark')
+  expect(await effective()).toBe('dark')
+  await page.locator('#cp-system-storage').screenshot({ path: testInfo.outputPath('system-dark.png') })
+
+  await page.evaluate(() => document.querySelector('#cp-system-storage')!.setAttribute('theme', 'light'))
+  expect(await effective()).toBe('light')
+  expect(await page.evaluate(() => localStorage.getItem('qa-system-theme'))).toBe(JSON.stringify({ theme: 'light' }))
+  await page.emulateMedia({ colorScheme: 'light' })
+  await page.reload({ waitUntil: 'domcontentloaded' })
+  await up(page, '#cp-system-storage')
+  expect(await effective(), 'reload 后显式 light 存储覆盖 system 默认值').toBe('light')
+
+  await page.evaluate(() => document.querySelector('#cp-system-storage')!.setAttribute('theme', 'system'))
+  expect(await page.evaluate(() => localStorage.getItem('qa-system-theme'))).toBe(JSON.stringify({ theme: 'system' }))
+  await page.emulateMedia({ colorScheme: 'dark' })
+  await page.waitForFunction(() => document.querySelector('#cp-system-storage')?.getAttribute('data-theme') === 'dark')
+  await page.reload({ waitUntil: 'domcontentloaded' })
+  await up(page, '#cp-system-storage')
+  expect(await effective(), '重选 system 后 reload 继续跟随系统而非旧显式值').toBe('dark')
+  expect(errors).toEqual([])
+  expect(warnings).toEqual([])
+})
+
+test('config-provider 主题 demo：System 点击与 Light 键盘操作有真实可见 token 反馈', async ({ page }, testInfo) => {
+  const errors: string[] = []
+  page.on('pageerror', (error) => errors.push(error.message))
+  await page.emulateMedia({ colorScheme: 'dark' })
+  await page.goto('/components/config-provider.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#cp-theme')
+
+  await page.getByRole('button', { name: '跟随系统', exact: true }).click()
+  await page.waitForFunction(() => document.querySelector('#cp-theme')?.getAttribute('data-theme') === 'dark')
+  expect(await page.locator('#cp-theme').getAttribute('theme')).toBe('system')
+  expect(await page.locator('#cp-theme').evaluate((el) => getComputedStyle(el).backgroundColor)).toBe('rgb(24, 24, 27)')
+  await page.locator('#cp-theme').screenshot({ path: testInfo.outputPath('demo-system-dark.png') })
+
+  const light = page.getByRole('button', { name: '浅色', exact: true })
+  await light.focus()
+  await page.keyboard.press('Enter')
+  await page.waitForFunction(() => document.querySelector('#cp-theme')?.getAttribute('data-theme') === 'light')
+  expect(await page.locator('#cp-theme').evaluate((el) => getComputedStyle(el).backgroundColor)).toBe(
+    'rgb(255, 255, 255)',
+  )
+  expect(errors).toEqual([])
+})

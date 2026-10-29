@@ -21,6 +21,59 @@ between three built-in themes:
 document.documentElement.dataset.theme = 'high-contrast'
 ```
 
+## System theme and optional storage
+
+`oas-config-provider` supports `theme="system"`: the `theme` attribute keeps the requested value `system`, while the host `data-theme` contains the effective `light` / `dark` value. OS color-scheme changes update the subtree live. Explicit theme names always win; a missing or empty `theme` does not default to system and continues to inherit from the outer context.
+
+Add `theme-storage-key` only when the user's choice should be remembered. Importing the library does not implicitly access storage or enable global system theming. The stored JSON is `{"theme":"light"}`, `{"theme":"dark"}`, or `{"theme":"system"}`. An explicit light/dark preference wins during the initial restore; choosing system afterwards replaces the old preference and resumes following the OS.
+
+SSR deterministically emits `data-theme="light"` for system and never accesses localStorage or media queries on the server. With SSR/DSD, place the following synchronous script in `<head>` so it runs before the first paint, and keep its key identical to the provider's. It corrects both the root and matching system providers to prevent a theme flash during hydration. Client-only pages do not need this bootstrap.
+
+```html
+<!-- Provider in <body> -->
+<oas-config-provider theme="system" theme-storage-key="oas-app-theme">
+  …
+</oas-config-provider>
+```
+
+Synchronous bootstrap in `<head>`:
+
+```html
+<script>
+  ;(() => {
+    const key = 'oas-app-theme'
+    const media = window.matchMedia('(prefers-color-scheme: dark)')
+    let preference = 'system'
+    try {
+      const saved = JSON.parse(localStorage.getItem(key) || 'null')
+      if (saved && ['light', 'dark', 'system'].includes(saved.theme)) preference = saved.theme
+    } catch {}
+    const effective = () => (preference === 'system' ? (media.matches ? 'dark' : 'light') : preference)
+    const apply = () => {
+      const theme = effective()
+      document.documentElement.dataset.theme = theme
+      document
+        .querySelectorAll('oas-config-provider[theme="system"][theme-storage-key="' + key + '"]')
+        .forEach((el) => {
+          el.dataset.theme = theme
+        })
+    }
+    apply()
+    // The body is not parsed yet in <head>; correct DSD providers as they appear, before the first paint.
+    const observer = new MutationObserver(apply)
+    observer.observe(document.documentElement, { childList: true, subtree: true })
+    document.addEventListener(
+      'DOMContentLoaded',
+      () => {
+        apply()
+        observer.disconnect()
+      },
+      { once: true },
+    )
+  })()
+</script>
+```
+
 ## Skin presets (optional)
 
 `@oas-ui/theme/skins.css` ships 6 brand-color skin presets (`violet` / `emerald` / `rose` / `amber` / `graphite` / `teal`): layer `data-skin` on top of `data-theme` to switch, freely combinable with the three built-in themes (a skin only changes the brand hue, not sizes/structure).

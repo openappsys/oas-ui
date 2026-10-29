@@ -889,7 +889,8 @@
     "attrs": {
       "locale": "Language for built-in copy in the wrapped subtree (must be registered); takes precedence over global `setLocale()`",
       "size": "Default size for wrapped components, applied when a component doesn't set it explicitly",
-      "theme": "Theme for the wrapped subtree, written to `data-theme`",
+      "theme": "Requested theme for the wrapped subtree; the effective value is written to `data-theme`; `system` follows `prefers-color-scheme`, missing/empty values inherit, and explicit names win over system and storage",
+      "theme-storage-key": "Optional localStorage key for `{\"theme\":\"light\"|\"dark\"|\"system\"}` explicit preferences; restored only on the initial system connection/key change, no access without a key, invalid values and exceptions fall back safely",
       "config": "Component-level default config JSON (e.g. `{\"oas-button\":{\"variant\":\"outlined\"}}`); components read `[tag][key]` from the nearest provider, own explicit attributes win; the top-level `disabledExempt` key (tag array) exempts whole classes from the global disable; invalid JSON is ignored with a dev warning",
       "direction": "Global direction injection (`ltr`/`rtl`); writes the host `dir` attribute (CSS direction inheritance pierces light/shadow subtrees); components can consume it via `injectValue('direction')`; invalid values fall back to `ltr` with a dev warning",
       "z-index": "Global starting value for floating layers (positive integer); writes `--oas-z-index-base` on the host, lifting all floating layers in the subtree; invalid values are ignored with a dev warning",

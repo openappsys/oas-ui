@@ -15,6 +15,10 @@
       "observed": true
     },
     {
+      "name": "theme-storage-key",
+      "observed": true
+    },
+    {
       "name": "config",
       "type": "string",
       "default": "",

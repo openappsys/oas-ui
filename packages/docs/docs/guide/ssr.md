@@ -90,6 +90,45 @@ const html = await renderToString('oas-button', { type: 'primary', size: 'large'
 >
 > **locale 请求局部化**：显式 `locale` 只影响本次调用及嵌套子树——渲染器在共享 DOM 内创建本次调用独立的临时 `<oas-config-provider locale>`，目标元素挂其下同步渲染（输出不含 provider 包装），返回前清理两者；不改全局 locale、渲染段不触发 locale/translator 广播（i18n registry 一次性装载副作用除外）。未传 `locale` 保持旧行为：沿用调用时全局 locale（全局 `setLocale()` 语义不变）。并发请求（同一轮 `Promise.all` 里混合多语言、冷加载与热渲染）各自独立，无交错窗口，无需在服务端做任何加锁。
 
+### system 主题首屏防闪
+
+`<oas-config-provider theme="system">` 的服务端快照固定为 `data-theme="light"`，不访问共享 storage、不注册媒体查询监听；客户端水合后按「显式存储 > 系统 > 浅色兜底」校正。使用 system + DSD 时在 `<head>` 放以下同步引导，key 必须与 provider 相同；它会校正根节点及后续解析到的同 key provider，保证首帧与水合一致。该脚本仅在使用 system 时按需加入，不改变默认全局主题。
+
+```html
+<script>
+  ;(() => {
+    const key = 'oas-app-theme'
+    const media = window.matchMedia('(prefers-color-scheme: dark)')
+    let preference = 'system'
+    try {
+      const saved = JSON.parse(localStorage.getItem(key) || 'null')
+      if (saved && ['light', 'dark', 'system'].includes(saved.theme)) preference = saved.theme
+    } catch {}
+    const effective = () => (preference === 'system' ? (media.matches ? 'dark' : 'light') : preference)
+    const apply = () => {
+      const theme = effective()
+      document.documentElement.dataset.theme = theme
+      document
+        .querySelectorAll('oas-config-provider[theme="system"][theme-storage-key="' + key + '"]')
+        .forEach((el) => {
+          el.dataset.theme = theme
+        })
+    }
+    apply()
+    const observer = new MutationObserver(apply)
+    observer.observe(document.documentElement, { childList: true, subtree: true })
+    document.addEventListener(
+      'DOMContentLoaded',
+      () => {
+        apply()
+        observer.disconnect()
+      },
+      { once: true },
+    )
+  })()
+</script>
+```
+
 ### Nuxt（推荐：`@oas-ui/nuxt` 插件）
 
 安装并注册 module 后即开箱即用：

@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { setLocale } from '@oas-ui/i18n'
 import { renderToString } from './index.js'
 import { ensureShim } from './shim.js'
@@ -1405,6 +1405,28 @@ describe('@oas-ui/ssr renderToString', () => {
     // 嵌套子组件被 injectNestedDSD 覆盖
     expect(html).toContain('<meta data-oas-ssr="oas-button" data-oas-ssr-v="1">')
     expect(html).toContain('确定</oas-button>')
+  })
+
+  it('oas-config-provider theme=system：SSR 确定性 light 且 storage/MQL 零访问', async () => {
+    const { window } = ensureShim()
+    const get = vi.spyOn(window.localStorage, 'getItem')
+    const set = vi.spyOn(window.localStorage, 'setItem')
+    const media = vi.spyOn(window, 'matchMedia')
+    try {
+      const attrs = { theme: 'system', 'theme-storage-key': 'ssr-theme' }
+      const first = await renderToString('oas-config-provider', attrs, '<span>系统主题</span>')
+      const second = await renderToString('oas-config-provider', attrs, '<span>系统主题</span>')
+
+      expect(first).toBe(second)
+      expect(first).toContain('<oas-config-provider theme="system" theme-storage-key="ssr-theme" data-theme="light">')
+      expect(get).not.toHaveBeenCalled()
+      expect(set).not.toHaveBeenCalled()
+      expect(media).not.toHaveBeenCalled()
+    } finally {
+      get.mockRestore()
+      set.mockRestore()
+      media.mockRestore()
+    }
   })
 
   it('oas-app：消息上下文容器子树原样 + 宿主注册无副作用', async () => {

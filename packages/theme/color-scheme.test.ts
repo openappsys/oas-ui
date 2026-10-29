@@ -32,6 +32,12 @@ describe.each([
     expect(text).toMatch(/\[data-theme="dark"\],\s*html\.dark\s*\{[^}]*color-scheme:\s*dark/)
   })
 
+  it('显式 light 自带完整浅色 token 规则（可在嵌套 dark 中真实回到 light）', () => {
+    expect(text).toMatch(/:root,\s*:host,\s*\[data-theme="light"\]\s*\{/)
+    expect(blockOf(text, '[data-theme="light"]')).toMatch(/color-scheme:\s*light/)
+    expect(blockOf(text, '[data-theme="light"]')).toMatch(/--oas-color-bg:\s*#ffffff/)
+  })
+
   it('高对比主题（浅底）声明 light', () => {
     expect(blockOf(text, '[data-theme="high-contrast"]')).toMatch(/color-scheme:\s*light/)
   })

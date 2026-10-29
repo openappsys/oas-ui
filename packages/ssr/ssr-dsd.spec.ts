@@ -42,6 +42,34 @@ let dsdHtml = ''
 const FLICKER_PAGE = join(ARTIFACT_DIR, 'measure-dsd.html')
 const FLICKER_PAGE_URL = pathToFileURL(FLICKER_PAGE).href
 
+/** system 主题 DSD + 同步 head 防闪专用页（与 theming/SSR guide 的最小引导保持同一状态机）。 */
+const SYSTEM_THEME_PAGE = join(ARTIFACT_DIR, 'config-provider-system-theme.html')
+const SYSTEM_THEME_PAGE_URL = pathToFileURL(SYSTEM_THEME_PAGE).href
+const SYSTEM_THEME_HEAD_SCRIPT = `(() => {
+  const key = 'ssr-system-theme'
+  const media = window.matchMedia('(prefers-color-scheme: dark)')
+  let preference = 'system'
+  try {
+    const saved = JSON.parse(localStorage.getItem(key) || 'null')
+    if (saved && ['light', 'dark', 'system'].includes(saved.theme)) preference = saved.theme
+  } catch {}
+  const effective = () => preference === 'system' ? (media.matches ? 'dark' : 'light') : preference
+  const apply = () => {
+    const theme = effective()
+    document.documentElement.dataset.theme = theme
+    document.querySelectorAll('oas-config-provider[theme="system"][theme-storage-key="' + key + '"]').forEach((el) => {
+      el.dataset.theme = theme
+    })
+  }
+  apply()
+  const observer = new MutationObserver(apply)
+  observer.observe(document.documentElement, { childList: true, subtree: true })
+  document.addEventListener('DOMContentLoaded', () => {
+    apply()
+    observer.disconnect()
+  }, { once: true })
+})()`
+
 /** 闪动页 ellipsis 用文本：300px 容器 + 2 行内必然溢出（触发校正） */
 const LONG_TEXT =
   '这是一段特别长的文本用于验证省略组件在真实浏览器中的溢出测量与校正行为，它跨越了不止两行的高度以便触发省略形态的布局写入，内容本身并无实际业务含义。'.repeat(
@@ -789,6 +817,18 @@ ${[
 
   // —— 3) 测量组件闪动治理：affix/ellipsis/scroll-area 由渲染器产出 DSD 快照场景 ——
   buildFlickerPage(affixFlickerSnap, ellipsisFlickerSnap, scrollAreaFlickerSnap, themeCss)
+
+  // —— 4) config-provider system：SSR 固定 light，同步 head 在 upgrade 前校正为真实系统/存储偏好 ——
+  const systemProvider = await renderToString(
+    'oas-config-provider',
+    { theme: 'system', 'theme-storage-key': 'ssr-system-theme' },
+    '<span style="display:block;padding:24px;background:var(--oas-color-bg);color:var(--oas-color-text-primary)">System DSD</span>',
+  )
+  writeFileSync(
+    SYSTEM_THEME_PAGE,
+    `<!doctype html><html lang="zh-CN" data-theme="light"><head><meta charset="utf-8"><title>system theme DSD</title><style>${themeCss}</style><script>${SYSTEM_THEME_HEAD_SCRIPT}</script></head><body>${systemProvider}</body></html>`,
+    'utf8',
+  )
 })
 
 async function openPage(page: Page): Promise<void> {
@@ -1581,6 +1621,71 @@ test('测量组件闪动治理：affix/ellipsis/scroll-area upgrade 首帧与快
   expect(result.secondFrame.scrollArea.vVisible).toBe(true)
   expect(result.secondFrame.scrollArea.vPeek).toBe(true)
   expect(result.secondFrame.scrollArea.thumbHeight).not.toBe('')
+})
+
+test('config-provider system DSD：同步 head 防闪校正与水合前后有效主题一致', async ({ page }) => {
+  const pageErrors: string[] = []
+  const consoleErrors: string[] = []
+  page.on('pageerror', (error) => pageErrors.push(error.message))
+  page.on('console', (message) => {
+    if (message.type() === 'error') consoleErrors.push(message.text())
+  })
+  await page.emulateMedia({ colorScheme: 'dark' })
+  await page.goto(SYSTEM_THEME_PAGE_URL, { waitUntil: 'load' })
+
+  const before = await page.evaluate(() => {
+    const provider = document.querySelector('oas-config-provider')!
+    const w = window as Window & { __systemThemeStyleRef?: Element | null }
+    w.__systemThemeStyleRef = provider.shadowRoot!.querySelector('style')
+    const rect = provider.getBoundingClientRect()
+    return {
+      requested: provider.getAttribute('theme'),
+      effective: provider.getAttribute('data-theme'),
+      rootEffective: document.documentElement.dataset.theme,
+      bg: getComputedStyle(provider.querySelector('span')!).backgroundColor,
+      width: rect.width,
+      height: rect.height,
+    }
+  })
+  expect(before.requested).toBe('system')
+  expect(before.effective).toBe('dark')
+  expect(before.rootEffective).toBe('dark')
+  await page.screenshot({ path: join(ARTIFACT_DIR, 'config-provider-system-before-upgrade.png'), fullPage: true })
+
+  await upgradeUi(page)
+  const after = await page.evaluate(() => {
+    const provider = document.querySelector('oas-config-provider')!
+    const w = window as Window & { __systemThemeStyleRef?: Element | null }
+    const rect = provider.getBoundingClientRect()
+    return {
+      requested: provider.getAttribute('theme'),
+      effective: provider.getAttribute('data-theme'),
+      rootEffective: document.documentElement.dataset.theme,
+      bg: getComputedStyle(provider.querySelector('span')!).backgroundColor,
+      width: rect.width,
+      height: rect.height,
+      styleSame: provider.shadowRoot!.querySelector('style') === w.__systemThemeStyleRef,
+      metaRemoved: provider.shadowRoot!.querySelector('meta[data-oas-ssr]') === null,
+    }
+  })
+  expect(after).toMatchObject({
+    requested: 'system',
+    effective: 'dark',
+    rootEffective: 'dark',
+    bg: before.bg,
+    width: before.width,
+    height: before.height,
+    styleSame: true,
+    metaRemoved: true,
+  })
+  await page.screenshot({ path: join(ARTIFACT_DIR, 'config-provider-system-after-upgrade.png'), fullPage: true })
+
+  await page.emulateMedia({ colorScheme: 'light' })
+  await page.waitForFunction(
+    () => document.querySelector('oas-config-provider')?.getAttribute('data-theme') === 'light',
+  )
+  expect(pageErrors).toEqual([])
+  expect(consoleErrors).toEqual([])
 })
 
 test('SSR 内置图标集已注册：内置图名的 oas-icon 快照含图标路径（icon opt-in 服务端注册回归锁）', async () => {

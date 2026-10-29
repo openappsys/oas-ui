@@ -186,6 +186,45 @@ for the rendering itself.
 > in a single `Promise.all`, cold and hot) are fully independent with no
 > interleaving window and require no server-side locking.
 
+### First-paint anti-flicker for system themes
+
+The server snapshot of `<oas-config-provider theme="system">` is deterministically `data-theme="light"`; it does not access shared storage or register media-query listeners. Client hydration corrects it using explicit stored preference > system > light fallback. When using system themes with DSD, place this synchronous bootstrap in `<head>` and keep its key identical to the provider's. It corrects the root and matching providers as they are parsed, keeping the first frame consistent with hydration. Add it only when system theming is used; the default global theme is unchanged.
+
+```html
+<script>
+  ;(() => {
+    const key = 'oas-app-theme'
+    const media = window.matchMedia('(prefers-color-scheme: dark)')
+    let preference = 'system'
+    try {
+      const saved = JSON.parse(localStorage.getItem(key) || 'null')
+      if (saved && ['light', 'dark', 'system'].includes(saved.theme)) preference = saved.theme
+    } catch {}
+    const effective = () => (preference === 'system' ? (media.matches ? 'dark' : 'light') : preference)
+    const apply = () => {
+      const theme = effective()
+      document.documentElement.dataset.theme = theme
+      document
+        .querySelectorAll('oas-config-provider[theme="system"][theme-storage-key="' + key + '"]')
+        .forEach((el) => {
+          el.dataset.theme = theme
+        })
+    }
+    apply()
+    const observer = new MutationObserver(apply)
+    observer.observe(document.documentElement, { childList: true, subtree: true })
+    document.addEventListener(
+      'DOMContentLoaded',
+      () => {
+        apply()
+        observer.disconnect()
+      },
+      { once: true },
+    )
+  })()
+</script>
+```
+
 ### Nuxt (recommended: the `@oas-ui/nuxt` module)
 
 Install and register the module, then it works out of the box:

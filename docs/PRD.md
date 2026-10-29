@@ -5,6 +5,29 @@
 
 ---
 
+## 未发布：ConfigProvider 系统自动主题与可选存储 ✅
+
+### 功能定义
+
+`oas-config-provider` 新增 `theme="system"` 与可选 `theme-storage-key`。requested（`theme` attribute）与 effective（宿主 `data-theme`）分离：system 在真实浏览器解析为 `light` / `dark` 并响应系统配色变化；显式主题名语义不变，缺失/空 theme 继续删除局部主题并继承外层。版本号未定，不标已发布。
+
+### 详细需求
+
+- **系统与存储优先级**：无 key 不读写 localStorage；仅在 system 首次连接/换 key 时恢复 `{ "theme": "light" | "dark" | "system" }`，合法显式 light/dark 可覆盖系统默认值。连接后的 theme 写入（含同值 system）视为用户显式选择并保存，重选 system 立即恢复跟随系统；坏 JSON、非法值、get/set 异常均安全降级且不阻塞切换。显式 attribute 永远优先于存储与系统。
+- **通知与生命周期**：系统或同键 storage 事件经现有 `notifyConfigProviders` 链只触发一次有效更新；MQL/storage 监听幂等，重复 update 不累积，disconnect 清理，reconnect 按同一优先级恢复。requested 不被 effective 回写。
+- **SSR 与首屏**：SSR shim 以 `__OAS_SSR__` 识别，不能因存在 window/document 就当真实浏览器；system 快照确定性输出 light，storage/MQL 零访问。theming/SSR 中英 guide 提供同步 head 引导，读取同一 key 与系统条件，在首帧前校正根节点及同 key provider，水合前后一致；不默认启用全局 system。
+- **局部浅色**：完整 light token 规则同时匹配 `[data-theme="light"]`，嵌套 dark 中显式 light 或 system=light 的 computed token/color-scheme 真实回到浅色，而不是只换属性名。
+
+### 非目标
+
+不实现 ThemeEditor 或 switch 改造，不改 ThemeEditor 的 NOT_SSR 决策；不新增组件/事件，不默认读写存储，不把缺失或空 theme 改成 system，不持久化自定义主题名为 system 的有效值。
+
+### 验收标准
+
+- 单测覆盖旧主题兼容、system light/dark 与通知、存储恢复/异常/重选 system、同键 storage 事件、监听幂等与断连重连；SSR index 锁确定性快照和 storage/MQL 零访问；theme 源文件与生成物锁显式 light 规则。
+- `packages/ui/qa-regression/config-provider.spec.ts` 在 Chromium + Firefox 锁嵌套 computed token、emulateMedia 实时切换、reload 恢复、demo 点击/键盘可见反馈、dark/console 与截图；`packages/ssr/ssr-dsd.spec.ts` 锁 head 防闪及水合前后有效主题、几何与 shadow 引用一致。
+- 文档与 API 同步；全量 test / typecheck / build / e2e / perf:size / api / llms / stats / skill / lint / format / trace 通过。
+
 ## 未发布：异步选中与视觉窗口协议 ✅
 
 ### 功能定义

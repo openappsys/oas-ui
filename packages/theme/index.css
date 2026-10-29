@@ -1,7 +1,8 @@
 /* Generated from index.source.css by scripts/theme/minify-css.mjs. Edit index.source.css, then run pnpm --filter @oas-ui/theme build. */
 
 :root,
-:host {
+:host,
+[data-theme="light"] {
   color-scheme: light;
   --oas-color-primary: #0b6cff;
   --oas-color-primary-hover: color-mix(in srgb, var(--oas-color-primary) 85%, black);

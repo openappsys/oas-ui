@@ -209,7 +209,8 @@ hover/active 为 `color-mix()` 派生值（随 primary 联动，light 掺黑压�
 - **`--oas-color-text-primary` 兼作混色颜料**（预期行为，非 bug）：除「主文字色」外，它还被组件当作 theme-aware 掺向颜料派生其它色——button 的 success/warning/danger 实底/描边 `color-mix(语义色 80%, var(--oas-color-text-primary))`、popconfirm、code inline solid 兜底等十余处。理由：这是 theme-aware 掺向（light 掺向近黑压深、dark 掺向近白提亮，自动随主题翻转），替代写死 `black`/`white` 的单向混合——写死 black 在暗色下会把颜色拉回不可读。宿主覆盖该 token 时会**连带影响这些派生色**（文字色与派生色共享一个颜料源），调色时需一并核对
 
 - 所有颜色必须同时有 light/dark 值；新增组件必须验证双主题
-- 主题切换通过 `data-theme="dark"` 在根元素切换，组件无需感知（只读 CSS 变量）
+- 主题切换通过 `data-theme="dark"` 在根元素或局部容器切换，组件无需感知（只读 CSS 变量）；`[data-theme="light"]` 带完整浅色 token，嵌套 dark 中可真实回到浅色
+- `oas-config-provider theme="system"` 将请求值 system 与实际 `data-theme="light/dark"` 分离，跟随 `prefers-color-scheme`；可选 `theme-storage-key` 仅持久化显式 light/dark/system 偏好，缺失/空 theme 仍继承外层
 - 自定义主题：宿主覆盖 `--oas-color-*` 基础 token 即可，文档站出覆盖指南
 
 ## 5. 验收（UI 层面）

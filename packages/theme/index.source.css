@@ -2,7 +2,8 @@
    主题经 data-theme="dark" 切换。各注释的完整沿革见 git 历史） */
 
 :root,
-:host {
+:host,
+[data-theme="light"] {
   /* 原生控件（checkbox/radio/滚动条等）跟随主题明暗；暗色不声明会在深底上出现白块 */
   color-scheme: light;
   --oas-color-primary: #0b6cff;

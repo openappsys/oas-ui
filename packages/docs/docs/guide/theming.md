@@ -20,6 +20,59 @@
 document.documentElement.dataset.theme = 'high-contrast'
 ```
 
+## 系统主题与可选存储
+
+`oas-config-provider` 支持 `theme="system"`：`theme` 属性始终保存请求值 `system`，宿主 `data-theme` 则是实际生效的 `light` / `dark`。系统配色变化会实时更新子树。显式主题名始终优先；缺失或空 `theme` 不会默认成 system，而是继续继承外层。
+
+需要记住用户选择时才添加 `theme-storage-key`，不会因引入组件库而默认读写存储或启用全局 system。存储 JSON 为 `{"theme":"light"}` / `{"theme":"dark"}` / `{"theme":"system"}`。首次恢复时显式 light/dark 优先于系统；之后重新选择 system 会覆盖旧偏好并恢复跟随系统。
+
+SSR 对 system 确定性输出 `data-theme="light"`，服务端不访问 localStorage 或媒体查询。若使用 SSR/DSD，把下面同步脚本放入 `<head>`（在首屏绘制前执行），并让脚本 key 与 provider 完全一致；它会同时校正根节点和同 key 的 system provider，避免水合前后闪变。纯客户端页面不需要这段引导。
+
+```html
+<!-- body 内的 provider -->
+<oas-config-provider theme="system" theme-storage-key="oas-app-theme">
+  …
+</oas-config-provider>
+```
+
+`<head>` 内的同步引导：
+
+```html
+<script>
+  ;(() => {
+    const key = 'oas-app-theme'
+    const media = window.matchMedia('(prefers-color-scheme: dark)')
+    let preference = 'system'
+    try {
+      const saved = JSON.parse(localStorage.getItem(key) || 'null')
+      if (saved && ['light', 'dark', 'system'].includes(saved.theme)) preference = saved.theme
+    } catch {}
+    const effective = () => (preference === 'system' ? (media.matches ? 'dark' : 'light') : preference)
+    const apply = () => {
+      const theme = effective()
+      document.documentElement.dataset.theme = theme
+      document
+        .querySelectorAll('oas-config-provider[theme="system"][theme-storage-key="' + key + '"]')
+        .forEach((el) => {
+          el.dataset.theme = theme
+        })
+    }
+    apply()
+    // head 执行时 body 尚未解析；observer 在 DSD provider 出现时、首帧绘制前同步校正。
+    const observer = new MutationObserver(apply)
+    observer.observe(document.documentElement, { childList: true, subtree: true })
+    document.addEventListener(
+      'DOMContentLoaded',
+      () => {
+        apply()
+        observer.disconnect()
+      },
+      { once: true },
+    )
+  })()
+</script>
+```
+
 ## 皮肤预设（可选）
 
 `@oas-ui/theme/skins.css` 提供 6 套品牌色皮肤预设（`violet` / `emerald` / `rose` / `amber` / `graphite` / `teal`）：在 `data-theme` 之上叠加 `data-skin` 即可切换，且与三套内置主题自由组合（皮肤只改品牌色相，不动尺寸/结构）。
