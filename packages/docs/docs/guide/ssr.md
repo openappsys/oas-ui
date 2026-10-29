@@ -92,7 +92,7 @@ const html = await renderToString('oas-button', { type: 'primary', size: 'large'
 
 ### system 主题首屏防闪
 
-`<oas-config-provider theme="system">` 的服务端快照固定为 `data-theme="light"`，不访问共享 storage、不注册媒体查询监听；客户端水合后按「显式存储 > 系统 > 浅色兜底」校正。使用 system + DSD 时在 `<head>` 放以下同步引导，key 必须与 provider 相同；无 key provider 改为 `const key = null`，只读 MQL 且 storage 零访问。脚本会校正根节点及后续解析到的对应 provider，保证首帧与水合一致；observer 在 DOMContentLoaded 结束后，root 仍持续跟随 MQL，有 key 时还跟随对应 localStorage 事件，且不写 storage。同文档重选不会触发 storage 事件，脚本会观察 provider 的 effective `data-theme`，重读当前合法偏好后交接 root；所有写入先比较现值，避免 Observer 自激或循环。该脚本仅在使用 system 时按需加入，不改变默认全局主题。
+`<oas-config-provider theme="system">` 的服务端快照固定为 `data-theme="light"`，不访问共享 storage、不注册媒体查询监听；客户端水合后按「显式存储 > 系统 > 浅色兜底」校正。使用 system + DSD 时在 `<head>` 放以下同步引导，key 必须与 provider 相同；无 key provider 改为 `const key = null`，只读 MQL 且 storage 零访问。脚本会校正根节点及后续解析到的对应 provider，保证首帧与水合一致；observer 在 DOMContentLoaded 结束后，root 仍持续跟随 MQL，有 key 时还跟随对应 localStorage 事件，且不写 storage。同文档重选不会触发 storage 事件，脚本会同时观察 requested `theme` 与 effective `data-theme`：requested=system 直接更新 head preference，effective 变化只同步 root，不在回调中重读旧 storage 或回写 provider；所有写入先比较现值，避免 Observer 自激或循环。该脚本仅在使用 system 时按需加入，不改变默认全局主题。
 
 ```html
 <script>
@@ -138,15 +138,25 @@ const html = await renderToString('oas-button', { type: 'primary', size: 'large'
       },
       { once: true },
     )
-    // 同文档重选不会发 storage 事件：观察 provider effective，重读合法偏好后交接 root。
+    // 同文档重选不会发 storage 事件：requested=system 直接交接；effective 只同步 root，不重读旧存储。
     const effectiveObserver = new MutationObserver((records) => {
-      if (!records.some((record) => record.target instanceof Element && matchesProvider(record.target))) return
-      preference = restorePreference()
-      apply()
+      for (const record of records) {
+        const el = record.target
+        if (!(el instanceof Element) || !matchesProvider(el)) continue
+        if (record.attributeName === 'theme') {
+          preference = 'system'
+          apply()
+        } else if (record.attributeName === 'data-theme') {
+          const theme = el.dataset.theme
+          if (theme && document.documentElement.dataset.theme !== theme) {
+            document.documentElement.dataset.theme = theme
+          }
+        }
+      }
     })
     effectiveObserver.observe(document.documentElement, {
       attributes: true,
-      attributeFilter: ['data-theme'],
+      attributeFilter: ['theme', 'data-theme'],
       subtree: true,
     })
     media.addEventListener('change', apply)

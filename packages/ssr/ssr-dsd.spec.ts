@@ -1884,6 +1884,64 @@ test('config-provider system 同文档重选：stored dark + OS light 后 root/p
   expect(consoleProblems).toEqual([])
 })
 
+test('config-provider system 同文档重选 setItem 异常：旧 stored dark 不得回写 light', async ({ page }) => {
+  const consoleProblems: string[] = []
+  page.on('pageerror', (error) => consoleProblems.push(error.message))
+  page.on('console', (message) => {
+    if (message.type() === 'error' || message.type() === 'warning') consoleProblems.push(message.text())
+  })
+  await page.addInitScript(() => {
+    localStorage.setItem('ssr-system-theme', JSON.stringify({ theme: 'dark' }))
+    Storage.prototype.setItem = () => {
+      throw new DOMException('full', 'QuotaExceededError')
+    }
+  })
+  await page.emulateMedia({ colorScheme: 'light' })
+  await page.goto(SYSTEM_THEME_PAGE_URL, { waitUntil: 'load' })
+  await upgradeUi(page)
+
+  const state = () =>
+    page.evaluate(() => ({
+      provider: document.querySelector('oas-config-provider')!.getAttribute('data-theme'),
+      root: document.documentElement.dataset.theme,
+      stored: localStorage.getItem('ssr-system-theme'),
+    }))
+  expect(await state()).toEqual({ provider: 'dark', root: 'dark', stored: JSON.stringify({ theme: 'dark' }) })
+  await page.screenshot({
+    path: join(ARTIFACT_DIR, 'config-provider-system-quota-before-reselect.png'),
+    fullPage: true,
+  })
+
+  const waitJoint = async (theme: 'light' | 'dark') => {
+    await page.waitForFunction(
+      (want) =>
+        document.querySelector('oas-config-provider')?.getAttribute('data-theme') === want &&
+        document.documentElement.dataset.theme === want,
+      theme,
+      { timeout: 5000 },
+    )
+  }
+
+  await page.evaluate(() => document.querySelector('oas-config-provider')!.setAttribute('theme', 'system'))
+  await waitJoint('light')
+  expect(await state()).toEqual({ provider: 'light', root: 'light', stored: JSON.stringify({ theme: 'dark' }) })
+  await page.screenshot({
+    path: join(ARTIFACT_DIR, 'config-provider-system-quota-after-reselect-light.png'),
+    fullPage: true,
+  })
+
+  await page.emulateMedia({ colorScheme: 'dark' })
+  await waitJoint('dark')
+  await page.screenshot({ path: join(ARTIFACT_DIR, 'config-provider-system-quota-after-mql-dark.png'), fullPage: true })
+  await page.emulateMedia({ colorScheme: 'light' })
+  await waitJoint('light')
+  await page.screenshot({
+    path: join(ARTIFACT_DIR, 'config-provider-system-quota-after-mql-light.png'),
+    fullPage: true,
+  })
+  expect(consoleProblems).toEqual([])
+})
+
 test('SSR 内置图标集已注册：内置图名的 oas-icon 快照含图标路径（icon opt-in 服务端注册回归锁）', async () => {
   const html = await renderToString('oas-icon', { name: 'check', size: '16' })
   // 未注册内置集时 shadow svg 为空（曾发生）；注册后应含 check 图标 path 特征串

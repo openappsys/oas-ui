@@ -27,7 +27,7 @@ document.documentElement.dataset.theme = 'high-contrast'
 
 Add `theme-storage-key` only when the user's choice should be remembered. Importing the library does not implicitly access storage or enable global system theming. The stored JSON is `{"theme":"light"}`, `{"theme":"dark"}`, or `{"theme":"system"}`. An explicit light/dark preference wins during the initial restore; choosing system afterwards replaces the old preference and resumes following the OS.
 
-SSR deterministically emits `data-theme="light"` for system and never accesses localStorage or media queries on the server. With SSR/DSD, place the following synchronous script in `<head>` so it runs before the first paint, and keep its key identical to the provider's. For a provider without a key, set `const key` to `null`; only the MQL is read and storage get/set calls stay at zero. It corrects both the root and matching system providers to prevent a theme flash during hydration. The initial observer may stop at DOMContentLoaded, while the MQL listener keeps root synchronized for the page lifetime; with a key, corresponding localStorage events are also synchronized, without writing storage. Same-document reselection emits no storage event, so the script also watches the provider's effective `data-theme`, restores the current valid preference, and hands it off to root. Every root/provider write is guarded by a current-value comparison to prevent observer self-triggering or loops. Client-only pages do not need this bootstrap.
+SSR deterministically emits `data-theme="light"` for system and never accesses localStorage or media queries on the server. With SSR/DSD, place the following synchronous script in `<head>` so it runs before the first paint, and keep its key identical to the provider's. For a provider without a key, set `const key` to `null`; only the MQL is read and storage get/set calls stay at zero. It corrects both the root and matching system providers to prevent a theme flash during hydration. The initial observer may stop at DOMContentLoaded, while the MQL listener keeps root synchronized for the page lifetime; with a key, corresponding localStorage events are also synchronized, without writing storage. Same-document reselection emits no storage event, so the script watches both requested `theme` and effective `data-theme`: a requested system write directly sets the head preference to system, while an effective change only synchronizes root without restoring stale storage or rewriting the provider in the callback. Every root/provider write is guarded by a current-value comparison to prevent observer self-triggering or loops. Client-only pages do not need this bootstrap.
 
 ```html
 <!-- Provider in <body> -->
@@ -83,15 +83,25 @@ Synchronous bootstrap in `<head>`:
       },
       { once: true },
     )
-    // Same-document reselection emits no storage event: observe provider effective state and restore the valid preference.
+    // Same-document reselection emits no storage event: requested=system hands off directly; effective only syncs root.
     const effectiveObserver = new MutationObserver((records) => {
-      if (!records.some((record) => record.target instanceof Element && matchesProvider(record.target))) return
-      preference = restorePreference()
-      apply()
+      for (const record of records) {
+        const el = record.target
+        if (!(el instanceof Element) || !matchesProvider(el)) continue
+        if (record.attributeName === 'theme') {
+          preference = 'system'
+          apply()
+        } else if (record.attributeName === 'data-theme') {
+          const theme = el.dataset.theme
+          if (theme && document.documentElement.dataset.theme !== theme) {
+            document.documentElement.dataset.theme = theme
+          }
+        }
+      }
     })
     effectiveObserver.observe(document.documentElement, {
       attributes: true,
-      attributeFilter: ['data-theme'],
+      attributeFilter: ['theme', 'data-theme'],
       subtree: true,
     })
     media.addEventListener('change', apply)

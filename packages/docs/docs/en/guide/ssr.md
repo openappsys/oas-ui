@@ -188,7 +188,7 @@ for the rendering itself.
 
 ### First-paint anti-flicker for system themes
 
-The server snapshot of `<oas-config-provider theme="system">` is deterministically `data-theme="light"`; it does not access shared storage or register media-query listeners. Client hydration corrects it using explicit stored preference > system > light fallback. When using system themes with DSD, place this synchronous bootstrap in `<head>` and keep its key identical to the provider's; for a provider without a key, use `const key = null` so only the MQL is read and storage is never accessed. It corrects the root and matching providers as they are parsed, keeping the first frame consistent with hydration. After the observer stops at DOMContentLoaded, root continues following the MQL and, with a key, corresponding localStorage events, without writing storage. Same-document reselection emits no storage event, so the script watches the provider's effective `data-theme`, restores the current valid preference, and hands it off to root. Every root/provider write is guarded by a current-value comparison to prevent observer self-triggering or loops. Add it only when system theming is used; the default global theme is unchanged.
+The server snapshot of `<oas-config-provider theme="system">` is deterministically `data-theme="light"`; it does not access shared storage or register media-query listeners. Client hydration corrects it using explicit stored preference > system > light fallback. When using system themes with DSD, place this synchronous bootstrap in `<head>` and keep its key identical to the provider's; for a provider without a key, use `const key = null` so only the MQL is read and storage is never accessed. It corrects the root and matching providers as they are parsed, keeping the first frame consistent with hydration. After the observer stops at DOMContentLoaded, root continues following the MQL and, with a key, corresponding localStorage events, without writing storage. Same-document reselection emits no storage event, so the script watches both requested `theme` and effective `data-theme`: a requested system write directly sets the head preference to system, while an effective change only synchronizes root without restoring stale storage or rewriting the provider in the callback. Every root/provider write is guarded by a current-value comparison to prevent observer self-triggering or loops. Add it only when system theming is used; the default global theme is unchanged.
 
 ```html
 <script>
@@ -234,15 +234,25 @@ The server snapshot of `<oas-config-provider theme="system">` is deterministical
       },
       { once: true },
     )
-    // Same-document reselection emits no storage event: observe provider effective state and restore the valid preference.
+    // Same-document reselection emits no storage event: requested=system hands off directly; effective only syncs root.
     const effectiveObserver = new MutationObserver((records) => {
-      if (!records.some((record) => record.target instanceof Element && matchesProvider(record.target))) return
-      preference = restorePreference()
-      apply()
+      for (const record of records) {
+        const el = record.target
+        if (!(el instanceof Element) || !matchesProvider(el)) continue
+        if (record.attributeName === 'theme') {
+          preference = 'system'
+          apply()
+        } else if (record.attributeName === 'data-theme') {
+          const theme = el.dataset.theme
+          if (theme && document.documentElement.dataset.theme !== theme) {
+            document.documentElement.dataset.theme = theme
+          }
+        }
+      }
     })
     effectiveObserver.observe(document.documentElement, {
       attributes: true,
-      attributeFilter: ['data-theme'],
+      attributeFilter: ['theme', 'data-theme'],
       subtree: true,
     })
     media.addEventListener('change', apply)
