@@ -40,22 +40,10 @@ const TOOL_ATTRS = {
   result: '{"hits":3}',
 }
 
-let localesReady = null
-
-/** bootstrap shim（无 locale 渲染，不装载 i18n）→ 注册 ar；zh-CN / en 由显式 locale 路径注册 */
-function ensureLocales() {
-  localesReady ??= (async () => {
-    await renderToString('oas-divider', {}, '')
-    const [{ registerLocale }, { default: ar }] = await Promise.all([import('@oas-ui/i18n'), import('@oas-ui/i18n/ar')])
-    registerLocale(ar)
-  })().catch((error) => {
-    localesReady = null
-    throw error
-  })
-  return localesReady
-}
-
-/** 公开类型只有 zh-CN / en；ar 是官方内置语言包，运行时注入路径与 en 相同 */
+/**
+ * 显式 locale 直接交给渲染器：`RenderToStringOptions.locale` 已内置官方语言名
+ * （含 ar），渲染器按需装载并注册语言包，fixture 不再手工 bootstrap / registerLocale。
+ */
 function renderOptionsFor(locale) {
   return { locale }
 }
@@ -105,7 +93,6 @@ function escapeHtml(value) {
  * （locale 是请求局部临时 provider，无全局锁）。
  */
 export async function buildDsdDocument({ requestLocale, theme = 'light' }) {
-  await ensureLocales()
   const config = LOCALES[requestLocale]
   if (!config) throw new Error(`[nuxt-fixture] 未知 locale「${requestLocale}」`)
   const opts = renderOptionsFor(config.render)

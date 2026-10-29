@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation'
-import { ensureFixtureLocales, renderOptionsFor, resolveRequestLocale } from '../../lib/locale'
+import { renderOptionsFor, resolveRequestLocale } from '../../lib/locale'
 import { loadSsr } from '../../lib/ssr-runtime'
 
 // 每个请求都真实执行 renderToString：禁止构建期静态化/请求缓存（locale 是请求局部状态）。
@@ -49,7 +49,6 @@ export default async function LocalePage({ params, searchParams }: PageProps) {
   if (!resolved) notFound()
   const { request, render, dir } = resolved
   const theme = query.theme === 'dark' ? 'dark' : 'light'
-  await ensureFixtureLocales()
   const opts = renderOptionsFor(render)
   const { renderToString } = await loadSsr()
 

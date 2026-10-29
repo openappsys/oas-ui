@@ -50,11 +50,15 @@ test.describe('Next.js App Router fixture', () => {
         if (other.path === item.path) continue
         expect(html, `${item.path} 不应含 ${other.request} 文案`).not.toContain(other.empty)
         expect(html, `${item.path} 不应含 ${other.request} 文案`).not.toContain(other.tool)
+        expect(html, `${item.path} 不应含 ${other.request} 文案`).not.toContain(other.select)
       }
 
       await page.goto(item.path)
       expect(await page.locator('main').getAttribute('data-locale')).toBe(item.render)
       expect(await page.locator('main').getAttribute('dir')).toBe(item.render === 'ar' ? 'rtl' : 'ltr')
+      // 文档级语义：<html lang> 跟随内容语言（en-US 请求归一为 en），<html dir> 为 RTL/LTR
+      expect(await page.locator('html').getAttribute('lang')).toBe(item.render)
+      expect(await page.locator('html').getAttribute('dir')).toBe(item.render === 'ar' ? 'rtl' : 'ltr')
       await expect.poll(() => shadowText(page, 'empty'), { message: `${item.path} oas-empty` }).toContain(item.empty)
       await expect.poll(() => shadowText(page, 'table'), { message: `${item.path} oas-table` }).toContain(item.empty)
       await expect.poll(() => shadowText(page, 'select'), { message: `${item.path} oas-select` }).toContain(item.select)
@@ -157,7 +161,7 @@ test.describe('Next.js App Router fixture', () => {
     await page.waitForTimeout(500)
 
     const after = await page.evaluate(() => {
-      const result: Record<string, { mark: string | null; meta: boolean }> = {}
+      const result: Record<string, { mark: string | null; meta: boolean; styleCount: number }> = {}
       for (const [id, tag] of Object.entries({
         empty: 'oas-empty',
         table: 'oas-table',
@@ -168,6 +172,7 @@ test.describe('Next.js App Router fixture', () => {
         result[id] = {
           mark: el?.shadowRoot?.querySelector('style')?.getAttribute('data-hydration-mark') ?? null,
           meta: !!el?.shadowRoot?.querySelector('meta[data-oas-ssr]'),
+          styleCount: el?.shadowRoot?.querySelectorAll('style').length ?? 0,
         }
       }
       return result
@@ -175,6 +180,8 @@ test.describe('Next.js App Router fixture', () => {
     for (const id of Object.keys(HOSTS)) {
       expect(after[id]?.mark, `${id} 的 style 节点被重建（水合未复用快照）`).toBe(id)
       expect(after[id]?.meta, `${id} 的 SSR 指纹 meta 未被消费（hydrate 未接管，走了 render 重建）`).toBe(false)
+      // 水合不得重复注入样式表（render 回退会多出一份 style）
+      expect(after[id]?.styleCount, `${id} 水合后 shadow 内 style 数量`).toBe(1)
     }
     // 水合后仍是同一语言文案
     await expect.poll(() => shadowText(page, 'empty')).toContain('暂无数据')

@@ -96,16 +96,20 @@
 
 - **定位**：`packages/ssr/fixtures/{next,nuxt}` 是**验收 fixture，不是 workspace 成员、不随 npm 包分发**（`packages/ssr/package.json#files` 仍只有 `dist` + LICENSE）。根 `pnpm-workspace.yaml` 仍是 `packages/*`，目录层级不匹配，根 `pnpm install` / `pnpm build` 不会安装或构建 fixture。
 - **独立依赖图**：每个 fixture 自带 `package.json` + `pnpm-lock.yaml`（`--frozen-lockfile` 安装）+ 单包 `pnpm-workspace.yaml`（仅承载 pnpm 12 的 `allowBuilds` 设置，`packages` 省略 = 只含自身）。通过 `link:` 引用主仓 `packages/*` 的构建产物；**必须先 `pnpm build` 主仓**，否则 fixture 构建/启动失败。
-- **e2e 隔离**：fixture 用例命名 `*.e2e.ts`，由根 `playwright.ssr.config.ts` 收集（根 `playwright.config.ts` 的 `testMatch` 只收 `*.spec.ts`，不会纳入全量 e2e）。端口固定 4301（Next）/ 4302（Nuxt），与 4173 preview、5175 dev 隔离；`SSR_FIXTURE=next|nuxt` 可只起对应 webServer。
-- **命令**（fixture 目录内）：`pnpm install --frozen-lockfile` → `pnpm build` → 根目录 `SSR_FIXTURE=next pnpm test:e2e:ssr --project=next`（Nuxt 同理）。CI 有独立 `ssr-fixtures` job（不并入现有 e2e job）。
+- **e2e 隔离**：fixture 用例命名 `*.e2e.ts`，由根 `playwright.ssr.config.ts` 收集（根 `playwright.config.ts` 的 `testMatch` 只收 `*.spec.ts`，不会纳入全量 e2e）。端口固定 4301（Next）/ 4302（Nuxt），与 4173 preview、5175 dev 隔离；`SSR_FIXTURE=next|nuxt` 可只起对应 webServer。本地默认 `reuseExistingServer: true`：端口若有陈旧进程会复用旧构建（旧 HTML 引用已删除 chunk → 批量 404），遇异常先杀端口进程；CI 恒为 `false`。
+- **命令**（fixture 目录内）：`pnpm install --frozen-lockfile` → `pnpm build` → `pnpm typecheck` → 根目录 `SSR_FIXTURE=next pnpm test:e2e:ssr --project=next`（Nuxt 同理）。CI 有独立 `ssr-fixtures` job（不并入现有 e2e job），两个 fixture 各自跑独立 typecheck。
+- **Next fixture 包边界**：Next fixture 不消费 `@oas-ui/next` 包入口，而是按绝对文件 URL 加载主仓 `packages/ssr/dist/index.js` 验证 SSR 行为；**不等价于 npm 安装后的 `@oas-ui/next` 路径**（包 `exports` / `react-server` 条件 / client reference / peer 解析由 `packages/next` 单测覆盖；本批不做 pack smoke）。
+- **Nuxt peer**：`@oas-ui/nuxt` 的 `@nuxt/kit` peer 为 `^3.16.0 || ^4.0.0`，`@nuxt/schema` 为同范围 optional peer（仅类型引用）。仓库内 Nuxt 4 fixture 以 `--frozen-lockfile` 安装并跑通生产构建 + e2e，即真实 Nuxt 4 工程下 peer 可满足的证据。
 - **覆盖口径**：同一进程冷/热混合请求 `zh-CN` / `en-US`（归一到内置 `en`）/ `ar`，逐组件 ID 校验文案与请求互不串扰；`javaScriptEnabled:false` 下 DSD 快照文本/结构可见；延迟客户端脚本后给快照 style 打标，注册完成后标记仍在且指纹 meta 被消费（真水合、shadow root 不重建）；`oas-tool-call` 点击展开/收起各一次事件；console error/warning 与 pageerror 零。
 - **Nuxt 注意事项（真实约束）**：`@oas-ui/ssr` 首次渲染会把 happy-dom 的 `window`/`document`/`HTMLElement` 安装到 `globalThis`。**不能与 Vue SSR 同进程**（实测 DSD 请求之后 `/vue` 500：`history is not defined`）。fixture 把 DSD 渲染放在常驻 `worker_threads` worker 中（`server/dsd-worker.mjs`），Nuxt 主进程保持干净；worker 常驻复用模块/标签缓存，后续请求为热路径。生产接入若同进程渲染 DSD，必须自行隔离（worker/子进程/独立服务）。
 
 ### 真实浏览器性能基线（只观测，不阻断）
 
-- **命令**：`pnpm perf:browser`（测量并与入库基线对比，默认不写盘）、`pnpm perf:browser --update-baseline`（刷新 `docs/perf-browser-baseline.json`）、`pnpm perf:browser:check`（仅校验基线 JSON 可解析、样本数、环境元数据齐全；已接入 CI test job）。
-- **口径**：固定 `pnpm build` 后的生产 dist + Chromium headless + `workers=1`；CSR 5 次 warmup + 3 轮 × 30 次；DSD 2 次 warmup + 3 轮 × 15 次；每次样本新建 page（同一 context，暖缓存）。记录 LCP / FCP / DCL / load / 首批渲染耗时 / DOM 节点数 / 传输体积，保存原始样本、每轮 min/median/p95 与总体离散度；环境元数据含 Node / pnpm / OS / CPU / Chromium / Playwright。
-- **非阻断原则**：性能数值永不阻断发布——脚本只在「dist 未构建 / Vite 构建失败 / 选择器缺失 / 样本数不足 / pageerror / console error」时非零退出；数值回归只打印 WARN（阈值 `×1.25`），不改变退出码。基线是观测档案，不是性能预算；预算仍由 `perf:size` 的绝对值/天花板档负责。
+- **命令**：`pnpm perf:browser`（测量并与入库基线对比，默认不写盘）、`pnpm perf:browser --update-baseline`（刷新 `docs/perf-browser-baseline.json`）、`pnpm perf:browser:check`（仅校验基线 JSON 可解析、样本数、每指标 finite、环境元数据齐全；已接入 CI test job）、`pnpm perf:browser:selftest`（校验器自测：缺样本 / NaN / null LCP 必须非零退出）。
+- **口径**：固定 `pnpm build` 后的生产 dist + Chromium headless + `workers=1`；CSR 5 次 warmup + 3 轮 × 30 次；DSD 2 次 warmup + 3 轮 × 15 次；每次样本新建 page（同一 context，暖缓存）。记录 LCP / FCP / DCL / load / 首批渲染耗时 / DOM 节点数 / 传输体积，保存原始样本、每轮 min/median/p95 与总体离散度；环境元数据含 Node / pnpm / OS / CPU / Chromium / Playwright，基线另存 `gitSha` / `gitDirty` / 发布包版本 / 「同 SHA 噪声」字段（同 SHA 复测的中位数与 p95 比值；跨 SHA 标 `compared:false`）。
+- **console 过滤口径**：每个样本页与最终结构校验页都监听 `console` 的 **error / warning** 与 `pageerror`；任一命中即该次测量无效（非零退出），不把控制台噪音当性能样本。
+- **样本有效性**：`stats()` 不吞 NaN/缺失（空样本或非有限值直接抛错）；每个场景 `count === rounds×perRound`；LCP 未采集写 `null`（绝不写 0 冒充有效样本）并失败。`--update-baseline` 写盘前走与 `:check` 相同的 `validateBaselinePayload`，任何不符都拒绝写入并非零退出。
+- **非阻断原则**：性能数值永不阻断发布——脚本只在「dist 未构建 / Vite 构建失败 / 选择器缺失 / 样本不足 / 指标非 finite / count 不符 / pageerror / console error」时非零退出；数值回归只打印 WARN（阈值 `×1.25`），不改变退出码。跨 OS/CPU 或基线缺环境元数据时额外 WARN（绝对耗时不可直接比较）。基线是观测档案，不是性能预算；预算仍由 `perf:size` 的绝对值/天花板档负责。
 - **DSD 页生成隔离**：DSD 性能页由独立子进程（`scripts/perf/lib/render-dsd-bench.mjs`）生成，避免 happy-dom 全局 shim 与 Playwright 客户端同进程。
 
 ## 5. 发布流程（v1.0 启用）

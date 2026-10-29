@@ -73,6 +73,8 @@
  * `try/finally` 清理），不改全局 locale、渲染段不触发 locale/translator 广播
  * （i18n registry 一次性装载副作用除外）；未传 locale 保持
  * 旧行为（沿用调用时全局 locale）。多请求并发（含冷加载）逐请求语言正确，无需加锁。
+ * RenderLocale 覆盖内置语言名子集（含 ar），按需装载语言包；未注册 locale
+ * devWarn 一次并回退内置 en（不借用可能变化的全局 locale）。
  *
  * Node 安全说明：本模块的静态导入只含纯数据（i18n 语言包）与 happy-dom（shim），
  * 不经过 @oas-ui/core/i18n registry——那些模块求值 `class extends HTMLElement` 需要全局
@@ -298,16 +300,40 @@ export const WHITELIST = [
 ] as const
 
 export type WhiteListTag = (typeof WHITELIST)[number]
-export type RenderLocale = 'zh-CN' | 'en'
+
+/**
+ * 内置语言包名（与 `@oas-ui/i18n` 的 `LocaleName` 一致）。
+ * 显式传入时渲染器按需装载对应语言包并注册到 i18n registry；
+ * 未列出的名字视为「未注册 locale」：devWarn 一次并回退内置 `en`（见 renderToString 文档）。
+ */
+export type RenderLocale = 'zh-CN' | 'en' | 'ja' | 'ko' | 'de' | 'fr' | 'es' | 'pt' | 'ru' | 'ar'
 
 export interface RenderToStringOptions {
-  /** 内置文案语言。显式传入只影响本次调用及嵌套子树；不传则沿用当前全局 locale（默认 zh-CN） */
+  /**
+   * 内置文案语言，或宿主已通过 `registerLocale()` 注册的自定义 locale 名。
+   * 显式传入只影响本次调用及嵌套子树；不传则沿用当前全局 locale（默认 zh-CN）。
+   */
   locale?: RenderLocale
 }
 
-const LOCALES: Record<RenderLocale, Locale> = {
-  'zh-CN': zhCN,
-  en,
+/** 内置语言包的装载器：zh-CN / en 静态引入（默认路径），其余按需动态引入。 */
+const LOCALE_LOADERS: Record<RenderLocale, () => Promise<{ default: Locale }>> = {
+  'zh-CN': async () => ({ default: zhCN }),
+  en: async () => ({ default: en }),
+  ja: () => import('@oas-ui/i18n/ja'),
+  ko: () => import('@oas-ui/i18n/ko'),
+  de: () => import('@oas-ui/i18n/de'),
+  fr: () => import('@oas-ui/i18n/fr'),
+  es: () => import('@oas-ui/i18n/es'),
+  pt: () => import('@oas-ui/i18n/pt'),
+  ru: () => import('@oas-ui/i18n/ru'),
+  ar: () => import('@oas-ui/i18n/ar'),
+}
+
+const RENDER_LOCALES = Object.keys(LOCALE_LOADERS) as RenderLocale[]
+
+function isRenderLocale(value: string): value is RenderLocale {
+  return (RENDER_LOCALES as readonly string[]).includes(value)
 }
 
 /**
@@ -551,11 +577,10 @@ function ensureTag(tag: string): Promise<void> {
 let i18nReady: Promise<typeof import('@oas-ui/i18n')> | null = null
 
 /**
- * 单一 i18n ready Promise：首次显式 locale 渲染时装载 i18n registry 并注册内置
- * zh-CN / en 两个 RenderLocale 语言包（按名翻译器供临时 config-provider 就近注入使用），
+ * 单一 i18n registry ready Promise：首次显式 locale 渲染时装载 i18n registry，
  * 之后所有并发请求共享这一份 Promise——不再有第二条冷加载路径。幂等。
  *
- * 注意：这里只 registerLocale，不 setLocale——显式 locale 走本次调用的临时 provider，
+ * 注意：这里只装载 registry，不 setLocale——显式 locale 走本次调用的临时 provider，
  * 不动全局 locale、渲染段不触发 locale/translator 广播（唯一的广播副作用是首次
  * import 触发的一次性 syncTranslator 装载；旧行为里唯一的 setLocale 全局切换
  * 已从渲染器移除，宿主侧的全局 setLocale 语义不受影响）。
@@ -564,19 +589,84 @@ function ensureI18nReady(): Promise<typeof import('@oas-ui/i18n')> {
   if (!i18nReady) {
     // i18n → core → `class OASElement extends HTMLElement`：类求值需要 shim 全局先就位
     ensureShim()
-    i18nReady = import('@oas-ui/i18n')
-      .then((api) => {
-        api.registerLocale(LOCALES['zh-CN'])
-        api.registerLocale(LOCALES['en'])
-        return api
-      })
-      .catch((e) => {
-        // 装载失败不缓存 rejected ready Promise：失败后重置，后续请求可重试（对齐旧 ensureI18n 语义）
-        i18nReady = null
-        throw e
-      })
+    i18nReady = import('@oas-ui/i18n').catch((e) => {
+      // 装载失败不缓存 rejected ready Promise：失败后重置，后续请求可重试（对齐旧 ensureI18n 语义）
+      i18nReady = null
+      throw e
+    })
   }
   return i18nReady
+}
+
+/** 已注册到 i18n registry 的内置语言包（按 locale 名缓存装载 Promise，失败不缓存）。 */
+const localeReady = new Map<RenderLocale, Promise<void>>()
+
+/**
+ * 按需装载并注册内置语言包（幂等；并发请求共享同一 Promise）。
+ * zh-CN / en 走静态导入，其余内置语言包走动态 import——不用到就不进模块图。
+ */
+function ensureLocalePack(locale: RenderLocale): Promise<void> {
+  const cached = localeReady.get(locale)
+  if (cached) return cached
+  const loading = (async () => {
+    const api = await ensureI18nReady()
+    const pack = await LOCALE_LOADERS[locale]()
+    api.registerLocale(pack.default)
+  })().catch((error) => {
+    localeReady.delete(locale)
+    throw error
+  })
+  localeReady.set(locale, loading)
+  return loading
+}
+
+/** 已告警过的未知 locale（逐进程去重，避免逐请求刷屏）。 */
+const warnedLocales = new Set<string>()
+
+/**
+ * 解析显式 locale：
+ * - 内置语言名 → 按需装载语言包后原样使用；
+ * - 宿主已 `registerLocale()` 的自定义 locale → 按名交给临时 config-provider（旧行为保留）；
+ * - 其余 → devWarn 一次并回退内置 `en`（确定性回退，不借用可能变化的全局 locale）。
+ *
+ * @returns 实际写入临时 `<oas-config-provider locale>` 的名字
+ */
+async function resolveRenderLocale(locale: string): Promise<string> {
+  if (isRenderLocale(locale)) {
+    await ensureLocalePack(locale)
+    return locale
+  }
+  await ensureI18nReady()
+  // core 的动态 import 在 shim + i18n 之后：core 主入口同样求值 `class extends HTMLElement`
+  const { getLocaleTranslator } = await import('@oas-ui/core')
+  if (getLocaleTranslator(locale)) return locale
+  if (!warnedLocales.has(locale)) {
+    warnedLocales.add(locale)
+    devWarn(
+      `[oas-ui/ssr] 未注册的 locale「${locale}」：已回退内置 en。可用内置语言：${RENDER_LOCALES.join(' / ')}；` +
+        '自定义 locale 请先调用 @oas-ui/i18n 的 registerLocale() 注册。',
+    )
+  }
+  await ensureLocalePack('en')
+  return 'en'
+}
+
+/**
+ * dev 告警通道（本包自包含实现，避免静态依赖 ui 源码）：生产 `NODE_ENV === 'production'`
+ * 时静默；裸 ESM / CDN 无 process 时 catch 兜底为 false 照常告警。
+ */
+const IS_PROD: boolean = (() => {
+  try {
+    return process.env.NODE_ENV === 'production'
+  } catch {
+    return false
+  }
+})()
+
+function devWarn(message: string): void {
+  if (IS_PROD) return
+  if ((globalThis as { __OAS_DEV_WARN_OFF__?: boolean }).__OAS_DEV_WARN_OFF__) return
+  console.warn(message)
 }
 
 /**
@@ -587,7 +677,7 @@ function ensureI18nReady(): Promise<typeof import('@oas-ui/i18n')> {
  * @param attrs 宿主 attributes（kebab-case 键），值在序列化时做 & " < > 完整 HTML 转义
  * @param slotHTML 注入 light DOM 的 HTML 片段（默认插槽内容）；内部含白名单子组件时
  *   会被递归序列化为嵌套 DSD（子组件 shadowRoot + 指纹包成 template 插到内容最前）
- * @param opts 选项（locale 控制内置文案语言）
+ * @param opts 选项（locale 为内置语言名或已注册的自定义 locale 名；未注册时 devWarn 并回退 en）
  */
 export async function renderToString(
   tag: string,
@@ -605,8 +695,10 @@ export async function renderToString(
   // 嵌套序列化前置：slotHTML 里出现的白名单子组件 tag 也需已装载（否则子组件不 upgrade，
   // shadowRoot 为空 → 无法序列化其 shadow 内容）。非白名单子组件不装载、按原始标记输出。
   await ensureNestedTags(slotHTML)
+  let effectiveLocale: string | null = null
   if (opts.locale) {
-    await ensureI18nReady()
+    // 内置语言包按需装载；未注册 locale 显式 devWarn 并回退 en（不静默借用全局 locale）
+    effectiveLocale = await resolveRenderLocale(opts.locale)
     // 本次调用的临时 provider 依赖 config-provider 组件已注册（findConfigProvider 按 tag 名就近查找）
     await ensureTag('oas-config-provider')
   }
@@ -621,9 +713,9 @@ export async function renderToString(
   let el: HTMLElement | null = null
   let provider: HTMLElement | null = null
   try {
-    if (opts.locale) {
+    if (effectiveLocale) {
       provider = document.createElement('oas-config-provider')
-      provider.setAttribute('locale', opts.locale)
+      provider.setAttribute('locale', effectiveLocale)
     }
     el = document.createElement(tag)
     for (const [name, value] of Object.entries(attrs)) {

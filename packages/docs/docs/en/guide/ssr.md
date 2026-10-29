@@ -82,7 +82,7 @@ Current progress:
   client-only.
 - `oas-bottom-sheet` (the mobile bottom-sheet carrier) is not whitelisted: it is a host-controlled overlay container (driven by the `open` attribute). In SSR scenarios the host template embeds the initial structure (an empty panel when closed), and the component uses the `passive` passthrough mode to keep the SSR/client structure strictly identical. Server-rendering an open state is meaningless, so it stays client-only.
 - Backfill batches (DSD whitelisting): the highlight text-highlight component (synchronous deterministic render, pure-presentation direct output); the scheduler / gantt / barcode / resource data components (data flows through the JSON attribute declarative channel, same class as calendar / kanban / table / qrcode — synchronous deterministic rendering, no measurement dependency); form wrap-up knob / questionnaire; the five conversation components bubble / attachment (+attachment-group) / message-scroller / marker / message-row; and the workbench widget family titlebar / statusbar / inspector / action-bar plus their sub-components — pure-presentation / skeleton snapshots (overlay and input interactions default to closed / empty states), every component overriding `hydrate()` for true hydration. Navigation additions: app-bar (app bar, visible structure rendered directly) and stepper (step panel, +stepper-panel).
-- Framework integration plugins: `@oas-ui/nuxt` (a Nuxt 3 module) and
+- Framework integration plugins: `@oas-ui/nuxt` (a Nuxt 3/4 module) and
   `@oas-ui/next` (a Next.js App Router integration) have landed — the Nuxt
   module auto-configures Vue `compilerOptions.isCustomElement` (recognizing
   `oas-*`), injects the `@oas-ui/theme` global CSS, and auto-imports the
@@ -173,6 +173,14 @@ for the rendering itself.
 > your Node process uses another global DOM solution (other SSR libraries, test
 > framework environments), evaluate coexistence first — the renderer throws a
 > clear error when globals cannot be installed.
+>
+> **`locale` values**: `RenderLocale` is the built-in subset `zh-CN` / `en` /
+> `ja` / `ko` / `de` / `fr` / `es` / `pt` / `ru` / `ar` (`ar` is RTL). The
+> renderer loads and registers the matching language pack on demand, so hosts do
+> not need to call `registerLocale` manually. Host-defined locales can still be
+> registered with `registerLocale()` and passed by name; **an unregistered
+> locale triggers one `devWarn` and falls back to built-in `en`** (it never
+> silently borrows the mutable global locale).
 >
 > **Request-scoped locale**: an explicit `locale` affects only that call and its
 > nested subtree — the renderer creates a per-call temporary
@@ -394,7 +402,8 @@ export default function SsrDemoPage() {
 Client registration bootstrap: mount `<OasRegistry>` in the layout ("use client",
 side-effect `import '@oas-ui/ui'` registers all `oas-*` elements globally),
 so every `oas-*` element in the app upgrades and the components take over
-interactivity:
+interactivity. **In Next 16, read the warning below first** (server-evaluation
+limitation and the temporary `useEffect` pattern):
 
 ```tsx
 // app/layout.tsx
@@ -417,12 +426,41 @@ support `string | number | boolean` and are serialized automatically);
 `OasComponent`'s `slotHTML` prop accepts raw HTML directly (children, when a
 string or a ReactNode, is serialized automatically).
 
+::: warning Next 16: `OasRegistry`'s top-level side-effect import runs during Client Component server rendering
+Although `OasRegistry` is marked `"use client"`, Next 16 App Router still
+evaluates Client Component modules on the server for the first request /
+prerender. The top-level `import '@oas-ui/ui'` runs
+`class extends HTMLElement` and throws `HTMLElement is not defined` without a
+DOM. **Adapter behavior is unchanged in this batch**, so do not mount
+`<OasRegistry>` in the root layout on Next 16 yet; use this temporary pattern
+inside a client component's `useEffect`:
+
+```tsx
+'use client'
+import { useEffect } from 'react'
+
+export function OasClientBoot() {
+  useEffect(() => {
+    // browser-only evaluation; not executed during server rendering
+    void import('@oas-ui/ui')
+  }, [])
+  return null
+}
+```
+
+Render `<OasClientBoot />` in the root layout instead of `<OasRegistry>`. For
+non-default languages, register the locale packs before importing the library
+(see `packages/ssr/fixtures/next/app/oas-client-boot.tsx`). The recommended
+`OasRegistry` usage returns once the adapter switches to the same `useEffect`
+dynamic import (follow-up tracked in `docs/PRD.md` / `docs/ROADMAP.md`).
+:::
+
 > Note: DSD templates are attached by the browser's **HTML parser** — the
 > initial SSR is applied by parsing the server output stream; client-side soft
 > navigation (RSC flight rebuild) injects via `innerHTML`, which does not attach
 > DSD. At that point the components are already registered on the client
-> (OasRegistry) and take over via custom-element self-rendering — this is the
-> progressive-enhancement model.
+> (OasRegistry / `OasClientBoot`) and take over via custom-element self-rendering
+> — this is the progressive-enhancement model.
 
 ### Next.js (manual integration, low-level)
 

@@ -41,6 +41,12 @@ SSR_FIXTURE=nuxt pnpm test:e2e:ssr --project=nuxt
 pnpm test:e2e:ssr                # 两个都跑（两个 webServer 都起）
 ```
 
+> **`reuseExistingServer` 风险**：本地（`CI` 未设置）默认复用已存在的 4301/4302 服务。若端口上残留的是**陈旧进程/旧构建**，e2e 会对着旧产物跑（常见表现：旧 HTML 引用已删除的 chunk → 批量 404 或离奇失败）。遇到此类失败先杀掉端口进程再重跑；CI 下 `reuseExistingServer: false`，不复用。
+
+## 包边界（Next fixture ≠ npm 安装的 `@oas-ui/next`）
+
+Next fixture **不通过 `@oas-ui/next` 包入口**运行，而是由 `lib/ssr-runtime.ts` 在 Node 运行时按**绝对文件 URL** 加载主仓 `packages/ssr/dist/index.js`（linked 包 + Turbopack 无法处理渲染器按 tag 的动态导入表）。因此它验证的是「主仓 dist 的 SSR 行为」，**不等价于 npm 安装后的 `@oas-ui/next` 路径**：包 `exports`、`react-server` 条件、client reference 与 peer 解析都不在 fixture 覆盖范围内。`@oas-ui/next` 的包入口契约由 `packages/next/src/*.test.ts` 覆盖；本批不做 `pnpm pack` smoke（Ruling）。Nuxt fixture 则通过 `link:` 直接消费 `@oas-ui/nuxt` 入口。
+
 ## 覆盖内容
 
 - 同一进程冷/热混合请求 `zh-CN` / `en-US`（归一到内置 `en`）/ `ar`（RTL），逐组件 ID 校验文案且互不串扰；
@@ -57,4 +63,5 @@ pnpm test:e2e:ssr                # 两个都跑（两个 webServer 都起）
    本 fixture 的 Nuxt DSD 渲染放在常驻 `worker_threads` worker（`server/dsd-worker.mjs`）；生产接入请用 worker / 子进程 / 独立服务隔离。
 2. **link 包 + 动态导入**：Next/Turbopack 会把 `link:` 的 `@oas-ui/ssr` 当源码打包，无法处理其按 tag 的 `import(目录入口)`
    动态表。fixture 通过 `lib/ssr-runtime.ts` 在 Node 运行时按真实文件 URL 加载引擎；从 npm 安装真实包时用
-   `serverExternalPackages: ['@oas-ui/ssr', 'happy-dom']` 即可。
+   `serverExternalPackages: ['@oas-ui/ssr', 'happy-dom']` 即可。这条文件 URL 路径也决定了它**不等价于**
+   npm 安装后的 `@oas-ui/next` 包路径（见上「包边界」）。

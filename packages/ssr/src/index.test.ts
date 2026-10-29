@@ -168,6 +168,45 @@ describe('@oas-ui/ssr renderToString', () => {
     expect(enHtml).not.toContain('暂无数据')
   })
 
+  it('locale：内置 ar（RTL 语言包）可按名直接渲染，不需要宿主预注册', async () => {
+    const ar = (await import('@oas-ui/i18n/ar')).default
+    const html = await renderToString('oas-empty', {}, '', { locale: 'ar' })
+    expect(html).toContain(ar.messages['empty.noData'])
+    expect(html).not.toContain('暂无数据')
+    expect(html).not.toContain('No data')
+  })
+
+  it('locale：未注册 locale 显式 devWarn 一次并回退内置 en（不静默借用全局 locale）', async () => {
+    const warnings: unknown[][] = []
+    const spy = vi.spyOn(console, 'warn').mockImplementation((...args: unknown[]) => {
+      warnings.push(args)
+    })
+    try {
+      const html = await renderToString('oas-empty', {}, '', { locale: 'xx-XX' as never })
+      // 回退到确定的内置 en（不是当前全局 zh-CN，也不是 raw key）
+      expect(html).toContain('No data')
+      expect(html).not.toContain('暂无数据')
+      expect(html).not.toContain('empty.noData')
+      expect(warnings).toHaveLength(1)
+      expect(String(warnings[0]?.[0])).toContain('xx-XX')
+      expect(String(warnings[0]?.[0])).toContain('en')
+      // 同一未知 locale 只告警一次，避免逐请求刷屏
+      await renderToString('oas-empty', {}, '', { locale: 'xx-XX' as never })
+      expect(warnings).toHaveLength(1)
+    } finally {
+      spy.mockRestore()
+    }
+  })
+
+  it('locale：宿主 registerLocale 注册的自定义 locale 仍按名生效（不被回退逻辑吞掉）', async () => {
+    const { registerLocale } = await import('@oas-ui/i18n')
+    const en = (await import('@oas-ui/i18n/en')).default
+    registerLocale({ ...en, name: 'xx-custom' })
+    const html = await renderToString('oas-empty', {}, '', { locale: 'xx-custom' as never })
+    expect(html).toContain('No data')
+    expect(html).not.toContain('暂无数据')
+  })
+
   it('oas-table：JSON attribute 声明式通道产出表头与数据行快照', async () => {
     const html = await renderToString(
       'oas-table',

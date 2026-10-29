@@ -19,7 +19,7 @@ const html = await renderToString('oas-button', { type: 'primary' }, '提交', {
 // <oas-button type="primary"><template shadowrootmode="open">…</template>提交</oas-button>
 ```
 
-支持按需（单组件 / 部分 / 全部）渲染，首屏无 JS 样式闪现。详见文档站 SSR 指南。
+支持按需（单组件 / 部分 / 全部）渲染，首屏无 JS 样式闪现。`locale` 支持内置语言名子集 `zh-CN` / `en` / `ja` / `ko` / `de` / `fr` / `es` / `pt` / `ru` / `ar`（按需装载语言包）；未注册 locale 会 devWarn 一次并回退 `en`，宿主自定义语言包可先 `registerLocale()` 再按名传入。详见文档站 SSR 指南。
 
 > **验收 fixture（不随本包分发）**：仓库内 `packages/ssr/fixtures/{next,nuxt}` 是 Next.js / Nuxt 生产构建 + 真实浏览器验收用例，独立 `package.json` / lockfile 安装与构建，不在 npm `files` 内，也不属于根 workspace。使用本包做真实框架接入时，`@oas-ui/ssr` 首次渲染会安装 happy-dom 全局 DOM shim；**不要与框架 SSR 共用同一进程**（会改变框架的环境探测），请放到 worker / 子进程或独立服务。
 
@@ -29,7 +29,7 @@ const html = await renderToString('oas-button', { type: 'primary' }, '提交', {
 | --- | --- |
 | `@oas-ui/ui` | 组件库主包 |
 | `@oas-ui/next` | Next.js（App Router）集成 |
-| `@oas-ui/nuxt` | Nuxt 3 module 集成 |
+| `@oas-ui/nuxt` | Nuxt 3/4 module 集成 |
 
 ## <a id="en"></a> [中文](#zh) | English
 
@@ -60,4 +60,4 @@ Supports on-demand rendering (single / partial / all components) with no style f
 | --- | --- |
 | `@oas-ui/ui` | Main UI library |
 | `@oas-ui/next` | Next.js (App Router) integration |
-| `@oas-ui/nuxt` | Nuxt 3 module integration |
+| `@oas-ui/nuxt` | Nuxt 3/4 module integration |

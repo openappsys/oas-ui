@@ -10,6 +10,10 @@ OAS-UI 的 Nuxt 3/4 module —— SSR（DSD 快照）开箱即用。
 pnpm add @oas-ui/nuxt @oas-ui/ssr @oas-ui/theme
 ```
 
+> peer 范围：`@nuxt/kit` 为 `^3.16.0 || ^4.0.0`。仓库内 Nuxt 4 fixture（`packages/ssr/fixtures/nuxt`）
+> 以 `--frozen-lockfile` 安装并跑通生产构建 + e2e，等于在真实 Nuxt 4 工程里证明该 peer 可满足；
+> `@nuxt/schema` 仅用于类型（`NuxtModule`），登记为同范围的 optional peer（Nuxt 3/4 自带）。
+
 ### 用法
 
 ```ts
@@ -21,7 +25,7 @@ export default defineNuxtConfig({
 
 module 自动完成三件事：
 
-1. **Vue isCustomElement**：`vite:extendConfig` 钩子把 `oas-*` 前缀注册进 `compilerOptions.isCustomElement`（与既有配置合并），Vue 不再把 `oas-*` 当组件解析、不再告警
+1. **Vue isCustomElement**：setup 阶段写入 `nuxt.options.vue.compilerOptions.isCustomElement`（Nuxt 4 实际读取的位置），并保留 `vite:extendConfig` 钩子兼容早期 Nuxt 3；`oas-*` 前缀与既有配置合并，Vue 不再把 `oas-*` 当组件解析、不再告警
 2. **theme CSS 注入**：`@oas-ui/theme` 自动追加到 `nuxt.options.css`（DSD 快照引用的 `--oas-*` token 全局可用）；可用 `oasUi: { theme: false }` 关闭或传自定义 CSS 入口
 3. **SSR helper 自动导入**：`renderOasToString` / `useOasRender`（来自 `@oas-ui/nuxt/ssr`）免 import 直接调用
 
@@ -63,6 +67,11 @@ import { renderOasToString } from '@oas-ui/nuxt/ssr'
 pnpm add @oas-ui/nuxt @oas-ui/ssr @oas-ui/theme
 ```
 
+> Peer range: `@nuxt/kit` is `^3.16.0 || ^4.0.0`. The in-repo Nuxt 4 fixture (`packages/ssr/fixtures/nuxt`)
+> installs with `--frozen-lockfile` and passes the production build + e2e, which proves this peer is
+> satisfiable in a real Nuxt 4 project; `@nuxt/schema` is type-only (`NuxtModule`) and registered as an
+> optional peer with the same range (Nuxt 3/4 ships it).
+
 ### Usage
 
 ```ts
@@ -74,7 +83,7 @@ export default defineNuxtConfig({
 
 The module does three things automatically:
 
-1. **Vue isCustomElement**: the `vite:extendConfig` hook registers the `oas-*` prefix into `compilerOptions.isCustomElement` (merged with existing config), so Vue no longer parses `oas-*` as components or warns about them
+1. **Vue isCustomElement**: setup writes `nuxt.options.vue.compilerOptions.isCustomElement` (the location Nuxt 4 actually reads) and keeps the `vite:extendConfig` hook for early Nuxt 3; the `oas-*` prefix is merged with existing config, so Vue no longer parses `oas-*` as components or warns about them
 2. **theme CSS injection**: `@oas-ui/theme` is appended to `nuxt.options.css` automatically (making `--oas-*` tokens referenced by DSD snapshots globally available); disable with `oasUi: { theme: false }` or pass a custom CSS entry
 3. **SSR helper auto-import**: `renderOasToString` / `useOasRender` (from `@oas-ui/nuxt/ssr`) are callable without an explicit import
 

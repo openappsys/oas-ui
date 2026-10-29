@@ -1,11 +1,12 @@
 /**
- * @oas-ui/nuxt —— Nuxt 3 module。
+ * @oas-ui/nuxt —— Nuxt 3/4 module。
  *
  * `modules: ['@oas-ui/nuxt']` 引入后自动完成三件事，SSR（DSD 快照）开箱即用：
  *
- * 1. **Vue isCustomElement**：`vite:extendConfig` 钩子把 `oas-*` 前缀注册进
- *    `compilerOptions.isCustomElement`（与既有配置合并，支持函数/RegExp/布尔），
- *    Vue 不再把 `oas-*` 当组件解析、不再告警；
+ * 1. **Vue isCustomElement**：setup 阶段写入 `nuxt.options.vue.compilerOptions.isCustomElement`
+ *    （Nuxt 4 实际读取的位置），并保留 `vite:extendConfig` 钩子兼容早期 Nuxt 3；
+ *    `oas-*` 前缀与既有配置合并（支持函数/RegExp/布尔），Vue 不再把 `oas-*`
+ *    当组件解析、不再告警；
  * 2. **theme CSS 注入**：`@oas-ui/theme` 自动追加到 `nuxt.options.css`（DSD 快照
  *    引用的 `--oas-*` token 定义在 theme 的 `:root`，页面必须引入否则 token 回落透明）。
  *    可用 `oasUi: { theme: false }` 关闭，或传自定义 CSS 入口替换；
@@ -26,9 +27,7 @@ export interface ModuleOptions {
   autoImports?: boolean
 }
 
-/** Vue 侧 compilerOptions.isCustomElement 的既有取值形态（plugin-vue 允许函数/RegExp/布尔） */
-
-/** 我们只关心最小的 vite vue 配置切片，避免依赖 Nuxt/Vite 的类型版本 */
+/** 最小 vite vue 配置切片（compilerOptions.isCustomElement 允许函数/RegExp/布尔），避免依赖 Nuxt/Vite 类型版本 */
 interface ViteVueOptionsLike {
   compilerOptions?: { isCustomElement?: unknown }
 }

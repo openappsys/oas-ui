@@ -26,7 +26,7 @@ OAS-UI 是 Web Components 组件库，组件在浏览器运行时自定义元素
 - 补位批次（DSD 白名单化）：highlight 文本命中高亮（同步确定性渲染，纯展示直出）；scheduler / gantt / barcode / resource 数据组件（数据走 JSON attribute 声明式通道，同 calendar / kanban / table / qrcode 类，同步确定性渲染、无测量依赖）；form 收尾 knob / questionnaire；conversation 五件 bubble / attachment（+attachment-group）/ message-scroller / marker / message-row；workbench 构件族 titlebar / statusbar / inspector / action-bar 及各自子件——纯展示/骨架直出快照（浮层与输入交互默认关闭/空态），全部组件有 `hydrate()` 真水合覆写。导航追加 app-bar（应用栏，可见结构直出）与 stepper（步骤面板，+stepper-panel）。
 - 嵌套递归序列化：light DOM 里已 upgrade 的白名单子组件（如 form>form-item>oas-input、tabs>tab-panel、descriptions>descriptions-item、layout>sider/header、grid>grid-item、timeline>timeline-item）会被递归包成嵌套 `<template shadowrootmode="open">`（含子组件指纹）插到该子元素内容最前，禁 JS 时子组件 shadow 内容（label 文本等）同样可见；浏览器 upgrade 后父子均按指纹走真水合。子组件 tag 在渲染前按需装载（非白名单子组件不装载、按原始标记输出）；light DOM 输出用处理后的 `el.innerHTML`（保留组件对 light DOM 的同步，如 tabs 非激活面板 hidden、collapse open 态）。
 - 测量组件首帧闪动治理：affix / ellipsis / scroll-area 检测到 DSD 快照时把布局写入延迟到首帧后（rAF）——快照 = 未校正态，upgrade 首帧与快照一致无跳动，rAF 后按真实布局校正。
-- 框架集成插件：`@oas-ui/nuxt`（Nuxt 3 module）与 `@oas-ui/next`（Next.js App Router 集成）已落地——nuxt module 自动配置 Vue `compilerOptions.isCustomElement`（识别 `oas-*`）、注入 `@oas-ui/theme` 全局 CSS、注册 `renderOasToString` SSR helper 自动导入；next 提供 RSC `<OasComponent>` 服务端产 DSD 快照 + `<OasRegistry>` 客户端注册引导（见下「Nuxt（推荐）」/「Next.js（推荐）」）。
+- 框架集成插件：`@oas-ui/nuxt`（Nuxt 3/4 module）与 `@oas-ui/next`（Next.js App Router 集成）已落地——nuxt module 自动配置 Vue `compilerOptions.isCustomElement`（识别 `oas-*`）、注入 `@oas-ui/theme` 全局 CSS、注册 `renderOasToString` SSR helper 自动导入；next 提供 RSC `<OasComponent>` 服务端产 DSD 快照 + `<OasRegistry>` 客户端注册引导（见下「Nuxt（推荐）」/「Next.js（推荐）」）。
 
 白名单组件可直接服务端渲染；其余组件仍按"客户端专属"方式接入（见下）。
 
@@ -87,6 +87,8 @@ const html = await renderToString('oas-button', { type: 'primary', size: 'large'
 > 注意：DSD 模板由浏览器 **HTML 解析器**附加 shadow root，`innerHTML` 等运行时字符串注入不会触发附加。产出字符串应经由 SSR 输出流（服务端渲染的 HTML 响应）送达浏览器。
 >
 > 进程级副作用声明：渲染器首次调用会把 happy-dom 的 `document` / `customElements` / `HTMLElement` 等全局安装到 `globalThis`（组件类求值与注册的必需环境）。若你的 Node 进程另有全局 DOM 方案（其他 SSR 库、测试框架环境），请先评估共存——无法覆盖全局时渲染器会抛明确错误。
+>
+> **locale 参数**：`RenderLocale` 为内置语言名子集 `zh-CN` / `en` / `ja` / `ko` / `de` / `fr` / `es` / `pt` / `ru` / `ar`（`ar` 为 RTL）。渲染器按需装载对应语言包并注册到 i18n registry，宿主无需手工 `registerLocale`。宿主自定义 locale 仍可先 `registerLocale()` 再按名传入；**未注册的 locale 会 `devWarn` 一次并回退内置 `en`**（不静默借用可能变化的全局 locale）。
 >
 > **locale 请求局部化**：显式 `locale` 只影响本次调用及嵌套子树——渲染器在共享 DOM 内创建本次调用独立的临时 `<oas-config-provider locale>`，目标元素挂其下同步渲染（输出不含 provider 包装），返回前清理两者；不改全局 locale、渲染段不触发 locale/translator 广播（i18n registry 一次性装载副作用除外）。未传 `locale` 保持旧行为：沿用调用时全局 locale（全局 `setLocale()` 语义不变）。并发请求（同一轮 `Promise.all` 里混合多语言、冷加载与热渲染）各自独立，无交错窗口，无需在服务端做任何加锁。
 
@@ -284,7 +286,7 @@ export default function SsrDemoPage() {
 }
 ```
 
-客户端注册引导：layout 挂 `<OasRegistry>`（"use client"，副作用 `import '@oas-ui/ui'` 完成全局注册）——整个应用的 `oas-*` 元素 upgrade 后由组件接管交互：
+客户端注册引导：`<OasRegistry>`（"use client"，副作用 `import '@oas-ui/ui'` 完成全局注册）——整个应用的 `oas-*` 元素 upgrade 后由组件接管交互。**Next 16 请先看下方警告**（服务端求值限制与临时 `useEffect` 写法）：
 
 ```tsx
 // app/layout.tsx
@@ -303,7 +305,26 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
 低层能力：`renderOas(tag, attrs, slotHTML, opts)`（`@oas-ui/next`）为 `renderToString` 的纯逻辑包装（attrs 值支持 `string | number | boolean` 自动序列化）；`OasComponent` 的 `slotHTML` prop 直接传原始 HTML（children 为字符串或 ReactNode 时自动序列化）。
 
-> 注意：`dangerouslySetInnerHTML` 的 DSD 模板只在浏览器 **HTML 解析器**处理时附加 shadow root——初始 SSR 由服务端输出流解析生效；客户端软导航（RSC flight 重建）走 `innerHTML` 注入不会附加 DSD，此时组件已在客户端注册（OasRegistry），由自定义元素自渲染接管，属渐进增强模型。
+::: warning Next 16：`OasRegistry` 的顶层副作用导入会在 Client Component 服务端渲染阶段求值
+`OasRegistry` 虽标注 `"use client"`，但 Next 16 App Router 在首次请求/预渲染时仍会在服务端求值 Client Component 模块；模块顶层的 `import '@oas-ui/ui'` 会执行 `class extends HTMLElement`，服务端没有 DOM，直接抛 `HTMLElement is not defined`。**本批未修改适配器行为**，因此 Next 16 下暂不要在根 layout 挂 `<OasRegistry>`；临时写法是在客户端组件的 `useEffect` 内动态导入：
+
+```tsx
+'use client'
+import { useEffect } from 'react'
+
+export function OasClientBoot() {
+  useEffect(() => {
+    // 只在浏览器执行；服务端渲染阶段不会求值组件库入口
+    void import('@oas-ui/ui')
+  }, [])
+  return null
+}
+```
+
+在根 layout 用 `<OasClientBoot />` 代替 `<OasRegistry>`。若页面使用 en / ar 等非默认语言，先注册语言包再导入组件库（见 `packages/ssr/fixtures/next/app/oas-client-boot.tsx`）。待适配器改为同样的 `useEffect` 动态导入后恢复推荐用法（follow-up 已登记到 `docs/PRD.md` / `docs/ROADMAP.md`）。
+:::
+
+> 注意：`dangerouslySetInnerHTML` 的 DSD 模板只在浏览器 **HTML 解析器**处理时附加 shadow root——初始 SSR 由服务端输出流解析生效；客户端软导航（RSC flight 重建）走 `innerHTML` 注入不会附加 DSD，此时组件已在客户端注册（OasRegistry / `OasClientBoot`），由自定义元素自渲染接管，属渐进增强模型。
 
 ### Next.js（手写接入，底层说明）
 

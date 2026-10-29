@@ -55,6 +55,22 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 }
 ```
 
+> ⚠️ **Next 16 限制（本批未修改适配器行为）**：`OasRegistry` 虽是 `"use client"`，Next 16 App Router 仍会在首次请求的服务端渲染阶段求值该模块；顶层 `import '@oas-ui/ui'` 会执行 `class extends HTMLElement`，服务端无 DOM 时抛 `HTMLElement is not defined`。在适配器改为 `useEffect` 动态导入前，请用临时写法：
+>
+> ```tsx
+> 'use client'
+> import { useEffect } from 'react'
+>
+> export function OasClientBoot() {
+>   useEffect(() => {
+>     void import('@oas-ui/ui') // 只在浏览器求值
+>   }, [])
+>   return null
+> }
+> ```
+>
+> 在根 layout 用 `<OasClientBoot />` 代替 `<OasRegistry>`；非默认语言需先注册语言包再导入组件库。follow-up 已登记在 `docs/PRD.md` / `docs/ROADMAP.md`。
+
 #### 低层能力
 
 `renderOas(tag, attrs, slotHTML, opts)`（`@oas-ui/next`）为 `renderToString` 的纯逻辑包装，无 React 依赖，适合自定义包装场景。
@@ -122,6 +138,22 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   )
 }
 ```
+
+> ⚠️ **Next 16 limitation (adapter behavior unchanged in this batch)**: although `OasRegistry` is a `"use client"` component, Next 16 App Router still evaluates the module during server rendering of the first request; the top-level `import '@oas-ui/ui'` runs `class extends HTMLElement` and throws `HTMLElement is not defined` when there is no DOM. Until the adapter switches to a `useEffect` dynamic import, use this temporary pattern:
+>
+> ```tsx
+> 'use client'
+> import { useEffect } from 'react'
+>
+> export function OasClientBoot() {
+>   useEffect(() => {
+>     void import('@oas-ui/ui') // browser-only evaluation
+>   }, [])
+>   return null
+> }
+> ```
+>
+> Use `<OasClientBoot />` in the root layout instead of `<OasRegistry>`; for non-default languages, register locale packs before importing the library. The follow-up is tracked in `docs/PRD.md` / `docs/ROADMAP.md`.
 
 #### Lower-level API
 

@@ -12,16 +12,19 @@
  *
  * 失败口径（**只有测量无效才非零退出**）：
  *   - dist 未构建 / Vite 构建失败 / 选择器缺失 / 样本数不足 / pageerror / console error；
+ *   - 任一指标非有限（含 LCP 未采集：样本写 null，不写 0）/ count ≠ rounds×perRound；
+ *   - `--update-baseline` 写盘前走与 `:check` 相同的完整校验，任何不符都拒绝写入并非零退出；
  *   - 性能数值回归只打印 WARN，永远不阻断。
  *
  * 用法：
  *   pnpm perf:browser                     # 测量并与入库基线对比（默认不写盘）
  *   pnpm perf:browser --update-baseline   # 刷新 docs/perf-browser-baseline.json
  *   pnpm perf:browser:check               # 仅校验基线 JSON 可解析、样本数、环境元数据
+ *   pnpm perf:browser:selftest            # 校验器自测（非法样本必须非零退出）
  */
 import { spawnSync } from 'node:child_process'
 import { createServer } from 'node:http'
-import { existsSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { createReadStream } from 'node:fs'
 import { join, extname, resolve, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -58,7 +61,6 @@ function fmt(ms) {
 
 /** 分位数（线性插值，与常见 p95 口径一致） */
 function percentile(values, p) {
-  if (!values.length) return Number.NaN
   const sorted = [...values].sort((a, b) => a - b)
   const index = (sorted.length - 1) * p
   const lower = Math.floor(index)
@@ -67,23 +69,37 @@ function percentile(values, p) {
   return sorted[lower] + (sorted[upper] - sorted[lower]) * (index - lower)
 }
 
-function stats(values) {
-  const finite = values.filter((value) => Number.isFinite(value))
-  if (!finite.length) return { count: 0, min: NaN, median: NaN, p95: NaN, max: NaN, mean: NaN }
-  const sum = finite.reduce((acc, value) => acc + value, 0)
+/**
+ * 统计值：**不吞 NaN/缺失**。空样本或任一非有限值直接抛错——
+ * 调用方（measureScenario / :check / --update-baseline）据此非零退出。
+ */
+function stats(values, label) {
+  if (!values.length) throw new Error(`${label} 样本为空，无法计算统计量`)
+  const invalid = values.findIndex((value) => !Number.isFinite(value))
+  if (invalid >= 0) {
+    throw new Error(
+      `${label} 第 ${invalid} 个样本不是有限数字：${String(values[invalid])}（LCP 未采集时应写 null 并失败）`,
+    )
+  }
+  const sum = values.reduce((acc, value) => acc + value, 0)
   return {
-    count: finite.length,
-    min: percentile(finite, 0),
-    median: percentile(finite, 0.5),
-    p95: percentile(finite, 0.95),
-    max: finite.reduce((acc, value) => Math.max(acc, value), 0),
-    mean: sum / finite.length,
+    count: values.length,
+    min: percentile(values, 0),
+    median: percentile(values, 0.5),
+    p95: percentile(values, 0.95),
+    max: values.reduce((acc, value) => Math.max(acc, value), -Infinity),
+    mean: sum / values.length,
   }
 }
 
-function metricsStats(samples) {
+function metricsStats(samples, label) {
   const out = {}
-  for (const metric of METRICS) out[metric] = stats(samples.map((sample) => sample[metric]))
+  for (const metric of METRICS) {
+    out[metric] = stats(
+      samples.map((sample) => sample?.[metric]),
+      `${label}.${metric}`,
+    )
+  }
   return out
 }
 
@@ -103,6 +119,35 @@ function playwrightVersion() {
   } catch {
     return 'unknown'
   }
+}
+
+/** 运行 git 并返回 trim 后的 stdout；失败返回 ''（不阻断测量）。 */
+function gitOutput(args) {
+  const result = spawnSync('git', args, { cwd: ROOT, encoding: 'utf8' })
+  return result.status === 0 ? result.stdout.trim() : ''
+}
+
+/** 基线来源标记：gitSha 用于判断「同 SHA 噪声」，dirty 表示测量时工作树有未提交改动。 */
+function gitMetadata() {
+  return {
+    gitSha: gitOutput(['rev-parse', 'HEAD']) || 'unknown',
+    gitDirty: gitOutput(['status', '--porcelain']) !== '',
+  }
+}
+
+/** 全部发布包的版本（基线可比性：包版本不同则数值差异包含发布内容变化）。 */
+function packageVersions() {
+  const versions = {}
+  for (const name of ['core', 'i18n', 'icons', 'ssr', 'theme', 'ui', 'next', 'nuxt']) {
+    try {
+      versions[`@oas-ui/${name}`] = JSON.parse(
+        readFileSync(join(ROOT, 'packages', name, 'package.json'), 'utf8'),
+      ).version
+    } catch {
+      versions[`@oas-ui/${name}`] = 'unknown'
+    }
+  }
+  return versions
 }
 
 function envMetadata(chromiumVersion) {
@@ -248,7 +293,8 @@ async function runSample(context, url) {
   })
   page.on('pageerror', (error) => problems.push(`pageerror: ${error.message}`))
   await page.addInitScript(() => {
-    window.__lcp = 0
+    // null 表示「未采集到」：绝不用 0 冒充有效 LCP（0 会被当成极快样本污染基线）。
+    window.__lcp = null
     try {
       new PerformanceObserver((list) => {
         const entries = list.getEntries()
@@ -256,7 +302,7 @@ async function runSample(context, url) {
         if (last) window.__lcp = last.startTime
       }).observe({ type: 'largest-contentful-paint', buffered: true })
     } catch {
-      // 忽略：浏览器不支持 LCP 时按 0 记录
+      // 浏览器不支持 LCP：保持 null，样本校验会失败而非静默写 0
     }
   })
   try {
@@ -267,16 +313,16 @@ async function runSample(context, url) {
     const sample = await page.evaluate(() => {
       const navigation = performance.getEntriesByType('navigation')[0]
       const paint = performance.getEntriesByType('paint')
-      const fcp = paint.find((entry) => entry.name === 'first-contentful-paint')?.startTime ?? 0
+      const fcp = paint.find((entry) => entry.name === 'first-contentful-paint')?.startTime ?? null
       const resources = performance.getEntriesByType('resource')
       const transferBytes =
         resources.reduce((sum, entry) => sum + (entry.transferSize || 0), 0) + (navigation?.transferSize || 0)
       return {
-        lcp: Number.isFinite(window.__lcp) ? window.__lcp : 0,
+        lcp: typeof window.__lcp === 'number' && Number.isFinite(window.__lcp) ? window.__lcp : null,
         fcp,
-        dcl: navigation?.domContentLoadedEventEnd ?? 0,
-        load: navigation?.loadEventEnd ?? 0,
-        firstRender: window.__benchDone,
+        dcl: navigation?.domContentLoadedEventEnd ?? null,
+        load: navigation?.loadEventEnd ?? null,
+        firstRender: Number.isFinite(window.__benchDone) ? window.__benchDone : null,
         domNodes: document.querySelectorAll('*').length,
         transferBytes,
       }
@@ -288,7 +334,7 @@ async function runSample(context, url) {
   }
 }
 
-async function measureScenario(context, baseUrl, path, { warmup, rounds, perRound }, requireSelector) {
+async function measureScenario(name, context, baseUrl, path, { warmup, rounds, perRound }, requireSelector) {
   const samples = []
   const roundStats = []
   const url = `${baseUrl}${path}`
@@ -300,11 +346,30 @@ async function measureScenario(context, baseUrl, path, { warmup, rounds, perRoun
       roundSamples.push(sample)
       samples.push(sample)
     }
-    roundStats.push(metricsStats(roundSamples))
+    roundStats.push(metricsStats(roundSamples, `${name} round ${round + 1}`))
+  }
+
+  // 样本完整性：数量必须精确等于 rounds×perRound；任一指标非有限直接失败。
+  const expected = rounds * perRound
+  if (samples.length !== expected) {
+    throw new Error(`${name} 样本数 ${samples.length} ≠ rounds×perRound ${expected}`)
+  }
+  const aggregate = metricsStats(samples, name)
+  for (const metric of METRICS) {
+    if (aggregate[metric].count !== expected) {
+      throw new Error(`${name}.${metric} count ${aggregate[metric].count} ≠ ${expected}`)
+    }
   }
 
   // 结构有效性：选择器必须存在且已有 shadow/子节点（防止空白页被当成有效样本）
   const checkPage = await context.newPage()
+  const problems = []
+  checkPage.on('console', (message) => {
+    if (message.type() === 'error' || message.type() === 'warning') {
+      problems.push(`console.${message.type()}: ${message.text()}`)
+    }
+  })
+  checkPage.on('pageerror', (error) => problems.push(`pageerror: ${error.message}`))
   try {
     await checkPage.goto(url, { waitUntil: 'load' })
     await checkPage.waitForFunction(() => Number.isFinite(window.__benchDone))
@@ -322,60 +387,120 @@ async function measureScenario(context, baseUrl, path, { warmup, rounds, perRoun
     if (structure.nodes < HOSTS.length) throw new Error(`组件宿主数量不足：${structure.nodes}/${HOSTS.length}`)
     if (structure.shadowed < HOSTS.length)
       throw new Error(`shadow root 数量不足：${structure.shadowed}/${HOSTS.length}`)
+    if (problems.length) throw new Error(`结构校验页告警/异常：\n${problems.join('\n')}`)
   } finally {
     await checkPage.close()
   }
 
-  return { samples, roundStats, aggregate: metricsStats(samples) }
+  return { samples, roundStats, aggregate }
 }
 
-function compareWithBaseline(scenario, current) {
-  if (!existsSync(BASELINE_PATH)) return
-  let baseline
+function readBaseline() {
+  if (!existsSync(BASELINE_PATH)) return null
   try {
-    baseline = JSON.parse(readFileSync(BASELINE_PATH, 'utf8'))
+    return JSON.parse(readFileSync(BASELINE_PATH, 'utf8'))
   } catch {
-    return
-  }
-  const previous = baseline?.scenarios?.[scenario]?.aggregate
-  if (!previous) return
-  for (const metric of ['lcp', 'fcp', 'firstRender', 'transferBytes']) {
-    const before = previous[metric]?.median
-    const now = current.aggregate[metric]?.median
-    if (!Number.isFinite(before) || !Number.isFinite(now) || before <= 0) continue
-    const ratio = now / before
-    if (ratio <= REGRESSION_RATIO) continue
-    console.warn(
-      `WARN [perf:browser] ${scenario}.${metric} 中位数 ${now.toFixed(2)} 高于基线 ${before.toFixed(2)}（×${ratio.toFixed(2)}）；仅提示，不阻断`,
-    )
+    return null
   }
 }
 
-/** `perf:browser:check`：只校验入库基线完整性（不启动浏览器） */
-function checkBaseline() {
-  if (!existsSync(BASELINE_PATH)) {
-    fail(`基线文件不存在：${BASELINE_PATH}`)
+/** 跨 OS/CPU 对比只提示不阻断（数值回归判定仍按阈值）。 */
+function warnEnvironment(baseline, current) {
+  if (!baseline) return
+  const previous = baseline.env ?? {}
+  const missing = ['os', 'cpu'].filter((key) => !previous[key])
+  if (missing.length) {
+    console.warn(
+      `WARN [perf:browser] 基线缺少环境元数据 env.${missing.join('/env.')}（旧格式）：跨机器对比噪声可能较大，数值仍按 ×${REGRESSION_RATIO} 提示`,
+    )
     return
   }
-  let baseline
-  try {
-    baseline = JSON.parse(readFileSync(BASELINE_PATH, 'utf8'))
-  } catch (error) {
-    fail(`基线不可解析：${error?.message ?? error}`)
-    return
+  for (const key of ['os', 'cpu']) {
+    if (previous[key] !== current.env[key]) {
+      console.warn(
+        `WARN [perf:browser] 跨 ${key.toUpperCase()} 对比：基线「${previous[key]}」≠ 当前「${current.env[key]}」；绝对耗时不可直接比较，回归判定仅作提示`,
+      )
+    }
+  }
+}
+
+/**
+ * 「同 SHA 噪声」：与入库基线 gitSha 相同时，记录本次复测相对上次的中位数/p95 比值。
+ * 同 SHA 的差异只能来自机器噪声；跨 SHA 或首次生成标记 compared:false。
+ */
+function computeSameShaNoise(previous, current) {
+  if (!previous) return { compared: false, reason: '首次生成基线，无同 SHA 参照' }
+  if (typeof previous.gitSha !== 'string' || !previous.gitSha) {
+    return { compared: false, reason: '旧基线缺少 gitSha，无法判断同 SHA' }
+  }
+  if (previous.gitSha !== current.gitSha) {
+    return {
+      compared: false,
+      baselineSha: previous.gitSha,
+      currentSha: current.gitSha,
+      reason: 'git SHA 不同：差异包含代码变化，不属同 SHA 噪声',
+    }
+  }
+  const metrics = {}
+  for (const scenario of ['csr', 'dsd']) {
+    for (const metric of ['lcp', 'fcp', 'firstRender', 'transferBytes']) {
+      const before = previous.scenarios?.[scenario]?.aggregate?.[metric]
+      const now = current.scenarios?.[scenario]?.aggregate?.[metric]
+      if (!Number.isFinite(before?.median) || !Number.isFinite(now?.median) || before.median <= 0) continue
+      metrics[`${scenario}.${metric}`] = {
+        medianRatio: Number((now.median / before.median).toFixed(4)),
+        p95Ratio:
+          Number.isFinite(before.p95) && before.p95 > 0 && Number.isFinite(now.p95)
+            ? Number((now.p95 / before.p95).toFixed(4))
+            : null,
+      }
+    }
+  }
+  return {
+    compared: true,
+    gitSha: current.gitSha,
+    metrics,
+    note: '同 SHA 复测差异属机器噪声，不代表性能退化；回归 WARN 仍按 ×1.25 提示',
+  }
+}
+
+/**
+ * 基线完整性校验（`--check` 与 `--update-baseline` 写盘前共用）。
+ * 返回 true 表示可写入/可用；失败通过 `fail()` 累积到 process.exitCode。
+ */
+function validateBaselinePayload(payload, label = '基线') {
+  if (!payload || typeof payload !== 'object') {
+    fail(`${label}不是对象`)
+    return false
+  }
+  if (typeof payload.gitSha !== 'string' || !/^[0-9a-f]{7,40}$/i.test(payload.gitSha)) {
+    fail(`${label} gitSha 缺失或无效：${payload.gitSha}`)
+  }
+  if (typeof payload.gitDirty !== 'boolean') fail(`${label} gitDirty 必须为布尔值`)
+  if (!payload.versions || typeof payload.versions !== 'object') {
+    fail(`${label} versions 缺失`)
+  } else {
+    for (const pkg of ['@oas-ui/ui', '@oas-ui/ssr']) {
+      if (!payload.versions[pkg] || typeof payload.versions[pkg] !== 'string') {
+        fail(`${label} versions.${pkg} 缺失`)
+      }
+    }
+  }
+  if (!payload.sameShaNoise || typeof payload.sameShaNoise.compared !== 'boolean') {
+    fail(`${label} sameShaNoise 缺失或格式错误`)
   }
   const expect = {
     csr: { warmup: CSR_WARMUP, rounds: CSR_ROUNDS, perRound: CSR_PER_ROUND },
     dsd: { warmup: DSD_WARMUP, rounds: DSD_ROUNDS, perRound: DSD_PER_ROUND },
   }
-  const env = baseline.env ?? {}
+  const env = payload.env ?? {}
   for (const key of ['node', 'pnpm', 'os', 'cpu', 'chromium', 'playwright']) {
     if (!env[key] || typeof env[key] !== 'string') fail(`环境元数据缺失：env.${key}`)
     else if (env[key] === 'unknown') fail(`环境元数据无效：env.${key} = unknown`)
   }
   if (env.workers !== 1) fail(`env.workers 必须为 1，实得 ${env.workers}`)
   for (const [scenario, settings] of Object.entries(expect)) {
-    const entry = baseline.scenarios?.[scenario]
+    const entry = payload.scenarios?.[scenario]
     if (!entry) {
       fail(`场景缺失：${scenario}`)
       continue
@@ -406,15 +531,154 @@ function checkBaseline() {
       }
     }
     for (const metric of METRICS) {
-      for (const field of ['min', 'median', 'p95']) {
+      for (const field of ['count', 'min', 'median', 'p95']) {
         if (!Number.isFinite(entry.aggregate?.[metric]?.[field])) fail(`${scenario}.aggregate.${metric}.${field} 无效`)
+      }
+      if (entry.aggregate?.[metric]?.count !== expectedSamples) {
+        fail(`${scenario}.aggregate.${metric}.count 应为 ${expectedSamples}，实得 ${entry.aggregate?.[metric]?.count}`)
       }
     }
   }
-  if (!process.exitCode) console.log(`PASS [perf:browser] 基线完整：${BASELINE_PATH}`)
+  return !process.exitCode
+}
+
+function compareWithBaseline(scenario, current, baseline) {
+  const previous = baseline?.scenarios?.[scenario]?.aggregate
+  if (!previous) return
+  for (const metric of ['lcp', 'fcp', 'firstRender', 'transferBytes']) {
+    const before = previous[metric]?.median
+    const now = current.aggregate[metric]?.median
+    if (!Number.isFinite(before) || !Number.isFinite(now) || before <= 0) continue
+    const ratio = now / before
+    if (ratio <= REGRESSION_RATIO) continue
+    console.warn(
+      `WARN [perf:browser] ${scenario}.${metric} 中位数 ${now.toFixed(2)} 高于基线 ${before.toFixed(2)}（×${ratio.toFixed(2)}）；仅提示，不阻断`,
+    )
+  }
+}
+
+/** `perf:browser:check`：只校验入库基线完整性（不启动浏览器） */
+function checkBaseline(path = process.env.PERF_BROWSER_BASELINE || BASELINE_PATH) {
+  if (!existsSync(path)) {
+    fail(`基线文件不存在：${path}`)
+    return
+  }
+  let baseline
+  try {
+    baseline = JSON.parse(readFileSync(path, 'utf8'))
+  } catch (error) {
+    fail(`基线不可解析：${error?.message ?? error}`)
+    return
+  }
+  if (validateBaselinePayload(baseline, `基线 ${path} `) && !process.exitCode) {
+    console.log(`PASS [perf:browser] 基线完整：${path}`)
+  }
+}
+
+/**
+ * `--self-test`：在临时目录构造合法 / 缺样本 / NaN / null LCP 四类基线，
+ * 通过子进程跑 `--check`，断言红绿两侧的退出码（不启动浏览器）。
+ */
+function runSelfTest() {
+  const dir = mkdtempSync(join(os.tmpdir(), 'oas-perf-browser-selftest-'))
+  const settings = {
+    csr: { warmup: CSR_WARMUP, rounds: CSR_ROUNDS, perRound: CSR_PER_ROUND },
+    dsd: { warmup: DSD_WARMUP, rounds: DSD_ROUNDS, perRound: DSD_PER_ROUND },
+  }
+  const makeSample = (value) => Object.fromEntries(METRICS.map((metric) => [metric, value]))
+  const makeStats = (value, count) => ({ count, min: value, median: value, p95: value, max: value, mean: value })
+  const makeMetrics = (value, count) => Object.fromEntries(METRICS.map((metric) => [metric, makeStats(value, count)]))
+  const build = () => {
+    const scenarios = {}
+    for (const [name, config] of Object.entries(settings)) {
+      const total = config.rounds * config.perRound
+      scenarios[name] = {
+        warmup: config.warmup,
+        rounds: config.rounds,
+        samplesPerRound: config.perRound,
+        raw: Array.from({ length: total }, (_, index) => makeSample(100 + (index % 10))),
+        roundStats: Array.from({ length: config.rounds }, () => makeMetrics(100, config.perRound)),
+        aggregate: makeMetrics(100, total),
+      }
+    }
+    return {
+      generatedAt: '2026-10-30',
+      method: 'self-test',
+      gitSha: '0123456789abcdef0123456789abcdef01234567',
+      gitDirty: false,
+      versions: { '@oas-ui/ui': '2.6.4', '@oas-ui/ssr': '2.6.4' },
+      env: {
+        node: process.version,
+        pnpm: 'self-test',
+        os: 'self-test',
+        cpu: 'self-test',
+        cpuCores: 1,
+        memoryGB: 1,
+        chromium: 'self-test',
+        playwright: 'self-test',
+        workers: 1,
+      },
+      settings: { viewport: { width: 1280, height: 800 }, regressionWarnRatio: REGRESSION_RATIO },
+      sameShaNoise: { compared: false, reason: 'self-test' },
+      scenarios,
+    }
+  }
+  const cases = [
+    { name: '合法基线', mutate: () => {}, expectPass: true },
+    {
+      name: '缺样本',
+      mutate: (payload) => payload.scenarios.csr.raw.pop(),
+      expectPass: false,
+    },
+    {
+      name: 'NaN 指标',
+      mutate: (payload) => {
+        payload.scenarios.dsd.raw[0].fcp = 'NaN'
+      },
+      expectPass: false,
+    },
+    {
+      name: 'LCP 未采集（null）',
+      mutate: (payload) => {
+        payload.scenarios.csr.raw[2].lcp = null
+      },
+      expectPass: false,
+    },
+  ]
+  let failed = 0
+  try {
+    for (const item of cases) {
+      const payload = build()
+      item.mutate(payload)
+      const path = join(dir, `${item.name}.json`)
+      writeFileSync(path, `${JSON.stringify(payload, null, 2)}\n`, 'utf8')
+      const result = spawnSync(process.execPath, [fileURLToPath(import.meta.url), '--check'], {
+        encoding: 'utf8',
+        env: { ...process.env, PERF_BROWSER_BASELINE: path },
+      })
+      const passed = result.status === 0
+      if (passed !== item.expectPass) {
+        failed++
+        console.error(
+          `FAIL [perf:browser] 自测「${item.name}」退出码 ${result.status}（期望${item.expectPass ? ' 0' : '非 0'}）`,
+        )
+      }
+    }
+  } finally {
+    rmSync(dir, { recursive: true, force: true })
+  }
+  if (failed) {
+    fail(`自测失败 ${failed} 项`)
+    return
+  }
+  console.log('PASS [perf:browser] 自测：合法基线通过，缺样本 / NaN / null LCP 均非零退出')
 }
 
 async function main() {
+  if (process.argv.includes('--self-test')) {
+    runSelfTest()
+    return
+  }
   if (process.argv.includes('--check')) {
     checkBaseline()
     return
@@ -429,6 +693,7 @@ async function main() {
     const context = await browser.newContext({ viewport: { width: 1280, height: 800 }, deviceScaleFactor: 1 })
     const baseUrl = `http://127.0.0.1:${port}`
     const csr = await measureScenario(
+      'csr',
       context,
       baseUrl,
       '/csr.html',
@@ -436,6 +701,7 @@ async function main() {
       '#root',
     )
     const dsd = await measureScenario(
+      'dsd',
       context,
       baseUrl,
       '/dsd.html',
@@ -443,11 +709,17 @@ async function main() {
       '[data-bench="dsd"]',
     )
 
+    const previousBaseline = readBaseline()
+    const git = gitMetadata()
     const payload = {
       generatedAt: new Date().toISOString().slice(0, 10),
+      // gitSha / gitDirty：判断同 SHA 噪声与「测量时工作树是否干净」
+      ...git,
+      versions: packageVersions(),
       method:
         'Vite 生产构建（oxc minify）+ Chromium headless；每次样本新建 page（同 context 暖缓存）；' +
-        'firstRender = 客户端注册/渲染完成后的双 rAF 时间戳；传输体积 = resource transferSize 之和 + navigation transferSize',
+        'firstRender = 客户端注册/渲染完成后的双 rAF 时间戳；传输体积 = resource transferSize 之和 + navigation transferSize；' +
+        'console 过滤口径 = 每个样本页与结构校验页的 console error/warning + pageerror（任一命中即测量无效）',
       env: envMetadata(browser.version()),
       settings: {
         viewport: { width: 1280, height: 800 },
@@ -473,6 +745,8 @@ async function main() {
       },
     }
 
+    payload.sameShaNoise = computeSameShaNoise(previousBaseline, payload)
+
     console.log('\n=== 真实浏览器基线（workers=1，Chromium） ===')
     for (const [name, scenario] of [
       ['CSR', csr],
@@ -487,12 +761,18 @@ async function main() {
       )
     }
 
-    compareWithBaseline('csr', csr)
-    compareWithBaseline('dsd', dsd)
+    warnEnvironment(previousBaseline, payload)
+    compareWithBaseline('csr', csr, previousBaseline)
+    compareWithBaseline('dsd', dsd, previousBaseline)
 
     if (UPDATE) {
-      writeFileSync(BASELINE_PATH, `${JSON.stringify(payload, null, 2)}\n`, 'utf8')
-      console.log(`\n[perf:browser] 基线已写入 ${BASELINE_PATH}`)
+      // 写盘前走与 :check 完全相同的校验：非法样本一律拒绝写入并非零退出
+      if (validateBaselinePayload(payload, '待写入基线')) {
+        writeFileSync(BASELINE_PATH, `${JSON.stringify(payload, null, 2)}\n`, 'utf8')
+        console.log(`\n[perf:browser] 基线已写入 ${BASELINE_PATH}`)
+      } else {
+        console.error('[perf:browser] 样本校验未通过：拒绝写入基线')
+      }
     } else {
       console.log('\n[perf:browser] 仅测量，未写入基线（确需刷新请加 --update-baseline）')
     }

@@ -43,6 +43,7 @@
     "perf:bench": "node scripts/perf/render-bench.mjs",
     "perf:browser": "node scripts/perf/browser-bench.mjs",
     "perf:browser:check": "node scripts/perf/browser-bench.mjs --check",
+    "perf:browser:selftest": "node --test scripts/perf/browser-bench.test.mjs",
     "release:check": "node scripts/release-check.mjs",
     "release:check:test": "node --test scripts/release-check.test.mjs",
     "release": "pnpm test && pnpm typecheck && pnpm build && node scripts/publish-skip-existing.mjs",

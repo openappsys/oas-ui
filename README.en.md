@@ -61,7 +61,7 @@ Web Components interoperate with every framework out of the box; these official 
 
 ```bash
 pnpm add @oas-ui/nuxt   # Nuxt 3/4 module: isCustomElement + theme injection + SSR helper
-pnpm add @oas-ui/next   # Next.js: RSC OasComponent + OasRegistry client registration bootstrap
+pnpm add @oas-ui/next   # Next.js: RSC OasComponent + client registration (Next 16: use a useEffect dynamic import, see packages/next/README.md)
 ```
 
 ## Documentation

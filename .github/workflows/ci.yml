@@ -40,8 +40,10 @@ jobs:
       # 渲染基准（pnpm perf:bench）耗时波动大（happy-dom + 共享 runner 抖动），不进 CI，
       # 发布前本地跑一遍核对即可（见 docs/engineering.md §4 性能基准）。
       - run: pnpm perf:size
-      # 真实浏览器基线的完整性校验（只读 JSON：可解析 / 样本数 / 环境元数据齐全）。
+      # 真实浏览器基线的完整性校验（只读 JSON：可解析 / 样本数 / 指标全有限 / 环境元数据齐全）。
+      # 先跑校验器自测（缺样本 / NaN / null LCP 必须非零退出），再校验入库基线。
       # 性能数值本身不阻断发布；不在此 job 跑浏览器测量（耗时/噪声），需要刷新走本地 --update-baseline。
+      - run: pnpm perf:browser:selftest
       - run: pnpm perf:browser:check
       - run: pnpm api:check
       # 废弃 API 台账：别名必须登记，canonical 必须存在，removeIn 不得倒退；
@@ -82,6 +84,13 @@ jobs:
       - name: Build Nuxt fixture
         working-directory: packages/ssr/fixtures/nuxt
         run: pnpm build
+      # fixture 独立 typecheck：不并入根 typecheck（fixture 不在根 workspace）
+      - name: Typecheck Next fixture
+        working-directory: packages/ssr/fixtures/next
+        run: pnpm typecheck
+      - name: Typecheck Nuxt fixture
+        working-directory: packages/ssr/fixtures/nuxt
+        run: pnpm typecheck
       - name: Cache Playwright browsers
         uses: actions/cache@v4
         with:

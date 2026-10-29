@@ -61,7 +61,7 @@ Web Components 本身与任何框架互操作；以下官方插件补齐 SSR 与
 
 ```bash
 pnpm add @oas-ui/nuxt   # Nuxt 3/4 module：isCustomElement + theme 注入 + SSR helper
-pnpm add @oas-ui/next   # Next.js：RSC OasComponent + OasRegistry 客户端注册引导
+pnpm add @oas-ui/next   # Next.js：RSC OasComponent + 客户端注册引导（Next 16 暂用 useEffect 动态导入，见 packages/next/README.md）
 ```
 
 ## 文档

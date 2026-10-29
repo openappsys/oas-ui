@@ -44,6 +44,7 @@ test.describe('Nuxt fixture', () => {
         if (other.locale === item.locale) continue
         expect(html, `${item.locale} 不应含 ${other.locale} 文案`).not.toContain(other.empty)
         expect(html, `${item.locale} 不应含 ${other.locale} 文案`).not.toContain(other.tool)
+        expect(html, `${item.locale} 不应含 ${other.locale} 文案`).not.toContain(other.select)
       }
 
       await page.goto(url(item.locale))
@@ -151,7 +152,7 @@ test.describe('Nuxt fixture', () => {
     await page.waitForTimeout(500)
 
     const after = await page.evaluate(() => {
-      const result: Record<string, { mark: string | null; meta: boolean }> = {}
+      const result: Record<string, { mark: string | null; meta: boolean; styleCount: number }> = {}
       for (const [id, tag] of Object.entries({
         empty: 'oas-empty',
         table: 'oas-table',
@@ -162,6 +163,7 @@ test.describe('Nuxt fixture', () => {
         result[id] = {
           mark: el?.shadowRoot?.querySelector('style')?.getAttribute('data-hydration-mark') ?? null,
           meta: !!el?.shadowRoot?.querySelector('meta[data-oas-ssr]'),
+          styleCount: el?.shadowRoot?.querySelectorAll('style').length ?? 0,
         }
       }
       return result
@@ -169,6 +171,8 @@ test.describe('Nuxt fixture', () => {
     for (const id of Object.keys(HOSTS)) {
       expect(after[id]?.mark, `${id} 的 style 节点被重建（水合未复用快照）`).toBe(id)
       expect(after[id]?.meta, `${id} 的 SSR 指纹 meta 未被消费（hydrate 未接管，走了 render 重建）`).toBe(false)
+      // 水合不得重复注入样式表（render 回退会多出一份 style）
+      expect(after[id]?.styleCount, `${id} 水合后 shadow 内 style 数量`).toBe(1)
     }
     await expect.poll(() => shadowText(page, 'empty')).toContain('暂无数据')
     expect(problems).toEqual([])
@@ -242,7 +246,7 @@ test.describe('Nuxt fixture', () => {
     expect(problems).toEqual([])
   })
 
-  test('locale 导航与 Vue 页 console error/warning 与 pageerror 均为零', async ({ page }) => {
+  test('locale 导航 console error/warning 与 pageerror 均为零（Vue 页由上一用例独立覆盖）', async ({ page }) => {
     const problems: string[] = []
     page.on('console', (message) => {
       if (message.type() === 'error' || message.type() === 'warning')

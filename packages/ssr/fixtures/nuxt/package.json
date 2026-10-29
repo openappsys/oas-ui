@@ -8,8 +8,9 @@
     "prebuild": "node scripts/embed-theme.mjs",
     "build": "vite build -c vite.client.config.ts && nuxt build",
     "predev": "node scripts/embed-theme.mjs",
-    "start": "node .output/server/index.mjs",
+    "start": "cross-env PORT=4302 HOST=127.0.0.1 node .output/server/index.mjs",
     "dev": "nuxt dev",
+    "typecheck": "nuxt prepare && nuxt typecheck",
     "prepare": "node scripts/embed-theme.mjs && nuxt prepare"
   },
   "dependencies": {
@@ -23,6 +24,9 @@
     "vue-router": "^4.6.3"
   },
   "devDependencies": {
-    "vite": "^8.3.4"
+    "cross-env": "^10.1.0",
+    "typescript": "^5.9.3",
+    "vite": "^8.3.4",
+    "vue-tsc": "^3.2.6"
   }
 }
