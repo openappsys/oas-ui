@@ -15,6 +15,7 @@
 顶部的「编辑主题」选择器对应 `editing-theme` / `editingTheme`，默认 `light`，非法值安全回落 `light`。它只选择编辑桶，**不是第二个主题开关**：实际预览仍由最近的 ConfigProvider 或有效 `data-theme` 决定。
 
 - light/dark 各自保存独立 overrides；编辑非实际预览桶时只更新该桶，不改当前页面内联变量
+- 预览桶判定：最近 `[data-theme]` 祖先优先（`dark` → dark 桶；`light` / `high-contrast` / 自定义主题名 → light 桶——两桶模型不臆造第三桶）；无 `[data-theme]` 祖先时兼容根 class 式暗色（`html.dark` / `html.dark-theme` / `html.theme-dark`），文档站即属此类，无需迁移；显式 `[data-theme]` 祖先始终优先于根 class（局部浅色 provider 不被根暗色劫持）
 - provider 明暗切换时应用对应桶；编辑桶选择保持不变，事件始终携带真实 `theme`
 - 切桶、双套导入与 reset 不重建 token 行，搜索词、组折叠状态和行内焦点保持；非法中间输入不被无谓重写
 - 未实际访问过另一套时，双套导出也通过临时隐藏 probe 读取该套 computed 默认值，probe 随即销毁，不复用当前主题值
@@ -96,6 +97,7 @@
 ## 导出 / 导入 / 重置
 
 - 旧 `exportJson()` / `exportCss()` 仍导出扁平 token map / CSS，只读当前编辑桶；旧 `importJson(json)` 也只合并进当前编辑桶（非 `--` 开头键忽略 + 告警）
+- 导入接受任意 `--*` CSS 变量，不限于内置 token 集：值按字符串原样写入 themeRoot 内联 style，未在 `token` 列表里的变量仍可导入生效（只是不会渲染成编辑行）；组件不校验变量是否真实存在，拼写错误会静默创建空变量
 - 新 `exportThemes()` 返回明确 `{ light, dark }` 双套扁平数据；新 `importThemes(themes)` 先完整校验形状和全部 token，再一次性替换两套，任何非法项都不会留下部分写入
 - `reset()` 只清当前编辑桶；`reset('light' | 'dark')` 只清指定桶
 - 旧 import、applyPreset、reset 不额外派发事件；用户编辑的 `oas-change` detail 为 `{ token, value, theme }`

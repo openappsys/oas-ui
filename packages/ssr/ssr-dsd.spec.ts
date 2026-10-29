@@ -1884,6 +1884,63 @@ test('config-provider system 同文档重选：stored dark + OS light 后 root/p
   expect(consoleProblems).toEqual([])
 })
 
+test('config-provider 离开 system：显式 light/dark 交接时 root 与 provider 联合同步', async ({ page }) => {
+  const consoleProblems: string[] = []
+  page.on('pageerror', (error) => consoleProblems.push(error.message))
+  page.on('console', (message) => {
+    if (message.type() === 'error' || message.type() === 'warning') consoleProblems.push(message.text())
+  })
+  await page.emulateMedia({ colorScheme: 'dark' })
+  await page.goto(SYSTEM_THEME_PAGE_URL, { waitUntil: 'load' })
+  await upgradeUi(page)
+
+  const state = () =>
+    page.evaluate(() => ({
+      requested: document.querySelector('oas-config-provider')!.getAttribute('theme'),
+      provider: document.querySelector('oas-config-provider')!.getAttribute('data-theme'),
+      root: document.documentElement.dataset.theme,
+      rootBg: getComputedStyle(document.documentElement).getPropertyValue('--oas-color-bg').trim(),
+    }))
+  const waitJoint = async (theme: 'light' | 'dark') => {
+    await page.waitForFunction(
+      (want) =>
+        document.querySelector('oas-config-provider')?.getAttribute('data-theme') === want &&
+        document.documentElement.dataset.theme === want &&
+        getComputedStyle(document.documentElement).getPropertyValue('--oas-color-bg').trim() ===
+          (want === 'dark' ? '#18181b' : '#ffffff'),
+      theme,
+      { timeout: 5000 },
+    )
+  }
+  const setRequested = (theme: string) =>
+    page.evaluate((next) => document.querySelector('oas-config-provider')!.setAttribute('theme', next), theme)
+
+  // 起点：system 跟随 OS dark
+  expect(await state()).toMatchObject({ requested: 'system', provider: 'dark', root: 'dark', rootBg: '#18181b' })
+
+  // 离开 system → light：provider 新 effective 必须镜像到 root（旧缺陷：root 滞留 dark，页面深色/子树浅色）
+  await setRequested('light')
+  await waitJoint('light')
+  expect(await state()).toMatchObject({ requested: 'light', provider: 'light', root: 'light', rootBg: '#ffffff' })
+  await page.screenshot({ path: join(ARTIFACT_DIR, 'config-provider-explicit-light.png'), fullPage: true })
+
+  // 交接后继续跟随显式主题（不再回落到 head preference）
+  await setRequested('dark')
+  await waitJoint('dark')
+  expect(await state()).toMatchObject({ requested: 'dark', provider: 'dark', root: 'dark', rootBg: '#18181b' })
+  await page.screenshot({ path: join(ARTIFACT_DIR, 'config-provider-explicit-dark.png'), fullPage: true })
+
+  await setRequested('light')
+  await waitJoint('light')
+
+  // 回到 system：重新交还 MQL（OS 仍 dark）
+  await setRequested('system')
+  await waitJoint('dark')
+  await page.emulateMedia({ colorScheme: 'light' })
+  await waitJoint('light')
+  expect(consoleProblems).toEqual([])
+})
+
 test('config-provider system 同文档重选 setItem 异常：旧 stored dark 不得回写 light', async ({ page }) => {
   const consoleProblems: string[] = []
   page.on('pageerror', (error) => consoleProblems.push(error.message))

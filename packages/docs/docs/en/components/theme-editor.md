@@ -15,6 +15,7 @@ Shows the full set of default theme tokens (the semantic tokens from `@oas-ui/th
 The Editing theme selector maps to `editing-theme` / `editingTheme`, defaults to `light`, and safely falls back to `light` for invalid values. It only selects the editing bucket; **it is not a second theme switch**. The actual preview still follows the nearest ConfigProvider or effective `data-theme`.
 
 - Light and dark keep independent overrides. Editing a bucket that is not currently previewed updates only that bucket and leaves the page's inline variables unchanged.
+- Preview bucket resolution: the nearest `[data-theme]` ancestor wins (`dark` → dark bucket; `light` / `high-contrast` / custom theme names → light bucket — the two-bucket model never invents a third). Without a `[data-theme]` ancestor, root-class dark mode is honored (`html.dark` / `html.dark-theme` / `html.theme-dark`; the docs site uses this and needs no migration). An explicit `[data-theme]` ancestor always wins over root classes, so a local light provider is not hijacked by a dark root.
 - Switching the provider's effective theme applies the corresponding bucket without changing the selected editing bucket. Change events always carry the actual editing `theme`.
 - Switching buckets, importing both buckets, and resetting do not rebuild token rows: the search query, group fold state, and inline focus remain intact, and invalid in-progress input is not unnecessarily overwritten.
 - Even before the other bucket has been previewed, dual export reads its computed defaults through a temporary hidden probe instead of reusing values from the current theme. The probe is destroyed immediately afterwards.
@@ -96,6 +97,7 @@ Groups are collapsible via details/summary (open by default). The search box at 
 ## Export / import / reset
 
 - Legacy `exportJson()` / `exportCss()` still return a flat token map / CSS for the current editing bucket only. Legacy `importJson(json)` likewise merges only into that bucket (non-`--` keys are ignored with a warning).
+- Imports accept any `--*` CSS variable, not just the built-in token set: values are written to the themeRoot inline style as strings, and variables outside the `token` list still take effect (they simply do not render as editable rows). Existence is not validated, so a typo silently creates an empty variable.
 - New `exportThemes()` returns an explicit `{ light, dark }` pair of flat maps. New `importThemes(themes)` validates the complete shape and every token before replacing both buckets in one commit; any invalid item causes no partial writes.
 - `reset()` clears only the current editing bucket; `reset('light' | 'dark')` clears only the named bucket.
 - Legacy import, applyPreset, and reset emit no extra events. User edits dispatch `oas-change` with `{ token, value, theme }`.

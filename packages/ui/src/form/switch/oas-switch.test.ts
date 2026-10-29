@@ -403,11 +403,13 @@ describe('OASSwitch', () => {
     )
   })
 
-  it('开启态 loading spinner 用实色 on-primary（glass 半透明 bg 会把 spinner 压到不可读）', () => {
+  it('开启态 loading spinner 吃 --oas-switch-on-color 自定义 on 色（回落实色 on-primary）', () => {
     mount()
     const style = document.querySelector('oas-switch')!.shadowRoot!.querySelector('style')!.textContent!
     const rule = style.match(/button\[aria-checked='true'\] \.spinner\s*\{[^}]*\}/)?.[0] ?? ''
-    expect(rule, 'checked spinner 规则应存在').toContain('var(--oas-color-text-on-primary)')
+    // 自定义浅色轨（color 属性）下 JS 注入深色 on 色：spinner 必须与轨道内文案同源，否则固定
+    // 白色 spinner 压在浅轨上不可见；无自定义色时回落实色 on-primary（glass 半透明 bg 不可读）。
+    expect(rule, 'checked spinner 规则应存在').toContain('var(--oas-switch-on-color, var(--oas-color-text-on-primary))')
     expect(rule, 'checked spinner 不得再回落到半透明 bg token').not.toContain('var(--oas-color-bg)')
   })
 

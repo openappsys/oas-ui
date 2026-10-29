@@ -5,6 +5,33 @@
 
 ---
 
+## 未发布：主题组合收口（back-top / ThemeEditor / system head 引导 / switch loading）✅
+
+### 功能定义
+
+维护批 final fix wave：不新增组件/API，只收口 7A/7B/7C 组合面——`oas-back-top` 的 `theme` 语义在全局浅色规则真实生效后保持文档既有定义（`light` = 浅色表面）、ThemeEditor 预览桶兼容根 class 式暗色、system `<head>` 引导在 provider 离开 system 时把 root 交接给显式主题、switch checked loading spinner 跟随自定义 on 色。版本号未定，不标已发布。
+
+### 详细需求
+
+- **back-top 可见语义（Ruling）**：`theme="light"`（默认）是浅色表面，暗色页面不隐式继承页面 token；`primary` 无自身主题块继续继承页面 token；`dark` 在暗色页面反色为亮底深字。保留组件文档既有语义，不改回隐式继承；CHANGELOG 记录可见行为变化；暗色页三变体真实 computed 外观回归锁住取值（含 `data-glass` 无关的几何不变）。
+- **ThemeEditor 预览桶**：最近 `[data-theme]` 祖先优先（`dark` → dark 桶；`light` / `high-contrast` / 自定义主题名 → light 桶）；无 `[data-theme]` 祖先时回退根 class 式暗色（`dark` / `dark-theme` / `theme-dark`），文档站 `html.dark` 无需迁移。`.dark` 下双套导出必须不同、编辑 dark 桶必须落预览；高对比/自定义主题按 light 桶预览作为文档化边界。
+- **system head 引导交接**：provider 从 system 显式切到 light/dark（或自定义主题名）时，脚本把该 provider 的新 effective 镜像到 root 并继续跟随其后续显式主题；恢复 system 重新交还 MQL。观察 `theme` 需 `attributeOldValue` 识别离开 system，所有 root/provider 写入先比较现值防自激。中英文 theming / SSR 四份脚本规范化后必须完全一致。
+- **switch checked loading**：spinner 颜色改为 `var(--oas-switch-on-color, var(--oas-color-text-on-primary))`，与轨道内文案同源；自定义浅色轨（如 `#fde68a`）在 glass + loading 下必须实色可见，扩现有自定义色 fixture 并显式断言 `data-glass` / glass token 在场（避免无玻璃时空跑假绿）。
+- **ThemeEditor 交互收口**：同一行色板/滑块写入合法值后清 `is-invalid` 并回填新值；切桶/双套导入/reset 等外部同步仍保留非法草稿。数字输入 `.is-invalid` 补可见 danger 红边 + 内描边（不只 class）。
+- **文档边界**：ThemeEditor 明确任意 `--*` 变量可导入（未列入 `token` 也可生效但不渲染编辑行，拼写错误不校验）；PRD 36 格口径改为「36 个采样格 = 21 个不同输入组合（15 个不同分数）」；spinner「修复前 16.3」改为可复现模型（自定义浅色轨 + 0.6 组透明度 + 感知分对比）。
+
+### 非目标
+
+不改 ConfigProvider 状态机、不迁移文档站主题机制、不扩大 glass token 作用域、不为高对比/自定义主题新增第三编辑桶、不改 back-top `theme` API 默认值或组件契约。
+
+### 验收标准
+
+- 单测：switch spinner 吃 on 色；ThemeEditor 根 class 预览桶（含等价命名与 `[data-theme]` 优先）、同行合法写入清草稿；四份 head 脚本规范化一致 + JS 可解析 + 交接契约。
+- `packages/ui/qa-regression/`（Chromium + Firefox）：back-top 暗色三变体 computed、ThemeEditor `.dark` 双套导出/落预览、数字非法态可见红边、同行草稿清除、glass 自定义色 + loading spinner 实色/可见；`packages/ssr/ssr-dsd.spec.ts`（Chromium DSD）锁 system→light→dark→system 的 root/provider 联合状态与真实 token。
+- perf 档案按 `perf:size --update-baseline` + `perf:docs` 重生成（不手改）；全量 test / typecheck / build / perf:size / api / llms / stats / skill / lint / format / trace 通过。
+
+---
+
 ## 未发布：ThemeEditor light/dark 双套编辑与原子导入导出 ✅
 
 ### 功能定义
@@ -56,16 +83,16 @@
 
 ### 功能定义
 
-`oas-switch` 轨道内文案在玻璃层下建立独立真实对比度矩阵：2 主题 × 2 checked 状态 × 3 种真实身后底色（页面 / 灰卡 / `bg-elevated`）× 3 种交互态（静止 / hover / press）共 36 格；静止与 hover 每格感知分 ≥60，press 每格 ≥45。版本号未定，不标已发布。
+`oas-switch` 轨道内文案在玻璃层下建立独立真实对比度矩阵：2 主题 × 2 checked 状态 × 3 种真实身后底色（页面 / 灰卡 / `bg-elevated`）× 3 种交互态（静止 / hover / press）共 36 个采样格；静止与 hover 每格感知分 ≥60，press 每格 ≥45。版本号未定，不标已发布。
 
-口径说明：checked 轨道为不透明 primary（玻璃档只整体加深），3 种身后底色不会改变 checked 格得分；36 格按主题/状态/底色去重后实际为 21 个可区分分数组（底色维度只对 unchecked 生效，数值相同的组进一步收敛）。
+口径说明（诚实计数）：36 个采样格实际只覆盖 **21 个不同输入组合（15 个不同分数）**——checked 轨道为不透明 primary（玻璃档只整体加深），3 种身后底色不改变 checked 格的实际混色；同一主题/状态内不同底色的 unchecked 采样也常落在同一分数档。采样计数与「每格真实取样」不变，禁用它把「格数」当作独立视觉结论。
 
 ### 详细需求
 
 - **真实采样**：每格使用真实 shadow DOM 中的 `unchecked-text` / `checked-text`、真实轨道计算色、真实容器计算底色与真实 sheen token；半透明轨道与半透明卡片逐层 alpha 合成，不假定玻璃不透明。press 必须由真实指针按下产生 `:active` 后采样 `--oas-glass-sheen-press`，不得改 class 或复用 hover 样本。
 - **计数不变量**：总数恰好 36，每格名称唯一；null / 无法解析 / 缺文字 / 状态不符直接失败，禁止 filter 后少样本仍绿。
 - **修复点**：选中态轨道内文案从半透明 `--oas-color-bg` 改为实色 `--oas-color-text-on-primary`；浅色玻璃档新增 `--oas-glass-switch-track-mix: 88%`，让开启态轨道按比例掺黑，抵消白色 sheen 叠底后的对比度损失。dark 与 `prefers-reduced-transparency` 回退 100%，无玻璃层原色零变化。自定义 `color` 在 glass 下把该 mix 钉为 100%（移除 color 时清 inline 回退），保持原轨道色与 `pickOnColor` 基于原色择 on 字的既有口径。
-- **loading/自定义色可读性**：checked loading spinner 从半透明 `--oas-color-bg` 改为实色 `--oas-color-text-on-primary`（glass 下半透明 spinner 在轨道上感知分仅 16.3）；disabled/loading 另做真实 computed 回归（不进入 36 格，disabled/loading 非交互态门限 35，仅防透明度塌陷）。
+- **loading/自定义色可读性**：checked loading spinner 原先固定 `--oas-color-text-on-primary`（light 为白）；glass 下轨道是半透明/浅色表面，白 spinner 在浅色自定义轨上几乎不可读。可复现模型：`color="#fde68a"` + `checked` + `loading` + glass，0.6 组透明度合成到页面底后 spinner 与轨道感知分仅约 7.8（dark 页面 0.0）；现 spinner 与轨道内文案同源取 `--oas-switch-on-color`（无自定义色回落实色 on-primary），同模型提升到约 63.4（dark 约 45.8）并纳入真实浏览器回归。disabled/loading 另做真实 computed 回归（不进入 36 格矩阵，disabled/loading 非交互态门限 35，仅防透明度塌陷）。
 - **范围纪律**：自定义 `color` 与不可控复杂背景不纳入 36 格，不新增第二套颜色算法；保留 40×22 几何、键盘/指针、动态高光注入/清理、RTL、disabled/loading 与组件消费点纪律；不改 ConfigProvider / ThemeEditor。
 
 ### 非目标

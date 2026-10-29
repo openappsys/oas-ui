@@ -871,3 +871,114 @@ describe('OASThemeEditor light/dark 双套编辑', () => {
     }
   })
 })
+
+// ---------------------------------------------------------------------------
+// 预览桶判定：文档站根 class 式暗色（html.dark）无 [data-theme] 祖先
+// ---------------------------------------------------------------------------
+
+describe('OASThemeEditor 预览桶：根 class 式暗色回退', () => {
+  const root = document.documentElement
+
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    root.classList.remove('dark', 'dark-theme', 'theme-dark')
+    root.removeAttribute('data-theme')
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+    root.classList.remove('dark', 'dark-theme', 'theme-dark')
+    root.removeAttribute('data-theme')
+  })
+
+  it('html.dark 无 data-theme 祖先时按 dark 预览：编辑 dark 桶落内联预览', () => {
+    root.classList.add('dark')
+    const el = mount()
+    el.editingTheme = 'dark'
+    el.importJson({ '--oas-color-primary': '#334455' })
+    expect(el.style.getPropertyValue('--oas-color-primary'), 'dark 桶必须落在实际预览根').toBe('#334455')
+
+    // light 桶仍与预览分离：切回 light 编辑不写内联
+    el.editingTheme = 'light'
+    el.importJson({ '--oas-color-primary': '#112233' })
+    expect(el.style.getPropertyValue('--oas-color-primary')).toBe('#334455')
+  })
+
+  it('根 class 式暗色的等价命名（dark-theme / theme-dark）同样识别为 dark', () => {
+    for (const cls of ['dark-theme', 'theme-dark']) {
+      root.classList.add(cls)
+      const el = mount()
+      el.editingTheme = 'dark'
+      el.importJson({ '--oas-color-primary': '#556677' })
+      expect(el.style.getPropertyValue('--oas-color-primary'), cls).toBe('#556677')
+      el.remove()
+      root.classList.remove(cls)
+    }
+  })
+
+  it('[data-theme] 祖先优先于根 class：显式 light 宿主内 html.dark 不劫持预览桶', () => {
+    root.classList.add('dark')
+    const host = document.createElement('div')
+    host.setAttribute('data-theme', 'light')
+    document.body.appendChild(host)
+    const el = new OASThemeEditor()
+    for (const [key, value] of Object.entries(DEFAULT_VARS)) el.style.setProperty(key, value)
+    host.appendChild(el)
+    el.editingTheme = 'dark'
+    el.importJson({ '--oas-color-primary': '#778899' })
+    expect(el.style.getPropertyValue('--oas-color-primary'), '显式 light 祖先下 dark 桶不落预览').toBe('#0b6cff')
+  })
+})
+
+// ---------------------------------------------------------------------------
+// 同行合法写入清除非法草稿（切桶/外部同步仍保留草稿，见上组用例）
+// ---------------------------------------------------------------------------
+
+describe('OASThemeEditor 同行合法写入清除非法草稿', () => {
+  const FN_VARS = {
+    '--demo-color-rgb': 'rgb(11, 108, 255)',
+  }
+
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+    vi.restoreAllMocks()
+  })
+
+  it('颜色行：非法文本草稿后用同行色板写入合法值，清 is-invalid 并回填新值', () => {
+    const el = mount({ token: '["--demo-color-rgb"]' }, FN_VARS)
+    const row = rowFor(el, '--demo-color-rgb')!
+    const text = colorTextInput(row)
+    text.value = 'not-a-color'
+    text.dispatchEvent(new Event('input', { bubbles: true }))
+    expect(text.classList.contains('is-invalid')).toBe(true)
+    expect(el.style.getPropertyValue('--demo-color-rgb')).toBe('rgb(11, 108, 255)')
+
+    const swatch = colorInput(row)
+    swatch.value = '#123456'
+    swatch.dispatchEvent(new Event('input', { bubbles: true }))
+    expect(el.style.getPropertyValue('--demo-color-rgb')).toBe('#123456')
+    expect(text.value, '同行合法写入后草稿应回填新值').toBe('#123456')
+    expect(text.classList.contains('is-invalid'), '草稿胶粘标记应清除').toBe(false)
+  })
+
+  it('数字行：清空数字草稿后用同行滑块写入合法值，清 is-invalid 并回填新值', () => {
+    const el = mount({ token: '["--oas-space-2"]' })
+    const row = rowFor(el, '--oas-space-2')!
+    const input = numberInput(row)
+    input.value = ''
+    input.dispatchEvent(new Event('input', { bubbles: true }))
+    expect(input.classList.contains('is-invalid')).toBe(true)
+    expect(el.style.getPropertyValue('--oas-space-2'), '非法草稿不写回，保留原值').toBe('8px')
+
+    const slider = sliderInput(row)
+    slider.value = '16'
+    slider.dispatchEvent(new Event('input', { bubbles: true }))
+    expect(el.style.getPropertyValue('--oas-space-2')).toBe('16px')
+    expect(input.value, '同行滑块合法写入后草稿应回填新值').toBe('16')
+    expect(input.classList.contains('is-invalid'), '草稿胶粘标记应清除').toBe(false)
+  })
+})

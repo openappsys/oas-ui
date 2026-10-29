@@ -92,7 +92,7 @@ const html = await renderToString('oas-button', { type: 'primary', size: 'large'
 
 ### system 主题首屏防闪
 
-`<oas-config-provider theme="system">` 的服务端快照固定为 `data-theme="light"`，不访问共享 storage、不注册媒体查询监听；客户端水合后按「显式存储 > 系统 > 浅色兜底」校正。使用 system + DSD 时在 `<head>` 放以下同步引导，key 必须与 provider 相同；无 key provider 改为 `const key = null`，只读 MQL 且 storage 零访问。脚本会校正根节点及后续解析到的对应 provider，保证首帧与水合一致；observer 在 DOMContentLoaded 结束后，root 仍持续跟随 MQL，有 key 时还跟随对应 localStorage 事件，且不写 storage。同文档重选不会触发 storage 事件，脚本会同时观察 requested `theme` 与 effective `data-theme`：requested=system 直接更新 head preference，effective 变化只同步 root，不在回调中重读旧 storage 或回写 provider；所有写入先比较现值，避免 Observer 自激或循环。该脚本仅在使用 system 时按需加入，不改变默认全局主题。
+`<oas-config-provider theme="system">` 的服务端快照固定为 `data-theme="light"`，不访问共享 storage、不注册媒体查询监听；客户端水合后按「显式存储 > 系统 > 浅色兜底」校正。使用 system + DSD 时在 `<head>` 放以下同步引导，key 必须与 provider 相同；无 key provider 改为 `const key = null`，只读 MQL 且 storage 零访问。脚本会校正根节点及后续解析到的对应 provider，保证首帧与水合一致；observer 在 DOMContentLoaded 结束后，root 仍持续跟随 MQL，有 key 时还跟随对应 localStorage 事件，且不写 storage。同文档重选不会触发 storage 事件，脚本会同时观察 requested `theme` 与 effective `data-theme`：requested=system 直接更新 head preference，effective 变化只同步 root，不在回调中重读旧 storage 或回写 provider；provider 从 system 显式切到 light / dark（或自定义主题名）时，脚本把该 provider 的新 effective 镜像到 root 并继续跟随它后续的显式主题（交接后不再回落到 head preference），避免 root 滞留最后一个系统主题；所有写入先比较现值，避免 Observer 自激或循环。该脚本仅在使用 system 时按需加入，不改变默认全局主题。
 
 ```html
 <script>
@@ -118,16 +118,22 @@ const html = await renderToString('oas-button', { type: 'primary', size: 'large'
     }
     let preference = restorePreference()
     const effective = () => (preference === 'system' ? (media.matches ? 'dark' : 'light') : preference)
-    const matchesProvider = (el) =>
-      el.getAttribute('theme') === 'system' && (el.getAttribute('theme-storage-key') || null) === key
+    const ownsKey = (el) => (el.getAttribute('theme-storage-key') || null) === key
+    const matchesProvider = (el) => el.getAttribute('theme') === 'system' && ownsKey(el)
+    // 已离开 system 的 provider：后续显式 light/dark 由它接管 root（交接后不再回落到 preference）。
+    const handedOver = new WeakSet()
+    const syncRoot = (theme) => {
+      if (theme && document.documentElement.dataset.theme !== theme) document.documentElement.dataset.theme = theme
+    }
     const apply = () => {
       const theme = effective()
-      if (document.documentElement.dataset.theme !== theme) document.documentElement.dataset.theme = theme
-      document.querySelectorAll('oas-config-provider[theme="system"]').forEach((el) => {
+      syncRoot(theme)
+      document.querySelectorAll('oas-config-provider').forEach((el) => {
         if (matchesProvider(el) && el.dataset.theme !== theme) el.dataset.theme = theme
       })
     }
     apply()
+    // observer 只负责首屏前校正；MQL/storage 监听在页面生命周期内持续拥有并同步 root。
     const observer = new MutationObserver(apply)
     observer.observe(document.documentElement, { childList: true, subtree: true })
     document.addEventListener(
@@ -138,24 +144,29 @@ const html = await renderToString('oas-button', { type: 'primary', size: 'large'
       },
       { once: true },
     )
-    // 同文档重选不会发 storage 事件：requested=system 直接交接；effective 只同步 root，不重读旧存储。
+    // 同文档重选不会发 storage 事件：requested=system 直接交接；离开 system 时把该 provider 的新
+    // effective 镜像到 root，并按 requested 变化继续跟随（写入前比较现值，避免 Observer 自激）。
     const effectiveObserver = new MutationObserver((records) => {
       for (const record of records) {
         const el = record.target
-        if (!(el instanceof Element) || !matchesProvider(el)) continue
+        if (!(el instanceof Element) || el.localName !== 'oas-config-provider' || !ownsKey(el)) continue
         if (record.attributeName === 'theme') {
-          preference = 'system'
-          apply()
-        } else if (record.attributeName === 'data-theme') {
-          const theme = el.dataset.theme
-          if (theme && document.documentElement.dataset.theme !== theme) {
-            document.documentElement.dataset.theme = theme
+          if (el.getAttribute('theme') === 'system') {
+            handedOver.delete(el)
+            preference = 'system'
+            apply()
+          } else if (record.oldValue === 'system' || handedOver.has(el)) {
+            handedOver.add(el)
+            syncRoot(el.dataset.theme)
           }
+        } else if (record.attributeName === 'data-theme') {
+          if (matchesProvider(el) || handedOver.has(el)) syncRoot(el.dataset.theme)
         }
       }
     })
     effectiveObserver.observe(document.documentElement, {
       attributes: true,
+      attributeOldValue: true,
       attributeFilter: ['theme', 'data-theme'],
       subtree: true,
     })

@@ -324,3 +324,161 @@ test('theme-editor 非法草稿：真实键盘切桶让 select 持焦也不重�
   await expect(numberInput).toHaveValue('')
   await expect(numberInput).toHaveClass(/is-invalid/)
 })
+
+test('theme-editor 文档站 html.dark（无 data-theme 祖先）：双套导出不相等 + 编辑 dark 桶落预览', async ({
+  page,
+}, testInfo) => {
+  // 回归：文档站暗色只切根 class（html.dark），没有 [data-theme] 祖先。previewTheme 只认
+  // closest([data-theme]) 时会把暗色页当 light——双套导出两桶相同、编辑 dark 桶不落预览。
+  const errors: string[] = []
+  page.on('pageerror', (e) => errors.push(e.message))
+  page.on('console', (m) => {
+    if (m.type() === 'error') errors.push(m.text())
+  })
+  await page.goto('/components/theme-editor.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#te-default')
+  await page.evaluate(() => {
+    document.documentElement.classList.add('dark')
+    document.documentElement.removeAttribute('data-theme')
+  })
+  await page.waitForFunction(
+    () => getComputedStyle(document.documentElement).getPropertyValue('--oas-color-bg').trim() === '#18181b',
+    undefined,
+    { timeout: 5000 },
+  )
+
+  const themes = await page.evaluate(() => {
+    const editor = document.querySelector('#te-default') as any
+    const probe = document.createElement('span')
+    document.body.appendChild(probe)
+    const rgb = (value: string) => {
+      probe.style.color = value
+      return getComputedStyle(probe).color
+    }
+    const out = editor.exportThemes()
+    const result = {
+      lightPrimary: rgb(out.light['--oas-color-primary']),
+      darkPrimary: rgb(out.dark['--oas-color-primary']),
+      lightBg: rgb(out.light['--oas-color-bg']),
+      darkBg: rgb(out.dark['--oas-color-bg']),
+      sameRefresh: JSON.stringify(out.light) === JSON.stringify(out.dark),
+    }
+    probe.remove()
+    return result
+  })
+  expect(themes.lightPrimary, 'light 桶应导出浅色默认值（不得复用暗色页面当前值）').toBe('rgb(11, 108, 255)')
+  expect(themes.darkPrimary).toBe('rgb(158, 205, 255)')
+  expect(themes.lightBg).toBe('rgb(255, 255, 255)')
+  expect(themes.darkBg).toBe('rgb(24, 24, 27)')
+  expect(themes.sameRefresh, 'html.dark 下双套导出不得退化为同一套').toBe(false)
+
+  const preview = await page.evaluate(() => {
+    const editor = document.querySelector('#te-default') as any
+    editor.editingTheme = 'dark'
+    editor.importJson({ '--oas-color-primary': '#334455' })
+    const host = document.querySelector('#te-default') as HTMLElement
+    const cs = getComputedStyle(host)
+    return {
+      inline: host.style.getPropertyValue('--oas-color-primary'),
+      computed: cs.getPropertyValue('--oas-color-primary').trim(),
+      editing: editor.editingTheme,
+      bgToken: cs.getPropertyValue('--oas-color-bg').trim(),
+      textColor: cs.color,
+    }
+  })
+  expect(preview).toEqual({
+    inline: '#334455',
+    computed: '#334455',
+    editing: 'dark',
+    bgToken: '#18181b',
+    textColor: 'rgb(250, 250, 250)',
+  })
+  await page.locator('#te-default').screenshot({ path: testInfo.outputPath('theme-editor-html-dark-preview.png') })
+
+  // 编辑 light 桶不得污染暗色预览
+  const lightIsolated = await page.evaluate(() => {
+    const editor = document.querySelector('#te-default') as any
+    editor.editingTheme = 'light'
+    editor.importJson({ '--oas-color-primary': '#aabbcc' })
+    const host = document.querySelector('#te-default') as HTMLElement
+    return host.style.getPropertyValue('--oas-color-primary')
+  })
+  expect(lightIsolated, 'light 桶编辑不得覆盖暗色预览').toBe('#334455')
+
+  await page.evaluate(() => {
+    document.documentElement.classList.remove('dark')
+  })
+  expect(errors).toEqual([])
+})
+
+test('theme-editor 数字输入非法态真实可见（computed 红边，不是只加 class）', async ({ page }, testInfo) => {
+  await page.goto('/components/theme-editor.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#te-default')
+  const input = page.locator('#te-default input[type="number"]').first()
+  await input.fill('')
+  const visible = await page.evaluate(() => {
+    const el = document
+      .querySelector('#te-default')!
+      .shadowRoot!.querySelector<HTMLInputElement>('input[type="number"]')!
+    const cs = getComputedStyle(el)
+    const probe = document.createElement('span')
+    document.body.appendChild(probe)
+    probe.style.color = 'var(--oas-color-danger)'
+    const danger = getComputedStyle(probe).color
+    probe.remove()
+    return {
+      invalid: el.classList.contains('is-invalid'),
+      borderColor: cs.borderTopColor,
+      borderWidth: cs.borderTopWidth,
+      boxShadow: cs.boxShadow,
+      danger,
+    }
+  })
+  expect(visible.invalid).toBe(true)
+  expect(visible.danger, 'danger token 应可解析').toMatch(/^rgb\(/)
+  expect(visible.borderColor, '非法态边框必须是可见 danger 色').toBe(visible.danger)
+  expect(visible.borderWidth).toBe('1px')
+  expect(visible.boxShadow, '1px 边框外再补内描边，保证真实可见').toContain('inset')
+  await page
+    .locator('#te-default input[type="number"]')
+    .first()
+    .screenshot({
+      path: testInfo.outputPath('theme-editor-number-invalid.png'),
+    })
+})
+
+test('theme-editor 同行合法写入清除胶粘草稿：色板/滑块写入后回填新值并清 is-invalid', async ({ page }, testInfo) => {
+  await page.goto('/components/theme-editor.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#te-default')
+
+  // 颜色行：非法文本草稿 → 同行色板写合法值
+  const colorRow = page.locator('#te-default [part="row"]').first()
+  const colorText = colorRow.locator('input.color-text')
+  await colorText.fill('not-a-color')
+  await expect(colorText).toHaveClass(/is-invalid/)
+  await colorRow.locator('input[type="color"]').evaluate((el: HTMLInputElement) => {
+    el.value = '#123456'
+    el.dispatchEvent(new Event('input', { bubbles: true }))
+  })
+  await expect(colorText).toHaveValue('#123456')
+  await expect(colorText).not.toHaveClass(/is-invalid/)
+
+  // 数字行：清空草稿 → 同行滑块写合法值
+  const numberRow = page
+    .locator('#te-default [part="row"]')
+    .filter({ has: page.locator('input[type="number"]') })
+    .first()
+  const numberInput = numberRow.locator('input[type="number"]')
+  await numberInput.fill('')
+  await expect(numberInput).toHaveClass(/is-invalid/)
+  const slider = numberRow.locator('input[type="range"]')
+  const next = await slider.evaluate((el: HTMLInputElement) => {
+    const target = String(Number(el.min || 0) + 8)
+    el.value = target
+    el.dispatchEvent(new Event('input', { bubbles: true }))
+    return target
+  })
+  await expect(numberInput).toHaveValue(next)
+  await expect(numberInput).not.toHaveClass(/is-invalid/)
+  await page.locator('#te-default').screenshot({ path: testInfo.outputPath('theme-editor-draft-cleared.png') })
+})

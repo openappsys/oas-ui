@@ -27,7 +27,7 @@ document.documentElement.dataset.theme = 'high-contrast'
 
 Add `theme-storage-key` only when the user's choice should be remembered. Importing the library does not implicitly access storage or enable global system theming. The stored JSON is `{"theme":"light"}`, `{"theme":"dark"}`, or `{"theme":"system"}`. An explicit light/dark preference wins during the initial restore; choosing system afterwards replaces the old preference and resumes following the OS.
 
-SSR deterministically emits `data-theme="light"` for system and never accesses localStorage or media queries on the server. With SSR/DSD, place the following synchronous script in `<head>` so it runs before the first paint, and keep its key identical to the provider's. For a provider without a key, set `const key` to `null`; only the MQL is read and storage get/set calls stay at zero. It corrects both the root and matching system providers to prevent a theme flash during hydration. The initial observer may stop at DOMContentLoaded, while the MQL listener keeps root synchronized for the page lifetime; with a key, corresponding localStorage events are also synchronized, without writing storage. Same-document reselection emits no storage event, so the script watches both requested `theme` and effective `data-theme`: a requested system write directly sets the head preference to system, while an effective change only synchronizes root without restoring stale storage or rewriting the provider in the callback. Every root/provider write is guarded by a current-value comparison to prevent observer self-triggering or loops. Client-only pages do not need this bootstrap.
+SSR deterministically emits `data-theme="light"` for system and never accesses localStorage or media queries on the server. With SSR/DSD, place the following synchronous script in `<head>` so it runs before the first paint, and keep its key identical to the provider's. For a provider without a key, set `const key` to `null`; only the MQL is read and storage get/set calls stay at zero. It corrects both the root and matching system providers to prevent a theme flash during hydration. The initial observer may stop at DOMContentLoaded, while the MQL listener keeps root synchronized for the page lifetime; with a key, corresponding localStorage events are also synchronized, without writing storage. Same-document reselection emits no storage event, so the script watches both requested `theme` and effective `data-theme`: a requested system write directly sets the head preference to system, while an effective change only synchronizes root without restoring stale storage or rewriting the provider in the callback. When a provider switches explicitly from `system` to `light` / `dark` (or a custom theme name), the script mirrors that provider's new effective theme to root and keeps following its later explicit changes (no fallback to the head preference after handover), so root cannot stay on the last system theme. Every root/provider write is guarded by a current-value comparison to prevent observer self-triggering or loops. Client-only pages do not need this bootstrap.
 
 ```html
 <!-- Provider in <body> -->
@@ -62,12 +62,17 @@ Synchronous bootstrap in `<head>`:
     }
     let preference = restorePreference()
     const effective = () => (preference === 'system' ? (media.matches ? 'dark' : 'light') : preference)
-    const matchesProvider = (el) =>
-      el.getAttribute('theme') === 'system' && (el.getAttribute('theme-storage-key') || null) === key
+    const ownsKey = (el) => (el.getAttribute('theme-storage-key') || null) === key
+    const matchesProvider = (el) => el.getAttribute('theme') === 'system' && ownsKey(el)
+    // Providers that left `system`: their later explicit light/dark takes over root (no fallback to preference).
+    const handedOver = new WeakSet()
+    const syncRoot = (theme) => {
+      if (theme && document.documentElement.dataset.theme !== theme) document.documentElement.dataset.theme = theme
+    }
     const apply = () => {
       const theme = effective()
-      if (document.documentElement.dataset.theme !== theme) document.documentElement.dataset.theme = theme
-      document.querySelectorAll('oas-config-provider[theme="system"]').forEach((el) => {
+      syncRoot(theme)
+      document.querySelectorAll('oas-config-provider').forEach((el) => {
         if (matchesProvider(el) && el.dataset.theme !== theme) el.dataset.theme = theme
       })
     }
@@ -83,24 +88,29 @@ Synchronous bootstrap in `<head>`:
       },
       { once: true },
     )
-    // Same-document reselection emits no storage event: requested=system hands off directly; effective only syncs root.
+    // Same-document reselection emits no storage event: requested=system hands off directly; leaving `system`
+    // mirrors the provider's new effective theme to root and keeps following explicit changes (compare before writing).
     const effectiveObserver = new MutationObserver((records) => {
       for (const record of records) {
         const el = record.target
-        if (!(el instanceof Element) || !matchesProvider(el)) continue
+        if (!(el instanceof Element) || el.localName !== 'oas-config-provider' || !ownsKey(el)) continue
         if (record.attributeName === 'theme') {
-          preference = 'system'
-          apply()
-        } else if (record.attributeName === 'data-theme') {
-          const theme = el.dataset.theme
-          if (theme && document.documentElement.dataset.theme !== theme) {
-            document.documentElement.dataset.theme = theme
+          if (el.getAttribute('theme') === 'system') {
+            handedOver.delete(el)
+            preference = 'system'
+            apply()
+          } else if (record.oldValue === 'system' || handedOver.has(el)) {
+            handedOver.add(el)
+            syncRoot(el.dataset.theme)
           }
+        } else if (record.attributeName === 'data-theme') {
+          if (matchesProvider(el) || handedOver.has(el)) syncRoot(el.dataset.theme)
         }
       }
     })
     effectiveObserver.observe(document.documentElement, {
       attributes: true,
+      attributeOldValue: true,
       attributeFilter: ['theme', 'data-theme'],
       subtree: true,
     })

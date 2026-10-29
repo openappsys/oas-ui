@@ -318,9 +318,10 @@ button:not([aria-checked='true']) .spinner {
 }
 button[aria-checked='true'] .spinner {
   inset-inline-start: calc(var(--thumb-offset) + 2px);
-  /* loading 时轨道内文字隐藏，spinner 是主要可读指示：用实色 on-primary。
-   * 不得回落 --oas-color-bg：glass 档该 token 半透明，叠在轨道上感知分仅 16.3（不可读）。 */
-  color: var(--oas-color-text-on-primary);
+  /* loading 时轨道内文字隐藏，spinner 是主要可读指示：与轨道内文案同源取 on 色。
+   * 自定义 color 轨（尤其浅色轨）下 JS 注入 --oas-switch-on-color 深/浅档，固定 on-primary
+   * 白 spinner 会压在浅轨上不可见；无自定义色回落实色 on-primary（glass 档半透明 bg 仅 16.3，不可读）。 */
+  color: var(--oas-switch-on-color, var(--oas-color-text-on-primary));
 }
 @keyframes oas-spin {
   to {

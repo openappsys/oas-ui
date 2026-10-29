@@ -1439,17 +1439,31 @@ test.describe('switch 玻璃态自定义色 / disabled / loading 可读性', () 
         const stage = document.createElement('div')
         stage.id = 'sw-custom-stage'
         stage.style.cssText =
-          'position:fixed;inset:0;z-index:2147483640;display:flex;align-items:center;justify-content:center;background:var(--vp-c-bg)'
-        const sw = document.createElement('oas-switch')
-        sw.id = 'sw-custom-color'
-        sw.setAttribute('color', '#16a34a')
-        sw.setAttribute('checked', '')
-        sw.setAttribute('checked-text', '开')
-        stage.appendChild(sw)
+          'position:fixed;inset:0;z-index:2147483640;display:flex;align-items:center;justify-content:center;gap:48px;background:var(--vp-c-bg)'
+        const make = (id: string, color: string, loading: boolean) => {
+          const sw = document.createElement('oas-switch')
+          sw.id = id
+          sw.setAttribute('color', color)
+          sw.setAttribute('checked', '')
+          sw.setAttribute('checked-text', '开')
+          if (loading) sw.setAttribute('loading', '')
+          stage.appendChild(sw)
+        }
+        make('sw-custom-color', '#16a34a', false)
+        // 自定义浅色轨 + loading：spinner 固定 text-on-primary（白）时在白/浅轨上不可见
+        make('sw-custom-loading-light', '#fde68a', true)
+        make('sw-custom-loading-mid', '#16a34a', true)
         document.body.appendChild(stage)
       }, theme)
       await page.waitForFunction(
-        () => !!document.getElementById('sw-custom-color')?.shadowRoot?.querySelector('button[part="switch"]'),
+        () =>
+          !!document.getElementById('sw-custom-color')?.shadowRoot?.querySelector('button[part="switch"]') &&
+          !!document
+            .getElementById('sw-custom-loading-light')
+            ?.shadowRoot?.querySelector('button[part="switch"] .spinner') &&
+          !!document
+            .getElementById('sw-custom-loading-mid')
+            ?.shadowRoot?.querySelector('button[part="switch"] .spinner'),
         undefined,
         { timeout: 15000 },
       )
@@ -1461,17 +1475,42 @@ test.describe('switch 玻璃态自定义色 / disabled / loading 可读性', () 
           const host = document.getElementById('sw-custom-color')!
           const btn = host.shadowRoot!.querySelector('button') as HTMLButtonElement
           const label = host.shadowRoot!.querySelector<HTMLElement>('.label')!
+          const loading = (id: string) => {
+            const el = document.getElementById(id)!
+            const button = el.shadowRoot!.querySelector('button') as HTMLButtonElement
+            const spinner = el.shadowRoot!.querySelector<HTMLElement>('.spinner')!
+            const box = spinner.getBoundingClientRect()
+            return {
+              track: getComputedStyle(button).backgroundColor,
+              onColorInline: button.style.getPropertyValue('--oas-switch-on-color').trim(),
+              mixInline: button.style.getPropertyValue('--oas-glass-switch-track-mix').trim(),
+              spinnerHidden: spinner.hidden,
+              spinnerColor: getComputedStyle(spinner).color,
+              spinnerBorder: getComputedStyle(spinner).borderLeftColor,
+              spinnerBox: { w: box.width, h: box.height },
+              opacity: Number(getComputedStyle(button).opacity),
+              labelHidden: el.shadowRoot!.querySelector<HTMLElement>('.label')!.hidden,
+            }
+          }
           return {
             pageBg: getComputedStyle(stage).backgroundColor,
+            glassAttr: document.documentElement.hasAttribute('data-glass'),
+            glassSheen: getComputedStyle(document.documentElement).getPropertyValue('--oas-glass-sheen').trim(),
+            mixComputed: getComputedStyle(btn).getPropertyValue('--oas-glass-switch-track-mix').trim(),
             track: getComputedStyle(btn).backgroundColor,
             fg: getComputedStyle(label).color,
             mixInline: btn.style.getPropertyValue('--oas-glass-switch-track-mix').trim(),
             labelHidden: label.hidden,
             labelText: label.textContent ?? '',
             labelWidth: label.getBoundingClientRect().width,
+            loadingLight: loading('sw-custom-loading-light'),
+            loadingMid: loading('sw-custom-loading-mid'),
           }
         })
       const r = await read()
+      // M10：玻璃材质必须真实在场，否则「轨道不混深」等断言会在无玻璃时空跑成假绿
+      expect(r.glassAttr, `${theme} data-glass 必须真实在场`).toBe(true)
+      expect(r.glassSheen, `${theme} 玻璃 sheen token 必须已解析`).not.toBe('')
       const pageBg = mustColor(r.pageBg, `${theme} 自定义色页面底`)
       if (pageBg[3] !== 1) throw new Error(`${theme} 自定义色页面底必须不透明`)
       const track = mustColor(r.track, `${theme} 自定义色轨道`)
@@ -1480,6 +1519,7 @@ test.describe('switch 玻璃态自定义色 / disabled / loading 可读性', () 
       expect(r.labelText).toBe('开')
       expect(r.labelWidth).toBeGreaterThan(0)
       expect(r.mixInline, `${theme} 自定义色必须把玻璃轨道 mix 钉为 100%（不混深）`).toBe('100%')
+      expect(r.mixComputed, `${theme} 自定义色 computed 轨道 mix 必须是 100%`).toBe('100%')
       expect(track[3], `${theme} 自定义色轨道应不透明`).toBe(1)
       expect(Math.abs(track[0] - 22), `${theme} 自定义色 R 通道`).toBeLessThanOrEqual(1)
       expect(Math.abs(track[1] - 163), `${theme} 自定义色 G 通道`).toBeLessThanOrEqual(1)
@@ -1488,6 +1528,49 @@ test.describe('switch 玻璃态自定义色 / disabled / loading 可读性', () 
         wcagRatio([track[0], track[1], track[2]], [fg[0], fg[1], fg[2]]),
         `${theme} 自定义色 on 色 WCAG 对比应 ≥4.5（track=${r.track} fg=${r.fg}）`,
       ).toBeGreaterThanOrEqual(4.5)
+
+      // I4：checked + loading 的 spinner 必须吃自定义 on 色（实色）并在浅/中色轨道上真实可见
+      for (const [label, sample, trackRgb, minScore] of [
+        ['浅色轨', r.loadingLight, [253, 230, 138], DISABLED_LOADING_MIN_SCORE],
+        ['中色轨', r.loadingMid, [22, 163, 74], 15],
+      ] as const) {
+        expect(sample.mixInline, `${theme}/${label} 自定义色 loading 也必须钉 100%`).toBe('100%')
+        expect(sample.onColorInline, `${theme}/${label} 自定义 on 色必须由 pickOnColor 注入`).toMatch(/^#[0-9a-f]{6}$/)
+        expect(sample.labelHidden, `${theme}/${label} loading 轨道文案应隐藏`).toBe(true)
+        expect(sample.spinnerHidden, `${theme}/${label} loading spinner 应显示`).toBe(false)
+        expect(sample.spinnerBox.w, `${theme}/${label} spinner 应有真实尺寸`).toBeGreaterThan(0)
+        const spinner = mustColor(sample.spinnerColor, `${theme}/${label} spinner`)
+        const border = mustColor(sample.spinnerBorder, `${theme}/${label} spinner border`)
+        expect(spinner[3], `${theme}/${label} spinner 必须实色`).toBe(1)
+        expect(
+          Math.abs(border[0] - spinner[0]) <= 1 &&
+            Math.abs(border[1] - spinner[1]) <= 1 &&
+            Math.abs(border[2] - spinner[2]) <= 1,
+          `${theme}/${label} spinner border 应等于 currentColor`,
+        ).toBe(true)
+        // spinner 必须跟随注入的 on 色：浅轨上旧的固定白 spinner 正是不可见缺陷
+        const on = mustColor(sample.onColorInline, `${theme}/${label} 注入的 on 色`)
+        expect(
+          Math.abs(on[0] - spinner[0]) <= 1 && Math.abs(on[1] - spinner[1]) <= 1 && Math.abs(on[2] - spinner[2]) <= 1,
+          `${theme}/${label} spinner 色必须等于 --oas-switch-on-color（${sample.onColorInline}）`,
+        ).toBe(true)
+        expect(sample.opacity, `${theme}/${label} loading opacity`).toBeCloseTo(0.6, 2)
+        const trackColor = mustColor(sample.track, `${theme}/${label} loading 轨道`)
+        expect(
+          Math.abs(trackColor[0] - trackRgb[0]) <= 2 &&
+            Math.abs(trackColor[1] - trackRgb[1]) <= 2 &&
+            Math.abs(trackColor[2] - trackRgb[2]) <= 2,
+          `${theme}/${label} loading 轨道应保持自定义原色`,
+        ).toBe(true)
+        const pageRgb: [number, number, number] = [pageBg[0], pageBg[1], pageBg[2]]
+        const trackEff = fadeOver(trackColor, sample.opacity, pageRgb)
+        const spinnerEff = fadeOver(spinner, sample.opacity, pageRgb)
+        const score = Math.abs(perceptualContrast(relativeLuminance(spinnerEff), relativeLuminance(trackEff)))
+        expect(
+          score,
+          `${theme}/${label} spinner 实际可见度 ${score.toFixed(1)} 应 ≥${minScore}（track=${sample.track} spinner=${sample.spinnerColor}）`,
+        ).toBeGreaterThanOrEqual(minScore)
+      }
 
       await page.locator('#sw-custom-stage').screenshot({
         path: testInfo.outputPath(`switch-glass-custom-${theme}.png`),
@@ -1506,6 +1589,8 @@ test.describe('switch 玻璃态自定义色 / disabled / loading 可读性', () 
             Math.abs(defaultTrack[2] - 74) > 2,
           '移除 color 后应回到主题默认轨道，而不是残留自定义绿',
         ).toBe(true)
+        // M10：无自定义色时玻璃档 mix 必须真的是 88%（light），证明玻璃 token 生效
+        expect(cleared.mixComputed, 'light 玻璃默认轨道 mix 应为 88%').toBe('88%')
       }
 
       await page.evaluate(() => document.getElementById('sw-custom-stage')?.remove())

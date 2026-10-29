@@ -386,8 +386,11 @@ input[type='text'].color-text {
   font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
   font-size: var(--oas-font-size-xs);
 }
+input[type='number'].control.is-invalid,
 input[type='text'].color-text.is-invalid {
+  /* 非法草稿的真实可见态：1px danger 边框 + 内描边（暗色/高 DPI 下 1px 边框易被吃掉） */
   border-color: var(--oas-color-danger);
+  box-shadow: inset 0 0 0 1px var(--oas-color-danger);
 }
 .slider {
   width: 96px;
@@ -844,7 +847,8 @@ export class OASThemeEditor extends OASElement {
     slider.addEventListener('input', () => {
       const parsed = parseFloat(slider.value)
       if (Number.isNaN(parsed)) return
-      this.applyValue(def, `${parsed}${unit}`)
+      // 同行另一控件写入合法值：清掉 number 输入的非法草稿并回填新值
+      this.applyValue(def, `${parsed}${unit}`, true)
     })
     right.appendChild(slider)
     right.appendChild(control)
@@ -881,7 +885,8 @@ export class OASThemeEditor extends OASElement {
     }
     swatch.addEventListener('input', () => {
       if (swatch.disabled) return
-      this.applyValue(def, swatch.value)
+      // 同行色板写入合法值：清掉文本框的非法草稿并回填新值（切桶/外部同步仍保留草稿）
+      this.applyValue(def, swatch.value, true)
     })
     const text = document.createElement('input')
     text.type = 'text'
@@ -915,8 +920,13 @@ export class OASThemeEditor extends OASElement {
     }
   }
 
-  /** 就地刷新单行控件状态（值显示 / 色板 / 文本框 / 滑块） */
-  private syncRow(row: TokenRow, value?: string): void {
+  /**
+   * 就地刷新单行控件状态（值显示 / 色板 / 文本框 / 滑块）。
+   *
+   * `clearDraft=true` 仅用于「同一行另一控件写入合法值」：此时用户的非法草稿已被真实意图取代，
+   * 清 is-invalid 并回填新值。切桶/外部同步（默认 false）仍保留非法草稿，不打断编辑。
+   */
+  private syncRow(row: TokenRow, value?: string, clearDraft = false): void {
     if (value === undefined) {
       const v = this.readValue(row.def.name)
       if (!v) return
@@ -936,13 +946,15 @@ export class OASThemeEditor extends OASElement {
         swatch.classList.add('swatch-neutral')
       }
       if (row.colorText) {
-        const preserveInvalidDraft = row.colorText.classList.contains('is-invalid')
+        if (clearDraft) row.colorText.classList.remove('is-invalid')
+        const preserveInvalidDraft = !clearDraft && row.colorText.classList.contains('is-invalid')
         if (!preserveInvalidDraft) row.colorText.value = value
       }
     } else {
       const num = parseFloat(value)
       if (!Number.isNaN(num)) {
-        const preserveInvalidDraft = row.control.classList.contains('is-invalid')
+        if (clearDraft) row.control.classList.remove('is-invalid')
+        const preserveInvalidDraft = !clearDraft && row.control.classList.contains('is-invalid')
         if (!preserveInvalidDraft) row.control.value = String(num)
         if (row.slider) {
           row.slider.value = String(this.clampNum(num, row.def.min, row.def.max))
@@ -951,7 +963,7 @@ export class OASThemeEditor extends OASElement {
     }
   }
 
-  private applyValue(def: ThemeTokenDef, value: string): void {
+  private applyValue(def: ThemeTokenDef, value: string, clearDraft = false): void {
     const theme = this.editingTheme
     this.overrides[theme].set(def.name, value)
     this.resolvedValues[theme].clear()
@@ -959,7 +971,7 @@ export class OASThemeEditor extends OASElement {
     this.emit('change', { token: def.name, value, theme })
     // 就地刷新值显示，避免整棵重建导致输入焦点丢失
     const row = this.rows.find((r) => r.def.name === def.name)
-    if (row) this.syncRow(row, value)
+    if (row) this.syncRow(row, value, clearDraft)
   }
 
   /** 搜索过滤：按 token 名子串（大小写不敏感），无匹配组隐藏，过滤时组自动展开 */
@@ -1019,10 +1031,25 @@ export class OASThemeEditor extends OASElement {
     return true
   }
 
-  /** 实际预览桶只读有效 data-theme；editingTheme 不参与这个判定。 */
+  /**
+   * 实际预览桶只读有效主题；editingTheme 不参与这个判定。
+   *
+   * 判定顺序：
+   * 1. 最近 `[data-theme]` 祖先（含 themeRoot 自身）：仅 `dark` 归 dark 桶，其余（light /
+   *    high-contrast / 自定义主题名）归 light 桶——两桶模型只有明暗两档，高对比/自定义主题
+   *    按「浅色基准」预览，不臆造第三桶；
+   * 2. 无 `[data-theme]` 祖先时兼容根 class 式暗色（文档站 VitePress 用 `html.dark`，
+   *    不设 data-theme）：`dark` / `dark-theme` / `theme-dark` 视为 dark，否则 light。
+   *    显式 `[data-theme]` 祖先优先于根 class（局部浅色 provider 不被根暗色劫持）。
+   */
   private previewTheme(): ThemeEditorTheme {
     const themed = this.themeRoot().closest('[data-theme]')
-    return themed?.getAttribute('data-theme') === 'dark' ? 'dark' : 'light'
+    if (themed) return themed.getAttribute('data-theme') === 'dark' ? 'dark' : 'light'
+    const classes = this.ownerDocument?.documentElement?.classList
+    if (classes?.contains('dark') || classes?.contains('dark-theme') || classes?.contains('theme-dark')) {
+      return 'dark'
+    }
+    return 'light'
   }
 
   private syncPreviewTheme(): void {

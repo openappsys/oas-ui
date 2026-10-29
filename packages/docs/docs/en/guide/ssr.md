@@ -188,7 +188,7 @@ for the rendering itself.
 
 ### First-paint anti-flicker for system themes
 
-The server snapshot of `<oas-config-provider theme="system">` is deterministically `data-theme="light"`; it does not access shared storage or register media-query listeners. Client hydration corrects it using explicit stored preference > system > light fallback. When using system themes with DSD, place this synchronous bootstrap in `<head>` and keep its key identical to the provider's; for a provider without a key, use `const key = null` so only the MQL is read and storage is never accessed. It corrects the root and matching providers as they are parsed, keeping the first frame consistent with hydration. After the observer stops at DOMContentLoaded, root continues following the MQL and, with a key, corresponding localStorage events, without writing storage. Same-document reselection emits no storage event, so the script watches both requested `theme` and effective `data-theme`: a requested system write directly sets the head preference to system, while an effective change only synchronizes root without restoring stale storage or rewriting the provider in the callback. Every root/provider write is guarded by a current-value comparison to prevent observer self-triggering or loops. Add it only when system theming is used; the default global theme is unchanged.
+The server snapshot of `<oas-config-provider theme="system">` is deterministically `data-theme="light"`; it does not access shared storage or register media-query listeners. Client hydration corrects it using explicit stored preference > system > light fallback. When using system themes with DSD, place this synchronous bootstrap in `<head>` and keep its key identical to the provider's; for a provider without a key, use `const key = null` so only the MQL is read and storage is never accessed. It corrects the root and matching providers as they are parsed, keeping the first frame consistent with hydration. After the observer stops at DOMContentLoaded, root continues following the MQL and, with a key, corresponding localStorage events, without writing storage. Same-document reselection emits no storage event, so the script watches both requested `theme` and effective `data-theme`: a requested system write directly sets the head preference to system, while an effective change only synchronizes root without restoring stale storage or rewriting the provider in the callback. When a provider switches explicitly from `system` to `light` / `dark` (or a custom theme name), the script mirrors that provider's new effective theme to root and keeps following its later explicit changes (no fallback to the head preference after handover), so root cannot stay on the last system theme. Every root/provider write is guarded by a current-value comparison to prevent observer self-triggering or loops. Add it only when system theming is used; the default global theme is unchanged.
 
 ```html
 <script>
@@ -214,16 +214,22 @@ The server snapshot of `<oas-config-provider theme="system">` is deterministical
     }
     let preference = restorePreference()
     const effective = () => (preference === 'system' ? (media.matches ? 'dark' : 'light') : preference)
-    const matchesProvider = (el) =>
-      el.getAttribute('theme') === 'system' && (el.getAttribute('theme-storage-key') || null) === key
+    const ownsKey = (el) => (el.getAttribute('theme-storage-key') || null) === key
+    const matchesProvider = (el) => el.getAttribute('theme') === 'system' && ownsKey(el)
+    // Providers that left `system`: their later explicit light/dark takes over root (no fallback to preference).
+    const handedOver = new WeakSet()
+    const syncRoot = (theme) => {
+      if (theme && document.documentElement.dataset.theme !== theme) document.documentElement.dataset.theme = theme
+    }
     const apply = () => {
       const theme = effective()
-      if (document.documentElement.dataset.theme !== theme) document.documentElement.dataset.theme = theme
-      document.querySelectorAll('oas-config-provider[theme="system"]').forEach((el) => {
+      syncRoot(theme)
+      document.querySelectorAll('oas-config-provider').forEach((el) => {
         if (matchesProvider(el) && el.dataset.theme !== theme) el.dataset.theme = theme
       })
     }
     apply()
+    // The observer only handles the first paint; MQL/storage listeners keep root synchronized for the page lifetime.
     const observer = new MutationObserver(apply)
     observer.observe(document.documentElement, { childList: true, subtree: true })
     document.addEventListener(
@@ -234,24 +240,29 @@ The server snapshot of `<oas-config-provider theme="system">` is deterministical
       },
       { once: true },
     )
-    // Same-document reselection emits no storage event: requested=system hands off directly; effective only syncs root.
+    // Same-document reselection emits no storage event: requested=system hands off directly; leaving `system`
+    // mirrors the provider's new effective theme to root and keeps following explicit changes (compare before writing).
     const effectiveObserver = new MutationObserver((records) => {
       for (const record of records) {
         const el = record.target
-        if (!(el instanceof Element) || !matchesProvider(el)) continue
+        if (!(el instanceof Element) || el.localName !== 'oas-config-provider' || !ownsKey(el)) continue
         if (record.attributeName === 'theme') {
-          preference = 'system'
-          apply()
-        } else if (record.attributeName === 'data-theme') {
-          const theme = el.dataset.theme
-          if (theme && document.documentElement.dataset.theme !== theme) {
-            document.documentElement.dataset.theme = theme
+          if (el.getAttribute('theme') === 'system') {
+            handedOver.delete(el)
+            preference = 'system'
+            apply()
+          } else if (record.oldValue === 'system' || handedOver.has(el)) {
+            handedOver.add(el)
+            syncRoot(el.dataset.theme)
           }
+        } else if (record.attributeName === 'data-theme') {
+          if (matchesProvider(el) || handedOver.has(el)) syncRoot(el.dataset.theme)
         }
       }
     })
     effectiveObserver.observe(document.documentElement, {
       attributes: true,
+      attributeOldValue: true,
       attributeFilter: ['theme', 'data-theme'],
       subtree: true,
     })
