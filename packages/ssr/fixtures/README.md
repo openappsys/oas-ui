@@ -45,7 +45,7 @@ pnpm test:e2e:ssr                # 两个都跑（两个 webServer 都起）
 
 ## 包边界（Next fixture ≠ npm 安装的 `@oas-ui/next`）
 
-Next fixture **不通过 `@oas-ui/next` 包入口**运行，而是由 `lib/ssr-runtime.ts` 在 Node 运行时按**绝对文件 URL** 加载主仓 `packages/ssr/dist/index.js`（linked 包 + Turbopack 无法处理渲染器按 tag 的动态导入表）。因此它验证的是「主仓 dist 的 SSR 行为」，**不等价于 npm 安装后的 `@oas-ui/next` 路径**：包 `exports`、`react-server` 条件、client reference 与 peer 解析都不在 fixture 覆盖范围内。`@oas-ui/next` 的包入口契约由 `packages/next/src/*.test.ts` 覆盖；本批不做 `pnpm pack` smoke（Ruling）。Nuxt fixture 则通过 `link:` 直接消费 `@oas-ui/nuxt` 入口。
+Next fixture **不通过 `@oas-ui/next` 包入口**运行，而是由 `lib/ssr-runtime.ts` 在 Node 运行时按**绝对文件 URL** 加载主仓 `packages/ssr/dist/index.js`（linked 包 + Turbopack 无法处理渲染器按 tag 的动态导入表）。因此它验证的是「主仓 dist 的 SSR 行为」；**fixture 不覆盖 npm 安装 / `exports` 路径**（包 `exports`、`react-server` 条件、client reference 与 peer 解析均不在验收内），**当前无 pack smoke**。Nuxt fixture 则通过 `link:` 直接消费 `@oas-ui/nuxt` 入口。
 
 ## 覆盖内容
 

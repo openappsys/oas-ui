@@ -430,6 +430,17 @@ function warnEnvironment(baseline, current) {
  */
 function computeSameShaNoise(previous, current) {
   if (!previous) return { compared: false, reason: '首次生成基线，无同 SHA 参照' }
+  // 工作树脏（参照或本次）时，同 SHA 差异会混入未提交改动：不能归为机器噪声，直接放弃比较。
+  if (previous.gitDirty === true || current.gitDirty === true) {
+    return {
+      compared: false,
+      ...(typeof previous.gitSha === 'string' && previous.gitSha ? { baselineSha: previous.gitSha } : {}),
+      currentSha: current.gitSha,
+      reason:
+        `工作树不干净（参照 gitDirty=${previous.gitDirty === true}，本次 gitDirty=${current.gitDirty === true}）：` +
+        '同 SHA 差异混入未提交改动，不计入机器噪声；请在干净工作树重测',
+    }
+  }
   if (typeof previous.gitSha !== 'string' || !previous.gitSha) {
     return { compared: false, reason: '旧基线缺少 gitSha，无法判断同 SHA' }
   }
@@ -477,6 +488,13 @@ function validateBaselinePayload(payload, label = '基线') {
     fail(`${label} gitSha 缺失或无效：${payload.gitSha}`)
   }
   if (typeof payload.gitDirty !== 'boolean') fail(`${label} gitDirty 必须为布尔值`)
+  else if (payload.gitDirty === true) {
+    // 脏工作树基线只作参照：不阻断校验，但必须显式提示（同 SHA 噪声不比较，见 computeSameShaNoise）
+    console.warn(
+      `WARN [perf:browser] ${label} gitDirty=true：基线在未提交工作树生成，数值包含未提交改动；` +
+        '仅作参照，同 SHA 噪声不比较。刷新基线请在干净工作树执行',
+    )
+  }
   if (!payload.versions || typeof payload.versions !== 'object') {
     fail(`${label} versions 缺失`)
   } else {
@@ -524,9 +542,16 @@ function validateBaselinePayload(payload, label = '基线') {
     }
     for (const [index, round] of (entry.roundStats ?? []).entries()) {
       for (const metric of METRICS) {
-        for (const field of ['min', 'median', 'p95']) {
+        for (const field of ['count', 'min', 'median', 'p95']) {
           if (!Number.isFinite(round?.[metric]?.[field]))
             fail(`${scenario}.roundStats[${index}].${metric}.${field} 无效`)
+        }
+        // 每轮样本数必须与 samplesPerRound 一致（防止轮次统计吞样本/重复计数）
+        if (round?.[metric]?.count !== settings.perRound) {
+          fail(
+            `${scenario}.roundStats[${index}].${metric}.count 应为 ${settings.perRound}，` +
+              `实得 ${round?.[metric]?.count}`,
+          )
         }
       }
     }
@@ -784,4 +809,10 @@ async function main() {
   }
 }
 
-await main()
+// 仅在作为 CLI 直接运行时执行；被 `node --test` 以模块方式 import 时不测量（便于单测纯函数）。
+if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  await main()
+}
+
+// 纯函数导出：`browser-bench.test.mjs` 直接覆盖「同 SHA 噪声」的脏工作树判定。
+export { computeSameShaNoise, validateBaselinePayload }

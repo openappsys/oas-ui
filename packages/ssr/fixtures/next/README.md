@@ -4,7 +4,7 @@
 
 ## 包边界
 
-本 fixture **不通过 `@oas-ui/next` 包入口**运行：`lib/ssr-runtime.ts` 在 Node 运行时按**绝对文件 URL** 加载主仓 `packages/ssr/dist/index.js`（`link:` + Turbopack 无法处理渲染器按 tag 的动态导入表）。因此它验证的是「主仓 dist 的 SSR 行为」，**不等价于 npm 安装后的 `@oas-ui/next` 路径**——包 `exports`、`react-server` 条件、client reference 与 peer 解析都不在覆盖范围内；这些由 `packages/next/src/*.test.ts` 覆盖。本批不做 `pnpm pack` smoke（Ruling）。
+本 fixture **不通过 `@oas-ui/next` 包入口**运行：`lib/ssr-runtime.ts` 在 Node 运行时按**绝对文件 URL** 加载主仓 `packages/ssr/dist/index.js`（`link:` + Turbopack 无法处理渲染器按 tag 的动态导入表）。因此它验证的是「主仓 dist 的 SSR 行为」；**fixture 不覆盖 npm 安装 / `exports` 路径**（包 `exports`、`react-server` 条件、client reference 与 peer 解析均不在验收内），**当前无 pack smoke**。
 
 ## Next 16 客户端注册限制
 

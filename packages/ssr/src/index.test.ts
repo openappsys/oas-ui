@@ -182,7 +182,7 @@ describe('@oas-ui/ssr renderToString', () => {
       warnings.push(args)
     })
     try {
-      const html = await renderToString('oas-empty', {}, '', { locale: 'xx-XX' as never })
+      const html = await renderToString('oas-empty', {}, '', { locale: 'xx-XX' })
       // 回退到确定的内置 en（不是当前全局 zh-CN，也不是 raw key）
       expect(html).toContain('No data')
       expect(html).not.toContain('暂无数据')
@@ -191,7 +191,7 @@ describe('@oas-ui/ssr renderToString', () => {
       expect(String(warnings[0]?.[0])).toContain('xx-XX')
       expect(String(warnings[0]?.[0])).toContain('en')
       // 同一未知 locale 只告警一次，避免逐请求刷屏
-      await renderToString('oas-empty', {}, '', { locale: 'xx-XX' as never })
+      await renderToString('oas-empty', {}, '', { locale: 'xx-XX' })
       expect(warnings).toHaveLength(1)
     } finally {
       spy.mockRestore()
@@ -202,7 +202,7 @@ describe('@oas-ui/ssr renderToString', () => {
     const { registerLocale } = await import('@oas-ui/i18n')
     const en = (await import('@oas-ui/i18n/en')).default
     registerLocale({ ...en, name: 'xx-custom' })
-    const html = await renderToString('oas-empty', {}, '', { locale: 'xx-custom' as never })
+    const html = await renderToString('oas-empty', {}, '', { locale: 'xx-custom' })
     expect(html).toContain('No data')
     expect(html).not.toContain('暂无数据')
   })

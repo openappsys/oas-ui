@@ -75,6 +75,9 @@
  * 旧行为（沿用调用时全局 locale）。多请求并发（含冷加载）逐请求语言正确，无需加锁。
  * RenderLocale 覆盖内置语言名子集（含 ar），按需装载语言包；未注册 locale
  * devWarn 一次并回退内置 en（不借用可能变化的全局 locale）。
+ * 自定义语言包必须在**首次 renderToString（安装 DOM shim）之后**再 registerLocale：
+ * i18n 主入口求值 `class extends HTMLElement`，裸 Node 下先注册会抛 `HTMLElement is not defined`；
+ * 渲染器内部即按「先装 shim、再动态 import i18n/组件」的顺序装载。
  *
  * Node 安全说明：本模块的静态导入只含纯数据（i18n 语言包）与 happy-dom（shim），
  * 不经过 @oas-ui/core/i18n registry——那些模块求值 `class extends HTMLElement` 需要全局
@@ -312,8 +315,13 @@ export interface RenderToStringOptions {
   /**
    * 内置文案语言，或宿主已通过 `registerLocale()` 注册的自定义 locale 名。
    * 显式传入只影响本次调用及嵌套子树；不传则沿用当前全局 locale（默认 zh-CN）。
+   *
+   * 类型为 `RenderLocale | (string & {})`：内置语言名保留字面量补全，同时允许任意自定义 locale 名
+   * （不强制 `as` 断言）。自定义语言包必须在**首次 `renderToString`（安装 DOM shim）之后**再
+   * `registerLocale()`——i18n 主入口求值 `class extends HTMLElement`，裸 Node 下先注册会抛
+   * `HTMLElement is not defined`；未注册的名字仍会 devWarn 一次并回退内置 `en`。
    */
-  locale?: RenderLocale
+  locale?: RenderLocale | (string & {})
 }
 
 /** 内置语言包的装载器：zh-CN / en 静态引入（默认路径），其余按需动态引入。 */

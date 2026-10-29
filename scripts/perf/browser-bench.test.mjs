@@ -5,6 +5,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { spawnSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
+import { computeSameShaNoise } from './browser-bench.mjs'
 
 /**
  * `perf:browser:check` 的样本完整性契约（红绿两侧）：
@@ -130,6 +131,40 @@ describe('perf:browser:check 样本校验', () => {
     const result = runCheck(writePayload('null-lcp', payload))
     assert.notEqual(result.status, 0)
     assert.match(result.stderr, /csr\.raw\[3\]\.lcp/)
+  })
+
+  it('roundStats[].count 与 samplesPerRound 不一致非零退出', () => {
+    const payload = buildPayload()
+    payload.scenarios.dsd.roundStats[1].lcp.count = SETTINGS.dsd.perRound - 1
+    const result = runCheck(writePayload('round-count-mismatch', payload))
+    assert.notEqual(result.status, 0)
+    assert.match(result.stderr, /dsd\.roundStats\[1\]\.lcp\.count/)
+  })
+
+  it('gitDirty 参照只 WARN、不阻断校验（脏工作树基线仍可解析）', () => {
+    const payload = buildPayload()
+    payload.gitDirty = true
+    const result = runCheck(writePayload('dirty-baseline', payload))
+    assert.equal(result.status, 0, result.stderr || result.stdout)
+    assert.match(`${result.stdout}${result.stderr}`, /WARN/)
+    assert.match(`${result.stdout}${result.stderr}`, /gitDirty=true/)
+  })
+
+  it('同 SHA 噪声：工作树脏（参照或本次）不比较，返回 compared:false + 原因', () => {
+    const sha = '0123456789abcdef0123456789abcdef01234567'
+    const scenario = { aggregate: { lcp: { median: 100, p95: 120 } } }
+    const previous = { gitSha: sha, gitDirty: false, scenarios: { csr: scenario, dsd: scenario } }
+    const current = { gitSha: sha, gitDirty: false, scenarios: { csr: scenario, dsd: scenario } }
+    // 干净 + 同 SHA：正常比较
+    assert.equal(computeSameShaNoise(previous, current).compared, true)
+
+    const dirtyBaseline = computeSameShaNoise({ ...previous, gitDirty: true }, current)
+    assert.equal(dirtyBaseline.compared, false)
+    assert.match(dirtyBaseline.reason, /gitDirty|工作树/)
+
+    const dirtyCurrent = computeSameShaNoise(previous, { ...current, gitDirty: true })
+    assert.equal(dirtyCurrent.compared, false)
+    assert.match(dirtyCurrent.reason, /gitDirty|工作树/)
   })
 
   it('--self-test 退出 0（内部再验证上述红绿两侧）', () => {

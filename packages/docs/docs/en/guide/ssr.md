@@ -177,10 +177,18 @@ for the rendering itself.
 > **`locale` values**: `RenderLocale` is the built-in subset `zh-CN` / `en` /
 > `ja` / `ko` / `de` / `fr` / `es` / `pt` / `ru` / `ar` (`ar` is RTL). The
 > renderer loads and registers the matching language pack on demand, so hosts do
-> not need to call `registerLocale` manually. Host-defined locales can still be
-> registered with `registerLocale()` and passed by name; **an unregistered
-> locale triggers one `devWarn` and falls back to built-in `en`** (it never
-> silently borrows the mutable global locale).
+> not need to call `registerLocale` manually. The `locale` type is
+> `RenderLocale | (string & {})`: built-in names keep literal autocomplete while
+> custom locale names can be passed directly without an `as` assertion. **A
+> custom language pack must be registered with `registerLocale()` after the
+> first `renderToString` call (which installs the DOM shim)**, then passed by
+> name — importing `@oas-ui/i18n` evaluates `@oas-ui/core`'s
+> `class extends HTMLElement`, so registering first in bare Node throws
+> `HTMLElement is not defined`. One render installs the shim and loads the
+> registry. **An unregistered locale triggers one `devWarn` and falls back to
+> built-in `en`** (it never silently borrows the mutable global locale);
+> `devWarn` is silent when `NODE_ENV === 'production'`, while the fallback
+> behavior is unchanged.
 >
 > **Request-scoped locale**: an explicit `locale` affects only that call and its
 > nested subtree — the renderer creates a per-call temporary
