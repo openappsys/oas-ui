@@ -16,10 +16,10 @@
 - **值输入**：`value` attribute 接受 epoch 毫秒数字串或 ISO 8601；property 额外接受 `number` / `Date`（Date 写回 ISO attribute）。`value` 更新即重算。空串/缺失/`NaN`/非法日期进入空态。
 - **语义**：shadow 内渲染 `<time part="time">`；有效值时 `datetime` 为解析时刻的 UTC ISO 8601（与机器可读原值同步），无效时移除 `datetime`、清空文本并隐藏节点；不显示 raw key / `NaN` / `Invalid Date`。
 - **单位与进位**：按绝对差值选秒/分/时/天/月/年，文案由 `Intl.RelativeTimeFormat` 产出；单位因子固定（分 60s、时 3600s、天 86400s、月 30.436875 天、年 365.2425 天），四舍五入后触及下一单位上限即进位（59.5s → 1 分钟、23.5h → 1 天、12 个月 → 1 年）；未来为正、过去为负。
-- **locale**：`locale` attribute（property 同源）优先；非法/不支持标签不抛错，回落到最近 `oas-config-provider` 的 `locale`，再回落全局 i18n locale，最终 `en-US`；合法值经 `Intl.getCanonicalLocales` 规范化。
+- **locale**：`locale` attribute 优先；`locale` property 与 attribute 同源（getter 返回 attribute 原文，setter 写回 attribute，`null` 移除属性）。非法/不支持标签不抛错，回落到最近 `oas-config-provider` 的 `locale`，再回落全局 i18n locale（默认 `zh-CN`），最终 `en-US`（仅作函数兜底）；合法值经 `Intl.getCanonicalLocales` 规范化。
 - **numeric**：`auto`（默认，交给 Intl 语义化文案「刚刚/昨天」）/ `always`（始终数字）；其他值按 `auto`。
 - **auto-refresh**：布尔在场（`"false"` 视为关闭，缺省关闭）。开启后按单位节流刷新（秒级 1s，其余 30s）；页签隐藏暂停、恢复可见立即重算并续排；断开连接清理定时器与 `visibilitychange` 监听，重连恢复；未开启时不注册任何全局监听、不访问浏览器全局。
-- **受控/非受控**：attribute 与 property 同源（property 写回 attribute），宿主改值静默重算，不派发事件。
+- **受控/非受控**：attribute 与 property 同源（`value` / `locale` 的 property 写回 attribute），宿主改值静默重算，不派发事件。
 - **SSR/水合**：`render()` / 格式化纯函数不引用浏览器 DOM；DSD 快照与客户端同模板，`hydrate()` 校验 `[part="time"]` 接管，客户端接管后按当前时钟重算（服务端快照以服务端 `Date.now()` 为初值）。
 
 ### 非目标
@@ -28,7 +28,7 @@
 
 ### 验收标准
 
-- 单测：epoch/ISO/Date 与 property 反射、无效/空态、秒/分/时/天/月/年边界与进位、过去/未来、locale 非法回落 + provider locale、numeric auto/always、fake clock 自动刷新、visibility 暂停恢复、断开清理/重连、SSR 快照与 hydrate、纯格式化模块 Node 环境零 DOM。
+- 单测：epoch/ISO/Date 与 value/locale property 反射、无效/空态、秒/分/时/天/月/年边界与进位、过去/未来、locale 非法回落 + provider locale、numeric auto/always、fake clock 自动刷新、visibility 暂停恢复、断开清理/重连、SSR 快照与 hydrate、纯格式化模块 Node 环境零 DOM。
 - qa-regression（Chromium + Firefox）：真实页面相对时间文本与 `<time datetime>`、auto-refresh 真时钟推进、dark 可读、console 零告警。
 - 文档：zh/en 新页 + 侧栏；API 表由 `api:scan/gen` 生成；SSR 白名单/DSD fixture/矩阵按生成器更新；CHANGELOG / PRD / ROADMAP；全量 test/typecheck/build/e2e/perf:size/api/llms/stats/skill/lint/format/trace 通过。
 

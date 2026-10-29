@@ -45,12 +45,18 @@ test('relative-time：真实页面相对文案 / datetime / 自动刷新 / 空�
   expect(invalid.hidden).toBe(true)
 
   // auto-refresh：秒级单位真实时钟推进后文案变化
-  const auto = page.locator('#relative-time-auto')
-  const first = await auto.evaluate((el) => el.shadowRoot?.querySelector('[part="time"]')?.textContent ?? '')
-  expect(first).toMatch(/秒/)
+  // 先等 demo 脚本注入 value 并渲染出秒级文案，避免读到注入前的空态（时序竞态）
+  const autoText = () =>
+    page.evaluate(
+      () =>
+        document.querySelector('#relative-time-auto')?.shadowRoot?.querySelector('[part="time"]')?.textContent ?? '',
+    )
+  await expect.poll(autoText, { message: '等待 demo 注入 value 后渲染秒级文案' }).toMatch(/秒/)
+  const first = await autoText()
   await page.waitForTimeout(1300)
-  const second = await auto.evaluate((el) => el.shadowRoot?.querySelector('[part="time"]')?.textContent ?? '')
+  const second = await autoText()
   expect(second, 'auto-refresh 应逐秒刷新').not.toBe(first)
+  expect(second).toMatch(/秒/)
 
   // dark：相对时间文字跟随 --oas-color-text-secondary 反转且仍可读
   const color = () =>

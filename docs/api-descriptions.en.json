@@ -5191,13 +5191,14 @@
   },
   "oas-relative-time": {
     "attrs": {
-      "value": "Target instant: epoch milliseconds or ISO 8601; the property channel also accepts `number` / `Date`",
-      "locale": "Relative-time locale (e.g. `zh-CN` / `en-US`); invalid or unsupported tags safely fall back to provider → global i18n → `en-US`",
+      "value": "Target instant: epoch milliseconds or ISO 8601 (purely numeric values are always epoch milliseconds — write a year as `2026-01-01`); offset-less ISO is parsed in the runtime's local time zone and date-only as UTC, while `datetime` output is always UTC; the property channel also accepts `number` / `Date`",
+      "locale": "Relative-time locale (e.g. `zh-CN` / `en-US`); invalid or unsupported tags safely fall back to provider → global i18n → `en-US` (global default is `zh-CN`, `en-US` is only a fallback)",
       "numeric": "Intl numeric mode: `auto` (default, idiomatic “now / yesterday”) / `always` (always numeric); other values use auto",
       "auto-refresh": "Throttled auto refresh (1s for second-level units, 30s otherwise); `\"false\"` or absent disables it; pauses while hidden, cleared on disconnect, restored on reconnect"
     },
     "props": {
-      "value": "Target instant property channel: `number` is epoch milliseconds, `Date` is written back as an ISO attribute, `null` clears (empty state)"
+      "value": "Target instant property channel: `number` is epoch milliseconds, `Date` is written back as an ISO attribute, `null` clears (empty state); reading returns the raw `value` attribute (string)",
+      "locale": "Relative-time locale property channel: writes the `locale` attribute back, `null` removes it (falls back to provider → global i18n → `en-US`); reading returns the raw attribute (string)"
     },
     "events": {},
     "slots": {}

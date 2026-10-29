@@ -1,6 +1,6 @@
 # 组件总览
 
-OAS-UI 提供 145 个框架无关的 Web Components 组件，按用途划分为 9 个分组。点击组件名可查看该组件的完整文档与示例。
+OAS-UI 提供 146 个框架无关的 Web Components 组件，按用途划分为 9 个分组。点击组件名可查看该组件的完整文档与示例。
 
 ## 基础组件
 
@@ -149,6 +149,7 @@ OAS-UI 提供 145 个框架无关的 Web Components 组件，按用途划分为 
 - [Carousel 轮播](/components/carousel) —— 用于在同一可视区域循环展示多屏内容，支持手动切换与自动播放。
 - [Statistic 统计数值](/components/statistic) —— 统计数值展示，`Intl.NumberFormat` 千分位与精度（locale 感知），支持前后缀与骨架屏加载占位。
 - [Countdown 倒计时](/components/countdown) —— 倒计时组件，实时刷新、支持天/时/分/秒格式化模板，到达终点派发 `oas-finish`，断开连接自动清理计时器。
+- [RelativeTime 相对时间](/components/relative-time) —— 本地化相对时间展示（`Intl.RelativeTimeFormat`），内层 `<time datetime>` 语义；可选 `auto-refresh` 按页面可见性自动刷新，非法/缺失值渲染安全空态。
 - [Ellipsis 文本省略](/components/ellipsis) —— 用于长文本的自动省略，支持单行/多行截断，溢出时悬停展示全文 tooltip，也可展开/收起。
 - [Chart 图表](/components/chart) —— 自研 SVG 图表组件（零第三方图表引擎），支持折线 / 柱状 / 饼图 / 面积 / 环形 / 堆叠柱状 / 雷达 / 极坐标面积 + 组合图与双轴，数据更新自动重绘，`prefers-reduced-motion` 时关闭动画。
 - [Code 代码块](/components/code) —— 代码块组件（自研正则 token 高亮，零第三方高亮引擎），支持常见语言基础着色、行号与复制按钮。

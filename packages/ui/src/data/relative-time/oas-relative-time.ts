@@ -93,10 +93,24 @@ export class OASRelativeTime extends OASElement {
   /**
    * value property 通道：接受 string / number / Date / null。
    * Date 规范化为 ISO attribute（SSR/attribute 通道同源）；null 移除属性走空态。
-   * getter 返回当前 attribute 原文，便于宿主读回。
+   * getter 返回当前 attribute 原文（string），便于宿主读回。
    */
   get value(): string {
     return this.getAttribute('value') ?? ''
+  }
+
+  /** locale property 通道：与 attribute 同源，读取返回 attribute 原文 */
+  get locale(): string {
+    return this.getAttribute('locale') ?? ''
+  }
+
+  /** @apiProperty 相对时间 locale：写入回写 attribute，`null` 移除属性（回落 provider → 全局 i18n → en-US） */
+  set locale(input: string | null) {
+    if (input == null) {
+      this.removeAttribute('locale')
+      return
+    }
+    this.setAttribute('locale', String(input))
   }
 
   /** @apiProperty 目标时刻：`number` 为 epoch 毫秒、`Date` 自动写回 ISO attribute、`null` 清空 */
@@ -132,14 +146,17 @@ export class OASRelativeTime extends OASElement {
   /** locale 候选链：显式 → 最近 config-provider → 全局 i18n → en-US */
   private effectiveLocale(): string {
     const provider = findConfigProvider(this)?.getAttribute('locale')
-    return resolveRelativeLocale([this.getAttribute('locale'), provider, getLocaleName()], 'en-US')
+    // 显式标注 string：attr 与 property 同名时 api 扫描默认跳过类型推断，这里补回 attribute 类型
+    const explicit = this.getAttr('locale') as string
+    return resolveRelativeLocale([explicit, provider, getLocaleName()], 'en-US')
   }
 
   /** 渲染相对时间与机器可读 datetime；空态清定时器 */
   private renderTime(): void {
     const time = this.shadow.querySelector<HTMLTimeElement>('[part="time"]')
     if (!time) return
-    const timestamp = parseTimestamp(this.getAttr('value', ''))
+    // 显式标注 string：attr 与 property 同名时 api 扫描默认跳过类型推断，这里补回 attribute 类型
+    const timestamp = parseTimestamp(this.getAttr('value', '') as string)
     const text =
       timestamp == null ? null : formatRelativeTime(timestamp - Date.now(), this.effectiveLocale(), this.numericMode())
     if (timestamp == null || text == null) {
@@ -177,16 +194,17 @@ export class OASRelativeTime extends OASElement {
       this.unbindVisibility()
       return
     }
+    // 已渲染但未连接（摘除后改属性）不挂监听：重连时 onReconnect → bind() 统一重挂，
+    // 避免给已摘除的实例挂 document 级监听、断开清理白做一轮。
+    if (!this.isConnected) return
     if (this.visibilityBound) return
-    const doc = this.getDocument()
-    if (!doc) return
-    doc.addEventListener('visibilitychange', this.onVisibilityChange)
+    this.ownerDocument.addEventListener('visibilitychange', this.onVisibilityChange)
     this.visibilityBound = true
   }
 
   private unbindVisibility(): void {
     if (!this.visibilityBound) return
-    this.getDocument()?.removeEventListener('visibilitychange', this.onVisibilityChange)
+    this.ownerDocument.removeEventListener('visibilitychange', this.onVisibilityChange)
     this.visibilityBound = false
   }
 
@@ -195,14 +213,7 @@ export class OASRelativeTime extends OASElement {
     this.unbindVisibility()
   }
 
-  /** 浏览器全局只在需要时读取；Node/SSR（无 document）返回 null，不抛 ReferenceError */
-  private getDocument(): Document | null {
-    const doc = (globalThis as { document?: Document }).document
-    return doc && typeof doc.addEventListener === 'function' ? doc : null
-  }
-
   private isDocumentHidden(): boolean {
-    const doc = this.getDocument()
-    return doc ? doc.hidden === true : true
+    return this.ownerDocument.hidden === true
   }
 }

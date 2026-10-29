@@ -6,6 +6,10 @@ Renders epoch milliseconds / ISO 8601 / `Date` as a localized relative time, bac
 
 `value` accepts epoch milliseconds (numeric string) or ISO 8601; the property channel additionally accepts `number` / `Date` (a `Date` is written back as an ISO attribute).
 
+A purely numeric value is always parsed as **epoch milliseconds**: `value="2026"` means 1970-01-01T00:00:02.026Z, not the year 2026 — write a year as ISO 8601 such as `2026-01-01`.
+
+For ISO 8601 include `Z` or an explicit offset (e.g. `2026-10-29T12:00:00+08:00`): an offset-less `2026-10-29T12:00:00` is parsed in the **runtime's local time zone**, while date-only `2026-10-29` is parsed as **UTC**; the inner `<time datetime>` output is always UTC ISO 8601.
+
 <DemoBlock title="epoch / ISO / Date property">
   <oas-relative-time value="1700000000000" locale="en-US"></oas-relative-time>
   <oas-relative-time value="2026-01-01T00:00:00.000Z" locale="en-US" numeric="always"></oas-relative-time>
@@ -36,7 +40,7 @@ For valid values the inner `<time part="time">` carries a `datetime` attribute s
 
 ## Locale and numeric
 
-`locale` takes precedence over the nearest `oas-config-provider`, then falls back to the global i18n locale and finally `en-US`; malformed tags (such as `zh_CN`) never throw. `numeric="auto"` (default) lets `Intl.RelativeTimeFormat` produce idiomatic "now / yesterday", while `numeric="always"` always shows a number.
+`locale` takes precedence over the nearest `oas-config-provider`, then falls back to the global i18n locale and finally `en-US` — the default `@oas-ui/i18n` locale is `zh-CN`, so `en-US` only acts as a functional fallback when the whole candidate chain fails; malformed tags (such as `zh_CN`) never throw. The property mirrors the attribute: `el.locale = 'en-US'` writes the `locale` attribute back, and `null` removes it. `numeric="auto"` (default) lets `Intl.RelativeTimeFormat` produce idiomatic "now / yesterday", while `numeric="always"` always shows a number.
 
 <DemoBlock title="en-US / zh-CN / invalid locale fallback / auto vs always">
   <oas-relative-time data-offset="-300" locale="en-US"></oas-relative-time>
@@ -87,15 +91,16 @@ The host uses `--oas-color-text-secondary` by default and inherits font size; `:
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
 | `auto-refresh` | Throttled auto refresh (1s for second-level units, 30s otherwise); `"false"` or absent disables it; pauses while hidden, cleared on disconnect, restored on reconnect | `string` | — |
-| `locale` | Relative-time locale (e.g. `zh-CN` / `en-US`); invalid or unsupported tags safely fall back to provider → global i18n → `en-US` | — | — |
+| `locale` | Relative-time locale (e.g. `zh-CN` / `en-US`); invalid or unsupported tags safely fall back to provider → global i18n → `en-US` (global default is `zh-CN`, `en-US` is only a fallback) | `string` | — |
 | `numeric` | Intl numeric mode: `auto` (default, idiomatic “now / yesterday”) / `always` (always numeric); other values use auto | `string` | `auto` |
-| `value` | Target instant: epoch milliseconds or ISO 8601; the property channel also accepts `number` / `Date` | `string \| number \| Date \| null` | — |
+| `value` | Target instant: epoch milliseconds or ISO 8601 (purely numeric values are always epoch milliseconds — write a year as `2026-01-01`); offset-less ISO is parsed in the runtime's local time zone and date-only as UTC, while `datetime` output is always UTC; the property channel also accepts `number` / `Date` | `string` | — |
 
 #### Property (JS property; see each row for attribute reflection)
 
 | Property | Description | Type | Default |
 | --- | --- | --- | --- |
-| `value` | Target instant property channel: `number` is epoch milliseconds, `Date` is written back as an ISO attribute, `null` clears (empty state) | `string \| number \| Date \| null` | — |
+| `locale` | Relative-time locale property channel: writes the `locale` attribute back, `null` removes it (falls back to provider → global i18n → `en-US`); reading returns the raw attribute (string) | `string \| null` | — |
+| `value` | Target instant property channel: `number` is epoch milliseconds, `Date` is written back as an ISO attribute, `null` clears (empty state); reading returns the raw `value` attribute (string) | `string \| number \| Date \| null` | — |
 
 <script setup>
 import { onMounted } from 'vue'

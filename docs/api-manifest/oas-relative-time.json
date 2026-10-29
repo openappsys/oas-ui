@@ -4,11 +4,13 @@
   "attrs": [
     {
       "name": "value",
+      "type": "string",
       "default": "",
       "observed": true
     },
     {
       "name": "locale",
+      "type": "string",
       "observed": true
     },
     {
@@ -28,6 +30,11 @@
     {
       "name": "value",
       "type": "string | number | Date | null",
+      "api": true
+    },
+    {
+      "name": "locale",
+      "type": "string | null",
       "api": true
     }
   ],

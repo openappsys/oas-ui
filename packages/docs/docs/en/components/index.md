@@ -1,6 +1,6 @@
 # Component Overview
 
-OAS-UI provides 145 framework-agnostic Web Components, organized into 9 groups by purpose. Click a component name to see its full documentation and examples.
+OAS-UI provides 146 framework-agnostic Web Components, organized into 9 groups by purpose. Click a component name to see its full documentation and examples.
 
 ## Basic
 
@@ -149,6 +149,7 @@ OAS-UI provides 145 framework-agnostic Web Components, organized into 9 groups b
 - [Carousel](/en/components/carousel) —— Cycles through multiple screens of content in the same viewport, with manual switching and autoplay support.
 - [Statistic](/en/components/statistic) —— Displays statistical values with `Intl.NumberFormat` thousands separators and precision (locale-aware), supporting prefix/suffix and a skeleton loading placeholder.
 - [Countdown](/en/components/countdown) —— A countdown component that refreshes in real time, supports day/hour/minute/second formatting templates, emits `oas-finish` when reaching zero, and automatically cleans up its timer on disconnect.
+- [RelativeTime](/en/components/relative-time) —— Localized relative time (`Intl.RelativeTimeFormat`) backed by a semantic `<time datetime>`; optional `auto-refresh` follows page visibility, and invalid or missing values render a safe empty state.
 - [Ellipsis](/en/components/ellipsis) —— Automatically truncates long text with single-line / multi-line clipping; on overflow it shows the full text in a tooltip on hover, and it can also expand / collapse.
 - [Chart](/en/components/chart) —— A self-developed SVG chart component (no third-party chart engine) supporting line / bar / pie / area / donut / stacked-bar / radar / polar-area plus combo and dual-axis. Data updates redraw automatically, and animations are disabled under `prefers-reduced-motion`.
 - [Code](/en/components/code) —— A code block component (self-developed regex token highlighting, no third-party highlighting engine) supporting basic coloring for common languages, line numbers, and a copy button.

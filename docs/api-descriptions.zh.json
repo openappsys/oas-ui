@@ -4931,13 +4931,14 @@
   },
   "oas-relative-time": {
     "attrs": {
-      "value": "目标时刻：epoch 毫秒数字串或 ISO 8601；property 另接受 `number` / `Date`",
-      "locale": "相对时间 locale（如 `zh-CN` / `en-US`）；非法或不支持时安全回落 provider → 全局 i18n → `en-US`",
+      "value": "目标时刻：epoch 毫秒数字串或 ISO 8601（纯数字一律按 epoch 毫秒解析，写年份请用 `2026-01-01`）；无偏移的 ISO 按运行环境本地时区解析、date-only 按 UTC，`datetime` 输出恒为 UTC；property 另接受 `number` / `Date`",
+      "locale": "相对时间 locale（如 `zh-CN` / `en-US`）；非法或不支持时安全回落 provider → 全局 i18n → `en-US`（全局默认 `zh-CN`，`en-US` 仅为兜底）",
       "numeric": "Intl 数字模式：`auto`（默认，语义化「刚刚 / 昨天」）/ `always`（始终数字）；其他值按 auto",
       "auto-refresh": "按单位节流自动刷新（秒级 1s、其余 30s）；`\"false\"` 或缺失关闭；页面隐藏暂停、断开清理、重连恢复"
     },
     "props": {
-      "value": "目标时刻 property 通道：`number` 为 epoch 毫秒、`Date` 自动写回 ISO attribute、`null` 清空（走空态）"
+      "value": "目标时刻 property 通道：`number` 为 epoch 毫秒、`Date` 自动写回 ISO attribute、`null` 清空（走空态）；读取返回 value attribute 原文（string）",
+      "locale": "相对时间 locale property 通道：写入回写 `locale` attribute、`null` 移除属性（回落 provider → 全局 i18n → `en-US`）；读取返回 attribute 原文（string）"
     },
     "events": {},
     "slots": {}

@@ -1,7 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
+import { setLocale } from '@oas-ui/i18n'
+import en from '@oas-ui/i18n/en'
 import '@oas-ui/i18n'
+import '../../framework/config-provider/index.js'
 import { OASRelativeTime } from './index.js'
 
 const NOW = Date.UTC(2026, 9, 29, 12, 0, 0)
@@ -73,7 +76,67 @@ describe('OASRelativeTime 值与语义', () => {
     expect(timeEl(el).hidden).toBe(true)
   })
 
-  it('数值属性通道在升级前写入也不丢失（Vue / React 绑定）', () => {
+  it('locale property 与 value 对称：写入回写 attribute、读取返回原文、null 清除', () => {
+    const el = mount({ value: String(NOW - 3 * MINUTE) })
+    expect(text(el)).toBe('3分钟前')
+
+    el.locale = 'en-US'
+    expect(el.getAttribute('locale')).toBe('en-US')
+    expect(el.locale).toBe('en-US')
+    expect(text(el)).toBe('3 minutes ago')
+
+    el.locale = null
+    expect(el.hasAttribute('locale')).toBe(false)
+    expect(el.locale).toBe('')
+    expect(text(el), 'null 清除后回落全局 zh-CN').toBe('3分钟前')
+  })
+
+  it('全局 setLocale 切换后文本随之刷新', () => {
+    const el = mount({ value: String(NOW - 3 * MINUTE) })
+    expect(text(el)).toBe('3分钟前')
+    try {
+      setLocale(en)
+      expect(text(el), '全局 locale 变化应重算文案').toBe('3 minutes ago')
+    } finally {
+      setLocale('zh-CN')
+    }
+    expect(text(el)).toBe('3分钟前')
+  })
+
+  it('config-provider locale 运行时变更即时刷新', () => {
+    const provider = document.createElement('oas-config-provider')
+    document.body.appendChild(provider)
+    const el = mount({ value: String(NOW - 3 * MINUTE) }, provider)
+    expect(text(el)).toBe('3分钟前')
+
+    provider.setAttribute('locale', 'en')
+    expect(text(el)).toBe('3 minutes ago')
+
+    provider.removeAttribute('locale')
+    expect(text(el)).toBe('3分钟前')
+  })
+
+  it('空态 → 有效值恢复文本、datetime 与显隐', () => {
+    const el = mount({ value: 'not-a-date' })
+    expect(text(el)).toBe('')
+    expect(timeEl(el).hidden).toBe(true)
+
+    el.value = NOW - 5 * MINUTE
+    expect(text(el)).toBe('5分钟前')
+    expect(timeEl(el).hidden).toBe(false)
+    expect(timeEl(el).getAttribute('datetime')).toBe('2026-10-29T11:55:00.000Z')
+  })
+
+  it('value = new Date(NaN) 写回空 attribute 并进入空态', () => {
+    const el = mount({ value: String(NOW) })
+    el.value = new Date(Number.NaN)
+    expect(el.getAttribute('value')).toBe('')
+    expect(text(el)).toBe('')
+    expect(timeEl(el).hidden).toBe(true)
+    expect(timeEl(el).hasAttribute('datetime')).toBe(false)
+  })
+
+  it('连接前 property 写入不丢失（Vue / React 绑定）', () => {
     const el = new OASRelativeTime()
     el.value = NOW - 5 * MINUTE
     document.body.appendChild(el)
@@ -228,6 +291,30 @@ describe('OASRelativeTime auto-refresh 生命周期', () => {
     expect(text(el), '重连按当前时钟重算').toBe('21秒钟前')
     vi.advanceTimersByTime(1000)
     expect(text(el), '重连后定时器恢复').toBe('22秒钟前')
+  })
+
+  it('已渲染但未连接时改 auto-refresh 不挂 visibilitychange 监听，重连后才挂', () => {
+    const el = mount({ value: String(NOW - 10_000) })
+    el.remove()
+
+    const add = vi.spyOn(document, 'addEventListener')
+    el.setAttribute('auto-refresh', '')
+    expect(
+      add.mock.calls.some(([type]) => type === 'visibilitychange'),
+      '未连接不挂监听',
+    ).toBe(false)
+
+    document.body.appendChild(el)
+    expect(
+      add.mock.calls.some(([type]) => type === 'visibilitychange'),
+      '重连重新挂载',
+    ).toBe(true)
+    add.mockRestore()
+
+    hidden = true
+    document.dispatchEvent(new Event('visibilitychange'))
+    vi.advanceTimersByTime(5000)
+    expect(text(el), '重连后隐藏暂停生效').toBe('10秒钟前')
   })
 
   it('改 value / numeric / locale 时重排定时器并使用新契约', () => {

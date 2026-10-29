@@ -6,6 +6,10 @@
 
 `value` 接受 epoch 毫秒数字串或 ISO 8601；property 通道额外接受 `number` / `Date`（Date 自动写回 ISO attribute）。
 
+纯数字一律按 **epoch 毫秒**解析：`value="2026"` 是 1970-01-01T00:00:02.026Z，不是 2026 年；写年份请用 `2026-01-01` 这类 ISO 8601。
+
+ISO 8601 请带 `Z` 或显式偏移（如 `2026-10-29T12:00:00+08:00`）：无偏移的 `2026-10-29T12:00:00` 按**运行环境本地时区**解析，date-only 的 `2026-10-29` 按 **UTC** 解析；内层 `<time datetime>` 的输出恒为 UTC ISO 8601。
+
 <DemoBlock title="epoch / ISO / Date property">
   <oas-relative-time value="1700000000000" locale="zh-CN"></oas-relative-time>
   <oas-relative-time value="2026-01-01T00:00:00.000Z" locale="zh-CN" numeric="always"></oas-relative-time>
@@ -36,7 +40,7 @@
 
 ## locale 与 numeric
 
-`locale` 优先于最近的 `oas-config-provider`，再回落全局 i18n locale 与 `en-US`；非法标签（如 `zh_CN`）不抛错。`numeric="auto"`（默认）交由 `Intl.RelativeTimeFormat` 输出「刚刚 / 昨天」，`numeric="always"` 始终显示数字。
+`locale` 优先于最近的 `oas-config-provider`，再回落全局 i18n locale 与 `en-US`——`@oas-ui/i18n` 默认 locale 是 `zh-CN`，`en-US` 只是候选链全部失效时的函数兜底；非法标签（如 `zh_CN`）不抛错。property 与 attribute 同源：`el.locale = 'en-US'` 会写回 `locale` attribute，`null` 移除属性。`numeric="auto"`（默认）交由 `Intl.RelativeTimeFormat` 输出「刚刚 / 昨天」，`numeric="always"` 始终显示数字。
 
 <DemoBlock title="zh-CN / en-US / 非法 locale 回落 / auto 与 always">
   <oas-relative-time data-offset="-300" locale="zh-CN"></oas-relative-time>
@@ -87,15 +91,16 @@
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
 | `auto-refresh` | 按单位节流自动刷新（秒级 1s、其余 30s）；`"false"` 或缺失关闭；页面隐藏暂停、断开清理、重连恢复 | `string` | — |
-| `locale` | 相对时间 locale（如 `zh-CN` / `en-US`）；非法或不支持时安全回落 provider → 全局 i18n → `en-US` | — | — |
+| `locale` | 相对时间 locale（如 `zh-CN` / `en-US`）；非法或不支持时安全回落 provider → 全局 i18n → `en-US`（全局默认 `zh-CN`，`en-US` 仅为兜底） | `string` | — |
 | `numeric` | Intl 数字模式：`auto`（默认，语义化「刚刚 / 昨天」）/ `always`（始终数字）；其他值按 auto | `string` | `auto` |
-| `value` | 目标时刻：epoch 毫秒数字串或 ISO 8601；property 另接受 `number` / `Date` | `string \| number \| Date \| null` | — |
+| `value` | 目标时刻：epoch 毫秒数字串或 ISO 8601（纯数字一律按 epoch 毫秒解析，写年份请用 `2026-01-01`）；无偏移的 ISO 按运行环境本地时区解析、date-only 按 UTC，`datetime` 输出恒为 UTC；property 另接受 `number` / `Date` | `string` | — |
 
 #### Property（JS property；是否写回 attribute 见各行说明）
 
 | Property | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
-| `value` | 目标时刻 property 通道：`number` 为 epoch 毫秒、`Date` 自动写回 ISO attribute、`null` 清空（走空态） | `string \| number \| Date \| null` | — |
+| `locale` | 相对时间 locale property 通道：写入回写 `locale` attribute、`null` 移除属性（回落 provider → 全局 i18n → `en-US`）；读取返回 attribute 原文（string） | `string \| null` | — |
+| `value` | 目标时刻 property 通道：`number` 为 epoch 毫秒、`Date` 自动写回 ISO attribute、`null` 清空（走空态）；读取返回 value attribute 原文（string） | `string \| number \| Date \| null` | — |
 
 <script setup>
 import { onMounted } from 'vue'
