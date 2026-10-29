@@ -19,9 +19,9 @@ When a rich `title` slot makes the title bar taller, the client measures the tit
     <oas-floating-panel id="fp-basic" open movable resizable panel-title="Layers" rect="0,0,380,230">
       <p style="margin: 0 0 var(--oas-space-2)">Drag the title bar to move; drag edges or corners to resize.</p>
       <div style="display: flex; gap: var(--oas-space-1_5); flex-wrap: wrap">
-        <oas-tag>Background</oas-tag>
-        <oas-tag>Line art</oas-tag>
-        <oas-tag>Notes</oas-tag>
+        <span style="font-size: var(--oas-font-size-xs); color: var(--oas-color-text-secondary)">Background</span>
+        <span style="font-size: var(--oas-font-size-xs); color: var(--oas-color-text-secondary)">Line art</span>
+        <span style="font-size: var(--oas-font-size-xs); color: var(--oas-color-text-secondary)">Notes</span>
       </div>
     </oas-floating-panel>
   </div>
@@ -164,7 +164,7 @@ The default slot carries the content; the `title` slot overrides the title text 
   <div style="position: relative; min-height: 210px">
     <oas-floating-panel id="fp-slot" open resizable rect="0,0,340,170">
       <span slot="title" style="display: inline-flex; align-items: center; gap: var(--oas-space-1); min-height: 48px">
-        <oas-tag>Synced</oas-tag>
+        <span style="font-size: var(--oas-font-size-xs); color: var(--oas-color-text-secondary)">Synced</span>
         <strong>Asset inspector</strong>
       </span>
       <p style="margin: 0">The title comes from the <strong>title</strong> slot (48px tall here); top/top-corner handles start below the title bar and still resize.</p>
@@ -176,7 +176,7 @@ The default slot carries the content; the `title` slot overrides the title text 
 <DemoBlock title="Untitled panel: i18n name fallback">
   <div style="position: relative; min-height: 220px">
     <oas-floating-panel id="fp-plain" open rect="0,0,360,200">
-      <p style="margin: 0">No <code>panel-title</code> and no <code>title</code> slot: the title area stays empty and screen readers announce "Floating panel".</p>
+      <p style="margin: 0">No <span style="font-family: var(--oas-font-family-mono)">panel-title</span> and no <span style="font-family: var(--oas-font-family-mono)">title</span> slot: the title area stays empty and screen readers announce "Floating panel".</p>
     </oas-floating-panel>
   </div>
 </DemoBlock>

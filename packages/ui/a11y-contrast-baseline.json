@@ -7,7 +7,7 @@
     "below60": 0,
     "ratio": 266,
     "exempt": 652,
-    "skipped": 3242
+    "skipped": 3250
   },
   "topPairs": [],
   "pages": {
@@ -1369,7 +1369,7 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 8
+      "skipped": 12
     },
     "floating-panel.html::dark": {
       "below30": 0,
@@ -1377,7 +1377,7 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 8
+      "skipped": 12
     }
   }
 }

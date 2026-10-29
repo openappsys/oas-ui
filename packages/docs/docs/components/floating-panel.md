@@ -19,9 +19,9 @@
     <oas-floating-panel id="fp-basic" open movable resizable panel-title="图层" rect="0,0,380,230">
       <p style="margin: 0 0 var(--oas-space-2)">拖动标题栏移动，拖动四边/四角缩放。</p>
       <div style="display: flex; gap: var(--oas-space-1_5); flex-wrap: wrap">
-        <oas-tag>背景</oas-tag>
-        <oas-tag>线稿</oas-tag>
-        <oas-tag>标注</oas-tag>
+        <span style="font-size: var(--oas-font-size-xs); color: var(--oas-color-text-secondary)">背景</span>
+        <span style="font-size: var(--oas-font-size-xs); color: var(--oas-color-text-secondary)">线稿</span>
+        <span style="font-size: var(--oas-font-size-xs); color: var(--oas-color-text-secondary)">标注</span>
       </div>
     </oas-floating-panel>
   </div>
@@ -164,7 +164,7 @@
   <div style="position: relative; min-height: 210px">
     <oas-floating-panel id="fp-slot" open resizable rect="0,0,340,170">
       <span slot="title" style="display: inline-flex; align-items: center; gap: var(--oas-space-1); min-height: 48px">
-        <oas-tag>已同步</oas-tag>
+        <span style="font-size: var(--oas-font-size-xs); color: var(--oas-color-text-secondary)">已同步</span>
         <strong>素材检查器</strong>
       </span>
       <p style="margin: 0">标题由 <strong>title</strong> 插槽提供（此处 48px 高）；上侧/上角手柄从标题栏下沿起算，仍可拖动缩放。</p>
@@ -176,7 +176,7 @@
 <DemoBlock title="无标题面板：回落 i18n 名称">
   <div style="position: relative; min-height: 220px">
     <oas-floating-panel id="fp-plain" open rect="0,0,360,200">
-      <p style="margin: 0">没有 <code>panel-title</code>，也没有 <code>title</code> 插槽：标题区留空，屏幕阅读器读「悬浮面板」。</p>
+      <p style="margin: 0">没有 <span style="font-family: var(--oas-font-family-mono)">panel-title</span>，也没有 <span style="font-family: var(--oas-font-family-mono)">title</span> 插槽：标题区留空，屏幕阅读器读「悬浮面板」。</p>
     </oas-floating-panel>
   </div>
 </DemoBlock>
