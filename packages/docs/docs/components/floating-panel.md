@@ -75,7 +75,9 @@
 
 ## 边界与尺寸约束
 
-`boundary` 缺省 `viewport`，也可给 CSS 选择器（按该元素的矩形夹取）；`boundary-padding` 内缩。边界只约束拖动/缩放/键盘交互，不改写宿主显式写入的坐标。`min` / `max` 为 `宽,高`，`min > max` 时以 `min` 为准。
+`boundary` 缺省 `viewport`，也可给 CSS 选择器（按该元素的矩形夹取）；`boundary-padding` 内缩。边界只约束拖动/缩放/键盘交互，不改写宿主显式写入的坐标。`min` / `max` 为 `宽,高`，`min > max` 时以 `min` 为准；`min` 非正或非法（含 `"0"` / `"0,0"`）视为未提供，回落缺省 `160,96`（不是 1px 下限，想要 1px 请显式写 `1,1`）。
+
+两个时序注意：① 手势进行中改 `boundary` / `boundary-padding` / `min` / `max` 不改变当前手势，下一次手势才生效；② 若初始 `rect` 完全落在边界外，首次拖动会先把位置夹回边界内（表现为瞬移一次）——需要稳定外观时把初始 `rect` 写在边界内。
 
 <DemoBlock title="在容器内拖动（boundary + min/max）">
   <div id="fp-bounds" style="position: relative; width: 100%; box-sizing: border-box; min-height: 260px; border: 1px dashed var(--oas-color-border); border-radius: var(--oas-radius-md)">
@@ -88,7 +90,7 @@
 
 ## 键盘与焦点
 
-面板框体可聚焦：方向键移动、`Shift` + 方向键缩放（8px/步），与指针等价。缩放方向映射固定为「方向键移动被拖动的边」：`Shift+→` / `Shift+↓` 放大（LTR 推东缘、RTL 推西缘；南缘下移），`Shift+←` / `Shift+↑` 缩小（LTR 西缘右移、RTL 东缘左移；北缘下移）。RTL 只镜像水平语义，垂直方向不变。`initial-focus` 指定打开时的焦点目标（找不到回退框体）；关闭时焦点归还打开前元素。
+面板框体可聚焦：方向键移动、`Shift` + 方向键缩放（8px/步），与指针等价。缩放方向映射固定为「方向键移动被拖动的边」：`Shift+→` / `Shift+↓` 放大（LTR 推东缘、RTL 推西缘；南缘下移），`Shift+←` / `Shift+↑` 缩小（LTR 西缘右移、RTL 东缘左移；北缘下移）。RTL 只镜像水平语义，垂直方向不变。`initial-focus` 指定打开时的焦点目标（找不到回退框体）；关闭时焦点归还打开前元素——焦点落在面板内**嵌套组件的 shadow 内**也算「仍在面板内」，同样归还；用户已把焦点移到面板外时不抢。
 
 <DemoBlock title="键盘移动 / 缩放 + initial-focus">
   <div style="position: relative; min-height: 240px">
@@ -130,7 +132,7 @@
 
 ## 插槽
 
-默认插槽承载面板内容；`title` 插槽覆盖标题文本（富标题，仍参与 `aria-labelledby`）。
+默认插槽承载面板内容；`title` 插槽覆盖标题文本（富标题，仍参与 `aria-labelledby`）。既无 `panel-title` 也无 `title` 插槽时，面板改用 i18n 名称（「悬浮面板」）作 `aria-label`，不写空的 `aria-labelledby`；`title` 插槽被动态清空后同样回落，清空再填回则切回 `aria-labelledby`。
 
 <DemoBlock title="title 插槽（富标题）">
   <div style="position: relative; min-height: 210px">
@@ -143,6 +145,14 @@
     </oas-floating-panel>
   </div>
   <p id="fp-slot-out" style="margin: var(--oas-space-2) 0 0; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">拖动上边或上角观察 oas-resize。</p>
+</DemoBlock>
+
+<DemoBlock title="无标题面板：回落 i18n 名称">
+  <div style="position: relative; min-height: 220px">
+    <oas-floating-panel id="fp-plain" open rect="0,0,360,200">
+      <p style="margin: 0">没有 <code>panel-title</code>，也没有 <code>title</code> 插槽：标题区留空，屏幕阅读器读「悬浮面板」。</p>
+    </oas-floating-panel>
+  </div>
 </DemoBlock>
 
 <script setup>
@@ -233,7 +243,7 @@ onMounted(() => {
 | `boundary-padding` | 边界内缩像素（非负；非法回落 0） | `string` | `0` |
 | `initial-focus` | 打开时聚焦的选择器（light DOM 或 shadow 内；找不到回退面板框体） | — | — |
 | `max` | 最大尺寸 宽,高（缺省不限制） | — | — |
-| `min` | 最小尺寸 宽,高（缺省 160,96；min > max 时以 min 为准） | — | — |
+| `min` | 最小尺寸 宽,高（缺省 160,96；非正/非法（含 0）视为未提供，回落缺省；min > max 时以 min 为准） | — | — |
 | `movable` | 标题栏拖动；框体聚焦时方向键移动（8px/步） | `boolean` | — |
 | `open` | 打开态（唯一状态源）；show()/close() 只写该属性，宿主直接写属性静默吸收（不派发 oas-open-change） | `boolean` | — |
 | `panel-title` | 标题文本（title 插槽覆盖）；避开原生 title 属性 | — | — |
@@ -245,7 +255,7 @@ onMounted(() => {
 | 方法 | 签名 | 说明 |
 | --- | --- | --- |
 | `show` | `show(): void` | 打开面板（写 open 属性；已打开时仅置前，不重复派发 oas-open-change） |
-| `close` | `close(): boolean` | 关闭请求：先派发可取消 oas-before-close；被 preventDefault 时返回 false 且保持打开（零属性写入、零 open-change）。返回是否已关闭——本来已关闭直接返回 true（不派发事件） |
+| `close` | `close(): boolean` | 关闭请求：先派发可取消 oas-before-close；被 preventDefault 时返回 false 且保持打开（零属性写入、零 open-change）。返回是否已关闭——本来已关闭直接返回 true（不派发事件）；before-close 处理器内重入 close() 不重复派发并返回 false |
 | `bringToFront` | `bringToFront(): void` | 族内置前并把本面板 Esc 层提到栈顶；已是最前时不重复派发 oas-activate |
 
 #### 事件
@@ -263,7 +273,7 @@ onMounted(() => {
 | 名称 | 说明 |
 | --- | --- |
 | 默认 | 面板内容 |
-| `title` | 标题富内容通道（覆盖 panel-title 文本，仍参与 aria-labelledby） |
+| `title` | 标题富内容通道（覆盖 panel-title 文本，仍参与 aria-labelledby；清空后回落 i18n 名称） |
 
 #### CSS 变量
 

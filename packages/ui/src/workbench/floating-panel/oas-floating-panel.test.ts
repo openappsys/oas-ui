@@ -158,6 +158,16 @@ describe('OASFloatingPanel 结构', () => {
     expect(frameStyle(el)).toEqual({ left: '0px', top: '0px', width: '500px', height: '500px' })
   })
 
+  it('min="0"：非正视为未提供，回落缺省 160,96（不按 1px 收敛）', () => {
+    const el = mount({ open: '', rect: '0,0,10,10', min: '0' })
+    expect(frameStyle(el)).toEqual({ left: '0px', top: '0px', width: '160px', height: '96px' })
+    el.setAttribute('min', '0,0')
+    expect(el.rect).toEqual({ x: 0, y: 0, width: 160, height: 96 })
+    // 显式 1 才是 1px 下限（rect 原文仍是 0,0,10,10）
+    el.setAttribute('min', '1,1')
+    expect(el.rect).toEqual({ x: 0, y: 0, width: 10, height: 10 })
+  })
+
   it('open property 反射', () => {
     const el = mount()
     expect(el.open).toBe(false)
@@ -208,6 +218,37 @@ describe('OASFloatingPanel 开合事件', () => {
     expect(el.hasAttribute('open')).toBe(true)
     expect(frame(el).hasAttribute('data-open')).toBe(true)
     expect(events).toEqual([{ type: 'oas-before-close', detail: { reason: 'method', source: 'api' } }])
+  })
+
+  it('before-close 处理器内重入 close()：一次逻辑关闭只派发一次，重入返回 false', () => {
+    const el = mount({ open: '' })
+    const events = record(el)
+    const reentrant: boolean[] = []
+    el.addEventListener('oas-before-close', () => {
+      reentrant.push(el.close())
+    })
+    expect(el.close()).toBe(true)
+    expect(reentrant, '重入调用不参与本次关闭的结果').toEqual([false])
+    expect(events, '只派发一次 before-close / 一次 open-change').toEqual([
+      { type: 'oas-before-close', detail: { reason: 'method', source: 'api' } },
+      { type: 'oas-open-change', detail: { open: false, reason: 'method', source: 'api' } },
+    ])
+    expect(el.hasAttribute('open')).toBe(false)
+  })
+
+  it('before-close 重入后外层否决：保持打开，且重入调用不写属性、不发 open-change', () => {
+    const el = mount({ open: '' })
+    const events = record(el)
+    let reentrant: boolean | null = null
+    el.addEventListener('oas-before-close', (e) => {
+      reentrant = el.close()
+      e.preventDefault()
+    })
+    expect(el.close()).toBe(false)
+    expect(reentrant).toBe(false)
+    expect(el.hasAttribute('open'), '外层否决后仍打开').toBe(true)
+    expect(events.filter((e) => e.type === 'oas-before-close')).toHaveLength(1)
+    expect(events.filter((e) => e.type === 'oas-open-change')).toHaveLength(0)
   })
 
   it('关闭钮：before-close { reason:close-button, source:user } → open-change；否决则保持打开', () => {
@@ -339,6 +380,60 @@ describe('OASFloatingPanel 可访问性', () => {
     expect(frame(el).hasAttribute('aria-label')).toBe(false)
   })
 
+  /** 按规范语义模拟真实浏览器 flatten：无分配节点时返回 slot fallback。
+   *  happy-dom 的 flatten 不返回 fallback（旧实现据此判「恒有标题」被假绿掩盖）。 */
+  function simulateFlattenFallback(slot: HTMLSlotElement): void {
+    const original = slot.assignedNodes.bind(slot)
+    slot.assignedNodes = ((options?: AssignedNodesOptions): Node[] => {
+      const assigned = original(options)
+      if (!options?.flatten || assigned.length > 0) return assigned
+      return [...slot.children]
+    }) as typeof slot.assignedNodes
+  }
+
+  it('无 panel-title 且无 title 插槽：真实 flatten 语义下仍回落 i18n aria-label', () => {
+    const el = mount({ open: '' })
+    const slot = el.shadowRoot!.querySelector<HTMLSlotElement>('slot[name="title"]')!
+    simulateFlattenFallback(slot)
+    slot.dispatchEvent(new Event('slotchange'))
+
+    const f = frame(el)
+    expect(f.hasAttribute('aria-labelledby'), '不得把 fallback 当标题').toBe(false)
+    expect(f.getAttribute('aria-label')).toBe('悬浮面板')
+
+    setLocale(en)
+    expect(frame(el).getAttribute('aria-label')).toBe('Floating panel')
+  })
+
+  it('title 插槽动态清空 / 重新填充：labelledby 与 aria-label 之间切换', () => {
+    const el = mount({ open: '' }, '<strong slot="title">富标题</strong>')
+    const slot = el.shadowRoot!.querySelector<HTMLSlotElement>('slot[name="title"]')!
+    expect(frame(el).getAttribute('aria-labelledby')).toBe(titleEl(el).id)
+
+    // 宿主清空插槽（真实浏览器会派发 slotchange；此处手动派发）
+    el.querySelector('[slot="title"]')!.remove()
+    slot.dispatchEvent(new Event('slotchange'))
+    expect(frame(el).hasAttribute('aria-labelledby'), '清空后不悬空 labelledby').toBe(false)
+    expect(frame(el).getAttribute('aria-label')).toBe('悬浮面板')
+
+    const again = document.createElement('span')
+    again.setAttribute('slot', 'title')
+    again.textContent = '再填回标题'
+    el.appendChild(again)
+    slot.dispatchEvent(new Event('slotchange'))
+    expect(frame(el).getAttribute('aria-labelledby')).toBe(titleEl(el).id)
+    expect(frame(el).hasAttribute('aria-label')).toBe(false)
+  })
+
+  it('浅插槽内空白文本 / 注释不算标题内容', () => {
+    const el = mount({ open: '' }, ' <!-- 注释 --> <span slot="title">   </span> ')
+    const slot = el.shadowRoot!.querySelector<HTMLSlotElement>('slot[name="title"]')!
+    simulateFlattenFallback(slot)
+    slot.dispatchEvent(new Event('slotchange'))
+    expect(frame(el).hasAttribute('aria-labelledby'), '纯空白插槽内容无名称').toBe(false)
+    expect(frame(el).getAttribute('aria-label')).toBe('悬浮面板')
+  })
+
   it('关闭钮 aria-label 与面板兜底名称随 locale 切换', () => {
     const el = mount({ open: '' })
     expect(closeBtn(el).getAttribute('aria-label')).toBe('关闭面板')
@@ -395,6 +490,40 @@ describe('OASFloatingPanel 焦点', () => {
     el.close()
     el.show()
     expect(activeInner(), '后续打开边沿聚焦面板').toBe(frame(el))
+  })
+
+  it('焦点在嵌套组件 shadow 内时关闭：沿组合链判定「仍在面板内」并归还焦点', () => {
+    const before = document.createElement('button')
+    document.body.appendChild(before)
+    before.focus()
+
+    const el = mount()
+    el.show()
+    // 面板内容放一个自带 shadow 的嵌套组件（与真实 oas-* 组件同形）
+    const nested = document.createElement('div')
+    el.appendChild(nested)
+    const nestedRoot = nested.attachShadow({ mode: 'open' })
+    const inner = document.createElement('button')
+    nestedRoot.appendChild(inner)
+
+    inner.focus()
+    expect(activeInner(), '焦点已进入嵌套 shadow').toBe(inner)
+
+    el.close()
+    expect(activeInner(), '跨组合边界仍判定为面板内焦点，归还打开前元素').toBe(before)
+  })
+
+  it('焦点已在面板外（用户另选目标）：关闭不抢焦点', () => {
+    const before = document.createElement('button')
+    const outside = document.createElement('button')
+    document.body.append(before, outside)
+    before.focus()
+
+    const el = mount()
+    el.show()
+    outside.focus()
+    el.close()
+    expect(activeInner(), '面板外的新焦点不被抢走').toBe(outside)
   })
 })
 

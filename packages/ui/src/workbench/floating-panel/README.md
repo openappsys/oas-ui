@@ -10,14 +10,20 @@
   面板框体 `position: absolute` 相对该锚点定位。因此面板随容器滚动、不依赖 `position: fixed` 的
   包含块陷阱，也不改动宿主 DOM 层级（无 portal）。
 - **缺省值**：`DEFAULT_RECT = { 48, 48, 420, 300 }`；`min` 缺省 `160,96`；`max` 缺省不限制。
+  `min` / `max` 里的非正或非法值（含 `0` / `0,0`）视为未提供：`min` 回落缺省 `160,96`，**不是** 1px 下限
+  （要 1px 请显式写 `1,1`）。
 - **纯函数**（`geometry.ts`，零 DOM）：解析/格式化、min/max 夹取、边界夹取、移动、八向缩放、
   键盘移动/缩放、相等判定。所有输出 `Math.round` 到整数像素，保证同一输入在 SSR/客户端/测试一致。
 - **退化规则**：
   - `min > max` → 以 `min` 为准（`resolveLimits` 把 `max` 抬到 `min`），不产生负尺寸；
   - 面板比边界大 → 贴起始边（`x = boundary.x + padding`），**边界不压缩尺寸**（尺寸只受 min/max 约束）；
-  - 边界元素零尺寸/缺失 → 不夹取（dev 告警一次，语义为「边界尚未可测」）。
+  - 边界元素零尺寸/缺失 → 不夹取（dev 告警一次，语义为「边界尚未可测」）；
+  - 初始 `rect` 完全落在边界外 → 首次拖动会先把位置夹回边界内（视觉上瞬移一次）；要稳定外观就把初始
+    `rect` 写在边界内（外部写 `rect` 本身不夹取，见下条）。
 - **边界只约束交互**：外部写 `rect` 原样归一化后立即生效（宿主显式坐标优先）；拖动/缩放/键盘
   才按 `boundary` + `boundary-padding` 夹取。好处是 SSR 与客户端首帧一致（服务端不测量、不改写宿主坐标）。
+- **手势快照**：`boundary` / `boundary-padding` / `min` / `max` 在 `pointerdown` 时快照进手势，
+  手势进行中改这些属性**不生效**（不影响正在进行的拖动/缩放与尺寸夹取），下一次手势才用新值。
 - **RTL**：`rect` 始终是物理坐标（拖拽是物理行为）。RTL 只镜像**键盘水平语义**：
   `ArrowRight` 朝书写前进方向（RTL 下 `x` 减小）；`Shift+ArrowRight` 在该侧扩展宽度。
 - **键盘缩放映射（固定为「方向键移动被拖动的边」）**：`Shift+→` / `Shift+↓` 放大
@@ -53,6 +59,7 @@
 | `lostpointercapture` | 视为结束并提交（`pointerup` 已提交则忽略后续 lost capture） |
 | 零位移 | 不写属性、不派发事件 |
 | 关闭钮 / Esc / `close()` | 先派发可取消 `oas-before-close`；`preventDefault()` → 不关闭、不写属性、不发 `open-change` |
+| `before-close` 处理器内重入 `close()` | `closing` 守卫：一次逻辑关闭只派发一次 `oas-before-close`；重入调用返回 `false`（本次关闭仍在进行中），不写属性、不发 `open-change` |
 | 外部写 `open` / `rect` | 静默吸收（不派发 `open-change` / `move` / `resize`） |
 | 触屏（`pointer: coarse`） | 手柄/关闭钮 44px；标题栏（含关闭钮）层级高于手柄，上侧/上角手柄从标题栏下沿起算 |
 | 断开期间改 `open` | 只更新内部状态与 `data-open`；Esc 层 / 叠放 / 焦点基线副作用被 `isConnected` 守卫跳过，重连由 `onReconnect` 补齐 |
@@ -67,9 +74,16 @@
 直接跳过，避免 RO 自激循环。SSR 快照仍用默认 token，服务端不测量、无差异帧；断开释放观察器，
 重连重挂。
 
+**标题插槽判据**：`hasSlotContent` 用 `assignedNodes()`（**不带 `flatten`**）判断 light DOM 是否有真实
+标题内容。title 槽内有 fallback `<span class="title-text">`（承载 `panel-title` 文本），真实浏览器的
+`flatten: true` 会把 fallback 当分配节点返回 → 恒判「有标题」→ 无标题面板的 i18n `aria-label` 分支不可达。
+本组件无插槽重分发，非 flatten 的分配节点就是真实内容；插槽被动态清空时 `slotchange` 触发 `update()`，
+`aria-labelledby` 撤下并切回 `aria-label`，填回后切回 `aria-labelledby`。
+
 焦点：打开时聚焦 `initial-focus`（light DOM 或 shadow 内首个命中），缺省聚焦面板框体；关闭时归还
-打开前元素（仍连接时）。键盘：面板框体可聚焦，方向键移动、`Shift` + 方向键缩放（8px/步），
-焦点在输入类控件内时不拦截。
+打开前元素（仍连接时）。「焦点是否还在面板内」沿组合链（`parentNode` → `ShadowRoot.host`）向上判定，
+因此内容里**嵌套组件 shadow 内**的焦点同样归还，不会丢到 `body`；用户已把焦点移到面板外则不抢。
+键盘：面板框体可聚焦，方向键移动、`Shift` + 方向键缩放（8px/步），焦点在输入类控件内时不拦截。
 
 ## 4. 清理与重连
 

@@ -350,6 +350,9 @@ export class OASFloatingPanel extends OASElement {
   /** 内部动作的待派发状态（外部写属性不设置 → 静默吸收） */
   private pendingOpenChange: FloatingPanelOpenChangeDetail | null = null
 
+  /** before-close 派发中（重入 close() 守卫：一次逻辑关闭只派发一次） */
+  private closing = false
+
   private interaction: InteractionState | null = null
   private rafId = 0
 
@@ -683,7 +686,16 @@ export class OASFloatingPanel extends OASElement {
 
   private requestClose(reason: FloatingPanelCloseReason, source: FloatingPanelActionSource): boolean {
     if (!this.hasAttr('open')) return true
-    if (!this.emit('before-close', { reason, source }, { cancelable: true })) return false
+    // 重入守卫：before-close 处理器内再次 close() 不得再派发一次（一次逻辑关闭只派发一次）
+    if (this.closing) return false
+    this.closing = true
+    let allowed: boolean
+    try {
+      allowed = this.emit('before-close', { reason, source }, { cancelable: true })
+    } finally {
+      this.closing = false
+    }
+    if (!allowed) return false
     this.cancelInteraction()
     this.pendingOpenChange = { open: false, reason, source }
     this.removeAttribute('open')
@@ -1005,10 +1017,7 @@ export class OASFloatingPanel extends OASElement {
     const previous = this.previousFocus
     this.previousFocus = null
     if (!previous || !previous.isConnected) return
-    const active = deepActiveElement()
-    const focusInside =
-      active === this || (active != null && (this.contains(active) || active.getRootNode() === this.shadow))
-    if (!focusInside) return
+    if (!this.isFocusInside(deepActiveElement())) return
     try {
       previous.focus()
     } catch {
@@ -1016,9 +1025,26 @@ export class OASFloatingPanel extends OASElement {
     }
   }
 
+  /**
+   * 焦点是否仍落在本面板内：沿组合链（`parentNode` → `ShadowRoot.host`）向上走，
+   * 因此内容里嵌套组件 shadow 内的焦点同样算「面板内」——`contains()` 不跨 shadow 边界，
+   * 只看 `getRootNode() === this.shadow` 会把嵌套 shadow 的焦点误判为面板外，关闭后焦点丢到 body。
+   */
+  private isFocusInside(active: Node | null): boolean {
+    let node: Node | null = active
+    while (node) {
+      if (node === this) return true
+      node = node.parentNode ?? (node as ShadowRoot).host ?? null
+    }
+    return false
+  }
+
   /** 插槽是否有真实内容：注释节点与纯空白文本不算（对齐库内判据） */
   private hasSlotContent(slot: HTMLSlotElement): boolean {
-    const nodes = slot.assignedNodes({ flatten: true })
+    // 必须用 assignedNodes()（不带 flatten）：title 槽内有 fallback `<span class="title-text">`，
+    // flatten 会把 fallback 当分配节点返回 → 恒判「有标题」→ 无标题面板的 aria-label 分支不可达。
+    // 本组件无插槽重分发，非 flatten 的分配节点即真实 light DOM 内容。
+    const nodes = slot.assignedNodes()
     return nodes.length > 0 && nodes.some((node) => this.isRealNode(node))
   }
 

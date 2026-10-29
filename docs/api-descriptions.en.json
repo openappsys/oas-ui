@@ -5212,7 +5212,7 @@
       "resizable": "Eight resize handles (four edges + four corners); Shift + arrows resize while the frame is focused",
       "boundary": "Interaction boundary: viewport (default) or a CSS selector; only drag/resize/keyboard are clamped, host-written coordinates are untouched",
       "boundary-padding": "Boundary inset in pixels (non-negative; invalid falls back to 0)",
-      "min": "Minimum size width,height (default 160,96; min wins when min > max)",
+      "min": "Minimum size width,height (default 160,96; non-positive or malformed values including 0 count as not provided and fall back to the default; min wins when min > max)",
       "max": "Maximum size width,height (unbounded by default)",
       "initial-focus": "Selector to focus on open (light DOM or shadow; falls back to the frame)"
     },
@@ -5225,11 +5225,11 @@
     },
     "slots": {
       "": "Panel content",
-      "title": "Rich title channel (overrides panel-title text; still feeds aria-labelledby)"
+      "title": "Rich title channel (overrides panel-title text; still feeds aria-labelledby; falls back to the i18n name when cleared)"
     },
     "methods": {
       "show": "Opens the panel (writes the open attribute; when already open it only raises the panel without re-dispatching oas-open-change)",
-      "close": "Requests close: dispatches cancelable oas-before-close first; returns false and stays open when prevented (no attribute write, no open-change). Returns whether the panel is closed — already closed returns true without dispatching",
+      "close": "Requests close: dispatches cancelable oas-before-close first; returns false and stays open when prevented (no attribute write, no open-change). Returns whether the panel is closed — already closed returns true without dispatching; a reentrant close() inside a before-close handler does not dispatch again and returns false",
       "bringToFront": "Raises the panel within the family and promotes its Esc layer to the top; no duplicate oas-activate when already frontmost"
     }
   }

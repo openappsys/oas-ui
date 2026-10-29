@@ -40,16 +40,22 @@ async function gotoPage(page: import('@playwright/test').Page, keep: string | st
   }, keepIds)
 }
 
-/** 独立真实页面：只放首帧即打开的面板，再加载真实构建产物（不经过文档 demo 页、不关闭任何面板） */
-async function openFirstFramePage(page: import('@playwright/test').Page, body: string): Promise<void> {
+/** 独立真实页面：路由一条空 HTML（全新 document + custom element registry）再加载真实构建产物。
+ *
+ * 不能用「`/404.html` + `setContent`」：文档站 `app.js` 已注册全部组件（CDN import 被跳过的同时
+ * 组件来自文档 bundle），而且 `document.open()` 不重置 registry——fixture 会静默用上文档 bundle，
+ * 不是 dist 产物。真实导航到路由空页才有干净 registry。 */
+async function openIsolatedPage(page: import('@playwright/test').Page, body: string): Promise<void> {
   await page.route('**/__qa_floating_cdn__/**', (route) =>
     route.fulfill({ path: builtCdn, contentType: 'text/javascript' }),
   )
-  // 真实 origin 锚点：setContent 后根相对模块说明符才能解析（about:blank 下 import 失败）
-  await page.goto('/404.html')
-  await page.setContent(
-    `<!doctype html><html lang="zh-CN"><body style="margin:0;padding:0">${body}<script type="module">import '/__qa_floating_cdn__/cdn.js'</script></body></html>`,
+  await page.route('**/__qa_floating_page__', (route) =>
+    route.fulfill({
+      contentType: 'text/html',
+      body: `<!doctype html><html lang="zh-CN"><body style="margin:0;padding:0">${body}<script type="module">import '/__qa_floating_cdn__/cdn.js'</script></body></html>`,
+    }),
   )
+  await page.goto('/__qa_floating_page__')
   await page.waitForFunction(() => customElements.get('oas-floating-panel') != null)
 }
 
@@ -103,11 +109,16 @@ test('基础渲染与语义：标题/位置/关闭钮/dialog 语义', async ({ p
     const host = document.getElementById('fp-basic')!
     const root = host.shadowRoot!
     const frame = root.querySelector<HTMLElement>('[part="frame"]')!
+    const title = root.querySelector<HTMLElement>('[part="title"]')!
+    const labelledby = frame.getAttribute('aria-labelledby')
     return {
       role: frame.getAttribute('role'),
       ariaModal: frame.getAttribute('aria-modal'),
-      labelledby: frame.getAttribute('aria-labelledby'),
-      title: root.querySelector('[part="title"]')!.textContent?.trim(),
+      labelledby,
+      // labelledby 必须指向真实存在的标题元素（悬空 IDREF 等于没有名称）
+      labelledbyResolves: labelledby != null && root.getElementById(labelledby) === title,
+      titleId: title.id,
+      title: title.textContent?.trim(),
       closeLabel: root.querySelector('[part="close"]')!.getAttribute('aria-label'),
       handles: root.querySelectorAll('[part="handle"]').length,
       display: getComputedStyle(host).display,
@@ -116,7 +127,8 @@ test('基础渲染与语义：标题/位置/关闭钮/dialog 语义', async ({ p
   expect(state.role).toBe('dialog')
   expect(state.ariaModal).toBe('false')
   expect(state.title).toBe('图层')
-  expect(state.labelledby, 'aria-labelledby 指向标题元素').toMatch(/^oas-floating-panel-title-/)
+  expect(state.labelledby, 'aria-labelledby 指向标题元素').toBe(state.titleId)
+  expect(state.labelledbyResolves, 'labelledby 指向真实 title id').toBe(true)
   expect(state.closeLabel, '关闭钮有可访问名称').toBe('关闭面板')
   expect(state.handles).toBe(8)
   expect(state.display).not.toBe('none')
@@ -130,6 +142,60 @@ test('基础渲染与语义：标题/位置/关闭钮/dialog 语义', async ({ p
   )
   await expect.poll(() => panelOpen(page, 'fp-basic')).toBe(false)
   expect(await page.evaluate(() => getComputedStyle(document.getElementById('fp-basic')!).display)).toBe('none')
+})
+
+/** 读取面板可访问名称相关状态（真实浏览器 aria 属性 + 标题文本） */
+function nameState(page: import('@playwright/test').Page, id: string) {
+  return page.evaluate((panelId) => {
+    const root = document.getElementById(panelId)!.shadowRoot!
+    const frame = root.querySelector<HTMLElement>('[part="frame"]')!
+    const title = root.querySelector<HTMLElement>('[part="title"]')!
+    const labelledby = frame.getAttribute('aria-labelledby')
+    return {
+      label: frame.getAttribute('aria-label'),
+      labelledby,
+      labelledbyResolves: labelledby != null && root.getElementById(labelledby) === title,
+      titleText: title.textContent?.trim() ?? '',
+      closeLabel: root.querySelector('[part="close"]')!.getAttribute('aria-label'),
+    }
+  }, id)
+}
+
+test('无标题面板：aria-label 回落 i18n 名称、无悬空 labelledby', async ({ page }) => {
+  await gotoPage(page, '#fp-plain')
+  const state = await nameState(page, 'fp-plain')
+  expect(state.labelledby, '无标题时不得写 labelledby').toBeNull()
+  expect(state.label, '回落 i18n 名称').toBe('悬浮面板')
+  expect(state.titleText, '标题区无内容').toBe('')
+  expect(state.closeLabel).toBe('关闭面板')
+})
+
+test('title 插槽动态清空 / 填回：labelledby 与 aria-label 正确切换', async ({ page }) => {
+  await gotoPage(page, '#fp-slot')
+  expect((await nameState(page, 'fp-slot')).labelledbyResolves, '初始富标题走 labelledby').toBe(true)
+
+  // 清空 title 插槽（宿主移除节点）：真实浏览器会派发 slotchange
+  await page.evaluate(() => {
+    document.getElementById('fp-slot')!.querySelector('[slot="title"]')!.remove()
+  })
+  await expect
+    .poll(async () => (await nameState(page, 'fp-slot')).labelledby, { message: '清空后不保留 labelledby' })
+    .toBeNull()
+  expect((await nameState(page, 'fp-slot')).label, '清空后回落 i18n 名称').toBe('悬浮面板')
+
+  // 重新填入：切回 labelledby
+  await page.evaluate(() => {
+    const host = document.getElementById('fp-slot')!
+    const span = document.createElement('span')
+    span.setAttribute('slot', 'title')
+    span.textContent = '恢复标题'
+    span.style.minHeight = '48px'
+    host.appendChild(span)
+  })
+  await expect
+    .poll(async () => (await nameState(page, 'fp-slot')).labelledbyResolves, { message: '填回后 labelledby 生效' })
+    .toBe(true)
+  expect((await nameState(page, 'fp-slot')).label).toBeNull()
 })
 
 test('真实拖拽标题移动：rect 提交 + oas-move 可见反馈', async ({ page }) => {
@@ -329,7 +395,7 @@ test('Esc 顺序跟随置前：A 开、B 开、点 A 置前后 Esc 关闭 A', as
 
 test('首帧即打开的单个面板落在最前档（+1）：页面只有该面板', async ({ page }) => {
   // 真实场景：HTML 里只有一块 open 面板，upgrade 时即为「首帧打开」，不调用 close() 清场
-  await openFirstFramePage(
+  await openIsolatedPage(
     page,
     `<div style="position:relative;min-height:240px">
       <oas-floating-panel id="fp-first" open panel-title="首帧面板" rect="20,20,300,160">
@@ -492,9 +558,89 @@ test('forced-colors：框体与关闭钮焦点环真实可见（outline 兜底�
   expect(frameState.boxShadow, 'box-shadow 被系统禁用，只剩 outline').toBe('none')
 })
 
-test('axe：面板无 critical/serious 违规', async ({ page }) => {
-  await gotoPage(page, ['#fp-basic', '#fp-ctrl', '#fp-nest'])
-  const results = await new AxeBuilder({ page }).include('#fp-basic').include('#fp-ctrl').include('#fp-nest').analyze()
+test('焦点在嵌套组件 shadow 内时关闭：焦点归还打开前元素（不丢到 body）', async ({ page }) => {
+  await gotoPage(page, '#fp-nest')
+  const result = await page.evaluate(async () => {
+    const panel = document.getElementById('fp-nest') as PanelEl
+    // 面板外的原生控件作为「打开前焦点」基线（自定义元素宿主不自带焦点语义）
+    const outside = document.getElementById('fp-veto') as HTMLElement
+    // 关闭后由宿主重新打开，确保建立「打开前焦点」基线（首帧即打开不建基线）
+    panel.close()
+    outside.focus()
+    panel.show()
+
+    // 面板内容里的真实嵌套组件：oas-button 的内层 <button> 在它自己的 shadow root 内
+    const button = panel.querySelector('oas-button')!
+    const inner = button.shadowRoot!.querySelector<HTMLElement>('button')!
+    const deep = (): Element | null => {
+      let active: Element | null = document.activeElement
+      while (active?.shadowRoot?.activeElement) active = active.shadowRoot.activeElement
+      return active
+    }
+    inner.focus()
+    const beforeClose = deep() === inner
+    panel.close()
+    await new Promise<void>((r) => requestAnimationFrame(() => requestAnimationFrame(() => r())))
+    return {
+      beforeClose,
+      outsideStillInDoc: outside.isConnected,
+      activeId: document.activeElement?.id ?? '',
+      focusReturned: document.activeElement === outside,
+    }
+  })
+  expect(result.beforeClose, '焦点确实进入嵌套组件 shadow').toBe(true)
+  expect(result.outsideStillInDoc, '打开前焦点元素仍在文档内').toBe(true)
+  expect(
+    result.focusReturned,
+    `关闭后焦点回到打开前按钮（实际 activeElement id=${JSON.stringify(result.activeId)}）`,
+  ).toBe(true)
+})
+
+test('嵌套组件 shadow 内焦点：close() 后回到打开前元素（独立 CDN 页面 + 焦点已收敛）', async ({ page }) => {
+  await openIsolatedPage(
+    page,
+    `<button id="fp-outside">outside</button>
+    <div style="position:relative;min-height:220px">
+      <oas-floating-panel id="fp-deep" rect="10,10,300,160"><oas-button>深一层</oas-button></oas-floating-panel>
+    </div>`,
+  )
+  await up(page, '#fp-deep')
+  await page.waitForFunction(() => document.querySelector('oas-button')?.shadowRoot?.querySelector('button') != null)
+  const result = await page.evaluate(async () => {
+    const panel = document.getElementById('fp-deep') as PanelEl
+    const outside = document.getElementById('fp-outside') as HTMLElement
+    const deep = (): Element | null => {
+      let active: Element | null = document.activeElement
+      while (active?.shadowRoot?.activeElement) active = active.shadowRoot.activeElement
+      return active
+    }
+    outside.focus()
+    panel.show()
+    // 真实嵌套组件：oas-button 的内层 <button> 在它自己的 shadow root 内（跨一层组合边界）
+    const inner = panel.querySelector('oas-button')!.shadowRoot!.querySelector<HTMLElement>('button')!
+    inner.focus()
+    const entered = deep() === inner
+    panel.close()
+    // 等焦点修正（浏览器在下一帧把隐藏子树里的焦点修正掉）：修复前这里会落到 body
+    await new Promise<void>((r) => requestAnimationFrame(() => requestAnimationFrame(() => r())))
+    return {
+      entered,
+      returned: document.activeElement === outside,
+      active: `${document.activeElement?.tagName}#${document.activeElement?.id ?? ''}`,
+    }
+  })
+  expect(result.entered, '焦点确实进入嵌套组件 shadow').toBe(true)
+  expect(result.returned, `关闭后焦点回到打开前按钮（实际 ${result.active}）`).toBe(true)
+})
+
+test('axe：面板无 critical/serious 违规（含无标题面板）', async ({ page }) => {
+  await gotoPage(page, ['#fp-basic', '#fp-ctrl', '#fp-nest', '#fp-plain'])
+  const results = await new AxeBuilder({ page })
+    .include('#fp-basic')
+    .include('#fp-ctrl')
+    .include('#fp-nest')
+    .include('#fp-plain')
+    .analyze()
   const blocking = results.violations.filter((v) => v.impact === 'critical' || v.impact === 'serious')
   expect(blocking.map((v) => `${v.id}: ${v.help}`)).toEqual([])
 })

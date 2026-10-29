@@ -75,7 +75,9 @@ Panels in the same family share a fixed overlay tier: only the frontmost panel g
 
 ## Boundaries and size limits
 
-`boundary` defaults to `viewport`; a CSS selector clamps interactions to that element's rectangle. `boundary-padding` insets it. Boundaries only constrain drag/resize/keyboard — host-written coordinates are never rewritten. `min` / `max` take `width,height`; when `min > max`, `min` wins.
+`boundary` defaults to `viewport`; a CSS selector clamps interactions to that element's rectangle. `boundary-padding` insets it. Boundaries only constrain drag/resize/keyboard — host-written coordinates are never rewritten. `min` / `max` take `width,height`; when `min > max`, `min` wins. Non-positive or malformed `min` values (including `"0"` / `"0,0"`) count as "not provided" and fall back to the default `160,96` — that is not a 1px floor; write `1,1` to get one.
+
+Two timing notes: ① changing `boundary` / `boundary-padding` / `min` / `max` mid-gesture does not affect the running gesture — it applies from the next gesture; ② if the initial `rect` lies fully outside the boundary, the first drag clamps the position back inside (a one-time jump) — keep the initial `rect` inside the boundary for a stable look.
 
 <DemoBlock title="Drag inside a container (boundary + min/max)">
   <div id="fp-bounds" style="position: relative; width: 100%; box-sizing: border-box; min-height: 260px; border: 1px dashed var(--oas-color-border); border-radius: var(--oas-radius-md)">
@@ -88,7 +90,7 @@ Panels in the same family share a fixed overlay tier: only the frontmost panel g
 
 ## Keyboard and focus
 
-The frame is focusable: arrow keys move, `Shift` + arrows resize (8px per step), equivalent to pointer input. The resize mapping always moves the dragged edge: `Shift+→` / `Shift+↓` grow (LTR pushes the east edge, RTL the west edge; the south edge moves down), `Shift+←` / `Shift+↑` shrink (LTR moves the west edge right, RTL the east edge left; the north edge moves down). RTL mirrors horizontal semantics only; vertical stays fixed. `initial-focus` chooses the focus target on open (falling back to the frame); focus returns to the previously focused element on close.
+The frame is focusable: arrow keys move, `Shift` + arrows resize (8px per step), equivalent to pointer input. The resize mapping always moves the dragged edge: `Shift+→` / `Shift+↓` grow (LTR pushes the east edge, RTL the west edge; the south edge moves down), `Shift+←` / `Shift+↑` shrink (LTR moves the west edge right, RTL the east edge left; the north edge moves down). RTL mirrors horizontal semantics only; vertical stays fixed. `initial-focus` chooses the focus target on open (falling back to the frame); focus returns to the previously focused element on close — focus inside a nested component's shadow root still counts as "inside the panel" and is returned, while focus the user already moved outside the panel is left alone.
 
 <DemoBlock title="Keyboard move / resize + initial-focus">
   <div style="position: relative; min-height: 240px">
@@ -130,7 +132,7 @@ Overlays inside the panel (such as `oas-dropdown`) push a later Esc layer: the f
 
 ## Slots
 
-The default slot carries the content; the `title` slot overrides the title text (rich titles still feed `aria-labelledby`).
+The default slot carries the content; the `title` slot overrides the title text (rich titles still feed `aria-labelledby`). With neither `panel-title` nor a `title` slot, the panel falls back to the i18n name ("Floating panel") via `aria-label` and writes no empty `aria-labelledby`; clearing the `title` slot later falls back the same way, and filling it again switches back to `aria-labelledby`.
 
 <DemoBlock title="title slot (rich title)">
   <div style="position: relative; min-height: 210px">
@@ -143,6 +145,14 @@ The default slot carries the content; the `title` slot overrides the title text 
     </oas-floating-panel>
   </div>
   <p id="fp-slot-out" style="margin: var(--oas-space-2) 0 0; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">Drag the top edge or a top corner to see oas-resize.</p>
+</DemoBlock>
+
+<DemoBlock title="Untitled panel: i18n name fallback">
+  <div style="position: relative; min-height: 220px">
+    <oas-floating-panel id="fp-plain" open rect="0,0,360,200">
+      <p style="margin: 0">No <code>panel-title</code> and no <code>title</code> slot: the title area stays empty and screen readers announce "Floating panel".</p>
+    </oas-floating-panel>
+  </div>
 </DemoBlock>
 
 <script setup>
@@ -233,7 +243,7 @@ onMounted(() => {
 | `boundary-padding` | Boundary inset in pixels (non-negative; invalid falls back to 0) | `string` | `0` |
 | `initial-focus` | Selector to focus on open (light DOM or shadow; falls back to the frame) | — | — |
 | `max` | Maximum size width,height (unbounded by default) | — | — |
-| `min` | Minimum size width,height (default 160,96; min wins when min > max) | — | — |
+| `min` | Minimum size width,height (default 160,96; non-positive or malformed values including 0 count as not provided and fall back to the default; min wins when min > max) | — | — |
 | `movable` | Drag by the title bar; arrow keys move while the frame is focused (8px per step) | `boolean` | — |
 | `open` | Open state (single source of truth); show()/close() only write it, host writes are absorbed silently (no oas-open-change) | `boolean` | — |
 | `panel-title` | Title text (overridden by the title slot); avoids the native title attribute | — | — |
@@ -245,7 +255,7 @@ onMounted(() => {
 | Method | Signature | Description |
 | --- | --- | --- |
 | `show` | `show(): void` | Opens the panel (writes the open attribute; when already open it only raises the panel without re-dispatching oas-open-change) |
-| `close` | `close(): boolean` | Requests close: dispatches cancelable oas-before-close first; returns false and stays open when prevented (no attribute write, no open-change). Returns whether the panel is closed — already closed returns true without dispatching |
+| `close` | `close(): boolean` | Requests close: dispatches cancelable oas-before-close first; returns false and stays open when prevented (no attribute write, no open-change). Returns whether the panel is closed — already closed returns true without dispatching; a reentrant close() inside a before-close handler does not dispatch again and returns false |
 | `bringToFront` | `bringToFront(): void` | Raises the panel within the family and promotes its Esc layer to the top; no duplicate oas-activate when already frontmost |
 
 #### Events
@@ -263,7 +273,7 @@ onMounted(() => {
 | Name | Description |
 | --- | --- |
 | default | Panel content |
-| `title` | Rich title channel (overrides panel-title text; still feeds aria-labelledby) |
+| `title` | Rich title channel (overrides panel-title text; still feeds aria-labelledby; falls back to the i18n name when cleared) |
 
 #### CSS Variables
 

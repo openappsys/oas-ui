@@ -4952,7 +4952,7 @@
       "resizable": "八向缩放手柄（四边 + 四角）；框体聚焦时 Shift + 方向键缩放",
       "boundary": "交互边界：viewport（默认）或 CSS 选择器；只夹取拖动/缩放/键盘，不改写宿主写入的坐标",
       "boundary-padding": "边界内缩像素（非负；非法回落 0）",
-      "min": "最小尺寸 宽,高（缺省 160,96；min > max 时以 min 为准）",
+      "min": "最小尺寸 宽,高（缺省 160,96；非正/非法（含 0）视为未提供，回落缺省；min > max 时以 min 为准）",
       "max": "最大尺寸 宽,高（缺省不限制）",
       "initial-focus": "打开时聚焦的选择器（light DOM 或 shadow 内；找不到回退面板框体）"
     },
@@ -4965,11 +4965,11 @@
     },
     "slots": {
       "": "面板内容",
-      "title": "标题富内容通道（覆盖 panel-title 文本，仍参与 aria-labelledby）"
+      "title": "标题富内容通道（覆盖 panel-title 文本，仍参与 aria-labelledby；清空后回落 i18n 名称）"
     },
     "methods": {
       "show": "打开面板（写 open 属性；已打开时仅置前，不重复派发 oas-open-change）",
-      "close": "关闭请求：先派发可取消 oas-before-close；被 preventDefault 时返回 false 且保持打开（零属性写入、零 open-change）。返回是否已关闭——本来已关闭直接返回 true（不派发事件）",
+      "close": "关闭请求：先派发可取消 oas-before-close；被 preventDefault 时返回 false 且保持打开（零属性写入、零 open-change）。返回是否已关闭——本来已关闭直接返回 true（不派发事件）；before-close 处理器内重入 close() 不重复派发并返回 false",
       "bringToFront": "族内置前并把本面板 Esc 层提到栈顶；已是最前时不重复派发 oas-activate"
     }
   }

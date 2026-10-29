@@ -80,6 +80,20 @@ describe('parseSizePair / resolveLimits', () => {
     })
   })
 
+  it('min="0" / 非正值：视为未提供，回落缺省 160×96（不按 1px 收敛）', () => {
+    const fallback = {
+      minWidth: 160,
+      minHeight: 96,
+      maxWidth: Number.POSITIVE_INFINITY,
+      maxHeight: Number.POSITIVE_INFINITY,
+    }
+    expect(resolveLimits('0', null)).toEqual(fallback)
+    expect(resolveLimits('0,0', null)).toEqual(fallback)
+    expect(resolveLimits('-5,-5', null)).toEqual(fallback)
+    // 显式 1 才是 1px 下限
+    expect(resolveLimits('1,1', null)).toMatchObject({ minWidth: 1, minHeight: 1 })
+  })
+
   it('min > max 退化：以 min 为准（不产生负尺寸）', () => {
     expect(resolveLimits('300,200', '100,50')).toEqual({
       minWidth: 300,
