@@ -38,7 +38,7 @@ interface ViteConfigLike {
 
 /** 供测试复用的最小 Nuxt 切片 */
 export interface NuxtLike {
-  options: { css: string[] }
+  options: { css: string[]; vue?: ViteVueOptionsLike }
   hook: (name: string, fn: (config: unknown) => void) => void
 }
 
@@ -64,6 +64,20 @@ export function mergeIsCustomElement(existing: unknown): (tag: string) => boolea
 export function applyVueIsCustomElement(config: unknown): void {
   const viteConfig = config as ViteConfigLike
   const vue = viteConfig.vue ?? (viteConfig.vue = {})
+  const compilerOptions = (vue.compilerOptions ??= {}) as { isCustomElement?: unknown }
+  compilerOptions.isCustomElement = mergeIsCustomElement(compilerOptions.isCustomElement)
+}
+
+/**
+ * 把 isCustomElement 写进 Nuxt 的 `vue.compilerOptions`（Nuxt 4 实际读取的配置位置）。
+ *
+ * Nuxt 4 构建期用 `vuePlugin(nuxtResolvedConfig.vue)` 创建插件，模块必须在 setup 阶段
+ * 直接写 `nuxt.options.vue.compilerOptions`；仅靠 `vite:extendConfig` 修改 config.vue
+ * 在 Nuxt 4 实测不生效（模板里的 `oas-*` 被当作未解析组件，SSR 输出只剩注释占位）。
+ * 两条路径都保留：Nuxt 3 早期版本仍走 vite hook。
+ */
+export function applyNuxtVueIsCustomElement(options: { vue?: ViteVueOptionsLike }): void {
+  const vue = options.vue ?? (options.vue = {})
   const compilerOptions = (vue.compilerOptions ??= {}) as { isCustomElement?: unknown }
   compilerOptions.isCustomElement = mergeIsCustomElement(compilerOptions.isCustomElement)
 }
@@ -94,6 +108,9 @@ export function setupOasModule(options: ModuleOptions, nuxt: NuxtLike): void {
   if (themeEntry && !nuxt.options.css.includes(themeEntry)) {
     nuxt.options.css.push(themeEntry)
   }
+
+  // Nuxt 4 真正读取的配置位置（setup 阶段即生效）；vite hook 保留给早期 Nuxt 3
+  applyNuxtVueIsCustomElement(nuxt.options)
 
   nuxt.hook('vite:extendConfig', (config) => {
     applyVueIsCustomElement(config)

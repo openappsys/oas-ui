@@ -25,7 +25,7 @@ OAS-UI 是 Web Components 组件库，组件在浏览器运行时自定义元素
 - 白名单收尾批次 5（DSD 白名单化）：badge / button-group / icon / kbd / label / link / space / visually-hidden 纯展示组件快照直出完整视觉（badge 徽标数字、kbd 键帽拆分、space 宿主内联布局样式均确定性写入）；tooltip / popover 浮层触发类默认关闭、快照为触发器 slot 原样 + 关闭态气泡骨架（content/title 文本同步，定位在触发时计算）；config-provider / app 框架级容器无自身视觉、快照为子树原样 + 容器属性就位（data-theme / size 等），嵌套子组件由 injectNestedDSD 覆盖。theme-editor 为开发工具组件（开发期主题编辑面板），SSR 意义低，评估后排除白名单，保持客户端专属。
 - 嵌套递归序列化：light DOM 里已 upgrade 的白名单子组件（如 form>form-item>oas-input、tabs>tab-panel、descriptions>descriptions-item、layout>sider/header、grid>grid-item、timeline>timeline-item）会被递归包成嵌套 `<template shadowrootmode="open">`（含子组件指纹）插到该子元素内容最前，禁 JS 时子组件 shadow 内容（label 文本等）同样可见；浏览器 upgrade 后父子均按指纹走真水合。子组件 tag 在渲染前按需装载（非白名单子组件不装载、按原始标记输出）；light DOM 输出用处理后的 `el.innerHTML`（保留组件对 light DOM 的同步，如 tabs 非激活面板 hidden、collapse open 态）。
 - 测量组件首帧闪动治理：affix / ellipsis / scroll-area 检测到 DSD 快照时把布局写入延迟到首帧后（rAF）——快照 = 未校正态，upgrade 首帧与快照一致无跳动，rAF 后按真实布局校正。
-- 框架集成插件：`@oas-ui/nuxt`（Nuxt 3 module）与 `@oas-ui/next`（Next.js App Router 集成）已落地——nuxt module 自动配置 Vue `compilerOptions.isCustomElement`（识别 `oas-*`）、注入 `@oas-ui/theme` 全局 CSS、注册 `renderOasToString` SSR helper 自动导入；next 提供 RSC `<OasComponent>` 服务端产 DSD 快照 + `<OasRegistry>` 客户端注册引导（见下「Nuxt（推荐）」/「Next.js（推荐）」）。
+- 框架集成插件：`@oas-ui/nuxt`（Nuxt 3/4 module）与 `@oas-ui/next`（Next.js App Router 集成）已落地——nuxt module 自动配置 Vue `compilerOptions.isCustomElement`（识别 `oas-*`）、注入 `@oas-ui/theme` 全局 CSS、注册 `renderOasToString` SSR helper 自动导入；next 提供 RSC `<OasComponent>` 服务端产 DSD 快照 + `<OasRegistry>` 客户端注册引导（见下「Nuxt（推荐）」/「Next.js（推荐）」）。
 
 白名单组件可直接服务端渲染；其余组件仍按"客户端专属"方式接入（见下）。
 

@@ -1,0 +1,28 @@
+{
+  "name": "oas-ui-ssr-fixture-nuxt",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "T11 fixture：Nuxt 4 生产构建下的 @oas-ui/nuxt DSD + Vue 模板验收（不随 npm 包分发）",
+  "scripts": {
+    "prebuild": "node scripts/embed-theme.mjs",
+    "build": "vite build -c vite.client.config.ts && nuxt build",
+    "predev": "node scripts/embed-theme.mjs",
+    "start": "node .output/server/index.mjs",
+    "dev": "nuxt dev",
+    "prepare": "node scripts/embed-theme.mjs && nuxt prepare"
+  },
+  "dependencies": {
+    "@oas-ui/i18n": "link:../../../i18n",
+    "@oas-ui/nuxt": "link:../../../nuxt",
+    "@oas-ui/ssr": "link:../..",
+    "@oas-ui/theme": "link:../../../theme",
+    "@oas-ui/ui": "link:../../../ui",
+    "nuxt": "4.6.3",
+    "vue": "^3.5.22",
+    "vue-router": "^4.6.3"
+  },
+  "devDependencies": {
+    "vite": "^8.3.4"
+  }
+}

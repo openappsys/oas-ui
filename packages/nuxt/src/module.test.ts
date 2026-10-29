@@ -52,8 +52,9 @@ const nuxtModule = nuxtModuleRaw as unknown as ModuleDefShape
 
 function createFakeNuxt() {
   const hooks = new Map<string, Array<(config: unknown) => void>>()
+  const options: { css: string[]; vue?: { compilerOptions?: { isCustomElement?: unknown } } } = { css: [] }
   return {
-    options: { css: [] as string[] },
+    options,
     hook: vi.fn((name: string, fn: (config: unknown) => void) => {
       hooks.set(name, [...(hooks.get(name) ?? []), fn])
     }),
@@ -142,6 +143,25 @@ describe('@oas-ui/nuxt module 定义', () => {
     const custom = createFakeNuxt()
     setupOasModule({ theme: '~/assets/oas.css', autoImports: false }, custom)
     expect(custom.options.css).toEqual(['~/assets/oas.css'])
+  })
+
+  it('setup：直接写 Nuxt 4 的 vue.compilerOptions.isCustomElement（vite hook 之外的真实生效路径）', () => {
+    const fake = createFakeNuxt()
+    setupOasModule({ theme: false, autoImports: false }, fake)
+    const isCustomElement = fake.options.vue?.compilerOptions?.isCustomElement as (tag: string) => boolean
+    expect(typeof isCustomElement).toBe('function')
+    expect(isCustomElement('oas-button')).toBe(true)
+    expect(isCustomElement('oas-form-item')).toBe(true)
+    expect(isCustomElement('div')).toBe(false)
+
+    // 既有配置（函数形态）保留
+    const withExisting = createFakeNuxt()
+    withExisting.options.vue = { compilerOptions: { isCustomElement: (t: string) => t === 'x-widget' } }
+    setupOasModule({ theme: false, autoImports: false }, withExisting)
+    const merged = withExisting.options.vue!.compilerOptions!.isCustomElement as (tag: string) => boolean
+    expect(merged('x-widget')).toBe(true)
+    expect(merged('oas-tag')).toBe(true)
+    expect(merged('span')).toBe(false)
   })
 
   it('setup：注册 vite:extendConfig 钩子，钩子内把 isCustomElement 注入 vue compilerOptions', async () => {
