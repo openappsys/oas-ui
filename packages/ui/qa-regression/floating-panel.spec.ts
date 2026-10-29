@@ -422,7 +422,7 @@ test.describe('coarse 指针热区', () => {
         type: 'touchMove',
         touchPoints: [{ x: start.x + step * 15, y: start.y + step * 10, id: 1 }],
       })
-      await page.waitForTimeout(16)
+      await page.evaluate(() => new Promise<void>((r) => requestAnimationFrame(() => requestAnimationFrame(() => r()))))
     }
     await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] })
     await expect.poll(() => rectAttr(page, 'fp-basic'), '触摸拖动提交 oas-move').toBe('60,40,380,230')
