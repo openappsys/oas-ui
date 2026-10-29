@@ -139,9 +139,9 @@ el.customRequest = ({ file, name, action, onProgress, onSuccess, onError }) => {
 
 ## 文件大小限制（max-size）
 
-`max-size` 支持字节数或带单位写法（`512KB` / `2MB` / `1GB`）；超限拒绝并派发 `oas-exceed-limit`（`detail.type === 'size'`，含 `maxSize` 字节数）。
+`max-size` 支持字节数或带单位写法（`512KB` / `2MB` / `1GB`；IEC 别名的 `2KiB` / `1MiB` / `1GiB` / `2TB` 同样被接受，单位一律按 1024 进制解析）；超限拒绝并派发 `oas-exceed-limit`（`detail.type === 'size'`，含 `maxSize` 字节数）。非空但无法解析的写法（如 `2ZB`）按「不限制」处理，并在 dev 环境发一次 `devWarn`（不静默放行）。
 
-> **大小显示与单位**：列表行、`[data-item-size]` 绑定与预览浮层中的文件大小按 IEC 单位显示（`B` / `KiB` / `MiB`，1024 进制，保留 1 位小数）——例如 `2048` 字节显示为 `2.0 KiB`。`max-size` 的输入写法 `KB` / `MB` / `GB` 仍按 1024 进制解析；两者数值口径一致，只是显示标签采用 IEC（`KiB` / `MiB`）。
+> **大小显示与单位**：列表行、`[data-item-size]` 绑定与预览浮层中的文件大小按 IEC 单位显示（`B` / `KiB` / `MiB` / `GiB` / `TiB` / `PiB` / `EiB`，1024 进制）——`B` 档取整，非 `B` 档固定 1 位小数；例如 `2048` 字节显示为 `2.0 KiB`，`1.5 GiB` 不再封顶显示为 `1536.0 MB`。`max-size` 的输入写法 `KB` / `MB` / `GB` 仍按 1024 进制解析；两者数值口径一致，只是显示标签采用 IEC（`KiB` / `MiB` / `GiB`）。
 
 <DemoBlock title="max-size（100KB）">
   <oas-upload id="upload-size" multiple max-size="100KB"></oas-upload>
@@ -171,7 +171,7 @@ el.customRequest = ({ file, name, action, onProgress, onSuccess, onError }) => {
 
 - `slot="trigger"`：替换拖拽区内容（点击/拖拽语义保留在拖拽区容器上——zone 本身就是 `role="button"` 的可聚焦控件，**内嵌内容不要再放按钮/链接等可交互元素**（嵌套交互 axe 违规）；展示性内容即可）
 - `tip` 属性或 `template[slot="tip"]`：拖拽区下方次要说明文案（属性优先）
-- `template[slot="item"]`：克隆进 `list` / `picture` 每行，`[data-item-name]` / `[data-item-size]` 自动绑定文件名与大小（大小按 IEC 单位 + 1 位小数，如 `2.0 KiB`）
+- `template[slot="item"]`：克隆进 `list` / `picture` 每行，`[data-item-name]` / `[data-item-size]` 自动绑定文件名与大小（大小按 IEC 单位，`B` 档取整、非 `B` 档 1 位小数，如 `2.0 KiB`）
 
 <DemoBlock title="trigger / tip 插槽">
   <oas-upload id="upload-trigger" multiple tip="支持任意文件，单个不超过 20MB">
@@ -342,7 +342,7 @@ onMounted(async () => {
   if (before) {
     before.beforeUpload = (file) => {
       if (file.size > 100 * 1024) {
-        message.warning(`${file.name} 超过 100KB，已拒绝`)
+        message.warning(`${file.name} 超过 100KiB，已拒绝`)
         return false
       }
       const renamed = new File([file], `demo-${Date.now()}-${file.name}`, { type: file.type })
@@ -351,11 +351,11 @@ onMounted(async () => {
     }
   }
 
-  // max-size 超限反馈
+  // max-size 超限反馈（KiB 与组件显示同单位，避免同屏 KB/KiB 矛盾）
   const size = document.getElementById('upload-size')
   size?.addEventListener('oas-exceed-limit', (e) => {
     if (e.detail.type === 'size') {
-      message.warning(`${e.detail.files[0].name} 超过 ${Math.round(e.detail.maxSize / 1024)}KB，已拒绝`)
+      message.warning(`${e.detail.files[0].name} 超过 ${Math.round(e.detail.maxSize / 1024)}KiB，已拒绝`)
     } else {
       message.warning('超出数量限制')
     }
@@ -367,14 +367,14 @@ onMounted(async () => {
     if (e.detail.replaced) message.info(`旧文件「${e.detail.file.name}」已被替换`)
   })
 
-  // crop 裁剪反馈：确认后展示裁剪结果信息
+  // crop 裁剪反馈：确认后展示裁剪结果信息（KiB 与组件显示同单位）
   const crop = document.getElementById('upload-crop')
   const cropOut = document.getElementById('upload-crop-output')
   crop?.addEventListener('oas-crop', (e) => {
     const { file, blob } = e.detail
-    const kb = Math.max(1, Math.round(blob.size / 1024))
-    if (cropOut) cropOut.textContent = `oas-crop：${file.name} → 裁剪结果 ${kb} KB`
-    message.success(`已裁剪：${file.name}（${kb} KB）`)
+    const kib = Math.max(1, Math.round(blob.size / 1024))
+    if (cropOut) cropOut.textContent = `oas-crop：${file.name} → 裁剪结果 ${kib} KiB`
+    message.success(`已裁剪：${file.name}（${kib} KiB）`)
   })
 
   // 已上传回显（defaultFiles：{name, url} 型初值，状态 done）
@@ -448,7 +448,7 @@ onMounted(async () => {
 | `headers` | 附加请求头（JSON 字符串） | — | — |
 | `list-type` | 列表样式：`list`（默认）/ `picture`（列表带小缩略图）/ `picture-card`（卡片缩略图墙） | `string` | `list` |
 | `max` | 最大文件数 | `string` | `0` |
-| `max-size` | 单文件大小上限（字节或 `2KB`/`1MB`/`1GB`，按 1024 进制解析；超限派 oas-exceed size 形态） | `string` | — |
+| `max-size` | 单文件大小上限（字节或 `2KB`/`2KiB`/`1MB`/`1GiB`/`2TB`，均按 1024 进制解析；非空但无法解析按「不限制」并 devWarn）；超限派 oas-exceed size 形态 | `string` | — |
 | `method` | HTTP 方法（默认 POST） | `string` | `POST` |
 | `multiple` | 多选 | `boolean` | — |
 | `name` | 上传文件的表单字段名（默认 `file`） | `string` | — |
@@ -495,7 +495,7 @@ onMounted(async () => {
 
 | 名称 | 说明 |
 | --- | --- |
-| `template[slot="item"]` | 自定义文件行/卡片（`[data-item-name]`/`[data-item-size]` 绑定；大小按 IEC `B`/`KiB`/`MiB` + 1 位小数显示） |
+| `template[slot="item"]` | 自定义文件行/卡片（`[data-item-name]`/`[data-item-size]` 绑定；大小按 IEC `B`/`KiB`/`MiB`… 显示，`B` 档取整、非 `B` 档 1 位小数） |
 | `template[slot="tip"]` | 拖拽区提示富内容（tip 属性优先） |
 | `template[slot="trigger"]` | 自绘触发区模板（native slot 对 template 元素不生效，走克隆通道；zone 点击仍打开文件选择） |
 | `trigger` | 替换拖拽区内容（zone 语义保留） |

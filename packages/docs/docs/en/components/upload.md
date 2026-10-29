@@ -139,9 +139,9 @@ Combined with `before-upload`, the hook runs first (validation/transform) and th
 
 ## File Size Limit (max-size)
 
-`max-size` accepts bytes or a unit form (`512KB` / `2MB` / `1GB`); oversized files are rejected with `oas-exceed-limit` (`detail.type === 'size'`, including the `maxSize` in bytes).
+`max-size` accepts bytes or a unit form (`512KB` / `2MB` / `1GB`); IEC aliases (`2KiB` / `1MiB` / `1GiB` / `2TB`) are accepted too and all units are parsed in base 1024. Oversized files are rejected with `oas-exceed-limit` (`detail.type === 'size'`, including the `maxSize` in bytes). A non-empty but unparsable value (e.g. `2ZB`) means "unlimited" and emits a one-time `devWarn` in development (never silently ignored).
 
-> **Size display and units**: file sizes in list rows, the `[data-item-size]` binding, and the preview overlay use IEC units (`B` / `KiB` / `MiB`, base 1024, one fixed decimal) — for example `2048` bytes renders as `2.0 KiB`. The `max-size` input forms `KB` / `MB` / `GB` are still parsed in base 1024; the numeric semantics match, only the display labels follow IEC (`KiB` / `MiB`).
+> **Size display and units**: file sizes in list rows, the `[data-item-size]` binding, and the preview overlay use IEC units (`B` / `KiB` / `MiB` / `GiB` / `TiB` / `PiB` / `EiB`, base 1024) — the `B` tier rounds to an integer, other tiers use one fixed decimal; for example `2048` bytes renders as `2.0 KiB`, and `1.5 GiB` is no longer clamped to `1536.0 MB`. The `max-size` input forms `KB` / `MB` / `GB` are still parsed in base 1024; the numeric semantics match, only the display labels follow IEC (`KiB` / `MiB` / `GiB`).
 
 <DemoBlock title="max-size (100KB)">
   <oas-upload id="upload-size" multiple max-size="100KB"></oas-upload>
@@ -171,7 +171,7 @@ With `replace`, exceeding the count limit no longer rejects: the oldest file is 
 
 - `slot="trigger"`: replaces the drop zone content (click/drag semantics stay on the zone container — the zone itself is the focusable `role="button"` control, so **do not nest interactive elements (buttons/links) inside the trigger content** (nested-interactive is an axe violation); presentational content only)
 - `tip` attribute or `template[slot="tip"]`: secondary hint text below the zone (attribute wins)
-- `template[slot="item"]`: cloned into every `list` / `picture` row; `[data-item-name]` / `[data-item-size]` bind the file name and size automatically (size uses IEC units with one decimal, e.g. `2.0 KiB`)
+- `template[slot="item"]`: cloned into every `list` / `picture` row; `[data-item-name]` / `[data-item-size]` bind the file name and size automatically (IEC units; the `B` tier rounds to an integer, other tiers use one decimal, e.g. `2.0 KiB`)
 
 <DemoBlock title="trigger / tip slots">
   <oas-upload id="upload-trigger" multiple tip="Any file type, up to 20MB each">
@@ -343,7 +343,7 @@ onMounted(async () => {
   if (before) {
     before.beforeUpload = (file) => {
       if (file.size > 100 * 1024) {
-        message.warning(`${file.name} exceeds 100KB, rejected`)
+        message.warning(`${file.name} exceeds 100KiB, rejected`)
         return false
       }
       const renamed = new File([file], `demo-${Date.now()}-${file.name}`, { type: file.type })
@@ -352,11 +352,11 @@ onMounted(async () => {
     }
   }
 
-  // max-size feedback
+  // max-size feedback (KiB matches the component display units)
   const size = document.getElementById('upload-size')
   size?.addEventListener('oas-exceed-limit', (e) => {
     if (e.detail.type === 'size') {
-      message.warning(`${e.detail.files[0].name} exceeds ${Math.round(e.detail.maxSize / 1024)}KB, rejected`)
+      message.warning(`${e.detail.files[0].name} exceeds ${Math.round(e.detail.maxSize / 1024)}KiB, rejected`)
     } else {
       message.warning('Count limit exceeded')
     }
@@ -368,14 +368,14 @@ onMounted(async () => {
     if (e.detail.replaced) message.info(`Old file "${e.detail.file.name}" was replaced`)
   })
 
-  // crop feedback: show the crop result after confirmation
+  // crop feedback: show the crop result after confirmation (KiB matches the component display units)
   const crop = document.getElementById('upload-crop')
   const cropOut = document.getElementById('upload-crop-output')
   crop?.addEventListener('oas-crop', (e) => {
     const { file, blob } = e.detail
-    const kb = Math.max(1, Math.round(blob.size / 1024))
-    if (cropOut) cropOut.textContent = `oas-crop: ${file.name} → cropped result ${kb} KB`
-    message.success(`Cropped: ${file.name} (${kb} KB)`)
+    const kib = Math.max(1, Math.round(blob.size / 1024))
+    if (cropOut) cropOut.textContent = `oas-crop: ${file.name} → cropped result ${kib} KiB`
+    message.success(`Cropped: ${file.name} (${kib} KiB)`)
   })
 
   // Echo back (defaultFiles: {name, url} records, status done)
@@ -449,7 +449,7 @@ The current form value is available through the public `value` property for read
 | `headers` | Extra request headers (JSON string) | — | — |
 | `list-type` | List style: `list` (default) / `picture` (rows with thumbnails) / `picture-card` (card thumbnail wall) | `string` | `list` |
 | `max` | Maximum number of files | `string` | `0` |
-| `max-size` | Per-file size limit (bytes or `2KB`/`1MB`/`1GB`, parsed in base 1024; over limit fires oas-exceed size form) | `string` | — |
+| `max-size` | Per-file size limit (bytes or `2KB`/`2KiB`/`1MB`/`1GiB`/`2TB`, all parsed in base 1024; unparsable non-empty values mean "unlimited" plus a devWarn); over limit fires oas-exceed size form | `string` | — |
 | `method` | HTTP method (default POST) | `string` | `POST` |
 | `multiple` | Multiple selection | `boolean` | — |
 | `name` | Form field name for the file (default `file`) | `string` | — |
@@ -496,7 +496,7 @@ The current form value is available through the public `value` property for read
 
 | Name | Description |
 | --- | --- |
-| `template[slot="item"]` | Custom file row/card (`[data-item-name]`/`[data-item-size]` bindings; size uses IEC `B`/`KiB`/`MiB` with one decimal) |
+| `template[slot="item"]` | Custom file row/card (`[data-item-name]`/`[data-item-size]` bindings; IEC `B`/`KiB`/`MiB`… display, `B` tier rounds to an integer, other tiers use one decimal) |
 | `template[slot="tip"]` | Drop-zone tip rich content (tip attribute wins) |
 | `template[slot="trigger"]` | Self-drawn trigger-area template (native slot does not render template elements — cloned by the component; clicking the zone still opens the file picker) |
 | `trigger` | Replace the drop-zone content (zone semantics kept) |

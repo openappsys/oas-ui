@@ -29,7 +29,7 @@ formatByte(1000, { unitSystem: 'si' }) // '1.0 KB'（1000 进制）
 formatByte(1536, { locale: 'de-DE' }) // '1,5 KiB'
 ```
 
-默认 `unitSystem: 'iec'`（`B` / `KiB` / `MiB`…）、`precision: 1`、`locale: 'en-US'`（SSR 与客户端逐字一致）；`NaN` / `Infinity` / 非数字返回空串。
+默认 `unitSystem: 'iec'`（`B` / `KiB` / `MiB`…）、`precision: 1`、`locale: 'en-US'`（SSR 与客户端逐字一致；非法或不受支持的 locale 标签统一回落 `en-US`）；`NaN` / `Infinity` / 非数字返回空串。
 
 ### 相关包
 
@@ -67,7 +67,7 @@ formatByte(1000, { unitSystem: 'si' }) // '1.0 KB' (base 1000)
 formatByte(1536, { locale: 'de-DE' }) // '1,5 KiB'
 ```
 
-Defaults: `unitSystem: 'iec'` (`B` / `KiB` / `MiB`…), `precision: 1`, `locale: 'en-US'` (SSR and client output match exactly). `NaN` / `Infinity` / non-numbers return an empty string.
+Defaults: `unitSystem: 'iec'` (`B` / `KiB` / `MiB`…), `precision: 1`, `locale: 'en-US'` (SSR and client output match exactly; invalid or unsupported locale tags fall back to `en-US`). `NaN` / `Infinity` / non-numbers return an empty string.
 
 ### Related packages
 

@@ -479,7 +479,8 @@ gtag('config', 'G-RXS142HBXF');`,
     optimizeDeps: {
       // workspace 包经 symlink 直接解析 packages/*/dist（与生产同一份产物），
       // 显式 exclude 防止被纳入预构建缓存——否则改 dist 后须清 .vitepress/cache 才生效。
-      exclude: ['@oas-ui/ui', '@oas-ui/core', '@oas-ui/i18n', '@oas-ui/icons'],
+      // 子路径入口（`@oas-ui/core/format-byte`）是独立 dist 模块，同样要排除。
+      exclude: ['@oas-ui/ui', '@oas-ui/core', '@oas-ui/core/format-byte', '@oas-ui/i18n', '@oas-ui/icons'],
     },
   },
   themeConfig: {

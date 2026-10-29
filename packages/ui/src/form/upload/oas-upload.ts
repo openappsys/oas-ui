@@ -1,5 +1,6 @@
 import { OASFormElement } from '@oas-ui/core'
 import { formatByte } from '@oas-ui/core/format-byte'
+import { devWarn } from '../../shared/dev-warn.js'
 
 /**
  * 上传条目：本地新选文件（File），或已上传回显记录（{name, url}，初值语义、状态 done）。
@@ -654,6 +655,18 @@ const STYLE = `
 
 /** 回显记录按扩展名判断图片（File 走 MIME type） */
 const IMAGE_URL_RE = /\.(png|jpe?g|gif|webp|svg|bmp|ico|avif)(\?.*)?$/i
+
+/** max-size 非法值告警去重：同一字符串只告警一次（逐次选文件/多实例不刷屏） */
+const warnedMaxSize = new Set<string>()
+
+function warnInvalidMaxSize(raw: string): void {
+  if (warnedMaxSize.has(raw)) return
+  warnedMaxSize.add(raw)
+  devWarn(
+    `[oas-upload] max-size "${raw}" 无法解析，已按「不限制」处理；` +
+      '支持字节数或 B / KB / KiB / MB / MiB / GB / GiB / TB（均按 1024 进制）',
+  )
+}
 
 function isImageEntry(entry: UploadEntry): boolean {
   if (entry instanceof File) return entry.type.startsWith('image/')
@@ -1536,16 +1549,35 @@ export class OASUpload extends OASFormElement {
     this.cropPrevFocus = null
   }
 
-  /** max-size 解析：纯数字按字节；支持 B/KB/MB/GB 单位（不区分大小写） */
+  /**
+   * max-size 解析：纯数字按字节；支持 `B` / `KB` / `KiB` / `MB` / `MiB` / `GB` / `GiB` / `TB`
+   * （不区分大小写，全部按 1024 进制——`KB` 与 `KiB` 同值，只认数值不认 SI 语义）。
+   * 非空但无法解析时按「不限制」处理并 devWarn（同一非法字符串只告警一次，避免刷屏）。
+   */
   private maxSizeBytes(): number {
     const raw = this.getAttr('max-size', '').trim()
     if (!raw) return 0
-    const m = /^(\d+(?:\.\d+)?)\s*(b|kb|mb|gb)?$/i.exec(raw)
-    if (!m) return 0
+    const m = /^(\d+(?:\.\d+)?)\s*(kib|mib|gib|kb|mb|gb|tb|b)?$/i.exec(raw)
+    if (!m) {
+      warnInvalidMaxSize(raw)
+      return 0
+    }
     const n = Number.parseFloat(m[1]!)
     const unit = (m[2] ?? 'b').toLowerCase()
-    const mult: Record<string, number> = { b: 1, kb: 1024, mb: 1024 ** 2, gb: 1024 ** 3 }
-    if (!Number.isFinite(n)) return 0
+    const mult: Record<string, number> = {
+      b: 1,
+      kb: 1024,
+      kib: 1024,
+      mb: 1024 ** 2,
+      mib: 1024 ** 2,
+      gb: 1024 ** 3,
+      gib: 1024 ** 3,
+      tb: 1024 ** 4,
+    }
+    if (!Number.isFinite(n)) {
+      warnInvalidMaxSize(raw)
+      return 0
+    }
     return Math.round(n * (mult[unit] ?? 1))
   }
 

@@ -4235,7 +4235,7 @@
       "headers": "Extra request headers (JSON string)",
       "data": "Extra form fields (JSON string, submitted with the file)",
       "with-credentials": "Cross-origin credentials",
-      "max-size": "Per-file size limit (bytes or `2KB`/`1MB`/`1GB`, parsed in base 1024; over limit fires oas-exceed size form)",
+      "max-size": "Per-file size limit (bytes or `2KB`/`2KiB`/`1MB`/`1GiB`/`2TB`, all parsed in base 1024; unparsable non-empty values mean \"unlimited\" plus a devWarn); over limit fires oas-exceed size form",
       "directory": "Directory upload (recursive folder intake)",
       "paste": "Paste upload (off by default; clipboard files enter the list when on)",
       "show-file-list": "File list visibility (`\"false\"` hides it, keeping only the drop zone)",
@@ -4261,7 +4261,7 @@
     },
     "slots": {
       "trigger": "Replace the drop-zone content (zone semantics kept)",
-      "template[slot=\"item\"]": "Custom file row/card (`[data-item-name]`/`[data-item-size]` bindings; size uses IEC `B`/`KiB`/`MiB` with one decimal)",
+      "template[slot=\"item\"]": "Custom file row/card (`[data-item-name]`/`[data-item-size]` bindings; IEC `B`/`KiB`/`MiB`… display, `B` tier rounds to an integer, other tiers use one decimal)",
       "template[slot=\"tip\"]": "Drop-zone tip rich content (tip attribute wins)",
       "template[slot=\"trigger\"]": "Self-drawn trigger-area template (native slot does not render template elements — cloned by the component; clicking the zone still opens the file picker)"
     },

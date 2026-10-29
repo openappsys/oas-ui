@@ -628,6 +628,47 @@ describe('OASUpload max-size', () => {
     expect(detail.maxSize).toBe(2048)
   })
 
+  it('max-size 支持 IEC 写法（2KiB = 2048 字节、2TB = 2×1024⁴）', () => {
+    // 用户照新的显示文案写 `2KiB` 时不能被静默当成「无限制」
+    const kib = mount({ 'max-size': '2KiB' })
+    let kibDetail: any
+    kib.addEventListener('oas-exceed', (e: Event) => (kibDetail = (e as CustomEvent).detail))
+    pick(kib, [makeFile('big.bin', 'application/octet-stream', 3 * 1024)])
+    expect(kib.files.length).toBe(0)
+    expect(kibDetail).toEqual({
+      files: [expect.any(File)],
+      type: 'size',
+      maxSize: 2048,
+      total: 0,
+    })
+
+    const tib = mount({ 'max-size': '2TB' })
+    let tibDetail: any
+    tib.addEventListener('oas-exceed', (e: Event) => (tibDetail = (e as CustomEvent).detail))
+    // 不真实分配 TB 级内存：fixture 只覆写 size（组件只读 File.size）
+    const huge = makeFile('huge.bin', 'application/octet-stream')
+    Object.defineProperty(huge, 'size', { value: 2 * 1024 ** 4 + 1 })
+    pick(tib, [huge])
+    expect(tibDetail.maxSize).toBe(2 * 1024 ** 4)
+  })
+
+  it('max-size 无法解析时 devWarn 一次（不静默放行），语义明确为「不限制」', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    try {
+      const el = mount({ 'max-size': '2ZB', multiple: '' })
+      pick(el, [makeFile('a.bin')])
+      pick(el, [makeFile('b.bin')])
+      // 非法 = 不限制（不误判为某个字节上限）；但必须显式告警，不能静默降级
+      expect(el.files.length).toBe(2)
+      const calls = warn.mock.calls.filter((c) => String(c[0]).includes('max-size'))
+      expect(calls.length, '同一非法值只告警一次，避免逐次选文件刷屏').toBe(1)
+      expect(String(calls[0]![0])).toContain('2ZB')
+      expect(String(calls[0]![0])).toContain('不限制')
+    } finally {
+      warn.mockRestore()
+    }
+  })
+
   it('未超限文件正常进入列表', () => {
     const el = mount({ 'max-size': '1MB' })
     pick(el, [makeFile('ok.txt', 'text/plain', 1024 * 512)])

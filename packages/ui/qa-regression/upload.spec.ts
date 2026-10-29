@@ -67,6 +67,47 @@ test('upload 文件大小显示 IEC 单位（KiB）：回显列表与 dark 主�
   }
 })
 
+test('upload max-size 接受 IEC 写法：2KiB 真实拦截 3KiB 文件（不再静默当作无限制）', async ({ page }) => {
+  // Task 9C fix round 1：用户照新的显示文案写 `2KiB` 时必须生效；旧解析表只认 b|kb|mb|gb，
+  // 会 return 0（=不限制）静默放行。devWarn 属 dev-only 通道（docs 为生产构建会被摇掉），
+  // 告警本身由 oas-upload.test.ts 单测锁定；这里断言用户可感知的拦截结果。
+  await page.goto('/components/upload.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#upload-drag')
+  const r = await page.evaluate(async () => {
+    if (!customElements.get('oas-upload')) await customElements.whenDefined('oas-upload')
+    const host = document.createElement('oas-upload') as HTMLElement & { files: unknown[] }
+    host.id = 'max-size-kib-probe'
+    host.setAttribute('max-size', '2KiB')
+    host.style.cssText = 'display:block;width:320px;position:fixed;top:80px;left:20px;z-index:9999;'
+    document.body.appendChild(host)
+    const detail: { type?: string; maxSize?: number; rejected?: number } = {}
+    host.addEventListener('oas-exceed-limit', (e) => {
+      const d = (e as CustomEvent).detail as { type?: string; maxSize?: number; files?: unknown[] }
+      detail.type = d.type
+      detail.maxSize = d.maxSize
+      detail.rejected = d.files?.length ?? 0
+    })
+    const dt = new DataTransfer()
+    dt.items.add(new File([new ArrayBuffer(3 * 1024)], 'three-kib.bin', { type: 'application/octet-stream' }))
+    host
+      .shadowRoot!.querySelector('.zone')!
+      .dispatchEvent(new DragEvent('drop', { dataTransfer: dt, bubbles: true, cancelable: true }))
+    await new Promise((res) => setTimeout(res, 50))
+    const result = {
+      files: host.files.length,
+      type: detail.type,
+      maxSize: detail.maxSize,
+      rejected: detail.rejected ?? 0,
+    }
+    host.remove()
+    return result
+  })
+  expect(r.files, '3KiB 超过 2KiB 上限，不得入列').toBe(0)
+  expect(r.rejected).toBe(1)
+  expect(r.type).toBe('size')
+  expect(r.maxSize).toBe(2048)
+})
+
 test('upload 拖拽 drop：真实拖放文件到拖拽区即渲染', async ({ page }) => {
   await page.goto('/components/upload.html', { waitUntil: 'domcontentloaded' })
   await up(page, '#upload-drag')

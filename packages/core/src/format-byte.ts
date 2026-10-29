@@ -5,7 +5,9 @@
  * - 默认 IEC（1024 进制，`KiB`/`MiB`）——文件系统与浏览器 `File.size` 的常用口径；
  *   需要十进制标签（`KB`/`MB`）时显式传 `unitSystem: 'si'`，不猜测、不自动切换。
  * - 默认 `locale: 'en-US'`：SSR 快照与客户端渲染必须逐字一致（不随运行环境 locale 漂移）；
- *   需要本地化小数点/数字字形时显式传 `locale`，非法标签回落 `en-US` 且不抛错。
+ *   需要本地化小数点/数字字形时显式传 `locale`；结构非法（`zh_CN`）与结构合法但 Intl 无数据
+ *   （`xx-YY`）的标签统一回落 `en-US` 且不抛错——后者若原样交给 Intl，会静默落宿主默认 locale
+ *   （CI/容器常为 zh-CN、de-DE），破坏 SSR 确定性。
  * - 固定小数位（默认 1 位）而非「最多 N 位」：与上传组件旧的定点显示意图一致
  *   （`2.0 KiB` / `5.0 MiB`），避免同一列表里 `2 KiB` 与 `2.5 KiB` 对齐抖动。
  * - 进位按舍入后的值判定：`1023.96 B` → `1.0 KiB`、`1023.96 KiB` → `1.0 MiB`，不出现
@@ -17,7 +19,7 @@
 export type ByteUnitSystem = 'iec' | 'si'
 
 export interface FormatByteOptions {
-  /** BCP 47 locale；缺省 `en-US`（确定性），非法/空值回落 `en-US` */
+  /** BCP 47 locale；缺省 `en-US`（确定性），非法/不受支持/空值回落 `en-US` */
   locale?: string
   /** 单位制，缺省 `iec`；非法值按 `iec` 处理 */
   unitSystem?: ByteUnitSystem
@@ -39,22 +41,35 @@ function resolvePrecision(raw: number | undefined): number {
   return Math.min(MAX_PRECISION, Math.max(0, Math.trunc(raw)))
 }
 
+/**
+ * locale 归一化（同时作为 formatter 缓存键）：只接受 Intl 真正有数据的标签。
+ *
+ * - 结构非法（`zh_CN`、`''`）：`supportedLocalesOf` 抛 RangeError → 回落 `en-US`；
+ * - 结构合法但不受支持（`xx-YY`）：返回空数组 → 回落 `en-US`。**不能**把这类标签原样交给
+ *   `Intl.NumberFormat`，那会静默使用宿主默认 locale（本机 zh-CN、CI/容器任意），
+ *   使「默认 en-US 的确定性」在传参时失效；
+ * - 受支持的标签归一化为规范大小写（`de-de` → `de-DE`），让缓存命中同一项。
+ */
+function resolveLocale(raw: string | undefined): string {
+  if (typeof raw !== 'string' || raw === '') return FALLBACK_LOCALE
+  try {
+    const [supported] = Intl.NumberFormat.supportedLocalesOf(raw)
+    return supported ?? FALLBACK_LOCALE
+  } catch {
+    return FALLBACK_LOCALE
+  }
+}
+
 function getFormatter(locale: string, digits: number): Intl.NumberFormat {
   const key = `${locale}|${digits}`
   const cached = formatterCache.get(key)
   if (cached) return cached
-  const options: Intl.NumberFormatOptions = {
+  // locale 已由 resolveLocale 校验/归一化：必定受支持，构造不会抛错
+  const formatter = new Intl.NumberFormat(locale, {
     useGrouping: false,
     minimumFractionDigits: digits,
     maximumFractionDigits: digits,
-  }
-  let formatter: Intl.NumberFormat
-  try {
-    formatter = new Intl.NumberFormat(locale, options)
-  } catch {
-    // 非法 BCP 47 标签：不向调用方抛错，固定回落 en-US（SSR 与客户端同口径）
-    formatter = new Intl.NumberFormat(FALLBACK_LOCALE, options)
-  }
+  })
   formatterCache.set(key, formatter)
   return formatter
 }
@@ -75,14 +90,15 @@ function roundAt(value: number, digits: number): number {
  * @example formatByte(1000, { unitSystem: 'si' }) // '1.0 KB'
  * @example formatByte(1536, { locale: 'de-DE' }) // '1,5 KiB'
  */
-export function formatByte(bytes: number, options: FormatByteOptions = {}): string {
+export function formatByte(bytes: number, options: FormatByteOptions | null = {}): string {
   if (typeof bytes !== 'number' || !Number.isFinite(bytes)) return ''
 
-  const unitSystem: ByteUnitSystem = options.unitSystem === 'si' ? 'si' : 'iec'
+  const opts = options ?? {}
+  const unitSystem: ByteUnitSystem = opts.unitSystem === 'si' ? 'si' : 'iec'
   const units = unitSystem === 'si' ? SI_UNITS : IEC_UNITS
   const base = unitSystem === 'si' ? 1000 : 1024
-  const precision = resolvePrecision(options.precision)
-  const locale = typeof options.locale === 'string' && options.locale !== '' ? options.locale : FALLBACK_LOCALE
+  const precision = resolvePrecision(opts.precision)
+  const locale = resolveLocale(opts.locale)
 
   const magnitude = Math.abs(bytes)
   let exponent = 0
