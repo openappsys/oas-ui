@@ -186,6 +186,7 @@
   "oas-json-viewer",
   "oas-diff-viewer",
   "oas-countdown",
+  "oas-relative-time",
   "oas-statistic",
   "oas-ellipsis",
   "oas-marquee",

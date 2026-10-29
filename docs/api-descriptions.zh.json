@@ -4928,5 +4928,18 @@
       "collapseAll": "收起全部未修改区块",
       "scrollToChange": "滚动到指定变更块并聚焦其首行；越界返回 false"
     }
+  },
+  "oas-relative-time": {
+    "attrs": {
+      "value": "目标时刻：epoch 毫秒数字串或 ISO 8601；property 另接受 `number` / `Date`",
+      "locale": "相对时间 locale（如 `zh-CN` / `en-US`）；非法或不支持时安全回落 provider → 全局 i18n → `en-US`",
+      "numeric": "Intl 数字模式：`auto`（默认，语义化「刚刚 / 昨天」）/ `always`（始终数字）；其他值按 auto",
+      "auto-refresh": "按单位节流自动刷新（秒级 1s、其余 30s）；`\"false\"` 或缺失关闭；页面隐藏暂停、断开清理、重连恢复"
+    },
+    "props": {
+      "value": "目标时刻 property 通道：`number` 为 epoch 毫秒、`Date` 自动写回 ISO attribute、`null` 清空（走空态）"
+    },
+    "events": {},
+    "slots": {}
   }
 }

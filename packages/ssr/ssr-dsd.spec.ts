@@ -417,6 +417,7 @@ test.beforeAll(async () => {
       locale: 'zh-CN',
     }),
     renderToString('oas-countdown', { value: '3600000', format: 'HH:mm:ss' }),
+    renderToString('oas-relative-time', { value: '2020-01-01T00:00:00.000Z', locale: 'zh-CN' }),
     renderToString('oas-chart', { type: 'bar', data: CHART_DATA }, '', { locale: 'zh-CN' }),
     renderToString('oas-code', { code: 'const a = 1\nconsole.log(a)', language: 'js', 'show-line-number': '' }, '', {
       locale: 'zh-CN',

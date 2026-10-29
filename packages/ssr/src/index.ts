@@ -35,7 +35,9 @@
  * （form 收尾 knob/questionnaire + conversation 五件 bubble/attachment/message-scroller/
  * marker/message-row + workbench 构件族 titlebar/statusbar/inspector/action-bar 及各自子件：
  * 纯展示/骨架组件直出完整快照；questionnaire 步骤内容走 slot 声明式通道；scroller 快照为
- * 初始滚动位，升级后 rAF 初始定位不改变宿主几何；全部组件有 hydrate() 覆写、真水合接管）。
+ * 初始滚动位，升级后 rAF 初始定位不改变宿主几何；全部组件有 hydrate() 覆写、真水合接管）+
+ * 相对时间展示（relative-time：快照按服务端 Date.now() 直出相对文案与 `<time datetime>`，
+ * 升级后按客户端时钟重算；未开启 auto-refresh 时渲染路径不访问浏览器全局）。
  *
  * 嵌套递归序列化：light DOM 里已 upgrade 的子组件（如 form>form-item>oas-input、tabs>tab-panel、
  * layout>sider）会被递归包成嵌套 `<template shadowrootmode="open">`（含子组件指纹），
@@ -179,6 +181,7 @@ export const WHITELIST = [
   'oas-carousel',
   'oas-statistic',
   'oas-countdown',
+  'oas-relative-time',
   'oas-chart',
   'oas-code',
   'oas-equation',
@@ -391,6 +394,7 @@ const TAG_ENTRY: Record<WhiteListTag, string> = {
   'oas-carousel': '@oas-ui/ui/data/carousel',
   'oas-statistic': '@oas-ui/ui/data/statistic',
   'oas-countdown': '@oas-ui/ui/data/countdown',
+  'oas-relative-time': '@oas-ui/ui/data/relative-time',
   'oas-chart': '@oas-ui/ui/data/chart',
   'oas-code': '@oas-ui/ui/data/code',
   'oas-equation': '@oas-ui/ui/data/equation',

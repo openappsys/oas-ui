@@ -1,8 +1,8 @@
 {
   "schema": 1,
   "totals": {
-    "components": 211,
-    "whitelist": 164,
+    "components": 212,
+    "whitelist": 165,
     "noSsr": 47
   },
   "components": [
@@ -3178,6 +3178,23 @@
       "parent": null,
       "note": null,
       "entry": "@oas-ui/ui/data/countdown",
+      "hasTemplate": true,
+      "hasHydrate": true,
+      "unitTest": true,
+      "dsdFixture": true,
+      "docsZh": true,
+      "docsEn": true
+    },
+    {
+      "tag": "oas-relative-time",
+      "family": "data",
+      "dir": "data/relative-time",
+      "className": "OASRelativeTime",
+      "ssr": "whitelist",
+      "reason": null,
+      "parent": null,
+      "note": null,
+      "entry": "@oas-ui/ui/data/relative-time",
       "hasTemplate": true,
       "hasHydrate": true,
       "unitTest": true,

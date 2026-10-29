@@ -1,0 +1,39 @@
+{
+  "className": "OASRelativeTime",
+  "sourceFile": "packages/ui/src/data/relative-time/oas-relative-time.ts",
+  "attrs": [
+    {
+      "name": "value",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "locale",
+      "observed": true
+    },
+    {
+      "name": "numeric",
+      "type": "string",
+      "default": "auto",
+      "observed": true
+    },
+    {
+      "name": "auto-refresh",
+      "type": "string",
+      "default": "",
+      "observed": true
+    }
+  ],
+  "props": [
+    {
+      "name": "value",
+      "type": "string | number | Date | null",
+      "api": true
+    }
+  ],
+  "methods": [],
+  "events": [],
+  "slots": [],
+  "cssVars": [],
+  "unresolved": []
+}

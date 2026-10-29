@@ -250,6 +250,7 @@ const componentSidebar: DefaultTheme.SidebarItem[] = [
       { text: 'Carousel 轮播', link: '/components/carousel' },
       { text: 'Statistic 统计数值', link: '/components/statistic' },
       { text: 'Countdown 倒计时', link: '/components/countdown' },
+      { text: 'RelativeTime 相对时间', link: '/components/relative-time' },
       { text: 'Ellipsis 文本省略', link: '/components/ellipsis' },
       { text: 'Chart 图表', link: '/components/chart' },
       { text: 'Code 代码块', link: '/components/code' },

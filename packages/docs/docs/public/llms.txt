@@ -169,6 +169,7 @@
 - [Carousel 轮播](https://oas-ui.dev/components/carousel): 用于在同一可视区域循环展示多屏内容，支持手动切换与自动播放。
 - [Statistic 统计数值](https://oas-ui.dev/components/statistic): 统计数值展示，Intl.NumberFormat 千分位与精度（locale 感知），支持前后缀与骨架屏加载占位。
 - [Countdown 倒计时](https://oas-ui.dev/components/countdown): 倒计时组件，实时刷新、支持天/时/分/秒格式化模板，到达终点派发 oas-finish，断开连接自动清理计时器。type="countup" 切换为正计时（从 start 起往上递增，无终止点）。
+- [RelativeTime 相对时间](https://oas-ui.dev/components/relative-time): 把 epoch 毫秒 / ISO 8601 / Date 渲染为本地化相对时间，内层使用语义化 <time datetime>；可选 auto-refresh 自动刷新，页面隐藏时暂停。
 - [Ellipsis 文本省略](https://oas-ui.dev/components/ellipsis): 用于长文本的自动省略，支持单行/多行截断，溢出时悬停展示全文 tooltip，也可展开/收起。
 - [Chart 图表](https://oas-ui.dev/components/chart): 自研 SVG 图表组件（零第三方图表引擎），支持折线 / 柱状 / 饼图 / 面积 / 环形 / 堆叠柱状 / 雷达 / 极坐标面积八型，外加系列级组合图与双轴。
 - [Code 代码块](https://oas-ui.dev/components/code): 代码块组件（自研正则 token 高亮，零第三方高亮引擎），支持常见语言基础着色、行号与复制按钮。

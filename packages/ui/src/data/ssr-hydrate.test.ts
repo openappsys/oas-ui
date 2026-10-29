@@ -14,6 +14,7 @@ import { OASList, OASListItem } from './list/index.js'
 import { OASCarousel } from './carousel/index.js'
 import { OASStatistic } from './statistic/index.js'
 import { OASCountdown } from './countdown/index.js'
+import { OASRelativeTime } from './relative-time/index.js'
 import { OASChart } from './chart/index.js'
 import { OASCode } from './code/index.js'
 import { OASEquation } from './equation/index.js'
@@ -164,6 +165,15 @@ const FIXTURES: Fixture[] = [
     cls: OASCountdown,
     setup: (e) => e.setAttribute('value', '3600'),
     probe: '[part="display"]',
+  },
+  {
+    name: 'relative-time',
+    cls: OASRelativeTime,
+    setup: (e) => {
+      e.setAttribute('value', String(Date.UTC(2026, 9, 29, 12, 0, 0) - 3 * 60_000))
+      e.setAttribute('locale', 'zh-CN')
+    },
+    probe: '[part="time"]',
   },
   { name: 'chart', cls: OASChart, setup: (e) => e.setAttribute('data', CHART_DATA), probe: 'svg' },
   {

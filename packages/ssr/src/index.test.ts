@@ -964,6 +964,27 @@ describe('@oas-ui/ssr renderToString', () => {
     expect(html).toContain('01:00:00')
   })
 
+  it('oas-relative-time：相对时间与 datetime 直出、locale 走请求局部 provider、非法值安全空态', async () => {
+    const target = Date.now() - 3 * 60_000
+    const iso = new Date(target).toISOString()
+    const html = await renderToString('oas-relative-time', { value: String(target) }, '', { locale: 'zh-CN' })
+    expect(html).toContain('<template shadowrootmode="open">')
+    expect(html).toContain('part="time"')
+    expect(html).toContain('3分钟前')
+    expect(html).toContain(`datetime="${iso}"`)
+
+    const en = await renderToString('oas-relative-time', { value: String(target) }, '', { locale: 'en' })
+    expect(en).toContain('3 minutes ago')
+
+    const empty = await renderToString('oas-relative-time', { value: 'not-a-date' }, '', { locale: 'zh-CN' })
+    expect(empty).toContain('part="time"')
+    expect(empty).toContain('hidden=""')
+    expect(empty).not.toContain('datetime=')
+    // 空态不渲染 raw key / NaN / Invalid Date（宿主 value 原文仍应保留）
+    expect(empty).not.toMatch(/NaN|Invalid Date/)
+    expect(empty).not.toContain('>not-a-date<')
+  })
+
   it('oas-chart：data JSON 通道产出 SVG 图形快照（同步确定性渲染，非 canvas）', async () => {
     const data = JSON.stringify([
       { label: '一月', value: 120 },

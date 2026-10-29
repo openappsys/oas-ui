@@ -2,8 +2,8 @@
 
 > 生成物：`pnpm ssr:matrix`。禁止手改；改数据源后重新生成。
 
-- 组件：211
-- SSR 白名单：164
+- 组件：212
+- SSR 白名单：165
 - 有意不 SSR：47
 
 | tag | 族 | 源目录 | SSR | 原因 | 父件 | entry | template | hydrate | 单测 | DSD e2e | 文档 zh/en |
@@ -195,6 +195,7 @@
 | `oas-json-viewer` | data | `data/json-viewer` | ✅ 白名单 | — | — | `@oas-ui/ui/data/json-viewer` | — | ✅ | ✅ | ✅ | ✅/✅ |
 | `oas-diff-viewer` | data | `data/diff-viewer` | ✅ 白名单 | — | — | `@oas-ui/ui/data/diff-viewer` | — | ✅ | ✅ | ✅ | ✅/✅ |
 | `oas-countdown` | data | `data/countdown` | ✅ 白名单 | — | — | `@oas-ui/ui/data/countdown` | ✅ | ✅ | ✅ | ✅ | ✅/✅ |
+| `oas-relative-time` | data | `data/relative-time` | ✅ 白名单 | — | — | `@oas-ui/ui/data/relative-time` | ✅ | ✅ | ✅ | ✅ | ✅/✅ |
 | `oas-statistic` | data | `data/statistic` | ✅ 白名单 | — | — | `@oas-ui/ui/data/statistic` | ✅ | ✅ | ✅ | ✅ | ✅/✅ |
 | `oas-ellipsis` | data | `data/ellipsis` | ✅ 白名单 | — | — | `@oas-ui/ui/data/ellipsis` | ✅ | ✅ | ✅ | ✅ | ✅/✅ |
 | `oas-marquee` | data | `data/marquee` | ✅ 白名单 | — | — | `@oas-ui/ui/data/marquee` | ✅ | ✅ | ✅ | ✅ | ✅/✅ |

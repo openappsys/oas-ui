@@ -5188,5 +5188,18 @@
       "collapseAll": "Collapse all unchanged regions",
       "scrollToChange": "Scroll to the given change block and focus its first row; returns false when out of range"
     }
+  },
+  "oas-relative-time": {
+    "attrs": {
+      "value": "Target instant: epoch milliseconds or ISO 8601; the property channel also accepts `number` / `Date`",
+      "locale": "Relative-time locale (e.g. `zh-CN` / `en-US`); invalid or unsupported tags safely fall back to provider → global i18n → `en-US`",
+      "numeric": "Intl numeric mode: `auto` (default, idiomatic “now / yesterday”) / `always` (always numeric); other values use auto",
+      "auto-refresh": "Throttled auto refresh (1s for second-level units, 30s otherwise); `\"false\"` or absent disables it; pauses while hidden, cleared on disconnect, restored on reconnect"
+    },
+    "props": {
+      "value": "Target instant property channel: `number` is epoch milliseconds, `Date` is written back as an ISO attribute, `null` clears (empty state)"
+    },
+    "events": {},
+    "slots": {}
   }
 }
