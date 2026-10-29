@@ -1,7 +1,7 @@
 {
   "generatedAt": "2026-10-29",
-  "gitSha": "2d306c35f6789bb0d3cee90ed85d79105ec0471a",
-  "gitDirty": true,
+  "gitSha": "77ab5541a3cddcf4f0e9c3c1235e4671d352c8fa",
+  "gitDirty": false,
   "versions": {
     "@oas-ui/core": "2.6.4",
     "@oas-ui/i18n": "2.6.4",
@@ -40,81 +40,27 @@
         {
           "lcp": 88,
           "fcp": 88,
-          "dcl": 81.80000001192093,
+          "dcl": 81.8999999910593,
           "load": 83.5,
           "firstRender": 83.70000000298023,
           "domNodes": 23,
           "transferBytes": 3017624
         },
         {
-          "lcp": 88,
-          "fcp": 88,
-          "dcl": 79.20000000298023,
-          "load": 80.79999999701977,
-          "firstRender": 81.09999999403954,
-          "domNodes": 23,
-          "transferBytes": 3017624
-        },
-        {
-          "lcp": 84,
-          "fcp": 84,
-          "dcl": 78.59999999403954,
-          "load": 80.20000000298023,
-          "firstRender": 80.29999999701977,
+          "lcp": 92,
+          "fcp": 92,
+          "dcl": 83.09999999403954,
+          "load": 84.8999999910593,
+          "firstRender": 85.20000000298023,
           "domNodes": 23,
           "transferBytes": 3017624
         },
         {
           "lcp": 88,
           "fcp": 88,
-          "dcl": 82.20000000298023,
-          "load": 83.8999999910593,
-          "firstRender": 84.20000000298023,
-          "domNodes": 23,
-          "transferBytes": 3017624
-        },
-        {
-          "lcp": 88,
-          "fcp": 88,
-          "dcl": 79.79999999701977,
-          "load": 81.40000000596046,
-          "firstRender": 81.70000000298023,
-          "domNodes": 23,
-          "transferBytes": 3017624
-        },
-        {
-          "lcp": 88,
-          "fcp": 88,
-          "dcl": 80.40000000596046,
-          "load": 82.1000000089407,
-          "firstRender": 82.40000000596046,
-          "domNodes": 23,
-          "transferBytes": 3017624
-        },
-        {
-          "lcp": 88,
-          "fcp": 88,
-          "dcl": 81.70000000298023,
-          "load": 83.40000000596046,
-          "firstRender": 83.6000000089407,
-          "domNodes": 23,
-          "transferBytes": 3017624
-        },
-        {
-          "lcp": 84,
-          "fcp": 84,
-          "dcl": 79.1000000089407,
-          "load": 80.70000000298023,
-          "firstRender": 80.90000000596046,
-          "domNodes": 23,
-          "transferBytes": 3017624
-        },
-        {
-          "lcp": 88,
-          "fcp": 88,
-          "dcl": 79.79999999701977,
-          "load": 81.70000000298023,
-          "firstRender": 82,
+          "dcl": 80.5,
+          "load": 82.09999999403954,
+          "firstRender": 82.29999999701977,
           "domNodes": 23,
           "transferBytes": 3017624
         },
@@ -122,7 +68,7 @@
           "lcp": 84,
           "fcp": 84,
           "dcl": 78.29999999701977,
-          "load": 79.90000000596046,
+          "load": 79.8999999910593,
           "firstRender": 80.09999999403954,
           "domNodes": 23,
           "transferBytes": 3017624
@@ -130,261 +76,18 @@
         {
           "lcp": 88,
           "fcp": 88,
-          "dcl": 81.70000000298023,
-          "load": 83.5,
-          "firstRender": 83.70000000298023,
+          "dcl": 82.5,
+          "load": 84.1000000089407,
+          "firstRender": 84.40000000596046,
           "domNodes": 23,
           "transferBytes": 3017624
         },
         {
           "lcp": 88,
           "fcp": 88,
-          "dcl": 80.70000000298023,
-          "load": 82.29999999701977,
-          "firstRender": 82.40000000596046,
-          "domNodes": 23,
-          "transferBytes": 3017624
-        },
-        {
-          "lcp": 88,
-          "fcp": 88,
-          "dcl": 80.1000000089407,
-          "load": 81.6000000089407,
-          "firstRender": 81.90000000596046,
-          "domNodes": 23,
-          "transferBytes": 3017624
-        },
-        {
-          "lcp": 88,
-          "fcp": 88,
-          "dcl": 80.79999999701977,
-          "load": 82.5,
-          "firstRender": 82.70000000298023,
-          "domNodes": 23,
-          "transferBytes": 3017624
-        },
-        {
-          "lcp": 84,
-          "fcp": 84,
-          "dcl": 77.79999999701977,
-          "load": 79.29999999701977,
-          "firstRender": 79.5,
-          "domNodes": 23,
-          "transferBytes": 3017624
-        },
-        {
-          "lcp": 88,
-          "fcp": 88,
-          "dcl": 80.09999999403954,
-          "load": 82,
-          "firstRender": 82.19999998807907,
-          "domNodes": 23,
-          "transferBytes": 3017624
-        },
-        {
-          "lcp": 92,
-          "fcp": 92,
-          "dcl": 82.79999999701977,
-          "load": 84.59999999403954,
-          "firstRender": 84.79999999701977,
-          "domNodes": 23,
-          "transferBytes": 3017624
-        },
-        {
-          "lcp": 84,
-          "fcp": 84,
-          "dcl": 76.70000000298023,
-          "load": 78.20000000298023,
-          "firstRender": 78.5,
-          "domNodes": 23,
-          "transferBytes": 3017624
-        },
-        {
-          "lcp": 88,
-          "fcp": 88,
-          "dcl": 79.09999999403954,
-          "load": 80.70000000298023,
-          "firstRender": 80.8999999910593,
-          "domNodes": 23,
-          "transferBytes": 3017624
-        },
-        {
-          "lcp": 88,
-          "fcp": 88,
-          "dcl": 81.5,
-          "load": 83.09999999403954,
-          "firstRender": 83.20000000298023,
-          "domNodes": 23,
-          "transferBytes": 3017624
-        },
-        {
-          "lcp": 88,
-          "fcp": 88,
-          "dcl": 80.09999999403954,
-          "load": 82,
-          "firstRender": 82.19999998807907,
-          "domNodes": 23,
-          "transferBytes": 3017624
-        },
-        {
-          "lcp": 88,
-          "fcp": 88,
-          "dcl": 81.59999999403954,
-          "load": 83.3999999910593,
-          "firstRender": 83.70000000298023,
-          "domNodes": 23,
-          "transferBytes": 3017624
-        },
-        {
-          "lcp": 84,
-          "fcp": 84,
-          "dcl": 78,
-          "load": 79.5,
-          "firstRender": 79.59999999403954,
-          "domNodes": 23,
-          "transferBytes": 3017624
-        },
-        {
-          "lcp": 88,
-          "fcp": 88,
-          "dcl": 81,
-          "load": 82.70000000298023,
-          "firstRender": 82.8999999910593,
-          "domNodes": 23,
-          "transferBytes": 3017624
-        },
-        {
-          "lcp": 88,
-          "fcp": 88,
-          "dcl": 81,
-          "load": 82.69999998807907,
-          "firstRender": 82.79999999701977,
-          "domNodes": 23,
-          "transferBytes": 3017624
-        },
-        {
-          "lcp": 84,
-          "fcp": 84,
-          "dcl": 78,
-          "load": 79.70000000298023,
-          "firstRender": 79.90000000596046,
-          "domNodes": 23,
-          "transferBytes": 3017624
-        },
-        {
-          "lcp": 88,
-          "fcp": 88,
-          "dcl": 81.5,
-          "load": 83.1000000089407,
-          "firstRender": 83.40000000596046,
-          "domNodes": 23,
-          "transferBytes": 3017624
-        },
-        {
-          "lcp": 100,
-          "fcp": 100,
-          "dcl": 91.6000000089407,
-          "load": 93.5,
-          "firstRender": 93.79999999701977,
-          "domNodes": 23,
-          "transferBytes": 3017624
-        },
-        {
-          "lcp": 88,
-          "fcp": 88,
-          "dcl": 79.80000001192093,
-          "load": 81.40000000596046,
-          "firstRender": 81.5,
-          "domNodes": 23,
-          "transferBytes": 3017624
-        },
-        {
-          "lcp": 88,
-          "fcp": 88,
-          "dcl": 80.20000000298023,
-          "load": 81.79999999701977,
-          "firstRender": 82,
-          "domNodes": 23,
-          "transferBytes": 3017624
-        },
-        {
-          "lcp": 88,
-          "fcp": 88,
-          "dcl": 79.79999999701977,
-          "load": 81.40000000596046,
-          "firstRender": 81.6000000089407,
-          "domNodes": 23,
-          "transferBytes": 3017624
-        },
-        {
-          "lcp": 88,
-          "fcp": 88,
-          "dcl": 80,
-          "load": 81.6000000089407,
-          "firstRender": 81.79999999701977,
-          "domNodes": 23,
-          "transferBytes": 3017624
-        },
-        {
-          "lcp": 88,
-          "fcp": 88,
-          "dcl": 81.20000000298023,
-          "load": 82.70000000298023,
-          "firstRender": 83,
-          "domNodes": 23,
-          "transferBytes": 3017624
-        },
-        {
-          "lcp": 88,
-          "fcp": 88,
-          "dcl": 81.20000000298023,
-          "load": 82.79999999701977,
-          "firstRender": 83,
-          "domNodes": 23,
-          "transferBytes": 3017624
-        },
-        {
-          "lcp": 92,
-          "fcp": 92,
-          "dcl": 83.5,
-          "load": 85.09999999403954,
-          "firstRender": 85.40000000596046,
-          "domNodes": 23,
-          "transferBytes": 3017624
-        },
-        {
-          "lcp": 84,
-          "fcp": 84,
-          "dcl": 77.3999999910593,
-          "load": 79.19999998807907,
-          "firstRender": 79.5,
-          "domNodes": 23,
-          "transferBytes": 3017624
-        },
-        {
-          "lcp": 88,
-          "fcp": 88,
-          "dcl": 78.70000000298023,
-          "load": 80.29999999701977,
-          "firstRender": 80.5,
-          "domNodes": 23,
-          "transferBytes": 3017624
-        },
-        {
-          "lcp": 88,
-          "fcp": 88,
-          "dcl": 80,
-          "load": 81.70000000298023,
-          "firstRender": 82,
-          "domNodes": 23,
-          "transferBytes": 3017624
-        },
-        {
-          "lcp": 92,
-          "fcp": 92,
-          "dcl": 82.59999999403954,
-          "load": 84.29999999701977,
-          "firstRender": 84.69999998807907,
+          "dcl": 79.5,
+          "load": 80.8999999910593,
+          "firstRender": 81.19999998807907,
           "domNodes": 23,
           "transferBytes": 3017624
         },
@@ -392,26 +95,17 @@
           "lcp": 88,
           "fcp": 88,
           "dcl": 81.40000000596046,
-          "load": 83,
+          "load": 82.90000000596046,
           "firstRender": 83.20000000298023,
           "domNodes": 23,
           "transferBytes": 3017624
         },
         {
-          "lcp": 84,
-          "fcp": 84,
-          "dcl": 78.8999999910593,
-          "load": 80.3999999910593,
-          "firstRender": 80.69999998807907,
-          "domNodes": 23,
-          "transferBytes": 3017624
-        },
-        {
-          "lcp": 84,
-          "fcp": 84,
-          "dcl": 78.40000000596046,
-          "load": 80.1000000089407,
-          "firstRender": 80.30000001192093,
+          "lcp": 88,
+          "fcp": 88,
+          "dcl": 82,
+          "load": 83.59999999403954,
+          "firstRender": 83.90000000596046,
           "domNodes": 23,
           "transferBytes": 3017624
         },
@@ -420,79 +114,61 @@
           "fcp": 88,
           "dcl": 79.29999999701977,
           "load": 81,
-          "firstRender": 81.19999998807907,
+          "firstRender": 81.29999999701977,
           "domNodes": 23,
           "transferBytes": 3017624
         },
         {
           "lcp": 88,
           "fcp": 88,
-          "dcl": 79.5,
-          "load": 81.20000000298023,
-          "firstRender": 81.5,
+          "dcl": 79.29999999701977,
+          "load": 81.09999999403954,
+          "firstRender": 81.40000000596046,
           "domNodes": 23,
           "transferBytes": 3017624
         },
         {
-          "lcp": 84,
-          "fcp": 84,
-          "dcl": 78.30000001192093,
-          "load": 79.90000000596046,
-          "firstRender": 80.1000000089407,
-          "domNodes": 23,
-          "transferBytes": 3017624
-        },
-        {
-          "lcp": 84,
-          "fcp": 84,
+          "lcp": 88,
+          "fcp": 88,
           "dcl": 78.70000000298023,
           "load": 80.5,
-          "firstRender": 80.70000000298023,
+          "firstRender": 80.8999999910593,
           "domNodes": 23,
           "transferBytes": 3017624
         },
         {
-          "lcp": 84,
-          "fcp": 84,
-          "dcl": 77.3999999910593,
-          "load": 78.8999999910593,
-          "firstRender": 79.09999999403954,
+          "lcp": 88,
+          "fcp": 88,
+          "dcl": 80.69999998807907,
+          "load": 82.3999999910593,
+          "firstRender": 82.59999999403954,
+          "domNodes": 23,
+          "transferBytes": 3017624
+        },
+        {
+          "lcp": 88,
+          "fcp": 88,
+          "dcl": 80.30000001192093,
+          "load": 82.1000000089407,
+          "firstRender": 82.20000000298023,
+          "domNodes": 23,
+          "transferBytes": 3017624
+        },
+        {
+          "lcp": 88,
+          "fcp": 88,
+          "dcl": 81.90000000596046,
+          "load": 83.40000000596046,
+          "firstRender": 83.70000000298023,
           "domNodes": 23,
           "transferBytes": 3017624
         },
         {
           "lcp": 96,
           "fcp": 96,
-          "dcl": 88.19999998807907,
-          "load": 89.79999999701977,
-          "firstRender": 89.8999999910593,
-          "domNodes": 23,
-          "transferBytes": 3017624
-        },
-        {
-          "lcp": 84,
-          "fcp": 84,
-          "dcl": 77.90000000596046,
-          "load": 79.59999999403954,
-          "firstRender": 79.90000000596046,
-          "domNodes": 23,
-          "transferBytes": 3017624
-        },
-        {
-          "lcp": 88,
-          "fcp": 88,
-          "dcl": 79.70000000298023,
-          "load": 81.29999999701977,
-          "firstRender": 81.59999999403954,
-          "domNodes": 23,
-          "transferBytes": 3017624
-        },
-        {
-          "lcp": 88,
-          "fcp": 88,
-          "dcl": 81.29999999701977,
-          "load": 82.79999999701977,
-          "firstRender": 83.09999999403954,
+          "dcl": 87.79999999701977,
+          "load": 89.3999999910593,
+          "firstRender": 89.70000000298023,
           "domNodes": 23,
           "transferBytes": 3017624
         },
@@ -501,52 +177,7 @@
           "fcp": 84,
           "dcl": 77.5,
           "load": 79,
-          "firstRender": 79.20000000298023,
-          "domNodes": 23,
-          "transferBytes": 3017624
-        },
-        {
-          "lcp": 88,
-          "fcp": 88,
-          "dcl": 80,
-          "load": 81.6000000089407,
-          "firstRender": 81.79999999701977,
-          "domNodes": 23,
-          "transferBytes": 3017624
-        },
-        {
-          "lcp": 88,
-          "fcp": 88,
-          "dcl": 79.20000000298023,
-          "load": 80.80000001192093,
-          "firstRender": 81,
-          "domNodes": 23,
-          "transferBytes": 3017624
-        },
-        {
-          "lcp": 84,
-          "fcp": 84,
-          "dcl": 79,
-          "load": 80.6000000089407,
-          "firstRender": 80.90000000596046,
-          "domNodes": 23,
-          "transferBytes": 3017624
-        },
-        {
-          "lcp": 92,
-          "fcp": 92,
-          "dcl": 83.40000000596046,
-          "load": 85.1000000089407,
-          "firstRender": 85.6000000089407,
-          "domNodes": 23,
-          "transferBytes": 3017624
-        },
-        {
-          "lcp": 88,
-          "fcp": 88,
-          "dcl": 82.20000000298023,
-          "load": 83.90000000596046,
-          "firstRender": 84,
+          "firstRender": 79.29999999701977,
           "domNodes": 23,
           "transferBytes": 3017624
         },
@@ -554,17 +185,107 @@
           "lcp": 88,
           "fcp": 88,
           "dcl": 78.70000000298023,
-          "load": 80.20000000298023,
-          "firstRender": 80.5,
+          "load": 80.3999999910593,
+          "firstRender": 80.79999999701977,
           "domNodes": 23,
           "transferBytes": 3017624
         },
         {
           "lcp": 88,
           "fcp": 88,
+          "dcl": 80.6000000089407,
+          "load": 82.1000000089407,
+          "firstRender": 82.30000001192093,
+          "domNodes": 23,
+          "transferBytes": 3017624
+        },
+        {
+          "lcp": 84,
+          "fcp": 84,
+          "dcl": 78.79999999701977,
+          "load": 80.29999999701977,
+          "firstRender": 80.5,
+          "domNodes": 23,
+          "transferBytes": 3017624
+        },
+        {
+          "lcp": 92,
+          "fcp": 92,
+          "dcl": 85.09999999403954,
+          "load": 86.79999999701977,
+          "firstRender": 87.09999999403954,
+          "domNodes": 23,
+          "transferBytes": 3017624
+        },
+        {
+          "lcp": 88,
+          "fcp": 88,
+          "dcl": 79.70000000298023,
+          "load": 81.30000001192093,
+          "firstRender": 81.5,
+          "domNodes": 23,
+          "transferBytes": 3017624
+        },
+        {
+          "lcp": 84,
+          "fcp": 84,
+          "dcl": 78.70000000298023,
+          "load": 80.20000000298023,
+          "firstRender": 80.40000000596046,
+          "domNodes": 23,
+          "transferBytes": 3017624
+        },
+        {
+          "lcp": 88,
+          "fcp": 88,
+          "dcl": 81.79999999701977,
+          "load": 83.70000000298023,
+          "firstRender": 83.90000000596046,
+          "domNodes": 23,
+          "transferBytes": 3017624
+        },
+        {
+          "lcp": 84,
+          "fcp": 84,
+          "dcl": 77.09999999403954,
+          "load": 78.69999998807907,
+          "firstRender": 78.79999999701977,
+          "domNodes": 23,
+          "transferBytes": 3017624
+        },
+        {
+          "lcp": 92,
+          "fcp": 92,
           "dcl": 80.5,
-          "load": 82.19999998807907,
-          "firstRender": 82.3999999910593,
+          "load": 82.29999999701977,
+          "firstRender": 82.79999999701977,
+          "domNodes": 23,
+          "transferBytes": 3017624
+        },
+        {
+          "lcp": 88,
+          "fcp": 88,
+          "dcl": 81.59999999403954,
+          "load": 83.19999998807907,
+          "firstRender": 83.5,
+          "domNodes": 23,
+          "transferBytes": 3017624
+        },
+        {
+          "lcp": 84,
+          "fcp": 84,
+          "dcl": 78.8999999910593,
+          "load": 80.5,
+          "firstRender": 80.79999999701977,
+          "domNodes": 23,
+          "transferBytes": 3017624
+        },
+        {
+          "lcp": 92,
+          "fcp": 92,
+          "dcl": 84.29999999701977,
+          "load": 86.09999999403954,
+          "firstRender": 86.3999999910593,
           "domNodes": 23,
           "transferBytes": 3017624
         },
@@ -578,11 +299,11 @@
           "transferBytes": 3017624
         },
         {
-          "lcp": 84,
-          "fcp": 84,
-          "dcl": 78.5,
-          "load": 80.1000000089407,
-          "firstRender": 80.30000001192093,
+          "lcp": 88,
+          "fcp": 88,
+          "dcl": 82.20000000298023,
+          "load": 83.80000001192093,
+          "firstRender": 84.1000000089407,
           "domNodes": 23,
           "transferBytes": 3017624
         },
@@ -590,26 +311,323 @@
           "lcp": 88,
           "fcp": 88,
           "dcl": 82.29999999701977,
-          "load": 83.90000000596046,
-          "firstRender": 84.09999999403954,
+          "load": 84.3999999910593,
+          "firstRender": 84.59999999403954,
           "domNodes": 23,
           "transferBytes": 3017624
         },
         {
-          "lcp": 92,
-          "fcp": 92,
-          "dcl": 86.30000001192093,
-          "load": 87.80000001192093,
-          "firstRender": 88,
+          "lcp": 84,
+          "fcp": 84,
+          "dcl": 78.80000001192093,
+          "load": 80.5,
+          "firstRender": 80.90000000596046,
+          "domNodes": 23,
+          "transferBytes": 3017624
+        },
+        {
+          "lcp": 84,
+          "fcp": 84,
+          "dcl": 78.5,
+          "load": 80.1000000089407,
+          "firstRender": 80.40000000596046,
           "domNodes": 23,
           "transferBytes": 3017624
         },
         {
           "lcp": 88,
           "fcp": 88,
-          "dcl": 80.40000000596046,
-          "load": 82.09999999403954,
+          "dcl": 81.30000001192093,
+          "load": 82.90000000596046,
+          "firstRender": 83.1000000089407,
+          "domNodes": 23,
+          "transferBytes": 3017624
+        },
+        {
+          "lcp": 88,
+          "fcp": 88,
+          "dcl": 81,
+          "load": 82.5,
+          "firstRender": 82.8999999910593,
+          "domNodes": 23,
+          "transferBytes": 3017624
+        },
+        {
+          "lcp": 92,
+          "fcp": 92,
+          "dcl": 82.90000000596046,
+          "load": 84.6000000089407,
+          "firstRender": 84.90000000596046,
+          "domNodes": 23,
+          "transferBytes": 3017624
+        },
+        {
+          "lcp": 88,
+          "fcp": 88,
+          "dcl": 81.40000000596046,
+          "load": 83.09999999403954,
+          "firstRender": 83.29999999701977,
+          "domNodes": 23,
+          "transferBytes": 3017624
+        },
+        {
+          "lcp": 84,
+          "fcp": 84,
+          "dcl": 78.70000000298023,
+          "load": 80.20000000298023,
+          "firstRender": 80.40000000596046,
+          "domNodes": 23,
+          "transferBytes": 3017624
+        },
+        {
+          "lcp": 88,
+          "fcp": 88,
+          "dcl": 80.70000000298023,
+          "load": 82.30000001192093,
+          "firstRender": 82.6000000089407,
+          "domNodes": 23,
+          "transferBytes": 3017624
+        },
+        {
+          "lcp": 88,
+          "fcp": 88,
+          "dcl": 79.70000000298023,
+          "load": 81.3999999910593,
+          "firstRender": 81.70000000298023,
+          "domNodes": 23,
+          "transferBytes": 3017624
+        },
+        {
+          "lcp": 96,
+          "fcp": 96,
+          "dcl": 86.29999999701977,
+          "load": 88.70000000298023,
+          "firstRender": 89.09999999403954,
+          "domNodes": 23,
+          "transferBytes": 3017624
+        },
+        {
+          "lcp": 88,
+          "fcp": 88,
+          "dcl": 80.6000000089407,
+          "load": 82.6000000089407,
+          "firstRender": 83.20000000298023,
+          "domNodes": 23,
+          "transferBytes": 3017624
+        },
+        {
+          "lcp": 84,
+          "fcp": 84,
+          "dcl": 78,
+          "load": 79.5,
+          "firstRender": 79.70000000298023,
+          "domNodes": 23,
+          "transferBytes": 3017624
+        },
+        {
+          "lcp": 84,
+          "fcp": 84,
+          "dcl": 78,
+          "load": 79.5,
+          "firstRender": 79.70000000298023,
+          "domNodes": 23,
+          "transferBytes": 3017624
+        },
+        {
+          "lcp": 88,
+          "fcp": 88,
+          "dcl": 81.5,
+          "load": 83.09999999403954,
+          "firstRender": 83.40000000596046,
+          "domNodes": 23,
+          "transferBytes": 3017624
+        },
+        {
+          "lcp": 92,
+          "fcp": 92,
+          "dcl": 85,
+          "load": 87,
+          "firstRender": 87.20000000298023,
+          "domNodes": 23,
+          "transferBytes": 3017624
+        },
+        {
+          "lcp": 88,
+          "fcp": 88,
+          "dcl": 80.69999998807907,
+          "load": 82.3999999910593,
+          "firstRender": 82.69999998807907,
+          "domNodes": 23,
+          "transferBytes": 3017624
+        },
+        {
+          "lcp": 92,
+          "fcp": 92,
+          "dcl": 83.90000000596046,
+          "load": 85.5,
+          "firstRender": 85.80000001192093,
+          "domNodes": 23,
+          "transferBytes": 3017624
+        },
+        {
+          "lcp": 92,
+          "fcp": 92,
+          "dcl": 83,
+          "load": 84.70000000298023,
+          "firstRender": 85,
+          "domNodes": 23,
+          "transferBytes": 3017624
+        },
+        {
+          "lcp": 92,
+          "fcp": 92,
+          "dcl": 85.3999999910593,
+          "load": 87.09999999403954,
+          "firstRender": 87.29999999701977,
+          "domNodes": 23,
+          "transferBytes": 3017624
+        },
+        {
+          "lcp": 84,
+          "fcp": 84,
+          "dcl": 77.79999999701977,
+          "load": 79.3999999910593,
+          "firstRender": 79.70000000298023,
+          "domNodes": 23,
+          "transferBytes": 3017624
+        },
+        {
+          "lcp": 92,
+          "fcp": 92,
+          "dcl": 84.70000000298023,
+          "load": 86.40000000596046,
+          "firstRender": 86.70000000298023,
+          "domNodes": 23,
+          "transferBytes": 3017624
+        },
+        {
+          "lcp": 88,
+          "fcp": 88,
+          "dcl": 79.5,
+          "load": 81,
+          "firstRender": 81.20000000298023,
+          "domNodes": 23,
+          "transferBytes": 3017624
+        },
+        {
+          "lcp": 88,
+          "fcp": 88,
+          "dcl": 80.3999999910593,
+          "load": 81.8999999910593,
+          "firstRender": 82.09999999403954,
+          "domNodes": 23,
+          "transferBytes": 3017624
+        },
+        {
+          "lcp": 88,
+          "fcp": 88,
+          "dcl": 79.09999999403954,
+          "load": 80.59999999403954,
+          "firstRender": 80.90000000596046,
+          "domNodes": 23,
+          "transferBytes": 3017624
+        },
+        {
+          "lcp": 88,
+          "fcp": 88,
+          "dcl": 81.1000000089407,
+          "load": 82.80000001192093,
+          "firstRender": 83.1000000089407,
+          "domNodes": 23,
+          "transferBytes": 3017624
+        },
+        {
+          "lcp": 88,
+          "fcp": 88,
+          "dcl": 82,
+          "load": 83.70000000298023,
+          "firstRender": 83.8999999910593,
+          "domNodes": 23,
+          "transferBytes": 3017624
+        },
+        {
+          "lcp": 88,
+          "fcp": 88,
+          "dcl": 82,
+          "load": 83.6000000089407,
+          "firstRender": 83.90000000596046,
+          "domNodes": 23,
+          "transferBytes": 3017624
+        },
+        {
+          "lcp": 92,
+          "fcp": 92,
+          "dcl": 86.1000000089407,
+          "load": 87.70000000298023,
+          "firstRender": 87.90000000596046,
+          "domNodes": 23,
+          "transferBytes": 3017624
+        },
+        {
+          "lcp": 92,
+          "fcp": 92,
+          "dcl": 85.70000000298023,
+          "load": 87.59999999403954,
+          "firstRender": 87.79999999701977,
+          "domNodes": 23,
+          "transferBytes": 3017624
+        },
+        {
+          "lcp": 88,
+          "fcp": 88,
+          "dcl": 81,
+          "load": 82.59999999403954,
+          "firstRender": 82.90000000596046,
+          "domNodes": 23,
+          "transferBytes": 3017624
+        },
+        {
+          "lcp": 88,
+          "fcp": 88,
+          "dcl": 79.40000000596046,
+          "load": 80.90000000596046,
+          "firstRender": 81.20000000298023,
+          "domNodes": 23,
+          "transferBytes": 3017624
+        },
+        {
+          "lcp": 84,
+          "fcp": 84,
+          "dcl": 78.70000000298023,
+          "load": 80.29999999701977,
+          "firstRender": 80.5,
+          "domNodes": 23,
+          "transferBytes": 3017624
+        },
+        {
+          "lcp": 88,
+          "fcp": 88,
+          "dcl": 80.5,
+          "load": 82.20000000298023,
           "firstRender": 82.29999999701977,
+          "domNodes": 23,
+          "transferBytes": 3017624
+        },
+        {
+          "lcp": 92,
+          "fcp": 92,
+          "dcl": 82.29999999701977,
+          "load": 86,
+          "firstRender": 86.40000000596046,
+          "domNodes": 23,
+          "transferBytes": 3017624
+        },
+        {
+          "lcp": 92,
+          "fcp": 92,
+          "dcl": 83.29999999701977,
+          "load": 85,
+          "firstRender": 85.20000000298023,
           "domNodes": 23,
           "transferBytes": 3017624
         },
@@ -618,7 +636,7 @@
           "fcp": 88,
           "dcl": 80.20000000298023,
           "load": 81.79999999701977,
-          "firstRender": 82.09999999403954,
+          "firstRender": 81.90000000596046,
           "domNodes": 23,
           "transferBytes": 3017624
         },
@@ -632,144 +650,27 @@
           "transferBytes": 3017624
         },
         {
-          "lcp": 92,
-          "fcp": 92,
-          "dcl": 84.79999999701977,
-          "load": 86.70000000298023,
-          "firstRender": 87.09999999403954,
+          "lcp": 88,
+          "fcp": 88,
+          "dcl": 80.40000000596046,
+          "load": 82.20000000298023,
+          "firstRender": 82.40000000596046,
           "domNodes": 23,
           "transferBytes": 3017624
         },
         {
           "lcp": 88,
           "fcp": 88,
-          "dcl": 80.80000001192093,
-          "load": 82.40000000596046,
-          "firstRender": 82.6000000089407,
+          "dcl": 79.1000000089407,
+          "load": 81.20000000298023,
+          "firstRender": 81.5,
           "domNodes": 23,
           "transferBytes": 3017624
         },
         {
           "lcp": 88,
           "fcp": 88,
-          "dcl": 79.20000000298023,
-          "load": 80.90000000596046,
-          "firstRender": 81.20000000298023,
-          "domNodes": 23,
-          "transferBytes": 3017624
-        },
-        {
-          "lcp": 88,
-          "fcp": 88,
-          "dcl": 80.5,
-          "load": 82,
-          "firstRender": 82.29999999701977,
-          "domNodes": 23,
-          "transferBytes": 3017624
-        },
-        {
-          "lcp": 84,
-          "fcp": 84,
-          "dcl": 77.29999999701977,
-          "load": 78.8999999910593,
-          "firstRender": 79.09999999403954,
-          "domNodes": 23,
-          "transferBytes": 3017624
-        },
-        {
-          "lcp": 88,
-          "fcp": 88,
-          "dcl": 81.09999999403954,
-          "load": 82.79999999701977,
-          "firstRender": 83,
-          "domNodes": 23,
-          "transferBytes": 3017624
-        },
-        {
-          "lcp": 92,
-          "fcp": 92,
-          "dcl": 82.8999999910593,
-          "load": 84.70000000298023,
-          "firstRender": 85,
-          "domNodes": 23,
-          "transferBytes": 3017624
-        },
-        {
-          "lcp": 84,
-          "fcp": 84,
-          "dcl": 76.59999999403954,
-          "load": 78.09999999403954,
-          "firstRender": 78.29999999701977,
-          "domNodes": 23,
-          "transferBytes": 3017624
-        },
-        {
-          "lcp": 84,
-          "fcp": 84,
-          "dcl": 78.09999999403954,
-          "load": 79.59999999403954,
-          "firstRender": 79.79999999701977,
-          "domNodes": 23,
-          "transferBytes": 3017624
-        },
-        {
-          "lcp": 84,
-          "fcp": 84,
-          "dcl": 77.8999999910593,
-          "load": 79.59999999403954,
-          "firstRender": 79.79999999701977,
-          "domNodes": 23,
-          "transferBytes": 3017624
-        },
-        {
-          "lcp": 88,
-          "fcp": 88,
-          "dcl": 82,
-          "load": 83.79999999701977,
-          "firstRender": 84.09999999403954,
-          "domNodes": 23,
-          "transferBytes": 3017624
-        },
-        {
-          "lcp": 92,
-          "fcp": 92,
-          "dcl": 85.6000000089407,
-          "load": 87.20000000298023,
-          "firstRender": 87.5,
-          "domNodes": 23,
-          "transferBytes": 3017624
-        },
-        {
-          "lcp": 84,
-          "fcp": 84,
-          "dcl": 79.20000000298023,
-          "load": 80.70000000298023,
-          "firstRender": 80.80000001192093,
-          "domNodes": 23,
-          "transferBytes": 3017624
-        },
-        {
-          "lcp": 88,
-          "fcp": 88,
-          "dcl": 79.70000000298023,
-          "load": 81.40000000596046,
-          "firstRender": 81.70000000298023,
-          "domNodes": 23,
-          "transferBytes": 3017624
-        },
-        {
-          "lcp": 84,
-          "fcp": 84,
-          "dcl": 78.29999999701977,
-          "load": 80,
-          "firstRender": 80.19999998807907,
-          "domNodes": 23,
-          "transferBytes": 3017624
-        },
-        {
-          "lcp": 88,
-          "fcp": 88,
-          "dcl": 80.09999999403954,
+          "dcl": 80.30000001192093,
           "load": 82,
           "firstRender": 82.20000000298023,
           "domNodes": 23,
@@ -778,63 +679,18 @@
         {
           "lcp": 92,
           "fcp": 92,
-          "dcl": 84.70000000298023,
-          "load": 86.59999999403954,
-          "firstRender": 86.79999999701977,
+          "dcl": 83.19999998807907,
+          "load": 84.79999999701977,
+          "firstRender": 85.09999999403954,
           "domNodes": 23,
           "transferBytes": 3017624
         },
         {
           "lcp": 88,
           "fcp": 88,
-          "dcl": 79,
-          "load": 81.09999999403954,
-          "firstRender": 81.29999999701977,
-          "domNodes": 23,
-          "transferBytes": 3017624
-        },
-        {
-          "lcp": 88,
-          "fcp": 88,
-          "dcl": 80.90000000596046,
-          "load": 82.6000000089407,
-          "firstRender": 82.80000001192093,
-          "domNodes": 23,
-          "transferBytes": 3017624
-        },
-        {
-          "lcp": 88,
-          "fcp": 88,
-          "dcl": 80.30000001192093,
-          "load": 81.90000000596046,
-          "firstRender": 82.1000000089407,
-          "domNodes": 23,
-          "transferBytes": 3017624
-        },
-        {
-          "lcp": 84,
-          "fcp": 84,
-          "dcl": 78.20000000298023,
-          "load": 79.79999999701977,
-          "firstRender": 80,
-          "domNodes": 23,
-          "transferBytes": 3017624
-        },
-        {
-          "lcp": 96,
-          "fcp": 96,
-          "dcl": 86,
-          "load": 87.8999999910593,
-          "firstRender": 88.09999999403954,
-          "domNodes": 23,
-          "transferBytes": 3017624
-        },
-        {
-          "lcp": 88,
-          "fcp": 88,
-          "dcl": 80.5,
-          "load": 82,
-          "firstRender": 82.19999998807907,
+          "dcl": 81.6000000089407,
+          "load": 83.20000000298023,
+          "firstRender": 83.5,
           "domNodes": 23,
           "transferBytes": 3017624
         },
@@ -846,6 +702,150 @@
           "firstRender": 83.40000000596046,
           "domNodes": 23,
           "transferBytes": 3017624
+        },
+        {
+          "lcp": 88,
+          "fcp": 88,
+          "dcl": 82.09999999403954,
+          "load": 83.70000000298023,
+          "firstRender": 83.8999999910593,
+          "domNodes": 23,
+          "transferBytes": 3017624
+        },
+        {
+          "lcp": 88,
+          "fcp": 88,
+          "dcl": 81.3999999910593,
+          "load": 83.09999999403954,
+          "firstRender": 83.3999999910593,
+          "domNodes": 23,
+          "transferBytes": 3017624
+        },
+        {
+          "lcp": 88,
+          "fcp": 88,
+          "dcl": 79.09999999403954,
+          "load": 80.59999999403954,
+          "firstRender": 80.90000000596046,
+          "domNodes": 23,
+          "transferBytes": 3017624
+        },
+        {
+          "lcp": 88,
+          "fcp": 88,
+          "dcl": 80,
+          "load": 81.79999999701977,
+          "firstRender": 82,
+          "domNodes": 23,
+          "transferBytes": 3017624
+        },
+        {
+          "lcp": 84,
+          "fcp": 84,
+          "dcl": 78.80000001192093,
+          "load": 80.5,
+          "firstRender": 80.70000000298023,
+          "domNodes": 23,
+          "transferBytes": 3017624
+        },
+        {
+          "lcp": 84,
+          "fcp": 84,
+          "dcl": 77.79999999701977,
+          "load": 79.3999999910593,
+          "firstRender": 79.69999998807907,
+          "domNodes": 23,
+          "transferBytes": 3017624
+        },
+        {
+          "lcp": 88,
+          "fcp": 88,
+          "dcl": 82.3999999910593,
+          "load": 84.09999999403954,
+          "firstRender": 84.29999999701977,
+          "domNodes": 23,
+          "transferBytes": 3017624
+        },
+        {
+          "lcp": 84,
+          "fcp": 84,
+          "dcl": 78.3999999910593,
+          "load": 79.8999999910593,
+          "firstRender": 80.19999998807907,
+          "domNodes": 23,
+          "transferBytes": 3017624
+        },
+        {
+          "lcp": 84,
+          "fcp": 84,
+          "dcl": 78.40000000596046,
+          "load": 80,
+          "firstRender": 80.29999999701977,
+          "domNodes": 23,
+          "transferBytes": 3017624
+        },
+        {
+          "lcp": 88,
+          "fcp": 88,
+          "dcl": 79.79999999701977,
+          "load": 81.3999999910593,
+          "firstRender": 81.69999998807907,
+          "domNodes": 23,
+          "transferBytes": 3017624
+        },
+        {
+          "lcp": 88,
+          "fcp": 88,
+          "dcl": 79.5,
+          "load": 81,
+          "firstRender": 81.29999999701977,
+          "domNodes": 23,
+          "transferBytes": 3017624
+        },
+        {
+          "lcp": 88,
+          "fcp": 88,
+          "dcl": 80.09999999403954,
+          "load": 81.70000000298023,
+          "firstRender": 81.8999999910593,
+          "domNodes": 23,
+          "transferBytes": 3017624
+        },
+        {
+          "lcp": 88,
+          "fcp": 88,
+          "dcl": 80.70000000298023,
+          "load": 82.40000000596046,
+          "firstRender": 82.6000000089407,
+          "domNodes": 23,
+          "transferBytes": 3017624
+        },
+        {
+          "lcp": 84,
+          "fcp": 84,
+          "dcl": 77.69999998807907,
+          "load": 79.29999999701977,
+          "firstRender": 79.5,
+          "domNodes": 23,
+          "transferBytes": 3017624
+        },
+        {
+          "lcp": 84,
+          "fcp": 84,
+          "dcl": 79.09999999403954,
+          "load": 80.70000000298023,
+          "firstRender": 81,
+          "domNodes": 23,
+          "transferBytes": 3017624
+        },
+        {
+          "lcp": 88,
+          "fcp": 88,
+          "dcl": 81.80000001192093,
+          "load": 83.40000000596046,
+          "firstRender": 83.70000000298023,
+          "domNodes": 23,
+          "transferBytes": 3017624
         }
       ],
       "roundStats": [
@@ -854,41 +854,41 @@
             "count": 30,
             "min": 84,
             "median": 88,
-            "p95": 90.19999999999999,
-            "max": 100,
-            "mean": 87.6
+            "p95": 92,
+            "max": 96,
+            "mean": 88
           },
           "fcp": {
             "count": 30,
             "min": 84,
             "median": 88,
-            "p95": 90.19999999999999,
-            "max": 100,
-            "mean": 87.6
+            "p95": 92,
+            "max": 96,
+            "mean": 88
           },
           "dcl": {
             "count": 30,
-            "min": 76.70000000298023,
-            "median": 80.15000000596046,
-            "p95": 82.52999999970197,
-            "max": 91.6000000089407,
-            "mean": 80.50000000099341
+            "min": 77.09999999403954,
+            "median": 80.5,
+            "p95": 84.73999999538064,
+            "max": 87.79999999701977,
+            "mean": 80.77333333243926
           },
           "load": {
             "count": 30,
-            "min": 78.20000000298023,
-            "median": 82,
-            "p95": 84.28499999269843,
-            "max": 93.5,
-            "mean": 82.17333333392938
+            "min": 78.69999998807907,
+            "median": 82.1000000089407,
+            "p95": 86.48499999567866,
+            "max": 89.3999999910593,
+            "mean": 82.40666666527589
           },
           "firstRender": {
             "count": 30,
-            "min": 78.5,
-            "median": 82.19999998807907,
-            "p95": 84.52999999970197,
-            "max": 93.79999999701977,
-            "mean": 82.38666666646799
+            "min": 78.79999999701977,
+            "median": 82.30000000447035,
+            "p95": 86.78499999269843,
+            "max": 89.70000000298023,
+            "mean": 82.67333333343268
           },
           "domNodes": {
             "count": 30,
@@ -914,7 +914,7 @@
             "median": 88,
             "p95": 92,
             "max": 96,
-            "mean": 87.46666666666667
+            "mean": 88.53333333333333
           },
           "fcp": {
             "count": 30,
@@ -922,31 +922,31 @@
             "median": 88,
             "p95": 92,
             "max": 96,
-            "mean": 87.46666666666667
+            "mean": 88.53333333333333
           },
           "dcl": {
             "count": 30,
-            "min": 77.3999999910593,
-            "median": 79.75,
-            "p95": 83.45500000268221,
-            "max": 88.19999998807907,
-            "mean": 80.14666666686534
+            "min": 77.79999999701977,
+            "median": 81.20000001043081,
+            "p95": 85.92000000625849,
+            "max": 86.29999999701977,
+            "mean": 81.5366666679581
           },
           "load": {
             "count": 30,
-            "min": 78.8999999910593,
-            "median": 81.35000000149012,
-            "p95": 85.10000000223518,
-            "max": 89.79999999701977,
-            "mean": 81.76666666716338
+            "min": 79.3999999910593,
+            "median": 82.8500000089407,
+            "p95": 87.65499999895692,
+            "max": 88.70000000298023,
+            "mean": 83.22666666706404
           },
           "firstRender": {
             "count": 30,
-            "min": 79.09999999403954,
-            "median": 81.60000000149012,
-            "p95": 85.51000000759959,
-            "max": 89.8999999910593,
-            "mean": 82.0133333330353
+            "min": 79.70000000298023,
+            "median": 83.15000000596046,
+            "p95": 87.85500000193716,
+            "max": 89.09999999403954,
+            "mean": 83.50333333512147
           },
           "domNodes": {
             "count": 30,
@@ -971,40 +971,40 @@
             "min": 84,
             "median": 88,
             "p95": 92,
-            "max": 96,
-            "mean": 87.86666666666666
+            "max": 92,
+            "mean": 87.46666666666667
           },
           "fcp": {
             "count": 30,
             "min": 84,
             "median": 88,
             "p95": 92,
-            "max": 96,
-            "mean": 87.86666666666666
+            "max": 92,
+            "mean": 87.46666666666667
           },
           "dcl": {
             "count": 30,
-            "min": 76.59999999403954,
-            "median": 80.45000000298023,
-            "p95": 85.82000000402331,
-            "max": 86.30000001192093,
-            "mean": 80.78333333383004
+            "min": 77.69999998807907,
+            "median": 80.25000000745058,
+            "p95": 82.83999998942018,
+            "max": 83.29999999701977,
+            "mean": 80.30666666626931
           },
           "load": {
             "count": 30,
-            "min": 78.09999999403954,
-            "median": 82,
-            "p95": 87.53000000789761,
-            "max": 87.8999999910593,
-            "mean": 82.46000000039736
+            "min": 79.29999999701977,
+            "median": 81.89999999850988,
+            "p95": 84.90999999865889,
+            "max": 86,
+            "mean": 82.01999999930462
           },
           "firstRender": {
             "count": 30,
-            "min": 78.29999999701977,
-            "median": 82.25,
-            "p95": 87.775,
-            "max": 88.09999999403954,
-            "mean": 82.68666666646799
+            "min": 79.5,
+            "median": 82.10000000149012,
+            "p95": 85.15499999895692,
+            "max": 86.40000000596046,
+            "mean": 82.26666666616997
           },
           "domNodes": {
             "count": 30,
@@ -1030,40 +1030,40 @@
           "min": 84,
           "median": 88,
           "p95": 92,
-          "max": 100,
-          "mean": 87.64444444444445
+          "max": 96,
+          "mean": 88
         },
         "fcp": {
           "count": 90,
           "min": 84,
           "median": 88,
           "p95": 92,
-          "max": 100,
-          "mean": 87.64444444444445
+          "max": 96,
+          "mean": 88
         },
         "dcl": {
           "count": 90,
-          "min": 76.59999999403954,
-          "median": 80.10000000149012,
-          "p95": 85.24000000357627,
-          "max": 91.6000000089407,
-          "mean": 80.4766666672296
+          "min": 77.09999999403954,
+          "median": 80.60000000149012,
+          "p95": 85.2649999924004,
+          "max": 87.79999999701977,
+          "mean": 80.87222222222222
         },
         "load": {
           "count": 90,
-          "min": 78.09999999403954,
-          "median": 81.85000000149012,
-          "p95": 86.97500000298024,
-          "max": 93.5,
-          "mean": 82.13333333383004
+          "min": 78.69999998807907,
+          "median": 82.25,
+          "p95": 87.05499999672175,
+          "max": 89.3999999910593,
+          "mean": 82.55111111054818
         },
         "firstRender": {
           "count": 90,
-          "min": 78.29999999701977,
-          "median": 82.10000000149012,
-          "p95": 87.3199999973178,
-          "max": 93.79999999701977,
-          "mean": 82.36222222199042
+          "min": 78.79999999701977,
+          "median": 82.5,
+          "p95": 87.25499999970198,
+          "max": 89.70000000298023,
+          "mean": 82.81444444490803
         },
         "domNodes": {
           "count": 90,
@@ -1089,263 +1089,11 @@
       "samplesPerRound": 15,
       "raw": [
         {
-          "lcp": 40,
-          "fcp": 40,
-          "dcl": 55.3999999910593,
-          "load": 56.69999998807907,
-          "firstRender": 56.8999999910593,
-          "domNodes": 23,
-          "transferBytes": 3169061
-        },
-        {
-          "lcp": 40,
-          "fcp": 40,
-          "dcl": 57,
-          "load": 58.099999994039536,
-          "firstRender": 61.099999994039536,
-          "domNodes": 23,
-          "transferBytes": 3169061
-        },
-        {
-          "lcp": 40,
-          "fcp": 40,
-          "dcl": 57.29999999701977,
-          "load": 58.599999994039536,
-          "firstRender": 65.8999999910593,
-          "domNodes": 23,
-          "transferBytes": 3169061
-        },
-        {
-          "lcp": 40,
-          "fcp": 40,
-          "dcl": 58.5,
-          "load": 59.8999999910593,
-          "firstRender": 60.20000000298023,
-          "domNodes": 23,
-          "transferBytes": 3169061
-        },
-        {
-          "lcp": 40,
-          "fcp": 40,
-          "dcl": 56.70000000298023,
-          "load": 57.8999999910593,
-          "firstRender": 58.5,
-          "domNodes": 23,
-          "transferBytes": 3169061
-        },
-        {
-          "lcp": 40,
-          "fcp": 40,
-          "dcl": 57.1000000089407,
-          "load": 58.29999999701977,
-          "firstRender": 58.6000000089407,
-          "domNodes": 23,
-          "transferBytes": 3169061
-        },
-        {
-          "lcp": 40,
-          "fcp": 40,
-          "dcl": 57,
-          "load": 58.30000001192093,
-          "firstRender": 67.30000001192093,
-          "domNodes": 23,
-          "transferBytes": 3169061
-        },
-        {
-          "lcp": 40,
-          "fcp": 40,
-          "dcl": 56.400000005960464,
-          "load": 57.6000000089407,
-          "firstRender": 65.6000000089407,
-          "domNodes": 23,
-          "transferBytes": 3169061
-        },
-        {
-          "lcp": 40,
-          "fcp": 40,
-          "dcl": 56.5,
-          "load": 57.599999994039536,
-          "firstRender": 61.29999999701977,
-          "domNodes": 23,
-          "transferBytes": 3169061
-        },
-        {
           "lcp": 44,
           "fcp": 44,
-          "dcl": 60.79999999701977,
-          "load": 62.099999994039536,
-          "firstRender": 70.3999999910593,
-          "domNodes": 23,
-          "transferBytes": 3169061
-        },
-        {
-          "lcp": 40,
-          "fcp": 40,
-          "dcl": 55.400000005960464,
-          "load": 56.6000000089407,
-          "firstRender": 56.79999999701977,
-          "domNodes": 23,
-          "transferBytes": 3169061
-        },
-        {
-          "lcp": 40,
-          "fcp": 40,
-          "dcl": 56.70000000298023,
-          "load": 58.70000000298023,
-          "firstRender": 69.70000000298023,
-          "domNodes": 23,
-          "transferBytes": 3169061
-        },
-        {
-          "lcp": 40,
-          "fcp": 40,
-          "dcl": 57.19999998807907,
-          "load": 58.69999998807907,
-          "firstRender": 62.099999994039536,
-          "domNodes": 23,
-          "transferBytes": 3169061
-        },
-        {
-          "lcp": 40,
-          "fcp": 40,
-          "dcl": 54.400000005960464,
-          "load": 55.599999994039536,
-          "firstRender": 55.79999999701977,
-          "domNodes": 23,
-          "transferBytes": 3169061
-        },
-        {
-          "lcp": 40,
-          "fcp": 40,
-          "dcl": 58.20000000298023,
-          "load": 59.70000000298023,
-          "firstRender": 60,
-          "domNodes": 23,
-          "transferBytes": 3169061
-        },
-        {
-          "lcp": 44,
-          "fcp": 44,
-          "dcl": 56.79999999701977,
-          "load": 57.8999999910593,
-          "firstRender": 66.29999999701977,
-          "domNodes": 23,
-          "transferBytes": 3169061
-        },
-        {
-          "lcp": 40,
-          "fcp": 40,
-          "dcl": 57.400000005960464,
-          "load": 59.20000000298023,
-          "firstRender": 60.900000005960464,
-          "domNodes": 23,
-          "transferBytes": 3169061
-        },
-        {
-          "lcp": 44,
-          "fcp": 44,
-          "dcl": 63.20000000298023,
-          "load": 64.5,
-          "firstRender": 64.80000001192093,
-          "domNodes": 23,
-          "transferBytes": 3169061
-        },
-        {
-          "lcp": 40,
-          "fcp": 40,
-          "dcl": 57.900000005960464,
-          "load": 59.29999999701977,
-          "firstRender": 68.6000000089407,
-          "domNodes": 23,
-          "transferBytes": 3169061
-        },
-        {
-          "lcp": 36,
-          "fcp": 36,
-          "dcl": 56.20000000298023,
-          "load": 57.400000005960464,
-          "firstRender": 57.6000000089407,
-          "domNodes": 23,
-          "transferBytes": 3169061
-        },
-        {
-          "lcp": 40,
-          "fcp": 40,
-          "dcl": 55.599999994039536,
-          "load": 56.79999999701977,
-          "firstRender": 64.09999999403954,
-          "domNodes": 23,
-          "transferBytes": 3169061
-        },
-        {
-          "lcp": 40,
-          "fcp": 40,
-          "dcl": 56.599999994039536,
-          "load": 57.900000005960464,
-          "firstRender": 58,
-          "domNodes": 23,
-          "transferBytes": 3169061
-        },
-        {
-          "lcp": 40,
-          "fcp": 40,
-          "dcl": 56.70000000298023,
-          "load": 58,
-          "firstRender": 58.20000000298023,
-          "domNodes": 23,
-          "transferBytes": 3169061
-        },
-        {
-          "lcp": 44,
-          "fcp": 44,
-          "dcl": 62.900000005960464,
-          "load": 64.20000000298023,
-          "firstRender": 71.79999999701977,
-          "domNodes": 23,
-          "transferBytes": 3169061
-        },
-        {
-          "lcp": 40,
-          "fcp": 40,
-          "dcl": 81.29999999701977,
-          "load": 82.59999999403954,
-          "firstRender": 82.79999999701977,
-          "domNodes": 23,
-          "transferBytes": 3169061
-        },
-        {
-          "lcp": 40,
-          "fcp": 40,
-          "dcl": 59.20000000298023,
-          "load": 60.5,
-          "firstRender": 68,
-          "domNodes": 23,
-          "transferBytes": 3169061
-        },
-        {
-          "lcp": 48,
-          "fcp": 48,
-          "dcl": 88.59999999403954,
-          "load": 89.79999999701977,
-          "firstRender": 90,
-          "domNodes": 23,
-          "transferBytes": 3169061
-        },
-        {
-          "lcp": 44,
-          "fcp": 44,
-          "dcl": 56.1000000089407,
-          "load": 57.20000000298023,
-          "firstRender": 64.6000000089407,
-          "domNodes": 23,
-          "transferBytes": 3169061
-        },
-        {
-          "lcp": 44,
-          "fcp": 44,
-          "dcl": 57.099999994039536,
-          "load": 58.400000005960464,
-          "firstRender": 69.29999999701977,
+          "dcl": 58,
+          "load": 59.400000005960464,
+          "firstRender": 66.30000001192093,
           "domNodes": 23,
           "transferBytes": 3169061
         },
@@ -1354,69 +1102,285 @@
           "fcp": 40,
           "dcl": 56,
           "load": 57.20000000298023,
-          "firstRender": 67.09999999403954,
+          "firstRender": 64.79999999701977,
+          "domNodes": 23,
+          "transferBytes": 3169061
+        },
+        {
+          "lcp": 40,
+          "fcp": 40,
+          "dcl": 56.599999994039536,
+          "load": 57.79999999701977,
+          "firstRender": 58.29999999701977,
+          "domNodes": 23,
+          "transferBytes": 3169061
+        },
+        {
+          "lcp": 44,
+          "fcp": 44,
+          "dcl": 58.6000000089407,
+          "load": 59.79999999701977,
+          "firstRender": 68.20000000298023,
+          "domNodes": 23,
+          "transferBytes": 3169061
+        },
+        {
+          "lcp": 40,
+          "fcp": 40,
+          "dcl": 58.5,
+          "load": 59.70000000298023,
+          "firstRender": 67.6000000089407,
           "domNodes": 23,
           "transferBytes": 3169061
         },
         {
           "lcp": 36,
           "fcp": 36,
-          "dcl": 56.900000005960464,
-          "load": 58.29999999701977,
-          "firstRender": 66.09999999403954,
+          "dcl": 55.29999999701977,
+          "load": 56.400000005960464,
+          "firstRender": 66.40000000596046,
           "domNodes": 23,
           "transferBytes": 3169061
         },
         {
           "lcp": 40,
           "fcp": 40,
-          "dcl": 55.599999994039536,
-          "load": 56.79999999701977,
+          "dcl": 60.5,
+          "load": 61.69999998807907,
+          "firstRender": 61.8999999910593,
+          "domNodes": 23,
+          "transferBytes": 3169061
+        },
+        {
+          "lcp": 40,
+          "fcp": 40,
+          "dcl": 60.400000005960464,
+          "load": 61.900000005960464,
+          "firstRender": 62.1000000089407,
+          "domNodes": 23,
+          "transferBytes": 3169061
+        },
+        {
+          "lcp": 40,
+          "fcp": 40,
+          "dcl": 55.30000001192093,
+          "load": 56.6000000089407,
+          "firstRender": 65.30000001192093,
+          "domNodes": 23,
+          "transferBytes": 3169061
+        },
+        {
+          "lcp": 40,
+          "fcp": 40,
+          "dcl": 58,
+          "load": 59.19999998807907,
+          "firstRender": 66.79999999701977,
+          "domNodes": 23,
+          "transferBytes": 3169061
+        },
+        {
+          "lcp": 40,
+          "fcp": 40,
+          "dcl": 57.79999999701977,
+          "load": 59.20000000298023,
+          "firstRender": 59.70000000298023,
+          "domNodes": 23,
+          "transferBytes": 3169061
+        },
+        {
+          "lcp": 40,
+          "fcp": 40,
+          "dcl": 55.20000000298023,
+          "load": 56.20000000298023,
+          "firstRender": 57.3999999910593,
+          "domNodes": 23,
+          "transferBytes": 3169061
+        },
+        {
+          "lcp": 40,
+          "fcp": 40,
+          "dcl": 56.29999999701977,
+          "load": 57.5,
+          "firstRender": 68,
+          "domNodes": 23,
+          "transferBytes": 3169061
+        },
+        {
+          "lcp": 40,
+          "fcp": 40,
+          "dcl": 55.70000000298023,
+          "load": 57,
+          "firstRender": 64.90000000596046,
+          "domNodes": 23,
+          "transferBytes": 3169061
+        },
+        {
+          "lcp": 40,
+          "fcp": 40,
+          "dcl": 57.20000000298023,
+          "load": 58.5,
           "firstRender": 58.70000000298023,
           "domNodes": 23,
           "transferBytes": 3169061
         },
         {
+          "lcp": 36,
+          "fcp": 36,
+          "dcl": 82.79999999701977,
+          "load": 84.19999998807907,
+          "firstRender": 98.09999999403954,
+          "domNodes": 23,
+          "transferBytes": 3169061
+        },
+        {
           "lcp": 40,
           "fcp": 40,
-          "dcl": 55.5,
-          "load": 56.70000000298023,
-          "firstRender": 60.20000000298023,
+          "dcl": 59.5,
+          "load": 60.79999999701977,
+          "firstRender": 68.20000000298023,
+          "domNodes": 23,
+          "transferBytes": 3169061
+        },
+        {
+          "lcp": 40,
+          "fcp": 40,
+          "dcl": 62.20000000298023,
+          "load": 63.70000000298023,
+          "firstRender": 64.1000000089407,
+          "domNodes": 23,
+          "transferBytes": 3169061
+        },
+        {
+          "lcp": 40,
+          "fcp": 40,
+          "dcl": 57.5,
+          "load": 58.79999999701977,
+          "firstRender": 59,
+          "domNodes": 23,
+          "transferBytes": 3169061
+        },
+        {
+          "lcp": 40,
+          "fcp": 40,
+          "dcl": 58,
+          "load": 59.19999998807907,
+          "firstRender": 68.3999999910593,
           "domNodes": 23,
           "transferBytes": 3169061
         },
         {
           "lcp": 44,
           "fcp": 44,
-          "dcl": 57.5,
-          "load": 58.8999999910593,
+          "dcl": 60.5,
+          "load": 61.79999999701977,
+          "firstRender": 69,
+          "domNodes": 23,
+          "transferBytes": 3169061
+        },
+        {
+          "lcp": 40,
+          "fcp": 40,
+          "dcl": 57,
+          "load": 58.29999999701977,
+          "firstRender": 65.3999999910593,
+          "domNodes": 23,
+          "transferBytes": 3169061
+        },
+        {
+          "lcp": 40,
+          "fcp": 40,
+          "dcl": 57.099999994039536,
+          "load": 58.400000005960464,
+          "firstRender": 58.70000000298023,
+          "domNodes": 23,
+          "transferBytes": 3169061
+        },
+        {
+          "lcp": 36,
+          "fcp": 36,
+          "dcl": 79.40000000596046,
+          "load": 80.70000000298023,
+          "firstRender": 80.79999999701977,
+          "domNodes": 23,
+          "transferBytes": 3169061
+        },
+        {
+          "lcp": 40,
+          "fcp": 40,
+          "dcl": 59,
+          "load": 60.20000000298023,
+          "firstRender": 63.5,
+          "domNodes": 23,
+          "transferBytes": 3169061
+        },
+        {
+          "lcp": 40,
+          "fcp": 40,
+          "dcl": 57.599999994039536,
+          "load": 58.79999999701977,
           "firstRender": 59.20000000298023,
           "domNodes": 23,
           "transferBytes": 3169061
         },
         {
-          "lcp": 44,
-          "fcp": 44,
-          "dcl": 61.3999999910593,
-          "load": 62.8999999910593,
-          "firstRender": 70.29999999701977,
+          "lcp": 40,
+          "fcp": 40,
+          "dcl": 56.70000000298023,
+          "load": 57.900000005960464,
+          "firstRender": 58.1000000089407,
           "domNodes": 23,
           "transferBytes": 3169061
         },
         {
           "lcp": 44,
           "fcp": 44,
-          "dcl": 59.5,
-          "load": 60.69999998807907,
-          "firstRender": 68.79999999701977,
+          "dcl": 58,
+          "load": 59.29999999701977,
+          "firstRender": 67.59999999403954,
+          "domNodes": 23,
+          "transferBytes": 3169061
+        },
+        {
+          "lcp": 44,
+          "fcp": 44,
+          "dcl": 58.599999994039536,
+          "load": 60,
+          "firstRender": 66.8999999910593,
           "domNodes": 23,
           "transferBytes": 3169061
         },
         {
           "lcp": 40,
           "fcp": 40,
-          "dcl": 65.59999999403954,
-          "load": 67,
+          "dcl": 59.5,
+          "load": 60.900000005960464,
+          "firstRender": 62.29999999701977,
+          "domNodes": 23,
+          "transferBytes": 3169061
+        },
+        {
+          "lcp": 40,
+          "fcp": 40,
+          "dcl": 57.6000000089407,
+          "load": 58.900000005960464,
+          "firstRender": 60.20000000298023,
+          "domNodes": 23,
+          "transferBytes": 3169061
+        },
+        {
+          "lcp": 40,
+          "fcp": 40,
+          "dcl": 58.8999999910593,
+          "load": 60.3999999910593,
+          "firstRender": 60.69999998807907,
+          "domNodes": 23,
+          "transferBytes": 3169061
+        },
+        {
+          "lcp": 40,
+          "fcp": 40,
+          "dcl": 55.6000000089407,
+          "load": 56.80000001192093,
           "firstRender": 67.20000000298023,
           "domNodes": 23,
           "transferBytes": 3169061
@@ -1424,18 +1388,54 @@
         {
           "lcp": 40,
           "fcp": 40,
-          "dcl": 58.1000000089407,
-          "load": 59.29999999701977,
-          "firstRender": 66.90000000596046,
+          "dcl": 57.70000000298023,
+          "load": 58.900000005960464,
+          "firstRender": 62.1000000089407,
           "domNodes": 23,
           "transferBytes": 3169061
         },
         {
           "lcp": 40,
           "fcp": 40,
-          "dcl": 56.5,
-          "load": 57.900000005960464,
-          "firstRender": 61.70000000298023,
+          "dcl": 59.099999994039536,
+          "load": 60.599999994039536,
+          "firstRender": 60.79999999701977,
+          "domNodes": 23,
+          "transferBytes": 3169061
+        },
+        {
+          "lcp": 40,
+          "fcp": 40,
+          "dcl": 55.900000005960464,
+          "load": 57.1000000089407,
+          "firstRender": 57.400000005960464,
+          "domNodes": 23,
+          "transferBytes": 3169061
+        },
+        {
+          "lcp": 40,
+          "fcp": 40,
+          "dcl": 56.6000000089407,
+          "load": 58,
+          "firstRender": 58.30000001192093,
+          "domNodes": 23,
+          "transferBytes": 3169061
+        },
+        {
+          "lcp": 40,
+          "fcp": 40,
+          "dcl": 59.5,
+          "load": 60.8999999910593,
+          "firstRender": 72,
+          "domNodes": 23,
+          "transferBytes": 3169061
+        },
+        {
+          "lcp": 40,
+          "fcp": 40,
+          "dcl": 59.1000000089407,
+          "load": 60.400000005960464,
+          "firstRender": 63.70000000298023,
           "domNodes": 23,
           "transferBytes": 3169061
         },
@@ -1443,53 +1443,53 @@
           "lcp": 40,
           "fcp": 40,
           "dcl": 59.6000000089407,
-          "load": 60.80000001192093,
-          "firstRender": 61,
+          "load": 61.1000000089407,
+          "firstRender": 61.5,
+          "domNodes": 23,
+          "transferBytes": 3169061
+        },
+        {
+          "lcp": 40,
+          "fcp": 40,
+          "dcl": 60,
+          "load": 61.3999999910593,
+          "firstRender": 70.79999999701977,
+          "domNodes": 23,
+          "transferBytes": 3169061
+        },
+        {
+          "lcp": 40,
+          "fcp": 40,
+          "dcl": 57.8999999910593,
+          "load": 59.29999999701977,
+          "firstRender": 59.70000000298023,
+          "domNodes": 23,
+          "transferBytes": 3169061
+        },
+        {
+          "lcp": 40,
+          "fcp": 40,
+          "dcl": 56.900000005960464,
+          "load": 58,
+          "firstRender": 65.59999999403954,
           "domNodes": 23,
           "transferBytes": 3169061
         },
         {
           "lcp": 44,
           "fcp": 44,
-          "dcl": 59,
-          "load": 60.20000000298023,
-          "firstRender": 68.59999999403954,
+          "dcl": 60.20000000298023,
+          "load": 61.79999999701977,
+          "firstRender": 62.20000000298023,
           "domNodes": 23,
           "transferBytes": 3169061
         },
         {
           "lcp": 40,
           "fcp": 40,
-          "dcl": 56.3999999910593,
-          "load": 57.70000000298023,
-          "firstRender": 65.59999999403954,
-          "domNodes": 23,
-          "transferBytes": 3169061
-        },
-        {
-          "lcp": 40,
-          "fcp": 40,
-          "dcl": 57.1000000089407,
-          "load": 58.400000005960464,
-          "firstRender": 61.20000000298023,
-          "domNodes": 23,
-          "transferBytes": 3169061
-        },
-        {
-          "lcp": 40,
-          "fcp": 40,
-          "dcl": 58.6000000089407,
-          "load": 60,
-          "firstRender": 60.20000000298023,
-          "domNodes": 23,
-          "transferBytes": 3169061
-        },
-        {
-          "lcp": 40,
-          "fcp": 40,
-          "dcl": 55.8999999910593,
-          "load": 57.20000000298023,
-          "firstRender": 57.5,
+          "dcl": 59.400000005960464,
+          "load": 60.70000000298023,
+          "firstRender": 61,
           "domNodes": 23,
           "transferBytes": 3169061
         }
@@ -1498,101 +1498,43 @@
         {
           "lcp": {
             "count": 15,
-            "min": 40,
+            "min": 36,
             "median": 40,
-            "p95": 41.199999999999996,
+            "p95": 44,
             "max": 44,
             "mean": 40.266666666666666
           },
           "fcp": {
             "count": 15,
-            "min": 40,
+            "min": 36,
             "median": 40,
-            "p95": 41.199999999999996,
+            "p95": 44,
             "max": 44,
             "mean": 40.266666666666666
           },
           "dcl": {
             "count": 15,
-            "min": 54.400000005960464,
-            "median": 57,
-            "p95": 59.18999999910593,
-            "max": 60.79999999701977,
-            "mean": 56.97333333392938
+            "min": 55.20000000298023,
+            "median": 57.20000000298023,
+            "p95": 60.43000000417233,
+            "max": 60.5,
+            "mean": 57.29333333472411
           },
           "load": {
             "count": 15,
-            "min": 55.599999994039536,
-            "median": 58.29999999701977,
-            "p95": 60.55999999195337,
-            "max": 62.099999994039536,
-            "mean": 58.293333330750464
+            "min": 56.20000000298023,
+            "median": 58.5,
+            "p95": 61.759999993443486,
+            "max": 61.900000005960464,
+            "mean": 58.540000000596045
           },
           "firstRender": {
             "count": 15,
-            "min": 55.79999999701977,
-            "median": 61.099999994039536,
-            "p95": 69.90999999940395,
-            "max": 70.3999999910593,
-            "mean": 62.01333333253861
-          },
-          "domNodes": {
-            "count": 15,
-            "min": 23,
-            "median": 23,
-            "p95": 23,
-            "max": 23,
-            "mean": 23
-          },
-          "transferBytes": {
-            "count": 15,
-            "min": 3169061,
-            "median": 3169061,
-            "p95": 3169061,
-            "max": 3169061,
-            "mean": 3169061
-          }
-        },
-        {
-          "lcp": {
-            "count": 15,
-            "min": 36,
-            "median": 40,
-            "p95": 45.199999999999996,
-            "max": 48,
-            "mean": 41.6
-          },
-          "fcp": {
-            "count": 15,
-            "min": 36,
-            "median": 40,
-            "p95": 45.199999999999996,
-            "max": 48,
-            "mean": 41.6
-          },
-          "dcl": {
-            "count": 15,
-            "min": 55.599999994039536,
-            "median": 57.099999994039536,
-            "p95": 83.48999999612569,
-            "max": 88.59999999403954,
-            "mean": 61.440000000596044
-          },
-          "load": {
-            "count": 15,
-            "min": 56.79999999701977,
-            "median": 58.400000005960464,
-            "p95": 84.7599999949336,
-            "max": 89.79999999701977,
-            "mean": 62.72666666706403
-          },
-          "firstRender": {
-            "count": 15,
-            "min": 57.6000000089407,
-            "median": 66.29999999701977,
-            "p95": 84.95999999791383,
-            "max": 90,
-            "mean": 67.47333333492278
+            "min": 57.3999999910593,
+            "median": 64.90000000596046,
+            "p95": 68.06000000089406,
+            "max": 68.20000000298023,
+            "mean": 63.76000000238419
           },
           "domNodes": {
             "count": 15,
@@ -1618,7 +1560,7 @@
             "median": 40,
             "p95": 44,
             "max": 44,
-            "mean": 40.8
+            "mean": 40.266666666666666
           },
           "fcp": {
             "count": 15,
@@ -1626,31 +1568,89 @@
             "median": 40,
             "p95": 44,
             "max": 44,
-            "mean": 40.8
+            "mean": 40.266666666666666
           },
           "dcl": {
-            "count": 15,
-            "min": 55.5,
-            "median": 57.5,
-            "p95": 62.65999999195337,
-            "max": 65.59999999403954,
-            "mean": 58.21333333353201
-          },
-          "load": {
             "count": 15,
             "min": 56.70000000298023,
-            "median": 58.8999999910593,
-            "p95": 64.1299999937415,
-            "max": 67,
-            "mean": 59.51999999980132
+            "median": 58.599999994039536,
+            "p95": 80.42000000327825,
+            "max": 82.79999999701977,
+            "mean": 61.559999999403956
+          },
+          "load": {
+            "count": 15,
+            "min": 57.900000005960464,
+            "median": 60,
+            "p95": 81.74999999850988,
+            "max": 84.19999998807907,
+            "mean": 62.86666666567326
           },
           "firstRender": {
             "count": 15,
-            "min": 57.5,
-            "median": 61.70000000298023,
-            "p95": 69.24999999701977,
-            "max": 70.29999999701977,
-            "mean": 63.54666666686535
+            "min": 58.1000000089407,
+            "median": 65.3999999910593,
+            "p95": 85.98999999612568,
+            "max": 98.09999999403954,
+            "mean": 67.28666666547457
+          },
+          "domNodes": {
+            "count": 15,
+            "min": 23,
+            "median": 23,
+            "p95": 23,
+            "max": 23,
+            "mean": 23
+          },
+          "transferBytes": {
+            "count": 15,
+            "min": 3169061,
+            "median": 3169061,
+            "p95": 3169061,
+            "max": 3169061,
+            "mean": 3169061
+          }
+        },
+        {
+          "lcp": {
+            "count": 15,
+            "min": 40,
+            "median": 40,
+            "p95": 41.199999999999996,
+            "max": 44,
+            "mean": 40.266666666666666
+          },
+          "fcp": {
+            "count": 15,
+            "min": 40,
+            "median": 40,
+            "p95": 41.199999999999996,
+            "max": 44,
+            "mean": 40.266666666666666
+          },
+          "dcl": {
+            "count": 15,
+            "min": 55.6000000089407,
+            "median": 58.8999999910593,
+            "p95": 60.06000000089407,
+            "max": 60.20000000298023,
+            "mean": 58.2666666696469
+          },
+          "load": {
+            "count": 15,
+            "min": 56.80000001192093,
+            "median": 60.3999999910593,
+            "p95": 61.519999992847445,
+            "max": 61.79999999701977,
+            "mean": 59.620000000794725
+          },
+          "firstRender": {
+            "count": 15,
+            "min": 57.400000005960464,
+            "median": 61.5,
+            "p95": 71.15999999791384,
+            "max": 72,
+            "mean": 62.880000001192094
           },
           "domNodes": {
             "count": 15,
@@ -1676,40 +1676,40 @@
           "min": 36,
           "median": 40,
           "p95": 44,
-          "max": 48,
-          "mean": 40.888888888888886
+          "max": 44,
+          "mean": 40.266666666666666
         },
         "fcp": {
           "count": 45,
           "min": 36,
           "median": 40,
           "p95": 44,
-          "max": 48,
-          "mean": 40.888888888888886
+          "max": 44,
+          "mean": 40.266666666666666
         },
         "dcl": {
           "count": 45,
-          "min": 54.400000005960464,
-          "median": 57.099999994039536,
-          "p95": 65.11999999582767,
-          "max": 88.59999999403954,
-          "mean": 58.875555556019144
+          "min": 55.20000000298023,
+          "median": 58,
+          "p95": 61.86000000238418,
+          "max": 82.79999999701977,
+          "mean": 59.04000000125832
         },
         "load": {
           "count": 45,
-          "min": 55.599999994039536,
-          "median": 58.400000005960464,
-          "p95": 66.5,
-          "max": 89.79999999701977,
-          "mean": 60.17999999920527
+          "min": 56.20000000298023,
+          "median": 59.29999999701977,
+          "p95": 63.34000000357627,
+          "max": 84.19999998807907,
+          "mean": 60.34222222235468
         },
         "firstRender": {
           "count": 45,
-          "min": 55.79999999701977,
-          "median": 64.09999999403954,
-          "p95": 71.51999999582767,
-          "max": 90,
-          "mean": 64.34444444477558
+          "min": 57.3999999910593,
+          "median": 63.70000000298023,
+          "p95": 71.75999999940395,
+          "max": 98.09999999403954,
+          "mean": 64.64222222301694
         },
         "domNodes": {
           "count": 45,
@@ -1732,6 +1732,8 @@
   },
   "sameShaNoise": {
     "compared": false,
-    "reason": "旧基线缺少 gitSha，无法判断同 SHA"
+    "baselineSha": "2d306c35f6789bb0d3cee90ed85d79105ec0471a",
+    "currentSha": "77ab5541a3cddcf4f0e9c3c1235e4671d352c8fa",
+    "reason": "工作树不干净（参照 gitDirty=true，本次 gitDirty=false）：同 SHA 差异混入未提交改动，不计入机器噪声；请在干净工作树重测"
   }
 }
