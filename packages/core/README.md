@@ -17,6 +17,19 @@ import { OASElement } from '@oas-ui/core'
 - `emit()` 派发 `oas-*` 前缀事件（可选 `bubbles` / `composed`）
 - `t()` 国际化文案查询（配合 `@oas-ui/i18n`）
 - 主题上下文（`data-theme`）与 DSD 水合衔接
+- `formatByte()` 字节量格式化（子路径 `@oas-ui/core/format-byte`，纯函数、零 DOM，Node 可直接导入）
+
+### 字节格式化
+
+```ts
+import { formatByte } from '@oas-ui/core/format-byte'
+
+formatByte(1536) // '1.5 KiB'（默认 IEC，1024 进制，1 位小数）
+formatByte(1000, { unitSystem: 'si' }) // '1.0 KB'（1000 进制）
+formatByte(1536, { locale: 'de-DE' }) // '1,5 KiB'
+```
+
+默认 `unitSystem: 'iec'`（`B` / `KiB` / `MiB`…）、`precision: 1`、`locale: 'en-US'`（SSR 与客户端逐字一致）；`NaN` / `Infinity` / 非数字返回空串。
 
 ### 相关包
 
@@ -42,6 +55,19 @@ import { OASElement } from '@oas-ui/core'
 - `emit()` dispatches `oas-*` prefixed events (optional `bubbles` / `composed`)
 - `t()` localized text lookup (with `@oas-ui/i18n`)
 - Theme context (`data-theme`) and DSD hydration integration
+- `formatByte()` byte-size formatting (subpath `@oas-ui/core/format-byte`; pure function, zero DOM, importable in Node)
+
+### Byte formatting
+
+```ts
+import { formatByte } from '@oas-ui/core/format-byte'
+
+formatByte(1536) // '1.5 KiB' (IEC by default, base 1024, one decimal)
+formatByte(1000, { unitSystem: 'si' }) // '1.0 KB' (base 1000)
+formatByte(1536, { locale: 'de-DE' }) // '1,5 KiB'
+```
+
+Defaults: `unitSystem: 'iec'` (`B` / `KiB` / `MiB`…), `precision: 1`, `locale: 'en-US'` (SSR and client output match exactly). `NaN` / `Infinity` / non-numbers return an empty string.
 
 ### Related packages
 

@@ -4043,7 +4043,7 @@
       "headers": "附加请求头（JSON 字符串）",
       "data": "附加表单字段（JSON 字符串，随文件一起提交）",
       "with-credentials": "跨域携带凭证",
-      "max-size": "单文件大小上限（字节或 `2KB`/`1MB`/`1GB`；超限派 oas-exceed size 形态）",
+      "max-size": "单文件大小上限（字节或 `2KB`/`1MB`/`1GB`，按 1024 进制解析；超限派 oas-exceed size 形态）",
       "directory": "目录上传（整目录递归入列）",
       "paste": "粘贴上传（默认关；开启后粘贴剪贴板文件入列）",
       "show-file-list": "文件列表显隐（`\"false\"` 隐藏，仅保留拖拽区）",
@@ -4069,7 +4069,7 @@
     },
     "slots": {
       "trigger": "替换拖拽区内容（zone 语义保留）",
-      "template[slot=\"item\"]": "自定义文件行/卡片（`[data-item-name]`/`[data-item-size]` 绑定）",
+      "template[slot=\"item\"]": "自定义文件行/卡片（`[data-item-name]`/`[data-item-size]` 绑定；大小按 IEC `B`/`KiB`/`MiB` + 1 位小数显示）",
       "template[slot=\"tip\"]": "拖拽区提示富内容（tip 属性优先）",
       "template[slot=\"trigger\"]": "自绘触发区模板（native slot 对 template 元素不生效，走克隆通道；zone 点击仍打开文件选择）"
     },

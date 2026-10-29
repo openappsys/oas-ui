@@ -40,6 +40,11 @@ export default defineConfig(() => {
       // 数组形式保证匹配顺序：更具体的子路径必须先于包名映射（对象形式的匹配顺序不保证先长后短）
       alias: [
         // 内联工作区包源码而非其 dist，CDN 构建自包含、不依赖其他包先构建
+        // 更具体的子路径必须先于包名映射（字符串 alias 是前缀匹配，否则会拼成 index.ts/format-byte）
+        {
+          find: '@oas-ui/core/format-byte',
+          replacement: resolve(import.meta.dirname, '../core/src/format-byte.ts'),
+        },
         { find: '@oas-ui/core', replacement: resolve(import.meta.dirname, '../core/src/index.ts') },
         { find: '@oas-ui/i18n', replacement: resolve(import.meta.dirname, '../i18n/src/index.ts') },
         { find: '@oas-ui/icons/register', replacement: resolve(import.meta.dirname, '../icons/src/register.ts') },

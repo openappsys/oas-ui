@@ -141,6 +141,8 @@ el.customRequest = ({ file, name, action, onProgress, onSuccess, onError }) => {
 
 `max-size` 支持字节数或带单位写法（`512KB` / `2MB` / `1GB`）；超限拒绝并派发 `oas-exceed-limit`（`detail.type === 'size'`，含 `maxSize` 字节数）。
 
+> **大小显示与单位**：列表行、`[data-item-size]` 绑定与预览浮层中的文件大小按 IEC 单位显示（`B` / `KiB` / `MiB`，1024 进制，保留 1 位小数）——例如 `2048` 字节显示为 `2.0 KiB`。`max-size` 的输入写法 `KB` / `MB` / `GB` 仍按 1024 进制解析；两者数值口径一致，只是显示标签采用 IEC（`KiB` / `MiB`）。
+
 <DemoBlock title="max-size（100KB）">
   <oas-upload id="upload-size" multiple max-size="100KB"></oas-upload>
 </DemoBlock>
@@ -169,7 +171,7 @@ el.customRequest = ({ file, name, action, onProgress, onSuccess, onError }) => {
 
 - `slot="trigger"`：替换拖拽区内容（点击/拖拽语义保留在拖拽区容器上——zone 本身就是 `role="button"` 的可聚焦控件，**内嵌内容不要再放按钮/链接等可交互元素**（嵌套交互 axe 违规）；展示性内容即可）
 - `tip` 属性或 `template[slot="tip"]`：拖拽区下方次要说明文案（属性优先）
-- `template[slot="item"]`：克隆进 `list` / `picture` 每行，`[data-item-name]` / `[data-item-size]` 自动绑定文件名与大小
+- `template[slot="item"]`：克隆进 `list` / `picture` 每行，`[data-item-name]` / `[data-item-size]` 自动绑定文件名与大小（大小按 IEC 单位 + 1 位小数，如 `2.0 KiB`）
 
 <DemoBlock title="trigger / tip 插槽">
   <oas-upload id="upload-trigger" multiple tip="支持任意文件，单个不超过 20MB">
@@ -446,7 +448,7 @@ onMounted(async () => {
 | `headers` | 附加请求头（JSON 字符串） | — | — |
 | `list-type` | 列表样式：`list`（默认）/ `picture`（列表带小缩略图）/ `picture-card`（卡片缩略图墙） | `string` | `list` |
 | `max` | 最大文件数 | `string` | `0` |
-| `max-size` | 单文件大小上限（字节或 `2KB`/`1MB`/`1GB`；超限派 oas-exceed size 形态） | `string` | — |
+| `max-size` | 单文件大小上限（字节或 `2KB`/`1MB`/`1GB`，按 1024 进制解析；超限派 oas-exceed size 形态） | `string` | — |
 | `method` | HTTP 方法（默认 POST） | `string` | `POST` |
 | `multiple` | 多选 | `boolean` | — |
 | `name` | 上传文件的表单字段名（默认 `file`） | `string` | — |
@@ -493,7 +495,7 @@ onMounted(async () => {
 
 | 名称 | 说明 |
 | --- | --- |
-| `template[slot="item"]` | 自定义文件行/卡片（`[data-item-name]`/`[data-item-size]` 绑定） |
+| `template[slot="item"]` | 自定义文件行/卡片（`[data-item-name]`/`[data-item-size]` 绑定；大小按 IEC `B`/`KiB`/`MiB` + 1 位小数显示） |
 | `template[slot="tip"]` | 拖拽区提示富内容（tip 属性优先） |
 | `template[slot="trigger"]` | 自绘触发区模板（native slot 对 template 元素不生效，走克隆通道；zone 点击仍打开文件选择） |
 | `trigger` | 替换拖拽区内容（zone 语义保留） |

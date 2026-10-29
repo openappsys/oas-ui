@@ -27,6 +27,46 @@ test('upload picture-card：list-type 属性在 Vue demo 存活，预置照片�
   expect(r.thumbBlobSrc).toContain('blob:') // URL.createObjectURL 缩略图
 })
 
+test('upload 文件大小显示 IEC 单位（KiB）：回显列表与 dark 主题均可读', async ({ page }) => {
+  await page.goto('/components/upload.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#upload-echo')
+  await page.waitForFunction(
+    () => document.querySelector('#upload-echo')?.shadowRoot?.querySelectorAll('.item').length === 2,
+    null,
+    { timeout: 10000 },
+  )
+  // Task 9C 可见变化：2048 / 4096 字节 → 2.0 KiB / 4.0 KiB（旧文案为 2.0 KB / 4.0 KB）
+  const light = await page.evaluate(() => {
+    const el = document.querySelector('#upload-echo')!
+    return [...el.shadowRoot!.querySelectorAll('.item .size')].map((n) => n.textContent)
+  })
+  expect(light).toEqual(['2.0 KiB', '4.0 KiB'])
+
+  const dark = await page.evaluate(() => {
+    document.documentElement.classList.add('dark')
+    const el = document.querySelector('#upload-echo')!
+    const sizes = [...el.shadowRoot!.querySelectorAll('.item .size')]
+    const result = sizes.map((n) => {
+      const rect = n.getBoundingClientRect()
+      const style = getComputedStyle(n)
+      return {
+        text: n.textContent,
+        visible: rect.width > 0 && rect.height > 0,
+        opacity: style.opacity,
+        color: style.color,
+      }
+    })
+    document.documentElement.classList.remove('dark')
+    return result
+  })
+  expect(dark.map((o) => o.text)).toEqual(['2.0 KiB', '4.0 KiB'])
+  for (const item of dark) {
+    expect(item.visible, 'dark 下大小文案不可见').toBe(true)
+    expect(item.opacity).not.toBe('0')
+    expect(item.color).not.toBe('rgba(0, 0, 0, 0)')
+  }
+})
+
 test('upload 拖拽 drop：真实拖放文件到拖拽区即渲染', async ({ page }) => {
   await page.goto('/components/upload.html', { waitUntil: 'domcontentloaded' })
   await up(page, '#upload-drag')

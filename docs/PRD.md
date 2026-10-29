@@ -5,6 +5,33 @@
 
 ---
 
+## 未发布：字节格式化 helper 与 Upload IEC 迁移（Task 9C）✅
+
+### 功能定义
+
+新增 `@oas-ui/core/format-byte` 纯函数 `formatByte(bytes, { locale, unitSystem, precision })`，作为全库唯一的字节量格式化实现；`oas-upload` 的文件大小显示从旧 `KB`（1024 进制但标签写作 KB）迁移为默认 IEC（`KiB`/`MiB`，1024 进制）。这是用户已批准的可见文案变化（`2.0 KB` → `2.0 KiB`），不改文件大小计算、上传/校验/裁剪行为，不迁移其他组件。
+
+### 详细契约
+
+- **签名与默认值**：`formatByte(bytes: number, options?: FormatByteOptions): string`；`unitSystem` 默认 `'iec'`（`B` / `KiB` / `MiB` / `GiB` / `TiB` / `PiB` / `EiB`，1024 进制），传 `'si'` 走 1000 进制（`B` / `KB` / `MB` / `GB` / `TB` / `PB` / `EB`）；`precision` 默认 `1`，非负整数截断，非法/非有限回落默认，上限 20；`locale` 默认 `en-US`（SSR 与客户端确定性一致），非法标签不抛错、回落 `en-US`。
+- **档位与进位**：按 `|bytes|` 与进制幂选单位，进位阈值严格为 `1024^n` / `1000^n`；按 `precision` 定点舍入后若达到进制上限（如 `1023.96` 字节 → `1.0 KiB`、`1023.5 KiB` → `1.0 MiB`）升一档重算，档位封顶 `EiB` / `EB`（极大值停留在最大单位，按整数输出，不出现 `Infinity`）。
+- **精度语义**：`B` 档取整（`512.6` → `513 B`）；非 `B` 档固定 `precision` 位小数（默认 `1`，即 `2.0 KiB`、`5.0 MiB`），保留 Upload 原有的定点小数意图。分组分隔关闭，输出文本只受 locale 小数点/数字字形影响。
+- **边界**：`0` / `-0` → `0 B`；负数保留符号（`-2.0 KiB`，按绝对值选档进位）；`NaN` / `±Infinity` / 非 number → `''`（空串，不渲染 `NaN`/`Infinity`）。
+- **导出与运行环境**：仅经 `@oas-ui/core/format-byte` 子路径导出，不进 `@oas-ui/core` 主入口；模块零 DOM 引用，Node 可直接导入。
+- **Upload 迁移**：`formatSize` 私有实现删除，三处显示（预览浮层、`template[slot="item"]` 绑定、默认行/卡片）统一调用 `formatByte(sizeOf(entry))`（IEC + 1 位小数）；回显记录 `size` 与真实 `File.size` 同口径，不改 `max-size` 解析（仍按 1024 进制的 `KB`/`MB`/`GB` 输入）与任何上传行为。
+
+### 非目标
+
+不新增组件、属性、事件、插槽或公开方法；不改 `max-size` 接受写法与判定；不迁移 attachment 等仅承载展示文案的组件；不引入第二份字节格式化实现；不做 SI 自动探测、bit 单位、科学计数或可配置单位表。
+
+### 验收标准
+
+- 单测：IEC/SI 阈值与进位边界、`0` / 小数 / 极大 / 负数 / 非法 / 非有限、`precision` 0/1/多位/非法、locale（`de-DE` 小数点、非法回落）、默认值；Node 环境直接 `import '@oas-ui/core/format-byte'` 与调用不引用 DOM；Upload 列表/模板绑定/预览浮层显示 `KiB`/`MiB` 且旧断言按新契约重算并注明原因。
+- qa-regression：真实文档页 Upload 大小文案为 IEC 单位（chromium + firefox），dark 主题可读，console 零告警。
+- 文档：CHANGELOG `[未发布] / 变更` 记录 KB→KiB 可见变化；upload 中英文页与 API 描述说明 IEC 单位；`@oas-ui/core` README 补 helper 用法；PRD/ROADMAP 登记；全量 test/typecheck/build/e2e/perf:size/api/llms/stats/skill/ssr/lint/format 通过。
+
+---
+
 ## 未发布：相对时间展示组件 oas-relative-time（Task 9B）✅
 
 ### 功能定义

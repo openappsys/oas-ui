@@ -141,6 +141,8 @@ Combined with `before-upload`, the hook runs first (validation/transform) and th
 
 `max-size` accepts bytes or a unit form (`512KB` / `2MB` / `1GB`); oversized files are rejected with `oas-exceed-limit` (`detail.type === 'size'`, including the `maxSize` in bytes).
 
+> **Size display and units**: file sizes in list rows, the `[data-item-size]` binding, and the preview overlay use IEC units (`B` / `KiB` / `MiB`, base 1024, one fixed decimal) — for example `2048` bytes renders as `2.0 KiB`. The `max-size` input forms `KB` / `MB` / `GB` are still parsed in base 1024; the numeric semantics match, only the display labels follow IEC (`KiB` / `MiB`).
+
 <DemoBlock title="max-size (100KB)">
   <oas-upload id="upload-size" multiple max-size="100KB"></oas-upload>
 </DemoBlock>
@@ -169,7 +171,7 @@ With `replace`, exceeding the count limit no longer rejects: the oldest file is 
 
 - `slot="trigger"`: replaces the drop zone content (click/drag semantics stay on the zone container — the zone itself is the focusable `role="button"` control, so **do not nest interactive elements (buttons/links) inside the trigger content** (nested-interactive is an axe violation); presentational content only)
 - `tip` attribute or `template[slot="tip"]`: secondary hint text below the zone (attribute wins)
-- `template[slot="item"]`: cloned into every `list` / `picture` row; `[data-item-name]` / `[data-item-size]` bind the file name and size automatically
+- `template[slot="item"]`: cloned into every `list` / `picture` row; `[data-item-name]` / `[data-item-size]` bind the file name and size automatically (size uses IEC units with one decimal, e.g. `2.0 KiB`)
 
 <DemoBlock title="trigger / tip slots">
   <oas-upload id="upload-trigger" multiple tip="Any file type, up to 20MB each">
@@ -447,7 +449,7 @@ The current form value is available through the public `value` property for read
 | `headers` | Extra request headers (JSON string) | — | — |
 | `list-type` | List style: `list` (default) / `picture` (rows with thumbnails) / `picture-card` (card thumbnail wall) | `string` | `list` |
 | `max` | Maximum number of files | `string` | `0` |
-| `max-size` | Per-file size limit (bytes or `2KB`/`1MB`/`1GB`; over limit fires oas-exceed size form) | `string` | — |
+| `max-size` | Per-file size limit (bytes or `2KB`/`1MB`/`1GB`, parsed in base 1024; over limit fires oas-exceed size form) | `string` | — |
 | `method` | HTTP method (default POST) | `string` | `POST` |
 | `multiple` | Multiple selection | `boolean` | — |
 | `name` | Form field name for the file (default `file`) | `string` | — |
@@ -494,7 +496,7 @@ The current form value is available through the public `value` property for read
 
 | Name | Description |
 | --- | --- |
-| `template[slot="item"]` | Custom file row/card (`[data-item-name]`/`[data-item-size]` bindings) |
+| `template[slot="item"]` | Custom file row/card (`[data-item-name]`/`[data-item-size]` bindings; size uses IEC `B`/`KiB`/`MiB` with one decimal) |
 | `template[slot="tip"]` | Drop-zone tip rich content (tip attribute wins) |
 | `template[slot="trigger"]` | Self-drawn trigger-area template (native slot does not render template elements — cloned by the component; clicking the zone still opens the file picker) |
 | `trigger` | Replace the drop-zone content (zone semantics kept) |

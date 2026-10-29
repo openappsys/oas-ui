@@ -26,6 +26,10 @@
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
+    },
+    "./format-byte": {
+      "types": "./dist/format-byte.d.ts",
+      "default": "./dist/format-byte.js"
     }
   },
   "sideEffects": false,

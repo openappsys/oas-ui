@@ -1,4 +1,5 @@
 import { OASFormElement } from '@oas-ui/core'
+import { formatByte } from '@oas-ui/core/format-byte'
 
 /**
  * 上传条目：本地新选文件（File），或已上传回显记录（{name, url}，初值语义、状态 done）。
@@ -650,12 +651,6 @@ const STYLE = `
   background: color-mix(in srgb, var(--oas-color-primary) 88%, var(--oas-color-bg));
 }
 `
-
-function formatSize(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
-}
 
 /** 回显记录按扩展名判断图片（File 走 MIME type） */
 const IMAGE_URL_RE = /\.(png|jpe?g|gif|webp|svg|bmp|ico|avif)(\?.*)?$/i
@@ -1955,7 +1950,7 @@ export class OASUpload extends OASFormElement {
       name.textContent = nameOf(entry)
       const size = document.createElement('div')
       size.className = 'preview-size'
-      size.textContent = formatSize(sizeOf(entry))
+      size.textContent = formatByte(sizeOf(entry))
       this.previewBody.append(name, size)
     }
     this.previewMask.removeAttribute('hidden')
@@ -2013,7 +2008,7 @@ export class OASUpload extends OASFormElement {
       const nameB = meta.querySelector('[data-item-name]')
       if (nameB) nameB.textContent = nameOf(entry)
       const sizeB = meta.querySelector('[data-item-size]')
-      if (sizeB) sizeB.textContent = formatSize(sizeOf(entry))
+      if (sizeB) sizeB.textContent = formatByte(sizeOf(entry))
       return meta
     }
     const meta = document.createElement('div')
@@ -2027,7 +2022,7 @@ export class OASUpload extends OASFormElement {
     name.addEventListener('click', () => this.openPreview(entry))
     const size = document.createElement('div')
     size.className = 'size'
-    size.textContent = formatSize(sizeOf(entry))
+    size.textContent = formatByte(sizeOf(entry))
     meta.append(name, size)
     return meta
   }

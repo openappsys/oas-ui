@@ -46,8 +46,20 @@ describe('OASUpload', () => {
     expect(items.length).toBe(2)
     expect(items[0]!.textContent).toContain('a.txt')
     expect(items[1]!.textContent).toContain('b.png')
-    expect(items[1]!.textContent).toContain('2.0 KB')
+    // Task 9C：文件大小显示由旧 `KB` 文案迁移为 IEC `KiB`（用户批准的可见变化，进制仍是 1024）
+    expect(items[1]!.textContent).toContain('2.0 KiB')
     expect(el.shadowRoot!.querySelectorAll('[part="progress"]').length).toBe(2)
+  })
+
+  it('文件大小显示走 IEC 单位（B / KiB / MiB）与原有 1 位小数精度', () => {
+    const el = mount()
+    el.files = [
+      makeFile('small.txt', 'text/plain', 512),
+      makeFile('kib.txt', 'text/plain', 1536),
+      makeFile('mib.txt', 'text/plain', 1024 * 1024 * 2.5),
+    ]
+    const sizes = [...el.shadowRoot!.querySelectorAll('.item .size')].map((n) => n.textContent)
+    expect(sizes).toEqual(['512 B', '1.5 KiB', '2.5 MiB'])
   })
 
   it('选择文件（input change）追加并派发 oas-change', () => {
@@ -735,7 +747,8 @@ describe('OASUpload 插槽（tip / trigger / item）', () => {
     const item = el.shadowRoot!.querySelector('.item')!
     expect(item.querySelector('.row-badge')).not.toBeNull()
     expect(item.querySelector('[data-item-name]')!.textContent).toBe('a.txt')
-    expect(item.querySelector('[data-item-size]')!.textContent).toBe('2.0 KB')
+    // Task 9C：模板绑定同样跟随 IEC 单位（旧断言 `2.0 KB` 按新契约重算）
+    expect(item.querySelector('[data-item-size]')!.textContent).toBe('2.0 KiB')
   })
 })
 
@@ -771,6 +784,13 @@ describe('OASUpload list/picture 预览入口与回显初值', () => {
     const nameBtn = el.shadowRoot!.querySelector<HTMLButtonElement>('.item-picture .name-btn')!
     nameBtn.click()
     expect(el.shadowRoot!.querySelector<HTMLElement>('.preview-mask')!.hidden).toBe(false)
+  })
+
+  it('非图片预览浮层显示 IEC 大小（KiB）', () => {
+    const el = mount()
+    el.files = [makeFile('a.txt', 'text/plain', 1536)]
+    el.shadowRoot!.querySelector<HTMLButtonElement>('.item .name-btn')!.click()
+    expect(el.shadowRoot!.querySelector('.preview-size')!.textContent).toBe('1.5 KiB')
   })
 
   it('回显初值 {name,url}：渲染 done 态行，预览走远程 url', () => {
