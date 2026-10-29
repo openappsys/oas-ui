@@ -99,7 +99,7 @@ test('基础渲染与语义：标题/位置/关闭钮/dialog 语义', async ({ p
   expect(state.role).toBe('dialog')
   expect(state.ariaModal).toBe('false')
   expect(state.title).toBe('图层')
-  expect(state.labelledby, 'aria-labelledby 指向标题元素').toBeTruthy()
+  expect(state.labelledby, 'aria-labelledby 指向标题元素').toMatch(/^oas-floating-panel-title-/)
   expect(state.closeLabel, '关闭钮有可访问名称').toBe('关闭面板')
   expect(state.handles).toBe(8)
   expect(state.display).not.toBe('none')
@@ -288,7 +288,7 @@ test('dark 主题 + reduced-motion + console 零告警', async ({ page }) => {
     })
   const lightBg = await bgOf()
   await page.evaluate(() => document.documentElement.classList.add('dark'))
-  await page.waitForTimeout(150)
+  await expect.poll(bgOf, { timeout: 2000 }).not.toBe(lightBg)
   const darkBg = await bgOf()
   expect(darkBg, '暗色下表面色随 token 变化').not.toBe(lightBg)
 
