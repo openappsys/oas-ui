@@ -114,9 +114,8 @@ function main() {
   const check = process.argv.includes('--check')
   // 阈值 = 历史债快照（2026-10-29 Task 9 final fix wave 实测），**只防增量、不要求清零**（见文件头）。
   // 快照口径：本批已先修掉新增的 4 条（relative-time 两条固定等待 + 两条弱断言），
-  // 剩余 wait=440 / weak=1967 全部是历史存量；此后再改阈值必须在提交说明写清为什么，
-  // 不得每批静默抬阈值（存量收口见 sdd/progress.md 的 deferred 条目）。
-  // eventLen 仍为历史基线 105（实测 96），未随本批改动。
+  // 剩余 wait=440 / weak=1967 全部是历史存量且无余量；eventLen 仍保留余量（实测 96 / 阈值 105）。
+  // 此后再改阈值必须在提交说明写清为什么，不得每批静默抬阈值（存量收口作为 deferred 记在 Task 13 / 维护批）。
   const maxWait = argValue('--max-wait', 440)
   const maxWeak = argValue('--max-weak', 1967)
   const maxEventLen = argValue('--max-event-len', 105)

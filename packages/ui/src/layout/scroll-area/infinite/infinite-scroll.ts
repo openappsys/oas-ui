@@ -304,8 +304,8 @@ export class InfiniteScrollController {
    *
    * 语义注记：`top` 未补偿封锁（blocked）**不跨 detach 保持**——detach 是一次环境重置
    * （视口/内容/锚点/预期 scrollTop 全部清空），若保留封锁，重挂后停在顶部会一直无法
-   * 自动续载，只能靠离开边缘或显式 `load()` 恢复。重挂后仍由 `armed=false` 阻止立刻发起
-   * 请求，封锁只在本次加载周期内生效。
+   * 自动续载，只能靠离开边缘或显式 `load()` 恢复。重挂后 idle/blocked 边缘仍由 `armed=false`
+   * 阻止立刻发起请求（被中止的 `loading` 会复位并重新武装，可再次自动加载），封锁只在本次加载周期内生效。
    */
   detach(): void {
     if (this.disposed || this.detaching) return

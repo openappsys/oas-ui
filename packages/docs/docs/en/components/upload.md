@@ -449,7 +449,7 @@ The current form value is available through the public `value` property for read
 | `headers` | Extra request headers (JSON string) | — | — |
 | `list-type` | List style: `list` (default) / `picture` (rows with thumbnails) / `picture-card` (card thumbnail wall) | `string` | `list` |
 | `max` | Maximum number of files | `string` | `0` |
-| `max-size` | Per-file size limit (bytes, or `2KB` / `2KiB` / `1MB` / `1GiB` / `1TiB` / `1PiB` / `1EiB` / `2TB`, all parsed in base 1024); unparsable non-empty values mean "unlimited" and only warn via devWarn in development (silent in production builds); a product that overflows is clamped to MAX_SAFE_INTEGER and `0.4B` counts as 1 byte; over limit fires oas-exceed size form | `string` | — |
+| `max-size` | Per-file size limit (bytes, or `2KB` / `2KiB` / `1MB` / `1GiB` / `1TiB` / `1PiB` / `1EiB` / `2TB`, all parsed in base 1024); unparsable non-empty values mean "unlimited" and only warn via devWarn in development (silent in production builds); when the multiplication result overflows it is clamped to MAX_SAFE_INTEGER and `0.4B` counts as 1 byte; over limit fires oas-exceed size form | `string` | — |
 | `method` | HTTP method (default POST) | `string` | `POST` |
 | `multiple` | Multiple selection | `boolean` | — |
 | `name` | Form field name for the file (default `file`) | `string` | — |

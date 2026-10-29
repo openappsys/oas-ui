@@ -1555,8 +1555,8 @@ export class OASUpload extends OASFormElement {
    * 只认数值不认 SI 语义）。
    * - 非空但无法解析时按「不限制」处理并 devWarn（同一非法字符串只告警一次，避免刷屏）；
    *   生产构建里 devWarn 被摇掉，因此生产环境是「静默不限制」——文档明示行为。
-   * - 乘积溢出双精度（极大数字 × TB 等）夹到 `Number.MAX_SAFE_INTEGER`：宁可拒绝超大文件，
-   *   也不能让上限退化成「不限制」。
+   * - 溢出（解析层 ≥309 位数字得 `Infinity`、乘积层极大数字 × `TB`）都夹到
+   *   `Number.MAX_SAFE_INTEGER`：宁可拒绝超大文件，也不能让上限退化成「不限制」。
    * - 舍入后 <= 0 的正数写法（如 `0.4B`）按 1 字节：最小上限语义不变，不退化成不限制；
    *   显式 `0` 仍是「不限制」。
    */
@@ -1584,8 +1584,9 @@ export class OASUpload extends OASFormElement {
       eib: 1024 ** 6,
     }
     if (!Number.isFinite(n)) {
-      warnInvalidMaxSize(raw)
-      return 0
+      // 解析层溢出（≥309 位数字字面量 → parseFloat 得 Infinity）与乘积层溢出同口径：
+      // 夹到可表示上限，不能退化成「不限制」
+      return Number.MAX_SAFE_INTEGER
     }
     const bytes = n * (mult[unit] ?? 1)
     if (!Number.isFinite(bytes)) return Number.MAX_SAFE_INTEGER

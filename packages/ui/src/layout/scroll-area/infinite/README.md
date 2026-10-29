@@ -41,7 +41,7 @@ controller.destroy()
 ## 行为约定
 
 - 同一边缘在途去重，不同边缘可并发；`complete` 后不再自动加载，error 需显式 `retry(edge)`（`retry()` 省略 edge 时重试全部 error 边缘）。
-- 到达边缘且处于武装态自动触发；离开边缘、内容增长或 `reset()` 后重新武装。只有加载带来内容高度增长才自动续载，空结果不会循环；`top` 增长但锚点未产生实际补偿时，停在边缘期间禁止自动续载，离开边缘 / `reset()` / 显式 `load()` 后恢复。该封锁（blocked）**不跨 `detach()` 保持**：`detach()` 是环境重置（视口/内容/锚点/预期 `scrollTop` 一起清空），保留封锁会让重挂后停在顶部永久失去自动续载；重挂后仍由「未武装」阻止立刻发起请求。
+- 到达边缘且处于武装态自动触发；离开边缘、内容增长或 `reset()` 后重新武装。只有加载带来内容高度增长才自动续载，空结果不会循环；`top` 增长但锚点未产生实际补偿时，停在边缘期间禁止自动续载，离开边缘 / `reset()` / 显式 `load()` 后恢复。该封锁（blocked）**不跨 `detach()` 保持**：`detach()` 是环境重置（视口/内容/锚点/预期 `scrollTop` 一起清空），保留封锁会让重挂后停在顶部永久失去自动续载；重挂后 idle/blocked 边缘仍由「未武装」阻止立刻发起请求（被中止的 `loading` 会复位并重新武装，可再次自动加载）。
 - `bottom` 边缘判定含 **1px 容差**：小数 `scrollTop` / 亚像素取整几何下实测「已到底」常残留亚像素距离，精确 `<= 0` 会永远触发不了；`top` 仍为 `scrollTop <= threshold`。
 - `detach()` / `attach(null)` / `attach()` 解析到不同 viewport 都会中止在途请求（`signal` abort，迟到结果按请求代际丢弃）并解绑监听；被中止的 loading 会复位为 idle 并在重新 attach 后重新武装，`error` / `complete` 不会因 re-attach 复活。同一 viewport 的 `attach()` 重挂会重解析 `content` getter 并重绑内容侧监听/观察（`load`/`error` capture、`ResizeObserver`、`MutationObserver`），宿主替换列表容器后无需先 detach。
 - `keyAttribute: ''` 关闭属性键，仅用元素 `id` 作稳定键；`keyAttribute` 缺省为 `data-key`，元素没有该属性（或值为空）时回落 `id`。

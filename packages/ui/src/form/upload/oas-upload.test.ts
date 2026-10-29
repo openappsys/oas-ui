@@ -675,7 +675,7 @@ describe('OASUpload max-size', () => {
     let eibDetail: any
     eib.addEventListener('oas-exceed', (e: Event) => (eibDetail = (e as CustomEvent).detail))
     const over3 = makeFile('over3.bin', 'application/octet-stream')
-    // 1024⁶ 已超双精度整数精度，+1 不可表示：用 2 EiB 作为超限样本
+    // 2^60 精确可表示，但 +1 超出该量级 ULP=256：用 2 EiB 作为超限样本
     Object.defineProperty(over3, 'size', { value: 2 * 1024 ** 6 })
     pick(eib, [over3])
     expect(eibDetail?.maxSize).toBe(1024 ** 6)
@@ -691,6 +691,36 @@ describe('OASUpload max-size', () => {
     pick(el, [huge])
     expect(el.files.length, '上限溢出不应退化为无限制').toBe(0)
     expect(detail?.maxSize).toBe(Number.MAX_SAFE_INTEGER)
+  })
+
+  it('max-size 解析层溢出（≥309 位数字 → parseFloat 得 Infinity）同样夹到 MAX_SAFE_INTEGER', () => {
+    // 400 位纯数字超出双精度范围：parseFloat 直接返回 Infinity，旧实现按「非法」放行为不限制
+    const el = mount({ 'max-size': '9'.repeat(400) })
+    let detail: any
+    el.addEventListener('oas-exceed', (e: Event) => (detail = (e as CustomEvent).detail))
+    // 2^60 字节（1 EiB）超过 MAX_SAFE_INTEGER：夹取后必须被拒，不能退化成「不限制」
+    const huge = makeFile('huge.bin', 'application/octet-stream')
+    Object.defineProperty(huge, 'size', { value: 2 ** 60 })
+    pick(el, [huge])
+    expect(el.files.length, '解析层溢出不应退化为无限制').toBe(0)
+    expect(detail?.maxSize).toBe(Number.MAX_SAFE_INTEGER)
+  })
+
+  it('max-size 解析层溢出夹取后，上限内的普通文件仍正常通过', () => {
+    // 夹到 8 PiB 级别的有限上限：2 字节文件本就在上限内，与「不限制」的区别是超限文件会被拒
+    const el = mount({ 'max-size': '9'.repeat(400) })
+    pick(el, [makeFile('two.bin', 'application/octet-stream', 2)])
+    expect(el.files.length).toBe(1)
+  })
+
+  it('max-size 显式空值 / 纯空白仍为「不限制」', () => {
+    const empty = mount({ 'max-size': '' })
+    pick(empty, [makeFile('ok.bin', 'application/octet-stream', 1024)])
+    expect(empty.files.length, '空属性仍表示不限制').toBe(1)
+
+    const blank = mount({ 'max-size': '   ' })
+    pick(blank, [makeFile('ok2.bin', 'application/octet-stream', 1024)])
+    expect(blank.files.length, '纯空白仍表示不限制').toBe(1)
   })
 
   it('max-size 舍入到 0（0.4B）按 1 字节生效；显式 0 仍是「不限制」', () => {
