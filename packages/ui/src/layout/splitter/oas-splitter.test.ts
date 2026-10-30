@@ -1407,3 +1407,35 @@ function pointer(type: string, clientX: number): Event {
   }
   return new MouseEvent(type, { bubbles: true, clientX })
 }
+
+describe('OASSplitter multi 删栏收敛（M9 回归）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  it('三栏折叠索引 1 → 删除第三栏：越界索引收敛、重建后布局立即可用', async () => {
+    const el = new OASSplitter()
+    el.setAttribute('mode', 'multi')
+    el.setAttribute('collapsible', '')
+    el.setAttribute('sizes', '30,40,30')
+    el.innerHTML = '<div>一</div><div>二</div><div>三</div>'
+    document.body.appendChild(el)
+    // 首渲染：通过折叠按钮折叠面板 1（用户真实路径）
+    collapseBtnOf(el, 1).click()
+    expect(el.hasAttribute('collapsed')).toBe(true)
+    // 删除第三栏（真实 childList 变更 → MutationObserver → syncPanels）
+    el.children[2]!.remove()
+    await new Promise<void>((resolve) => setTimeout(resolve, 0))
+    const panes = el.shadowRoot!.querySelectorAll('[part="pane"]')
+    expect(panes.length).toBe(2)
+    // 残留折叠索引 1（≥ n-1）必须被收敛：collapsed 属性移除
+    expect(el.hasAttribute('collapsed')).toBe(false)
+    // 重建后的两块面板都有布局（不再是空 inline flex 的零宽面板）
+    for (const pane of panes as NodeListOf<HTMLElement>) {
+      expect(pane.style.flex, `pane flex 应被重应用（实际 "${pane.style.flex}"）`).not.toBe('')
+      expect(pane.style.flex).not.toBe('0 0 0%')
+    }
+    expect(el.shadowRoot!.querySelectorAll('[part="splitter"]').length).toBe(1)
+  })
+})

@@ -627,8 +627,11 @@ export class OASSplitter extends OASElement {
       this.rebuildStructure(n)
       this.pruneCollapsed(n)
       // 重建出的新分隔条需要补折叠按钮与 aria：MutationObserver 路径只走 syncPanels()，不走 update()
+      // 重建 + 收敛折叠索引后必须立即重应用布局：否则 inline flex 为空（面板零宽/塌缩不可见），
+      // 直到下一次 update() 才恢复（M9 回归）
       this.syncCollapseButtons()
       this.syncAria()
+      this.applyPercent()
     }
     this.ensureSizes(n)
   }
@@ -673,11 +676,11 @@ export class OASSplitter extends OASElement {
     return wrap
   }
 
-  /** 面板被移除时清掉越界折叠态 */
+  /** 面板被移除时清掉越界折叠态（多面板可折叠索引上限是 n-2：末面板没有可折叠侧） */
   private pruneCollapsed(n: number): void {
     let pruned = false
     for (const i of [...this.collapsedPanels]) {
-      if (i >= n) {
+      if (i >= n - 1) {
         this.collapsedPanels.delete(i)
         this.collapsedPrev.delete(i)
         pruned = true

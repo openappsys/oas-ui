@@ -23,12 +23,12 @@ describe('@oas-ui/next OasRegistry', () => {
     15_000,
   )
 
-  it('副作用注册：import @oas-ui/ui 后 oas-* 组件全局注册（customElements.define）', () => {
-    expect(customElements.get('oas-button')).toBeDefined()
-    expect(customElements.get('oas-table')).toBeDefined()
-    expect(customElements.get('oas-modal')).toBeDefined()
-    expect(customElements.get('oas-input')).toBeDefined()
-  })
+  it('副作用注册：客户端环境动态导入完成后 oas-* 组件全局注册（customElements.define）', async () => {
+    // 守卫式动态导入是异步注册：逐项轮询（模块图顺序不保证字母序）
+    for (const tag of ['oas-button', 'oas-table', 'oas-modal', 'oas-input']) {
+      await expect.poll(() => customElements.get(tag), { timeout: 12_000, interval: 100 }).toBeDefined()
+    }
+  }, 15_000)
 
   it('组件零 DOM：原样透传 children', () => {
     const children = createChildren()

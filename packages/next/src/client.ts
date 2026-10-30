@@ -27,7 +27,11 @@
  */
 'use client'
 
-import '@oas-ui/ui'
+// 仅在浏览器求值注册副作用：Next 会把 Client Component 也放到服务端预渲染，
+// Node 无 DOM 时求值 `@oas-ui/ui`（class extends HTMLElement）会直接崩溃。
+// 客户端仍在模块求值时注册（早于水合），SSR 阶段安全跳过。
+if (typeof window !== 'undefined') void import('@oas-ui/ui')
+
 import type { ReactNode } from 'react'
 
 export interface OasRegistryProps {

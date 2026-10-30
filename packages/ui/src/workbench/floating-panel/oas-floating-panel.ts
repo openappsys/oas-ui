@@ -483,8 +483,9 @@ export class OASFloatingPanel extends OASElement {
   /**
    * 布局实测观察器（客户端）：同时服务两件事——
    * 1. 标题栏实测高度：富标题插槽撑高 > 默认 token 时，整段上侧/上角手柄会被标题栏（z-index: 2）
-   *    盖住，顶部与两个上角缩放失效。把实测内容高写回 host 的
-   *    `--oas-floating-panel-titlebar-height`（px），n/ne/nw 手柄随之下移。
+   *    盖住，顶部与两个上角缩放失效。把实测高度写回 shadow 内 `.frame` 的
+   *    `--oas-floating-panel-titlebar-height`（px），n/ne/nw 手柄随之下移
+   *    （仅 `resizable` 观察；默认标题不高于 token，不写内联，宿主样式表覆写保持生效）。
    * 2. 内容溢出复判：面板尺寸变化（拖动缩放 / 宿主改 rect）或内容块尺寸变化时，
    *    重新决定内容滚动区是否补 tabindex（见 syncContentFocusable）。
    *
@@ -497,7 +498,7 @@ export class OASFloatingPanel extends OASElement {
       this.syncContentFocusable()
     })
     const bar = this.titlebarEl
-    if (bar) this.layoutObserver.observe(bar)
+    if (bar && this.hasAttr('resizable')) this.layoutObserver.observe(bar)
     this.observeContent()
     // 首连/重连立即补测一次：RO 首次回调在下一帧，水合后不必等一帧
     this.syncTitlebarHeight()
@@ -543,18 +544,34 @@ export class OASFloatingPanel extends OASElement {
     else box.removeAttribute('tabindex')
   }
 
+  /**
+   * 标题栏实测高度同步（仅 `resizable`；手柄只在该形态存在）。
+   *
+   * 写入目标改为 shadow 内 `.frame` 内联（宿主清空/覆写 host `style` 不影响），
+   * 且只在实测高度**大于**解析后的 token 值时写入：
+   * - 默认标题（36px）不 pin 任何内联值，宿主样式表覆写 token 保持生效；
+   * - 宿主清掉 frame 内联值后，下一次 RO 回调/重连会补写（自愈）；
+   * - 实测 ≤ 解析值时移除内联（标题变矮/宿主调大 token 后回落到样式表值）。
+   * 关闭态 `display:none` 实测 0：跳过（打开后 RO 会再回调）。
+   * `clientHeight` 排除 1px 下边框，写整高会让标题栏每帧再长 1px（RO 无限循环）。
+   */
   private syncTitlebarHeight(): void {
     const bar = this.titlebarEl
-    if (!bar || !this.isConnected) return
-    // clientHeight 排除 1px 下边框：token 是 content-box 的 min-height，
-    // 写「整高（含边框）」会让标题栏每帧再长 1px，形成 RO 无限循环
+    const frame = this.frameEl
+    if (!bar || !frame || !this.isConnected) return
     const height = bar.clientHeight
-    // 关闭态 display:none 实测 0：不覆盖默认 token（打开后 RO 会再回调）
     if (height <= 0) return
-    const next = `${height}px`
-    // 同值不重写（防 RO 自激循环）；同时覆盖宿主在断开期间移除/改写内联 token 的情况
-    if (this.style.getPropertyValue('--oas-floating-panel-titlebar-height') === next) return
-    this.style.setProperty('--oas-floating-panel-titlebar-height', next)
+    const TOKEN = '--oas-floating-panel-titlebar-height'
+    const resolved = Number.parseFloat(getComputedStyle(frame).getPropertyValue(TOKEN))
+    const base = Number.isFinite(resolved) ? resolved : 36
+    const inline = frame.style.getPropertyValue(TOKEN)
+    if (height > base) {
+      const next = `${height}px`
+      if (inline !== next) frame.style.setProperty(TOKEN, next)
+      return
+    }
+    // 实测不高于解析值：内联不应存在（含宿主移除后的清理路径）
+    if (inline !== '') frame.style.removeProperty(TOKEN)
   }
 
   protected override render(): void {

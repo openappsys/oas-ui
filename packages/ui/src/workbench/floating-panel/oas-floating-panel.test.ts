@@ -1147,6 +1147,11 @@ describe('OASFloatingPanel 标题栏高度实测', () => {
 
   const TOKEN = '--oas-floating-panel-titlebar-height'
 
+  /** token 目标是 shadow 内 .frame 内联（宿主清 style / 覆写 host 侧都不影响） */
+  function frameOf(el: OASFloatingPanel): HTMLElement {
+    return el.shadowRoot!.querySelector<HTMLElement>('[part="frame"]')!
+  }
+
   function stubHeight(el: HTMLElement, height: number): void {
     Object.defineProperty(el, 'clientHeight', { configurable: true, value: height })
   }
@@ -1160,49 +1165,78 @@ describe('OASFloatingPanel 标题栏高度实测', () => {
     vi.unstubAllGlobals()
   })
 
-  it('富标题实测高度写回 host token；重复回调不重写；断开释放、重连重挂', () => {
-    const el = mount({ open: '' })
+  it('富标题（48 > 默认 36）实测写 frame 内联 token；host 侧不 pin；重复回调不重写', () => {
+    const el = mount({ open: '', movable: '', resizable: '', rect: '0,0,300,200' })
     const bar = titlebar(el)
-    // happy-dom 无布局：模拟 48px 富标题实测值
     stubHeight(bar, 48)
     const ro = FakeRO.instances[0]!
     expect(ro.targets.has(bar), '观察标题栏本体').toBe(true)
 
     ro.trigger()
-    expect(el.style.getPropertyValue(TOKEN), '写回 px 实测值').toBe('48px')
+    expect(frameOf(el).style.getPropertyValue(TOKEN), '实测高于解析值 → 写 px').toBe('48px')
+    expect(el.style.getPropertyValue(TOKEN), 'host 侧不再 pin 内联').toBe('')
 
-    const setSpy = vi.spyOn(el.style, 'setProperty')
+    const setSpy = vi.spyOn(frameOf(el).style, 'setProperty')
     ro.trigger()
     expect(setSpy, '同值重复回调不重写（防 RO 循环）').not.toHaveBeenCalled()
     setSpy.mockRestore()
-
-    // 宿主移除内联 token 后再次实测：必须补写（同值判定看实际内联值，不看缓存）
-    el.style.removeProperty(TOKEN)
-    ro.trigger()
-    expect(el.style.getPropertyValue(TOKEN)).toBe('48px')
-
-    el.remove()
-    expect(ro.disconnected, '断开释放观察器').toBe(true)
-    document.body.appendChild(el)
-    const reconnected = FakeRO.instances.at(-1)!
-    expect(reconnected).not.toBe(ro)
-    expect(reconnected.targets.has(titlebar(el)), '重连重挂').toBe(true)
-    expect(el.style.getPropertyValue(TOKEN)).toBe('48px')
   })
 
-  it('实测为 0（关闭态 display:none）不写 token，保留默认 36px', () => {
-    const el = mount()
+  it('自愈：frame 内联 token 被移除后，下一次实测回调补写（48px 富标题）', () => {
+    const el = mount({ open: '', movable: '', resizable: '', rect: '0,0,300,200' })
+    const bar = titlebar(el)
+    stubHeight(bar, 48)
+    const ro = FakeRO.instances[0]!
+    ro.trigger()
+    expect(frameOf(el).style.getPropertyValue(TOKEN)).toBe('48px')
+
+    // 模拟 token 丢失（任何原因）：同尺寸的 RO 回调必须补写
+    frameOf(el).style.removeProperty(TOKEN)
+    ro.trigger()
+    expect(frameOf(el).style.getPropertyValue(TOKEN)).toBe('48px')
+
+    // 宿主清空自己的 style 不影响 frame 内联 token
+    el.style.cssText = ''
+    expect(frameOf(el).style.getPropertyValue(TOKEN)).toBe('48px')
+  })
+
+  it('默认标题（36 ≤ 默认 36）不写内联；实测回落到 ≤ 解析值时移除内联（宿主样式表覆写生效）', () => {
+    const el = mount({ open: '', movable: '', resizable: '', rect: '0,0,300,200' })
+    const bar = titlebar(el)
+    stubHeight(bar, 36)
+    FakeRO.instances[0]!.trigger()
+    expect(frameOf(el).style.getPropertyValue(TOKEN)).toBe('')
+    expect(el.style.getPropertyValue(TOKEN)).toBe('')
+
+    // 先富标题写 48，再实测回落 36：内联必须移除（回到样式表 36）
+    stubHeight(bar, 48)
+    FakeRO.instances[0]!.trigger()
+    expect(frameOf(el).style.getPropertyValue(TOKEN)).toBe('48px')
+    stubHeight(bar, 36)
+    FakeRO.instances[0]!.trigger()
+    expect(frameOf(el).style.getPropertyValue(TOKEN)).toBe('')
+  })
+
+  it('实测为 0（关闭态 display:none）不写 token', () => {
+    const el = mount({ open: '', movable: '', resizable: '', rect: '0,0,300,200' })
     const bar = titlebar(el)
     stubHeight(bar, 0)
     FakeRO.instances[0]!.trigger()
-    expect(el.style.getPropertyValue(TOKEN)).toBe('')
+    expect(frameOf(el).style.getPropertyValue(TOKEN)).toBe('')
+  })
+
+  it('非 resizable：不观察标题栏（手柄不存在，实测无收益）', () => {
+    const el = mount({ open: '', movable: '', rect: '0,0,300,200' })
+    const ro = FakeRO.instances[0]!
+    expect(ro.targets.has(titlebar(el)), '标题栏不进入观察').toBe(false)
+    expect(ro.targets.size).toBeGreaterThan(0)
   })
 
   it('SSR 运行段不建观察器、不写实测 token（快照仍用默认 token）', () => {
     ;(window as Window & { __OAS_SSR__?: boolean }).__OAS_SSR__ = true
-    const el = mount({ open: '' })
+    const el = mount({ open: '', resizable: '', rect: '0,0,300,200' })
     expect(FakeRO.instances).toHaveLength(0)
-    expect(el.style.getPropertyValue(TOKEN)).toBe('')
+    expect(frameOf(el).style.getPropertyValue(TOKEN)).toBe('')
   })
 })
 
