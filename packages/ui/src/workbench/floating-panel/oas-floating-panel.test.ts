@@ -1177,9 +1177,13 @@ describe('OASFloatingPanel 标题栏高度实测', () => {
     expect(el.style.getPropertyValue(TOKEN), 'host 侧不再 pin 内联').toBe('')
 
     const setSpy = vi.spyOn(frameOf(el).style, 'setProperty')
+    const removeSpy = vi.spyOn(frameOf(el).style, 'removeProperty')
     ro.trigger()
     expect(setSpy, '同值重复回调不重写（防 RO 循环）').not.toHaveBeenCalled()
+    expect(removeSpy, '同值重复回调不自删（自激回归：computed 含自身内联会误判回落）').not.toHaveBeenCalled()
+    expect(frameOf(el).style.getPropertyValue(TOKEN), 'token 保持 pin 不被回退').toBe('48px')
     setSpy.mockRestore()
+    removeSpy.mockRestore()
   })
 
   it('自愈：frame 内联 token 被移除后，下一次实测回调补写（48px 富标题）', () => {

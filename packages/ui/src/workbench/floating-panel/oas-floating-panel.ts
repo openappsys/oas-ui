@@ -547,11 +547,13 @@ export class OASFloatingPanel extends OASElement {
   /**
    * 标题栏实测高度同步（仅 `resizable`；手柄只在该形态存在）。
    *
-   * 写入目标改为 shadow 内 `.frame` 内联（宿主清空/覆写 host `style` 不影响），
-   * 且只在实测高度**大于**解析后的 token 值时写入：
+   * 写入目标是 shadow 内 `.frame` 内联（宿主清空/覆写 host `style` 不影响），
+   * 且只在实测高度**大于**样式表层叠基准时写入：
    * - 默认标题（36px）不 pin 任何内联值，宿主样式表覆写 token 保持生效；
    * - 宿主清掉 frame 内联值后，下一次 RO 回调/重连会补写（自愈）；
-   * - 实测 ≤ 解析值时移除内联（标题变矮/宿主调大 token 后回落到样式表值）。
+   * - 实测 ≤ 样式表基准时移除内联（标题变矮/宿主调大 token 后回落到样式表值）。
+   * 基准读取必须剥离自身内联（computed 含 inline，否则写入即回退自激）；内联 pin
+   * 不改变标题栏实际高度（由内容撑高），写/删不会触发 RO 新回调，自激闭环不成立。
    * 关闭态 `display:none` 实测 0：跳过（打开后 RO 会再回调）。
    * `clientHeight` 排除 1px 下边框，写整高会让标题栏每帧再长 1px（RO 无限循环）。
    */
@@ -562,16 +564,19 @@ export class OASFloatingPanel extends OASElement {
     const height = bar.clientHeight
     if (height <= 0) return
     const TOKEN = '--oas-floating-panel-titlebar-height'
+    const next = `${height}px`
+    const inline = frame.style.getPropertyValue(TOKEN)
+    // 同值稳定态零操作：防重复回调抖动（RO 观察的是标题栏，写 frame token 不触发新回调，
+    // 但宿主手触/重连补测会重复进来——直接返回是唯一安全的稳定态）
+    if (inline === next) return
+    if (inline !== '') frame.style.removeProperty(TOKEN)
+    // 内联 pin 会污染 computed 读取（自己写的值会被当成样式表基准，下一轮误判
+    // 「实测 ≤ 基准」而自删——写入即回退的自激循环）。上面已剥离 pin，此处读到的是
+    // 真正的样式表层叠值（无声明时 guaranteed-invalid → parseFloat NaN → 回落 36）
     const resolved = Number.parseFloat(getComputedStyle(frame).getPropertyValue(TOKEN))
     const base = Number.isFinite(resolved) ? resolved : 36
-    const inline = frame.style.getPropertyValue(TOKEN)
-    if (height > base) {
-      const next = `${height}px`
-      if (inline !== next) frame.style.setProperty(TOKEN, next)
-      return
-    }
-    // 实测不高于解析值：内联不应存在（含宿主移除后的清理路径）
-    if (inline !== '') frame.style.removeProperty(TOKEN)
+    if (height > base) frame.style.setProperty(TOKEN, next)
+    // 实测 ≤ 样式表基准：保持无内联（样式表值生效，宿主覆写不被 pin 覆盖）
   }
 
   protected override render(): void {
