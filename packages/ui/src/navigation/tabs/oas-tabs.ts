@@ -9,6 +9,7 @@ import { plusPath } from '@oas-ui/icons/icons/plus'
 import { TOUCH_TARGET_CSS } from '../../shared/touch-target.js'
 import { isRtl } from '../../shared/direction.js'
 import { safeUrl } from '../../shared/safe-url.js'
+import { stableHash36 } from '../../shared/stable-id.js'
 import { normalizeSizeStrict, ALL_SIZES } from '../../shared/size.js'
 import type { OASTabPanel } from './oas-tab-panel.js'
 import { registeredTabsCapabilities, onTabsCapabilityRegistered } from './oas-tabs-capability.js'
@@ -28,8 +29,6 @@ export type TabsPanelMode = 'keep' | 'lazy' | 'destroy'
 export type TabsActivation = 'auto' | 'manual'
 
 /** 面板/标签稳定 id 序列（模块级唯一，跨实例不冲突） */
-let tabIdSeq = 0
-
 const VALID_PANEL_MODES: readonly TabsPanelMode[] = ['keep', 'lazy', 'destroy']
 
 /** 非法 panel-mode 归一化：回落 keep 并在 dev 下 console.warn 一次（同值去重） */
@@ -1894,7 +1893,9 @@ export class OASTabs extends OASElement {
   private panelIdOf(panel: Element): string {
     let id = this.panelIds.get(panel)
     if (!id) {
-      id = `oas-tab-panel-${++tabIdSeq}`
+      // 面板 id 由面板外征派生（FNV-1a base36）：SSR 快照逐字节确定，不再依赖模块级计数
+      const seed = `${panel.getAttribute('value') ?? ''}\u0000${panel.getAttribute('label') ?? ''}\u0000${panel.textContent ?? ''}`
+      id = `oas-tab-panel-${stableHash36(seed)}`
       this.panelIds.set(panel, id)
     }
     return id
@@ -1902,7 +1903,12 @@ export class OASTabs extends OASElement {
 
   /** tabpanel 语义容器（shadow 内 .panel）稳定 id */
   private panelRegionId(): string {
-    if (!this.regionId) this.regionId = `oas-tabs-panel-${++tabIdSeq}`
+    if (!this.regionId) {
+      const seed = Array.from(this.querySelectorAll('oas-tab-panel'))
+        .map((el) => `${el.getAttribute('value') ?? ''}\u0000${el.getAttribute('label') ?? ''}`)
+        .join('\u0001')
+      this.regionId = `oas-tabs-panel-${stableHash36(seed)}`
+    }
     return this.regionId
   }
 

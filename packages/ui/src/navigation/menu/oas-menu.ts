@@ -9,6 +9,7 @@ import { isRtl } from '../../shared/direction.js'
 import { OASMenuItem } from './oas-menu-item.js'
 // items property 运行时容忍 JSON 字符串（框架把静态 attribute 写成 property 的 SPA 场景）
 import { parseJsonArray } from '../../shared/json-array.js'
+import { stableHash36 } from '../../shared/stable-id.js'
 import { devWarn } from '../../shared/dev-warn.js'
 
 export type MenuItemType = 'item' | 'group' | 'divider'
@@ -559,8 +560,10 @@ export class OASMenu extends OASElement {
   private expandedSet = new Set<string>()
   private menuEl: HTMLElement | null = null
   /** aria-activedescendant 引用的菜单项 id 前缀（跨实例唯一，避免同页多实例 id 冲突） */
-  private static uidSeq = 0
-  private readonly uid = `oas-menu-${++OASMenu.uidSeq}`
+  /** 菜单 id 前缀：由 items 身份属性派生（FNV-1a base36），SSR 快照逐字节确定 */
+  private get uid(): string {
+    return `oas-menu-${stableHash36(this.getAttr('items', ''))}`
+  }
   /** 单次渲染内的菜单项 id 序号（renderItems 开头复位） */
   private itemIdSeq = 0
   /** typeahead 字符缓冲（连续输入定位匹配项） + 超时定时器 */

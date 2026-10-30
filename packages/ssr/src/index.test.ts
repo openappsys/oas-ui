@@ -1675,6 +1675,38 @@ describe('@oas-ui/ssr renderToString', () => {
         attrs: { steps: '[{"title":"填写信息"},{"title":"确认订单"}]', current: '1' },
         slot: '<oas-stepper-panel value="0">第一步内容</oas-stepper-panel><oas-stepper-panel value="1">第二步内容</oas-stepper-panel>',
       },
+      {
+        name: 'chart 面积渐变（gradient id）',
+        tag: 'oas-chart',
+        attrs: {
+          type: 'area',
+          options: '{"gradient":true}',
+          data: JSON.stringify({
+            labels: ['周一', '周二', '周三'],
+            series: [
+              { name: '访问量', data: [320, 302, 341] },
+              { name: '下载量', data: [120, 132, 101] },
+            ],
+          }),
+        },
+      },
+      {
+        name: 'tooltip tip id',
+        tag: 'oas-tooltip',
+        attrs: { content: '提示文案', placement: 'bottom' },
+        slot: '<button>悬停</button>',
+      },
+      {
+        name: 'menu 菜单项 id',
+        tag: 'oas-menu',
+        attrs: { items: '[{"label":"首页"},{"label":"产品"},{"label":"关于"}]' },
+      },
+      {
+        name: 'tabs tab/panel 关联 id',
+        tag: 'oas-tabs',
+        attrs: { active: 'a' },
+        slot: '<oas-tab-panel label="A" value="a">面板A内容</oas-tab-panel><oas-tab-panel label="B" value="b">面板B内容</oas-tab-panel>',
+      },
     ]
     for (const { name, tag, attrs, slot } of cases) {
       const first = await renderToString(tag, attrs, slot ?? '')

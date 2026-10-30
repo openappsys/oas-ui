@@ -59,7 +59,6 @@ const PALETTE = [
 ]
 
 /** 面积图渐变 id 计数器（同页多组件实例防 id 冲突） */
-let areaGradSeq = 0
 
 /** 折线图配色类：color 继承 → 元素 stroke/fill 用 currentColor */
 const SWATCH_CLASSES = ['c0', 'c1', 'c2', 'c3', 'c4', 'c5', 'c6', 'c7']
@@ -585,7 +584,7 @@ export class OASChart extends OASElement {
       const fill = `${path} L ${xAt(lastI).toFixed(1)} ${baseY.toFixed(1)} L ${xAt(0).toFixed(1)} ${baseY.toFixed(1)} Z`
       let areaStyle = this.colorStyle(color)
       if (useGrad) {
-        const gid = `oas-chart-ag-${++areaGradSeq}`
+        const gid = `oas-chart-ag-${si}`
         const col = color ?? PALETTE[si % PALETTE.length] ?? ''
         defs += `<linearGradient id="${gid}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${this.escapeAttr(col)}" stop-opacity="0.35"/><stop offset="1" stop-color="${this.escapeAttr(col)}" stop-opacity="0"/></linearGradient>`
         areaStyle = ` style="fill:url(#${gid});opacity:1"`

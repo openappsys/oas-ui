@@ -2,6 +2,7 @@ import { OASElement } from '@oas-ui/core'
 import { pickOnColor as pickOnColorBase } from '../../shared/on-color.js'
 import { bindCoarseTap, clickIgnorable } from '../../shared/coarse-tap.js'
 import { resolveDirection } from '../../shared/direction.js'
+import { stableHash36 } from '../../shared/stable-id.js'
 import { computePosition, getViewport, type Placement } from '../../overlay/floating/index.js'
 
 const STYLE = `
@@ -265,9 +266,6 @@ export function shouldSkipDelay(duration: number): boolean {
   return Date.now() - lastCloseAt < duration
 }
 
-// tip 唯一 id 生成器（aria-describedby 关联用）
-let tipSeq = 0
-
 export class OAStooltip extends OASElement {
   static override get observedAttributes(): string[] {
     return [
@@ -402,8 +400,12 @@ export class OAStooltip extends OASElement {
     this.tipEl = this.shadow.querySelector('.tip')
     this.anchor = this.anchorHost()
     if (this.tipEl) {
-      this.tipEl.id = `oas-tooltip-tip-${++tipSeq}`
-      this.tipId = this.tipEl.id
+      // tip id 由 content 身份属性派生（FNV-1a base36）：SSR 快照逐字节确定；
+      // 懒派生一次实例内不变（id 是 aria-describedby 关联锚点，content 变更不换 id）
+      if (!this.tipId) {
+        this.tipId = `oas-tooltip-tip-${stableHash36(this.getAttr('content', ''))}`
+        this.tipEl.id = this.tipId
+      }
       // 富内容插槽：slotchange → 内容源切换（属性文本 ↔ 插槽）
       this.contentSlot = this.tipEl.querySelector('slot[name="content"]')
       this.contentSlot?.addEventListener('slotchange', () => this.syncContent())
