@@ -11,6 +11,9 @@ importers:
       '@oas-ui/i18n':
         specifier: link:../../../i18n
         version: link:../../../i18n
+      '@oas-ui/next':
+        specifier: link:../../../next
+        version: link:../../../next
       '@oas-ui/ssr':
         specifier: link:../..
         version: link:../..
