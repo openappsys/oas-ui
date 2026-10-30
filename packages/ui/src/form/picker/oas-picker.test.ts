@@ -268,6 +268,18 @@ describe('OASPicker', () => {
       }
       expect(col.hasAttribute('aria-activedescendant'), '滚动落停不得写悬空 IDREF').toBe(false)
     })
+
+    it('混合列滚动落停：禁用项 aria-selected 保持移除（与渲染路径同口径，不写 "false"）', async () => {
+      const el = mount({
+        columns: JSON.stringify([{ items: [{ label: 'a', disabled: true }, { label: 'b' }] }]),
+      })
+      await settle()
+      scrollTo(el, 0, 1)
+      await settle()
+      const its = items(cols(el)[0]!)
+      expect(its[0]!.getAttribute('aria-selected'), '禁用项不写 aria-selected').toBeNull()
+      expect(its[1]!.getAttribute('aria-selected')).toBe('true')
+    })
   })
   describe('级联（options 树）', () => {
     it('options 树：列数随选中路径派生；父列变更重建子列并复位', async () => {

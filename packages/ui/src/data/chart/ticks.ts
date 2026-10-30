@@ -142,10 +142,15 @@ const FALLBACK_LOCALE = 'en-US'
 const FORMATTER_CACHE_MAX = 64
 const formatterCache = new Map<string, Intl.NumberFormat>()
 
+/** 只读探针（测试锁上限用）：ticks 是内部模块，不进公共导出面 */
+export function formatterCacheSize(): number {
+  return formatterCache.size
+}
+
 /**
  * 构造（或复用）formatter。非法 locale（zh_CN / 自定义名 / 非 ASCII / 空串）只回退一次到
  * 固定 en-US（保证 SSR 与客户端一致），绝不把未校验 locale 再交给 Intl 二次抛 RangeError。
- * 回退构造本身也包 try：即便宿主环境连 en-US 都不可用（极端 ICU 裁剪），也不向渲染抛错。
+ * 最终兜底不依赖 Intl（构造本身不可用时退化为 toFixed 字符串），保证任何环境都不向渲染抛错。
  */
 function formatterFor(locale: string, scientific: boolean, digits: number): Intl.NumberFormat {
   const key = `${locale}\u0000${scientific ? 'sci' : 'std'}\u0000${digits}`
@@ -164,12 +169,11 @@ function formatterFor(locale: string, scientific: boolean, digits: number): Intl
     try {
       formatter = new Intl.NumberFormat(FALLBACK_LOCALE, options)
     } catch {
-      // 极端环境最终兜底：Intl 完全不可用时退化为固定小数格式（刻度仍可读）
-      formatter = new Intl.NumberFormat(FALLBACK_LOCALE, {
-        ...options,
-        notation: 'standard',
-        minimumFractionDigits: digits,
-      })
+      // 极端环境（Intl 构造整体不可用）：字符串格式化兜底（可读、不抛）；与主路径输出
+      // 允许不同（此时已无「双端一致」可谈），只保证刻度可渲染
+      formatter = {
+        format: (value: number) => value.toFixed(Math.max(0, Math.min(100, digits))),
+      } as unknown as Intl.NumberFormat
     }
   }
   // FIFO 淘汰最旧缓存项（正常宿主 locale 集合有限，不会触顶）

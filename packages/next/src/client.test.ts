@@ -24,10 +24,13 @@ describe('@oas-ui/next OasRegistry', () => {
   )
 
   it('副作用注册：客户端环境动态导入完成后 oas-* 组件全局注册（customElements.define）', async () => {
-    // 守卫式动态导入是异步注册：逐项轮询（模块图顺序不保证字母序）
-    for (const tag of ['oas-button', 'oas-table', 'oas-modal', 'oas-input']) {
-      await expect.poll(() => customElements.get(tag), { timeout: 12_000, interval: 100 }).toBeDefined()
-    }
+    // 守卫式动态导入是异步注册：单次轮询检查全部 tag（串行逐项 poll 的预算会在慢机上
+    // 被第一个 tag 吃满，用例以超时而非断言失败结束，且后续 tag 没机会跑）
+    const tags = ['oas-button', 'oas-table', 'oas-modal', 'oas-input']
+    await expect
+      .poll(() => tags.every((t) => customElements.get(t) != null), { timeout: 12_000, interval: 100 })
+      .toBe(true)
+    for (const tag of tags) expect(customElements.get(tag)).toBeDefined()
   }, 15_000)
 
   it('组件零 DOM：原样透传 children', () => {

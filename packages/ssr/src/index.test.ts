@@ -1639,5 +1639,36 @@ describe('@oas-ui/ssr renderToString', () => {
       columns: JSON.stringify([{ items: [{ label: 'a' }, { label: 'b' }] }]),
     })
     expect(pickerAgain).toBe(picker)
+
+    // 多列与级联树形态同样确定（id 种子含完整 columns/options 属性串）
+    const multi = await renderToString('oas-picker', {
+      columns: JSON.stringify([
+        { items: [{ label: 'a' }, { label: 'b' }] },
+        { items: [{ label: 'x' }, { label: 'y', disabled: true }, { label: 'z' }] },
+      ]),
+    })
+    expect(
+      await renderToString('oas-picker', {
+        columns: JSON.stringify([
+          { items: [{ label: 'a' }, { label: 'b' }] },
+          { items: [{ label: 'x' }, { label: 'y', disabled: true }, { label: 'z' }] },
+        ]),
+      }),
+    ).toBe(multi)
+
+    const tree = await renderToString('oas-picker', {
+      options: JSON.stringify([
+        { label: '浙江', children: [{ label: '杭州' }, { label: '宁波' }] },
+        { label: '江苏', children: [{ label: '南京' }] },
+      ]),
+    })
+    expect(
+      await renderToString('oas-picker', {
+        options: JSON.stringify([
+          { label: '浙江', children: [{ label: '杭州' }, { label: '宁波' }] },
+          { label: '江苏', children: [{ label: '南京' }] },
+        ]),
+      }),
+    ).toBe(tree)
   })
 })

@@ -147,9 +147,18 @@ export class OASPicker extends OASFormElement {
    * 稳定实例 id：由身份属性（columns/options）派生（FNV-1a → base36）。
    * SSR 快照逐字节确定（同一属性输入 → 同一 id，不再依赖模块级自增计数）。
    * 同页属性相同的实例各自 shadow 隔离，activedescendant 在 shadow 内解析，实际碰撞可忽略。
+   * 结果按属性串缓存：itemId 在渲染/滚动热路径逐项调用，不做重复哈希。
    */
+  private stableIdCacheKey: string | null = null
+  private stableIdCache = ''
+
   private stableId(): string {
-    return `oas-picker-${stableHash36(`${this.getAttr('columns', '')}\u0000${this.getAttr('options', '')}`)}`
+    const key = `${this.getAttr('columns', '')}\u0000${this.getAttr('options', '')}`
+    if (this.stableIdCacheKey !== key) {
+      this.stableIdCacheKey = key
+      this.stableIdCache = `oas-picker-${stableHash36(key)}`
+    }
+    return this.stableIdCache
   }
 
   /** option 元素 id：`oas-picker-<稳定id>-<列>-<项>` */
@@ -408,7 +417,9 @@ export class OASPicker extends OASFormElement {
       const items = el.querySelectorAll<HTMLElement>('.item')
       // 全禁用列：无可选中项 → 不标 aria-selected（读屏不应播报「已选中」一个不可选项）。
       // 宿主 disabled 不改变选中语义（视觉选中态仍在，只是不可交互）。
+      // selectable 预算进 dataset：scroll 热路径 paintSelection 只读标记，不重新解析数据
       const selectable = col.items.some((it) => !it.disabled)
+      el.dataset.selectable = selectable ? '1' : '0'
       col.items.forEach((item, j) => {
         const it = items[j]
         if (!it) return
@@ -419,6 +430,9 @@ export class OASPicker extends OASFormElement {
         else it.setAttribute('aria-selected', String(j === sel))
         if (item.disabled) it.setAttribute('aria-disabled', 'true')
         else it.removeAttribute('aria-disabled')
+        // 禁用标记供 paintSelection（scroll 热路径）零解析读取
+        if (item.disabled) it.dataset.disabled = '1'
+        else delete it.dataset.disabled
       })
       // 全禁用列不写 activedescendant（无可用项可指向）
       const activeId = selectable ? this.activeDescendantId(i, col.items.length, sel) : null
@@ -453,6 +467,7 @@ export class OASPicker extends OASFormElement {
     const sel = this.selectedIdx[index] ?? 0
     // 全禁用列：无可选中项 → 不标 aria-selected（与 syncColumns 同口径）
     const selectable = col.items.some((it) => !it.disabled)
+    el.dataset.selectable = selectable ? '1' : '0'
     col.items.forEach((item, j) => {
       const it = document.createElement('div')
       it.className = 'item'
@@ -464,6 +479,8 @@ export class OASPicker extends OASFormElement {
       if (!selectable || item.disabled) it.removeAttribute('aria-selected')
       else it.setAttribute('aria-selected', String(j === sel))
       if (item.disabled) it.setAttribute('aria-disabled', 'true')
+      // 禁用标记供 paintSelection（scroll 热路径）零解析读取
+      if (item.disabled) it.dataset.disabled = '1'
       el.appendChild(it)
     })
     const activeId = selectable ? this.activeDescendantId(index, col.items.length, sel) : null
@@ -544,11 +561,13 @@ export class OASPicker extends OASFormElement {
   private paintSelection(colIdx: number, idx: number): void {
     const col = this.shadow.querySelectorAll<HTMLElement>('.column')[colIdx]
     if (!col) return
-    const items = col.querySelectorAll('.item')
-    // 与 syncColumns/buildColumn 同口径：全禁用列无选中语义（滚动中重绘也不得复活 aria-selected）
-    const selectable = this.resolvedColumns()[colIdx]?.items.some((it) => !it.disabled) ?? false
+    const items = col.querySelectorAll<HTMLElement>('.item')
+    // 与 syncColumns/buildColumn 同口径：全禁用列无选中语义、列内禁用项不写 aria-selected
+    // （渲染路径是 removeAttribute，滚动重绘不得改成 "false"——两条路径口径一致）。
+    // selectable 用渲染期预算进 dataset 的标记（scroll 热路径不再 JSON.parse 整份数据）
+    const selectable = col.dataset.selectable === '1'
     items.forEach((it, j) => {
-      if (!selectable) it.removeAttribute('aria-selected')
+      if (!selectable || it.dataset.disabled === '1') it.removeAttribute('aria-selected')
       else it.setAttribute('aria-selected', String(j === idx))
     })
     const activeId = selectable ? this.activeDescendantId(colIdx, items.length, idx) : null

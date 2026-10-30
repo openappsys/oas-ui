@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest'
-import { formatTick, niceStep, niceTicks, tickFractionDigits } from './ticks.js'
+import { describe, it, expect, vi } from 'vitest'
+import { formatTick, formatterCacheSize, niceStep, niceTicks, tickFractionDigits } from './ticks.js'
 
 describe('niceStep', () => {
   it('只使用 1 / 2 / 2.5 / 5 / 10 × 10^n 序列，阈值处向上切换', () => {
@@ -263,16 +263,35 @@ describe('formatTick', () => {
     expect(() => formatTick(2.5e8, 2.5e8, 'ar')).not.toThrow()
   })
 
-  // 维护批：formatter 缓存上限 + fallback 健壮性（独立复核 A5）
-  it('大量不同非法 locale 轮换：缓存有上限（FIFO 淘汰），渲染不抛错', () => {
-    // 注入 200 个互不相同的非法 locale（结构非法必走回退路径）
+  // 维护批：formatter 缓存上限 + fallback 健壮性（独立复核 A5；交叉审查 fix round 改为可观测断言）
+  it('大量不同非法 locale 轮换：缓存条目数有上限（≤64），渲染不抛错', () => {
     for (let i = 0; i < 200; i++) {
       expect(() => formatTick(1, 1, `bad_${i}`)).not.toThrow()
     }
+    // 只读探针（内部模块导出，不进公共 API 面）：上限常量改动会被此断言锁住
+    expect(formatterCacheSize(), '缓存条目数不得超过上限 64').toBeLessThanOrEqual(64)
   })
 
   it('fallback 构造包 try：非法 locale 输出与固定 en-US 一致（SSR/客户端同口径）', () => {
     expect(formatTick(0.25, 0.25, 'zh_CN')).toBe(formatTick(0.25, 0.25, 'en-US'))
     expect(formatTick(25000, 25000, 'zh_CN')).toBe(formatTick(25000, 25000, 'en-US'))
+  })
+
+  it('最终兜底不依赖 Intl：Intl 完全不可用时退化为 toFixed，绝不向渲染抛错', () => {
+    const real = Intl.NumberFormat
+    // 模拟极端 ICU 裁剪环境：任何 locale 的 Intl.NumberFormat 构造都抛错
+    vi.spyOn(Intl, 'NumberFormat').mockImplementation(() => {
+      throw new RangeError('Intl unavailable')
+    })
+    try {
+      let out = ''
+      expect(() => {
+        out = formatTick(0.25, 0.25, 'zh_CN')
+      }).not.toThrow()
+      expect(out, '退化为数字字符串（toFixed）').toMatch(/^0\.25\d*$/)
+    } finally {
+      vi.mocked(Intl.NumberFormat).mockRestore()
+      void real
+    }
   })
 })

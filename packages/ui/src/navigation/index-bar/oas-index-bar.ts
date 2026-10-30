@@ -247,9 +247,18 @@ export class OASIndexBar extends OASElement {
    * 稳定实例 id：由身份属性（sections）派生（FNV-1a → base36）。
    * SSR 快照逐字节确定（同一属性输入 → 同一 header id），不再依赖模块级自增计数。
    * header id 只用于分节容器 aria-labelledby（shadow 内解析），同页实例属性相同时各自 shadow 隔离。
+   * 结果按属性串缓存：header id 在 rebuild 逐节调用，不做重复哈希。
    */
+  private stableIdCacheKey: string | null = null
+  private stableIdCache = ''
+
   private stableId(): string {
-    return stableHash36(this.getAttr('sections', ''))
+    const key = this.getAttr('sections', '')
+    if (this.stableIdCacheKey !== key) {
+      this.stableIdCacheKey = key
+      this.stableIdCache = stableHash36(key)
+    }
+    return this.stableIdCache
   }
 
   override connectedCallback(): void {

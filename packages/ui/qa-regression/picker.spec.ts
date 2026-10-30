@@ -141,3 +141,50 @@ test('picker 选中行高亮：bg-hover + 发丝线可见，无覆盖式指示�
   expect(r.shadow, '上下发丝线在位').toContain('px')
   expect(r.text, '选中项文字在位').toBeTruthy()
 })
+
+test('picker 全禁用列：任何项不标 aria-selected、列无 activedescendant；滚动后仍不复活（A4/维护批）', async ({
+  page,
+}) => {
+  await page.goto(PAGE, { waitUntil: 'domcontentloaded' })
+  await up(page, '#pk-basic')
+  // 挂一个全禁用列 probe（组件页无全禁用列 demo，用真实浏览器实例固化 ARIA 语义）
+  await page.evaluate(() => {
+    const host = document.createElement('oas-picker')
+    host.id = '__qa_all_disabled__'
+    host.setAttribute(
+      'columns',
+      JSON.stringify([
+        {
+          label: '全禁',
+          items: [
+            { label: '甲', disabled: true },
+            { label: '乙', disabled: true },
+          ],
+        },
+      ]),
+    )
+    document.querySelector('#pk-basic')!.parentElement!.appendChild(host)
+  })
+  const read = () =>
+    page.evaluate(() => {
+      const el = document.querySelector('#__qa_all_disabled__')!
+      const col = el.shadowRoot!.querySelectorAll('.column')[0]!
+      return {
+        selected: [...col.querySelectorAll('.item')].map((i) => i.getAttribute('aria-selected')),
+        disabled: [...col.querySelectorAll('.item')].map((i) => i.getAttribute('aria-disabled')),
+        activeDescendant: col.getAttribute('aria-activedescendant'),
+      }
+    })
+  const before = await read()
+  expect(before.selected, '全禁用列任何项不标 aria-selected').toEqual([null, null])
+  expect(before.disabled, '禁用项照常标 aria-disabled').toEqual(['true', 'true'])
+  expect(before.activeDescendant, '列不写悬空 IDREF').toBeNull()
+  // 真实滚轮滚动落停后（paintSelection 重绘路径）不得复活选中语义
+  const col = page.locator('#__qa_all_disabled__').locator('[part="column"]').first()
+  await col.hover()
+  await page.mouse.wheel(0, 120)
+  await page.waitForTimeout(400)
+  const after = await read()
+  expect(after.selected, '滚动落停后仍不标 aria-selected').toEqual([null, null])
+  expect(after.activeDescendant, '滚动落停后仍无 IDREF').toBeNull()
+})
