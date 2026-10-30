@@ -4,6 +4,7 @@ import { isRtl } from '../../shared/direction.js'
 import { devWarn } from '../../shared/dev-warn.js'
 import { pushEscapeLayer, promoteEscapeLayer, type OverlayEscapeLayer } from '../../shared/overlay-stack.js'
 import { isSsrRuntime } from '../../shared/ssr-runtime.js'
+import { stableHash36 } from '../../shared/stable-id.js'
 import {
   DEFAULT_RECT,
   formatRect,
@@ -67,9 +68,6 @@ const EDGES: readonly ResizeEdge[] = ['n', 's', 'e', 'w', 'ne', 'nw', 'se', 'sw'
 
 /** 未命中 boundary 告警台账上限（防宿主拼字符串撑爆静态 Set） */
 const MAX_WARNED_BOUNDARIES = 32
-
-/** 标题 id 序号（同页多实例唯一；SSR 快照保留服务端 id） */
-let titleUid = 0
 
 const STYLE = `
 :host {
@@ -435,7 +433,9 @@ export class OASFloatingPanel extends OASElement {
   /** 纯函数：SSR 快照与客户端渲染共用同一份模板（位置只依赖属性，服务端不测量） */
   private template(): string {
     const rect = this.currentRect()
-    this.titleId = `oas-floating-panel-title-${++titleUid}`
+    // 标题 id 由 panel-title 派生（FNV-1a base36）：SSR 快照逐字节确定，不再依赖模块级
+    // 自增序号。同页同标题的多实例各自 shadow 隔离（aria-labelledby 在 shadow 内解析）。
+    this.titleId = `oas-floating-panel-title-${stableHash36(this.getAttr('panel-title', ''))}`
     const handles = EDGES.map(
       (edge) => `<span class="handle" part="handle" data-edge="${edge}" aria-hidden="true"></span>`,
     ).join('')
@@ -617,7 +617,8 @@ export class OASFloatingPanel extends OASElement {
     if (!this.shadow.querySelector('slot[name="title"]')) return false
     if (this.shadow.querySelectorAll('[part="handle"]').length !== EDGES.length) return false
     const title = this.shadow.querySelector<HTMLElement>('[part="title"]')
-    this.titleId = title?.id || `oas-floating-panel-title-${++titleUid}`
+    // 快照保留服务端派生 id；缺失（异常/旧快照）时按当前属性派生补写
+    this.titleId = title?.id || `oas-floating-panel-title-${stableHash36(this.getAttr('panel-title', ''))}`
     // 快照标题缺 id：补写回 DOM，否则 aria-labelledby 指向不存在的 IDREF
     if (title && !title.id) title.id = this.titleId
     this.bind()

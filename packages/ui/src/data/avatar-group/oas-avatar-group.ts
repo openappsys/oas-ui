@@ -1,5 +1,6 @@
 import { OASElement } from '@oas-ui/core'
 import { resolveDirection } from '../../shared/direction.js'
+import { stableHash36 } from '../../shared/stable-id.js'
 import { computePosition, getViewport } from '../../overlay/floating/index.js'
 
 /** 浮层与触发元素的默认间距（与 computePosition 的 GAP 一致） */
@@ -111,9 +112,6 @@ const STYLE = `
 }
 `
 
-/** 面板实例计数：全局唯一 id（aria-controls 关联用） */
-let uid = 0
-
 // 模块级 Esc 栈：所有打开中的折叠弹层按打开先后排序（后开者在上），
 // 共享一个 document keydown 处理器——一次 Esc 只关闭最顶层。栈空时自动移除监听，无孤儿。
 const openLayers: OASAvatarGroup[] = []
@@ -170,8 +168,20 @@ export class OASAvatarGroup extends OASElement {
   /** 滚动/尺寸变化重定位监听是否已挂 */
   private scrollFollow = false
   private scrollRaf = 0
-  /** 面板 id（aria-controls 关联） */
-  private readonly panelId = `oas-avatar-group-overflow-${++uid}`
+  /** 面板 id（aria-controls 关联）：由 light DOM 头像子元素外征派生（FNV-1a base36），
+   *  SSR 快照逐字节确定（数量 + 文本 + src），不再依赖模块级自增计数。
+   *  懒派生一次、实例生命周期内不变（id 是关联锚点；子元素变化不换 id，aria-controls 稳定）。
+   *  同页同内容的多实例各自 shadow 隔离（aria-controls 在 shadow 内解析）。 */
+  private panelIdCache = ''
+  private get panelId(): string {
+    if (this.panelIdCache === '') {
+      const seed = Array.from(this.querySelectorAll('oas-avatar') as NodeListOf<HTMLElement>)
+        .map((a) => `${a.textContent ?? ''}\u0000${a.getAttribute('src') ?? ''}`)
+        .join('\u0001')
+      this.panelIdCache = `oas-avatar-group-overflow-${stableHash36(seed)}`
+    }
+    return this.panelIdCache
+  }
 
   /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
   private template(): string {

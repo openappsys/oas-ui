@@ -1,6 +1,7 @@
 import { OASElement } from '@oas-ui/core'
 import { resolveDirection } from '../../shared/direction.js'
 import { cssVarPx } from '../../shared/css-var.js'
+import { stableHash36 } from '../../shared/stable-id.js'
 import { alertCirclePath } from '@oas-ui/icons/icons/alert-circle'
 import { warningPath } from '@oas-ui/icons/icons/warning'
 import { computePosition, getViewport, type Placement } from '../../overlay/floating/index.js'
@@ -278,9 +279,6 @@ const STYLE = `
 }
 `
 
-/** 实例计数：面板 / 标题区的全局唯一 id（aria-controls / aria-labelledby 关联） */
-let uid = 0
-
 // 模块级 Esc 栈：所有打开中的 popconfirm 按打开先后排序（后开者在上），
 // 共享一个 document keydown 处理器——一次 Esc 只关闭最顶层（嵌套时即最内层）。
 // 栈空时自动移除监听，无孤儿。
@@ -363,9 +361,24 @@ export class OASPopconfirm extends OASElement {
   /** 滚动/尺寸变化重定位监听是否已挂 */
   private scrollFollow = false
   private scrollRaf = 0
-  /** 面板/标题区 id（aria 关联） */
-  private readonly panelId = `oas-popconfirm-pop-${++uid}`
-  private readonly titleId = `oas-popconfirm-title-${uid}`
+  /** 面板/标题区 id（aria 关联）：由 title/description 身份属性派生（FNV-1a base36），
+   *  SSR 快照逐字节确定，不再依赖模块级自增计数。懒派生一次、实例生命周期内不变——
+   *  id 是关联锚点不承载语义，title 吸收/文案变更不换 id（避免 aria-controls 一瞬悬空）。
+   *  同页同内容的多实例各自 shadow 隔离（aria-controls / aria-labelledby 在 shadow 内解析）。 */
+  private panelIdCache = ''
+  private get panelId(): string {
+    if (this.panelIdCache === '') {
+      this.panelIdCache = `oas-popconfirm-pop-${stableHash36(`${this.getAttr('title', '')}\u0000${this.getAttr('description', '')}`)}`
+    }
+    return this.panelIdCache
+  }
+  private titleIdCache = ''
+  private get titleId(): string {
+    if (this.titleIdCache === '') {
+      this.titleIdCache = `oas-popconfirm-title-${this.panelId.split('-').pop()}`
+    }
+    return this.titleIdCache
+  }
   /** 本连接周期的清理函数是否已注册（基类 disconnectedCallback 会执行并清空 cleanupFns，
    *  重连需重挂；本标志防同一连接周期重复注册） */
   private lifecycleBound = false

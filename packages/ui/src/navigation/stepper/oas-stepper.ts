@@ -3,6 +3,7 @@ import { OASElement } from '@oas-ui/core'
 import { lookupIcon } from '@oas-ui/icons/runtime'
 import { isRtl } from '../../shared/direction.js'
 import { normalizeSizeStrict, ALL_SIZES } from '../../shared/size.js'
+import { stableHash36 } from '../../shared/stable-id.js'
 import type { OASStepperPanel } from './oas-stepper-panel.js'
 import { devWarn } from '../../shared/dev-warn.js'
 
@@ -30,9 +31,6 @@ function warnInvalidSize(raw: string): void {
   warnedSizes.add(raw)
   devWarn(`[oas-stepper] 非法 size "${raw}"，已回落 medium；合法值：xs/small/medium/large/xl`)
 }
-
-/** 实例唯一 id 前缀（tab/panel 关联用；模块级计数器，确定性可复现） */
-let uidCounter = 0
 
 const STYLE = `
 :host {
@@ -259,7 +257,14 @@ export class OASStepper extends OASElement {
   private _steps: StepperStep[] = []
   private tablist: HTMLElement | null = null
   private observer: MutationObserver | null = null
-  private readonly uid = `oas-stepper-${++uidCounter}`
+
+  /**
+   * tab id 前缀：由 steps 身份属性派生（FNV-1a base36），SSR 快照逐字节确定，
+   * 不再依赖模块级自增计数。shadow 内 tab 与 light DOM 面板的关联走 flat tree。
+   */
+  private get uid(): string {
+    return `oas-stepper-${stableHash36(this.getAttr('steps', ''))}`
+  }
 
   /** Vue/React 会把 steps 识别为实例属性走 property 赋值；setter 反射到 attribute 统一解析链路 */
   get steps(): StepperStep[] {
@@ -383,11 +388,15 @@ export class OASStepper extends OASElement {
       const value = panel.getAttribute('value') ?? ''
       panel.hidden = value !== String(current)
       panel.setAttribute('role', 'tabpanel')
-      // aria-labelledby → 对应步骤 tab（面板 value 即步骤序号）
+      // aria-labelledby → 对应步骤 tab（面板 value 即步骤序号；tab id 由 steps 派生，flat tree 解析）
       panel.setAttribute('aria-labelledby', `${this.uid}-tab-${value}`)
-      if (!panel.id) panel.id = `${this.uid}-panel-${value}`
-      const tab = this.tablist?.querySelector<HTMLElement>(`[data-index="${value}"]`)
-      tab?.setAttribute('aria-controls', panel.id)
+      // panel.id 只在宿主显式设置时使用并同步 aria-controls：组件不代生成 light DOM id——
+      // 同 steps 的多实例会在文档级产生 duplicate id（axe duplicate-id 违规）；
+      // 无 id 时宁缺勿错（面板命名由 aria-labelledby + 自身内容承担，同 picker 空列口径）
+      if (panel.id) {
+        const tab = this.tablist?.querySelector<HTMLElement>(`[data-index="${value}"]`)
+        tab?.setAttribute('aria-controls', panel.id)
+      }
     }
   }
 

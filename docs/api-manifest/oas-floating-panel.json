@@ -12,6 +12,8 @@
     },
     {
       "name": "panel-title",
+      "type": "string",
+      "default": "",
       "observed": true
     },
     {

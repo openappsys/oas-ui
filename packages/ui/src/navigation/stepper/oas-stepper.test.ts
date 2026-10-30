@@ -378,13 +378,26 @@ describe('OASStepper 面板联动（oas-stepper-panel value 关联）', () => {
     expect(panels(el)[2]!.hasAttribute('hidden')).toBe(false)
   })
 
-  it('面板 role=tabpanel + aria-labelledby 关联对应 tab', () => {
+  it('面板 role=tabpanel + aria-labelledby 关联对应 tab；无宿主 id 时不代生成 id/aria-controls', () => {
     const el = mount({ current: '0' })
     const panel = panels(el)[0]!
     const tab = tabs(el)[0]!
     expect(panel.getAttribute('role')).toBe('tabpanel')
     expect(panel.getAttribute('aria-labelledby')).toBe(tab.id)
-    expect(tab.getAttribute('aria-controls')).toBe(panel.id)
+    // panel.id 只在宿主显式设置时同步 aria-controls（组件不代生成 light DOM id：
+    // 同 steps 多实例会在文档级产生 duplicate id）
+    expect(panel.id, '组件不代生成面板 id').toBe('')
+    expect(tab.getAttribute('aria-controls')).toBeNull()
+  })
+
+  it('宿主显式 panel.id：aria-controls 同步该 id', () => {
+    const el = mount({ current: '0' })
+    const panel = panels(el)[0]!
+    panel.id = 'host-panel-0'
+    el.setAttribute('current', '1')
+    el.setAttribute('current', '0')
+    const tab = tabs(el)[0]!
+    expect(tab.getAttribute('aria-controls')).toBe('host-panel-0')
   })
 
   it('current 与 steps 数量不一致（面板 value 无匹配）时全部隐藏', () => {

@@ -1618,57 +1618,68 @@ describe('@oas-ui/ssr renderToString', () => {
     )
   })
 
-  // 维护批：快照 id 确定性（index-bar / picker 曾依赖模块级自增 uid → 同属性两次渲染 id 不同）
-  it('index-bar / picker 快照逐字节确定（同一属性输入 → 同一 HTML）', async () => {
-    const indexBar = await renderToString(
-      'oas-index-bar',
-      { sections: '[{"title":"A","items":[{"label":"a1"}]},{"title":"B","items":[{"label":"b1"}]}]' },
-      '',
-    )
-    const indexBarAgain = await renderToString(
-      'oas-index-bar',
-      { sections: '[{"title":"A","items":[{"label":"a1"}]},{"title":"B","items":[{"label":"b1"}]}]' },
-      '',
-    )
-    expect(indexBarAgain).toBe(indexBar)
-
-    const picker = await renderToString('oas-picker', {
-      columns: JSON.stringify([{ items: [{ label: 'a' }, { label: 'b' }] }]),
-    })
-    const pickerAgain = await renderToString('oas-picker', {
-      columns: JSON.stringify([{ items: [{ label: 'a' }, { label: 'b' }] }]),
-    })
-    expect(pickerAgain).toBe(picker)
-
-    // 多列与级联树形态同样确定（id 种子含完整 columns/options 属性串）
-    const multi = await renderToString('oas-picker', {
-      columns: JSON.stringify([
-        { items: [{ label: 'a' }, { label: 'b' }] },
-        { items: [{ label: 'x' }, { label: 'y', disabled: true }, { label: 'z' }] },
-      ]),
-    })
-    expect(
-      await renderToString('oas-picker', {
-        columns: JSON.stringify([
-          { items: [{ label: 'a' }, { label: 'b' }] },
-          { items: [{ label: 'x' }, { label: 'y', disabled: true }, { label: 'z' }] },
-        ]),
-      }),
-    ).toBe(multi)
-
-    const tree = await renderToString('oas-picker', {
-      options: JSON.stringify([
-        { label: '浙江', children: [{ label: '杭州' }, { label: '宁波' }] },
-        { label: '江苏', children: [{ label: '南京' }] },
-      ]),
-    })
-    expect(
-      await renderToString('oas-picker', {
-        options: JSON.stringify([
-          { label: '浙江', children: [{ label: '杭州' }, { label: '宁波' }] },
-          { label: '江苏', children: [{ label: '南京' }] },
-        ]),
-      }),
-    ).toBe(tree)
+  // 维护批：快照 id 确定性（index-bar / picker 曾依赖模块级自增 uid → 同属性两次渲染 id 不同；
+  // M2 扩为表驱动：所有含 id 输出的 SSR 白名单组件，同属性两次渲染逐字节一致）
+  it('含 id 输出的白名单组件快照逐字节确定（表驱动）', async () => {
+    const cases: Array<{ name: string; tag: string; attrs: Record<string, string>; slot?: string }> = [
+      {
+        name: 'index-bar sections',
+        tag: 'oas-index-bar',
+        attrs: { sections: '[{"title":"A","items":[{"label":"a1"}]},{"title":"B","items":[{"label":"b1"}]}]' },
+      },
+      {
+        name: 'picker 单列',
+        tag: 'oas-picker',
+        attrs: { columns: JSON.stringify([{ items: [{ label: 'a' }, { label: 'b' }] }]) },
+      },
+      {
+        name: 'picker 多列（含禁用项）',
+        tag: 'oas-picker',
+        attrs: {
+          columns: JSON.stringify([
+            { items: [{ label: 'a' }, { label: 'b' }] },
+            { items: [{ label: 'x' }, { label: 'y', disabled: true }, { label: 'z' }] },
+          ]),
+        },
+      },
+      {
+        name: 'picker 级联树',
+        tag: 'oas-picker',
+        attrs: {
+          options: JSON.stringify([
+            { label: '浙江', children: [{ label: '杭州' }, { label: '宁波' }] },
+            { label: '江苏', children: [{ label: '南京' }] },
+          ]),
+        },
+      },
+      {
+        name: 'floating-panel 富标题',
+        tag: 'oas-floating-panel',
+        attrs: { open: '', 'panel-title': '图层', movable: '', rect: '0,0,320,180' },
+      },
+      {
+        name: 'popconfirm 触发钮 + 气泡',
+        tag: 'oas-popconfirm',
+        attrs: { title: '确认删除？', description: '删除后不可恢复' },
+        slot: '<button>删除</button>',
+      },
+      {
+        name: 'avatar-group 头像溢出面板',
+        tag: 'oas-avatar-group',
+        attrs: {},
+        slot: '<oas-avatar>甲</oas-avatar><oas-avatar>乙</oas-avatar><oas-avatar>丙</oas-avatar><oas-avatar>丁</oas-avatar>',
+      },
+      {
+        name: 'stepper 步骤头 + 面板关联',
+        tag: 'oas-stepper',
+        attrs: { steps: '[{"title":"填写信息"},{"title":"确认订单"}]', current: '1' },
+        slot: '<oas-stepper-panel value="0">第一步内容</oas-stepper-panel><oas-stepper-panel value="1">第二步内容</oas-stepper-panel>',
+      },
+    ]
+    for (const { name, tag, attrs, slot } of cases) {
+      const first = await renderToString(tag, attrs, slot ?? '')
+      const second = await renderToString(tag, attrs, slot ?? '')
+      expect(second, `${tag}（${name}）同属性两次渲染应逐字节一致`).toBe(first)
+    }
   })
 })
