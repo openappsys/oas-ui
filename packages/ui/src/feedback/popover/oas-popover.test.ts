@@ -1825,9 +1825,19 @@ describe('OASPopover P1 触发元素 ARIA 关联', () => {
     expect(btn.getAttribute('aria-controls')).toBe(p.id)
   })
 
-  it('多实例面板 id 不冲突', () => {
+  it('多实例面板 id：同内容确定性一致（各自 shadow 内解析，无串扰）', () => {
     const a = mount()
     const b = mount()
+    a.setAttribute('open', '')
+    b.setAttribute('open', '')
+    // 维护批 M2 fix round：id 由 title/content 身份派生——同内容实例 id 一致（SSR 可复现）；
+    // panel 恒在各自 shadow 内，id 相同无串扰
+    expect(panelOf(a).id).toBe(panelOf(b).id)
+  })
+
+  it('不同内容的实例面板 id 不同（身份属性参与派生）', () => {
+    const a = mount({ title: 'A 标题' })
+    const b = mount({ title: 'B 标题' })
     a.setAttribute('open', '')
     b.setAttribute('open', '')
     expect(panelOf(a).id).not.toBe(panelOf(b).id)

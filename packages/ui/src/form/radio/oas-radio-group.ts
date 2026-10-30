@@ -1,5 +1,6 @@
 import { OASFormElement } from '@oas-ui/core'
 import { isRtl } from '../../shared/direction.js'
+import { isSsrRuntime } from '../../shared/ssr-runtime.js'
 // options 数据通道渲染 oas-radio 需保证自定义元素已定义（运行时副作用导入）
 import './oas-radio.js'
 import type { OASRadio } from './oas-radio.js'
@@ -205,7 +206,9 @@ export class OASRadioGroup extends OASFormElement {
     const groupStatus = normalizeChoice(this.getAttr('status', ''), VALID_STATUSES)
     this.items = this.collectItems()
     for (const r of this.items) {
-      r.setAttribute('name', this.groupName)
+      // 互斥 name 不进 SSR 快照（groupName 为运行时自增唯一值，写进快照会让同属性两次渲染
+      // 不可复现）：SSR 段跳过，水合后写真实 name 恢复互斥；禁 JS 时 radio 无互斥（本也无交互）
+      if (!isSsrRuntime()) r.setAttribute('name', this.groupName)
       r.toggleAttribute('checked', r.getAttribute('value') === value)
       // 组级下发走 data-group-*（与子项显式属性分立，不互相覆盖）
       r.toggleAttribute('data-group-disabled', groupDisabled)

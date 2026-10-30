@@ -560,7 +560,11 @@ export class OASMenu extends OASElement {
   private expandedSet = new Set<string>()
   private menuEl: HTMLElement | null = null
   /** aria-activedescendant 引用的菜单项 id 前缀（跨实例唯一，避免同页多实例 id 冲突） */
-  /** 菜单 id 前缀：由 items 身份属性派生（FNV-1a base36），SSR 快照逐字节确定 */
+  /**
+   * 菜单 id 前缀：由 items 身份属性派生（FNV-1a base36），SSR 快照逐字节确定。
+   * 已知口径：items property 直赋不反射 attribute（property 通道实例）派生种子为空串
+   * ——前缀共享但 itemIdSeq 序号在 shadow 内解析，无功能影响；SSR 与 attribute 通道正常。
+   */
   private get uid(): string {
     return `oas-menu-${stableHash36(this.getAttr('items', ''))}`
   }

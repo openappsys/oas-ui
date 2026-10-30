@@ -4,15 +4,13 @@ import { lookupIcon } from '@oas-ui/icons/runtime'
 import { isRtl } from '../../shared/direction.js'
 import { normalizeSizeStrict, ALL_SIZES } from '../../shared/size.js'
 import { devWarn } from '../../shared/dev-warn.js'
+import { stableHash36 } from '../../shared/stable-id.js'
 
 export type SwitchSize = 'xs' | 'small' | 'medium' | 'large' | 'xl'
 
 /** status 校验态：success / warning / error（error 联动 aria-invalid） */
 const VALID_STATUSES = ['error', 'warning', 'success'] as const
 const warnedSizes = new Set<string>()
-
-/** label for/button id 关联：确定性计数器（SSR 快照可重复，浏览器多实例不冲突） */
-let switchIdCounter = 0
 
 /** 非法 size 告警：回落 medium 并在 dev 下 console.warn 一次（同值去重）；sm/md/lg 别名由 shared/size 静默映射，不告警 */
 function warnInvalidSize(raw: string): void {
@@ -418,7 +416,10 @@ export class OASSwitch extends OASFormElement {
   /** 缓存节点引用 + 绑定切换/焦点事件 + 分配确定性 id（render 与水合路径共用） */
   private bind(): void {
     this.btn = this.shadow.querySelector('button')
-    this.btnId = `oas-switch-${++switchIdCounter}`
+    // btn id 由文案身份派生（FNV-1a base36）：SSR 快照逐字节确定；懒派生一次实例内不变
+    if (!this.btnId) {
+      this.btnId = `oas-switch-${stableHash36(`${this.getAttr('checked-text', '')}\u0000${this.getAttr('unchecked-text', '')}`)}`
+    }
     if (this.btn) this.btn.id = this.btnId
     this.shadow.querySelector('.ext-label')?.setAttribute('for', this.btnId)
 

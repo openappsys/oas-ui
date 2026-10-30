@@ -29,6 +29,8 @@ test('stepper 移动端：coarse 下步骤头横向可滚、tab 最小触控高 
 })
 
 test('stepper：每个 tab 的 aria-controls 指向真实存在的 panel id（跨 shadow 引用兜底断言）', async ({ page }) => {
+  // ⚠️ 本断言依赖组件页 demo 的 panel 显式 id（stepper 不再代生成面板 id）：若 demo 撤掉
+  // oas-stepper-panel 的 id，checked 会归零并在此红——属预期信号，需同步更新 demo 或断言
   await page.goto('/components/stepper.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-stepper')
   const r = await page.evaluate(() => {

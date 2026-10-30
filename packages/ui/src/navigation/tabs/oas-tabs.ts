@@ -1893,7 +1893,9 @@ export class OASTabs extends OASElement {
   private panelIdOf(panel: Element): string {
     let id = this.panelIds.get(panel)
     if (!id) {
-      // 面板 id 由面板外征派生（FNV-1a base36）：SSR 快照逐字节确定，不再依赖模块级计数
+      // 面板 id 由面板外征派生（FNV-1a base36）：SSR 快照逐字节确定，不再依赖模块级计数。
+      // 已知口径：同 value+label+文本的两个面板（宿主使用错误态）会派生同 id——shadow 内
+      // 解析无串扰；宿主应保证面板 value 唯一（与 tabs 的 value 关联语义一致）
       const seed = `${panel.getAttribute('value') ?? ''}\u0000${panel.getAttribute('label') ?? ''}\u0000${panel.textContent ?? ''}`
       id = `oas-tab-panel-${stableHash36(seed)}`
       this.panelIds.set(panel, id)

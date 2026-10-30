@@ -1,4 +1,5 @@
 import { OASFormElement } from '@oas-ui/core'
+import { stableHash36 } from '../../shared/stable-id.js'
 
 /** size 尺寸档（对齐全局三档：勾选框 14/16/18px + 字号联动） */
 const VALID_SIZES = ['small', 'medium', 'large'] as const
@@ -221,8 +222,6 @@ input:focus-visible {
 `
 
 /** label for/input id 关联：确定性计数器（SSR 快照可重复，浏览器多实例不冲突） */
-let cbIdCounter = 0
-
 export class OASCheckbox extends OASFormElement {
   /** 原生表单集成（label for / FormData / reset / fieldset disabled）；沿静态原型链已可继承，显式声明便于阅读与检索 */
   static override formAssociated = true
@@ -357,7 +356,10 @@ export class OASCheckbox extends OASFormElement {
       this.input?.click()
     })
 
-    this.inputId = `oas-cb-${++cbIdCounter}`
+    // input id 由 value 身份派生（FNV-1a base36）：SSR 快照逐字节确定；懒派生一次实例内不变
+    if (!this.inputId) {
+      this.inputId = `oas-cb-${stableHash36(this.getAttr('value', ''))}`
+    }
 
     this.input?.addEventListener('change', () => {
       const checked = this.input!.checked

@@ -1,4 +1,5 @@
 import { OASElement } from '@oas-ui/core'
+import { stableHash36 } from '../../shared/stable-id.js'
 import '../../data/virtual-list/index.js'
 import type { OASVirtualList } from '../../data/virtual-list/index.js'
 
@@ -80,8 +81,6 @@ const SHORTCUT_SYMBOLS: Record<string, string> = {
 const MAX_RECENTS = 10
 
 /** 组件实例级 listbox 容器 id 的自增序列（aria-controls 唯一 id） */
-let commandSeq = 0
-
 const STYLE = `
 :host {
   display: block;
@@ -596,10 +595,13 @@ export class OASCommand extends OASElement {
     this.emptyTextEl = this.shadow.querySelector('.empty-text')
     this.emptySlotEl = this.shadow.querySelector('slot[name="empty"]')
     this.confirmEl = this.shadow.querySelector('.confirm')
-    // aria-controls：listbox / 虚拟列表容器分配组件内唯一 id（模板为 SSR 纯函数，
-    // id 在 bind 阶段运行时写入，SSR 快照不含，避免序列号跨进程漂移破坏 DSD 匹配）
-    this.listboxId = `oas-command-list-${++commandSeq}`
-    this.vlistId = `oas-command-vlist-${commandSeq}`
+    // aria-controls：listbox / 虚拟列表容器 id 由 value 身份派生（FNV-1a base36）——
+    // bind 在 SSR 渲染路径同样执行（id 进快照），自增序号会让快照不可复现；
+    // 懒派生一次实例内不变，SSR 与客户端、同属性多次渲染逐字节一致
+    if (!this.listboxId) {
+      this.listboxId = `oas-command-list-${stableHash36(this.getAttr('value', ''))}`
+      this.vlistId = `oas-command-vlist-${this.listboxId.split('-').pop()}`
+    }
     this.listEl?.setAttribute('id', this.listboxId)
     this.vlist?.setAttribute('id', this.vlistId)
 

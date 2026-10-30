@@ -1,4 +1,5 @@
 import { OASFormElement } from '@oas-ui/core'
+import { stableHash36 } from '../../shared/stable-id.js'
 
 /** size 尺寸档（与 checkbox 同批对齐：圆点 14/16/18px + 字号联动） */
 const VALID_SIZES = ['small', 'medium', 'large'] as const
@@ -193,8 +194,6 @@ input:focus-visible {
 `
 
 /** label for/input id 关联：确定性计数器（SSR 快照可重复，浏览器多实例不冲突） */
-let radioIdCounter = 0
-
 export class OASRadio extends OASFormElement {
   /** 原生表单集成（label for / FormData / reset / fieldset disabled）；沿静态原型链已可继承，显式声明便于阅读与检索 */
   static override formAssociated = true
@@ -253,7 +252,10 @@ export class OASRadio extends OASFormElement {
   private bind(): void {
     this.input = this.shadow.querySelector('input')
     this.labelEl = this.shadow.querySelector('label')
-    this.inputId = `oas-radio-${++radioIdCounter}`
+    // input id 由 value/name 身份派生（FNV-1a base36）：SSR 快照逐字节确定；懒派生一次实例内不变
+    if (!this.inputId) {
+      this.inputId = `oas-radio-${stableHash36(`${this.getAttr('value', '')}\u0000${this.getAttr('name', '')}`)}`
+    }
 
     // 宿主点击 = 激活控件：外部 label 的合成 click（composedPath 起点 = 宿主）与宿主直接点击同路径，
     // 未选中时转发为内层原生 click（选中 + change 走既有处理器）；已选中不取消（原生 radio 行为）。

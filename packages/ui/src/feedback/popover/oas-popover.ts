@@ -1,5 +1,6 @@
 import { OASElement } from '@oas-ui/core'
 import { resolveDirection } from '../../shared/direction.js'
+import { stableHash36 } from '../../shared/stable-id.js'
 import { cssVarPx } from '../../shared/css-var.js'
 import { closePath } from '@oas-ui/icons/icons/close'
 import { computePosition, getViewport, type Placement } from '../../overlay/floating/index.js'
@@ -24,8 +25,6 @@ const MOUSE_SUPPRESS_MS = 350
  * 窗口内 click 视为手势收尾不参与 tap 切换，防「长按打开 → 抬手即关」 */
 const POINTER_OPEN_GUARD_MS = 800
 /** 面板 id 文档唯一计数器（aria-controls 跨树引用需要文档级唯一） */
-let panelUid = 0
-
 /** 面板全部命名 slot（portal 桥接 / destroy-on-hide 暂存 / hide-empty 判空共用） */
 const SLOT_NAMES = ['content', 'title', 'header', 'footer', 'description'] as const
 
@@ -791,14 +790,11 @@ export class OASPopover extends OASElement {
     this.closeBtn = this.shadow.querySelector<HTMLButtonElement>('.close-btn')
     this.anchor = this.querySelector(':scope > *') ?? this
 
-    // 面板 id 文档唯一（aria-controls 跨 shadow 树引用需要文档级唯一）；SSR 水合快照复用已有 id。
-    // 已占用时递增重试：防御 SSR 快照 id（panel-1…）与客户端动态挂载实例计数器撞号
+    // 面板 id 由 title/content 身份派生（FNV-1a base36）：SSR 快照逐字节确定。
+    // panel 恒在组件 shadow 内（shadow 内 id 作用域天然隔离，无需文档级撞号重试）；
+    // SSR 水合快照复用已有 id，缺失（异常/旧快照）时按当前属性派生补写
     if (this.panel && !this.panel.id) {
-      let id = `oas-popover-panel-${++panelUid}`
-      while (typeof document !== 'undefined' && document.getElementById(id)) {
-        id = `oas-popover-panel-${++panelUid}`
-      }
-      this.panel.id = id
+      this.panel.id = `oas-popover-panel-${stableHash36(`${this.getAttr('title', '')}\u0000${this.getAttr('content', '')}`)}`
     }
     // P1 绑定时机：触发元素挂 aria-haspopup（开/关态的 expanded/controls 在 update 同步）
     this.syncAnchorAria(false)

@@ -7,6 +7,7 @@ import type { MenuItemKind } from '../menu/oas-menu.js'
 // 不经 oas-icon 组件模块——避免把整个 <oas-icon> 拉进 navigation-menu 按需链
 import { lookupIcon } from '@oas-ui/icons/runtime'
 import { isRtl } from '../../shared/direction.js'
+import { stableHash36 } from '../../shared/stable-id.js'
 import { onMeasurable, type MeasureDisposer } from '../../shared/measure-when-visible.js'
 
 export interface NavItem extends MenuItem {
@@ -674,8 +675,6 @@ const STYLE = `
 }
 `
 
-let viewportSeq = 0
-
 export class OASNavigationMenu extends OASElement {
   static override get observedAttributes(): string[] {
     return [
@@ -705,8 +704,22 @@ export class OASNavigationMenu extends OASElement {
   private backdropEl: HTMLElement | null = null
   private subPanelEl: HTMLElement | null = null
   private panelFooterEl: HTMLElement | null = null
-  private viewportId = `oas-nav-panel-${viewportSeq++}`
-  private subPanelId = `oas-nav-sub-${viewportSeq++}`
+  /** viewport/子面板 id：由 items 身份属性派生（FNV-1a base36），SSR 快照逐字节确定；
+   *  两者前缀不同（panel/sub）不冲突，各自懒派生一次实例内不变 */
+  private viewportIdCache = ''
+  private get viewportId(): string {
+    if (!this.viewportIdCache) {
+      this.viewportIdCache = `oas-nav-panel-${stableHash36(this.getAttr('items', ''))}`
+    }
+    return this.viewportIdCache
+  }
+  private subPanelIdCache = ''
+  private get subPanelId(): string {
+    if (!this.subPanelIdCache) {
+      this.subPanelIdCache = `oas-nav-sub-${stableHash36(this.getAttr('items', ''))}`
+    }
+    return this.subPanelIdCache
+  }
 
   /** 子元素通道观察器：light DOM 里 oas-navigation-menu-item/group 增删或属性/文本变化 → 重渲染 */
   private childObserver: MutationObserver | null = null

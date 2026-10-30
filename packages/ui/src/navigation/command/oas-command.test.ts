@@ -933,11 +933,11 @@ describe('OASCommand', () => {
 
   // ============ search aria-controls ============
 
-  it('search aria-controls 指向 listbox 容器 id（组件内生成唯一 id）', () => {
+  it('search aria-controls 指向 listbox 容器 id（value 身份派生，SSR 确定性）', () => {
     const el = mount({ open: '' })
     const list = q(el, '[part="list"]')!
     expect(list.getAttribute('role')).toBe('listbox')
-    expect(list.id).toMatch(/^oas-command-list-\d+$/)
+    expect(list.id).toMatch(/^oas-command-list-[0-9a-z]+$/)
     expect(search(el).getAttribute('aria-controls')).toBe(list.id)
   })
 
@@ -948,12 +948,22 @@ describe('OASCommand', () => {
     expect(search(el).getAttribute('aria-controls')).toBe(vlist.id)
   })
 
-  it('多个实例 listbox id 唯一', () => {
+  it('多个实例 listbox id：同 value 确定性一致（各自 shadow 内解析，aria-controls 指向自身 list）', () => {
     const a = mount({ open: '' })
     const b = mount({ open: '' })
     const la = q(a, '[part="list"]')!
     const lb = q(b, '[part="list"]')!
-    expect(la.id).not.toBe(lb.id)
+    // 维护批 M2 fix round：id 由 value 身份派生——同属性实例 id 一致（SSR 可复现）；
+    // 各自 shadow 内解析，aria-controls 均指向自身 shadow 的 list，无串扰
+    expect(la.id).toBe(lb.id)
+    expect(search(a).getAttribute('aria-controls')).toBe(la.id)
+    expect(search(b).getAttribute('aria-controls')).toBe(lb.id)
+  })
+
+  it('不同 value 的实例 listbox id 不同（身份属性参与派生）', () => {
+    const a = mount({ open: '', value: 'first' })
+    const b = mount({ open: '', value: 'second' })
+    expect(q(a, '[part="list"]')!.id).not.toBe(q(b, '[part="list"]')!.id)
   })
 
   // ============ append-to（portal host 独立 shadow + STYLE 注入 + 插槽桥接） ============

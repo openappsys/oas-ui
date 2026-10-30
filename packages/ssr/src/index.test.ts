@@ -441,9 +441,10 @@ describe('@oas-ui/ssr renderToString', () => {
     expect(rg).toContain('<oas-radio-group value="a" data-direction="vertical">')
     // radio-group 的 fieldset 带 role="radiogroup"（键盘组模式改造加的正确语义）
     expect(rg).toContain('<fieldset part="group" role="radiogroup">')
-    expect(rg).toContain(
-      '<oas-radio value="a" data-size="medium" data-variant="default" name="oas-radio-group-1" checked="">',
-    )
+    // 互斥 name 不进快照（维护批 M2 fix round：groupName 为运行时自增唯一值，写进快照会让
+    // 同属性两次渲染不可复现）——SSR 段跳过 name 写入，水合后恢复互斥
+    expect(rg).toContain('<oas-radio value="a" data-size="medium" data-variant="default" checked="">')
+    expect(rg).not.toContain('name="oas-radio-group-')
     expect(rg).toContain('<template shadowrootmode="open">')
     expect(rg).toContain('<meta data-oas-ssr="oas-radio" data-oas-ssr-v="1">')
   })
@@ -1702,6 +1703,53 @@ describe('@oas-ui/ssr renderToString', () => {
         attrs: { items: '[{"label":"首页"},{"label":"产品"},{"label":"关于"}]' },
       },
       {
+        name: 'switch 内部关联 id',
+        tag: 'oas-switch',
+        attrs: { checked: '', 'checked-text': '开', 'unchecked-text': '关' },
+      },
+      {
+        name: 'checkbox 内部关联 id',
+        tag: 'oas-checkbox',
+        attrs: { value: 'agree' },
+      },
+      {
+        name: 'radio 内部关联 id',
+        tag: 'oas-radio',
+        attrs: { value: 'a', name: 'grp' },
+      },
+      {
+        name: 'radio-group 子项生成',
+        tag: 'oas-radio-group',
+        attrs: {
+          options: JSON.stringify([
+            { label: '甲', value: '1' },
+            { label: '乙', value: '2' },
+          ]),
+          value: '1',
+        },
+      },
+      {
+        name: 'command listbox id',
+        tag: 'oas-command',
+        attrs: { items: JSON.stringify([{ label: '复制', hotkey: 'Ctrl+C' }, { label: '粘贴' }]) },
+      },
+      {
+        name: 'navigation-menu viewport/子面板 id',
+        tag: 'oas-navigation-menu',
+        attrs: {
+          items: JSON.stringify([
+            { label: '产品', value: 'products', children: [{ label: '组件', value: 'components', href: '/c' }] },
+            { label: '定价', value: 'pricing', href: '/p' },
+          ]),
+          'keep-mounted': '',
+        },
+      },
+      {
+        name: 'popover 面板 id',
+        tag: 'oas-popover',
+        attrs: { title: '标题', content: '正文内容' },
+      },
+      {
         name: 'tabs tab/panel 关联 id',
         tag: 'oas-tabs',
         attrs: { active: 'a' },
@@ -1713,5 +1761,16 @@ describe('@oas-ui/ssr renderToString', () => {
       const second = await renderToString(tag, attrs, slot ?? '')
       expect(second, `${tag}（${name}）同属性两次渲染应逐字节一致`).toBe(first)
     }
+
+    // 反向断言：不同属性 → 不同 id（防止未来种子退化成常量时「同→同」断言假绿）
+    const avA = await renderToString('oas-avatar-group', {}, '<oas-avatar>甲</oas-avatar><oas-avatar>乙</oas-avatar>')
+    const avB = await renderToString('oas-avatar-group', {}, '<oas-avatar>甲</oas-avatar><oas-avatar>丙</oas-avatar>')
+    const idOf = (html: string): string | undefined => html.match(/id="(oas-avatar-group-overflow-[0-9a-z]+)"/)?.[1]
+    expect(idOf(avA), '不同头像内容 → 不同面板 id').not.toBe(idOf(avB))
+
+    const tipA = await renderToString('oas-tooltip', { content: '提示 A' }, '<button>x</button>')
+    const tipB = await renderToString('oas-tooltip', { content: '提示 B' }, '<button>x</button>')
+    const tipIdOf = (html: string): string | undefined => html.match(/id="(oas-tooltip-tip-[0-9a-z]+)"/)?.[1]
+    expect(tipIdOf(tipA), '不同 content → 不同 tip id').not.toBe(tipIdOf(tipB))
   })
 })
