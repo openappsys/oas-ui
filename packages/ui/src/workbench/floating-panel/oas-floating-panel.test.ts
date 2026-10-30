@@ -1229,11 +1229,27 @@ describe('OASFloatingPanel 标题栏高度实测', () => {
     expect(frameOf(el).style.getPropertyValue(TOKEN)).toBe('')
   })
 
-  it('非 resizable：不观察标题栏（手柄不存在，实测无收益）', () => {
+  it('非 resizable：不观察标题栏（手柄不存在，实测无收益），也不写实测 token', () => {
     const el = mount({ open: '', movable: '', rect: '0,0,300,200' })
+    const bar = titlebar(el)
+    stubHeight(bar, 48)
+    FakeRO.instances[0]!.trigger()
     const ro = FakeRO.instances[0]!
-    expect(ro.targets.has(titlebar(el)), '标题栏不进入观察').toBe(false)
+    expect(ro.targets.has(bar), '标题栏不进入观察').toBe(false)
     expect(ro.targets.size).toBeGreaterThan(0)
+    expect(frameOf(el).style.getPropertyValue(TOKEN), '非 resizable 不写实测 token（注释口径一致）').toBe('')
+  })
+
+  it('动态开启 resizable：重挂标题栏观察（attributeChanged 路径不回落到 A3 之前的盖挡缺陷）', () => {
+    const el = mount({ open: '', movable: '', rect: '0,0,300,200' })
+    const bar = titlebar(el)
+    const ro = FakeRO.instances[0]!
+    expect(ro.targets.has(bar), '初始未观察').toBe(false)
+    el.setAttribute('resizable', '')
+    expect(ro.targets.has(bar), '开启 resizable 后标题栏进入观察').toBe(true)
+    stubHeight(bar, 48)
+    ro.trigger()
+    expect(frameOf(el).style.getPropertyValue(TOKEN), '实测写 frame token').toBe('48px')
   })
 
   it('SSR 运行段不建观察器、不写实测 token（快照仍用默认 token）', () => {

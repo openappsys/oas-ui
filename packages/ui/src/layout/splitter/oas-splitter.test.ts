@@ -1414,7 +1414,7 @@ describe('OASSplitter multi 删栏收敛（M9 回归）', () => {
     setLocale('zh-CN')
   })
 
-  it('三栏折叠索引 1 → 删除第三栏：越界索引收敛、重建后布局立即可用', async () => {
+  it('三栏折叠索引 1 → 删除第三栏：越界索引收敛、重建后布局/模型/属性三方一致', async () => {
     const el = new OASSplitter()
     el.setAttribute('mode', 'multi')
     el.setAttribute('collapsible', '')
@@ -1431,11 +1431,36 @@ describe('OASSplitter multi 删栏收敛（M9 回归）', () => {
     expect(panes.length).toBe(2)
     // 残留折叠索引 1（≥ n-1）必须被收敛：collapsed 属性移除
     expect(el.hasAttribute('collapsed')).toBe(false)
-    // 重建后的两块面板都有布局（不再是空 inline flex 的零宽面板）
-    for (const pane of panes as NodeListOf<HTMLElement>) {
-      expect(pane.style.flex, `pane flex 应被重应用（实际 "${pane.style.flex}"）`).not.toBe('')
-      expect(pane.style.flex).not.toBe('0 0 0%')
-    }
+    // 布局/模型/属性三方一致（M9 fix round 2）：ensureSizes 必须先于 applyPercent——
+    // 旧长度 sizesData（30,0,110）渲染两块面板会得到 30/70（DOM)vs 50/50（模型）三方不一致
+    expect((panes[0] as HTMLElement).style.flex, '面板 0 按归一后尺寸渲染').toBe('0 0 50%')
+    expect((panes[1] as HTMLElement).style.flex, '末面板吸收剩余').toBe('1 1 0%')
+    expect(el.getAttribute('sizes'), 'sizes 属性按新面板数回写').toBe('50,50')
     expect(el.shadowRoot!.querySelectorAll('[part="splitter"]').length).toBe(1)
+  })
+
+  it('三栏折叠 → 删第三栏：storage-key 快照不残留越界折叠与旧长度 sizes', async () => {
+    const el = new OASSplitter()
+    el.setAttribute('mode', 'multi')
+    el.setAttribute('collapsible', '')
+    el.setAttribute('storage-key', '__m9_store__')
+    el.setAttribute('sizes', '30,40,30')
+    el.innerHTML = '<div>一</div><div>二</div><div>三</div>'
+    document.body.appendChild(el)
+    // 首连恢复微任务结束后解除持久化抑制
+    await new Promise<void>((resolve) => setTimeout(resolve, 0))
+    collapseBtnOf(el, 1).click()
+    // PERSIST_DELAY=120ms 合并窗口：等落盘
+    await new Promise<void>((resolve) => setTimeout(resolve, 200))
+    expect(window.localStorage.getItem('__m9_store__'), '折叠已落盘').toBeTruthy()
+    // 删第三栏：越界折叠收敛后必须重新落盘（否则下次两面板挂载整份拒收、用户布局被重置）
+    el.children[2]!.remove()
+    await new Promise<void>((resolve) => setTimeout(resolve, 300))
+    const snap = JSON.parse(window.localStorage.getItem('__m9_store__')!) as {
+      collapsed?: number[]
+      sizes?: number[]
+    }
+    expect(snap.collapsed ?? [], '快照折叠索引收敛为空').toEqual([])
+    expect(snap.sizes, '快照 sizes 按新面板数').toEqual([50, 50])
   })
 })

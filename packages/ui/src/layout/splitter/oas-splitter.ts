@@ -626,12 +626,22 @@ export class OASSplitter extends OASElement {
     if (this.panes.length !== n) {
       this.rebuildStructure(n)
       this.pruneCollapsed(n)
+      // 尺寸归一必须先于布局应用：面板数变化后旧 sizesData 长度不符（含折叠的 0），
+      // 用旧值渲染新面板数会得到 DOM/模型/属性三方不一致（M9 fix round 2）
+      this.ensureSizes(n)
       // 重建出的新分隔条需要补折叠按钮与 aria：MutationObserver 路径只走 syncPanels()，不走 update()
       // 重建 + 收敛折叠索引后必须立即重应用布局：否则 inline flex 为空（面板零宽/塌缩不可见），
       // 直到下一次 update() 才恢复（M9 回归）
       this.syncCollapseButtons()
       this.syncAria()
       this.applyPercent()
+      // 归一后的模型值回写属性（受控语义同折叠回写），并落盘新快照——
+      // 否则 storage 里残留越界折叠/旧长度 sizes，下次按新面板数挂载会整份拒收、用户布局被重置。
+      // 首连恢复/抑制期不回写：坏快照拒收回落均分属于「降级」，不得把自写值伪装成宿主输入
+      if (!this.persistSuppressed) {
+        this.writeBackSizes()
+        this.schedulePersist()
+      }
     }
     this.ensureSizes(n)
   }

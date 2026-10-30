@@ -370,6 +370,8 @@ export class OASFloatingPanel extends OASElement {
 
   /** 布局实测观察器（标题栏高度 + 内容溢出判定；断开释放、重连重挂） */
   private layoutObserver: ResizeObserver | null = null
+  /** 标题栏是否已被观察（resizable 动态开启补挂的去重标记；断开重置） */
+  private titlebarObserved = false
 
   /** 当前被观察的内容节点（slotchange 后重算差集，避免重复 observe/漏摘） */
   private observedContentNodes = new Set<Element>()
@@ -403,6 +405,7 @@ export class OASFloatingPanel extends OASElement {
     this.cancelInteraction()
     this.layoutObserver?.disconnect()
     this.layoutObserver = null
+    this.titlebarObserved = false
     this.observedContentNodes.clear()
     this.releaseEscapeLayer?.()
     this.releaseEscapeLayer = null
@@ -498,11 +501,28 @@ export class OASFloatingPanel extends OASElement {
       this.syncContentFocusable()
     })
     const bar = this.titlebarEl
-    if (bar && this.hasAttr('resizable')) this.layoutObserver.observe(bar)
+    if (bar && this.hasAttr('resizable')) {
+      this.layoutObserver.observe(bar)
+      this.titlebarObserved = true
+    }
     this.observeContent()
     // 首连/重连立即补测一次：RO 首次回调在下一帧，水合后不必等一帧
     this.syncTitlebarHeight()
     this.syncContentFocusable()
+  }
+
+  /**
+   * 动态开启 `resizable` 时补挂标题栏观察（bind/onReconnect 只按当时属性挂一次）。
+   * RO.observe 同目标幂等；关闭方向不 unobserve（回调由 syncTitlebarHeight 的
+   * resizable 门控短路，无害）；断开重连由 observeLayout 重置标记。
+   */
+  private syncTitlebarObserver(): void {
+    if (isSsrRuntime() || !this.layoutObserver || this.titlebarObserved) return
+    const bar = this.titlebarEl
+    if (!bar || !this.hasAttr('resizable')) return
+    this.layoutObserver.observe(bar)
+    this.titlebarObserved = true
+    this.syncTitlebarHeight()
   }
 
   /**
@@ -561,6 +581,8 @@ export class OASFloatingPanel extends OASElement {
     const bar = this.titlebarEl
     const frame = this.frameEl
     if (!bar || !frame || !this.isConnected) return
+    // 仅 resizable（手柄只在该形态存在）：非 resizable 面板不写实测 token，注释/行为一致
+    if (!this.hasAttr('resizable')) return
     const height = bar.clientHeight
     if (height <= 0) return
     const TOKEN = '--oas-floating-panel-titlebar-height'
@@ -619,6 +641,9 @@ export class OASFloatingPanel extends OASElement {
     this.syncCloseButton()
     this.syncOpenState()
     this.syncFrontLayer()
+    // 动态开启 resizable（bind/onReconnect 只按当时属性观察一次）：attributeChanged → update
+    // 时补挂标题栏观察，避免 A3 条件观察让连接后开启缩放的面板回到手柄被盖的缺陷
+    this.syncTitlebarObserver()
     // 放在最后：open/rect 变更后按最新布局判定内容滚动区是否可聚焦
     this.syncContentFocusable()
   }
