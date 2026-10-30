@@ -247,6 +247,27 @@ describe('OASPicker', () => {
       expect(its[0]!.getAttribute('aria-selected')).toBeNull()
       expect(its[1]!.getAttribute('aria-selected')).toBe('true')
     })
+
+    it('全禁用列滚动落停后仍不标 aria-selected / aria-activedescendant（paintSelection 同口径）', async () => {
+      const el = mount({
+        columns: JSON.stringify([
+          {
+            items: [
+              { label: 'a', disabled: true },
+              { label: 'b', disabled: true },
+            ],
+          },
+        ]),
+      })
+      await settle()
+      scrollTo(el, 0, 1)
+      await settle()
+      const col = cols(el)[0]!
+      for (const it of items(col)) {
+        expect(it.getAttribute('aria-selected'), `滚动后「${it.textContent}」仍不得标选中`).toBeNull()
+      }
+      expect(col.hasAttribute('aria-activedescendant'), '滚动落停不得写悬空 IDREF').toBe(false)
+    })
   })
   describe('级联（options 树）', () => {
     it('options 树：列数随选中路径派生；父列变更重建子列并复位', async () => {

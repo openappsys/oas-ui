@@ -545,8 +545,13 @@ export class OASPicker extends OASFormElement {
     const col = this.shadow.querySelectorAll<HTMLElement>('.column')[colIdx]
     if (!col) return
     const items = col.querySelectorAll('.item')
-    items.forEach((it, j) => it.setAttribute('aria-selected', String(j === idx)))
-    const activeId = this.activeDescendantId(colIdx, items.length, idx)
+    // 与 syncColumns/buildColumn 同口径：全禁用列无选中语义（滚动中重绘也不得复活 aria-selected）
+    const selectable = this.resolvedColumns()[colIdx]?.items.some((it) => !it.disabled) ?? false
+    items.forEach((it, j) => {
+      if (!selectable) it.removeAttribute('aria-selected')
+      else it.setAttribute('aria-selected', String(j === idx))
+    })
+    const activeId = selectable ? this.activeDescendantId(colIdx, items.length, idx) : null
     if (activeId) col.setAttribute('aria-activedescendant', activeId)
     else col.removeAttribute('aria-activedescendant')
   }
