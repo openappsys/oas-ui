@@ -10,9 +10,9 @@
 
 触屏（`pointer: coarse`）下手柄与关闭钮热区放大到 44px：标题栏（含关闭钮）始终位于手柄之上，上侧/上角手柄从标题栏下沿起算，因此拖标题栏和点关闭不会被缩放手柄抢走。
 
-放大热区有代价：coarse 下内容顶部约 44px 是 `n` 手柄的缩放带；若沿用最小尺寸 `160×96`，标题栏与缩放带几乎占满面板，内容区几乎不可点。触屏建议用更大的 `min`（如 `240,180`），或关闭 `n`/`s` 边缩放（组件没有单边手柄开关，需整体不开启 `resizable`）。手势语义不变。
+放大热区有代价：coarse 下标题栏与 `n` 手柄热区各 44px，合计占掉顶部 88px（左右/底部同理各有 44px 热区）；若沿用最小尺寸 `160×96`，内容区几乎不可点。触屏建议 `min` ≥ `260,220`（此时内容区仍有约 172×132px 可用），或整体不开启 `resizable`（组件没有单边手柄开关）。手势语义不变。
 
-富标题（`title` 插槽）撑高标题栏时，客户端用 `ResizeObserver` 实测标题栏高度并写回 `--oas-floating-panel-titlebar-height`（px），上侧/上角手柄随之下移；SSR 快照仍用默认 token，服务端不测量。
+富标题（`title` 插槽）撑高标题栏时，客户端用 `ResizeObserver` 实测标题栏高度，只在实测**大于**当前解析值时写进组件 shadow 内部的 `--oas-floating-panel-titlebar-height`（px），上侧/上角手柄随之下移；宿主用样式表覆写该 token 仍然生效（默认标题不写内联），实测回落后内联自动移除。SSR 快照仍用默认 token，服务端不测量。
 
 <DemoBlock title="可移动 / 可缩放的悬浮面板">
   <div style="position: relative; min-height: 260px">
@@ -104,7 +104,7 @@
 
 ## 内容溢出与滚动
 
-内容超出面板时内容区自然滚动（`overflow: auto`）。这时内容区会补 `tabindex="0"`：键盘用户 Tab 到内容区后用方向键 / PageDown 滚动，焦点环走 `--oas-focus-ring`。内容不溢出时不加 `tabindex`——不产生空的 Tab 停靠点；面板缩放、内容变化、开合都会重新判定。
+内容超出面板时内容区自然滚动（`overflow: auto`）。这时内容区会补 `tabindex="0"`：键盘用户 Tab 到内容区后用方向键 / PageDown 滚动，焦点环走 `--oas-focus-ring`。内容不溢出时不加 `tabindex`——不产生空的 Tab 停靠点；面板缩放、内容元素尺寸变化（ResizeObserver 观察）、开合与内容增删（`slotchange`）都会重新判定。注意裸文本内容是观察盲区（`ResizeObserver` 只能观察元素、文本节点突变不触发 `slotchange`）：动态增长的文本建议包在元素里。
 
 <DemoBlock title="内容溢出：滚动区键盘可达">
   <div style="position: relative; min-height: 260px">

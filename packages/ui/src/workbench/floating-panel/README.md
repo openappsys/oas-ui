@@ -64,15 +64,18 @@
 | 触屏（`pointer: coarse`） | 手柄/关闭钮 44px；标题栏（含关闭钮）层级高于手柄，上侧/上角手柄从标题栏下沿起算 |
 | 断开期间改 `open` | 只更新内部状态与 `data-open`；Esc 层 / 叠放 / 焦点基线副作用被 `isConnected` 守卫跳过，重连由 `onReconnect` 补齐 |
 
-**coarse 缩放带代价**：上侧/上角手柄从标题栏下沿起算；coarse 下内容顶部约 44px 是 `n` 手柄
-缩放带，默认最小尺寸 `160×96` 时标题栏 + 缩放带几乎占满面板，内容区几乎不可点。触屏建议用更大
-`min`（如 `240,180`），或整体关闭 `resizable`（`n`/`s` 边缩放没有单边开关）。手势语义不变。
+**coarse 缩放带代价**：上侧/上角手柄从标题栏下沿起算；coarse 下标题栏与 `n` 手柄热区各 44px，
+合计占掉顶部 88px（左右/底部同理各有 44px 热区），默认最小尺寸 `160×96` 时内容区几乎不可点。
+触屏建议 `min` ≥ `260,220`（`260×220` 时内容区仍有约 172×132px 可用），或整体关闭 `resizable`
+（`n`/`s` 边缩放没有单边开关）。手势语义不变。
 
 **富标题实测**：`title` 插槽把标题栏撑高时，客户端用 `ResizeObserver` 实测标题栏内容高
-（`clientHeight`，天然排除 1px 下边框）并写回 host 的 `--oas-floating-panel-titlebar-height`（px），
-`n`/`ne`/`nw` 手柄随之下移。写入只在实测值变化 ≥1px 时发生，且实测 0（关闭态 `display:none`）
-直接跳过，避免 RO 自激循环。SSR 快照仍用默认 token，服务端不测量、无差异帧；断开释放观察器，
-重连重挂。
+（`clientHeight`，天然排除 1px 下边框），只在实测**大于**当前解析值时把高度写进 shadow 内
+`.frame` 的 `--oas-floating-panel-titlebar-height`（px），`n`/`ne`/`nw` 手柄随之下移。写入目标在
+shadow 内部：宿主清空/覆写自己 `style` 不影响；默认标题（36px）不高于解析值，**不写内联**——宿主
+样式表对 token 的覆写保持生效；实测回落到 ≤ 解析值（标题变矮/宿主调大 token）时移除内联；内联
+值被清除后下一次 RO 回调/重连补写（自愈）。实测 0（关闭态 `display:none`）跳过，避免 RO 自激
+循环。SSR 快照仍用默认 token，服务端不测量、无差异帧；断开释放观察器，重连重挂。
 
 **标题插槽判据**：`hasSlotContent` 用 `assignedNodes()`（**不带 `flatten`**）判断 light DOM 是否有真实
 标题内容。title 槽内有 fallback `<span class="title-text">`（承载 `panel-title` 文本），真实浏览器的
@@ -91,9 +94,12 @@
 PageDown 滚动；不溢出、或面板关闭（`display: none`，滚动区不可见）时移除该属性——**不引入永久 Tab
 停靠点**（同 `oas-list` body / `oas-resource` scroller 口径）。判定时机：`update()`（开合/`rect` 变更）、
 内容槽 `slotchange`、以及 ResizeObserver（同时观察内容盒与已分配内容元素——面板缩放改内容盒尺寸，
-图片加载/列表变长改内容块尺寸，二者都会改变是否溢出）。写 `tabindex` 不触发重排，不产生布局抖动。
-焦点环复用 `--oas-focus-ring`（`box-shadow: inset`，画在滚动口内侧不被框体 `overflow: hidden` 裁掉），
-forced-colors 下回退 `outline: 2px solid`；不新增颜色 token。SSR 快照不含客户端测量，故不含 `tabindex`。
+图片加载/列表变长改内容块尺寸，二者都会改变是否溢出）。**纯文本节点是观察盲区**：RO 只能观察
+Element，直接放在面板里的裸文本自身增高不在观察范围（文本节点突变也不触发 `slotchange`），
+溢出复判只由 `update()`（开合/`rect` 变更）兜底——动态增长的文本建议包在元素里。写 `tabindex`
+不触发重排，不产生布局抖动。焦点环复用 `--oas-focus-ring`（`box-shadow: inset`，画在滚动口内侧
+不被框体 `overflow: hidden` 裁掉），forced-colors 下回退 `outline: 2px solid`；不新增颜色 token。
+SSR 快照不含客户端测量，故不含 `tabindex`。
 
 ## 4. 清理与重连
 

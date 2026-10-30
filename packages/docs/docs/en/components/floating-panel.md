@@ -10,9 +10,9 @@ The panel **does not portal**: the host is a zero-size anchor (`position: relati
 
 On touch devices (`pointer: coarse`) handles and the close button grow to 44px: the title bar (including the close button) always sits above the handles, and the top/top-corner handles start below the title bar — so dragging the bar and tapping close are never stolen by a resize handle.
 
-The larger hit areas have a cost: under coarse pointers roughly the top 44px of the content area is the `n` resize band. With the default minimum size `160×96`, the title bar plus that band covers nearly the whole panel and the content is barely clickable. For touch, use a larger `min` (for example `240,180`) or disable `n`/`s` edge resizing (the component has no per-handle switch; leave `resizable` off entirely). Gesture semantics are unchanged.
+The larger hit areas have a cost: under coarse pointers the title bar and the `n` handle band are each 44px, covering the top 88px together (plus 44px bands on the left, right and bottom). With the default minimum size `160×96`, the content is barely clickable. For touch, use `min` ≥ `260,220` (leaving roughly 172×132px of usable content) or leave `resizable` off entirely (the component has no per-handle switch). Gesture semantics are unchanged.
 
-When a rich `title` slot makes the title bar taller, the client measures the title bar with `ResizeObserver` and writes the height back to `--oas-floating-panel-titlebar-height` (px), moving the top/top-corner handles down. SSR snapshots keep the default token; the server does not measure.
+When a rich `title` slot makes the title bar taller, the client measures it with `ResizeObserver` and — only when the measured height is **greater** than the currently resolved value — writes the height into `--oas-floating-panel-titlebar-height` (px) on the component's inner shadow frame, moving the top/top-corner handles down. Host stylesheet overrides of that token keep working (the default title never pins an inline value), and the inline value is removed automatically once the measurement falls back. SSR snapshots keep the default token; the server does not measure.
 
 <DemoBlock title="Movable / resizable panel">
   <div style="position: relative; min-height: 260px">
@@ -104,7 +104,7 @@ The frame is focusable: arrow keys move, `Shift` + arrows resize (8px per step),
 
 ## Overflow and scrolling
 
-Content taller than the panel scrolls inside the content area (`overflow: auto`). The content area then gets `tabindex="0"`: keyboard users can Tab to it and scroll with arrow keys / PageDown, with a focus ring from `--oas-focus-ring`. When nothing overflows no `tabindex` is added — the panel never introduces an empty Tab stop, and the decision is re-evaluated on resize, content changes and open/close.
+Content taller than the panel scrolls inside the content area (`overflow: auto`). The content area then gets `tabindex="0"`: keyboard users can Tab to it and scroll with arrow keys / PageDown, with a focus ring from `--oas-focus-ring`. When nothing overflows no `tabindex` is added — the panel never introduces an empty Tab stop, and the decision is re-evaluated on panel resize, content element size changes (ResizeObserver), open/close and content add/remove (`slotchange`). Note that bare text content is an observation blind spot (`ResizeObserver` can only observe elements, and text-node mutations do not fire `slotchange`): wrap dynamically growing text in an element.
 
 <DemoBlock title="Overflow: keyboard-scrollable content">
   <div style="position: relative; min-height: 260px">
