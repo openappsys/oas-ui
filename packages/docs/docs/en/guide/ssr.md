@@ -410,8 +410,7 @@ export default function SsrDemoPage() {
 Client registration bootstrap: mount `<OasRegistry>` in the layout ("use client",
 side-effect `import '@oas-ui/ui'` registers all `oas-*` elements globally),
 so every `oas-*` element in the app upgrades and the components take over
-interactivity. **In Next 16, read the warning below first** (server-evaluation
-limitation and the temporary `useEffect` pattern):
+interactivity. **Next 16 server rendering is safe** — see the note below:
 
 ```tsx
 // app/layout.tsx
@@ -434,33 +433,21 @@ support `string | number | boolean` and are serialized automatically);
 `OasComponent`'s `slotHTML` prop accepts raw HTML directly (children, when a
 string or a ReactNode, is serialized automatically).
 
-::: warning Next 16: `OasRegistry`'s top-level side-effect import runs during Client Component server rendering
+::: tip Next 16: `OasRegistry` is SSR-prerender safe (browser-guarded dynamic import)
 Although `OasRegistry` is marked `"use client"`, Next 16 App Router still
 evaluates Client Component modules on the server for the first request /
-prerender. The top-level `import '@oas-ui/ui'` runs
-`class extends HTMLElement` and throws `HTMLElement is not defined` without a
-DOM. **Adapter behavior is unchanged in this batch**, so do not mount
-`<OasRegistry>` in the root layout on Next 16 yet; use this temporary pattern
-inside a client component's `useEffect`:
+prerender. The adapter now performs a **browser-guarded dynamic import** at
+module-evaluation time (`if (typeof window !== 'undefined') void
+import('@oas-ui/ui')`): on the server there is no DOM, so the guard skips and
+the library entry is never evaluated (no more `HTMLElement is not defined`);
+on the client the components still register during module evaluation — earlier
+than hydration, not deferred to `useEffect`. Mount
+`<OasRegistry>{children}</OasRegistry>` in the root layout as-is.
 
-```tsx
-'use client'
-import { useEffect } from 'react'
-
-export function OasClientBoot() {
-  useEffect(() => {
-    // browser-only evaluation; not executed during server rendering
-    void import('@oas-ui/ui')
-  }, [])
-  return null
-}
-```
-
-Render `<OasClientBoot />` in the root layout instead of `<OasRegistry>`. For
-non-default languages, register the locale packs before importing the library
-(see `packages/ssr/fixtures/next/app/oas-client-boot.tsx`). The recommended
-`OasRegistry` usage returns once the adapter switches to the same `useEffect`
-dynamic import (follow-up tracked in `docs/PRD.md` / `docs/ROADMAP.md`).
+For non-default languages, register locale packs with a **static import**
+(module-evaluation time, always before component upgrades; do not put them in
+a `useEffect` dynamic import racing against the library — see
+`packages/ssr/fixtures/next/app/oas-client-boot.tsx`).
 :::
 
 > Note: DSD templates are attached by the browser's **HTML parser** — the

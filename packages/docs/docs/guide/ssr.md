@@ -305,23 +305,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
 低层能力：`renderOas(tag, attrs, slotHTML, opts)`（`@oas-ui/next`）为 `renderToString` 的纯逻辑包装（attrs 值支持 `string | number | boolean` 自动序列化）；`OasComponent` 的 `slotHTML` prop 直接传原始 HTML（children 为字符串或 ReactNode 时自动序列化）。
 
-::: warning Next 16：`OasRegistry` 的顶层副作用导入会在 Client Component 服务端渲染阶段求值
-`OasRegistry` 虽标注 `"use client"`，但 Next 16 App Router 在首次请求/预渲染时仍会在服务端求值 Client Component 模块；模块顶层的 `import '@oas-ui/ui'` 会执行 `class extends HTMLElement`，服务端没有 DOM，直接抛 `HTMLElement is not defined`。**本批未修改适配器行为**，因此 Next 16 下暂不要在根 layout 挂 `<OasRegistry>`；临时写法是在客户端组件的 `useEffect` 内动态导入：
+::: tip Next 16：`OasRegistry` 已做 SSR 预渲染安全（浏览器守卫动态导入）
+`OasRegistry` 虽标注 `"use client"`，但 Next 16 App Router 在首次请求/预渲染时仍会在服务端求值 Client Component 模块。适配器已改为模块求值期的**浏览器守卫动态导入**（`if (typeof window !== 'undefined') void import('@oas-ui/ui')`）：服务端没有 DOM，守卫跳过、组件库入口不求值（不再抛 `HTMLElement is not defined`）；客户端仍在模块求值时注册（早于水合，不延后到 `useEffect`）。根 layout 直接 `<OasRegistry>{children}</OasRegistry>` 即可。
 
-```tsx
-'use client'
-import { useEffect } from 'react'
-
-export function OasClientBoot() {
-  useEffect(() => {
-    // 只在浏览器执行；服务端渲染阶段不会求值组件库入口
-    void import('@oas-ui/ui')
-  }, [])
-  return null
-}
-```
-
-在根 layout 用 `<OasClientBoot />` 代替 `<OasRegistry>`。若页面使用 en / ar 等非默认语言，先注册语言包再导入组件库（见 `packages/ssr/fixtures/next/app/oas-client-boot.tsx`）。待适配器改为同样的 `useEffect` 动态导入后恢复推荐用法（follow-up 已登记到 `docs/PRD.md` / `docs/ROADMAP.md`）。
+若页面使用 en / ar 等非默认语言，语言包用**静态 import 同步注册**（模块求值期执行，必然早于组件 upgrade；不要放进 `useEffect` 动态 import 再和组件库竞速，见 `packages/ssr/fixtures/next/app/oas-client-boot.tsx`）。
 :::
 
 > 注意：`dangerouslySetInnerHTML` 的 DSD 模板只在浏览器 **HTML 解析器**处理时附加 shadow root——初始 SSR 由服务端输出流解析生效；客户端软导航（RSC flight 重建）走 `innerHTML` 注入不会附加 DSD，此时组件已在客户端注册（OasRegistry / `OasClientBoot`），由自定义元素自渲染接管，属渐进增强模型。

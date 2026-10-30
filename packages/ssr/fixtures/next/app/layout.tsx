@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 import { headers } from 'next/headers'
 // 设计 token（--oas-*）全局可用；DSD 快照在禁 JS 下同样依赖这些变量呈现颜色。
 import '@oas-ui/theme'
+import { OasRegistry } from '@oas-ui/next'
 import { OasClientBoot } from './oas-client-boot'
 import './globals.css'
 
@@ -20,7 +21,9 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
   return (
     <html lang={lang} dir={dir} data-theme={theme}>
       <body>
-        {children}
+        {/* 真实使用 OasRegistry（A1 修复后 SSR 预渲染安全）：客户端模块求值期
+            守卫动态导入 @oas-ui/ui 完成全局注册，服务端守卫跳过 */}
+        <OasRegistry>{children}</OasRegistry>
         <OasClientBoot />
       </body>
     </html>

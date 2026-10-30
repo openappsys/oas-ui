@@ -55,21 +55,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 }
 ```
 
-> ⚠️ **Next 16 限制（本批未修改适配器行为）**：`OasRegistry` 虽是 `"use client"`，Next 16 App Router 仍会在首次请求的服务端渲染阶段求值该模块；顶层 `import '@oas-ui/ui'` 会执行 `class extends HTMLElement`，服务端无 DOM 时抛 `HTMLElement is not defined`。在适配器改为 `useEffect` 动态导入前，请用临时写法：
->
-> ```tsx
-> 'use client'
-> import { useEffect } from 'react'
->
-> export function OasClientBoot() {
->   useEffect(() => {
->     void import('@oas-ui/ui') // 只在浏览器求值
->   }, [])
->   return null
-> }
-> ```
->
-> 在根 layout 用 `<OasClientBoot />` 代替 `<OasRegistry>`；非默认语言需先注册语言包再导入组件库。follow-up 已登记在 `docs/PRD.md` / `docs/ROADMAP.md`。
+> ✅ **Next 16 SSR 安全（已修复）**：`OasRegistry` 虽是 `"use client"`，Next 16 App Router 仍会在首次请求的服务端渲染阶段求值该模块；适配器已改为**浏览器守卫下的动态导入**（模块求值期 `if (typeof window !== 'undefined') void import('@oas-ui/ui')`）——服务端预渲染安全跳过（无 DOM 不求值组件库），客户端仍在模块求值时注册（早于水合，不延后到 `useEffect`）。根 layout 直接 `<OasRegistry>{children}</OasRegistry>` 即可，无需任何 workaround。非默认语言需先注册语言包再让组件库求值（语言包用静态 import 同步注册即可，必然早于组件 upgrade；见 `packages/ssr/fixtures/next`）。
 
 #### 低层能力
 
@@ -139,21 +125,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 }
 ```
 
-> ⚠️ **Next 16 limitation (adapter behavior unchanged in this batch)**: although `OasRegistry` is a `"use client"` component, Next 16 App Router still evaluates the module during server rendering of the first request; the top-level `import '@oas-ui/ui'` runs `class extends HTMLElement` and throws `HTMLElement is not defined` when there is no DOM. Until the adapter switches to a `useEffect` dynamic import, use this temporary pattern:
->
-> ```tsx
-> 'use client'
-> import { useEffect } from 'react'
->
-> export function OasClientBoot() {
->   useEffect(() => {
->     void import('@oas-ui/ui') // browser-only evaluation
->   }, [])
->   return null
-> }
-> ```
->
-> Use `<OasClientBoot />` in the root layout instead of `<OasRegistry>`; for non-default languages, register locale packs before importing the library. The follow-up is tracked in `docs/PRD.md` / `docs/ROADMAP.md`.
+> ✅ **Next 16 SSR safety (fixed)**: although `OasRegistry` is a `"use client"` component, Next 16 App Router still evaluates the module during server rendering of the first request. The adapter now uses a **browser-guarded dynamic import** (module-evaluation-time `if (typeof window !== 'undefined') void import('@oas-ui/ui')`) — server pre-rendering skips it safely (the library is never evaluated without DOM), while the client still registers during module evaluation (earlier than hydration, not deferred to `useEffect`). Just use `<OasRegistry>{children}</OasRegistry>` in the root layout; no workaround needed. For non-default languages, register locale packs before the library is evaluated (a static-import synchronous registration always lands before component upgrades; see `packages/ssr/fixtures/next`).
 
 #### Lower-level API
 

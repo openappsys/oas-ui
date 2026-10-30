@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "description": "T11 fixture：Next.js 16 App Router + @oas-ui/ssr 的生产构建 DSD 验收（不消费 @oas-ui/next 包入口，不随 npm 包分发）",
+  "description": "T11 fixture：Next.js 16 App Router + @oas-ui/ssr 的生产构建 DSD 验收（真实消费 @oas-ui/next 的 OasRegistry；不随 npm 包分发）",
   "scripts": {
     "build": "next build",
     "start": "next start -p 4301 -H 127.0.0.1",
@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@oas-ui/i18n": "link:../../../i18n",
+    "@oas-ui/next": "link:../../../next",
     "@oas-ui/ssr": "link:../..",
     "@oas-ui/theme": "link:../../../theme",
     "@oas-ui/ui": "link:../../../ui",
