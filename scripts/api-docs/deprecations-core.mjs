@@ -83,7 +83,10 @@ export function collectProblems({ entries = [], currentVersion, manifest = {}, s
     // 的合法 x.y.z，兼容 patch 提升与 minor 提升（DEP-EXPORT-0001 先例：2.6.4 → 2.6.5）。
     // 更高 major 由普通 major 规则放行；同版本、更低版本（更低 minor 或 patch 同级/降级）
     // 与非法版本（缺段 / v 前缀 / prerelease / 非数字文本）即使携带 minorException 也拒绝。
-    if (entry.removeIn != null) {
+    // `state: "removed"` 的条目是已实装删除的历史记录（removeIn 的预告纪律在实装版发布时
+    // 履行完毕），不适用「预告必须指向未来」检查——否则每次发布当前版都会把刚生效的
+    // 历史条目误判为违规（DEP-EXPORT-0001 在 v2.6.5 发布当日即复现）。
+    if (entry.removeIn != null && entry.state !== 'removed') {
       const target = parseXyz(entry.removeIn)
       const allowed =
         currentXyz != null &&

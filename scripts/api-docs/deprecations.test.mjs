@@ -88,6 +88,26 @@ test('package-export 不带 minorException 的非 major removeIn → 拒绝（�
   assert.match(problems[0], /major/)
 })
 
+test('发布后台账：state=removed 的历史条目 removeIn 等于当前版本 → 豁免版本纪律（DEP-EXPORT-0001 v2.6.5 发布当日实况）', () => {
+  // 实装删除后 removeIn 的「预告指向未来」纪律已履行完毕——历史记录不得在每次
+  // 发布当前版后被误判为违规（v2.6.5 发布当日 DEP-EXPORT-0001 即复现）
+  const problems = collectProblems({
+    entries: [exportEntry],
+    currentVersion: '2.6.5',
+    manifest,
+    sourceCalls: [],
+  })
+  assert.deepEqual(problems, [], `state=removed 是历史记录，不应再受预告纪律约束：${problems.join(' | ')}`)
+})
+
+test('对照：state 非 removed 的同版本预告仍拒绝（state 感知不泛化到未实装条目）', () => {
+  const problems = run(
+    [{ ...exportEntry, state: 'silent-compat', currentVersionTag: '2.6.5' }].map(({ currentVersionTag, ...e }) => e),
+  )
+  assert.equal(problems.length, 1, `同版本预告必须拒绝：${problems.join(' | ')}`)
+  assert.match(problems[0], /major/)
+})
+
 test('minorException 泛化防护：普通 API 面携带 minorException → 拒绝（豁免仅限 package-export）', () => {
   const problems = run([
     {
