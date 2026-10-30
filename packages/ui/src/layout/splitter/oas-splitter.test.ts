@@ -1439,6 +1439,29 @@ describe('OASSplitter multi 删栏收敛（M9 回归）', () => {
     expect(el.shadowRoot!.querySelectorAll('[part="splitter"]').length).toBe(1)
   })
 
+  it('三栏折叠索引 0 → 删除第一栏：折叠态全清空，新首面板不被错误折叠（无 key 面板的结构变更重置）', async () => {
+    const el = new OASSplitter()
+    el.setAttribute('mode', 'multi')
+    el.setAttribute('collapsible', '')
+    el.setAttribute('sizes', '30,40,30')
+    el.innerHTML = '<div>一</div><div>二</div><div>三</div>'
+    document.body.appendChild(el)
+    // 折叠面板 0（用户真实路径）
+    collapseBtnOf(el, 0).click()
+    expect(el.hasAttribute('collapsed')).toBe(true)
+    // 删除第一栏（折叠的那块）：light DOM 无 key，删除目标不可知——
+    // 语义定为「结构变更重置派生折叠态」（按索引保留会把折叠错配到存活面板 → 零宽复发）
+    el.children[0]!.remove()
+    await new Promise<void>((resolve) => setTimeout(resolve, 0))
+    const panes = el.shadowRoot!.querySelectorAll('[part="pane"]')
+    expect(panes.length).toBe(2)
+    expect(el.hasAttribute('collapsed'), '折叠态随结构变更收敛').toBe(false)
+    for (const pane of panes as NodeListOf<HTMLElement>) {
+      expect(pane.style.flex, '存活面板不得被错误折叠（零宽复发）').not.toBe('0 0 0%')
+      expect(pane.style.flex).not.toBe('')
+    }
+    expect(el.shadowRoot!.querySelectorAll('[part="splitter"]').length).toBe(1)
+  })
   it('三栏折叠 → 删第三栏：storage-key 快照不残留越界折叠与旧长度 sizes', async () => {
     const el = new OASSplitter()
     el.setAttribute('mode', 'multi')

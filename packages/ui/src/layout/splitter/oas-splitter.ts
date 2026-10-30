@@ -625,7 +625,7 @@ export class OASSplitter extends OASElement {
     })
     if (this.panes.length !== n) {
       this.rebuildStructure(n)
-      this.pruneCollapsed(n)
+      this.pruneCollapsed()
       // 尺寸归一必须先于布局应用：面板数变化后旧 sizesData 长度不符（含折叠的 0），
       // 用旧值渲染新面板数会得到 DOM/模型/属性三方不一致（M9 fix round 2）
       this.ensureSizes(n)
@@ -686,19 +686,18 @@ export class OASSplitter extends OASElement {
     return wrap
   }
 
-  /** 面板被移除时清掉越界折叠态（多面板可折叠索引上限是 n-2：末面板没有可折叠侧） */
-  private pruneCollapsed(n: number): void {
-    let pruned = false
-    for (const i of [...this.collapsedPanels]) {
-      if (i >= n - 1) {
-        this.collapsedPanels.delete(i)
-        this.collapsedPrev.delete(i)
-        pruned = true
-      }
-    }
-    // 仅在确实清掉越界折叠态后才移除 collapsed 属性：首渲染 multi 的显式 collapsed 属性
-    // 需要保留给随后 syncCollapsedFromAttr（否则初始折叠态被吞）
-    if (pruned && this.collapsedPanels.size === 0) this.removeAttribute('collapsed')
+  /**
+   * 面板数变化 → 清空全部折叠态（含折叠前尺寸）。light DOM 子元素无稳定身份（无 key），
+   * 结构变更后无法知道删的是哪一块；按索引保留会把折叠态错配到存活的相邻面板
+   * （零宽症状在另一种删除顺序下复发）。语义定为「结构变更重置派生状态」——无 key 列表的
+   * 通行做法（类比受控列表 key 变化时重置内部状态）：全部收敛 + collapsed 属性移除，
+   * 布局回写与快照落盘由调用方（syncPanels 重建分支）收口，宿主可按需重新折叠。
+   */
+  private pruneCollapsed(): void {
+    if (this.collapsedPanels.size === 0) return
+    this.collapsedPanels.clear()
+    this.collapsedPrev.clear()
+    this.removeAttribute('collapsed')
   }
 
   /**
