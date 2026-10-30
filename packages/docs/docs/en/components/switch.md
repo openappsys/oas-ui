@@ -237,7 +237,7 @@ onMounted(() => {
 | `aria-label` | Accessible name (host override channel; explicit value wins over label derivation) | — | — |
 | `checked` | Whether on | `boolean` | — |
 | `checked-icon` | Checked-state thumb icon (oas-icon name) | `string` | — |
-| `checked-text` | Label shown when on; inside the track at medium/large/xl, outside at xs/small | — | — |
+| `checked-text` | Label shown when on; inside the track at medium/large/xl, outside at xs/small | `string` | — |
 | `color` | Custom primary color for the on state, overrides `--oas-color-primary` (CSS color value) | — | — |
 | `description` | Secondary description text (muted line under the label; slot[name=description] rich content wins over the attribute text), same contract as checkbox/radio description | `string` | — |
 | `disabled` | Disabled | `boolean` | — |
@@ -250,7 +250,7 @@ onMounted(() => {
 | `status` | Validation status: `error` / `warning` / `success`; error mirrors aria-invalid | `string` | — |
 | `true-value` | Mapped value when checked (read via the value getter) | `string` | — |
 | `unchecked-icon` | Unchecked-state thumb icon | `string` | — |
-| `unchecked-text` | Label shown when off; inside the track at medium/large/xl, outside at xs/small | — | — |
+| `unchecked-text` | Label shown when off; inside the track at medium/large/xl, outside at xs/small | `string` | — |
 | `variant` | Variant: `default` (plain thumb) / `card` (a bordered card wrapping the thumb + label + description; whole card clickable, selected state tints the border, aligned with the checkbox/radio choice card); invalid values silently fall back to default | `string` | — |
 
 #### Methods

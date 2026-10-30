@@ -235,7 +235,7 @@ onMounted(() => {
 | `aria-label` | 可访问名（宿主覆盖通道，显式设置优先于 label 推导） | — | — |
 | `checked` | 是否开启 | `boolean` | — |
 | `checked-icon` | 选中态滑块图标（oas-icon 图标名） | `string` | — |
-| `checked-text` | 开启时显示的文案；medium/large/xl 在轨道内，xs/small 在轨道外侧 | — | — |
+| `checked-text` | 开启时显示的文案；medium/large/xl 在轨道内，xs/small 在轨道外侧 | `string` | — |
 | `color` | 开启态自定义主色，覆盖 `--oas-color-primary`（CSS 颜色值） | — | — |
 | `description` | 描述副文本（label 下方的次级说明；slot[name=description] 富内容优先于属性文本），与 checkbox/radio 的 description 契约一致 | `string` | — |
 | `disabled` | 禁用 | `boolean` | — |
@@ -248,7 +248,7 @@ onMounted(() => {
 | `status` | 校验态：`error` / `warning` / `success`；error 联动 aria-invalid | `string` | — |
 | `true-value` | 选中时的映射值（读 value getter 取映射值） | `string` | — |
 | `unchecked-icon` | 未选中态滑块图标 | `string` | — |
-| `unchecked-text` | 关闭时显示的文案；medium/large/xl 在轨道内，xs/small 在轨道外侧 | — | — |
+| `unchecked-text` | 关闭时显示的文案；medium/large/xl 在轨道内，xs/small 在轨道外侧 | `string` | — |
 | `variant` | 形态：`default`（默认拨杆）/ `card`（卡片：描边容器包住拨杆 + 标签 + 描述，整卡可点、选中描边着色，对齐 checkbox/radio 选择卡）；非法值静默回落 default | `string` | — |
 
 #### 方法

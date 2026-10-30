@@ -19,10 +19,14 @@
     },
     {
       "name": "checked-text",
+      "type": "string",
+      "default": "",
       "observed": true
     },
     {
       "name": "unchecked-text",
+      "type": "string",
+      "default": "",
       "observed": true
     },
     {
