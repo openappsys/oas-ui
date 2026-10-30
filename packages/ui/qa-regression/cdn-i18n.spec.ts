@@ -20,8 +20,8 @@ async function mockI18nEsm(page: import('@playwright/test').Page): Promise<void>
   })
 }
 
-/** ui ESM 与 workspace 依赖回填：dist 产物的裸导入在路由层重写为映射 URL（import map 在
- *  Firefox 的 setContent 文档不生效，路由重写双引擎行为一致）。只改写真实 import/from
+/** ui ESM 与 workspace 依赖回填：dist 产物的裸导入在路由层重写为映射 URL（路由重写比
+ *  import map 兼容性更强，Firefox 同样生效）。只改写真实 import/from
  *  语句——字符串字面量（Symbol.for 键、devWarn 提示、报错文案）保持原样。 */
 function rewriteBareSpecifiers(js: string): string {
   return js.replace(
@@ -86,14 +86,32 @@ function collectErrors(page: import('@playwright/test').Page): string[] {
   return errors
 }
 
-/** IIFE 页面骨架：popconfirm（默认触发钮）+ empty，加载指定 dist bundle（classic script：顶层 var OASUI 挂全局，与真实 <script src> 语义一致）。
- *  先 goto 一次真实页面锚定 origin——setContent 后根相对模块说明符（/__oas-i18n-esm__/…）才能解析（about:blank 下抛 Failed to resolve）。 */
+/**
+ * 独立隔离页（真实导航，非 setContent）：route.fulfill 虚拟页面路径 → `page.goto` 真实跳转。
+ *
+ * 此前用 `goto('/404.html') + setContent` 组装文档——setContent 是假隔离（同一文档上下文，
+ * 与站点页面共享 JS 全局、URL 历史），且依赖「先锚定 origin 根相对说明符才可解析」的隐式前提。
+ * 改为真实导航后：origin 天然锚定（根相对模块说明符 /__oas-i18n-esm__/… 直接可解析）、
+ * 与文档站页面零共享状态。路由锚（/__oas-i18n-esm/、/__oas-ui-esm/、/__oas-pkg/）仍在同一 origin。
+ */
+async function openIsolatedPage(page: import('@playwright/test').Page, body: string): Promise<void> {
+  await page.route('**/__qa_cdn_page__', (route) =>
+    route.fulfill({
+      // charset 必须显式声明：正文含中文，Firefox 对未声明编码的文档会记 console error
+      contentType: 'text/html; charset=utf-8',
+      body: `<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"></head><body style="margin:0">${body}</body></html>`,
+    }),
+  )
+  await page.goto('/__qa_cdn_page__')
+}
+
+/** IIFE 页面骨架：popconfirm（默认触发钮）+ empty，加载指定 dist bundle（classic script：顶层 var OASUI 挂全局，与真实 <script src> 语义一致）。 */
 async function openIifePage(page: import('@playwright/test').Page, bundle: string): Promise<void> {
-  await page.goto('/404.html')
-  await page.setContent(`<!doctype html><html lang="zh-CN"><body style="margin:0">
-    <oas-popconfirm id="pc" title="删除该部门？"><oas-button data-testid="trigger">删除</oas-button></oas-popconfirm>
-    <oas-empty id="empty"></oas-empty>
-  </body></html>`)
+  await openIsolatedPage(
+    page,
+    `<oas-popconfirm id="pc" title="删除该部门？"><oas-button data-testid="trigger">删除</oas-button></oas-popconfirm>
+    <oas-empty id="empty"></oas-empty>`,
+  )
   await page.addScriptTag({ path: join(UI_ROOT, bundle) })
   await page.waitForFunction(() => !!customElements.get('oas-popconfirm'))
 }
@@ -170,12 +188,12 @@ test('ESM 主入口（dist/index.js）真实导入：namespace 只含 setLocale�
   const errors = collectErrors(page)
   await mockI18nEsm(page)
   await mockUiEsm(page)
-  await page.goto('/404.html')
-  // 正文预置组件——import dist/index.js 即注册并升级（中文默认）；裸导入由路由层重写解析
-  await page.setContent(`<!doctype html><html><body style="margin:0">
-    <oas-popconfirm id="pc" title="删除该部门？"><oas-button>删除</oas-button></oas-popconfirm>
-    <oas-empty id="empty"></oas-empty>
-  </body></html>`)
+  // 真实导航进入独立隔离页（非 setContent 假隔离）；裸导入由路由层重写解析
+  await openIsolatedPage(
+    page,
+    `<oas-popconfirm id="pc" title="删除该部门？"><oas-button>删除</oas-button></oas-popconfirm>
+    <oas-empty id="empty"></oas-empty>`,
+  )
 
   // 真实动态 import 实际构建产物 dist/index.js（浏览器解析全部裸导入与相对导入）
   const surface = await page.evaluate(async () => {

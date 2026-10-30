@@ -122,7 +122,7 @@ describe('OASPicker', () => {
       expect(fruit.querySelector(`#${idref}`)?.getAttribute('role')).toBe('option')
     })
 
-    it('option id 带实例 uid：同页多个 picker 的 IDREF 不互相串（文档 id 唯一）', () => {
+    it('option id 由身份属性确定性派生：同属性实例 id 一致，IDREF 各自 shadow 内可解析', () => {
       const attrs = { columns: COLUMNS }
       const a = mount(attrs)
       const b = mount(attrs)
@@ -130,8 +130,14 @@ describe('OASPicker', () => {
       const aIds = idsOf(a)
       const bIds = idsOf(b)
       expect(aIds.length).toBeGreaterThan(0)
-      expect(new Set([...aIds, ...bIds]).size, '两个实例的 option id 不得重复').toBe(aIds.length + bIds.length)
-      // 各自的 aria-activedescendant 必须落在自身 shadow 内
+      // 确定性 id（维护批）：id 由 columns/options 派生，不再含模块级自增 uid——
+      // 同属性的两次实例化 id 逐字节一致，SSR 快照与客户端水合才可能对齐
+      expect(bIds, '同属性 → 同 id（确定性）').toEqual(aIds)
+      // 不同属性 → 不同前缀（身份属性确实参与派生）
+      const c = mount({ columns: JSON.stringify([{ items: [{ label: 'x' }] }]) })
+      expect(idsOf(c)[0]).not.toBe(aIds[0])
+      // 各自的 aria-activedescendant 必须落在自身 shadow 内（即便跨实例 id 相同，
+      // IDREF 也在各自 shadowRoot 作用域解析，不会互相串）
       for (const el of [a, b]) {
         for (const col of cols(el)) {
           const idref = col.getAttribute('aria-activedescendant')

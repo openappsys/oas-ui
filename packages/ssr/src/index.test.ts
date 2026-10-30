@@ -1617,4 +1617,27 @@ describe('@oas-ui/ssr renderToString', () => {
       '<div data-oas-marquee-copy="" slot="oas-marquee-copy" aria-hidden="true" inert="">单条通告',
     )
   })
+
+  // 维护批：快照 id 确定性（index-bar / picker 曾依赖模块级自增 uid → 同属性两次渲染 id 不同）
+  it('index-bar / picker 快照逐字节确定（同一属性输入 → 同一 HTML）', async () => {
+    const indexBar = await renderToString(
+      'oas-index-bar',
+      { sections: '[{"title":"A","items":[{"label":"a1"}]},{"title":"B","items":[{"label":"b1"}]}]' },
+      '',
+    )
+    const indexBarAgain = await renderToString(
+      'oas-index-bar',
+      { sections: '[{"title":"A","items":[{"label":"a1"}]},{"title":"B","items":[{"label":"b1"}]}]' },
+      '',
+    )
+    expect(indexBarAgain).toBe(indexBar)
+
+    const picker = await renderToString('oas-picker', {
+      columns: JSON.stringify([{ items: [{ label: 'a' }, { label: 'b' }] }]),
+    })
+    const pickerAgain = await renderToString('oas-picker', {
+      columns: JSON.stringify([{ items: [{ label: 'a' }, { label: 'b' }] }]),
+    })
+    expect(pickerAgain).toBe(picker)
+  })
 })

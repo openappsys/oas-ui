@@ -1,4 +1,5 @@
 import { OASFormElement } from '@oas-ui/core'
+import { stableHash36 } from '../../shared/stable-id.js'
 
 /**
  * oas-picker —— 滚轮选择器（form 族，移动原生形态批）。
@@ -122,9 +123,6 @@ const DEFAULT_VISIBLE_COUNT = 5
 /** 滚动落停判定：最后一次 scroll 后无新事件的静默窗口（scrollend 不兼容环境的兜底） */
 const SETTLE_MS = 100
 
-/** 实例序号：option id 必须跨实例唯一（同页多个 picker 的 aria-activedescendant 不得互相串） */
-let uid = 0
-
 /** 条目合法性：对象且 label 为字符串（合法 JSON 但非法元素——null/数字/缺 label——一律过滤，与 index-bar 防御口径一致） */
 function isValidItem(it: unknown): it is PickerItem {
   return it != null && typeof it === 'object' && typeof (it as PickerItem).label === 'string'
@@ -144,12 +142,19 @@ export class OASPicker extends OASFormElement {
   private emitReady = false
   /** 上一帧已渲染结构指纹：水合恢复后同指纹只同步选中/滚动，不重建快照列 */
   private lastStructureKey: string | null = null
-  /** 实例 uid：option id 前缀（同页多实例唯一） */
-  private readonly uid = ++uid
 
-  /** option 元素 id（实例隔离）：`oas-picker-<uid>-<列>-<项>` */
+  /**
+   * 稳定实例 id：由身份属性（columns/options）派生（FNV-1a → base36）。
+   * SSR 快照逐字节确定（同一属性输入 → 同一 id，不再依赖模块级自增计数）。
+   * 同页属性相同的实例各自 shadow 隔离，activedescendant 在 shadow 内解析，实际碰撞可忽略。
+   */
+  private stableId(): string {
+    return `oas-picker-${stableHash36(`${this.getAttr('columns', '')}\u0000${this.getAttr('options', '')}`)}`
+  }
+
+  /** option 元素 id：`oas-picker-<稳定id>-<列>-<项>` */
   private itemId(columnIndex: number, itemIndex: number): string {
-    return `oas-picker-${this.uid}-${columnIndex}-${itemIndex}`
+    return `${this.stableId()}-${columnIndex}-${itemIndex}`
   }
 
   /**

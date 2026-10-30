@@ -3,6 +3,7 @@ import { isRtl } from '../../shared/direction.js'
 import { parseJsonArray } from '../../shared/json-array.js'
 import { devWarn } from '../../shared/dev-warn.js'
 import { isSsrRuntime } from '../../shared/ssr-runtime.js'
+import { stableHash36 } from '../../shared/stable-id.js'
 
 /** 索引栏条目数据 */
 export interface IndexBarItem {
@@ -159,8 +160,6 @@ function prefersReducedMotion(): boolean {
   }
 }
 
-let uid = 0
-
 /** sections property 通道非法输入告警去重（同值只告警一次） */
 const warnedSections = new Set<string>()
 
@@ -244,7 +243,14 @@ export class OASIndexBar extends OASElement {
   private dragPointerId: number | null = null
   private dragIndex = -1
 
-  private readonly uid = ++uid
+  /**
+   * 稳定实例 id：由身份属性（sections）派生（FNV-1a → base36）。
+   * SSR 快照逐字节确定（同一属性输入 → 同一 header id），不再依赖模块级自增计数。
+   * header id 只用于分节容器 aria-labelledby（shadow 内解析），同页实例属性相同时各自 shadow 隔离。
+   */
+  private stableId(): string {
+    return stableHash36(this.getAttr('sections', ''))
+  }
 
   override connectedCallback(): void {
     super.connectedCallback()
@@ -323,7 +329,7 @@ export class OASIndexBar extends OASElement {
 
   /**
    * 真水合：校验 SSR 快照结构（root + 分节/字母数量与数据一致）后接管，跳过 shadow 重建。
-   * 采纳快照节点并恢复 sectionsData/lastSectionsRaw——update 不再 rebuild，header id（含 UID）
+   * 采纳快照节点并恢复 sectionsData/lastSectionsRaw——update 不再 rebuild，header id（稳定 id）
    * 与 aria-labelledby 原样稳定；交互由 bind() 的父容器委托恢复。
    */
   protected override hydrate(): boolean {
@@ -453,7 +459,7 @@ export class OASIndexBar extends OASElement {
     header.setAttribute('part', 'section-header')
     header.setAttribute('role', 'heading')
     header.setAttribute('aria-level', '2')
-    header.id = `oas-index-bar-${this.uid}-h-${index}`
+    header.id = `oas-index-bar-${this.stableId()}-h-${index}`
     header.textContent = section.title
     sec.setAttribute('aria-labelledby', header.id)
     sec.appendChild(header)
