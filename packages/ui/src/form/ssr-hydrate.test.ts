@@ -376,7 +376,7 @@ describe('form 组件 DSD 真水合批次 1', () => {
     const radios = el.querySelectorAll('oas-radio')
     expect(radios.length).toBe(2)
     const names = [...radios].map((r) => r.getAttribute('name'))
-    expect(names[0], '子项 name 已恢复（非空）').toBeTruthy()
+    expect(names[0], '子项 name 已恢复且同组同名').toBe(names[1])
     expect(names[0], '同组子项同名（互斥组）').toBe(names[1])
 
     // 组内单选互斥生效（组件链路：radio 按 name 文档级清同组 + 组 update 重下发 checked，

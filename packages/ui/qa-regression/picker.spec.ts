@@ -183,7 +183,16 @@ test('picker 全禁用列：任何项不标 aria-selected、列无 activedescend
   const col = page.locator('#__qa_all_disabled__').locator('[part="column"]').first()
   await col.hover()
   await page.mouse.wheel(0, 120)
-  await page.waitForTimeout(400)
+  // 滚动落定 = scrollTop 两次采样稳定（poll 源码无固定 waitForTimeout——qa:audit 阈值无余量）
+  let prevScroll = -1
+  await expect
+    .poll(async () => {
+      const t = await col.evaluate((c) => c.scrollTop)
+      const stable = t === prevScroll && t > 0
+      prevScroll = t
+      return stable
+    })
+    .toBe(true)
   const after = await read()
   expect(after.selected, '滚动落停后仍不标 aria-selected').toEqual([null, null])
   expect(after.activeDescendant, '滚动落停后仍无 IDREF').toBeNull()

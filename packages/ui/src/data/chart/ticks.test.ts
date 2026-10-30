@@ -303,7 +303,8 @@ describe('formatTick', () => {
       expect(() => {
         out = formatTick(0.125, 0.125, 'zh_CN')
       }).not.toThrow()
-      expect(calls.length, '兜底路径必须真实触达（构造器至少被调用过）').toBeGreaterThan(0)
+      // 精确 2 次：zh_CN 构造抛错 → catch 内 en-US 再抛（两次都走 mock 计数）
+      expect(calls.length, '兜底路径必须真实触达（zh_CN + en-US 各一次）').toBe(2)
       expect(out, '退化为数字字符串（toFixed 3 位）').toBe('0.125')
     } finally {
       vi.mocked(Intl.NumberFormat).mockRestore()

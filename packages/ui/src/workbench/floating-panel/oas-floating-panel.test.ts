@@ -1236,7 +1236,7 @@ describe('OASFloatingPanel 标题栏高度实测', () => {
     FakeRO.instances[0]!.trigger()
     const ro = FakeRO.instances[0]!
     expect(ro.targets.has(bar), '标题栏不进入观察').toBe(false)
-    expect(ro.targets.size).toBeGreaterThan(0)
+    expect(ro.targets.size, '非 resizable 只观察内容盒（bar 不进入）').toBe(1)
     expect(frameOf(el).style.getPropertyValue(TOKEN), '非 resizable 不写实测 token（注释口径一致）').toBe('')
   })
 

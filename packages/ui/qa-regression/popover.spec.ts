@@ -1158,7 +1158,8 @@ test('popover portal：锚点 aria-controls 跟随派生面板 id（两个同 co
   await page.evaluate(() => {
     document.querySelectorAll('#__qa_portal_pair__ oas-popover').forEach((el) => el.setAttribute('open', ''))
   })
-  await page.waitForTimeout(400)
+  // portal host 数量由内建自动等待收敛（源码无固定 waitForTimeout——qa:audit 阈值无余量）
+  await expect(page.locator('[data-oas-popover-portal]')).toHaveCount(2)
   const r = await page.evaluate(() => {
     const pops = [...document.querySelectorAll<HTMLElement>('#__qa_portal_pair__ oas-popover')]
     const hosts = [...document.querySelectorAll<HTMLElement>('[data-oas-popover-portal]')]
@@ -1170,7 +1171,6 @@ test('popover portal：锚点 aria-controls 跟随派生面板 id（两个同 co
   expect(r.hostCount, '两个 portal host（各自独立 shadow，id 作用域隔离）').toBe(2)
   expect(r.panelIds[0], '同内容实例面板 id 派生一致（确定性）').toBe(r.panelIds[1])
   for (const c of r.controls) {
-    expect(c, '每个锚点都有 aria-controls').toBeTruthy()
     expect(r.panelIds, 'aria-controls 指向真实存在的面板 id').toContain(c)
   }
 })

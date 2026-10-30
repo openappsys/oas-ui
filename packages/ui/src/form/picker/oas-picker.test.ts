@@ -129,7 +129,7 @@ describe('OASPicker', () => {
       const idsOf = (el: OASPicker): string[] => cols(el).flatMap((col) => items(col).map((it) => it.id))
       const aIds = idsOf(a)
       const bIds = idsOf(b)
-      expect(aIds.length).toBeGreaterThan(0)
+      expect(aIds.length, '两列各 3 项 → 全部 item id').toBe(6)
       // 确定性 id（维护批）：id 由 columns/options 派生，不再含模块级自增 uid——
       // 同属性的两次实例化 id 逐字节一致，SSR 快照与客户端水合才可能对齐
       expect(bIds, '同属性 → 同 id（确定性）').toEqual(aIds)
