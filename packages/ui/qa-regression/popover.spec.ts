@@ -1134,3 +1134,43 @@ test('popover 打开态断开重连：Esc 与外点仍关闭、焦点不被抢�
     '嵌套重连后一次 Esc 只关子层，父层保持打开',
   ).toBe(true)
 })
+
+test('popover portal：锚点 aria-controls 跟随派生面板 id（两个同 content 实例互不悬空）', async ({ page }) => {
+  await page.goto('/components/popover.html', { waitUntil: 'domcontentloaded' })
+  await page.waitForSelector('oas-popover', { timeout: 15000 })
+  // 动态挂两个完全同 content 的 portal popover（行级「删除确认」常见形态）：
+  // id 由 title/content 派生，两实例同 id（各自 portal host shadow 内解析，作用域隔离）；
+  // 回归点：锚点 aria-controls 必须与面板 id 一致（id 策略变更后不得悬空）
+  await page.evaluate(() => {
+    const host = document.createElement('div')
+    host.id = '__qa_portal_pair__'
+    document.body.appendChild(host)
+    for (const t of ['删除 A', '删除 B']) {
+      const el = document.createElement('oas-popover')
+      el.setAttribute('append-to', 'body')
+      el.setAttribute('title', '删除')
+      el.setAttribute('content', '确认删除该行？')
+      el.innerHTML = `<button>${t}</button>`
+      host.appendChild(el)
+    }
+  })
+  // 受控 open 属性驱动打开（portal 在 update → syncPortal(true) 挂载）
+  await page.evaluate(() => {
+    document.querySelectorAll('#__qa_portal_pair__ oas-popover').forEach((el) => el.setAttribute('open', ''))
+  })
+  await page.waitForTimeout(400)
+  const r = await page.evaluate(() => {
+    const pops = [...document.querySelectorAll<HTMLElement>('#__qa_portal_pair__ oas-popover')]
+    const hosts = [...document.querySelectorAll<HTMLElement>('[data-oas-popover-portal]')]
+    const panelIds = hosts.map((h) => h.shadowRoot!.querySelector<HTMLElement>('[part="panel"]')!.id)
+    const controls = pops.map((p) => p.querySelector<HTMLElement>(':scope > *')!.getAttribute('aria-controls'))
+    return { panelIds, controls, popCount: pops.length, hostCount: hosts.length }
+  })
+  expect(r.popCount, '两个 popover 实例').toBe(2)
+  expect(r.hostCount, '两个 portal host（各自独立 shadow，id 作用域隔离）').toBe(2)
+  expect(r.panelIds[0], '同内容实例面板 id 派生一致（确定性）').toBe(r.panelIds[1])
+  for (const c of r.controls) {
+    expect(c, '每个锚点都有 aria-controls').toBeTruthy()
+    expect(r.panelIds, 'aria-controls 指向真实存在的面板 id').toContain(c)
+  }
+})

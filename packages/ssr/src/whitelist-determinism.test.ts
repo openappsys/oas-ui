@@ -4,8 +4,11 @@ import { renderToString, WHITELIST, type WhiteListTag } from './index.js'
 /**
  * 全白名单快照确定性实测（维护批 M2 fix round）：
  * 每个 tag 用最小样本属性连续渲染两次，逐字节比对——任何组件把模块级/静态自增
- * 计数（uid/seq/Counter）写进快照都会在此红。样本属性覆盖各自「含 id 输出」的
- * 渲染路径（form 族关联 id / overlay 面板 id / 渐变 id 等）。
+ * 计数（uid/seq/Counter）写进快照都会在此红。
+ *
+ * 分工：light DOM 子项通道的组件（avatar-group / tabs / stepper——id 派生种子来自
+ * 子元素外征）由 `index.test.ts` 的表驱动 slot 用例覆盖（本文件 slotHTML 恒空），
+ * 两套互补构成完整确定性门禁。
  *
  * 新增白名单组件时本用例自动纳入（WHITELIST 驱动）；若新组件最小形态不触发其
  * id 输出路径，请同步在 SAMPLE_ATTRS 补该组件的触发属性。
@@ -46,15 +49,12 @@ const SAMPLE_ATTRS: Partial<Record<WhiteListTag, Record<string, string>>> = {
 describe('全白名单快照确定性（穷尽实测）', () => {
   it('每个白名单 tag 最小渲染两次逐字节一致（175 tag 穷尽）', async () => {
     const nondeterministic: string[] = []
-    let checked = 0
     for (const tag of WHITELIST) {
       const attrs = SAMPLE_ATTRS[tag] ?? {}
       const first = await renderToString(tag, attrs, '')
       const second = await renderToString(tag, attrs, '')
-      checked++
       if (first !== second) nondeterministic.push(tag)
     }
     expect(nondeterministic, '同属性两次渲染必须逐字节一致（自增计数进快照即违例）').toEqual([])
-    expect(checked, '白名单全部 tag 都必须实际渲染比对').toBe(WHITELIST.length)
   })
 })

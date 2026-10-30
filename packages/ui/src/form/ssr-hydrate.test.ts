@@ -361,6 +361,30 @@ describe('form 组件 DSD 真水合批次 1', () => {
     expect(di.shadowRoot!.querySelectorAll('.row').length).toBe(2)
   })
 
+  it('radio-group：互斥 name 不进快照（SSR 口径）但水合后恢复——子项 input.name 非空且原生互斥生效', () => {
+    // 方案 F 回归（维护批 M2 fix round）：radio-group 的互斥 name（运行时唯一值）不进
+    // SSR 快照——这里手工构造「无 name」的快照模拟真实 SSR 输出
+    const setup = (e: OASElement) => {
+      e.setAttribute('value', 'a')
+      e.innerHTML = '<oas-radio value="a">A</oas-radio><oas-radio value="b">B</oas-radio>'
+    }
+    const snap = captureSnapshot(OASRadioGroup, setup).replace(/ name="[^"]*"/g, '')
+    expect(snap, 'SSR 快照口径：子项不含互斥 name').not.toContain('name=')
+    const { el } = upgradeFromSnapshot(OASRadioGroup, snap, setup)
+
+    // 水合后 radio-group 把运行时唯一 name 写回子项（radio observedAttributes 含 name → input.name 同步）
+    const radios = el.querySelectorAll('oas-radio')
+    expect(radios.length).toBe(2)
+    const names = [...radios].map((r) => r.getAttribute('name'))
+    expect(names[0], '子项 name 已恢复（非空）').toBeTruthy()
+    expect(names[0], '同组子项同名（互斥组）').toBe(names[1])
+
+    // 原生互斥生效：点击第二个子项的内部 input → 第一个子项 checked 取消、value 切到 b
+    const inputB = (radios[1] as OASRadio & { shadowRoot: ShadowRoot }).shadowRoot!.querySelector('input')!
+    inputB.click()
+    expect(radios[1]!.hasAttribute('checked'), '点击后 B 选中').toBe(true)
+    expect(radios[0]!.hasAttribute('checked'), '原生同名互斥：A 取消').toBe(false)
+  })
   it('交互可触发：水合后 oas-input 输入派发 oas-input / oas-switch 点击切换 / oas-toggle-button 切换 aria-pressed', () => {
     // oas-input
     const inputSnap = captureSnapshot(OASInput, (e) => e.setAttribute('value', ''))

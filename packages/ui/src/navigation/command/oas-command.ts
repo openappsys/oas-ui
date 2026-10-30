@@ -80,7 +80,6 @@ const SHORTCUT_SYMBOLS: Record<string, string> = {
 
 const MAX_RECENTS = 10
 
-/** 组件实例级 listbox 容器 id 的自增序列（aria-controls 唯一 id） */
 const STYLE = `
 :host {
   display: block;
@@ -514,7 +513,7 @@ export class OASCommand extends OASElement {
   private _filter: ((query: string, items: CommandItem[]) => CommandItem[]) | null = null
   /** append-to：portal host 容器（目标容器内 div + 独立 shadow + STYLE 注入 + 插槽桥接） */
   private portalHost: HTMLElement | null = null
-  /** listbox 容器 id（组件内生成唯一，aria-controls 指向） */
+  /** listbox 容器 id（由 value 身份派生、实例内不变；同 value 实例共享 id，shadow 内解析无串扰；aria-controls 指向） */
   private listboxId = ''
   private vlistId = ''
   /** document keydown 幂等重挂守卫（断开重连后 update() 恢复，防丢失） */

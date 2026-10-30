@@ -24,7 +24,6 @@ const MOUSE_SUPPRESS_MS = 350
 /** 指针坐标打开（右键光标 / 触屏长按）后抬手合成 click 的收尾守卫窗口（ms）：
  * 窗口内 click 视为手势收尾不参与 tap 切换，防「长按打开 → 抬手即关」 */
 const POINTER_OPEN_GUARD_MS = 800
-/** 面板 id 文档唯一计数器（aria-controls 跨树引用需要文档级唯一） */
 /** 面板全部命名 slot（portal 桥接 / destroy-on-hide 暂存 / hide-empty 判空共用） */
 const SLOT_NAMES = ['content', 'title', 'header', 'footer', 'description'] as const
 
@@ -791,7 +790,10 @@ export class OASPopover extends OASElement {
     this.anchor = this.querySelector(':scope > *') ?? this
 
     // 面板 id 由 title/content 身份派生（FNV-1a base36）：SSR 快照逐字节确定。
-    // panel 恒在组件 shadow 内（shadow 内 id 作用域天然隔离，无需文档级撞号重试）；
+    // panel 恒在某棵 shadow tree 内（默认在组件 shadow；`append-to` portal 时移入 portal
+    // host 的独立 shadowRoot）——id 作用域都在 shadow 内，document 级不存在撞号，
+    // 同内容多实例同 id 无串扰；portal 形态下锚点 aria-controls 为跨 shadow IDREF
+    // （读屏不解析，portal 形态的既有已知限制，非 id 策略引入）。
     // SSR 水合快照复用已有 id，缺失（异常/旧快照）时按当前属性派生补写
     if (this.panel && !this.panel.id) {
       this.panel.id = `oas-popover-panel-${stableHash36(`${this.getAttr('title', '')}\u0000${this.getAttr('content', '')}`)}`

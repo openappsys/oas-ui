@@ -705,7 +705,9 @@ export class OASNavigationMenu extends OASElement {
   private subPanelEl: HTMLElement | null = null
   private panelFooterEl: HTMLElement | null = null
   /** viewport/子面板 id：由 items 身份属性派生（FNV-1a base36），SSR 快照逐字节确定；
-   *  两者前缀不同（panel/sub）不冲突，各自懒派生一次实例内不变 */
+   *  两者前缀不同（panel/sub）不冲突，各自懒派生一次实例内不变。
+   *  已知口径：items property 直赋不反射 attribute 时派生种子为空串——前缀共享但引用
+   *  全部在组件 shadow 内闭环（按钮与 viewport/sub-panel 同树 IDREF），无功能影响。 */
   private viewportIdCache = ''
   private get viewportId(): string {
     if (!this.viewportIdCache) {
