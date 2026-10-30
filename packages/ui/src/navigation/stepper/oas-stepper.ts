@@ -392,11 +392,11 @@ export class OASStepper extends OASElement {
       panel.setAttribute('aria-labelledby', `${this.uid}-tab-${value}`)
       // panel.id 只在宿主显式设置时使用并同步 aria-controls：组件不代生成 light DOM id——
       // 同 steps 的多实例会在文档级产生 duplicate id（axe duplicate-id 违规）；
-      // 无 id 时宁缺勿错（面板命名由 aria-labelledby + 自身内容承担，同 picker 空列口径）
-      if (panel.id) {
-        const tab = this.tablist?.querySelector<HTMLElement>(`[data-index="${value}"]`)
-        tab?.setAttribute('aria-controls', panel.id)
-      }
+      // 无 id 时宁缺勿错（面板命名由 aria-labelledby + 自身内容承担，同 picker 空列口径），
+      // 且移除可能残留的旧引用（宿主撤掉面板 id 后 tab 不得留悬空 IDREF）
+      const tab = this.tablist?.querySelector<HTMLElement>(`[data-index="${value}"]`)
+      if (panel.id) tab?.setAttribute('aria-controls', panel.id)
+      else tab?.removeAttribute('aria-controls')
     }
   }
 
