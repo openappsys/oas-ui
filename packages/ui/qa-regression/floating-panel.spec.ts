@@ -228,18 +228,19 @@ test('四边 / 四角缩放：se 放大、w 左扩、n 上扩', async ({ page })
 
 test('富标题 48px：上侧/上角手柄带可命中，顶边拖拽可缩放', async ({ page }) => {
   await gotoPage(page, '#fp-slot')
-  // 等 ResizeObserver 把实测标题栏高度写回 host token（关闭态/初测 0 不写）
+  // 等 ResizeObserver 把实测标题栏高度写进 shadow .frame 的内联 token（关闭态/初测 0 不写；
+  // A3 后写入目标是 frame 内联而非 host style——宿主样式不被 pin，host 上读不到该值）
   await expect
     .poll(
       () =>
         page.evaluate(() => {
-          const host = document.getElementById('fp-slot')!
+          const frame = document.getElementById('fp-slot')!.shadowRoot!.querySelector<HTMLElement>('[part="frame"]')!
           const value = Number.parseFloat(
-            getComputedStyle(host).getPropertyValue('--oas-floating-panel-titlebar-height'),
+            getComputedStyle(frame!).getPropertyValue('--oas-floating-panel-titlebar-height'),
           )
           return Number.isFinite(value) ? value : 0
         }),
-      { message: '富标题实测高度写回 token' },
+      { message: '富标题实测高度写回 shadow frame token' },
     )
     .toBeGreaterThan(40)
 
