@@ -401,17 +401,22 @@ export class OASPicker extends OASFormElement {
 
       const sel = this.selectedIdx[i] ?? 0
       const items = el.querySelectorAll<HTMLElement>('.item')
+      // 全禁用列：无可选中项 → 不标 aria-selected（读屏不应播报「已选中」一个不可选项）。
+      // 宿主 disabled 不改变选中语义（视觉选中态仍在，只是不可交互）。
+      const selectable = col.items.some((it) => !it.disabled)
       col.items.forEach((item, j) => {
         const it = items[j]
         if (!it) return
         it.style.height = `${h}px`
         it.textContent = item.label
         it.id = this.itemId(i, j)
-        it.setAttribute('aria-selected', String(j === sel))
+        if (!selectable || item.disabled) it.removeAttribute('aria-selected')
+        else it.setAttribute('aria-selected', String(j === sel))
         if (item.disabled) it.setAttribute('aria-disabled', 'true')
         else it.removeAttribute('aria-disabled')
       })
-      const activeId = this.activeDescendantId(i, col.items.length, sel)
+      // 全禁用列不写 activedescendant（无可用项可指向）
+      const activeId = selectable ? this.activeDescendantId(i, col.items.length, sel) : null
       if (activeId) el.setAttribute('aria-activedescendant', activeId)
       else el.removeAttribute('aria-activedescendant')
     })
@@ -441,6 +446,8 @@ export class OASPicker extends OASFormElement {
     el.appendChild(top)
 
     const sel = this.selectedIdx[index] ?? 0
+    // 全禁用列：无可选中项 → 不标 aria-selected（与 syncColumns 同口径）
+    const selectable = col.items.some((it) => !it.disabled)
     col.items.forEach((item, j) => {
       const it = document.createElement('div')
       it.className = 'item'
@@ -449,11 +456,12 @@ export class OASPicker extends OASFormElement {
       it.id = this.itemId(index, j)
       it.style.height = `${h}px`
       it.textContent = item.label
-      it.setAttribute('aria-selected', String(j === sel))
+      if (!selectable || item.disabled) it.removeAttribute('aria-selected')
+      else it.setAttribute('aria-selected', String(j === sel))
       if (item.disabled) it.setAttribute('aria-disabled', 'true')
       el.appendChild(it)
     })
-    const activeId = this.activeDescendantId(index, col.items.length, sel)
+    const activeId = selectable ? this.activeDescendantId(index, col.items.length, sel) : null
     if (activeId) el.setAttribute('aria-activedescendant', activeId)
 
     const bottom = document.createElement('div')

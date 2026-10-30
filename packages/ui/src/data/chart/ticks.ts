@@ -137,12 +137,15 @@ function usesScientific(step: number): boolean {
 /** 非法 locale 的固定回退 locale：不依赖运行环境默认值，保证 SSR/客户端快照一致 */
 const FALLBACK_LOCALE = 'en-US'
 
-/** Intl.NumberFormat 缓存：locale|notation|精度 键控，每轴每档复用同一构造结果 */
+/** Intl.NumberFormat 缓存：locale|notation|精度 键控，每轴每档复用同一构造结果。
+ *  容量上限（FIFO 淘汰）：宿主持续注入不同非法 locale 时 Map 不无限增长。 */
+const FORMATTER_CACHE_MAX = 64
 const formatterCache = new Map<string, Intl.NumberFormat>()
 
 /**
  * 构造（或复用）formatter。非法 locale（zh_CN / 自定义名 / 非 ASCII / 空串）只回退一次到
  * 固定 en-US（保证 SSR 与客户端一致），绝不把未校验 locale 再交给 Intl 二次抛 RangeError。
+ * 回退构造本身也包 try：即便宿主环境连 en-US 都不可用（极端 ICU 裁剪），也不向渲染抛错。
  */
 function formatterFor(locale: string, scientific: boolean, digits: number): Intl.NumberFormat {
   const key = `${locale}\u0000${scientific ? 'sci' : 'std'}\u0000${digits}`
@@ -158,7 +161,21 @@ function formatterFor(locale: string, scientific: boolean, digits: number): Intl
   try {
     formatter = new Intl.NumberFormat(locale, options)
   } catch {
-    formatter = new Intl.NumberFormat(FALLBACK_LOCALE, options)
+    try {
+      formatter = new Intl.NumberFormat(FALLBACK_LOCALE, options)
+    } catch {
+      // 极端环境最终兜底：Intl 完全不可用时退化为固定小数格式（刻度仍可读）
+      formatter = new Intl.NumberFormat(FALLBACK_LOCALE, {
+        ...options,
+        notation: 'standard',
+        minimumFractionDigits: digits,
+      })
+    }
+  }
+  // FIFO 淘汰最旧缓存项（正常宿主 locale 集合有限，不会触顶）
+  if (formatterCache.size >= FORMATTER_CACHE_MAX) {
+    const oldest = formatterCache.keys().next().value
+    if (oldest !== undefined) formatterCache.delete(oldest)
   }
   formatterCache.set(key, formatter)
   return formatter

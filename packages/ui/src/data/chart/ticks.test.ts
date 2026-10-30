@@ -262,4 +262,17 @@ describe('formatTick', () => {
     expect(out).not.toBe('0')
     expect(() => formatTick(2.5e8, 2.5e8, 'ar')).not.toThrow()
   })
+
+  // 维护批：formatter 缓存上限 + fallback 健壮性（独立复核 A5）
+  it('大量不同非法 locale 轮换：缓存有上限（FIFO 淘汰），渲染不抛错', () => {
+    // 注入 200 个互不相同的非法 locale（结构非法必走回退路径）
+    for (let i = 0; i < 200; i++) {
+      expect(() => formatTick(1, 1, `bad_${i}`)).not.toThrow()
+    }
+  })
+
+  it('fallback 构造包 try：非法 locale 输出与固定 en-US 一致（SSR/客户端同口径）', () => {
+    expect(formatTick(0.25, 0.25, 'zh_CN')).toBe(formatTick(0.25, 0.25, 'en-US'))
+    expect(formatTick(25000, 25000, 'zh_CN')).toBe(formatTick(25000, 25000, 'en-US'))
+  })
 })

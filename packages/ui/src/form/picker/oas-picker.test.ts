@@ -211,6 +211,37 @@ describe('OASPicker', () => {
     })
   })
 
+  describe('全禁用列的 aria-selected（维护批回归）', () => {
+    it('全禁用列：任何项都不标 aria-selected；无悬空 aria-activedescendant', async () => {
+      const el = mount({
+        columns: JSON.stringify([
+          {
+            items: [
+              { label: 'a', disabled: true },
+              { label: 'b', disabled: true },
+            ],
+          },
+        ]),
+      })
+      await settle()
+      const col = cols(el)[0]!
+      for (const it of items(col)) {
+        expect(it.getAttribute('aria-selected'), `「${it.textContent}」不可选项不得标选中`).toBeNull()
+        expect(it.getAttribute('aria-disabled')).toBe('true')
+      }
+      expect(col.hasAttribute('aria-activedescendant')).toBe(false)
+    })
+
+    it('混有可用项的列：可用项照常标 aria-selected（不全禁用不受影响）', async () => {
+      const el = mount({
+        columns: JSON.stringify([{ items: [{ label: 'a', disabled: true }, { label: 'b' }] }]),
+      })
+      await settle()
+      const its = items(cols(el)[0]!)
+      expect(its[0]!.getAttribute('aria-selected')).toBeNull()
+      expect(its[1]!.getAttribute('aria-selected')).toBe('true')
+    })
+  })
   describe('级联（options 树）', () => {
     it('options 树：列数随选中路径派生；父列变更重建子列并复位', async () => {
       const el = mount({ options: TREE, value: '["zj","hz"]' })
