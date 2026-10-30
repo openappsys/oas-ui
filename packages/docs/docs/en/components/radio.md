@@ -34,7 +34,7 @@ Radios sharing a `name` are mutually exclusive (the component syncs across Shado
   </oas-radio-group>
 </DemoBlock>
 
-The group is controlled via `value`; each item's `value` acts as the option identifier, and the group manages exclusivity. SSR note: the group's runtime exclusion `name` is not written into the server snapshot (keeping same-attribute renders reproducible) — without JS the items in a group lose native same-name exclusivity (multiple can be checked); exclusivity is restored after client upgrade. For forms that rely on no-JS exclusivity, use `select` or validate server-side.
+The group is controlled via `value`; each item's `value` acts as the option identifier, and the group manages exclusivity. SSR note: the group's runtime exclusion `name` is not written into the server snapshot (keeping same-attribute renders reproducible) — without JS the items in a group lose native same-name exclusivity (multiple can be checked); exclusivity is restored after client upgrade; without JS the item values are also omitted from native form submission (no `name`). For forms that rely on no-JS submission or exclusivity, use `select` or validate server-side.
 
 The group follows the WAI-ARIA radiogroup keyboard pattern: **Tab enters the group once (stopping at the checked item, or the first non-disabled / non-readonly item when none is checked)**, `↑` `↓` `←` `→` move and select immediately (wrapping around, skipping disabled items), `Home` / `End` jump to the first/last enabled item. Native inputs each live inside their own Shadow DOM, so the browser's same-name arrow grouping breaks across shadow boundaries — the component fills the gap with a host-level roving tabindex and arrow key handling.
 

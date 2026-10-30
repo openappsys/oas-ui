@@ -207,8 +207,9 @@ export class OASRadioGroup extends OASFormElement {
     this.items = this.collectItems()
     for (const r of this.items) {
       // 互斥 name 不进 SSR 快照（groupName 为运行时自增唯一值，写进快照会让同属性两次渲染
-      // 不可复现）：SSR 段跳过，水合后写真实 name 恢复互斥与表单提交。禁 JS 的真实损失是
-      // 同组失去原生同名互斥（可多选）——input/label 原生点击与键盘仍可用
+      // 不可复现）：SSR 段跳过，水合后写真实 name 恢复互斥与表单提交。禁 JS 的真实损失：
+      // 同组失去原生同名互斥（可多选），且子项 name 缺省 → 值不随原生表单提交——
+      // input/label 原生点击与键盘仍可用；依赖禁 JS 提交/互斥的表单请在服务端校验
       if (!isSsrRuntime()) r.setAttribute('name', this.groupName)
       r.toggleAttribute('checked', r.getAttribute('value') === value)
       // 组级下发走 data-group-*（与子项显式属性分立，不互相覆盖）

@@ -596,7 +596,10 @@ export class OASCommand extends OASElement {
     this.confirmEl = this.shadow.querySelector('.confirm')
     // aria-controls：listbox / 虚拟列表容器 id 由 value 身份派生（FNV-1a base36）——
     // bind 在 SSR 渲染路径同样执行（id 进快照），自增序号会让快照不可复现；
-    // 懒派生一次实例内不变，SSR 与客户端、同属性多次渲染逐字节一致
+    // 懒派生一次实例内不变，SSR 与客户端、同属性多次渲染逐字节一致。
+    // 已知口径：search 的 aria-controls 为跨 shadow IDREF（默认形态 listbox 在组件
+    // shadow；append-to portal 只搬 overlay 容器，search 仍在组件 shadow），读屏不
+    // 解析——与家族内 popover/tooltip 同一口径，非 id 策略引入。
     if (!this.listboxId) {
       this.listboxId = `oas-command-list-${stableHash36(this.getAttr('value', ''))}`
       this.vlistId = `oas-command-vlist-${this.listboxId.split('-').pop()}`

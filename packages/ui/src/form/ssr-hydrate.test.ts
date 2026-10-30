@@ -361,7 +361,7 @@ describe('form 组件 DSD 真水合批次 1', () => {
     expect(di.shadowRoot!.querySelectorAll('.row').length).toBe(2)
   })
 
-  it('radio-group：互斥 name 不进快照（SSR 口径）但水合后恢复——子项 input.name 非空且原生互斥生效', () => {
+  it('radio-group：互斥 name 不进快照（SSR 口径）但水合后恢复——子项 input.name 非空且组内单选互斥生效', () => {
     // 方案 F 回归（维护批 M2 fix round）：radio-group 的互斥 name（运行时唯一值）不进
     // SSR 快照——这里手工构造「无 name」的快照模拟真实 SSR 输出
     const setup = (e: OASElement) => {
@@ -379,7 +379,9 @@ describe('form 组件 DSD 真水合批次 1', () => {
     expect(names[0], '子项 name 已恢复（非空）').toBeTruthy()
     expect(names[0], '同组子项同名（互斥组）').toBe(names[1])
 
-    // 原生互斥生效：点击第二个子项的内部 input → 第一个子项 checked 取消、value 切到 b
+    // 组内单选互斥生效（组件链路：radio 按 name 文档级清同组 + 组 update 重下发 checked，
+    // 非浏览器跨 shadow 同名分组——后者在 shadow 场景本就失效）：点击第二个子项的内部
+    // input → 第一个子项 checked 取消、value 切到 b
     const inputB = (radios[1] as OASRadio & { shadowRoot: ShadowRoot }).shadowRoot!.querySelector('input')!
     inputB.click()
     expect(radios[1]!.hasAttribute('checked'), '点击后 B 选中').toBe(true)

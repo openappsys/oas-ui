@@ -790,11 +790,11 @@ export class OASPopover extends OASElement {
     this.anchor = this.querySelector(':scope > *') ?? this
 
     // 面板 id 由 title/content 身份派生（FNV-1a base36）：SSR 快照逐字节确定。
-    // panel 恒在某棵 shadow tree 内（默认在组件 shadow；`append-to` portal 时移入 portal
-    // host 的独立 shadowRoot）——id 作用域都在 shadow 内，document 级不存在撞号，
-    // 同内容多实例同 id 无串扰；portal 形态下锚点 aria-controls 为跨 shadow IDREF
-    // （读屏不解析，portal 形态的既有已知限制，非 id 策略引入）。
-    // SSR 水合快照复用已有 id，缺失（异常/旧快照）时按当前属性派生补写
+    // panel 的落点有两形态——默认在组件 shadow、`append-to` portal 时移入 portal host 的
+    // 独立 shadowRoot；而锚点是宿主 light DOM 元素，两种形态的锚点 aria-controls 都是
+    // 跨 shadow IDREF（读屏不解析，为 portal 与非 portal 一致的既有已知限制，非 id
+    // 策略引入）。panel 恒在某棵 shadow tree 内，document 级不存在撞号，同内容多实例
+    // 同 id 无串扰。SSR 水合快照复用已有 id，缺失（异常/旧快照）时按当前属性派生补写
     if (this.panel && !this.panel.id) {
       this.panel.id = `oas-popover-panel-${stableHash36(`${this.getAttr('title', '')}\u0000${this.getAttr('content', '')}`)}`
     }
