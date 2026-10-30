@@ -4,10 +4,14 @@
   "attrs": [
     {
       "name": "columns",
+      "type": "string",
+      "default": "",
       "observed": true
     },
     {
       "name": "options",
+      "type": "string",
+      "default": "",
       "observed": true
     },
     {
