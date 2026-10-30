@@ -1,5 +1,12 @@
 import { describe, it, expect, vi } from 'vitest'
-import { formatTick, formatterCacheSize, niceStep, niceTicks, tickFractionDigits } from './ticks.js'
+import {
+  formatTick,
+  formatterCacheSize,
+  resetFormatterCacheForTests,
+  niceStep,
+  niceTicks,
+  tickFractionDigits,
+} from './ticks.js'
 
 describe('niceStep', () => {
   it('只使用 1 / 2 / 2.5 / 5 / 10 × 10^n 序列，阈值处向上切换', () => {
@@ -278,17 +285,26 @@ describe('formatTick', () => {
   })
 
   it('最终兜底不依赖 Intl：Intl 完全不可用时退化为 toFixed，绝不向渲染抛错', () => {
+    // 触达前提：先清模块级缓存——否则前面用例写过的 key 直接命中，mock 的
+    // Intl.NumberFormat 根本不被调用（兜底路径零覆盖，M1 补审 I1 假绿实证）。
+    // 另用文件内未出现过的 digits=3 组合（0.125）双保险。
+    resetFormatterCacheForTests()
     const real = Intl.NumberFormat
-    // 模拟极端 ICU 裁剪环境：任何 locale 的 Intl.NumberFormat 构造都抛错
-    vi.spyOn(Intl, 'NumberFormat').mockImplementation(() => {
+    const calls: unknown[][] = []
+    // 模拟极端 ICU 裁剪环境：任何 locale 的 Intl.NumberFormat 构造都抛错。
+    // mockImplementation 必须用 function——箭头函数在 `new` 语义下 vitest 不执行
+    // 函数体，calls 观测会失真（恒 0，M1 补审 I1 假绿的观测根源）
+    vi.spyOn(Intl, 'NumberFormat').mockImplementation(function (...args) {
+      calls.push(args)
       throw new RangeError('Intl unavailable')
     })
     try {
       let out = ''
       expect(() => {
-        out = formatTick(0.25, 0.25, 'zh_CN')
+        out = formatTick(0.125, 0.125, 'zh_CN')
       }).not.toThrow()
-      expect(out, '退化为数字字符串（toFixed）').toMatch(/^0\.25\d*$/)
+      expect(calls.length, '兜底路径必须真实触达（构造器至少被调用过）').toBeGreaterThan(0)
+      expect(out, '退化为数字字符串（toFixed 3 位）').toBe('0.125')
     } finally {
       vi.mocked(Intl.NumberFormat).mockRestore()
       void real

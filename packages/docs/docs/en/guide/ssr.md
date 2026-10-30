@@ -445,8 +445,13 @@ than hydration, not deferred to `useEffect`. Mount
 `<OasRegistry>{children}</OasRegistry>` in the root layout as-is.
 
 For non-default languages, register locale packs with a **static import**
-(module-evaluation time, always before component upgrades; do not put them in
-a `useEffect` dynamic import racing against the library — see
+(synchronous module-evaluation time; the dynamic `@oas-ui/ui` import resolves at
+least one microtask later, so registration precedes component upgrades within
+the same client module graph — and in practice across chunks too, since the ui
+bundle is far larger than the boot code, though that is bundler behavior rather
+than a language guarantee; the fixture additionally settles readiness via
+`customElements.whenDefined`). Do not put locale registration in a
+`useEffect` dynamic import racing against the library — see
 `packages/ssr/fixtures/next/app/oas-client-boot.tsx`).
 :::
 

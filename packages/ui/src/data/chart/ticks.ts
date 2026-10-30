@@ -147,6 +147,11 @@ export function formatterCacheSize(): number {
   return formatterCache.size
 }
 
+/** 清空探针（测试构造兜底路径用）：清后必 miss，强制走 Intl 构造（含抛错兜底分支） */
+export function resetFormatterCacheForTests(): void {
+  formatterCache.clear()
+}
+
 /**
  * 构造（或复用）formatter。非法 locale（zh_CN / 自定义名 / 非 ASCII / 空串）只回退一次到
  * 固定 en-US（保证 SSR 与客户端一致），绝不把未校验 locale 再交给 Intl 二次抛 RangeError。

@@ -81,8 +81,8 @@ test('普通 minor 移除必须被拒绝：attribute 面 removeIn 2.6.5 → 报�
   assert.equal(isApprovedMinorException({ ...attrEntry, removeIn: '2.6.5' }), false)
 })
 
-test('package-export 不带 minorException 的非 major removeIn → 拒绝（例外不得缺省成立）', () => {
-  const { minorException, ...bare } = exportEntry
+test('package-export 预告态不带 minorException 的非 major removeIn → 拒绝（例外不得缺省成立）', () => {
+  const { minorException, ...bare } = { ...exportEntry, state: 'silent-compat' }
   const problems = run([bare])
   assert.equal(problems.length, 1, `应恰好一条问题：${problems.join(' | ')}`)
   assert.match(problems[0], /major/)
@@ -101,9 +101,13 @@ test('发布后台账：state=removed 的历史条目 removeIn 等于当前版�
 })
 
 test('对照：state 非 removed 的同版本预告仍拒绝（state 感知不泛化到未实装条目）', () => {
-  const problems = run(
-    [{ ...exportEntry, state: 'silent-compat', currentVersionTag: '2.6.5' }].map(({ currentVersionTag, ...e }) => e),
-  )
+  // currentVersion=2.6.5（发布后）+ 预告态 + removeIn=2.6.5：同版本不满足「严格高于」→ 拒绝
+  const problems = collectProblems({
+    entries: [{ ...exportEntry, state: 'silent-compat' }],
+    currentVersion: '2.6.5',
+    manifest,
+    sourceCalls: [],
+  })
   assert.equal(problems.length, 1, `同版本预告必须拒绝：${problems.join(' | ')}`)
   assert.match(problems[0], /major/)
 })
@@ -134,7 +138,7 @@ test('minorException 缺批准方 / 缺理由 / 空白 → 拒绝（approvedBy �
     '口头批准',
   ]
   for (const bad of bads) {
-    const problems = run([{ ...exportEntry, minorException: bad }])
+    const problems = run([{ ...exportEntry, state: 'silent-compat', minorException: bad }])
     assert.ok(
       problems.some((p) => /minorException/.test(p)),
       `minorException=${JSON.stringify(bad)} 应被拒：${problems.join(' | ')}`,
@@ -151,7 +155,8 @@ test('例外只允许「同 major 且严格高于 currentVersion」的合法 x.y
   }
   // 拒绝：同版本 / patch 降级 / 更低 minor / 更低 major / 非法版本——即使带 minorException
   for (const bad of ['2.6.4', '2.6.3', '2.5.9', '1.9.0', '2.6', '2.6.5-beta.1', 'abc', 'v2.6.5', '']) {
-    const problems = run([{ ...exportEntry, removeIn: bad }])
+    // 拒绝组用预告态（silent-compat）：removed 墓碑已被发布后豁免，不再参与版本纪律红侧
+    const problems = run([{ ...exportEntry, state: 'silent-compat', removeIn: bad }])
     assert.equal(
       problems.length,
       1,

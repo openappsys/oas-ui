@@ -512,14 +512,25 @@ export class OASFloatingPanel extends OASElement {
   }
 
   /**
-   * 动态开启 `resizable` 时补挂标题栏观察（bind/onReconnect 只按当时属性挂一次）。
-   * RO.observe 同目标幂等；关闭方向不 unobserve（回调由 syncTitlebarHeight 的
-   * resizable 门控短路，无害）；断开重连由 observeLayout 重置标记。
+   * 动态双向跟随 `resizable`（bind/onReconnect 只按当时属性挂一次）：
+   * - 开启：补挂标题栏观察（RO.observe 同目标幂等）并立即实测；
+   * - 关闭：清掉 frame 上可能滞留的内联 pin + 重置标记——否则 pin 永不回落
+   *   （RO 回调被 syncTitlebarHeight 的 resizable 门控短路，宿主清 style 也
+   *   够不到 shadow 内联），标题栏 min-height 偏高且宿主样式表覆写失效。
    */
   private syncTitlebarObserver(): void {
-    if (isSsrRuntime() || !this.layoutObserver || this.titlebarObserved) return
+    if (isSsrRuntime() || !this.layoutObserver) return
     const bar = this.titlebarEl
-    if (!bar || !this.hasAttr('resizable')) return
+    if (!bar) return
+    if (!this.hasAttr('resizable')) {
+      if (this.titlebarObserved) {
+        this.layoutObserver.unobserve(bar)
+        this.titlebarObserved = false
+        this.frameEl?.style.removeProperty('--oas-floating-panel-titlebar-height')
+      }
+      return
+    }
+    if (this.titlebarObserved) return
     this.layoutObserver.observe(bar)
     this.titlebarObserved = true
     this.syncTitlebarHeight()

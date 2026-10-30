@@ -1250,6 +1250,17 @@ describe('OASFloatingPanel 标题栏高度实测', () => {
     stubHeight(bar, 48)
     ro.trigger()
     expect(frameOf(el).style.getPropertyValue(TOKEN), '实测写 frame token').toBe('48px')
+
+    // 动态关闭 resizable：清掉滞留 pin（否则 min-height 偏高且宿主样式表覆写失效——
+    // RO 回调被 resizable 门控短路，宿主清 style 够不到 shadow 内联，此为唯一逃逸口）
+    el.removeAttribute('resizable')
+    expect(frameOf(el).style.getPropertyValue(TOKEN), '关闭 resizable 后滞留 pin 被清').toBe('')
+    expect(ro.targets.has(bar), '关闭后标题栏移出观察集').toBe(false)
+    // 重新开启：重进观察集并按实测重写
+    el.setAttribute('resizable', '')
+    expect(ro.targets.has(bar), '重新开启后重进观察').toBe(true)
+    ro.trigger()
+    expect(frameOf(el).style.getPropertyValue(TOKEN), '重新实测写回').toBe('48px')
   })
 
   it('SSR 运行段不建观察器、不写实测 token（快照仍用默认 token）', () => {
@@ -1383,6 +1394,22 @@ describe('OASFloatingPanel 内容滚动区键盘可达', () => {
     expect(reconnected).not.toBe(ro)
     expect(reconnected.targets.has(content(el)), '重连重挂内容盒').toBe(true)
     expect(box.getAttribute('tabindex'), '重连后按实测复判（仍溢出）').toBe('0')
+
+    // resizable + 富标题变体（M1 补审 M1-3）：标题栏重进观察集的直接断言——
+    // 动态双向 resizable 引入后，重连路径的标题栏重挂无其它用例覆盖
+    const el2 = mount({ open: '', resizable: '' }, '<span slot="title">富标题</span>')
+    const bar2 = titlebar(el2)
+    const ro2 = FakeRO.instances.at(-1)!
+    if (!ro2.targets.has(bar2)) {
+      expect.fail(
+        `DIAG roCount=${FakeRO.instances.length} resizable=${el2.hasAttribute('resizable')} bar2=${!!bar2} has=${ro2.targets.has(bar2)} targets=${[...ro2.targets].map((t) => t.getAttribute('part')).join(',')}`,
+      )
+    }
+    el2.remove()
+    expect(ro2.disconnected, '断开释放').toBe(true)
+    document.body.appendChild(el2)
+    const reconnected2 = FakeRO.instances.at(-1)!
+    expect(reconnected2.targets.has(titlebar(el2)), '重连后 resizable 富标题的标题栏重进观察集').toBe(true)
   })
 
   it('SSR 运行段不建观察器、不写 tabindex（快照不含客户端测量）', () => {

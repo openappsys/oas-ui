@@ -55,7 +55,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 }
 ```
 
-> ✅ **Next 16 SSR 安全（已修复）**：`OasRegistry` 虽是 `"use client"`，Next 16 App Router 仍会在首次请求的服务端渲染阶段求值该模块；适配器已改为**浏览器守卫下的动态导入**（模块求值期 `if (typeof window !== 'undefined') void import('@oas-ui/ui')`）——服务端预渲染安全跳过（无 DOM 不求值组件库），客户端仍在模块求值时注册（早于水合，不延后到 `useEffect`）。根 layout 直接 `<OasRegistry>{children}</OasRegistry>` 即可，无需任何 workaround。非默认语言需先注册语言包再让组件库求值（语言包用静态 import 同步注册即可，必然早于组件 upgrade；见 `packages/ssr/fixtures/next`）。
+> ✅ **Next 16 SSR 安全（已修复）**：`OasRegistry` 虽是 `"use client"`，Next 16 App Router 仍会在首次请求的服务端渲染阶段求值该模块；适配器已改为**浏览器守卫下的动态导入**（模块求值期 `if (typeof window !== 'undefined') void import('@oas-ui/ui')`）——服务端预渲染安全跳过（无 DOM 不求值组件库），客户端仍在模块求值时注册（早于水合，不延后到 `useEffect`）。根 layout 直接 `<OasRegistry>{children}</OasRegistry>` 即可，无需任何 workaround。非默认语言需先注册语言包再让组件库求值（语言包用静态 import 同步注册——模块求值期同步执行，`@oas-ui/ui` 的动态导入解析至少晚一个 microtask，同一客户端模块图内注册先于组件 upgrade；ui 产物体积远大于 boot 代码，实践上跨 chunk 也稳定如此，但这属打包行为而非语言保证；见 `packages/ssr/fixtures/next`）。
 
 #### 低层能力
 

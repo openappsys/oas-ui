@@ -199,7 +199,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 ::: tip Next 16：`OasRegistry` 已做 SSR 预渲染安全（浏览器守卫动态导入）
 `OasRegistry` 虽标注 `"use client"`，但 Next 16 App Router 在首次请求/预渲染时仍会在服务端求值 Client Component 模块。适配器已改为模块求值期的**浏览器守卫动态导入**（`if (typeof window !== 'undefined') void import('@oas-ui/ui')`）：服务端没有 DOM，守卫跳过、组件库入口不求值（不再抛 `HTMLElement is not defined`）；客户端仍在模块求值时注册（早于水合，不延后到 `useEffect`）。根 layout 直接 `<OasRegistry>{children}</OasRegistry>` 即可。
 
-若页面使用 en / ar 等非默认语言，语言包用**静态 import 同步注册**（模块求值期执行，必然早于组件 upgrade；不要放进 `useEffect` 动态 import 再和组件库竞速，见 `packages/ssr/fixtures/next/app/oas-client-boot.tsx`）。
+若页面使用 en / ar 等非默认语言，语言包用**静态 import 同步注册**（模块求值期同步执行；`@oas-ui/ui` 的动态导入解析至少晚一个 microtask，同一客户端模块图内注册先于组件 upgrade——ui 产物体积远大于 boot 代码，实践上跨 chunk 也稳定如此，但这属打包行为而非语言保证，fixture 以 `customElements.whenDefined` 后再标记就绪兜底；不要把语言包放进 `useEffect` 动态 import 与组件库竞速，见 `packages/ssr/fixtures/next/app/oas-client-boot.tsx`）。
 :::
 
 > 注意：`dangerouslySetInnerHTML` 的 DSD 模板只在浏览器 **HTML 解析器**处理时附加 shadow root——初始 SSR 由服务端输出流解析生效；客户端软导航（RSC flight 重建）走 `innerHTML` 注入不会附加 DSD，此时组件已在客户端注册（OasRegistry / `OasClientBoot`），由自定义元素自渲染接管，属渐进增强模型。
