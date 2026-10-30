@@ -272,7 +272,7 @@ onMounted(() => {
 | `min` | 最小尺寸 宽,高（缺省 160,96；非正/非法（含 0）视为未提供，回落缺省；min > max 时以 min 为准） | — | — |
 | `movable` | 标题栏拖动；框体聚焦时方向键移动（8px/步） | `boolean` | — |
 | `open` | 打开态（唯一状态源）；show()/close() 只写该属性，宿主直接写属性静默吸收（不派发 oas-open-change） | `boolean` | — |
-| `panel-title` | 标题文本（title 插槽覆盖）；避开原生 title 属性 | — | — |
+| `panel-title` | 标题文本（title 插槽覆盖）；避开原生 title 属性 | `string` | — |
 | `rect` | 位置与尺寸 x,y,width,height（相对宿主锚点的像素坐标；缺省 48,48,420,300；输出取整）；property 同时接受对象与同格式字符串 | `PanelRect` | — |
 | `resizable` | 八向缩放手柄（四边 + 四角）；框体聚焦时 Shift + 方向键缩放 | `boolean` | — |
 

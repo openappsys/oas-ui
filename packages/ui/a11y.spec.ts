@@ -38,9 +38,10 @@ const PAGE_NODE_EXEMPTIONS: Record<string, NodeRuleExemption[]> = {
   'stepper.html': [
     {
       rule: 'aria-valid-attr-value',
-      // tab 由 oas-stepper 在 shadow 内生成（id 形如 oas-stepper-<n>-tab-<i>）。
+      // tab 由 oas-stepper 在 shadow 内生成（id 形如 oas-stepper-<base36 哈希>-tab-<i>，
+      // 哈希来自 steps 身份属性派生的 stable id）。
       // ⚠️ 若 uid 生成格式变更，必须同步本正则；applied>0 断言会让陈旧豁免立刻变红（不会静默漏豁免）。
-      target: /^#oas-stepper-\d+-tab-\d+$/,
+      target: /^#oas-stepper-[0-9a-z]+-tab-\d+$/,
       // 仅「aria-controls 取值无效」这一条；同节点其它 ARIA 属性非法不会命中
       summary: /^Fix all of the following:\s+Invalid ARIA attribute value: aria-controls="([^"]+)"$/,
       idref: true,

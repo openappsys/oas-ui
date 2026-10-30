@@ -87,6 +87,8 @@
 
 - **维护批 M1（真实缺陷与测试/文档诚信收口）**：① **Next 适配器 SSR 安全**——`OasRegistry` 顶层副作用改浏览器守卫动态导入（客户端注册时机不变），Next fixture 改为真实消费 `<OasRegistry>`（撤销 `useEffect` workaround），README / docs/ssr.md / 中英 SSR 指南撤销临时写法；② **splitter 多面板删栏**——越界折叠索引收敛（`i >= n-1`）、重建后先归一尺寸再应用布局并回写属性/落盘快照（DOM/模型/属性/storage 四方一致）；③ **floating-panel 标题栏 token**——写入目标移入 shadow `.frame`、仅实测高于样式表基准时 pin（基准读取剥离自身内联防写入即回退自激）、动态开启 `resizable` 补挂标题栏观察、非 resizable 不观察不写 token；④ **picker 全禁用列**——`aria-selected` / `aria-activedescendant` 渲染与滚动/键盘重绘路径同口径门控（禁用项不写 `"false"`），id 改身份属性派生（`shared/stable-id.ts` FNV-1a）使 SSR 快照逐字节确定（index-bar 同批）；⑤ **chart formatter**——缓存上限 64 + fallback 双层 try + Intl 完全不可用时 `toFixed` 真兜底；⑥ **cdn-i18n 回归**——假隔离（`setContent` 复用文档 registry）改 route-fulfill 真实导航隔离；⑦ 文档措辞对齐实现（floating-panel 实测写入条件/触屏建议 `≥260,220`/纯文本节点溢出盲区、notice-bar `aria-live` SSR 口径）。
 
+- **维护批 M2（SSR 快照确定性全量收口 + splitter 折叠语义收紧）**：① floating-panel / popconfirm / avatar-group / stepper 的快照 id 从模块级自增计数改为身份属性派生（`stable-id.ts`），含 id 输出的白名单组件以表驱动用例锁「同属性两次渲染逐字节相等」；stepper 面板 `id` 不再由组件代生成（宿主显式 `id` 才同步 `aria-controls`），杜绝同 `steps` 多实例的文档级 duplicate id。② splitter 多面板增删子元素时折叠态整体收敛（`collapsed` 移除 + 全展开 + 快照落盘）——light DOM 无 key，按索引保留会错配折叠（零宽复发）；组件页与 CHANGELOG 已更新语义说明。
+
 ### 非目标
 
 不扩大 `oas-swatch-group` / `oas-bottom-sheet`；不新增组件属性/事件/插槽；不改变主 DSD spec 的全量断言范围与现有 Firefox/WebKit 抽样规则（仅新增该最小 spec）；不为其余 NOT_SSR 子件/命令式组件立项；**本批不修改 `@oas-ui/next` 适配器行为**（`OasRegistry` 的 Next 16 服务端求值限制以文档 + follow-up 处理，不做 pack smoke）。

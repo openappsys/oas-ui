@@ -1,6 +1,6 @@
 # Stepper 步骤面板
 
-步骤驱动的分步内容面板一体机：头部步骤条（可点击跳步）+ 联动内容面板（仅当前步显示），适合向导 / 表单分步 / 结账流程等场景。双组件配套使用：`oas-stepper` 管步骤头、`oas-stepper-panel` 管内容、`value` 关联显示（同构 `oas-tabs` / `oas-tab-panel` 模式）。
+步骤驱动的分步内容面板一体机：头部步骤条（可点击跳步）+ 联动内容面板（仅当前步显示），适合向导 / 表单分步 / 结账流程等场景。双组件配套使用：`oas-stepper` 管步骤头、`oas-stepper-panel` 管内容、`value` 关联显示（同构 `oas-tabs` / `oas-tab-panel` 模式）。面板的 `id` 只在宿主显式设置时使用并同步步骤头的 `aria-controls`（组件不代生成 light DOM id，避免同页多实例 duplicate id）；未设置时面板命名由 `aria-labelledby` 与自身内容承担，需要完整 tab/panel 关联请给面板显式 `id`。
 
 ## 基础用法
 
@@ -8,13 +8,13 @@
 
 <DemoBlock title="基础用法">
   <oas-stepper current="1" steps='[{"title":"创建订单","description":"填写订单信息"},{"title":"确认支付","description":"选择支付方式"},{"title":"完成发货","description":"等待收货"}]'>
-    <oas-stepper-panel value="0">
+    <oas-stepper-panel value="0" id="step-demo-panel-0">
       <p style="color: var(--oas-color-text-secondary)">第一步：填写收货地址与订单信息。</p>
     </oas-stepper-panel>
-    <oas-stepper-panel value="1">
+    <oas-stepper-panel value="1" id="step-demo-panel-1">
       <p style="color: var(--oas-color-text-secondary)">第二步：选择支付方式完成付款。</p>
     </oas-stepper-panel>
-    <oas-stepper-panel value="2">
+    <oas-stepper-panel value="2" id="step-demo-panel-2">
       <p style="color: var(--oas-color-text-secondary)">第三步：等待卖家发货并确认收货。</p>
     </oas-stepper-panel>
   </oas-stepper>

@@ -272,7 +272,7 @@ onMounted(() => {
 | `min` | Minimum size width,height (default 160,96; non-positive or malformed values including 0 count as not provided and fall back to the default; min wins when min > max) | — | — |
 | `movable` | Drag by the title bar; arrow keys move while the frame is focused (8px per step) | `boolean` | — |
 | `open` | Open state (single source of truth); show()/close() only write it, host writes are absorbed silently (no oas-open-change) | `boolean` | — |
-| `panel-title` | Title text (overridden by the title slot); avoids the native title attribute | — | — |
+| `panel-title` | Title text (overridden by the title slot); avoids the native title attribute | `string` | — |
 | `rect` | Position and size x,y,width,height relative to the host anchor (default 48,48,420,300; rounded); the property also accepts an object or a string of the same format | `PanelRect` | — |
 | `resizable` | Eight resize handles (four edges + four corners); Shift + arrows resize while the frame is focused | `boolean` | — |
 

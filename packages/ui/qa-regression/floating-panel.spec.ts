@@ -229,20 +229,26 @@ test('四边 / 四角缩放：se 放大、w 左扩、n 上扩', async ({ page })
 test('富标题 48px：上侧/上角手柄带可命中，顶边拖拽可缩放', async ({ page }) => {
   await gotoPage(page, '#fp-slot')
   // 等 ResizeObserver 把实测标题栏高度写进 shadow .frame 的内联 token（关闭态/初测 0 不写；
-  // A3 后写入目标是 frame 内联而非 host style——宿主样式不被 pin，host 上读不到该值）
+  // A3 后写入目标是 frame 内联而非 host style——宿主样式不被 pin，host 上读不到该值）。
+  // 断言与真实值比较（token === 标题栏实测内容高且确实撑高），不用阈值型
+  // （coarse 默认 44px 也满足 >40，会假阳）
   await expect
     .poll(
       () =>
         page.evaluate(() => {
-          const frame = document.getElementById('fp-slot')!.shadowRoot!.querySelector<HTMLElement>('[part="frame"]')!
-          const value = Number.parseFloat(
-            getComputedStyle(frame!).getPropertyValue('--oas-floating-panel-titlebar-height'),
+          const root = document.getElementById('fp-slot')!.shadowRoot!
+          const frame = root.querySelector<HTMLElement>('[part="frame"]')!
+          const bar = root.querySelector<HTMLElement>('[part="titlebar"]')!
+          const token = Number.parseFloat(
+            getComputedStyle(frame).getPropertyValue('--oas-floating-panel-titlebar-height'),
           )
-          return Number.isFinite(value) ? value : 0
+          const barContentH = bar.clientHeight
+          // token 必须精确等于标题栏实测内容高，且标题栏确实比默认 36px 高（富标题生效）
+          return Number.isFinite(token) && token === barContentH && barContentH > 40
         }),
-      { message: '富标题实测高度写回 shadow frame token' },
+      { message: 'token === 标题栏实测内容高且 > 默认 36（真实值比较，非阈值）' },
     )
-    .toBeGreaterThan(40)
+    .toBe(true)
 
   const probe = await page.evaluate(() => {
     const host = document.getElementById('fp-slot')!

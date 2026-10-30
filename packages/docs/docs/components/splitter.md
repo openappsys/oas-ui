@@ -74,7 +74,7 @@ min / max 支持像素值：`200px` 后缀按像素夹取（相对容器宽度�
 
 ## 折叠
 
-`collapsible` 属性在分隔条上显示折叠按钮，点击收起/展开前一侧面板；折叠状态写回 `collapsed` 属性并派发 `oas-collapse` 事件。
+`collapsible` 属性在分隔条上显示折叠按钮，点击收起/展开前一侧面板；折叠状态写回 `collapsed` 属性并派发 `oas-collapse` 事件。多面板模式下增删子元素（面板数变化）时折叠态会整体收敛（`collapsed` 属性移除、全部面板展开）——light DOM 子元素没有稳定身份，结构变更后按索引保留会把折叠错配到存活的相邻面板（表现为意外的零宽面板）；需要保持折叠时在增删后重新设置 `collapsed` 即可。
 
 <DemoBlock title="collapsible 折叠 / 展开">
   <oas-space direction="vertical" size="small" style="width: 100%">
