@@ -79,11 +79,11 @@ form-associated：有 `name` 时 FormData 提交 JSON 数组字符串；`form.re
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
-| `columns` | 独立多列数据（JSON 数组 [{ key?, label?, items: [{ label, value?, disabled? }] }]；与 options 互斥且优先） | — | — |
+| `columns` | 独立多列数据（JSON 数组 [{ key?, label?, items: [{ label, value?, disabled? }] }]；与 options 互斥且优先） | `string` | — |
 | `disabled` | 整件禁用（滚轮不响应、值不变） | `boolean` | — |
 | `item-height` | 行高 px（正整数，非法回落默认） | — | — |
 | `name` | 原生表单字段名（form-associated：FormData 提交的键，值为 JSON 数组字符串） | — | — |
-| `options` | 级联树数据（JSON [{ label, value?, children: [...] }]）；列数随选中路径派生，父列变更重建子列并复位首可用项 | — | — |
+| `options` | 级联树数据（JSON [{ label, value?, children: [...] }]）；列数随选中路径派生，父列变更重建子列并复位首可用项 | `string` | — |
 | `required` | 必填标记（驱动原生校验链 valueMissing：未选 = 未填） | `boolean` | — |
 | `value` | 各列选中值（JSON 数组，项 value 缺省回退 label）；落停回写反射，程序性写入只滚动不派发事件 | `string[] \| string` | — |
 | `visible-count` | 可见行数（≥3，偶数自动归奇） | — | — |
