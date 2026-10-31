@@ -216,7 +216,7 @@ test.describe('磨砂玻璃材质层', () => {
       modal?.remove()
       return bb
     })
-    expect(divider, '画廊对话框应打开且有标题区').not.toBeNull()
+    // 标题分割线颜色正则即覆盖「对话框已打开且有标题区」（divider 为 null 时 toMatch 直接抛错）
     // 白色结构线（rgba(255,255,255,...)）在白面板上消失——必须为深色系
     expect(divider, '标题分割线必须为深色系（白面板上可见）').toMatch(/^rgba?\(0, 0, 0,/)
   })
@@ -255,7 +255,8 @@ test.describe('玻璃材质与动态高光（跨浏览器一致）', () => {
         switchBox: box ? { w: box.width, h: box.height } : null,
       }
     })
-    expect(r.filters.length, '应采到玻璃控件 surface').toBeGreaterThan(0)
+    // 精确值：舞台内 4 个 oas-button 各 1 个 surface（button）+ 开关 2（button/.thumb）+ 滑块 2 = 8
+    expect(r.filters.length, '应采到玻璃控件 surface（4 按钮 + 开关 2 + 滑块 2）').toBe(8)
     for (const filter of r.filters) {
       expect(filter, '玻璃控件不得再消费浏览器专属位移滤镜').not.toContain('data:image/svg+xml')
       expect(filter, '玻璃控件不得再出现 feDisplacementMap').not.toContain('feDisplacementMap')
@@ -431,11 +432,20 @@ test.describe('玻璃材质与动态高光（跨浏览器一致）', () => {
       await customElements.whenDefined('oas-button')
       await new Promise((res) => requestAnimationFrame(() => requestAnimationFrame(() => res(null))))
       const injected = btn.shadowRoot ? (btn.shadowRoot.adoptedStyleSheets?.length ?? 0) : -1
+      // 对照：文档级已注册的同种控件（注入链的常规路径）作为基准
+      const control = document.querySelector('.gg-controls oas-button') as HTMLElement & {
+        shadowRoot: ShadowRoot
+      }
+      const controlInjected = control.shadowRoot.adoptedStyleSheets?.length ?? -1
       btn.remove()
       host.remove()
-      return { injected }
+      return { injected, controlInjected }
     })
-    expect(r.injected, 'shadow 内动态新增的注册组件也应被注入共享样式表').toBeGreaterThan(0)
+    // 精确值：两处都应恰好注入 1 张共享样式表（-1 = 无 shadowRoot；0 = 观察器漏掉 shadow 内新增）
+    expect(
+      [r.controlInjected, r.injected],
+      '文档级控件与 shadow 内动态新增控件各注入 1 张共享样式表（数量少/多都是注入链回归）',
+    ).toEqual([1, 1])
   })
 
   test('动态流动感：message 系 `.box` 高光层真生成（四组件防「漏基态 → 伪元素不生成」假绿）', async ({ page }) => {
@@ -763,7 +773,9 @@ test.describe('玻璃材质与动态高光（跨浏览器一致）', () => {
           bb * a + pageBg[2] * (1 - a),
         ]
         const [sr, sg, sb, sa] = item.sheen as [number, number, number, number]
-        expect(sa, `${theme}/${item.tag}：sheen 必须有 alpha（为 0 则门禁空转假绿）`).toBeGreaterThan(0)
+        // 高光 alpha 实测 light ≈0.278（#ffffff47）/ dark ≈0.2（#fff3）；token 微调不应红，
+        // 但必须保持「可感知」——下界 0.1（原先只判 >0，α=0.001 也能过，门禁等同空转）
+        expect(sa, `${theme}/${item.tag}：sheen alpha 必须可感知（≥0.1）`).toBeGreaterThanOrEqual(0.1)
         const [fr, fg2, fb] = item.fg as [number, number, number, number]
         // 高光层落在「surface 背景之上、文字之下」（注入表 isolation:isolate + z-index:-1）——
         // 文字亮度不变，只有底被提亮；取「高光叠底（文字不动）」与「无高光基线」更差者
@@ -837,10 +849,9 @@ test.describe('玻璃材质与动态高光（跨浏览器一致）', () => {
         const fg = parseSrgb(s.color)
         const bg = parseSrgb(s.bg)
         const sh = parseSrgb(s.sheen || 'rgba(255,255,255,0)')
-        expect(fg, `${theme}/${s.t} 文字色无法归一化（color-mix？）`).not.toBeNull()
-        expect(bg, `${theme}/${s.t} 底色无法归一化（color-mix？）`).not.toBeNull()
-        expect(sh, `${theme}/${s.t} sheen 无法归一化 raw=${JSON.stringify(s.sheen)}`).not.toBeNull()
-        expect(sh![3], `${theme}/${s.t} sheen 必须有 alpha（为 0 则 hover 断言空转）`).toBeGreaterThan(0)
+        // 三个色值都必须可归一化（下方 fg/bg/sh 的 [0..3] 访问在 null 时会直接抛错）
+        // 精确下界：实心按钮 hover 高光同样必须可感知（token light ≈0.278 / dark ≈0.2，下界 0.1）
+        expect(sh![3], `${theme}/${s.t} sheen alpha 必须可感知（≥0.1）`).toBeGreaterThanOrEqual(0.1)
         const fgRgb: [number, number, number] = [fg![0], fg![1], fg![2]]
         const bgRgb: [number, number, number] = [bg![0], bg![1], bg![2]]
         const base = Math.abs(perceptualContrast(relativeLuminance(fgRgb), relativeLuminance(bgRgb)))
@@ -1587,6 +1598,8 @@ test.describe('switch 玻璃态自定义色 / disabled / loading 可读性', () 
               spinnerColor: getComputedStyle(spinner).color,
               spinnerBorder: getComputedStyle(spinner).borderLeftColor,
               spinnerBox: { w: box.width, h: box.height },
+              // spinner 声明尺寸（布局宽受旋转/缩放动画影响，故以声明宽为下界基准）
+              spinnerCssW: parseFloat(getComputedStyle(spinner).width),
               opacity: Number(getComputedStyle(button).opacity),
               labelHidden: el.shadowRoot!.querySelector<HTMLElement>('.label')!.hidden,
             }
@@ -1602,6 +1615,8 @@ test.describe('switch 玻璃态自定义色 / disabled / loading 可读性', () 
             labelHidden: label.hidden,
             labelText: label.textContent ?? '',
             labelWidth: label.getBoundingClientRect().width,
+            // 精确契约基准：文案铺满轨道（按钮）宽，塌陷/hidden 时为 0
+            buttonW: btn.getBoundingClientRect().width,
             loadingLight: loading('sw-custom-loading-light'),
             loadingMid: loading('sw-custom-loading-mid'),
           }
@@ -1616,7 +1631,8 @@ test.describe('switch 玻璃态自定义色 / disabled / loading 可读性', () 
       const fg = mustColor(r.fg, `${theme} 自定义色文字`)
       expect(r.labelHidden, `${theme} 自定义色轨道文案应可见`).toBe(false)
       expect(r.labelText).toBe('开')
-      expect(r.labelWidth).toBeGreaterThan(0)
+      // 精确契约：文案层铺满轨道宽（47px 轨 → 47px 文案盒；hidden/塌陷时为 0）
+      expect(r.labelWidth, `${theme} 自定义色轨道文案「开」应真实占位（宽 = 轨道宽）`).toBe(r.buttonW)
       expect(r.mixInline, `${theme} 自定义色必须把玻璃轨道 mix 钉为 100%（不混深）`).toBe('100%')
       expect(r.mixComputed, `${theme} 自定义色 computed 轨道 mix 必须是 100%`).toBe('100%')
       expect(track[3], `${theme} 自定义色轨道应不透明`).toBe(1)
@@ -1637,7 +1653,11 @@ test.describe('switch 玻璃态自定义色 / disabled / loading 可读性', () 
         expect(sample.onColorInline, `${theme}/${label} 自定义 on 色必须由 pickOnColor 注入`).toMatch(/^#[0-9a-f]{6}$/)
         expect(sample.labelHidden, `${theme}/${label} loading 轨道文案应隐藏`).toBe(true)
         expect(sample.spinnerHidden, `${theme}/${label} loading spinner 应显示`).toBe(false)
-        expect(sample.spinnerBox.w, `${theme}/${label} spinner 应有真实尺寸`).toBeGreaterThan(0)
+        // spinner 布局宽随旋转/缩放动画波动（实测 14–15.7px），取不到精确值；下界 = 声明宽 10px
+        expect(
+          Math.min(sample.spinnerBox.w, sample.spinnerBox.h),
+          `${theme}/${label} spinner 应有真实尺寸（≥ 声明宽 ${sample.spinnerCssW}px）`,
+        ).toBeGreaterThanOrEqual(sample.spinnerCssW)
         const spinner = mustColor(sample.spinnerColor, `${theme}/${label} spinner`)
         const border = mustColor(sample.spinnerBorder, `${theme}/${label} spinner border`)
         expect(spinner[3], `${theme}/${label} spinner 必须实色`).toBe(1)
@@ -1797,6 +1817,8 @@ test.describe('switch 玻璃态自定义色 / disabled / loading 可读性', () 
             labelHidden: label.hidden,
             labelText: label.textContent ?? '',
             labelWidth: label.getBoundingClientRect().width,
+            // 精确契约基准：文案铺满轨道（按钮）宽，塌陷/hidden 时为 0
+            buttonW: btn.getBoundingClientRect().width,
             spinnerHidden: spinner.hidden,
             spinnerColor: getComputedStyle(spinner).color,
             spinnerBorder: getComputedStyle(spinner).borderLeftColor,
@@ -1818,7 +1840,8 @@ test.describe('switch 玻璃态自定义色 / disabled / loading 可读性', () 
       expect(raw.disabled.opacity, `${theme} disabled opacity`).toBeCloseTo(0.6, 2)
       expect(raw.disabled.labelHidden, `${theme} disabled 文案应可见`).toBe(false)
       expect(raw.disabled.labelText).toBe('开')
-      expect(raw.disabled.labelWidth).toBeGreaterThan(0)
+      // 精确契约：disabled 只降透明度，文案盒仍铺满轨道宽（不为 0）
+      expect(raw.disabled.labelWidth, `${theme} disabled 文案应真实占位（宽 = 轨道宽）`).toBe(raw.disabled.buttonW)
       expect(raw.disabled.spinnerHidden, `${theme} disabled spinner 应隐藏`).toBe(true)
       expect(raw.disabled.mixComputed, `${theme} disabled 默认轨道 mix`).toBe(expectedMix)
       expect(raw.disabled.mixInline, `${theme} disabled 不得留自定义色 inline mix`).toBe('')

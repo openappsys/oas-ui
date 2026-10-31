@@ -425,7 +425,9 @@ test('scheduler 虚拟化：资源行/时间轴窗口量界 + 滚动覆盖 + 拖
   const virtualRes = page.locator('#scheduler-virtual-res')
   const rowCount = await virtualRes.locator('.res-row').count()
   expect(rowCount, '500 资源渲染行数有上界（可视行 ±buffer，非全量 500）').toBeLessThanOrEqual(24)
-  expect(rowCount, '窗口渲染非空').toBeGreaterThan(0)
+  // 精确下界：窗口行必须铺满可视区 = ceil(600px 限高 / 37px 行高) = 17（实测 21 = 17 可视 + 4 行
+  // 预渲染；预渲染量属实现细节，故取「铺满可视区」这一契约下界）
+  expect(rowCount, '窗口行铺满可视区（≥ ceil(600/37) = 17）').toBeGreaterThanOrEqual(17)
   await expect(virtualRes.locator('.res-row[data-resource="r0"]').first()).toBeVisible()
 
   // 总高守恒：pad-top + 渲染行 × 37 + pad-bottom === 500 × 37
@@ -466,7 +468,8 @@ test('scheduler 虚拟化：资源行/时间轴窗口量界 + 滚动覆盖 + 拖
   const virtualDay = page.locator('#scheduler-virtual-day')
   const spanCount = await virtualDay.locator('.gutter span').count()
   expect(spanCount, '24 小时刻度按窗口渲染（DOM 上界，非全量 24）').toBeLessThanOrEqual(18)
-  expect(spanCount).toBeGreaterThan(0)
+  // 精确下界：刻度必须铺满视口 = ceil(640px timeview 高 / 48px 小时高) = 14（实测 16 = 14 + 2 格预渲染）
+  expect(spanCount, '刻度铺满可视区（≥ ceil(640/48) = 14）').toBeGreaterThanOrEqual(14)
 
   // 总高守恒：gutter 与 track 均保持 24 × 48（滚动范围不变）
   const axisH = await virtualDay.evaluate((host) => {
@@ -583,14 +586,27 @@ test('scheduler 虚拟化复审：band 高度偏移（多全天事件滚到中�
   await expect(band.locator('.col .event', { hasText: '早班检查' })).toHaveCount(1)
 
   // F2：聚焦事件条 → 再滚动触发窗口平移重建 → shadow.activeElement 仍为同一事件 id
-  const focusId = await band.evaluate(() => {
+  const focus = await band.evaluate(() => {
     const el = document.getElementById('scheduler-virtual-band')!
     const s = el.shadowRoot!
-    const ev = s.querySelector('.col .event') as HTMLElement
+    const ev = s.querySelector<HTMLElement>('.col .event')!
+    const evTitle = (ev.textContent ?? '').trim()
+    const evId = ev.getAttribute('data-id')
     ev.focus()
-    return (s.activeElement as HTMLElement | null)?.getAttribute('data-id') ?? null
+    const active = s.activeElement as HTMLElement | null
+    return {
+      evTitle,
+      evId,
+      activeId: active?.getAttribute('data-id') ?? null,
+      activeTitle: (active?.textContent ?? '').trim(),
+    }
   })
-  expect(focusId, '前置：聚焦事件条取得 data-id').toBeTruthy()
+  // 精确值：.col 首个事件条即「早班检查」（前置数据），聚焦后 shadow.activeElement 必须就是它
+  expect([focus.evTitle, focus.activeTitle], '前置：聚焦落在「早班检查」事件条上').toEqual(['早班检查', '早班检查'])
+  // 精确契约：两处取到的 data-id 相同且非空（后续「回焦」轮询以它为对照，空值会让该断言空转）
+  expect(focus.activeId, '前置：聚焦事件条取得非空 data-id').toMatch(/^\S+$/)
+  expect(focus.activeId).toBe(focus.evId)
+  const focusId = focus.activeId
   await band.evaluate(() => {
     const el = document.getElementById('scheduler-virtual-band')!
     const tv = el.shadowRoot!.querySelector('[part="timeview"]') as HTMLElement
@@ -665,7 +681,8 @@ test('scheduler 虚拟化终审：500 资源 × 5000+ 事件滚动覆盖 + 未�
   // 渲染行数上界：501 行只渲染可视窗口（600px 限高 → 可视行 ±buffer）
   const rowCount = await idx.locator('.res-row').count()
   expect(rowCount, '501 行只渲染窗口行').toBeLessThanOrEqual(24)
-  expect(rowCount, '窗口渲染非空').toBeGreaterThan(0)
+  // 精确下界：窗口行铺满可视区 = ceil(600px 限高 / 37px 行高) = 17（实测 21）
+  expect(rowCount, '窗口行铺满可视区（≥ ceil(600/37) = 17）').toBeGreaterThanOrEqual(17)
 
   // aria-rowcount = 500 资源 + 1 未分配（存在无 resource / 未知 resource 事件）
   await expect(idx.locator('[role="grid"]')).toHaveAttribute('aria-rowcount', '501')
@@ -736,12 +753,15 @@ test('scheduler 资源视图默认限高：宿主 height=600px + 500 资源内�
   const before = await read()
   expect(before.hostH, '宿主 height=600px 生效').toBeCloseTo(600, 0)
   expect(before.maxH, '资源视图默认限高 640px（与 timeview 一致）').toBe('640px')
-  expect(before.clientH, '资源视图形成滚动视口').toBeGreaterThan(0)
+  // 精确契约：内部限高即实际滚动视口高 —— 视口 clientHeight 必须等于生效 max-height（实测 640，
+  // 宿主 600px 不钳内层；为 0 时下一条 scrollH > clientH 会假绿）
+  expect(before.clientH, '资源视图形成滚动视口：视口高 = 生效 max-height').toBe(parseFloat(before.maxH))
   expect(before.scrollH, '500 行内容超过视口：内部产生滚动').toBeGreaterThan(before.clientH + 1)
   // 窗口行数上界 = ceil(640/37)=18 可视行 + 上下预渲染 buffer 各 4（RES_ROW_BUFFER）。
   // 首屏顶部 buffer 被 clamp 到 0 时为 22；滚动到中部上下 buffer 均满 → 26 为精确上界
   expect(before.rows, '500 行只渲染可视窗口（非全量）').toBeLessThanOrEqual(26)
-  expect(before.rows, '窗口渲染非空').toBeGreaterThan(0)
+  // 精确下界：窗口行铺满视口 = ceil(640/37) = 18（实测 22 = 18 可视 + 4 行顶部 buffer；上界 26 已断言）
+  expect(before.rows, '窗口行铺满视口（≥ ceil(640/37) = 18）').toBeGreaterThanOrEqual(18)
 
   // 中部滚动：行窗口平移覆盖可视区；spacer 守恒总高（scrollHeight 不随窗口重建缩水）
   await host.evaluate((h) => {
@@ -898,7 +918,12 @@ test('scheduler windowed 资源切片 + 打印样式：绝对行号、窗口请�
   expect(r.rowCount).toBe('100')
   expect(r.scrollTop, '首屏应锚定到切片首行（37px/行 × 40）').toBeGreaterThanOrEqual(40 * 37)
   expect(r.firstIndex).toBe('41')
-  expect(r.req, '应派发 oas-window-request').not.toBeNull()
+  // 精确契约：窗口请求必须覆盖当前切片 [40, 60)，且 reason=init（null 时下面的对象直接不等）
+  const winReq = r.req as { start: number; end: number; reason: string } | null
+  expect(
+    { coversSlice: winReq !== null && winReq.start <= 40 && winReq.end >= 60, reason: winReq?.reason ?? null },
+    `应派发覆盖切片 [40,60) 的 oas-window-request（实得 ${JSON.stringify(r.req)}）`,
+  ).toEqual({ coversSlice: true, reason: 'init' })
   expect(r.printCss, '应包含 @media print').toBe(true)
   expect(errors).toEqual([])
 })
@@ -1036,14 +1061,16 @@ test('scheduler 日视图：重叠定时事件按车道并排（不再完全叠�
     }
   })
 
-  expect(r.a, '重叠事件 A 应渲染').not.toBeNull()
-  expect(r.b, '重叠事件 B 应渲染').not.toBeNull()
-  expect(r.c, '非重叠事件 C 应渲染').not.toBeNull()
+  // 三条事件条是否渲染由下方几何断言承担（r.a/r.b/r.c 为 null 时访问即抛错）
   // 同一聚簇两车道：A/B 各占约半列，横向错开且有间隙，纵向仍重叠（同一时段）
   expect(r.a!.w).toBeLessThan(r.host * 0.6)
   expect(r.b!.w).toBeLessThan(r.host * 0.6)
   expect(Math.min(r.a!.right, r.b!.right) - Math.max(r.a!.left, r.b!.left)).toBeLessThanOrEqual(1)
-  expect(Math.min(r.a!.bottom, r.b!.bottom) - Math.max(r.a!.top, r.b!.top)).toBeGreaterThan(0)
+  // 精确契约：B（09:30–10:30）整体落在 A（09:00–11:00）内 → 纵向重叠恰为 B 的整高
+  expect(
+    Math.min(r.a!.bottom, r.b!.bottom) - Math.max(r.a!.top, r.b!.top),
+    'B 落在 A 时段内 → 纵向重叠 = B 的整高',
+  ).toBeCloseTo(r.b!.bottom - r.b!.top, 0)
   // 列内 4px 外边距 + 车道间 2px 间隙（与单车道 C 同口径）
   expect(Math.abs(r.a!.left - r.track.left - 4), '首车道左缘保留 4px 外边距').toBeLessThanOrEqual(1)
   expect(Math.abs(r.track.right - r.b!.right - 4), '末车道右缘保留 4px 外边距').toBeLessThanOrEqual(1)

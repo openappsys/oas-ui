@@ -273,8 +273,12 @@ test('gantt RTL scrollToDate 负值模型 + 显式 milestone 带 end 渲染菱�
     return out
   })
   expect(result.rtlAttr).toBe(true)
-  // LTR 正值模型：向右滚为正
-  expect(result.ltr).toBeGreaterThan(0)
+  // 精确契约（镜像对称）：同一目标日期在 LTR / RTL 两个 400px 实例上滚动，scrollLeft 互为相反数
+  // （时间轴镜像、视口半宽对齐同一点）；浏览器 RTL scrollLeft 存在 1px 亚像素取整，故容差 1px
+  expect(
+    Math.abs(result.ltr + result.rtl),
+    `LTR scrollLeft ${result.ltr} 应 = −(RTL ${result.rtl})（镜像对称）`,
+  ).toBeLessThanOrEqual(1)
   // RTL 负值模型：同一目标日期 scrollLeft 为负（时间轴镜像，0 在画布最右）
   expect(result.rtl).toBeLessThan(0)
   // 感知层：目标日期列滚动后落在视口内（不只是公式为负）
@@ -307,9 +311,21 @@ test('gantt 行拖拽重排 oas-reparent + 基线对比渲染', async ({ page })
   await page.mouse.move(b4.x + 12, b4.y + b4.height / 2)
   await page.mouse.down()
   await page.mouse.move(b3.x + 12, b3.y + 4, { steps: 5 })
-  // 落点指示线可见（评审 C1：drop-line 曾零宽度不可见）
-  const dropW = await host.locator('.drop-line').evaluate((el) => el.getBoundingClientRect().width)
-  expect(dropW).toBeGreaterThan(0)
+  // 落点指示线可见（评审 C1：drop-line 曾零宽度不可见）。
+  // 精确契约：横跨左侧行区 —— 宽 = 行区宽 − inset-inline-start（8 + 层级缩进）− inset-inline-end(8)
+  const drop = await host.locator('.drop-line').evaluate((el) => {
+    const cs = getComputedStyle(el)
+    return {
+      w: el.getBoundingClientRect().width,
+      rowsW: (el.parentElement as HTMLElement).clientWidth,
+      start: parseFloat(cs.insetInlineStart),
+      end: parseFloat(cs.insetInlineEnd),
+    }
+  })
+  expect(
+    drop.w,
+    `落点线宽 ${drop.w} 应 = 行区宽 ${drop.rowsW} − 起点缩进 ${drop.start} − 收尾 ${drop.end}`,
+  ).toBeCloseTo(drop.rowsW - drop.start - drop.end, 0)
   await page.mouse.up()
   await expect(page.locator('#gantt-reparent-output')).toContainText('oas-reparent')
 
@@ -381,7 +397,9 @@ test('gantt 拖拽到视口下缘自动滚动', async ({ page }) => {
     { timeout: 8000 },
   )
   const st = await host.locator('.tbody').evaluate((el) => el.scrollTop)
-  expect(st, '拖到边缘应自动滚动').toBeGreaterThan(0)
+  // 自动滚动量随「指针停留边缘的帧数」累积（每帧步进 ≤24px，见组件 autoScrollTick），取不到精确值；
+  // 下界 16px（< 单帧上限 24px）= 拖拽确实把内容推进了至少半个 40px 行高，而非 1px 抖动
+  expect(st, '拖到边缘应自动滚动（下界 16px = 半个行高）').toBeGreaterThanOrEqual(16)
   await page.mouse.up()
 })
 
@@ -629,10 +647,14 @@ test('gantt 长跨度列虚拟化：表头格数有上界 + 滚动后窗口平�
     // scroll 事件 → onScroll → rAF 合帧重建列窗口（等待窗口追上滚动位置）
     await raf()
     await raf()
+    const firstUnit = sr.querySelector<HTMLElement>('.head-minor .unit')!
     const after = {
       scrollLeft: tb.scrollLeft,
       minors: sr.querySelectorAll('.head-minor .unit').length,
       coverage: hasCoverage(),
+      // 视口宽 / 单列宽（列窗口下界 = ceil(视口宽 / 列宽)）
+      clientW: tb.clientWidth,
+      colW: parseFloat(firstUnit.style.width),
     }
     el.remove()
     return { before, after }
@@ -642,7 +664,11 @@ test('gantt 长跨度列虚拟化：表头格数有上界 + 滚动后窗口平�
   expect(res.before.coverage, '未滚动时可视区有刻度覆盖').toBe(true)
   expect(res.after.scrollLeft, 'scrollToDate 已滚动').not.toBe(0)
   expect(res.after.minors, '滚到中部后窗口格数仍有上界').toBeLessThan(200)
-  expect(res.after.minors).toBeGreaterThan(0)
+  // 精确下界：列窗口必须铺满可视区 = ceil(视口宽 / 列宽)；实测 32（含前后预渲染列，预渲染量随
+  // 滚动位置裁剪，故不能取精确值；上界 200 已断言）
+  expect(res.after.minors, '滚到中部后列窗口覆盖整屏').toBeGreaterThanOrEqual(
+    Math.ceil(res.after.clientW / res.after.colW),
+  )
   expect(res.after.coverage, '滚到中部后可视区仍有刻度覆盖').toBe(true)
 })
 
@@ -1158,7 +1184,8 @@ test('gantt windowed：滚动派发行窗口请求 + 绝对行回填 + 轴端 ra
     res.rangeInit !== null && res.rangeInit.startMs < new Date(2026, 0, 1).getTime(),
     '首帧 range need 起点越出轴起点（可视列窗贴轴头 ±1 视口宽）',
   ).toBe(true)
-  expect(res.scrollReq, '滚出装载区派发 scroll 请求').not.toBeNull()
+  // 装载区内滚动零请求已由上一条锁定；此处不再单列「scrollReq 非空」——下方覆盖区间断言
+  //（res.scrollReq !== null && …）为 null 时直接失败并打印实得值
   expect(
     res.scrollReq !== null && res.scrollReq.start <= 30 && res.scrollReq.end > 30,
     `scroll 请求应覆盖滚动行 30（实得 ${JSON.stringify(res.scrollReq)}）`,
@@ -1241,7 +1268,7 @@ test('gantt windowed 层级切片扁平化：装载区滚动无空白 + aria 全
     return { initFirst, mid, reqsInLoaded, aria }
   })
   expect(res.initFirst, '切片即行序：首行 = 切片首任务（expanded 收起不塌缩）').toBe('p')
-  expect(res.mid.count, '装载区中部滚动有行渲染（旧实现塌缩 → 空白）').toBeGreaterThan(0)
+  // 「中部滚动有行渲染」由下一条首行断言承担（空窗口时 first = '' 直接失败），不再单列 count > 0
   expect(res.mid.first, '滚动后首渲染行按扁平行序（行 120 - buffer 6 → c113）').toBe('c113')
   expect(res.reqsInLoaded, '装载区内滚动零请求（期望区间被覆盖）').toBe(0)
   expect(res.aria.posinset, 'posinset = 绝对行号（1 基）').toBe('115')
@@ -1395,7 +1422,8 @@ test('gantt 万行选择增量：连点 20 次选择零重建、渲染行数有�
   // 状态写入一致：aria/data 的 true 计数 = 选中数，且未选中行带显式 false
   expect(after.ariaTrue).toBe(4)
   expect(after.dataTrue).toBe(4)
-  expect(after.dataFalse, '未选中行仍带显式 data-selected="false"').toBeGreaterThan(0)
+  // 精确契约：渲染行要么选中（aria/data true）要么显式写 false —— 未选中行数 = 窗口行数 − true 数
+  expect(after.dataFalse, '未选中行仍带显式 data-selected="false"').toBe(after.rows - after.dataTrue)
   expect(after.multiselectable, '树容器声明多选语义').toBe('true')
 
   expect(errors, 'console 零 error').toEqual([])
@@ -1469,7 +1497,7 @@ test('gantt stripe 斑马纹：绝对行号奇偶 + 滚动稳定 + 暗色 + 关�
 
   // ① 开启：奇数绝对行有底色、偶数无；行名与条纹同口径；条纹不拦指针
   expect(res.light.canvas, '开启后条纹容器存在').toBe(true)
-  expect(res.light.names.length, '窗口行已渲染').toBeGreaterThan(0)
+  // 窗口行非空由下方 names.find(...) 的使用承担（空窗口时 find 返回 undefined → 访问即抛错）
   for (const n of res.light.names) {
     expect(n.striped, `绝对行 ${n.abs} 行名 data-stripe 应为 ${n.abs % 2 === 1}`).toBe(n.abs % 2 === 1)
   }
@@ -1749,12 +1777,14 @@ test('gantt 任务名与条形标签文字可选中复制（不牺牲可选中�
       barUserSelect: getComputedStyle(barLabel).userSelect,
       rowText: selectText(rowName),
       barText: selectText(barLabel),
+      barLabelText: (barLabel.textContent ?? '').trim(),
     }
   })
   expect(r.rowUserSelect, '任务名列应允许文本选择').toBe('text')
   expect(r.barUserSelect, '条标签应允许文本选择').toBe('text')
   expect(r.rowText).toContain('一期')
-  expect(r.barText.length).toBeGreaterThan(0)
+  // 精确值：条内标签（inside 档）文本 = 该条任务名；demo「inside」实例首条带标签的条为 w1「设计」
+  expect([r.barText, r.barLabelText], '条内标签文本可划选（选区文本 = 标签文本「设计」）').toEqual(['设计', '设计'])
 
   // 真实鼠标拖选（不是只读 computedStyle）：行名文本可被用户划选复制
   const name = page.locator('#gantt-basic .row-name[data-key="t1"] .name')
@@ -1767,7 +1797,8 @@ test('gantt 任务名与条形标签文字可选中复制（不牺牲可选中�
     await page.mouse.move(box.x + box.width - 2, box.y + box.height / 2, { steps: 5 })
     await page.mouse.up()
     const selected = await page.evaluate(() => window.getSelection()?.toString() ?? '')
-    expect(selected.length, '真实拖选应产生文本选区').toBeGreaterThan(0)
+    // 精确值：行名 t1 = 「需求分析」，从行名左缘拖到右缘必须选中整段文本
+    expect(selected.trim(), '真实拖选应选中整段行名文本「需求分析」').toBe('需求分析')
   }
 })
 
@@ -1850,12 +1881,18 @@ test('gantt DST 日轴：America/New_York 回拨周 minor 标签不重复（日�
       el.setAttribute('scale', 'day')
       el.setAttribute('tasks', JSON.stringify([{ id: 'dst', name: 'DST', start: '2026-10-30', end: '2026-11-04' }]))
       document.body.appendChild(el)
-      return [...el.shadowRoot!.querySelectorAll<HTMLElement>('.head-minor .unit')].map((u) =>
+      const rendered = [...el.shadowRoot!.querySelectorAll<HTMLElement>('.head-minor .unit')].map((u) =>
         (u.textContent ?? '').trim(),
       )
+      // 期望序列由轴单元自身推出（日档辅刻度 = 单元起始日的两位日号），与渲染窗口/单元数解耦
+      const units = (el as unknown as { units: Array<{ startMs: number }> }).units
+      const expected = units.map((u) => String(new Date(u.startMs).getDate()).padStart(2, '0'))
+      el.remove()
+      return { rendered, expected }
     })
-    expect(labels.length).toBeGreaterThan(0)
-    expect(new Set(labels).size, 'DST 回拨周日标签不得重复').toBe(labels.length)
+    // 精确契约：渲染出的日号序列 = 轴日序列（同时保证非空 + 顺序 + 格式；日号重复由下一条锁定）
+    expect(labels.rendered, '渲染日号 = 轴单元日号（日历日步进）').toEqual(labels.expected)
+    expect(new Set(labels.rendered).size, 'DST 回拨周日标签不得重复').toBe(labels.rendered.length)
   } finally {
     await context.close()
   }
