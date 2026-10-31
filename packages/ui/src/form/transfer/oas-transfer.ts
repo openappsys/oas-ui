@@ -3,6 +3,7 @@ import '../../data/virtual-list/index.js'
 import type { OASVirtualList } from '../../data/virtual-list/index.js'
 import { OASElement } from '@oas-ui/core'
 import { isRtl } from '../../shared/direction.js'
+import { cloneSlotContent } from '../../shared/slot-template.js'
 // 注册 oas-icon（穿梭按钮内嵌 oas-icon 组件，复用图标集/自定义注册/currentColor 着色）
 import '../../basic/icon/index.js'
 
@@ -858,11 +859,11 @@ export class OASTransfer extends OASElement {
     }
   }
 
-  /** 行内容：template[slot="item"] 克隆（[data-item-label] 绑定选项文本），缺省回落纯文本 */
+  /** 行内容：template[slot="item"] 双形态克隆（[data-item-label] 绑定选项文本），缺省回落纯文本 */
   private fillRowContent(row: HTMLElement, item: TransferItem): void {
     const tpl = this.querySelector('template[slot="item"]')
     if (tpl instanceof HTMLTemplateElement) {
-      row.appendChild(tpl.content.cloneNode(true))
+      row.appendChild(cloneSlotContent(tpl))
       const binder = row.querySelector('[data-item-label]')
       if (binder) binder.textContent = item.label
     } else {
@@ -890,8 +891,8 @@ export class OASTransfer extends OASElement {
       empty.className = 'empty'
       const tpl = this.querySelector('template[slot="empty"]')
       if (tpl instanceof HTMLTemplateElement) {
-        // 空态插槽（真空态与无匹配态共用，双侧共用）
-        empty.appendChild(tpl.content.cloneNode(true))
+        // 空态插槽（真空态与无匹配态共用，双侧共用）；双形态克隆（content / CSR 直插 childNodes）
+        empty.appendChild(cloneSlotContent(tpl))
       } else {
         empty.textContent = query ? this.t('transfer.noMatch') : this.t('transfer.empty')
       }

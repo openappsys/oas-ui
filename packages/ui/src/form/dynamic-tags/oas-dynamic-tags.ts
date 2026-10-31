@@ -1,5 +1,6 @@
 import { OASElement } from '@oas-ui/core'
 import { isRtl } from '../../shared/direction.js'
+import { cloneSlotContent } from '../../shared/slot-template.js'
 
 /** size 尺寸档（对齐 oas-input：small/medium/large，控高走 --oas-control-height-* token） */
 const VALID_SIZES = ['small', 'medium', 'large'] as const
@@ -514,12 +515,12 @@ export class OASDynamicTags extends OASElement {
 
     tagsEl.innerHTML = ''
 
-    // prefix 插槽：克隆到标签容器首位
+    // prefix 插槽：克隆到标签容器首位（双形态克隆：静态 HTML 取 content，框架 CSR 直插取 childNodes）
     const prefixTemplate = this.querySelector<HTMLTemplateElement>('template[slot="prefix"]')
     if (prefixTemplate instanceof HTMLTemplateElement) {
       const holder = document.createElement('span')
       holder.className = 'slot-prefix'
-      holder.appendChild(prefixTemplate.content.cloneNode(true))
+      holder.appendChild(cloneSlotContent(prefixTemplate))
       tagsEl.appendChild(holder)
     }
 
@@ -537,12 +538,12 @@ export class OASDynamicTags extends OASElement {
       tagsEl.appendChild(overflow)
     }
 
-    // suffix 插槽：克隆到标签容器末位
+    // suffix 插槽：克隆到标签容器末位（双形态克隆，同 prefix）
     const suffixTemplate = this.querySelector<HTMLTemplateElement>('template[slot="suffix"]')
     if (suffixTemplate instanceof HTMLTemplateElement) {
       const holder = document.createElement('span')
       holder.className = 'slot-suffix'
-      holder.appendChild(suffixTemplate.content.cloneNode(true))
+      holder.appendChild(cloneSlotContent(suffixTemplate))
       tagsEl.appendChild(holder)
     }
   }
@@ -575,7 +576,8 @@ export class OASDynamicTags extends OASElement {
     if (tpl instanceof HTMLTemplateElement) {
       const holder = document.createElement('span')
       holder.className = 'tag-custom'
-      holder.appendChild(tpl.content.cloneNode(true))
+      // 双形态克隆：静态 HTML 取 template.content，框架 CSR 直插取元素 childNodes
+      holder.appendChild(cloneSlotContent(tpl))
       const binder = holder.querySelector('[data-tag-label]')
       if (binder) binder.textContent = label
       item.appendChild(holder)

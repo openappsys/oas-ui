@@ -1,6 +1,7 @@
 import { OASFormElement } from '@oas-ui/core'
 import { computePosition, getViewport, type Placement } from '../../overlay/floating/index.js'
 import { resolveDirection } from '../../shared/direction.js'
+import { cloneSlotContent } from '../../shared/slot-template.js'
 
 export interface Option {
   label: string
@@ -907,11 +908,14 @@ export class OASMentions extends OASFormElement {
     this.emit('option-render', { index: idx, option, element: label })
   }
 
-  /** 选项 label 渲染：template[slot="option"] 克隆 + [data-option-label] 绑定，缺省回落纯文本 */
+  /**
+   * 选项 label 渲染：template[slot="option"] 克隆 + [data-option-label] 绑定，缺省回落纯文本。
+   * 克隆走共享工具：兼容静态 HTML（content）与框架 CSR 直插（元素 childNodes）双形态。
+   */
   private fillOptionLabel(labelEl: HTMLElement, option: Option): void {
     const tpl = this.querySelector('template[slot="option"]')
     if (tpl instanceof HTMLTemplateElement) {
-      labelEl.appendChild(tpl.content.cloneNode(true))
+      labelEl.appendChild(cloneSlotContent(tpl))
       const binder = labelEl.querySelector('[data-option-label]')
       if (binder) binder.textContent = String(option.label ?? '')
     } else {

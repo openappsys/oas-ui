@@ -1967,6 +1967,37 @@ describe('OASSelect 长尾组（能力缺口 P2）', () => {
     expect(trigger(bare).querySelector<HTMLElement>('.suffix')!.hidden).toBe(true)
   })
 
+  it('slot 模板子节点直插后仍可克隆，且不改动宿主模板 DOM', () => {
+    // Vue 等框架 CSR 直插 template 元素时子节点落在元素 childNodes（content 为空）；真实浏览器形态由
+    // qa-regression e2e 覆盖，这里守住非破坏性克隆与四条触发器插槽的接线。
+    const el = new OASSelect()
+    el.setAttribute('options', OPTIONS)
+    el.setAttribute('clearable', '')
+    el.setAttribute('value', 'apple')
+    const cases: Array<[string, string, string]> = [
+      ['prefix', '<span class="csr-prefix">📍</span>', '.csr-prefix'],
+      ['suffix', '<span class="csr-suffix">城市</span>', '.csr-suffix'],
+      ['suffix-icon', '<span class="csr-arrow">⌄</span>', '.csr-arrow'],
+      ['clear-icon', '<span class="csr-clear">✕</span>', '.csr-clear'],
+    ]
+    for (const [slot, html, probe] of cases) {
+      const tpl = document.createElement('template')
+      tpl.setAttribute('slot', slot)
+      const holder = document.createElement('span')
+      holder.innerHTML = html
+      while (holder.firstChild) tpl.insertBefore(holder.firstChild, null)
+      el.appendChild(tpl)
+    }
+    document.body.appendChild(el)
+    const root = el.shadowRoot!
+    expect(root.querySelector('.csr-prefix')?.textContent).toBe('📍')
+    expect(root.querySelector('.csr-suffix')?.textContent).toBe('城市')
+    expect(root.querySelector('.csr-arrow')?.textContent).toBe('⌄')
+    expect(root.querySelector('.csr-clear')?.textContent).toBe('✕')
+    // 非破坏性：宿主模板子节点保留（happy-dom 会把插入重定向到 content，CSR 直插形态由 e2e 覆盖）
+    expect(el.querySelector<HTMLTemplateElement>('template[slot="prefix"]')!.content.childNodes.length).toBe(1)
+  })
+
   // ---- input-value（filterable 输入值受控） ----
 
   it('input-value 预设：打开后搜索框带初始值并参与过滤', () => {

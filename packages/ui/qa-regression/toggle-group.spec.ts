@@ -272,17 +272,18 @@ test('toggle-group 纵向贴合：首项右上角必须是圆角（横向零化�
   // （#tg-view-v 四角全圆）并列时肉眼可见。修复：横向规则加 :not([vertical])，纵向由专项块自洽定义。
   await page.goto(PAGE, { waitUntil: 'domcontentloaded' })
   await up(page, '#tg-view-t')
+  // 圆角值 = --oas-radius-md（token 当前 6px）；贴合语义用 =0（直角）与 >0（圆角）对偶表达
   const cs = await itemCorners(page, '#tg-view-t')
   expect(cs.length, '纵向贴合 demo 应为 3 项').toBe(3)
-  expect(cs[0]!.tl, '首项左上圆角').toBeGreaterThan(0)
-  expect(cs[0]!.tr, '首项右上圆角（本次缺陷点）').toBeGreaterThan(0)
+  expect(cs[0]!.tl, '首项左上圆角').toBe(6)
+  expect(cs[0]!.tr, '首项右上圆角（本次缺陷点）').toBe(6)
   expect(cs[0]!.bl, '首项左下应为直角（与次项贴合）').toBe(0)
   expect(cs[0]!.br, '首项右下应为直角').toBe(0)
   expect(cs[1], '中项四角全直角').toEqual({ tl: 0, tr: 0, bl: 0, br: 0 })
   expect(cs[2]!.tl, '末项左上应为直角').toBe(0)
   expect(cs[2]!.tr, '末项右上应为直角').toBe(0)
-  expect(cs[2]!.bl, '末项左下圆角').toBeGreaterThan(0)
-  expect(cs[2]!.br, '末项右下圆角').toBeGreaterThan(0)
+  expect(cs[2]!.bl, '末项左下圆角').toBe(6)
+  expect(cs[2]!.br, '末项右下圆角').toBe(6)
 })
 
 test('toggle-group 分离纵向：各项四角均为圆角（不参与贴合合并）', async ({ page }) => {
@@ -290,11 +291,12 @@ test('toggle-group 分离纵向：各项四角均为圆角（不参与贴合合�
   await up(page, '#tg-view-v')
   const cs = await itemCorners(page, '#tg-view-v')
   expect(cs.length).toBe(3)
+  // 分离形态四角均为 --oas-radius-md（6px）圆角
   for (const [i, c] of cs.entries()) {
-    expect(c.tl, `第 ${i + 1} 项左上圆角`).toBeGreaterThan(0)
-    expect(c.tr, `第 ${i + 1} 项右上圆角`).toBeGreaterThan(0)
-    expect(c.bl, `第 ${i + 1} 项左下圆角`).toBeGreaterThan(0)
-    expect(c.br, `第 ${i + 1} 项右下圆角`).toBeGreaterThan(0)
+    expect(c.tl, `第 ${i + 1} 项左上圆角`).toBe(6)
+    expect(c.tr, `第 ${i + 1} 项右上圆角`).toBe(6)
+    expect(c.bl, `第 ${i + 1} 项左下圆角`).toBe(6)
+    expect(c.br, `第 ${i + 1} 项右下圆角`).toBe(6)
   }
 })
 
@@ -305,14 +307,14 @@ test('toggle-group 横向贴合：首项右侧、末项左侧合并为直角（�
   expect(cs.length).toBeGreaterThan(1)
   const first = cs[0]!
   const last = cs[cs.length - 1]!
-  expect(first.tl, '首项左上圆角').toBeGreaterThan(0)
-  expect(first.bl, '首项左下圆角').toBeGreaterThan(0)
+  expect(first.tl, '首项左上圆角').toBe(6)
+  expect(first.bl, '首项左下圆角').toBe(6)
   expect(first.tr, '首项右上应为直角（横向贴合）').toBe(0)
   expect(first.br, '首项右下应为直角').toBe(0)
   expect(last.tl, '末项左上应为直角').toBe(0)
   expect(last.bl, '末项左下应为直角').toBe(0)
-  expect(last.tr, '末项右上圆角').toBeGreaterThan(0)
-  expect(last.br, '末项右下圆角').toBeGreaterThan(0)
+  expect(last.tr, '末项右上圆角').toBe(6)
+  expect(last.br, '末项右下圆角').toBe(6)
 })
 
 // ---- 组级 variant 批次：形态镜像 + 真点选中语义/反馈（对齐 button variant 体系）----

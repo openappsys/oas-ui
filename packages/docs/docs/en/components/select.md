@@ -187,7 +187,7 @@ When a value is selected, a clear button appears; clicking clears the value and 
 
 <DemoBlock title="prefix / suffix / suffix-icon / clear-icon slots and show-arrow">
   <oas-space size="small" direction="vertical">
-    <oas-select id="select-affix-demo" placeholder="Prefix icon + suffix text" options='[{"label":"Apple","value":"apple"},{"label":"Banana","value":"banana"}]'>
+    <oas-select id="select-affix-demo" style="width: 280px" placeholder="Prefix icon + suffix text" options='[{"label":"Apple","value":"apple"},{"label":"Banana","value":"banana"}]'>
       <template slot="prefix"><span style="display:inline-flex">📍</span></template>
       <template slot="suffix"><span style="display:inline-flex">City</span></template>
     </oas-select>

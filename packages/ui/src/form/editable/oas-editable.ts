@@ -1,5 +1,6 @@
 import { OASElement } from '@oas-ui/core'
 import { onMeasurable, type MeasureDisposer } from '../../shared/measure-when-visible.js'
+import { cloneSlotContent } from '../../shared/slot-template.js'
 
 /** size 尺寸档（对齐 oas-input：small/medium/large，控高走 --oas-control-height-* token） */
 const VALID_SIZES = ['small', 'medium', 'large'] as const
@@ -324,7 +325,7 @@ export class OASEditable extends OASElement {
   private defaultEditingApplied = false
   /** light DOM 观察器：template[slot="display"/"ok-icon"/"cancel-icon"] 增删 → 重刷展示态 */
   private childObserver: MutationObserver | null = null
-  /** template[slot=display] 的 content 观察器（fragment 不在宿主子树内，dev 渲染时序下内容迟到需单独观察） */
+  /** template[slot=display] 内容观察器（content 与元素自身 childNodes 双形态；dev 渲染时序下内容迟到需单独观察） */
   private displayTplObserver: MutationObserver | null = null
   /** 当前已挂观察器的 display 模板元素（换模板时重挂） */
   private displayTplEl: HTMLTemplateElement | null = null
@@ -508,14 +509,15 @@ export class OASEditable extends OASElement {
       if (child !== pencil) child.remove()
     }
     const tpl = this.querySelector<HTMLTemplateElement>('template[slot="display"]')
-    // 宿主 childObserver 观察不到 template.content（DocumentFragment 不在宿主子树内）——
-    // dev 下 Vue 客户端渲染「先建空 template 再填内容」的时序里，首帧克隆到空气后不会
-    // 自动补渲染，这里对 content 挂观察器补齐（同一模板只挂一次）
+    // 宿主 childObserver 观察不到模板内容（静态形态内容在 DocumentFragment、CSR 形态是 template
+    // 元素自身的子节点插入）——dev 下框架客户端渲染「先建空 template 再填内容」的时序里，
+    // 首帧克隆到空气后不会自动补渲染，这里对模板（content + 元素自身）挂观察器补齐（同一模板只挂一次）
     if (tpl) this.observeDisplayTpl(tpl)
     if (tpl instanceof HTMLTemplateElement) {
       const holder = document.createElement('span')
       holder.className = 'display-custom'
-      holder.appendChild(tpl.content.cloneNode(true))
+      // 双形态克隆：静态 HTML 取 template.content，框架 CSR 直插取元素 childNodes
+      holder.appendChild(cloneSlotContent(tpl))
       const bindValue = holder.querySelector('[data-display-value]')
       if (bindValue) bindValue.textContent = value
       const bindPlaceholder = holder.querySelector('[data-display-placeholder]')
@@ -531,13 +533,18 @@ export class OASEditable extends OASElement {
     displayEl.classList.toggle('placeholder', value === '')
   }
 
-  /** template.content 迟到填充观察（dev 渲染时序：空 template 先挂、内容后到） */
+  /**
+   * 模板内容迟到填充观察（dev 渲染时序：空 template 先挂、内容后到）。
+   * 两形态同时观察：静态 HTML 内容落在 `tpl.content`（DocumentFragment），框架 CSR 直插
+   * 落在 template 元素自身 childNodes；一个 observer 可 observe 多个目标，disconnect 统一断开。
+   */
   private observeDisplayTpl(tpl: HTMLTemplateElement): void {
     if (this.displayTplEl === tpl) return
     this.displayTplEl = tpl
     this.displayTplObserver?.disconnect()
     this.displayTplObserver = new MutationObserver(() => this.update())
     this.displayTplObserver.observe(tpl.content, { childList: true })
+    this.displayTplObserver.observe(tpl, { childList: true })
     this.onCleanup(() => {
       this.displayTplObserver?.disconnect()
       this.displayTplObserver = null
@@ -610,12 +617,12 @@ export class OASEditable extends OASElement {
     }
   }
 
-  /** 确认/取消按钮图标：template[slot] 克隆优先，缺省回落内置 SVG */
+  /** 确认/取消按钮图标：template[slot] 克隆优先（双形态克隆），缺省回落内置 SVG */
   private fillActionIcon(btn: HTMLButtonElement, slotName: string, fallback: string): void {
     const tpl = this.querySelector<HTMLTemplateElement>(`template[slot="${slotName}"]`)
     if (tpl instanceof HTMLTemplateElement) {
       btn.innerHTML = ''
-      btn.appendChild(tpl.content.cloneNode(true))
+      btn.appendChild(cloneSlotContent(tpl))
     } else if (!btn.innerHTML) {
       btn.innerHTML = fallback
     }

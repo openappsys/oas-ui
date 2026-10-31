@@ -1,6 +1,7 @@
 import { OASElement } from '@oas-ui/core'
 import { isRtl } from '../../shared/direction.js'
 import { beginScrub, scrubValueAt, roundToPrecision, type ScrubAnchor, SCRUB_PX_PER_STEP } from '../../shared/scrub.js'
+import { cloneSlotContent, slotContentSignature } from '../../shared/slot-template.js'
 
 /** 单个刻度：数值 + 展示标签（show-stops 生成的刻度点无标签） */
 interface MarkEntry {
@@ -1797,14 +1798,15 @@ export class OASSlider extends OASElement {
       }
       return
     }
-    const key = templateEl ? `t:${templateEl.innerHTML}` : `l:${liveEl!.outerHTML}`
+    // 内容签名按实际源节点生成：静态 HTML（content）与框架 CSR 直插（元素 childNodes）双形态都
+    // 可检测内容变化；template 的 innerHTML 在 CSR 形态恒空，不能作缓存键
+    const key = templateEl ? `t:${slotContentSignature(templateEl)}` : `l:${liveEl!.outerHTML}`
     for (const content of contents) {
       if (content.dataset.srcKey === key) continue
       content.dataset.srcKey = key
       content.textContent = ''
       if (templateEl) {
-        const frag = templateEl.content.cloneNode(true) as DocumentFragment
-        content.append(...Array.from(frag.childNodes))
+        content.append(...Array.from(cloneSlotContent(templateEl).childNodes))
       } else {
         content.append(liveEl!.cloneNode(true))
       }

@@ -1,5 +1,6 @@
 import { OASFormElement } from '@oas-ui/core'
 import { stableHash36 } from '../../shared/stable-id.js'
+import { cloneSlotContent } from '../../shared/slot-template.js'
 
 /** size 尺寸档（与 checkbox 同批对齐：圆点 14/16/18px + 字号联动） */
 const VALID_SIZES = ['small', 'medium', 'large'] as const
@@ -452,7 +453,8 @@ export class OASRadio extends OASFormElement {
     descWrap.hidden = !hasDescSlot && descText === ''
   }
 
-  /** template[slot] 指示器通道：template 分发进 slot 无视觉（内容 inert），克隆展开进指示器容器 */
+  /** template[slot] 指示器通道：template 分发进 slot 无视觉（内容 inert），克隆展开进指示器容器。
+   *  克隆走共享工具：兼容静态 HTML（content）与框架 CSR 直插（元素 childNodes）双形态。 */
   private syncIndicatorTpl(slotName: string, indicatorSelector: string): void {
     const indicator = this.shadow.querySelector<HTMLElement>(indicatorSelector)
     if (!indicator) return
@@ -461,7 +463,7 @@ export class OASRadio extends OASFormElement {
     if (!(tpl instanceof HTMLTemplateElement)) return
     const holder = document.createElement('span')
     holder.className = 'indicator-tpl'
-    holder.appendChild(tpl.content.cloneNode(true))
+    holder.appendChild(cloneSlotContent(tpl))
     indicator.appendChild(holder)
   }
 

@@ -1,6 +1,8 @@
 import { OASElement } from '@oas-ui/core'
 import { isRtl } from '../../shared/direction.js'
 import { safeUrl } from '../../shared/safe-url.js'
+// slot 模板双形态克隆（静态 HTML 在 template.content；Vue 等 CSR 直插元素 childNodes）
+import { cloneSlotContent } from '../../shared/slot-template.js'
 
 const STYLE = `
 :host {
@@ -599,7 +601,7 @@ export class OASImage extends OASElement {
         : this.querySelector('template[slot="error"]')
     const el = this.querySelector(`:scope > [slot="${slot}"]:not(template)`)
     if (tpl instanceof HTMLTemplateElement) {
-      container.replaceChildren(tpl.content.cloneNode(true))
+      container.replaceChildren(cloneSlotContent(tpl))
     } else if (el) {
       container.replaceChildren(el.cloneNode(true))
     } else {
@@ -1072,8 +1074,9 @@ export class OASImage extends OASElement {
       if (this.toolbarCustom) return
       this.toolbarCustom = true
       bar.classList.add('custom')
-      // template 克隆 content（克隆 template 外壳会得到惰性节点）；普通元素整节点克隆
-      bar.replaceChildren(tpl instanceof HTMLTemplateElement ? tpl.content.cloneNode(true) : el!.cloneNode(true))
+      // template 克隆插槽内容（克隆 template 外壳会得到惰性节点；CSR 直插形态下 content 为空，
+      // 双形态克隆兜底）；普通元素整节点克隆
+      bar.replaceChildren(tpl instanceof HTMLTemplateElement ? cloneSlotContent(tpl) : el!.cloneNode(true))
       this.emitToolbarRender()
     } else if (this.toolbarCustom) {
       this.toolbarCustom = false

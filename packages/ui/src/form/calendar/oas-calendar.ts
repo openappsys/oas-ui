@@ -18,6 +18,7 @@ import {
   isSameDay,
 } from './date-grid.js'
 import { isRtl } from '../../shared/direction.js'
+import { cloneSlotContent } from '../../shared/slot-template.js'
 
 const STYLE = `
 :host {
@@ -812,7 +813,8 @@ export class OASCalendar extends OASElement {
       if (!date) continue
       if (tpl) {
         btn.textContent = ''
-        btn.appendChild(tpl.content.cloneNode(true))
+        // 双形态克隆：静态 HTML 取 template.content，框架 CSR 直插取元素 childNodes
+        btn.appendChild(cloneSlotContent(tpl))
         const binder = btn.querySelector<HTMLElement>('[data-cell-date]')
         if (binder) binder.textContent = String(date.getDate())
       }

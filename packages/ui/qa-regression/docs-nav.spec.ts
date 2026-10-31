@@ -1,6 +1,10 @@
 import { test, expect } from '@playwright/test'
 
 // SPA 内部跳转（VitePress 客户端路由）回归：
+// 本文件所有「…demo 在场 / 渲染计数 ≥ 1」的 toBeGreaterThanOrEqual(1) 下界，理由统一为：
+// 契约是「SPA 跳转后该组件在该页至少渲染一个实例且不空白」（本文件的回归对象是
+// property/attribute 通道存活，不是各 demo 的精确规模）；精确 demo 数量/项数随产品演进变化，
+// 由各组件自身的 qa-regression spec 覆盖。
 // Vue 对自定义元素按「key in el」决定写 property 还是 attribute。若组件的**私有方法名与单字属性同名**
 // （如 private scale() 与 scale="day"），SPA 跳转时元素已升级 → Vue 把属性写成 property → own string
 // 遮蔽原型方法 → `this.scale is not a function` → demo 空白；整页刷新因升级晚于 patch 才走 attribute。
@@ -34,7 +38,7 @@ test('docs SPA 跳转：gantt / resource demo 不因属性-方法撞名而空白
     }
   })
   expect(sched.path, '客户端路由到 scheduler').toContain('/components/scheduler')
-  expect(sched.events, 'scheduler demo 渲染事件').toBeGreaterThan(0)
+  expect(sched.events, 'scheduler demo 渲染事件').toBeGreaterThanOrEqual(1)
   expect(sched.ownView, '元素上不得出现 own 属性 view').toBe(false)
 
   // 客户端跳转到甘特
@@ -58,8 +62,8 @@ test('docs SPA 跳转：gantt / resource demo 不因属性-方法撞名而空白
     }
   })
   expect(gantt.path, '客户端路由到 gantt').toContain('/components/gantt')
-  expect(gantt.bars, 'gantt demo 渲染任务条').toBeGreaterThan(0)
-  expect(gantt.rows, 'gantt demo 渲染行').toBeGreaterThan(0)
+  expect(gantt.bars, 'gantt demo 渲染任务条').toBeGreaterThanOrEqual(1)
+  expect(gantt.rows, 'gantt demo 渲染行').toBeGreaterThanOrEqual(1)
   expect(gantt.ownScale, '元素上不得出现 own 属性 scale（会遮蔽方法）').toBe(false)
   expect(gantt.ownExpanded, '元素上不得出现 own 属性 expanded（会遮蔽 Set 字段）').toBe(false)
 
@@ -83,8 +87,8 @@ test('docs SPA 跳转：gantt / resource demo 不因属性-方法撞名而空白
     }
   })
   expect(res.path, '客户端路由到 resource').toContain('/components/resource')
-  expect(res.lanes, 'resource demo 渲染泳道').toBeGreaterThan(0)
-  expect(res.bars, 'resource demo 渲染任务条').toBeGreaterThan(0)
+  expect(res.lanes, 'resource demo 渲染泳道').toBeGreaterThanOrEqual(1)
+  expect(res.bars, 'resource demo 渲染任务条').toBeGreaterThanOrEqual(1)
   expect(res.ownScale, '元素上不得出现 own 属性 scale').toBe(false)
 
   // 客户端跳转到菜单：items 静态 JSON attribute 在 Vue 下被写成 property（字符串）——
@@ -108,14 +112,14 @@ test('docs SPA 跳转：gantt / resource demo 不因属性-方法撞名而空白
         ),
       { timeout: 20000 },
     )
-    .toBeGreaterThan(0)
+    .toBeGreaterThanOrEqual(1)
   const menu = await page.evaluate(() => {
     const els = [...document.querySelectorAll('oas-menu')]
     const counts = els.map((el) => el.shadowRoot?.querySelectorAll('.item').length ?? 0)
     return { path: location.pathname, counts, total: counts.reduce((a, b) => a + b, 0), max: Math.max(0, ...counts) }
   })
   expect(menu.path, '客户端路由到 menu').toContain('/components/menu')
-  expect(menu.total, 'menu demo 应渲染菜单项（items JSON attribute 在 SPA 下存活）').toBeGreaterThan(0)
+  expect(menu.total, 'menu demo 应渲染菜单项（items JSON attribute 在 SPA 下存活）').toBeGreaterThanOrEqual(1)
   expect(menu.max, '单个菜单项数合理（不是 items JSON 串逐字符渲染的垃圾项）').toBeLessThan(30)
 
   // 客户端跳转到 rate：colors/icons 静态 JSON attribute 同类场景——property 通道收到字符串
@@ -158,7 +162,7 @@ test('docs SPA 跳转：gantt / resource demo 不因属性-方法撞名而空白
     return { path: location.pathname, rates: els.length, hasIconsJson, hasColorsJson }
   })
   expect(rate.path, '客户端路由到 rate').toContain('/components/rate')
-  expect(rate.rates, 'rate demo 在场').toBeGreaterThan(0)
+  expect(rate.rates, 'rate demo 在场').toBeGreaterThanOrEqual(1)
   expect(rate.hasIconsJson, 'icons JSON attribute 应生效（逐值符号渲染）').toBe(true)
   expect(rate.hasColorsJson, 'colors JSON attribute 应生效（分段色注入）').toBe(true)
 
@@ -207,9 +211,9 @@ test('docs SPA 跳转：gantt / resource demo 不因属性-方法撞名而空白
   expect(indexBar.path, '客户端路由到 index-bar').toContain('/components/index-bar')
   expect(indexBar.hasBasic, 'index-bar demo 在场').toBe(true)
   expect(indexBar.isArray, 'index-bar sections 属性仍为可解析 JSON 数组').toBe(true)
-  expect(indexBar.groups, 'index-bar 静态分组数 > 0').toBeGreaterThan(0)
-  expect(indexBar.sections, 'index-bar 实际渲染分节 > 0（数据未丢失）').toBeGreaterThan(0)
-  expect(indexBar.letters, 'index-bar 侧栏字母 > 0').toBeGreaterThan(0)
+  expect(indexBar.groups, 'index-bar 静态分组数 > 0').toBeGreaterThanOrEqual(1)
+  expect(indexBar.sections, 'index-bar 实际渲染分节 > 0（数据未丢失）').toBeGreaterThanOrEqual(1)
+  expect(indexBar.letters, 'index-bar 侧栏字母 > 0').toBeGreaterThanOrEqual(1)
   expect(indexBar.ownSections, 'sections 走原型访问器，不得是实例 own 字段').toBe(false)
 
   // 客户端跳转到 cascader：value 静态 JSON attribute 在 SPA 下被写成 property（字符串）——
@@ -266,7 +270,7 @@ test('docs SPA 跳转：gantt / resource demo 不因属性-方法撞名而空白
     }
   })
   expect(cascader.path, '客户端路由到 cascader').toContain('/components/cascader')
-  expect(cascader.cascaders, 'cascader demo 在场').toBeGreaterThan(0)
+  expect(cascader.cascaders, 'cascader demo 在场').toBeGreaterThanOrEqual(1)
   expect(cascader.hasPreset, 'cascader 预设路径 demo 在场').toBe(true)
   expect(cascader.valueOk, 'cascader value 属性为可解析 JSON').toBe(true)
   expect(cascader.valueIsArray, 'cascader value 不双重编码（单层路径数组）').toBe(true)
@@ -321,7 +325,7 @@ test('docs SPA 跳转：gantt / resource demo 不因属性-方法撞名而空白
     }
   })
   expect(select.path, '客户端路由到 select').toContain('/components/select')
-  expect(select.selects, 'select demo 在场').toBeGreaterThan(0)
+  expect(select.selects, 'select demo 在场').toBeGreaterThanOrEqual(1)
   expect(select.hasMulti, 'select 多选 value demo 在场').toBe(true)
   expect(select.valueOk, 'select 多选 value 属性为可解析 JSON').toBe(true)
   expect(select.valueIsArray, 'select 多选 value 不双重编码（数组）').toBe(true)
@@ -378,12 +382,12 @@ test('docs SPA 跳转：gantt / resource demo 不因属性-方法撞名而空白
     }
   })
   expect(toggleGroup.path, '客户端路由到 toggle-group').toContain('/components/toggle-group')
-  expect(toggleGroup.groups, 'toggle-group demo 在场').toBeGreaterThan(0)
+  expect(toggleGroup.groups, 'toggle-group demo 在场').toBeGreaterThanOrEqual(1)
   expect(toggleGroup.multiValueIsArray, 'toggle-group 多选 value 属性为可解析 JSON 数组').toBe(true)
   expect(toggleGroup.multiValue, 'toggle-group 多选 value 不双重编码').toEqual(['bold'])
-  expect(toggleGroup.checked, 'toggle-group 多选选中态 > 0（bold 被选中）').toBeGreaterThan(0)
-  expect(toggleGroup.singleItems, 'toggle-group items 静态 JSON 属性存活').toBeGreaterThan(0)
-  expect(toggleGroup.buttons, 'toggle-group 按钮渲染 > 0').toBeGreaterThan(0)
+  expect(toggleGroup.checked, 'toggle-group 多选选中态 > 0（bold 被选中）').toBeGreaterThanOrEqual(1)
+  expect(toggleGroup.singleItems, 'toggle-group items 静态 JSON 属性存活').toBeGreaterThanOrEqual(1)
+  expect(toggleGroup.buttons, 'toggle-group 按钮渲染 > 0').toBeGreaterThanOrEqual(1)
 
   // 客户端跳转到 slider：range 静态 value="[20, 80]" 同类场景——整体走 `Number(v) || 0`
   // 会把 JSON 串变 0，双把手归零；须解析为数值数组并保持两滑块位置
@@ -435,7 +439,7 @@ test('docs SPA 跳转：gantt / resource demo 不因属性-方法撞名而空白
     }
   })
   expect(slider.path, '客户端路由到 slider').toContain('/components/slider')
-  expect(slider.sliders, 'slider demo 在场').toBeGreaterThan(0)
+  expect(slider.sliders, 'slider demo 在场').toBeGreaterThanOrEqual(1)
   expect(slider.hasRange, 'slider range 预设值 demo 在场').toBe(true)
   expect(slider.valueOk, 'slider range value 属性为可解析 JSON 数组').toBe(true)
   expect(slider.value, 'slider range value 不双重编码（两个数值）').toEqual([20, 80])
@@ -488,7 +492,7 @@ test('docs SPA 跳转：gantt / resource demo 不因属性-方法撞名而空白
     }
   })
   expect(treeSelect.path, '客户端路由到 tree-select').toContain('/components/tree-select')
-  expect(treeSelect.treeSelects, 'tree-select demo 在场').toBeGreaterThan(0)
+  expect(treeSelect.treeSelects, 'tree-select demo 在场').toBeGreaterThanOrEqual(1)
   expect(treeSelect.hasCache, 'tree-select 多选 JSON value demo 在场').toBe(true)
   expect(treeSelect.valueOk, 'tree-select 多选 value 属性为可解析 JSON 数组').toBe(true)
   expect(treeSelect.value, 'tree-select 多选 value 不双重编码').toEqual(['js'])
@@ -561,7 +565,7 @@ test('docs SPA 跳转：gantt / resource demo 不因属性-方法撞名而空白
     }
   })
   expect(combobox.path, '客户端路由到 combobox').toContain('/components/combobox')
-  expect(combobox.comboboxes, 'combobox demo 在场').toBeGreaterThan(0)
+  expect(combobox.comboboxes, 'combobox demo 在场').toBeGreaterThanOrEqual(1)
   expect(combobox.hasMulti, 'combobox 多选 demo 在场').toBe(true)
   expect(combobox.optionsOk, 'combobox options 静态 JSON 属性存活').toBe(true)
   expect(combobox.valueOk, 'combobox 多选 value 属性为可解析 JSON 数组').toBe(true)

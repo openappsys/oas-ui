@@ -19,6 +19,8 @@ import {
   type ExportFormat,
 } from './oas-table-export.js'
 import { devWarn } from '../../shared/dev-warn.js'
+// slot 模板双形态克隆（静态 HTML 在 template.content；Vue 等 CSR 直插元素 childNodes）
+import { cloneSlotContent } from '../../shared/slot-template.js'
 // 行键计算（row-key 缺失时按行对象缓存 JSON.stringify 回退，见模块注释）
 import { rowKeyValue } from './oas-table-row-key.js'
 // 服务端行窗口协议（windowed 模式）：与宿主交换行区间的共享契约（类型 + 纯工具），
@@ -1551,8 +1553,8 @@ export class OASTableBase extends OASElement {
       th.classList.add(`align-${align}`)
     }
     if (col.headerTemplate) {
-      // 自定义列头：克隆模板内容作为 th 基础内容（静态，不随行插值）
-      th.appendChild(col.headerTemplate.content.cloneNode(true) as DocumentFragment)
+      // 自定义列头：克隆模板内容作为 th 基础内容（静态，不随行插值；双形态克隆兼容 CSR 直插）
+      th.appendChild(cloneSlotContent(col.headerTemplate))
     } else {
       th.textContent = col.title
     }
@@ -1596,7 +1598,7 @@ export class OASTableBase extends OASElement {
   private fillFilterIcon(btn: HTMLButtonElement): void {
     const tpl = this.querySelector('template[slot="filter-icon"]')
     if (tpl instanceof HTMLTemplateElement) {
-      btn.appendChild(tpl.content.cloneNode(true))
+      btn.appendChild(cloneSlotContent(tpl))
       return
     }
     const custom = this.querySelector('[slot="filter-icon"]')
@@ -2740,7 +2742,7 @@ export class OASTableBase extends OASElement {
       优先于 empty-text / 内置文案；插槽子元素增删由 MutationObserver 感知触发重渲染 */
   private emptySlotContent(): Node | null {
     const tpl = this.querySelector('template[slot="empty"]')
-    if (tpl) return (tpl as HTMLTemplateElement).content.cloneNode(true)
+    if (tpl) return cloneSlotContent(tpl as HTMLTemplateElement)
     const el = this.querySelector('[slot="empty"]')
     if (el) return el.cloneNode(true)
     return null
@@ -3889,7 +3891,8 @@ export class OASTableBase extends OASElement {
     const cols = this.effectiveColumns().filter((c) => !c.actions)
     const headers = cols.map((c) => {
       if (c.headerTemplate) {
-        const frag = c.headerTemplate.content.cloneNode(true) as DocumentFragment
+        // 双形态克隆：CSR 直插形态下 content 为空，按实际子节点取源
+        const frag = cloneSlotContent(c.headerTemplate)
         const text = frag.textContent?.trim() ?? ''
         return text !== '' ? text : c.title
       }
@@ -5148,7 +5151,8 @@ function normalizeSpan(v: [number, number] | { rowspan: number; colspan: number 
  * 替换为该行对应值（缺省空串）。返回值是水合后的 DocumentFragment（可 appendChild 进 td）。
  */
 function hydrateRowTemplate(template: HTMLTemplateElement, row: Record<string, unknown>): DocumentFragment {
-  const frag = template.content.cloneNode(true) as DocumentFragment
+  // 双形态克隆：声明通道（light DOM <template>）在 CSR 直插形态下 content 为空，按实际子节点取源
+  const frag = cloneSlotContent(template)
   const bind = (node: Node): void => {
     if (node.nodeType === Node.TEXT_NODE) {
       const text = node.textContent ?? ''
