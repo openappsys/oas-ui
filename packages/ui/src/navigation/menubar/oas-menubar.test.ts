@@ -1587,15 +1587,51 @@ describe('OASMenubar 输入上下文守卫', () => {
     return input
   }
 
-  it('输入框内 Ctrl+Shift+S 不触发 menubar shortcut', () => {
+  it('输入框内 Ctrl+Shift+S 仍触发 menubar shortcut（编辑器保存必须可达）', () => {
     const el = mount({ items: SHORTCUT_ITEMS })
     const count: string[] = []
     el.addEventListener('oas-select', (e: Event) => count.push(String((e as CustomEvent).detail?.value)))
     const input = mountInput()
-    input.dispatchEvent(
-      new KeyboardEvent('keydown', { key: 'S', ctrlKey: true, shiftKey: true, bubbles: true, cancelable: true }),
-    )
-    expect(count, '输入框内快捷键应留给宿主/浏览器').toEqual([])
+    const ev = new KeyboardEvent('keydown', {
+      key: 'S',
+      ctrlKey: true,
+      shiftKey: true,
+      bubbles: true,
+      cancelable: true,
+    })
+    input.focus()
+    input.dispatchEvent(ev)
+    expect(count, '可编辑焦点内 Ctrl+Shift+S 应触发已定义 shortcut').toEqual(['save'])
+    expect(ev.defaultPrevented, '命中的 shortcut 应 preventDefault').toBe(true)
+    expect(document.activeElement, '触发后焦点应留在输入框（不抢到菜单栏）').toBe(input)
+  })
+
+  it('输入框内 F9 单键功能键仍触发 shortcut，普通可打印字符不触发', () => {
+    const el = mount({
+      items: JSON.stringify([{ label: '刷新', value: 'refresh', shortcut: 'F9' }]),
+    })
+    const count: string[] = []
+    el.addEventListener('oas-select', (e: Event) => count.push(String((e as CustomEvent).detail?.value)))
+    const input = mountInput()
+    const f9 = new KeyboardEvent('keydown', { key: 'F9', bubbles: true, cancelable: true })
+    input.dispatchEvent(f9)
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'a', bubbles: true, cancelable: true }))
+    expect(count, 'F9 触发、裸字母输入不触发').toEqual(['refresh'])
+    expect(f9.defaultPrevented).toBe(true)
+  })
+
+  it('输入框内未命中的修饰键组合不 preventDefault（不干扰编辑器自身快捷键）', () => {
+    const el = mount({ items: SHORTCUT_ITEMS })
+    const input = mountInput()
+    const ev = new KeyboardEvent('keydown', {
+      key: 'q',
+      ctrlKey: true,
+      bubbles: true,
+      cancelable: true,
+    })
+    input.dispatchEvent(ev)
+    expect(ev.defaultPrevented, '未定义组合应原样交给编辑器').toBe(false)
+    expect(el.hasAttribute('open')).toBe(false)
   })
 
   it('输入框内 Alt+F 不展开对应顶级菜单', () => {
@@ -1605,17 +1641,44 @@ describe('OASMenubar 输入上下文守卫', () => {
     expect(openSubmenus(el).length, '输入框内 Alt 访问键不劫持').toBe(0)
   })
 
-  it('textarea / contenteditable 同样受守卫', () => {
-    const el = mount()
+  it('textarea / contenteditable：Ctrl 组合生效，Alt 访问键让路', () => {
+    const el = mount({ items: SHORTCUT_ITEMS })
+    const count: string[] = []
+    el.addEventListener('oas-select', (e: Event) => count.push(String((e as CustomEvent).detail?.value)))
     const area = document.createElement('textarea')
     const editable = document.createElement('div')
     editable.tabIndex = 0
     editable.setAttribute('contenteditable', 'true')
     editable.textContent = 'x'
     document.body.append(area, editable)
+    area.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'S', ctrlKey: true, shiftKey: true, bubbles: true, cancelable: true }),
+    )
+    editable.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'S', ctrlKey: true, shiftKey: true, bubbles: true, cancelable: true }),
+    )
+    expect(count, 'textarea / contenteditable 内 Ctrl 组合同样触发').toEqual(['save', 'save'])
     area.dispatchEvent(new KeyboardEvent('keydown', { key: 'e', altKey: true, bubbles: true, cancelable: true }))
     editable.dispatchEvent(new KeyboardEvent('keydown', { key: 'e', altKey: true, bubbles: true, cancelable: true }))
-    expect(openSubmenus(el).length).toBe(0)
+    expect(openSubmenus(el).length, 'Alt 访问键仍让路').toBe(0)
+  })
+
+  it('IME 组合中 Ctrl 组合也不触发（交给输入法）', () => {
+    const el = mount({ items: SHORTCUT_ITEMS })
+    const count: string[] = []
+    el.addEventListener('oas-select', (e: Event) => count.push(String((e as CustomEvent).detail?.value)))
+    const input = mountInput()
+    input.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        key: 'S',
+        ctrlKey: true,
+        shiftKey: true,
+        isComposing: true,
+        bubbles: true,
+        cancelable: true,
+      }),
+    )
+    expect(count).toEqual([])
   })
 
   it('焦点不在可编辑控件时 Alt 访问键照常工作（守卫不过度收紧）', () => {

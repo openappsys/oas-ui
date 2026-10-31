@@ -23,6 +23,7 @@
 - **文档导航生成链路**：组件总览从基线恢复完整条目并按组内 slug 排序；sidebar 改为字面量单一有序数据源，`llms.txt` 与总览/sidebar 精确同序并有防漂移测试。
 - **打包消费方（含 CDN）默认语言包丢失**：旧的裸副作用 import 在打包时可能被摇掉，导致内置文案渲染为 raw key；现组件入口显式注册本族切片，CDN 产物含 9 族文案，`perf:size` 新增 `[CDN 默认文案]` 断言锁定。
 - **多个组件的 slot 模板在框架 CSR 挂载下克隆为空**：Vue 等框架会把 `<template slot="…">` 的子节点直插模板元素（落在 `childNodes`），`template.content` 为空；组件原只克隆 `content`，导致 dev 演示站的前后缀图标、自定义箭头/清空图标、空态、下拉头尾、选项行、标签、单元格等插槽整段空白（生产 SSR 快照形态子节点在 `content` 里，故此前未暴露）。现新增 `shared/slot-template.ts` 统一双形态克隆（content 优先、空则回落元素 childNodes），并接入 `oas-select` / `oas-cascader` / `oas-auto-complete` / `oas-calendar` / `oas-checkbox` / `oas-radio` / `oas-dynamic-input` / `oas-dynamic-tags` / `oas-editable` / `oas-form-list` / `oas-mentions` / `oas-segmented` / `oas-slider` / `oas-transfer` / `oas-upload` / `oas-gantt` / `oas-image` / `oas-json-viewer` / `oas-qrcode` / `oas-table` / `oas-virtual-list` 的全部模板克隆点；同步修复两处衍生问题：`oas-qrcode` / `oas-slider` 以 `innerHTML` 作为内容缓存键（CSR 形态恒空，空克隆会被缓存住），改为按实际源节点生成签名；`oas-editable` 的迟到内容观察器同时观察模板元素与 `content`。不改公开 API。
+- **`oas-menubar` 可编辑焦点下快捷键全部失效**：原守卫在匹配 shortcut 之前对 `input` / `textarea` / `select` / `contenteditable` 一票否决，编辑器内 Ctrl+S / Ctrl+N / F9 等核心动作全部静默失效（下游编辑器应用需自行 document capture 绕过）。现仅对未命中的按键与无修饰键的可打印/编辑键让路：**带 Ctrl/Cmd 的已定义 shortcut 与 F1–F24 单键 shortcut 在可编辑焦点内照常触发**，Alt 访问键、AltGr 组合与 IME 组合继续让路；未命中任何 shortcut 的组合键不 `preventDefault`，编辑器自身快捷键不受影响；命中的 shortcut 不再把焦点抢到菜单栏，编辑器光标留在原处。
 
 ### 构建
 

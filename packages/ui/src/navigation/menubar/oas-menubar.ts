@@ -1921,7 +1921,7 @@ export class OASMenubar extends OASElement {
     this.syncRoving()
   }
 
-  private select(item: MenuItem, scope = ''): void {
+  private select(item: MenuItem, scope = '', restoreFocusTop = true): void {
     // action 项：动作语义，不参与 value 选中态（不写回、不打勾），只通知宿主
     if (item.kind === 'action') {
       this.emit('select', { value: item.value, kind: 'action' })
@@ -1943,7 +1943,9 @@ export class OASMenubar extends OASElement {
     }
     // 收起策略：checkbox 勾选切换永不收起（连续勾选场景）；其余按 close-on-select（缺省收）
     if (item.kind !== 'checkbox' && this.closeOnSelectEnabled()) {
-      this.collapseAndFocusTop()
+      // 可编辑焦点内触发的 shortcut 不把焦点抢到菜单栏（编辑器 Ctrl+S 后光标留在原地）
+      if (restoreFocusTop) this.collapseAndFocusTop()
+      else this.collapseToTop()
     } else {
       this.syncSelection()
     }
@@ -2188,22 +2190,39 @@ export class OASMenubar extends OASElement {
     return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || target.isContentEditable
   }
 
+  /**
+   * 可编辑焦点内仍可触发的 shortcut 形态：
+   * - Ctrl / Cmd 组合（Ctrl+S / Cmd+N 等编辑器核心动作；AltGr 带 altKey，不会命中 Ctrl-only 绑定）
+   * - F1–F24 单键功能键（不产生文本、不移动光标）
+   * 其余（普通字符、方向/编辑键、Alt 访问键）一律让路。
+   */
+  private shortcutAllowedInEditable(e: KeyboardEvent): boolean {
+    if (e.ctrlKey || e.metaKey) return true
+    return /^f\d{1,2}$/.test(e.key.toLowerCase())
+  }
+
   /** 文档级键盘：shortcut 快捷键 + Alt 访问键 + Alt 聚焦 + 子菜单 Tab 焦点陷阱 */
   private handleDocumentKey = (e: KeyboardEvent): void => {
     if (this.isBarDisabled()) return
-    // 输入上下文守卫：焦点在可编辑控件（input/textarea/select/contenteditable）时，
-    // 文档级快捷键与 Alt 访问键必须让路（否则输入框里 Alt+F / Ctrl+Shift+S 被菜单栏劫持）。
-    // 菜单栏自身打开时的 Tab 焦点陷阱不受影响（其焦点在菜单项上，不是可编辑控件）。
-    if (this.isEditableKeyboardTarget(e)) return
-    // 快捷键（shortcut 字段）：命中即触发对应项 select（Ctrl+N / Ctrl+Shift+S 等）
+    // IME 组合中一律让路（含带修饰键的组合，交给输入法）
+    if (e.isComposing) return
+    const editable = this.isEditableKeyboardTarget(e)
+    // 快捷键（shortcut 字段）：命中即触发对应项 select（Ctrl+N / Ctrl+Shift+S / F9 等）。
+    // 可编辑上下文守卫（2026-11-01 下游编辑器需求）：带 Ctrl/Meta 的组合键与 F1–F24 单键
+    // 仍生效（编辑器内 Ctrl+S 保存必须可达）；普通可打印字符、方向/编辑键、Alt 访问键与
+    // AltGr 组合继续让路，不劫持输入与光标。
     const shortcutItem = this.matchShortcut(e)
     if (shortcutItem) {
+      if (editable && !this.shortcutAllowedInEditable(e)) return
       e.preventDefault()
       if (shortcutItem.disabled) return
       this.keyboardMode = true
-      this.select(shortcutItem, this.scopeOf(shortcutItem.value ?? ''))
+      // 可编辑焦点内触发的 shortcut 不抢焦点（保持编辑器光标）；其余场景沿用原行为
+      this.select(shortcutItem, this.scopeOf(shortcutItem.value ?? ''), !editable)
       return
     }
+    // 其余文档级按键（Alt 访问键 / Alt 聚焦 / Tab 陷阱）在可编辑焦点内一律让路
+    if (editable) return
     // Alt 单独按下：聚焦菜单栏第一个可用顶级项（移动端聚焦汉堡按钮）
     if (e.key === 'Alt' && !e.ctrlKey && !e.metaKey) {
       if (this.mobileMode) {

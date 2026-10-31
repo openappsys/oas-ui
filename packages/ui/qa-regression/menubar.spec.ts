@@ -347,8 +347,10 @@ for (const theme of ['light', 'dark'] as const) {
   })
 }
 
-// ===== 反馈 #6：文档级快捷键 / Alt 访问键无输入上下文守卫（输入框内被劫持） =====
-test('menubar 输入上下文守卫：输入框内 Ctrl 快捷键与 Alt 访问键不劫持，离开输入框后恢复', async ({ page }) => {
+// ===== 输入上下文快捷键语义（2026-11-01 下游编辑器需求） =====
+// 历史守卫一刀切：可编辑焦点内文档级 shortcut 全部让路，编辑器里的 Ctrl+S / F9 失效。
+// 现语义：Ctrl/Cmd 组合与 F1–F24 单键仍触发；普通字符 / 方向编辑键 / Alt 访问键 / IME 让路。
+test('menubar 可编辑焦点快捷键：Ctrl 组合与 F9 触发，裸字符/Alt 访问键不劫持，未命中组合不拦截', async ({ page }) => {
   await page.goto('/components/menubar.html', { waitUntil: 'domcontentloaded' })
   await page.waitForFunction(() => !!customElements.get('oas-menubar'))
   await page.evaluate(() => {
@@ -363,7 +365,10 @@ test('menubar 输入上下文守卫：输入框内 Ctrl 快捷键与 Alt 访问�
           label: '文件',
           value: 'file',
           accessKey: 'f',
-          children: [{ label: '保存', value: 'save', shortcut: 'Ctrl+Shift+S' }],
+          children: [
+            { label: '保存', value: 'save', shortcut: 'Ctrl+Shift+S' },
+            { label: '刷新', value: 'refresh', shortcut: 'F9' },
+          ],
         },
       ]),
     )
@@ -378,21 +383,55 @@ test('menubar 输入上下文守卫：输入框内 Ctrl 快捷键与 Alt 访问�
   })
 
   const selects = () => page.evaluate(() => (window as unknown as { __mbSelects: string[] }).__mbSelects)
+  const openPanels = () =>
+    page.evaluate(
+      () =>
+        document.querySelector('oas-menubar#e2e-mb-guard')!.shadowRoot!.querySelectorAll('[part="submenu"].open')
+          .length,
+    )
 
-  // 输入框内：快捷键与 Alt 访问键都被守卫让路
+  // 输入框内：Ctrl 组合与 F9 仍触发（编辑器保存/刷新必须可达）
   await page.locator('#e2e-mb-input').focus()
   await page.keyboard.press('Control+Shift+S')
-  await page.keyboard.press('Alt+f')
-  expect(await selects(), '输入框内不得触发菜单快捷键/访问键').toEqual([])
-  const openedInInput = await page.evaluate(
-    () =>
-      document.querySelector('oas-menubar#e2e-mb-guard')!.shadowRoot!.querySelectorAll('[part="submenu"].open').length,
+  await page.keyboard.press('F9')
+  expect(await selects(), '可编辑焦点内 Ctrl 组合与 F9 应触发').toEqual(['save', 'refresh'])
+  expect(await page.evaluate(() => document.activeElement?.id), '快捷键触发后焦点应留在编辑器（不抢到菜单栏）').toBe(
+    'e2e-mb-input',
   )
-  expect(openedInInput, '输入框内 Alt+F 不得展开菜单').toBe(0)
 
-  // 离开输入框：快捷键恢复（守卫不过度收紧）
-  await page.locator('#e2e-mb-input').blur()
-  await page.keyboard.press('Control+Shift+S')
-  await page.waitForFunction(() => (window as unknown as { __mbSelects: string[] }).__mbSelects.length === 1)
-  expect(await selects()).toEqual(['save'])
+  // 裸字符输入不触发；Alt 访问键让路；未命中组合不 preventDefault
+  await page.keyboard.press('a')
+  await page.keyboard.press('Alt+f')
+  expect(await selects(), '裸字符与 Alt 访问键不得触发 shortcut').toEqual(['save', 'refresh'])
+  expect(await openPanels(), '可编辑焦点内 Alt+F 不得展开菜单').toBe(0)
+  const unboundPrevented = await page.evaluate(() => {
+    const ev = new KeyboardEvent('keydown', { key: 'q', ctrlKey: true, bubbles: true, cancelable: true })
+    return !document.getElementById('e2e-mb-input')!.dispatchEvent(ev)
+  })
+  expect(unboundPrevented, '未命中 shortcut 的 Ctrl 组合不得 preventDefault').toBe(false)
+
+  // contenteditable（编辑器场景）同样生效
+  const editorHandled = await page.evaluate(async () => {
+    const ed = document.createElement('div')
+    ed.id = 'e2e-mb-editor'
+    ed.tabIndex = 0
+    ed.setAttribute('contenteditable', 'true')
+    ed.textContent = 'x'
+    document.body.appendChild(ed)
+    ed.focus()
+    const ev = new KeyboardEvent('keydown', {
+      key: 'S',
+      ctrlKey: true,
+      shiftKey: true,
+      bubbles: true,
+      cancelable: true,
+    })
+    const notPrevented = ed.dispatchEvent(ev)
+    await new Promise((r) => requestAnimationFrame(() => r(null)))
+    return { notPrevented, active: document.activeElement === ed }
+  })
+  expect(editorHandled.active, 'contenteditable 应保持焦点').toBe(true)
+  expect(editorHandled.notPrevented, '命中的 Ctrl 组合应 preventDefault').toBe(false)
+  await page.waitForFunction(() => (window as unknown as { __mbSelects: string[] }).__mbSelects.length === 3)
+  expect(await selects()).toEqual(['save', 'refresh', 'save'])
 })

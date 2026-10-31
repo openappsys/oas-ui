@@ -24,7 +24,7 @@
 
 `shortcut` 字段（如 `"Ctrl+N"`）：右侧渲染快捷键提示，并自动绑定 `document` 级 keydown——命中即触发对应项选择（`preventDefault` 拦截浏览器默认行为）。绑定规则：`修饰键+键` 直接绑定；单键仅限功能键（F1–F12）可绑定，其余单键（字母/数字/Delete 等）仅作展示不绑定。
 
-**全局快捷键语义**：`shortcut` 与 `accessKey`（Alt 访问键）都是**文档级**绑定，作用于整个页面而非仅菜单栏聚焦时。为避免劫持输入，焦点位于可编辑控件（`input` / `textarea` / `select` / `contenteditable`，以及输入法组合中）时，文档级快捷键与 Alt 访问键一律让路，由控件与浏览器自行处理；菜单栏自身的键盘导航（方向键 / Tab 焦点陷阱）只在其内部焦点上生效，不受此守卫影响。同一快捷键应在页面内保持唯一，冲突时以先匹配到的菜单项为准。
+**全局快捷键语义**：`shortcut` 与 `accessKey`（Alt 访问键）都是**文档级**绑定，作用于整个页面而非仅菜单栏聚焦时。为避免劫持输入，焦点位于可编辑控件（`input` / `textarea` / `select` / `contenteditable`）时：**带 Ctrl / Cmd 的已定义 shortcut 与 F1–F24 单键 shortcut 仍然生效**（编辑器内保存/新建等核心动作必须可达），其余按键（普通可打印字符、方向键/编辑键、Alt 访问键、输入法组合中的任何按键）一律让路，由控件与浏览器自行处理；未命中任何 shortcut 的组合键不会 `preventDefault`，编辑器自身快捷键不受影响；命中的快捷键也不会把焦点抢到菜单栏，编辑器光标留在原处。菜单栏自身的键盘导航（方向键 / Tab 焦点陷阱）只在其内部焦点上生效，不受此守卫影响。同一快捷键应在页面内保持唯一，冲突时以先匹配到的菜单项为准。
 
 <DemoBlock title="快捷键（shortcut）">
   <oas-menubar id="menubar-shortcut" onoas-select="menubarShortcutLog(event)" items='[{"label":"文件","value":"file","accessKey":"f","children":[{"label":"新建","value":"new","shortcut":"Ctrl+N"},{"label":"打开","value":"open","shortcut":"Ctrl+O"},{"type":"divider"},{"label":"保存","value":"save","shortcut":"Ctrl+S","kind":"action"}]}]'></oas-menubar>
