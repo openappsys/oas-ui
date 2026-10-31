@@ -56,7 +56,7 @@ describe('OASScheduler 月视图 + events CRUD', () => {
     expect(dayOf(el, '2026-08-10').querySelectorAll('.chip').length).toBe(1)
     const read = el.events
     expect(read.length).toBe(1)
-    expect(read[0]!.id, '缺省 id 自动分配').toBeTruthy()
+    expect(read[0]!.id, '缺省 id 自动分配').toBe('ev1')
     expect(read).not.toBe((el as unknown as { _events: unknown[] })._events)
   })
 
@@ -85,7 +85,6 @@ describe('OASScheduler 月视图 + events CRUD', () => {
       events: JSON.stringify([{ id: 'span', date: '2026-08-10', endDate: '2026-08-11', title: '跨日' }]),
     })
     const bar = (): HTMLElement => el.shadowRoot!.querySelector<HTMLElement>('.band-span[data-id="span"]')!
-    expect(bar()).not.toBeNull()
     bar().dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', altKey: true, bubbles: true }))
     expect(el.events[0]!.endDate).toBe('2026-08-12')
     bar().dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', altKey: true, bubbles: true }))
@@ -100,7 +99,7 @@ describe('OASScheduler 月视图 + events CRUD', () => {
     })
     const shortEvent = short.shadowRoot!.querySelector<HTMLElement>('.col[data-date="2026-08-10"] .event')!
     expect(shortEvent.querySelector('.resize-start')).toBeNull()
-    expect(shortEvent.querySelector('.resize')).not.toBeNull()
+    expect(shortEvent.querySelectorAll('.resize').length).toBe(1)
 
     const el = mount({
       view: 'week',
@@ -219,7 +218,7 @@ describe('OASScheduler 月视图 + events CRUD', () => {
     longBar.focus()
     longBar.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', altKey: true, bubbles: true }))
     expect(long.events[0]!.endDate).toBe('2026-08-09')
-    expect(long.shadowRoot!.querySelector('.band-span[data-id="long"]')).not.toBeNull()
+    expect(long.shadowRoot!.querySelector<HTMLElement>('.band-span')!.getAttribute('data-id')).toBe('long')
     expect(long.shadowRoot!.activeElement?.getAttribute('data-id')).toBe('long')
   })
 
@@ -233,7 +232,7 @@ describe('OASScheduler 月视图 + events CRUD', () => {
     dayBar.focus()
     dayBar.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', altKey: true, bubbles: true }))
     expect(day.events[0]!.endDate).toBe('2026-08-11')
-    expect(day.shadowRoot!.querySelector('.band-span[data-id="long-day"]')).not.toBeNull()
+    expect(day.shadowRoot!.querySelector<HTMLElement>('.band-span')!.getAttribute('data-id')).toBe('long-day')
     expect(day.shadowRoot!.activeElement?.getAttribute('data-id')).toBe('long-day')
   })
 
@@ -243,7 +242,10 @@ describe('OASScheduler 月视图 + events CRUD', () => {
     el.addEventListener('oas-events-change', () => seen.push('c'))
 
     const id = el.addEvent({ date: '2026-08-11', title: '新增' })
-    expect(id).toBeTruthy()
+    expect(
+      el.events.some((e) => e.id === id),
+      '新增事件 id 命中内部状态',
+    ).toBe(true)
     expect(dayOf(el, '2026-08-11').querySelector('.chip')?.textContent).toBe('新增')
 
     expect(el.updateEvent(id, { title: '改名', date: '2026-08-12' })).toBe(true)
@@ -353,7 +355,7 @@ describe('OASScheduler 终轮修复回归（F1/F2/F3/F4）', () => {
       })
       const me = el as unknown as { remindAt(ev: unknown): number | null }
       const at = me.remindAt(el.events[0])
-      expect(at).not.toBeNull()
+      expect(typeof at).toBe('number')
       const when = new Date(at!)
       // 2 月无 31 号：应跳过 2 月落 3-31（而非幻影 2-28）
       expect(when.getMonth()).toBe(2)
@@ -401,7 +403,7 @@ describe('OASScheduler 终轮修复回归（F1/F2/F3/F4）', () => {
       const title = el.shadowRoot!.querySelector('[part="title"]')!.textContent ?? ''
       expect(title, '点今天应锚 NY 的 2026-08 而非宿主 2026-09').toContain('08')
       expect(title).not.toContain('09')
-      expect(el.shadowRoot!.querySelector('.day.today'), 'today 高亮不丢').not.toBeNull()
+      expect(el.shadowRoot!.querySelectorAll('.day.today').length, 'today 高亮不丢').toBe(1)
     } finally {
       vi.useRealTimers()
     }
@@ -480,8 +482,8 @@ describe('OASScheduler review 修复回归（C1/I1/I2/I4/I5/I-5/I-6/I-7/I-1）',
       'page-show-date': '2026-08-10',
     })
     const track = el.shadowRoot!.querySelector('.track') as HTMLElement
-    expect(Number.parseFloat(track.style.height)).toBeGreaterThan(0)
-    expect(el.shadowRoot!.querySelectorAll('.gutter span').length).toBeGreaterThan(0)
+    expect(Number.parseFloat(track.style.height), '21 点起钳制到 22 点，轨道 1 小时 = 48px').toBe(48)
+    expect(el.shadowRoot!.querySelectorAll('.gutter span').length, '21–22 点仅 1 个刻度').toBe(1)
   })
 
   it('I-5：拖拽移动按时长约束落点（2 小时事件拖到 23:30 不截断时长）', () => {
@@ -534,7 +536,7 @@ describe('OASScheduler review 修复回归（C1/I1/I2/I4/I5/I-5/I-6/I-7/I-1）',
       'page-show-date': '2026-08-10',
     })
     expect(el.shadowRoot!.querySelector('.col[data-date="2026-08-10"] .event')).toBeNull()
-    expect(el.shadowRoot!.querySelector('.band-col[data-date="2026-08-10"] .allday .chip')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('.band-col[data-date="2026-08-10"] .allday .chip').length).toBe(1)
   })
 
   it('I-1：resize 落定才派发 oas-events-change（move 期间不重建 DOM）', () => {
@@ -590,7 +592,7 @@ describe('OASScheduler P3：时区 + 日程（agenda）视图', () => {
 
   it('agenda 空区间显示占位；点事件行派发 oas-event-click、点日头派发 oas-day-click', () => {
     const el = mount({ 'page-show-date': '2026-08-10', view: 'agenda' })
-    expect(el.shadowRoot!.querySelector('.ag-empty')?.textContent).toBeTruthy()
+    expect(el.shadowRoot!.querySelector('.ag-empty')?.textContent).toBe('此区间无日程')
     const el2 = mount({
       events: JSON.stringify([{ date: '2026-08-10', title: 'x' }]),
       'page-show-date': '2026-08-10',
@@ -644,7 +646,6 @@ describe('OASScheduler P3：时区 + 日程（agenda）视图', () => {
   it('视图按钮含 agenda；切换派发 oas-view-change', () => {
     const el = mount({ 'page-show-date': '2026-08-10' })
     const btn = el.shadowRoot!.querySelector<HTMLButtonElement>('[part="views"] button[data-view="agenda"]')
-    expect(btn).not.toBeNull()
     const log: string[] = []
     el.addEventListener('oas-view-change', ((e: Event) =>
       log.push((e as CustomEvent<{ view: string }>).detail.view)) as EventListener)
@@ -693,8 +694,8 @@ describe('OASScheduler P2：重复规则（RRULE 子集）+ 提醒', () => {
       'page-show-date': '2026-08-10',
       view: 'week',
     })
-    expect(el.shadowRoot!.querySelector('.col[data-date="2026-08-10"] .event')).not.toBeNull()
-    expect(el.shadowRoot!.querySelector('.col[data-date="2026-08-11"] .event')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('.col[data-date="2026-08-10"] .event').length).toBe(1)
+    expect(el.shadowRoot!.querySelectorAll('.col[data-date="2026-08-11"] .event').length).toBe(1)
     expect(el.events.length).toBe(1)
     expect(el.events[0]!.repeat?.freq).toBe('daily')
   })
@@ -792,7 +793,7 @@ describe('OASScheduler P1：view 切换 + 周/日时间轴 + 拖拽移动/缩放
     const first = evs[0] as HTMLElement
     expect(Number.parseFloat(first.style.top)).toBeCloseTo((9 - 8) * 48, 0)
     expect(Number.parseFloat(first.style.height)).toBeCloseTo(48, 0)
-    expect(el.shadowRoot!.querySelector('.band-col[data-date="2026-08-10"] .allday')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('.band-col[data-date="2026-08-10"] .allday').length).toBe(1)
     expect(el.shadowRoot!.querySelector('.band-col[data-date="2026-08-11"] .allday .chip')?.textContent).toBe(
       '全天活动',
     )
@@ -1081,7 +1082,7 @@ describe('OASScheduler 资源视图 + now 线 + 拖拽创建', () => {
     const t = new Date()
     const iso = `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}-${String(t.getDate()).padStart(2, '0')}`
     const on = mount({ view: 'day', 'page-show-date': iso, 'start-hour': '0', 'end-hour': '24' })
-    expect(on.shadowRoot!.querySelector('.nowline')).not.toBeNull()
+    expect(on.shadowRoot!.querySelectorAll('.nowline').length).toBe(1)
     const off = mount({ view: 'day', 'page-show-date': iso, 'show-now': 'false', 'start-hour': '0', 'end-hour': '24' })
     expect(off.shadowRoot!.querySelector('.nowline')).toBeNull()
   })
@@ -1163,7 +1164,6 @@ describe('OASScheduler 虚拟化（时间轴小时窗口 + 资源行窗口）', 
     const spans = gutter.querySelectorAll('span')
     // 窗口 = [0, 5 + buffer 2) = 7 个刻度（全量 24）
     expect(spans.length, '24 小时刻度应按窗口渲染（上界 7）').toBe(7)
-    expect(spans.length).toBeGreaterThan(0)
     // 容器总高守恒：gutter 高度仍为 全部小时 × 行高（滚动范围不随窗口缩水）
     expect(parseFloat(gutter.style.height)).toBe(24 * HOUR_H)
     // 日列不窗口化（≤7 列恒全量）：day 视图仍 1 列
@@ -1203,8 +1203,6 @@ describe('OASScheduler 虚拟化（时间轴小时窗口 + 资源行窗口）', 
     expect(rows.length, '渲染行数应有上界（500 行只渲染窗口 24 行）').toBe(24)
     const top = el.shadowRoot!.querySelector<HTMLElement>('.res-pad-top')
     const bottom = el.shadowRoot!.querySelector<HTMLElement>('.res-pad-bottom')
-    expect(top, '窗口上方 spacer 存在').not.toBeNull()
-    expect(bottom, '窗口下方 spacer 存在').not.toBeNull()
     const total = parseFloat(top!.style.height) + parseFloat(bottom!.style.height) + rows.length * RES_ROW_H
     expect(total, 'spacer + 渲染行高之和守恒总高').toBe(500 * RES_ROW_H)
     expect(parseFloat(bottom!.style.height)).toBe((500 - 24) * RES_ROW_H)
@@ -1233,8 +1231,7 @@ describe('OASScheduler 虚拟化（时间轴小时窗口 + 资源行窗口）', 
     expect(parseFloat(el.shadowRoot!.querySelector<HTMLElement>('.res-pad-bottom')!.style.height)).toBe(
       (100 - 60) * RES_ROW_H,
     )
-    expect(req, '切片未覆盖可视窗口时应请求宿主回填').not.toBeNull()
-    expect(req!.start).toBeLessThanOrEqual(40)
+    expect(req!.start, '切片未覆盖可视窗口时应请求宿主回填').toBeLessThanOrEqual(40)
     expect(req!.end).toBeGreaterThanOrEqual(60)
   })
 
@@ -1265,7 +1262,6 @@ describe('OASScheduler 虚拟化（时间轴小时窗口 + 资源行窗口）', 
       events: JSON.stringify([{ date: '2026-08-10', title: 'orphan', start: '09:00', end: '10:00' }]),
     })
     const un = el.shadowRoot!.querySelector<HTMLElement>('.res-row[data-resource="__unassigned__"]')!
-    expect(un).not.toBeNull()
     expect(un.querySelector('.res-bar')?.textContent).toBe('orphan')
   })
 
@@ -1323,7 +1319,7 @@ describe('OASScheduler 虚拟化（时间轴小时窗口 + 资源行窗口）', 
     })
     rv.dispatchEvent(new Event('scroll'))
     await flushRaf()
-    expect(request, '滚动到未装载区应请求宿主').not.toBeNull()
+    expect(typeof request!.start, '滚动到未装载区应请求宿主').toBe('number')
     const next = Array.from({ length: 20 }, (_, i) => ({ id: `r${request!.start + i}`, title: 'X' }))
     el.setAttribute('window-start', String(request!.start))
     el.setAttribute('resources', JSON.stringify(next))
@@ -1350,11 +1346,11 @@ describe('OASScheduler 虚拟化（时间轴小时窗口 + 资源行窗口）', 
     const rv = resviewOf(el)
     stubBox(rv, { clientHeight: 740 })
     el.requestUpdate()
-    expect(el.shadowRoot!.querySelector('.res-row[data-resource="r0"]'), '顶部窗口首行在 DOM').not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('.res-row[data-resource="r0"]').length, '顶部窗口首行在 DOM').toBe(1)
     stubBox(rv, { scrollTop: 250 * RES_ROW_H }) // 滚到第 250 行
     rv.dispatchEvent(new Event('scroll'))
     await flushRaf()
-    expect(el.shadowRoot!.querySelector('.res-row[data-resource="r250"]'), '中部行渲染覆盖可视区').not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('.res-row[data-resource="r250"]').length, '中部行渲染覆盖可视区').toBe(1)
     expect(el.shadowRoot!.querySelector('.res-row[data-resource="r0"]'), '顶部行随窗口移出').toBeNull()
   })
 
@@ -1385,7 +1381,7 @@ describe('OASScheduler 虚拟化（时间轴小时窗口 + 资源行窗口）', 
     const resEl = mount({ view: 'resource', 'page-show-date': '2026-08-10' })
     expect(resEl.shadowRoot!.querySelectorAll('[part="resource"] .res-row').length).toBe(1)
     const dayEl = mount({ view: 'day', 'page-show-date': '2026-08-10' })
-    expect(dayEl.shadowRoot!.querySelector('.col .track')).not.toBeNull()
+    expect(dayEl.shadowRoot!.querySelectorAll('.col .track').length).toBe(1)
     const weekEl = mount({ view: 'week', 'page-show-date': '2026-08-10' })
     expect(weekEl.shadowRoot!.querySelectorAll('.timeview .col').length).toBe(7)
   })
@@ -1429,8 +1425,7 @@ describe('OASScheduler 虚拟化（时间轴小时窗口 + 资源行窗口）', 
     tv.dispatchEvent(new Event('scroll'))
     await flushRaf()
     const after = el.shadowRoot!.activeElement as HTMLElement | null
-    expect(after, '重建后焦点不得丢失').not.toBeNull()
-    expect(after!.getAttribute('data-id'), '回焦到同一事件 id').toBe(ev.getAttribute('data-id'))
+    expect(after!.getAttribute('data-id'), '重建后焦点不得丢失，且回焦到同一事件 id').toBe(ev.getAttribute('data-id'))
   })
 
   it('V10 aria 行计数：resource 网格 aria-rowcount + 每行绝对 aria-rowindex（1 基，窗口平移不重编号）', () => {
@@ -1542,7 +1537,9 @@ describe('OASScheduler 资源视图索引化（终审 F1：滚动帧不随事件
     // 索引化后每个事件只属一个资源桶：每帧扫描 = Σ(窗口行桶大小) ≤ 事件总量 → 5 帧上界 5 × TOTAL_EV。
     // 索引化前：每可见行两遍全量扫描（eventsOn + filter）≈ 24 行 × 2 × 5000 × 5 帧 ≈ 120 万次比较
     expect(delta, '滚动帧扫描计数不得随「窗口行数 × 事件总量」增长').toBeLessThanOrEqual(5 * TOTAL_EV)
-    expect(delta, '滚动触发窗口重建，扫描计数应为正').toBeGreaterThan(0)
+    // 精确值取决于窗口桶大小与帧内合帧时机，无法在不绑定实现细节的前提下写死；
+    // 下界 1 即「确实发生了一次以上桶扫描」，上界归上一行断言负责。
+    expect(delta, '滚动触发窗口重建，扫描计数应为正').toBeGreaterThanOrEqual(1)
   })
 
   it('窗口行渲染结果正确：中部行事件齐全、未分配行归并（无/未知 resource 并存）+ aria-rowcount', async () => {
@@ -1562,7 +1559,6 @@ describe('OASScheduler 资源视图索引化（终审 F1：滚动帧不随事件
     // 滚到最后一行：未分配行（id ''）归并无 resource 与未知 resource 事件
     await scrollResRows(el, RES_COUNT)
     const un = el.shadowRoot!.querySelector('.res-row[data-resource=""]')!
-    expect(un, '未分配行存在').not.toBeNull()
     expect(un.getAttribute('aria-rowindex')).toBe(String(RES_COUNT + 1))
     expect(un.querySelectorAll('.res-bar').length, '未分配定时条 = 无 resource 15 + 未知 resource 5').toBe(
       UNASSIGNED_TIMED + GHOST_TIMED,
@@ -1628,8 +1624,7 @@ describe('OASScheduler 复审修复（I1 now 计时器 / I4 滚动容器键盘�
     })
     const internals = el as unknown as { nowTimer: unknown }
     const line = (): HTMLElement => el.shadowRoot!.querySelector<HTMLElement>('.res-row[data-resource="r1"] .res-now')!
-    expect(internals.nowTimer, 'resource 视图启动 now 计时器').toBeTruthy()
-    expect(line(), '当天资源视图渲染 now 线').not.toBeNull()
+    expect(vi.getTimerCount(), 'resource 视图启动 now 计时器').toBe(1)
     const before = parseFloat(line().style.insetInlineStart)
     vi.advanceTimersByTime(60_000)
     expect(parseFloat(line().style.insetInlineStart), '推进 1 分钟后 now 线位置变化').toBeGreaterThan(before)
@@ -1645,7 +1640,7 @@ describe('OASScheduler 复审修复（I1 now 计时器 / I4 滚动容器键盘�
 
     // 切回 resource：重启定时器并立即按当前时刻重渲染
     el.shadowRoot!.querySelector<HTMLButtonElement>('[data-view="resource"]')!.click()
-    expect(internals.nowTimer, '切回 resource 重启计时器').toBeTruthy()
+    expect(vi.getTimerCount(), '切回 resource 重启计时器').toBe(1)
     expect(parseFloat(line().style.insetInlineStart), '切回后 now 线推进到当前时刻').toBeGreaterThan(parseFloat(frozen))
 
     el.remove()
@@ -1692,11 +1687,11 @@ describe('OASScheduler 复审修复（I1 now 计时器 / I4 滚动容器键盘�
       'end-hour': '24',
     })
     const internals = el as unknown as { nowTimer: unknown }
-    expect(internals.nowTimer).toBeTruthy()
+    expect(vi.getTimerCount(), 'resource 视图启动 now 计时器').toBe(1)
     el.shadowRoot!.querySelector<HTMLButtonElement>('[data-view="agenda"]')!.click()
     expect(internals.nowTimer, 'agenda 无 now 线，计时器停止').toBeFalsy()
     el.shadowRoot!.querySelector<HTMLButtonElement>('[data-view="resource"]')!.click()
-    expect(internals.nowTimer, '切回 resource 重启').toBeTruthy()
+    expect(vi.getTimerCount(), '切回 resource 重启').toBe(1)
   })
 
   it('I2 资源视图默认 max-height 640px（--oas-scheduler-resource-max-height 可覆盖，与 timeview 一致）', () => {
@@ -1963,8 +1958,8 @@ describe('scheduler 跨日全天 / repeat count+byDay / ICS 增强', () => {
       )
     }
     expect(el.events.find((item) => item.id === 'span')!.date).toBe('2026-08-17')
-    expect(el.shadowRoot!.querySelector('.band-span')).not.toBeNull()
-    expect(el.shadowRoot!.querySelector('.band-col[data-date="2026-08-17"]')).not.toBeNull()
+    expect(el.shadowRoot!.querySelector<HTMLElement>('.band-span')!.getAttribute('data-id')).toBe('span')
+    expect(el.shadowRoot!.querySelectorAll('.band-col[data-date="2026-08-17"]').length).toBe(1)
   })
 
   it('定时跨日条键盘平移保留 start/end 时刻', () => {
@@ -1992,7 +1987,6 @@ describe('scheduler 跨日全天 / repeat count+byDay / ICS 增强', () => {
       ]),
     })
     const bar = el.shadowRoot!.querySelector<HTMLElement>('.band-span.timed-span')!
-    expect(bar).not.toBeNull()
     expect(bar.textContent).toContain('22:00')
     expect(bar.textContent).toContain('夜间')
     expect(el.shadowRoot!.querySelectorAll('.col .event').length).toBe(0)
@@ -2128,7 +2122,6 @@ describe('scheduler 跨日几何 / ICS 类型 / byDay 计数回归（I-1/I-2/I-3
       ]),
     })
     const bar = el.shadowRoot!.querySelector<HTMLElement>('.res-lane[data-resource="r1"] .res-bar')!
-    expect(bar).not.toBeNull()
     // 22:00 → 24:00 占 24 小时轨道的 2/24
     expect(Number.parseFloat(bar.style.insetInlineStart)).toBeCloseTo((22 / 24) * 100, 1)
     expect(Number.parseFloat(bar.style.width)).toBeCloseTo((2 / 24) * 100, 1)

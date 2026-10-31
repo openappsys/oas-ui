@@ -65,7 +65,6 @@ describe('toast 命令式 API（既有能力回归）', () => {
     toast.success({ title: '操作成功' })
     await Promise.resolve()
     const t = el()
-    expect(t).not.toBeNull()
     expect(titleOf(t)).toBe('操作成功')
     expect(t.getAttribute('type')).toBe('success')
     expect(vi.getTimerCount()).toBe(1)
@@ -78,22 +77,21 @@ describe('toast 命令式 API（既有能力回归）', () => {
 
   it('error 类型 role=alert，其余 role=status', () => {
     toast.error({ title: '出错了' })
-    expect(el().shadowRoot!.querySelector('[role="alert"]')).not.toBeNull()
+    expect(el().shadowRoot!.querySelector('[part="box"]')!.getAttribute('role')).toBe('alert')
     destroyAll()
     toast.info({ title: '信息' })
-    expect(el().shadowRoot!.querySelector('[role="status"]')).not.toBeNull()
+    expect(el().shadowRoot!.querySelector('[part="box"]')!.getAttribute('role')).toBe('status')
   })
 
   it('duration 0 不自动关闭', async () => {
     toast.info({ title: '常驻', duration: 0 })
     await tick(60000)
-    expect(document.body.querySelector('oas-toast')).not.toBeNull()
+    expect(document.body.querySelectorAll('oas-toast').length).toBe(1)
   })
 
   it('closable=false 关闭按钮隐藏（loading 恒不可关）', () => {
     toast.info({ title: '不可关', closable: false })
     const close = el().shadowRoot!.querySelector<HTMLElement>('[part="close"]')!
-    expect(close).not.toBeNull()
     expect(close.hidden).toBe(true)
   })
 
@@ -102,7 +100,6 @@ describe('toast 命令式 API（既有能力回归）', () => {
     toast.info({ title: '有操作', action: { label: '查看', onClick } })
     const t = el()
     const btn = t.shadowRoot!.querySelector('[part="action"]') as HTMLButtonElement
-    expect(btn).not.toBeNull()
     expect(btn.type).toBe('button')
     expect(btn.textContent).toBe('查看')
     btn.click()
@@ -117,7 +114,7 @@ describe('toast 命令式 API（既有能力回归）', () => {
     expect(t.shadowRoot!.querySelector<HTMLElement>('[part="close"]')!.hidden).toBe(true)
     expect(vi.getTimerCount()).toBe(0)
     await tick(60000)
-    expect(document.body.querySelector('oas-toast')).not.toBeNull()
+    expect(document.body.querySelectorAll('oas-toast').length).toBe(1)
   })
 
   it('handle.close() 手动关闭并清理计时器', async () => {
@@ -243,7 +240,7 @@ describe('toast 命令式 API（既有能力回归）', () => {
       document.body.appendChild(t)
       const slot = t.shadowRoot!.querySelector<HTMLSlotElement>('slot[name="title"]')!
       const fallback = t.shadowRoot!.querySelector<HTMLElement>('.title-text')!
-      expect(slot.assignedNodes().length).toBeGreaterThan(0)
+      expect(slot.assignedNodes().length).toBe(1)
       expect(fallback.hidden).toBe(true)
       expect(t.hasAttribute('title')).toBe(false)
     })
@@ -360,13 +357,12 @@ describe('P2 按 id 的 update 与 close', () => {
     toast.info({ title: '旧标题', id: 'upload', duration: 0 })
     toast.update('upload', { title: '新标题', type: 'success', duration: 5000 })
     const t = document.body.querySelector('oas-toast[id="upload"]') as OASToast
-    expect(t).not.toBeNull()
     expect(t.getAttribute('type')).toBe('success')
     expect(titleOf(t)).toBe('新标题')
     expect(t.getAttribute('duration')).toBe('5000')
     // 更新后重置计时：5s 到点才关
     await tick(4999)
-    expect(document.body.querySelector('oas-toast[id="upload"]')).not.toBeNull()
+    expect(document.body.querySelectorAll('oas-toast[id="upload"]').length).toBe(1)
     await tick(1)
     await settleClose()
     expect(document.body.querySelector('oas-toast[id="upload"]')).toBeNull()
@@ -382,7 +378,6 @@ describe('P2 按 id 的 update 与 close', () => {
   it('toast.update 不存在则新建', () => {
     toast.update('new-id', { title: '新建', type: 'warning' })
     const t = document.body.querySelector('oas-toast[id="new-id"]') as OASToast
-    expect(t).not.toBeNull()
     expect(t.getAttribute('type')).toBe('warning')
   })
 
@@ -392,7 +387,7 @@ describe('P2 按 id 的 update 与 close', () => {
     toast.dismiss('a')
     await settleClose()
     expect(document.body.querySelector('oas-toast[id="a"]')).toBeNull()
-    expect(document.body.querySelector('oas-toast[id="b"]')).not.toBeNull()
+    expect(document.body.querySelectorAll('oas-toast[id="b"]').length).toBe(1)
   })
 
   it('toast.dismiss 不存在则静默无操作', () => {
@@ -430,7 +425,7 @@ describe('P3 max 可见数 + 超限队列 + priority 优先级', () => {
     // 关闭 a → c 补位
     toast.dismiss('a')
     await Promise.resolve()
-    expect(document.body.querySelector('oas-toast[id="c"]')).not.toBeNull()
+    expect(document.body.querySelectorAll('oas-toast[id="c"]').length).toBe(1)
     await settleClose()
     expect(document.body.querySelector('oas-toast[id="a"]')).toBeNull()
     expect(all().length).toBe(2)
@@ -454,7 +449,7 @@ describe('P3 max 可见数 + 超限队列 + priority 优先级', () => {
     toast.info({ title: 'low', id: 'low', priority: 0 })
     toast.info({ title: 'high', id: 'high', priority: 5 })
     await Promise.resolve()
-    expect(document.body.querySelector('oas-toast[id="high"]')).not.toBeNull()
+    expect(document.body.querySelectorAll('oas-toast[id="high"]').length).toBe(1)
     await settleClose()
     expect(document.body.querySelector('oas-toast[id="low"]')).toBeNull()
   })
@@ -464,7 +459,7 @@ describe('P3 max 可见数 + 超限队列 + priority 优先级', () => {
     toast.info({ title: 'a', id: 'a', priority: 5 })
     toast.info({ title: 'b', id: 'b', priority: 0 })
     expect(all().length).toBe(1)
-    expect(document.body.querySelector('oas-toast[id="a"]')).not.toBeNull()
+    expect(titleOf(el())).toBe('a')
     expect(document.body.querySelector('oas-toast[id="b"]')).toBeNull()
   })
 
@@ -476,11 +471,11 @@ describe('P3 max 可见数 + 超限队列 + priority 优先级', () => {
     toast.info({ title: 'c', id: 'c', priority: 5 }) // 抢占 a → b 补位 → c 入队
     await settleClose() // a 离场完毕
     expect(all().length).toBe(1)
-    expect(document.body.querySelector('oas-toast[id="b"]')).not.toBeNull()
+    expect(document.body.querySelectorAll('oas-toast[id="b"]').length).toBe(1)
     expect(document.body.querySelector('oas-toast[id="c"]')).toBeNull()
     // 关闭 b → c 出队补位（b 离场后只剩 c）
     toast.dismiss('b')
-    expect(document.body.querySelector('oas-toast[id="c"]')).not.toBeNull()
+    expect(document.body.querySelectorAll('oas-toast[id="c"]').length).toBe(1)
     await settleClose()
     expect(all().length).toBe(1)
   })
@@ -503,10 +498,10 @@ describe('P4 hover/聚焦/窗口失焦暂停计时（剩余时长记账）', () 
     const t = el()
     t.dispatchEvent(new Event('pointerenter'))
     await tick(5000) // 暂停中推进
-    expect(document.body.querySelector('oas-toast')).not.toBeNull()
+    expect(document.body.querySelectorAll('oas-toast').length).toBe(1)
     t.dispatchEvent(new Event('pointerleave'))
     await tick(999)
-    expect(document.body.querySelector('oas-toast')).not.toBeNull()
+    expect(document.body.querySelectorAll('oas-toast').length).toBe(1)
     await tick(1)
     await settleClose()
     expect(document.body.querySelector('oas-toast')).toBeNull()
@@ -520,7 +515,7 @@ describe('P4 hover/聚焦/窗口失焦暂停计时（剩余时长记账）', () 
     await tick(5000)
     t.dispatchEvent(new Event('pointerleave'))
     await tick(599) // 剩余 600-599=1
-    expect(document.body.querySelector('oas-toast')).not.toBeNull()
+    expect(document.body.querySelectorAll('oas-toast').length).toBe(1)
     await tick(1)
     await settleClose()
     expect(document.body.querySelector('oas-toast')).toBeNull()
@@ -531,7 +526,7 @@ describe('P4 hover/聚焦/窗口失焦暂停计时（剩余时长记账）', () 
     const t = el()
     t.dispatchEvent(new Event('focusin'))
     await tick(5000)
-    expect(document.body.querySelector('oas-toast')).not.toBeNull()
+    expect(document.body.querySelectorAll('oas-toast').length).toBe(1)
     t.dispatchEvent(new Event('focusout'))
     await tick(1000)
     await settleClose()
@@ -542,7 +537,7 @@ describe('P4 hover/聚焦/窗口失焦暂停计时（剩余时长记账）', () 
     toast.info({ title: 'x', duration: 1000 })
     window.dispatchEvent(new Event('blur'))
     await tick(5000)
-    expect(document.body.querySelector('oas-toast')).not.toBeNull()
+    expect(document.body.querySelectorAll('oas-toast').length).toBe(1)
     window.dispatchEvent(new Event('focus'))
     await tick(1000)
     await settleClose()
@@ -607,7 +602,6 @@ describe('P5 全局默认配置（toast.config + app 白名单）', () => {
     document.body.appendChild(app)
     toast.info({ title: 'x' })
     const t = app.querySelector('oas-toast') as OASToast
-    expect(t).not.toBeNull()
     expect(t.getAttribute('duration')).toBe('1500')
   })
 
@@ -666,7 +660,7 @@ describe('P6 键盘可达：Esc 关闭当前', () => {
     toast.info({ title: 'x', duration: 0 })
     el().dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
     await Promise.resolve()
-    expect(document.body.querySelector('oas-toast')).not.toBeNull()
+    expect(document.body.querySelectorAll('oas-toast').length).toBe(1)
   })
 })
 
@@ -784,7 +778,7 @@ describe('P9 同内容去重 grouping（badge 计数）', () => {
     toast.info({ title: 'x', grouping: true, duration: 1000 })
     // 第二次调用重置 → 再过 1000ms 才关
     vi.advanceTimersByTime(999)
-    expect(document.body.querySelector('oas-toast')).not.toBeNull()
+    expect(document.body.querySelectorAll('oas-toast').length).toBe(1)
   })
 
   it('未开启 grouping 不合并', () => {
@@ -827,14 +821,14 @@ describe('P10 滑动关闭（swipe）', () => {
     await Promise.resolve()
     const box = el().shadowRoot!.querySelector<HTMLElement>('.box')!
     expect(box.classList.contains('swipe-back')).toBe(true)
-    expect(document.body.querySelector('oas-toast')).not.toBeNull()
+    expect(document.body.querySelectorAll('oas-toast').length).toBe(1)
   })
 
   it('swipe-direction=left 只认左滑', async () => {
     toast.info({ title: 'x', duration: 0, swipeDirection: 'left' })
     swipe(100, 250) // 右滑不符合方向 → 不关
     await Promise.resolve()
-    expect(document.body.querySelector('oas-toast')).not.toBeNull()
+    expect(document.body.querySelectorAll('oas-toast').length).toBe(1)
     destroyAll()
     toast.info({ title: 'y', duration: 0, swipeDirection: 'left' })
     swipe(250, 100) // 左滑 → 关
@@ -869,7 +863,6 @@ describe('P11 折叠堆叠模式（+N 折叠 / stacked peek 层叠）', () => {
     expect(stack.classList.contains('oas-toast-stack')).toBe(true)
     expect(stack.getAttribute('data-stacked')).toBe('true')
     const badge = stack.querySelector<HTMLElement>('.oas-toast-stack-badge')!
-    expect(badge).not.toBeNull()
     expect(badge.textContent).toBe('+1')
     expect(badge.hidden).toBe(false)
   })
@@ -941,7 +934,7 @@ describe('P14 受控/声明式双模式（open 属性）', () => {
     document.body.appendChild(t)
     t.setAttribute('open', 'false')
     await tick(5000)
-    expect(document.body.querySelector('oas-toast')).not.toBeNull()
+    expect(document.body.querySelectorAll('oas-toast').length).toBe(1)
     // 重新打开 → 重新计时
     t.setAttribute('open', 'true')
     await tick(1000)
@@ -1006,8 +999,8 @@ describe('P16 挂载点控制（container）', () => {
     document.body.appendChild(host)
     toast.info({ title: 'x', container: host })
     const stack = host.querySelector('.oas-toast-stack')!
-    expect(stack).not.toBeNull()
-    expect(stack.querySelector('oas-toast')).not.toBeNull()
+    expect(stack.querySelectorAll('oas-toast').length).toBe(1)
+    expect(titleOf(stack.querySelector('oas-toast') as OASToast)).toBe('x')
     expect(document.body.querySelector('body > .oas-toast-stack')).toBeNull()
   })
 
@@ -1015,12 +1008,12 @@ describe('P16 挂载点控制（container）', () => {
     const host = document.createElement('section')
     document.body.appendChild(host)
     toast.info({ title: 'x', container: () => host })
-    expect(host.querySelector('.oas-toast-stack')).not.toBeNull()
+    expect(host.querySelectorAll('.oas-toast-stack').length).toBe(1)
   })
 
   it('container 缺省仍挂默认宿主（body）', () => {
     toast.info({ title: 'x' })
-    expect(document.body.querySelector('body > .oas-toast-stack')).not.toBeNull()
+    expect(document.body.querySelectorAll('body > .oas-toast-stack').length).toBe(1)
   })
 })
 
@@ -1069,7 +1062,7 @@ describe('P17 按钮扩展（action 多按钮 + 变体 + noDismiss）', () => {
     const btns = [...el().shadowRoot!.querySelectorAll('.action')] as HTMLButtonElement[]
     btns[0]!.click()
     expect(a).toHaveBeenCalledTimes(1)
-    expect(document.body.querySelector('oas-toast')).not.toBeNull()
+    expect(document.body.querySelectorAll('oas-toast').length).toBe(1)
     btns[1]!.click()
     expect(b).toHaveBeenCalledTimes(1)
     await settleClose()
@@ -1104,7 +1097,6 @@ describe('P18 动画配置（默认进出场，时长走 CSS 变量开口）', (
     await Promise.resolve()
     // 离场中：仍在 DOM
     const closing = document.body.querySelector('oas-toast[id="y"]') as OASToast
-    expect(closing).not.toBeNull()
     expect(closing.shadowRoot!.querySelector('[part="box"]')!.classList.contains('closing')).toBe(true)
     await settleClose()
     expect(document.body.querySelector('oas-toast[id="y"]')).toBeNull()
@@ -1192,7 +1184,6 @@ describe('P23 多 toaster 实例（命名实例并行管理）', () => {
     side.info({ title: 's', duration: 0 })
     toast.info({ title: 'm', duration: 0 })
     side.destroyAll()
-    expect(document.body.querySelector('oas-toast')!.shadowRoot).not.toBeNull()
     expect(all().length).toBe(1)
     expect(titleOf(el())).toBe('m')
   })
@@ -1234,8 +1225,8 @@ describe('P25 进度环式关闭按钮', () => {
     expect(ring.hidden).toBe(false)
     const ringFill = ring.querySelector<HTMLElement>('.ring-fill')!
     expect(ringFill.style.animationDuration).toBe('3000ms')
-    // 环不遮挡关闭操作：close 仍在
-    expect(el().shadowRoot!.querySelector('[part="close"]')).not.toBeNull()
+    // 环不遮挡关闭操作：close 仍可见可点
+    expect(el().shadowRoot!.querySelector<HTMLElement>('[part="close"]')!.hidden).toBe(false)
   })
 
   it('duration=0 不显示进度环', () => {
@@ -1330,7 +1321,7 @@ describe('离场时长单位解析', () => {
     el().style.setProperty('--oas-toast-leave-duration', '0.2s')
     ;(el() as unknown as { close(): void }).close()
     await tick(50)
-    expect(document.body.querySelector('oas-toast')).not.toBeNull()
+    expect(document.body.querySelectorAll('oas-toast').length).toBe(1)
     await tick(200)
     expect(document.body.querySelector('oas-toast')).toBeNull()
   })

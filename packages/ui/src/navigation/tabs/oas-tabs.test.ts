@@ -167,12 +167,11 @@ describe('OASTabs', () => {
     el.addEventListener('oas-tab-contextmenu', (e) => (detail = (e as CustomEvent).detail))
     const tab = el.shadowRoot!.querySelector<HTMLElement>('[role="tab"][data-value="b"]')!
     tab.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, clientX: 210, clientY: 110 }))
-    expect(detail, '应派发 oas-tab-contextmenu').not.toBeNull()
     expect(detail!.value).toBe('b')
     expect(detail!.index).toBe(1)
     expect(detail!.clientX).toBe(210)
     expect(detail!.clientY).toBe(110)
-    expect(detail!.originalEvent, 'detail 应携带原生事件引用').toBeTruthy()
+    expect((detail!.originalEvent as MouseEvent).type, 'detail 应携带原生事件引用').toBe('contextmenu')
   })
 
   it('宿主 preventDefault(oas-tab-contextmenu)：内建菜单与浏览器默认菜单全抑止', () => {
@@ -188,7 +187,7 @@ describe('OASTabs', () => {
   it('不 preventDefault：内建菜单照常打开（既有契约零回归）', () => {
     const el = mountMany(['a', 'b'], { 'context-menu': '' })
     rightClickTab(el, 'a')
-    expect(el.shadowRoot!.querySelector('.ctx-menu')).not.toBeNull()
+    expect(el.shadowRoot!.querySelector<HTMLElement>('.ctx-menu')!.hidden).toBe(false)
   })
 
   it('空白处右键（nav 背景，非任何标签）不派发事件', () => {
@@ -208,13 +207,12 @@ describe('OASTabs', () => {
     const tab = el.shadowRoot!.querySelector<HTMLElement>('[role="tab"][data-value="b"]')!
     tab.focus()
     tab.dispatchEvent(new KeyboardEvent('keydown', { key: 'ContextMenu', bubbles: true }))
-    expect(detail, 'Menu 键应派发').not.toBeNull()
-    expect(detail!.value).toBe('b')
+    expect(detail!.value, 'Menu 键应派发').toBe('b')
     expect(typeof detail!.clientX).toBe('number')
     // Shift+F10 同通道
     detail = null
     tab.dispatchEvent(new KeyboardEvent('keydown', { key: 'F10', shiftKey: true, bubbles: true }))
-    expect(detail, 'Shift+F10 应派发').not.toBeNull()
+    expect(detail!.value, 'Shift+F10 应派发').toBe('b')
   })
 
   it('RTL：右键标签事件照常派发且 detail 值正确（坐标透传原生 clientX/Y）', () => {
@@ -223,7 +221,6 @@ describe('OASTabs', () => {
     el.addEventListener('oas-tab-contextmenu', (e) => (detail = (e as CustomEvent).detail))
     const tab = el.shadowRoot!.querySelector<HTMLElement>('[role="tab"][data-value="a"]')!
     tab.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, clientX: 640, clientY: 90 }))
-    expect(detail).not.toBeNull()
     expect(detail!.value).toBe('a')
     expect(detail!.clientX).toBe(640)
   })
@@ -291,7 +288,7 @@ describe('OASTabs', () => {
     expect(closes[0]!.tagName).toBe('SPAN')
     expect(closes[0]!.getAttribute('tabindex')).toBe('-1')
     expect(closes[0]!.getAttribute('role')).toBeNull()
-    expect(closes[0]!.getAttribute('aria-label')).toBeTruthy()
+    expect(closes[0]!.getAttribute('aria-label')).toBe('关闭')
   })
 
   it('closable：点击 × 派发 oas-close detail { key }，不自动移除、不触发切换', () => {
@@ -530,11 +527,10 @@ describe('OASTabs', () => {
   it('addable：渲染 + 新增按钮（native button + aria-label 走 locale + part 暴露）', () => {
     const el = mount({ addable: '' })
     const add = el.shadowRoot!.querySelector<HTMLElement>('.tab-add')
-    expect(add).not.toBeNull()
     expect(add!.tagName).toBe('BUTTON')
     expect(add!.getAttribute('aria-label')).toBe('新增标签')
     expect(add!.getAttribute('part')).toBe('add-button')
-    expect(add!.querySelector('svg')).not.toBeNull()
+    expect(add!.querySelectorAll('svg').length).toBe(1)
     // + 移出滚动区固定 nav：role=button（不再占位 tab），tabindex=0 进 Tab 顺序，可见
     expect(add!.getAttribute('role')).toBe('button')
     expect(add!.hasAttribute('hidden')).toBe(false)
@@ -695,7 +691,6 @@ describe('OASTabs', () => {
     const icons = el.shadowRoot!.querySelectorAll('.tab-icon')
     expect(icons.length).toBe(2)
     const svg = icons[0]!.querySelector('svg')
-    expect(svg).not.toBeNull()
     expect(icons[0]!.getAttribute('aria-hidden')).toBe('true')
     expect(svg!.getAttribute('aria-hidden')).toBe('true')
     // 非法 icon 名不渲染图标容器
@@ -712,7 +707,6 @@ describe('OASTabs', () => {
     `
     document.body.appendChild(el)
     const icon = el.shadowRoot!.querySelector<HTMLElement>('.tab-icon')
-    expect(icon).not.toBeNull()
     expect(icon!.textContent).toContain('⭐')
     expect(icon!.getAttribute('aria-hidden')).toBe('true')
   })
@@ -725,7 +719,7 @@ describe('OASTabs', () => {
     document.body.appendChild(el)
     const btn = el.shadowRoot!.querySelector('[role="tab"]')!
     const icon = btn.querySelector<HTMLElement>('.tab-icon')!
-    expect(icon.querySelector('svg')).not.toBeNull()
+    expect(icon.querySelectorAll('svg').length).toBe(1)
     expect(icon.textContent).not.toContain('⭐')
     // 图标在文字之前
     expect(btn.children[0]!.classList.contains('tab-icon')).toBe(true)
@@ -809,7 +803,7 @@ describe('OASTabs', () => {
       const el = mount({ size: 'huge' })
       console.warn = orig
       expect(el.classList.contains('oas-tabs--medium')).toBe(true)
-      expect(warn.length).toBeGreaterThan(0)
+      expect(warn.length).toBe(1)
     })
   })
 
@@ -888,7 +882,7 @@ describe('OASTabs', () => {
         scrolled = (opts.left as number) ?? 0
       }) as typeof tablist.scrollBy
       ;(el.shadowRoot!.querySelector('.scroll-end') as HTMLElement).click()
-      expect(scrolled).toBeGreaterThan(0)
+      expect(scrolled).toBe(300) // clientWidth 500 * 0.6
     })
 
     it('without-scroll-controls 关闭箭头（溢出也不显示）', () => {
@@ -964,7 +958,7 @@ describe('OASTabs', () => {
       expect(offview).toEqual(['t3'])
       // 下拉非空：点开 more 应有条目
       ;(el.shadowRoot!.querySelector('.more-btn') as HTMLElement).click()
-      expect(el.shadowRoot!.querySelectorAll('.more-item').length).toBeGreaterThan(0)
+      expect(el.shadowRoot!.querySelectorAll('.more-item').length).toBe(1)
     })
 
     it('#18 offview 判定为「不完全可见」：部分滚出右缘/左缘都计入，完全可见不计入', () => {
@@ -1043,7 +1037,7 @@ describe('OASTabs', () => {
       // moreBtn ArrowDown 打开下拉并聚焦第一项（非搜索框）
       moreBtn.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }))
       const items = [...el.shadowRoot!.querySelectorAll<HTMLElement>('.more-item')]
-      expect(items.length).toBeGreaterThan(0)
+      expect(items.length).toBe(6)
       const activeEl = el.shadowRoot!.activeElement as HTMLElement
       expect(activeEl.classList.contains('more-item'), '打开后首焦点应落第一项').toBe(true)
       expect(activeEl.getAttribute('data-value')).toBe(items[0]!.getAttribute('data-value'))
@@ -1117,7 +1111,7 @@ describe('OASTabs', () => {
     it('keep（默认）：未激活面板 hidden 但内容保留 DOM', () => {
       const el = mountMode('keep')
       expect(panelOf(el, 'b').hidden).toBe(true)
-      expect(panelOf(el, 'b').querySelector('.pb')).not.toBeNull() // 内容保留
+      expect(panelOf(el, 'b').querySelectorAll('.pb').length).toBe(1) // 内容保留
     })
 
     it('lazy：未访问的未激活面板子节点被暂存（不挂载）', () => {
@@ -1125,29 +1119,29 @@ describe('OASTabs', () => {
       // 初始激活 a；b/c 未访问，子节点被暂存
       expect(panelOf(el, 'b').querySelector('.pb')).toBeNull()
       expect(panelOf(el, 'c').querySelector('.pc')).toBeNull()
-      expect(panelOf(el, 'a').querySelector('.pa')).not.toBeNull() // 激活的正常
+      expect(panelOf(el, 'a').querySelectorAll('.pa').length).toBe(1) // 激活的正常
     })
 
     it('lazy：首次激活后面板内容挂载并保留（再次切走不卸载）', async () => {
       const el = mountMode('lazy')
       el.setAttribute('active', 'b')
       await Promise.resolve()
-      expect(panelOf(el, 'b').querySelector('.pb')).not.toBeNull() // 首次激活挂载
+      expect(panelOf(el, 'b').querySelectorAll('.pb').length).toBe(1) // 首次激活挂载
       el.setAttribute('active', 'a')
       await Promise.resolve()
-      expect(panelOf(el, 'b').querySelector('.pb')).not.toBeNull() // 访问过后保留
+      expect(panelOf(el, 'b').querySelectorAll('.pb').length).toBe(1) // 访问过后保留
     })
 
     it('destroy：切走时卸载非激活面板子节点，切回时重挂', async () => {
       const el = mountMode('destroy')
-      expect(panelOf(el, 'a').querySelector('.pa')).not.toBeNull()
+      expect(panelOf(el, 'a').querySelectorAll('.pa').length).toBe(1)
       el.setAttribute('active', 'b')
       await Promise.resolve()
       expect(panelOf(el, 'a').querySelector('.pa')).toBeNull() // 切走卸载
-      expect(panelOf(el, 'b').querySelector('.pb')).not.toBeNull()
+      expect(panelOf(el, 'b').querySelectorAll('.pb').length).toBe(1)
       el.setAttribute('active', 'a')
       await Promise.resolve()
-      expect(panelOf(el, 'a').querySelector('.pa')).not.toBeNull() // 切回重挂
+      expect(panelOf(el, 'a').querySelectorAll('.pa').length).toBe(1) // 切回重挂
       expect(panelOf(el, 'b').querySelector('.pb')).toBeNull()
     })
 
@@ -1157,7 +1151,7 @@ describe('OASTabs', () => {
       console.warn = (...a: unknown[]) => warn.push(a)
       mountMode('bogus')
       console.warn = orig
-      expect(warn.length).toBeGreaterThan(0)
+      expect(warn.length).toBe(1)
     })
   })
 
@@ -1246,7 +1240,6 @@ describe('OASTabs', () => {
       const tabA = el.shadowRoot!.querySelector<HTMLElement>('[role="tab"][data-value="a"]')!
       tabA.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }))
       const input = tabA.querySelector('.tab-rename-input')
-      expect(input).not.toBeNull()
       expect((input as HTMLInputElement).value).toBe('文档一')
     })
 
@@ -1433,7 +1426,7 @@ describe('OASTabs', () => {
       const tabB = el.shadowRoot!.querySelector<HTMLElement>('[role="tab"][data-value="b"]')!
       const labelSlot = tabB.querySelector('.tab-label')
       // 自定义内容克隆进标签位（含富文本节点）
-      expect(labelSlot!.querySelector('strong')).not.toBeNull()
+      expect(labelSlot!.querySelectorAll('strong').length).toBe(1)
       expect(labelSlot!.textContent).toContain('富文本标签')
       // 普通标签仍是纯文本
       const tabA = el.shadowRoot!.querySelector<HTMLElement>('[role="tab"][data-value="a"]')!
@@ -1467,7 +1460,7 @@ describe('OASTabs', () => {
         configurable: true,
       })
       tablist.dispatchEvent(new WheelEvent('wheel', { deltaY: 100, bubbles: true, cancelable: true }))
-      expect(scrollLeftVal).toBeGreaterThan(0)
+      expect(scrollLeftVal).toBe(100) // deltaY 原样转横向（RTL 才取反）
     })
 
     it('未溢出时滚轮不拦截（放行页面正常滚动）', () => {
@@ -1554,8 +1547,7 @@ describe('OASTabs', () => {
       const moreBtn = el.shadowRoot!.querySelector('.more-btn') as HTMLElement
       moreBtn.click()
       const search = el.shadowRoot!.querySelector('.more-search')
-      expect(search).not.toBeNull()
-      expect(search!.getAttribute('placeholder') ?? search!.getAttribute('aria-label')).toBeTruthy()
+      expect(search!.getAttribute('aria-label')).toBe('更多标签')
     })
 
     it('搜索过滤：输入关键字只显示匹配的视口外项', async () => {
@@ -1566,7 +1558,7 @@ describe('OASTabs', () => {
       const search = el.shadowRoot!.querySelector('.more-search') as HTMLInputElement
       const allItems = () => [...el.shadowRoot!.querySelectorAll<HTMLElement>('.more-item')].filter((i) => !i.hidden)
       const totalBefore = allItems().length
-      expect(totalBefore).toBeGreaterThan(0)
+      expect(totalBefore).toBe(7) // clientWidth 300 → 视口外 t3-t9
       search.value = '标签9'
       search.dispatchEvent(new Event('input', { bubbles: true }))
       await Promise.resolve()
@@ -1763,7 +1755,7 @@ describe('OASTabs', () => {
         scrolled = (opts.left as number) ?? 0
       }) as typeof tablist.scrollBy
       tablist.dispatchEvent(new KeyboardEvent('keydown', { key: 'PageDown', bubbles: true, cancelable: true }))
-      expect(scrolled).toBeGreaterThan(0)
+      expect(scrolled).toBe(400) // 一屏 = clientWidth
     })
 
     it('PageUp：溢出时向前滚动一屏', () => {
@@ -1871,7 +1863,7 @@ describe('OASTabs', () => {
       expect(closeA.textContent).toContain('✕✕')
       // 无 slot 的用默认 ×
       const closeB = el.shadowRoot!.querySelector<HTMLElement>('[role="tab"][data-value="b"] .tab-close')!
-      expect(closeB.querySelector('svg')).not.toBeNull()
+      expect(closeB.querySelectorAll('svg').length).toBe(1)
     })
 
     it('addable 新增按钮支持 slot="add-icon" 自定义图标', () => {
@@ -1918,7 +1910,7 @@ describe('OASTabs', () => {
 
     it('默认（无 hide-content）：渲染面板区', () => {
       const el = mount()
-      expect(el.shadowRoot!.querySelector('.panel')).not.toBeNull()
+      expect(el.shadowRoot!.querySelectorAll('.panel').length).toBe(1)
     })
   })
 
@@ -1952,8 +1944,8 @@ describe('OASTabs', () => {
       )
       document.body.appendChild(el)
       const home = el.shadowRoot!.querySelector<HTMLElement>('[role="tab"][data-value="home"]')!
-      expect(home.querySelector('.tab-icon')).not.toBeNull()
-      expect(home.querySelector('.tab-badge')).not.toBeNull()
+      expect(home.querySelectorAll('.tab-icon').length).toBe(1)
+      expect(home.querySelectorAll('.tab-badge').length).toBe(1)
       const ext = el.shadowRoot!.querySelector<HTMLElement>('[role="tab"][data-value="ext"]')!
       expect(ext.tagName).toBe('A')
       const dis = el.shadowRoot!.querySelector<HTMLElement>('[role="tab"][data-value="dis"]')!
@@ -2008,9 +2000,9 @@ describe('OASTabs', () => {
       el.setAttribute('items', JSON.stringify([{ label: '收件箱', value: 'in', badge: '9', icon: 'mail' }]))
       expect(badge()?.textContent).toBe('9')
       expect(
-        el.shadowRoot!.querySelector('[role="tab"][data-value="in"] .tab-icon'),
+        el.shadowRoot!.querySelectorAll('[role="tab"][data-value="in"] .tab-icon').length,
         '新增 icon 也应重建出来',
-      ).not.toBeNull()
+      ).toBe(1)
     })
 
     it('items 原样重设不触发无谓重建（同一 JSON 字符串）', () => {
@@ -2035,7 +2027,7 @@ describe('OASTabs', () => {
       el.innerHTML = '<oas-tab-panel label="消息" value="a" icon="mail" icon-only><p>内容</p></oas-tab-panel>'
       document.body.appendChild(el)
       const tabA = el.shadowRoot!.querySelector<HTMLElement>('[role="tab"][data-value="a"]')!
-      expect(tabA.querySelector('.tab-icon')).not.toBeNull()
+      expect(tabA.querySelectorAll('.tab-icon').length).toBe(1)
       expect(tabA.querySelector('.tab-label')).toBeNull() // 无文字
       expect(tabA.getAttribute('aria-label')).toBe('消息') // aria 兜底
     })
@@ -2281,7 +2273,7 @@ describe('断开重连 onReconnect 重绑（core 重连架构接线）', () => {
     parent.appendChild(el)
     // 断开重连后 document click 应进入外点收起判定（cleanup 摘除 → onReconnect 重挂）
     document.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }))
-    expect(calls, '重连后 document click 监听恢复').toBeGreaterThan(0)
+    expect(calls, '重连后 document click 监听恢复').toBe(1)
   })
 })
 
@@ -2289,15 +2281,17 @@ describe('onReconnect 面板 MutationObserver 重建（cleanup disconnect + 置 
   it('断开重连后面板 MutationObserver 重建（此前 cleanup 不置 null 致重建代码为死代码）', () => {
     const el = mount()
     const host = el as unknown as { observer: MutationObserver | null; resizeObserver: ResizeObserver | null }
-    expect(host.observer, '首连 MutationObserver 在场').not.toBeNull()
-    expect(host.resizeObserver, '首连溢出 ResizeObserver 在场').not.toBeNull()
+    const firstObserver = host.observer
+    const firstResizeObserver = host.resizeObserver
+    expect(typeof firstObserver!.observe, '首连 MutationObserver 在场').toBe('function')
+    expect(typeof firstResizeObserver!.observe, '首连溢出 ResizeObserver 在场').toBe('function')
     el.remove()
     expect(host.observer, '断开后 MutationObserver 置 null（cleanup disconnect + 置 null）').toBeNull()
     expect(host.resizeObserver, '断开后溢出 ResizeObserver 置 null（同款——此前漏置 null 致 RO 重建死代码）').toBeNull()
     const parent = el.parentElement ?? document.body
     parent.appendChild(el)
-    expect(host.observer, '重连后 MutationObserver 重建（null 守卫生效）').not.toBeNull()
-    expect(host.resizeObserver, '重连后溢出 ResizeObserver 重建（null 守卫生效）').not.toBeNull()
+    expect(host.observer, '重连后 MutationObserver 重建（新实例）').not.toBe(firstObserver)
+    expect(host.resizeObserver, '重连后溢出 ResizeObserver 重建（新实例）').not.toBe(firstResizeObserver)
   })
 })
 
