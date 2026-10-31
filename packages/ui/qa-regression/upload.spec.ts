@@ -261,7 +261,23 @@ test('upload picture-card：dark 下删除×徽标反转为浅底深字（× 在
     { timeout: 10000 },
   )
   await page.evaluate(() => document.documentElement.classList.add('dark'))
-  await page.waitForTimeout(300)
+  // dark token 翻转完成的真实信号：徽标底/字亮度关系已达断言条件（bgL>200、colorL<80、差>120）
+  await expect
+    .poll(() =>
+      page.evaluate(() => {
+        const cs = getComputedStyle(
+          document.querySelector('#upload-full')!.shadowRoot!.querySelector('.card .remove') as HTMLElement,
+        )
+        const lum = (rgb: string) => {
+          const [rr, gg, bb] = rgb.match(/\d+/g)!.map(Number)
+          return 0.2126 * rr! + 0.7152 * gg! + 0.0722 * bb!
+        }
+        const bgL = lum(cs.backgroundColor)
+        const colorL = lum(cs.color)
+        return bgL > 200 && colorL < 80 && bgL - colorL > 120
+      }),
+    )
+    .toBe(true)
   const r = await page.evaluate(() => {
     const remove = document.querySelector('#upload-full')!.shadowRoot!.querySelector('.card .remove') as HTMLElement
     const cs = getComputedStyle(remove)

@@ -21,7 +21,8 @@ test('context-menu 多级子菜单贴近视口右缘：翻转后全部落在视�
   await page
     .locator('oas-context-menu[data-e2e-right-edge] [part="item"][data-value="new-project"]')
     .hover({ timeout: 5000 })
-  await page.waitForTimeout(200)
+  // 级联展开完成的真实信号：可见子菜单 ≥2（即断言条件本身）
+  await expect.poll(async () => (await visibleSubmenuRects(page)).length).toBeGreaterThanOrEqual(2)
   const rects = await visibleSubmenuRects(page)
   expect(rects.length).toBeGreaterThanOrEqual(2) // 一级 + 二级子菜单均已展开
   expect(
@@ -43,7 +44,16 @@ test('context-menu kind=checkbox：初始勾选回显 + 勾选写回宿主 value
   await page.goto('/components/context-menu.html', { waitUntil: 'domcontentloaded' })
   await up(page, '#cm-kind')
   await page.evaluate(() => document.getElementById('cm-kind')!.scrollIntoView({ block: 'center' }))
-  await page.waitForTimeout(300)
+  // 滚动静默的真实信号：连续两次 scrollY 一致（smooth 滚动结束后右键坐标才可用）
+  let prevCmSY: number | null = null
+  await expect
+    .poll(async () => {
+      const y = await page.evaluate(() => window.scrollY)
+      const stable = prevCmSY !== null && y === prevCmSY
+      prevCmSY = y
+      return stable
+    })
+    .toBe(true)
   const r = await page.evaluate(async () => {
     const el = document.getElementById('cm-kind')!
     const area = el.firstElementChild as HTMLElement

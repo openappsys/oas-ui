@@ -251,7 +251,8 @@ test.describe('移动仿真（触屏真手势）', () => {
       })
     }
     await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] })
-    await page.waitForTimeout(400)
+    // 手势收尾的真实信号：touchEnd 后滑动态已落盘（即断言条件本身）
+    await expect.poll(() => cell.evaluate((el) => el.hasAttribute('open')), { timeout: 5000 }).toBe(true)
     expect(await cell.evaluate((el) => el.hasAttribute('open')), '触屏横滑开态').toBe(true)
   })
 })
@@ -262,7 +263,7 @@ test('swipe-cell actions 按钮铺满行高（回归：oas-button 内层恒定�
   await page.goto('/components/swipe-cell.html', { waitUntil: 'domcontentloaded' })
   await up(page, '#swipe-demo-1')
   await page.evaluate(() => document.querySelector('#swipe-demo-1')!.setAttribute('open', ''))
-  await page.waitForTimeout(400)
+  // 属性同步生效：开态渲染立即读取
   const r = await page.evaluate(() => {
     const cell = document.querySelector('#swipe-demo-1')!
     const actions = cell.shadowRoot!.querySelector('.actions')!.getBoundingClientRect()
@@ -291,7 +292,10 @@ test('swipe-cell side=start：真实向右滑开（LTR），actions 在左（回
   await page.mouse.down()
   await page.mouse.move(box.x + 180, box.y + box.height / 2, { steps: 10 })
   await page.mouse.up()
-  await page.waitForTimeout(400)
+  // 拖拽换边完成的真实信号：open 态落盘（即断言读取的前置条件）
+  await expect
+    .poll(() => page.evaluate(() => document.querySelector('#swipe-side')!.hasAttribute('open')), { timeout: 5000 })
+    .toBe(true)
   const r = await page.evaluate(() => {
     const el = document.querySelector('#swipe-side')!
     const actions = el.shadowRoot!.querySelector('.actions')!.getBoundingClientRect()

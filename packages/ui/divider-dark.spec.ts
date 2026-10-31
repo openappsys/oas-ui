@@ -10,7 +10,8 @@ test('DemoBlock 跟随全局主题：暗色下 body 背景与 divider 可见', a
 
   // 切换全局暗色（模拟 vitepress 主题切换按钮）
   await page.evaluate(() => document.documentElement.classList.add('dark'))
-  await page.waitForTimeout(400)
+  // 主题过渡完成的真实信号：body 背景到达暗色目标值（即断言条件本身）
+  await expect.poll(() => body0.evaluate((el) => getComputedStyle(el).backgroundColor)).toBe('rgb(24, 24, 27)')
   const bg = await body0.evaluate((el) => getComputedStyle(el).backgroundColor)
   expect(bg).toBe('rgb(24, 24, 27)') // #18181b
 
@@ -31,6 +32,9 @@ test('暗色模式 divider 截图（全局暗色）', async ({ page }) => {
   await page.setViewportSize({ width: 760, height: 900 })
   await page.goto('/components/divider.html', { waitUntil: 'networkidle' })
   await page.evaluate(() => document.documentElement.classList.add('dark'))
-  await page.waitForTimeout(400)
+  // 截图前等主题过渡到终态：body 背景到达暗色目标值
+  await expect
+    .poll(() => page.evaluate(() => getComputedStyle(document.querySelector('.demo-block__body')!).backgroundColor))
+    .toBe('rgb(24, 24, 27)')
   await page.screenshot({ path: 'test-results/divider-dark.png', fullPage: true })
 })

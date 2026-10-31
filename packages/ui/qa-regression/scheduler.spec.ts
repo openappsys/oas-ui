@@ -107,9 +107,8 @@ test('scheduler 浏览器回归：月/周/agenda 视图渲染与切换 + console
   expect(agendaMetrics.rowH, 'agenda 行应保持自然高度（flex-shrink:0），不被压扁').toBeGreaterThanOrEqual(24)
   expect(agendaMetrics.scrollable, 'agenda 内容超高应出现纵向滚动').toBe(true)
 
-  // 暗色：各视图仍可见
+  // 暗色：各视图仍可见（类切换同步进级联；toBeVisible 自带自动等待）
   await page.evaluate(() => document.documentElement.classList.add('dark'))
-  await page.waitForTimeout(300)
   await expect(basic.locator('.day[data-date="2026-08-08"] .chip').first()).toBeVisible()
   await expect(week.locator('.col[data-date="2026-08-10"] .event').first()).toBeVisible()
 
@@ -388,9 +387,8 @@ test('scheduler 资源视图 + 拖拽创建 + now 线 浏览器回归', async ({
   expect(rtl.hasRtl, 'RTL 下资源视图带 data-rtl').toBe(true)
   expect(rtl.dir, 'RTL 下资源视图 direction=rtl').toBe('rtl')
 
-  // 暗色：资源视图仍可见
+  // 暗色：资源视图仍可见（类切换同步进级联；toBeVisible 自带自动等待）
   await page.evaluate(() => document.documentElement.classList.add('dark'))
-  await page.waitForTimeout(300)
   await expect(resDay.locator('.res-row[data-resource="a"] .res-bar')).toBeVisible()
 
   expect(errors).toEqual([])

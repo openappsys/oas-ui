@@ -94,6 +94,8 @@ test('questionnaire 在途竞态：validator 落地时已离开发起步则放�
   // prev 用 evaluate 驱动：realClick 内置 defocus + 滚动静默（约 400ms+）会晚于 200ms
   // validator 窗口，等不到竞态场景——此处的断言对象是时序机制本身（方法链路同源）。
   const nextResult = q.evaluate((el) => (el as HTMLElement & { next(): Promise<boolean> }).next())
+  // audit-exception: 被测对象是时序机制本身（validator 在途窗口内回退）——在途窗口期无 DOM 信号，
+  // 50ms = 打断竞态的最小窗口
   await page.waitForTimeout(50)
   await q.evaluate((el) => (el as HTMLElement & { prev(): boolean }).prev())
   await expect(q).toHaveAttribute('current', '0')

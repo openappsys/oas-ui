@@ -257,7 +257,7 @@ test('color-picker 受控 open：外部按钮开/关静默、内部交互派发�
   await page.waitForFunction(() => document.querySelector('#cp-ctrl')?.hasAttribute('open') === true, null, {
     timeout: 5000,
   })
-  await page.waitForTimeout(100)
+  // 外部写属性为同步吸收：若误派发此刻已入列，立即读取
   expect(await page.evaluate(() => (window as any).__cpOpenCount), '宿主外部写 open 不回派事件').toBe(0)
 
   // 受控态下内部交互（点击触发器请求关闭）仍派发事件
@@ -285,7 +285,7 @@ test('color-picker 受控 open：外部按钮开/关静默、内部交互派发�
     const el = document.querySelector('#cp-readonly')!
     ;(el.shadowRoot!.querySelector('[part="trigger"]') as HTMLElement).click()
   })
-  await page.waitForTimeout(100)
+  // readonly 点击守卫为同步处理器：立即读取
   const readonlyState = await page.evaluate(() => {
     const el = document.querySelector('#cp-readonly')!
     return {

@@ -12,7 +12,16 @@ test('cdn 族包 form.js swatch-group 静态 value 首帧', async ({ page }) => 
     </oas-swatch-group>
   </body></html>`)
   await page.addScriptTag({ path: join(process.cwd(), 'packages/ui/dist/cdn/form.js'), type: 'module' })
-  await page.waitForTimeout(100)
+  // upgrade + 首渲染完成的真实信号：group 与 swatch 的 shadow 均已挂载（即 diag 断言条件本身）
+  await expect
+    .poll(() =>
+      page.evaluate(() => {
+        const g = document.querySelector('#g')
+        const first = document.querySelector('oas-swatch')
+        return !!g?.shadowRoot && !!first?.shadowRoot
+      }),
+    )
+    .toBe(true)
   const diag = await page.evaluate(() => {
     const g = document.querySelector('#g')!
     const first = document.querySelector('oas-swatch')!

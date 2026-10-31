@@ -211,6 +211,8 @@ test('Vue property 劫持门禁：SPA 导航 + 静态 JSON 契约表（不依赖
     // 精确断言（attribute 缺失 / own property / 渲染为空），而非笼统的超时失败
     await page.waitForSelector(tag, { state: 'attached', timeout: 15000 })
     // 等一拍：SPA 首帧渲染后 demo 脚本还会有 property 写入 / 异步重渲染，attribute 与渲染树随后落定
+    // audit-exception: 该等待属于「等 property 写入/异步重渲染自然落定」的宽限期——落定形态因组件而异
+    // （无统一 DOM 信号），且过早读取会把合法异步写入误报为契约违规
     await page.waitForTimeout(250)
 
     const issues = await page.evaluate(

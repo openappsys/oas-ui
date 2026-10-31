@@ -27,8 +27,8 @@ for (const page of PAGES) {
     })
     await p.goto(page, { waitUntil: 'domcontentloaded' })
     await p.waitForSelector('.demo-block', { state: 'attached' })
-    // 缓冲等 hydration 后组件脚本执行完，console/pageerror 才能收全
-    await p.waitForTimeout(300)
+    // console/pageerror 收集的渲染收尾信号：字体加载完成（hydration/脚本期报错此刻必然已入列）
+    await p.evaluate(() => document.fonts.ready)
     const blocks = p.locator('.demo-block')
     const count = await blocks.count()
     expect(count).toBeGreaterThan(0)

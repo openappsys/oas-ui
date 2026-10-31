@@ -93,7 +93,7 @@ test('movable：canvas 引擎下拖拽 offset 写回、背景位置跟随（图�
   await up(page, '#wm-movable')
   // movable demo 在页面下方，必须先滚入视口——否则鼠标坐标落空、pointerdown 不命中图层
   await page.locator('#wm-movable').scrollIntoViewIfNeeded()
-  await page.waitForTimeout(200)
+  // scrollIntoViewIfNeeded 自带稳定性等待；拖拽坐标直接可用
   const box = (await page.locator('#wm-movable').boundingBox())!
   // 在水印层上按住拖动（movable 图层 pointer-events: auto）
   await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)

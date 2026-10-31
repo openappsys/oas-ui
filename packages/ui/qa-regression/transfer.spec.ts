@@ -98,7 +98,10 @@ test('transfer virtual：万级数据窗口化渲染且滚动后窗口平移', a
     vp.scrollTop = 10000
     vp.dispatchEvent(new Event('scroll'))
   })
-  await page.waitForTimeout(200)
+  // 虚拟窗口重建按帧节流：双 rAF 等重建落定（data-key 读取的前置条件）
+  await page.evaluate(
+    () => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))),
+  )
   const after = await page.locator('#transfer-virtual').evaluate((el) => {
     const vlist = el.shadowRoot!.querySelector('.vlist-left')!
     const first = vlist.shadowRoot!.querySelector('[part="item"] .option')

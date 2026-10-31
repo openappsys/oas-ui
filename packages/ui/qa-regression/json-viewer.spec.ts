@@ -30,7 +30,10 @@ test('json-viewer 10k 节点只渲染虚拟窗口，滚动后窗口移动', asyn
     viewport.scrollTop = viewport.scrollHeight / 2
     viewport.dispatchEvent(new Event('scroll'))
   })
-  await page.waitForTimeout(120)
+  // 虚拟窗口重建按帧节流：双 rAF 等重建落定（aria-activedescendant 读取的前置条件）
+  await page.evaluate(
+    () => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))),
+  )
   const after = await page.evaluate(() => {
     const el = document.querySelector('#jv-large')!
     const root = el.shadowRoot!

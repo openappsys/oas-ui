@@ -17,7 +17,15 @@ test('cdn form.js：form 先于 combobox 升级时挂载不抛错且值按空处
     document.querySelector('#host')!.innerHTML =
       '<oas-form id="f"><oas-combobox name="category"></oas-combobox><oas-input name="company" value="ACME"></oas-input></oas-form>'
   })
-  await page.waitForTimeout(100)
+  // 连接重建完成的真实信号：form.getValues 已可用（未升级时方法不在原型上）
+  await expect
+    .poll(() =>
+      page.evaluate(() => {
+        const f = document.querySelector('#f') as unknown as { getValues?: unknown } | null
+        return typeof f?.getValues === 'function'
+      }),
+    )
+    .toBe(true)
   expect(errors, 'form 先于 combobox 升级不应崩溃').toEqual([])
   const values = await page.evaluate(() =>
     (document.querySelector('#f') as unknown as { getValues(): Record<string, unknown> }).getValues(),

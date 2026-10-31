@@ -785,7 +785,8 @@ test('kanban 优先级强调色：卡片/列 color 经伪元素生效、RTL 镜�
 
   // 暗色：强调条取暗色 token（与明色不同、非透明）
   await page.evaluate(() => document.documentElement.classList.add('dark'))
-  await page.waitForTimeout(300)
+  // dark token 翻转完成的真实信号：卡片条背景已偏离 light 值（即断言条件本身）
+  await expect.poll(async () => (await read()).cardBarBg !== light.cardBarBg).toBe(true)
   const dark = await read()
   expect(dark.cardBarBg, '暗色下强调条取暗色 token').toBe(dark.tokenBg)
   expect(dark.cardBarBg, '暗色强调条非透明（可读）').not.toBe('rgba(0, 0, 0, 0)')

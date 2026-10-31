@@ -30,7 +30,8 @@ for (const pageCase of PAGES) {
       { timeout: 15000 },
     )
     await expect(page.locator(pageCase.tag).first()).toBeVisible()
-    await page.waitForTimeout(250)
+    // console/pageerror 收集的渲染收尾信号：字体加载完成
+    await page.evaluate(() => document.fonts.ready)
     expect(errors, `WebKit console/pageerror: ${pageCase.path}`).toEqual([])
   })
 }

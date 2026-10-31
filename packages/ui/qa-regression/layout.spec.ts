@@ -53,7 +53,18 @@ test('sider 内嵌 sidebar 宽度自动对齐：填满轨道而非自身默认�
     const toggle = sb.shadowRoot!.querySelector('[part="toggle"]') as HTMLElement
     toggle.click()
   })
-  await page.waitForTimeout(300) // 等 width transition（180ms）
+  // width transition（180ms）落定的真实信号：侧栏宽度连续两次一致
+  let prevSbW: number | null = null
+  await expect
+    .poll(async () => {
+      const w = await page.evaluate(
+        () => (document.querySelector('#layout-viewport-sidebar') as HTMLElement).getBoundingClientRect().width,
+      )
+      const stable = prevSbW !== null && Math.abs(w - prevSbW) < 0.5
+      prevSbW = w
+      return stable
+    })
+    .toBe(true)
   const r2 = await page.evaluate(() => {
     const layout = document.querySelector('#layout-viewport') as HTMLElement
     const sider = layout.querySelector('oas-sider') as HTMLElement

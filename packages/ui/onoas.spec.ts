@@ -12,7 +12,6 @@ async function openReady(page: import('@playwright/test').Page, url: string, sel
     selector,
     { timeout: 15000 },
   )
-  await page.waitForTimeout(300)
 }
 
 test('onoas-* 属性绑定 CustomEvent（modal 事件反馈 demo）', async ({ page }) => {

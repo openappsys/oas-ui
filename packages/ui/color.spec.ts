@@ -124,7 +124,15 @@ test('自定义色在暗色主题仍生效（tag solid + switch 轨道）', asyn
   await page.goto('/components/tag.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-tag[color]')
   await page.evaluate(() => document.documentElement.classList.add('dark'))
-  await page.waitForTimeout(300)
+  // dark token 翻转完成的真实信号：tag 背景已切换到暗色变体（读终态）
+  await expect
+    .poll(() =>
+      page.evaluate(() => {
+        const el = document.querySelector('oas-tag[color="#e11d48"][variant="solid"]')!
+        return getComputedStyle(el.shadowRoot!.querySelector('.tag')!).backgroundColor
+      }),
+    )
+    .not.toBe('rgb(225, 29, 72)')
   const tagBg = await page.evaluate(() => {
     const el = document.querySelector('oas-tag[color="#e11d48"][variant="solid"]')!
     return getComputedStyle(el.shadowRoot!.querySelector('.tag')!).backgroundColor
@@ -134,7 +142,7 @@ test('自定义色在暗色主题仍生效（tag solid + switch 轨道）', asyn
   await page.goto('/components/switch.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-switch[color]')
   await page.evaluate(() => document.documentElement.classList.add('dark'))
-  await page.waitForTimeout(300)
+  // 断言值与主题无关（自定义色 dark 不变）；up 已保证 shadow 就绪，读取即终态
   const swBg = await page.evaluate(() => {
     const el = document.querySelector('oas-switch[color]')!
     return getComputedStyle(el.shadowRoot!.querySelector('button')!).backgroundColor

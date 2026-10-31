@@ -152,7 +152,28 @@ test('command 非虚拟列表：键盘移动到视口外时活动行滚入可视
   const input = page.locator('#command-scroll-e2e input.search')
   await input.focus()
   for (let i = 0; i < 18; i++) await page.keyboard.press('ArrowDown')
-  await page.waitForTimeout(100)
+  // 键盘导航 + 滚动跟随落定的真实信号：active 项在 list 视口内且 scrollTop 稳定（即断言条件本身）
+  let prevCmdTop: number | null = null
+  await expect
+    .poll(async () => {
+      const st = await page.evaluate(() => {
+        const root = document.querySelector('#command-scroll-e2e')!.shadowRoot!
+        const list = root.querySelector<HTMLElement>('.list')!
+        const active = root.querySelector<HTMLElement>('.option.active')
+        if (!active) return null
+        return {
+          scrollTop: list.scrollTop,
+          ok:
+            active.getBoundingClientRect().top >= list.getBoundingClientRect().top - 1 &&
+            active.getBoundingClientRect().bottom <= list.getBoundingClientRect().bottom + 1,
+        }
+      })
+      if (!st) return false
+      const stable = prevCmdTop !== null && st.scrollTop === prevCmdTop
+      prevCmdTop = st.scrollTop
+      return st.ok && stable
+    })
+    .toBe(true)
   const r = await page.evaluate(() => {
     const root = document.querySelector('#command-scroll-e2e')!.shadowRoot!
     const list = root.querySelector<HTMLElement>('.list')!

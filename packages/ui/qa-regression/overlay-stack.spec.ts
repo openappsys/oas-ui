@@ -42,7 +42,7 @@ test('浮层 Esc 层栈：modal + drawer 同开时一次 Esc 只关一层（不�
 
   expect(await visibleCount()).toBe(2)
   await page.keyboard.press('Escape')
-  await page.waitForTimeout(250)
+  // Esc 关闭为同步处理器：立即读取
   expect(await visibleCount(), '一次 Esc 只能关闭一层').toBe(1)
   await page.keyboard.press('Escape')
   await page.waitForFunction(

@@ -35,7 +35,13 @@ test('notice-bar type 配色：底色 light/dark 均真实解析生效（token �
 
   // 切暗色：底色随 token 变化（dark 变体），仍非透明
   await page.evaluate(() => document.documentElement.classList.add('dark'))
-  await page.waitForTimeout(100)
+  // dark token 翻转完成的真实信号：bar 背景已切到暗色 token 且不透明（即断言条件本身）
+  await expect
+    .poll(async () => {
+      const d = await readBar()
+      return d.bg !== 'rgba(0, 0, 0, 0)' && d.bg !== success.bg
+    })
+    .toBe(true)
   const dark = await readBar()
   expect(dark.bg).not.toBe('rgba(0, 0, 0, 0)')
   expect(dark.bg).not.toBe(success.bg)
@@ -73,6 +79,7 @@ test('notice-bar items 轮播：interval 到点后文本真实切换到第二条
 
   expect(await readItem()).toBe('第一条：服务例行维护通知')
   // interval=2500 + 淡出换文本 200ms → 2.8s 后第二条已落定
+  // audit-exception: 轮播 interval 到点切换是时间流逝语义（2500ms 间隔 + 淡出 200ms），无 DOM 信号可等
   await page.waitForTimeout(2800)
   expect(await readItem()).toBe('第二条：新版主题编辑器上线')
 })

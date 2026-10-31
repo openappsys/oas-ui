@@ -19,7 +19,10 @@ for (const page of PAGES) {
     await p.goto(page, { waitUntil: 'domcontentloaded' })
     // 切换全局暗色
     await p.evaluate(() => document.documentElement.classList.add('dark'))
-    await p.waitForTimeout(300)
+    // 主题过渡完成的真实信号：首个 demo 块背景到达暗色目标值（与下方逐块断言同值）
+    await expect
+      .poll(() => p.evaluate(() => getComputedStyle(document.querySelector('.demo-block__body')!).backgroundColor))
+      .toBe('rgb(24, 24, 27)')
     const blocks = p.locator('.demo-block')
     const n = await blocks.count()
     expect(n).toBeGreaterThan(0)

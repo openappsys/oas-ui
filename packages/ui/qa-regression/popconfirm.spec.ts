@@ -74,7 +74,7 @@ test('popconfirm 基础链路：确定派发反馈 + 关闭回焦 trigger + aria
     const el = document.querySelector('#pc-basic-reg')!
     ;(el.shadowRoot!.querySelector('[part="ok"]') as HTMLElement).click()
   })
-  await page.waitForTimeout(50)
+  // ok 点击 → 关闭为同步处理器：立即读取
   s = await state()
   expect(s.open).toBe(false)
   expect(s.ariaHidden).toBe('true')

@@ -45,6 +45,8 @@ test('tag 页事件反馈不自激：点选项 A 后消息自动关闭不再触�
   await up(page, 'oas-tag-group')
   await page.locator('oas-tag-group oas-tag', { hasText: '选项 A' }).first().click()
   // 等首条「选中：a」消息自动关闭（默认时长约 3s）+ 潜在自激链至少一轮
+  // audit-exception: 「3s 默认时长后自动关闭 + 自激链一轮」是时间流逝语义（定时关闭回归锁），
+  // 无 DOM 信号可等；5000ms = 3s 时长 + 2s 自激链余量
   await page.waitForTimeout(5000)
   const texts = await page.evaluate(() =>
     [...document.querySelectorAll('oas-message')].map((m) => (m.textContent || '').trim()),

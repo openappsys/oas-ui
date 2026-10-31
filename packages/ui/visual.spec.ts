@@ -15,10 +15,21 @@ for (const name of PAGES) {
     await page.goto(`/components/${name}.html`, { waitUntil: 'domcontentloaded' })
     // index 页无 demo-block，等待失败可忽略；其余页等块渲染后截图更稳
     await page.waitForSelector('.demo-block', { state: 'attached', timeout: 3000 }).catch(() => {})
-    await page.waitForTimeout(200)
+    // 截图前等字体/布局落定（资源期字体替换会造成截图闪烁）
+    await page.evaluate(() => document.fonts.ready)
     await shoot(page, `test-results/visual/light-${name}`)
     await page.evaluate(() => document.documentElement.classList.add('dark'))
-    await page.waitForTimeout(300)
+    // dark 截图前等主题过渡到终态：首个 demo 块背景到达暗色目标值
+    // （index 等页无 demo-block —— 缺失即视为无需等待）
+    await page.waitForFunction(
+      () => {
+        const el = document.querySelector('.demo-block__body')
+        if (!el) return true
+        return getComputedStyle(el).backgroundColor === 'rgb(24, 24, 27)'
+      },
+      undefined,
+      { timeout: 5000 },
+    )
     await shoot(page, `test-results/visual/dark-${name}`)
   })
 }

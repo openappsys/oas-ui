@@ -12,8 +12,17 @@ test('cdn swatch-group 静态 value 首帧（demands 复现）', async ({ page }
     </oas-swatch-group>
   </body></html>`)
   await page.addScriptTag({ path: join(process.cwd(), 'packages/ui/dist/cdn.js'), type: 'module' })
-  // 不等待——直接读首帧错误（upgrade microtask 队列中的窗口）
-  await page.waitForTimeout(100)
+  // upgrade + 首渲染完成的真实信号：group 与 swatch 的 shadow 均已挂载（渲染帧同步，
+  // 非 upgrade microtask 异步窗口的赌博）
+  await expect
+    .poll(() =>
+      page.evaluate(() => {
+        const g = document.querySelector('#g')
+        const first = document.querySelector('oas-swatch')
+        return !!g?.shadowRoot && !!first?.shadowRoot
+      }),
+    )
+    .toBe(true)
   console.log('ERRORS ' + JSON.stringify(errors.slice(0, 4)))
   const diag = await page.evaluate(() => {
     const g = document.querySelector('#g')!

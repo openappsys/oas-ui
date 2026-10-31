@@ -67,7 +67,8 @@ test('log 搜索过滤：无命中显示「无匹配」空态（locale），暗�
   expect(light.bg, 'light 下 mark 有 warning 语义底色（非透明）').not.toBe('rgba(0, 0, 0, 0)')
   expect(light.color, 'light 下 mark 文字色可读').not.toBe('rgba(0, 0, 0, 0)')
   await page.evaluate(() => document.documentElement.classList.add('dark'))
-  await page.waitForTimeout(300)
+  // dark token 翻转完成的真实信号：mark 背景已偏离 light 值（即断言条件本身）
+  await expect.poll(async () => (await read()).bg !== light.bg).toBe(true)
   const dark = await read()
   expect(dark.bg, 'dark 下 mark 底色跟随暗色 token 换色').not.toBe(light.bg)
   expect(dark.bg, 'dark 下 mark 仍有底色（非透明）').not.toBe('rgba(0, 0, 0, 0)')

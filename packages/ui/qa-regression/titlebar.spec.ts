@@ -8,9 +8,21 @@ test('titlebar subtitle 对比度 light/dark 均 ≥ 4.5:1', async ({ page }) =>
   await up(page, '#tb-basic')
 
   for (const theme of ['light', 'dark'] as const) {
+    const lightSubtitleColor = await page.evaluate(() => {
+      const host = document.querySelector<HTMLElement>('#tb-basic')!
+      return getComputedStyle(host.shadowRoot!.querySelector<HTMLElement>('[part="subtitle"]')!).color
+    })
     if (theme === 'dark') {
       await page.evaluate(() => document.documentElement.classList.add('dark'))
-      await page.waitForTimeout(150)
+      // dark token 翻转完成的真实信号：subtitle 文字色已切换（对比度断言读取终态）
+      await expect
+        .poll(() =>
+          page.evaluate(() => {
+            const host = document.querySelector<HTMLElement>('#tb-basic')!
+            return getComputedStyle(host.shadowRoot!.querySelector<HTMLElement>('[part="subtitle"]')!).color
+          }),
+        )
+        .not.toBe(lightSubtitleColor)
     }
     const ratio = await page.evaluate(() => {
       const host = document.querySelector<HTMLElement>('#tb-basic')!

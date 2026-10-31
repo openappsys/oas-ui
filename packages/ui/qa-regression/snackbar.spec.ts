@@ -124,6 +124,8 @@ test('hover 暂停计时：悬停期间不到期，离开后按剩余时长关�
   // 先等入场 transition 收尾：期间 Firefox 会对动画中的 fixed 元素发假 pointerleave
   //（四轮实锤：enter 后 6ms 连发两次 leave，暂停被静默释放）——固定 900ms 覆盖动画+负载
   //（几何稳定轮询在 Firefox headless 的微漂移下不可靠，曾 8s 超时）
+  // audit-exception: 入场过渡收尾窗口（期间假 pointerleave 会静默释放暂停，几何轮询在
+  // Firefox headless 微漂移下不可靠曾 8s 超时）——900ms 为已验证的最小可靠窗口
   await page.waitForTimeout(900)
 
   // 轮询「移动到当前 box 中心 → 组件真实进入 hover 暂停」：满负载下几何/帧延迟会让
@@ -151,6 +153,7 @@ test('hover 暂停计时：悬停期间不到期，离开后按剩余时长关�
     )
     .toBe(true)
   // 悬停超过 duration 仍打开（计时被暂停）
+  // audit-exception: 「悬停超过 duration（6s）仍打开」的被测语义就是时间流逝（计时暂停），无 DOM 信号可等
   await page.waitForTimeout(6600)
   expect(await page.evaluate(() => document.querySelectorAll('oas-snackbar.oas-open').length)).toBe(1)
   // 离开 → 剩余时长（≈6s，悬停暂停在接近满时长处）走完自动关闭

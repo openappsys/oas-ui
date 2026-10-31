@@ -48,7 +48,7 @@ test('recipes 表单食谱：行点击弹窗 → 校验失败留存 → 修正�
   await page.keyboard.press('Delete')
   await expect(stock, '清空后 value 属性应同步为空').toHaveAttribute('value', '')
   await clickInner(page, '#recipe-save')
-  await page.waitForTimeout(250)
+  // 校验失败拦截为同步判定：toHaveAttribute 自带自动等待
   await expect(modal, '校验失败弹窗不关').toHaveAttribute('visible', '')
   expect(JSON.parse((await table.getAttribute('data'))!)[0].stock, '校验失败不回写').toBe(15230)
 
@@ -58,7 +58,7 @@ test('recipes 表单食谱：行点击弹窗 → 校验失败留存 → 修正�
   await page.keyboard.type('999')
   await expect(stock, '输入应同步到 value 属性').toHaveAttribute('value', '999')
   await clickInner(page, '#recipe-save')
-  await page.waitForTimeout(300)
+  // 校验通过关窗为同步判定：not.toHaveAttribute 自带自动等待
   await expect(modal, '校验通过应关窗').not.toHaveAttribute('visible', '')
   await expect(page.locator('#recipe-log')).toContainText('999')
   expect(JSON.parse((await table.getAttribute('data'))!)[0].stock, 'oas-submit 回写表格 data').toBe(999)

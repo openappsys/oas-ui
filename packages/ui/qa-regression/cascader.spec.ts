@@ -146,7 +146,15 @@ test('cascader loading / field-names / focus 事件：用户视角反馈（PRD P
     const rows = [...el.shadowRoot!.querySelectorAll<HTMLElement>('.option')]
     rows.find((r) => r.textContent?.includes('设计'))?.click()
   })
-  await page.waitForTimeout(150)
+  // 选择生效的真实信号：被禁用项「UI」已带 aria-disabled（即断言读取的字段）
+  await expect
+    .poll(() =>
+      fields.evaluate((el) => {
+        const rows = [...el.shadowRoot!.querySelectorAll<HTMLElement>('.option')]
+        return rows.find((r) => r.textContent?.trim() === 'UI')?.getAttribute('aria-disabled') ?? null
+      }),
+    )
+    .toBe('true')
   const disabledRow = await fields.evaluate((el) => {
     const rows = [...el.shadowRoot!.querySelectorAll<HTMLElement>('.option')]
     return rows.find((r) => r.textContent?.trim() === 'UI')?.getAttribute('aria-disabled')

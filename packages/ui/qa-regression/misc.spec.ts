@@ -361,7 +361,16 @@ test('menubar/navigation-menu/sidebar 粗指针触控目标 ≥48px xl 档（poi
     },
     { timeout: 15000 },
   )
-  await sidebarPage.waitForTimeout(400)
+  // 侧栏 rail 渲染完成的真实信号：菜单项已渲染且量到非零高度（即读取条件本身）
+  await expect
+    .poll(() =>
+      sidebarPage.evaluate(() =>
+        [...document.querySelectorAll('oas-sidebar')]
+          .flatMap((s) => [...(s.shadowRoot?.querySelectorAll('.item') ?? [])])
+          .some((i) => Math.round(i.getBoundingClientRect().height) > 0),
+      ),
+    )
+    .toBe(true)
   r.sidebarItem = await sidebarPage.evaluate(() => {
     const items = [...document.querySelectorAll('oas-sidebar')]
       .flatMap((s) => [...(s.shadowRoot?.querySelectorAll('.item') ?? [])])

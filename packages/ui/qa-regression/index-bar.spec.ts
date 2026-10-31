@@ -82,8 +82,20 @@ test('index-bar 点字母落定：可滚动 fixture 只派发一次；短内容 
 
     // 点击字母 B（第二个）：真实指针点击（pointerdown → jumpTo → 平滑滚动落定）
     await page.locator(`#${fixture.id} [part="letter"]`).nth(1).click()
-    // 500ms > 动画 300ms：轮询窗口内的「一次」不是侥幸，落定后仍是用户选中项
-    await page.waitForTimeout(500)
+    // 平滑滚动落定的真实信号：list scrollTop 连续两次一致（滚动动画结束后事件集才冻结，
+    // 轮询窗口内的「一次」不是侥幸，落定后仍是用户选中项）
+    let prevIbTop: number | null = null
+    await expect
+      .poll(async () => {
+        const top = await page.evaluate((id) => {
+          const host = document.getElementById(id)!
+          return (host.shadowRoot!.querySelector('[part="list"]') as HTMLElement).scrollTop
+        }, fixture.id)
+        const stable = prevIbTop !== null && top === prevIbTop
+        prevIbTop = top
+        return stable
+      })
+      .toBe(true)
 
     const state = await page.evaluate((id) => {
       const w = window as unknown as Window & { __ibEvents: Array<{ key: string }> }

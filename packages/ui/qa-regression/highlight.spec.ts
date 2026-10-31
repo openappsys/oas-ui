@@ -65,7 +65,13 @@ test('highlight 配色：mark 底色 light/dark 均真实解析生效（非 tran
 
   // 切暗色：底色应随 token 变化（dark 变体），仍非透明
   await page.evaluate(() => document.documentElement.classList.add('dark'))
-  await page.waitForTimeout(100)
+  // dark token 翻转完成的真实信号：背景已切到暗色 token 且不透明（即断言条件本身）
+  await expect
+    .poll(async () => {
+      const d = await readBg()
+      return d.bg !== 'rgba(0, 0, 0, 0)' && d.bg !== light.bg
+    })
+    .toBe(true)
   const dark = await readBg()
   expect(dark.bg).not.toBe('rgba(0, 0, 0, 0)')
   expect(dark.bg).not.toBe(light.bg)

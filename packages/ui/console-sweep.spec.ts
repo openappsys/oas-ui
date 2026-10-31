@@ -38,8 +38,9 @@ for (const page of PAGES) {
     })
     p.on('pageerror', (e) => errs.push(`pageerror: ${e.message}`))
     await p.goto(page, { waitUntil: 'domcontentloaded' })
-    // PAGES 含 index.md（无 demo-block），不能用 waitForSelector 统一等待；固定短缓冲等脚本执行完
-    await p.waitForTimeout(300)
+    // PAGES 含 index.md（无 demo-block），不能用 waitForSelector 统一等待；
+    // console/pageerror 收集的渲染收尾信号：字体加载完成（资源期报错此刻必然已入列）
+    await p.evaluate(() => document.fonts.ready)
 
     const badWarns = warns.filter((w) => !WARN_ALLOW.some((re) => re.test(w)))
     const badErrs = errs.filter((e) => !ERR_ALLOW.some((re) => re.test(e)))

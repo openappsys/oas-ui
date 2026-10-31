@@ -14,7 +14,20 @@ async function assertBuiltInRenders(page: import('@playwright/test').Page, bundl
     <oas-button id="b" icon="check">按钮</oas-button>
   </body></html>`)
   await page.addScriptTag({ path: join(process.cwd(), bundle), type: 'module' })
-  await page.waitForTimeout(150)
+  // upgrade + SVG 注入完成的真实信号：icon/btn shadow 内 svg 已包含目标 path（即断言条件本身）
+  await expect
+    .poll(
+      () =>
+        page.evaluate((n) => {
+          const icon = document.querySelector('#i') as HTMLElement & { shadowRoot: ShadowRoot }
+          const btn = document.querySelector('#b') as HTMLElement & { shadowRoot: ShadowRoot }
+          const iconSvg = icon.shadowRoot?.querySelector('svg')?.innerHTML ?? ''
+          const btnSvg = btn.shadowRoot?.querySelector('svg')?.innerHTML ?? ''
+          return iconSvg.includes(n) && btnSvg.includes(n)
+        }, CHECK_PATH),
+      { timeout: 5000 },
+    )
+    .toBe(true)
   const r = await page.evaluate((needle) => {
     const icon = document.querySelector('#i') as HTMLElement & { shadowRoot: ShadowRoot }
     const btn = document.querySelector('#b') as HTMLElement & { shadowRoot: ShadowRoot }

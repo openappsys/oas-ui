@@ -186,7 +186,10 @@ test('diff-viewer 3000 行虚拟窗口有界，滚动与键盘可用', async ({ 
     viewport.scrollTop = viewport.scrollHeight / 2
     viewport.dispatchEvent(new Event('scroll'))
   })
-  await page.waitForTimeout(120)
+  // 虚拟窗口重建按帧节流：双 rAF 等重建落定（aria-activedescendant/行集读取的前置条件）
+  await page.evaluate(
+    () => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))),
+  )
   const after = await page.evaluate(() => {
     const el = document.querySelector('#dv-large')!
     const root = el.shadowRoot!
@@ -317,9 +320,23 @@ test('diff-viewer 暗色与 axe 零严重违规', async ({ page }) => {
   await open(page)
   const light = await new AxeBuilder({ page }).include('oas-diff-viewer').analyze()
   expect(light.violations.filter((v) => v.impact === 'serious' || v.impact === 'critical')).toEqual([])
+  const lightInsertBg = await page.evaluate(() => {
+    const el = document.querySelector('#dv-basic')!
+    const row = el.shadowRoot!.querySelector<HTMLElement>('[part="row"][data-op="insert"]')!
+    return getComputedStyle(row).backgroundColor
+  })
 
   await page.evaluate(() => document.documentElement.classList.add('dark'))
-  await page.waitForTimeout(120)
+  // dark token 翻转完成的真实信号：insert 行背景已偏离 light 值（即断言读取的前置条件）
+  await expect
+    .poll(() =>
+      page.evaluate(() => {
+        const el = document.querySelector('#dv-basic')!
+        const row = el.shadowRoot!.querySelector<HTMLElement>('[part="row"][data-op="insert"]')!
+        return getComputedStyle(row).backgroundColor
+      }),
+    )
+    .not.toBe(lightInsertBg)
   const colors = await page.evaluate(() => {
     const el = document.querySelector('#dv-basic')!
     const row = el.shadowRoot!.querySelector<HTMLElement>('[part="row"][data-op="insert"]')!

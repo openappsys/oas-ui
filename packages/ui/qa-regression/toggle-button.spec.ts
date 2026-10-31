@@ -82,7 +82,17 @@ test('toggle-button variant：outlined/filled/text 真点切换 + 反馈文本�
   await page.goto('/components/toggle-button.html', { waitUntil: 'domcontentloaded' })
   await up(page, '#tb-variant-outlined')
   await page.locator('#tb-variant-outlined').scrollIntoViewIfNeeded()
-  await page.waitForTimeout(300) // 等 demo 宿主挂事件监听
+  // demo 三个宿主升级完成的真实信号：shadow 均已挂载（点击/属性切换的前提）
+  await expect
+    .poll(() =>
+      page.evaluate(() =>
+        ['tb-variant-outlined', 'tb-variant-filled', 'tb-variant-text'].every((id) => {
+          const el = document.getElementById(id)
+          return !!el?.shadowRoot
+        }),
+      ),
+    )
+    .toBe(true)
 
   const pressedOf = (id: string) =>
     page.evaluate((sel) => document.querySelector(`#${sel}`)!.hasAttribute('pressed'), id)

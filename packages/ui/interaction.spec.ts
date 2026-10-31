@@ -18,7 +18,6 @@ async function openReady(page: import('@playwright/test').Page, url: string, rea
     ready,
     { timeout: 15000 },
   )
-  await page.waitForTimeout(300)
 }
 
 test.describe('反馈/布局组件交互验真（最新构建）', () => {
@@ -104,7 +103,6 @@ test.describe('反馈/布局组件交互验真（最新构建）', () => {
 
     const bar = splitter.locator('[part="splitter"]')
     await bar.scrollIntoViewIfNeeded()
-    await page.waitForTimeout(200)
     const box = await bar.boundingBox()
     expect(box).not.toBeNull()
     const cx = box!.x + box!.width / 2

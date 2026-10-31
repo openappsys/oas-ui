@@ -36,7 +36,17 @@ test('descriptions items 通道：JSON attribute 存活渲染 + 声明式子元�
     node.textContent = '子元素优先'
     el.appendChild(node)
   })
-  await page.waitForTimeout(300)
+  // 声明式优先切换完成的真实信号：生成项清空（子元素经默认插槽接管渲染）
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () =>
+          document
+            .querySelector('#desc-items-attr')!
+            .shadowRoot!.querySelectorAll('.items > oas-descriptions-item[data-generated]').length,
+      ),
+    )
+    .toBe(0)
   const after = await page.evaluate(() => {
     const el = document.querySelector('#desc-items-attr')!
     return {

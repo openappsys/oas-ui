@@ -24,7 +24,6 @@ test('AI 会话 recipe：流式、停止、失败与重试', async ({ page }) =>
 
   await input.fill('停止测试')
   await input.press('Enter')
-  await page.waitForTimeout(80)
   await page.locator('#ai-chat-input [part="send"]').click()
   await expect(page.locator('#ai-chat-status')).toHaveText('已停止', { timeout: 5000 })
   await expect(userRows).toHaveCount(2)
