@@ -115,12 +115,86 @@
 - **非阻断原则**：性能数值永不阻断发布——脚本只在「dist 未构建 / Vite 构建失败 / 选择器缺失 / 样本不足 / 指标非 finite / count 不符 / pageerror / console error」时非零退出；数值回归只打印 WARN（阈值 `×1.25`），不改变退出码。跨 OS/CPU 或基线缺环境元数据时额外 WARN（绝对耗时不可直接比较）。基线是观测档案，不是性能预算；预算仍由 `perf:size` 的绝对值/天花板档负责。
 - **DSD 页生成隔离**：DSD 性能页由独立子进程（`scripts/perf/lib/render-dsd-bench.mjs`）生成，避免 happy-dom 全局 shim 与 Playwright 客户端同进程。
 
-## 5. 发布流程（v1.0 启用）
+## 5. 发布流程（每个版本必经，含 2026-10-31 v2.6.5 事故后固化的完整核查清单）
 
-1. 全绿：test / typecheck / build / e2e
-2. PRD 版本段更新（含测试数）+ ROADMAP 状态
-3. CHANGELOG 记录（conventional commits 生成）
-4. 版本号同步各包 `package.json`，**打 tag 前必跑 `pnpm release:check <版本号>`**（版本一致性硬校验：6 发布包版本 == tag 版本 + CHANGELOG 段齐全 + tag 指向提交版本一致；pre-push 钩子对推 v* tag 重复校验拦截），打 tag，`git push --tags`（**CI 通道**：tag 触发自动 build + publish，另有两道远端同 SHA 门禁，见下方「两种发布通道 → CI」；**本地通道**：tag 仅作版本标记，发布走下方 `pnpm release`）
+> **总原则**：tag 指向的树必须与「本地已验证全绿」的树**完全一致**。任何定版/修复提交叠在
+> 已验证树之上后，必须**重放全部门禁**才能打 tag——只在中间提交上验证过、之后叠新提交再
+> 打 tag，等于发布未验证状态（v2.6.5 实发事故：qa:audit:check 阈值超量与 fixture 语言包
+> 竞态两处红灯都在 tag 树上才暴露）。tag 与 main 分开推：先推 main 等 CI 全绿，再推 tag。
+
+### 第 0 层：发布范围确认
+
+- 版本号**用户确认**（不得擅自发明；minor 例外删除须带批准记录）
+- 本批发布内容清单过目：CHANGELOG `[未发布]` 段逐条核对 = 本批实际完成项
+- 需求收件箱（`.opencode/demands.md`）清零或确认「不在本批」
+
+### 第 1 层：发布内容定版（一个提交完成，必须在 tag 之前）
+
+| 核查项 | 说明 |
+| --- | --- |
+| CHANGELOG 定版 | `## [未发布]` 全部内容 → `## [版本号] - 日期`；新增条目逐条核对 = 本批实际改动 |
+| ROADMAP 状态同步 | `## 未发布` 分组标题 → `## v版本号`；状态列「（未发布）」→「（v版本号）」；正文跨批引用同步 |
+| PRD 状态同步 | `## 未发布：` 分组标题 → `## v版本号：`；正文跨批引用（「已由未发布XX批收口」等）同步 |
+| deprecations.json `currentVersion` | 同步为新版本（removed 历史条目有发布后豁免，见 deprecations-core.mjs） |
+| demands.md 状态 | 发布状态行更新 |
+| 6 主包 bump | core / icons / theme / i18n / ssr / ui → 新版本 |
+| 适配层 bump | next / nuxt **有源码改动则 bump 其独立版本线**（不 bump 则 publish-skip-existing 永久跳过，改动发不出去） |
+| 生成物刷新 | `pnpm api:gen`（0 漂移）、`pnpm llms:gen` + `llms:check`、`pnpm stats:gen`、`pnpm deprecations:gen` |
+| trace | 变更区 + `--all` 双查，0 命中 |
+
+### 第 2 层：本地完整重放 ci.yml test job（同步骤同顺序，全绿才继续）
+
+按序执行，任何一步失败即停（修复后从头重跑本层）：
+
+1. `pnpm format:check`
+2. `pnpm skill:check`
+3. `pnpm release:check:test`
+4. `pnpm test`（全量单测）
+5. `pnpm qa:audit:check`（⚠️ 阈值模式，不是 `qa:audit`——v2.6.5 事故：只跑了非 check 模式，阈值超量在 CI 才暴露）
+6. `pnpm build`
+7. `pnpm typecheck`
+8. `pnpm stats:check`
+9. `pnpm perf:size`
+10. `pnpm perf:browser:selftest`
+11. `pnpm perf:browser:check`
+12. `pnpm api:check`
+13. `pnpm deprecations:test`
+14. `pnpm deprecations:check`
+15. `pnpm ssr:check`
+16. `pnpm llms:check`
+
+本地加严（不在 ci.yml 但发布前必查）：
+
+- `node scripts/qa/assert-audit.mjs --check` 之外，`pnpm lint:md`（文档改动时）
+- `node .opencode/check-trace.mjs --all`（全历史 message 扫描，0 命中）
+
+### 第 3 层：e2e 三套
+
+- `pnpm test:e2e`（chromium + firefox + webkit 全量；CI 分 6 片跑，本地合并跑）
+- `pnpm test:e2e:ssr`（fixture 需先 install/build；Next + Nuxt）
+- 用户视角抽验：关键组件页真点交互 + light/dark 截图 + console 零告警（见根 AGENTS.md 用户视角验证门禁）
+
+### 第 4 层：发布前置核对
+
+- `pnpm perf:bench`（本地核对；退化/超预算时在发布说明中给原因与后续优化计划）
+- `node scripts/release-check.mjs <版本号>`（版本一致性硬校验：6 主包版本 == 目标 + CHANGELOG 段齐全 + tag 若存在指向一致 + workflow pnpm 版本一致 + 适配层改动未 bump 提醒）
+- `pnpm perf:browser:check`（真实浏览器基线完整性）
+
+### 第 5 层：tag 与推送时序（fail closed 链）
+
+1. 提交第 1 层定版 + bump（**ROADMAP/PRD 状态同步必须包含在定版提交里**——v2.6.5 事故：定版提交漏了 ROADMAP/PRD，发布后 tag 树内文档口径停留「未发布」，无法追溯修复）
+2. 本地完整重放第 2/3 层**全绿**（在最终将打 tag 的树上）
+3. `git tag v<版本号>`（tag 指向的树 = 已验证树）
+4. `git push origin main`（先）→ 等 CI 在该 SHA 完整跑绿
+5. `git push origin v<版本号>`（后）→ Release `verify-quality` 查同 SHA CI `completed + success` → 放行 → `publish`
+6. **tag 推送后冻结**：发布后状态定版（如有遗漏）走 main 直提 + 下版本段，不动已发布 tag
+7. 失败排查：verify-quality 报 `queued/pending` → CI 未跑完，**CI 绿后重跑 Release workflow 即可**（无需重新 push）；verify-quality 报 failure → 修 CI 红的步骤；publish 阶段失败（provenance 校验等）→ 重跑 Release，publish-skip-existing 幂等保留已发包
+
+### v2.6.5 事故记录（本清单的来源）
+
+- **qa:audit:check 阈值超量**（wait +2 / weak +5）：发布前只跑了 `qa:audit` 非 check 模式，CI 的 check 模式才执行阈值断言——本批新增用例的存在性/计数断言按纪律就地收紧（不抬阈值），固定等待改内建自动等待/poll
+- **fixture 语言包竞态**（ar 文案被 zh-CN 覆盖）：组件 upgrade 抢先于语言包注册（chunk 加载顺序为打包行为非语言保证）——boot 自愈（registerLocale 后重下发 provider locale）+ 文档措辞收敛（不写「必然早于」类时序断言）
+- **ROADMAP/PRD「未发布」状态未随定版同步**：定版提交只做了 CHANGELOG/bump——tag 树内文档口径停留「未发布」，发布后补（4460c8f9，在 tag 后无法进 tag）——本清单第 1 层固化
 
 ### 两种发布通道
 
