@@ -46,9 +46,9 @@ jobs:
           node-version-file: .nvmrc
           registry-url: https://registry.npmjs.org
           cache: pnpm
-      # Trusted Publishing 要求 npm CLI >= 11.5.1；不能用 latest（npm 12 起要求 Node >=22.22.2，
-      # 本仓库 .nvmrc 锁 22.18.0），固定在兼容的 11.x 最新
-      - run: npm install -g npm@11
+      # Trusted Publishing 要求 npm CLI >= 11.5.1；npm@latest（12.x）要求 Node >=22.22.2——
+      # .nvmrc 已升 Node 24.22.2（满足），固定 npm@12 大版本内最新（比浮动 latest 可复现）
+      - run: npm install -g npm@12
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
       - run: pnpm api:check
