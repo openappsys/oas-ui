@@ -92,6 +92,7 @@
 - **渲染基准（本地/发布前）**：`pnpm perf:bench`。happy-dom 环境测代表性组件首渲染与增量更新耗时（100 次迭代取均值/中位数），量级断言防退化；阈值单一真源同上。渲染耗时波动大，**不进 CI**；发布前本地跑一遍核对。同样**默认只测不写**，更新基线加 `--update-baseline`。
 - **自评摘要**：`docs/perf-baseline.md` §3（体积/渲染对自身基线与预算的自评；具体数字以生成块与 JSON 为准）。
 - **发布前核对流程**：改动组件/依赖/构建配置后，发布前依次跑 `pnpm build && pnpm perf:size && pnpm perf:bench`（需要刷新文档数据时再 `--update-baseline` + `pnpm perf:docs`）；超预算或渲染 p95 明显退化时，在发布说明中给出原因与后续优化计划。
+- **打 tag 前必须本地完整重放 ci.yml（2026-10-31 起，v2.6.5 发布事故教训）**：tag 指向的树要与「已验证绿」的树完全一致——只在中间提交上跑过门禁、之后叠了新提交再打 tag，等于发布未验证状态（v2.6.5 实发：qa:audit:check 阈值超量 + fixture 语言包竞态两处红灯都在 tag 树上才暴露）。重放清单 = ci.yml test job 全部步骤（format:check / skill:check / release:check:test / test / qa:audit:check / build / typecheck / stats:check / perf:size / perf:browser:selftest+check / api:check / deprecations:test+check / ssr:check / llms:check）+ 全量 e2e + ssr fixture e2e + webkit；全绿后才 `git tag`。tag 与 main 分开推：先推 main 等 CI 全绿，再推 tag（Release 的 verify-quality 在 CI queued 时会 fail closed）。
 - **注意**：渲染基准用 happy-dom 合成环境（无排版/合成管线），数值只用于相对对比与退化监测，不代表真实浏览器首帧数字；真实浏览器口径见下一条。
 
 ### SSR 集成 fixture（Next / Nuxt，独立安装）
