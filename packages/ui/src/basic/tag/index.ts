@@ -1,4 +1,6 @@
-import '@oas-ui/i18n'
+import { registerDefaultMessages } from '@oas-ui/i18n/registry'
+import { basicMessages } from '@oas-ui/i18n/slices/basic'
+registerDefaultMessages(basicMessages)
 import '../icon/index.js' // 副作用：确保 oas-icon 已注册（tag 的 icon 属性内部渲染 <oas-icon>）
 import { OASTag } from './oas-tag.js'
 import { OASTagGroup } from './oas-tag-group.js'

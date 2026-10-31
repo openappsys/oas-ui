@@ -1,5 +1,5 @@
 import { OASElement, escapeText, escapeAttr, findConfigProvider } from '@oas-ui/core'
-import { getLocaleName } from '@oas-ui/i18n'
+import { getLocaleName } from '@oas-ui/i18n/registry'
 import { formatTick, niceTicks, type ChartTicks } from './ticks.js'
 
 export type ChartType = 'line' | 'bar' | 'pie' | 'area' | 'donut' | 'stacked-bar' | 'radar' | 'polar-area'

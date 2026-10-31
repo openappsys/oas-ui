@@ -1,3 +1,6 @@
+import { registerDefaultMessages } from '@oas-ui/i18n/registry'
+import { formMessages } from '@oas-ui/i18n/slices/form'
+registerDefaultMessages(formMessages)
 import '../../basic/icon/index.js' // 副作用：确保 oas-icon 已注册（checked-icon/unchecked-icon 属性内部渲染 <oas-icon>）
 import { OASSwitch } from './oas-switch.js'
 

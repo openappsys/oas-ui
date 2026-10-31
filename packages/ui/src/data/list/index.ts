@@ -1,4 +1,6 @@
-import '@oas-ui/i18n'
+import { registerDefaultMessages } from '@oas-ui/i18n/registry'
+import { dataMessages } from '@oas-ui/i18n/slices/data'
+registerDefaultMessages(dataMessages)
 import '../virtual-list/index.js' // 副作用：确保 oas-virtual-list 已注册（height 虚拟模式内嵌）
 import { OASList } from './oas-list.js'
 import { OASListItem } from './oas-list-item.js'

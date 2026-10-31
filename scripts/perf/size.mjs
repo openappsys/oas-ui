@@ -44,6 +44,7 @@
  */
 import { readFileSync, writeFileSync, readdirSync, statSync, existsSync, realpathSync } from 'node:fs'
 import { dirname, join, resolve, relative } from 'node:path'
+import { pathToFileURL } from 'node:url'
 import { gzipSync, brotliCompressSync, constants } from 'node:zlib'
 import {
   ROOT,
@@ -541,6 +542,45 @@ if (importViolations.length) {
   )
 } else {
   console.log(`PASS 扫描 ${publishedJs.length} 个发布 JS 文件：无未声明外部依赖`)
+}
+
+// ---------- 1.6 CDN 默认文案完整性（回归锁，2026-10-31） ----------
+// 旧 i18n 入口只有 re-export 语句：裸 `import '@oas-ui/i18n'` 在打包时整模块被摇掉，
+// CDN 消费者拿到空 defaultMessages（全部 raw key）——现改为「值导入 + registerDefaultMessages」。
+// 本断言锁定 dist/cdn.js 里确实带每个家族切片的文案（防未来再动 sideEffects / CDN alias 时复发）。
+{
+  const CDN_SLICE_FAMILIES = [
+    'basic',
+    'conversation',
+    'data',
+    'feedback',
+    'form',
+    'framework',
+    'layout',
+    'navigation',
+    'workbench',
+  ]
+  const cdnText = cdnBuf.toString('utf8')
+  const missing = []
+  for (const family of CDN_SLICE_FAMILIES) {
+    try {
+      const mod = await import(pathToFileURL(join(ROOT, 'packages/i18n/dist/slices', `${family}.js`)).href)
+      const messages = mod[`${family}Messages`] ?? {}
+      const [key, value] = Object.entries(messages)[0] ?? []
+      if (!key) missing.push(`${family}：切片为空或未导出 ${family}Messages`)
+      else if (typeof value !== 'string' || !cdnText.includes(value)) {
+        missing.push(`${family}：${key} 的文案不在 dist/cdn.js`)
+      }
+    } catch (error) {
+      missing.push(`${family}：无法读取 i18n 切片 dist（${String(error?.message ?? error).slice(0, 120)}）`)
+    }
+  }
+  if (missing.length) {
+    fail = true
+    console.error(`FAIL [CDN 默认文案] ${missing.join('；')}`)
+  } else {
+    console.log('PASS [CDN 默认文案] 9 个家族切片的文案均在 dist/cdn.js')
+  }
 }
 
 const packageRows = [

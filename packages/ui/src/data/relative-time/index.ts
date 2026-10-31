@@ -1,4 +1,4 @@
-import '@oas-ui/i18n'
+import '@oas-ui/i18n/registry'
 import { OASRelativeTime } from './oas-relative-time.js'
 
 if (!customElements.get('oas-relative-time')) {

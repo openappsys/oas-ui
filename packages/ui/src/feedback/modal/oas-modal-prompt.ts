@@ -1,5 +1,5 @@
 import type { ReactiveController } from '@oas-ui/core'
-import { t } from '@oas-ui/i18n'
+import { t } from '@oas-ui/i18n/registry'
 import type { OASModal, ModalCloseSource } from './oas-modal.js'
 import {
   normalizeOptions,

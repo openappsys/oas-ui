@@ -128,11 +128,15 @@ without any global setup.
 
 For languages beyond the built-in 10: use the `zh-CN` pack's messages as a template → spread `...zhCN.messages` to inherit all keys and replace them one by one → tag `messages` as a `Locale` (type guardrail: missing keys fail at compile time) → mark `dir: 'rtl'` for RTL languages → `registerLocale` → `setLocale`. See the `@oas-ui/i18n` package README, "Custom locale packs" section, for the full step-by-step example. Ship custom packs with your own dynamic `import()` for code splitting (`loadLocale()` only maps the 10 built-in names).
 
+### Why isn't `getLocale().messages` the full set when I only import components?
+
+The built-in Chinese default texts of `@oas-ui/i18n` ship as **per-family slices**: importing a component on demand only registers the slice of its family (e.g. a `data` chain carries only the data family's texts). `getLocale().messages` therefore contains just the **loaded slices**, not the complete key set. For the full set, use the whole-package entry `import '@oas-ui/i18n'`, or take the entire pack via `import zhCN from '@oas-ui/i18n/zh-CN'`. When `t()` misses a key it falls back to the key itself; in development each missing key logs a deduplicated warning once (silent in production), which is a useful signal for tracking down a missing slice.
+
 ### Why does `setLocale()` not work when ui is linked via `link:` / workspace?
 
 When the host references `@oas-ui/ui` through `link:` (or a pnpm workspace), the `@oas-ui/i18n` resolved inside ui and the one the host depends on from the registry can be **two module instances**: calling `setLocale()` on the host's copy does not reach the instance used by ui components, so built-in texts fall back to raw keys (e.g. `popconfirm.ok`).
 
-The root cause was that the locale registry and the core translator hook lived in **module-level variables**. Both now live on `globalThis` under versioned `Symbol.for` keys, so every copy in the same process shares one locale / translator state. In a linked setup **no import change is needed**: the existing `import { setLocale } from '@oas-ui/i18n'` works.
+The root cause was that the locale registry and the core translator hook lived in **module-level variables**. Both now live on `globalThis` under versioned `Symbol.for` keys, so every copy in the same process shares one locale / translator state. In a linked setup **no import change is needed**: the existing `import { setLocale } from '@oas-ui/i18n'` works. The **family slices** of the default Chinese pack go through the same mechanism: the default-messages object they write to also lives on the shared state, so slices registered by different copies merge into one set — no orphaned writes that nobody reads.
 
 Deduplicating in the host build is still recommended to avoid duplicate code and bundle weight (not required for correctness):
 

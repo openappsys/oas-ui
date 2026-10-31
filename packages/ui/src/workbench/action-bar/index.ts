@@ -1,3 +1,6 @@
+import { registerDefaultMessages } from '@oas-ui/i18n/registry'
+import { workbenchMessages } from '@oas-ui/i18n/slices/workbench'
+registerDefaultMessages(workbenchMessages)
 import { OASActionBar } from './oas-action-bar.js'
 import type { ActionBarTheme } from './oas-action-bar.js'
 import { OASActionBarButton } from './oas-action-bar-button.js'

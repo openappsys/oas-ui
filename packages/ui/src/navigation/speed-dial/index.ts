@@ -1,4 +1,6 @@
-import '@oas-ui/i18n'
+import { registerDefaultMessages } from '@oas-ui/i18n/registry'
+import { navigationMessages } from '@oas-ui/i18n/slices/navigation'
+registerDefaultMessages(navigationMessages)
 import { OASSpeedDial } from './oas-speed-dial.js'
 
 if (!customElements.get('oas-speed-dial')) {

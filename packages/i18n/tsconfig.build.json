@@ -4,6 +4,7 @@
     "composite": false,
     "declaration": true,
     "sourceMap": true,
+    "removeComments": true,
     "outDir": "dist",
     "rootDir": "src",
     "paths": {

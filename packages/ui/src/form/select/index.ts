@@ -1,4 +1,6 @@
-import '@oas-ui/i18n'
+import { registerDefaultMessages } from '@oas-ui/i18n/registry'
+import { formMessages } from '@oas-ui/i18n/slices/form'
+registerDefaultMessages(formMessages)
 import { OASSelect } from './oas-select.js'
 import { OASOption } from './oas-option.js'
 

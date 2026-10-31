@@ -1,3 +1,6 @@
+import { registerDefaultMessages } from '@oas-ui/i18n/registry'
+import { basicMessages } from '@oas-ui/i18n/slices/basic'
+registerDefaultMessages(basicMessages)
 import { OASButtonGroup } from './oas-button-group.js'
 import { OASButtonGroupSeparator } from './oas-button-group-separator.js'
 

@@ -89,8 +89,8 @@ describe('CDN 按需打包：全族注册文件覆盖全量注册表', () => {
       for (const b of BASE_MODULES) {
         expect(comps.includes(b), `${fam}.ts 缺少基座 ${b}`).toBe(true)
       }
-      // @oas-ui/i18n 副作用注入（translator）也应存在
-      expect(text).toContain("import '@oas-ui/i18n'")
+      // @oas-ui/i18n registry 注入（translator）也应存在；默认文案由各组件入口按家族切片注册
+      expect(text).toContain("import '@oas-ui/i18n/registry'")
     }
   })
 

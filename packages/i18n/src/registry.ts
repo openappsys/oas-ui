@@ -1,7 +1,7 @@
 /**
  * locale registry —— 全局语言注册表与切换入口。
  *
- * - 默认内置 zh-CN；registerLocale() 注册自定义语言包
+ * - 默认内置 zh-CN（按家族切片渐进注册，见 registerDefaultMessages()）；registerLocale() 注册自定义语言包
  * - setLocale(name) 按名字切换（需已注册），setLocale(locale) 直接传语言包对象（自动注册）
  * - t(key, params) 翻译 + {count} 插值
  * - onLocaleChange(cb) 订阅切换事件
@@ -9,32 +9,64 @@
  *   core 不依赖本包（翻译钩子注入，无循环依赖）
  * - registerLocale() 同时通过 core 的 registerLocaleTranslator() 注册"按 locale 名"的翻译器，
  *   供 config-provider 就近注入 locale 时按名查找
+ *
+ * 默认文案与切片：zh-CN 整包不再静态打进 registry，而是由 `@oas-ui/i18n` 主入口
+ * 通过 `./slices/all-register.js` 把 9 个家族切片逐个 registerDefaultMessages() 注册进来；
+ * 组件按需消费时可只注册自己家族的切片（`@oas-ui/i18n/slices/<family>`），按需链不携带整包。
+ * `loadLocale('zh-CN')` 仍可整包装载（见函数注释）。`getLocale().messages` 语义为
+ * 「已注册的部分默认文案」（整包入口下即全集）。
  */
 import { setTranslator, registerLocaleTranslator } from '@oas-ui/core'
-import { zhCN } from './locales/zh-CN.js'
 import type { Locale, LocaleKey, LocaleMessages, LocaleName, LocaleParams } from './types.js'
 
 interface RegistryState {
   locales: Map<string, Locale>
   listeners: Set<(name: string) => void>
   current: Locale | null
+  /** 默认（zh-CN）文案的共享累积对象：切片逐个 Object.assign 进来 */
+  defaultMessages: LocaleMessages
 }
 
 /**
  * 单例状态挂到 globalThis：`link:` / workspace / 依赖提升失败时，同一进程可能出现
  * 多份 @oas-ui/i18n 模块实例；模块级 Map/Set/current 会让各副本各存一份 locale，
  * 宿主 setLocale 只更新其中一份，组件仍回落 raw key。用 Symbol.for 共享同一状态。
- * 状态结构变更时 bump key 的版本号（v1 → v2），避免跨大版本误共享。
+ * defaultMessages 也在共享状态上：切片可能由另一份副本（独立入口模块）注册，
+ * 各副本必须读写同一个对象。状态结构变更时 bump key 的版本号（v2 起含 defaultMessages）。
  */
-const STATE_KEY = Symbol.for('@oas-ui/i18n/registry/v1')
+const STATE_KEY = Symbol.for('@oas-ui/i18n/registry/v2')
 const globalStore = globalThis as unknown as { [key: symbol]: unknown }
 function createState(): RegistryState {
-  return { locales: new Map(), listeners: new Set(), current: null }
+  // defaultMessages 运行时从空对象开始、由切片渐进 Object.assign（Partial 语义）；
+  // 类型按 LocaleMessages 标注以贴合 defaultLocale.messages 的类型口径（getLocale().messages 语义 =「已加载部分」）。
+  return { locales: new Map(), listeners: new Set(), current: null, defaultMessages: {} as LocaleMessages }
 }
 const state: RegistryState = (globalStore[STATE_KEY] as RegistryState | undefined) ?? createState()
 if (!globalStore[STATE_KEY]) globalStore[STATE_KEY] = state
 
-const defaultLocale: Locale = { name: 'zh-CN', messages: zhCN }
+/** 默认（zh-CN）locale 对象：messages 是共享的 defaultMessages（切片注册目标，不可换对象） */
+const defaultLocale: Locale = { name: 'zh-CN', messages: state.defaultMessages }
+
+/**
+ * 注册默认（zh-CN）文案片段：Object.assign 合并进共享 defaultMessages，幂等。
+ * 家族切片（`@oas-ui/i18n/slices/<family>`）由组件入口显式调用注册——
+ * 值导入 + 显式调用，不依赖模块副作用，任意 bundler 的 tree-shake 配置下都不会丢失。
+ */
+export function registerDefaultMessages(m: Partial<LocaleMessages>): void {
+  Object.assign(state.defaultMessages, m)
+}
+
+/** dev 判定：vite/vitest 下 import.meta.env.DEV 为 true；裸 Node/SSR 无 import.meta.env → 静默；生产构建被静态替换为 false */
+const canDevWarn: boolean = ((import.meta as unknown as { env?: { DEV?: boolean } }).env?.DEV ?? false) === true
+/** 未命中告警按 key 去重（每份模块副本一份集合，跨副本重复告警可接受） */
+const warnedKeys = new Set<string>()
+function warnMissingKey(key: string): void {
+  if (!canDevWarn || warnedKeys.has(key)) return
+  warnedKeys.add(key)
+  console.warn(
+    `[oas-ui/i18n] 默认文案未命中 key「${key}」——对应家族切片可能未注册（漏 import @oas-ui/i18n/slices/<family>）或 key 拼写错误`,
+  )
+}
 
 /** 用指定语言包翻译（供 config-provider 按 locale 名取翻译器复用） */
 function translateIn(messages: LocaleMessages, key: string, params?: LocaleParams): string {
@@ -116,11 +148,22 @@ const loaders: Record<LocaleName, () => Promise<{ default: Locale }>> = {
 }
 
 /**
- * 按需加载并注册内置语言包（已注册则直接返回，不重复下载）。
+ * 按需加载并注册内置语言包。
  * 纯异步：`await loadLocale('ja'); setLocale('ja')`。
+ *
+ * zh-CN 特判（默认文案是切片渐进注册的）：
+ * - 注册表里的 'zh-CN' 就是默认 locale 对象 → 整包 Object.assign 进共享 defaultMessages
+ *   并返回该对象本身（不得 registerLocale 换对象——换对象后切片注册会写进孤儿对象）；
+ * - 用户已 registerLocale 覆盖同名 'zh-CN' → 按用户注册优先，直接返回用户对象，不装载整包
+ *   （与「已注册则早退」契约一致）。
  */
 export async function loadLocale(name: LocaleName): Promise<Locale> {
   const registered = state.locales.get(name)
+  if (name === defaultLocale.name && registered === defaultLocale) {
+    const mod = await loaders[name]()
+    Object.assign(defaultLocale.messages, mod.default.messages)
+    return defaultLocale
+  }
   if (registered) return registered
   const loader = loaders[name]
   if (!loader) {
@@ -132,10 +175,16 @@ export async function loadLocale(name: LocaleName): Promise<Locale> {
   return locale
 }
 
-/** 翻译：key + 可选插值参数（{count} 等）；未知 key 回退返回 key 本身 */
+/**
+ * 翻译：key + 可选插值参数（{count} 等）；未知 key 回退返回 key 本身。
+ * dev 下走默认 locale 时对未命中 key 告警一次（按 key 去重；生产/裸 Node 静默）——
+ * 组件按需消费漏注册家族切片时的最后提示。
+ */
 export function t(key: LocaleKey, params?: LocaleParams): string {
   const current = state.current ?? defaultLocale
-  return translateIn(current.messages, key, params)
+  const out = translateIn(current.messages, key, params)
+  if (out === key && current === defaultLocale) warnMissingKey(key)
+  return out
 }
 
 /** 订阅 locale 切换（回调收到新 locale name），返回取消订阅函数 */
@@ -150,7 +199,8 @@ function syncTranslator(): void {
 }
 
 // 模块加载即注入默认 zh-CN 翻译器，组件开箱即用中文；
-// 重复模块副本共享 globalThis 状态，只有第一份注册默认包，后续副本复用。
+// 重复模块副本共享 globalThis 状态，只有第一份注册默认 locale，后续副本复用。
+// 默认文案本身由切片注册（主入口的 ./slices/all-register.js 或按需消费方显式注册）。
 if (!state.locales.has(defaultLocale.name)) registerLocale(defaultLocale)
 if (!state.current) state.current = state.locales.get(defaultLocale.name) ?? defaultLocale
 syncTranslator()

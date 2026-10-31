@@ -1,4 +1,6 @@
-import '@oas-ui/i18n'
+import { registerDefaultMessages } from '@oas-ui/i18n/registry'
+import { feedbackMessages } from '@oas-ui/i18n/slices/feedback'
+registerDefaultMessages(feedbackMessages)
 // scrollable 模式内嵌 <oas-marquee>：先注册 marquee，保证 notice-bar 单独引入即可用
 import '../../data/marquee/index.js'
 import { OASNoticeBar } from './oas-notice-bar.js'

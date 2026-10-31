@@ -16,7 +16,7 @@
  *   不用 `:host-context`（跨浏览器支持不齐），data 属性方案 shadow 内稳定可用
  */
 import { findConfigProvider } from '@oas-ui/core'
-import { getDirection } from '@oas-ui/i18n'
+import { getDirection } from '@oas-ui/i18n/registry'
 
 const RTL = 'rtl'
 const LTR = 'ltr'

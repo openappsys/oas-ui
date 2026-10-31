@@ -2,6 +2,20 @@
 
 所有显著变更记录于此。
 
+## [未发布]
+
+### 性能
+
+- **`@oas-ui/i18n` 默认语言包按家族切片**：内置 zh-CN 拆成 9 个家族切片，按需引入的组件链只注册本族默认文案（消费形态为 `import { registerDefaultMessages } from '@oas-ui/i18n/registry'` + `import { <family>Messages } from '@oas-ui/i18n/slices/<family>'` 后显式调用）；公共入口 `@oas-ui/i18n` 行为不变。实测按需链 gzip（dist 静态闭包口径）：form 28.9→22.4 KB、table 68.8→64.3 KB、gantt 66.7→61.1 KB、json-viewer 34.0→28.4 KB、diff-viewer 32.7→27.1 KB，helper 链（table/advanced、range、detail、glass-fluid）不变。注意 `getLocale().messages` 语义变为「已加载的切片」，需要全集用整包入口或 `import zhCN from '@oas-ui/i18n/zh-CN'`。
+
+### 修复
+
+- **打包消费方（含 CDN）默认语言包丢失**：旧的裸副作用 import 在打包时可能被摇掉，导致内置文案渲染为 raw key；现组件入口显式注册本族切片，CDN 产物含 9 族文案，`perf:size` 新增 `[CDN 默认文案]` 断言锁定。
+
+### 构建
+
+- **i18n 构建加 `removeComments`**（发布产物去注释，d.ts 保留文档注释）；`packages/i18n` 的 `sideEffects` 增 `./dist/registry.js`（registry 含真实模块级副作用，须防消费方 tree-shake 摇掉）。
+
 ## [2.6.5] - 2026-10-31
 
 ### 移除

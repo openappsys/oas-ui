@@ -33,6 +33,7 @@
     "deprecations:gen": "node scripts/api-docs/deprecations.mjs",
     "deprecations:check": "node scripts/api-docs/deprecations.mjs --check",
     "deprecations:test": "node --test scripts/api-docs/deprecations.test.mjs",
+    "i18n:slices:gen": "node scripts/i18n/gen-slices.mjs",
     "manual-pages:check": "node scripts/api-docs/check-manual-pages.mjs",
     "scaffold:component": "node scripts/scaffold/component.mjs",
     "scaffold:check": "node --test scripts/scaffold/component.test.mjs",

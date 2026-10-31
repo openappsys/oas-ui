@@ -1,4 +1,4 @@
-import '@oas-ui/i18n'
+import '@oas-ui/i18n/registry'
 import { OASScrollArea } from './oas-scroll-area.js'
 
 if (!customElements.get('oas-scroll-area')) {

@@ -1,3 +1,6 @@
+import { registerDefaultMessages } from '@oas-ui/i18n/registry'
+import { formMessages } from '@oas-ui/i18n/slices/form'
+registerDefaultMessages(formMessages)
 import { OASRadio } from './oas-radio.js'
 import { OASRadioGroup } from './oas-radio-group.js'
 

@@ -1,3 +1,6 @@
+import { registerDefaultMessages } from '@oas-ui/i18n/registry'
+import { navigationMessages } from '@oas-ui/i18n/slices/navigation'
+registerDefaultMessages(navigationMessages)
 import { OASBottomNavigation } from './oas-bottom-navigation.js'
 import { OASBottomNavigationItem } from './oas-bottom-navigation-item.js'
 

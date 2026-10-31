@@ -1,4 +1,6 @@
-import '@oas-ui/i18n'
+import { registerDefaultMessages } from '@oas-ui/i18n/registry'
+import { dataMessages } from '@oas-ui/i18n/slices/data'
+registerDefaultMessages(dataMessages)
 import '../../basic/icon/index.js' // 副作用：确保 oas-icon 已注册（icon 属性内部渲染 <oas-icon>）
 import { OASTimeline } from './oas-timeline.js'
 import { OASTimelineItem } from './oas-timeline-item.js'

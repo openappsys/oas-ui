@@ -1,4 +1,4 @@
-import '@oas-ui/i18n'
+import '@oas-ui/i18n/registry'
 import { OASMarker } from './oas-marker.js'
 
 if (!customElements.get('oas-marker')) {

@@ -1,3 +1,6 @@
+import { registerDefaultMessages } from '@oas-ui/i18n/registry'
+import { navigationMessages } from '@oas-ui/i18n/slices/navigation'
+registerDefaultMessages(navigationMessages)
 // 纯核入口（core-only）：不含 manager 能力包（L3），context-menu 右键菜单 /
 // sortable 拖拽 / editable 双击重命名 配置在此路径下静默失效并在 dev 告警一次
 // （见 oas-tabs.ts 的 warnManagerNotImported）。

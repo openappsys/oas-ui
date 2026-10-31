@@ -87,9 +87,30 @@ effect(() => {
 - **事件命名**：一律 `oas-*` 前缀 CustomEvent，payload 挂 `detail`，bubbles + composed（穿透 Shadow DOM）。
 - **跨 Shadow DOM 的 ARIA 关联**：idref（`aria-describedby`/`aria-labelledby`）不能穿透 shadow 边界。方案：core 提供 id 生成器；表单错误提示优先用 `aria-live` region 播报 + `aria-invalid` 标记，跨组件 idref 场景由 form 容器在 light DOM 侧协调。
 - **overlay 管理器**：浮层栈、z-index 语义 token（`--oas-z-tooltip/popover/modal/message`）、点击外部关闭；Esc 层栈与 body 滚动锁由 `@oas-ui/ui` 的 `shared/overlay-stack` 提供（modal/drawer/tour/dropdown/context-menu/sidebar 共用），tooltip/message 等轻提示不走该栈。
-- **i18n 预留**：core 提供 locale 注册表（`setLocale/ t()`），组件内置文案（空态、确认/取消）走查表；当前内置 zh-CN，结构可扩展。
+- **i18n**：locale 注册表（`setLocale / t()`），组件内置文案（空态、确认/取消）走查表；当前内置 zh-CN，默认文案按家族切片分发（见 §2.2）。
 - **主题注入**：组件样式只写 token 引用；宿主只需一次 `import '@oas-ui/theme'` 定义 `:root` 变量即可换肤。
 - **SSR**：Web Components 原生不 SSR；提供"无 JS 占位 + 渐进增强"策略作为边界（见 ROADMAP SSR 项）。
+
+### 2.2 i18n 默认语言包按家族切片（包体止损批，未发布）
+
+内置 zh-CN 默认文案拆成 **9 个家族切片**（basic / conversation / data / feedback / form / framework / layout / navigation / workbench），按需引入的组件链只携带本族默认文案，不再每条链都带约 6.8 KB（gzip）的全集。
+
+- **单一事实源 + 生成物**：`packages/i18n/src/locales/zh-CN.ts` 保持手写全集（唯一事实源，完备性测试基准）；`node scripts/i18n/gen-slices.mjs` 静态扫描组件源码的 key 引用，生成 `packages/i18n/src/slices/<family>.ts`（文件头标注生成物，入库提交）；`--check` 模式做防漂移比对，接入 i18n 完备性单测。
+- **消费形态：值导入 + 显式调用**（不依赖模块副作用与 `sideEffects`，各类打包器 tree-shake 下都保留）：
+
+  ```ts
+  import { registerDefaultMessages } from '@oas-ui/i18n/registry'
+  import { dataMessages } from '@oas-ui/i18n/slices/data'
+
+  registerDefaultMessages(dataMessages)
+  ```
+
+- **入口分工**：公共入口 `@oas-ui/i18n` 行为不变（9 切片全量注册）；新子路径 `@oas-ui/i18n/registry` 只含 registry API（无默认文案）、`@oas-ui/i18n/slices/<family>` 只导出本族消息对象；组件入口注册自己家族的切片。
+- **`getLocale().messages` 语义**：按需消费下只保证**已加载的切片**；需要全集仍可用整包 `import zhCN from '@oas-ui/i18n/zh-CN'`（整包导出不变）。`t()` 未命中回退 key 本身，dev 下每个 key 输出一次去重告警（生产静默）。
+- **跨家族 key 重复规则**：被多个族引用的 key **重复写入每个消费族的切片**（不按所有者单族分配）——重复实例约 0.2–0.3 KB，只在全量口径可见，按需链无恶化。无活代码引用的 8 个死键归 framework 族。
+- **构建**：i18n 发布产物加 `removeComments`（发布产物去注释，d.ts 保留文档注释）；`packages/i18n` 的 `sideEffects` 增 `./dist/registry.js`（registry 有真实模块级副作用，须防消费方摇掉）。
+- **顺带修复**：打包消费方（含 CDN）此前可能丢失默认语言包（裸副作用 import 在打包时被摇掉 → 界面出现 raw key）；现组件入口显式注册切片，CDN 产物含 9 族文案，`perf:size` 新增 `[CDN 默认文案]` 断言锁定。
+- **实测收益**（gzip，dist 静态闭包口径）：form 28.9 → 22.4 KB、table 68.8 → 64.3 KB、gantt 66.7 → 61.1 KB、json-viewer 34.0 → 28.4 KB、diff-viewer 32.7 → 27.1 KB；helper 链（table/advanced、range、detail、glass-fluid）不变。
 
 ## 3. Monorepo 包结构
 

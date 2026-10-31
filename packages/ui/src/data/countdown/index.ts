@@ -1,4 +1,4 @@
-import '@oas-ui/i18n'
+import '@oas-ui/i18n/registry'
 import { OASCountdown, formatDuration } from './oas-countdown.js'
 
 if (!customElements.get('oas-countdown')) {

@@ -1,4 +1,6 @@
-import '@oas-ui/i18n'
+import { registerDefaultMessages } from '@oas-ui/i18n/registry'
+import { layoutMessages } from '@oas-ui/i18n/slices/layout'
+registerDefaultMessages(layoutMessages)
 import { OASSidebar } from './oas-sidebar.js'
 import { OASSidebarItem } from './oas-sidebar-item.js'
 import { OASSidebarDivider } from './oas-sidebar-divider.js'

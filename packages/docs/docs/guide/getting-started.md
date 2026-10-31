@@ -102,6 +102,8 @@ import '@oas-ui/theme'
 import '@oas-ui/ui/basic/button'
 ```
 
+> 按需引入组件会**自动注册该家族的内置中文文案**（`@oas-ui/i18n` 默认语言包按家族切片，组件链只携带本族文案）；`@oas-ui/i18n` 整包入口行为不变，仍可整包引入。切换到其他语言用 `loadLocale` 按需加载，详见 [FAQ](./faq) 的 i18n 小节。
+
 > 按需模式**不含内置图标全量集**（避免每个组件链背整套图标）。若用到**内置图标名**（如 `<oas-button icon="check">`、`<oas-icon name="close">`），额外 `import '@oas-ui/icons/register'` 一次即可（全量引入 `@oas-ui/ui` 已自动包含，无需手动）；仅用 `registerIcon` / `registerIconLibrary` / iconfont / slot 提供图标时无需引入。
 
 React / Vue 中直接使用（渲染、属性、插槽内容两端均可；**事件监听见下方小节**）：

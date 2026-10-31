@@ -1,3 +1,6 @@
+import { registerDefaultMessages } from '@oas-ui/i18n/registry'
+import { workbenchMessages } from '@oas-ui/i18n/slices/workbench'
+registerDefaultMessages(workbenchMessages)
 import { OASInspector } from './oas-inspector.js'
 import { OASInspectorTabs } from './oas-inspector-tabs.js'
 import type { InspectorTabItem } from './oas-inspector-tabs.js'

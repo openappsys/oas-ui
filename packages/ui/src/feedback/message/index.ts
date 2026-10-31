@@ -1,4 +1,6 @@
-import '@oas-ui/i18n'
+import { registerDefaultMessages } from '@oas-ui/i18n/registry'
+import { feedbackMessages } from '@oas-ui/i18n/slices/feedback'
+registerDefaultMessages(feedbackMessages)
 import { OASMessage, type MessageType } from './oas-message.js'
 import { message, destroyAll, type MessageHandle, type MessageOptions, type MessageUpdateOptions } from './message.js'
 import type { MessageCloseSource, MessageContent, CustomMessageType } from './oas-message.js'

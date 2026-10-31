@@ -1,3 +1,6 @@
+import { registerDefaultMessages } from '@oas-ui/i18n/registry'
+import { workbenchMessages } from '@oas-ui/i18n/slices/workbench'
+registerDefaultMessages(workbenchMessages)
 import { OASFloatingPanel } from './oas-floating-panel.js'
 import type { PanelRect } from './geometry.js'
 

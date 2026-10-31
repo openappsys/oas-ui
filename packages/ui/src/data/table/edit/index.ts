@@ -1,3 +1,6 @@
+import { registerDefaultMessages } from '@oas-ui/i18n/registry'
+import { dataMessages } from '@oas-ui/i18n/slices/data'
+registerDefaultMessages(dataMessages)
 import { registerTableCapability } from '../oas-table-capability.js'
 import { TableEditController, createEditController, type TableEditHost } from '../oas-table-edit.js'
 // type='checkbox' 列的编辑器走 oas-switch（editComponent 组件通道）——副作用注册随能力包

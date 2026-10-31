@@ -1,3 +1,6 @@
+import { registerDefaultMessages } from '@oas-ui/i18n/registry'
+import { navigationMessages } from '@oas-ui/i18n/slices/navigation'
+registerDefaultMessages(navigationMessages)
 import { OASToolbar } from './oas-toolbar.js'
 import { OASToolbarToggle } from './oas-toolbar-toggle.js'
 import { OASToolbarToggleItem } from './oas-toolbar-toggle-item.js'

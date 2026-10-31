@@ -1,3 +1,6 @@
+import { registerDefaultMessages } from '@oas-ui/i18n/registry'
+import { navigationMessages } from '@oas-ui/i18n/slices/navigation'
+registerDefaultMessages(navigationMessages)
 import { registerTabsCapability } from '../oas-tabs-capability.js'
 import { TabsManagerController, createTabsManagerController, type TabsManagerHost } from '../oas-tabs-manager.js'
 

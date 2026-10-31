@@ -1,4 +1,6 @@
-import '@oas-ui/i18n'
+import { registerDefaultMessages } from '@oas-ui/i18n/registry'
+import { navigationMessages } from '@oas-ui/i18n/slices/navigation'
+registerDefaultMessages(navigationMessages)
 import { OASBreadcrumb, type BreadcrumbItem } from './oas-breadcrumb.js'
 import { OASBreadcrumbItem } from './oas-breadcrumb-item.js'
 import { OASBreadcrumbSeparator } from './oas-breadcrumb-separator.js'

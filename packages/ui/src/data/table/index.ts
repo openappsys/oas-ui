@@ -1,7 +1,9 @@
 // 默认入口 = 基础表格（不含编辑能力）；编辑能力在 `@oas-ui/ui/data/table/edit` 按需 import。
 // 旧别名 `@oas-ui/ui/data/table/core` 已于 v2.6.5 移除（DEP-EXPORT-0001，用户批准的
 // minor 单点例外），迁移路径统一为本入口；防回归见 core-removed.test.ts。
-import '@oas-ui/i18n'
+import { registerDefaultMessages } from '@oas-ui/i18n/registry'
+import { dataMessages } from '@oas-ui/i18n/slices/data'
+registerDefaultMessages(dataMessages)
 import '../../navigation/pagination/index.js'
 import { OASTableColumn } from './oas-table-column.js'
 import {

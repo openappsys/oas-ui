@@ -1,3 +1,6 @@
+import { registerDefaultMessages } from '@oas-ui/i18n/registry'
+import { navigationMessages } from '@oas-ui/i18n/slices/navigation'
+registerDefaultMessages(navigationMessages)
 import { OASCommand, type CommandItem } from './oas-command.js'
 import { OASCommandItem } from './oas-command-item.js'
 

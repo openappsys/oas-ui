@@ -46,6 +46,14 @@ export default defineConfig(() => {
           replacement: resolve(import.meta.dirname, '../core/src/format-byte.ts'),
         },
         { find: '@oas-ui/core', replacement: resolve(import.meta.dirname, '../core/src/index.ts') },
+        {
+          find: /^@oas-ui\/i18n\/registry$/,
+          replacement: resolve(import.meta.dirname, '../i18n/src/registry.ts'),
+        },
+        {
+          find: /^@oas-ui\/i18n\/slices\/(.+)$/,
+          replacement: resolve(import.meta.dirname, '../i18n/src/slices/$1.ts'),
+        },
         { find: '@oas-ui/i18n', replacement: resolve(import.meta.dirname, '../i18n/src/index.ts') },
         { find: '@oas-ui/icons/register', replacement: resolve(import.meta.dirname, '../icons/src/register.ts') },
         { find: '@oas-ui/icons/runtime', replacement: resolve(import.meta.dirname, '../icons/src/runtime.ts') },

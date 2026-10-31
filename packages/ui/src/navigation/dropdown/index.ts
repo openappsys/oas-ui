@@ -1,3 +1,6 @@
+import { registerDefaultMessages } from '@oas-ui/i18n/registry'
+import { navigationMessages } from '@oas-ui/i18n/slices/navigation'
+registerDefaultMessages(navigationMessages)
 import { OASDropdown } from './oas-dropdown.js'
 import { OASDropdownItem } from './oas-dropdown-item.js'
 import { OASDropdownGroup } from './oas-dropdown-group.js'

@@ -1,3 +1,6 @@
+import { registerDefaultMessages } from '@oas-ui/i18n/registry'
+import { formMessages } from '@oas-ui/i18n/slices/form'
+registerDefaultMessages(formMessages)
 import { OASSwatch } from './oas-swatch.js'
 import { OASSwatchGroup } from './oas-swatch-group.js'
 

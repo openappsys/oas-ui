@@ -1,4 +1,6 @@
-import '@oas-ui/i18n'
+import { registerDefaultMessages } from '@oas-ui/i18n/registry'
+import { layoutMessages } from '@oas-ui/i18n/slices/layout'
+registerDefaultMessages(layoutMessages)
 import { OASLayout } from './oas-layout.js'
 import { OASHeader } from './oas-header.js'
 import { OASSider } from './oas-sider.js'

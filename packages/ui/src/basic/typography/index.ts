@@ -1,4 +1,6 @@
-import '@oas-ui/i18n'
+import { registerDefaultMessages } from '@oas-ui/i18n/registry'
+import { basicMessages } from '@oas-ui/i18n/slices/basic'
+registerDefaultMessages(basicMessages)
 import { OASText } from './oas-typography.js'
 import { OASTitle } from './oas-typography.js'
 import { OASParagraph } from './oas-typography.js'

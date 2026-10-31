@@ -1,3 +1,6 @@
+import { registerDefaultMessages } from '@oas-ui/i18n/registry'
+import { navigationMessages } from '@oas-ui/i18n/slices/navigation'
+registerDefaultMessages(navigationMessages)
 // 主路径默认含 manager 能力（能力包 import 即注册，与全量入口/族包行为一致）；
 // 纯核瘦身走 `@oas-ui/ui/navigation/tabs/core` 子路径（不含能力，见 ./core/index.ts）。
 import './manager/index.js'

@@ -1,3 +1,6 @@
+import { registerDefaultMessages } from '@oas-ui/i18n/registry'
+import { feedbackMessages } from '@oas-ui/i18n/slices/feedback'
+registerDefaultMessages(feedbackMessages)
 import { registerModalCapability } from '../oas-modal-capability.js'
 import { OASModal } from '../oas-modal.js'
 import { PromptController, createPromptController } from '../oas-modal-prompt.js'

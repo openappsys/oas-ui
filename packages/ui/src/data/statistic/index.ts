@@ -1,4 +1,4 @@
-import '@oas-ui/i18n'
+import '@oas-ui/i18n/registry'
 import '../../feedback/skeleton/index.js'
 import { OASStatistic } from './oas-statistic.js'
 

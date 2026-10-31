@@ -1,4 +1,4 @@
-import '@oas-ui/i18n'
+import '@oas-ui/i18n/registry'
 import { OASGradientText } from './oas-gradient-text.js'
 
 if (!customElements.get('oas-gradient-text')) {

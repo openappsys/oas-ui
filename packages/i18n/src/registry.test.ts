@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import {
+  registerDefaultMessages,
   registerLocale,
   setLocale,
   getLocale,
@@ -8,13 +9,24 @@ import {
   loadLocale,
   t,
   onLocaleChange,
-} from './registry.js'
+} from './index.js'
+import type { LocaleMessages } from './types.js'
 import { zhCN } from './locales/zh-CN.js'
 import { en } from './locales/en.js'
 import arLocale from './ar.js'
+import { basicMessages } from './slices/basic.js'
+import { workbenchMessages } from './slices/workbench.js'
 
 // setLocale 接受完整 Locale 对象（name + messages），或已注册的名字
 const enLocale = { name: 'en', messages: en }
+
+/** 读共享 registry 状态（globalThis 单例；STATE_KEY 见 registry.ts） */
+function sharedState(): { defaultMessages: LocaleMessages } {
+  const store = globalThis as unknown as { [key: symbol]: unknown }
+  const state = store[Symbol.for('@oas-ui/i18n/registry/v2')] as { defaultMessages: LocaleMessages } | undefined
+  expect(state, '共享 registry 状态应已挂载').toBeDefined()
+  return state!
+}
 
 describe('locale registry', () => {
   beforeEach(() => {
@@ -22,7 +34,7 @@ describe('locale registry', () => {
     setLocale('zh-CN')
   })
 
-  it('默认内置 zh-CN', () => {
+  it('默认内置 zh-CN（主入口经切片全量注册）', () => {
     expect(getLocaleName()).toBe('zh-CN')
     expect(getLocale().name).toBe('zh-CN')
     expect(t('empty.noData')).toBe('暂无数据')
@@ -108,6 +120,72 @@ describe('locale registry', () => {
     expect(again.t('modal.ok')).toBe('OK')
     again.setLocale('zh-CN')
     expect(getLocaleName(), '旧副本应读到新副本的切换').toBe('zh-CN')
+    expect(t('modal.ok')).toBe('确定')
+  })
+
+  it('registerDefaultMessages 幂等：重复注册不改变默认文案', () => {
+    const snapshot = { ...getLocale().messages }
+    registerDefaultMessages(basicMessages)
+    registerDefaultMessages(basicMessages)
+    expect(getLocale().messages).toEqual(snapshot)
+    expect(t('badge.notifications')).toBe('{count} 条未读通知')
+  })
+
+  it('跨副本可见性：切片注册写在共享 defaultMessages 上，裸 registry 副本也能读到', async () => {
+    vi.resetModules()
+    // 新副本只 import registry（不 import 切片/主入口）——defaultLocale.messages 指向共享对象
+    const bare = await import('./registry.js')
+    expect(bare.t('statusbar.label'), '裸副本应读到此前副本注册的 workbench 切片文案').toBe('状态栏')
+    // 裸副本再注册同一切片：写进同一共享对象，幂等无害
+    const { workbenchMessages: wb } = await import('./slices/workbench.js')
+    bare.registerDefaultMessages(wb)
+    expect(bare.t('inspector.label')).toBe('属性面板')
+    expect(t('inspector.label'), '旧副本同样读到新副本的注册').toBe('属性面板')
+  })
+
+  it("loadLocale('zh-CN')：默认对象在册 → 整包合并进共享 defaultMessages；用户覆盖 → 用户注册优先", async () => {
+    const defaultView = getLocale()
+    const saved = defaultView.messages
+    const state = sharedState()
+    expect(state.defaultMessages, '共享 defaultMessages 与默认 locale.messages 应同一对象').toBe(saved)
+    // 模拟「切片尚未注册」的裸环境：清空共享默认文案（defaultLocale.messages 与 state 同步换空）
+    defaultView.messages = {} as LocaleMessages
+    state.defaultMessages = defaultView.messages
+    try {
+      expect(t('modal.ok'), '空默认文案 → raw key 回退').toBe('modal.ok')
+      const locale = await loadLocale('zh-CN')
+      expect(locale, '返回默认 locale 对象本身（不得换对象，否则切片注册写孤儿对象）').toBe(defaultView)
+      expect(t('modal.ok'), '整包已合并回共享默认文案').toBe('确定')
+      expect(t('timePicker.now'), '死键（不在任何切片）经整包装载后可解析').toBe('此刻')
+    } finally {
+      defaultView.messages = saved
+      state.defaultMessages = saved
+    }
+    // 用户已 registerLocale 覆盖同名 zh-CN → 按用户注册优先：直接返回用户对象，不装载整包
+    const userMessages = { ...zhCN, 'modal.ok': '自定义确定' }
+    registerLocale({ name: 'zh-CN', messages: userMessages })
+    setLocale('zh-CN')
+    const user = await loadLocale('zh-CN')
+    expect(user.messages).toBe(userMessages)
+    expect(t('modal.ok')).toBe('自定义确定')
+    // 还原注册表（此后 map 里的 zh-CN 是基准包对象，非默认 locale 引用，行为等价）
+    registerLocale({ name: 'zh-CN', messages: zhCN })
+    setLocale('zh-CN')
+    expect(t('modal.ok')).toBe('确定')
+  })
+
+  it('用户 registerLocale(zh-CN) 优先于切片：t() 走用户对象，后续切片注册不覆盖', () => {
+    const userMessages = { ...zhCN, 'modal.ok': '自定义文案' }
+    registerLocale({ name: 'zh-CN', messages: userMessages })
+    setLocale('zh-CN')
+    // 即便切片在此之后再注册，也不影响用户对象的生效结果
+    registerDefaultMessages(workbenchMessages)
+    expect(t('modal.ok'), '用户覆盖的 key 不被切片注册覆盖').toBe('自定义文案')
+    expect(t('empty.noData'), '其余 key 沿用用户对象').toBe('暂无数据')
+    expect(t('statusbar.label'), '切片 key 在用户对象里同样可解析').toBe('状态栏')
+    // 还原：以完整基准包重新注册，避免污染后续用例
+    registerLocale({ name: 'zh-CN', messages: zhCN })
+    setLocale('zh-CN')
     expect(t('modal.ok')).toBe('确定')
   })
 })

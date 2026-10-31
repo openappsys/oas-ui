@@ -1,7 +1,9 @@
 // 主路径默认含 prompt 能力（能力包 import 即注册，与全量入口/族包行为一致）；
 // 纯核瘦身走 `@oas-ui/ui/feedback/modal/core` 子路径（不含能力，见 ./core/index.ts）。
 import './prompt/index.js'
-import '@oas-ui/i18n'
+import { registerDefaultMessages } from '@oas-ui/i18n/registry'
+import { feedbackMessages } from '@oas-ui/i18n/slices/feedback'
+registerDefaultMessages(feedbackMessages)
 import {
   OASModal,
   type ModalVariant,

@@ -1,3 +1,6 @@
+import { registerDefaultMessages } from '@oas-ui/i18n/registry'
+import { workbenchMessages } from '@oas-ui/i18n/slices/workbench'
+registerDefaultMessages(workbenchMessages)
 import { OASTitlebar } from './oas-titlebar.js'
 import type { TitlebarSize, TitlebarWindowAction } from './oas-titlebar.js'
 import { OASTrafficLights } from './oas-traffic-lights.js'

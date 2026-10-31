@@ -67,10 +67,19 @@
     "./ar": {
       "types": "./dist/ar.d.ts",
       "default": "./dist/ar.js"
+    },
+    "./registry": {
+      "types": "./dist/registry.d.ts",
+      "default": "./dist/registry.js"
+    },
+    "./slices/*": {
+      "types": "./dist/slices/*.d.ts",
+      "default": "./dist/slices/*.js"
     }
   },
   "sideEffects": [
-    "./dist/index.js"
+    "./dist/index.js",
+    "./dist/registry.js"
   ],
   "files": [
     "dist",

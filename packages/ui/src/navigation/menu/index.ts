@@ -1,3 +1,6 @@
+import { registerDefaultMessages } from '@oas-ui/i18n/registry'
+import { navigationMessages } from '@oas-ui/i18n/slices/navigation'
+registerDefaultMessages(navigationMessages)
 import { OASMenu, type MenuItem, type MenuItemKind } from './oas-menu.js'
 import { OASMenuItem } from './oas-menu-item.js'
 import { OASMenuGroup } from './oas-menu-group.js'

@@ -5,6 +5,55 @@
 
 ---
 
+## 未发布：i18n 默认语言包按家族切片（包体止损）
+
+### 背景
+
+内置 zh-CN 默认文案随 `@oas-ui/i18n` 公共入口整包携带，任何按需组件链都被塞进约 6.8 KB（gzip）的全集文案——单组件按需链的默认文案占比过高，form 链余量已触底；同时旧的裸副作用 import 在部分打包消费方（含 CDN）会被摇掉，默认语言包丢失导致界面出现 raw key。
+
+### 实现要点
+
+- 内置 zh-CN 拆成 **9 个家族切片**：basic / conversation / data / feedback / form / framework / layout / navigation / workbench。
+- **单一事实源 + 生成物**：`packages/i18n/src/locales/zh-CN.ts` 保持手写全集；`node scripts/i18n/gen-slices.mjs` 从组件源码静态扫描 key 引用生成 `packages/i18n/src/slices/<family>.ts`（文件头标注生成物），`--check` 防漂移并接入完备性单测。
+- **消费形态：值导入 + 显式调用**（不依赖模块副作用 / `sideEffects`）：
+
+  ```ts
+  import { registerDefaultMessages } from '@oas-ui/i18n/registry'
+  import { dataMessages } from '@oas-ui/i18n/slices/data'
+
+  registerDefaultMessages(dataMessages)
+  ```
+
+- **入口分工**：公共入口 `@oas-ui/i18n` 行为不变（9 切片全量注册）；新子路径 `@oas-ui/i18n/registry`（无默认文案）与 `@oas-ui/i18n/slices/<family>`。
+- **`getLocale().messages` 语义**：按需消费下只保证已加载的切片；整包仍可 `import zhCN from '@oas-ui/i18n/zh-CN'`。
+- **跨家族 key**：被多个族引用的 key 重复写入每个消费族的切片（不按所有者单族分配）；无活代码引用的 8 个死键归 framework。
+- **构建**：i18n 发布产物加 `removeComments`（d.ts 保留文档注释）；`packages/i18n` 的 `sideEffects` 增 `./dist/registry.js`。
+
+### 实测收益（gzip，dist 静态闭包口径）
+
+| 按需链                                                    | 前       | 后       | 变化     |
+| --------------------------------------------------------- | -------- | -------- | -------- |
+| form                                                      | 28.9 KB  | 22.4 KB  | −6.5 KB  |
+| table                                                     | 68.8 KB  | 64.3 KB  | −4.5 KB  |
+| gantt                                                     | 66.7 KB  | 61.1 KB  | −5.6 KB  |
+| json-viewer                                               | 34.0 KB  | 28.4 KB  | −5.6 KB  |
+| diff-viewer                                               | 32.7 KB  | 27.1 KB  | −5.6 KB  |
+| helper 链（table/advanced、range、detail、glass-fluid） | 不变     | 不变     | —        |
+
+### 修复项
+
+打包消费方（含 CDN）此前可能丢失默认语言包（裸副作用 import 在打包时被摇掉 → raw key）；现组件入口显式注册本族切片，CDN 产物含 9 族文案，`perf:size` 新增 `[CDN 默认文案]` 断言锁定。
+
+### 非目标
+
+其余 9 个语言包不动（`loadLocale` 动态加载，不进口袋）；不改 key 命名与文案；不做跨语言回退。
+
+### 验收
+
+- 全量单测 11805 绿（含切片完备性、注册边界与多副本场景测试）。
+- `node scripts/i18n/gen-slices.mjs --check` 防漂移通过。
+- `perf:size` 全绿（按需链预算 + `[CDN 默认文案]` 断言）。
+
 ## v2.6.5：工作台悬浮面板 oas-floating-panel（Task 12）✅
 
 ### 功能定义

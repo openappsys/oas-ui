@@ -89,11 +89,15 @@ CSS 规范限制：`::part()` 伪元素后**只能接伪类**（`:hover` / `:foc
 
 内置 10 种之外的新语言：以 `zh-CN` 语言包的消息为模板 → `...zhCN.messages` 全量继承后逐 key 替换 → 把 `messages` 标注为 `Locale`（类型护栏：缺 key 编译期报错）→ RTL 语言标 `dir: 'rtl'` → `registerLocale` 注册 → `setLocale` 切换。**完整 step-by-step 示例见 `@oas-ui/i18n` 包 README「自定义语言包」节**。自定义包的按需分包走宿主自己的动态 `import()`（`loadLocale()` 只认内置 10 种包名）。
 
+### 为什么只引入组件时 `getLocale().messages` 不是全集？
+
+`@oas-ui/i18n` 的内置中文默认文案按**家族切片**分发：按需引入组件时只注册该组件所属家族的切片（如 `data` 链只带 data 族文案），因此 `getLocale().messages` 只包含**已加载的切片**，不是完整键全集。需要全集时用整包入口 `import '@oas-ui/i18n'`，或 `import zhCN from '@oas-ui/i18n/zh-CN'` 取整份语言包。组件 `t()` 未命中时回退显示 key 本身，开发环境会对每个未命中 key 输出一次去重告警（生产静默），可作为「漏切片 / 漏文案」的排查信号。
+
 ### 用 `link:` / workspace 引用 ui 时，`setLocale()` 为什么不生效？
 
 宿主以 `link:`（或 pnpm workspace）引用 `@oas-ui/ui` 时，ui 内部的 `@oas-ui/i18n` 与宿主从 registry 直接依赖的 `@oas-ui/i18n` 可能是**两份模块实例**：对宿主那份调用 `setLocale()` 切不到 ui 组件使用的实例，内置文案会回落 raw key（如 `popconfirm.ok`）。
 
-根因是 locale registry 与 core translator 钩子原先存在**模块级变量**里。现在两者都挂到 `globalThis` 的 `Symbol.for` 版本键上，同一进程内所有副本共享同一份 locale / translator 状态；因此 link 场景**不需要改 import**，原有 `import { setLocale } from '@oas-ui/i18n'` 直接生效。
+根因是 locale registry 与 core translator 钩子原先存在**模块级变量**里。现在两者都挂到 `globalThis` 的 `Symbol.for` 版本键上，同一进程内所有副本共享同一份 locale / translator 状态；因此 link 场景**不需要改 import**，原有 `import { setLocale } from '@oas-ui/i18n'` 直接生效。默认语言包的**家族切片**注册走同一机制：切片写入的默认文案对象同样挂在共享 state 上，多副本下各副本注册的切片汇入同一份文案，不会出现「写了没人读」的孤儿对象。
 
 仍建议宿主构建去重，减少重复代码与包体（不是正确性必需）：
 

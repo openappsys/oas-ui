@@ -1,3 +1,6 @@
+import { registerDefaultMessages } from '@oas-ui/i18n/registry'
+import { workbenchMessages } from '@oas-ui/i18n/slices/workbench'
+registerDefaultMessages(workbenchMessages)
 import { OASStatusbar } from './oas-statusbar.js'
 import { OASStatusbarItem } from './oas-statusbar-item.js'
 import type { StatusbarItemStatus } from './oas-statusbar-item.js'

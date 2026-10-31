@@ -1,4 +1,4 @@
-import '@oas-ui/i18n'
+import '@oas-ui/i18n/registry'
 import { OASBottomSheet } from './oas-bottom-sheet.js'
 
 if (!customElements.get('oas-bottom-sheet')) {
