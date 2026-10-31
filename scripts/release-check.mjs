@@ -23,6 +23,16 @@
  *    而 workflows 仍写 11.20.0 → pnpm/action-setup「Multiple versions」Release 首步即挂）
  * 5. 适配层（next/nuxt）提醒：自上个 release tag 以来源码有改动但版本未 bump →
  *    本次发布会被 publish-skip-existing 跳过（版本已存在），改动永远发不出去。
+ * 6. 定版文档同步（v2.6.5 事故固化）：docs/ROADMAP.md 与 docs/PRD.md 不得残留「未发布」
+ *    且必须含 v<目标> 的二级标题（且不得是「计划/待发布」态）；docs/deprecations.json
+ *    的 currentVersion == 目标——定版提交漏改会让 tag 树内文档口径永久停留「未发布」
+ *    （tag 不可变，无法追溯修复）
+ * 7. --ref <committish>（pre-push 钩子用）：文件内容类检查（包版本 / CHANGELOG / 定版文档 /
+ *    deprecations）改为读该提交的树（git show <ref>:<path>），核「tag 树」而非工作树——
+ *    工作树已定版而 tag 指向的旧树仍留「未发布」在此拦下（v2.6.5 事故形态；CI publish 侧
+ *    --require-tag-head 在 checkout 树上重跑同脚本是远端兜底，二者不互替）。
+ *    有 --ref 时若 tag v<版本> 已存在，还要求其提交 == --ref 提交（防「核 A 树、推 B tag」）；
+ *    工作树类检查（HEAD / GITHUB_SHA / workflows pnpm 版本 / 适配层提醒）语义不变。
  */
 import { readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
@@ -112,6 +122,13 @@ function main() {
   if (args[0] === '--verify-ci') return verifyCi()
 
   const requireTagHead = args.includes('--require-tag-head')
+  // --ref <committish>：文件内容类检查改读该提交的树（核 tag 树）
+  const refIdx = args.indexOf('--ref')
+  const refArg = refIdx !== -1 ? args[refIdx + 1] : undefined
+  if (refIdx !== -1 && refArg === undefined) {
+    console.error('✗ --ref 需要一个 committish 值（tag 名 / 提交 sha）——fail closed')
+    process.exit(1)
+  }
   const version = parseReleaseVersion(args[0])
   if (!version) {
     if (args[0] !== undefined) {
@@ -119,25 +136,69 @@ function main() {
         `✗ 「${args[0]}」不是合法的 x.y.z 目标版本——非 semver tag 直接失败（不支持 prerelease / 短版本 / 其他写法）`,
       )
     }
-    console.error('用法：node scripts/release-check.mjs <目标版本，如 2.5.4> [--require-tag-head]')
+    console.error('用法：node scripts/release-check.mjs <目标版本，如 2.5.4> [--require-tag-head] [--ref <committish>]')
     process.exit(1)
   }
 
+  // --ref 解析：任意 committish 统一解引用到提交 sha（annotated tag 对象 sha 也能进来）；
+  // 解析失败直接退出（fail closed），不进入任何检查
+  let refSha = null
+  if (refArg !== undefined) {
+    if (!/^[\w./:^~-]{1,80}$/.test(refArg)) {
+      console.error(`✗ --ref committish 形状非法：${refArg}——fail closed`)
+      process.exit(1)
+    }
+    try {
+      refSha = execFileSync('git', ['rev-parse', `${refArg}^{commit}`], GIT_OPTS).trim()
+    } catch {
+      console.error(`✗ --ref「${refArg}」无法解析为提交——fail closed`)
+      process.exit(1)
+    }
+    if (!/^[0-9a-f]{40}$/i.test(refSha)) {
+      console.error(`✗ --ref「${refArg}」解析结果非 40 位 hex：${refSha}——fail closed`)
+      process.exit(1)
+    }
+  }
+
+  // 统一树读取：无 --ref 读磁盘（原语义）；有 --ref 用 git show 读该提交的树。
+  // 读不到（ref 树缺文件 / 非 git 环境）抛错，由调用方 catch 后 fail closed。
+  // ⚠ Windows：join() 产生反斜杠，git show 的 <rev>:<path> 里 path 必须正斜杠
+  const readAt = (p) => {
+    if (refSha === null) return readFileSync(p, 'utf8')
+    return execFileSync('git', ['show', `${refSha}:${p.replace(/\\/g, '/')}`], {
+      ...GIT_OPTS,
+      maxBuffer: 64 * 1024 * 1024,
+    })
+  }
+  const refNote = refSha ? `（--ref 树 ${short(refSha)}）` : ''
+
   let fail = 0
 
-  // 1) 当前磁盘版本一致性
+  // 1) 版本一致性（无 --ref 读磁盘；有 --ref 读 ref 树）
   for (const p of MAIN_PACKAGES) {
-    const j = JSON.parse(readFileSync(join('packages', p, 'package.json'), 'utf8'))
+    let j
+    try {
+      j = JSON.parse(readAt(join('packages', p, 'package.json')))
+    } catch {
+      console.error(`✗ 无法读取 packages/${p}/package.json${refNote}——fail closed`)
+      fail++
+      continue
+    }
     if (j.version !== version) {
-      console.error(`✗ ${j.name} 当前版本 ${j.version} ≠ 目标 ${version}`)
+      console.error(`✗ ${j.name} 当前版本 ${j.version} ≠ 目标 ${version}${refNote}`)
       fail++
     }
   }
 
   // 2) CHANGELOG 有 [目标] 段
-  const changelog = readFileSync('CHANGELOG.md', 'utf8')
-  if (!changelog.includes(`[${version}]`)) {
-    console.error(`✗ CHANGELOG.md 缺 [${version}] 段`)
+  let changelog = null
+  try {
+    changelog = readAt('CHANGELOG.md')
+  } catch {
+    // 保持 null：下面按「缺段 / 读取失败」统一 fail closed
+  }
+  if (changelog === null || !changelog.includes(`[${version}]`)) {
+    console.error(`✗ CHANGELOG.md 缺 [${version}] 段${changelog === null ? `${refNote}（读取失败，fail closed）` : ''}`)
     fail++
   }
 
@@ -157,6 +218,13 @@ function main() {
       console.error(`✗ tag v${version} 指向提交缺少 packages/ui/package.json，无法核对版本`)
       fail++
     }
+  }
+
+  // 3c) --ref 模式：tag（若存在）必须与 --ref 是同一提交——防「核 A 树、推 B tag」。
+  //     tag 不存在时放行（打 tag 前的预检场景）
+  if (refSha !== null && tagExists && tagSha !== refSha) {
+    console.error(`✗ tag v${version} 指向 ${short(tagSha)}，≠ --ref 提交 ${short(refSha)}——核对与推送必须是同一棵树`)
+    fail++
   }
 
   let head = headSha()
@@ -196,6 +264,67 @@ function main() {
         `tag 之后的提交（发布不会包含它们）：\n${gap}\n` +
         `若其中有本属于 v${version} 的修复，请删 tag 重打后再推；若均为无关新工作，可忽略本警告。`,
     )
+  }
+
+  // 3.5) 定版文档同步（v2.6.5 事故固化：定版提交只改 CHANGELOG + bump，漏 ROADMAP/PRD 的
+  //      「未发布」→「v版本号」状态同步，tag 树内文档口径永久停留「未发布」，tag 不可变无法追溯修复）
+  for (const doc of ['docs/ROADMAP.md', 'docs/PRD.md']) {
+    let text
+    try {
+      text = readAt(doc)
+    } catch {
+      console.error(`✗ ${doc} 缺失或读取失败${refNote}——定版状态同步检查无法进行，fail closed`)
+      fail++
+      continue
+    }
+    const lines = text.split(/\r?\n/)
+    const hits = []
+    for (const [i, line] of lines.entries()) {
+      if (line.includes('未发布')) hits.push(i + 1)
+    }
+    if (hits.length > 0) {
+      const shown = hits
+        .slice(0, 5)
+        .map((n) => `${doc}:${n}`)
+        .join('、')
+      console.error(
+        `✗ ${doc} 残留 ${hits.length} 处「未发布」（${shown}${hits.length > 5 ? ' 等' : ''}）——` +
+          `定版提交必须把状态同步为 v${version}（组标题 + 状态列 + 正文跨批引用）`,
+      )
+      fail++
+    }
+    // 版本二级标题：容忍「## v2.6.5（2026-10-31 发布）」「## v2.6.5：…」「## v2.6.5（已发布）」等格式；
+    // 要求版本号紧跟「## 」（可带 v 前缀），避免「## 独立项目（不纳入 v2.6.4）」这类提及性标题误命中
+    const headingRe = new RegExp(`^##\\s+v?${version.replace(/\./g, '\\.')}(?![\\d.])`)
+    const headingHits = []
+    for (const [i, line] of lines.entries()) {
+      if (headingRe.test(line)) headingHits.push({ no: i + 1, line })
+    }
+    if (headingHits.length === 0) {
+      console.error(`✗ ${doc} 缺「## v${version}」二级标题——定版必须建对应版本段（如「## v${version}（日期）」）`)
+      fail++
+    }
+    // 目标版本标题不得是计划/待发布态（真实案例：「## v2.6.5（计划）」可与已发布段并存造成口径漂移）
+    for (const { no, line } of headingHits) {
+      if (/计划|待发布|未发布/.test(line)) {
+        console.error(
+          `✗ ${doc}:${no} 的 v${version} 标题仍是计划态（「${line.trim()}」）——定版后必须改为已发布口径（如「（已发布）」或「（日期 发布）」）`,
+        )
+        fail++
+      }
+    }
+  }
+  try {
+    const dep = JSON.parse(readAt('docs/deprecations.json'))
+    if (dep.currentVersion !== version) {
+      console.error(
+        `✗ docs/deprecations.json 的 currentVersion（${String(dep.currentVersion)}）≠ 目标 ${version}${refNote}——废弃台账版本口径必须同步`,
+      )
+      fail++
+    }
+  } catch {
+    console.error(`✗ docs/deprecations.json 缺失或 JSON 损坏${refNote}——定版检查无法进行，fail closed`)
+    fail++
   }
 
   // 4) 工作流 pnpm 版本一致性：pnpm/action-setup 若固定 version，必须 == packageManager
@@ -294,7 +423,7 @@ function main() {
   const strictNote =
     requireTagHead && tagExists && head ? `；CI 严格模式：tag v${version} 指向验证 SHA ${short(head)}` : ''
   console.log(
-    `[release-check] 通过：${MAIN_PACKAGES.length} 个发布包均为 ${version}，CHANGELOG 段齐全，tag（若存在）指向一致${strictNote}`,
+    `[release-check] 通过：${MAIN_PACKAGES.length} 个发布包均为 ${version}，CHANGELOG 段齐全，tag（若存在）指向一致${refNote}${strictNote}`,
   )
 }
 

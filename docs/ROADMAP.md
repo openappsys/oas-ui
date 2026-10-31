@@ -2,6 +2,12 @@
 
 版本遵循 SemVer。v1.0.0 为首个正式发布。每个版本 = 一个可独立交付/可试用的里程碑。
 
+## 未发布（发布门禁机械化）
+
+| 范围 | 内容 | 状态 |
+| --- | --- | --- |
+| **发布核查机械化（五层清单落地为工具）** | ① `pnpm release:rehearse`：直接解析 `.github/workflows/ci.yml` 的 `test` job 步骤逐条本地重放（CI 改步骤自动跟随，不再依赖手工清单），加两份本地加严（`check-trace --all` / `lint:md`）；`--with-e2e` 复刻全量浏览器 e2e（= CI e2e + e2e-webkit），`--with-ssr-e2e` 复刻 `ssr-fixtures` job（两 fixture install/build/typecheck + 两套 fixture e2e，跳过 `--with-deps`）。三层证据落 `<git-dir>/oas-release-rehearsal.json`（同 SHA 按层累积、换 SHA 重置、失败层写 `ok:false`、执行期 HEAD 漂移不写）。② `scripts/release-check.mjs` 新增定版检查：ROADMAP/PRD 不得残留「未发布」、目标版本标题不得是计划态、`deprecations.json` `currentVersion` 必须同步；新增 `--ref <committish>` 把文件内容类检查改为核**该提交的树**（tag 树），与 tag 不一致直接失败。③ `pre-push` 推 `v*` tag 的 release 路由双校：tag 树定版（`--ref`）+ 本 SHA 三层 rehearse 证据（annotated tag 对象 sha 先解引用到提交）。④ `docs/engineering.md` §5 与私有纪律同步为「工具为权威、清单为说明」。回归：64 条脚本自测（含 v2.6.5 事故形态复刻：磁盘已定版 / tag 树残留 → `--ref` 必须拦下） | ✅ 已完成（未发布） |
+
 ## v2.6.5（2026-10-31 发布）
 
 | 范围 | 内容 | 状态 |
@@ -54,11 +60,11 @@
 | --- | --- | --- |
 | **N03 Markdown 渲染器** | 独立项目 `oas-markdown`：安全、零依赖 Markdown → HTML（标题/段落/引用/列表/代码/行内/链接图片，HTML 转义 + URL 白名单）；代码高亮 / 目录锚点 / 流式渲染留后续 | 🚧 v0.1 已启动（独立仓） |
 
-## v2.6.5（计划）
+## v2.6.5（已发布）
 
 | 范围 | 内容 | 状态 |
 | --- | --- | --- |
-| **移除 table/core 别名** | 删除 `@oas-ui/ui/data/table/core`；迁移路径统一为 `@oas-ui/ui/data/table`（需要编辑时补 `table/edit`） | ✅ 已完成（未发布；用户批准的 minor 单点例外，DEP-EXPORT-0001） |
+| **移除 table/core 别名** | 删除 `@oas-ui/ui/data/table/core`；迁移路径统一为 `@oas-ui/ui/data/table`（需要编辑时补 `table/edit`） | ✅ 已完成（v2.6.5 发布；用户批准的 minor 单点例外，DEP-EXPORT-0001） |
 
 ## v2.6.3（已发布）
 

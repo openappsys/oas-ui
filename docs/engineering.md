@@ -144,6 +144,10 @@
 
 ### 第 2 层：本地完整重放 ci.yml test job（同步骤同顺序，全绿才继续）
 
+> **权威执行方式**：`pnpm release:rehearse`——脚本直接解析 ci.yml 的 test job 步骤逐条执行，
+> CI 改步骤自动跟随（不再依赖手工清单同步），结果按层落盘 `<git-dir>/oas-release-rehearsal.json`
+> （`--quiet` 静默跑，失败步原样吐输出）。下面手工清单仅用于说明每步含义与脚本不可用时的兜底。
+
 按序执行，任何一步失败即停（修复后从头重跑本层）：
 
 1. `pnpm format:check`
@@ -170,8 +174,13 @@
 
 ### 第 3 层：e2e 三套
 
-- `pnpm test:e2e`（chromium + firefox + webkit 全量；CI 分 6 片跑，本地合并跑）
-- `pnpm test:e2e:ssr`（fixture 需先 install/build；Next + Nuxt）
+- `pnpm release:rehearse --with-e2e`：e2e 层 ← ci.yml `e2e` + `e2e-webkit` 两个 job 合并本地跑（= `pnpm test:e2e`，chromium + firefox + webkit 全量；CI 分 6 片，本地合并一次跑完）
+- `pnpm release:rehearse --with-ssr-e2e`：ssrE2e 层 ← ci.yml `ssr-fixtures` job 复刻——去重根 install/build（testJob 层已跑）、跳过 `playwright install --with-deps`；保留 fixture 的 install/build/typecheck（各自目录内跑）与 Next/Nuxt 两轮 e2e（`SSR_FIXTURE` 经进程环境注入）。`playwright.ssr.config.ts` 的 webServer 只启动已构建产物、不做 install/build，fixture 步骤必须先跑；浏览器需本机已安装（`playwright install`），缺失时由 playwright 自身报错
+- 层映射小结：`testJob ← ci.yml test job`、`e2e ← e2e + e2e-webkit 合并本地跑`、`ssrE2e ← ssr-fixtures job（去重 + 跳过环境相关步骤）`
+- 两个开关可独立或同时给；**同 SHA 内按层累积**，不覆盖已跑层——可先跑第 2 层再分次补 e2e
+- 每层结果落盘 `<git-dir>/oas-release-rehearsal.json`；`node scripts/release/verify-rehearsal.mjs <版本> <committish>`（tag 名 / tag 对象 sha / 提交 sha 均可，脚本内部统一解引用到提交）随时可核，推 v* tag 时 pre-push 钩子自动核（证据不符直接拒推）
+- 证据是**本机 `<git-dir>` 内的文件**：换机器、换 worktree、清理 `.git` 后证据不存在，必须重跑 rehearse——verify 对查不到证据 fail closed 拒推，不会静默放行
+- CI publish 侧同样会跑 `release:check <版本> --require-tag-head`（checkout 树 = tag 树），定版检查在**发布前**还有一道远端兜底；本地 pre-push 的 `--ref` 是提前拦截，二者不互相替代
 - 用户视角抽验：关键组件页真点交互 + light/dark 截图 + console 零告警（见根 AGENTS.md 用户视角验证门禁）
 
 ### 第 4 层：发布前置核对
@@ -184,7 +193,7 @@
 
 1. 提交第 1 层定版 + bump（**ROADMAP/PRD 状态同步必须包含在定版提交里**——v2.6.5 事故：定版提交漏了 ROADMAP/PRD，发布后 tag 树内文档口径停留「未发布」，无法追溯修复）
 2. 本地完整重放第 2/3 层**全绿**（在最终将打 tag 的树上）
-3. `git tag v<版本号>`（tag 指向的树 = 已验证树）
+3. `git tag v<版本号>`（tag 指向的树 = 已验证树；**tag 必须打在 rehearse 证据对应 sha 上**——证据不符 pre-push 直接拒推）
 4. `git push origin main`（先）→ 等 CI 在该 SHA 完整跑绿
 5. `git push origin v<版本号>`（后）→ Release `verify-quality` 查同 SHA CI `completed + success` → 放行 → `publish`
 6. **tag 推送后冻结**：发布后状态定版（如有遗漏）走 main 直提 + 下版本段，不动已发布 tag

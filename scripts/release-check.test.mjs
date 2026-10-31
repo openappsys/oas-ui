@@ -50,6 +50,12 @@ function writeRepoFiles(dir, { version = FIXTURE_VERSION, changelog = true } = {
     changelog ? `# Changelog\n\n## [${FIXTURE_VERSION}] - 2026-10-28\n\n### 修复\n\n- x\n` : '# Changelog\n',
   )
   writeFileSync(join(dir, 'package.json'), JSON.stringify({ name: 'oas-ui', private: true }))
+  // 定版文档同步检查（release-check.mjs 第 3.5 步）的 fixture：ROADMAP / PRD / deprecations.json
+  // 三件齐全且口径 = 目标版本——否则既有用例会被新检查全红
+  mkdirSync(join(dir, 'docs'), { recursive: true })
+  writeFileSync(join(dir, 'docs', 'ROADMAP.md'), `# Roadmap\n\n## v${version}（2026-01-01 发布）\n\n- x\n`)
+  writeFileSync(join(dir, 'docs', 'PRD.md'), `# PRD\n\n## v${version}：示例批次\n\n- x\n`)
+  writeFileSync(join(dir, 'docs', 'deprecations.json'), JSON.stringify({ schemaVersion: 1, currentVersion: version }))
 }
 
 function initRepo(opts = {}) {
@@ -259,6 +265,140 @@ test('CHANGELOG 缺目标段 → 阻断', () => {
   const r = runScript([FIXTURE_VERSION], { dir })
   assert.notEqual(r.status, 0)
   assert.match(r.stderr, /CHANGELOG/)
+})
+
+// ---------- 定版文档同步检查（docs 三件：ROADMAP / PRD / deprecations.json） ----------
+
+test('定版检查：docs 三件齐全 → 通过（全部既有用例因此补上 docs fixture）', () => {
+  const dir = initRepo()
+  const r = runScript([FIXTURE_VERSION], { dir })
+  assert.equal(r.status, 0, `docs 三件齐全且口径一致应放行：\n${r.stderr}`)
+})
+
+test('定版检查：ROADMAP 残留「未发布」→ 阻断并给出行号与定版提示', () => {
+  const dir = initRepo()
+  writeFileSync(
+    join(dir, 'docs', 'ROADMAP.md'),
+    `# Roadmap\n\n## v${FIXTURE_VERSION}（2026-01-01 发布）\n\n| x | （未发布） |\n| y | （未发布） |\n`,
+  )
+  const r = runScript([FIXTURE_VERSION], { dir })
+  assert.notEqual(r.status, 0)
+  assert.match(r.stderr, /ROADMAP\.md 残留 2 处「未发布」/)
+  assert.match(r.stderr, /ROADMAP\.md:5/, '应给出第一处残留的行号')
+  assert.match(r.stderr, /v2\.6\.5/, '应提示同步为 v<版本>')
+})
+
+test('定版检查：PRD 缺版本二级标题 → 阻断', () => {
+  const dir = initRepo()
+  writeFileSync(join(dir, 'docs', 'PRD.md'), '# PRD\n\n## 其他版本段\n\n- x\n')
+  const r = runScript([FIXTURE_VERSION], { dir })
+  assert.notEqual(r.status, 0)
+  assert.match(r.stderr, /PRD\.md 缺「## v2\.6\.5」二级标题/)
+})
+
+test('定版检查：deprecations.json currentVersion 不符 / JSON 损坏 → 阻断', () => {
+  const dir = initRepo()
+  writeFileSync(join(dir, 'docs', 'deprecations.json'), JSON.stringify({ currentVersion: '2.6.4' }))
+  const r = runScript([FIXTURE_VERSION], { dir })
+  assert.notEqual(r.status, 0)
+  assert.match(r.stderr, /currentVersion（2\.6\.4）≠ 目标 2\.6\.5/)
+
+  const dir2 = initRepo()
+  writeFileSync(join(dir2, 'docs', 'deprecations.json'), '{oops')
+  const r2 = runScript([FIXTURE_VERSION], { dir: dir2 })
+  assert.notEqual(r2.status, 0)
+  assert.match(r2.stderr, /deprecations\.json 缺失或 JSON 损坏/)
+})
+
+test('定版检查：docs 文件缺失 → fail closed', () => {
+  const dir = initRepo()
+  rmSync(join(dir, 'docs', 'ROADMAP.md'))
+  const r = runScript([FIXTURE_VERSION], { dir })
+  assert.notEqual(r.status, 0)
+  assert.match(r.stderr, /docs\/ROADMAP\.md 缺失/)
+})
+
+test('定版检查（I3）：目标版本标题为「计划」态 → 阻断；已发布/日期/批次态 → 放行', () => {
+  const dir = initRepo()
+  writeFileSync(join(dir, 'docs', 'ROADMAP.md'), `# Roadmap\n\n## v${FIXTURE_VERSION}（计划）\n\n- x\n`)
+  const r = runScript([FIXTURE_VERSION], { dir })
+  assert.notEqual(r.status, 0)
+  assert.match(r.stderr, /计划态/)
+  assert.match(r.stderr, /ROADMAP\.md:3/, '应给出计划态标题的行号')
+
+  for (const okHeading of [`## v${FIXTURE_VERSION}（已发布）`, `## v${FIXTURE_VERSION}（2026-10-31 发布）`]) {
+    const d = initRepo()
+    writeFileSync(join(d, 'docs', 'ROADMAP.md'), `# Roadmap\n\n${okHeading}\n\n- x\n`)
+    const rr = runScript([FIXTURE_VERSION], { dir: d })
+    assert.equal(rr.status, 0, `标题「${okHeading}」应放行：\n${rr.stderr}`)
+  }
+})
+
+// ---------- --ref <committish>：核 tag 树而非工作树（v2.6.5 事故形态的核心拦截） ----------
+
+test('--ref 核心：磁盘已定版 + tag 树残留「未发布」→ --ref tag 提交必须失败且原因是「未发布」', () => {
+  const dir = initRepo() // 树 A：定版
+  // 树 B：ROADMAP 残留「未发布」（v2.6.5 实发事故形态），tag 打在这棵树
+  writeFileSync(
+    join(dir, 'docs', 'ROADMAP.md'),
+    `# Roadmap\n\n## v${FIXTURE_VERSION}（2026-01-01 发布）\n\n| x | （未发布） |\n`,
+  )
+  git(dir, 'add', '-A')
+  git(dir, 'commit', '-q', '-m', 'dirty-docs')
+  git(dir, 'tag', `v${FIXTURE_VERSION}`)
+  // 树 C：磁盘恢复定版（工作树干净、口径正确）
+  writeFileSync(join(dir, 'docs', 'ROADMAP.md'), `# Roadmap\n\n## v${FIXTURE_VERSION}（2026-01-01 发布）\n\n- x\n`)
+  git(dir, 'add', '-A')
+  git(dir, 'commit', '-q', '-m', 'fixup-docs')
+
+  // 对照：磁盘模式只看工作树 → 放行（这正是钩子必须用 --ref 的原因）
+  const disk = runScript([FIXTURE_VERSION], { dir })
+  assert.equal(disk.status, 0, `磁盘已定版应放行：\n${disk.stderr}`)
+  // 核心：--ref tag 提交 → 核 tag 树 → 必须拦下，且失败原因是「未发布」
+  const tagTree = revParse(dir, `v${FIXTURE_VERSION}^{commit}`)
+  const r = runScript([FIXTURE_VERSION, '--ref', tagTree], { dir })
+  assert.notEqual(r.status, 0, '--ref 核 tag 树必须拦下残留「未发布」')
+  assert.match(r.stderr, /未发布/)
+  assert.match(r.stderr, /ROADMAP\.md/)
+})
+
+test('--ref：tag 树干净 → 放行（磁盘推进到新提交不影响 ref 树核对）', () => {
+  const dir = initRepo()
+  git(dir, 'tag', `v${FIXTURE_VERSION}`) // tag 打在定版树 A
+  commitMore(dir) // 磁盘推进到 B（与本 release 无关的新工作）
+  const r = runScript([FIXTURE_VERSION, '--ref', revParse(dir, `v${FIXTURE_VERSION}^{commit}`)], { dir })
+  assert.equal(r.status, 0, `tag 树干净应放行：\n${r.stderr}`)
+})
+
+test('--ref 与 tag 指向不一致 → 失败（防「核 A 树、推 B tag」）', () => {
+  const dir = initRepo() // A
+  commitMore(dir) // B
+  git(dir, 'tag', `v${FIXTURE_VERSION}`) // tag 打在 B
+  const r = runScript([FIXTURE_VERSION, '--ref', revParse(dir, 'HEAD~1')], { dir }) // ref = A ≠ tag B
+  assert.notEqual(r.status, 0)
+  assert.match(r.stderr, /≠ --ref/)
+})
+
+test('--ref：非法 ref / 值缺失 / 形状非法 → fail closed', () => {
+  const dir = initRepo()
+  const missing = runScript([FIXTURE_VERSION, '--ref', 'no-such-ref'], { dir })
+  assert.notEqual(missing.status, 0)
+  assert.match(missing.stderr, /无法解析为提交/)
+  const shape = runScript([FIXTURE_VERSION, '--ref', 'bad sha'], { dir })
+  assert.notEqual(shape.status, 0)
+  assert.match(shape.stderr, /形状非法/)
+  const noValue = runScript([FIXTURE_VERSION, '--ref'], { dir })
+  assert.notEqual(noValue.status, 0)
+  assert.match(noValue.stderr, /需要一个 committish/)
+})
+
+test('--ref：ref 树缺文件（docs/deprecations.json 被删）→ fail closed', () => {
+  const dir = initRepo()
+  git(dir, 'rm', '-q', 'docs/deprecations.json')
+  git(dir, 'commit', '-q', '-m', 'rm-deprecations')
+  const r = runScript([FIXTURE_VERSION, '--ref', 'HEAD'], { dir })
+  assert.notEqual(r.status, 0)
+  assert.match(r.stderr, /deprecations\.json 缺失或 JSON 损坏/)
 })
 
 test('非 semver 版本直接失败（含 prerelease / 短版本 / 任意文本），并给出明确原因', () => {
