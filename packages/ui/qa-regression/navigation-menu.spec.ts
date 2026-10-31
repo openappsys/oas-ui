@@ -178,28 +178,58 @@ test('navigation-menu delay-duration=0 移入子菜单不收回（关闭宽限�
   // 指针离开触发器后 setTimeout(0) 先于 viewport mouseenter 执行，面板在指针到达前关闭
   await page.goto('/components/navigation-menu.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-navigation-menu')
-  const r = await page.evaluate(async () => {
+  // 把 demo 滚进视口：真实指针必须能到达触发器与面板（面板在折叠线下时 elementFromPoint 为空，
+  // 真实指针事件无法命中——先滚动到位再做真实交互）
+  const trigPt = await page.evaluate(async () => {
     const nav = [...document.querySelectorAll('oas-navigation-menu')].find(
       (n) => n.getAttribute('delay-duration') === '0',
     )!
-    const root = nav.shadowRoot!
-    const trigger = root.querySelectorAll('[part="top-item"]')[0] as HTMLElement
+    nav.scrollIntoView({ block: 'center' })
+    await new Promise((r) => setTimeout(r, 150))
+    const trigger = nav.shadowRoot!.querySelectorAll('[part="top-item"]')[0] as HTMLElement
     const tr = trigger.getBoundingClientRect()
-    // 悬停触发器开面板
-    trigger.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }))
-    await new Promise((r2) => setTimeout(r2, 120))
-    const vp = root.querySelector('[part="viewport"]') as HTMLElement
-    const openNow = getComputedStyle(vp).display !== 'none' && Number(getComputedStyle(vp).opacity) > 0
-    // 模拟指针移入面板：真实 hover viewport（真实浏览器 hover 状态供 :hover/事件派发）
-    const vr = vp.getBoundingClientRect()
-    const cx = vr.x + vr.width / 2
-    const cy = vr.y + Math.min(vr.height * 0.3, 80)
-    return { openNow, cx, cy }
+    return { x: tr.x + tr.width / 2, y: tr.y + tr.height / 2 }
   })
-  if (!r?.openNow) throw new Error('面板未打开')
+  // 记录 viewport 的 pointerenter（监听直接挂 shadow 内 viewport：document 层监听的 e.target
+  // 会被 shadow retarget 成 host，contains 判定永远不中）
+  await page.evaluate(() => {
+    ;(window as unknown as { __vpEntered?: boolean }).__vpEntered = false
+    const nav = [...document.querySelectorAll('oas-navigation-menu')].find(
+      (n) => n.getAttribute('delay-duration') === '0',
+    )!
+    const vp = nav.shadowRoot!.querySelector('[part="viewport"]')!
+    vp.addEventListener('pointerenter', () => {
+      ;(window as unknown as { __vpEntered?: boolean }).__vpEntered = true
+    })
+  })
+  // 真实悬停触发器开面板
+  await page.mouse.move(trigPt.x, trigPt.y)
+  // 等面板打开：viewport 可见（display 非 none 且 opacity > 0）
+  await expect
+    .poll(() =>
+      page.evaluate(() => {
+        const nav = [...document.querySelectorAll('oas-navigation-menu')].find(
+          (n) => n.getAttribute('delay-duration') === '0',
+        )!
+        const cs = getComputedStyle(nav.shadowRoot!.querySelector('[part="viewport"]') as HTMLElement)
+        return cs.display !== 'none' && Number(cs.opacity) > 0
+      }),
+    )
+    .toBe(true)
+  // 面板几何就绪后取进入点（视口中心偏上，避开边缘）
+  const vpPt = await page.evaluate(() => {
+    const nav = [...document.querySelectorAll('oas-navigation-menu')].find(
+      (n) => n.getAttribute('delay-duration') === '0',
+    )!
+    const vr = nav.shadowRoot!.querySelector('[part="viewport"]')!.getBoundingClientRect()
+    return { x: vr.x + vr.width / 2, y: vr.y + Math.min(vr.height * 0.3, 80) }
+  })
   // 真实鼠标移动：跨过触发器→面板间隙进入面板（复现原 bug 的时序）
-  await page.mouse.move(r.cx, r.cy, { steps: 8 })
-  await page.waitForTimeout(500)
+  await page.mouse.move(vpPt.x, vpPt.y, { steps: 8 })
+  // 等指针真实进入面板（旧缺陷：setTimeout(0) 先关闭 → viewport display:none 收不到 enter，此 poll 超时）
+  await expect
+    .poll(() => page.evaluate(() => (window as unknown as { __vpEntered?: boolean }).__vpEntered === true))
+    .toBe(true)
   const still = await page.evaluate(() => {
     const nav = [...document.querySelectorAll('oas-navigation-menu')].find(
       (n) => n.getAttribute('delay-duration') === '0',
@@ -233,7 +263,26 @@ test('navigation-menu 垂直方向指示条对准活动触发器（bottom 锚点
     return { x: tr.x + tr.width / 2, y: tr.y + tr.height / 2 }
   })
   await page.mouse.move(target.x, target.y)
-  await page.waitForTimeout(600)
+  // 等指示条过渡落定的真实信号：可见且与触发器 top/高度对齐（查找逻辑与末段断言读取一致）
+  await expect
+    .poll(() =>
+      page.evaluate(() => {
+        const nav = [...document.querySelectorAll('oas-navigation-menu')].find((n) =>
+          n.shadowRoot?.querySelector('.bar.vertical'),
+        )!
+        const root = nav.shadowRoot!
+        const trigger = [...root.querySelectorAll('[part="top-item"]')].find(
+          (t) => t.getAttribute('aria-expanded') === 'true' || t.querySelector('.chevron'),
+        ) as HTMLElement
+        const ind = root.querySelector('.indicator') as HTMLElement
+        const tr = trigger.getBoundingClientRect()
+        const ir = ind.getBoundingClientRect()
+        return (
+          getComputedStyle(ind).opacity === '1' && Math.abs(ir.top - tr.top) < 4 && Math.abs(ir.height - tr.height) < 4
+        )
+      }),
+    )
+    .toBe(true)
   const r = await page.evaluate(() => {
     const nav = [...document.querySelectorAll('oas-navigation-menu')].find((n) =>
       n.shadowRoot?.querySelector('.bar.vertical'),
@@ -447,7 +496,23 @@ test('navigation-menu 面板左缘跟随激活触发器（hover 第 1 项 vs 最
       return { x: r.left + r.width / 2, y: r.top + r.height / 2 }
     }, idx)
     await page.mouse.move(pt.x, pt.y)
-    await page.waitForTimeout(450)
+    // 等面板几何落定的真实信号：open 且连续两次 viewport 矩形一致（width/height 过渡 0.2s 结束）
+    let prevKey: string | null = null
+    await expect
+      .poll(async () => {
+        const key = await page.evaluate((i) => {
+          const host = document.querySelector('#nav-follow') as HTMLElement
+          const root = host.shadowRoot!
+          const vp = root.querySelector<HTMLElement>('[part="viewport"]')!
+          if (!vp.classList.contains('open')) return null
+          const vr = vp.getBoundingClientRect()
+          return `${Math.round(vr.left * 10)},${Math.round(vr.right * 10)},${Math.round(vr.top * 10)}`
+        }, idx)
+        const stable = key !== null && key === prevKey
+        prevKey = key
+        return stable
+      })
+      .toBe(true)
     return page.evaluate((i) => {
       const host = document.querySelector('#nav-follow') as HTMLElement
       const root = host.shadowRoot!
@@ -466,7 +531,17 @@ test('navigation-menu 面板左缘跟随激活触发器（hover 第 1 项 vs 最
   }
   const first = await measure(0)
   await page.mouse.move(5, 400)
-  await page.waitForTimeout(350)
+  // 等面板关闭的真实信号：viewport open 类移除（再切第 4 项才能量到「全新打开」的几何）
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () =>
+          !(document.querySelector('#nav-follow') as HTMLElement)
+            .shadowRoot!.querySelector<HTMLElement>('[part="viewport"]')!
+            .classList.contains('open'),
+      ),
+    )
+    .toBe(true)
   const last = await measure(3)
   expect(first.open, '第 1 项面板应打开').toBe(true)
   expect(last.open, '最后一项面板应打开').toBe(true)
@@ -497,7 +572,24 @@ test('navigation-menu 子面板左缘跟随触发器（窄导航栏不误判回�
       return { x: r.left + r.width / 2, y: r.top + r.height / 2 }
     }, idx)
     await page.mouse.move(pt.x, pt.y)
-    await page.waitForTimeout(450)
+    // 等面板几何落定的真实信号：open 且连续两次 viewport 矩形一致（width/height 过渡 0.2s 结束；
+    // 矩形稳定与翻转/对齐方向无关，窄视口回折分支同样适用）
+    let prevKey: string | null = null
+    await expect
+      .poll(async () => {
+        const key = await page.evaluate((i) => {
+          const host = document.querySelector('#nav-arrow') as HTMLElement
+          const root = host.shadowRoot!
+          const vp = root.querySelector<HTMLElement>('[part="viewport"]')!
+          if (!vp.classList.contains('open')) return null
+          const vr = vp.getBoundingClientRect()
+          return `${Math.round(vr.left * 10)},${Math.round(vr.right * 10)},${Math.round(vr.top * 10)}`
+        }, idx)
+        const stable = key !== null && key === prevKey
+        prevKey = key
+        return stable
+      })
+      .toBe(true)
     return page.evaluate((i) => {
       const host = document.querySelector('#nav-arrow') as HTMLElement
       const root = host.shadowRoot!
@@ -530,7 +622,17 @@ test('navigation-menu 子面板左缘跟随触发器（窄导航栏不误判回�
   expect(first.panelRight, '前提：面板越过窄导航栏右缘（含 8px 安全边距）').toBeGreaterThan(first.navRight - 8)
 
   await page.mouse.move(5, 5)
-  await page.waitForTimeout(350)
+  // 等面板关闭：viewport open 类移除（下一步在干净状态读第 2 项）
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () =>
+          !(document.querySelector('#nav-arrow') as HTMLElement)
+            .shadowRoot!.querySelector<HTMLElement>('[part="viewport"]')!
+            .classList.contains('open'),
+      ),
+    )
+    .toBe(true)
   const second = await measure(1)
   expect(second.open, '第 2 项面板应打开').toBe(true)
   expect(second.flip, '宽视口下第 2 项不应回折').toBe(false)
@@ -542,9 +644,17 @@ test('navigation-menu 子面板左缘跟随触发器（窄导航栏不误判回�
 
   // 反例：把视口压窄到「跟随后的面板」会越出视口右缘 → 必须回折（右缘贴触发器右缘）
   await page.mouse.move(5, 5)
-  await page.waitForTimeout(350)
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () =>
+          !(document.querySelector('#nav-arrow') as HTMLElement)
+            .shadowRoot!.querySelector<HTMLElement>('[part="viewport"]')!
+            .classList.contains('open'),
+      ),
+    )
+    .toBe(true)
   await page.setViewportSize({ width: 300, height: 800 })
-  await page.waitForTimeout(300)
   const narrow = await measure(1)
   expect(narrow.open, '窄视口下第 2 项面板应打开').toBe(true)
   expect(narrow.triggerLeft + narrow.panelWidth, '前提：窄视口下跟随后面板会越出视口右缘').toBeGreaterThan(
@@ -579,7 +689,24 @@ test('navigation-menu en 面板卡片列：文字不越出列外、相邻列不�
       return { x: r.left + r.width / 2, y: r.top + r.height / 2 }
     }, sel)
     await page.mouse.move(pt.x, pt.y)
-    await page.waitForTimeout(600)
+    // 等面板完全落定的真实信号：open + opacity 过渡到 1 + 连续两次宽度一致
+    // （width 过渡 0.2s 期间 grid 列宽随视口宽度逐帧重排，几何量测必须等宽度稳定）
+    let prevW = -1
+    await expect
+      .poll(async () => {
+        const w = await page.evaluate((s) => {
+          const host = document.querySelector(s) as HTMLElement
+          const root = host.shadowRoot!
+          const vp = root.querySelector<HTMLElement>('[part="viewport"]')!
+          if (!vp.classList.contains('open')) return -1
+          if (getComputedStyle(vp).opacity !== '1') return -1
+          return Math.round(vp.getBoundingClientRect().width * 10)
+        }, sel)
+        const stable = w > 0 && w === prevW
+        prevW = w
+        return stable
+      })
+      .toBe(true)
   }
 
   const geom = async (sel: string) =>
@@ -666,7 +793,17 @@ test('navigation-menu en 面板卡片列：文字不越出列外、相邻列不�
   expect(enFlip.panel.width, 'en 面板应随内容最小宽度撑开（不再把列压到内容最小宽度以下）').toBeGreaterThan(200)
 
   await page.mouse.move(5, 5)
-  await page.waitForTimeout(400)
+  // 等前一个面板（#nav-flip）关闭后再打开下一个 demo
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () =>
+          !(document.querySelector('#nav-flip') as HTMLElement)
+            .shadowRoot!.querySelector<HTMLElement>('[part="viewport"]')!
+            .classList.contains('open'),
+      ),
+    )
+    .toBe(true)
   await up(page, '#nav-basic')
   await openFirst('#nav-basic')
   assertInvariants(await geom('#nav-basic'), 'en #nav-basic')
@@ -714,7 +851,23 @@ const openSubPanel = async (page: Page, sel: string): Promise<void> => {
     return { x: r.left + r.width / 2, y: r.top + r.height / 2 }
   }, sel)
   await page.mouse.move(pt.x, pt.y)
-  await page.waitForTimeout(600)
+  // 等主面板完全落定的真实信号：open + opacity=1 + 连续两次宽度一致（同 en 面板用例的 openFirst）
+  let prevW = -1
+  await expect
+    .poll(async () => {
+      const w = await page.evaluate((s) => {
+        const host = document.querySelector(s) as HTMLElement
+        const root = host.shadowRoot!
+        const vp = root.querySelector<HTMLElement>('[part="viewport"]')!
+        if (!vp.classList.contains('open')) return -1
+        if (getComputedStyle(vp).opacity !== '1') return -1
+        return Math.round(vp.getBoundingClientRect().width * 10)
+      }, sel)
+      const stable = w > 0 && w === prevW
+      prevW = w
+      return stable
+    })
+    .toBe(true)
   const sub = await page.evaluate((s) => {
     const host = document.querySelector(s) as HTMLElement
     const t = host.shadowRoot!.querySelector<HTMLElement>('[part="sub-trigger"]')!
@@ -722,7 +875,16 @@ const openSubPanel = async (page: Page, sel: string): Promise<void> => {
     return { x: r.left + r.width / 2, y: r.top + r.height / 2 }
   }, sel)
   await page.mouse.click(sub.x, sub.y)
-  await page.waitForTimeout(600)
+  // 等二级覆盖面板打开的真实信号：hidden 移除（入场动画仅 opacity/translateX，不影响布局量测）
+  await expect
+    .poll(() =>
+      page.evaluate((s) => {
+        const host = document.querySelector(s) as HTMLElement
+        const sp = host.shadowRoot!.querySelector<HTMLElement>('[part="sub-panel"]')!
+        return !sp.hidden
+      }, sel),
+    )
+    .toBe(true)
 }
 
 const subGeom = async (page: Page, sel: string) =>
@@ -856,8 +1018,16 @@ test('navigation-menu 二级覆盖面板长标签：文字不越出列、不与�
     if (sub?.[2]) sub[2].label = 'Internationalization'
     host.setAttribute('items', JSON.stringify(items))
   })
-  await page.waitForTimeout(400)
   await openSubPanel(page, '#nav-sub')
+  // 长标签渲染的真实信号：二级面板打开后文本已出现在 shadow 内（sub 项在面板打开路径渲染）
+  await expect
+    .poll(() =>
+      page.evaluate(() => {
+        const host = document.querySelector('#nav-sub') as HTMLElement
+        return host.shadowRoot!.textContent!.includes('Internationalization')
+      }),
+    )
+    .toBe(true)
   const long = await subGeom(page, '#nav-sub')
   expect(
     long.items.some((i) => i.text === 'Internationalization'),

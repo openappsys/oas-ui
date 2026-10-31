@@ -79,12 +79,30 @@ const BACKDROPS: Array<[string, [number, number, number]]> = [
   ['深青', [31, 74, 68]],
 ]
 
+/** 页面就绪的真实信号：glass 流体运行时已启动——任一已注册组件的 shadowRoot 已被注入共享样式表。
+ *  注意：data-glass 属性是页面静态标记，早于 fluid 运行时启动（组件访问时 started=false 会被跳过），
+ *  不能作为就绪信号；注入发生在 startGlassFluid 的全量 scan 里，是最可靠的「运行时已就绪」事实。
+ *  该信号同时隐含「组件已升级」（无 shadowRoot 则无从注入）。 */
+async function waitGlassReady(p: Page, selector: string | null = '.gg-card') {
+  await p.waitForFunction(
+    () => {
+      const host = document.querySelector(
+        'oas-button, oas-switch, oas-slider, oas-app-bar, oas-bottom-navigation, oas-message',
+      )
+      return !!host && (host.shadowRoot?.adoptedStyleSheets?.length ?? 0) > 0
+    },
+    undefined,
+    { timeout: 15000 },
+  )
+  if (selector) await p.waitForSelector(selector, { state: 'attached', timeout: 15000 })
+}
+
 test.describe('磨砂玻璃材质层', () => {
   for (const theme of ['light', 'dark']) {
     test(`材质机制 + 文字感知对比度（${theme}，三类背板 <60 零容忍）`, async ({ page }) => {
       await page.goto(PAGE, { waitUntil: 'domcontentloaded' })
       if (theme === 'dark') await page.evaluate(() => document.documentElement.classList.add('dark'))
-      await page.waitForTimeout(800)
+      await waitGlassReady(page)
       const r = await page.evaluate(() => {
         const card = document.querySelector('.gg-card')!
         const cs = getComputedStyle(card)
@@ -134,9 +152,10 @@ test.describe('磨砂玻璃材质层', () => {
 
   test('demo 深浅切换走全站主题：暗色卡片仍半透明（stage 基础 token 不得覆盖玻璃 surface）', async ({ page }) => {
     await page.goto(PAGE, { waitUntil: 'domcontentloaded' })
-    await page.waitForTimeout(800)
+    await waitGlassReady(page)
     await page.locator('.gg-toolbar .sg-btn').filter({ hasText: 'dark' }).click()
-    await page.waitForTimeout(300)
+    // 主题切换的真实信号：html.dark 类已挂（后续读取的是切换后的 computed 样式）
+    await expect.poll(() => page.evaluate(() => document.documentElement.classList.contains('dark'))).toBe(true)
     const r = await page.evaluate(() => ({
       dark: document.documentElement.classList.contains('dark'),
       stageTheme: document.querySelector('.gg-stage')?.getAttribute('data-theme') ?? null,
@@ -149,7 +168,7 @@ test.describe('磨砂玻璃材质层', () => {
 
   test('high-contrast 下不启用（实心可访问性档优先）', async ({ page }) => {
     await page.goto(PAGE, { waitUntil: 'domcontentloaded' })
-    await page.waitForTimeout(500)
+    await waitGlassReady(page)
     const blur = await page.evaluate(() => {
       document.documentElement.setAttribute('data-theme', 'high-contrast')
       const cs = getComputedStyle(document.querySelector('.gg-card')!)
@@ -160,7 +179,7 @@ test.describe('磨砂玻璃材质层', () => {
 
   test('high-contrast × class 式暗色同样不启用（.dark 选择器排除实抓回归锁）', async ({ page }) => {
     await page.goto(PAGE, { waitUntil: 'domcontentloaded' })
-    await page.waitForTimeout(500)
+    await waitGlassReady(page)
     const blur = await page.evaluate(() => {
       // 宿主常见的 html.dark class 式暗色与 HC 并存时，玻璃材质也必须整体让位
       document.documentElement.classList.add('dark')
@@ -173,7 +192,7 @@ test.describe('磨砂玻璃材质层', () => {
 
   test('浅色玻璃阴影含发丝线（白底面板边缘不消失——用户实抓回归锁）', async ({ page }) => {
     await page.goto(PAGE, { waitUntil: 'domcontentloaded' })
-    await page.waitForTimeout(500)
+    await waitGlassReady(page)
     const shadow = await page.evaluate(() => getComputedStyle(document.querySelector('.gg-card')!).boxShadow)
     // 浅色玻璃：surface/折光边皆为白色系，白底上面板边界消失——发丝线 0 0 0 1px 深色细线补边缘
     expect(shadow, '浅色玻璃阴影应含发丝线（0px 0px 0px 1px）').toContain('0px 0px 0px 1px')
@@ -181,7 +200,7 @@ test.describe('磨砂玻璃材质层', () => {
 
   test('浅色玻璃内部隔断线为深色（modal 标题分割线在白面板上可见——用户实抓回归锁）', async ({ page }) => {
     await page.goto(PAGE, { waitUntil: 'domcontentloaded' })
-    await page.waitForTimeout(800)
+    await waitGlassReady(page)
     const divider = await page.evaluate(async () => {
       const btns = [...document.querySelectorAll('oas-button')]
       ;(
@@ -204,7 +223,7 @@ test.describe('磨砂玻璃材质层', () => {
 
   test('局部降级：容器覆盖变量后 surface 回实心语义', async ({ page }) => {
     await page.goto(PAGE, { waitUntil: 'domcontentloaded' })
-    await page.waitForTimeout(500)
+    await waitGlassReady(page)
     const r = await page.evaluate(() => {
       const stage = document.querySelector('.gg-stage') as HTMLElement
       stage.style.setProperty('--oas-glass-blur', 'none')
@@ -220,7 +239,7 @@ test.describe('磨砂玻璃材质层', () => {
 test.describe('玻璃材质与动态高光（跨浏览器一致）', () => {
   test('玻璃控件不消费位移滤镜，开关尺寸与布局盒一致（Chromium/Firefox 同构）', async ({ page }) => {
     await page.goto(PAGE, { waitUntil: 'domcontentloaded' })
-    await page.waitForTimeout(900)
+    await waitGlassReady(page)
     const r = await page.evaluate(() => {
       const read = (host: Element) => {
         const root = (host as HTMLElement).shadowRoot
@@ -257,12 +276,12 @@ test.describe('玻璃材质与动态高光（跨浏览器一致）', () => {
   test('prefers-reduced-transparency：实心回退（关 blur/ring/sheen）', async ({ page, browserName }) => {
     test.skip(browserName !== 'chromium', 'CDP media emulation is Chromium-only')
     await page.goto(PAGE, { waitUntil: 'domcontentloaded' })
-    await page.waitForTimeout(800)
+    await waitGlassReady(page)
     const cdp = await page.context().newCDPSession(page)
     await cdp.send('Emulation.setEmulatedMedia', {
       features: [{ name: 'prefers-reduced-transparency', value: 'reduce' }],
     })
-    await page.waitForTimeout(250)
+    // CDP 媒体特性注入同步生效：matchMedia 与 :root 自定义属性在下次强制重算（getComputedStyle）时即新值
     const r = await page.evaluate(() => {
       const root = getComputedStyle(document.documentElement)
       const card = getComputedStyle(document.querySelector('.gg-card')!)
@@ -285,7 +304,7 @@ test.describe('玻璃材质与动态高光（跨浏览器一致）', () => {
 
   test('动态流动感：多组件指针命中 → 坐标变量 + 高光亮起 → 离开清理（跨引擎）', async ({ page }) => {
     await page.goto(PAGE, { waitUntil: 'domcontentloaded' })
-    await page.waitForTimeout(900)
+    await waitGlassReady(page, null)
     // 逐个注入探针组件到固定位置（docs 全量包已注册全部组件）
     // 等组件升级 + 一帧渲染后取 **surface 自身** rect（宿主 rect ≠ surface rect，空 bottom-nav 高度为 0）
     const boxes = await page.evaluate(
@@ -376,26 +395,29 @@ test.describe('玻璃材质与动态高光（跨浏览器一致）', () => {
     }
     // 离开：全部清理
     await page.mouse.move(5, 5)
-    await page.waitForTimeout(300)
-    const leftover = await page.evaluate(() => {
-      const hosts = [
-        ...document.querySelectorAll(
-          'oas-button, oas-switch, oas-slider, oas-app-bar, oas-bottom-navigation, oas-message',
-        ),
-      ]
-      let n = 0
-      for (const h of hosts) {
-        const els = [h, ...(h.shadowRoot ? [...h.shadowRoot.querySelectorAll('*')] : [])]
-        for (const el of els) if (el.hasAttribute('data-glass-fluid')) n++
-      }
-      return n
-    })
-    expect(leftover, '指针离开后不得残留 data-glass-fluid').toBe(0)
+    // 等清理完成：全部 data-glass-fluid 标记移除（leave 清理异步于 mouseleave 派发，即断言条件本身）
+    await expect
+      .poll(() =>
+        page.evaluate(() => {
+          const hosts = [
+            ...document.querySelectorAll(
+              'oas-button, oas-switch, oas-slider, oas-app-bar, oas-bottom-navigation, oas-message',
+            ),
+          ]
+          let n = 0
+          for (const h of hosts) {
+            const els = [h, ...(h.shadowRoot ? [...h.shadowRoot.querySelectorAll('*')] : [])]
+            for (const el of els) if (el.hasAttribute('data-glass-fluid')) n++
+          }
+          return n
+        }),
+      )
+      .toBe(0)
   })
 
   test('动态流动感：shadow 内动态新增的注册组件也被注入（观察器不跨 shadow 边界回归锁）', async ({ page }) => {
     await page.goto(PAGE, { waitUntil: 'domcontentloaded' })
-    await page.waitForTimeout(700)
+    await waitGlassReady(page, null)
     const r = await page.evaluate(async () => {
       const host = document.createElement('oas-card')
       document.body.appendChild(host)
@@ -418,7 +440,7 @@ test.describe('玻璃材质与动态高光（跨浏览器一致）', () => {
 
   test('动态流动感：message 系 `.box` 高光层真生成（四组件防「漏基态 → 伪元素不生成」假绿）', async ({ page }) => {
     await page.goto(PAGE, { waitUntil: 'domcontentloaded' })
-    await page.waitForTimeout(600)
+    await waitGlassReady(page, null)
     const r = await page.evaluate(
       async (tags: string[]) => {
         const out: Record<string, { content: string; bg: string; opacity: string; border: string }> = {}
@@ -452,7 +474,7 @@ test.describe('玻璃材质与动态高光（跨浏览器一致）', () => {
 
   test('动态流动感：surface 内部子元素跨界不熄灭高光（leave 精判回归）', async ({ page }) => {
     await page.goto(PAGE, { waitUntil: 'domcontentloaded' })
-    await page.waitForTimeout(900)
+    await waitGlassReady(page, null)
     const box = await page.evaluate(async () => {
       const btn = document.createElement('oas-button') as HTMLElement
       btn.setAttribute('type', 'primary')
@@ -477,7 +499,15 @@ test.describe('玻璃材质与动态高光（跨浏览器一致）', () => {
     // 在 surface 内部跨界（跨过内部文字/插槽子元素边界，触发 capture pointerleave 派发链）
     await page.mouse.move(box.x + box.w * 0.3, box.y + box.h / 2)
     await page.mouse.move(box.x + box.w * 0.8, box.y + box.h / 2)
-    await page.waitForTimeout(250)
+    // 轮询至高光仍在（跨界后不熄灭）再读取坐标
+    await expect
+      .poll(() =>
+        page.evaluate(() => {
+          const inner = [...document.querySelectorAll('oas-button')].pop()!.shadowRoot!.querySelector('button')!
+          return inner.hasAttribute('data-glass-fluid')
+        }),
+      )
+      .toBe(true)
     const r = await page.evaluate(() => {
       const inner = [...document.querySelectorAll('oas-button')].pop()!.shadowRoot!.querySelector('button')!
       return { fluid: inner.hasAttribute('data-glass-fluid'), px: inner.style.getPropertyValue('--oas-glass-px') }
@@ -488,18 +518,20 @@ test.describe('玻璃材质与动态高光（跨浏览器一致）', () => {
 
   test('动态流动感按压：按下换成更强的高光色（真增强），非压暗', async ({ page }) => {
     await page.goto(PAGE, { waitUntil: 'domcontentloaded' })
-    await page.waitForTimeout(900)
+    await waitGlassReady(page, null)
     // 专用探针（append 在最后 → `.pop()` 稳定命中，不依赖页面既有按钮的 DOM 次序）；
     // 用默认（玻璃）按钮：实心按钮的按压走内描边而非「更强高光铺底」，故以玻璃按钮验证更强按压高光
-    const box = await page.evaluate(() => {
+    const box = await page.evaluate(async () => {
       const btn = document.createElement('oas-button') as HTMLElement
       btn.textContent = 'fluid-press-probe'
       btn.style.cssText = 'position:fixed;left:120px;top:120px;z-index:9999'
       document.body.appendChild(btn)
+      // 等升级 + 一帧渲染再取 rect（未升级时 rect 为 0，指针会落空）
+      await customElements.whenDefined('oas-button')
+      await new Promise((res) => requestAnimationFrame(() => requestAnimationFrame(() => res(null))))
       const r = btn.getBoundingClientRect()
       return { x: r.x, y: r.y, w: r.width, h: r.height }
     })
-    await page.waitForTimeout(200)
     await page.mouse.move(box.x + box.w * 0.6, box.y + box.h * 0.5)
     await page.waitForFunction(
       () => {
@@ -514,7 +546,18 @@ test.describe('玻璃材质与动态高光（跨浏览器一致）', () => {
       return getComputedStyle(inner, '::after').backgroundImage
     })
     await page.mouse.down()
-    await page.waitForTimeout(250)
+    // 按压态生效的真实信号：::after 已换成按压专属渐变（≠ hover 渐变）且不透明度过渡到 1
+    // （渐变切换与淡入是两个过渡，只等其一会漏掉另一段的中间帧）
+    const hoverBgSnapshot = hoverBg
+    await expect
+      .poll(() =>
+        page.evaluate((hb) => {
+          const inner = [...document.querySelectorAll('oas-button')].pop()!.shadowRoot!.querySelector('button')!
+          const cs = getComputedStyle(inner, '::after')
+          return cs.backgroundImage !== hb && cs.opacity === '1'
+        }, hoverBgSnapshot),
+      )
+      .toBe(true)
     const pressBg = await page.evaluate(() => {
       const inner = [...document.querySelectorAll('oas-button')].pop()!.shadowRoot!.querySelector('button')!
       const cs = getComputedStyle(inner, '::after')
@@ -530,7 +573,7 @@ test.describe('玻璃材质与动态高光（跨浏览器一致）', () => {
 
   test('动态流动感作用域：实心按钮 hover 有高光、按压走边缘内描边（非提亮）；禁用玻璃无高光', async ({ page }) => {
     await page.goto(PAGE, { waitUntil: 'domcontentloaded' })
-    await page.waitForTimeout(800)
+    await waitGlassReady(page, null)
     const rects = await page.evaluate(async () => {
       const mk = (id: string, setup: (b: HTMLElement) => void) => {
         const b = document.createElement('oas-button') as HTMLElement
@@ -565,7 +608,12 @@ test.describe('玻璃材质与动态高光（跨浏览器一致）', () => {
     const hitOf: Record<string, boolean> = {}
     for (const rect of rects) {
       await page.mouse.move(rect.x + rect.w / 2, rect.y + rect.h / 2)
-      await page.waitForTimeout(150)
+      // 高光激活的真实信号：data-glass-fluid 已写入（替代固定等待）
+      await page.waitForFunction(
+        (id) => document.getElementById(id)!.shadowRoot!.querySelector('button')!.hasAttribute('data-glass-fluid'),
+        rect.id,
+        { timeout: 5000 },
+      )
       const read = await page.evaluate((id) => {
         const inner = document.getElementById(id)!.shadowRoot!.querySelector('button')!
         const cs = getComputedStyle(inner, '::after')
@@ -594,7 +642,18 @@ test.describe('玻璃材质与动态高光（跨浏览器一致）', () => {
     // 按压：实心按钮走边缘内描边（background 清空、box-shadow inset），不铺白底
     await page.mouse.move(rects[1]!.x + rects[1]!.w / 2, rects[1]!.y + rects[1]!.h / 2)
     await page.mouse.down()
-    await page.waitForTimeout(150)
+    // 按压态生效的真实信号：::after 高光已清空且内描边已出现（即按压断言条件本身）
+    await expect
+      .poll(() =>
+        page.evaluate(() => {
+          const cs = getComputedStyle(
+            document.getElementById('p-primary')!.shadowRoot!.querySelector('button')!,
+            '::after',
+          )
+          return cs.backgroundImage === 'none' && cs.boxShadow.includes('inset')
+        }),
+      )
+      .toBe(true)
     const pressed = await page.evaluate(() => {
       const inner = document.getElementById('p-primary')!.shadowRoot!.querySelector('button')!
       const cs = getComputedStyle(inner, '::after')
@@ -609,7 +668,7 @@ test.describe('玻璃材质与动态高光（跨浏览器一致）', () => {
     for (const theme of ['light', 'dark'] as const) {
       await page.goto(PAGE, { waitUntil: 'domcontentloaded' })
       if (theme === 'dark') await page.evaluate(() => document.documentElement.classList.add('dark'))
-      await page.waitForTimeout(600)
+      await waitGlassReady(page)
       const r = await page.evaluate(
         async (cases: string[]) => {
           // 用 Canvas 把任意 CSS 计算色（rgb/color(srgb)/oklab/oklch/color-mix 结果）归一到 sRGB；
@@ -805,19 +864,27 @@ test.describe('玻璃材质与动态高光（跨浏览器一致）', () => {
   test('动态流动感守卫：reduced-motion 下不启用（零变量）', async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' })
     await page.goto(PAGE, { waitUntil: 'domcontentloaded' })
-    await page.waitForTimeout(900)
-    const box = await page.evaluate(() => {
+    // 注意：reduced-motion 下 fluid 运行时整体禁用（永不注入），waitGlassReady 的注入信号在此不成立；
+    // 本用例探针自足（内部 whenDefined），只需等页面骨架挂载
+    await page.waitForSelector('.gg-card', { state: 'attached', timeout: 15000 })
+    const box = await page.evaluate(async () => {
       const btn = document.createElement('oas-button') as HTMLElement
       btn.setAttribute('type', 'primary')
       btn.textContent = 'fluid-rm-probe'
       btn.style.cssText = 'position:fixed;left:120px;top:120px;z-index:9999'
       document.body.appendChild(btn)
+      // 等升级 + 一帧渲染再取 rect（未升级时 rect 为 0，指针会落空）
+      await customElements.whenDefined('oas-button')
+      await new Promise((res) => requestAnimationFrame(() => requestAnimationFrame(() => res(null))))
       const r = btn.getBoundingClientRect()
       return { x: r.x, y: r.y, w: r.width, h: r.height }
     })
-    await page.waitForTimeout(200)
     await page.mouse.move(box.x + box.w * 0.7, box.y + box.h * 0.5)
-    await page.waitForTimeout(300)
+    // 「不亮高光」是否定断言，无可等待的正面信号；但高光激活（若回归发生）由 pointermove
+    // 处理器/rAF 节流写入——等两个动画帧即可覆盖该调度窗口，无需固定 sleep
+    await page.evaluate(
+      () => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))),
+    )
     const r = await page.evaluate(() => {
       const inner = [...document.querySelectorAll('oas-button')].pop()!.shadowRoot!.querySelector('button')!
       return { fluid: inner.hasAttribute('data-glass-fluid'), px: inner.style.getPropertyValue('--oas-glass-px') }
@@ -828,7 +895,8 @@ test.describe('玻璃材质与动态高光（跨浏览器一致）', () => {
 
   test('动态流动感守卫：无 data-glass 页面零变量', async ({ page }) => {
     await page.goto('/components/button.html', { waitUntil: 'domcontentloaded' })
-    await page.waitForTimeout(700)
+    // 页面就绪的真实信号：首个 oas-button 已升级（demo chunk 动态加载，时长不可用固定值赌博）
+    await page.waitForFunction(() => !!document.querySelector('oas-button')?.shadowRoot, undefined, { timeout: 15000 })
     const box = await page.evaluate(() => {
       const btn = document.querySelector('oas-button') as HTMLElement
       btn.style.cssText += ';position:fixed;left:120px;top:120px;z-index:9999'
@@ -836,7 +904,11 @@ test.describe('玻璃材质与动态高光（跨浏览器一致）', () => {
       return { x: r.x, y: r.y, w: r.width, h: r.height }
     })
     await page.mouse.move(box.x + box.w * 0.7, box.y + box.h * 0.5)
-    await page.waitForTimeout(250)
+    // 「不亮高光」是否定断言，无可等待的正面信号；激活（若回归发生）由 pointermove 处理器/rAF
+    // 节流写入——等两个动画帧即可覆盖该调度窗口，无需固定 sleep
+    await page.evaluate(
+      () => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))),
+    )
     const r = await page.evaluate(() => {
       const inner = document.querySelector('oas-button')!.shadowRoot!.querySelector('button')!
       return { fluid: inner.hasAttribute('data-glass-fluid'), px: inner.style.getPropertyValue('--oas-glass-px') }
@@ -847,7 +919,7 @@ test.describe('玻璃材质与动态高光（跨浏览器一致）', () => {
 
   test('注册表 ↔ 真实 DOM 对账：每个注册组件的 surface 选择器都命中（防漂移静默失效）', async ({ page }) => {
     await page.goto(PAGE, { waitUntil: 'domcontentloaded' })
-    await page.waitForTimeout(600)
+    await waitGlassReady(page, null)
     const miss = await page.evaluate(async (registry: Array<{ tag: string; surface: string; host?: boolean }>) => {
       const out: string[] = []
       for (const e of registry) {
@@ -871,7 +943,7 @@ test.describe('玻璃材质与动态高光（跨浏览器一致）', () => {
     page,
   }) => {
     await page.goto(PAGE, { waitUntil: 'domcontentloaded' })
-    await page.waitForTimeout(800)
+    await waitGlassReady(page, null)
     const r = await page.evaluate(async () => {
       const fixedBar = document.createElement('oas-app-bar')
       fixedBar.setAttribute('data-position', 'fixed')
@@ -1188,7 +1260,7 @@ test.describe('switch 玻璃轨道内文案 36 格真实对比度矩阵', () => 
         document.documentElement.classList.toggle('dark', next === 'dark')
         document.documentElement.removeAttribute('data-theme')
       }, theme)
-      await page.waitForTimeout(250)
+      // 主题类切换同步进 CSS 级联：后续 evaluate 首次读取 computed 时即新值，无需固定等待
 
       const probes = await page.evaluate(
         ({ theme: currentTheme, checkedStates: checks, backdrops: kinds }) => {
@@ -1260,7 +1332,17 @@ test.describe('switch 玻璃轨道内文案 36 格真实对比度矩阵', () => 
 
       // 静止：指针移出所有 surface，等高光淡出与颜色过渡结束
       await page.mouse.move(1, 1)
-      await page.waitForTimeout(250)
+      // 清理完成的真实信号：所有探针的 data-glass-fluid 已移除
+      await expect
+        .poll(() =>
+          page.evaluate(
+            () =>
+              [...document.querySelectorAll('#sw-glass-matrix oas-switch')].filter((s) =>
+                s.shadowRoot!.querySelector('button')?.hasAttribute('data-glass-fluid'),
+              ).length,
+          ),
+        )
+        .toBe(0)
       for (const id of ids) {
         const p = probes.find((x) => x.id === id)!
         rows.push(await sampleSwitchCell(page, p as SwitchProbe, 'static'))
@@ -1293,7 +1375,15 @@ test.describe('switch 玻璃轨道内文案 36 格真实对比度矩阵', () => 
           id,
           { timeout: 5000 },
         )
-        await page.waitForTimeout(180)
+        // 高光淡入完成的真实信号：::after 不透明度过渡到 1（淡入期间 backgroundImage 在插值，量测须等终态）
+        await expect
+          .poll(() =>
+            page.evaluate((probeId) => {
+              const btn = document.getElementById(probeId)!.shadowRoot!.querySelector('button')!
+              return getComputedStyle(btn, '::after').opacity
+            }, id),
+          )
+          .toBe('1')
         rows.push(await sampleSwitchCell(page, p as SwitchProbe, 'hover'))
         if (!hoverShot) {
           hoverShot = true
@@ -1336,7 +1426,16 @@ test.describe('switch 玻璃轨道内文案 36 格真实对比度矩阵', () => 
           id,
           { timeout: 5000 },
         )
-        await page.waitForTimeout(180)
+        // 按压层切换完成的真实信号：::after 背景已换成按压专属渐变且不透明度到 1（即 press.afterBg ≠ hover.afterBg）
+        await expect
+          .poll(() =>
+            page.evaluate((probeId) => {
+              const btn = document.getElementById(probeId)!.shadowRoot!.querySelector('button')!
+              const cs = getComputedStyle(btn, '::after')
+              return { bg: cs.backgroundImage, opacity: cs.opacity }
+            }, id),
+          )
+          .toMatchObject({ opacity: '1' })
         rows.push(await sampleSwitchCell(page, p as SwitchProbe, 'press'))
         if (!pressShot) {
           pressShot = true
@@ -1352,7 +1451,7 @@ test.describe('switch 玻璃轨道内文案 36 格真实对比度矩阵', () => 
         }
         await page.mouse.move(1, 1)
         await page.mouse.up()
-        await page.waitForTimeout(60)
+        // mouse.move 已把指针移出开关，mouseup 的 click 落在 (1,1) 不会误触开关状态，无需间隔等待
       }
 
       await page.evaluate(() => document.getElementById('sw-glass-matrix')?.remove())
@@ -1467,7 +1566,7 @@ test.describe('switch 玻璃态自定义色 / disabled / loading 可读性', () 
         undefined,
         { timeout: 15000 },
       )
-      await page.waitForTimeout(150)
+      // 组件与 spinner 均已就绪（上一 waitForFunction）；计算样式读取同步取值，无需固定等待
 
       const read = () =>
         page.evaluate(() => {
@@ -1579,7 +1678,48 @@ test.describe('switch 玻璃态自定义色 / disabled / loading 可读性', () 
       if (theme === 'light') {
         // 移除 color 后必须清除 inline 钉值，回到主题默认轨道（88% mix）
         await page.evaluate(() => document.getElementById('sw-custom-color')!.removeAttribute('color'))
-        await page.waitForTimeout(100)
+        // 清除完成的真实信号：按钮 inline mix 钉值已移除
+        await expect
+          .poll(() =>
+            page.evaluate(() =>
+              document
+                .getElementById('sw-custom-color')!
+                .shadowRoot!.querySelector('button')!
+                .style.getPropertyValue('--oas-glass-switch-track-mix')
+                .trim(),
+            ),
+          )
+          .toBe('')
+        // 轨道背景有过渡且序列化形态不定（实测 Chromium 返回 color(srgb …)）：等「computed mix 回到
+        // 88%」（纯字符串信号，排除框架重渲染空窗）且「计算色已离开自定义绿」（rgb/color(srgb) 双格式解析）
+        await expect
+          .poll(() =>
+            page.evaluate(() => {
+              const btn = document.getElementById('sw-custom-color')!.shadowRoot!.querySelector('button')!
+              if (getComputedStyle(btn).getPropertyValue('--oas-glass-switch-track-mix').trim() !== '88%') return false
+              const bg = getComputedStyle(btn).backgroundColor
+              const rgb = bg.match(/rgba?\(([^)]+)\)/)
+              const srgb = bg.match(/color\(srgb\s+([\d.]+)\s+([\d.]+)\s+([\d.]+)\)/)
+              let channels: number[]
+              if (rgb) {
+                const p = rgb[1]!
+                  .split(/[,\s/]+/)
+                  .filter(Boolean)
+                  .map(Number)
+                channels = [p[0] ?? 0, p[1] ?? 0, p[2] ?? 0]
+              } else if (srgb) {
+                channels = [Number(srgb[1]) * 255, Number(srgb[2]) * 255, Number(srgb[3]) * 255]
+              } else {
+                return false // 未知序列化形态：继续等，最终断言会给出原始值证据
+              }
+              return !(
+                Math.abs(channels[0]! - 22) <= 2 &&
+                Math.abs(channels[1]! - 163) <= 2 &&
+                Math.abs(channels[2]! - 74) <= 2
+              )
+            }),
+          )
+          .toBe(true)
         const cleared = await read()
         expect(cleared.mixInline, '移除 color 后 inline mix 必须清除').toBe('')
         const defaultTrack = mustColor(cleared.track, '默认轨道色')
@@ -1638,7 +1778,7 @@ test.describe('switch 玻璃态自定义色 / disabled / loading 可读性', () 
         undefined,
         { timeout: 15000 },
       )
-      await page.waitForTimeout(150)
+      // 组件就绪已由上一 waitForFunction 保证；计算样式读取同步取值，无需固定等待
 
       const raw = await page.evaluate(() => {
         const stage = document.getElementById('sw-state-stage')!

@@ -38,7 +38,8 @@ function readLog(page: import('@playwright/test').Page, selector: string): Promi
 test('toggle-group 单选点击切换：aria-checked 同步 + value 回写 + oas-change + 反馈文本', async ({ page }) => {
   await page.goto(PAGE, { waitUntil: 'domcontentloaded' })
   await up(page, '#tg-single')
-  await page.waitForTimeout(300) // 等 demo 宿主挂事件监听
+  // demo 宿主挂事件监听的真实信号：#tg-single-out（与监听同一 Vue 模板 patch 挂载）
+  await expect(page.locator('#tg-single-out')).toBeAttached()
   await attachLog(page, '#tg-single', ['oas-change'])
   // 初始无选中
   const init = await page.evaluate(() => {
@@ -54,7 +55,8 @@ test('toggle-group 单选点击切换：aria-checked 同步 + value 回写 + oas
 
   // 点击第 3 项「月」
   await page.locator('#tg-single [part="item"]').nth(2).click()
-  await page.waitForTimeout(200)
+  // demo 宿主监听 oas-change 后回写 value 并更新反馈文本：等反馈文本到位即链路完成
+  await expect(page.locator('#tg-single-out')).toHaveText('当前：month')
   const after = await page.evaluate(() => {
     const el = document.querySelector('#tg-single')!
     const btns = [...el.shadowRoot!.querySelectorAll('[part="item"]')]
@@ -76,12 +78,14 @@ test('toggle-group 单选点击切换：aria-checked 同步 + value 回写 + oas
 test('toggle-group 多选：checkbox 语义 + 点击勾选/取消 + value JSON 数组 + oas-change', async ({ page }) => {
   await page.goto(PAGE, { waitUntil: 'domcontentloaded' })
   await up(page, '#tg-multi')
-  await page.waitForTimeout(300)
+  // demo 宿主挂事件监听的真实信号：#tg-multi-out（与监听同一 Vue 模板 patch 挂载）
+  await expect(page.locator('#tg-multi-out')).toBeAttached()
   await attachLog(page, '#tg-multi', ['oas-change'])
   // 点「加粗」「斜体」
   await page.locator('#tg-multi [part="item"]').nth(0).click()
   await page.locator('#tg-multi [part="item"]').nth(1).click()
-  await page.waitForTimeout(200)
+  // demo 宿主监听 oas-change 后更新反馈文本：等文本含最新选中值即链路完成
+  await expect(page.locator('#tg-multi-out')).toContainText('bold')
   const picked = await page.evaluate(() => {
     const el = document.querySelector('#tg-multi')!
     const btns = [...el.shadowRoot!.querySelectorAll('[part="item"]')]
@@ -100,7 +104,8 @@ test('toggle-group 多选：checkbox 语义 + 点击勾选/取消 + value JSON �
   expect(picked.out, '#tg-multi-out 应显示当前集合').toContain('bold')
   // 再点「加粗」取消
   await page.locator('#tg-multi [part="item"]').nth(0).click()
-  await page.waitForTimeout(200)
+  // value 由组件同步回写：等目标值出现
+  await expect(page.locator('#tg-multi')).toHaveAttribute('value', '["italic"]')
   const canceled = await page.evaluate(() => document.querySelector('#tg-multi')!.getAttribute('value'))
   expect(canceled, '再点已选项应取消').toBe('["italic"]')
   const log = await readLog(page, '#tg-multi')
@@ -115,7 +120,8 @@ test('toggle-group 键盘方向键：单选移动即选中（焦点随 roving ta
     document.querySelector('#tg-event')!.shadowRoot!.querySelectorAll<HTMLButtonElement>('[part="item"]')[0]!.focus()
   })
   await page.keyboard.press('ArrowRight')
-  await page.waitForTimeout(200)
+  // 方向键选中为同步属性回写：等 value 出现目标值
+  await expect(page.locator('#tg-event')).toHaveAttribute('value', 'center')
   const right = await page.evaluate(() => {
     const el = document.querySelector('#tg-event')!
     const btns = [...el.shadowRoot!.querySelectorAll('[part="item"]')]
@@ -129,7 +135,7 @@ test('toggle-group 键盘方向键：单选移动即选中（焦点随 roving ta
   expect(right.checked).toEqual(['false', 'true', 'false'])
   expect(right.focusIndex, '焦点应随方向键移动').toBe(1)
   await page.keyboard.press('ArrowLeft')
-  await page.waitForTimeout(200)
+  await expect(page.locator('#tg-event')).toHaveAttribute('value', 'left')
   const left = await page.evaluate(() => document.querySelector('#tg-event')!.getAttribute('value'))
   expect(left, 'ArrowLeft 应回选上一项').toBe('left')
 })
@@ -163,7 +169,7 @@ test('toggle-group disabled 项：aria-disabled + tabindex -1 + 点击不选中�
     )!
     el.shadowRoot!.querySelectorAll<HTMLButtonElement>('[part="item"]')[1]!.click()
   })
-  await page.waitForTimeout(200)
+  // el.click() 同步派发：若误选中，aria-checked/value 会同步变化，无需宽限期直接读取
   const after = await page.evaluate(() => {
     const el = [...document.querySelectorAll('oas-toggle-group')].find((g) =>
       (g.getAttribute('items') ?? '').includes('"disabled":true'),
@@ -182,11 +188,13 @@ test('toggle-group disabled 项：aria-disabled + tabindex -1 + 点击不选中�
 test('toggle-group max-count=2：达上限拦截越界选择 + oas-exceed-limit + 反馈文本；已选项仍可取消', async ({ page }) => {
   await page.goto(PAGE, { waitUntil: 'domcontentloaded' })
   await up(page, '#tg-max')
-  await page.waitForTimeout(300)
+  // demo 宿主挂事件监听的真实信号：#tg-max-out（与监听同一 Vue 模板 patch 挂载）
+  await expect(page.locator('#tg-max-out')).toBeAttached()
   await attachLog(page, '#tg-max', ['oas-change', 'oas-exceed-limit'])
   // 初始 value=["bold"]，点「斜体」→ 选中 2/2
   await page.locator('#tg-max [part="item"]').nth(1).click()
-  await page.waitForTimeout(200)
+  // demo 宿主监听 oas-change 后回写 value：等目标值出现即链路完成
+  await expect(page.locator('#tg-max')).toHaveAttribute('value', '["bold","italic"]')
   const full = await page.evaluate(() => {
     const el = document.querySelector('#tg-max')!
     const btns = [...el.shadowRoot!.querySelectorAll('[part="item"]')]
@@ -202,7 +210,8 @@ test('toggle-group max-count=2：达上限拦截越界选择 + oas-exceed-limit 
   // 达上限后未选项被置 aria-disabled=true，playwright actionability 会拒绝点击；
   // 真实用户仍可点击（浏览器照常派发 click），组件自身拦截越界选择——用 force 走真实事件路径
   await page.locator('#tg-max [part="item"]').nth(2).click({ force: true })
-  await page.waitForTimeout(200)
+  // 拦截反馈：等 demo 反馈文本出现「已达上限」（oas-exceed-limit → 宿主监听更新 out）
+  await expect(page.locator('#tg-max-out')).toContainText('已达上限')
   const exceeded = await page.evaluate(() => ({
     value: document.querySelector('#tg-max')!.getAttribute('value'),
     out: document.querySelector('#tg-max-out')!.textContent,
@@ -211,7 +220,8 @@ test('toggle-group max-count=2：达上限拦截越界选择 + oas-exceed-limit 
   expect(exceeded.out, '#tg-max-out 应显示已达上限反馈').toContain('已达上限')
   // 取消一项后未选项恢复可选
   await page.locator('#tg-max [part="item"]').nth(0).click()
-  await page.waitForTimeout(200)
+  // value 同步回写：等目标值出现
+  await expect(page.locator('#tg-max')).toHaveAttribute('value', '["italic"]')
   const freed = await page.evaluate(() => {
     const el = document.querySelector('#tg-max')!
     const btns = [...el.shadowRoot!.querySelectorAll('[part="item"]')]
@@ -338,7 +348,8 @@ test('toggle-group variant：filled 多选真点切换 + demo 反馈文本可见
   await page.goto(PAGE, { waitUntil: 'domcontentloaded' })
   await up(page, '#tg-variant-filled')
   await page.locator('#tg-variant-filled').scrollIntoViewIfNeeded()
-  await page.waitForTimeout(300) // 等 demo 宿主挂事件监听
+  // demo 宿主挂事件监听的真实信号：#tg-variant-out（与监听同一 Vue 模板 patch 挂载）
+  await expect(page.locator('#tg-variant-out')).toBeAttached()
 
   // 点第 1 项 → aria-checked 翻转 + value JSON 回写 + 反馈文本
   await page.locator('#tg-variant-filled [part="item"]').nth(0).click()

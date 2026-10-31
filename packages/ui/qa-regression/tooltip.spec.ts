@@ -34,7 +34,17 @@ test('tooltip virtual 坐标跟随：鼠标移入画布 tooltip 跟随显示、�
   await page.evaluate(() => {
     document.querySelector('#vp-canvas')?.scrollIntoView({ block: 'center' })
   })
-  await page.waitForTimeout(300)
+  // 等滚动静默的真实信号：连续两次 boundingBox 一致（smooth 滚动/惯性结束后坐标才可用）
+  let prevCanvasBox: { x: number; y: number } | null = null
+  await expect
+    .poll(async () => {
+      const b = (await canvas.boundingBox())!
+      const stable =
+        prevCanvasBox !== null && Math.abs(b.x - prevCanvasBox.x) < 0.5 && Math.abs(b.y - prevCanvasBox.y) < 0.5
+      prevCanvasBox = { x: b.x, y: b.y }
+      return stable
+    })
+    .toBe(true)
   const box = await canvas.boundingBox()
 
   // 监听 oas-open-change 计数：follow-cursor demo 由宿主脚本写 open 属性（受控吸收，静默不回派）
@@ -103,9 +113,8 @@ test('tooltip virtual-anchor：hover 图表点位 tooltip 锚定该点显示、�
   await page.evaluate(() => {
     document.querySelector('#vp-chart')?.scrollIntoView({ block: 'center' })
   })
-  await page.waitForTimeout(300)
 
-  // hover 点位 0 → tooltip 锚定显示（placement=top，气泡在点位上方）
+  // hover 点位 0 → tooltip 锚定显示（placement=top，气泡在点位上方）；hover 自带 actionability 稳定等待
   await page.locator('#vp-dot-0').hover()
   await page.waitForFunction(() => {
     const t = document.querySelector('#tt-anchor')
@@ -156,6 +165,9 @@ test('tooltip 触发路径一致性：hover 与 click 打开的落点/方向逐�
   page,
 }) => {
   await page.goto('/components/tooltip.html', { waitUntil: 'domcontentloaded' })
+  // 几何断言需静止态：reduced-motion 关闭入场动画（scale 0.9→1，150ms），组件已实现该标准分支，
+  // 比「等动画播完」更确定（同 merge 用例的处理）
+  await page.emulateMedia({ reducedMotion: 'reduce' })
   const SEL = 'oas-tooltip[placement="top"]'
   await page.waitForSelector(SEL, { state: 'attached', timeout: 15000 })
   await page.waitForFunction((s) => document.querySelector(s)?.shadowRoot != null, SEL, {
@@ -163,7 +175,6 @@ test('tooltip 触发路径一致性：hover 与 click 打开的落点/方向逐�
   })
   const btn = page.locator(`${SEL} > *`).first()
   await btn.scrollIntoViewIfNeeded()
-  await page.waitForTimeout(300)
 
   const read = () =>
     page.evaluate((s) => {
@@ -191,10 +202,9 @@ test('tooltip 触发路径一致性：hover 与 click 打开的落点/方向逐�
       return tip?.getAttribute('aria-hidden') === 'true'
     }, SEL)
 
-  // hover 打开 → 等进场动画结束再量（动画中 rect 被 scale 污染）
+  // hover 打开（reduced-motion 已关入场动画，打开态即静止态）
   await btn.hover()
   await waitOpen()
-  await page.waitForTimeout(250)
   const hoverState = await read()
   expect(hoverState.placement).toBe('top')
   expect(hoverState.gapAbove, 'placement=top 间距应精确 10px').toBe(10)
@@ -205,7 +215,6 @@ test('tooltip 触发路径一致性：hover 与 click 打开的落点/方向逐�
   await waitClosed()
   await btn.click()
   await waitOpen()
-  await page.waitForTimeout(250)
   const clickState = await read()
   expect(clickState.placement).toBe('top')
   expect(clickState.gapAbove).toBe(10)
@@ -233,7 +242,17 @@ test('tooltip 箭头：#tt-follow 打开后 .arrow 可见且位于面板顶部�
   await page.evaluate(() => {
     document.querySelector('#vp-canvas')?.scrollIntoView({ block: 'center' })
   })
-  await page.waitForTimeout(300)
+  // 等滚动静默的真实信号：连续两次 boundingBox 一致（同 follow-cursor 画布用例）
+  let prevCanvasBox: { x: number; y: number } | null = null
+  await expect
+    .poll(async () => {
+      const b = (await canvas.boundingBox())!
+      const stable =
+        prevCanvasBox !== null && Math.abs(b.x - prevCanvasBox.x) < 0.5 && Math.abs(b.y - prevCanvasBox.y) < 0.5
+      prevCanvasBox = { x: b.x, y: b.y }
+      return stable
+    })
+    .toBe(true)
   const box = (await canvas.boundingBox())!
   await page.mouse.move(box.x + 60, box.y + 40)
   await page.waitForFunction(() => {
@@ -295,6 +314,8 @@ test('tooltip arrow="false"：打开后无可见箭头元素（hidden 属性 + 0
 
 test('tooltip arrow-point-at-center：面板被视口边缘避让 clamp 偏移后，箭头仍指向锚点中心', async ({ page }) => {
   await page.goto('/components/tooltip.html', { waitUntil: 'domcontentloaded' })
+  // 几何断言需静止态：reduced-motion 关闭入场动画（fade/scale 150ms），组件已实现该标准分支
+  await page.emulateMedia({ reducedMotion: 'reduce' })
   await up(page, '#tt-arrow-center')
   // 把触发元素钉到视口左缘（placement 默认 top）：面板水平居中会被 clamp 到视口左缘，
   // 默认箭头会随面板中心偏移（脱离锚点），arrow-point-at-center 箭头必须仍指向锚点中心
@@ -309,9 +330,7 @@ test('tooltip arrow-point-at-center：面板被视口边缘避让 clamp 偏移�
   })
   const tip = page.locator('#tt-arrow-center [part="tip"]')
   await expect(tip).toHaveAttribute('aria-hidden', 'false')
-  // tooltip 新增入场动画（fade/scale 150ms）：动画进行中面板/箭头的 getBoundingClientRect
-  // 受 transform 缩放影响会偏几 px，等动画播完再量几何（静止态箭头精确指向锚点中心，已实测）
-  await page.waitForTimeout(250)
+  // reduced-motion 已关入场动画：打开态即静止态，直接量几何（箭头精确指向锚点中心）
   const r = await page.evaluate(() => {
     const host = document.querySelector('#tt-arrow-center')!
     const t = host.shadowRoot!.querySelector<HTMLElement>('[part="tip"]')!
@@ -355,15 +374,28 @@ test('tooltip 箭头形态（用户场景）：top 方向底部箭头完整菱�
   page,
 }) => {
   await page.goto('/components/tooltip.html', { waitUntil: 'domcontentloaded' })
+  // 几何断言需静止态：reduced-motion 关闭入场动画（150ms），组件已实现该标准分支
+  await page.emulateMedia({ reducedMotion: 'reduce' })
   await up(page, 'oas-tooltip[placement="top"]')
   // 「四个方向」demo 的 上 按钮（placement="top"，tooltip 在按钮上方 → 箭头悬气泡底边）
   const host = page.locator('oas-tooltip[placement="top"]').first()
   const anchor = host.locator(':scope > oas-button')
   await anchor.scrollIntoViewIfNeeded()
-  await page.waitForTimeout(200)
+  // 等滚动静默的真实信号：连续两次 boundingBox 一致
+  let prevAnchorBox: { x: number; y: number } | null = null
+  await expect
+    .poll(async () => {
+      const b = (await anchor.boundingBox())!
+      const stable =
+        prevAnchorBox !== null && Math.abs(b.x - prevAnchorBox.x) < 0.5 && Math.abs(b.y - prevAnchorBox.y) < 0.5
+      prevAnchorBox = { x: b.x, y: b.y }
+      return stable
+    })
+    .toBe(true)
   const box = (await anchor.boundingBox())!
   await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2, { steps: 4 })
-  await page.waitForTimeout(300) // 等进场动画（150ms）播完取静止态
+  // reduced-motion 已关入场动画：等打开态就绪即静止态
+  await expect(host.locator('[part="tip"]')).toHaveAttribute('aria-hidden', 'false')
   const r = await host.evaluate((el) => {
     const t = el.shadowRoot!.querySelector<HTMLElement>('[part="tip"]')!
     const arrow = t.querySelector<HTMLElement>('[data-popper-arrow]')!
@@ -620,6 +652,8 @@ test('tooltip 窄气泡圆角封顶：空内容 16px 气泡 radius 收到 (16−
   page,
 }) => {
   await page.goto('/components/tooltip.html', { waitUntil: 'domcontentloaded' })
+  // 几何断言需静止态（tip 宽度用 gBCR 量测）：reduced-motion 关闭入场动画，组件已实现该标准分支
+  await page.emulateMedia({ reducedMotion: 'reduce' })
   await page.waitForFunction(
     () => {
       const h = Array.from(document.querySelectorAll('oas-tooltip')).find((x) => x.textContent?.includes('无内容提示'))
@@ -630,9 +664,9 @@ test('tooltip 窄气泡圆角封顶：空内容 16px 气泡 radius 收到 (16−
   )
   const host = page.locator('oas-tooltip', { hasText: '无内容提示' })
   await host.locator(':scope > oas-button').scrollIntoViewIfNeeded()
-  await page.waitForTimeout(200)
   await host.evaluate((el) => el.setAttribute('open', ''))
-  await page.waitForTimeout(300) // 等动画播完（offset* 本不受影响，取静止态断言收敛值）
+  // reduced-motion 已关入场动画（组件标准分支）：等打开态就绪即静止态（offset* 不受动画影响，取收敛值）
+  await expect(host.locator('[part="tip"]')).toHaveAttribute('aria-hidden', 'false')
   const r = await host.evaluate((el) => {
     const t = el.shadowRoot!.querySelector<HTMLElement>('[part="tip"]')!
     const arrow = t.querySelector<HTMLElement>('[data-popper-arrow]')!
@@ -669,12 +703,11 @@ test('tooltip 增强-close-on-scroll：容器滚动 → 打开中的 tooltip 关
     void tip
   })
   await page.waitForFunction(() => !document.querySelector('oas-tooltip[close-on-scroll]')?.hasAttribute('open'))
-  // 再滚动一次不抛错、保持关闭（监听已随关闭卸载）
+  // 再滚动一次不抛错、保持关闭（监听已随关闭卸载；close-on-scroll 只关不开，无新状态可等）
   await host.evaluate((el) => {
     const box = el.closest('.tt-scrollbox')
     if (box) box.scrollTop = 10
   })
-  await page.waitForTimeout(120)
   const closed = await host.evaluate((el) => !el.hasAttribute('open'))
   expect(closed, '滚动关闭后 tooltip 应保持关闭').toBe(true)
 })
@@ -751,7 +784,16 @@ test('tooltip 增强-follow-cursor：区域内移动 → 浮层跟随光标（�
   await up(page, '#tt-fc')
   const area = page.locator('#tt-fc .tt-area')
   await area.scrollIntoViewIfNeeded()
-  await page.waitForTimeout(300)
+  // 等滚动静默的真实信号：连续两次 boundingBox 一致（坐标用于后续 mouse.move/pointermove）
+  let prevAreaBox: { x: number; y: number } | null = null
+  await expect
+    .poll(async () => {
+      const b = (await area.boundingBox())!
+      const stable = prevAreaBox !== null && Math.abs(b.x - prevAreaBox.x) < 0.5 && Math.abs(b.y - prevAreaBox.y) < 0.5
+      prevAreaBox = { x: b.x, y: b.y }
+      return stable
+    })
+    .toBe(true)
   const box = (await area.boundingBox())!
   // 悬停进入区域中部 → 打开；随后左右移动 → 浮层 left 跟随变化
   await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
@@ -797,7 +839,6 @@ test('tooltip 增强-width="trigger"：浮层宽度与触发按钮同宽', async
   await up(page, 'oas-tooltip[width="trigger"]')
   const host = page.locator('oas-tooltip[width="trigger"]')
   await host.locator(':scope > oas-button').scrollIntoViewIfNeeded()
-  await page.waitForTimeout(200)
   await host.evaluate((el) => el.setAttribute('open', ''))
   await page.waitForFunction(() => {
     const h = document.querySelector('oas-tooltip[width="trigger"]')
@@ -873,12 +914,14 @@ test.describe('触屏降级（P3，iPhone 仿真）', () => {
           ?.shadowRoot?.querySelector('[part="tip"]')
           ?.getAttribute('aria-hidden'),
       )
-    // 指针悬停（触屏仿真下 tap 会合成 hover）不再打开
+    // 指针悬停（触屏仿真下 tap 会合成 hover）不再打开：hover-delay 150ms 的「不发生」断言
+    // 没有任何可等待的 DOM 信号（正常路径不产生任何状态变化），只能限时观察。
+    // audit-exception: hover 不打开为否定断言，无可等待信号；250ms = hover-delay 150ms + 100ms 派发余量
     const btn = page.locator('#tt-coarse-tap button')
     await btn.scrollIntoViewIfNeeded()
     const box = (await btn.boundingBox())!
     await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
-    await page.waitForTimeout(400)
+    await page.waitForTimeout(250)
     expect(await tipState(), '触屏下 hover 不得打开 tooltip').toBe('true')
     // 点按打开
     await page.tap('#tt-coarse-tap button')

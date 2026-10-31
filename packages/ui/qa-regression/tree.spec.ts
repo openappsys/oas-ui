@@ -10,7 +10,22 @@ test('tree 虚拟滚动渲染真实 label 且行样式生效', async ({ page }) 
   //           修复为注入 VIRTUAL_ROW_STYLE 到 vlist 的 shadow root。
   await page.goto('/components/tree.html', { waitUntil: 'domcontentloaded' })
   await up(page, '#tree-virtual')
-  await page.waitForTimeout(800)
+  // 虚拟行渲染完成的真实信号：行项已挂 + 首行 label 有文字 + 行样式表已注入（即本用例断言条件）
+  await expect
+    .poll(() =>
+      page.evaluate(() => {
+        const tree = document.querySelector('#tree-virtual')!
+        const vroot = tree.shadowRoot!.querySelector('oas-virtual-list')!.shadowRoot!
+        const items = [...vroot.querySelectorAll('[part=item]')]
+        const firstRow = items[0]?.querySelector('.row')
+        return (
+          items.length > 0 &&
+          (firstRow?.querySelector('.label')?.textContent?.length ?? 0) > 0 &&
+          !!vroot.querySelector('style[data-oas-tree-rows]')
+        )
+      }),
+    )
+    .toBe(true)
   const r = await page.evaluate(() => {
     const tree = document.querySelector('#tree-virtual')!
     const vlist = tree.shadowRoot!.querySelector('oas-virtual-list')!
@@ -43,7 +58,10 @@ test('tree 虚拟滚动渲染真实 label 且行样式生效', async ({ page }) 
   // hover 背景（Playwright CSS 选择器自动穿透 open shadow DOM）
   const firstRow = page.locator('#tree-virtual oas-virtual-list [part=item] .row').first()
   await firstRow.hover()
-  await page.waitForTimeout(200)
+  // hover 底色生效的真实信号：背景色离开透明（:hover 规则同步挂载，可能有过渡）
+  await expect
+    .poll(() => firstRow.evaluate((row) => getComputedStyle(row).backgroundColor))
+    .not.toBe('rgba(0, 0, 0, 0)')
   const hoverBg = await firstRow.evaluate((row) => getComputedStyle(row).backgroundColor)
   expect(hoverBg).not.toBe('rgba(0, 0, 0, 0)')
 })
@@ -52,9 +70,23 @@ test('tree 虚拟列表滚轮增量滚动正常（overflow-anchor 回归）', as
   // 曾现 bug：同 virtual-list——tree 虚拟模式复用 oas-virtual-list，滚轮一下直接滚到底。
   await page.goto('/components/tree.html', { waitUntil: 'domcontentloaded' })
   await up(page, '#tree-virtual')
-  await page.waitForTimeout(800)
+  // 虚拟行就绪的真实信号（同上一用例）：行项已挂 + label 有文字 + 样式表注入
+  await expect
+    .poll(() =>
+      page.evaluate(() => {
+        const tree = document.querySelector('#tree-virtual')!
+        const vroot = tree.shadowRoot!.querySelector('oas-virtual-list')!.shadowRoot!
+        const items = [...vroot.querySelectorAll('[part=item]')]
+        const firstRow = items[0]?.querySelector('.row')
+        return (
+          items.length > 0 &&
+          (firstRow?.querySelector('.label')?.textContent?.length ?? 0) > 0 &&
+          !!vroot.querySelector('style[data-oas-tree-rows]')
+        )
+      }),
+    )
+    .toBe(true)
   await page.locator('#tree-virtual').scrollIntoViewIfNeeded()
-  await page.waitForTimeout(300)
   const r = await page.evaluate(() => {
     const tree = document.querySelector('#tree-virtual')!
     const vlist = tree.shadowRoot!.querySelector('oas-virtual-list')!
@@ -70,13 +102,14 @@ test('tree 虚拟列表滚轮增量滚动正常（overflow-anchor 回归）', as
       return vlist.shadowRoot!.querySelector('[part=viewport]')!.scrollTop
     })
   await page.mouse.wheel(0, 120)
-  await page.waitForTimeout(300)
+  // 滚轮增量落定的真实信号：scrollTop 达到本档增量下限（scroll 事件异步到达）
+  await expect.poll(scrollTop).toBeGreaterThanOrEqual(100)
   const s1 = await scrollTop()
   await page.mouse.wheel(0, 120)
-  await page.waitForTimeout(300)
+  await expect.poll(scrollTop).toBeGreaterThanOrEqual(s1 + 100)
   const s2 = await scrollTop()
   await page.mouse.wheel(0, 120)
-  await page.waitForTimeout(300)
+  await expect.poll(scrollTop).toBeGreaterThanOrEqual(s2 + 100)
   const s3 = await scrollTop()
   expect(s1).toBeGreaterThanOrEqual(100)
   expect(s2 - s1).toBeGreaterThanOrEqual(100)
@@ -90,7 +123,15 @@ test('tree 自定义节点模板 + oas-node-render 渲染真实内容且 ARIA �
   // 本次补 template[slot="node"] / template[slot="toggle"] 骨架 + oas-node-render 事件。
   await page.goto('/components/tree.html', { waitUntil: 'domcontentloaded' })
   await up(page, '#tree-custom')
-  await page.waitForTimeout(600)
+  // 自定义行渲染完成的真实信号：骨架图标已挂（含 oas-node-render 写入完成）
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () =>
+          !!document.querySelector('#tree-custom')?.shadowRoot?.querySelector('[part="row"] .label .node-demo-glyph'),
+      ),
+    )
+    .toBe(true)
   const r = await page.evaluate(() => {
     const tree = document.querySelector('#tree-custom')!
     const row = tree.shadowRoot!.querySelector('[part="row"]')!
@@ -164,7 +205,15 @@ test('tree slot 模板：Vue CSR 直插形态（insertBefore 到模板自身、c
     tree.setAttribute('data', tree.getAttribute('data')!)
   })
   await up(page, '#tree-csr-slot')
-  await page.waitForTimeout(200)
+  // CSR 直插渲染完成的真实信号：骨架图标已在行内
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () =>
+          !!document.querySelector('#tree-csr-slot')?.shadowRoot?.querySelector('[part="row"] .label svg.csr-glyph'),
+      ),
+    )
+    .toBe(true)
   const r = await page.evaluate(() => {
     const tree = document.querySelector('#tree-csr-slot')!
     const label = tree.shadowRoot!.querySelector('[part="row"] .label')!
@@ -182,7 +231,16 @@ test('tree 目录模式：文件夹/文件图标、展开态切换与 ARIA', asy
   // 本次补 directory 属性：children/isLeaf 判定目录/文件，文件夹按展开态换图标。
   await page.goto('/components/tree.html', { waitUntil: 'domcontentloaded' })
   await up(page, '#tree-dir')
-  await page.waitForTimeout(600)
+  // 目录行渲染完成的真实信号：首行（已展开文件夹）图标为 folder-open（即首条断言条件）
+  await expect
+    .poll(() =>
+      page.evaluate(() => {
+        const tree = document.querySelector('#tree-dir')!
+        const row = [...tree.shadowRoot!.querySelectorAll('[part="row"]')][0]
+        return !!row && row.querySelector('[part="node-icon"]')?.getAttribute('data-kind') === 'folder-open'
+      }),
+    )
+    .toBe(true)
   const kinds = () =>
     page.evaluate(() => {
       const tree = document.querySelector('#tree-dir')!
@@ -229,7 +287,16 @@ test('tree 目录模式：文件夹/文件图标、展开态切换与 ARIA', asy
 test('tree 自定义节点：#tree-custom 每行 .label 实际渲染宽度 > 0（文字不被 flex 压没）', async ({ page }) => {
   await page.goto('/components/tree.html', { waitUntil: 'domcontentloaded' })
   await up(page, '#tree-custom')
-  await page.waitForTimeout(800)
+  // 渲染完成的真实信号：首个 [data-node-label] 有非零布局宽度（量测前提）
+  await expect
+    .poll(() =>
+      page.evaluate(() => {
+        const tree = document.querySelector('#tree-custom')!
+        const binder = tree.shadowRoot!.querySelector('[part="row"] [data-node-label]') as HTMLElement | null
+        return !!binder && binder.getBoundingClientRect().width > 0
+      }),
+    )
+    .toBe(true)
   const r = await page.evaluate(() => {
     const tree = document.querySelector('#tree-custom')!
     return [...tree.shadowRoot!.querySelectorAll('[part="row"]')].map((row) => {
@@ -259,17 +326,21 @@ test('tree 内联重命名：双击 label 进编辑 + Enter 提交宿主回写�
   // 需手工判定（capture click 同 key 500ms 两击）；提交只派发事件、由宿主更新 data 显示新名。
   await page.goto('/components/tree.html', { waitUntil: 'domcontentloaded' })
   await up(page, '#tree-rename')
-  await page.waitForTimeout(600)
+  // 行就绪的真实信号：label 在场（dblclick 目标存在）
+  await expect
+    .poll(() =>
+      page.evaluate(() => !!document.querySelector('#tree-rename')?.shadowRoot?.querySelector('[part="row"] .label')),
+    )
+    .toBe(true)
   const firstLabel = page.locator('#tree-rename [part="row"] .label').first()
   const input = page.locator('#tree-rename input.rename-input')
   await firstLabel.dblclick()
-  await page.waitForTimeout(150)
+  // toBeVisible 自带自动等待（手工双击判定 500ms 窗口后输入框出现）
   await expect(input).toBeVisible()
   expect(await input.inputValue()).toContain('研发团队')
   await input.fill('研发中心')
   await input.press('Enter')
-  await page.waitForTimeout(200)
-  // 宿主监听 oas-node-rename 更新 data 后行内显示新 label
+  // toHaveText 自带自动等待（宿主回写 data 后行内刷新）
   await expect(firstLabel).toHaveText('研发中心')
   const status = await page.locator('#tree-rename-status').textContent()
   expect(status).toContain('研发中心')
@@ -487,7 +558,15 @@ test('tree P2 批：size 五档归一化存活 + block-node 切换反馈 + selec
 }) => {
   await page.goto('/components/tree.html', { waitUntil: 'domcontentloaded' })
   await up(page, '#tree-selectable')
-  await page.waitForTimeout(400)
+  // size 五档渲染完成的真实信号：4 棵 size 树的 data-size 归一化属性全部落位
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () =>
+          [...document.querySelectorAll('oas-tree[size]')].filter((el) => el.getAttribute('data-size') != null).length,
+      ),
+    )
+    .toBe(4)
 
   // size 五档 demo 存在且归一化别名（sm→small）落成 data-size
   const sizes = await page.evaluate(() =>
@@ -508,7 +587,17 @@ test('tree P2 批：size 五档归一化存活 + block-node 切换反馈 + selec
   expect(blockOn).toBe(true)
   await page.locator('#tree-block-toggle').scrollIntoViewIfNeeded()
   await page.locator('#tree-block-toggle').click()
-  await page.waitForTimeout(200)
+  // 开关为同步 DOM handler（setAttribute/removeAttribute + status 文本）：等类已摘除
+  await expect
+    .poll(() =>
+      page.evaluate(() =>
+        document
+          .querySelector('oas-tree#tree-block')!
+          .shadowRoot!.querySelector('.tree')!
+          .classList.contains('block-node'),
+      ),
+    )
+    .toBe(false)
   const blockOff = await page.evaluate(() =>
     document.querySelector('oas-tree#tree-block')!.shadowRoot!.querySelector('.tree')!.classList.contains('block-node'),
   )
@@ -517,13 +606,18 @@ test('tree P2 批：size 五档归一化存活 + block-node 切换反馈 + selec
   // selectable=false：点行不选中（selected 属性不动、反馈文本不更新）
   await page.locator('#tree-selectable-off').scrollIntoViewIfNeeded()
   await page.locator('#tree-selectable-off').click()
-  await page.waitForTimeout(200)
+  // 开关为同步 DOM handler：等 selectable="false" 落到树属性
+  await expect
+    .poll(() =>
+      page.evaluate(() => document.querySelector('oas-tree#tree-selectable')?.getAttribute('selectable') ?? ''),
+    )
+    .toBe('false')
   await page.evaluate(() => {
     const el = document.querySelector('oas-tree#tree-selectable')!
     const row = el.shadowRoot!.querySelector('[part="row"]') as HTMLElement
     row.click()
   })
-  await page.waitForTimeout(200)
+  // 同步派发：关闭态点行不派 oas-select（selected 保持空），立即读取
   const selOff = await page.evaluate(() => ({
     selected: document.querySelector('oas-tree#tree-selectable')!.getAttribute('selected'),
     status: document.querySelector('#tree-selectable-status')!.textContent,
@@ -533,7 +627,12 @@ test('tree P2 批：size 五档归一化存活 + block-node 切换反馈 + selec
 
   // selectable=true：恢复点选（点击选中并派发 oas-select，反馈行更新）
   await page.locator('#tree-selectable-on').click()
-  await page.waitForTimeout(200)
+  // 开关为同步 DOM handler：等 selectable="true" 落到树属性
+  await expect
+    .poll(() =>
+      page.evaluate(() => document.querySelector('oas-tree#tree-selectable')?.getAttribute('selectable') ?? ''),
+    )
+    .toBe('true')
   await page.evaluate(() => {
     const el = document.querySelector('oas-tree#tree-selectable')!
     const row = el.shadowRoot!.querySelector('[part="row"]') as HTMLElement

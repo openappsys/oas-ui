@@ -20,7 +20,8 @@ test('speed-dial 点击主钮展开/收起：aria-expanded + .dial.open + 动作
 }) => {
   await page.goto(PAGE, { waitUntil: 'domcontentloaded' })
   await up(page, '#sd-event')
-  await page.waitForTimeout(300) // 等 demo 宿主挂事件监听
+  // demo 宿主挂事件监听的真实信号：#sd-out（与 oas-open 监听同一 Vue 模板 patch 挂载）
+  await expect(page.locator('#sd-out')).toBeAttached()
 
   // 点击主钮展开（挂监听记录 oas-open detail）
   await page.evaluate(() => {
@@ -29,7 +30,23 @@ test('speed-dial 点击主钮展开/收起：aria-expanded + .dial.open + 动作
     el.addEventListener('oas-open', (e) => (el.__opens as OpenLog[]).push((e as CustomEvent).detail as OpenLog))
     el.shadowRoot!.querySelector<HTMLElement>('[part="fab"]')!.click()
   })
-  await page.waitForTimeout(600) // 等级联动画完成（3 项最大 delay 60ms + 过渡）
+  // 等级联动画的真实信号：全部子动作有布局尺寸（transform 塌缩释放）且首个 opacity 过渡到 1
+  await expect
+    .poll(() =>
+      page.evaluate(() => {
+        const el = document.querySelector('#sd-event')!
+        const actions = [...el.shadowRoot!.querySelectorAll<HTMLElement>('[part="action"]')]
+        return (
+          el.hasAttribute('open') &&
+          actions.every((a) => {
+            const r = a.getBoundingClientRect()
+            return r.width > 0 && r.height > 0
+          }) &&
+          getComputedStyle(actions[0]!).opacity === '1'
+        )
+      }),
+    )
+    .toBe(true)
   const opened = await page.evaluate(() => {
     const el = document.querySelector('#sd-event') as HTMLElement & { __opens?: OpenLog[] }
     const fab = el.shadowRoot!.querySelector<HTMLElement>('[part="fab"]')!
@@ -63,7 +80,16 @@ test('speed-dial 点击主钮展开/收起：aria-expanded + .dial.open + 动作
     const el = document.querySelector('#sd-event')!
     el.shadowRoot!.querySelector<HTMLElement>('[part="fab"]')!.click()
   })
-  await page.waitForTimeout(600)
+  // 等收起过渡的真实信号：宿主 open 已移除且首个子动作 opacity 过渡回 0
+  await expect
+    .poll(() =>
+      page.evaluate(() => {
+        const el = document.querySelector('#sd-event')!
+        const first = el.shadowRoot!.querySelector<HTMLElement>('[part="action"]')!
+        return !el.hasAttribute('open') && getComputedStyle(first).opacity === '0'
+      }),
+    )
+    .toBe(true)
   const closed = await page.evaluate(() => {
     const el = document.querySelector('#sd-event') as HTMLElement & { __opens?: OpenLog[] }
     const fab = el.shadowRoot!.querySelector<HTMLElement>('[part="fab"]')!
@@ -90,7 +116,8 @@ test('speed-dial 点击主钮展开/收起：aria-expanded + .dial.open + 动作
 test('speed-dial 点击动作项：派发 oas-select { index, label } 并自动收起 + 反馈文本', async ({ page }) => {
   await page.goto(PAGE, { waitUntil: 'domcontentloaded' })
   await up(page, '#sd-event')
-  await page.waitForTimeout(300)
+  // demo 宿主挂事件监听的真实信号：#sd-out（与监听同一 Vue 模板 patch 挂载）
+  await expect(page.locator('#sd-out')).toBeAttached()
   await page.evaluate(() => {
     const el = document.querySelector('#sd-event') as HTMLElement & { __selects?: unknown[] }
     el.__selects = []
@@ -98,13 +125,23 @@ test('speed-dial 点击动作项：派发 oas-select { index, label } 并自动�
     // 先展开
     el.shadowRoot!.querySelector<HTMLElement>('[part="fab"]')!.click()
   })
-  await page.waitForTimeout(400)
+  // 等级联动画完成再点动作项：首个子动作 opacity 过渡到 1
+  await expect
+    .poll(() =>
+      page.evaluate(() => {
+        const el = document.querySelector('#sd-event')!
+        const a0 = el.shadowRoot!.querySelector<HTMLElement>('[part="action"]')!
+        return el.hasAttribute('open') && getComputedStyle(a0).opacity === '1'
+      }),
+    )
+    .toBe(true)
   // 点击第一个动作项「复制」
   await page.evaluate(() => {
     const el = document.querySelector('#sd-event')!
     el.shadowRoot!.querySelectorAll<HTMLElement>('[part="action"]')[0]!.click()
   })
-  await page.waitForTimeout(300)
+  // 等自动收起的真实信号：宿主 open 属性移除（select → 自动收起 → oas-open(false) 同步链完成）
+  await expect.poll(() => page.evaluate(() => !document.querySelector('#sd-event')!.hasAttribute('open'))).toBe(true)
   const r = await page.evaluate(() => {
     const el = document.querySelector('#sd-event') as HTMLElement & { __selects?: unknown[] }
     return {
@@ -132,12 +169,14 @@ test('speed-dial Esc 收起并回焦主按钮（reason: escape）', async ({ pag
   await page.locator('h1').first().scrollIntoViewIfNeeded()
   // 真实点击主钮展开（焦点落在主钮）
   await page.locator('#sd-event [part="fab"]').click()
-  await page.waitForTimeout(300)
+  // 展开为同步属性切换：等宿主带上 open 属性
+  await expect(page.locator('#sd-event')).toHaveAttribute('open')
   const before = await page.evaluate(() => document.querySelector('#sd-event')!.hasAttribute('open'))
   expect(before, '点击主钮应展开').toBe(true)
   // Esc 收起
   await page.keyboard.press('Escape')
-  await page.waitForTimeout(200)
+  // 收起为同步属性切换：等宿主 open 属性移除（焦点回移与反馈文本在同一同步链内完成）
+  await expect(page.locator('#sd-event')).not.toHaveAttribute('open')
   const after = await page.evaluate(() => {
     const el = document.querySelector('#sd-event')!
     return {
@@ -154,12 +193,14 @@ test('speed-dial Esc 收起并回焦主按钮（reason: escape）', async ({ pag
 test('speed-dial 点击外部收起（reason: outside），点击组件内部不收起', async ({ page }) => {
   await page.goto(PAGE, { waitUntil: 'domcontentloaded' })
   await up(page, '#sd-event')
-  await page.waitForTimeout(300)
+  // demo 宿主挂事件监听的真实信号：#sd-out（与监听同一 Vue 模板 patch 挂载）
+  await expect(page.locator('#sd-out')).toBeAttached()
   // 展开
   await page.evaluate(() => {
     document.querySelector('#sd-event')!.shadowRoot!.querySelector<HTMLElement>('[part="fab"]')!.click()
   })
-  await page.waitForTimeout(200)
+  // 展开为同步属性切换：等宿主带上 open 属性
+  await expect(page.locator('#sd-event')).toHaveAttribute('open')
   // 点击组件内部（.dial 容器）：不收起
   await page.evaluate(() => {
     document
@@ -175,7 +216,8 @@ test('speed-dial 点击外部收起（reason: outside），点击组件内部不
   await page.evaluate(() => {
     document.body.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }))
   })
-  await page.waitForTimeout(200)
+  // 外部点击收起为同步属性切换：等宿主 open 属性移除（反馈文本在同一同步链内更新）
+  await expect(page.locator('#sd-event')).not.toHaveAttribute('open')
   const after = await page.evaluate(() => ({
     open: document.querySelector('#sd-event')!.hasAttribute('open'),
     out: document.querySelector('#sd-out')!.textContent,
@@ -189,7 +231,17 @@ test('speed-dial 键盘导航：展开自动聚焦首项，ArrowDown/ArrowUp 循
   await up(page, '#sd-event')
   // 真实点击主钮展开 → 组件意图为自动聚焦首个子动作
   await page.locator('#sd-event [part="fab"]').click()
-  await page.waitForTimeout(400)
+  // 等自动聚焦的真实信号：焦点已落首项且其 visibility 为 visible（展开向无过渡延迟）
+  await expect
+    .poll(() =>
+      page.evaluate(() => {
+        const el = document.querySelector('#sd-event')!
+        const root = el.shadowRoot!
+        const a0 = root.querySelector('[part="action"]') as HTMLElement
+        return root.activeElement === a0 && getComputedStyle(a0).visibility === 'visible'
+      }),
+    )
+    .toBe(true)
   const focusState = await page.evaluate(() => {
     const el = document.querySelector('#sd-event')!
     const root = el.shadowRoot!
@@ -243,7 +295,7 @@ test('speed-dial RTL：收起态不可见面板不制造横向可滚动溢出（
       '.VPNavBar .menu,.VPNavBarMenu{display:none!important}.VPNavBar,.VPSidebar,.VPLocalNav,.VPPageNav,.VPDocAside,.VPDocFooter,.VPFooter{direction:ltr!important}'
     document.head.appendChild(s)
   })
-  await page.waitForTimeout(200)
+  // rtl 属性与样式注入同步生效；后续 evaluate 内部自带 double-rAF + whenDefined，布局刷新有真实信号
   const r = await page.evaluate(async () => {
     await customElements.whenDefined('oas-speed-dial')
     const el = document.createElement('oas-speed-dial')

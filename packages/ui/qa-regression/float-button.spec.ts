@@ -17,9 +17,18 @@ test('group 模式：点击主钮展开，子钮在主钮下方纵向可见（ex
   const main = group.locator('[part="btn"]')
   await main.click()
   await expect(group).toHaveAttribute('expanded', '', { timeout: 5000 })
-  // 等滑入过渡（--oas-transition-base）结束再量几何：属性翻转瞬间 .actions 仍处于
-  // 收起态 -8px 变换起点，立即测量会得到「子钮 top == 主钮 bottom」的假阴性
-  await page.waitForTimeout(300)
+  // 等滑入过渡（--oas-transition-base）的真实信号：全部子钮脱离收起态 -8px 变换起点
+  // （top 越过主钮 bottom 且有尺寸）。属性翻转瞬间仍在变换起点，立即测量会得到假阴性。
+  await expect
+    .poll(() =>
+      group.evaluate((el) => {
+        const root = el.shadowRoot!
+        const mainRect = root.querySelector('[part="btn"]')!.getBoundingClientRect()
+        const kids = [...el.querySelectorAll<HTMLElement>('[slot="action"]')].map((k) => k.getBoundingClientRect())
+        return kids.length >= 3 && kids.every((r) => r.width > 0 && r.height > 0 && r.top > mainRect.bottom)
+      }),
+    )
+    .toBe(true)
   // 子钮真实渲染且在主钮正下方（down 方向：首个子钮最靠近主钮）
   const geom = await group.evaluate((el) => {
     const root = el.shadowRoot!
@@ -60,15 +69,22 @@ test('group 展开事件反馈：点击主钮切换，oas-expand-change 有 mess
   )
   expect(msg).toContain('展开态：true')
   // 先收起 Demo A（Esc 也会触发其 onoas-expand-change 反馈），避免其外点收起污染后续计数
+  const msgCountBeforeEsc = await page.evaluate(() => document.querySelectorAll('oas-message').length)
   await page.keyboard.press('Escape')
-  await page.waitForTimeout(200)
+  // 收起反馈的真实信号：message 计数 +1（Esc 收起的 onoas-expand-change 反馈已出现）
+  await expect
+    .poll(() => page.evaluate(() => document.querySelectorAll('oas-message').length))
+    .toBe(msgCountBeforeEsc + 1)
   // Demo B：trigger=manual 受控——宿主切换 expanded 属性，组件不自切也不派发事件
   const host = page.locator('#fb-manual-demo')
   const before = await page.evaluate(() => document.querySelectorAll('oas-message').length)
   const toggle = page.getByRole('button', { name: '切换 expanded' })
   await toggle.click()
   await expect(host).toHaveAttribute('expanded', '', { timeout: 5000 })
-  await page.waitForTimeout(300)
+  // 若宿主直切错误派发了事件，message 会在属性翻转的同一同步链内出现——等展开态类就位后再计数
+  await expect
+    .poll(() => host.evaluate((el) => el.shadowRoot!.querySelector('[part="group"]')!.classList.contains('open')))
+    .toBe(true)
   const after = await page.evaluate(() => document.querySelectorAll('oas-message').length)
   expect(after, '宿主直切 expanded 不派发事件（无新 message）').toBe(before)
 })
@@ -175,7 +191,20 @@ test('group 展开自动聚焦首项：visibility 过渡不得吞焦点（speed-
   // 真实点击主钮展开：open 态 visibility 立即翻转（无过渡延迟），syncExpanded 展开帧
   // 聚焦首个子动作必须落在可见元素上——若回归为「过渡期末端才可见」，焦点会跌落 body
   await group.locator('[part="btn"]').click()
-  await page.waitForTimeout(120) // 过渡中段即断言：焦点应已就位
+  // 等焦点就位与首项可见的真实信号（回归点：若 visibility 过渡吞焦点，焦点跌落 body 且首项不可见）
+  await expect
+    .poll(() =>
+      page.evaluate(() => {
+        const el = document.querySelector('#fb-slot-demo')!
+        const root = el.shadowRoot!
+        const firstAction = el.querySelector('[slot="action"]') as HTMLElement | null
+        const fab = root.querySelector('[part="btn"]')
+        const firstVisible = firstAction ? getComputedStyle(firstAction).visibility === 'visible' : false
+        const inPanel = (!!firstAction && document.activeElement === firstAction) || document.activeElement === el
+        return firstVisible && inPanel
+      }),
+    )
+    .toBe(true)
   const state = await page.evaluate(() => {
     const el = document.querySelector('#fb-slot-demo')!
     const root = el.shadowRoot!
@@ -197,13 +226,18 @@ test('group 展开自动聚焦首项：visibility 过渡不得吞焦点（speed-
   // keydown 委托未按路径设守卫，会与逐钮直绑叠加，一次 ArrowDown 跳两步（本页 actions 路径已由
   // 专门的键盘用例断言单步，此处固化 slot 路径不退化为双触发）
   await page.keyboard.press('ArrowDown')
-  await page.waitForTimeout(200)
-  const focusedIdx = await page.evaluate(() => {
-    const el = document.querySelector('#fb-slot-demo')!
-    const kids = [...el.querySelectorAll('[slot="action"]')]
-    return kids.findIndex((k) => k === el.shadowRoot!.activeElement || k === document.activeElement)
-  })
-  expect(focusedIdx, 'slot 路径 ArrowDown 应单步到第 2 项（双触发会跳到第 3 项）').toBe(1)
+  // 单步焦点移动的真实信号：焦点索引到 1（双触发缺陷会直接跳到 2，该 poll 永不满足）
+  await expect
+    .poll(
+      () =>
+        page.evaluate(() => {
+          const el = document.querySelector('#fb-slot-demo')!
+          const kids = [...el.querySelectorAll('[slot="action"]')]
+          return kids.findIndex((k) => k === el.shadowRoot!.activeElement || k === document.activeElement)
+        }),
+      'slot 路径 ArrowDown 应单步到第 2 项（双触发会跳到第 3 项）',
+    )
+    .toBe(1)
 })
 
 test('demo 宿主不溢出 DemoBlock：relative 覆盖必须配 inset 中和宿主 bottom/right 悬浮偏移', async ({ page }) => {
@@ -248,20 +282,29 @@ test('拖拽跟手：absolute 定位（卡内 demo 容器）下按钮随指针 1
   const fab = page.locator('.demo-block__body oas-float-button[draggable]').first()
   await up(page, 'oas-float-button[draggable]')
   await fab.scrollIntoViewIfNeeded()
-  await page.waitForTimeout(600)
+  // 等页面滚动静默的真实信号：连续两次 boundingBox 一致（焦点滚动/惯性结束后坐标才可用）
+  let prevBox: { x: number; y: number } | null = null
+  await expect
+    .poll(async () => {
+      const b = (await fab.boundingBox())!
+      const stable = prevBox !== null && Math.abs(b.x - prevBox.x) < 0.5 && Math.abs(b.y - prevBox.y) < 0.5
+      prevBox = { x: b.x, y: b.y }
+      return stable
+    })
+    .toBe(true)
   const box = (await fab.boundingBox())!
   const cx = box.x + box.width / 2
   const cy = box.y + box.height / 2
   await page.mouse.move(cx, cy)
   await page.mouse.down()
-  await page.waitForTimeout(60) // 等 pointerdown 处理与指针捕获生效
+  // mouse.down 的 CDP 往返返回时 pointerdown 处理器已同步执行完（含 setPointerCapture）
   // 分步小位移（每步 10px）。每步用 evaluate 读取实际几何：headless 下输入事件需一次
   // 往返才驱动事件循环/渲染落定（仅 Node 侧 sleep 不足以让 pointermove 全量生效），
   // 同时该值即断言关心的渲染位置。
   let lastLeft = 0
   for (let i = 1; i <= 5; i++) {
     await page.mouse.move(cx - i * 10, cy, { steps: 1 })
-    await page.waitForTimeout(60)
+    // evaluate 往返即输入事件的落定信号：读取的 left 已含本步 pointermove 的同步样式写入
     lastLeft = await fab.evaluate((el) => el.getBoundingClientRect().left)
   }
   await page.mouse.up()
@@ -275,24 +318,43 @@ test('磁吸贴容器边缘：magnetic=x 松手吸附到 absolute 包含块（de
   const fab = page.locator('.demo-block__body oas-float-button[draggable][magnetic="x"]').first()
   await up(page, 'oas-float-button[draggable][magnetic="x"]')
   await fab.scrollIntoViewIfNeeded()
-  await page.waitForTimeout(600)
+  // 等页面滚动静默的真实信号：连续两次 boundingBox 一致（同拖拽跟手用例）
+  let prevBox: { x: number; y: number } | null = null
+  await expect
+    .poll(async () => {
+      const b = (await fab.boundingBox())!
+      const stable = prevBox !== null && Math.abs(b.x - prevBox.x) < 0.5 && Math.abs(b.y - prevBox.y) < 0.5
+      prevBox = { x: b.x, y: b.y }
+      return stable
+    })
+    .toBe(true)
   const box = (await fab.boundingBox())!
   const cx = box.x + box.width / 2
   const cy = box.y + box.height / 2
   await page.mouse.move(cx, cy)
   await page.mouse.down()
-  await page.waitForTimeout(60) // 等指针捕获生效
+  // mouse.down 的 CDP 往返返回时 pointerdown 处理器已同步执行完（含 setPointerCapture）
   // 向左拖少量后松手：按钮仍在容器右半边 → 磁吸应贴容器右缘（视口坐标系下会吸到错误边缘）。
   // 每步 evaluate 驱动事件循环落定（同跟手断言）。
   for (let i = 1; i <= 3; i++) {
     await page.mouse.move(cx - i * 10, cy, { steps: 1 })
-    await page.waitForTimeout(60)
     await fab.evaluate((el) => el.getBoundingClientRect().left)
   }
   await page.mouse.up()
-  await page.waitForTimeout(400) // 等磁吸过渡（--oas-transition-base）
-  // 吸附目标是 absolute 宿主所属的定位包含块（offsetParent = demo 内层 relative 容器）。
-  // 不能用 .demo-block__body：它自带 padding（space-5），与包含块差一圈 padding 距离。
+  // 等磁吸过渡（--oas-transition-base）的真实信号：与包含块边缘的缝隙收敛到贴合阈值内
+  await expect
+    .poll(async () => {
+      // 吸附目标是 absolute 宿主所属的定位包含块（offsetParent = demo 内层 relative 容器）。
+      // 不能用 .demo-block__body：它自带 padding（space-5），与包含块差一圈 padding 距离。
+      const gaps = await fab.evaluate((el) => {
+        const inner = (el as HTMLElement).offsetParent as HTMLElement | null
+        const r = el.getBoundingClientRect()
+        const c = inner!.getBoundingClientRect()
+        return { left: r.left - c.left, right: c.right - r.right }
+      })
+      return Math.min(Math.abs(gaps.left), Math.abs(gaps.right))
+    })
+    .toBeLessThan(3)
   const gaps = await fab.evaluate((el) => {
     const inner = (el as HTMLElement).offsetParent as HTMLElement | null
     const r = el.getBoundingClientRect()
@@ -316,7 +378,8 @@ test('group actions 自渲染子钮：背景色免疫宿主页 button{background
   const host = page.locator('#fb-actions-demo')
   await host.locator('[part="btn"]').click()
   await expect(host).toHaveAttribute('expanded', '', { timeout: 5000 })
-  await page.waitForTimeout(300) // 等滑入过渡落定
+  // 子钮渲染就绪的真实信号：3 个 .action-btn 全部出现
+  await expect.poll(() => host.evaluate((el) => el.shadowRoot!.querySelectorAll('.action-btn').length)).toBe(3)
   // 核心断言：vitepress 全局 button{background-color:transparent} 曾把 ::slotted 子钮背景覆盖成透明；
   // actions 通道子钮外壳在 shadow 内渲染，计算背景必须为 --oas-color-bg 实色（非透明）
   const bg = await host.evaluate((el) => {
@@ -350,21 +413,26 @@ test('group actions 气泡：hover 时 .bubble 可见（其余隐藏）且文本
   const host = page.locator('#fb-actions-demo')
   await host.locator('[part="btn"]').click()
   await expect(host).toHaveAttribute('expanded', '', { timeout: 5000 })
-  await page.waitForTimeout(300)
+  // 子钮渲染就绪的真实信号：3 个气泡全部出现
+  await expect.poll(() => host.evaluate((el) => el.shadowRoot!.querySelectorAll('.action-btn .bubble').length)).toBe(3)
   // 气泡文本 = label
   const labels = await host.evaluate((el) =>
     [...el.shadowRoot!.querySelectorAll<HTMLElement>('.action-btn .bubble')].map((b) => b.textContent),
   )
   expect(labels).toEqual(['编辑', '帮助文档', '消息'])
-  // hover 第 1 钮 → 其气泡可见、其余隐藏（visibility 过渡为离散插值，等过渡期结束再读）
+  // hover 第 1 钮 → 其气泡可见、其余隐藏（visibility 过渡为离散插值，轮询至终态）
   await host.locator('.action-btn').first().hover()
-  await page.waitForTimeout(400)
-  const vis = await host.evaluate((el) =>
-    [...el.shadowRoot!.querySelectorAll<HTMLElement>('.action-btn')].map(
-      (b) => getComputedStyle(b.querySelector('.bubble')!).visibility,
-    ),
-  )
-  expect(vis, 'hover 第 1 钮：仅其气泡可见').toEqual(['visible', 'hidden', 'hidden'])
+  await expect
+    .poll(
+      () =>
+        host.evaluate((el) =>
+          [...el.shadowRoot!.querySelectorAll<HTMLElement>('.action-btn')].map(
+            (b) => getComputedStyle(b.querySelector('.bubble')!).visibility,
+          ),
+        ),
+      'hover 第 1 钮：仅其气泡可见',
+    )
+    .toEqual(['visible', 'hidden', 'hidden'])
 })
 
 test('group actions 键盘：展开自动聚焦首项，方向键移动（气泡 focus-visible 可见），Esc 收起回焦主钮', async ({
@@ -375,13 +443,29 @@ test('group actions 键盘：展开自动聚焦首项，方向键移动（气泡
   const host = page.locator('#fb-actions-demo')
   await host.locator('[part="btn"]').click()
   await expect(host).toHaveAttribute('expanded', '', { timeout: 5000 })
-  await page.waitForTimeout(350)
-  // 展开自动聚焦首项（shadow 内 .action-btn）
+  // 展开自动聚焦首项的真实信号：shadow activeElement 落在 .action-btn 上
+  await expect
+    .poll(
+      () => host.evaluate((el) => el.shadowRoot!.activeElement?.classList.contains('action-btn') === true),
+      '展开后焦点应落在首个自渲染子钮',
+    )
+    .toBe(true)
   const firstFocused = await host.evaluate((el) => el.shadowRoot!.activeElement?.classList.contains('action-btn'))
   expect(firstFocused, '展开后焦点应落在首个自渲染子钮').toBe(true)
   // 真实键盘 ArrowDown → 焦点到第 2 项；键盘引发的聚焦必匹配 :focus-visible → 气泡可见
   await page.keyboard.press('ArrowDown')
-  await page.waitForTimeout(400)
+  // 真实信号：焦点索引到 1 且第 2 项气泡 visibility 过渡到 visible（起始帧仍为 hidden，须并入等待）
+  await expect
+    .poll(() =>
+      host.evaluate((el) => {
+        const items = [...el.shadowRoot!.querySelectorAll<HTMLElement>('.action-btn')]
+        return {
+          focusIdx: items.findIndex((b) => b === el.shadowRoot!.activeElement),
+          secondBubble: getComputedStyle(items[1]!.querySelector('.bubble')!).visibility,
+        }
+      }),
+    )
+    .toEqual({ focusIdx: 1, secondBubble: 'visible' })
   const second = await host.evaluate((el) => {
     const items = [...el.shadowRoot!.querySelectorAll<HTMLElement>('.action-btn')]
     return {
@@ -406,7 +490,8 @@ test('group actions RTL：dir=rtl 下纵向气泡镜像到书写方向另一侧�
   const host = page.locator('#fb-actions-demo')
   await host.locator('[part="btn"]').click()
   await expect(host).toHaveAttribute('expanded', '', { timeout: 5000 })
-  await page.waitForTimeout(300)
+  // 气泡相对自身子钮的横向关系在容器过渡（纵向位移）下不变、visibility:hidden 保留布局，
+  // 几何可直接测量，无需等过渡落定
   // LTR：纵向展开气泡在子钮书写终点侧（右）；visibility:hidden 保留布局可直接量几何
   const ltr = await host.evaluate((el) => {
     const btn = el.shadowRoot!.querySelector<HTMLElement>('.action-btn')!

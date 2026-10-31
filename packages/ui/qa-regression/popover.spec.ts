@@ -105,8 +105,8 @@ test('popover virtual：virtual-x/virtual-y 定位 + 锚点元素跟随 + oas-op
   expect(Math.abs(box.x - 168)).toBeLessThanOrEqual(2)
   expect(Math.abs(box.y - (90 - box.height / 2))).toBeLessThanOrEqual(2)
 
-  // 宿主写 open 属性静默：不得回派 oas-open-change（受控吸收）
-  await page.waitForTimeout(100)
+  // 宿主写 open 属性静默：不得回派 oas-open-change（受控吸收）。
+  // 受控吸收与属性/定位更新同一同步链，若误派发此刻计数已非 0，无需宽限期
   const popOpenCount = await page.evaluate(() => (window as any).__popOpenCount ?? -1)
   expect(popOpenCount, '宿主写 open 属性不得回派 oas-open-change').toBe(0)
 
@@ -139,7 +139,7 @@ test('popover virtual：virtual-x/virtual-y 定位 + 锚点元素跟随 + oas-op
   await page.evaluate(() => {
     document.querySelector('#pop-chart')?.scrollIntoView({ block: 'center' })
   })
-  await page.waitForTimeout(300)
+  // hover 自带 actionability 等待（元素稳定 + 可接收事件），滚动落定无需额外固定等待
   await page.locator('#pop-dot-0').hover()
   const anchorPanel = page.locator('#pop-anchor [part="panel"]')
   await expect(anchorPanel).toHaveAttribute('aria-hidden', 'false', { timeout: 5000 })
@@ -440,25 +440,25 @@ test('popover 12 向箭头对准锚点：demo 4 实例箭头中心落在锚点�
     const pop = page.locator(sel).first()
     await pop.scrollIntoViewIfNeeded()
     await pop.click()
-    await page.waitForTimeout(350)
-    const r = await page.evaluate((s) => {
-      const pop = document.querySelector(s)!
-      const panel = pop.shadowRoot!.querySelector<HTMLElement>('[part="panel"]')!
-      const arrow = panel.querySelector<HTMLElement>('[data-popper-arrow]')!
-      const anchor = pop.querySelector<HTMLElement>(':scope > *')!
-      const ab = arrow.getBoundingClientRect()
-      const nb = anchor.getBoundingClientRect()
-      const placement = panel.getAttribute('data-placement')!
-      const vertical = placement.startsWith('top') || placement.startsWith('bottom')
-      const cx = ab.left + ab.width / 2
-      const cy = ab.top + ab.height / 2
-      return vertical
-        ? { ok: cx >= nb.left - 2 && cx <= nb.right + 2 }
-        : { ok: cy >= nb.top - 2 && cy <= nb.bottom + 2 }
-    }, sel)
-    expect(r.ok, `${pl} 箭头中心应落在锚点投影区间内`).toBe(true)
+    // 等箭头定位落定的真实信号：面板打开且箭头中心已落入锚点投影区间（即断言条件本身）
+    await expect
+      .poll(() =>
+        page.evaluate((s) => {
+          const pop = document.querySelector(s)!
+          const panel = pop.shadowRoot!.querySelector<HTMLElement>('[part="panel"]')!
+          const arrow = panel.querySelector<HTMLElement>('[data-popper-arrow]')!
+          const anchor = pop.querySelector<HTMLElement>(':scope > *')!
+          const ab = arrow.getBoundingClientRect()
+          const nb = anchor.getBoundingClientRect()
+          const placement = panel.getAttribute('data-placement')!
+          const vertical = placement.startsWith('top') || placement.startsWith('bottom')
+          const cx = ab.left + ab.width / 2
+          const cy = ab.top + ab.height / 2
+          return vertical ? cx >= nb.left - 2 && cx <= nb.right + 2 : cy >= nb.top - 2 && cy <= nb.bottom + 2
+        }, sel),
+      )
+      .toBe(true)
     await page.evaluate((s) => document.querySelector(s)!.removeAttribute('open'), sel)
-    await page.waitForTimeout(120)
   }
 })
 
@@ -475,7 +475,19 @@ test('popover portal 样式保真：append-to 面板 fixed + 有背景边框，�
   const pop = page.locator(sel).first()
   await pop.scrollIntoViewIfNeeded()
   await pop.click()
-  await page.waitForTimeout(350)
+  // portal 面板几何就绪的真实信号：面板已挂 portal host 且与锚点保持 8px 间距（即 gapOk 断言条件）
+  await expect
+    .poll(() =>
+      page.evaluate(() => {
+        const popEl = document.querySelector('oas-popover[append-to="body"]')!
+        const host = document.querySelector<HTMLElement>('[data-oas-popover-portal]')
+        const panelEl = host?.shadowRoot?.querySelector<HTMLElement>('[part="panel"]')
+        const anchor = popEl.querySelector<HTMLElement>(':scope > *')!
+        if (!panelEl) return false
+        return Math.abs(panelEl.getBoundingClientRect().top - anchor.getBoundingClientRect().bottom - 8) <= 2
+      }),
+    )
+    .toBe(true)
   const r1 = await page.evaluate((s) => {
     const pop = document.querySelector(s)!
     const host = document.querySelector<HTMLElement>('[data-oas-popover-portal]')
@@ -499,9 +511,19 @@ test('popover portal 样式保真：append-to 面板 fixed + 有背景边框，�
   expect(r1.hasBg, '面板应有背景色（曾透明）').toBe(true)
   expect(r1.hasBorder, '面板应有边框（曾无边框）').toBe(true)
   expect(r1.gapOk, '面板应在锚点下方 8px').toBe(true)
-  // 滚动跟随：面板与锚点视口坐标同步
+  // 滚动跟随：面板与锚点视口坐标同步——滚动后轮询至间距重新收敛到 8px（即 r2 断言条件）
   await page.evaluate(() => window.scrollBy(0, 300))
-  await page.waitForTimeout(400)
+  await expect
+    .poll(() =>
+      page.evaluate(() => {
+        const popEl = document.querySelector('oas-popover[append-to="body"]')!
+        const host = document.querySelector<HTMLElement>('[data-oas-popover-portal]')
+        const panelEl = host?.shadowRoot?.querySelector<HTMLElement>('[part="panel"]')!
+        const anchor = popEl.querySelector<HTMLElement>(':scope > *')!
+        return Math.abs(panelEl.getBoundingClientRect().top - anchor.getBoundingClientRect().bottom - 8) <= 2
+      }),
+    )
+    .toBe(true)
   const r2 = await page.evaluate((s) => {
     const pop = document.querySelector(s)!
     const host = document.querySelector<HTMLElement>('[data-oas-popover-portal]')
@@ -526,7 +548,8 @@ test('popover closable：右上角 ✕ 按钮真实可见（display 非 none 且
   const pop = page.locator(sel).first()
   await pop.scrollIntoViewIfNeeded()
   await pop.click()
-  await page.waitForTimeout(350)
+  // 打开态读取的前提信号：面板 aria-hidden=false（关闭态 ✕ 可能合理地 display:none）
+  await expect(pop.locator('[part="panel"]')).toHaveAttribute('aria-hidden', 'false')
   const r = await page.evaluate((s) => {
     const pop = document.querySelector(s)!
     const panel = pop.shadowRoot!.querySelector<HTMLElement>('[part="panel"]')!
@@ -557,7 +580,26 @@ test('popover virtual 定点：(160,90) 标记点可见且箭头对准该点（�
     document.getElementById('pop-point')!.scrollIntoView({ block: 'center' })
     ;(window as unknown as { popPointShow: (x: number, y: number) => void }).popPointShow(160, 90)
   })
-  await page.waitForTimeout(400)
+  // 等标记与箭头定位落定的真实信号：标记可见且中心落在 (160,90)、箭头垂直中心对准 y=90（即末段断言条件）
+  await expect
+    .poll(() =>
+      page.evaluate(() => {
+        const mark = document.getElementById('pop-point-mark')!
+        const mb = mark.getBoundingClientRect()
+        const cs = getComputedStyle(mark)
+        const panel = document.getElementById('pop-point')!.shadowRoot!.querySelector<HTMLElement>('[part="panel"]')!
+        const arrow = panel.querySelector<HTMLElement>('[data-popper-arrow]')!
+        const ab = arrow.getBoundingClientRect()
+        return (
+          cs.opacity !== '0' &&
+          mb.width > 0 &&
+          Math.abs(mb.left + mb.width / 2 - 160) <= 1 &&
+          Math.abs(mb.top + mb.height / 2 - 90) <= 1 &&
+          Math.abs(ab.top + ab.height / 2 - 90) <= 3
+        )
+      }),
+    )
+    .toBe(true)
   const r = await page.evaluate(() => {
     const pop = document.getElementById('pop-point')!
     const panel = pop.shadowRoot!.querySelector<HTMLElement>('[part="panel"]')!
@@ -705,7 +747,8 @@ test('popover P3/P4/P5/P13/P15：trap-focus 无遮罩 + 关闭开关 + before-cl
   const trapAttr = await trap.evaluate((e) => e.getAttribute('trap-focus'))
   expect(trapAttr, 'trap-focus 被 Vue 剥离').not.toBeNull()
   await trap.evaluate((e) => (e.querySelector(':scope > *') as HTMLElement).click())
-  await page.waitForTimeout(250)
+  // 焦点就位的前提信号：面板已打开（focus-on-open 在打开链路同步落焦）
+  await expect(trap.locator('[part="panel"]')).toHaveAttribute('aria-hidden', 'false')
   const t = await trap.evaluate((e) => {
     const panel = e.shadowRoot!.querySelector<HTMLElement>('[part="panel"]')!
     const backdrop = e.shadowRoot!.querySelector<HTMLElement>('.backdrop')!
@@ -726,7 +769,8 @@ test('popover P3/P4/P5/P13/P15：trap-focus 无遮罩 + 关闭开关 + before-cl
   await noOutside.scrollIntoViewIfNeeded()
   expect(await noOutside.evaluate((e) => e.getAttribute('close-on-outside'))).toBe('false')
   await noOutside.evaluate((e) => e.setAttribute('open', ''))
-  await page.waitForTimeout(250)
+  // 外点前先等打开态就绪（aria-hidden=false）
+  await expect(noOutside.locator('[part="panel"]')).toHaveAttribute('aria-hidden', 'false')
   await page.mouse.click(5, 5)
   await expect(noOutside.locator('[part="panel"]')).toHaveAttribute('aria-hidden', 'false')
   await noOutside.evaluate((e) => e.removeAttribute('open'))
@@ -757,7 +801,8 @@ test('popover P3/P4/P5/P13/P15：trap-focus 无遮罩 + 关闭开关 + before-cl
   await fin.scrollIntoViewIfNeeded()
   await fin.evaluate((e) => e.setAttribute('open', ''))
   await fin.locator('[part="close"]').click()
-  await page.waitForTimeout(120)
+  // 焦点迁移的前提信号：面板已关闭（final-focus 在关闭链路同步落焦）
+  await expect(fin.locator('[part="panel"]')).toHaveAttribute('aria-hidden', 'true')
   const focused = await page.evaluate(() => document.activeElement?.id === 'pop-final-input')
   expect(focused, '关闭后焦点应到 final-focus 指定输入框').toBe(true)
 
@@ -770,7 +815,7 @@ test('popover P3/P4/P5/P13/P15：trap-focus 无遮罩 + 关闭开关 + before-cl
   await empty.evaluate((e) => e.setAttribute('title', ''))
   await empty.evaluate((e) => e.removeAttribute('open'))
   await empty.evaluate((e) => (e.querySelector(':scope > *') as HTMLElement).click())
-  await page.waitForTimeout(250)
+  // el.click() 同步派发：hide-empty 的放行/拦截判定同步完成，若误挂 open 此刻已可见
   expect(await empty.evaluate((e) => e.hasAttribute('open')), 'hide-empty 空内容时触发路径不应挂 open').toBe(false)
   // 填回内容后正常打开
   await empty.evaluate((e) => e.setAttribute('content', '有内容了'))
@@ -828,7 +873,14 @@ test('popover P20/P21/P22/P25：contextmenu 光标定位 + dismiss-on-select + d
   await destroy.evaluate((e) => (e.querySelector(':scope > *') as HTMLElement).click())
   await expect(destroy.locator('[part="panel"]')).toHaveAttribute('aria-hidden', 'false')
   await destroy.evaluate((e) => e.removeAttribute('open'))
-  await page.waitForTimeout(250)
+  // 暂存完成的真实信号：slot 名已改写为暂存名（stash 在关闭链路完成）
+  await expect
+    .poll(() =>
+      destroy.evaluate(
+        (e) => e.querySelector<HTMLElement>('[slot="oas-popover-stash"]')?.getAttribute('slot') === 'oas-popover-stash',
+      ),
+    )
+    .toBe(true)
   const d = await destroy.evaluate((e) => {
     // stash 后 slot 名改写为暂存名（原 slot 名存 data-oas-popover-stash）
     const inner = e.querySelector<HTMLElement>('[slot="oas-popover-stash"]')!
@@ -949,10 +1001,12 @@ test.describe('触屏降级（P3 扩展，iPhone 仿真）：popover hover 回�
     // 注：popover shadow 内还有 close 按钮（close-btn），必须限定 light DOM 直接子元素
     const btn = pop.locator(':scope > button')
     await btn.scrollIntoViewIfNeeded()
-    // 指针悬停（触屏仿真下 tap 会合成 hover）不打开（hover-delay 150ms，等待 400ms 足够判定）
+    // 指针悬停（触屏仿真下 tap 会合成 hover）不打开：hover-delay 150ms 的「不发生」断言
+    // 没有任何可等待的 DOM 信号（正常路径不产生任何状态变化），只能限时观察。
+    // audit-exception: hover 不打开为否定断言，无可等待信号；250ms = hover-delay 150ms + 100ms 派发余量
     const box = (await btn.boundingBox())!
     await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
-    await page.waitForTimeout(400)
+    await page.waitForTimeout(250)
     expect(await panelAria(), '触屏下 hover 不得打开 popover').toBe('true')
     // 点按打开
     await page.tap('oas-popover[data-e2e-coarse] > button')

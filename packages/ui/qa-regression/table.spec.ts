@@ -38,7 +38,19 @@ test('table SPA 导航后数据不丢（Vue property 赋值反射到 attribute�
   })
   await page.waitForURL('**/components/table')
   await page.waitForSelector('oas-table', { timeout: 10000 })
-  await page.waitForTimeout(800)
+  // 数据行渲染完成的真实信号：非空 data 的表格都已渲染出行（即本用例断言条件本身）
+  await expect
+    .poll(() =>
+      page.evaluate(() => {
+        const r = [...document.querySelectorAll('oas-table')].map((t) => ({
+          rows: t.shadowRoot?.querySelectorAll('tbody tr').length ?? -1,
+          dataLen: t.getAttribute('data')?.length ?? 0,
+        }))
+        const nonEmpty = r.filter((t) => t.dataLen > 2)
+        return nonEmpty.length > 5 && nonEmpty.every((t) => t.rows > 0)
+      }),
+    )
+    .toBe(true)
   const r = await page.evaluate(() =>
     [...document.querySelectorAll('oas-table')].map((t) => ({
       rows: t.shadowRoot?.querySelectorAll('tbody tr').length ?? -1,
@@ -123,7 +135,12 @@ test('table 行内编辑：真实双击进入编辑（真实 dblclick，非 disp
   await page.locator('#table-edit').first().scrollIntoViewIfNeeded()
   const cell = page.locator('#table-edit td.editable-cell').first()
   await cell.dblclick()
-  await page.waitForTimeout(300)
+  // 编辑器就绪的真实信号：input.cell-editor 出现（与组件自身异步渲染解耦）
+  await page.waitForFunction(
+    () => !!document.querySelector('#table-edit')!.shadowRoot!.querySelector('input.cell-editor'),
+    null,
+    { timeout: 5000 },
+  )
   const hasEditor = await page.evaluate(
     () => !!document.querySelector('#table-edit')!.shadowRoot!.querySelector('input.cell-editor'),
   )
@@ -151,18 +168,34 @@ test('table 行内编辑几何稳定：进/出编辑列宽与行高零跳变（i
   // input 编辑器（首个可编辑单元格）
   const inputCell = page.locator('#table-edit tbody tr.row').first().locator('td.editable-cell').first()
   await inputCell.dblclick()
-  await page.waitForTimeout(300)
+  // 编辑器就绪的真实信号：.cell-editor（input/select 通用类）出现
+  await page.waitForFunction(
+    () => !!document.querySelector('#table-edit')!.shadowRoot!.querySelector('.cell-editor'),
+    null,
+    { timeout: 5000 },
+  )
   const inEdit = await measure()
   expect(inEdit.cols, 'input 编辑中列宽应零跳变').toEqual(base.cols)
   expect(inEdit.rowH, 'input 编辑中行高应零跳变').toBe(base.rowH)
   await page.keyboard.press('Escape')
-  await page.waitForTimeout(300)
+  // 编辑器退出的真实信号：.cell-editor 移除（几何量测须在退出后）
+  await page.waitForFunction(
+    () => !document.querySelector('#table-edit')!.shadowRoot!.querySelector('.cell-editor'),
+    null,
+    {
+      timeout: 5000,
+    },
+  )
   expect((await measure()).cols, '退出编辑列宽应还原').toEqual(base.cols)
 
   // select 编辑器（职位列）
   const selectCell = page.locator('#table-edit tbody tr.row').first().locator('td.editable-cell[data-col="position"]')
   await selectCell.dblclick()
-  await page.waitForTimeout(300)
+  await page.waitForFunction(
+    () => !!document.querySelector('#table-edit')!.shadowRoot!.querySelector('.cell-editor'),
+    null,
+    { timeout: 5000 },
+  )
   const inSelect = await measure()
   expect(inSelect.cols, 'select 编辑中列宽应零跳变').toEqual(base.cols)
   expect(inSelect.rowH, 'select 编辑中行高应零跳变').toBe(base.rowH)
@@ -184,7 +217,10 @@ test('table 可编辑单元格可感知线索：hover 淡底色 + text 光标 + 
   expect(before.cursor, '可编辑单元格应为 text 光标').toBe('text')
   expect(before.iconOpacity, '常态下铅笔图标应隐藏（opacity 0）').toBe('0')
   await cell.hover()
-  await page.waitForTimeout(300) // 图标 opacity 过渡 0.15s
+  // 图标淡入完成的真实信号：opacity 过渡到 1（过渡 0.15s）
+  await expect
+    .poll(() => cell.evaluate((td) => getComputedStyle(td.querySelector<HTMLElement>('.cell-edit-icon')!).opacity))
+    .toBe('1')
   const after = await cell.evaluate((td) => {
     const icon = td.querySelector<HTMLElement>('.cell-edit-icon')!
     return {
@@ -367,7 +403,18 @@ test('table 单元格模板 cellTemplate：property 通道注入的模板渲染�
   // whenDefined 后赋值防升级前 expando 遮蔽）。本断言锁定模板列真实渲染（含插值与样式标记）。
   await page.goto('/components/table.html', { waitUntil: 'domcontentloaded' })
   await up(page, '#cell-tpl-table')
-  await page.waitForTimeout(300)
+  // 模板列渲染完成的真实信号：首行姓名/价格单元格有内容且带模板标记（即末段断言条件）
+  await expect
+    .poll(() =>
+      page.evaluate(() => {
+        const table = document.querySelector('#cell-tpl-table')!
+        const row = table.shadowRoot!.querySelector('tbody tr.row')
+        if (!row) return false
+        const tds = [...row.querySelectorAll('td')]
+        return tds.length >= 3 && tds[0]!.textContent!.trim() !== '' && !!tds[0]!.querySelector('span, b')
+      }),
+    )
+    .toBe(true)
   const cells = await page.evaluate(() => {
     const table = document.querySelector('#cell-tpl-table')!
     const row = table.shadowRoot!.querySelector('tbody tr.row')!
@@ -476,7 +523,20 @@ test('table 行内 oas-button 点击不连带 oas-row-click（宿主无 role，�
     const t = document.querySelector('#qa-inline-oas-button')
     return (t?.shadowRoot?.querySelectorAll('tbody tr').length ?? 0) > 0
   })
-  await page.waitForTimeout(300)
+  // 等渲染稳定的真实信号：tbody 快照连续两次一致（locale/水合晚期的 update 重建不再发生），
+  // 随后注入不再被插针冲掉
+  let prevTbodyKey: string | null = null
+  await expect
+    .poll(async () => {
+      const key = await page.evaluate(() => {
+        const t = document.querySelector('#qa-inline-oas-button')
+        return `${t?.shadowRoot?.querySelectorAll('tbody tr').length ?? 0}:${t?.shadowRoot?.querySelector('tbody')?.innerHTML.length ?? 0}`
+      })
+      const stable = key !== '0:0' && key === prevTbodyKey
+      prevTbodyKey = key
+      return stable
+    })
+    .toBe(true)
   await page.evaluate(() => {
     const t = document.querySelector<HTMLElement>('#qa-inline-oas-button')!
     const btn = document.createElement('oas-button')
@@ -488,7 +548,7 @@ test('table 行内 oas-button 点击不连带 oas-row-click（宿主无 role，�
   })
   // 点行内 oas-button：自身 oas-click 应触发，但不得连带 oas-row-click / 行选中重建
   await page.locator('#qa-inline-oas-button td[data-col="op"] oas-button').click()
-  await page.waitForTimeout(200)
+  // 事件派发与（若缺陷复发的）行重建均为同步链：立即读取即可判定，无需宽限期
   const r1 = await page.evaluate(() => {
     const t = document.querySelector<HTMLElement>('#qa-inline-oas-button')!
     return {
@@ -502,7 +562,6 @@ test('table 行内 oas-button 点击不连带 oas-row-click（宿主无 role，�
   expect(r1.hasBtn, 'oas-button 点击不应触发行选中重建（按钮应仍在原格）').toBe(true)
   // 对照：普通文本单元格点击仍派发 oas-row-click（排除未误伤正常行点击）
   await page.locator('#qa-inline-oas-button td[data-col="name"]').click()
-  await page.waitForTimeout(200)
   const r2 = await page.evaluate(() => {
     const t = document.querySelector<HTMLElement>('#qa-inline-oas-button')!
     const v = Number(t.dataset.rowClick ?? '0')
@@ -550,7 +609,19 @@ test('table 逃生口：data-oas-row-click-ignore 容器内点击不连带 oas-r
     const t = document.querySelector('#qa-row-ignore-escape')
     return (t?.shadowRoot?.querySelectorAll('tbody tr').length ?? 0) > 0
   })
-  await page.waitForTimeout(300)
+  // 等渲染稳定的真实信号：tbody 快照连续两次一致（update 重建不再发生，注入不被插针冲掉）
+  let prevTbodyKey: string | null = null
+  await expect
+    .poll(async () => {
+      const key = await page.evaluate(() => {
+        const t = document.querySelector('#qa-row-ignore-escape')
+        return `${t?.shadowRoot?.querySelectorAll('tbody tr').length ?? 0}:${t?.shadowRoot?.querySelector('tbody')?.innerHTML.length ?? 0}`
+      })
+      const stable = key !== '0:0' && key === prevTbodyKey
+      prevTbodyKey = key
+      return stable
+    })
+    .toBe(true)
   await page.evaluate(() => {
     const t = document.querySelector('#qa-row-ignore-escape')!
     const td = t.shadowRoot!.querySelector('td[data-col="op"]')!
@@ -563,7 +634,7 @@ test('table 逃生口：data-oas-row-click-ignore 容器内点击不连带 oas-r
     // 同一 JS 回合内注入并点击（同步任务，update 无法插针）
     inner.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }))
   })
-  await page.waitForTimeout(200)
+  // 同步派发：豁免判定与（若缺陷复发的）行点击均为同步链，立即读取
   const r1 = await page.evaluate(() => {
     const t = document.querySelector<HTMLElement>('#qa-row-ignore-escape')!
     return {
@@ -580,7 +651,6 @@ test('table 逃生口：data-oas-row-click-ignore 容器内点击不连带 oas-r
       .shadowRoot!.querySelector('td[data-col="name"]')!
     td.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }))
   })
-  await page.waitForTimeout(200)
   const r2 = await page.evaluate(() => {
     const t = document.querySelector<HTMLElement>('#qa-row-ignore-escape')!
     const v = Number(t.dataset.rowClick ?? '0')
@@ -641,7 +711,7 @@ test('table 可编辑格内 oas-button 双击不进入编辑（编辑路径排�
   )
   // 真实双击可编辑格内 oas-button：按钮连点不得判为「双击编辑」
   await page.locator('#qa-edit-inline-oas-button td[data-col="name"] oas-button').dblclick()
-  await page.waitForTimeout(300)
+  // 若缺陷复发，编辑器会在双击链的同步处理器内打开：立即读取即可判定
   const afterBtn = await page.evaluate(() => {
     const t = document.querySelector<HTMLElement>('#qa-edit-inline-oas-button')!
     return {
@@ -835,7 +905,10 @@ test('table 行单选（checkable="radio"）：真实点击互斥 + 再点已选
   })
   const radios = page.locator('#qa-radio-select .check-cell input[type="radio"]')
   await radios.nth(0).click()
-  await page.waitForTimeout(150)
+  // 选中写回的真实信号：selected 属性已落到目标值（受控写回与 checked 同步链）
+  await expect
+    .poll(() => page.evaluate(() => document.querySelector('#qa-radio-select')!.getAttribute('selected')))
+    .toBe('张三')
   const afterFirst = await page.evaluate(() => {
     const t = document.querySelector('#qa-radio-select')!
     return {
@@ -851,7 +924,22 @@ test('table 行单选（checkable="radio"）：真实点击互斥 + 再点已选
   expect(afterFirst.headerInput, '单选档表头不应有全选框').toBe(false)
   // 点第二行：互斥切换
   await radios.nth(1).click()
-  await page.waitForTimeout(150)
+  await expect
+    .poll(() => page.evaluate(() => document.querySelector('#qa-radio-select')!.getAttribute('selected')))
+    .toBe('李四')
+  // 选中切换会触发 tbody 重建：连续两次快照一致（重建落定）后再点已选行，避免点击落在重建窗口内被吞
+  let prevRadioTbodyKey: string | null = null
+  await expect
+    .poll(async () => {
+      const key = await page.evaluate(() => {
+        const t = document.querySelector('#qa-radio-select')!
+        return `${t.shadowRoot!.querySelectorAll('tbody tr').length}:${t.shadowRoot!.querySelector('tbody')!.innerHTML.length}`
+      })
+      const stable = key === prevRadioTbodyKey
+      prevRadioTbodyKey = key
+      return stable
+    })
+    .toBe(true)
   const afterSecond = await page.evaluate(() => {
     const t = document.querySelector('#qa-radio-select')!
     return {
@@ -865,7 +953,10 @@ test('table 行单选（checkable="radio"）：真实点击互斥 + 再点已选
   expect(afterSecond.checked).toEqual([false, true])
   // 再点已选行：取消选中
   await radios.nth(1).click()
-  await page.waitForTimeout(150)
+  // 取消写回的真实信号：selected 值清空（移除或置空串，与末段断言同口径）
+  await expect
+    .poll(() => page.evaluate(() => document.querySelector('#qa-radio-select')?.getAttribute('selected') ?? ''))
+    .toBe('')
   const afterDeselect = await page.evaluate(() => {
     const t = document.querySelector('#qa-radio-select')!
     const v = {
@@ -955,7 +1046,12 @@ test('table 过滤面板：打开后定位夹取在视口内（floating 引擎�
     cols[0] = { ...cols[0], filterable: true }
     el.setAttribute('columns', JSON.stringify(cols))
   })
-  await page.waitForTimeout(200)
+  // filter 按钮注入完成的真实信号：.filter-btn 出现
+  await page.waitForFunction(
+    () => !!document.querySelector('oas-table')?.shadowRoot?.querySelector('th[data-key] .filter-btn'),
+    null,
+    { timeout: 5000 },
+  )
   await page.evaluate(() => {
     const el = document.querySelector('oas-table')!
     const btn = el.shadowRoot!.querySelector<HTMLElement>('th[data-key] .filter-btn')!
@@ -1076,7 +1172,7 @@ test('table P2 批：cell-click/row-dblclick 事件反馈可见 + row-expandable
     td.appendChild(btn)
     btn.click()
   })
-  await page.waitForTimeout(300)
+  // 同步派发：排除判定（若缺陷复发的 cell-click）为同步链，立即读取
   expect(await page.textContent('#table-cell-feedback')).toBe(before)
 })
 
@@ -1225,7 +1321,12 @@ test('table 网格导航 × 行/格手势：grid-navigation 开启时点行/点�
   )
   // 真鼠标点格：行点击（选中 + oas-row-click）与 oas-cell-click 都应生效
   await page.locator('#qa-grid-nav-clicks td[data-col="age"]').first().click()
-  await page.waitForTimeout(150)
+  // 事件落地的真实信号：row-click 计数到 1（cell-click 与选中写回同一同步链）
+  await expect
+    .poll(() =>
+      page.evaluate(() => Number(document.querySelector<HTMLElement>('#qa-grid-nav-clicks')?.dataset.rowClick ?? '0')),
+    )
+    .toBe(1)
   const r1 = await page.evaluate(() => {
     const t = document.querySelector<HTMLElement>('#qa-grid-nav-clicks')!
     const row = t.shadowRoot!.querySelector('tbody tr[data-key="张三"]')
@@ -1257,7 +1358,7 @@ test('table 网格导航 × 行/格手势：grid-navigation 开启时点行/点�
   })
   await page.locator('#qa-grid-nav-clicks #qa-grid-nav-inline-btn').click()
   await page.locator('#qa-grid-nav-clicks #qa-grid-nav-inline-input').click()
-  await page.waitForTimeout(150)
+  // 同步链：豁免判定（若缺陷复发的行/格连带）立即反映，无需宽限期
   const r2 = await page.evaluate(() => {
     const t = document.querySelector<HTMLElement>('#qa-grid-nav-clicks')!
     const row = t.shadowRoot!.querySelector('tbody tr[data-key="李四"]')
@@ -1638,7 +1739,14 @@ test('table 子元素通道 + 列内模板 + 真实列宽拖拽：不崩表（�
     document.body.appendChild(host)
   })
   await page.waitForSelector('#tbl-child-tpl', { state: 'attached' })
-  await page.waitForTimeout(400)
+  // 模板列渲染完成的真实信号：姓名列 strong 已挂（hydrate 完成后才做拖拽）
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () => !!document.querySelector('#tbl-child-tpl')?.shadowRoot?.querySelector('td[data-col="name"] strong'),
+      ),
+    )
+    .toBe(true)
   // 真实列宽拖拽：th 右缘热区 pointerdown → move → up（走列设置控制器完整链路）
   const edge = await page.evaluate(() => {
     const host = document.querySelector('#tbl-child-tpl')!
@@ -1646,11 +1754,25 @@ test('table 子元素通道 + 列内模板 + 真实列宽拖拽：不崩表（�
     const r = th.getBoundingClientRect()
     return { x: r.right - 2, y: r.top + r.height / 2 }
   })
+  const widthBefore = await page.evaluate(() =>
+    document.querySelector('#tbl-child-tpl')!.querySelector('oas-table-column[data-key="name"]')!.getAttribute('width'),
+  )
   await page.mouse.move(edge.x, edge.y)
   await page.mouse.down()
   await page.mouse.move(edge.x + 100, edge.y, { steps: 5 })
   await page.mouse.up()
-  await page.waitForTimeout(300)
+  // 宽度落盘的真实信号：声明源 width attribute 已离开初值（拖拽结果写回）
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () =>
+          document
+            .querySelector('#tbl-child-tpl')!
+            .querySelector('oas-table-column[data-key="name"]')
+            ?.getAttribute('width') ?? null,
+      ),
+    )
+    .not.toBe(widthBefore)
   const r = await page.evaluate(() => {
     const host = document.querySelector('#tbl-child-tpl')!
     return {
@@ -2873,7 +2995,16 @@ test('table windowed 切片回填焦点回锚：聚焦行 → 宿主回填 windo
     t.setAttribute('window-start', '95')
     t.data = make(95, 50)
   })
-  await page.waitForTimeout(200)
+  // 焦点回锚完成的真实信号：shadow 焦点所在行回到 行103
+  await expect
+    .poll(() =>
+      page.evaluate(() => {
+        const t = document.querySelector('#qa-windowed-focus')!
+        const active = t.shadowRoot!.activeElement as HTMLElement | null
+        return active?.closest?.('tr[data-key]')?.getAttribute('data-key') ?? ''
+      }),
+    )
+    .toBe('行103')
   const r1 = await page.evaluate(() => {
     const t = document.querySelector('#qa-windowed-focus')!
     const active = t.shadowRoot!.activeElement as HTMLElement | null
@@ -2906,7 +3037,18 @@ test('table windowed 切片回填焦点回锚：聚焦行 → 宿主回填 windo
     t.setAttribute('window-start', '95')
     t.data = make(95, 8)
   })
-  await page.waitForTimeout(200)
+  // 负例切片重渲染完成的真实信号：窗口内首行已重渲染为 行97
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () =>
+          document
+            .querySelector('#qa-windowed-focus')!
+            .shadowRoot!.querySelector('tbody tr[data-key]')
+            ?.getAttribute('data-key') ?? '',
+      ),
+    )
+    .toBe('行97')
   const r3 = await page.evaluate(() => {
     const t = document.querySelector('#qa-windowed-focus')!
     const active = t.shadowRoot!.activeElement as HTMLElement | null
@@ -3060,13 +3202,16 @@ test('table windowed 聚焦后横向滚动不被回锚拉回：每帧 scrollLeft
       Object.fromEntries(Array.from({ length: 8 }, (_, c) => [`c${c}`, c === 0 ? `行${i}` : `${i}-${c}`])),
     )
   })
-  await page.waitForTimeout(250)
-  const afterRefill = await page.evaluate(() => {
-    const t = document.querySelector('#qa-windowed-hscroll')!
-    const ae = t.shadowRoot!.activeElement as HTMLElement | null
-    return ae?.closest?.('tr[data-key]')?.getAttribute('data-key') ?? ''
-  })
-  expect(afterRefill, 'update 回填路径焦点仍回锚同一 row-key（既有行为不变）').toBe('行2')
+  // update 回填路径焦点回锚完成的真实信号：焦点行回到 行2（既有行为不变）
+  await expect
+    .poll(() =>
+      page.evaluate(() => {
+        const t = document.querySelector('#qa-windowed-hscroll')!
+        const ae = t.shadowRoot!.activeElement as HTMLElement | null
+        return ae?.closest?.('tr[data-key]')?.getAttribute('data-key') ?? ''
+      }),
+    )
+    .toBe('行2')
   // 纵向：滚动位置保持（st 恢复路径不被横向回锚破坏）
   await page.evaluate(() => {
     const wrap = document
@@ -3212,7 +3357,8 @@ test('table Pro 第二批：虚拟滚动帧后区域装饰 / roving tabindex / a
     wrap.scrollTop = 80
     wrap.dispatchEvent(new Event('scroll'))
   })
-  await page.waitForTimeout(150)
+  // 重建+装饰兜底完成的真实信号：滚动帧后选区装饰已恢复（counts 断言条件本身）
+  await expect.poll(async () => (await counts()).selected > 0).toBe(true)
   const after = await counts()
   expect(after.selected, '滚动帧后选区装饰仍在').toBeGreaterThan(0)
   expect(after.aria, '滚动帧后 aria-selected 仍在').toBeGreaterThan(0)
@@ -3246,7 +3392,15 @@ test('table Pro 第二批：虚拟滚动帧后区域装饰 / roving tabindex / a
     wrap.scrollLeft = 300
     wrap.dispatchEvent(new Event('scroll'))
   })
-  await page.waitForTimeout(150)
+  // 重建+装饰兜底完成的真实信号：列窗口滚动后选区装饰已恢复
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () =>
+          document.querySelector('#table-col-virtual')!.shadowRoot!.querySelectorAll('td.range-selected').length > 0,
+      ),
+    )
+    .toBe(true)
   expect(
     await page.evaluate(
       () => document.querySelector('#table-col-virtual')!.shadowRoot!.querySelectorAll('td.range-selected').length,
@@ -3970,7 +4124,15 @@ test('table Pro 主从详情：selectByKey 显式等待回填落地、默认未�
     ;(window as any).__qaAbortCtl.abort()
     el.data = [{ id: 'k', name: 'Kilo' }]
   })
-  await page.waitForTimeout(100)
+  // 数据到达已处理的真实信号：Kilo 行已渲染（abort 的等待若缺陷复现会在数据到达链中落地，此时读必变化）
+  await page.waitForFunction(
+    () =>
+      [...(document.querySelector('#qa-detail-pending-table')?.shadowRoot?.querySelectorAll('tbody tr') ?? [])].some(
+        (tr) => tr.textContent?.includes('Kilo'),
+      ),
+    null,
+    { timeout: 5000 },
+  )
   const aborted = await page.evaluate(() => {
     const detail = (window as any).__qaDetail
     return {
@@ -4005,7 +4167,15 @@ test('table Pro 主从详情：selectByKey 显式等待回填落地、默认未�
     const el = document.querySelector('#qa-detail-pending-table') as HTMLElement & { data: unknown[] }
     el.data = [{ id: 'y', name: 'Yankee' }]
   })
-  await page.waitForTimeout(100)
+  // 数据到达已处理的真实信号：Yankee 行已渲染（被 close 取消的等待若缺陷复现会在此时错误落地）
+  await page.waitForFunction(
+    () =>
+      [...(document.querySelector('#qa-detail-pending-table')?.shadowRoot?.querySelectorAll('tbody tr') ?? [])].some(
+        (tr) => tr.textContent?.includes('Yankee'),
+      ),
+    null,
+    { timeout: 5000 },
+  )
   const cancelled = await page.evaluate(() => {
     const detail = (window as any).__qaDetail
     const panel = document.querySelector('#qa-detail-pending-panel')!
@@ -4030,7 +4200,15 @@ test('table Pro 主从详情：selectByKey 显式等待回填落地、默认未�
     el.data = [{ id: 'w', name: 'Whiskey' }]
     return { beforeData, events: (window as any).__qaDetailEvents }
   })
-  await page.waitForTimeout(100)
+  // 数据到达已处理的真实信号：Whiskey 行已渲染（Esc 取消的等待若缺陷复现会在此时错误落地）
+  await page.waitForFunction(
+    () =>
+      [...(document.querySelector('#qa-detail-pending-table')?.shadowRoot?.querySelectorAll('tbody tr') ?? [])].some(
+        (tr) => tr.textContent?.includes('Whiskey'),
+      ),
+    null,
+    { timeout: 5000 },
+  )
   const escCancelled = await page.evaluate(() => {
     const detail = (window as any).__qaDetail
     return {
@@ -4699,7 +4877,7 @@ test('table advanced：createWindowedSource × 视觉适配器——真实 adapt
     null,
     { timeout: 15000 },
   )
-  await page.waitForTimeout(150)
+  // 下一行 waitForFunction 已等「切片底部渲染矩阵就绪」（tbody 行数 > 0），中间固定等待无增量信息
   await page.waitForFunction(
     () => (window as any).__qaVisualState.el.shadowRoot.querySelectorAll('tbody tr[data-row-index]').length > 0,
     null,
