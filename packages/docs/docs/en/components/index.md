@@ -4,175 +4,175 @@ OAS-UI provides 147 framework-agnostic Web Components, organized into 9 groups b
 
 ## Basic
 
-- [Button](/en/components/button) —— Basic button component, an enhanced native `<button>`.
-- [Icon](/en/components/icon) —— An original linear icon set that renders inline SVGs by name; tree-shakable.
-- [Tag](/en/components/tag) —— A small tag used for marking and categorization.
 - [Badge](/en/components/badge) —— A numeric/status badge, typically used for message counts or new-content indicators.
-- [Space](/en/components/space) —— A layout container with even horizontal/vertical spacing.
+- [Badge](/en/components/badge) —— A numeric/status badge, typically used for message counts or new-content indicators.
+- [ButtonGroup](/en/components/button-group) —— Button group: combines multiple `oas-button` elements into a value-selection group; adjacent button corners merge and hover only highlights the current item.
 - [Divider](/en/components/divider) —— A horizontal/vertical divider that separates content.
-- [Link](/en/components/link) —— A text link, an enhanced native `<a>`.
-- [Typography](/en/components/typography) —— Typography components for text, titles, and paragraphs.
+- [Badge](/en/components/badge) —— A numeric/status badge, typically used for message counts or new-content indicators.
+- [Kbd](/en/components/kbd) —— A keyboard shortcut display component. `keys` is split by spaces into multiple keycaps joined with `+`; non-interactive.
+- [Label](/en/components/label) —— A form label component. `for` points to the target control's id, and clicking focuses the control; supports a required asterisk and its position.
+- [Label](/en/components/label) —— A form label component. `for` points to the target control's id, and clicking focuses the control; supports a required asterisk and its position.
+- [Badge](/en/components/badge) —— A numeric/status badge, typically used for message counts or new-content indicators.
 - [ButtonGroup](/en/components/button-group) —— Button group: combines multiple `oas-button` elements into a value-selection group; adjacent button corners merge and hover only highlights the current item.
 - [Label](/en/components/label) —— A form label component. `for` points to the target control's id, and clicking focuses the control; supports a required asterisk and its position.
-- [Kbd](/en/components/kbd) —— A keyboard shortcut display component. `keys` is split by spaces into multiple keycaps joined with `+`; non-interactive.
 - [VisuallyHidden](/en/components/visually-hidden) —— A container that is visible to screen readers but visually hidden. Commonly used for assistive descriptions, form validation hints, and other accessibility scenarios.
 
 ## Layout
 
-- [Layout](/en/components/layout) —— A classic page skeleton of header + sider + content + footer, used with semantic child components.
-- [Sidebar](/en/components/sidebar) —— A collapsible side bar: on desktop, `collapsed` narrows it to an icon strip; on mobile (narrower than `mobile-breakpoint`, default 768px) it automatically becomes an overlay drawer with a backdrop. Clicking outside, the close button or Esc collapses it.
-- [Container](/en/components/container) —— A fixed-width, centered container: `size` maps to `--oas-container-*` width tokens, `margin-inline: auto` centers it (logical property, RTL-compliant automatically), and `max-width: min(100%, token)` prevents overflow on narrow screens.
-- [Grid](/en/components/grid) —— A 24-column grid layout system. Pair it with `oas-grid-item` to divide column widths, with support for gap, offset and a custom total column count; setting `columns` switches to an auto equal-width layout (simple-grid).
-- [Flex](/en/components/flex) —— A layout container based on CSS Flexbox; attributes control direction, main/cross-axis alignment, gap and wrapping.
-- [Splitter](/en/components/splitter) —— A split component that resizes the left/right panel widths, adjustable via mouse drag or arrow keys.
-- [ScrollArea](/en/components/scroll-area) —— A container that wraps content and takes over the scrollbar appearance: a thin custom scrollbar that thickens on hover; with `auto-hide` it is only shown while scrolling or hovering, and scroll events are throttled.
-- [Masonry](/en/components/masonry) —— A masonry layout container based on CSS columns; child items are automatically distributed across columns without being split.
 - [AspectRatio](/en/components/aspect-ratio) —— Locks a container's size to a specified aspect ratio: 100% width with height derived from the ratio, content filling the area and cropped to the ratio; with no children it still occupies space at the ratio.
+- [Container](/en/components/container) —— A fixed-width, centered container: `size` maps to `--oas-container-*` width tokens, `margin-inline: auto` centers it (logical property, RTL-compliant automatically), and `max-width: min(100%, token)` prevents overflow on narrow screens.
+- [Flex](/en/components/flex) —— A layout container based on CSS Flexbox; attributes control direction, main/cross-axis alignment, gap and wrapping.
+- [Grid](/en/components/grid) —— A 24-column grid layout system. Pair it with `oas-grid-item` to divide column widths, with support for gap, offset and a custom total column count; setting `columns` switches to an auto equal-width layout (simple-grid).
+- [AspectRatio](/en/components/aspect-ratio) —— Locks a container's size to a specified aspect ratio: 100% width with height derived from the ratio, content filling the area and cropped to the ratio; with no children it still occupies space at the ratio.
+- [Masonry](/en/components/masonry) —— A masonry layout container based on CSS columns; child items are automatically distributed across columns without being split.
+- [ScrollArea](/en/components/scroll-area) —— A container that wraps content and takes over the scrollbar appearance: a thin custom scrollbar that thickens on hover; with `auto-hide` it is only shown while scrolling or hovering, and scroll events are throttled.
+- [Container](/en/components/container) —— A fixed-width, centered container: `size` maps to `--oas-container-*` width tokens, `margin-inline: auto` centers it (logical property, RTL-compliant automatically), and `max-width: min(100%, token)` prevents overflow on narrow screens.
+- [Masonry](/en/components/masonry) —— A masonry layout container based on CSS columns; child items are automatically distributed across columns without being split.
 
 ## Form
 
-- [Input](/en/components/input) —— An enhanced base input built on the native `<input>` element.
-- [Textarea](/en/components/textarea) —— An enhanced native `<textarea>` supporting auto-height and resize.
-- [Checkbox](/en/components/checkbox) —— An enhanced native `<input type="checkbox">` supporting indeterminate state and checkbox groups.
-- [Radio](/en/components/radio) —— An enhanced native `<input type="radio">` supporting radio groups and controlled values.
-- [Switch](/en/components/switch) —— A switch button with `role="switch"`.
-- [Segmented](/en/components/segmented) —— A single-select linear segmented control for light filtering / view switching, `role="radiogroup"`, with per-item disabling.
-- [Swatch](/en/components/swatch) — Inline preset color swatches for quick pick & display: theme/tag/favorite colors without opening a panel; swatch item + selection group (single/multi, roving keyboard).
-- [Picker](/en/components/picker) — Mobile-style scroll-wheel column selector: independent columns or cascading tree, native inertial scrolling with snap, keyboard accessible, form-associated.
-- [Slider](/en/components/slider) —— A slider built on an enhanced native `<input type="range">`.
-- [Knob](/en/components/knob) —— A rotary control that maps continuous/discrete values to a circular angle, designed for parameter-dense panels (audio/industrial/3D); supports circular + linear drag interactions and double-click reset.
-- [InputNumber](/en/components/input-number) —— An enhanced native `<input type="number">` with stepper buttons and range constraints.
-- [Rate](/en/components/rate) —— A star rating supporting keyboard arrow-key adjustment; clicking the currently selected star clears the value by default.
-- [Select](/en/components/select) —— A dropdown selector supporting single/multiple selection, groups, clearable, remote search, and custom creation, with full keyboard operation.
 - [AutoComplete](/en/components/auto-complete) —— Type to get suggestions, with keyboard up/down selection, Enter to confirm, and Esc to close.
-- [Combobox](/en/components/combobox) —— A filterable single-select combobox whose input is the control: **an always-visible editable input** shows the selected label, typing filters options in real time, and `value` takes `option.value` on selection.
-- [Cascader](/en/components/cascader) —— Multi-level linked selection supporting submission at any level and path display.
-- [TreeSelect](/en/components/tree-select) —— Tree-structure selection supporting parent-child cascaded multiple selection.
-- [Mentions](/en/components/mentions) —— A mention input component that pops a suggestion overlay when typing `@`, suited for @member / @task scenarios.
-- [DatePicker](/en/components/date-picker) —— A date picker supporting four types — single date, date range, month, and datetime — with keyboard operation and `Intl.DateTimeFormat` formatting.
-- [TimePicker](/en/components/time-picker) —— A time picker with dropdown hour/minute/second columns; `↑`/`↓` adjusts, `Enter` confirms, `Esc` cancels, and stepping intervals are supported.
 - [Calendar](/en/components/calendar) —— A calendar component with month/year modes, supporting selection, disabled dates, week numbers, and keyboard grid navigation; date descriptions use `Intl.DateTimeFormat` (locale-aware).
-- [Upload](/en/components/upload) —— Click or drag to select files; displays the file list and upload progress.
-- [Transfer](/en/components/transfer) —— Dual left/right panels with shuttle buttons in the middle, supporting search filtering and keyboard operation.
+- [Cascader](/en/components/cascader) —— Multi-level linked selection supporting submission at any level and path display.
+- [Cascader](/en/components/cascader) —— Multi-level linked selection supporting submission at any level and path display.
 - [ColorPicker](/en/components/color-picker) —— Click the trigger swatch to open a color panel, supporting preset colors, HSV, and RGB input.
-- [ToggleButton](/en/components/toggle-button) —— An `aria-pressed` two-state toggle button; the pressed state uses the primary color background.
-- [ToggleGroup](/en/components/toggle-group) —— A mutually exclusive button group for single/multiple selection: single mode uses radio semantics, multiple mode uses checkbox semantics; keyboard arrow navigation and controlled `value`.
-- [PinInput](/en/components/pin-input) —— A segmented code input supporting keyboard arrow navigation, Backspace fallback, and paste auto-distribution.
+- [Combobox](/en/components/combobox) —— A filterable single-select combobox whose input is the control: **an always-visible editable input** shows the selected label, typing filters options in real time, and `value` takes `option.value` on selection.
+- [DatePicker](/en/components/date-picker) —— A date picker supporting four types — single date, date range, month, and datetime — with keyboard operation and `Intl.DateTimeFormat` formatting.
 - [DynamicInput](/en/components/dynamic-input) —— Add/remove/edit for array fields; each row reuses the `oas-input` component, supporting both controlled and uncontrolled modes.
 - [DynamicTags](/en/components/dynamic-tags) —— Type in the input and press Enter/comma to create tags; supports deduplication, a maximum limit, and keyboard deletion.
 - [Editable](/en/components/editable) —— Click/Enter/Space enters edit mode; Enter submits, Esc cancels, and empty-value submission is non-destructive by default.
 - [Form](/en/components/form) —— An enhanced native `<form>` supporting validation and submission of inner fields according to `rules`.
 - [FormItem](/en/components/form#grid-form-layout) —— `oas-form-item`: label + control container + error slot; spans grid columns via `span` inside a `layout="grid"` form.
 - [FormList](/en/components/form#dynamic-field-group-form-list) —— `oas-form-list`: an add/remove group of field rows inside a form; row templates are cloned with field `name` indexed automatically (nested values), validation/submit follow the host form.
+- [AutoComplete](/en/components/auto-complete) —— Type to get suggestions, with keyboard up/down selection, Enter to confirm, and Esc to close.
+- [Form](/en/components/form) —— An enhanced native `<form>` supporting validation and submission of inner fields according to `rules`.
+- [Editable](/en/components/editable) —— Click/Enter/Space enters edit mode; Enter submits, Esc cancels, and empty-value submission is non-destructive by default.
+- [Mentions](/en/components/mentions) —— A mention input component that pops a suggestion overlay when typing `@`, suited for @member / @task scenarios.
+- [DynamicInput](/en/components/dynamic-input) —— Add/remove/edit for array fields; each row reuses the `oas-input` component, supporting both controlled and uncontrolled modes.
+- [PinInput](/en/components/pin-input) —— A segmented code input supporting keyboard arrow navigation, Backspace fallback, and paste auto-distribution.
 - [Questionnaire](/en/components/questionnaire) —— A step-driven form flow orchestrator: step header + progress (Step n / m) + one panel per step + per-step validation gating; each step embeds one `<oas-form>`, reusing the `oas-form` kernel.
+- [Cascader](/en/components/cascader) —— Multi-level linked selection supporting submission at any level and path display.
+- [FormItem](/en/components/form#grid-form-layout) —— `oas-form-item`: label + control container + error slot; spans grid columns via `span` inside a `layout="grid"` form.
+- [Combobox](/en/components/combobox) —— A filterable single-select combobox whose input is the control: **an always-visible editable input** shows the selected label, typing filters options in real time, and `value` takes `option.value` on selection.
+- [FormList](/en/components/form#dynamic-field-group-form-list) —— `oas-form-list`: an add/remove group of field rows inside a form; row templates are cloned with field `name` indexed automatically (nested values), validation/submit follow the host form.
+- [DynamicTags](/en/components/dynamic-tags) —— Type in the input and press Enter/comma to create tags; supports deduplication, a maximum limit, and keyboard deletion.
+- [DatePicker](/en/components/date-picker) —— A date picker supporting four types — single date, date range, month, and datetime — with keyboard operation and `Intl.DateTimeFormat` formatting.
+- [ColorPicker](/en/components/color-picker) —— Click the trigger swatch to open a color panel, supporting preset colors, HSV, and RGB input.
+- [Calendar](/en/components/calendar) —— A calendar component with month/year modes, supporting selection, disabled dates, week numbers, and keyboard grid navigation; date descriptions use `Intl.DateTimeFormat` (locale-aware).
+- [Questionnaire](/en/components/questionnaire) —— A step-driven form flow orchestrator: step header + progress (Step n / m) + one panel per step + per-step validation gating; each step embeds one `<oas-form>`, reusing the `oas-form` kernel.
+- [DynamicTags](/en/components/dynamic-tags) —— Type in the input and press Enter/comma to create tags; supports deduplication, a maximum limit, and keyboard deletion.
+- [DatePicker](/en/components/date-picker) —— A date picker supporting four types — single date, date range, month, and datetime — with keyboard operation and `Intl.DateTimeFormat` formatting.
+- [Combobox](/en/components/combobox) —— A filterable single-select combobox whose input is the control: **an always-visible editable input** shows the selected label, typing filters options in real time, and `value` takes `option.value` on selection.
+- [Mentions](/en/components/mentions) —— A mention input component that pops a suggestion overlay when typing `@`, suited for @member / @task scenarios.
+- [FormItem](/en/components/form#grid-form-layout) —— `oas-form-item`: label + control container + error slot; spans grid columns via `span` inside a `layout="grid"` form.
 
 ## Feedback & Overlays
 
-- [Tooltip](/en/components/tooltip) —— A simple text prompt bubble triggered on hover or keyboard focus.
-- [Popover](/en/components/popover) —— A click-triggered popup panel that can hold a title, body text and arbitrary custom content.
-- [HoverCard](/en/components/hover-card) —— A preview card triggered on hover/focus with configurable delay.
-- [Message](/en/components/message) —— Imperative global message notifications with support for types, custom duration, and manual dismissal.
-- [Notification](/en/components/notification) —— Notification cards in the top-right corner, supporting title, description, duration, and type.
-- [Toast](/en/components/toast) —— Imperative global toasts supporting success/error/warning/info/loading states, action buttons, and promise chains; auto-dismisses after 3 seconds by default.
-- [Snackbar](/en/components/snackbar) —— A lightweight feedback bar that slides in from the bottom (or top). The `open` attribute is controlled; it can include an action button and dispatches `oas-close` after 4 seconds by default, leaving dismissal to the host.
+- [Alert](/en/components/alert) —— An inline notice bar for success, info, warning, or error messages, with support for a custom title and a close button.
 - [Backdrop](/en/components/backdrop) —— A full-screen semi-transparent overlay with `transparent`/`blur` variants and body scroll locking; the node is automatically unmounted when `open=false`, leaving no orphan DOM.
 - [BottomSheet](/en/components/bottom-sheet) —— feedback Mobile bottom sheet container: close via drag handle / backdrop click / Esc, with safe-area and focus trap built in; `passive` mode serves as a structural placeholder for overlay PC forms.
-- [Modal](/en/components/modal) —— A modal dialog for interrupting flows that require user confirmation or input.
 - [Confirm](/en/components/confirm) —— Imperative confirmation dialog based on Promises, reusing `oas-modal` under the hood.
 - [Drawer](/en/components/drawer) —— A panel that slides in from the side, often used for filters, details, and similar scenarios.
-- [Popconfirm](/en/components/popconfirm) —— Shows a confirmation bubble next to the trigger element, commonly used before destructive actions like deletion.
-- [Alert](/en/components/alert) —— An inline notice bar for success, info, warning, or error messages, with support for a custom title and a close button.
-- [NoticeBar](/en/components/notice-bar) —— A notice bar for the top of a page or inside a section: icon + seamlessly scrolling long text + vertical multi-notice rotation + closable + an action link.
-- [PullRefresh](/en/components/pull-refresh) —— A mobile pull-to-refresh container: pull past the top of the list to reveal the indicator (finger-following resistance curve); releasing past the threshold dispatches oas-refresh and parks; when the host finishes it removes refreshing and the component plays the success copy before bouncing back.
-- [Progress](/en/components/progress) —— Shows task progress, supporting line and circle forms, status colors, and hidden text.
-- [LoadingBar](/en/components/loading-bar) —— A global loading progress bar at the top of the page, driven by an imperative API.
-- [Spin](/en/components/spin) —— A loading indicator that can be used standalone or wrap content with an overlaid mask.
-- [Skeleton](/en/components/skeleton) —— A placeholder skeleton for loading states, supporting an avatar, title, multiple paragraph rows, and a shimmer animation.
 - [Empty](/en/components/empty) —— A placeholder for empty data, supporting custom descriptions, custom illustrations with sizing, and hiding the illustration or action area.
+- [BottomSheet](/en/components/bottom-sheet) —— feedback Mobile bottom sheet container: close via drag handle / backdrop click / Esc, with safe-area and focus trap built in; `passive` mode serves as a structural placeholder for overlay PC forms.
+- [LoadingBar](/en/components/loading-bar) —— A global loading progress bar at the top of the page, driven by an imperative API.
+- [Confirm](/en/components/confirm) —— Imperative confirmation dialog based on Promises, reusing `oas-modal` under the hood.
+- [Modal](/en/components/modal) —— A modal dialog for interrupting flows that require user confirmation or input.
+- [NoticeBar](/en/components/notice-bar) —— A notice bar for the top of a page or inside a section: icon + seamlessly scrolling long text + vertical multi-notice rotation + closable + an action link.
+- [Drawer](/en/components/drawer) —— A panel that slides in from the side, often used for filters, details, and similar scenarios.
+- [Popconfirm](/en/components/popconfirm) —— Shows a confirmation bubble next to the trigger element, commonly used before destructive actions like deletion.
+- [Backdrop](/en/components/backdrop) —— A full-screen semi-transparent overlay with `transparent`/`blur` variants and body scroll locking; the node is automatically unmounted when `open=false`, leaving no orphan DOM.
+- [Progress](/en/components/progress) —— Shows task progress, supporting line and circle forms, status colors, and hidden text.
+- [PullRefresh](/en/components/pull-refresh) —— A mobile pull-to-refresh container: pull past the top of the list to reveal the indicator (finger-following resistance curve); releasing past the threshold dispatches oas-refresh and parks; when the host finishes it removes refreshing and the component plays the success copy before bouncing back.
 - [Result](/en/components/result) —— A result feedback page supporting four states: success, error, warning, and info.
+- [Skeleton](/en/components/skeleton) —— A placeholder skeleton for loading states, supporting an avatar, title, multiple paragraph rows, and a shimmer animation.
+- [BottomSheet](/en/components/bottom-sheet) —— feedback Mobile bottom sheet container: close via drag handle / backdrop click / Esc, with safe-area and focus trap built in; `passive` mode serves as a structural placeholder for overlay PC forms.
+- [BottomSheet](/en/components/bottom-sheet) —— feedback Mobile bottom sheet container: close via drag handle / backdrop click / Esc, with safe-area and focus trap built in; `passive` mode serves as a structural placeholder for overlay PC forms.
+- [Empty](/en/components/empty) —— A placeholder for empty data, supporting custom descriptions, custom illustrations with sizing, and hiding the illustration or action area.
+- [Alert](/en/components/alert) —— An inline notice bar for success, info, warning, or error messages, with support for a custom title and a close button.
 
 ## Navigation
 
-- [Menu](/en/components/menu) —— A standalone menu list with selection state and keyboard navigation.
-- [Dropdown](/en/components/dropdown) —— A click-triggered menu that opens anchored to the trigger element.
-- [ContextMenu](/en/components/context-menu) —— A right-click menu that opens at the mouse position within its wrapped region.
-- [Command](/en/components/command) —— A command palette (⌘K / Ctrl+K) — search filtering, keyboard selection and Enter to execute. `open` is controlled: it can be set externally, and the global ⌘K shortcut or Esc closes it (closing fires `oas-select` / removes `open`).
-- [Menubar](/en/components/menubar) —— A desktop-app-style top menu bar (File / Edit / View). Click or hover expands submenus (cascading popups), with arrow key support, `Alt` access keys and a focus trap.
-- [NavigationMenu](/en/components/navigation-menu) —— A website-style multi-level navigation bar: hover / keyboard expands submenus (cascading popups); leaf items with `href` render as links.
-- [Toolbar](/en/components/toolbar) —— A container for groups of tool buttons: `role="toolbar"` + `aria-label`, `Tab` enters and arrow keys move between buttons (roving tabindex — only the current item is focused).
-- [Breadcrumb](/en/components/breadcrumb) —— Shows the page hierarchy path; the last item is the current page (not clickable).
-- [Anchor](/en/components/anchor) —— Tracks the current section on scroll and highlights it automatically; clicking an anchor smooth-scrolls to the target.
-- [IndexBar](/en/components/index-bar) —— A mobile sectioned list with an alphabet index rail: tap/drag a letter to jump to a section, and scrolling highlights the current letter in reverse.
-- [BackTop](/en/components/back-top) —— A back-to-top button fixed to a corner of the viewport; clicking it smooth-scrolls back to the top of the page.
-- [Tour](/en/components/tour) —— Step-by-step feature onboarding with a fullscreen overlay and target highlighting.
-- [Tabs](/en/components/tabs) —— Tab-based content switching with arrow-key navigation; inactive panels are hidden via the `hidden` attribute. Use `oas-tabs` together with `oas-tab-panel`.
-- [BottomNavigation](/en/components/bottom-navigation) —— A mobile bottom navigation bar: `role="navigation"` with the current item marked `aria-current="page"`; every enabled item is Tab-reachable, arrow keys move focus as an enhancement, Enter/Space selects; the active item uses the primary color plus an icon, with a thin top divider.
-- [Pagination](/en/components/pagination) —— Data pagination navigation with page-number ellipsis, prev/next flipping, configurable sibling page count, total display, page-size switching and quick jump.
-- [Steps](/en/components/steps) —— A step indicator that guides users through a task, with four states (wait / process / finish / error), vertical layout and clickable navigation.
-- [Stepper](/en/components/stepper) —— A step-driven content panel: a clickable step header synced with content panels (only the current step is visible), for wizards / multi-step forms / checkout flows; `oas-stepper` + `oas-stepper-panel` work as a pair (tabs-style value association).
 - [Affix](/en/components/affix) —— Pins content to the top of the viewport; it becomes fixed once the page scrolls past a given offset. Commonly used for fixed table action bars, toolbars, etc.
+- [Anchor](/en/components/anchor) —— Tracks the current section on scroll and highlights it automatically; clicking an anchor smooth-scrolls to the target.
 - [AppBar](/en/components/app-bar) —— An app bar at the top of the page or toolbar area: title + hamburger button + action area with overflow collapse, scroll hiding, and an extended section; `role="banner"` semantics, with the hamburger button dispatching `oas-menu-toggle` and keeping `aria-expanded` in sync.
-- [PageHeader](/en/components/page-header) —— A page header information area with title, subtitle, back button and a right-side action area. Commonly used at the top of detail and edit pages.
+- [BackTop](/en/components/back-top) —— A back-to-top button fixed to a corner of the viewport; clicking it smooth-scrolls back to the top of the page.
+- [BottomNavigation](/en/components/bottom-navigation) —— A mobile bottom navigation bar: `role="navigation"` with the current item marked `aria-current="page"`; every enabled item is Tab-reachable, arrow keys move focus as an enhancement, Enter/Space selects; the active item uses the primary color plus an icon, with a thin top divider.
+- [Breadcrumb](/en/components/breadcrumb) —— Shows the page hierarchy path; the last item is the current page (not clickable).
+- [BackTop](/en/components/back-top) —— A back-to-top button fixed to a corner of the viewport; clicking it smooth-scrolls back to the top of the page.
+- [AppBar](/en/components/app-bar) —— An app bar at the top of the page or toolbar area: title + hamburger button + action area with overflow collapse, scroll hiding, and an extended section; `role="banner"` semantics, with the hamburger button dispatching `oas-menu-toggle` and keeping `aria-expanded` in sync.
+- [Anchor](/en/components/anchor) —— Tracks the current section on scroll and highlights it automatically; clicking an anchor smooth-scrolls to the target.
 - [FloatButton](/en/components/float-button) —— A circular action button fixed to the bottom-right corner of the page by default, for quick actions like "New" and "Feedback"; supports a badge and a custom icon.
+- [FloatButton](/en/components/float-button) —— A circular action button fixed to the bottom-right corner of the page by default, for quick actions like "New" and "Feedback"; supports a badge and a custom icon.
+- [Affix](/en/components/affix) —— Pins content to the top of the viewport; it becomes fixed once the page scrolls past a given offset. Commonly used for fixed table action bars, toolbars, etc.
+- [BottomNavigation](/en/components/bottom-navigation) —— A mobile bottom navigation bar: `role="navigation"` with the current item marked `aria-current="page"`; every enabled item is Tab-reachable, arrow keys move focus as an enhancement, Enter/Space selects; the active item uses the primary color plus an icon, with a thin top divider.
+- [Breadcrumb](/en/components/breadcrumb) —— Shows the page hierarchy path; the last item is the current page (not clickable).
+- [PageHeader](/en/components/page-header) —— A page header information area with title, subtitle, back button and a right-side action area. Commonly used at the top of detail and edit pages.
+- [PageHeader](/en/components/page-header) —— A page header information area with title, subtitle, back button and a right-side action area. Commonly used at the top of detail and edit pages.
 - [SpeedDial](/en/components/speed-dial) —— A floating main button that expands a list of sub-actions, commonly used for quick actions like "New/Share"; `aria-expanded` stays in sync, clicking outside / Esc collapses it, with no orphan popups.
+- [SpeedDial](/en/components/speed-dial) —— A floating main button that expands a list of sub-actions, commonly used for quick actions like "New/Share"; `aria-expanded` stays in sync, clicking outside / Esc collapses it, with no orphan popups.
+- [PageHeader](/en/components/page-header) —— A page header information area with title, subtitle, back button and a right-side action area. Commonly used at the top of detail and edit pages.
+- [BottomNavigation](/en/components/bottom-navigation) —— A mobile bottom navigation bar: `role="navigation"` with the current item marked `aria-current="page"`; every enabled item is Tab-reachable, arrow keys move focus as an enhancement, Enter/Space selects; the active item uses the primary color plus an icon, with a thin top divider.
+- [BackTop](/en/components/back-top) —— A back-to-top button fixed to a corner of the viewport; clicking it smooth-scrolls back to the top of the page.
+- [Affix](/en/components/affix) —— Pins content to the top of the viewport; it becomes fixed once the page scrolls past a given offset. Commonly used for fixed table action bars, toolbars, etc.
 
 ## Workbench
 
-- [TitleBar](/en/components/titlebar) —— A window title bar and app-level chrome: draggable region + window controls/document well + compact/large tiers; aimed at desktop shells (Electron/Tauri) and "windowed" web workbenches.
-- [StatusBar](/en/components/statusbar) —— A bottom silent status strip: left/right segmented cells + clickable + background-activity spinner + warning/error semantic colors; complementary to `oas-footer`: statusbar carries status vocabulary (counts/selection/sync state), footer is the substantive page footer.
-- [Inspector](/en/components/inspector) —— A right-side (or left-side) object editing panel: pill tab strip + collapsible sections + label/control rows; `role="complementary"`, complementary to `oas-sidebar` (navigation menus): inspector examines and edits object properties.
 - [ActionBar](/en/components/action-bar) —— A bottom command strip + readout wells container: command buttons + statistic/task-progress/media-transport/music readout wells, multiple surfaces (charcoal/dark/light); complementary to `oas-toolbar` (toolbar role).
 - [FloatingPanel](/en/components/floating-panel) —— A non-modal tool window driven by host attributes (`open` / `rect`): title-bar drag, eight-way resize, constant-overlay family stacking (only the frontmost tier), pointer and keyboard equivalent; no portal, no backdrop, no focus trap.
+- [Inspector](/en/components/inspector) —— A right-side (or left-side) object editing panel: pill tab strip + collapsible sections + label/control rows; `role="complementary"`, complementary to `oas-sidebar` (navigation menus): inspector examines and edits object properties.
+- [FloatingPanel](/en/components/floating-panel) —— A non-modal tool window driven by host attributes (`open` / `rect`): title-bar drag, eight-way resize, constant-overlay family stacking (only the frontmost tier), pointer and keyboard equivalent; no portal, no backdrop, no focus trap.
+- [ActionBar](/en/components/action-bar) —— A bottom command strip + readout wells container: command buttons + statistic/task-progress/media-transport/music readout wells, multiple surfaces (charcoal/dark/light); complementary to `oas-toolbar` (toolbar role).
 
 ## Data Display
 
-- [Kanban](/en/components/kanban) — Column + card kanban board: drag across columns / reorder within / column reorder / WIP limits / multi-select / swimlanes, fires oas-change on drop.
-- [Scheduler](/en/components/scheduler) — Month-view scheduler: event chips in day cells (title + color bar) + events read/write channel + CRUD methods and events, pure UI state.
-- [Gantt](/en/components/gantt) — Project scheduling: row-tree WBS + task bars/milestones/summary bars + FS/SS/FF/SF dependency links + six-scale time ruler + drag to reschedule/stretch/progress + three-level read-only + virtual scrolling.
-- [Resource](/en/components/resource) — Resource lanes + workload histogram: task allocation, capacity and overload highlighting per resource; a pure view layer that does not write schedules back.
-
-- [Table](/en/components/table) —— Displays structured data in a row-and-column grid with sorting, row selection, multi-select, and a loading state. It can be wired together with a pagination component.
-- [Tree](/en/components/tree) —— Displays hierarchical data with support for selection, expansion, multi-select, lazy loading, and node drag-and-drop.
-- [VirtualList](/en/components/virtual-list) —— Renders large data lists into the viewport window: only visible items (plus a top/bottom buffer) are rendered, with head/tail padding placeholders to support the scroll height, and scroll events throttled via rAF. It is a generic rendering primitive reused by table / tree.
-- [JSONViewer](/en/components/json-viewer) —— A read-only JSON tree with collapse/expand, search, JSONPath copy, fixed-row virtual scrolling, keyboard and screen-reader support.
-- [DiffViewer](/en/components/diff-viewer) —— A read-only text diff with line- and word-level highlights, unified/split views, unchanged-region folding, virtual scrolling, keyboard and screen-reader support.
-- [Card](/en/components/card) —— An information container that groups a set of related content.
 - [Avatar](/en/components/avatar) —— Displays a user or object avatar, supporting both text-placeholder and image forms.
-- [Image](/en/components/image) —— Displays image resources, with an optional built-in preview feature.
-- [QRCode](/en/components/qrcode) —— A QR code component based on a **pure TypeScript, zero-dependency encoder** (built in-house) that outputs inline SVG and is scannable and downloadable.
 - [Barcode](/en/components/barcode) —— A 1D barcode component based on a **pure TypeScript, zero-dependency encoder** (built in-house): 6 symbologies in the first release (CODE128/EAN-13/EAN-8/UPC-A/CODE39/ITF-14), built-in scannability guardrails (quiet-zone floor / fixed white background), inline SVG output, downloadable.
-- [Watermark](/en/components/watermark) —— A container-level watermark layer that sits on top of the content without intercepting any interaction, suitable for preventing sensitive information from leaking.
-- [Collapse](/en/components/collapse) —— Stows content in collapsible panels to keep the focus on key information.
-- [Collapsible](/en/components/collapsible) —— A single-region collapse primitive: one freely controllable collapsible region. Collapse is the "multi-region + accordion" orchestration set; collapsible is the standalone single piece, suited for file-tree nodes, detail fold-away areas, and similar scenarios.
-- [Descriptions](/en/components/descriptions) —— Displays read-only information in groups, suitable for detail page scenarios.
-- [Timeline](/en/components/timeline) —— Displays a series of event nodes in chronological order.
-- [List](/en/components/list) —— Displays a collection of related items, capable of carrying a title, description, and extra actions.
+- [Card](/en/components/card) —— An information container that groups a set of related content.
 - [Carousel](/en/components/carousel) —— Cycles through multiple screens of content in the same viewport, with manual switching and autoplay support.
-- [Statistic](/en/components/statistic) —— Displays statistical values with `Intl.NumberFormat` thousands separators and precision (locale-aware), supporting prefix/suffix and a skeleton loading placeholder.
-- [Countdown](/en/components/countdown) —— A countdown component that refreshes in real time, supports day/hour/minute/second formatting templates, emits `oas-finish` when reaching zero, and automatically cleans up its timer on disconnect.
-- [RelativeTime](/en/components/relative-time) —— Localized relative time (`Intl.RelativeTimeFormat`) backed by a semantic `<time datetime>`; optional `auto-refresh` follows page visibility, and invalid or missing values render a safe empty state.
-- [Ellipsis](/en/components/ellipsis) —— Automatically truncates long text with single-line / multi-line clipping; on overflow it shows the full text in a tooltip on hover, and it can also expand / collapse.
+
 - [Chart](/en/components/chart) —— A self-developed SVG chart component (no third-party chart engine) supporting line / bar / pie / area / donut / stacked-bar / radar / polar-area plus combo and dual-axis. Data updates redraw automatically, and animations are disabled under `prefers-reduced-motion`.
 - [Code](/en/components/code) —— A code block component (self-developed regex token highlighting, no third-party highlighting engine) supporting basic coloring for common languages, line numbers, and a copy button.
-- [Equation](/en/components/equation) —— A math formula component (self-developed simplified LaTeX subset, zero third-party formula engine) covering common high-school / university formulas: superscripts/subscripts, fractions, square roots, summation/integration (with limits), Greek letters, and common operators.
-- [Log](/en/components/log) —— A monospace log display container that supports incremental appending and "stick-to-bottom" auto-scrolling, suitable for consoles / build output scenarios.
+- [Collapse](/en/components/collapse) —— Stows content in collapsible panels to keep the focus on key information.
+- [Collapsible](/en/components/collapsible) —— A single-region collapse primitive: one freely controllable collapsible region. Collapse is the "multi-region + accordion" orchestration set; collapsible is the standalone single piece, suited for file-tree nodes, detail fold-away areas, and similar scenarios.
 - [Comment](/en/components/comment) —— A purely presentational comment block container that assembles the author avatar, name, time, content, and actions via slots; nested child comments are automatically indented.
-- [Marquee](/en/components/marquee) —— A purely presentational component that scrolls long content horizontally in a loop; content cycles seamlessly via a slot. Supports pause on hover and static fallback under `prefers-reduced-motion`. No events.
-- [NumberAnimation](/en/components/number-animation) —— An animation component that eases a number from its current value to the target value, stops at the target and emits `oas-finish`; under `prefers-reduced-motion` it jumps straight to the target, and disconnecting cancels the rAF without leaks.
+- [Countdown](/en/components/countdown) —— A countdown component that refreshes in real time, supports day/hour/minute/second formatting templates, emits `oas-finish` when reaching zero, and automatically cleans up its timer on disconnect.
+- [Descriptions](/en/components/descriptions) —— Displays read-only information in groups, suitable for detail page scenarios.
+- [Comment](/en/components/comment) —— A purely presentational comment block container that assembles the author avatar, name, time, content, and actions via slots; nested child comments are automatically indented.
+- [Ellipsis](/en/components/ellipsis) —— Automatically truncates long text with single-line / multi-line clipping; on overflow it shows the full text in a tooltip on hover, and it can also expand / collapse.
+- [Equation](/en/components/equation) —— A math formula component (self-developed simplified LaTeX subset, zero third-party formula engine) covering common high-school / university formulas: superscripts/subscripts, fractions, square roots, summation/integration (with limits), Greek letters, and common operators.
+- [Card](/en/components/card) —— An information container that groups a set of related content.
 - [GradientText](/en/components/gradient-text) —— A purely presentational component that fills text with a gradient color, implemented with `background-clip: text`; it defaults to a two-color theme-token gradient and supports arbitrary color-stop arrays and directions. No events.
 - [Highlight](/en/components/highlight) —— Text match highlighting: matched segments from `text` + `highlight` (space-separated words or a JSON array) render as `<mark>` (token colors, dark-mode aware), with case / whole-word / accent toggles, dispatching `oas-count` after each recompute.
+- [Comment](/en/components/comment) —— A purely presentational comment block container that assembles the author avatar, name, time, content, and actions via slots; nested child comments are automatically indented.
+- [Collapsible](/en/components/collapsible) —— A single-region collapse primitive: one freely controllable collapsible region. Collapse is the "multi-region + accordion" orchestration set; collapsible is the standalone single piece, suited for file-tree nodes, detail fold-away areas, and similar scenarios.
+- [Avatar](/en/components/avatar) —— Displays a user or object avatar, supporting both text-placeholder and image forms.
+- [Avatar](/en/components/avatar) —— Displays a user or object avatar, supporting both text-placeholder and image forms.
+- [Log](/en/components/log) —— A monospace log display container that supports incremental appending and "stick-to-bottom" auto-scrolling, suitable for consoles / build output scenarios.
+- [Marquee](/en/components/marquee) —— A purely presentational component that scrolls long content horizontally in a loop; content cycles seamlessly via a slot. Supports pause on hover and static fallback under `prefers-reduced-motion`. No events.
+- [NumberAnimation](/en/components/number-animation) —— An animation component that eases a number from its current value to the target value, stops at the target and emits `oas-finish`; under `prefers-reduced-motion` it jumps straight to the target, and disconnecting cancels the rAF without leaks.
+- [Ellipsis](/en/components/ellipsis) —— Automatically truncates long text with single-line / multi-line clipping; on overflow it shows the full text in a tooltip on hover, and it can also expand / collapse.
+- [NumberAnimation](/en/components/number-animation) —— An animation component that eases a number from its current value to the target value, stops at the target and emits `oas-finish`; under `prefers-reduced-motion` it jumps straight to the target, and disconnecting cancels the rAF without leaks.
+- [Carousel](/en/components/carousel) —— Cycles through multiple screens of content in the same viewport, with manual switching and autoplay support.
+- [Barcode](/en/components/barcode) —— A 1D barcode component based on a **pure TypeScript, zero-dependency encoder** (built in-house): 6 symbologies in the first release (CODE128/EAN-13/EAN-8/UPC-A/CODE39/ITF-14), built-in scannability guardrails (quiet-zone floor / fixed white background), inline SVG output, downloadable.
+- [Log](/en/components/log) —— A monospace log display container that supports incremental appending and "stick-to-bottom" auto-scrolling, suitable for consoles / build output scenarios.
 - [SwipeCell](/en/components/swipe-cell) —— Reveal an action button group by swiping a list item horizontally: the default slot is the content layer and `slot="actions"` the action area, swiped toward inline-start and snapped open/closed by `threshold`; single-open exclusion, outside-click/scroll close, Esc close, and keyboard-reachable action buttons; `oas-open` / `oas-close` dispatched when the state settles.
+- [Chart](/en/components/chart) —— A self-developed SVG chart component (no third-party chart engine) supporting line / bar / pie / area / donut / stacked-bar / radar / polar-area plus combo and dual-axis. Data updates redraw automatically, and animations are disabled under `prefers-reduced-motion`.
+- [Collapsible](/en/components/collapsible) —— A single-region collapse primitive: one freely controllable collapsible region. Collapse is the "multi-region + accordion" orchestration set; collapsible is the standalone single piece, suited for file-tree nodes, detail fold-away areas, and similar scenarios.
+- [Code](/en/components/code) —— A code block component (self-developed regex token highlighting, no third-party highlighting engine) supporting basic coloring for common languages, line numbers, and a copy button.
+- [Collapse](/en/components/collapse) —— Stows content in collapsible panels to keep the focus on key information.
+- [Card](/en/components/card) —— An information container that groups a set of related content.
 
 ## Conversation
 
-- [Bubble](/en/components/bubble) —— A conversation message content surface: a purely presentational content bubble (variants/border/radius/tail decoration + content), without avatar/time/action states; compose with `oas-message-row` for a complete message, suited for AI chats, IM and natural conversation flows.
 - [Attachment](/en/components/attachment) —— A conversation attachment card: media (image/thumbnail) + file name/metadata + upload state machine + action buttons (download/remove/open), suited for sending files in conversations, AI chat image attachments, and similar scenarios.
-- [MessageScroller](/en/components/message-scroller) —— A conversation scroll container (does not own message data): a scroll-intent model — follow new content while the user is at the bottom (AI style), or always pin to the bottom (IM style); built-in jump button; supports prepend position preservation, async-resource position preservation, turn anchoring (AI "back to the last question"), and optional in-viewport visibility tracking.
+- [Attachment](/en/components/attachment) —— A conversation attachment card: media (image/thumbnail) + file name/metadata + upload state machine + action buttons (download/remove/open), suited for sending files in conversations, AI chat image attachments, and similar scenarios.
 - [Marker](/en/components/marker) —— A conversation time/system-event marker: a lightweight text separator for dates, statuses and boundaries, like IM's "Today 10:00" time separator or group-chat "system events"; also fits status separators in AI-style conversations.
 - [MessageRow](/en/components/message-row) —— A conversation message row (layout shell): header/footer slots carry avatar/name, the default slot embeds `oas-bubble`, and the footer carries delivery status/actions; supports alignment direction and grouped clustering.
+- [Marker](/en/components/marker) —— A conversation time/system-event marker: a lightweight text separator for dates, statuses and boundaries, like IM's "Today 10:00" time separator or group-chat "system events"; also fits status separators in AI-style conversations.
 
 ## Framework Containers
 
-- [ConfigProvider](/en/components/config-provider) —— The injection entry point for global configuration, centrally managing `locale` / `size` / `theme` for the wrapped subtree. Component resolution order: own attribute > config-provider > global default.
+- [App](/en/components/app) —— The host container for imperative APIs such as message / notification / loadingBar. When an app container exists, messages mount inside it (instead of `document.body`); works well with config-provider.
 - [App](/en/components/app) —— The host container for imperative APIs such as message / notification / loadingBar. When an app container exists, messages mount inside it (instead of `document.body`); works well with config-provider.
 - [ThemeEditor](/en/components/theme-editor) —— Edit `--oas-*` theme tokens in real time: color tokens use a color picker, numeric tokens use a number input (displayed without the unit, written back with the original unit). Edits are written to host CSS variables immediately, so the subtree previews them live. By default, tokens are grouped into colors / font sizes / spacing / radius / control heights.
