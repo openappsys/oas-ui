@@ -363,10 +363,10 @@ export default defineConfig({
     ['link', { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' }],
     ['link', { rel: 'icon', type: 'image/png', sizes: '32x32', href: '/favicon-32.png' }],
     ['link', { rel: 'apple-touch-icon', sizes: '180x180', href: '/favicon-180.png' }],
-    // 语言偏好跳转：只认「用户显式切换过」的偏好（localStorage oas-lang=en），中文 root 与中文深链
-    // 才跳对应英文页；不再按浏览器语言（navigator.language）自动跳——否则 Googlebot 默认 en-US 会被
-    // 从中文页带走、稀释中文页收录（Google 明确建议避免按感知语言自动跳转）。首访一律留中文（默认
-    // 语言），已带 /en/ 前缀的路径视为显式英文，永不回弹。location.replace 不产生历史记录；脚本内联
+    // 语言偏好跳转：显式保存的偏好（localStorage oas-lang=en）在中文 root 与中文深链都跳对应英文页；
+    // 浏览器语言只做「landing page」一次性猜测——无偏好且首选语言为 en 时，仅 `/` / `/index.html`
+    // 跳 `/en/`，深链一律保持显式地址，避免爬虫/外链/书签在所有页面被语言改写。自动猜测不写偏好；
+    // 已带 /en/ 前缀的路径视为显式英文，永不回弹。location.replace 不产生历史记录；脚本内联
     // 在 head 尽早执行（减少语言闪烁）。
     [
       'script',
@@ -374,9 +374,17 @@ export default defineConfig({
       `(function () {
   try {
     var path = location.pathname
-    var onEn = path === '/en' || path.indexOf('/en/') === 0
+    var onEn = path === '/en' || path === '/en/' || path.indexOf('/en/') === 0
     if (onEn) return
-    if (localStorage.getItem('oas-lang') === 'en') location.replace('/en' + path)
+    var pref = localStorage.getItem('oas-lang')
+    if (pref === 'en') location.replace('/en' + path + location.search + location.hash)
+    if (pref != null) return
+    var language = ''
+    try { language = navigator.language || '' } catch (e) {}
+    var landing = path === '/' || path === '/index.html'
+    if (landing && language.toLowerCase().indexOf('en') === 0) {
+      location.replace('/en/' + location.search + location.hash)
+    }
   } catch (e) {}
 })()`,
     ] as [string, Record<string, string>, string],
