@@ -583,6 +583,22 @@ if (importViolations.length) {
   }
 }
 
+// ---------- 1.7 i18n 公共入口的注册调用（防「只副作用 import → 打包后文案全丢」） ----------
+// 入口必须形成「值导入 + 显式 registerDefaultMessages 调用」的产物；纯副作用 import 会被
+// 打包器按 sideEffects 摇掉（2026-10-31 实测：公共入口因此整体丢文案、渲染 raw key）。
+{
+  const idx = readFileSync(join(ROOT, 'packages/i18n/dist/index.js'), 'utf8')
+  const calls = (idx.match(/registerDefaultMessages\(/g) ?? []).length
+  if (calls < 9) {
+    fail = true
+    console.error(
+      `FAIL [i18n 主入口] dist/index.js 只有 ${calls} 次 registerDefaultMessages 调用（应 ≥ 9）——公共入口默认文案会丢`,
+    )
+  } else {
+    console.log(`PASS [i18n 主入口] dist/index.js 含 ${calls} 次显式注册调用（值导入，不依赖副作用）`)
+  }
+}
+
 const packageRows = [
   ['@oas-ui/ui (dist 总大小)', `${fmtBytes(uiDistTotal)}`, '', ''],
   ['@oas-ui/ui (浏览器可加载 JS)', `${uiJs.files} 文件`, fmtKB(uiJs.rawBytes), fmtKB(uiJs.gzipBytes)],

@@ -87,7 +87,7 @@
     "LICENSE-MIT"
   ],
   "scripts": {
-    "build": "tsc -p tsconfig.build.json",
+    "build": "tsc -p tsconfig.build.json && tsc -p tsconfig.build.json --removeComments false --emitDeclarationOnly --outDir dist",
     "dev": "tsc -p tsconfig.build.json --watch",
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },
