@@ -230,9 +230,21 @@ test('drawer resizable：拖拽调宽生效并弹出 oas-resize 提示', async (
     const rail = document.querySelector('#drawer-resize')?.shadowRoot?.querySelector<HTMLElement>('[part="rail"]')
     return rail != null && !rail.hasAttribute('hidden')
   })
-  // 等打开动画结束（data-open 后仍滑入 ~180ms）再拖——动画期间 rail 位移中，
-  // 按动画起点量出的坐标按下会落在面板上而非 rail，拖拽不生效
-  await page.waitForTimeout(450)
+  // 等打开动画结束的真实信号：rail 中心 x 连续两次一致（滑入动画期间 rail 位移中，
+  // 按动画起点量出的坐标按下会落在面板上而非 rail，拖拽不生效）
+  let prevRailX: number | null = null
+  await expect
+    .poll(async () => {
+      const x = await page.evaluate(() => {
+        const rail = document.querySelector('#drawer-resize')!.shadowRoot!.querySelector<HTMLElement>('[part="rail"]')!
+        const r = rail.getBoundingClientRect()
+        return r.x + r.width / 2
+      })
+      const stable = prevRailX !== null && Math.abs(x - prevRailX) < 0.5
+      prevRailX = x
+      return stable
+    })
+    .toBe(true)
   const railBox = await page.evaluate(() => {
     const rail = document.querySelector('#drawer-resize')!.shadowRoot!.querySelector<HTMLElement>('[part="rail"]')!
     const r = rail.getBoundingClientRect()
@@ -324,7 +336,21 @@ test('drawer 面板打开后可视位置在视口内（CSS 顺序回归：placem
         )
         btn?.click()
       }, label)
-      await page.waitForTimeout(900)
+      // 开入动画完成的真实信号：data-open 面板完整落在视口内（即断言条件本身）
+      await expect
+        .poll(() =>
+          page.evaluate(() => {
+            const panel = [...document.querySelectorAll('oas-drawer')]
+              .map((d) => d.shadowRoot!.querySelector<HTMLElement>('[part="panel"]'))
+              .find((p) => p?.hasAttribute('data-open'))
+            if (!panel) return false
+            const b = panel.getBoundingClientRect()
+            return (
+              b.x >= 0 && b.x + b.width <= window.innerWidth + 1 && b.y >= 0 && b.y + b.height <= window.innerHeight + 1
+            )
+          }),
+        )
+        .toBe(true)
     },
   })
   for (const { label, act } of [open('左侧抽屉'), open('右侧抽屉'), open('顶部抽屉'), open('底部抽屉')]) {
@@ -346,7 +372,17 @@ test('drawer 面板打开后可视位置在视口内（CSS 顺序回归：placem
     ).toBe(true)
     // 关闭当前，避免影响下一个 placement 的查找
     await page.keyboard.press('Escape')
-    await page.waitForTimeout(600)
+    // 关闭动画完成的真实信号：不再存在 data-open 面板
+    await expect
+      .poll(() =>
+        page.evaluate(
+          () =>
+            ![...document.querySelectorAll('oas-drawer')].some((d) =>
+              d.shadowRoot!.querySelector('[part="panel"]')?.hasAttribute('data-open'),
+            ),
+        ),
+      )
+      .toBe(true)
   }
 })
 
@@ -472,14 +508,13 @@ test('drawer no-mask：遮罩不渲染、点击外部关闭（source=mask 取消
   })
   expect(maskState.hidden, 'no-mask 下遮罩应带 hidden').toBe(true)
   expect(maskState.display, 'no-mask 下遮罩不参与渲染').toBe('none')
-  // 面板内 pointerdown 不关闭
+  // 面板内 pointerdown 不关闭（同步派发：若缺陷复发的误关同步生效，立即读取）
   await page.evaluate(() => {
     const el = document.querySelector('#drawer-nomask-mode')!
     el.shadowRoot!.querySelector<HTMLElement>('[part="body"]')!.dispatchEvent(
       new PointerEvent('pointerdown', { bubbles: true, composed: true }),
     )
   })
-  await page.waitForTimeout(200)
   expect(
     await page.evaluate(() => document.querySelector('#drawer-nomask-mode')!.hasAttribute('visible')),
     '面板内部点击不得关闭',

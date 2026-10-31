@@ -200,7 +200,15 @@ test('splitter storage-key：真实拖拽落盘 → 刷新恢复；显式初值�
     undefined,
     { timeout: 15000 },
   )
-  await page.waitForTimeout(150)
+  // 恢复完成的真实信号：pane flex 已按存储落位
+  await expect
+    .poll(() =>
+      page.evaluate(() => {
+        const sp = document.querySelector('#splitter-persist-demo') as HTMLElement | null
+        return ((sp?.shadowRoot?.querySelector('.pane') as HTMLElement | null)?.style.flex ?? '').length > 0
+      }),
+    )
+    .toBe(true)
   const restored = await page.evaluate(() => {
     const sp = document.querySelector('#splitter-persist-demo') as HTMLElement & { shadowRoot: ShadowRoot }
     const pane = sp.shadowRoot.querySelector('.pane') as HTMLElement
@@ -283,16 +291,14 @@ test('splitter storage-key：真实拖拽落盘 → 刷新恢复；显式初值�
   expect(fresh.onMount, '无快照时 mount 不得新建 key').toBeNull()
   expect(fresh.afterUser, '用户交互后应创建快照').not.toBeNull()
 
-  // dark / RTL 不改变恢复后的比例、console 零告警
+  // dark / RTL 不改变恢复后的比例（percent attribute 与主题/方向无关，类切换同步进级联）
   await page.evaluate(() => document.documentElement.classList.add('dark'))
-  await page.waitForTimeout(250)
   const darkPercent = await page.evaluate(() => {
     const sp = document.querySelector('#splitter-persist-demo')
     return Number(sp?.getAttribute('percent') ?? '50')
   })
   expect(darkPercent).toBeCloseTo(restored.percent, 1)
   await page.evaluate(() => document.documentElement.setAttribute('dir', 'rtl'))
-  await page.waitForTimeout(150)
   const rtlPercent = await page.evaluate(() => {
     const sp = document.querySelector('#splitter-persist-demo')
     return Number(sp?.getAttribute('percent') ?? '50')
@@ -385,7 +391,18 @@ test('splitter storage-key：折叠前尺寸刷新恢复（legacy）+ 多面板 
     undefined,
     { timeout: 15000 },
   )
-  await page.waitForTimeout(150)
+  // 多面板恢复完成的真实信号：3 个 pane 的 flex 全部落位
+  await expect
+    .poll(() =>
+      page.evaluate(() => {
+        const sp = document.querySelector('#splitter-persist-multi') as HTMLElement | null
+        const flexes = Array.from(sp?.shadowRoot?.querySelectorAll('.pane') ?? []).map(
+          (p) => (p as HTMLElement).style.flex,
+        )
+        return flexes.length >= 3 && flexes.every((f) => f.length > 0)
+      }),
+    )
+    .toBe(true)
   const multiRestored = await page.evaluate(() => {
     const sp = document.querySelector('#splitter-persist-multi') as HTMLElement & { shadowRoot: ShadowRoot }
     const panes = sp.shadowRoot.querySelectorAll('.pane')

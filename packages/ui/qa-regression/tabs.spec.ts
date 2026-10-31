@@ -122,7 +122,10 @@ test('tabs 非激活项 hover 有视觉反馈（line 与 card 模式）', async 
   const tab = page.locator('oas-tabs [role="tab"][aria-selected="false"]').first()
   const before = await tab.evaluate((el) => getComputedStyle(el).backgroundColor)
   await tab.hover()
-  await page.waitForTimeout(300)
+  // hover 反馈生效的真实信号：背景已偏离静止值（即断言条件本身）
+  await expect
+    .poll(() => tab.evaluate((el) => getComputedStyle(el).backgroundColor), 'hover 后背景应变化')
+    .not.toBe(before)
   const after = await tab.evaluate((el) => getComputedStyle(el).backgroundColor)
   expect(after, 'hover 后背景应变化').not.toBe(before)
 })
@@ -160,7 +163,12 @@ test('tabs editable 真实双击进入重命名编辑态（真实 dblclick，非
   await page.locator('h2:has-text("可编辑重命名")').first().scrollIntoViewIfNeeded()
   const tabA = page.locator('#tabs-rename [role="tab"][data-value="a"]')
   await tabA.dblclick({ force: true })
-  await page.waitForTimeout(300)
+  // 重命名编辑态就绪的真实信号：.tab-rename-input 出现
+  await expect
+    .poll(() =>
+      page.evaluate(() => !!document.querySelector('#tabs-rename')!.shadowRoot!.querySelector('.tab-rename-input')),
+    )
+    .toBe(true)
   const hasInput = await page.evaluate(
     () => !!document.querySelector('#tabs-rename')!.shadowRoot!.querySelector('.tab-rename-input'),
   )
@@ -180,7 +188,12 @@ test('tabs editable 编辑态与非编辑态几何一致（编辑框贴合标签
     return { tabTop: tab.top, tabH: tab.height, labelTop: label.top, labelH: label.height }
   })
   await tabA.dblclick({ force: true })
-  await page.waitForTimeout(200)
+  // 编辑态就绪的真实信号：.tab-rename-input 出现（几何量测前置条件）
+  await expect
+    .poll(() =>
+      page.evaluate(() => !!document.querySelector('#tabs-rename')!.shadowRoot!.querySelector('.tab-rename-input')),
+    )
+    .toBe(true)
   const after = await tabA.evaluate((el) => {
     const input = el.querySelector('.tab-rename-input')!.getBoundingClientRect()
     const tab = el.getBoundingClientRect()
@@ -252,7 +265,14 @@ test('tabs more 模式（通用机制）：tab 全渲染不隐藏 + more 下拉�
   await page.evaluate(() => {
     document.querySelector('oas-tabs[more]')!.shadowRoot!.querySelector<HTMLElement>('.more-btn')!.click()
   })
-  await page.waitForTimeout(200)
+  // 下拉渲染完成的真实信号：.more-item 已列出（即断言条件本身）
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () => (document.querySelector('oas-tabs[more]')!.shadowRoot!.querySelectorAll('.more-item').length ?? 0) > 0,
+      ),
+    )
+    .toBe(true)
   const dropCount = await page.evaluate(
     () => document.querySelector('oas-tabs[more]')!.shadowRoot!.querySelectorAll('.more-item').length,
   )
@@ -265,7 +285,18 @@ test('tabs more 模式（通用机制）：tab 全渲染不隐藏 + more 下拉�
     const items = [...document.querySelector('oas-tabs[more]')!.shadowRoot!.querySelectorAll<HTMLElement>('.more-item')]
     items[items.length - 1]?.click()
   })
-  await page.waitForTimeout(600) // 等平滑滚动
+  // 平滑滚动落定的真实信号：tablist scrollLeft 连续两次一致
+  let prevTablistSL: number | null = null
+  await expect
+    .poll(async () => {
+      const sl = await page.evaluate(
+        () => document.querySelector('oas-tabs[more]')!.shadowRoot!.querySelector('.tablist')!.scrollLeft,
+      )
+      const stable = prevTablistSL !== null && sl === prevTablistSL
+      prevTablistSL = sl
+      return stable
+    })
+    .toBe(true)
   const result = await page.evaluate(() => {
     const el = document.querySelector('oas-tabs[more]')!
     return {

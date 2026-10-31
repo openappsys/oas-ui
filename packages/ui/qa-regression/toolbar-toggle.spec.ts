@@ -49,7 +49,8 @@ test('toolbar-toggle 选中态主题可见——light/dark 下选中与未选中
 
   // ---- dark：token 切换后选中项背景跟随 dark primary（识图缺陷场景） ----
   await page.evaluate(() => document.documentElement.classList.add('dark'))
-  await page.waitForTimeout(400)
+  // dark token 翻转完成的真实信号：primary 已偏离 light 值（即断言条件本身）
+  await expect.poll(async () => await tokenRgb('--oas-color-primary')).not.toBe(primaryLight)
   const primaryDark = await tokenRgb('--oas-color-primary')
   expect(primaryDark, 'dark token 应与 light 不同（主题已切换）').not.toBe(primaryLight)
 
@@ -61,7 +62,13 @@ test('toolbar-toggle 选中态主题可见——light/dark 下选中与未选中
     )!
     btn.click()
   })
-  await page.waitForTimeout(300)
+  // 选中背景过渡完成的真实信号：dark primary 已落到新选中项（即断言条件本身）
+  await expect
+    .poll(async () => {
+      const align = await readAlign()
+      return align.find((b) => b.pressed === 'true')!.bg
+    })
+    .toBe(primaryDark)
 
   btns = await readAlign()
   const selD = btns.find((b) => b.pressed === 'true')!

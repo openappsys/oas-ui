@@ -70,6 +70,8 @@ test('显式暂停按钮：点击切换 aria-pressed 与图标，autoplay 停走
   await btn.click()
   await expect(btn).toHaveAttribute('aria-pressed', 'true')
   // 显式暂停后超过两个间隔（2 * 2000ms）仍停走
+  // audit-exception: 「暂停 4.5s 后 index 不变」的被测语义就是时间流逝（暂停期间 autoplay 不走），
+  // 无 DOM 信号可等；4500ms = 2 × autoplay 间隔 2000ms + 500ms 余量
   await page.waitForTimeout(4500)
   const pausedIndex = await page.evaluate(
     () => document.querySelector('oas-carousel[pause-button]')!.getAttribute('index')!,
@@ -91,7 +93,10 @@ test('显式暂停按钮：点击切换 aria-pressed 与图标，autoplay 停走
   await expect(btn).toHaveAttribute('aria-pressed', 'false')
   await page.locator('h1').first().click()
   await page.mouse.move(0, 0)
-  await page.waitForTimeout(4500)
+  // 恢复走屏的真实信号：index 已前进（autoplay 间隔 2000ms，5s 轮询必覆盖一屏）
+  await expect
+    .poll(() => page.evaluate(() => document.querySelector('oas-carousel[pause-button]')!.getAttribute('index')!))
+    .not.toBe(before)
   const resumedIndex = await page.evaluate(
     () => document.querySelector('oas-carousel[pause-button]')!.getAttribute('index')!,
   )
@@ -131,7 +136,16 @@ test('carousel draggable：PC 显式开启后真实鼠标拖拽切屏、跟手�
   await page.evaluate(() => {
     document.querySelector('oas-carousel#carousel-drag')!.scrollIntoView({ block: 'center' })
   })
-  await page.waitForTimeout(300)
+  // 滚动静默的真实信号：连续两次 scrollY 一致（smooth 滚动结束后指针坐标才可用）
+  let prevDragSY: number | null = null
+  await expect
+    .poll(async () => {
+      const y = await page.evaluate(() => window.scrollY)
+      const stable = prevDragSY !== null && y === prevDragSY
+      prevDragSY = y
+      return stable
+    })
+    .toBe(true)
   const geometry = await page.evaluate(() => {
     const el = document.querySelector('oas-carousel#carousel-drag')!
     const vp = el.shadowRoot!.querySelector<HTMLElement>('[part="viewport"]')!
@@ -168,12 +182,11 @@ test('carousel draggable：PC 显式开启后真实鼠标拖拽切屏、跟手�
   })
   expect(after.noTransition).toBe(false)
   expect(after.readout).toBe('2')
-  // 小幅拖拽（<25%）回弹：index 不变
+  // 小幅拖拽（<25%）回弹：index 不变（pointerup 处理同步判定回弹，立即读取）
   await page.mouse.move(geometry.x, geometry.y)
   await page.mouse.down()
   await page.mouse.move(geometry.x - 30, geometry.y, { steps: 4 })
   await page.mouse.up()
-  await page.waitForTimeout(120)
   expect(await page.evaluate(() => document.querySelector('oas-carousel#carousel-drag')!.getAttribute('index'))).toBe(
     '1',
   )

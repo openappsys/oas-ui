@@ -9,7 +9,7 @@ test('form-item label 点击聚焦 oas-input 的 shadow 内 input（focus 委托
   // 限定到基础用法 demo 块（页面后续新增 demo 的 form-item 也在首位竞争）
   const item = page.locator('#form-grid oas-form-item[label]').first()
   await item.locator('[part="label"]').click()
-  await page.waitForTimeout(100)
+  // label→控件 focus 委托在 click 处理器内同步完成，立即读取
   const r = await page.evaluate(() => {
     const item = document.querySelector<HTMLElement>('#form-grid oas-form-item[label]')!
     const control = item.querySelector('oas-input')
@@ -268,7 +268,7 @@ test('form 两段式提交：校验失败 → 修正 → 再提交应派发 oas-
     form.addEventListener('oas-validate-fail', () => out.push('fail'))
     modal.setAttribute('visible', '')
   })
-  await page.waitForTimeout(200)
+  // 后续 fill 自带 actionability 等待（弹窗内控件可见可编辑后才填写），无需固定等待
 
   // 第一段：清空名称 → 真实点击保存 → 校验失败（错误文案出现）
   await page.getByTestId('qa-2stage-name').locator('input').fill('')
@@ -278,7 +278,13 @@ test('form 两段式提交：校验失败 → 修正 → 再提交应派发 oas-
   // 第二段：填入合法值 → 真实点击保存 → oas-submit 派发、宿主关闭弹窗
   await page.getByTestId('qa-2stage-name').locator('input').fill('影音')
   await page.getByTestId('qa-2stage-save').click()
-  await page.waitForTimeout(200)
+  // 提交完成的真实信号：事件桩已记录 submit（派发与关闭同一同步链）
+  await expect
+    .poll(
+      () => page.evaluate(() => (window as unknown as { __qa2stage: string[] }).__qa2stage.join(',')),
+      '修正后再提交应派发 oas-submit',
+    )
+    .toContain('submit')
   const events = await page.evaluate(() => (window as unknown as { __qa2stage: string[] }).__qa2stage.join(','))
   expect(events, '修正后再提交应派发 oas-submit').toContain('submit')
   await expect(page.getByTestId('qa-2stage-modal')).not.toHaveAttribute('visible', '')

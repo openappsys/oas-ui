@@ -85,7 +85,8 @@ test('collapsible 受控 demo 外部切换按钮联动（页面脚本写属性 �
     () => typeof (window as unknown as { collapsibleToggle?: unknown }).collapsibleToggle === 'function',
   )
   await page.evaluate(() => (window as unknown as { collapsibleToggle: () => void }).collapsibleToggle())
-  await page.waitForTimeout(100)
+  // 切换完成的真实信号：demo 状态文本更新（写回/aria/文本同一同步链）
+  await expect.poll(() => page.textContent('#collapsible-state')).toBe('收起')
   const afterToggle = await page.evaluate(() => {
     const el = document.querySelector('#collapsible-ctrl')!
     return {
@@ -184,7 +185,15 @@ test('collapsible 暗色渲染 + 触发器 focus ring 可见（token 消费）',
   await page.goto(PAGE, { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-collapsible')
   await page.evaluate(() => document.documentElement.setAttribute('data-theme', 'dark'))
-  await page.waitForTimeout(100)
+  // dark token 翻转的真实信号：触发器文字色已离开亮主题黑（即断言条件本身）
+  await expect
+    .poll(() =>
+      page.evaluate(() => {
+        const el = document.querySelector('oas-collapsible')!
+        return getComputedStyle(el.shadowRoot!.querySelector('[part="trigger"]')!).color
+      }),
+    )
+    .not.toBe('rgb(0, 0, 0)')
   const r = await page.evaluate(() => {
     const el = document.querySelector('oas-collapsible')!
     const trigger = el.shadowRoot!.querySelector<HTMLElement>('[part="trigger"]')!
@@ -212,6 +221,7 @@ test('collapsible 页面 console 零告警', async ({ page }) => {
   page.on('pageerror', (err) => errors.push(`pageerror: ${err.message}`))
   await page.goto(PAGE, { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-collapsible')
-  await page.waitForTimeout(500)
+  // console 零告警断言的渲染收尾信号：字体加载完成
+  await page.evaluate(() => document.fonts.ready)
   expect(errors, `console 应零告警，实际：${errors.join(' | ')}`).toEqual([])
 })

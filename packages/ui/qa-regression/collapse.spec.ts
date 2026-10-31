@@ -27,7 +27,19 @@ test('collapse 点击头切换展开/收起：open 反射 + aria-expanded + 内�
     el.addEventListener('oas-change', (e) => (el.__changes as unknown[]).push((e as CustomEvent).detail))
     el.querySelector('oas-collapse-item')!.shadowRoot!.querySelector<HTMLElement>('[part="head"]')!.click()
   })
-  await page.waitForTimeout(500) // 等展开过渡完成
+  // 展开过渡完成的真实信号：open 已挂且 body-wrap 高度离开 0（即断言条件本身）
+  await expect
+    .poll(() =>
+      page.evaluate(() => {
+        const el = document.querySelectorAll('oas-collapse')[2]!
+        const item = el.querySelector('oas-collapse-item')!
+        return (
+          item.hasAttribute('open') &&
+          item.shadowRoot!.querySelector<HTMLElement>('[part="body-wrap"]')!.getBoundingClientRect().height > 0
+        )
+      }),
+    )
+    .toBe(true)
   const opened = await page.evaluate(() => {
     const el = document.querySelectorAll('oas-collapse')[2] as HTMLElement & { __changes?: unknown[] }
     const item = el.querySelector('oas-collapse-item')!
@@ -52,7 +64,19 @@ test('collapse 点击头切换展开/收起：open 反射 + aria-expanded + 内�
     const el = document.querySelectorAll('oas-collapse')[2]!
     el.querySelector('oas-collapse-item')!.shadowRoot!.querySelector<HTMLElement>('[part="head"]')!.click()
   })
-  await page.waitForTimeout(500)
+  // 收起过渡完成的真实信号：body-wrap 高度归零（过渡中间帧高度 >0，必须等终态）
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () =>
+          document
+            .querySelectorAll('oas-collapse')[2]!
+            .querySelector('oas-collapse-item')!
+            .shadowRoot!.querySelector<HTMLElement>('[part="body-wrap"]')!
+            .getBoundingClientRect().height,
+      ),
+    )
+    .toBe(0)
   const closed = await page.evaluate(() => {
     const el = document.querySelectorAll('oas-collapse')[2] as HTMLElement & { __changes?: unknown[] }
     const item = el.querySelector('oas-collapse-item')!
@@ -73,7 +97,8 @@ test('collapse 点击头切换展开/收起：open 反射 + aria-expanded + 内�
 test('collapse 手风琴互斥：展开新项收起旧项、再点已展开项全部收起、#collapse-state 反馈同步', async ({ page }) => {
   await page.goto(PAGE, { waitUntil: 'domcontentloaded' })
   await up(page, '#collapse-event')
-  await page.waitForTimeout(300) // 等 demo 宿主挂 oas-change 监听（onMounted 内异步 import）
+  // demo 宿主挂 oas-change 监听的真实信号：#collapse-state（与监听同一模板挂载）
+  await expect(page.locator('#collapse-state')).toBeAttached()
   // 初始 active="a"：面板 a 展开
   const init = await page.evaluate(() => {
     const el = document.querySelector('#collapse-event')!
@@ -91,7 +116,8 @@ test('collapse 手风琴互斥：展开新项收起旧项、再点已展开项�
     const el = document.querySelector('#collapse-event')!
     el.querySelectorAll('oas-collapse-item')[1]!.shadowRoot!.querySelector<HTMLElement>('[part="head"]')!.click()
   })
-  await page.waitForTimeout(200)
+  // 互斥切换完成的真实信号：#collapse-state 反馈更新为 b（写回与反馈同一同步链）
+  await expect.poll(() => page.textContent('#collapse-state')).toBe('b')
   const switched = await page.evaluate(() => {
     const el = document.querySelector('#collapse-event')!
     const items = el.querySelectorAll('oas-collapse-item')
@@ -114,7 +140,8 @@ test('collapse 手风琴互斥：展开新项收起旧项、再点已展开项�
     const el = document.querySelector('#collapse-event')!
     el.querySelectorAll('oas-collapse-item')[1]!.shadowRoot!.querySelector<HTMLElement>('[part="head"]')!.click()
   })
-  await page.waitForTimeout(200)
+  // 全部收起完成的真实信号：#collapse-state 反馈更新为「（无）」
+  await expect.poll(() => page.textContent('#collapse-state')).toBe('（无）')
   const collapsed = await page.evaluate(() => {
     const el = document.querySelector('#collapse-event')!
     return {

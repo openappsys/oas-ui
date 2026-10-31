@@ -14,13 +14,17 @@ test('皮肤画廊：点皮肤/主题有可见反馈 + console 零告警', async
   await wrap.waitFor({ timeout: 15000 })
 
   await page.getByRole('button', { name: 'violet' }).first().click()
-  await page.waitForTimeout(300)
+  // 主题切换过渡完成的真实信号：主色 token 到达 violet 目标值（即断言条件本身）
+  await expect
+    .poll(() => wrap.evaluate((el) => getComputedStyle(el).getPropertyValue('--oas-color-primary').trim()))
+    .toBe('#7c3aed')
   const afterViolet = await wrap.evaluate((el) => getComputedStyle(el).getPropertyValue('--oas-color-primary').trim())
   expect(afterViolet.toLowerCase(), '点 violet 主色应变').toBe('#7c3aed')
 
   const bgLight = await wrap.evaluate((el) => getComputedStyle(el).backgroundColor)
   await page.getByRole('button', { name: 'dark', exact: true }).click()
-  await page.waitForTimeout(400)
+  // 背景变深过渡完成的真实信号：背景色已偏离 light 值
+  await expect.poll(() => wrap.evaluate((el) => getComputedStyle(el).backgroundColor)).not.toBe(bgLight)
   const bgDark = await wrap.evaluate((el) => getComputedStyle(el).backgroundColor)
   expect(bgDark, '点 dark 背景应变深').not.toBe(bgLight)
   const primaryDarkViolet = await wrap.evaluate((el) =>
@@ -32,7 +36,12 @@ test('皮肤画廊：点皮肤/主题有可见反馈 + console 零告警', async
   await page.goto('/en/guide/skins.html', { waitUntil: 'domcontentloaded' })
   await page.locator('.sg-wrap').waitFor({ timeout: 15000 })
   await page.getByRole('button', { name: 'emerald' }).first().click()
-  await page.waitForTimeout(300)
+  // 主题切换过渡完成的真实信号：主色 token 到达 emerald 目标值
+  await expect
+    .poll(() =>
+      page.locator('.sg-wrap').evaluate((el) => getComputedStyle(el).getPropertyValue('--oas-color-primary').trim()),
+    )
+    .toBe('#059669')
   const p = await page
     .locator('.sg-wrap')
     .evaluate((el) => getComputedStyle(el).getPropertyValue('--oas-color-primary').trim())

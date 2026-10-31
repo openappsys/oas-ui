@@ -584,23 +584,35 @@ test('marquee 悬停暂停回归：进出循环不重启动画（animationstart 
     // 宿主放视口内（top=200px）+ z-index 盖过底下内容，:hover 需要真实指针可达
     top: '200px',
   })
-  // 采样期间用真实鼠标驱动 :hover（进入→离开→再进入→离开）
+  // 采样期间用真实鼠标驱动 :hover（进入→离开→再进入→离开）；每段驻留以确定性信号收口：
+  // 进入 = 末帧 paused（悬停暂停即时生效）；移出 = 末帧 running 且 running 采样 ≥20 帧
+  // （下游速度连续性断言需 >15 个 running 帧，帧数是确定性信号，替代固定 dwell）
   await page.evaluate((key) => {
     ;(window as typeof window & Record<string, MqPageProbe>)[key]!.begin()
   }, PROBE_KEY)
+  const lastPs = (key: string) =>
+    page.evaluate((k) => {
+      const probe = (window as typeof window & Record<string, MqPageProbe>)[k]!
+      return probe.samples[probe.samples.length - 1]?.ps ?? ''
+    }, key)
+  const runningCount = (key: string) =>
+    page.evaluate((k) => {
+      const probe = (window as typeof window & Record<string, MqPageProbe>)[k]!
+      return probe.samples.filter((s) => s.ps === 'running').length
+    }, key)
   const box = await page.evaluate((key) => {
     const probe = (window as typeof window & Record<string, MqPageProbe>)[key]!
     const r = probe.host.getBoundingClientRect()
     return { x: r.x + r.width / 2, y: r.y + r.height / 2 }
   }, PROBE_KEY)
   await page.mouse.move(box.x, box.y)
-  await page.waitForTimeout(500)
+  await expect.poll(() => lastPs(PROBE_KEY), { timeout: 3000 }).toBe('paused')
   await page.mouse.move(4, 4)
-  await page.waitForTimeout(500)
+  await expect.poll(() => runningCount(PROBE_KEY), { timeout: 5000 }).toBeGreaterThanOrEqual(20)
   await page.mouse.move(box.x, box.y)
-  await page.waitForTimeout(500)
+  await expect.poll(() => lastPs(PROBE_KEY), { timeout: 3000 }).toBe('paused')
   await page.mouse.move(4, 4)
-  await page.waitForTimeout(300)
+  await expect.poll(() => runningCount(PROBE_KEY), { timeout: 5000 }).toBeGreaterThanOrEqual(20)
   const { samples, starts } = await page.evaluate((key) => {
     const probe = (window as typeof window & Record<string, MqPageProbe>)[key]!
     return probe.stop()

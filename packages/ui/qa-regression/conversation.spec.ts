@@ -80,6 +80,7 @@ test('message-scroller AI 式 auto-scroll：离底追加不打扰、回底后跟
   await up(page, '#msc-ai')
 
   // 先追加数行使内容溢出视口（内容不满屏时 atBottom 恒真，「离底」语义不成立）
+  // 每条追加后双 rAF：让滚动器的逐条处理（跟随判定）确定性地跑完一帧节流窗口
   for (let i = 0; i < 6; i++) {
     await page.evaluate(() => {
       const host = document.querySelector('#msc-ai') as HTMLElement
@@ -87,7 +88,9 @@ test('message-scroller AI 式 auto-scroll：离底追加不打扰、回底后跟
       row.textContent = '铺垫行 ' + Date.now()
       host.appendChild(row)
     })
-    await page.waitForTimeout(60)
+    await page.evaluate(
+      () => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))),
+    )
   }
   await expect
     .poll(
@@ -103,7 +106,7 @@ test('message-scroller AI 式 auto-scroll：离底追加不打扰、回底后跟
   await scrollTo(page, '#msc-ai', 0)
   const topBefore = (await readScroll(page, '#msc-ai')).top
 
-  // 流式追加：离底阅读时不被拉回
+  // 流式追加：离底阅读时不被拉回（每条追加后双 rAF，滚动器逐条处理窗口确定性跑完）
   for (let i = 0; i < 5; i++) {
     await page.evaluate(() => {
       const host = document.querySelector('#msc-ai') as HTMLElement
@@ -111,7 +114,9 @@ test('message-scroller AI 式 auto-scroll：离底追加不打扰、回底后跟
       row.textContent = '流式行 ' + Date.now()
       host.appendChild(row)
     })
-    await page.waitForTimeout(60)
+    await page.evaluate(
+      () => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))),
+    )
   }
   const afterAway = await readScroll(page, '#msc-ai')
   expect(afterAway.top, '离底阅读时不被拉回').toBe(topBefore)
@@ -369,7 +374,7 @@ test('message-scroller turn-anchor：锚顶跟随中流式追加，提问钉在�
 
   // 真点「跳到当前提问」→ scrollToMessage 精确到锚顶（offset ≈0）
   await realClick(page, '#msc-turn-anchor', null)
-  await page.waitForTimeout(200)
+  // 跳转滚动落定的真实信号：锚行顶对视口顶偏差进入 ±8px（即断言条件本身）
   const readAnchorOffset = () =>
     page.evaluate(() => {
       const host = document.querySelector('#msc-turn') as HTMLElement
@@ -377,6 +382,7 @@ test('message-scroller turn-anchor：锚顶跟随中流式追加，提问钉在�
       const anchor = [...host.querySelectorAll('oas-message-row[anchor]')].at(-1) as HTMLElement
       return anchor.getBoundingClientRect().top - vp.getBoundingClientRect().top
     })
+  await expect.poll(async () => Math.abs(await readAnchorOffset()), { timeout: 5000 }).toBeLessThanOrEqual(8)
   expect(Math.abs(await readAnchorOffset()), '跳转后锚行顶对视口顶（±8px）').toBeLessThanOrEqual(8)
 
   // 真点「流式追加回答」：首行把锚对齐到 prev-peek 位（demo 首锚在内容顶，contentY-peek<0

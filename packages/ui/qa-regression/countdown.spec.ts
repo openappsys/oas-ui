@@ -17,6 +17,7 @@ test('countdown countup 正计时：走时递增、active 暂停冻结、reset()
     )
   const first = await read()
   expect(first, '正计时初始为 00:00:00').toBe('00:00:00')
+  // audit-exception: 走表 ≥1.6s 是被测行为本身（秒位递增），时间流逝无 DOM 信号可等
   await page.waitForTimeout(1600)
   const second = await read()
   expect(second, '走时递增（≥1s）').not.toBe('00:00:00')
@@ -26,8 +27,9 @@ test('countdown countup 正计时：走时递增、active 暂停冻结、reset()
   await page.evaluate(() => {
     document.querySelector('oas-countdown#countup-active')!.setAttribute('active', 'false')
   })
-  await page.waitForTimeout(300)
+  // 暂停同步生效：置 false 后 display 冻结，立即采样基线
   const frozen = await read()
+  // audit-exception: 时钟组件的走表 1.2s 是被测行为本身（「暂停期间冻结」），时间流逝无 DOM 信号可等
   await page.waitForTimeout(1200)
   expect(await read(), '暂停期间冻结').toBe(frozen)
 
@@ -35,6 +37,7 @@ test('countdown countup 正计时：走时递增、active 暂停冻结、reset()
   await page.evaluate(() => {
     document.querySelector('oas-countdown#countup-active')!.setAttribute('active', 'true')
   })
+  // audit-exception: 同上，恢复续走 1.3s 是被测行为（秒位前进），时间流逝无信号可等
   await page.waitForTimeout(1300)
   const resumed = await read()
   expect(resumed, '恢复后续走（秒位前进）').not.toBe(frozen)
@@ -57,7 +60,8 @@ test('countdown countup 正计时：dark 主题下显示与 light 一致可读',
     })
   const light = await readColor()
   await page.evaluate(() => document.documentElement.classList.add('dark'))
-  await page.waitForTimeout(300)
+  // dark token 翻转的真实信号：颜色已偏离 light 值（可能有过渡，读终态）
+  await expect.poll(readColor, 'dark 下颜色翻转（token 暗色变体生效）').not.toBe(light)
   const dark = await readColor()
   expect(light, 'light 下颜色来自 token').not.toBe('')
   expect(dark, 'dark 下颜色翻转（token 暗色变体生效）').not.toBe(light)

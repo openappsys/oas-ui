@@ -16,7 +16,8 @@ test('picker 真实滚轮：滚动落停选中变化并派发 oas-change（demo 
   const col = page.locator('#pk-basic').locator('[part="column"]').first()
   await col.hover()
   await page.mouse.wheel(0, 120)
-  await page.waitForTimeout(400)
+  // 滚动吸附落停提交完成的真实信号：demo 反馈文本更新（oas-change 已派发，即断言条件本身）
+  await expect.poll(() => out.textContent(), { timeout: 5000 }).not.toBe(before)
   const r = await page.evaluate(() => {
     const el = document.querySelector('#pk-basic')!
     const sel = [...el.shadowRoot!.querySelectorAll('.column')[0]!.querySelectorAll('.item')].findIndex(
@@ -44,7 +45,19 @@ test('picker 键盘：列聚焦后方向键移动选中并派发 oas-change', as
     return arr
   })
   await page.keyboard.press('ArrowDown')
-  await page.waitForTimeout(300)
+  // 选中移动完成的真实信号：首列选中索引到 1（吸附落停提交后 value[0] 同步回写 banana）
+  await expect
+    .poll(() =>
+      page.evaluate(() =>
+        [
+          ...(document
+            .querySelector('#pk-basic')!
+            .shadowRoot!.querySelectorAll('.column')[0]!
+            .querySelectorAll('.item') ?? []),
+        ].findIndex((i) => i.getAttribute('aria-selected') === 'true'),
+      ),
+    )
+    .toBe(1)
   const r = await page.evaluate(() => {
     const el = document.querySelector('#pk-basic')!
     return {
@@ -71,7 +84,19 @@ test('picker 级联：父列滚动变更 → 子列重建并复位首可用项�
   const col = page.locator('#pk-cascade').locator('[part="column"]').first()
   await col.hover()
   await page.mouse.wheel(0, 40)
-  await page.waitForTimeout(500)
+  // 级联子列重建完成的真实信号：子列项已切到江苏城市（即断言条件本身）
+  await expect
+    .poll(() =>
+      page.evaluate(() =>
+        [
+          ...(document
+            .querySelector('#pk-cascade')!
+            .shadowRoot!.querySelectorAll('.column')[1]!
+            .querySelectorAll('.item') ?? []),
+        ].map((i) => i.textContent),
+      ),
+    )
+    .toEqual(['南京', '苏州'])
   const r = await page.evaluate(() => {
     const el = document.querySelector('#pk-cascade')!
     return {

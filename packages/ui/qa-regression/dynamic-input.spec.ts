@@ -38,7 +38,8 @@ function readLog(page: import('@playwright/test').Page, selector: string): Promi
 test('dynamic-input 点击添加按钮：追加空行 + oas-add { index } + oas-change + 反馈文本', async ({ page }) => {
   await page.goto(PAGE, { waitUntil: 'domcontentloaded' })
   await up(page, '#dyn-event')
-  await page.waitForTimeout(300) // 等 demo 宿主挂事件监听
+  // demo 宿主挂事件监听的真实信号：#dyn-output（与监听同一 Vue 模板 patch 挂载）
+  await expect(page.locator('#dyn-output')).toBeAttached()
   await attachLog(page, '#dyn-event')
   const initCount = await page.evaluate(
     () => document.querySelector('#dyn-event')!.shadowRoot!.querySelectorAll('.row').length,
@@ -47,7 +48,10 @@ test('dynamic-input 点击添加按钮：追加空行 + oas-add { index } + oas-
   await page.evaluate(() => {
     document.querySelector('#dyn-event')!.shadowRoot!.querySelector<HTMLElement>('.add')!.click()
   })
-  await page.waitForTimeout(200)
+  // 追加完成的真实信号：行数到 2（模型写回/事件派发同一同步链）
+  await expect
+    .poll(() => page.evaluate(() => document.querySelector('#dyn-event')!.shadowRoot!.querySelectorAll('.row').length))
+    .toBe(2)
   const after = await page.evaluate(() => {
     const el = document.querySelector('#dyn-event')!
     const rows = [...el.shadowRoot!.querySelectorAll<HTMLElement>('.row')]
@@ -84,7 +88,10 @@ test('dynamic-input 点击删除按钮：移除对应行 + oas-remove { index, v
   await page.evaluate(() => {
     document.querySelector('#dyn-event')!.shadowRoot!.querySelector<HTMLElement>('.row .remove')!.click()
   })
-  await page.waitForTimeout(200)
+  // 删除完成的真实信号：行数归 0（受控通道写回同一同步链）
+  await expect
+    .poll(() => page.evaluate(() => document.querySelector('#dyn-event')!.shadowRoot!.querySelectorAll('.row').length))
+    .toBe(0)
   const after = await page.evaluate(() => {
     const el = document.querySelector('#dyn-event')!
     return {
@@ -129,7 +136,14 @@ test('dynamic-input min=2：不足自动补足行数、达 min 删除按钮禁�
   await page.evaluate(() => {
     document.querySelector('oas-dynamic-input[min="2"]')!.shadowRoot!.querySelector<HTMLElement>('.add')!.click()
   })
-  await page.waitForTimeout(200)
+  // 追加完成的真实信号：行数到 3
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () => document.querySelector('oas-dynamic-input[min="2"]')!.shadowRoot!.querySelectorAll('.row').length,
+      ),
+    )
+    .toBe(3)
   const grown = await page.evaluate(() => {
     const el = document.querySelector('oas-dynamic-input[min="2"]')!
     const rows = [...el.shadowRoot!.querySelectorAll<HTMLElement>('.row')]
@@ -145,13 +159,17 @@ test('dynamic-input min=2：不足自动补足行数、达 min 删除按钮禁�
 test('dynamic-input 行内输入（真实 fill 两级 shadow）：更新模型 + 派发 oas-change + 反馈文本', async ({ page }) => {
   await page.goto(PAGE, { waitUntil: 'domcontentloaded' })
   await up(page, '#dyn-event')
-  await page.waitForTimeout(300)
+  // demo 宿主挂事件监听的真实信号：#dyn-output（与监听同一 Vue 模板 patch 挂载）
+  await expect(page.locator('#dyn-output')).toBeAttached()
   await attachLog(page, '#dyn-event')
   // 行内 oas-input 的内部 input（[part="input"]，两级 shadow 穿透）真实输入
   const inner = page.locator('#dyn-event .row').first().locator('oas-input [part="input"]')
   await expect(inner).toBeVisible()
   await inner.fill('xyz')
-  await page.waitForTimeout(200)
+  // 模型写回完成的真实信号：model-value 属性更新为 ["xyz"]
+  await expect
+    .poll(() => page.evaluate(() => document.querySelector('#dyn-event')?.getAttribute('model-value')))
+    .toBe('["xyz"]')
   const after = await page.evaluate(() => ({
     modelValue: JSON.parse(document.querySelector('#dyn-event')!.getAttribute('model-value') ?? '[]'),
     out: document.querySelector('#dyn-output')!.textContent,

@@ -248,7 +248,16 @@ test('hover-card 浮层可悬停：触发器 → 卡片跨间隙移动不闪关'
   await page.evaluate((s) => {
     document.querySelector(s)?.querySelector('oas-button')?.scrollIntoView({ block: 'center' })
   }, sel)
-  await page.waitForTimeout(300)
+  // 滚动静默的真实信号：连续两次 scrollY 一致（smooth 滚动结束后指针坐标才可用）
+  let prevHcSY: number | null = null
+  await expect
+    .poll(async () => {
+      const y = await page.evaluate(() => window.scrollY)
+      const stable = prevHcSY !== null && y === prevHcSY
+      prevHcSY = y
+      return stable
+    })
+    .toBe(true)
   const trigger = await page.evaluate((s) => {
     const host = document.querySelector(s) as HTMLElement
     const el = host.querySelector('oas-button') as HTMLElement
@@ -273,6 +282,8 @@ test('hover-card 浮层可悬停：触发器 → 卡片跨间隙移动不闪关'
     return { x: r.left + r.width / 2, y: r.top + r.height / 2 }
   }, sel)
   await page.mouse.move(card.x, card.y)
+  // audit-exception: 「驻留超过 close-delay 仍开」的被测语义就是时间流逝（close-delay 计时到期不关闭），
+  // 无 DOM 信号可等；600ms = open/close-delay 量级 + 余量
   await page.waitForTimeout(600)
   const stillOpen = await page.evaluate((s) => {
     const host = document.querySelector(s) as HTMLElement
@@ -303,12 +314,13 @@ test.describe('触屏降级（P3，iPhone 仿真）', () => {
           ?.shadowRoot?.querySelector('[part="card"]')
           ?.getAttribute('aria-hidden'),
       )
-    // 悬停（触屏合成事件）不打开
+    // 悬停（触屏合成事件）不打开：hover-delay 的「不发生」断言，无可等待的 DOM 信号。
+    // audit-exception: 否定断言，250ms = hover-delay 150ms + 100ms 派发余量
     const btn = page.locator('#hc-coarse-tap oas-button')
     await btn.scrollIntoViewIfNeeded()
     const box = (await btn.boundingBox())!
     await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
-    await page.waitForTimeout(400)
+    await page.waitForTimeout(250)
     expect(await cardState(), '触屏下 hover 不得打开 hover-card').toBe('true')
     // 点按打开
     await page.tap('#hc-coarse-tap oas-button')

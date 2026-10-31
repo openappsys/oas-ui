@@ -116,7 +116,15 @@ test('pull-refresh 不足阈值释放：零事件零残留（回弹归零）', a
   // 短拉 24px（阻力化后 ~21.6px < 60px 阈值）
   await dragDown(page, '#pr-basic', 24)
 
-  await page.waitForTimeout(700)
+  // 回弹完成的真实信号：track transform 已归零（回弹过渡期间为中间值）
+  await expect
+    .poll(() =>
+      page.evaluate(() => {
+        const host = document.querySelector('#pr-basic')!
+        return (host.shadowRoot!.querySelector('[part="track"]') as HTMLElement).style.transform
+      }),
+    )
+    .toBe('translateY(0px)')
   const after = await readShadow(page, '#pr-basic')
   expect(after.state, '保持 idle').toBe('idle')
   expect(after.transform, '回弹归零').toBe('translateY(0px)')
@@ -132,7 +140,7 @@ test('pull-refresh disabled：手势全不响应', async ({ page }) => {
   const outBefore = await page.locator('#pr-disabled-out').textContent()
   await dragDown(page, '#pr-disabled', 140)
 
-  await page.waitForTimeout(500)
+  // disabled 下拖拽无任何状态变化：state 恒 idle（同步判定，立即读取）
   const after = await readShadow(page, '#pr-disabled')
   expect(after.state).toBe('idle')
   expect(after.transform).toBe('translateY(0px)')
@@ -154,7 +162,7 @@ test('pull-refresh 滚离顶部：下拉手势放行（不接管、不派发）'
   const outBefore = await page.locator('#pr-basic-out').textContent()
   await dragDown(page, '#pr-basic', 140)
 
-  await page.waitForTimeout(500)
+  // 非顶部起手不接管：state 恒 idle、无位移（同步判定，立即读取）
   const after = await readShadow(page, '#pr-basic')
   expect(after.state, '非顶部起手不接管').toBe('idle')
   expect(after.transform, '无位移').toBe('translateY(0px)')
@@ -211,7 +219,14 @@ test.describe('移动仿真（触屏真手势）', () => {
       await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: cx, y: y0 + i * 20 }] })
     }
     await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] })
-    await page.waitForTimeout(400)
+    // 刷新链路完成的真实信号：data-state 进入 refreshing/success（即断言条件本身）
+    await expect
+      .poll(() =>
+        page.evaluate(() =>
+          ['refreshing', 'success'].includes(document.querySelector('#pr-basic')!.getAttribute('data-state') ?? ''),
+        ),
+      )
+      .toBe(true)
     const r = await page.evaluate(() => ({
       state: document.querySelector('#pr-basic')!.getAttribute('data-state'),
       fired: (window as unknown as { __rf: number }).__rf,

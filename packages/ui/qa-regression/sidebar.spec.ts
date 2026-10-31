@@ -249,7 +249,15 @@ test('sidebar 折叠态树形父项点击开 flyout：面板在 rail 右侧视�
     sb.setAttribute('collapsed', '')
     await customElements.whenDefined('oas-sidebar')
   })
-  await page.waitForTimeout(300)
+  // 折叠 rail 渲染完成的真实信号：rail 上已出现带弹出能力的父项
+  await expect
+    .poll(() =>
+      page.evaluate(() => {
+        const sb = [...document.querySelectorAll('oas-sidebar')].find((s) => s.hasAttribute('collapsed'))
+        return !!sb?.shadowRoot?.querySelector('[part="item"][aria-haspopup="true"]')
+      }),
+    )
+    .toBe(true)
   const r1 = await page.evaluate(async () => {
     const sb = [...document.querySelectorAll('oas-sidebar')].find((s) => s.hasAttribute('collapsed'))!
     const btn = sb.shadowRoot!.querySelector<HTMLElement>('[part="item"][aria-haspopup="true"]')!
@@ -317,7 +325,26 @@ test('sidebar flyout hover 链路：hover 父项打开，移入面板驻留不�
     blk.scrollIntoView({ block: 'center' })
     blk.querySelector('oas-sidebar')!.setAttribute('collapsed', '')
   })
-  await page.waitForTimeout(300)
+  // 折叠 rail 渲染完成的真实信号（同上一用例）
+  await expect
+    .poll(() =>
+      page.evaluate(() => {
+        const sb = [...document.querySelectorAll('oas-sidebar')].find((s) => s.hasAttribute('collapsed'))
+        return !!sb?.shadowRoot?.querySelector('[part="item"][aria-haspopup="true"]')
+      }),
+    )
+    .toBe(true)
+  // 滚动静默的真实信号：scrollIntoView 为平滑滚动，连续两次 scrollY 一致后坐标才可用
+  // （滚动中途读 rect → 真实指针落到错位处，hover 永不命中）
+  let prevFlyoutScrollY: number | null = null
+  await expect
+    .poll(async () => {
+      const y = await page.evaluate(() => window.scrollY)
+      const stable = prevFlyoutScrollY !== null && y === prevFlyoutScrollY
+      prevFlyoutScrollY = y
+      return stable
+    })
+    .toBe(true)
   // 真实鼠标轨迹：移到父项图标中心（hover 开）
   const target = await page.evaluate(() => {
     const sb = [...document.querySelectorAll('oas-sidebar')].find((s) => s.hasAttribute('collapsed'))!
@@ -326,21 +353,31 @@ test('sidebar flyout hover 链路：hover 父项打开，移入面板驻留不�
     return { x: r.left + r.width / 2, y: r.top + r.height / 2, value: btn.dataset.value }
   })
   await page.mouse.move(target.x, target.y)
-  await page.waitForTimeout(250) // > FLYOUT_OPEN_DELAY(150)，hover 开面板
+  // hover 延迟展开完成的真实信号：flyout 打开（FLYOUT_OPEN_DELAY 150ms，即断言条件本身）
+  const parentValue = target.value
+  if (!parentValue) throw new Error('导航按钮缺少 data-value，无法定位 flyout')
+  const flyoutOpen = (val: string) =>
+    page.evaluate((v) => {
+      const sb = [...document.querySelectorAll('oas-sidebar')].find((s) => s.hasAttribute('collapsed'))!
+      return !sb.shadowRoot!.querySelector<HTMLElement>(`[part="flyout"][data-parent="${v}"]`)!.hidden
+    }, val)
+  await expect.poll(() => flyoutOpen(parentValue), { timeout: 3000 }).toBe(true)
   const opened = await page.evaluate((v) => {
     const sb = [...document.querySelectorAll('oas-sidebar')].find((s) => s.hasAttribute('collapsed'))!
     const flyout = sb.shadowRoot!.querySelector<HTMLElement>(`[part="flyout"][data-parent="${v}"]`)!
     const fR = flyout.getBoundingClientRect()
     return { open: !flyout.hidden, x: fR.left + 20, y: fR.top + 20 }
-  }, target.value)
+  }, parentValue)
   expect(opened.open, 'hover 父项应打开 flyout').toBe(true)
-  // 移入面板内驻留 400ms（> FLYOUT_CLOSE_DELAY(300)）：面板不应自动关闭
+  // 移入面板内驻留 420ms（> FLYOUT_CLOSE_DELAY(300)）：面板不应自动关闭
   await page.mouse.move(opened.x, opened.y, { steps: 6 })
+  // audit-exception: 「驻留超过 CLOSE_DELAY 后仍开」的被测语义就是时间流逝（300ms 计时不触发关闭），
+  // 无 DOM 信号可等；420ms = CLOSE_DELAY 300ms + 120ms 余量
   await page.waitForTimeout(420)
   const stillOpen = await page.evaluate((v) => {
     const sb = [...document.querySelectorAll('oas-sidebar')].find((s) => s.hasAttribute('collapsed'))!
     return !sb.shadowRoot!.querySelector<HTMLElement>(`[part="flyout"][data-parent="${v}"]`)!.hidden
-  }, target.value)
+  }, parentValue)
   expect(stillOpen, '指针已在面板内悬停时面板不应自动关闭（hover 链路不得断裂）').toBe(true)
 })
 

@@ -308,6 +308,8 @@ test('action-bar 任务进度井：取消派发 oas-cancel、进度受控推进�
     { timeout: 5000 },
   )
   const frozen = await page.evaluate(() => document.querySelector('#ab-task-well')!.getAttribute('progress'))
+  // audit-exception: 「取消后进度不再推进」为否定断言（demo 定时器已停、正确表现是值不变），
+  // 无信号可等；700ms 为观察窗口——若取消缺陷复发（定时器未停），进度必在该窗口内偏离
   await page.waitForTimeout(700)
   expect(
     await page.evaluate(() => document.querySelector('#ab-task-well')!.getAttribute('progress')),
@@ -325,7 +327,7 @@ test('action-bar charcoal 恒深表面：light/dark 主题下背景色一致（�
     })
   const lightBg = await bgOf()
   await page.evaluate(() => document.documentElement.classList.add('dark'))
-  await page.waitForTimeout(120)
+  // charcoal 恒深断言：类切换同步进级联，读取即新值（值相同则无过渡插值风险）
   const darkBg = await bgOf()
   await page.evaluate(() => document.documentElement.classList.remove('dark'))
   expect(darkBg, 'charcoal 表体在 dark 主题下背景色不变（恒深 token 契约）').toBe(lightBg)
@@ -652,10 +654,10 @@ for (const page_ of ['titlebar', 'statusbar', 'inspector', 'action-bar']) {
   test(`workbench ${page_} 页 console 零告警 + 暗色冒烟`, async ({ page }) => {
     await page.goto(`/components/${page_}.html`, { waitUntil: 'domcontentloaded' })
     await up(page, `oas-${page_}`)
-    await page.waitForTimeout(400)
+    // console 零告警断言的渲染收尾信号：字体加载完成（资源期报错此刻必然已入列）
+    await page.evaluate(() => document.fonts.ready)
     // 暗色切换后组件 shadow 正常渲染（任取一个组件探活）
     await page.evaluate(() => document.documentElement.classList.add('dark'))
-    await page.waitForTimeout(200)
     const probe = await page.evaluate(
       (tag) => {
         const el = document.querySelector(tag)
@@ -700,7 +702,15 @@ test('titlebar macOS 交通灯：三点 macOS 固定色 + 点击派发 oas-windo
 
   // 悬停显符号（.dot color 由 transparent → 有色）
   await page.hover('#tb-macos oas-traffic-lights')
-  await page.waitForTimeout(150)
+  // hover 符号显形完成的真实信号：close 点 color 到达目标值（即断言条件本身）
+  await expect
+    .poll(() =>
+      page.evaluate(() => {
+        const tl = document.querySelector('#tb-macos oas-traffic-lights')!.shadowRoot!
+        return getComputedStyle(tl.querySelector('.dot[data-action="close"]')!).color
+      }),
+    )
+    .toBe('rgba(0, 0, 0, 0.55)')
   const glyph = await page.evaluate(() => {
     const tl = document.querySelector('#tb-macos oas-traffic-lights')!.shadowRoot!
     return getComputedStyle(tl.querySelector('.dot[data-action="close"]')!).color

@@ -19,7 +19,16 @@ test('cdn 全量包：oas-kanban 注册/渲染/attribute 双通道', async ({ pa
   await page.setContent(KANBAN_HTML)
   await page.addScriptTag({ path: join(process.cwd(), 'packages/ui/dist/cdn.js'), type: 'module' })
   await page.waitForFunction(() => customElements.get('oas-kanban') != null, null, { timeout: 15000 })
-  await page.waitForTimeout(200)
+  // 首渲染完成的真实信号：列与卡片文本已进 shadow（即 diag 断言条件本身）
+  await expect
+    .poll(() =>
+      page.evaluate(() => {
+        const k = document.querySelector('#k')
+        const text = k?.shadowRoot?.textContent ?? ''
+        return text.includes('待办') && text.includes('任务A') && text.includes('任务B')
+      }),
+    )
+    .toBe(true)
 
   const diag = await page.evaluate(() => {
     const k = document.querySelector('#k') as HTMLElement & { cards?: unknown }
@@ -48,7 +57,6 @@ test('cdn 全量包：oas-kanban renderCard property（函数通道，CDN 不丢
   await page.setContent(KANBAN_HTML)
   await page.addScriptTag({ path: join(process.cwd(), 'packages/ui/dist/cdn.js'), type: 'module' })
   await page.waitForFunction(() => customElements.get('oas-kanban') != null, null, { timeout: 15000 })
-  await page.waitForTimeout(150)
 
   await page.evaluate(() => {
     const k = document.querySelector('#k') as HTMLElement & { renderCard?: (card: { title: string }) => Node }
@@ -59,7 +67,14 @@ test('cdn 全量包：oas-kanban renderCard property（函数通道，CDN 不丢
       return box
     }
   })
-  await page.waitForTimeout(200)
+  // renderCard 生效的真实信号：自定义渲染节点已进 shadow（即断言条件本身）
+  await expect
+    .poll(() =>
+      page.evaluate(() =>
+        [...(document.querySelector('#k')?.shadowRoot?.querySelectorAll('.qa-rc') ?? [])].map((n) => n.textContent),
+      ),
+    )
+    .toEqual(expect.arrayContaining(['RC:任务A', 'RC:任务B']))
   const rc = await page.evaluate(() => {
     const k = document.querySelector('#k')!
     const nodes = [...(k.shadowRoot?.querySelectorAll('.qa-rc') ?? [])].map((n) => n.textContent)

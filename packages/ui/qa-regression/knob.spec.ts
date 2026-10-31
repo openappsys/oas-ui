@@ -30,8 +30,8 @@ test('knob 真指针三手势：cursor 圆周跟随 / axis 线性拖拽 / auto �
   await page.mouse.down()
   for (let i = 1; i <= 8; i++) {
     const a = (i / 8) * (Math.PI / 2)
+    // 逐帧 CDP move 有序到达，值在 pointermove 处理器内同步更新，无需步进间隔
     await page.mouse.move(cur.x + r * Math.sin(a), cur.y - r * Math.cos(a))
-    await page.waitForTimeout(10)
   }
   await page.mouse.up()
   const curAfter = await valueOf(page, 'oas-knob[interaction="cursor"]')
@@ -44,7 +44,6 @@ test('knob 真指针三手势：cursor 圆周跟随 / axis 线性拖拽 / auto �
   await page.mouse.down()
   for (let i = 1; i <= 8; i++) {
     await page.mouse.move(ax.x, ax.y - i * 7.5)
-    await page.waitForTimeout(10)
   }
   await page.mouse.up()
   expect(await valueOf(page, axisSel), 'axis 上拖 60px 应 +40（40 → 80）').toBeCloseTo(80, 0)
@@ -56,14 +55,12 @@ test('knob 真指针三手势：cursor 圆周跟随 / axis 线性拖拽 / auto �
   await page.mouse.down()
   for (let i = 1; i <= 6; i++) {
     await page.mouse.move(au.x, au.y - i * 8)
-    await page.waitForTimeout(10)
   }
   const afterVertical = await valueOf(page, autoSel)
   expect(afterVertical, 'auto 竖直主导应走线性（40 → 72）').toBeCloseTo(72, 0)
   // 锁定验证：纯水平移动（距轴心远超阈值）不得改变值
   for (let i = 1; i <= 6; i++) {
     await page.mouse.move(au.x + i * 8, au.y - 48)
-    await page.waitForTimeout(10)
   }
   expect(await valueOf(page, autoSel), 'auto 解析为线性后纯水平移动不得改值（锁定）').toBe(afterVertical)
   await page.mouse.up()

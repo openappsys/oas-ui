@@ -40,7 +40,8 @@ test('dropdown 多级子菜单贴近视口右缘：翻转后全部落在视口�
   await dd.locator(':scope > button').click()
   await page.locator('oas-dropdown[data-e2e-right-edge] [part="item"][data-value="file"]').hover()
   await page.locator('oas-dropdown[data-e2e-right-edge] [part="item"][data-value="new"]').hover()
-  await page.waitForTimeout(200)
+  // 级联展开完成的真实信号：可见子菜单 ≥2（即断言条件本身）
+  await expect.poll(async () => (await visibleSubmenuRects(page)).length).toBeGreaterThanOrEqual(2)
   const rects = await visibleSubmenuRects(page)
   expect(rects.length).toBeGreaterThanOrEqual(2)
   expect(
@@ -367,7 +368,15 @@ test('dropdown 关闭过程箭头与面板透明度逐帧同步（不慢一拍�
     h.scrollIntoView({ block: 'center' })
     ;(h.shadowRoot!.querySelector('button') as HTMLElement).click()
   })
-  await page.waitForTimeout(400)
+  // 展开动画完成的真实信号：menu opacity 过渡到 1（关闭采样须从完全展开态起测）
+  await expect
+    .poll(() =>
+      page.evaluate(() => {
+        const h = document.querySelector('oas-dropdown')!
+        return parseFloat(getComputedStyle(h.shadowRoot!.querySelector('oas-menu')!).opacity)
+      }),
+    )
+    .toBe(1)
   // 触发关闭并多帧采样
   const samples = await page.evaluate(async () => {
     const h = document.querySelector('oas-dropdown')!
@@ -427,10 +436,11 @@ test.describe('触屏降级（P3 扩展，iPhone 仿真）：dropdown hover 回�
     const anchorHidden = () => dd.evaluate((e) => e.shadowRoot!.querySelector<HTMLElement>('.menu-anchor')!.hidden)
     const btn = dd.locator(':scope > button')
     await btn.scrollIntoViewIfNeeded()
-    // 指针悬停不展开（hover-delay 150ms，等待 400ms 足够判定）
+    // 指针悬停不展开：hover-delay 150ms 的「不发生」断言，无可等待的 DOM 信号。
+    // audit-exception: 否定断言（hover 不展开），250ms = hover-delay 150ms + 100ms 派发余量
     const box = (await btn.boundingBox())!
     await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
-    await page.waitForTimeout(400)
+    await page.waitForTimeout(250)
     expect(await anchorHidden(), '触屏下 hover 不得展开 dropdown').toBe(true)
     // 点按展开
     await page.tap('oas-dropdown[data-e2e-coarse] > button')
@@ -533,13 +543,12 @@ test('dropdown fine pointer 右键/中键不切换（回归：coarse-tap 曾无�
   const btn = page.locator('oas-dropdown[data-e2e-right] > button')
   await btn.scrollIntoViewIfNeeded()
   await btn.click({ button: 'right' })
-  await page.waitForTimeout(300)
+  // 右键无 click 即无切换：同步链判定，立即读取
   expect(
     await page.locator('oas-dropdown[data-e2e-right]').evaluate((e) => e.hasAttribute('open')),
     '右键不得开合菜单（fine pointer 纯 click 语义，右键无 click 即无切换）',
   ).toBe(false)
   await btn.click({ button: 'middle' })
-  await page.waitForTimeout(300)
   expect(
     await page.locator('oas-dropdown[data-e2e-right]').evaluate((e) => e.hasAttribute('open')),
     '中键不得开合菜单',
@@ -571,7 +580,10 @@ test('dropdown split 主按钮 oas-action 的 originalEvent 为真实事件（�
   const btn = page.locator('oas-dropdown[data-e2e-split] > button')
   await btn.scrollIntoViewIfNeeded()
   await btn.click()
-  await page.waitForTimeout(300)
+  // oas-action 派发完成的真实信号：__action 已捕获（pointerup→oas-action 同步链）
+  await expect
+    .poll(() => page.evaluate(() => (window as unknown as { __action?: unknown }).__action !== undefined))
+    .toBe(true)
   const r = await page.evaluate(() => {
     const oe = (window as unknown as { __action?: unknown }).__action
     return {

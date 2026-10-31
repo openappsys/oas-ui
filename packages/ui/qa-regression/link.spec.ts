@@ -8,10 +8,19 @@ test('link href="#" 点击不滚动页面', async ({ page }) => {
   await up(page, 'oas-link')
   const link = page.locator('.demo-block', { hasText: '点击事件' }).locator('oas-link')
   await link.scrollIntoViewIfNeeded()
-  await page.waitForTimeout(200)
+  // 滚动静默的真实信号：连续两次 scrollY 一致（smooth 滚动结束后才可比较前后位置）
+  let prevLinkSY: number | null = null
+  await expect
+    .poll(async () => {
+      const y = await page.evaluate(() => window.scrollY)
+      const stable = prevLinkSY !== null && y === prevLinkSY
+      prevLinkSY = y
+      return stable
+    })
+    .toBe(true)
   const before = await page.evaluate(() => window.scrollY)
   await link.click()
-  await page.waitForTimeout(300)
+  // 锚点跳转（若缺陷复发的滚动）即时发生：立即读取
   const after = await page.evaluate(() => window.scrollY)
   expect(after).toBe(before)
   expect(after).toBeGreaterThan(0)
@@ -64,12 +73,15 @@ test('link 三态下划线 + icon + external + rel：hover 悬停出下划线、
   // hover 悬停真交互：hover 态出下划线
   const hoverLink = page.locator('oas-link').filter({ hasText: 'hover' }).first()
   await hoverLink.hover()
-  await page.waitForTimeout(200)
-  const hoverDeco = await page.evaluate(() => {
-    const el = [...document.querySelectorAll('oas-link')].find((l) => l.textContent?.includes('hover'))
-    return getComputedStyle(el!.shadowRoot!.querySelector('a')!).textDecorationLine
-  })
-  expect(hoverDeco).toContain('underline')
+  // hover 下划线过渡完成的真实信号：textDecorationLine 含 underline（即断言条件本身）
+  await expect
+    .poll(() =>
+      page.evaluate(() => {
+        const el = [...document.querySelectorAll('oas-link')].find((l) => l.textContent?.includes('hover'))
+        return getComputedStyle(el!.shadowRoot!.querySelector('a')!).textDecorationLine
+      }),
+    )
+    .toContain('underline')
 })
 
 test('link 色板达标：预设名映射 -text 达标 token、自定义色原值渲染、type 语义色改指 text 变体', async ({ page }) => {

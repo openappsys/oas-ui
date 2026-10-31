@@ -43,7 +43,7 @@ test('card clickable：整卡 tabindex 存活（不挂缺省 role）、点击派
   // 点击 actions 内按钮 → 不派发整卡 oas-click（演示反馈应不重复弹出）
   const before = await page.locator('oas-message').count()
   await page.locator('oas-card[clickable][cover-src] oas-button').first().click()
-  await page.waitForTimeout(600)
+  // demo 弹消息为 oas-click 同步监听：若缺陷复发的误派发此刻已入列，立即读取
   const after = await page.locator('oas-message').count()
   expect(after, '点内部按钮不应再触发整卡 oas-click').toBe(before)
 })
@@ -128,7 +128,7 @@ test('card selectable：点击切换选中 + aria-checked/角标同步 + 内部�
   // 点击卡内 actions 按钮 → 不触发选中切换（选中态保持、计数不变、无新增选中）
   const beforeSelected = await page.evaluate(() => document.querySelectorAll('oas-card[selectable][selected]').length)
   await page.locator('oas-card[selectable]:not([data-select-radio]):not([disabled]) oas-button').first().click()
-  await page.waitForTimeout(400)
+  // 选中切换为同步处理器：若缺陷复发的误切换此刻已生效，立即读取
   const afterSelected = await page.evaluate(() => document.querySelectorAll('oas-card[selectable][selected]').length)
   expect(afterSelected, '点内部按钮不应改变选中态').toBe(beforeSelected)
 
@@ -242,7 +242,7 @@ test('card disabled：灰化态属性存活 + 点击无 oas-click 反馈 + aria-
       .shadowRoot!.querySelector('[part="body"]')!
       .dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, composed: true }))
   })
-  await page.waitForTimeout(600)
+  // 同步派发：禁用守卫（若缺陷复发的误派发）此刻已生效，立即读取
   expect(await page.locator('oas-message').count(), '禁用卡点击不弹消息').toBe(before)
 })
 
