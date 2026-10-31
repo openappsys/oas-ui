@@ -113,13 +113,13 @@ function main() {
   const summary = summarize(results)
   const check = process.argv.includes('--check')
   // 阈值 = 已收口的历史债快照（2026-11-01）：waitForTimeout 440 → 28（四批清理后仅剩
-  // 已登记的时间流逝/否定断言/测量仪器例外，逐处带 audit-exception 注释；工作树另有
-  // 2 处随并行改动待落地后可再下调到 26）；弱断言 1967 → 1922
-  // （marquee/gantt/glass/scheduler 四文件清零；其余按文件分批还债中）。
+  // 已登记的时间流逝/否定断言/测量仪器例外，逐处带 audit-exception 注释）；弱断言 1967 → 1305
+  // （e2e 首批 4 文件 + 单测 top-20 文件清零，617 处换成精确值/精确契约/下界+理由/删冗余；
+  // 单测其余 ~160 文件 ~950 处按文件分批还债中，登记在 ROADMAP）。
   // 口径不变：**只防增量、不要求清零**；此后再改阈值必须在提交说明写清为什么，
   // 不得每批静默抬阈值（存量收口作为 deferred 记在 Task 13 / 维护批）。
   const maxWait = argValue('--max-wait', 28)
-  const maxWeak = argValue('--max-weak', 1922)
+  const maxWeak = argValue('--max-weak', 1305)
   const maxEventLen = argValue('--max-event-len', 105)
 
   if (process.argv.includes('--json')) {
