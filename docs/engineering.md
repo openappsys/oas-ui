@@ -148,7 +148,7 @@
 > CI 改步骤自动跟随（不再依赖手工清单同步），结果按层落盘 `<git-dir>/oas-release-rehearsal.json`
 > （`--quiet` 静默跑，失败步原样吐输出）。下面手工清单仅用于说明每步含义与脚本不可用时的兜底。
 
-按序执行，任何一步失败即停（修复后从头重跑本层）：
+按序执行，任何一步失败即停（修复后从头重跑本层）。CI 的**首步是 `pnpm install --frozen-lockfile`**（rehearse 同样执行），其后为：
 
 1. `pnpm format:check`
 2. `pnpm skill:check`
@@ -167,9 +167,9 @@
 15. `pnpm ssr:check`
 16. `pnpm llms:check`
 
-本地加严（不在 ci.yml 但发布前必查）：
+本地加严（不在 ci.yml 但发布前必查，`pnpm release:rehearse` 已包含）：
 
-- `node scripts/qa/assert-audit.mjs --check` 之外，`pnpm lint:md`（文档改动时）
+- `pnpm lint:md`（文档有改动时；`qa:audit` 的阈值模式已在上方第 5 步）
 - `node .opencode/check-trace.mjs --all`（全历史 message 扫描，0 命中）
 
 ### 第 3 层：e2e 三套
