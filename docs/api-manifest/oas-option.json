@@ -13,6 +13,10 @@
     {
       "name": "group",
       "observed": true
+    },
+    {
+      "name": "icon",
+      "observed": true
     }
   ],
   "props": [],

@@ -12,6 +12,10 @@ const stats = JSON.parse(
 test.describe.configure({ mode: 'parallel' })
 
 test.describe('官网首页（重设计版）', () => {
+  // 默认 Playwright context 是 en-US；首页浏览器语言自动跳转只针对 landing page，
+  // 本 describe 的默认首页断言固定 zh-CN，避免每个用例重复声明。
+  test.use({ locale: 'zh-CN' })
+
   test('hero 渲染：品牌名/主副标题/双 CTA/console 零告警', async ({ page }) => {
     const errors: string[] = []
     page.on('pageerror', (e) => errors.push(e.message))
@@ -162,7 +166,7 @@ test.describe('官网首页（重设计版）', () => {
   })
 
   test('英文首页渲染 + 中英切换链路', async ({ browser, page }) => {
-    // /en/ 是显式英文路径：直接打开即英文首页（首访不再按浏览器语言自动跳转）
+    // /en/ 是显式英文路径：直接打开即英文首页。
     const ctxEn = await browser.newContext({ locale: 'en-US' })
     const pEn = await ctxEn.newPage()
     await pEn.goto('/en/', { waitUntil: 'domcontentloaded' })
@@ -170,22 +174,45 @@ test.describe('官网首页（重设计版）', () => {
     await expect(hero).toBeAttached()
     await expect(hero.locator('.hh-title')).toContainText('framework-agnostic')
     await ctxEn.close()
-    // 中文首页（默认，不自动跳转）：zh 标题渲染完成即「未被重定向」的确定性信号
+    // 中文首页：zh 浏览器不触发英文 landing 跳转，zh 标题渲染是“未被重定向”的确定性信号
     // （重定向脚本在 head 同步执行，若发生 goto 直接落在 /en/，zh 标题永不出现 → 此处超时红）
     await page.goto('/', { waitUntil: 'domcontentloaded' })
     await expect(page.locator('.home-hero .hh-title')).toContainText('框架无关的', { timeout: 15000 })
   })
 
-  // 语言偏好跳转（head inline 脚本）：只认用户「显式切换过」的偏好（localStorage oas-lang=en）——
-  // 无偏好时不再按浏览器语言自动跳，首访一律留中文（默认语言）；已带 /en/ 的路径是显式英文，不回弹。
-  test('语言偏好跳转：无偏好不跳（留中文），显式 oas-lang=en 才跳 /en/', async ({ browser }) => {
-    // en 浏览器、无偏好：根路径留中文
+  // 浏览器语言自动跳转只作用于 landing page：en 首访根路径跳 /en/，query/hash 保留；
+  // 中文深链是显式内容地址，不做浏览器语言猜测；zh 浏览器根路径自然留在中文。
+  test('landing 自动跳转：en 首页跳 /en/ 并保留 query/hash，子页面不自动', async ({ browser }) => {
+    const ctx = await browser.newContext({ locale: 'en-US' })
+    const p = await ctx.newPage()
+    await p.goto('/?from=landing#a11y', { waitUntil: 'domcontentloaded' })
+    await expect.poll(() => new URL(p.url()).pathname, { timeout: 15000 }).toBe('/en/')
+    expect(new URL(p.url()).search, 'landing 跳转应保留 query').toBe('?from=landing')
+    expect(new URL(p.url()).hash, 'landing 跳转应保留 hash').toBe('#a11y')
+    await expect(p.locator('.home-hero .hh-title')).toContainText('framework-agnostic', { timeout: 15000 })
+    expect(await p.evaluate(() => localStorage.getItem('oas-lang')), '自动猜测不得持久化').toBeNull()
+
+    await p.goto('/index.html?from=landing-index#index', { waitUntil: 'domcontentloaded' })
+    await expect.poll(() => new URL(p.url()).pathname, { timeout: 15000 }).toBe('/en/')
+    expect(new URL(p.url()).search, 'index.html landing 跳转应保留 query').toBe('?from=landing-index')
+    expect(new URL(p.url()).hash, 'index.html landing 跳转应保留 hash').toBe('#index')
+    expect(await p.evaluate(() => localStorage.getItem('oas-lang')), 'index.html 自动猜测仍不得持久化').toBeNull()
+
+    const deep = await ctx.newPage()
+    await deep.goto('/components/button.html', { waitUntil: 'domcontentloaded' })
+    await expect.poll(() => deep.evaluate(() => document.documentElement.lang), { timeout: 15000 }).toBe('zh-CN')
+    expect(new URL(deep.url()).pathname, 'en 浏览器无偏好访问中文深链不应自动跳').toBe('/components/button.html')
+    await ctx.close()
+  })
+
+  // 语言偏好跳转（head inline 脚本）：显式保存的偏好仍全站生效；浏览器语言猜测只作用于 landing。
+  test('语言偏好跳转：无偏好 landing 按浏览器语言，显式 oas-lang=en 才跳深链', async ({ browser }) => {
+    // en 浏览器、无偏好：根路径自动跳英文首页
     const ctxEn = await browser.newContext({ locale: 'en-US' })
     const pEn = await ctxEn.newPage()
     await pEn.goto('/', { waitUntil: 'domcontentloaded' })
-    // 留在中文页的确定性信号：zh 标题渲染（误跳 /en/ 时标题为英文，此处超时红）
-    await expect(pEn.locator('.home-hero .hh-title')).toContainText('框架无关的', { timeout: 15000 })
-    expect(pEn.url(), 'en 浏览器无偏好应留中文根路径').not.toContain('/en/')
+    await expect.poll(() => new URL(pEn.url()).pathname, { timeout: 15000 }).toBe('/en/')
+    await expect(pEn.locator('.home-hero .hh-title')).toContainText('framework-agnostic', { timeout: 15000 })
     // en 浏览器、无偏好：zh 深链留中文（html lang=zh-CN 为 zh 页确定性信号，en 页为 lang=en）
     await pEn.goto('/components/button.html', { waitUntil: 'domcontentloaded' })
     await expect.poll(() => pEn.evaluate(() => document.documentElement.lang), { timeout: 15000 }).toBe('zh-CN')

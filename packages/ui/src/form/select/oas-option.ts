@@ -15,12 +15,13 @@ const ITEM_STYLE = `
  * 选项（子元素声明式通道）。
  *
  * 纯数据载体：默认插槽文本为 label，属性对齐 Option 字段
- * （value/disabled/group，group 为分组标题，同组连续渲染组标题）。
+ * （value/disabled/group，group 为分组标题，icon 为选项图标——
+ *  同组连续渲染组标题，选项行与选中态统一渲染 icon）。
  * 宿主 <oas-select> 在 options 属性未显式设置时解析子元素并收敛到同一渲染路径。
  */
 export class OASOption extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['value', 'disabled', 'group']
+    return ['value', 'disabled', 'group', 'icon']
   }
 
   protected override render(): void {

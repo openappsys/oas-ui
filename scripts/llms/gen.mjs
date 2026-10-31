@@ -3,7 +3,7 @@
  *
  * - llms.txt：H1 + blockquote 摘要 + 约定（自由 markdown）+ 若干 H2「文件列表」
  *   （`- [名称](url): 说明`）+ `## Optional`。链接指向站点规范 URL（cleanUrls），
- *   组件分组取自 srcDir 侧栏（.vitepress/config.ts 的 componentSidebar）。
+ *   组件分组取自 srcDir 侧栏（.vitepress/sidebar.ts 的 componentSidebar）。
  * - llms-full.txt：指南与全部组件文档**原样拼接**（不清理、零信息损失；
  *   去掉 `<script setup>` 属另一路线的旧行为，已废弃），每页前加 `<!-- 站点URL -->` 源标注。
  * - 每页 `.md` 镜像**不在此脚本生成**：由 docs 构建期（.vitepress/config.ts 的 buildEnd）
@@ -141,13 +141,13 @@ const DESC_OVERRIDE = {
   'guide/getting-started.md': '安装、按需引入、图标 opt-in 注册与 CDN 用法的入门指南。',
 }
 
-// ---------- 解析 config.ts 的 componentSidebar 分组 ----------
+// ---------- 解析 sidebar.ts 的 componentSidebar 分组 ----------
 
 function parseComponentGroups() {
-  const cfg = readFileSync(join(DOCS, '.vitepress/config.ts'), 'utf8')
-  const start = cfg.indexOf('const componentSidebar')
-  const end = cfg.indexOf('const enGroupNames')
-  const region = cfg.slice(start, end)
+  const sidebar = readFileSync(join(DOCS, '.vitepress/sidebar.ts'), 'utf8')
+  const start = sidebar.indexOf('export const componentSidebar')
+  const end = sidebar.indexOf('const enGroupNames', start)
+  const region = sidebar.slice(start, end)
   const groups = []
   const re = /text:\s*'([^']+)',\s*collapsed:\s*\w+,\s*items:\s*\[([\s\S]*?)\]/g
   let m

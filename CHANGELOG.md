@@ -4,12 +4,23 @@
 
 ## [未发布]
 
+### 新增
+
+- **`oas-select` 选项图标（`Option.icon`）**：`options` JSON 与 `<oas-option icon>` 子元素通道支持 `@oas-ui/icons` 图标名，下拉项、单选触发器与多选 chip 统一渲染 `icon + label`；图标装饰性（`aria-hidden`），未注册时回退纯文本并仅 devWarn 一次。富内容仍走 `oas-option-render` / `template[slot="option"]`。
+
+### 文档
+
+- **组件导航排序**：组件侧栏与总览页保留语义分组，组内按 URL slug 字母排序；新增 `sidebar-order.test.ts` 防漂移，llms 生成器改从抽离的 `sidebar.ts` 单一数据源取分组。
+- **Landing 页语言适配**：英文浏览器首访 `/` 自动进入 `/en/` 并保留 query/hash；中文深链不做浏览器语言猜测；显式切换仍写入 `oas-lang`，自动猜测不持久化。
+
 ### 性能
 
 - **`@oas-ui/i18n` 默认语言包按家族切片**：内置 zh-CN 拆成 9 个家族切片，按需引入的组件链只注册本族默认文案（消费形态为 `import { registerDefaultMessages } from '@oas-ui/i18n/registry'` + `import { <family>Messages } from '@oas-ui/i18n/slices/<family>'` 后显式调用）；公共入口 `@oas-ui/i18n` 行为不变。实测按需链 gzip（dist 静态闭包口径）：form 28.9→22.4 KB、table 68.8→64.3 KB、gantt 66.7→61.1 KB、json-viewer 34.0→28.4 KB、diff-viewer 32.7→27.1 KB，helper 链（table/advanced、range、detail、glass-fluid）不变。注意 `getLocale().messages` 语义变为「已加载的切片」，需要全集用整包入口或 `import zhCN from '@oas-ui/i18n/zh-CN'`。
 
 ### 修复
 
+- **`oas-select Option.icon` 复核修复**：下拉项图标与 label 补 4px 行 gap；多选 chip 长 label 在带图标时恢复单行省略；`reserve-width` 额外计入 1em 图标与行 gap。
+- **文档导航生成链路**：组件总览从基线恢复完整条目并按组内 slug 排序；sidebar 改为字面量单一有序数据源，`llms.txt` 与总览/sidebar 精确同序并有防漂移测试。
 - **打包消费方（含 CDN）默认语言包丢失**：旧的裸副作用 import 在打包时可能被摇掉，导致内置文案渲染为 raw key；现组件入口显式注册本族切片，CDN 产物含 9 族文案，`perf:size` 新增 `[CDN 默认文案]` 断言锁定。
 - **多个组件的 slot 模板在框架 CSR 挂载下克隆为空**：Vue 等框架会把 `<template slot="…">` 的子节点直插模板元素（落在 `childNodes`），`template.content` 为空；组件原只克隆 `content`，导致 dev 演示站的前后缀图标、自定义箭头/清空图标、空态、下拉头尾、选项行、标签、单元格等插槽整段空白（生产 SSR 快照形态子节点在 `content` 里，故此前未暴露）。现新增 `shared/slot-template.ts` 统一双形态克隆（content 优先、空则回落元素 childNodes），并接入 `oas-select` / `oas-cascader` / `oas-auto-complete` / `oas-calendar` / `oas-checkbox` / `oas-radio` / `oas-dynamic-input` / `oas-dynamic-tags` / `oas-editable` / `oas-form-list` / `oas-mentions` / `oas-segmented` / `oas-slider` / `oas-transfer` / `oas-upload` / `oas-gantt` / `oas-image` / `oas-json-viewer` / `oas-qrcode` / `oas-table` / `oas-virtual-list` 的全部模板克隆点；同步修复两处衍生问题：`oas-qrcode` / `oas-slider` 以 `innerHTML` 作为内容缓存键（CSR 形态恒空，空克隆会被缓存住），改为按实际源节点生成签名；`oas-editable` 的迟到内容观察器同时观察模板元素与 `content`。不改公开 API。
 

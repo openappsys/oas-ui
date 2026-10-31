@@ -3,6 +3,104 @@
 import { test, expect } from '@playwright/test'
 import { panelGeometryAcrossOpens, up } from './helpers'
 
+test('select Option.icon：下拉项、单选触发器与多选 chip 同步渲染装饰性 SVG，暗色仍可见', async ({ page }) => {
+  await page.goto('/components/select.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#select-option-icon')
+  const sel = page.locator('#select-option-icon')
+  const trigger = sel.locator('[part="trigger"]')
+
+  // 单选触发器：初始 zh-CN 已渲染图标；图标装饰性不进可访问名
+  await expect(trigger.locator('.value-icon svg')).toBeVisible()
+  await expect(trigger.locator('.value-icon')).toHaveAttribute('aria-hidden', 'true')
+  await expect(trigger).toContainText('简体中文')
+
+  // 展开：下拉项 leading SVG 与 label 同行可见；切换到 English 后触发器图标同步切换
+  await trigger.click()
+  await expect(sel.locator('[role="option"]').first().locator('.option-icon svg')).toBeVisible()
+  await expect(sel.locator('[role="option"]').first().locator('.option-icon')).toHaveAttribute('aria-hidden', 'true')
+  const optionIconGap = await sel
+    .locator('[role="option"]')
+    .first()
+    .evaluate((row) => {
+      const icon = row.querySelector('.option-icon')!.getBoundingClientRect()
+      const label = row.querySelector('.option-label')!.getBoundingClientRect()
+      return label.left - icon.right
+    })
+  expect(optionIconGap, '下拉项 icon 与 label 之间应有 4px 行 gap').toBeCloseTo(4, 0)
+  await sel.locator('[role="option"]').nth(1).click()
+  await expect(trigger).toContainText('English')
+  await expect(trigger.locator('.value-icon svg')).toBeVisible()
+
+  // 多选 chip：两个已选值均带图标且移除按钮保留
+  const multi = page.locator('#select-option-icon-multi')
+  await expect(multi.locator('.chip-icon svg')).toHaveCount(2)
+  await expect(multi.locator('.chip button[aria-label]')).toHaveCount(2)
+
+  // 暗色：图标仍是可见非透明前景（真实渲染而非空占位）
+  await page.evaluate(() => document.documentElement.classList.add('dark'))
+  const dark = await multi
+    .locator('.chip-icon svg')
+    .first()
+    .evaluate((svg) => {
+      const icon = svg.closest('.chip-icon') as HTMLElement
+      const cs = getComputedStyle(icon)
+      return { display: cs.display, visibility: cs.visibility, color: cs.color }
+    })
+  expect(dark.display).not.toBe('none')
+  expect(dark.visibility).not.toBe('hidden')
+  expect(dark.color).not.toMatch(/rgba\(0,\s*0,\s*0,\s*0\)/)
+})
+
+test('select Option.icon 多选长 label：chip 内仍单行省略，不撑高 20px 胶囊', async ({ page }) => {
+  await page.goto('/components/select.html', { waitUntil: 'domcontentloaded' })
+  await page.evaluate(() => {
+    const el = document.createElement('oas-select')
+    el.setAttribute('multiple', '')
+    el.setAttribute('value', '["long"]')
+    el.setAttribute('style', 'width: 180px')
+    el.setAttribute(
+      'options',
+      JSON.stringify([
+        {
+          label: '这是一段非常非常长的选项文字，应该在图标后的标签容器内单行省略',
+          value: 'long',
+          icon: 'star',
+        },
+      ]),
+    )
+    document.body.appendChild(el)
+  })
+  await page.waitForFunction(() => {
+    const el = document.querySelector('oas-select[style="width: 180px"]')
+    const chip = el?.shadowRoot?.querySelector('.chip')
+    return chip?.querySelector('.chip-icon svg') != null
+  })
+  const r = await page.evaluate(() => {
+    const el = document.querySelector('oas-select[style="width: 180px"]')!
+    const chip = el.shadowRoot!.querySelector<HTMLElement>('.chip')!
+    const icon = chip.querySelector<HTMLElement>('.chip-icon')!
+    const label = chip.querySelector<HTMLElement>('span:not(.chip-icon)')!
+    const cs = getComputedStyle(label)
+    const c = chip.getBoundingClientRect()
+    const l = label.getBoundingClientRect()
+    const i = icon.getBoundingClientRect()
+    return {
+      chipHeight: c.height,
+      labelHeight: l.height,
+      overflow: cs.overflow,
+      whiteSpace: cs.whiteSpace,
+      iconVisible: i.width > 0 && i.height > 0,
+      labelWithinChip: l.right <= c.right + 0.5 && l.bottom <= c.bottom + 0.5,
+    }
+  })
+  expect(r.iconVisible).toBe(true)
+  expect(r.chipHeight, 'chip 高度应保持 20px').toBe(20)
+  expect(r.labelHeight, 'label 应单行省略').toBeLessThanOrEqual(18)
+  expect(r.overflow).toBe('hidden')
+  expect(r.whiteSpace).toBe('nowrap')
+  expect(r.labelWithinChip).toBe(true)
+})
+
 test('select multiple：chip 结构完整（label + 移除按钮）且样式不拥挤', async ({ page }) => {
   // 曾现 bug：chip 无行高、label 与 × 间距仅 2px、padding 只有横向，文字贴边、行间粘连。
   await page.goto('/components/select.html', { waitUntil: 'domcontentloaded' })

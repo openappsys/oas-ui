@@ -262,7 +262,7 @@ Multiple-select tags wrap by default and do not collapse; only when `max-tag-cou
   </div>
 </DemoBlock>
 
-`reserve-width` (opt-in) measures the max text width of all option labels plus the placeholder and locks the trigger min-width: the trigger never jitters when switching values. It pairs well with `auto-width` — after shrinking to content, the reserved value acts as the floor (the first select above is locked to the widest option, the second is the control; open the dropdowns and switch values to see the difference). Both the `options` attribute and the declarative child channel participate; content changes re-measure automatically; removing the attribute releases the lock. The text width is an approximation (trigger chrome margin tunable via the `--oas-select-reserve-pad` variable, default 46px).
+`reserve-width` (opt-in) measures the max text width of all option labels plus the placeholder and locks the trigger min-width: the trigger never jitters when switching values. It pairs well with `auto-width` — after shrinking to content, the reserved value acts as the floor (the first select above is locked to the widest option, the second is the control; open the dropdowns and switch values to see the difference). Both the `options` attribute and the declarative child channel participate; options with `Option.icon` additionally reserve the 1em icon plus row gap; content changes re-measure automatically; removing the attribute releases the lock. The text width is an approximation (trigger chrome margin tunable via the `--oas-select-reserve-pad` variable, default 46px).
 
 ## Max Count
 
@@ -283,6 +283,17 @@ With `multiple` and `max-count` set, once the selection reaches the limit, unsel
 </DemoBlock>
 
 When search yields no match, a "Create {label}" item is shown; clicking or pressing Enter creates a new option from the input value and selects it. Creation dispatches `oas-create` (`detail: { value, label }` carrying the created text).
+
+## Option Icons (`Option.icon`)
+
+`Option.icon` is a data-driven convenience field for common country / language / status pickers: pass an `@oas-ui/icons` registry name and the option row, single-select trigger, and multi-select chips all render `icon + label`. The icon is decorative (`aria-hidden`); the accessible name still comes from `label`. An unregistered icon falls back to plain text with one dev-only warning. For arbitrary rich content, use the `oas-option-render` / `template[slot="option"]` escape hatch.
+
+<DemoBlock title="Option icons (single + multiple)">
+  <oas-select id="select-option-icon" value="zh-CN" options='[{"label":"Simplified Chinese","value":"zh-CN","icon":"language"},{"label":"English","value":"en","icon":"translate"},{"label":"Settings","value":"settings","icon":"gear"}]'></oas-select>
+  <oas-select id="select-option-icon-multi" multiple value='["zh-CN","en"]' options='[{"label":"Simplified Chinese","value":"zh-CN","icon":"language"},{"label":"English","value":"en","icon":"translate"},{"label":"Settings","value":"settings","icon":"gear"}]'></oas-select>
+</DemoBlock>
+
+The declarative child channel uses the same field name: `<oas-option value="zh-CN" icon="language">简体中文</oas-option>`.
 
 ## Custom Option Rendering
 
@@ -313,7 +324,7 @@ The dropdown max height goes through the CSS variable `--oas-select-dropdown-hei
 
 ## Declarative Child-Element Channel
 
-Besides the `options` JSON, you can declare options declaratively with `<oas-option>` child elements (matching the native `<select><option>` mental model: the default slot text is the label; attributes map to the `options` fields — `value` / `disabled` / `group` group title). The `options` attribute *takes precedence when explicitly set*; otherwise child elements are parsed and converge into the same rendering path (virtual scrolling, grouping, search etc. are fully identical). Child additions, removals, attribute and text changes re-render automatically (MutationObserver).
+Besides the `options` JSON, you can declare options declaratively with `<oas-option>` child elements (matching the native `<select><option>` mental model: the default slot text is the label; attributes map to the `options` fields — `value` / `disabled` / `group` group title / `icon` option icon). The `options` attribute *takes precedence when explicitly set*; otherwise child elements are parsed and converge into the same rendering path (virtual scrolling, grouping, search etc. are fully identical). Child additions, removals, attribute and text changes re-render automatically (MutationObserver).
 
 <DemoBlock title="Declarative child elements (native select mental model)">
   <oas-space size="small" direction="vertical">
@@ -738,14 +749,14 @@ onMounted(() => {
 | `multiple` | Multiple select | `boolean` | — |
 | `name` | Form field name (key for native FormData submission; also the key of same-name multiple entries in multiple mode; the browser skips submission when name is absent) | `string` | — |
 | `open` | Controlled open: attribute present = open, removed = closed; host gestures only fire oas-open-change (no forced write-back) | `boolean \| string` | `false` |
-| `options` | Options, JSON array `[{ label, value, disabled?, group? }]` | `Option[] \| string` | `[]` |
+| `options` | Options, JSON array `[{ label, value, disabled?, group?, icon? }]` (group is the group title, icon is an @oas-ui/icons registry name) | `Option[] \| string` | `[]` |
 | `placeholder` | Placeholder text | — | — |
 | `placement` | Dropdown direction: `auto` (default, bottom-first with flip) / `top` / `bottom` (forced, no flip) | `string` | `auto` |
 | `readonly` | Read-only: focusable and copyable, no dropdown, value immutable (clear/remove buttons hidden) | `boolean` | — |
 | `remote` | Remote search: no local filtering, typing dispatches `oas-input` for the host to request | `boolean` | — |
 | `required` | Required marker (drives the native valueMissing validation chain; not passed through to the inner control) | `boolean` | — |
 | `reserve-keyword` | Keep the keyword after selection in searchable mode (cleared by default, matching tree-select) | `boolean` | — |
-| `reserve-width` | Reserve the widest option width on the trigger (opt-in): measures the max text width of all option labels plus the placeholder to lock the trigger min-width so switching values never jitters; pairs well with auto-width (the reserved value acts as the floor after shrinking); re-measured automatically when options/children change; removing the attribute releases the lock | `boolean` | — |
+| `reserve-width` | Reserve the widest option width on the trigger (opt-in): measures the max text width of all option labels plus the placeholder to lock the trigger min-width, with an additional 1em icon + row gap allowance for options carrying Option.icon; re-measured automatically when options/children change; removing the attribute releases the lock | `boolean` | — |
 | `searchable` | Searchable (type to filter after opening the dropdown) | `boolean` | — |
 | `show-arrow` | Set `"false"` to hide the default dropdown arrow | `string` | `true` |
 | `size` | Size preset `small` / `medium` (default) / `large`: control height/font/chip height scale | `string` | `medium` |
@@ -813,6 +824,7 @@ onMounted(() => {
 | --- | --- | --- | --- |
 | `disabled` | Disable this option (not selectable) | — | — |
 | `group` | Group title (optional): options in the same group render a consecutive group title (not selectable), items are indented | — | — |
+| `icon` | Option icon (@oas-ui/icons registry name): rendered in the option row, single-select trigger, and multi-select chips; unregistered names fall back to plain text with one dev warning | — | — |
 | `value` | Option value (data-carrier field of the declarative child-element channel) | — | — |
 
 #### Slots

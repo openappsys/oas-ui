@@ -8,6 +8,13 @@
 | --- | --- | --- |
 | **固定等待清理 + 弱断言分批还债** | `waitForTimeout` **440 → 28**（四批；28 处全部为已登记例外——时间流逝语义 / 否定断言 / 测量仪器与无统一信号，逐处带 `audit-exception` 注释）。弱断言 **1967 → 1305**（e2e 首批 4 文件 45 处 + 单测 top-20 文件 572 处，共 617 处换成精确值 / 精确契约 / 下界+理由 / 删冗余；门禁 `maxWeak` 同步锁到 1305）。剩余存量（单测 ~160 文件 ~950 处 + e2e 长尾）按文件分批推进、登记为技术债；精确值绑定实现细节处已注释，重构时需按新实现更新 | ✅ 已完成（未发布） |
 
+## 未发布（issue 反馈批）
+
+| 范围 | 内容 | 状态 |
+| --- | --- | --- |
+| **`oas-select` 选项图标（`Option.icon`）** | `options` JSON 与 `<oas-option icon>` 支持 `@oas-ui/icons` 图标名；下拉项、单选触发器、多选 chip 统一渲染 `icon + label`；图标 `aria-hidden`，未知图标回退纯文本 + 一次 devWarn；富内容走现有 `oas-option-render` / option 模板逃生口；单测 + Chromium qa-regression + zh/en 文档/API/暗色/console 收口 | ✅ 已完成（未发布） |
+| **文档站 issue 反馈收口** | 组件侧栏数据抽离 `sidebar.ts` 单一数据源，中文/英文侧栏与总览页保留语义分组、组内按 slug 字母排序，`sidebar-order.test.ts` 防漂移，llms 生成器同步；英文浏览器首访 `/` / `/index.html` 自动进 `/en/` 并保留 query/hash，深链不做语言猜测，显式 `oas-lang` 仍全站生效、自动猜测不持久化；首页 docs-site e2e 收口 | ✅ 已完成（未发布） |
+
 ## 未发布（包体止损批）
 
 | 范围 | 内容 | 状态 |
