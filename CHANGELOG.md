@@ -19,6 +19,8 @@
 
 ### 修复
 
+- **`oas-select Option.icon` 复核修复**：下拉项图标与 label 补 4px 行 gap；多选 chip 长 label 在带图标时恢复单行省略；`reserve-width` 额外计入 1em 图标与行 gap。
+- **文档导航生成链路**：组件总览从基线恢复完整条目并按组内 slug 排序；sidebar 改为字面量单一有序数据源，`llms.txt` 与总览/sidebar 精确同序并有防漂移测试。
 - **打包消费方（含 CDN）默认语言包丢失**：旧的裸副作用 import 在打包时可能被摇掉，导致内置文案渲染为 raw key；现组件入口显式注册本族切片，CDN 产物含 9 族文案，`perf:size` 新增 `[CDN 默认文案]` 断言锁定。
 
 ### 构建

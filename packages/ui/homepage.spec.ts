@@ -190,6 +190,13 @@ test.describe('官网首页（重设计版）', () => {
     expect(new URL(p.url()).search, 'landing 跳转应保留 query').toBe('?from=landing')
     expect(new URL(p.url()).hash, 'landing 跳转应保留 hash').toBe('#a11y')
     await expect(p.locator('.home-hero .hh-title')).toContainText('framework-agnostic', { timeout: 15000 })
+    expect(await p.evaluate(() => localStorage.getItem('oas-lang')), '自动猜测不得持久化').toBeNull()
+
+    await p.goto('/index.html?from=landing-index#index', { waitUntil: 'domcontentloaded' })
+    await expect.poll(() => new URL(p.url()).pathname, { timeout: 15000 }).toBe('/en/')
+    expect(new URL(p.url()).search, 'index.html landing 跳转应保留 query').toBe('?from=landing-index')
+    expect(new URL(p.url()).hash, 'index.html landing 跳转应保留 hash').toBe('#index')
+    expect(await p.evaluate(() => localStorage.getItem('oas-lang')), 'index.html 自动猜测仍不得持久化').toBeNull()
 
     const deep = await ctx.newPage()
     await deep.goto('/components/button.html', { waitUntil: 'domcontentloaded' })

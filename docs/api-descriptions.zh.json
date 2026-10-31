@@ -2822,7 +2822,7 @@
       "auto-width": "触发器宽度随选中项收缩",
       "hint": "触发器下方提示文案（aria-describedby 关联）",
       "hide-selected": "多选时已选选项从下拉列表隐藏，清空/取消后回到列表（仅 multiple 生效）",
-      "reserve-width": "触发器预留最宽选项宽（opt-in）：量测全部选项 label 与 placeholder 的最大文本宽锁定触发器最小宽度，切换选中值时尺寸不抖动；常与 auto-width 组合（收缩后由预留值托底）；options/子元素变化自动重测；移除属性解除锁定"
+      "reserve-width": "触发器预留最宽选项宽（opt-in）：量测全部选项 label 与 placeholder 的最大文本宽锁定触发器最小宽度，带 Option.icon 的选项额外计入 1em 图标与行 gap；切换选中值时尺寸不抖动，常与 auto-width 组合；options/子元素变化自动重测；移除属性解除锁定"
     },
     "events": {
       "oas-change": "选择/清空变化，`detail: { value }`",

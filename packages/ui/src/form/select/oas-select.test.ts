@@ -473,15 +473,17 @@ describe('OASSelect Option.icon 数据通道', () => {
     const el = mount({ value: 'apple', options: ICON_OPTIONS })
     open(el)
     const icon = el.shadowRoot!.querySelector<HTMLElement>('[role="option"] .option-icon')
-    expect(icon, '下拉项应渲染 Option.icon').not.toBeNull()
+    expect(!!icon, '下拉项应渲染 Option.icon').toBe(true)
+    expect(icon!.classList.contains('option-icon')).toBe(true)
     expect(icon!.getAttribute('aria-hidden')).toBe('true')
-    expect(icon!.querySelector('svg')).not.toBeNull()
+    expect(icon!.querySelector('svg path')!.getAttribute('d')).toBe('M1 1 L15 15')
     expect(icon!.querySelector('[data-option-label]')).toBeNull()
 
     const valueIcon = trigger(el).querySelector<HTMLElement>('.value-icon')
-    expect(valueIcon, '单选触发器应渲染选中项 icon').not.toBeNull()
+    expect(!!valueIcon, '单选触发器应渲染选中项 icon').toBe(true)
+    expect(valueIcon!.classList.contains('value-icon')).toBe(true)
     expect(valueIcon!.getAttribute('aria-hidden')).toBe('true')
-    expect(valueIcon!.querySelector('svg')).not.toBeNull()
+    expect(valueIcon!.querySelector('svg path')!.getAttribute('d')).toBe('M1 1 L15 15')
   })
 
   it('multiple chip 渲染选中项 icon，移除按钮仍保留', () => {
@@ -541,7 +543,7 @@ describe('OASSelect 自定义选项渲染（template slot + 渲染事件）', ()
     document.body.appendChild(el)
     open(el)
     const row = el.shadowRoot!.querySelector('[role="option"]')!
-    expect(row.querySelector('.option-icon svg')).not.toBeNull()
+    expect(row.querySelector('.option-icon svg path')!.getAttribute('d')).toBe('M1 1 L15 15')
     expect(row.querySelector('.opt-custom')!.textContent).toBe('自定义：')
     expect(row.querySelector('[data-option-label]')!.textContent).toBe('苹果')
   })
@@ -694,7 +696,7 @@ describe('OASSelect 虚拟滚动（virtual）', () => {
     const el = mount({ virtual: '', options })
     open(el)
     const rows = virtualRows(el)
-    expect(rows[0]!.querySelector('.option-icon svg')).not.toBeNull()
+    expect(rows[0]!.querySelector('.option-icon svg path')!.getAttribute('d')).toBe('M1 1 L15 15')
     expect(rows[1]!.querySelector('.option-icon')).toBeNull()
   })
 
@@ -823,7 +825,7 @@ describe('OASSelect 子元素声明式通道（oas-option）', () => {
     registerIcon('select-child-banana', '<path d="M2 2 L14 14"/>')
     const el = childSelect([['apple', '苹果', { icon: 'select-child-apple' }]])
     open(el)
-    expect(el.shadowRoot!.querySelector('[role="option"] .option-icon')!.querySelector('svg')).not.toBeNull()
+    expect(el.shadowRoot!.querySelector('[role="option"] .option-icon svg path')!.getAttribute('d')).toBe('M1 1 L15 15')
     const opt = el.querySelector('oas-option')!
     opt.setAttribute('icon', 'select-child-banana')
     await new Promise((r) => setTimeout(r, 0))
@@ -2399,6 +2401,20 @@ describe('OASSelect reserve-width（触发器预留最宽选项，切值不抖�
     el.setAttribute('options', JSON.stringify([{ label: '一个特别特别特别长的选项标签', value: 'long' }]))
     const after = Number.parseFloat(el.style.getPropertyValue('--oas-select-reserve'))
     expect(after).toBeGreaterThan(before)
+  })
+
+  it('Option.icon 预留宽度计入图标与行 gap（带图标选项不导致切值抖动）', () => {
+    const label = '统一长度的选项标签'
+    const plain = mount({ 'reserve-width': '', options: JSON.stringify([{ label, value: 'plain' }]) })
+    const withIcon = mount({
+      'reserve-width': '',
+      options: JSON.stringify([{ label, value: 'icon', icon: 'star' }]),
+    })
+    const plainReserve = Number.parseFloat(plain.style.getPropertyValue('--oas-select-reserve'))
+    const iconReserve = Number.parseFloat(withIcon.style.getPropertyValue('--oas-select-reserve'))
+    const iconAllowance = iconReserve - plainReserve
+    expect(iconAllowance, '预留宽度应补 1em 图标 + gap').toBeGreaterThanOrEqual(18)
+    expect(iconAllowance).toBeLessThanOrEqual(40)
   })
 
   it('与 auto-width 组合：宿主宽度让位后由预留值锁定下限', () => {

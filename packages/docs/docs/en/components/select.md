@@ -262,7 +262,7 @@ Multiple-select tags wrap by default and do not collapse; only when `max-tag-cou
   </div>
 </DemoBlock>
 
-`reserve-width` (opt-in) measures the max text width of all option labels plus the placeholder and locks the trigger min-width: the trigger never jitters when switching values. It pairs well with `auto-width` — after shrinking to content, the reserved value acts as the floor (the first select above is locked to the widest option, the second is the control; open the dropdowns and switch values to see the difference). Both the `options` attribute and the declarative child channel participate; content changes re-measure automatically; removing the attribute releases the lock. The text width is an approximation (trigger chrome margin tunable via the `--oas-select-reserve-pad` variable, default 46px).
+`reserve-width` (opt-in) measures the max text width of all option labels plus the placeholder and locks the trigger min-width: the trigger never jitters when switching values. It pairs well with `auto-width` — after shrinking to content, the reserved value acts as the floor (the first select above is locked to the widest option, the second is the control; open the dropdowns and switch values to see the difference). Both the `options` attribute and the declarative child channel participate; options with `Option.icon` additionally reserve the 1em icon plus row gap; content changes re-measure automatically; removing the attribute releases the lock. The text width is an approximation (trigger chrome margin tunable via the `--oas-select-reserve-pad` variable, default 46px).
 
 ## Max Count
 
@@ -756,7 +756,7 @@ onMounted(() => {
 | `remote` | Remote search: no local filtering, typing dispatches `oas-input` for the host to request | `boolean` | — |
 | `required` | Required marker (drives the native valueMissing validation chain; not passed through to the inner control) | `boolean` | — |
 | `reserve-keyword` | Keep the keyword after selection in searchable mode (cleared by default, matching tree-select) | `boolean` | — |
-| `reserve-width` | Reserve the widest option width on the trigger (opt-in): measures the max text width of all option labels plus the placeholder to lock the trigger min-width so switching values never jitters; pairs well with auto-width (the reserved value acts as the floor after shrinking); re-measured automatically when options/children change; removing the attribute releases the lock | `boolean` | — |
+| `reserve-width` | Reserve the widest option width on the trigger (opt-in): measures the max text width of all option labels plus the placeholder to lock the trigger min-width, with an additional 1em icon + row gap allowance for options carrying Option.icon; re-measured automatically when options/children change; removing the attribute releases the lock | `boolean` | — |
 | `searchable` | Searchable (type to filter after opening the dropdown) | `boolean` | — |
 | `show-arrow` | Set `"false"` to hide the default dropdown arrow | `string` | `true` |
 | `size` | Size preset `small` / `medium` (default) / `large`: control height/font/chip height scale | `string` | `medium` |

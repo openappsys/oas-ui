@@ -2956,7 +2956,7 @@
       "auto-width": "Trigger width shrinks to fit the selection",
       "hint": "Hint line below the trigger, wired via aria-describedby",
       "hide-selected": "Hide selected options from the dropdown in multiple mode; they return after clearing or deselecting",
-      "reserve-width": "Reserve the widest option width on the trigger (opt-in): measures the max text width of all option labels plus the placeholder to lock the trigger min-width so switching values never jitters; pairs well with auto-width (the reserved value acts as the floor after shrinking); re-measured automatically when options/children change; removing the attribute releases the lock"
+      "reserve-width": "Reserve the widest option width on the trigger (opt-in): measures the max text width of all option labels plus the placeholder to lock the trigger min-width, with an additional 1em icon + row gap allowance for options carrying Option.icon; re-measured automatically when options/children change; removing the attribute releases the lock"
     },
     "events": {
       "oas-change": "Selection/clear change, `detail: { value }`",

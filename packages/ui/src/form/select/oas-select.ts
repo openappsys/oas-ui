@@ -68,6 +68,7 @@ const OPTION_STYLE = `
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: var(--oas-space-1);
 }
 .option:hover {
   background: var(--oas-color-bg-hover);
@@ -314,7 +315,7 @@ const STYLE = `
   color: var(--oas-color-text-primary);
 }
 /* 超长标签在 chip 内省略，避免超出容器横向溢出（换行模式下单个标签无法再折行） */
-.chip > span:first-child:not(.chip-icon) {
+.chip .chip-text {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -997,7 +998,8 @@ export class OASSelect extends OASFormElement {
    * 测最宽选项 label + placeholder 文本宽，经 `--oas-select-reserve` 变量锁宿主
    * min-width（opt-in `reserve-width`；与 auto-width 组合最典型——宽度随内容收缩后
    * 由预留值托底，切换选中值不抖）。文本量测走 shared 三级降级（canvas → 离屏 span
-   * → 估算），options/子元素变化经 update 自动重测。文本宽为近似值（触发器 chrome
+   * → 估算），options/子元素变化经 update 自动重测；带 `Option.icon` 的选项额外补
+   * 1em 图标 + 行 gap，避免图标进入选中态后触发器变宽。文本宽为近似值（触发器 chrome
    * 余量经 --oas-select-reserve-pad 开口调整），目标是「切换不抖」而非像素级排版。
    */
   private syncReserveWidth(): void {
@@ -1012,13 +1014,15 @@ export class OASSelect extends OASFormElement {
     if (placeholder) texts.push(placeholder)
     const cs = getComputedStyle(this)
     const w = measureMaxTextWidth(texts, { fontSize: cs.fontSize, fontFamily: cs.fontFamily })
-    if (w <= 0) {
+    const hasIcon = this._options.some((o) => typeof o.icon === 'string' && o.icon !== '')
+    const iconAllowance = hasIcon ? (Number.parseFloat(cs.fontSize) || 16) + 4 : 0
+    if (w <= 0 && !hasIcon) {
       // 无可计量测文本（无选项且无 placeholder）：无预留，写 0 不占宿主盒
       this.style.setProperty('--oas-select-reserve', '0px')
       return
     }
     const pad = cssVarPx(this, '--oas-select-reserve-pad', 46)
-    this.style.setProperty('--oas-select-reserve', `${Math.ceil(w + pad)}px`)
+    this.style.setProperty('--oas-select-reserve', `${Math.ceil(w + pad + iconAllowance)}px`)
   }
 
   /** 移动形态判定：触屏（coarse pointer）或窄视口（<768px）→ 下拉由 bottom-sheet 底部抽屉承载 */
@@ -1854,6 +1858,7 @@ export class OASSelect extends OASFormElement {
 
   /** 标签（chip）渲染：template[slot="tag"] 克隆 + [data-tag-label] 绑定；随后派发 oas-tag-render 供宿主改写 */
   private fillTagLabel(labelEl: HTMLElement, value: string, label: string): void {
+    labelEl.className = 'chip-text'
     const tpl = this.querySelector('template[slot="tag"]')
     if (tpl instanceof HTMLTemplateElement) {
       labelEl.innerHTML = ''

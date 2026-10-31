@@ -23,7 +23,7 @@
 
 ### 验收
 
-- `oas-select` 182 条单测、select qa-regression 19 条 Chromium 用例、首页 docs-site 17 条用例、sidebar-order 3 条用例通过。
+- `oas-select` 183 条单测、select qa-regression 20 条 Chromium 用例、首页 docs-site 17 条用例、sidebar-order 5 条用例通过。
 - `api:check` / `llms:check` / build / typecheck / 中英 demo 与暗色、RTL、console 零告警验证通过。
 
 ---

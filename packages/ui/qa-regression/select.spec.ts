@@ -18,6 +18,15 @@ test('select Option.icon：下拉项、单选触发器与多选 chip 同步渲�
   await trigger.click()
   await expect(sel.locator('[role="option"]').first().locator('.option-icon svg')).toBeVisible()
   await expect(sel.locator('[role="option"]').first().locator('.option-icon')).toHaveAttribute('aria-hidden', 'true')
+  const optionIconGap = await sel
+    .locator('[role="option"]')
+    .first()
+    .evaluate((row) => {
+      const icon = row.querySelector('.option-icon')!.getBoundingClientRect()
+      const label = row.querySelector('.option-label')!.getBoundingClientRect()
+      return label.left - icon.right
+    })
+  expect(optionIconGap, '下拉项 icon 与 label 之间应有 4px 行 gap').toBeCloseTo(4, 0)
   await sel.locator('[role="option"]').nth(1).click()
   await expect(trigger).toContainText('English')
   await expect(trigger.locator('.value-icon svg')).toBeVisible()
@@ -40,6 +49,56 @@ test('select Option.icon：下拉项、单选触发器与多选 chip 同步渲�
   expect(dark.display).not.toBe('none')
   expect(dark.visibility).not.toBe('hidden')
   expect(dark.color).not.toMatch(/rgba\(0,\s*0,\s*0,\s*0\)/)
+})
+
+test('select Option.icon 多选长 label：chip 内仍单行省略，不撑高 20px 胶囊', async ({ page }) => {
+  await page.goto('/components/select.html', { waitUntil: 'domcontentloaded' })
+  await page.evaluate(() => {
+    const el = document.createElement('oas-select')
+    el.setAttribute('multiple', '')
+    el.setAttribute('value', '["long"]')
+    el.setAttribute('style', 'width: 180px')
+    el.setAttribute(
+      'options',
+      JSON.stringify([
+        {
+          label: '这是一段非常非常长的选项文字，应该在图标后的标签容器内单行省略',
+          value: 'long',
+          icon: 'star',
+        },
+      ]),
+    )
+    document.body.appendChild(el)
+  })
+  await page.waitForFunction(() => {
+    const el = document.querySelector('oas-select[style="width: 180px"]')
+    const chip = el?.shadowRoot?.querySelector('.chip')
+    return chip?.querySelector('.chip-icon svg') != null
+  })
+  const r = await page.evaluate(() => {
+    const el = document.querySelector('oas-select[style="width: 180px"]')!
+    const chip = el.shadowRoot!.querySelector<HTMLElement>('.chip')!
+    const icon = chip.querySelector<HTMLElement>('.chip-icon')!
+    const label = chip.querySelector<HTMLElement>('span:not(.chip-icon)')!
+    const cs = getComputedStyle(label)
+    const c = chip.getBoundingClientRect()
+    const l = label.getBoundingClientRect()
+    const i = icon.getBoundingClientRect()
+    return {
+      chipHeight: c.height,
+      labelHeight: l.height,
+      overflow: cs.overflow,
+      whiteSpace: cs.whiteSpace,
+      iconVisible: i.width > 0 && i.height > 0,
+      labelWithinChip: l.right <= c.right + 0.5 && l.bottom <= c.bottom + 0.5,
+    }
+  })
+  expect(r.iconVisible).toBe(true)
+  expect(r.chipHeight, 'chip 高度应保持 20px').toBe(20)
+  expect(r.labelHeight, 'label 应单行省略').toBeLessThanOrEqual(18)
+  expect(r.overflow).toBe('hidden')
+  expect(r.whiteSpace).toBe('nowrap')
+  expect(r.labelWithinChip).toBe(true)
 })
 
 test('select multiple：chip 结构完整（label + 移除按钮）且样式不拥挤', async ({ page }) => {

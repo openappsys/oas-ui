@@ -262,7 +262,7 @@
   </div>
 </DemoBlock>
 
-`reserve-width`（opt-in）量测全部选项 label 与 placeholder 的最大文本宽，锁定触发器最小宽度：切换选中值时触发器尺寸不抖动。常与 `auto-width` 组合——宽度随内容收缩后由预留值托底（上方第一个 select 锁定到最宽选项，第二个为对照；点开下拉切换选中项即可看到差别）。`options` 属性与子元素声明式通道都参与量测，内容变化自动重测；移除属性解除锁定。文本宽为近似值（触发器余量经 CSS 变量 `--oas-select-reserve-pad` 调整，默认 46px）。
+`reserve-width`（opt-in）量测全部选项 label 与 placeholder 的最大文本宽，锁定触发器最小宽度：切换选中值时触发器尺寸不抖动。常与 `auto-width` 组合——宽度随内容收缩后由预留值托底（上方第一个 select 锁定到最宽选项，第二个为对照；点开下拉切换选中项即可看到差别）。`options` 属性与子元素声明式通道都参与量测，带 `Option.icon` 的选项额外计入 1em 图标与行 gap，内容变化自动重测；移除属性解除锁定。文本宽为近似值（触发器余量经 CSS 变量 `--oas-select-reserve-pad` 调整，默认 46px）。
 
 ## 多选上限
 
@@ -751,7 +751,7 @@ onMounted(() => {
 | `remote` | 远程搜索：不做本地过滤，输入派发 `oas-input` 供宿主请求 | `boolean` | — |
 | `required` | 必填标记（驱动原生校验链 valueMissing；不透传内层控件） | `boolean` | — |
 | `reserve-keyword` | searchable 选中后保留搜索词（缺省清空，对齐 tree-select） | `boolean` | — |
-| `reserve-width` | 触发器预留最宽选项宽（opt-in）：量测全部选项 label 与 placeholder 的最大文本宽锁定触发器最小宽度，切换选中值时尺寸不抖动；常与 auto-width 组合（收缩后由预留值托底）；options/子元素变化自动重测；移除属性解除锁定 | `boolean` | — |
+| `reserve-width` | 触发器预留最宽选项宽（opt-in）：量测全部选项 label 与 placeholder 的最大文本宽锁定触发器最小宽度，带 Option.icon 的选项额外计入 1em 图标与行 gap；切换选中值时尺寸不抖动，常与 auto-width 组合；options/子元素变化自动重测；移除属性解除锁定 | `boolean` | — |
 | `searchable` | 可搜索（打开下拉后输入过滤） | `boolean` | — |
 | `show-arrow` | 显式 `"false"` 隐藏默认下拉箭头 | `string` | `true` |
 | `size` | 尺寸档位 `small` / `medium`（默认）/ `large`：控高/字号/标签高联动 | `string` | `medium` |

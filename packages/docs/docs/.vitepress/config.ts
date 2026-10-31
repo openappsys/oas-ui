@@ -137,9 +137,10 @@ export default defineConfig({
     ['link', { rel: 'apple-touch-icon', sizes: '180x180', href: '/favicon-180.png' }],
     // 语言偏好跳转：显式保存的偏好（localStorage oas-lang=en）在中文 root 与中文深链都跳对应英文页；
     // 浏览器语言只做「landing page」一次性猜测——无偏好且首选语言为 en 时，仅 `/` / `/index.html`
-    // 跳 `/en/`，深链一律保持显式地址，避免爬虫/外链/书签在所有页面被语言改写。自动猜测不写偏好；
-    // 已带 /en/ 前缀的路径视为显式英文，永不回弹。location.replace 不产生历史记录；脚本内联
-    // 在 head 尽早执行（减少语言闪烁）。
+    // 跳 `/en/`，深链一律保持显式地址，避免爬虫/外链/书签在所有页面被语言改写。SEO 取舍：首页
+    // JS 语言跳转可能影响爬虫对根 URL 的语言判断；深链全量保留且 canonical/hreflang 不变，影响收敛
+    // 在单页。自动猜测不写偏好；已带 /en/ 前缀的路径视为显式英文，永不回弹。location.replace 不产生
+    // 历史记录；脚本内联在 head 尽早执行（减少语言闪烁）。
     [
       'script',
       {},
