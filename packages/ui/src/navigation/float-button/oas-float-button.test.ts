@@ -25,7 +25,7 @@ describe('OASFloatButton', () => {
 
   it('渲染悬浮按钮', () => {
     const el = mount()
-    expect(btn(el)).not.toBeNull()
+    expect(btn(el).tagName).toBe('BUTTON')
   })
 
   it('点击派发 oas-click，detail 携带 originalEvent（文档契约）', () => {
@@ -35,7 +35,6 @@ describe('OASFloatButton', () => {
       detail = (e as CustomEvent).detail
     })
     btn(el).click()
-    expect(detail).toBeTruthy()
     expect(detail!.originalEvent).toBeInstanceOf(MouseEvent)
   })
 
@@ -131,7 +130,6 @@ describe('OASFloatButton', () => {
   it('href 渲染 a 元素并透传 target（原生链接语义）', () => {
     const el = mount({ href: 'https://example.com', target: '_blank' })
     const a = el.shadowRoot!.querySelector<HTMLAnchorElement>('a[part="btn"]')
-    expect(a).not.toBeNull()
     expect(a!.getAttribute('href')).toBe('https://example.com')
     expect(a!.getAttribute('target')).toBe('_blank')
     expect(el.shadowRoot!.querySelector('button[part="btn"]')).toBeNull()
@@ -141,17 +139,16 @@ describe('OASFloatButton', () => {
     const el = mount({ href: 'https://example.com', disabled: '' })
     expect(el.shadowRoot!.querySelector('a[part="btn"]')).toBeNull()
     const span = el.shadowRoot!.querySelector<HTMLElement>('span[part="btn"]')
-    expect(span).not.toBeNull()
     expect(span!.getAttribute('aria-disabled')).toBe('true')
   })
 
   it('href 增删触发 shadow 重建（button ↔ a 切换）', () => {
     const el = mount()
-    expect(el.shadowRoot!.querySelector('button[part="btn"]')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('button[part="btn"]').length).toBe(1)
     el.setAttribute('href', '#x')
-    expect(el.shadowRoot!.querySelector('a[part="btn"]')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('a[part="btn"]').length).toBe(1)
     el.removeAttribute('href')
-    expect(el.shadowRoot!.querySelector('button[part="btn"]')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('button[part="btn"]').length).toBe(1)
   })
 
   it('定位 CSS 变量开口：--oas-float-button-bottom/right 默认 space-6', () => {
@@ -475,9 +472,9 @@ describe('OASFloatButton 家族扩展：mode 结构', () => {
 
   it('mode=group：渲染 group 容器 + actions 层 + mirror 层，主钮 aria-haspopup="true"', () => {
     const el = mountGroup()
-    expect(groupEl(el)).not.toBeNull()
-    expect(actionsLayer(el)).not.toBeNull()
-    expect(el.shadowRoot!.querySelector('slot[name="action"]')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('[part="group"]').length).toBe(1)
+    expect(el.shadowRoot!.querySelectorAll('[part="actions"]').length).toBe(1)
+    expect(el.shadowRoot!.querySelectorAll('slot[name="action"]').length).toBe(1)
     expect(el.shadowRoot!.querySelector('[part="menu"]')).toBeNull()
     expect(btn(el).getAttribute('aria-haspopup')).toBe('true')
     expect(btn(el).getAttribute('aria-expanded')).toBe('false')
@@ -489,7 +486,6 @@ describe('OASFloatButton 家族扩展：mode 结构', () => {
       actions: JSON.stringify([{ label: '编辑' }]),
     })
     const menu = menuEl(el)
-    expect(menu).not.toBeNull()
     expect(menu.getAttribute('role')).toBe('menu')
     expect(btn(el).getAttribute('aria-haspopup')).toBe('menu')
   })
@@ -507,10 +503,10 @@ describe('OASFloatButton 家族扩展：mode 结构', () => {
     const el = mount()
     expect(el.shadowRoot!.querySelector('[part="group"]')).toBeNull()
     el.setAttribute('mode', 'group')
-    expect(groupEl(el)).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('[part="group"]').length).toBe(1)
     el.setAttribute('mode', 'single')
     expect(el.shadowRoot!.querySelector('[part="group"]')).toBeNull()
-    expect(btn(el)).not.toBeNull() // 主钮始终在
+    expect(btn(el).tagName).toBe('BUTTON') // 主钮始终在
   })
 
   it('observedAttributes 声明 mode/expanded/trigger/expand-direction/actions', () => {
@@ -701,7 +697,7 @@ describe('OASFloatButton group 子钮（slot=action）', () => {
     // 覆盖 UA 的 [hidden]{display:none}，空徽标仍画在每个子钮右上角（同 .label[hidden] 先例）
     const el = mountGroup()
     const badges = mirrors(el).map((m) => m.querySelector<HTMLElement>('.mini-badge')!)
-    expect(badges.length).toBeGreaterThan(0)
+    expect(badges.length, '默认 3 个子钮各一枚镜像徽标').toBe(3)
     expect(
       badges.every((b) => b.hasAttribute('hidden')),
       '无 badge 属性的 mirror 徽标应带 hidden',
@@ -791,7 +787,7 @@ describe('OASFloatButton menu 模式', () => {
     expect(items[0]!.tagName).toBe('BUTTON')
     expect(items[0]!.getAttribute('role')).toBe('menuitem')
     expect(items[0]!.textContent).toContain('编辑')
-    expect(items[0]!.querySelector('svg')).not.toBeNull() // icon 渲染
+    expect(items[0]!.querySelectorAll('svg').length).toBe(1) // icon 渲染
   })
 
   it('href action 渲染为链接菜单项 a[role=menuitem]，target 透传（与可点动作互斥）', () => {
@@ -832,7 +828,7 @@ describe('OASFloatButton menu 模式', () => {
   it('actions 非法 JSON → 空菜单不抛异常', () => {
     const el = mount({ mode: 'menu', actions: '{oops' })
     expect(menuItems(el)).toHaveLength(0)
-    expect(btn(el)).not.toBeNull()
+    expect(btn(el).tagName).toBe('BUTTON')
   })
 
   it('menu 展开方向只支持纵向：down 生效，left/非法值回落 up', () => {
@@ -992,8 +988,8 @@ describe('OASFloatButton DSD 真水合', () => {
     const { el, styleRef } = upgradeFromFbSnapshot(snap, setup)
     expect(el.shadowRoot!.querySelector('style')).toBe(styleRef)
     expect(el.shadowRoot!.querySelector('meta[data-oas-ssr]')).toBeNull()
-    expect(el.shadowRoot!.querySelector('[part="btn"]')).not.toBeNull()
-    expect(el.shadowRoot!.querySelector('[part="badge"]')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('[part="btn"]').length).toBe(1)
+    expect(el.shadowRoot!.querySelectorAll('[part="badge"]').length).toBe(1)
     expect(snap).toContain('<style>')
   })
 
@@ -1005,7 +1001,7 @@ describe('OASFloatButton DSD 真水合', () => {
     }
     const snap = captureFbSnapshot(setup)
     const { el } = upgradeFromFbSnapshot(snap, setup)
-    expect(el.shadowRoot!.querySelector('[part="group"]')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('[part="group"]').length).toBe(1)
     ;(el.querySelector('[slot="action"]') as HTMLElement).click()
     expect(el.hasAttribute('expanded'), '水合后子钮点击应收起组').toBe(false)
     expect(el.shadowRoot!.activeElement).toBe(el.shadowRoot!.querySelector('[part="btn"]'))
@@ -1019,7 +1015,7 @@ describe('OASFloatButton DSD 真水合', () => {
     }
     const snap = captureFbSnapshot(setup)
     const { el } = upgradeFromFbSnapshot(snap, setup)
-    expect(el.shadowRoot!.querySelector('[part="menu"]')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('[part="menu"]').length).toBe(1)
     const items = el.shadowRoot!.querySelectorAll('[role="menuitem"]')
     expect(items.length).toBe(2) // 水合后 update 重建菜单项（监听器随重建重挂）
     let detail: unknown
@@ -1032,7 +1028,7 @@ describe('OASFloatButton DSD 真水合', () => {
     const el = new OASFloatButton()
     el.shadowRoot!.innerHTML = '<div>残缺</div>'
     document.body.appendChild(el)
-    expect(el.shadowRoot!.querySelector('[part="btn"]')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('[part="btn"]').length).toBe(1)
   })
 })
 
@@ -1068,7 +1064,7 @@ describe('OASFloatButton group 自渲染子钮（actions）', () => {
     expect(items).toHaveLength(3)
     expect(items[0]!.getAttribute('part')).toBe('action-btn')
     expect(items[0]!.getAttribute('aria-label')).toBe('编辑')
-    expect(items[0]!.querySelector('svg')).not.toBeNull() // icon 渲染
+    expect(items[0]!.querySelectorAll('svg').length).toBe(1) // icon 渲染
     expect(items[1]!.getAttribute('aria-label')).toBe('复制')
   })
 
@@ -1129,7 +1125,7 @@ describe('OASFloatButton group 自渲染子钮（actions）', () => {
       `<span slot="icon">＋</span><button slot="action" label="x">x</button>`,
     )
     expect(actionBtns(el)).toHaveLength(0)
-    expect(btn(el)).not.toBeNull()
+    expect(btn(el).tagName).toBe('BUTTON')
     expect(el.hasAttribute('data-action-rendered')).toBe(false)
     expect(slotted(el)).toHaveLength(1) // slot 路径接管
     expect(mirrors(el)).toHaveLength(1)

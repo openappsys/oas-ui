@@ -57,7 +57,6 @@ describe('OAStooltip', () => {
     const el = mount({ open: '', content: '这是提示', placement: 'top' })
     await Promise.resolve()
     const t = tip(el)
-    expect(t).not.toBeNull()
     expect(t.getAttribute('role')).toBe('tooltip')
     expect(t.textContent).toContain('这是提示')
   })
@@ -355,12 +354,11 @@ describe('OAStooltip', () => {
     await Promise.resolve()
     const t = tip(el)
     const arrow = t.querySelector<HTMLElement>('[data-popper-arrow]')
-    expect(arrow).not.toBeNull()
     expect(arrow!.getAttribute('part')).toBe('arrow')
     expect(arrow!.getAttribute('aria-hidden')).toBe('true')
     // 内容写入 .tip-content，不会被 textContent 覆盖清掉箭头骨架
     expect(t.querySelector<HTMLElement>('.tip-content')!.textContent).toBe('提示内容')
-    expect(t.querySelector('[data-popper-arrow]')).not.toBeNull()
+    expect(t.querySelectorAll('[data-popper-arrow]').length).toBe(1)
   })
 
   it('内容更新不影响箭头元素（update 重建内容容器，箭头保留）', async () => {
@@ -370,7 +368,7 @@ describe('OAStooltip', () => {
     await Promise.resolve()
     const t = tip(el)
     expect(t.querySelector<HTMLElement>('.tip-content')!.textContent).toBe('B')
-    expect(t.querySelector('[data-popper-arrow]')).not.toBeNull()
+    expect(t.querySelectorAll('[data-popper-arrow]').length).toBe(1)
   })
 
   it('virtual 各 placement：data-placement 写入后箭头元素随浮层就位（四向）', async () => {
@@ -387,7 +385,7 @@ describe('OAStooltip', () => {
       const t = tip(el)
       // 视口中段坐标：四向均不翻转，data-placement 与请求一致
       expect(t.getAttribute('data-placement')).toBe(p)
-      expect(t.querySelector('[data-popper-arrow]')).not.toBeNull()
+      expect(t.querySelectorAll('[data-popper-arrow]').length).toBe(1)
     }
   })
 
@@ -438,7 +436,6 @@ describe('OAStooltip', () => {
     const el = mount({ open: '', content: 'x', placement: 'top', arrow: 'false' })
     await Promise.resolve()
     const arrow = tip(el).querySelector<HTMLElement>('[data-popper-arrow]')!
-    expect(arrow).not.toBeNull()
     expect(arrow.getAttribute('part')).toBe('arrow')
     expect(arrow.hidden).toBe(true)
   })
@@ -764,9 +761,8 @@ describe('OAStooltip', () => {
     await Promise.resolve()
     const btn = el.querySelector('button')!
     const tid = btn.getAttribute('aria-describedby')
-    expect(tid).toBeTruthy()
+    expect(tid).toMatch(/^oas-tooltip-tip-[0-9a-z]+$/)
     const tipEl = el.shadowRoot!.getElementById(tid!)
-    expect(tipEl).not.toBeNull()
     expect(tipEl!.getAttribute('role')).toBe('tooltip')
   })
 
@@ -776,7 +772,7 @@ describe('OAStooltip', () => {
     const btn = el.querySelector('button')!
     el.setAttribute('open', '')
     await Promise.resolve()
-    expect(btn.getAttribute('aria-describedby')).toBeTruthy()
+    expect(btn.getAttribute('aria-describedby')).toMatch(/^oas-tooltip-tip-[0-9a-z]+$/)
     el.removeAttribute('open')
     await Promise.resolve()
     expect(btn.getAttribute('aria-describedby')).toBeNull()
@@ -994,9 +990,7 @@ describe('OAStooltip', () => {
     const el = mount({ open: '', content: 'x', 'append-to': 'body' })
     await Promise.resolve()
     const host = document.body.querySelector<HTMLElement>('[data-oas-tooltip-portal]')
-    expect(host).not.toBeNull()
     const t = host!.shadowRoot!.querySelector('[part="tip"]')!
-    expect(t).not.toBeNull()
     expect(t.getAttribute('aria-hidden')).toBe('false')
     // 原 shadow 内不再包含 tip（已移出）
     expect(el.shadowRoot!.querySelector('[part="tip"]')).toBeNull()
@@ -1009,9 +1003,7 @@ describe('OAStooltip', () => {
     const el = mount({ open: '', content: 'x', 'append-to': '#tt-target' })
     await Promise.resolve()
     const host = target.querySelector<HTMLElement>('[data-oas-tooltip-portal]')
-    expect(host).not.toBeNull()
     const t = host!.shadowRoot!.querySelector('[part="tip"]')!
-    expect(t).not.toBeNull()
   })
 
   it('append-to 动态移除：tip 移回原 shadow，portal host 销毁', async () => {
@@ -1019,14 +1011,14 @@ describe('OAStooltip', () => {
     await Promise.resolve()
     el.removeAttribute('append-to')
     await Promise.resolve()
-    expect(el.shadowRoot!.querySelector('[part="tip"]')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('[part="tip"]').length).toBe(1)
     expect(document.body.querySelector('[data-oas-tooltip-portal]')).toBeNull()
   })
 
   it('无 append-to：tip 留在原 shadow（默认挂载）', async () => {
     const el = mount({ open: '', content: 'x' })
     await Promise.resolve()
-    expect(el.shadowRoot!.querySelector('[part="tip"]')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('[part="tip"]').length).toBe(1)
     expect(document.body.querySelector('[data-oas-tooltip-portal]')).toBeNull()
   })
 
@@ -1833,7 +1825,7 @@ describe('OAStooltip 增强能力（2026-09）', () => {
     const el = mount({ a11y: 'label', open: '', content: '可访问名' })
     await Promise.resolve()
     const btn = el.querySelector('button')!
-    expect(btn.getAttribute('aria-labelledby')).toBeTruthy()
+    expect(btn.getAttribute('aria-labelledby')).toMatch(/^oas-tooltip-tip-[0-9a-z]+$/)
     const tid = btn.getAttribute('aria-labelledby')!
     expect(el.shadowRoot!.getElementById(tid)!.getAttribute('role')).toBe('tooltip')
     expect(btn.hasAttribute('aria-describedby')).toBe(false)
@@ -1844,7 +1836,7 @@ describe('OAStooltip 增强能力（2026-09）', () => {
     await Promise.resolve()
     const btn = el.querySelector('button')!
     expect(btn.hasAttribute('aria-labelledby')).toBe(false)
-    expect(btn.getAttribute('aria-describedby')).toBeTruthy()
+    expect(btn.getAttribute('aria-describedby')).toMatch(/^oas-tooltip-tip-[0-9a-z]+$/)
   })
 
   it('P3 修复覆盖：用户自设 aria-describedby 原值在关闭后还原', async () => {
@@ -1855,7 +1847,7 @@ describe('OAStooltip 增强能力（2026-09）', () => {
     el.setAttribute('open', '')
     await Promise.resolve()
     expect(btn.getAttribute('aria-describedby')).not.toBe('user-desc-id') // 打开时被 tooltip 关联
-    expect(btn.getAttribute('aria-describedby')).toBeTruthy()
+    expect(btn.getAttribute('aria-describedby')).toMatch(/^oas-tooltip-tip-[0-9a-z]+$/)
     el.removeAttribute('open')
     await Promise.resolve()
     expect(btn.getAttribute('aria-describedby'), '关闭应还原用户原值').toBe('user-desc-id')
@@ -1868,18 +1860,18 @@ describe('OAStooltip 增强能力（2026-09）', () => {
     btn.setAttribute('aria-describedby', 'user-desc')
     el.setAttribute('open', '')
     await Promise.resolve()
-    expect(btn.getAttribute('aria-describedby')).toBeTruthy()
+    expect(btn.getAttribute('aria-describedby')).toMatch(/^oas-tooltip-tip-[0-9a-z]+$/)
     // 运行时切到 label 语义：describedby 应还原 user-desc，labelledby 挂 tip
     el.setAttribute('a11y', 'label')
     await Promise.resolve()
     expect(btn.getAttribute('aria-describedby'), '切 label 时 describedby 还原原值').toBe('user-desc')
-    expect(btn.getAttribute('aria-labelledby')).toBeTruthy()
+    expect(btn.getAttribute('aria-labelledby')).toMatch(/^oas-tooltip-tip-[0-9a-z]+$/)
     // 关闭还原 labelledby
     const labelledBy = btn.getAttribute('aria-labelledby')!
     el.removeAttribute('open')
     await Promise.resolve()
     expect(btn.getAttribute('aria-labelledby')).toBeNull()
-    expect(labelledBy).toBeTruthy()
+    expect(labelledBy).toMatch(/^oas-tooltip-tip-[0-9a-z]+$/)
   })
 
   // ---------- P4 arrow-position side 态 + arrow-offset ----------

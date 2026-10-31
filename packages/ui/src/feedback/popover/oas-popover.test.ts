@@ -102,7 +102,6 @@ describe('OASPopover', () => {
     const el = mount({ open: '', title: '标题', content: '内容区域' })
     await Promise.resolve()
     const panel = el.shadowRoot!.querySelector('[part="panel"]')!
-    expect(panel).not.toBeNull()
     expect(panel.getAttribute('role')).toBe('dialog')
     expect(el.shadowRoot!.textContent).toContain('标题')
     expect(el.shadowRoot!.querySelector('[part="content"]')!.textContent).toContain('内容区域')
@@ -191,8 +190,8 @@ describe('OASPopover', () => {
       const p = panelOf(el)
       expect(p.getAttribute('aria-hidden')).toBe('false')
       expect(p.getAttribute('data-placement')).toBe('right')
-      expect(p.style.left).toBeTruthy()
-      expect(p.style.top).toBeTruthy()
+      expect(p.style.left).toMatch(/^\d+(\.\d+)?px$/)
+      expect(p.style.top).toMatch(/^\d+(\.\d+)?px$/)
     })
 
     it('virtual-anchor：按选择器锚定元素定位', () => {
@@ -202,8 +201,8 @@ describe('OASPopover', () => {
       const el = mount({ open: '', virtual: '', 'virtual-anchor': '#pop-dot-test' })
       const p = panelOf(el)
       expect(p.getAttribute('aria-hidden')).toBe('false')
-      expect(p.getAttribute('data-placement')).toBeTruthy()
-      expect(p.style.left).toBeTruthy()
+      expect(p.getAttribute('data-placement')).toMatch(/^(top|bottom|left|right)(-(start|end))?$/)
+      expect(p.style.left).toMatch(/^\d+(\.\d+)?px$/)
     })
 
     it('virtual 坐标精确定位：placement=right → left=x+8、top=y-h/2（不依赖真实布局）', () => {
@@ -357,7 +356,6 @@ describe('OASPopover', () => {
     const el = mount({ open: '', title: '标题', content: '内容区' })
     const p = panelOf(el)
     const arrow = p.querySelector<HTMLElement>('[data-popper-arrow]')
-    expect(arrow).not.toBeNull()
     expect(arrow!.getAttribute('part')).toBe('arrow')
     expect(arrow!.getAttribute('aria-hidden')).toBe('true')
     expect(p.querySelector('[part="title"]')!.textContent).toBe('标题')
@@ -386,7 +384,6 @@ describe('OASPopover', () => {
       const panel = panelOf(el)
       const arrow = panel.querySelector<HTMLElement>('[data-popper-arrow]')!
       expect(panel.getAttribute('data-placement')).toBe(p)
-      expect(arrow).not.toBeNull()
       const cs = window.getComputedStyle(arrow)
       const c = cases[p]
       // happy-dom 对 calc(var()/…) 不求最终数值（真实浏览器得 -6px，e2e 验证）；
@@ -420,7 +417,6 @@ describe('OASPopover', () => {
   it('arrow="false"：隐藏箭头（hidden=true），元素与 part 保留', () => {
     const el = mount({ open: '', title: 'x', arrow: 'false' })
     const arrow = panelOf(el).querySelector<HTMLElement>('[data-popper-arrow]')!
-    expect(arrow).not.toBeNull()
     expect(arrow.getAttribute('part')).toBe('arrow')
     expect(arrow.hidden).toBe(true)
   })
@@ -1036,13 +1032,11 @@ describe('OASPopover portal（append-to）', () => {
     const el = mount({ open: '', 'append-to': 'body' })
     const p = panelAnywhere(el)
     const host = portalHostOf()
-    expect(host).not.toBeNull()
     expect(document.body.contains(host!)).toBe(true)
     expect(host!.shadowRoot!.contains(p)).toBe(true)
     expect(el.shadowRoot!.contains(p)).toBe(false)
     // 样式作用域保真：portal shadow 内注入同一份 STYLE
     const st = host!.shadowRoot!.querySelector('style')
-    expect(st).not.toBeNull()
     expect(st!.textContent).toContain('.panel')
     // 关闭：面板移回原 shadow，host 从 body 移除（无孤儿产物）
     el.removeAttribute('open')
@@ -1056,7 +1050,6 @@ describe('OASPopover portal（append-to）', () => {
     document.body.appendChild(port)
     const el = mount({ open: '', 'append-to': '#pop-port' })
     const host = port.querySelector<HTMLElement>('[data-oas-popover-portal]')
-    expect(host).not.toBeNull()
     expect(host!.shadowRoot!.contains(panelAnywhere(el))).toBe(true)
   })
 
@@ -1105,7 +1098,7 @@ describe('OASPopover portal（append-to）', () => {
     const hosts = document.querySelectorAll('[data-oas-popover-portal]')
     const plainHost = hosts[hosts.length - 1] as HTMLElement
     expect(plainHost.style.zIndex).toContain('--oas-z-dropdown')
-    expect(plain).toBeTruthy()
+    expect(plain.hasAttribute('open')).toBe(true)
   })
 })
 
@@ -1207,7 +1200,6 @@ describe('OASPopover 关闭按钮与声明式关层', () => {
   it('closable：显示关闭按钮（part=close），点击关闭并还原焦点', () => {
     const el = mount({ open: '', closable: '', title: 'x' })
     const btn = el.shadowRoot!.querySelector<HTMLButtonElement>('[part="close"]')!
-    expect(btn).not.toBeNull()
     expect(btn.hidden).toBe(false)
     const trigger = el.querySelector('button')!
     trigger.focus()
@@ -1285,7 +1277,6 @@ describe('OASPopover modal 化', () => {
   it('modal：backdrop 显示 + aria-modal + 焦点移入面板', () => {
     const el = mount({ open: '', modal: '' })
     const backdrop = el.shadowRoot!.querySelector<HTMLElement>('.backdrop')!
-    expect(backdrop).not.toBeNull()
     expect(backdrop.classList.contains('oas-show')).toBe(true)
     expect(panelOf(el).getAttribute('aria-modal')).toBe('true')
   })
@@ -1504,8 +1495,7 @@ describe('OASPopover fresh / auto-close / arrow-merge', () => {
           `\\.panel\\[data-placement='${p}'\\]\\[data-arrow-merge\\] \\.arrow \\{ [^}]*background: linear-gradient\\((\\d+)deg`,
         ),
       )
-      expect(m, `merge ${p} 应有斜边渐变`).not.toBeNull()
-      expect(Number(m![1]), `merge ${p} 斜边 ${diag} 对角线应配 ${angle}deg 渐变`).toBe(angle)
+      expect(Number(m![1]), `merge ${p} 应有斜边渐变，斜边 ${diag} 对角线应配 ${angle}deg`).toBe(angle)
     }
   })
 
@@ -1675,7 +1665,7 @@ describe('OASPopover title 双通道（slot="title" 富内容覆盖属性文本�
     const p = panelOf(el)
     const slot = p.querySelector<HTMLSlotElement>('slot[name="title"]')!
     const fallback = p.querySelector<HTMLElement>('.title-text')!
-    expect(slot.assignedNodes().length).toBeGreaterThan(0)
+    expect(slot.assignedNodes().length).toBe(1)
     expect(fallback.hidden).toBe(true)
     // 属性仍被吸收缓存（兜底隐而不删），宿主无残留原生悬浮提示
     expect(fallback.textContent).toBe('属性标题')
@@ -1692,7 +1682,7 @@ describe('OASPopover title 双通道（slot="title" 富内容覆盖属性文本�
     mounted.push(el)
     const p = panelOf(el)
     const slot = p.querySelector<HTMLSlotElement>('slot[name="title"]')!
-    expect(slot.assignedNodes().length).toBeGreaterThan(0)
+    expect(slot.assignedNodes().length).toBe(1)
     expect(p.querySelector<HTMLElement>('.title-text')!.hidden).toBe(true)
     expect(p.querySelector('.head')!.classList.contains('oas-empty')).toBe(false)
     expect(p.getAttribute('aria-labelledby')).toBe('pop-title')
@@ -1817,7 +1807,7 @@ describe('OASPopover P1 触发元素 ARIA 关联', () => {
     el.setAttribute('open', '')
     const p = panelOf(el)
     expect(btn.getAttribute('aria-expanded')).toBe('true')
-    expect(p.id).toBeTruthy()
+    expect(p.id).toMatch(/^oas-popover-panel-[0-9a-z]+$/)
     expect(btn.getAttribute('aria-controls')).toBe(p.id)
     el.removeAttribute('open')
     expect(btn.getAttribute('aria-expanded')).toBe('false')
@@ -2040,7 +2030,7 @@ describe('OASPopover P4 外点 / Esc 关闭开关', () => {
     await sleep(220)
     expect(normal.hasAttribute('open')).toBe(false)
     expect(muted.hasAttribute('open')).toBe(true)
-    expect(normal).toBeTruthy()
+    expect(normal.shadowRoot!.querySelector('[part="panel"]')!.getAttribute('aria-hidden')).toBe('true')
   })
 })
 
@@ -2171,10 +2161,8 @@ describe('OASPopover P7 description 插槽', () => {
     el.setAttribute('content', 'x') // 触发 update
     const p = panelOf(el)
     const descBox = p.querySelector('[part="description"]')!
-    expect(descBox).not.toBeNull()
     // slot 分配判定（shadow 容器 textContent 不含分配内容）
     expect(descBox.querySelector<HTMLSlotElement>('slot[name="description"]')!.assignedNodes()).toContain(desc)
-    expect(p.getAttribute('aria-describedby')).toBeTruthy()
     expect(p.getAttribute('aria-describedby')).toBe(descBox.id)
   })
 
@@ -2295,7 +2283,6 @@ describe('OASPopover P11 header / footer 插槽', () => {
     el.setAttribute('content', 'x')
     const p = panelOf(el)
     const foot = p.querySelector<HTMLElement>('[part="foot"]')!
-    expect(foot).not.toBeNull()
     expect(foot.classList.contains('oas-empty')).toBe(true)
     const footer = document.createElement('div')
     footer.setAttribute('slot', 'footer')
@@ -2311,9 +2298,9 @@ describe('OASPopover P11 header / footer 插槽', () => {
     el.innerHTML = '<button>触发</button><div slot="header">H</div><div slot="footer">F</div>'
     el.setAttribute('open', '')
     const p = panelOf(el)
-    expect(p.querySelector<HTMLSlotElement>('slot[name="header"]')!.assignedNodes().length).toBeGreaterThan(0)
+    expect(p.querySelector<HTMLSlotElement>('slot[name="header"]')!.assignedNodes().length).toBe(1)
     expect(p.querySelector('[part="content"]')!.textContent).toBe('C')
-    expect(p.querySelector<HTMLSlotElement>('slot[name="footer"]')!.assignedNodes().length).toBeGreaterThan(0)
+    expect(p.querySelector<HTMLSlotElement>('slot[name="footer"]')!.assignedNodes().length).toBe(1)
   })
 })
 

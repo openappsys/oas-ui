@@ -103,7 +103,7 @@ describe('OASMenu', () => {
 
   it('渲染菜单项，role=menu', () => {
     const el = mount()
-    expect(el.shadowRoot!.querySelector('[role="menu"]')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('[role="menu"]').length).toBe(1)
     expect(items(el).length).toBe(3)
   })
 
@@ -147,7 +147,7 @@ describe('OASMenu', () => {
     const firstParent = topItems(el)[0]!
     expect(firstParent.getAttribute('aria-expanded')).toBe('false')
     expect(firstParent.classList.contains('open')).toBe(false)
-    expect(firstParent.querySelector('[part="submenu"]')).not.toBeNull()
+    expect(firstParent.querySelectorAll('[part="submenu"]').length).toBe(1)
   })
 
   it('点击展开显示子项，再点击收起', () => {
@@ -256,7 +256,7 @@ describe('OASMenu', () => {
   it('子菜单样式：菜单项禁止逐字换行、子菜单为级联浮出面板（CSS 规则存在性断言）', () => {
     const el = mount({ items: NESTED_ITEMS })
     items(el)[0]!.click() // 展开子菜单，确保 submenu 存在
-    expect(submenuEl(el)).not.toBeNull()
+    expect(submenuEl(el)!.parentElement!.classList.contains('open')).toBe(true)
     const css = el.shadowRoot!.querySelector('style')!.textContent ?? ''
     // 菜单项禁止中文断裂换行
     expect(css).toContain('white-space: nowrap;')
@@ -315,7 +315,7 @@ describe('OASMenu', () => {
     // hover 浮出子菜单（子菜单为完整菜单）
     items(el)[0]!.dispatchEvent(new MouseEvent('mouseenter'))
     expect(items(el)[0]!.getAttribute('aria-expanded')).toBe('true')
-    expect(submenuEl(el)).not.toBeNull()
+    expect(submenuEl(el)!.parentElement!.classList.contains('open')).toBe(true)
     // 叶子项仍可选
     let detail: unknown
     el.addEventListener('oas-select', (e: Event) => (detail = (e as CustomEvent).detail))
@@ -326,7 +326,6 @@ describe('OASMenu', () => {
   it('分组：渲染组标题分区，子项平铺同层，组标题不可点、子项可选中', () => {
     const el = mount({ items: GROUP_ITEMS })
     const group = el.shadowRoot!.querySelector('[part="group"]')
-    expect(group).not.toBeNull()
     expect(group!.getAttribute('role')).toBe('none')
     expect(group!.querySelector('.group-label')!.textContent).toBe('导航')
     // 子项平铺：items() 只统计可点项（首页/关于/设置），组标题与分隔线不计入
@@ -359,7 +358,6 @@ describe('OASMenu', () => {
   it('分隔线：渲染细分隔线（role=separator），不可点', () => {
     const el = mount({ items: GROUP_ITEMS })
     const divider = el.shadowRoot!.querySelector('[part="divider"]')
-    expect(divider).not.toBeNull()
     expect(divider!.getAttribute('role')).toBe('separator')
     let fired = 0
     el.addEventListener('oas-select', () => fired++)
@@ -375,8 +373,7 @@ describe('OASMenu', () => {
       ]),
     })
     const icon = items(el)[0]!.querySelector('.icon')
-    expect(icon).not.toBeNull()
-    expect(icon!.querySelector('svg')).not.toBeNull()
+    expect(icon!.querySelectorAll('svg').length).toBe(1)
     const plain = mount({ items: JSON.stringify([{ label: '普通', value: 'plain' }]) })
     expect(plain.shadowRoot!.querySelector('[part="item"] .icon')).toBeNull()
   })
@@ -518,7 +515,6 @@ describe('OASMenu', () => {
     // 展开 文件 > 新建（两级链），使 新建 成为 .open 父项
     topItems(el)[1]!.dispatchEvent(new MouseEvent('mouseenter')) // 文件
     const newItem = el.shadowRoot!.querySelector<HTMLElement>('[data-value="new"]')!
-    expect(newItem).not.toBeNull()
     // 桩掉 新建 的 rect 与它的子菜单 rect：新建 贴近视口右缘
     stubRect(newItem, { left: 600, top: 40, right: 760, bottom: 76, width: 160, height: 36 })
     const deepSub = newItem.querySelector<HTMLElement>('[part="submenu"]')!
@@ -1009,7 +1005,7 @@ describe('OASMenu loading 菜单项', () => {
     const el = mount({ items: LOADING_ITEMS })
     const item = items(el).find((i) => i.dataset.value === 'syncing')!
     expect(item.classList.contains('loading')).toBe(true)
-    expect(item.querySelector('.spin')).not.toBeNull()
+    expect(item.querySelectorAll('.spin').length).toBe(1)
     expect(item.getAttribute('aria-busy')).toBe('true')
     expect(item.getAttribute('aria-disabled')).toBe('true')
     let fired = 0
@@ -1311,7 +1307,7 @@ describe('OASMenu loading 菜单项', () => {
       const dash = el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="dash"]')!
       dash.click() // 展开
       const sub = el.shadowRoot!.querySelector('.inline-sub')
-      expect(sub).not.toBeNull() // inline 展开容器存在
+      expect(sub!.getAttribute('class')).toContain('inline-sub') // inline 展开容器存在
     })
 
     it('inline 展开/收起有高度过渡（只动 height/opacity）', () => {
@@ -1372,7 +1368,7 @@ describe('OASMenu loading 菜单项', () => {
     it('expanded 属性受控：指定展开的子菜单', () => {
       const el = mount({ mode: 'inline', items: EXP_ITEMS, expanded: '["a"]' })
       const subA = el.shadowRoot!.querySelector('.inline-sub[data-parent="a"]')
-      expect(subA).not.toBeNull()
+      expect(subA!.classList.contains('open')).toBe(true)
     })
 
     it('展开/收起派发 oas-expand-change（detail:{expanded, value, isExpanded}）', () => {
@@ -1390,7 +1386,7 @@ describe('OASMenu loading 菜单项', () => {
       const dashA = el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="a"]')!
       dashA.click()
       const subA = el.shadowRoot!.querySelector('.inline-sub[data-parent="a"]')
-      expect(subA).not.toBeNull()
+      expect(subA!.classList.contains('open')).toBe(true)
     })
   })
 
@@ -1407,7 +1403,7 @@ describe('OASMenu loading 菜单项', () => {
       const subA = el.shadowRoot!.querySelector('.inline-sub[data-parent="a"]')
       const subB = el.shadowRoot!.querySelector('.inline-sub[data-parent="b"]')
       // a 收起（无展开容器或隐藏），b 展开
-      expect(subB).not.toBeNull()
+      expect(subB!.classList.contains('open')).toBe(true)
       expect(subA === null || !subA.classList.contains('open')).toBe(true)
     })
 
@@ -1584,7 +1580,7 @@ describe('子元素声明式通道', () => {
     `)
     const root = el.shadowRoot!
     // role=menu 骨架一致
-    expect(root.querySelector('[role="menu"]')).not.toBeNull()
+    expect(root.querySelectorAll('[role="menu"]').length).toBe(2)
     // 分组标题平铺渲染 + 组内子项同层
     const group = root.querySelector<HTMLElement>('[part="group"]')!
     expect(group.textContent).toBe('导航')
@@ -1627,7 +1623,7 @@ describe('子元素声明式通道', () => {
     // checkbox：menuitemcheckbox + 方块勾选框，点击写回数组
     const grid = root.querySelector<HTMLElement>('[part="item"][data-value="grid"]')!
     expect(grid.getAttribute('role')).toBe('menuitemcheckbox')
-    expect(grid.querySelector('.check--box')).not.toBeNull()
+    expect(grid.querySelectorAll('.check--box').length).toBe(1)
     grid.click()
     expect(JSON.parse(el.getAttribute('value')!)).toEqual(['grid'])
     // danger 红字类
@@ -1643,7 +1639,7 @@ describe('子元素声明式通道', () => {
     expect(save.classList.contains('loading')).toBe(true)
     expect(save.getAttribute('aria-busy')).toBe('true')
     expect(save.getAttribute('aria-disabled')).toBe('true')
-    expect(save.querySelector('.spin')).not.toBeNull()
+    expect(save.querySelectorAll('.spin').length).toBe(1)
     let saveSelected = false
     el.addEventListener('oas-select', () => (saveSelected = true))
     save.click()
@@ -1677,8 +1673,7 @@ describe('子元素声明式通道', () => {
       )
       const li = el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="user"]')!
       const media = li.querySelector<HTMLElement>('.media')!
-      expect(media).not.toBeNull()
-      expect(media.querySelector('[data-avatar]')).not.toBeNull()
+      expect(media.querySelectorAll('[data-avatar]').length).toBe(1)
       // media 在 label 之前（前置）
       const label = li.querySelector<HTMLElement>('.label')!
       expect(label.textContent).toBe('张三')
@@ -1690,7 +1685,7 @@ describe('子元素声明式通道', () => {
         `<oas-menu-item value="team"><b data-mark slot="leading">团</b>团队空间</oas-menu-item>`,
       )
       const media = el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="team"] .media')!
-      expect(media.querySelector('[data-mark]')).not.toBeNull()
+      expect(media.querySelectorAll('[data-mark]').length).toBe(1)
     })
 
     it('leading 优先于 icon 属性：同给时渲染 .media 不渲染 .icon；无 leading 项零回归', () => {
@@ -1699,10 +1694,10 @@ describe('子元素声明式通道', () => {
           `<oas-menu-item value="b" icon="gear">纯图标</oas-menu-item>`,
       )
       const a = el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="a"]')!
-      expect(a.querySelector('.media')).not.toBeNull()
+      expect(a.querySelectorAll('.media').length).toBe(1)
       expect(a.querySelector('.icon')).toBeNull()
       const b = el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="b"]')!
-      expect(b.querySelector('.icon')).not.toBeNull()
+      expect(b.querySelectorAll('.icon').length).toBe(1)
       expect(b.querySelector('.media')).toBeNull()
     })
 
@@ -1711,7 +1706,7 @@ describe('子元素声明式通道', () => {
         `<oas-menu-item value="sync" loading>同步中<template slot="leading"><i data-y></i></template></oas-menu-item>`,
       )
       const li = el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="sync"]')!
-      expect(li.querySelector('.spin')).not.toBeNull()
+      expect(li.querySelectorAll('.spin').length).toBe(1)
       expect(li.querySelector('.media')).toBeNull()
     })
 
@@ -1732,7 +1727,7 @@ describe('子元素声明式通道', () => {
       const parent = el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="parent"]')!
       const child = el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="child"]')!
       expect(parent.querySelector(':scope > .media'), '父项不得挂子项的 leading').toBeNull()
-      expect(child.querySelector(':scope > .media [data-child-lead]'), '子项自己的 leading 正常渲染').not.toBeNull()
+      expect(child.querySelectorAll(':scope > .media [data-child-lead]').length, '子项自己的 leading 正常渲染').toBe(1)
     })
   })
 
@@ -1745,7 +1740,9 @@ describe('子元素声明式通道', () => {
     el.appendChild(item)
     await new Promise((r) => setTimeout(r, 0))
     expect(items(el).length).toBe(2)
-    expect(el.shadowRoot!.querySelector('[part="item"][data-value="about"]')).not.toBeNull()
+    expect(
+      el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="about"]')!.getAttribute('data-value'),
+    ).toBe('about')
   })
 
   it('value 勾选语义：radio 组单选（子元素通道下与 items 通道一致）', () => {
@@ -2105,7 +2102,7 @@ describe('OASMenu searchable + shortcut（能力缺口 D13）', () => {
     // 祖先链自动展开到命中叶子
     expect(el.shadowRoot!.querySelector<HTMLElement>('[data-value="file"]')!.classList.contains('open')).toBe(true)
     expect(el.shadowRoot!.querySelector<HTMLElement>('[data-value="new"]')!.classList.contains('open')).toBe(true)
-    expect(el.shadowRoot!.querySelector('[data-value="new-window"]')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('[data-value="new-window"]').length).toBe(1)
     expect(el.shadowRoot!.querySelector('[data-value="new-file"]')).toBeNull()
   })
 
@@ -2349,7 +2346,7 @@ describe('OASMenu 读屏语义（aria-activedescendant）', () => {
     const menu = menuOf(el)
     expect(menu.getAttribute('tabindex'), '焦点容器仍是唯一的 ul').toBe('0')
     expect(menu.getAttribute('role')).toBe('menu')
-    expect(menu.getAttribute('aria-label'), 'ul 需可访问名称').toBeTruthy()
+    expect(menu.getAttribute('aria-label'), 'ul 需可访问名称').toBe('导航')
     expect(menu.getAttribute('aria-orientation')).toBe('vertical')
     for (const li of items(el)) {
       expect(li.hasAttribute('tabindex'), 'activedescendant 模型下菜单项不应有 tabindex').toBe(false)
@@ -2366,7 +2363,7 @@ describe('OASMenu 读屏语义（aria-activedescendant）', () => {
     const menu = menuOf(el)
     key(menu, 'ArrowDown')
     const first = items(el)[0]!
-    expect(first.id, '菜单项应有 id 供 activedescendant 引用').toBeTruthy()
+    expect(first.id, '菜单项应有 id 供 activedescendant 引用').toMatch(/-item-1$/)
     expect(menu.getAttribute('aria-activedescendant')).toBe(first.id)
     // 唯一性：不能出现重复 id（否则 AT 解析歧义）
     const ids = items(el).map((li) => li.id)
