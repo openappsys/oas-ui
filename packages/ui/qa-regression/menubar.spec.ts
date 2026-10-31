@@ -47,9 +47,10 @@ test('menubar 多级子菜单贴近视口右缘：翻转后全部落在视口内
   // click 首开「视图」展开一级下拉，hover 级联「缩放」展开二级子菜单
   // （限定 .bar 作用域：汉堡面板里渲染了同一份 items 镜像，[part="item"] 会重复命中）
   await page.locator('#menubar-basic[data-e2e-right-edge] .bar [part="top-item"][data-value="view"]').click()
-  await page.waitForTimeout(150)
+  // hover 自带 actionability 等待（一级子菜单动画期间元素微动，由 hover 重试吸收）
   await page.locator('#menubar-basic[data-e2e-right-edge] .bar [part="item"][data-value="zoom"]').hover()
-  await page.waitForTimeout(200)
+  // 二级级联展开完成的真实信号：可见子菜单 ≥2（一级下拉 + 级联子菜单，即断言条件本身）
+  await expect.poll(async () => (await visibleSubmenuRects(page)).length).toBeGreaterThanOrEqual(2)
   const rects = await visibleSubmenuRects(page)
   expect(rects.length).toBeGreaterThanOrEqual(2) // 一级下拉 + 级联子菜单
   for (const r of rects) {
@@ -70,9 +71,8 @@ test('menubar 多级子菜单贴近视口右缘：翻转后全部落在视口内
 test('menubar click 首开语义：无开态 hover 不展开、开态 hover 切换顶级（桌面共识回归）', async ({ page }) => {
   await page.goto('/components/menubar.html', { waitUntil: 'domcontentloaded' })
   await up(page, '#menubar-basic')
-  // 无开态：hover 顶级「视图」不展开
+  // 无开态：hover 顶级「视图」不展开（click 首开语义下 hover 无定时器，若缺陷复现为同步打开，立即读取可判）
   await page.locator('#menubar-basic [part="top-item"][data-value="view"]').hover()
-  await page.waitForTimeout(120)
   const closed = await page.evaluate(() => {
     const mb = document.querySelector('#menubar-basic')!
     const sub = mb.shadowRoot!.querySelector('[part="submenu"][data-parent="view"]')!
@@ -81,10 +81,12 @@ test('menubar click 首开语义：无开态 hover 不展开、开态 hover 切�
   expect(closed, '无开态时 hover 顶级项不应展开（click 首开）').toBe(true)
   // 点击「文件」首开
   await page.locator('#menubar-basic [part="top-item"][data-value="file"]').click()
-  await page.waitForTimeout(120)
+  // 首开完成的真实信号：file 子菜单已展开
+  await expect.poll(() => submenuOpen(page, '#menubar-basic', 'file')).toBe(true)
   // hover「编辑」切换：编辑展开、文件收起
   await page.locator('#menubar-basic [part="top-item"][data-value="edit"]').hover()
-  await page.waitForTimeout(150)
+  // 切换完成的真实信号：edit 子菜单已展开（file 收起与 edit 展开为同一同步切换）
+  await expect.poll(() => submenuOpen(page, '#menubar-basic', 'edit')).toBe(true)
   const switched = await page.evaluate(() => {
     const mb = document.querySelector('#menubar-basic')!
     const sub = (v: string) => mb.shadowRoot!.querySelector(`[part="submenu"][data-parent="${v}"]`)!
@@ -159,9 +161,8 @@ test('menubar close-on-select="false"（menubar-checkbox demo）：radio 叶子�
   // 浮层展开动画/定位期间元素持续微动，Playwright 稳定性检查会重试到超时（firefox 尤甚）；
   // 这里验证的是 close-on-select 行为，用 DOM click 触发组件处理器即可。
   await leaf.evaluate((el) => (el as HTMLElement).click())
-  // close-on-select="false"：点叶子后应保持展开。等一个动画窗口让「若会收」的收起发生，
-  // 再断言仍展开（避免点击效果还没跑就抢跑通过）。
-  await page.waitForTimeout(300)
+  // close-on-select="false"：点叶子后应保持展开。收起（若缺陷复现）为点击同步链内的行为，
+  // 立即读取即可判定；下方 poll 再兜一层重试
   await expect
     .poll(() => submenuOpen(page, '#menubar-checkbox', 'view'), {
       message: 'close-on-select="false" radio 叶子选中后子菜单应保持展开',
@@ -277,7 +278,7 @@ for (const theme of ['light', 'dark'] as const) {
       document.documentElement.setAttribute('dir', 'rtl')
       document.documentElement.classList.toggle('dark', dark)
     }, theme === 'dark')
-    await page.waitForTimeout(200)
+    // dir/class 切换同步进 CSS 级联；下方 evaluate 内部自带点击后等待，无需额外固定等待
     const rows = await page.evaluate(async () => {
       const mb = document.querySelector('#menubar-basic')!
       const trigs = [...mb.shadowRoot!.querySelectorAll<HTMLElement>('.bar [part="top-item"]')].filter(

@@ -14,7 +14,8 @@ test('menu 多级子菜单贴近视口右缘：翻转后全部落在视口内', 
   // hover 展开 文件 → 新建（三级链）
   await page.locator('#menu-nested [part="item"][data-value="file"]').hover()
   await page.locator('#menu-nested [part="item"][data-value="new"]').hover()
-  await page.waitForTimeout(200)
+  // 级联展开完成的真实信号：可见子菜单 ≥2（即断言条件本身）
+  await expect.poll(async () => (await visibleSubmenuRects(page)).length).toBeGreaterThanOrEqual(2)
   const rects = await visibleSubmenuRects(page)
   expect(rects.length).toBeGreaterThanOrEqual(2)
   expect(
@@ -41,7 +42,8 @@ test('menu 水平模式子菜单浮层不被裁剪——.menu 容器 overflow-x:
   // hover「产品」展开一级子菜单
   const item = menu.locator('[data-value="products"]')
   await item.hover()
-  await page.waitForTimeout(400)
+  // 子菜单展开完成的真实信号：父项 li 挂 open 类（sub 可见性由 li.open 的后代规则控制）
+  await expect.poll(() => item.evaluate((li) => li.classList.contains('open'))).toBe(true)
   const result = await item.evaluate((li) => {
     const host = li.getRootNode() instanceof ShadowRoot ? (li.getRootNode() as ShadowRoot).host : null
     const menuRoot = host?.shadowRoot?.querySelector('.menu') as HTMLElement | null
@@ -577,7 +579,18 @@ for (const sc of [
       })
     // 真鼠标 hover 展开（page.mouse 走完整 hit-test 事件路径）
     await page.mouse.move(item.cx, item.cy)
-    await page.waitForTimeout(260)
+    // hover 延迟展开完成的真实信号：父项挂 open 类（即断言条件本身）
+    await expect
+      .poll(
+        () =>
+          page.evaluate(() => {
+            const h = document.querySelector('#zz-menu-bridge')!
+            const li = h.shadowRoot!.querySelector<HTMLElement>('.menu > [part="item"][data-value="help"]')!
+            return li.classList.contains('open')
+          }),
+        { timeout: 3000 },
+      )
+      .toBe(true)
     const opened = await readState()
     expect(opened.open, 'hover 父项应展开面板').toBe(true)
     expect(opened.transform, '场景前提：面板被回折 + inline 平移夹回（与父项横向错开）').toMatch(
@@ -741,7 +754,18 @@ test('menu 水平溢出收纳「···」可见且末项不截断（曾收纳项
   await up(page, 'oas-menu')
   const menu = page.locator('oas-menu[mode="horizontal"][style*="380px"]')
   await menu.scrollIntoViewIfNeeded()
-  await page.waitForTimeout(400) // 等 rAF 测量
+  // 收纳测量完成的真实信号：已有溢出项被收纳且「···」可见（即前两条断言条件本身）
+  await expect
+    .poll(() =>
+      menu.evaluate((host) => {
+        const root = host.shadowRoot!.querySelector('.menu')!
+        const items = [...root.querySelectorAll<HTMLElement>(':scope > [part="item"][data-value]:not(.menu-more)')]
+        const more = root.querySelector<HTMLElement>('.menu-more')!
+        const visible = items.filter((t) => !t.hasAttribute('data-collapsed'))
+        return items.length - visible.length > 0 && getComputedStyle(more).display !== 'none' && more.offsetWidth > 0
+      }),
+    )
+    .toBe(true)
   const st = await menu.evaluate((host) => {
     const root = host.shadowRoot!.querySelector('.menu')!
     const items = [...root.querySelectorAll<HTMLElement>(':scope > [part="item"][data-value]:not(.menu-more)')]
@@ -760,7 +784,16 @@ test('menu 水平溢出收纳「···」可见且末项不截断（曾收纳项
   expect(st.lastItemClipped, '末个可见项不应截断').toBe(false)
   // 点击「···」→ 镜像弹层真实可见（elementFromPoint 命中宿主）
   await menu.locator('.menu-more').click()
-  await page.waitForTimeout(300)
+  // 弹层展开完成的真实信号：.menu-more-sub 可见（display 非 none 且有高度）
+  await expect
+    .poll(() =>
+      menu.evaluate((host) => {
+        const sub = host.shadowRoot!.querySelector<HTMLElement>('.menu-more-sub')!
+        const r = sub.getBoundingClientRect()
+        return getComputedStyle(sub).display !== 'none' && r.height > 0
+      }),
+    )
+    .toBe(true)
   const pop = await menu.evaluate((host) => {
     const sub = host.shadowRoot!.querySelector<HTMLElement>('.menu-more-sub')!
     const r = sub.getBoundingClientRect()
@@ -775,7 +808,8 @@ test('menu 水平溢出收纳「···」可见且末项不截断（曾收纳项
   // 「···」高亮（child-selected + 主色 + aria-current），弹层镜像项带 radio 选中态
   // （选中项在溢出弹层里时由收纳指示器高亮表达）
   await menu.locator('.menu-more-sub [role="menuitemradio"]').first().click()
-  await page.waitForTimeout(400) // 等 value 写回 → update → rAF 重建镜像
+  // 选中写回完成的真实信号：value 已写回（update → rAF 重建镜像与其同一调度链）
+  await expect.poll(() => menu.evaluate((host) => !!host.getAttribute('value'))).toBe(true)
   const sel = await menu.evaluate((host) => {
     const root = host.shadowRoot!.querySelector('.menu')!
     const more = root.querySelector<HTMLElement>('.menu-more')!
@@ -812,7 +846,10 @@ test('menu close-on-select="false"（menu-keep-open demo）：点叶子后子菜
   const leaf = page.locator('#menu-keep-open [part="item"][data-value="copy"]')
   await leaf.waitFor({ state: 'visible' })
   await leaf.click()
-  await page.waitForTimeout(200)
+  // 选中写回完成的真实信号：value = copy（保持展开与写回同一同步链）
+  await expect
+    .poll(() => page.evaluate(() => document.querySelector('#menu-keep-open')?.getAttribute('value')))
+    .toBe('copy')
   const r = await page.evaluate(() => {
     const menu = document.querySelector('#menu-keep-open')!
     const parent = menu.shadowRoot!.querySelector('[part="item"][data-value="edit"]')
@@ -831,9 +868,23 @@ test('menu inline + close-on-select="true"（menu-inline-close demo）：点叶�
   await page.goto('/components/menu.html', { waitUntil: 'domcontentloaded' })
   await up(page, '#menu-inline-close')
   await page.locator('#menu-inline-close [data-value="dash"]').click()
-  await page.waitForTimeout(200)
+  // inline 子菜单展开完成的真实信号：.inline-sub[data-parent=dash] 挂 open
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () =>
+          document
+            .querySelector('#menu-inline-close')!
+            .shadowRoot!.querySelector('.inline-sub[data-parent="dash"]')
+            ?.classList.contains('open') ?? false,
+      ),
+    )
+    .toBe(true)
   await page.locator('#menu-inline-close [data-value="dash-overview"]').click()
-  await page.waitForTimeout(200)
+  // 选中写回完成的真实信号：value = dash-overview（收起与写回同一同步链）
+  await expect
+    .poll(() => page.evaluate(() => document.querySelector('#menu-inline-close')?.getAttribute('value')))
+    .toBe('dash-overview')
   const r = await page.evaluate(() => {
     const menu = document.querySelector('#menu-inline-close')!
     const sub = menu.shadowRoot!.querySelector('.inline-sub[data-parent="dash"]')
@@ -880,7 +931,16 @@ test('menu open-on-hover：悬停延迟展开 → 移出延迟收起 → 点击�
   await page.evaluate(() => {
     document.querySelector('oas-menu#menu-hover-v')!.scrollIntoView({ block: 'center' })
   })
-  await page.waitForTimeout(300)
+  // 滚动静默的真实信号：连续两次页面 scrollY 一致（smooth 滚动结束后坐标才可用）
+  let prevHoverScrollY: number | null = null
+  await expect
+    .poll(async () => {
+      const y = await page.evaluate(() => window.scrollY)
+      const stable = prevHoverScrollY !== null && y === prevHoverScrollY
+      prevHoverScrollY = y
+      return stable
+    })
+    .toBe(true)
   // 真实鼠标移入父项 → ~150ms 延迟展开
   const box = await page.evaluate(() => {
     const el = document.querySelector('oas-menu#menu-hover-v')!
@@ -1060,8 +1120,10 @@ test('menu 读屏语义：键盘高亮经 aria-activedescendant 暴露（焦点�
   expect(st.activeBg, `高亮背景 ${st.activeBg} 应与普通项 ${st.idleBg} 不同`).not.toBe(st.idleBg)
   // Space 激活当前项（不得落入 typeahead；value 写回 = 用户可见状态变化）
   await page.keyboard.press('Space')
-  await page.waitForTimeout(120)
-  expect(await page.evaluate(() => document.querySelector('#zz-menu-a11y')!.getAttribute('value'))).toBe('home')
+  // value 写回完成的真实信号：Space 激活同步写回 home
+  await expect
+    .poll(() => page.evaluate(() => document.querySelector('#zz-menu-a11y')!.getAttribute('value')))
+    .toBe('home')
   await page.screenshot({ path: 'test-results/visual-review/menu-a11y-activedescendant.png' })
 })
 
@@ -1185,9 +1247,8 @@ test('menu persistent（P2）：Vue 下属性存活、选中后子菜单保持�
   await page.goto('/components/menu.html', { waitUntil: 'domcontentloaded' })
   await up(page, '#menu-persistent')
   await page.locator('#menu-persistent').scrollIntoViewIfNeeded()
-  // hover 展开父项 → 点击子菜单叶子
+  // hover 展开父项 → 点击子菜单叶子（click 自带可见性自动等待，子菜单渲染完成后自动点击）
   await page.locator('#menu-persistent [part="item"][data-value="file"]').hover()
-  await page.waitForTimeout(150)
   await page.locator('#menu-persistent [part="item"][data-value="new"]').click()
   const r = await page.evaluate(() => {
     const el = document.querySelector('#menu-persistent')!

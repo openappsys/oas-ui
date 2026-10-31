@@ -18,6 +18,8 @@ async function heapMedian(page: Page): Promise<number> {
         () => (performance as unknown as { memory?: { usedJSHeapSize: number } }).memory!.usedJSHeapSize,
       ),
     )
+    // audit-exception: heap 采样间隔属测量仪器协议（performance.memory 无任何 DOM 信号可等），
+    // 80ms 为拉开采样间隔吸收噪声的最小值，非 UI 状态等待
     await page.waitForTimeout(80)
   }
   samples.sort((a, b) => a - b)
@@ -72,6 +74,13 @@ async function countTable(page: Page, sel: string): Promise<{ all: number; wc: n
   }, sel)
 }
 
+/** 两个动画帧：虚拟窗口重建/懒渲染按帧节流，双 rAF 覆盖一帧节流窗口（替代固定等待） */
+async function settleFrames(page: Page): Promise<void> {
+  await page.evaluate(
+    () => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))),
+  )
+}
+
 /** 60 列 × 40 行大宽表：column-virtual + height 行虚拟双开，checkable + 左右固定列 */
 async function mountWideTable(page: Page): Promise<void> {
   await page.goto('/components/table.html', { waitUntil: 'load' })
@@ -110,7 +119,8 @@ async function mountWideTable(page: Page): Promise<void> {
     null,
     { timeout: 10000 },
   )
-  await page.waitForTimeout(500)
+  // 懒加载资源就绪的真实信号：字体全部加载完成（「懒加载资源就绪」的确定性等价物）
+  await page.evaluate(() => document.fonts.ready)
 }
 
 // ==================== 基线断言 ====================
@@ -139,7 +149,8 @@ test.describe('table 大宽表内存回归基线', () => {
       scroll.scrollLeft = 400
       scroll.scrollTop = 100
     })
-    await page.waitForTimeout(200)
+    // 滚动窗口重建按帧节流：双 rAF 等重建落定
+    await settleFrames(page)
     await page.evaluate(() => {
       const scroll = document
         .querySelector('#qa-table-memory')!
@@ -147,7 +158,7 @@ test.describe('table 大宽表内存回归基线', () => {
       scroll.scrollLeft = 0
       scroll.scrollTop = 0
     })
-    await page.waitForTimeout(200)
+    await settleFrames(page)
     await forceGC(page)
     const before = await countTable(page, '#qa-table-memory')
     const base = await heapMedian(page)
@@ -173,7 +184,8 @@ test.describe('table 大宽表内存回归基线', () => {
       scroll.scrollLeft = 0
       scroll.scrollTop = 0
     })
-    await page.waitForTimeout(300)
+    // 归零窗口重建落定（双 rAF，同预热）
+    await settleFrames(page)
     await forceGC(page)
     const after = await countTable(page, '#qa-table-memory')
     const afterHeap = await heapMedian(page)
@@ -226,7 +238,8 @@ test.describe('table 大宽表内存回归基线', () => {
       null,
       { timeout: 10000 },
     )
-    await page.waitForTimeout(500)
+    // 懒加载资源就绪：字体加载完成（同 mountWideTable）
+    await page.evaluate(() => document.fonts.ready)
 
     // 一轮「双击进编辑 → Esc 取消」：合成 dblclick 走组件的原生 dblclick 兜底链路；
     // Escape 派发到编辑器根元素（组件在编辑器上监听 keydown）。每轮校验编辑器确实挂载并退出。
@@ -262,13 +275,14 @@ test.describe('table 大宽表内存回归基线', () => {
 
     // 预热一轮：编辑链路首次初始化属一次性分配，不进基线
     await cycle(true)
-    await page.waitForTimeout(200)
+    // 编辑器挂/退已在 cycle 内逐轮校验，双 rAF 等收尾渲染落定
+    await settleFrames(page)
     await forceGC(page)
     const before = await countTable(page, '#qa-table-edit-memory')
     const base = await heapMedian(page)
 
     await cycle(false)
-    await page.waitForTimeout(300)
+    await settleFrames(page)
     await forceGC(page)
     const after = await countTable(page, '#qa-table-edit-memory')
     const afterHeap = await heapMedian(page)

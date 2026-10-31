@@ -9,7 +9,16 @@ test('virtual-list 独立页：items 升级前赋值回收 + 视口高度受限'
   // 另有视口 height 不落 CSS 高度的同款撑高问题。
   await page.goto('/components/virtual-list.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-virtual-list')
-  await page.waitForTimeout(600)
+  // 渲染完成的真实信号：全部 virtual-list 都已渲染出行（即本用例断言条件本身）
+  await expect
+    .poll(() =>
+      page.evaluate(() =>
+        [...document.querySelectorAll('oas-virtual-list')].every(
+          (vlist) => vlist.shadowRoot!.querySelectorAll('[part=item]').length > 0,
+        ),
+      ),
+    )
+    .toBe(true)
   const r = await page.evaluate(() =>
     [...document.querySelectorAll('oas-virtual-list')].map((vlist) => {
       const viewport = vlist.shadowRoot!.querySelector('[part=viewport]')
@@ -33,7 +42,14 @@ test('virtual-list 滚轮增量滚动不失控（overflow-anchor 回归）', asy
   // 表现为"滚一下直接滚到底/越滚越快"。修复：.viewport/.inner 加 overflow-anchor: none。
   await page.goto('/components/virtual-list.html', { waitUntil: 'domcontentloaded' })
   await up(page, '#vl-basic')
-  await page.waitForTimeout(600)
+  // 渲染完成的真实信号：目标列表已有行项（滚轮事件才能命中 viewport）
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () => (document.querySelector('#vl-basic')?.shadowRoot?.querySelectorAll('[part=item]').length ?? 0) > 0,
+      ),
+    )
+    .toBe(true)
   const box = await page.locator('#vl-basic').boundingBox()
   await page.mouse.move(box!.x + box!.width / 2, box!.y + 50)
   const scrollTop = () =>
@@ -43,13 +59,14 @@ test('virtual-list 滚轮增量滚动不失控（overflow-anchor 回归）', asy
     })
   const s0 = await scrollTop()
   await page.mouse.wheel(0, 120)
-  await page.waitForTimeout(300)
+  // 滚轮增量落定的真实信号：scrollTop 达到本档增量下限（scroll 事件异步到达）
+  await expect.poll(scrollTop).toBeGreaterThanOrEqual(s0 + 100)
   const s1 = await scrollTop()
   await page.mouse.wheel(0, 120)
-  await page.waitForTimeout(300)
+  await expect.poll(scrollTop).toBeGreaterThanOrEqual(s1 + 100)
   const s2 = await scrollTop()
   await page.mouse.wheel(0, 120)
-  await page.waitForTimeout(300)
+  await expect.poll(scrollTop).toBeGreaterThanOrEqual(s2 + 100)
   const s3 = await scrollTop()
   const d1 = s1 - s0
   const d2 = s2 - s1
@@ -88,7 +105,17 @@ test('virtual-list buffer 宿主 property 遮蔽原型方法后渲染不崩（�
 test('virtual-list 动态行高：不等高行实测渲染 + 总高修正 + scrollToIndex 定位', async ({ page }) => {
   await page.goto('/components/virtual-list.html', { waitUntil: 'domcontentloaded' })
   await up(page, '#vl-dyn')
-  await page.waitForTimeout(800)
+  // 动态行高渲染完成的真实信号：行已挂且实测行高有差异（即本用例断言条件本身）
+  await expect
+    .poll(() =>
+      page.evaluate(() => {
+        const el = document.querySelector('#vl-dyn')!
+        const items = [...el.shadowRoot!.querySelectorAll('[part=item]')] as HTMLElement[]
+        const heights = items.map((it) => it.getBoundingClientRect().height)
+        return items.length > 0 && new Set(heights.map((h) => Math.round(h))).size > 1
+      }),
+    )
+    .toBe(true)
   const r = await page.evaluate(() => {
     const el = document.querySelector('#vl-dyn')!
     const items = [...el.shadowRoot!.querySelectorAll('[part="item"]')] as HTMLElement[]
@@ -117,7 +144,19 @@ test('virtual-list 动态行高：不等高行实测渲染 + 总高修正 + scro
     }
     el.scrollToIndex(40, { align: 'start' })
   })
-  await page.waitForTimeout(400)
+  // 跳转定位完成的真实信号：目标行已渲染且落入视口顶部带内（即末段断言条件）
+  await expect
+    .poll(() =>
+      page.evaluate(() => {
+        const el = document.querySelector('#vl-dyn')!
+        const viewport = el.shadowRoot!.querySelector('[part=viewport]') as HTMLElement
+        const target = el.shadowRoot!.querySelector('[part=item][data-index="40"]') as HTMLElement | null
+        if (!target) return false
+        const top = target.getBoundingClientRect().top - viewport.getBoundingClientRect().top
+        return top >= -1 && top < 80
+      }),
+    )
+    .toBe(true)
   const pos = await page.evaluate(() => {
     const el = document.querySelector('#vl-dyn')!
     const viewport = el.shadowRoot!.querySelector('[part="viewport"]') as HTMLElement

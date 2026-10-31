@@ -25,7 +25,8 @@ test.describe('官网首页（重设计版）', () => {
     await expect(hero.locator('.hh-title')).toContainText('框架无关的')
     await expect(hero.locator('.hh-glow')).toContainText('Web Components')
     await expect(hero.locator('oas-button')).toHaveCount(2, { timeout: 5000 })
-    await page.waitForTimeout(300)
+    // 字体加载完成（console 零告警断言的渲染收尾信号：资源期报错此刻必然已入列）
+    await page.evaluate(() => document.fonts.ready)
     expect(errors).toEqual([])
   })
 
@@ -86,7 +87,28 @@ test.describe('官网首页（重设计版）', () => {
     await page.goto('/', { waitUntil: 'domcontentloaded' })
     await page.waitForSelector('.home-perf', { timeout: 15000 })
     await page.evaluate(() => document.querySelector('.home-perf')?.scrollIntoView({ block: 'center' }))
-    await page.waitForTimeout(400)
+    // 滚动落定 + 数值渲染的真实信号：最窄段数值三点全部可见（即本用例断言条件本身；
+    // smooth 滚动中途 elementFromPoint 会命中滚动层，必须在终态采样）
+    await expect
+      .poll(() =>
+        page.evaluate(() => {
+          const seg = document.querySelector('.home-perf .seg-btn') as HTMLElement | null
+          const val = seg?.querySelector('.hp-val') as HTMLElement | null
+          if (!seg || !val) return false
+          const b = val.getBoundingClientRect()
+          const s = seg.getBoundingClientRect()
+          const y = Math.round(b.top + b.height / 2)
+          const onTop = (x: number): boolean => document.elementFromPoint(x, y) === val
+          return (
+            seg.classList.contains('seg-tiny') &&
+            Math.abs(b.left - s.left) <= 1 &&
+            onTop(Math.round(b.left + 1)) &&
+            onTop(Math.round(b.left + b.width / 2)) &&
+            onTop(Math.round(b.right - 1))
+          )
+        }),
+      )
+      .toBe(true)
     const r = await page.evaluate(() => {
       const seg = document.querySelector('.home-perf .seg-btn') as HTMLElement | null
       const val = seg?.querySelector('.hp-val') as HTMLElement | null
@@ -148,10 +170,10 @@ test.describe('官网首页（重设计版）', () => {
     await expect(hero).toBeAttached()
     await expect(hero.locator('.hh-title')).toContainText('framework-agnostic')
     await ctxEn.close()
-    // 中文首页（默认，不自动跳转）
+    // 中文首页（默认，不自动跳转）：zh 标题渲染完成即「未被重定向」的确定性信号
+    // （重定向脚本在 head 同步执行，若发生 goto 直接落在 /en/，zh 标题永不出现 → 此处超时红）
     await page.goto('/', { waitUntil: 'domcontentloaded' })
-    await page.waitForTimeout(1200)
-    await expect(page.locator('.home-hero .hh-title')).toContainText('框架无关的')
+    await expect(page.locator('.home-hero .hh-title')).toContainText('框架无关的', { timeout: 15000 })
   })
 
   // 语言偏好跳转（head inline 脚本）：只认用户「显式切换过」的偏好（localStorage oas-lang=en）——
@@ -161,11 +183,12 @@ test.describe('官网首页（重设计版）', () => {
     const ctxEn = await browser.newContext({ locale: 'en-US' })
     const pEn = await ctxEn.newPage()
     await pEn.goto('/', { waitUntil: 'domcontentloaded' })
-    await pEn.waitForTimeout(1200)
+    // 留在中文页的确定性信号：zh 标题渲染（误跳 /en/ 时标题为英文，此处超时红）
+    await expect(pEn.locator('.home-hero .hh-title')).toContainText('框架无关的', { timeout: 15000 })
     expect(pEn.url(), 'en 浏览器无偏好应留中文根路径').not.toContain('/en/')
-    // en 浏览器、无偏好：zh 深链留中文
+    // en 浏览器、无偏好：zh 深链留中文（html lang=zh-CN 为 zh 页确定性信号，en 页为 lang=en）
     await pEn.goto('/components/button.html', { waitUntil: 'domcontentloaded' })
-    await pEn.waitForTimeout(1200)
+    await expect.poll(() => pEn.evaluate(() => document.documentElement.lang), { timeout: 15000 }).toBe('zh-CN')
     expect(new URL(pEn.url()).pathname, 'en 浏览器无偏好访问 zh 深链应留中文').not.toContain('/en')
     // 显式偏好 en：zh 根路径与深链跳对应英文页
     await pEn.evaluate(() => localStorage.setItem('oas-lang', 'en'))
@@ -179,7 +202,8 @@ test.describe('官网首页（重设计版）', () => {
     const ctxZh = await browser.newContext({ locale: 'zh-CN' })
     const pZh = await ctxZh.newPage()
     await pZh.goto('/', { waitUntil: 'domcontentloaded' })
-    await pZh.waitForTimeout(1200)
+    // 留在中文页的确定性信号：zh 标题渲染
+    await expect(pZh.locator('.home-hero .hh-title')).toContainText('框架无关的', { timeout: 15000 })
     expect(pZh.url(), 'zh 浏览器首访应留中文根路径').not.toContain('/en/')
     await ctxZh.close()
   })
@@ -191,7 +215,8 @@ test.describe('官网首页（重设计版）', () => {
     await p.goto('/en/', { waitUntil: 'domcontentloaded' })
     await p.evaluate(() => localStorage.setItem('oas-lang', 'zh'))
     await p.goto('/', { waitUntil: 'domcontentloaded' })
-    await p.waitForTimeout(1200)
+    // 留在中文页的确定性信号：zh 标题渲染（zh 偏好被无视而误跳 /en/ 时此处超时红）
+    await expect(p.locator('.home-hero .hh-title')).toContainText('框架无关的', { timeout: 15000 })
     expect(p.url(), '已存 zh 偏好的 en 浏览器访问根路径应留中文').not.toContain('/en/')
     // 反向：zh 浏览器 + 已存 en 偏好 → 跳英文
     const ctx2 = await browser.newContext({ locale: 'zh-CN' })
@@ -220,7 +245,9 @@ test.describe('官网首页（重设计版）', () => {
       let loads = 0
       p.on('load', () => loads++)
       await p.goto(start, { waitUntil: 'domcontentloaded' })
-      await p.waitForTimeout(2500)
+      // 收敛的真实信号：URL 稳定落在期望路径（互踢循环下 pathname 反复翻转；
+      // 若曾在错误路径间振荡，重定向产生的整页 load 会被下方 loads ≤3 断言抓住）
+      await expect.poll(() => new URL(p.url()).pathname, { timeout: 15000 }).toBe(expectPath)
       const path = new URL(p.url()).pathname
       await ctx.close()
       expect(path, `${locale} 打开 ${start} 应稳定落在 ${expectPath}`).toBe(expectPath)
@@ -239,7 +266,8 @@ test.describe('官网首页（重设计版）', () => {
     const ctx = await browser.newContext({ locale: 'zh-CN' })
     const p = await ctx.newPage()
     await p.goto('/', { waitUntil: 'domcontentloaded' })
-    await p.waitForTimeout(1200)
+    // 水合完成的确定性信号：hero 标题渲染（曾误写偏好的 watcher 在水合期触发，此刻必然已跑完）
+    await expect(p.locator('.home-hero .hh-title')).toContainText('框架无关的', { timeout: 15000 })
     expect(await p.evaluate(() => localStorage.getItem('oas-lang')), '落地首屏不得写偏好').toBeNull()
     // 显式切换：打开语言下拉 → 点 English
     await p.locator('.VPNavBarTranslations button.button').click()

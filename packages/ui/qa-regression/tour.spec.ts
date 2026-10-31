@@ -31,7 +31,13 @@ test('tour-basic 2 步流程：点下一步高亮移到区域二 + 按钮变完�
     const btn = [...document.querySelectorAll('oas-button')].find((x) => /开始引导/.test(x.textContent))!
     ;(btn as HTMLElement).click()
   })
-  await page.waitForTimeout(500)
+  // 打开+定位完成的真实信号：open 且高亮已落在区域一（即 s1 断言条件本身）
+  await expect
+    .poll(async () => {
+      const s = await step()
+      return s.open && s.onB1
+    })
+    .toBe(true)
   const s1 = await step()
   expect(s1.open, '打开后 open').toBe(true)
   expect(s1.onB1, 'step1 高亮在区域一').toBe(true)
@@ -39,7 +45,13 @@ test('tour-basic 2 步流程：点下一步高亮移到区域二 + 按钮变完�
   await page.evaluate(() =>
     (document.querySelector('#tour-basic')!.shadowRoot!.querySelector('[part=next]') as HTMLElement).click(),
   )
-  await page.waitForTimeout(500)
+  // 步进完成的真实信号：current=1 且高亮已落到区域二（即 s2 断言条件本身）
+  await expect
+    .poll(async () => {
+      const s = await step()
+      return s.current === '1' && s.onB2
+    })
+    .toBe(true)
   const s2 = await step()
   expect(s2.open, '点下一步后不应消失').toBe(true)
   expect(s2.current, '应推进到第 2 步').toBe('1')
@@ -50,7 +62,8 @@ test('tour-basic 2 步流程：点下一步高亮移到区域二 + 按钮变完�
   await page.evaluate(() =>
     (document.querySelector('#tour-basic')!.shadowRoot!.querySelector('[part=next]') as HTMLElement).click(),
   )
-  await page.waitForTimeout(400)
+  // 关闭完成的真实信号：open 属性移除
+  await expect.poll(() => page.evaluate(() => !document.querySelector('#tour-basic')!.hasAttribute('open'))).toBe(true)
   const s3 = await step()
   expect(s3.open, '点完成后才关闭').toBe(false)
 })
@@ -69,14 +82,24 @@ test('tour 弹窗可交互：真实鼠标点击弹窗内部不关闭（pointer-e
   await page.evaluate(() => {
     ;[...document.querySelectorAll<HTMLElement>('oas-button')].find((x) => /开始引导/.test(x.textContent))!.click()
   })
-  await page.waitForTimeout(500)
+  // 弹窗渲染完成的真实信号：popup 有非零尺寸（可点中心坐标）
+  await expect
+    .poll(() =>
+      page.evaluate(() => {
+        const p = document.querySelector('#tour-basic')!.shadowRoot!.querySelector('.popup') as HTMLElement | null
+        if (!p) return false
+        const r = p.getBoundingClientRect()
+        return r.width > 0 && r.height > 0
+      }),
+    )
+    .toBe(true)
   const center = await page.evaluate(() => {
     const r = document.querySelector('#tour-basic')!.shadowRoot!.querySelector('.popup')!.getBoundingClientRect()
     return { x: r.left + r.width / 2, y: r.top + r.height / 2 }
   })
   // 真实鼠标点击弹窗中心（带 pointerdown + 命中测试）
   await page.mouse.click(center.x, center.y)
-  await page.waitForTimeout(400)
+  // 命中测试结果（若缺陷复发的遮罩误关）同步生效，立即读取
   const open = await page.evaluate(() => document.querySelector('#tour-basic')!.hasAttribute('open'))
   expect(open, '真实点击弹窗内部不应关闭（pointer-events 须为 auto）').toBe(true)
 })
@@ -98,7 +121,31 @@ test('tour append-to=body：portal host 显示 + 弹窗非零尺寸 + 高亮框�
     btn.scrollIntoView({ block: 'center' })
     btn.click()
   })
-  await page.waitForTimeout(800)
+  // portal 弹窗就绪的真实信号：portal host 显示、弹窗非零、高亮框住目标（即末段断言条件本身）
+  await expect
+    .poll(() =>
+      page.evaluate(() => {
+        const ph = [...document.body.children].find((c) => c.shadowRoot && c.shadowRoot.querySelector('.popup'))
+        if (!ph) return false
+        const sr = ph.shadowRoot!
+        const popup = sr.querySelector('.popup') as HTMLElement
+        const hl = sr.querySelector('.highlight') as HTMLElement | null
+        const target = document.querySelector('#tour-pp1')
+        if (!popup || !target) return false
+        const pr = popup.getBoundingClientRect()
+        const hr = hl?.getBoundingClientRect()
+        const tr = target.getBoundingClientRect()
+        return (
+          getComputedStyle(ph).display !== 'none' &&
+          pr.width > 50 &&
+          pr.height > 20 &&
+          !!hr &&
+          Math.abs(hr.x - tr.x) < 12 &&
+          Math.abs(hr.y - tr.y) < 12
+        )
+      }),
+    )
+    .toBe(true)
   const r = await page.evaluate(() => {
     const ph = [...document.body.children].find((c) => c.shadowRoot && c.shadowRoot.querySelector('.popup'))
     if (!ph) return { noPortal: true }
@@ -168,7 +215,8 @@ test('tour 目标在视口外首次打开：滚动期间弹窗隐藏（不闪现
     timeout: 15000,
   })
   await page.evaluate(() => window.scrollTo(0, 0))
-  await page.waitForTimeout(200)
+  // 回顶完成的真实信号：scrollY 归零（采样起点必须静止，否则把回顶帧混入滚动帧分析）
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0)
   // rAF 逐帧采样整个「打开 + 滚动 + 落定」过程（先开采样再点击，覆盖零死角）——
   // 不定长定时器采样（旧实现 150ms×12）在滚动动画存在的断续窗口里会漏帧
   const samples = await page.evaluate(async () => {

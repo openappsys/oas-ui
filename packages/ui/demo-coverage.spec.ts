@@ -1001,10 +1001,13 @@ async function runSteps(page: Page, steps: Array<[string, string, string?]>): Pr
           })
         }
       } else if (act.startsWith('wait:')) {
+        // audit-exception: 声明式等待步——ms 参数来自 demo 交互配置表（['wait:400', ...]），
+        // 各 demo 语义不同，harness 层不存在统一的 DOM 就绪信号可等
         await page.waitForTimeout(Number(act.slice(5)))
       } else if (act === 'wait') {
         // 等待步历史约定：参数编码在 sel 位（['wait:400', 'wait', ...]），act 恒为 'wait'
         const ms = Number(sel.startsWith('wait:') ? sel.slice(5) : 0)
+        // audit-exception: 同上，声明式等待步（demo 配置表驱动），无通用 DOM 信号
         if (Number.isFinite(ms) && ms > 0) await page.waitForTimeout(ms)
       } else if (act === 'scrollbottom') {
         // 把匹配容器 shadow 视口确定性滚到底：scrollTop 赋值会触发原生 scroll，
@@ -1065,6 +1068,8 @@ async function runSteps(page: Page, steps: Array<[string, string, string?]>): Pr
     } catch {
       // 探针步骤失败不致命：其余步骤继续，事件覆盖以最终 __fired 为准
     }
+    // audit-exception: 异构步进间的通用 pacing——步骤类型各异（点击/拖拽序列/合成事件），
+    // harness 层不存在统一 DOM 信号；拖拽序列依赖步间真实间隔（双 rAF 过快会吞掉 oas-resize）
     await page.waitForTimeout(60)
   }
 }
@@ -1175,15 +1180,22 @@ for (const [name, m] of Object.entries(manifest)) {
         }
       }
       await probe(page, name)
-      await page.waitForTimeout(200)
+      // 首轮读数前的 settle：双 rAF 等帧节流 handler 落定（漏事件由重试循环兜底）
+      await page.evaluate(
+        () => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))),
+      )
       let fired = await page.evaluate(() => [...window.__fired])
       let notFired = m.events.filter((e) => !fired.includes(e) && !EXEMPT_EVENTS.has(e))
       // 事件未全触发：大概率是组件 upgrade 晚于首次 probe（CI 慢机）。重试 probe——
       // __fired 是 Set 单调累积，重复交互只会补充事件类型，不会误判；重试间隔给 upgrade 喘息
       for (let attempt = 0; attempt < 2 && notFired.length > 0; attempt++) {
+        // audit-exception: 重试退避间隔（给慢机 upgrade 喘息后再次 probe），属覆盖 harness
+        // 的退避策略而非 UI 状态等待——事件是否出现无前置 DOM 信号（漏事件正是要探明的结果）
         await page.waitForTimeout(1000)
         await probe(page, name)
-        await page.waitForTimeout(200)
+        await page.evaluate(
+          () => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))),
+        )
         fired = await page.evaluate(() => [...window.__fired])
         notFired = m.events.filter((e) => !fired.includes(e) && !EXEMPT_EVENTS.has(e))
       }

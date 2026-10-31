@@ -36,7 +36,8 @@ function readLog(page: import('@playwright/test').Page, selector: string): Promi
 test('editable 点击进入编辑 → 修改 → Enter 提交：值回写 + oas-change + 反馈文本', async ({ page }) => {
   await page.goto(PAGE, { waitUntil: 'domcontentloaded' })
   await up(page, '#edit-event')
-  await page.waitForTimeout(300) // 等 demo 宿主挂事件监听
+  // demo 宿主挂事件监听的真实信号：#edit-output（与监听同一 Vue 模板 patch 挂载）
+  await expect(page.locator('#edit-output')).toBeAttached()
   await attachLog(page, '#edit-event')
   // 清页面初始焦点（default-editing demo 的失焦提交链会拽走滚动/焦点）后真实点击进入编辑态
   await realClick(page, '#edit-event', '[part="display"]')
@@ -49,7 +50,10 @@ test('editable 点击进入编辑 → 修改 → Enter 提交：值回写 + oas-
   // 修改并 Enter 提交
   await input.fill('修改后的值')
   await input.press('Enter')
-  await page.waitForTimeout(200)
+  // 提交链完成的真实信号：editing 属性移除（value/display/反馈文本写回同一同步链）
+  await expect
+    .poll(() => page.evaluate(() => document.querySelector('#edit-event')!.hasAttribute('editing')))
+    .toBe(false)
   const after = await page.evaluate(() => {
     const el = document.querySelector('#edit-event')!
     const display = el.shadowRoot!.querySelector<HTMLElement>('[part="display"]')!
@@ -87,7 +91,15 @@ test('editable Esc 取消：恢复原文 + 派发 oas-cancel + 不改 value', as
   await expect(input).toBeVisible()
   await input.fill('临时改动')
   await input.press('Escape')
-  await page.waitForTimeout(200)
+  // 取消链完成的真实信号：展示态恢复原文（value 不变，attribute 选择器继续匹配）
+  await expect
+    .poll(() =>
+      page.evaluate(() => {
+        const el = document.querySelector('oas-editable[value="点击我修改"]')!
+        return el.shadowRoot!.querySelector<HTMLElement>('[part="display"]')!.textContent
+      }),
+    )
+    .toBe('点击我修改')
   const after = await page.evaluate(() => {
     const el = document.querySelector('oas-editable[value="点击我修改"]')!
     const display = el.shadowRoot!.querySelector<HTMLElement>('[part="display"]')!
@@ -131,7 +143,12 @@ test('editable 失焦提交（默认 submit-on-blur）：点击页面其他区�
     // host.blur() 不会把内部 input 的焦点移出（focusout 不发 → 失焦提交不触发，实抓）
     ;(el.shadowRoot!.activeElement as HTMLElement | null)?.blur()
   })
-  await page.waitForTimeout(200)
+  // 失焦提交完成的真实信号：value 属性已回写新值
+  await expect
+    .poll(() =>
+      page.evaluate(() => document.querySelector('oas-editable[data-qa-probe="blur-submit"]')?.getAttribute('value')),
+    )
+    .toBe('失焦提交的值')
   const after = await page.evaluate(() => {
     const el = document.querySelector('oas-editable[data-qa-probe="blur-submit"]')!
     return {
@@ -202,7 +219,17 @@ test('editable 多行 hidden 挂载 → 可见：字段高与可见容器直接�
   const ta = page.locator('#qa-ml-probe textarea')
   await expect(ta).toBeVisible()
   await ta.fill('第一行\n第二行\n第三行')
-  await page.waitForTimeout(100)
+  // 自适应长高完成的真实信号：编辑框高度已超过挂载自愈后的基线
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () =>
+          (
+            document.querySelector('#qa-ml-probe')!.shadowRoot!.querySelector('textarea') as HTMLTextAreaElement
+          ).getBoundingClientRect().height,
+      ),
+    )
+    .toBeGreaterThan(measured.probeHeight)
   const grown = await page.evaluate(() => {
     const field = document.querySelector('#qa-ml-probe')!.shadowRoot!.querySelector('textarea') as HTMLTextAreaElement
     return { height: field.getBoundingClientRect().height, styleHeight: field.style.height, value: field.value }
@@ -219,7 +246,7 @@ test('editable disabled：点击文本不进入编辑态', async ({ page }) => {
   // display 带 aria-disabled=true，playwright actionability 会拒绝点击；
   // 真实用户仍可点击（浏览器照常派发 click），组件靠 disabled 守卫拦截进入编辑——用 force 走真实事件路径
   await page.locator('oas-editable[disabled] [part="display"]').click({ force: true })
-  await page.waitForTimeout(200)
+  // el.click 同步派发：disabled 守卫（若缺陷复发的进编辑）同步生效，立即读取
   const r = await page.evaluate(() => {
     const el = document.querySelector('oas-editable[disabled]')!
     const display = el.shadowRoot!.querySelector<HTMLElement>('[part="display"]')!

@@ -22,7 +22,7 @@ test('button color 自定义色：无 type 也按 variant 着色，文字色按�
   expect(light[1]!.border, '绿色描边').toBe('rgb(4, 120, 87)')
   expect(light[2]!.bg, '粉色浅底（12% tint）').toContain('0.12')
   await page.evaluate(() => document.documentElement.classList.add('dark'))
-  await page.waitForTimeout(300)
+  // dark[0] 两断言的取值在明暗主题下相同（无过渡插值风险），类切换同步进级联，读取即新值
   const dark = await read()
   expect(dark[0]!.bg).toBe('rgb(124, 58, 237)')
   expect(dark[0]!.color, '暗色下紫底仍是白字（亮度自适应）').toBe('rgb(255, 255, 255)')
@@ -101,14 +101,13 @@ test('button 语义色状态方向统一：success hover 变暗（0.94）、选�
     })
   expect(await readFilter()).toBe('none')
   await mid.hover()
-  await page.waitForTimeout(400)
-  const hoverFilter = await readFilter()
-  expect(hoverFilter, 'success hover 应变暗（brightness < 1）').toBe('brightness(0.94)')
+  // hover 过渡完成的真实信号：filter 到达 brightness(0.94)（即断言条件本身）
+  await expect.poll(readFilter, 'success hover 应变暗（brightness < 1）').toBe('brightness(0.94)')
   // 选中比 hover 更深
   await mid.click()
   await page.mouse.move(0, 0)
-  await page.waitForTimeout(400)
-  expect(await readFilter(), 'success 选中应比 hover 更深').toBe('brightness(0.85)')
+  // 选中态过渡完成的真实信号：filter 到达 brightness(0.85)
+  await expect.poll(readFilter, 'success 选中应比 hover 更深').toBe('brightness(0.85)')
 })
 
 test('button-group 禁用 × 选中：选中态颜色保留可读（有意设计——禁用只灭交互与装饰变形，不抹状态）', async ({ page }) => {
@@ -118,7 +117,16 @@ test('button-group 禁用 × 选中：选中态颜色保留可读（有意设计
   await up(page, 'oas-button-group')
   // group 的 shadow 就绪不等于 light-DOM 子按钮已升级；Firefox 慢加载下曾读到 null shadowRoot
   await up(page, 'oas-button-group oas-button')
-  await page.waitForTimeout(600)
+  // 全部组的子按钮升级完成的真实信号（evaluate 用到的可能不是 up() 命中的那一组）
+  await expect
+    .poll(() =>
+      page.evaluate(() =>
+        [...document.querySelectorAll('oas-button-group')].every((g) =>
+          [...g.querySelectorAll('oas-button')].every((b) => b.shadowRoot != null),
+        ),
+      ),
+    )
+    .toBe(true)
   const r = await page.evaluate(() => {
     const g = document.querySelector('oas-button-group[value]') ?? document.querySelector('oas-button-group')!
     g.setAttribute('disabled', '')
@@ -160,9 +168,8 @@ test('button primary（solid）：hover/选中背景不被自定义底色兜底�
     })
   const normal = await readBg()
   await btn.hover()
-  await page.waitForTimeout(400)
-  const hover = await readBg()
-  expect(hover, 'solid primary hover 背景应变深').not.toBe(normal)
+  // hover 过渡完成的真实信号：背景已偏离静止色（即断言条件本身）
+  await expect.poll(readBg, 'solid primary hover 背景应变深').not.toBe(normal)
 
   // 按钮组选中态：点击后 aria-pressed=true 且底色与未选项可区分（primary-active）
   await page.goto('/components/button-group.html', { waitUntil: 'domcontentloaded' })
@@ -170,7 +177,17 @@ test('button primary（solid）：hover/选中背景不被自定义底色兜底�
   const group = page.locator('oas-button-group[type="primary"]').first()
   await group.locator('oas-button', { hasText: '中' }).click()
   await page.mouse.move(0, 0) // 移开鼠标，排除 hover 色干扰，看纯选中态
-  await page.waitForTimeout(400)
+  // 选中态过渡完成的真实信号：选中底色已与未选项可区分（即断言条件本身）
+  await expect
+    .poll(() =>
+      page.evaluate(() => {
+        const g = document.querySelector('oas-button-group[type="primary"]')!
+        const btns = [...g.querySelectorAll('oas-button')]
+        const bg = (b: Element) => getComputedStyle(b.shadowRoot!.querySelector('button')!).backgroundColor
+        return bg(btns[1]!) !== bg(btns[0]!)
+      }),
+    )
+    .toBe(true)
   const r = await page.evaluate(() => {
     const g = document.querySelector('oas-button-group[type="primary"]')!
     const btns = [...g.querySelectorAll('oas-button')]
@@ -349,7 +366,17 @@ test('button active/active-tint：选中视觉与 button-group 同挂点（aria-
   // 预设名（purple）：解析为 -text 档 token，暗色走 dark 变体（与 light 可区分）
   const presetLight = light[5]!.bg
   await page.evaluate(() => document.documentElement.classList.add('dark'))
-  await page.waitForTimeout(300)
+  // dark token 解析完成的真实信号：预设 tint 底色已偏离 light 值（可能有过渡，读终态）
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () =>
+          getComputedStyle(
+            document.querySelector('oas-button[active-tint="purple"]')!.shadowRoot!.querySelector('button')!,
+          ).backgroundColor,
+      ),
+    )
+    .not.toBe(presetLight)
   const presetDark = await page.evaluate(
     () =>
       getComputedStyle(document.querySelector('oas-button[active-tint="purple"]')!.shadowRoot!.querySelector('button')!)
@@ -357,7 +384,7 @@ test('button active/active-tint：选中视觉与 button-group 同挂点（aria-
   )
   expect(presetDark, '预设 tint 暗色应解析 dark token（与 light 可区分）').not.toBe(presetLight)
   await page.evaluate(() => document.documentElement.classList.remove('dark'))
-  await page.waitForTimeout(300)
+  // 后续断言只要求「点击后选中淡底 ≠ 静止 restBg」，对主题回归的过渡中间态不敏感，无需固定等待
   // 受控回写 demo 真点：aria-pressed 与选中视觉随点击翻转（可见反馈，非仅 console）
   await realClick(page, '#btn-active-toggle', null)
   const after = await page.evaluate(() => {

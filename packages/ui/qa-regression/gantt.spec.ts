@@ -83,7 +83,16 @@ test('gantt 浏览器回归：渲染 + 刻度切换 + 折叠 + 拖拽改期 + co
   // 拖拽改期（真实指针）：t1 右拖 72px（2 格）→ oas-task-change 派发 + 数据写回
   // mouse 事件不自动滚动：先滚进视口
   await basic.evaluate((el) => el.scrollIntoView({ block: 'center' }))
-  await page.waitForTimeout(300)
+  // 滚动静默的真实信号：连续两次 scrollY 一致（smooth 滚动结束后几何才可用）
+  let prevGY: number | null = null
+  await expect
+    .poll(async () => {
+      const y = await page.evaluate(() => window.scrollY)
+      const stable = prevGY !== null && y === prevGY
+      prevGY = y
+      return stable
+    })
+    .toBe(true)
   const before = await basic.evaluate(
     (el) => (el as unknown as { tasks: Array<{ id: string; start: string }> }).tasks.find((t) => t.id === 't1')?.start,
   )
@@ -106,9 +115,8 @@ test('gantt 浏览器回归：渲染 + 刻度切换 + 折叠 + 拖拽改期 + co
   await bar2.hover()
   await expect(basic.locator('.tooltip:not([hidden])')).toBeVisible()
 
-  // 暗色：条与今日线仍可见
+  // 暗色：条与今日线仍可见（类切换同步进级联；toBeVisible 自带自动等待）
   await page.evaluate(() => document.documentElement.classList.add('dark'))
-  await page.waitForTimeout(300)
   await expect(basic.locator('.bars .bar[data-id="t1"]').first()).toBeVisible()
   await expect(todayDemo.locator('.today-line:not([hidden])')).toBeVisible()
 
@@ -122,11 +130,17 @@ test('gantt 窗口自适应/可见性回归：首任务贴近左缘 + 今日线/
 }) => {
   await page.goto('/components/gantt.html', { waitUntil: 'domcontentloaded' })
   await waitGantt(page, 'gantt-basic')
-  await page.waitForTimeout(500)
 
   const basic = page.locator('#gantt-basic')
   await basic.evaluate((el) => el.scrollIntoView({ block: 'center' }))
-  await page.waitForTimeout(200)
+  // 滚动静默 + 窗口适配完成的真实信号：首任务条已落位到时间轴左半区（即断言条件本身）
+  await expect
+    .poll(async () => {
+      const tbodyBox = await basic.locator('.tbody').boundingBox()
+      const t1Box = await basic.locator('.bars .bar[data-id="t1"]').boundingBox()
+      return !!tbodyBox && !!t1Box && t1Box.x >= tbodyBox.x && t1Box.x < tbodyBox.x + tbodyBox.width / 2
+    })
+    .toBe(true)
 
   // 首任务左缘落在时间轴左半区（旧缺陷：起始留白 7 天把条推到 252px 接近右缘）
   const tbodyBox = (await basic.locator('.tbody').boundingBox())!
@@ -148,22 +162,20 @@ test('gantt 窗口自适应/可见性回归：首任务贴近左缘 + 今日线/
   expect(majorAlign.delta).toBeLessThan(30)
 
   // 今日线在视口内（#gantt-today 数据动态覆盖今天；旧缺陷：窗口起点留白使今日线滚出视口）
+  // toBeInViewport 自带自动等待（滚动落定后重试到入视口）
   const todayDemo = page.locator('#gantt-today')
   await todayDemo.evaluate((el) => el.scrollIntoView({ block: 'center' }))
-  await page.waitForTimeout(200)
   await expect(todayDemo.locator('.today-line:not([hidden])')).toBeInViewport()
 
   // 里程碑菱形在视口内（拖拽 demo 的 dg2；旧缺陷：滚出视口 → 整行无菱形）
   const drag = page.locator('#gantt-drag')
   await drag.evaluate((el) => el.scrollIntoView({ block: 'center' }))
-  await page.waitForTimeout(200)
   await expect(drag.locator('.bars .bar[data-id="dg2"].milestone')).toBeInViewport()
   await expect(drag.locator('.bars .bar[data-id="dg2"] .dia')).toBeVisible()
 
   // readonly 整图只读 demo：任务条在视口内（旧缺陷：条被推到右缘外看似空白）
   const readonly = page.locator('oas-gantt[readonly]')
   await readonly.evaluate((el) => el.scrollIntoView({ block: 'center' }))
-  await page.waitForTimeout(200)
   await expect(readonly.locator('.bars .bar[data-id="r1"]')).toBeInViewport()
 
   // 行名超长省略号：.name 收缩到行宽内且 ellipsis（旧缺陷：flex 子项不收缩 → 硬裁无省略号）
@@ -183,7 +195,16 @@ test('gantt 窗口自适应/可见性回归：首任务贴近左缘 + 今日线/
   // 轴标签抽稀：日档窄容器下相邻可见辅刻度中心距 ≥ 阈值（旧缺陷：14.4px 列宽下双位日号首尾相接）
   const scaleDemo = page.locator('#gantt-scale')
   await scaleDemo.evaluate((el) => el.scrollIntoView({ block: 'center' }))
-  await page.waitForTimeout(200)
+  // 滚动静默的真实信号：连续两次 scrollY 一致（刻度中心量测须在终态滚动位置采样）
+  let prevScaleY: number | null = null
+  await expect
+    .poll(async () => {
+      const y = await page.evaluate(() => window.scrollY)
+      const stable = prevScaleY !== null && y === prevScaleY
+      prevScaleY = y
+      return stable
+    })
+    .toBe(true)
   const centers = await scaleDemo.locator('.head-minor .unit').evaluateAll((cells) =>
     cells
       .filter((c) => (c.textContent ?? '').trim() !== '')

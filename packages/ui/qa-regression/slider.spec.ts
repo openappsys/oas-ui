@@ -445,8 +445,8 @@ test('slider vertical：真实鼠标拖动可改值（pointer 接管）+ 输入�
   await page.mouse.move(box!.x + box!.width / 2, box!.y + box!.height * 0.7)
   await page.mouse.down()
   for (let i = 1; i <= 8; i++) {
+    // 逐帧 CDP move 本身有序到达，值更新在 pointermove 处理器内同步完成，无需步进间隔
     await page.mouse.move(box!.x + box!.width / 2, box!.y + box!.height * 0.7 - i * 10)
-    await page.waitForTimeout(20)
   }
   await page.mouse.up()
   const after = await page.evaluate(() => document.querySelector('oas-slider[vertical]')!.getAttribute('value'))
@@ -588,17 +588,19 @@ test('slider 纵向拇指 hover 放大：桌面生效、readonly 不放大、触
   const base = await scaleOf()
   expect(base, '静止态无缩放').not.toContain('1.15')
   await host.hover()
-  await page.waitForTimeout(300)
-  expect(await scaleOf(), '非 readonly 纵向拇指 hover 应放大 1.15').toContain('1.15')
+  // hover 放大过渡完成的真实信号：transform 含 1.15（即断言条件本身）
+  await expect.poll(scaleOf, '非 readonly 纵向拇指 hover 应放大 1.15').toContain('1.15')
 
   // readonly：不放大（:host(:hover:not([data-readonly])) 的排除分支）
   await host.evaluate((el) => el.setAttribute('readonly', ''))
-  await page.waitForTimeout(200)
   await page.mouse.move(5, 5)
-  await page.waitForTimeout(200)
+  // 缩回过渡完成的真实信号：transform 回到静止基线（避免读到 1.15→1 的过渡中间帧作 roBase）
+  await expect.poll(scaleOf).toBe(base)
   const roBase = await scaleOf()
   await host.hover()
-  await page.waitForTimeout(300)
+  // audit-exception: 「readonly hover 不得放大」为否定断言，无正面信号可等；
+  // 250ms ≥ thumb scale 过渡时长，若排除分支回归，偏离必发生在该窗口内
+  await page.waitForTimeout(250)
   expect(await scaleOf(), 'readonly 纵向拇指 hover 不应放大').toBe(roBase)
 
   // 触屏仿真：无 hover 能力 → (hover: hover) 守卫使放大规则整体不生效
@@ -615,7 +617,9 @@ test('slider 纵向拇指 hover 放大：桌面生效、readonly 不放大、触
       (el) => getComputedStyle(el.shadowRoot!.querySelector<HTMLElement>('.custom-thumb')!).transform,
     )
     await h2.tap().catch(() => h2.click({ force: true }))
-    await p2.waitForTimeout(300)
+    // audit-exception: 「触屏 tap 后拇指不得保持放大」为否定断言（(hover:hover) 守卫使规则整体不生效，
+    // 无任何状态变化可等）；250ms ≥ 过渡时长，若守卫回归，粘滞 :hover 的偏离必发生在该窗口内
+    await p2.waitForTimeout(250)
     const after = await h2.evaluate(
       (el) => getComputedStyle(el.shadowRoot!.querySelector<HTMLElement>('.custom-thumb')!).transform,
     )

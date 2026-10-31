@@ -13,7 +13,7 @@ test('docs SPA 跳转：gantt / resource demo 不因属性-方法撞名而空白
   page.on('pageerror', (e) => errors.push(`pageerror: ${e.message}`))
 
   await page.goto('/components/table.html', { waitUntil: 'domcontentloaded' })
-  await page.waitForTimeout(500)
+  // 侧栏链接点击自带 actionability 等待（SPA 首屏渲染完成后可点）
 
   // 客户端跳转到日程
   await page.locator('a[href="/components/scheduler"]').first().click()
@@ -96,7 +96,19 @@ test('docs SPA 跳转：gantt / resource demo 不因属性-方法撞名而空白
     undefined,
     { timeout: 20000 },
   )
-  await page.waitForTimeout(500)
+  // 菜单渲染完成的真实信号：全部 oas-menu 已渲染菜单项（即断言条件本身）
+  await expect
+    .poll(
+      () =>
+        page.evaluate(() =>
+          [...document.querySelectorAll('oas-menu')].reduce(
+            (n, el) => n + (el.shadowRoot?.querySelectorAll('.item').length || 0),
+            0,
+          ),
+        ),
+      { timeout: 20000 },
+    )
+    .toBeGreaterThan(0)
   const menu = await page.evaluate(() => {
     const els = [...document.querySelectorAll('oas-menu')]
     const counts = els.map((el) => el.shadowRoot?.querySelectorAll('.item').length ?? 0)
@@ -114,7 +126,23 @@ test('docs SPA 跳转：gantt / resource demo 不因属性-方法撞名而空白
     undefined,
     { timeout: 20000 },
   )
-  await page.waitForTimeout(500)
+  // rate JSON attribute 生效完成的真实信号：icons 专属符号与 colors 专属分段色都已渲染（即断言条件本身）
+  await expect
+    .poll(
+      () =>
+        page.evaluate(() => {
+          const els = [...document.querySelectorAll('oas-rate')]
+          const starTexts = els.flatMap((el) =>
+            [...(el.shadowRoot?.querySelectorAll('.star') ?? [])].map((s) => (s.textContent ?? '').trim()),
+          )
+          const hasIconsJson = starTexts.some((t) => t === '\u{1F60D}')
+          const activeVars = els.map((el) => (el as HTMLElement).style.getPropertyValue('--oas-rate-active'))
+          const hasColorsJson = activeVars.some((v) => v.includes('--oas-preset-gold'))
+          return hasIconsJson && hasColorsJson
+        }),
+      { timeout: 20000 },
+    )
+    .toBe(true)
   const rate = await page.evaluate(() => {
     const els = [...document.querySelectorAll('oas-rate')]
     // icons JSON 专属产物：icons demo 第 5 星渲染 icons[4]='😍'（默认星形是 SVG 无文本）——
@@ -142,7 +170,20 @@ test('docs SPA 跳转：gantt / resource demo 不因属性-方法撞名而空白
     undefined,
     { timeout: 20000 },
   )
-  await page.waitForTimeout(500)
+  // index-bar 渲染完成的真实信号：分节与侧栏字母都已渲染（即断言条件本身）
+  await expect
+    .poll(
+      () =>
+        page.evaluate(() => {
+          const els = [...document.querySelectorAll('oas-index-bar')]
+          return (
+            els.reduce((n, el) => n + (el.shadowRoot?.querySelectorAll('.section').length || 0), 0) > 0 &&
+            els.reduce((n, el) => n + (el.shadowRoot?.querySelectorAll('.letter').length || 0), 0) > 0
+          )
+        }),
+      { timeout: 20000 },
+    )
+    .toBe(true)
   const indexBar = await page.evaluate(() => {
     const els = [...document.querySelectorAll('oas-index-bar')]
     const basic = document.getElementById('ib-basic')
@@ -179,7 +220,18 @@ test('docs SPA 跳转：gantt / resource demo 不因属性-方法撞名而空白
     undefined,
     { timeout: 20000 },
   )
-  await page.waitForTimeout(500)
+  // cascader 渲染完成的真实信号：预设路径回显非空（即断言条件本身）
+  await expect
+    .poll(
+      () =>
+        page.evaluate(() => {
+          const els = [...document.querySelectorAll('oas-cascader')]
+          const preset = els.find((el) => !el.hasAttribute('multiple') && el.hasAttribute('value')) ?? null
+          return (preset?.shadowRoot?.querySelector('.value')?.textContent ?? '').trim().length > 0
+        }),
+      { timeout: 20000 },
+    )
+    .toBe(true)
   const cascader = await page.evaluate(() => {
     const els = [...document.querySelectorAll('oas-cascader')]
     const preset = els.find((el) => !el.hasAttribute('multiple') && el.hasAttribute('value')) ?? null
@@ -231,7 +283,18 @@ test('docs SPA 跳转：gantt / resource demo 不因属性-方法撞名而空白
     undefined,
     { timeout: 20000 },
   )
-  await page.waitForTimeout(500)
+  // select 渲染完成的真实信号：多选标签 > 1（整串单值缺陷只会剩 1 个，即断言条件本身）
+  await expect
+    .poll(
+      () =>
+        page.evaluate(() => {
+          const els = [...document.querySelectorAll('oas-select')]
+          const multi = els.find((el) => el.hasAttribute('multiple') && el.hasAttribute('value')) ?? null
+          return (multi?.shadowRoot?.querySelectorAll('.chip').length ?? 0) > 1
+        }),
+      { timeout: 20000 },
+    )
+    .toBe(true)
   const select = await page.evaluate(() => {
     const els = [...document.querySelectorAll('oas-select')]
     const multi = els.find((el) => el.hasAttribute('multiple') && el.hasAttribute('value')) ?? null
@@ -276,7 +339,21 @@ test('docs SPA 跳转：gantt / resource demo 不因属性-方法撞名而空白
     undefined,
     { timeout: 20000 },
   )
-  await page.waitForTimeout(500)
+  // toggle-group 渲染完成的真实信号：按钮已渲染且多选选中态就位（即断言条件本身）
+  await expect
+    .poll(
+      () =>
+        page.evaluate(() => {
+          const els = [...document.querySelectorAll('oas-toggle-group')]
+          const multi = document.getElementById('tg-controlled-multi')
+          return (
+            els.reduce((n, el) => n + (el.shadowRoot?.querySelectorAll('.item').length || 0), 0) > 0 &&
+            (multi?.shadowRoot?.querySelectorAll('.item[aria-checked="true"]').length ?? 0) > 0
+          )
+        }),
+      { timeout: 20000 },
+    )
+    .toBe(true)
   const toggleGroup = await page.evaluate(() => {
     const els = [...document.querySelectorAll('oas-toggle-group')]
     const multi = document.getElementById('tg-controlled-multi')
@@ -320,7 +397,19 @@ test('docs SPA 跳转：gantt / resource demo 不因属性-方法撞名而空白
     undefined,
     { timeout: 20000 },
   )
-  await page.waitForTimeout(500)
+  // slider range 渲染完成的真实信号：两滑块值已解析落位（即断言条件本身）
+  await expect
+    .poll(
+      () =>
+        page.evaluate(() => {
+          const el = document.getElementById('slider-range')
+          const thumb = (role: string) =>
+            el?.shadowRoot?.querySelector<HTMLInputElement>(`input[data-role="${role}"]`)?.value ?? null
+          return [thumb('range-min'), thumb('range-max')]
+        }),
+      { timeout: 20000 },
+    )
+    .toEqual(['20', '80'])
   const slider = await page.evaluate(() => {
     const el = document.getElementById('slider-range')
     const raw = el?.getAttribute('value') ?? null
@@ -361,7 +450,19 @@ test('docs SPA 跳转：gantt / resource demo 不因属性-方法撞名而空白
     undefined,
     { timeout: 20000 },
   )
-  await page.waitForTimeout(500)
+  // tree-select 渲染完成的真实信号：多选 chip 已按 JSON 解析渲染（非 JSON 串，即断言条件本身）
+  await expect
+    .poll(
+      () =>
+        page.evaluate(() => {
+          const chips = [
+            ...(document.getElementById('ts-cache')?.shadowRoot?.querySelectorAll('.chip:not(.chip-plus)') ?? []),
+          ].map((c) => (c.textContent ?? '').trim())
+          return chips.length === 1 && chips[0] !== '' && !chips[0]!.includes('[') && !chips[0]!.includes('"')
+        }),
+      { timeout: 20000 },
+    )
+    .toBe(true)
   const treeSelect = await page.evaluate(() => {
     const el = document.getElementById('ts-cache')
     const raw = el?.getAttribute('value') ?? null
@@ -405,7 +506,23 @@ test('docs SPA 跳转：gantt / resource demo 不因属性-方法撞名而空白
     undefined,
     { timeout: 20000 },
   )
-  await page.waitForTimeout(500)
+  // combobox 升级完成的真实信号：options JSON attribute 在场且 shadow 已挂（后续 property 写入走原型访问器）
+  await expect
+    .poll(
+      () =>
+        page.evaluate(() => {
+          const el = document.getElementById('cb-multi')
+          if (!el?.shadowRoot) return false
+          try {
+            const parsed: unknown = JSON.parse(el.getAttribute('options') ?? 'null')
+            return Array.isArray(parsed) && parsed.length > 0
+          } catch {
+            return false
+          }
+        }),
+      { timeout: 20000 },
+    )
+    .toBe(true)
   const combobox = await page.evaluate(() => {
     // 页面上下文里自定义元素的 value 是原型访问器，HTMLElement 类型未声明，显式补类型
     const el = document.getElementById('cb-multi') as (HTMLElement & { value: unknown }) | null
@@ -463,7 +580,21 @@ test('docs SPA 跳转：gantt / resource demo 不因属性-方法撞名而空白
     undefined,
     { timeout: 20000 },
   )
-  await page.waitForTimeout(500)
+  // splitter 渲染完成的真实信号：全部 pane 的 flex 比例已按 sizes 落位（即断言条件本身）
+  await expect
+    .poll(
+      () =>
+        page.evaluate(() => {
+          const el =
+            [...document.querySelectorAll('oas-splitter')].find(
+              (n) => n.children.length >= 3 && n.hasAttribute('sizes'),
+            ) ?? null
+          const panes = [...(el?.shadowRoot?.querySelectorAll<HTMLElement>('.pane') ?? [])]
+          return panes.length >= 3 && panes.every((p) => (p.style.flex || '').trim().length > 0)
+        }),
+      { timeout: 20000 },
+    )
+    .toBe(true)
   const splitter = await page.evaluate(() => {
     const el =
       [...document.querySelectorAll('oas-splitter')].find((n) => n.children.length >= 3 && n.hasAttribute('sizes')) ??
