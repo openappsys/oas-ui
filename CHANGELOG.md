@@ -15,6 +15,7 @@
 ### 构建
 
 - **i18n 构建加 `removeComments`**（发布产物去注释，d.ts 保留文档注释）；`packages/i18n` 的 `sideEffects` 增 `./dist/registry.js`（registry 含真实模块级副作用，须防消费方 tree-shake 摇掉）。
+- **4 条贴边链预算按实测重定档**：`table/advanced` 8→9 KB、`table/range` 13→13.5 KB、`table/detail` 4→4.5 KB、`theme glass-fluid` 8.5→9.5 KB。四条链均逐文件复读确认**无冗余可清**（可安全移除项合计 136 B），此前 2.2%~5.1% 余量让 90% 预警线失去意义；新档按实测上浮 13.5%~18%，利用率回到 82%~88%（依据写入 `perf:size` 各条 `basis` 与 `docs/perf-baseline.md`）。
 
 ## [2.6.5] - 2026-10-31
 

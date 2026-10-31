@@ -8,6 +8,8 @@
 | --- | --- | --- |
 | **i18n 默认语言包按家族切片（包体止损）** | 内置 zh-CN 拆成 9 个家族切片（basic / conversation / data / feedback / form / framework / layout / navigation / workbench）：`locales/zh-CN.ts` 单一事实源 + `scripts/i18n/gen-slices.mjs` 生成 `slices/<family>.ts`（`--check` 防漂移接入完备性单测）；消费形态为「值导入 + 显式调用」（`registerDefaultMessages(<family>Messages)`，不依赖模块副作用）；新子路径 `@oas-ui/i18n/registry`（无默认文案）与 `@oas-ui/i18n/slices/<family>`，公共入口 `@oas-ui/i18n` 行为不变（9 切片全量注册）；`getLocale().messages` 语义为「已加载的切片」（整包 `@oas-ui/i18n/zh-CN` 不变）；跨家族 key 重复写入每个消费族、8 个死键归 framework；i18n 发布产物 `removeComments`（d.ts 保留文档）+ `sideEffects` 补 `./dist/registry.js`。实测按需链 gzip（dist 静态闭包口径）：form 28.9→22.4 KB、table 68.8→64.3 KB、gantt 66.7→61.1 KB、json-viewer 34.0→28.4 KB、diff-viewer 32.7→27.1 KB，helper 链（table/advanced、range、detail、glass-fluid）不变；顺带修复打包消费方（含 CDN）默认语言包被摇掉导致 raw key（`perf:size` 新增 `[CDN 默认文案]` 断言锁定）。非目标：其余 9 个语言包不动、不改 key/文案、不做跨语言回退。验收：全量单测 11805、`node scripts/i18n/gen-slices.mjs --check` 防漂移、`perf:size` | ✅ 已完成（未发布） |
 
+| **4 条贴边链预算重定档（包体止损）** | 对 `table/advanced`（7.8/8.0）、`table/range`（11.9/13）、`table/detail`（3.7/4）、`theme glass-fluid`（8.1/8.5）逐文件复读：可安全移除项合计仅 136 B（最大项是 range 的 `findRowPath` 双实现 69 B、detail 的 `isInputTarget` 重复 60 B），**无冗余可清**；此前 2.2%~5.1% 余量使 90% 预警线失去意义。按实测上浮 13.5%~18% 重定档 9 / 13.5 / 4.5 / 9.5 KB（利用率 86.9% / 88.1% / 82.6% / 85.1%），依据写入各条 `basis`；`glass-fluid` 原「暂不瘦身/不重定档」结论被本次逐行复核替换 | ✅ 已完成（未发布） |
+
 ## 未发布（发布门禁机械化）
 
 | 范围 | 内容 | 状态 |

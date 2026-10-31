@@ -75,7 +75,7 @@
 | 按需（button） | 图标库 opt-in 后卸掉整套图标（34.1→26.6 KB）；绝对值预算（§4）                                |
 | 按需（table）  | 默认入口不含 edit/Pro；`table/edit` 与六个 Pro helper 子路径独立计量、独立预算档（§2/§4）    |
 | 主题           | 一套语义 token 变量即全部主题成本；组件样式内联进组件，无独立样式文件                        |
-| 可选运行时     | glass-fluid.js 独立档（独立可选、不进 union）；已达 WARN 预警线，新增大改前先瘦身评估        |
+| 可选运行时     | glass-fluid.js 独立档（独立可选、不进 union）；2026-10-31 逐行复核无冗余可清后按实测重定档 9.5 KB，新增大改前先做包体评估 |
 | 图标集         | 组件链只含精确 path；全量集仅全量入口自动注册（开箱即用），按需链不背整套                    |
 
 ### 渲染耗时（happy-dom）
@@ -130,15 +130,15 @@
 | @oas-ui/ui/data/json-viewer 链 gzip | 28.4 KB | 35.0 KB（绝对值） | 实测 gzip 31.5 KB（链含 core + i18n + 树模型/虚拟窗口/工具栏/搜索/复制/复制浮层；无第三方运行时、无图标全量注册），上浮约 10% 定档 35 KB；PRD 目标 ≤32 KB。 |
 | @oas-ui/ui/data/diff-viewer 链 gzip | 27.1 KB | 34.0 KB（绝对值） | 实测 gzip 30.6 KB（链含 core + i18n + 自研 Myers 行级差异/词级高亮/折叠/并排/虚拟窗口；无第三方 diff 依赖、无图标全量注册），上浮约 11% 定档 34 KB；PRD 目标 ≤32 KB。 |
 | @oas-ui/theme index.css gzip | 1.9 KB | 4.0 KB（绝对值） | 实测 gzip 3.52 KB（skins 皮肤层变量族 + 阴影双层精修后），上浮约 15%；前档 3.5 KB 定档于 2026-09-15（3.0 KB 实测） |
-| @oas-ui/theme glass-fluid.js gzip | 8.1 KB | 8.5 KB（绝对值） | 实测 gzip 8.0 KB（B 档 + 修复批：注册表 + 注入样式表并入运行时——ui 包相应减少同量玻璃规则体；高光层改「surface 背景之上、文字之下」，补 .box 基态/命中成对、isolation:isolate、z-index:-1、禁用守卫（含链接形态 aria-disabled，且同时 background/box-shadow:none）、实心按钮 hover 高光 + 按压边缘内描边（:where 归零特异性）、全根观察 + 帧内 prune 防泄漏）。已达 WARN 预警线：评估后**暂不瘦身 / 不重定档**（增幅为上述合理增量的正常结果，无冗余可清）；再次加功能前先瘦身。前档 4.5 / 4 KB 首次定档于 2026-10-07（3.6 / 2.97 KB 实测）（指针镜面高光运行时：监听/命中/坐标/rAF/守卫/清理） |
+| @oas-ui/theme glass-fluid.js gzip | 8.1 KB | 9.5 KB（绝对值） | 实测 gzip 8.0 KB（B 档 + 修复批：注册表 + 注入样式表并入运行时——ui 包相应减少同量玻璃规则体；高光层改「surface 背景之上、文字之下」，补 .box 基态/命中成对、isolation:isolate、z-index:-1、禁用守卫（含链接形态 aria-disabled，且同时 background/box-shadow:none）、实心按钮 hover 高光 + 按压边缘内描边（:where 归零特异性）、全根观察 + 帧内 prune 防泄漏）。2026-10-31 复核：把派生式生成器烘焙成静态字面量实测只省 108 B（不值得牺牲「派生防漂移」），无操作三元 7 B、HIT_SELECTORS 函数包装 0 B —— 无冗余可清；前档 8.5 KB 时利用率 95.1%、×1.10 档会让实测距预警线只差 16 B，故按实测上浮 17.5% 重定档 9.5 KB（利用率 85.1%，预警线恢复有效）。再次加功能前先做包体评估。前档 4.5 / 4 KB 首次定档于 2026-10-07（3.6 / 2.97 KB 实测）（指针镜面高光运行时：监听/命中/坐标/rAF/守卫/清理） |
 | @oas-ui/theme glass.css gzip | 3.4 KB | 6.0 KB（绝对值） | 本次实测 gzip 3516 B（2026-10-29；玻璃静态层新增 switch 轨道加深 token 后复核：surface 半透明 token + 折光边 + 阴影 + switch mix；独立可选，不进 union），保留 6 KB 上限 |
 | @oas-ui/theme skins.css gzip | 0.9 KB | 2.0 KB（绝对值） | 实测 gzip 约 0.91 KB（皮肤层变量族：预设色板皮肤档；独立可选，不进 union），上浮定档 2 KB |
-| @oas-ui/ui/data/table/advanced 链 gzip | 7.8 KB | 8.0 KB（绝对值） | 首档 2026-10-25：实测 7.0 KB 上浮约 14% 定档 8 KB。2026-10-28 收口：视觉适配器协议批使链增至 8146 B（余量仅 46 B 触顶）；无行为变化瘦身（公式解析器 class → 模块函数，消除产物方法名税）后实测 8011 B、余量 181 B（约 2.2%，仍处 90% WARN 预警区，未抬预算）。逐文件归因见 perf-baseline.json：windowed 1996 B（视觉协议，行为密集勿轻动）、formula 2317 B、其余 ~3700 B；再次扩展前必须先做包体评估或瘦身，不得把剩余空间当作常量 |
+| @oas-ui/ui/data/table/advanced 链 gzip | 7.8 KB | 9.0 KB（绝对值） | 首档 2026-10-25：实测 7.0 KB 上浮约 14% 定档 8 KB。2026-10-28 收口：视觉适配器协议批使链增至 8146 B（余量仅 46 B 触顶）；无行为变化瘦身（公式解析器 class → 模块函数，消除产物方法名税）后实测 8011 B。2026-10-31 复核重定档：逐文件复读 8 个模块（formula 2317 / windowed 1996 / pivot 1097 / query 851 / conditional 565 / history 490 / clipboard 363 / index 332），无可无行为变化清除的冗余（最大可清项 evaluateFormula 仅 19 B 且属公开导出，geometrySummary 的 try/catch 25 B 属已声明防御路径）；2.2% 余量已无预警意义，按实测上浮 15% 重定档 9 KB（利用率 86.9%）。再次扩展前必须先做包体评估或瘦身 |
 | @oas-ui/ui/data/table/format 链 gzip | 4.6 KB | 6.0 KB（绝对值） | 实测 gzip 4.7 KB（条件格式 capability + 规则引擎，无表单控件；不进入 table 默认链），上浮约 27% 定档 6 KB |
 | @oas-ui/ui/data/table/view 链 gzip | 1.0 KB | 1.5 KB（绝对值） | 实测 gzip 1.0 KB（完整视图快照 + 可配置 key 的持久化适配器，无 table 运行时依赖），上浮定档 1.5 KB |
-| @oas-ui/ui/data/table/range 链 gzip | 11.9 KB | 13.0 KB（绝对值） | 实测 gzip 11.6 KB（选区 + 多选区 + 剪贴板写回 + 填充柄 + 展示集快照与扁平滚动 + windowed 协议共享链 + 可访问性播报），上浮约 12% 定档 13 KB |
+| @oas-ui/ui/data/table/range 链 gzip | 11.9 KB | 13.5 KB（绝对值） | 实测 gzip 12181 B（range/index 9715 = 选区控制器本体，未内联 table 运行时；window-data 840 / interactive 626 / clipboard 363 / capability 340 / row-key 297），其中 662 B 为本链未使用的导出（window-data 534 / clipboard 128），真实消费者构建经 tree-shaking 不携带，故真实量级约 11.5 KB。2026-10-31 复核：唯一可去重项是 findRowPath 与 indexRowPaths 的双实现（69 B），低于瘦身阈值；旧宿主视图签名回退（30 B）无测试覆盖但属 getDisplaySnapshot? 兼容契约，保留。按实测上浮 13.5% 重定档 13.5 KB（利用率 88.1%） |
 | @oas-ui/ui/data/table/history 链 gzip | 3.5 KB | 4.0 KB（绝对值） | 实测 gzip 3.4 KB（撤销/重做栈 + 受控记录/事务 + oas-edit 行键/原类型回写 + 树形子行递归 + 交互宿主穿透），上浮约 18% 定档 4 KB |
-| @oas-ui/ui/data/table/detail 链 gzip | 3.7 KB | 4.0 KB（绝对值） | 实测 gzip 3.4 KB（主从详情宿主侧 helper + 树形行定位 / 焦点兜底 / 多实例 Esc 回退与跨表路由 / 交互宿主穿透，无 table 运行时依赖），上浮约 18% 定档 4 KB |
+| @oas-ui/ui/data/table/detail 链 gzip | 3.7 KB | 4.5 KB（绝对值） | 实测 gzip 3805 B（detail/index 2882 / interactive 626 / row-key 297，无未用导出虚高）。2026-10-31 复核：唯一重复实现是 isInputTarget 与 isInteractiveEvent（排除清单已含 input/select/textarea/[contenteditable]），实测仅 60 B；其余（内联 findIndex / activeEscapeClose 冗余状态）合计 ≤25 B。无冗余可清，按实测上浮 18% 重定档 4.5 KB（利用率 82.6%） |
 | @oas-ui/ui/layout/scroll-area/infinite 链 gzip | 4.1 KB | 5.0 KB（绝对值） | 实测 gzip 3916 B / 3.8 KB / 3 文件（2026-10-29 首次独立定档；headless 控制器：滚动/尺寸/资源监听、双边缘状态机、prepend 锚定与 keyed 重查、ResizeObserver 资源补偿；仅 dev-warn 一个共享依赖，无滚动引擎/无自定义元素），上浮约 31% 定档 5 KB 绝对值 |
 <!-- END:generated:perf-baseline:budgets -->
 
