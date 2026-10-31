@@ -5,7 +5,7 @@
 
 ---
 
-## 未发布：工作台悬浮面板 oas-floating-panel（Task 12）✅
+## v2.6.5：工作台悬浮面板 oas-floating-panel（Task 12）✅
 
 ### 功能定义
 
@@ -40,10 +40,10 @@
 
 - 单测：`geometry`（四边/四角、极小边界、min>max、RTL 键位、取整、非法值）、`panel-stack`（置前顺序、多实例、断开摘除、z 不随次数增长）、开合事件矩阵（受控/非受控、before-close 否决零事件、detail 精确）、指针（第二指针/捕获失败/取消/失焦/Esc 中断）、键盘替代路径、焦点进入与归还、断连重连、SSR 快照与 hydrate。
 - qa-regression（Chromium + Firefox 抽样）：真实拖拽、四边/四角缩放、两面板置前、子浮层（dropdown）Esc 优先级、受控回写、coarse 44px 热区 + `elementFromPoint` 不命中手柄 + 真实触摸拖动/点关闭、Esc 跟随置前、单面板首帧最前档、断开期间改 open 的 Esc 回归、dark、reduced-motion、axe、console 零告警。
-- 文档：中英组件页 + 侧栏；`## API` 由 `api:scan && api:gen` 生成（方法表同样由 JSDoc 扫描生成，非手工）；`open` 属性类型 `boolean` 来自 property 扫描，`min` / `max` / `panel-title` / `initial-focus` 无对应 property、scanner 推断不出类型故显示 `—`（scanner 限制，非契约缺失）；10 语言文案；SSR 白名单 174 → 175 与 DSD fixture；CHANGELOG `[未发布]`。
+- 文档：中英组件页 + 侧栏；`## API` 由 `api:scan && api:gen` 生成（方法表同样由 JSDoc 扫描生成，非手工）；`open` 属性类型 `boolean` 来自 property 扫描，`min` / `max` / `panel-title` / `initial-focus` 无对应 property、scanner 推断不出类型故显示 `—`（scanner 限制，非契约缺失）；10 语言文案；SSR 白名单 174 → 175 与 DSD fixture；CHANGELOG `[2.6.5]`。
 - 门禁：focused/full `pnpm test`、typecheck、build、全量 e2e、perf:size、api/llms/stats/skill/ssr/lint/format/deprecations/qa:audit/trace。
 
-## 未发布：Next / Nuxt 生产 fixture 与真实浏览器性能基线（Task 11）✅
+## v2.6.5：Next / Nuxt 生产 fixture 与真实浏览器性能基线（Task 11）✅
 
 ### 功能定义
 
@@ -65,7 +65,7 @@
 - 主仓：`pnpm test`、`typecheck`、`build`、`perf:size`、`perf:browser:check`、api/llms/stats/skill/ssr/lint/format/deprecations/qa:audit/trace 全绿；全量 e2e 由控制器另行执行。
 - 文档：`engineering.md`（fixture 安装/构建/CI 与性能观测带宽）、`architecture.md`（隔离与 shim 进程边界）、`ROADMAP.md` / `CHANGELOG.md` 同步；README 说明 fixture 不随发布包分发。
 
-## 未发布：SSR 白名单收口九件与跨引擎 DSD（Task 10）✅
+## v2.6.5：SSR 白名单收口九件与跨引擎 DSD（Task 10）✅
 
 ### 功能定义
 
@@ -101,7 +101,7 @@
 
 ---
 
-## 未发布：字节格式化 helper 与 Upload IEC 迁移（Task 9C）✅
+## v2.6.5：字节格式化 helper 与 Upload IEC 迁移（Task 9C）✅
 
 ### 功能定义
 
@@ -124,11 +124,11 @@
 
 - 单测：IEC/SI 阈值与进位边界、`0` / 小数 / 极大 / 负数 / 非法 / 非有限、`precision` 0/1/多位/非法、locale（`de-DE` 小数点、结构非法与 `xx-YY` 不受支持均回落 `en-US`）、`options: null`、默认值；Node 环境直接 `import '@oas-ui/core/format-byte'` 与调用不引用 DOM（显式断言无 `document`）；Upload 列表/模板绑定/预览浮层显示 `KiB`/`MiB` 且旧断言按新契约重算并注明原因；`max-size` 的 `2KiB` / `1.5TiB` / `2PiB` / `1EiB` 生效、未知单位 devWarn 且不静默降级、解析层与乘积层溢出都夹到 `MAX_SAFE_INTEGER`、`0.4B` 按 1 字节、显式 `0` 仍不限制。
 - qa-regression：真实文档页 Upload 大小文案为 IEC 单位（chromium + firefox），`max-size="2KiB"` 真实拦截、未知单位只在开发环境 devWarn 后按不限制放行（生产构建无告警，属明示行为），dark 主题可读，console 无意外告警。
-- 文档：CHANGELOG `[未发布] / 变更` 记录 KB→KiB 可见变化；upload 中英文页与 API 描述说明 IEC 单位；`@oas-ui/core` README 补 helper 用法；PRD/ROADMAP 登记；全量 test/typecheck/build/e2e/perf:size/api/llms/stats/skill/ssr/lint/format 通过。
+- 文档：CHANGELOG `[2.6.5]` 记录 KB→KiB 可见变化；upload 中英文页与 API 描述说明 IEC 单位；`@oas-ui/core` README 补 helper 用法；PRD/ROADMAP 登记；全量 test/typecheck/build/e2e/perf:size/api/llms/stats/skill/ssr/lint/format 通过。
 
 ---
 
-## 未发布：相对时间展示组件 oas-relative-time（Task 9B）✅
+## v2.6.5：相对时间展示组件 oas-relative-time（Task 9B）✅
 
 ### 功能定义
 
@@ -157,7 +157,7 @@
 
 ---
 
-## 未发布：无限滚动 headless 控制器（Task 9A）✅
+## v2.6.5：无限滚动 headless 控制器（Task 9A）✅
 
 ### 功能定义
 
@@ -184,7 +184,7 @@
 
 ---
 
-## 未发布：chart 小数刻度与标签留白（Task 8A）✅
+## v2.6.5：chart 小数刻度与标签留白（Task 8A）✅
 
 ### 功能定义
 
@@ -214,7 +214,7 @@
 
 ---
 
-## 未发布：Splitter opt-in 尺寸持久化（Task 8B）✅
+## v2.6.5：Splitter opt-in 尺寸持久化（Task 8B）✅
 
 ### 功能定义
 
@@ -249,7 +249,7 @@
 
 ---
 
-## 未发布：主题组合收口（back-top / ThemeEditor / system head 引导 / switch loading）✅
+## v2.6.5：主题组合收口（back-top / ThemeEditor / system head 引导 / switch loading）✅
 
 ### 功能定义
 
@@ -277,7 +277,7 @@
 
 ---
 
-## 未发布：ThemeEditor light/dark 双套编辑与原子导入导出 ✅
+## v2.6.5：ThemeEditor light/dark 双套编辑与原子导入导出 ✅
 
 ### 功能定义
 
@@ -301,7 +301,7 @@
 - `packages/ui/qa-regression/theme-editor.spec.ts` 在真实浏览器锁双套编辑、键盘切桶、provider 明暗切换、未访问 dark 的真实默认值导出、原子失败无部分写入、dark/console 与截图。
 - 组件中英文页、PRD/ROADMAP、API 描述与 10 locale 同步；全量 test / typecheck / build / e2e / perf:size / api / llms / stats / skill / lint / format / trace 通过。
 
-## 未发布：ConfigProvider 系统自动主题与可选存储 ✅
+## v2.6.5：ConfigProvider 系统自动主题与可选存储 ✅
 
 ### 功能定义
 
@@ -324,7 +324,7 @@
 - `packages/ui/qa-regression/config-provider.spec.ts` 在 Chromium + Firefox 锁嵌套 computed token、emulateMedia 实时切换、reload 恢复、demo 点击/键盘可见反馈、dark/console 与截图；`packages/ssr/ssr-dsd.spec.ts` 锁 head 防闪及水合前后有效主题、几何与 shadow 引用一致。
 - 文档与 API 同步；全量 test / typecheck / build / e2e / perf:size / api / llms / stats / skill / lint / format / trace 通过。
 
-## 未发布：switch 玻璃轨道内文案 36 格对比度矩阵 ✅
+## v2.6.5：switch 玻璃轨道内文案 36 格对比度矩阵 ✅
 
 ### 功能定义
 
@@ -350,7 +350,7 @@
 - `packages/ui/qa-regression/glass.spec.ts` 在 Chromium + Firefox 真实浏览器锁 36 格矩阵、样本计数/唯一性/维度分解、press 真实 `:active` 与更强 sheen、console 零告警及 light/dark 截图；switch/glass 单测锁文字回落实色 token、轨道加深消费与 glass.css 明暗/实心回退值。
 - 文档同步 glass/theming 中英文 guide、API 描述与 PRD/ROADMAP；全量 test / typecheck / build / e2e / perf:size / api / llms / stats / skill / lint / format / trace 通过。
 
-## 未发布：异步选中与视觉窗口协议 ✅
+## v2.6.5：异步选中与视觉窗口协议 ✅
 
 ### 功能定义
 
@@ -376,7 +376,7 @@
 - e2e：`qa-regression/table.spec.ts` 真实 Chromium——默认未命中无可见等待（面板/事件不变）、显式等待回填有可见面板反馈、abort 后回填无反馈；expand>12 映射（真实滚动 → 请求 [95,118)+视觉字段 → 渲染 104..109 与属主 expand 可见）与 visual-start 协议（总高 80000、宿主控制展开、ARIA/displaySnapshot 数据口径）两场景；`createWindowedSource × 视觉适配器`（真实 adapter 驱动协议取数、滚动请求按视觉映射覆盖真实可见行、协议下本地 toggle 只派发 oas-expand、宿主回写 expanded/visual-start/data 后焦点仍在同一 row-key、ARIA 不变），含 dark 主题与 console/pageerror 零新增告警。
 - 文档 zh/en 同步；`api:check` / `llms:check` / `stats:check` / `lint:md` / `format:check` 通过。
 
-## 未发布：SSR locale 请求局部化 ✅
+## v2.6.5：SSR locale 请求局部化 ✅
 
 ### 功能定义
 
@@ -398,7 +398,7 @@
 - e2e：`packages/ssr/ssr-dsd.spec.ts` 新增并发混合多语言静态快照用例（16 请求逐 marker 核对禁 JS 可见语言与嵌套关闭按钮 aria-label，console/pageerror 零告警）。
 - 文档：`docs/ssr.md` + 中英 guide locale 语义段同步；`ssr:check` / `llms:check` / `api:check` / `typecheck` / `build` / 全量 `test` / 全量 e2e 通过。
 
-## 未发布：Release 同 SHA 质量门禁 ✅
+## v2.6.5：Release 同 SHA 质量门禁 ✅
 
 ### 功能定义
 
@@ -421,7 +421,7 @@
 - `pnpm release:check:test` 接入 CI test job，防 workflow/脚本漂移。
 - 工程文档（docs/engineering.md §5）同步两 job 时序与权限模型。
 
-## 未发布：CDN i18n（组件内置文案切换）✅
+## v2.6.5：CDN i18n（组件内置文案切换）✅
 
 ### 功能定义
 
@@ -446,7 +446,7 @@ CDN IIFE 此前内联了 i18n registry 但无切换入口，宿主只能消费�
 - qa 回归 `packages/ui/qa-regression/form-unupgraded-combobox.spec.ts`（Chromium + Firefox）：真实 bundle 下 `oas-form` 先升级、子级 combobox 未升级时零 pageerror，`getValues()` 将该字段读为 `''`，不再出现 `startsWith` 崩溃。
 - 主仓全量验证：build / typecheck / 全量单测 / 全量 e2e / api:check / llms:check / stats / skill:check / perf:size / lint / format 通过。
 
-## 未发布：表格 Pro / JSON 查看器 / Sidebar 维护 ✅
+## v2.6.5：表格 Pro / JSON 查看器 / Sidebar 维护 ✅
 
 ### 功能定义
 
@@ -455,12 +455,12 @@ v2.6.4 后的维护批：补齐 table Pro 能力在 windowed、失败请求与�
 ### 详细需求
 
 - **table/detail：有效 windowed 判定**：`windowed` 属性在场且 `total` 先截断（非有限数按 0）后 `> 0` 才视为生效，与表格 `readWindowedMode` 同口径；`total` 缺失、非法或截断后为 0（含 `0.5`）按普通模式处理。`refresh()` 与 `selectByKey()` 共用该判定。
-- **table/detail：selectByKey 等待与取消**：本批的 windowed 隐式等待已由「未发布：异步选中与视觉窗口协议」批改为显式 `waitForRow` opt-in（含 `AbortSignal` 取消与终止决策收口），此处的隐式默认与批次契约描述作废；普通模式键不存在清空选中、未渲染行保留选中（`rowIndex=-1`）的语义不变。
+- **table/detail：selectByKey 等待与取消**：本批的 windowed 隐式等待已由「v2.6.5：异步选中与视觉窗口协议」批改为显式 `waitForRow` opt-in（含 `AbortSignal` 取消与终止决策收口），此处的隐式默认与批次契约描述作废；普通模式键不存在清空选中、未渲染行保留选中（`rowIndex=-1`）的语义不变。
 - **table/detail：pending-only Esc 作用域**：无选中且仅等待时，只有本实例表格/面板内的 `Esc` 取消等待；不注册 window 全局兜底，不抢多实例「最近激活」标记，仍让位 `defaultPrevented`、输入控件与同表其它活动实例。`closeOnEscape: false` 时完全不响应 Esc；启用 range 且存在活动选区时，表格内第一次 Esc 先清选区、等待保留。
 - **table/range：tabindex 所有权**：控制器只保存「原值 + 自己最后写入的 `0/-1`」；range 禁用且未交给 grid-navigation 时，仅当当前 `tabindex` 仍等于最后写入值才恢复原值，拥有期间被其它能力改写则保留外部值。grid-navigation 接管时直接放弃记录、不回写陈旧原值。
 - **table/advanced：windowed source 覆盖判定**：每次处理 `oas-window-request` 时，覆盖去重都读表格当前真实切片（`window-start` + `data` 长度，有限数、截断、最小 0 的半开区间），不自存装载区间；宿主外部清空/替换 `data` 或切换 `window-start` 后，同窗口请求会重新拉取。保留在途去重、回声抑制、`refresh()` 强制重拉、`destroy()` 中止过期请求与构造首拉行为。
 - **table/advanced：windowed source 失败重试**：`fetchRows` 同步 `throw` 与 Promise rejection 走同一失败路径：清在途标记并派发一次 `oas-window-error`（`detail { start, end, error }`，`bubbles` + `composed`），之后同窗口可重试；过期失败不清新请求的在途标记。不自动重试，也不改表格 `oas-window-request` 的派发。
-- **table：windowed 行内嵌 expand 视觉槽位**：`renderWindowedBody` 双坐标记账——`abs` 仅数据行递增（`data-row-index`、事件 rowIndex 与 ARIA 口径不变），flow 坐标对每个 display 条目（含 expand 内容行）递增；culling、首尾 spacer 与 tbody 总高一律按 flow 记账，总高 = `total × rowHeight + 当前已装载切片中的 expand 数 × rowHeight`，不随滚动漂移；渲染窗口条目数 = `total + 当前切片 expand 数`（已装载的全量末行数据的 expand 不被窗口上界裁掉）。切片越界（`window-start + 装载数 > total`）时，越界数据行及其 expand 不渲染（对齐既有「越界行不渲染」契约），最后合法数据行的 expand 保留；无 expand 时与旧公式逐值等价（由既有无 expand 的 windowed 用例保持，未新增对照测试）；`oas-window-request` 期望区间、ARIA、range/displaySnapshot 与非 windowed 路径不变；expand 内容按既有定高模型占一行高（富内容归非虚拟模式）。多行展开与已装载的全量末行 expand 均可见。（本批遗留的「展开数 > buffer + WINDOW_MARGIN 时请求区间按均匀网格猜测、可能视觉重锚」边界已由「未发布：异步选中与视觉窗口协议」批的请求映射收口。）
+- **table：windowed 行内嵌 expand 视觉槽位**：`renderWindowedBody` 双坐标记账——`abs` 仅数据行递增（`data-row-index`、事件 rowIndex 与 ARIA 口径不变），flow 坐标对每个 display 条目（含 expand 内容行）递增；culling、首尾 spacer 与 tbody 总高一律按 flow 记账，总高 = `total × rowHeight + 当前已装载切片中的 expand 数 × rowHeight`，不随滚动漂移；渲染窗口条目数 = `total + 当前切片 expand 数`（已装载的全量末行数据的 expand 不被窗口上界裁掉）。切片越界（`window-start + 装载数 > total`）时，越界数据行及其 expand 不渲染（对齐既有「越界行不渲染」契约），最后合法数据行的 expand 保留；无 expand 时与旧公式逐值等价（由既有无 expand 的 windowed 用例保持，未新增对照测试）；`oas-window-request` 期望区间、ARIA、range/displaySnapshot 与非 windowed 路径不变；expand 内容按既有定高模型占一行高（富内容归非虚拟模式）。多行展开与已装载的全量末行 expand 均可见。（本批遗留的「展开数 > buffer + WINDOW_MARGIN 时请求区间按均匀网格猜测、可能视觉重锚」边界已由「v2.6.5：异步选中与视觉窗口协议」批的请求映射收口。）
 - **sidebar：嵌套头像行首槽位**：`depth > 0` 且没有 icon 时，仅在同时没有 `avatar` / `avatarText` 的情况下保留 18px 空图标槽用于层级缩进；头像子项的空图标设为 `hidden`，不参与 flex 布局，也不产生第二个 gap。普通无图标子项的缩进、头像尺寸、折叠态与公开 API 不变。
 - **JSON 查看器：滚动/键盘复用可见行**：窗口内滚动、键盘移动与 `scrollToPath()` 收尾复用最近一次完整计算的可见行；`scrollToPath()` 一次公开调用只完整展开一次。数据源/根节点/展开态/搜索态变化都会置脏，回到完整重算。
 - **JSON 查看器：跳过行 DOM 重建**：行渲染签名（可见行数组身份、行容器身份、窗口起止、行高、搜索词、活动路径、自定义 toggle 模板存在性）全部相等时跳过行 DOM 重建，仅更新工具栏/`aria-activedescendant`/`aria-busy`；活动行校正、搜索跳转、空/错误态与模板变更一律重建。
@@ -669,7 +669,7 @@ v2.6.4 后的维护批：补齐 table Pro 能力在 windowed、失败请求与�
 - 全量单测 **11190 passed**；全量 e2e **3828 passed / 46 skipped**（Chromium 全量 + Firefox/WebKit 抽样；1 条 Firefox scroll-area 用例首次失败，单独复跑通过）。
 - `typecheck` / `build` / `api:check` / `stats:check` / `llms:check` / `skill:check` / `deprecations:check` / `ssr:check` / `perf:size` / `format:check` / trace 通过；`perf:bench` 在同一 dist、较大堆复核下全部预算通过。默认 happy-dom 在本机存在 GC 尾延迟，未改预算或基线。
 
-## v2.6.5：移除 table/core ✅（未发布）
+## v2.6.5：移除 table/core ✅
 
 删除 `@oas-ui/ui/data/table/core` 与相关文档/预算/测试；迁移路径统一为 `@oas-ui/ui/data/table`（需要编辑时补 `table/edit`）。
 
@@ -2898,7 +2898,7 @@ OASElement 的 render 生命周期只首连一次（`rendered` 门闩），组�
 - **只读三级 + 任务级禁用**：`readonly`（全禁）/ `dates-readonly` / `progress-readonly`；只读态不渲染拖拽手柄（视觉即语义）；数据 `disabled: true` 单条禁拖。
 - **今日线与日历底色**：`show-today`（默认开，装饰层 aria-hidden）+ `weekends` 周末列高亮（day/hour 档）+ `holidays` 假日列表。
 - **行虚拟滚动**：行数超出视口只渲染窗口行 + buffer（名称列/任务条/连线/底色全部窗口化）；方法 `scrollToTask(id)`（命名避开 DOM 内建 Element.scrollTo）/ `scrollToDate(date)` / `scrollToToday()` / `updateTask(id, patch)`。
-- **宿主责任边界**：undo/redo（组件发全量事件，宿主维护历史栈）、编辑表单（`oas-task-dblclick` 宿主接 oas-dialog）、导出（数据转换属业务层）、关键路径与依赖联动排程（排程计算，组件不做）；基线对比改归组件（见「未发布 oas-gantt 纵深」段）。
+- **宿主责任边界**：undo/redo（组件发全量事件，宿主维护历史栈）、编辑表单（`oas-task-dblclick` 宿主接 oas-dialog）、导出（数据转换属业务层）、关键路径与依赖联动排程（排程计算，组件不做）；基线对比改归组件（见「v2.6.5 oas-gantt 纵深」段）。
 
 ### 验收
 
@@ -2921,7 +2921,7 @@ OASElement 的 render 生命周期只首连一次（`rendered` 门闩），组�
 
 ### 已知限制
 
-- **y 轴刻度步长恒为整数（已于未发布维护批修复）**：v2.6.0 时 nice 刻度步长 = ceil(max/段数) ≥ 1，小数量程（如 0~0.01）退化为整步刻度、数据压底。未发布维护批（Task 8A，见文首段）已改走 `1/2/2.5/5/10 × 10^n` nice 序列 + 动态 Intl 精度 + 标签按需留白；90→100、双轴右轴 10→10 为接受的顶格变化。
+- **y 轴刻度步长恒为整数（已于 v2.6.5 维护批修复）**：v2.6.0 时 nice 刻度步长 = ceil(max/段数) ≥ 1，小数量程（如 0~0.01）退化为整步刻度、数据压底。v2.6.5 维护批（Task 8A，见文首段）已改走 `1/2/2.5/5/10 × 10^n` nice 序列 + 动态 Intl 精度 + 标签按需留白；90→100、双轴右轴 10→10 为接受的顶格变化。
 
 ### 验收
 
@@ -2977,7 +2977,7 @@ OASElement 的 render 生命周期只首连一次（`rendered` 门闩），组�
 - `prefers-reduced-motion: reduce` 不启用；粗指针（`pointer: coarse`）不接（触屏无 hover 语义）；`high-contrast` 不启用；无 `data-glass` 时零监听零开销；
 - 性能：单文档监听 + rAF 合批 + passive 监听；每帧至多一次 rect 读取；命中判定走事件 `composedPath`（不查表不遍历）；
 - 实心按钮命中后运行时写标记与坐标变量以驱动 hover 高光，按压态由 CSS 换边缘内描边（不提亮）；
-- 本批挂账的 `oas-switch` 选中态轨道内文案已由「未发布：switch 玻璃轨道内文案 36 格对比度矩阵」批收口（2 主题 × 2 checked × 3 真实底色 × 3 交互态，静止/hover ≥60、press ≥45）；slider 把手高光仍为纯装饰，不入门禁。
+- 本批挂账的 `oas-switch` 选中态轨道内文案已由「v2.6.5：switch 玻璃轨道内文案 36 格对比度矩阵」批收口（2 主题 × 2 checked × 3 真实底色 × 3 交互态，静止/hover ≥60、press ≥45）；slider 把手高光仍为纯装饰，不入门禁。
 - 更强的「随交互变形」形态（拖拽中塑性形变、随背景内容变化的实时高光）不在 v1。
 
 ### 验收
@@ -3006,7 +3006,7 @@ OASElement 的 render 生命周期只首连一次（`rendered` 门闩），组�
 
 - 单测：TDD RED→GREEN（渲染/值域钳制/step 吸附/角度映射/圆周与线性手势/auto 中途解析锁定/键盘全键位/ARIA 三通道/受控 property/事件链/禁用只读/复位/RTL 镜像/token 纪律/SSR 水合）；`pnpm test` 全绿。
 - e2e：`qa-regression/knob.spec.ts`（真实指针三手势 + 键盘链路 + 双击复位 + 暗色 token 切换 + console 零告警 + readonly/disabled 拦截）。
-- 文档：knob.md zh/en（内联 attribute 演示 + 页级 script 事件反馈）+ api-manifest/api-descriptions + 侧栏；PRD/ROADMAP 同步（版本号未定，标「未发布」）。
+- 文档：knob.md zh/en（内联 attribute 演示 + 页级 script 事件反馈）+ api-manifest/api-descriptions + 侧栏；PRD/ROADMAP 同步（版本号未定，标「v2.6.5」）。
 
 ## v2.6.1 conversation 会话组件族首批五件
 
@@ -3166,7 +3166,7 @@ OASElement 的 render 生命周期只首连一次（`rendered` 门闩），组�
 - 单测：TDD RED→GREEN——collapsible（双模式/播种值语义/事件/disabled 含注入/插槽/键盘退化/token/水合）+ list-item（icon/image 显隐/链接覆盖层/rel 自动补/aria 名称/焦点分离）+ menu 系（template/元素双通道/优先级/loading 替位/样式）+ dropdown 别名通道 + typography（白名单/解包/切换重建/样式 token）；分多批累计（计数随各轮 review 修复递增，不逐项固化数字）。
 - e2e：`qa-regression/collapsible.spec.ts` 新建 7 条（真点开合/受控写回/外部切换联动/disabled/键盘/暗色/console 零告警）+ list 补 2 条（真实点击 hash 导航 + extra 可点 + 焦点分离 / 前置媒体真实渲染）+ typography 补 1 条（块级真渲染断言）+ menu 补 1 条（leading 真实渲染在 label 前）。
 - 文档：collapsible.md zh/en 新页（进侧栏与 smoke 等自动收集面）+ list/typography/menu/dropdown zh/en demo 与说明 + api-manifest/api-descriptions 同步（api:check 双向 0）。
-- PRD/ROADMAP 标「未发布」；CHANGELOG `[2.6.1]` 简体中文条目。
+- PRD/ROADMAP 标「v2.6.5」；CHANGELOG `[2.6.1]` 简体中文条目。
 
 ## v2.6.1 能力补全批：4 新组件 + 多组件增强
 
