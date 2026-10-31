@@ -2339,6 +2339,7 @@
     "attrs": {
       "disabled": "禁用该项（不可选）",
       "group": "分组标题（可选）：同组连续渲染组标题（不可选），组内选项缩进",
+      "icon": "选项图标（@oas-ui/icons 图标名）：选项行、单选触发器与多选 chip 统一渲染；未注册时回退纯文本并 devWarn 一次",
       "value": "选项值（子元素声明式通道的数据载体字段）"
     },
     "events": {},
@@ -2794,7 +2795,7 @@
       "loading": "远程加载占位（与 `remote` 搭配使用）",
       "max-tag-count": "多选标签按数量折叠为 `+N`（需显式设置；未设置时标签默认换行展示，不折叠）",
       "multiple": "多选",
-      "options": "选项，JSON 数组 `[{ label, value, disabled?, group? }]`",
+      "options": "选项，JSON 数组 `[{ label, value, disabled?, group?, icon? }]`（group 为分组标题，icon 为 @oas-ui/icons 图标名）",
       "placeholder": "占位提示",
       "remote": "远程搜索：不做本地过滤，输入派发 `oas-input` 供宿主请求",
       "searchable": "可搜索（打开下拉后输入过滤）",

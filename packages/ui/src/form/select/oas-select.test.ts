@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
+import { registerIcon } from '@oas-ui/icons/runtime'
 import { OASSelect } from './index.js'
 import '../../framework/config-provider/index.js'
 
@@ -452,6 +453,60 @@ describe('OASSelect focus 委托', () => {
   })
 })
 
+describe('OASSelect Option.icon 数据通道', () => {
+  const ICON_OPTIONS = JSON.stringify([
+    { label: '苹果', value: 'apple', icon: 'select-option-apple' },
+    { label: '香蕉', value: 'banana', icon: 'select-option-banana' },
+  ])
+
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    registerIcon('select-option-apple', '<path d="M1 1 L15 15"/>')
+    registerIcon('select-option-banana', '<path d="M2 2 L14 14"/>')
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('options JSON 的 icon 渲染为下拉项 leading SVG 与单选触发器图标，装饰性不进可访问名', () => {
+    const el = mount({ value: 'apple', options: ICON_OPTIONS })
+    open(el)
+    const icon = el.shadowRoot!.querySelector<HTMLElement>('[role="option"] .option-icon')
+    expect(icon, '下拉项应渲染 Option.icon').not.toBeNull()
+    expect(icon!.getAttribute('aria-hidden')).toBe('true')
+    expect(icon!.querySelector('svg')).not.toBeNull()
+    expect(icon!.querySelector('[data-option-label]')).toBeNull()
+
+    const valueIcon = trigger(el).querySelector<HTMLElement>('.value-icon')
+    expect(valueIcon, '单选触发器应渲染选中项 icon').not.toBeNull()
+    expect(valueIcon!.getAttribute('aria-hidden')).toBe('true')
+    expect(valueIcon!.querySelector('svg')).not.toBeNull()
+  })
+
+  it('multiple chip 渲染选中项 icon，移除按钮仍保留', () => {
+    const el = mount({ multiple: '', value: JSON.stringify(['apple', 'banana']), options: ICON_OPTIONS })
+    const chips = [...el.shadowRoot!.querySelectorAll<HTMLElement>('.chip')]
+    expect(chips.length).toBe(2)
+    expect(chips.every((chip) => chip.querySelector<HTMLElement>('.chip-icon')?.querySelector('svg'))).toBe(true)
+    expect(chips.every((chip) => chip.querySelector('.chip-icon')!.getAttribute('aria-hidden') === 'true')).toBe(true)
+    expect(chips.every((chip) => chip.querySelector('button[aria-label]'))).toBe(true)
+  })
+
+  it('未知 icon 回退纯文本并仅 devWarn 一次', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const el = mount({
+      options: JSON.stringify([{ label: '缺失', value: 'missing', icon: 'select-option-icon-missing-e2e' }]),
+    })
+    open(el)
+    await new Promise((resolve) => requestAnimationFrame(() => resolve(undefined)))
+    expect(el.shadowRoot!.querySelector('[role="option"] .option-icon')).toBeNull()
+    expect(warn).toHaveBeenCalledTimes(1)
+    expect(warn.mock.calls[0]![0]).toContain('select-option-icon-missing-e2e')
+    warn.mockRestore()
+  })
+})
+
 describe('OASSelect 自定义选项渲染（template slot + 渲染事件）', () => {
   beforeEach(() => {
     document.body.innerHTML = ''
@@ -473,6 +528,22 @@ describe('OASSelect 自定义选项渲染（template slot + 渲染事件）', ()
     const first = el.shadowRoot!.querySelector('[role="option"]')!
     expect(first.querySelector('.opt-icon')).not.toBeNull()
     expect(first.querySelector('[data-option-label]')!.textContent).toBe('苹果')
+  })
+
+  it('Option.icon 与 option 模板并存：内置 leading icon + 模板 label 内容', () => {
+    registerIcon('select-template-option-icon', '<path d="M1 1 L15 15"/>')
+    const el = new OASSelect()
+    el.setAttribute('options', JSON.stringify([{ label: '苹果', value: 'apple', icon: 'select-template-option-icon' }]))
+    const tpl = document.createElement('template')
+    tpl.setAttribute('slot', 'option')
+    tpl.innerHTML = '<span class="opt-custom">自定义：</span><span data-option-label></span>'
+    el.appendChild(tpl)
+    document.body.appendChild(el)
+    open(el)
+    const row = el.shadowRoot!.querySelector('[role="option"]')!
+    expect(row.querySelector('.option-icon svg')).not.toBeNull()
+    expect(row.querySelector('.opt-custom')!.textContent).toBe('自定义：')
+    expect(row.querySelector('[data-option-label]')!.textContent).toBe('苹果')
   })
 
   it('oas-option-render 派发 { index, option, element }，宿主可改写选项内容', () => {
@@ -614,6 +685,19 @@ describe('OASSelect 虚拟滚动（virtual）', () => {
     expect(detail).toEqual({ value: 'v8', option: { label: '选项 8', value: 'v8' } })
   })
 
+  it('virtual：Option.icon 在虚拟行内同一渲染', () => {
+    registerIcon('select-virtual-first', '<path d="M1 1 L15 15"/>')
+    const options = JSON.stringify([
+      { label: '带图标', value: 'first', icon: 'select-virtual-first' },
+      { label: '普通', value: 'second' },
+    ])
+    const el = mount({ virtual: '', options })
+    open(el)
+    const rows = virtualRows(el)
+    expect(rows[0]!.querySelector('.option-icon svg')).not.toBeNull()
+    expect(rows[1]!.querySelector('.option-icon')).toBeNull()
+  })
+
   it('virtual：searchable 过滤后虚拟列表跟随过滤子集', () => {
     const el = mount({ virtual: '', searchable: '', options: manyOptions(100) })
     open(el)
@@ -732,6 +816,19 @@ describe('OASSelect 子元素声明式通道（oas-option）', () => {
     ;(rows[1] as HTMLElement).click()
     expect(fired).toBe(0)
     expect(el.getAttribute('value')).toBeNull()
+  })
+
+  it('属性映射：icon 进入数据模型，运行时改写属性后下拉同步刷新', async () => {
+    registerIcon('select-child-apple', '<path d="M1 1 L15 15"/>')
+    registerIcon('select-child-banana', '<path d="M2 2 L14 14"/>')
+    const el = childSelect([['apple', '苹果', { icon: 'select-child-apple' }]])
+    open(el)
+    expect(el.shadowRoot!.querySelector('[role="option"] .option-icon')!.querySelector('svg')).not.toBeNull()
+    const opt = el.querySelector('oas-option')!
+    opt.setAttribute('icon', 'select-child-banana')
+    await new Promise((r) => setTimeout(r, 0))
+    const icon = el.shadowRoot!.querySelector<HTMLElement>('[role="option"] .option-icon svg path')
+    expect(icon!.getAttribute('d')).toBe('M2 2 L14 14')
   })
 
   it('MutationObserver：运行时 append oas-option 后下拉刷新', async () => {

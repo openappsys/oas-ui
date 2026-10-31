@@ -3,6 +3,45 @@
 import { test, expect } from '@playwright/test'
 import { panelGeometryAcrossOpens, up } from './helpers'
 
+test('select Option.icon：下拉项、单选触发器与多选 chip 同步渲染装饰性 SVG，暗色仍可见', async ({ page }) => {
+  await page.goto('/components/select.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#select-option-icon')
+  const sel = page.locator('#select-option-icon')
+  const trigger = sel.locator('[part="trigger"]')
+
+  // 单选触发器：初始 zh-CN 已渲染图标；图标装饰性不进可访问名
+  await expect(trigger.locator('.value-icon svg')).toBeVisible()
+  await expect(trigger.locator('.value-icon')).toHaveAttribute('aria-hidden', 'true')
+  await expect(trigger).toContainText('简体中文')
+
+  // 展开：下拉项 leading SVG 与 label 同行可见；切换到 English 后触发器图标同步切换
+  await trigger.click()
+  await expect(sel.locator('[role="option"]').first().locator('.option-icon svg')).toBeVisible()
+  await expect(sel.locator('[role="option"]').first().locator('.option-icon')).toHaveAttribute('aria-hidden', 'true')
+  await sel.locator('[role="option"]').nth(1).click()
+  await expect(trigger).toContainText('English')
+  await expect(trigger.locator('.value-icon svg')).toBeVisible()
+
+  // 多选 chip：两个已选值均带图标且移除按钮保留
+  const multi = page.locator('#select-option-icon-multi')
+  await expect(multi.locator('.chip-icon svg')).toHaveCount(2)
+  await expect(multi.locator('.chip button[aria-label]')).toHaveCount(2)
+
+  // 暗色：图标仍是可见非透明前景（真实渲染而非空占位）
+  await page.evaluate(() => document.documentElement.classList.add('dark'))
+  const dark = await multi
+    .locator('.chip-icon svg')
+    .first()
+    .evaluate((svg) => {
+      const icon = svg.closest('.chip-icon') as HTMLElement
+      const cs = getComputedStyle(icon)
+      return { display: cs.display, visibility: cs.visibility, color: cs.color }
+    })
+  expect(dark.display).not.toBe('none')
+  expect(dark.visibility).not.toBe('hidden')
+  expect(dark.color).not.toMatch(/rgba\(0,\s*0,\s*0,\s*0\)/)
+})
+
 test('select multiple：chip 结构完整（label + 移除按钮）且样式不拥挤', async ({ page }) => {
   // 曾现 bug：chip 无行高、label 与 × 间距仅 2px、padding 只有横向，文字贴边、行间粘连。
   await page.goto('/components/select.html', { waitUntil: 'domcontentloaded' })

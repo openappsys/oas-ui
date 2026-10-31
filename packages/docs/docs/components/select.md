@@ -284,6 +284,17 @@
 
 搜索无匹配时显示「创建 xxx」项，点击或回车后以输入值创建新选项并纳入选中，创建时派发 `oas-create`（`detail: { value, label }` 为创建文本）。
 
+## 选项图标（Option.icon）
+
+`Option.icon` 是给常用「国家 / 语言 / 状态」选择减负的数据字段：值为 `@oas-ui/icons` 图标名，选项行、单选触发器与多选 chip 会统一渲染 `icon + label`。图标是装饰性节点（`aria-hidden`），可访问名称仍来自 `label`；未注册的图标回退纯文本并仅 devWarn 一次。任意富内容仍走 `oas-option-render` / `template[slot="option"]` 逃生口。
+
+<DemoBlock title="选项图标（单选 + 多选）">
+  <oas-select id="select-option-icon" value="zh-CN" options='[{"label":"简体中文","value":"zh-CN","icon":"language"},{"label":"English","value":"en","icon":"translate"},{"label":"设置","value":"settings","icon":"gear"}]'></oas-select>
+  <oas-select id="select-option-icon-multi" multiple value='["zh-CN","en"]' options='[{"label":"简体中文","value":"zh-CN","icon":"language"},{"label":"English","value":"en","icon":"translate"},{"label":"设置","value":"settings","icon":"gear"}]'></oas-select>
+</DemoBlock>
+
+子元素声明式通道同名字段：`<oas-option value="zh-CN" icon="language">简体中文</oas-option>`。
+
 ## 自定义选项渲染
 
 <DemoBlock title="自定义选项（图标 + 富文本）">
@@ -313,7 +324,7 @@
 
 ## 子元素声明式通道
 
-除 `options` JSON 外，可用 `<oas-option>` 子元素声明式书写选项（对齐原生 `<select><option>` 心智：默认插槽文本为 label，属性对齐 `options` 字段——`value` / `disabled` / `group` 分组标题）。`options` 属性*显式设置时优先*，未设置时解析子元素收敛到同一渲染路径（虚拟滚动 / 分组 / 搜索等能力完全一致）。子元素增删、属性与文本变化会自动重渲染（MutationObserver）。
+除 `options` JSON 外，可用 `<oas-option>` 子元素声明式书写选项（对齐原生 `<select><option>` 心智：默认插槽文本为 label，属性对齐 `options` 字段——`value` / `disabled` / `group` 分组标题 / `icon` 选项图标）。`options` 属性*显式设置时优先*，未设置时解析子元素收敛到同一渲染路径（虚拟滚动 / 分组 / 搜索等能力完全一致）。子元素增删、属性与文本变化会自动重渲染（MutationObserver）。
 
 <DemoBlock title="子元素声明式（对齐原生 select 心智）">
   <oas-space size="small" direction="vertical">
@@ -733,7 +744,7 @@ onMounted(() => {
 | `multiple` | 多选 | `boolean` | — |
 | `name` | 表单字段名（原生 FormData 提交的 key；多选时作为同名多条 entry 的 key；无 name 浏览器自动不提交） | `string` | — |
 | `open` | 受控展开：属性在场=展开、移除=收起；宿主手势只派 oas-open-change 通知（组件不强制写回） | `boolean \| string` | `false` |
-| `options` | 选项，JSON 数组 `[{ label, value, disabled?, group? }]` | `Option[] \| string` | `[]` |
+| `options` | 选项，JSON 数组 `[{ label, value, disabled?, group?, icon? }]`（group 为分组标题，icon 为 @oas-ui/icons 图标名） | `Option[] \| string` | `[]` |
 | `placeholder` | 占位提示 | — | — |
 | `placement` | 下拉方向：`auto`（默认，下方优先自动翻转）/ `top` / `bottom`（强制不翻转） | `string` | `auto` |
 | `readonly` | 只读：可聚焦可复制、不弹层、值不可改（隐藏清空与移除按钮） | `boolean` | — |
@@ -808,6 +819,7 @@ onMounted(() => {
 | --- | --- | --- | --- |
 | `disabled` | 禁用该项（不可选） | — | — |
 | `group` | 分组标题（可选）：同组连续渲染组标题（不可选），组内选项缩进 | — | — |
+| `icon` | 选项图标（@oas-ui/icons 图标名）：选项行、单选触发器与多选 chip 统一渲染；未注册时回退纯文本并 devWarn 一次 | — | — |
 | `value` | 选项值（子元素声明式通道的数据载体字段） | — | — |
 
 #### 插槽

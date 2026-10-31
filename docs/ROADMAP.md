@@ -2,6 +2,13 @@
 
 版本遵循 SemVer。v1.0.0 为首个正式发布。每个版本 = 一个可独立交付/可试用的里程碑。
 
+## 未发布（issue 反馈批）
+
+| 范围 | 内容 | 状态 |
+| --- | --- | --- |
+| **`oas-select` 选项图标（`Option.icon`）** | `options` JSON 与 `<oas-option icon>` 支持 `@oas-ui/icons` 图标名；下拉项、单选触发器、多选 chip 统一渲染 `icon + label`；图标 `aria-hidden`，未知图标回退纯文本 + 一次 devWarn；富内容走现有 `oas-option-render` / option 模板逃生口；单测 + Chromium qa-regression + zh/en 文档/API/暗色/console 收口 | ✅ 已完成（未发布） |
+| **文档站 issue 反馈收口** | 组件侧栏数据抽离 `sidebar.ts` 单一数据源，中文/英文侧栏与总览页保留语义分组、组内按 slug 字母排序，`sidebar-order.test.ts` 防漂移，llms 生成器同步；英文浏览器首访 `/` / `/index.html` 自动进 `/en/` 并保留 query/hash，深链不做语言猜测，显式 `oas-lang` 仍全站生效、自动猜测不持久化；首页 docs-site e2e 收口 | ✅ 已完成（未发布） |
+
 ## 未发布（包体止损批）
 
 | 范围 | 内容 | 状态 |

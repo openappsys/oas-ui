@@ -4,6 +4,15 @@
 
 ## [未发布]
 
+### 新增
+
+- **`oas-select` 选项图标（`Option.icon`）**：`options` JSON 与 `<oas-option icon>` 子元素通道支持 `@oas-ui/icons` 图标名，下拉项、单选触发器与多选 chip 统一渲染 `icon + label`；图标装饰性（`aria-hidden`），未注册时回退纯文本并仅 devWarn 一次。富内容仍走 `oas-option-render` / `template[slot="option"]`。
+
+### 文档
+
+- **组件导航排序**：组件侧栏与总览页保留语义分组，组内按 URL slug 字母排序；新增 `sidebar-order.test.ts` 防漂移，llms 生成器改从抽离的 `sidebar.ts` 单一数据源取分组。
+- **Landing 页语言适配**：英文浏览器首访 `/` 自动进入 `/en/` 并保留 query/hash；中文深链不做浏览器语言猜测；显式切换仍写入 `oas-lang`，自动猜测不持久化。
+
 ### 性能
 
 - **`@oas-ui/i18n` 默认语言包按家族切片**：内置 zh-CN 拆成 9 个家族切片，按需引入的组件链只注册本族默认文案（消费形态为 `import { registerDefaultMessages } from '@oas-ui/i18n/registry'` + `import { <family>Messages } from '@oas-ui/i18n/slices/<family>'` 后显式调用）；公共入口 `@oas-ui/i18n` 行为不变。实测按需链 gzip（dist 静态闭包口径）：form 28.9→22.4 KB、table 68.8→64.3 KB、gantt 66.7→61.1 KB、json-viewer 34.0→28.4 KB、diff-viewer 32.7→27.1 KB，helper 链（table/advanced、range、detail、glass-fluid）不变。注意 `getLocale().messages` 语义变为「已加载的切片」，需要全集用整包入口或 `import zhCN from '@oas-ui/i18n/zh-CN'`。

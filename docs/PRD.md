@@ -5,6 +5,29 @@
 
 ---
 
+## 未发布：issue 反馈批（Select 选项图标 + 文档站导航）
+
+### 功能定义
+
+响应社区 issue 的三点反馈：① `oas-select` 增加数据驱动的选项图标字段，覆盖国家 / 语言 / 状态选择这类高频场景；② 文档站组件侧栏与总览页在保留语义分组的前提下按组件 slug 组内字母排序；③ 英文浏览器首访 landing page 自动进入英文站，中文深链不做语言猜测。
+
+### 详细需求
+
+- **`Option.icon`**：`options` JSON 与 `<oas-option icon>` 子元素通道同名；值为 `@oas-ui/icons` 注册表图标名，选项行、单选触发器与多选 chip 统一渲染 `icon + label`；图标 `aria-hidden`，可访问名称仍来自 `label`；未注册图标回退纯文本并仅 devWarn 一次；富内容仍走 `oas-option-render` / `template[slot="option"]`。
+- **组件导航排序**：sidebar 数据抽离为 `.vitepress/sidebar.ts` 单一数据源；每组内按 `/components/<slug>` 字母排序，英文侧栏由同一顺序派生；总览页同步；`sidebar-order.test.ts` 防漂移；llms 生成器同步读取抽离数据源。
+- **Landing 语言适配**：无显式偏好且 `navigator.language` 以 `en` 开头时，仅 `/` / `/index.html` 跳 `/en/` 并保留 query/hash；自动猜测不写 `oas-lang`；显式 `oas-lang` 偏好仍全站生效；`/en/` 显式路径永不回弹。
+
+### 非目标
+
+不做任意 HTML / URL 图标字段；不把浏览器语言猜测扩展到深链；不扁平化语义分组；不改变现有自定义 option/tag 渲染事件语义。
+
+### 验收
+
+- `oas-select` 182 条单测、select qa-regression 19 条 Chromium 用例、首页 docs-site 17 条用例、sidebar-order 3 条用例通过。
+- `api:check` / `llms:check` / build / typecheck / 中英 demo 与暗色、RTL、console 零告警验证通过。
+
+---
+
 ## 未发布：i18n 默认语言包按家族切片（包体止损）
 
 ### 背景

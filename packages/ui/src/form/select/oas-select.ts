@@ -10,6 +10,8 @@ import { resolveDirection } from '../../shared/direction.js'
 import { measureMaxTextWidth } from '../../shared/measure-text.js'
 import { cssVarPx } from '../../shared/css-var.js'
 import { TOUCH_TARGET_CSS } from '../../shared/touch-target.js'
+import { lookupIcon } from '@oas-ui/icons/runtime'
+import { hintUnresolvedIcon } from '../../shared/icon-hint.js'
 import { OASFormElement } from '@oas-ui/core'
 
 export interface Option {
@@ -18,6 +20,8 @@ export interface Option {
   disabled?: boolean
   /** 选项分组标题：同一组连续渲染组标题（不可选），组内选项缩进 */
   group?: string
+  /** 选项前置图标名：走 @oas-ui/icons 查表协议；未注册时回退纯文本并 devWarn 一次 */
+  icon?: string
 }
 
 /** size 尺寸档（对齐 oas-input：small/medium/large，控高走 --oas-control-height-* token） */
@@ -84,6 +88,17 @@ const OPTION_STYLE = `
 }
 .option[aria-selected='true'] .check {
   visibility: visible;
+}
+.option-icon {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  color: currentColor;
+}
+.option-icon svg {
+  display: block;
+  width: 1em;
+  height: 1em;
 }
 .option-label {
   flex: 1;
@@ -265,6 +280,17 @@ const STYLE = `
   text-align: start;
   /* 默认换行：标签放不下时换行、触发器自适应增高；折叠仅在显式设置 max-tag-count 时启用 */
 }
+.value-icon {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  color: currentColor;
+}
+.value-icon svg {
+  display: block;
+  width: 1em;
+  height: 1em;
+}
 :host([max-tag-count]) .value {
   flex-wrap: nowrap;
   /* max-tag-count 折叠模式：单行不换行、不出横向滚动条，放不下的标签折叠为 +N（见 collapseOverflowChips） */
@@ -288,11 +314,22 @@ const STYLE = `
   color: var(--oas-color-text-primary);
 }
 /* 超长标签在 chip 内省略，避免超出容器横向溢出（换行模式下单个标签无法再折行） */
-.chip > span:first-child {
+.chip > span:first-child:not(.chip-icon) {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   min-width: 0;
+}
+.chip-icon {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  color: currentColor;
+}
+.chip-icon svg {
+  display: block;
+  width: 1em;
+  height: 1em;
 }
 /* 自定义标签模板（template[slot="tag"]）渲染时：标签容器改为 flex 布局，子元素各自省略 */
 .chip .chip-label {
@@ -1294,6 +1331,23 @@ export class OASSelect extends OASFormElement {
     this.syncActive()
   }
 
+  /** Option.icon 渲染为装饰性 SVG；未注册图标提示一次并回退纯文本 */
+  private optionIconElement(icon: string | undefined, className: string): HTMLElement | null {
+    if (!icon) return null
+    const path = lookupIcon(icon)
+    if (!path) {
+      hintUnresolvedIcon(icon)
+      return null
+    }
+    const box = document.createElement('span')
+    box.className = className
+    box.setAttribute('aria-hidden', 'true')
+    box.innerHTML =
+      '<svg viewBox="0 0 16 16" width="1em" height="1em" aria-hidden="true" focusable="false" ' +
+      `fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">${path}</svg>`
+    return box
+  }
+
   /** 构建一个选项行（角色/aria/高亮/点击/自定义渲染），非虚拟与虚拟（vlist oas-item）两路共用 */
   private createOptionRow(option: Option, optionIdx: number, values: string[], container: HTMLElement): void {
     const row = document.createElement('div')
@@ -1308,13 +1362,15 @@ export class OASSelect extends OASFormElement {
     row.id = `opt-${optionIdx}` // aria-activedescendant 锚点（shadow 内 id 作用域隔离，无宿主冲突）
     row.setAttribute('data-index', String(optionIdx))
     if (optionIdx === this.activeIndex) row.classList.add('active')
+    const icon = this.optionIconElement(option.icon, 'option-icon')
     const label = document.createElement('span')
     label.className = 'option-label'
     this.fillOptionLabel(label, option)
     const check = document.createElement('span')
     check.className = 'check'
     check.textContent = '✓'
-    row.append(label, check)
+    if (icon) row.append(icon, label, check)
+    else row.append(label, check)
     row.addEventListener('click', () => {
       if (option.disabled) return
       if (this.blockedByLimit(option.value)) return
@@ -1641,6 +1697,8 @@ export class OASSelect extends OASFormElement {
     if (el.hasAttribute('disabled')) option.disabled = true
     const group = el.getAttribute('group')
     if (group) option.group = group
+    const icon = el.getAttribute('icon')
+    if (icon) option.icon = icon
     return option
   }
 
@@ -1667,7 +1725,7 @@ export class OASSelect extends OASFormElement {
       subtree: true,
       attributes: true,
       characterData: true,
-      attributeFilter: ['value', 'disabled', 'group', 'slot'],
+      attributeFilter: ['value', 'disabled', 'group', 'icon', 'slot'],
     })
     this.childObserver = observer
     this.onCleanup(() => {
@@ -1759,6 +1817,8 @@ export class OASSelect extends OASFormElement {
         const label = option?.label ?? v
         const chip = document.createElement('span')
         chip.className = 'chip'
+        const icon = this.optionIconElement(option?.icon, 'chip-icon')
+        if (icon) chip.append(icon)
         const labelEl = document.createElement('span')
         this.fillTagLabel(labelEl, v, label)
         chip.append(labelEl)
@@ -1785,7 +1845,10 @@ export class OASSelect extends OASFormElement {
     } else {
       const value = values[0] ?? ''
       const option = this._options.find((o) => o.value === value)
-      valueEl.textContent = option?.label ?? value
+      valueEl.innerHTML = ''
+      const icon = this.optionIconElement(option?.icon, 'value-icon')
+      if (icon) valueEl.append(icon)
+      valueEl.append(document.createTextNode(option?.label ?? value))
     }
   }
 
