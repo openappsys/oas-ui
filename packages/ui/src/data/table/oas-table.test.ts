@@ -221,7 +221,7 @@ describe('OASTable', () => {
 
   it('loading：显示加载占位行，不渲染数据行', () => {
     const el = mount({ loading: '' })
-    expect(el.shadowRoot!.querySelector('[part="loading-row"]')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('[part="loading-row"]').length).toBe(1)
     expect(el.shadowRoot!.textContent).toContain('加载中')
     expect(rows(el).length).toBe(0)
     // 表头仍保留
@@ -230,7 +230,7 @@ describe('OASTable', () => {
 
   it('loading 与空数据同时存在时优先显示加载态', () => {
     const el = mount({ loading: '', data: '[]' })
-    expect(el.shadowRoot!.querySelector('[part="loading-row"]')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('[part="loading-row"]').length).toBe(1)
     expect(el.shadowRoot!.textContent).not.toContain('暂无数据')
   })
 
@@ -481,7 +481,7 @@ describe('OASTable 虚拟滚动', () => {
       ]),
       data: BIG_DATA,
     })
-    expect(el.shadowRoot!.querySelector('[part="loading-row"]')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('[part="loading-row"]').length).toBe(1)
     expect(rows(el).length).toBe(0)
   })
 })
@@ -598,7 +598,7 @@ describe('OASTable 属性/attribute 声明式通道', () => {
     // 指纹命中但结构不完整（无 table-scroll）→ hydrate 返回 false → render 重建
     snap.shadowRoot!.innerHTML = '<meta data-oas-ssr="oas-table" data-oas-ssr-v="1"><span>broken</span>'
     document.body.appendChild(snap)
-    expect(snap.shadowRoot!.querySelector('.table-scroll')).not.toBeNull()
+    expect(snap.shadowRoot!.querySelectorAll('.table-scroll').length).toBe(1)
     expect(snap.shadowRoot!.querySelector('meta[data-oas-ssr]')).toBeNull()
     snap.setAttribute('columns', JSON.stringify([{ key: 'name', title: 'Name' }]))
     snap.setAttribute('data', JSON.stringify([{ name: 'Alice' }]))
@@ -645,7 +645,6 @@ describe('OASTable 展示增强（stripe/bordered/summary/expand/tree）', () =>
       'row-key': 'name',
     })
     const row = el.shadowRoot!.querySelector('[part="summary-row"]')!
-    expect(row).not.toBeNull()
     expect(row.className).toContain('summary')
     // 30 + 25 + 35 = 90；首列放标签
     expect(row.textContent).toContain('90')
@@ -769,7 +768,6 @@ describe('OASTable 展示增强（stripe/bordered/summary/expand/tree）', () =>
     expect(detail).toEqual({ key: '张三', expanded: true })
     expect(el.getAttribute('expanded')).toBe('张三')
     const expandRow = el.shadowRoot!.querySelector('[part="expand-row"]')
-    expect(expandRow).not.toBeNull()
     expect(expandRow!.textContent).toContain('技术骨干')
 
     // 再次点击收起
@@ -904,7 +902,6 @@ describe('OASTable 行内编辑（inline editing）', () => {
     const td = cells(el)[0]!
     td.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }))
     const input = td.querySelector<HTMLInputElement>('input.cell-editor')
-    expect(input).not.toBeNull()
     expect(input!.value).toBe('张三')
     expect(td.getAttribute('data-editing')).toBe('true')
     expect(td.classList.contains('editing')).toBe(true)
@@ -934,7 +931,6 @@ describe('OASTable 行内编辑（inline editing）', () => {
     const td = cells(el)[0]!
     td.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }))
     const input = td.querySelector<HTMLInputElement>('input.cell-editor')!
-    expect(input).not.toBeNull()
     input.value = '李四'
     input.dispatchEvent(new Event('input', { bubbles: true }))
     el.setAttribute('aria-label', '用户表格')
@@ -979,7 +975,7 @@ describe('OASTable 行内编辑（inline editing）', () => {
     // 对照：双击同表纯文本可编辑格照常进入编辑（扩展排除未误伤普通双击）
     const plainTd = cells(el).find((td) => td.getAttribute('data-col') === 'age')!
     plainTd.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }))
-    expect(plainTd.querySelector('input.cell-editor'), '纯文本格双击应照常进入编辑').not.toBeNull()
+    expect(plainTd.querySelectorAll('input.cell-editor').length, '纯文本格双击应照常进入编辑').toBe(1)
   })
 
   it('非 editable 列双击不进入编辑', () => {
@@ -1005,7 +1001,6 @@ describe('OASTable 行内编辑（inline editing）', () => {
     const el = editMount()
     cells(el)[3]!.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }))
     const select = cellSelect(el, 0, 3)
-    expect(select).not.toBeNull()
     expect([...select!.options].map((o) => o.textContent)).toEqual(['前端工程师', '后端工程师'])
     expect(select!.value).toBe('frontend')
   })
@@ -1080,7 +1075,7 @@ describe('OASTable 行内编辑（inline editing）', () => {
     input.value = 'bad'
     input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
     expect(el.getAttribute('data')).not.toContain('"bad"')
-    expect(td.querySelector('input.cell-editor')).not.toBeNull() // 仍编辑中
+    expect(td.querySelectorAll('input.cell-editor').length).toBe(1) // 仍编辑中
     expect(td.getAttribute('data-invalid')).toBe('true')
     expect(td.querySelector('.edit-error')!.textContent).toBe('名称不合法')
   })
@@ -1243,16 +1238,14 @@ describe('OASTable 行内编辑（inline editing）', () => {
     const tr = rows(el)[0]!
     const actionTd = tr.querySelectorAll('td')[4] as HTMLTableCellElement
     const editBtn = actionTd.querySelector<HTMLButtonElement>('.action-btn')
-    expect(editBtn).not.toBeNull()
     expect(editBtn!.textContent).toBe('编辑')
     editBtn!.click()
     // 进入编辑：首个可编辑列出现输入框
     const input = tr.querySelector<HTMLInputElement>('input.cell-editor')
-    expect(input).not.toBeNull()
     expect(input!.value).toBe('张三')
     // 操作列切换为 保存/取消
-    expect(actionTd.querySelector('.action-btn.save')).not.toBeNull()
-    expect(actionTd.querySelector('.action-btn.danger')).not.toBeNull()
+    expect(actionTd.querySelectorAll('.action-btn.save').length).toBe(1)
+    expect(actionTd.querySelectorAll('.action-btn.danger').length).toBe(1)
     input!.value = '王五'
     actionTd.querySelector<HTMLButtonElement>('.action-btn.save')!.click()
     expect(cells(el)[0]!.textContent).toBe('王五')
@@ -1285,7 +1278,7 @@ describe('OASTable 行内编辑（inline editing）', () => {
   it('键盘：聚焦可编辑单元格按 Enter / F2 进入编辑', () => {
     const el = editMount()
     cells(el)[0]!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
-    expect(cellInput(el, 0, 0)).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('input.cell-editor').length).toBe(1)
     cells(el)[0]!.dispatchEvent(new KeyboardEvent('keydown', { key: 'F2', bubbles: true }))
     // F2 已处于编辑态，值保持
     expect(cellInput(el, 0, 0)!.value).toBe('张三')
@@ -1294,7 +1287,7 @@ describe('OASTable 行内编辑（inline editing）', () => {
   it('外部重渲染（data 变化）时自动取消编辑，不留孤儿编辑器', () => {
     const el = editMount()
     cells(el)[0]!.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }))
-    expect(el.shadowRoot!.querySelector('input.cell-editor')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('input.cell-editor').length).toBe(1)
     el.setAttribute('data', EDIT_DATA)
     expect(el.shadowRoot!.querySelector('input.cell-editor')).toBeNull()
     expect(el.shadowRoot!.querySelector('[data-editing="true"]')).toBeNull()
@@ -1305,7 +1298,7 @@ describe('OASTable 行内编辑（inline editing）', () => {
     // 虚拟模式 tbody 首行是占位行，取首个数据行（tr.row）的首个 td
     const td = rows(el)[0]!.querySelector('td')!
     td.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }))
-    expect(td.querySelector('input.cell-editor')).not.toBeNull()
+    expect(td.querySelectorAll('input.cell-editor').length).toBe(1)
   })
 
   it('可编辑单元格：渲染铅笔图标（editable-cell 类 + aria-hidden + svg），不可编辑列无图标', () => {
@@ -1313,9 +1306,8 @@ describe('OASTable 行内编辑（inline editing）', () => {
     const td = cells(el)[0]!
     expect(td.classList.contains('editable-cell')).toBe(true)
     const icon = td.querySelector<HTMLElement>('.cell-edit-icon')
-    expect(icon).not.toBeNull()
     expect(icon!.getAttribute('aria-hidden')).toBe('true')
-    expect(icon!.querySelector('svg')).not.toBeNull()
+    expect(icon!.querySelectorAll('svg').length).toBe(1)
     // 不可编辑列：无图标与可编辑类
     const plain = cells(el)[2]!
     expect(plain.querySelector('.cell-edit-icon')).toBeNull()
@@ -1348,16 +1340,16 @@ describe('OASTable 行内编辑（inline editing）', () => {
   it('编辑中单元格（td.editing）不挂铅笔图标；退出编辑后恢复', () => {
     const el = editMount()
     const td = cells(el)[0]!
-    expect(td.querySelector('.cell-edit-icon')).not.toBeNull()
+    expect(td.querySelectorAll('.cell-edit-icon').length).toBe(1)
     td.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }))
     // 进入编辑：编辑器接管视觉，图标随内容清空移除
     expect(td.querySelector('.cell-edit-icon')).toBeNull()
-    expect(td.querySelector('input.cell-editor')).not.toBeNull()
+    expect(td.querySelectorAll('input.cell-editor').length).toBe(1)
     // Esc 退出：单元格恢复展示并重新挂图标
     cellInput(el, 0, 0)!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
     expect(td.querySelector('input.cell-editor')).toBeNull()
     expect(td.textContent).toBe('张三')
-    expect(td.querySelector('.cell-edit-icon')).not.toBeNull()
+    expect(td.querySelectorAll('.cell-edit-icon').length).toBe(1)
   })
 
   it('受控模式退出编辑后铅笔图标恢复（exitEdit 路径重挂）', () => {
@@ -1366,7 +1358,7 @@ describe('OASTable 行内编辑（inline editing）', () => {
     td.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }))
     expect(td.querySelector('.cell-edit-icon')).toBeNull()
     cellInput(el, 0, 0)!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
-    expect(td.querySelector('.cell-edit-icon')).not.toBeNull()
+    expect(td.querySelectorAll('.cell-edit-icon').length).toBe(1)
   })
 })
 
@@ -1587,7 +1579,6 @@ describe('OASTable 单元格渲染与 hidden（实测缺陷回归）', () => {
     const cells = r.querySelectorAll('td')
     // status 列（第 2 列）应含 span 元素而非纯文本
     const statusCell = cells[1]!
-    expect(statusCell.querySelector('span')).toBeTruthy()
     expect(statusCell.querySelector('span')!.textContent).toBe('[启用]')
     // 单元格挂载的是 span 元素（非单个纯文本节点）：firstChild 为元素
     expect(statusCell.firstChild!.nodeType).toBe(Node.ELEMENT_NODE)
@@ -1752,7 +1743,7 @@ describe('OASTable 多级表头（children）', () => {
     const check = el.shadowRoot!.querySelector('thead th.check-cell')!
     expect(check.getAttribute('rowspan')).toBe('2')
     // 数据行首列为选择列
-    expect(rows(el)[0]!.querySelector('td.check-cell')).not.toBeNull()
+    expect(rows(el)[0]!.querySelectorAll('td.check-cell').length).toBe(1)
   })
 })
 
@@ -1767,7 +1758,6 @@ describe('OASTable 分页（pagination）', () => {
     const el = mount({ columns: PAG_COLS, data: PAG_DATA, pagination: '', 'page-size': '5' })
     expect(rows(el).length).toBe(5)
     const pag = el.shadowRoot!.querySelector('.pagination oas-pagination')
-    expect(pag).not.toBeNull()
     expect(pag!.getAttribute('total')).toBe('12')
     expect(pag!.getAttribute('page-size')).toBe('5')
     expect(pag!.getAttribute('current')).toBe('1')
@@ -1876,7 +1866,7 @@ describe('OASTable 外部数据分页（total）', () => {
 
   it('外部 total=0（服务端空集）：渲染空态 + 分页器 total=0', () => {
     const el = mount({ columns: T_COLS, data: '[]', pagination: '', 'page-size': '5', total: '0' })
-    expect(el.shadowRoot!.querySelector('tbody .empty')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('tbody .empty').length).toBe(1)
     expect(el.shadowRoot!.querySelector('.pagination oas-pagination')!.getAttribute('total')).toBe('0')
   })
 
@@ -1955,10 +1945,8 @@ describe('OASTable 列过滤（filter）', () => {
   it('#14 filterable 表头渲染过滤触发器，点击弹出选项并能应用', () => {
     const el = mount({ columns: FILTER_COLS, data: DATA })
     const btn = el.shadowRoot!.querySelector('th[data-key="name"] .filter-btn')!
-    expect(btn).not.toBeNull()
     ;(btn as HTMLElement).click()
     const panel = el.shadowRoot!.querySelector('.filter-panel')!
-    expect(panel).not.toBeNull()
     // 选项含张三/李四（列级 filters）
     expect([...panel.querySelectorAll('.filter-option')].map((o) => o.textContent)).toEqual(['张三', '李四'])
     let detail: unknown
@@ -2006,7 +1994,7 @@ describe('OASTable 合并单元格（merge）', () => {
     expect(dept0.getAttribute('rowspan')).toBe('2')
     expect(trs[1]!.querySelector('td[data-col="dept"]')).toBeNull()
     // 第三行（市场）非连续，td 保留
-    expect(trs[2]!.querySelector('td[data-col="dept"]')).not.toBeNull()
+    expect(trs[2]!.querySelectorAll('td[data-col="dept"]').length).toBe(1)
     expect(trs[1]!.querySelector('td[data-col="name"]')!.textContent).toBe('李四')
   })
 
@@ -2016,7 +2004,7 @@ describe('OASTable 合并单元格（merge）', () => {
     expect(trs[0]!.querySelector('td[data-col="dept"]')!.getAttribute('rowspan')).toBe('2')
     expect(trs[1]!.querySelector('td[data-col="dept"]')).toBeNull()
     // 选择列仍在每行显示
-    expect(trs[1]!.querySelector('td.check-cell')).not.toBeNull()
+    expect(trs[1]!.querySelectorAll('td.check-cell').length).toBe(1)
   })
 
   it('#15 不同值不合并', () => {
@@ -2029,8 +2017,8 @@ describe('OASTable 合并单元格（merge）', () => {
     })
     const trs = rows(el)
     // 不同值不合并：两行各保留 dept td
-    expect(trs[0]!.querySelector('td[data-col="dept"]')).not.toBeNull()
-    expect(trs[1]!.querySelector('td[data-col="dept"]')).not.toBeNull()
+    expect(trs[0]!.querySelectorAll('td[data-col="dept"]').length).toBe(1)
+    expect(trs[1]!.querySelectorAll('td[data-col="dept"]').length).toBe(1)
   })
 })
 
@@ -2163,7 +2151,6 @@ describe('OASTable 子元素声明式通道（oas-table-column）', () => {
     document.body.appendChild(el)
     // 首行 name 单元格应为被水合的 <button>（含 row.name 值）
     const btn = rows(el)[0]!.querySelector('td[data-col="name"] button.cell-btn')!
-    expect(btn).not.toBeNull()
     expect(btn.textContent).toBe('张三')
   })
 
@@ -2186,10 +2173,10 @@ describe('OASTable 子元素声明式通道（oas-table-column）', () => {
       '<oas-table-column key="name" title="姓名" sortable><template data-role="header"><span class="hd"><i>★</i> 姓名</span></template></oas-table-column>'
     document.body.appendChild(el)
     const th = el.shadowRoot!.querySelector('th[data-key="name"]')!
-    expect(th.querySelector('span.hd')).not.toBeNull()
+    expect(th.querySelectorAll('span.hd').length).toBe(1)
     expect(th.querySelector('span.hd')!.textContent).toBe('★ 姓名')
     // 自定义列头下排序图标仍需追加（自动排序可用）
-    expect(th.querySelector('.sort-icon')).not.toBeNull()
+    expect(th.querySelectorAll('.sort-icon').length).toBe(1)
     // 单元格不应用 header 模板（仍为普通文本）
     expect(rows(el)[0]!.querySelector('td[data-col="name"]')!.textContent).toBe('张三')
   })
@@ -2202,7 +2189,7 @@ describe('OASTable 子元素声明式通道（oas-table-column）', () => {
     el.columns = [{ key: 'name', title: 'x', headerTemplate: tpl }]
     document.body.appendChild(el)
     const th = el.shadowRoot!.querySelector('th[data-key="name"]')!
-    expect(th.querySelector('b')).not.toBeNull()
+    expect(th.querySelectorAll('b').length).toBe(1)
   })
 })
 
@@ -2236,7 +2223,6 @@ describe('OASTable 行选择单选（checkable="radio"）', () => {
   it('radio 档：行渲染 radio、表头无全选框但保留空白选择列头（列对齐）', () => {
     const el = mountRadio()
     const headerCheck = el.shadowRoot!.querySelector('thead th.check-cell')!
-    expect(headerCheck).not.toBeNull()
     expect(headerCheck.querySelector('input')).toBeNull()
     const rs = radios(el)
     expect(rs.length).toBe(3)
@@ -2511,7 +2497,7 @@ describe('OASTable 受控合并（spanMethod property）', () => {
     el.setAttribute('row-height', '40')
     el.setAttribute('data', BIG_DATA)
     for (const tr of rows(el)) {
-      expect(tr.querySelector('td[data-col="name"]')).not.toBeNull()
+      expect(tr.querySelectorAll('td[data-col="name"]').length).toBe(1)
     }
   })
 })
@@ -2697,7 +2683,7 @@ describe('OASTable 虚拟滚动 + 展开行超高防重叠', () => {
       expanded: '张三',
       'row-key': 'name',
     })
-    expect(el.shadowRoot!.querySelector('[part="expand-row"]')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('[part="expand-row"]').length).toBe(1)
     const style = el.shadowRoot!.querySelector('style')!.textContent!
     expect(style).toMatch(/\[data-virtual='true'\]\s+tr\.expand-row td\s*\{[^}]*overflow:\s*hidden/)
   })
@@ -2757,8 +2743,8 @@ describe('OASTable 触屏命中区与触屏列重排（pointer: coarse）', () =
     const ths = [...el.shadowRoot!.querySelectorAll<HTMLElement>('thead th[data-key]')]
     expect(ths.length).toBe(3)
     for (const th of ths) {
-      expect(th.querySelector('.col-move.up')).not.toBeNull()
-      expect(th.querySelector('.col-move.down')).not.toBeNull()
+      expect(th.querySelectorAll('.col-move.up').length).toBe(1)
+      expect(th.querySelectorAll('.col-move.down').length).toBe(1)
     }
     // PC 态不可见（默认 display:none），coarse 媒体块恢复 inline-flex
     const style = el.shadowRoot!.querySelector('style')!.textContent!
@@ -2787,8 +2773,8 @@ describe('OASTable 触屏命中区与触屏列重排（pointer: coarse）', () =
     const ths = [...el.shadowRoot!.querySelectorAll<HTMLElement>('thead th[data-key]')]
     expect(ths.length).toBe(3)
     for (const th of ths) {
-      expect(th.querySelector('.col-move.up')).not.toBeNull()
-      expect(th.querySelector('.col-move.down')).not.toBeNull()
+      expect(th.querySelectorAll('.col-move.up').length).toBe(1)
+      expect(th.querySelectorAll('.col-move.down').length).toBe(1)
       expect(th.getAttribute('draggable')).toBe('true')
     }
   })
@@ -2859,7 +2845,7 @@ describe('OASTable 触屏命中区与触屏列重排（pointer: coarse）', () =
   it('回归：light DOM 变动触发的重渲染（Vue hydration / 声明式列增删）后，重排按钮与 draggable 保持注入', async () => {
     const el = mount({ columns: MOVE_COLS, data: DATA })
     const th = () => el.shadowRoot!.querySelector<HTMLElement>('thead th[data-key="name"]')!
-    expect(th()!.querySelector('.col-move.down')).not.toBeNull()
+    expect(th()!.querySelectorAll('.col-move.down').length).toBe(1)
     expect(th()!.getAttribute('draggable')).toBe('true')
     // 模拟宿主动态增删声明式列（子元素声明式通道的 MutationObserver 重渲染路径）：
     // 该路径曾绕过 controller 通知直接 update，把注入的按钮/draggable 冲掉且不补注
@@ -2868,7 +2854,7 @@ describe('OASTable 触屏命中区与触屏列重排（pointer: coarse）', () =
     col.setAttribute('title', '邮箱')
     el.appendChild(col)
     await new Promise((r) => setTimeout(r, 0))
-    expect(th().querySelector('.col-move.down')).not.toBeNull()
+    expect(th().querySelectorAll('.col-move.down').length).toBe(1)
     expect(th().getAttribute('draggable')).toBe('true')
   })
 })
@@ -2917,7 +2903,7 @@ describe('OASTable show-header', () => {
     const el = mount({ 'show-header': 'false', height: '160', rowHeight: '40', columns: fixedCols })
     expect(headers(el).length).toBe(0)
     expect(el.shadowRoot!.querySelector('thead')!.children.length).toBe(0)
-    expect(rows(el).length).toBeGreaterThan(0)
+    expect(rows(el).length, '可视窗口覆盖 3 行数据（160/40 + buffer）').toBe(3)
     // 虚拟窗口行仍按固定列写入 sticky 偏移（数据行形态不受表头隐藏影响）
     const firstTd = rows(el)[0]!.querySelector('td[data-col="name"]')!
     expect(firstTd.getAttribute('data-fixed')).toBe('left')
@@ -2997,7 +2983,7 @@ describe('OASTable P2 批（table-layout / hover / filter-icon / indent-size / r
     it('缺省内置图标（现状回归：.filter-btn 内是 svg）', () => {
       const el = mount({ columns: FILTER_COLS })
       const btn = el.shadowRoot!.querySelector<HTMLButtonElement>('.filter-btn')!
-      expect(btn.querySelector('svg')).not.toBeNull()
+      expect(btn.querySelectorAll('svg').length).toBe(1)
     })
 
     it('template[slot="filter-icon"]：克隆进过滤触发按钮', async () => {
@@ -3020,7 +3006,7 @@ describe('OASTable P2 批（table-layout / hover / filter-icon / indent-size / r
       el.appendChild(icon)
       await new Promise((r) => setTimeout(r, 0))
       const btn = el.shadowRoot!.querySelector<HTMLButtonElement>('.filter-btn')!
-      expect(btn.querySelector('oas-icon')).not.toBeNull()
+      expect(btn.querySelectorAll('oas-icon').length).toBe(1)
     })
   })
 
@@ -3252,7 +3238,6 @@ describe('editComponent 组件编辑器（form 组件 ↔ table 编辑协议）'
     const td = cellOf(el, 0, 0)
     td.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }))
     const comp = td.querySelector<HTMLElement>('oas-input.cell-editor-component')
-    expect(comp, '组件编辑器挂载（而非原生 input.cell-editor）').not.toBeNull()
     expect(td.querySelector('input.cell-editor')).toBeNull()
     expect(comp!.getAttribute('value')).toBe('张三')
     // oas-input 现拥有真 value property：条件化注入走 property 通道（不再是「无 property」形态）
@@ -3334,7 +3319,6 @@ describe('editComponent 组件编辑器（form 组件 ↔ table 编辑协议）'
     const td = cellOf(el, 1, 0)
     td.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }))
     const comp = td.querySelector<HTMLElement>('mini-editor-x.cell-editor-component')
-    expect(comp, '宿主自定义组件挂载').not.toBeNull()
     // 双通道注入：attribute（attribute-only 契约）+ property（property 型 WC 无
     // attribute→property 同步，只写 attribute 会停在类型默认值）
     expect(comp!.getAttribute('value')).toBe('李四')
@@ -3356,7 +3340,6 @@ describe('editComponent 组件编辑器（form 组件 ↔ table 编辑协议）'
     const td = cellOf(el, 0, 0)
     td.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }))
     const comp = td.querySelector<HTMLElement>('attr-editor-x.cell-editor-component')
-    expect(comp, 'attribute-only 组件挂载').not.toBeNull()
     expect(comp!.getAttribute('value')).toBe('张三')
     // 无真 property 时注入不建 expando——否则读取第二级命中 expando 初值，attribute 新值被吞
     expect('value' in comp!).toBe(false)
@@ -3479,8 +3462,7 @@ describe('column-virtual 列窗口（窗口序列 / 滚动同步 / 前缀扣除 
   it('占位格不入网格导航矩阵：方向键不停在空白合并格（回归）', () => {
     const el = wideMount({ 'grid-navigation': '' })
     const ph = placeholders(el)[0]
-    expect(ph, '初始窗口下存在占位格').toBeTruthy()
-    expect(ph!.getAttribute('role')).toBe('gridcell')
+    expect(ph!.getAttribute('role'), '初始窗口下存在占位格').toBe('gridcell')
     expect(ph!.getAttribute('aria-colspan')).toBe(String(ph!.colSpan))
     // 矩阵行为断言：从窗口首列连续 ArrowRight，焦点永不落占位格、到窗口末列自然停住
     const wrap = el.shadowRoot!.querySelector('.table-scroll') as HTMLElement
@@ -3569,7 +3551,7 @@ describe('断开重连 onReconnect 重绑（core 重连架构接线）', () => {
     el.setAttribute('data', wideData(3, 20))
     document.body.appendChild(el)
     const obs = (el as unknown as { colResizeObs: ResizeObserver | null }).colResizeObs
-    expect(obs, 'column-virtual 挂载后 RO 实例在场').not.toBeNull()
+    expect(typeof obs!.observe, 'column-virtual 挂载后 RO 实例在场').toBe('function')
     if (!obs) return
     // happy-dom 的 ResizeObserver 是 stub 不触发回调——断言「断开 disconnect、重连 observe」
     // 的调用链即可锁定重挂路径（回调语义由 scroll 恢复用例与 e2e 覆盖）
@@ -3587,7 +3569,8 @@ describe('断开重连 onReconnect 重绑（core 重连架构接线）', () => {
     }) as typeof obs.disconnect
     const parent = el.parentElement!
     el.remove()
-    expect(disconnects, '断开时 RO disconnect（cleanup 摘除）').toBeGreaterThan(0)
+    // 此处统计的是 cleanup 内部 disconnect 调用次数，属实现细节，无稳定精确值；下界 1 即证明已摘除。
+    expect(disconnects, '断开时 RO disconnect（cleanup 摘除）').toBeGreaterThanOrEqual(1)
     const before = observes
     parent.appendChild(el)
     expect(observes, '重连后 observe 重挂（onReconnect→bind 的 ??= 复用实例重挂）').toBeGreaterThan(before)
@@ -3619,7 +3602,7 @@ describe('filter panel 关闭监听生命周期（监听跟面板走，不残留
     }
     const btn = el.shadowRoot!.querySelector('.filter-btn') as HTMLElement
     host.openFilterPanel({ key: 'name' }, btn)
-    expect(host.filterPanel, '面板已开').not.toBeNull()
+    expect(host.filterPanel?.classList.contains('filter-panel'), '面板已开').toBe(true)
     expect(host.filterPanelCloseBound, '开面板挂监听').toBe(true)
     // 外点关闭：监听工作（document click → closeFilterPanel → 摘监听）
     document.body.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }))

@@ -29,12 +29,17 @@ test('marquee 速度通道：测量退出 measuring、时长 = 内容宽 / speed
     const track = document
       .querySelector('oas-marquee[speed="96"]')!
       .shadowRoot!.querySelector<HTMLElement>('[part="track"]')!
+    const group = document
+      .querySelector('oas-marquee[speed="96"]')!
+      .shadowRoot!.querySelector<HTMLElement>('.group:not(.clone)')!
     return {
       shift: parseFloat(track.style.getPropertyValue('--oas-marquee-shift')),
       duration: parseFloat(track.style.getPropertyValue('--oas-marquee-duration')),
+      groupW: group.getBoundingClientRect().width,
     }
   })
-  expect(t.shift, '测得一组内容宽 > 0（无缝循环平移距离）').toBeGreaterThan(0)
+  // 精确契约：位移距离 === 源组实测内容宽（无缝循环平移的距离就是「一组内容」的宽）
+  expect(t.shift, '位移距离 = 源组实测内容宽').toBeCloseTo(t.groupW, 2)
   // 速度语义：像素/秒真实速度 → 时长 = 距离 / 速度（1% 容差）
   expect(Math.abs(t.duration - t.shift / 96), '时长 = 内容宽 ÷ 速度（96px/s 恒速）').toBeLessThan(
     Math.max(0.05, t.shift / 9600),
@@ -189,13 +194,16 @@ test('marquee 克隆份继承页面样式：页面 class 定尺寸的内容，�
   })
   expect(r.srcTile.w, '前置：源份由页面 class 定尺寸（64×64）').toBeCloseTo(64, 1)
   expect(r.srcTile.h, '前置：源份高度由页面 class 定').toBeCloseTo(64, 1)
-  expect(r.cloneTile, '克隆份存在').not.toBeNull()
-  // 缺陷回归：修前克隆份 0×0（丢页面样式）→ 右侧整片空白
+  // 缺陷回归：修前克隆份 0×0（丢页面样式）→ 右侧整片空白（下方三条尺寸/底色断言即覆盖其存在性）
   expect(r.cloneTile!.w, '克隆份宽必须同源份（修前 0 = 丢页面样式）').toBeCloseTo(r.srcTile.w, 1)
   expect(r.cloneTile!.h, '克隆份高必须同源份').toBeCloseTo(r.srcTile.h, 1)
   expect(r.cloneTileBg, '克隆份背景色（页面 class）必须同源份').toBe(r.srcTileBg)
-  // 克隆组宽度必须是源组宽的整数倍（repeat 份，份宽 === 位移距离）且足以覆盖视口（无右侧空白）
-  expect(r.cloneGroupW, 'cloneGroupW 必须 > 0（修前为 0）').toBeGreaterThan(0)
+  // 克隆组宽度必须是源组宽的整数倍（repeat 份，份宽 === 位移距离）且足以覆盖视口（无右侧空白）。
+  // 精确契约：6 个 64px + 16px 外边距的页内贴片 = 480px 内容宽，容器 600px 不足两屏 → 恰 2 份（修前为 0）
+  expect(r.cloneGroupW, '克隆组宽 = 源组宽 × 2 份（内容 480 < 容器 600 → ceil(600/480) = 2）').toBeCloseTo(
+    r.srcGroupW * 2,
+    1,
+  )
   expect(
     Math.abs(r.cloneGroupW / r.srcGroupW - Math.round(r.cloneGroupW / r.srcGroupW)),
     `克隆组宽 ${r.cloneGroupW} 应为源组宽 ${r.srcGroupW} 的整数倍`,
@@ -919,14 +927,17 @@ test('marquee reverse 运行时切换：切换帧位移不超常规帧阈值（�
       requestAnimationFrame(tick)
     })
   }, PROBE_KEY)
-  const { samples, starts } = await page.evaluate((key) => {
+  const { samples, starts, srcW } = await page.evaluate((key) => {
     const probe = (window as typeof window & Record<string, MqPageProbe>)[key]!
-    return probe.stop()
+    const stopped = probe.stop()
+    const group = probe.host.shadowRoot!.querySelector<HTMLElement>('.group:not(.clone)')!
+    return { ...stopped, srcW: group.getBoundingClientRect().width }
   }, PROBE_KEY)
   expect(marks.length, 'reverse 切换已触发（进度门控命中）').toBe(1)
   const mark = marks[0]!
   const shift = samples.find((s) => s.shift > 0)?.shift ?? 0
-  expect(shift, '位移距离已测量').toBeGreaterThan(0)
+  // 精确契约：位移距离 = 源组实测内容宽（内容由本用例句柄生成，宽度随字体渲染变化，故与实测宽比）
+  expect(shift, '位移距离 = 源组实测内容宽（测量写入）').toBeCloseTo(srcW, 1)
   // 1) 动画不重启：animationstart 只在初始发生 1 次；currentTime 无巨幅回退
   expect(starts, 'reverse 切换不得重启动画（animationstart 计数不变）').toBe(1)
   expect(mqRestartDrop(samples), 'currentTime 不得回退（重启特征）').toBeLessThanOrEqual(50)
@@ -935,7 +946,9 @@ test('marquee reverse 运行时切换：切换帧位移不超常规帧阈值（�
   const far = steps.filter((s) => !s.wrap && !s.near)
   const near = steps.filter((s) => !s.wrap && s.near)
   expect(far.length, '切换点前后各有足够采样帧').toBeGreaterThan(15)
-  expect(near.length, '切换点附近有采样帧').toBeGreaterThan(0)
+  // 采样帧数随风载/rAF 节奏变化，取不到精确值；下界 1 = 切换点 60ms 窗内至少采到一帧
+  // （为空则下方 worstToggle 恒 0，缺陷断言会假绿）
+  expect(near.length, '切换点附近有采样帧').toBeGreaterThanOrEqual(1)
   // 装置自检：常规帧位移 = 速度 100px/s × 帧时长（约 1.7px @60Hz），且切换前内容向左、切换后向右
   const medianStep = mqMedian(far.map((s) => Math.abs(s.dx)))
   expect(medianStep, `常规帧位移中位 ${medianStep.toFixed(2)}px 应贴合 100px/s（装置有效性自检）`).toBeGreaterThan(0.5)
@@ -945,7 +958,9 @@ test('marquee reverse 运行时切换：切换帧位移不超常规帧阈值（�
   // 高负载下采样窗可能落在切换点单侧（dt>60ms 的帧被过滤后 before/after 为空）：
   // 空数组中位数为 0，不能据此判方向错误；有样本才做方向断言，位移阈值仍由 near/far 检查兜底。
   if (before.length) expect(mqMedian(before), '切换前内容左移（正向）').toBeLessThan(0)
-  if (after.length) expect(mqMedian(after), '切换后内容右移（反向，证明方向真的翻了）').toBeGreaterThan(0)
+  // 单帧位移量随风载变化（速度 100px/s × 帧间隔；60Hz 约 1.7px/帧），取不到精确值；
+  // 下界 0.5px = 帧间隔 ≥5ms 时的最小可测位移，与上方 far 中位下界同口径
+  if (after.length) expect(mqMedian(after), '切换后内容右移（反向，证明方向真的翻了）').toBeGreaterThanOrEqual(0.5)
 
   // 2) 缺陷回归断言：切换帧位移不得超常规帧阈值（修前实测 -135.6px vs 常规 1.67px）
   const worstToggle = near.reduce((m, s) => Math.max(m, Math.abs(s.dx)), 0)
@@ -1068,12 +1083,16 @@ test('marquee orientation 运行时切换：重启补偿到同一位移（相位
     })
     const startsEnd = starts
     // 终态几何：纵向模式下位移距离必须 = 源内容高（按新轴重测的直接证据）
-    const groupH = host.shadowRoot!.querySelector<HTMLElement>('.group:not(.clone)')!.getBoundingClientRect().height
+    const srcGroup = host.shadowRoot!.querySelector<HTMLElement>('.group:not(.clone)')!
+    const groupH = srcGroup.getBoundingClientRect().height
+    // 纵向组盒高由 `.group{min-height:100%}` 撑满容器可视高（内容超出时溢出，组盒不再随之增长）
+    const hostH = host.clientHeight
     host.remove()
-    return { samples, mark, startsSettled, startsEnd, groupH }
+    return { samples, mark, startsSettled, startsEnd, groupH, hostH }
   })
 
-  expect(out.mark, 'orientation 切换已触发（相位门控命中）').toBeGreaterThan(0)
+  // 切换是否真的发生由下方 animation-name 由 x 变 y + 位移量纲变化断言（mark 未命中时 before 为空、
+  // 后续访问会直接抛错），不再单列一条「mark > 0」的存在性检查
   expect(out.startsSettled, '切轴后动画事件已落定（用于「无额外重启」对照）').toBeGreaterThanOrEqual(0)
   const pts = out.samples.filter((s): s is MqPhaseSample & { u: number } => s.u !== null)
   expect(pts.length, '采样帧数足够').toBeGreaterThan(30)
@@ -1083,7 +1102,8 @@ test('marquee orientation 运行时切换：重启补偿到同一位移（相位
   // 轴确实换了（否则本用例是空断言）
   expect(before.name, '切换前走横向关键帧').toBe('oas-marquee-x')
   expect(after.name, '切换后走纵向关键帧').toBe('oas-marquee-y')
-  expect(out.groupH, '纵向内容高 > 0').toBeGreaterThan(0)
+  // 精确契约：切轴后组盒高 = 容器可视高（`.group{min-height:100%}` 撑满；0 = 纵向测量塌陷）
+  expect(out.groupH, '纵向内容高 = 容器可视高（按新轴重测）').toBe(out.hostH)
   expect(out.groupH, '装置自检：纵向内容高 ≠ 横向内容宽（位移量纲不同 → 像素位移不可守恒）').not.toBeCloseTo(
     before.shift,
     0,
@@ -1117,7 +1137,9 @@ test('marquee orientation 运行时切换：重启补偿到同一位移（相位
   const far = steps.filter((s) => !s.near)
   const near = steps.filter((s) => s.near)
   expect(far.length, '切换点前后各有足够采样帧').toBeGreaterThan(30)
-  expect(near.length, '切换点附近有采样帧').toBeGreaterThan(0)
+  // 采样帧数随风载/rAF 节奏变化，取不到精确值；下界 1 = 切换点 120ms 窗内至少采到一帧
+  // （为空则下方 worst 恒 0，缺陷断言会假绿）
+  expect(near.length, '切换点附近有采样帧').toBeGreaterThanOrEqual(1)
   const medianPx = mqMedian(far.map((s) => s.px))
   expect(medianPx, `常规帧位移中位 ${medianPx.toFixed(2)}px 应贴合 100px/s（装置有效性自检）`).toBeGreaterThan(0.3)
   expect(medianPx).toBeLessThan(12)
@@ -1178,7 +1200,8 @@ test('marquee 克隆份 inert：视觉副本不进 Tab 序（真机 Tab 不落�
   expect(r.inertMissing, '每个克隆份包裹节点都必须带 inert（修前 0 个）').toBe(0)
   expect(r.inertAll, '克隆份 inert 全覆盖').toBe(true)
   expect(r.ariaHiddenAll, 'aria-hidden 语义保持（读屏仍不重复播报）').toBe(true)
-  expect(r.copyLinkCount, '装置自检：克隆份内确实含可聚焦链接（否则本用例是空断言）').toBeGreaterThan(0)
+  // 精确契约：每份克隆都是源内容的完整副本 → 链接总数 = 克隆份数 × 2（源内容 2 条链接）
+  expect(r.copyLinkCount, '每个克隆份各含 2 条源链接（否则 inert 断言是空转）').toBe(r.copies * 2)
   // inert 不改变布局：位移距离仍等于源组渲染宽（几何不变量不被 inert 破坏）
   expect(Math.abs(r.shift - r.srcGroupW), `位移距离 ${r.shift} 应仍等于源组宽 ${r.srcGroupW}`).toBeLessThanOrEqual(0.5)
 
@@ -1253,7 +1276,7 @@ test('marquee 克隆份 inert：视觉副本不进 Tab 序（真机 Tab 不落�
     )
   await page.mouse.move(4, 4)
   await expect.poll(playState, { message: '前置：未悬停时动画在跑' }).toBe('running')
-  const pt = await page.evaluate(() => {
+  const probe = await page.evaluate(() => {
     const host = document.querySelector('#hover-probe')!
     const track = host.shadowRoot!.querySelector<HTMLElement>('[part="track"]')!
     // 冻结几何：指针点可复现（不影响 CSS 的 animation-play-state 计算值）
@@ -1263,12 +1286,21 @@ test('marquee 克隆份 inert：视觉副本不进 Tab 序（真机 Tab 不落�
       const r = c.getBoundingClientRect()
       const x = (r.left + r.right) / 2
       const y = (r.top + r.bottom) / 2
-      if (x > hr.left + 2 && x < hr.right - 2 && y > hr.top + 1 && y < hr.bottom - 1) return { x, y }
+      if (x > hr.left + 2 && x < hr.right - 2 && y > hr.top + 1 && y < hr.bottom - 1)
+        return { x, y, box: { left: r.left, right: r.right, top: r.top, bottom: r.bottom } }
     }
     return null
   })
-  expect(pt, '装置自检：找到一个确实落在克隆份上的指针点（否则本条是空断言）').not.toBeNull()
-  await page.mouse.move(pt!.x, pt!.y)
+  // 装置自检（精确契约）：指针点必须落在该克隆份的盒内——否则悬停根本没打到克隆份，本条断言空转
+  expect(
+    probe !== null &&
+      probe.x >= probe.box.left &&
+      probe.x <= probe.box.right &&
+      probe.y >= probe.box.top &&
+      probe.y <= probe.box.bottom,
+    '装置自检：找到一个确实落在克隆份盒内的指针点（否则本条是空断言）',
+  ).toBe(true)
+  await page.mouse.move(probe!.x, probe!.y)
   await expect
     .poll(playState, { message: '指针落在 inert 克隆份上时宿主仍 :hover（pause-on-hover 照常暂停）' })
     .toBe('paused')
@@ -1321,6 +1353,7 @@ test('marquee 宿主重渲染健壮性：清空并重建 light DOM 后克隆份�
         srcNodes: srcNodes.length,
         totalHostNodes: host.childNodes.length,
         repeatFromGeom: Math.round(cln.getBoundingClientRect().width / src.getBoundingClientRect().width),
+        srcW: src.getBoundingClientRect().width,
         animName: getComputedStyle(trackEl()).animationName,
         shift: trackEl().style.getPropertyValue('--oas-marquee-shift'),
       }
@@ -1355,7 +1388,8 @@ test('marquee 宿主重渲染健壮性：清空并重建 light DOM 后克隆份�
   // 动画仍在跑
   expect(r.after.animName, '重渲染后动画仍在跑（animation-name 非 none）').not.toBe('none')
   expect(r.after.animName).toBe('oas-marquee-x')
-  expect(parseFloat(r.after.shift), '位移距离重测有效').toBeGreaterThan(0)
+  // 精确契约：重建后位移距离 = 重建后源组渲染宽（重测确实生效，不只是「非 0」）
+  expect(parseFloat(r.after.shift), '位移距离 = 重建后源组渲染宽（重测生效）').toBeCloseTo(r.after.srcW, 0)
 })
 
 // ===== max-loops：限定循环次数（播完定格末帧 + oas-finish）=====

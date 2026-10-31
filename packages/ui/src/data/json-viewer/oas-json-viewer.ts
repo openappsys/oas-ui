@@ -1,5 +1,7 @@
 import { OASElement } from '@oas-ui/core'
 import { devWarn } from '../../shared/dev-warn.js'
+// slot 模板双形态克隆（静态 HTML 在 template.content；Vue 等 CSR 直插元素 childNodes）
+import { cloneSlotContent } from '../../shared/slot-template.js'
 import {
   buildJsonTree,
   collectAncestorPaths,
@@ -889,7 +891,7 @@ export class OASJsonViewer extends OASElement {
         : this.querySelector<HTMLTemplateElement>('template[slot="toggle-collapsed"]')
       if (template) {
         twisty.setAttribute('data-custom', 'true')
-        twisty.appendChild(template.content.cloneNode(true))
+        twisty.appendChild(cloneSlotContent(template))
       }
     }
     el.appendChild(twisty)

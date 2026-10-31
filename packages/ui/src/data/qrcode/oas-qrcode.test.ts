@@ -37,7 +37,7 @@ describe('OASQRCode', () => {
     expect(svg.getAttribute('viewBox')).toBe('0 0 29 29')
     expect(svg.getAttribute('width')).toBe('128')
     expect(svg.getAttribute('height')).toBe('128')
-    expect(svg.querySelector('path')).not.toBeNull()
+    expect(svg.querySelectorAll('path').length).toBe(2)
   })
 
   it('size 属性控制宽高', () => {
@@ -68,7 +68,7 @@ describe('OASQRCode', () => {
     for (const ec of ['l', 'm', 'q', 'h']) {
       const el = mount({ value: 'HELLO WORLD', 'error-correction': ec })
       const svg = svgOf(el)
-      expect(svg.querySelector('path')).not.toBeNull()
+      expect(svg.querySelectorAll('path').length).toBe(2)
       paths.add(svg.querySelector('path')!.getAttribute('d')!)
       el.remove()
     }
@@ -107,7 +107,7 @@ describe('OASQRCode', () => {
     const svg = svgOf(el)
     el.setAttribute('value', 'bbbbbbbbbb')
     expect(svgOf(el)).toBe(svg)
-    expect(svg.querySelector('path')).not.toBeNull()
+    expect(svg.querySelectorAll('path').length).toBe(2)
   })
 
   describe('背景/前景/静区（dark 可扫性修复）', () => {
@@ -160,7 +160,7 @@ describe('OASQRCode', () => {
       expect(image.getAttribute('href')).toBe('https://oas-ui.dev/logo.png')
       // 默认 icon-size = size/5 = 128/5 ≈ 26 → 以 viewBox 模块计（v1 总 29 模块）
       const w = Number(image.getAttribute('width'))
-      expect(w).toBeGreaterThan(0)
+      expect(w).toBeCloseTo(5.89, 2) // size/5 = 25.6px → 29 模块 viewBox 下 5.89 模块
       expect(w).toBeLessThan(29 / 2)
     })
 
@@ -293,27 +293,24 @@ describe('OASQRCode 形状化 / 渐变 / 挖空（美化维度）', () => {
   it('dot-shape=dots：pattern 平铺圆点原型 + 合并路径填充，无 <use>（体积回落 square 量级）', () => {
     const svg = svgOf(mount({ value: VALUE, 'dot-shape': 'dots' }))
     const pattern = svg.querySelector('defs pattern#oas-qr-pat')!
-    expect(pattern).not.toBeNull()
-    expect(pattern.querySelector('circle')).not.toBeNull()
+    expect(pattern.querySelectorAll('circle').length).toBe(1)
     // 数据区 = 合并路径（run-length）+ pattern 填充；定位图形仍是独立 path（共 2 条）
     const paths = [...svg.querySelectorAll('path')]
     expect(paths).toHaveLength(2)
     const data = paths.find((p) => p.getAttribute('fill') === 'url(#oas-qr-pat)')!
-    expect(data).toBeTruthy()
     expect(data.getAttribute('shape-rendering')).toBeNull()
     expect(svg.querySelectorAll('use')).toHaveLength(0)
   })
 
   it('dot-shape=rounded：pattern 原型为圆角方块', () => {
     const rect = svgOf(mount({ value: VALUE, 'dot-shape': 'rounded' })).querySelector('defs pattern#oas-qr-pat rect')
-    expect(rect).not.toBeNull()
-    expect(rect!.getAttribute('rx')).toBeTruthy()
+    expect(rect!.getAttribute('rx')).toBe('0.35')
   })
 
   it('dot-shape 非法值静默回落 square（无 pattern、走合并路径）', () => {
     const svg = svgOf(mount({ value: VALUE, 'dot-shape': 'triangle' }))
     expect(svg.querySelector('defs pattern#oas-qr-pat')).toBeNull()
-    expect(svg.querySelector('path[shape-rendering="crispEdges"]')).not.toBeNull()
+    expect(svg.querySelectorAll('path[shape-rendering="crispEdges"]').length).toBe(2)
   })
 
   it('体积回归守卫：dots 总量 < square × 1.5（逐模块 <use> 时代约为 5 倍）', () => {
@@ -326,18 +323,16 @@ describe('OASQRCode 形状化 / 渐变 / 挖空（美化维度）', () => {
   it('渐变 + 形状化：gradient 转 userSpaceOnUse 跨整码映射，pattern 原型直接引用渐变', () => {
     const svg = svgOf(mount({ value: VALUE, 'dot-shape': 'dots', gradient: '["#0b6cff","#7c3aed"]' }))
     const grad = svg.querySelector('defs linearGradient#oas-qr-grad')!
-    expect(grad).not.toBeNull()
     expect(grad.getAttribute('gradientUnits')).toBe('userSpaceOnUse')
-    expect(svg.querySelector('defs pattern#oas-qr-pat circle[fill="url(#oas-qr-grad)"]')).not.toBeNull()
-    expect(svg.querySelector('path[fill="url(#oas-qr-pat)"]')).not.toBeNull()
+    expect(svg.querySelectorAll('defs pattern#oas-qr-pat circle[fill="url(#oas-qr-grad)"]').length).toBe(1)
+    expect(svg.querySelectorAll('path[fill="url(#oas-qr-pat)"]').length).toBe(1)
   })
 
   it('渐变 + square（缺省形状）：保持 objectBoundingBox（缺省路径渲染零变化）', () => {
     const svg = svgOf(mount({ value: VALUE, gradient: '["#0b6cff","#7c3aed"]' }))
     const grad = svg.querySelector('defs linearGradient#oas-qr-grad')!
-    expect(grad).not.toBeNull()
     expect(grad.getAttribute('gradientUnits')).toBeNull()
-    expect(svg.querySelector('path[fill="url(#oas-qr-grad)"]')).not.toBeNull()
+    expect(svg.querySelectorAll('path[fill="url(#oas-qr-grad)"]').length).toBe(2)
   })
 
   it('corner-shape=rounded：定位图形路径带弧线', () => {
@@ -347,8 +342,8 @@ describe('OASQRCode 形状化 / 渐变 / 挖空（美化维度）', () => {
 
   it('gradient 生效时覆盖 color：defs 出 linearGradient，模块填充引用它', () => {
     const svg = svgOf(mount({ value: VALUE, gradient: '["#0b6cff","#7c3aed"]', color: '#ff0000' }))
-    expect(svg.querySelector('defs linearGradient#oas-qr-grad')).not.toBeNull()
-    expect(svg.querySelector('path[fill="url(#oas-qr-grad)"]')).not.toBeNull()
+    expect(svg.querySelectorAll('defs linearGradient#oas-qr-grad').length).toBe(1)
+    expect(svg.querySelectorAll('path[fill="url(#oas-qr-grad)"]').length).toBe(2)
     expect(svg.querySelector('path[fill="#ff0000"]')).toBeNull()
   })
 
@@ -356,7 +351,7 @@ describe('OASQRCode 形状化 / 渐变 / 挖空（美化维度）', () => {
     for (const bad of ['not-json', '["#fff"]', '{"a":1}', '[]']) {
       const svg = svgOf(mount({ value: VALUE, gradient: bad, color: '#ff0000' }))
       expect(svg.querySelector('defs linearGradient')).toBeNull()
-      expect(svg.querySelector('path[fill="#ff0000"]')).not.toBeNull()
+      expect(svg.querySelectorAll('path[fill="#ff0000"]').length).toBe(2)
     }
   })
 
@@ -415,7 +410,7 @@ describe('OASQRCode 属性-方法撞名回归', () => {
       el.setAttribute('gradient-angle', '90')
       el.setAttribute('bg-color', '#f5f5f5')
     }).not.toThrow()
-    expect(svgOf(el).querySelector('defs linearGradient#oas-qr-grad')).not.toBeNull()
+    expect(svgOf(el).querySelectorAll('defs linearGradient#oas-qr-grad').length).toBe(1)
     expect(svgOf(el).querySelector('rect')!.getAttribute('fill')).toBe('#f5f5f5')
   })
 })

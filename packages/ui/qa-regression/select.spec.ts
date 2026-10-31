@@ -182,7 +182,6 @@ test('select 展开态 active 选项在暗色主题下文字/背景对比度 ≥
   await page.goto('/components/select.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-select')
   await page.evaluate(() => document.documentElement.classList.add('dark'))
-  await page.waitForTimeout(200)
   const sel = page.locator('oas-select').first()
   await sel.locator('[part="trigger"]').click()
   await page.waitForFunction(() => {
@@ -247,7 +246,10 @@ test('select virtual：1 万条选项仅渲染可视窗口，滚动后窗口平�
     vp.scrollTop = 4000
     vp.dispatchEvent(new Event('scroll'))
   })
-  await page.waitForTimeout(100)
+  // 虚拟窗口重建按帧节流：双 rAF 等重建落定（即断言读取的前置条件）
+  await page.evaluate(
+    () => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))),
+  )
   const after = await page.evaluate(() => {
     const s = document.querySelector('#select-virtual')!
     const vlist = s.shadowRoot!.querySelector('oas-virtual-list') as HTMLElement
@@ -641,4 +643,55 @@ test('select 多选无 name + required + 有选中：不误报 valueMissing（ch
   })
   expect(r.valid, '有选中（无 name）→ 校验通过').toBe(true)
   expect(r.emptyValid, '清空后 → valueMissing 生效').toBe(false)
+})
+
+// 回归：框架 CSR 挂载的 slot 模板（子节点直插 template 元素、content 为空）曾因只克隆
+// tpl.content 而整段空白——dev 演示站前后缀图标/自定义箭头/清空图标全丢（生产 SSR 快照
+// 子节点在 content 里所以看不出来）。这里主动造出 CSR 形态锁死回归。
+test('select slot 模板 CSR 直插形态：前后缀与自定义图标仍渲染', async ({ page }) => {
+  await page.goto('/components/select.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-select')
+  const r = await page.evaluate(async () => {
+    await customElements.whenDefined('oas-select')
+    const el = document.createElement('oas-select')
+    el.setAttribute('options', JSON.stringify([{ label: '苹果', value: 'apple' }]))
+    el.setAttribute('clearable', '')
+    el.setAttribute('value', 'apple')
+    const add = (slot: string, html: string) => {
+      const tpl = document.createElement('template')
+      tpl.setAttribute('slot', slot)
+      const holder = document.createElement('span')
+      holder.innerHTML = html
+      while (holder.firstChild) tpl.insertBefore(holder.firstChild, null)
+      el.appendChild(tpl)
+    }
+    add('prefix', '<span class="csr-prefix">📍</span>')
+    add('suffix', '<span class="csr-suffix">城市</span>')
+    add('suffix-icon', '<span class="csr-arrow">⌄</span>')
+    add('clear-icon', '<span class="csr-clear">✕</span>')
+    document.body.appendChild(el)
+    await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
+    const root = el.shadowRoot!
+    const tpl = el.querySelector<HTMLTemplateElement>('template[slot="prefix"]')!
+    return {
+      // 确认造出的是 CSR 形态（content 空、子节点在元素自身 childNodes）
+      contentNodes: tpl.content.childNodes.length,
+      childNodes: tpl.childNodes.length,
+      prefix: root.querySelector('.csr-prefix')?.textContent ?? null,
+      suffix: root.querySelector('.csr-suffix')?.textContent ?? null,
+      arrow: root.querySelector('.csr-arrow')?.textContent ?? null,
+      clear: root.querySelector('.csr-clear')?.textContent ?? null,
+      defaultChevronHidden: root.querySelector('.chevron')!.hasAttribute('hidden'),
+      // 非破坏性：宿主模板子节点保留
+      templateKept: tpl.childNodes.length === 1,
+    }
+  })
+  expect(r.contentNodes, '测试须造出 CSR 形态').toBe(0)
+  expect(r.childNodes).toBe(1)
+  expect(r.prefix).toBe('📍')
+  expect(r.suffix).toBe('城市')
+  expect(r.arrow).toBe('⌄')
+  expect(r.clear).toBe('✕')
+  expect(r.defaultChevronHidden).toBe(true)
+  expect(r.templateKept).toBe(true)
 })

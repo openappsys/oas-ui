@@ -1,4 +1,5 @@
 import { OASElement } from '@oas-ui/core'
+import { cloneSlotContent } from '../../shared/slot-template.js'
 import '../input/index.js'
 
 /** pair 预设的键值对行值 */
@@ -445,12 +446,13 @@ export class OASDynamicInput extends OASElement {
     row.className = 'row'
     row.setAttribute('part', 'row')
 
-    // 行内容：template[slot="row"] 克隆优先，缺省回落预设（input 单框 / pair 双框）
+    // 行内容：template[slot="row"] 克隆优先，缺省回落预设（input 单框 / pair 双框）；
+    // 克隆走共享工具，兼容静态 HTML（content）与框架 CSR 直插（元素 childNodes）双形态
     const tpl = this.querySelector<HTMLTemplateElement>('template[slot="row"]')
     const content = document.createElement('div')
     content.className = 'row-content'
     if (tpl instanceof HTMLTemplateElement) {
-      content.appendChild(tpl.content.cloneNode(true))
+      content.appendChild(cloneSlotContent(tpl))
     } else if (this.isPair()) {
       const keyInput = document.createElement('oas-input')
       keyInput.setAttribute('part', 'row-key')

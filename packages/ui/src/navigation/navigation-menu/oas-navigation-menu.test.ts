@@ -147,7 +147,7 @@ describe('OASNavigationMenu', () => {
 
   it('顶级触发器带下拉箭头 chevron（part=chevron），叶子无', () => {
     const el = mount()
-    expect(topItems(el)[0]!.querySelector('[part="chevron"]')).not.toBeNull()
+    expect(topItems(el)[0]!.querySelectorAll('[part="chevron"]').length).toBe(1)
     expect(topItems(el)[2]!.querySelector('[part="chevron"]')).toBeNull()
   })
 
@@ -156,15 +156,14 @@ describe('OASNavigationMenu', () => {
     topItems(el)[0]!.click()
     expect(isOpen(el)).toBe(true)
     const g = grid(el)
-    expect(g).not.toBeNull()
     // columns 默认 2 → 网格列数变量
     expect(g!.style.getPropertyValue('--nav-columns')).toBe('2')
     const cards = panelItems(el).filter((li) => li.querySelector('[part="card-link"]'))
     expect(cards.length).toBe(2)
     expect(cards[0]!.textContent).toContain('组件')
     expect(cards[0]!.textContent).toContain('30+ 组件')
-    expect(cards[0]!.querySelector('.icon svg')).not.toBeNull()
-    expect(cards[0]!.querySelector('a[href="/components"]')).not.toBeNull()
+    expect(cards[0]!.querySelectorAll('.icon svg').length).toBe(1)
+    expect(cards[0]!.querySelectorAll('a[href="/components"]').length).toBe(1)
   })
 
   it('iconColor：面板链接卡图标固定颜色（svg 外层 stroke + 内置 path 的 currentColor 替换）；缺省 currentColor 不回归', () => {
@@ -216,7 +215,7 @@ describe('OASNavigationMenu', () => {
   it('面板内容统一渲染在 viewport 容器内（所有顶级项共用同一面板）', () => {
     const el = mount({ 'delay-duration': '0' })
     topItems(el)[0]!.click()
-    expect(panel(el).closest('[part="viewport"]')).not.toBeNull()
+    expect(panel(el).closest('[part="viewport"]')).toBe(viewport(el))
     // 切换打开项 → 同一 viewport 内面板内容替换
     topItems(el)[1]!.click()
     expect(isOpen(el)).toBe(true)
@@ -398,7 +397,6 @@ describe('OASNavigationMenu', () => {
   it('Indicator 指示条存在，打开时 data-state=open', () => {
     const el = mount({ 'delay-duration': '0' })
     const ind = el.shadowRoot!.querySelector<HTMLElement>('[part="indicator"]')!
-    expect(ind).not.toBeNull()
     expect(ind.getAttribute('data-state')).toBe('closed')
     topItems(el)[0]!.click()
     expect(ind.getAttribute('data-state')).toBe('open')
@@ -419,7 +417,6 @@ describe('OASNavigationMenu', () => {
     const el = mount({ 'delay-duration': '0' })
     topItems(el)[0]!.click()
     const section = el.shadowRoot!.querySelector<HTMLElement>('[part="section"]')!
-    expect(section).not.toBeNull()
     expect(section.textContent).toContain('更多')
     const links = [...section.querySelectorAll<HTMLElement>('[part="section-links"] a')]
     expect(links.map((a) => a.getAttribute('href'))).toEqual(['/blog', '/community'])
@@ -471,7 +468,6 @@ describe('OASNavigationMenu', () => {
   it('backdrop 属性：打开时显示遮罩，点击遮罩关闭', () => {
     const el = mount({ backdrop: '', 'delay-duration': '0' })
     const bd = el.shadowRoot!.querySelector<HTMLElement>('[part="backdrop"]')!
-    expect(bd).not.toBeNull()
     topItems(el)[0]!.click()
     expect(bd.classList.contains('open')).toBe(true)
     bd.click()
@@ -489,7 +485,7 @@ describe('OASNavigationMenu', () => {
   it('keep-mounted：关闭时面板 DOM 保留（供爬虫索引）；默认关闭清空面板', () => {
     const kept = mount({ 'keep-mounted': '', 'delay-duration': '0' })
     topItems(kept)[0]!.click()
-    expect(panelItems(kept).length).toBeGreaterThan(0)
+    expect(panelItems(kept).length, '产品面板渲染 2 张链接卡').toBe(2)
     topItems(kept)[0]!.click()
     expect(isOpen(kept)).toBe(false)
     expect(panel(kept).textContent).toContain('组件') // DOM 保留
@@ -504,7 +500,7 @@ describe('OASNavigationMenu', () => {
   it('弹出层箭头 arrow：默认存在；arrow="false" 隐藏', () => {
     const el = mount({ 'delay-duration': '0' })
     topItems(el)[0]!.click()
-    expect(el.shadowRoot!.querySelector('[part="arrow"]')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('[part="arrow"]').length).toBe(1)
     const hidden = mount({ arrow: 'false', 'delay-duration': '0' })
     topItems(hidden)[0]!.click()
     const ar = hidden.shadowRoot!.querySelector<HTMLElement>('[part="arrow"]')!
@@ -913,7 +909,6 @@ describe('Sub 二级级联', () => {
     const el = mount({ items: SUB_ITEMS, 'delay-duration': '0' })
     topItems(el)[0]!.click()
     const trig = el.shadowRoot!.querySelector<HTMLElement>('[part="sub-trigger"]')!
-    expect(trig).not.toBeNull()
     expect(trig.textContent).toContain('学习中心')
     expect(trig.getAttribute('aria-expanded')).toBe('false')
   })
@@ -987,7 +982,6 @@ describe('panel-footer 插槽', () => {
     const el = mount({ 'delay-duration': '0' })
     topItems(el)[0]!.click()
     const footer = el.shadowRoot!.querySelector<HTMLElement>('[part="panel-footer"]')!
-    expect(footer).not.toBeNull()
     expect(footer.hidden).toBe(true)
 
     const withFooter = mount({ 'delay-duration': '0' })
@@ -1000,7 +994,7 @@ describe('panel-footer 插槽', () => {
     topItems(withFooter)[0]!.click()
     const footer2 = withFooter.shadowRoot!.querySelector<HTMLElement>('[part="panel-footer"]')!
     expect(footer2.hidden).toBe(false)
-    expect(footer2.querySelector('slot')).not.toBeNull()
+    expect(footer2.querySelectorAll('slot').length).toBe(1)
     // 插槽投影的营销内容在 light DOM（shadow 容器只负责承接 slot）
     expect(withFooter.querySelector('[slot="panel-footer"]')!.textContent).toContain('立即开始')
   })
@@ -1041,8 +1035,8 @@ describe('子元素声明式通道', () => {
     expect(cards.length).toBe(2)
     expect(cards[0]!.textContent).toContain('组件')
     expect(cards[0]!.textContent).toContain('30+ 组件')
-    expect(cards[0]!.querySelector('.icon svg')).not.toBeNull()
-    expect(cards[0]!.querySelector('a[href="/components"]')).not.toBeNull()
+    expect(cards[0]!.querySelectorAll('.icon svg').length).toBe(1)
+    expect(cards[0]!.querySelectorAll('a[href="/components"]').length).toBe(1)
   })
 
   it('icon-color 属性映射：子元素声明式通道面板链接卡图标固定颜色，缺省 currentColor 不回归', () => {
@@ -1086,7 +1080,6 @@ describe('子元素声明式通道', () => {
     )
     topItems(el)[0]!.click()
     const section = el.shadowRoot!.querySelector<HTMLElement>('[part="section"]')!
-    expect(section).not.toBeNull()
     expect(section.textContent).toContain('更多')
     const links = [...section.querySelectorAll<HTMLElement>('[part="section-links"] a')]
     expect(links.map((a) => a.getAttribute('href'))).toEqual(['/blog', '/community'])
@@ -1105,7 +1098,6 @@ describe('子元素声明式通道', () => {
     )
     topItems(el)[0]!.click()
     const trig = el.shadowRoot!.querySelector<HTMLElement>('[part="sub-trigger"]')!
-    expect(trig).not.toBeNull()
     expect(trig.textContent).toContain('学习中心')
     trig.click()
     const sp = el.shadowRoot!.querySelector<HTMLElement>('[part="sub-panel"]')!
@@ -1129,8 +1121,8 @@ describe('子元素声明式通道', () => {
     topItems(el)[0]!.click()
     const cards = panelItems(el).filter((li) => li.querySelector('[part="card-link"]'))
     expect(cards.length).toBe(2)
-    expect(cards[0]!.querySelector('a[href="/components"]')).not.toBeNull()
-    expect(cards[1]!.querySelector('a[href="/docs"]')).not.toBeNull()
+    expect(cards[0]!.querySelectorAll('a[href="/components"]').length).toBe(1)
+    expect(cards[1]!.querySelectorAll('a[href="/docs"]').length).toBe(1)
   })
 
   it('子元素变化（MutationObserver）动态重渲染：增删与属性更新', async () => {
@@ -1243,7 +1235,6 @@ describe('OASNavigationMenu 顶级溢出收纳（移动端窄屏）', () => {
     ;(items[0] as HTMLElement).click()
     expect(isOpen(el)).toBe(true)
     expect(overflowPanel(el).hidden).toBe(true)
-    expect(grid(el)).not.toBeNull()
     expect(grid(el)!.textContent).toContain('主题')
     // 被收纳的隐藏触发器不驱动指示条（指示条复位关闭，而非定位到 offset 0）
     const indicator = el.shadowRoot!.querySelector<HTMLElement>('[part="indicator"]')!
@@ -1334,7 +1325,6 @@ describe('OASNavigationMenu 顶级溢出收纳（移动端窄屏）', () => {
     }
     vi.stubGlobal('ResizeObserver', FakeRO as unknown as typeof ResizeObserver)
     const el = mount()
-    expect(lastRO).not.toBeNull()
     expect(lastRO!.observed).toContain(el)
     mockNarrowLayout(el)
     lastRO!.cb()
@@ -1427,7 +1417,6 @@ describe('OASNavigationMenu 浮层 hidden→visible 尺寸自愈', () => {
     // 浮层转为可见：面板拿到真实尺寸、宿主尺寸 0→非 0 → RO 回调按真实尺寸补写（自愈）
     Object.defineProperty(p, 'scrollWidth', { value: 320, configurable: true })
     Object.defineProperty(p, 'scrollHeight', { value: 180, configurable: true })
-    expect(roRef).not.toBeNull()
     roRef!.cb()
     expect(vp.style.getPropertyValue('--vp-w')).toBe('320px')
     expect(vp.style.getPropertyValue('--vp-h')).toBe('180px')
@@ -1514,7 +1503,7 @@ describe('断开重连 onReconnect 重绑（core 重连架构接线）', () => {
     el.remove()
     parent.appendChild(el)
     document.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, composed: true }))
-    expect(pointerCalls, '重连后 document pointerdown 监听恢复（handleDocPointer 被调）').toBeGreaterThan(0)
+    expect(pointerCalls, '重连后 document pointerdown 监听恢复（handleDocPointer 被调一次）').toBe(1)
     // keydown 与 pointerdown 同在 bindDocListeners 一并重挂（同引用幂等）
     expect(typeof host.handleDocumentKey, 'handleDocumentKey 类字段在场').toBe('function')
   })
@@ -1528,7 +1517,7 @@ describe('onReconnect childObserver 重建（重连后子项变化监听不失�
     parent.appendChild(el)
     // 重连后 childObserver 应重建（cleanup 断开置 null → onReconnect 的 null 守卫重建）
     const host = el as unknown as { childObserver: MutationObserver | null }
-    expect(host.childObserver, '重连后 childObserver 重建').not.toBeNull()
+    expect(typeof host.childObserver!.observe, '重连后 childObserver 重建').toBe('function')
   })
 })
 

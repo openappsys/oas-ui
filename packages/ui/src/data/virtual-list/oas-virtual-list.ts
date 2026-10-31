@@ -1,6 +1,8 @@
 import { OASElement } from '@oas-ui/core'
 import { HeightCache, computeDynamicWindow } from './dynamic-height.js'
 import { parseJsonArray } from '../../shared/json-array.js'
+// slot 模板双形态克隆（静态 HTML 在 template.content；Vue 等 CSR 直插元素 childNodes）
+import { cloneSlotContent } from '../../shared/slot-template.js'
 
 export interface VirtualWindow {
   start: number
@@ -573,7 +575,7 @@ export class OASVirtualList extends OASElement {
         el.style.height = `${ih}px`
       }
       if (tpl) {
-        el.appendChild(tpl.content.cloneNode(true))
+        el.appendChild(cloneSlotContent(tpl))
         this.emit('item', { index: i, item, element: el })
       } else {
         // 先派发 oas-item 让宿主（如 oas-tree）填充内容；宿主没填才回退 String(item)，

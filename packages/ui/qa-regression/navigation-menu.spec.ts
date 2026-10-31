@@ -76,14 +76,12 @@ test('navigation-menu 箭头几何对准触发器中心（水平+垂直）且营
       { sel, vertical },
     )
   const horiz = await probe('#nav-arrow', false)
-  expect(horiz).not.toBeNull()
+  // （probe 返回 null 的情形由下方 horiz!.arrowC 解引用自然失败覆盖，冗余存在性检查已删）
   expect(Math.abs(horiz!.arrowC - horiz!.trigC), '水平箭头中心对准触发器中心（±2px）').toBeLessThanOrEqual(2)
   expect(horiz!.arrowInVp, '箭头不越出面板').toBe(true)
   const vert = await probe('oas-navigation-menu[orientation="vertical"]', true)
-  expect(vert).not.toBeNull()
   expect(Math.abs(vert!.arrowC - vert!.trigC), '垂直箭头中心对准触发器中心（±2px）').toBeLessThanOrEqual(2)
   const footer = await probe('#nav-footer', false)
-  expect(footer).not.toBeNull()
   expect(footer!.pfOverflow, '营销位底缘不超出面板（≤0px 溢出）').toBeLessThanOrEqual(0)
 })
 
@@ -389,18 +387,21 @@ test('navigation-menu 浮层 hidden→visible：面板尺寸自愈，与可见�
   // A 必须拿到与 B 相同的真实尺寸（改前 A 的尺寸状态留空 → RED）
   expect(r.a.vpW, 'A 视口宽度状态应写入真实值（非空）').toMatch(/^\d+(\.\d+)?px$/)
   expect(r.a.vpH, 'A 视口高度状态应写入真实值（非空）').toMatch(/^\d+(\.\d+)?px$/)
-  expect(parseFloat(r.a.vpW), 'A 视口宽度状态 > 0').toBeGreaterThan(0)
-  expect(parseFloat(r.a.vpH), 'A 视口高度状态 > 0').toBeGreaterThan(0)
-  expect(r.a.viewportW, 'A 视口宽 > 0').toBeGreaterThan(0)
-  expect(r.a.viewportH, 'A 视口高 > 0').toBeGreaterThan(0)
+  // 下界理由：viewport/面板宽高随文档站视口尺寸变化（无固定像素值）；>0 锁定「尺寸状态写入的是
+  // 真实测量值而非留空/0」（本用例的回归点，A/B 一致性由下方 ±1px 断言覆盖）
+  expect(parseFloat(r.a.vpW), 'A 视口宽度状态 > 0').toBeGreaterThanOrEqual(1)
+  expect(parseFloat(r.a.vpH), 'A 视口高度状态 > 0').toBeGreaterThanOrEqual(1)
+  expect(r.a.viewportW, 'A 视口宽 > 0').toBeGreaterThanOrEqual(1)
+  expect(r.a.viewportH, 'A 视口高 > 0').toBeGreaterThanOrEqual(1)
   expect(Math.abs(r.a.viewportW - r.b.viewportW), 'A 视口宽应与 B 一致（±1px）').toBeLessThanOrEqual(1)
   expect(Math.abs(r.a.viewportH - r.b.viewportH), 'A 视口高应与 B 一致（±1px）').toBeLessThanOrEqual(1)
-  expect(r.a.panelW, 'A 面板宽 > 0').toBeGreaterThan(0)
+  expect(r.a.panelW, 'A 面板宽 > 0').toBeGreaterThanOrEqual(1)
   expect(Math.abs(r.a.panelW - r.b.panelW), 'A 面板宽应与 B 一致（±1px）').toBeLessThanOrEqual(1)
   // 内容可见可交互
   expect(r.a.open, 'A 面板应处于打开态').toBe(true)
   expect(r.a.gridVisible, 'A 面板内容应可见').toBe(true)
-  expect(r.a.links, 'A 面板应有可交互链接').toBeGreaterThan(0)
+  // 下界理由：面板内可交互链接数由该 demo 的 items 结构决定（≥1 即「有链接可交互」契约）
+  expect(r.a.links, 'A 面板应有可交互链接').toBeGreaterThanOrEqual(1)
   expect(r.a.selected, 'A 面板叶子项点击应派发 oas-select').not.toBe('')
 })
 
@@ -452,8 +453,9 @@ test('navigation-menu 移动端：窄屏顶级溢出收纳进「···」弹层�
     })
     expect(r.collapsed, '150px 窄容器应触发顶级溢出收纳').toBe(true)
     if (r.collapsed) {
-      expect(r.collapsedCount, '应有尾部顶级项被收纳').toBeGreaterThan(0)
-      expect(r.mirrorCount, '「···」弹层应有镜像项').toBeGreaterThan(0)
+      // 下界理由：150px 窄容器下被收纳的尾部项数与弹层镜像项数随容器宽与 items 结构变化（≥1 即收纳生效）
+      expect(r.collapsedCount, '应有尾部顶级项被收纳').toBeGreaterThanOrEqual(1)
+      expect(r.mirrorCount, '「···」弹层应有镜像项').toBeGreaterThanOrEqual(1)
       expect(r.panelOpensViewport, '弹层 children 项点击应打开大面板').toBe(true)
       expect(r.vpMaxWidthCss, 'viewport 应有 100vw 窄屏宽度兜底').toBe(true)
     }
@@ -776,7 +778,7 @@ test('navigation-menu en 面板卡片列：文字不越出列外、相邻列不�
         pairs++
       }
     }
-    expect(pairs, `${label}：面板应有至少一行两列（否则断言空转）`).toBeGreaterThan(0)
+    expect(pairs, `${label}：面板应有至少一行两列（否则断言空转，列对齐无从转换）`).toBeGreaterThanOrEqual(1)
     for (const row of rows) {
       const last = row[row.length - 1]!
       expect(last.box.right, `${label}：末列不应越出面板内容盒（内边距与首列对称）`).toBeLessThanOrEqual(
@@ -972,7 +974,7 @@ const assertSubInvariants = (g: SubGeom, label: string): void => {
       pairs++
     }
   }
-  expect(pairs, `${label}：应有至少一行两列（否则断言空转）`).toBeGreaterThan(0)
+  expect(pairs, `${label}：应有至少一行两列（否则断言空转，列对齐无从转换）`).toBeGreaterThanOrEqual(1)
   for (const row of rows) {
     const last = row[row.length - 1]!
     expect(last.box.right, `${label}：末列不应越出 .sub-links 盒（右内边距与左对称）`).toBeLessThanOrEqual(

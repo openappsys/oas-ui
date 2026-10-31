@@ -77,7 +77,6 @@ describe('OASCalendar events 排期条目通道', () => {
     const d = day(el, '2026-08-15')
     d.dispatchEvent(new PointerEvent('pointerover', { bubbles: true }))
     const panel = el.shadowRoot!.querySelector('.ev-panel')
-    expect(panel, '浮层出现').not.toBeNull()
     const rows = panel!.querySelectorAll('.ev-row')
     expect(rows.length).toBe(2)
     expect(rows[0]!.textContent).toContain('发布')
@@ -96,7 +95,7 @@ describe('OASCalendar events 排期条目通道', () => {
     expect(day(el, '2026-08-17').querySelector('.ev-marks')).toBeNull()
     day(el, '2026-08-17').dispatchEvent(new PointerEvent('pointerover', { bubbles: true }))
     expect(el.shadowRoot!.querySelector('.ev-panel')).toBeNull()
-    expect(cellRenderCount).toBeGreaterThan(0)
+    expect(cellRenderCount, '两次渲染 × 42 日格各派发一次').toBe(84)
   })
 })
 
@@ -201,7 +200,10 @@ describe('OASCalendar', () => {
     expect(el.shadowRoot!.querySelector('[part="title"]')!.textContent).toBe('2027年')
     el.shadowRoot!.querySelectorAll('.month-cell')[0]!.dispatchEvent(new MouseEvent('click'))
     expect(el.shadowRoot!.querySelector('[part="title"]')!.textContent).toBe('2027年1月')
-    expect(el.shadowRoot!.querySelectorAll('.day').length).toBeGreaterThan(0)
+    expect(
+      el.shadowRoot!.querySelectorAll('.day').length,
+      '月视图日格数 35（5 周）或 42（6 周）',
+    ).toBeGreaterThanOrEqual(35)
   })
 
   it('键盘：方向键在网格内移动焦点，Enter 选中派发事件', () => {
@@ -244,7 +246,7 @@ describe('OASCalendar', () => {
     el.appendChild(tpl)
     document.body.appendChild(el)
     const btn = day(el, '2026-08-15')
-    expect(btn.querySelector('.dot')).not.toBeNull()
+    expect(btn.querySelectorAll('.dot').length).toBe(1)
     expect(btn.querySelector('[data-cell-date]')!.textContent).toBe('15')
   })
 
@@ -267,7 +269,7 @@ describe('OASCalendar', () => {
     })
     document.body.appendChild(el)
     expect(day(el, '2026-08-01').classList.contains('holiday')).toBe(true)
-    expect(day(el, '2026-08-15').querySelector('.cell-dot')).not.toBeNull()
+    expect(day(el, '2026-08-15').querySelectorAll('.cell-dot').length).toBe(1)
     expect(day(el, '2026-08-02').classList.contains('holiday')).toBe(false)
     // 42 格全部派发（含前后月补位）
     expect(marked.length).toBeGreaterThanOrEqual(42)
@@ -289,7 +291,10 @@ describe('OASCalendar', () => {
     expect(el.getAttribute('mode')).toBe('month')
     // 回到月视图：标题 + 日网格，选中 7 月 1 日
     expect(el.shadowRoot!.querySelector('[part="title"]')!.textContent).toBe('2026年7月')
-    expect(el.shadowRoot!.querySelectorAll('.day').length).toBeGreaterThan(0)
+    expect(
+      el.shadowRoot!.querySelectorAll('.day').length,
+      '月视图日格数 35（5 周）或 42（6 周）',
+    ).toBeGreaterThanOrEqual(35)
     expect(day(el, '2026-07-01').classList.contains('selected')).toBe(true)
   })
 
@@ -350,13 +355,13 @@ describe('OASCalendar', () => {
     const labels = [...el.shadowRoot!.querySelectorAll('.weekday')].map((n) => n.textContent)
     expect(labels).toEqual(['日', '一', '二', '三', '四', '五', '六'])
     // 周日起始：首格为 2026-07-26（周日）
-    expect(day(el, '2026-07-26')).toBeTruthy()
+    expect(day(el, '2026-07-26').getAttribute('data-date')).toBe('2026-07-26')
     expect(day(el, '2026-07-26').classList.contains('outside')).toBe(true)
     // 切周三起始：周头轮转 + 首格 07-29
     el.setAttribute('first-day-of-week', '3')
     const labels3 = [...el.shadowRoot!.querySelectorAll('.weekday')].map((n) => n.textContent)
     expect(labels3).toEqual(['三', '四', '五', '六', '日', '一', '二'])
-    expect(day(el, '2026-07-29')).toBeTruthy()
+    expect(day(el, '2026-07-29').getAttribute('data-date')).toBe('2026-07-29')
   })
 
   it('键盘 Home/End 跳周首尾，PageUp/PageDown 翻月、Shift 翻年（含面板翻页事件）', () => {
@@ -515,7 +520,10 @@ describe('OASCalendar', () => {
     // 选 6 月 → 回日视图
     el.shadowRoot!.querySelectorAll('.month-cell')[5]!.dispatchEvent(new MouseEvent('click'))
     expect(el.shadowRoot!.querySelector('[part="title"]')!.textContent).toBe('2024年6月')
-    expect(el.shadowRoot!.querySelectorAll('.day').length).toBeGreaterThan(0)
+    expect(
+      el.shadowRoot!.querySelectorAll('.day').length,
+      '月视图日格数 35（5 周）或 42（6 周）',
+    ).toBeGreaterThanOrEqual(35)
   })
 
   it('year 模式标题钻取 decade 跳远年，选年后保持模式、选月提交', () => {
@@ -699,11 +707,11 @@ describe('P2 批：header 插槽 / locale / format', () => {
 
   it('缺省内置导航头（prev/title/next/today 在位，slot 容器存在）', () => {
     const el = mount({ value: '2026-08-09' })
-    expect(el.shadowRoot!.querySelector('[part="prev"]')).toBeTruthy()
-    expect(el.shadowRoot!.querySelector('[part="title"]')).toBeTruthy()
-    expect(el.shadowRoot!.querySelector('[part="next"]')).toBeTruthy()
-    expect(el.shadowRoot!.querySelector('[part="today"]')).toBeTruthy()
-    expect(el.shadowRoot!.querySelector('slot[name="header"]')).toBeTruthy()
+    expect(el.shadowRoot!.querySelectorAll('[part="prev"]').length).toBe(1)
+    expect(el.shadowRoot!.querySelectorAll('[part="title"]').length).toBe(1)
+    expect(el.shadowRoot!.querySelectorAll('[part="next"]').length).toBe(1)
+    expect(el.shadowRoot!.querySelectorAll('[part="today"]').length).toBe(1)
+    expect(el.shadowRoot!.querySelectorAll('slot[name="header"]').length).toBe(1)
   })
 
   it('header 插槽：宿主内容分发进头部，宿主内容可交互', () => {
@@ -864,8 +872,8 @@ describe('D24 months 多月份并排面板', () => {
     expect(title).toContain('2026年8月')
     expect(title).toContain('2026年9月')
     // 两个月的日期都在网格中
-    expect(day(el, '2026-08-15')).toBeTruthy()
-    expect(day(el, '2026-09-15')).toBeTruthy()
+    expect(day(el, '2026-08-15').getAttribute('data-date')).toBe('2026-08-15')
+    expect(day(el, '2026-09-15').getAttribute('data-date')).toBe('2026-09-15')
   })
 
   it('months=2 翻页联动：下一月/上一月整体前进/后退两个月', () => {
@@ -875,11 +883,11 @@ describe('D24 months 多月份并排面板', () => {
       pages.push(toISO(((e as CustomEvent).detail as { date: Date }).date))
     })
     el.shadowRoot!.querySelector<HTMLElement>('[part="next"]')!.click()
-    expect(day(el, '2026-10-15')).toBeTruthy()
-    expect(day(el, '2026-11-15')).toBeTruthy()
+    expect(day(el, '2026-10-15').getAttribute('data-date')).toBe('2026-10-15')
+    expect(day(el, '2026-11-15').getAttribute('data-date')).toBe('2026-11-15')
     expect(pages).toEqual(['2026-10-01'])
     el.shadowRoot!.querySelector<HTMLElement>('[part="prev"]')!.click()
-    expect(day(el, '2026-08-15')).toBeTruthy()
+    expect(day(el, '2026-08-15').getAttribute('data-date')).toBe('2026-08-15')
     expect(pages).toEqual(['2026-10-01', '2026-08-01'])
   })
 

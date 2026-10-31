@@ -44,7 +44,7 @@ describe('OASBreadcrumb', () => {
     expect(el.shadowRoot!.querySelectorAll('.item').length).toBe(3)
     expect(el.shadowRoot!.querySelectorAll('.sep').length).toBe(2)
     expect(el.shadowRoot!.querySelectorAll('[part="link"]').length).toBe(2)
-    expect(el.shadowRoot!.querySelector('[part="current"]')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('[part="current"]').length).toBe(1)
   })
 
   it('宿主 aria-label 优先命名内部 navigation landmark', () => {
@@ -68,7 +68,6 @@ describe('OASBreadcrumb', () => {
     // 视觉序列：首页 / … / 反馈 / 面包屑（4 个 .item，省略占一个）
     expect(root.querySelectorAll('.item').length).toBe(4)
     const btn = root.querySelector<HTMLButtonElement>('.ellipsis-btn')!
-    expect(btn).not.toBeNull()
     expect(btn.textContent).toBe('…')
     expect(btn.getAttribute('aria-haspopup')).toBe('menu')
     expect(btn.getAttribute('aria-expanded')).toBe('false')
@@ -135,7 +134,7 @@ describe('OASBreadcrumb', () => {
   it('max-items 非法值回退默认 4', () => {
     const el = mountWith({ items: LONG_ITEMS, collapsed: '', 'max-items': 'abc' })
     const root = el.shadowRoot!
-    expect(root.querySelector('.ellipsis-btn')).not.toBeNull()
+    expect(root.querySelectorAll('.ellipsis-btn').length).toBe(1)
     expect(root.querySelector('.ellipsis-dropdown')!.querySelectorAll('a').length).toBe(3)
   })
 
@@ -156,7 +155,6 @@ describe('OASBreadcrumb', () => {
     })
     const root = el.shadowRoot!
     const item = root.querySelector<HTMLElement>('.ellipsis-item[aria-disabled="true"]')!
-    expect(item).not.toBeNull()
     expect(item.textContent).toBe('无链接')
   })
 
@@ -173,9 +171,8 @@ describe('OASBreadcrumb', () => {
     const root = el.shadowRoot!
     const link = root.querySelector<HTMLAnchorElement>('nav > .item > a[part="link"]')!
     const icon = link.querySelector<SVGElement>('[part="icon"]')
-    expect(icon).not.toBeNull()
     expect(icon!.getAttribute('aria-hidden')).toBe('true')
-    expect(icon!.querySelector('path')).not.toBeNull()
+    expect(icon!.querySelectorAll('path').length).toBe(1)
     // 文本在图标之后
     expect(link.lastElementChild!.classList.contains('item-text')).toBe(true)
     // 无效图标名 → 不渲染
@@ -190,7 +187,7 @@ describe('OASBreadcrumb', () => {
     const root = el.shadowRoot!
     const seps = root.querySelectorAll('.sep')
     expect(seps.length).toBe(2)
-    expect(seps[0]!.querySelector('svg')).not.toBeNull()
+    expect(seps[0]!.querySelectorAll('svg').length).toBe(1)
     expect(seps[0]!.textContent).toBe('')
     // 非图标名 → 文本
     const el2 = mountWith({ items: ITEMS, separator: '›' })
@@ -210,7 +207,7 @@ describe('OASBreadcrumb', () => {
     })
     const root = el.shadowRoot!
     const seps = root.querySelectorAll('.sep')
-    expect(seps[0]!.querySelector('svg')).not.toBeNull() // 首项 item.separator=heart → 图标
+    expect(seps[0]!.querySelectorAll('svg').length).toBe(1) // 首项 item.separator=heart → 图标
     expect(seps[1]!.textContent).toBe('/') // 第二项未配置 → 全局
   })
 
@@ -254,7 +251,6 @@ describe('OASBreadcrumb', () => {
     })
     const root = el.shadowRoot!
     const d = root.querySelector<HTMLElement>('[part="disabled"]')!
-    expect(d).not.toBeNull()
     expect(d.getAttribute('aria-disabled')).toBe('true')
     expect(d.textContent).toBe('禁用')
     let fired = 0
@@ -308,7 +304,6 @@ describe('OASBreadcrumb', () => {
     })
     const root = el.shadowRoot!
     const btn = root.querySelector<HTMLButtonElement>('button.dropdown-trigger')!
-    expect(btn).not.toBeNull()
     expect(btn.getAttribute('aria-haspopup')).toBe('menu')
     expect(btn.getAttribute('aria-expanded')).toBe('false')
     expect(btn.textContent).toContain('更多')
@@ -448,7 +443,6 @@ describe('OASBreadcrumb', () => {
     })
     const root = el.shadowRoot!
     const link = root.querySelector<HTMLAnchorElement>('a[part="link"][aria-current="page"]')!
-    expect(link).not.toBeNull()
     expect(link.getAttribute('href')).toContain('/breadcrumb')
     // 无 active-last 时末项仍是 current span
     const el2 = mountWith({
@@ -457,7 +451,7 @@ describe('OASBreadcrumb', () => {
         { label: '末页', href: '/last' },
       ]),
     })
-    expect(el2.shadowRoot!.querySelector('[part="current"]')).not.toBeNull()
+    expect(el2.shadowRoot!.querySelectorAll('[part="current"]').length).toBe(1)
     expect(el2.shadowRoot!.querySelector('a[aria-current="page"]')).toBeNull()
   })
 
@@ -511,7 +505,6 @@ describe('OASBreadcrumb', () => {
   it('C1 结构化数据：light DOM 注入 BreadcrumbList JSON-LD（仅含 href 项）', () => {
     const el = mount()
     const script = el.querySelector<HTMLScriptElement>('script[data-oas-breadcrumb-ld]')
-    expect(script).not.toBeNull()
     expect(script!.type).toBe('application/ld+json')
     const data = JSON.parse(script!.textContent!) as {
       '@type': string
@@ -562,14 +555,14 @@ describe('OASBreadcrumb', () => {
     })
     const root = el.shadowRoot!
     expect(root.querySelectorAll('[part="item"]').length).toBe(3)
-    expect(root.querySelector('[part="separator"]')).not.toBeNull()
-    expect(root.querySelector('[part="icon"]')).not.toBeNull()
-    expect(root.querySelector('[part="dropdown"]')).not.toBeNull()
-    expect(root.querySelector('[part="current"]')).not.toBeNull()
+    expect(root.querySelectorAll('[part="separator"]').length).toBe(2)
+    expect(root.querySelectorAll('[part="icon"]').length).toBe(1)
+    expect(root.querySelectorAll('[part="dropdown"]').length).toBe(1)
+    expect(root.querySelectorAll('[part="current"]').length).toBe(1)
     // 折叠场景 part：ellipsis + ellipsis-menu
     const el2 = mountWith({ items: LONG_ITEMS, collapsed: '', 'max-items': '4' })
-    expect(el2.shadowRoot!.querySelector('[part="ellipsis"]')).not.toBeNull()
-    expect(el2.shadowRoot!.querySelector('[part="ellipsis-menu"]')).not.toBeNull()
+    expect(el2.shadowRoot!.querySelectorAll('[part="ellipsis"]').length).toBe(1)
+    expect(el2.shadowRoot!.querySelectorAll('[part="ellipsis-menu"]').length).toBe(1)
   })
 })
 
@@ -602,7 +595,7 @@ describe('子元素声明式通道', () => {
     expect(cur.getAttribute('aria-current')).toBe('page')
     expect(cur.textContent).toBe('面包屑')
     // 项 icon 通道生效
-    expect(root.querySelector('[part="icon"]')).not.toBeNull()
+    expect(root.querySelectorAll('[part="icon"]').length).toBe(1)
   })
 
   it('items 属性显式设置时优先（子元素被忽略）', () => {
@@ -633,7 +626,6 @@ describe('子元素声明式通道', () => {
     const truncated = links.find((l) => l.textContent === '很长的一项')!
     expect(truncated.querySelector('.item-text')!.getAttribute('style')).toContain('80px')
     const ddBtn = root.querySelector<HTMLButtonElement>('button.dropdown-trigger')!
-    expect(ddBtn).not.toBeNull()
     ddBtn.click()
     const panel = root.querySelector('.item-dropdown')!
     expect(panel.classList.contains('open')).toBe(true)
@@ -670,7 +662,7 @@ describe('子元素声明式通道', () => {
       <oas-breadcrumb-item>末项</oas-breadcrumb-item>
     `)
     const seps = [...el.shadowRoot!.querySelectorAll('.sep')]
-    expect(seps[0]!.querySelector('svg')).not.toBeNull()
+    expect(seps[0]!.querySelectorAll('svg').length).toBe(1)
     expect(seps[1]!.textContent).toBe('/')
   })
 
@@ -683,7 +675,7 @@ describe('子元素声明式通道', () => {
     const root = el.shadowRoot!
     const seps = [...root.querySelectorAll('.sep')]
     expect(seps[0]!.textContent).toBe('›')
-    expect(seps[0]!.querySelector('span')).not.toBeNull()
+    expect(seps[0]!.querySelectorAll('span').length).toBe(1)
     // 标签只含默认插槽文本
     expect(root.querySelector('a[part="link"]')!.textContent).toBe('首页')
   })

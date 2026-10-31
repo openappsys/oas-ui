@@ -48,7 +48,7 @@ describe('OASSidebar（可折叠侧栏）', () => {
   })
 
   it('注册 oas-sidebar 自定义元素', () => {
-    expect(customElements.get('oas-sidebar')).not.toBeNull()
+    expect(customElements.get('oas-sidebar')).toBe(OASSidebar)
   })
 
   it('桌面端默认：非移动态，折叠按钮可见，移动触发/关闭按钮隐藏', () => {
@@ -113,7 +113,7 @@ describe('OASSidebar（可折叠侧栏）', () => {
     const home = items.find((i) => i.dataset.value === 'home')!
     const settings = items.find((i) => i.dataset.value === 'settings')!
     expect(calls, '每个菜单项都应调用 renderLabel').toEqual(['home', 'settings'])
-    expect(home.querySelector('.label.label-custom .rich-label'), 'Node 直接挂载').toBeTruthy()
+    expect(home.querySelectorAll('.label.label-custom .rich-label').length, 'Node 直接挂载').toBe(1)
     expect(home.textContent).toContain('工作台')
     expect(home.getAttribute('aria-label'), '可访问名称仍取 item.label').toBe('首页')
     expect(settings.querySelector('.label')!.textContent, '字符串按纯文本渲染').toBe('设置项')
@@ -332,7 +332,10 @@ describe('OASSidebar 受控高亮与图标渲染（实测缺陷回归）', () =>
     })
     const items = [...el.shadowRoot!.querySelectorAll('[part="item"]')]
     const active = items.find((b) => b.getAttribute('aria-current') === 'page')
-    expect(active, '应有一个 aria-current=page 的项').toBeTruthy()
+    expect(
+      items.filter((b) => b.getAttribute('aria-current') === 'page').length,
+      '应有一个 aria-current=page 的项',
+    ).toBe(1)
     expect(active!.querySelector('.label')!.textContent).toBe('设置')
     expect(active!.classList.contains('active')).toBe(true)
     // 切换 active → 高亮迁移
@@ -357,7 +360,7 @@ describe('OASSidebar 受控高亮与图标渲染（实测缺陷回归）', () =>
     stubMatchMedia(true)
     const el = mount()
     const trigger = el.shadowRoot!.querySelector('[part="trigger"]')!
-    expect(trigger.querySelector('svg'), 'trigger 应含 svg 图标而非文本').toBeTruthy()
+    expect(trigger.querySelectorAll('svg').length, 'trigger 应含 svg 图标而非文本').toBe(1)
     expect(trigger.textContent!.trim(), '不应是 ☰/文本').not.toMatch(/☰|⋯|汉堡/)
   })
 
@@ -369,7 +372,7 @@ describe('OASSidebar 受控高亮与图标渲染（实测缺陷回归）', () =>
     const items = [...el.shadowRoot!.querySelectorAll('[part="item"]')]
     const withIcon = items[0]!.querySelector('.icon')!
     const withoutIcon = items[1]!.querySelector('.icon') as HTMLElement
-    expect(withIcon.querySelector('svg'), '有 icon 的项应渲染 svg').toBeTruthy()
+    expect(withIcon.querySelectorAll('svg').length, '有 icon 的项应渲染 svg').toBe(1)
     expect(withoutIcon.hidden).toBe(true)
   })
 })
@@ -535,11 +538,9 @@ describe('OASSidebar 能力补齐批（嵌套/徽标/操作/分隔线/骨架/快
     const l1 = sr.querySelector<HTMLElement>('[part="item"][data-value="l1"]')!
     l1.click()
     const l2 = sr.querySelector<HTMLElement>('[part="item"][data-value="l2"]')
-    expect(l2, 'L1 展开后 L2 应渲染').not.toBeNull()
     // L2 展开 → L3 渲染可见
     l2!.click()
     const l3 = sr.querySelector<HTMLElement>('[part="item"][data-value="l3"]')
-    expect(l3, 'L2 展开后 L3 应渲染').not.toBeNull()
     // L3 叶子点击派发 select
     let detail: unknown
     el.addEventListener('oas-select', (e) => (detail = (e as CustomEvent).detail))
@@ -712,7 +713,6 @@ describe('OASSidebar 能力补齐批（嵌套/徽标/操作/分隔线/骨架/快
     })
     const row = el.shadowRoot!.querySelector<HTMLElement>('[data-value="u1"]')!
     const av = row.querySelector<HTMLElement>('[part="avatar"]')!
-    expect(av, '头像节点存在').not.toBeNull()
     expect(av.textContent).toBe('张')
     expect(av.classList.contains('item-avatar')).toBe(true)
     expect(av.getAttribute('aria-hidden')).toBe('true')
@@ -760,7 +760,7 @@ describe('OASSidebar 能力补齐批（嵌套/徽标/操作/分隔线/骨架/快
     const av = el.shadowRoot!.querySelector<HTMLElement>('[data-value="u1"] [part="avatar"]')!
     expect(av.textContent).toBe('李')
     expect(av.style.getPropertyValue('--oas-sidebar-avatar-color')).toBe('#fef08a')
-    expect(el.shadowRoot!.querySelector('[data-value="u2"] [part="avatar"] img')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('[data-value="u2"] [part="avatar"] img').length).toBe(1)
   })
 
   it('折叠态：有行首头像无图标的项保留（成员行不再消失），无头像无图标仍隐藏', () => {
@@ -779,8 +779,8 @@ describe('OASSidebar 能力补齐批（嵌套/徽标/操作/分隔线/骨架/快
     expect(row('u2').hidden, '图片头像行保留').toBe(false)
     expect(row('tint').hidden, '仅 avatarColor（无文字/图）不产生可视内容，仍隐藏').toBe(true)
     expect(row('plain').hidden, '无头像无图标行仍隐藏').toBe(true)
-    expect(row('u1').querySelector('[part="avatar"]'), '折叠态头像仍渲染').not.toBeNull()
-    expect(el.shadowRoot!.querySelector('oas-tooltip[content="张伟"]'), '折叠态头像行有 label 提示').not.toBeNull()
+    expect(row('u1').querySelectorAll('[part="avatar"]').length, '折叠态头像仍渲染').toBe(1)
+    expect(el.shadowRoot!.querySelectorAll('oas-tooltip[content="张伟"]').length, '折叠态头像行有 label 提示').toBe(1)
   })
 
   it('折叠态：有头像 + children 无 icon 的父项也走 flyout（子项可达，不派发父项 select）', () => {
@@ -815,13 +815,11 @@ describe('OASSidebar 能力补齐批（嵌套/徽标/操作/分隔线/骨架/快
     parent.click()
     // 点击打开 flyout（不派发父项 select）
     const flyout = el.shadowRoot!.querySelector<HTMLElement>('[part="flyout"]')
-    expect(flyout, '应渲染 flyout 面板').not.toBeNull()
     expect(flyout!.hidden, '点击后 flyout 应打开').toBe(false)
     expect(parent.getAttribute('aria-expanded'), '父项 aria-expanded 同步').toBe('true')
     expect(detail, '父项（非页面）点击不派发 select').toBeUndefined()
     // flyout 内子项可点
     const child = flyout!.querySelector<HTMLElement>('[part="item"][data-value="users"]')!
-    expect(child, 'flyout 内渲染子项').not.toBeNull()
     child.click()
     expect(detail, '子项点击派发 select').toEqual({ value: 'users', label: '用户' })
     expect(flyout!.hidden, '选中后 flyout 关闭').toBe(true)
@@ -830,7 +828,7 @@ describe('OASSidebar 能力补齐批（嵌套/徽标/操作/分隔线/骨架/快
       items: '[{"label":"管理","value":"admin","icon":"star","children":[{"label":"用户","value":"users"}]}]',
     })
     const p2 = el2.shadowRoot!.querySelector<HTMLElement>('[part="item"]')!
-    expect(p2.querySelector('.chevron'), '展开态父项应有展开箭头').not.toBeNull()
+    expect(p2.querySelectorAll('.chevron').length, '展开态父项应有展开箭头').toBe(1)
   })
 
   it('flyout：Esc 关闭并回焦父项；点击外部关闭；同一时刻只开一个', () => {
@@ -889,9 +887,8 @@ describe('OASSidebar 能力补齐批（嵌套/徽标/操作/分隔线/骨架/快
     parent.click()
     const flyout = el.shadowRoot!.querySelector<HTMLElement>('[part="flyout"]')!
     const nested = flyout.querySelector<HTMLElement>('[part="item"][data-value="sys"]')!
-    expect(nested, 'flyout 内嵌套父项渲染').not.toBeNull()
     // 嵌套父项在 flyout 内走内联展开（chevron 存在）
-    expect(nested.querySelector('.chevron'), '嵌套父项应可内联展开').not.toBeNull()
+    expect(nested.querySelectorAll('.chevron').length, '嵌套父项应可内联展开').toBe(1)
   })
 
   it('RTL：flyout 锚定父项 inline-end（dir=rtl 下 placement 镜像）', () => {
@@ -947,8 +944,8 @@ describe('OASSidebar 能力补齐批（嵌套/徽标/操作/分隔线/骨架/快
     })
     const childBtn = el.shadowRoot!.querySelector<HTMLElement>('[part="submenu"] [part="item"]')!
     const svg = childBtn.querySelector('.icon svg')
-    expect(svg, '子项 icon 字段应渲染注册表 SVG').not.toBeNull()
-    expect(childBtn.querySelector('.icon svg path'), '子项图标 path 应渲染').not.toBeNull()
+    expect(svg!.tagName.toLowerCase(), '子项 icon 字段应渲染注册表 SVG').toBe('svg')
+    expect(childBtn.querySelectorAll('.icon svg path').length, '子项图标 path 应渲染').toBe(1)
   })
 
   it('折叠态徽标为图标右上角紧凑角标（绝对定位不撑出 64px 图标条；默认药丸会溢出成白条）', () => {
@@ -964,7 +961,7 @@ describe('OASSidebar 能力补齐批（嵌套/徽标/操作/分隔线/骨架/快
     expect(stl).toMatch(/\.item-badge\s*\{[^}]*inset-block-start:\s*2px/)
     // 渲染出的徽标元素仍在（角标样式不影响内容）
     const badge = el.shadowRoot!.querySelector('[part="badge"]')
-    expect(badge, '折叠态徽标元素仍在').not.toBeNull()
+    expect(badge!.textContent, '折叠态徽标元素仍在且内容不变').toBe('12')
   })
 
   it('项操作：actions 渲染悬停操作按钮，点击派发 oas-action 且不触发 select', () => {
@@ -997,7 +994,7 @@ describe('OASSidebar 能力补齐批（嵌套/徽标/操作/分隔线/骨架/快
   it('loading 骨架屏：渲染 part="skeleton" 骨架行、不渲染菜单项', () => {
     stubMatchMedia(false)
     const el = mount({ loading: '', items: '[{"label":"首页","value":"home"}]' })
-    expect(el.shadowRoot!.querySelectorAll('[part="skeleton"]').length).toBeGreaterThan(0)
+    expect(el.shadowRoot!.querySelectorAll('[part="skeleton"]').length).toBe(4)
     expect(el.shadowRoot!.querySelectorAll('[part="item"]').length).toBe(0)
     el.setAttribute('loading', '6')
     expect(el.shadowRoot!.querySelectorAll('[part="skeleton"]').length).toBe(6)
@@ -1048,7 +1045,7 @@ describe('OASSidebar 能力补齐批（嵌套/徽标/操作/分隔线/骨架/快
     const tip = el.shadowRoot!.querySelector('oas-tooltip')!
     expect(tip.getAttribute('content')).toBe('首页')
     expect(tip.getAttribute('placement')).toBe('right')
-    expect(tip.querySelector('[part="item"]')).not.toBeNull()
+    expect(tip.querySelectorAll('[part="item"]').length).toBe(1)
   })
 
   it('expand-on-hover：折叠图标条悬停临时展开的 CSS 规则存在；hover 不重复弹 tooltip，focus 保留', () => {
@@ -1323,8 +1320,8 @@ describe('OASSidebar 子元素声明式通道', () => {
   })
 
   it('注册 oas-sidebar-item / oas-sidebar-divider 自定义元素', () => {
-    expect(customElements.get('oas-sidebar-item')).not.toBeNull()
-    expect(customElements.get('oas-sidebar-divider')).not.toBeNull()
+    expect(typeof customElements.get('oas-sidebar-item')).toBe('function')
+    expect(typeof customElements.get('oas-sidebar-divider')).toBe('function')
   })
 
   it('基础：普通项/分组/divider/嵌套 children 混排解析渲染，与 items 通道一致', () => {
@@ -1391,7 +1388,7 @@ describe('OASSidebar 子元素声明式通道', () => {
     expect(badges[0]!.textContent).toBe('12')
     expect(badges[1]!.textContent).toBe('hot')
     // icon 注册表名 → SVG
-    expect(root.querySelector('[data-value="inbox"] .icon svg')).not.toBeNull()
+    expect(root.querySelectorAll('[data-value="inbox"] .icon svg').length).toBe(1)
     // group 组标题
     expect(root.querySelector('[part="group"]')!.textContent).toBe('消息')
   })
@@ -1406,7 +1403,6 @@ describe('OASSidebar 子元素声明式通道', () => {
     el.appendChild(item)
     await new Promise((r) => setTimeout(r, 0))
     expect(el.shadowRoot!.querySelectorAll('[part="item"]').length).toBe(2)
-    expect(el.shadowRoot!.querySelector('[data-value="about"]')).not.toBeNull()
     expect(el.shadowRoot!.querySelector<HTMLElement>('[data-value="about"] .label')!.textContent).toBe('关于')
   })
 
@@ -1438,7 +1434,7 @@ describe('OASSidebar 子元素声明式通道', () => {
     const tip = root.querySelector('oas-tooltip')!
     expect(tip.getAttribute('content')).toBe('首页')
     expect(tip.getAttribute('placement')).toBe('right')
-    expect(tip.querySelector('[part="item"]')).not.toBeNull()
+    expect(tip.querySelectorAll('[part="item"]').length).toBe(1)
     // 分组标题渲染但折叠态 CSS 隐藏（与 items 通道同一规则）
     expect(root.querySelector('[part="group"]')!.textContent).toBe('导航')
     const css = root.querySelector('style')!.textContent!
@@ -1502,7 +1498,7 @@ describe('OASSidebar 子元素声明式通道', () => {
     const pItems = elItems.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="biz"]')!
     expect(elItems.shadowRoot!.querySelector('[part="submenu"]'), 'items 通道折叠态同样不渲染子树').toBeNull()
     expect(pItems.querySelector('.chevron'), 'items 通道折叠态同样无箭头').toBeNull()
-    expect(elItems.shadowRoot!.querySelector('[part="flyout"]'), 'items 通道折叠态同样渲染 flyout').not.toBeNull()
+    expect(elItems.shadowRoot!.querySelectorAll('[part="flyout"]').length, 'items 通道折叠态同样渲染 flyout').toBe(1)
   })
 })
 
@@ -1529,7 +1525,7 @@ describe('OASSidebar 图标通道与着色', () => {
       items: JSON.stringify([{ label: '任务', value: 'task', icon: 'sidebar-custom-rocket' }]),
     })
     const svg = el.shadowRoot!.querySelector<SVGSVGElement>('.icon svg')
-    expect(svg, 'registerIcon 注册的自定义图标应渲染为 SVG').not.toBeNull()
+    expect(svg!.tagName.toLowerCase(), 'registerIcon 注册的自定义图标应渲染为 SVG').toBe('svg')
     expect(svg!.querySelector('path')!.getAttribute('d')).toBe('M1 1 L15 15')
   })
 
@@ -1538,7 +1534,7 @@ describe('OASSidebar 图标通道与着色', () => {
     registerIcon('check', '<path d="M2 2 L14 14"/>') // 与内置 check 同名 → 自定义版覆盖
     const el = mount({ items: JSON.stringify([{ label: '完成', value: 'done', icon: 'check' }]) })
     const svg = el.shadowRoot!.querySelector<SVGSVGElement>('.icon svg')
-    expect(svg).not.toBeNull()
+    expect(svg!.tagName.toLowerCase(), '自定义图标覆盖同名内置').toBe('svg')
     expect(svg!.querySelector('path')!.getAttribute('d')).toBe('M2 2 L14 14')
   })
 
@@ -1571,7 +1567,7 @@ describe('OASSidebar 图标通道与着色', () => {
       items: JSON.stringify([{ label: '徽标', value: 'logo', icon: 'sidebar-color-heart' }]),
     })
     const path = el.shadowRoot!.querySelector<SVGPathElement>('.icon svg path')
-    expect(path, '彩色自定义 SVG 应渲染').not.toBeNull()
+    expect(path!.tagName.toLowerCase(), '彩色自定义 SVG 应渲染').toBe('path')
     expect(path!.getAttribute('stroke'), 'path 自带 stroke 应保留（外层 stroke 不干扰）').toBe('#0a0')
   })
 
@@ -1582,9 +1578,7 @@ describe('OASSidebar 图标通道与着色', () => {
       items: JSON.stringify([{ label: '首页', value: 'home', icon: 'star', iconColor: '#0af' }]),
     })
     const tip = el.shadowRoot!.querySelector('oas-tooltip')
-    expect(tip, '折叠态图标项应包 tooltip').not.toBeNull()
     const svg = tip!.querySelector<SVGSVGElement>('svg')
-    expect(svg, 'tooltip 内应有图标 svg').not.toBeNull()
     expect(svg!.getAttribute('stroke')).toBe('#0af')
   })
 
@@ -1594,7 +1588,7 @@ describe('OASSidebar 图标通道与着色', () => {
     el.innerHTML = `<oas-sidebar-item value="home" icon="star" icon-color="#f0a">首页</oas-sidebar-item>`
     document.body.appendChild(el)
     const svg = el.shadowRoot!.querySelector<SVGSVGElement>('.icon svg')
-    expect(svg, '子元素 icon 应渲染').not.toBeNull()
+    expect(svg!.tagName.toLowerCase(), '子元素 icon 应渲染').toBe('svg')
     expect(svg!.getAttribute('stroke'), 'icon-color 应映射为 iconColor 生效').toBe('#f0a')
   })
 
@@ -1638,7 +1632,9 @@ describe('OASSidebar 图标通道与着色', () => {
     expect(css, 'footer 常驻需 sticky 钉底').toMatch(/\.foot\s*\{[^}]*position:\s*sticky[^}]*bottom:\s*0/)
     const foot = el.shadowRoot!.querySelector<HTMLElement>('[part="foot"]')!
     expect(foot.hidden, '空 footer 不占底部空白').toBe(true)
-    expect(el.shadowRoot!.querySelector('[part="body"] slot:not([name])'), '默认菜单内容仍由 body 承载').not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('[part="body"] slot:not([name])').length, '默认菜单内容仍由 body 承载').toBe(
+      1,
+    )
 
     const footer = document.createElement('div')
     footer.setAttribute('slot', 'footer')
@@ -1669,7 +1665,6 @@ describe('OASSidebar 图标通道与着色', () => {
     stubMatchMedia(false)
     const el = mount({ 'hide-toggle': '' })
     const toggle = el.shadowRoot!.querySelector<HTMLElement>('[part="toggle"]')
-    expect(toggle, 'toggle 按钮存在').not.toBeNull()
     expect(toggle!.hidden, 'hide-toggle 时折叠按钮应隐藏').toBe(true)
     // 对照：无属性时桌面显示
     const el2 = mount({})
@@ -1736,8 +1731,8 @@ describe('断开重连 onReconnect 重绑（core 重连架构接线）', () => {
     parent.appendChild(el)
     document.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true }))
     window.dispatchEvent(new Event('scroll'))
-    expect(keyCalls, '重连后 document keydown 监听恢复').toBeGreaterThan(0)
-    expect(scrollCalls, '重连后 window scroll 监听恢复').toBeGreaterThan(0)
+    expect(keyCalls, '重连后 document keydown 监听恢复').toBe(1)
+    expect(scrollCalls, '重连后 window scroll 监听恢复').toBe(1)
   })
 })
 
@@ -1746,7 +1741,6 @@ describe('onReconnect mq change 监听恢复（重连后媒体断点切换不失
     const el = mount({ collapsed: '' })
     const host = el as unknown as { mq: MediaQueryList | null }
     // mq 实例在场（syncMq 已建）；断开重连后 mq 的 change 监听应恢复（cleanup 摘除 → onReconnect 补挂）
-    expect(host.mq, 'mq 实例在场').not.toBeNull()
     const mq = host.mq!
     let adds = 0
     const origAdd = mq.addEventListener.bind(mq)
@@ -1816,8 +1810,7 @@ describe('OASSidebar 移动抽屉焦点', () => {
     expect(panel.getAttribute('aria-modal')).toBe('true')
     expect(panel.hasAttribute('aria-hidden'), '打开的抽屉不能 aria-hidden').toBe(false)
     const active = el.shadowRoot!.activeElement as HTMLElement | null
-    expect(active, '打开后焦点必须进入抽屉').not.toBeNull()
-    expect(panel.contains(active!)).toBe(true)
+    expect(panel.contains(active!), '打开后焦点必须进入抽屉').toBe(true)
   })
 
   it('关闭后移除 dialog 语义、aria-hidden=true，焦点回到触发器', () => {

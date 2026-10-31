@@ -19,7 +19,7 @@ describe('OASImage', () => {
     const el = new OASImage()
     el.setAttribute('src', '/a.png')
     document.body.appendChild(el)
-    expect(el.shadowRoot!.querySelector('img')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('img[src="/a.png"]').length).toBe(1)
   })
 
   it('alt 透传', () => {
@@ -174,7 +174,6 @@ describe('OASImage preview 增强', () => {
     const el = mountPreview('javascript:window.__oas_xss=1')
     ;(el.shadowRoot!.querySelector('.previewable') as HTMLElement).click()
     const link = q<HTMLAnchorElement>(el, '[part="preview-download"]')
-    expect(link).not.toBeNull()
     expect(link.getAttribute('href') ?? '', '危险协议不得写入下载链接').not.toMatch(/^javascript:/i)
     // 合法 blob/相对地址不受影响
     el.setAttribute('src', 'blob:https://example.com/550e8400-e29b-41d4-a716-446655440000')
@@ -253,7 +252,7 @@ describe('OASImage preview 增强', () => {
     const el = mountPreview('/photo.png')
     ;(el.shadowRoot!.querySelector('.previewable') as HTMLElement).click()
     const link = q<HTMLAnchorElement>(el, '[part="preview-download"]')!
-    expect(link.getAttribute('download')).not.toBeNull()
+    expect(link.getAttribute('download')).toBe('')
     expect(link.getAttribute('href')).toBe('/photo.png')
   })
 
@@ -628,7 +627,7 @@ describe('OASImage 图集预览', () => {
     document.body.appendChild(el)
     openIt(el)
     pq<HTMLImageElement>(el, '[part="preview-image"]').dispatchEvent(new Event('error'))
-    expect(pq(el, '[part="preview-error"]').querySelector('.custom-err')).not.toBeNull()
+    expect(pq(el, '[part="preview-error"]').querySelectorAll('.custom-err').length).toBe(1)
   })
 
   it('非法 JSON 按无图集处理：回落单图预览，页码与翻页隐藏', () => {
@@ -929,7 +928,7 @@ describe('OASImage 自定义 placeholder / error 插槽', () => {
     el.innerHTML = '<template slot="placeholder"><b class="custom-ph">加载中请稍候</b></template>'
     document.body.appendChild(el)
     const ph = el.shadowRoot!.querySelector('[part="placeholder"]')!
-    expect(ph.querySelector('.custom-ph')).not.toBeNull()
+    expect(ph.querySelectorAll('.custom-ph').length).toBe(1)
     expect(ph.textContent).toContain('加载中请稍候')
   })
 
@@ -940,7 +939,7 @@ describe('OASImage 自定义 placeholder / error 插槽', () => {
     document.body.appendChild(el)
     el.shadowRoot!.querySelector('img')!.dispatchEvent(new Event('error'))
     const fb = el.shadowRoot!.querySelector('[part="fallback"]')!
-    expect(fb.querySelector('.custom-err')).not.toBeNull()
+    expect(fb.querySelectorAll('.custom-err').length).toBe(1)
     expect(fb.textContent).toContain('图片不见了')
   })
 
@@ -952,7 +951,7 @@ describe('OASImage 自定义 placeholder / error 插槽', () => {
     document.body.appendChild(el)
     const ph = el.shadowRoot!.querySelector('[part="placeholder"]')!
     expect(ph.textContent).toContain('等一等')
-    expect(el.querySelector('span[slot="placeholder"]')).not.toBeNull()
+    expect(el.querySelectorAll('span[slot="placeholder"]').length).toBe(1)
   })
 
   it('插槽内容优先于 locale 文案，setLocale 不覆盖插槽', () => {
@@ -963,7 +962,7 @@ describe('OASImage 自定义 placeholder / error 插槽', () => {
     document.body.appendChild(el)
     setLocale(en)
     const ph = el.shadowRoot!.querySelector('[part="placeholder"]')!
-    expect(ph.querySelector('.custom-ph')).not.toBeNull()
+    expect(ph.querySelectorAll('.custom-ph').length).toBe(1)
     expect(ph.textContent).toContain('插槽占位')
     setLocale('zh-CN')
   })
@@ -1034,13 +1033,13 @@ describe('OASImage 自定义工具栏（slot=toolbar + oas-toolbar-render）', (
     const { el } = mountToolbar()
     openIt(el)
     const bar = barOf(el)
-    expect(bar.querySelector('[data-cmd="zoom-in"]')).not.toBeNull()
-    expect(bar.querySelector('[data-cmd="close"]')).not.toBeNull()
+    expect(bar.querySelectorAll('[data-cmd="zoom-in"]').length).toBe(1)
+    expect(bar.querySelectorAll('[data-cmd="close"]').length).toBe(1)
     // 默认按钮组被替换
     expect(bar.querySelector('[part="preview-zoom-in"]')).toBeNull()
     expect(bar.querySelector('[part="preview-close"]')).toBeNull()
     // 原模板节点不被移动
-    expect(el.querySelector('template[slot="toolbar"]')).not.toBeNull()
+    expect(el.querySelectorAll('template[slot="toolbar"]').length).toBe(1)
   })
 
   it('oas-toolbar-render detail 携带 element 与 actions 命令全集（打开时再次派发）', () => {
@@ -1133,8 +1132,8 @@ describe('OASImage 自定义工具栏（slot=toolbar + oas-toolbar-render）', (
     openIt(el)
     const bar = barOf(el)
     expect(bar.querySelector('[data-cmd]')).toBeNull()
-    expect(bar.querySelector('[part="preview-zoom-in"]')).not.toBeNull()
-    expect(bar.querySelector('[part="preview-close"]')).not.toBeNull()
+    expect(bar.querySelectorAll('[part="preview-zoom-in"]').length).toBe(1)
+    expect(bar.querySelectorAll('[part="preview-close"]').length).toBe(1)
     // 默认按钮仍可用
     bar.querySelector<HTMLElement>('[part="preview-zoom-in"]')!.click()
     expect(pdoc(el).querySelector<HTMLElement>('[part="preview-image"]')!.style.transform).toContain('scale(1.5)')
@@ -1149,7 +1148,7 @@ describe('OASImage 自定义工具栏（slot=toolbar + oas-toolbar-render）', (
     document.body.appendChild(el)
     openIt(el)
     expect(fired).toBe(0)
-    expect(barOf(el).querySelector('.tool')).not.toBeNull()
+    expect(barOf(el).querySelectorAll('.tool').length, '默认工具栏 7 个工具（6 钮 + 下载链接）').toBe(7)
   })
 
   it('自定义按钮参与 Tab 焦点陷阱（Tab/Shift+Tab 循环不逃逸、浮层保持打开）', () => {
@@ -1380,12 +1379,11 @@ describe('OASImage 预览挂载点（portal 到 body）', () => {
     el.setAttribute('preview', '')
     document.body.appendChild(el)
     ;(el.shadowRoot!.querySelector('.previewable') as HTMLElement).click()
-    expect(portal()).not.toBeNull()
-    expect(portal()!.shadowRoot!.querySelector('.preview-mask')).not.toBeNull()
+    expect(portal()!.shadowRoot!.querySelectorAll('.preview-mask').length).toBe(1)
     expect(el.shadowRoot!.querySelector('.preview-mask')).toBeNull()
     ;(portal()!.shadowRoot!.querySelector('[part="preview-close"]') as HTMLElement).click()
     expect(portal()).toBeNull()
-    expect(el.shadowRoot!.querySelector('.preview-mask')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('.preview-mask').length).toBe(1)
   })
 
   it('断开连接时拆除 portal 并还原遮罩（无孤儿浮层）', () => {
@@ -1394,10 +1392,10 @@ describe('OASImage 预览挂载点（portal 到 body）', () => {
     el.setAttribute('preview', '')
     document.body.appendChild(el)
     ;(el.shadowRoot!.querySelector('.previewable') as HTMLElement).click()
-    expect(portal()).not.toBeNull()
+    expect(portal()!.shadowRoot!.querySelectorAll('.preview-mask').length).toBe(1)
     el.remove()
     expect(portal()).toBeNull()
-    expect(el.shadowRoot!.querySelector('.preview-mask')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('.preview-mask').length).toBe(1)
   })
 
   it('打开态断开重连：遮罩隐藏无残留，preview-open 属性在场则重新打开', () => {
@@ -1406,7 +1404,7 @@ describe('OASImage 预览挂载点（portal 到 body）', () => {
     el.setAttribute('preview', '')
     document.body.appendChild(el)
     ;(el.shadowRoot!.querySelector('.previewable') as HTMLElement).click()
-    expect(portal()).not.toBeNull()
+    expect(portal()!.shadowRoot!.querySelectorAll('.preview-mask').length).toBe(1)
     el.remove()
     // 无 preview-open：重连保持关闭，遮罩隐藏（无残留可见遮罩）
     document.body.appendChild(el)
@@ -1416,7 +1414,6 @@ describe('OASImage 预览挂载点（portal 到 body）', () => {
     // 有 preview-open：重连按属性重新打开（portal/keydown 重新装配）
     el.setAttribute('preview-open', '')
     document.body.appendChild(el)
-    expect(portal()).not.toBeNull()
     expect(portal()!.shadowRoot!.querySelector('.preview-mask')!.hasAttribute('hidden')).toBe(false)
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
     expect(portal()).toBeNull()

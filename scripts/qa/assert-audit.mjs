@@ -112,12 +112,14 @@ function main() {
   const results = audit()
   const summary = summarize(results)
   const check = process.argv.includes('--check')
-  // 阈值 = 历史债快照（2026-10-29 Task 9 final fix wave 实测），**只防增量、不要求清零**（见文件头）。
-  // 快照口径：本批已先修掉新增的 4 条（relative-time 两条固定等待 + 两条弱断言），
-  // 剩余 wait=440 / weak=1967 全部是历史存量且无余量；eventLen 仍保留余量（实测 96 / 阈值 105）。
-  // 此后再改阈值必须在提交说明写清为什么，不得每批静默抬阈值（存量收口作为 deferred 记在 Task 13 / 维护批）。
-  const maxWait = argValue('--max-wait', 440)
-  const maxWeak = argValue('--max-weak', 1967)
+  // 阈值 = 已收口的历史债快照（2026-11-01）：waitForTimeout 440 → 28（四批清理后仅剩
+  // 已登记的时间流逝/否定断言/测量仪器例外，逐处带 audit-exception 注释）；弱断言 1967 → 1305
+  // （e2e 首批 4 文件 + 单测 top-20 文件清零，617 处换成精确值/精确契约/下界+理由/删冗余；
+  // 单测其余 ~160 文件 ~950 处按文件分批还债中，登记在 ROADMAP）。
+  // 口径不变：**只防增量、不要求清零**；此后再改阈值必须在提交说明写清为什么，
+  // 不得每批静默抬阈值（存量收口作为 deferred 记在 Task 13 / 维护批）。
+  const maxWait = argValue('--max-wait', 28)
+  const maxWeak = argValue('--max-weak', 1305)
   const maxEventLen = argValue('--max-event-len', 105)
 
   if (process.argv.includes('--json')) {

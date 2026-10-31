@@ -1,6 +1,7 @@
 import { escapeAttr, OASElement } from '@oas-ui/core'
 import { lookupIcon } from '@oas-ui/icons/runtime'
 import { isRtl } from '../../shared/direction.js'
+import { cloneSlotContent } from '../../shared/slot-template.js'
 
 export interface SegmentedOption {
   label: string
@@ -324,8 +325,9 @@ export class OASSegmented extends OASElement {
     const lab = document.createElement('span')
     lab.className = 'item-label'
     if (tpl instanceof HTMLTemplateElement) {
-      // 自定义选项渲染：克隆模板，[data-option-label] 绑定选项文本（对齐 select 的 option slot 惯例）
-      lab.appendChild(tpl.content.cloneNode(true))
+      // 自定义选项渲染：双形态克隆模板（静态 HTML 取 content，框架 CSR 直插取元素 childNodes），
+      // [data-option-label] 绑定选项文本（对齐 select 的 option slot 惯例）
+      lab.appendChild(cloneSlotContent(tpl))
       const binder = lab.querySelector('[data-option-label]')
       if (binder) binder.textContent = option.label
     } else {

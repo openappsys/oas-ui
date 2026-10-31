@@ -12,6 +12,7 @@ import { cssVarPx } from '../../shared/css-var.js'
 import { TOUCH_TARGET_CSS } from '../../shared/touch-target.js'
 import { lookupIcon } from '@oas-ui/icons/runtime'
 import { hintUnresolvedIcon } from '../../shared/icon-hint.js'
+import { cloneSlotContent } from '../../shared/slot-template.js'
 import { OASFormElement } from '@oas-ui/core'
 
 export interface Option {
@@ -938,7 +939,7 @@ export class OASSelect extends OASFormElement {
       const tpl = this.querySelector('template[slot="suffix-icon"]')
       if (tpl instanceof HTMLTemplateElement) {
         iconBox.innerHTML = ''
-        iconBox.appendChild(tpl.content.cloneNode(true))
+        iconBox.appendChild(cloneSlotContent(tpl))
         iconBox.hidden = false
         chevron.setAttribute('hidden', '')
       } else {
@@ -954,7 +955,7 @@ export class OASSelect extends OASFormElement {
       const tpl = this.querySelector('template[slot="clear-icon"]')
       if (tpl instanceof HTMLTemplateElement) {
         clearBox.innerHTML = ''
-        clearBox.appendChild(tpl.content.cloneNode(true))
+        clearBox.appendChild(cloneSlotContent(tpl))
         clearBox.hidden = false
         clearSvg.setAttribute('hidden', '')
       } else {
@@ -972,7 +973,7 @@ export class OASSelect extends OASFormElement {
     const tpl = this.querySelector(`template[slot="${slot}"]`)
     if (tpl instanceof HTMLTemplateElement) {
       el.innerHTML = ''
-      el.appendChild(tpl.content.cloneNode(true))
+      el.appendChild(cloneSlotContent(tpl))
       el.hidden = false
     } else {
       el.innerHTML = ''
@@ -1394,7 +1395,7 @@ export class OASSelect extends OASFormElement {
   private fillEmpty(emptyEl: HTMLElement, fallbackText: string): void {
     const tpl = this.querySelector('template[slot="empty"]')
     if (tpl instanceof HTMLTemplateElement) {
-      emptyEl.appendChild(tpl.content.cloneNode(true))
+      emptyEl.appendChild(cloneSlotContent(tpl))
     } else {
       emptyEl.textContent = fallbackText
     }
@@ -1439,7 +1440,7 @@ export class OASSelect extends OASFormElement {
     const tpl = this.querySelector(`template[slot="${slot}"]`)
     if (tpl instanceof HTMLTemplateElement) {
       container.innerHTML = ''
-      container.appendChild(tpl.content.cloneNode(true))
+      container.appendChild(cloneSlotContent(tpl))
       container.hidden = false
     } else {
       container.innerHTML = ''
@@ -1451,7 +1452,7 @@ export class OASSelect extends OASFormElement {
   private fillOptionLabel(labelEl: HTMLElement, option: Option): void {
     const tpl = this.querySelector('template[slot="option"]')
     if (tpl instanceof HTMLTemplateElement) {
-      labelEl.appendChild(tpl.content.cloneNode(true))
+      labelEl.appendChild(cloneSlotContent(tpl))
       const binder = labelEl.querySelector('[data-option-label]')
       if (binder) binder.textContent = option.label
     } else {
@@ -1862,7 +1863,7 @@ export class OASSelect extends OASFormElement {
     const tpl = this.querySelector('template[slot="tag"]')
     if (tpl instanceof HTMLTemplateElement) {
       labelEl.innerHTML = ''
-      labelEl.appendChild(tpl.content.cloneNode(true))
+      labelEl.appendChild(cloneSlotContent(tpl))
       const binder = labelEl.querySelector('[data-tag-label]')
       if (binder) binder.textContent = label
       labelEl.classList.add('chip-label')

@@ -1,6 +1,7 @@
 import { OASFormElement } from '@oas-ui/core'
 import { formatByte } from '@oas-ui/core/format-byte'
 import { devWarn } from '../../shared/dev-warn.js'
+import { cloneSlotContent } from '../../shared/slot-template.js'
 
 /**
  * 上传条目：本地新选文件（File），或已上传回显记录（{name, url}，初值语义、状态 done）。
@@ -1183,7 +1184,7 @@ export class OASUpload extends OASFormElement {
     this.syncValidity()
   }
 
-  /** tip：属性文本优先，缺席时回落 template[slot="tip"] 克隆；两者皆无则隐藏 */
+  /** tip：属性文本优先，缺席时回落 template[slot="tip"] 双形态克隆；两者皆无则隐藏 */
   private syncTip(): void {
     const tip = this.shadow.querySelector<HTMLElement>('.tip')
     if (!tip) return
@@ -1196,7 +1197,8 @@ export class OASUpload extends OASFormElement {
     const tpl = this.querySelector('template[slot="tip"]')
     if (tpl instanceof HTMLTemplateElement) {
       tip.innerHTML = ''
-      tip.appendChild(tpl.content.cloneNode(true))
+      // 双形态克隆：静态 HTML 取 template.content，框架 CSR 直插取元素 childNodes
+      tip.appendChild(cloneSlotContent(tpl))
       tip.hidden = false
     } else {
       tip.hidden = true
@@ -1206,7 +1208,8 @@ export class OASUpload extends OASFormElement {
   /**
    * trigger：native slot 分发 light-DOM 子元素；但 `<template slot="trigger">` 的 template
    * 元素本身被分配进 slot 后内容永不渲染（inert）——触发区整块空白（头像自绘 demo 双向空白实抓）。
-   * 模板在场时走克隆通道：隐藏 slot，把模板内容克隆进 .trigger-tpl（shadow 内，点击走 zone 通路）。
+   * 模板在场时走克隆通道：隐藏 slot，把模板内容双形态克隆（静态 content / CSR 直插 childNodes）
+   * 进 .trigger-tpl（shadow 内，点击走 zone 通路）。
    * ⚠️ 限制：克隆是 update() 时的静态快照——模板内容连接后再变更不会自动刷新（模板写完再挂组件，
    * 或之后改任意属性触发一次 update 即可重同步）。
    */
@@ -1216,7 +1219,7 @@ export class OASUpload extends OASFormElement {
     if (!slot || !cloneBox) return
     const tpl = this.querySelector('template[slot="trigger"]')
     if (tpl instanceof HTMLTemplateElement) {
-      cloneBox.replaceChildren(tpl.content.cloneNode(true))
+      cloneBox.replaceChildren(cloneSlotContent(tpl))
       cloneBox.hidden = false
       slot.hidden = true
     } else {
@@ -2045,13 +2048,13 @@ export class OASUpload extends OASFormElement {
     return this.statusMap.get(entry) ?? { percent: 0, status: 'pending' }
   }
 
-  /** 行内容区：template[slot="item"] 克隆（[data-item-name]/[data-item-size] 绑定），缺省回落默认布局 */
+  /** 行内容区：template[slot="item"] 双形态克隆（[data-item-name]/[data-item-size] 绑定），缺省回落默认布局 */
   private makeItemMeta(entry: UploadEntry): HTMLElement {
     const tpl = this.querySelector('template[slot="item"]')
     if (tpl instanceof HTMLTemplateElement) {
       const meta = document.createElement('div')
       meta.className = 'meta'
-      meta.appendChild(tpl.content.cloneNode(true))
+      meta.appendChild(cloneSlotContent(tpl))
       const nameB = meta.querySelector('[data-item-name]')
       if (nameB) nameB.textContent = nameOf(entry)
       const sizeB = meta.querySelector('[data-item-size]')

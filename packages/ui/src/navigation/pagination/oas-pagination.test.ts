@@ -34,7 +34,7 @@ describe('OASPagination', () => {
   it('渲染页码与前后按钮，当前页标记', () => {
     const el = mount({ current: '1' })
     expect(el.shadowRoot!.querySelectorAll('[part="page"]').length).toBeGreaterThanOrEqual(3)
-    expect(el.shadowRoot!.querySelector('[part="ellipsis"]')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('[part="ellipsis"]').length).toBe(1)
     expect(el.shadowRoot!.querySelector('[part="page"][aria-current="true"]')!.textContent).toBe('1')
   })
 
@@ -63,7 +63,6 @@ describe('OASPagination', () => {
   it('show-total：显示「共 N 条」总数文案', () => {
     const el = mount({ 'show-total': '', total: '150' })
     const total = el.shadowRoot!.querySelector('[part="total"]')
-    expect(total).not.toBeNull()
     expect(total!.textContent).toBe('共 150 条')
   })
 
@@ -75,7 +74,6 @@ describe('OASPagination', () => {
   it('page-sizes：渲染下拉选项并选中当前每页条数', () => {
     const el = mount({ 'page-sizes': '[10,20,50]' })
     const select = el.shadowRoot!.querySelector('[part="size"]') as HTMLSelectElement
-    expect(select).not.toBeNull()
     expect(select.options.length).toBe(3)
     expect([...select.options].map((o) => o.value)).toEqual(['10', '20', '50'])
     expect(select.value).toBe('10')
@@ -121,7 +119,7 @@ describe('OASPagination', () => {
   it('show-jumper：渲染「跳至 __ 页」输入框', () => {
     const el = mount({ 'show-jumper': '' })
     const input = jumperInput(el)
-    expect(input).not.toBeNull()
+    expect(input.getAttribute('aria-label')).toBe('页码跳转')
     const jumper = el.shadowRoot!.querySelector('[part="jumper"]')
     expect(jumper!.textContent).toContain('跳至')
     expect(jumper!.textContent).toContain('页')
@@ -177,7 +175,7 @@ describe('OASPagination', () => {
       'show-jumper': '',
     })
     const buttons = [...el.shadowRoot!.querySelectorAll<HTMLButtonElement>('button')]
-    expect(buttons.length).toBeGreaterThan(0)
+    expect(buttons.length).toBe(9)
     for (const b of buttons) {
       expect(b.disabled).toBe(true)
       expect(b.getAttribute('aria-disabled')).toBe('true')
@@ -229,8 +227,8 @@ describe('OASPagination', () => {
     expect(el.shadowRoot!.querySelectorAll('[part="page"]').length).toBe(0)
     expect(el.shadowRoot!.querySelector('[part="ellipsis"]')).toBeNull()
     expect(el.shadowRoot!.querySelector('[part="simple"]')!.textContent).toBe('3 / 10')
-    expect(el.shadowRoot!.querySelector('[part="prev"]')).not.toBeNull()
-    expect(el.shadowRoot!.querySelector('[part="next"]')).not.toBeNull()
+    expect(el.shadowRoot!.querySelector('[part="prev"]')!.tagName).toBe('BUTTON')
+    expect(el.shadowRoot!.querySelector('[part="next"]')!.tagName).toBe('BUTTON')
   })
 
   it('simple：与 siblings/省略算法互斥（simple 优先）', () => {
@@ -241,7 +239,7 @@ describe('OASPagination', () => {
 
   it('simple：show-jumper 可叠加显示', () => {
     const el = mount({ simple: '', 'show-jumper': '' })
-    expect(jumperInput(el)).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('[part="jumper"] input').length).toBe(1)
   })
 
   it('simple：show-edges 不叠加（极简形态无首末页钮）', () => {
@@ -256,8 +254,6 @@ describe('OASPagination', () => {
     const el = mount({ 'show-edges': '', total: '100', current: '5' })
     const first = el.shadowRoot!.querySelector('[part="first"]') as HTMLButtonElement
     const last = el.shadowRoot!.querySelector('[part="last"]') as HTMLButtonElement
-    expect(first).not.toBeNull()
-    expect(last).not.toBeNull()
     expect(first.getAttribute('aria-label')).toBe('首页')
     expect(last.getAttribute('aria-label')).toBe('末页')
     expect(first.disabled).toBe(false)
@@ -296,7 +292,7 @@ describe('OASPagination', () => {
   it('未设置 hide-on-single：单页正常渲染', () => {
     const el = mount({ total: '8', 'page-size': '10' })
     expect(el.hasAttribute('hidden')).toBe(false)
-    expect(el.shadowRoot!.querySelectorAll('button').length).toBeGreaterThan(0)
+    expect(el.shadowRoot!.querySelectorAll('button').length).toBe(3)
   })
 
   // ===== 批次 10：prev-icon / next-icon 具名插槽 =====
@@ -347,7 +343,8 @@ describe('OASPagination', () => {
     custom.setAttribute('slot', 'total')
     el.append(custom)
     el.setAttribute('current', '2')
-    expect(el.shadowRoot!.querySelector('[part="total"]')).not.toBeNull()
+    const totalEl = el.shadowRoot!.querySelector('[part="total"]')!
+    expect(totalEl.querySelector<HTMLSlotElement>('slot')!.assignedNodes()).toContain(custom)
   })
 
   // ===== 批次 12：oas-before-change 翻页前拦截 =====
@@ -524,10 +521,10 @@ describe('OASPagination', () => {
       current: '45',
     })
     expect(el.shadowRoot!.querySelectorAll('[part="page"]').length).toBe(5)
-    expect(el.shadowRoot!.querySelector('[part="first"]')).not.toBeNull()
-    expect(el.shadowRoot!.querySelector('[part="last"]')).not.toBeNull()
-    expect(el.shadowRoot!.querySelector('[part="prev"]')).not.toBeNull()
-    expect(el.shadowRoot!.querySelector('[part="next"]')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('[part="first"]').length).toBe(1)
+    expect(el.shadowRoot!.querySelectorAll('[part="last"]').length).toBe(1)
+    expect(el.shadowRoot!.querySelectorAll('[part="prev"]').length).toBe(1)
+    expect(el.shadowRoot!.querySelectorAll('[part="next"]').length).toBe(1)
   })
 
   it('pager-count：simple 极简模式无页码序列，不受影响', () => {
@@ -558,15 +555,14 @@ describe('OASPagination', () => {
     expect(href('next')).toBe('/products?page=6')
     expect(href('last')).toBe('/products?page=10')
     // 当前页（5）也在页码链中
-    expect(el.shadowRoot!.querySelector('[part="page"][aria-current="page"]')).not.toBeNull()
-    expect(el.shadowRoot!.querySelectorAll('a').length).toBeGreaterThan(0)
+    expect(el.shadowRoot!.querySelector('[part="page"][aria-current="page"]')!.textContent).toBe('5')
+    expect(el.shadowRoot!.querySelectorAll('a').length).toBe(11)
     expect(el.shadowRoot!.querySelector('button')).toBeNull()
   })
 
   it('href-template：当前页 a 带 aria-current="page"', () => {
     const el = mount({ 'href-template': '/p?page={page}', total: '100', current: '5' })
     const active = el.shadowRoot!.querySelector('a[aria-current="page"]')
-    expect(active).not.toBeNull()
     expect(active!.textContent).toBe('5')
   })
 
@@ -580,7 +576,7 @@ describe('OASPagination', () => {
     })
     expect(el.shadowRoot!.querySelector('a')).toBeNull()
     const spans = el.shadowRoot!.querySelectorAll('.group span.btn')
-    expect(spans.length).toBeGreaterThan(0)
+    expect(spans.length).toBe(11)
     for (const s of [...spans]) {
       expect(s.hasAttribute('href')).toBe(false)
       expect(s.getAttribute('aria-disabled')).toBe('true')
@@ -628,7 +624,7 @@ describe('OASPagination', () => {
       current: '3',
     })
     const anchors = el.shadowRoot!.querySelectorAll('a')
-    expect(anchors.length).toBeGreaterThan(0)
+    expect(anchors.length).toBe(10)
     for (const a of [...anchors]) expect(a.getAttribute('target')).toBe('_blank')
   })
 
@@ -672,7 +668,7 @@ describe('OASPagination', () => {
     const el = mount({ responsive: '', total: '100', current: '5' })
     // clientWidth=0（未布局/SSR）不误判为窄
     expect(el.shadowRoot!.querySelector('[part="simple"]')).toBeNull()
-    expect(el.shadowRoot!.querySelectorAll('[part="page"]').length).toBeGreaterThan(0)
+    expect(el.shadowRoot!.querySelectorAll('[part="page"]').length).toBe(5)
     Object.defineProperty(el, 'clientWidth', { value: 480, configurable: true })
     roCb!()
     expect(el.shadowRoot!.querySelector('[part="simple"]')!.textContent).toBe('5 / 10')
@@ -680,7 +676,7 @@ describe('OASPagination', () => {
     Object.defineProperty(el, 'clientWidth', { value: 900, configurable: true })
     roCb!()
     expect(el.shadowRoot!.querySelector('[part="simple"]')).toBeNull()
-    expect(el.shadowRoot!.querySelectorAll('[part="page"]').length).toBeGreaterThan(0)
+    expect(el.shadowRoot!.querySelectorAll('[part="page"]').length).toBe(5)
   })
 
   it('responsive：与 hide-on-single 不冲突（单页仍隐藏）', () => {
@@ -801,7 +797,7 @@ describe('OASPagination', () => {
     el.append(tpl)
     el.setAttribute('current', '5')
     const pageBtns = [...el.shadowRoot!.querySelectorAll('[part="page"]')]
-    expect(pageBtns.length).toBeGreaterThan(0)
+    expect(pageBtns.length).toBe(5)
     const texts = pageBtns.map((b) => b.textContent!.replace(/^第 (\d+) 页$/, '$1'))
     expect(texts).toEqual(['1', '4', '5', '6', '10'])
     // 内容来自克隆：与 light DOM 模板不是同一节点，模板占位符原样保留
@@ -819,10 +815,9 @@ describe('OASPagination', () => {
     el.append(tpl)
     el.setAttribute('current', '5')
     const pageBtns = [...el.shadowRoot!.querySelectorAll('[part="page"]')]
-    expect(pageBtns.length).toBeGreaterThan(0)
+    expect(pageBtns.length).toBe(5)
     for (const b of pageBtns) {
       const clone = b.querySelector('span')
-      expect(clone).not.toBeNull()
       expect(clone!.hasAttribute('hidden')).toBe(false)
       expect(clone!.hasAttribute('slot')).toBe(false)
     }
@@ -860,7 +855,7 @@ describe('OASPagination', () => {
     el.append(tpl)
     el.setAttribute('current', '5')
     const pageBtns = [...el.shadowRoot!.querySelectorAll('[part="page"]')]
-    expect(pageBtns.length).toBeGreaterThan(0)
+    expect(pageBtns.length).toBe(5)
     for (const b of pageBtns) {
       const cloneInner = b.querySelector('b')
       expect(cloneInner!.textContent).toMatch(/^第 \d+ 页$/) // 文本节点被替换
@@ -872,9 +867,9 @@ describe('OASPagination', () => {
 
   it('show-more：total 未知（≤0）时渲染「上一页 / 更多 / 下一页」三钮，无页码序列与总数', () => {
     const el = mount({ 'show-more': '', total: '0' })
-    expect(el.shadowRoot!.querySelector('[part="prev"]')).not.toBeNull()
-    expect(el.shadowRoot!.querySelector('[part="more"]')).not.toBeNull()
-    expect(el.shadowRoot!.querySelector('[part="next"]')).not.toBeNull()
+    expect((el.shadowRoot!.querySelector('[part="prev"]') as HTMLButtonElement).disabled).toBe(true)
+    expect((el.shadowRoot!.querySelector('[part="more"]') as HTMLButtonElement).disabled).toBe(true)
+    expect((el.shadowRoot!.querySelector('[part="next"]') as HTMLButtonElement).disabled).toBe(false)
     expect(el.shadowRoot!.querySelectorAll('[part="page"]').length).toBe(0)
     expect(el.shadowRoot!.querySelector('[part="ellipsis"]')).toBeNull()
     expect(el.shadowRoot!.querySelector('[part="total"]')).toBeNull()
@@ -883,7 +878,6 @@ describe('OASPagination', () => {
   it('show-more：更多钮为不可点状态指示（disabled + aria-disabled，part=more，文案走 i18n「更多」）', () => {
     const el = mount({ 'show-more': '', total: '0' })
     const more = el.shadowRoot!.querySelector('[part="more"]') as HTMLButtonElement
-    expect(more).not.toBeNull()
     expect(more.disabled).toBe(true)
     expect(more.getAttribute('aria-disabled')).toBe('true')
     expect(more.textContent).toBe('更多')
@@ -913,13 +907,13 @@ describe('OASPagination', () => {
   it('show-more：current 无上界夹取（外部设大值保持为事实状态，不受总页数约束）', () => {
     const el = mount({ 'show-more': '', total: '0', current: '99' })
     expect(el.getAttribute('current')).toBe('99')
-    expect(el.shadowRoot!.querySelector('[part="next"]')).not.toBeNull()
+    expect((el.shadowRoot!.querySelector('[part="next"]') as HTMLButtonElement).disabled).toBe(false)
   })
 
   it('show-more：total>0 时无效（正常页码渲染，无更多钮）', () => {
     const el = mount({ 'show-more': '', total: '100', current: '5' })
     expect(el.shadowRoot!.querySelector('[part="more"]')).toBeNull()
-    expect(el.shadowRoot!.querySelectorAll('[part="page"]').length).toBeGreaterThan(0)
+    expect(el.shadowRoot!.querySelectorAll('[part="page"]').length).toBe(5)
     const active = el.shadowRoot!.querySelector('[part="page"][aria-current="true"]')
     expect(active?.textContent).toBe('5')
   })
@@ -938,15 +932,15 @@ describe('OASPagination', () => {
   it('show-more：hide-on-single 不适用（total 未知不算单页，组件不隐藏）', () => {
     const el = mount({ 'show-more': '', 'hide-on-single': '', total: '0' })
     expect(el.hasAttribute('hidden')).toBe(false)
-    expect(el.shadowRoot!.querySelector('[part="more"]')).not.toBeNull()
+    expect((el.shadowRoot!.querySelector('[part="more"]') as HTMLButtonElement).disabled).toBe(true)
   })
 
   it('show-more：total 未设置（视为未知）时同样生效', () => {
     const el = new OASPagination()
     el.setAttribute('show-more', '')
     document.body.appendChild(el)
-    expect(el.shadowRoot!.querySelector('[part="more"]')).not.toBeNull()
-    expect(el.shadowRoot!.querySelector('[part="next"]')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('[part="more"]').length).toBe(1)
+    expect(el.shadowRoot!.querySelectorAll('[part="next"]').length).toBe(1)
   })
 
   it('show-more：更多钮文案走 i18n（en More）', () => {
@@ -966,13 +960,12 @@ describe('OASPagination', () => {
   it('total-boundary：total > 阈值时渲染条数切换器', () => {
     const el = mount({ 'page-sizes': '[10,20,50]', 'total-boundary': '50', total: '100' })
     const select = el.shadowRoot!.querySelector('[part="size"]') as HTMLSelectElement
-    expect(select).not.toBeNull()
     expect(select.options.length).toBe(3)
   })
 
   it('total-boundary：未设置时维持现状（有 page-sizes 即显示，零回归）', () => {
     const el = mount({ 'page-sizes': '[10,20,50]', total: '30' })
-    expect(el.shadowRoot!.querySelector('[part="size"]')).not.toBeNull()
+    expect((el.shadowRoot!.querySelector('[part="size"]') as HTMLSelectElement).options.length).toBe(3)
   })
 
   it('total-boundary：切换器显隐切换时 current 保持夹取正确', () => {
@@ -982,20 +975,20 @@ describe('OASPagination', () => {
     expect(el.shadowRoot!.querySelector('[part="page"][aria-current="true"]')!.textContent).toBe('3')
     // total 增大到 100 > 50：切换器显示，current 属性 9 在 10 页内合法 → 视图第 9 页
     el.setAttribute('total', '100')
-    expect(el.shadowRoot!.querySelector('[part="size"]')).not.toBeNull()
+    expect((el.shadowRoot!.querySelector('[part="size"]') as HTMLSelectElement).options.length).toBe(2)
     expect(el.shadowRoot!.querySelector('[part="page"][aria-current="true"]')!.textContent).toBe('9')
   })
 
   it('total-boundary：非法值（非数字）忽略，有 page-sizes 即显示', () => {
     const el = mount({ 'page-sizes': '[10,20]', 'total-boundary': 'abc', total: '10' })
-    expect(el.shadowRoot!.querySelector('[part="size"]')).not.toBeNull()
+    expect((el.shadowRoot!.querySelector('[part="size"]') as HTMLSelectElement).options.length).toBe(2)
   })
 
   it('total-boundary：空字符串属性（total-boundary=""）按 0 处理（total>0 才显示）', () => {
     const el = mount({ 'page-sizes': '[10,20]', 'total-boundary': '', total: '0' })
     expect(el.shadowRoot!.querySelector('[part="size"]')).toBeNull()
     const el2 = mount({ 'page-sizes': '[10,20]', 'total-boundary': '', total: '10' })
-    expect(el2.shadowRoot!.querySelector('[part="size"]')).not.toBeNull()
+    expect((el2.shadowRoot!.querySelector('[part="size"]') as HTMLSelectElement).options.length).toBe(2)
   })
 
   // ===== 批次 21：宿主 hidden 所有权（update 不得撕宿主声明的 hidden）=====

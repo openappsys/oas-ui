@@ -1,4 +1,5 @@
 import { OASElement } from '@oas-ui/core'
+import { cloneSlotContent } from '../../shared/slot-template.js'
 
 /**
  * oas-form-list —— 动态字段组（oas-form 配套子组件，D10）。
@@ -245,7 +246,8 @@ export class OASFormList extends OASElement {
     wrapper.setAttribute('slot', `oas-form-list-item-${uid}`)
 
     const named: NamedFieldRecord[] = []
-    const content = this.lastTemplate!.content.cloneNode(true) as DocumentFragment
+    // 双形态克隆：静态 HTML 取 template.content，框架 CSR 直插取 template 元素 childNodes
+    const content = cloneSlotContent(this.lastTemplate!)
     for (const el of [...content.querySelectorAll('[name]')]) {
       const tplName = el.getAttribute('name') ?? ''
       const next = this.indexedName(tplName, index, listName)

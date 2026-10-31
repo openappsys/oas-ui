@@ -1,4 +1,6 @@
 import { OASElement } from '@oas-ui/core'
+// slot 模板双形态克隆（静态 HTML 在 template.content；Vue 等 CSR 直插元素 childNodes）
+import { cloneSlotContent, slotContentSignature } from '../../shared/slot-template.js'
 import { encodeQR, QR_TOO_LONG_ERROR, type QrErrorCorrection } from './qr.js'
 import {
   centeredBox,
@@ -289,9 +291,11 @@ export class OASQRCode extends OASElement {
         customBox.setAttribute('part', 'status-custom')
         overlay.appendChild(customBox)
       }
-      if (customBox.dataset.sig !== String(tpl.innerHTML.length)) {
-        customBox.replaceChildren(tpl.content.cloneNode(true))
-        customBox.dataset.sig = String(tpl.innerHTML.length)
+      // 缓存键用插槽内容签名：template.innerHTML 在 CSR 直插形态恒为空串，按长度判重会把空克隆缓存住
+      const sig = slotContentSignature(tpl)
+      if (customBox.dataset.sig !== sig) {
+        customBox.replaceChildren(cloneSlotContent(tpl))
+        customBox.dataset.sig = sig
       }
     } else {
       overlay.querySelector('.status-custom')?.remove()

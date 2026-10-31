@@ -205,7 +205,7 @@ describe('OASKanban', () => {
         } else {
           // 空列不设 role=list（axe aria-required-children：list 必有 listitem 子元素）
           expect(body.getAttribute('role')).toBeNull()
-          expect(body.querySelector('.empty-column'), '空列占位在').not.toBeNull()
+          expect(body.querySelectorAll('.empty-column').length, '空列占位在').toBe(1)
         }
       }
     })
@@ -251,7 +251,7 @@ describe('OASKanban', () => {
       expect(columnEls(noCols).length).toBe(0)
       const noCards = mount({ cards: '[]' })
       for (const col of columnEls(noCards)) {
-        expect(col.querySelector('.empty-column')).not.toBeNull()
+        expect(col.querySelectorAll('.empty-column').length).toBe(1)
       }
     })
 
@@ -424,7 +424,6 @@ describe('OASKanban', () => {
     it('每张卡片带移动按钮（aria-label + haspopup）', () => {
       const el = mount()
       const btn = moveBtn(el, 'c1')
-      expect(btn).not.toBeNull()
       expect(btn.getAttribute('aria-label')).toBe('移动卡片')
       expect(btn.getAttribute('aria-haspopup')).toBe('menu')
     })
@@ -494,10 +493,9 @@ describe('OASKanban', () => {
       const el = mount()
       openMenu(el, 'c1')
       const menu = shadow(el).querySelector('.move-menu') as HTMLElement
-      expect(menu).not.toBeNull()
       // 菜单内部滚动（composedPath 含 .move-menu）：豁免，菜单保持打开
       menu.dispatchEvent(new Event('scroll', { bubbles: true, composed: true }))
-      expect(shadow(el).querySelector('.move-menu'), '菜单自身滚动豁免').not.toBeNull()
+      expect(shadow(el).querySelectorAll('.move-menu').length, '菜单自身滚动豁免').toBe(1)
       // 外部滚动（document 级，path 不含菜单）：关闭
       document.body.dispatchEvent(new Event('scroll', { bubbles: true, composed: true }))
       expect(shadow(el).querySelector('.move-menu'), '外部滚动关菜单').toBeNull()
@@ -506,13 +504,13 @@ describe('OASKanban', () => {
     it('菜单关闭后重开：document 监听幂等重挂（断开重连场景的外点关闭仍可用）', () => {
       const el = mount()
       openMenu(el, 'c1')
-      expect(shadow(el).querySelector('.move-menu')).not.toBeNull()
+      expect(shadow(el).querySelectorAll('.move-menu').length).toBe(1)
       // 外点关闭
       document.body.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }))
       expect(shadow(el).querySelector('.move-menu')).toBeNull()
       // 重开后外点仍可关闭（监听随菜单生命周期幂等重挂）
       openMenu(el, 'c1')
-      expect(shadow(el).querySelector('.move-menu')).not.toBeNull()
+      expect(shadow(el).querySelectorAll('.move-menu').length).toBe(1)
       document.body.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }))
       expect(shadow(el).querySelector('.move-menu')).toBeNull()
     })
@@ -532,7 +530,7 @@ describe('OASKanban', () => {
     it('Esc 与点击外部关闭菜单', () => {
       const el = mount()
       openMenu(el, 'c1')
-      expect(shadow(el).querySelector('.move-menu')).not.toBeNull()
+      expect(shadow(el).querySelectorAll('.move-menu').length).toBe(1)
       shadow(el).dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, composed: true }))
       expect(shadow(el).querySelector('.move-menu')).toBeNull()
       openMenu(el, 'c1')
@@ -549,7 +547,7 @@ describe('OASKanban', () => {
       up.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }))
       expect(events.length).toBe(0)
       expect(el.getAttribute('cards')).toBe(before)
-      expect(shadow(el).querySelector('.move-menu')).not.toBeNull()
+      expect(shadow(el).querySelectorAll('.move-menu').length).toBe(1)
     })
   })
 
@@ -591,13 +589,13 @@ describe('OASKanban', () => {
     it('非函数赋值静默忽略（回落默认 title 渲染）', () => {
       const el = mount()
       el.renderCard = 'not-a-function' as unknown as (card: Record<string, unknown>) => Node | string
-      expect(cardOf(el, 'c1')!.querySelector('.card-title')).not.toBeNull()
+      expect(cardOf(el, 'c1')!.querySelectorAll('.card-title').length).toBe(1)
     })
 
     it('触屏移动按钮在自定义渲染下保留', () => {
       const el = mount()
       el.renderCard = (card) => String(card.title)
-      expect(cardOf(el, 'c1')!.querySelector('.card-move')).not.toBeNull()
+      expect(cardOf(el, 'c1')!.querySelectorAll('.card-move').length).toBe(1)
     })
 
     it('renderCard 先于连接赋值：首帧 cards 仍解析（面板非空）——回归', () => {
@@ -609,7 +607,7 @@ describe('OASKanban', () => {
       el.renderCard = (card) => String(card.title)
       document.body.appendChild(el)
       expect(el.cards.length, 'cards 首帧解析（不被 renderCard 阻断）').toBe(CARDS.length)
-      expect(shadow(el).querySelectorAll('.card').length, '面板渲染卡片').toBeGreaterThan(0)
+      expect(shadow(el).querySelectorAll('.card').length, '面板渲染卡片').toBe(3)
     })
 
     it('renderCard 置 null 后：内存态（拖拽成果）保留，恢复默认 title 渲染', () => {
@@ -621,7 +619,7 @@ describe('OASKanban', () => {
       // 内存态保留（拖拽成果不丢），渲染回落默认 title
       expect(el.cards.find((c) => c.id === 'c1')!.column).toBe('done')
       expect(cardsOf(el, 'done').length).toBe(1)
-      expect(cardsOf(el, 'done')[0]!.querySelector('.card-title')).not.toBeNull()
+      expect(cardsOf(el, 'done')[0]!.querySelectorAll('.card-title').length).toBe(1)
     })
   })
 
@@ -630,7 +628,6 @@ describe('OASKanban', () => {
       const el = mount()
       for (const col of columnEls(el)) {
         const handle = col.querySelector<HTMLElement>('.column-drag')!
-        expect(handle, '每列头一个手柄').not.toBeNull()
         expect(handle.getAttribute('draggable')).toBe('true')
         expect(handle.getAttribute('aria-label')).toBe('拖拽调整列顺序')
       }
@@ -1175,7 +1172,7 @@ describe('OASKanban', () => {
       // 水合接管成功：render() 未跑（shadow 无新增 <style>，只有 update() 重建板体内容）
       expect(el.shadowRoot!.querySelector('style'), '水合路径不重建 shadow（无新 <style>）').toBeNull()
       expect(el.shadowRoot!.querySelector('meta[data-oas-ssr]')).toBeNull()
-      expect(el.shadowRoot!.querySelectorAll('.card').length, '水合后 update 正常填充卡片').toBeGreaterThan(0)
+      expect(el.shadowRoot!.querySelectorAll('.card').length, '水合后 update 正常填充卡片').toBe(5)
     })
 
     it('DSD 真水合兼容旧列结构（.column 快照接管不重建）', () => {
@@ -1187,7 +1184,7 @@ describe('OASKanban', () => {
       document.body.appendChild(el)
       expect(el.shadowRoot!.querySelector('style'), '水合路径不重建 shadow（无新 <style>）').toBeNull()
       expect(el.shadowRoot!.querySelector('meta[data-oas-ssr]')).toBeNull()
-      expect(el.shadowRoot!.querySelectorAll('.card').length, '水合后 update 正常填充卡片').toBeGreaterThan(0)
+      expect(el.shadowRoot!.querySelectorAll('.card').length, '水合后 update 正常填充卡片').toBe(3)
     })
   })
 })
@@ -1429,7 +1426,6 @@ describe('列体虚拟化（大列只渲染可视窗口）', () => {
     // 占位 + 窗口内卡片步距 = 全量卡片步距总和 → 列内滚动范围与全量渲染一致
     const top = body.querySelector<HTMLElement>('.vpad-top')!
     const bottom = body.querySelector<HTMLElement>('.vpad-bottom')!
-    expect(top, '有顶部占位').not.toBeNull()
     expect(Number.parseFloat(top.style.height)).toBe(0)
     expect(top.style.marginTop, '占位用负 margin 抵消列内 flex gap').toBe('-8px')
     const sum = Number.parseFloat(top.style.height) + rendered.length * 68 + Number.parseFloat(bottom.style.height)
@@ -1520,7 +1516,7 @@ describe('列体虚拟化（大列只渲染可视窗口）', () => {
     expect(body.querySelector('.vpad-top'), '窗口覆盖全部 → 无占位').toBeNull()
     expect(body.querySelector('.vpad-bottom'), '窗口覆盖全部 → 无占位').toBeNull()
     expect(body.getAttribute('role'), 'list 语义保持').toBe('list')
-    expect(columnOf(el, 'done').querySelector('.empty-column'), '空列占位保持').not.toBeNull()
+    expect(columnOf(el, 'done').querySelectorAll('.empty-column').length, '空列占位保持').toBe(1)
   })
 
   it('视口不可测（happy-dom/列体未布局）→ 回落全量渲染（既有行为零变化）', () => {
@@ -1604,7 +1600,7 @@ describe('列体虚拟化（大列只渲染可视窗口）', () => {
     body.dispatchEvent(dragEvent('dragend'))
     await flushRaf()
     expect(windowPaints(el), 'dragend 后补做一次窗口重算').toBe(before + 1)
-    expect(renderedIndexes(el)[0], '窗口已按新滚动位置回正').toBeGreaterThan(0)
+    expect(renderedIndexes(el)[0], '窗口已按新滚动位置回正（floor(5000/68)−6）').toBe(67)
   })
 
   it('键盘 Alt+→ 移入大列尾部：目标卡落在渲染窗口外也回焦（列体滚到该卡，不丢键盘焦点）', () => {
@@ -1626,7 +1622,7 @@ describe('列体虚拟化（大列只渲染可视窗口）', () => {
     expect(active?.getAttribute('data-id'), '回焦移动后的卡（窗口外也不例外）').toBe('head')
     expect(active?.closest('.column')?.getAttribute('data-key'), '焦点卡在目标列').toBe('doing')
     expect(renderedIndexes(el, 'doing'), '目标列窗口已滚到该卡').toContain(500)
-    expect(bigBody(el, 'doing').scrollTop, '目标列已离开顶部').toBeGreaterThan(0)
+    expect(bigBody(el, 'doing').scrollTop, '目标列已离开顶部（对齐第 500 张卡）').toBe(33660)
     expect((events[0]!.detail as { index: number }).index, '落点为目标列尾部').toBe(500)
   })
 
@@ -1654,11 +1650,11 @@ describe('列体虚拟化（大列只渲染可视窗口）', () => {
     await flushRaf()
     expect(windowPaints(el), '仅目标列重建一次').toBe(before + 1)
     expect(renderedIndexes(el, 'todo')[0], '源列窗口冻结').toBe(0)
-    expect(renderedIndexes(el, 'doing')[0], '目标列窗口随滚动前移').toBeGreaterThan(0)
+    expect(renderedIndexes(el, 'doing')[0], '目标列窗口随滚动前移').toBe(67)
     // dragend 后源列补做回正
     srcBody.dispatchEvent(dragEvent('dragend'))
     await flushRaf()
-    expect(renderedIndexes(el, 'todo')[0], 'dragend 后源列窗口回正').toBeGreaterThan(0)
+    expect(renderedIndexes(el, 'todo')[0], 'dragend 后源列窗口回正').toBe(67)
   })
 
   it('数据变更后重建：滚动位置保留（拖拽落定不把列体滚回顶部）', async () => {
@@ -1668,12 +1664,12 @@ describe('列体虚拟化（大列只渲染可视窗口）', () => {
     body.dispatchEvent(new Event('scroll'))
     await flushRaf()
     const first = renderedIndexes(el)[0]!
-    expect(first).toBeGreaterThan(0)
+    expect(first).toBe(67)
     // 回写数据触发整板重建：重建后窗口仍落在滚动位置附近（不跳回顶部）
     el.setAttribute('cards', JSON.stringify(bigCards(200)))
     const bodyAfter = bigBody(el)
     expect(bodyAfter, '整板重建换了列体节点').not.toBe(body)
-    expect(renderedIndexes(el)[0], '重建后窗口不在顶部（滚动位置已恢复）').toBeGreaterThan(0)
+    expect(renderedIndexes(el)[0], '重建后窗口不在顶部（滚动位置已恢复）').toBe(67)
   })
 
   it('滚动帧按索引切片：5 帧取卡诊断计数有上界且不随卡量增长（回归：每滚动帧对 _cards 全量 filter）', async () => {
@@ -1692,7 +1688,8 @@ describe('列体虚拟化（大列只渲染可视窗口）', () => {
     }
     const big = await scansAfterScrolls(5000)
     const small = await scansAfterScrolls(500)
-    expect(big, '索引取卡确在发生（未退化回全量数组路径——反证：退化则增量为 0）').toBeGreaterThan(0)
+    // 诊断计数随滚动帧的窗口桶大小变化，无稳定精确契约值；下界 1 证明索引取卡路径确实生效。
+    expect(big, '索引取卡确在发生（未退化回全量数组路径——反证：退化则增量为 0）').toBeGreaterThanOrEqual(1)
     // 上界与卡量无关：窗口 ≈ 可视(≈6) + 上下缓冲(6×2) ≈ 18 张，5 帧 × 上界 40 = 200，写 400 留裕度
     expect(big, '5000 卡：5 帧取卡数有上界（旧实现每帧全量 filter = 5000×5 = 25000）').toBeLessThanOrEqual(400)
     expect(small, '卡量降 10 倍上界不变（计数不随卡总量增长）').toBeLessThanOrEqual(400)
@@ -1939,7 +1936,7 @@ describe('优先级强调色（可选 color）', () => {
       body.dispatchEvent(new Event('scroll'))
       await flushRaf()
       const win0 = [...body.querySelectorAll<HTMLElement>('.card[data-index]')]
-      expect(win0.length, '窗口有渲染卡片').toBeGreaterThan(0)
+      expect(win0.length, '窗口有渲染卡片').toBe(19)
       expect(
         win0.every((c) => cardHasNoAccent(c)),
         '无 color 时窗口卡片零变量',
@@ -1948,7 +1945,7 @@ describe('优先级强调色（可选 color）', () => {
       el.cards = base.map((c) => ({ ...c, color: '#00ff00' }))
       const body2 = bigBody(el)
       const win1 = [...body2.querySelectorAll<HTMLElement>('.card[data-index]')]
-      expect(win1.length).toBeGreaterThan(0)
+      expect(win1.length).toBe(19)
       expect(
         win1.every((c) => c.style.getPropertyValue(CARD_COLOR_VAR) === '#00ff00'),
         '换色后窗口卡片全部生效',
@@ -1957,7 +1954,7 @@ describe('优先级强调色（可选 color）', () => {
       el.cards = base
       const body3 = bigBody(el)
       const win2 = [...body3.querySelectorAll<HTMLElement>('.card[data-index]')]
-      expect(win2.length).toBeGreaterThan(0)
+      expect(win2.length).toBe(19)
       expect(
         win2.every((c) => cardHasNoAccent(c)),
         '移除 color 后窗口卡片变量清干净',

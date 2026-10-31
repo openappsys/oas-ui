@@ -7,6 +7,7 @@ import type { OASBottomSheet } from '../../feedback/bottom-sheet/index.js'
 import { watchMobileSheetMode } from '../../shared/mobile-sheet.js'
 import { computePosition, getViewport, type Placement } from '../../overlay/floating/index.js'
 import { TOUCH_TARGET_CSS } from '../../shared/touch-target.js'
+import { cloneSlotContent } from '../../shared/slot-template.js'
 // 注册 oas-virtual-list（OASVirtualList 仅作类型用，需裸 import 保住注册副作用）
 import '../../data/virtual-list/index.js'
 import type { OASVirtualList } from '../../data/virtual-list/index.js'
@@ -1355,11 +1356,12 @@ export class OASCascader extends OASElement {
   /**
    * 选项行 label 渲染：template[slot="option"] 克隆 + [data-option-label] 绑定展示文本，
    * 缺省回落纯文本（对齐 select/tree-select 的模板惯例；面板行与搜索结果行两路共用）。
+   * 克隆走共享工具，兼容静态 HTML（content）与框架 CSR 直插（元素 childNodes）双形态。
    */
   private fillOptionLabel(labelEl: HTMLElement, text: string): void {
     const tpl = this.querySelector('template[slot="option"]')
     if (tpl instanceof HTMLTemplateElement) {
-      labelEl.appendChild(tpl.content.cloneNode(true))
+      labelEl.appendChild(cloneSlotContent(tpl))
       const binder = labelEl.querySelector('[data-option-label]')
       if (binder) binder.textContent = text
     } else {
@@ -1937,15 +1939,17 @@ export class OASCascader extends OASElement {
   /**
    * 后缀图标同步：template[slot="suffix-icon"] 替换默认 chevron（展开旋转样式同容器生效）；
    * loading 时自定义图标与 chevron 一并让位 spinner。
+   * 克隆走共享工具，兼容静态 HTML（content）与框架 CSR 直插（元素 childNodes）双形态。
    * 注意 chevron 是 svg：SVGElement 无 hidden IDL 属性（属性赋值是 expando 假隐藏），显隐一律走 attribute。
    */
   private syncSuffixIcon(): void {
     const tpl = this.querySelector('template[slot="suffix-icon"]')
-    const hasCustom = tpl instanceof HTMLTemplateElement
+    const custom = tpl instanceof HTMLTemplateElement ? tpl : null
+    const hasCustom = custom !== null
     const loading = this.hasAttr('loading')
     if (this.suffixIconEl) {
       this.suffixIconEl.innerHTML = ''
-      if (hasCustom) this.suffixIconEl.appendChild((tpl as HTMLTemplateElement).content.cloneNode(true))
+      if (custom) this.suffixIconEl.appendChild(cloneSlotContent(custom))
       this.suffixIconEl.hidden = loading || !hasCustom
     }
     this.chevronEl?.toggleAttribute('hidden', loading || hasCustom)

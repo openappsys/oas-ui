@@ -52,7 +52,6 @@ describe('OASSelect', () => {
     open(el)
     expect(trigger(el).getAttribute('aria-expanded')).toBe('true')
     const listbox = el.shadowRoot!.querySelector('[role="listbox"]')
-    expect(listbox).not.toBeNull()
     expect(listbox!.querySelectorAll('[role="option"]').length).toBe(3)
   })
 
@@ -124,7 +123,7 @@ describe('OASSelect', () => {
     const rm = chip.children[1] as HTMLButtonElement
     expect(label.textContent).toBe('苹果')
     expect(rm.textContent).toBe('×')
-    expect(rm.getAttribute('aria-label')).toBeTruthy()
+    expect(rm.getAttribute('aria-label')).toBe('移除 苹果')
     const style = el.shadowRoot!.querySelector('style')!.textContent!
     const chipRule = style.match(/\.chip\s*\{[^}]*\}/)?.[0] ?? ''
     expect(chipRule).toContain('box-sizing: border-box')
@@ -428,7 +427,7 @@ describe('OASSelect 声明式数据通道与真水合', () => {
     snap.shadowRoot!.innerHTML = '<meta data-oas-ssr="oas-select" data-oas-ssr-v="1"><span>broken</span>'
     snap.setAttribute('options', OPTIONS)
     document.body.appendChild(snap)
-    expect(snap.shadowRoot!.querySelector('.trigger')).not.toBeNull()
+    expect(snap.shadowRoot!.querySelectorAll('.trigger').length).toBe(1)
     expect(snap.shadowRoot!.querySelector('meta[data-oas-ssr]')).toBeNull()
     open(snap)
     expect(snap.shadowRoot!.querySelectorAll('[role="option"]').length).toBe(3)
@@ -528,7 +527,7 @@ describe('OASSelect 自定义选项渲染（template slot + 渲染事件）', ()
     document.body.appendChild(el)
     open(el)
     const first = el.shadowRoot!.querySelector('[role="option"]')!
-    expect(first.querySelector('.opt-icon')).not.toBeNull()
+    expect(first.querySelectorAll('.opt-icon').length).toBe(1)
     expect(first.querySelector('[data-option-label]')!.textContent).toBe('苹果')
   })
 
@@ -578,7 +577,7 @@ describe('OASSelect 自定义选项渲染（template slot + 渲染事件）', ()
     el.appendChild(tpl)
     document.body.appendChild(el)
     const chip = el.shadowRoot!.querySelector('.chip')!
-    expect(chip.querySelector('.tag-ic')).not.toBeNull()
+    expect(chip.querySelectorAll('.tag-ic').length).toBe(1)
     expect(chip.querySelector('[data-tag-label]')!.textContent).toBe('苹果')
   })
 
@@ -659,7 +658,7 @@ describe('OASSelect 虚拟滚动（virtual）', () => {
     }
     expect(btn.getAttribute('aria-activedescendant')).toBe('opt-25')
     const vp = vlistOf(el).shadowRoot!.querySelector<HTMLElement>('.viewport')!
-    expect(vp.scrollTop).toBeGreaterThan(0)
+    expect(vp.scrollTop).toBe(696)
     // happy-dom 不自动触发 scroll：手动派发后窗口重算，高亮项应在窗口内
     vp.dispatchEvent(new Event('scroll'))
     await flushRaf()
@@ -725,7 +724,6 @@ describe('OASSelect 虚拟滚动（virtual）', () => {
     searchInput.dispatchEvent(new Event('input', { bubbles: true }))
     expect(vlistOf(el).hidden).toBe(true)
     const createRow = el.shadowRoot!.querySelector<HTMLElement>('.create-option')!
-    expect(createRow).not.toBeNull()
     createRow.click()
     expect(el.getAttribute('value')).toBe('不存在项')
   })
@@ -1055,7 +1053,7 @@ describe('OASSelect 下拉头尾与空态插槽（header / footer / empty）', (
     open(el)
     const header = el.shadowRoot!.querySelector<HTMLElement>('[part="header"]')!
     expect(header.hidden).toBe(false)
-    expect(header.querySelector('.hdr')).not.toBeNull()
+    expect(header.querySelectorAll('.hdr').length).toBe(1)
     // 位置：搜索框（searchable 时）与选项列表之间
     el.setAttribute('searchable', '')
     const dropdown = el.shadowRoot!.querySelector('.dropdown')!
@@ -1075,7 +1073,7 @@ describe('OASSelect 下拉头尾与空态插槽（header / footer / empty）', (
     open(el)
     const footer = el.shadowRoot!.querySelector<HTMLElement>('[part="footer"]')!
     expect(footer.hidden).toBe(false)
-    expect(footer.querySelector('.ftr-add')).not.toBeNull()
+    expect(footer.querySelectorAll('.ftr-add').length).toBe(1)
     const dropdown = el.shadowRoot!.querySelector('.dropdown')!
     const children = [...dropdown.children].map((c) => c.className || c.tagName)
     expect(children.indexOf('vlist')).toBeLessThan(children.indexOf('dropdown-footer'))
@@ -1115,7 +1113,7 @@ describe('OASSelect 下拉头尾与空态插槽（header / footer / empty）', (
     open(el)
     // 空选项：自定义空态替代「暂无数据」
     el.setAttribute('options', '[]')
-    expect(el.shadowRoot!.querySelector('.custom-empty')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('.custom-empty').length).toBe(1)
     // 搜索无匹配：自定义空态替代「无匹配选项」
     el.setAttribute('options', OPTIONS)
     const si = el.shadowRoot!.querySelector<HTMLInputElement>('[part="search-input"]')!
@@ -1846,7 +1844,7 @@ describe('OASSelect form-associated（原生表单集成）', () => {
     const missing = fake.setValidity.mock.calls.at(-1)
     expect(missing?.[0]).toEqual({ valueMissing: true })
     expect(typeof missing?.[1]).toBe('string')
-    expect((missing?.[1] as string).length).toBeGreaterThan(0)
+    expect(missing?.[1] as string).toMatch(/\S/)
     open(el)
     ;(el.shadowRoot!.querySelectorAll('[role="option"]')[0] as HTMLElement).click()
     expect(fake.setValidity).toHaveBeenLastCalledWith({})
@@ -2022,7 +2020,7 @@ describe('OASSelect 长尾组（能力缺口 P2）', () => {
     const box = trigger(el).querySelector<HTMLElement>('.suffix-icon')!
     const chevron = trigger(el).querySelector('.chevron')!
     expect(box.hidden).toBe(false)
-    expect(box.querySelector('.my-ic')).not.toBeNull()
+    expect(box.querySelectorAll('.my-ic').length).toBe(1)
     expect(chevron.hasAttribute('hidden')).toBe(true)
     // 旋转样式挂在容器上（跟随展开态翻转）
     expect(styleText(el)).toContain(".trigger[aria-expanded='true'] .suffix-icon")
@@ -2044,7 +2042,7 @@ describe('OASSelect 长尾组（能力缺口 P2）', () => {
     document.body.appendChild(el)
     const btn = el.shadowRoot!.querySelector<HTMLElement>('.clear-btn')!
     expect(btn.hidden).toBe(false)
-    expect(btn.querySelector('.my-clear')).not.toBeNull()
+    expect(btn.querySelectorAll('.my-clear').length).toBe(1)
     expect(btn.querySelector('svg')!.hasAttribute('hidden')).toBe(true)
   })
 
@@ -2057,15 +2055,46 @@ describe('OASSelect 长尾组（能力缺口 P2）', () => {
     const prefix = trigger(el).querySelector<HTMLElement>('.prefix')!
     const suffix = trigger(el).querySelector<HTMLElement>('.suffix')!
     expect(prefix.hidden).toBe(false)
-    expect(prefix.querySelector('.my-prefix')).not.toBeNull()
+    expect(prefix.querySelectorAll('.my-prefix').length).toBe(1)
     expect(suffix.hidden).toBe(false)
-    expect(suffix.querySelector('.my-suffix')).not.toBeNull()
+    expect(suffix.querySelectorAll('.my-suffix').length).toBe(1)
     // 前缀在值之前、后缀在清空按钮之后
     const valueEl = trigger(el).querySelector('.value')!
     expect(prefix.nextElementSibling).toBe(valueEl)
     const bare = mount()
     expect(trigger(bare).querySelector<HTMLElement>('.prefix')!.hidden).toBe(true)
     expect(trigger(bare).querySelector<HTMLElement>('.suffix')!.hidden).toBe(true)
+  })
+
+  it('slot 模板子节点直插后仍可克隆，且不改动宿主模板 DOM', () => {
+    // Vue 等框架 CSR 直插 template 元素时子节点落在元素 childNodes（content 为空）；真实浏览器形态由
+    // qa-regression e2e 覆盖，这里守住非破坏性克隆与四条触发器插槽的接线。
+    const el = new OASSelect()
+    el.setAttribute('options', OPTIONS)
+    el.setAttribute('clearable', '')
+    el.setAttribute('value', 'apple')
+    const cases: Array<[string, string, string]> = [
+      ['prefix', '<span class="csr-prefix">📍</span>', '.csr-prefix'],
+      ['suffix', '<span class="csr-suffix">城市</span>', '.csr-suffix'],
+      ['suffix-icon', '<span class="csr-arrow">⌄</span>', '.csr-arrow'],
+      ['clear-icon', '<span class="csr-clear">✕</span>', '.csr-clear'],
+    ]
+    for (const [slot, html, probe] of cases) {
+      const tpl = document.createElement('template')
+      tpl.setAttribute('slot', slot)
+      const holder = document.createElement('span')
+      holder.innerHTML = html
+      while (holder.firstChild) tpl.insertBefore(holder.firstChild, null)
+      el.appendChild(tpl)
+    }
+    document.body.appendChild(el)
+    const root = el.shadowRoot!
+    expect(root.querySelector('.csr-prefix')?.textContent).toBe('📍')
+    expect(root.querySelector('.csr-suffix')?.textContent).toBe('城市')
+    expect(root.querySelector('.csr-arrow')?.textContent).toBe('⌄')
+    expect(root.querySelector('.csr-clear')?.textContent).toBe('✕')
+    // 非破坏性：宿主模板子节点保留（happy-dom 会把插入重定向到 content，CSR 直插形态由 e2e 覆盖）
+    expect(el.querySelector<HTMLTemplateElement>('template[slot="prefix"]')!.content.childNodes.length).toBe(1)
   })
 
   // ---- input-value（filterable 输入值受控） ----
@@ -2212,7 +2241,7 @@ describe('OASSelect 清空按钮键盘可达（I4）', () => {
     const clearBtn = el.shadowRoot!.querySelector<HTMLElement>('[part="clear"]')!
     expect(clearBtn.getAttribute('tabindex')).toBe('0')
     expect(clearBtn.tabIndex).toBe(0)
-    expect((clearBtn.getAttribute('aria-label') ?? '').length).toBeGreaterThan(0)
+    expect(clearBtn.getAttribute('aria-label')).toBe('清除')
     clearBtn.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }))
     expect(el.getAttribute('value')).toBeNull()
     expect(el.shadowRoot!.querySelector<HTMLElement>('[part="clear"]')!.hidden).toBe(true)
@@ -2298,7 +2327,7 @@ describe('OASSelect hide-selected（能力缺口 D20）', () => {
     const el = mount({ multiple: '', 'hide-selected': '', value: JSON.stringify(['apple', 'banana', 'orange']) })
     open(el)
     expect(el.shadowRoot!.querySelectorAll('[role="option"]').length).toBe(0)
-    expect(el.shadowRoot!.querySelector('.empty')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('.empty').length).toBe(1)
     el.setAttribute('value', '["banana"]')
     expect(optionLabels(el)).toEqual(['苹果', '橙子'])
   })
@@ -2385,14 +2414,14 @@ describe('OASSelect reserve-width（触发器预留最宽选项，切值不抖�
     const el = mount({ 'reserve-width': '' })
     const v = el.style.getPropertyValue('--oas-select-reserve')
     expect(v).toMatch(/^[\d.]+px$/)
-    expect(Number.parseFloat(v)).toBeGreaterThan(0)
+    expect(Number.parseFloat(v), '苹果/香蕉/橙子中最宽标签的预留宽度').toBe(94)
     el.removeAttribute('reserve-width')
     expect(el.style.getPropertyValue('--oas-select-reserve')).toBe('')
   })
 
   it('量测包含选项与 placeholder（空态也不小于占位文案）', () => {
     const el = mount({ 'reserve-width': '', placeholder: '非常非常长的占位提示文案' })
-    expect(Number.parseFloat(el.style.getPropertyValue('--oas-select-reserve'))).toBeGreaterThan(0)
+    expect(Number.parseFloat(el.style.getPropertyValue('--oas-select-reserve')), '长占位文案撑宽预留').toBe(238)
   })
 
   it('options 变化重测：更宽选项进入后预留宽度增长', () => {

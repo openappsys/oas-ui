@@ -59,7 +59,6 @@ describe('OASGantt 渲染基础', () => {
   it('任务条渲染：bar 定位/宽度（day 档 col=36，5 天条宽 180）；milestone 菱形', () => {
     const el = mount({ tasks: JSON.stringify(BASE_TASKS) })
     const t1 = barOf(el, 't1')
-    expect(t1).not.toBeNull()
     expect(Number.parseFloat(t1.style.width)).toBe(5 * 36)
     const left1 = Number.parseFloat(t1.style.left)
     const t2 = barOf(el, 't2')
@@ -100,9 +99,8 @@ describe('OASGantt 渲染基础', () => {
     const el = mount({ tasks: '[]' })
     expect(bars(el).length).toBe(0)
     const empty = shadowOf(el).querySelector('.empty')
-    expect(empty).not.toBeNull()
     expect(empty!.textContent ?? '').not.toContain('gantt.')
-    expect((empty!.textContent ?? '').length).toBeGreaterThan(0)
+    expect(empty!.textContent).toBe('暂无任务')
   })
 
   it('slot="empty" 覆盖默认空态文案', () => {
@@ -164,7 +162,7 @@ describe('OASGantt 渲染基础', () => {
       scale: 'bogus',
     })
     expect(el.tasks[0]!.progress).toBe(100)
-    expect(shadowOf(el).querySelectorAll('.head-minor .unit').length).toBeGreaterThan(0)
+    expect(shadowOf(el).querySelectorAll('.head-minor .unit').length).toBe(7)
   })
 
   it('milestone 显式声明优先：type="milestone" 即使带 end 也按里程碑渲染（菱形，end 忽略）+ console.warn 一次', () => {
@@ -179,7 +177,7 @@ describe('OASGantt 渲染基础', () => {
       expect(bar.classList.contains('milestone')).toBe(true)
       // end 忽略：菱形宽 16px（条形则会按 end 计算宽）
       expect(bar.style.width).toBe('16px')
-      expect(bar.querySelector('.dia')).not.toBeNull()
+      expect(bar.querySelectorAll('.dia').length).toBe(1)
       // 数据矛盾告警一次（重渲染不重复告警；同值 setAttribute 会被 attrCache 短路，用 requestUpdate 触发重建）
       expect(warn.mock.calls.filter((c) => String(c[0]).includes('milestone')).length).toBe(1)
       el.requestUpdate()
@@ -317,7 +315,7 @@ describe('OASGantt 渲染基础', () => {
         tasks: JSON.stringify([{ id: 'm', name: 'M', start: '2026-03-05', end: '2026-03-10', type: 'milestone' }]),
       })
       const before = warn.mock.calls.length
-      expect(before).toBeGreaterThan(0)
+      expect(before, '挂载时矛盾里程碑已告警一次').toBe(1)
       // 同 id 内容变更重写 → 重新清洗 + 重渲染，仍不重复告警
       el.setAttribute(
         'tasks',
@@ -640,7 +638,7 @@ describe('OASGantt 行树（WBS）与折叠', () => {
 
   it('aria：summary 行 aria-expanded 同步；树容器 role=tree；行 role=treeitem + aria-level', () => {
     const el = mount({ tasks: JSON.stringify(TREE) })
-    expect(shadowOf(el).querySelector('.side-body [role="tree"]')).not.toBeNull()
+    expect(shadowOf(el).querySelectorAll('.side-body [role="tree"]').length).toBe(1)
     const p1Row = shadowOf(el).querySelector('.row-name[data-key="p1"]')
     expect(p1Row?.getAttribute('role')).toBe('treeitem')
     expect(p1Row?.getAttribute('aria-level')).toBe('1')
@@ -816,7 +814,7 @@ describe('OASGantt 依赖连线（FS/SS/FF/SF）', () => {
     const hit = shadowOf(el).querySelector('.link-hit')!
     expect(hit.getAttribute('role')).toBe('button')
     expect(hit.getAttribute('tabindex')).toBe('0')
-    expect(hit.getAttribute('aria-label')).toBeTruthy()
+    expect(hit.getAttribute('aria-label')).toMatch(/^删除依赖: .+ → .+$/)
   })
 })
 
@@ -1040,7 +1038,7 @@ describe('OASGantt 多选 / 行内重命名 / 键盘重排 / 连线键盘', () =
     const el = mount({ tasks: TASKS })
     const name = shadowOf(el).querySelector<HTMLElement>('.row-name[data-key="x"] .name')!
     name.dispatchEvent(new MouseEvent('dblclick', { bubbles: true, composed: true }))
-    expect(shadowOf(el).querySelector('.rename-input')).not.toBeNull()
+    expect(shadowOf(el).querySelectorAll('.rename-input').length).toBe(1)
     // onScroll 的窗口重建经 rAF 合帧（同帧多次 scroll 只重建一次）→ 手动 flush 触发重建
     const cbs: FrameRequestCallback[] = []
     const orig = globalThis.requestAnimationFrame
@@ -1056,7 +1054,7 @@ describe('OASGantt 多选 / 行内重命名 / 键盘重排 / 连线键盘', () =
     }
     const name2 = shadowOf(el).querySelector<HTMLElement>('.row-name[data-key="x"] .name')!
     name2.dispatchEvent(new MouseEvent('dblclick', { bubbles: true, composed: true }))
-    expect(shadowOf(el).querySelector('.rename-input'), '重建后仍可重命名').not.toBeNull()
+    expect(shadowOf(el).querySelectorAll('.rename-input').length, '重建后仍可重命名').toBe(1)
   })
 
   it('重命名 Enter 提交后输入框移除', () => {
@@ -1219,7 +1217,7 @@ describe('OASGantt 多选 / 行内重命名 / 键盘重排 / 连线键盘', () =
     })
     const hit = shadowOf(el).querySelector<HTMLElement>('.link-hit')!
     hit.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }))
-    expect(shadowOf(el).querySelector('.link-hit.selected')).not.toBeNull()
+    expect(shadowOf(el).querySelectorAll('.link-hit.selected').length).toBe(1)
     const bar = barOf(el, 'b')
     bar.focus()
     bar.dispatchEvent(new KeyboardEvent('keydown', { key: 'Delete', bubbles: true, composed: true }))
@@ -1341,7 +1339,6 @@ describe('OASGantt 多选 / 行内重命名 / 键盘重排 / 连线键盘', () =
     try {
       const el = mount({ tasks: TASKS })
       const handle = shadowOf(el).querySelector<HTMLElement>('.row-name[data-key="x"] .row-drag')
-      expect(handle).not.toBeNull()
       const side = shadowOf(el).querySelector<HTMLElement>('.side-body')!
       side.getBoundingClientRect = () =>
         ({
@@ -1708,7 +1705,7 @@ describe('OASGantt 行虚拟滚动', () => {
   it('scrollTo(id)：滚到目标行后窗口包含该行（渲染出对应 bar）', () => {
     const el = mount({ tasks: JSON.stringify(bigTasks(60)), height: '180', 'row-height': '36' })
     el.scrollToTask('k50')
-    expect(barOf(el, 'k50')).not.toBeNull()
+    expect(barOf(el, 'k50').getAttribute('data-id')).toBe('k50')
   })
 
   it('虚拟滚动下依赖两行均在窗口才画线；任一端滚出则省略', () => {
@@ -1779,9 +1776,11 @@ describe('OASGantt 选择变化增量渲染（选择不重跑全量构建）', (
     const g = priv(el)
     // 挂载本身已发生一次全量构建 → 计数非恒 0（否则「不增」断言是假绿）
     const base = snap()
-    expect(base.rowBuilds, '挂载触发 buildRows').toBeGreaterThan(0)
-    expect(base.unitBuilds, '挂载触发 buildUnits').toBeGreaterThan(0)
-    expect(base.cpComputes, '挂载触发关键路径计算').toBeGreaterThan(0)
+    // 诊断计数随挂载期间的渲染次数（本用例为 6/6/2），属实现细节，无稳定精确契约值；
+    // 下界 1 即证明「挂载确实触发了全量构建」，与后续「不增」断言配合构成完整契约。
+    expect(base.rowBuilds, '挂载触发 buildRows').toBeGreaterThanOrEqual(1)
+    expect(base.unitBuilds, '挂载触发 buildUnits').toBeGreaterThanOrEqual(1)
+    expect(base.cpComputes, '挂载触发关键路径计算').toBeGreaterThanOrEqual(1)
     // 选择集 ARIA：树容器声明多选语义（与 Ctrl/Shift/框选能力一致）
     expect(shadowOf(el).querySelector('.side-rows')!.getAttribute('aria-multiselectable')).toBe('true')
 
@@ -2243,7 +2242,7 @@ describe('OASGantt 列虚拟滚动（横向时间轴窗口）', () => {
     // ② 窗口起点落在组内部（137 列 ≈ 月中，二分定位的首组被窗口左缘截断）
     Object.defineProperty(tbody, 'scrollLeft', { value: 137 * colW, configurable: true, writable: true })
     g.renderWindow()
-    expect(g.winColStart, '窗口已平移到轴中段').toBeGreaterThan(0)
+    expect(g.winColStart, '窗口已平移到轴中段（floor(137) − buffer 4）').toBe(133)
     expectWindow(g.winColStart, g.winColEnd)
     // ③ 组跨窗口两端：视口收窄到 40px（窗口 ≤ 11 列 < 月组跨度 ~28..31 列），再滚到某大组正中
     //    → 窗口完全落在单组内部（组同时跨窗口左右两缘）
@@ -2252,7 +2251,7 @@ describe('OASGantt 列虚拟滚动（横向时间轴窗口）', () => {
     const winSize = g.winColEnd - g.winColStart
     expect(winSize, '窄视口窗口列数（小于组跨度是本情形前提）').toBeLessThan(28)
     const big = groups.find((gr) => gr.end - gr.start >= winSize)
-    expect(big, '存在跨度 ≥ 窗口的组（day 档月组）').toBeTruthy()
+    expect(big!.end - big!.start, '存在跨度 ≥ 窗口的组（day 档月组）').toBeGreaterThanOrEqual(winSize)
     const mid = big!.start + Math.floor((big!.end - big!.start) / 2)
     Object.defineProperty(tbody, 'scrollLeft', { value: mid * colW, configurable: true, writable: true })
     g.renderWindow()
@@ -2337,7 +2336,7 @@ describe('OASGantt 列虚拟滚动（横向时间轴窗口）', () => {
     // 断言窗口状态与 DOM 都已同步反映目标滚动位置（旧实现只设 scrollLeft，窗口靠异步
     // scroll → rAF 合帧补齐 → 调用返回瞬间表头/条仍是旧窗口）
     const sl = tbody.scrollLeft
-    expect(sl, 'scrollToDate 已滚动').toBeGreaterThan(0)
+    expect(sl, 'scrollToDate 已滚动').toBe(8196)
     expect(g.winColStart, '列窗口起点与 scrollLeft 同步（max(0, floor(sl/colW) − buffer)）').toBe(
       Math.max(0, Math.floor(sl / colW) - 4),
     )
@@ -2443,7 +2442,6 @@ describe('OASGantt 今日线 / 周末与假日 / tooltip / 标签', () => {
       vi.setSystemTime(new Date('2026-03-10T10:00:00'))
       const el = mount({ tasks: JSON.stringify([{ id: 'a', name: 'A', start: '2026-03-02', end: '2026-03-20' }]) })
       const line = shadowOf(el).querySelector('.today-line')
-      expect(line).not.toBeNull()
       expect(line!.getAttribute('aria-hidden')).toBe('true')
       expect(line!.hasAttribute('hidden')).toBe(false)
       const el2 = mount({
@@ -2471,7 +2469,7 @@ describe('OASGantt 今日线 / 周末与假日 / tooltip / 标签', () => {
       tasks: JSON.stringify([{ id: 'a', name: 'A', start: '2026-03-02', end: '2026-03-08' }]),
       holidays: JSON.stringify(['2026-03-04']),
     })
-    expect(shadowOf(el3).querySelector('.grid-canvas .holiday')).not.toBeNull()
+    expect(shadowOf(el3).querySelectorAll('.grid-canvas .holiday').length).toBe(1)
   })
 
   it('holidaySet 缓存：同一属性原文复用同一 Set（每帧 JSON.parse 消除）；属性变更即失效，语义与逐次解析一致', () => {
@@ -2501,7 +2499,6 @@ describe('OASGantt 今日线 / 周末与假日 / tooltip / 标签', () => {
     const bar = barOf(el, 'a')
     bar.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }))
     const tip = shadowOf(el).querySelector('.tooltip')
-    expect(tip).not.toBeNull()
     expect(tip!.textContent ?? '').toContain('悬停我')
     bar.dispatchEvent(new MouseEvent('mouseleave', { bubbles: true }))
     expect(shadowOf(el).querySelector('.tooltip')!.hasAttribute('hidden')).toBe(true)
@@ -2602,7 +2599,7 @@ describe('OASGantt RTL', () => {
     const ltrLeft = ltr.shadowRoot!.querySelector<HTMLElement>('.tbody')!.scrollLeft
     const rtlLeft = rtl.shadowRoot!.querySelector<HTMLElement>('.tbody')!.scrollLeft
     // LTR：scrollLeft = 目标物理 x − 半视口（正值模型）
-    expect(ltrLeft).toBeGreaterThan(0)
+    expect(ltrLeft, 'LTR 正值滚动模型（目标居中）').toBe(44)
     // RTL 物理 x 是镜像坐标（p = canvasW − x = canvasW − ltrLeft − half）：
     // scrollLeft = (p − half) − maxScroll = canvasW − ltrLeft − 2×half − maxScroll ∈ [−maxScroll, 0]
     expect(rtlLeft).toBe(canvasW - ltrLeft - 200 - 160)
@@ -2659,7 +2656,7 @@ describe('OASGantt tasks 通道与方法', () => {
     el.tasks = [{ id: 'a', name: 'A', start: '2026-03-02', end: '2026-03-03' }]
     expect(changed).toBe(1)
     expect(el.getAttribute('tasks')).toContain('2026-03-02')
-    expect(barOf(el, 'a')).not.toBeNull()
+    expect(barOf(el, 'a').getAttribute('data-id')).toBe('a')
     const read = el.tasks
     expect(read).not.toBe(el.tasks)
     expect(read[0]!.id).toBe('a')
@@ -2728,7 +2725,7 @@ describe('OASGantt tasks 通道与方法', () => {
       const el = mount({ tasks: JSON.stringify(BASE_TASKS) })
       expect(() => el.scrollToDate('2026-03-15')).not.toThrow()
       expect(() => el.scrollToToday()).not.toThrow()
-      expect(shadowOf(el).querySelector('.bars .bar')).not.toBeNull()
+      expect(shadowOf(el).querySelectorAll('.bars .bar').length).toBe(3)
     } finally {
       vi.useRealTimers()
     }
@@ -2784,7 +2781,7 @@ describe('OASGantt 基线对比（baseline）', () => {
     const b = shadowOf(on).querySelector<HTMLElement>('.baseline[data-id="b"]')!
     expect(b.title, '与基线一致').toBe('与基线一致')
     expect(shadowOf(on).querySelector('.baseline[data-id="c"]'), '非法基线不渲染').toBeNull()
-    expect(parseFloat(a.style.width)).toBeGreaterThan(0)
+    expect(parseFloat(a.style.width), '基线 03-02..03-04 含端 3 天 × 36').toBe(108)
     expect(a.dataset.startDelta).toBe('0')
     expect(a.dataset.endDelta).toBe('2')
     expect(a.dataset.durationDelta).toBe('2')
@@ -2907,7 +2904,7 @@ describe('OASGantt 截止日 / 浮时 / 基线进度', () => {
     expect(barOf(on, 'a').dataset.totalFloat).toBe('0')
     expect(barOf(on, 'c').dataset.totalFloat).toBe('3')
     expect(barOf(on, 'c').dataset.freeFloat).toBe('3')
-    expect(shadowOf(on).querySelectorAll('.float-label').length).toBeGreaterThan(0)
+    expect(shadowOf(on).querySelectorAll('.float-label').length).toBe(3)
     expect(barOf(on, 'c').textContent).toContain('3')
   })
 
@@ -2934,7 +2931,7 @@ describe('OASGantt 截止日 / 浮时 / 基线进度', () => {
       ]),
     })
     expect(shadowOf(el).querySelectorAll('.float-label').length).toBe(0)
-    expect(barOf(el, 'a').querySelector('.bar-label .float-inline')).not.toBeNull()
+    expect(barOf(el, 'a').querySelectorAll('.bar-label .float-inline').length).toBe(1)
 
     const inside = mount({
       'show-float': '',
@@ -2945,7 +2942,7 @@ describe('OASGantt 截止日 / 浮时 / 基线进度', () => {
       ]),
     })
     // 条内标签窄条会截断；inside 组合改走条外浮时标签，且颜色随实底可读
-    expect(barOf(inside, 'a').querySelector('.float-label')).not.toBeNull()
+    expect(barOf(inside, 'a').querySelectorAll('.float-label').length).toBe(1)
     expect(barOf(inside, 'a').querySelector('.float-inline')).toBeNull()
   })
 
@@ -3170,7 +3167,6 @@ describe('OASGantt 依赖连线交互编辑', () => {
       ]),
     })
     const hit = shadowOf(el).querySelector<SVGPathElement>('.link-hit[data-from="b"][data-to="a"]')!
-    expect(hit).not.toBeNull()
     let fired = 0
     el.addEventListener('oas-dependencies-change', () => fired++)
     hit.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }))
@@ -3409,7 +3405,9 @@ describe('OASGantt 评审修复回归', () => {
         { id: 'b', name: 'B', start: '2026-03-09', end: '2026-03-13' },
       ]),
     })
-    expect(shadowOf(el).querySelector('.bar[data-id="a"] .link-dot'), 'disabled 条仍渲染连线点').not.toBeNull()
+    expect(shadowOf(el).querySelectorAll('.bar[data-id="a"] .link-dot').length, 'disabled 条仍渲染起止两个连线点').toBe(
+      2,
+    )
     linkDrag(el, 'a', 'end', 310)
     expect(el.tasks.find((t) => t.id === 'b')!.dependencies).toEqual([{ id: 'a', type: 'fs' }])
     expect(el.tasks.find((t) => t.id === 'a')!.dependencies, 'disabled 自身未改').toBeUndefined()
@@ -3480,7 +3478,7 @@ describe('OASGantt 评审修复回归', () => {
       ]),
     })
     expect(shadowOf(el).querySelector('.link-hit[data-from="b"][data-to="a"]'), '禁用后继无命中路径').toBeNull()
-    expect(shadowOf(el).querySelector('.link[data-from="b"][data-to="a"]'), '可见线仍画').not.toBeNull()
+    expect(shadowOf(el).querySelectorAll('.link[data-from="b"][data-to="a"]').length, '可见线仍画').toBe(1)
   })
 
   it('sanitizeDeps 保留同源多型（fs + ss 各一，两条线）', () => {
@@ -3608,7 +3606,8 @@ describe('OASGantt 评审修复回归', () => {
       document.dispatchEvent(move)
       expect(rafCbs.length).toBe(1)
       rafCbs[0]!(0)
-      expect(tb.scrollTop, '自动向底滚动').toBeGreaterThan(0)
+      // 自动滚动步长取决于指针越界距离与速度系数，属实现细节；下界 1 证明已推进滚动。
+      expect(tb.scrollTop, '自动向底滚动').toBeGreaterThanOrEqual(1)
       document.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, composed: true, pointerId: 1 }))
     } finally {
       globalThis.requestAnimationFrame = orig
@@ -3822,7 +3821,7 @@ describe('OASGantt 评审修复回归', () => {
     const el = mount({ tasks: JSON.stringify([{ id: 'm', name: 'M', start: '2026-03-05' }]) })
     const bar = shadowOf(el).querySelector('.bar[data-id="m"]')!
     expect(bar.querySelectorAll('.link-dot').length).toBe(1)
-    expect(bar.querySelector('.link-dot.link-end')).not.toBeNull()
+    expect(bar.querySelectorAll('.link-dot.link-end').length).toBe(1)
     expect(bar.querySelector('.link-dot.link-start')).toBeNull()
   })
 
@@ -4370,7 +4369,7 @@ describe('OASGantt 创作：creatable 行内新建', () => {
     shadowOf(el).querySelector<HTMLElement>('.row-name[data-key="p"] .row-add')!.click()
     expect(added).toHaveLength(1)
     expect(el.tasks.find((t) => t.id === added[0]!.id)!.parent).toBe('p')
-    expect(shadowOf(el).querySelector('.rename-input'), '进入行内重命名').not.toBeNull()
+    expect(shadowOf(el).querySelectorAll('.rename-input').length, '进入行内重命名').toBe(1)
   })
 
   it('点击叶子行「＋」在其后加同级', () => {
@@ -4400,7 +4399,7 @@ describe('OASGantt 创作：creatable 行内新建', () => {
       ]),
       creatable: '',
     })
-    expect(shadowOf(el).querySelector('.row-name[data-key="a"] .row-add')).not.toBeNull()
+    expect(shadowOf(el).querySelectorAll('.row-name[data-key="a"] .row-add').length).toBe(1)
     expect(shadowOf(el).querySelector('.row-name[data-key="b"] .row-add'), 'disabled 行').toBeNull()
     el.setAttribute('readonly', '')
     expect(shadowOf(el).querySelectorAll('.row-add').length, 'readonly 全不渲染').toBe(0)
@@ -4439,7 +4438,7 @@ describe('OASGantt 创作：creatable 行内新建', () => {
     tbody.dispatchEvent(ev)
     expect(added).toHaveLength(1)
     expect(el.tasks.find((t) => t.id === added[0]!.id)!.start).toBe('2026-03-03')
-    expect(shadowOf(el).querySelector('.rename-input')).not.toBeNull()
+    expect(shadowOf(el).querySelectorAll('.rename-input').length).toBe(1)
   })
 
   it('双击 side-body 空白按今天建任务', () => {
@@ -4559,10 +4558,10 @@ describe('OASGantt 创作：复审修复回归（守卫 / 克隆依赖 / RTL 落
     const added = el.tasks.filter((t) => t.parent === 'p' && t.id !== 'c')
     expect(added).toHaveLength(1)
     expect(
-      shadowOf(el).querySelector(`.row-name[data-key="${added[0]!.id}"]`),
+      shadowOf(el).querySelectorAll(`.row-name[data-key="${added[0]!.id}"]`).length,
       '新子级应可见（自动展开）',
-    ).not.toBeNull()
-    expect(shadowOf(el).querySelector('.rename-input')).not.toBeNull()
+    ).toBe(1)
+    expect(shadowOf(el).querySelectorAll('.rename-input').length).toBe(1)
   })
 
   it('行尾「＋」聚焦后 Space/Enter 不被行 keydown 抢走（不改选中）', () => {
@@ -5292,7 +5291,6 @@ describe('OASGantt 框选多任务（marquee）', () => {
     pointerAt('pointerdown', 20, 10, side(el))
     pointerAt('pointermove', 40, 50, document)
     const overlay = shadowOf(el).querySelector<HTMLElement>('.marquee')
-    expect(overlay).not.toBeNull()
     expect(Number.parseFloat(overlay!.style.width)).toBe(20)
     expect(Number.parseFloat(overlay!.style.height)).toBe(40)
     pointerAt('pointerup', 40, 50, document)
@@ -5388,7 +5386,7 @@ describe('OASGantt 拖拽建任务（creatable 时间轴空白拖）', () => {
     const t = taskOf(el, added[0]!.id)
     expect(t.start).toBe('2026-03-03')
     expect(t.end).toBe('2026-03-05')
-    expect(shadowOf(el).querySelector('.rename-input')).not.toBeNull()
+    expect(shadowOf(el).querySelectorAll('.rename-input').length).toBe(1)
   })
 
   it('反向拖（从右向左）：起止取 min/max，跨度一致且不触发 start>end 自愈告警', () => {
@@ -5480,7 +5478,7 @@ describe('OASGantt 拖拽建任务（creatable 时间轴空白拖）', () => {
     Object.defineProperty(move, 'clientX', { value: 5 * 36 + 5 })
     Object.defineProperty(move, 'clientY', { value: 10 })
     document.dispatchEvent(move)
-    expect(shadowOf(el).querySelector('.marquee')).not.toBeNull()
+    expect(shadowOf(el).querySelectorAll('.marquee').length).toBe(1)
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
     document.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, composed: true, pointerId: 1 }))
     expect(added, 'Esc 后不应建任务').toBe(0)
@@ -5631,7 +5629,7 @@ describe('OASGantt 依赖 lag/lead', () => {
       expect(taskOf(el, 't').start).toBe('2026-03-02 12:00')
       expect(taskOf(el, 't').end).toBe('2026-03-02 13:00')
       // 组件可渲染（非白屏）
-      expect(barOf(el, 't')).not.toBeNull()
+      expect(barOf(el, 't').getAttribute('data-id')).toBe('t')
     } finally {
       warn.mockRestore()
     }
@@ -5652,7 +5650,7 @@ describe('OASGantt 依赖 lag/lead', () => {
     expect(t.start).toBe('2026-03-07')
     expect(t.end).toBe('2026-03-08')
     expect(t.start, '不产生 Invalid Date 数据串').not.toContain('NaN')
-    expect(barOf(el, 't')).not.toBeNull()
+    expect(barOf(el, 't').getAttribute('data-id')).toBe('t')
   })
 
   it('lag 安全域：1e7 天（旧上限放行）按 0 处理——不写 5 位年份、回写不丢任务、属性通道告警一次', () => {
@@ -5909,7 +5907,7 @@ describe('OASGantt 依赖 lag/lead', () => {
     })
     // lag 被清洗丢弃 → 依赖退化为无 lag；渲染/排程均正常
     expect(el.tasks.find((x) => x.id === 't')!.dependencies![0]!.lag).toBeUndefined()
-    expect(barOf(el, 't')).toBeTruthy()
+    expect(barOf(el, 't').getAttribute('data-id')).toBe('t')
   })
 
   it('连线 lag 可见标签：非 0 渲染 .link-label（+N/−N），0 不渲染', () => {
@@ -6899,7 +6897,7 @@ describe('OASGantt 行名列自定义模板（template[slot="row"]）', () => {
     const el = mountTpl()
     const name = shadowOf(el).querySelector<HTMLElement>('.row-name[data-key="a"] .name')!
     expect(name.querySelector('[data-task-name]')!.textContent).toBe('A')
-    expect(name.querySelector('.owner-edit')).not.toBeNull()
+    expect(name.querySelectorAll('.owner-edit').length).toBe(1)
     // 宿主可读自定义字段 owner 渲染
     const task = el.tasks.find((t) => t.id === 'a') as Record<string, unknown>
     expect(task.owner).toBe('张三')
@@ -7149,7 +7147,7 @@ describe('OASGantt windowed（服务端行窗口模式）', () => {
     const units = (el as unknown as { units: Array<{ startMs: number; endMs: number }> }).units
     const jan1 = new Date(2026, 0, 1).getTime()
     const dec31End = new Date(2026, 11, 31).getTime() + DAY_MS
-    expect(units.length).toBeGreaterThan(0)
+    expect(units.length, 'day 档 2026 全年（含端点留白）').toBe(370)
     // 轴覆盖宿主范围：首列起点 ≤ 01-01、末列右缘 ≥ 12-31 含端
     expect(units[0]!.startMs).toBeLessThanOrEqual(jan1)
     expect(units[units.length - 1]!.endMs).toBeGreaterThanOrEqual(dec31End)
@@ -7169,7 +7167,7 @@ describe('OASGantt windowed（服务端行窗口模式）', () => {
       expect(warn.mock.calls.filter((c) => String(c[0]).includes('range-start')).length).toBe(1)
       // 回落 rows 派生：轴覆盖 3 月数据
       const units = (el as unknown as { units: Array<{ startMs: number }> }).units
-      expect(units.length).toBeGreaterThan(0)
+      expect(units.length, '回落 rows 派生（03-02..03-06 含端 + 留白）').toBe(10)
       expect(units[0]!.startMs).toBeLessThanOrEqual(new Date(2026, 2, 1).getTime())
     } finally {
       warn.mockRestore()
@@ -7273,7 +7271,7 @@ describe('OASGantt windowed（服务端行窗口模式）', () => {
     el.setAttribute('window-start', '100')
     el.setAttribute('tasks', taskSlice(100, 17))
     const names = nameRows(el)
-    expect(names.length).toBeGreaterThan(0)
+    expect(names.length, '窗口 [94,103) 共 9 行').toBe(9)
     // 绝对行号定位：首行 top = 100 × 40（若按局部下标 0 × 40 会红）
     expect(names[0]!.dataset.key).toBe('t100')
     expect(names[0]!.style.top).toBe(`${100 * 40}px`)
@@ -7324,7 +7322,7 @@ describe('OASGantt windowed（服务端行窗口模式）', () => {
       tb.dispatchEvent(new Event('scroll'))
       await flushRaf()
       const midNames = nameRows(el)
-      expect(midNames.length).toBeGreaterThan(0)
+      expect(midNames.length, '行 60 窗口 [54,71) 共 17 行').toBe(17)
       expect(midNames[0]!.dataset.key).toBe('c53') // 行 60 - buffer 6 → c53（父占 1 行）
       expect(reqs.filter((r) => r.reason === 'scroll')).toEqual([]) // 装载区内不派请求
       // 滚出装载区 → 照常派发 scroll 请求（绝对区间）
@@ -7607,7 +7605,7 @@ describe('OASGantt 行斑马纹（stripe）', () => {
     tb.scrollTop = 27 * ROW_H
     rerender(el)
     const names = nameRows(el)
-    expect(names.length).toBeGreaterThan(0)
+    expect(names.length, '窗口 [15,32) 共 17 行').toBe(17)
     expect(absOf(names[0]!.style.top), '首渲染行 = 绝对行 21（窗口数学自检）').toBe(21)
     // 反证锚点：DOM 序 0 若按序着色应无底色——按**绝对奇偶**必须有（winStart 为奇时两者必错位）
     expect(names[0]!.hasAttribute('data-stripe'), '绝对行 21（奇）→ 行名有底色').toBe(true)
@@ -7665,7 +7663,7 @@ describe('OASGantt 行斑马纹（stripe）', () => {
       height: '180',
       'row-height': String(ROW_H),
     })
-    expect(shadowOf(el).querySelectorAll('.stripe').length).toBeGreaterThan(0)
+    expect(shadowOf(el).querySelectorAll('.stripe').length, '首屏窗口 11 行中奇数行条纹 5 条').toBe(5)
     el.removeAttribute('stripe')
     expect(shadowOf(el).querySelector('.stripe-canvas'), '关闭后容器整体移除，不留一个条纹').toBeNull()
     expect(shadowOf(el).querySelectorAll('.stripe').length).toBe(0)
@@ -7710,7 +7708,7 @@ describe('OASGantt 属性-方法撞名回归', () => {
       el.setAttribute('progress-readonly', '')
     }).not.toThrow()
     // label-position=inside：条旁标签渲染
-    expect(barOf(el, 't1').querySelector('.bar-label')).not.toBeNull()
+    expect(barOf(el, 't1').querySelectorAll('.bar-label').length).toBe(1)
     // show-today=false：今日线隐藏
     expect(shadowOf(el).querySelector<HTMLElement>('.today-line')!.hidden).toBe(true)
     // dates-readonly / progress-readonly：拖拽手柄与进度手柄不渲染

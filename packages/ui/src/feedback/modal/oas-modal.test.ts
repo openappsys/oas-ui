@@ -34,9 +34,8 @@ describe('OASModal', () => {
     const el = mount({ visible: '' })
     await Promise.resolve()
     const dialog = el.shadowRoot!.querySelector('[role="dialog"]')!
-    expect(dialog).not.toBeNull()
     expect(dialog.getAttribute('aria-modal')).toBe('true')
-    expect(el.shadowRoot!.querySelector('slot')).not.toBeNull()
+    expect(el.shadowRoot!.querySelector<HTMLSlotElement>('slot:not([name])')!.assignedNodes().length).toBe(1)
     expect(el.textContent).toContain('内容')
   })
 
@@ -158,7 +157,7 @@ describe('OASModal', () => {
     const el = mount({ visible: '', centered: '' })
     await Promise.resolve()
     const dialog = el.shadowRoot!.querySelector('.dialog')!
-    expect(dialog.getAttribute('data-centered')).not.toBeNull()
+    expect(dialog.hasAttribute('data-centered')).toBe(true)
     el.removeAttribute('centered')
     expect(dialog.getAttribute('data-centered')).toBeNull()
   })
@@ -237,7 +236,7 @@ describe('OASModal', () => {
     const el = mount({ visible: '', fullscreen: '', width: '640px' })
     await Promise.resolve()
     const dialog = el.shadowRoot!.querySelector<HTMLElement>('.dialog')!
-    expect(dialog.getAttribute('data-fullscreen')).not.toBeNull()
+    expect(dialog.hasAttribute('data-fullscreen')).toBe(true)
     expect(dialog.style.width).toBe('')
     el.removeAttribute('fullscreen')
     expect(dialog.getAttribute('data-fullscreen')).toBeNull()
@@ -248,8 +247,8 @@ describe('OASModal', () => {
     const el = mount({ visible: '', fullscreen: '', centered: '' })
     await Promise.resolve()
     const dialog = el.shadowRoot!.querySelector('.dialog')!
-    expect(dialog.getAttribute('data-fullscreen')).not.toBeNull()
-    expect(dialog.getAttribute('data-centered')).not.toBeNull()
+    expect(dialog.hasAttribute('data-fullscreen')).toBe(true)
+    expect(dialog.hasAttribute('data-centered')).toBe(true)
   })
 
   it('fullscreen + draggable：拖拽被禁用（优先级 fullscreen 胜出）', async () => {
@@ -407,7 +406,7 @@ describe('OASModal', () => {
     await Promise.resolve()
     const icon = el.shadowRoot!.querySelector('[part="semantic-icon"]')!
     expect(icon.hasAttribute('hidden')).toBe(false)
-    expect(icon.querySelector('svg')).not.toBeNull()
+    expect(icon.querySelectorAll('svg').length).toBe(1)
     expect(icon.getAttribute('aria-hidden')).toBe('true')
     el.removeAttribute('type')
     await Promise.resolve()
@@ -556,7 +555,7 @@ describe('OASModal', () => {
       await Promise.resolve()
       const slot = el.shadowRoot!.querySelector<HTMLSlotElement>('slot[name="title"]')!
       const fallback = el.shadowRoot!.querySelector<HTMLElement>('.title-text')!
-      expect(slot.assignedNodes().length).toBeGreaterThan(0)
+      expect(slot.assignedNodes().length).toBe(1)
       expect(fallback.hidden).toBe(true)
       // 宿主 title 仍被吸收（吸收状态机不变）
       expect(el.hasAttribute('title')).toBe(false)
@@ -573,7 +572,7 @@ describe('OASModal', () => {
       await Promise.resolve()
       const slot = el.shadowRoot!.querySelector<HTMLSlotElement>('slot[name="title"]')!
       const fallback = el.shadowRoot!.querySelector<HTMLElement>('.title-text')!
-      expect(slot.assignedNodes().length).toBeGreaterThan(0)
+      expect(slot.assignedNodes().length).toBe(1)
       expect(fallback.hidden).toBe(true)
       expect(el.hasAttribute('title')).toBe(false)
     })
@@ -794,9 +793,8 @@ describe('OASModal 一期能力增强', () => {
     await Promise.resolve()
     const actions = el.shadowRoot!.querySelector<HTMLElement>('[part="footer-actions"]')!
     expect(actions.hidden).toBe(true)
-    expect(el.shadowRoot!.querySelector('slot[name="footer"]')).not.toBeNull()
     const slot = el.shadowRoot!.querySelector<HTMLSlotElement>('slot[name="footer"]')!
-    expect(slot.assignedNodes().length).toBeGreaterThan(0)
+    expect(slot.assignedNodes().length).toBe(1)
     // 插槽内容实际显示（未被内置按钮遮挡逻辑破坏）
     expect(el.textContent).toContain('自定义')
   })
@@ -812,9 +810,9 @@ describe('OASModal 一期能力增强', () => {
   it('P10 destroy-on-close：关闭动画结束（oas-closed）后清空 light DOM 内容', async () => {
     const el = mount({ visible: '', 'destroy-on-close': '' })
     await Promise.resolve()
-    expect(el.children.length).toBeGreaterThan(0)
+    expect(el.children.length).toBe(1)
     el.removeAttribute('visible')
-    expect(el.children.length, '动画未结束前不销毁').toBeGreaterThan(0)
+    expect(el.children.length, '动画未结束前不销毁').toBe(1)
     el.shadowRoot!.querySelector('.dialog')!.dispatchEvent(new Event('transitionend'))
     await Promise.resolve()
     expect(el.children.length).toBe(0)
@@ -823,11 +821,11 @@ describe('OASModal 一期能力增强', () => {
   it('P10 未开启 destroy-on-close：关闭动画结束后内容保留（默认不销毁 DOM）', async () => {
     const el = mount({ visible: '' })
     await Promise.resolve()
-    expect(el.children.length).toBeGreaterThan(0)
+    expect(el.children.length).toBe(1)
     el.removeAttribute('visible')
     el.shadowRoot!.querySelector('.dialog')!.dispatchEvent(new Event('transitionend'))
     await Promise.resolve()
-    expect(el.children.length).toBeGreaterThan(0)
+    expect(el.children.length).toBe(1)
   })
 
   // —— P7 append-to ——
@@ -836,14 +834,13 @@ describe('OASModal 一期能力增强', () => {
     const el = mount({ visible: '', 'append-to': 'body' })
     await Promise.resolve()
     const portal = document.querySelector('[data-oas-modal-portal]')!
-    expect(portal).not.toBeNull()
-    expect(portal.shadowRoot!.querySelector('.mask')).not.toBeNull()
-    expect(portal.shadowRoot!.querySelector('.dialog')).not.toBeNull()
+    expect(portal.shadowRoot!.querySelectorAll('.mask').length).toBe(1)
+    expect(portal.shadowRoot!.querySelectorAll('.dialog').length).toBe(1)
     expect(el.shadowRoot!.querySelector('.dialog')).toBeNull()
     el.removeAttribute('append-to')
     await Promise.resolve()
     expect(portal.shadowRoot!.querySelector('.dialog')).toBeNull()
-    expect(el.shadowRoot!.querySelector('.dialog')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('.dialog').length).toBe(1)
   })
 
   it('P7 append-to 选择器命中自定义容器；无效选择器回退组件 shadow', async () => {
@@ -853,13 +850,12 @@ describe('OASModal 一期能力增强', () => {
     const el = mount({ visible: '', 'append-to': '#modal-host' })
     await Promise.resolve()
     const portal = host.querySelector('[data-oas-modal-portal]')!
-    expect(portal).not.toBeNull()
-    expect(portal.shadowRoot!.querySelector('.dialog')).not.toBeNull()
+    expect(portal.shadowRoot!.querySelectorAll('.dialog').length).toBe(1)
     el.removeAttribute('append-to')
     await Promise.resolve()
     el.setAttribute('append-to', '#no-such-node')
     await Promise.resolve()
-    expect(el.shadowRoot!.querySelector('.dialog')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('.dialog').length).toBe(1)
   })
 
   // —— P9 position top ——
@@ -971,7 +967,7 @@ describe('OASModal 一期能力增强', () => {
   it('P24 role 属性切换 dialog 语义（alertdialog），缺省保持 dialog', async () => {
     const el = mount({ visible: '', role: 'alertdialog' })
     await Promise.resolve()
-    expect(el.shadowRoot!.querySelector('[role="alertdialog"]')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('[role="alertdialog"]').length).toBe(1)
     expect(el.shadowRoot!.querySelector('[role="dialog"]')).toBeNull()
   })
 })
@@ -1010,8 +1006,8 @@ describe('OASModal 二期能力增强', () => {
     el.setAttribute('visible', '')
     await Promise.resolve()
     expect(open).toBe(1)
-    expect(el.shadowRoot!.querySelector('.mask')!.getAttribute('data-open')).not.toBeNull()
-    expect(dialogOf(el).getAttribute('data-open')).not.toBeNull()
+    expect(el.shadowRoot!.querySelector('.mask')!.hasAttribute('data-open')).toBe(true)
+    expect(dialogOf(el).hasAttribute('data-open')).toBe(true)
     expect(dialogOf(el).getAttribute('data-closed')).toBeNull()
   })
 
@@ -1057,7 +1053,7 @@ describe('OASModal 二期能力增强', () => {
     expect(closeDetail.source).toBe('cancel')
     expect(el.hasAttribute('visible')).toBe(false)
     expect(dialogOf(el).getAttribute('data-open')).toBeNull()
-    expect(dialogOf(el).getAttribute('data-closed')).not.toBeNull()
+    expect(dialogOf(el).hasAttribute('data-closed')).toBe(true)
     expect(closed).toBe(0)
     endClose(el)
     expect(closed).toBe(1)
@@ -1241,7 +1237,7 @@ describe('OASModal 二期能力增强', () => {
       expect(dialogOf(el).getAttribute('data-fullscreen')).toBeNull()
       // 收窄视口 → 自动全屏（标记 data-fullscreen + 清除内联宽度）
       setViewport(800, 600)
-      expect(dialogOf(el).getAttribute('data-fullscreen')).not.toBeNull()
+      expect(dialogOf(el).hasAttribute('data-fullscreen')).toBe(true)
       expect(dialogOf(el).style.width).toBe('')
       // 拉宽视口 → 恢复常规（宽度回到显式 width）
       setViewport(1280, 800)
@@ -1341,7 +1337,7 @@ describe('OASModal 二期能力增强', () => {
     await Promise.resolve()
     const slot = el.shadowRoot!.querySelector<HTMLSlotElement>('slot[name="close-icon"]')!
     const assigned = slot.assignedNodes()
-    expect(assigned.length).toBeGreaterThan(0)
+    expect(assigned.length).toBe(1)
     // 插槽分配内容即自定义关闭图标（shadow textContent 不扁平化，断言分配到 light DOM 节点）
     expect(assigned[0]!.textContent).toContain('关闭')
     // 关闭按钮本体仍可点
@@ -1509,7 +1505,9 @@ describe('OASModal maximizable（标题栏最大化/还原，PRD D28）', () => 
     const btn = maxBtnOf(el)
     expect(btn.hidden).toBe(false)
     const close = el.shadowRoot!.querySelector('[part="close"]')!
-    expect(btn.compareDocumentPosition(close) & Node.DOCUMENT_POSITION_FOLLOWING, '最大化按钮应在 ✕ 之前').toBeTruthy()
+    expect(btn.compareDocumentPosition(close) & Node.DOCUMENT_POSITION_FOLLOWING, '最大化按钮应在 ✕ 之前').toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING,
+    )
   })
 
   it('点击最大化：data-fullscreen 标记 + width 内联清除 + oas-maximize(maximized=true)；再点还原', () => {
@@ -1519,7 +1517,7 @@ describe('OASModal maximizable（标题栏最大化/还原，PRD D28）', () => 
     let detail: unknown
     el.addEventListener('oas-maximize', (e: Event) => (detail = (e as CustomEvent).detail))
     btn.click()
-    expect(dialog.getAttribute('data-fullscreen'), '最大化等同 fullscreen 语义').not.toBeNull()
+    expect(dialog.hasAttribute('data-fullscreen'), '最大化等同 fullscreen 语义').toBe(true)
     expect(dialog.style.width, '最大化下内联宽度清除').toBe('')
     expect(detail).toEqual({ maximized: true })
     expect(btn.getAttribute('aria-label')).toBe(expectedLabel(true))
@@ -1565,7 +1563,7 @@ describe('OASModal maximizable（标题栏最大化/还原，PRD D28）', () => 
     const el = mount({ visible: '', maximizable: '' })
     const dialog = el.shadowRoot!.querySelector<HTMLElement>('.dialog')!
     maxBtnOf(el).click()
-    expect(dialog.getAttribute('data-fullscreen')).not.toBeNull()
+    expect(dialog.hasAttribute('data-fullscreen')).toBe(true)
     el.removeAttribute('maximizable')
     expect(maxBtnOf(el).hidden).toBe(true)
     expect(dialog.getAttribute('data-fullscreen'), '移除 maximizable 应退出最大化').toBeNull()
@@ -1598,8 +1596,6 @@ describe('OASModal media 插槽与 sticky-footer（三期）', () => {
     await Promise.resolve()
     const media = mediaOf(el)
     const slot = el.shadowRoot!.querySelector<HTMLSlotElement>('slot[name="media"]')!
-    expect(media, '媒体区容器随模板常驻').not.toBeNull()
-    expect(slot).not.toBeNull()
     expect(media.hidden, '无内容隐藏（不占位）').toBe(true)
     // 注入媒体内容 → 显示并分配到媒体 slot
     const img = document.createElement('img')
@@ -1666,8 +1662,9 @@ describe('OASModal media 插槽与 sticky-footer（三期）', () => {
     expect(getComputedStyle(body).overflowY).toBe('auto')
     // footer 是 body 的后续兄弟节点（flex 列布局下自然吸底，不随正文滚走）
     const footer = el.shadowRoot!.querySelector<HTMLElement>('[part="footer"]')!
-    expect(footer).not.toBeNull()
-    expect(body.compareDocumentPosition(footer) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(body.compareDocumentPosition(footer) & Node.DOCUMENT_POSITION_FOLLOWING).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING,
+    )
   })
 
   it('sticky-footer 动态增删：属性往返不残留（CSS 由 host 属性门控，移除即回默认布局）', () => {

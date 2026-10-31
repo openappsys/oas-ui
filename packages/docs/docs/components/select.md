@@ -187,7 +187,7 @@
 
 <DemoBlock title="prefix / suffix / suffix-icon / clear-icon 插槽与 show-arrow">
   <oas-space size="small" direction="vertical">
-    <oas-select id="select-affix-demo" placeholder="前缀图标 + 后缀文本" options='[{"label":"苹果","value":"apple"},{"label":"香蕉","value":"banana"}]'>
+    <oas-select id="select-affix-demo" style="width: 280px" placeholder="前缀图标 + 后缀文本" options='[{"label":"苹果","value":"apple"},{"label":"香蕉","value":"banana"}]'>
       <template slot="prefix"><span style="display:inline-flex">📍</span></template>
       <template slot="suffix"><span style="display:inline-flex">城市</span></template>
     </oas-select>

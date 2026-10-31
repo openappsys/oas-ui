@@ -61,7 +61,9 @@ test('table SPA 导航后数据不丢（Vue property 赋值反射到 attribute�
   const nonEmpty = r.filter((t) => t.dataLen > 2)
   expect(nonEmpty.length).toBeGreaterThan(5)
   for (const t of nonEmpty) {
-    expect(t.rows, `表格数据 ${t.dataLen}B 但行数 ${t.rows}`).toBeGreaterThan(0)
+    // 下界理由：页面聚合多张不同数据的 demo 表（行数各异，无统一精确值）；契约是
+    // 「非空 data 必须渲染出至少一行」（空表回归锁），各行精确行数由各 demo 专测覆盖
+    expect(t.rows, `表格数据 ${t.dataLen}B 但行数 ${t.rows}`).toBeGreaterThanOrEqual(1)
   }
 })
 
@@ -251,7 +253,9 @@ test('table 吸顶行：sticky-rows 前 N 行带 data-sticky 且与固定列共�
   expect(r[3]!.sticky).toBeNull()
   // 固定列与吸顶行共存：sticky 行的固定单元格仍保留横向偏移
   expect(r[0]!.left).toBe('0px')
-  expect(parseFloat(r[0]!.top), '吸顶行 top 应大于 0（表头下方）').toBeGreaterThan(0)
+  // 下界理由：精确值 = 表头行高（由该 demo 表头样式决定，无固定像素契约）；>0 锁定
+  // 「吸顶行被推到表头下方而非贴视口顶」的回归点
+  expect(parseFloat(r[0]!.top), '吸顶行 top 应大于 0（表头下方）').toBeGreaterThanOrEqual(1)
 })
 
 test('table size 密度档位：small/medium/large 三档 padding+字号阶梯，组件级变量覆盖优先', async ({ page }) => {
@@ -388,7 +392,9 @@ test('table 表头吸顶：非固定列表头纵向 sticky 不被覆盖失效（
       ths,
     }
   })
-  expect(result.target, '容器应有可滚动余量').toBeGreaterThan(0)
+  // 下界理由：可滚动余量由该 demo 表数据行数与行高样式决定（无固定像素契约）；
+  // >0 锁定「容器确有滚动空间可供 sticky 表头验证」的前提
+  expect(result.target, '容器应有可滚动余量').toBeGreaterThanOrEqual(1)
   expect(result.scrollTop, '容器应已滚动到目标位置').toBe(result.target)
   for (const th of result.ths) {
     expect(th.position, `${th.text} 表头应为 sticky（不被 relative 覆盖）`).toBe('sticky')
@@ -557,7 +563,8 @@ test('table 行内 oas-button 点击不连带 oas-row-click（宿主无 role，�
       hasBtn: !!t.shadowRoot!.querySelector('td[data-col="op"] oas-button'),
     }
   })
-  expect(r1.btnClick, 'oas-button 自身应被真实点击（派发 oas-click）').toBeGreaterThan(0)
+  // 单次点击恰好一次：计数器精确值（不是「至少一次」——重复派发同样是缺陷）
+  expect(r1.btnClick, 'oas-button 自身应被真实点击（派发 oas-click）').toBe(1)
   expect(r1.rowClick, 'oas-button 点击不应连带 oas-row-click').toBe(0)
   expect(r1.hasBtn, 'oas-button 点击不应触发行选中重建（按钮应仍在原格）').toBe(true)
   // 对照：普通文本单元格点击仍派发 oas-row-click（排除未误伤正常行点击）
@@ -1115,13 +1122,14 @@ test('table P2 批：cell-click/row-dblclick 事件反馈可见 + row-expandable
   await page.goto('/components/table.html', { waitUntil: 'domcontentloaded' })
   await up(page, '#table-cell-events')
   // 等 rowExpandable property 赋值生效（whenDefined 链）——条件等待替代盲等
+  // （该 demo 数据固定 3 行：张三/李四/王五）
   await expect
     .poll(() =>
       page.evaluate(
         () => document.querySelector('oas-table#table-cell-events')!.shadowRoot!.querySelectorAll('tbody tr').length,
       ),
     )
-    .toBeGreaterThan(0)
+    .toBe(3)
 
   // rowExpandable（property 函数通道）：key=c 的行（王五）无展开钮，其余行有
   const expand = await page.evaluate(() => {
@@ -1371,7 +1379,8 @@ test('table 网格导航 × 行/格手势：grid-navigation 开启时点行/点�
       hasInput: !!t.shadowRoot!.querySelector('#qa-grid-nav-inline-input'),
     }
   })
-  expect(r2.btnClick, '行内按钮自身被真实点击').toBeGreaterThan(0)
+  // 单次点击恰好一次：计数器精确值（不是「至少一次」——重复派发同样是缺陷）
+  expect(r2.btnClick, '行内按钮自身被真实点击').toBe(1)
   expect(r2.rowClick, '行内按钮点击不连带 oas-row-click').toBe(1)
   expect(r2.cellClick, '行内输入框/按钮点击不连带 oas-cell-click').toBe(1)
   expect(r2.selected, '行内控件点击不改行选中').toBe('张三')
@@ -1494,12 +1503,21 @@ test('table column-virtual 横向虚拟：窗口列渲染 + 占位归并 + 滚�
   expect(r.fixedVisible, 'left 固定列恒渲染').toBe(true)
   // 滚动后窗口推移（data-col 内容由窗口决定；此处验证窗口列在滚动后仍正确渲染）
   expect(r.afterScroll.fixedVisible, '横向滚动后固定列仍在').toBe(true)
-  expect(r.afterScroll.firstDataKey, '滚动后窗口首列前移（非初始列）').toBeTruthy()
-  expect(r.afterScroll.headKeys.length, '表头窗口列已渲染').toBeGreaterThan(0)
+  // 下界理由：滚动 2400px 后非固定窗口列的首个 key 依赖 overscan 内部常量（无固定值）；
+  // 稳定契约是「窗口推移后仍渲染非固定列且不塌缩」——固定列 c0 之外至少 3 列
+  //（视口 1160px 可见近 10 列，overscan 无论如何不小于此），窗口列渲染由下方 toEqual 覆盖
+  expect(
+    r.afterScroll.firstRowKeys.filter((k) => k !== 'c0').length,
+    '滚动后窗口仍渲染非固定列（推移不塌缩）',
+  ).toBeGreaterThanOrEqual(3)
+  // 表头/首行窗口列一一对应（含「表头窗口列已渲染」——空数组无法与 firstRowKeys 对等）
   expect(r.afterScroll.headKeys, '横向滚动后 thead 与 tbody 首行窗口列一一对应（回归：双开 thead 滞留旧窗口）').toEqual(
     r.afterScroll.firstRowKeys,
   )
-  expect(r.lastRowKeys.length, '纵向滚动后行窗口仍正常').toBeGreaterThan(0)
+  // 纵向滚动到底的精确表达：窗口末 3 行恰为数据末三行 r37/r38/r39（顺序锁定）
+  expect(r.lastRowKeys[0], '纵向滚动到底：窗口倒数第 3 行为 r37').toContain('r37')
+  expect(r.lastRowKeys[1], '纵向滚动到底：窗口倒数第 2 行为 r38').toContain('r38')
+  expect(r.lastRowKeys[2], '纵向滚动到底：窗口末行为 r39').toContain('r39')
 })
 
 test('table 编辑 × column-virtual：滚动后双击窗口列，编辑器落在正确格并提交正确列（回归）', async ({ page }) => {
@@ -1616,9 +1634,13 @@ test('table 三开（height + group-by + row-draggable）：虚拟下拖拽禁�
     el.remove()
     return { initial, afterScroll, afterBack }
   })
-  expect(r.initial.length, '虚拟下拖拽禁用，分组安全生效（有分节头）').toBeGreaterThan(0)
-  expect(r.afterScroll.length, '虚拟滚动重建后分节头仍在（口径不漂移）').toBeGreaterThan(0)
-  expect(r.afterBack.length, '回滚后分节头仍在').toBeGreaterThan(0)
+  // 顶部起窗的精确表达：首组头必为 组0（内容契约，替代单纯计数）
+  expect(r.initial, '虚拟下拖拽禁用，分组安全生效（顶部起窗含首组头）').toContain('组0')
+  // 下界理由：scrollTop=500 的窗口中间态含哪些组头取决于滚动位置与行高（无固定值）；
+  // 契约是「虚拟滚动重建后分节头仍在（口径不漂移）」，组键合法性由下方 valid 集合断言覆盖
+  expect(r.afterScroll.length, '虚拟滚动重建后分节头仍在（口径不漂移）').toBeGreaterThanOrEqual(1)
+  // 回顶的精确表达：与顶部起窗对称，首组头回到 组0
+  expect(r.afterBack, '回滚后分节头仍在且回到首组').toContain('组0')
   // 组键合法性：滚动/回滚后出现的分节头都属于合法分组（孪生路径判定漂移时
   // 会出现 update 时没有的组或重复组——对齐原缺陷语义，不依赖窗口常量巧合）
   const valid = new Set(['组0', '组1', '组2'])
@@ -1650,7 +1672,8 @@ test('table 浮层编辑器通道（editComponent 第二期）：选定即提交
   })
   expect((opened as { tag: string }).tag, 'oas-select 挂载').toBe('oas-select')
   expect((opened as { open: boolean }).open, '浮层自动展开').toBe(true)
-  expect((opened as { options: number }).options, '选项渲染').toBeGreaterThan(0)
+  // dept 列 editOptions 固定 3 项（前端部/后端部/测试部）——精确值
+  expect((opened as { options: number }).options, '选项渲染').toBe(3)
 
   // 2. 选定选项 → 提交并回写（浮层关闭 + 编辑退出）
   const submitted = await page.evaluate(() => {
@@ -3346,9 +3369,11 @@ test('table Pro 第二批：虚拟滚动帧后区域装饰 / roving tabindex / a
       selection: { start: { row: 0, col: 'id' }, end: { row: 1, col: 'name' } },
     })
   })
-  await expect.poll(async () => (await counts()).selected).toBeGreaterThan(0)
+  await expect.poll(async () => (await counts()).selected > 0).toBe(true)
   const before = await counts()
-  expect(before.aria, 'grid-navigation 下选中格应有 aria-selected').toBeGreaterThan(0)
+  // 下界理由：滚动窗口 ∩ 选区矩形的格子数随窗口位置变化（无固定值）；
+  // 契约是「range 选区装饰不丢失（至少 1 格）」，精确覆盖范围由 Pro 选区专测覆盖
+  expect(before.aria, 'grid-navigation 下选中格应有 aria-selected').toBeGreaterThanOrEqual(1)
   expect(before.stops, 'grid-navigation 下 range 不新增 td 停靠点').toBe(0)
 
   // 真实滚动帧：tbody 全量重建且不走 update，装饰必须由 childList 观察兜底恢复
@@ -3360,8 +3385,9 @@ test('table Pro 第二批：虚拟滚动帧后区域装饰 / roving tabindex / a
   // 重建+装饰兜底完成的真实信号：滚动帧后选区装饰已恢复（counts 断言条件本身）
   await expect.poll(async () => (await counts()).selected > 0).toBe(true)
   const after = await counts()
-  expect(after.selected, '滚动帧后选区装饰仍在').toBeGreaterThan(0)
-  expect(after.aria, '滚动帧后 aria-selected 仍在').toBeGreaterThan(0)
+  // 下界理由同 before（窗口 ∩ 选区数量随滚动位置变化）；契约是装饰恢复不丢失
+  expect(after.selected, '滚动帧后选区装饰仍在').toBeGreaterThanOrEqual(1)
+  expect(after.aria, '滚动帧后 aria-selected 仍在').toBeGreaterThanOrEqual(1)
   expect(after.stops, '滚动帧后仍无额外停靠点').toBe(0)
 
   // 列窗口（column-virtual）横向滚动同样走手写重建，不派发 oas-scroll：childList 观察兜底
@@ -3383,10 +3409,11 @@ test('table Pro 第二批：虚拟滚动帧后区域装饰 / roving tabindex / a
   await expect
     .poll(() =>
       page.evaluate(
-        () => document.querySelector('#table-col-virtual')!.shadowRoot!.querySelectorAll('td.range-selected').length,
+        () =>
+          document.querySelector('#table-col-virtual')!.shadowRoot!.querySelectorAll('td.range-selected').length > 0,
       ),
     )
-    .toBeGreaterThan(0)
+    .toBe(true)
   await page.evaluate(() => {
     const wrap = document.querySelector('#table-col-virtual')!.shadowRoot!.querySelector('.table-scroll') as HTMLElement
     wrap.scrollLeft = 300
@@ -3406,7 +3433,7 @@ test('table Pro 第二批：虚拟滚动帧后区域装饰 / roving tabindex / a
       () => document.querySelector('#table-col-virtual')!.shadowRoot!.querySelectorAll('td.range-selected').length,
     ),
     '列窗口滚动后选区装饰仍在',
-  ).toBeGreaterThan(0)
+  ).toBeGreaterThanOrEqual(1)
 })
 
 test('table Pro 第二批：区域选择/复制、行详情、Shift 扩展与编辑撤销共存', async ({ page }) => {
@@ -4696,7 +4723,9 @@ test('table advanced：createWindowedSource × 视觉适配器——真实 adapt
     )
     return { last, renderedCovered }
   })
-  expect(scrolled.last!.visualStart, '滚动请求带视觉字段（可视窗口视觉坐标）').toBeGreaterThan(0)
+  // 下界理由：visualStart = 滚动后可视窗口首行的视觉坐标（像素，随滚动位置/视口尺寸变化，无固定值）；
+  // >0 锁定「滚动请求携带的是视觉坐标（非数据索引 0 起点）」的映射契约
+  expect(scrolled.last!.visualStart, '滚动请求带视觉字段（可视窗口视觉坐标）').toBeGreaterThanOrEqual(1)
   expect(scrolled.renderedCovered, '真实可见数据行全部落在已请求区间内（映射覆盖可视窗口，不再均匀网格错位）').toBe(
     true,
   )

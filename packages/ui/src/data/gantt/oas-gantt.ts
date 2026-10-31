@@ -28,6 +28,8 @@ import {
 } from '../../shared/window-data.js'
 import { isRtl } from '../../shared/direction.js'
 import { devWarn } from '../../shared/dev-warn.js'
+// slot 模板双形态克隆（静态 HTML 在 template.content；Vue 等 CSR 直插元素 childNodes）
+import { cloneSlotContent } from '../../shared/slot-template.js'
 
 /** 编译期一致性：emit 用的字面量（拼 `oas-` 前缀）须与共享契约常量一致 */
 const _ROW_WINDOW_EVENT_CHECK: typeof ROW_WINDOW_EVENT = 'oas-window-request'
@@ -3285,7 +3287,7 @@ export class OASGantt extends OASElement {
         const tpl = this.querySelector('template[slot="empty"]')
         if (tpl instanceof HTMLTemplateElement) {
           this.emptyEl.innerHTML = ''
-          this.emptyEl.appendChild(tpl.content.cloneNode(true))
+          this.emptyEl.appendChild(cloneSlotContent(tpl))
         } else {
           this.emptyEl.textContent = this.t('gantt.empty')
         }
@@ -3569,7 +3571,7 @@ export class OASGantt extends OASElement {
       name.className = 'name'
       if (rowTpl instanceof HTMLTemplateElement) {
         // 行名列自定义模板：宿主可渲染「负责人」等任意列/控件（[data-task-name] 自动填任务名）
-        name.appendChild(rowTpl.content.cloneNode(true))
+        name.appendChild(cloneSlotContent(rowTpl))
         name.querySelectorAll<HTMLElement>('[data-task-name]').forEach((n) => {
           n.textContent = row.task.name
         })
@@ -3707,7 +3709,7 @@ export class OASGantt extends OASElement {
             const label = document.createElement('span')
             label.className = 'bar-label'
             if (tplTask instanceof HTMLTemplateElement) {
-              label.appendChild(tplTask.content.cloneNode(true))
+              label.appendChild(cloneSlotContent(tplTask))
               const bound = label.querySelector<HTMLElement>('[data-task-name]')
               if (bound) bound.textContent = row.task.name
             } else {
@@ -6284,7 +6286,7 @@ export class OASGantt extends OASElement {
     const tpl = this.querySelector('template[slot="tooltip"]')
     if (tpl instanceof HTMLTemplateElement) {
       tip.innerHTML = ''
-      tip.appendChild(tpl.content.cloneNode(true))
+      tip.appendChild(cloneSlotContent(tpl))
       const nameEl = tip.querySelector<HTMLElement>('[data-task-name]')
       if (nameEl) nameEl.textContent = row.task.name
       const rangeEl = tip.querySelector<HTMLElement>('[data-task-range]')

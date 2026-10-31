@@ -250,8 +250,8 @@ describe('OASResource 泳道渲染', () => {
     // 刻度 5 格（Mar2..Mar6），单滚动容器里泳道与直方图同源
     expect(tickTexts(el).length).toBe(5)
     expect(tickTexts(el)[0]).toBe('03-02')
-    expect(shadowOf(el).querySelector('.scroller .lanes')).not.toBeNull()
-    expect(shadowOf(el).querySelector('.scroller .loads')).not.toBeNull()
+    expect(shadowOf(el).querySelectorAll('.scroller .lanes').length).toBe(1)
+    expect(shadowOf(el).querySelectorAll('.scroller .loads').length).toBe(1)
   })
 
   it('条位置偏移：锚点为最早任务所在 period，后一天任务 left = 1×colW', () => {
@@ -988,7 +988,7 @@ describe('OASResource 空态与语义', () => {
     const el1 = mount({ resources: '[]', tasks: '[]' })
     const empty1 = shadowOf(el1).querySelector<HTMLElement>('.empty')!
     expect(empty1.hidden).toBe(false)
-    expect((empty1.textContent ?? '').length).toBeGreaterThan(0)
+    expect(empty1.textContent).toBe('暂无资源任务')
     expect(empty1.textContent ?? '').not.toContain('resource.')
     expect(shadowOf(el1).querySelector<HTMLElement>('.scroller')!.hidden).toBe(true)
     expect(() => el1.scrollToDate('2026-03-02')).not.toThrow()
@@ -1006,7 +1006,7 @@ describe('OASResource 空态与语义', () => {
       tasks: JSON.stringify([{ id: 't1', name: '开发', start: '2026-03-02', end: '2026-03-06', resources: ['r1'] }]),
     })
     const wrap = shadowOf(el).querySelector('[role="group"]')!
-    expect(wrap.getAttribute('aria-label')).toBeTruthy()
+    expect(wrap.getAttribute('aria-label')).toBe('资源负载')
     expect(wrap.getAttribute('aria-label')).not.toContain('resource.')
     const bar = barOf(el, 't1', 'r1')
     expect(bar.getAttribute('role')).toBe('button')
@@ -1017,7 +1017,7 @@ describe('OASResource 空态与语义', () => {
     expect(aria).toContain('前端组')
     // 直方图区标题可读（非 key 回落）
     const histHead = shadowOf(el).querySelector('.hist-head .name')!
-    expect((histHead.textContent ?? '').length).toBeGreaterThan(0)
+    expect(histHead.textContent).toBe('负载直方图')
     expect(histHead.textContent ?? '').not.toContain('resource.')
   })
 
@@ -2261,7 +2261,7 @@ describe('OASResource 横向虚拟化（时间轴 period 列窗口）', { timeou
     const el = longMount()
     stubViewport(el, 360)
     const ticks = tickLefts(el)
-    expect(ticks.length, '窗口化后刻度数为正').toBeGreaterThan(0)
+    expect(ticks.length, '窗口化后刻度数（360/36 + 双侧 overscan 4）').toBe(14)
     expect(ticks.length, '窗口 + overscan（360/36 + 4 = 14）左右').toBeLessThan(100)
     expect(ticks.length, '确实发生窗口化（远少于全量）').toBeLessThan(LONG_TOTAL)
     // 滚动长度不变：刻度容器 / 泳道轨 / 直方图表头宽仍 = canvasW（scrollbar 长度不缩水）
@@ -2390,7 +2390,7 @@ describe('OASResource 横向虚拟化（时间轴 period 列窗口）', { timeou
     // 视口受限：滚动前远端条在窗口外（未建 DOM）
     expect(barOf(el, 'mid', 'r1'), '窗口外远端条初始被 cull').toBeFalsy()
     el.scrollToDate('2026-04-01')
-    expect(barOf(el, 'mid', 'r1'), '命令式滚动后目标条同步在 DOM').toBeTruthy()
+    expect(barOf(el, 'mid', 'r1').getAttribute('data-task-id'), '命令式滚动后目标条同步在 DOM').toBe('mid')
     expect(barOf(el, 'head', 'r1'), '已移出窗口的远端条被 cull').toBeFalsy()
   })
 
@@ -2439,7 +2439,7 @@ describe('OASResource 横向虚拟化（时间轴 period 列窗口）', { timeou
     ros[0]!.cb([], {} as ResizeObserver)
     const ticks = tickLefts(el)
     expect(ticks.length, 'RO 触发后切回窗口（不再全量）').toBeLessThan(LONG_TOTAL)
-    expect(ticks.length, '窗口内有刻度').toBeGreaterThan(0)
+    expect(ticks.length, '窗口内有刻度（600/36 + 双侧 overscan 4）').toBe(21)
   })
 
   it('⑪ 横向滚动重渲染复用条节点：聚焦条在窗口滑动后仍在 DOM、焦点保持，事件/aria/data 不变', async () => {
@@ -2453,7 +2453,7 @@ describe('OASResource 横向虚拟化（时间轴 period 列窗口）', { timeou
     })
     const sc = stubViewport(el, 360)
     const bar = barOf(el, 'mid', 'r1')
-    expect(bar, '目标条在窗口内').toBeTruthy()
+    expect(bar.getAttribute('data-task-id'), '目标条在窗口内').toBe('mid')
     bar.focus()
     expect(shadowOf(el).activeElement, '前置：条已聚焦').toBe(bar)
     const beforeFirstTick = tickLefts(el)[0]
@@ -2497,7 +2497,7 @@ describe('OASResource 横向虚拟化（时间轴 period 列窗口）', { timeou
     const layout = internals(el).laneLayout.get('r1')!
     const { left, right } = winRange(el)
     const expected = layout.entries.filter((e) => !(e.xStart > right || e.xStart + e.w < left)).length
-    expect(expected, '窗口内有相交条（断言非平凡）').toBeGreaterThan(0)
+    expect(expected, '窗口内有相交条（t3/t4，断言非平凡）').toBe(2)
     expect(expected, '窗口外仍有被 cull 的条（断言非平凡）').toBeLessThan(layout.entries.length)
     const bars = barsOf(el, 'r1')
     expect(bars.length, '窗口内条数 === 缓存相交数').toBe(expected)
@@ -2532,7 +2532,8 @@ describe('OASResource 横向虚拟化（时间轴 period 列窗口）', { timeou
     })
     const sc = stubViewport(el, 360)
     const builds = internals(el).laneLayoutBuilds
-    expect(builds, 'update() 触发布局预计算').toBeGreaterThan(0)
+    // 预计算次数随 update 触发次数（渲染管线实现细节），无稳定精确契约值；下界 1 证明已执行布局预计算。
+    expect(builds, 'update() 触发布局预计算').toBeGreaterThanOrEqual(1)
     for (let i = 1; i <= 5; i++) {
       sc.scrollLeft = i * 360
       sc.dispatchEvent(new Event('scroll'))
@@ -2656,8 +2657,7 @@ describe('OASResource 横向虚拟化（时间轴 period 列窗口）', { timeou
     expect(cache.order, 'order 按 xStart 升序且稳定').toEqual(
       [...cache.order].sort((a, b) => cache.entries[a]!.xStart - cache.entries[b]!.xStart || a - b),
     )
-    expect(cache.segTree, '段树已建').not.toBeNull()
-    expect(cache.segTree![1], '段树根 == 全量 max(xEnd)').toBe(maxEnd)
+    expect(cache.segTree![1], '段树已建且根 == 全量 max(xEnd)').toBe(maxEnd)
     expect(cache.maxEnd).toBe(maxEnd)
     expect(cache.minStart).toBe(Math.min(...cache.entries.map((e) => e.xStart)))
 
@@ -2670,7 +2670,7 @@ describe('OASResource 横向虚拟化（时间轴 period 列窗口）', { timeou
       if (expected.length === 1) onlyLong++
     }
     expect(longHits, '跨窗口长条在每个窗口都命中（不丢条）').toBe(7)
-    expect(onlyLong, '确有「只剩长条」的窗口（短条已全部被 cull）').toBeGreaterThan(0)
+    expect(onlyLong, '确有「只剩长条」的窗口（短条已全部被 cull）').toBe(2)
   })
 
   it('⑰ 结构等价②：month 档被钳到 MIN_BAR_W 的条，多窗口下仍与朴素全量扫描逐条一致', async () => {
@@ -2689,7 +2689,7 @@ describe('OASResource 横向虚拟化（时间轴 period 列窗口）', { timeou
     })
     const sc = stubViewport(el, 360)
     const cache = internals(el).laneLayout.get('r1')!
-    expect(cache.entries.filter((e) => e.w === 8).length, '确有被钳到最小宽的条（断言非平凡）').toBeGreaterThan(0)
+    expect(cache.entries.filter((e) => e.w === 8).length, '确有被钳到最小宽的条（31 个单日条）').toBe(31)
     for (const sl of [0, 110, 110 * 2, 110 * 5, 10 ** 6]) {
       await scrollTo(sc, sl)
       expectCullMatchesNaive(el, 'r1', 110)
@@ -2749,7 +2749,9 @@ describe('OASResource 横向虚拟化（时间轴 period 列窗口）', { timeou
     for (const sl of [0, 3600, 36 * 500, 36 * 900]) {
       await scrollTo(sc, sl)
       const bars = barsOf(el, 'r1')
-      expect(bars.length, '窗口内条数有界（虚拟化生效）').toBeGreaterThan(0)
+      // 窗口内条数随滚动位置（5000 条按日铺满三年）在数十条量级，无单一精确值；
+      // 下界 1 证明窗口渲染非空，上界由下一行 200 条约束。
+      expect(bars.length, '窗口内条数有界（虚拟化生效）').toBeGreaterThanOrEqual(1)
       expect(bars.length, '窗口内条数远小于总条数').toBeLessThan(200)
       const visits = internals(el).laneCullVisits
       expect(visits, '候选访问数有界（不随 5000 条线性增长）').toBeLessThan(400)
@@ -2914,7 +2916,7 @@ describe('OASResource 行虚拟化（纵向窗口，泳道/负载两区独立）
     const lanes = laneRows(el)
     const loads = loadRows(el)
     expect(lanes.length, '泳道行窗口化（远少于 500）').toBeLessThan(60)
-    expect(lanes.length, '窗口内有行（非空）').toBeGreaterThan(0)
+    expect(lanes.length, '窗口内有行（vh 180 → 5 行 + buffer 4）').toBe(9)
     expect(loads.length, '负载行同步窗口化（两区独立窗口）').toBeLessThan(60)
     expect(lanes.length).toBeLessThan(N)
     // 滚动总高不变：spacerTop + 窗内行 × 行模型高 + spacerBottom = 全量 N 行模型高
@@ -2943,7 +2945,7 @@ describe('OASResource 行虚拟化（纵向窗口，泳道/负载两区独立）
     expect(ids, '首行已随窗口平移移除').not.toContain('r0')
     expect(ids, '末行不在窗口').not.toContain('r499')
     const [lTop] = laneSpacers(el) as [HTMLElement, HTMLElement]
-    expect(Number.parseFloat(lTop.style.height), '顶部 spacer 占位 > 0').toBeGreaterThan(0)
+    expect(Number.parseFloat(lTop.style.height), '顶部 spacer = 窗口首行 195 × 行高 37').toBe(7215)
     expect(
       internals(el).winLaneEnd - internals(el).winLaneStart,
       '行窗大小有界（vh/行高 + 1 + 双侧 buffer 4）',
@@ -2976,13 +2978,16 @@ describe('OASResource 行虚拟化（纵向窗口，泳道/负载两区独立）
     const el = mountMany(500)
     const sc = shadowOf(el).querySelector<HTMLElement>('.scroller')!
     const bar = shadowOf(el).querySelector<HTMLElement>('.lane[data-resource-id="r5"] .bar')!
-    expect(bar, 'r5 行在初始窗口内').toBeTruthy()
+    expect(bar.getAttribute('data-task-id'), 'r5 行在初始窗口内').toBe('t0')
     bar.focus()
     expect(shadowOf(el).activeElement, '前置：条已聚焦').toBe(bar)
     sc.scrollTop = LANE_ROW_H * 3 // 平移 3 行，r5 仍在窗口内（buffer 4 吸收）
     sc.dispatchEvent(new Event('scroll'))
     await flushRaf()
-    expect(shadowOf(el).querySelector('.lane[data-resource-id="r5"] .bar'), 'r5 行仍在窗口（行未被重建）').toBeTruthy()
+    expect(
+      shadowOf(el).querySelector<HTMLElement>('.lane[data-resource-id="r5"] .bar')!.getAttribute('data-task-id'),
+      'r5 行仍在窗口（行未被重建）',
+    ).toBe('t0')
     expect(shadowOf(el).activeElement, '焦点不掉（行与条均被复用，未替换节点）').toBe(bar)
   })
 
@@ -2997,7 +3002,7 @@ describe('OASResource 行虚拟化（纵向窗口，泳道/负载两区独立）
       clicks.push({ id: e.detail.id, resourceId: e.detail.resourceId })
     }) as EventListener)
     const bar = shadowOf(el).querySelector<HTMLElement>('.lane[data-resource-id="r250"] .bar')!
-    expect(bar, 'r250 行在窗口内').toBeTruthy()
+    expect(bar.getAttribute('data-task-id'), 'r250 行在窗口内').toBe('t0')
     bar.click()
     expect(clicks, '窗口内条点击派发（detail 双定位正确）').toEqual([{ id: 't0', resourceId: 'r250' }])
   })
@@ -3038,7 +3043,7 @@ describe('OASResource 行虚拟化（纵向窗口，泳道/负载两区独立）
     await flushRaf()
     expect([internals(el).winColStart, internals(el).winColEnd], '纵向滚动不改列窗口').toEqual(colBefore)
     const laneAfterV: [number, number] = [internals(el).winLaneStart, internals(el).winLaneEnd]
-    expect(laneAfterV[0], '纵向滚动确实平移了行窗口（断言非平凡）').toBeGreaterThan(0)
+    expect(laneAfterV[0], '纵向滚动确实平移了行窗口（floor((20×37−表头偏移)/37) − buffer）').toBe(15)
     sc.scrollLeft = 3600
     sc.dispatchEvent(new Event('scroll'))
     await flushRaf()
@@ -3467,7 +3472,7 @@ describe('OASResource 服务端窗口（windowed 行窗口 + 宿主托管时间�
     expect(reqs.ranges.length, '范围请求：init 一次（轴切换后仍只 init）').toBe(1)
     expect(reqs.ranges[0]!.reason).toBe('init')
     // 轴范围把时间轴撑到 365 天（tasks 为空也成立：轴托管不依赖任务）
-    expect(tickTexts(el).length, '刻度按列窗口渲染（非空）').toBeGreaterThan(0)
+    expect(tickTexts(el).length, '刻度按列窗口渲染（400/36 + 双侧 overscan 4）').toBe(16)
   })
 
   it('⑳ total 非法 / 为 0 → windowed 不生效，回落本地全量口径（无行请求、绝对行号被忽略）', () => {
@@ -3730,7 +3735,7 @@ describe('OASResource a11y 行网格（非 windowed 全量口径）', () => {
     el.requestUpdate()
     expect(shadowOf(el).querySelector('.lanes')!.getAttribute('aria-rowcount'), '全量行数口径').toBe('200')
     const head = lanesOf(el)
-    expect(head.length, '有行渲染').toBeGreaterThan(0)
+    expect(head.length, '有行渲染（vh 180 → 5 行 + buffer 4）').toBe(9)
     expect(head.length, '窗口外行不进 DOM').toBeLessThan(200)
     expect(head[0]!.getAttribute('aria-rowindex'), '首行绝对行号 1').toBe('1')
     sc.scrollTop = 100 * 37
@@ -3808,7 +3813,7 @@ describe('OASResource 可读性能力（opt-in，默认全关）', () => {
   it('heatmap：按负载/容量渲染热力格、图例与 title 提示', () => {
     const el = mount({ resources: RES_OVER, tasks: TASKS_OVER, heatmap: '' })
     const cells = [...shadowOf(el).querySelectorAll<HTMLElement>('.heat-cell')]
-    expect(cells.length).toBeGreaterThan(0)
+    expect(cells.length, '2 资源 × 3 天热力格').toBe(6)
     expect(cells.some((cell) => cell.classList.contains('over'))).toBe(true)
     expect(cells.every((cell) => !!cell.title && cell.title.includes('/'))).toBe(true)
     expect(shadowOf(el).querySelectorAll('.pillar').length, 'heatmap 模式不渲染柱体').toBe(0)
@@ -3926,7 +3931,7 @@ describe('OASResource 可读性能力（opt-in，默认全关）', () => {
     expect(label.textContent, '按纯文本渲染（textContent 赋值，不解析 HTML）').toBe(xss)
     expect(label.children.length, '无任何子元素（防注入）').toBe(0)
     expect(label.getAttribute('aria-hidden'), '标签装饰性（条的 aria-label 已含任务名）').toBe('true')
-    expect((bar.getAttribute('aria-label') ?? '').length, '条的 aria-label 不受影响').toBeGreaterThan(0)
+    expect(bar.getAttribute('aria-label'), '条的 aria-label 不受影响').toContain('<b>加粗</b>')
     // 点击命中：label 上的 click 冒泡后仍定位到条（标签可选中，点击路径不变）
     const clicks: string[] = []
     el.addEventListener('oas-task-click', ((e: CustomEvent<{ id: string }>) => {
