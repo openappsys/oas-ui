@@ -93,6 +93,12 @@
     {
       "name": "header-sticky",
       "observed": true
+    },
+    {
+      "name": "show-cost",
+      "type": "string",
+      "default": "",
+      "observed": true
     }
   ],
   "props": [

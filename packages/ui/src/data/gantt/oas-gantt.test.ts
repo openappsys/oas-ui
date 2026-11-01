@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { OASGantt, computeVariance } from './index.js'
 import { pickVisibleLabels, ganttRenderDiag } from './oas-gantt.js'
+import { computeEvm } from './evm/index.js'
 import type { GanttTask, GanttBaselineVariance, GanttReparentDetail } from './index.js'
 import type { GanttTaskAddDetail } from './oas-gantt.js'
 
@@ -7714,5 +7715,621 @@ describe('OASGantt 属性-方法撞名回归', () => {
     // dates-readonly / progress-readonly：拖拽手柄与进度手柄不渲染
     expect(barOf(el, 't1').querySelector('.handle')).toBeNull()
     expect(barOf(el, 't1').querySelector('.progress-handle')).toBeNull()
+  })
+})
+
+// ===== 二期 opt-in 扩展（默认全关：默认形态零变化）=====
+//
+// G1 show-effort 工时列 / G2 show-status-line 进度线 + status-date / G3 baselines 多基线。
+
+describe('OASGantt show-effort 工时列（opt-in）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  const TASKS: GanttTask[] = [
+    { id: 'a', name: 'A', start: '2026-03-02', end: '2026-03-06', effort: 12 },
+    { id: 'b', name: 'B', start: '2026-03-05', end: '2026-03-09', effort: 2.5 },
+    { id: 'm', name: 'M', start: '2026-03-16' },
+  ]
+
+  it('默认关：无 .effort 节点、表头无 has-effort 且为空（默认形态零变化）', () => {
+    const el = mount({ tasks: JSON.stringify(TASKS) })
+    expect(shadowOf(el).querySelectorAll('.effort').length).toBe(0)
+    const head = shadowOf(el).querySelector<HTMLElement>('.side-head')!
+    expect(head.classList.contains('has-effort')).toBe(false)
+    expect(head.textContent).toBe('')
+    expect(head.querySelector('.head-effort')).toBeNull()
+  })
+
+  it('show-effort="false" 显式关闭（防宿主布尔绑定意外开启，同 stripe 口径）', () => {
+    const el = mount({ tasks: JSON.stringify(TASKS), 'show-effort': 'false' })
+    expect(shadowOf(el).querySelectorAll('.effort').length).toBe(0)
+  })
+
+  it('开启：表头两列 + 列头「工时」；行尾 .effort 右列，整数/小数格式化、缺失为空', () => {
+    const el = mount({ tasks: JSON.stringify(TASKS), 'show-effort': '' })
+    const head = shadowOf(el).querySelector<HTMLElement>('.side-head')!
+    expect(head.classList.contains('has-effort')).toBe(true)
+    expect(head.querySelector<HTMLElement>('.head-name')).toBeTruthy()
+    expect(head.querySelector<HTMLElement>('.head-effort')!.textContent).toBe('工时')
+    const cells = [...shadowOf(el).querySelectorAll<HTMLElement>('.row-name .effort')]
+    expect(cells.length, '每行一个工时单元格').toBe(3)
+    expect(cells[0]!.textContent).toBe('12')
+    expect(cells[1]!.textContent, '两位小数截断去尾零').toBe('2.5')
+    expect(cells[2]!.textContent, '无 effort 显示空').toBe('')
+  })
+
+  it('清洗层：负数/非有限/非数值 effort 丢弃为 undefined；展示两位小数四舍五入；超大值科学计数防超长数字', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    try {
+      const el = mount({
+        tasks: JSON.stringify([{ id: 'a', name: 'A', start: '2026-03-02', end: '2026-03-03', effort: 1.256 }]),
+        'show-effort': '',
+      })
+      expect(el.tasks[0]!.effort, '有限数值原样保留（清洗不改动数值）').toBe(1.256)
+      const cell = shadowOf(el).querySelector<HTMLElement>('.row-name .effort')!
+      expect(cell.textContent).toBe('1.26')
+      expect(cell.getAttribute('aria-label'), '可读名带单位（i18n gantt.effortValue）').toBe('工时 1.26 天')
+      // property 通道非法值清洗：负数（对齐 costRate 口径）/非有限/非 number 一律丢弃为 undefined
+      el.tasks = [{ id: 'b', name: 'B', start: '2026-03-02', end: '2026-03-03', effort: -3 }]
+      expect(el.tasks[0]!.effort, '负数丢弃').toBeUndefined()
+      el.tasks = [{ id: 'b', name: 'B', start: '2026-03-02', end: '2026-03-03', effort: Number.NaN }]
+      expect(el.tasks[0]!.effort).toBeUndefined()
+      expect(shadowOf(el).querySelector<HTMLElement>('.row-name .effort')!.textContent).toBe('')
+      expect(
+        shadowOf(el).querySelector<HTMLElement>('.row-name .effort')!.hasAttribute('aria-label'),
+        '空值无可读名碎片',
+      ).toBe(false)
+      // 超大值：清洗保留（合法有限数），格式化转科学计数防 21 位长数字撑破列
+      el.tasks = [{ id: 'c', name: 'C', start: '2026-03-02', end: '2026-03-03', effort: 1.5e21 }]
+      expect(el.tasks[0]!.effort).toBe(1.5e21)
+      const big = shadowOf(el).querySelector<HTMLElement>('.row-name .effort')!
+      expect(big.textContent, '科学计数（≤ 8 字符）').toBe('1.50e+21')
+    } finally {
+      warn.mockRestore()
+    }
+  })
+
+  it('effort 单元格可读名：aria-label 走 i18n 带单位文案（工时 N 天），空值不加', () => {
+    const el = mount({
+      tasks: JSON.stringify([
+        { id: 'a', name: 'A', start: '2026-03-02', end: '2026-03-03', effort: 12 },
+        { id: 'b', name: 'B', start: '2026-03-02', end: '2026-03-03' },
+      ]),
+      'show-effort': '',
+    })
+    const cells = shadowOf(el).querySelectorAll<HTMLElement>('.row-name .effort')
+    expect(cells[0]!.getAttribute('aria-label')).toBe('工时 12 天')
+    expect(cells[0]!.textContent).toBe('12')
+    expect(cells[1]!.hasAttribute('aria-label'), '空值不产出可读名碎片').toBe(false)
+    // en 文案由 locale 文件承载（完备性测试保证非空），此处只断 zh 缺省通道
+  })
+
+  it('工时列 CSS：行内 .effort 右对齐 + tabular-nums，与表头共用列宽 token（暗色走 token 不硬编码）', () => {
+    const el = mount({ tasks: JSON.stringify(TASKS), 'show-effort': '' })
+    const css = shadowOf(el).querySelector('style')!.textContent ?? ''
+    expect(css).toMatch(/\.row-name \.effort \{[^}]*text-align: end/)
+    expect(css).toMatch(/\.row-name \.effort \{[^}]*font-variant-numeric: tabular-nums/)
+    expect(css).toMatch(/\.row-name \.effort \{[^}]*width: var\(--oas-gantt-effort-width, 56px\)/)
+    expect(css).toMatch(/\.side-head \.head-effort \{[^}]*width: var\(--oas-gantt-effort-width, 56px\)/)
+  })
+})
+
+describe('OASGantt show-status-line 进度线 + status-date（opt-in）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  /** 轴钉在 2026-03-01..03-31（day 档 col=36），消除锚点推断的不确定性 */
+  const RANGE = { 'range-start': '2026-03-01', 'range-end': '2026-03-31' }
+  const TASKS: GanttTask[] = [
+    { id: 'a', name: 'A', start: '2026-03-02', end: '2026-03-11' }, // 10 天：03-04 → 2/10
+    { id: 'm', name: 'M', start: '2026-03-06' }, // 里程碑：03-04 未到 → 0；03-07 已到 → 1
+    { id: 'p', name: 'P', start: '2026-03-02', end: '2026-03-11', type: 'summary' },
+    { id: 'c', name: 'C', start: '2026-03-02', end: '2026-03-06', parent: 'p' },
+  ]
+
+  it('默认关：状态线 hidden、条内无 .plan-tick（默认形态零变化）', () => {
+    const el = mount({ tasks: JSON.stringify(TASKS), ...RANGE })
+    expect(shadowOf(el).querySelector<HTMLElement>('.status-line')!.hidden).toBe(true)
+    expect(shadowOf(el).querySelectorAll('.plan-tick').length).toBe(0)
+  })
+
+  it('status-date 落在范围内：竖线渲染在对应列位（col 36 × 偏移），title = 归一化日期；超出范围隐藏', () => {
+    const el = mount({
+      tasks: JSON.stringify(TASKS),
+      'show-status-line': '',
+      'status-date': '2026-03-04',
+      ...RANGE,
+    })
+    const line = shadowOf(el).querySelector<HTMLElement>('.status-line')!
+    expect(line.hidden).toBe(false)
+    // 轴首留白 1 档：range-start 03-01 占 col 1 → 03-04 在 col 4 → left = 4 × 36
+    expect(Number.parseFloat(line.style.left)).toBe(4 * 36)
+    expect(line.title).toBe('2026-03-04')
+    expect(line.getAttribute('aria-hidden')).toBe('true')
+    const out = mount({
+      tasks: JSON.stringify(TASKS),
+      'show-status-line': '',
+      'status-date': '2026-05-10',
+      ...RANGE,
+    })
+    expect(out.shadowRoot!.querySelector<HTMLElement>('.status-line')!.hidden).toBe(true)
+  })
+
+  it('status-date 非法/缺省回落当天（fake timers 钉住 2026-03-05）', () => {
+    vi.useFakeTimers()
+    try {
+      vi.setSystemTime(new Date(2026, 2, 5, 12, 0, 0))
+      for (const statusDate of ['', 'not-a-date']) {
+        const attrs: Record<string, string> = { tasks: JSON.stringify(TASKS), 'show-status-line': '', ...RANGE }
+        if (statusDate !== '') attrs['status-date'] = statusDate
+        const el = mount(attrs)
+        const line = el.shadowRoot!.querySelector<HTMLElement>('.status-line')!
+        expect(line.hidden).toBe(false)
+        // 03-05 在 col 5（轴首留白 1 档）
+        expect(Number.parseFloat(line.style.left)).toBe(5 * 36)
+        expect(line.title).toBe('2026-03-05')
+      }
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('条内计划进度刻度：普通任务按含端日粒度（10 天任务 03-04 → 0.3）；里程碑二值；summary 不画；关闭不画', () => {
+    const el = mount({
+      tasks: JSON.stringify(TASKS),
+      'show-status-line': '',
+      'status-date': '2026-03-04',
+      ...RANGE,
+    })
+    const tickA = barOf(el, 'a').querySelector<HTMLElement>('.plan-tick')!
+    expect(tickA.dataset['planRatio'], '10 天任务 status 03-04：已耗 3 天（含端）→ 0.3').toBe('0.3')
+    expect(tickA.getAttribute('aria-hidden')).toBe('true')
+    const tickM = barOf(el, 'm').querySelector<HTMLElement>('.plan-tick')!
+    expect(tickM.dataset['planRatio'], '里程碑未到 → 0').toBe('0')
+    const summaryBar = barOf(el, 'p')
+    expect(summaryBar.classList.contains('summary')).toBe(true)
+    expect(summaryBar.querySelector('.plan-tick'), 'summary 不画刻度').toBeNull()
+    // 里程碑已过（03-07 ≥ start 03-06）→ 二值 1
+    const after = mount({
+      tasks: JSON.stringify(TASKS),
+      'show-status-line': '',
+      'status-date': '2026-03-07',
+      ...RANGE,
+    })
+    expect(after.shadowRoot!.querySelector<HTMLElement>('.bar[data-id="m"] .plan-tick')!.dataset['planRatio']).toBe('1')
+    // 子任务 c（03-02..03-06 共 5 天）：status 03-07 已到右缘 → clamp 1
+    expect(after.shadowRoot!.querySelector<HTMLElement>('.bar[data-id="c"] .plan-tick')!.dataset['planRatio']).toBe('1')
+    // 时刻越界：早于 start → 0；晚于 end → 1（clamp）
+    const late = mount({
+      tasks: JSON.stringify(TASKS),
+      'show-status-line': '',
+      'status-date': '2026-03-30',
+      ...RANGE,
+    })
+    expect(late.shadowRoot!.querySelector<HTMLElement>('.bar[data-id="a"] .plan-tick')!.dataset['planRatio']).toBe('1')
+    const off = mount({ tasks: JSON.stringify(TASKS), 'status-date': '2026-03-04', ...RANGE })
+    expect(off.shadowRoot!.querySelectorAll('.plan-tick').length).toBe(0)
+  })
+
+  it('刻度数据属性：data-plan-ratio 精确值（10 天任务 03-06 → 0.5，含端口径），样式 token 走 warning 色族（不硬编码色值）', () => {
+    const el = mount({
+      tasks: JSON.stringify(TASKS),
+      'show-status-line': '',
+      'status-date': '2026-03-06',
+      ...RANGE,
+    })
+    const tick = barOf(el, 'a').querySelector<HTMLElement>('.plan-tick')!
+    // 精确断言：10 天任务 status 03-06 → 已耗 5 天（含端）→ 0.5（口径与 evm planned 一致，见跨包测试）
+    expect(tick.dataset['planRatio']).toBe('0.5')
+    const css = shadowOf(el).querySelector('style')!.textContent ?? ''
+    expect(css).toMatch(
+      /\.plan-tick \{[^}]*background: var\(--oas-gantt-status-line-color, var\(--oas-color-warning\)\)/,
+    )
+    expect(css).toMatch(
+      /\.status-line \{[^}]*background: var\(--oas-gantt-status-line-color, var\(--oas-color-warning\)\)/,
+    )
+  })
+})
+
+describe('OASGantt baselines 多基线（数据通道 + baseline-id）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  const MULTI: GanttTask[] = [
+    {
+      id: 'a',
+      name: 'A',
+      start: '2026-03-05',
+      end: '2026-03-09',
+      baselines: [
+        { id: 'b1', start: '2026-03-01', end: '2026-03-03' },
+        { id: 'b2', start: '2026-03-04', end: '2026-03-08', progress: 50 },
+      ],
+    },
+  ]
+  const RANGE = { 'range-start': '2026-03-01', 'range-end': '2026-03-31' }
+
+  it('单 baseline 字段不物化派生 baselines：el.tasks 保留原字段原样；读侧归一经 taskBaselines 生效（C1 回归）', () => {
+    const el = mount({
+      tasks: JSON.stringify([
+        {
+          id: 'a',
+          name: 'A',
+          start: '2026-03-02',
+          end: '2026-03-06',
+          baseline: { start: '2026-03-02', end: '2026-03-04', progress: 25 },
+        },
+      ]),
+    })
+    // 清洗层不再物化派生数组：读回保持宿主输入原样（对象键随清洗补齐 end/progress，但无 baselines 键）
+    expect(el.tasks[0]!.baseline).toEqual({ start: '2026-03-02', end: '2026-03-04', progress: 25 })
+    expect(el.tasks[0]!.baselines).toBeUndefined()
+    // 读侧归一生效：渲染（show-baseline）与 computeVariance 都能看到等价 default 条目
+    const shown = mount({
+      tasks: JSON.stringify([
+        {
+          id: 'a',
+          name: 'A',
+          start: '2026-03-02',
+          end: '2026-03-06',
+          baseline: { start: '2026-03-01', end: '2026-03-03' },
+        },
+      ]),
+      'show-baseline': '',
+      'range-start': '2026-03-01',
+      'range-end': '2026-03-31',
+    })
+    const bl = shadowOf(shown).querySelector<HTMLElement>('.baseline[data-id="a"]')!
+    expect(Number.parseFloat(bl.style.width)).toBe(3 * 36)
+    expect(computeVariance(el.tasks)[0]!.startDelta, '读侧归一参与差值（当前 03-02 − 基线 03-02 = 0）').toBe(0)
+  })
+
+  it('单字段 progress 不丢：progressDelta 经读侧归一参与差值', () => {
+    const el = mount({
+      tasks: JSON.stringify([
+        {
+          id: 'a',
+          name: 'A',
+          start: '2026-03-02',
+          end: '2026-03-06',
+          progress: 80,
+          baseline: { start: '2026-03-02', progress: 30 },
+        },
+      ]),
+    })
+    const v = computeVariance(el.tasks)[0]!
+    expect(v.progressDelta, '80 − 30 = +50（单字段 progress 经归一参与）').toBe(50)
+  })
+
+  it('多基线清洗：id 空/start 非法条目丢弃；progress 越界 clamp；同 id 保留首个；全无效整组不落', () => {
+    const el = mount({
+      tasks: JSON.stringify([
+        {
+          id: 'a',
+          name: 'A',
+          start: '2026-03-02',
+          end: '2026-03-06',
+          baselines: [
+            { id: '', start: '2026-03-01' },
+            { id: 'ok', start: 'bad-date' },
+            { id: 'dup', start: '2026-03-01' },
+            { id: 'dup', start: '2026-03-02' },
+            { id: 'p', start: '2026-03-01', progress: 250 },
+          ],
+        },
+        { id: 'b', name: 'B', start: '2026-03-02', end: '2026-03-03', baselines: [{ id: '', start: 'nope' }] },
+      ]),
+    })
+    const a = el.tasks[0]!
+    expect(a.baselines!.map((b) => b.id)).toEqual(['dup', 'p'])
+    expect(a.baselines![0]).toEqual({ id: 'dup', start: '2026-03-01' })
+    expect(a.baselines![1]!.progress).toBe(100)
+    expect(a.baseline).toBeUndefined()
+    expect(el.tasks[1]!.baselines, '全无效 → 整组不落').toBeUndefined()
+  })
+
+  it('show-baseline 渲染取 baseline-id 选中的基线（几何/进度覆盖层按选中条）', () => {
+    const el = mount({
+      tasks: JSON.stringify(MULTI),
+      'show-baseline': '',
+      'baseline-id': 'b2',
+      ...RANGE,
+    })
+    const bl = shadowOf(el).querySelector<HTMLElement>('.baseline[data-id="a"]')!
+    // b2: 03-04..03-08（end 含端 → 右缘 03-09）→ 轴首留白 1 档下 03-04 在 col 4 → left = 144，宽 = 5 × 36
+    expect(Number.parseFloat(bl.style.left)).toBe(4 * 36)
+    expect(Number.parseFloat(bl.style.width)).toBe(5 * 36)
+    const fill = bl.querySelector<HTMLElement>('.baseline-progress')!
+    expect(fill.style.width).toBe('50%')
+  })
+
+  it('baseline-id 未命中回落第一条 + 实例级告警一次；缺省（无属性）也取第一条', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    try {
+      const el = mount({ tasks: JSON.stringify(MULTI), 'show-baseline': '', 'baseline-id': 'nope', ...RANGE })
+      const bl = shadowOf(el).querySelector<HTMLElement>('.baseline[data-id="a"]')!
+      // 回落 b1: 03-01..03-03 → 03-01 在 col 1（轴首留白 1 档）→ left = 36，宽 = 3 × 36 = 108
+      expect(Number.parseFloat(bl.style.left)).toBe(1 * 36)
+      expect(Number.parseFloat(bl.style.width)).toBe(3 * 36)
+      const warnMsgs = warn.mock.calls.map((c) => String(c[0])).filter((m) => m.includes('baseline-id'))
+      expect(warnMsgs.length, '实例级告警一次（后续 update 不重复）').toBe(1)
+      expect(warnMsgs[0], '文案含未命中 id 与回落说明').toContain('"nope"')
+      expect(warnMsgs[0]).toContain('回落')
+      // 关闭再开启（触发新 update）不重复告警
+      el.removeAttribute('baseline-id')
+      el.setAttribute('baseline-id', 'nope')
+      expect(warn.mock.calls.map((c) => String(c[0])).filter((m) => m.includes('baseline-id')).length).toBe(1)
+      // 缺省 = 第一条（与未命中等价，但无告警）
+      const el2 = mount({ tasks: JSON.stringify(MULTI), 'show-baseline': '', ...RANGE })
+      const bl2 = el2.shadowRoot!.querySelector<HTMLElement>('.baseline[data-id="a"]')!
+      expect(Number.parseFloat(bl2.style.width)).toBe(3 * 36)
+      expect(warn.mock.calls.map((c) => String(c[0])).filter((m) => m.includes('baseline-id')).length).toBe(1)
+      // 实例隔离：第二个实例未命中 → 独立告警一次（互不吞并）
+      const el3 = mount({ tasks: JSON.stringify(MULTI), 'show-baseline': '', 'baseline-id': 'zzz', ...RANGE })
+      expect(shadowOf(el3).querySelector<HTMLElement>('.baseline[data-id="a"]')).toBeTruthy()
+      const zzzMsgs = warn.mock.calls.map((c) => String(c[0])).filter((m) => m.includes('"zzz"'))
+      expect(zzzMsgs.length, '新实例独立告警一次').toBe(1)
+    } finally {
+      warn.mockRestore()
+    }
+  })
+
+  it('computeVariance(tasks, baselineId)：指定 id 按该条计算；未命中回落第一条；缺省保持旧签名行为', () => {
+    const task: GanttTask = {
+      id: 'a',
+      name: 'A',
+      start: '2026-03-05',
+      end: '2026-03-09',
+      baselines: [
+        { id: 'b1', start: '2026-03-01', end: '2026-03-03' },
+        { id: 'b2', start: '2026-03-03', end: '2026-03-05', progress: 40 },
+      ],
+    }
+    // 命中 b2：startDelta = 05 − 03 = +2；progressDelta = 0 − 40 = −40
+    const hitB2 = computeVariance([task], 'b2')[0]!
+    expect(hitB2.startDelta).toBe(2)
+    expect(hitB2.endDelta, 'end 03-09 vs 基线 03-05（含端右缘 +1）').toBe(4)
+    expect(hitB2.progressDelta).toBe(-40)
+    // 缺省 = 第一条 b1：startDelta = 05 − 01 = +4
+    expect(computeVariance([task])[0]!.startDelta).toBe(4)
+    // 未命中回落第一条（与缺省一致）
+    expect(computeVariance([task], 'zzz')[0]!.startDelta).toBe(4)
+    // 兼容：只有单 baseline 字段的任务在所有签名下行为不变
+    const single: GanttTask = {
+      id: 's',
+      name: 'S',
+      start: '2026-03-04',
+      end: '2026-03-06',
+      baseline: { start: '2026-03-02' },
+    }
+    expect(computeVariance([single])[0]!.startDelta).toBe(2)
+    expect(computeVariance([single], 'default')[0]!.startDelta).toBe(2)
+  })
+})
+
+// ===== 复核回归：updateTask/updateTasks 的单 baseline 通道（清洗层不物化派生数组）=====
+//
+// 背景：派生 baselines 一旦物化进内部模型，patch 合并 {...旧, ...patch} 会把它原样带到下一轮，
+// 读侧「baselines 优先」就把 patch.baseline 的新值/删除静默遮蔽。修法 = 只物化显式 baselines，
+// 单字段读时归一（taskBaselines）；本组用例锁死该契约。
+describe('OASGantt updateTask/updateTasks 单 baseline 通道（读改写回归）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  const RANGE = { 'range-start': '2026-03-01', 'range-end': '2026-03-31' }
+  const PLAIN = JSON.stringify([{ id: 'a', name: 'A', start: '2026-03-05', end: '2026-03-09', progress: 40 }])
+
+  function baselineBar(el: OASGantt): HTMLElement | null {
+    return shadowOf(el).querySelector<HTMLElement>('.baseline[data-id="a"]')
+  }
+
+  it('updateTask 新增单 baseline：渲染基线条 + computeVariance 同步生效', () => {
+    const el = mount({ tasks: PLAIN, 'show-baseline': '', ...RANGE })
+    expect(baselineBar(el)).toBeNull()
+    expect(el.updateTask('a', { baseline: { start: '2026-03-03', end: '2026-03-05' } })).toBe(true)
+    const bl = baselineBar(el)
+    expect(bl, '基线条出现').toBeTruthy()
+    // 03-03..03-05（含端）→ 轴首留白 1 档下 left = 3×36，宽 = 3 天 = 108
+    expect(Number.parseFloat(bl!.style.left)).toBe(3 * 36)
+    expect(Number.parseFloat(bl!.style.width)).toBe(3 * 36)
+    expect(computeVariance(el.tasks)[0]!.startDelta, '当前 03-05 − 基线 03-03 = +2').toBe(2)
+  })
+
+  it('updateTask 修改单 baseline：几何与差值随之更新（不被旧派生值遮蔽）', () => {
+    const el = mount({
+      tasks: JSON.stringify([
+        {
+          id: 'a',
+          name: 'A',
+          start: '2026-03-05',
+          end: '2026-03-09',
+          progress: 40,
+          baseline: { start: '2026-03-03', end: '2026-03-05' },
+        },
+      ]),
+      'show-baseline': '',
+      ...RANGE,
+    })
+    expect(Number.parseFloat(baselineBar(el)!.style.width)).toBe(3 * 36)
+    expect(el.updateTask('a', { baseline: { start: '2026-03-01', end: '2026-03-06', progress: 20 } })).toBe(true)
+    const bl = baselineBar(el)!
+    // 新基线 03-01..03-06 → left = 1×36，宽 = 6 天
+    expect(Number.parseFloat(bl.style.left)).toBe(1 * 36)
+    expect(Number.parseFloat(bl.style.width)).toBe(6 * 36)
+    const v = computeVariance(el.tasks)[0]!
+    expect(v.startDelta).toBe(4)
+    expect(v.progressDelta, '40 − 20 = +20（单字段 progress 改值生效）').toBe(20)
+  })
+
+  it('updateTask(id, { baseline: undefined }) 删除：条消失 + tasks 读回无 baseline', () => {
+    const el = mount({
+      tasks: JSON.stringify([
+        { id: 'a', name: 'A', start: '2026-03-05', end: '2026-03-09', baseline: { start: '2026-03-03' } },
+      ]),
+      'show-baseline': '',
+      ...RANGE,
+    })
+    expect(baselineBar(el)).toBeTruthy()
+    expect(el.updateTask('a', { baseline: undefined })).toBe(true)
+    expect(baselineBar(el), '基线条移除').toBeNull()
+    expect(el.tasks[0]!.baseline).toBeUndefined()
+    expect(computeVariance(el.tasks), '无基线 → 无差值行').toEqual([])
+  })
+
+  it('updateTasks 批量：新增/修改/删除混合一次提交全部生效', () => {
+    const el = mount({
+      tasks: JSON.stringify([
+        { id: 'a', name: 'A', start: '2026-03-05', end: '2026-03-09', baseline: { start: '2026-03-03' } },
+        { id: 'b', name: 'B', start: '2026-03-06', end: '2026-03-08' },
+      ]),
+      'show-baseline': '',
+      ...RANGE,
+    })
+    const n = el.updateTasks([
+      { id: 'a', baseline: undefined }, // 删
+      { id: 'b', baseline: { start: '2026-03-04', end: '2026-03-07', progress: 10 } }, // 增
+    ])
+    expect(n).toBe(2)
+    expect(baselineBar(el), 'a 的基线已删').toBeNull()
+    const bl = shadowOf(el).querySelector<HTMLElement>('.baseline[data-id="b"]')!
+    expect(Number.parseFloat(bl.style.left)).toBe(4 * 36)
+    expect(Number.parseFloat(bl.style.width)).toBe(4 * 36)
+    expect(computeVariance(el.tasks).map((v) => v.id)).toEqual(['b'])
+  })
+
+  it('宿主读改写回循环：el.tasks → 改 baseline → 写回 el.tasks 生效', () => {
+    const el = mount({ tasks: PLAIN, 'show-baseline': '', ...RANGE })
+    const rows = el.tasks
+    rows[0]!.baseline = { start: '2026-03-02', end: '2026-03-04', progress: 15 }
+    el.tasks = rows
+    const bl = baselineBar(el)!
+    expect(Number.parseFloat(bl.style.left)).toBe(2 * 36)
+    expect(Number.parseFloat(bl.style.width)).toBe(3 * 36)
+    expect(computeVariance(el.tasks)[0]!.progressDelta).toBe(25)
+  })
+
+  it('两通道并存 baselines 优先：渲染与 computeVariance 都取 baselines 首条（单字段被忽略）', () => {
+    const el = mount({
+      tasks: JSON.stringify([
+        {
+          id: 'a',
+          name: 'A',
+          start: '2026-03-06',
+          end: '2026-03-09',
+          baseline: { start: '2026-03-01', end: '2026-03-02' },
+          baselines: [{ id: 'x', start: '2026-03-04', end: '2026-03-06' }],
+        },
+      ]),
+      'show-baseline': '',
+      ...RANGE,
+    })
+    const bl = baselineBar(el)!
+    // x: 03-04..03-06 → left = 4×36，宽 = 3 天（若单字段胜出会是 1×36 / 2 天）
+    expect(Number.parseFloat(bl.style.left)).toBe(4 * 36)
+    expect(Number.parseFloat(bl.style.width)).toBe(3 * 36)
+    expect(computeVariance(el.tasks)[0]!.startDelta, '当前 03-06 − 基线 x 03-04 = +2').toBe(2)
+  })
+
+  it('显式 baselines 通道的 updateTask 增/删同样生效（含深拷贝隔离）', () => {
+    const el = mount({
+      tasks: JSON.stringify([
+        {
+          id: 'a',
+          name: 'A',
+          start: '2026-03-05',
+          end: '2026-03-09',
+          baselines: [{ id: 'b1', start: '2026-03-02', end: '2026-03-04' }],
+        },
+      ]),
+      'show-baseline': '',
+      ...RANGE,
+    })
+    expect(
+      el.updateTask('a', {
+        baselines: [
+          { id: 'b1', start: '2026-03-04', end: '2026-03-07' },
+          { id: 'b2', start: '2026-03-01' },
+        ],
+      }),
+    ).toBe(true)
+    // 缺省第一条 b1：03-04..03-07 → left 4×36，宽 4 天
+    const bl = baselineBar(el)!
+    expect(Number.parseFloat(bl.style.left)).toBe(4 * 36)
+    expect(Number.parseFloat(bl.style.width)).toBe(4 * 36)
+    // 快照深拷贝：改返回的 baselines 不影响内部
+    const snapshot = el.tasks[0]!.baselines!
+    snapshot[0]!.start = '2026-03-30'
+    expect(Number.parseFloat(baselineBar(el)!.style.left)).toBe(4 * 36)
+    // 删除：整组清空 → 无基线渲染
+    expect(el.updateTask('a', { baselines: undefined })).toBe(true)
+    expect(baselineBar(el)).toBeNull()
+  })
+})
+
+// ===== 复核回归：计划进度刻度口径（含端日粒度，与 evm planned 同构）=====
+describe('OASGantt 计划刻度与 evm 同口径（跨包对表）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('同输入下条内 data-plan-ratio === computeEvm 的 planned/budget（10 天任务 03-06 → 0.5）', () => {
+    const task: GanttTask = { id: 'ev', name: 'EV', start: '2026-03-02', end: '2026-03-11' }
+    const r = computeEvm([task], { rates: { taskCost: { ev: 1000 } }, statusDate: '2026-03-06' })
+    expect(r.byTask[0]!.budget).toBe(1000)
+    expect(r.byTask[0]!.planned, '已耗 5 天 / 工期 10 天').toBeCloseTo(500, 10)
+    const ratio = r.byTask[0]!.planned / r.byTask[0]!.budget
+    const el = mount({
+      tasks: JSON.stringify([task]),
+      'show-status-line': '',
+      'status-date': '2026-03-06',
+      'range-start': '2026-03-01',
+      'range-end': '2026-03-31',
+    })
+    const tick = barOf(el, 'ev').querySelector<HTMLElement>('.plan-tick')!
+    expect(Number(tick.dataset['planRatio'])).toBe(ratio)
+    expect(tick.dataset['planRatio']).toBe('0.5')
+  })
+
+  it('含端边界：status = start 当日 → 1/工期；status = end 当日 → 1；status 早于 start → 0', () => {
+    const task: GanttTask = { id: 'w', name: 'W', start: '2026-03-02', end: '2026-03-06' } // 5 天
+    const ratios = [
+      { status: '2026-03-02', want: 0.2 },
+      { status: '2026-03-06', want: 1 },
+      { status: '2026-03-01', want: 0 },
+    ]
+    for (const { status, want } of ratios) {
+      const el = mount({
+        tasks: JSON.stringify([task]),
+        'show-status-line': '',
+        'status-date': status,
+        'range-start': '2026-03-01',
+        'range-end': '2026-03-31',
+      })
+      const tick = barOf(el, 'w').querySelector<HTMLElement>('.plan-tick')!
+      expect(Number(tick.dataset['planRatio']), `status ${status} → ${want}`).toBe(want)
+    }
+    // 与 evm planned 的比值再对一次（start 当日）
+    const r = computeEvm([task], { rates: { taskCost: { w: 500 } }, statusDate: '2026-03-02' })
+    expect(r.byTask[0]!.planned / 500).toBe(0.2)
   })
 })

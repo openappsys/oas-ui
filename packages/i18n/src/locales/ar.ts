@@ -220,6 +220,8 @@ export const ar: LocaleMessages = {
   'gantt.addTask': 'إضافة مهمة',
   'gantt.addChild': 'إضافة مهمة فرعية',
   'gantt.newTask': 'مهمة جديدة',
+  'gantt.effort': 'Effort',
+  'gantt.effortValue': 'Effort {value}d',
   // resource (حمل الموارد / عرض المسارات)
   'resource.label': 'حمل الموارد',
   'resource.empty': 'لا توجد مهام موارد',
@@ -232,6 +234,7 @@ export const ar: LocaleMessages = {
   'resource.loadAria': '{resource}: الحمل طبيعي',
   'resource.loadOverAria': '{resource}: {count} فترة محمّلة بشكل زائد',
   'resource.overBadge': 'تحميل زائد ×{count}',
+  'resource.cost': 'Cost',
   // kanban (لوحة كانبان)
   'kanban.emptyColumn': 'اسحب البطاقات إلى هنا',
   'kanban.moveCard': 'نقل البطاقة',

@@ -1962,3 +1962,201 @@ test('gantt 小时级班次交集：多资源共同班次 11-12，后继落到�
     ),
   ).toMatchObject({ start: '2026-03-03 11:00', end: '2026-03-03 12:00' })
 })
+
+// ===== 二期 opt-in 扩展（默认关 → 开启逐节点；暗色存在性；console 零告警）=====
+// 动态挂载（页内 evaluate 建元素 + 固定 range 锚点），不依赖文档 demo 的数据漂移。
+
+type GanttShadowHost = HTMLElement & { shadowRoot: ShadowRoot }
+
+async function mountGantt(page: Page, id: string, attrs: Record<string, string>): Promise<void> {
+  await page.evaluate(
+    ({ id, attrs }) => {
+      const el = document.createElement('oas-gantt')
+      el.id = id
+      for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v)
+      document.body.appendChild(el)
+    },
+    { id, attrs },
+  )
+  await page.waitForFunction(
+    (target) => {
+      const el = document.getElementById(target) as GanttShadowHost | null
+      return !!el?.shadowRoot && !!el.shadowRoot.querySelector('.bar')
+    },
+    id,
+    { timeout: 30000 },
+  )
+}
+
+test('gantt show-effort 工时列：默认关零节点、开启两列右对齐、暗色存在；console 零告警', async ({ page }) => {
+  const errors: string[] = []
+  page.on('pageerror', (e) => errors.push(e.message))
+  page.on('console', (m) => {
+    if (m.type() === 'error') errors.push(m.text())
+  })
+  await page.goto('/components/gantt.html', { waitUntil: 'domcontentloaded' })
+  const TASKS = JSON.stringify([
+    { id: 'ef1', name: '任务一（12 天）', start: '2026-03-02', end: '2026-03-06', effort: 12 },
+    { id: 'ef2', name: '任务二（2.5 天）', start: '2026-03-05', end: '2026-03-09', effort: 2.5 },
+    { id: 'ef3', name: '任务三（未填）', start: '2026-03-10', end: '2026-03-11' },
+  ])
+  // 默认关：无 .effort 节点、表头无 has-effort
+  await mountGantt(page, 'gantt-effort-off', { tasks: TASKS, 'range-start': '2026-03-01', 'range-end': '2026-03-31' })
+  const off = page.locator('#gantt-effort-off')
+  await expect(off.locator('.effort')).toHaveCount(0)
+  expect(await off.locator('.side-head').evaluate((el) => el.classList.contains('has-effort'))).toBe(false)
+  // 开启：表头 has-effort + 列头「工时」；三行各一个 .effort（12 / 2.5 / 空）
+  await mountGantt(page, 'gantt-effort-on', {
+    tasks: TASKS,
+    'show-effort': '',
+    'range-start': '2026-03-01',
+    'range-end': '2026-03-31',
+  })
+  const on = page.locator('#gantt-effort-on')
+  expect(await on.locator('.side-head').evaluate((el) => el.classList.contains('has-effort'))).toBe(true)
+  await expect(on.locator('.side-head .head-effort')).toHaveText('工时')
+  const cells = on.locator('.side-body .row-name .effort')
+  await expect(cells).toHaveCount(3)
+  await expect(cells.nth(0)).toHaveText('12')
+  // 可读名带单位（i18n gantt.effortValue，与 resource 行头「成本 N」前缀方案对齐）
+  await expect(cells.nth(0)).toHaveAttribute('aria-label', '工时 12 天')
+  await expect(cells.nth(1)).toHaveText('2.5')
+  await expect(cells.nth(2)).toHaveText('')
+  // 暗色存在性（token 切换不丢节点）
+  await page.evaluate(() => document.documentElement.setAttribute('data-theme', 'dark'))
+  await expect(on.locator('.side-body .row-name .effort').first()).toBeVisible()
+  expect(errors).toEqual([])
+})
+
+test('gantt show-status-line：状态竖线 + 条内 plan-ratio 刻度（里程碑二值/summary 不画）、默认关零节点、暗色存在', async ({
+  page,
+}) => {
+  const errors: string[] = []
+  page.on('pageerror', (e) => errors.push(e.message))
+  page.on('console', (m) => {
+    if (m.type() === 'error') errors.push(m.text())
+  })
+  await page.goto('/components/gantt.html', { waitUntil: 'domcontentloaded' })
+  const TASKS = JSON.stringify([
+    { id: 'st1', name: '任务（10 天）', start: '2026-03-02', end: '2026-03-11' },
+    { id: 'stm', name: '里程碑', start: '2026-03-06' },
+    { id: 'stp', name: '阶段', start: '2026-03-02', end: '2026-03-11', type: 'summary' },
+    { id: 'stc', name: '子任务', start: '2026-03-02', end: '2026-03-06', parent: 'stp' },
+    { id: 'std', name: '次日单日', start: '2026-03-03', end: '2026-03-03', parent: 'stp' },
+  ])
+  const RANGE = { 'range-start': '2026-03-01', 'range-end': '2026-03-31' }
+  // 默认关：状态线 hidden、无刻度
+  await mountGantt(page, 'gantt-status-off', { tasks: TASKS, 'status-date': '2026-03-06', ...RANGE })
+  const off = page.locator('#gantt-status-off')
+  await expect(off.locator('.status-line')).toBeHidden()
+  await expect(off.locator('.plan-tick')).toHaveCount(0)
+  // 开启（status-date 钉 03-06）：竖线可见且落在 03-06 列位（自适应列宽 → 相对几何断言：
+  // 以 03-02 条（stc）为锚，col = std.left − stc.left（相邻两天），line.left = stc.left + 4 × col）
+  await mountGantt(page, 'gantt-status-on', {
+    tasks: TASKS,
+    'show-status-line': '',
+    'status-date': '2026-03-06',
+    ...RANGE,
+  })
+  const on = page.locator('#gantt-status-on')
+  await expect(on.locator('.status-line')).toBeVisible()
+  const geom = await on.evaluate((el) => {
+    const shadow = (el as unknown as { shadowRoot: ShadowRoot }).shadowRoot
+    const leftOf = (id: string) =>
+      Number.parseFloat(shadow.querySelector<HTMLElement>(`.bar[data-id="${id}"]`)?.style.left ?? 'NaN')
+    return {
+      line: Number.parseFloat(shadow.querySelector<HTMLElement>('.status-line')?.style.left ?? 'NaN'),
+      stc: leftOf('stc'),
+      std: leftOf('std'),
+    }
+  })
+  const col = geom.std - geom.stc
+  expect(col, '相邻两天列宽为正').toBeGreaterThan(0)
+  expect(geom.line, '状态线落在 03-06 列位 = 03-02 条 + 4 列').toBeCloseTo(geom.stc + 4 * col, 1)
+  await expect(on.locator('.bar[data-id="st1"] .plan-tick')).toHaveAttribute('data-plan-ratio', '0.5')
+  await expect(on.locator('.bar[data-id="stc"] .plan-tick')).toHaveAttribute('data-plan-ratio', '1')
+  // 含端日粒度：stc 03-02..03-06 在 status 03-06 已满 5/5 天；st1 10 天任务已耗 5 天（口径同 evm planned）
+  // 里程碑二值：03-06 已到 start → 1；summary 无刻度
+  await expect(on.locator('.bar[data-id="stm"] .plan-tick')).toHaveAttribute('data-plan-ratio', '1')
+  await expect(on.locator('.bar[data-id="stp"] .plan-tick')).toHaveCount(0)
+  // 暗色存在性
+  await page.evaluate(() => document.documentElement.setAttribute('data-theme', 'dark'))
+  await expect(on.locator('.bar[data-id="st1"] .plan-tick')).toBeVisible()
+  expect(errors).toEqual([])
+})
+
+test('gantt baselines 多基线：baseline-id 选中条几何、未命中回落第一条 + 告警一次、暗色存在', async ({ page }) => {
+  const errors: string[] = []
+  const warns: string[] = []
+  page.on('pageerror', (e) => errors.push(e.message))
+  page.on('console', (m) => {
+    if (m.type() === 'error') errors.push(m.text())
+    else if (m.type() === 'warning') warns.push(m.text())
+  })
+  await page.goto('/components/gantt.html', { waitUntil: 'domcontentloaded' })
+  const TASKS = JSON.stringify([
+    {
+      id: 'mb1',
+      name: '多基线任务',
+      start: '2026-03-05',
+      end: '2026-03-09',
+      baselines: [
+        { id: 'plan-a', start: '2026-03-01', end: '2026-03-03' },
+        { id: 'plan-b', start: '2026-03-04', end: '2026-03-08', progress: 50 },
+      ],
+    },
+  ])
+  const RANGE = { 'range-start': '2026-03-01', 'range-end': '2026-03-31' }
+  // 无 show-baseline：不渲染基线条（默认关）
+  await mountGantt(page, 'gantt-baseline-off', { tasks: TASKS, 'baseline-id': 'plan-b', ...RANGE })
+  await expect(page.locator('#gantt-baseline-off .baseline')).toHaveCount(0)
+  // 开启 + plan-b：基线条 = 03-04..03-08（col 4 起，宽 5 天），进度覆盖层 50%
+  await mountGantt(page, 'gantt-baseline-b', { tasks: TASKS, 'show-baseline': '', 'baseline-id': 'plan-b', ...RANGE })
+  const bl = page.locator('#gantt-baseline-b .baseline[data-id="mb1"]')
+  await expect(bl).toBeVisible()
+  // 自适应列宽 → 相对几何：col = bar(mb1).left − bl.left（任务 03-05 与基线 03-04 恰差 1 天）；
+  // plan-b 宽 5 天 = 5 × col，进度覆盖层 50%
+  const geo = await page.locator('#gantt-baseline-b').evaluate((el) => {
+    const shadow = (el as unknown as { shadowRoot: ShadowRoot }).shadowRoot
+    const num = (sel: string) => Number.parseFloat(shadow.querySelector<HTMLElement>(sel)?.style.left ?? 'NaN')
+    const w = (sel: string) => Number.parseFloat(shadow.querySelector<HTMLElement>(sel)?.style.width ?? 'NaN')
+    return {
+      barLeft: num('.bar[data-id="mb1"]'),
+      blLeft: num('.baseline[data-id="mb1"]'),
+      blWidth: w('.baseline[data-id="mb1"]'),
+    }
+  })
+  const col = geo.barLeft - geo.blLeft
+  expect(col, '任务与基线恰差 1 天 → col 为正列宽').toBeGreaterThan(0)
+  expect(geo.blWidth).toBeCloseTo(5 * col, 1)
+  await expect(bl.locator('.baseline-progress')).toHaveAttribute('style', /width:\s*50%/)
+  // baseline-id 未命中 → 回落第一条（03-01 起，col 1 = 36px，宽 3 天）+ 告警恰好一次
+  await mountGantt(page, 'gantt-baseline-fallback', {
+    tasks: TASKS,
+    'show-baseline': '',
+    'baseline-id': 'nope',
+    ...RANGE,
+  })
+  const fb = page.locator('#gantt-baseline-fallback .baseline[data-id="mb1"]')
+  await expect(fb).toBeVisible()
+  // 回落第一条（03-01..03-03）：相对几何 —— 宽 = 3 天 = 3 × col（col 由 plan-b 实例同锚推导：
+  // fallback 实例内任务条同一日期锚 → bar.left − fb.left = 4 天 × col）
+  const fbGeo = await page.locator('#gantt-baseline-fallback').evaluate((el) => {
+    const shadow = (el as unknown as { shadowRoot: ShadowRoot }).shadowRoot
+    const num = (sel: string) => Number.parseFloat(shadow.querySelector<HTMLElement>(sel)?.style.left ?? 'NaN')
+    const w = (sel: string) => Number.parseFloat(shadow.querySelector<HTMLElement>(sel)?.style.width ?? 'NaN')
+    return {
+      barLeft: num('.bar[data-id="mb1"]'),
+      blLeft: num('.baseline[data-id="mb1"]'),
+      blWidth: w('.baseline[data-id="mb1"]'),
+    }
+  })
+  const fbCol = (fbGeo.barLeft - fbGeo.blLeft) / 4
+  expect(fbCol, '任务 03-05 与基线 03-01 相差 4 天 → 推导列宽为正').toBeGreaterThan(0)
+  expect(fbGeo.blWidth).toBeCloseTo(3 * fbCol, 1)
+  // devWarn 一次的告警断言在单测覆盖（预览站为生产构建，devWarn 被静默，e2e 只验证回落几何）
+  // 暗色存在性
+  await page.evaluate(() => document.documentElement.setAttribute('data-theme', 'dark'))
+  await expect(bl).toBeVisible()
+  expect(errors).toEqual([])
+})

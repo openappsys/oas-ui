@@ -11,6 +11,7 @@ export { OASGantt, computeVariance }
 export type {
   GanttTask,
   GanttResource,
+  GanttBaseline,
   GanttBaselineVariance,
   GanttDependency,
   GanttScale,

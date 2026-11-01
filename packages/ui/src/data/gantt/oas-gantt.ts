@@ -75,6 +75,26 @@ const STYLE = `
   flex-shrink: 0;
   border-bottom: 1px solid var(--oas-gantt-grid-line-color, var(--oas-color-border));
 }
+/* 工时列（show-effort，opt-in 默认关）：表头与行名共用同一两列模板（名称自适应 | 工时定宽右对齐）。
+   关闭时无 .effort 节点、表头保持空 div——既有单列形态 DOM 逐节点不变 */
+.side-head.has-effort {
+  display: flex;
+  align-items: center;
+  gap: var(--oas-space-1);
+  padding-inline: var(--oas-space-2);
+  box-sizing: border-box;
+  font-size: var(--oas-font-size-xs);
+  color: var(--oas-color-text-secondary-strong);
+}
+.side-head .head-name {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.side-head .head-effort {
+  flex: none;
+  width: var(--oas-gantt-effort-width, 56px);
+  text-align: end;
+}
 .side-body {
   flex: 1;
   overflow: hidden;
@@ -281,6 +301,17 @@ svg.links .link-hit:focus-visible + .link {
 }
 .variance[data-early] {
   color: var(--oas-color-success);
+}
+/* 工时单元格（show-effort 开启）：与表头同列模板——定宽右对齐 tabular-nums，数值稳定不跳动；
+   颜色沿用行标签次级文本 token（暗色变体随 token 自动切换） */
+.row-name .effort {
+  flex: none;
+  width: var(--oas-gantt-effort-width, 56px);
+  text-align: end;
+  font-variant-numeric: tabular-nums;
+  font-size: var(--oas-font-size-xs);
+  color: var(--oas-color-text-secondary-strong);
+  white-space: nowrap;
 }
 .toggle {
   appearance: none;
@@ -660,6 +691,31 @@ svg.links .temp-link {
 .today-line[hidden] {
   display: none !important;
 }
+/* 状态线（show-status-line，opt-in 默认关）：与 today-line 同路径渲染，独立 token
+   缺省取 warning 色族（进度线语义色，与「今天」的 danger 区分）；装饰层不拦指针 */
+.status-line {
+  position: absolute;
+  top: 0;
+  width: 2px;
+  background: var(--oas-gantt-status-line-color, var(--oas-color-warning));
+  pointer-events: none;
+  z-index: 1;
+}
+.status-line[hidden] {
+  display: none !important;
+}
+/* 计划进度刻度（show-status-line 开启）：任务条内按 planned%（status-date 时刻在
+   [start, end] 的时间流逝占比）画的窄竖线，与状态线同 token 同色——只画刻度、不染色不告警。
+   milestone 内为二值刻度（0/1）；条 overflow:hidden 裁掉出条部分，RTL 走逻辑属性自动镜像 */
+.plan-tick {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--oas-gantt-status-line-color, var(--oas-color-warning));
+  pointer-events: none;
+  z-index: 2;
+}
 .tooltip {
   position: absolute;
   z-index: 7;
@@ -759,9 +815,35 @@ export interface GanttTask {
   deadline?: string
   /** 多个截止日（可选；与 deadline 合并，去重并只保留合法日期） */
   deadlines?: string[]
-  /** 基线计划（对比用；由宿主保存，组件只读）：start 必填；end 缺省 = 单点；progress 为基线进度 0-100 */
+  /** 基线计划（对比用；由宿主保存，组件只读）：start 必填；end 缺省 = 单点；progress 为基线进度 0-100。
+   *  等价于 `baselines: [{ id: 'default', ... }]` 的单条写法（清洗层归一，不 deprecate）；
+   *  两通道并存时 `baselines` 优先 */
   baseline?: { start: string; end?: string; progress?: number }
+  /**
+   * 多基线（opt-in 数据扩展）：清洗层逐条校验（id 必填非空、start 必填合法、end/progress 非法丢弃），
+   * 全部无效时整组不落；单 `baseline` 字段会归一为 `[{ id: 'default', ...baseline }]`。
+   * 渲染取数走 `baseline-id` 属性（缺省第一条）。
+   */
+  baselines?: GanttBaseline[]
+  /**
+   * 工时估算（单位：天，可为小数如 2.5；**纯展示数据**，不参与排程/布局/依赖计算）。
+   * `show-effort` 开启时在行标签区右列显示；缺失/非有限显示空。索引签名本已允许透传，
+   * 此处显式声明并纳入清洗层（非有限数值丢弃）。
+   */
+  effort?: number
   [key: string]: unknown
+}
+
+/** 多基线条目（show-baseline 渲染与 computeVariance 的取数来源；`baseline` 单字段归一为 id 'default'） */
+export interface GanttBaseline {
+  /** 基线 id（baselines 内唯一；缺失/空串该条丢弃） */
+  id: string
+  /** 基线开始 'YYYY-MM-DD'（hour 档可带时刻）；必填，非法整条丢弃 */
+  start: string
+  /** 基线结束；缺省 = 单点（= start） */
+  end?: string
+  /** 基线进度 0-100（越界 clamp；缺省不参与进度差） */
+  progress?: number
 }
 
 /** 基线与当前排期的差值（日精度；正数 = 当前晚于基线/工期更长/进度更多） */
@@ -1021,12 +1103,14 @@ const RESERVED_TASK_KEYS = new Set([
   'disabled',
   'expanded',
   'baseline',
+  'baselines',
   'project',
   'resources',
   'deadline',
   'deadlines',
   'constraint',
   'constraintDate',
+  'effort',
 ])
 
 /** 需携带 constraintDate 方能生效的约束模式 */
@@ -1106,21 +1190,37 @@ function endDayIndex(s: unknown): number | null {
 }
 
 /**
- * 基线差异（纯函数，日精度）：逐任务比较当前 start/end/progress 与 baseline。
- * - 无 id / 无合法 baseline.start 的任务跳过；baseline.end 缺省按单点（= start）处理。
+ * 基线差异（纯函数，日精度）：逐任务比较当前 start/end/progress 与选中基线。
+ * - 基线取数走 taskBaselines（baselines 数组优先，单 baseline 字段归一为 id 'default'）；
+ *   无 id / 无合法基线 start 的任务跳过；基线 end 缺省按单点（= start）处理。
  * - 当前 end 缺省按里程碑（= start）处理；差值正数表示当前晚于基线/工期更长/进度更多。
- * - baseline.progress 未提供时 progressDelta=null（不把缺失当成 0）。
+ * - 基线 progress 未提供时 progressDelta=null（不把缺失当成 0）。
+ * - baselineId（可选，对应组件 baseline-id 属性）：指定 id 命中该条基线；未命中回落每任务
+ *   第一条并 devWarn 一次（模块级去重）。缺省 = 每任务第一条基线（既有调用不破坏）。
  */
-export function computeVariance(tasks: GanttTask[]): GanttBaselineVariance[] {
+export function computeVariance(tasks: GanttTask[], baselineId?: string): GanttBaselineVariance[] {
   const out: GanttBaselineVariance[] = []
+  const want = typeof baselineId === 'string' ? baselineId.trim() : ''
   for (const t of tasks) {
-    if (!t || typeof t.id !== 'string' || t.id === '' || !t.baseline) continue
+    if (!t || typeof t.id !== 'string' || t.id === '') continue
+    const bases = taskBaselines(t)
+    if (bases.length === 0) continue
+    // 选基线：指定 id 命中取命中，未命中回落第一条（模块级告警一次，防刷屏）；缺省取第一条
+    let base = bases[0]!
+    if (want !== '') {
+      const hit = bases.find((b) => b.id === want)
+      if (hit) base = hit
+      else if (!varianceBaselineIdWarned) {
+        varianceBaselineIdWarned = true
+        devWarn(`[oas-gantt] computeVariance 未找到 id 为 "${want}" 的基线，已回落每任务第一条基线`)
+      }
+    }
     const curStart = dayIndex(t.start)
-    const baseStart = dayIndex(t.baseline.start)
+    const baseStart = dayIndex(base.start)
     if (curStart === null || baseStart === null) continue
     const curEnd = endDayIndex(t.end) ?? curStart
-    const baseEnd = endDayIndex(t.baseline.end) ?? baseStart
-    const baseProgress = parseProgress(t.baseline.progress)
+    const baseEnd = endDayIndex(base.end) ?? baseStart
+    const baseProgress = parseProgress(base.progress)
     out.push({
       id: t.id,
       startDelta: curStart - baseStart,
@@ -1132,9 +1232,74 @@ export function computeVariance(tasks: GanttTask[]): GanttBaselineVariance[] {
   return out
 }
 
+/** computeVariance 指定 baseline-id 未命中的模块级告警去重（纯函数无实例可挂，仅提示一次） */
+let varianceBaselineIdWarned = false
+
 function parseProgress(v: unknown): number | undefined {
   if (typeof v !== 'number' || !Number.isFinite(v)) return undefined
   return Math.min(100, Math.max(0, Math.round(v)))
+}
+
+/**
+ * 多基线清洗（纯函数）：非数组返回 null；逐条校验——id 必填非空字符串、start 必填可解析、
+ * end 缺省省略（非法丢弃 end 保条目）、progress 越界 clamp；全组无效（无合法条目）返回 null。
+ * 条内 start 晚于 end 时按渲染语义交换（同单 baseline 口径）。不做去重：同 id 保留首个
+ * （baseline-id 取数按首个命中，后续同 id 条目不参与）。
+ */
+function sanitizeBaselines(v: unknown): GanttBaseline[] | null {
+  if (!Array.isArray(v)) return null
+  const out: GanttBaseline[] = []
+  const seen = new Set<string>()
+  for (const item of v) {
+    if (typeof item !== 'object' || item === null) continue
+    const b = item as Record<string, unknown>
+    const id = typeof b.id === 'string' ? b.id.trim() : ''
+    if (id === '' || seen.has(id)) continue
+    const s = typeof b.start === 'string' ? b.start.trim() : ''
+    if (!s || !parseTaskDate(s)) continue
+    seen.add(id)
+    const one: GanttBaseline = { id, start: s }
+    const e = typeof b.end === 'string' ? b.end.trim() : ''
+    if (e && parseTaskDate(e)) {
+      const sD = parseTaskDate(s)!
+      const eD = parseTaskDate(e)!
+      const eMs = e.length > 10 ? eD.getTime() : addLocalDays(eD.getTime(), 1)
+      if (eMs < sD.getTime()) {
+        one.start = e
+        one.end = s
+      } else {
+        one.end = e
+      }
+    }
+    const bp = parseProgress(b.progress)
+    if (bp !== undefined) one.progress = bp
+    out.push(one)
+  }
+  return out.length > 0 ? out : null
+}
+
+/**
+ * 单 baseline 字段 → GanttBaseline 的归一（纯函数）：id 固定 'default'，end/progress 缺省省略。
+ * taskBaselines（读侧）与未来清洗侧共用同一条归一路径，避免双实现漂移。
+ */
+function normalizeSingleBaseline(b: { start: string; end?: string; progress?: number }): GanttBaseline {
+  const one: GanttBaseline = { id: 'default', start: b.start }
+  if (b.end !== undefined) one.end = b.end
+  if (b.progress !== undefined) one.progress = b.progress
+  return one
+}
+
+/**
+ * 任务的多基线读取（**读时归一**；纯函数通道对未清洗输入兜底兼容）：
+ * 显式 baselines 数组非空优先；否则单 baseline 字段**在读侧**归一为 `[{ id: 'default', ... }]`
+ * （清洗层不物化派生数组——否则 updateTask/updateTasks 的 patch 合并 {...旧, ...patch} 会保留旧
+ * 派生数组、令 patch.baseline 的新值/删除被静默遮蔽，回归见「updateTask 改/删单 baseline」用例）；两者皆无返回 []。
+ */
+export function taskBaselines(t: GanttTask | undefined | null): GanttBaseline[] {
+  if (!t) return []
+  if (Array.isArray(t.baselines) && t.baselines.length > 0) return t.baselines
+  if (t.baseline) return [normalizeSingleBaseline(t.baseline)]
+  return []
 }
 
 /**
@@ -1389,6 +1554,16 @@ function sanitizeTasks(
         t.baseline = bb
       }
     }
+    const baselines = sanitizeBaselines(raw.baselines)
+    if (baselines) {
+      // 多基线通道（显式 baselines）优先：与单 baseline 并存时单字段被忽略（数据面归一口径）。
+      // **只物化显式数组**——单 baseline 字段保持原样不派生（否则 updateTask(patch.baseline) 会被
+      // 旧对象的派生 baselines 遮蔽：patch 合并 {...旧, ...patch} 后 baselines 仍在、单字段被忽略）。
+      // 读侧归一统一走 taskBaselines()（单字段 → [{ id: 'default', ... }]）。
+      t.baselines = baselines
+    }
+    // 工时估算（纯展示，单位天）：仅保留有限**非负**数值；NaN/±Infinity/负数/非 number 丢弃为无工时（显示空）
+    if (typeof raw.effort === 'number' && Number.isFinite(raw.effort) && raw.effort >= 0) t.effort = raw.effort
     out.push(t)
   }
   return out
@@ -1415,6 +1590,19 @@ function stableStringify(v: unknown): string {
 /** 选择器 id 转义（宿主 id 可能含引号/方括号，直接拼接会抛 DOMException） */
 function escId(s: string): string {
   return typeof CSS !== 'undefined' && typeof CSS.escape === 'function' ? CSS.escape(s) : s.replace(/["\\\]]/g, '\\$&')
+}
+
+/**
+ * 工时单元格格式化（show-effort）：单位天，最多保留两位小数并去掉尾随零（3 → '3'、2.5 → '2.5'、
+ * 1.25 → '1.25'）；非有限/负值返回空串（清洗层已按 costRate 同口径丢弃负数/非有限，此处双保险）。
+ * 不加单位——单位语义由单元格 aria-label（gantt.effortValue）与列头（gantt.effort）承载。
+ * 超大值（≥ 1e12，字符串 13+ 位）转科学计数，防 21 位长数字撑破列宽（1e21 → '1.00e+21'）。
+ */
+function formatEffortCell(v: unknown): string {
+  if (typeof v !== 'number' || !Number.isFinite(v) || v < 0) return ''
+  const rounded = Math.round(v * 100) / 100
+  const s = String(rounded)
+  return rounded >= 1e12 || s.length > 13 ? rounded.toExponential(2) : s
 }
 
 export class OASGantt extends OASElement {
@@ -1448,6 +1636,12 @@ export class OASGantt extends OASElement {
       'stripe',
       'group-by-project',
       'group-by-resource',
+      // 二期 opt-in 扩展（全部默认关：show-effort 工时列 / show-status-line 进度线 +
+      // status-date 基准日 / baseline-id 多基线选择——数据通道 baselines 无属性默认取第一条）
+      'show-effort',
+      'show-status-line',
+      'status-date',
+      'baseline-id',
       // windowed（服务端行窗口模式）+ 宿主托管时间范围（契约见 shared/window-data.ts）
       'windowed',
       'total',
@@ -1585,6 +1779,8 @@ export class OASGantt extends OASElement {
   private stripeCanvasEl: HTMLElement | null = null
   private innerEl: HTMLElement | null = null
   private todayEl: HTMLElement | null = null
+  /** 状态线节点（show-status-line opt-in）：模板常驻 + hidden 控制，开关切换不重建 shadow */
+  private statusLineEl: HTMLElement | null = null
   private tooltipEl: HTMLElement | null = null
   private emptyEl: HTMLElement | null = null
   private winStart = 0
@@ -1638,6 +1834,7 @@ export class OASGantt extends OASElement {
       const copy: GanttTask = { ...t }
       if (copy.dependencies) copy.dependencies = copy.dependencies.map((d) => ({ ...d }))
       if (copy.baseline) copy.baseline = { ...copy.baseline }
+      if (copy.baselines) copy.baselines = copy.baselines.map((b) => ({ ...b }))
       if (copy.deadlines) copy.deadlines = [...copy.deadlines]
       delete copy.children
       return copy
@@ -1852,6 +2049,7 @@ export class OASGantt extends OASElement {
         const copy: GanttTask = { ...task }
         if (copy.dependencies) copy.dependencies = copy.dependencies.map((d) => ({ ...d }))
         if (copy.baseline) copy.baseline = { ...copy.baseline }
+        if (copy.baselines) copy.baselines = copy.baselines.map((b) => ({ ...b }))
         if (copy.deadlines) copy.deadlines = [...copy.deadlines]
         copy.id = task.id ?? ''
         return copy as TG
@@ -2093,6 +2291,42 @@ export class OASGantt extends OASElement {
   /** 行斑马纹开关（缺省关）：属性存在即开；显式 "false" 视作关（防宿主布尔绑定意外开启，同 auto-schedule） */
   private stripeOn(): boolean {
     return this.hasAttr('stripe') && this.getAttr('stripe', '') !== 'false'
+  }
+
+  /** 工时列开关（opt-in 缺省关；显式 "false" 视作关，同 stripe） */
+  private effortOn(): boolean {
+    return this.hasAttr('show-effort') && this.getAttr('show-effort', '') !== 'false'
+  }
+
+  /** 状态线开关（opt-in 缺省关）：开启后渲染状态竖线 + 条内计划进度刻度（G2 两渲染共用一个开关） */
+  private statusLineOn(): boolean {
+    return this.hasAttr('show-status-line') && this.getAttr('show-status-line', '') !== 'false'
+  }
+
+  /**
+   * 状态基准日（ms）：status-date 属性（'YYYY-MM-DD'，hour 档可带时刻）非法/缺省回落**当天**
+   * （与 today-line 同口径 startOfDay(new Date())；SSR 下为服务器当天——需要快照确定性的宿主请显式传 status-date）。
+   */
+  private statusDateMs(): number {
+    const parsed = parseTaskDate(this.getAttr('status-date', ''))
+    return parsed ? parsed.getTime() : startOfDay(new Date()).getTime()
+  }
+
+  /** 多基线选择（baseline-id 属性）：缺省/空白回落第一条；未命中回落第一条（update() 实例级告警一次） */
+  private baselineIdValue(): string {
+    return this.getAttr('baseline-id', '').trim()
+  }
+
+  /** 选中任务的展示基线：baselines（含单 baseline 归一）内按 baseline-id 取，未命中/缺省取第一条；无基线返回 null */
+  private pickBaseline(row: GanttRow): GanttBaseline | null {
+    const bases = taskBaselines(row.task)
+    if (bases.length === 0) return null
+    const want = this.baselineIdValue()
+    if (want !== '') {
+      const hit = bases.find((b) => b.id === want)
+      if (hit) return hit
+    }
+    return bases[0]!
   }
 
   /** 基线差值文案（实际 end 相对基线 end：晚/早 N 天或一致） */
@@ -2932,6 +3166,7 @@ export class OASGantt extends OASElement {
     this.gridEl = this.shadow.querySelector('.grid-canvas')
     this.innerEl = this.shadow.querySelector('.inner')
     this.todayEl = this.shadow.querySelector('.today-line')
+    this.statusLineEl = this.shadow.querySelector('.status-line')
     this.tooltipEl = this.shadow.querySelector('.tooltip')
     this.emptyEl = this.shadow.querySelector('.empty')
     this.tbody?.addEventListener('scroll', this.onScroll, { passive: true })
@@ -3129,6 +3364,7 @@ export class OASGantt extends OASElement {
               <svg class="links"></svg>
               <div class="bars"></div>
               <div class="today-line" aria-hidden="true" hidden></div>
+              <div class="status-line" aria-hidden="true" hidden></div>
             </div>
           </div>
         </div>
@@ -3230,6 +3466,19 @@ export class OASGantt extends OASElement {
         )
       }
     }
+    // baseline-id 校验（多基线 opt-in）：显式指定但在全部任务的 baselines 中都不存在 →
+    // 渲染路径已静默回落第一条，这里实例级告警一次帮宿主发现 id 拼写错误（对齐 devWarn 惯例）
+    const wantBaseline = this.baselineIdValue()
+    if (wantBaseline !== '') {
+      const known = new Set<string>()
+      for (const t of this._tasks) for (const b of taskBaselines(t)) known.add(b.id)
+      if (!known.has(wantBaseline)) {
+        this.warnOnce(
+          `baseline-id:${wantBaseline}`,
+          `[oas-gantt] baseline-id "${wantBaseline}" 在任何任务的 baselines 中都不存在，已回落每任务第一条基线`,
+        )
+      }
+    }
     // 关键路径：critical 仅 show-critical-path 开启时算；conflict（违约）在 show-critical-path 或 auto-schedule 开启时都算（违约应可见）。
     // windowed 下组件只持有已装载切片，CPM/违约判定需要完整依赖图——部分数据上计算会得到错误
     // 结果（未装载前置/后继缺失），跳过并 devWarn 一次（宿主可在服务端计算后自行标注/过滤）。
@@ -3305,8 +3554,10 @@ export class OASGantt extends OASElement {
     // 列窗口先于表头切片计算（表头/网格都按窗口渲染；renderWindow 内会再算一次，幂等）
     this.computeColWindow()
     this.renderHeader()
+    this.renderSideHead()
     this.renderWindow()
     this.renderToday()
+    this.renderStatusLine()
     this.syncHeaderOffset()
     // 数据重写后收敛出的选中变化统一在此补发（property/attribute 两通道一致）
     if (prunedSel) this.emitSelectionChange()
@@ -3460,6 +3711,7 @@ export class OASGantt extends OASElement {
     this.renderGrid()
     this.renderLinks()
     this.renderToday()
+    this.renderStatusLine()
   }
 
   private viewportH(): number {
@@ -3487,6 +3739,30 @@ export class OASGantt extends OASElement {
     )
     this.winColStart = win.start
     this.winColEnd = win.end
+  }
+
+  /**
+   * 工时列表头（show-effort opt-in）：开启时表头变两列（名称占位 | 工时），列头 i18n
+   * `gantt.effort`（locale 切换经 update() 即时刷新）；关闭时表头清空——既有空表头形态逐节点不变。
+   * 与行内 .effort 单元格共用列模板（--oas-gantt-effort-width），右缘对齐。
+   */
+  private renderSideHead(): void {
+    const head = this.shadow.querySelector<HTMLElement>('.side-head')
+    if (!head) return
+    head.innerHTML = ''
+    if (!this.effortOn()) {
+      head.classList.remove('has-effort')
+      return
+    }
+    head.classList.add('has-effort')
+    const name = document.createElement('span')
+    name.className = 'head-name'
+    name.setAttribute('aria-hidden', 'true')
+    head.appendChild(name)
+    const effort = document.createElement('span')
+    effort.className = 'head-effort'
+    effort.textContent = this.t('gantt.effort')
+    head.appendChild(effort)
   }
 
   /** 左列名称树（窗口行） */
@@ -3585,8 +3861,10 @@ export class OASGantt extends OASElement {
         }
       }
       el.appendChild(name)
-      if (this.varianceOn() && row.task.baseline) {
-        const variance = computeVariance([row.task])[0]
+      // 偏差徽标（show-variance）：取数走 pickBaseline（baseline-id 选择 + 单 baseline 归一）
+      const rowBaseline = this.pickBaseline(row)
+      if (this.varianceOn() && rowBaseline) {
+        const variance = computeVariance([row.task], this.baselineIdValue() || undefined)[0]
         if (variance) {
           const badge = document.createElement('span')
           badge.className = 'variance'
@@ -3597,7 +3875,7 @@ export class OASGantt extends OASElement {
           if (variance.endDelta > 0) badge.dataset.late = ''
           else if (variance.endDelta < 0) badge.dataset.early = ''
           badge.textContent = `Δ${variance.endDelta > 0 ? '+' : ''}${variance.endDelta}d`
-          const bEnd = row.task.baseline.end ?? row.task.baseline.start
+          const bEnd = rowBaseline.end ?? rowBaseline.start
           const baseEnd = parseTaskDate(bEnd)
           badge.title = baseEnd ? this.baselineDeltaText(row, baseEnd.getTime()) : badge.textContent
           badge.setAttribute('aria-label', badge.title)
@@ -3616,6 +3894,18 @@ export class OASGantt extends OASElement {
           this.onRowAdd(row)
         })
         el.appendChild(add)
+      }
+      // 工时单元格（show-effort opt-in）：追加为行尾最后一个节点，右缘与表头工时列对齐；
+      // effort 缺失/非法显示空（清洗层已过滤，这里双保险）；关闭时不出节点——单列形态不变。
+      // 可读名：裸数字对读屏不成话 → aria-label 走 i18n 带单位文案（gantt.effortValue，
+      // 与 resource 行头「成本 N」前缀方案对齐）；空值不加 label（不产出可读名碎片）
+      if (this.effortOn()) {
+        const effort = document.createElement('span')
+        effort.className = 'effort'
+        const text = formatEffortCell(row.task.effort)
+        effort.textContent = text
+        if (text !== '') effort.setAttribute('aria-label', this.t('gantt.effortValue', { value: text }))
+        el.appendChild(effort)
       }
       el.addEventListener('pointerdown', (e) => this.onRowPointerDown(e as PointerEvent, row))
       el.addEventListener('keydown', (e) => this.onRowKeyDown(e as KeyboardEvent, row))
@@ -3639,6 +3929,9 @@ export class OASGantt extends OASElement {
     const tplTask = this.querySelector('template[slot="task"]')
     const roDates = this.datesReadonlyOn()
     const roProgress = this.progressReadonlyOn()
+    // 计划进度刻度锚点（show-status-line 开启才消费；闸门后短路——默认路径不解析 status-date）
+    const statusOn = this.statusLineOn()
+    const statusMs = statusOn ? this.statusDateMs() : 0
     const frag = document.createDocumentFragment()
     for (let i = this.winStart; i < this.winEnd; i++) {
       const row = this.rows[i]!
@@ -3672,6 +3965,18 @@ export class OASGantt extends OASElement {
         dia.className = 'dia'
         dia.style.left = '50%'
         bar.appendChild(dia)
+        // 计划进度刻度（里程碑按二值：status 时刻已到 1 / 未到 0；未开 show-status-line 不渲染）
+        if (statusOn) {
+          const tick = document.createElement('span')
+          tick.className = 'plan-tick'
+          tick.setAttribute('aria-hidden', 'true')
+          const ratio = this.plannedRatio(row, statusMs)
+          // data-plan-ratio（0-1，两位精度）：宿主可消费的机器可读值；样式定位用逻辑属性
+          // inset-inline-start（min() 钳右缘防 2px 溢出——.bar overflow:visible，milestone 需要它）
+          tick.dataset.planRatio = String(Math.round(ratio * 100) / 100)
+          tick.style.insetInlineStart = `min(calc(100% - 2px), ${ratio * 100}%)`
+          bar.appendChild(tick)
+        }
         bar.setAttribute('role', 'button')
         bar.tabIndex = 0
         bar.setAttribute(
@@ -3735,6 +4040,21 @@ export class OASGantt extends OASElement {
         }
       }
 
+      // 条内计划进度刻度（show-status-line opt-in）：普通任务条内按 planned% 画窄竖刻度
+      //（status-date 时刻在 [start, end] 的时间流逝占比，clamp 0-1；纯展示、不染色不告警）。
+      // summary 不画（聚合条无单一进度语义）；milestone 在上方分支按二值画。
+      if (statusOn && !row.isSummary && !row.isMilestone) {
+        const tick = document.createElement('span')
+        tick.className = 'plan-tick'
+        tick.setAttribute('aria-hidden', 'true')
+        const ratio = this.plannedRatio(row, statusMs)
+        // data-plan-ratio（0-1，两位精度）：宿主可消费的机器可读值（同 total-float 数据属性惯例）
+        tick.dataset.planRatio = String(Math.round(ratio * 100) / 100)
+        // 2px 刻度钳在条内（.bar overflow:visible，100% 定位会溢出 2px → min() 收到右缘内）
+        tick.style.insetInlineStart = `min(calc(100% - 2px), ${ratio * 100}%)`
+        bar.appendChild(tick)
+      }
+
       // 浮时：仅 show-float 开启时渲染（数据属性供宿主消费，标签为视觉提示）
       if (!row.isSummary && this.showFloatOn() && this.totalFloatMs.has(row.task.id)) {
         const totalDays = Math.round(this.totalFloatMs.get(row.task.id)! / DAY_MS)
@@ -3762,9 +4082,11 @@ export class OASGantt extends OASElement {
         }
       }
 
-      // 基线对比条（计划 vs 实际）：置于实际条之下，只读展示
-      if (this.baselineOn() && row.task.baseline && !row.isMilestone) {
-        const b = row.task.baseline
+      // 基线对比条（计划 vs 实际）：置于实际条之下，只读展示；取数走 pickBaseline
+      //（baseline-id 属性选择，缺省/未命中回落第一条；含单 baseline 字段归一）
+      const barBaseline = this.pickBaseline(row)
+      if (this.baselineOn() && barBaseline && !row.isMilestone) {
+        const b = barBaseline
         const bs = parseTaskDate(b.start)?.getTime()
         const beParsed = b.end ? parseTaskDate(b.end)?.getTime() : undefined
         if (bs !== undefined) {
@@ -3781,7 +4103,7 @@ export class OASGantt extends OASElement {
           bl.style.left = `${this.mirrorX(bx1) - (rtl ? bw : 0)}px`
           bl.style.width = `${bw}px`
           bl.title = this.baselineDeltaText(row, bEnd)
-          const variance = computeVariance([row.task])[0]
+          const variance = computeVariance([row.task], this.baselineIdValue() || undefined)[0]
           if (variance) {
             bl.dataset.startDelta = String(variance.startDelta)
             bl.dataset.endDelta = String(variance.endDelta)
@@ -3851,6 +4173,7 @@ export class OASGantt extends OASElement {
     const copy: GanttTask = { ...t }
     if (copy.dependencies) copy.dependencies = copy.dependencies.map((d) => ({ ...d }))
     if (copy.baseline) copy.baseline = { ...copy.baseline }
+    if (copy.baselines) copy.baselines = copy.baselines.map((b) => ({ ...b }))
     delete copy.children
     return copy
   }
@@ -4299,6 +4622,7 @@ export class OASGantt extends OASElement {
       if (clone.dependencies)
         clone.dependencies = clone.dependencies.map((d) => ({ ...d, id: idMap.get(d.id) ?? d.id }))
       if (clone.baseline) clone.baseline = { ...clone.baseline }
+      if (clone.baselines) clone.baselines = clone.baselines.map((b) => ({ ...b }))
       delete clone.children
       if (t === root) {
         if (rootParent) clone.parent = rootParent
@@ -6276,6 +6600,54 @@ export class OASGantt extends OASElement {
     line.style.left = `${this.mirrorX(this.xOf(todayMs))}px`
     line.style.height = `${this.layoutRows() * this.rowHeightPx()}px`
     line.setAttribute('title', this.t('gantt.today'))
+  }
+
+  /**
+   * 状态线（show-status-line opt-in，默认关；status-date 在范围内才渲染；装饰层 aria-hidden）。
+   * 渲染路径与 today-line 同构（同 xOf/mirrorX/高度算式），独立 token
+   * `--oas-gantt-status-line-color`（缺省 warning 色族）；title 用归一化日期原文（无新 i18n key）。
+   * status-date 缺省/非法回落当天——SSR 下为服务器当天，需确定性的宿主请显式传 status-date。
+   */
+  private renderStatusLine(): void {
+    const line = this.statusLineEl
+    if (!line) return
+    // 开关先行（闸门后短路）：关闭态不解析 status-date、不计算范围，默认路径零新增开销
+    if (!this.statusLineOn()) {
+      line.hidden = true
+      return
+    }
+    const statusMs = this.statusDateMs()
+    const inRange =
+      this.units.length > 0 && statusMs >= this.units[0]!.startMs && statusMs < this.units[this.units.length - 1]!.endMs
+    if (!inRange || this.rows.length === 0) {
+      line.hidden = true
+      return
+    }
+    line.hidden = false
+    line.style.left = `${this.mirrorX(this.xOf(statusMs))}px`
+    line.style.height = `${this.layoutRows() * this.rowHeightPx()}px`
+    line.title = toISODate(new Date(statusMs))
+  }
+
+  /**
+   * 计划进度比（0-1，**含端日粒度**口径，与 evm computeEvm 的 planned 同构）：
+   * 已耗天数 = status 日与 start 之间的日历日数（含 status 当日、start 当日 = 1），clamp 到工期；
+   * ratio = 已耗天数 / 工期天数（0 工期防护为 0）。里程碑保持二值（未到 0 / 已到 1）。
+   * 日差按「本地日历日 → UTC 零点」归一计算，DST 23/25h 日不漂（同 evm/dst.test 的 dayDiff 口径）。
+   */
+  private plannedRatio(row: GanttRow, statusMs: number): number {
+    if (row.isMilestone) return statusMs >= row.startMs ? 1 : 0
+    const durationDays = Math.round((row.endMs - row.startMs) / DAY_MS)
+    if (durationDays <= 0) return statusMs >= row.endMs ? 1 : 0
+    const startDay = new Date(row.startMs)
+    const statusDay = new Date(statusMs)
+    const dayDiff = Math.round(
+      (Date.UTC(statusDay.getFullYear(), statusDay.getMonth(), statusDay.getDate()) -
+        Date.UTC(startDay.getFullYear(), startDay.getMonth(), startDay.getDate())) /
+        DAY_MS,
+    )
+    const elapsed = Math.min(durationDays, Math.max(0, dayDiff + 1))
+    return elapsed / durationDays
   }
 
   // ===== tooltip（单例浮层：名称 + 区间 + 进度；template[slot=tooltip] 覆盖内容）=====

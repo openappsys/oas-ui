@@ -5,6 +5,34 @@
 
 ---
 
+## 未发布：gantt / resource 二期核心扩展（4 项 opt-in）
+
+### 功能定义
+
+在 oas-gantt / oas-resource 核心组件上补齐二期 4 项**全部 opt-in、默认关**的能力（**默认视觉零变化**——数据面契约变化单列于「边界与非目标」）：`show-effort` 工时列、`show-status-line` + `status-date` 状态线与计划进度刻度、`baselines` 多基线数据通道与 `baseline-id` 选择、`show-cost` 泳道成本合计。核心改动遵循最小侵入：新增属性走既有 attr 门禁 + 渲染分支模式，不改既有渲染路径的默认产物。
+
+### 详细需求（契约摘要）
+
+- **G1 `show-effort`（oas-gantt）**：`GanttTask.effort?: number`（工时估算，单位天可为小数；**纯展示**，不参与排程/依赖/布局；清洗层保留有限**非负**数值、丢弃 NaN/±Infinity/负数/非数值，与 costRate 同口径）。开启后行标签区两列（名称 | 工时）：工时右对齐、最多两位小数去尾零（超大值转科学计数防超长数字），缺失显示空；列头 i18n `gantt.effort`（zh「工时」/en「Effort」，其余 8 语言英文兜底），单元格可读名 i18n `gantt.effortValue`（zh「工时 N 天」，与 resource 行头「成本 N」前缀方案对齐）；列宽 token `--oas-gantt-effort-width`（缺省 56px）表头/行共用。关闭时不出任何节点。
+- **G2 `show-status-line` + `status-date`（oas-gantt）**：状态竖线照 today-line 渲染路径（xOf/mirrorX/行高同算式），独立 token `--oas-gantt-status-line-color`（缺省 `--oas-color-warning`），`status-date` 非法/缺省回落当天（SSR 口径写明：服务器当天，需确定性请显式传值；开关关闭时不解析该属性——默认路径零新增开销）；条内计划进度刻度 = **含端日粒度**口径（status 日与 start 的日历日差含当日，clamp 工期；与 `computeEvm` planned 同构），2px 窄刻度（min() 钳右缘防溢出），并写 `data-plan-ratio`（0-1 两位精度）供宿主消费；里程碑按二值（0/1），summary 不画；只画刻度——不染色、不告警、不参与交互。
+- **G3 多基线（oas-gantt）**：新导出接口 `GanttBaseline { id, start, end?, progress? }`；`GanttTask.baselines?: GanttBaseline[]` 清洗层逐条校验（id 唯一非空、start 合法、end/progress 非法降级），全无效整组不落；既有单 `baseline` 字段归一为 `[{ id: 'default', ... }]`（**不 deprecate**，两通道并存时 baselines 优先）；`baseline-id` 属性选择展示基线（缺省第一条，未命中回落第一条并实例级 devWarn 一次）；渲染路径（基线条/偏差徽标/tooltip）参数化取数；`computeVariance(tasks, baselineId?)` 可选第二参数（未命中回落第一条、模块级告警一次；既有单参调用行为不变）。
+- **R1 `show-cost`（oas-resource）**：`ResourceItem.costRate?: number` 小时费率（纯展示）；开启后每个有费率 lane 行头显示 Σ(已装载周期内任务天数 × 8h × costRate)，固定两位小数、无货币符号（单位由宿主 CSS/文案自定）；「已装载周期」= 时间轴全域（range-* 托管优先，否则按已装载任务推导），跨轴任务按相交日历日数计；费率缺失/非法 lane 不显示；合计随数据/日期窗口在 update() 重算，滚动可视列窗口不触发；i18n `resource.cost`（zh「成本」/en「Cost」×10）。
+
+### 边界与非目标
+
+- 全部属性默认关：**默认视觉零变化**（新装饰节点模板常驻 + hidden 控制，DOM/aria/SSR 快照缺省形态不变；数据面契约变化见下）。
+- G2 刻度口径为**含端日粒度**（status 日与 start 的日历日差含当日，clamp 工期；与 `computeEvm` planned 同构——有跨包对表测试），不做计划落后染色/告警（保持最小展示面）；G3 不做基线对比面板（宿主可消费 data-* 与 computeVariance 自建）；R1 不做货币格式化/汇率（宿主职责），合计按**托管轴端点**求交（无 range-start/range-end 托管时按任务推导轴），不随刻度档漂移。
+- **数据面契约变化（默认关下仍生效，需宿主知悉）**：`effort` / `costRate` / `baselines` 成为清洗层保留键（宿主同名**非法**值会被清洗丢弃，合法值不受影响）；单 `baseline` 字段**不物化**派生 baselines——`el.tasks` 读回不再包含派生键，updateTask/updateTasks 对单字段的增/改/删即时生效（读侧归一由 taskBaselines 承担）。
+- 不新增事件、方法、插槽；新增 CSS token 仅 2 个（effort-width / status-line-color）。
+
+### 验收
+
+- 单测：gantt 26 条 + resource 8 条新用例（精确断言：默认关形态零变化、开启逐节点、清洗边界、updateTask/updateTasks 单 baseline 增/改/删、两通道并存优先级、computeVariance 双签名、计划刻度与 evm 跨包对表、成本三档一致与托管轴求交、告警恰一次/实例隔离）；`pnpm test` 全量绿。
+- e2e：gantt.spec / resource.spec 各加 opt-in 开/关 + 暗色存在性回归。
+- 门禁：`pnpm build`（含 exports:check）、`pnpm typecheck`、`pnpm perf:size`（gantt 链 61.1 → 62.7 KB gzip，预算 70 KB 内；resource 链无独立预算档，实测 46.4 KB gzip）、`pnpm qa:audit:check`、`pnpm format:check`、`pnpm lint:md`、api:scan/api:gen 0 漂移、llms:gen/llms:check、check-trace 0 命中。
+
+---
+
 ## 未发布：gantt / resource Pro helper 分包批（6 个按需 helper）
 
 ### 功能定义

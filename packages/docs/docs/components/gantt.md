@@ -350,6 +350,39 @@ const rows = computeVariance(el.tasks)
 // 正数 = 当前晚于基线 / 工期更长 / 进度更多；无 baseline.progress 时 progressDelta 为 null
 ```
 
+## 工时列（show-effort）
+
+<DemoBlock title="show-effort 开启：行标签区两列（名称 | 工时），工时右对齐、缺失为空">
+  <oas-gantt show-effort range-start="2026-03-01" range-end="2026-03-31" tasks='[{"id":"e1","name":"需求（12 天）","start":"2026-03-02","end":"2026-03-06","progress":60,"effort":12},{"id":"e2","name":"开发（2.5 天）","start":"2026-03-05","end":"2026-03-09","progress":30,"effort":2.5},{"id":"e3","name":"评审（未填工时）","start":"2026-03-10","end":"2026-03-11"}]'></oas-gantt>
+</DemoBlock>
+
+`show-effort`（默认关）开启后，左侧行标签区从单列变两列（名称 | 工时）：`GanttTask.effort`（单位天，可为小数，**纯展示数据**，不参与排程/依赖计算）在行尾右对齐显示；缺失/非有限显示空。列头文案走 i18n（`gantt.effort`），列宽走 `--oas-gantt-effort-width`（默认 56px，表头与行共用）。关闭时不出任何节点，既有单列形态不变。
+
+## 状态线与计划进度刻度（show-status-line / status-date）
+
+<DemoBlock title="show-status-line 开启：时间轴 status-date 竖线 + 条内计划进度刻度（里程碑二值）">
+  <oas-gantt show-status-line status-date="2026-03-06" range-start="2026-03-01" range-end="2026-03-31" tasks='[{"id":"s1","name":"设计（过半）","start":"2026-03-02","end":"2026-03-09","progress":70},{"id":"s2","name":"开发（刚启动）","start":"2026-03-05","end":"2026-03-16","progress":10},{"id":"s3","name":"发布","start":"2026-03-14"}]'></oas-gantt>
+</DemoBlock>
+
+`show-status-line`（默认关）开启后两件事一起发生：
+
+- **状态竖线**：时间轴上按 `status-date`（非法/缺省回落当天；SSR 下回落服务器当天，需要快照确定性的宿主请显式传值；`show-status-line` 关闭时不解析该属性——默认路径零新增开销）渲染一条竖线，颜色走 `--oas-gantt-status-line-color`（默认 `--oas-color-warning`，与「今天」的 danger 线区分）；落在轴范围内才渲染，装饰层 `aria-hidden`。
+- **条内计划进度刻度**：每个普通任务条内按「计划进度」画一条窄竖刻度——计划进度为**含端日粒度**口径：`status-date` 与 start 之间的日历日数（含 status 当日、start 当日记 1），clamp 到工期后除以工期天数（与 `computeEvm` 的 planned 同口径）；刻度同时写 `data-plan-ratio`（0-1，两位精度）供宿主消费。里程碑按二值（`status-date` 未到 start 记 0、已到记 1），summary 不画。刻度只作展示，**不染色、不告警、不改变实际进度**（progress 仍由数据驱动）。
+
+## 多基线（baselines / baseline-id）
+
+<DemoBlock title="baselines 多基线 + baseline-id 选择展示第二基线（B 方案，比 A 方案晚 2 天）">
+  <oas-gantt show-baseline baseline-id="plan-b" range-start="2026-03-01" range-end="2026-03-31" tasks='[{"id":"b1","name":"设计（实际 vs 两版基线）","start":"2026-03-04","end":"2026-03-10","progress":55,"baselines":[{"id":"plan-a","start":"2026-03-02","end":"2026-03-06"},{"id":"plan-b","start":"2026-03-04","end":"2026-03-08","progress":50}]}]'></oas-gantt>
+</DemoBlock>
+
+`GanttTask.baselines`（多基线，opt-in 数据扩展）：`[{ id, start, end?, progress? }]`，渲染与 `computeVariance` 的取数都走它；`baseline-id` 属性指定展示哪一条（缺省第一条；未命中回落第一条并 devWarn 一次）。既有单 `baseline` 字段完全兼容——清洗层归一为 `[{ id: 'default', ...baseline }]`，不 deprecate；两通道并存时 `baselines` 优先。基线条视觉样式与单基线一致（`--oas-gantt-baseline-color`）。
+
+```ts
+// 指定基线做差异计算（纯函数第二参数；缺省第一条）
+computeVariance(el.tasks, 'plan-b')
+// [{ id, startDelta, endDelta, durationDelta, progressDelta }]
+```
+
 ## 行虚拟滚动（万级任务）
 
 <DemoBlock title="height + row-height 启用视口窗口渲染（演示 300 行；只渲染可视窗口 + buffer）">
@@ -736,6 +769,7 @@ expanded.forEach((t) => ganttEl.addTask(t)) // 喂回组件前按需自行合并
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
 | `auto-schedule` | 依赖联动排程（布尔，默认关）：日期变更（拖拽/键盘/updateTask/updateTasks）或依赖增改后，按 FS/SS/FF/SF 沿依赖图对后继做最小前推（只推迟不提前、保持工期），跳过 disabled 与摘要行，成环安全；派发 oas-reschedule | `string` | — |
+| `baseline-id` | 多基线选择（配合 GanttTask.baselines）：指定渲染/差异取哪条基线；缺省取 baselines[0]；未命中回落第一条并 devWarn 一次。单 baseline 字段等价 [{ id: 'default', ... }]（清洗层归一） | `string` | — |
 | `creatable` | 行内新建（布尔，默认关）：开启后行尾出「＋」（摘要行加子级、叶子行加同级后继）、双击空白区按落点日期建任务，新建后进入行内重命名；只读/任务级禁用行不出按钮 | `boolean` | — |
 | `dates-readonly` | 禁改期/拉伸（进度仍可拖） | `boolean` | — |
 | `expanded` | 已展开集合（JSON 数组，受控）：属性缺席缺省全展开；显式 [] 全收起；点折叠钮写回 | `string` | — |
@@ -756,12 +790,15 @@ expanded.forEach((t) => ganttEl.addTask(t)) // 喂回组件前按需自行合并
 | `scale` | 时间刻度：hour / day（默认）/ week / month / quarter / year；非法值回落 day | `string` | — |
 | `show-baseline` | 基线对比（布尔，默认关）：任务带 baseline 时在实际条下渲染基线条（baseline.progress 渲染进度覆盖层），title 标差值（比基线晚/早 N 天或一致） | `boolean` | — |
 | `show-critical-path` | 关键路径（布尔，默认关）：在依赖图与工期上算总时差，时差为 0 的任务加 .critical 高亮（颜色走 --oas-gantt-critical-color）；只读展示不改数据 | `string` | — |
+| `show-effort` | 工时列（布尔，默认关）：行标签区变两列（名称 \| 工时），工时右对齐、列头 i18n gantt.effort；单元格可读名 i18n gantt.effortValue（「工时 N 天」带单位文案）。GanttTask.effort 缺失/负数/非有限显示空（清洗层与 costRate 同口径丢弃），超大值转科学计数。列宽 token --oas-gantt-effort-width（缺省 56px）；关闭时不出节点，单列形态不变 | `string` | — |
 | `show-float` | 显示总浮时/自由浮时（布尔，默认关）：仅在依赖图完整时计算，条上显示「总浮时/自由浮时」标签并写入 data-total-float/data-free-float（单位为天）；摘要不参与，windowed 模式跳过并 devWarn | `string` | — |
+| `show-status-line` | 状态线 + 计划进度刻度（布尔，默认关）：① 时间轴上按 status-date 渲染竖直进度线（token --oas-gantt-status-line-color，缺省 warning 色族；关闭态不解析 status-date——默认路径零新增开销）；② 每个任务条内按计划进度画窄竖刻度并写 data-plan-ratio（0-1 两位精度）——计划进度为**含端日粒度**口径：status 日与 start 的日历日差含当日、clamp 到工期（与 computeEvm 的 planned 同构）；里程碑按二值（未到 0/已到 1），summary 不画；只画刻度，不染色不告警 | `string` | — |
 | `show-today` | 今日线（默认开；false 关闭） | `string` | — |
 | `show-variance` | 任务带 baseline 时在行名后显示 Δ±Nd 偏差徽标，并写入 data-start-delta/data-end-delta/data-duration-delta/data-progress-delta；正值标红、负值标绿 | `string` | — |
 | `snap` | 拖拽吸附当前刻度（默认开；false 按像素比例平移并保留时间精度） | `string` | — |
+| `status-date` | 状态基准日（'YYYY-MM-DD'，hour 档可带时刻）：show-status-line 的取数基准；非法/缺省回落当天（SSR 下为服务器当天，需快照确定性的宿主请显式传值） | `string` | — |
 | `stripe` | 行斑马纹（布尔，默认关）：按**绝对行号**奇偶给行加底色（虚拟化/窗口化滚动稳定，不随 DOM 顺序跳变）；颜色走 `--oas-gantt-row-stripe-bg`（缺省 `--oas-color-bg-hover`）；选中/周末假日等背景覆盖条纹 | `string` | — |
-| `tasks` | 甘特任务（JSON）：[{ id?, name, start, end?, type?, progress?, parent?, children?, dependencies?, color?, disabled?, expanded?, baseline?（start/end?/progress?）, resources?, deadline?, deadlines?, constraint?（asap/snet/mso/fnlt）, constraintDate? }]——扁平 parent 指针为主，嵌套 children 自动拍平；type:"milestone" 显式优先（带 end 也按里程碑渲染，end 忽略），有子任务时恒为摘要；无 end 亦推导为里程碑；start 晚于 end 自动交换 | `GanttTask[]` | `[]` |
+| `tasks` | 甘特任务（JSON）：[{ id?, name, start, end?, type?, progress?, parent?, children?, dependencies?, color?, disabled?, expanded?, baseline?（start/end?/progress?）, baselines?（[{ id, start, end?, progress? }] 多基线，与单 baseline 并存时优先）, resources?, deadline?, deadlines?, constraint?（asap/snet/mso/fnlt）, constraintDate?, effort?（工时估算，天，可小数，纯展示不参与排程） }]——扁平 parent 指针为主，嵌套 children 自动拍平；type:"milestone" 显式优先（带 end 也按里程碑渲染，end 忽略），有子任务时恒为摘要；无 end 亦推导为里程碑；start 晚于 end 自动交换 | `GanttTask[]` | `[]` |
 | `total` | windowed 模式下的全量行（任务）数；为 0 或非法时 windowed 不生效（回落本地模式） | `string` | — |
 | `weekends` | 周末列高亮（默认开；day/hour 档生效；false 关闭） | `string` | — |
 | `window-start` | windowed 模式下切片首行的绝对行号（相对全量） | `string` | `0` |
@@ -840,6 +877,7 @@ expanded.forEach((t) => ganttEl.addTask(t)) // 喂回组件前按需自行合并
 | `--oas-gantt-conflict-color` | 违约（负总时差）高亮色（默认 --oas-color-danger） | `var(--oas-color-danger)` |
 | `--oas-gantt-critical-color` | 关键路径高亮色（默认 --oas-color-danger） | `var(--oas-color-danger)` |
 | `--oas-gantt-deadline-color` | 截止日标记颜色（默认 --oas-color-danger） | `var(--oas-color-danger)` |
+| `--oas-gantt-effort-width` | 工时列宽（show-effort，默认 56px；表头与行内单元格共用） | `56px` |
 | `--oas-gantt-grid-line-color` | — | `var(--oas-color-border)` |
 | `--oas-gantt-header-bg` | — | `var(--oas-color-bg)` |
 | `--oas-gantt-header-height` | — | `44px` |
@@ -850,6 +888,7 @@ expanded.forEach((t) => ganttEl.addTask(t)) // 喂回组件前按需自行合并
 | `--oas-gantt-milestone-color` | — | `var(--oas-color-warning)` |
 | `--oas-gantt-row-height` | — | `36px` |
 | `--oas-gantt-row-stripe-bg` | — | `var(--oas-color-bg-hover)` |
+| `--oas-gantt-status-line-color` | 状态线/计划进度刻度颜色（show-status-line，默认 --oas-color-warning） | `var(--oas-color-warning)` |
 | `--oas-gantt-summary-bg` | — | `var(--oas-color-text-secondary-strong)` |
 | `--oas-gantt-today-color` | — | `var(--oas-color-danger)` |
 | `--oas-gantt-weekend-bg` | — | `color-mix(in srgb, var(--oas-color-bg-hover) 60%, transparent)` |

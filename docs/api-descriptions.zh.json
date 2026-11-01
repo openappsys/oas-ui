@@ -4420,7 +4420,7 @@
   },
   "oas-gantt": {
     "attrs": {
-      "tasks": "甘特任务（JSON）：[{ id?, name, start, end?, type?, progress?, parent?, children?, dependencies?, color?, disabled?, expanded?, baseline?（start/end?/progress?）, resources?, deadline?, deadlines?, constraint?（asap/snet/mso/fnlt）, constraintDate? }]——扁平 parent 指针为主，嵌套 children 自动拍平；type:\"milestone\" 显式优先（带 end 也按里程碑渲染，end 忽略），有子任务时恒为摘要；无 end 亦推导为里程碑；start 晚于 end 自动交换",
+      "tasks": "甘特任务（JSON）：[{ id?, name, start, end?, type?, progress?, parent?, children?, dependencies?, color?, disabled?, expanded?, baseline?（start/end?/progress?）, baselines?（[{ id, start, end?, progress? }] 多基线，与单 baseline 并存时优先）, resources?, deadline?, deadlines?, constraint?（asap/snet/mso/fnlt）, constraintDate?, effort?（工时估算，天，可小数，纯展示不参与排程） }]——扁平 parent 指针为主，嵌套 children 自动拍平；type:\"milestone\" 显式优先（带 end 也按里程碑渲染，end 忽略），有子任务时恒为摘要；无 end 亦推导为里程碑；start 晚于 end 自动交换",
       "scale": "时间刻度：hour / day（默认）/ week / month / quarter / year；非法值回落 day",
       "expanded": "已展开集合（JSON 数组，受控）：属性缺席缺省全展开；显式 [] 全收起；点折叠钮写回",
       "readonly": "整图只读（禁改期/禁进度，不渲染拖拽手柄）",
@@ -4451,7 +4451,11 @@
       "show-variance": "任务带 baseline 时在行名后显示 Δ±Nd 偏差徽标，并写入 data-start-delta/data-end-delta/data-duration-delta/data-progress-delta；正值标红、负值标绿",
       "history": "内建撤销/重做（布尔，默认关）：记录任务提交快照（最多 100 步），配合 undo()/redo()/canUndo/canRedo/clearHistory()；外部整体重写 tasks（内容有变）会清空历史，语义相同的回写（含键序差异）不清空",
       "resources": "逐资源日历（JSON [{ id, name?, workdays?, holidays?, shifts? }]）：与 GanttTask.resources 配合；多资源 workdays 取交集、holidays 取并集；shifts: [] 表示无可用班次；hour 档 auto-schedule 吸附到首个带班次资源的窗口，日级只消费 workdays/holidays",
-      "group-by-resource": "按任务首个 resources 生成资源摘要泳道（资源名取 resources.name，缺省用 id）；多资源任务只出现在首个资源下，未分配任务保持顶层；与 group-by-project 同时开启时资源泳道优先"
+      "group-by-resource": "按任务首个 resources 生成资源摘要泳道（资源名取 resources.name，缺省用 id）；多资源任务只出现在首个资源下，未分配任务保持顶层；与 group-by-project 同时开启时资源泳道优先",
+      "show-effort": "工时列（布尔，默认关）：行标签区变两列（名称 | 工时），工时右对齐、列头 i18n gantt.effort；单元格可读名 i18n gantt.effortValue（「工时 N 天」带单位文案）。GanttTask.effort 缺失/负数/非有限显示空（清洗层与 costRate 同口径丢弃），超大值转科学计数。列宽 token --oas-gantt-effort-width（缺省 56px）；关闭时不出节点，单列形态不变",
+      "show-status-line": "状态线 + 计划进度刻度（布尔，默认关）：① 时间轴上按 status-date 渲染竖直进度线（token --oas-gantt-status-line-color，缺省 warning 色族；关闭态不解析 status-date——默认路径零新增开销）；② 每个任务条内按计划进度画窄竖刻度并写 data-plan-ratio（0-1 两位精度）——计划进度为**含端日粒度**口径：status 日与 start 的日历日差含当日、clamp 到工期（与 computeEvm 的 planned 同构）；里程碑按二值（未到 0/已到 1），summary 不画；只画刻度，不染色不告警",
+      "status-date": "状态基准日（'YYYY-MM-DD'，hour 档可带时刻）：show-status-line 的取数基准；非法/缺省回落当天（SSR 下为服务器当天，需快照确定性的宿主请显式传值）",
+      "baseline-id": "多基线选择（配合 GanttTask.baselines）：指定渲染/差异取哪条基线；缺省取 baselines[0]；未命中回落第一条并 devWarn 一次。单 baseline 字段等价 [{ id: 'default', ... }]（清洗层归一）"
     },
     "events": {
       "oas-reschedule": "依赖联动排程改动了后继任务时派发（auto-schedule 开启），detail: { ids }（被联动改动的任务 id）",
@@ -4485,7 +4489,9 @@
       "--oas-gantt-baseline-color": "基线条颜色（默认半透明次要文字色）",
       "--oas-gantt-critical-color": "关键路径高亮色（默认 --oas-color-danger）",
       "--oas-gantt-conflict-color": "违约（负总时差）高亮色（默认 --oas-color-danger）",
-      "--oas-gantt-deadline-color": "截止日标记颜色（默认 --oas-color-danger）"
+      "--oas-gantt-deadline-color": "截止日标记颜色（默认 --oas-color-danger）",
+      "--oas-gantt-effort-width": "工时列宽（show-effort，默认 56px；表头与行内单元格共用）",
+      "--oas-gantt-status-line-color": "状态线/计划进度刻度颜色（show-status-line，默认 --oas-color-warning）"
     }
   },
   "oas-picker": {
@@ -4805,7 +4811,7 @@
   },
   "oas-resource": {
     "attrs": {
-      "resources": "资源列表（JSON [{ id, name, capacity?, workdays?, holidays?, capacityOverrides?, skills? }]）。`workdays` 编号 0=周日…6=周六，`[]` 表示全不可用；未声明 `workdays` 且 `holidays` / `capacityOverrides` 为空时，capacity = 每档（period）可并行任务数（旧语义）；否则按逐日容量求和，非空 `capacityOverrides` 优先于 `workdays` / `holidays`，可写小数但任务按整日计数（0.5 日无法容纳整日任务）；空 `holidays` / `capacityOverrides` 视为未声明。`skills` 为技能标签。资源可带可选 `color`（CSS 颜色或 token，如 `var(--oas-color-success)`）：用于该泳道任务条与负载柱着色，缺省走 `--oas-resource-bar-bg` / `--oas-resource-load-bg` 的统一色",
+      "resources": "资源列表（JSON [{ id, name, capacity?, workdays?, holidays?, capacityOverrides?, skills?, costRate? }]）。`workdays` 编号 0=周日…6=周六，`[]` 表示全不可用；未声明 `workdays` 且 `holidays` / `capacityOverrides` 为空时，capacity = 每档（period）可并行任务数（旧语义）；否则按逐日容量求和，非空 `capacityOverrides` 优先于 `workdays` / `holidays`，可写小数但任务按整日计数（0.5 日无法容纳整日任务）；空 `holidays` / `capacityOverrides` 视为未声明。`skills` 为技能标签。`costRate` 为小时费率（纯展示；`show-cost` 开启时参与行头成本合计 Σ(天数 × 8h × costRate)，缺失/非法该行不显示成本）。资源可带可选 `color`（CSS 颜色或 token，如 `var(--oas-color-success)`）：用于该泳道任务条与负载柱着色，缺省走 `--oas-resource-bar-bg` / `--oas-resource-load-bg` 的统一色",
       "tasks": "资源任务（JSON [{ id, name, start, end, resources?, priority?, requiredSkills?, project? }]）；start/end 仅日精度 YYYY-MM-DD（end 含当日；带时刻输入按当日处理），resources 为分配的资源 id 数组（指向不存在资源的分配忽略）。priority 数值越小越优先；requiredSkills 在 reassign 时要求目标资源全部具备；project 配合 levelResources({ projectOrder }) 做跨项目优先级",
       "scale": "直方图 period 粒度与时间轴刻度：day（默认）/ week / month；非法回落 day",
       "height": "组件高度 px（默认 320；接受纯数字或 Npx）：映射到自定义属性 --oas-resource-height（宿主自身 height 内联始终优先，组件不覆盖宿主内联）。height 属性在场且为合法值（>0 纯数字或 Npx）时组件接管该变量，写入宿主内联并覆盖宿主自己设置的 --oas-resource-height；空串/空白按未设置处理；非法值不写该变量、仅清除本实例此前写入的值，宿主 token 不受影响；属性移除后组件写入的值归零清除，高度回落 token 缺省 320 或宿主 CSS，宿主原先内联设置的值不恢复；从未设置 height 属性时组件不写该变量，宿主内联或 class 规则设置的 --oas-resource-height 完全不受影响",
@@ -4821,7 +4827,8 @@
       "bar-label": "任务条内显示任务名（布尔，默认关）：单行省略，窄条自动裁切；不改变 aria-label 与点击/拖拽命中",
       "header-sticky": "泳道表头纵向吸顶（默认开）：滚动泳道时周/日刻度保持可见；`header-sticky=\"false\"` 关闭（表头随内容滚动）。角落名列在横向滚动时始终贴边（LTR/RTL）",
       "heatmap": "负载热力图（布尔，默认关）：按 load/capacity 渲染低/中/高/超载热力格，表头显示图例，每格 title 为日期与 load/capacity",
-      "skill-matrix": "技能矩阵视图（布尔，默认关）：行=资源、列=技能并集，✓ 表示具备；无虚拟化"
+      "skill-matrix": "技能矩阵视图（布尔，默认关）：行=资源、列=技能并集，✓ 表示具备；无虚拟化",
+      "show-cost": "泳道成本合计（布尔，默认关）：行头显示「成本 Σ(任务天数 × 8h × costRate)」两位小数（无货币符号，单位由宿主 CSS/文案自定）；天数按任务与**求交窗口**的相交日历日数计——有 range-start/range-end 托管时用轴端点（成本不随刻度档漂移），否则用任务推导轴全域；costRate 缺失/非法的 lane 不显示。合计随数据/日期窗口在 update 时重算，滚动可视列窗口不触发"
     },
     "events": {
       "oas-task-click": "点击资源泳道内的任务条时派发，detail: { id, task, resourceId }",

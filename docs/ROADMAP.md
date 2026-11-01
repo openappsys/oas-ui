@@ -2,6 +2,12 @@
 
 版本遵循 SemVer。v1.0.0 为首个正式发布。每个版本 = 一个可独立交付/可试用的里程碑。
 
+## 未发布（gantt / resource 二期核心扩展批）
+
+| 范围 | 内容 | 状态 |
+| --- | --- | --- |
+| **gantt / resource 二期核心扩展（4 项 opt-in，默认关）** | ① gantt `show-effort` 工时列：行标签区两列（名称 \| 工时），`GanttTask.effort`（天，可小数，纯展示不参与排程；负数/非有限清洗丢弃）右对齐 + 单元格可读名 i18n `gantt.effortValue`（带单位文案，与 resource「成本 N」前缀方案对齐）+ 列头 i18n `gantt.effort` ×10 语言，列宽 token `--oas-gantt-effort-width`，超大值科学计数；② gantt `show-status-line` + `status-date`：时间轴状态竖线（token `--oas-gantt-status-line-color`，缺省 warning 族；关闭态不解析 status-date）+ 条内计划进度刻度（**含端日粒度**口径：status 日与 start 的日历日差含当日 clamp 工期，与 `computeEvm` planned 同构，`data-plan-ratio` 0-1 供宿主消费；里程碑二值、summary 不画，只画刻度不染色不告警）；③ gantt 多基线：新接口 `GanttBaseline { id, start, end?, progress? }` + `GanttTask.baselines`（清洗层逐条校验；单 `baseline` 字段**读侧归一** `[{ id: 'default', ... }]`、不物化派生数组——updateTask/updateTasks 改/删单字段即时生效）+ `baseline-id` 属性（缺省第一条、未命中回落并实例级告警一次）+ `computeVariance(tasks, baselineId?)` 可选第二参数（既有调用不破坏）；④ resource `show-cost`：泳道行头成本合计 Σ(**托管轴内**任务天数 × 8h × `ResourceItem.costRate`) 两位小数无货币符号（有 range-* 按轴端点求交、不随刻度档漂移），费率缺失/非法 lane 不显示，随数据/日期窗口在 update() 重算，i18n `resource.cost` ×10 语言。全部默认关、默认视觉零变化；单测（gantt 26 + resource 8 条新用例，含 updateTask 读改写回归组与 evm 跨包对表）+ 中英文档 + API 表 + CHANGELOG（含保留键透传契约变化声明） | ✅ 已完成（未发布） |
+
 ## 未发布（gantt / resource Pro helper 分包批）
 
 | 范围 | 内容 | 状态 |
@@ -25,7 +31,7 @@
 
 | 范围 | 内容 | 状态 |
 | --- | --- | --- |
-| **`oas-bubble` opt-in 尾巴（`tail`）** | `tail="none"（默认）| "auto" | "start" | "end"`：`auto` 跟随有效对齐（显式 `align` 或容器 text-align 继承反射）；实底变体在底部外角画弧形尾巴（颜色与表面同源，暗色适配），`outline` 退化为底部外角收小圆角，`muted`/`ghost` 无表面不画；逻辑属性 RTL 镜像，装饰性伪元素不进 DOM/读屏；分组由宿主只给同发送者连续消息的最后一条加 tail；新增 `--oas-bubble-tail-size` / `--oas-bubble-tail-offset` / `--oas-bubble-tail-corner-radius`；SSR 首帧按显式 align 落侧。单测 + 真实浏览器 e2e + zh/en 文档/API/CHANGELOG | ✅ 已完成（未发布） |
+| **`oas-bubble` opt-in 尾巴（`tail`）** | `tail="none"（默认）\| "auto" \| "start" \| "end"`：`auto` 跟随有效对齐（显式 `align` 或容器 text-align 继承反射）；实底变体在底部外角画弧形尾巴（颜色与表面同源，暗色适配），`outline` 退化为底部外角收小圆角，`muted`/`ghost` 无表面不画；逻辑属性 RTL 镜像，装饰性伪元素不进 DOM/读屏；分组由宿主只给同发送者连续消息的最后一条加 tail；新增 `--oas-bubble-tail-size` / `--oas-bubble-tail-offset` / `--oas-bubble-tail-corner-radius`；SSR 首帧按显式 align 落侧。单测 + 真实浏览器 e2e + zh/en 文档/API/CHANGELOG | ✅ 已完成（未发布） |
 
 ## 未发布（包体止损批）
 

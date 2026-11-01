@@ -349,6 +349,39 @@ const rows = computeVariance(el.tasks)
 // Positive = later than baseline / longer duration / more progress; progressDelta is null without baseline.progress
 ```
 
+## Effort Column (show-effort)
+
+<DemoBlock title="show-effort on: the label area becomes two columns (name | effort), effort right-aligned, missing renders empty">
+  <oas-gantt show-effort range-start="2026-03-01" range-end="2026-03-31" tasks='[{"id":"e1","name":"Discovery (12d)","start":"2026-03-02","end":"2026-03-06","progress":60,"effort":12},{"id":"e2","name":"Build (2.5d)","start":"2026-03-05","end":"2026-03-09","progress":30,"effort":2.5},{"id":"e3","name":"Review (no effort set)","start":"2026-03-10","end":"2026-03-11"}]'></oas-gantt>
+</DemoBlock>
+
+With `show-effort` (off by default) the left label area switches from a single column to two (name | effort): `GanttTask.effort` (in days, may be fractional, **display-only data** — never participates in scheduling/dependency math) renders right-aligned at the end of each row; missing/non-finite renders empty. The header text comes from i18n (`gantt.effort`), the column width from `--oas-gantt-effort-width` (default 56px, shared by header and rows). Off state renders no nodes and leaves the existing single-column form untouched.
+
+## Status Line & Planned-Progress Ticks (show-status-line / status-date)
+
+<DemoBlock title="show-status-line on: a vertical line at status-date on the timeline + planned-progress ticks inside bars (milestones are binary)">
+  <oas-gantt show-status-line status-date="2026-03-06" range-start="2026-03-01" range-end="2026-03-31" tasks='[{"id":"s1","name":"Design (past half)","start":"2026-03-02","end":"2026-03-09","progress":70},{"id":"s2","name":"Build (just started)","start":"2026-03-05","end":"2026-03-16","progress":10},{"id":"s3","name":"Release","start":"2026-03-14"}]'></oas-gantt>
+</DemoBlock>
+
+Turning on `show-status-line` (off by default) does two things at once:
+
+- **Status line**: a vertical line at `status-date` (invalid/missing falls back to today; under SSR it is the server's today — hosts that need snapshot determinism should pass it explicitly; the attribute is not parsed while `show-status-line` is off — zero added cost on the default path), colored by `--oas-gantt-status-line-color` (default `--oas-color-warning`, distinct from the danger-colored today line); renders only when inside the axis range, decorative layer `aria-hidden`.
+- **Planned-progress ticks**: each normal task bar draws a narrow vertical tick at its planned ratio — **inclusive day-granularity**: the calendar-day count between `status-date` and start (status day counted, start day = 1), clamped to the duration and divided by it (same formula as `computeEvm`'s planned) — and exposes `data-plan-ratio` (0-1, two decimals) for hosts. Milestones use the binary ratio (0 before start / 1 at or after), summaries draw none. The tick is display-only: **no coloring, no warnings, actual progress stays data-driven**.
+
+## Multiple Baselines (baselines / baseline-id)
+
+<DemoBlock title="baselines + baseline-id selecting the second plan (Plan B, 2 days later than Plan A)">
+  <oas-gantt show-baseline baseline-id="plan-b" range-start="2026-03-01" range-end="2026-03-31" tasks='[{"id":"b1","name":"Design (actual vs two baselines)","start":"2026-03-04","end":"2026-03-10","progress":55,"baselines":[{"id":"plan-a","start":"2026-03-02","end":"2026-03-06"},{"id":"plan-b","start":"2026-03-04","end":"2026-03-08","progress":50}]}]'></oas-gantt>
+</DemoBlock>
+
+`GanttTask.baselines` (multiple baselines, opt-in data extension): `[{ id, start, end?, progress? }]` — rendering and `computeVariance` both read from it; the `baseline-id` attribute selects which plan is shown (defaults to the first; an unknown id falls back to the first and devWarns once). The existing single `baseline` field stays fully compatible — the sanitize layer normalizes it to `[{ id: 'default', ...baseline }]` and is not deprecated; when both are present `baselines` wins. The baseline bar visuals match the single-baseline path (`--oas-gantt-baseline-color`).
+
+```ts
+// Variance against a chosen baseline (pure-function second argument; defaults to the first)
+computeVariance(el.tasks, 'plan-b')
+// [{ id, startDelta, endDelta, durationDelta, progressDelta }]
+```
+
 ## Row Virtualization (10k-scale tasks)
 
 <DemoBlock title="height + row-height enable viewport windowing (300 rows demoed; only the visible window + buffer renders)">
@@ -737,6 +770,7 @@ expanded.forEach((t) => ganttEl.addTask(t)) // merge back as needed before feedi
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
 | `auto-schedule` | Dependency auto-scheduling (boolean, off by default): after a date change (drag/keyboard/updateTask/updateTasks) or a dependency add/update, successors are pushed minimally (later only, duration preserved) along FS/SS/FF/SF; skips disabled and summary rows; cycle-safe. Dispatches oas-reschedule | `string` | — |
+| `baseline-id` | Multi-baseline selector (with GanttTask.baselines): picks which baseline is rendered/measured; defaults to baselines[0]; an unknown id falls back to the first baseline and devWarns once. The single baseline field is equivalent to [{ id: 'default', ... }] (normalized in the sanitize layer) | `string` | — |
 | `creatable` | Inline creation (boolean, off by default): when enabled, a trailing "+" appears per row (adds a subtask on summary rows, a sibling after on leaf rows) and double-clicking empty space creates a task at the clicked date; the new task enters inline rename. No button on readonly or per-task-disabled rows | `boolean` | — |
 | `dates-readonly` | No rescheduling/resizing (progress still draggable) | `boolean` | — |
 | `expanded` | Expanded set (JSON array, controlled): defaults to fully expanded when absent; explicit [] collapses all; written back on toggle | `string` | — |
@@ -757,12 +791,15 @@ expanded.forEach((t) => ganttEl.addTask(t)) // merge back as needed before feedi
 | `scale` | Time scale: hour / day (default) / week / month / quarter / year; invalid values fall back to day | `string` | — |
 | `show-baseline` | Baseline comparison (boolean, off by default): tasks with baseline render a baseline bar under the actual bar (baseline.progress renders an overlay), with a title showing the delta (N days later/earlier or same) | `boolean` | — |
 | `show-critical-path` | Critical path (boolean, off by default): runs a CPM pass over the dependency graph + durations to compute total float and adds a .critical highlight to zero-float tasks (color via --oas-gantt-critical-color); read-only | `string` | — |
+| `show-effort` | Effort column (boolean, off by default): the label area becomes two columns (name \| effort); effort is right-aligned, header from i18n gantt.effort; cells get an accessible name from i18n gantt.effortValue ("Effort {value}d" unit copy). Missing/negative/non-finite GanttTask.effort renders empty (sanitize drops them, same policy as costRate); huge values switch to scientific notation. Column width token --oas-gantt-effort-width (default 56px); off state renders no nodes and keeps the single-column layout unchanged | `string` | — |
 | `show-float` | Show total/free float (boolean, off by default): computed only on a complete dependency graph; the bar gets a total/free float label plus data-total-float/data-free-float in days. Summaries are excluded; windowed mode skips it with a devWarn. | `string` | — |
+| `show-status-line` | Status line + planned-progress ticks (boolean, off by default): (1) renders a vertical progress line at status-date on the timeline (token --oas-gantt-status-line-color, falls back to the warning color family; status-date is not parsed while the switch is off — zero added cost on the default path); (2) inside each task bar draws a narrow tick at the planned ratio and writes data-plan-ratio (0-1, two decimals) — the planned ratio uses **inclusive day granularity**: calendar-day difference between status-day and start (status day counted, start day = 1), clamped to the duration (same formula as computeEvm's planned); milestones use the binary ratio (0 before / 1 after), summaries draw none; the tick is display-only — no coloring, no warnings | `string` | — |
 | `show-today` | Today line (on by default; false to disable) | `string` | — |
 | `show-variance` | Render a Δ±Nd variance badge after the row name when a baseline exists; exposes data-start-delta/data-end-delta/data-duration-delta/data-progress-delta | `string` | — |
 | `snap` | Snap drags to the current scale unit (on by default; false shifts by pixel ratio and keeps time precision) | `string` | — |
+| `status-date` | Status date ('YYYY-MM-DD', hour scale may carry a time): the reference date for show-status-line; invalid/missing falls back to today (server-side today under SSR — pass it explicitly when snapshot determinism matters) | `string` | — |
 | `stripe` | Row zebra striping (boolean, off by default): tints rows by the **absolute row index** parity (stable under virtualization/windowing, no DOM-order flicker); color via `--oas-gantt-row-stripe-bg` (default `--oas-color-bg-hover`); selection/weekend backgrounds override the stripe | `string` | — |
-| `tasks` | Gantt tasks (JSON): [{ id?, name, start, end?, type?, progress?, parent?, children?, dependencies?, color?, disabled?, expanded?, baseline? (start/end?/progress?), resources?, deadline?, deadlines?, constraint? ('asap'\|'snet'\|'mso'\|'fnlt'), constraintDate? }] — flat parent pointers are the primary contract; nested children are flattened automatically; explicit type:"milestone" takes precedence (rendered as milestone even with end, which is ignored) but a task with children is always a summary; no end also infers milestone; start/end are swapped automatically when start is after end | `GanttTask[]` | `[]` |
+| `tasks` | Gantt tasks (JSON): [{ id?, name, start, end?, type?, progress?, parent?, children?, dependencies?, color?, disabled?, expanded?, baseline? (start/end?/progress?), baselines? ([{ id, start, end?, progress? }] multiple baselines; wins over the single baseline when both are present), resources?, deadline?, deadlines?, constraint? ('asap'\|'snet'\|'mso'\|'fnlt'), constraintDate?, effort? (effort estimate in days, fractional allowed, display-only — never feeds scheduling) }] — flat parent pointers are the primary contract; nested children are flattened automatically; explicit type:"milestone" takes precedence (rendered as milestone even with end, which is ignored) but a task with children is always a summary; no end also infers milestone; start/end are swapped automatically when start is after end | `GanttTask[]` | `[]` |
 | `total` | Full row (task) count in windowed mode; 0 or invalid disables windowed (falls back to local mode) | `string` | — |
 | `weekends` | Weekend column highlights (on by default; applies on day/hour tiers; false to disable) | `string` | — |
 | `window-start` | Absolute row index (within the full dataset) of the first row in the slice (windowed mode) | `string` | `0` |
@@ -841,6 +878,7 @@ expanded.forEach((t) => ganttEl.addTask(t)) // merge back as needed before feedi
 | `--oas-gantt-conflict-color` | Conflict (negative-float) highlight color (default --oas-color-danger) | `var(--oas-color-danger)` |
 | `--oas-gantt-critical-color` | Critical-path highlight color (default --oas-color-danger) | `var(--oas-color-danger)` |
 | `--oas-gantt-deadline-color` | Deadline marker color (default --oas-color-danger) | `var(--oas-color-danger)` |
+| `--oas-gantt-effort-width` | Effort column width (show-effort, default 56px; shared by the header and row cells) | `56px` |
 | `--oas-gantt-grid-line-color` | — | `var(--oas-color-border)` |
 | `--oas-gantt-header-bg` | — | `var(--oas-color-bg)` |
 | `--oas-gantt-header-height` | — | `44px` |
@@ -851,6 +889,7 @@ expanded.forEach((t) => ganttEl.addTask(t)) // merge back as needed before feedi
 | `--oas-gantt-milestone-color` | — | `var(--oas-color-warning)` |
 | `--oas-gantt-row-height` | — | `36px` |
 | `--oas-gantt-row-stripe-bg` | — | `var(--oas-color-bg-hover)` |
+| `--oas-gantt-status-line-color` | Status line / planned-progress tick color (show-status-line, default --oas-color-warning) | `var(--oas-color-warning)` |
 | `--oas-gantt-summary-bg` | — | `var(--oas-color-text-secondary-strong)` |
 | `--oas-gantt-today-color` | — | `var(--oas-color-danger)` |
 | `--oas-gantt-weekend-bg` | — | `color-mix(in srgb, var(--oas-color-bg-hover) 60%, transparent)` |

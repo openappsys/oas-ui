@@ -343,6 +343,17 @@ const STYLE = `
   color: var(--oas-color-danger);
   white-space: nowrap;
 }
+/* lane-cost（show-cost opt-in，默认无节点）：行头右缀成本合计——次级文本色 + tabular-nums，
+   暗色变体随 token 自动切换；flex:none 不被名字压缩，margin-inline-start 与名字/徽标留隔（RTL 镜像） */
+.name .lane-cost {
+  flex: none;
+  margin-inline-start: var(--oas-space-1);
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--oas-color-text-secondary-strong);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
 /* bar-label：任务条内任务名（textContent 纯文本防注入；单行 ellipsis，条窄时自然裁切；
    文字可选中复制；标签点击冒泡到 .bar，不改变点击反馈路径） */
 .bar-label {
@@ -439,6 +450,11 @@ export interface ResourceItem {
   capacityOverrides?: Record<string, number>
   /** 资源技能标签（reassign 时用于 requiredSkills 硬匹配） */
   skills?: string[]
+  /**
+   * 小时费率（纯展示数据，不参与排程/负载计算）：`show-cost` 开启时参与泳道行头成本合计
+   * Σ(可见/已装载周期内任务天数 × 8h × costRate)。缺失/非有限 → 该 lane 不显示成本。
+   */
+  costRate?: number
   [key: string]: unknown
 }
 
@@ -519,7 +535,7 @@ export interface LevelResourcesOptions {
   projectOrder?: string[]
 }
 
-/** 内部清洗后资源模型（capacity: null = 回落组件缺省容量）；白名单外键原样透传 */
+/** 内部清洗后资源模型（capacity: null = 回落组件缺省容量；costRate: null = 未声明/非法）；白名单外键原样透传 */
 interface RS {
   id: string
   name: string
@@ -529,6 +545,8 @@ interface RS {
   holidays: Set<string>
   capacityOverrides: Map<string, number> | null
   skills: string[] | null
+  /** null = 未声明/非法 costRate（show-cost 下该 lane 不显示成本） */
+  costRate: number | null
   [key: string]: unknown
 }
 
@@ -613,6 +631,8 @@ const COL_BUFFER = 4
 /** 纵向行虚拟窗口上下预渲染行数（overscan）：语义同 COL_BUFFER，泳道区/负载区共用 */
 const ROW_BUFFER = 4
 const DAY_MS = 86_400_000
+/** 成本合计的每日工时（show-cost：Σ(天数 × 8h × costRate)；固定 8h，单位由宿主文案承载） */
+const COST_HOURS_PER_DAY = 8
 /** period 构建护栏（防脏数据撑爆循环） */
 const MAX_PERIODS = 5000
 /** levelResources 缺省迭代上限 */
@@ -667,6 +687,7 @@ const RESERVED_RESOURCE_KEYS = new Set([
   'holidays',
   'capacityOverrides',
   'skills',
+  'costRate',
 ])
 /** 任务已知字段（清洗时按各自口径处理）；此外的键视为宿主自定义字段，原样透传 */
 const RESERVED_TASK_KEYS = new Set(['id', 'name', 'start', 'end', 'resources', 'priority', 'requiredSkills', 'project'])
@@ -820,6 +841,12 @@ function calendarDaysBetween(a: Date, b: Date): number {
 /** 容量清洗：正有限数才有效，其余回落 null（= 用组件缺省容量） */
 function sanitizeCapacity(v: unknown): number | null {
   if (typeof v !== 'number' || !Number.isFinite(v) || v <= 0) return null
+  return v
+}
+
+/** 小时费率清洗（show-cost）：有限非负数才有效；缺失/负数/非有限回落 null（= 该 lane 不显示成本） */
+function sanitizeCostRate(v: unknown): number | null {
+  if (typeof v !== 'number' || !Number.isFinite(v) || v < 0) return null
   return v
 }
 
@@ -1017,6 +1044,7 @@ function sanitizeResources(v: unknown, onKeyError?: (key: string) => void, onInv
       const holidaysRaw = safeGet(raw, 'holidays')
       const overridesRaw = safeGet(raw, 'capacityOverrides')
       const skillsRaw = safeGet(raw, 'skills')
+      const costRateRaw = safeGet(raw, 'costRate')
       const r: RS = {
         id,
         name,
@@ -1025,6 +1053,7 @@ function sanitizeResources(v: unknown, onKeyError?: (key: string) => void, onInv
         holidays: holidaysRaw === READ_FAILED ? new Set() : sanitizeHolidays(holidaysRaw),
         capacityOverrides: overridesRaw === READ_FAILED ? null : sanitizeCapacityOverrides(overridesRaw),
         skills: skillsRaw === READ_FAILED ? null : sanitizeSkills(skillsRaw),
+        costRate: costRateRaw === READ_FAILED ? null : sanitizeCostRate(costRateRaw),
       }
       // 自定义字段透传（ResourceItem 的 `[key: string]: unknown` 契约）：白名单外的键原样保留
       for (const k of ownKeys) {
@@ -1166,6 +1195,7 @@ function toPublicResource(r: RS, memo?: WeakMap<object, unknown>, onKeyError?: (
   if (r.holidays.size > 0) copy.holidays = [...r.holidays]
   if (r.capacityOverrides) copy.capacityOverrides = Object.fromEntries(r.capacityOverrides)
   if (r.skills && r.skills.length > 0) copy.skills = [...r.skills]
+  if (r.costRate !== null) copy.costRate = r.costRate
   for (const k of Object.keys(r)) {
     if (RESERVED_RESOURCE_KEYS.has(k) || UNSAFE_KEYS.has(k)) continue
     const v = safeGet(r, k)
@@ -1566,6 +1596,8 @@ export class OASResource extends OASElement {
       'skill-matrix',
       'bar-label',
       'header-sticky',
+      // 成本合计（opt-in，默认关）：泳道行头按 costRate 显示已装载周期内成本合计
+      'show-cost',
     ]
   }
 
@@ -1607,6 +1639,12 @@ export class OASResource extends OASElement {
    * scroll 帧与 ResizeObserver 回调只按窗口增删 DOM，不重做 filter/sort/贪心分段。
    */
   private laneLayout = new Map<string, LaneLayout>()
+  /**
+   * 泳道成本合计缓存（show-cost opt-in，update() 时随数据/日期窗口重算）：
+   * 资源 id → 合计金额（Σ 任务与已装载轴相交天数 × 8h × costRate）；无费率资源不在表内（不显示）。
+   * 滚动帧只读缓存不重算——成本口径是「已装载时间轴」，不随滚动可视列窗口变化（见文档）。
+   */
+  private laneCosts = new Map<string, number>()
   /**
    * 布局预计算次数（内部诊断计数）：回归用它证明 scroll 帧不触发布局重算/分段。
    * 只在 update()（数据/尺寸/属性变更）里递增，滚动与纯尺寸观察回调均不得递增。
@@ -2522,6 +2560,10 @@ export class OASResource extends OASElement {
     // 泳道条布局预计算（排序 + 段堆叠 + 画布几何）：只在 update() 里算一次并缓存，
     // scroll 帧 / 尺寸变化回调只按窗口增删 DOM（见 renderLanes），不再每帧重做 filter/sort/贪心分段。
     this.computeLaneLayout(assignedByRes)
+    // 成本合计（show-cost opt-in）：复用同一份「资源 → 分配 span」归档（单趟 Σ，无额外全量扫描）；
+    // 口径 = 任务与**已装载时间轴**（range-* 托管或按任务 min/max 推断）相交的天数 × 8h × costRate，
+    // 随 update()（数据/日期窗口变化）重算，滚动可视列窗口不触发（成本不是滚动视口量）
+    this.computeLaneCosts(assignedByRes)
     const periodCount = this.periods.length
     let maxLoad = 0
     const perResourceLoads = this._resources.map((r) => {
@@ -2685,6 +2727,38 @@ export class OASResource extends OASElement {
   }
 
   /**
+   * 泳道成本合计（show-cost opt-in）：每资源 Σ(任务与已装载时间轴相交天数 × COST_HOURS_PER_DAY × costRate)。
+   * - 轴 = periods 全域（range-* 托管优先，否则按已装载任务 min/max 推断）；相交才计费，
+   *   相交段按日历日数计（含端），跨轴任务只计轴内天数（「已装载周期内」口径）。
+   * - costRate 缺失/非有限（清洗层归 null）→ 该资源不入缓存，行头不显示成本。
+   * - 只在 update() 里重算（数据/日期窗口变化），滚动可视列窗口不触发——成本不是滚动视口量；
+   *   无费率/轴为空时清空缓存（开关关闭同样清空，保证关→开一次 update 即恢复）。
+   */
+  private computeLaneCosts(assignedByRes: Map<string, Span[]>): void {
+    this.laneCosts.clear()
+    if (!this.hasAttr('show-cost') || this.getAttr('show-cost', '') === 'false') return
+    // 求交窗口：有**托管轴**（range-start/range-end）时用轴端点——period 锚点会按 scale 对齐
+    //（周/月档首尾 period 外扩到周一/月初），用它会令成本随刻度档漂移；无托管轴时维持
+    // periods 全域（任务推导口径，档对齐同样外扩但那是轴本身）。
+    const first = this.periods[0]
+    const last = this.periods[this.periods.length - 1]
+    if (!first || !last) return
+    const axisStart = this.axisMs ? this.axisMs.startMs : first.startMs
+    const axisEnd = this.axisMs ? this.axisMs.endMs : last.endMs
+    for (const r of this._resources) {
+      if (r.costRate === null) continue
+      let totalDays = 0
+      for (const s of assignedByRes.get(r.id) ?? []) {
+        const lo = Math.max(s.startMs, axisStart)
+        const hi = Math.min(s.endMs, axisEnd)
+        if (hi <= lo) continue
+        totalDays += Math.round((hi - lo) / DAY_MS)
+      }
+      if (totalDays > 0) this.laneCosts.set(r.id, totalDays * COST_HOURS_PER_DAY * r.costRate)
+    }
+  }
+
+  /**
    * 预计算每资源的条布局（排序 + 段堆叠 + 画布 x/宽/段序 + 稳定 key）。
    * 只在 update() 里跑一次并缓存（laneLayout）——scroll 帧与 ResizeObserver 回调只按窗口增删 DOM。
    * laneLayoutBuilds 为内部诊断计数：回归用它证明 scroll 帧不触发重分段。
@@ -2767,6 +2841,11 @@ export class OASResource extends OASElement {
    *
    * 边界（固有取舍，不修）：窗口外的行/条不进 DOM → 键盘 Tab 不可达（只能到达可视窗口内的条）。
    */
+  /** 泳道行头成本文案：i18n 标签 + 两位小数（无货币符号，单位由宿主 CSS/文案自定） */
+  private laneCostText(cost: number): string {
+    return `${this.t('resource.cost')} ${cost.toFixed(2)}`
+  }
+
   private renderLanes(): void {
     if (!this.lanesEl) return
     this.laneCullVisits = 0
@@ -2779,6 +2858,10 @@ export class OASResource extends OASElement {
     if (overCounts) {
       for (const row of this.loadRows) overCounts.set(row.resource.id, row.overCount)
     }
+    // show-cost（opt-in）：行头成本合计取 update() 预算的 laneCosts 缓存（滚动帧只读不重算）；
+    // 开关关闭时不读缓存（默认路径零开销，行头逐节点与旧实现一致）
+    const costOn = this.hasAttr('show-cost') && this.getAttr('show-cost', '') !== 'false'
+    const laneCosts = costOn ? this.laneCosts : null
     // 列窗口像素范围（两侧各多留 1 列 overscan，避免边缘条被误裁）；cull 在画布坐标系进行（RTL 同）
     const winLeft = this.winColStart * colW - colW
     const winRight = this.winColEnd * colW + colW
@@ -2881,6 +2964,7 @@ export class OASResource extends OASElement {
       const name = row.firstElementChild as HTMLElement
       name.setAttribute('role', 'rowheader')
       const overCount = overCounts?.get(r.id) ?? 0
+      const laneCost = laneCosts?.get(r.id)
       if (badgeOn && overCount > 0) {
         // 徽标路径：名字移入 .name-text 承接 ellipsis（flex 容器自身不吃 text-overflow），
         // 徽标为可见信息（不 aria-hidden）；文案走 i18n（locale 切换经 update() 即时刷新）
@@ -2893,8 +2977,27 @@ export class OASResource extends OASElement {
         badge.className = 'over-badge'
         badge.textContent = this.t('resource.overBadge', { count: overCount })
         name.appendChild(badge)
+        // 徽标与成本并存（两个 opt-in 同开）：成本缀在徽标后，同一次 update 数据源
+        if (laneCost !== undefined) {
+          const costEl = document.createElement('span')
+          costEl.className = 'lane-cost'
+          costEl.textContent = this.laneCostText(laneCost)
+          name.appendChild(costEl)
+        }
+      } else if (laneCost !== undefined) {
+        // 成本路径（show-cost + 费率有效 + 合计 > 0）：名字移入 .name-text 承接 ellipsis，
+        // 成本合计右缀（i18n 标签 + 两位小数，无货币符号——单位由宿主 CSS/文案自定）
+        name.textContent = ''
+        const nameText = document.createElement('span')
+        nameText.className = 'name-text'
+        nameText.textContent = r.name
+        name.appendChild(nameText)
+        const costEl = document.createElement('span')
+        costEl.className = 'lane-cost'
+        costEl.textContent = this.laneCostText(laneCost)
+        name.appendChild(costEl)
       } else {
-        // 默认路径（关徽标 / 无超载）：与旧实现逐节点一致（纯 textContent，清掉复用行的旧徽标结构）
+        // 默认路径（关闭徽标 / 无超载 / 无成本）：与旧实现逐节点一致（纯 textContent，清掉复用行的旧徽标结构）
         name.textContent = r.name
       }
       const track = row.lastElementChild as HTMLElement

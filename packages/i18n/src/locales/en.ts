@@ -183,6 +183,8 @@ export const en: LocaleMessages = {
   'gantt.addTask': 'Add task',
   'gantt.addChild': 'Add subtask',
   'gantt.newTask': 'New task',
+  'gantt.effort': 'Effort',
+  'gantt.effortValue': 'Effort {value}d',
   // resource（resource load / swimlane view）
   'resource.label': 'Resource load',
   'resource.empty': 'No resource tasks',
@@ -195,6 +197,7 @@ export const en: LocaleMessages = {
   'resource.loadAria': '{resource}: load normal',
   'resource.loadOverAria': '{resource}: {count} overloaded period(s)',
   'resource.overBadge': 'Overloaded ×{count}',
+  'resource.cost': 'Cost',
   // kanban（看板）
   'kanban.emptyColumn': 'Drag cards here',
   'kanban.moveCard': 'Move card',

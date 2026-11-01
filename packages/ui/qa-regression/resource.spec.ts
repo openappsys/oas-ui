@@ -2464,3 +2464,77 @@ test('resource 浏览器回归：一键均载（reassign）改派资源、日期
   expect(after.map((t) => t.resources.join('+'))).not.toEqual(before.map((t) => t.resources.join('+')))
   expect(errors).toEqual([])
 })
+
+test('resource show-cost 成本合计：默认关零节点、开启按费率行头两位小数、窗口重算、暗色存在；console 零告警', async ({
+  page,
+}) => {
+  const errors: string[] = []
+  page.on('pageerror', (e) => errors.push(e.message))
+  page.on('console', (m) => {
+    if (m.type() === 'error') errors.push(m.text())
+  })
+  await page.goto('/components/resource.html', { waitUntil: 'domcontentloaded' })
+  const RESOURCES = JSON.stringify([
+    { id: 'r1', name: '资深（100/h）', costRate: 100 },
+    { id: 'r2', name: '初级（未填费率）' },
+  ])
+  const TASKS = JSON.stringify([
+    { id: 'tc1', name: '任务（5 天）', start: '2026-03-02', end: '2026-03-06', resources: ['r1', 'r2'] },
+  ])
+  const RANGE = { 'range-start': '2026-03-01', 'range-end': '2026-03-31' }
+  const mount = (id: string, attrs: Record<string, string>) =>
+    page.evaluate(
+      ({ id, attrs }) => {
+        const el = document.createElement('oas-resource')
+        el.id = id
+        for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v)
+        document.body.appendChild(el)
+      },
+      { id, attrs },
+    )
+  // 默认关：无 .lane-cost
+  await mount('res-cost-off', { resources: RESOURCES, tasks: TASKS, ...RANGE })
+  await page.waitForFunction(
+    (target) => {
+      const el = document.getElementById(target) as (HTMLElement & { shadowRoot?: ShadowRoot | null }) | null
+      return !!el?.shadowRoot?.querySelector('.row.lane .bar')
+    },
+    'res-cost-off',
+    { timeout: 30000 },
+  )
+  await expect(page.locator('#res-cost-off .lane-cost')).toHaveCount(0)
+  // 开启：r1（5 天 × 8h × 100 = 4000）行头「成本 4000.00」；r2 无费率不显示
+  await mount('res-cost-on', { resources: RESOURCES, tasks: TASKS, 'show-cost': '', ...RANGE })
+  await page.waitForFunction(
+    (target) => {
+      const el = document.getElementById(target) as (HTMLElement & { shadowRoot?: ShadowRoot | null }) | null
+      return !!el?.shadowRoot?.querySelector('.row.lane .bar')
+    },
+    'res-cost-on',
+    { timeout: 30000 },
+  )
+  const on = page.locator('#res-cost-on')
+  const laneOf = (id: string) => on.locator(`.lane[data-resource-id="${id}"] .name`)
+  await expect(laneOf('r1').locator('.lane-cost')).toHaveText('成本 4000.00')
+  await expect(laneOf('r2').locator('.lane-cost')).toHaveCount(0)
+  // 窗口收窄（03-05..03-31 与任务相交 2 天）→ 2 × 8 × 100 = 1600（走 update 重算）
+  await page.evaluate(() => {
+    const el = document.getElementById('res-cost-on')!
+    el.setAttribute('range-start', '2026-03-05')
+    el.setAttribute('range-end', '2026-03-31')
+  })
+  await expect(laneOf('r1').locator('.lane-cost')).toHaveText('成本 1600.00')
+  // 数据变化同样重算：任务缩到 1 天 → 800
+  await page.evaluate(() => {
+    const el = document.getElementById('res-cost-on') as unknown as {
+      shadowRoot: ShadowRoot
+      set tasks(v: unknown)
+    }
+    el.tasks = [{ id: 'tc1', name: '任务（1 天）', start: '2026-03-06', end: '2026-03-06', resources: ['r1'] }]
+  })
+  await expect(laneOf('r1').locator('.lane-cost')).toHaveText('成本 800.00')
+  // 暗色存在性
+  await page.evaluate(() => document.documentElement.setAttribute('data-theme', 'dark'))
+  await expect(laneOf('r1').locator('.lane-cost')).toBeVisible()
+  expect(errors).toEqual([])
+})

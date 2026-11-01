@@ -220,6 +220,8 @@ export const ja: LocaleMessages = {
   'gantt.addTask': 'タスクを追加',
   'gantt.addChild': 'サブタスクを追加',
   'gantt.newTask': '新しいタスク',
+  'gantt.effort': 'Effort',
+  'gantt.effortValue': 'Effort {value}d',
   // resource（リソース負荷/スイムレーンビュー）
   'resource.label': 'リソース負荷',
   'resource.empty': 'リソースタスクがありません',
@@ -232,6 +234,7 @@ export const ja: LocaleMessages = {
   'resource.loadAria': '{resource}：負荷は正常です',
   'resource.loadOverAria': '{resource}：{count} 期間が過負荷',
   'resource.overBadge': '過負荷 ×{count}',
+  'resource.cost': 'Cost',
   // kanban（かんばん）
   'kanban.emptyColumn': 'カードをここにドラッグ',
   'kanban.moveCard': 'カードを移動',

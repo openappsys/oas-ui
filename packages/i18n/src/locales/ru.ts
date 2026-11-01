@@ -220,6 +220,8 @@ export const ru: LocaleMessages = {
   'gantt.addTask': 'Добавить задачу',
   'gantt.addChild': 'Добавить подзадачу',
   'gantt.newTask': 'Новая задача',
+  'gantt.effort': 'Effort',
+  'gantt.effortValue': 'Effort {value}d',
   // resource (загрузка ресурсов / дорожки)
   'resource.label': 'Загрузка ресурсов',
   'resource.empty': 'Нет задач ресурсов',
@@ -232,6 +234,7 @@ export const ru: LocaleMessages = {
   'resource.loadAria': '{resource}: нагрузка в норме',
   'resource.loadOverAria': '{resource}: перегрузка в {count} периодах',
   'resource.overBadge': 'Перегрузка ×{count}',
+  'resource.cost': 'Cost',
   // kanban (канбан-доска)
   'kanban.emptyColumn': 'Перетащите карточки сюда',
   'kanban.moveCard': 'Переместить карточку',

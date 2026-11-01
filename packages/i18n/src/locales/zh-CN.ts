@@ -220,6 +220,8 @@ export const zhCN = {
   'gantt.addTask': '添加任务',
   'gantt.addChild': '添加子任务',
   'gantt.newTask': '新任务',
+  'gantt.effort': '工时',
+  'gantt.effortValue': '工时 {value} 天',
   // resource（资源负载/泳道视图）
   'resource.label': '资源负载',
   'resource.empty': '暂无资源任务',
@@ -232,6 +234,7 @@ export const zhCN = {
   'resource.loadAria': '{resource}：负载正常',
   'resource.loadOverAria': '{resource}：超载 {count} 档',
   'resource.overBadge': '超载 {count} 档',
+  'resource.cost': '成本',
   // kanban（看板）
   'kanban.emptyColumn': '拖拽卡片到此处',
   'kanban.moveCard': '移动卡片',

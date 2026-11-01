@@ -159,6 +159,30 @@
       "observed": true
     },
     {
+      "name": "show-effort",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "show-status-line",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "status-date",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "baseline-id",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
       "name": "windowed",
       "type": "boolean",
       "observed": true
@@ -403,6 +427,10 @@
       "default": "var(--oas-color-border)"
     },
     {
+      "name": "--oas-gantt-effort-width",
+      "default": "56px"
+    },
+    {
       "name": "--oas-gantt-row-height",
       "default": "36px"
     },
@@ -465,6 +493,10 @@
     {
       "name": "--oas-gantt-today-color",
       "default": "var(--oas-color-danger)"
+    },
+    {
+      "name": "--oas-gantt-status-line-color",
+      "default": "var(--oas-color-warning)"
     }
   ],
   "unresolved": []

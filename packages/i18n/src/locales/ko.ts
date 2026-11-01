@@ -220,6 +220,8 @@ export const ko: LocaleMessages = {
   'gantt.addTask': '작업 추가',
   'gantt.addChild': '하위 작업 추가',
   'gantt.newTask': '새 작업',
+  'gantt.effort': 'Effort',
+  'gantt.effortValue': 'Effort {value}d',
   // resource（리소스 부하/스윔레인 뷰）
   'resource.label': '리소스 부하',
   'resource.empty': '리소스 작업이 없습니다',
@@ -232,6 +234,7 @@ export const ko: LocaleMessages = {
   'resource.loadAria': '{resource}: 부하 정상',
   'resource.loadOverAria': '{resource}: {count}개 기간 과부하',
   'resource.overBadge': '과부하 ×{count}',
+  'resource.cost': 'Cost',
   // kanban（칸반）
   'kanban.emptyColumn': '카드를 여기로 끌어다 놓으세요',
   'kanban.moveCard': '카드 이동',

@@ -4150,3 +4150,120 @@ describe('property 通道接受 JSON 字符串（框架把静态 attribute 写�
     expect(el.tasks[0]!.resources).toEqual(['r1'])
   })
 })
+
+// ===== 二期 opt-in 扩展：show-cost 成本视图（默认关，默认形态零变化）=====
+
+describe('OASResource show-cost 泳道成本合计（opt-in）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  /** 轴钉在 2026-03-01..03-31（排除按任务 min/max 推断的漂移） */
+  const RANGE = { 'range-start': '2026-03-01', 'range-end': '2026-03-31' }
+  const RESOURCES = JSON.stringify([
+    { id: 'r1', name: '张三', costRate: 100 },
+    { id: 'r2', name: '李四' },
+    { id: 'r3', name: '王五', costRate: -5 },
+  ])
+  const TASKS = JSON.stringify([
+    { id: 't1', name: '任务一', start: '2026-03-02', end: '2026-03-06', resources: ['r1', 'r2'] },
+  ])
+
+  it('默认关：无 .lane-cost 节点（默认形态零变化）', () => {
+    const el = mount({ resources: RESOURCES, tasks: TASKS, ...RANGE })
+    expect(shadowOf(el).querySelectorAll('.lane-cost').length).toBe(0)
+  })
+
+  it('显式 false 关闭（防宿主布尔绑定意外开启，同 show-load-values 口径）', () => {
+    const el = mount({ resources: RESOURCES, tasks: TASKS, 'show-cost': 'false', ...RANGE })
+    expect(shadowOf(el).querySelectorAll('.lane-cost').length).toBe(0)
+  })
+
+  it('开启：有费率 lane 行头显示「成本 Σ(天数 × 8h × rate)」两位小数；无费率/非法费率 lane 不显示', () => {
+    const el = mount({ resources: RESOURCES, tasks: TASKS, 'show-cost': '', ...RANGE })
+    // t1: 03-02..03-06 共 5 天 → 5 × 8 × 100 = 4000
+    const cost1 = laneOf(el, 'r1').querySelector<HTMLElement>('.name .lane-cost')!
+    expect(cost1.textContent).toBe('成本 4000.00')
+    // r2 无 costRate → 不显示成本（名字保持纯文本）
+    const name2 = laneOf(el, 'r2').querySelector<HTMLElement>('.name')!
+    expect(name2.querySelector('.lane-cost')).toBeNull()
+    expect(name2.textContent).toBe('李四')
+    // r3 负费率（清洗归 null）→ 不显示
+    expect(laneOf(el, 'r3').querySelector('.lane-cost')).toBeNull()
+  })
+
+  it('成本随已装载日期窗口重算（range 收窄 → 相交天数减少；走既有 update 路径）', () => {
+    const el = mount({ resources: RESOURCES, tasks: TASKS, 'show-cost': '', ...RANGE })
+    expect(laneOf(el, 'r1').querySelector<HTMLElement>('.lane-cost')!.textContent).toBe('成本 4000.00')
+    el.setAttribute('range-start', '2026-03-04')
+    el.setAttribute('range-end', '2026-03-08')
+    // 03-04..03-08 与任务相交 3 天 → 3 × 8 × 100 = 2400
+    expect(laneOf(el, 'r1').querySelector<HTMLElement>('.lane-cost')!.textContent).toBe('成本 2400.00')
+    // 数据变化同样重算：任务缩到 1 天 → 1 × 8 × 100 = 800
+    el.tasks = [{ id: 't1', name: '任务一', start: '2026-03-05', end: '2026-03-05', resources: ['r1'] }]
+    expect(laneOf(el, 'r1').querySelector<HTMLElement>('.lane-cost')!.textContent).toBe('成本 800.00')
+  })
+
+  it('costRate 经 property 通道：非有限数值清洗为 null（不显示）；有限负数同样视为无效', () => {
+    const el = mount({ resources: RESOURCES, tasks: TASKS, 'show-cost': '', ...RANGE })
+    el.resources = [
+      { id: 'r1', name: '甲', costRate: Number.NaN },
+      { id: 'r2', name: '乙', costRate: 12.5 },
+    ]
+    expect(el.resources[0]!.costRate).toBeUndefined()
+    expect(el.resources[1]!.costRate).toBe(12.5)
+    // 03-02..03-06（5 天）× 8 × 12.5 = 500
+    expect(laneOf(el, 'r2').querySelector<HTMLElement>('.lane-cost')!.textContent).toBe('成本 500.00')
+  })
+
+  it('成本元素样式：flex:none + tabular-nums + 次级文本 token（暗色随 token 切换，无硬编码色值）', () => {
+    const el = mount({ resources: RESOURCES, tasks: TASKS, 'show-cost': '', ...RANGE })
+    const css = shadowOf(el).querySelector('style')!.textContent ?? ''
+    expect(css).toMatch(/\.name \.lane-cost \{[^}]*font-variant-numeric: tabular-nums/)
+    expect(css).toMatch(/\.name \.lane-cost \{[^}]*color: var\(--oas-color-text-secondary-strong\)/)
+  })
+
+  it('成本与刻度档无关（托管轴端点求交）：range-start 晚于任务开始时 day/week/month 三档同值', () => {
+    // 任务 03-02..03-06（5 天），托管轴 03-04..03-31 → 只计相交 3 天 → 3×8×100 = 2400；
+    // 若误用 period 锚点（week 对齐周一 / month 对齐月初）会随档漂移 —— 本用例锁死三档同值
+    const resources = JSON.stringify([{ id: 'r1', name: '甲', costRate: 100 }])
+    const tasks = JSON.stringify([{ id: 't1', name: 'T1', start: '2026-03-02', end: '2026-03-06', resources: ['r1'] }])
+    for (const scale of ['day', 'week', 'month'] as const) {
+      const el = mount({
+        resources,
+        tasks,
+        'show-cost': '',
+        scale,
+        'range-start': '2026-03-04',
+        'range-end': '2026-03-31',
+      })
+      const cost = laneOf(el, 'r1').querySelector<HTMLElement>('.lane-cost')!
+      expect(cost.textContent, `${scale} 档：相交 3 天 × 8h × 100 = 2400`).toBe('成本 2400.00')
+    }
+  })
+
+  it('任务越过 range-end / 早于 range-start 都只计轴内天数（托管轴口径）', () => {
+    const resources = JSON.stringify([{ id: 'r1', name: '甲', costRate: 100 }])
+    // 任务 03-02..03-08；托管轴 03-04..03-05（endMs = 03-06 00:00）→ 相交 03-04..03-05 = 2 天 → 1600
+    const tasks = JSON.stringify([{ id: 't1', name: 'T1', start: '2026-03-02', end: '2026-03-08', resources: ['r1'] }])
+    for (const scale of ['day', 'week', 'month'] as const) {
+      const el = mount({
+        resources,
+        tasks,
+        'show-cost': '',
+        scale,
+        'range-start': '2026-03-04',
+        'range-end': '2026-03-05',
+      })
+      expect(laneOf(el, 'r1').querySelector<HTMLElement>('.lane-cost')!.textContent, `${scale} 档：2 天`).toBe(
+        '成本 1600.00',
+      )
+    }
+    // 无托管轴回落 periods 全域（任务推导）：整条任务计费 = 7 天 → 5600（档对齐外扩不裁任务本体）
+    const free = mount({ resources, tasks, 'show-cost': '', scale: 'month' })
+    expect(laneOf(free, 'r1').querySelector<HTMLElement>('.lane-cost')!.textContent).toBe('成本 5600.00')
+  })
+})

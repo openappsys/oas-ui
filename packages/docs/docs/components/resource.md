@@ -11,7 +11,7 @@
   <div id="res-basic-output" style="color:var(--oas-color-text-secondary);font-size:var(--oas-font-size-sm);margin-top:var(--oas-space-2)"></div>
 </DemoBlock>
 
-- `resources`：`[{ id, name, capacity?, workdays?, holidays?, capacityOverrides?, skills? }]`。未声明 `workdays` 且 `holidays` / `capacityOverrides` 为空时，`capacity` = 该资源**每档（period）**可并行任务数（兼容旧语义）；声明 `workdays`（`0=周日…6=周六`，`[]` 表示全部不可用）、非空 `holidays` 或非空 `capacityOverrides` 后切换为**逐日容量**，周期容量 = 周期内逐日容量求和。`capacityOverrides`（YYYY-MM-DD → 容量）优先于 `workdays` / `holidays`，可写小数（如 `0.5`）；当前任务负载按整日计数，0.5 日无法容纳整日任务，为后续 effort 模型预留。`skills` 为技能标签数组。
+- `resources`：`[{ id, name, capacity?, workdays?, holidays?, capacityOverrides?, skills?, costRate? }]`。未声明 `workdays` 且 `holidays` / `capacityOverrides` 为空时，`capacity` = 该资源**每档（period）**可并行任务数（兼容旧语义）；声明 `workdays`（`0=周日…6=周六`，`[]` 表示全部不可用）、非空 `holidays` 或非空 `capacityOverrides` 后切换为**逐日容量**，周期容量 = 周期内逐日容量求和。`capacityOverrides`（YYYY-MM-DD → 容量）优先于 `workdays` / `holidays`，可写小数（如 `0.5`）；当前任务负载按整日计数，0.5 日无法容纳整日任务，为后续 effort 模型预留。`skills` 为技能标签数组。`costRate` 为小时费率（纯展示，配合 `show-cost` 显示泳道成本合计，见下文）。
 - `tasks`：`[{ id, name, start, end, resources?: string[], priority?, requiredSkills?, project? }]`，`start/end` 为 `YYYY-MM-DD`（**仅日精度**，`end` 含当日；带时刻的输入按当日处理），`resources` 为分配的资源 id 数组；指向不存在资源的分配被忽略。`priority` 数值越小越优先；`requiredSkills` 在 reassign 时要求目标资源全部具备；`project` 配合 `levelResources({ projectOrder })` 做跨项目优先级。
 - `scale`：`day`（默认）/ `week` / `month`——决定直方图 period 粒度与刻度文案。
 - 泳道与直方图**共享列宽与横向滚动**；超载柱加 `.over`（颜色走 `--oas-color-danger`）；同一资源内**互相重叠的任务条按段堆叠**显示（互不遮挡，点哪条命中哪条）。
@@ -57,6 +57,21 @@ el.tasks = tasks.map((t) => [...moved, ...reassigned].find((m) => m.id === t.id)
 ```
 
 `levelResources` 保证：确定性（同输入同输出）、迭代至无超载或达 `maxIter`；**不改入参**。组件不自动调用。
+
+## 泳道成本合计（show-cost）
+
+<DemoBlock title="show-cost 开启：有 costRate 的资源行头显示已装载周期内成本合计（两位小数，无货币符号）">
+  <oas-resource id="res-cost" show-cost scale="day" height="300" capacity="1" range-start="2026-03-01" range-end="2026-03-31"
+    resources='[{"id":"senior","name":"资深（200/h）","capacity":1,"costRate":200},{"id":"junior","name":"初级（80/h）","capacity":1,"costRate":80},{"id":"vendor","name":"外聘（未填费率）","capacity":1}]'
+    tasks='[{"id":"c1","name":"架构设计","start":"2026-03-02","end":"2026-03-04","resources":["senior"]},{"id":"c2","name":"功能开发","start":"2026-03-03","end":"2026-03-10","resources":["junior"]},{"id":"c3","name":"验收支持","start":"2026-03-09","end":"2026-03-11","resources":["vendor"]}]'></oas-resource>
+</DemoBlock>
+
+`show-cost`（默认关）开启后，**有费率**的资源行头显示成本合计：Σ(已装载周期内任务天数 × 8h × `ResourceItem.costRate`)。
+
+- `costRate` 为小时费率（纯展示数据，不参与负载/排程计算）；缺失/非法（负数、非有限）→ 该 lane 不显示成本。
+- 「已装载周期」= 时间轴全域（`range-start`/`range-end` 托管优先，否则按已装载任务日期推导）；与轴相交的任务按相交的**日历日数**计（含端），跨轴任务只计轴内天数。
+- 格式化固定两位小数、**无货币符号**（上面资源名里的「200/h」是宿主文案，非组件输出）；标签文案走 i18n（`resource.cost`），数字样式走次级文本 token（暗色自动切换）。
+- 合计在 `update()` 时随**数据/日期窗口**变化重算；横向滚动可视列窗口不触发（成本是数据窗口量，不是滚动视口量）。
 
 ### 容量日历、技能与优先级
 
@@ -220,8 +235,9 @@ if (pool.version !== lastSeen) {
 | `locale` | 本地化（覆盖 config-provider 注入与全局 locale） | `string` | — |
 | `range-end` | 宿主托管时间轴终点（ISO 日期 YYYY-MM-DD，含当日）：与 range-start 成对使用；只有其一 / 颠倒 / 非法时忽略托管并 devWarn | `string` | — |
 | `range-start` | 宿主托管时间轴起点（ISO 日期 YYYY-MM-DD）：提供后 period 范围不再由已装载任务推导 | `string` | — |
-| `resources` | 资源列表（JSON [{ id, name, capacity?, workdays?, holidays?, capacityOverrides?, skills? }]）。`workdays` 编号 0=周日…6=周六，`[]` 表示全不可用；未声明 `workdays` 且 `holidays` / `capacityOverrides` 为空时，capacity = 每档（period）可并行任务数（旧语义）；否则按逐日容量求和，非空 `capacityOverrides` 优先于 `workdays` / `holidays`，可写小数但任务按整日计数（0.5 日无法容纳整日任务）；空 `holidays` / `capacityOverrides` 视为未声明。`skills` 为技能标签。资源可带可选 `color`（CSS 颜色或 token，如 `var(--oas-color-success)`）：用于该泳道任务条与负载柱着色，缺省走 `--oas-resource-bar-bg` / `--oas-resource-load-bg` 的统一色 | `ResourceItem[]` | `[]` |
+| `resources` | 资源列表（JSON [{ id, name, capacity?, workdays?, holidays?, capacityOverrides?, skills?, costRate? }]）。`workdays` 编号 0=周日…6=周六，`[]` 表示全不可用；未声明 `workdays` 且 `holidays` / `capacityOverrides` 为空时，capacity = 每档（period）可并行任务数（旧语义）；否则按逐日容量求和，非空 `capacityOverrides` 优先于 `workdays` / `holidays`，可写小数但任务按整日计数（0.5 日无法容纳整日任务）；空 `holidays` / `capacityOverrides` 视为未声明。`skills` 为技能标签。`costRate` 为小时费率（纯展示；`show-cost` 开启时参与行头成本合计 Σ(天数 × 8h × costRate)，缺失/非法该行不显示成本）。资源可带可选 `color`（CSS 颜色或 token，如 `var(--oas-color-success)`）：用于该泳道任务条与负载柱着色，缺省走 `--oas-resource-bar-bg` / `--oas-resource-load-bg` 的统一色 | `ResourceItem[]` | `[]` |
 | `scale` | 直方图 period 粒度与时间轴刻度：day（默认）/ week / month；非法回落 day | `string` | — |
+| `show-cost` | 泳道成本合计（布尔，默认关）：行头显示「成本 Σ(任务天数 × 8h × costRate)」两位小数（无货币符号，单位由宿主 CSS/文案自定）；天数按任务与**求交窗口**的相交日历日数计——有 range-start/range-end 托管时用轴端点（成本不随刻度档漂移），否则用任务推导轴全域；costRate 缺失/非法的 lane 不显示。合计随数据/日期窗口在 update 时重算，滚动可视列窗口不触发 | `string` | — |
 | `show-load-values` | 负载直方图柱顶显示该档负载数字（布尔，默认关）：仅 load > 0 显示，超载档数字用 `text-on-primary`（浅色主题白字/暗色主题深字，压在 danger 柱身上保证对比）；数字为视觉冗余（aria-hidden），读屏仍读列的负载描述 | `boolean` | — |
 | `show-overload-badge` | 泳道行头显示「超载 N 档」徽标（布尔，默认关）：仅该资源存在超载档时显示，文案走 i18n resource.overBadge | `boolean` | — |
 | `skill-matrix` | 技能矩阵视图（布尔，默认关）：行=资源、列=技能并集，✓ 表示具备；无虚拟化 | `boolean` | — |

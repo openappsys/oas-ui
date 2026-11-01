@@ -6,7 +6,7 @@
  * 2. 防丢键：9 个切片的 key 并集 === zh-CN 全集（值也逐一相等）；
  * 3. 消费面：ui 源码里出现的每个 key 字面量（含模板点分前缀展开），都在其所在家族的切片里；
  * 4. 跨家族/死键：跨家族 key 在每个消费族切片里都存在；死键清单固定且只归 framework；
- * 5. 定点键 + 运行时：三个空串陷阱键在对应切片里；整包入口下 435 键全部可解析。
+ * 5. 定点键 + 运行时：三个空串陷阱键在对应切片里；整包入口下 438 键全部可解析。
  */
 import { spawnSync } from 'node:child_process'
 import { readdirSync, readFileSync } from 'node:fs'
@@ -453,8 +453,8 @@ describe('i18n 家族切片完备性', () => {
     expect(slices.conversation['promptInput.placeholder']).toBe('输入消息…')
   })
 
-  it('运行时：整包入口下 435 键全部可解析（t() 不回退 raw key）', () => {
-    expect(zhKeys.length).toBe(435)
+  it('运行时：整包入口下 438 键全部可解析（t() 不回退 raw key）', () => {
+    expect(zhKeys.length).toBe(438)
     for (const key of zhKeys) {
       expect(t(key as never), `整包入口下 ${key} 应解析为中文`).not.toBe(key)
     }

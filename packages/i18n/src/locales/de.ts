@@ -220,6 +220,8 @@ export const de: LocaleMessages = {
   'gantt.addTask': 'Aufgabe hinzufügen',
   'gantt.addChild': 'Teilaufgabe hinzufügen',
   'gantt.newTask': 'Neue Aufgabe',
+  'gantt.effort': 'Effort',
+  'gantt.effortValue': 'Effort {value}d',
   // resource (Ressourcenauslastung / Schwimmbahn-Ansicht)
   'resource.label': 'Ressourcenauslastung',
   'resource.empty': 'Keine Ressourcenaufgaben',
@@ -232,6 +234,7 @@ export const de: LocaleMessages = {
   'resource.loadAria': '{resource}: Auslastung normal',
   'resource.loadOverAria': '{resource}: {count} überlastete Perioden',
   'resource.overBadge': 'Überlastet ×{count}',
+  'resource.cost': 'Cost',
   // kanban (Kanban-Board)
   'kanban.emptyColumn': 'Karten hierher ziehen',
   'kanban.moveCard': 'Karte verschieben',

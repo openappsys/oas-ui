@@ -220,6 +220,8 @@ export const pt: LocaleMessages = {
   'gantt.addTask': 'Adicionar tarefa',
   'gantt.addChild': 'Adicionar subtarefa',
   'gantt.newTask': 'Nova tarefa',
+  'gantt.effort': 'Effort',
+  'gantt.effortValue': 'Effort {value}d',
   // resource (carga de recursos / vista de raias)
   'resource.label': 'Carga de recursos',
   'resource.empty': 'Sem tarefas de recursos',
@@ -232,6 +234,7 @@ export const pt: LocaleMessages = {
   'resource.loadAria': '{resource}: carga normal',
   'resource.loadOverAria': '{resource}: {count} períodos sobrecarregados',
   'resource.overBadge': 'Sobrecarga ×{count}',
+  'resource.cost': 'Cost',
   // kanban (quadro kanban)
   'kanban.emptyColumn': 'Arraste cartões para cá',
   'kanban.moveCard': 'Mover cartão',
