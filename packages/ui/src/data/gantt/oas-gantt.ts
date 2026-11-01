@@ -3460,8 +3460,9 @@ export class OASGantt extends OASElement {
     // 行高协议（与 height 协议同构）：row-height 属性在场且合法（纯数字 ≥20，与 rowHeightPx() 同口径）
     // 时写 --oas-gantt-row-height（.row-name 高度 = var(--oas-gantt-row-height) 与网格行高同源）；
     // 从未写过时绝不动宿主自己内联设的 token。px 后缀对 row-height 非法（rowHeightPx 同样回落 36）。
+    // 注意：getAttr 不带字面量第二实参——api:scan 以最后一个字面量默认值为准，'36' 锚点在 rowHeightPx()。
     if (this.hasAttr('row-height')) {
-      const raw = this.getAttr('row-height', '').trim()
+      const raw = this.getAttr('row-height').trim()
       const n = Number(raw)
       if (raw !== '' && Number.isFinite(n) && n >= 20) {
         this.style.setProperty('--oas-gantt-row-height', `${n}px`)
