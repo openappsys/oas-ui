@@ -635,6 +635,13 @@ const COMPONENT_ENTRIES = [
     entry: 'layout/scroll-area/infinite',
     spec: '@oas-ui/ui/layout/scroll-area/infinite',
   },
+  // data 家族 helper 型 L3：gantt / resource 纯函数子路径（不进 L1/data 族包，显式 import 按需函数）
+  { id: 'ganttExport', entry: 'data/gantt/export', spec: '@oas-ui/ui/data/gantt/export' },
+  { id: 'ganttEvm', entry: 'data/gantt/evm', spec: '@oas-ui/ui/data/gantt/evm' },
+  { id: 'ganttAlap', entry: 'data/gantt/alap', spec: '@oas-ui/ui/data/gantt/alap' },
+  { id: 'ganttRecurring', entry: 'data/gantt/recurring', spec: '@oas-ui/ui/data/gantt/recurring' },
+  { id: 'resourceCost', entry: 'data/resource/cost', spec: '@oas-ui/ui/data/resource/cost' },
+  { id: 'resourcePool', entry: 'data/resource/pool', spec: '@oas-ui/ui/data/resource/pool' },
   { id: 'form', entry: 'form/form', spec: '@oas-ui/ui/form/form' },
   { id: 'gantt', entry: 'data/gantt', spec: '@oas-ui/ui/data/gantt' },
   { id: 'jsonViewer', entry: 'data/json-viewer', spec: '@oas-ui/ui/data/json-viewer' },
@@ -840,6 +847,62 @@ const BUDGETS = [
     limit: 5 * 1024, // 5 KB（2026-10-29 首次定档：实测 3916 B / 3.8 KB，上浮约 31% 取整）
     basis:
       '实测 gzip 3916 B / 3.8 KB / 3 文件（2026-10-29 首次独立定档；headless 控制器：滚动/尺寸/资源监听、双边缘状态机、prepend 锚定与 keyed 重查、ResizeObserver 资源补偿；仅 dev-warn 一个共享依赖，无滚动引擎/无自定义元素），上浮约 31% 定档 5 KB 绝对值',
+  },
+  // —— data 家族 helper 型 L3：gantt / resource 纯函数子路径（独立预算档；不进 L1/data 族包） ——
+  // helper 纯函数子路径，按需引入；首档 2026-11-01：构建后实测上浮 ~30% 取整。
+  {
+    name: '@oas-ui/ui/data/gantt/export 链 gzip',
+    kind: 'absolute',
+    componentId: 'ganttExport',
+    get: () => componentMeasures.ganttExport.gzipBytes,
+    limit: 1.5 * 1024, // 1.5 KB（2026-11-01 首档：实测 1110 B 上浮 ~30% 取整）
+    basis:
+      'helper 纯函数子路径，按需引入；首档 2026-11-01：实测 gzip 1110 B / 2 文件（csv 本体 1056 + 入口转发 54，链含拍平/类型推导/CSV 转义，无组件运行时/无 core/i18n），上浮约 30% 取整定档 1.5 KB',
+  },
+  {
+    name: '@oas-ui/ui/data/gantt/evm 链 gzip',
+    kind: 'absolute',
+    componentId: 'ganttEvm',
+    get: () => componentMeasures.ganttEvm.gzipBytes,
+    limit: 1.5 * 1024, // 1.5 KB（2026-11-01 首档：实测 1097 B 上浮 ~30% 取整）
+    basis:
+      'helper 纯函数子路径，按需引入；首档 2026-11-01：实测 gzip 1097 B / 1 文件（EVM 预算/PV/EV/AC/指标 + 拍平 + DST 安全日索引，单文件零依赖），上浮约 30% 取整定档 1.5 KB',
+  },
+  {
+    name: '@oas-ui/ui/data/gantt/alap 链 gzip',
+    kind: 'absolute',
+    componentId: 'ganttAlap',
+    get: () => componentMeasures.ganttAlap.gzipBytes,
+    limit: 2 * 1024, // 2 KB（2026-11-01 首档：实测 1423 B 上浮 ~30% 取整）
+    basis:
+      'helper 纯函数子路径，按需引入；首档 2026-11-01：实测 gzip 1423 B / 1 文件（后向 CPM 反推最晚日期：Kahn 拓扑 + 四类依赖 lag 公式 + 环 best-effort + hour 成分保留，单文件零依赖），上浮约 30% 取整定档 2 KB',
+  },
+  {
+    name: '@oas-ui/ui/data/gantt/recurring 链 gzip',
+    kind: 'absolute',
+    componentId: 'ganttRecurring',
+    get: () => componentMeasures.ganttRecurring.gzipBytes,
+    limit: 2 * 1024, // 2 KB（2026-11-01 首档：实测 1380 B 上浮 ~30% 取整）
+    basis:
+      'helper 纯函数子路径，按需引入；首档 2026-11-01：实测 gzip 1380 B / 1 文件（daily/weekly/monthly 周期展开 + count/until/窗口终止 + 短月跳过 + hour 成分保留，单文件零依赖），上浮约 30% 取整定档 2 KB',
+  },
+  {
+    name: '@oas-ui/ui/data/resource/cost 链 gzip',
+    kind: 'absolute',
+    componentId: 'resourceCost',
+    get: () => componentMeasures.resourceCost.gzipBytes,
+    limit: 1.25 * 1024, // 1.25 KB（2026-11-01 首档：实测 828 B 上浮 ~30% 取整）
+    basis:
+      'helper 纯函数子路径，按需引入；首档 2026-11-01：实测 gzip 828 B / 1 文件（任务成本核算：taskCost 优先 + 资源时薪推导 + resourceIds 限定 + perResource 均摊，单文件零依赖），上浮约 30% 取整定档 1.25 KB',
+  },
+  {
+    name: '@oas-ui/ui/data/resource/pool 链 gzip',
+    kind: 'absolute',
+    componentId: 'resourcePool',
+    get: () => componentMeasures.resourcePool.gzipBytes,
+    limit: 0.75 * 1024, // 0.75 KB（2026-11-01 首档：实测 490 B 上浮 ~30% 取整）
+    basis:
+      'helper 纯函数子路径，按需引入；首档 2026-11-01：实测 gzip 490 B / 1 文件（ResourcePool id 去重登记表 + version 变更计数 + globalThis Symbol.for 共享单例，单文件零依赖），上浮约 30% 取整定档 0.75 KB',
   },
 ]
 

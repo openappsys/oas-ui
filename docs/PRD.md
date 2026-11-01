@@ -5,6 +5,36 @@
 
 ---
 
+## 未发布：gantt / resource Pro helper 分包批（6 个按需 helper）
+
+### 功能定义
+
+把甘特/资源场景的高频数据加工能力做成 **6 个纯函数 helper 子路径**，挂在新分包入口上按需引入：`@oas-ui/ui/data/gantt/export`（CSV 导出）、`@oas-ui/ui/data/gantt/evm`（挣值管理 EVM）、`@oas-ui/ui/data/gantt/alap`（后向 CPM 反推最晚日期）、`@oas-ui/ui/data/gantt/recurring`（周期任务展开）、`@oas-ui/ui/data/resource/cost`（任务成本核算）、`@oas-ui/ui/data/resource/pool`（共享资源池单例）。组件核心（oas-gantt / oas-resource）一行不动；helper 运行闭包零 core / 零 i18n / 零 customElements / 零 CSS / 零模块级副作用（pool 的 globalThis 挂载延迟到 `getSharedResourcePool()` 首次调用）。
+
+### 详细需求（契约摘要）
+
+- **export / toCsv(tasks, opts?)**：按清洗层同款顺序拍平嵌套 children（DFS 前序）；默认列 `id,name,start,end,type,progress,parent,project`；milestone 的 end 回退 start；type 缺省推导（有子=summary、无 end=milestone、其余 task）；CSV 标准转义（含分隔符/引号/换行加引号、引号翻倍、末尾换行）；`bom` 选项控制 `\uFEFF`；数组字段（resources/dependencies）仅自定义列输出（`|` 拼 id）。
+- **evm / computeEvm(tasks, opts)**：budget = taskCost 优先，否则 Σ(分配资源 × 工期小时 × 时薪)（milestone 工期 0，预算只看 taskCost）；planned = budget × min(1, 已耗天数/工期天数)（milestone 按 start ≤ statusDate 全计）；earned = budget × clamp(progress,0,100)/100；ac 缺省 = EV（中性口径）；spi/cpi 在 pv/ac 为 0 时为 null。
+- **alap / computeLateDates(tasks, opts?)**：输入视为当前排程结果（不做正向重排）；projectEnd 缺省 = max(end)；fs/ss/ff/sf + lag 反推 lateFinish/lateStart（与核心 CPM 同公式、lag 正值推迟后继）；totalFloatDays = lateStart − 当前 start；依赖环 best-effort（单趟松弛、确定有界、不抛）；悬空边跳过；输出 day 精度并保留输入 hour 成分。
+- **recurring / expandRecurring(tasks, range, opts?)**：daily/weekly/monthly + interval/byWeekday/count/until；输出 = 非周期任务 + 实例（默认剔除 master，keepMaster 保留）；实例 id `${id}#${seq}`（seq = 序列内发生序号，不随窗口变化）+ masterId + recurringInstance + progress 0，日期平移保工期与 hour 成分，不带 dependencies；count 计整个序列发生（含窗外）；weekly 周锚点 = start 所在周周一；monthly 同月日、短月跳过。
+- **cost / computeCost(tasks, resourceIds, opts?)**：工期 = end − start + 1（含当日）；taskCost 优先，否则 Σ(工期 × hoursPerDay × 费率)；resourceIds 限定计费资源集合（不在集合不计费不分摊）；perResource 按「实际计费的分配资源数」均摊，perTask 全额。
+- **pool / ResourcePool + getSharedResourcePool()**：id 去重登记表（register/remove/get/list/clear + version 生效变更计数，no-op 不抬版本）；单例挂 `globalThis[Symbol.for('@oas-ui/ui/resource-pool/v1')]`（link/多副本共享）。
+
+### 按需叙事
+
+helper 不进 L1、不进 CDN 族包（`perf:size` 新增 6 条 L3 登记 + 独立预算档断言锁定：helper 必须不在 L1 与族包，否则 FAIL）；消费方显式 `import` 后才进包。首档预算按构建后实测上浮 ~30% 取整：export 1.5 KB（实测 1110 B）/ evm 1.5 KB（1097 B）/ alap 2 KB（1423 B）/ recurring 2 KB（1380 B）/ cost 1.25 KB（828 B）/ pool 0.75 KB（490 B）gzip，六链 core+i18n 闭包复算均为 0 KB。
+
+### 非目标
+
+不进 L1 / CDN 分包（helper 无触发面，进 union 即死重）；不改 oas-gantt / oas-resource 组件核心（不新增属性/事件/插槽）；helper 不做 i18n 文案与 UI 渲染；alap 不做工作日日历吸附（日历口径归核心 auto-schedule）；recurring 不展开 master 的子树、不为实例重建依赖；新增 i18n key 为零。
+
+### 验收
+
+- 6 个 helper 单测 56 条全绿（每文件独立跑 2 次）；`pnpm test` 全量、`pnpm build`（含 exports:check）、`pnpm typecheck`、`pnpm perf:size`（新链独立预算且 [L1 包含关系]/[独立预算]/[族包包含关系]/[Pro 零泄漏] 全 PASS）、`pnpm qa:audit:check`、`pnpm lint:md`、`llms:gen + llms:check` 通过。
+- 6 链闭包复算（chain-attribution，与 perf:size 同口径）：core+i18n = 0 KB。
+
+---
+
 ## 未发布：issue 反馈批（Select 选项图标 + 文档站导航）
 
 ### 功能定义

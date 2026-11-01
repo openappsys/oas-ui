@@ -169,6 +169,41 @@ const file = importResourceCalendars(json)
 
 `computeUtilization` 的负载口径与组件一致（任务与某日相交即给每个 assigned resource 记 1）；未声明日历字段时 `capacity` 作为逐日基数。`suggestAssignments` 返回按 `score` 升序的候选，`missingSkills` 非空的资源排后。`buildSkillMatrix` 只汇总技能，不推断等级/熟练度。`importResourceCalendars` 对非法 JSON/版本抛错，宿主应 `try/catch` 后提示。
 
+## Pro helper（按需引入）
+
+resource 的数据加工能力另拆 2 个 **纯函数 helper 子路径**，与组件分开按需引入：运行闭包零组件运行时、零 core、零 i18n（组件核心一行不动、不进 L1/CDN 分包），显式 import 才会进你的构建产物：
+
+```ts
+// 任务成本核算（taskCost 优先 + 资源时薪推导 + 计费集合限定 + 均摊）
+import { computeCost } from '@oas-ui/ui/data/resource/cost'
+// 共享资源池（id 去重登记表 + version 变更计数 + 跨副本单例）
+import { ResourcePool, getSharedResourcePool } from '@oas-ui/ui/data/resource/pool'
+```
+
+**`computeCost(tasks, resourceIds, opts?)`**：日粒度成本核算。日期对齐清洗层：**带时刻输入截断到当日**（非法时刻/尾码/Z 后缀拒收）、**`start` 晚于 `end` 自愈交换**；工期 = `end − start + 1`（end 含当日，与组件负载口径一致）；任务成本 `taskCost[id]` 优先，否则 Σ(工期天数 × `hoursPerDay`（缺省 8）× `resourceHourly[rid]`)；`resourceIds` 限定计费资源集合（分配中不在集合内的资源不计费不分摊）；`perTask` 为全额，`perResource` 按「实际计费的分配资源数」**均摊**，`total = Σ perTask`；`perTask` / `perResource` 为无原型容器，任务 id 撞 `constructor` / `toString` / `__proto__` 等原型键名也安全。
+
+```ts
+const r = computeCost(tasks, ['zhang', 'li'], {
+  resourceHourly: { zhang: 100, li: 50 },
+  taskCost: { fix: 900 }, // 优先于资源推导
+  hoursPerDay: 8,
+})
+// r: { perTask, perResource, total }
+```
+
+**`ResourcePool` / `getSharedResourcePool()`**：id 去重的资源登记表，供多个视图/组件共享同一份资源集合。`register`（同 id 覆盖、非法条目跳过）/ `remove` / `get` / `list` / `clear`；`version` 每次生效变更 +1（no-op 调用不抬版本），供宿主轮询/比较。`getSharedResourcePool()` 返回挂载在 `globalThis`（`Symbol.for`）上的共享单例——多副本共存（link / 多 bundler 实例）时共享同一份数据与版本号。
+
+```ts
+const pool = getSharedResourcePool()
+pool.register(resources)
+if (pool.version !== lastSeen) {
+  lastSeen = pool.version
+  render(pool.list())
+}
+```
+
+> helper 本身是纯函数/纯数据结构，可在任何时机直接调用；要与页面里的 `<oas-resource>` 实例联动时，先 `await customElements.whenDefined('oas-resource')` 再取实例。helper 体积（gzip，2026-11-01 首档实测）：cost 828 B / pool 490 B。
+
 ## API
 
 ### oas-resource

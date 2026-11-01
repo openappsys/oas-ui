@@ -671,6 +671,62 @@ onMounted(async () => {
 })
 </script>
 
+## Pro helper（按需引入）
+
+gantt 的数据加工能力另拆 4 个 **纯函数 helper 子路径**，与组件分开按需引入：运行闭包零组件运行时、零 core、零 i18n（组件核心一行不动、不进 L1/CDN 分包），显式 import 才会进你的构建产物：
+
+```ts
+// CSV 导出（嵌套拍平 + 默认列 + 标准转义）
+import { toCsv } from '@oas-ui/ui/data/gantt/export'
+// 挣值管理 EVM（budget / PV / EV / AC / spi / cpi）
+import { computeEvm } from '@oas-ui/ui/data/gantt/evm'
+// 后向 CPM：反推最晚日期与总浮时
+import { computeLateDates } from '@oas-ui/ui/data/gantt/alap'
+// 周期任务展开
+import { expandRecurring } from '@oas-ui/ui/data/gantt/recurring'
+```
+
+**`toCsv(tasks, opts?)`**：按组件清洗层同款顺序拍平嵌套 `children`，默认列 `id,name,start,end,type,progress,parent,project`；milestone 的 `end` 回退 `start`；`type` 缺省推导（有子 = summary、无 end = milestone、其余 task）；标准 CSV 转义（含分隔符/引号/换行加引号、引号翻倍），`bom: true` 供 Excel 直开；`delimiter` / `columns`（`string | { key, label? }`）可自定义，数组字段（resources / dependencies）仅在自定义列输出（`|` 拼元素 id）。
+
+```ts
+const csv = toCsv(tasks, { bom: true })
+const csv2 = toCsv(tasks, {
+  delimiter: ';',
+  columns: [{ key: 'name', label: '任务名' }, 'start', 'end', 'progress', 'resources'],
+})
+```
+
+**`computeEvm(tasks, opts)`**：日精度挣值计算。**摘要（有子级/被 `parent` 指向）不参与**（进度由子级派生，计入会双计），`byTask` 与总额都不含；**显式 `type: "milestone"` 优先**——工期按 0、`end` 忽略（预算只看 taskCost，PV 按 start ≤ statusDate 二值全计）；`budget` = `rates.taskCost[id]` 优先，否则 Σ(分配资源 × 工期小时 × `rates.resourceHourly[rid]`)；`planned` 按 statusDate 前的已耗天数比例封顶；`earned = budget × progress%`；`actualCost` 可传全局金额或逐任务记录，缺省按 EV 记（中性口径）；`spi` / `cpi` 在 pv / ac 为 0 时返回 `null`；`start` 晚于 `end` 按清洗层口径自愈交换。
+
+```ts
+const r = computeEvm(tasks, {
+  rates: { resourceHourly: { zhang: 100 }, taskCost: { fix: 800 } },
+  statusDate: '2026-03-10',
+  actualCost: 5200, // 或 Record<taskId, number>
+  hoursPerDay: 8,
+})
+// r: { pv, ev, ac, sv, cv, spi, cpi, byTask }
+```
+
+**`computeLateDates(tasks, opts?)`**：把当前排程视为既成结果（不做正向重排），按 fs/ss/ff/sf + lag 反推每任务的最晚开始/完成与总浮时（`totalFloatDays`，负值 = 当前排程相对 `projectEnd` 不可行——只覆盖排程漂移面；约束（snet/mso/fnlt）与截止日违约判定不在 helper 范围，仍以组件侧为准）；摘要（有子级）不参与、`projectEnd` 缺省取**依赖图内**最晚任务完成日；悬空依赖跳过、依赖环 best-effort 不抛（结果确定但顺序相关）；输出保留输入的 hour 成分。
+
+```ts
+const lates = computeLateDates(tasks, { projectEnd: '2026-04-30' })
+// [{ id, lateStart: 'YYYY-MM-DD', lateFinish: 'YYYY-MM-DD', totalFloatDays }, …]
+```
+
+**`expandRecurring(tasks, range, opts?)`**：把带 `recurring` 规则的任务展开为窗口内实例。规则支持 `daily` / `weekly`（`byWeekday` 缺省 = start 的星期，周锚点为所在周周一）/ `monthly`（同月日，短月跳过）与 `interval` / `count` / `until`；**`count` / `until` 缺省 = 不限，提供但非法（count < 1、until 不可解析）→ 整条规则无效、master 不展开**；实例 id 为 `${id}#${seq}`（seq = 序列内发生序号，不随窗口变化），带 `masterId` + `recurringInstance: true`、`progress: 0`，日期平移保工期与 hour 成分；实例**剥除 children / dependencies / recurring**，数组字段切片克隆、`type` summary 强转 task（milestone 保持）；默认剔除 master（`keepMaster: true` 保留）。
+
+```ts
+const expanded = expandRecurring(
+  [{ id: 'standup', name: '站会', start: '2026-03-02', recurring: { freq: 'weekly', byWeekday: [1, 3, 5] } }],
+  { start: '2026-03-01', end: '2026-03-31' },
+)
+expanded.forEach((t) => ganttEl.addTask(t)) // 喂回组件前按需自行合并
+```
+
+> 在文档站页面脚本里使用时，等待自定义元素就绪后再取组件实例（`await customElements.whenDefined('oas-gantt')`），helper 本身是纯函数、可在任何时机直接调用。helper 体积（gzip，2026-11-01 首档实测）：export 1110 B / evm 1097 B / alap 1423 B / recurring 1380 B。
+
 ## API
 
 ### oas-gantt

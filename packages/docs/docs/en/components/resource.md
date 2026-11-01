@@ -169,6 +169,41 @@ const file = importResourceCalendars(json)
 
 `computeUtilization` uses the same load rule as the component (a task intersecting a day adds 1 for each assigned resource); without calendar fields, `capacity` is the per-day base. `suggestAssignments` returns candidates sorted by ascending `score`, with resources that have `missingSkills` pushed back. `buildSkillMatrix` only aggregates skills and does not infer levels or proficiency. `importResourceCalendars` throws on invalid JSON/version, so hosts should `try/catch` and show a message.
 
+## Pro helpers (on-demand)
+
+Two **pure-function helper subpaths** ship the resource data-processing capabilities separately from the component: their runtime closure carries no component runtime, no core and no i18n (the component core is untouched; helpers are not part of the L1/CDN bundles) — they only enter your build when explicitly imported:
+
+```ts
+// Task costing (taskCost first + hourly-rate derivation + billable set + apportionment)
+import { computeCost } from '@oas-ui/ui/data/resource/cost'
+// Shared resource pool (id-deduped registry + version counter + cross-copy singleton)
+import { ResourcePool, getSharedResourcePool } from '@oas-ui/ui/data/resource/pool'
+```
+
+**`computeCost(tasks, resourceIds, opts?)`**: day-granularity costing. Dates follow the sanitize layer: **time-bearing inputs truncate to the day** (invalid time / trailing garbage / `Z` suffix rejected), and a `start` after `end` self-heals by swapping; duration = `end − start + 1` (inclusive end, matching the component's load rule); task cost prefers `taskCost[id]`, otherwise Σ(duration days × `hoursPerDay` (default 8) × `resourceHourly[rid]`); `resourceIds` limits the billable resource set (allocations outside the set are neither billed nor apportioned); `perTask` holds full amounts, `perResource` is **apportioned equally** across the actually billed assigned resources, `total = Σ perTask`; `perTask` / `perResource` are prototype-less containers, so task ids colliding with `constructor` / `toString` / `__proto__` are safe.
+
+```ts
+const r = computeCost(tasks, ['zhang', 'li'], {
+  resourceHourly: { zhang: 100, li: 50 },
+  taskCost: { fix: 900 }, // takes precedence over rate derivation
+  hoursPerDay: 8,
+})
+// r: { perTask, perResource, total }
+```
+
+**`ResourcePool` / `getSharedResourcePool()`**: an id-deduped resource registry for sharing one resource collection across views/components. `register` (same id overrides, invalid entries skipped) / `remove` / `get` / `list` / `clear`; `version` increments on every effective change (no-op calls do not bump it) for polling/diffing. `getSharedResourcePool()` returns the shared singleton mounted on `globalThis` (`Symbol.for`) — multiple copies (linking / multiple bundler instances) share the same data and version.
+
+```ts
+const pool = getSharedResourcePool()
+pool.register(resources)
+if (pool.version !== lastSeen) {
+  lastSeen = pool.version
+  render(pool.list())
+}
+```
+
+> The helpers are pure functions/pure data structures and can run at any time; when coordinating with an `<oas-resource>` instance on the page, `await customElements.whenDefined('oas-resource')` before grabbing the instance. Helper sizes (gzip, first budget measured 2026-11-01): cost 828 B / pool 490 B.
+
 ## API
 
 ### oas-resource
