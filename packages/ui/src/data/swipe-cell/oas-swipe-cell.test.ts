@@ -114,11 +114,11 @@ describe('OASSwipeCell', () => {
 
   it('渲染结构：root/content/actions 三层 + 默认与 actions 插槽', () => {
     const el = mount()
-    expect(el.shadowRoot!.querySelector('[part="root"]')).not.toBeNull()
-    expect(content(el)).not.toBeNull()
-    expect(actions(el)).not.toBeNull()
-    expect(el.shadowRoot!.querySelector('slot:not([name])')).not.toBeNull()
-    expect(el.shadowRoot!.querySelector('slot[name="actions"]')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('[part="root"]').length).toBe(1)
+    expect(el.shadowRoot!.querySelectorAll('[part="content"]').length).toBe(1)
+    expect(el.shadowRoot!.querySelectorAll('[part="actions"]').length).toBe(1)
+    expect(el.shadowRoot!.querySelectorAll('slot:not([name])').length).toBe(1)
+    expect(el.shadowRoot!.querySelectorAll('slot[name="actions"]').length).toBe(1)
   })
 
   it('actions 区 role=group + i18n aria-label（zh/en 切换）', () => {
@@ -575,13 +575,13 @@ describe('OASSwipeCell', () => {
     el.shadowRoot!.innerHTML = `<meta data-oas-ssr="oas-swipe-cell" data-oas-ssr-v="1">${snapshot}`
     document.body.appendChild(el)
     stubActionsWidth(el, 80)
-    expect(el.shadowRoot!.querySelector('style')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('style').length).toBe(1)
     expect(el.shadowRoot!.querySelector('meta[data-oas-ssr]')).toBeNull()
-    expect(el.shadowRoot!.querySelector('slot[name="actions"]')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('slot[name="actions"]').length).toBe(1)
     // 水合后手势仍可用
     swipe(el, 260, 200, 10)
     expect(el.hasAttribute('open')).toBe(true)
-    expect(styleRef).not.toBeNull()
+    expect(styleRef.tagName).toBe('STYLE')
   })
 
   it('DSD 回退：快照缺关键结构时 render 全量重建', () => {
@@ -589,7 +589,7 @@ describe('OASSwipeCell', () => {
     el.innerHTML = DEFAULT_HTML
     el.shadowRoot!.innerHTML = '<meta data-oas-ssr="oas-swipe-cell" data-oas-ssr-v="1"><span>broken</span>'
     document.body.appendChild(el)
-    expect(el.shadowRoot!.querySelector('[part="content"]')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('[part="content"]').length).toBe(1)
     expect(el.shadowRoot!.querySelector('meta[data-oas-ssr]')).toBeNull()
   })
 
@@ -689,8 +689,8 @@ describe('OASSwipeCell 双侧滑动', () => {
   it('结构：存在 actions-start 插槽与 part；双侧同现时两组各自 role=group + aria-label', () => {
     const el = mount({}, DUAL_HTML)
     const slot = el.shadowRoot!.querySelector('slot[name="actions-start"]')
-    expect(slot).not.toBeNull()
-    expect(startActions(el)).not.toBeNull()
+    expect(slot!.getAttribute('name')).toBe('actions-start')
+    expect(startActions(el).getAttribute('part')).toBe('actions-start')
     expect(actions(el).getAttribute('role')).toBe('group')
     expect(startActions(el).getAttribute('role')).toBe('group')
     expect(startActions(el).getAttribute('aria-label')).toBe('滑动操作')

@@ -26,7 +26,7 @@ describe('OASCard', () => {
     const el = mount({ title: '卡片标题' })
     const sr = el.shadowRoot!
     expect(sr.querySelector('[part="title"]')!.textContent).toBe('卡片标题')
-    expect(sr.querySelector('slot')).not.toBeNull()
+    expect(sr.querySelectorAll('slot:not([name])').length).toBe(1)
   })
 
   it('无 title 且无 extra：header 应设 hidden（逻辑层）', () => {
@@ -62,7 +62,7 @@ describe('OASCard', () => {
       const el = mount({ title: '属性标题' }, '<span slot="title">插槽标题</span><p>正文</p>')
       const slot = el.shadowRoot!.querySelector<HTMLSlotElement>('slot[name="title"]')!
       const fallback = el.shadowRoot!.querySelector<HTMLElement>('.title-text')!
-      expect(slot.assignedNodes().length).toBeGreaterThan(0)
+      expect(slot.assignedNodes().length).toBe(1)
       expect(fallback.hidden).toBe(true)
       // 宿主 title 仍被吸收（吸收状态机不变）
       expect(el.hasAttribute('title')).toBe(false)
@@ -74,7 +74,7 @@ describe('OASCard', () => {
       const el = mount({}, '<span slot="title">插槽标题</span><p>正文</p>')
       const slot = el.shadowRoot!.querySelector<HTMLSlotElement>('slot[name="title"]')!
       const fallback = el.shadowRoot!.querySelector<HTMLElement>('.title-text')!
-      expect(slot.assignedNodes().length).toBeGreaterThan(0)
+      expect(slot.assignedNodes().length).toBe(1)
       expect(fallback.hidden).toBe(true)
       expect(part(el, 'header').hidden).toBe(false)
       expect(el.hasAttribute('title')).toBe(false)
@@ -157,7 +157,6 @@ describe('OASCard', () => {
     it('cover-src 渲染封面图并设 src/alt', () => {
       const el = mount({ 'cover-src': 'https://example.com/pic.jpg' })
       const img = el.shadowRoot!.querySelector<HTMLImageElement>('[part="cover-img"]')!
-      expect(img).not.toBeNull()
       expect(img.getAttribute('src')).toBe('https://example.com/pic.jpg')
       expect(part(el, 'cover').hasAttribute('hidden')).toBe(false)
       expect(img.hasAttribute('hidden')).toBe(false)
@@ -453,7 +452,7 @@ describe('OASCard', () => {
       expect(el.getAttribute('shadow')).toBe('always')
       expect(part(el, 'card').classList.contains('shadow-always')).toBe(true)
       // 内部读通道仍返回真实 ShadowRoot（组件结构未被污染）
-      expect(el.shadowRoot!.querySelector('[part="link"]')).not.toBeNull()
+      expect(el.shadowRoot!.querySelectorAll('[part="link"]').length).toBe(1)
       expect(rec.shadow).toBe(el.shadowRoot)
       // 再切态：属性通道持续生效
       rec.shadow = 'hover'
@@ -573,7 +572,7 @@ describe('OASCard', () => {
       const fallback = el.shadowRoot!.querySelector<HTMLElement>('.desc-text')!
       expect(fallback.hidden).toBe(true)
       const descSlot = el.shadowRoot!.querySelector<HTMLSlotElement>('slot[name="description"]')!
-      expect(descSlot.assignedNodes().length).toBeGreaterThan(0)
+      expect(descSlot.assignedNodes().length).toBe(1)
     })
 
     it('仅 description（无 title/extra）：标题区仍显示', () => {
@@ -860,7 +859,7 @@ describe('OASCard', () => {
     expect(css).not.toMatch(/margin-right:/)
     expect(css).not.toMatch(/padding-left:/)
     expect(css).not.toMatch(/padding-right:/)
-    expect(el.shadowRoot!.querySelector('[part="card"]')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('[part="card"]').length).toBe(1)
     el.remove()
   })
 
@@ -933,10 +932,10 @@ describe('OASCard', () => {
       const el = mount({ title: 'T' })
       const card = part(el, 'card')!
       const main = card.querySelector('.card-main')!
-      expect(main.querySelector('[part="header"]')).not.toBeNull()
-      expect(main.querySelector('[part="body"]')).not.toBeNull()
-      expect(main.querySelector('[part="actions"]')).not.toBeNull()
-      expect(main.querySelector('[part="footer"]')).not.toBeNull()
+      expect(main.querySelectorAll('[part="header"]').length).toBe(1)
+      expect(main.querySelectorAll('[part="body"]').length).toBe(1)
+      expect(main.querySelectorAll('[part="actions"]').length).toBe(1)
+      expect(main.querySelectorAll('[part="footer"]').length).toBe(1)
       // 纵向（默认）：包装容器为普通块级（flex-direction: column 上下排布）
       const css = el.shadowRoot!.querySelector('style')!.textContent!
       expect(css).toMatch(/\.card-main\s*\{[^}]*display:\s*flex[^}]*flex-direction:\s*column/)

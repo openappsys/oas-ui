@@ -463,7 +463,7 @@ describe('OASLog ANSI 着色（ansi 属性）', () => {
     expect(fg.textContent).toBe('ERROR')
     // reset 后片段无样式：纯文本节点直接挂 line（不包多余 span）
     const tail = Array.from(line.childNodes).find((n) => n.nodeType === Node.TEXT_NODE && n.textContent === ' boom')
-    expect(tail).toBeTruthy()
+    expect(tail!.nodeType).toBe(Node.TEXT_NODE)
   })
 
   it('ansi 开启但行无转义码：保持纯文本渲染（无 span）', () => {
@@ -567,8 +567,8 @@ describe('OASLog ANSI 着色（ansi 属性）', () => {
     expect(lines[2]!.textContent).toBe('p q')
     // 参数中段非法（< 为参数字节但非数字）：合法部分继续生效（31 红色 + 1 加粗）
     expect(lines[3]!.textContent).toBe('z')
-    expect(lines[3]!.querySelector('.ansi-bold')).toBeTruthy()
-    expect(lines[3]!.querySelector('.ansi-fg-red')).toBeTruthy()
+    expect(lines[3]!.querySelectorAll('.ansi-bold').length).toBe(1)
+    expect(lines[3]!.querySelectorAll('.ansi-fg-red').length).toBe(1)
   })
 
   it('OSC 序列剔除（BEL 与 ST 终止均支持；链接文本保留）', () => {
@@ -664,7 +664,7 @@ describe('OASLog ANSI 着色（ansi 属性）', () => {
     el.setAttribute('levels', '["error","info"]')
     const rs = rows(el)
     expect(rs[0]!.getAttribute('data-level')).toBe('error')
-    expect(rs[0]!.querySelector('.ansi-fg-red')).toBeTruthy()
+    expect(rs[0]!.querySelectorAll('.ansi-fg-red').length).toBe(1)
     expect(rs[1]!.getAttribute('data-level')).toBe('info')
   })
 
@@ -676,7 +676,7 @@ describe('OASLog ANSI 着色（ansi 属性）', () => {
     expect(lineAt(el).textContent).toBe(`${ESC}31mred${ESC}0m`)
     el.setAttribute('ansi', '')
     expect(lineAt(el).textContent).toBe('red')
-    expect(lineAt(el).querySelector('.ansi-fg-red')).toBeTruthy()
+    expect(lineAt(el).querySelectorAll('.ansi-fg-red').length).toBe(1)
   })
 
   it('增量追加：旧行不丢色、新行正确解析', () => {
@@ -687,22 +687,22 @@ describe('OASLog ANSI 着色（ansi 属性）', () => {
     const after = rows(el)
     expect(after.length).toBe(2)
     expect(after[0]).toBe(first)
-    expect(after[0]!.querySelector('.ansi-fg-red')).toBeTruthy()
-    expect(after[1]!.querySelector('.ansi-fg-green')).toBeTruthy()
+    expect(after[0]!.querySelectorAll('.ansi-fg-red').length).toBe(1)
+    expect(after[1]!.querySelectorAll('.ansi-fg-green').length).toBe(1)
   })
 
   it('reconcile 按原始文本比较：显示文本相同但转义码不同的行不被误判复用', () => {
     const el = mount([`${ESC}31mALERT${ESC}0m`, `${ESC}32mALERT${ESC}0m`])
     el.setAttribute('ansi', '')
-    expect(rows(el)[0]!.querySelector('.ansi-fg-red')).toBeTruthy()
-    expect(rows(el)[1]!.querySelector('.ansi-fg-green')).toBeTruthy()
+    expect(rows(el)[0]!.querySelectorAll('.ansi-fg-red').length).toBe(1)
+    expect(rows(el)[1]!.querySelectorAll('.ansi-fg-green').length).toBe(1)
     // 中间插入显示文本相同、转义码不同的行：按原始文本对齐，中间差异行重建
     el.lines = [`${ESC}31mALERT${ESC}0m`, `${ESC}33mALERT${ESC}0m`, `${ESC}32mALERT${ESC}0m`]
     const after = rows(el)
     expect(after.length).toBe(3)
-    expect(after[0]!.querySelector('.ansi-fg-red')).toBeTruthy()
-    expect(after[1]!.querySelector('.ansi-fg-yellow')).toBeTruthy()
-    expect(after[2]!.querySelector('.ansi-fg-green')).toBeTruthy()
+    expect(after[0]!.querySelectorAll('.ansi-fg-red').length).toBe(1)
+    expect(after[1]!.querySelectorAll('.ansi-fg-yellow').length).toBe(1)
+    expect(after[2]!.querySelectorAll('.ansi-fg-green').length).toBe(1)
   })
 
   it('恶意文本按纯文本渲染，不产生 HTML 注入', () => {

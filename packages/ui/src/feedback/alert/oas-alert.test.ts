@@ -36,14 +36,14 @@ describe('OASAlert', () => {
 
   it('渲染内容，type 默认 info', () => {
     const el = mount()
-    expect(el.shadowRoot!.querySelector('slot')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('slot:not([name])').length).toBe(1)
     expect(el.textContent).toContain('这是提示内容')
     expect(el.shadowRoot!.querySelector('[part="box"]')!.getAttribute('data-type')).toBe('info')
   })
 
   it('error 类型 role=alert，其余类型 role=status', () => {
     const el = mount({ type: 'error' })
-    expect(el.shadowRoot!.querySelector('[role="alert"]')).not.toBeNull()
+    expect(el.shadowRoot!.querySelector<HTMLElement>('[part="box"]')!.getAttribute('role')).toBe('alert')
     el.setAttribute('type', 'warning')
     expect(el.shadowRoot!.querySelector('[part="box"]')!.getAttribute('role')).toBe('status')
     el.setAttribute('type', 'info')
@@ -116,7 +116,7 @@ describe('OASAlert', () => {
       document.body.appendChild(el)
       const slot = el.shadowRoot!.querySelector<HTMLSlotElement>('slot[name="title"]')!
       const fallback = el.shadowRoot!.querySelector<HTMLElement>('.title-text')!
-      expect(slot.assignedNodes().length).toBeGreaterThan(0)
+      expect(slot.assignedNodes().length).toBe(1)
       expect(fallback.hidden).toBe(true)
       // 宿主 title 仍被吸收（吸收状态机不变）
       expect(el.hasAttribute('title')).toBe(false)
@@ -128,7 +128,7 @@ describe('OASAlert', () => {
       document.body.appendChild(el)
       const slot = el.shadowRoot!.querySelector<HTMLSlotElement>('slot[name="title"]')!
       const fallback = el.shadowRoot!.querySelector<HTMLElement>('.title-text')!
-      expect(slot.assignedNodes().length).toBeGreaterThan(0)
+      expect(slot.assignedNodes().length).toBe(1)
       expect(fallback.hidden).toBe(true)
       expect(el.hasAttribute('title')).toBe(false)
     })
@@ -163,7 +163,7 @@ describe('OASAlert', () => {
       const el = mount({ icon: '' })
       const icon = el.shadowRoot!.querySelector<HTMLElement>('[part="icon"]')!
       expect(icon.hidden).toBe(false)
-      expect(icon.querySelector('svg')).not.toBeNull()
+      expect(icon.querySelectorAll('svg').length).toBe(1)
     })
 
     it('无 icon 属性不显示图标', () => {
@@ -176,7 +176,7 @@ describe('OASAlert', () => {
       const ok = mount({ icon: '', type: 'success' })
       const a = info.shadowRoot!.querySelector('.icon-default')!.innerHTML
       const b = ok.shadowRoot!.querySelector('.icon-default')!.innerHTML
-      expect(a.length).toBeGreaterThan(0)
+      expect(a).toMatch(/<path/)
       expect(a).not.toBe(b)
     })
 
@@ -186,7 +186,7 @@ describe('OASAlert', () => {
       const icon = el.shadowRoot!.querySelector<HTMLElement>('[part="icon"]')!
       const fallback = icon.querySelector('.icon-default') as HTMLElement
       const slot = icon.querySelector('slot[name="icon"]') as HTMLSlotElement
-      expect(slot.assignedNodes().length).toBeGreaterThan(0)
+      expect(slot.assignedNodes().length).toBe(1)
       expect(fallback.hidden).toBe(true)
     })
 
@@ -216,7 +216,7 @@ describe('OASAlert', () => {
       const actionSlot = box.querySelector('slot[name="action"]') as HTMLSlotElement
       const actionEl = box.querySelector('[part="actions"]')!
       const closeEl = box.querySelector('[part="close"]')!
-      expect(actionSlot.assignedNodes().length).toBeGreaterThan(0)
+      expect(actionSlot.assignedNodes().length).toBe(1)
       expect((actionSlot.assignedNodes()[0] as HTMLElement).textContent).toBe('查看详情')
       // action 在 close 之前
       expect(Array.from(box.children).indexOf(actionEl)).toBeLessThan(Array.from(box.children).indexOf(closeEl))
@@ -249,14 +249,14 @@ describe('OASAlert', () => {
       el.innerHTML = '<span slot="description">插槽描述</span><p>正文</p>'
       const slot = el.shadowRoot!.querySelector('slot[name="description"]') as HTMLSlotElement
       const fallback = el.shadowRoot!.querySelector('.description-text') as HTMLElement
-      expect(slot.assignedNodes().length).toBeGreaterThan(0)
+      expect(slot.assignedNodes().length).toBe(1)
       expect(fallback.hidden).toBe(true)
     })
 
     it('描述与默认插槽正文并存', () => {
       const el = mount({ description: '描述文本' }, '<p>正文内容</p>')
       expect(el.shadowRoot!.querySelector<HTMLElement>('[part="description"]')!.hidden).toBe(false)
-      expect(el.shadowRoot!.querySelector('[part="body"]')!.querySelector('slot')).not.toBeNull()
+      expect(el.shadowRoot!.querySelector('[part="body"]')!.querySelectorAll('slot').length).toBe(1)
       expect(el.textContent).toContain('正文内容')
     })
   })
@@ -380,7 +380,7 @@ describe('OASAlert', () => {
       const el = mount({ closeable: '' })
       el.innerHTML = '<span slot="close">移除提示</span>'
       const close = el.shadowRoot!.querySelector('[part="close"]')!
-      expect(close.querySelector<HTMLSlotElement>('slot[name="close"]')!.assignedNodes().length).toBeGreaterThan(0)
+      expect(close.querySelector<HTMLSlotElement>('slot[name="close"]')!.assignedNodes().length).toBe(1)
     })
   })
 

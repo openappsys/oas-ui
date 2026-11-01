@@ -738,7 +738,7 @@ describe('面板能力', () => {
     open(el)
     const title = panel(el).querySelector<HTMLElement>('[part="title"]')!.textContent!
     expect(title).toContain('2026年8月')
-    expect(day(el, '2026-08-15')).toBeTruthy()
+    expect(day(el, '2026-08-15').getAttribute('data-date')).toBe('2026-08-15')
   })
 
   it('show-week-number：网格出现周号列', () => {
@@ -807,7 +807,7 @@ describe('面板能力', () => {
     const dayCount = el.shadowRoot!.querySelectorAll('.day').length
     expect(rendered.length).toBe(dayCount)
     const aug1 = day(el, '2026-08-01')
-    expect(aug1.querySelector('.cell-dot')).not.toBeNull()
+    expect(aug1.querySelectorAll('.cell-dot').length).toBe(1)
     expect(aug1.querySelector<HTMLElement>('[data-cell-date]')!.textContent).toBe('1')
   })
 
@@ -1037,7 +1037,9 @@ describe('浮层定位（placement / fixed 锚定）', () => {
     open(el)
     expect(dd.classList.contains('open')).toBe(true)
     const afterFirst = computePositionMock.mock.calls.length
-    expect(afterFirst).toBeGreaterThan(0)
+    // 定位引擎调用次数取决于打开时的重排次数（实现细节），下界 1 证明已走 fixed 锚定；
+    // 再开必增的契约由下一处 >afterClose 断言负责。
+    expect(afterFirst).toBeGreaterThanOrEqual(1)
     panel(el).dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
     expect(dd.classList.contains('open')).toBe(false)
     const afterClose = computePositionMock.mock.calls.length
@@ -1108,7 +1110,6 @@ describe('OASDatePicker 移动端底部抽屉（bottom-sheet 接入）', () => {
 
   it('模板恒包 oas-bottom-sheet（SSR/客户端结构一致），PC 默认 passive 透传', () => {
     const el = mount()
-    expect(sheet(el)).toBeTruthy()
     expect(sheet(el).getAttribute('part')).toBe('sheet')
     expect(sheet(el).hasAttribute('passive')).toBe(true)
     expect(sheet(el).contains(el.shadowRoot!.querySelector('[part="dropdown"]')!)).toBe(true)
@@ -1349,7 +1350,7 @@ describe('OASDatePicker form-associated（原生表单集成）', () => {
     const missing = fake.setValidity.mock.calls.at(-1)
     expect(missing?.[0]).toEqual({ valueMissing: true })
     expect(typeof missing?.[1]).toBe('string')
-    expect((missing?.[1] as string).length).toBeGreaterThan(0)
+    expect(missing?.[1] as string).toMatch(/\S/)
     open(el)
     day(el, '2026-08-15').click()
     expect(fake.setValidity).toHaveBeenLastCalledWith({})
@@ -1822,7 +1823,7 @@ describe('caption-layout=dropdown（标题换月/年下拉，dob 远年快速跳
     const el = mount({ value: '2026-08-09' })
     open(el)
     expect(el.shadowRoot!.querySelectorAll('.caption-select').length).toBe(0)
-    expect(el.shadowRoot!.querySelector('[part="title"]')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('[part="title"]').length).toBe(1)
   })
 
   it('dropdown：面板头部渲染月/年下拉（part + aria-label + 选中项为视图月/年）', () => {
@@ -1908,7 +1909,7 @@ describe('caption-layout=dropdown（标题换月/年下拉，dob 远年快速跳
   it('week 类型同样生效；month 类型不渲染下拉（回归）', () => {
     const week = mount({ type: 'week', value: '2026-W32', 'caption-layout': 'dropdown' })
     open(week)
-    expect(week.shadowRoot!.querySelector('[part="caption-month"]')).not.toBeNull()
+    expect(week.shadowRoot!.querySelectorAll('[part="caption-month"]').length).toBe(1)
 
     const month = mount({ type: 'month', value: '2026-08', 'caption-layout': 'dropdown' })
     open(month)
@@ -1919,12 +1920,12 @@ describe('caption-layout=dropdown（标题换月/年下拉，dob 远年快速跳
     const el = mount({ value: '2026-08-09' })
     open(el)
     el.shadowRoot!.querySelector<HTMLElement>('[part="title"]')!.click()
-    expect(el.shadowRoot!.querySelector('.month-cell')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('.month-cell').length).toBe(12)
     // open 态切属性（宿主动态切换）：months 子面板残留会让月网格与 caption 下拉并存
     el.setAttribute('caption-layout', 'dropdown')
     expect(el.shadowRoot!.querySelector('.month-cell')).toBeNull()
-    expect(el.shadowRoot!.querySelector('[part="caption-year"]')).not.toBeNull()
-    expect(el.shadowRoot!.querySelector('.day')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('[part="caption-year"]').length).toBe(1)
+    expect(el.shadowRoot!.querySelectorAll('.day').length).toBe(42)
   })
 })
 
@@ -1947,7 +1948,7 @@ describe('OASDatePicker 清空按钮键盘可达（I4）', () => {
     expect(clearBtn.tagName).toBe('BUTTON')
     expect(clearBtn.hasAttribute('tabindex')).toBe(false)
     expect(clearBtn.tabIndex).toBe(0)
-    expect((clearBtn.getAttribute('aria-label') ?? '').length).toBeGreaterThan(0)
+    expect(clearBtn.getAttribute('aria-label')).toBe('清除')
   })
 
   it('面板展开时清空按钮仍可聚焦（不移出 Tab 序）', () => {

@@ -50,7 +50,7 @@ describe('loadingBar 命令式 API', () => {
   it('start 渲染顶部进度条，默认无 position 属性（top 语义）', async () => {
     loadingBar.start()
     await Promise.resolve()
-    expect(document.body.querySelector('oas-loading-bar')).not.toBeNull()
+    expect(document.body.querySelectorAll('oas-loading-bar').length).toBe(1)
     expect(bar().hasAttribute('position')).toBe(false)
   })
 
@@ -72,7 +72,7 @@ describe('loadingBar 命令式 API', () => {
 
     loadingBar.finish() // 仍有一个会话活跃
     await Promise.resolve()
-    expect(document.body.querySelector('oas-loading-bar')).not.toBeNull()
+    expect(document.body.querySelectorAll('oas-loading-bar').length).toBe(1)
     expect(el.active).toBe(true)
 
     loadingBar.finish() // 最后一个 finish 触发收尾
@@ -105,7 +105,7 @@ describe('loadingBar 命令式 API', () => {
     loadingBar.finish()
     vi.advanceTimersByTime(100)
     await Promise.resolve()
-    expect(document.body.querySelector('oas-loading-bar')).not.toBeNull()
+    expect(document.body.querySelectorAll('oas-loading-bar').length).toBe(1)
     vi.advanceTimersByTime(400)
     await Promise.resolve()
     expect(document.body.querySelector('oas-loading-bar')).toBeNull()
@@ -136,7 +136,6 @@ describe('loadingBar 命令式 API', () => {
     loadingBar.start({ to: host })
     await Promise.resolve()
     const el = host.querySelector('oas-loading-bar')
-    expect(el).not.toBeNull()
     expect(el!.hasAttribute('local')).toBe(true)
     // 默认宿主（body 直接子级）不出现局部条
     expect(Array.from(document.body.children).some((n) => n.tagName === 'OAS-LOADING-BAR')).toBe(false)
@@ -148,7 +147,7 @@ describe('loadingBar 命令式 API', () => {
     document.body.appendChild(host)
     loadingBar.start({ to: '#sel-box' })
     await Promise.resolve()
-    expect(host.querySelector('oas-loading-bar')).not.toBeNull()
+    expect(host.querySelectorAll('oas-loading-bar').length).toBe(1)
     expect(() => loadingBar.start({ to: '#not-exist' })).toThrow()
   })
 
@@ -166,8 +165,8 @@ describe('loadingBar 命令式 API', () => {
     loadingBar.finish() // 默认宿主无会话 → 空操作
     vi.advanceTimersByTime(400)
     await Promise.resolve()
-    expect(a.querySelector('oas-loading-bar')).not.toBeNull()
-    expect(b.querySelector('oas-loading-bar')).not.toBeNull()
+    expect(a.querySelectorAll('oas-loading-bar').length).toBe(1)
+    expect(b.querySelectorAll('oas-loading-bar').length).toBe(1)
     expect(loadingBar.isActive(a)).toBe(true)
     expect(loadingBar.isActive(b)).toBe(true)
   })
@@ -184,7 +183,7 @@ describe('loadingBar 命令式 API', () => {
     vi.advanceTimersByTime(400)
     await Promise.resolve()
     expect(a.querySelector('oas-loading-bar')).toBeNull()
-    expect(b.querySelector('oas-loading-bar')).not.toBeNull()
+    expect(b.querySelectorAll('oas-loading-bar').length).toBe(1)
   })
 
   // ---------- P5 增量控制 ----------
@@ -219,7 +218,8 @@ describe('loadingBar 命令式 API', () => {
     await Promise.resolve()
     const el = bar()
     vi.advanceTimersByTime(650) // 约 2 拍
-    expect(Number(progressAttr(el))).toBeGreaterThan(0)
+    // 自动推进步长含随机抖动（Math.random 参与），无稳定精确值；下界 1 证明已推进，上界 90 由下一行断言覆盖。
+    expect(Number(progressAttr(el)), '650ms / 300ms 两拍后已有推进').toBeGreaterThanOrEqual(1)
     vi.advanceTimersByTime(60_000)
     expect(Number(progressAttr(el))).toBeLessThanOrEqual(90)
   })
@@ -264,7 +264,6 @@ describe('loadingBar 命令式 API', () => {
     expect(loadingBar.getEl()).toBeNull()
     loadingBar.start()
     const el = loadingBar.getEl()
-    expect(el).not.toBeNull()
     expect(el!.tagName).toBe('OAS-LOADING-BAR')
   })
 
@@ -279,7 +278,7 @@ describe('loadingBar 命令式 API', () => {
     expect(progressAttr(el)).toBe('100')
     expect(el.hasAttribute('data-leaving')).toBe(true)
     vi.advanceTimersByTime(100)
-    expect(document.body.querySelector('oas-loading-bar')).not.toBeNull()
+    expect(document.body.querySelectorAll('oas-loading-bar').length).toBe(1)
     vi.advanceTimersByTime(400)
     await Promise.resolve()
     expect(document.body.querySelector('oas-loading-bar')).toBeNull()
@@ -362,7 +361,6 @@ describe('loadingBar 命令式 API', () => {
     loadingBar.error()
     await Promise.resolve()
     const el = bar()
-    expect(el).not.toBeNull()
     expect(el.getAttribute('status')).toBe('error')
     expect(progressAttr(el)).toBe('100') // 直接满格，不经过 0→推进 的闪烁
     expect(el.hasAttribute('data-leaving')).toBe(true)

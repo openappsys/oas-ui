@@ -13,7 +13,7 @@ describe('OASSpin', () => {
   it('渲染加载指示器，size 默认中号', () => {
     const el = new OASSpin()
     document.body.appendChild(el)
-    expect(el.shadowRoot!.querySelector('[part="indicator"]')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('[part="indicator"]').length).toBe(1)
     expect(el.shadowRoot!.querySelector('[part="indicator"]')!.getAttribute('data-size')).toBe('medium')
   })
 
@@ -59,8 +59,8 @@ describe('OASSpin', () => {
     el.setAttribute('spinning', '')
     el.innerHTML = `<p>内容</p>`
     document.body.appendChild(el)
-    expect(el.shadowRoot!.querySelector('slot')).not.toBeNull()
-    expect(el.shadowRoot!.querySelector('[part="wrap"]')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('slot:not([name])').length, '默认插槽承载包裹内容').toBe(1)
+    expect(el.shadowRoot!.querySelectorAll('[part="wrap"]').length).toBe(1)
   })
 })
 
@@ -260,7 +260,6 @@ describe('OASSpin tip 加载文案', () => {
     el.innerHTML = '<p>内容</p>'
     document.body.appendChild(el)
     const body = el.shadowRoot!.querySelector('[part="body"]')!
-    expect(body).not.toBeNull()
     expect(el.shadowRoot!.querySelector('[part="indicator"]')!.parentElement).toBe(body)
   })
 })
@@ -280,7 +279,7 @@ describe('OASSpin 自定义指示器 icon 插槽', () => {
     document.body.appendChild(el)
     const indicator = el.shadowRoot!.querySelector('[part="indicator"]')!
     expect(indicator.classList.contains('custom-icon')).toBe(true)
-    expect(el.shadowRoot!.querySelector('slot[name="icon"]')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('slot[name="icon"]').length).toBe(1)
   })
 
   it('icon 插槽默认不旋转；rotate 属性开启旋转', () => {
@@ -528,7 +527,7 @@ describe('OASSpin fullscreen 全屏模式', () => {
   it('OASSpin.fullscreen() 命令式：挂载全屏实例，close() 移除', () => {
     const handle = OASSpin.fullscreen()
     const el = document.body.querySelector('oas-spin:last-child') as OASSpin
-    expect(el).not.toBeNull()
+    expect(el.tagName).toBe('OAS-SPIN')
     expect(el.hasAttribute('fullscreen')).toBe(true)
     expect(el.hasAttribute('spinning')).toBe(true)
     handle.close()
@@ -639,7 +638,7 @@ describe('OASSpin percent determinate 进度', () => {
     expect(indicator.getAttribute('aria-valuemax')).toBe('100')
     expect(indicator.getAttribute('aria-valuenow')).toBe('40')
     expect(indicator.classList.contains('determinate')).toBe(true)
-    expect(bar.getAttribute('stroke-dasharray')).not.toBeNull()
+    expect(Number(bar.getAttribute('stroke-dasharray'))).toBeCloseTo(C, 6)
     expect(Number(bar.getAttribute('stroke-dashoffset'))).toBeCloseTo(C * 0.6, 3)
   })
 
@@ -701,7 +700,7 @@ describe('OASSpin percent determinate 进度', () => {
     const now = () => Number(indicator.getAttribute('aria-valuenow') ?? '-1')
     expect(now()).toBeLessThanOrEqual(0)
     vi.advanceTimersByTime(600)
-    expect(now()).toBeGreaterThan(0)
+    expect(now(), '500ms 首拍：0 + max(1, 90 × 0.12) ≈ 10.8 → 11').toBe(11)
     for (let i = 0; i < 100; i++) vi.advanceTimersByTime(500)
     expect(now()).toBeLessThanOrEqual(90)
     // spinning 结束：停表并复位（再次激活从头推进，不接续 90）
@@ -710,7 +709,7 @@ describe('OASSpin percent determinate 进度', () => {
     el.setAttribute('spinning', '')
     vi.advanceTimersByTime(600)
     const restarted = now()
-    expect(restarted).toBeGreaterThan(0)
+    expect(restarted, '复位后首拍重新从 0 推进（非接续 90）').toBe(11)
     expect(restarted).toBeLessThan(90)
   })
 
@@ -729,7 +728,7 @@ describe('OASSpin percent determinate 进度', () => {
     // 兜底名与 valuenow 一致（不得冻结在首帧的 0%）
     expect(Number.isNaN(label)).toBe(false)
     expect(label).toBe(now)
-    expect(label).toBeGreaterThan(0)
+    expect(label, '1200ms 两拍：10.8 → 20.304 → 20').toBe(20)
   })
 
   it('percent 兜底可访问名：宿主 aria-label 在场时不写兜底；移除宿主名后兜底恢复', () => {

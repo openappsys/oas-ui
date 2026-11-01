@@ -27,9 +27,8 @@ describe('OASPopconfirm', () => {
     const el = mount({ open: '', title: '确认删除？' })
     await Promise.resolve()
     const p = pop(el)
-    expect(p).not.toBeNull()
     expect(p.textContent).toContain('确认删除？')
-    expect(el.shadowRoot!.querySelector('[part="ok"]')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('[part="ok"]').length).toBe(1)
   })
 
   it('点击确定派发 oas-ok 并关闭，detail.source 指向本实例（修复 shadow retarget）', async () => {
@@ -132,7 +131,6 @@ describe('OASPopconfirm', () => {
       const el = mount({ open: '' })
       await Promise.resolve()
       const arrow = pop(el).querySelector('[data-popper-arrow]') as HTMLElement
-      expect(arrow).not.toBeNull()
       expect(arrow.hidden).toBe(false)
     })
 
@@ -410,8 +408,8 @@ describe('OASPopconfirm', () => {
       const el = mount({ open: '', title: '确认' })
       await Promise.resolve()
       const labelledby = pop(el).getAttribute('aria-labelledby')
-      expect(labelledby).toBeTruthy()
-      expect(el.shadowRoot!.getElementById(labelledby!)).not.toBeNull()
+      expect(labelledby).toMatch(/^oas-popconfirm-title-[0-9a-z]+$/)
+      expect(el.shadowRoot!.querySelector('[part="title"]')!.id).toBe(labelledby)
     })
 
     it('打开时焦点移入气泡（ok 按钮优先）', async () => {
@@ -436,7 +434,7 @@ describe('OASPopconfirm', () => {
       await Promise.resolve()
       ;(el.querySelector('button') as HTMLElement).click()
       const custom = el.querySelector('[data-x="custom"]') as HTMLElement
-      expect(custom, 'slotted 自定义按钮存在').toBeTruthy()
+      expect(custom.textContent, 'slotted 自定义按钮存在').toBe('自定义')
       expect(document.activeElement, '焦点落在插槽内自定义按钮（light DOM）').toBe(custom)
       // 内置 ok 按钮已随 builtin-actions 隐藏，不持有焦点
       const builtin = el.shadowRoot!.querySelector('[part="ok"]') as HTMLElement
@@ -520,7 +518,7 @@ describe('OASPopconfirm', () => {
       const el = mount({ open: '' })
       await Promise.resolve()
       const icon = el.shadowRoot!.querySelector('[part="icon"]')!
-      expect(icon.querySelector('svg')).not.toBeNull()
+      expect(icon.querySelectorAll('svg').length).toBe(1)
     })
 
     it('hide-icon 隐藏图标区', async () => {
@@ -534,8 +532,8 @@ describe('OASPopconfirm', () => {
       await Promise.resolve()
       const icon = el.shadowRoot!.querySelector('[part="icon"]') as HTMLElement
       const slot = icon.querySelector('slot[name="icon"]') as HTMLSlotElement
-      expect(slot.assignedNodes().length).toBeGreaterThan(0)
-      expect(icon.querySelector('svg')).not.toBeNull() // 默认 svg 作为 slot fallback 保留在 DOM
+      expect(slot.assignedNodes().length).toBe(1)
+      expect(icon.querySelectorAll('svg').length).toBe(1) // 默认 svg 作为 slot fallback 保留在 DOM
     })
   })
 
@@ -556,7 +554,7 @@ describe('OASPopconfirm', () => {
       await Promise.resolve()
       const slot = el.shadowRoot!.querySelector<HTMLSlotElement>('slot[name="description"]')!
       const fallback = el.shadowRoot!.querySelector<HTMLElement>('.description-text')!
-      expect(slot.assignedNodes().length).toBeGreaterThan(0)
+      expect(slot.assignedNodes().length).toBe(1)
       expect(fallback.hidden).toBe(true)
     })
 
@@ -742,7 +740,7 @@ describe('OASPopconfirm', () => {
       await Promise.resolve()
       const slot = el.shadowRoot!.querySelector<HTMLSlotElement>('slot[name="title"]')!
       const fallback = el.shadowRoot!.querySelector<HTMLElement>('.title-text')!
-      expect(slot.assignedNodes().length).toBeGreaterThan(0)
+      expect(slot.assignedNodes().length).toBe(1)
       expect(fallback.hidden).toBe(true)
       // 宿主 title 仍被吸收（吸收状态机不变）
       expect(el.hasAttribute('title')).toBe(false)
@@ -756,7 +754,7 @@ describe('OASPopconfirm', () => {
       await Promise.resolve()
       const slot = el.shadowRoot!.querySelector<HTMLSlotElement>('slot[name="title"]')!
       const fallback = el.shadowRoot!.querySelector<HTMLElement>('.title-text')!
-      expect(slot.assignedNodes().length).toBeGreaterThan(0)
+      expect(slot.assignedNodes().length).toBe(1)
       expect(fallback.hidden).toBe(true)
       expect(el.hasAttribute('title')).toBe(false)
     })

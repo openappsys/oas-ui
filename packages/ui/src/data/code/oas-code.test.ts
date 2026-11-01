@@ -40,9 +40,9 @@ describe('OASCode', () => {
   it('js 语言高亮关键字/字符串/注释', () => {
     const el = mount({ code: JS_SRC, language: 'js' })
     const code = codeEl(el)
-    expect(code.querySelector('.tok-keyword')).not.toBeNull()
-    expect(code.querySelector('.tok-string')).not.toBeNull()
-    expect(code.querySelector('.tok-comment')).not.toBeNull()
+    expect(code.querySelectorAll('.tok-keyword').length, 'const/function/return').toBe(3)
+    expect(code.querySelectorAll('.tok-string').length, "'hi'").toBe(1)
+    expect(code.querySelectorAll('.tok-comment').length, '// 注释').toBe(1)
   })
 
   it('未知语言按纯文本渲染，不报错', () => {
@@ -93,12 +93,12 @@ describe('OASCode', () => {
     expect(style).not.toMatch(/\.line-number\s*\{[^}]*text-align:\s*right/)
     expect(style).not.toMatch(/\.lang\s*\{[^}]*margin-right/)
     // RTL 下渲染结构不抛错、行号仍在
-    expect(el.shadowRoot!.querySelector('[part="line-number"]')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('[part="line-number"]').length).toBe(2)
   })
 
   it('复制按钮默认显示，copyable=false 隐藏', () => {
     const el = mount({ code: 'hi' })
-    expect(el.shadowRoot!.querySelector('[part="copy"]')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('[part="copy"]').length).toBe(1)
     el.setAttribute('copyable', 'false')
     expect(el.shadowRoot!.querySelector('[part="copy"]')!.hasAttribute('hidden')).toBe(true)
   })
@@ -149,9 +149,9 @@ describe('OASCode', () => {
 
   it('json/html 语言分别高亮', () => {
     const jsonEl = mount({ code: '{"a": 1}', language: 'json' })
-    expect(jsonEl.shadowRoot!.querySelector('.tok-string')).not.toBeNull()
+    expect(jsonEl.shadowRoot!.querySelectorAll('.tok-string').length).toBe(1)
     const htmlEl = mount({ code: '<div class="x">hi</div>', language: 'html' })
-    expect(htmlEl.shadowRoot!.querySelector('.tok-tag')).not.toBeNull()
+    expect(htmlEl.shadowRoot!.querySelectorAll('.tok-tag').length).toBe(2)
   })
 
   it('code 变化增量更新内容', () => {
@@ -159,7 +159,7 @@ describe('OASCode', () => {
     const code = codeEl(el)
     el.setAttribute('code', 'const b = 2')
     expect(code).toBe(codeEl(el))
-    expect(code.querySelector('.tok-keyword')).not.toBeNull()
+    expect(code.querySelectorAll('.tok-keyword').length, 'const').toBe(1)
   })
 
   describe('inline 行内代码', () => {
@@ -177,7 +177,7 @@ describe('OASCode', () => {
 
     it('inline + language 仍高亮', () => {
       const el = mount({ code: 'const a = 1', language: 'js', inline: '' })
-      expect(el.shadowRoot!.querySelector('.tok-keyword')).not.toBeNull()
+      expect(el.shadowRoot!.querySelectorAll('.tok-keyword').length).toBe(1)
     })
   })
 
@@ -399,7 +399,6 @@ describe('OASCode', () => {
       const el = mount({ code: 'a\nb\nc\nd\ne', 'max-rows': '2' })
       expect(el.shadowRoot!.querySelectorAll('[part="line"]').length).toBe(2)
       const btn = el.shadowRoot!.querySelector<HTMLButtonElement>('[part="more-btn"]')!
-      expect(btn).not.toBeNull()
       expect(btn.textContent).toBe('展开')
       expect(btn.getAttribute('aria-expanded')).toBe('false')
     })

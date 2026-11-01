@@ -423,7 +423,6 @@ describe('OASTable windowed（服务端行窗口模式）', () => {
     const nameTd = rowsOf(el)[0]!.querySelector<HTMLTableCellElement>('td[data-col="name"]')!
     nameTd.dispatchEvent(new MouseEvent('dblclick', { bubbles: true, composed: true }))
     const input = nameTd.querySelector<HTMLInputElement>('input.cell-editor')
-    expect(input).not.toBeNull()
     input!.value = '改名'
     input!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
     expect(cellIdx, 'cell-click 绝对行号').toBe(10)
@@ -491,8 +490,8 @@ describe('OASTable windowed（服务端行窗口模式）', () => {
     // 降级：不渲染列窗口占位格（全列普通渲染）
     expect(el.shadowRoot!.querySelector('.col-virtual-placeholder')).toBeNull()
     // 行窗口照常：首帧 init 请求 + 已装载行渲染
-    expect(reqs.length).toBeGreaterThan(0)
-    expect(rowsOf(el).length).toBeGreaterThan(0)
+    expect(reqs.length, '首帧 init 请求一次').toBe(1)
+    expect(rowsOf(el).length, '已装载 5 行全部渲染').toBe(5)
     warn.mockRestore()
   })
 
@@ -568,7 +567,7 @@ describe('OASTable windowed（服务端行窗口模式）', () => {
       expect(sliceMsgs()[0], '告警含全量行数依据').toContain('total 10')
       expect(sliceMsgs()[0], '告警含越界行数').toContain('越界 18 行')
       const indexes = rowsOf(el).map((r) => Number(r.getAttribute('data-row-index')))
-      expect(indexes.length, '有渲染行（未装载区域占位留白）').toBeGreaterThan(0)
+      expect(indexes.length, '可视区内仅行 8 在 total 内').toBe(1)
       for (const n of indexes) {
         expect(n, `渲染行绝对行号 ${n} 应在 total 内`).toBeLessThan(10)
         expect(n, `渲染行绝对行号 ${n} 不应早于 window-start`).toBeGreaterThanOrEqual(8)
@@ -605,8 +604,7 @@ describe('OASTable windowed（服务端行窗口模式）', () => {
     // 宿主回填新切片（行3 仍在窗口内）：update 清空 tbody 曾把焦点一起拆掉
     el.setAttribute('data', slice(0, 40))
     const restored = el.shadowRoot!.activeElement as HTMLElement | null
-    expect(restored, '回填后焦点应恢复').toBeTruthy()
-    expect(restored!.tagName, '焦点应落在单元格上').toBe('TD')
+    expect(restored!.tagName, '回填后焦点应恢复且落在单元格上').toBe('TD')
     expect(restored!.closest('tr')!.getAttribute('data-key'), '应回锚到同一逻辑行（row-key）').toBe('行3')
     // gridPos 重映射：焦点回容器后按方向键应续接自锚行（而非切片首行）
     const wrap = wrapOf(el)
@@ -645,15 +643,14 @@ describe('OASTable windowed（服务端行窗口模式）', () => {
     el.setAttribute('window-start', '100')
     el.setAttribute('data', slice(100, 40))
     const td103 = nameTdOf('行103')!
-    expect(td103, '回填后行103 在渲染窗口内').toBeTruthy()
+    expect(td103.getAttribute('data-col'), '回填后行103 在渲染窗口内').toBe('name')
     td103.focus()
     expect(el.shadowRoot!.activeElement).toBe(td103)
     // 宿主再次回填（切片变化，行103 仍在新切片 [95,145) 内）→ 焦点应回锚到同一 row-key
     el.setAttribute('window-start', '95')
     el.setAttribute('data', slice(95, 50))
     const restored = el.shadowRoot!.activeElement as HTMLElement | null
-    expect(restored, '切片变化后焦点应恢复').toBeTruthy()
-    expect(restored!.closest('tr')!.getAttribute('data-key'), '回锚到同一逻辑行').toBe('行103')
+    expect(restored!.closest('tr')!.getAttribute('data-key'), '切片变化后回锚到同一逻辑行').toBe('行103')
     // 负例：换窗到行103 不在的切片（[95,103) 不含行103，但行97-102 仍可见）→ 不强行聚焦
     el.setAttribute('window-start', '95')
     el.setAttribute('data', slice(95, 8))
@@ -960,8 +957,7 @@ describe('OASTable windowed × 视觉映射（expand>12 请求映射）', () => 
     wrap.scrollTop = 4440
     wrap.dispatchEvent(new Event('scroll'))
     await flushRaf()
-    const scrollReq = reqs.find((r) => r.reason === 'scroll')
-    expect(scrollReq, '滚动后应派发 scroll 请求').toBeTruthy()
+    const scrollReq = reqs.find((r) => r.reason === 'scroll')!
     // start/end 仍是数据坐标（覆盖真实可见数据行 104..109 与 expand 属主 103..109）
     expect(scrollReq!.start, '映射后数据 start=103-8=95（旧均匀网格 99）').toBe(95)
     expect(scrollReq!.end, '映射后数据 end=110+8=118').toBe(118)
@@ -1123,7 +1119,6 @@ describe('OASTable windowed × 可选视觉协议（visual-total / visual-start�
       const details: Array<{ key: string; expanded: boolean }> = []
       el.addEventListener('oas-expand', (e) => details.push((e as CustomEvent).detail))
       const btn = el.shadowRoot!.querySelector<HTMLElement>('tr[data-key="行51"] .expand-toggle-cell button.toggle')!
-      expect(btn, '行51 有展开钮').toBeTruthy()
       btn.click()
       expect(details, '派发一次 oas-expand（宿主通道）').toEqual([{ key: '行51', expanded: true }])
       expect(el.getAttribute('expanded'), '本地不改 expanded（宿主完全控制）').toBe('')
@@ -1162,7 +1157,7 @@ describe('OASTable windowed × 可选视觉协议（visual-total / visual-start�
       )!
       btn2.click()
       expect(el2.el.getAttribute('expanded'), '未提供协议：本地 toggle 照旧写 expanded').toBe('行51')
-      expect(el2.el.shadowRoot!.querySelector('tbody tr.expand-row'), '未提供协议：本地展开渲染').not.toBeNull()
+      expect(el2.el.shadowRoot!.querySelectorAll('tbody tr.expand-row').length, '未提供协议：本地展开渲染').toBe(1)
       expect(warn2.mock.calls.filter((c) => String(c[0]).includes('视觉协议')).length, '未提供协议：无协议告警').toBe(0)
       warn2.mockRestore()
     } finally {
@@ -1188,7 +1183,7 @@ describe('OASTable windowed × 可选视觉协议（visual-total / visual-start�
       warn.mockClear()
       const c = mountVisual({ 'visual-total': '50' })
       expect(caseMsgs().length, 'visual-total < 数据 total → 告警一次').toBe(1)
-      expect(trsOf(c.el).length).toBeGreaterThan(0)
+      expect(trsOf(c.el).length, '回落后仍渲染 tbody 行（数据行 + expand 行）').toBe(2)
       // 实例级去重：同实例重渲染不重复告警
       c.el.setAttribute('data', c.el.getAttribute('data')!)
       expect(caseMsgs().length, '同实例只提示一次').toBe(1)
@@ -1223,7 +1218,7 @@ describe('OASTable windowed × 可选视觉协议（visual-total / visual-start�
         rowsOf(el).map((r) => r.getAttribute('data-row-index')),
         '界外条目 data52..55 不渲染',
       ).toEqual(['50', '51'])
-      expect(el.shadowRoot!.querySelector('tbody tr.expand-row'), '窗口内的 expand51 照常渲染').not.toBeNull()
+      expect(el.shadowRoot!.querySelectorAll('tbody tr.expand-row').length, '窗口内的 expand51 照常渲染').toBe(1)
       // ARIA 全量口径不变
       expect(el.shadowRoot!.querySelector('table')!.getAttribute('aria-rowcount')).toBe('60')
       // 重渲染不重复告警

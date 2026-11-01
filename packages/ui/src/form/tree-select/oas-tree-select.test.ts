@@ -385,13 +385,13 @@ describe('OASTreeSelect 懒加载（lazy / load）', () => {
     el.addEventListener('oas-load', (e: Event) => (eventValue = (e as CustomEvent).detail.value))
     el.load = (payload: { value: string }) => (propValue = payload.value)
     trigger(el).click()
-    expect(nodes(el)[0]!.querySelector('.toggle')).toBeTruthy() // 未加载节点有展开箭头
+    expect(nodes(el)[0]!.querySelectorAll('.toggle').length).toBe(1) // 未加载节点有展开箭头
     nodes(el)[0]!
       .querySelector('.toggle')!
       .dispatchEvent(new MouseEvent('click', { bubbles: true }))
     expect(eventValue).toBe('root')
     expect(propValue).toBe('root')
-    expect(el.shadowRoot!.querySelector('.toggle-spinner')).toBeTruthy()
+    expect(el.shadowRoot!.querySelectorAll('.toggle-spinner').length).toBe(1)
   })
 
   it('宿主回填 children 后 spinner 消失、子节点渲染', () => {
@@ -725,7 +725,7 @@ describe('OASTreeSelect 面板增强（loading / empty / header / footer / node 
     el.innerHTML = '<template slot="empty"><i class="custom-empty">无</i></template>'
     document.body.appendChild(el)
     trigger(el).click()
-    expect(el.shadowRoot!.querySelector('.empty .custom-empty')).toBeTruthy()
+    expect(el.shadowRoot!.querySelectorAll('.empty .custom-empty').length).toBe(1)
   })
 
   it('template[slot=header] / [slot=footer]：面板头尾内容', () => {
@@ -739,9 +739,9 @@ describe('OASTreeSelect 面板增强（loading / empty / header / footer / node 
     const header = el.shadowRoot!.querySelector('.panel-header') as HTMLElement
     const footer = el.shadowRoot!.querySelector('.panel-footer') as HTMLElement
     expect(header.hidden).toBe(false)
-    expect(header.querySelector('.hd')).toBeTruthy()
+    expect(header.querySelectorAll('.hd').length).toBe(1)
     expect(footer.hidden).toBe(false)
-    expect(footer.querySelector('.ft')).toBeTruthy()
+    expect(footer.querySelectorAll('.ft').length).toBe(1)
     // 无模板时隐藏
     const el2 = mount()
     expect((el2.shadowRoot!.querySelector('.panel-header') as HTMLElement).hidden).toBe(true)
@@ -757,7 +757,7 @@ describe('OASTreeSelect 面板增强（loading / empty / header / footer / node 
     expect(details.length).toBeGreaterThanOrEqual(2)
     expect((details[0]!['node'] as Record<string, unknown>).value).toBe('fe')
     expect(details[0]!['level']).toBe(1)
-    expect(details[0]!['element']).toBeTruthy()
+    expect((details[0]!['element'] as HTMLElement).className).toBe('label')
   })
 
   it('template[slot=node]：自定义节点模板 + data-node-label 绑定', () => {
@@ -767,7 +767,7 @@ describe('OASTreeSelect 面板增强（loading / empty / header / footer / node 
     document.body.appendChild(el)
     trigger(el).click()
     const label = byLabel(el, '前端').querySelector('.label')!
-    expect(label.querySelector('.node-custom')).toBeTruthy()
+    expect(label.querySelectorAll('.node-custom').length).toBe(1)
     expect(label.querySelector('[data-node-label]')!.textContent).toBe('前端')
   })
 })
@@ -866,7 +866,7 @@ describe('OASTreeSelect 虚拟滚动（virtual）', () => {
     }
     expect(btn.getAttribute('aria-activedescendant')).toBe('tree-opt-30')
     const vp = vlistOf(el).shadowRoot!.querySelector<HTMLElement>('.viewport')!
-    expect(vp.scrollTop).toBeGreaterThan(0)
+    expect(vp.scrollTop).toBe(828)
     // happy-dom 不自动触发 scroll：手动派发后窗口重算，高亮项应在窗口内
     vp.dispatchEvent(new Event('scroll'))
     await flushRaf()
@@ -997,7 +997,6 @@ describe('OASTreeSelect 移动端底部抽屉（bottom-sheet 接入）', () => {
 
   it('模板恒包 oas-bottom-sheet（SSR/客户端结构一致），PC 默认 passive 透传', () => {
     const el = mount()
-    expect(sheet(el)).toBeTruthy()
     expect(sheet(el).getAttribute('part')).toBe('sheet')
     expect(sheet(el).hasAttribute('passive')).toBe(true)
     expect(sheet(el).contains(dropdown(el))).toBe(true)
@@ -1132,7 +1131,7 @@ describe('OASTreeSelect form-associated（原生表单集成）', () => {
     const missing = fake.setValidity.mock.calls.at(-1)
     expect(missing?.[0]).toEqual({ valueMissing: true })
     expect(typeof missing?.[1]).toBe('string')
-    expect((missing?.[1] as string).length).toBeGreaterThan(0)
+    expect(missing?.[1] as string).toMatch(/\S/)
     pickReact(el)
     expect(fake.setValidity).toHaveBeenLastCalledWith({})
   })
@@ -1281,7 +1280,7 @@ describe('OASTreeSelect 长尾组（能力缺口 P2）', () => {
     document.body.appendChild(el)
     const box = trigger(el).querySelector<HTMLElement>('.suffix-icon')!
     expect(box.hidden).toBe(false)
-    expect(box.querySelector('.my-ic')).not.toBeNull()
+    expect(box.querySelectorAll('.my-ic').length).toBe(1)
     expect(trigger(el).querySelector('.chevron')!.hasAttribute('hidden')).toBe(true)
   })
 })
@@ -1552,7 +1551,7 @@ describe('OASTreeSelect 清空按钮键盘可达（I4）', () => {
     const clearBtn = el.shadowRoot!.querySelector<HTMLElement>('.clear-btn')!
     expect(clearBtn.getAttribute('tabindex')).toBe('0')
     expect(clearBtn.tabIndex).toBe(0)
-    expect((clearBtn.getAttribute('aria-label') ?? '').length).toBeGreaterThan(0)
+    expect(clearBtn.getAttribute('aria-label')).toBe('清除')
     clearBtn.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }))
     expect(el.getAttribute('value')).toBe('')
     expect(el.shadowRoot!.activeElement, '清空后焦点交还 trigger').toBe(trigger(el))

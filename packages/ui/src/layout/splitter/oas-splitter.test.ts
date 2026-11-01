@@ -44,7 +44,7 @@ describe('OASSplitter', () => {
 
   it('渲染分割条', () => {
     const el = mount()
-    expect(el.shadowRoot!.querySelector('[part="splitter"]')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('[part="splitter"]').length).toBe(1)
   })
 
   it('方向键调整比例并派发 oas-resize', () => {
@@ -147,7 +147,6 @@ describe('OASSplitter', () => {
     el.setAttribute('percent', '50')
     el.setAttribute('collapsible', '')
     const btn = collapseBtnOf(el)
-    expect(btn).not.toBeNull()
     expect(btn.getAttribute('aria-label')).toBe('收起面板')
     const left = el.shadowRoot!.querySelector('.pane:first-of-type') as HTMLElement
     let detail: unknown
@@ -239,10 +238,10 @@ describe('OASSplitter', () => {
     const el = mount()
     const splitter = el.shadowRoot!.querySelector('[part="splitter"]')!
     // 无 handle：默认 grip 圆点
-    expect(splitter.querySelector('.grip')).not.toBeNull()
+    expect(splitter.querySelectorAll('.grip').length).toBe(1)
     // 有 handle：分隔条内 slot 分发自定义内容
     el.innerHTML = '<div slot="left">左</div><div slot="right">右</div><span slot="handle" class="custom-dot">·</span>'
-    expect(splitter.querySelector('slot[name="handle"]')).not.toBeNull()
+    expect(splitter.querySelectorAll('slot[name="handle"]').length).toBe(1)
     expect(el.querySelector('[slot="handle"]')?.textContent).toBe('·')
     // handle 不影响拖拽
     Object.defineProperty(el, 'clientWidth', { value: 1000, configurable: true })
@@ -338,8 +337,8 @@ describe('OASSplitter', () => {
     const panes = el.shadowRoot!.querySelectorAll('.pane')
     const btn0 = collapseBtnOf(el, 0)
     const btn1 = collapseBtnOf(el, 1)
-    expect(btn0).not.toBeNull()
-    expect(btn1).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('.collapse-btn').length, '每个分隔条各一个折叠按钮').toBe(2)
+    expect([btn0, btn1].map((b) => b.getAttribute('data-splitter-index'))).toEqual(['0', '1'])
     btn0.click()
     expect((panes[0] as HTMLElement).style.flex).toBe('0 0 0%')
     expect(el.getAttribute('sizes')).toBe('0,70,30')
@@ -405,8 +404,8 @@ describe('OASSplitter', () => {
     const el = mount()
     expect(el.shadowRoot!.querySelectorAll('.pane').length).toBe(2)
     expect(el.shadowRoot!.querySelectorAll('[part="splitter"]').length).toBe(1)
-    expect(el.shadowRoot!.querySelector('[part="pane-left"]')).not.toBeNull()
-    expect(el.shadowRoot!.querySelector('[part="pane-right"]')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('[part="pane-left"]').length).toBe(1)
+    expect(el.shadowRoot!.querySelectorAll('[part="pane-right"]').length).toBe(1)
   })
 
   it('折叠按钮与分隔条同级：不是 separator 后代（axe nested-interactive 回归固化）', () => {
@@ -835,7 +834,10 @@ describe('OASSplitter sizes property（框架字符串/数组双通道）', () =
       expect(parseFloat((panes[0] as HTMLElement).style.flex.split(' ')[2] ?? '')).toBeCloseTo(33.33, 1)
       el.sizes = [30, -1, 70]
       expect(parseFloat((panes[0] as HTMLElement).style.flex.split(' ')[2] ?? '')).toBeCloseTo(33.33, 1)
-      expect(warn.mock.calls.filter((c) => String(c[0]).includes('oas-splitter')).length).toBeGreaterThan(0)
+      expect(
+        warn.mock.calls.filter((c) => String(c[0]).includes('oas-splitter')).length,
+        '两次非法 sizes 各告警一次',
+      ).toBe(2)
     } finally {
       warn.mockRestore()
     }
@@ -1475,7 +1477,8 @@ describe('OASSplitter multi 删栏收敛（M9 回归）', () => {
     collapseBtnOf(el, 1).click()
     // PERSIST_DELAY=120ms 合并窗口：等落盘
     await new Promise<void>((resolve) => setTimeout(resolve, 200))
-    expect(window.localStorage.getItem('__m9_store__'), '折叠已落盘').toBeTruthy()
+    const stored = snapshotOf(window.localStorage.getItem('__m9_store__'))
+    expect(stored?.collapsed, '折叠已落盘').toEqual([1])
     // 删第三栏：越界折叠收敛后必须重新落盘（否则下次两面板挂载整份拒收、用户布局被重置）
     el.children[2]!.remove()
     await new Promise<void>((resolve) => setTimeout(resolve, 300))

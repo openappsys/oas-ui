@@ -78,9 +78,9 @@ describe('OASJsonViewer 数据通道', () => {
     el.addEventListener('oas-parse-error', (e) => errors.push((e as CustomEvent).detail))
     el.setAttribute('text', '{bad')
     document.body.appendChild(el)
-    expect(el.shadowRoot!.querySelector('[part="error"]')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('[part="error"]').length).toBe(1)
     expect(errors).toHaveLength(1)
-    expect((errors[0] as { message: string }).message).toBeTruthy()
+    expect((errors[0] as { message: string }).message).toMatch(/\S/)
     el.data = { ok: 1 }
     expect(el.shadowRoot!.querySelector('[part="error"]')).toBeNull()
     expect(paths(el)).toEqual(['$', "$['ok']"])
@@ -93,7 +93,7 @@ describe('OASJsonViewer 数据通道', () => {
     expect(() => {
       el.data = deep
     }).not.toThrow()
-    expect(el.shadowRoot!.querySelector('[part="error"]')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('[part="error"]').length).toBe(1)
     expect(el.shadowRoot!.querySelector('[part="error"]')!.textContent).toContain(t('jsonViewer.tooDeep'))
     el.data = { shallow: true }
     expect(el.shadowRoot!.querySelector('[part="error"]')).toBeNull()
@@ -120,11 +120,11 @@ describe('OASJsonViewer 数据通道', () => {
 
   it('空数据渲染空态，错误/空态不用 tree 角色（避免 aria-required-children）', () => {
     const el = mount()
-    expect(el.shadowRoot!.querySelector('[part="empty"]')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('[part="empty"]').length).toBe(1)
     expect(tree(el).getAttribute('role')).toBe('group')
 
     const invalid = mount({ text: '{bad' })
-    expect(invalid.shadowRoot!.querySelector('[part="error"]')).not.toBeNull()
+    expect(invalid.shadowRoot!.querySelectorAll('[part="error"]').length).toBe(1)
     expect(tree(invalid).getAttribute('role')).toBe('group')
   })
 })
@@ -214,7 +214,7 @@ describe('OASJsonViewer 展开受控/非受控', () => {
     const viewport = tree(el)
     viewport.scrollTop = 0
     el.search = '9999'
-    expect(viewport.scrollTop).toBeGreaterThan(0)
+    expect(viewport.scrollTop).toBe(199940)
   })
 
   it('受控 scrollToPath 的 transient 可被 collapseAll 收回', () => {
@@ -381,7 +381,7 @@ describe('OASJsonViewer 搜索与复制', () => {
     const changes: Array<{ query: string; matches: number; activeIndex: number }> = []
     el.addEventListener('oas-search-change', (e) => changes.push((e as CustomEvent).detail))
     el.setAttribute('search', 'a')
-    expect(changes.length).toBeGreaterThan(0)
+    expect(changes.length, 'search 设置派发一次').toBe(1)
     el.removeAttribute('search')
     expect(changes.at(-1)).toEqual({ query: '', matches: 0, activeIndex: -1 })
   })
@@ -482,8 +482,8 @@ describe('OASJsonViewer 键盘与虚拟滚动', () => {
     viewport.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }))
     expect(rows(el).length).toBeGreaterThan(1)
     const activeId = viewport.getAttribute('aria-activedescendant')
-    expect(activeId).toBeTruthy()
-    expect(el.shadowRoot!.getElementById(activeId!)).not.toBeNull()
+    expect(activeId).toMatch(/^oas-json-row-\d+$/)
+    expect(el.shadowRoot!.getElementById(activeId!)!.getAttribute('role')).toBe('treeitem')
     viewport.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true }))
     expect(rows(el)).toHaveLength(1)
   })
@@ -492,7 +492,7 @@ describe('OASJsonViewer 键盘与虚拟滚动', () => {
     const values = Array.from({ length: 10_000 }, (_, i) => i)
     const el = mount({ text: JSON.stringify(values), height: '200', 'row-height': '20' })
     const initial = rows(el).length
-    expect(initial).toBeGreaterThan(0)
+    expect(initial, '视口 10 行 + 双侧 buffer').toBe(16)
     expect(initial).toBeLessThan(40)
     const viewport = tree(el)
     viewport.scrollTop = 4000
@@ -516,7 +516,7 @@ describe('OASJsonViewer 键盘与虚拟滚动', () => {
     expect(paths(el)[0]).not.toBe('$')
 
     el.search = '999'
-    expect(viewport.scrollTop).toBeGreaterThan(0)
+    expect(viewport.scrollTop).toBe(19860)
     expect(paths(el)).toContain('$[999]')
 
     el.removeAttribute('search')

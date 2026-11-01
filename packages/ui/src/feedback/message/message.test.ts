@@ -35,7 +35,6 @@ describe('message 命令式 API', () => {
     message.success('操作成功')
     await Promise.resolve()
     const msg = document.body.querySelector('oas-message')!
-    expect(msg).not.toBeNull()
     expect(msg.shadowRoot!.textContent).toContain('操作成功')
     expect(msg.getAttribute('type')).toBe('success')
     vi.advanceTimersByTime(3000)
@@ -47,7 +46,7 @@ describe('message 命令式 API', () => {
     message.error('出错了')
     await Promise.resolve()
     const msg = document.body.querySelector('oas-message')!
-    expect(msg.shadowRoot!.querySelector('[role="alert"]')).not.toBeNull()
+    expect(msg.shadowRoot!.querySelector<HTMLElement>('[role="alert"]')!.getAttribute('role')).toBe('alert')
   })
 
   it('success 类型颜色选择器从 host 属性命中（type 设在 host 上）', async () => {
@@ -373,7 +372,7 @@ describe('P2 loading 类型', () => {
     expect(el.shadowRoot!.querySelector<HTMLElement>('[part="spinner"]')!.style.display).not.toBe('none')
     vi.advanceTimersByTime(60000)
     await Promise.resolve()
-    expect(document.body.querySelector('oas-message')).not.toBeNull()
+    expect(document.body.querySelectorAll('oas-message').length).toBe(1)
   })
 
   it('loading 与 update 组合成轻量异步流', async () => {
@@ -443,14 +442,14 @@ describe('P4 hover/focus/页面隐藏暂停与编程式 pause/resume', () => {
     expect(vi.getTimerCount()).toBe(0)
     vi.advanceTimersByTime(2000)
     await Promise.resolve()
-    expect(document.body.querySelector('oas-message')).not.toBeNull()
+    expect(document.body.querySelectorAll('oas-message').length).toBe(1)
     el.dispatchEvent(new Event('mouseleave'))
     expect(el.hasAttribute('paused')).toBe(false)
     // 剩余时长记账：恢复后仍需完整 3000ms 才关闭
     expect(vi.getTimerCount()).toBe(1)
     vi.advanceTimersByTime(2999)
     await Promise.resolve()
-    expect(document.body.querySelector('oas-message')).not.toBeNull()
+    expect(document.body.querySelectorAll('oas-message').length).toBe(1)
     vi.advanceTimersByTime(2)
     await Promise.resolve()
     expect(document.body.querySelector('oas-message')).toBeNull()
@@ -468,7 +467,7 @@ describe('P4 hover/focus/页面隐藏暂停与编程式 pause/resume', () => {
     // 已过 1000ms，剩余 2000ms
     vi.advanceTimersByTime(1999)
     await Promise.resolve()
-    expect(document.body.querySelector('oas-message')).not.toBeNull()
+    expect(document.body.querySelectorAll('oas-message').length).toBe(1)
     vi.advanceTimersByTime(2)
     await Promise.resolve()
     expect(document.body.querySelector('oas-message')).toBeNull()
@@ -493,7 +492,7 @@ describe('P4 hover/focus/页面隐藏暂停与编程式 pause/resume', () => {
     expect(vi.getTimerCount()).toBe(0)
     vi.advanceTimersByTime(3000)
     await Promise.resolve()
-    expect(document.body.querySelector('oas-message')).not.toBeNull()
+    expect(document.body.querySelectorAll('oas-message').length).toBe(1)
     el.dispatchEvent(new Event('focusout'))
     vi.advanceTimersByTime(3000)
     await Promise.resolve()
@@ -512,7 +511,7 @@ describe('P4 hover/focus/页面隐藏暂停与编程式 pause/resume', () => {
     expect(el.hasAttribute('paused')).toBe(true)
     vi.advanceTimersByTime(3000)
     await Promise.resolve()
-    expect(document.body.querySelector('oas-message')).not.toBeNull()
+    expect(document.body.querySelectorAll('oas-message').length).toBe(1)
     Object.defineProperty(document, 'visibilityState', {
       get: () => 'visible',
       configurable: true,
@@ -533,7 +532,7 @@ describe('P4 hover/focus/页面隐藏暂停与编程式 pause/resume', () => {
     expect(vi.getTimerCount()).toBe(0)
     vi.advanceTimersByTime(5000)
     await Promise.resolve()
-    expect(document.body.querySelector('oas-message')).not.toBeNull()
+    expect(document.body.querySelectorAll('oas-message').length).toBe(1)
     handle.resume()
     vi.advanceTimersByTime(3000)
     await Promise.resolve()
@@ -744,7 +743,7 @@ describe('P8 进出场动画', () => {
     const box = el.shadowRoot!.querySelector<HTMLElement>('.box')!
     expect(box.classList.contains('leaving')).toBe(true)
     // 动画期间仍在 DOM
-    expect(document.body.querySelector('oas-message')).not.toBeNull()
+    expect(document.body.querySelectorAll('oas-message').length).toBe(1)
     vi.advanceTimersByTime(EXIT_FALLBACK)
     await Promise.resolve()
     expect(document.body.querySelector('oas-message')).toBeNull()
@@ -1056,7 +1055,7 @@ describe('P15 声明式元素用法', () => {
     document.body.appendChild(el)
     await Promise.resolve()
     const slot = el.shadowRoot!.querySelector<HTMLSlotElement>('slot[name="content"]')!
-    expect(slot.assignedNodes().length).toBeGreaterThan(0)
+    expect(slot.assignedNodes().length).toBe(1)
     expect(el.shadowRoot!.querySelector<HTMLElement>('.text-inner')!.hidden).toBe(true)
   })
 })
