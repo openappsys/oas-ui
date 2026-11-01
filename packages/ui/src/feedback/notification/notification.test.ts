@@ -17,7 +17,6 @@ describe('notification 命令式 API', () => {
     notification.success({ title: '成功', description: '操作已完成' })
     await Promise.resolve()
     const el = document.body.querySelector('oas-notification')!
-    expect(el).not.toBeNull()
     const sr = el.shadowRoot!
     expect(sr.textContent).toContain('成功')
     expect(sr.textContent).toContain('操作已完成')
@@ -179,7 +178,7 @@ describe('notification 命令式 API', () => {
       document.body.appendChild(el)
       const slot = el.shadowRoot!.querySelector<HTMLSlotElement>('slot[name="title"]')!
       const fallback = el.shadowRoot!.querySelector<HTMLElement>('.title-text')!
-      expect(slot.assignedNodes().length).toBeGreaterThan(0)
+      expect(slot.assignedNodes().length).toBe(1)
       expect(fallback.hidden).toBe(true)
       // 宿主 title 仍被吸收（吸收状态机不变）
       expect(el.hasAttribute('title')).toBe(false)
@@ -192,7 +191,7 @@ describe('notification 命令式 API', () => {
       document.body.appendChild(el)
       const slot = el.shadowRoot!.querySelector<HTMLSlotElement>('slot[name="title"]')!
       const fallback = el.shadowRoot!.querySelector<HTMLElement>('.title-text')!
-      expect(slot.assignedNodes().length).toBeGreaterThan(0)
+      expect(slot.assignedNodes().length).toBe(1)
       expect(fallback.hidden).toBe(true)
       expect(el.hasAttribute('title')).toBe(false)
     })
@@ -220,7 +219,7 @@ describe('notification 命令式 API', () => {
       // 暂停期间时间流逝不关闭
       vi.advanceTimersByTime(4000)
       await Promise.resolve()
-      expect(document.body.querySelector('oas-notification')).not.toBeNull()
+      expect(document.body.querySelectorAll('oas-notification').length).toBe(1)
     })
 
     it('mouseleave 恢复：剩余时间继续倒计时后关闭', async () => {
@@ -236,7 +235,7 @@ describe('notification 命令式 API', () => {
       // 剩余 3000ms：2999 不关，3000 关
       vi.advanceTimersByTime(2999)
       await Promise.resolve()
-      expect(document.body.querySelector('oas-notification')).not.toBeNull()
+      expect(document.body.querySelectorAll('oas-notification').length).toBe(1)
       vi.advanceTimersByTime(1)
       await Promise.resolve()
       expect(document.body.querySelector('oas-notification')).toBeNull()
@@ -335,7 +334,7 @@ describe('notification 命令式 API', () => {
       notification.info({ title: 'x' })
       await Promise.resolve()
       const el = document.body.querySelector('oas-notification')!
-      expect(el.shadowRoot!.querySelector('[part="close"]')).not.toBeNull()
+      expect(el.shadowRoot!.querySelectorAll('[part="close"]').length).toBe(1)
     })
 
     it('closable=false 隐藏关闭按钮', async () => {
@@ -355,7 +354,7 @@ describe('notification 命令式 API', () => {
       el.innerHTML = '<span slot="icon">🔔</span>'
       document.body.appendChild(el)
       const slot = el.shadowRoot!.querySelector<HTMLSlotElement>('slot[name="icon"]')!
-      expect(slot.assignedNodes().length).toBeGreaterThan(0)
+      expect(slot.assignedNodes().length).toBe(1)
       el.remove()
     })
 
@@ -375,7 +374,7 @@ describe('notification 命令式 API', () => {
       el.innerHTML = '<span slot="close-icon">关闭</span>'
       document.body.appendChild(el)
       const slot = el.shadowRoot!.querySelector<HTMLSlotElement>('slot[name="close-icon"]')!
-      expect(slot.assignedNodes().length).toBeGreaterThan(0)
+      expect(slot.assignedNodes().length).toBe(1)
       expect(slot.textContent).toBe('✕') // fallback 保持
       el.remove()
     })
@@ -433,7 +432,7 @@ describe('notification 命令式 API', () => {
       const footer = el.shadowRoot!.querySelector<HTMLElement>('[part="footer"]')!
       expect(footer.hidden).toBe(false)
       const slot = el.shadowRoot!.querySelector<HTMLSlotElement>('slot[name="footer"]')!
-      expect(slot.assignedNodes().length).toBeGreaterThan(0)
+      expect(slot.assignedNodes().length).toBe(1)
       el.remove()
     })
 
@@ -471,7 +470,7 @@ describe('notification 命令式 API', () => {
       el.innerHTML = '<div slot="content">富内容</div>'
       document.body.appendChild(el)
       const slot = el.shadowRoot!.querySelector<HTMLSlotElement>('slot[name="content"]')!
-      expect(slot.assignedNodes().length).toBeGreaterThan(0)
+      expect(slot.assignedNodes().length).toBe(1)
       expect(el.shadowRoot!.querySelector('.desc-text')!.textContent).toBe('属性文本')
       el.remove()
     })
@@ -501,7 +500,7 @@ describe('notification 命令式 API', () => {
       el.setAttribute('duration', '5000')
       vi.advanceTimersByTime(2000)
       await Promise.resolve()
-      expect(document.body.querySelector('oas-notification')).not.toBeNull()
+      expect(document.body.querySelectorAll('oas-notification').length).toBe(1)
       vi.advanceTimersByTime(3000)
       await Promise.resolve()
       expect(document.body.querySelector('oas-notification')).toBeNull()
@@ -599,7 +598,7 @@ describe('notification 命令式 API', () => {
       document.body.appendChild(host)
       notification.info({ title: 'x', duration: 0, container: host })
       await Promise.resolve()
-      expect(host.querySelector('oas-notification')).not.toBeNull()
+      expect(host.querySelectorAll('oas-notification').length).toBe(1)
       // 默认栈（body 直属）里没有通知
       expect(document.body.querySelector(':scope > div.oas-notification-stack > oas-notification')).toBeNull()
       host.remove()
@@ -678,7 +677,6 @@ describe('notification 命令式 API', () => {
       const collapsed = els.filter((el) => el.classList.contains('oas-notification-collapsed'))
       expect(collapsed.length).toBe(3) // 最新 1 条显示，旧 3 条折叠
       const badge = stack.querySelector<HTMLButtonElement>('.stack-badge')
-      expect(badge).not.toBeNull()
       expect(badge!.textContent).toBe('+3')
       expect(badge!.hidden).toBe(false)
     })
@@ -717,7 +715,7 @@ describe('notification 命令式 API', () => {
           el.classList.contains('oas-notification-collapsed'),
         ).length,
       ).toBe(0)
-      expect(stack.querySelector<HTMLElement>('.stack-badge')!.hidden ?? false).toBeTruthy()
+      expect(stack.querySelector<HTMLElement>('.stack-badge')!.hidden).toBe(true)
     })
 
     it('collapsible：自定义 threshold', async () => {
@@ -746,7 +744,6 @@ describe('notification 命令式 API', () => {
       expect(stack.className).toContain('stack-peek')
       // peek 展开规则注入在全局 style（栈容器为普通 div，无 shadow）
       const globalStyle = document.querySelector('style[data-oas-notification-stack]')!
-      expect(globalStyle).not.toBeNull()
       expect(globalStyle.textContent).toContain('.stack-peek')
       expect(globalStyle.textContent).toContain(':not(:last-of-type)')
       expect(globalStyle.textContent).toContain(':hover')
@@ -798,7 +795,7 @@ describe('notification 命令式 API', () => {
       await Promise.resolve()
       vi.advanceTimersByTime(2000)
       await Promise.resolve()
-      expect(document.body.querySelector('oas-notification')).not.toBeNull()
+      expect(document.body.querySelectorAll('oas-notification').length).toBe(1)
       vi.advanceTimersByTime(3500)
       await Promise.resolve()
       expect(document.body.querySelector('oas-notification')).toBeNull()
@@ -870,7 +867,7 @@ describe('notification 命令式 API', () => {
       expect(el.shadowRoot!.querySelector<HTMLElement>('[part="close"]')!.hidden).toBe(true)
       vi.advanceTimersByTime(60000)
       await Promise.resolve()
-      expect(document.body.querySelector('oas-notification')).not.toBeNull()
+      expect(document.body.querySelectorAll('oas-notification').length).toBe(1)
     })
 
     it('promise resolve：loading 切 success，4500ms 后自动关闭', async () => {

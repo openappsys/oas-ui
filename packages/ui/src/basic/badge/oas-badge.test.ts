@@ -167,7 +167,7 @@ describe('OASBadge ribbon', () => {
     el.innerHTML = '<span slot="ribbon">HOT</span>'
     await new Promise((r) => setTimeout(r, 0))
     expect(ribbon(el)!.hidden).toBe(false)
-    expect(ribbonSlot(el)!.assignedNodes().length).toBeGreaterThan(0)
+    expect(ribbonSlot(el)!.assignedNodes().length).toBe(1)
   })
 
   it('text 属性写入兜底元素；slot 有内容时兜底隐藏、assigned 优先', async () => {
@@ -176,7 +176,7 @@ describe('OASBadge ribbon', () => {
     expect(ribbonFallback(el)!.hidden).toBe(false)
     el.innerHTML = '<em slot="ribbon">slot</em>'
     await new Promise((r) => setTimeout(r, 0))
-    expect(ribbonSlot(el)!.assignedNodes().length).toBeGreaterThan(0)
+    expect(ribbonSlot(el)!.assignedNodes().length).toBe(1)
     expect(ribbonFallback(el)!.hidden).toBe(true)
     expect(ribbon(el)!.hidden).toBe(false)
   })
@@ -196,7 +196,7 @@ describe('OASBadge ribbon', () => {
   it('text 兜底元素位于 ribbon-text 内（继承文字色，否则文字与缎带背景同色不可见）', () => {
     const el = mount({ ribbon: '', text: 'HOT' })
     const text = el.shadowRoot!.querySelector<HTMLElement>('.ribbon-text')!
-    expect(text.querySelector('.ribbon-fallback')).not.toBeNull()
+    expect(text.querySelectorAll('.ribbon-fallback').length).toBe(1)
   })
 
   it('属性变化增量更新：切换 ribbon 属性不重建引用', () => {
@@ -515,7 +515,7 @@ describe('OASBadge attention 吸引动画', () => {
     expect(style).toContain('.badge.attention-bounce')
     // prefers-reduced-motion 媒体查询中存在停用规则
     const mq = style.match(/@media\s*\(prefers-reduced-motion:\s*reduce\)\s*\{([\s\S]*?)\}/g) ?? []
-    expect(mq.length).toBeGreaterThan(0)
+    expect(mq.length, '样式表含 1 段 prefers-reduced-motion 停用规则').toBe(1)
     expect(mq.join('')).toContain('.attention-pulse')
     expect(mq.join('')).toContain('.attention-bounce')
   })
@@ -709,7 +709,7 @@ describe('OASBadge 折叠角尖三角几何', () => {
   it('尖三角构造：clip-path 三点三角 + background currentColor + brightness 压暗；不再用 scaleY 压扁', () => {
     const el = mount({ ribbon: '', text: 'HOT' })
     const style = el.shadowRoot!.querySelector('style')!.textContent!
-    expect(el.shadowRoot!.querySelector('.ribbon-corner')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('.ribbon-corner').length).toBe(1)
     const corner = cssRule(style, '.ribbon-corner')
     expect(corner).toContain('clip-path: polygon(0 0, 100% 0, 0 100%)')
     expect(corner).toContain('background: currentColor')
@@ -801,16 +801,15 @@ describe('OASBadge ribbon-form 形态维度', () => {
     expect(r.classList.contains('form-triangle')).toBe(true)
     // 图标经命名插槽投影（节点留在 light DOM，不在 .ribbon-text 的 textContent 里）
     const assigned = ribbonSlot(el)!.assignedNodes()
-    expect(assigned.length).toBeGreaterThan(0)
+    expect(assigned.length).toBe(1)
     expect((assigned[0] as HTMLElement).tagName.toLowerCase()).toBe('oas-icon')
-    expect(r.querySelector('.ribbon-text')).not.toBeNull()
+    expect(r.querySelectorAll('.ribbon-text').length).toBe(1)
   })
 
   it('seal 形态注入锯齿多边形 clip-path（点数充足）', () => {
     const el = mount({ ribbon: '', text: '奖', 'ribbon-form': 'seal' })
     const style = el.shadowRoot!.querySelector('style')!.textContent!
     const m = cssRule(style, '.ribbon.form-seal').match(/clip-path:\s*(polygon\([^;]+\))/)
-    expect(m).not.toBeNull()
     const pts = (m![1]!.match(/%/g) ?? []).length
     expect(pts).toBeGreaterThan(24)
   })
@@ -1348,7 +1347,6 @@ describe('OASBadge premium 金属质感', () => {
     const style = el.shadowRoot!.querySelector('style')!.textContent!
     // 多选择器合写规则：取首个选择器起的整段规则体（至首个 }）
     const m = style.match(/\.ribbon\.premium\.form-triangle[\s\S]*?\{([\s\S]*?)\}/)
-    expect(m).not.toBeNull()
     const rule = m![1]!
     expect(rule).toContain('border: none;')
     expect(rule).toContain('filter: drop-shadow')
@@ -1422,16 +1420,15 @@ describe('OASBadge icon 徽标图标', () => {
     const b = badge(el)!
     expect(b.hidden).toBe(false)
     const svg = b.querySelector('svg')!
-    expect(svg).not.toBeNull()
     expect(svg.getAttribute('aria-hidden')).toBe('true')
     expect(svg.getAttribute('width')).toBe('1em')
-    expect(svg.innerHTML.length).toBeGreaterThan(0)
+    expect(svg.innerHTML).toContain('<path')
   })
 
   it('icon 优先于 value：icon+value 显示图标不显示数字', () => {
     const el = mount({ icon: 'check', value: '5' })
     const b = badge(el)!
-    expect(b.querySelector('svg')).not.toBeNull()
+    expect(b.querySelectorAll('svg').length).toBe(1)
     expect(b.textContent).not.toContain('5')
     expect(b.classList.contains('dot')).toBe(false)
   })
@@ -1439,7 +1436,7 @@ describe('OASBadge icon 徽标图标', () => {
   it('icon 与 dot 互斥：icon 优先（显示图标，dot class 保留但无圆点文本）', () => {
     const el = mount({ icon: 'warning', dot: '' })
     const b = badge(el)!
-    expect(b.querySelector('svg')).not.toBeNull()
+    expect(b.querySelectorAll('svg').length).toBe(1)
     expect(b.classList.contains('dot')).toBe(true)
     expect(b.textContent).toBe('')
   })
@@ -1458,7 +1455,7 @@ describe('OASBadge icon 徽标图标', () => {
     el.setAttribute('icon', 'warning')
     expect(badge(el)).toBe(b)
     expect(b.querySelector('svg')).toBe(svg)
-    expect(svg.innerHTML.length).toBeGreaterThan(0)
+    expect(svg.innerHTML).toContain('<path')
     el.removeAttribute('icon')
     expect(b.querySelector('svg')).toBeNull()
     expect(b.textContent).toBe('5')
@@ -1471,7 +1468,7 @@ describe('OASBadge icon 徽标图标', () => {
     const b = badge(el)!
     expect(b.hidden).toBe(false)
     expect(b.classList.contains('standalone')).toBe(true)
-    expect(b.querySelector('svg')).not.toBeNull()
+    expect(b.querySelectorAll('svg').length).toBe(1)
   })
 })
 
@@ -1625,7 +1622,7 @@ describe('OASBadge size 多尺寸档', () => {
     expect(cssRule(style, '.badge.corner-top-left')).toContain('left: 0')
     // 其余 ribbon 定位已逻辑化（inset-inline-*）
     expect(style).toContain('inset-inline-end')
-    expect(badge(el)).not.toBeNull()
+    expect(badge(el)!.hidden).toBe(false)
   })
 })
 

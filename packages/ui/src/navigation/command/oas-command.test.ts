@@ -78,7 +78,7 @@ describe('OASCommand', () => {
 
   it('渲染 items 为选项（role=listbox/option）', () => {
     const el = mount({ open: '' })
-    expect(el.shadowRoot!.querySelector('[role="listbox"]')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('[role="listbox"]').length).toBe(1)
     expect(options(el).length).toBe(4)
     expect(options(el)[0]!.getAttribute('role')).toBe('option')
   })
@@ -300,7 +300,7 @@ describe('OASCommand', () => {
       items: JSON.stringify([{ label: '打开文件', value: 'open', icon: 'M4 4 L12 12' }]),
     })
     const svg = options(el)[0]!.querySelector('.option-icon svg')
-    expect(svg).not.toBeNull()
+    expect(svg!.tagName.toLowerCase()).toBe('svg')
     expect(options(el)[0]!.textContent).toBe('打开文件')
   })
 
@@ -310,7 +310,6 @@ describe('OASCommand', () => {
       items: JSON.stringify([{ label: '打开文件', value: 'open', shortcut: 'ctrl+p' }]),
     })
     const kbd = options(el)[0]!.querySelector('.option-shortcut kbd')!
-    expect(kbd).not.toBeNull()
     expect(kbd.textContent).toContain('⌃')
     expect(kbd.textContent).toContain('P')
   })
@@ -355,7 +354,7 @@ describe('OASCommand', () => {
   it('loading 态：显示占位行并置 aria-busy', () => {
     const el = mount({ open: '', loading: '' })
     expect(el.shadowRoot!.querySelector('[role="listbox"]')!.getAttribute('aria-busy')).toBe('true')
-    expect(el.shadowRoot!.querySelector('.loading-row')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('.loading-row').length).toBe(1)
     expect(options(el).length).toBe(0)
   })
 
@@ -452,7 +451,6 @@ describe('OASCommand', () => {
     fireInput(el, '打开')
     const row = options(el)[0]!
     const mark = row.querySelector('mark.hl')!
-    expect(mark).not.toBeNull()
     expect(mark.textContent).toBe('打开')
     expect(row.textContent).toBe('打开文件')
   })
@@ -790,7 +788,7 @@ describe('OASCommand', () => {
     options(el)[0]!.click()
     expect(detail).toEqual({ view: 'deploy', title: '部署设置' })
     expect(q(el, '.view')!.hidden).toBe(false)
-    expect(el.shadowRoot!.querySelector('slot[name="view-deploy"]')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('slot[name="view-deploy"]').length).toBe(1)
     expect(q(el, '.list')!.hidden).toBe(true)
     // Esc 回退列表
     esc()
@@ -851,7 +849,7 @@ describe('OASCommand', () => {
     expect((vlist as HTMLElement).hidden).toBe(false)
     const rows = [...vlist.shadowRoot!.querySelectorAll<HTMLElement>('[part="option"]')]
     expect(rows.length).toBeLessThan(100)
-    expect(rows.length).toBeGreaterThan(0)
+    expect(rows.length, '虚拟窗口行数（视口 + 双侧 buffer）').toBe(13)
   })
 
   it('virtual：键盘导航滚动窗口使高亮可见', async () => {
@@ -860,7 +858,7 @@ describe('OASCommand', () => {
     const vlist = el.shadowRoot!.querySelector('oas-virtual-list')!
     for (let i = 0; i < 25; i++) arrow(el, 'ArrowDown')
     const vp = vlist.shadowRoot!.querySelector<HTMLElement>('.viewport')!
-    expect(vp.scrollTop).toBeGreaterThan(0)
+    expect(vp.scrollTop).toBe(696)
     vp.dispatchEvent(new Event('scroll'))
     await new Promise((resolve) => requestAnimationFrame(() => resolve(undefined)))
     const rows = [...vlist.shadowRoot!.querySelectorAll<HTMLElement>('[part="option"]')]
@@ -974,10 +972,8 @@ describe('OASCommand', () => {
     document.body.appendChild(target)
     const el = mount({ open: '', 'append-to': '#cmd-target' })
     const host = target.querySelector<HTMLElement>('[data-oas-command-portal]')
-    expect(host).not.toBeNull()
     // overlay 整体移入 portal shadow（样式作用域保真）
     const hostOverlay = host!.shadowRoot!.querySelector<HTMLElement>('[part="overlay"]')
-    expect(hostOverlay).not.toBeNull()
     expect(hostOverlay!.hidden).toBe(false)
     expect(el.shadowRoot!.querySelector<HTMLElement>('[part="overlay"]')).toBeNull()
     const portalCss = host!.shadowRoot!.querySelector('style')!.textContent!
@@ -986,7 +982,7 @@ describe('OASCommand', () => {
     expect(portalCss).toMatch(/\.overlay\s*\{[^}]*pointer-events:\s*auto/)
     // 关闭：overlay 移回原 shadow，host 移除
     el.removeAttribute('open')
-    expect(el.shadowRoot!.querySelector<HTMLElement>('[part="overlay"]')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll<HTMLElement>('[part="overlay"]').length).toBe(1)
     expect(target.querySelector('[data-oas-command-portal]')).toBeNull()
   })
 
@@ -1030,7 +1026,7 @@ describe('OASCommand', () => {
 
   it('append-to 未命中容器：静默回退自身 shadow（不抛错不孤儿）', () => {
     const el = mount({ open: '', 'append-to': '#cmd-missing' })
-    expect(el.shadowRoot!.querySelector<HTMLElement>('[part="overlay"]')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll<HTMLElement>('[part="overlay"]').length).toBe(1)
     expect(document.querySelector('[data-oas-command-portal]')).toBeNull()
   })
 })
@@ -1080,7 +1076,6 @@ describe('子元素声明式通道', () => {
     expect(options(el).length).toBe(3)
     // shortcut kbd（meta → ⌘ 符号映射与 items 通道一致）
     const kbd = options(el)[0]!.querySelector('.option-shortcut kbd')!
-    expect(kbd).not.toBeNull()
     expect(kbd.textContent).toContain('⌘')
     // description 副标题
     expect(options(el)[0]!.querySelector('.option-desc')!.textContent).toBe('创建空白文档')
@@ -1183,7 +1178,7 @@ describe('子元素声明式通道', () => {
     options(el)[0]!.click()
     expect(detail).toEqual({ view: 'deploy', title: '部署应用' })
     expect(q(el, '.view')!.hidden).toBe(false)
-    expect(el.shadowRoot!.querySelector('slot[name="view-deploy"]')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('slot[name="view-deploy"]').length).toBe(1)
     expect(q(el, '.list')!.hidden).toBe(true)
   })
 
@@ -1200,7 +1195,7 @@ describe('子元素声明式通道', () => {
     // 该 childList 突变被 isChildChannelMutation 过滤，不产生无谓重渲染/循环
     await new Promise((r) => setTimeout(r, 0))
     const host = target.querySelector<HTMLElement>('[data-oas-command-portal]')!
-    expect(host.shadowRoot!.querySelector('slot[name="footer"]')).not.toBeNull()
+    expect(host.shadowRoot!.querySelectorAll('slot[name="footer"]').length).toBe(1)
     // 随后 append 数据载体，子元素通道仍正常响应（portal 模式下列表在 portal shadow 内）
     const item = document.createElement('oas-command-item')
     item.setAttribute('value', 'b')
@@ -1281,6 +1276,6 @@ describe('OASCommand 属性-方法撞名回归', () => {
     const el = mount({ open: '' })
     ;(el as unknown as Record<string, unknown>).recentStorageKey = 'x'
     expect(() => el.setAttribute('recent', '')).not.toThrow()
-    expect(options(el).length).toBeGreaterThan(0)
+    expect(options(el).length, '默认 4 个命令选项').toBe(4)
   })
 })

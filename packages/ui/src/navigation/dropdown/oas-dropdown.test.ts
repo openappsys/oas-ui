@@ -95,10 +95,8 @@ describe('OASDropdown', () => {
     const file = root.querySelector<HTMLElement>('[part="item"][data-value="file"]')!
     file.dispatchEvent(new MouseEvent('mouseenter'))
     const newItem = root.querySelector<HTMLElement>('[part="item"][data-value="new"]')!
-    expect(newItem).not.toBeNull()
     newItem.dispatchEvent(new MouseEvent('mouseenter'))
     const windowItem = root.querySelector<HTMLElement>('[part="item"][data-value="new-window"]')!
-    expect(windowItem).not.toBeNull()
     windowItem.click()
     expect(detail).toEqual({ value: 'new-window' })
     expect(el.hasAttribute('open')).toBe(false)
@@ -109,7 +107,7 @@ describe('OASDropdown', () => {
     await Promise.resolve()
     const root = innerMenuRoot(el)
     root.querySelector<HTMLElement>('[part="item"][data-value="file"]')!.dispatchEvent(new MouseEvent('mouseenter'))
-    expect(root.querySelectorAll('.item.open').length).toBeGreaterThan(0)
+    expect(root.querySelectorAll('.item.open').length, '仅 file 父项展开').toBe(1)
     // 外部点击关闭 → 重开：级联展开态应清空
     document.dispatchEvent(new MouseEvent('click', { bubbles: true }))
     expect(el.hasAttribute('open')).toBe(false)
@@ -142,7 +140,6 @@ describe('OASDropdown split 下拉按钮', () => {
   it('渲染箭头按钮；非 split 时隐藏（display:none）', () => {
     const plain = mount()
     const arrow = arrowBtn(plain)
-    expect(arrow).not.toBeNull()
     expect(arrow.getAttribute('aria-haspopup')).toBe('menu')
     const css = plain.shadowRoot!.querySelector('style')!.textContent ?? ''
     expect(css).toMatch(/:host\(:not\(\[split\]\)\)\s*\.arrow-btn\s*\{[^}]*display:\s*none/)
@@ -269,7 +266,6 @@ describe('OASDropdown 箭头（arrow）', () => {
     const el = mount({ open: '' })
     await Promise.resolve()
     const arrow = arrowOf(el)
-    expect(arrow).not.toBeNull()
     expect(arrow.getAttribute('part')).toBe('arrow')
     expect(arrow.getAttribute('aria-hidden')).toBe('true')
     // 菜单项照常渲染（箭头骨架不破坏内层 oas-menu 内容）
@@ -294,7 +290,6 @@ describe('OASDropdown 箭头（arrow）', () => {
       const panel = anchorEl(el)
       expect(panel.getAttribute('data-placement')).toBe(p)
       const arrow = arrowOf(el)
-      expect(arrow).not.toBeNull()
       // 悬空边半值外探：happy-dom 对 calc(var()/…) 不求最终数值（真实浏览器得 -6px，e2e 验证），
       // 锁「token 回退 12px 后按 /-2 求半值」的表达式形态
       expect(window.getComputedStyle(arrow).getPropertyValue(cases[p].edge)).toBe('calc(12px / -2)')
@@ -315,7 +310,7 @@ describe('OASDropdown 箭头（arrow）', () => {
   it('arrow="false" 隐藏箭头（hidden 属性驱动，骨架保留）', () => {
     const hidden = mount({ open: '', arrow: 'false' })
     expect(arrowOf(hidden).hasAttribute('hidden')).toBe(true)
-    expect(arrowOf(hidden)).not.toBeNull // 骨架保留（DSD 快照结构稳定）
+    expect(arrowOf(hidden).getAttribute('part'), '骨架保留（DSD 快照结构稳定）').toBe('arrow')
     const shown = mount({ open: '' })
     expect(arrowOf(shown).hasAttribute('hidden')).toBe(false)
   })
@@ -889,7 +884,7 @@ describe('OASDropdown 子元素声明式通道', () => {
     expect(edit.getAttribute('role')).toBe('menuitem')
     edit.dispatchEvent(new MouseEvent('mouseenter'))
     expect(edit.getAttribute('aria-expanded')).toBe('true')
-    expect(root.querySelector('[part="item"][data-value="copy"]')).not.toBeNull()
+    expect(root.querySelectorAll('[part="item"][data-value="copy"]').length).toBe(1)
     // 点击选中事件 detail 与 items 通道一致（{ value } + 默认关闭）
     let detail: unknown
     el.addEventListener('oas-select', (e: Event) => (detail = (e as CustomEvent).detail))
@@ -930,7 +925,7 @@ describe('OASDropdown 子元素声明式通道', () => {
     // checkbox：menuitemcheckbox + 方块勾选框
     const grid = root.querySelector<HTMLElement>('[part="item"][data-value="grid"]')!
     expect(grid.getAttribute('role')).toBe('menuitemcheckbox')
-    expect(grid.querySelector('.check--box')).not.toBeNull()
+    expect(grid.querySelectorAll('.check--box').length).toBe(1)
     // danger 红字类
     expect(root.querySelector('[data-value="del"]')!.classList.contains('danger')).toBe(true)
     // href 链接项渲染为 <a>
@@ -944,7 +939,7 @@ describe('OASDropdown 子元素声明式通道', () => {
     expect(save.classList.contains('loading')).toBe(true)
     expect(save.getAttribute('aria-busy')).toBe('true')
     expect(save.getAttribute('aria-disabled')).toBe('true')
-    expect(save.querySelector('.spin')).not.toBeNull()
+    expect(save.querySelectorAll('.spin').length).toBe(1)
     // disabled 禁点
     const off = root.querySelector<HTMLElement>('[part="item"][data-value="off"]')!
     expect(off.getAttribute('aria-disabled')).toBe('true')
@@ -970,10 +965,10 @@ describe('OASDropdown 子元素声明式通道', () => {
     await Promise.resolve()
     const root = innerMenuRoot(el)
     const user = root.querySelector<HTMLElement>('[part="item"][data-value="user"]')!
-    expect(user.querySelector('.media [data-avatar]')).not.toBeNull()
+    expect(user.querySelectorAll('.media [data-avatar]').length).toBe(1)
     expect(user.querySelector<HTMLElement>('.label')!.textContent).toBe('张三')
     const plain = root.querySelector<HTMLElement>('[part="item"][data-value="plain"]')!
-    expect(plain.querySelector('.icon')).not.toBeNull()
+    expect(plain.querySelectorAll('.icon').length).toBe(1)
     expect(plain.querySelector('.media')).toBeNull()
   })
 
@@ -991,7 +986,7 @@ describe('OASDropdown 子元素声明式通道', () => {
     el.appendChild(item)
     await new Promise((r) => setTimeout(r, 0))
     expect(innerMenuRoot(el).querySelectorAll('[part="item"]').length).toBe(2)
-    expect(innerMenuRoot(el).querySelector('[part="item"][data-value="about"]')).not.toBeNull()
+    expect(innerMenuRoot(el).querySelectorAll('[part="item"][data-value="about"]').length).toBe(1)
   })
 
   it('trigger click 开合不受影响（触发按钮仍为首子元素，载体不误当锚点）', async () => {
@@ -1003,8 +998,8 @@ describe('OASDropdown 子元素声明式通道', () => {
     ;(el.querySelector('button') as HTMLElement).click()
     expect(el.hasAttribute('open')).toBe(true)
     await Promise.resolve()
-    expect(innerMenuRoot(el).querySelector('[part="item"][data-value="home"]')).not.toBeNull()
-    expect(innerMenuRoot(el).querySelector('[part="divider"]')).not.toBeNull()
+    expect(innerMenuRoot(el).querySelectorAll('[part="item"][data-value="home"]').length).toBe(1)
+    expect(innerMenuRoot(el).querySelectorAll('[part="divider"]').length).toBe(1)
     ;(el.querySelector('button') as HTMLElement).click()
     expect(el.hasAttribute('open')).toBe(false)
   })
@@ -1186,7 +1181,7 @@ describe('OASDropdown reserve-width（触发器预留最宽选项，切值不抖
     const btn = triggerBtn(el)
     const w = btn.style.minWidth
     expect(w).toMatch(/^[\d.]+px$/)
-    expect(Number.parseFloat(w)).toBeGreaterThan(0)
+    expect(Number.parseFloat(w), '选项「编辑/删除」最宽文本的预留宽度').toBe(72)
     // 移除属性 → 清除（无原值恢复为空）
     el.removeAttribute('reserve-width')
     expect(btn.style.minWidth).toBe('')
@@ -1361,11 +1356,10 @@ describe('OASDropdown 触发器语义与键盘焦点', () => {
     ;(el.querySelector('button') as HTMLElement).click()
     await Promise.resolve()
     const list = activeMenuList(el)
-    expect(list, '打开后焦点应进入内层菜单').not.toBeNull()
-    expect(list!.getAttribute('role')).toBe('menu')
+    expect(list!.getAttribute('role'), '打开后焦点应进入内层菜单').toBe('menu')
     list!.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true, cancelable: true }))
     const active = innerMenuRoot(el).querySelector<HTMLElement>('[part="item"].active')
-    expect(active, 'ArrowDown 应高亮首项').not.toBeNull()
+    expect(active!.getAttribute('data-value'), 'ArrowDown 应高亮首项').toBe('edit')
   })
 
   it('Esc 关闭并把焦点还给触发器', async () => {

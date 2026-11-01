@@ -27,7 +27,7 @@ describe('OASList', () => {
 
   it('渲染列表项', () => {
     const el = mount()
-    expect(el.shadowRoot!.querySelector('[part="list"]')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('[part="list"]').length).toBe(1)
     expect(el.querySelectorAll('oas-list-item').length).toBe(2)
   })
 
@@ -165,7 +165,7 @@ describe('OASList', () => {
       document.body.appendChild(el)
       const slot = el.shadowRoot!.querySelector<HTMLSlotElement>('slot[name="title"]')!
       const fallback = el.shadowRoot!.querySelector<HTMLElement>('.title-text')!
-      expect(slot.assignedNodes().length).toBeGreaterThan(0)
+      expect(slot.assignedNodes().length).toBe(1)
       expect(fallback.hidden).toBe(true)
       // 属性仍被吸收缓存（兜底隐而不删），宿主无残留原生悬浮提示
       expect(fallback.textContent).toBe('属性标题')
@@ -178,7 +178,7 @@ describe('OASList', () => {
       document.body.appendChild(el)
       const slot = el.shadowRoot!.querySelector<HTMLSlotElement>('slot[name="title"]')!
       const fallback = el.shadowRoot!.querySelector<HTMLElement>('.title-text')!
-      expect(slot.assignedNodes().length).toBeGreaterThan(0)
+      expect(slot.assignedNodes().length).toBe(1)
       expect(fallback.hidden).toBe(true)
       expect(el.hasAttribute('title')).toBe(false)
     })
@@ -345,7 +345,7 @@ describe('OASList', () => {
       el.innerHTML = '<span slot="avatar">自定义头像</span>'
       document.body.appendChild(el)
       const slot = el.shadowRoot!.querySelector<HTMLSlotElement>('slot[name="avatar"]')!
-      expect(slot.assignedNodes().length).toBeGreaterThan(0)
+      expect(slot.assignedNodes().length).toBe(1)
     })
 
     it('无 avatar 时头像区隐藏', () => {
@@ -606,7 +606,7 @@ describe('OASList', () => {
       const rows = el.shadowRoot!.querySelector('[part="data-items"]')!.children
       expect(rows.length).toBe(2)
       // 模板克隆进每个条目：slot 结构由 oas-list-item 分发
-      expect(rows[0]!.querySelector('[data-bind="title"]')).not.toBeNull()
+      expect(rows[0]!.querySelectorAll('[data-bind="title"]').length).toBe(1)
       expect(rows[1]!.getAttribute('data-index')).toBe('1')
     })
 
@@ -790,7 +790,7 @@ describe('OASList', () => {
       expect(vlist.getAttribute('height')).toBe('240')
       expect(el.shadowRoot!.querySelector<HTMLElement>('[part="data-items"]')!.hidden).toBe(true)
       // 数据透传到内嵌虚拟列表（窗口渲染，只渲染可见项）
-      expect(vlist.shadowRoot!.querySelectorAll('[part="item"]').length).toBeGreaterThan(0)
+      expect(vlist.shadowRoot!.querySelectorAll('[part="item"]').length, 'height 240 视口窗口行数').toBe(8)
       expect(vlist.shadowRoot!.querySelectorAll('[part="item"]').length).toBeLessThan(100)
     })
 
@@ -819,12 +819,12 @@ describe('OASList', () => {
       el.data = ['甲', '乙']
       document.body.appendChild(el)
       const vlist = el.shadowRoot!.querySelector('oas-virtual-list')!
-      expect(vlist.querySelector('template[slot="item"]')).not.toBeNull()
+      expect(vlist.querySelectorAll('template[slot="item"]').length).toBe(1)
       el.removeAttribute('height')
-      expect(el.querySelector('template[slot="item"]')).not.toBeNull()
+      expect(el.querySelectorAll('template[slot="item"]').length).toBe(1)
       const rows = el.shadowRoot!.querySelector('[part="data-items"]')!.children
       expect(rows.length).toBe(2)
-      expect(rows[0]!.querySelector('[data-tpl]')).not.toBeNull()
+      expect(rows[0]!.querySelectorAll('[data-tpl]').length).toBe(1)
     })
   })
 
@@ -1046,9 +1046,8 @@ describe('OASList', () => {
     it('slot="icon" 投影到前置图标位；无内容时容器隐藏', () => {
       const row = item('<oas-icon name="user" slot="icon"></oas-icon><span slot="title">甲</span>')
       const iconWrap = row.shadowRoot!.querySelector<HTMLElement>('[part="lead-icon"]')!
-      expect(iconWrap).not.toBeNull()
       expect(iconWrap.hidden).toBe(false)
-      expect(iconWrap.querySelector('slot[name="icon"]')).not.toBeNull()
+      expect(iconWrap.querySelectorAll('slot[name="icon"]').length).toBe(1)
       // 无内容行：图标位隐藏
       const plain = item('<span slot="title">乙</span>')
       expect((plain.shadowRoot!.querySelector('[part="lead-icon"]') as HTMLElement).hidden).toBe(true)
@@ -1111,7 +1110,6 @@ describe('OASList', () => {
       const row = item({ href: 'https://example.com/doc' })
       expect((row.constructor as typeof import('./oas-list-item.js').OASListItem).observedAttributes).toContain('href')
       const a = row.shadowRoot!.querySelector<HTMLAnchorElement>('a.row-link')!
-      expect(a).not.toBeNull()
       expect(a.getAttribute('href')).toBe('https://example.com/doc')
     })
 
@@ -1143,7 +1141,7 @@ describe('OASList', () => {
       const row = item({})
       expect(row.shadowRoot!.querySelector('a.row-link')).toBeNull()
       row.setAttribute('href', '#c')
-      expect(row.shadowRoot!.querySelector('a.row-link')).not.toBeNull()
+      expect(row.shadowRoot!.querySelectorAll('a.row-link').length).toBe(1)
       row.removeAttribute('href')
       expect(row.shadowRoot!.querySelector('a.row-link')).toBeNull()
     })
@@ -1343,7 +1341,7 @@ describe('windowed（服务端行窗口协议）', () => {
     el.setAttribute('window-start', '196')
 
     const rows = rowsOf(el)
-    expect(rows.length).toBeGreaterThan(0)
+    expect(rows.length, '窗口 [196,209) 共 11 行').toBe(11)
     expect(rows[0]!.getAttribute('data-index'), '渲染行用绝对行号铺位').toBe('196')
     expect(rows.map((r) => r.getAttribute('aria-posinset')).slice(0, 3)).toEqual(['197', '198', '199'])
     expect(rows.every((r) => r.getAttribute('aria-setsize') === '500')).toBe(true)
@@ -1395,7 +1393,7 @@ describe('windowed（服务端行窗口协议）', () => {
     for (const row of rowsOf(el)) {
       expect(row.getAttribute('role')).toBe('listitem')
       expect(row.getAttribute('aria-setsize')).toBe('2')
-      expect(row.getAttribute('aria-posinset')).toBeTruthy()
+      expect(row.getAttribute('aria-posinset')).toMatch(/^[1-9]\d*$/)
     }
   })
 
@@ -1487,7 +1485,7 @@ describe('windowed（服务端行窗口协议）', () => {
     const items = vlist.shadowRoot!.querySelector<HTMLElement>('.items')!
     expect(items.getAttribute('role'), 'list 容器是 vlist 内 .items（可聚焦视口在其外）').toBe('list')
     const vrows = [...vlist.shadowRoot!.querySelectorAll<HTMLElement>('[part="item"]')]
-    expect(vrows.length).toBeGreaterThan(0)
+    expect(vrows.length, 'height 240 视口窗口行数').toBe(8)
     for (const r of vrows) {
       expect(r.getAttribute('role')).toBe('listitem')
       expect(r.getAttribute('aria-setsize')).toBe('100')
@@ -1579,7 +1577,7 @@ describe('windowed（服务端行窗口协议）', () => {
     const { el } = mountWindowed({ total: 500, height: '120', rowHeight: '40' })
     el.setAttribute('sortable', '')
     const rows = rowsOf(el)
-    expect(rows.length).toBeGreaterThan(0)
+    expect(rows.length, 'vh 120 / 行高 40 → 3 行 + 双侧 buffer 4').toBe(7)
     expect(rows.every((r) => r.getAttribute('draggable') !== 'true')).toBe(true)
     const transfer = (): DataTransfer =>
       ({ setData: () => {}, getData: () => '', effectAllowed: '', dropEffect: '' }) as unknown as DataTransfer
@@ -1638,7 +1636,7 @@ describe('windowed（服务端行窗口协议）', () => {
       expect(reqs, '有视口后按可视窗口请求（首次成功评估 reason=init）').toEqual([
         { start: 0, end: 15, reason: 'init' },
       ])
-      expect(spacer(el, 'top'), '有视口后恢复占位').not.toBeNull()
+      expect(spacer(el, 'top')!.getAttribute('data-spacer'), '有视口后恢复占位').toBe('top')
       expect(rowsOf(el).length, '按视口窗口渲染（3 可见 + 4 buffer）').toBe(7)
     } finally {
       warn.mockRestore()

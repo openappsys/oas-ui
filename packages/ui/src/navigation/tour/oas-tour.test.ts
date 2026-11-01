@@ -834,7 +834,6 @@ describe('hints / 记忆 / 多页 / 打字机 / 挂载', () => {
     el.setAttribute('open', '')
     await tick()
     const portalHost = document.querySelector<HTMLElement>('[data-oas-tour-portal]')!
-    expect(portalHost).not.toBeNull()
     expect(document.body.contains(portalHost)).toBe(true)
     const overlay = portalHost.shadowRoot!.querySelector<HTMLElement>('.overlay')!
     expect(overlay.getRootNode()).not.toBe(el.shadowRoot)
@@ -850,11 +849,9 @@ describe('hints / 记忆 / 多页 / 打字机 / 挂载', () => {
     el.setAttribute('open', '')
     await tick()
     const portalHost = document.querySelector<HTMLElement>('[data-oas-tour-portal]')!
-    expect(portalHost).not.toBeNull()
     // 宿主 light DOM 不再持有 cover 节点（已桥接到 portal host）
     expect(el.querySelector('[slot="cover"]')).toBeNull()
     const bridged = portalHost.querySelector<HTMLElement>('[slot="cover"]')
-    expect(bridged).not.toBeNull()
     expect(bridged!.textContent).toBe('封面富内容')
     // popup 内 <slot name="cover"> 能跨 host 分配到桥接节点（不断供）
     const slotEl = portalHost.shadowRoot!.querySelector<HTMLSlotElement>('.popup slot[name="cover"]')!
@@ -878,7 +875,7 @@ describe('既有行为回归', () => {
     const el = mount()
     el.setAttribute('open', '')
     await Promise.resolve()
-    expect(el.shadowRoot!.querySelector('[part="mask-top"]')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('[part="mask-top"]').length).toBe(1)
     expect(el.shadowRoot!.textContent).toContain('第一步')
   })
 
@@ -929,17 +926,17 @@ describe('SSR 模板结构', () => {
     el.setAttribute('steps', STEPS)
     document.body.appendChild(el)
     const shadow = el.shadowRoot!
-    expect(shadow.querySelector('.overlay')).not.toBeNull()
-    expect(shadow.querySelector('.highlight')).not.toBeNull()
-    expect(shadow.querySelector('.popup')).not.toBeNull()
-    expect(shadow.querySelector('[data-popper-arrow]')).not.toBeNull()
-    expect(shadow.querySelector('.progress')).not.toBeNull()
-    expect(shadow.querySelector('.close')).not.toBeNull()
-    expect(shadow.querySelector('.hints')).not.toBeNull()
-    expect(shadow.querySelector('.hint-popup')).not.toBeNull()
-    expect(shadow.querySelector('slot[name="cover"]')).not.toBeNull()
-    expect(shadow.querySelector('slot[name="indicators"]')).not.toBeNull()
-    expect(shadow.querySelector('slot[name="actions"]')).not.toBeNull()
+    expect(shadow.querySelectorAll('.overlay').length).toBe(1)
+    expect(shadow.querySelectorAll('.highlight').length).toBe(1)
+    expect(shadow.querySelectorAll('.popup').length).toBe(1)
+    expect(shadow.querySelectorAll('[data-popper-arrow]').length).toBe(1)
+    expect(shadow.querySelectorAll('.progress').length).toBe(1)
+    expect(shadow.querySelectorAll('.close').length).toBe(1)
+    expect(shadow.querySelectorAll('.hints').length).toBe(1)
+    expect(shadow.querySelectorAll('.hint-popup').length).toBe(1)
+    expect(shadow.querySelectorAll('slot[name="cover"]').length).toBe(1)
+    expect(shadow.querySelectorAll('slot[name="indicators"]').length).toBe(1)
+    expect(shadow.querySelectorAll('slot[name="actions"]').length).toBe(1)
   })
 })
 

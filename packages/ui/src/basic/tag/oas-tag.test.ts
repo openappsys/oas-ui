@@ -34,7 +34,7 @@ describe('OASTag', () => {
     expect(r.classList.contains('default')).toBe(true)
     expect(r.classList.contains('medium')).toBe(true)
     expect(el.textContent).toContain('进行中')
-    expect(r.querySelector('slot')).not.toBeNull()
+    expect(r.querySelectorAll('slot').length).toBe(1)
   })
 
   it('type/size/round 属性映射到 class', () => {
@@ -77,7 +77,6 @@ describe('OASTag', () => {
   it('默认关闭按钮 hidden（不可交互/不入 a11y 树）；closable 时显示', () => {
     const el = mount({})
     const btn = root(el).querySelector('button')
-    expect(btn).not.toBeNull()
     expect(btn!.hidden).toBe(true)
     el.setAttribute('closable', '')
     expect(root(el).querySelector('button')!.hidden).toBe(false)
@@ -425,10 +424,8 @@ describe('OASTag', () => {
     it('icon 属性：默认插槽前渲染 <oas-icon name>，非法图标名隐藏', () => {
       const el = mount({ icon: 'star' }, '精选')
       const iconSpan = root(el).querySelector<HTMLElement>('.icon')
-      expect(iconSpan).not.toBeNull()
       expect(iconSpan!.hidden).toBe(false)
       const oasIcon = iconSpan!.querySelector('oas-icon')
-      expect(oasIcon).not.toBeNull()
       expect(oasIcon!.getAttribute('name')).toBe('star')
       el.remove()
 
@@ -451,7 +448,7 @@ describe('OASTag', () => {
       expect(r.tagName).toBe('A')
       expect(r.getAttribute('href')).toBe('/guide')
       expect(r.getAttribute('target')).toBe('_blank')
-      expect(r.querySelector('slot')).not.toBeNull()
+      expect(r.querySelectorAll('slot').length).toBe(1)
     })
 
     it('href 增删触发 shadow 重建：span ↔ a 切换，节点引用更新', () => {
@@ -493,7 +490,6 @@ describe('OASTag', () => {
     it('max-width：应用到 .content（truncate class + inline max-width），缺省不启用省略', () => {
       const el = mount({ 'max-width': '120px' }, '超长文本')
       const content = root(el).querySelector<HTMLElement>('.content')
-      expect(content).not.toBeNull()
       expect(content!.style.maxWidth).toBe('120px')
       expect(content!.classList.contains('truncate')).toBe(true)
       el.remove()
@@ -509,7 +505,6 @@ describe('OASTag', () => {
     it('dot：渲染 .dot 圆点且可见，移除后隐藏', () => {
       const el = mount({ dot: '' })
       const dot = root(el).querySelector<HTMLElement>('.dot')
-      expect(dot).not.toBeNull()
       expect(dot!.hidden).toBe(false)
       expect(dot!.getAttribute('aria-hidden')).toBe('true')
       el.removeAttribute('dot')
@@ -678,8 +673,7 @@ describe('OASTag', () => {
       const el = mount({ closable: '' })
       const btn = root(el).querySelector('button')!
       const iconWrap = btn.querySelector<HTMLElement>('.close-icon')
-      expect(iconWrap).not.toBeNull()
-      expect(iconWrap!.querySelector('svg')).not.toBeNull()
+      expect(iconWrap!.querySelectorAll('svg').length).toBe(1)
       el.setAttribute('close-icon', 'trash')
       expect(iconWrap!.querySelector('svg')).toBeNull()
       expect(iconWrap!.querySelector('oas-icon')!.getAttribute('name')).toBe('trash')
@@ -687,13 +681,13 @@ describe('OASTag', () => {
       expect(iconWrap!.querySelector('oas-icon')!.getAttribute('name')).toBe('minus')
       el.removeAttribute('close-icon')
       expect(iconWrap!.querySelector('oas-icon')).toBeNull()
-      expect(iconWrap!.querySelector('svg')).not.toBeNull()
+      expect(iconWrap!.querySelectorAll('svg').length).toBe(1)
     })
 
     it('close-icon 非法图标名：保持默认 svg', () => {
       const el = mount({ closable: '', 'close-icon': 'no-such-icon' })
       const iconWrap = root(el).querySelector('button')!.querySelector<HTMLElement>('.close-icon')!
-      expect(iconWrap.querySelector('svg')).not.toBeNull()
+      expect(iconWrap.querySelectorAll('svg').length).toBe(1)
       expect(iconWrap.querySelector('oas-icon')).toBeNull()
     })
 
@@ -708,7 +702,6 @@ describe('OASTag', () => {
       const el = mount({ closable: '' })
       const btn = root(el).querySelector('button')!
       const spinner = btn.querySelector<HTMLElement>('.spinner')
-      expect(spinner).not.toBeNull()
       expect(spinner!.hidden).toBe(true)
       expect(btn.disabled).toBe(false)
       el.setAttribute('loading', '')
@@ -805,7 +798,6 @@ describe('OASTag', () => {
     it('checkable + checked：文字前渲染 √（默认 check），未选中/取消后隐藏', () => {
       const el = mount({ checkable: '' })
       const checkEl = root(el).querySelector<HTMLElement>('.checked-icon')
-      expect(checkEl).not.toBeNull()
       expect(checkEl!.hidden).toBe(true)
       el.click()
       expect(checkEl!.hidden).toBe(false)
@@ -817,7 +809,6 @@ describe('OASTag', () => {
     it('checked-icon 自定义勾选图标名（如 star）', () => {
       const el = mount({ checkable: '', checked: '', 'checked-icon': 'star' })
       const oasIcon = root(el).querySelector<HTMLElement>('.checked-icon oas-icon')
-      expect(oasIcon).not.toBeNull()
       expect(oasIcon!.getAttribute('name')).toBe('star')
     })
 
@@ -841,7 +832,6 @@ describe('OASTag', () => {
     it('默认隐藏；icon-end 属性渲染文字尾部 oas-icon；非法名隐藏', () => {
       const plain = mount({}, '标签')
       const plainEl = root(plain).querySelector<HTMLElement>('.icon-end')
-      expect(plainEl).not.toBeNull()
       expect(plainEl!.hidden).toBe(true)
       plain.remove()
 
@@ -849,7 +839,6 @@ describe('OASTag', () => {
       const wrap = root(ok).querySelector<HTMLElement>('.icon-end')!
       expect(wrap.hidden).toBe(false)
       const oasIcon = wrap.querySelector('oas-icon')
-      expect(oasIcon).not.toBeNull()
       expect(oasIcon!.getAttribute('name')).toBe('star')
       ok.remove()
 
@@ -881,7 +870,6 @@ describe('OASTag', () => {
       const el = mount({ icon: 'star', 'icon-end': 'arrow-right' }, '标签')
       const head = root(el).querySelector<HTMLElement>('.icon oas-icon')
       const tail = root(el).querySelector<HTMLElement>('.icon-end oas-icon')
-      expect(head).not.toBeNull()
       expect(head!.getAttribute('name')).toBe('star')
       expect(tail!.getAttribute('name')).toBe('arrow-right')
     })

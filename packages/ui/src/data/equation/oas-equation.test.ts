@@ -29,7 +29,6 @@ describe('OASEquation', () => {
   it('上标 x^2 渲染 sup', () => {
     const el = mount({ code: 'x^2' })
     const sup = eqOf(el).querySelector('.sup')
-    expect(sup).not.toBeNull()
     expect(sup!.textContent).toBe('2')
   })
 
@@ -44,20 +43,18 @@ describe('OASEquation', () => {
     expect(style).toMatch(/\.sqrt::before\s*\{[^}]*margin-inline-end:\s*0\.05em/)
     expect(style).not.toMatch(/\.sup\s*\{[^}]*margin-left/)
     // RTL 下渲染结构正常
-    expect(eqOf(el).querySelector('.sup')).not.toBeNull()
+    expect(eqOf(el).querySelectorAll('.sup').length).toBe(1)
   })
 
   it('下标 a_{i} 渲染 sub', () => {
     const el = mount({ code: 'a_{i}' })
     const sub = eqOf(el).querySelector('.sub')
-    expect(sub).not.toBeNull()
     expect(sub!.textContent).toBe('i')
   })
 
   it('分数 \\frac{a}{b}', () => {
     const el = mount({ code: '\\frac{a}{b}' })
     const frac = eqOf(el).querySelector('.frac')
-    expect(frac).not.toBeNull()
     expect(frac!.querySelector('.num')!.textContent).toBe('a')
     expect(frac!.querySelector('.den')!.textContent).toBe('b')
   })
@@ -65,14 +62,12 @@ describe('OASEquation', () => {
   it('根号 \\sqrt{x}', () => {
     const el = mount({ code: '\\sqrt{x}' })
     const sqrt = eqOf(el).querySelector('.sqrt')
-    expect(sqrt).not.toBeNull()
     expect(sqrt!.textContent).toBe('x')
   })
 
   it('求和带上下限 \\sum_{i=1}^{n}', () => {
     const el = mount({ code: '\\sum_{i=1}^{n}' })
     const op = eqOf(el).querySelector('.op')
-    expect(op).not.toBeNull()
     expect(op!.textContent).toContain('i=1')
     expect(op!.textContent).toContain('n')
   })
@@ -109,13 +104,13 @@ describe('OASEquation', () => {
   it('嵌套：分数内上标/下标', () => {
     const el = mount({ code: '\\frac{x^2}{y_1}' })
     const frac = eqOf(el).querySelector('.frac')!
-    expect(frac.querySelector('.sup')).not.toBeNull()
-    expect(frac.querySelector('.sub')).not.toBeNull()
+    expect(frac.querySelectorAll('.sup').length).toBe(1)
+    expect(frac.querySelectorAll('.sub').length).toBe(1)
   })
 
   it('空 code 不报错', () => {
     const el = mount({})
-    expect(eqOf(el)).not.toBeNull()
+    expect(eqOf(el).textContent).toBe('')
   })
 
   it('code 更新重新渲染', () => {
@@ -128,7 +123,7 @@ describe('OASEquation', () => {
 
   it('display="block" 块级模式：host 属性驱动 scoped CSS（居中独立行）', () => {
     const el = mount({ code: 'x^2', display: 'block' })
-    expect(eqOf(el).querySelector('.sup')).not.toBeNull()
+    expect(eqOf(el).querySelectorAll('.sup').length).toBe(1)
     const style = el.shadowRoot!.querySelector('style')!.textContent!
     expect(style).toContain("[display='block']")
   })
@@ -137,7 +132,7 @@ describe('OASEquation', () => {
     const el = mount({ code: 'x^2', display: 'inline' })
     const style = el.shadowRoot!.querySelector('style')!.textContent!
     expect(style).toContain("[display='block']")
-    expect(eqOf(el).querySelector('.sup')).not.toBeNull()
+    expect(eqOf(el).querySelectorAll('.sup').length).toBe(1)
   })
 
   it('engine 注入时委托渲染（薄壳模式），code 透传引擎', () => {
@@ -150,7 +145,7 @@ describe('OASEquation', () => {
       },
     }
     expect(received).toBe('\\foo{bar}')
-    expect(eqOf(el).querySelector('.engine-mark')).not.toBeNull()
+    expect(eqOf(el).querySelectorAll('.engine-mark').length).toBe(1)
     expect(eqOf(el).textContent).toBe('ENGINE')
   })
 
@@ -173,22 +168,22 @@ describe('OASEquation', () => {
         throw new Error('engine boom')
       },
     }
-    expect(eqOf(el).querySelector('.sup')).not.toBeNull()
+    expect(eqOf(el).querySelectorAll('.sup').length).toBe(1)
   })
 
   it('移除/替换 engine 后渲染跟随切换', () => {
     const el = mount({ code: 'x^2' })
     el.engine = { renderToString: () => '<i class="engine-mark">e</i>' }
-    expect(eqOf(el).querySelector('.engine-mark')).not.toBeNull()
+    expect(eqOf(el).querySelectorAll('.engine-mark').length).toBe(1)
     el.engine = null
     expect(eqOf(el).querySelector('.engine-mark')).toBeNull()
-    expect(eqOf(el).querySelector('.sup')).not.toBeNull()
+    expect(eqOf(el).querySelectorAll('.sup').length).toBe(1)
   })
 
   it('非法 engine 对象被忽略（保持自研渲染）', () => {
     const el = mount({ code: 'x^2' })
     // @ts-expect-error 故意注入非法形态
     el.engine = { render: 1 }
-    expect(eqOf(el).querySelector('.sup')).not.toBeNull()
+    expect(eqOf(el).querySelectorAll('.sup').length).toBe(1)
   })
 })

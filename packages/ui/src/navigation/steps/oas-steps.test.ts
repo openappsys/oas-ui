@@ -283,10 +283,10 @@ describe('StepItem.icon（图标指示器）', () => {
     })
     const list = items(el)
     const iconA = list[0]!.querySelector('.icon')!
-    expect(iconA.querySelector('svg')).not.toBeNull()
+    expect(iconA.querySelectorAll('svg').length).toBe(1)
     expect(iconA.textContent).toBe('')
     const iconB = list[1]!.querySelector('.icon')!
-    expect(iconB.querySelector('svg')).not.toBeNull()
+    expect(iconB.querySelectorAll('svg').length).toBe(1)
     expect(iconB.textContent).toBe('')
   })
 
@@ -300,7 +300,7 @@ describe('StepItem.icon（图标指示器）', () => {
     })
     const list = items(el)
     // error + 匹配 icon → svg
-    expect(list[0]!.querySelector('.icon svg')).not.toBeNull()
+    expect(list[0]!.querySelectorAll('.icon svg').length).toBe(1)
     // 无匹配 → 回落序号 / ✓
     expect(list[1]!.querySelector('.icon svg')).toBeNull()
     expect(list[1]!.querySelector('.icon')!.textContent).toBe('2')
@@ -523,13 +523,16 @@ describe('StepItem.extra（操作提示行）', () => {
     const el = mount({ steps: JSON.stringify([{ title: 'A', description: 'd', extra: '提示' }]) })
     const item = items(el)[0]!
     const extra = item.querySelector<HTMLElement>('.extra')!
-    expect(extra).not.toBeNull()
     expect(extra.textContent).toBe('提示')
     // 顺序：title → desc → extra
     const text = item.querySelector<HTMLElement>('.text')!
     const desc = item.querySelector<HTMLElement>('.desc')!
-    expect(text.compareDocumentPosition(extra) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
-    expect(desc.compareDocumentPosition(extra) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(text.compareDocumentPosition(extra) & Node.DOCUMENT_POSITION_FOLLOWING).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING,
+    )
+    expect(desc.compareDocumentPosition(extra) & Node.DOCUMENT_POSITION_FOLLOWING).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING,
+    )
   })
 
   it('extra 走 textContent：HTML 字符串不生成元素（防注入）', () => {
@@ -672,7 +675,7 @@ describe('StepItem.loading（加载指示器）', () => {
     expect(list[0]!.querySelector('.icon .spinner')).toBeNull()
     expect(list[0]!.querySelector('.icon')!.textContent).toBe('1')
     // B 是后续步（wait + loading）：loading 渲染旋转圈，序号让位
-    expect(list[1]!.querySelector('.icon .spinner')).not.toBeNull()
+    expect(list[1]!.querySelectorAll('.icon .spinner').length).toBe(1)
     expect(list[1]!.querySelector('.icon')!.textContent).toBe('')
     // C 显式 finish：照常 ✓
     expect(list[2]!.querySelector('.icon')!.textContent).toBe('✓')
@@ -681,7 +684,7 @@ describe('StepItem.loading（加载指示器）', () => {
   it('loading 优先于显式 icon：有 icon 时 icon 让位', () => {
     const el = mount({ steps: JSON.stringify([{ title: 'A', loading: true, icon: 'user' }]) })
     const icon = items(el)[0]!.querySelector('.icon')!
-    expect(icon.querySelector('.spinner')).not.toBeNull()
+    expect(icon.querySelectorAll('.spinner').length).toBe(1)
     expect(icon.querySelector('svg')).toBeNull()
   })
 
@@ -711,7 +714,6 @@ describe('StepItem.optional（可选标记）', () => {
     setLocale('zh-CN')
     const el = mount({ steps: JSON.stringify([{ title: 'A', optional: true }]) })
     const opt = items(el)[0]!.querySelector<HTMLElement>('.text .optional')!
-    expect(opt).not.toBeNull()
     expect(opt.textContent).toBe('可选')
   })
 
@@ -840,7 +842,6 @@ describe('StepItem.percent（进度圆环）', () => {
     })
     const icon = items(el)[1]!.querySelector('.icon')!
     const bar = icon.querySelector<SVGCircleElement>('.progress-bar')!
-    expect(bar).not.toBeNull()
     expect(bar.getAttribute('stroke-dasharray')).toBe('60 40')
     expect(icon.querySelector('.percent-text')!.textContent).toBe('60%')
   })
@@ -851,7 +852,7 @@ describe('StepItem.percent（进度圆环）', () => {
       steps: JSON.stringify([{ title: 'A', percent: 30, icon: 'user' }]),
     })
     const icon = items(el)[0]!.querySelector('.icon')!
-    expect(icon.querySelector('.progress-bar')).not.toBeNull()
+    expect(icon.querySelectorAll('.progress-bar').length).toBe(1)
     expect(icon.querySelector('.spinner')).toBeNull()
     expect(icon.querySelector('.percent-text')!.textContent).toBe('30%')
   })
@@ -931,7 +932,7 @@ describe('StepItem.prefix（自定义编号）', () => {
       steps: JSON.stringify([{ title: 'A', prefix: '01', icon: 'user' }]),
     })
     const icon = items(el)[0]!.querySelector('.icon')!
-    expect(icon.querySelector('svg')).not.toBeNull()
+    expect(icon.querySelectorAll('svg').length).toBe(1)
     expect(icon.textContent).toBe('')
   })
 
@@ -965,13 +966,13 @@ describe('StepItem.prefix（自定义编号）', () => {
 
   it('loading / percent 优先于 prefix（让位与序号一致）', () => {
     const loading = mount({ steps: JSON.stringify([{ title: 'A', prefix: '01', loading: true }]) })
-    expect(items(loading)[0]!.querySelector('.icon .spinner')).not.toBeNull()
+    expect(items(loading)[0]!.querySelectorAll('.icon .spinner').length).toBe(1)
     expect(items(loading)[0]!.querySelector('.icon')!.textContent).toBe('')
     const pct = mount({
       current: '0',
       steps: JSON.stringify([{ title: 'A', prefix: '01', percent: 40 }]),
     })
-    expect(items(pct)[0]!.querySelector('.icon .progress-bar')).not.toBeNull()
+    expect(items(pct)[0]!.querySelectorAll('.icon .progress-bar').length).toBe(1)
   })
 
   it('空字符串 prefix 回落默认序号', () => {
@@ -1073,7 +1074,7 @@ describe('max-count（中段折叠省略）', () => {
     const el = mount({ steps: TEN })
     expect(el.shadowRoot!.querySelector('.item-ellipsis')).toBeNull()
     el.setAttribute('max-count', '4')
-    expect(el.shadowRoot!.querySelector('.item-ellipsis')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('.item-ellipsis').length).toBe(1)
   })
 
   it('current 移动窗口平移：current 0→8 省略位置从头侧换到尾侧', () => {
@@ -1203,8 +1204,8 @@ describe('content-placement（内容块位置）', () => {
       steps: JSON.stringify([{ title: 'A', description: 'd', extra: 'e' }]),
     })
     const item = items(el)[0]!
-    expect(item.querySelector('.desc')).not.toBeNull()
-    expect(item.querySelector('.extra')).not.toBeNull()
+    expect(item.querySelectorAll('.desc').length).toBe(1)
+    expect(item.querySelectorAll('.extra').length).toBe(1)
   })
 
   it('right 模式连线对准指示器中心（与 label-placement=horizontal 同几何）', () => {
@@ -1268,7 +1269,6 @@ describe('arrow（箭头分格形态）', () => {
   it('指示器保留且透明化（无圆形边框，序号直读格子填充色）', () => {
     const el = mount({ arrow: '', current: '0' })
     const icon = items(el)[0]!.querySelector('.icon')!
-    expect(icon).not.toBeNull()
     expect(icon.textContent).toBe('1')
     const css = el.shadowRoot!.querySelector('style')!.textContent!
     expect(css).toContain(".steps[data-arrow='true'] .icon")

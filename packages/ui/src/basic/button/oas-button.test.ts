@@ -55,7 +55,7 @@ describe('OASButton', () => {
     expect(btn.classList.contains('default')).toBe(true)
     expect(btn.classList.contains('medium')).toBe(true)
     expect(el.textContent).toContain('保存')
-    expect(btn.querySelector('slot')).not.toBeNull()
+    expect(btn.querySelectorAll('slot').length, '默认/loading-icon/description 三插槽').toBe(3)
     expect(btn.disabled).toBe(false)
   })
 
@@ -113,7 +113,7 @@ describe('OASButton', () => {
     const btn = shadowBtn(el)
     expect(btn.disabled).toBe(true)
     expect(btn.getAttribute('aria-busy')).toBe('true')
-    expect(btn.querySelector('.spinner')).not.toBeNull()
+    expect(btn.querySelectorAll('.spinner').length).toBe(1)
   })
 
   it('点击派发 oas-click 事件（bubbles + composed）', () => {
@@ -155,9 +155,8 @@ describe('OASButton', () => {
     const el = mount({ icon: 'search' }, '搜索')
     const btn = shadowBtn(el)
     const iconEl = btn.querySelector<HTMLElement>('.icon')
-    expect(iconEl).not.toBeNull()
     expect(iconEl!.hidden).toBe(false)
-    expect(iconEl!.querySelector('svg')).not.toBeNull()
+    expect(iconEl!.querySelectorAll('svg').length).toBe(1)
     expect(btn.classList.contains('has-icon')).toBe(true)
   })
 
@@ -274,7 +273,6 @@ describe('OASButton', () => {
     it('href: renders <a> instead of <button>, carries href/target', async () => {
       const el = mount({ href: '/guide', target: '_blank' })
       const a = el.shadowRoot!.querySelector('a[part="button"]')
-      expect(a).not.toBeNull()
       expect(a!.getAttribute('href')).toBe('/guide')
       expect(a!.getAttribute('target')).toBe('_blank')
       expect(el.shadowRoot!.querySelector('button')).toBeNull()
@@ -294,10 +292,10 @@ describe('OASButton', () => {
 
     it('href removed: rebuilds back to <button>', async () => {
       const el = mount({ href: '/guide' })
-      expect(el.shadowRoot!.querySelector('a')).not.toBeNull()
+      expect(el.shadowRoot!.querySelectorAll('a').length).toBe(1)
       el.removeAttribute('href')
       await flush()
-      expect(el.shadowRoot!.querySelector('button')).not.toBeNull()
+      expect(el.shadowRoot!.querySelectorAll('button').length).toBe(1)
       expect(el.shadowRoot!.querySelector('a')).toBeNull()
       el.remove()
     })
@@ -410,9 +408,8 @@ describe('新增能力：icon-end / loading 宽度稳定 / loading-text / loadin
     const el = mount({ icon: 'search', 'icon-end': 'chevron-right' }, '搜索')
     const btn = shadowBtn(el)
     const endIcon = btn.querySelector<HTMLElement>('[part="icon-end"]')
-    expect(endIcon).not.toBeNull()
     expect(endIcon!.hidden).toBe(false)
-    expect(endIcon!.querySelector('svg')).not.toBeNull()
+    expect(endIcon!.querySelectorAll('svg').length).toBe(1)
     expect(btn.classList.contains('has-icon')).toBe(true)
     el.remove()
   })
@@ -650,7 +647,7 @@ describe('compound 双行变体（slot="description"）', () => {
     const el = mountCompound()
     expect(el.hasAttribute('data-compound')).toBe(true)
     const btn = shadowBtn(el)
-    expect(btn.querySelector('[part="description"]')).not.toBeNull()
+    expect(btn.querySelectorAll('[part="description"]').length).toBe(1)
     const slot = btn.querySelector<HTMLSlotElement>('slot[name="description"]')!
     expect(slot.assignedNodes().length, '副文本节点分配进 description 插槽').toBe(1)
     expect((slot.assignedNodes()[0] as HTMLElement).textContent).toBe('副文本说明')
@@ -670,7 +667,7 @@ describe('compound 双行变体（slot="description"）', () => {
     el.setAttribute('loading', '')
     const btn = shadowBtn(el)
     expect(btn.querySelector<HTMLElement>('[part="spinner"]')!.hidden).toBe(false)
-    expect(btn.querySelector('[part="description"]')).not.toBeNull()
+    expect(btn.querySelectorAll('[part="description"]').length).toBe(1)
     el.remove()
   })
 
@@ -984,7 +981,7 @@ describe('OASButton loading-icon 插槽（自定义加载图标，缺省内置 s
 
   it('spinner 内含 loading-icon 具名插槽（SSR 与客户端同构）', () => {
     const el = mount({})
-    expect(spinnerOf(el).querySelector('slot[name="loading-icon"]')).not.toBeNull()
+    expect(spinnerOf(el).querySelectorAll('slot[name="loading-icon"]').length).toBe(1)
   })
 
   it('缺省（插槽无内容）：loading 时保持内置 spinner 环（无 custom-icon class）', () => {
@@ -1106,7 +1103,6 @@ describe('active / active-tint 选中态', () => {
   it('active + href（a 变体）：宿主 aria-pressed 同步，CSS 选中规则覆盖 a[part=button]', () => {
     const el = mount({ href: '#guide', active: '' })
     const a = el.shadowRoot!.querySelector('a[part="button"]')!
-    expect(a).not.toBeNull()
     expect(el.getAttribute('aria-pressed')).toBe('true')
     const css = el.shadowRoot!.querySelector('style')!.textContent!
     expect(css).toMatch(/:host\(\[aria-pressed='true'\]\) a\[part='button'\]/)

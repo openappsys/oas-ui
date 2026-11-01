@@ -309,7 +309,7 @@ describe('OASMenubar', () => {
     const editTop = el.shadowRoot!.querySelector<HTMLElement>('[part="top-item"][data-value="edit"]')!
     editTop.click()
     const insertItem = el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="insert"]')
-    expect(insertItem).not.toBeNull()
+    expect(insertItem!.getAttribute('data-value')).toBe('insert')
   })
 
   it('粗指针触控基线：样式表含 pointer:coarse 的 44px 目标规则（top-item/hamburger/subitem）', () => {
@@ -467,7 +467,6 @@ describe('OASMenubar', () => {
     const el = mount({ items: SHORTCUT_ITEMS })
     const newItem = el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="new"]')!
     const kbd = newItem.querySelector('.shortcut')
-    expect(kbd).not.toBeNull()
     expect(kbd!.textContent).toBe('Ctrl+N')
   })
 
@@ -539,7 +538,7 @@ describe('checkbox 复选项', () => {
     const grid = el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="grid"]')!
     expect(grid.getAttribute('role')).toBe('menuitemcheckbox')
     expect(grid.getAttribute('aria-checked')).toBe('true')
-    expect(grid.querySelector('.check--box')).not.toBeNull()
+    expect(grid.querySelectorAll('.check--box').length).toBe(1)
     const wrap = el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="wrap"]')!
     expect(wrap.getAttribute('aria-checked')).toBe('false')
     const open = el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="open"]')!
@@ -691,9 +690,9 @@ describe('图标 icon', () => {
   it('顶级项与子项渲染 SVG 图标', () => {
     const el = mount({ items: ICON_ITEMS })
     const top = topItems(el)[0]!
-    expect(top.querySelector('svg')).not.toBeNull()
+    expect(top.querySelectorAll('svg').length).toBe(1)
     const sub = el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="new"]')!
-    expect(sub.querySelector('svg')).not.toBeNull()
+    expect(sub.querySelectorAll('svg').length).toBe(1)
   })
 
   it('iconColor：顶级项与子项图标固定颜色（svg 外层 stroke + 内置 path 的 currentColor 替换）；缺省 currentColor 不回归', () => {
@@ -877,12 +876,11 @@ describe('breakpoint 移动端汉堡', () => {
     expect(el.classList.contains('oas-menubar--mobile')).toBe(true)
     expect(bar(el).classList.contains('mobile')).toBe(true)
     const burger = el.shadowRoot!.querySelector<HTMLElement>('[part="hamburger"]')!
-    expect(burger).not.toBeNull()
     burger.click()
     const panel = el.shadowRoot!.querySelector<HTMLElement>('.hamburger-panel')!
     expect(panel.classList.contains('open')).toBe(true)
     expect(burger.getAttribute('aria-expanded')).toBe('true')
-    expect(panel.querySelectorAll<HTMLElement>('[part="item"]').length).toBeGreaterThan(0)
+    expect(panel.querySelectorAll<HTMLElement>('[part="item"]').length, '汉堡面板镜像全部菜单项').toBe(11)
     // 点击叶子项 → oas-select + 面板收起
     let detail: unknown
     el.addEventListener('oas-select', (e) => (detail = (e as CustomEvent).detail))
@@ -1058,8 +1056,6 @@ describe('start/end 插槽', () => {
     const el = mount()
     const start = el.shadowRoot!.querySelector<HTMLElement>('[part="bar-start"]')!
     const end = el.shadowRoot!.querySelector<HTMLElement>('[part="bar-end"]')!
-    expect(start).not.toBeNull()
-    expect(end).not.toBeNull()
     expect(start.hidden).toBe(true)
     expect(end.hidden).toBe(true)
     expect(start.querySelector('slot')!.getAttribute('name')).toBe('start')
@@ -1100,7 +1096,6 @@ describe('水平溢出收纳（ellipsis）', () => {
   it('水平模式渲染「···」收纳项（默认隐藏）；竖排不渲染', () => {
     const el = mount({ items: MANY_ITEMS })
     const more = el.shadowRoot!.querySelector<HTMLElement>('[part="top-item"][data-value="__more__"]')
-    expect(more).not.toBeNull()
     expect(more!.hidden).toBe(true)
     const v = mount({ items: MANY_ITEMS, orientation: 'vertical' })
     expect(v.shadowRoot!.querySelector('[data-value="__more__"]')).toBeNull()
@@ -1133,7 +1128,7 @@ describe('水平溢出收纳（ellipsis）', () => {
     Object.defineProperty(moreWrap!, 'offsetWidth', { value: 40, configurable: true })
     await new Promise((r) => requestAnimationFrame(r))
     const collapsed = dataWraps.filter((w) => w.hasAttribute('data-collapsed'))
-    expect(collapsed.length).toBeGreaterThan(0)
+    expect(collapsed.length, 'clientWidth 120 → 4 项收起').toBe(4)
     const more = el.shadowRoot!.querySelector<HTMLElement>('[part="top-item"][data-value="__more__"]')!
     expect(more.hidden).toBe(false)
     // 打开「···」弹层：显示被收项镜像
@@ -1191,7 +1186,7 @@ describe('水平溢出收纳（ellipsis）', () => {
     const mirrors = el.shadowRoot!.querySelectorAll<HTMLElement>(
       '[part="submenu"][data-parent="__more__"] [part="item"]',
     )
-    expect(mirrors.length).toBeGreaterThan(0)
+    expect(mirrors.length, '镜像项计数 = 收起项计数').toBe(4)
     expect(el.shadowRoot!.activeElement).toBe(mirrors[0])
     key(el, 'Escape') // 收回并聚焦回「···」
     expect(more.getAttribute('aria-expanded')).toBe('false')
@@ -1248,7 +1243,7 @@ describe('子元素声明式通道', () => {
     expect(openSubmenus(el).length).toBe(1)
     // 子菜单内：叶子项/组标题/分隔线齐备（作用域限定 bar——hamburger 面板内是同一份 items 副本）
     const fileSub = el.shadowRoot!.querySelector('[part="bar"] .top-wrap[data-value="file"] > [part="submenu"]')!
-    expect(fileSub.querySelector('.group-label')).not.toBeNull()
+    expect(fileSub.querySelectorAll('.group-label').length).toBe(1)
     expect(fileSub.querySelectorAll('[part="divider"]').length).toBe(1)
     const newItem = el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="new"]')!
     expect(newItem.getAttribute('role')).toBe('menuitemradio')
@@ -1256,7 +1251,6 @@ describe('子元素声明式通道', () => {
     el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="zoom"]')!.click()
     expect(openSubmenus(el).length).toBe(2)
     const zoomIn = el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="zoom-in"]')!
-    expect(zoomIn).not.toBeNull()
     zoomIn.click()
     expect(el.getAttribute('value')).toBe('zoom-in')
   })
@@ -1330,7 +1324,7 @@ describe('子元素声明式通道', () => {
     el.appendChild(item)
     await new Promise((r) => setTimeout(r, 0))
     expect(topItems(el).length).toBe(2)
-    expect(el.shadowRoot!.querySelector('[part="top-item"][data-value="edit"]')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('[part="top-item"][data-value="edit"]').length).toBe(1)
   })
 
   it('value 勾选语义：radio 组单选 + checkbox 数组（子元素通道下与 items 通道一致）', () => {
@@ -1498,7 +1492,7 @@ describe('断开重连 onReconnect 重绑（core 重连架构接线）', () => {
     parent.appendChild(el)
     // 断开重连后 document keydown 应进入导航/收起判定（cleanup 摘除 → onReconnect 重挂）
     document.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true }))
-    expect(calls, '重连后 document keydown 监听恢复（handleDocumentKey 被调）').toBeGreaterThan(0)
+    expect(calls, '重连后 document keydown 监听恢复（handleDocumentKey 被调一次）').toBe(1)
   })
 
   it('断开重连后 document pointerdown 监听恢复（外部点击关闭汉堡面板）', () => {
@@ -1514,7 +1508,7 @@ describe('断开重连 onReconnect 重绑（core 重连架构接线）', () => {
     el.remove()
     parent.appendChild(el)
     document.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, composed: true }))
-    expect(calls, '重连后 document pointerdown 监听恢复（handleDocumentPointerDown 被调）').toBeGreaterThan(0)
+    expect(calls, '重连后 document pointerdown 监听恢复（handleDocumentPointerDown 被调一次）').toBe(1)
   })
 })
 
@@ -1522,7 +1516,9 @@ describe('onReconnect mobileMq change 监听恢复（重连后移动断点切换
   it('断开重连后 mobileMq change 监听恢复（spy 断言重挂）', () => {
     const el = mount({ breakpoint: '768' })
     const host = el as unknown as { mobileMq: MediaQueryList | null }
-    expect(host.mobileMq, 'breakpoint 属性在场时 mobileMq 实例必建（恒绿守卫）').not.toBeNull()
+    expect(typeof host.mobileMq!.addEventListener, 'breakpoint 属性在场时 mobileMq 实例必建（恒绿守卫）').toBe(
+      'function',
+    )
     const mq = host.mobileMq!
     let adds = 0
     const origAdd = mq.addEventListener.bind(mq)

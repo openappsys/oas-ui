@@ -459,7 +459,7 @@ describe('OASTree 节点级 disabled / selectable / disableCheckbox / 整树 dis
     const el = mount({ disabled: '', checkable: '', data: CASCADE_DATA })
     let fired = 0
     el.addEventListener('oas-select', () => fired++)
-    expect(toggles(el)[0]).toBeTruthy() // 展开箭头仍在（视觉稳定），点击被守卫拦截
+    expect(toggles(el)[0]!.getAttribute('part')).toBe('toggle') // 展开箭头仍在（视觉稳定），点击被守卫拦截
     rows(el)[0]!.click()
     toggles(el)[0]!.click()
     checkBox(el, checkboxes(el)[0]!, true)
@@ -643,7 +643,7 @@ describe('OASTree 树内过滤（filter / filter-highlight / filterNode）', () 
   it('filter-highlight：默认 label 文本命中片段包 <mark>', () => {
     const el = mount({ filter: 're', 'filter-highlight': '', data: BIG })
     const marks = el.shadowRoot!.querySelectorAll('mark')
-    expect(marks.length).toBeGreaterThan(0)
+    expect(marks.length, 'React 一处命中（re → Re）').toBe(1)
     expect([...marks].some((m) => m.textContent === 'Re')).toBe(true)
   })
 
@@ -687,7 +687,6 @@ describe('OASTree 懒加载（lazy / load / 失败重试）', () => {
     expect(loadDetail).toEqual({ key: 'b' })
     expect(expandedOf(el)).toEqual(['b'])
     const spinner = el.shadowRoot!.querySelector<HTMLElement>('[part="spinner"]')
-    expect(spinner).not.toBeNull()
     expect(spinner!.getAttribute('aria-label')).toBe('加载中…')
 
     const loaded = JSON.stringify([
@@ -829,7 +828,7 @@ describe('OASTree field-names / tree-lines / empty', () => {
     expect(a2.querySelectorAll('.indent').length).toBe(1)
     // 非 tree-lines 时占位仍存在（行结构稳定）
     const plain = mount({ expanded: '["a"]', data: CASCADE_DATA })
-    expect(plain.shadowRoot!.querySelectorAll('[part="row"] .indent').length).toBeGreaterThan(0)
+    expect(plain.shadowRoot!.querySelectorAll('[part="row"] .indent').length, '两个子行各一个缩进占位').toBe(2)
   })
 
   it('空数据 / empty 属性 / template[slot=empty] 空态', () => {
@@ -845,7 +844,7 @@ describe('OASTree field-names / tree-lines / empty', () => {
     tpl.innerHTML = '<i class="custom-empty">无节点</i>'
     withSlot.appendChild(tpl)
     document.body.appendChild(withSlot)
-    expect(withSlot.shadowRoot!.querySelector('.empty .custom-empty')).not.toBeNull()
+    expect(withSlot.shadowRoot!.querySelectorAll('.empty .custom-empty').length).toBe(1)
   })
 })
 
@@ -1183,7 +1182,7 @@ describe('OASTree 声明式数据通道 / 水合 / 自定义渲染 / 目录', ()
     el.appendChild(tpl('node', '<svg class="glyph"></svg><span data-node-label></span>'))
     el.setAttribute('data', el.getAttribute('data')!)
     const label = el.shadowRoot!.querySelector<HTMLElement>('[part="row"] .label')!
-    expect(label.querySelector('svg.glyph')).not.toBeNull()
+    expect(label.querySelectorAll('svg.glyph').length).toBe(1)
     expect(label.querySelector('[data-node-label]')!.textContent).toBe('节点 A')
   })
 
@@ -1203,7 +1202,7 @@ describe('OASTree 声明式数据通道 / 水合 / 自定义渲染 / 目录', ()
     el.appendChild(tpl('toggle', '<svg class="chev"></svg>'))
     el.setAttribute('data', el.getAttribute('data')!)
     const toggle = el.shadowRoot!.querySelector<HTMLElement>('[part="toggle"]')!
-    expect(toggle.querySelector('svg.chev')).not.toBeNull()
+    expect(toggle.querySelectorAll('svg.chev').length).toBe(1)
     expect(toggle.textContent!.includes('›')).toBe(false)
   })
 
@@ -1282,7 +1281,6 @@ describe('OASTree 节点重命名（can-rename / 双击 or F2 内联编辑）', 
     el.addEventListener('oas-select', () => selectCount++)
     dblClickLabel(el, 0)
     const input = renameInputOf(el)
-    expect(input).not.toBeNull()
     expect(input!.value).toBe('节点 A')
     // 第二次点击的选中被抑制：选中不取消、oas-select 只随首击触发一次
     expect(el.getAttribute('selected')).toBe('a')
@@ -1301,7 +1299,7 @@ describe('OASTree 节点重命名（can-rename / 双击 or F2 内联编辑）', 
     dblClickLabel(el, 1)
     expect(renameInputOf(el)).toBeNull()
     dblClickLabel(el, 0)
-    expect(renameInputOf(el)).not.toBeNull()
+    expect(renameInputOf(el)!.value).toBe('可重命名')
   })
 
   it('整树 disabled / 节点 disabled：不可重命名', () => {
@@ -1406,7 +1404,6 @@ describe('OASTree 节点重命名（can-rename / 双击 or F2 内联编辑）', 
     rows(el)[0]!.focus()
     rows(el)[0]!.dispatchEvent(new KeyboardEvent('keydown', { key: 'F2', bubbles: true, composed: true }))
     const input = renameInputOf(el)
-    expect(input).not.toBeNull()
     expect(input!.value).toBe('节点 A')
     input!.value = 'F2 改名'
     input!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
@@ -1425,7 +1422,6 @@ describe('OASTree 节点重命名（can-rename / 双击 or F2 内联编辑）', 
     // 重建触发（同 data 重设属性 → update 全量重建行）
     el.setAttribute('data', el.getAttribute('data')!)
     const rebuilt = renameInputOf(el)
-    expect(rebuilt).not.toBeNull()
     expect(rebuilt!.value).toBe('重命名中')
   })
 
@@ -1448,7 +1444,6 @@ describe('OASTree 节点重命名（can-rename / 双击 or F2 内联编辑）', 
     fire()
     fire()
     const input = virtualRows(el)[0]!.querySelector<HTMLInputElement>('input.rename-input')
-    expect(input).not.toBeNull()
     input!.value = '虚拟行改名'
     input!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
     expect(virtualRows(el)[0]!.textContent).toContain('虚拟行改名')
@@ -1526,7 +1521,7 @@ describe('OASTree 展开/收起过渡（motion 高度动画）', () => {
     const childRow = [...virtualRows(el)].find((r) =>
       r.querySelector<HTMLElement>('.label')!.textContent.includes('子节点 0-c'),
     )
-    expect(childRow).toBeTruthy()
+    expect(childRow!.textContent, '子节点 0-c 已进入虚拟窗口').toContain('子节点 0-c')
     expect(childRow!.querySelector('.row')!.classList.contains('oas-row-fade')).toBe(true)
     // 虚拟模式收起降级即时（不做强行动画）
     virtualRows(el)[0]!.querySelector<HTMLButtonElement>('.toggle')!.click()
@@ -1901,7 +1896,7 @@ describe('OASTree size 五档 / block-node / selectable 整树开关（P2 批）
       box.checked = true
       box.dispatchEvent(new Event('change'))
       const value = checkedOf(el)
-      expect(value.length, '过滤态全选只含可见匹配（A 子树）').toBeGreaterThan(0)
+      expect(value.length, '过滤态全选只含可见匹配（A 子树 3 节点）').toBe(3)
       expect(value.includes('b'), '未命中的节点 B 不得入选').toBe(false)
       expect(value.includes('a'), '命中节点 A 入选').toBe(true)
       // 清过滤后全选覆盖全树
@@ -1961,7 +1956,7 @@ describe('OASTree size 五档 / block-node / selectable 整树开关（P2 批）
     it('check-all：虚拟模式（height）下全选项行仍渲染', () => {
       const el = mount({ checkable: '', 'check-all': '', height: '120', data: CASCADE_DATA })
       expect(rowOf(el).hasAttribute('hidden')).toBe(false)
-      expect(boxOf(el)).not.toBeNull()
+      expect(boxOf(el).checked).toBe(false)
     })
 
     it('check-all：样式表含全选项行规则（token 色）', () => {

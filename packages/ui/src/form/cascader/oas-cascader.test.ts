@@ -151,7 +151,7 @@ describe('OASCascader multiple 多选', () => {
   it('多选面板行渲染 checkbox', () => {
     const el = mount({ multiple: '' })
     trigger(el).click()
-    expect(rows(el, 0)[0]!.querySelector('.check')).not.toBeNull()
+    expect(rows(el, 0)[0]!.querySelectorAll('.check').length).toBe(1)
   })
 
   it('勾选叶子提交路径数组且不关闭面板', () => {
@@ -271,7 +271,7 @@ describe('OASCascader filterable 搜索', () => {
     trigger(el).click()
     const input = searchInput(el)
     expect(input.hidden).toBe(false)
-    expect(input.getAttribute('aria-label')).toBeTruthy()
+    expect(input.getAttribute('aria-label')).toBe('搜索选项')
   })
 
   it('输入后展示扁平路径结果', () => {
@@ -314,7 +314,6 @@ describe('OASCascader filterable 搜索', () => {
     input.value = '不存在'
     input.dispatchEvent(new Event('input', { bubbles: true }))
     const status = el.shadowRoot!.querySelector('.empty')
-    expect(status).not.toBeNull()
     expect(status!.textContent).toContain('无匹配选项')
   })
 
@@ -643,7 +642,6 @@ describe('OASCascader 空态', () => {
     const el = mount({ options: '[]' })
     trigger(el).click()
     const status = el.shadowRoot!.querySelector('.empty')
-    expect(status).not.toBeNull()
     expect(status!.textContent).toContain('暂无数据')
   })
 })
@@ -795,7 +793,6 @@ describe('OASCascader 移动端底部抽屉（bottom-sheet 接入）', () => {
 
   it('模板恒包 oas-bottom-sheet（SSR/客户端结构一致），PC 默认 passive 透传', () => {
     const el = mount()
-    expect(sheet(el)).toBeTruthy()
     expect(sheet(el).getAttribute('part')).toBe('sheet')
     expect(sheet(el).hasAttribute('passive')).toBe(true)
     expect(sheet(el).contains(dropdown(el))).toBe(true)
@@ -1070,7 +1067,7 @@ describe('OASCascader 长尾组（能力缺口 P2）', () => {
     document.body.appendChild(el)
     const box = suffixIconBox(el)
     expect(box.hidden).toBe(false)
-    expect(box.querySelector('.my-ic')).not.toBeNull()
+    expect(box.querySelectorAll('.my-ic').length).toBe(1)
     expect(chevron(el).hasAttribute('hidden')).toBe(true)
     // loading：spinner 显示，自定义图标与 chevron 一并让位
     el.setAttribute('loading', '')
@@ -1096,13 +1093,13 @@ describe('OASCascader 长尾组（能力缺口 P2）', () => {
     document.body.appendChild(el)
     el.setAttribute('open', '')
     const first = rows(el)[0]!
-    expect(first.querySelector('.opt-ic')).not.toBeNull()
+    expect(first.querySelectorAll('.opt-ic').length).toBe(1)
     expect(first.querySelector('[data-option-label]')!.textContent).toBe('浙江')
     // 搜索结果行同样走模板
     searchInput(el).value = '杭'
     searchInput(el).dispatchEvent(new Event('input', { bubbles: true }))
     const result = el.shadowRoot!.querySelector('.search-results [role="option"]')!
-    expect(result.querySelector('.opt-ic')).not.toBeNull()
+    expect(result.querySelectorAll('.opt-ic').length).toBe(1)
     expect(result.querySelector('[data-option-label]')!.textContent).toBe('浙江 / 杭州')
   })
 
@@ -1205,7 +1202,7 @@ describe('OASCascader 虚拟滚动（virtual）', () => {
     }
     // happy-dom 不自动触发 scroll：手动派发后窗口重算，高亮项应在窗口内
     const vp = vlistOf(el).shadowRoot!.querySelector<HTMLElement>('.viewport')!
-    expect(vp.scrollTop).toBeGreaterThan(0)
+    expect(vp.scrollTop).toBe(696)
     vp.dispatchEvent(new Event('scroll'))
     await flushRaf()
     const activeRow = virtualRows(el).find((r) => r.classList.contains('active'))
@@ -1254,13 +1251,16 @@ describe('OASCascader 虚拟滚动（virtual）', () => {
     searchInput(el).value = '项目 9'
     searchInput(el).dispatchEvent(new Event('input', { bubbles: true }))
     // 搜索模式渲染扁平路径结果列表，不虚拟化
-    expect(el.shadowRoot!.querySelector('.search-results')).not.toBeNull()
-    expect(el.shadowRoot!.querySelectorAll('.search-results [role="option"]').length).toBeGreaterThan(0)
+    expect(el.shadowRoot!.querySelectorAll('.search-results').length).toBe(1)
+    expect(
+      el.shadowRoot!.querySelectorAll('.search-results [role="option"]').length,
+      '项目 9/90-99/900-999 命中（含父级路径行）',
+    ).toBe(222)
     // loading 态：面板只显示加载占位
     document.body.innerHTML = ''
     const loading = mount({ virtual: '', loading: '', options: wideOptions(100) })
     loading.setAttribute('open', '')
-    expect(loading.shadowRoot!.querySelector('[role="status"]')).not.toBeNull()
+    expect(loading.shadowRoot!.querySelectorAll('[role="status"]').length).toBe(1)
     expect(loading.shadowRoot!.querySelectorAll('oas-virtual-list').length).toBe(0)
   })
 
@@ -1452,7 +1452,7 @@ describe('OASCascader 清空按钮与 chip 移除钮键盘可达（I4）', () =>
     const clearBtn = el.shadowRoot!.querySelector<HTMLElement>('[part="clear"]')!
     expect(clearBtn.getAttribute('tabindex')).toBe('0')
     expect(clearBtn.tabIndex).toBe(0)
-    expect((clearBtn.getAttribute('aria-label') ?? '').length).toBeGreaterThan(0)
+    expect(clearBtn.getAttribute('aria-label')).toBe('清除')
     clearBtn.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }))
     expect(el.getAttribute('value')).toBeNull()
     expect(el.shadowRoot!.activeElement, '清空后焦点交还 trigger').toBe(trigger(el))
@@ -1464,7 +1464,7 @@ describe('OASCascader 清空按钮与 chip 移除钮键盘可达（I4）', () =>
     const rm = chip.querySelector<HTMLElement>('.remove')!
     expect(rm.getAttribute('tabindex')).toBe('0')
     expect(rm.tabIndex).toBe(0)
-    expect((rm.getAttribute('aria-label') ?? '').length).toBeGreaterThan(0)
+    expect(rm.getAttribute('aria-label')).toBe('移除 浙江 / 杭州')
     rm.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }))
     expect(JSON.parse(el.getAttribute('value') ?? '[]')).toEqual([['js'], ['js', 'nj']])
     expect(trigger(el).getAttribute('aria-expanded'), '移除 chip 不应冒泡成展开').toBe('false')

@@ -113,7 +113,7 @@ describe('OASUpload', () => {
       const uploads: unknown[] = []
       el.addEventListener('oas-upload', (e: Event) => uploads.push((e as CustomEvent).detail))
       vi.advanceTimersByTime(120 * 5 + 50)
-      expect(uploads.length).toBeGreaterThan(0)
+      expect(uploads.length, '5 个进度节点（20→100）各派发一次').toBe(5)
       const last = uploads[uploads.length - 1] as { percent: number; status: string }
       expect(last.percent).toBe(100)
       expect(last.status).toBe('done')
@@ -131,7 +131,7 @@ describe('OASUpload', () => {
       el.addEventListener('oas-upload', (e: Event) => uploads.push((e as CustomEvent).detail))
       el.startUpload()
       vi.advanceTimersByTime(120 * 3 + 10)
-      expect(uploads.length).toBeGreaterThan(0)
+      expect(uploads.length, '3 个进度节点（20/40/60）').toBe(3)
     } finally {
       vi.useRealTimers()
     }
@@ -221,7 +221,6 @@ describe('OASUpload list-type', () => {
     const el = mount({ 'list-type': 'picture-card' })
     el.files = [makeFile('a.png', 'image/png')]
     const img = el.shadowRoot!.querySelector<HTMLImageElement>('.card .thumb img')!
-    expect(img).not.toBeNull()
     expect(img.src).toContain('blob:')
     expect(img.alt).toBe('a.png')
   })
@@ -230,7 +229,7 @@ describe('OASUpload list-type', () => {
     const el = mount({ 'list-type': 'picture-card' })
     el.files = [makeFile('a.txt')]
     const thumb = el.shadowRoot!.querySelector('.card .thumb')!
-    expect(thumb.querySelector('oas-icon')).not.toBeNull()
+    expect(thumb.querySelectorAll('oas-icon').length).toBe(1)
     expect(thumb.querySelector('img')).toBeNull()
     expect(thumb.textContent).toContain('a.txt')
   })
@@ -482,7 +481,6 @@ describe('OASUpload 真实上传通道（action + XHR）', () => {
     expect(el.shadowRoot!.querySelector('.item')!.classList.contains('is-error')).toBe(true)
     expect(errors[0]).toEqual({ file: expect.any(File), response: 'boom', status: 500 })
     const retry = el.shadowRoot!.querySelector<HTMLButtonElement>('.item .retry')!
-    expect(retry).not.toBeNull()
     retry.click()
     expect(retries.length).toBe(1)
     expect(FakeUploadXHR.instances.length).toBe(2)
@@ -493,7 +491,7 @@ describe('OASUpload 真实上传通道（action + XHR）', () => {
     const cancels: unknown[] = []
     el.addEventListener('oas-cancel', (e: Event) => cancels.push((e as CustomEvent).detail))
     pick(el, [makeFile('a.txt')])
-    expect(el.shadowRoot!.querySelector('.item .cancel')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('.item .cancel').length).toBe(1)
     ;(el.shadowRoot!.querySelector('.item .cancel') as HTMLElement).click()
     expect(cancels).toEqual([{ file: expect.any(File) }])
     expect(el.shadowRoot!.querySelector('.item')!.classList.contains('is-error')).toBe(false)
@@ -856,7 +854,7 @@ describe('OASUpload 插槽（tip / trigger / item）', () => {
     expect(slot.hidden).toBe(true)
     const cloneBox = el.shadowRoot!.querySelector<HTMLElement>('.trigger-tpl')!
     expect(cloneBox.hidden).toBe(false)
-    expect(cloneBox.querySelector('.my-avatar')).not.toBeNull()
+    expect(cloneBox.querySelectorAll('.my-avatar').length).toBe(1)
     expect(cloneBox.querySelector('.my-hint')?.textContent).toBe('点击或拖拽上传头像')
     // 克隆内容在 shadow 内 → zone 点击路径开文件选择（不依赖 light DOM 冒泡转发）
     const input = inputOf(el)
@@ -873,7 +871,7 @@ describe('OASUpload 插槽（tip / trigger / item）', () => {
     el.appendChild(tpl)
     el.files = [makeFile('a.txt', 'text/plain', 2048)]
     const item = el.shadowRoot!.querySelector('.item')!
-    expect(item.querySelector('.row-badge')).not.toBeNull()
+    expect(item.querySelectorAll('.row-badge').length).toBe(1)
     expect(item.querySelector('[data-item-name]')!.textContent).toBe('a.txt')
     // Task 9C：模板绑定同样跟随 IEC 单位（旧断言 `2.0 KB` 按新契约重算）
     expect(item.querySelector('[data-item-size]')!.textContent).toBe('2.0 KiB')
@@ -900,7 +898,6 @@ describe('OASUpload list/picture 预览入口与回显初值', () => {
     let detail: unknown
     el.addEventListener('oas-preview', (e: Event) => (detail = (e as CustomEvent).detail))
     const nameBtn = el.shadowRoot!.querySelector<HTMLButtonElement>('.item .name-btn')!
-    expect(nameBtn).not.toBeNull()
     nameBtn.click()
     expect(detail).toEqual({ file: expect.any(File), url: 'blob:mock-url' })
     expect(el.shadowRoot!.querySelector<HTMLElement>('.preview-mask')!.hidden).toBe(false)
@@ -993,7 +990,7 @@ describe('OASUpload picture-card error 态', () => {
     FakeUploadXHR.instances[0]!.respond(500, 'boom')
     const card = el.shadowRoot!.querySelector('.card')!
     expect(card.classList.contains('is-error')).toBe(true)
-    expect(card.querySelector('.act.retry')).not.toBeNull()
+    expect(card.querySelectorAll('.act.retry').length).toBe(1)
     ;(card.querySelector('.act.retry') as HTMLElement).click()
     expect(FakeUploadXHR.instances.length).toBe(2)
   })
@@ -1131,7 +1128,7 @@ describe('OASUpload form-associated（原生表单集成）', () => {
     const missing = fake.setValidity.mock.calls.at(-1)
     expect(missing?.[0]).toEqual({ valueMissing: true })
     expect(typeof missing?.[1]).toBe('string')
-    expect((missing?.[1] as string).length).toBeGreaterThan(0)
+    expect(missing?.[1] as string).toMatch(/\S/)
     pick(el, [makeFile('a.txt')])
     expect(fake.setValidity).toHaveBeenLastCalledWith({})
   })
@@ -1191,9 +1188,9 @@ describe('OASUpload oas-progress（进度事件通道，PRD P2）', () => {
       el.addEventListener('oas-progress', (e: Event) => progresses.push((e as CustomEvent).detail))
       pick(el, [makeFile('a.txt')])
       vi.advanceTimersByTime(120 * 5 + 50)
-      expect(progresses.length).toBeGreaterThan(0)
+      expect(progresses.length, '5 个进度节点（20→100）').toBe(5)
       expect(progresses[0]!.file).toBeInstanceOf(File)
-      expect(progresses[0]!.percent).toBeGreaterThan(0)
+      expect(progresses[0]!.percent).toBe(20)
       expect(progresses.at(-1)!.percent).toBe(100)
       // 单调不回退
       const mono = progresses.every((p, i) => i === 0 || p.percent >= progresses[i - 1]!.percent)
