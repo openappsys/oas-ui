@@ -5,7 +5,7 @@
 
 ---
 
-## 未发布：gantt / resource 二期核心扩展（4 项 opt-in）
+## v2.6.6：gantt / resource 二期核心扩展（4 项 opt-in）
 
 ### 功能定义
 
@@ -33,7 +33,7 @@
 
 ---
 
-## 未发布：gantt / resource Pro helper 分包批（6 个按需 helper）
+## v2.6.6：gantt / resource Pro helper 分包批（6 个按需 helper）
 
 ### 功能定义
 
@@ -63,7 +63,7 @@ helper 不进 L1、不进 CDN 族包（`perf:size` 新增 6 条 L3 登记 + 独�
 
 ---
 
-## 未发布：gantt 斑马纹与周末/假日列视觉修正 + 行高对齐 + 行 hover（gantt / resource）
+## v2.6.6：gantt 斑马纹与周末/假日列视觉修正 + 行高对齐 + 行 hover（gantt / resource）
 
 ### 功能定义
 
@@ -85,7 +85,7 @@ helper 不进 L1、不进 CDN 族包（`perf:size` 新增 6 条 L3 登记 + 独�
 
 ---
 
-## 未发布：issue 反馈批（Select 选项图标 + 文档站导航）
+## v2.6.6：issue 反馈批（Select 选项图标 + 文档站导航）
 
 ### 功能定义
 
@@ -108,7 +108,7 @@ helper 不进 L1、不进 CDN 族包（`perf:size` 新增 6 条 L3 登记 + 独�
 
 ---
 
-## 未发布：Bubble 气泡尾巴（opt-in）
+## v2.6.6：Bubble 气泡尾巴（opt-in）
 
 ### 功能定义
 
@@ -134,6 +134,8 @@ helper 不进 L1、不进 CDN 族包（`perf:size` 新增 6 条 L3 登记 + 独�
 - 中英文档 + API 表 + CHANGELOG 同步；亮/暗截图核对尾巴与气泡表面无缝衔接；`api:check` / `llms:check` / build / typecheck 全绿。
 
 ---
+
+## v2.6.6：i18n 默认语言包按家族切片（包体止损批）
 
 ### 背景
 

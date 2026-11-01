@@ -2,53 +2,53 @@
 
 版本遵循 SemVer。v1.0.0 为首个正式发布。每个版本 = 一个可独立交付/可试用的里程碑。
 
-## 未发布（gantt / resource 二期核心扩展批）
+## v2.6.6（gantt / resource 二期核心扩展批）
 
 | 范围 | 内容 | 状态 |
 | --- | --- | --- |
-| **gantt / resource 二期核心扩展（4 项 opt-in，默认关）** | ① gantt `show-effort` 工时列：行标签区两列（名称 \| 工时），`GanttTask.effort`（天，可小数，纯展示不参与排程；负数/非有限清洗丢弃）右对齐 + 单元格可读名 i18n `gantt.effortValue`（带单位文案，与 resource「成本 N」前缀方案对齐）+ 列头 i18n `gantt.effort` ×10 语言，列宽 token `--oas-gantt-effort-width`，超大值科学计数；② gantt `show-status-line` + `status-date`：时间轴状态竖线（token `--oas-gantt-status-line-color`，缺省 warning 族；关闭态不解析 status-date）+ 条内计划进度刻度（**含端日粒度**口径：status 日与 start 的日历日差含当日 clamp 工期，与 `computeEvm` planned 同构，`data-plan-ratio` 0-1 供宿主消费；里程碑二值、summary 不画，只画刻度不染色不告警）；③ gantt 多基线：新接口 `GanttBaseline { id, start, end?, progress? }` + `GanttTask.baselines`（清洗层逐条校验；单 `baseline` 字段**读侧归一** `[{ id: 'default', ... }]`、不物化派生数组——updateTask/updateTasks 改/删单字段即时生效）+ `baseline-id` 属性（缺省第一条、未命中回落并实例级告警一次）+ `computeVariance(tasks, baselineId?)` 可选第二参数（既有调用不破坏）；④ resource `show-cost`：泳道行头成本合计 Σ(**托管轴内**任务天数 × 8h × `ResourceItem.costRate`) 两位小数无货币符号（有 range-* 按轴端点求交、不随刻度档漂移），费率缺失/非法 lane 不显示，随数据/日期窗口在 update() 重算，i18n `resource.cost` ×10 语言。全部默认关、默认视觉零变化；单测（gantt 26 + resource 8 条新用例，含 updateTask 读改写回归组与 evm 跨包对表）+ 中英文档 + API 表 + CHANGELOG（含保留键透传契约变化声明） | ✅ 已完成（未发布） |
+| **gantt / resource 二期核心扩展（4 项 opt-in，默认关）** | ① gantt `show-effort` 工时列：行标签区两列（名称 \| 工时），`GanttTask.effort`（天，可小数，纯展示不参与排程；负数/非有限清洗丢弃）右对齐 + 单元格可读名 i18n `gantt.effortValue`（带单位文案，与 resource「成本 N」前缀方案对齐）+ 列头 i18n `gantt.effort` ×10 语言，列宽 token `--oas-gantt-effort-width`，超大值科学计数；② gantt `show-status-line` + `status-date`：时间轴状态竖线（token `--oas-gantt-status-line-color`，缺省 warning 族；关闭态不解析 status-date）+ 条内计划进度刻度（**含端日粒度**口径：status 日与 start 的日历日差含当日 clamp 工期，与 `computeEvm` planned 同构，`data-plan-ratio` 0-1 供宿主消费；里程碑二值、summary 不画，只画刻度不染色不告警）；③ gantt 多基线：新接口 `GanttBaseline { id, start, end?, progress? }` + `GanttTask.baselines`（清洗层逐条校验；单 `baseline` 字段**读侧归一** `[{ id: 'default', ... }]`、不物化派生数组——updateTask/updateTasks 改/删单字段即时生效）+ `baseline-id` 属性（缺省第一条、未命中回落并实例级告警一次）+ `computeVariance(tasks, baselineId?)` 可选第二参数（既有调用不破坏）；④ resource `show-cost`：泳道行头成本合计 Σ(**托管轴内**任务天数 × 8h × `ResourceItem.costRate`) 两位小数无货币符号（有 range-* 按轴端点求交、不随刻度档漂移），费率缺失/非法 lane 不显示，随数据/日期窗口在 update() 重算，i18n `resource.cost` ×10 语言。全部默认关、默认视觉零变化；单测（gantt 26 + resource 8 条新用例，含 updateTask 读改写回归组与 evm 跨包对表）+ 中英文档 + API 表 + CHANGELOG（含保留键透传契约变化声明） | ✅ 已完成（v2.6.6） |
 
-## 未发布（gantt / resource Pro helper 分包批）
-
-| 范围 | 内容 | 状态 |
-| --- | --- | --- |
-| **6 个按需 helper 子路径（gantt / resource Pro 分包一期）** | `@oas-ui/ui/data/gantt/export`（toCsv：拍平 + 默认列 + CSV 转义 + bom）、`@oas-ui/ui/data/gantt/evm`（computeEvm：budget/PV/EV/AC/spi/cpi）、`@oas-ui/ui/data/gantt/alap`（computeLateDates：fs/ss/ff/sf + lag 反向 CPM、环 best-effort）、`@oas-ui/ui/data/gantt/recurring`（expandRecurring：daily/weekly/monthly + count/until/窗口）、`@oas-ui/ui/data/resource/cost`（computeCost：taskCost 优先 + resourceIds 限定 + perResource 均摊）、`@oas-ui/ui/data/resource/pool`（ResourcePool + globalThis Symbol.for 单例）。helper 纯函数、零 core/i18n/customElements/CSS、无模块级副作用；组件核心一行不动；不进 L1/CDN 族包（perf:size 6 条 helper 型 L3 登记 + 独立预算档锁定，首档 2026-11-01：export 1.5 / evm 1.5 / alap 2 / recurring 2 / cost 1.25 / pool 0.75 KB gzip，实测 1110/1097/1423/1380/828/490 B）；56 条单测 + 全量门禁 | ✅ 已完成（未发布） |
-
-## 未发布（测试质量：qa:audit 还债）
+## v2.6.6（gantt / resource Pro helper 分包批）
 
 | 范围 | 内容 | 状态 |
 | --- | --- | --- |
-| **固定等待清理 + 弱断言全量还债** | `waitForTimeout` **440 → 26**（四批；26 处全部为已登记例外——时间流逝语义 / 否定断言 / 测量仪器与无统一信号，逐处带 `audit-exception` 注释）。弱断言 **1967 → 0**：单测 1549（U1a–U9 九批）+ e2e 418（W1/E1–E3 四批）共约 1900 处全部换成精确值 / 精确契约 / 下界+理由 / 删冗余（禁换皮），门禁 `maxWeak` 锁到 **0**（零增量容忍）；精确值绑定实现细节处已注释，重构时按新实现更新 | ✅ 已完成（未发布） |
+| **6 个按需 helper 子路径（gantt / resource Pro 分包一期）** | `@oas-ui/ui/data/gantt/export`（toCsv：拍平 + 默认列 + CSV 转义 + bom）、`@oas-ui/ui/data/gantt/evm`（computeEvm：budget/PV/EV/AC/spi/cpi）、`@oas-ui/ui/data/gantt/alap`（computeLateDates：fs/ss/ff/sf + lag 反向 CPM、环 best-effort）、`@oas-ui/ui/data/gantt/recurring`（expandRecurring：daily/weekly/monthly + count/until/窗口）、`@oas-ui/ui/data/resource/cost`（computeCost：taskCost 优先 + resourceIds 限定 + perResource 均摊）、`@oas-ui/ui/data/resource/pool`（ResourcePool + globalThis Symbol.for 单例）。helper 纯函数、零 core/i18n/customElements/CSS、无模块级副作用；组件核心一行不动；不进 L1/CDN 族包（perf:size 6 条 helper 型 L3 登记 + 独立预算档锁定，首档 2026-11-01：export 1.5 / evm 1.5 / alap 2 / recurring 2 / cost 1.25 / pool 0.75 KB gzip，实测 1110/1097/1423/1380/828/490 B）；56 条单测 + 全量门禁 | ✅ 已完成（v2.6.6） |
 
-## 未发布（issue 反馈批）
-
-| 范围 | 内容 | 状态 |
-| --- | --- | --- |
-| **`oas-select` 选项图标（`Option.icon`）** | `options` JSON 与 `<oas-option icon>` 支持 `@oas-ui/icons` 图标名；下拉项、单选触发器、多选 chip 统一渲染 `icon + label`；图标 `aria-hidden`，未知图标回退纯文本 + 一次 devWarn；富内容走现有 `oas-option-render` / option 模板逃生口；单测 + Chromium qa-regression + zh/en 文档/API/暗色/console 收口 | ✅ 已完成（未发布） |
-| **文档站 issue 反馈收口** | 组件侧栏数据抽离 `sidebar.ts` 单一数据源，中文/英文侧栏与总览页保留语义分组、组内按 slug 字母排序，`sidebar-order.test.ts` 防漂移，llms 生成器同步；英文浏览器首访 `/` / `/index.html` 自动进 `/en/` 并保留 query/hash，深链不做语言猜测，显式 `oas-lang` 仍全站生效、自动猜测不持久化；首页 docs-site e2e 收口 | ✅ 已完成（未发布） |
-| **`oas-gantt` 斑马纹 × 周末/假日列视觉修正** | 周末/假日列底色改相对 `--oas-color-bg` 的不透明混合，斑马行上的周末/假日列不再吸收条纹色；`stripe` 保持 opt-in（默认关），虚拟滚动 demo 新增真实开关；像素级 dark 回归 + demo 开关交互回归 | ✅ 已完成（未发布） |
-| **`oas-gantt` 行高对齐修正** | `row-height` 属性映射 `--oas-gantt-row-height`（与 height 属性同协议），左侧行名高度与网格行高同源，修复 `row-height≠36` 时行名 36px 缺省高度与 32px 网格逐行叠压错位；单测（token 协议 3 条）+ 几何级 e2e（行名/条纹顶底边对齐） | ✅ 已完成（未发布） |
-| **`oas-gantt` / `oas-resource` 行 hover（默认开，`hover="false"` 关闭）** | 鼠标移入行名/任务条（gantt）或泳道（resource）整行点亮，左右同底色；新 token `--oas-gantt-row-hover-bg` / `--oas-resource-row-hover-bg`（与斑马纹、条 hover 独立）；gantt 时间轴单元素装饰层挂绝对行号（虚拟滚动窗口内重建，条纹 < hover < 选中）；resource 纯 CSS（行 + sticky 行头，关闭时逐元素还原基础底色）；单测 + e2e（真实 hover 几何对齐/暗色/关闭/console） | ✅ 已完成（未发布） |
-
-## 未发布（Bubble 气泡尾巴）
+## v2.6.6（测试质量：qa:audit 还债）
 
 | 范围 | 内容 | 状态 |
 | --- | --- | --- |
-| **`oas-bubble` opt-in 尾巴（`tail`）** | `tail="none"（默认）\| "auto" \| "start" \| "end"`：`auto` 跟随有效对齐（显式 `align` 或容器 text-align 继承反射）；实底变体在底部外角画弧形尾巴（颜色与表面同源，暗色适配），`outline` 退化为底部外角收小圆角，`muted`/`ghost` 无表面不画；逻辑属性 RTL 镜像，装饰性伪元素不进 DOM/读屏；分组由宿主只给同发送者连续消息的最后一条加 tail；新增 `--oas-bubble-tail-size` / `--oas-bubble-tail-offset` / `--oas-bubble-tail-corner-radius`；SSR 首帧按显式 align 落侧。单测 + 真实浏览器 e2e + zh/en 文档/API/CHANGELOG | ✅ 已完成（未发布） |
+| **固定等待清理 + 弱断言全量还债** | `waitForTimeout` **440 → 26**（四批；26 处全部为已登记例外——时间流逝语义 / 否定断言 / 测量仪器与无统一信号，逐处带 `audit-exception` 注释）。弱断言 **1967 → 0**：单测 1549（U1a–U9 九批）+ e2e 418（W1/E1–E3 四批）共约 1900 处全部换成精确值 / 精确契约 / 下界+理由 / 删冗余（禁换皮），门禁 `maxWeak` 锁到 **0**（零增量容忍）；精确值绑定实现细节处已注释，重构时按新实现更新 | ✅ 已完成（v2.6.6） |
 
-## 未发布（包体止损批）
-
-| 范围 | 内容 | 状态 |
-| --- | --- | --- |
-| **i18n 默认语言包按家族切片（包体止损）** | 内置 zh-CN 拆成 9 个家族切片（basic / conversation / data / feedback / form / framework / layout / navigation / workbench）：`locales/zh-CN.ts` 单一事实源 + `scripts/i18n/gen-slices.mjs` 生成 `slices/<family>.ts`（`--check` 防漂移接入完备性单测）；消费形态为「值导入 + 显式调用」（`registerDefaultMessages(<family>Messages)`，不依赖模块副作用）；新子路径 `@oas-ui/i18n/registry`（无默认文案）与 `@oas-ui/i18n/slices/<family>`，公共入口 `@oas-ui/i18n` 行为不变（9 切片全量注册）；`getLocale().messages` 语义为「已加载的切片」（整包 `@oas-ui/i18n/zh-CN` 不变）；跨家族 key 重复写入每个消费族、8 个死键归 framework；i18n 发布产物 `removeComments`（d.ts 保留文档）+ `sideEffects` 补 `./dist/registry.js`。实测按需链 gzip（dist 静态闭包口径）：form 28.9→22.4 KB、table 68.8→64.3 KB、gantt 66.7→61.1 KB、json-viewer 34.0→28.4 KB、diff-viewer 32.7→27.1 KB，helper 链（table/advanced、range、detail、glass-fluid）不变；顺带修复打包消费方（含 CDN）默认语言包被摇掉导致 raw key（`perf:size` 新增 `[CDN 默认文案]` 断言锁定）。非目标：其余 9 个语言包不动、不改 key/文案、不做跨语言回退。验收：全量单测 11805、`node scripts/i18n/gen-slices.mjs --check` 防漂移、`perf:size` | ✅ 已完成（未发布） |
-
-| **4 条贴边链预算重定档（包体止损）** | 对 `table/advanced`（7.8/8.0）、`table/range`（11.9/13）、`table/detail`（3.7/4）、`theme glass-fluid`（8.1/8.5）逐文件复读：可安全移除项合计仅 136 B（最大项是 range 的 `findRowPath` 双实现 69 B、detail 的 `isInputTarget` 重复 60 B），**无冗余可清**；此前 2.2%~5.1% 余量使 90% 预警线失去意义。按实测上浮 13.5%~18% 重定档 9 / 13.5 / 4.5 / 9.5 KB（利用率 86.9% / 88.1% / 82.6% / 85.1%），依据写入各条 `basis`；`glass-fluid` 原「暂不瘦身/不重定档」结论被本次逐行复核替换 | ✅ 已完成（未发布） |
-
-## 未发布（发布门禁机械化）
+## v2.6.6（issue 反馈批）
 
 | 范围 | 内容 | 状态 |
 | --- | --- | --- |
-| **发布核查机械化（五层清单落地为工具）** | ① `pnpm release:rehearse`：直接解析 `.github/workflows/ci.yml` 的 `test` job 步骤逐条本地重放（CI 改步骤自动跟随，不再依赖手工清单），加两份本地加严（`check-trace --all` / `lint:md`）；`--with-e2e` 复刻全量浏览器 e2e（= CI e2e + e2e-webkit），`--with-ssr-e2e` 复刻 `ssr-fixtures` job（两 fixture install/build/typecheck + 两套 fixture e2e，跳过 `--with-deps`）。三层证据落 `<git-dir>/oas-release-rehearsal.json`（同 SHA 按层累积、换 SHA 重置、失败层写 `ok:false`、执行期 HEAD 漂移不写）。② `scripts/release-check.mjs` 新增定版检查：ROADMAP/PRD 不得残留「未发布」、目标版本标题不得是计划态、`deprecations.json` `currentVersion` 必须同步；新增 `--ref <committish>` 把文件内容类检查改为核**该提交的树**（tag 树），与 tag 不一致直接失败。③ `pre-push` 推 `v*` tag 的 release 路由双校：tag 树定版（`--ref`）+ 本 SHA 三层 rehearse 证据（annotated tag 对象 sha 先解引用到提交）。④ `docs/engineering.md` §5 与私有纪律同步为「工具为权威、清单为说明」。回归：64 条脚本自测（含 v2.6.5 事故形态复刻：磁盘已定版 / tag 树残留 → `--ref` 必须拦下） | ✅ 已完成（未发布） |
+| **`oas-select` 选项图标（`Option.icon`）** | `options` JSON 与 `<oas-option icon>` 支持 `@oas-ui/icons` 图标名；下拉项、单选触发器、多选 chip 统一渲染 `icon + label`；图标 `aria-hidden`，未知图标回退纯文本 + 一次 devWarn；富内容走现有 `oas-option-render` / option 模板逃生口；单测 + Chromium qa-regression + zh/en 文档/API/暗色/console 收口 | ✅ 已完成（v2.6.6） |
+| **文档站 issue 反馈收口** | 组件侧栏数据抽离 `sidebar.ts` 单一数据源，中文/英文侧栏与总览页保留语义分组、组内按 slug 字母排序，`sidebar-order.test.ts` 防漂移，llms 生成器同步；英文浏览器首访 `/` / `/index.html` 自动进 `/en/` 并保留 query/hash，深链不做语言猜测，显式 `oas-lang` 仍全站生效、自动猜测不持久化；首页 docs-site e2e 收口 | ✅ 已完成（v2.6.6） |
+| **`oas-gantt` 斑马纹 × 周末/假日列视觉修正** | 周末/假日列底色改相对 `--oas-color-bg` 的不透明混合，斑马行上的周末/假日列不再吸收条纹色；`stripe` 保持 opt-in（默认关），虚拟滚动 demo 新增真实开关；像素级 dark 回归 + demo 开关交互回归 | ✅ 已完成（v2.6.6） |
+| **`oas-gantt` 行高对齐修正** | `row-height` 属性映射 `--oas-gantt-row-height`（与 height 属性同协议），左侧行名高度与网格行高同源，修复 `row-height≠36` 时行名 36px 缺省高度与 32px 网格逐行叠压错位；单测（token 协议 3 条）+ 几何级 e2e（行名/条纹顶底边对齐） | ✅ 已完成（v2.6.6） |
+| **`oas-gantt` / `oas-resource` 行 hover（默认开，`hover="false"` 关闭）** | 鼠标移入行名/任务条（gantt）或泳道（resource）整行点亮，左右同底色；新 token `--oas-gantt-row-hover-bg` / `--oas-resource-row-hover-bg`（与斑马纹、条 hover 独立）；gantt 时间轴单元素装饰层挂绝对行号（虚拟滚动窗口内重建，条纹 < hover < 选中）；resource 纯 CSS（行 + sticky 行头，关闭时逐元素还原基础底色）；单测 + e2e（真实 hover 几何对齐/暗色/关闭/console） | ✅ 已完成（v2.6.6） |
+
+## v2.6.6（Bubble 气泡尾巴）
+
+| 范围 | 内容 | 状态 |
+| --- | --- | --- |
+| **`oas-bubble` opt-in 尾巴（`tail`）** | `tail="none"（默认）\| "auto" \| "start" \| "end"`：`auto` 跟随有效对齐（显式 `align` 或容器 text-align 继承反射）；实底变体在底部外角画弧形尾巴（颜色与表面同源，暗色适配），`outline` 退化为底部外角收小圆角，`muted`/`ghost` 无表面不画；逻辑属性 RTL 镜像，装饰性伪元素不进 DOM/读屏；分组由宿主只给同发送者连续消息的最后一条加 tail；新增 `--oas-bubble-tail-size` / `--oas-bubble-tail-offset` / `--oas-bubble-tail-corner-radius`；SSR 首帧按显式 align 落侧。单测 + 真实浏览器 e2e + zh/en 文档/API/CHANGELOG | ✅ 已完成（v2.6.6） |
+
+## v2.6.6（包体止损批）
+
+| 范围 | 内容 | 状态 |
+| --- | --- | --- |
+| **i18n 默认语言包按家族切片（包体止损）** | 内置 zh-CN 拆成 9 个家族切片（basic / conversation / data / feedback / form / framework / layout / navigation / workbench）：`locales/zh-CN.ts` 单一事实源 + `scripts/i18n/gen-slices.mjs` 生成 `slices/<family>.ts`（`--check` 防漂移接入完备性单测）；消费形态为「值导入 + 显式调用」（`registerDefaultMessages(<family>Messages)`，不依赖模块副作用）；新子路径 `@oas-ui/i18n/registry`（无默认文案）与 `@oas-ui/i18n/slices/<family>`，公共入口 `@oas-ui/i18n` 行为不变（9 切片全量注册）；`getLocale().messages` 语义为「已加载的切片」（整包 `@oas-ui/i18n/zh-CN` 不变）；跨家族 key 重复写入每个消费族、8 个死键归 framework；i18n 发布产物 `removeComments`（d.ts 保留文档）+ `sideEffects` 补 `./dist/registry.js`。实测按需链 gzip（dist 静态闭包口径）：form 28.9→22.4 KB、table 68.8→64.3 KB、gantt 66.7→61.1 KB、json-viewer 34.0→28.4 KB、diff-viewer 32.7→27.1 KB，helper 链（table/advanced、range、detail、glass-fluid）不变；顺带修复打包消费方（含 CDN）默认语言包被摇掉导致 raw key（`perf:size` 新增 `[CDN 默认文案]` 断言锁定）。非目标：其余 9 个语言包不动、不改 key/文案、不做跨语言回退。验收：全量单测 11805、`node scripts/i18n/gen-slices.mjs --check` 防漂移、`perf:size` | ✅ 已完成（v2.6.6） |
+
+| **4 条贴边链预算重定档（包体止损）** | 对 `table/advanced`（7.8/8.0）、`table/range`（11.9/13）、`table/detail`（3.7/4）、`theme glass-fluid`（8.1/8.5）逐文件复读：可安全移除项合计仅 136 B（最大项是 range 的 `findRowPath` 双实现 69 B、detail 的 `isInputTarget` 重复 60 B），**无冗余可清**；此前 2.2%~5.1% 余量使 90% 预警线失去意义。按实测上浮 13.5%~18% 重定档 9 / 13.5 / 4.5 / 9.5 KB（利用率 86.9% / 88.1% / 82.6% / 85.1%），依据写入各条 `basis`；`glass-fluid` 原「暂不瘦身/不重定档」结论被本次逐行复核替换 | ✅ 已完成（v2.6.6） |
+
+## v2.6.6（发布门禁机械化）
+
+| 范围 | 内容 | 状态 |
+| --- | --- | --- |
+| **发布核查机械化（五层清单落地为工具）** | ① `pnpm release:rehearse`：直接解析 `.github/workflows/ci.yml` 的 `test` job 步骤逐条本地重放（CI 改步骤自动跟随，不再依赖手工清单），加两份本地加严（`check-trace --all` / `lint:md`）；`--with-e2e` 复刻全量浏览器 e2e（= CI e2e + e2e-webkit），`--with-ssr-e2e` 复刻 `ssr-fixtures` job（两 fixture install/build/typecheck + 两套 fixture e2e，跳过 `--with-deps`）。三层证据落 `<git-dir>/oas-release-rehearsal.json`（同 SHA 按层累积、换 SHA 重置、失败层写 `ok:false`、执行期 HEAD 漂移不写）。② `scripts/release-check.mjs` 新增定版检查：ROADMAP/PRD 不得残留未定版状态字样（旧「待发布」组标题/状态列）、目标版本标题不得是计划态、`deprecations.json` `currentVersion` 必须同步；新增 `--ref <committish>` 把文件内容类检查改为核**该提交的树**（tag 树），与 tag 不一致直接失败。③ `pre-push` 推 `v*` tag 的 release 路由双校：tag 树定版（`--ref`）+ 本 SHA 三层 rehearse 证据（annotated tag 对象 sha 先解引用到提交）。④ `docs/engineering.md` §5 与私有纪律同步为「工具为权威、清单为说明」。回归：64 条脚本自测（含 v2.6.5 事故形态复刻：磁盘已定版 / tag 树残留 → `--ref` 必须拦下） | ✅ 已完成（v2.6.6） |
 
 ## v2.6.5（2026-10-31 发布）
 

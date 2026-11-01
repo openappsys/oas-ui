@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "library": "@oas-ui/ui",
-  "currentVersion": "2.6.5",
+  "currentVersion": "2.6.6",
   "policy": {
     "removeIn": "null 表示长期兼容或尚未排期；非空必须是高于 currentVersion 的 major。唯一豁免：package-export 面可经用户批准携带 minorException（必填非空 approvedBy 与 reason），以「经批准的非 major 提升」移除——正向定义：removeIn 须为同 major 且严格高于 currentVersion 的合法 x.y.z（兼容 patch 提升如 2.6.4→2.6.5 与 minor 提升如 2.7.0；单点例外，不构成先例）；同版本、更低版本与非法版本即使携带 minorException 也拒绝；组件 API 面的 minor/patch 移除一律拒绝",
     "unreleasedTombstone": "state=removed 且 removeIn 为未发布版本（如 DEP-EXPORT-0001 的 removeIn=2.6.5）表示代码已删除但该版本尚未发布，将随该版本发布生效；已发布版本的墓碑（DEP-REMOVED-*）removeIn 为空",
