@@ -204,7 +204,7 @@ describe('OASQuestionnaire', () => {
     const list2 = items(el2)
     let fired2 = 0
     el2.addEventListener('oas-change', () => fired2++)
-    expect(list2[2]!.querySelector('button')).not.toBeNull()
+    expect(list2[2]!.querySelectorAll('button').length).toBe(1)
     ;(list2[2]!.querySelector('button') as HTMLButtonElement).click()
     expect(el2.getAttribute('current')).toBe('2')
     expect(fired2).toBe(1)
@@ -243,9 +243,9 @@ describe('OASQuestionnaire', () => {
     expect(progressEl(off).hasAttribute('hidden')).toBe(true)
     const text = mountDefault({ 'progress-variant': 'text' })
     expect(text.shadowRoot!.querySelector('.progress-track')).toBeNull()
-    expect(text.shadowRoot!.querySelector('.progress-text')).not.toBeNull()
+    expect(text.shadowRoot!.querySelectorAll('.progress-text').length).toBe(1)
     const bar = mountDefault({ 'progress-variant': 'bar' })
-    expect(bar.shadowRoot!.querySelector('.progress-track')).not.toBeNull()
+    expect(bar.shadowRoot!.querySelectorAll('.progress-track').length).toBe(1)
     expect(bar.shadowRoot!.querySelector('.progress-text')).toBeNull()
   })
 

@@ -99,7 +99,7 @@ describe('OASStepper 渲染与状态', () => {
       steps: JSON.stringify([{ title: 'A', icon: 'check-circle' }, { title: 'B' }, { title: 'C' }]),
     })
     const list = tabs(el)
-    expect(list[0]!.querySelector('.indicator svg')).not.toBeNull()
+    expect(list[0]!.querySelectorAll('.indicator svg').length).toBe(1)
     expect(list[1]!.querySelector('.indicator svg')).toBeNull()
   })
 
@@ -447,7 +447,7 @@ describe('OASStepper 样式契约', () => {
   it('面板插槽区：slot part=panels，面板间距走 token', () => {
     const el = mount()
     const slot = el.shadowRoot!.querySelector<HTMLElement>('slot[part="panels"]')
-    expect(slot).not.toBeNull()
+    expect(slot!.getAttribute('part')).toBe('panels')
     expect(el.shadowRoot!.querySelector('style')!.textContent!).toContain('var(--oas-space-4)')
   })
 
@@ -495,7 +495,7 @@ describe('OASStepper DSD 水合双路径', () => {
     el.shadowRoot!.innerHTML = `<meta data-oas-ssr="oas-stepper" data-oas-ssr-v="1"><span>broken</span>`
     document.body.appendChild(el)
     expect(el.shadowRoot!.querySelector('meta[data-oas-ssr]')).toBeNull()
-    expect(el.shadowRoot!.querySelector('.tablist')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('.tablist').length).toBe(1)
     expect(tabs(el).length).toBe(3)
   })
 })

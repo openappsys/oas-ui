@@ -57,7 +57,7 @@ describe('OASSwitch', () => {
 
   it('loading 显示 spinner 且禁止切换', () => {
     const el = mount({ loading: '', checked: '' })
-    expect(sw(el).querySelector('.spinner')).not.toBeNull()
+    expect(sw(el).querySelectorAll('.spinner').length).toBe(1)
     sw(el).click()
     expect(sw(el).getAttribute('aria-checked')).toBe('true')
   })
@@ -288,7 +288,7 @@ describe('OASSwitch', () => {
     btn.click()
     expect(btn.disabled).toBe(true)
     expect(btn.querySelector<HTMLElement>('.spinner')!.hidden).toBe(false)
-    await vi.waitFor(() => expect(resolveFn).not.toBeNull())
+    await vi.waitFor(() => expect(typeof resolveFn).toBe('function'))
     resolveFn!(true)
     await vi.waitFor(() => expect(el.hasAttribute('checked')).toBe(true))
     expect(btn.disabled).toBe(false)
@@ -317,7 +317,7 @@ describe('OASSwitch', () => {
     expect(calls).toBe(1)
     sw(el).click()
     expect(calls).toBe(1)
-    await vi.waitFor(() => expect(resolveFn).not.toBeNull())
+    await vi.waitFor(() => expect(typeof resolveFn).toBe('function'))
     resolveFn!(true)
     await vi.waitFor(() => expect(el.hasAttribute('checked')).toBe(true))
   })

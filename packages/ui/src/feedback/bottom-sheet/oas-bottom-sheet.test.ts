@@ -28,11 +28,11 @@ describe('OASBottomSheet', () => {
 
   it('渲染 backdrop + sheet + handle + content 结构（SSR 快照同构）', () => {
     const el = mount()
-    expect(backdrop(el)).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('[part="backdrop"]').length).toBe(1)
     expect(sheet(el).getAttribute('role')).toBe('dialog')
     expect(sheet(el).getAttribute('aria-modal')).toBe('true')
-    expect(el.shadowRoot!.querySelector('[part="handle"]')).not.toBeNull()
-    expect(el.shadowRoot!.querySelector('[part="content"]')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('[part="handle"]').length).toBe(1)
+    expect(el.shadowRoot!.querySelectorAll('[part="content"]').length).toBe(1)
   })
 
   it('open 属性在场时 sheet 平移归位（transform 无 100% 下推）', () => {

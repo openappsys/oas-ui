@@ -33,7 +33,7 @@ describe('OASMasonry', () => {
   it('无子项时渲染不报错', () => {
     expect(() => mount({}, false)).not.toThrow()
     const el = mount({}, false)
-    expect(root(el)).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('.masonry').length).toBe(1)
   })
 
   it('默认 columns=4、gap=8', () => {
@@ -159,14 +159,14 @@ describe('OASMasonry', () => {
     }
     vi.stubGlobal('ResizeObserver', FakeResizeObserver)
     const el = mount({ fresh: '' })
-    expect(roCallback).not.toBeNull()
+    expect(typeof roCallback).toBe('function')
     const spy = vi.spyOn(el as unknown as { update: () => void }, 'update')
     roCallback!()
     expect(spy).toHaveBeenCalledTimes(1)
     spy.mockRestore()
     // 移除 fresh：观察器断开
     el.removeAttribute('fresh')
-    expect(disconnected).toBeGreaterThan(0)
+    expect(disconnected, '移除 fresh 断开观察器（含既有子项）').toBe(4)
     el.remove()
     vi.unstubAllGlobals()
   })

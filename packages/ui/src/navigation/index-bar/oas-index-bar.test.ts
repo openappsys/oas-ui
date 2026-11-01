@@ -213,7 +213,7 @@ describe('OASIndexBar', () => {
     const sec = sectionEls(el)[0]!
     const header = sec.querySelector('[part="section-header"]')!
     expect(sec.getAttribute('aria-labelledby')).toBe(header.id)
-    expect(header.id).toBeTruthy()
+    expect(header.id).toMatch(/^oas-index-bar-[0-9a-z]+-h-\d+$/)
     // aria-labelledby 挂在无角色的 div 上是「generic 禁命名」（axe aria-prohibited-attr 类）：
     // 分节容器显式 role=group，命名才被 AT 接受
     expect(sec.getAttribute('role')).toBe('group')
@@ -672,7 +672,7 @@ describe('OASIndexBar', () => {
     el.setAttribute('sections', SECTIONS)
     el.shadowRoot!.innerHTML = '<meta data-oas-ssr="oas-index-bar" data-oas-ssr-v="1"><span>broken</span>'
     document.body.appendChild(el)
-    expect(el.shadowRoot!.querySelector('[part="root"]')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('[part="root"]').length).toBe(1)
     expect(el.shadowRoot!.querySelector('meta[data-oas-ssr]')).toBeNull()
     expect(letters(el).length).toBe(3)
   })

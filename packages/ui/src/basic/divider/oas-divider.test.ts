@@ -119,7 +119,7 @@ describe('OASDivider', () => {
 
     it('SSR 快照结构含四线型支持（class 驱动，快照与客户端同模板）', () => {
       const el = mount({ variant: 'dotted' }, '')
-      expect(el.shadowRoot!.querySelector('.divider.dotted')).not.toBeNull()
+      expect(el.shadowRoot!.querySelectorAll('.divider.dotted').length).toBe(1)
     })
   })
 
@@ -324,8 +324,8 @@ describe('OASDivider', () => {
       console.warn = (...a: unknown[]) => warn.push(a)
       const el = mount({ direction: 'vertical', 'text-orientation': 'bogus' }, '文字')
       console.warn = orig
-      expect(warn.length).toBeGreaterThan(0)
-      expect(el.shadowRoot!.querySelector('.content')).not.toBeNull()
+      expect(warn.length, '非法 text-orientation 告警一次').toBe(1)
+      expect(el.shadowRoot!.querySelectorAll('.content').length).toBe(1)
     })
 
     it('horizontal（默认）模式 text-orientation=vertical 不生效（仅 vertical 分割线有意义）', () => {

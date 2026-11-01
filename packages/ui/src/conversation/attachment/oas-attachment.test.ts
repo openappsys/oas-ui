@@ -30,7 +30,7 @@ describe('OASAttachment', () => {
 
   it('缺 name 只渲染 media 容器不报错（空态合法）', () => {
     const el = mount()
-    expect(el.shadowRoot!.querySelector('[part="media"]')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('[part="media"]').length).toBe(1)
     expect(el.shadowRoot!.querySelector('[part="title"]')!.textContent).toBe('')
   })
 
@@ -96,7 +96,7 @@ describe('OASAttachment', () => {
   it('媒体：缺省渲染内置文件 svg（aria-hidden 装饰）；slot=media 即覆盖（无形态属性）', async () => {
     const el = mount('', { name: 'f' })
     const media = el.shadowRoot!.querySelector('[part="media"]')!
-    expect(media.querySelector('svg')).not.toBeNull()
+    expect(media.querySelectorAll('svg').length).toBe(1)
     const img = document.createElement('img')
     img.setAttribute('slot', 'media')
     img.src = 'data:image/png;base64,x'
@@ -153,7 +153,7 @@ describe('OASAttachment', () => {
   it('href：触发器为 <a part="trigger">，点击派发 oas-open（detail 带 href）', () => {
     const el = mount('', { name: 'a.pdf', href: 'https://example.com/a.pdf' })
     const a = el.shadowRoot!.querySelector<HTMLAnchorElement>('a[part="trigger"]')!
-    expect(a).not.toBeNull()
+    expect(a.tagName).toBe('A')
     expect(a.getAttribute('href')).toBe('https://example.com/a.pdf')
     let detail: unknown
     el.addEventListener('oas-open', (e) => {
@@ -222,6 +222,6 @@ describe('OASAttachment', () => {
     document.body.appendChild(el)
     // 水合成功：指纹被移除、骨架保留（未被 innerHTML 重建覆盖）
     expect(el.shadowRoot!.querySelector('meta[data-oas-ssr]')).toBeNull()
-    expect(el.shadowRoot!.querySelector('[part="attachment"]')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('[part="attachment"]').length).toBe(1)
   })
 })

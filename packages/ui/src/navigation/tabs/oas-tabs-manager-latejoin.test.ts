@@ -26,7 +26,7 @@ describe('OASTabs manager 能力晚加入（late-join）', () => {
     await import('./manager/index.js')
 
     // 订阅通知 → 幂等 attach → 宿主已连接故 hostConnected 立即触发 → 能力样式注入
-    expect(el.shadowRoot!.querySelector('style[data-oas-tabs-manager]')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('style[data-oas-tabs-manager]').length).toBe(1)
     el.remove()
   })
 
@@ -38,7 +38,7 @@ describe('OASTabs manager 能力晚加入（late-join）', () => {
     // 断开期间注册表仍为空；重连时 catch-up + 重新订阅
     document.body.appendChild(el)
     await import('./manager/index.js')
-    expect(el.shadowRoot!.querySelector('style[data-oas-tabs-manager]')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('style[data-oas-tabs-manager]').length).toBe(1)
     // 幂等：重复 attach 不重复注入样式
     const count = el.shadowRoot!.querySelectorAll('style[data-oas-tabs-manager]').length
     expect(count).toBe(1)

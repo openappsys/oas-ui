@@ -18,7 +18,7 @@ describe('OASContainer（定宽容器）', () => {
   })
 
   it('注册 oas-container 自定义元素', () => {
-    expect(customElements.get('oas-container')).not.toBeNull()
+    expect(typeof customElements.get('oas-container')).toBe('function')
   })
 
   it('默认 size=lg 且居中', () => {
@@ -75,8 +75,8 @@ describe('OASContainer（定宽容器）', () => {
 
   it('无子元素不报错，slot 存在', () => {
     const el = mount()
-    expect(el.shadowRoot!.querySelector('slot')).not.toBeNull()
-    expect(el.shadowRoot!.querySelector('[part="root"]')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('slot:not([name])').length).toBe(1)
+    expect(el.shadowRoot!.querySelectorAll('[part="root"]').length).toBe(1)
   })
 
   it('渲染 slot 内容', () => {

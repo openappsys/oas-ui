@@ -175,8 +175,8 @@ describe('OASBackTop', () => {
     el.setAttribute('visible', '')
     el.innerHTML = '<span class="my-c">返回顶部 ↑</span>'
     document.body.appendChild(el)
-    expect(el.shadowRoot!.querySelector('slot')).not.toBeNull()
-    expect(el.querySelector('.my-c')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('slot:not([name])').length).toBe(1)
+    expect(el.querySelectorAll('.my-c').length).toBe(1)
     const icon = el.shadowRoot!.querySelector('[part="icon"]')!
     expect(icon.classList.contains('hidden')).toBe(true)
   })
@@ -588,7 +588,7 @@ describe('OASBackTop', () => {
     document.body.appendChild(el)
     const btn = el.shadowRoot!.querySelector('[part="btn"]')!
     const tip = el.shadowRoot!.querySelector('[part="tooltip"]')!
-    expect(tip.id).toBeTruthy()
+    expect(tip.id).toBe('tip')
     expect(btn.getAttribute('aria-describedby')).toBe(tip.id)
     expect(tip.getAttribute('aria-hidden')).toBe('false')
   })

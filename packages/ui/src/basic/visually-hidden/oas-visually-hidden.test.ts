@@ -20,14 +20,14 @@ describe('OASVisuallyHidden', () => {
   it('slot 内容原样透出（DOM 可读、可被复制）', () => {
     const el = mountHidden()
     expect(el.textContent).toContain('仅屏幕阅读器可见的说明文字')
-    expect(el.shadowRoot!.querySelector('slot')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('slot:not([name])').length).toBe(1)
   })
 
   it('shadow 仅含样式与 slot，无任何交互元素', () => {
     const el = mountHidden()
     expect(el.shadowRoot!.children.length).toBe(2)
-    expect(el.shadowRoot!.querySelector('style')).not.toBeNull()
-    expect(el.shadowRoot!.querySelector('slot')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('style').length).toBe(1)
+    expect(el.shadowRoot!.querySelectorAll('slot:not([name])').length).toBe(1)
     expect(el.shadowRoot!.querySelectorAll('button, input, a, [tabindex]').length).toBe(0)
   })
 

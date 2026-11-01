@@ -46,8 +46,8 @@ describe('OASForm', () => {
   it('渲染原生 form，含 slot', async () => {
     const el = mount()
     await Promise.resolve()
-    expect(el.shadowRoot!.querySelector('form')).not.toBeNull()
-    expect(el.shadowRoot!.querySelector('slot')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('form').length).toBe(1)
+    expect(el.shadowRoot!.querySelectorAll('slot:not([name])').length).toBe(1)
   })
 
   it('校验通过时派发 oas-submit，detail 携带 values', () => {
@@ -798,7 +798,7 @@ describe('OASForm Rule.validator', () => {
     el.addEventListener('oas-validate-fail', (e) => (errors = (e as CustomEvent).detail.errors))
     el.submit()
     expect(typeof errors.name).toBe('string')
-    expect(errors.name!.length).toBeGreaterThan(0)
+    expect(errors.name).toMatch(/\S/)
   })
 
   it('validator 与既有规则组合：先到先报（pattern 失败则 validator 不再执行）', () => {

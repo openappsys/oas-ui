@@ -165,7 +165,6 @@ describe('OASSegmented', () => {
       ]),
     })
     const icon = items(el)[0]!.querySelector('.item-icon oas-icon')
-    expect(icon).not.toBeNull()
     expect(icon!.getAttribute('name')).toBe('menu')
   })
 
@@ -196,7 +195,6 @@ describe('OASSegmented', () => {
     await new Promise((r) => setTimeout(r, 0))
     const lab = items(el)[0]!.querySelector('.item-label')!
     const custom = lab.querySelector<HTMLElement>('.custom')!
-    expect(custom).not.toBeNull()
     expect(custom.textContent).toBe('日')
   })
 

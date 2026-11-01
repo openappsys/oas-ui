@@ -202,7 +202,7 @@ describe('OASThemeEditor', () => {
 
   it('token 属性非法 JSON 时回退默认集', () => {
     const el = mount({ token: 'not-json' })
-    expect(rows(el).length).toBeGreaterThan(0)
+    expect(rows(el).length, '非法 JSON 回落默认集（行数与默认挂载一致）').toBe(rows(mount()).length)
     expect(rowFor(el, '--oas-color-primary')).toBeDefined()
   })
 
@@ -506,7 +506,7 @@ describe('OASThemeEditor 组折叠与搜索', () => {
     expect(colorGroup.querySelector('.group-title')!.tagName.toLowerCase()).toBe('summary')
     colorGroup.open = false
     expect(colorGroup.open).toBe(false)
-    expect(rows(el).length).toBeGreaterThan(0)
+    expect(rows(el).length, '折叠不减少行数（与默认挂载一致）').toBe(rows(mount()).length)
   })
 
   it('搜索按 token 名子串过滤：匹配行保留、无匹配组隐藏、组自动展开', () => {

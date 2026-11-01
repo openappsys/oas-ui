@@ -26,7 +26,7 @@ describe('OASLabel', () => {
     const el = mountLabel()
     expect(el.textContent).toContain('姓名')
     expect(labelEl(el).tagName.toLowerCase()).toBe('label')
-    expect(labelEl(el).querySelector('slot')).not.toBeNull()
+    expect(labelEl(el).querySelectorAll('slot:not([name])').length).toBe(1)
   })
 
   it('for 属性同步到原生 label', () => {
@@ -52,7 +52,6 @@ describe('OASLabel', () => {
   it('required 追加 * 标记（aria-hidden）', () => {
     const el = mountLabel({ required: '' })
     const marker = el.shadowRoot!.querySelector('[part="required"]')
-    expect(marker).not.toBeNull()
     expect(marker!.getAttribute('aria-hidden')).toBe('true')
     expect(marker!.textContent).toBe('*')
     expect(marker!.hasAttribute('hidden')).toBe(false)
@@ -139,7 +138,6 @@ describe('OASLabel', () => {
     it('colon 渲染冒号元素（aria-hidden）', () => {
       const el = mountLabel({ colon: '' })
       const colon = el.shadowRoot!.querySelector('.colon')
-      expect(colon).not.toBeNull()
       expect(colon!.textContent).toBe(':')
       expect(colon!.getAttribute('aria-hidden')).toBe('true')
     })

@@ -34,8 +34,8 @@ describe('OASColorPicker 主路径入口（index 内含 designer 能力）', () 
   it('仅 import 主路径即渲染 2D 色域 + hue 竖条（能力注入后的 designer 结构）', () => {
     const el = mount({ value: '#ff0000' })
     open(el)
-    expect(el.shadowRoot!.querySelector('.sv2d')).not.toBeNull()
-    expect(el.shadowRoot!.querySelector('.hue')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('.sv2d').length).toBe(1)
+    expect(el.shadowRoot!.querySelectorAll('.hue').length).toBe(1)
     el.remove()
   })
 
@@ -43,7 +43,6 @@ describe('OASColorPicker 主路径入口（index 内含 designer 能力）', () 
     const el = mount({ mode: 'gradient', value: GRAD_VALUE })
     open(el)
     const grad = el.shadowRoot!.querySelector<HTMLElement>('.grad')
-    expect(grad).not.toBeNull()
     expect(grad!.hasAttribute('hidden')).toBe(false)
     const stops = [...el.shadowRoot!.querySelectorAll<HTMLElement>('.grad-stop')]
     expect(stops.length).toBe(2)

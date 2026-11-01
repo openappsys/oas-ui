@@ -50,7 +50,7 @@ describe('OASButtonGroup', () => {
     const el = mountGroup()
     const root = groupRoot(el)
     expect(root.getAttribute('role')).toBe('group')
-    expect(root.getAttribute('aria-label')).toBeTruthy()
+    expect(root.getAttribute('aria-label')).toBe('按钮组')
   })
 
   it('aria-label 属性可覆盖默认文案', () => {
@@ -117,7 +117,7 @@ describe('OASButtonGroup', () => {
   it('零子按钮空组不报错', () => {
     const el = mountGroup({}, [])
     expect(el.querySelectorAll('oas-button').length).toBe(0)
-    expect(groupRoot(el)).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('[role="group"]').length).toBe(1)
   })
 
   it('无 value 属性的子按钮不参与选值', () => {
@@ -221,7 +221,7 @@ describe('OASButtonGroup 扩展：pill / 嵌套组 / 分隔符', () => {
     expect(customElements.get('oas-button-group-separator')).toBe(OASButtonGroupSeparator)
     const sep = document.createElement('oas-button-group-separator')
     document.body.appendChild(sep)
-    expect(sep.shadowRoot!.querySelector('[part="line"]')).not.toBeNull()
+    expect(sep.shadowRoot!.querySelectorAll('[part="line"]').length).toBe(1)
     expect(sep.shadowRoot!.querySelector('[part="line"]')!.getAttribute('aria-hidden')).toBe('true')
   })
 

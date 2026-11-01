@@ -42,7 +42,7 @@ describe('OASSpeedDial', () => {
 
   it('渲染主按钮与子动作，aria-expanded 默认 false', () => {
     const el = mount()
-    expect(fab(el)).not.toBeNull()
+    expect(fab(el).tagName).toBe('BUTTON')
     expect(actionBtns(el).length).toBe(3)
     expect(actionBtns(el)[0]!.textContent).toContain('复制')
     expect(fab(el).getAttribute('aria-expanded')).toBe('false')
@@ -223,7 +223,6 @@ describe('OASSpeedDial 能力补齐批次', () => {
     const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
     el.appendChild(svg)
     const slot = el.shadowRoot!.querySelector<HTMLSlotElement>('.fab slot')
-    expect(slot).not.toBeNull()
     expect(slot!.assignedNodes().length).toBe(1)
     expect(slot!.assignedNodes()[0]).toBe(svg)
     // 展开时 .dial.open 仍驱动 45° 旋转（旋转类在，视觉由 CSS 决定）
@@ -403,7 +402,6 @@ describe('OASSpeedDial hide-label（icon-only 子动作）', () => {
     expect(btns[1]!.getAttribute('aria-label')).toBeNull()
     // label 常驻 DOM（气泡载体）
     const label = btns[0]!.querySelector<HTMLElement>('.label')
-    expect(label).not.toBeNull()
     expect(label!.textContent).toBe('复制')
   })
 

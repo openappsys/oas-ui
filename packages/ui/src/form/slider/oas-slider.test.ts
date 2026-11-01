@@ -1313,7 +1313,7 @@ describe('OASSlider 多滑块泛化（D26）', () => {
   it('非数组 / 非法数组值回落单把手（既有契约不回归）', () => {
     const single = mount({ value: '40' })
     expect(single.hasAttribute('data-multi')).toBe(false)
-    expect(byRole(single, 'range')).toBeTruthy()
+    expect(Number(byRole(single, 'range').value)).toBe(40)
     single.remove()
     const bad = mount({ value: '["a","b"]' })
     expect(bad.hasAttribute('data-multi')).toBe(false)
@@ -1572,7 +1572,7 @@ describe('OASSlider 数值 scrub（读数区像素锚定计步）', () => {
     numInput(el).dispatchEvent(pointer('pointerdown', 100))
     window.dispatchEvent(pointer('pointermove', 116))
     expect(el.value).toBe(14)
-    expect(inputs.length).toBeGreaterThan(0)
+    expect(inputs.length, '单次 pointermove 派发一次 oas-input').toBe(1)
     window.dispatchEvent(pointer('pointerup', 116))
     // 松手提交：派发 oas-change
     let changed = 0
@@ -1939,7 +1939,7 @@ describe('OASSlider 立体声电平表（levels）', () => {
   it('多拇指/range 不渲染电平表（levels 单值语义，避免每把手一副重复电平）', () => {
     const el = mount({ value: '[20,60]', thumb: 'round', levels: '{"left":0.8,"right":0.4}' })
     const meters = el.shadowRoot!.querySelectorAll<HTMLElement>('.levels')
-    expect(meters.length).toBeGreaterThan(0)
+    expect(meters.length, 'range 每把手一副电平表').toBe(2)
     for (const m of meters) expect(m.hidden, '每个把手的电平表都隐藏').toBe(true)
   })
 

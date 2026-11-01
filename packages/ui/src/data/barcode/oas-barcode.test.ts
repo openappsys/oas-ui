@@ -37,7 +37,7 @@ describe('OASBarcode', () => {
     expect(svg.getAttribute('viewBox')).toBe('0 0 176 120')
     expect(svg.getAttribute('width')).toBe('176')
     expect(svg.getAttribute('height')).toBe('120')
-    expect(svg.querySelector('path')).not.toBeNull()
+    expect(svg.querySelector('path')!.getAttribute('d')).toMatch(/^M/)
   })
 
   it('bar-width 放大整体几何（条宽与静区联动），下限 clamp ≥1', () => {
@@ -80,7 +80,7 @@ describe('OASBarcode', () => {
       const el = mount({ value, format })
       const svg = svgOf(el)
       expect(svg.hasAttribute('hidden'), `${format} 应渲染`).toBe(false)
-      expect(svg.querySelector('path[shape-rendering="crispEdges"]')).not.toBeNull()
+      expect(svg.querySelector('path[shape-rendering="crispEdges"]')!.getAttribute('d')).toMatch(/^M/)
       el.remove()
     }
   })
@@ -295,7 +295,7 @@ describe('OASBarcode', () => {
     const svg = svgOf(el)
     el.setAttribute('value', '12345678')
     expect(svgOf(el)).toBe(svg)
-    expect(svg.querySelector('path')).not.toBeNull()
+    expect(svg.querySelector('path')!.getAttribute('d')).toMatch(/^M/)
   })
 
   describe('download()（离屏 rasterize）', () => {

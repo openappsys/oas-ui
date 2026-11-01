@@ -42,7 +42,7 @@ describe('OASKbd', () => {
     const el = mountKbd({ keys: 'ctrl' }, '⌘C')
     const kbd = kbdEl(el)
     expect(kbd.querySelector('.keys')!.hasAttribute('hidden')).toBe(true)
-    expect(kbd.querySelector('slot')).not.toBeNull()
+    expect(kbd.querySelectorAll('slot:not([name])').length).toBe(1)
   })
 
   it('keys 变化增量更新', () => {
@@ -67,7 +67,6 @@ describe('OASKbd', () => {
       const keys = [...kbdEl(el).querySelectorAll('.key')]
       expect(keys.map((k) => k.textContent)).toEqual(['⌘', '⇧', 'k'])
       const abbr = keys[0]!.querySelector('abbr')
-      expect(abbr).not.toBeNull()
       expect(abbr!.getAttribute('title')).toBe('Command')
       expect(abbr!.textContent).toBe('⌘')
       // 未命中的字面键不包 abbr
@@ -259,7 +258,7 @@ describe('OASKbd', () => {
       // 基类 cleanupFns 应包含 slotchange 的移除函数
       const fns = (el as unknown as { cleanupFns: unknown[] }).cleanupFns
       expect(Array.isArray(fns)).toBe(true)
-      expect(fns.length).toBeGreaterThan(0)
+      expect(fns.length, 'slotchange 监听移除函数注册一条').toBe(1)
     })
   })
 })

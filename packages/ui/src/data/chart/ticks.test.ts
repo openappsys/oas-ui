@@ -134,7 +134,7 @@ describe('niceTicks', () => {
     const ticks = niceTicks(raw)
     expect(Number.isFinite(ticks.max)).toBe(true)
     expect(ticks.max).toBeGreaterThanOrEqual(raw)
-    expect(ticks.step).toBeGreaterThan(0)
+    expect(ticks.step / (ticks.values[1]! - ticks.values[0]!), '步长 = values[1] - values[0]').toBeCloseTo(1, 10)
     expect(ticks.values).toHaveLength(5)
     expect(ticks.values[0]).toBe(0)
     expect(ticks.values.every(Number.isFinite)).toBe(true)
@@ -185,7 +185,10 @@ describe('niceTicks', () => {
       const ticks = niceTicks(raw)
       expect(ticks.max, `raw=${raw}`).toBeGreaterThanOrEqual(raw)
       expect(Number.isFinite(ticks.max), `raw=${raw}`).toBe(true)
-      expect(ticks.step, `raw=${raw}`).toBeGreaterThan(0)
+      expect(ticks.step / (ticks.values[1]! - ticks.values[0]!), `raw=${raw} 步长 = values[1] - values[0]`).toBeCloseTo(
+        1,
+        10,
+      )
       expect(ticks.values.every(Number.isFinite), `raw=${raw}`).toBe(true)
       expect(ticks.values[0], `raw=${raw}`).toBe(0)
       expect(ticks.values[ticks.values.length - 1], `raw=${raw}`).toBe(ticks.max)
@@ -265,7 +268,7 @@ describe('formatTick', () => {
   // 测试只锁「可渲染、非空、不是零」，不锁死具体字形；正式轴标签仍按 locale 输出。
   it('ar 科学计数只断言可渲染，不锁 ICU 字形', () => {
     const out = formatTick(2.5e8, 2.5e8, 'ar')
-    expect(out.length).toBeGreaterThan(0)
+    expect(out).toMatch(/\p{Nd}/u)
     expect(out).not.toBe('0')
     expect(() => formatTick(2.5e8, 2.5e8, 'ar')).not.toThrow()
   })

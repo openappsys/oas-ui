@@ -75,7 +75,7 @@ describe('OASTextarea', () => {
     Object.defineProperty(t, 'scrollHeight', { configurable: true, value: 60 })
     t.value = '第一行\n第二行'
     t.dispatchEvent(new Event('input'))
-    expect(parseInt(t.style.height)).toBeGreaterThan(0)
+    expect(parseInt(t.style.height), 'scrollHeight 60px 直接写入').toBe(60)
     expect(ta(el)).toBe(t)
   })
 
@@ -276,7 +276,6 @@ describe('OASTextarea clearable', () => {
     el.addEventListener('oas-clear', (e: Event) => (detail = (e as CustomEvent).detail))
     btn.click()
     expect(t.value).toBe('')
-    expect(detail).not.toBeNull()
     expect((detail as { originalEvent: MouseEvent }).originalEvent).toBeInstanceOf(MouseEvent)
     expect(btn.hidden).toBe(true)
     expect(el.shadowRoot!.activeElement).toBe(t)
@@ -302,7 +301,7 @@ describe('OASTextarea clearable', () => {
     el.shadowRoot!.querySelector<HTMLButtonElement>('.clear-btn')!.click()
     const cleared = parseInt(t.style.height)
     expect(grown).toBeGreaterThan(cleared)
-    expect(cleared).toBeGreaterThan(0)
+    expect(cleared, '清空后回落到两行最小高').toBe(40)
   })
 })
 

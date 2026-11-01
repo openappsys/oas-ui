@@ -361,7 +361,7 @@ describe('OASTree windowed：服务端根节点窗口协议', () => {
     const toggle = rowByKey(el, 'lz')!.querySelector<HTMLButtonElement>('[part="toggle"]')!
     toggle.click()
     expect(loads).toEqual(['lz'])
-    expect(rowByKey(el, 'lz')!.querySelector('.toggle-spinner')).toBeTruthy()
+    expect(rowByKey(el, 'lz')!.querySelectorAll('.toggle-spinner').length).toBe(1)
     // 宿主回填：loaded + children → 子行渲染、懒加载机制不破坏
     el.setAttribute(
       'data',
@@ -375,7 +375,6 @@ describe('OASTree windowed：服务端根节点窗口协议', () => {
       ]),
     )
     const child = rowByKey(el, 'lz-c1')
-    expect(child).toBeTruthy()
     expect(child!.getAttribute('aria-setsize')).toBe('1')
     expect(child!.getAttribute('aria-posinset')).toBe('1')
     expect(rowByKey(el, 'lz')!.getAttribute('aria-setsize')).toBe('100')
@@ -528,7 +527,7 @@ describe('OASTree windowed：服务端根节点窗口协议', () => {
     // → 请求装载下一根：target=20 → [20,21) 扩 margin → [12,29)
     rowByKey(el, 'k0')!.dispatchEvent(new KeyboardEvent('keydown', { key: 'End' }))
     viewportOf(el).dispatchEvent(new Event('scroll'))
-    expect(rowByKey(el, 'k19')).toBeTruthy()
+    expect(rowByKey(el, 'k19')!.getAttribute('data-key')).toBe('k19')
     expect(requests).toEqual([{ start: 12, end: 29, reason: 'scroll' }])
     // 已在底部再 ArrowDown：同 need 去重不重发
     rowByKey(el, 'k19')!.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown' }))
