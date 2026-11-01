@@ -48,7 +48,7 @@ describe('OASFormList 基础结构', () => {
     const el = makeList()
     expect(rows(el).length).toBe(0)
     expect(frames(el).length).toBe(0)
-    expect(addBtn(el)).not.toBeNull()
+    expect(addBtn(el).tagName).toBe('BUTTON')
     expect(addBtn(el).textContent).toContain('添加')
   })
 
@@ -82,7 +82,7 @@ describe('OASFormList 基础结构', () => {
     const slotName = wrapper.getAttribute('slot')!
     expect(slotName).not.toBe('')
     const frame = frames(el)[0]!
-    expect(frame.querySelector(`slot[name="${slotName}"]`)).not.toBeNull()
+    expect(frame.querySelectorAll(`slot[name="${slotName}"]`).length).toBe(1)
   })
 
   it('独立使用（不在 oas-form 内）不报错', () => {
@@ -293,7 +293,7 @@ describe('OASFormList template 后注入与水合', () => {
     document.body.appendChild(el)
 
     const style = el.shadowRoot!.querySelector('style')
-    expect(style).not.toBeNull()
+    expect(style!.tagName).toBe('STYLE')
     expect(el.shadowRoot!.querySelector('meta[data-oas-ssr]')).toBeNull()
     // 属性变化走增量 update，不重建 shadow（style 引用不变）
     el.setAttribute('min', '2')
@@ -309,7 +309,7 @@ describe('OASFormList template 后注入与水合', () => {
     el.appendChild(tpl)
     el.shadowRoot!.innerHTML = '<meta data-oas-ssr="oas-form-list" data-oas-ssr-v="1"><div></div>'
     document.body.appendChild(el)
-    expect(el.shadowRoot!.querySelector('.add')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('.add').length).toBe(1)
     expect(rows(el).length).toBe(1)
   })
 })

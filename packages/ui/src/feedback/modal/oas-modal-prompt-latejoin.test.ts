@@ -29,12 +29,12 @@ describe('OASModal prompt 能力晚加入（late-join）', () => {
 
     // 订阅通知 → 幂等 attach → 已连接宿主可取回 controller
     const cap = el.getModalCapability<ModalPromptCapability>('prompt')
-    expect(cap).not.toBeNull()
+    expect(typeof cap!.openPrompt).toBe('function')
 
     // 补齐后立即可用：openPrompt 在宿主 light DOM 构建输入控件（行为可观察标记）
     cap!.openPrompt({ title: 'late-join', inputValue: 'v1' })
     const input = el.querySelector<HTMLInputElement>('.oas-modal-prompt input')
-    expect(input).not.toBeNull()
+    expect(input!.tagName).toBe('INPUT')
     expect(input!.value).toBe('v1')
   })
 
@@ -43,7 +43,7 @@ describe('OASModal prompt 能力晚加入（late-join）', () => {
     const el = new OASModal()
     document.body.appendChild(el)
     const cap1 = el.getModalCapability<ModalPromptCapability>('prompt')
-    expect(cap1).not.toBeNull()
+    expect(typeof cap1!.openPrompt).toBe('function')
     // 多次断开/重连：connectedCallback 重新订阅 + catch-up attach（attachedCaps 幂等去重），
     // controller 引用保持不变（若 catch-up 重复 attach 会新建 controller 覆盖 map 项）
     for (let i = 0; i < 2; i++) {
@@ -51,7 +51,7 @@ describe('OASModal prompt 能力晚加入（late-join）', () => {
       document.body.appendChild(el)
     }
     const cap2 = el.getModalCapability<ModalPromptCapability>('prompt')
-    expect(cap2).not.toBeNull()
+    expect(typeof cap2!.openPrompt).toBe('function')
     expect(cap2).toBe(cap1)
     el.remove()
   })

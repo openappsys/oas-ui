@@ -235,10 +235,10 @@ describe('OASDynamicInput template[slot=row] 行内容自定义', () => {
     tpl.innerHTML = '<span class="custom-row"><span data-row-value></span></span>'
     el.appendChild(tpl)
     await Promise.resolve()
-    expect(rows(el)[0]!.querySelector('.custom-row')).not.toBeNull()
+    expect(rows(el)[0]!.querySelectorAll('.custom-row').length).toBe(1)
     expect(rows(el)[0]!.querySelector('[data-row-value]')!.textContent).toBe('a')
     expect(rows(el)[1]!.querySelector('[data-row-value]')!.textContent).toBe('b')
-    expect(rows(el)[0]!.querySelector('.remove')).not.toBeNull()
+    expect(rows(el)[0]!.querySelectorAll('.remove').length).toBe(1)
   })
 
   it('row 模板行内的 oas-input 输入事件仍走值通道（composed 委托）', async () => {
@@ -271,11 +271,11 @@ describe('OASDynamicInput template[slot=row] 行内容自定义', () => {
   it('模板移除后回落默认行（oas-input 预设）', async () => {
     const el = mountWithRowTpl({ 'model-value': '["a"]' })
     await Promise.resolve()
-    expect(rows(el)[0]!.querySelector('.custom-row')).not.toBeNull()
+    expect(rows(el)[0]!.querySelectorAll('.custom-row').length).toBe(1)
     el.querySelector('template[slot="row"]')!.remove()
     await Promise.resolve()
     expect(rows(el)[0]!.querySelector('.custom-row')).toBeNull()
-    expect(rows(el)[0]!.querySelector('oas-input')).not.toBeNull()
+    expect(rows(el)[0]!.querySelectorAll('oas-input').length).toBe(1)
   })
 })
 
@@ -345,7 +345,7 @@ describe('OASDynamicInput sortable 按钮排序', () => {
     expect(rows(el)[0]!.querySelector('.move-up')).toBeNull()
     el.setAttribute('sortable', '')
     await Promise.resolve()
-    expect(rows(el)[0]!.querySelector('.move-up')).not.toBeNull()
+    expect(rows(el)[0]!.querySelectorAll('.move-up').length).toBe(1)
     expect(moveUp(el, 0).disabled).toBe(true)
     expect(moveDown(el, 1).disabled).toBe(true)
   })

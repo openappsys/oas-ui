@@ -42,14 +42,14 @@ describe('OASTable 默认入口 + 显式编辑能力（index + edit）', () => {
 
   it('仅 import 主路径即可用行内编辑：可编辑列装饰/铅笔图标/操作按钮渲染，双击进入编辑', () => {
     const el = mount({ editable: '', 'row-key': 'name' })
-    expect(el.shadowRoot!.querySelector('td.editable-cell')).not.toBeNull()
-    expect(el.shadowRoot!.querySelector('.cell-edit-icon')).not.toBeNull()
-    expect(el.shadowRoot!.querySelector('[part="action-edit"]')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('td.editable-cell').length).toBe(1)
+    expect(el.shadowRoot!.querySelectorAll('.cell-edit-icon').length).toBe(1)
+    expect(el.shadowRoot!.querySelectorAll('[part="action-edit"]').length).toBe(1)
     // 双击可编辑列进入编辑态（input 编辑器回填当前值）
     const nameTd = cells(el).find((td) => td.getAttribute('data-col') === 'name')!
     nameTd.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }))
     const input = nameTd.querySelector<HTMLInputElement>('input.cell-editor')
-    expect(input).not.toBeNull()
+    expect(input!.tagName).toBe('INPUT')
     expect(input!.value).toBe('张三')
   })
 })

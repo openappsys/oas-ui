@@ -33,9 +33,9 @@ describe('OASColorPicker designer 能力晚加入（late-join）', () => {
 
     // 连接渲染：catch-up attach 先于基类 render → designerCap 就位 → 模板含 .sv2d/.hue/.grad
     document.body.appendChild(el)
-    expect(el.shadowRoot!.querySelector('.sv2d')).not.toBeNull()
-    expect(el.shadowRoot!.querySelector('.hue')).not.toBeNull()
-    expect(el.shadowRoot!.querySelector('.grad')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('.sv2d').length).toBe(1)
+    expect(el.shadowRoot!.querySelectorAll('.hue').length).toBe(1)
+    expect(el.shadowRoot!.querySelectorAll('.grad').length).toBe(1)
     el.remove()
   })
 
@@ -44,8 +44,8 @@ describe('OASColorPicker designer 能力晚加入（late-join）', () => {
     const el = new OASColorPicker()
     el.setAttribute('value', '#ff0000')
     document.body.appendChild(el)
-    expect(el.shadowRoot!.querySelector('.sv2d')).not.toBeNull()
-    expect(el.shadowRoot!.querySelector('.grad')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('.sv2d').length).toBe(1)
+    expect(el.shadowRoot!.querySelectorAll('.grad').length).toBe(1)
     // 多次断开/重连：connectedCallback 重新订阅 + catch-up attach（attachedCaps 幂等去重），
     // designer 结构恰好一份（无重复注入导致的重复节点/监听）
     for (let i = 0; i < 2; i++) {

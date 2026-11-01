@@ -20,8 +20,8 @@ describe('OASMarker', () => {
 
   it('渲染 icon 槽与内容槽，part=marker 骨架', async () => {
     const el = mount('昨天 18:20')
-    expect(el.shadowRoot!.querySelector('[part="marker"]')).not.toBeNull()
-    expect(el.shadowRoot!.querySelector('[part="content"]')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('[part="marker"]').length).toBe(1)
+    expect(el.shadowRoot!.querySelectorAll('[part="content"]').length).toBe(1)
     const icon = document.createElement('span')
     icon.setAttribute('slot', 'icon')
     icon.textContent = '◆'
@@ -98,7 +98,7 @@ describe('OASMarker', () => {
   it('observedAttributes 声明 variant；非法值不报错', () => {
     expect(OASMarker.observedAttributes).toContain('variant')
     const el = mount('x', { variant: 'fancy' })
-    expect(el.shadowRoot!.querySelector('[part="marker"]')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('[part="marker"]').length).toBe(1)
   })
 
   it('status 语义档：info/success/warning/danger 四档全走语义 token，无硬编码色', () => {
@@ -134,6 +134,6 @@ describe('OASMarker', () => {
     expect(OASMarker.observedAttributes).toContain('status')
     expect(OASMarker.observedAttributes).toContain('shimmer')
     const el = mount('x', { status: 'danger', shimmer: '' })
-    expect(el.shadowRoot!.querySelector('[part="marker"]')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('[part="marker"]').length).toBe(1)
   })
 })

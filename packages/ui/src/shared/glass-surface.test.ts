@@ -73,7 +73,7 @@ function mount(Ctor: new () => HTMLElement): HTMLElement {
 /** 组件 shadow 内首个 style 的文本（各组件模板均为单 style 节点） */
 function styleText(el: HTMLElement): string {
   const style = el.shadowRoot?.querySelector('style')
-  expect(style, `${el.localName} 应有 shadow style`).toBeTruthy()
+  expect(style!.tagName, `${el.localName} 应有 shadow style`).toBe('STYLE')
   return style!.textContent ?? ''
 }
 
@@ -106,7 +106,7 @@ describe('磨砂玻璃 L1：浮层 surface 接线', () => {
     for (const [Ctor, sel] of reps) {
       const el = mount(Ctor)
       const surface = el.shadowRoot!.querySelector<HTMLElement>(sel)
-      expect(surface, `${el.localName} ${sel} 应存在`).toBeTruthy()
+      expect(surface!.classList.contains(sel.slice(1)), `${el.localName} ${sel} 应存在`).toBe(true)
       const cs = getComputedStyle(surface!)
       expect(cs.backdropFilter, `${el.localName} 默认 backdrop-filter`).toBe('none')
       expect(cs.outlineColor, `${el.localName} 默认 outline-color`).toBe('transparent')
@@ -228,7 +228,7 @@ describe('玻璃跨浏览器一致性：不依赖浏览器专属位移滤镜', (
   it('prefers-reduced-transparency 回退实心并关闭模糊/折光边/高光', () => {
     const css = readFileSync(resolve(import.meta.dirname, '../../../../packages/theme/glass.css'), 'utf8')
     const idx = css.indexOf('prefers-reduced-transparency')
-    expect(idx).toBeGreaterThan(0)
+    expect(css.split('prefers-reduced-transparency').length - 1, '回退媒体查询出现一次').toBe(1)
     const block = css.slice(idx)
     expect(block).toContain('--oas-glass-blur: none')
     expect(block).toContain('--oas-glass-ring: transparent')
@@ -243,7 +243,7 @@ describe('玻璃跨浏览器一致性：不依赖浏览器专属位移滤镜', (
     expect(css).toContain('--oas-glass-sheen-size:')
     expect(css).toContain('--oas-glass-sheen-press:')
     const darkIdx = css.indexOf('[data-theme="dark"]')
-    expect(darkIdx).toBeGreaterThan(0)
+    expect(css.split('[data-theme="dark"]').length - 1, 'dark 段出现两次（主题段 + 变量段）').toBe(2)
     expect(css.slice(darkIdx), 'dark 段应有独立 sheen 档').toContain('--oas-glass-sheen:')
   })
 

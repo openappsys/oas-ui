@@ -656,9 +656,9 @@ describe('OASInputNumber focus 委托与水合结构', () => {
     const el = new OASInputNumber()
     document.body.appendChild(el)
     // SSR 水合路径由 form/ssr-hydrate.test.ts 覆盖；此处校验 render 后结构稳定
-    expect(el.shadowRoot!.querySelector('input[part="input"]')).not.toBeNull()
-    expect(el.shadowRoot!.querySelector('button[part="up"]')).not.toBeNull()
-    expect(el.shadowRoot!.querySelector('button[part="down"]')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('input[part="input"]').length).toBe(1)
+    expect(el.shadowRoot!.querySelectorAll('button[part="up"]').length).toBe(1)
+    expect(el.shadowRoot!.querySelectorAll('button[part="down"]').length).toBe(1)
   })
 })
 
@@ -1037,7 +1037,7 @@ describe('OASInputNumber 数值 scrub（数字区像素锚定计步）', () => {
     el.addEventListener('oas-input', (e) => inputs.push((e as CustomEvent).detail.value))
     input(el).dispatchEvent(pointer('pointerdown', 100))
     window.dispatchEvent(pointer('pointermove', 112))
-    expect(inputs.length).toBeGreaterThan(0)
+    expect(inputs.length, '单次 pointermove 派发一次 oas-input').toBe(1)
     expect(inputs.at(-1)).toBe('8')
     window.dispatchEvent(pointer('pointerup', 112))
   })

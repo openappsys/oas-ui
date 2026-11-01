@@ -26,15 +26,15 @@ describe('OASBubble', () => {
 
   it('渲染默认插槽内容与 part=bubble 骨架', () => {
     const el = mount('<p>你好</p>')
-    expect(el.shadowRoot!.querySelector('[part="bubble"]')).not.toBeNull()
-    expect(el.shadowRoot!.querySelector('[part="content"]')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('[part="bubble"]').length).toBe(1)
+    expect(el.shadowRoot!.querySelectorAll('[part="content"]').length).toBe(1)
     const slot = el.shadowRoot!.querySelector<HTMLSlotElement>('slot:not([name])')!
     expect(slot.assignedNodes().some((n: Node) => (n.textContent ?? '').includes('你好'))).toBe(true)
   })
 
   it('无内容渲染不报错（纯表面容器，空态合法）', () => {
     const el = mount()
-    expect(el.shadowRoot!.querySelector('[part="bubble"]')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('[part="bubble"]').length).toBe(1)
   })
 
   it('六种 variant 全部有 :host([variant=…]) 级 CSS 规则（纯 CSS 消费）', () => {
@@ -135,7 +135,7 @@ describe('OASBubble', () => {
   it('observedAttributes 声明 loading；非法 variant/align 不报错', () => {
     expect(OASBubble.observedAttributes).toContain('loading')
     const el = mount('<p>x</p>', { variant: 'neon', align: 'middle' })
-    expect(el.shadowRoot!.querySelector('[part="bubble"]')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('[part="bubble"]').length).toBe(1)
   })
 
   // ---- 尾巴（tail）：opt-in，默认无；auto 跟随对齐；显式侧覆盖 ----

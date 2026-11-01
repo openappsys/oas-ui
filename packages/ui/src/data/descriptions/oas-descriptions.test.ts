@@ -23,7 +23,7 @@ describe('OASDescriptions', () => {
 
   it('渲染标签与内容', () => {
     const el = mount()
-    expect(el.shadowRoot!.querySelector('[part="items"]')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('[part="items"]').length).toBe(1)
     const items = el.querySelectorAll('oas-descriptions-item')
     expect(items.length).toBe(2)
   })
@@ -86,7 +86,7 @@ describe('OASDescriptions', () => {
       document.body.appendChild(el)
       const slot = el.shadowRoot!.querySelector<HTMLSlotElement>('slot[name="title"]')!
       const fallback = el.shadowRoot!.querySelector<HTMLElement>('.title-text')!
-      expect(slot.assignedNodes().length).toBeGreaterThan(0)
+      expect(slot.assignedNodes().length).toBe(1)
       expect(fallback.hidden).toBe(true)
       // 属性仍被吸收缓存（兜底隐而不删），宿主无残留原生悬浮提示
       expect(fallback.textContent).toBe('属性标题')
@@ -99,7 +99,7 @@ describe('OASDescriptions', () => {
       document.body.appendChild(el)
       const slot = el.shadowRoot!.querySelector<HTMLSlotElement>('slot[name="title"]')!
       const fallback = el.shadowRoot!.querySelector<HTMLElement>('.title-text')!
-      expect(slot.assignedNodes().length).toBeGreaterThan(0)
+      expect(slot.assignedNodes().length).toBe(1)
       expect(fallback.hidden).toBe(true)
       expect(el.hasAttribute('title')).toBe(false)
     })
@@ -215,7 +215,7 @@ describe('OASDescriptions', () => {
       document.body.appendChild(el)
       const extra = el.shadowRoot!.querySelector<HTMLElement>('[part="extra"]')!
       const slot = extra.querySelector<HTMLSlotElement>('slot[name="extra"]')!
-      expect(slot.assignedNodes().length).toBeGreaterThan(0)
+      expect(slot.assignedNodes().length).toBe(1)
     })
   })
 
@@ -323,7 +323,7 @@ describe('OASDescriptionsItem', () => {
     const el = mountItem({ label: '属性标签' }, '<b slot="label">富标签</b><span>内容</span>')
     const slot = el.shadowRoot!.querySelector<HTMLSlotElement>('slot[name="label"]')!
     const fallback = el.shadowRoot!.querySelector<HTMLElement>('.label-text')!
-    expect(slot.assignedNodes().length).toBeGreaterThan(0)
+    expect(slot.assignedNodes().length).toBe(1)
     expect(fallback.hidden).toBe(true)
     expect(fallback.textContent).toBe('属性标签')
   })

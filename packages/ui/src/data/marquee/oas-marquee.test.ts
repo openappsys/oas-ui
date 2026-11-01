@@ -139,7 +139,7 @@ describe('OASMarquee', () => {
     expect(groups.length).toBe(2)
     expect(cloneGroup(el).getAttribute('aria-hidden')).toBe('true')
     expect(cloneText(el)).toBe('OAS-UI 滚动内容')
-    expect(groups[0]!.querySelector('slot')).not.toBeNull()
+    expect(groups[0]!.querySelectorAll('slot:not([name])').length).toBe(1)
   })
 
   it('克隆份在 light DOM（页面样式表可达）：宿主直系包裹节点 + 具名 slot 投递 + ::slotted 等价盒模型', () => {
@@ -151,7 +151,7 @@ describe('OASMarquee', () => {
     const copies = cloneCopies(el)
     expect(copies.length, '克隆份是宿主 light DOM 直系子节点').toBe(1)
     expect(copies[0]!.getAttribute('slot'), '投递到克隆组的具名 slot').toBe('oas-marquee-copy')
-    expect(cloneGroup(el).querySelector('slot[name="oas-marquee-copy"]')).not.toBeNull()
+    expect(cloneGroup(el).querySelectorAll('slot[name="oas-marquee-copy"]').length).toBe(1)
     expect(copies[0]!.getAttribute('aria-hidden'), '克隆份对读屏隐藏（自身标注，不依赖 shadow 祖先）').toBe('true')
     // 缺陷回归：aria-hidden 只挡读屏，克隆份里的按钮/链接仍留在 Tab 序里（可误操作视觉副本）
     expect(copies[0]!.hasAttribute('inert'), '克隆份带 inert（视觉副本不进键盘/AT 导航）').toBe(true)
@@ -176,7 +176,7 @@ describe('OASMarquee', () => {
     const srcGroup = el.shadowRoot!.querySelector('.group:not(.clone)')!
     const srcCopies = srcGroup.querySelectorAll('.copy')
     expect(srcCopies.length, '源组恰好 1 份 .copy').toBe(1)
-    expect(srcCopies[0]!.querySelector('slot'), '源份内是 slot').not.toBeNull()
+    expect(srcCopies[0]!.querySelectorAll('slot').length, '源份内是 slot').toBe(1)
     const clnCopies = cloneCopies(el)
     expect(clnCopies.length, '克隆组默认 1 份').toBe(1)
     for (const c of clnCopies) expect(c.textContent).toBe('OAS-UI')
@@ -627,7 +627,7 @@ describe('OASMarquee', () => {
     expect(css).toContain(":host([data-rtl]:not([orientation='vertical'])) .track")
     expect(css).toContain('animation-name: oas-marquee-x-rtl')
     const kf = css.match(/@keyframes oas-marquee-x-rtl\s*\{[\s\S]*?\n\}/)
-    expect(kf, 'RTL 关键帧存在').toBeTruthy()
+    expect(kf![0], 'RTL 关键帧存在').toContain('@keyframes oas-marquee-x-rtl')
     expect(kf![0]).toContain('translateX(var(--oas-marquee-shift))')
     expect(kf![0]).not.toContain('-1 *')
   })

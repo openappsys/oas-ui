@@ -385,7 +385,7 @@ describe('createWindowedSource × 视觉适配器', () => {
       expect(el.getAttribute('visual-total')).toBe('210')
       // 首拉请求携带视觉字段（协议在请求派发前已生效）→ getDataRange 用事件视觉区间映射
       expect(events[0]!.visualStart).toBe(0)
-      expect(events[0]!.visualEnd).toBeGreaterThan(0)
+      expect(events[0]!.visualEnd).toBe(9)
       expect(layout.getDataRangeCalls[0]).toEqual([events[0]!.visualStart, events[0]!.visualEnd])
       // 并集契约：fetch = 事件区间 ∪ 映射区间。首拉事件 [0,17)（视口+margin）⊇ 映射 [0,8)
       // （行 0 占双槽位）→ 并集 [0,17)——组件 need（含缓冲）不被映射裁剪
@@ -472,7 +472,7 @@ describe('createWindowedSource × 视觉适配器', () => {
       const rows = el.shadowRoot!.querySelectorAll('tbody tr[data-row-index]')
       const last = rows[rows.length - 1] as HTMLElement
       const lastAbs = Number(last.getAttribute('data-row-index'))
-      expect(lastAbs, '视口内最后已渲染行').toBeGreaterThan(0)
+      expect(lastAbs, '视口内最后已渲染行').toBe(5)
       const td = last.querySelector<HTMLElement>('td[data-col="name"]')!
       td.focus()
       expect(el.shadowRoot!.activeElement).toBe(td)
@@ -554,7 +554,7 @@ describe('createWindowedSource × 视觉适配器', () => {
     })
     try {
       expect(el.getAttribute('visual-total'), 'geometry total ≥ 截断后数据 total → 协议生效').toBe('100')
-      await vi.waitFor(() => expect(el.data.length).toBeGreaterThan(0))
+      await vi.waitFor(() => expect(el.data.length).toBe(17))
       expect(errors, 'total 小数不得触发误降级').toHaveLength(0)
     } finally {
       source.destroy()
@@ -960,7 +960,6 @@ describe('createWindowedSource × 视觉适配器', () => {
       source.refresh()
       await vi.waitFor(() => expect(el.getAttribute('visual-total')).toBe('1001'))
       const restored = el.shadowRoot!.activeElement as HTMLElement | null
-      expect(restored, '回填后焦点应恢复').toBeTruthy()
       expect(restored!.closest('tr')!.getAttribute('data-key'), '焦点回锚同一 row-key').toBe('行3')
       expect(el.shadowRoot!.querySelector('table')!.getAttribute('aria-rowcount'), 'ARIA 仍为数据 total').toBe('1000')
       const snapshot = (

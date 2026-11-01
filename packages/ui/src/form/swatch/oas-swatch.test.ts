@@ -223,7 +223,7 @@ describe('OASSwatchGroup 选择组', () => {
     // 焦点漫游：ArrowRight 到下一子件焦点
     swatches[0]!.focus()
     el.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true, composed: true }))
-    expect(swatches[1]!.shadowRoot!.activeElement).not.toBeNull()
+    expect(swatches[1]!.shadowRoot!.activeElement, 'ArrowRight 漫游到第 2 件').toBe(btn(swatches[1]!))
     // Enter 选中
     let change: unknown = null
     el.addEventListener('oas-change', (e) => (change = (e as CustomEvent).detail))
@@ -232,7 +232,7 @@ describe('OASSwatchGroup 选择组', () => {
     expect(change).toEqual({ value: 'blue' })
     // Home 回首件 + End 到末件
     el.dispatchEvent(new KeyboardEvent('keydown', { key: 'End', bubbles: true, composed: true }))
-    expect(swatches[2]!.shadowRoot!.activeElement).not.toBeNull()
+    expect(swatches[2]!.shadowRoot!.activeElement, 'End 漫游到末件').toBe(btn(swatches[2]!))
   })
 
   it('RTL：dir=rtl 时 ArrowLeft=下一项（视觉镜像）', () => {
@@ -241,13 +241,13 @@ describe('OASSwatchGroup 选择组', () => {
     const swatches = [...el.querySelectorAll<OASSwatch>('oas-swatch')]
     swatches[0]!.focus()
     el.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true, composed: true }))
-    expect(swatches[1]!.shadowRoot!.activeElement).not.toBeNull()
+    expect(swatches[1]!.shadowRoot!.activeElement, 'RTL 下 ArrowLeft 漫游到第 2 件').toBe(btn(swatches[1]!))
   })
 
   it('空组零子件不报错', () => {
     const el = new OASSwatchGroup()
     document.body.appendChild(el)
-    expect(el.shadowRoot!.querySelector('[part="group"]')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('[part="group"]').length).toBe(1)
   })
 
   it('value 不在子集中静默忽略（无选中子件、不报错）', () => {

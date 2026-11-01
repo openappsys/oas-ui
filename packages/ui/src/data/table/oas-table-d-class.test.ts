@@ -132,7 +132,7 @@ describe('OASTable D9 grid-navigation', () => {
     td.focus()
     pressActive(el, 'Enter')
     const input = td.querySelector<HTMLInputElement>('input.cell-editor')
-    expect(input, 'Enter 应进入编辑态').not.toBeNull()
+    expect(input!.tagName, 'Enter 应进入编辑态').toBe('INPUT')
     expect(shadow(el).activeElement).toBe(input)
     // 编辑态：方向键让位输入框（不被网格导航抢走）
     pressActive(el, 'ArrowRight')
@@ -326,7 +326,7 @@ describe('OASTable D9 grid-navigation', () => {
     document.body.appendChild(el)
     const td = cell(el, 0, 0)
     td.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }))
-    expect(td.querySelector('input.cell-editor'), '双击可编辑格进编辑（未被 gridcell 拦下）').not.toBeNull()
+    expect(td.querySelectorAll('input.cell-editor').length, '双击可编辑格进编辑（未被 gridcell 拦下）').toBe(1)
   })
 })
 
@@ -352,7 +352,7 @@ describe('OASTable D15 row-draggable', () => {
     expect(handles.length).toBe(6)
     expect(handles[0]!.getAttribute('aria-label')).toBe('拖拽排序')
     expect(handles[0]!.getAttribute('draggable')).toBe('true')
-    expect(shadow(el).querySelector('thead th.row-drag-cell')).not.toBeNull()
+    expect(shadow(el).querySelectorAll('thead th.row-drag-cell').length).toBe(1)
 
     const off = mount()
     expect(shadow(off).querySelector('.row-drag-handle')).toBeNull()
@@ -470,7 +470,7 @@ describe('OASTable D15 row-draggable', () => {
     expect(shadow(el).querySelector('.row-drag-handle')).toBeNull()
     el.setAttribute('row-draggable', '')
     expect(shadow(el).querySelectorAll('tr.row td.row-drag-cell').length).toBe(6)
-    expect(shadow(el).querySelector('thead th.row-drag-cell')).not.toBeNull()
+    expect(shadow(el).querySelectorAll('thead th.row-drag-cell').length).toBe(1)
     el.removeAttribute('row-draggable')
     expect(shadow(el).querySelector('.row-drag-handle')).toBeNull()
     expect(shadow(el).querySelector('thead th.row-drag-cell')).toBeNull()

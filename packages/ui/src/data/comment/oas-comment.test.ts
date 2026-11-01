@@ -87,7 +87,7 @@ describe('OASComment', () => {
     const el = mount()
     el.setAttribute('align', 'right')
     el.setAttribute('align', 'center') // 非 left/right 取值：CSS 选择器不命中即回落默认
-    expect(el.shadowRoot!.querySelector('[part="comment"]')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('[part="comment"]').length).toBe(1)
   })
 
   it('align=right 提供 time 右挤与 actions 右对齐规则（CSS 级，逻辑属性 RTL 安全）', () => {
@@ -107,13 +107,13 @@ describe('OASComment', () => {
     expect(css).toMatch(/\.reply,\s*\n?\.quote\s*\{[^}]*border-inline-start:\s*2px solid/)
     expect(css).not.toMatch(/margin-left:/)
     expect(css).not.toMatch(/padding-left:/)
-    expect(el.shadowRoot!.querySelector('[part="content"]')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('[part="content"]').length).toBe(1)
   })
 
   it('quote/reply 插槽：结构存在、空隐藏、有内容显示', async () => {
     const el = mount()
-    expect(el.shadowRoot!.querySelector('slot[name="quote"]')).not.toBeNull()
-    expect(el.shadowRoot!.querySelector('slot[name="reply"]')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('slot[name="quote"]').length).toBe(1)
+    expect(el.shadowRoot!.querySelectorAll('slot[name="reply"]').length).toBe(1)
     for (const part of ['quote', 'reply']) {
       expect(el.shadowRoot!.querySelector(`[part="${part}"]`)!.hasAttribute('hidden')).toBe(true)
     }

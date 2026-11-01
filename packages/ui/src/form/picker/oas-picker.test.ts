@@ -97,7 +97,7 @@ describe('OASPicker', () => {
       const el = mount({ columns: COLUMNS })
       expect(cols(el)[0]!.getAttribute('aria-label')).toBe('水果')
       const bare = mount({ columns: JSON.stringify([{ items: [{ label: 'x' }] }]) })
-      expect(cols(bare)[0]!.getAttribute('aria-label')).toBeTruthy()
+      expect(cols(bare)[0]!.getAttribute('aria-label')).toBe('第 1 列')
     })
 
     it('非法/空 JSON：空列容错不渲染', () => {
@@ -118,7 +118,7 @@ describe('OASPicker', () => {
       expect(empty.getAttribute('aria-activedescendant')).toBeNull()
       // 有 option 的列仍正常同步
       const idref = fruit.getAttribute('aria-activedescendant')
-      expect(idref).toBeTruthy()
+      expect(idref).toMatch(/^oas-picker-[0-9a-z]+-\d+-\d+$/)
       expect(fruit.querySelector(`#${idref}`)?.getAttribute('role')).toBe('option')
     })
 
@@ -141,8 +141,8 @@ describe('OASPicker', () => {
       for (const el of [a, b]) {
         for (const col of cols(el)) {
           const idref = col.getAttribute('aria-activedescendant')
-          expect(idref).toBeTruthy()
-          expect(col.querySelector(`#${idref}`)).not.toBeNull()
+          expect(idref).toMatch(/^oas-picker-[0-9a-z]+-\d+-\d+$/)
+          expect(col.querySelector(`#${idref}`)!.getAttribute('role')).toBe('option')
         }
       }
     })
@@ -444,7 +444,7 @@ describe('OASPicker', () => {
 
     it('进 ssr 注册（Node 环境可安全导入类）', async () => {
       const ssr = await import('../../ssr.js')
-      expect((ssr as Record<string, unknown>).OASPicker).toBeTruthy()
+      expect(typeof (ssr as Record<string, unknown>).OASPicker).toBe('function')
       // 全量并发下动态导入整包 ssr 聚合口偶超 5s 默认超时（二轮 review 实抓）
     }, 15000)
   })

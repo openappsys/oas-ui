@@ -20,7 +20,7 @@ describe('OASStepperPanel', () => {
 
   it('渲染默认插槽内容（面板内容走默认插槽）', () => {
     const el = mount('0', '<p>第一步内容</p>')
-    expect(el.shadowRoot!.querySelector('slot')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('slot:not([name])').length).toBe(1)
     expect(el.textContent).toContain('第一步内容')
   })
 
@@ -34,7 +34,7 @@ describe('OASStepperPanel', () => {
     const shadow = el.shadowRoot
     el.setAttribute('value', '1')
     expect(el.shadowRoot).toBe(shadow)
-    expect(el.shadowRoot!.querySelector('slot')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('slot:not([name])').length).toBe(1)
   })
 
   it(':host([hidden]) 显隐由外部（oas-stepper）驱动：hidden 时样式规则存在', () => {
@@ -47,7 +47,7 @@ describe('OASStepperPanel', () => {
     const el = new OASStepperPanel()
     el.innerHTML = '<p>内容</p>'
     document.body.appendChild(el)
-    expect(el.shadowRoot!.querySelector('slot')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('slot:not([name])').length).toBe(1)
   })
 
   it('DSD 水合双路径：快照指纹命中 → hydrate 接管，跳过 shadow 重建', () => {
@@ -62,7 +62,7 @@ describe('OASStepperPanel', () => {
     document.body.appendChild(el)
     // 水合成功：指纹 meta 被移除
     expect(el.shadowRoot!.querySelector('meta[data-oas-ssr]')).toBeNull()
-    expect(el.shadowRoot!.querySelector('slot')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('slot:not([name])').length).toBe(1)
     expect(el.textContent).toContain('内容')
   })
 
@@ -73,6 +73,6 @@ describe('OASStepperPanel', () => {
     el.shadowRoot!.innerHTML = `<meta data-oas-ssr="oas-stepper-panel" data-oas-ssr-v="1"><span>broken</span>`
     document.body.appendChild(el)
     expect(el.shadowRoot!.querySelector('meta[data-oas-ssr]')).toBeNull()
-    expect(el.shadowRoot!.querySelector('slot')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('slot:not([name])').length).toBe(1)
   })
 })

@@ -102,7 +102,7 @@ describe('OASLink', () => {
     it('icon 进入 observedAttributes，渲染图标元素', () => {
       expect(OASLink.observedAttributes).toContain('icon')
       const el = mount({ href: '#', icon: 'search' })
-      expect(el.shadowRoot!.querySelector('.icon')).not.toBeNull()
+      expect(el.shadowRoot!.querySelectorAll('.icon').length).toBe(1)
     })
 
     it('icon-position=start（默认）图标在文字前，end 在后', () => {
@@ -131,7 +131,7 @@ describe('OASLink', () => {
       const a = link(el)
       expect(a.getAttribute('target')).toBe('_blank')
       expect(a.getAttribute('rel')).toBe('noopener noreferrer')
-      expect(a.querySelector('.icon-external')).not.toBeNull()
+      expect(a.querySelectorAll('.icon-external').length).toBe(1)
     })
 
     it('external 图标位置跟随 icon-position（默认 end）', () => {
@@ -341,7 +341,6 @@ describe('loading 态（转圈替换前置图标 + 禁点击）', () => {
   it('loading 时前置图标替换为转圈（icon 位置保留、内容为 loading svg + spinning class）', () => {
     const el = mount({ href: '#', icon: 'search', loading: '' })
     const icon = el.shadowRoot!.querySelector<HTMLElement>('.icon')
-    expect(icon).not.toBeNull()
     expect(icon!.classList.contains('spinning')).toBe(true)
     expect(icon!.innerHTML).toContain('stroke="currentColor"')
     // 位置不变：仍在文字前
@@ -351,8 +350,8 @@ describe('loading 态（转圈替换前置图标 + 禁点击）', () => {
   it('loading 且无 icon：自动补转圈图标（文字前）', () => {
     const el = mount({ href: '#', loading: '' })
     const icon = el.shadowRoot!.querySelector('.icon')
-    expect(icon).not.toBeNull()
-    expect(link(el).firstElementChild!.classList.contains('icon')).toBe(true)
+    expect(icon!.classList.contains('icon')).toBe(true)
+    expect(link(el).firstElementChild).toBe(icon)
   })
 
   it('退出 loading 后恢复原图标（spinning 移除、原 svg 恢复）', () => {

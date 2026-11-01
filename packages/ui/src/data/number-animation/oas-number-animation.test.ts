@@ -117,7 +117,7 @@ describe('OASNumberAnimation', () => {
 
   it('断开连接取消 rAF（无泄漏）', () => {
     const el = mount({ value: '500', duration: '1000' })
-    expect(rafCb).not.toBeNull()
+    expect(typeof rafCb).toBe('function')
     el.remove()
     expect(rafCb).toBeNull()
   })
@@ -184,7 +184,7 @@ describe('OASNumberAnimation', () => {
     const listener = vi.fn()
     el.addEventListener('oas-finish', listener)
     el.setAttribute('active', 'true')
-    expect(rafCb).not.toBeNull()
+    expect(typeof rafCb).toBe('function')
     runToEnd(500)
     expect(text(el)).toBe('1000')
     expect(listener).toHaveBeenCalledTimes(1)
@@ -201,7 +201,7 @@ describe('OASNumberAnimation', () => {
     // 停帧：文本保持当前值
     expect(text(el)).toBe(String(mid))
     el.setAttribute('active', 'true')
-    expect(rafCb).not.toBeNull()
+    expect(typeof rafCb).toBe('function')
     runToEnd(1000)
     expect(text(el)).toBe('1000')
   })
@@ -216,7 +216,7 @@ describe('OASNumberAnimation', () => {
     expect(text(el)).toBe('500')
     expect(listener).toHaveBeenCalledTimes(1)
     el.play()
-    expect(rafCb).not.toBeNull() // 重播已启动
+    expect(typeof rafCb).toBe('function') // 重播已启动
     runToEnd(300)
     expect(text(el)).toBe('500')
     expect(listener).toHaveBeenCalledTimes(2)

@@ -35,19 +35,17 @@ describe('modal 主路径入口（index 内含 prompt 能力）', () => {
     expect(hasModalCapability('prompt')).toBe(true)
     const el = new OASModal()
     document.body.appendChild(el)
-    expect(el.getModalCapability('prompt')).not.toBeNull()
+    expect(typeof el.getModalCapability('prompt')).toBe('object')
     el.remove()
   })
 
   it('仅 import 主路径即可 modal.prompt：返回句柄、创建可见对话框并渲染输入框', async () => {
     const p = modal.prompt({ title: '项目名', inputValue: 'oas-ui', placeholder: '请输入' })
     await Promise.resolve()
-    expect(p).not.toBeNull()
     const el = document.body.querySelector('oas-modal') as OASModal
-    expect(el).not.toBeNull()
     expect(el.hasAttribute('visible')).toBe(true)
     const input = el.querySelector<HTMLInputElement>('input')
-    expect(input).not.toBeNull()
+    expect(input!.tagName).toBe('INPUT')
     expect(input!.value).toBe('oas-ui')
     expect(input!.getAttribute('placeholder')).toBe('请输入')
     p.close()
