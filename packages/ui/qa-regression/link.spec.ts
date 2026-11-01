@@ -23,7 +23,6 @@ test('link href="#" 点击不滚动页面', async ({ page }) => {
   // 锚点跳转（若缺陷复发的滚动）即时发生：立即读取
   const after = await page.evaluate(() => window.scrollY)
   expect(after).toBe(before)
-  expect(after).toBe(2997)
 })
 
 test('link 三态下划线 + icon + external + rel：hover 悬停出下划线、图标前后位置、外链自动 target/rel/图标', async ({

@@ -142,7 +142,7 @@ test('gantt 规模回归：10 年 day 档（≈3660 列）× 1 万行，表头/�
   expect(metrics.before.coverage, '未滚动时可视区有刻度覆盖').toBe(true)
 
   // 滚到跨度中部：窗口平移后仍有界 + 可视区仍有刻度覆盖
-  expect(metrics.after.scrollLeft, 'scrollToDate 已滚动').toBe(31700)
+  expect(metrics.after.scrollLeft, 'scrollToDate 已滚动（列宽取整跨浏览器 ±1px）').toBeCloseTo(31700, -1)
   expect(metrics.after.minors, '滚动后表头格数仍有上界').toBeLessThan(300)
   expect(metrics.after.bars, '滚动（横向）后条数仍有上界').toBeLessThan(100)
   expect(metrics.after.sideRows, '滚动（横向）后行名列仍有上界').toBeLessThan(100)

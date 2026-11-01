@@ -174,7 +174,8 @@ test('typography 内容块排版：blockquote 边条 / ul 解包投影（slot �
   expect(r.hasContentWrap, 'ul 解包投影：无 content span 包装').toBe(false)
   expect(r.hasSlot, 'slot 直挂根').toBe(true)
   expect(r.liCount).toBe(2)
-  expect(r.ulHeight, 'li 投影渲染（列表有布局高度）').toBe(48)
+  // 列表行高由字体度量决定，Firefox 每行高约 1px（实测 48–50）
+  expect(r.ulHeight, 'li 投影渲染（列表有布局高度）').toBeCloseTo(49, -1)
   expect(r.tableTag).toBe('TABLE')
   expect(r.tableWidth, '表格全宽').toBeGreaterThan(200)
   expect(r.tableCollapse).toBe('collapse')

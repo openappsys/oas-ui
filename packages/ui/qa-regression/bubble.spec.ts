@@ -121,10 +121,13 @@ test('RTL：tail=start 仍贴 inline-start（逻辑属性镜像）且无物理 l
     }
   })
   expect(Number.parseFloat(r.insetStart)).toBeLessThan(0)
-  expect(Number.parseFloat(r.insetEnd)).toBeCloseTo(57.4844, 1)
+  // 尾部偏移由气泡盒宽推导，字体度量差异使 Chrome ≈57.5 / Firefox ≈53.7
+  expect(Number.parseFloat(r.insetEnd)).toBeGreaterThanOrEqual(50)
+  expect(Number.parseFloat(r.insetEnd)).toBeLessThanOrEqual(60)
   // 逻辑偏移换算后物理边相反：RTL 下 start 对应右侧
   expect(Number.parseFloat(r.right)).toBeLessThan(0)
-  expect(Number.parseFloat(r.left)).toBeCloseTo(57.4844, 1)
+  expect(Number.parseFloat(r.left)).toBeGreaterThanOrEqual(50)
+  expect(Number.parseFloat(r.left)).toBeLessThanOrEqual(60)
 })
 
 test('暗色：尾巴颜色仍取气泡表面（亮/暗背景色不同，尾巴渐变随表面变化）', async ({ page }) => {

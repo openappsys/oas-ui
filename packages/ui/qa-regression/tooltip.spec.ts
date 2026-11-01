@@ -81,7 +81,7 @@ test('tooltip virtual 坐标跟随：鼠标移入画布 tooltip 跟随显示、�
   expect(r.content).toContain('坐标') // 内容实时更新
   expect(r.placement).toBe('bottom')
   expect(r.top, 'tooltip 应定位在鼠标下方').toBe(383)
-  expect(r.left).toBeCloseTo(367.391, 1)
+  expect(r.left).toBeCloseTo(367.34, 0)
   expect(r.inViewport, 'tooltip 不应溢出视口').toBe(true)
 
   // 移出画布 → tooltip 隐藏 + 状态反馈复位

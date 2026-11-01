@@ -264,7 +264,10 @@ test('tour 目标在视口外首次打开：滚动期间弹窗隐藏（不闪现
         s.scrollY !== prev.scrollY || (s.scrollY !== samples.at(-1)!.scrollY && s.scrollY !== samples[0]!.scrollY)
       return moving && s.scrollY !== samples.at(-1)!.scrollY
     })
-    expect(midScroll.length, '平滑滚动期间应有中间帧').toBe(67)
+    expect(
+      new Set(midScroll.map((s) => s.scrollY)).size,
+      '平滑滚动期间应有多个中间滚动位置（帧数随浏览器滚动实现不同）',
+    ).toBeGreaterThanOrEqual(2)
     for (const s of midScroll) {
       expect(s.pending || s.opacity < 0.1, `滚动途中帧（scrollY=${s.scrollY}）弹窗应隐藏（pending 或近透明）`).toBe(
         true,

@@ -204,7 +204,7 @@ test('sidebar 嵌套父项点击折叠子菜单：hidden 真实隐藏（grid 0fr
         await new Promise((res) => requestAnimationFrame(res))
       }
     }
-    const before = { aria: getBiz().getAttribute('aria-expanded'), visibility: visibility() }
+    const before = { aria: getBiz().getAttribute('aria-expanded'), visibility: visibility(), rectH: rectH() }
     getBiz().click()
     await settle(() => getBiz().getAttribute('aria-expanded') === 'false')
     await settle(() => visibility() === 'hidden' && rectH() === 0)
@@ -215,7 +215,7 @@ test('sidebar 嵌套父项点击折叠子菜单：hidden 真实隐藏（grid 0fr
     }
     getBiz().click()
     await settle(() => getBiz().getAttribute('aria-expanded') === 'true')
-    await settle(() => visibility() === 'visible' && rectH() > 0)
+    await settle(() => visibility() === 'visible' && Math.abs(rectH() - before.rectH) <= 1)
     const afterReclick = {
       aria: getBiz().getAttribute('aria-expanded'),
       visibility: visibility(),
@@ -231,7 +231,10 @@ test('sidebar 嵌套父项点击折叠子菜单：hidden 真实隐藏（grid 0fr
   expect(r.afterClick.rectH, '隐藏后子菜单高度应为 0').toBe(0)
   expect(r.afterReclick.aria, '再点应重新展开').toBe('true')
   expect(r.afterReclick.visibility).toBe('visible')
-  expect(r.afterReclick.rectH, '再展开后子菜单高度应恢复').toBe(7)
+  expect(
+    Math.abs(r.afterReclick.rectH - r.before.rectH),
+    '再展开后子菜单高度恢复到初始展开态（字体/取整差异 ±1px）',
+  ).toBeLessThanOrEqual(1)
 })
 
 // —— 缺陷回归：collapsed × 树形 children 折叠态子菜单完全不可达（下游 templates 被迫扁平化规避）——

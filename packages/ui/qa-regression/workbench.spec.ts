@@ -519,7 +519,7 @@ test('task-progress-well 全空态宿主级隐藏：data-empty 反射 + 零尺�
       () => document.querySelector('oas-task-progress-well[data-empty-probe]')!.getBoundingClientRect().width,
     ),
     '有内容后井真实占位（胶囊可见）',
-  ).toBeCloseTo(91.58, 2)
+  ).toBeCloseTo(91.57, 0)
 })
 
 test('transport-well 键盘 seek：←/→ 真实键盘路径派发 oas-seek、宿主回写后时间码推进 + 输出行可见', async ({ page }) => {

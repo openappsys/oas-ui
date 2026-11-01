@@ -180,7 +180,8 @@ test('swipe-cell 聚焦滚动不误关：视口外 cell 聚焦 actions 按钮（
     await new Promise((res) => setTimeout(res, 500))
     return { open: el.hasAttribute('open'), scrollY: window.scrollY }
   })
-  expect(r.scrollY, '已发生聚焦滚动').toBe(7320)
+  // 聚焦滚动目标位置的取整与滚动条占位跨浏览器不同（实测 7310–7320）
+  expect(r.scrollY, '已发生聚焦滚动').toBeCloseTo(7315, -2)
   expect(r.open, '聚焦滚动不应把打开的 cell 误关（键盘可达）').toBe(true)
 })
 

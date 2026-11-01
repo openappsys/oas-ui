@@ -712,7 +712,9 @@ test('modal media 插槽：有内容时媒体区显示、slot 分配且真实占
   expect(r.hidden).toBe(false)
   expect(r.assigned).toBe(1)
   expect(r.hasMedia).toBe(true)
-  expect(r.mediaHeight, '媒体区真实占位（有内容可见）').toBeCloseTo(61.8, 0)
+  // 媒体区由 slot 内容撑高，Firefox 字体行高比 Chromium 高约 2px（实测 61–64）
+  expect(r.mediaHeight, '媒体区真实占位（有内容可见）').toBeGreaterThanOrEqual(60)
+  expect(r.mediaHeight, '媒体区占位不应超过内容高度区间').toBeLessThanOrEqual(66)
 })
 
 test('modal sticky-footer：正文限高内滚动 + 页脚吸底贴近对话框底边', async ({ page }) => {
@@ -742,6 +744,8 @@ test('modal sticky-footer：正文限高内滚动 + 页脚吸底贴近对话框�
   expect(r.bodyOverflowY).toBe('auto')
   expect(r.bodyScrolls, '正文区在限高内可滚动').toBe(true)
   expect(r.bodyMaxHeight, '正文限高生效（非 none）').not.toBe('none')
-  expect(r.footerHeight).toBeCloseTo(62.5, 0)
+  // 页脚高度含按钮行高，Firefox 字体行高偏高（实测 62.4–64.9）
+  expect(r.footerHeight).toBeGreaterThanOrEqual(61)
+  expect(r.footerHeight).toBeLessThanOrEqual(66)
   expect(r.footerToDialogBottom, '页脚吸底贴近对话框底边（不随正文滚走）').toBeLessThanOrEqual(2)
 })

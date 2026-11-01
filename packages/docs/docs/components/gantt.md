@@ -768,6 +768,15 @@ expanded.forEach((t) => ganttEl.addTask(t)) // 喂回组件前按需自行合并
 
 > 在文档站页面脚本里使用时，等待自定义元素就绪后再取组件实例（`await customElements.whenDefined('oas-gantt')`），helper 本身是纯函数、可在任何时机直接调用。helper 体积（gzip，2026-11-01 首档实测）：export 1110 B / evm 1097 B / alap 1423 B / recurring 1380 B。
 
+## 行 hover 高亮（hover）
+
+<DemoBlock title="默认：名称行 hover 同步高亮整行时间轴（装饰层 pointer-events:none）；hover=&quot;false&quot; 关闭">
+  <oas-gantt id="gantt-hover" tasks='[{"id":"h1","name":"默认 hover 高亮","start":"2026-03-02","end":"2026-03-06"},{"id":"h2","name":"鼠标移入名称行试试","start":"2026-03-09","end":"2026-03-13"}]'></oas-gantt>
+  <oas-gantt id="gantt-hover-off" hover="false" tasks='[{"id":"h3","name":"hover=false 关闭高亮","start":"2026-03-02","end":"2026-03-06"},{"id":"h4","name":"整行不再跟随","start":"2026-03-09","end":"2026-03-13"}]' style="margin-top:var(--oas-space-3)"></oas-gantt>
+</DemoBlock>
+
+默认开启：鼠标移入左侧名称行时，时间轴同步出现整行高亮装饰层（与斑马纹、选中态按 stripe < hover < selected 的声明序叠加），移出清除；`hover="false"` 完全关闭该高亮。触屏无 hover 语义，不受该属性影响。
+
 ## API
 
 ### oas-gantt

@@ -162,7 +162,8 @@ test('popconfirm theme 色阶：danger 确定按钮背景走 danger token + 面�
   // 色值 = rgb(#dc2626) 形态；token 十六进制转 rgb 对比
   expect(s.btnBg, 'danger 时确定按钮实底 = --oas-color-danger').toBe(hexToRgb(s.danger))
   expect(s.iconColor, 'danger 时图标色 = --oas-color-danger').toBe(hexToRgb(s.danger))
-  expect(s.popBg, '面板 tint 不等于纯背景（语义色混合）').toBe('color(srgb 0.986274 0.914902 0.914902)')
+  // Firefox 与 Chromium 的 color-mix 浮点末位不同（0.986274 vs 0.986275），归一化到前 5 位比较
+  expect(s.popBg, '面板 tint 不等于纯背景（语义色混合）').toMatch(/^color\(srgb 0\.9862[0-9]* 0\.9149/)
 })
 
 test('popconfirm 12 向 placement：fixed 定位写视口坐标 + 箭头在场', async ({ page }) => {

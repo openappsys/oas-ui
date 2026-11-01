@@ -769,6 +769,15 @@ expanded.forEach((t) => ganttEl.addTask(t)) // merge back as needed before feedi
 
 > When using helpers in docs-site page scripts, await the custom element before grabbing the component instance (`await customElements.whenDefined('oas-gantt')`); the helpers themselves are pure functions and can run at any time. Helper sizes (gzip, first budget measured 2026-11-01): export 1110 B / evm 1097 B / alap 1423 B / recurring 1380 B.
 
+## Row hover highlight (hover)
+
+<DemoBlock title="Default: hovering a name row highlights the whole timeline row (decorative layer, pointer-events:none); hover=&quot;false&quot; turns it off">
+  <oas-gantt id="gantt-hover" tasks='[{"id":"h1","name":"Default hover highlight","start":"2026-03-02","end":"2026-03-06"},{"id":"h2","name":"Hover the name row","start":"2026-03-09","end":"2026-03-13"}]'></oas-gantt>
+  <oas-gantt id="gantt-hover-off" hover="false" tasks='[{"id":"h3","name":"hover=false disables it","start":"2026-03-02","end":"2026-03-06"},{"id":"h4","name":"Rows no longer follow","start":"2026-03-09","end":"2026-03-13"}]' style="margin-top:var(--oas-space-3)"></oas-gantt>
+</DemoBlock>
+
+Enabled by default: hovering a name row in the left column highlights the matching timeline row through a decorative layer (stacking order stripe < hover < selected), cleared on mouse leave; `hover="false"` disables the highlight entirely. Touch devices have no hover semantics and are unaffected.
+
 ## API
 
 ### oas-gantt
