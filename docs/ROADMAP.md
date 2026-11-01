@@ -2,6 +2,12 @@
 
 版本遵循 SemVer。v1.0.0 为首个正式发布。每个版本 = 一个可独立交付/可试用的里程碑。
 
+## 未发布（gantt / resource Pro helper 分包批）
+
+| 范围 | 内容 | 状态 |
+| --- | --- | --- |
+| **6 个按需 helper 子路径（gantt / resource Pro 分包一期）** | `@oas-ui/ui/data/gantt/export`（toCsv：拍平 + 默认列 + CSV 转义 + bom）、`@oas-ui/ui/data/gantt/evm`（computeEvm：budget/PV/EV/AC/spi/cpi）、`@oas-ui/ui/data/gantt/alap`（computeLateDates：fs/ss/ff/sf + lag 反向 CPM、环 best-effort）、`@oas-ui/ui/data/gantt/recurring`（expandRecurring：daily/weekly/monthly + count/until/窗口）、`@oas-ui/ui/data/resource/cost`（computeCost：taskCost 优先 + resourceIds 限定 + perResource 均摊）、`@oas-ui/ui/data/resource/pool`（ResourcePool + globalThis Symbol.for 单例）。helper 纯函数、零 core/i18n/customElements/CSS、无模块级副作用；组件核心一行不动；不进 L1/CDN 族包（perf:size 6 条 helper 型 L3 登记 + 独立预算档锁定，首档 2026-11-01：export 1.5 / evm 1.5 / alap 2 / recurring 2 / cost 1.25 / pool 0.75 KB gzip，实测 1110/1097/1423/1380/828/490 B）；56 条单测 + 全量门禁 | ✅ 已完成（未发布） |
+
 ## 未发布（测试质量：qa:audit 还债）
 
 | 范围 | 内容 | 状态 |

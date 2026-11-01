@@ -6,6 +6,7 @@
 
 ### 新增
 
+- **6 个 gantt / resource Pro helper 按需子路径**：`@oas-ui/ui/data/gantt/export`（`toCsv` 任务导出 CSV：嵌套拍平、默认列、milestone end 回退、type 缺省推导、标准转义与 bom）、`@oas-ui/ui/data/gantt/evm`（`computeEvm` 挣值管理：taskCost/资源时薪预算、PV/EV/AC、spi/cpi 缺分母时 null）、`@oas-ui/ui/data/gantt/alap`（`computeLateDates` 后向 CPM 反推最晚日期与总浮时：fs/ss/ff/sf + lag、环 best-effort、hour 成分保留）、`@oas-ui/ui/data/gantt/recurring`（`expandRecurring` 周期任务展开：daily/weekly/monthly、count/until/窗口先达成者终止、实例保工期与 hour 成分）、`@oas-ui/ui/data/resource/cost`（`computeCost` 任务成本核算：taskCost 优先、resourceIds 限定计费集合、perResource 按计费资源数均摊）、`@oas-ui/ui/data/resource/pool`（`ResourcePool` 资源登记表 + `getSharedResourcePool` globalThis 单例、version 生效变更计数）。全部为纯函数 helper（pool 单例的 globalThis 挂载延迟到首次调用），零 core/i18n/customElements/CSS，组件核心不动；不进 L1 与 CDN 族包，`perf:size` 以 6 条 helper 型 L3 登记 + 独立预算档锁定（首档 2026-11-01，实测 gzip 490 B–1423 B）。
 - **`oas-select` 选项图标（`Option.icon`）**：`options` JSON 与 `<oas-option icon>` 子元素通道支持 `@oas-ui/icons` 图标名，下拉项、单选触发器与多选 chip 统一渲染 `icon + label`；图标装饰性（`aria-hidden`），未注册时回退纯文本并仅 devWarn 一次。富内容仍走 `oas-option-render` / `template[slot="option"]`。
 
 ### 文档

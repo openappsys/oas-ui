@@ -67,6 +67,15 @@ export const L3_REGISTRY = [
     kind: 'helper',
     measured: true,
   },
+  // —— data 家族 helper 型 L3：gantt / resource 纯函数子路径（独立计量 + 独立预算档） ——
+  // 数据加工 helper（CSV 导出 / EVM / 反推最晚日期 / 周期展开 / 成本核算 / 资源池）：
+  // 激活唯一入口是显式 import 按需函数，无 HTML/属性触发面；进 L1/data 族包即死重，必须显式 import。
+  { id: 'ganttExport', entry: 'data/gantt/export', family: 'data', kind: 'helper', measured: true },
+  { id: 'ganttEvm', entry: 'data/gantt/evm', family: 'data', kind: 'helper', measured: true },
+  { id: 'ganttAlap', entry: 'data/gantt/alap', family: 'data', kind: 'helper', measured: true },
+  { id: 'ganttRecurring', entry: 'data/gantt/recurring', family: 'data', kind: 'helper', measured: true },
+  { id: 'resourceCost', entry: 'data/resource/cost', family: 'data', kind: 'helper', measured: true },
+  { id: 'resourcePool', entry: 'data/resource/pool', family: 'data', kind: 'helper', measured: true },
 ]
 
 const normalize = (file) => file.replaceAll('\\', '/')

@@ -672,6 +672,62 @@ onMounted(async () => {
 })
 </script>
 
+## Pro helpers (on-demand)
+
+The gantt data-processing capabilities are also shipped as **4 pure-function helper subpaths**, imported separately from the component: their runtime closure carries no component runtime, no core and no i18n (the component core is untouched; helpers are not part of the L1/CDN bundles) — they only enter your build when explicitly imported:
+
+```ts
+// CSV export (nested flattening + default columns + standard escaping)
+import { toCsv } from '@oas-ui/ui/data/gantt/export'
+// Earned value management (budget / PV / EV / AC / spi / cpi)
+import { computeEvm } from '@oas-ui/ui/data/gantt/evm'
+// Backward CPM: latest dates and total float
+import { computeLateDates } from '@oas-ui/ui/data/gantt/alap'
+// Recurring task expansion
+import { expandRecurring } from '@oas-ui/ui/data/gantt/recurring'
+```
+
+**`toCsv(tasks, opts?)`**: flattens nested `children` in the same order as the component's sanitize layer, with default columns `id,name,start,end,type,progress,parent,project`; a milestone's `end` falls back to `start`; `type` is derived when missing (has children = summary, no end = milestone, otherwise task); standard CSV escaping (quote when the cell contains the delimiter/quotes/newlines, double the quotes), `bom: true` for Excel; `delimiter` / `columns` (`string | { key, label? }`) are customizable, and array fields (resources / dependencies) are only emitted for custom columns (ids joined with `|`).
+
+```ts
+const csv = toCsv(tasks, { bom: true })
+const csv2 = toCsv(tasks, {
+  delimiter: ';',
+  columns: [{ key: 'name', label: 'Task' }, 'start', 'end', 'progress', 'resources'],
+})
+```
+
+**`computeEvm(tasks, opts)`**: day-precision earned value. **Summaries (tasks with children or referenced via `parent`) are excluded** — their progress is derived from children, and counting them would double-book — `byTask` and totals never include them; an explicit `type: "milestone"` takes precedence — duration counts 0 and `end` is ignored (budget only via taskCost; PV counts fully when `start ≤ statusDate`); `budget` = `rates.taskCost[id]` first, otherwise Σ(assigned resources × duration hours × `rates.resourceHourly[rid]`); `planned` is capped by the elapsed-day ratio at `statusDate`; `earned = budget × progress%`; `actualCost` accepts a global number or a per-task record and defaults to EV (neutral); `spi` / `cpi` return `null` when pv / ac is 0; `start` after `end` self-heals by swapping (sanitize-layer semantics).
+
+```ts
+const r = computeEvm(tasks, {
+  rates: { resourceHourly: { zhang: 100 }, taskCost: { fix: 800 } },
+  statusDate: '2026-03-10',
+  actualCost: 5200, // or Record<taskId, number>
+  hoursPerDay: 8,
+})
+// r: { pv, ev, ac, sv, cv, spi, cpi, byTask }
+```
+
+**`computeLateDates(tasks, opts?)`**: treats the current schedule as-is (no forward re-scheduling) and derives each task's latest start/finish and total float from fs/ss/ff/sf + lag (`totalFloatDays`; negative = the current schedule is infeasible relative to `projectEnd` — schedule-drift only; constraint (`snet`/`mso`/`fnlt`) and deadline violation detection are out of scope for the helper and remain the component's job); summaries (tasks with children) are excluded, and `projectEnd` defaults to the latest finish **within the dependency graph**; dangling dependencies are skipped, dependency cycles are handled best-effort without throwing (deterministic but input-order sensitive); output preserves the hour part of the input.
+
+```ts
+const lates = computeLateDates(tasks, { projectEnd: '2026-04-30' })
+// [{ id, lateStart: 'YYYY-MM-DD', lateFinish: 'YYYY-MM-DD', totalFloatDays }, …]
+```
+
+**`expandRecurring(tasks, range, opts?)`**: expands tasks carrying a `recurring` rule into instances within the window. Rules support `daily` / `weekly` (`byWeekday` defaults to the start's weekday, week anchor = the Monday of that week) / `monthly` (same day of month, skipped in short months) plus `interval` / `count` / `until`; **`count` / `until` default to unlimited, but when provided and invalid (`count < 1`, unparseable `until`) the whole rule is void and the master is not expanded**; instances get id `${id}#${seq}` (seq = occurrence number in the series, stable across windows), `masterId` + `recurringInstance: true`, `progress: 0`, shifted dates preserving duration and the hour part; instances **drop children / dependencies / recurring**, array-valued fields are slice-cloned, and `type` summary is coerced to task (milestone kept); the master is dropped by default (`keepMaster: true` keeps it).
+
+```ts
+const expanded = expandRecurring(
+  [{ id: 'standup', name: 'Standup', start: '2026-03-02', recurring: { freq: 'weekly', byWeekday: [1, 3, 5] } }],
+  { start: '2026-03-01', end: '2026-03-31' },
+)
+expanded.forEach((t) => ganttEl.addTask(t)) // merge back as needed before feeding the component
+```
+
+> When using helpers in docs-site page scripts, await the custom element before grabbing the component instance (`await customElements.whenDefined('oas-gantt')`); the helpers themselves are pure functions and can run at any time. Helper sizes (gzip, first budget measured 2026-11-01): export 1110 B / evm 1097 B / alap 1423 B / recurring 1380 B.
+
 ## API
 
 ### oas-gantt
