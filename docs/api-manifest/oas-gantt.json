@@ -448,11 +448,11 @@
     },
     {
       "name": "--oas-gantt-weekend-bg",
-      "default": "color-mix(in srgb, var(--oas-color-bg-hover) 60%, transparent)"
+      "default": "color-mix(in srgb, var(--oas-color-bg-hover) 60%, var(--oas-color-bg))"
     },
     {
       "name": "--oas-gantt-holiday-bg",
-      "default": "color-mix(in srgb, var(--oas-color-warning) 12%, transparent)"
+      "default": "color-mix(in srgb, var(--oas-color-warning) 12%, var(--oas-color-bg))"
     },
     {
       "name": "--oas-gantt-link-color",

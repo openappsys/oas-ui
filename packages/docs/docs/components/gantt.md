@@ -387,8 +387,13 @@ computeVariance(el.tasks, 'plan-b')
 
 <DemoBlock title="height + row-height 启用视口窗口渲染（演示 300 行；只渲染可视窗口 + buffer）">
   <oas-gantt id="gantt-virtual" height="240" row-height="32" stripe></oas-gantt>
-  <div style="font-size:var(--oas-font-size-sm);color:var(--oas-color-text-secondary);margin-top:var(--oas-space-2)">方法通道：<oas-button id="gantt-jump" size="small">scrollToTask 跳到第 250 行</oas-button></div>
+  <div style="display:flex;align-items:center;justify-content:space-between;gap:var(--oas-space-3);margin-top:var(--oas-space-2);font-size:var(--oas-font-size-sm);color:var(--oas-color-text-secondary)">
+    <span>方法通道：<oas-button id="gantt-jump" size="small">scrollToTask 跳到第 250 行</oas-button></span>
+    <oas-switch id="gantt-stripe-switch" label="斑马纹" label-position="start" checked></oas-switch>
+  </div>
 </DemoBlock>
+
+`stripe` 是 opt-in 开关（默认关）：上例为了演示先行开启，可用右侧开关随时关闭；关闭后条纹层整体移除，不影响虚拟滚动与任务交互。周末/假日列颜色相对组件底色混合，不会把斑马行染成同色。
 
 方法：`scrollToTask(id)` 定位任务行、`scrollToDate(date)` / `scrollToToday()` 水平定位、`updateTask(id, patch)` 单条增量更新（走清洗层，派发 `oas-tasks-change`）。
 
@@ -513,6 +518,9 @@ onMounted(async () => {
     }
     virtual.tasks = tasks
     document.getElementById('gantt-jump')?.addEventListener('oas-click', () => virtual.scrollToTask('v249'))
+    document.getElementById('gantt-stripe-switch')?.addEventListener('oas-change', (e) => {
+      virtual.toggleAttribute('stripe', !!e.detail?.checked)
+    })
   }
 
   // 刻度切换（宿主 segmented → scale 属性）
@@ -882,7 +890,7 @@ expanded.forEach((t) => ganttEl.addTask(t)) // 喂回组件前按需自行合并
 | `--oas-gantt-header-bg` | — | `var(--oas-color-bg)` |
 | `--oas-gantt-header-height` | — | `44px` |
 | `--oas-gantt-height` | — | `320px` |
-| `--oas-gantt-holiday-bg` | — | `color-mix(in srgb, var(--oas-color-warning) 12%, transparent)` |
+| `--oas-gantt-holiday-bg` | — | `color-mix(in srgb, var(--oas-color-warning) 12%, var(--oas-color-bg))` |
 | `--oas-gantt-link-color` | — | `var(--oas-color-primary)` |
 | `--oas-gantt-list-width` | — | `220px` |
 | `--oas-gantt-milestone-color` | — | `var(--oas-color-warning)` |
@@ -891,4 +899,4 @@ expanded.forEach((t) => ganttEl.addTask(t)) // 喂回组件前按需自行合并
 | `--oas-gantt-status-line-color` | 状态线/计划进度刻度颜色（show-status-line，默认 --oas-color-warning） | `var(--oas-color-warning)` |
 | `--oas-gantt-summary-bg` | — | `var(--oas-color-text-secondary-strong)` |
 | `--oas-gantt-today-color` | — | `var(--oas-color-danger)` |
-| `--oas-gantt-weekend-bg` | — | `color-mix(in srgb, var(--oas-color-bg-hover) 60%, transparent)` |
+| `--oas-gantt-weekend-bg` | — | `color-mix(in srgb, var(--oas-color-bg-hover) 60%, var(--oas-color-bg))` |

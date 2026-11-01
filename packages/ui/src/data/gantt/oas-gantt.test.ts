@@ -7657,6 +7657,18 @@ describe('OASGantt 行斑马纹（stripe）', () => {
     )
   })
 
+  it('⑤b CSS：周末/假日列基于组件底色不透明混合（不与斑马纹二次叠加撞色）', () => {
+    const el = mount({ tasks: JSON.stringify(flatTasks(6)), stripe: '' })
+    const css = shadowOf(el).querySelector('style')!.textContent ?? ''
+    expect(css).toMatch(
+      /\.grid-canvas \.cell \{[^}]*color-mix\(in srgb, var\(--oas-color-bg-hover\) 60%, var\(--oas-color-bg\)\)/,
+    )
+    expect(css).toMatch(
+      /\.grid-canvas \.cell\.holiday \{[^}]*color-mix\(in srgb, var\(--oas-color-warning\) 12%, var\(--oas-color-bg\)\)/,
+    )
+    expect(css).not.toMatch(/\.grid-canvas \.cell \{[^}]*--oas-color-bg-hover\) 60%, transparent\)/)
+  })
+
   it('⑥ 移除属性：条纹容器与行名底色即时清除（回归既有外观）', () => {
     const el = mount({
       tasks: JSON.stringify(flatTasks(12)),

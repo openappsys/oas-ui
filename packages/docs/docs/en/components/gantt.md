@@ -386,8 +386,13 @@ computeVariance(el.tasks, 'plan-b')
 
 <DemoBlock title="height + row-height enable viewport windowing (300 rows demoed; only the visible window + buffer renders)">
   <oas-gantt id="gantt-virtual" height="240" row-height="32" stripe></oas-gantt>
-  <div style="font-size:var(--oas-font-size-sm);color:var(--oas-color-text-secondary);margin-top:var(--oas-space-2)">Methods: <oas-button id="gantt-jump" size="small">scrollToTask row 250</oas-button></div>
+  <div style="display:flex;align-items:center;justify-content:space-between;gap:var(--oas-space-3);margin-top:var(--oas-space-2);font-size:var(--oas-font-size-sm);color:var(--oas-color-text-secondary)">
+    <span>Methods: <oas-button id="gantt-jump" size="small">scrollToTask row 250</oas-button></span>
+    <oas-switch id="gantt-stripe-switch" label="Zebra stripes" label-position="start" checked></oas-switch>
+  </div>
 </DemoBlock>
+
+`stripe` is an opt-in switch (off by default). The example enables it for demonstration and can be turned off at any time; disabling removes the stripe layer without affecting virtualization or task interactions. Weekend/holiday columns mix against the component background, so they do not inherit the zebra row color.
 
 Methods: `scrollToTask(id)` to bring a task row into view, `scrollToDate(date)` / `scrollToToday()` for horizontal positioning, `updateTask(id, patch)` for single-task incremental updates (sanitized, dispatches `oas-tasks-change`).
 
@@ -512,6 +517,9 @@ onMounted(async () => {
     }
     virtual.tasks = tasks
     document.getElementById('gantt-jump')?.addEventListener('oas-click', () => virtual.scrollToTask('v249'))
+    document.getElementById('gantt-stripe-switch')?.addEventListener('oas-change', (e) => {
+      virtual.toggleAttribute('stripe', !!e.detail?.checked)
+    })
   }
 
   // Scale switching (host segmented → scale attribute)
@@ -883,7 +891,7 @@ expanded.forEach((t) => ganttEl.addTask(t)) // merge back as needed before feedi
 | `--oas-gantt-header-bg` | — | `var(--oas-color-bg)` |
 | `--oas-gantt-header-height` | — | `44px` |
 | `--oas-gantt-height` | — | `320px` |
-| `--oas-gantt-holiday-bg` | — | `color-mix(in srgb, var(--oas-color-warning) 12%, transparent)` |
+| `--oas-gantt-holiday-bg` | — | `color-mix(in srgb, var(--oas-color-warning) 12%, var(--oas-color-bg))` |
 | `--oas-gantt-link-color` | — | `var(--oas-color-primary)` |
 | `--oas-gantt-list-width` | — | `220px` |
 | `--oas-gantt-milestone-color` | — | `var(--oas-color-warning)` |
@@ -892,4 +900,4 @@ expanded.forEach((t) => ganttEl.addTask(t)) // merge back as needed before feedi
 | `--oas-gantt-status-line-color` | Status line / planned-progress tick color (show-status-line, default --oas-color-warning) | `var(--oas-color-warning)` |
 | `--oas-gantt-summary-bg` | — | `var(--oas-color-text-secondary-strong)` |
 | `--oas-gantt-today-color` | — | `var(--oas-color-danger)` |
-| `--oas-gantt-weekend-bg` | — | `color-mix(in srgb, var(--oas-color-bg-hover) 60%, transparent)` |
+| `--oas-gantt-weekend-bg` | — | `color-mix(in srgb, var(--oas-color-bg-hover) 60%, var(--oas-color-bg))` |

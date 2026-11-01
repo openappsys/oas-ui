@@ -400,7 +400,8 @@ svg.links .link-hit:focus-visible + .link {
 }
 /* 行斑马纹容器（stripe 属性，opt-in，懒创建）：绝对行号奇数行整行底色。
    纯装饰且不拦指针（条拖拽/框选/连线命中不受影响）；DOM 序插在 .grid-canvas 之前
-   （同为 absolute 无 z-index → 先者先绘）→ 周末/假日格画在条纹之上，条纹只透出工作日部分 */
+   （同为 absolute 无 z-index → 先者先绘）。周末/假日列使用相对 --oas-color-bg 的不透明混合：
+   若用 transparent 会与下方斑马纹二次叠加，斑马行上的周末列会被染成条纹色。 */
 .stripe-canvas {
   position: absolute;
   inset: 0;
@@ -420,10 +421,10 @@ svg.links .link-hit:focus-visible + .link {
 .grid-canvas .cell {
   position: absolute;
   top: 0;
-  background: var(--oas-gantt-weekend-bg, color-mix(in srgb, var(--oas-color-bg-hover) 60%, transparent));
+  background: var(--oas-gantt-weekend-bg, color-mix(in srgb, var(--oas-color-bg-hover) 60%, var(--oas-color-bg)));
 }
 .grid-canvas .cell.holiday {
-  background: var(--oas-gantt-holiday-bg, color-mix(in srgb, var(--oas-color-warning) 12%, transparent));
+  background: var(--oas-gantt-holiday-bg, color-mix(in srgb, var(--oas-color-warning) 12%, var(--oas-color-bg)));
 }
 svg.links {
   position: absolute;

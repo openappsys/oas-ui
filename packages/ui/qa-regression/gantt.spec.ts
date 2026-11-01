@@ -1542,6 +1542,94 @@ test('gantt stripe 斑马纹：绝对行号奇偶 + 滚动稳定 + 暗色 + 关�
   expect(errors, 'console 零 error').toEqual([])
 })
 
+test('gantt stripe × weekend：斑马行与普通行上的周末列同色（像素级），暗色下也不吸收条纹色', async ({ page }) => {
+  await page.goto('/components/gantt.html', { waitUntil: 'domcontentloaded' })
+  await waitGantt(page, 'gantt-basic')
+  const geometry = await page.evaluate(async () => {
+    await customElements.whenDefined('oas-gantt')
+    const raf = () => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)))
+    const el = document.createElement('oas-gantt') as HTMLElement & { tasks: unknown; shadowRoot: ShadowRoot }
+    el.setAttribute('stripe', '')
+    el.setAttribute('height', '220')
+    el.setAttribute('row-height', '36')
+    el.style.cssText = 'position:fixed;top:120px;left:120px;width:620px;z-index:9999'
+    document.body.appendChild(el)
+    el.tasks = [
+      { id: 'p0', name: '普通行', start: '2026-03-02', end: '2026-03-06' },
+      { id: 'p1', name: '斑马行', start: '2026-03-02', end: '2026-03-06' },
+      { id: 'p2', name: '普通行 2', start: '2026-03-02', end: '2026-03-06' },
+      { id: 'p3', name: '斑马行 2', start: '2026-03-02', end: '2026-03-06' },
+      { id: 'range', name: '范围到周末', start: '2026-03-02', end: '2026-03-08' },
+    ]
+    await raf()
+    const sr = el.shadowRoot
+    const weekend = sr.querySelector<HTMLElement>('.grid-canvas .cell.weekend')!
+    const names = [...sr.querySelectorAll<HTMLElement>('.side-body .row-name')]
+    const inner = sr.querySelector<HTMLElement>('.inner')!
+    const rect = inner.getBoundingClientRect()
+    const rowCenter = (idx: number) => {
+      const r = names[idx]!.getBoundingClientRect()
+      return r.top + r.height / 2 - rect.top
+    }
+    const points = {
+      x: weekend.getBoundingClientRect().left + weekend.getBoundingClientRect().width / 2 - rect.left,
+      stripeX: weekend.getBoundingClientRect().left - weekend.getBoundingClientRect().width / 2 - rect.left,
+      plainY: rowCenter(0),
+      stripedY: rowCenter(1),
+      stripeBgY: sr.querySelector<HTMLElement>('.stripe-canvas .stripe')!.getBoundingClientRect().top + 2 - rect.top,
+    }
+    document.documentElement.classList.add('dark')
+    await raf()
+    return { clip: { x: rect.left, y: rect.top, width: rect.width, height: rect.height }, points }
+  })
+
+  const sample = async () => {
+    const shot = await page.screenshot({ clip: geometry.clip })
+    return page.evaluate(
+      async ({ dataUrl, points }) => {
+        const img = new Image()
+        img.src = dataUrl
+        await img.decode()
+        const canvas = document.createElement('canvas')
+        canvas.width = img.naturalWidth
+        canvas.height = img.naturalHeight
+        const ctx = canvas.getContext('2d')!
+        ctx.drawImage(img, 0, 0)
+        const px = (x: number, y: number) => {
+          const d = ctx.getImageData(Math.round(x), Math.round(y), 1, 1).data
+          return [d[0] ?? 0, d[1] ?? 0, d[2] ?? 0]
+        }
+        return {
+          weekendOnPlain: px(points.x, points.plainY),
+          weekendOnStripe: px(points.x, points.stripedY),
+          stripe: px(points.stripeX, points.stripeBgY),
+        }
+      },
+      { dataUrl: `data:image/png;base64,${shot.toString('base64')}`, points: geometry.points },
+    )
+  }
+
+  const dark = await sample()
+  const maxDelta = (a: readonly number[], b: readonly number[]) => Math.max(...a.map((v, i) => Math.abs(v - b[i]!)))
+  expect(
+    maxDelta(dark.weekendOnPlain, dark.weekendOnStripe),
+    '暗色下周末列在普通行与斑马行上应保持同色',
+  ).toBeLessThanOrEqual(1)
+  expect(maxDelta(dark.weekendOnStripe, dark.stripe), '暗色下周末列不应被斑马纹染成条纹色').toBeGreaterThan(3)
+})
+
+test('gantt 虚拟滚动 demo：斑马纹开关真实切换条纹层', async ({ page }) => {
+  await page.goto('/components/gantt.html', { waitUntil: 'domcontentloaded' })
+  await waitGantt(page, 'gantt-virtual')
+  const gantt = page.locator('#gantt-virtual')
+  const toggle = page.locator('#gantt-stripe-switch')
+  await expect(gantt.locator('.stripe-canvas')).toBeAttached()
+  await toggle.click()
+  await expect(gantt.locator('.stripe-canvas')).toHaveCount(0)
+  await toggle.click()
+  await expect(gantt.locator('.stripe-canvas')).toBeAttached()
+})
+
 // C1 回归（lag 安全域）：极大有限 lag（1e8 天）× auto-schedule 曾把排程运算推出 Date 合法域
 // （±8.64e15 ms）→ Invalid Date → fmtIso 内 Intl.formatToParts 抛 RangeError（整图白屏）。
 // 修复口径：越域 lag 清洗为无 lag（等价 0，依赖保留），排程按 0 计算。
