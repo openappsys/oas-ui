@@ -2538,3 +2538,59 @@ test('resource show-cost 成本合计：默认关零节点、开启按费率行�
   await expect(laneOf('r1').locator('.lane-cost')).toBeVisible()
   expect(errors).toEqual([])
 })
+
+// 泳道行 hover（hover 属性，默认开）：真实鼠标 hover 泳道 → 整行底色（含 sticky 行头 .name）激活；
+// hover="false" → 行底色与行头均不变；暗色下 token 暗色变体仍生效；console 零告警。
+test('resource 泳道行 hover：整行（含行头）底色激活 + hover="false" 关闭 + 暗色 + console 零告警', async ({ page }) => {
+  const errors: string[] = []
+  page.on('pageerror', (e) => errors.push(e.message))
+  page.on('console', (m) => {
+    if (m.type() === 'error') errors.push(m.text())
+  })
+  await page.goto('/components/resource.html', { waitUntil: 'domcontentloaded' })
+  await waitResource(page, 'res-level')
+  const res = page.locator('#res-level')
+
+  const readRowBg = () =>
+    page.evaluate(() => {
+      const sr = (document.getElementById('res-level') as HTMLElement & { shadowRoot: ShadowRoot }).shadowRoot
+      const lane = sr.querySelector<HTMLElement>('.row.lane')!
+      const name = lane.querySelector<HTMLElement>('.name')!
+      const track = lane.querySelector<HTMLElement>('.track')!
+      const cs = (n: HTMLElement) => getComputedStyle(n).backgroundColor
+      return { lane: cs(lane), name: cs(name), track: cs(track) }
+    })
+
+  const before = await readRowBg()
+  await res.locator('.row.lane').first().hover()
+  const hovered = await readRowBg()
+  expect(hovered.lane, '泳道行底色激活').not.toBe(before.lane)
+  expect(hovered.name, 'sticky 行头同步变色（整行贯通）').not.toBe(before.name)
+  expect(hovered.name).toBe(hovered.lane)
+
+  // hover="false"：行与行头底色回到初始
+  await page.evaluate(() => document.getElementById('res-level')!.setAttribute('hover', 'false'))
+  await res.locator('.row.lane').first().hover()
+  const disabled = await readRowBg()
+  expect(disabled.lane, 'hover=false 行底色不激活').toBe(before.lane)
+  expect(disabled.name, 'hover=false 行头不激活').toBe(before.name)
+  // 条自身 hover 色不受行 hover 开关影响（独立 token）
+  await res.locator('.row.lane .bar').first().hover()
+  const barHover = await page.evaluate(() => {
+    const sr = (document.getElementById('res-level') as HTMLElement & { shadowRoot: ShadowRoot }).shadowRoot
+    const lane = sr.querySelector<HTMLElement>('.row.lane')!
+    return getComputedStyle(lane).backgroundColor
+  })
+  expect(barHover, '条 hover 不点亮行底色（通道独立）').toBe(before.lane)
+
+  // 移除属性恢复默认开 + 暗色下激活
+  await page.evaluate(() => {
+    document.getElementById('res-level')!.removeAttribute('hover')
+    document.documentElement.classList.add('dark')
+  })
+  await res.locator('.row.lane').first().hover()
+  const dark = await readRowBg()
+  expect(dark.lane, '暗色下 hover 底色与亮色不同（暗色变体）').not.toBe(hovered.lane)
+
+  expect(errors, 'console 零 error').toEqual([])
+})

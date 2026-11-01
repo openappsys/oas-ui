@@ -63,11 +63,11 @@ helper 不进 L1、不进 CDN 族包（`perf:size` 新增 6 条 L3 登记 + 独�
 
 ---
 
-## 未发布：gantt 斑马纹与周末/假日列视觉修正
+## 未发布：gantt 斑马纹与周末/假日列视觉修正 + 行高对齐 + 行 hover（gantt / resource）
 
 ### 功能定义
 
-修复 `oas-gantt` 开启 `stripe` 后，周末/假日列在斑马行上吸收条纹色、与普通行上颜色不一致的问题；`stripe` 继续保持 opt-in（默认关），并在虚拟滚动 demo 提供真实开关。
+修复 `oas-gantt` 开启 `stripe` 后，周末/假日列在斑马行上吸收条纹色、与普通行上颜色不一致的问题；`stripe` 继续保持 opt-in（默认关），并在虚拟滚动 demo 提供真实开关。修正 `row-height` 属性不作用于行名高度导致的错位。为 `oas-gantt` / `oas-resource` 增加整行 hover 底色（默认开，`hover="false"` 关闭，与 `oas-table` 惯例一致）。
 
 ### 详细需求
 
@@ -81,6 +81,7 @@ helper 不进 L1、不进 CDN 族包（`perf:size` 新增 6 条 L3 登记 + 独�
 - Chromium 像素级回归：暗色下周末列在普通行与斑马行同色，且与纯斑马底色可区分。
 - demo 开关真实点击回归：关闭后 `.stripe-canvas` 移除，开启后恢复。
 - 行高对齐：`row-height` 属性在场时映射 `--oas-gantt-row-height`（与 height 属性同协议，合法口径为纯数字 ≥20），行名高度与网格行高同源；几何级 e2e 断言斑马行名与条纹顶/底边逐一相等。
+- 行 hover（gantt + resource 同形态）：`hover` 属性默认开、`"false"` 关闭（与 oas-table 惯例一致）；gantt 行名/任务条、resource 泳道 hover 时整行点亮；新 token `--oas-gantt-row-hover-bg` / `--oas-resource-row-hover-bg` 与斑马纹、条 hover 色独立；gantt 时间轴装饰层单元素挂绝对行号（条纹 < hover < 选中，周末/假日列仍在其上）；触控不响应。
 
 ---
 

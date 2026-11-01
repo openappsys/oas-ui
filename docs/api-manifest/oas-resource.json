@@ -99,6 +99,10 @@
       "type": "string",
       "default": "",
       "observed": true
+    },
+    {
+      "name": "hover",
+      "observed": true
     }
   ],
   "props": [
@@ -165,6 +169,10 @@
     {
       "name": "--oas-resource-name-width",
       "default": "160px"
+    },
+    {
+      "name": "--oas-resource-row-hover-bg",
+      "default": "var(--oas-color-bg-hover)"
     },
     {
       "name": "--oas-resource-header-height",

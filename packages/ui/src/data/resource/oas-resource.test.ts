@@ -4267,3 +4267,31 @@ describe('OASResource show-cost 泳道成本合计（opt-in）', () => {
     expect(laneOf(free, 'r1').querySelector<HTMLElement>('.lane-cost')!.textContent).toBe('成本 5600.00')
   })
 })
+
+describe('OASResource 泳道行 hover（hover 属性，默认开；hover="false" 关闭）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('① CSS：.row.lane:hover 底色走 --oas-resource-row-hover-bg（回落 bg-hover），行头 .name 同步变色', () => {
+    const el = mount({ resources: JSON.stringify(RES), tasks: '[]' })
+    const css = shadowOf(el).querySelector('style')!.textContent ?? ''
+    expect(css).toMatch(/\.row\.lane:hover\s*\{[^}]*var\(--oas-resource-row-hover-bg,\s*var\(--oas-color-bg-hover\)\)/)
+    expect(css).toMatch(
+      /\.row\.lane:hover \.name\s*\{[^}]*var\(--oas-resource-row-hover-bg,\s*var\(--oas-color-bg-hover\)\)/,
+    )
+    expect(OASResource.observedAttributes, 'hover 进 observedAttributes 支持运行时切换').toContain('hover')
+  })
+
+  it('② hover="false"：逐元素还原基础底色（行透明 / 行头 --oas-color-bg），视觉与未 hover 一致', () => {
+    const el = mount({ resources: JSON.stringify(RES), tasks: '[]', hover: 'false' })
+    const css = shadowOf(el).querySelector('style')!.textContent ?? ''
+    expect(css).toMatch(/:host\(\[hover='false'\]\) \.row\.lane:hover\s*\{[^}]*background:\s*transparent/)
+    expect(css).toMatch(
+      /:host\(\[hover='false'\]\) \.row\.lane:hover \.name\s*\{[^}]*background:\s*var\(--oas-color-bg\)/,
+    )
+  })
+})

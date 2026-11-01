@@ -430,6 +430,94 @@ describe('OASGantt row-height 属性映射（--oas-gantt-row-height，行名高�
   })
 })
 
+describe('OASGantt 行 hover（hover 属性，默认开；hover="false" 关闭）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  /** hover 触发用 pointer 系事件（MouseEvent 兜底：happy-dom 未必有 PointerEvent；
+   *  处理器以 pointerType !== 'touch' 放行，MouseEvent 无 pointerType 等价鼠标） */
+  function firePointer(target: EventTarget, type: string): void {
+    const win = window as unknown as { PointerEvent?: typeof MouseEvent }
+    const evt = win.PointerEvent
+      ? new win.PointerEvent(type, { bubbles: true, pointerType: 'mouse' } as PointerEventInit)
+      : new MouseEvent(type, { bubbles: true })
+    target.dispatchEvent(evt)
+  }
+
+  function hoverTasks(n: number): GanttTask[] {
+    return Array.from({ length: n }, (_, i) => ({
+      id: `t${i}`,
+      name: `T${i}`,
+      start: '2026-03-02',
+      end: '2026-03-06',
+    }))
+  }
+
+  it('① CSS：行名 hover 走 --_row-hover-bg（回落 --oas-gantt-row-hover-bg → bg-hover），定义在斑马纹之后、selected 之前', () => {
+    const el = mount({ tasks: JSON.stringify(BASE_TASKS) })
+    const css = shadowOf(el).querySelector('style')!.textContent ?? ''
+    expect(css).toMatch(
+      /\.row-name:hover\s*\{[^}]*var\(--_row-hover-bg,\s*var\(--oas-gantt-row-hover-bg,\s*var\(--oas-color-bg-hover\)\)\)/,
+    )
+    expect(css).toMatch(/:host\(\[hover='false'\]\)\s*\{[^}]*--_row-hover-bg:\s*transparent/)
+    // 优先级序：stripe < hover < selected（源码声明序：条纹规则在 hover 之前，selected 在 hover 之后）
+    const iStripe = css.indexOf('.row-name[data-stripe]')
+    const iHover = css.indexOf('.row-name:hover')
+    const iSelected = css.indexOf('.row-name.selected')
+    expect(iStripe, '斑马纹规则在 hover 之前（条纹 < hover）').toBeGreaterThan(-1)
+    expect(iHover, 'hover 规则在斑马纹之后').toBeGreaterThan(iStripe)
+    expect(iSelected, 'selected 规则在 hover 之后（hover < selected）').toBeGreaterThan(iHover)
+    // 时间轴 hover 装饰层：absolute + pointer-events:none + 同 token 链
+    expect(css).toMatch(/\.row-hover\s*\{[^}]*position:\s*absolute[^}]*pointer-events:\s*none/)
+    expect(css).toMatch(
+      /\.row-hover\s*\{[^}]*var\(--_row-hover-bg,\s*var\(--oas-gantt-row-hover-bg,\s*var\(--oas-color-bg-hover\)\)\)/,
+    )
+    expect(OASGantt.observedAttributes, 'hover 进 observedAttributes 支持运行时切换').toContain('hover')
+  })
+
+  it('② 鼠标移入行名 → 时间轴出现 .row-hover 装饰层（top=absRowTop、height=rowH、width=canvasW）；移出清除', () => {
+    const el = mount({ tasks: JSON.stringify(hoverTasks(4)) })
+    const sr = shadowOf(el)
+    const rowH = 36
+    const name = sr.querySelector<HTMLElement>('.side-body .row-name[data-key="t1"]')!
+    firePointer(name, 'pointerover')
+    let layer = sr.querySelector<HTMLElement>('.row-hover')!
+    expect(layer, 'hover 装饰层出现').toBeTruthy()
+    expect(layer.style.top, 'top = 绝对行号 × 行高').toBe(`${rowH}px`)
+    expect(layer.style.height).toBe(`${rowH}px`)
+    expect(Number(layer.style.width.replace('px', ''))).toBeGreaterThan(0)
+    expect(layer.getAttribute('aria-hidden'), '装饰层对读屏隐藏').toBe('true')
+    // 移到另一行 → 层跟随（不堆叠多个层）
+    const name3 = sr.querySelector<HTMLElement>('.side-body .row-name[data-key="t3"]')!
+    firePointer(name3, 'pointerover')
+    layer = sr.querySelector<HTMLElement>('.row-hover')!
+    expect(sr.querySelectorAll('.row-hover').length, '同一时刻只有一个 hover 层').toBe(1)
+    expect(layer.style.top).toBe(`${3 * rowH}px`)
+    // 移出左侧列表 → 层清除
+    const sideBody = sr.querySelector<HTMLElement>('.side-body')!
+    firePointer(sideBody, 'pointerleave')
+    expect(sr.querySelector('.row-hover'), 'pointerleave 后层清除').toBeNull()
+  })
+
+  it('③ 鼠标移入任务条 → 同行点亮；hover="false" → 不生成层', () => {
+    const el = mount({ tasks: JSON.stringify(hoverTasks(4)) })
+    const sr = shadowOf(el)
+    const bar = sr.querySelector<HTMLElement>('.bars .bar[data-id="t2"]')!
+    firePointer(bar, 'pointerover')
+    expect(sr.querySelector<HTMLElement>('.row-hover')?.style.top, '条 hover 点亮相同行').toBe(`${2 * 36}px`)
+    // hover="false"：条与行名都不生成层
+    const el2 = mount({ tasks: JSON.stringify(hoverTasks(4)), hover: 'false' })
+    const sr2 = shadowOf(el2)
+    firePointer(sr2.querySelector<HTMLElement>('.side-body .row-name')!, 'pointerover')
+    firePointer(sr2.querySelector<HTMLElement>('.bars .bar')!, 'pointerover')
+    expect(sr2.querySelector('.row-hover'), 'hover=false 零装饰层').toBeNull()
+  })
+})
+
 describe('OASGantt 刻度六档', () => {
   beforeEach(() => {
     document.body.innerHTML = ''

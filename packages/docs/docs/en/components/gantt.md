@@ -788,6 +788,7 @@ expanded.forEach((t) => ganttEl.addTask(t)) // merge back as needed before feedi
 | `height` | Component height in px (default 320; accepts a plain number or Npx): mapped to the custom property --oas-gantt-height. The height is applied to the internal canvas (.gantt) — the host's own inline height only frames the outer box, while the inner canvas height is still governed by the height attribute / --oas-gantt-height and is not stretched by the host's inline height; to change the overall height use the height attribute or --oas-gantt-height. While the height attribute is present and valid (>0 plain number or Npx) the component takes over this variable — writing it inline on the host and overriding any --oas-gantt-height the host set itself; an empty/whitespace value is treated as unset; an invalid value writes nothing and only clears a value this instance wrote earlier, so a host token is never affected; after the attribute is removed the component-written value is cleared to zero, so the height falls back to the token default (320) or host CSS, and the host's previous inline value is not restored; when the height attribute was never set the component never writes the variable, and a --oas-gantt-height set by the host (inline or via class rules) is left completely untouched | `string` | `320` |
 | `history` | Built-in undo/redo (boolean, off by default): records task commits (max 100), used with undo()/redo()/canUndo/canRedo/clearHistory(); replacing tasks wholesale with different content clears the stack (an equivalent write-back does not) | `string` | — |
 | `holidays` | Holiday list (JSON ["YYYY-MM-DD",…]): matching columns highlighted (takes precedence over weekend tint); holidays are always non-working (regardless of workdays) and are skipped by auto-schedule | `string` | — |
+| `hover` | Row hover background switch (on by default): hovering a row name or task bar lights up the whole row (name + timeline share the same background). Color via `--oas-gantt-row-hover-bg` (defaults to `--oas-color-bg-hover`, independent of the zebra stripe); `"false"` disables | `string` | — |
 | `label-position` | Bar label position: inside / right / left; default `none` (the row-name column already shows the name, so the bar does not repeat it); invalid values fall back to `none` | `string` | — |
 | `locale` | Localization (overrides config-provider injection and the global locale) | `string` | — |
 | `progress-readonly` | No progress dragging (dates still draggable) | `boolean` | — |
@@ -896,6 +897,7 @@ expanded.forEach((t) => ganttEl.addTask(t)) // merge back as needed before feedi
 | `--oas-gantt-list-width` | — | `220px` |
 | `--oas-gantt-milestone-color` | — | `var(--oas-color-warning)` |
 | `--oas-gantt-row-height` | — | `36px` |
+| `--oas-gantt-row-hover-bg` | — | `var(--oas-color-bg-hover)` |
 | `--oas-gantt-row-stripe-bg` | — | `var(--oas-color-bg-hover)` |
 | `--oas-gantt-status-line-color` | Status line / planned-progress tick color (show-status-line, default --oas-color-warning) | `var(--oas-color-warning)` |
 | `--oas-gantt-summary-bg` | — | `var(--oas-color-text-secondary-strong)` |

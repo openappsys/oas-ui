@@ -131,6 +131,22 @@ const STYLE = `
 .hist-head .name {
   background: var(--oas-resource-header-bg, var(--oas-color-bg));
 }
+/* 泳道行 hover 底色（hover 属性，默认开）。与条 hover（--oas-resource-bar-hover-bg）独立：
+   条色仍走 primary 混合，行底色走 hover token 链。行 hover 时行头 .name 同步变色，整行连贯通栏。
+   hover="false" 逐元素还原基础底色（行基础透明 / 行头不透明 --oas-color-bg）——不能用单一变量置透明：
+   行头会被打穿，置同色则行底色又显白，只有分开还原才与未 hover 完全一致 */
+.row.lane:hover {
+  background: var(--oas-resource-row-hover-bg, var(--oas-color-bg-hover));
+}
+.row.lane:hover .name {
+  background: var(--oas-resource-row-hover-bg, var(--oas-color-bg-hover));
+}
+:host([hover='false']) .row.lane:hover {
+  background: transparent;
+}
+:host([hover='false']) .row.lane:hover .name {
+  background: var(--oas-color-bg);
+}
 .track {
   position: relative;
   flex: none;
@@ -1598,6 +1614,8 @@ export class OASResource extends OASElement {
       'header-sticky',
       // 成本合计（opt-in，默认关）：泳道行头按 costRate 显示已装载周期内成本合计
       'show-cost',
+      // 泳道行 hover 底色（默认开；hover="false" 关闭）
+      'hover',
     ]
   }
 

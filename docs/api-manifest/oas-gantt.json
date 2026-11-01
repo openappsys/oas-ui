@@ -147,6 +147,12 @@
       "observed": true
     },
     {
+      "name": "hover",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
       "name": "group-by-project",
       "type": "string",
       "default": "",
@@ -436,6 +442,10 @@
     },
     {
       "name": "--oas-gantt-row-stripe-bg",
+      "default": "var(--oas-color-bg-hover)"
+    },
+    {
+      "name": "--oas-gantt-row-hover-bg",
       "default": "var(--oas-color-bg-hover)"
     },
     {

@@ -28,6 +28,7 @@
 | **文档站 issue 反馈收口** | 组件侧栏数据抽离 `sidebar.ts` 单一数据源，中文/英文侧栏与总览页保留语义分组、组内按 slug 字母排序，`sidebar-order.test.ts` 防漂移，llms 生成器同步；英文浏览器首访 `/` / `/index.html` 自动进 `/en/` 并保留 query/hash，深链不做语言猜测，显式 `oas-lang` 仍全站生效、自动猜测不持久化；首页 docs-site e2e 收口 | ✅ 已完成（未发布） |
 | **`oas-gantt` 斑马纹 × 周末/假日列视觉修正** | 周末/假日列底色改相对 `--oas-color-bg` 的不透明混合，斑马行上的周末/假日列不再吸收条纹色；`stripe` 保持 opt-in（默认关），虚拟滚动 demo 新增真实开关；像素级 dark 回归 + demo 开关交互回归 | ✅ 已完成（未发布） |
 | **`oas-gantt` 行高对齐修正** | `row-height` 属性映射 `--oas-gantt-row-height`（与 height 属性同协议），左侧行名高度与网格行高同源，修复 `row-height≠36` 时行名 36px 缺省高度与 32px 网格逐行叠压错位；单测（token 协议 3 条）+ 几何级 e2e（行名/条纹顶底边对齐） | ✅ 已完成（未发布） |
+| **`oas-gantt` / `oas-resource` 行 hover（默认开，`hover="false"` 关闭）** | 鼠标移入行名/任务条（gantt）或泳道（resource）整行点亮，左右同底色；新 token `--oas-gantt-row-hover-bg` / `--oas-resource-row-hover-bg`（与斑马纹、条 hover 独立）；gantt 时间轴单元素装饰层挂绝对行号（虚拟滚动窗口内重建，条纹 < hover < 选中）；resource 纯 CSS（行 + sticky 行头，关闭时逐元素还原基础底色）；单测 + e2e（真实 hover 几何对齐/暗色/关闭/console） | ✅ 已完成（未发布） |
 
 ## 未发布（Bubble 气泡尾巴）
 

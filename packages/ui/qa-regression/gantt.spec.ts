@@ -1682,6 +1682,97 @@ test('gantt row-height 属性：行名高度与网格行高同源（斑马行名
   })
 })
 
+// 行 hover（hover 属性，默认开）：真实鼠标 hover 行名 → 左侧行名底色激活 + 时间轴 .row-hover 装饰层
+// 按绝对行号对齐（top/height 与行名 rect 一致）；hover 任务条 → 相同行点亮（层跟随不堆叠）；
+// hover="false" → 行名/条 hover 均无底色、零装饰层；暗色下 token 有暗色变体；console 零告警。
+test('gantt 行 hover：行名/条点亮整行（左右几何对齐）+ hover="false" 关闭 + 暗色 + console 零告警', async ({
+  page,
+}) => {
+  const errors: string[] = []
+  page.on('pageerror', (e) => errors.push(e.message))
+  page.on('console', (m) => {
+    if (m.type() === 'error') errors.push(m.text())
+  })
+  await page.goto('/components/gantt.html', { waitUntil: 'domcontentloaded' })
+  await waitGantt(page, 'gantt-basic')
+  const gantt = page.locator('#gantt-basic')
+
+  // ① hover 行名（第 2 行）→ 左侧行名底色激活 + 时间轴层几何对齐
+  await gantt.locator('.side-body .row-name').nth(1).hover()
+  const onName = await page.evaluate(() => {
+    const sr = (document.getElementById('gantt-basic') as HTMLElement & { shadowRoot: ShadowRoot }).shadowRoot
+    const name = sr.querySelectorAll<HTMLElement>('.side-body .row-name')[1]!
+    const layer = sr.querySelector<HTMLElement>('.row-hover')
+    const nameRect = name.getBoundingClientRect()
+    const layerRect = layer?.getBoundingClientRect()
+    return {
+      nameBg: getComputedStyle(name).backgroundColor,
+      plainBg: getComputedStyle(sr.querySelectorAll<HTMLElement>('.side-body .row-name')[0]!).backgroundColor,
+      layer: layer
+        ? { top: layerRect!.top, height: layerRect!.height, pe: getComputedStyle(layer).pointerEvents }
+        : null,
+      align: layer
+        ? Math.abs(layerRect!.top - nameRect.top) <= 0.5 && Math.abs(layerRect!.height - nameRect.height) <= 0.5
+        : false,
+    }
+  })
+  expect(onName.layer, 'hover 行名 → 时间轴出现 .row-hover 层').toBeTruthy()
+  expect(onName.align, 'hover 层与行名顶边/高度几何对齐').toBe(true)
+  expect(onName.layer!.pe, '装饰层不拦指针').toBe('none')
+  expect(onName.nameBg, '行名底色激活').not.toBe(onName.plainBg)
+
+  // ② hover 第 3 行任务条 → 层跟随到该行（单元素不堆叠）
+  await gantt.locator('.bars .bar').first().hover()
+  const onBar = await page.evaluate(() => {
+    const sr = (document.getElementById('gantt-basic') as HTMLElement & { shadowRoot: ShadowRoot }).shadowRoot
+    const bar = sr.querySelector<HTMLElement>('.bars .bar')!
+    const layer = sr.querySelector<HTMLElement>('.row-hover')!
+    const barRect = bar.getBoundingClientRect()
+    const name = [...sr.querySelectorAll<HTMLElement>('.side-body .row-name')].find((n) => {
+      const r = n.getBoundingClientRect()
+      return barRect.top >= r.top - 1 && barRect.bottom <= r.bottom + 1
+    })!
+    const nameRect = name.getBoundingClientRect()
+    return {
+      count: sr.querySelectorAll('.row-hover').length,
+      align:
+        Math.abs(layer.getBoundingClientRect().top - nameRect.top) <= 0.5 &&
+        Math.abs(layer.getBoundingClientRect().height - nameRect.height) <= 0.5,
+    }
+  })
+  expect(onBar.count, '同一时刻只有一个 hover 层').toBe(1)
+  expect(onBar.align, '条 hover 点亮条所在行').toBe(true)
+
+  // ③ 暗色下 hover 仍激活（token 暗色变体）
+  await page.evaluate(() => document.documentElement.classList.add('dark'))
+  await gantt.locator('.side-body .row-name').nth(1).hover()
+  const darkBg = await page.evaluate(() => {
+    const sr = (document.getElementById('gantt-basic') as HTMLElement & { shadowRoot: ShadowRoot }).shadowRoot
+    return getComputedStyle(sr.querySelectorAll<HTMLElement>('.side-body .row-name')[1]!).backgroundColor
+  })
+  expect(darkBg, '暗色下 hover 底色与亮色不同（暗色变体生效）').not.toBe(onName.nameBg)
+
+  // ④ hover="false"：行名/条 hover 均无底色、零装饰层
+  await page.evaluate(() => {
+    document.getElementById('gantt-basic')!.setAttribute('hover', 'false')
+  })
+  await gantt.locator('.side-body .row-name').nth(1).hover()
+  await gantt.locator('.bars .bar').first().hover()
+  const off = await page.evaluate(() => {
+    const sr = (document.getElementById('gantt-basic') as HTMLElement & { shadowRoot: ShadowRoot }).shadowRoot
+    const name = sr.querySelectorAll<HTMLElement>('.side-body .row-name')[1]!
+    return {
+      nameBg: getComputedStyle(name).backgroundColor,
+      layerCount: sr.querySelectorAll('.row-hover').length,
+    }
+  })
+  expect(off.layerCount, 'hover=false 零装饰层').toBe(0)
+  // gantt-basic 无 stripe → 行名基础底色透明；hover=false 时 hover 也不生效，应保持透明
+  expect(off.nameBg, 'hover=false 行名无 hover 底色').toBe('rgba(0, 0, 0, 0)')
+
+  expect(errors, 'console 零 error').toEqual([])
+})
+
 // C1 回归（lag 安全域）：极大有限 lag（1e8 天）× auto-schedule 曾把排程运算推出 Date 合法域
 // （±8.64e15 ms）→ Invalid Date → fmtIso 内 Intl.formatToParts 抛 RangeError（整图白屏）。
 // 修复口径：越域 lag 清洗为无 lag（等价 0，依赖保留），排程按 0 计算。

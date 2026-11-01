@@ -232,6 +232,7 @@ if (pool.version !== lastSeen) {
 | `header-sticky` | 泳道表头纵向吸顶（默认开）：滚动泳道时周/日刻度保持可见；`header-sticky="false"` 关闭（表头随内容滚动）。角落名列在横向滚动时始终贴边（LTR/RTL） | — | — |
 | `heatmap` | 负载热力图（布尔，默认关）：按 load/capacity 渲染低/中/高/超载热力格，表头显示图例，每格 title 为日期与 load/capacity | `boolean` | — |
 | `height` | 组件高度 px（默认 320；接受纯数字或 Npx）：映射到自定义属性 --oas-resource-height（宿主自身 height 内联始终优先，组件不覆盖宿主内联）。height 属性在场且为合法值（>0 纯数字或 Npx）时组件接管该变量，写入宿主内联并覆盖宿主自己设置的 --oas-resource-height；空串/空白按未设置处理；非法值不写该变量、仅清除本实例此前写入的值，宿主 token 不受影响；属性移除后组件写入的值归零清除，高度回落 token 缺省 320 或宿主 CSS，宿主原先内联设置的值不恢复；从未设置 height 属性时组件不写该变量，宿主内联或 class 规则设置的 --oas-resource-height 完全不受影响 | `string` | `320` |
+| `hover` | 泳道行 hover 底色开关（默认开）：鼠标移入泳道时整行点亮（含行头），颜色走 `--oas-resource-row-hover-bg`（缺省 `--oas-color-bg-hover`，与条 hover 色独立）；`"false"` 关闭 | — | — |
 | `locale` | 本地化（覆盖 config-provider 注入与全局 locale） | `string` | — |
 | `range-end` | 宿主托管时间轴终点（ISO 日期 YYYY-MM-DD，含当日）：与 range-start 成对使用；只有其一 / 颠倒 / 非法时忽略托管并 devWarn | `string` | — |
 | `range-start` | 宿主托管时间轴起点（ISO 日期 YYYY-MM-DD）：提供后 period 范围不再由已装载任务推导 | `string` | — |
@@ -285,6 +286,7 @@ if (pool.version !== lastSeen) {
 | `--oas-resource-load-over-bg` | `var(--oas-color-danger)` |
 | `--oas-resource-name-width` | `160px` |
 | `--oas-resource-row-height` | `36px` |
+| `--oas-resource-row-hover-bg` | `var(--oas-color-bg-hover)` |
 | `--oas-resource-unavailable-bg` | `transparent` |
 
 <script setup>

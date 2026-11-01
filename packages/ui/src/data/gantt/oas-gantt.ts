@@ -135,6 +135,15 @@ const STYLE = `
 .row-name[data-stripe] {
   background: var(--oas-gantt-row-stripe-bg, var(--oas-color-bg-hover));
 }
+/* 行 hover 底色（hover 属性，默认开；hover="false" 经 --_row-hover-bg 置透明关闭，不改写本规则）。
+   与斑马纹独立 token（--oas-gantt-row-hover-bg），可分别自定义；定义在斑马纹之后、selected 之前
+   （同特异性后者胜）→ 优先级序：条纹 < hover < 选中 */
+:host([hover='false']) {
+  --_row-hover-bg: transparent;
+}
+.row-name:hover {
+  background: var(--_row-hover-bg, var(--oas-gantt-row-hover-bg, var(--oas-color-bg-hover)));
+}
 .row-name.selected {
   background: color-mix(in srgb, var(--oas-color-primary) 18%, transparent);
   box-shadow: inset 2px 0 0 var(--oas-color-primary);
@@ -412,6 +421,14 @@ svg.links .link-hit:focus-visible + .link {
   inset-inline-start: 0;
   background: var(--oas-gantt-row-stripe-bg, var(--oas-color-bg-hover));
   pointer-events: none;
+}
+/* 行 hover 时间轴装饰层（单元素，跟随 hover 行；插在 .grid-canvas 之前 = 条纹之上、周末/假日列之下）。
+   同 token 链 --_row-hover-bg / --oas-gantt-row-hover-bg，与左侧行名 hover 同源同色 */
+.row-hover {
+  position: absolute;
+  inset-inline-start: 0;
+  pointer-events: none;
+  background: var(--_row-hover-bg, var(--oas-gantt-row-hover-bg, var(--oas-color-bg-hover)));
 }
 .grid-canvas {
   position: absolute;
@@ -752,6 +769,43 @@ svg.links .temp-link {
 }
 .empty[hidden] {
   display: none !important;
+}
+/* ===== 高对比模式（forced-colors: active）兜底 =====
+   系统强制色会覆盖 background、禁用 box-shadow：凡「只凭底色/阴影」传达信息的元素
+   （今日线/状态线/进度刻度、周末与假日列、基线条、行选中态、任务条本体、进度填充、
+   里程碑菱形）在高对比下会整体不可见。以下在媒体查询内追加 outline/border 兜底——
+   两者保留宽度与线型，颜色由强制色接管（CanvasText，高对比可见），常态样式不动。 */
+@media (forced-colors: active) {
+  /* 竖线与细条类（2px 线 / 4px 基线 / 里程碑菱形）：outline 不占布局，线宽与定位零漂移 */
+  .today-line,
+  .status-line,
+  .plan-tick,
+  .baseline,
+  .bar.milestone .dia {
+    outline: 1px solid;
+  }
+  /* 周末列 / 假日列高亮：底色被强制后整列消失 → 内缩 1px 列描边标出非工作日边界 */
+  .grid-canvas .cell {
+    outline: 1px solid;
+    outline-offset: -1px;
+  }
+  /* 行名选中态：选中靠「主色底 + inset 阴影」表达，两者同时失效 → 内缩 outline 兜底
+     （RTL 选中态选择器特异性更高，需并列声明才能覆盖其 inset 阴影） */
+  .row-name.selected,
+  :host([data-rtl]) .row-name.selected {
+    box-shadow: none;
+    outline: 2px solid;
+    outline-offset: -2px;
+  }
+  /* 任务条本体：底色被强制后只剩文字 → 1px 边框找回条体轮廓（border-box，几何不变）；
+     里程碑条透明底、靠菱形表达，排除以免长框被误读为普通条 */
+  .bar:not(.milestone) {
+    border: 1px solid;
+  }
+  /* 进度填充：进度只凭填充色 → 条内右缘 2px 描边标出进度前沿（RTL 走逻辑属性自动镜像） */
+  .bar-progress {
+    border-inline-end: 2px solid;
+  }
 }
 `
 
@@ -1635,6 +1689,8 @@ export class OASGantt extends OASElement {
       'show-critical-path',
       // 行斑马纹开关（opt-in，默认关）
       'stripe',
+      // 行 hover 底色（默认开；hover="false" 关闭）
+      'hover',
       'group-by-project',
       'group-by-resource',
       // 二期 opt-in 扩展（全部默认关：show-effort 工时列 / show-status-line 进度线 +
@@ -1785,6 +1841,10 @@ export class OASGantt extends OASElement {
   private gridEl: HTMLElement | null = null
   /** 行斑马纹容器（stripe 属性懒创建；render() 重建 innerHTML 后由 renderStripes 的 isConnected 检查自愈） */
   private stripeCanvasEl: HTMLElement | null = null
+  /** 行 hover（hover 属性，默认开）：hover 行任务 id（行名/任务条 pointerover 驱动），
+   *  时间轴侧由单元素 .row-hover 装饰层跟随（绝对行号定位，虚拟滚动窗口内重建） */
+  private hoverKey: string | null = null
+  private hoverEl: HTMLElement | null = null
   private innerEl: HTMLElement | null = null
   private todayEl: HTMLElement | null = null
   /** 状态线节点（show-status-line opt-in）：模板常驻 + hidden 控制，开关切换不重建 shadow */
@@ -3184,6 +3244,11 @@ export class OASGantt extends OASElement {
     // 空白双击新建（creatable 通道）：左侧列表与时间轴各一个落点入口
     this.sideBody?.addEventListener('dblclick', this.onSideDblClick)
     this.tbody?.addEventListener('dblclick', this.onTbodyDblClick)
+    // 行 hover（默认开）：行名列表 / 时间轴分别委托 pointerover/leave（行名与条每帧重建，委托挂在稳定容器上）
+    this.sideBody?.addEventListener('pointerover', this.onSidePointerOver)
+    this.sideBody?.addEventListener('pointerleave', this.onHoverPointerLeave)
+    this.tbody?.addEventListener('pointerover', this.onTbodyPointerOver)
+    this.tbody?.addEventListener('pointerleave', this.onHoverPointerLeave)
     // 连线：删除键 + 点空白清选中（函数引用稳定，重复 bind 幂等）
     document.addEventListener('keydown', this.docLinkKey)
     document.addEventListener('click', this.docLinkClick)
@@ -3200,6 +3265,12 @@ export class OASGantt extends OASElement {
       this.tbody?.removeEventListener('pointerdown', this.onTbodyPointerDown)
       this.sideBody?.removeEventListener('dblclick', this.onSideDblClick)
       this.tbody?.removeEventListener('dblclick', this.onTbodyDblClick)
+      this.sideBody?.removeEventListener('pointerover', this.onSidePointerOver)
+      this.sideBody?.removeEventListener('pointerleave', this.onHoverPointerLeave)
+      this.tbody?.removeEventListener('pointerover', this.onTbodyPointerOver)
+      this.tbody?.removeEventListener('pointerleave', this.onHoverPointerLeave)
+      this.hoverKey = null
+      this.hoverEl = null
       this.resizeObs?.disconnect()
       this.resizeObs = null
       this.dragCtx = null
@@ -3733,6 +3804,7 @@ export class OASGantt extends OASElement {
     if (this.winColStart !== prevColStart || this.winColEnd !== prevColEnd) this.renderHeader()
     this.renderSideRows()
     this.renderStripes()
+    this.renderRowHover()
     this.renderBars()
     this.renderGrid()
     this.renderLinks()
@@ -6578,6 +6650,74 @@ export class OASGantt extends OASElement {
       frag.appendChild(stripe)
     }
     canvas.appendChild(frag)
+  }
+
+  /** 行 hover 开关：默认开；hover="false" 关闭（左侧行名经 --_row-hover-bg 透明化，时间轴不建层） */
+  private hoverOn(): boolean {
+    return this.getAttr('hover', '') !== 'false'
+  }
+
+  private setHoverRow(key: string | null): void {
+    if (this.hoverKey === key) return
+    this.hoverKey = key
+    this.renderRowHover()
+  }
+
+  /** 行 hover（左侧行名委托）：pointerover 落在 .row-name 上 → 点亮该行；触控（pointerType=touch）不响应 */
+  private onSidePointerOver = (e: PointerEvent): void => {
+    if (!this.hoverOn() || e.pointerType === 'touch') return
+    const name = e.target instanceof Element ? e.target.closest('.row-name') : null
+    if (name instanceof HTMLElement && name.dataset.key) this.setHoverRow(name.dataset.key)
+  }
+
+  /** 行 hover（时间轴委托）：pointerover 落在任务条上 → 点亮条所在行 */
+  private onTbodyPointerOver = (e: PointerEvent): void => {
+    if (!this.hoverOn() || e.pointerType === 'touch') return
+    const bar = e.target instanceof Element ? e.target.closest('.bar') : null
+    if (bar instanceof HTMLElement && bar.dataset.id) this.setHoverRow(bar.dataset.id)
+  }
+
+  /** 指针离开行名列表/时间轴视口 → 清除 hover 行（容器 pointerleave 不冒泡，两侧各挂一份） */
+  private onHoverPointerLeave = (): void => {
+    this.setHoverRow(null)
+  }
+
+  /**
+   * 行 hover 时间轴装饰层（单元素，随 renderWindow 每帧重建定位）：hover 行在窗口内 → 按绝对行号
+   * 定位（top=absRowTop、height=行高、width=画布全宽）；滚出窗口 → 移除层但保留 hoverKey（滚回即恢复）；
+   * hover 行被数据删除 / hover="false" → 状态与层一并清除。层插在 .grid-canvas 之前（条纹之上、
+   * 周末/假日列之下），DOM 序与 .stripe-canvas 同法自愈（isConnected 重建）。
+   */
+  private renderRowHover(): void {
+    const inner = this.innerEl
+    if (!inner) return
+    let el = this.hoverEl
+    if (el && !el.isConnected) el = this.hoverEl = null
+    if (!this.hoverOn()) {
+      this.hoverKey = null
+      el?.remove()
+      this.hoverEl = null
+      return
+    }
+    const key = this.hoverKey
+    const idx = key === null ? undefined : this.rowIndexById.get(key)
+    if (idx === undefined || idx < this.winStart || idx >= this.winEnd) {
+      // 行不存在（数据删改）→ 清状态；行滚出窗口 → 只藏层（保留态，滚回恢复）
+      if (idx === undefined) this.hoverKey = null
+      el?.remove()
+      this.hoverEl = null
+      return
+    }
+    if (!el) {
+      el = document.createElement('div')
+      el.className = 'row-hover'
+      el.setAttribute('aria-hidden', 'true')
+      inner.insertBefore(el, this.gridEl)
+      this.hoverEl = el
+    }
+    el.style.top = `${this.absRowTop(idx)}px`
+    el.style.height = `${this.rowHeightPx()}px`
+    el.style.width = `${this.canvasW}px`
   }
 
   /** 周末/假日列高亮（day/hour 档；week+ 档跨度大不高亮） */
