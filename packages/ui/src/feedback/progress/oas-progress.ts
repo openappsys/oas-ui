@@ -299,6 +299,17 @@ const STYLE = `
 .circle-icon svg {
   display: block;
 }
+/* 高对比模式（forced-colors: active）兜底：line 形态的轨道与填充都只凭底色表达
+   （轨道 bg-hover / 填充主色），系统强制 background 后整条进度不可见 → 1px 边框
+   找回轨道范围与已填充范围（box-sizing 保持高度不变）；circle/dashboard 走 SVG
+   stroke（强制色保留线宽），不受影响 */
+@media (forced-colors: active) {
+  .track,
+  .bar {
+    box-sizing: border-box;
+    border: 1px solid;
+  }
+}
 `
 
 export class OASProgress extends OASElement {

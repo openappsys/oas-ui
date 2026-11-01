@@ -1303,6 +1303,14 @@ const STYLE = `
 .ribbon[hidden] {
   display: none;
 }
+/* 高对比模式（forced-colors: active）兜底：dot 变体只凭底色表达「存在状态」，
+   系统强制 background 后 8px 圆点整体消失 → 1px outline 找回轮廓（不占布局，
+   圆点几何与重叠定位不变）；带文字的徽标文字在强制色下仍可读，无需处理 */
+@media (forced-colors: active) {
+  .badge.dot {
+    outline: 1px solid;
+  }
+}
 `
 
 export class OASBadge extends OASElement {

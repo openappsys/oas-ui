@@ -678,6 +678,16 @@ const STYLE = `
     display: none !important;
   }
 }
+/* 高对比模式（forced-colors: active）兜底：当前时刻线（日/周视图 nowline + 起点圆点、
+   资源视图 res-now）只凭 danger 底色表达，系统强制 background 后整线消失 →
+   1px outline 找回轮廓（不占布局，时刻线几何零漂移） */
+@media (forced-colors: active) {
+  .nowline,
+  .nowline::before,
+  .res-now {
+    outline: 1px solid;
+  }
+}
 `
 
 /** 日程事件：`{ id?, date: 'YYYY-MM-DD', title, color?, start?, end? }`（start/end 为 'HH:mm' 时刻，week/day 视图按时刻渲染 timed 块，缺省为全天事件） */

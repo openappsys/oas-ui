@@ -1682,3 +1682,14 @@ describe('OASBadge shape 形态（round 默认 / square / pill，数值与 dot �
     expect(badge(el)!.classList.contains('shape-pill')).toBe(false)
   })
 })
+
+// 高对比（forced-colors: active）兜底契约：dot 变体只凭底色表达「存在状态」，
+// 系统强制 background 后圆点整体消失，必须在 forced-colors 媒体查询内有 outline 兜底。
+describe('OASBadge forced-colors 高对比兜底', () => {
+  it('dot 变体 outline 兜底（带文字徽标文字仍可读，不处理）', () => {
+    const style = mount({ dot: '' }).shadowRoot!.querySelector('style')!.textContent!
+    const start = style.indexOf('@media (forced-colors: active)')
+    expect(start, '存在 forced-colors 回退块').toBeGreaterThan(-1)
+    expect(style.slice(start)).toMatch(/\.badge\.dot\s*\{[^}]*outline:\s*1px solid/)
+  })
+})

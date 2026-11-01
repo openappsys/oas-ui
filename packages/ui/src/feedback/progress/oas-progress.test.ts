@@ -623,3 +623,15 @@ describe('OASProgress vertical（垂直线形，PRD D22）', () => {
     expect(css, 'steps 分段纵向').toMatch(/:host\(\[data-vertical\]\)\s+\.steps\s*\{[^}]*flex-direction:\s*column/)
   })
 })
+
+// 高对比（forced-colors: active）兜底契约：line 形态轨道与填充都只凭底色表达，
+// 系统强制 background 后整条进度不可见，必须在 forced-colors 媒体查询内有 border 兜底。
+describe('OASProgress forced-colors 高对比兜底', () => {
+  it('轨道与填充 border 兜底', () => {
+    const el = mount({ percent: '40' })
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    const start = css.indexOf('@media (forced-colors: active)')
+    expect(start, '存在 forced-colors 回退块').toBeGreaterThan(-1)
+    expect(css.slice(start)).toMatch(/\.track,\s*\.bar\s*\{[^}]*box-sizing:\s*border-box[^}]*border:\s*1px solid/)
+  })
+})

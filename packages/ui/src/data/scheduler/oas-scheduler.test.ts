@@ -2319,3 +2319,15 @@ describe('scheduler 跨日几何 / ICS 类型 / byDay 计数回归（I-1/I-2/I-3
     }
   })
 })
+
+// 高对比（forced-colors: active）兜底契约：当前时刻线与起点圆点只凭 danger 底色表达，
+// 系统强制 background 后整线消失，必须在 forced-colors 媒体查询内有 outline 兜底。
+describe('OASScheduler forced-colors 高对比兜底', () => {
+  it('nowline（含起点圆点）与资源视图 res-now outline 兜底', () => {
+    const el = mount({ view: 'day', 'page-show-date': '2026-08-10' })
+    const css = el.shadowRoot!.querySelector('style')!.textContent ?? ''
+    const start = css.indexOf('@media (forced-colors: active)')
+    expect(start, '存在 forced-colors 回退块').toBeGreaterThan(-1)
+    expect(css.slice(start)).toMatch(/\.nowline,\s*\.nowline::before,\s*\.res-now\s*\{[^}]*outline:\s*1px solid/)
+  })
+})

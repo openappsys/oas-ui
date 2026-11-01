@@ -8478,3 +8478,66 @@ describe('OASGantt 计划刻度与 evm 同口径（跨包对表）', () => {
     expect(r.byTask[0]!.planned / 500).toBe(0.2)
   })
 })
+
+// ===== 高对比（forced-colors: active）兜底契约 =====
+// 系统强制色会覆盖 background、禁用 box-shadow：凡「只凭底色/阴影」传达信息的元素
+// （今日线/状态线/进度刻度、周末假日列、基线条、行选中态、任务条本体、进度填充、
+// 里程碑菱形）必须有 outline/border 兜底，否则高对比下信息整体不可见。
+
+describe('OASGantt forced-colors 高对比兜底', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  function forcedBlock(el: OASGantt): string {
+    const css = shadowOf(el).querySelector('style')!.textContent ?? ''
+    const start = css.indexOf('@media (forced-colors: active)')
+    expect(start, '存在 forced-colors 回退块').toBeGreaterThan(-1)
+    return css.slice(start)
+  }
+
+  it('竖线与细条类（today/status/plan-tick/baseline/milestone 菱形）outline 兜底', () => {
+    const el = mount({
+      tasks: JSON.stringify(BASE_TASKS),
+      'range-start': '2026-03-01',
+      'range-end': '2026-03-31',
+    })
+    expect(forcedBlock(el)).toMatch(
+      /\.today-line,\s*\.status-line,\s*\.plan-tick,\s*\.baseline,\s*\.bar\.milestone \.dia\s*\{[^}]*outline:\s*1px solid/,
+    )
+  })
+
+  it('周末/假日列高亮 inset outline 兜底', () => {
+    const el = mount({
+      tasks: JSON.stringify(BASE_TASKS),
+      'range-start': '2026-03-01',
+      'range-end': '2026-03-31',
+    })
+    expect(forcedBlock(el)).toMatch(/\.grid-canvas \.cell\s*\{[^}]*outline:\s*1px solid[^}]*outline-offset:\s*-1px/)
+  })
+
+  it('行名选中态 inset outline 兜底（box-shadow 失效；含 RTL 高特异性选择器）', () => {
+    const el = mount({
+      tasks: JSON.stringify(BASE_TASKS),
+      'range-start': '2026-03-01',
+      'range-end': '2026-03-31',
+    })
+    expect(forcedBlock(el)).toMatch(
+      /\.row-name\.selected,\s*:host\(\[data-rtl\]\) \.row-name\.selected\s*\{[^}]*box-shadow:\s*none[^}]*outline:\s*2px solid[^}]*outline-offset:\s*-2px/,
+    )
+  })
+
+  it('任务条 border 兜底（milestone 例外）+ 进度填充前沿 border-inline-end 兜底', () => {
+    const el = mount({
+      tasks: JSON.stringify(BASE_TASKS),
+      'range-start': '2026-03-01',
+      'range-end': '2026-03-31',
+    })
+    const block = forcedBlock(el)
+    expect(block, '任务条本体 border 兜底').toMatch(/\.bar:not\(\.milestone\)\s*\{[^}]*border:\s*1px solid/)
+    expect(block, '进度前沿兜底').toMatch(/\.bar-progress\s*\{[^}]*border-inline-end:\s*2px solid/)
+  })
+})
