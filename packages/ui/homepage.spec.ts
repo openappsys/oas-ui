@@ -129,7 +129,6 @@ test.describe('官网首页（重设计版）', () => {
         rightVisible: onTop(Math.round(b.right - 1)),
       }
     })
-    expect(r).not.toBeNull()
     expect(r!.tiny, '窄段使用 seg-tiny 布局').toBe(true)
     expect(r!.leftAligned, '数值贴段左缘（不再居中溢出到白底）').toBe(true)
     expect(r!.leftVisible && r!.midVisible && r!.rightVisible, '数值全宽都可见（未被遮挡）').toBe(true)
@@ -368,7 +367,7 @@ test.describe('官网首页（重设计版）', () => {
     await page.evaluate(() => {
       document.querySelector('.home-reveal')?.scrollIntoView({ block: 'center' })
     })
-    await expect.poll(() => page.locator('.home-reveal.in').count()).toBeGreaterThan(0)
+    await expect(page.locator('.home-reveal.in').first()).toBeVisible()
     await expect(reveal).toHaveClass(/in/)
   })
 })

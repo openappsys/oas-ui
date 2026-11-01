@@ -13,7 +13,7 @@ test('visually-hidden 默认 1×1 几何隐藏但内容保留（读屏可读、�
   })
   expect(r.w, '视觉隐藏：宽 ≤1px（clip 方案）').toBeLessThanOrEqual(1)
   expect(r.h, '视觉隐藏：高 ≤1px').toBeLessThanOrEqual(1)
-  expect(r.textLen, '文本仍在 DOM（屏幕阅读器可读、可选中复制）').toBeGreaterThan(0)
+  expect(r.textLen, '文本仍在 DOM（屏幕阅读器可读、可选中复制）').toBe(21)
 })
 
 test('visually-hidden focusable：内容聚焦显形（skip-link），失焦恢复隐藏', async ({ page }) => {

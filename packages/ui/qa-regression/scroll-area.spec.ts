@@ -111,7 +111,7 @@ test('scroll-area type 四档显示模式行为正确（always/auto/scroll/hover
   await shown(alwaysArea)
   const always = await peekState(alwaysArea)
   expect(always.peek).toBe(true)
-  expect(always.opacity).toBeGreaterThan(0)
+  await expect.poll(async () => (await peekState(alwaysArea)).opacity, { timeout: 5000 }).toBe(1)
 
   // hover：悬停显示（opacity > 0），移开立即隐藏
   const hoverArea = page.locator('oas-scroll-area[type="hover"]')
@@ -126,7 +126,7 @@ test('scroll-area type 四档显示模式行为正确（always/auto/scroll/hover
   await shown(hoverArea)
   const hoverShown = await peekState(hoverArea)
   expect(hoverShown.peek).toBe(true)
-  expect(hoverShown.opacity).toBeGreaterThan(0)
+  await expect.poll(async () => (await peekState(hoverArea)).opacity, { timeout: 5000 }).toBe(1)
   await page.mouse.move(10, 10)
   await hidden(hoverArea)
   expect((await peekState(hoverArea)).peek).toBe(false)

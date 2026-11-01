@@ -118,7 +118,7 @@ test('select multiple：chip 结构完整（label + 移除按钮）且样式不�
       gap: cs.gap,
     }
   })
-  expect(r.chipCount).toBeGreaterThan(0)
+  expect(r.chipCount).toBe(4)
   expect(r.hasLabel).toBe(true)
   expect(r.hasButton).toBe(true)
   expect(r.height).toBe('20px')
@@ -291,7 +291,7 @@ test('select virtual：键盘导航高亮项滚动进视口且 aria-activedescen
   })
   expect(r.desc).toBe('opt-20')
   expect(r.activeIndex).toBe('20')
-  expect(r.scrollTop).toBeGreaterThan(0) // 窗口已滚动
+  expect(r.scrollTop).toBe(516) // 窗口已滚动
 })
 
 test('select 自定义选项渲染：demo 里图标 + 文本进入选项行与标签', async ({ page }) => {
@@ -393,7 +393,7 @@ test('select 移动端：底部抽屉贴视口底展开 + dropdown 静态化 + �
     expect(info.panelLeft, '抽屉面板应左贴视口').toBe(0)
     expect(Math.abs(info.panelRight - info.vw), '抽屉面板应右贴视口（≤1px 亚像素容差）').toBeLessThanOrEqual(1)
     expect(info.backdropOpacity, '遮罩应可见').toBeGreaterThan(0.5)
-    expect(info.options, '抽屉内选项应可交互').toBeGreaterThan(0)
+    expect(info.options, '抽屉内选项应可交互').toBe(4)
     // oas-close 同步收起：点遮罩
     await host.evaluate((el) => {
       const sheet = el.shadowRoot!.querySelector('oas-bottom-sheet')!

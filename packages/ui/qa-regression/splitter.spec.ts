@@ -40,7 +40,7 @@ test('oas-splitter + sidebar：拖拽分割条 sidebar 宽度实时跟随（不�
   // 左面板 22%（splitter 宽 638 级），sidebar 不应是默认 220px 固定宽被遮住
   expect(r.w0, 'sidebar 初宽应≈左面板宽（220px 以下，非固定 220px 被遮）').toBeLessThan(220)
   // 拖拽中宽度实时变化且单调递增
-  expect(r.widths.length, '拖拽采样应有宽度读数').toBeGreaterThan(0)
+  expect(r.widths.length, '拖拽采样应有宽度读数').toBe(4)
   const finalW = r.widths[r.widths.length - 1]!
   expect(finalW, '拖拽后 sidebar 应变宽').toBeGreaterThan(r.w0)
   const mono = r.widths.every((w, i) => i === 0 || w >= r.widths[i - 1]!)
@@ -289,7 +289,7 @@ test('splitter storage-key：真实拖拽落盘 → 刷新恢复；显式初值�
     return { onMount, afterUser }
   }, freshKey)
   expect(fresh.onMount, '无快照时 mount 不得新建 key').toBeNull()
-  expect(fresh.afterUser, '用户交互后应创建快照').not.toBeNull()
+  expect(fresh.afterUser, '用户交互后应创建快照').toContain('"mode":"legacy"')
 
   // dark / RTL 不改变恢复后的比例（percent attribute 与主题/方向无关，类切换同步进级联）
   await page.evaluate(() => document.documentElement.classList.add('dark'))

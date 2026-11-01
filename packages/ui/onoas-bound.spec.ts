@@ -29,7 +29,23 @@ for (const page of PAGES) {
         bound: els.filter((el) => el.dataset.onoasBound === 'true').length,
       }
     })
-    expect(bound.total, `${page} 应有 onoas-* 元素`).toBeGreaterThan(0)
+    expect(bound.total, `${page} 应有 onoas-* 元素`).toBe(
+      {
+        'context-menu': 3,
+        tour: 4,
+        alert: 2,
+        'back-top': 2,
+        popconfirm: 1,
+        dropdown: 6,
+        'page-header': 1,
+        breadcrumb: 8,
+        anchor: 3,
+        drawer: 1,
+        menu: 12,
+        'float-button': 5,
+        modal: 2,
+      }[page],
+    )
     expect(bound.bound, `${page} 全部 onoas-* 已绑定`).toBe(bound.total)
   })
 }

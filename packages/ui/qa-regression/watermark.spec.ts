@@ -101,7 +101,7 @@ test('movable：canvas 引擎下拖拽 offset 写回、背景位置跟随（图�
   await page.mouse.move(box.x + box.width / 2 + 60, box.y + box.height / 2 + 30, { steps: 5 })
   await page.mouse.up()
   const offset = await page.locator('#wm-movable').getAttribute('offset')
-  expect(offset).not.toBeNull()
+  expect(offset).toBe('[127,76]')
   const style = await page.evaluate(() => {
     const layer = document.querySelector('#wm-movable')?.shadowRoot?.querySelector('[part="watermark"]')
     return layer?.getAttribute('style') ?? ''
@@ -137,7 +137,7 @@ test('watermark 空容器：无 slot 内容时宿主不塌缩、水印图层有�
     }
   })
   // 宿主与图层都必须有实际宽度（空态满铺），且背景图存在
-  expect(r.hostW).toBeGreaterThan(0)
-  expect(r.layerW).toBeGreaterThan(0)
+  expect(r.hostW).toBe(574)
+  expect(r.layerW).toBe(574)
   expect(r.bgImage).toBe(true)
 })

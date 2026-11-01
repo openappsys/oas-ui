@@ -264,7 +264,7 @@ test('tour 目标在视口外首次打开：滚动期间弹窗隐藏（不闪现
         s.scrollY !== prev.scrollY || (s.scrollY !== samples.at(-1)!.scrollY && s.scrollY !== samples[0]!.scrollY)
       return moving && s.scrollY !== samples.at(-1)!.scrollY
     })
-    expect(midScroll.length, '平滑滚动期间应有中间帧').toBeGreaterThan(0)
+    expect(midScroll.length, '平滑滚动期间应有中间帧').toBe(67)
     for (const s of midScroll) {
       expect(s.pending || s.opacity < 0.1, `滚动途中帧（scrollY=${s.scrollY}）弹窗应隐藏（pending 或近透明）`).toBe(
         true,
@@ -274,7 +274,7 @@ test('tour 目标在视口外首次打开：滚动期间弹窗隐藏（不闪现
   // 终态断言（两种形态都必须满足）：滚动停止后弹窗正确显示
   const settled = samples[samples.length - 1]!
   expect(settled.opacity, '滚动停止后弹窗显示').toBe(1)
-  expect(settled.placement, '滚动停止后 placement 已设').not.toBeNull()
+  expect(settled.placement, '滚动停止后 placement 已设').toBe('bottom')
   expect(settled.pending, '滚动停止后不再待定').toBe(false)
 })
 

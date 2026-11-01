@@ -33,9 +33,9 @@ test('toolbar 窄容器子项防收缩：项保持固有宽度、溢出触发「
     }
   })
   expect(r.moreVisible, '「···」收纳项应可见').toBe(true)
-  expect(r.collapsedCount, '应有被收纳项').toBeGreaterThan(0)
+  expect(r.collapsedCount, '应有被收纳项').toBe(5)
   expect(r.minW, '未收纳按钮不应被压扁（两字中文按钮固有宽约 24px+，压扁态为 ~13px）').toBeGreaterThan(24)
-  expect(r.panelRoles.length, '弹层应有镜像项').toBeGreaterThan(0)
+  expect(r.panelRoles.length, '弹层应有镜像项').toBe(5)
   for (const role of r.panelRoles) {
     expect(['menuitem', 'menuitemcheckbox'], '镜像项角色应为 menuitem/menuitemcheckbox').toContain(role)
   }

@@ -124,7 +124,7 @@ test('auto-complete virtual（D3）：千级建议窗口渲染 + 键盘导航跟
     }
   })
   expect(keyed.descendant, 'aria-activedescendant 应指向第 25 项').toBe('opt-25')
-  expect(keyed.scrollTop, '窗口应随键盘导航滚动').toBeGreaterThan(0)
+  expect(keyed.scrollTop, '窗口应随键盘导航滚动').toBe(696)
   // 窗口重算后高亮行可见（真实浏览器 scroll 事件驱动重渲染）
   await page.waitForFunction(() => {
     const vl = document.querySelector('#ac-virtual')!.shadowRoot!.querySelector('oas-virtual-list')!

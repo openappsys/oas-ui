@@ -168,7 +168,7 @@ test('image 自定义工具栏：模板克隆替换默认按钮组，actions 命
   expect(focusWrap.seq.every((s) => s !== null)).toBe(true)
   expect(['preview-prev', 'zoom-out']).toContain(focusWrap.seq[0])
   // Shift+Tab 从首个按钮环绕到浮层内最后一项（关闭按钮或翻页箭头）
-  expect(focusWrap.shiftWrap).not.toBeNull()
+  expect(focusWrap.shiftWrap).toBe('zoom-out')
 
   // Esc 关闭：portal 拆除，无孤儿浮层
   await page.keyboard.press('Escape')
@@ -200,10 +200,11 @@ test('image 懒加载：视口外图片不加载（img 无 src、占位显示）
       const img = i.shadowRoot?.querySelector('img')
       return img && !img.hasAttribute('src')
     })
-    return { total: imgs.length, noSrc: noSrc.length }
+    const lastImg = imgs.at(-1)?.shadowRoot?.querySelector('img')
+    return { total: imgs.length, noSrc: noSrc.length, lastNoSrc: !!lastImg && !lastImg.hasAttribute('src') }
   })
   expect(state.total).toBeGreaterThan(5)
-  expect(state.noSrc, '列表底部应有未加载的图片').toBeGreaterThan(0)
+  expect(state.lastNoSrc, '列表底部应有未加载的图片').toBe(true)
   // 逐项滚入视口：懒加载依赖 IntersectionObserver，定时连续滚动在慢机器/并行
   // worker 下可能在 IO 回调前越过中间项，导致正确跳过却让用例抖动。逐项
   // scrollIntoView + 等 src 出现，既模拟真实浏览，也让断言与 IO 回调同步。

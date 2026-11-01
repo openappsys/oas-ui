@@ -65,7 +65,7 @@ test('avatar 能力补齐批次：shape/color/fit/枚举 size 机制与视觉落
   })
   expect(shape.square).toBe('0px')
   expect(shape.squareImg).toBe('0px')
-  expect(parseFloat(shape.round)).toBeGreaterThan(0)
+  expect(parseFloat(shape.round)).toBe(6)
 
   const color = await page.evaluate(() => {
     const el = document.querySelector('oas-avatar[color="#7c3aed"]') as HTMLElement

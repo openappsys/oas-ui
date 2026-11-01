@@ -41,7 +41,9 @@ test('Q09 reduced-motion：代表页面动画时长压到近零', async ({ page 
       walk(document)
       return { bad: bad.slice(0, 10), shadows }
     })
-    expect(result.shadows, `${name} 未扫描到 shadow 树（组件未升级）`).toBeGreaterThan(0)
+    expect(result.shadows, `${name} 未扫描到 shadow 树（组件未升级）`).toBe(
+      { marquee: 30, spin: 72, carousel: 28, 'notice-bar': 29, 'number-animation': 15 }[name],
+    )
     expect(result.bad, `${name} 在 reduced-motion 下仍有长动画`).toEqual([])
   }
 })
@@ -85,7 +87,6 @@ test('Q09 forced-colors：resource 条形图焦点环回退为可见 outline', a
       outlineWidth: Number.parseFloat(cs.outlineWidth),
     }
   })
-  expect(result, 'resource 页未找到条形图').not.toBeNull()
   expect(result!.matches).toBe(true)
   expect(result!.focusVisible).toBe(true)
   expect(result!.outlineStyle).not.toBe('none')

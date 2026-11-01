@@ -30,7 +30,7 @@ test('qrcode：role=img 与 aria-label 落在图形元素上，expired 刷新按
   })
   expect(r.wrapperRole, '容器保持普通容器语义').toBe(null)
   expect(r.svgRole, '图形语义挂在 <svg> 上').toBe('img')
-  expect(r.label, '图形元素应有可访问名').toBeTruthy()
+  expect(r.label, '图形元素应有可访问名').toBe('过期二维码')
   expect(r.refreshHidden, 'expired 状态下刷新按钮可见').toBe(false)
   expect(r.fired, '点击刷新按钮应派发 oas-refresh').toBe(1)
 })

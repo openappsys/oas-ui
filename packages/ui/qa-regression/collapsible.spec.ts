@@ -36,7 +36,7 @@ test('collapsible 非受控点击开合：aria-expanded 同步 + 内容可见性
   expect(r.before.height).toBe(0)
   expect(r.before.hostOpen, '非受控点击不得写回 open 属性').toBe(false)
   expect(r.opened.expanded).toBe('true')
-  expect(r.opened.height, '展开后内容可见').toBeGreaterThan(0)
+  expect(r.opened.height, '展开后内容可见').toBeCloseTo(80.5, 1)
   expect(r.closed.expanded).toBe('false')
   expect(r.closed.height, '收起后内容高度归零').toBe(0)
   expect(r.events, '应派发 oas-toggle { open: true } → { open: false }').toEqual([{ open: true }, { open: false }])

@@ -39,5 +39,5 @@ test('cdn 族包 form.js swatch-group 静态 value 首帧', async ({ page }) => 
     const first = document.querySelector('oas-swatch')!
     return first.hasAttribute('selected') || first.getAttribute('aria-checked')
   })
-  expect(selected, '族包首帧 value 命中项选中态同步').toBeTruthy()
+  expect(selected, '族包首帧 value 命中项选中态同步').toBe(true)
 })

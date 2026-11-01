@@ -46,7 +46,7 @@ test('bottom-sheet 打开：面板可见且贴视口底边、全宽', async ({ p
       vh: window.innerHeight,
     }
   })
-  expect(r.height).toBeGreaterThan(0)
+  expect(r.height).toBe(192)
   expect(r.top, '面板应可见（不整块停在屏幕外）').toBeLessThan(r.vh)
   expect(r.bottom, '面板应贴视口底边').toBeGreaterThanOrEqual(r.vh - 1)
   expect(r.left, '面板应贴左缘（全宽）').toBeLessThanOrEqual(1)
@@ -117,6 +117,6 @@ test('bottom-sheet max-height 限高：50vh 封顶写入手柄且面板不超限
     return { maxHeight: sheet.style.maxHeight, height: sheet.getBoundingClientRect().height, vh: window.innerHeight }
   })
   expect(r.maxHeight, 'max-height 值应原样写入面板内联样式').toBe('50vh')
-  expect(r.height).toBeGreaterThan(0)
+  expect(r.height).toBe(192)
   expect(r.height, '面板实际高度不得超过 50vh').toBeLessThanOrEqual(r.vh * 0.5 + 1)
 })

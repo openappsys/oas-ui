@@ -207,9 +207,9 @@ test('editable 多行 hidden 挂载 → 可见：字段高与可见容器直接�
     return { controlHeight, probeStyleHeight: ta.style.height, probeHeight: rect.height, probeWidth: rect.width }
   })
 
-  expect(measured.probeWidth, 'hidden→visible 后编辑框应可见').toBeGreaterThan(0)
+  expect(measured.probeWidth, 'hidden→visible 后编辑框应可见').toBeCloseTo(79.48, 1)
   expect(measured.probeStyleHeight, '量到 0 不得写入 0px 内联高').not.toBe('0px')
-  expect(measured.probeHeight, '编辑框不应塌陷（高度 >0）').toBeGreaterThan(0)
+  expect(measured.probeHeight, '编辑框不应塌陷（高度 >0）').toBe(52)
   expect(
     Math.abs(measured.probeHeight - measured.controlHeight),
     `hidden 挂载自愈后高度(${measured.probeHeight})应与可见容器直接渲染(${measured.controlHeight})一致`,

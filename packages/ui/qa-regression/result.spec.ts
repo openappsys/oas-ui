@@ -22,7 +22,7 @@ test('result status 通道：404 专属字形与 aria 同步、动态改 status 
   expect(r.httpAria, '图标 role=status + aria-label=归一化状态（读屏可命名）').toBe('404')
   expect(r.httpGlyph, '404 专属 SVG 字形已渲染').toBe(true)
   expect(r.titleResidue, 'title 吸收：宿主不残留原生 title（悬停不弹原生提示）').toBe(0)
-  expect(r.renderedTitles, '带标题的 result 均渲染标题区').toBeGreaterThan(0)
+  expect(r.renderedTitles, '带标题的 result 均渲染标题区').toBe(13)
 
   // 消费式属性：连接后改 status → 图标状态即时跟随（非仅首连一次）
   await page.evaluate(() => document.querySelector('oas-result')!.setAttribute('status', 'error'))

@@ -365,7 +365,9 @@ test('drawer 面板打开后可视位置在视口内（CSS 顺序回归：placem
       const vh = window.innerHeight
       return { x: b.x, y: b.y, w: b.width, h: b.height, vw, vh }
     })
-    expect(r, label + '：应有一个 data-open 面板').not.toBeNull()
+    expect(r!.h, label + '：应有一个 data-open 面板').toBe(
+      label.includes('顶') ? 256 : label.includes('底') ? 360 : 720,
+    )
     expect(
       r!.x >= 0 && r!.x + r!.w <= r!.vw + 1 && r!.y >= 0 && r!.y + r!.h <= r!.vh + 1,
       label + '：面板应完整落在视口内（实测 ' + JSON.stringify(r) + '）',

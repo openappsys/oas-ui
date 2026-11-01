@@ -70,8 +70,8 @@ test('time-picker 移动端：底部抽屉贴视口底展开 + 时间列可交�
     expect(Math.abs(info.panelRight - info.vw), '抽屉面板应右贴视口（≤1px 亚像素容差）').toBeLessThanOrEqual(1)
     expect(info.backdropOpacity, '遮罩应可见').toBeGreaterThan(0.5)
     expect(info.handleVisible, 'drag handle 应可见').toBe(true)
-    expect(info.columns, '抽屉内应渲染时间列').toBeGreaterThan(0)
-    expect(info.options, '抽屉内时间列应有可点选项').toBeGreaterThan(0)
+    expect(info.columns, '抽屉内应渲染时间列').toBe(3)
+    expect(info.options, '抽屉内时间列应有可点选项').toBe(144)
     // 触控目标抬升：移动形态下时间列选项行高度 ≥44px（--oas-touch-target-min）
     expect(info.optionH, `移动形态时间选项行高度 ${Math.round(info.optionH)}px 应 ≥44px`).toBeGreaterThanOrEqual(44)
     // 抽屉内点选交互：点第一列首个可选项 → 组件进入待提交态（选中态可见）
@@ -81,7 +81,7 @@ test('time-picker 移动端：底部抽屉贴视口底展开 + 时间列可交�
       opt.click()
     })
     const selected = await host.evaluate((el) => el.shadowRoot!.querySelectorAll('.option.selected').length)
-    expect(selected, '抽屉内点选应产生选中态').toBeGreaterThan(0)
+    expect(selected, '抽屉内点选应产生选中态').toBe(3)
     // oas-close 同步收起：点遮罩
     await host.evaluate((el) => {
       const sheet = el.shadowRoot!.querySelector('oas-bottom-sheet')!

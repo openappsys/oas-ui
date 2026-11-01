@@ -128,7 +128,7 @@ test('tree-select virtual：键盘导航高亮滚动进视口且 aria-activedesc
     const vp = el.shadowRoot!.querySelector('oas-virtual-list')!.shadowRoot!.querySelector('.viewport')!
     return vp.scrollTop
   })
-  expect(scrolled).toBeGreaterThan(0)
+  expect(scrolled).toBe(828)
   // Enter 勾选高亮行 → value 写回（trigger 显示成员标签，可见反馈）
   await btn.press('Enter')
   await page.waitForFunction(
@@ -202,7 +202,7 @@ test('tree-select 移动端：底部抽屉贴视口底展开 + 搜索/树面板�
     expect(info.panelLeft, '抽屉面板应左贴视口').toBe(0)
     expect(Math.abs(info.panelRight - info.vw), '抽屉面板应右贴视口（≤1px 亚像素容差）').toBeLessThanOrEqual(1)
     expect(info.backdropOpacity, '遮罩应可见').toBeGreaterThan(0.5)
-    expect(info.treeitems, '抽屉内树面板应可交互（有节点）').toBeGreaterThan(0)
+    expect(info.treeitems, '抽屉内树面板应可交互（有节点）').toBe(2)
     // oas-close 同步收起：点遮罩
     await host.evaluate((el) => {
       const sheet = el.shadowRoot!.querySelector('oas-bottom-sheet')!

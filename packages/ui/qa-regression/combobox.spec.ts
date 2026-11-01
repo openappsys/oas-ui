@@ -84,7 +84,7 @@ test('combobox 移动端：底部抽屉贴视口底展开 + 列表可交互 + �
     expect(Math.abs(info.panelRight - info.vw), '抽屉面板应右贴视口（≤1px 亚像素容差）').toBeLessThanOrEqual(1)
     expect(info.backdropOpacity, '遮罩应可见').toBeGreaterThan(0.5)
     expect(info.handleVisible, 'drag handle 应可见').toBe(true)
-    expect(info.options, '抽屉内列表应可交互（有选项行）').toBeGreaterThan(0)
+    expect(info.options, '抽屉内列表应可交互（有选项行）').toBe(4)
     // 触控目标抬升：移动形态下选项行高度 ≥44px（--oas-touch-target-min）
     expect(info.optionH, `移动形态选项行高度 ${Math.round(info.optionH)}px 应 ≥44px`).toBeGreaterThanOrEqual(44)
     // 抽屉内点选交互：点第一项 → 选中并回写 value

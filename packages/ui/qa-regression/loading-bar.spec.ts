@@ -64,7 +64,7 @@ test('局部容器：条挂进指定容器（local 属性），全局宿主无�
   expect(list[0]!.local).toBe(true)
   // 相对容器顶部：条上边缘贴近容器顶部（非视口顶部）
   const box = await page.locator('#lb-local-box').boundingBox()
-  expect(box).not.toBeNull()
+  await expect(page.locator('#lb-local-box')).toBeVisible()
   expect(Math.abs(list[0]!.rect.top - box!.y)).toBeLessThan(2)
 })
 

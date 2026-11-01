@@ -69,7 +69,7 @@ test('barcode：role=img 与 aria-label 落在图形元素上，非法输入渲�
   })
 
   expect(r.okRole, '图形语义挂在 <svg> 上').toBe('img')
-  expect(r.okLabel, '图形元素应有可访问名').toBeTruthy()
+  expect(r.okLabel, '图形元素应有可访问名').toBe('待生成的商品条码')
   expect(r.okErrorHidden, '合法值时错误占位隐藏').toBe(true)
   expect(r.badErrorVisible, '非法值时错误占位可见').toBe(true)
   expect(r.badErrorText, '错误占位含 i18n 文案').toContain('编码规则')
@@ -141,7 +141,20 @@ test('barcode：十码制切换全部可渲染，整体宽度由内容决定；�
 
   for (const key of ['code128', 'gs1-128', 'ean13', 'ean8', 'upce', 'upca', 'code39', 'codabar', 'msi', 'itf14']) {
     expect(r.rendered[key], `${key} 应渲染出条形 path`).toBe(true)
-    expect(Number(r.widths[key]), `${key} 宽度应由内容决定（>0）`).toBeGreaterThan(0)
+    expect(Number(r.widths[key]), `${key} 宽度应由内容决定（>0）`).toBe(
+      {
+        code128: 374,
+        'gs1-128': 484,
+        ean13: 242,
+        ean8: 174,
+        upce: 166,
+        upca: 254,
+        code39: 350,
+        codabar: 162,
+        msi: 198,
+        itf14: 252,
+      }[key],
+    )
   }
   // ITF-14 '10614141000415'：标准起始 nnnn + 14 数字 + 停止 Wnn = 106 模；106×2 + 缺省静区 10×bar-width×2 侧 = 40 → 252
   expect(r.widths.itf14, 'ITF-14 须为标准 106 模宽').toBe('252')

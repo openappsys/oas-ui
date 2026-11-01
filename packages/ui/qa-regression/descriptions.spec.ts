@@ -26,7 +26,7 @@ test('descriptions items 通道：JSON attribute 存活渲染 + 声明式子元�
   expect(r.firstLabel).toBe('服务名')
   expect(r.firstText).toBe('oas-ui-docs')
   expect(r.attrStillThere, 'items 属性保留在宿主（数据通道声明式来源）').toBe(true)
-  expect(r.declarative, '声明式通道 .map() 子项照常渲染').toBeGreaterThan(0)
+  expect(r.declarative, '声明式通道 .map() 子项照常渲染').toBe(4)
 
   // 声明式优先：给 items demo 塞入子元素后，生成项清空、子元素经默认插槽渲染
   await page.evaluate(() => {

@@ -38,7 +38,7 @@ test('堆叠布局：三条同向打开纵向排列不重叠（最新贴底边�
   expect(bars.length).toBe(3)
   const viewportHeight = page.viewportSize()?.height ?? 0
   for (const b of bars) {
-    expect(b.rect.height).toBeGreaterThan(0)
+    expect(b.rect.height).toBe(37)
   }
   // 最新一条贴底边（默认 bottom 方向 + 24px 偏移，留容差）；老条目依序上移
   const maxBottom = Math.max(...bars.map((b) => b.rect.bottom))

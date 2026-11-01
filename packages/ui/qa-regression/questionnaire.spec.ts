@@ -139,10 +139,10 @@ test('questionnaire 头部列表语义：<ol> 直接子为 <li>、可点项为�
       btnCount: ol.querySelectorAll('button').length,
     }
   })
-  expect(res.children.length).toBeGreaterThan(0)
+  expect(res.children.length).toBe(3)
   expect(res.children.every((t) => t === 'LI')).toBe(true)
   expect(res.roles.every((r) => r === null)).toBe(true)
-  expect(res.btnCount).toBeGreaterThan(0)
+  expect(res.btnCount).toBe(2)
 })
 
 test('questionnaire 头部项键盘可达：聚焦原生 button 按 Enter 由浏览器原生触发跳步（回归）', async ({ page }) => {

@@ -210,7 +210,7 @@ test('carousel D17：thumbs 缩略图替代圆点、当前项主色描边、点�
   })
   expect(data.count, 'thumbs demo 应渲染缩略图').toBeGreaterThan(1)
   expect(data.dots, 'thumbs 下不应再有圆点').toBe(0)
-  expect(data.imgCount, '缩略图应取子项图片').toBeGreaterThan(0)
+  expect(data.imgCount, '缩略图应取子项图片').toBe(3)
   expect(data.borderColor, '当前项应有主色描边').not.toBe('rgba(0, 0, 0, 0)')
   const before = await car.getAttribute('index')
   await car.locator('[part="thumb"]').nth(1).click()

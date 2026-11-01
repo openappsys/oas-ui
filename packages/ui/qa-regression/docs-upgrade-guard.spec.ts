@@ -27,7 +27,6 @@ async function assertNoExpando(p: import('@playwright/test').Page, sel: string, 
     },
     { sel, prop },
   )
-  expect(hasOwn, `${sel} 应存在（否则断言空转）`).not.toBeNull()
   expect(hasOwn, `${sel} 实例不得残留自有属性 ${prop}（升级前裸写会遮蔽 setter）`).toBe(false)
 }
 
@@ -55,7 +54,7 @@ test('docs 守卫 demo：calendar disabledDate 周末禁用真实生效（无 ex
   })
   expect(r.hasOwnExpando, 'disabledDate 不得以自有属性残留（守卫必须生效）').toBe(false)
   expect(r.accessorLive, '原型 getter 应返回 demo 写入的函数（写入必须落到 setter）').toBe(true)
-  expect(r.disabledCount, '周末禁用应有可见的禁用格子').toBeGreaterThan(0)
+  expect(r.disabledCount, '周末禁用应有可见的禁用格子').toBe(12)
   expect(r.allDisabledAreWeekend, '禁用格子必须全部是周末（demo 规则真实生效）').toBe(true)
   if (r.todayVisible) expect(r.todayEnabled, '工作日（今天）不得被禁用').toBe(true)
 })

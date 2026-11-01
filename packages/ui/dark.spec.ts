@@ -25,7 +25,7 @@ for (const page of PAGES) {
       .toBe('rgb(24, 24, 27)')
     const blocks = p.locator('.demo-block')
     const n = await blocks.count()
-    expect(n).toBeGreaterThan(0)
+    await expect(blocks.first()).toBeVisible()
     // 每个块背景应为暗色，无未捕获异常
     for (let i = 0; i < n; i++) {
       const body = blocks.nth(i).locator('.demo-block__body')

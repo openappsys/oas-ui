@@ -95,7 +95,7 @@ test('calendar header 插槽：宿主头部内容分发 + 可交互（点宿主�
       fallbackNav: !!el.shadowRoot!.querySelector('[part="prev"]'),
     }
   })
-  expect(r0.assigned, '宿主内容应分发进 header 插槽').toBeGreaterThan(0)
+  expect(r0.assigned, '宿主内容应分发进 header 插槽').toBe(1)
   // 真实链路：点宿主头部按钮 → page-show-date 锚定当月 → 标题落到当月 + 反馈行更新
   await page.locator('#calendar-header-slot-btn').click()
   const now = new Date()
@@ -280,7 +280,7 @@ test('calendar calendar-system：伊斯兰历标题与单元格跟随历法（�
   })
   expect(r.title).toBe(r.expectedTitle)
   expect(r.title).toContain('1448')
-  expect(r.aria).toBeTruthy()
+  expect(r.aria).toContain('伊斯兰历')
   expect(r.dataDate).toBe('2026-08-09')
 })
 

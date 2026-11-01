@@ -326,6 +326,6 @@ test('speed-dial RTL：收起态不可见面板不制造横向可滚动溢出（
   })
   expect(r.swClosed, '收起态（不可见面板）不应制造横向可滚动溢出').toBeLessThanOrEqual(r.cw + 2)
   expect(r.openState.visible, '展开后面板可见').toBe('visible')
-  expect(r.openState.panelWidth, '展开面板有布局尺寸（塌缩不伤展开态）').toBeGreaterThan(0)
+  expect(r.openState.panelWidth, '展开面板有布局尺寸（塌缩不伤展开态）').toBe(104)
   expect(r.swAfterClose, '收起后同样无横向溢出').toBeLessThanOrEqual(r.cw + 2)
 })

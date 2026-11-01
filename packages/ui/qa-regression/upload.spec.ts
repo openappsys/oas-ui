@@ -184,7 +184,7 @@ test('upload 超限 max：drop 超过 max 的文件触发 oas-exceed-limit 并�
       cards: el.shadowRoot!.querySelectorAll('.card').length, // max=3：只接收 3 个
     }
   })
-  expect(r.msgCount).toBeGreaterThan(0)
+  expect(r.msgCount).toBe(1)
   expect(r.msgText).toContain('最多上传 3 个文件')
   expect(r.cards).toBe(3)
 })
@@ -326,7 +326,7 @@ test('upload oas-progress：drop 后进度事件派发（percent 推进到 100�
   })
   expect(r.last, '进度收尾应为 100').toBe(100)
   expect(r.mono, '进度应单调不回退').toBe(true)
-  expect(r.count, '至少派发一次 oas-progress').toBeGreaterThan(0)
+  expect(r.count, '至少派发一次 oas-progress').toBe(5)
   expect(r.output, 'demo 反馈区应显示进度').toContain('100%')
 })
 

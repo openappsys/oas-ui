@@ -189,7 +189,7 @@ test('toggle-button icon-toggled：真点按下渲染 toggled 图标、抬起回
     })
   const s0 = await state()
   expect(s0.pressed, '初始未按下').toBe(false)
-  expect(s0.d, '未按下渲染 icon 图标').toBeTruthy()
+  expect(s0.d, '未按下渲染 icon 图标').toContain('M8 2.4')
 
   await page.locator('#tb-icon-toggled').click()
   const s1 = await state()

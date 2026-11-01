@@ -98,7 +98,7 @@ test('anchor 墨水条 hidden→visible：尺寸自愈，与可见容器直接�
 
   // 竖条（default）：高度随当前项，改前 hidden 挂载为 0
   expect(r.verticalHidden.inkDisplay, '竖条应可见').not.toBe('none')
-  expect(r.verticalHidden.inkH, '竖条高 > 0（改前为 0 → RED）').toBeGreaterThan(0)
+  expect(r.verticalHidden.inkH, '竖条高 > 0（改前为 0 → RED）').toBe(28)
   expect(Math.abs(r.verticalHidden.inkH - r.verticalHidden.linkH), '竖条高应等于当前项高（±1px）').toBeLessThanOrEqual(
     1,
   )
@@ -113,7 +113,7 @@ test('anchor 墨水条 hidden→visible：尺寸自愈，与可见容器直接�
 
   // underline 横条：宽度随当前项，改前 hidden 挂载为 0
   expect(r.underlineHidden.inkDisplay, '下划线应可见').not.toBe('none')
-  expect(r.underlineHidden.inkW, '下划线宽 > 0（改前为 0 → RED）').toBeGreaterThan(0)
+  expect(r.underlineHidden.inkW, '下划线宽 > 0（改前为 0 → RED）').toBe(240)
   expect(
     Math.abs(r.underlineHidden.inkW - r.underlineHidden.linkW),
     '下划线宽应等于当前项宽（±1px）',

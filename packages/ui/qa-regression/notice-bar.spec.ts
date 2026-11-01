@@ -127,5 +127,5 @@ test('notice-bar scrollable：内嵌 marquee 存在、内容物化、滚动动�
   expect(r.materialized).toBeGreaterThan(10)
   // 滚动动画真实在跑（有 keyframes 与时长）
   expect(r.animName).toBe(true)
-  expect(Number(r.animDuration)).toBeGreaterThan(0)
+  expect(Number(r.animDuration)).toBeCloseTo(20131, -2)
 })

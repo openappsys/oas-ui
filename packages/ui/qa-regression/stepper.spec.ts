@@ -48,7 +48,7 @@ test('stepper：每个 tab 的 aria-controls 指向真实存在的 panel id（�
     }
     return { checked, missing }
   })
-  expect(r.checked, '页面应有带 aria-controls 的 tab').toBeGreaterThan(0)
+  expect(r.checked, '页面应有带 aria-controls 的 tab').toBe(3)
   expect(r.missing, 'aria-controls 指向的 panel id 必须真实存在（axe 静态分析够不到，由此断言兜底）').toEqual([])
 })
 
@@ -122,6 +122,6 @@ test('stepper：demo 全量 aria-* 取值合法性（节点级豁免的等价强
     }
     return { checked, errors }
   })
-  expect(r.checked, 'demo 区应存在 aria-* 属性').toBeGreaterThan(0)
+  expect(r.checked, 'demo 区应存在 aria-* 属性').toBe(136)
   expect(r.errors, '全部 aria-* 取值必须合法（token 值集合 / 引用目标存在 / 未知名非空）').toEqual([])
 })

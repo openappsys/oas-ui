@@ -37,7 +37,7 @@ async function dragDown(page: import('@playwright/test').Page, sel: string, dist
   // e2e 指针先 scrollIntoView（库惯例）：Firefox 默认视口下 demo 可能出屏，裸坐标拖拽落空
   await page.locator(sel).scrollIntoViewIfNeeded()
   const box = await page.locator(sel).boundingBox()
-  expect(box).not.toBeNull()
+  await expect(page.locator(sel)).toBeVisible()
   const cx = box!.x + box!.width / 2
   const y0 = box!.y + Math.min(box!.height / 2, 40)
   await page.mouse.move(cx, y0)
@@ -175,7 +175,7 @@ test('pull-refresh 指示区几何：拉动中 indicator 与内容零重叠（�
   await page.goto('/components/pull-refresh.html', { waitUntil: 'domcontentloaded' })
   await up(page, '#pr-basic')
   const box = await page.locator('#pr-basic').boundingBox()
-  expect(box).not.toBeNull()
+  await expect(page.locator('#pr-basic')).toBeVisible()
   const cx = box!.x + box!.width / 2
   const y0 = box!.y + Math.min(box!.height / 2, 40)
   await page.mouse.move(cx, y0)
@@ -204,7 +204,7 @@ test.describe('移动仿真（触屏真手势）', () => {
     // elementFromPoint=null，浏览器首 move 即 pointercancel——探针实抓）
     await page.locator('#pr-basic').scrollIntoViewIfNeeded()
     const box = await page.locator('#pr-basic').boundingBox()
-    expect(box).not.toBeNull()
+    await expect(page.locator('#pr-basic')).toBeVisible()
     const cx = box!.x + box!.width / 2
     const y0 = box!.y + Math.min(box!.height / 2, 40)
     await page.evaluate(() => {

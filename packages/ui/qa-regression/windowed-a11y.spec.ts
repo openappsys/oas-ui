@@ -249,7 +249,7 @@ test('windowed/虚拟化实例 axe 审计：gantt/table/tree/list/resource 无 c
   expect(coverage.ganttRowindex, 'gantt windowed：treeitem 不使用 aria-rowindex').toBeNull()
   expect(coverage.resourceRowcount, 'resource windowed：泳道区 aria-rowcount=total').toBe('100')
   expect(coverage.resourceRowIndex, 'resource：行 aria-rowindex 在场').toMatch(/^\d+$/)
-  expect(coverage.sanityDeepQuery, '深度遍历自检：shadow 内 aria-posinset 可被 axe 同等遍历到').toBeGreaterThan(0)
+  expect(coverage.sanityDeepQuery, '深度遍历自检：shadow 内 aria-posinset 可被 axe 同等遍历到').toBe(30)
 
   // ② axe：wcag2a / wcag2aa / wcag21aa 全规则面，critical / serious 零容忍（已登记债务除外）
   const results = await new AxeBuilder({ page })
@@ -282,7 +282,7 @@ test('windowed/虚拟化实例 axe 审计：gantt/table/tree/list/resource 无 c
   // 台账条目必须仍然命中且形态与登记一致（组件修复 / 违规恶化 → 红，强制同步或删除条目）
   for (const [id, entry] of Object.entries(KNOWN_ISSUES)) {
     const v = serious.find((x) => x.id === id)
-    expect(v, `台账条目 "${id}" 已不再命中（${entry.where} 可能已修复）——请核实后删除台账条目`).toBeTruthy()
+    expect(v!.id, `台账条目 "${id}" 已不再命中（${entry.where} 可能已修复）——请核实后删除台账条目`).toBe(id)
     if (!v) continue
     const offLedger = v.nodes.filter((n) => {
       // axe target 形态：Array<string | string[]>（shadow 穿透路径为嵌套数组）——拍平后取 host 锚

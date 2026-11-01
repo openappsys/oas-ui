@@ -56,7 +56,18 @@ test('collapse 点击头切换展开/收起：open 反射 + aria-expanded + 内�
   })
   expect(opened.open, '点击头后 item 应带 open 属性').toBe(true)
   expect(opened.ariaExpanded, 'head button aria-expanded 应同步为 true').toBe('true')
-  expect(opened.bodyHeight, '展开后面板内容可见（高度 > 0）').toBeGreaterThan(0)
+  await expect
+    .poll(
+      () =>
+        page.evaluate(() => {
+          const el = document.querySelectorAll('oas-collapse')[2] as HTMLElement
+          const item = el.querySelector('oas-collapse-item')!
+          const wrap = item.shadowRoot!.querySelector<HTMLElement>('[part="body-wrap"]')!
+          return Math.round(wrap.getBoundingClientRect().height) === Math.round(wrap.scrollHeight)
+        }),
+      { timeout: 5000 },
+    )
+    .toBe(true)
   expect(opened.changes, '应派发 oas-change { active: ["a"] }').toEqual([{ active: ['a'] }])
 
   // 再点同一头部收起

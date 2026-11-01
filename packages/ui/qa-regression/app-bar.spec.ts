@@ -79,7 +79,7 @@ test('app-bar overflow：窄视口超宽操作项收进「···」（data-colla
       expanded: bar.shadowRoot!.querySelector('[part="more"]')!.getAttribute('aria-expanded'),
     }
   })
-  expect(panel.collapsed, '窄容器下有操作项被收纳隐藏').toBeGreaterThan(0)
+  expect(panel.collapsed, '窄容器下有操作项被收纳隐藏').toBe(3)
   expect(panel.mirrors, '收纳项镜像进「···」弹层').toBe(panel.collapsed)
   expect(panel.expanded, '「···」aria-expanded 同步').toBe('true')
 

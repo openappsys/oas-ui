@@ -206,7 +206,7 @@ test('真实拖拽标题移动：rect 提交 + oas-move 可见反馈', async ({ 
   await expect.poll(() => rectAttr(page, 'fp-basic')).toMatch(/^60,4[01],380,230$/)
   await expect(page.locator('#fp-basic-out')).toContainText('oas-move')
   const finalRect = await rectAttr(page, 'fp-basic')
-  expect(finalRect).not.toBeNull()
+  expect(finalRect).toMatch(/^60,4[01],380,230$/)
   await expect(page.locator('#fp-basic-out')).toContainText(finalRect!)
   const box = await frameBox(page, 'fp-basic')
   expect(box.width).toBeCloseTo(380, 0)

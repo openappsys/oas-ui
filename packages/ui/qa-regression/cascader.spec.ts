@@ -86,7 +86,7 @@ test('cascader 移动端：底部抽屉贴视口底展开 + 多级面板可用 +
     expect(info.panelLeft, '抽屉面板应左贴视口').toBe(0)
     expect(Math.abs(info.panelRight - info.vw), '抽屉面板应右贴视口（≤1px 亚像素容差）').toBeLessThanOrEqual(1)
     expect(info.backdropOpacity, '遮罩应可见').toBeGreaterThan(0.5)
-    expect(info.options, '抽屉内多级面板应可交互（有选项）').toBeGreaterThan(0)
+    expect(info.options, '抽屉内多级面板应可交互（有选项）').toBe(3)
     // oas-close 同步收起：点遮罩
     await host.evaluate((el) => {
       const sheet = el.shadowRoot!.querySelector('oas-bottom-sheet')!
@@ -277,7 +277,7 @@ test('cascader virtual（D4）：千级长列窗口渲染 + 面板高度恒定 +
     const vl = el.shadowRoot!.querySelector('.panel oas-virtual-list')!
     return vl.shadowRoot!.querySelector<HTMLElement>('.viewport')!.scrollTop
   })
-  expect(keyed, '窗口应随键盘导航滚动').toBeGreaterThan(0)
+  expect(keyed, '窗口应随键盘导航滚动').toBe(876)
   // 深层选中回显：滚动到长列末尾窗口，点第 999 项下钻 → 点叶子提交 → 触发器文本 + 可见反馈
   await host.evaluate((el) => {
     const vl = el.shadowRoot!.querySelector('.panel oas-virtual-list')!

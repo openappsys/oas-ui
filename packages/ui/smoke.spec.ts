@@ -31,7 +31,7 @@ for (const page of PAGES) {
     await p.evaluate(() => document.fonts.ready)
     const blocks = p.locator('.demo-block')
     const count = await blocks.count()
-    expect(count).toBeGreaterThan(0)
+    await expect(blocks.first()).toBeVisible()
     // 每个 DemoBlock 的 body 应有至少一个可渲染元素
     for (let i = 0; i < count; i++) {
       const body = blocks.nth(i).locator('.demo-block__body')

@@ -136,7 +136,7 @@ test('notification 悬停暂停：hover 后进度条 animation-play-state=paused
   // 8s duration，悬停 1.2s 后仍存活（若未暂停会因计时流逝而提前关闭风险排除）
   // audit-exception: 悬停暂停的驻留观察是时间流逝语义（暂停期间通知不消失），无 DOM 信号可等
   await page.waitForTimeout(1200)
-  expect(await page.locator('oas-notification[show-progress]').count()).toBeGreaterThan(0)
+  await expect(page.locator('oas-notification[show-progress]')).toHaveCount(1)
   await page.mouse.move(10, 300) // 移出恢复
   const r2 = await page.evaluate(() => {
     const el = document.querySelector('oas-notification[show-progress]')!

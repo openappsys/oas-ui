@@ -228,7 +228,7 @@ test.describe('button 移动端触控目标（coarse pointer 抬升）', () => {
       const xsH = xsEl.shadowRoot!.querySelector('button')!.getBoundingClientRect().height
       return { heights, iconW: ib.width, iconH: ib.height, xsH }
     })
-    expect(r.heights.length, '页面应渲染出可见按钮').toBeGreaterThan(0)
+    expect(r.heights.length, '页面应渲染出可见按钮').toBe(99)
     for (const h of r.heights) {
       expect(h, `触屏下按钮高度 ${h}px 应 ≥44px`).toBeGreaterThanOrEqual(44)
     }

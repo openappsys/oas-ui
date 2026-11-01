@@ -54,7 +54,7 @@ test('CSR 模板：cascader suffix-icon + option 插槽正常渲染', async ({ p
   })
   expect(r.shape, '测试须造出 CSR 形态').toEqual({ content: 0, own: 1 })
   expect(r.suffix).toBe('▤')
-  expect(r.options.length).toBeGreaterThan(0)
+  expect(r.options.length).toBe(1)
   expect(r.labels.join(',')).toContain('浙江')
 })
 
@@ -306,7 +306,7 @@ test('CSR 模板：calendar cell 模板渲染且 [data-cell-date] 绑定日期�
     }
   })
   expect(r.shape, '测试须造出 CSR 形态').toEqual({ content: 0, own: 1 })
-  expect(r.total).toBeGreaterThan(0)
+  expect(r.total).toBe(42)
   expect(r.bound, '每个日格都应渲染模板节点').toBe(r.total)
   expect(r.binder, '模板内 [data-cell-date] 应绑定该格日期数字').toBe(r.expectDay)
 })
@@ -519,7 +519,7 @@ test('CSR 模板：virtual-list item 模板渲染每个可见项', async ({ page
     }
   })
   expect(r.shape, '测试须造出 CSR 形态').toEqual({ content: 0, own: 1 })
-  expect(r.total, '160px / 32px 视口应渲染出可见窗口').toBeGreaterThan(0)
+  expect(r.total, '160px / 32px 视口应渲染出可见窗口').toBe(9)
   expect(r.bound, '每个可见项都应渲染模板节点').toBe(r.total)
 })
 

@@ -104,7 +104,7 @@ test.describe('反馈/布局组件交互验真（最新构建）', () => {
     const bar = splitter.locator('[part="splitter"]')
     await bar.scrollIntoViewIfNeeded()
     const box = await bar.boundingBox()
-    expect(box).not.toBeNull()
+    await expect(bar).toBeVisible()
     const cx = box!.x + box!.width / 2
     const cy = box!.y + box!.height / 2
     await page.mouse.move(cx, cy)

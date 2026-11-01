@@ -122,7 +122,7 @@ test('icon iconfont-url：项目脚本注入 + 别名前缀解析，内联渲染
   expect(r.paths[1]).toContain('M512 928')
   expect(r.paths[2]).toContain('M416 736')
   expect(r.viewBoxes).toEqual(['0 0 1024 1024', '0 0 1024 1024', '0 0 1024 1024'])
-  expect(Math.min(...r.bboxW), '内联 symbol 应有真实几何（跨树 use 会渲染为 0 宽）').toBeGreaterThan(0)
+  expect(Math.min(...r.bboxW), '内联 symbol 应有真实几何（跨树 use 会渲染为 0 宽）').toBe(704)
   expect(r.scriptCount).toBe(1)
 })
 

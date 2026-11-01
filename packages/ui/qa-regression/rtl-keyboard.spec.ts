@@ -54,7 +54,6 @@ test('slider：dir=rtl 下 ArrowRight 降低数值（视觉方向一致）', asy
     input.focus()
     return { before: Number(input.value), dir: input.dir }
   })
-  expect(result, '需要至少一个可用的水平 slider').not.toBeNull()
   expect(result!.dir).toBe('rtl')
   await page.keyboard.press('ArrowRight')
   const after = await page.evaluate(() => {

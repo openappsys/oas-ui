@@ -181,7 +181,7 @@ test('slider/input-number 受控写回：交互后宿主 value 属性同步（�
     const num = el.shadowRoot!.querySelector<HTMLInputElement>('[role="textbox"], input[type="number"]')
     return { before: el.getAttribute('value'), hasNum: !!num }
   })
-  expect(r.before).not.toBeNull()
+  expect(r.before).toBe('40')
   // 真实交互：改数值输入框并提交（change 事件）
   const written = await page.evaluate(() => {
     const el = document.querySelector('oas-slider[show-input]')!
