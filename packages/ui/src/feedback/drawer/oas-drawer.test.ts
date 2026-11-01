@@ -60,7 +60,7 @@ describe('OASDrawer', () => {
   it('visible 时渲染面板，placement 默认 right', async () => {
     const el = mount({ visible: '', title: '筛选' })
     await Promise.resolve()
-    expect(panel(el)).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('[part="panel"]').length).toBe(1)
     expect(panel(el).getAttribute('role')).toBe('dialog')
     expect(el.shadowRoot!.querySelector('[part="title"]')!.textContent).toBe('筛选')
   })
@@ -427,7 +427,6 @@ describe('OASDrawer', () => {
   it('drawer() 创建并打开抽屉（标题渲染、内容为纯文本）', () => {
     drawer({ title: '命令式', content: '我是内容' })
     const el = document.querySelector('oas-drawer[visible]') as OASDrawer
-    expect(el).not.toBeNull()
     expect(el.shadowRoot!.querySelector('[part="title"]')!.textContent).toBe('命令式')
     expect(el.textContent).toContain('我是内容')
   })
@@ -539,9 +538,9 @@ describe('OASDrawer', () => {
   it('append-to=body：mask/panel 移入 portal 容器', () => {
     const el = mount({ visible: '', 'append-to': 'body' })
     const portal = document.querySelector('[data-oas-drawer-portal]')
-    expect(portal).not.toBeNull()
-    expect(portal!.shadowRoot!.querySelector('[part="panel"]')).not.toBeNull()
-    expect(portal!.shadowRoot!.querySelector('.mask')).not.toBeNull()
+    expect(document.querySelectorAll('[data-oas-drawer-portal]').length).toBe(1)
+    expect(portal!.shadowRoot!.querySelectorAll('[part="panel"]').length).toBe(1)
+    expect(portal!.shadowRoot!.querySelectorAll('.mask').length).toBe(1)
     // 原 shadow 不再持有 panel
     expect(el.shadowRoot!.querySelector('[part="panel"]')).toBeNull()
   })
@@ -549,7 +548,7 @@ describe('OASDrawer', () => {
   it('移除 append-to：mask/panel 移回宿主 shadow', () => {
     const el = mount({ visible: '', 'append-to': 'body' })
     el.removeAttribute('append-to')
-    expect(el.shadowRoot!.querySelector('[part="panel"]')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('[part="panel"]').length).toBe(1)
     expect(document.querySelector('[data-oas-drawer-portal]')).toBeNull()
   })
 
@@ -765,7 +764,7 @@ describe('OASDrawer', () => {
       document.body.appendChild(el)
       const slot = el.shadowRoot!.querySelector<HTMLSlotElement>('slot[name="title"]')!
       const fallback = el.shadowRoot!.querySelector<HTMLElement>('.title-text')!
-      expect(slot.assignedNodes().length).toBeGreaterThan(0)
+      expect(slot.assignedNodes().length).toBe(1)
       expect(fallback.hidden).toBe(true)
       expect(el.hasAttribute('title')).toBe(false)
     })

@@ -92,7 +92,7 @@ describe('OASEditable', () => {
     bind.setAttribute('data-display-value', '')
     tpl.content.appendChild(bind)
     await new Promise((r) => setTimeout(r, 50))
-    expect(el.shadowRoot!.querySelector('.display-custom')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('.display-custom').length).toBe(1)
     expect(el.shadowRoot!.querySelector('[data-display-value]')?.textContent).toBe('张三')
   })
 
@@ -371,7 +371,7 @@ describe('OASEditable display 插槽', () => {
     tpl.innerHTML = '<span class="rich">👤 <span data-display-value></span></span>'
     el.appendChild(tpl)
     await Promise.resolve()
-    expect(display(el).querySelector('.rich')).not.toBeNull()
+    expect(display(el).querySelectorAll('.rich').length).toBe(1)
     expect(display(el).querySelector('[data-display-value]')!.textContent).toBe('张三')
   })
 
@@ -407,7 +407,7 @@ describe('OASEditable multiline 多行编辑', () => {
   it('multiline 渲染 textarea 而非 input', () => {
     const el = mount({ value: 'a', multiline: '' })
     display(el).click()
-    expect(textarea(el)).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('textarea').length).toBe(1)
     expect(el.shadowRoot!.querySelector('input')).toBeNull()
   })
 
@@ -499,7 +499,7 @@ describe('OASEditable 多行 hidden 挂载尺寸守卫/自愈', () => {
   it('零尺寸守卫：scrollHeight=0（未布局/容器 hidden）不写入 0px', () => {
     const el = mount({ value: '第一行\n第二行', multiline: '', editing: '' })
     const field = ta(el)
-    expect(field, '多行编辑态应渲染 textarea').not.toBeNull()
+    expect(field.tagName, '多行编辑态应渲染 textarea').toBe('TEXTAREA')
     expect(field.style.height, '量到 0 不得写入 0px（保留 CSS 自然高）').not.toBe('0px')
   })
 
@@ -519,7 +519,7 @@ describe('OASEditable 多行 hidden 挂载尺寸守卫/自愈', () => {
   it('容器 hidden→visible：宿主尺寸 0→非 0 触发 ResizeObserver，多行高按真实尺寸自愈', () => {
     const el = mount({ value: '第一行\n第二行', multiline: '', editing: '' })
     const field = ta(el)
-    expect(roRef, '应建立宿主尺寸观察器').not.toBeNull()
+    expect(typeof roRef!.cb, '应建立宿主尺寸观察器回调').toBe('function')
     // 可见后拿到真实内容高 → 复测补写（此前量到 0 不写）
     Object.defineProperty(field, 'scrollHeight', { value: 52, configurable: true })
     roRef!.cb()
@@ -620,8 +620,8 @@ describe('OASEditable allow-empty / 图标插槽', () => {
     el.append(ok, cancel)
     await Promise.resolve()
     display(el).click()
-    expect(okBtn(el).querySelector('.my-ok')).not.toBeNull()
-    expect(cancelBtn(el).querySelector('.my-cancel')).not.toBeNull()
+    expect(okBtn(el).querySelectorAll('.my-ok').length).toBe(1)
+    expect(cancelBtn(el).querySelectorAll('.my-cancel').length).toBe(1)
   })
 })
 

@@ -68,7 +68,7 @@ describe('OASAffix', () => {
 
   it('渲染包裹内容', () => {
     const el = mount()
-    expect(el.shadowRoot!.querySelector('slot')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('slot:not([name])').length).toBe(1)
   })
 
   it('offset 属性生效', () => {
@@ -365,7 +365,6 @@ describe('OASAffix append-to（teleport 传送）', () => {
     const btn = el.querySelector('oas-button')!
     // 首帧吸顶：wrap 在 dest 内，且 light DOM 内容实体已搬入 wrap（不再依赖 slot 投影）
     const wrapInDest = dest.querySelector<HTMLElement>('.wrap')!
-    expect(wrapInDest).not.toBeNull()
     expect(el.querySelector('oas-button')).toBeNull()
     expect(wrapInDest.querySelector('oas-button')).toBe(btn)
     // 解除吸附：内容搬回 host（light DOM），wrap 归位 placeholder
@@ -388,7 +387,7 @@ describe('OASAffix append-to（teleport 传送）', () => {
     document.body.appendChild(dest)
     const el = mount({ 'append-to': '#affix-dest', offset: '80' })
     const placeholder = el.shadowRoot!.querySelector<HTMLElement>('.placeholder')!
-    expect(dest.querySelector<HTMLElement>('.wrap')).not.toBeNull()
+    expect(dest.querySelectorAll('.wrap').length).toBe(1)
     expect(placeholder.parentNode).toBe(el.shadowRoot!)
     expect(placeholder.style.height).toBe('0px')
   })
@@ -434,7 +433,7 @@ describe('OASAffix append-to（teleport 传送）', () => {
     expect(a.querySelector('.wrap')).toBeNull()
     // 移除 append-to → 无传送目标，内容搬回 + wrap 归位 placeholder
     el.removeAttribute('append-to')
-    expect(placeholder.querySelector('.wrap')).not.toBeNull()
+    expect(placeholder.querySelectorAll('.wrap').length).toBe(1)
     expect(a.querySelector('.wrap')).toBeNull()
     expect(b.querySelector('.wrap')).toBeNull()
     // 内容实体搬回 host（light DOM 原位，textContent 断言不依赖具体元素）
@@ -446,14 +445,14 @@ describe('OASAffix append-to（teleport 传送）', () => {
     dest.id = 'affix-dest'
     document.body.appendChild(dest)
     const el = mount({ 'append-to': '#affix-dest', offset: '80' })
-    expect(dest.querySelector<HTMLElement>('.wrap')).not.toBeNull()
+    expect(dest.querySelectorAll('.wrap').length).toBe(1)
     el.remove()
     // 断开连接清理后重新连接：render 重建 shadow（wrap 回归），滚动触发 apply 后可正常再次传送
     document.body.appendChild(el)
     mockPlaceholderRect(el, 5, 25)
     scrollWindow(100)
     scrollWindow(300)
-    expect(dest.querySelector<HTMLElement>('.wrap')).not.toBeNull()
+    expect(dest.querySelectorAll('.wrap').length).toBe(1)
   })
 })
 
@@ -519,6 +518,6 @@ describe('断开重连 onReconnect 重绑（core 重连架构接线）', () => {
     parent.appendChild(el)
     // 断开重连后 window scroll 事件应触发 handleScroll（cleanup 摘除 → onReconnect→bind 重挂）
     window.dispatchEvent(new Event('scroll'))
-    expect(calls, '重连后 scroll 监听恢复（handleScroll 被调）').toBeGreaterThan(0)
+    expect(calls, '重连后一次 scroll 触发一次 handleScroll').toBe(1)
   })
 })

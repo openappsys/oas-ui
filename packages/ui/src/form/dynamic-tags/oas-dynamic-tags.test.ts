@@ -525,9 +525,9 @@ describe('OASDynamicTags tag 插槽 / prefix / suffix', () => {
     el.appendChild(tpl)
     await Promise.resolve()
     const first = tagEls(el)[0]!
-    expect(first.querySelector('.my-tag')).not.toBeNull()
+    expect(first.querySelectorAll('.my-tag').length).toBe(1)
     expect(first.querySelector('[data-tag-label]')!.textContent).toBe('a')
-    expect(first.querySelector('.tag-remove')).not.toBeNull()
+    expect(first.querySelectorAll('.tag-remove').length).toBe(1)
   })
 
   it('template[slot=prefix] / [slot=suffix] 克隆到容器首尾', async () => {
@@ -541,8 +541,8 @@ describe('OASDynamicTags tag 插槽 / prefix / suffix', () => {
     el.append(p, s)
     await Promise.resolve()
     const tagsBox = el.shadowRoot!.querySelector('.tags')!
-    expect(tagsBox.querySelector('.pfx')).not.toBeNull()
-    expect(tagsBox.querySelector('.sfx')).not.toBeNull()
+    expect(tagsBox.querySelectorAll('.pfx').length).toBe(1)
+    expect(tagsBox.querySelectorAll('.sfx').length).toBe(1)
     expect(tagsBox.firstElementChild!.classList.contains('slot-prefix')).toBe(true)
     expect(tagsBox.lastElementChild!.classList.contains('slot-suffix')).toBe(true)
   })
@@ -616,7 +616,6 @@ describe('OASDynamicTags 编辑现有标签', () => {
     const el = mount({ 'model-value': '["hello"]' })
     chip(el, 0).dispatchEvent(new MouseEvent('dblclick', { bubbles: true, cancelable: true }))
     const input = editInput(el)
-    expect(input).not.toBeNull()
     expect(input!.value).toBe('hello')
     expect(el.shadowRoot!.activeElement).toBe(input)
   })
@@ -650,8 +649,7 @@ describe('OASDynamicTags 编辑现有标签', () => {
     editInput(el)!.value = 'b'
     editInput(el)!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }))
     expect(el.modelValue).toEqual(['a', 'b'])
-    expect(editInput(el)).not.toBeNull()
-    expect(editInput(el)!.getAttribute('aria-invalid')).toBe('true')
+    expect(editInput(el)!.getAttribute('aria-invalid'), '编辑框仍在（拒绝重复值）').toBe('true')
     expect(el.shadowRoot!.querySelector<HTMLElement>('.hint')!.hidden).toBe(false)
   })
 
@@ -668,7 +666,7 @@ describe('OASDynamicTags 编辑现有标签', () => {
     const el = mount({ sortable: '', 'model-value': '["a"]' })
     chip(el, 0).focus()
     chip(el, 0).dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }))
-    expect(editInput(el)).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('.tag-edit').length).toBe(1)
   })
 
   it('编辑失焦默认提交（save-on-blur=true）', () => {
@@ -780,8 +778,7 @@ describe('OASDynamicTags sortable 按钮排序与触屏', () => {
     const el = mount({ sortable: '', 'model-value': '["a","b"]' })
     // 双击首个标签进入编辑
     tagEls(el)[0]!.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }))
-    const editChip = el.shadowRoot!.querySelector('.tag-edit')
-    expect(editChip).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('.tag-edit').length).toBe(1)
     expect(el.shadowRoot!.querySelectorAll('.tag-sort-up').length).toBe(1) // 仅 b 的 chip 有
   })
 

@@ -29,7 +29,7 @@ describe('OASCheckbox', () => {
     await Promise.resolve()
     expect(input.type).toBe('checkbox')
     expect(el.textContent).toContain('记住我')
-    expect(input.id).toBeTruthy()
+    expect(input.id).toMatch(/^oas-cb-[a-z0-9]+$/)
     expect(el.shadowRoot!.querySelector('label')!.getAttribute('for')).toBe(input.id)
   })
 
@@ -187,8 +187,7 @@ describe('OASCheckbox 自定义指示器插槽', () => {
     el.appendChild(tpl)
     document.body.appendChild(el)
     const holder = el.shadowRoot!.querySelector('.indicator-checked')!.querySelector('.indicator-tpl')
-    expect(holder).not.toBeNull()
-    expect(holder!.querySelector('.fav')).not.toBeNull()
+    expect(holder!.querySelectorAll('.fav').length).toBe(1)
   })
 
   it('indeterminate-icon 插槽同理', () => {
@@ -220,7 +219,6 @@ describe('OASCheckbox 辅助文本（description）', () => {
     const el = mountCheckbox({}, '主文案')
     el.setAttribute('description', '副文本说明')
     const desc = el.shadowRoot!.querySelector('.description')!
-    expect(desc).not.toBeNull()
     expect(desc.textContent).toContain('副文本说明')
   })
 
@@ -324,8 +322,7 @@ describe('OASCheckboxGroup', () => {
   it('用原生 fieldset + legend 组织，value 数组驱动子项勾选', async () => {
     const el = mountGroup()
     await Promise.resolve()
-    const fieldset = el.shadowRoot!.querySelector('fieldset')
-    expect(fieldset).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('fieldset').length).toBe(1)
     const checkbox = el.querySelector('oas-checkbox')!
     expect(checkbox.hasAttribute('checked')).toBe(true)
   })
@@ -415,7 +412,6 @@ describe('OASCheckboxGroup 组级能力', () => {
       ]),
     })
     const options = el.shadowRoot!.querySelector('.options')!
-    expect(options).not.toBeNull()
     const items = [...options.querySelectorAll('oas-checkbox')]
     expect(items.length).toBe(3)
     expect(items[0]!.hasAttribute('checked')).toBe(true)
@@ -893,7 +889,7 @@ describe('form-associated（原生表单集成）', () => {
     const missing = fake.setValidity.mock.calls.at(-1)
     expect(missing?.[0]).toEqual({ valueMissing: true })
     expect(typeof missing?.[1]).toBe('string')
-    expect((missing?.[1] as string).length).toBeGreaterThan(0)
+    expect(missing?.[1] as string).toMatch(/\S/)
     native(el).click()
     expect(fake.setValidity).toHaveBeenLastCalledWith({})
   })

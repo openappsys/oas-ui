@@ -111,10 +111,10 @@ describe('OASKnob', () => {
 
   it('渲染 shadow 结构（frame/svg/track/fill/indicator/value），宿主 role=slider + tabindex=0', () => {
     const el = mount()
-    expect(frame(el)).toBeTruthy()
-    expect(trackPath(el)).toBeTruthy()
-    expect(fillPath(el)).toBeTruthy()
-    expect(pointerGroup(el)).toBeTruthy()
+    expect(el.shadowRoot!.querySelectorAll('[part="frame"]').length).toBe(1)
+    expect(el.shadowRoot!.querySelectorAll('[part="track"]').length).toBe(1)
+    expect(el.shadowRoot!.querySelectorAll('[part="fill"]').length).toBe(1)
+    expect(el.shadowRoot!.querySelectorAll('.pointer').length).toBe(1)
     expect(el.getAttribute('role')).toBe('slider')
     expect(el.getAttribute('tabindex')).toBe('0')
     expect(el.getAttribute('aria-valuemin')).toBe('0')
@@ -136,7 +136,7 @@ describe('OASKnob', () => {
     const a = mount({ value: '60' })
     const styleA = a.shadowRoot!.querySelector('style')
     a.setAttribute('value', '30')
-    expect(a.shadowRoot!.querySelector('[part="frame"]')).toBeTruthy()
+    expect(a.shadowRoot!.querySelectorAll('[part="frame"]').length).toBe(1)
     // 增量路径：style 节点保持同一引用（未被 innerHTML 重建）
     expect(a.shadowRoot!.querySelector('style')).toBe(styleA)
     a.setAttribute('value', '60')
@@ -960,7 +960,7 @@ describe('OASKnob', () => {
     el.shadowRoot!.innerHTML = `<meta data-oas-ssr="oas-knob" data-oas-ssr-v="1">` + ref.shadowRoot!.innerHTML
     document.body.appendChild(el)
     expect(el.shadowRoot!.querySelector('meta[data-oas-ssr]')).toBeNull()
-    expect(el.shadowRoot!.querySelector('[part="frame"]')).toBeTruthy()
+    expect(el.shadowRoot!.querySelectorAll('[part="frame"]').length).toBe(1)
     expect(el.getAttribute('aria-valuenow')).toBe('60')
     // 接管后交互可用（键盘改值）
     key(el, 'ArrowUp')
@@ -972,7 +972,7 @@ describe('OASKnob', () => {
     el.shadowRoot!.innerHTML = `<meta data-oas-ssr="oas-knob"><div>残缺快照</div>`
     document.body.appendChild(el)
     expect(el.shadowRoot!.querySelector('meta[data-oas-ssr]')).toBeNull()
-    expect(el.shadowRoot!.querySelector('[part="frame"]')).toBeTruthy()
+    expect(el.shadowRoot!.querySelectorAll('[part="frame"]').length).toBe(1)
     expect(el.getAttribute('aria-valuenow')).toBe('0')
   })
 

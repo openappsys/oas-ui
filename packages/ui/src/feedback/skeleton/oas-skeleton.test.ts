@@ -39,8 +39,8 @@ describe('OASSkeleton', () => {
 
   it('title/avatar 开关', () => {
     const el = mount({ title: '', avatar: '' })
-    expect(el.shadowRoot!.querySelector('[part="title"]')).not.toBeNull()
-    expect(el.shadowRoot!.querySelector('[part="avatar"]')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('[part="title"]').length).toBe(1)
+    expect(el.shadowRoot!.querySelectorAll('[part="avatar"]').length).toBe(1)
   })
 
   it('active 兼容映射 sheen 动效', () => {
@@ -231,23 +231,23 @@ describe('OASSkeleton', () => {
     it('挂载后宿主不再残留 title 属性，标题形骨架块照常渲染', () => {
       const el = mount({ title: '' })
       expect(el.hasAttribute('title'), '宿主原生 title 应被吸收移除').toBe(false)
-      expect(el.shadowRoot!.querySelector('[part="title"]')).not.toBeNull()
+      expect(el.shadowRoot!.querySelectorAll('[part="title"]').length).toBe(1)
     })
 
     it('吸收后二次 update 幂等（rows 变化重建不丢标题块、宿主 title 不复活）', () => {
       const el = mount({ title: '' })
       el.setAttribute('rows', '5') // 触发二次 update
       expect(el.shadowRoot!.querySelectorAll('[part="line"]').length).toBe(5)
-      expect(el.shadowRoot!.querySelector('[part="title"]')).not.toBeNull()
+      expect(el.shadowRoot!.querySelectorAll('[part="title"]').length).toBe(1)
       expect(el.hasAttribute('title')).toBe(false)
     })
 
     it('title 空串属性仍表示开关在场（存在性语义保留，与值无关）', () => {
       const el = mount({ title: '' })
-      expect(el.shadowRoot!.querySelector('[part="title"]')).not.toBeNull()
+      expect(el.shadowRoot!.querySelectorAll('[part="title"]').length).toBe(1)
       // 吸收后 removeAttribute 属宿主常态：块保持（清空语义不适用于存在性开关）
       el.removeAttribute('title')
-      expect(el.shadowRoot!.querySelector('[part="title"]')).not.toBeNull()
+      expect(el.shadowRoot!.querySelectorAll('[part="title"]').length).toBe(1)
       expect(el.hasAttribute('title')).toBe(false)
     })
 
@@ -259,7 +259,7 @@ describe('OASSkeleton', () => {
       const el = new OASSkeleton()
       el.shadowRoot!.innerHTML = `<meta data-oas-ssr="oas-skeleton" data-oas-ssr-v="1">${snap}`
       document.body.appendChild(el)
-      expect(el.shadowRoot!.querySelector('[part="title"]')).not.toBeNull()
+      expect(el.shadowRoot!.querySelectorAll('[part="title"]').length).toBe(1)
       expect(el.hasAttribute('title')).toBe(false)
       el.remove()
     })
@@ -270,7 +270,7 @@ describe('OASSkeleton', () => {
       el.shadowRoot!.innerHTML = `<meta data-oas-ssr="oas-skeleton" data-oas-ssr-v="1"><style>x</style><div class="block" part="block"></div>`
       el.setAttribute('loading', 'false')
       document.body.appendChild(el)
-      expect(el.shadowRoot!.querySelector('slot')).not.toBeNull()
+      expect(el.shadowRoot!.querySelectorAll('slot:not([name])').length).toBe(1)
       expect(el.shadowRoot!.querySelector('slot')!.hasAttribute('hidden')).toBe(false)
       el.remove()
     })

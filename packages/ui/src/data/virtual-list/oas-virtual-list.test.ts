@@ -165,7 +165,7 @@ describe('OASVirtualList', () => {
       seen.push((e as CustomEvent).detail)
     }) as EventListener)
     el.items = data // 触发重渲染
-    expect(seen.length).toBeGreaterThan(0)
+    expect(seen.length, '10 项各派发一次 oas-item').toBe(10)
     expect(seen[0]!.index).toBe(0)
     expect(seen[0]!.item).toEqual({ id: 0 })
     expect(seen[0]!.element.getAttribute('data-index')).toBe('0')
@@ -179,7 +179,7 @@ describe('OASVirtualList', () => {
     el.appendChild(tpl)
     el.items = [...el.items] // 触发重渲染拾取模板
     const first = items(el)[0]!
-    expect(first.querySelector('.tpl-tag')).not.toBeNull()
+    expect(first.querySelectorAll('.tpl-tag').length).toBe(1)
     expect(first.textContent).not.toContain('0')
   })
 
@@ -214,7 +214,7 @@ describe('OASVirtualList', () => {
     })
     el.remove()
     document.body.appendChild(el)
-    expect(items(el).length).toBeGreaterThan(0)
+    expect(items(el).length, '100px 视口 / 20px 行高 → 5 行 + buffer').toBe(9)
   })
 
   it('视口与 inner 禁用 Chrome 滚动锚定（overflow-anchor: none）', () => {
@@ -439,7 +439,7 @@ describe('OASVirtualList 动态行高（dynamic-height）', () => {
       items: JSON.stringify(range(100)),
     })
     const rows = items(el)
-    expect(rows.length).toBeGreaterThan(0)
+    expect(rows.length, '100px 视口 / 预估 20px → 5 行 + buffer').toBe(9)
     for (const r of rows) expect(r.style.height).toBe('')
     const inner = el.shadowRoot!.querySelector<HTMLElement>('[part="inner"]')!
     expect(inner.style.height).toBe('2000px')
@@ -531,10 +531,10 @@ describe('OASVirtualList 动态行高（dynamic-height）', () => {
         items: JSON.stringify(range(100)),
       })
       const before = observed.size
-      expect(before).toBeGreaterThan(0)
+      expect(before, '首窗 9 行全部被观察').toBe(9)
       // 强制重建窗口（等效滚动/尺寸变化）：旧行应先 unobserve 再移除
       el.setAttribute('buffer', '6')
-      expect(unobserved, '重建前应 unobserve 旧行').toBeGreaterThan(0)
+      expect(unobserved, '重建前应 unobserve 旧行（9 行 × 2 次重建）').toBe(18)
       expect(observed.size, '观察目标不应超过当前 DOM 行数').toBe(items(el).length)
     } finally {
       vi.unstubAllGlobals()
@@ -582,7 +582,7 @@ describe('OASVirtualList 属性-方法撞名回归', () => {
     // 滚动路径照常（rAF 内 renderWindow 全链路读行高）：滚到底部窗口回绕
     expect(() => scrollTo(el, 100)).not.toThrow()
     await flushRaf()
-    expect(items(el)[0]!.getAttribute('data-index')).not.toBeNull()
+    expect(items(el)[0]!.getAttribute('data-index'), '滚动后窗口重算仍从头开始（buffer 吸收 100px）').toBe('0')
   })
 })
 

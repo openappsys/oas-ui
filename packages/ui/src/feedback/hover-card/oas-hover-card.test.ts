@@ -65,7 +65,6 @@ describe('OASHoverCard', () => {
     const el = mount({ open: '', title: '卡片', content: '内容' })
     await Promise.resolve()
     const c = card(el)
-    expect(c).not.toBeNull()
     expect(el.shadowRoot!.textContent).toContain('卡片')
     expect(c.querySelector<HTMLElement>('[part="content"]')!.textContent).toBe('内容')
   })
@@ -96,9 +95,8 @@ describe('OASHoverCard', () => {
     document.body.appendChild(el)
     await Promise.resolve()
     const slot = card(el).querySelector<HTMLSlotElement>('slot[name="content"]')
-    expect(slot).not.toBeNull()
     const nodes = slot!.assignedNodes({ flatten: true })
-    expect(nodes.length).toBeGreaterThan(0)
+    expect(nodes.length, '单一富内容节点').toBe(1)
     expect((nodes[0] as HTMLElement).textContent).toContain('富内容')
   })
 
@@ -276,7 +274,6 @@ describe('OASHoverCard', () => {
     const el = mount({ open: '', content: 'x', placement: 'top' })
     await Promise.resolve()
     const arrow = card(el).querySelector<HTMLElement>('[data-popper-arrow]')
-    expect(arrow).not.toBeNull()
     expect(arrow!.getAttribute('part')).toBe('arrow')
     expect(arrow!.hidden).toBe(false)
     el.setAttribute('arrow', 'false')
@@ -432,7 +429,6 @@ describe('OASHoverCard', () => {
     const el = mount({ open: '', 'append-to': '#hc-target' })
     await Promise.resolve()
     const host = target.querySelector<HTMLElement>('[data-oas-hover-card-portal]')
-    expect(host).not.toBeNull()
     expect(host!.shadowRoot!.contains(card(el))).toBe(true)
     // 样式作用域保真：portal shadow 内注入同一份 STYLE
     expect(host!.shadowRoot!.querySelector('style')!.textContent).toContain('.card')
@@ -967,7 +963,7 @@ describe('OASHoverCard', () => {
       const c = card(el)
       const slot = c.querySelector<HTMLSlotElement>('slot[name="title"]')!
       const fallback = c.querySelector<HTMLElement>('.title-text')!
-      expect(slot.assignedNodes().length).toBeGreaterThan(0)
+      expect(slot.assignedNodes().length).toBe(1)
       expect(fallback.hidden).toBe(true)
       // 属性仍被吸收缓存（兜底隐而不删），宿主无残留原生悬浮提示
       expect(fallback.textContent).toBe('属性标题')
@@ -983,7 +979,7 @@ describe('OASHoverCard', () => {
       const c = card(el)
       const slot = c.querySelector<HTMLSlotElement>('slot[name="title"]')!
       const fallback = c.querySelector<HTMLElement>('.title-text')!
-      expect(slot.assignedNodes().length).toBeGreaterThan(0)
+      expect(slot.assignedNodes().length).toBe(1)
       expect(fallback.hidden).toBe(true)
       // 有标题语义：标题区容器不隐藏
       expect(c.querySelector<HTMLElement>('[part="title"]')!.hidden).toBe(false)

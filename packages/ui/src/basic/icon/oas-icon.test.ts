@@ -46,7 +46,6 @@ describe('OASIcon', () => {
   it('无 name 时渲染空 svg（骨架保留，不报错）', () => {
     const el = mount()
     const s = svg(el)
-    expect(s).not.toBeNull()
     expect(s!.childNodes.length).toBe(0)
     expect(el.getAttribute('aria-hidden')).toBe('true')
   })
@@ -54,14 +53,13 @@ describe('OASIcon', () => {
   it('未知 name 渲染空 svg（空态兜底）', () => {
     const el = mount({ name: 'not-exist' })
     const s = svg(el)
-    expect(s).not.toBeNull()
     expect(s!.childNodes.length).toBe(0)
     expect(el.getAttribute('aria-hidden')).toBe('true')
   })
 
   it('按 name 渲染对应图标 SVG', () => {
     const el = mount({ name: 'check' })
-    expect(svg(el)).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('svg').length).toBe(1)
     expect(svg(el)!.getAttribute('viewBox')).toBe('0 0 16 16')
     expect(el.shadowRoot!.querySelector('path')?.getAttribute('d')).toContain('M3.5 8.5')
   })
@@ -181,7 +179,7 @@ describe('OASIcon', () => {
       registerIcon('custom-heart', '<path d="M2 2 L14 14"/>')
       const el = mount({ name: 'custom-heart' })
       expect(svg(el)!.querySelector('path')?.getAttribute('d')).toBe('M2 2 L14 14')
-      expect(el.shadowRoot!.querySelector('path')).not.toBeNull()
+      expect(el.shadowRoot!.querySelectorAll('path').length).toBe(1)
     })
   })
 
@@ -259,7 +257,6 @@ describe('OASIcon', () => {
       try {
         const el = mount({ library: 'lib-sprite', name: 'heart' })
         const use = svg(el)!.querySelector('use')
-        expect(use).not.toBeNull()
         expect(use!.getAttribute('href')).toBe('/demo-sprite.svg#heart')
         expect(fetchMock).not.toHaveBeenCalled()
         // 外观控制仍生效（width 来自 size）
@@ -366,7 +363,7 @@ describe('OASIcon', () => {
           depth: '2',
         })
         await vi.waitFor(() => {
-          expect(svg(el)!.querySelector('path')).not.toBeNull()
+          expect(svg(el)!.querySelector('path')?.tagName.toLowerCase()).toBe('path')
         })
         expect(svg(el)!.getAttribute('width')).toBe('24')
         expect(el.style.color).toBe('var(--oas-color-primary)')
@@ -573,7 +570,7 @@ describe('OASIcon', () => {
       expect(svg(a)!.querySelector('path')).toBeNull()
       appended[0]!.dispatchEvent(new Event('load'))
       await vi.waitFor(() => {
-        expect(svg(a)!.querySelector('path')).not.toBeNull()
+        expect(svg(a)!.querySelector('path')?.tagName.toLowerCase()).toBe('path')
       })
       expect(svg(a)!.querySelector('path')!.getAttribute('d')).toBe('M10 10')
       expect(svg(b)!.querySelector('path')!.getAttribute('d')).toBe('M20 20')

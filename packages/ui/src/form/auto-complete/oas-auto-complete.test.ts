@@ -62,7 +62,7 @@ describe('OASAutoComplete', () => {
     const i = input(el)
     i.value = '不存在的'
     i.dispatchEvent(new Event('input'))
-    expect(el.shadowRoot!.querySelector('.empty')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('.empty').length).toBe(1)
   })
 
   it('无障碍名优先级：宿主 aria-label > aria-labelledby > placeholder > i18n 兜底', () => {
@@ -185,7 +185,7 @@ describe('OASAutoComplete 机制补齐', () => {
     // 组合结束：以最终文本补发一次过滤（zhong 无匹配 → 空态）
     i.dispatchEvent(new Event('compositionend'))
     expect(inputEvents).toEqual(['zhong'])
-    expect(el.shadowRoot!.querySelector('.empty')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('.empty').length).toBe(1)
     // 恢复正常输入
     type(el, '苹')
     expect(inputEvents).toEqual(['zhong', '苹'])
@@ -405,7 +405,7 @@ describe('OASAutoComplete 能力项', () => {
     el.innerHTML = '<span slot="empty">换个关键词试试</span>'
     type(el, '不存在的')
     const empty = el.shadowRoot!.querySelector<HTMLElement>('.empty')!
-    expect(empty.querySelector('slot[name="empty"]')).not.toBeNull()
+    expect(empty.querySelectorAll('slot[name="empty"]').length).toBe(1)
     expect(empty.querySelector<HTMLElement>('.empty-default')!.hidden).toBe(true)
 
     const el2 = mount()
@@ -756,7 +756,7 @@ describe('OASAutoComplete 虚拟滚动（virtual）', () => {
     expect(i.getAttribute('aria-activedescendant')).toBe('opt-25')
     // happy-dom 不自动触发 scroll：手动派发后窗口重算，高亮项应在窗口内
     const vp = vlistOf(el).shadowRoot!.querySelector<HTMLElement>('.viewport')!
-    expect(vp.scrollTop).toBeGreaterThan(0)
+    expect(vp.scrollTop).toBe(696)
     vp.dispatchEvent(new Event('scroll'))
     await flushRaf()
     const activeRow = virtualRows(el).find((r) => r.classList.contains('active'))
@@ -809,12 +809,12 @@ describe('OASAutoComplete 虚拟滚动（virtual）', () => {
     const loading = mount({ virtual: '', loading: '', options: manyOptions(100) })
     type(loading, '')
     expect(vlistOf(loading).hidden).toBe(true)
-    expect(loading.shadowRoot!.querySelector('.empty')).not.toBeNull()
+    expect(loading.shadowRoot!.querySelectorAll('.empty').length).toBe(1)
     document.body.innerHTML = ''
     const noMatch = mount({ virtual: '', options: manyOptions(100) })
     type(noMatch, '不存在的项')
     expect(vlistOf(noMatch).hidden).toBe(true)
-    expect(noMatch.shadowRoot!.querySelector('.empty')).not.toBeNull()
+    expect(noMatch.shadowRoot!.querySelectorAll('.empty').length).toBe(1)
   })
 
   it('CSS 变量开口：.listbox max-height 走 --oas-auto-complete-dropdown-height（默认 240px）', () => {

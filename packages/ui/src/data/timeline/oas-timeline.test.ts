@@ -38,14 +38,13 @@ describe('OASTimeline', () => {
     const el = mount()
     const [first, second] = items(el)
     const firstRow = row(first!)
-    expect(firstRow).not.toBeNull()
-    expect(firstRow.querySelector('[part="dot"]')).not.toBeNull()
+    expect(firstRow.querySelectorAll('[part="dot"]').length).toBe(1)
     expect(firstRow.querySelector('[part="time"]')!.textContent).toBe('2024-01-01')
     // 内容在宿主 light DOM 原位（slot 分发）：happy-dom 里 slot textContent 不含分布式内容，
     // 用条目自身 textContent + 默认插槽 assignedNodes 断言
     expect(first!.textContent).toContain('事件一')
     const defaultSlot = firstRow.querySelector<HTMLSlotElement>('slot:not([name])')!
-    expect(defaultSlot.assignedNodes().length).toBeGreaterThan(0)
+    expect(defaultSlot.assignedNodes().length).toBe(1)
     expect(second!.textContent).toContain('事件二')
     // 内容不再被 cloneNode 进 timeline shadow：timeline shadow 只有 slot 分发
     expect(el.shadowRoot!.querySelector('[part="timeline"]')!.querySelector('p')).toBeNull()
@@ -236,7 +235,7 @@ describe('OASTimeline', () => {
     document.body.appendChild(el)
     const dot = row(items(el)[0]!).querySelector('[part="dot"]')!
     const icon = dot.querySelector('oas-icon')
-    expect(icon).not.toBeNull()
+    expect(icon!.tagName).toBe('OAS-ICON')
     expect(icon!.getAttribute('name')).toBe('check')
   })
 
@@ -252,7 +251,7 @@ describe('OASTimeline', () => {
     const dot = row(items(el)[0]!).querySelector<HTMLElement>('[part="dot"]')!
     expect(dot.hasAttribute('data-custom')).toBe(true)
     const slot = dot.querySelector<HTMLSlotElement>('slot[name="dot"]')!
-    expect(slot.assignedNodes().length).toBeGreaterThan(0)
+    expect(slot.assignedNodes().length).toBe(1)
   })
 
   it('title 插槽：标题行渲染且与正文分区', () => {
@@ -269,7 +268,7 @@ describe('OASTimeline', () => {
     expect(title.hidden).toBe(false)
     const titleSlot = title.querySelector<HTMLSlotElement>('slot[name="title"]')!
     expect(titleSlot.assignedNodes().some((n: Node) => (n.textContent ?? '').includes('v1.2.0'))).toBe(true)
-    expect(r.querySelector('[part="content"]')).not.toBeNull()
+    expect(r.querySelectorAll('[part="content"]').length).toBe(1)
   })
 
   it('opposite 插槽：alternate 模式下分配对侧内容；单侧模式隐藏', () => {
@@ -285,7 +284,7 @@ describe('OASTimeline', () => {
     const item = items(el)[0]!
     const opp = row(item).querySelector<HTMLElement>('[part="opposite"]')!
     const slot = opp.querySelector<HTMLSlotElement>('slot[name="opposite"]')!
-    expect(slot.assignedNodes().length).toBeGreaterThan(0)
+    expect(slot.assignedNodes().length).toBe(1)
     expect(opp.hidden).toBe(false)
 
     const single = new OASTimeline()
@@ -344,7 +343,7 @@ describe('OASTimeline', () => {
     el.innerHTML = '<oas-timeline-item time="2024-01-01"><p>事件一</p></oas-timeline-item>'
     document.body.appendChild(el)
     expect(el.shadowRoot!.querySelector('meta[data-oas-ssr]')).toBeNull()
-    expect(el.shadowRoot!.querySelector('[part="timeline"]')!.querySelector('slot')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('[part="timeline"] slot').length).toBe(1)
     expect(items(el)[0]!.getAttribute('data-direction')).toBe('vertical')
   })
 })

@@ -46,7 +46,6 @@ describe('modal 命令式 API', () => {
     modal.confirm({ title: '确认删除' })
     await Promise.resolve()
     const el = document.body.querySelector('oas-modal')!
-    expect(el).not.toBeNull()
     expect(el.hasAttribute('visible')).toBe(true)
   })
 
@@ -57,7 +56,7 @@ describe('modal 命令式 API', () => {
     try {
       modal.confirm({ title: '挂载到 app' })
       await Promise.resolve()
-      expect(app.querySelector('oas-modal')).not.toBeNull()
+      expect(app.querySelectorAll('oas-modal').length).toBe(1)
       expect(document.body.querySelectorAll('oas-modal').length).toBe(1)
     } finally {
       unregisterAppHost(app)
@@ -269,7 +268,7 @@ describe('modal 命令式 API', () => {
     modal.confirm({ title: '测试' })
     await Promise.resolve()
     const el = document.body.querySelector('oas-modal')!
-    expect(el.shadowRoot!.querySelector('[role="alertdialog"]')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('[role="alertdialog"]').length).toBe(1)
     // 声明式（无 role 属性）保持 dialog：由 oas-modal.test.ts 的缺省断言覆盖
   })
 
@@ -328,7 +327,6 @@ describe('modal 命令式 API', () => {
     await Promise.resolve()
     const el = document.body.querySelector('oas-modal')!
     const input = el.querySelector('input')!
-    expect(input).not.toBeNull()
     expect(input.value).toBe('初始')
     expect(input.getAttribute('placeholder')).toBe('占位')
     p.close()
@@ -342,7 +340,7 @@ describe('modal 命令式 API', () => {
     const [pa, pb, pc] = document.body.querySelectorAll('oas-modal')
     expect(pa!.querySelector('input')!.type).toBe('password')
     expect(pb!.querySelector('input')!.type).toBe('number')
-    expect(pc!.querySelector('textarea')).not.toBeNull()
+    expect(pc!.querySelectorAll('textarea').length).toBe(1)
   })
 
   it('PB3 打开自动聚焦输入框（initial-focus），非聚焦确定按钮', async () => {
@@ -640,7 +638,7 @@ describe('modal 命令式 API', () => {
     // toggle 行含轨道元素（视觉开关）
     const rows = [...el.querySelectorAll('.oas-modal-opt-toggle')]
     expect(rows.length).toBe(2)
-    expect(rows[0]!.querySelector('.oas-modal-opt-track')).not.toBeNull()
+    expect(rows[0]!.querySelectorAll('.oas-modal-opt-track').length).toBe(1)
     // 开启第二项 → 确定结果数组
     inputs[1]!.click()
     okButton(el).click()
@@ -689,7 +687,6 @@ describe('modal 命令式 API', () => {
     modal.confirm({ title: '确认删除' })
     await Promise.resolve()
     const el = document.body.querySelector('oas-modal')!
-    expect(el).not.toBeNull()
     let docClicks = 0
     const onDoc = (): void => {
       docClicks++

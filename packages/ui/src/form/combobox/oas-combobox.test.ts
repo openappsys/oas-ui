@@ -51,7 +51,7 @@ describe('OASCombobox', () => {
     expect(i.getAttribute('aria-controls')).toBe('combobox-list')
     expect(i.getAttribute('aria-autocomplete')).toBe('list')
     expect(i.placeholder).toBe('请选择')
-    expect(el.shadowRoot!.querySelector('[role="listbox"]')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('[role="listbox"]').length).toBe(1)
   })
 
   it('value 匹配时输入框显示选项 label（而非 value）', () => {
@@ -87,7 +87,7 @@ describe('OASCombobox', () => {
       ]),
     })
     open(el)
-    expect(el.shadowRoot!.querySelector('[aria-disabled="true"]')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('[aria-disabled="true"]').length).toBe(1)
     optionRows(el)[1]!.click()
     expect(el.getAttribute('value')).toBeNull()
   })
@@ -487,7 +487,7 @@ describe('OASCombobox 虚拟滚动（virtual）', () => {
     }
     expect(i.getAttribute('aria-activedescendant')).toBe('combobox-option-25')
     const vp = vlistOf(el).shadowRoot!.querySelector<HTMLElement>('.viewport')!
-    expect(vp.scrollTop).toBeGreaterThan(0)
+    expect(vp.scrollTop).toBe(696)
     // happy-dom 不自动触发 scroll：手动派发后窗口重算，高亮项在窗口内
     vp.dispatchEvent(new Event('scroll'))
     await flushRaf()
@@ -583,7 +583,6 @@ describe('OASCombobox 移动端底部抽屉（bottom-sheet 接入）', () => {
 
   it('模板恒包 oas-bottom-sheet（SSR/客户端结构一致），PC 默认 passive 透传', () => {
     const el = mount()
-    expect(sheet(el)).toBeTruthy()
     expect(sheet(el).getAttribute('part')).toBe('sheet')
     expect(sheet(el).hasAttribute('passive')).toBe(true)
     expect(sheet(el).contains(dropdown(el))).toBe(true)
@@ -760,7 +759,7 @@ describe('OASCombobox form-associated（原生表单集成）', () => {
     const missing = fake.setValidity.mock.calls.at(-1)
     expect(missing?.[0]).toEqual({ valueMissing: true })
     expect(typeof missing?.[1]).toBe('string')
-    expect((missing?.[1] as string).length).toBeGreaterThan(0)
+    expect(missing?.[1] as string).toMatch(/\S/)
     open(el)
     optionRows(el)[0]!.click()
     expect(fake.setValidity).toHaveBeenLastCalledWith({})
@@ -990,8 +989,8 @@ describe('OASCombobox multiple 多选（对齐 oas-select 多选语义）', () =
     let exceeded: unknown
     el.addEventListener('oas-exceed-limit', (e: Event) => (exceeded = (e as CustomEvent).detail))
     const blocked = optionRows(el).find((r) => r.getAttribute('aria-disabled') === 'true')
-    expect(blocked).not.toBeNull()
-    // 被拦截的是第一个未选项（banana）；exceed-limit detail.value 对应被点的那项
+    expect(blocked!.textContent, '被拦截的是第一个未选项 banana').toContain('香蕉')
+    // exceed-limit detail.value 对应被点的那项
     blocked!.click()
     expect(exceeded).toEqual({ value: 'banana', max: 1 })
     expect(el.getAttribute('value')).toBe('["apple"]')
@@ -1074,7 +1073,7 @@ describe('OASCombobox multiple 多选（对齐 oas-select 多选语义）', () =
     expect(el.getAttribute('value')).toBe('["apple"]')
     // 过滤词未被清空：ArrowDown 仍在过滤集内移动，渲染行保持高亮（不被清词后的全量索引错位）
     input(el).dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }))
-    expect(el.shadowRoot!.querySelector('.option.active')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('.option.active').length).toBe(1)
   })
 
   it('FormData：运行时改 name 重同步同名多条 entry 的 key（对齐 select 观察 name）', () => {
@@ -1146,7 +1145,6 @@ describe('OASCombobox multiple 多选（对齐 oas-select 多选语义）', () =
   it('回归：chip 移除按钮 mousedown preventDefault（防 input 失焦收面板，与 clear-btn/dropdown 同纪律）', () => {
     const el = mount({ multiple: '', value: '["apple"]' })
     const rm = el.shadowRoot!.querySelector<HTMLButtonElement>('.chip button')!
-    expect(rm).not.toBeNull()
     const e = new MouseEvent('mousedown', { cancelable: true, bubbles: true })
     rm.dispatchEvent(e)
     expect(e.defaultPrevented).toBe(true)

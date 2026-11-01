@@ -157,7 +157,6 @@ describe('OASInput', () => {
   it('clearable + 有值时渲染清除按钮，点击派发 oas-clear 并清空', () => {
     const el = mount({ clearable: '', value: 'abc' })
     const btn = el.shadowRoot!.querySelector('button')!
-    expect(btn).not.toBeNull()
     let detail: unknown
     el.addEventListener('oas-clear', (e: Event) => (detail = e))
     btn.click()
@@ -239,8 +238,8 @@ describe('OASInput', () => {
 
   it('prefix-icon/suffix-icon 用 lookupIcon 渲染内联 SVG', () => {
     const el = mount({ 'prefix-icon': 'search', 'suffix-icon': 'close' })
-    expect(el.shadowRoot!.querySelector('[part="prefix-icon"] svg')).not.toBeNull()
-    expect(el.shadowRoot!.querySelector('[part="suffix-icon"] svg')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('[part="prefix-icon"] svg').length).toBe(1)
+    expect(el.shadowRoot!.querySelectorAll('[part="suffix-icon"] svg').length).toBe(1)
   })
 
   it('无效图标名不渲染 SVG，图标区域隐藏', () => {
@@ -270,7 +269,7 @@ describe('OASInput', () => {
     el.setAttribute('prefix-icon', 'search')
     expect(input(el)).toBe(i)
     expect(part(el, 'prepend').textContent).toBe('b')
-    expect(el.shadowRoot!.querySelector('[part="prefix-icon"] svg')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('[part="prefix-icon"] svg').length).toBe(1)
   })
 
   // ---- v1.4 show-password / maxlength / show-count / oas-enter ----
@@ -997,7 +996,7 @@ describe('OASInput 能力补齐', () => {
 
   it('inside 计数渲染在输入区内（.inner 内部），host 打 data-count-inside 驱动布局', () => {
     const el = mount({ 'show-count': '', 'count-position': 'inside', value: 'abc' })
-    expect(countEl(el).closest('.inner')).not.toBeNull()
+    expect(countEl(el).closest('.inner')!.classList.contains('inner')).toBe(true)
     expect(el.hasAttribute('data-count-inside')).toBe(true)
     el.removeAttribute('count-position')
     expect(el.hasAttribute('data-count-inside')).toBe(false)
@@ -1146,7 +1145,7 @@ describe('OASInput 能力补齐', () => {
   it('auto-width：host 打 data-auto-width，shadow 内渲染测宽 mirror', () => {
     const el = mount({ 'auto-width': '' })
     expect(el.hasAttribute('data-auto-width')).toBe(true)
-    expect(mirror(el)).not.toBeNull()
+    expect(mirror(el).classList.contains('measure')).toBe(true)
     el.removeAttribute('auto-width')
     expect(el.hasAttribute('data-auto-width')).toBe(false)
   })
@@ -1393,9 +1392,8 @@ describe('OASInput P2：min/max/step 透传 / clear-icon 插槽 / hint', () => {
   it('clear-icon 插槽存在，缺省内置关闭图标作为 slot fallback', () => {
     const el = mount({ clearable: '', value: 'x' })
     const slot = el.shadowRoot!.querySelector<HTMLSlotElement>('slot[name="clear-icon"]')
-    expect(slot).not.toBeNull()
     // 未分发时渲染 slot fallback 内的内置图标
-    expect(slot!.querySelector('svg')).not.toBeNull()
+    expect(slot!.querySelectorAll('svg').length).toBe(1)
   })
 
   it('clear-icon 分发自定义内容替换缺省图标', async () => {

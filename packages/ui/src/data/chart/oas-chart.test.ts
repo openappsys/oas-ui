@@ -80,7 +80,7 @@ describe('OASChart', () => {
   it('默认 line 类型渲染折线 SVG（path + 数据点）', () => {
     const el = mount({ data: SINGLE })
     const svg = svgOf(el)
-    expect(svg.querySelector('.line-path')).not.toBeNull()
+    expect(svg.querySelectorAll('.line-path').length).toBe(1)
     expect(svg.querySelectorAll('.dot').length).toBe(3)
   })
 
@@ -190,7 +190,7 @@ describe('OASChart', () => {
     const radii = [...d.matchAll(/A ([\d.]+) ([\d.]+)/g)].map((m) => Number(m[1]))
     expect(radii.length).toBe(2)
     expect(radii[0]!).toBe(116) // 外半径 = min(520,280)/2 - 24
-    expect(radii[1]!).toBeGreaterThan(0)
+    expect(radii[1]!).toBeCloseTo(71.92, 2) // 内半径 = 0.62 × 外半径
     expect(radii[1]!).toBeLessThan(radii[0]!)
   })
 
@@ -255,7 +255,7 @@ describe('OASChart', () => {
     expect(slices.length).toBe(1)
     const slice = slices[0]!
     expect(slice.tagName.toLowerCase()).toBe('circle')
-    expect(Number(slice.getAttribute('r'))).toBeGreaterThan(0)
+    expect(Number(slice.getAttribute('r'))).toBeCloseTo(116, 1)
     expect(slice.querySelector('title')!.textContent).toBe('东: 5')
   })
 
@@ -679,7 +679,7 @@ describe('OASChart', () => {
       data: JSON.stringify({ labels, series: [{ name: 'S', data: labels.map((_, i) => i) }] }),
     })
     const texts = [...svgOf(el).querySelectorAll('text.axis-label')]
-    expect(texts.length).toBeGreaterThan(0)
+    expect(texts.length, '按旋转后包围盒宽度抽稀后 12 个刻度').toBe(12)
     for (const t of texts) {
       expect(t.getAttribute('transform') ?? '').toMatch(/^rotate\(45 /)
       expect(t.getAttribute('style')).toContain('text-anchor:start')
@@ -976,8 +976,8 @@ describe('OASChart', () => {
     const bar = svg.querySelector('rect.bar')!
     const area = svg.querySelector('.area-path')!
     const line = svg.querySelector('.line-path')!
-    expect(bar.compareDocumentPosition(area) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
-    expect(area.compareDocumentPosition(line) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(bar.compareDocumentPosition(area) & Node.DOCUMENT_POSITION_FOLLOWING).toBe(Node.DOCUMENT_POSITION_FOLLOWING)
+    expect(area.compareDocumentPosition(line) & Node.DOCUMENT_POSITION_FOLLOWING).toBe(Node.DOCUMENT_POSITION_FOLLOWING)
   })
 
   it('combo（bar 顶层 + line 覆盖）：柱与线共存，线点对齐 band 中心（非纯折线的端点对齐）', () => {
@@ -1004,7 +1004,7 @@ describe('OASChart', () => {
     // 层序：bar 层先于 line 层（线盖柱的通行读法）
     const bar = svg.querySelector('rect.bar')!
     const line = svg.querySelector('.line-path')!
-    expect(bar.compareDocumentPosition(line) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(bar.compareDocumentPosition(line) & Node.DOCUMENT_POSITION_FOLLOWING).toBe(Node.DOCUMENT_POSITION_FOLLOWING)
   })
 
   it('柱组在 band 内居中：柱组中心 = 分类标签/折线点所在的 band 中心', () => {
@@ -1305,7 +1305,7 @@ describe('OASChart', () => {
     const svg = svgOf(el)
     expect(svg.querySelector('.line-path')!.getAttribute('style')).toBe('color:rgb(1, 2, 3)')
     const dots = [...svg.querySelectorAll<SVGCircleElement>('circle.dot')]
-    expect(dots.length).toBeGreaterThan(0)
+    expect(dots.length).toBe(3)
     for (const dot of dots) expect(dot.getAttribute('style')).toBe('color:rgb(1, 2, 3)')
   })
 
