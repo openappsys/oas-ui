@@ -385,6 +385,51 @@ describe('OASGantt height 属性映射（--oas-gantt-height，与 oas-resource �
   })
 })
 
+describe('OASGantt row-height 属性映射（--oas-gantt-row-height，行名高度与网格行高同源）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('① row-height="32" → 组件写宿主自定义属性 --oas-gantt-row-height:32px', () => {
+    const el = mount({ tasks: JSON.stringify(BASE_TASKS), 'row-height': '32' })
+    expect(el.style.getPropertyValue('--oas-gantt-row-height')).toBe('32px')
+  })
+
+  it('② 无 row-height 属性 → 不写 token（.row-name 回落 CSS 缺省 36px）；宿主内联 token 不被清除', () => {
+    const el = mount({ tasks: JSON.stringify(BASE_TASKS) })
+    expect(el.style.getPropertyValue('--oas-gantt-row-height'), '未设置 → 不写').toBe('')
+    el.style.setProperty('--oas-gantt-row-height', '40px')
+    el.requestUpdate()
+    expect(el.style.getPropertyValue('--oas-gantt-row-height'), '无属性时不清宿主自设 token').toBe('40px')
+    el.setAttribute('row-height', '32')
+    el.requestUpdate()
+    expect(el.style.getPropertyValue('--oas-gantt-row-height'), '属性在场：接管').toBe('32px')
+    el.removeAttribute('row-height')
+    el.requestUpdate()
+    expect(el.style.getPropertyValue('--oas-gantt-row-height'), '移除属性：清除自写值（不残留 32px）').toBe('')
+  })
+
+  it('③ 非法值（<20 下限 / 非数 / px 后缀与 rowHeightPx 口径一致为非法）不写；写过则清除', () => {
+    const el = mount({ tasks: JSON.stringify(BASE_TASKS), 'row-height': '10' })
+    expect(el.style.getPropertyValue('--oas-gantt-row-height'), '低于 20 下限不写').toBe('')
+    el.setAttribute('row-height', '32px')
+    el.requestUpdate()
+    expect(
+      el.style.getPropertyValue('--oas-gantt-row-height'),
+      'px 后缀对 row-height 非法（与 rowHeightPx 回落口径一致）',
+    ).toBe('')
+    el.setAttribute('row-height', '28')
+    el.requestUpdate()
+    expect(el.style.getPropertyValue('--oas-gantt-row-height')).toBe('28px')
+    el.setAttribute('row-height', 'abc')
+    el.requestUpdate()
+    expect(el.style.getPropertyValue('--oas-gantt-row-height'), '非法值清除自写值（回落 CSS 缺省 36px）').toBe('')
+  })
+})
+
 describe('OASGantt 刻度六档', () => {
   beforeEach(() => {
     document.body.innerHTML = ''

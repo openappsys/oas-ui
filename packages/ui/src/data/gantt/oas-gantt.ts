@@ -1721,6 +1721,13 @@ export class OASGantt extends OASElement {
    * 非法值（属性在场但非 >0 纯数字 / Npx）：不写变量、仅清本实例自写值，宿主 token 不受影响。
    */
   private heightApplied = false
+  /**
+   * 本实例是否写过 `--oas-gantt-row-height`（与 heightApplied 同协议）。
+   * row-height 属性在场且合法（纯数字 ≥20，与 rowHeightPx() 同口径；px 后缀对 row-height 非法）
+   * 时组件接管该 token——.row-name 高度即 var(--oas-gantt-row-height)，与网格行高同源，
+   * 否则行名高度恒为 CSS 缺省 36px，row-height≠36 时行名与条/条纹错位（每行叠 4px）。
+   */
+  private rowHeightApplied = false
   private resizeObs: ResizeObserver | null = null
   private dragCtx: DragCtx | null = null
   private reparentCtx: { id: string; byId: Map<string, TG> } | null = null
@@ -3449,6 +3456,23 @@ export class OASGantt extends OASElement {
     } else if (this.heightApplied) {
       this.style.removeProperty('--oas-gantt-height')
       this.heightApplied = false
+    }
+    // 行高协议（与 height 协议同构）：row-height 属性在场且合法（纯数字 ≥20，与 rowHeightPx() 同口径）
+    // 时写 --oas-gantt-row-height（.row-name 高度 = var(--oas-gantt-row-height) 与网格行高同源）；
+    // 从未写过时绝不动宿主自己内联设的 token。px 后缀对 row-height 非法（rowHeightPx 同样回落 36）。
+    if (this.hasAttr('row-height')) {
+      const raw = this.getAttr('row-height', '').trim()
+      const n = Number(raw)
+      if (raw !== '' && Number.isFinite(n) && n >= 20) {
+        this.style.setProperty('--oas-gantt-row-height', `${n}px`)
+        this.rowHeightApplied = true
+      } else if (this.rowHeightApplied) {
+        this.style.removeProperty('--oas-gantt-row-height')
+        this.rowHeightApplied = false
+      }
+    } else if (this.rowHeightApplied) {
+      this.style.removeProperty('--oas-gantt-row-height')
+      this.rowHeightApplied = false
     }
     this.toggleAttribute('data-rtl', isRtl(this))
     this.buildRows()

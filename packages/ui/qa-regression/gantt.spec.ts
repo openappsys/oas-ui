@@ -1630,6 +1630,58 @@ test('gantt 虚拟滚动 demo：斑马纹开关真实切换条纹层', async ({ 
   await expect(gantt.locator('.stripe-canvas')).toBeAttached()
 })
 
+test('gantt row-height 属性：行名高度与网格行高同源（斑马行名底边与条纹底边对齐，几何级）', async ({ page }) => {
+  await page.goto('/components/gantt.html', { waitUntil: 'domcontentloaded' })
+  await waitGantt(page, 'gantt-basic')
+  const res = await page.evaluate(async () => {
+    await customElements.whenDefined('oas-gantt')
+    const raf = () => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)))
+    const el = document.createElement('oas-gantt') as HTMLElement & { tasks: unknown; shadowRoot: ShadowRoot }
+    el.setAttribute('stripe', '')
+    el.setAttribute('row-height', '32')
+    el.setAttribute('height', '220')
+    el.style.cssText = 'position:fixed;top:100px;left:100px;width:640px;z-index:9999'
+    document.body.appendChild(el)
+    el.tasks = [
+      { id: 'a', name: '行 A', start: '2026-03-02', end: '2026-03-04' },
+      { id: 'b', name: '行 B', start: '2026-03-02', end: '2026-03-04' },
+      { id: 'c', name: '行 C', start: '2026-03-02', end: '2026-03-04' },
+      { id: 'd', name: '行 D', start: '2026-03-02', end: '2026-03-04' },
+    ]
+    await raf()
+    const sr = el.shadowRoot
+    const names = [...sr.querySelectorAll<HTMLElement>('.side-body .row-name')]
+    const stripes = [...sr.querySelectorAll<HTMLElement>('.stripe-canvas .stripe')]
+    return {
+      token: el.style.getPropertyValue('--oas-gantt-row-height'),
+      names: names.map((n) => {
+        const b = n.getBoundingClientRect()
+        return { top: b.top, bottom: b.bottom, h: b.height, striped: n.hasAttribute('data-stripe') }
+      }),
+      stripes: stripes.map((s) => {
+        const b = s.getBoundingClientRect()
+        return { top: b.top, bottom: b.bottom, h: b.height }
+      }),
+    }
+  })
+  expect(res.token, 'row-height 属性映射 --oas-gantt-row-height').toBe('32px')
+  expect(res.names.length).toBeGreaterThanOrEqual(4)
+  for (const n of res.names) {
+    expect(n.h, '行名高度 = row-height（与网格行高同源，不再恒为 36px 缺省）').toBe(32)
+  }
+  for (const s of res.stripes) {
+    expect(s.h, '条纹高度 = row-height').toBe(32)
+  }
+  // 斑马行名（data-stripe）与时间轴条纹同奇偶同口径 → 顶边/底边逐一相等（±0.5 抗亚像素）
+  const stripedNames = res.names.filter((n) => n.striped)
+  expect(stripedNames.length).toBe(res.stripes.length)
+  res.stripes.forEach((s, i) => {
+    const n = stripedNames[i]!
+    expect(Math.abs(n.top - s.top), `条纹 ${i} 顶边对齐`).toBeLessThanOrEqual(0.5)
+    expect(Math.abs(n.bottom - s.bottom), `条纹 ${i} 底边对齐`).toBeLessThanOrEqual(0.5)
+  })
+})
+
 // C1 回归（lag 安全域）：极大有限 lag（1e8 天）× auto-schedule 曾把排程运算推出 Date 合法域
 // （±8.64e15 ms）→ Invalid Date → fmtIso 内 Intl.formatToParts 抛 RangeError（整图白屏）。
 // 修复口径：越域 lag 清洗为无 lag（等价 0，依赖保留），排程按 0 计算。

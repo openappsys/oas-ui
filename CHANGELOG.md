@@ -25,6 +25,7 @@
 ### 修复
 
 - **`oas-gantt` 斑马纹 × 周末/假日列撞色修复**：周末/假日底色改为相对 `--oas-color-bg` 的不透明混合，斑马行上的周末/假日列不再吸收条纹色；虚拟滚动 demo 新增斑马纹开关，`stripe` 保持 opt-in（默认关）。
+- **`oas-gantt` 行高对齐修复**：`row-height` 属性现在映射 `--oas-gantt-row-height`，左侧行名高度与网格行高同源——此前行名恒为 36px 缺省值，`row-height≠36` 时行名与任务条/斑马纹逐行错位叠压。
 - **`oas-select Option.icon` 复核修复**：下拉项图标与 label 补 4px 行 gap；多选 chip 长 label 在带图标时恢复单行省略；`reserve-width` 额外计入 1em 图标与行 gap。
 - **文档导航生成链路**：组件总览从基线恢复完整条目并按组内 slug 排序；sidebar 改为字面量单一有序数据源，`llms.txt` 与总览/sidebar 精确同序并有防漂移测试。
 - **打包消费方（含 CDN）默认语言包丢失**：旧的裸副作用 import 在打包时可能被摇掉，导致内置文案渲染为 raw key；现组件入口显式注册本族切片，CDN 产物含 9 族文案，`perf:size` 新增 `[CDN 默认文案]` 断言锁定。
