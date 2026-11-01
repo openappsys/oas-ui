@@ -27,6 +27,12 @@
     {
       "name": "align",
       "observed": true
+    },
+    {
+      "name": "tail",
+      "type": "string",
+      "default": "none",
+      "observed": true
     }
   ],
   "props": [],
@@ -50,6 +56,18 @@
     {
       "name": "--oas-bubble-radius",
       "default": "var(--oas-radius-lg)"
+    },
+    {
+      "name": "--oas-bubble-tail-offset",
+      "default": "0"
+    },
+    {
+      "name": "--oas-bubble-tail-size",
+      "default": "16px"
+    },
+    {
+      "name": "--oas-bubble-tail-corner-radius",
+      "default": "var(--oas-radius-sm)"
     }
   ],
   "unresolved": []

@@ -7,6 +7,7 @@
 ### 新增
 
 - **`oas-select` 选项图标（`Option.icon`）**：`options` JSON 与 `<oas-option icon>` 子元素通道支持 `@oas-ui/icons` 图标名，下拉项、单选触发器与多选 chip 统一渲染 `icon + label`；图标装饰性（`aria-hidden`），未注册时回退纯文本并仅 devWarn 一次。富内容仍走 `oas-option-render` / `template[slot="option"]`。
+- **`oas-bubble` opt-in 尾巴（`tail`）**：新增 `tail="none"（默认）| "auto" | "start" | "end"`，`auto` 跟随有效对齐（显式 `align` 或容器 `text-align` 继承反射）；实底变体在底部外角画弧形尾巴（颜色与气泡表面同源，暗色自动适配），`outline` 退化为底部外角收小圆角（描边不断口），`muted` / `ghost` 无表面不画；逻辑属性实现 RTL 镜像，装饰性伪元素不进 DOM/读屏；分组时宿主只给同一发送者连续消息的最后一条加。新增 `--oas-bubble-tail-size` / `--oas-bubble-tail-offset` / `--oas-bubble-tail-corner-radius`。
 
 ### 文档
 

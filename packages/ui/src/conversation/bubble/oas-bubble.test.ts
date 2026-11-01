@@ -138,6 +138,57 @@ describe('OASBubble', () => {
     expect(el.shadowRoot!.querySelector('[part="bubble"]')).not.toBeNull()
   })
 
+  // ---- 尾巴（tail）：opt-in，默认无；auto 跟随对齐；显式侧覆盖 ----
+  it('tail 默认 none / 非法值：不写 data-tail-side', () => {
+    const cases: Record<string, string>[] = [{}, { tail: 'none' }, { tail: 'neon' }]
+    for (const attrs of cases) {
+      const el = mount('<p>x</p>', attrs)
+      expect(el.shadowRoot!.querySelector('[part="bubble"]')!.hasAttribute('data-tail-side')).toBe(false)
+    }
+  })
+
+  it('tail=auto 跟随 align（start/end），显式 start/end 覆盖 align', () => {
+    const start = mount('<p>x</p>', { tail: 'auto', align: 'start' })
+    expect(start.shadowRoot!.querySelector('[part="bubble"]')!.getAttribute('data-tail-side')).toBe('start')
+    const end = mount('<p>x</p>', { tail: 'auto', align: 'end' })
+    expect(end.shadowRoot!.querySelector('[part="bubble"]')!.getAttribute('data-tail-side')).toBe('end')
+    const forced = mount('<p>x</p>', { tail: 'start', align: 'end' })
+    expect(forced.shadowRoot!.querySelector('[part="bubble"]')!.getAttribute('data-tail-side')).toBe('start')
+  })
+
+  it('tail 运行时可改：加属性/切侧/移除即时收敛', () => {
+    const el = mount('<p>x</p>', { tail: 'auto', align: 'start' })
+    const bubble = () => el.shadowRoot!.querySelector('[part="bubble"]')!
+    el.setAttribute('align', 'end')
+    expect(bubble().getAttribute('data-tail-side')).toBe('end')
+    el.setAttribute('tail', 'none')
+    expect(bubble().hasAttribute('data-tail-side')).toBe(false)
+    el.setAttribute('tail', 'end')
+    expect(bubble().getAttribute('data-tail-side')).toBe('end')
+  })
+
+  it('tail CSS：实底弧形尾 / outline 退化圆角 / muted·ghost 不画 / 逻辑属性 RTL 安全', () => {
+    const el = mount('<p>x</p>', { tail: 'auto' })
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    expect(css).toContain('.bubble[data-tail-side="start"]::after')
+    expect(css).toContain('.bubble[data-tail-side="end"]::after')
+    expect(css).toContain('radial-gradient(')
+    expect(css, '尾巴颜色与表面同源').toContain('var(--_oas-bubble-surface)')
+    expect(css).toContain('border-end-start-radius')
+    expect(css).toContain('border-end-end-radius')
+    // 物理 left/right 不允许出现在尾巴定位里（逻辑属性自动镜像）
+    expect(css).not.toMatch(/data-tail-side[^{]*\{[^}]*\b(left|right):/s)
+    for (const v of ['muted', 'ghost', 'outline']) {
+      expect(css, `${v} 不应画突出尾巴`).toContain(`:host([variant="${v}"]) .bubble[data-tail-side]::after`)
+    }
+  })
+
+  it('SSR 首帧按显式 align 落侧（auto 无 align 时为 start）', () => {
+    const el = mount('<p>x</p>', { tail: 'auto', align: 'end' })
+    // render 走 template()：tail 侧在首帧 HTML 即写入，不依赖后续 update
+    expect(el.shadowRoot!.querySelector('[part="bubble"]')!.getAttribute('data-tail-side')).toBe('end')
+  })
+
   it('reactions：JSON 数组渲染为真按钮（emoji + 计数 + aria-pressed），空/缺失隐藏', () => {
     const empty = mount('<p>x</p>')
     expect(empty.shadowRoot!.querySelector('[part="reactions"]')!.hasAttribute('hidden')).toBe(true)

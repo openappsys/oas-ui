@@ -4757,7 +4757,8 @@
       "reactions-side": "Vertical placement of the reaction bar: bottom (default, below the bubble) / top (above the bubble)",
       "reactions-align": "Horizontal alignment of the reaction bar: start / end; defaults to following the bubble align",
       "align": "Direction: start (other party, default) / end (self) — logical-property alignment (align-self, RTL mirrored automatically); when set explicitly it wins over the inherited text-align reflection",
-      "streaming": "Streaming state (boolean presence): content stays visible and the host reflects aria-busy; the content region uses aria-live=off to avoid per-token announcements, while a host status region announces completion."
+      "streaming": "Streaming state (boolean presence): content stays visible and the host reflects aria-busy; the content region uses aria-live=off to avoid per-token announcements, while a host status region announces completion.",
+      "tail": "Tail direction: none (default, no tail) | auto (follow align: start or end side) | start | end — a small curved tail at the bottom outer corner pointing at the sender. Filled variants draw it, outline falls back to a tightened bottom outer corner, and muted / ghost omit it. In grouped conversations set it only on the last message of a run from the same sender."
     },
     "events": {
       "oas-reaction": "Fired when a reaction is clicked; detail { emoji, count, active, index } (reaction data stays owned by the host)"

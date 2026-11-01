@@ -23,6 +23,39 @@
 
 `align="start" | "end"` 用逻辑布局实现（`margin-inline-start: auto` + `text-align: end`），RTL 下自动翻转，无物理方向 CSS。
 
+## 尾巴（tail）
+
+<DemoBlock title="分组最后一条 + 双方对话">
+  <div style="width: 100%; max-width: 480px; display: flex; flex-direction: column; gap: var(--oas-space-2_5)">
+    <oas-message-row>
+      <oas-avatar slot="avatar" size="28">客</oas-avatar>
+      <oas-bubble>同一发送者的连续消息，前几条不加尾巴。</oas-bubble>
+    </oas-message-row>
+    <oas-message-row>
+      <oas-avatar slot="avatar" size="28">客</oas-avatar>
+      <oas-bubble tail="auto">最后一条加 tail，尾巴在头像一侧指向发送者。</oas-bubble>
+    </oas-message-row>
+    <oas-message-row align="end">
+      <oas-avatar slot="avatar" size="28">我</oas-avatar>
+      <oas-bubble align="end" variant="secondary">我方消息默认无尾巴。</oas-bubble>
+    </oas-message-row>
+    <oas-message-row align="end">
+      <oas-avatar slot="avatar" size="28">我</oas-avatar>
+      <oas-bubble align="end" variant="secondary" tail="auto">tail="auto" 跟随 align，指向右侧发送者。</oas-bubble>
+    </oas-message-row>
+  </div>
+</DemoBlock>
+
+<DemoBlock title="变体差异：outline 退化圆角，muted / ghost 不画">
+  <div style="width: 100%; max-width: 480px; display: flex; flex-direction: column; gap: var(--oas-space-2_5)">
+    <oas-bubble tail="start" variant="outline">outline：不画突出尾巴，底部外角收小圆角，描边不断口。</oas-bubble>
+    <oas-bubble tail="start" variant="muted">muted：无表面，不画尾巴。</oas-bubble>
+    <oas-bubble tail="start" variant="ghost">ghost：无表面，不画尾巴。</oas-bubble>
+  </div>
+</DemoBlock>
+
+`tail="none | auto | start | end"`，默认 `none`。`auto` 跟随 `align`：对方（start）尾巴在底部左侧，我方（end）在底部右侧。实底变体（default / secondary / destructive）画底部外角弧形尾巴，颜色跟随气泡表面；`outline` 退化为底部外角收小圆角（避免描边断口），`muted` / `ghost` 无表面不画。**分组时要只给同一发送者连续消息的最后一条加 `tail`**，与主流会话界面一致。尾巴是装饰性伪元素，不进入 DOM 与读屏；尺寸/偏移/圆角可用 `--oas-bubble-tail-size` / `--oas-bubble-tail-offset` / `--oas-bubble-tail-corner-radius` 调整。
+
 ## 变体（variant）
 
 <DemoBlock title="六种语义变体">
@@ -107,6 +140,7 @@ onMounted(async () => {
 | `reactions-align` | 反应条横向对齐：start / end；缺省跟随气泡 align | — | — |
 | `reactions-side` | 反应条纵向位置：bottom（默认，气泡下方）/ top（气泡上方） | — | — |
 | `streaming` | 流式追加态（布尔在场）：内容保持可见，宿主反射 aria-busy；内容区 aria-live=off，避免逐 token 播报，终态由外部 status 区播报 | `boolean` | — |
+| `tail` | 尾巴方向：none（默认，无尾巴）/ auto（跟随 align：start 侧或 end 侧）/ start / end——底部外角弧形小尾巴，指向发送者；实底变体绘制，outline 退化为底部外角收小圆角，muted / ghost 不画。分组时只给同一发送者连续消息的最后一条加 | `string` | `none` |
 
 #### 事件
 
@@ -126,5 +160,8 @@ onMounted(async () => {
 | --- | --- |
 | `--oas-bubble-max-width` | `80%` |
 | `--oas-bubble-radius` | `var(--oas-radius-lg)` |
+| `--oas-bubble-tail-corner-radius` | `var(--oas-radius-sm)` |
+| `--oas-bubble-tail-offset` | `0` |
+| `--oas-bubble-tail-size` | `16px` |
 
 部件：`::part(bubble)` 气泡表面、`::part(content)` 内容区、`::part(typing)` 打字点、`::part(reactions)` 反应条 / `::part(reaction)` 单个反应钮。`align`（`start` 默认 / `end`）与 `variant`（`default` / `secondary` / `muted` / `outline` / `ghost` / `destructive`）为纯 CSS 消费通道。

@@ -7,6 +7,8 @@ export type BubbleVariant = 'default' | 'secondary' | 'muted' | 'outline' | 'gho
 export type BubbleReactionsSide = 'top' | 'bottom'
 /** 反应条横向对齐；缺省跟随气泡 align（start/end） */
 export type BubbleReactionsAlign = 'start' | 'end'
+/** 尾巴方向：none（默认）/ auto（跟随 align）/ start / end */
+export type BubbleTail = 'none' | 'auto' | 'start' | 'end'
 
 /**
  * 单条表情回应（`reactions` 属性的 JSON 数组元素）。
@@ -35,6 +37,8 @@ const STYLE = `
 }
 /* 气泡表面：圆角/上限走变量开口，宿主可整链换肤；flex 项默认靠 inline-start（align=end 靠 end），不拉伸 */
 .bubble {
+  /* 表面底色单源：variant 只覆写此变量，尾巴（伪元素）同源取色，避免两处色值漂移 */
+  --_oas-bubble-surface: var(--oas-color-bg-hover);
   align-self: flex-start;
   max-width: var(--oas-bubble-max-width, 80%);
   box-sizing: border-box;
@@ -43,7 +47,7 @@ const STYLE = `
   border: 1px solid transparent;
   line-height: 1.6;
   word-break: break-word;
-  background: var(--oas-color-bg-hover);
+  background: var(--_oas-bubble-surface);
 }
 /* ghost 无底无框：放开宽度上限（长回答不被 80% 卡住） */
 :host([variant="ghost"]) .bubble {
@@ -69,27 +73,69 @@ const STYLE = `
 }
 /* 变体：全部语义 token，dark 自动适配（secondary/destructive 用 theme-aware 浅调混色） */
 :host([variant="default"]) .bubble {
-  background: var(--oas-color-bg-hover);
+  --_oas-bubble-surface: var(--oas-color-bg-hover);
 }
 :host([variant="secondary"]) .bubble {
-  background: color-mix(in srgb, var(--oas-color-primary) 10%, var(--oas-color-bg));
+  --_oas-bubble-surface: color-mix(in srgb, var(--oas-color-primary) 10%, var(--oas-color-bg));
 }
 :host([variant="muted"]) .bubble {
-  background: transparent;
+  --_oas-bubble-surface: transparent;
   color: var(--oas-color-text-secondary);
 }
 :host([variant="outline"]) .bubble {
-  background: var(--oas-color-bg);
+  --_oas-bubble-surface: var(--oas-color-bg);
   border-color: var(--oas-color-border-strong);
 }
 :host([variant="ghost"]) .bubble {
-  background: transparent;
+  --_oas-bubble-surface: transparent;
   padding-inline: 0;
   border: none;
 }
 :host([variant="destructive"]) .bubble {
-  background: color-mix(in srgb, var(--oas-color-danger) 10%, var(--oas-color-bg));
+  --_oas-bubble-surface: color-mix(in srgb, var(--oas-color-danger) 10%, var(--oas-color-bg));
   color: color-mix(in srgb, var(--oas-color-danger) 75%, var(--oas-color-text-primary));
+}
+/* ---- 尾巴（opt-in，默认无）：底部外角的弧形，指向发送者一侧 -------------------
+   实底变体画突出尾巴（radial-gradient 切出，颜色与表面同源，任意底色/暗色均可）；
+   outline 无描边断口：退化为底部外角收小圆角；muted / ghost 无表面，不画。
+   分组场景由宿主只给「同一发送者连续消息的最后一条」加 tail。 */
+.bubble[data-tail-side] {
+  position: relative;
+}
+.bubble[data-tail-side]::after {
+  content: "";
+  position: absolute;
+  inset-block-end: var(--oas-bubble-tail-offset, 0);
+  width: calc(var(--oas-bubble-tail-size, 16px) * 0.85);
+  height: var(--oas-bubble-tail-size, 16px);
+  pointer-events: none;
+}
+.bubble[data-tail-side="start"]::after {
+  inset-inline-start: calc(var(--oas-bubble-tail-size, 16px) * -0.45);
+  background: radial-gradient(
+    calc(var(--oas-bubble-tail-size, 16px) * 0.45) var(--oas-bubble-tail-size, 16px) at 0 0,
+    transparent 96%,
+    var(--_oas-bubble-surface) 100%
+  );
+}
+.bubble[data-tail-side="end"]::after {
+  inset-inline-end: calc(var(--oas-bubble-tail-size, 16px) * -0.45);
+  background: radial-gradient(
+    calc(var(--oas-bubble-tail-size, 16px) * 0.45) var(--oas-bubble-tail-size, 16px) at 100% 0,
+    transparent 96%,
+    var(--_oas-bubble-surface) 100%
+  );
+}
+:host([variant="muted"]) .bubble[data-tail-side]::after,
+:host([variant="ghost"]) .bubble[data-tail-side]::after,
+:host([variant="outline"]) .bubble[data-tail-side]::after {
+  content: none;
+}
+:host([variant="outline"]) .bubble[data-tail-side="start"] {
+  border-end-start-radius: var(--oas-bubble-tail-corner-radius, var(--oas-radius-sm));
+}
+:host([variant="outline"]) .bubble[data-tail-side="end"] {
+  border-end-end-radius: var(--oas-bubble-tail-corner-radius, var(--oas-radius-sm));
 }
 /* loading：内容与打字点互斥显隐 */
 .content {
@@ -216,6 +262,9 @@ const STYLE = `
  *   空数组/非法 JSON 不渲染反应条）
  * - `reactions-side`：`bottom`（默认，气泡下方）| `top`（气泡上方）
  * - `reactions-align`：`start` | `end`——横向对齐覆盖；缺省跟随气泡 `align`
+ * - `tail`：`none`（默认，无尾巴）| `auto`（跟随 align：start 侧 / end 侧）| `start` | `end`
+ *   ——底部外角小尾巴，指向发送者；实底变体画弧形尾，outline 退化为底部外角收小圆角，
+ *   muted / ghost 不画。分组场景只给同发送者连续消息的最后一条加。
  *
  * 插槽：默认（气泡内容）
  *
@@ -225,14 +274,16 @@ const STYLE = `
  */
 export class OASBubble extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['loading', 'streaming', 'reactions', 'reactions-side', 'reactions-align', 'align']
+    return ['loading', 'streaming', 'reactions', 'reactions-side', 'reactions-align', 'align', 'tail']
   }
 
   /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
   private template(): string {
+    // SSR 无法读继承 text-align：auto 先按显式 align 落侧，客户端 update 再按继承值收敛
+    const tailSide = this.resolveTailSide(false)
     return `
       <style>${STYLE}</style>
-      <div class="bubble" part="bubble">
+      <div class="bubble" part="bubble"${tailSide ? ` data-tail-side="${tailSide}"` : ''}>
         <div class="content" part="content" hidden><slot></slot></div>
         <div class="typing" part="typing" hidden role="status" aria-label="${this.t('bubble.loading')}"><span aria-hidden="true"></span><span aria-hidden="true"></span><span aria-hidden="true"></span></div>
       </div>
@@ -291,6 +342,8 @@ export class OASBubble extends OASElement {
     // 横向对齐继承链：message-row 等容器用 text-align 落位 slotted 气泡（见 oas-message-row .content 注释），
     // flex 项不响应 text-align——把继承的计算值反射为内部属性供选择器消费（显式 align 属性优先，含 align="start"）
     this.syncInheritedAlign()
+    // 尾巴方向：auto 跟随有效对齐（显式 align 或容器 text-align 继承反射）
+    this.syncTail()
     // 已知边界：容器侧对齐运行时动态切换（如 message-row 的 align 属性变化）不触发本组件 update，
     // 反射值在下次 update 时收敛；组件自身 align/loading/reactions 变化路径均即时
     this.syncReactions()
@@ -308,7 +361,33 @@ export class OASBubble extends OASElement {
     this.alignRaf = requestAnimationFrame(() => {
       this.alignRaf = 0
       this.applyInheritedAlign()
+      // 继承值迟到（Firefox 首帧）时尾巴方向同步收敛
+      this.syncTail()
     })
+  }
+
+  /**
+   * 解析尾巴方向：`start` / `end` 显式指定；`auto` 跟随有效对齐（显式 align 优先，
+   * 否则读容器 text-align 反射的 data-inherit-end）；`none` / 非法值 → 无尾巴。
+   * SSR 首帧（useInherited=false）只按显式 align 解析，客户端 update 再按继承值收敛。
+   */
+  private resolveTailSide(useInherited: boolean): '' | 'start' | 'end' {
+    const raw = this.getAttr('tail', 'none')
+    if (raw === 'start' || raw === 'end') return raw
+    if (raw !== 'auto') return ''
+    const end =
+      this.getAttribute('align') === 'end' ||
+      (useInherited && this.getAttribute('align') === null && this.hasAttribute('data-inherit-end'))
+    return end ? 'end' : 'start'
+  }
+
+  /** 把解析后的尾巴方向写到 .bubble（CSS 纯消费；属性变化即时收敛） */
+  private syncTail(): void {
+    const bubble = this.shadow.querySelector<HTMLElement>('[part="bubble"]')
+    if (!bubble) return
+    const side = this.resolveTailSide(true)
+    if (side) bubble.setAttribute('data-tail-side', side)
+    else bubble.removeAttribute('data-tail-side')
   }
 
   /** 读取继承的 text-align 并反射为 data-inherit-end（显式 align 优先，清历史反射） */

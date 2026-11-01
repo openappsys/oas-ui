@@ -28,7 +28,32 @@
 
 ---
 
-## 未发布：i18n 默认语言包按家族切片（包体止损）
+## 未发布：Bubble 气泡尾巴（opt-in）
+
+### 功能定义
+
+`oas-bubble` 增加可选 `tail`：在气泡底部外角画一个指向发送者的小尾巴，供 IM/客服式会话在需要「说话人指向」时使用；默认无尾巴，保持现有 AI 会话的克制表面与向后兼容。
+
+### 详细需求
+
+- **`tail`** 取 `none`（默认）| `auto` | `start` | `end`：`auto` 跟随有效对齐（显式 `align`，否则容器 `text-align` 继承反射：start → 左侧、end → 右侧）；`start` / `end` 显式指定；非法值静默回落 `none`。
+- **视觉规则**：实底变体（default / secondary / destructive）在底部外角画弧形尾巴，颜色与气泡表面同源（`--_oas-bubble-surface`），暗色自动适配；`outline` 不画突出尾巴、改为底部外角收小圆角（避免描边断口）；`muted` / `ghost` 无表面不画。
+- **位置**：底部外角（IM 通行约定）；逻辑属性实现，RTL 自动镜像；装饰性伪元素，不进 DOM/读屏。
+- **分组语义**：组件不猜分组，宿主只给同一发送者连续消息的最后一条加 `tail`；文档给出双方对话 demo。
+- **Token**：`--oas-bubble-tail-size`（默认 16px）、`--oas-bubble-tail-offset`（默认 0）、`--oas-bubble-tail-corner-radius`（outline 退化圆角，默认 `--oas-radius-sm`）。
+- **SSR**：`template()` 首帧按显式 `align` 写入尾巴侧；继承对齐路径由客户端 update/rAF 收敛。
+
+### 非目标
+
+不做 `tail-position="top"`（顶部尾巴）与独立尺寸预设；不自动推断分组/最后一条；不新增 DOM 结构或公开 part；不改 message-row / message-actions / message-scroller 职责。
+
+### 验收
+
+- 单测覆盖：默认 none、非法值、auto 跟随 align、显式覆盖、运行时可改、CSS 规则（实底弧形 / outline 退化 / muted·ghost 不画 / 逻辑属性无物理方向）、SSR 首帧落侧。
+- e2e：真实浏览器断言两侧尾巴伪元素存在/尺寸与 offset、outline 圆角与无伪元素、muted/ghost 无伪元素、RTL 镜像、暗色下尾巴背景与气泡表面同色；console 零告警。
+- 中英文档 + API 表 + CHANGELOG 同步；亮/暗截图核对尾巴与气泡表面无缝衔接；`api:check` / `llms:check` / build / typecheck 全绿。
+
+---
 
 ### 背景
 

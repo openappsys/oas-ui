@@ -15,6 +15,12 @@
 | **`oas-select` 选项图标（`Option.icon`）** | `options` JSON 与 `<oas-option icon>` 支持 `@oas-ui/icons` 图标名；下拉项、单选触发器、多选 chip 统一渲染 `icon + label`；图标 `aria-hidden`，未知图标回退纯文本 + 一次 devWarn；富内容走现有 `oas-option-render` / option 模板逃生口；单测 + Chromium qa-regression + zh/en 文档/API/暗色/console 收口 | ✅ 已完成（未发布） |
 | **文档站 issue 反馈收口** | 组件侧栏数据抽离 `sidebar.ts` 单一数据源，中文/英文侧栏与总览页保留语义分组、组内按 slug 字母排序，`sidebar-order.test.ts` 防漂移，llms 生成器同步；英文浏览器首访 `/` / `/index.html` 自动进 `/en/` 并保留 query/hash，深链不做语言猜测，显式 `oas-lang` 仍全站生效、自动猜测不持久化；首页 docs-site e2e 收口 | ✅ 已完成（未发布） |
 
+## 未发布（Bubble 气泡尾巴）
+
+| 范围 | 内容 | 状态 |
+| --- | --- | --- |
+| **`oas-bubble` opt-in 尾巴（`tail`）** | `tail="none"（默认）| "auto" | "start" | "end"`：`auto` 跟随有效对齐（显式 `align` 或容器 text-align 继承反射）；实底变体在底部外角画弧形尾巴（颜色与表面同源，暗色适配），`outline` 退化为底部外角收小圆角，`muted`/`ghost` 无表面不画；逻辑属性 RTL 镜像，装饰性伪元素不进 DOM/读屏；分组由宿主只给同发送者连续消息的最后一条加 tail；新增 `--oas-bubble-tail-size` / `--oas-bubble-tail-offset` / `--oas-bubble-tail-corner-radius`；SSR 首帧按显式 align 落侧。单测 + 真实浏览器 e2e + zh/en 文档/API/CHANGELOG | ✅ 已完成（未发布） |
+
 ## 未发布（包体止损批）
 
 | 范围 | 内容 | 状态 |

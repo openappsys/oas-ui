@@ -23,6 +23,39 @@ Content goes into the default slot; width fits content with an 80% container cap
 
 `align="start" | "end"` is implemented with logical layout (`margin-inline-start: auto` + `text-align: end`) — no physical-direction CSS.
 
+## Tail
+
+<DemoBlock title="Last bubble of a group in a two-sided conversation">
+  <div style="width: 100%; max-width: 480px; display: flex; flex-direction: column; gap: var(--oas-space-2_5)">
+    <oas-message-row>
+      <oas-avatar slot="avatar" size="28">G</oas-avatar>
+      <oas-bubble>Consecutive messages from the same sender: earlier ones carry no tail.</oas-bubble>
+    </oas-message-row>
+    <oas-message-row>
+      <oas-avatar slot="avatar" size="28">G</oas-avatar>
+      <oas-bubble tail="auto">The last one sets tail, pointing at its sender next to the avatar.</oas-bubble>
+    </oas-message-row>
+    <oas-message-row align="end">
+      <oas-avatar slot="avatar" size="28">Me</oas-avatar>
+      <oas-bubble align="end" variant="secondary">My message has no tail by default.</oas-bubble>
+    </oas-message-row>
+    <oas-message-row align="end">
+      <oas-avatar slot="avatar" size="28">Me</oas-avatar>
+      <oas-bubble align="end" variant="secondary" tail="auto">tail="auto" follows align and points at the sender on the end side.</oas-bubble>
+    </oas-message-row>
+  </div>
+</DemoBlock>
+
+<DemoBlock title="Variant behavior: outline falls back to a corner, muted / ghost omit the tail">
+  <div style="width: 100%; max-width: 480px; display: flex; flex-direction: column; gap: var(--oas-space-2_5)">
+    <oas-bubble tail="start" variant="outline">outline: no protruding tail; the bottom outer corner tightens so the border stays continuous.</oas-bubble>
+    <oas-bubble tail="start" variant="muted">muted: no surface, so no tail.</oas-bubble>
+    <oas-bubble tail="start" variant="ghost">ghost: no surface, so no tail.</oas-bubble>
+  </div>
+</DemoBlock>
+
+`tail="none | auto | start | end"` (default `none`). `auto` follows `align`: the other party (start) gets a bottom-left tail, my own messages (end) get a bottom-right tail. Filled variants (default / secondary / destructive) draw a curved tail at the bottom outer corner, colored from the bubble surface; `outline` falls back to a tightened bottom outer corner (no broken border), while `muted` / `ghost` have no surface and draw nothing. **In grouped conversations, set `tail` only on the last message of a run from the same sender**, matching common chat UIs. The tail is a decorative pseudo-element (not in the DOM or accessibility tree); size, offset and corner radius are tunable via `--oas-bubble-tail-size` / `--oas-bubble-tail-offset` / `--oas-bubble-tail-corner-radius`.
+
 ## Variants (variant)
 
 <DemoBlock title="Six semantic variants">
@@ -107,6 +140,7 @@ onMounted(async () => {
 | `reactions-align` | Horizontal alignment of the reaction bar: start / end; defaults to following the bubble align | — | — |
 | `reactions-side` | Vertical placement of the reaction bar: bottom (default, below the bubble) / top (above the bubble) | — | — |
 | `streaming` | Streaming state (boolean presence): content stays visible and the host reflects aria-busy; the content region uses aria-live=off to avoid per-token announcements, while a host status region announces completion. | `boolean` | — |
+| `tail` | Tail direction: none (default, no tail) \| auto (follow align: start or end side) \| start \| end — a small curved tail at the bottom outer corner pointing at the sender. Filled variants draw it, outline falls back to a tightened bottom outer corner, and muted / ghost omit it. In grouped conversations set it only on the last message of a run from the same sender. | `string` | `none` |
 
 #### Events
 
@@ -126,5 +160,8 @@ onMounted(async () => {
 | --- | --- |
 | `--oas-bubble-max-width` | `80%` |
 | `--oas-bubble-radius` | `var(--oas-radius-lg)` |
+| `--oas-bubble-tail-corner-radius` | `var(--oas-radius-sm)` |
+| `--oas-bubble-tail-offset` | `0` |
+| `--oas-bubble-tail-size` | `16px` |
 
 Parts: `::part(bubble)`, `::part(content)`, `::part(typing)`, `::part(reactions)` reaction strip / `::part(reaction)` a single reaction button. `align` (`start` default / `end`) and `variant` (`default` / `secondary` / `muted` / `outline` / `ghost` / `destructive`) are pure CSS channels.
