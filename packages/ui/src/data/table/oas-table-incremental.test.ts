@@ -265,7 +265,7 @@ describe('OASTable 增量渲染（选择切换零重算）', () => {
     const td = el.shadowRoot!.querySelector<HTMLTableCellElement>('tr[data-key="张三"] td[data-col="name"]')!
     td.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }))
     const input = td.querySelector<HTMLInputElement>('input.cell-editor')
-    expect(input, '双击进入编辑（input 通道）').not.toBeNull()
+    expect(input!.tagName, '双击进入编辑（input 通道）').toBe('INPUT')
     input!.value = '新名'
     // 仅选择变化（另一行）：渲染签名一致 → 局部补丁快路径（不重建行 DOM）
     el.setAttribute('selected', '李四')

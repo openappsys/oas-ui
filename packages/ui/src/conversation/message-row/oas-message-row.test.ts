@@ -116,6 +116,6 @@ describe('OASMessageRow', () => {
 
   it('空行渲染不报错', () => {
     const el = mount()
-    expect(el.shadowRoot!.querySelector('[part="row"]')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('[part="row"]').length).toBe(1)
   })
 })

@@ -36,7 +36,7 @@ describe('isRtl / resolveDirection 书写方向判定', () => {
     const h = host('rtl')
     const shadow = h.attachShadow({ mode: 'open' })
     shadow.innerHTML = '<div id="inner"></div>'
-    expect(shadow.querySelector('#inner')).toBeTruthy()
+    expect(shadow.querySelector('#inner')!.id).toBe('inner')
     expect(isRtl(h)).toBe(true)
   })
 })

@@ -99,7 +99,7 @@ describe('onMeasurable 隐藏容器测量自愈助手', () => {
     // 收敛后再触发也不重复 measure
     ro.cb()
     expect(measure).toHaveBeenCalledTimes(2)
-    expect(cancelled.length).toBeGreaterThan(0)
+    expect(cancelled.length, '收敛后重复 RO 回调不新增取消记录，但既有记录恰好一次').toBe(1)
   })
 
   it('连接后一次性 rAF 复测到有效即收敛', () => {

@@ -267,7 +267,7 @@ describe('P3 message 默认插槽（富内容）', () => {
     document.body.appendChild(el2)
     const slot2 = el2.shadowRoot!.querySelector<HTMLSlotElement>('slot')!
     const fallback2 = el2.shadowRoot!.querySelector<HTMLElement>('.message-text')!
-    expect(slot2.assignedNodes().length).toBeGreaterThan(0)
+    expect(slot2.assignedNodes().length, '富内容三个节点').toBe(3)
     expect(fallback2.hidden).toBe(true)
   })
 })

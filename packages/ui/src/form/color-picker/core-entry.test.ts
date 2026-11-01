@@ -57,7 +57,7 @@ describe('OASColorPicker 纯核入口（core：不含 designer 能力）', () =>
 
   it('无 gradient 配置时 core 入口渲染正常且不告警', () => {
     const plain = mount({ value: '#0b6cff' })
-    expect(plain.shadowRoot!.querySelector('[part="trigger"]')).not.toBeNull()
+    expect(plain.shadowRoot!.querySelectorAll('[part="trigger"]').length).toBe(1)
     const designerWarns = warnSpy.mock.calls.filter((call: unknown[]) =>
       String(call[0]).includes('form/color-picker/designer'),
     )

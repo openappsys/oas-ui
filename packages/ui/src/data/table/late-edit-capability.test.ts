@@ -26,7 +26,7 @@ describe('OASTable 编辑能力晚注册', () => {
     await import('./edit/index.js')
     await Promise.resolve()
 
-    expect(el.shadowRoot!.querySelector('td.editable-cell')).not.toBeNull()
-    expect(el.shadowRoot!.querySelector('.cell-edit-icon')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('td.editable-cell').length).toBe(1)
+    expect(el.shadowRoot!.querySelectorAll('.cell-edit-icon').length).toBe(1)
   })
 })

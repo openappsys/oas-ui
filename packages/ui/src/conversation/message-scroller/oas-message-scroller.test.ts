@@ -157,7 +157,7 @@ describe('OASMessageScroller', () => {
     el.addEventListener('oas-scroll-state', (e) => events.push((e as CustomEvent).detail))
     vp.scrollTop = 100
     vp.dispatchEvent(new Event('scroll'))
-    expect(events.length).toBeGreaterThan(0)
+    expect(events.length, '单次 scroll 广播一次').toBe(1)
     expect(events.at(-1)).toMatchObject({ atBottom: false, atTop: false, canScrollStart: true, canScrollEnd: true })
   })
 
@@ -342,7 +342,7 @@ describe('OASMessageScroller', () => {
     stubScroll(el, { scrollHeight: 1000, clientHeight: 400 })
     vp2.scrollTop = 100
     vp2.dispatchEvent(new Event('scroll'))
-    expect(events.length).toBeGreaterThan(0)
+    expect(events.length, '重连后单次 scroll 广播一次（含首帧）').toBe(2)
   })
 
   it('observedAttributes 覆盖全部公开属性', () => {

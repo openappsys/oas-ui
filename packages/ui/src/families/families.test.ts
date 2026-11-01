@@ -42,13 +42,24 @@ describe('CDN 按需打包：全族注册文件覆盖全量注册表', () => {
   const all = parseComponentImports(indexText)
 
   it('src/index.ts 全量清单可解析且按顶层目录对齐各族', () => {
-    expect(all.length).toBeGreaterThan(0)
+    expect(all.length, '全量注册表组件数').toBe(157)
     const tops = new Set(all.map((p) => p.split('/')[0]))
     expect(tops).toEqual(new Set(Object.values(FAMILY_DIR)))
     // 每个顶层目录的全部组件都在 index.ts 全量清单里
     for (const dir of Object.values(FAMILY_DIR)) {
       const dirComps = all.filter((p) => p.startsWith(`${dir}/`))
-      expect(dirComps.length).toBeGreaterThan(0)
+      const EXPECTED_PER_DIR: Record<string, number> = {
+        basic: 12,
+        layout: 9,
+        workbench: 5,
+        form: 35,
+        feedback: 24,
+        navigation: 23,
+        data: 38,
+        conversation: 8,
+        framework: 3,
+      }
+      expect(dirComps.length, `${dir} 族注册组件数`).toBe(EXPECTED_PER_DIR[dir])
       // 无空目录；framework 目录即基座三件，其余目录不含基座
       if (dir === 'framework') {
         expect(BASE_MODULES.every((b) => dirComps.includes(b))).toBe(true)

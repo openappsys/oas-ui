@@ -166,7 +166,7 @@ describe('QR 编码器（纯 TS 零依赖，L/M/Q/H 全级别，版本 1–40）
     const qr = encodeQR(text, 'l')
     expect(qr.version).toBeGreaterThanOrEqual(6)
     expect(qr.codewords.length).toBeLessThanOrEqual(346)
-    expect(qr.codewords.length).toBeGreaterThan(0)
+    expect(qr.codewords.length, 'v6-L 总码字数').toBe(172)
     // 回读校验（复用上面逻辑的最小验证）：位数应恰好等于码字数*8 + 余数位
     const size = qr.size
     let dataCells = 0

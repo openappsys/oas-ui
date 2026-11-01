@@ -227,7 +227,7 @@ describe('OASStatistic', () => {
     const up = mount({ value: '12', trend: 'up' })
     const trendUp = partEl(up, 'trend')
     expect(trendUp.hidden).toBe(false)
-    expect(trendUp.querySelector('svg')).not.toBeNull()
+    expect(trendUp.querySelectorAll('svg').length, '箭头 + 读屏兜底图标').toBe(2)
     const down = mount({ value: '12', trend: 'down' })
     expect(partEl(down, 'trend').hidden).toBe(false)
     up.removeAttribute('trend')
@@ -250,7 +250,7 @@ describe('OASStatistic', () => {
 
   it('loading 时骨架显示、value 区内容隐藏；取消后恢复', () => {
     const el = mount({ value: '123', loading: '' })
-    expect(el.shadowRoot!.querySelector('oas-skeleton')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('oas-skeleton').length).toBe(1)
     expect(skeleton(el).hasAttribute('hidden')).toBe(false)
     // 数值区内容（含 Intl 兜底文本）必须真正不可见，而非仅 textContent 仍在 DOM
     expect(valueInner(el).hidden).toBe(true)

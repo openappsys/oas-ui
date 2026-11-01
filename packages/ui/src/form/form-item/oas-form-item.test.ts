@@ -184,7 +184,7 @@ describe('OASFormItem', () => {
     const el = mount({ label: '姓名' }, '')
     const control = new OASInput()
     el.appendChild(control)
-    expect(control.shadowRoot).not.toBeNull() // 自定义元素已渲染
+    expect(control.shadowRoot!.mode, '自定义元素已渲染 open shadow').toBe('open')
     el.shadowRoot!.querySelector<HTMLElement>('[part="label"]')!.click()
     // happy-dom 重定向：document.activeElement 为宿主，shadowRoot.activeElement 指向内层 input
     expect(document.activeElement).toBe(control)
@@ -288,7 +288,7 @@ describe('OASFormItem status-icon 校验状态图标', () => {
     const icon = el.shadowRoot!.querySelector('[part="status-icon"]')!
     expect(icon.hasAttribute('hidden')).toBe(false)
     expect(icon.getAttribute('aria-hidden')).toBe('true')
-    expect(icon.querySelector('svg'), '图标内联 svg 渲染').not.toBeNull()
+    expect(icon.querySelectorAll('svg').length, '图标内联 svg 渲染').toBe(1)
   })
 
   it('setError(null)：图标随错误位一起隐藏', () => {

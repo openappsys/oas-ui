@@ -60,7 +60,7 @@ describe('modal 纯核入口（core：不含 prompt 能力）', () => {
     el.innerHTML = '<p>声明式内容</p>'
     document.body.appendChild(el)
     expect(el.getModalCapability('prompt')).toBeNull()
-    expect(el.shadowRoot!.querySelector('[role="dialog"]')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('[role="dialog"]').length).toBe(1)
     // 命令式 confirm 照常可用且无 prompt 告警噪音
     warnSpy.mockClear()
     modal.confirm({ title: '确认' })

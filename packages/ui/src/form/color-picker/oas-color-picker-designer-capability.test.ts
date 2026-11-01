@@ -83,7 +83,7 @@ describe('OASColorPicker designer 能力边界（纯核 core 入口：未 import
 
   it('core-only：无 mode=gradient 配置时正常渲染且不告警', () => {
     const plain = mount({ value: '#0b6cff' })
-    expect(plain.shadowRoot!.querySelector('[part="trigger"]')).not.toBeNull()
+    expect(plain.shadowRoot!.querySelectorAll('[part="trigger"]').length).toBe(1)
     expect(warnSpy.mock.calls.filter(isDesignerHint).length).toBe(0)
   })
 })

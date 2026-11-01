@@ -99,7 +99,7 @@ describe('OASCompact', () => {
 
   it('空组渲染不报错', () => {
     const el = mountCompact({}, [])
-    expect(el.shadowRoot!.querySelector('slot')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('slot:not([name])').length).toBe(1)
     expect(el.querySelectorAll(':scope > *').length).toBe(0)
   })
 

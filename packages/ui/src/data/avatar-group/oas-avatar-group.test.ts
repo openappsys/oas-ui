@@ -25,7 +25,7 @@ describe('OASAvatarGroup', () => {
 
   it('渲染分组容器并保留全部头像', () => {
     const el = mount(5)
-    expect(el.shadowRoot!.querySelector('[part="group"]')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('[part="group"]').length).toBe(1)
     expect(el.querySelectorAll('oas-avatar').length).toBe(5)
   })
 

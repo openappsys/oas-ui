@@ -117,7 +117,8 @@ describe('内联图标约定：class="chevron" 的 path 必须是规范 V 形', 
         offenders.push(`${file.slice(here.length + 1)}: d="${d}"（应为 "${CANONICAL_CHEVRON}"）`)
       }
     }
-    expect(checked, '应至少扫描到内联 chevron（否则匹配规则失效）').toBeGreaterThan(0)
+    // 扫描到的内联 chevron 数量（新增内联 chevron 时同步更新；用于防「正则失效扫不到任何文件」）
+    expect(checked, '内联 chevron 扫描命中数').toBe(6)
     expect(offenders, '内联 chevron 路径与规范 V 形不一致，图标会画歪').toEqual([])
   })
 
@@ -234,7 +235,7 @@ describe('theme 预设 -text 档：锁色相（漂移 ≤ 12°）', () => {
   }
 
   it('守卫自身有效：gold 调成 red 能被捕获、当前值不误报', () => {
-    expect(hueDriftViolations('light', withText('light', { gold: '#da1e28' })).length).toBeGreaterThan(0)
+    expect(hueDriftViolations('light', withText('light', { gold: '#da1e28' })).length, '仅 gold 越界').toBe(1)
     // 本色相跨度远大于阈值：gold(76°) → red(26°) 这种"改色相"必被拦
     expect(hueDiff(hexToOklch('#faad14').h, hexToOklch('#f5222d').h)).toBeGreaterThan(TEXT_MAX_HUE_DRIFT)
     expect(hueDriftViolations('light')).toEqual([])

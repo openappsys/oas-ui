@@ -928,7 +928,7 @@ describe('OASAnchorTarget', () => {
     document.body.appendChild(t)
     const target = t.shadowRoot!.querySelector('[part="target"]')!
     expect(target.getAttribute('id')).toBe('mark-1')
-    expect(target.querySelector('slot')).not.toBeNull()
+    expect(target.querySelectorAll('slot:not([name])').length).toBe(1)
     expect(t.textContent).toBe('目标标题')
   })
 
@@ -1146,7 +1146,7 @@ describe('OASAnchor 墨水条 hidden 容器尺寸守卫/自愈', () => {
 
   it('零尺寸守卫：当前项不可测（offsetHeight=0）时不写入 0 尺寸（链路待测）', () => {
     const el = mount({ active: '#section1' })
-    expect(roRef, '应建立宿主尺寸观察器以待复测').not.toBeNull()
+    expect(typeof roRef!.cb, '应建立宿主尺寸观察器以待复测').toBe('function')
     const ink = inkOf(el)
     expect(ink.style.height, '量到 0 不得写入 0px').not.toBe('0px')
     expect(ink.style.top, '量到 0 不得写入 0px').not.toBe('0px')

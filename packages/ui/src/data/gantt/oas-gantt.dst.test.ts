@@ -80,7 +80,7 @@ describe('OASGantt DST 边界（America/New_York）', () => {
       'range-end': '2026-03-10',
     })
     const units = internals(el).units
-    expect(units.length).toBeGreaterThan(0)
+    expect(units.length, '03-01..03-10 共 10 个日刻度').toBe(10)
     for (const u of units) {
       const d = new Date(u.startMs)
       expect(d.getHours(), `单位 ${u.minor} 起点应为本地零点`).toBe(0)

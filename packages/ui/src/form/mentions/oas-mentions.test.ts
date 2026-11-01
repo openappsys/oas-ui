@@ -104,7 +104,6 @@ describe('OASMentions', () => {
     const el = mount({ options: OPTIONS })
     type(el, '@zzz')
     const empty = el.shadowRoot!.querySelector('.empty')
-    expect(empty).not.toBeNull()
     expect(empty!.textContent).toBe('无匹配提及')
   })
 
@@ -477,7 +476,7 @@ describe('OASMentions', () => {
     type(el, '@zzz')
     const empty = el.shadowRoot!.querySelector('.empty')!
     expect(empty.querySelector<HTMLElement>('.empty-default')!.hidden).toBe(true)
-    expect(empty.querySelector('slot[name="empty"]')).not.toBeNull()
+    expect(empty.querySelectorAll('slot[name="empty"]').length).toBe(1)
   })
 
   it('header/footer 插槽随面板展开可见（[slot=...] 提供时容器不 hidden）', () => {

@@ -162,7 +162,6 @@ describe('OASGradientText', () => {
     // 缺省描边色走 text-primary token（随主题亮暗自动切换）
     expect(el.style.getPropertyValue('--oas-gradient-text-stroke-c')).toBe('var(--oas-color-text-primary)')
     const layer = el.shadowRoot!.querySelector<HTMLElement>('[part="stroke"]')!
-    expect(layer).not.toBeNull()
     expect(layer.textContent).toBe('渐变文字')
     expect(layer.getAttribute('aria-hidden')).toBe('true')
   })

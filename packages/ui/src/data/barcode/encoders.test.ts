@@ -3,7 +3,6 @@ import { encodeBarcode, gs1CheckDigit, BarcodeEncodeError, BARCODE_FORMATS, type
 
 /** runs 结构不变量：恒以条开头/结尾、条空交替、总模数守恒 */
 function assertRunInvariants(r: EncodeResult): void {
-  expect(r.runs.length).toBeGreaterThan(0)
   expect(
     r.runs.every((n) => Number.isInteger(n) && n > 0),
     '所有 run 宽度须为正整数',

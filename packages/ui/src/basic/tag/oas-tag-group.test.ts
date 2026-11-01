@@ -121,7 +121,7 @@ describe('OASTagGroup', () => {
 
   it('零子签空组不报错', () => {
     const el = mountGroup({}, [])
-    expect(groupRoot(el)).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('[part="group"]').length).toBe(1)
   })
 
   it('无 value 的子签不参与选值、不派发组 oas-change', () => {

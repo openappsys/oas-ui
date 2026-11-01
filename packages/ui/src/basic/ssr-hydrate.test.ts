@@ -154,7 +154,7 @@ describe('基础纯展示 + 浮层触发 + 框架容器 DSD 真水合批次 5', 
       // 指纹 meta 已移除
       expect(el.shadowRoot!.querySelector('meta[data-oas-ssr]')).toBeNull()
       // 关键结构仍在
-      expect(el.shadowRoot!.querySelector(f.probe)).not.toBeNull()
+      expect(el.shadowRoot!.querySelector(f.probe)!.isConnected, '关键结构仍在且已连接').toBe(true)
       // 快照确实含关键结构（保证用例在测真水合而非空快照）
       if (f.hasStyle !== false) expect(snap).toContain('<style>')
       expect(snap).not.toContain('data-oas-ssr')
@@ -167,7 +167,7 @@ describe('基础纯展示 + 浮层触发 + 框架容器 DSD 真水合批次 5', 
       f.setup?.(el)
       document.body.appendChild(el)
       // render 重建出完整结构，指纹被重建清掉
-      expect(el.shadowRoot!.querySelector(f.probe)).not.toBeNull()
+      expect(el.shadowRoot!.querySelector(f.probe)!.isConnected, '关键结构仍在且已连接').toBe(true)
       expect(el.shadowRoot!.querySelector('meta[data-oas-ssr]')).toBeNull()
     })
   }

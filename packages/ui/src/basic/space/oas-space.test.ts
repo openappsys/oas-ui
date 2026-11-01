@@ -192,7 +192,7 @@ describe('OASSpace', () => {
   it('fill 移除后清掉子项 flex；分隔符子项不受 fill 影响', () => {
     const el = mountWith({ fill: '', separator: '|' }, '<span>一</span><span>二</span>')
     const sep = el.querySelector<HTMLElement>(':scope > .oas-space-separator')
-    expect(sep).not.toBeNull()
+    expect(sep!.textContent).toBe('|')
     expect(sep!.style.flex).toBe('')
     const items = el.querySelectorAll<HTMLElement>(':scope > span:not(.oas-space-separator)')
     expect(items[0]!.style.flex).toBe('1 1 0%')
@@ -297,6 +297,6 @@ describe('OASSpace', () => {
     expect(el.style.rowGap).not.toBe('')
     const css = el.shadowRoot!.querySelector('style')!.textContent!
     expect(css).not.toMatch(/margin-left|margin-right|padding-left|padding-right/)
-    expect(el.shadowRoot!.querySelector('slot')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('slot:not([name])').length).toBe(1)
   })
 })

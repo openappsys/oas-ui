@@ -50,7 +50,7 @@ describe('OASTabs 主路径入口（index 内含 manager 能力）', () => {
     const el = mount({ 'context-menu': '' })
     rightClickTab(el, 'b')
     const menu = el.shadowRoot!.querySelector('.ctx-menu') as HTMLElement
-    expect(menu).not.toBeNull()
+    expect(menu.getAttribute('part')).toBe('context-menu')
     expect(menu.hidden).toBe(false)
     expect(menu.getAttribute('part')).toBe('context-menu')
     const items = [...menu.querySelectorAll<HTMLElement>('.ctx-item')]
@@ -80,7 +80,7 @@ describe('OASTabs 主路径入口（index 内含 manager 能力）', () => {
     const tabA = el.shadowRoot!.querySelector<HTMLElement>('[role="tab"][data-value="a"]')!
     tabA.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }))
     const input = tabA.querySelector<HTMLInputElement>('.tab-rename-input')
-    expect(input).not.toBeNull()
+    expect(input!.tagName).toBe('INPUT')
     expect(input!.value).toBe('文档一')
   })
 })

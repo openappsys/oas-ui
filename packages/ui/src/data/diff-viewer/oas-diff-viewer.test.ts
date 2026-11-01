@@ -258,7 +258,7 @@ describe('OASDiffViewer 视图与键盘', () => {
     expect(el.scrollToChange(0)).toBe(true)
     const active = el.shadowRoot!.querySelector('[part="row"].active')!
     expect(active.getAttribute('data-op')).toBe('delete')
-    expect(viewport(el).scrollTop).toBeGreaterThan(0)
+    expect(viewport(el).scrollTop).toBe(2260)
     expect(el.scrollToChange(99)).toBe(false)
   })
 

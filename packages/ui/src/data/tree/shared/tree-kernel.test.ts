@@ -218,7 +218,7 @@ describe('tree-kernel：懒加载状态机 + 模板克隆', () => {
     const t = document.createElement('template')
     t.innerHTML = '<b data-node-label></b>'
     const frag = cloneSlotContent(t)
-    expect(frag.querySelector('b')).not.toBeNull()
-    expect(t.content.querySelector('b')).not.toBeNull() // 不改动源模板
+    expect(frag.querySelectorAll('b[data-node-label]').length).toBe(1)
+    expect(t.content.querySelectorAll('b[data-node-label]').length, '不改动源模板').toBe(1)
   })
 })

@@ -63,7 +63,7 @@ describe('OASAspectRatio', () => {
 
   it('无子内容仍保比例占位', () => {
     const el = mount({ ratio: '16/9' }, '')
-    expect(el.shadowRoot!.querySelector('slot')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('slot:not([name])').length).toBe(1)
     expect(el.style.aspectRatio).toBe('16 / 9')
   })
 })

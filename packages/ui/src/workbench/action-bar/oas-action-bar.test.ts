@@ -126,7 +126,7 @@ describe('OASActionBar 容器', () => {
 
   it('无井时退化为纯命令条（center 无内容不塌占位——auto margin 由插槽容器承担）', () => {
     const el = mount({ html: '<span>只有命令</span>' })
-    expect(el.shadowRoot!.querySelector('[part="center"]')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('[part="center"]').length).toBe(1)
     expect(el.shadowRoot!.querySelector<HTMLElement>('[part="center"]')!.hidden).toBe(true)
   })
 

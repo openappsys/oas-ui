@@ -168,7 +168,7 @@ describe('OASStatusbarItem 单元格', () => {
 
   it('spinning 属性显示 spinner（旋转动画走样式表），移除后隐藏', () => {
     const el = mountItem({ attrs: { label: '同步中', spinning: '' } })
-    expect(spinner(el)).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('[part="item-spinner"]').length).toBe(1)
     expect(styleText(el)).toContain('animation')
     el.removeAttribute('spinning')
     expect(spinner(el)!.hidden).toBe(true)
@@ -176,7 +176,7 @@ describe('OASStatusbarItem 单元格', () => {
 
   it('icon 属性从内置图标注册表渲染 svg，未知图标名不渲染', () => {
     const el = mountItem({ attrs: { label: 'git', icon: 'check' } })
-    expect(iconSvg(el)).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('[part="item-icon"] svg').length).toBe(1)
     const el2 = mountItem({ attrs: { label: 'x', icon: 'not-exist-icon' } })
     expect(iconSvg(el2)).toBeNull()
   })

@@ -77,8 +77,8 @@ describe('OASColorPicker designer（import 即注册）', () => {
 
   it('渲染 2D 色域 + hue 竖条（不再渲染 H/S/V 三滑轨）', () => {
     const el = mount({ value: '#ff0000' })
-    expect(el.shadowRoot!.querySelector('.sv2d')).not.toBeNull()
-    expect(el.shadowRoot!.querySelector('.hue')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('.sv2d').length).toBe(1)
+    expect(el.shadowRoot!.querySelectorAll('.hue').length).toBe(1)
     expect(el.shadowRoot!.querySelector('input.hue')).toBeNull()
     expect(el.shadowRoot!.querySelector('input.sat')).toBeNull()
     expect(el.shadowRoot!.querySelector('input.val')).toBeNull()

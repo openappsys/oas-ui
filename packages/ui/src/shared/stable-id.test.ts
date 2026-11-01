@@ -10,8 +10,7 @@ describe('stableHash36', () => {
   it('恒为非空 base36（字母数字，可安全用于 id 片段）', () => {
     for (const seed of ['', 'a', '中文', 'oas-picker-columns', '\u0000x']) {
       const out = stableHash36(seed)
-      expect(out.length).toBeGreaterThan(0)
-      expect(out).toMatch(/^[0-9a-z]+$/)
+      expect(out).toMatch(/^[0-9a-z]{6,7}$/)
     }
   })
 

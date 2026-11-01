@@ -429,7 +429,7 @@ describe('OASHighlight', () => {
     el.setAttribute('highlight', 'hello')
     el.shadowRoot!.innerHTML = '<meta data-oas-ssr="oas-highlight" data-oas-ssr-v="1"><span>broken</span>'
     document.body.appendChild(el)
-    expect(el.shadowRoot!.querySelector('[part="root"]')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('[part="root"]').length).toBe(1)
     expect(el.shadowRoot!.querySelector('meta[data-oas-ssr]')).toBeNull()
     expect(marks(el).length).toBe(1)
   })

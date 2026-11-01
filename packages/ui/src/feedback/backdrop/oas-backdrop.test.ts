@@ -70,7 +70,7 @@ describe('OASBackdrop', () => {
   describe('滚动锁定（既有能力保持）', () => {
     it('open 锁定滚动：拦截滚动行为但保留滚动条（不移除 → 视口宽度不变 → 无页面位移）', () => {
       const el = mount({ open: '' })
-      expect(el.shadowRoot!.querySelector('[part="mask"]')).not.toBeNull()
+      expect(el.shadowRoot!.querySelectorAll('[part="mask"]').length).toBe(1)
       // 不移除滚动条（overflow 保持空，滚动条可见）
       expect(document.documentElement.style.overflow).toBe('')
       // 拦截滚动行为

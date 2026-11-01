@@ -15,7 +15,7 @@ describe('confirm 命令式 API', () => {
     confirm({ title: '确认删除', content: '删除后不可恢复' })
     await Promise.resolve()
     const modal = document.body.querySelector('oas-modal')!
-    expect(modal).not.toBeNull()
+    expect(modal.tagName).toBe('OAS-MODAL')
     // title 吸收：宿主原生 title 被吸收移除，标题渲染进可见标题区（无残留原生悬浮提示）
     expect(modal.getAttribute('title')).toBeNull()
     expect(modal.shadowRoot!.querySelector('[part="title"]')!.textContent).toBe('确认删除')

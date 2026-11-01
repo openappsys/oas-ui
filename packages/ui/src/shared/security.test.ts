@@ -67,7 +67,7 @@ describe('HTML/SVG 注入安全回归', () => {
     const unsafe = mount(new OASButton(), { href: 'javascript:window.__oas_xss=1' })
     await flush()
     expect(unsafe.shadowRoot!.querySelector('a')).toBeNull()
-    expect(unsafe.shadowRoot!.querySelector('button')).not.toBeNull()
+    expect(unsafe.shadowRoot!.querySelectorAll('button').length).toBe(1)
   })
 
   it('tag 的链接属性不逃逸，javascript: 退化为 span', async () => {
@@ -81,7 +81,7 @@ describe('HTML/SVG 注入安全回归', () => {
     const unsafe = mount(new OASTag(), { href: 'javascript:window.__oas_xss=1' })
     await flush()
     expect(unsafe.shadowRoot!.querySelector('a')).toBeNull()
-    expect(unsafe.shadowRoot!.querySelector('span.tag')).not.toBeNull()
+    expect(unsafe.shadowRoot!.querySelectorAll('span.tag').length).toBe(1)
   })
 
   it('tag 的 icon 名不逃逸属性上下文', async () => {

@@ -362,7 +362,7 @@ describe('OASToolbar 属性增强', () => {
       const el = mount('<button>一</button><button>二</button>')
       const moreBtn = el.shadowRoot!.querySelector<HTMLButtonElement>('[part="more"]')!
       const panel = el.shadowRoot!.querySelector<HTMLElement>('[part="more-panel"]')!
-      expect(lastRO).not.toBeNull()
+      expect(lastRO!.observed, '挂载即观察宿主').toContain(el)
       // 断开 → 重连：重连后 ResizeObserver 重新 observe 本宿主
       el.remove()
       document.body.appendChild(el)

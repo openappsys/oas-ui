@@ -17,7 +17,7 @@ describe('OASGrid', () => {
     document.body.appendChild(grid)
     const items = grid.querySelectorAll('oas-grid-item')
     expect(items.length).toBe(2)
-    expect(grid.shadowRoot!.querySelector('slot')).not.toBeNull()
+    expect(grid.shadowRoot!.querySelectorAll('slot:not([name])').length).toBe(1)
   })
 
   it('不写内联 display（:host{display:grid} 样式表兜底）——内联 display 会压过 :host([hidden]) 使动态 hidden 失效', () => {
