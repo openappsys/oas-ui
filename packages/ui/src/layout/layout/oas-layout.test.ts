@@ -19,15 +19,15 @@ describe('OASLayout', () => {
       <oas-footer>底部</oas-footer>
     `
     document.body.appendChild(layout)
-    expect(layout.shadowRoot!.querySelector('[part="root"]')).not.toBeNull()
-    expect(layout.shadowRoot!.querySelector('[part="sider"]')).not.toBeNull()
+    expect(layout.shadowRoot!.querySelectorAll('[part="root"]').length).toBe(1)
+    expect(layout.shadowRoot!.querySelectorAll('[part="sider"]').length).toBe(1)
   })
 
   it('注册四个子组件', () => {
-    expect(customElements.get('oas-header')).not.toBeNull()
-    expect(customElements.get('oas-sider')).not.toBeNull()
-    expect(customElements.get('oas-content')).not.toBeNull()
-    expect(customElements.get('oas-footer')).not.toBeNull()
+    expect(typeof customElements.get('oas-header')).toBe('function')
+    expect(typeof customElements.get('oas-sider')).toBe('function')
+    expect(typeof customElements.get('oas-content')).toBe('function')
+    expect(typeof customElements.get('oas-footer')).toBe('function')
   })
 })
 

@@ -79,10 +79,9 @@ describe('OASContextMenu', () => {
     await Promise.resolve()
     const menu = el.shadowRoot!.querySelector('oas-menu') as HTMLElement & { shadowRoot: ShadowRoot }
     const list = menu.shadowRoot.activeElement as HTMLElement | null
-    expect(list, '打开后焦点应落入内层菜单').not.toBeNull()
-    expect(list!.getAttribute('role')).toBe('menu')
+    expect(list!.getAttribute('role'), '打开后焦点应落入内层菜单').toBe('menu')
     list!.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true, cancelable: true }))
-    expect(innerMenuRoot(el).querySelector('[part="item"].active')).not.toBeNull()
+    expect(innerMenuRoot(el).querySelectorAll('[part="item"].active').length).toBe(1)
   })
 
   it('Esc 关闭后焦点回到触发源元素', async () => {
@@ -374,7 +373,7 @@ describe('OASContextMenu 子元素声明式通道', () => {
     expect(edit.getAttribute('role')).toBe('menuitem')
     edit.dispatchEvent(new MouseEvent('mouseenter'))
     expect(edit.getAttribute('aria-expanded')).toBe('true')
-    expect(root.querySelector('[part="item"][data-value="select-all"]')).not.toBeNull()
+    expect(root.querySelectorAll('[part="item"][data-value="select-all"]').length).toBe(1)
     // 点击选中事件 detail 与 items 通道一致（{ value } + 关闭）
     let detail: unknown
     el.addEventListener('oas-select', (e: Event) => (detail = (e as CustomEvent).detail))
@@ -410,7 +409,7 @@ describe('OASContextMenu 子元素声明式通道', () => {
     // checkbox：menuitemcheckbox + 方块勾选框
     const grid = root.querySelector<HTMLElement>('[part="item"][data-value="grid"]')!
     expect(grid.getAttribute('role')).toBe('menuitemcheckbox')
-    expect(grid.querySelector('.check--box')).not.toBeNull()
+    expect(grid.querySelectorAll('.check--box').length).toBe(1)
     // danger 红字类
     expect(root.querySelector('[data-value="del"]')!.classList.contains('danger')).toBe(true)
     // href 链接项渲染为 <a>
@@ -424,7 +423,7 @@ describe('OASContextMenu 子元素声明式通道', () => {
     expect(save.classList.contains('loading')).toBe(true)
     expect(save.getAttribute('aria-busy')).toBe('true')
     expect(save.getAttribute('aria-disabled')).toBe('true')
-    expect(save.querySelector('.spin')).not.toBeNull()
+    expect(save.querySelectorAll('.spin').length).toBe(1)
     // disabled 禁点
     const off = root.querySelector<HTMLElement>('[part="item"][data-value="off"]')!
     expect(off.getAttribute('aria-disabled')).toBe('true')
@@ -459,7 +458,7 @@ describe('OASContextMenu 子元素声明式通道', () => {
     el.appendChild(item)
     await new Promise((r) => setTimeout(r, 0))
     expect(innerMenuRoot(el).querySelectorAll('[part="item"]').length).toBe(2)
-    expect(innerMenuRoot(el).querySelector('[part="item"][data-value="paste"]')).not.toBeNull()
+    expect(innerMenuRoot(el).querySelectorAll('[part="item"][data-value="paste"]').length).toBe(1)
   })
 
   it('右键打开定位 + Escape 关闭不受影响（子元素通道下同样走定位/Esc 关闭路径）', async () => {

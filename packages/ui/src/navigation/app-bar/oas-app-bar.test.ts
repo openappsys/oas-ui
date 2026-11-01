@@ -448,7 +448,7 @@ describe('OASAppBar overflow 溢出收纳', () => {
       const el = mount({
         html: '<button slot="actions">一</button><button slot="actions">二</button><button slot="actions">三</button>',
       })
-      expect(lastRO).not.toBeNull()
+      expect(lastRO!.observed, '挂载即观察宿主').toContain(el)
       // 断开 → 重连：重连后 ResizeObserver 重新 observe
       el.remove()
       document.body.appendChild(el)
@@ -663,9 +663,9 @@ describe('OASAppBar DSD 真水合', () => {
     const { el, styleRef } = upgradeFromSnapshot(snap, setup)
     expect(el.shadowRoot!.querySelector('style')).toBe(styleRef)
     expect(el.shadowRoot!.querySelector('meta[data-oas-ssr]')).toBeNull()
-    expect(el.shadowRoot!.querySelector('[part="bar"]')).not.toBeNull()
-    expect(el.shadowRoot!.querySelector('[part="menu-button"]')).not.toBeNull()
-    expect(el.shadowRoot!.querySelector('[part="extended"]')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('[part="bar"]').length).toBe(1)
+    expect(el.shadowRoot!.querySelectorAll('[part="menu-button"]').length).toBe(1)
+    expect(el.shadowRoot!.querySelectorAll('[part="extended"]').length).toBe(1)
     expect(snap).toContain('<style>')
     expect(snap).not.toContain('data-oas-ssr')
   })
@@ -692,7 +692,7 @@ describe('OASAppBar DSD 真水合', () => {
     const tag = el.tagName.toLowerCase()
     el.shadowRoot!.innerHTML = `<meta data-oas-ssr="${tag}" data-oas-ssr-v="1"><span>broken</span>`
     document.body.appendChild(el)
-    expect(el.shadowRoot!.querySelector('[part="bar"]')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('[part="bar"]').length).toBe(1)
     expect(el.shadowRoot!.querySelector('meta[data-oas-ssr]')).toBeNull()
   })
 

@@ -623,7 +623,8 @@ describe('浮层定位（fixed + computePosition 12 向）', () => {
       ({ left: 569, top: 505, width: 180, height: 32, right: 749, bottom: 537 }) as DOMRect
     open(el)
     const afterOpen = computePositionMock.mock.calls.length
-    expect(afterOpen).toBeGreaterThan(0)
+    // 打开时的定位调用次数取决于重排次数（实现细节），下界 1 证明已走 fixed 锚定
+    expect(afterOpen).toBeGreaterThanOrEqual(1)
     popupW = 198
     await new Promise((r) => setTimeout(r, 60)) // rAF 重定位帧
     expect(computePositionMock.mock.calls.length, '内容撑宽后应有重定位调用').toBeGreaterThan(afterOpen)
@@ -678,7 +679,7 @@ describe('OASTimePicker 移动端底部抽屉（bottom-sheet 接入）', () => {
 
   it('模板恒包 oas-bottom-sheet（SSR/客户端结构一致），PC 默认 passive 透传', () => {
     const el = mount()
-    expect(sheet(el)).toBeTruthy()
+    expect(sheet(el).tagName).toBe('OAS-BOTTOM-SHEET')
     expect(sheet(el).getAttribute('part')).toBe('sheet')
     expect(sheet(el).hasAttribute('passive')).toBe(true)
     expect(sheet(el).contains(dropdown(el))).toBe(true)
@@ -716,7 +717,8 @@ describe('OASTimePicker 移动端底部抽屉（bottom-sheet 接入）', () => {
     open(el)
     expect(expanded(el)).toBe('true')
     expect(sheet(el).hasAttribute('open')).toBe(false)
-    expect(computePositionMock.mock.calls.length).toBeGreaterThan(0)
+    // PC 展开必走 fixed 锚定；调用次数受重排影响（实现细节），下界 1 即可
+    expect(computePositionMock.mock.calls.length).toBeGreaterThanOrEqual(1)
   })
 
   it('移动形态时间列选项触控目标抬升：.option min-height 对齐 --oas-touch-target-min', () => {
@@ -881,7 +883,7 @@ describe('OASTimePicker form-associated（原生表单集成）', () => {
     const missing = fake.setValidity.mock.calls.at(-1)
     expect(missing?.[0]).toEqual({ valueMissing: true })
     expect(typeof missing?.[1]).toBe('string')
-    expect((missing?.[1] as string).length).toBeGreaterThan(0)
+    expect(missing?.[1] as string).toMatch(/\S/)
     pick(el, 1, '15')
     expect(fake.setValidity).toHaveBeenLastCalledWith({})
   })
@@ -1151,7 +1153,7 @@ describe('OASTimePicker 清空按钮键盘可达（I4）', () => {
     expect(clearBtn.tagName).toBe('BUTTON')
     expect(clearBtn.hasAttribute('tabindex')).toBe(false)
     expect(clearBtn.tabIndex).toBe(0)
-    expect((clearBtn.getAttribute('aria-label') ?? '').length).toBeGreaterThan(0)
+    expect(clearBtn.getAttribute('aria-label')).toBe('清除')
   })
 
   it('面板展开时清空按钮仍可聚焦（不移出 Tab 序）', () => {

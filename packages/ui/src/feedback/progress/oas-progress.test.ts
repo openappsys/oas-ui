@@ -209,7 +209,7 @@ describe('OASProgress', () => {
     slot.dispatchEvent(new Event('slotchange'))
     const value = el.shadowRoot!.querySelector<HTMLElement>('.text-value')!
     expect(value.hidden).toBe(true)
-    expect(slot.assignedNodes({ flatten: true }).length).toBeGreaterThan(0)
+    expect(slot.assignedNodes({ flatten: true }).length).toBe(1)
   })
 
   it('slot 无内容时内置百分比照常显示', () => {
@@ -227,7 +227,7 @@ describe('OASProgress', () => {
     el.innerHTML = '<b>3/5</b>'
     const slot = el.shadowRoot!.querySelector<HTMLSlotElement>('.circle-text slot')
     slot?.dispatchEvent(new Event('slotchange'))
-    expect(el.shadowRoot!.querySelector('.circle-text slot')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('.circle-text slot').length).toBe(1)
     const value = el.shadowRoot!.querySelector<HTMLElement>('.circle-value')!
     expect(value.hidden).toBe(true)
   })
@@ -445,19 +445,18 @@ describe('OASProgress', () => {
     const ok = mount({ type: 'circle', percent: '80', status: 'success' })
     const icon = ok.shadowRoot!.querySelector<HTMLElement>('.circle-icon')!
     const svg = icon.querySelector('svg')
-    expect(svg).not.toBeNull()
     expect(svg!.getAttribute('viewBox')).toBe('0 0 16 16')
     expect(icon.getAttribute('aria-hidden')).toBe('true')
     expect(ok.shadowRoot!.querySelector<HTMLElement>('.circle-value')!.hidden).toBe(true)
     const err = mount({ type: 'circle', percent: '80', status: 'error' })
-    expect(err.shadowRoot!.querySelector('.circle-icon svg')).not.toBeNull()
+    expect(err.shadowRoot!.querySelectorAll('.circle-icon svg').length).toBe(1)
     const warn = mount({ type: 'circle', percent: '80', status: 'warning' })
-    expect(warn.shadowRoot!.querySelector('.circle-icon svg')).not.toBeNull()
+    expect(warn.shadowRoot!.querySelectorAll('.circle-icon svg').length).toBe(1)
   })
 
   it('percent 满值无 status 自动显示成功图标；恢复进度后还原百分比', () => {
     const el = mount({ type: 'circle', percent: '100' })
-    expect(el.shadowRoot!.querySelector('.circle-icon svg')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('.circle-icon svg').length).toBe(1)
     expect(el.shadowRoot!.querySelector<HTMLElement>('.circle-value')!.hidden).toBe(true)
     el.setAttribute('percent', '40')
     expect(el.shadowRoot!.querySelector('.circle-icon svg')).toBeNull()

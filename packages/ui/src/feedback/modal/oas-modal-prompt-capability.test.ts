@@ -75,7 +75,7 @@ describe('modal prompt 能力边界（纯核 core 入口：未 import prompt 能
     el.innerHTML = '<p>声明式内容</p>'
     document.body.appendChild(el)
     expect(el.getModalCapability('prompt')).toBeNull()
-    expect(el.shadowRoot!.querySelector('[role="dialog"]')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('[role="dialog"]').length).toBe(1)
     expect(el.textContent).toContain('声明式内容')
     // 命令式 confirm 照常可用且无 prompt 告警噪音
     warnSpy.mockClear()
@@ -108,12 +108,10 @@ describe('modal prompt 能力（import 能力包后全链路）', () => {
 
   it('import 后 modal.prompt 返回句柄、对话框正常创建且无能力告警', () => {
     const p = modal.prompt({ title: '输入' })
-    expect(p).not.toBeNull()
     const el = document.body.querySelector('oas-modal') as OASModal
-    expect(el).not.toBeNull()
     expect(el.hasAttribute('visible')).toBe(true)
     // 宿主注入 prompt controller：命令式层按名取得到（委托点生效）
-    expect(el.getModalCapability('prompt')).not.toBeNull()
+    expect(typeof el.getModalCapability('prompt')).toBe('object')
     expect(warnSpy.mock.calls.filter(isPromptHint).length).toBe(0)
     p.close()
   })
@@ -123,7 +121,6 @@ describe('modal prompt 能力（import 能力包后全链路）', () => {
     await Promise.resolve()
     const el = document.body.querySelector('oas-modal')!
     const input = el.querySelector('input')!
-    expect(input).not.toBeNull()
     expect(input.value).toBe('oas-ui')
     expect(input.getAttribute('placeholder')).toBe('请输入')
     expect(document.activeElement).toBe(input)
@@ -138,7 +135,7 @@ describe('modal prompt 能力（import 能力包后全链路）', () => {
     const [pa, pb, pc] = document.body.querySelectorAll('oas-modal')
     expect(pa!.querySelector('input')!.type).toBe('password')
     expect(pb!.querySelector('input')!.type).toBe('number')
-    expect(pc!.querySelector('textarea')).not.toBeNull()
+    expect(pc!.querySelectorAll('textarea').length).toBe(1)
   })
 
   it('PG4/PG5/PB1 validator 返回 false：校验失败保持打开 + 默认错误文案 + danger 边框 + aria-invalid；输入修正自动清除可再提交', async () => {

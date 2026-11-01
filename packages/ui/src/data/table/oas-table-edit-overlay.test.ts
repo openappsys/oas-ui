@@ -89,7 +89,7 @@ describe('editComponent 浮层编辑器通道（oas-select / oas-date-picker）'
     const el = mount()
     const td = enterEdit(el, 'dept')
     const comp = td.querySelector<HTMLElement>('oas-select.cell-editor-component')
-    expect(comp, '浮层组件编辑器挂载').not.toBeNull()
+    expect(comp!.tagName, '浮层组件编辑器挂载').toBe('OAS-SELECT')
     expect(td.querySelector('select.cell-editor'), '不落原生 select 通道').toBeNull()
     // 选项同步：editOptions 优先（value 归一字符串序列化）
     expect(JSON.parse(comp!.getAttribute('options')!)).toEqual([
@@ -108,11 +108,11 @@ describe('editComponent 浮层编辑器通道（oas-select / oas-date-picker）'
     const el = mount()
     const td = enterEdit(el, 'joined')
     const comp = td.querySelector<HTMLElement>('oas-date-picker.cell-editor-component')
-    expect(comp, 'date-picker 编辑器挂载').not.toBeNull()
+    expect(comp!.tagName, 'date-picker 编辑器挂载').toBe('OAS-DATE-PICKER')
     expect(comp!.getAttribute('value')).toBe('2026-03-15')
     expect(triggerOf(comp!).getAttribute('aria-expanded')).toBe('true')
     // 面板锚定选中值所在月
-    expect(comp!.shadowRoot!.querySelector('.day[data-date="2026-03-15"]')).not.toBeNull()
+    expect(comp!.shadowRoot!.querySelectorAll('.day[data-date="2026-03-15"]').length).toBe(1)
   })
 
   it('浮层内交互不误提交：点选项行引发失焦不提交，oas-change 才提交（第一期缺口回归）', () => {
@@ -184,7 +184,7 @@ describe('editComponent 浮层编辑器通道（oas-select / oas-date-picker）'
     })
     const td = enterEdit(el, 'v')
     const comp = td.querySelector<HTMLElement>('oas-input.cell-editor-component')
-    expect(comp, '非浮层组件照常挂载').not.toBeNull()
+    expect(comp!.tagName, '非浮层组件照常挂载').toBe('OAS-INPUT')
     expect(comp!.shadowRoot, '白板组件不尝试展开浮层').toBeNull()
     // Esc 走第一期 el 级取消通道
     comp!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
@@ -196,7 +196,7 @@ describe('editComponent 浮层编辑器通道（oas-select / oas-date-picker）'
     let cancelled = 0
     el.addEventListener('oas-edit-cancel', () => cancelled++)
     const td = enterEdit(el, 'dept')
-    expect(td.querySelector('oas-select')).not.toBeNull()
+    expect(td.querySelectorAll('oas-select').length).toBe(1)
     // 数据变化触发整体重建 → settleEdit 静默取消（与横向滚动列窗口重建同语义）
     el.setAttribute(
       'data',
@@ -246,7 +246,7 @@ describe('multi-select 编辑器升级（oas-select multiple 替代逗号分隔 
     const el = tagMount(['a', 'b'])
     const td = enterEdit(el, 'tags')
     const comp = tagComp(el)
-    expect(comp, '多选列默认编辑器为 oas-select').not.toBeNull()
+    expect(comp.tagName, '多选列默认编辑器为 oas-select').toBe('OAS-SELECT')
     expect(td.querySelector('input.cell-editor'), '逗号分隔 input 通道退役').toBeNull()
     expect(comp.hasAttribute('multiple'), '多选形态').toBe(true)
     expect(JSON.parse(comp.getAttribute('options')!)).toEqual([

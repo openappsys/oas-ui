@@ -49,7 +49,7 @@ describe('OASCollapse', () => {
     el.setAttribute('active', 'a')
     let detail: unknown
     el.addEventListener('oas-change', (e: Event) => (detail = (e as CustomEvent).detail))
-    expect(items(el)[0]!.getAttribute('open')).not.toBeNull()
+    expect(items(el)[0]!.getAttribute('open')).toBe('')
     clickHead(items(el)[0]!)
     expect(detail).toEqual({ active: [] })
   })
@@ -346,7 +346,7 @@ describe('OASCollapse', () => {
     // 复原后重同步（替身期间命令式方法改写过 active，重置回受控初值）：open 反射与 roving 恢复一致
     el.setAttribute('active', 'a')
     el.requestSync()
-    expect(items(el)[0]!.getAttribute('open')).not.toBeNull()
+    expect(items(el)[0]!.getAttribute('open')).toBe('')
   })
 })
 
@@ -413,7 +413,7 @@ describe('OASCollapseItem', () => {
     const el = mountItem('<template slot="toggle"><svg id="my-icon" viewBox="0 0 16 16"></svg></template><p>内容</p>', {
       header: '标题',
     })
-    expect(el.shadowRoot!.querySelector('#my-icon')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('#my-icon').length).toBe(1)
     expect(el.shadowRoot!.querySelector('[part="arrow"]')!.textContent).not.toContain('›')
   })
 
@@ -430,14 +430,14 @@ describe('OASCollapseItem', () => {
       })
       expect(el.shadowRoot!.querySelector('slot:not([name])')).toBeNull()
       el.setAttribute('open', '')
-      expect(el.shadowRoot!.querySelector('slot:not([name])')).not.toBeNull()
+      expect(el.shadowRoot!.querySelectorAll('slot:not([name])').length).toBe(1)
       el.removeAttribute('open')
       expect(el.shadowRoot!.querySelector('slot:not([name])')).toBeNull()
     })
 
     it('默认策略：内容常驻 DOM（收起时 slot 仍在）', () => {
       const el = mountItem('<p>内容</p>', { header: '标题' })
-      expect(el.shadowRoot!.querySelector('slot:not([name])')).not.toBeNull()
+      expect(el.shadowRoot!.querySelectorAll('slot:not([name])').length).toBe(1)
     })
 
     it('force-render 优先于 destroy-on-collapse：收起时仍渲染', () => {
@@ -446,7 +446,7 @@ describe('OASCollapseItem', () => {
         'destroy-on-collapse': '',
         'force-render': '',
       })
-      expect(el.shadowRoot!.querySelector('slot:not([name])')).not.toBeNull()
+      expect(el.shadowRoot!.querySelectorAll('slot:not([name])').length).toBe(1)
     })
   })
 

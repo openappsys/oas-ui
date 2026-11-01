@@ -103,13 +103,13 @@ describe('OASWatermark', () => {
     expect(style).toMatch(/:host\(:empty\)\s*\{[^}]*width:\s*100%/)
     // 非空容器不受该规则影响
     const filled = mount({ text: '水印' }, '<span>x</span>')
-    expect(filled.childNodes.length).toBeGreaterThan(0)
+    expect(filled.childNodes.length).toBe(1)
   })
 
   it('装饰水印层 aria-hidden，slot 内容正常保留', () => {
     const el = mount({ text: '水印' }, '<button id="btn">按钮</button>')
-    expect(el.shadowRoot!.querySelector('slot')).not.toBeNull()
-    expect(el.querySelector('#btn')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('slot:not([name])').length).toBe(1)
+    expect(el.querySelectorAll('#btn').length).toBe(1)
   })
 
   it('text 中的 XML 特殊字符被转义（不破坏 data-uri）', () => {
@@ -185,7 +185,7 @@ describe('OASWatermark', () => {
     const style = styleOf(el)
     expect(style).toContain('data:image/svg+xml')
     const uriMatch = style.match(/data:image\/svg\+xml[^"]+/)
-    expect(uriMatch).not.toBeNull()
+    expect(uriMatch![0]).toMatch(/^data:image\/svg\+xml/)
     const svg = decodeURIComponent(uriMatch![0])
     expect(svg).toContain('rotate(-22 160 80)')
     expect(svg).toContain('font-size="20"')
@@ -237,7 +237,6 @@ describe('OASWatermark', () => {
     layer.remove()
     await new Promise((r) => setTimeout(r, 0))
     const restored = layerOf(el)
-    expect(restored).not.toBeNull()
     expect(restored).not.toBe(layer)
     expect(restored.getAttribute('aria-hidden')).toBe('true')
     expect(styleOf(el)).toContain('data:image/svg+xml')
@@ -278,7 +277,7 @@ describe('OASWatermark', () => {
     document.body.appendChild(el)
     layerOf(el).remove()
     await new Promise((r) => setTimeout(r, 0))
-    expect(layerOf(el)).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('[part="watermark"]').length).toBe(1)
   })
 
   it('movable：拖拽更新 offset 属性（默认 offset=gap/2 起步）', async () => {

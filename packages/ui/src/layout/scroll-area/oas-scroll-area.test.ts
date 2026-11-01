@@ -51,11 +51,11 @@ describe('OASScrollArea', () => {
 
   it('渲染滚动视口与自定义滚动条（纵向/横向 track + thumb）', () => {
     const el = mount()
-    expect(viewport(el)).not.toBeNull()
-    expect(track(el, 'track-v')).not.toBeNull()
-    expect(thumb(el, 'thumb-v')).not.toBeNull()
-    expect(track(el, 'track-h')).not.toBeNull()
-    expect(thumb(el, 'thumb-h')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('[part="viewport"]').length).toBe(1)
+    expect(el.shadowRoot!.querySelectorAll('[part="track-v"]').length).toBe(1)
+    expect(el.shadowRoot!.querySelectorAll('[part="thumb-v"]').length).toBe(1)
+    expect(el.shadowRoot!.querySelectorAll('[part="track-h"]').length).toBe(1)
+    expect(el.shadowRoot!.querySelectorAll('[part="thumb-h"]').length).toBe(1)
   })
 
   it('height/width 属性映射到视口内联尺寸', () => {
@@ -296,7 +296,6 @@ describe('OASScrollArea', () => {
     const el = mount({ height: '200' })
     el.remove()
     document.body.appendChild(el)
-    expect(viewport(el)).not.toBeNull()
     expect(viewport(el).style.height).toBe('200px')
   })
 

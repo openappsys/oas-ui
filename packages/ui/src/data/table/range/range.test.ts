@@ -446,7 +446,7 @@ describe('table/range 区域选择 + 剪贴板', () => {
     const events: unknown[] = []
     el.addEventListener('oas-range-change', (event) => events.push((event as CustomEvent).detail))
     setRangeSelection(el, { row: 0, col: 'name' }, { row: 1, col: 'name' })
-    expect(getRangeSelection(el)).not.toBeNull()
+    expect(getRangeSelection(el)).toEqual({ start: { row: 0, col: 'name' }, end: { row: 1, col: 'name' } })
     el.setAttribute('window-start', '50')
     el.data = [
       { id: 'z', name: 'Z' },
@@ -457,7 +457,10 @@ describe('table/range 区域选择 + 剪贴板', () => {
       end: { row: 1, col: 'name' },
     })
     expect(el.shadowRoot!.querySelectorAll('td.range-selected')).toHaveLength(0)
-    expect(events.at(-1)).not.toBeNull()
+    expect(events.at(-1), '数据源重置后重放同一逻辑选区事件').toEqual({
+      start: { row: 0, col: 'name' },
+      end: { row: 1, col: 'name' },
+    })
   })
 })
 
@@ -595,8 +598,10 @@ describe('table/range 键盘窗口与跨窗口选区（第三批）', () => {
     wrap.dispatchEvent(new Event('scroll'))
     await new Promise((resolve) => setTimeout(resolve, 60))
     const after = getRangeSelection(el)
-    expect(after).not.toBeNull()
-    expect(cellAtDataIndex(el, after!.end.row, 'name').textContent).toBe('R6')
+    expect(after, 'pendingFocus 落地到越界下一行').toEqual({
+      start: { row: 5, col: 'name' },
+      end: { row: 6, col: 'name' },
+    })
   })
 
   it('禁用后重连不会落地旧的 pendingFocus', () => {
@@ -874,7 +879,7 @@ describe('table/range 展示集坐标回归', () => {
     const wrap = el.shadowRoot!.querySelector('.table-scroll') as HTMLElement
     wrap.scrollTop = 99 * 40
     wrap.dispatchEvent(new Event('scroll'))
-    await vi.waitFor(() => expect(rowAtDataIndex(el, 99)).toBeTruthy())
+    await vi.waitFor(() => expect(rowAtDataIndex(el, 99)?.getAttribute('data-row-index')).toBe('99'))
     selectByKey(el, { key: 'r99', col: 'name' })
     cellAtDataIndex(el, 99, 'name').dispatchEvent(
       new KeyboardEvent('keydown', { key: 'Home', ctrlKey: true, bubbles: true, cancelable: true }),
@@ -901,7 +906,7 @@ describe('table/range 展示集坐标回归', () => {
     const wrap = el.shadowRoot!.querySelector('.table-scroll') as HTMLElement
     wrap.scrollTop = 99 * 40
     wrap.dispatchEvent(new Event('scroll'))
-    await vi.waitFor(() => expect(rowAtDataIndex(el, 99)).toBeTruthy())
+    await vi.waitFor(() => expect(rowAtDataIndex(el, 99)?.getAttribute('data-row-index')).toBe('99'))
     selectByKey(el, { key: 'r99', col: 'name' })
     cellAtDataIndex(el, 99, 'name').dispatchEvent(
       new KeyboardEvent('keydown', { key: 'Home', ctrlKey: true, shiftKey: true, bubbles: true, cancelable: true }),
@@ -1263,7 +1268,7 @@ describe('table/range 复审边界回归', () => {
     const wrap = el.shadowRoot!.querySelector('.table-scroll') as HTMLElement
     wrap.scrollTop = 0
     wrap.dispatchEvent(new Event('scroll'))
-    await vi.waitFor(() => expect(rowAtDataIndex(el, 5)).toBeTruthy())
+    await vi.waitFor(() => expect(rowAtDataIndex(el, 5)?.getAttribute('data-row-index')).toBe('5'))
     const rendered = [...el.shadowRoot!.querySelectorAll<HTMLTableRowElement>('tr.row')]
     const lastIndex = Math.max(...rendered.map((tr) => Number(tr.getAttribute('data-row-index'))))
     expect(lastIndex).toBeLessThan(9)

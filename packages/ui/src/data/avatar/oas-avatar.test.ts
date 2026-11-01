@@ -34,7 +34,7 @@ describe('OASAvatar', () => {
     const el = new OASAvatar()
     el.setAttribute('src', '/avatar.png')
     document.body.appendChild(el)
-    expect(el.shadowRoot!.querySelector('img')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('img').length).toBe(1)
   })
 
   it('size 属性生效', () => {
@@ -223,7 +223,7 @@ describe('OASAvatar fallback（加载失败回退）', () => {
     expect(fb(el).hidden).toBe(false)
     expect(el.shadowRoot!.querySelector<HTMLElement>('[part="text"]')!.hidden).toBe(true)
     const slot = el.shadowRoot!.querySelector<HTMLSlotElement>('slot[name="fallback"]')!
-    expect(slot.assignedNodes().length).toBeGreaterThan(0)
+    expect(slot.assignedNodes().length).toBe(1)
   })
 
   it('失败状态保持：其他属性变化不恢复图片', () => {
@@ -262,7 +262,7 @@ describe('OASAvatar fallback（加载失败回退）', () => {
     const el = new OASAvatar()
     el.textContent = '王'
     document.body.appendChild(el)
-    expect(el.shadowRoot!.querySelector('img')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('img').length).toBe(1)
     expect(img(el).hidden).toBe(true)
     el.setAttribute('src', '/new.png')
     expect(img(el).hidden).toBe(false)
@@ -280,8 +280,8 @@ describe('OASAvatar fallback（加载失败回退）', () => {
     el.shadowRoot!.innerHTML = `<meta data-oas-ssr="oas-avatar" data-oas-ssr-v="1">${snap}`
     document.body.appendChild(el)
     expect(el.shadowRoot!.querySelector('meta[data-oas-ssr]')).toBeNull()
-    expect(el.shadowRoot!.querySelector('img')).not.toBeNull()
-    expect(el.shadowRoot!.querySelector('[part="fallback"]')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('img').length).toBe(1)
+    expect(el.shadowRoot!.querySelectorAll('[part="fallback"]').length).toBe(1)
   })
 })
 
@@ -631,7 +631,7 @@ describe('OASAvatar trigger（换头像入口）', () => {
     expect(trigger.getAttribute('aria-label')).toBe('更换头像')
     // 空占位节点：显示默认相机图标（has-content 不置位，.trigger-default 由 CSS 展示）
     expect(trigger.classList.contains('has-content')).toBe(false)
-    expect(el.shadowRoot!.querySelector('[part="trigger-default"]')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('[part="trigger-default"]').length).toBe(1)
   })
 
   it('trigger 遮罩有实质内容时隐藏默认相机图标', () => {

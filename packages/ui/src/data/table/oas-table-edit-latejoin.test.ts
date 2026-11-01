@@ -51,17 +51,17 @@ describe('OASTable edit 能力晚加入（late-join）', () => {
     // 能力已注入（订阅通知 → 幂等 attach → editCap 就位）；编辑装饰在行重建时应用——
     // 触发一次数据驱动重建作为「补齐后下一次渲染」的观察点
     el.setAttribute('data', JSON.stringify([{ name: '李四' }]))
-    expect(el.shadowRoot!.querySelector('td.editable-cell')).not.toBeNull()
-    expect(el.shadowRoot!.querySelector('.cell-edit-icon')).not.toBeNull()
-    expect(el.shadowRoot!.querySelector('[part="action-edit"]')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('td.editable-cell').length).toBe(1)
+    expect(el.shadowRoot!.querySelectorAll('.cell-edit-icon').length).toBe(1)
+    expect(el.shadowRoot!.querySelectorAll('[part="action-edit"]').length).toBe(1)
     el.remove()
   })
 
   it('断开的宿主退订：重连仍经 catch-up 补齐（多次重连不泄漏不重复注入）', () => {
     // 注册表已含 edit（上一条用例已 import）：构造快照即注入，装饰随首渲染出现
     const el = mount(JSON.stringify([{ name: '王五' }]))
-    expect(el.shadowRoot!.querySelector('td.editable-cell')).not.toBeNull()
-    expect(el.shadowRoot!.querySelector('[part="action-edit"]')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('td.editable-cell').length).toBe(1)
+    expect(el.shadowRoot!.querySelectorAll('[part="action-edit"]').length).toBe(1)
     // 多次断开/重连：connectedCallback 重新订阅 + catch-up attach（attachedCaps 幂等去重），
     // 重建后装饰仍恰好一份（无重复注入导致的重复能力副作用）
     for (let i = 0; i < 2; i++) {

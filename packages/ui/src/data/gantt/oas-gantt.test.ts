@@ -486,10 +486,9 @@ describe('OASGantt 行 hover（hover 属性，默认开；hover="false" 关闭�
     const name = sr.querySelector<HTMLElement>('.side-body .row-name[data-key="t1"]')!
     firePointer(name, 'pointerover')
     let layer = sr.querySelector<HTMLElement>('.row-hover')!
-    expect(layer, 'hover 装饰层出现').toBeTruthy()
-    expect(layer.style.top, 'top = 绝对行号 × 行高').toBe(`${rowH}px`)
+    expect(layer.style.top, 'hover 装饰层出现；top = 绝对行号 × 行高').toBe(`${rowH}px`)
     expect(layer.style.height).toBe(`${rowH}px`)
-    expect(Number(layer.style.width.replace('px', ''))).toBeGreaterThan(0)
+    expect(layer.style.width, '覆盖完整时间轴画布宽').toBe('360px')
     expect(layer.getAttribute('aria-hidden'), '装饰层对读屏隐藏').toBe('true')
     // 移到另一行 → 层跟随（不堆叠多个层）
     const name3 = sr.querySelector<HTMLElement>('.side-body .row-name[data-key="t3"]')!
@@ -7899,7 +7898,7 @@ describe('OASGantt show-effort 工时列（opt-in）', () => {
     const el = mount({ tasks: JSON.stringify(TASKS), 'show-effort': '' })
     const head = shadowOf(el).querySelector<HTMLElement>('.side-head')!
     expect(head.classList.contains('has-effort')).toBe(true)
-    expect(head.querySelector<HTMLElement>('.head-name')).toBeTruthy()
+    expect(head.querySelectorAll('.head-name').length).toBe(1)
     expect(head.querySelector<HTMLElement>('.head-effort')!.textContent).toBe('工时')
     const cells = [...shadowOf(el).querySelectorAll<HTMLElement>('.row-name .effort')]
     expect(cells.length, '每行一个工时单元格').toBe(3)
@@ -8224,7 +8223,7 @@ describe('OASGantt baselines 多基线（数据通道 + baseline-id）', () => {
       expect(warn.mock.calls.map((c) => String(c[0])).filter((m) => m.includes('baseline-id')).length).toBe(1)
       // 实例隔离：第二个实例未命中 → 独立告警一次（互不吞并）
       const el3 = mount({ tasks: JSON.stringify(MULTI), 'show-baseline': '', 'baseline-id': 'zzz', ...RANGE })
-      expect(shadowOf(el3).querySelector<HTMLElement>('.baseline[data-id="a"]')).toBeTruthy()
+      expect(shadowOf(el3).querySelectorAll('.baseline[data-id="a"]').length).toBe(1)
       const zzzMsgs = warn.mock.calls.map((c) => String(c[0])).filter((m) => m.includes('"zzz"'))
       expect(zzzMsgs.length, '新实例独立告警一次').toBe(1)
     } finally {
@@ -8290,7 +8289,7 @@ describe('OASGantt updateTask/updateTasks 单 baseline 通道（读改写回归�
     expect(baselineBar(el)).toBeNull()
     expect(el.updateTask('a', { baseline: { start: '2026-03-03', end: '2026-03-05' } })).toBe(true)
     const bl = baselineBar(el)
-    expect(bl, '基线条出现').toBeTruthy()
+    expect(bl!.getAttribute('data-id'), '基线条出现').toBe('a')
     // 03-03..03-05（含端）→ 轴首留白 1 档下 left = 3×36，宽 = 3 天 = 108
     expect(Number.parseFloat(bl!.style.left)).toBe(3 * 36)
     expect(Number.parseFloat(bl!.style.width)).toBe(3 * 36)
@@ -8331,7 +8330,7 @@ describe('OASGantt updateTask/updateTasks 单 baseline 通道（读改写回归�
       'show-baseline': '',
       ...RANGE,
     })
-    expect(baselineBar(el)).toBeTruthy()
+    expect(baselineBar(el)!.getAttribute('data-id')).toBe('a')
     expect(el.updateTask('a', { baseline: undefined })).toBe(true)
     expect(baselineBar(el), '基线条移除').toBeNull()
     expect(el.tasks[0]!.baseline).toBeUndefined()

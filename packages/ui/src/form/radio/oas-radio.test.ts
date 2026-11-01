@@ -162,8 +162,7 @@ describe('OASRadio checked-icon 插槽与 description / label-position / variant
     el.appendChild(tpl)
     document.body.appendChild(el)
     const holder = el.shadowRoot!.querySelector('.indicator-checked')!.querySelector('.indicator-tpl')
-    expect(holder).not.toBeNull()
-    expect(holder!.querySelector('.dot')).not.toBeNull()
+    expect(holder!.querySelectorAll('.dot').length).toBe(1)
   })
 
   it('description 属性渲染次要文本，无则隐藏', () => {
@@ -236,7 +235,7 @@ describe('OASRadioGroup', () => {
   it('fieldset 组织，value 驱动子项选中', async () => {
     const el = mountGroup()
     await Promise.resolve()
-    expect(el.shadowRoot!.querySelector('fieldset')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('fieldset').length).toBe(1)
     const a = el.querySelector('oas-radio[value="a"]')!
     expect(a.hasAttribute('checked')).toBe(true)
   })
@@ -325,7 +324,6 @@ describe('OASRadioGroup 组级能力', () => {
       ]),
     })
     const options = el.shadowRoot!.querySelector('.options')!
-    expect(options).not.toBeNull()
     const items = [...options.querySelectorAll('oas-radio')]
     expect(items.length).toBe(3)
     expect(items[0]!.hasAttribute('checked')).toBe(true)
@@ -655,7 +653,7 @@ describe('form-associated（原生表单集成）', () => {
     const missing = fake.setValidity.mock.calls.at(-1)
     expect(missing?.[0]).toEqual({ valueMissing: true })
     expect(typeof missing?.[1]).toBe('string')
-    expect((missing?.[1] as string).length).toBeGreaterThan(0)
+    expect(missing?.[1] as string).toMatch(/\S/)
     native(el).click()
     expect(fake.setValidity).toHaveBeenLastCalledWith({})
   })
@@ -747,7 +745,7 @@ describe('OASRadioGroup required（form-associated 原生校验链）', () => {
     const missing = fake.setValidity.mock.calls.at(-1)
     expect(missing?.[0]).toEqual({ valueMissing: true })
     expect(typeof missing?.[1]).toBe('string')
-    expect((missing?.[1] as string).length).toBeGreaterThan(0)
+    expect(missing?.[1] as string).toMatch(/\S/)
   })
 
   it('required 且已有选中：校验通过 setValidity({})', () => {

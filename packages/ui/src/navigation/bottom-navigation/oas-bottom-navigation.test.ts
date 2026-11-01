@@ -228,7 +228,7 @@ describe('OASBottomNavigation 子元素声明式通道', () => {
   })
 
   it('注册 oas-bottom-navigation-item 自定义元素', () => {
-    expect(customElements.get('oas-bottom-navigation-item')).not.toBeNull()
+    expect(typeof customElements.get('oas-bottom-navigation-item')).toBe('function')
   })
 
   it('基础：子元素渲染 label/icon SVG/aria，点击选中派发 oas-change 与 items 通道一致', () => {
@@ -241,7 +241,7 @@ describe('OASBottomNavigation 子元素声明式通道', () => {
     expect(ts.length).toBe(3)
     expect(ts[0]!.getAttribute('role')).toBeNull()
     expect(ts[0]!.querySelector('.tab-label')!.textContent).toBe('首页')
-    expect(ts[0]!.querySelector('svg'), 'icon 注册表名应渲染 SVG').not.toBeNull()
+    expect(ts[0]!.querySelectorAll('svg').length, 'icon 注册表名应渲染 SVG').toBe(1)
     // 未指定 value 默认选中第一项
     expect(ts[0]!.getAttribute('aria-current')).toBe('page')
     let detail: unknown
@@ -292,7 +292,7 @@ describe('OASBottomNavigation 子元素声明式通道', () => {
     await new Promise((r) => setTimeout(r, 0))
     expect(tabs(el).length).toBe(2)
     expect(tabs(el)[1]!.querySelector('.tab-label')!.textContent).toBe('关于')
-    expect(tabs(el)[1]!.querySelector('svg')).not.toBeNull()
+    expect(tabs(el)[1]!.querySelectorAll('svg').length).toBe(1)
   })
 
   it('value 选中态跟随（子元素通道下与 items 通道一致）', () => {
@@ -431,8 +431,8 @@ describe('OASBottomNavigation 横排布局（layout）', () => {
     expect(ts.length).toBe(3)
     expect(list(el).getAttribute('role')).toBe('navigation')
     expect(ts[0]!.getAttribute('role')).toBeNull()
-    expect(ts[0]!.querySelector('.icon-wrap')).not.toBeNull()
-    expect(ts[0]!.querySelector('.tab-label')).not.toBeNull()
+    expect(ts[0]!.querySelectorAll('.icon-wrap').length).toBe(1)
+    expect(ts[0]!.querySelectorAll('.tab-label').length).toBe(1)
   })
 
   it('layout 缺省与显式 stacked：data-layout=stacked（默认）', () => {

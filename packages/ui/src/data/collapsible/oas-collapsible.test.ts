@@ -37,7 +37,7 @@ describe('OASCollapsible', () => {
     expect(el.hasAttribute('open')).toBe(false)
     expect(trigger(el).getAttribute('aria-expanded')).toBe('false')
     const wrap = el.shadowRoot!.querySelector<HTMLElement>('[part="body-wrap"]')!
-    expect(wrap.querySelector('.body')).not.toBeNull()
+    expect(wrap.querySelectorAll('.body').length).toBe(1)
   })
 
   it('open 属性展开（受控）：aria-expanded=true、内容区展开类', () => {
@@ -50,7 +50,7 @@ describe('OASCollapsible', () => {
     const el = mount({ open: '' })
     const controls = trigger(el).getAttribute('aria-controls')!
     expect(controls).not.toBe('')
-    expect(el.shadowRoot!.querySelector(`#${controls}`)).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll(`#${controls}`).length).toBe(1)
   })
 
   describe('受控 / 非受控双模式（open）', () => {
@@ -163,8 +163,7 @@ describe('OASCollapsible', () => {
   describe('插槽', () => {
     it('slot="header" 富触发内容投影进触发按钮；无 slot 时回落 header 属性文本', () => {
       const el = mount({}, '<b slot="header">富标题</b><p>内容</p>')
-      const slot = trigger(el).querySelector('slot[name="header"]')!
-      expect(slot).not.toBeNull()
+      expect(trigger(el).querySelectorAll('slot[name="header"]').length).toBe(1)
       // 属性文本通道（无 slot 内容时回落属性文本）
       const el2 = mount({ header: '文本标题' }, '<p>内容</p>')
       expect(el2.shadowRoot!.querySelector<HTMLElement>('[part="header-text"]')!.textContent).toBe('文本标题')
@@ -172,7 +171,7 @@ describe('OASCollapsible', () => {
 
     it('默认插槽内容渲染在折叠体内', () => {
       const el = mount()
-      expect(el.shadowRoot!.querySelector('.body slot:not([name])')).not.toBeNull()
+      expect(el.shadowRoot!.querySelectorAll('.body slot:not([name])').length).toBe(1)
     })
 
     it('template[slot="toggle"] 自定义展开图标（缺省内建箭头）', () => {
@@ -185,7 +184,7 @@ describe('OASCollapsible', () => {
         <span slot="header">触发</span><p>内容</p>
       `,
       )
-      expect(el2.shadowRoot!.querySelector('.arrow [data-custom-toggle]')).not.toBeNull()
+      expect(el2.shadowRoot!.querySelectorAll('.arrow [data-custom-toggle]').length).toBe(1)
     })
   })
 
@@ -208,7 +207,7 @@ describe('OASCollapsible', () => {
   it('真水合：SSR 快照结构校验通过后接管，不重建 shadow', () => {
     const el = mount({ open: '' })
     const before = el.shadowRoot!.querySelector('[part="trigger"]')!
-    expect(el.shadowRoot!.querySelector('.root')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('.root').length).toBe(1)
     // hydrate 通道由基类在 connectedCallback 走 SSR 快照校验：此处验证快照指纹存在
     expect(before.getAttribute('aria-expanded')).toBe('true')
   })

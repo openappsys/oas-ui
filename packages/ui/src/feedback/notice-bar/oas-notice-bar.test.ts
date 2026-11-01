@@ -144,7 +144,7 @@ describe('OASNoticeBar', () => {
     const el = mount()
     const icon = el.shadowRoot!.querySelector<HTMLElement>('[part="icon"]')!
     expect(icon.hidden).toBe(false)
-    expect(icon.querySelector('svg')).not.toBeNull()
+    expect(icon.querySelectorAll('svg').length).toBe(1)
     expect(icon.querySelector<HTMLElement>('.icon-default')!.hidden).toBe(false)
 
     el.setAttribute('icon', 'none')
@@ -154,12 +154,12 @@ describe('OASNoticeBar', () => {
   it('icon：自定义图标名渲染对应 SVG；非法名回落 type 默认', () => {
     const el = mount({ icon: 'star' })
     const fallback = el.shadowRoot!.querySelector<HTMLElement>('.icon-default')!
-    expect(fallback.querySelector('svg')).not.toBeNull()
+    expect(fallback.querySelectorAll('svg').length).toBe(1)
     // star 与默认 info 的 path 不同
     expect(fallback.innerHTML).not.toBe(mount().shadowRoot!.querySelector('.icon-default')!.innerHTML)
     const el2 = mount({ icon: 'not-exist-icon' })
     const fallback2 = el2.shadowRoot!.querySelector<HTMLElement>('.icon-default')!
-    expect(fallback2.querySelector('svg')).not.toBeNull()
+    expect(fallback2.querySelectorAll('svg').length).toBe(1)
   })
 
   it('icon 插槽覆盖默认图标', () => {
@@ -426,7 +426,7 @@ describe('OASNoticeBar', () => {
 
     expect(el.shadowRoot!.querySelector('style')).toBe(styleRef)
     expect(el.shadowRoot!.querySelector('meta[data-oas-ssr]')).toBeNull()
-    expect(el.shadowRoot!.querySelector('[part="bar"]')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('[part="bar"]').length).toBe(1)
     let close = 0
     el.addEventListener('oas-close', () => close++)
     closeBtn(el).click()
@@ -439,7 +439,7 @@ describe('OASNoticeBar', () => {
     el.setAttribute('closable', '')
     el.shadowRoot!.innerHTML = '<meta data-oas-ssr="oas-notice-bar" data-oas-ssr-v="1"><span>broken</span>'
     document.body.appendChild(el)
-    expect(el.shadowRoot!.querySelector('[part="bar"]')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('[part="bar"]').length).toBe(1)
     expect(el.shadowRoot!.querySelector('meta[data-oas-ssr]')).toBeNull()
     expect(closeBtn(el).hidden).toBe(false)
   })
