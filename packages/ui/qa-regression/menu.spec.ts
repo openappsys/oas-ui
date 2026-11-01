@@ -58,7 +58,6 @@ test('menu 水平模式子菜单浮层不被裁剪——.menu 容器 overflow-x:
       hitTag: hit?.tagName ?? null,
     }
   })
-  expect(result, '子菜单应已展开').not.toBeNull()
   expect(result!.subVisible, '子菜单应 display 可见').toBe(true)
   expect(result!.overflowX, '容器应只裁横轴（clip）').toBe('clip')
   expect(result!.hitIsHost, `子菜单区域应命中菜单宿主（实际命中 ${result!.hitTag}）`).toBe(true)
@@ -779,7 +778,7 @@ test('menu 水平溢出收纳「···」可见且末项不截断（曾收纳项
       lastItemClipped: lastVisible ? lastVisible.scrollWidth > lastVisible.offsetWidth + 1 : false,
     }
   })
-  expect(st.collapsedCount, '应有溢出项被收纳').toBeGreaterThan(0)
+  expect(st.collapsedCount, '应有溢出项被收纳').toBe(5)
   expect(st.moreVisible, '「···」收纳项应可见').toBe(true)
   expect(st.lastItemClipped, '末个可见项不应截断').toBe(false)
   // 点击「···」→ 镜像弹层真实可见（elementFromPoint 命中宿主）
@@ -826,7 +825,7 @@ test('menu 水平溢出收纳「···」可见且末项不截断（曾收纳项
       visibleChecked,
     }
   })
-  expect(sel.value, '选中值应写回').toBeTruthy()
+  expect(sel.value, '选中值应写回').toBe('docs')
   expect(sel.visibleChecked, '条上可见项不应带 ✓（选中项被收纳）').toBe(false)
   expect(sel.moreCls, '「···」应有 child-selected 高亮').toContain('child-selected')
   expect(sel.moreAriaCurrent, '「···」应有 aria-current').toBe('true')
@@ -917,7 +916,7 @@ test.describe('触摸目标（P2，iPhone 仿真）', () => {
         .filter((el) => el.getBoundingClientRect().height > 0)
         .map((el) => el.getBoundingClientRect().height)
     })
-    expect(heights.length, '页面应渲染出可见菜单项').toBeGreaterThan(0)
+    expect(heights.length, '页面应渲染出可见菜单项').toBe(3)
     for (const h of heights) {
       expect(h, `触屏下菜单项高度 ${h}px 应 ≥44px`).toBeGreaterThanOrEqual(44)
     }
@@ -1113,7 +1112,7 @@ test('menu 读屏语义：键盘高亮经 aria-activedescendant 暴露（焦点�
   expect(st.focusOnHost, '焦点应留在 oas-menu 宿主（shadow 内 ul），不挪到 li').toBe(true)
   expect(st.focusOnMenu, 'shadow 内焦点应仍是 ul.menu').toBe(true)
   expect(st.rovingTabindex, '不应引入 roving tabindex（activedescendant 模型）').toBe(0)
-  expect(st.ariaLabel, 'ul 需可访问名称（读屏进入菜单有名称播报）').toBeTruthy()
+  expect(st.ariaLabel, 'ul 需可访问名称（读屏进入菜单有名称播报）').toBe('导航')
   expect(st.orientation, '竖向菜单 aria-orientation=vertical').toBe('vertical')
   expect(st.activeVisible, '高亮项应真实可见').toBe(true)
   // 视觉高亮：active 项背景不同于非高亮项（机制绿 + 用户可见高亮）
@@ -1273,7 +1272,7 @@ test('menu D13：searchable 键入实时过滤、无匹配空态、shortcut kbd 
   const menu = page.locator('#menu-searchable')
   await menu.scrollIntoViewIfNeeded()
   const attrSurvived = await menu.evaluate((h) => h.getAttribute('searchable'))
-  expect(attrSurvived, 'searchable 被 Vue 剥离').not.toBeNull()
+  expect(attrSurvived, 'searchable 被 Vue 剥离').toBe('')
   const input = menu.locator('.menu-search-input')
   expect(await menu.evaluate((h) => h.shadowRoot!.querySelectorAll('[part="item"]').length)).toBe(4)
   await input.fill('窗')
@@ -1324,5 +1323,5 @@ test('menu 前置媒体插槽（slot="leading"）：头像真实渲染在 label 
   expect(r.hasAvatar, 'leading 模板内容（头像）真实渲染进媒体位').toBe(true)
   expect(r.mediaBeforeLabel, '媒体位渲染在 label 之前').toBe(true)
   expect(r.hasIcon, 'leading 优先于 icon：同项不渲染 .icon').toBe(false)
-  expect(r.mediaWidth, '媒体位有真实布局宽度（头像可见）').toBeGreaterThan(0)
+  expect(r.mediaWidth, '媒体位有真实布局宽度（头像可见）').toBe(24)
 })

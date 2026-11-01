@@ -50,7 +50,7 @@ test('sidebar 公开方法：外部调用 openDrawer/closeDrawer 开合移动抽
   // openDrawer 后：属性置位 + 面板真实可见并停在 x=0（滑入）
   expect(r.opened.attr, 'openDrawer 应置位 drawer-open').toBe(true)
   expect(r.opened.panelVisibility, 'openDrawer 后面板应可见').toBe('visible')
-  expect(r.opened.panelWidth, '面板应有真实宽度').toBeGreaterThan(0)
+  expect(r.opened.panelWidth, '面板应有真实宽度').toBe(220)
   // 面板左缘贴 0（-0/亚像素引擎差异容差：Firefox 可算出 -0 或 -0.4px）
   expect(Math.abs(r.opened.panelLeft), 'openDrawer 后面板应滑入到 x=0').toBeLessThan(1)
   expect(r.opened.maskVisibility, 'openDrawer 后遮罩应可见').toBe('visible')
@@ -128,8 +128,8 @@ test('sidebar 嵌套子菜单：无图标子项 label 缩进父项 label 右侧�
     }
   })
   expect(r.childIconHidden, '嵌套无图标项图标占位不应隐藏').toBe(false)
-  expect(r.childIconWidth, '嵌套图标占位应保留宽度').toBeGreaterThan(0)
-  expect(r.indent, '子项 label 应缩进父项 label 右侧（不得齐平/更靠左）').toBeGreaterThan(0)
+  expect(r.childIconWidth, '嵌套图标占位应保留宽度').toBe(18)
+  expect(r.indent, '子项 label 应缩进父项 label 右侧（不得齐平/更靠左）').toBe(21)
 })
 test('sidebar 嵌套头像子项：空图标不占布局，普通无图标子项仍保留缩进', async ({ page }) => {
   await page.goto('/components/sidebar.html', { waitUntil: 'domcontentloaded' })
@@ -231,7 +231,7 @@ test('sidebar 嵌套父项点击折叠子菜单：hidden 真实隐藏（grid 0fr
   expect(r.afterClick.rectH, '隐藏后子菜单高度应为 0').toBe(0)
   expect(r.afterReclick.aria, '再点应重新展开').toBe('true')
   expect(r.afterReclick.visibility).toBe('visible')
-  expect(r.afterReclick.rectH, '再展开后子菜单高度应恢复').toBeGreaterThan(0)
+  expect(r.afterReclick.rectH, '再展开后子菜单高度应恢复').toBe(7)
 })
 
 // —— 缺陷回归：collapsed × 树形 children 折叠态子菜单完全不可达（下游 templates 被迫扁平化规避）——
@@ -291,7 +291,7 @@ test('sidebar 折叠态树形父项点击开 flyout：面板在 rail 右侧视�
   expect(r1.childTextVisible, '子项文字标签可见（label 不被折叠态误隐藏）').toBe(true)
   expect(r1.childJustify, 'flyout 子项左对齐（不被折叠态居中规则压过）').toBe('flex-start')
   expect(r1.childPaddingInline, 'flyout 子项水平内边距非零（不被折叠态 padding-inline:0 压过）').not.toBe('0px')
-  expect(r1.childCount, 'flyout 内渲染全部子项').toBeGreaterThan(0)
+  expect(r1.childCount, 'flyout 内渲染全部子项').toBe(5)
 
   // 叶子子项点击 → oas-select + 关面板
   const r2 = await page.evaluate(async () => {
@@ -507,7 +507,6 @@ test('sidebar 文档 demo：分组独立高亮 + 同组多选可点，宿主写�
     await new Promise((res) => requestAnimationFrame(() => res(null)))
     return { before, after: active(), log: document.getElementById('sidebar-by-group-log')?.textContent ?? '' }
   })
-  expect(r).not.toBeNull()
   expect(r!.before).toEqual(expect.arrayContaining(['p1', 'v1', 'v2', 'doing']))
   expect(r!.after).toContain('v3')
   expect(r!.log).toContain('v3')
@@ -579,7 +578,7 @@ test('sidebar hide-toggle + 空 header：头部塌陷与恢复（真实几何）
   expect(r.empty.headH).toBe(0)
   expect(r.empty.navTop, '导航紧贴面板顶部（无 24px 死缝）').toBe(0)
   expect(r.withHeader.hidden, '有 header 内容：head 保留').toBe(false)
-  expect(r.withHeader.headH).toBeGreaterThan(0)
+  expect(r.withHeader.headH).toBe(56)
   expect(r.removed.hidden, '移除 header 内容：重新塌陷').toBe(true)
 })
 

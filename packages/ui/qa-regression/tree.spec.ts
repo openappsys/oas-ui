@@ -153,10 +153,10 @@ test('tree 自定义节点模板 + oas-node-render 渲染真实内容且 ARIA �
   })
   // 骨架模板渲染：图标 + [data-node-label] 绑定 + 徽标（oas-node-render 写入）
   expect(r.glyph, '自定义节点应渲染骨架图标').toBe(true)
-  expect(r.glyphW, 'SVG glyph 应有显式 width 属性（14px），不能撑满容器').toBeGreaterThan(0)
+  expect(r.glyphW, 'SVG glyph 应有显式 width 属性（14px），不能撑满容器').toBe(14)
   expect(r.glyphW, 'SVG glyph 渲染宽应 ≤32px（14 + 余量）').toBeLessThanOrEqual(32)
   expect(r.boundText).toBe('项目 A')
-  expect(r.labelW, '[data-node-label] 文字宽度应 > 0（不被 flex 压成 0 宽）').toBeGreaterThan(0)
+  expect(r.labelW, '[data-node-label] 文字宽度（不被 flex 压成 0 宽）').toBe(60)
   expect(r.badge).toContain('3')
   // ARIA 在自定义渲染下保持
   expect(r.rowRole).toBe('treeitem')
@@ -312,11 +312,11 @@ test('tree 自定义节点：#tree-custom 每行 .label 实际渲染宽度 > 0�
       }
     })
   })
-  expect(r.length).toBeGreaterThan(0)
+  expect(r.length).toBe(6)
   for (const [i, item] of r.entries()) {
-    expect(item.labelText.length, `第 ${i} 行 [data-node-label] 文字缺失`).toBeGreaterThan(0)
+    expect(item.labelText, `第 ${i} 行 [data-node-label] 文字缺失`).toMatch(/\S/)
     expect(item.labelWidth, `第 ${i} 行 .label 渲染宽度为 0（被 flex 压没）`).toBeGreaterThan(24)
-    expect(item.binderWidth, `第 ${i} 行 [data-node-label] 实际宽度为 0`).toBeGreaterThan(0)
+    expect(item.binderWidth, `第 ${i} 行 [data-node-label] 实际宽度`).toBe(60)
   }
   await page.screenshot({ path: test.info().outputPath('fix-tree-custom-label.png') })
 })
@@ -577,7 +577,7 @@ test('tree P2 批：size 五档归一化存活 + block-node 切换反馈 + selec
   )
   expect(sizes.length, '五档 demo 有 4 棵树（xs/small/large/xl）').toBe(4)
   for (const s of sizes) {
-    expect(s.normalized, `raw=${s.raw} 归一化合法`).not.toBeNull()
+    expect(s.normalized, `raw=${s.raw} 归一化合法`).toBe(s.raw)
   }
 
   // block-node：demo 初始开启（.tree 容器挂类），点击按钮回落紧凑行
@@ -958,7 +958,6 @@ test('tree 拖拽指示线：CSS 变量覆盖颜色与粗细（真实 computed s
     const cs = getComputedStyle(row, '::before')
     return { color: cs.backgroundColor, height: cs.height, content: cs.content }
   })
-  expect(r, 'tree demo 与行存在').not.toBeNull()
   expect(r!.content, '插入线伪元素生效').not.toBe('none')
   expect(r!.color, '颜色 token 生效').toBe('rgb(255, 0, 0)')
   expect(r!.height, '粗细 token 生效').toBe('5px')

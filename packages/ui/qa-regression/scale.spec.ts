@@ -125,9 +125,9 @@ test('gantt 规模回归：10 年 day 档（≈3660 列）× 1 万行，表头/�
 
   // 卫断言：渲染确实成功（防「渲染失败 → 计数 0 → 上界恒真」的假绿）
   expect(metrics.before.units, '10 年 day 档列数（含首尾留白）应 >3000（全量）').toBeGreaterThan(3000)
-  expect(metrics.before.minors, '辅刻度格已渲染').toBeGreaterThan(0)
-  expect(metrics.before.bars, '任务条已渲染').toBeGreaterThan(0)
-  expect(metrics.before.sideRows, '行名列已渲染').toBeGreaterThan(0)
+  expect(metrics.before.minors, '辅刻度格已渲染（列窗口量）').toBe(28)
+  expect(metrics.before.bars, '任务条已渲染（行窗口量）').toBe(14)
+  expect(metrics.before.sideRows, '行名列已渲染（行窗口量）').toBe(14)
 
   // DOM 有界（反证：无列虚拟化 minors=3660、无行虚拟化 bars/sideRows=10000，均远超上界 → 红）
   expect(metrics.before.minors, '表头辅刻度格有上界（全量 3660）').toBeLessThan(300)
@@ -142,7 +142,7 @@ test('gantt 规模回归：10 年 day 档（≈3660 列）× 1 万行，表头/�
   expect(metrics.before.coverage, '未滚动时可视区有刻度覆盖').toBe(true)
 
   // 滚到跨度中部：窗口平移后仍有界 + 可视区仍有刻度覆盖
-  expect(metrics.after.scrollLeft, 'scrollToDate 已滚动').toBeGreaterThan(0)
+  expect(metrics.after.scrollLeft, 'scrollToDate 已滚动').toBe(31700)
   expect(metrics.after.minors, '滚动后表头格数仍有上界').toBeLessThan(300)
   expect(metrics.after.bars, '滚动（横向）后条数仍有上界').toBeLessThan(100)
   expect(metrics.after.sideRows, '滚动（横向）后行名列仍有上界').toBeLessThan(100)
@@ -265,8 +265,8 @@ test('resource 规模回归：3 年 day 档（≈1096 period）× 5000 任务，
   await page.evaluate(() => document.getElementById('res-scale-3y')?.remove())
 
   // 卫断言：渲染成功 + 窗口内确实有内容（防「计数 0 → 上界恒真」假绿）
-  expect(before.ticks, '刻度已渲染').toBeGreaterThan(0)
-  expect(before.lane1Bars, '首泳道条已渲染（窗口内有相交任务）').toBeGreaterThan(0)
+  expect(before.ticks, '刻度已渲染').toBe(19)
+  expect(before.lane1Bars, '首泳道条已渲染（窗口内有相交任务）').toBe(42)
 
   // DOM 有界（反证：无列窗口化 ticks≈1096、无 lane cull 首 lane 条数≈1667，均远超上界 → 红）
   expect(before.ticks, '刻度数有上界（全量 ≈1096 period）').toBeLessThan(200)
@@ -277,7 +277,7 @@ test('resource 规模回归：3 年 day 档（≈1096 period）× 5000 任务，
   expect(before.coverage, '未滚动时可视区有刻度覆盖').toBe(true)
 
   // 滚到中部：窗口平移后仍有界 + 可视区仍有刻度覆盖
-  expect(after.scrollLeft, '已横向滚动到中部').toBeGreaterThan(0)
+  expect(after.scrollLeft, '已横向滚动到中部').toBe(19549)
   expect(after.ticks, '滚动后刻度数仍有上界').toBeLessThan(200)
   expect(after.lane1Bars, '滚动后单泳道条数仍有上界').toBeLessThan(200)
   expect(after.coverage, '滚到中部后可视区仍有刻度覆盖').toBe(true)
@@ -332,8 +332,8 @@ test('gantt 规模对照：跨度不变、数据量翻倍（1 万→2 万）渲�
 
   logMetrics(test.info(), 'gantt 2x', counts)
   // 卫断言：两实例都渲染成功，且轴完全一致（对照公平性前提）
-  expect(counts.a.bars, '1 万行实例条已渲染').toBeGreaterThan(0)
-  expect(counts.b.bars, '2 万行实例条已渲染').toBeGreaterThan(0)
+  expect(counts.a.bars, '1 万行实例条已渲染').toBe(14)
+  expect(counts.b.bars, '2 万行实例条已渲染').toBe(14)
   expect(counts.b.units, '两实例轴列数一致（跨度锚相同）').toBe(counts.a.units)
   // 行/列窗口与数据总量无关 → 节点数严格相等（若全量渲染，b 应是 a 的 2 倍 → 红）
   expect(counts.b.bars, '数据量翻倍 → 条数不变（全量渲染应翻倍）').toBe(counts.a.bars)
@@ -410,8 +410,8 @@ test('resource 规模对照：跨度不变、数据量翻倍（5 千→1 万）�
 
   logMetrics(test.info(), 'resource 2x', counts)
   // 卫断言
-  expect(counts.a.ticks, '5 千任务实例刻度已渲染').toBeGreaterThan(0)
-  expect(counts.b.lane1Bars, '1 万任务实例首泳道条已渲染').toBeGreaterThan(0)
+  expect(counts.a.ticks, '5 千任务实例刻度已渲染').toBe(19)
+  expect(counts.b.lane1Bars, '1 万任务实例首泳道条已渲染').toBe(84)
   // 刻度数与任务量无关 → 严格相等（全量渲染下刻度数同样与任务量无关——真正的反证在用例 2 的
   // 「≈1096 period」上界；此断言锁「数据量不引入额外刻度」这一不变量）
   expect(counts.b.ticks, '数据量翻倍 → 刻度数不变（列窗口只依赖视口/列宽/跨度）').toBe(counts.a.ticks)

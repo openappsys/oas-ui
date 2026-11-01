@@ -162,11 +162,11 @@ test('message-scroller 500 行 track-visible：IO 驱动 data-visible + 滚动�
     `[scale-perf] message-scroller 500 rows visible=${result.initialVisible}/${result.afterVisible} ids=${result.visibleIds} events=${result.events} p95=${frameP95.toFixed(1)}ms`,
   )
 
-  expect(result.initialVisible, 'IO 初始应标记可见消息').toBeGreaterThan(0)
-  expect(result.afterVisible, '滚动后仍应有可见消息').toBeGreaterThan(0)
+  expect(result.initialVisible, 'IO 初始应标记可见消息').toBe(7)
+  expect(result.afterVisible, '滚动后仍应有可见消息').toBe(7)
   expect(result.afterVisible, '可见消息数不得退化为全量').toBeLessThan(result.total)
-  expect(result.visibleIds, 'visibleMessageIds 应可从 IO 快照读取').toBeGreaterThan(0)
-  expect(result.events, '滚动跨越可见边界应派发 oas-visible-change').toBeGreaterThan(0)
+  expect(result.visibleIds, 'visibleMessageIds 应可从 IO 快照读取').toBe(7)
+  expect(result.events, '滚动跨越可见边界应派发 oas-visible-change').toBe(20)
   expect(frameP95, 'track-visible 滚动帧 p95 超预算').toBeLessThan(isFirefox ? 120 : 80)
   expect(errors, 'console/page error').toEqual([])
 })
@@ -333,9 +333,9 @@ test('list / tree windowed 5 万：真实浏览器首渲染与 DOM 上界', asyn
   const budget = browserName === 'firefox' ? 15000 : 8000
   console.log('[scale-perf] list/tree windowed', result)
   expect(result.buildMs).toBeLessThan(budget)
-  expect(result.listRows).toBeGreaterThan(0)
+  expect(result.listRows).toBe(12)
   expect(result.listRows).toBeLessThan(1000)
-  expect(result.treeRows).toBeGreaterThan(0)
+  expect(result.treeRows).toBe(55)
   expect(result.treeRows).toBeLessThan(1000)
   expect(errors).toEqual([])
 })
@@ -371,7 +371,7 @@ test('kanban 3000 cards：真实浏览器首渲染与卡片 DOM 上界', async (
   const budget = browserName === 'firefox' ? 15000 : 8000
   console.log('[scale-perf] kanban 3000', result)
   expect(result.buildMs).toBeLessThan(budget)
-  expect(result.cards).toBeGreaterThan(0)
+  expect(result.cards).toBe(55)
   expect(result.cards).toBeLessThan(1500)
   expect(result.columns).toBe(5)
   expect(errors).toEqual([])
@@ -406,7 +406,7 @@ test('scheduler month 2000 events：真实浏览器首渲染与事件 DOM 上界
   const budget = browserName === 'firefox' ? 15000 : 8000
   console.log('[scale-perf] scheduler 2000', result)
   expect(result.buildMs).toBeLessThan(budget)
-  expect(result.chips).toBeGreaterThan(0)
+  expect(result.chips).toBe(56)
   expect(result.chips).toBeLessThanOrEqual(2000)
   expect(errors).toEqual([])
 })

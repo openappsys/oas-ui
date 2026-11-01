@@ -40,7 +40,7 @@ test('swipe-cell 超阈值横滑开：open 落定、内容层位移到 actions �
     const host = document.querySelector('#swipe-demo-1') as HTMLElement
     return (host.shadowRoot!.querySelector('[part="actions"]') as HTMLElement).getBoundingClientRect().width
   })
-  expect(width, 'actions 有可测量宽度').toBeGreaterThan(0)
+  expect(width, 'actions 有可测量宽度').toBe(62)
 
   await swipe(page, '#swipe-demo-1', -Math.max(60, width + 20))
 
@@ -180,7 +180,7 @@ test('swipe-cell 聚焦滚动不误关：视口外 cell 聚焦 actions 按钮（
     await new Promise((res) => setTimeout(res, 500))
     return { open: el.hasAttribute('open'), scrollY: window.scrollY }
   })
-  expect(r.scrollY, '已发生聚焦滚动').toBeGreaterThan(0)
+  expect(r.scrollY, '已发生聚焦滚动').toBe(7320)
   expect(r.open, '聚焦滚动不应把打开的 cell 误关（键盘可达）').toBe(true)
 })
 
@@ -211,7 +211,7 @@ test('swipe-cell RTL 镜像：向 inline-start（右滑）开、偏移为正、a
     }
   })
   expect(state.open).toBe(true)
-  expect(parseFloat(state.offset), 'RTL 偏移为正').toBeGreaterThan(0)
+  expect(parseFloat(state.offset), 'RTL 偏移为正').toBe(80)
   // 过渡动画期间几何在移动，等吸附完成后再核对方向（RTL：actions 在左、内容层右移，contentLeft > actionsLeft）
   await expect
     .poll(() =>
@@ -222,7 +222,7 @@ test('swipe-cell RTL 镜像：向 inline-start（右滑）开、偏移为正、a
         return content.getBoundingClientRect().left - actions.getBoundingClientRect().left
       }),
     )
-    .toBeGreaterThan(0)
+    .toBe(80)
 })
 
 test.describe('移动仿真（触屏真手势）', () => {
@@ -236,7 +236,7 @@ test.describe('移动仿真（触屏真手势）', () => {
     const cell = page.locator('oas-swipe-cell').first()
     await cell.scrollIntoViewIfNeeded()
     const box = await cell.boundingBox()
-    expect(box).not.toBeNull()
+    await expect(cell).toBeVisible()
     const cdp = await page.context().newCDPSession(page)
     // 横滑（LTR 向左滑开）
     const y = box!.y + box!.height / 2
@@ -323,7 +323,7 @@ test.describe('swipe-cell 双侧滑动', () => {
       const host = document.querySelector('#swipe-dual') as HTMLElement
       return (host.shadowRoot!.querySelector('[part="actions-start"]') as HTMLElement).getBoundingClientRect().width
     })
-    expect(startW, 'actions-start 有可测量宽度').toBeGreaterThan(0)
+    expect(startW, 'actions-start 有可测量宽度').toBe(62)
 
     await swipe(page, '#swipe-dual', Math.max(60, startW + 20))
 
@@ -341,7 +341,7 @@ test.describe('swipe-cell 双侧滑动', () => {
       }
     })
     expect(state.open).toBe(true)
-    expect(state.offset, 'LTR start 侧偏移为正').toBeGreaterThan(0)
+    expect(state.offset, 'LTR start 侧偏移为正').toBe(62)
     await expect
       .poll(() =>
         page.evaluate(() => {
@@ -351,7 +351,7 @@ test.describe('swipe-cell 双侧滑动', () => {
           return content.getBoundingClientRect().left - start.getBoundingClientRect().left
         }),
       )
-      .toBeGreaterThan(0)
+      .toBe(62)
   })
 
   test('左滑开 end 侧（删除）：open-side=end、偏移为负', async ({ page }) => {

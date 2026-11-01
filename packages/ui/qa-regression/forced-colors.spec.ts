@@ -45,9 +45,9 @@ function expectVisibleEdge(
   edge: { outlineWidth: string; outlineStyle: string; outlineColor: string } | null,
   label: string,
 ): void {
-  expect(edge, `${label}：元素存在且未隐藏`).not.toBeNull()
   const px = Number.parseFloat(edge!.outlineWidth)
-  expect(px, `${label}：outline 宽度 > 0（got ${edge!.outlineWidth}）`).toBeGreaterThan(0)
+  // forced-colors 下 UA 强制边框宽度只有 1px / 2px 两档
+  expect([1, 2], `${label}：outline 宽度为 UA 强制档位（got ${edge!.outlineWidth}）`).toContain(px)
   expect(edge!.outlineStyle, `${label}：outline 线型非 none`).not.toBe('none')
   expect(edge!.outlineColor, `${label}：outline 颜色非 transparent`).not.toContain('rgba(0, 0, 0, 0)')
 }
@@ -106,8 +106,7 @@ test('gantt：任务条 / 进度填充 / 基线 / 里程碑菱形在强制色下
       borderColor: cs.borderTopColor,
     }
   })
-  expect(barEdge, '普通任务条存在').not.toBeNull()
-  expect(Number.parseFloat(barEdge!.borderTopWidth), '任务条 border 宽度 > 0').toBeGreaterThan(0)
+  expect(Number.parseFloat(barEdge!.borderTopWidth), '任务条 border 宽度').toBe(1)
   expect(barEdge!.borderStyle).not.toBe('none')
   expect(barEdge!.borderColor).not.toContain('rgba(0, 0, 0, 0)')
   // 进度填充前沿兜底：basic 首条 progress 40 → 存在 .bar-progress
@@ -118,8 +117,7 @@ test('gantt：任务条 / 进度填充 / 基线 / 里程碑菱形在强制色下
     const cs = getComputedStyle(prog)
     return { width: cs.borderInlineEndWidth, color: cs.borderInlineEndColor }
   })
-  expect(progEdge, '进度填充存在').not.toBeNull()
-  expect(Number.parseFloat(progEdge!.width), '进度前沿 border-inline-end 宽度 > 0').toBeGreaterThan(0)
+  expect(Number.parseFloat(progEdge!.width), '进度前沿 border-inline-end 宽度').toBe(2)
   expect(progEdge!.color).not.toContain('rgba(0, 0, 0, 0)')
   // 基线条 outline 兜底（show-baseline 演示实例）
   expectVisibleEdge(await shadowEdge(page, 'oas-gantt[show-baseline]', '.baseline'), 'gantt baseline')
@@ -184,7 +182,6 @@ test('badge / progress：dot 徽标与进度轨道在强制色下有可计算的
     const cs = getComputedStyle(track)
     return { borderTopWidth: cs.borderTopWidth, borderStyle: cs.borderTopStyle, borderColor: cs.borderTopColor }
   })
-  expect(trackEdge, 'progress track 存在').not.toBeNull()
-  expect(Number.parseFloat(trackEdge!.borderTopWidth), 'track border 宽度 > 0').toBeGreaterThan(0)
+  expect(Number.parseFloat(trackEdge!.borderTopWidth), 'track border 宽度').toBe(1)
   expect(trackEdge!.borderStyle).not.toBe('none')
 })

@@ -60,7 +60,7 @@ test('kanban DnD 跨列拖拽：换列并派发 oas-change（from/to/index 口�
   expect(r.events.length).toBe(1)
   const d = r.events[0] as { from: string; to: string; index: number }
   expect(d.from).not.toBe(d.to)
-  expect(r.secondColIds.length, '第二列卡片数 +1').toBeGreaterThan(0)
+  expect(r.secondColIds.length, '第二列卡片数 +1').toBe(2)
   expect(r.orphanMark, 'dragend 后无孤儿指示线').toBe(false)
 })
 
@@ -225,7 +225,10 @@ test('kanban 泳道跨带拖拽：拖到另一泳带 → 泳道字段回写 + de
   })
   expect(r.events.length, '跨带拖拽派发 oas-change').toBe(1)
   const d = r.events[0] as { swimlane?: { from: string; to: string } }
-  expect(d.swimlane, 'detail 含 swimlane from/to').toBeTruthy()
+  expect(d.swimlane, 'detail 含 swimlane from/to').toMatchObject({
+    from: expect.stringMatching(/\S/),
+    to: expect.stringMatching(/\S/),
+  })
   expect(d.swimlane!.from, '泳道 from 非空').not.toBe(d.swimlane!.to)
 })
 
@@ -450,7 +453,6 @@ test('kanban 虚拟化滚动帧按索引切片：滚动 5 帧取卡诊断计数�
   })
   // 真浏览器有 ResizeObserver 实测回写（额外有限次重绘），上界放宽到 1000——仍远小于 3000×5
   expect(r.delta, '5 帧取卡数有上界（窗口量级；旧实现每帧全量 filter = 3000×5 = 15000）').toBeLessThanOrEqual(1000)
-  expect(r.delta, '索引切片路径确在使用（未退化回全量数组路径）').toBeGreaterThan(0)
   expect(r.first, '已滚离顶部').toBeGreaterThan(10)
   expect(r.contiguous, '窗口 data-index 连续（滚动语义不变）').toBe(true)
 })
@@ -582,10 +584,10 @@ test('kanban 程序化跳滚：scrollTo 大步跳变后一帧内窗口与视口�
     const bottom = read()
     return { rowH, w0, TOTAL, TARGET, jump, back, bottom }
   })
-  expect(r.rowH, '实测步进有效（相邻卡间距 > 0）').toBeGreaterThan(0)
+  expect(r.rowH, '实测步进有效（相邻卡间距 = 45.5px）').toBe(45.5)
   const pred = (target: number): number => Math.round(r.w0 + (target - r.w0 * r.rowH) / 68)
   // --- 跳滚 23400：一帧内窗口与视口一致 ---
-  expect(r.jump.visCount, '视口内有渲染卡（无整帧空白——缺陷版此处为 0）').toBeGreaterThan(0)
+  expect(r.jump.visCount, '视口内有渲染卡（无整帧空白——缺陷版此处为 0）').toBe(7)
   expect(
     Math.abs((r.jump.visFirst as number) - pred(r.TARGET)),
     `视口首卡 ${r.jump.visFirst} 与混合前缀理论 ${pred(r.TARGET)} 一致（容差 ±10：二分边界 ±1 + RO 锚定补偿 ≈7.6 卡）`,
@@ -593,13 +595,13 @@ test('kanban 程序化跳滚：scrollTo 大步跳变后一帧内窗口与视口�
   expect(r.jump.count, '窗口卡数有上界').toBeLessThanOrEqual(60)
   expect(r.jump.contiguous, '窗口 data-index 连续').toBe(true)
   // --- 反向跳变到已测前缀末端：上方全为已测卡（无补偿），窗口精确落位 ---
-  expect(r.back.visCount, '反向跳变视口非空白').toBeGreaterThan(0)
+  expect(r.back.visCount, '反向跳变视口非空白').toBe(7)
   expect(
     Math.abs((r.back.visFirst as number) - pred(r.w0 * r.rowH)),
     `反向跳变首卡 ${r.back.visFirst} 与理论 ${pred(r.w0 * r.rowH)} 一致（已测前缀内 ±3）`,
   ).toBeLessThanOrEqual(3)
   // --- 到底：末卡渲染 ---
-  expect(r.bottom.visCount, '到底后视口非空白').toBeGreaterThan(0)
+  expect(r.bottom.visCount, '到底后视口非空白').toBe(6)
   expect(r.bottom.last, '到底后窗口末卡 = 全量最后一张（末卡渲染）').toBe(r.TOTAL - 1)
   expect(r.bottom.contiguous, '到底窗口 data-index 连续').toBe(true)
 })
@@ -759,7 +761,7 @@ test('kanban 优先级强调色：卡片/列 color 经伪元素生效、RTL 镜�
   expect(light.cardBarTop, '竖条贴顶').toBe('0px')
   expect(light.cardBarBottom, '竖条贴底').toBe('0px')
   expect(light.cardBarLeft, 'LTR 竖条在左侧（inset-inline-start 逻辑属性）').toBe('0px')
-  expect(Number.parseFloat(light.cardBarRight), 'LTR 竖条不贴右（3px 宽）').toBeGreaterThan(0)
+  expect(Number.parseFloat(light.cardBarRight), 'LTR 竖条不贴右（卡片宽 − 3px）').toBe(611)
   expect(light.cleanCardVar, '无 color 卡片无变量').toBe('')
   expect(light.cleanCardStyle, '无 color 卡片零额外 style 标记').toBe(false)
   expect(light.cleanCardBarBg, '无 color 伪元素透明（零视觉变化）').toBe('rgba(0, 0, 0, 0)')
@@ -781,7 +783,7 @@ test('kanban 优先级强调色：卡片/列 color 经伪元素生效、RTL 镜�
     return { left: cs.left, right: cs.right }
   })
   expect(rtl.right, 'RTL 竖条贴右（inset-inline-start 镜像）').toBe('0px')
-  expect(Number.parseFloat(rtl.left), 'RTL 竖条不贴左（镜像后 3px 宽）').toBeGreaterThan(0)
+  expect(Number.parseFloat(rtl.left), 'RTL 竖条不贴左（镜像后卡片宽 − 3px）').toBe(611)
 
   // 暗色：强调条取暗色 token（与明色不同、非透明）
   await page.evaluate(() => document.documentElement.classList.add('dark'))

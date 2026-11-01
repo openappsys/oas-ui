@@ -20,7 +20,7 @@ test('json-viewer 10k 节点只渲染虚拟窗口，滚动后窗口移动', asyn
       clientHeight: viewport.clientHeight,
     }
   })
-  expect(before.rows).toBeGreaterThan(0)
+  expect(before.rows).toBe(20)
   expect(before.rows).toBeLessThan(80)
   expect(before.first).toBe('$')
   expect(before.scrollHeight).toBeGreaterThan(before.clientHeight * 50)
@@ -44,7 +44,7 @@ test('json-viewer 10k 节点只渲染虚拟窗口，滚动后窗口移动', asyn
       activePointerValid: activeId == null || root.getElementById(activeId) != null,
     }
   })
-  expect(after.rows).toBeGreaterThan(0)
+  expect(after.rows).toBe(28)
   expect(after.rows).toBeLessThan(80)
   expect(after.first).not.toBe('$')
   expect(after.activePointerValid).toBe(true)
@@ -95,7 +95,7 @@ test('json-viewer 搜索命中计数/自动展开，Ctrl+F 与键盘导航可用
       .shadowRoot!.querySelector('[part="viewport"]')!
       .getAttribute('aria-activedescendant'),
   )
-  expect(activeId).toBeTruthy()
+  expect(activeId).toMatch(/^oas-json-row-\d+$/)
   const activeExists = await page.evaluate((id) => {
     const root = document.querySelector('#jv-search')!.shadowRoot!
     return root.getElementById(id)?.getAttribute('role') === 'treeitem'
@@ -202,7 +202,7 @@ test('json-viewer toolbar=false 工具栏隐藏且复制反馈浮层可见', asy
   })
   expect(flash.ok).toBe(true)
   expect(flash.hidden).toBe(false)
-  expect(flash.text).toBeTruthy()
+  expect(flash.text).toBe('已复制')
 })
 
 test('json-viewer 基础与错误态 axe 零违规', async ({ page }) => {
@@ -315,7 +315,7 @@ test('json-viewer 滚动复用行 DOM：同窗口保留节点，跨窗口/键盘
       delta,
     }
   })
-  expect(sameWindow.rowCount).toBeGreaterThan(0)
+  expect(sameWindow.rowCount).toBe(28)
   expect(sameWindow.stablePaths, '同窗口滚动内容应完全一致').toBe(true)
   expect(sameWindow.sameNode, `同窗口滚动 delta=${sameWindow.delta}px 应保留行 DOM 节点`).toBe(true)
 
@@ -332,7 +332,7 @@ test('json-viewer 滚动复用行 DOM：同窗口保留节点，跨窗口/键盘
       activePointerValid: activeId == null || root.getElementById(activeId) != null,
     }
   })
-  expect(crossWindow.rows).toBeGreaterThan(0)
+  expect(crossWindow.rows).toBe(28)
   expect(crossWindow.first).not.toBe('$')
   expect(crossWindow.activePointerValid).toBe(true)
 
@@ -382,7 +382,7 @@ test('json-viewer 滚动复用行 DOM：同窗口保留节点，跨窗口/键盘
   expect(search.count).not.toBe(countBefore)
   expect(search.visible, '搜索 next 后活动命中行必须可见').toBe(true)
   expect(search.resolved).toBe(search.activePath)
-  expect(search.activePath).toBeTruthy()
+  expect(search.activePath).toBe("$['tags']")
 
   expect(badWarns, `console/page 零新增 error/warning：${badWarns.join(' | ')}`).toEqual([])
 })

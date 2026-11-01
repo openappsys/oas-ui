@@ -78,8 +78,8 @@ test('slider range：双滑块区间 + 双输入框联动且方向反向（rever
   expect(r.numMax).toBe('80')
   expect(r.fillUnit, '有布局尺寸时 fill 应按像素定位（与 thumb 中心同公式）').toBe(true)
   expect(Math.abs(r.fillWidthPx - r.expectedFillW), 'fill 宽应等于双 thumb 中心距').toBeLessThanOrEqual(1.5)
-  expect(r.minAria).toBeTruthy()
-  expect(r.maxAria).toBeTruthy()
+  expect(r.minAria).toBe('最小值')
+  expect(r.maxAria).toBe('最大值')
 
   // reverse demo：方向反转 + 填充区从右端起（值 60 → 镜像 40%，thumb 中心 = 0.4×(长-直径)+半径）
   await up(page, 'oas-slider[reverse]')
@@ -103,8 +103,8 @@ test('slider range：双滑块区间 + 双输入框联动且方向反向（rever
   expect(rev.dir).toBe('rtl')
   expect(parseFloat(rev.fillLeft), 'reverse 填充左边应与 thumb 中心同公式（px）').toBeCloseTo(rev.fillLeftExpected, 0)
   expect(rev.fillRight).toBe('')
-  expect(parseFloat(rev.fillWidth)).toBeGreaterThan(0)
-  expect(rev.ariaLabel).toBeTruthy()
+  expect(parseFloat(rev.fillWidth)).toBe(190.6)
+  expect(rev.ariaLabel).toBe('滑块')
   expect(rev.ariaNow).toBe('60')
 })
 
@@ -242,7 +242,7 @@ test('slider range：pointerdown 提升 input z-index 后蓝色填充仍可见�
       raisedZ: maxInput.style.zIndex,
     }
   })
-  expect(r.fillWidth, 'fill 应有宽度').toBeGreaterThan(0)
+  expect(r.fillWidth, 'fill 应有宽度').toBeCloseTo(103.8, 1)
   expect(r.fillVisible, 'fill 应可见').toBe(true)
   expect(r.fillBg, 'fill 应为 primary 填充色').not.toMatch(/transparent|rgba\(0, 0, 0, 0\)/)
   expect(r.raisedZ, 'pointerdown 后 z-index 提升逻辑仍应生效').toBe('2')
@@ -310,7 +310,6 @@ test('slider tooltip 格式化双通道：format 模板串与 formatTooltip 函�
       tipVisible: !thumb.querySelector('.thumb-tip')?.hasAttribute('hidden'),
     }
   })
-  expect(fn, 'formatTooltip 函数 property 应已赋值').not.toBeNull()
   expect(fn!.tip).toContain('120')
   expect(fn!.tipVisible).toBe(true)
 })
@@ -827,7 +826,6 @@ test('slider thumb=pointer：细指针形态真实渲染（薄条 + 原生拇指
     }
     return { pointer: probe(pointerEl), round: probe(roundEl) }
   })
-  expect(r.pointer, 'pointer demo 应有可见指针').not.toBeNull()
   expect(r.pointer!.shape).toBe('pointer')
   expect(r.pointer!.customThumb, 'pointer 应隐藏原生拇指（走自定义视觉层）').toBe(true)
   // 指针为薄竖条：宽约 3px，明显窄于圆推子直径

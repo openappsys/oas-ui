@@ -129,7 +129,6 @@ test('list：点击可点行内的开关不触发行点击，且行不挂缺省 
     await new Promise((res) => setTimeout(res, 0))
     return { rowClicks, role: row.getAttribute('role'), before, after: inner.getAttribute('aria-checked') }
   })
-  expect(r, '页面应有嵌开关的可点行').not.toBeNull()
   // 组件默认把行容器声明为 list，行派生 listitem；关键是不得挂交互角色（role=button 会与行内开关构成嵌套交互）
   expect(r!.role, '可点行不挂缺省 role=button（否则行内开关构成交互嵌套）').not.toBe('button')
   expect(['listitem', null], '行角色为 listitem（list 语义）或未设').toContain(r!.role)
@@ -156,7 +155,6 @@ test('list 选中行内 checked 开关：轨道底与 primary 行底可辨（dem
     }
     return null
   })
-  expect(r, '选中行 demo 内应有开启态开关').not.toBeNull()
   expect(r!.trackBg, '开启轨道底色不得与选中行底同色（曾同为 primary → 轨道消失只剩悬空滑块，可供性丢失）').not.toBe(
     r!.rowBg,
   )
@@ -176,7 +174,7 @@ test('list hoverable：属性存活 + 行打 data-hoverable 钩子 + 样式表 h
       selectedExcluded: css.includes(':not([selected])'),
     }
   })
-  expect(r.count, 'hoverable demo 有声明式行').toBeGreaterThan(0)
+  expect(r.count, 'hoverable demo 有声明式行').toBe(3)
   expect(r.hooked, '所有行打上 data-hoverable 钩子（Vue 下 hoverable 属性存活）').toBe(true)
   expect(r.cssOk, '样式表含 hover 规则（token 色）').toBe(true)
   expect(r.selectedExcluded, '选中行排除在 hover 规则外').toBe(true)
@@ -327,7 +325,6 @@ test('list windowed：滚动派发 oas-window-request、回填后绝对行渲染
     const reqs = (window as unknown as { __winReqs: Array<{ start: number; end: number; reason: string }> }).__winReqs
     return reqs[reqs.length - 1] ?? null
   })
-  expect(req, '滚动后应派发 oas-window-request').not.toBeNull()
   expect(req!.reason).toBe('scroll')
   expect(req!.start).toBeGreaterThan(100)
   expect(req!.end).toBeGreaterThan(req!.start)
@@ -366,7 +363,7 @@ test('list windowed：滚动派发 oas-window-request、回填后绝对行渲染
       scrollTop: (sh.querySelector('[part="body"]') as HTMLElement).scrollTop,
     }
   })
-  expect(r.indexes.length, '回填后有绝对行渲染').toBeGreaterThan(0)
+  expect(r.indexes.length, '回填后有绝对行渲染').toBe(14)
   // 绝对连续行号（不回到 0 起）
   expect(r.indexes).toEqual(r.indexes.map((_, i) => r.indexes[0]! + i))
   expect(Math.min(...r.indexes)).toBeGreaterThanOrEqual(req!.start)
@@ -375,9 +372,9 @@ test('list windowed：滚动派发 oas-window-request、回填后绝对行渲染
   expect(r.setsize.every((s) => s === '500')).toBe(true)
   expect(r.posinset).toEqual(r.indexes.map((i) => i + 1))
   // 占位 + 行 = 全量总高（500 × 40），且滚动位置未被重建清回 0
-  expect(r.rowH).toBeGreaterThan(0)
+  expect(r.rowH).toBe(40)
   expect(r.topH + r.indexes.length * r.rowH + r.bottomH).toBe(500 * 40)
-  expect(r.scrollTop).toBeGreaterThan(0)
+  expect(r.scrollTop).toBe(8000)
 })
 
 // ===== a11y 角色归属：role=list 落在 shadow 内行容器，宿主不再承担 list 角色 =====
@@ -479,7 +476,7 @@ test('list a11y：windowed(height) / windowed(max-height) / 虚拟 / 分组四�
     const it = r[id]!
     expect(it.hostRole, `${id} 宿主不再保留 role=list（可聚焦滚动容器会成为非法子元素）`).toBe(null)
     expect(it.containerRole, `${id} role=list 落在行容器上`).toBe('list')
-    expect(it.rowRoles.length).toBeGreaterThan(0)
+    expect(it.rowRoles.length, `${id} 行数`).toBe(3)
     for (const role of it.rowRoles) expect(role, `${id} 行派生 listitem`).toBe('listitem')
     expect(it.scrollParentOfList, `${id} 滚动容器在 list 容器之外`).toBe(true)
     if (id === 'qa-a11y-win-h' || id === 'qa-a11y-win-mh') {
@@ -540,7 +537,7 @@ test('list windowed 无视口：零请求 + 不铺 total 占位；补 max-height
     }
   })
   expect(after.req.start, '有视口后请求可算区间').toBe(0)
-  expect(after.req.end).toBeGreaterThan(0)
+  expect(after.req.end).toBe(15)
   expect(after.req.end).toBeLessThan(500)
   expect(after.hasSpacer, '有视口后恢复占位').toBe(true)
 })

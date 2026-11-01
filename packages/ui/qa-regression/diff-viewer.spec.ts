@@ -24,17 +24,21 @@ test('diff-viewer 渲染行级/词级差异与统计', async ({ page }) => {
       activePointer: root.getElementById(
         root.querySelector('[part="viewport"]')?.getAttribute('aria-activedescendant') ?? '',
       ),
+      pointerOp:
+        root
+          .getElementById(root.querySelector('[part="viewport"]')?.getAttribute('aria-activedescendant') ?? '')
+          ?.getAttribute('data-op') ?? null,
     }
   })
   expect(state.stats).toMatchObject({ added: 3, removed: 3 })
   expect(state.ops).toContain('delete')
   expect(state.ops).toContain('insert')
-  expect(state.words.length).toBeGreaterThan(0)
+  expect(state.words.length).toBe(6)
   expect(state.words).toEqual(expect.arrayContaining(['false', 'true']))
   expect(state.added).toBe('+3')
   expect(state.removed).toBe('−3')
   expect(state.tableRole).toBe('grid')
-  expect(state.activePointer).not.toBeNull()
+  expect(state.pointerOp, '活动指针落在首个 equal 行').toBe('equal')
 })
 
 test('diff-viewer 折叠块点击/键盘展开，批量按钮生效', async ({ page }) => {
@@ -49,7 +53,7 @@ test('diff-viewer 折叠块点击/键盘展开，批量按钮生效', async ({ p
   const before = await page.evaluate(
     () => document.querySelector('#dv-fold')!.shadowRoot!.querySelectorAll('[part="fold"]').length,
   )
-  expect(before).toBeGreaterThan(0)
+  expect(before).toBe(1)
 
   await page.locator('#dv-fold [part="fold-toggle"]').first().click()
   await page.waitForFunction(() => (window as unknown as { __toggles?: unknown[] }).__toggles?.length === 1)
@@ -177,7 +181,7 @@ test('diff-viewer 3000 行虚拟窗口有界，滚动与键盘可用', async ({ 
       firstIndex: root.querySelector('[part="row"]')?.getAttribute('data-index'),
     }
   })
-  expect(before.rows).toBeGreaterThan(0)
+  expect(before.rows).toBe(20)
   expect(before.rows).toBeLessThan(80)
   expect(before.scrollHeight).toBeGreaterThan(before.clientHeight * 20)
 
@@ -202,7 +206,7 @@ test('diff-viewer 3000 行虚拟窗口有界，滚动与键盘可用', async ({ 
       activePointerValid: activeId == null || root.getElementById(activeId) != null,
     }
   })
-  expect(after.rows).toBeGreaterThan(0)
+  expect(after.rows).toBe(28)
   expect(after.rows).toBeLessThan(80)
   expect(after.firstIndex).not.toBe(before.firstIndex)
   expect(after.activePointerValid).toBe(true)
@@ -236,8 +240,8 @@ test('diff-viewer scrollToChange 定位变更块', async ({ page }) => {
   })
   expect(result.ok).toBe(true)
   expect(result.invalid).toBe(false)
-  expect(result.op).not.toBeNull()
-  expect(result.scrollTop).toBeGreaterThan(0)
+  expect(result.op).toBe('delete')
+  expect(result.scrollTop).toBe(47797)
 })
 
 test('diff-viewer wrap 模式 scrollToChange 与键盘落点可见', async ({ page }) => {
@@ -276,7 +280,7 @@ test('diff-viewer wrap 模式 scrollToChange 与键盘落点可见', async ({ pa
   })
   expect(result.visible).toBe(true)
   expect(result.activeHeight).toBeGreaterThan(22)
-  expect(result.scrollTop).toBeGreaterThan(0)
+  expect(result.scrollTop).toBe(2069)
 
   // 键盘 End 后活动行仍在视口内
   const end = await page.evaluate(() => {

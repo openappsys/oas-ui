@@ -487,7 +487,7 @@ test.describe('无障碍审计（axe，零严重违规）', () => {
           expect(
             split.applied.length,
             `${name} [${theme}]：节点级豁免必须实际命中（陈旧豁免会静默放行其它违规，须同步删除）`,
-          ).toBeGreaterThan(0)
+          ).toBe(1)
           const exemptionIssues = await verifyExemptedAriaControls(p, split.applied)
           expect(exemptionIssues, `${name} [${theme}]：节点级豁免必须对应真实的跨 shadow 引用`).toEqual([])
         }
@@ -562,7 +562,7 @@ test('感知对比度门禁自检：注入低对比文本能被捕获且指标�
     .analyze()) as unknown as AxeResultsLike
   const { samples } = collectContrast('canary', results)
   const hit = samples.find((s) => s.target.includes('contrast-canary'))
-  expect(hit, '采集器应捕获注入的低对比节点').toBeTruthy()
+  expect(hit!.target, '采集器应捕获注入的低对比节点').toBe('#contrast-canary')
   expect(hit!.score, '注入节点感知分应低于 30 档').toBeLessThan(30)
   // 指标函数本身的分档与极性
   expect(scoreOf('#f4f4f5', '#ffffff')!, '浅字浅底应判定为低分').toBeLessThan(30)
@@ -591,7 +591,9 @@ test('节点级豁免自检：stepper 页注入其它非法 ARIA 取值必须被
     .filter((v) => v.id === 'aria-valid-attr-value')
     .flatMap((v) => v.nodes)
     .find((n) => JSON.stringify(n.target).includes('aria-valid-canary'))
-  expect(canary, '规则必须保持启用：页级整规则豁免会让 aria-checked="maybe" 这类非法值静默漏检').toBeTruthy()
+  expect(canary!.target, '规则必须保持启用：页级整规则豁免会让 aria-checked="maybe" 这类非法值静默漏检').toEqual([
+    '#aria-valid-canary',
+  ])
   expect(
     split.applied.some((a) => a.targetId.includes('aria-valid-canary')),
     '其它节点的非法 ARIA 值不得落进 stepper 的节点级豁免',
@@ -673,7 +675,7 @@ test('生成对比度基线（CONTRAST_BASELINE=update --workers=1 -g 生成对�
   // 生成后立刻校验求和不变量：totals 与逐页必须严格一致（结构性保证，防生成逻辑漂移）
   const mismatch = totalsMismatch(JSON.parse(readFileSync(BASELINE_FILE, 'utf8')))
   expect(mismatch, `新生成的基线 totals 与 pages 求和不一致：${mismatch.join('；')}`).toEqual([])
-  expect(Object.keys(pages).length).toBeGreaterThan(0)
+  expect(Object.keys(pages).length).toBe(171)
 })
 
 // ---------- totals 求和不变量门禁 ----------
@@ -684,7 +686,7 @@ test('a11y 基线 totals 求和不变量：六项计数等于逐页求和（samp
     totals: Record<string, number>
     pages: Record<string, Record<string, number>>
   }
-  expect(Object.keys(baseline.pages ?? {}).length, '基线应包含逐页条目（空基线 = 门禁空转）').toBeGreaterThan(0)
+  expect(Object.keys(baseline.pages ?? {}).length, '基线应包含逐页条目（空基线 = 门禁空转）').toBe(171)
   const mismatch = totalsMismatch(baseline)
   expect(
     mismatch,
@@ -708,9 +710,9 @@ test('a11y 基线不变量自检：篡改 totals 必须被判红（checker 反�
   ).toBe(true)
   // ② 删除一个有计数的页（模拟残留清理后忘了同步 totals）→ 求和变小必须被发现
   const withCount = Object.entries(baseline.pages).find(([, c]) => (c.ratio ?? 0) > 0)
-  expect(withCount, '基线里应存在 ratio>0 的页（否则本反证选样失效）').toBeTruthy()
+  expect(withCount![0], '基线里应存在 ratio>0 的页（否则本反证选样失效）').toBe('affix.html')
   const removed: Record<string, Record<string, number>> = { ...baseline.pages }
   delete removed[withCount![0]!]
   const m2 = totalsMismatch({ totals: baseline.totals, pages: removed })
-  expect(m2.length, '删除有计数的页后 totals 不再等于求和，必须报不一致').toBeGreaterThan(0)
+  expect(m2.length, '删除有计数的页后 totals 不再等于求和，必须报不一致').toBe(1)
 })
