@@ -101,7 +101,7 @@ describe('OASJsonViewer 渲染热路径：可见行复用', () => {
     document.body.appendChild(el)
     const viewport = tree(el)
     const first = rows(el)[0]!
-    expect(first.querySelector('[part="toggle-icon"]')).not.toBeNull()
+    expect(first.querySelectorAll('[part="toggle-icon"]').length).toBe(1)
 
     perf.flatten = 0
     viewport.dispatchEvent(new Event('scroll'))
@@ -118,9 +118,10 @@ describe('OASJsonViewer 渲染热路径：可见行复用', () => {
     viewport.scrollTop = 4000
     viewport.dispatchEvent(new Event('scroll'))
     const after = paths(el)
-    expect(after.length).toBeGreaterThan(0)
+    // 视口 200px / 行高 20（10 行）+ 双侧 buffer，落到 24 行窗口
+    expect(after.length).toBe(24)
     expect(after).not.toEqual(before)
-    expect(after[0]).not.toBe('$')
+    expect(after[0]).toBe('$[191]')
   })
 
   it('窗口不变时键盘移动活动行仍更新高亮与 aria-activedescendant', () => {
@@ -133,8 +134,8 @@ describe('OASJsonViewer 渲染热路径：可见行复用', () => {
     const active = el.shadowRoot!.querySelector<HTMLElement>('[part="row"].active')!
     expect(active.getAttribute('data-path')).toBe('$[31]')
     const activeId = viewport.getAttribute('aria-activedescendant')
-    expect(activeId).toBeTruthy()
-    expect(el.shadowRoot!.getElementById(activeId!)?.getAttribute('data-path')).toBe('$[31]')
+    expect(activeId).toMatch(/^oas-json-row-\d+$/)
+    expect(el.shadowRoot!.getElementById(activeId!)!.getAttribute('data-path')).toBe('$[31]')
   })
 
   it('数据源/展开状态变化后的首次渲染必须重新计算可见行', () => {
@@ -143,12 +144,12 @@ describe('OASJsonViewer 渲染热路径：可见行复用', () => {
 
     perf.flatten = 0
     el.expandAll()
-    expect(perf.flatten).toBeGreaterThan(0)
+    expect(perf.flatten, '展开后重算一次可见行').toBe(1)
     expect(paths(el)).toContain("$['a']['b']")
 
     perf.flatten = 0
     el.data = { x: 1 }
-    expect(perf.flatten, '换数据源必须重新计算').toBeGreaterThan(0)
+    expect(perf.flatten, '换数据源必须重新计算').toBe(1)
     // 换数据源会重置初始化展开（default-expand-depth=0 → 只剩根）
     expect(paths(el)).toEqual(['$'])
     el.expandAll()
@@ -157,12 +158,12 @@ describe('OASJsonViewer 渲染热路径：可见行复用', () => {
 
   it('空/错误态与数据态切换不复用陈旧行', () => {
     const el = mount({ text: '{bad' })
-    expect(el.shadowRoot!.querySelector('[part="error"]')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('[part="error"]').length).toBe(1)
     el.data = { a: 1 }
     expect(paths(el)).toEqual(['$', "$['a']"])
 
     el.text = '{bad'
-    expect(el.shadowRoot!.querySelector('[part="error"]')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('[part="error"]').length).toBe(1)
     el.data = { a: 1, b: 2 }
     expect(paths(el)).toEqual(['$', "$['a']", "$['b']"])
   })
@@ -180,7 +181,7 @@ describe('OASJsonViewer 渲染热路径：搜索祖先展开缓存', () => {
 
   it('搜索初始化后 searchNext 与滚动不再重算祖先路径', () => {
     const el = mount({ text: SEARCH_TEXT, search: 'alpha' })
-    expect(perf.ancestors, '首次搜索需要计算祖先').toBeGreaterThan(0)
+    expect(perf.ancestors, '首次搜索按 400 行 × 命中行逐条计算祖先').toBe(400)
 
     perf.ancestors = 0
     el.searchNext()
@@ -196,11 +197,11 @@ describe('OASJsonViewer 渲染热路径：搜索祖先展开缓存', () => {
     const el = mount({ text: SEARCH_TEXT, search: 'alpha' })
     perf.ancestors = 0
     el.setAttribute('search', 'item-2')
-    expect(perf.ancestors, '换查询必须重算').toBeGreaterThan(0)
+    expect(perf.ancestors, '换查询按新命中集重算').toBe(111)
 
     perf.ancestors = 0
     el.data = Array.from({ length: 400 }, (_, i) => ({ name: `item-${i}`, meta: { label: `beta-${i}` } }))
-    expect(perf.ancestors, '换数据源（root）必须重算').toBeGreaterThan(0)
+    expect(perf.ancestors, '换数据源（root）按新树重算').toBe(111)
   })
 
   it('搜索期间手动收起不被后续重绘/滚动顶开，清空搜索恢复', () => {

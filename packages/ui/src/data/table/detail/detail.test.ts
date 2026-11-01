@@ -197,12 +197,12 @@ describe('table/detail 主从详情', () => {
     const input = document.createElement('input')
     table.shadowRoot!.appendChild(input)
     input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }))
-    expect(detail.selected).not.toBeNull()
+    expect(detail.selected?.key).toBe('a')
 
     const prevented = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true })
     prevented.preventDefault()
     table.dispatchEvent(prevented)
-    expect(detail.selected).not.toBeNull()
+    expect(detail.selected?.key).toBe('a')
     detail.destroy()
   })
 
@@ -238,7 +238,7 @@ describe('table/detail 主从详情', () => {
     innerRoot
       .querySelector('input')!
       .dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, composed: true, cancelable: true }))
-    expect(detail.selected).not.toBeNull()
+    expect(detail.selected?.key).toBe('a')
     detail.destroy()
   })
 
@@ -412,7 +412,7 @@ describe('table/detail 主从详情', () => {
     esc()
     // 只关最近激活的 B，A 不被牵连
     expect(db.selected).toBeNull()
-    expect(da.selected).not.toBeNull()
+    expect(da.selected?.key).toBe('a')
     // A 重新成功选中后成为最近激活：Esc 关 A
     rowClick(a.table, { id: 'a', name: 'Alpha' }, 'a')
     esc()
@@ -446,7 +446,7 @@ describe('table/detail 主从详情', () => {
     table.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }))
     panel.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }))
     window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', cancelable: true }))
-    expect(detail.selected).not.toBeNull()
+    expect(detail.selected?.key).toBe('a')
     detail.close()
     expect(detail.selected).toBeNull()
     detail.destroy()
@@ -580,7 +580,9 @@ describe('table/detail windowed 与活动实例收尾', () => {
     const wrap = table.shadowRoot!.querySelector('.table-scroll') as HTMLElement
     wrap.scrollTop = 99 * 40
     wrap.dispatchEvent(new Event('scroll'))
-    await vi.waitFor(() => expect(table.shadowRoot!.querySelector('tr[data-row-index="99"]')).toBeTruthy())
+    await vi.waitFor(() =>
+      expect(table.shadowRoot!.querySelector('tr[data-row-index="99"]')?.getAttribute('data-row-index')).toBe('99'),
+    )
     detail.selectByKey('r99')
     expect(detail.selected?.rowIndex).toBeGreaterThanOrEqual(0)
     wrap.scrollTop = 0
@@ -599,7 +601,7 @@ describe('table/detail windowed 与活动实例收尾', () => {
     const td = table.shadowRoot!.querySelector('tr.row td[data-col="name"]') as HTMLElement
     td.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, composed: true, cancelable: true }))
     expect(getRangeSelection(table)).toBeNull()
-    expect(detail.selected).not.toBeNull()
+    expect(detail.selected?.key).toBe('b')
     td.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, composed: true, cancelable: true }))
     expect(detail.selected).toBeNull()
     expect(getRangeSelection(table)).toBeNull()
@@ -802,7 +804,11 @@ describe('table/detail selectByKey 显式等待与取消', () => {
       { id: 'a', name: 'A' },
       { id: 'b', name: 'B' },
     ]
-    await vi.waitFor(() => expect(table.shadowRoot!.querySelector('tr[data-key="b"] td[data-col="name"]')).toBeTruthy())
+    await vi.waitFor(() =>
+      expect(table.shadowRoot!.querySelector('tr[data-key="b"] td[data-col="name"]')?.getAttribute('data-col')).toBe(
+        'name',
+      ),
+    )
     detail.selectByKey('z', { waitForRow: true })
     const enterTd = table.shadowRoot!.querySelector('tr[data-key="b"] td[data-col="name"]') as HTMLElement
     enterTd.dispatchEvent(
@@ -1095,7 +1101,7 @@ describe('table/detail selectByKey 显式等待与取消', () => {
     })
     detail.selectByKey('z', { waitForRow: true })
     setRangeSelection(table, { row: 0, col: 'name' })
-    expect(getRangeSelection(table)).not.toBeNull()
+    expect(getRangeSelection(table)).toEqual({ start: { row: 0, col: 'name' }, end: { row: 0, col: 'name' } })
     expect(events).toHaveLength(0)
 
     const td = table.shadowRoot!.querySelector('tr.row td[data-col="name"]') as HTMLElement

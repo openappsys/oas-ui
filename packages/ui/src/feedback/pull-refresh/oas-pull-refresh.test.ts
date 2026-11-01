@@ -135,11 +135,11 @@ describe('OASPullRefresh', () => {
 
   it('渲染结构：滚动盒 + 位移层 + 指示区 + 内容插槽；初始位移 0（内联值确定）状态 idle', () => {
     const el = mount()
-    expect(scroller(el)).not.toBeNull()
-    expect(track(el)).not.toBeNull()
-    expect(indicator(el)).not.toBeNull()
-    expect(labelEl(el)).not.toBeNull()
-    expect(el.shadowRoot!.querySelector('slot:not([name])')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('[part="root"]').length).toBe(1)
+    expect(el.shadowRoot!.querySelectorAll('[part="track"]').length).toBe(1)
+    expect(el.shadowRoot!.querySelectorAll('[part="indicator"]').length).toBe(1)
+    expect(el.shadowRoot!.querySelectorAll('[part="label"]').length).toBe(1)
+    expect(el.shadowRoot!.querySelectorAll('slot:not([name])').length).toBe(1)
     expect(pullOf(el)).toBe(0)
     // 初始即写内联 transform（宿主/测试可稳定读取，不经手势也有确定值）
     expect(track(el).style.transform).toBe('translateY(0px)')
@@ -512,7 +512,7 @@ describe('OASPullRefresh', () => {
   it('spinner/箭头互斥：refreshing 态 data-state 镜像供 CSS 互斥显示', () => {
     const el = mount()
     // 初始：data-state=idle（CSS 默认隐藏 spinner）
-    expect(spinnerEl(el)).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('[part="spinner"]').length).toBe(1)
     drag(el, [100])
     expect(stateOf(el)).toBe('refreshing')
     el.setAttribute('refreshing', '')
@@ -592,7 +592,7 @@ describe('OASPullRefresh', () => {
 
     expect(el.shadowRoot!.querySelector('style')).toBe(styleRef)
     expect(el.shadowRoot!.querySelector('meta[data-oas-ssr]')).toBeNull()
-    expect(scroller(el)).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('[part="root"]').length).toBe(1)
     expect(stateOf(el)).toBe('idle')
 
     el.setAttribute('refreshing', '')
@@ -603,7 +603,7 @@ describe('OASPullRefresh', () => {
     const el = new OASPullRefresh()
     el.shadowRoot!.innerHTML = '<meta data-oas-ssr="oas-pull-refresh" data-oas-ssr-v="1"><span>broken</span>'
     document.body.appendChild(el)
-    expect(el.shadowRoot!.querySelector('[part="root"]')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('[part="root"]').length).toBe(1)
     expect(el.shadowRoot!.querySelector('meta[data-oas-ssr]')).toBeNull()
     expect(stateOf(el)).toBe('idle')
   })

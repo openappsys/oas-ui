@@ -40,7 +40,7 @@ describe('OASCarousel', () => {
 
   it('渲染滑动容器与指示器', () => {
     const el = mount()
-    expect(el.shadowRoot!.querySelector('[part="track"]')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('[part="track"]').length).toBe(1)
     expect(el.shadowRoot!.querySelectorAll('[part="dot"]').length).toBe(3)
   })
 
@@ -55,8 +55,8 @@ describe('OASCarousel', () => {
 
   it('渲染左右箭头按钮', () => {
     const el = mount()
-    expect(el.shadowRoot!.querySelector('[part="arrow-prev"]')).not.toBeNull()
-    expect(el.shadowRoot!.querySelector('[part="arrow-next"]')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('[part="arrow-prev"]').length).toBe(1)
+    expect(el.shadowRoot!.querySelectorAll('[part="arrow-next"]').length).toBe(1)
     expect(el.shadowRoot!.querySelector('[part="arrow-prev"]')?.getAttribute('aria-label')).toBe('上一屏')
     expect(el.shadowRoot!.querySelector('[part="arrow-next"]')?.getAttribute('aria-label')).toBe('下一屏')
   })
@@ -72,8 +72,8 @@ describe('OASCarousel', () => {
   it('arrows=hover 时箭头保留在 DOM，可见性由 CSS 控制', () => {
     const el = mount({ arrows: 'hover' })
     expect(el.getAttribute('arrows')).toBe('hover')
-    expect(el.shadowRoot!.querySelector('[part="arrow-prev"]')).not.toBeNull()
-    expect(el.shadowRoot!.querySelector('[part="arrow-next"]')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('[part="arrow-prev"]').length).toBe(1)
+    expect(el.shadowRoot!.querySelectorAll('[part="arrow-next"]').length).toBe(1)
     expect(el.shadowRoot!.querySelector('[part="arrow-prev"]')?.hasAttribute('hidden')).toBe(false)
     expect(el.shadowRoot!.querySelector('[part="arrow-next"]')?.hasAttribute('hidden')).toBe(false)
   })
@@ -864,9 +864,9 @@ describe('OASCarousel', () => {
 
     it('箭头/暂停钮/圆点 DOM 结构与 PC 一致（coarse 纯 CSS 增强，无结构分叉）', () => {
       const el = mount({ autoplay: '', 'pause-button': '' })
-      expect(el.shadowRoot!.querySelector('[part="arrow-prev"]')).not.toBeNull()
-      expect(el.shadowRoot!.querySelector('[part="arrow-next"]')).not.toBeNull()
-      expect(el.shadowRoot!.querySelector('[part="pause-button"]')).not.toBeNull()
+      expect(el.shadowRoot!.querySelectorAll('[part="arrow-prev"]').length).toBe(1)
+      expect(el.shadowRoot!.querySelectorAll('[part="arrow-next"]').length).toBe(1)
+      expect(el.shadowRoot!.querySelectorAll('[part="pause-button"]').length).toBe(1)
       expect(el.shadowRoot!.querySelectorAll('[part="dot"]').length).toBe(3)
     })
   })
@@ -980,7 +980,7 @@ describe('OASCarousel thumbs 缩略图指示器（能力缺口 D17）', () => {
     expect(ts[0]!.querySelector('img')!.getAttribute('src')).toBe('t0.jpg')
     expect(ts[1]!.querySelector('img')!.getAttribute('src')).toBe('i1.jpg')
     expect(ts[2]!.querySelector('img')).toBeNull()
-    expect(ts[2]!.querySelector('.thumb-placeholder')).not.toBeNull()
+    expect(ts[2]!.querySelectorAll('.thumb-placeholder').length).toBe(1)
   })
 
   it('thumbs 属性值为 JSON 数组时作为缩略图数据源', () => {

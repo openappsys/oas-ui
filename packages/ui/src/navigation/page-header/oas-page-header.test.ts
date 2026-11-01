@@ -18,9 +18,8 @@ describe('OASPageHeader', () => {
     const sr = el.shadowRoot!
     expect(sr.querySelector('[part="title"]')!.textContent).toBe('页面标题')
     const back = sr.querySelector('[part="back"]')
-    expect(back).not.toBeNull()
     // 返回按钮为 SVG chevron 图标按钮（替代文本字符 ‹）
-    expect(back!.querySelector('svg')).not.toBeNull()
+    expect(back!.querySelectorAll('svg').length).toBe(1)
     expect(back!.getAttribute('aria-label')).toBe('返回')
   })
 
@@ -37,7 +36,7 @@ describe('OASPageHeader', () => {
   it('extra 插槽存在', () => {
     const el = new OASPageHeader()
     document.body.appendChild(el)
-    expect(el.shadowRoot!.querySelector('slot[name="extra"]')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('slot[name="extra"]').length).toBe(1)
   })
 
   describe('主体内容区 content（默认插槽）', () => {
@@ -120,8 +119,6 @@ describe('OASPageHeader', () => {
       const back = sr.querySelector<HTMLElement>('[part="back"]')!
       const avatar = sr.querySelector<HTMLElement>('[part="avatar"]')!
       const title = sr.querySelector<HTMLElement>('[part="title"]')!
-      expect(back).not.toBeNull()
-      expect(avatar).not.toBeNull()
       const isFollowing = (a: Node, b: Node) => (a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING) !== 0
       expect(isFollowing(back, avatar)).toBe(true)
       expect(isFollowing(avatar, title)).toBe(true)
@@ -161,7 +158,6 @@ describe('OASPageHeader', () => {
       el.setAttribute('back', '')
       document.body.appendChild(el)
       const icon = el.shadowRoot!.querySelector<HTMLElement>('[part="back-icon"]')
-      expect(icon).not.toBeNull()
       expect(icon!.hidden).toBe(false)
     })
 
@@ -199,9 +195,7 @@ describe('OASPageHeader', () => {
       document.body.appendChild(el)
       const t = el.shadowRoot!.querySelector<HTMLElement>('[part="title"]')!
       expect(t.hidden).toBe(true)
-      expect(
-        el.shadowRoot!.querySelector<HTMLSlotElement>('slot[name="title"]')!.assignedNodes().length,
-      ).toBeGreaterThan(0)
+      expect(el.shadowRoot!.querySelector<HTMLSlotElement>('slot[name="title"]')!.assignedNodes().length).toBe(1)
     })
 
     it('subtitle 插槽有内容时覆盖属性文案', () => {
@@ -351,7 +345,7 @@ describe('OASPageHeader', () => {
       const sr = el.shadowRoot!
       expect(sr.querySelector('[part="title"]')!.textContent).toBe('页面标题')
       expect(sr.querySelector('[part="subtitle"]')!.textContent).toBe('副标题')
-      expect(sr.querySelector('[part="back"]')).not.toBeNull()
+      expect(sr.querySelectorAll('[part="back"]').length).toBe(1)
       expect(sr.querySelector<HTMLElement>('[part="content"]')!.hidden).toBe(false)
       // 文字色仍走主题前景 token（ghost 不引入新颜色）
       expect(cssOf(el)).toContain('var(--oas-color-text-primary)')
@@ -401,7 +395,7 @@ describe('OASPageHeader responsive 响应式紧凑', () => {
     el.setAttribute('title', '标题')
     el.setAttribute('responsive', '')
     document.body.appendChild(el)
-    expect(roCb).not.toBeNull()
+    expect(typeof roCb).toBe('function')
     // 初始未布局：不紧凑
     expect(el.hasAttribute('data-compact')).toBe(false)
     // 窄于 768 → 紧凑

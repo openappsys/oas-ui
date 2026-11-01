@@ -254,9 +254,9 @@ describe('OASTable 列字段类型系统（column type）', () => {
       expect(td.querySelector('a.type-link'), `行 ${r} 危险协议不得渲染为链接`).toBeNull()
       expect(td.textContent, '回落纯文本展示原值').not.toBe('')
     }
-    expect(cellOf(el, 'url', 3).querySelector('a.type-link'), 'mailto: 放行').not.toBeNull()
-    expect(cellOf(el, 'url', 4).querySelector('a.type-link'), '相对路径放行').not.toBeNull()
-    expect(cellOf(el, 'url', 5).querySelector('a.type-link'), '锚点放行').not.toBeNull()
+    expect(cellOf(el, 'url', 3).querySelectorAll('a.type-link').length, 'mailto: 放行').toBe(1)
+    expect(cellOf(el, 'url', 4).querySelectorAll('a.type-link').length, '相对路径放行').toBe(1)
+    expect(cellOf(el, 'url', 5).querySelectorAll('a.type-link').length, '锚点放行').toBe(1)
   })
 
   it('type=progress：track + fill 宽度百分比，出界夹取 0-100', () => {
@@ -414,7 +414,10 @@ describe('OASTable 字段类型编辑（type × editable）', () => {
     )
     const td = enterEdit(el, 'tags')
     const comp = td.querySelector<HTMLElement>('oas-select.cell-editor-component')!
-    expect(comp, '多选列默认编辑器为 oas-select multiple').not.toBeNull()
+    expect(
+      td.querySelectorAll('oas-select.cell-editor-component').length,
+      '多选列默认编辑器为 oas-select multiple',
+    ).toBe(1)
     expect(td.querySelector('input.cell-editor'), '第一期逗号分隔 input 通道退役').toBeNull()
     expect(comp.hasAttribute('multiple')).toBe(true)
     // 选项同步自列 options（editOptions 优先通道在浮层用例覆盖）
@@ -428,7 +431,7 @@ describe('OASTable 字段类型编辑（type × editable）', () => {
     const el = editableMount([{ key: 'on', title: '开关', type: 'checkbox', editable: true }], [{ id: 1, on: true }])
     const td = enterEdit(el, 'on')
     const sw = td.querySelector<HTMLElement>('oas-switch')!
-    expect(sw).not.toBeNull()
+    expect(td.querySelectorAll('oas-switch').length).toBe(1)
     // 切换开关（shadow 内按钮点击 → checked 翻转 → 派发 oas-change → 提交）
     ;(sw.shadowRoot!.querySelector('button') as HTMLElement)!.click()
     const data = JSON.parse(el.getAttribute('data')!)
@@ -468,7 +471,7 @@ describe('OASTable 字段类型编辑（type × editable）', () => {
     const input = td.querySelector<HTMLInputElement>('input.cell-editor')!
     input.value = '2026/03/05'
     input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
-    expect(td.querySelector('input.cell-editor')).not.toBeNull()
+    expect(td.querySelectorAll('input.cell-editor').length, '非法输入仍留在编辑态').toBe(1)
     expect(td.getAttribute('data-invalid')).toBe('true')
     // 修正为合法形态后正常提交
     input.value = '2026-04-01'
@@ -537,7 +540,6 @@ describe('OASTable 分组视图（group-by）', () => {
     expect(heads[1]!.textContent).toContain('后端')
     expect(heads[1]!.textContent).toContain('2')
     const btn = heads[0]!.querySelector('button')
-    expect(btn).not.toBeNull()
     expect(btn!.getAttribute('aria-expanded')).toBe('true')
     // 默认全展开：5 条数据行全部在场
     expect(rows(el).length).toBe(5)
@@ -750,7 +752,6 @@ describe('OASTable 单元格溢出提示（cell-tooltip 单例浮层）', () => 
     const { el, td } = tipMount()
     td.dispatchEvent(new MouseEvent('mouseover', { bubbles: true }))
     const tip = tooltip(el)
-    expect(tip).not.toBeNull()
     expect(tip!.getAttribute('data-visible')).toBe('true')
     expect(tip!.textContent).toBe('这是一段非常长的文本内容会溢出窄列宽度')
     // 浮层实例唯一（表格级单例，不为每格创建）
@@ -855,6 +856,6 @@ describe('OASTable 单元格溢出提示（cell-tooltip 单例浮层）', () => 
 describe('table 字段类型/分组 i18n', () => {
   it('en 语言包含分组空值组文案 key', () => {
     expect(typeof en.messages['table.groupEmpty']).toBe('string')
-    expect(en.messages['table.groupEmpty'].length).toBeGreaterThan(0)
+    expect(en.messages['table.groupEmpty']).toBe('(empty)')
   })
 })

@@ -27,7 +27,7 @@ describe('OASEmpty', () => {
   it('渲染原创插画区域', () => {
     const el = new OASEmpty()
     document.body.appendChild(el)
-    expect(el.shadowRoot!.querySelector('[part="image"]')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('[part="image"]').length).toBe(1)
   })
 
   it('illustration 属性（SVG 标记）替换默认插画', () => {
@@ -35,7 +35,7 @@ describe('OASEmpty', () => {
     el.setAttribute('illustration', '<svg id="custom"><circle r="10"/></svg>')
     document.body.appendChild(el)
     const content = el.shadowRoot!.querySelector<HTMLElement>('[part="illustration"]')!
-    expect(content.querySelector('#custom')).not.toBeNull()
+    expect(content.querySelectorAll('#custom').length).toBe(1)
     expect(content.querySelector('rect')).toBeNull()
     expect(content.getAttribute('data-default')).toBeNull()
   })
@@ -59,7 +59,7 @@ describe('OASEmpty', () => {
     const slot = el.shadowRoot!.querySelector<HTMLSlotElement>('slot[name="illustration"]')!
     expect(content.hidden).toBe(true)
     expect(slot.hidden).toBe(false)
-    expect(slot.assignedNodes().length).toBeGreaterThan(0)
+    expect(slot.assignedNodes().length).toBe(1)
   })
 
   it('无 slot 时使用 illustration 属性', async () => {
@@ -69,7 +69,7 @@ describe('OASEmpty', () => {
     await new Promise((r) => setTimeout(r, 0))
     const content = el.shadowRoot!.querySelector<HTMLElement>('[part="illustration"]')!
     expect(content.hidden).toBe(false)
-    expect(content.querySelector('#attr-illu')).not.toBeNull()
+    expect(content.querySelectorAll('#attr-illu').length).toBe(1)
   })
 
   it('image-size 控制插画尺寸', () => {
@@ -149,7 +149,7 @@ describe('OASEmpty', () => {
       await new Promise((r) => setTimeout(r, 0))
       const fallback = el.shadowRoot!.querySelector<HTMLElement>('.title-text')!
       const slot = el.shadowRoot!.querySelector<HTMLSlotElement>('slot[name="title"]')!
-      expect(slot.assignedNodes().length).toBeGreaterThan(0)
+      expect(slot.assignedNodes().length).toBe(1)
       expect(fallback.hidden).toBe(true)
       expect(el.hasAttribute('title')).toBe(false)
       expect(el.shadowRoot!.querySelector<HTMLElement>('.title')!.hidden).toBe(false)
@@ -183,7 +183,7 @@ describe('OASEmpty', () => {
       const desc = el.shadowRoot!.querySelector<HTMLElement>('[part="description"]')!
       const slot = el.shadowRoot!.querySelector<HTMLSlotElement>('slot:not([name])')!
       expect(desc.hidden).toBe(true)
-      expect(slot.assignedNodes().length).toBeGreaterThan(0)
+      expect(slot.assignedNodes().length).toBe(1)
     })
 
     it('纯空白文本不算富内容（仍走属性通道）', async () => {
@@ -256,7 +256,7 @@ describe('OASEmpty', () => {
       document.body.appendChild(el)
       const content = el.shadowRoot!.querySelector<HTMLElement>('[part="illustration"]')!
       expect(content.dataset.mode).toBe('icon')
-      expect(content.querySelector('svg')).not.toBeNull()
+      expect(content.querySelectorAll('svg').length).toBe(1)
       expect(content.getAttribute('data-default')).toBeNull()
       expect(content.getAttribute('hidden')).toBeNull()
     })
@@ -280,9 +280,7 @@ describe('OASEmpty', () => {
       await new Promise((r) => setTimeout(r, 0))
       const content = el.shadowRoot!.querySelector<HTMLElement>('[part="illustration"]')!
       expect(content.hidden).toBe(true)
-      expect(
-        el.shadowRoot!.querySelector<HTMLSlotElement>('slot[name="illustration"]')!.assignedNodes().length,
-      ).toBeGreaterThan(0)
+      expect(el.shadowRoot!.querySelector<HTMLSlotElement>('slot[name="illustration"]')!.assignedNodes().length).toBe(1)
     })
   })
 
@@ -293,7 +291,7 @@ describe('OASEmpty', () => {
       document.body.appendChild(el)
       const content = el.shadowRoot!.querySelector<HTMLElement>('[part="illustration"]')!
       expect(content.getAttribute('data-default')).toBe('')
-      expect(content.querySelector('ellipse')).not.toBeNull()
+      expect(content.querySelectorAll('ellipse').length).toBe(2)
       expect(content.querySelector('rect')).toBeNull()
     })
 

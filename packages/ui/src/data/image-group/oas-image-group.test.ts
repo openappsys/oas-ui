@@ -54,7 +54,7 @@ describe('OASImageGroup', () => {
 
   it('渲染：默认插槽 + role=group + 可访问名称（locale 感知）', () => {
     const g = mount(wall(['/a.png']))
-    expect(g.shadowRoot!.querySelector('slot')).not.toBeNull()
+    expect(g.shadowRoot!.querySelectorAll('slot:not([name])').length).toBe(1)
     const box = g.shadowRoot!.querySelector('[part="group"]')!
     expect(box.getAttribute('role')).toBe('group')
     expect(box.getAttribute('aria-label')).toBe('图集')
@@ -200,7 +200,7 @@ describe('OASImageGroup', () => {
   it('Esc 关闭共享预览：遮罩隐藏、portal 拆除', () => {
     const g = mount(wall(['/a.png', '/b.png']))
     clickChild(g, 0)
-    expect(document.querySelector('[data-oas-image-preview-portal]')).not.toBeNull()
+    expect(document.querySelectorAll('[data-oas-image-preview-portal]').length).toBe(1)
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
     expect(document.querySelector('[data-oas-image-preview-portal]')).toBeNull()
     expect(inner(g).shadowRoot!.querySelector('.preview-mask')!.hasAttribute('hidden')).toBe(true)
@@ -209,7 +209,7 @@ describe('OASImageGroup', () => {
   it('断开连接无孤儿：移除容器时预览 portal 一并拆除', () => {
     const g = mount(wall(['/a.png', '/b.png']))
     clickChild(g, 0)
-    expect(document.querySelector('[data-oas-image-preview-portal]')).not.toBeNull()
+    expect(document.querySelectorAll('[data-oas-image-preview-portal]').length).toBe(1)
     g.remove()
     expect(document.querySelector('[data-oas-image-preview-portal]')).toBeNull()
   })
@@ -221,8 +221,8 @@ describe('OASImageGroup', () => {
         '<button type="button" data-cmd="next">下一张</button></template>',
     )
     // 宿主模板克隆进内部预览宿主（原模板保留在组图 light DOM）
-    expect(inner(g).querySelector('template[slot="toolbar"]')).not.toBeNull()
-    expect(g.querySelector('template[slot="toolbar"]')).not.toBeNull()
+    expect(inner(g).querySelectorAll('template[slot="toolbar"]').length).toBe(1)
+    expect(g.querySelectorAll('template[slot="toolbar"]').length).toBe(1)
 
     // oas-toolbar-render 经共享宿主冒泡到组图（composed 跨 shadow）
     let detail: { element: HTMLElement; actions: Record<string, () => void> } | null = null
@@ -231,10 +231,11 @@ describe('OASImageGroup', () => {
     })
     clickChild(g, 0)
     await new Promise((r) => setTimeout(r, 0))
-    expect(detail).not.toBeNull()
+    expect(typeof detail!.actions.zoomIn).toBe('function')
+    expect(typeof detail!.actions.next).toBe('function')
 
     const bar = pq(g, '[part="preview-toolbar"]')
-    expect(bar.querySelector('[data-cmd="zoom-in"]')).not.toBeNull()
+    expect(bar.querySelectorAll('[data-cmd="zoom-in"]').length).toBe(1)
     expect(bar.querySelector('[part="preview-zoom-in"]')).toBeNull()
 
     // 命令接线实际生效：缩放 + 翻页
@@ -260,7 +261,7 @@ describe('OASImageGroup', () => {
     document.body.appendChild(el)
 
     expect(el.shadowRoot!.querySelector('meta[data-oas-ssr]')).toBeNull()
-    expect(el.shadowRoot!.querySelector('oas-image[part="preview-host"]')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('oas-image[part="preview-host"]').length).toBe(1)
     expect(innerList(el)).toEqual(['/a.png'])
   })
 

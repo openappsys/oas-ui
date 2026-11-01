@@ -31,7 +31,7 @@ describe('OASResult', () => {
   it('extra 插槽存在', () => {
     const el = new OASResult()
     document.body.appendChild(el)
-    expect(el.shadowRoot!.querySelector('slot[name="extra"]')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('slot[name="extra"]').length).toBe(1)
   })
 
   describe('status 内置 SVG 图标（替换文字字形）', () => {
@@ -40,7 +40,7 @@ describe('OASResult', () => {
       el.setAttribute('status', 'success')
       document.body.appendChild(el)
       const glyph = el.shadowRoot!.querySelector<HTMLElement>('.icon-glyph')!
-      expect(glyph.querySelector('svg')).not.toBeNull()
+      expect(glyph.querySelectorAll('svg').length).toBe(1)
       expect(glyph.hidden).toBe(false)
       // ✓✕!i 文字字形淘汰
       expect(glyph.textContent).not.toMatch(/[✓✕!i]/)
@@ -65,7 +65,7 @@ describe('OASResult', () => {
       const glyph = el.shadowRoot!.querySelector<HTMLElement>('.icon-glyph')!
       expect(icon.getAttribute('data-status')).toBe('403')
       expect(icon.getAttribute('aria-label')).toBe('403')
-      expect(glyph.querySelector('svg rect')).not.toBeNull()
+      expect(glyph.querySelectorAll('svg rect').length).toBe(1)
     })
 
     it('404 渲染问号字形', () => {
@@ -73,7 +73,7 @@ describe('OASResult', () => {
       el.setAttribute('status', '404')
       document.body.appendChild(el)
       const glyph = el.shadowRoot!.querySelector<HTMLElement>('.icon-glyph')!
-      expect(glyph.querySelector('svg')).not.toBeNull()
+      expect(glyph.querySelectorAll('svg').length).toBe(1)
       expect(el.shadowRoot!.querySelector('[part="icon"]')!.getAttribute('data-status')).toBe('404')
     })
 
@@ -82,7 +82,7 @@ describe('OASResult', () => {
       el.setAttribute('status', '500')
       document.body.appendChild(el)
       const glyph = el.shadowRoot!.querySelector<HTMLElement>('.icon-glyph')!
-      expect(glyph.querySelector('svg rect')).not.toBeNull()
+      expect(glyph.querySelectorAll('svg rect').length).toBe(1)
       expect(el.shadowRoot!.querySelector('[part="icon"]')!.getAttribute('data-status')).toBe('500')
     })
 
@@ -125,7 +125,7 @@ describe('OASResult', () => {
       expect(icon.hasAttribute('data-custom')).toBe(false)
       expect(icon.getAttribute('role')).toBe('status')
       expect(glyph.hidden).toBe(false)
-      expect(glyph.querySelector('svg')).not.toBeNull()
+      expect(glyph.querySelectorAll('svg').length).toBe(1)
     })
   })
 
@@ -157,7 +157,7 @@ describe('OASResult', () => {
       await new Promise((r) => setTimeout(r, 0))
       const content = el.shadowRoot!.querySelector<HTMLElement>('.content')!
       expect(content.hidden).toBe(false)
-      expect(content.querySelector('slot')!.assignedNodes().length).toBeGreaterThan(0)
+      expect(content.querySelector('slot')!.assignedNodes().length).toBe(1)
     })
 
     it('无内容时内容区隐藏', () => {
@@ -254,7 +254,7 @@ describe('OASResult', () => {
       document.body.appendChild(el)
       const slot = el.shadowRoot!.querySelector<HTMLSlotElement>('slot[name="title"]')!
       const fallback = el.shadowRoot!.querySelector<HTMLElement>('.title-text')!
-      expect(slot.assignedNodes().length).toBeGreaterThan(0)
+      expect(slot.assignedNodes().length).toBe(1)
       // 宿主 title 仍被吸收（吸收状态机不变）
       expect(el.hasAttribute('title')).toBe(false)
       expect(fallback.hidden).toBe(true)
@@ -266,7 +266,7 @@ describe('OASResult', () => {
       document.body.appendChild(el)
       const slot = el.shadowRoot!.querySelector<HTMLSlotElement>('slot[name="title"]')!
       const fallback = el.shadowRoot!.querySelector<HTMLElement>('.title-text')!
-      expect(slot.assignedNodes().length).toBeGreaterThan(0)
+      expect(slot.assignedNodes().length).toBe(1)
       expect(fallback.hidden).toBe(true)
       expect(el.hasAttribute('title')).toBe(false)
     })

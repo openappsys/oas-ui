@@ -61,7 +61,6 @@ describe('OASEllipsis', () => {
     const el = mount({ text: '这是一段很长的文本' })
     forceOverflow(el, true)
     const tip = el.shadowRoot!.querySelector('oas-tooltip')
-    expect(tip).not.toBeNull()
     expect(tip!.getAttribute('content')).toContain('这是一段很长的文本')
     expect(textEl(el).classList.contains('single')).toBe(true)
   })
@@ -69,7 +68,7 @@ describe('OASEllipsis', () => {
   it('溢出消失后解除 tooltip 包裹（零孤儿）', () => {
     const el = mount({ text: 'x' })
     forceOverflow(el, true)
-    expect(el.shadowRoot!.querySelector('oas-tooltip')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('oas-tooltip').length).toBe(1)
     forceOverflow(el, false)
     expect(el.shadowRoot!.querySelector('oas-tooltip')).toBeNull()
     expect(textEl(el).textContent).toBe('x')
@@ -91,7 +90,6 @@ describe('OASEllipsis', () => {
     const el = mount({ text: '多行溢出的完整文本内容', rows: '3' })
     forceOverflow(el, true)
     const tip = el.shadowRoot!.querySelector('oas-tooltip')
-    expect(tip).not.toBeNull()
     expect(tip!.getAttribute('content')).toContain('多行溢出的完整文本内容')
   })
 
@@ -127,7 +125,7 @@ describe('OASEllipsis', () => {
     expect(detail).toEqual({ expanded: false })
     // i18n 模块加载即注册默认 zh-CN 翻译器（开箱即用设计），标签为译文而非裸 key
     expect(btn.textContent).toContain('展开')
-    expect(el.shadowRoot!.querySelector('oas-tooltip')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('oas-tooltip').length).toBe(1)
   })
 
   it('expandable 无溢出时按钮隐藏', () => {
@@ -196,7 +194,6 @@ describe('OASEllipsis', () => {
       })
       forceOverflow(el, true)
       const tip = el.shadowRoot!.querySelector('oas-tooltip')
-      expect(tip).not.toBeNull()
       expect(tip!.getAttribute('content')).toContain('用于中部省略演示')
     })
     it('direction="middle" 无溢出时原样展示全文（不截断）', () => {
@@ -453,7 +450,6 @@ describe('OASEllipsis', () => {
       stubFit(el, 8)
       forceOverflow(el, true)
       const tip = el.shadowRoot!.querySelector<HTMLElement>('oas-tooltip')
-      expect(tip).not.toBeNull()
       expect(tip!.style.display).toBe('inline-block')
       expect(tip!.getAttribute('content')).toBe(FULL)
     })
@@ -477,7 +473,7 @@ describe('OASEllipsis', () => {
       toggleEl(el).click()
       toggleEl(el).click()
       expect(textEl(el).textContent).toContain('…')
-      expect(el.shadowRoot!.querySelector('oas-tooltip')).not.toBeNull()
+      expect(el.shadowRoot!.querySelectorAll('oas-tooltip').length).toBe(1)
     })
 
     it('测量恒 0（无布局环境）安全兜底：返回全文 + 链接，不截断不抛错', () => {
@@ -549,7 +545,6 @@ describe('OASEllipsis', () => {
       stubMulti(el, 'truncateMiddleMulti', '这是一段…截断效果')
       forceOverflow(el, true)
       const tip = el.shadowRoot!.querySelector('oas-tooltip')
-      expect(tip).not.toBeNull()
       expect(tip!.getAttribute('content')).toBe(FULL)
     })
 

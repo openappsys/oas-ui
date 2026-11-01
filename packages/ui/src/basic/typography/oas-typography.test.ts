@@ -55,10 +55,10 @@ describe('OAS typography', () => {
 
   it('oas-title level 1-5 映射标题元素', () => {
     const h2 = mount(OASTitle, { level: '2' }, '标题')
-    expect(h2.shadowRoot!.querySelector('h2')).not.toBeNull()
+    expect(h2.shadowRoot!.querySelectorAll('h2').length).toBe(1)
     h2.remove()
     const h4 = mount(OASTitle, { level: '4' }, '标题')
-    expect(h4.shadowRoot!.querySelector('h4')).not.toBeNull()
+    expect(h4.shadowRoot!.querySelectorAll('h4').length).toBe(1)
   })
 
   it('oas-paragraph 渲染 p，type 映射 class', () => {
@@ -157,7 +157,6 @@ describe('OAS typography', () => {
     it('suffix 元素存在且带文本（仅 ellipsis 开启时）', () => {
       const el = mount(OASText, { ellipsis: '', 'ellipsis-suffix': '--结尾' }, '长长长长长长长')
       const suffix = el.shadowRoot!.querySelector('.suffix')
-      expect(suffix).not.toBeNull()
       expect(suffix!.textContent).toBe('--结尾')
     })
     it('无 ellipsis 时 suffix 隐藏', () => {
@@ -178,8 +177,7 @@ describe('OAS typography', () => {
       btn.textContent = '赞'
       el.appendChild(btn)
       const actions = el.shadowRoot!.querySelector('.actions')
-      expect(actions).not.toBeNull()
-      expect(actions!.querySelector('slot[name="actions"]')).not.toBeNull()
+      expect(actions!.querySelectorAll('slot[name="actions"]').length).toBe(1)
     })
     it('actions-position=start：actions 在文本前（order -1 严格前置——order 0 与文本缺省值平局会被 DOM 序裁决，start 从未生效）', () => {
       const el = mount(OASText, { 'actions-position': 'start' }, '文本')
@@ -197,7 +195,7 @@ describe('OAS typography', () => {
     it('actions 与 copyable 共存：复制按钮在 actions 区域内', () => {
       const el = mount(OASText, { copyable: '' }, '文本')
       const actions = el.shadowRoot!.querySelector('.actions')!
-      expect(actions.querySelector('.copy-btn')).not.toBeNull()
+      expect(actions.querySelectorAll('.copy-btn').length).toBe(1)
     })
   })
 
@@ -226,7 +224,6 @@ describe('OAS typography', () => {
     it('line-clamp + ellipsis-suffix：suffix 在多行省略时同样展示', () => {
       const el = mount(OASText, { 'line-clamp': '2', 'ellipsis-suffix': '--结尾' }, '长文本')
       const suffix = el.shadowRoot!.querySelector('.suffix') as HTMLElement
-      expect(suffix).not.toBeNull()
       expect(suffix.hidden).toBe(false)
     })
   })
@@ -285,7 +282,7 @@ describe('OAS typography', () => {
       expect(root.tagName).toBe('UL')
       // 无 content span 包装：slot 是根的直接子节点
       expect(root.querySelector(':scope > .content')).toBeNull()
-      expect(root.querySelector(':scope > slot')).not.toBeNull()
+      expect(root.querySelectorAll(':scope > slot').length).toBe(1)
       const ol = mount(OASText, { tag: 'ol' }, '')
       expect(ol.shadowRoot!.querySelector('.text')!.tagName).toBe('OL')
     })
@@ -325,7 +322,7 @@ describe('OAS typography', () => {
       el.setAttribute('tag', 'span')
       const root = el.shadowRoot!.querySelector<HTMLElement>('.text')!
       expect(root.tagName).toBe('SPAN')
-      expect(root.querySelector(':scope > .content')).not.toBeNull()
+      expect(root.querySelectorAll(':scope > .content').length).toBe(1)
     })
 
     it('块级形态下 ellipsis-suffix 不渲染（suffix 仅行内省略语义）', () => {
@@ -392,7 +389,7 @@ describe('OAS typography', () => {
       expect(css).toMatch(/\.copy-btn\s*\{[^}]*padding-inline-start:\s*var\(--oas-space-1\)/)
       expect(css).not.toMatch(/\.actions\s*\{[^}]*margin-left/)
       expect(css).not.toMatch(/\.copy-btn\s*\{[^}]*padding:\s*0 0 0/)
-      expect(el.shadowRoot!.querySelector('.copy-btn')).not.toBeNull()
+      expect(el.shadowRoot!.querySelectorAll('.copy-btn').length).toBe(1)
     })
     it('align 非法值忽略（回落无内联对齐）', () => {
       const el = mount(OASText, { align: 'left' }, '文本')

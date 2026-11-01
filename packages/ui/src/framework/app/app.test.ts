@@ -30,7 +30,7 @@ describe('oas-app', () => {
     await Promise.resolve()
 
     const msg = app.querySelector('oas-message')!
-    expect(msg).not.toBeNull()
+    expect(msg.tagName).toBe('OAS-MESSAGE')
     // 不在 body 直接子级（栈容器挂在 app 内）
     expect(document.body.querySelector('oas-message')).toBe(msg)
     expect(msg.parentElement?.parentElement).toBe(app)
@@ -44,7 +44,7 @@ describe('oas-app', () => {
     await Promise.resolve()
 
     const el = app.querySelector('oas-notification')!
-    expect(el).not.toBeNull()
+    expect(el.tagName).toBe('OAS-NOTIFICATION')
     expect(el.parentElement?.parentElement).toBe(app)
   })
 
@@ -52,7 +52,7 @@ describe('oas-app', () => {
     message.info('提示')
     await Promise.resolve()
     const msg = document.body.querySelector('oas-message')!
-    expect(msg).not.toBeNull()
+    expect(msg.tagName).toBe('OAS-MESSAGE')
   })
 
   it('app 断开后 message 回退挂 body', async () => {
@@ -63,7 +63,7 @@ describe('oas-app', () => {
     message.info('提示')
     await Promise.resolve()
     const msg = document.body.querySelector('oas-message')!
-    expect(msg).not.toBeNull()
+    expect(msg.tagName).toBe('OAS-MESSAGE')
   })
 
   it('嵌套 app 移除内层：外层宿主自动接管（栈式管理）', async () => {
@@ -85,7 +85,7 @@ describe('oas-app', () => {
     message.info('外层接管')
     await Promise.resolve()
     const msg = outer.querySelector('oas-message')!
-    expect(msg).not.toBeNull()
+    expect(msg.tagName).toBe('OAS-MESSAGE')
     expect(msg.parentElement?.parentElement).toBe(outer)
     expect(msg.getAttribute('duration')).toBe('800')
   })
@@ -98,13 +98,13 @@ describe('oas-app', () => {
 
     message.info('后注册优先')
     await Promise.resolve()
-    expect(second.querySelector('oas-message')).not.toBeNull()
+    expect(second.querySelectorAll('oas-message').length).toBe(1)
 
     destroyAllMessage()
     second.remove()
     message.info('先注册接管')
     await Promise.resolve()
-    expect(first.querySelector('oas-message')).not.toBeNull()
+    expect(first.querySelectorAll('oas-message').length).toBe(1)
   })
 
   it('app 与 config-provider 配套（app 嵌套在 config-provider 内）', async () => {
@@ -117,7 +117,7 @@ describe('oas-app', () => {
     message.info('hello')
     await Promise.resolve()
     const msg = app.querySelector('oas-message')!
-    expect(msg).not.toBeNull()
+    expect(msg.tagName).toBe('OAS-MESSAGE')
   })
 
   describe('message 全局默认配置（message JSON 属性）', () => {

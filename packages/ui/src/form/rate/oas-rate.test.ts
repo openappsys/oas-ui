@@ -124,7 +124,7 @@ describe('OASRate', () => {
 
   it('icon 属性支持 SVG 标记', () => {
     const el = mount({ icon: "<svg viewBox='0 0 16 16'></svg>" })
-    expect(stars(el)[0]!.querySelector('svg')).not.toBeNull()
+    expect(stars(el)[0]!.querySelectorAll('svg').length).toBe(1)
   })
 
   it('slot 自定义图标克隆到每颗星', async () => {
@@ -151,9 +151,8 @@ describe('OASRate', () => {
     // 旧实现已移除：不再用 inline opacity 0.5
     expect(half.style.opacity).toBe('')
     const fill = half.querySelector<HTMLElement>('.half-fill')
-    expect(fill).not.toBeNull()
     expect(fill!.getAttribute('aria-hidden')).toBe('true')
-    expect(fill!.querySelector('svg')).not.toBeNull() // 覆盖层与基础星同图标
+    expect(fill!.querySelectorAll('svg').length).toBe(1) // 覆盖层与基础星同图标
     const css = el.shadowRoot!.querySelector('style')!.textContent ?? ''
     // 垂直分割保留左半 + 覆盖层用激活色（color/void-color/colors 通道经 --oas-rate-active 变量注入；
     // 缺省激活色走 -text 文字安全档，warning 基色当文字压浅底 感知分不达标）
@@ -168,7 +167,7 @@ describe('OASRate', () => {
   it('半选：整数值/非半选模式不渲染 half-fill，值变化增量增删', () => {
     const el = mount({ value: '2.5', 'allow-half': '' })
     const s = stars(el)
-    expect(s[2]!.querySelector('.half-fill')).not.toBeNull()
+    expect(s[2]!.querySelectorAll('.half-fill').length).toBe(1)
     // 值变回整数 → 覆盖层移除
     el.setAttribute('value', '3')
     expect(s[2]!.classList.contains('half')).toBe(false)
@@ -176,7 +175,7 @@ describe('OASRate', () => {
     // 再变回半值 → 覆盖层重新出现
     el.setAttribute('value', '3.5')
     expect(s[3]!.classList.contains('half')).toBe(true)
-    expect(s[3]!.querySelector('.half-fill')).not.toBeNull()
+    expect(s[3]!.querySelectorAll('.half-fill').length).toBe(1)
     // 非半选模式下半值按整星计，无覆盖层
     el.removeAttribute('allow-half')
     el.setAttribute('value', '2.5')
@@ -187,7 +186,6 @@ describe('OASRate', () => {
     const el = mount({ value: '2.5', 'allow-half': '', icon: '♥' })
     const half = stars(el)[2]!
     const fill = half.querySelector<HTMLElement>('.half-fill')
-    expect(fill).not.toBeNull()
     expect(fill!.textContent?.trim()).toBe('♥')
   })
 })
@@ -316,7 +314,6 @@ describe('OASRate 能力补齐', () => {
     const s = stars(el)
     expect(s.filter((x) => x.classList.contains('active')).length).toBe(3)
     const fill = s[3]!.querySelector<HTMLElement>('.half-fill')
-    expect(fill).not.toBeNull()
     expect(fill!.style.clipPath).toBe('inset(0 30% 0 0)')
   })
 
@@ -541,14 +538,16 @@ describe('OASRate 能力补齐', () => {
     // slot 投影不改变 star.textContent（投影属渲染层）：用 assignedNodes 断言真实投影关系
     for (let i = 1; i <= 5; i++) {
       const slot = s[i - 1]!.querySelector<HTMLSlotElement>(`slot[name="icon-${i}"]`)
-      expect(slot, `第 ${i} 星应有逐位插槽`).not.toBeNull()
-      expect(slot!.assignedNodes().map((n) => n.textContent)).toEqual([emojis[i - 1]])
+      expect(
+        slot!.assignedNodes().map((n) => n.textContent),
+        `第 ${i} 星应有逐位插槽`,
+      ).toEqual([emojis[i - 1]])
     }
     // 值变化后逐位插槽仍稳定（applyIcons 幂等重写不丢投影）
     el.setAttribute('value', '5')
     for (let i = 1; i <= 5; i++) {
       const slot = s[i - 1]!.querySelector<HTMLSlotElement>(`slot[name="icon-${i}"]`)
-      expect(slot).not.toBeNull()
+      expect(slot!.getAttribute('name')).toBe(`icon-${i}`)
       expect(slot!.assignedNodes().length).toBe(1)
     }
   })
@@ -583,7 +582,6 @@ describe('OASRate 能力补齐', () => {
     const s = stars(el)
     s[1]!.dispatchEvent(new MouseEvent('mouseenter', { clientX: 10 }))
     const tip = el.shadowRoot!.querySelector('oas-tooltip')
-    expect(tip).not.toBeNull()
     expect(tip!.hasAttribute('virtual')).toBe(true)
     expect(tip!.hasAttribute('open')).toBe(true)
     expect(tip!.getAttribute('content')).toBe('一般')

@@ -73,7 +73,7 @@ describe('OASTransfer', () => {
   it('disabled 项不可选中，穿梭按钮随选中清空禁用', () => {
     const el = mount()
     ;(leftOptions(el)[2] as HTMLElement).click() // c 是 disabled
-    expect(el.shadowRoot!.querySelector('.listbox.left .option[aria-disabled="true"]')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('.listbox.left .option[aria-disabled="true"]').length).toBe(1)
     expect(toRightBtn(el).disabled).toBe(true)
   })
 
@@ -267,7 +267,8 @@ describe('OASTransfer', () => {
     document.body.appendChild(el)
     el.data = BIG
     const rows = leftVRows(el)
-    expect(rows.length).toBeGreaterThan(0)
+    // 视口 10 行 + 单侧 buffer，控制进有界窗口
+    expect(rows.length).toBe(11)
     expect(rows.length).toBeLessThan(30)
     const vroot = leftVlist(el).shadowRoot!
     const inner = vroot.querySelector<HTMLElement>('[part="inner"]')!
@@ -294,7 +295,8 @@ describe('OASTransfer', () => {
     vp.scrollTop = 1000
     vp.dispatchEvent(new Event('scroll'))
     await flushRaf()
-    expect(leftVRows(el).length).toBeGreaterThan(0)
+    expect(leftVRows(el).length, '滚动后窗口行数有界').toBe(15)
+    expect(leftVRows(el)[0]!.getAttribute('data-key')).toBe('k24')
     vp.scrollTop = 0
     vp.dispatchEvent(new Event('scroll'))
     await flushRaf()
@@ -428,7 +430,7 @@ describe('OASTransfer item 插槽', () => {
     el.appendChild(tpl)
     el.setAttribute('titles', '["可选","已选"]') // 触发 update 重渲
     const first = leftOptions(el)[0]!
-    expect(first.querySelector('oas-icon')).not.toBeNull()
+    expect(first.querySelectorAll('oas-icon').length).toBe(1)
     expect(first.querySelector('[data-item-label]')!.textContent).toBe('苹果')
   })
 
@@ -442,7 +444,7 @@ describe('OASTransfer item 插槽', () => {
     el.appendChild(tpl)
     el.data = Array.from({ length: 100 }, (_, i) => ({ key: `k${i}`, label: `Item ${i}` }))
     const row = el.shadowRoot!.querySelector('.vlist-left')!.shadowRoot!.querySelectorAll('[part="item"] .option')[0]!
-    expect(row.querySelector('.tick')).not.toBeNull()
+    expect(row.querySelectorAll('.tick').length).toBe(1)
     expect(row.querySelector('[data-item-label]')!.textContent).toBe('Item 0')
   })
 })
@@ -528,14 +530,14 @@ describe('OASTransfer empty 插槽', () => {
     el.appendChild(tpl)
     el.data = [] // data setter → update → 空态重渲（template 已在场）
     const empty = el.shadowRoot!.querySelector('.listbox.left .empty')!
-    expect(empty.querySelector('.custom-empty')).not.toBeNull()
+    expect(empty.querySelectorAll('.custom-empty').length).toBe(1)
     // 无匹配态同样走插槽
     el.data = [{ key: 'a', label: '苹果' }]
     const search = el.shadowRoot!.querySelector<HTMLInputElement>('.search-left')!
     search.value = 'zzz'
     search.dispatchEvent(new Event('input', { bubbles: true }))
     const noMatch = el.shadowRoot!.querySelector('.listbox.left .empty')!
-    expect(noMatch.querySelector('.custom-empty')).not.toBeNull()
+    expect(noMatch.querySelectorAll('.custom-empty').length, '无匹配态同样用自定义空态').toBe(1)
   })
 })
 
@@ -754,8 +756,8 @@ describe('OASTransfer 触屏与按钮排序', () => {
     const down = el.shadowRoot!.querySelector<HTMLButtonElement>('.listbox.right .move-down')!
     expect(up.getAttribute('part')).toBe('move-up')
     expect(down.getAttribute('part')).toBe('move-down')
-    expect(up.getAttribute('aria-label')).toBeTruthy()
-    expect(down.getAttribute('aria-label')).toBeTruthy()
+    expect(up.getAttribute('aria-label')).toBe('上移')
+    expect(down.getAttribute('aria-label')).toBe('下移')
   })
 
   it('original 模式或无 target-draggable 时不渲染排序按钮', () => {
