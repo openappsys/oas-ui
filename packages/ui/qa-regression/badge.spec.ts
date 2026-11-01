@@ -43,7 +43,7 @@ test('badge ribbon：缎带可见、折叠角生效、语义色与 placement 渲
     }
   })
   // 默认缎带：可见、文本同步、danger 色、尖三角折叠角生效（clip-path 非 none）
-  expect(r.default).not.toBeNull()
+  expect(r.default!.hidden).toBe(false)
   expect(r.default!.hidden).toBe(false)
   expect(r.default!.text).toContain('HOT')
   expect(r.default!.bg).toBe('rgb(220, 38, 38)')
@@ -52,11 +52,11 @@ test('badge ribbon：缎带可见、折叠角生效、语义色与 placement 渲
   expect(r.default!.cornerClip).not.toBe('none')
   expect(r.default!.cornerClip).toContain('polygon(')
   // placement=start：换到行首
-  expect(r.start).not.toBeNull()
+  expect(r.start!.placementStart).toBe(true)
   expect(r.start!.hidden).toBe(false)
   expect(r.start!.placementStart).toBe(true)
   // color=success：语义色生效（非 danger）
-  expect(r.success).not.toBeNull()
+  expect(r.success!.bg).toBe('rgb(22, 163, 74)')
   expect(r.success!.bg).toBe('rgb(22, 163, 74)')
   // count 数字徽标与 ribbon 并存正常
   expect(r.count).toBe('5')

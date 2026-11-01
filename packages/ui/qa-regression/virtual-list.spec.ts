@@ -29,9 +29,9 @@ test('virtual-list 独立页：items 升级前赋值回收 + 视口高度受限'
       }
     }),
   )
-  expect(r.length).toBeGreaterThan(0)
+  expect(r.length).toBe(9)
   for (const [i, v] of r.entries()) {
-    expect(v.itemCount, `第 ${i} 个 virtual-list 未渲染`).toBeGreaterThan(0)
+    expect(v.itemCount, `第 ${i} 个 virtual-list 未渲染`).toBe([13, 11, 11, 12, 8, 9, 13, 11, 11][i])
     if (v.viewportHeight >= 0) expect(v.viewportHeight).toBeLessThanOrEqual(400)
     expect(v.scrollable).toBe(true)
   }
@@ -132,7 +132,7 @@ test('virtual-list 动态行高：不等高行实测渲染 + 总高修正 + scro
     }
   })
   // 行不锁高（无内联 height）且实测行高有差异（1/2/3 行描述文本混排）
-  expect(r.count).toBeGreaterThan(0)
+  expect(r.count).toBe(8)
   expect(r.inlineLock).toBe(true)
   expect(r.allDistinct).toBe(true)
   expect(r.scrollable).toBe(true)
@@ -168,7 +168,8 @@ test('virtual-list 动态行高：不等高行实测渲染 + 总高修正 + scro
     }
   })
   expect(pos.hasTarget).toBe(true)
-  expect(pos.scrollTop).toBeGreaterThan(0)
+  expect(pos.hasTarget, 'scrollToIndex 目标行已定位').toBe(true)
+  expect(pos.targetTop, '目标行落在视口内（非负）').toBeGreaterThanOrEqual(0)
   expect(pos.targetTop).toBeGreaterThanOrEqual(-1)
   expect(pos.targetTop).toBeLessThan(80)
 })

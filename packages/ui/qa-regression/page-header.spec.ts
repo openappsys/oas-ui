@@ -22,10 +22,10 @@ test('page-header title 吸收不残留原生 title；点返回 oas-back 有消�
       ),
     }
   })
-  expect(r.total, '页面有 page-header demo').toBeGreaterThan(0)
+  expect(r.total, '页面有 page-header demo').toBe(14)
   expect(r.titleResidue, 'title 吸收：宿主不残留原生 title（悬停不弹原生提示）').toBe(0)
-  expect(r.titled, '标题照常渲染进可见标题区').toBeGreaterThan(0)
-  expect(r.backCount, 'back 头部有返回钮').toBeGreaterThan(0)
+  expect(r.titled, '标题照常渲染进可见标题区').toBe(13)
+  expect(r.backCount, 'back 头部有返回钮').toBe(7)
   expect(r.backAriaOk, '返回钮有可读名称（i18n aria-label）').toBe(true)
   expect(r.ghostOk, 'ghost 变体挂宿主类名钩子（背景/分隔线规则的 CSS 入口）').toBe(true)
 

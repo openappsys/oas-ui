@@ -33,11 +33,11 @@ async function waitLayout(page: import('@playwright/test').Page, sel: string): P
     .poll(
       async () => {
         const { height, client } = await readScroll(page, sel)
-        return height
+        return height > client
       },
       { timeout: 5000 },
     )
-    .toBeGreaterThan(0)
+    .toBe(true)
 }
 
 test('message-scroller 跳底按钮：离底显形、点击落底、到底隐藏（真交互链）', async ({ page }) => {
@@ -235,7 +235,7 @@ test('message-scroller 首帧广播：宿主监听晚于元素连接（upgrade �
     return out
   })
   expect(result.count, '首帧（rAF）恰好广播一次初始态').toBe(1)
-  expect(result.top, '初始定位（end）已在广播前生效').toBeGreaterThan(0)
+  expect(result.top, '初始定位（end）已在广播前生效').toBe(304)
   expect(result.last).toMatchObject({ atBottom: true })
 })
 
@@ -264,7 +264,7 @@ test('message-scroller 加载历史 demo：滚到顶触发 prepend 且保位补�
   await expect.poll(rows, { timeout: 15000 }).toBe(13)
 
   // 保位补偿：scrollTop 落在插入高度差上（未补偿会停在 0，阅读位置被新内容顶走）
-  await expect.poll(async () => (await readScroll(page, sel)).top, { timeout: 15000 }).toBeGreaterThan(0)
+  await expect.poll(async () => (await readScroll(page, sel)).top, { timeout: 15000 }).toBe(318)
 })
 
 // ---------- B 批：滚动的精确性（异步保位 / 首屏防跳 / last-anchor / 轮次锚定）真交互固化 ----------
@@ -311,7 +311,7 @@ test('message-scroller 首屏防跳：连接时 data-pending-scroll 在场，定
   })
   expect(result.duringConnect, '连接即反射 data-pending-scroll（隐藏未定位帧）').toBe(true)
   expect(result.removed, '首帧定位后移除（不永久隐藏）').toBe(true)
-  expect(result.top, '初始定位（end）已生效').toBeGreaterThan(0)
+  expect(result.top, '初始定位（end）已生效').toBe(304)
   expect(result.atBottom).toBe(true)
 })
 
@@ -507,7 +507,7 @@ test('message-scroller track-visible：滚动后 oas-visible-change 更新可见
     return host.visibleMessageIds
   })
   expect(Array.isArray(ids)).toBe(true)
-  expect(ids.length).toBeGreaterThan(0)
+  expect(ids.length).toBe(4)
 })
 
 test('attachment-group：横向溢出反射边缘可滚 + 滚动到端改变 data-scrollable', async ({ page }) => {

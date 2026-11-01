@@ -438,7 +438,7 @@ test('modal close-icon 插槽：slot 内容分配进关闭按钮（默认 ✕ �
       text: (assigned[0] as HTMLElement | null)?.textContent ?? '',
     }
   })
-  expect(r.assigned).toBeGreaterThan(0)
+  expect(r.assigned).toBe(1)
   expect(r.text).toContain('✕')
 })
 
@@ -710,9 +710,9 @@ test('modal media 插槽：有内容时媒体区显示、slot 分配且真实占
     }
   })
   expect(r.hidden).toBe(false)
-  expect(r.assigned).toBeGreaterThan(0)
+  expect(r.assigned).toBe(1)
   expect(r.hasMedia).toBe(true)
-  expect(r.mediaHeight, '媒体区真实占位（有内容可见）').toBeGreaterThan(0)
+  expect(r.mediaHeight, '媒体区真实占位（有内容可见）').toBeCloseTo(61.8, 0)
 })
 
 test('modal sticky-footer：正文限高内滚动 + 页脚吸底贴近对话框底边', async ({ page }) => {
@@ -742,6 +742,6 @@ test('modal sticky-footer：正文限高内滚动 + 页脚吸底贴近对话框�
   expect(r.bodyOverflowY).toBe('auto')
   expect(r.bodyScrolls, '正文区在限高内可滚动').toBe(true)
   expect(r.bodyMaxHeight, '正文限高生效（非 none）').not.toBe('none')
-  expect(r.footerHeight).toBeGreaterThan(0)
+  expect(r.footerHeight).toBeCloseTo(62.5, 0)
   expect(r.footerToDialogBottom, '页脚吸底贴近对话框底边（不随正文滚走）').toBeLessThanOrEqual(2)
 })

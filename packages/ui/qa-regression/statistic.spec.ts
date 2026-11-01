@@ -57,15 +57,15 @@ test('statistic loading：骨架真实可见、数值区（含 slot="value" 自�
   // 注入实例插在 body 最前，必须排除它们，避免泛选择器实际又读到注入元素（假绿）
   const demo = await read('oas-statistic[loading]:not(#stat-loading-reg):not(#stat-loading-slot-reg)')
   expect(demo.skDisplay, 'loading 时骨架应显示').not.toBe('none')
-  expect(demo.skW, '骨架应有实际宽度').toBeGreaterThan(0)
+  expect(demo.skW, '骨架应有实际宽度').toBe(120)
   expect(demo.innerDisplay, 'loading 时数值区应不可见').toBe('none')
   expect(demo.innerW, '数值区实际宽度应为 0').toBe(0)
 
   const attrCase = await read('#stat-loading-reg')
   expect(attrCase.skHiddenAttr, 'loading 时骨架不得带 hidden').toBe(false)
   expect(attrCase.skDisplay).not.toBe('none')
-  expect(attrCase.skW, '骨架应有实际宽度').toBeGreaterThan(0)
-  expect(attrCase.skH, '骨架应有实际高度').toBeGreaterThan(0)
+  expect(attrCase.skW, '骨架应有实际宽度').toBe(120)
+  expect(attrCase.skH, '骨架应有实际高度').toBe(124)
   expect(attrCase.innerHiddenAttr, 'loading 时数值区容器应带 hidden').toBe(true)
   expect(attrCase.innerDisplay, 'loading 时数值区容器 computed display 应为 none').toBe('none')
   expect(attrCase.innerH, '数值区实际高度应为 0（不占位）').toBe(0)
@@ -92,6 +92,6 @@ test('statistic loading：骨架真实可见、数值区（含 slot="value" 自�
     return getComputedStyle(inner).display !== 'none' && getComputedStyle(sk).display === 'none'
   })
   const restored = await read('#stat-loading-reg')
-  expect(restored.innerW, '取消 loading 后数值区应有实际宽度').toBeGreaterThan(0)
+  expect(restored.innerW, '取消 loading 后数值区应有实际宽度').toBeCloseTo(45.7, 1)
   expect(restored.skHiddenAttr, '取消 loading 后骨架应隐藏').toBe(true)
 })

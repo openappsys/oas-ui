@@ -25,7 +25,7 @@ test('picker 真实滚轮：滚动落停选中变化并派发 oas-change（demo 
     )
     return { sel, value: el.getAttribute('value') }
   })
-  expect(r.sel, '滚动后选中项离开首项').toBeGreaterThan(0)
+  expect(r.sel, '滚动后选中项离开首项').toBe(3)
   expect(JSON.parse(r.value ?? '[]')[0], 'value 回写与选中一致').toBe(
     ['apple', 'banana', 'orange', 'grape', 'melon'][r.sel],
   )
@@ -130,7 +130,7 @@ test('picker 禁用项：落停吸附到最近可用项；程序性 value 写入
     }
   })
   expect(r.selIdx, '不得停在禁用项').not.toBe(1)
-  expect(r.value, '吸附后值已提交').not.toBeNull()
+  expect(r.value, '吸附后值已提交').toBe('["下午"]')
 
   // 程序性写入不派发
   const noEmit = await page.evaluate(async () => {
@@ -164,7 +164,7 @@ test('picker 选中行高亮：bg-hover + 发丝线可见，无覆盖式指示�
   expect(r.bg, '选中行自底色可见').not.toBe('rgba(0, 0, 0, 0)')
   expect(r.bg, '选中行自底色可见').not.toBe('transparent')
   expect(r.shadow, '上下发丝线在位').toContain('px')
-  expect(r.text, '选中项文字在位').toBeTruthy()
+  expect(r.text, '选中项文字在位').toBe('苹果')
 })
 
 test('picker 全禁用列：任何项不标 aria-selected、列无 activedescendant；滚动后仍不复活（A4/维护批）', async ({

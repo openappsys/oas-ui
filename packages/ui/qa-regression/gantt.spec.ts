@@ -1716,7 +1716,7 @@ test('gantt 行 hover：行名/条点亮整行（左右几何对齐）+ hover="f
         : false,
     }
   })
-  expect(onName.layer, 'hover 行名 → 时间轴出现 .row-hover 层').toBeTruthy()
+  expect(onName.layer!.height, 'hover 行名 → 时间轴出现 .row-hover 层').toBe(36)
   expect(onName.align, 'hover 层与行名顶边/高度几何对齐').toBe(true)
   expect(onName.layer!.pe, '装饰层不拦指针').toBe('none')
   expect(onName.nameBg, '行名底色激活').not.toBe(onName.plainBg)
@@ -2302,7 +2302,7 @@ test('gantt show-status-line：状态竖线 + 条内 plan-ratio 刻度（里程�
     }
   })
   const col = geom.std - geom.stc
-  expect(col, '相邻两天列宽为正').toBeGreaterThan(0)
+  expect(col, '相邻两天列宽为正').toBeCloseTo(29.36, 1)
   expect(geom.line, '状态线落在 03-06 列位 = 03-02 条 + 4 列').toBeCloseTo(geom.stc + 4 * col, 1)
   await expect(on.locator('.bar[data-id="st1"] .plan-tick')).toHaveAttribute('data-plan-ratio', '0.5')
   await expect(on.locator('.bar[data-id="stc"] .plan-tick')).toHaveAttribute('data-plan-ratio', '1')
@@ -2358,7 +2358,7 @@ test('gantt baselines 多基线：baseline-id 选中条几何、未命中回落�
     }
   })
   const col = geo.barLeft - geo.blLeft
-  expect(col, '任务与基线恰差 1 天 → col 为正列宽').toBeGreaterThan(0)
+  expect(col, '任务与基线恰差 1 天 → col 为正列宽').toBeCloseTo(29.36, 1)
   expect(geo.blWidth).toBeCloseTo(5 * col, 1)
   await expect(bl.locator('.baseline-progress')).toHaveAttribute('style', /width:\s*50%/)
   // baseline-id 未命中 → 回落第一条（03-01 起，col 1 = 36px，宽 3 天）+ 告警恰好一次
@@ -2383,7 +2383,7 @@ test('gantt baselines 多基线：baseline-id 选中条几何、未命中回落�
     }
   })
   const fbCol = (fbGeo.barLeft - fbGeo.blLeft) / 4
-  expect(fbCol, '任务 03-05 与基线 03-01 相差 4 天 → 推导列宽为正').toBeGreaterThan(0)
+  expect(fbCol, '任务 03-05 与基线 03-01 相差 4 天 → 推导列宽为正').toBeCloseTo(29.36, 1)
   expect(fbGeo.blWidth).toBeCloseTo(3 * fbCol, 1)
   // devWarn 一次的告警断言在单测覆盖（预览站为生产构建，devWarn 被静默，e2e 只验证回落几何）
   // 暗色存在性

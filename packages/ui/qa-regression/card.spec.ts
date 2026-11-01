@@ -38,7 +38,7 @@ test('card clickable：整卡 tabindex 存活（不挂缺省 role）、点击派
     timeout: 5000,
   })
   const msgCount = await page.locator('oas-message').count()
-  expect(msgCount).toBeGreaterThan(0)
+  expect(msgCount).toBe(1)
 
   // 点击 actions 内按钮 → 不派发整卡 oas-click（演示反馈应不重复弹出）
   const before = await page.locator('oas-message').count()
@@ -60,9 +60,9 @@ test('card title 吸收：宿主不残留原生 title（消除整卡悬浮 toolt
         .length,
     }
   })
-  expect(r.total, '页面应有 card demo').toBeGreaterThan(0)
+  expect(r.total, '页面应有 card demo').toBe(39)
   expect(r.residue, '任何卡片宿主都不应残留原生 title（整卡悬停不弹原生提示）').toBe(0)
-  expect(r.renderedTitles, '带 title 的卡片应照常渲染标题区').toBeGreaterThan(0)
+  expect(r.renderedTitles, '带 title 的卡片应照常渲染标题区').toBe(36)
 })
 
 test('card selectable：点击切换选中 + aria-checked/角标同步 + 内部按钮不触发 + 受控单选宿主回写', async ({ page }) => {

@@ -43,8 +43,8 @@ test('group 模式：点击主钮展开，子钮在主钮下方纵向可见（ex
   expect(geom.open).toBe(true)
   expect(geom.kids.length).toBeGreaterThanOrEqual(3)
   for (const k of geom.kids) {
-    expect(k.w, '子钮有真实渲染尺寸').toBeGreaterThan(0)
-    expect(k.h, '子钮有真实渲染尺寸').toBeGreaterThan(0)
+    expect(k.w, '子钮有真实渲染尺寸').toBe(40)
+    expect(k.h, '子钮有真实渲染尺寸').toBeCloseTo(40, 1)
     expect(k.top, '子钮在主钮下方（down）').toBeGreaterThan(geom.mainRect.bottom)
   }
   // 纵向堆叠：子钮 x 对齐
@@ -500,7 +500,7 @@ test('group actions RTL：dir=rtl 下纵向气泡镜像到书写方向另一侧�
     const bb = bubble.getBoundingClientRect()
     return bb.left - b.right
   })
-  expect(ltr, 'LTR：气泡在子钮右侧').toBeGreaterThan(0)
+  expect(ltr, 'LTR：气泡在子钮右侧').toBe(7)
   // 切 RTL：气泡镜像到左侧
   await host.evaluate((el) => el.setAttribute('dir', 'rtl'))
   const rtl = await host.evaluate((el) => {
@@ -510,5 +510,5 @@ test('group actions RTL：dir=rtl 下纵向气泡镜像到书写方向另一侧�
     const bb = bubble.getBoundingClientRect()
     return b.left - bb.right
   })
-  expect(rtl, 'RTL：气泡镜像到子钮左侧').toBeGreaterThan(0)
+  expect(rtl, 'RTL：气泡镜像到子钮左侧').toBe(7)
 })

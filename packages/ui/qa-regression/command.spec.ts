@@ -50,8 +50,8 @@ test('command 基础回归：open 打开、过滤驱动可见行、方向键高�
     return { before, after, filtered: after > 0 && after < before, active, selected }
   })
   expect(r.filtered, `输入过滤词后可见行应减少（before=${r.before} after=${r.after}）`).toBe(true)
-  expect(r.active, '方向键后应有 .active 高亮行').toBeGreaterThan(0)
-  expect(r.selected, 'Enter 应派发 oas-select 并携带选中 value').toBeTruthy()
+  expect(r.active, '方向键后应有 .active 高亮行').toBe(1)
+  expect(r.selected, 'Enter 应派发 oas-select 并携带选中 value').toBe('open-file')
 })
 
 // 键盘竞态回归：过滤结果重排后 activeIndex 必须归零，Enter 命中当前列表项而非旧索引项
@@ -186,7 +186,8 @@ test('command 非虚拟列表：键盘移动到视口外时活动行滚入可视
       listBottom: list.getBoundingClientRect().bottom,
     }
   })
-  expect(r.scrollTop).toBeGreaterThan(0)
+  expect(r.activeTop, '活动行在列表视口内（顶部）').toBeGreaterThanOrEqual(r.listTop)
+  expect(r.activeBottom, '活动行在列表视口内（底部）').toBeLessThanOrEqual(r.listBottom)
   expect(r.activeTop).toBeGreaterThanOrEqual(r.listTop - 1)
   expect(r.activeBottom).toBeLessThanOrEqual(r.listBottom + 1)
 })

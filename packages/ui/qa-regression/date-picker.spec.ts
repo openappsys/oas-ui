@@ -38,7 +38,7 @@ test('date-picker / time-picker 面板贴输入框下方（:host 为定位祖先
     // ——锁定架构不变量：fixed 定位 + 面板与触发器相邻（下翻 gap=4 在下；下方空间不足自动
     // 上翻 gap=4 在上，两种朝向均合法）+ 视口内不裁 + 碰撞翻转钩子可读（data-placement）
     expect(r.dropdownPosition, `${name} dropdown 应为 fixed 定位`).toBe('fixed')
-    expect(r.placement, `${name} 应有 data-placement 定位钩子`).toBeTruthy()
+    expect(r.placement, `${name} 应有 data-placement 定位钩子`).toBe('top-start')
     const gap = r.dropdownTop - r.triggerBottom >= 0 ? r.dropdownTop - r.triggerBottom : r.triggerTop - r.dropdownBottom
     expect(gap, `${name} 面板应与触发器相邻（gap 4，下翻或上翻）`).toBeCloseTo(4, 1)
     expect(r.inViewport, `${name} 面板应完整在视口内`).toBe(true)
@@ -125,7 +125,7 @@ test('date-picker 移动端：底部抽屉贴视口底展开 + dropdown 静态�
     expect(Math.abs(info.panelRight - info.vw), '抽屉面板应右贴视口（≤1px 亚像素容差）').toBeLessThanOrEqual(1)
     expect(info.backdropOpacity, '遮罩应可见').toBeGreaterThan(0.5)
     expect(info.handleVisible, 'drag handle 应可见').toBe(true)
-    expect(info.dayButtons, '抽屉内面板应可交互（有日格）').toBeGreaterThan(0)
+    expect(info.dayButtons, '抽屉内面板应可交互（有日格）').toBe(42)
     // oas-close 同步收起：点遮罩
     await host.evaluate((el) => {
       const sheet = el.shadowRoot!.querySelector('oas-bottom-sheet')!
@@ -316,7 +316,7 @@ test('date-picker 单元格渲染：template[slot=cell] 内容保留、每个日
     }
   })
   expect(r.hasTemplateContent, 'template[slot=cell] 内容应被保留').toBe(true)
-  expect(r.dayCount).toBeGreaterThan(0)
+  expect(r.dayCount).toBe(42)
   expect(r.withNumber, '每个日格都应有日期数字').toBe(r.dayCount)
   // 标记点只给固定几天（2026-08-10/20/28）：曾误把 .cell-dot 放进模板，导致每格都长红点
   expect(r.dotCount, '标记点应只出现在固定几天，不能每格都有').toBe(3)

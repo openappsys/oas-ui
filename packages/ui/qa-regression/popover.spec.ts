@@ -22,7 +22,7 @@ test('popover 嵌套：父关闭级联关闭子层、Esc 逐层关闭、Vue demo
 
   // focus-on-open 属性在 Vue demo 中存活（不被剥离）
   const focusAttr = await parent.evaluate((e) => e.getAttribute('focus-on-open'))
-  expect(focusAttr, 'focus-on-open 被 Vue 剥离').not.toBeNull()
+  expect(focusAttr, 'focus-on-open 被 Vue 剥离').toBe('')
 
   // 同时打开父子 → 子层可见且层级在父之上
   await parent.evaluate((e) => e.setAttribute('open', ''))
@@ -86,7 +86,7 @@ test('popover virtual：virtual-x/virtual-y 定位 + 锚点元素跟随 + oas-op
     x: e.getAttribute('virtual-x'),
     y: e.getAttribute('virtual-y'),
   }))
-  expect(attrs.virtual, 'virtual 被 Vue 剥离').not.toBeNull()
+  expect(attrs.virtual, 'virtual 被 Vue 剥离').toBe('')
   expect(attrs.x).toBe('160')
   expect(attrs.y).toBe('90')
 
@@ -659,7 +659,7 @@ test('popover P1/P2/P6/P11：锚点 ARIA 三时机 + trigger-keys 默认值 + si
   await first.evaluate((e) => e.setAttribute('open', ''))
   aria = await anchorAria()
   expect(aria.expanded).toBe('true')
-  expect(aria.controls).toBeTruthy()
+  expect(aria.controls).toMatch(/^oas-popover-panel-[0-9a-z]+$/)
   await first.evaluate((e) => e.removeAttribute('open'))
   aria = await anchorAria()
   expect(aria.expanded).toBe('false')
@@ -745,7 +745,7 @@ test('popover P3/P4/P5/P13/P15：trap-focus 无遮罩 + 关闭开关 + before-cl
   const trap = page.locator('oas-popover[trap-focus]').first()
   await trap.scrollIntoViewIfNeeded()
   const trapAttr = await trap.evaluate((e) => e.getAttribute('trap-focus'))
-  expect(trapAttr, 'trap-focus 被 Vue 剥离').not.toBeNull()
+  expect(trapAttr, 'trap-focus 被 Vue 剥离').toBe('')
   await trap.evaluate((e) => (e.querySelector(':scope > *') as HTMLElement).click())
   // 焦点就位的前提信号：面板已打开（focus-on-open 在打开链路同步落焦）
   await expect(trap.locator('[part="panel"]')).toHaveAttribute('aria-hidden', 'false')
@@ -911,7 +911,7 @@ test('popover P20/P21/P22/P25：contextmenu 光标定位 + dismiss-on-select + d
   // P25：render-panel demo——宿主自组按钮打开纯面板、点击宿主内容不切换
   const panel = page.locator('#pop-render-panel')
   await panel.scrollIntoViewIfNeeded()
-  expect(await panel.evaluate((e) => e.getAttribute('render-panel'))).not.toBeNull()
+  expect(await panel.evaluate((e) => e.getAttribute('render-panel'))).toBe('')
   await page.evaluate(() => {
     ;(window as unknown as { popPanelShow: (e: MouseEvent) => void }).popPanelShow({
       clientX: 300,

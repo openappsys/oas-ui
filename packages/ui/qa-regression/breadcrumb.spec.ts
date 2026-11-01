@@ -40,7 +40,7 @@ test('breadcrumb 折叠：超出 max-items 中间项折叠为 …，点击展开
   expect(r0.itemCount).toBe(4)
   expect(r0.btnText).toContain('…')
   expect(r0.ariaExpanded).toBe('false')
-  expect(r0.ariaLabel).toBeTruthy()
+  expect(r0.ariaLabel).toBe('展开被折叠的面包屑项')
   expect(r0.open).toBe(false)
   expect(r0.hiddenLabels).toEqual(['组件', '导航', '数据展示'])
   expect(r0.current).toBe('面包屑')
@@ -81,7 +81,7 @@ test('breadcrumb 真实链接：原生跳转不阻止 + oas-select 照常派发�
       rel: links[1]!.getAttribute('rel'),
     }
   })
-  expect(r.href).toBeTruthy()
+  expect(r.href).toBe('/components')
   expect(r.target).toBe('_blank')
   expect(r.rel).toContain('noopener')
   // 点击 target=_blank 链接：新窗口打开（原生跳转）+ oas-select 派发（demo tag 反馈，页面不卸载）
@@ -109,7 +109,7 @@ test('breadcrumb 单行省略：ellipsis 时 nav 不换行 class + 链接带全�
     }
   })
   expect(r.ellipsis).toBe(true)
-  expect(r.title).toBeTruthy()
+  expect(r.title).toBe('首页')
 })
 
 test('breadcrumb ellipsis 模式项下拉不被裁剪：面板 elementFromPoint 真实命中', async ({ page }) => {

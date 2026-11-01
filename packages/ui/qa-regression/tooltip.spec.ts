@@ -24,7 +24,7 @@ test('tooltip virtual 坐标跟随：鼠标移入画布 tooltip 跟随显示、�
       y: t.getAttribute('virtual-y'),
     }
   })
-  expect(attrs.virtual, 'virtual 被 Vue 剥离').not.toBeNull()
+  expect(attrs.virtual, 'virtual 被 Vue 剥离').toBe('')
   expect(attrs.x).toBe('0')
   expect(attrs.y).toBe('0')
 
@@ -80,8 +80,8 @@ test('tooltip virtual 坐标跟随：鼠标移入画布 tooltip 跟随显示、�
   expect(r.status, 'demo 状态 tag 应有可见反馈').toContain('跟随')
   expect(r.content).toContain('坐标') // 内容实时更新
   expect(r.placement).toBe('bottom')
-  expect(r.top, 'tooltip 应定位在鼠标下方').toBeGreaterThan(0)
-  expect(r.left).toBeGreaterThan(0)
+  expect(r.top, 'tooltip 应定位在鼠标下方').toBe(383)
+  expect(r.left).toBeCloseTo(367.391, 1)
   expect(r.inViewport, 'tooltip 不应溢出视口').toBe(true)
 
   // 移出画布 → tooltip 隐藏 + 状态反馈复位
@@ -107,7 +107,7 @@ test('tooltip virtual-anchor：hover 图表点位 tooltip 锚定该点显示、�
     const t = document.querySelector('#tt-anchor')!
     return { virtual: t.getAttribute('virtual'), anchor: t.getAttribute('virtual-anchor') }
   })
-  expect(attrs.virtual, 'virtual 被 Vue 剥离').not.toBeNull()
+  expect(attrs.virtual, 'virtual 被 Vue 剥离').toBe('')
   expect(attrs.anchor).toBe('#vp-dot-0')
 
   await page.evaluate(() => {
@@ -757,7 +757,7 @@ test('tooltip 增强-a11y="label"：打开挂 aria-labelledby、关闭还原（�
       status: document.querySelector('#tt-label-status')?.textContent ?? '',
     }
   })
-  expect(r.labelledby, 'label 模式应挂 aria-labelledby').toBeTruthy()
+  expect(r.labelledby, 'label 模式应挂 aria-labelledby').toMatch(/^oas-tooltip-tip-[0-9a-z]+$/)
   expect(r.describedby).toBeNull()
   expect(r.ariaLabel, '宿主 aria-label 不被覆盖').toBe('收藏按钮')
   expect(r.status).toContain('aria: oas-tooltip-tip')
@@ -887,7 +887,7 @@ test('tooltip 无空格长串在 max-width 内断行不溢出（overflow-wrap: a
       scrollW: (box as HTMLElement).scrollWidth,
     }
   })
-  expect(r, '应找到带长路径的 ellipsis 示例与 tooltip').not.toBeNull()
+  expect(r!.width, '应找到带长路径的 ellipsis 示例与 tooltip').toBe(240)
   expect(r!.overflowWrap).toBe('anywhere')
   expect(r!.scrollW - r!.width, '内容不超出浮层盒').toBeLessThanOrEqual(2)
 })

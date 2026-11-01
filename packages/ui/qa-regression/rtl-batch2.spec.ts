@@ -46,7 +46,7 @@ test('menu：dir=rtl 下图标间距逻辑属性镜像（inline-end → 物理�
     }
     return null
   })
-  expect(margins, 'menu 页未找到带 8px 间距图标的菜单项').not.toBeNull()
+  expect(margins!.ltr.right, 'menu 页未找到带 8px 间距图标的菜单项').toBe('8px')
   // 逻辑属性 margin-inline-end：LTR 落物理右、RTL 翻到物理左
   expect(margins!.ltr).toEqual({ right: '8px', left: '0px' })
   expect(margins!.rtl).toEqual({ right: '0px', left: '8px' })
@@ -63,7 +63,7 @@ test('dropdown split：dir=rtl 下接缝/外侧圆角随方向翻转', async ({ 
     const cs = getComputedStyle(btn)
     return { topLeft: cs.borderTopLeftRadius, topRight: cs.borderTopRightRadius }
   })
-  expect(radii, 'split 按钮未找到').not.toBeNull()
+  expect(radii!.topLeft, 'split 按钮未找到').toBe('6px')
   // LTR：接缝在左（topLeft=0）、外侧圆角在右；RTL 镜像后相反
   expect(radii!.topLeft).not.toBe('0px')
   expect(radii!.topRight).toBe('0px')
@@ -87,13 +87,12 @@ test('stepper：dir=rtl 下横向连接线锚点镜像（::after 计算 left→a
     el.removeAttribute('dir')
     return { ltr, rtl }
   })
-  expect(probe.ltr, 'stepper 步骤未找到').not.toBeNull()
   // inset-inline-start: 50%（computed 已解析为 px）：LTR 线自中点向右延伸（left 正 / right 负），
   // RTL 镜像为向左延伸（left 负 / right 正）——仍用物理 left 时 RTL 下会画到上一步并悬空到容器边缘
   const n = (v: string) => Number.parseFloat(v)
-  expect(n(probe.ltr!.left)).toBeGreaterThan(0)
+  expect(n(probe.ltr!.left)).toBeCloseTo(95.6562, 1)
   expect(n(probe.rtl!.left)).toBeLessThan(0)
-  expect(n(probe.rtl!.right)).toBeGreaterThan(0)
+  expect(n(probe.rtl!.right)).toBeCloseTo(95.6562, 1)
   // 镜像对称：两方向锚点数值等大反号
   expect(Math.abs(n(probe.rtl!.right))).toBeCloseTo(Math.abs(n(probe.ltr!.left)), 1)
 })

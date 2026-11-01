@@ -346,7 +346,7 @@ test('titlebar editable 文档井 + subtitle 状态行：subtitle 照常可见�
   })
   expect(state.inputHidden, 'editable 下文档井输入可见').toBe(false)
   expect(state.subtitleHidden, 'editable 下 subtitle 状态行不被强制隐藏（用户可见）').toBe(false)
-  expect(state.subtitleText.length, 'subtitle 状态行渲染提示文本').toBeGreaterThan(0)
+  expect(state.subtitleText, 'subtitle 状态行渲染提示文本').toBe('双击标题改名，Enter 提交')
 })
 
 test('action-bar end 段推远端契约：无 center 时 end 的 margin 接棒 auto（回归：曾固定间距贴命令区）', async ({
@@ -423,7 +423,7 @@ test('statusbar-item 全空态宿主级隐藏：data-empty 反射 + 无布局足
   const filled = await page.evaluate(
     () => document.querySelector('oas-statusbar-item[data-empty-probe]')!.getBoundingClientRect().width,
   )
-  expect(filled, '填入内容后探针真实占位').toBeGreaterThan(0)
+  expect(filled, '填入内容后探针真实占位').toBe(36)
 })
 
 test('statistic-well 全空态宿主级隐藏：data-empty 反射 + 零尺寸（回归：空井曾留固定高胶囊占位）', async ({ page }) => {
@@ -469,7 +469,7 @@ test('statistic-well 全空态宿主级隐藏：data-empty 反射 + 零尺寸（
       () => document.querySelector('oas-statistic-well[data-empty-probe]')!.getBoundingClientRect().width,
     ),
     '有内容后井真实占位（胶囊可见）',
-  ).toBeGreaterThan(0)
+  ).toBeCloseTo(24.42, 2)
 })
 
 test('task-progress-well 全空态宿主级隐藏：data-empty 反射 + 零尺寸（回归：空井曾恒显 0% + 取消钮占胶囊）', async ({
@@ -519,7 +519,7 @@ test('task-progress-well 全空态宿主级隐藏：data-empty 反射 + 零尺�
       () => document.querySelector('oas-task-progress-well[data-empty-probe]')!.getBoundingClientRect().width,
     ),
     '有内容后井真实占位（胶囊可见）',
-  ).toBeGreaterThan(0)
+  ).toBeCloseTo(91.58, 2)
 })
 
 test('transport-well 键盘 seek：←/→ 真实键盘路径派发 oas-seek、宿主回写后时间码推进 + 输出行可见', async ({ page }) => {
@@ -636,7 +636,7 @@ test('action-bar 语义降级为 role=group + aria-label（取舍：center 槽�
     return { role: bar.getAttribute('role'), label: bar.getAttribute('aria-label') }
   })
   expect(semantics.role, '容器 role=group（非 toolbar——读数井在场不作纯命令集合承诺）').toBe('group')
-  expect(semantics.label?.length, 'aria-label 在场（AT 可播报组名）').toBeGreaterThan(0)
+  expect(semantics.label, 'aria-label 在场（AT 可播报组名）').toBe('操作栏')
 })
 
 test('titlebar 容器语义：role=group + aria-label（回归：aria-label 曾挂无 role div，AT 忽略）', async ({ page }) => {
@@ -647,7 +647,7 @@ test('titlebar 容器语义：role=group + aria-label（回归：aria-label 曾�
     return { role: bar.getAttribute('role'), label: bar.getAttribute('aria-label') }
   })
   expect(semantics.role, '容器 role=group（aria-label 有挂载目标，AT 可播报）').toBe('group')
-  expect(semantics.label?.length, 'aria-label 在场').toBeGreaterThan(0)
+  expect(semantics.label, 'aria-label 在场').toBe('标题栏')
 })
 
 for (const page_ of ['titlebar', 'statusbar', 'inspector', 'action-bar']) {

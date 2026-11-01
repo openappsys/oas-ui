@@ -91,7 +91,7 @@ test('code 行高亮 / 行聚焦 / diff 着色真实生效（token 派生色）'
   })
   // 行高亮：命中行有底色，未命中行透明
   const hlOn = r.hlFlags.map((on, i) => (on ? i : -1)).filter((i) => i >= 0)
-  expect(hlOn.length).toBeGreaterThan(0)
+  expect(hlOn.length).toBe(3)
   expect(r.hlBgs[hlOn[0]!]).not.toBe('rgba(0, 0, 0, 0)')
   expect(r.hlBgs[r.hlFlags.findIndex((on) => !on)]).toBe('rgba(0, 0, 0, 0)')
   // 行聚焦：淡化行与聚焦行文字色有区分（掺色机制；opacity 恒 1——opacity 淡化在感知对比度门禁下不达标）
@@ -100,8 +100,8 @@ test('code 行高亮 / 行聚焦 / diff 着色真实生效（token 派生色）'
   // diff：增行绿、减行红（语义色非默认文本色）
   const adds = r.diffRows.filter((x) => x.add)
   const removes = r.diffRows.filter((x) => x.remove)
-  expect(adds.length).toBeGreaterThan(0)
-  expect(removes.length).toBeGreaterThan(0)
+  expect(adds.length).toBe(1)
+  expect(removes.length).toBe(1)
   expect(adds[0]!.color).not.toBe(removes[0]!.color)
   expect(adds[0]!.color).not.toBe('rgb(24, 24, 27)')
 })

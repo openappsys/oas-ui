@@ -53,16 +53,16 @@ test('gradient-text 描边：属性渲染钩子 + 描边与渐变共存样式', 
   expect(r.defHostVarW).toMatch(/^\d+(\.\d+)?(px|em|rem|pt)$/)
   expect(r.defHostVarC).toBe('var(--oas-color-text-primary)')
   // 副层镜像槽文本、aria-hidden 隔离屏幕阅读器、非 display:none
-  expect(r.defLayerText).toBeTruthy()
+  expect(r.defLayerText).toBe('渐变描边文字')
   expect(r.defLayerAriaHidden).toBe('true')
   expect(r.defLayerCss.display).toBe('block')
   // 副层真实带描边（宽度非 0），主层走 clipped 渐变且自身不描边
-  expect(parseFloat(r.defLayerCss.strokeWidth)).toBeGreaterThan(0)
+  expect(parseFloat(r.defLayerCss.strokeWidth)).toBe(2)
   expect(r.defTextCss.strokeWidth === '' || parseFloat(r.defTextCss.strokeWidth) === 0).toBe(true)
   expect(r.defClipped).toBe(true)
   expect(r.defGradBg).toContain('linear-gradient')
   // 自定义描边色真实落在副层
-  expect(parseFloat(r.customLayerCss.strokeWidth)).toBeGreaterThan(0)
+  expect(parseFloat(r.customLayerCss.strokeWidth)).toBe(2)
   expect(r.customLayerCss.strokeColor).not.toBe('rgb(0, 0, 0)')
   expect(r.customClipped).toBe(true)
   // 语义渐变 + 描边：data-type 与 clipped 并存

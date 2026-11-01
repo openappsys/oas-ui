@@ -109,7 +109,7 @@ test('index-bar 点字母落定：可滚动 fixture 只派发一次；短内容 
     expect(state.events, `${fixture.id}：点击后 500ms 事件仍恰好 1 次（不得回退二次派发）`).toEqual([{ key: 'B' }])
     expect(state.active, `${fixture.id}：aria-current 保持目标 B`).toBe('B')
     if (fixture.scrollable) {
-      expect(state.scrollTop, `${fixture.id}：可滚动列表应真实滚动`).toBeGreaterThan(0)
+      expect(state.scrollTop, `${fixture.id}：可滚动列表应真实滚动`).toBe(464)
     } else {
       expect(state.scrollTop, `${fixture.id}：短内容 scrollTop 恒 0（目标不可达）`).toBe(0)
     }
@@ -155,8 +155,8 @@ test('index-bar 侧栏拖拽：按下经过字母即跳转分节', async ({ page
   const letters = page.locator('#ib-basic [part="letter"]')
   const first = await letters.nth(0).boundingBox()
   const last = await letters.nth(5).boundingBox()
-  expect(first).not.toBeNull()
-  expect(last).not.toBeNull()
+  expect(first!.width).toBe(21)
+  expect(last!.width).toBe(21)
 
   await page.mouse.move(first!.x + first!.width / 2, first!.y + first!.height / 2)
   await page.mouse.down()
@@ -213,11 +213,11 @@ test('index-bar 无障碍：分节容器 role=group + aria-labelledby 指向自�
       }
     })
   })
-  expect(a11y.length).toBeGreaterThan(0)
+  expect(a11y.length).toBe(8)
   for (const sec of a11y) {
     // aria-labelledby 挂在无 role 的 div 上是 generic 禁命名（名称会被 AT 丢弃）
     expect(sec.role).toBe('group')
-    expect(sec.idref, 'aria-labelledby 必须有值').toBeTruthy()
+    expect(sec.idref, 'aria-labelledby 必须有值').toMatch(/^oas-index-bar-[0-9a-z]+-h-\d+$/)
     expect(sec.targetIsOwnHeader, 'aria-labelledby 必须指向本节分节头').toBe(true)
     expect(sec.headerRole).toBe('heading')
     expect(sec.headerLevel).toBe('2')

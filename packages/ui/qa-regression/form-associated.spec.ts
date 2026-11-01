@@ -169,7 +169,7 @@ test('form-associated 校验链路：required 空值进入原生约束校验（c
   expect(r.valueMissing, 'validity.valueMissing 为 true').toBe(true)
   expect(r.invalidPseudo, '宿主匹配 :invalid 伪类').toBe(true)
   expect(r.reported, 'reportValidity 为 false').toBe(false)
-  expect(r.invalidFired, 'reportValidity 派发 invalid 事件').toBeGreaterThan(0)
+  expect(r.invalidFired, 'reportValidity 派发 invalid 事件').toBe(2)
   expect(r.validAfter, '填入值后 checkValidity 恢复 true').toBe(true)
   expect(r.validPseudo, '填入值后宿主匹配 :valid 伪类').toBe(true)
   expect(r.invalidAgain, '再次清空后回到 invalid').toBe(false)
@@ -839,7 +839,7 @@ test('form-associated：外部 label 动态刷新矩阵（直连 / 弹窗 / 表�
     const afterRemove = read()
     return { initial, afterText, afterAdd, afterUnbind, afterRebind, focused, afterRemove }
   })
-  expect(direct.initial, '直连：初始 label 文本已转发为可访问名').toBeTruthy()
+  expect(direct.initial, '直连：初始 label 文本已转发为可访问名').toContain('姓名')
   expect(direct.afterText, '直连：label 文本变化即时刷新').toBe('直连动态标签')
   expect(direct.afterAdd, '直连：后加 label 立即并入可访问名').toBe('直连动态标签 （补充）')
   expect(direct.afterUnbind, '直连：for 解绑后不得残留旧名称').toBeNull()
@@ -922,7 +922,7 @@ test('form-associated：外部 label 动态刷新矩阵（直连 / 弹窗 / 表�
     const afterRemove = inner.getAttribute('aria-label')
     return { hostName, afterAdd, afterText, focused, afterRemove }
   })
-  expect(result.hostName, '表格：既有单元格命名（表格注入的 aria-label）不被动态 label 观察覆盖').toBeTruthy()
+  expect(result.hostName, '表格：既有单元格命名（表格注入的 aria-label）不被动态 label 观察覆盖').toContain('词条')
   expect(result.afterAdd, '表格行内编辑：同根 label 立即命名编辑器').toBe('行内姓名')
   expect(result.afterText, '表格行内编辑：label 文本变化即时刷新').toBe('行内姓名（已改名）')
   expect(result.focused, '表格行内编辑：点击 label 聚焦编辑器内部控件').toBe(true)

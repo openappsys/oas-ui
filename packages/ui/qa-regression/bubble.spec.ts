@@ -50,9 +50,9 @@ test('tail=auto 跟随 align：两侧伪元素落在底部外角且尺寸/偏移
   // 伪元素真实存在且落在底部外角（负 inline 偏移 = 探出气泡）
   expect(r.start.content).not.toBe('none')
   expect(Number.parseFloat(r.start.insetStart)).toBeLessThan(0)
-  expect(Number.parseFloat(r.start.insetEnd)).toBeGreaterThan(0)
+  expect(Number.parseFloat(r.start.insetEnd)).toBeCloseTo(49.5938, 1)
   expect(Number.parseFloat(r.end.insetEnd)).toBeLessThan(0)
-  expect(Number.parseFloat(r.end.insetStart)).toBeGreaterThan(0)
+  expect(Number.parseFloat(r.end.insetStart)).toBeCloseTo(49.5938, 1)
   expect(r.start.bottom).toBe('0px')
   expect(r.start.background).toContain('radial-gradient')
   // 尺寸/偏移 token 生效（20px 高；底部偏移 4px）
@@ -121,10 +121,10 @@ test('RTL：tail=start 仍贴 inline-start（逻辑属性镜像）且无物理 l
     }
   })
   expect(Number.parseFloat(r.insetStart)).toBeLessThan(0)
-  expect(Number.parseFloat(r.insetEnd)).toBeGreaterThan(0)
+  expect(Number.parseFloat(r.insetEnd)).toBeCloseTo(57.4844, 1)
   // 逻辑偏移换算后物理边相反：RTL 下 start 对应右侧
   expect(Number.parseFloat(r.right)).toBeLessThan(0)
-  expect(Number.parseFloat(r.left)).toBeGreaterThan(0)
+  expect(Number.parseFloat(r.left)).toBeCloseTo(57.4844, 1)
 })
 
 test('暗色：尾巴颜色仍取气泡表面（亮/暗背景色不同，尾巴渐变随表面变化）', async ({ page }) => {

@@ -214,7 +214,7 @@ test('dropdown split：Vue demo 属性存活、箭头按钮 aria 同步、主按
       topRightRadius: cs.borderTopRightRadius,
     }
   })
-  expect(r.splitAttr, 'split 属性被 Vue 剥离').not.toBeNull()
+  expect(r.splitAttr, 'split 属性被 Vue 剥离').toBe('')
   expect(r.hasArrow).toBe(true)
   expect(r.haspoup).toBe('menu')
   expect(r.expanded).toBe('false')
@@ -395,7 +395,10 @@ test('dropdown 关闭过程箭头与面板透明度逐帧同步（不慢一拍�
   })
   // 关闭过程中至少有一帧处于淡出中（opacity 在 0~1 之间），且每帧箭头与面板同步
   const fading = samples.filter((s) => s.menu > 0 && s.menu < 1)
-  expect(fading.length, '应采样到淡出过程帧').toBeGreaterThan(0)
+  expect(
+    fading.some((f) => f.menu > 0 && f.menu < 1 && f.arrow === f.menu),
+    '应采样到箭头与面板同步的淡出过程帧',
+  ).toBe(true)
   for (const s of fading) {
     expect(Math.abs(s.arrow - s.menu), '箭头与面板 opacity 应逐帧同步（差 ≤0.05）').toBeLessThanOrEqual(0.05)
   }
@@ -609,7 +612,7 @@ test('dropdown reserve-width：触发器被锁 min-width，对照（无预留）
     return { reserved: w('#dd-reserve'), control: w('#dd-narrow') }
   })
   expect(r.reserved).toMatch(/^[\d.]+px$/)
-  expect(Number.parseFloat(r.reserved!)).toBeGreaterThan(0)
+  expect(Number.parseFloat(r.reserved!)).toBe(184)
   expect(r.control).toBe('')
 })
 

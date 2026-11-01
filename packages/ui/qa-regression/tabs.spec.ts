@@ -276,7 +276,7 @@ test('tabs more 模式（通用机制）：tab 全渲染不隐藏 + more 下拉�
   const dropCount = await page.evaluate(
     () => document.querySelector('oas-tabs[more]')!.shadowRoot!.querySelectorAll('.more-item').length,
   )
-  expect(dropCount, 'more 下拉应列出视口外 tab').toBeGreaterThan(0)
+  expect(dropCount, 'more 下拉应列出视口外 tab').toBe(8)
   // 点选最后一个视口外项 → 平滑滚动到可见 + 激活
   const scrollBefore = await page.evaluate(
     () => document.querySelector('oas-tabs[more]')!.shadowRoot!.querySelector('.tablist')!.scrollLeft,
@@ -304,7 +304,7 @@ test('tabs more 模式（通用机制）：tab 全渲染不隐藏 + more 下拉�
       scrollLeft: el.shadowRoot!.querySelector('.tablist')!.scrollLeft,
     }
   })
-  expect(result.active, '点选后应激活').toBeTruthy()
+  expect(result.active, '点选后应激活').toBe('t12')
   expect(result.scrollLeft, '点选视口外项应滚动到可见区').toBeGreaterThan(scrollBefore)
 })
 
@@ -339,11 +339,12 @@ test('tabs oas-tab-contextmenu：右键标签派发 detail 正确 + preventDefau
       builtinOpened: menu ? !menu.hidden : null,
     }
   })
-  expect(r1.detail, '右键标签应派发 oas-tab-contextmenu').not.toBeNull()
   expect(r1.detail!.value, 'detail.value = 被右键标签 value').toBe('c')
   expect(r1.detail!.index, 'detail.index = 标签序号').toBe(2)
   expect(typeof r1.detail!.clientX, '坐标透传').toBe('number')
-  expect(r1.detail!.originalEvent, 'detail 携带原生事件').toBeTruthy()
+  expect((r1.detail!.originalEvent as { isTrusted: boolean }).isTrusted, 'detail 携带原生事件（测试内合成事件）').toBe(
+    false,
+  )
   expect(r1.builtinOpened, '不拦截时内建菜单照常打开').toBe(true)
 
   // 宿主 preventDefault → 内建菜单抑止
@@ -402,7 +403,7 @@ test('tabs title 透传：panel title 进按钮（原生 tooltip）+ panel 吸�
     const btnNew = el.shadowRoot!.querySelector<HTMLElement>('[role="tab"][data-value="a"]')!
     return { ...first, btnTitleNew: btnNew.getAttribute('title'), panelAbsorbedAfter: !panelA.hasAttribute('title') }
   })
-  expect(r.btnTitle, '按钮 title = panel title 文本（原生 hover tooltip）').toBeTruthy()
+  expect(r.btnTitle, '按钮 title = panel title 文本（原生 hover tooltip）').toBe('仪表盘：全链路监控与告警总览')
   expect(r.panelAbsorbed, 'panel 宿主 title 被吸收移除').toBe(true)
   expect(r.btnTitleNew, '改写后按钮 title 更新').toBe('改写后的提示')
   expect(r.panelAbsorbedAfter, '改写后的 title 再次被吸收').toBe(true)
@@ -426,7 +427,7 @@ test('tabs actions 插槽：操作区固定于滚动区外（nav 内、tablist �
   expect(r1.hidden).toBe(false)
   expect(r1.inNav).toBe(true)
   expect(r1.notInTablist).toBe(true)
-  expect(r1.assigned).toBeGreaterThan(0)
+  expect(r1.assigned).toBe(1)
   expect(r1.refreshed).toBeNull()
   // 点击操作区按钮：可见反馈（宿主写回 data-refreshed）
   await page.locator('#tabs-actions-refresh').click()

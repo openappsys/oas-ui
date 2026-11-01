@@ -64,7 +64,7 @@ test('resource-management 组合示例：初始超载 → 取消勾选重算 →
   // ===== 初始：3 资源容量 1，7 任务 → 卡片峰值 2/2/2，超载天数 3/4/2（合计 9 档红柱） =====
   const initial = await snapshot(page)
   expect(initial.lanes, '3 条资源泳道').toBe(3)
-  expect(initial.bars, '泳道内任务条已渲染').toBeGreaterThan(0)
+  expect(initial.bars, '泳道内任务条已渲染').toBe(11)
   expect(initial.checkboxes, '分配表 7 任务 × 3 资源 = 21 个勾选框').toBe(21)
   expect(initial.peakZhang, '张三峰值').toBe('2')
   expect(initial.peakLisi, '李四峰值').toBe('2')
@@ -117,7 +117,7 @@ test('resource-management 组合示例：初始超载 → 取消勾选重算 →
     t7: '2026-03-09',
   }
   const shifted = Object.keys(initialStarts).filter((id) => afterLevel.taskStarts[id] !== initialStarts[id])
-  expect(shifted.length, '至少一个任务日期确有后移').toBeGreaterThan(0)
+  expect(shifted.length, '至少一个任务日期确有后移').toBe(4)
   expect(
     shifted.every((id) => afterLevel.taskStarts[id]! > initialStarts[id]!),
     '被移动任务的 start 只往后移',
@@ -171,7 +171,7 @@ test('resource-management en 页冒烟：标题/卡片/泳道渲染 + console �
   ).toBe(true)
   expect(info.rows, '分配表 7 行').toBe(7)
   expect(info.lanes, '3 条泳道').toBe(3)
-  expect(info.bars, '任务条已渲染').toBeGreaterThan(0)
+  expect(info.bars, '任务条已渲染').toBe(11)
   expect(issues, 'console 零 error/warning').toEqual([])
 })
 
@@ -206,6 +206,6 @@ test('resource-management 资源颜色：卡片色点与泳道任务条/负载�
   // 真浏览器解析 color-mix：三条泳道的条/柱底色应互不相同（证明确实按资源着色，而非统一 primary）
   expect(new Set(Object.values(out.barBg)).size, '三条泳道任务条底色互不相同').toBe(3)
   const loadColors = Object.values(out.loadBg).filter(Boolean)
-  expect(loadColors.length, '负载柱存在（非超载）').toBeGreaterThan(0)
+  expect(loadColors.length, '负载柱存在（非超载）').toBe(3)
   expect(new Set(loadColors).size, '负载柱底色按资源区分').toBeGreaterThan(1)
 })
