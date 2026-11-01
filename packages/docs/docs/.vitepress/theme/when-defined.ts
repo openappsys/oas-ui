@@ -18,3 +18,15 @@ export function whenTagDefined(tag: string, run: () => void): void {
   }
   customElements.whenDefined(tag).then(() => run())
 }
+
+// 元素句柄版守卫：页面里已有 getElementById/querySelector 拿到的元素时，免去手写 tag 字符串
+// （tag 从 el.localName 取，不存在「helper 的 tag 与元素实际标签拼写不一致」这一失效面）。
+// el 为 null（id 不存在/时序取空）直接跳过——与 whenTagDefined 的永不定义语义一致：宁空不猜。
+export function onUpgraded(el: Element | null, fn: () => void): void {
+  if (!el) return
+  if (customElements.get(el.localName)) {
+    fn()
+    return
+  }
+  customElements.whenDefined(el.localName).then(() => fn())
+}

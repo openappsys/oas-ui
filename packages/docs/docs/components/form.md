@@ -399,6 +399,9 @@
 
 <script setup>
 import { onMounted } from 'vue'
+// 升级守卫共享 helper：oas-* property 写入必须晚于组件定义（升级前写入会产生自有属性、
+// 遮蔽升级后的 setter，数据静默丢失）。静态防回流见 packages/docs/prop-write-timing.test.ts
+import { onUpgraded } from '../.vitepress/theme/when-defined'
 onMounted(() => {
   // 受控同步：把文本类字段的输入写回 value 属性
   for (const id of ['form-basic', 'form-full', 'form-validate', 'form-length', 'form-skip', 'form-event', 'form-grid', 'form-align', 'form-inline-login', 'form-inline-search', 'form-size-colon', 'form-help-icon', 'form-vmessages']) {
@@ -523,9 +526,10 @@ onMounted(() => {
     if (e.target?.textContent?.includes('重置')) initialOut.textContent = 'reset() 已执行（回初始值，不派发事件）'
   })
 
-  // 自定义校验函数：validator 走 rules property 通道（函数不可 JSON 序列化）
+  // 自定义校验函数：validator 走 rules property 通道（函数不可 JSON 序列化）。
+  // rules 是复杂 property：必须等 oas-form 升级后再写（升级前直写会遮蔽 setter，数据静默丢失）
   const validatorForm = document.getElementById('form-validator')
-  if (validatorForm) {
+  onUpgraded(validatorForm, () => {
     validatorForm.rules = {
       username: [
         { required: true, message: '请输入用户名' },
@@ -538,7 +542,7 @@ onMounted(() => {
         },
       ],
     }
-  }
+  })
   const validatorOut = document.getElementById('form-validator-output')
   validatorForm?.addEventListener('oas-submit', (e) => {
     validatorOut.textContent = `oas-submit: ${JSON.stringify(e.detail.values)}`
@@ -562,14 +566,14 @@ onMounted(() => {
     const { name, value, values } = e.detail
     valuesOut.textContent = `最近变化：${name} = ${value || '（空）'}；全表：${JSON.stringify(values)}`
   })
-  // 自定义校验文案（validate-messages property 通道，覆盖 locale 默认）
+  // 自定义校验文案（validate-messages property 通道，覆盖 locale 默认；同 rules：等升级后再写）
   const vmForm = document.getElementById('form-vmessages')
-  if (vmForm) {
+  onUpgraded(vmForm, () => {
     vmForm.validateMessages = {
       required: '用户名不能为空',
       minLength: '用户名至少 ${min} 个字符',
     }
-  }
+  })
 })
 </script>
 

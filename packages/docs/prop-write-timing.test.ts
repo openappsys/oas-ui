@@ -15,9 +15,16 @@
 //  - 只拦「同步加载路径」：顶层、onMounted 回调体、以及被同步路径调用的具名函数体。
 //    事件回调 / setTimeout / rAF / .then / Observer 回调里的写入执行时机必然晚于组件定义
 //    （用户交互/异步边界之后），不报——「已升级元素不得误伤」。
-//  - whenTagDefined('tag', () => {...}) 守卫块内不报；async 函数体内 `await
-//    customElements.whenDefined(...)` / `await Promise.all([...whenDefined...])` 之后的写入不报。
+//  - 守卫 helper 块内不报：whenTagDefined('tag', () => {...}) / onUpgraded(el, () => {...})
+//    （theme/when-defined.ts）；async 函数体内 `await customElements.whenDefined(...)`
+//    / `await Promise.all([...whenDefined...])` / `await import('@oas-ui/ui')` 之后的写入不报。
 //  - 附带校验：whenTagDefined 的 tag 必须真实出现在本页 HTML 里（防拼写错误静默空 demo）。
+//
+// 解析前处理（行号/字节长度保持不变）：①代码围栏 → 等量换行；②内联代码 span（`...`）→
+// 等量空格。②的教训：form.md 散文「一个 `<script>` 块统一挂接」里的内联 <script> 曾被
+// script 剥离正则误认为真脚本开头、惰性吞到 570+ 行的真 </script>——夹在中间的 demo HTML
+// 全部从 id 表消失、真脚本体从未被扫描，validatorForm.rules / vmForm.validateMessages
+// 两处同步裸写因此漏报（2026-11 批次修复）。
 import { readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, test } from 'vitest'
@@ -59,10 +66,13 @@ const NATIVE_PROPS = new Set([
 /** 提取 md 里的 <script> 块（返回 { code, startLine }），并同时返回剥掉 script/代码围栏后的 HTML 文本 */
 function extractScripts(content: string): { scripts: Array<{ code: string; startLine: number }>; html: string } {
   const scripts: Array<{ code: string; startLine: number }> = []
-  // 先把代码围栏替换为「等量换行」的中间串（行数不变、字节数变）：后续提取 script 与
-  // 绝对行号计算必须都用同一中间串——offset 是中间串里的位置，混用原始 content 会在
-  // 「script 前有代码围栏」时行号错位（围栏正文字节被删，offset 比原始位置小）。
-  const intermediate = content.replace(/```[\s\S]*?```/g, (m) => '\n'.repeat(m.split('\n').length - 1))
+  // 先把代码围栏替换为「等量换行」、内联代码 span 替换为「等量空格」的中间串（行数不变）：
+  // 后续提取 script 与绝对行号计算必须都用同一中间串——offset 是中间串里的位置，混用原始
+  // content 会在「script 前有围栏/散文」时行号错位。内联 span 必须剥离：散文里 `` `<script>` ``
+  // 这类字面样例会劫持 script 剥离正则（惰性吞到真 </script>），见文件头②的 form.md 教训。
+  const intermediate = content
+    .replace(/```[\s\S]*?```/g, (m) => '\n'.repeat(m.split('\n').length - 1))
+    .replace(/`[^`\n]*`/g, (m) => ' '.repeat(m.length))
   const html = intermediate.replace(/<script[^>]*>[\s\S]*?<\/script>/g, (m, offset: number) => {
     // 无捕获组：replace 回调第 2 参即匹配起点 offset（此前误取 rest 末位的整体字符串，startLine 恒 1）
     scripts.push({
@@ -101,8 +111,8 @@ function resolveTargetLiteral(arg: string, idTags: Map<string, string>): string 
 /** 判断行是否引入「异步/守卫」回调作用域（写入执行时机必然晚于组件定义） */
 const ASYNC_INTRO_RE =
   /\.addEventListener\s*\(|\b(?:setTimeout|setInterval|requestAnimationFrame|queueMicrotask)\s*\(|\.then\s*\(|\.finally\s*\(|new\s+(?:Mutation|Resize|Intersection|Performance)Observer\s*\(|\.observe\s*\(|\.catch\s*\(/
-// whenTagDefined('tag', () => { ——共享守卫 helper（theme/when-defined.ts）
-const HELPER_GUARD_RE = /whenTagDefined\s*\(\s*['"][^'"]+['"]\s*,/
+// whenTagDefined('tag', () => { / onUpgraded(el, () => { ——共享守卫 helper（theme/when-defined.ts）
+const HELPER_GUARD_RE = /whenTagDefined\s*\(\s*['"][^'"]+['"]\s*,|\bonUpgraded\s*\([^,]*,/
 
 /** 扫描单个 script 块，返回裸写 findings */
 export function scanScript(
@@ -273,8 +283,8 @@ describe('docs demo 升级前裸 property 写入防回流', () => {
     expect(
       all,
       `发现升级前裸 property 写入（未升级元素上写 property 会遮蔽 setter，数据静默丢失）。\n` +
-        `修复：用 .vitepress/theme/when-defined.ts 的 whenTagDefined('tag', () => {...}) 包裹，\n` +
-        `或移入事件回调/whenDefined 之后；详情见文件头判定口径。\n` +
+        `修复：用 .vitepress/theme/when-defined.ts 的 whenTagDefined('tag', () => {...}) 或\n` +
+        `onUpgraded(el, () => {...}) 包裹，或移入事件回调/whenDefined 之后；详情见文件头判定口径。\n` +
         all.map((f) => `${f.file}:${f.line} [${f.prop}] ${f.text}（${f.receiver}）`).join('\n'),
     ).toEqual([])
   })
@@ -492,5 +502,59 @@ describe('docs demo 升级前裸 property 写入防回流', () => {
       '',
     ].join('\n')
     expect(scanMarkdown(asyncFn, 'fixture'), '事件回调内定义并调用的函数体不报').toEqual([])
+  })
+
+  test('自测：散文内联代码里的 `<script>` 不得劫持 script 剥离（form.md 曾致守卫分析全盲）', () => {
+    // 散文行的 `` `<script>` `` 若不剥离，会被 script 剥离正则当作真脚本开头、惰性吞到
+    // 真 </script>——真脚本体从未被扫描，同步裸写漏报（修复前本 fixture 判 0，属假绿）
+    const page = [
+      '受控同步与事件监听（一个 `<script>` 块统一挂接）：',
+      '',
+      '<oas-form id="fx"></oas-form>',
+      '',
+      '<script setup>',
+      'import { onMounted } from "vue"',
+      'onMounted(() => {',
+      '  const el = document.getElementById("fx")',
+      '  if (el) el.rules = { a: 1 }',
+      '})',
+      '</script>',
+      '',
+    ].join('\n')
+    const hits = scanMarkdown(page, 'fixture')
+    expect(hits.length, '散文内联 <script> 之后真脚本里的同步裸写必须判红').toBe(1)
+    expect(hits[0]!.prop).toBe('rules')
+  })
+
+  test('自测：onUpgraded(el, () => {...}) 守卫块内不报（theme/when-defined.ts 元素句柄版）', () => {
+    const page = [
+      '<oas-form id="fy"></oas-form>',
+      '<script setup>',
+      'import { onMounted } from "vue"',
+      'import { onUpgraded } from "../.vitepress/theme/when-defined"',
+      'onMounted(() => {',
+      '  const el = document.getElementById("fy")',
+      '  onUpgraded(el, () => {',
+      '    el.rules = { a: 1 }',
+      '  })',
+      '})',
+      '</script>',
+      '',
+    ].join('\n')
+    expect(scanMarkdown(page, 'fixture'), 'onUpgraded 守卫块内的复杂 property 写入不报').toEqual([])
+
+    const inline = [
+      '<oas-form id="fz"></oas-form>',
+      '<script setup>',
+      'import { onMounted } from "vue"',
+      'import { onUpgraded } from "../.vitepress/theme/when-defined"',
+      'onMounted(() => {',
+      '  const el = document.getElementById("fz")',
+      '  if (el) onUpgraded(el, () => (el.rules = { a: 1 }))',
+      '})',
+      '</script>',
+      '',
+    ].join('\n')
+    expect(scanMarkdown(inline, 'fixture'), 'onUpgraded 单表达式守卫同样不报').toEqual([])
   })
 })

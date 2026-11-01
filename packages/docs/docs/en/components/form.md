@@ -399,6 +399,10 @@ Script wiring (controlled sync + event feedback for each demo):
 
 <script setup>
 import { onMounted } from 'vue'
+// Shared upgrade guard: oas-* property writes must happen after the element is defined
+// (writing before upgrade creates an own property that shadows the setter — data silently lost).
+// Static anti-regression scan: packages/docs/prop-write-timing.test.ts
+import { onUpgraded } from '../../.vitepress/theme/when-defined'
 onMounted(() => {
   // Controlled sync: write text-field input back to the value attribute
   for (const id of ['form-basic', 'form-full', 'form-validate', 'form-length', 'form-skip', 'form-event', 'form-grid', 'form-align', 'form-inline-login', 'form-inline-search', 'form-size-colon', 'form-help-icon', 'form-vmessages']) {
@@ -524,9 +528,11 @@ onMounted(() => {
     if (e.target?.textContent?.includes('Reset')) initialOut.textContent = 'reset() done (back to initial values, no events dispatched)'
   })
 
-  // Custom validation function: validator goes through the rules property channel (functions are not JSON-serializable)
+  // Custom validation function: validator goes through the rules property channel (functions
+  // are not JSON-serializable). rules is a complex property: it must be written after the
+  // oas-form is upgraded (writing before upgrade shadows the setter — data silently lost).
   const validatorForm = document.getElementById('form-validator')
-  if (validatorForm) {
+  onUpgraded(validatorForm, () => {
     validatorForm.rules = {
       username: [
         { required: true, message: 'Please enter a username' },
@@ -539,7 +545,7 @@ onMounted(() => {
         },
       ],
     }
-  }
+  })
   const validatorOut = document.getElementById('form-validator-output')
   validatorForm?.addEventListener('oas-submit', (e) => {
     validatorOut.textContent = `oas-submit: ${JSON.stringify(e.detail.values)}`
@@ -563,14 +569,15 @@ onMounted(() => {
     const { name, value, values } = e.detail
     valuesOut.textContent = `Latest change: ${name} = ${value || '(empty)'}; all: ${JSON.stringify(values)}`
   })
-  // Custom validation messages (validate-messages property channel, overrides locale defaults)
+  // Custom validation messages (validate-messages property channel, overrides locale defaults;
+  // same as rules: write after upgrade)
   const vmForm = document.getElementById('form-vmessages')
-  if (vmForm) {
+  onUpgraded(vmForm, () => {
     vmForm.validateMessages = {
       required: 'Username is required',
       minLength: 'Username needs at least ${min} characters',
     }
-  }
+  })
 })
 </script>
 
