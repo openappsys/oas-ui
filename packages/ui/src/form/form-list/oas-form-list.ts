@@ -92,6 +92,16 @@ const STYLE = `
   outline: none;
   box-shadow: var(--oas-focus-ring);
 }
+
+@media (forced-colors: active) {
+  /* 强制色下 box-shadow 被 UA 弃用：焦点环回退系统色实线 outline（WCAG 2.4.7） */
+  .remove:focus-visible,
+  .add:focus-visible {
+    outline: 1px solid CanvasText;
+    outline-offset: 1px;
+    box-shadow: none;
+  }
+}
 `
 
 const ADD_ICON_PATH = 'M8 3 L8 13 M3 8 L13 8'

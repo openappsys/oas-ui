@@ -291,6 +291,14 @@ const ROW_STYLE = `
     animation: none;
   }
 }
+@media (forced-colors: active) {
+  /* 行内重命名输入框：基规则压掉 UA outline，强制色下无其他焦点线索 */
+  .rename-input:focus {
+    outline: 1px solid CanvasText;
+    outline-offset: 1px;
+    box-shadow: none;
+  }
+}
 `
 
 const STYLE = `

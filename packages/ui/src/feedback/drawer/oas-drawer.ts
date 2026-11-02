@@ -406,6 +406,14 @@ const STYLE = `
     transition: none;
   }
 }
+/* 强对比模式下 background 被 UA 剥掉（实测透明）→ 拖拽指示条不可见；以系统色实线 outline 代替
+   （outline 不参与布局，指示条位置/宽度与常模一致；对齐 splitter 的既有兜底口径） */
+@media (forced-colors: active) {
+  .rail::after {
+    outline: 1px solid;
+    outline-offset: -1px;
+  }
+}
 `
 
 /** size 预设档位宽度（对齐主流抽屉尺寸；纵向 placement 时映射为高度） */

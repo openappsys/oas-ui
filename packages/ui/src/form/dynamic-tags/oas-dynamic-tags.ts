@@ -294,6 +294,24 @@ input[hidden] {
     transform: translateY(-50%);
   }
 }
+
+@media (forced-colors: active) {
+  /* 强制色下 box-shadow 被 UA 弃用：焦点环回退系统色实线 outline（WCAG 2.4.7） */
+  .tag-remove:focus-visible,
+  .tag-sort:focus-visible,
+  input:focus,
+  .clear:focus-visible {
+    outline: 1px solid CanvasText;
+    outline-offset: 1px;
+    box-shadow: none;
+  }
+  /* 原地编辑框：基规则压掉 UA outline，强制色下无其他焦点线索 */
+  .tag-edit:focus {
+    outline: 1px solid CanvasText;
+    outline-offset: 1px;
+    box-shadow: none;
+  }
+}
 `
 
 const CLOSE_ICON = `

@@ -652,6 +652,24 @@ const STYLE = `
 .crop-btn.is-primary:hover {
   background: color-mix(in srgb, var(--oas-color-primary) 88%, var(--oas-color-bg));
 }
+
+@media (forced-colors: active) {
+  /* 强制色下 box-shadow 被 UA 弃用：焦点环回退系统色实线 outline（WCAG 2.4.7） */
+  .zone:focus-visible,
+  .item .name-btn:focus-visible,
+  .item .remove:focus-visible,
+  .item .act-inline:focus-visible,
+  .card .remove:focus-visible,
+  .card .actions .act:focus-visible,
+  .preview-close:focus-visible,
+  .crop-frame:focus-visible,
+  .crop-zoom-btn:focus-visible,
+  .crop-btn:focus-visible {
+    outline: 1px solid CanvasText;
+    outline-offset: 1px;
+    box-shadow: none;
+  }
+}
 `
 
 /** 回显记录按扩展名判断图片（File 走 MIME type） */

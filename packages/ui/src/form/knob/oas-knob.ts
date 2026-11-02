@@ -180,6 +180,14 @@ const STYLE = `
 .value[hidden] {
   display: none;
 }
+@media (forced-colors: active) {
+  /* 焦点环画在 .frame 上（host 自身 outline 被基规则压掉），强制色下 box-shadow 被弃用 */
+  :host(:focus-visible) .frame {
+    outline: 1px solid CanvasText;
+    outline-offset: 1px;
+    box-shadow: none;
+  }
+}
 `
 
 /** 拖拽手势状态（null = 未在拖） */

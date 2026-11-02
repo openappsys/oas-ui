@@ -757,6 +757,15 @@ a[part='button'].has-color:where(:not(.filled):not(.outlined):not(.dashed):not(.
 :host([data-compound]) [part='description'][hidden] {
   display: none;
 }
+
+@media (forced-colors: active) {
+  /* 强制色下 box-shadow 被 UA 弃用：焦点环回退系统色实线 outline（WCAG 2.4.7） */
+  button:focus-visible {
+    outline: 1px solid CanvasText;
+    outline-offset: 1px;
+    box-shadow: none;
+  }
+}
 `
 
 export class OASButton extends OASElement {

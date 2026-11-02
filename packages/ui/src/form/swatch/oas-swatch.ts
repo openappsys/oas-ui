@@ -66,6 +66,15 @@ const STYLE = `
 :host([data-selected]) .swatch:hover:not(:disabled) {
   box-shadow: 0 0 0 2px var(--oas-color-bg), 0 0 0 4px var(--oas-color-primary-hover);
 }
+
+@media (forced-colors: active) {
+  /* 强制色下 box-shadow 被 UA 弃用：焦点环回退系统色实线 outline（WCAG 2.4.7） */
+  .swatch:focus-visible {
+    outline: 1px solid CanvasText;
+    outline-offset: 1px;
+    box-shadow: none;
+  }
+}
 `
 
 /** 颜色属性统一协议（ui-spec §4.1）的预设名 */

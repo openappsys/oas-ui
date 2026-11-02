@@ -1127,6 +1127,26 @@ tr.group-header .toggle {
 .cell-tooltip[data-visible='true'] {
   display: block;
 }
+
+@media (forced-colors: active) {
+  /* 强制色下 box-shadow 被 UA 弃用：焦点环回退系统色实线 outline（WCAG 2.4.7） */
+  .export-btn:focus-visible,
+  .row-drag-handle:focus-visible,
+  :host([grid-navigation]) .table-scroll:focus-visible,
+  .filter-btn:focus-visible,
+  .action-btn:focus-visible,
+  .type-link:focus-visible {
+    outline: 1px solid CanvasText;
+    outline-offset: 1px;
+    box-shadow: none;
+  }
+  td.editing .cell-editor:focus,
+  :host([grid-navigation]) tbody tr.row td:focus {
+    outline: 1px solid CanvasText;
+    outline-offset: -1px;
+    box-shadow: none;
+  }
+}
 `
 
 const CHECK_CELL_WIDTH = 40

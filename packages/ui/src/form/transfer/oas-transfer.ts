@@ -95,6 +95,15 @@ const OPTION_STYLE = `
     height: var(--oas-touch-target-min, 44px);
   }
 }
+
+@media (forced-colors: active) {
+  /* 强制色下 box-shadow 被 UA 弃用：焦点环回退系统色实线 outline（WCAG 2.4.7） */
+  .option .sort-btn:focus-visible {
+    outline: 1px solid CanvasText;
+    outline-offset: 1px;
+    box-shadow: none;
+  }
+}
 `
 
 /** 虚拟模式注入 oas-virtual-list 的 shadow：选项行占满 item、整行可点 */
@@ -341,6 +350,21 @@ ${OPTION_STYLE}
   .actions {
     flex-direction: row;
     justify-content: center;
+  }
+}
+
+@media (forced-colors: active) {
+  /* 强制色下 box-shadow 被 UA 弃用：焦点环回退系统色实线 outline（WCAG 2.4.7） */
+  .panel-foot button:focus-visible,
+  .actions button:focus-visible {
+    outline: 1px solid CanvasText;
+    outline-offset: 1px;
+    box-shadow: none;
+  }
+  .search-input:focus {
+    outline: 1px solid CanvasText;
+    outline-offset: -1px;
+    box-shadow: none;
   }
 }
 `

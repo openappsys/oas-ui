@@ -159,6 +159,26 @@ const STYLE = `
 }
 :host([data-wrap]) .code { white-space: pre-wrap; overflow-wrap: anywhere; }
 :host([data-wrap]) .row { height: auto; min-height: var(--oas-diff-viewer-row-height, 22px); line-height: 1.5; }
+
+@media (forced-colors: active) {
+  /* 强制色下 box-shadow 被 UA 弃用：焦点环回退系统色实线 outline（WCAG 2.4.7） */
+  .btn:focus-visible {
+    outline: 1px solid CanvasText;
+    outline-offset: 1px;
+    box-shadow: none;
+  }
+  .fold-btn:focus-visible {
+    outline: 1px solid CanvasText;
+    outline-offset: -1px;
+    box-shadow: none;
+  }
+  /* 滚动视口原用 inset 焦点环 */
+  .viewport:focus-visible {
+    outline: 1px solid CanvasText;
+    outline-offset: -1px;
+    box-shadow: none;
+  }
+}
 `
 
 function clampInt(raw: string, fallback: number, min: number): number {

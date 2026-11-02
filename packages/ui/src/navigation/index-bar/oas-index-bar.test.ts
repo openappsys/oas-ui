@@ -623,6 +623,28 @@ describe('OASIndexBar', () => {
     expect(letters(el)[0]!.textContent).toBe('<b>T</b>')
   })
 
+  // ---------- 焦点环 ----------
+
+  it('focus-visible 焦点环走 box-shadow 环（outline: var(--oas-focus-ring) 是非法声明会被 UA 丢弃）', () => {
+    const el = mount()
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    // --oas-focus-ring 是 box-shadow 值（0 0 0 2px …），作 outline 值非法 → UA 丢弃 → 常规模式下
+    // 从来没有焦点环。断言「用 box-shadow 环 + outline: none」而不是具体颜色（happy-dom 不解析 var）
+    for (const selector of ['.item:focus-visible', '.letter:focus-visible']) {
+      const block = css.slice(css.indexOf(`${selector} {`))
+      const rule = block.slice(0, block.indexOf('}'))
+      expect(rule, `${selector} 用 box-shadow 焦点环`).toContain('box-shadow: var(--oas-focus-ring)')
+      expect(rule, `${selector} 关闭 outline 占位`).toContain('outline: none')
+      expect(css, `${selector} 不得再把 box-shadow 值当 outline 用`).not.toMatch(/outline:\s*var\(--oas-focus-ring\)/)
+    }
+    // 强制色兜底：box-shadow 被 UA 弃用 → 系统色实线 outline
+    const forced = css.slice(css.indexOf('@media (forced-colors: active)'))
+    expect(forced).toContain('.item:focus-visible')
+    expect(forced).toContain('.letter:focus-visible')
+    expect(forced).toContain('outline: 1px solid CanvasText')
+    expect(forced).toContain('box-shadow: none')
+  })
+
   // ---------- DSD 真水合 ----------
 
   it('DSD 真水合：快照接管（shadow 不重建、指纹移除、结构保留），水合后属性变化可更新', () => {

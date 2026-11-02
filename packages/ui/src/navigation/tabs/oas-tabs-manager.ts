@@ -118,6 +118,17 @@ const MANAGER_STYLE = `
 :host(.oas-tabs--vertical) .tab--drag-over {
   box-shadow: inset 0 2px 0 var(--oas-color-primary);
 }
+
+@media (forced-colors: active) {
+  /* 强制色下 box-shadow 被 UA 弃用：焦点环回退系统色实线 outline（WCAG 2.4.7） */
+  /* 右键菜单项原以 hover 底色标示焦点（强制色下底色被接管）：复用原选择器 */
+  .ctx-item:hover,
+  .ctx-item:focus-visible {
+    outline: 1px solid CanvasText;
+    outline-offset: -1px;
+    box-shadow: none;
+  }
+}
 `
 
 /** manager 能力 controller：editable 重命名 + contextmenu 右键菜单 + sortable 拖拽排序 */

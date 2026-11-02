@@ -469,6 +469,16 @@ pre.code {
 .inline.solid .tok-tag {
   color: color-mix(in srgb, var(--oas-color-danger-text) 30%, var(--oas-code-on-color, var(--oas-color-bg)));
 }
+
+@media (forced-colors: active) {
+  /* 强制色下 box-shadow 被 UA 弃用：焦点环回退系统色实线 outline（WCAG 2.4.7） */
+  .copy-btn:focus-visible,
+  .more-btn:focus-visible {
+    outline: 1px solid CanvasText;
+    outline-offset: 1px;
+    box-shadow: none;
+  }
+}
 `
 
 /**

@@ -810,6 +810,12 @@ svg.links .temp-link {
   .bar-progress {
     border-inline-end: 2px solid;
   }
+  /* 行内重命名输入框：基规则压掉 UA outline，强制色下无其他焦点线索 */
+  .rename-input:focus {
+    outline: 1px solid CanvasText;
+    outline-offset: 1px;
+    box-shadow: none;
+  }
 }
 `
 

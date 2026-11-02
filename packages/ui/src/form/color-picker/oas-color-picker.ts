@@ -516,6 +516,28 @@ const STYLE = `
   width: 20px;
   height: 20px;
 }
+
+@media (forced-colors: active) {
+  /* 强制色下 box-shadow 被 UA 弃用：焦点环回退系统色实线 outline（WCAG 2.4.7） */
+  .trigger:focus-visible,
+  .recent-swatch:focus-visible,
+  .preset:focus-visible,
+  .grad-stop:focus-visible,
+  .sv2d:focus-visible,
+  .hue:focus-visible,
+  .footer-button:focus-visible {
+    outline: 1px solid CanvasText;
+    outline-offset: 1px;
+    box-shadow: none;
+  }
+  /* 数值 / HEX 输入框原用边框换色标示焦点（强制色下描边色被系统接管） */
+  .row input[type='number']:focus,
+  .hex-input:focus {
+    outline: 1px solid CanvasText;
+    outline-offset: 1px;
+    box-shadow: none;
+  }
+}
 `
 
 /** 图标为原始绘制（非字体图标/非位图），随 currentColor 换色 */

@@ -262,6 +262,18 @@ textarea {
 .action.cancel:hover:not(:disabled) {
   color: var(--oas-color-danger);
 }
+
+@media (forced-colors: active) {
+  /* 强制色下 box-shadow 被 UA 弃用：焦点环回退系统色实线 outline（WCAG 2.4.7） */
+  .display:focus-visible,
+  .trigger-icon:focus-visible,
+  :is(input, textarea):focus,
+  .action:focus-visible {
+    outline: 1px solid CanvasText;
+    outline-offset: 1px;
+    box-shadow: none;
+  }
+}
 `
 
 const OK_ICON = `

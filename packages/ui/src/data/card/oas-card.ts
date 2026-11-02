@@ -336,6 +336,22 @@ const STYLE = `
   height: 11px;
   color: var(--oas-color-text-on-primary);
 }
+
+@media (forced-colors: active) {
+  /* 强制色下 box-shadow 被 UA 弃用：焦点环回退系统色实线 outline（WCAG 2.4.7） */
+  :host([clickable]:focus-visible) .card,
+  :host([selectable]:focus-visible) .card {
+    outline: 1px solid CanvasText;
+    outline-offset: 1px;
+    box-shadow: none;
+  }
+  /* href 模式：锚点自身 outline 被压掉，焦点环画在 .card 层 */
+  .card-link:focus-visible .card {
+    outline: 1px solid CanvasText;
+    outline-offset: 1px;
+    box-shadow: none;
+  }
+}
 `
 
 /** 整卡点击的排除选择器：命中这些交互元素时不派发 oas-click（避免与内部按钮/链接冲突） */

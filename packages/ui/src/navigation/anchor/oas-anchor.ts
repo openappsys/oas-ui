@@ -165,6 +165,15 @@ nav.size-large [part='link'] {
     align-items: center;
   }
 }
+@media (forced-colors: active) {
+  /* 强制色下 box-shadow 被 UA 弃用：焦点环回退系统色实线 outline（WCAG 2.4.7）。
+     注：基规则里的 outline 值为阴影语法（无效），此处在强制色下给出可见兜底 */
+  [part='link']:focus-visible {
+    outline: 1px solid CanvasText;
+    outline-offset: 2px;
+    box-shadow: none;
+  }
+}
 `
 
 /** 滚动落点对齐方式 */

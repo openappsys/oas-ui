@@ -539,6 +539,17 @@ ${NODE_STYLE}
 /* 触摸目标抬升：coarse pointer 下树节点行最小高度 ≥44px（token 开口可调）。
    只进 tree-select 自身 shadow——虚拟模式行高由 vlist 布局数学固定，不在 vlist 注入 */
 ${TOUCH_TARGET_CSS}
+
+@media (forced-colors: active) {
+  /* 强制色下 box-shadow 被 UA 弃用：焦点环回退系统色实线 outline（WCAG 2.4.7） */
+  .trigger:focus-visible,
+  .clear-btn:focus-visible,
+  .search-input:focus {
+    outline: 1px solid CanvasText;
+    outline-offset: 1px;
+    box-shadow: none;
+  }
+}
 `
 
 /**

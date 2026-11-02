@@ -258,6 +258,16 @@ const STYLE = `
   display: block;
   fill: currentColor;
 }
+
+@media (forced-colors: active) {
+  /* 强制色下 box-shadow 被 UA 弃用：焦点环回退系统色实线 outline（WCAG 2.4.7） */
+  .action:focus-visible,
+  .close-btn:focus-visible {
+    outline: 1px solid CanvasText;
+    outline-offset: 1px;
+    box-shadow: none;
+  }
+}
 `
 
 /** 插槽是否有真实内容（元素节点或非空白文本）——slot 覆盖默认图标的判空依据 */

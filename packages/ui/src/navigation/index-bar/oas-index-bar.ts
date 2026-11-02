@@ -100,8 +100,8 @@ const STYLE = `
   background: var(--oas-color-bg-hover);
 }
 .item:focus-visible {
-  outline: var(--oas-focus-ring);
-  outline-offset: -2px;
+  outline: none;
+  box-shadow: var(--oas-focus-ring);
 }
 .bar {
   flex: 0 0 auto;
@@ -136,8 +136,8 @@ const STYLE = `
   color: var(--oas-index-bar-letter-active-color, var(--oas-color-primary));
 }
 .letter:focus-visible {
-  outline: var(--oas-focus-ring);
-  outline-offset: 1px;
+  outline: none;
+  box-shadow: var(--oas-focus-ring);
 }
 .letter.active {
   color: var(--oas-index-bar-letter-active-color, var(--oas-color-primary));
@@ -147,6 +147,15 @@ const STYLE = `
 @media (prefers-reduced-motion: reduce) {
   .letter {
     transition: none;
+  }
+}
+@media (forced-colors: active) {
+  /* 强制色下 box-shadow 被 UA 弃用：焦点环回退系统色实线 outline（WCAG 2.4.7） */
+  .item:focus-visible,
+  .letter:focus-visible {
+    outline: 1px solid CanvasText;
+    outline-offset: 1px;
+    box-shadow: none;
   }
 }
 `

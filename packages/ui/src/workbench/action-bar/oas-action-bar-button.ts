@@ -82,6 +82,15 @@ const STYLE = `
 }
 /* light 表体下的按钮/井底色：操作栏在 light 主题段下发深色淡底变量（见 oas-action-bar），
    此处保持 on-ink 兜底——宿主给 --oas-action-bar-button-bg 可整体覆写 */
+
+@media (forced-colors: active) {
+  /* 强制色下 box-shadow 被 UA 弃用：焦点环回退系统色实线 outline（WCAG 2.4.7） */
+  .btn:focus-visible {
+    outline: 1px solid CanvasText;
+    outline-offset: 1px;
+    box-shadow: none;
+  }
+}
 `
 
 /**

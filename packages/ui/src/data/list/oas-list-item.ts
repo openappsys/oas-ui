@@ -156,6 +156,21 @@ const STYLE = `
 .row-link:focus-visible {
   box-shadow: inset var(--oas-focus-ring);
 }
+
+@media (forced-colors: active) {
+  /* 强制色下 box-shadow 被 UA 弃用：焦点环回退系统色实线 outline（WCAG 2.4.7） */
+  :host([data-clickable]:focus-visible) {
+    outline: 1px solid CanvasText;
+    outline-offset: -1px;
+    box-shadow: none;
+  }
+  /* href 模式：铺满行的链接覆盖层原用 inset 焦点环 */
+  .row-link:focus-visible {
+    outline: 1px solid CanvasText;
+    outline-offset: -1px;
+    box-shadow: none;
+  }
+}
 `
 
 /** 行内交互元素判定选择器（命中则不触发行点击；含原生控件、ARIA 控件角色与可编辑区） */
