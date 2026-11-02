@@ -72,7 +72,7 @@ test('tooltip virtual 坐标跟随：鼠标移入画布 tooltip 跟随显示、�
       content: tip.textContent,
       placement: tip.getAttribute('data-placement'),
       top: parseFloat(tip.style.top),
-      left: parseFloat(tip.style.left),
+      tipCenterX: (tb.left + tb.right) / 2,
       inViewport: tb.top >= 0 && tb.left >= 0 && tb.bottom <= window.innerHeight && tb.right <= window.innerWidth,
     }
   })
@@ -80,8 +80,16 @@ test('tooltip virtual 坐标跟随：鼠标移入画布 tooltip 跟随显示、�
   expect(r.status, 'demo 状态 tag 应有可见反馈').toContain('跟随')
   expect(r.content).toContain('坐标') // 内容实时更新
   expect(r.placement).toBe('bottom')
-  expect(r.top, 'tooltip 应定位在鼠标下方').toBe(383)
-  expect(r.left).toBeCloseTo(367.34, 0)
+  // 语义不变量（锚点 = 光标所在的虚拟点）：placement=bottom 时 tip 顶边 = 光标 y + 10px 间距，
+  // 且在水平方向以光标为中心。不锁绝对像素——画布落位/行高跨 OS 有 1px 级差异（CI 384 / 本机 383），
+  // 那是同一语义的亚像素表达；±2 只吸收取整，不掩盖「贴错侧/未跟随」这类真缺陷。
+  const gapBelowCursor = r.top - (box!.y + 40)
+  expect(
+    gapBelowCursor,
+    `tooltip 应紧跟光标下方（设计间距 10px，实测 ${gapBelowCursor.toFixed(2)}px）`,
+  ).toBeGreaterThanOrEqual(8)
+  expect(gapBelowCursor).toBeLessThanOrEqual(12)
+  expect(r.tipCenterX, 'tooltip 应水平居中于光标（虚拟锚点）').toBeCloseTo(box!.x + 60, 0)
   expect(r.inViewport, 'tooltip 不应溢出视口').toBe(true)
 
   // 移出画布 → tooltip 隐藏 + 状态反馈复位

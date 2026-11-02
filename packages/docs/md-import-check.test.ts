@@ -1,12 +1,16 @@
 /**
  * 文档 import 防漂移门禁：扫描 docs 站 markdown 源码（含 zh/en 与 guide）代码块里的
- * `@oas-ui/*` import specifier，逐条按各 workspace 包 package.json#exports 解析到
- * 构建产物并验证真实存在（与 scripts/check-exports.mjs 同一套解析口径）。
+ * `@oas-ui/*` import specifier，逐条按各 workspace 包 package.json#exports 解析，
+ * 并校验解析结果对应**真实源码模块**（src/ 下存在）。
  *
  * 背景（C1 复发预防）：helper 分包文档曾把 `@oas-ui/ui/data/resource/cost` 误写成
- * `@oas-ui/ui/resource/cost`（漏掉家族段 `data/`），exports 通配解析不到 dist 文件，
+ * `@oas-ui/ui/resource/cost`（漏掉家族段 `data/`），exports 通配解析不到对应模块，
  * 消费者照文档 import 会直接运行时报错——源码级 exports:check 只扫 .ts/.mts/.tsx，
  * 覆盖不到 md 里的示例，故此处单独立门禁。
+ *
+ * 注意（CI 时序）：`pnpm test` 跑在 `pnpm build` 之前，因此本门禁**不得依赖 dist 产物**——
+ * 只校验 exports 映射 + 源码模块存在性；dist 实际文件存在性由 build 期的
+ * scripts/check-exports.mjs（exports:check）兜底。两者职责互补，都不缺。
  */
 import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
@@ -66,13 +70,29 @@ export function resolveSpecifier(specifier: string): string | null {
   }
   return null
 }
-/** 单条 specifier 判定：可解析且目标产物真实存在时返回 null，否则返回人读的失败原因 */
+/** exports 目标路径 → 包内「应存在源码」的候选相对路径（构建前即可判定，不看 dist 产物）。
+ *  - dist 目标（`./dist/<sub>.js` / `./dist/types/<sub>.d.ts`）：源码在 `src/<sub>.ts(x)` 或 `src/<sub>/index.ts(x)`
+ *  - 非 dist 目标（如 `./index.css`、`./glass.css`）：源码就在包根同名路径
+ */
+export function sourceCandidates(target: string): string[] {
+  const rel = target.replace(/^\.\//, '')
+  if (rel.startsWith('dist/')) {
+    const stem = rel.slice('dist/'.length).replace(/\.d\.ts$|\.js$|\.mjs$|\.css$/, '')
+    return ['ts', 'tsx', 'mts', 'css', 'json'].flatMap((ext) => [`src/${stem}.${ext}`, `src/${stem}/index.${ext}`])
+  }
+  const stem = rel.replace(/\.js$|\.css$/, '')
+  return [rel, `src/${rel}`, `src/${stem}.ts`, `src/${stem}/index.ts`]
+}
+
+/** 单条 specifier 判定：可解析且对应源码模块存在时返回 null，否则返回人读的失败原因 */
 export function checkSpecifier(specifier: string): string | null {
   const target = resolveSpecifier(specifier)
   if (target == null) return `exports 无匹配（包未登记或路径拼错）`
   const pkgName = /^(@oas-ui\/[^/]+)/.exec(specifier)![1]!
-  const absolute = join(PACKAGES.get(pkgName)!, target)
-  if (!existsSync(absolute)) return `→ ${target} 不存在（请先 pnpm build，或修正文档路径）`
+  const pkgDir = PACKAGES.get(pkgName)!
+  if (!sourceCandidates(target).some((rel) => existsSync(join(pkgDir, rel)))) {
+    return `→ ${target} 对应的源码模块不存在（请修正文档路径）`
+  }
   return null
 }
 
@@ -104,10 +124,11 @@ function walkMarkdown(dir: string, out: string[] = []): string[] {
   return out
 }
 
-describe('docs md import 防漂移（@oas-ui/* specifier 按 package.json#exports 可解析）', () => {
+describe('docs md import 防漂移（@oas-ui/* specifier 按 package.json#exports 解析到真实源码模块）', () => {
   it('错误形态自验：C1 的 `@oas-ui/ui/resource/cost`（漏 data/ 家族段）必须被判失败，正确路径可解析', () => {
     // RED 自验锚：本用例锁死「文档 import 路径多一段/少一段会被抓出」的判定本身。
-    // 错误形态有两种落点：exports 无匹配，或 `./*` 通配解析到不存在的 dist 文件——都算失败。
+    // 错误形态有两种落点：exports 无匹配，或 `./*` 通配解析到的目标映射不到任何源码模块——都算失败。
+    // （判定走源码而非 dist：CI 的 test job 跑在 build 之前。）
     expect(checkSpecifier('@oas-ui/ui/resource/cost')).toMatch(/exports 无匹配|不存在/)
     expect(checkSpecifier('@oas-ui/ui/resource/pool')).toMatch(/exports 无匹配|不存在/)
     expect(checkSpecifier('@oas-ui/ui/data/resource/cost')).toBeNull()
@@ -121,7 +142,7 @@ describe('docs md import 防漂移（@oas-ui/* specifier 按 package.json#export
     expect(checkSpecifier('@oas-ui/nonexistent/x')).toMatch(/exports 无匹配|不存在/)
   })
 
-  it('全部 md 源码里的 @oas-ui import specifier 均可按 exports 解析到真实产物', () => {
+  it('全部 md 源码里的 @oas-ui import specifier 均可按 exports 解析到真实源码模块（构建前可跑）', () => {
     const failures: string[] = []
     for (const file of walkMarkdown(DOCS_DIR)) {
       const md = readFileSync(file, 'utf8')

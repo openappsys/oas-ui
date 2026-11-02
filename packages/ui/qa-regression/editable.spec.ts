@@ -204,10 +204,23 @@ test('editable 多行 hidden 挂载 → 可见：字段高与可见容器直接�
     await nextFrames(4)
     const ta = probe.shadowRoot!.querySelector('textarea') as HTMLTextAreaElement
     const rect = ta.getBoundingClientRect()
-    return { controlHeight, probeStyleHeight: ta.style.height, probeHeight: rect.height, probeWidth: rect.width }
+    return {
+      controlHeight,
+      probeStyleHeight: ta.style.height,
+      probeStyleWidth: ta.style.width,
+      probeHeight: rect.height,
+      probeWidth: rect.width,
+    }
   })
 
-  expect(measured.probeWidth, 'hidden→visible 后编辑框应可见').toBeCloseTo(79.48, 1)
+  // 宽度断言只取下界：两条路径的定宽策略不同——可见挂载会量镜像盒写 px（content 宽 + 余量），
+  // hidden 挂载时镜像量到 0，按组件设计退化为 ch 兜底（ch 的具体像素随 OS 字体不同：CI 81 / 本机 79.48），
+  // 故不能与对照组宽度直接对比。真正要守住的是「可见后有可辨识的输入宽度、没塌成 0」。
+  // 下界 40px ≈ 「第一行」两字以上的可读宽度，远低于两种平台的实测值（79–81）。
+  expect(measured.probeWidth, 'hidden→visible 后编辑框应有可辨识宽度（不塌陷）').toBeGreaterThanOrEqual(40)
+  expect(measured.probeStyleWidth, '宽度应已由组件写入内联值（ch 或 px），不是未同步的默认值').toMatch(
+    /^(\d+(?:\.\d+)?)(px|ch)$/,
+  )
   expect(measured.probeStyleHeight, '量到 0 不得写入 0px 内联高').not.toBe('0px')
   expect(
     Math.abs(measured.probeHeight - measured.controlHeight),

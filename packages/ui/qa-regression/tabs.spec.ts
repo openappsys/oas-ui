@@ -273,10 +273,35 @@ test('tabs more 模式（通用机制）：tab 全渲染不隐藏 + more 下拉�
       ),
     )
     .toBe(true)
-  const dropCount = await page.evaluate(
-    () => document.querySelector('oas-tabs[more]')!.shadowRoot!.querySelectorAll('.more-item').length,
-  )
-  expect(dropCount, 'more 下拉应列出视口外 tab').toBe(8)
+  const more = await page.evaluate(() => {
+    const el = document.querySelector('oas-tabs[more]')!
+    const root = el.shadowRoot!
+    const tablist = root.querySelector('.tablist') as HTMLElement
+    const listRect = tablist.getBoundingClientRect()
+    const viewLeft = listRect.left
+    const viewRight = listRect.left + tablist.clientWidth
+    const tabs = [...root.querySelectorAll<HTMLElement>('[role="tab"][data-value]')]
+    const valueOf = (t: HTMLElement) => t.getAttribute('data-value')
+    // 「视口外集合」由组件标记 data-offview 承载；此处再与真实几何交叉自证：
+    //  - 被标记的 tab 必须贴到/越过可视区某一边（±2px 边界带吸收亚像素与整数取整）；
+    //  - 未标记的 tab 必须完整落在可视区内（同 ±2px 容差）。
+    // 不锁固定条数——「塞得下几个 tab」由字体宽度决定（CI 与本地不同，计数本身就是 OS 依变量）。
+    const geometryMismatch = tabs
+      .filter((t) => {
+        const r = t.getBoundingClientRect()
+        const clipped = r.left < viewLeft + 2 || r.right > viewRight - 2
+        const inside = r.left >= viewLeft - 2 && r.right <= viewRight + 2
+        return t.hasAttribute('data-offview') ? !clipped : !inside
+      })
+      .map(valueOf)
+    const marked = tabs.filter((t) => t.hasAttribute('data-offview')).map(valueOf)
+    const items = [...root.querySelectorAll<HTMLElement>('.more-item')].map((i) => i.getAttribute('data-value'))
+    return { total: tabs.length, marked, items, geometryMismatch }
+  })
+  expect(more.marked.length, '溢出场景必有视口外 tab（下拉非空的前提）').toBeGreaterThanOrEqual(1)
+  expect(more.marked.length, '视口外 tab 数应少于总数（否则不是滚动溢出场景）').toBeLessThan(more.total)
+  expect(more.items, 'more 下拉项应与「视口外 tab 集合」精确一致（含顺序）').toEqual(more.marked)
+  expect(more.geometryMismatch, '视口外标记应与真实几何一致（边界带 ±2px 容差）').toEqual([])
   // 点选最后一个视口外项 → 平滑滚动到可见 + 激活
   const scrollBefore = await page.evaluate(
     () => document.querySelector('oas-tabs[more]')!.shadowRoot!.querySelector('.tablist')!.scrollLeft,

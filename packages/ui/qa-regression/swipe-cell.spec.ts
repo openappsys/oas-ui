@@ -176,12 +176,24 @@ test('swipe-cell 聚焦滚动不误关：视口外 cell 聚焦 actions 按钮（
     document.body.appendChild(el)
     await new Promise((res) => requestAnimationFrame(() => res(null)))
     const btn = el.querySelector('button') as HTMLButtonElement
+    const scrollBefore = window.scrollY
     btn.focus() // 浏览器把视口外按钮滚入视口 → 派发 scroll
     await new Promise((res) => setTimeout(res, 500))
-    return { open: el.hasAttribute('open'), scrollY: window.scrollY }
+    const br = btn.getBoundingClientRect()
+    return {
+      open: el.hasAttribute('open'),
+      scrollBefore,
+      scrollAfter: window.scrollY,
+      btnInViewport: br.top >= -1 && br.bottom <= window.innerHeight + 1,
+    }
   })
-  // 聚焦滚动目标位置的取整与滚动条占位跨浏览器不同（实测 7310–7320）
-  expect(r.scrollY, '已发生聚焦滚动').toBeCloseTo(7315, -2)
+  // 语义不变量（与字体/行高/滚动条占位无关）：聚焦确实把视口外按钮带进了视口。
+  // 不锁具体 scrollY 落点——行高与文档流高度跨 OS 不同（CI 7433–7440 / 本机 7315），
+  // 那些都是「同一语义的不同像素表达」。
+  expect(r.scrollAfter - r.scrollBefore, '已发生聚焦滚动（下界 100 远低于真实位移，仅排除「未滚动」）').toBeGreaterThan(
+    100,
+  )
+  expect(r.btnInViewport, '聚焦后 actions 按钮应落入视口内（聚焦滚动已完成）').toBe(true)
   expect(r.open, '聚焦滚动不应把打开的 cell 误关（键盘可达）').toBe(true)
 })
 

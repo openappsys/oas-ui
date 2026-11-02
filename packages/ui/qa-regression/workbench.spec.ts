@@ -464,12 +464,28 @@ test('statistic-well 全空态宿主级隐藏：data-empty 反射 + 零尺寸（
       }),
     )
     .toEqual({ empty: false, width: expect.any(Number) })
+  const filled = await page.evaluate(() => {
+    const el = document.querySelector('oas-statistic-well[data-empty-probe]')!
+    const root = el.shadowRoot!
+    const well = root.querySelector('[part="well"]') as HTMLElement
+    const value = root.querySelector('[part="well-value"]') as HTMLElement
+    const cs = getComputedStyle(well)
+    return {
+      hostWidth: el.getBoundingClientRect().width,
+      wellWidth: well.getBoundingClientRect().width,
+      valueWidth: value.getBoundingClientRect().width,
+      paddingX: parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight),
+    }
+  })
+  // 语义不变量：胶囊宽 = 数值内容宽 + 左右内边距（贴合内容，无幽灵定宽），宿主盒与胶囊同宽。
+  // 不锁绝对像素——一位数字的渲染宽随 OS 字体不同（CI 25 / 本机 24.42），那是同一语义的像素表达。
+  // 下界 20px = 内边距 16 + 一位数字（tabular-nums），用来排除「塌成 0 宽」的回归。
+  expect(filled.hostWidth, '有内容后井真实占位（胶囊可见）').toBeGreaterThanOrEqual(20)
   expect(
-    await page.evaluate(
-      () => document.querySelector('oas-statistic-well[data-empty-probe]')!.getBoundingClientRect().width,
-    ),
-    '有内容后井真实占位（胶囊可见）',
-  ).toBeCloseTo(24.42, 2)
+    Math.abs(filled.wellWidth - (filled.valueWidth + filled.paddingX)),
+    `胶囊宽(${filled.wellWidth})应为内容宽(${filled.valueWidth.toFixed(2)}) + 左右内边距(${filled.paddingX})`,
+  ).toBeLessThanOrEqual(1)
+  expect(Math.abs(filled.hostWidth - filled.wellWidth), '宿主盒应与胶囊等宽（无额外占位）').toBeLessThanOrEqual(1)
 })
 
 test('task-progress-well 全空态宿主级隐藏：data-empty 反射 + 零尺寸（回归：空井曾恒显 0% + 取消钮占胶囊）', async ({
@@ -514,12 +530,28 @@ test('task-progress-well 全空态宿主级隐藏：data-empty 反射 + 零尺�
       }),
     )
     .toEqual({ empty: false, width: expect.any(Number) })
+  const filled = await page.evaluate(() => {
+    const el = document.querySelector('oas-task-progress-well[data-empty-probe]')!
+    const root = el.shadowRoot!
+    const well = root.querySelector('.well') as HTMLElement
+    const head = root.querySelector('.head') as HTMLElement
+    const cs = getComputedStyle(well)
+    return {
+      hostWidth: el.getBoundingClientRect().width,
+      wellWidth: well.getBoundingClientRect().width,
+      headWidth: head.getBoundingClientRect().width,
+      paddingX: parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight),
+    }
+  })
+  // 语义不变量：胶囊宽 = 头行（标签 + 进度文本 + 取消钮）宽 + 左右内边距（列向 flex 撑到最宽子项）。
+  // 不锁绝对像素——「导出」的文本宽随 OS 字体不同（CI 91 / 本机 91.57），那是同一语义的像素表达。
+  // 下界 60px = 20px 取消钮 + 两段文本 + 间距 + 内边距，用来排除「塌成 0 宽」的回归。
+  expect(filled.hostWidth, '有内容后井真实占位（胶囊可见）').toBeGreaterThanOrEqual(60)
   expect(
-    await page.evaluate(
-      () => document.querySelector('oas-task-progress-well[data-empty-probe]')!.getBoundingClientRect().width,
-    ),
-    '有内容后井真实占位（胶囊可见）',
-  ).toBeCloseTo(91.57, 0)
+    Math.abs(filled.wellWidth - (filled.headWidth + filled.paddingX)),
+    `胶囊宽(${filled.wellWidth})应为头行宽(${filled.headWidth.toFixed(2)}) + 左右内边距(${filled.paddingX})`,
+  ).toBeLessThanOrEqual(1)
+  expect(Math.abs(filled.hostWidth - filled.wellWidth), '宿主盒应与胶囊等宽（无额外占位）').toBeLessThanOrEqual(1)
 })
 
 test('transport-well 键盘 seek：←/→ 真实键盘路径派发 oas-seek、宿主回写后时间码推进 + 输出行可见', async ({ page }) => {

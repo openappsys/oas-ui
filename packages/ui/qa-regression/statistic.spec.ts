@@ -24,9 +24,16 @@ test('statistic loading：骨架真实可见、数值区（含 slot="value" 自�
     }
     mk('stat-loading-reg', false)
     mk('stat-loading-slot-reg', true)
+    // 同页对照实例：同值、非 loading。数值区宽度由同一 OS 字体决定，
+    // 作为「取消 loading 后应恢复到的宽度」的期望值来源（避免跨 OS 锁死绝对像素）
+    const control = document.createElement('oas-statistic')
+    control.id = 'stat-width-control'
+    control.setAttribute('value', '8846')
+    document.body.insertBefore(control, document.body.firstChild)
   })
   await up(page, '#stat-loading-reg')
   await up(page, '#stat-loading-slot-reg')
+  await up(page, '#stat-width-control')
 
   const read = (sel: string) =>
     page.evaluate((s) => {
@@ -92,6 +99,13 @@ test('statistic loading：骨架真实可见、数值区（含 slot="value" 自�
     return getComputedStyle(inner).display !== 'none' && getComputedStyle(sk).display === 'none'
   })
   const restored = await read('#stat-loading-reg')
-  expect(restored.innerW, '取消 loading 后数值区应有实际宽度').toBeCloseTo(45.7, 1)
+  const control = await read('#stat-width-control')
+  // 语义不变量：取消 loading 后数值区宽度 = 同页同值对照实例的宽度（同字体渲染的两份同一文本）。
+  // 不锁绝对像素——「8,846」的文本宽随 OS 字体不同（CI 47 / 本机 45.7），但两者必须一致。
+  expect(control.innerW, '对照实例数值区有可测量宽度（4 位带千分位数字，下界 20px）').toBeGreaterThanOrEqual(20)
+  expect(
+    Math.abs(restored.innerW - control.innerW),
+    `恢复后数值区宽度(${restored.innerW})应与对照实例(${control.innerW})一致`,
+  ).toBeLessThanOrEqual(1)
   expect(restored.skHiddenAttr, '取消 loading 后骨架应隐藏').toBe(true)
 })
