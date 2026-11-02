@@ -23,12 +23,23 @@ export interface Option {
   group?: string
   /** 选项前置图标名：走 @oas-ui/icons 查表协议；未注册时回退纯文本并 devWarn 一次 */
   icon?: string
+  /**
+   * 选项色点：CSS 颜色值（token 名 / var() / hex 等任意颜色写法），选项行首与
+   * chip 触发器首渲染 8px 圆点（清洗后内联写 background，非法值静默丢弃）；
+   * 与 avatarText 同时给时 dot 优先（首元素槽只取一个）。
+   */
+  dot?: string
+  /**
+   * 迷你头像文本：取首字符渲染 16px 圆形头像（形态对齐库内头像 token 缺省：
+   * primary 实底 + on-primary 字色）；与 dot 同时给时 dot 优先。
+   */
+  avatarText?: string
 }
 
 /** size 尺寸档（对齐 oas-input：small/medium/large，控高走 --oas-control-height-* token） */
 const VALID_SIZES = ['small', 'medium', 'large'] as const
-/** variant 形态（对齐 oas-input 三值枚举：outlined 默认 / filled 填充 / borderless 无框） */
-const VALID_VARIANTS = ['outlined', 'filled', 'borderless'] as const
+/** variant 形态（对齐 oas-input 三值枚举 + chip 第 4 值：属性面板紧凑胶囊编辑形态） */
+const VALID_VARIANTS = ['outlined', 'filled', 'borderless', 'chip'] as const
 /** status 校验态：success / warning / error（error 联动 aria-invalid） */
 const VALID_STATUSES = ['error', 'warning', 'success'] as const
 
@@ -36,6 +47,36 @@ const VALID_STATUSES = ['error', 'warning', 'success'] as const
 function normalizeChoice(raw: string, fallback: string, valid: readonly string[]): string {
   if (raw === '') return fallback
   return (valid as readonly string[]).includes(raw) ? raw : fallback
+}
+
+/**
+ * Option.dot 清洗：仅保留可安全内联进 style.background 的颜色值字符串。
+ * 拒绝含注入面字符（`;{<>"'` 与反斜杠/换行）的值与空值——非法值静默丢弃不渲染
+ * （快照确定性：清洗后的合法值经 style 属性赋值写入，语法校验交给浏览器）。
+ */
+function sanitizeDot(raw: unknown): string | undefined {
+  if (typeof raw !== 'string') return undefined
+  const s = raw.trim()
+  if (s === '' || /[;{}<>"'\\\r\n]/.test(s)) return undefined
+  return s
+}
+
+/** Option.avatarText 清洗：仅保留非空字符串（textContent 通道天然安全）；空/非字符串丢弃 */
+function sanitizeAvatarText(raw: unknown): string | undefined {
+  if (typeof raw !== 'string') return undefined
+  const s = raw.trim()
+  return s === '' ? undefined : s
+}
+
+/** dot/avatarText 清洗落位：非法值不进渲染模型（合法值保留、非法键删除，detail 序列化保持干净） */
+function withLeadingFields(o: Option): Option {
+  const { dot, avatarText, ...rest } = o
+  const next: Option = rest as Option
+  const d = sanitizeDot(dot)
+  if (d !== undefined) next.dot = d
+  const a = sanitizeAvatarText(avatarText)
+  if (a !== undefined) next.avatarText = a
+  return next
 }
 
 /**
@@ -225,6 +266,80 @@ const STYLE = `
 }
 :host([data-variant='borderless']) .trigger[disabled] {
   background: transparent;
+}
+/* ---- variant=chip：属性面板紧凑胶囊触发器形态（属性面板编辑模式）。
+     形态优先级：chip 规则置于 filled/borderless 之后——同特异性（:host[attr] .trigger）
+     时后定义胜出，chip 形态以自身 CSS 为主（弱底胶囊、无边框框选感）；status 语义色块
+     在其后定义照常胜出（chip 基态无边框，语义色仅作用于 focus/expanded 描边与焦点环，
+     与 borderless 的表现口径一致）。size 档字号仍联动（chip 不覆写字号），控高以
+     --oas-select-chip-height token 为准、不随 size 档变化 ---- */
+:host([data-variant='chip']) {
+  /* chip 形态宽度随内容收缩（属性面板字段值胶囊心智）；auto-width 属性叠加无冲突 */
+  width: auto;
+}
+:host([data-variant='chip']) .trigger {
+  /* 紧凑胶囊：高度走 --oas-select-chip-height token（缺省 24px，宿主覆盖即可调）；
+     min-height 而非固定高——multiple 组合下标签换行时触发器仍可增高 */
+  min-height: var(--oas-select-chip-height, 24px);
+  width: fit-content;
+  max-width: 100%;
+  padding: 0 var(--oas-space-2);
+  gap: var(--oas-space-1);
+  /* 弱底胶囊、无边框框选感（选中态不描边，与 Linear 属性面板形态一致）：
+     仅 focus-visible / expanded 出焦点环（继承基础样式的 box-shadow 通道） */
+  border: none;
+  border-radius: calc(var(--oas-select-chip-height, 24px) / 2);
+  background: var(--oas-color-bg-hover);
+}
+:host([data-variant='chip']) .trigger:hover {
+  /* hover 微强调：弱底上叠一层文字色低透明混合（深一档，不出框） */
+  background: color-mix(in srgb, var(--oas-color-text-primary) 8%, var(--oas-color-bg-hover));
+}
+:host([data-variant='chip']) .trigger:focus-visible,
+:host([data-variant='chip']) .trigger[aria-expanded='true'] {
+  border-color: transparent;
+}
+:host([data-variant='chip']) .trigger[disabled] {
+  background: var(--oas-color-bg-disabled);
+}
+/* chip 态尾部图标首行对齐修正：基础样式的 margin-top 按标准控高算，chip 高度更矮，居中即可 */
+:host([data-variant='chip']) :is(.chevron, .clear-btn, .suffix-icon) {
+  align-self: center;
+  margin-top: 0;
+}
+/* chip 首元素槽：dot 8px 色点 / avatarText 16px 迷你头像（icon 复用既有 .value-icon） */
+.chip-dot {
+  width: 8px;
+  height: 8px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  /* 颜色经 dot 字段清洗后内联写入 background（快照确定性：非法值不落 DOM） */
+}
+.chip-avatar {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  /* 对齐库内头像 token（oas-avatar 的宿主开口 --oas-avatar-bg / --oas-avatar-on-color）：
+     主题无 --oas-color-avatar-* 族，缺省回落 primary 实底 + on-primary 字色（暗色走 token 变体） */
+  background: var(--oas-avatar-bg, var(--oas-color-primary));
+  color: var(--oas-avatar-on-color, var(--oas-color-text-on-primary));
+  font-size: 10px;
+  line-height: 1;
+  font-weight: 500;
+  user-select: none;
+}
+/* chip 态选中项 label：单行省略（胶囊内放不下不折行不撑高） */
+.chip-value-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+  max-width: 100%;
 }
 .trigger:hover {
   border-color: var(--oas-color-primary);
@@ -999,8 +1114,8 @@ export class OASSelect extends OASFormElement {
    * 测最宽选项 label + placeholder 文本宽，经 `--oas-select-reserve` 变量锁宿主
    * min-width（opt-in `reserve-width`；与 auto-width 组合最典型——宽度随内容收缩后
    * 由预留值托底，切换选中值不抖）。文本量测走 shared 三级降级（canvas → 离屏 span
-   * → 估算），options/子元素变化经 update 自动重测；带 `Option.icon` 的选项额外补
-   * 1em 图标 + 行 gap，避免图标进入选中态后触发器变宽。文本宽为近似值（触发器 chrome
+   * → 估算），options/子元素变化经 update 自动重测；带 Option.icon / dot / avatarText
+   * 首元素的选项额外补首元素宽 + 行 gap，避免首元素进入选中态后触发器变宽。文本宽为近似值（触发器 chrome
    * 余量经 --oas-select-reserve-pad 开口调整），目标是「切换不抖」而非像素级排版。
    */
   private syncReserveWidth(): void {
@@ -1015,7 +1130,11 @@ export class OASSelect extends OASFormElement {
     if (placeholder) texts.push(placeholder)
     const cs = getComputedStyle(this)
     const w = measureMaxTextWidth(texts, { fontSize: cs.fontSize, fontFamily: cs.fontFamily })
-    const hasIcon = this._options.some((o) => typeof o.icon === 'string' && o.icon !== '')
+    // 带 leading 首元素（icon / dot / avatarText）的选项额外补一个首元素宽 + 行 gap，
+    // 避免首元素进入选中态后触发器变宽
+    const hasIcon = this._options.some(
+      (o) => (typeof o.icon === 'string' && o.icon !== '') || o.dot !== undefined || o.avatarText !== undefined,
+    )
     const iconAllowance = hasIcon ? (Number.parseFloat(cs.fontSize) || 16) + 4 : 0
     if (w <= 0 && !hasIcon) {
       // 无可计量测文本（无选项且无 placeholder）：无预留，写 0 不占宿主盒
@@ -1353,6 +1472,32 @@ export class OASSelect extends OASFormElement {
     return box
   }
 
+  /**
+   * 选项首元素槽（优先级 dot > avatarText > icon，契约见 Option 字段注释）：
+   * - dot：8px 色点（清洗后的颜色值内联写 background，快照确定性）
+   * - avatarText：16px 迷你头像（取首字符；token 缺省 primary 底 + on-primary 字）
+   * - icon：@oas-ui/icons 图标（未注册回退 null → 纯文本）
+   * chip 触发器与下拉选项行共用（iconClass 区分两处图标样式挂点）。
+   */
+  private optionLeadingElement(option: Option | undefined, iconClass: string): HTMLElement | null {
+    if (!option) return null
+    if (option.dot) {
+      const dotEl = document.createElement('span')
+      dotEl.className = 'chip-dot'
+      dotEl.setAttribute('aria-hidden', 'true')
+      dotEl.style.background = option.dot
+      return dotEl
+    }
+    if (option.avatarText) {
+      const avEl = document.createElement('span')
+      avEl.className = 'chip-avatar'
+      avEl.setAttribute('aria-hidden', 'true')
+      avEl.textContent = [...option.avatarText][0] ?? ''
+      return avEl
+    }
+    return this.optionIconElement(option.icon, iconClass)
+  }
+
   /** 构建一个选项行（角色/aria/高亮/点击/自定义渲染），非虚拟与虚拟（vlist oas-item）两路共用 */
   private createOptionRow(option: Option, optionIdx: number, values: string[], container: HTMLElement): void {
     const row = document.createElement('div')
@@ -1367,14 +1512,15 @@ export class OASSelect extends OASFormElement {
     row.id = `opt-${optionIdx}` // aria-activedescendant 锚点（shadow 内 id 作用域隔离，无宿主冲突）
     row.setAttribute('data-index', String(optionIdx))
     if (optionIdx === this.activeIndex) row.classList.add('active')
-    const icon = this.optionIconElement(option.icon, 'option-icon')
+    // 首元素槽：dot > avatarText > icon（chip 触发器与选项行同一优先级）
+    const leading = this.optionLeadingElement(option, 'option-icon')
     const label = document.createElement('span')
     label.className = 'option-label'
     this.fillOptionLabel(label, option)
     const check = document.createElement('span')
     check.className = 'check'
     check.textContent = '✓'
-    if (icon) row.append(icon, label, check)
+    if (leading) row.append(leading, label, check)
     else row.append(label, check)
     row.addEventListener('click', () => {
       if (option.disabled) return
@@ -1672,7 +1818,9 @@ export class OASSelect extends OASFormElement {
     if (this.hasAttribute('options')) {
       try {
         const parsed = JSON.parse(this.getAttr('options', '[]'))
-        base = Array.isArray(parsed) ? parsed.filter((o): o is Option => o && typeof o.value === 'string') : []
+        base = Array.isArray(parsed)
+          ? parsed.filter((o): o is Option => o && typeof o.value === 'string').map(withLeadingFields)
+          : []
       } catch {
         base = []
       }
@@ -1696,7 +1844,7 @@ export class OASSelect extends OASFormElement {
     return options
   }
 
-  /** 单个 <oas-option> → Option（默认插槽文本为 label，属性对齐 options 字段） */
+  /** 单个 <oas-option> → Option（默认插槽文本为 label，属性对齐 options 字段；dot/avatar-text 走同款清洗） */
   private childToOption(el: Element): Option {
     const option: Option = { label: this.childLabel(el), value: el.getAttribute('value') ?? '' }
     if (el.hasAttribute('disabled')) option.disabled = true
@@ -1704,6 +1852,10 @@ export class OASSelect extends OASFormElement {
     if (group) option.group = group
     const icon = el.getAttribute('icon')
     if (icon) option.icon = icon
+    const dot = sanitizeDot(el.getAttribute('dot'))
+    if (dot !== undefined) option.dot = dot
+    const avatarText = sanitizeAvatarText(el.getAttribute('avatar-text'))
+    if (avatarText !== undefined) option.avatarText = avatarText
     return option
   }
 
@@ -1730,7 +1882,7 @@ export class OASSelect extends OASFormElement {
       subtree: true,
       attributes: true,
       characterData: true,
-      attributeFilter: ['value', 'disabled', 'group', 'icon', 'slot'],
+      attributeFilter: ['value', 'disabled', 'group', 'icon', 'dot', 'avatar-text', 'slot'],
     })
     this.childObserver = observer
     this.onCleanup(() => {
@@ -1851,10 +2003,26 @@ export class OASSelect extends OASFormElement {
       const value = values[0] ?? ''
       const option = this._options.find((o) => o.value === value)
       valueEl.innerHTML = ''
-      const icon = this.optionIconElement(option?.icon, 'value-icon')
-      if (icon) valueEl.append(icon)
-      valueEl.append(document.createTextNode(option?.label ?? value))
+      if (this.isChipVariant() && option) {
+        // chip 触发器形态：首元素槽（dot > avatarText > icon）+ 选中项 label 单行省略
+        //（chevron 由模板既有节点承担；空值走上方 placeholder 分支，chip 态同样生效）
+        const leading = this.optionLeadingElement(option, 'value-icon')
+        if (leading) valueEl.append(leading)
+        const text = document.createElement('span')
+        text.className = 'chip-value-text'
+        text.textContent = option.label
+        valueEl.append(text)
+      } else {
+        const icon = this.optionIconElement(option?.icon, 'value-icon')
+        if (icon) valueEl.append(icon)
+        valueEl.append(document.createTextNode(option?.label ?? value))
+      }
     }
+  }
+
+  /** chip 形态判定（variant 归一化后比较；data-variant 镜像由 syncSizeStatus 承担） */
+  private isChipVariant(): boolean {
+    return normalizeChoice(this.getAttr('variant', ''), 'outlined', VALID_VARIANTS) === 'chip'
   }
 
   /** 标签（chip）渲染：template[slot="tag"] 克隆 + [data-tag-label] 绑定；随后派发 oas-tag-render 供宿主改写 */

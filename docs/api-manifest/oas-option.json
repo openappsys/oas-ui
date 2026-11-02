@@ -17,6 +17,14 @@
     {
       "name": "icon",
       "observed": true
+    },
+    {
+      "name": "dot",
+      "observed": true
+    },
+    {
+      "name": "avatar-text",
+      "observed": true
     }
   ],
   "props": [],

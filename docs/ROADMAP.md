@@ -2,6 +2,12 @@
 
 版本遵循 SemVer。v1.0.0 为首个正式发布。每个版本 = 一个可独立交付/可试用的里程碑。
 
+## 未发布（select chip 形态）
+
+| 范围 | 内容 | 状态 |
+| --- | --- | --- |
+| **`oas-select` chip 形态 + Option 首元素字段（属性面板编辑模式组件化）** | `variant` 第 4 值 `chip`：紧凑胶囊触发器（高 24px 走 `--oas-select-chip-height` token、弱底 hover 微强调、无边框框选感、宽度随内容收缩）；`Option.dot` 色点（8px，CSS 颜色值清洗后内联写 background）与 `Option.avatarText` 迷你头像（16px 取首字符，对齐库内头像 token 缺省），选项行首与 chip 触发器首按 `dot > avatarText > icon` 渲染首元素槽；子元素通道 `<oas-option dot avatar-text>` 同款映射与运行时刷新；单选点选即 oas-change、空值走 placeholder、键盘全等价、size/status/multiple 可组合；非法值静默清洗。单测（chip 全量组 + 既有零回归）+ Chromium qa-regression（Vue demo 属性存活 + 容器底部 fixed 翻转不被裁切 + 外点/Esc 关闭 + 选中即改首元素更新）+ 中英文档「属性面板模式」节与 workflow 状态色点 demo + API 生成物同步 | 🚧 进行中（未发布） |
+
 ## v2.6.6（menubar 可编辑焦点 shortcut 开关）
 
 | 范围 | 内容 | 状态 |

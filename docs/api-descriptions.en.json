@@ -2442,7 +2442,9 @@
   },
   "oas-option": {
     "attrs": {
+      "avatar-text": "Mini avatar text: the first character renders as a 16px round avatar (default primary background with on-primary text, aligned with the library avatar token defaults); rendered first on option rows and the chip trigger; dot wins when both are given",
       "disabled": "Disable this option (not selectable)",
+      "dot": "Option color dot (any CSS color: token names, var(), hex, etc.): renders an 8px dot at the start of option rows and the chip trigger; invalid values are silently dropped; dot wins when avatar-text is also given",
       "group": "Group title (optional): options in the same group render a consecutive group title (not selectable), items are indented",
       "icon": "Option icon (@oas-ui/icons registry name): rendered in the option row, single-select trigger, and multi-select chips; unregistered names fall back to plain text with one dev warning",
       "value": "Option value (data-carrier field of the declarative child-element channel)"
@@ -2930,7 +2932,7 @@
       "loading": "Remote loading placeholder (use with `remote`)",
       "max-tag-count": "Collapse tags beyond this count into `+N` in multiple mode (opt-in; without it tags wrap instead of collapsing)",
       "multiple": "Multiple select",
-      "options": "Options, JSON array `[{ label, value, disabled?, group?, icon? }]` (group is the group title, icon is an @oas-ui/icons registry name)",
+      "options": "Options, JSON array `[{ label, value, disabled?, group?, icon?, dot?, avatarText? }]` (group is the group title; icon is an @oas-ui/icons registry name; dot is an option color dot, avatarText is mini avatar text rendered by its first character; leading slot priority dot > avatarText > icon)",
       "placeholder": "Placeholder text",
       "remote": "Remote search: no local filtering, typing dispatches `oas-input` for the host to request",
       "searchable": "Searchable (type to filter after opening the dropdown)",
@@ -2946,7 +2948,7 @@
       "required": "Required marker (drives the native valueMissing validation chain; not passed through to the inner control)",
       "name": "Form field name (key for native FormData submission; also the key of same-name multiple entries in multiple mode; the browser skips submission when name is absent)",
       "label": "The trigger's accessible name (aria-label), taking priority over the placeholder",
-      "variant": "Visual variant: `outlined` (default) / `filled` / `borderless`; invalid values fall back silently; status colors take precedence",
+      "variant": "Visual variant: `outlined` (default) / `filled` / `borderless` / `chip` (compact property-panel editing pill: soft background, no border box, leading slot + selected label + chevron); invalid values fall back silently; status colors take precedence",
       "input-value": "Controlled search text: typing writes back and emits oas-input-value-change; external updates sync into the search box",
       "show-arrow": "Set `\"false\"` to hide the default dropdown arrow",
       "autofocus": "Auto-focus the trigger after mount",
@@ -2957,7 +2959,7 @@
       "auto-width": "Trigger width shrinks to fit the selection",
       "hint": "Hint line below the trigger, wired via aria-describedby",
       "hide-selected": "Hide selected options from the dropdown in multiple mode; they return after clearing or deselecting",
-      "reserve-width": "Reserve the widest option width on the trigger (opt-in): measures the max text width of all option labels plus the placeholder to lock the trigger min-width, with an additional 1em icon + row gap allowance for options carrying Option.icon; re-measured automatically when options/children change; removing the attribute releases the lock"
+      "reserve-width": "Reserve the widest option width on the trigger (opt-in): measures the max text width of all option labels plus the placeholder to lock the trigger min-width, with an additional leading-element + row gap allowance for options carrying Option.icon / dot / avatarText; re-measured automatically when options/children change; removing the attribute releases the lock"
     },
     "events": {
       "oas-change": "Selection/clear change, `detail: { value }`",

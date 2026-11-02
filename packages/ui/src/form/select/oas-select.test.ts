@@ -2481,3 +2481,242 @@ describe('OASSelect 属性-方法撞名回归', () => {
     expect(trigger(el).querySelector('.chevron')!.hasAttribute('hidden')).toBe(true)
   })
 })
+
+// ===== variant="chip" 属性面板编辑模式（E 需求）+ Option.dot / Option.avatarText =====
+
+describe('OASSelect variant=chip（属性面板编辑模式）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  /** workflow 状态场景（贴近属性面板消费）：dot / avatarText / icon 三类首元素混排 */
+  const CHIP_OPTIONS = JSON.stringify([
+    { label: '待处理', value: 'todo', dot: 'var(--oas-preset-gold)' },
+    { label: '进行中', value: 'in-progress', dot: 'var(--oas-preset-blue)' },
+    { label: '负责人评审', value: 'review', avatarText: '评审人' },
+    { label: '已完成', value: 'done', dot: 'var(--oas-preset-green)', avatarText: '完' },
+    { label: '设置', value: 'settings', icon: 'chip-gear' },
+  ])
+
+  function chipMount(attrs: Record<string, string> = {}): OASSelect {
+    registerIcon('chip-gear', '<path d="M1 1 L15 15"/>')
+    return mount({ options: CHIP_OPTIONS, ...attrs })
+  }
+
+  it('variant=chip 进入 data-variant 镜像，非法值静默回落 outlined', () => {
+    const el = chipMount({ variant: 'chip' })
+    expect(el.getAttribute('data-variant')).toBe('chip')
+    el.setAttribute('variant', 'fancy')
+    expect(el.getAttribute('data-variant')).toBe('outlined')
+    el.setAttribute('variant', 'chip')
+    expect(el.getAttribute('data-variant')).toBe('chip')
+  })
+
+  it('chip 形态样式规则存在：紧凑胶囊高度走 --oas-select-chip-height token、弱底、无边框框选感', () => {
+    const el = chipMount({ variant: 'chip' })
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    expect(css).toContain("[data-variant='chip']")
+    expect(css).toContain('var(--oas-select-chip-height, 24px)')
+    const chipRule = css.match(/:host\(\[data-variant='chip'\]\)\s+\.trigger\s*\{[^}]*\}/)?.[0] ?? ''
+    expect(chipRule).toContain('border: none')
+    expect(chipRule).toContain('var(--oas-color-bg-hover)')
+  })
+
+  it('chip 触发器首元素槽优先级：dot > avatarText > icon', () => {
+    const dotBoth = chipMount({ variant: 'chip', value: 'done' })
+    const t1 = trigger(dotBoth)
+    expect(t1.querySelectorAll('.chip-dot').length, 'dot 与 avatarText 同时给时 dot 优先（恰一个色点）').toBe(1)
+    expect(t1.querySelectorAll('.chip-avatar').length).toBe(0)
+    expect(t1.querySelectorAll('.value-icon').length).toBe(0)
+
+    const avatar = chipMount({ variant: 'chip', value: 'review' })
+    const avEl = trigger(avatar).querySelector<HTMLElement>('.chip-avatar')
+    expect(avEl?.textContent ?? '', '无 dot 时回落 avatarText 且取首字符').toBe('评')
+    expect(avEl?.getAttribute('aria-hidden')).toBe('true')
+    expect(trigger(avatar).querySelectorAll('.chip-dot').length).toBe(0)
+
+    registerIcon('chip-gear', '<path d="M1 1 L15 15"/>')
+    const icon = chipMount({ variant: 'chip', value: 'settings' })
+    const icEl = trigger(icon).querySelector<HTMLElement>('.value-icon')
+    expect(icEl?.querySelector('svg path')?.getAttribute('d'), 'dot/avatarText 均无时回落 icon').toBe('M1 1 L15 15')
+    expect(trigger(icon).querySelectorAll('.chip-dot').length).toBe(0)
+    expect(trigger(icon).querySelectorAll('.chip-avatar').length).toBe(0)
+  })
+
+  it('chip 触发器渲染选中项 label + chevron；dot 颜色内联写 background（快照确定性）', () => {
+    const el = chipMount({ variant: 'chip', value: 'in-progress' })
+    const t = trigger(el)
+    const text = t.querySelector<HTMLElement>('.chip-value-text')
+    expect(text!.textContent).toBe('进行中')
+    const dot = t.querySelector<HTMLElement>('.chip-dot')
+    expect(dot?.getAttribute('aria-hidden')).toBe('true')
+    expect(dot?.getAttribute('style') ?? '', 'dot 颜色内联写 background（快照确定性）').toContain(
+      'var(--oas-preset-blue)',
+    )
+    expect(t.querySelectorAll('.chevron').length, 'chip 态保留下拉 chevron').toBe(1)
+  })
+
+  it('chip 空值态走既有 placeholder 机制（无首元素残留）', () => {
+    const el = chipMount({ variant: 'chip', placeholder: '设置状态' })
+    const t = trigger(el)
+    expect(t.querySelector('.placeholder')!.textContent).toBe('设置状态')
+    expect(t.querySelector('.chip-dot')).toBeNull()
+    expect(t.querySelector('.chip-avatar')).toBeNull()
+    expect(t.querySelector('.chip-value-text')).toBeNull()
+  })
+
+  it('chip 单选点选即派发 oas-change（detail 与既有 select 一致）并收起下拉', () => {
+    const el = chipMount({ variant: 'chip', value: 'todo' })
+    open(el)
+    let detail: unknown
+    el.addEventListener('oas-change', (e: Event) => (detail = (e as CustomEvent).detail))
+    const rows = el.shadowRoot!.querySelectorAll('[role="option"]')
+    ;(rows[3] as HTMLElement).click()
+    expect(el.getAttribute('value')).toBe('done')
+    expect(trigger(el).getAttribute('aria-expanded')).toBe('false')
+    expect(detail).toEqual({
+      value: 'done',
+      option: { label: '已完成', value: 'done', dot: 'var(--oas-preset-green)', avatarText: '完' },
+    })
+  })
+
+  it('chip 键盘等价：↑↓/Enter/Esc 既有回归不破（关闭态 ↓ 展开、Enter 选中、Esc 关闭）', () => {
+    const el = chipMount({ variant: 'chip' })
+    const btn = trigger(el)
+    btn.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }))
+    expect(btn.getAttribute('aria-expanded')).toBe('true')
+    btn.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }))
+    btn.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }))
+    expect(el.getAttribute('value')).toBe('in-progress')
+    expect(btn.getAttribute('aria-expanded')).toBe('false')
+    open(el)
+    btn.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+    expect(btn.getAttribute('aria-expanded')).toBe('false')
+  })
+
+  it('下拉选项行渲染 dot / avatarText 首元素（与 chip 触发器同一优先级）', () => {
+    const el = chipMount({ variant: 'chip' })
+    open(el)
+    const rows = [...el.shadowRoot!.querySelectorAll('[role="option"]')]
+    const dotRow = rows[0]!.querySelector<HTMLElement>('.chip-dot')
+    expect(dotRow?.getAttribute('style') ?? '', '选项行首渲染 dot 并内联背景').toContain('var(--oas-preset-gold)')
+    const avRow = rows[2]!.querySelector<HTMLElement>('.chip-avatar')
+    expect(avRow?.textContent).toBe('评')
+    expect(rows[3]!.querySelectorAll('.chip-dot').length, '行内同样 dot 优先（dot + avatarText 同时给）').toBe(1)
+    const icRow = rows[4]!.querySelector<HTMLElement>('.option-icon')
+    expect(icRow?.querySelector('svg path')?.getAttribute('d'), '行内回落 icon').toBe('M1 1 L15 15')
+    expect(icRow?.getAttribute('aria-hidden')).toBe('true')
+  })
+
+  it('非法值清洗：注入面 dot / 空串 dot / 空白 avatarText / 非字符串值一律丢弃不渲染', () => {
+    const bad = JSON.stringify([
+      { label: '注入', value: 'bad', dot: 'red; background: url(x)' },
+      { label: '空点', value: 'empty-dot', dot: '' },
+      { label: '空白头像', value: 'blank-avatar', avatarText: '   ' },
+      { label: '非字符串', value: 'num', dot: 123 },
+    ])
+    const el = chipMount({ variant: 'chip', value: 'bad', options: bad })
+    expect(trigger(el).querySelector('.chip-dot')).toBeNull()
+    open(el)
+    const rows = [...el.shadowRoot!.querySelectorAll('[role="option"]')]
+    expect(rows.every((r) => r.querySelector('.chip-dot') === null)).toBe(true)
+    expect(rows.every((r) => r.querySelector('.chip-avatar') === null)).toBe(true)
+    let detail: { option: Record<string, unknown> } | undefined
+    el.addEventListener('oas-change', (e: Event) => (detail = (e as CustomEvent).detail))
+    ;(rows[0] as HTMLElement).click()
+    expect('dot' in detail!.option, '清洗后非法 dot 不进数据模型').toBe(false)
+  })
+
+  it('avatarText 多字符取首字符；空选项回落既有纯文本渲染', () => {
+    const opts = JSON.stringify([
+      { label: '指派', value: 'assign', avatarText: '王大明' },
+      { label: '普通', value: 'plain' },
+    ])
+    const el = chipMount({ variant: 'chip', value: 'assign', options: opts })
+    expect(trigger(el).querySelector('.chip-avatar')!.textContent).toBe('王')
+    open(el)
+    const rows = [...el.shadowRoot!.querySelectorAll('[role="option"]')]
+    expect(rows[1]!.querySelector('.chip-avatar')).toBeNull()
+    expect(rows[1]!.querySelector('.option-icon')).toBeNull()
+  })
+
+  it('chip 与 multiple 组合不冲突：多选标签走既有 chip 通道，触发器同步 chip 形态镜像', () => {
+    const el = chipMount({ variant: 'chip', multiple: '' })
+    open(el)
+    const rows = el.shadowRoot!.querySelectorAll('[role="option"]')
+    ;(rows[0] as HTMLElement).click()
+    ;(rows[4] as HTMLElement).click()
+    expect(JSON.parse(el.getAttribute('value')!)).toEqual(['todo', 'settings'])
+    expect(el.shadowRoot!.querySelectorAll('.chip').length).toBe(2)
+    expect(el.getAttribute('data-variant')).toBe('chip')
+  })
+
+  it('reserve-width 计入 dot/avatarText 首元素宽度（带色点选项预留不塌缩）', () => {
+    const label = '统一长度的选项标签'
+    const plain = mount({ 'reserve-width': '', options: JSON.stringify([{ label, value: 'plain' }]) })
+    const dotted = mount({
+      'reserve-width': '',
+      options: JSON.stringify([{ label, value: 'dot', dot: '#0f0' }]),
+    })
+    const plainReserve = Number.parseFloat(plain.style.getPropertyValue('--oas-select-reserve'))
+    const dotReserve = Number.parseFloat(dotted.style.getPropertyValue('--oas-select-reserve'))
+    expect(dotReserve - plainReserve, '预留宽度应补首元素 + 行 gap').toBeGreaterThanOrEqual(18)
+  })
+})
+
+describe('OASSelect Option.dot / avatarText 子元素通道（oas-option）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  function childChipSelect(): OASSelect {
+    const el = new OASSelect()
+    el.setAttribute('variant', 'chip')
+    const opt1 = document.createElement('oas-option')
+    opt1.setAttribute('value', 'low')
+    opt1.setAttribute('dot', '#ff0000')
+    opt1.textContent = '低'
+    const opt2 = document.createElement('oas-option')
+    opt2.setAttribute('value', 'user')
+    opt2.setAttribute('avatar-text', '李四')
+    opt2.textContent = '负责人'
+    el.append(opt1, opt2)
+    document.body.appendChild(el)
+    return el
+  }
+
+  it('dot / avatar-text 属性映射进数据模型并渲染', () => {
+    const el = childChipSelect()
+    open(el)
+    const rows = [...el.shadowRoot!.querySelectorAll('[role="option"]')]
+    expect(
+      (rows[0]!.querySelector<HTMLElement>('.chip-dot')?.getAttribute('style') ?? '').toLowerCase(),
+      'dot 属性映射并内联渲染',
+    ).toContain('#ff0000')
+    expect(rows[1]!.querySelector<HTMLElement>('.chip-avatar')?.textContent).toBe('李')
+  })
+
+  it('运行时改写 dot 属性后下拉与 chip 触发器同步刷新（MutationObserver 通道）', async () => {
+    const el = childChipSelect()
+    el.setAttribute('value', 'low')
+    open(el)
+    expect((trigger(el).querySelector<HTMLElement>('.chip-dot')?.getAttribute('style') ?? '').toLowerCase()).toContain(
+      '#ff0000',
+    )
+    const opt = el.querySelector('oas-option')!
+    opt.setAttribute('dot', '#00ff00')
+    await new Promise((r) => setTimeout(r, 0))
+    expect(
+      (trigger(el).querySelector<HTMLElement>('.chip-dot')?.getAttribute('style') ?? '').toLowerCase(),
+      '运行时改写 dot 同步刷新',
+    ).toContain('#00ff00')
+  })
+})

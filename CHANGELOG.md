@@ -2,6 +2,12 @@
 
 所有显著变更记录于此。
 
+## [未发布]
+
+### 新增
+
+- **`oas-select` chip 形态（`variant="chip"`）+ Option 首元素字段（`dot` / `avatarText`）**：属性面板编辑模式组件化——`variant` 新增第 4 值 `chip`，触发器换成紧凑胶囊（高 24px 走 `--oas-select-chip-height` token、弱底 hover 微强调、无边框框选感、宽度随内容收缩，size/status/multiple 可组合）；`Option` 接口新增 `dot`（选项色点，8px 圆点，CSS 颜色值支持 token 名/var()/hex，清洗后内联写 background）与 `avatarText`（迷你头像，16px 取首字符，缺省 primary 底 + on-primary 字色），选项行首与 chip 触发器首按 `dot > avatarText > icon` 优先级渲染首元素槽（同时给时 dot 优先）；子元素通道 `<oas-option dot="…" avatar-text="…">` 同款映射，运行时改写即时刷新；单选点选即派发 `oas-change`（detail 不变）、空值走 placeholder、键盘全等价、非法值静默清洗。中英文档「属性面板模式」节 + workflow 状态色点 demo；API 生成物同步。
+
 ## [2.6.6] - 2026-11-01
 
 ### 新增

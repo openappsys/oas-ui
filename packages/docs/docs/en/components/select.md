@@ -69,7 +69,18 @@ In multiple mode `value` is a JSON array; selected items are shown as tags that 
   </oas-space>
 </DemoBlock>
 
-`variant` mirrors the `oas-input` three-value variants: `outlined` (default border) / `filled` (tinted background, border appears on focus/open) / `borderless` (no border, no background — for plain-text embedding or low-chrome filter bars); invalid values silently fall back to the default. The `status` semantic color takes precedence over the variant background.
+`variant` mirrors the `oas-input` three-value variants: `outlined` (default border) / `filled` (tinted background, border appears on focus/open) / `borderless` (no border, no background — for plain-text embedding or low-chrome filter bars); a fourth value `chip` is added for the property-panel editing form (see next section); invalid values silently fall back to the default. The `status` semantic color takes precedence over the variant background.
+
+## Property Panel Mode (variant="chip")
+
+<DemoBlock title="Property-panel chip editing (workflow status)">
+  <oas-space size="small" direction="vertical">
+    <oas-select id="select-chip-workflow" variant="chip" value="in-progress" label="Status" options='[{"label":"Todo","value":"todo","dot":"var(--oas-preset-gold)"},{"label":"In Progress","value":"in-progress","dot":"var(--oas-preset-blue)"},{"label":"Owner Review","value":"review","avatarText":"R"},{"label":"Done","value":"done","dot":"var(--oas-preset-green)","avatarText":"D"},{"label":"Blocked","value":"blocked","dot":"var(--oas-preset-red)"}]'></oas-select>
+    <oas-tag id="select-chip-result" type="info">oas-change: in-progress</oas-tag>
+  </oas-space>
+</DemoBlock>
+
+`variant="chip"` turns the trigger into the compact pill common in property panels: 24px tall (adjustable via the `--oas-select-chip-height` CSS variable), soft background (slightly stronger on hover), no border box even when a value is selected (only focus/open show the focus ring), and the width shrinks to fit the content. The trigger and option rows render a "leading slot": the option's `dot` color dot (8px) → `avatarText` mini avatar (16px, first character) → `icon`, in that order, followed by the selected label and the dropdown chevron; `dot` wins when both `dot` and `avatarText` are given. Selecting dispatches `oas-change` as usual, and an empty value falls back to `placeholder`; existing attributes like `size` / `status` / `multiple` compose fine (the chip form keeps its own CSS, `size` only scales the font). Use it to replace hand-rolled status pills in field-level editing scenarios (property drawers, detail panels).
 
 ## Status
 
@@ -551,6 +562,13 @@ onMounted(() => {
     declSelect.appendChild(opt)
   })
 
+  // Property-panel chip variant demo: selection feedback + leading-slot switch (echo on change)
+  const chipSel = document.getElementById('select-chip-workflow')
+  const chipResult = document.getElementById('select-chip-result')
+  chipSel?.addEventListener('oas-change', (e) => {
+    if (chipResult) chipResult.textContent = `oas-change: ${e.detail.value}`
+  })
+
   // Custom filtering demo: filterMethod matches both value and label (pinyin-initial rules work the same way)
   const filterEl = document.getElementById('select-filter')
   if (filterEl) {
@@ -749,21 +767,21 @@ onMounted(() => {
 | `multiple` | Multiple select | `boolean` | — |
 | `name` | Form field name (key for native FormData submission; also the key of same-name multiple entries in multiple mode; the browser skips submission when name is absent) | `string` | — |
 | `open` | Controlled open: attribute present = open, removed = closed; host gestures only fire oas-open-change (no forced write-back) | `boolean \| string` | `false` |
-| `options` | Options, JSON array `[{ label, value, disabled?, group?, icon? }]` (group is the group title, icon is an @oas-ui/icons registry name) | `Option[] \| string` | `[]` |
+| `options` | Options, JSON array `[{ label, value, disabled?, group?, icon?, dot?, avatarText? }]` (group is the group title; icon is an @oas-ui/icons registry name; dot is an option color dot, avatarText is mini avatar text rendered by its first character; leading slot priority dot > avatarText > icon) | `Option[] \| string` | `[]` |
 | `placeholder` | Placeholder text | — | — |
 | `placement` | Dropdown direction: `auto` (default, bottom-first with flip) / `top` / `bottom` (forced, no flip) | `string` | `auto` |
 | `readonly` | Read-only: focusable and copyable, no dropdown, value immutable (clear/remove buttons hidden) | `boolean` | — |
 | `remote` | Remote search: no local filtering, typing dispatches `oas-input` for the host to request | `boolean` | — |
 | `required` | Required marker (drives the native valueMissing validation chain; not passed through to the inner control) | `boolean` | — |
 | `reserve-keyword` | Keep the keyword after selection in searchable mode (cleared by default, matching tree-select) | `boolean` | — |
-| `reserve-width` | Reserve the widest option width on the trigger (opt-in): measures the max text width of all option labels plus the placeholder to lock the trigger min-width, with an additional 1em icon + row gap allowance for options carrying Option.icon; re-measured automatically when options/children change; removing the attribute releases the lock | `boolean` | — |
+| `reserve-width` | Reserve the widest option width on the trigger (opt-in): measures the max text width of all option labels plus the placeholder to lock the trigger min-width, with an additional leading-element + row gap allowance for options carrying Option.icon / dot / avatarText; re-measured automatically when options/children change; removing the attribute releases the lock | `boolean` | — |
 | `searchable` | Searchable (type to filter after opening the dropdown) | `boolean` | — |
 | `show-arrow` | Set `"false"` to hide the default dropdown arrow | `string` | `true` |
 | `size` | Size preset `small` / `medium` (default) / `large`: control height/font/chip height scale | `string` | `medium` |
 | `status` | Validation status: `error` / `warning` / `success`; error mirrors aria-invalid on the host | `string` | — |
 | `tabindex` | Forwarded to the internal trigger (host attribute removed after delegation to avoid double tab stops) | — | — |
 | `value` | Current value (JSON array in multiple mode) | `string \| string[]` | — |
-| `variant` | Visual variant: `outlined` (default) / `filled` / `borderless`; invalid values fall back silently; status colors take precedence | `string` | — |
+| `variant` | Visual variant: `outlined` (default) / `filled` / `borderless` / `chip` (compact property-panel editing pill: soft background, no border box, leading slot + selected label + chevron); invalid values fall back silently; status colors take precedence | `string` | — |
 | `virtual` | Virtual scrolling for large datasets: renders only the visible window (reuses oas-virtual-list); options with a `group` field fall back to full rendering | `boolean` | — |
 
 #### Property (JS property; see each row for attribute reflection)
@@ -810,9 +828,12 @@ onMounted(() => {
 
 | CSS Variable | Default |
 | --- | --- |
+| `--oas-avatar-bg` | `var(--oas-color-primary)` |
+| `--oas-avatar-on-color` | `var(--oas-color-text-on-primary)` |
 | `--oas-button-group-radius` | `var(--oas-radius-md)` |
 | `--oas-glass-blur` | `none` |
 | `--oas-glass-ring` | `transparent` |
+| `--oas-select-chip-height` | `24px` |
 | `--oas-select-dropdown-height` | `240px` |
 | `--oas-select-reserve` | `0px` |
 
@@ -822,7 +843,9 @@ onMounted(() => {
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
+| `avatar-text` | Mini avatar text: the first character renders as a 16px round avatar (default primary background with on-primary text, aligned with the library avatar token defaults); rendered first on option rows and the chip trigger; dot wins when both are given | — | — |
 | `disabled` | Disable this option (not selectable) | — | — |
+| `dot` | Option color dot (any CSS color: token names, var(), hex, etc.): renders an 8px dot at the start of option rows and the chip trigger; invalid values are silently dropped; dot wins when avatar-text is also given | — | — |
 | `group` | Group title (optional): options in the same group render a consecutive group title (not selectable), items are indented | — | — |
 | `icon` | Option icon (@oas-ui/icons registry name): rendered in the option row, single-select trigger, and multi-select chips; unregistered names fall back to plain text with one dev warning | — | — |
 | `value` | Option value (data-carrier field of the declarative child-element channel) | — | — |

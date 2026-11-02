@@ -5,6 +5,35 @@
 
 ---
 
+## 未发布：select chip 形态（属性面板编辑模式组件化，E 需求）
+
+### 功能定义
+
+`oas-select` 新增 `variant` 第 4 值 `chip`：把触发器换成属性面板常见的紧凑胶囊编辑形态（真实消费方 = 属性面板字段值胶囊，如项目模板 IssueDetailDrawer 的 FieldChip）。同时扩展 `Option` 接口两个字段：`dot`（选项色点，CSS 颜色值）与 `avatarText`（迷你头像文本，取首字符），选项行首与 chip 触发器首渲染「首元素槽」。
+
+### 属性契约
+
+- **`variant="chip"`**：紧凑胶囊触发器——高 24px 走 `--oas-select-chip-height` token（缺省 24px，宿主覆盖即可调）、弱底（`--oas-color-bg-hover` 级，hover 用 color-mix 微强调）、无边框框选感（选中态不描边，仅 focus-visible / expanded 出焦点环）、宽度随内容收缩（`width: fit-content`，host `width: auto`）。与 size / status / multiple 等既有属性组合不冲突（chip 形态以自身 CSS 为主：size 只联动字号、控高以 chip token 为准；status 语义色按「后定义胜出」约定作用于 focus/expanded 描边与焦点环）。
+- **`Option.dot?: string`**：CSS 颜色值（支持 token 名 / var() / hex 等任意颜色写法），选项行首与 chip 触发器首渲染 8px 圆点（清洗后内联写 `style.background`，快照确定性）；非法值（含注入面字符 / 空串 / 非字符串）静默丢弃不渲染。
+- **`Option.avatarText?: string`**：迷你头像，取首字符渲染 16px 圆形头像；形态对齐库内头像 token 缺省（主题无 `--oas-color-avatar-*` 族，走 `--oas-avatar-bg` / `--oas-avatar-on-color` 开口、缺省回落 primary 实底 + on-primary 字色，暗色走 token 变体）；空/非字符串清洗丢弃。
+- **首元素槽优先级**：`dot` > `avatarText` > `icon`（两字段同时给时 dot 优先，首元素槽只取一个）；chip 触发器 = 首元素槽 + 选中项 label（单行省略）+ chevron。
+- **子元素通道**：`<oas-option dot="…" avatar-text="…">` 属性映射同款字段与清洗，运行时改写即时刷新（MutationObserver attributeFilter 扩展）。
+- **语义**：单选点选即 `oas-change`（detail 与既有 select 一致）；多选 / filter / clearable 与 chip 组合不禁止（多选标签走既有 chip 通道）；空值走既有 placeholder 机制（chip 态同样生效）；键盘等价（关闭态 ↓/↑/Enter/Space 展开、展开态 ↑/↓ 移动、Enter 选中、Esc 关闭，全走既有链路）；首元素为装饰性节点（`aria-hidden`），可访问名仍来自 label 属性 / placeholder。
+
+### 非目标
+
+- 不新增事件 / 方法 / 插槽；不新增 i18n key（纯呈现）；新增 CSS 变量出口仅 `--oas-select-chip-height` 一个。
+- 多选标签（value chips）不渲染 dot / avatarText（首元素槽只作用于下拉选项行与 chip 单选触发器）。
+
+### 验收
+
+- 单测：`pnpm vitest run packages/ui/src/form/select` 全绿（chip 镜像/样式规则/首元素优先级/label+chevron/placeholder 空态/点选即 change/键盘等价/选项行首元素/非法值清洗/avatarText 首字符/multiple 组合/reserve-width 计入首元素/子元素通道映射与运行时刷新，既有 186 条零回归）。
+- e2e：`packages/ui/qa-regression/select.spec.ts` 追加 chip 场景（Vue demo 属性存活 + demo 真交互反馈 + 滚动容器底部 fixed 翻转不被裁切夹具 + 外点/Esc 关闭 + 选中即改且 chip 首元素更新），`--project=chromium` 全绿。
+- 门禁：`pnpm build` + `pnpm api:check`、`pnpm typecheck`、`pnpm qa:audit:check`、`pnpm format:check`、`pnpm lint:md`、`llms:gen` + `llms:check`、`check-trace` 0 命中、`pnpm perf:size`（select 链增量 < 0.6 KB）。
+- 文档：中英 select.md「属性面板模式（variant="chip"）」节 + 可运行 demo（workflow 状态色点场景）；API 表与描述文案经 api:scan/api:gen 同步。
+
+---
+
 ## v2.6.6：menubar 可编辑焦点 shortcut 开关（editable-shortcuts）
 
 ### 功能定义

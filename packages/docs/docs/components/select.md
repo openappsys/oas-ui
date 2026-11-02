@@ -69,7 +69,18 @@
   </oas-space>
 </DemoBlock>
 
-`variant` 对齐 `oas-input` 三值形态：`outlined`（默认描边）/ `filled`（填充底色，聚焦/展开才出边框）/ `borderless`（无框无底色，用于纯文本嵌入或筛选条等低装饰场景）；非法值静默回落默认。`status` 校验态语义色优先于形态底色。
+`variant` 对齐 `oas-input` 三值形态：`outlined`（默认描边）/ `filled`（填充底色，聚焦/展开才出边框）/ `borderless`（无框无底色，用于纯文本嵌入或筛选条等低装饰场景）；另加第 4 值 `chip`（属性面板编辑形态，见下节）；非法值静默回落默认。`status` 校验态语义色优先于形态底色。
+
+## 属性面板模式（variant="chip"）
+
+<DemoBlock title="属性面板 chip 编辑形态（workflow 状态）">
+  <oas-space size="small" direction="vertical">
+    <oas-select id="select-chip-workflow" variant="chip" value="in-progress" label="状态" options='[{"label":"待处理","value":"todo","dot":"var(--oas-preset-gold)"},{"label":"进行中","value":"in-progress","dot":"var(--oas-preset-blue)"},{"label":"负责人评审","value":"review","avatarText":"评审人"},{"label":"已完成","value":"done","dot":"var(--oas-preset-green)","avatarText":"完"},{"label":"已阻塞","value":"blocked","dot":"var(--oas-preset-red)"}]'></oas-select>
+    <oas-tag id="select-chip-result" type="info">oas-change: in-progress</oas-tag>
+  </oas-space>
+</DemoBlock>
+
+`variant="chip"` 把触发器换成属性面板常见的紧凑胶囊：高度 24px（CSS 变量 `--oas-select-chip-height` 可调）、弱底（hover 微强调）、无边框框选感（选中态不描边，仅聚焦/展开出焦点环），宽度随内容收缩。触发器与选项行首渲染「首元素槽」：按序取选项的 `dot` 色点（8px）→ `avatarText` 迷你头像（16px，取首字符）→ `icon` 图标，再接选中项 label 与下拉 chevron；`dot` 与 `avatarText` 同时给时 `dot` 优先。选中即派发 `oas-change`（与既有 select 一致），空值走 `placeholder` 占位；`size` / `status` / `multiple` 等既有属性可组合（chip 形态以自身 CSS 为主，size 只联动字号）。字段级编辑场景（属性抽屉、详情面板）可由此替代手写状态胶囊。
 
 ## 校验状态
 
@@ -551,6 +562,13 @@ onMounted(() => {
     declSelect.appendChild(opt)
   })
 
+  // 属性面板 chip 形态 demo：选中即改 + 首元素槽切换（点选后输出回显，反馈可见）
+  const chipSel = document.getElementById('select-chip-workflow')
+  const chipResult = document.getElementById('select-chip-result')
+  chipSel?.addEventListener('oas-change', (e) => {
+    if (chipResult) chipResult.textContent = `oas-change: ${e.detail.value}`
+  })
+
   // 自定义过滤 demo：filterMethod 同时匹配 value 与 label（拼音首字母等自定义规则同理）
   const filterEl = document.getElementById('select-filter')
   if (filterEl) {
@@ -744,21 +762,21 @@ onMounted(() => {
 | `multiple` | 多选 | `boolean` | — |
 | `name` | 表单字段名（原生 FormData 提交的 key；多选时作为同名多条 entry 的 key；无 name 浏览器自动不提交） | `string` | — |
 | `open` | 受控展开：属性在场=展开、移除=收起；宿主手势只派 oas-open-change 通知（组件不强制写回） | `boolean \| string` | `false` |
-| `options` | 选项，JSON 数组 `[{ label, value, disabled?, group?, icon? }]`（group 为分组标题，icon 为 @oas-ui/icons 图标名） | `Option[] \| string` | `[]` |
+| `options` | 选项，JSON 数组 `[{ label, value, disabled?, group?, icon?, dot?, avatarText? }]`（group 为分组标题；icon 为 @oas-ui/icons 图标名；dot 为选项色点颜色值，avatarText 为迷你头像文本取首字符；首元素槽优先级 dot > avatarText > icon） | `Option[] \| string` | `[]` |
 | `placeholder` | 占位提示 | — | — |
 | `placement` | 下拉方向：`auto`（默认，下方优先自动翻转）/ `top` / `bottom`（强制不翻转） | `string` | `auto` |
 | `readonly` | 只读：可聚焦可复制、不弹层、值不可改（隐藏清空与移除按钮） | `boolean` | — |
 | `remote` | 远程搜索：不做本地过滤，输入派发 `oas-input` 供宿主请求 | `boolean` | — |
 | `required` | 必填标记（驱动原生校验链 valueMissing；不透传内层控件） | `boolean` | — |
 | `reserve-keyword` | searchable 选中后保留搜索词（缺省清空，对齐 tree-select） | `boolean` | — |
-| `reserve-width` | 触发器预留最宽选项宽（opt-in）：量测全部选项 label 与 placeholder 的最大文本宽锁定触发器最小宽度，带 Option.icon 的选项额外计入 1em 图标与行 gap；切换选中值时尺寸不抖动，常与 auto-width 组合；options/子元素变化自动重测；移除属性解除锁定 | `boolean` | — |
+| `reserve-width` | 触发器预留最宽选项宽（opt-in）：量测全部选项 label 与 placeholder 的最大文本宽锁定触发器最小宽度，带 Option.icon / dot / avatarText 首元素的选项额外计入首元素宽与行 gap；切换选中值时尺寸不抖动，常与 auto-width 组合；options/子元素变化自动重测；移除属性解除锁定 | `boolean` | — |
 | `searchable` | 可搜索（打开下拉后输入过滤） | `boolean` | — |
 | `show-arrow` | 显式 `"false"` 隐藏默认下拉箭头 | `string` | `true` |
 | `size` | 尺寸档位 `small` / `medium`（默认）/ `large`：控高/字号/标签高联动 | `string` | `medium` |
 | `status` | 校验态：`error` / `warning` / `success`；error 联动宿主 aria-invalid | `string` | — |
 | `tabindex` | 透传内部触发器控制 Tab 序（宿主属性委托后移除，防双停靠点） | — | — |
 | `value` | 当前值（多选为 JSON 数组） | `string \| string[]` | — |
-| `variant` | 形态变体：`outlined`（默认）/ `filled` / `borderless`，非法值静默回落；status 语义色优先 | `string` | — |
+| `variant` | 形态变体：`outlined`（默认）/ `filled` / `borderless` / `chip`（属性面板紧凑胶囊编辑形态：弱底胶囊、无边框框选感、首元素槽 + 选中项 label + chevron），非法值静默回落；status 语义色优先 | `string` | — |
 | `virtual` | 大数据量虚拟滚动：只渲染可视窗口，滚动流畅（复用 oas-virtual-list）；带 `group` 的选项自动回退全量渲染 | `boolean` | — |
 
 #### Property（JS property；是否写回 attribute 见各行说明）
@@ -805,9 +823,12 @@ onMounted(() => {
 
 | CSS 变量 | 默认值 |
 | --- | --- |
+| `--oas-avatar-bg` | `var(--oas-color-primary)` |
+| `--oas-avatar-on-color` | `var(--oas-color-text-on-primary)` |
 | `--oas-button-group-radius` | `var(--oas-radius-md)` |
 | `--oas-glass-blur` | `none` |
 | `--oas-glass-ring` | `transparent` |
+| `--oas-select-chip-height` | `24px` |
 | `--oas-select-dropdown-height` | `240px` |
 | `--oas-select-reserve` | `0px` |
 
@@ -817,7 +838,9 @@ onMounted(() => {
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
+| `avatar-text` | 迷你头像文本：取首字符渲染 16px 圆形头像（缺省 primary 底 + on-primary 字色，对齐库内头像 token 缺省）；选项行与 chip 触发器首渲染；与 dot 同时给时 dot 优先 | — | — |
 | `disabled` | 禁用该项（不可选） | — | — |
+| `dot` | 选项色点（CSS 颜色值，支持 token 名/var()/hex 等）：选项行首与 chip 触发器首渲染 8px 圆点；非法值静默丢弃；与 avatar-text 同时给时 dot 优先 | — | — |
 | `group` | 分组标题（可选）：同组连续渲染组标题（不可选），组内选项缩进 | — | — |
 | `icon` | 选项图标（@oas-ui/icons 图标名）：选项行、单选触发器与多选 chip 统一渲染；未注册时回退纯文本并 devWarn 一次 | — | — |
 | `value` | 选项值（子元素声明式通道的数据载体字段） | — | — |

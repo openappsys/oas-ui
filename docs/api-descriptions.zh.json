@@ -2338,7 +2338,9 @@
   },
   "oas-option": {
     "attrs": {
+      "avatar-text": "迷你头像文本：取首字符渲染 16px 圆形头像（缺省 primary 底 + on-primary 字色，对齐库内头像 token 缺省）；选项行与 chip 触发器首渲染；与 dot 同时给时 dot 优先",
       "disabled": "禁用该项（不可选）",
+      "dot": "选项色点（CSS 颜色值，支持 token 名/var()/hex 等）：选项行首与 chip 触发器首渲染 8px 圆点；非法值静默丢弃；与 avatar-text 同时给时 dot 优先",
       "group": "分组标题（可选）：同组连续渲染组标题（不可选），组内选项缩进",
       "icon": "选项图标（@oas-ui/icons 图标名）：选项行、单选触发器与多选 chip 统一渲染；未注册时回退纯文本并 devWarn 一次",
       "value": "选项值（子元素声明式通道的数据载体字段）"
@@ -2796,7 +2798,7 @@
       "loading": "远程加载占位（与 `remote` 搭配使用）",
       "max-tag-count": "多选标签按数量折叠为 `+N`（需显式设置；未设置时标签默认换行展示，不折叠）",
       "multiple": "多选",
-      "options": "选项，JSON 数组 `[{ label, value, disabled?, group?, icon? }]`（group 为分组标题，icon 为 @oas-ui/icons 图标名）",
+      "options": "选项，JSON 数组 `[{ label, value, disabled?, group?, icon?, dot?, avatarText? }]`（group 为分组标题；icon 为 @oas-ui/icons 图标名；dot 为选项色点颜色值，avatarText 为迷你头像文本取首字符；首元素槽优先级 dot > avatarText > icon）",
       "placeholder": "占位提示",
       "remote": "远程搜索：不做本地过滤，输入派发 `oas-input` 供宿主请求",
       "searchable": "可搜索（打开下拉后输入过滤）",
@@ -2812,7 +2814,7 @@
       "required": "必填标记（驱动原生校验链 valueMissing；不透传内层控件）",
       "name": "表单字段名（原生 FormData 提交的 key；多选时作为同名多条 entry 的 key；无 name 浏览器自动不提交）",
       "label": "触发器可访问名称（aria-label），优先于 placeholder 回退",
-      "variant": "形态变体：`outlined`（默认）/ `filled` / `borderless`，非法值静默回落；status 语义色优先",
+      "variant": "形态变体：`outlined`（默认）/ `filled` / `borderless` / `chip`（属性面板紧凑胶囊编辑形态：弱底胶囊、无边框框选感、首元素槽 + 选中项 label + chevron），非法值静默回落；status 语义色优先",
       "input-value": "搜索词受控源：输入写回属性并派发 oas-input-value-change，外部更新同步进搜索框",
       "show-arrow": "显式 `\"false\"` 隐藏默认下拉箭头",
       "autofocus": "挂载后自动聚焦触发器",
@@ -2823,7 +2825,7 @@
       "auto-width": "触发器宽度随选中项收缩",
       "hint": "触发器下方提示文案（aria-describedby 关联）",
       "hide-selected": "多选时已选选项从下拉列表隐藏，清空/取消后回到列表（仅 multiple 生效）",
-      "reserve-width": "触发器预留最宽选项宽（opt-in）：量测全部选项 label 与 placeholder 的最大文本宽锁定触发器最小宽度，带 Option.icon 的选项额外计入 1em 图标与行 gap；切换选中值时尺寸不抖动，常与 auto-width 组合；options/子元素变化自动重测；移除属性解除锁定"
+      "reserve-width": "触发器预留最宽选项宽（opt-in）：量测全部选项 label 与 placeholder 的最大文本宽锁定触发器最小宽度，带 Option.icon / dot / avatarText 首元素的选项额外计入首元素宽与行 gap；切换选中值时尺寸不抖动，常与 auto-width 组合；options/子元素变化自动重测；移除属性解除锁定"
     },
     "events": {
       "oas-change": "选择/清空变化，`detail: { value }`",

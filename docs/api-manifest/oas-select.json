@@ -289,6 +289,18 @@
       "default": "var(--oas-radius-md)"
     },
     {
+      "name": "--oas-select-chip-height",
+      "default": "24px"
+    },
+    {
+      "name": "--oas-avatar-bg",
+      "default": "var(--oas-color-primary)"
+    },
+    {
+      "name": "--oas-avatar-on-color",
+      "default": "var(--oas-color-text-on-primary)"
+    },
+    {
       "name": "--oas-glass-blur",
       "default": "none"
     },

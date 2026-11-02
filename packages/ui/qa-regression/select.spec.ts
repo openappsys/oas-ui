@@ -695,3 +695,107 @@ test('select slot 模板 CSR 直插形态：前后缀与自定义图标仍渲染
   expect(r.defaultChevronHidden).toBe(true)
   expect(r.templateKept).toBe(true)
 })
+
+// ---- variant="chip" 属性面板编辑模式（E 需求：pm 模板 IssueDetailDrawer FieldChip 场景） ----
+
+test('select chip：滚动容器底部展开自动翻转不被裁切 + 外点/Esc 关闭 + 选中即改且 chip 首元素更新', async ({ page }) => {
+  await page.goto('/components/select.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#select-chip-workflow')
+  const demo = page.locator('#select-chip-workflow')
+
+  // Vue demo 属性存活：variant 与 options 里的 dot/avatarText 字段不被宿主框架剥离
+  await expect(demo).toHaveAttribute('variant', 'chip')
+  const demoOptions = await demo.evaluate(
+    (el) => (el as unknown as { options: Array<Record<string, unknown>> }).options,
+  )
+  expect(demoOptions.some((o) => typeof o.dot === 'string' && String(o.dot).includes('var('))).toBe(true)
+  expect(demoOptions.some((o) => typeof o.avatarText === 'string' && String(o.avatarText).length > 0)).toBe(true)
+
+  // demo 真交互：点选 avatarText 选项 → 选中即改 + chip 首元素切为迷你头像 + 输出回显
+  await demo.locator('[part="trigger"]').click()
+  await page.waitForFunction(() => {
+    const s = document.querySelector('#select-chip-workflow')
+    return (s?.shadowRoot?.querySelectorAll('[role="option"]').length ?? 0) === 5
+  })
+  await demo.locator('.option', { hasText: '负责人评审' }).click()
+  await expect(page.locator('#select-chip-result')).toContainText('review')
+  const demoAvatar = await demo
+    .locator('[part="trigger"]')
+    .evaluate((t) => t.querySelector<HTMLElement>('.chip-avatar')?.textContent ?? null)
+  expect(demoAvatar, 'chip 首元素槽切为 avatarText 首字符').toBe('评')
+  await expect(demo).toHaveAttribute('value', 'review')
+
+  // pm 场景夹具：抽屉/滚动容器底部——限高容器 + overflow:hidden，chip 放容器底部贴视口底
+  //（抽屉本身是高层叠上下文，夹具带 z-index 压过文档站页脚翻页链接，保证点击命中组件而非页面 chrome）
+  await page.evaluate(() => {
+    const fixture = document.createElement('div')
+    fixture.id = 'select-chip-clip-fixture'
+    fixture.style.cssText =
+      'position:fixed;left:16px;bottom:8px;height:120px;overflow:hidden;display:flex;align-items:flex-end;padding:8px;border:1px solid var(--oas-color-border);background:var(--oas-color-bg);z-index:9999'
+    const el = document.createElement('oas-select')
+    el.id = 'select-chip-bottom'
+    el.setAttribute('variant', 'chip')
+    el.setAttribute('label', '状态')
+    el.setAttribute(
+      'options',
+      JSON.stringify([
+        { label: '待处理', value: 'todo', dot: 'var(--oas-preset-gold)' },
+        { label: '进行中', value: 'in-progress', dot: 'var(--oas-preset-blue)' },
+        { label: '已完成', value: 'done', dot: 'var(--oas-preset-green)' },
+      ]),
+    )
+    fixture.appendChild(el)
+    document.body.appendChild(fixture)
+  })
+  const bottom = page.locator('#select-chip-bottom')
+  await bottom.locator('[part="trigger"]').click()
+  await page.waitForFunction(() => {
+    const s = document.querySelector('#select-chip-bottom')
+    return s?.shadowRoot?.querySelector('.dropdown')?.classList.contains('open') === true
+  })
+  const flip = await page.evaluate(() => {
+    const s = document.querySelector('#select-chip-bottom')!
+    const trigger = s.shadowRoot!.querySelector<HTMLElement>('[part="trigger"]')!
+    const panel = s.shadowRoot!.querySelector<HTMLElement>('[part="dropdown"]')!
+    const t = trigger.getBoundingClientRect()
+    const p = panel.getBoundingClientRect()
+    return {
+      position: getComputedStyle(panel).position,
+      flippedAbove: p.top < t.top,
+      withinViewport: p.top >= 0 && p.bottom <= window.innerHeight + 0.5,
+      triggerNearViewportBottom: window.innerHeight - t.bottom < 40,
+      optionCount: s.shadowRoot!.querySelectorAll('[role="option"]').length,
+    }
+  })
+  expect(flip.triggerNearViewportBottom, '夹具应造出「容器底部空间不足」场景').toBe(true)
+  expect(flip.position, 'dropdown 走 fixed 定位逃出 overflow:hidden 容器（不贡献裁切）').toBe('fixed')
+  expect(flip.flippedAbove, '下方空间不足时列表自动向上翻转').toBe(true)
+  expect(flip.withinViewport, '翻转后面板完整落在视口内（不被容器裁切）').toBe(true)
+  expect(flip.optionCount).toBe(3)
+
+  // 外点关闭：点击夹具内、组件外区域
+  await page.locator('#select-chip-clip-fixture').click({ position: { x: 2, y: 2 } })
+  await expect(bottom.locator('[part="trigger"]')).toHaveAttribute('aria-expanded', 'false')
+
+  // Esc 关闭
+  await bottom.locator('[part="trigger"]').click()
+  await page.waitForFunction(() => {
+    const s = document.querySelector('#select-chip-bottom')
+    return s?.shadowRoot?.querySelector('.dropdown')?.classList.contains('open') === true
+  })
+  await bottom.locator('[part="trigger"]').press('Escape')
+  await expect(bottom.locator('[part="trigger"]')).toHaveAttribute('aria-expanded', 'false')
+
+  // 选中即改且 chip 首元素（dot）更新：点选「已完成」→ 触发器色点切为 green token
+  await bottom.locator('[part="trigger"]').click()
+  await page.waitForFunction(() => {
+    const s = document.querySelector('#select-chip-bottom')
+    return (s?.shadowRoot?.querySelectorAll('[role="option"]').length ?? 0) === 3
+  })
+  await bottom.locator('.option', { hasText: '已完成' }).click()
+  await expect(bottom).toHaveAttribute('value', 'done')
+  const dotStyle = await bottom
+    .locator('[part="trigger"]')
+    .evaluate((t) => t.querySelector<HTMLElement>('.chip-dot')?.getAttribute('style') ?? null)
+  expect(dotStyle, '选中项 dot 色点内联进 chip 触发器').toContain('--oas-preset-green')
+})
