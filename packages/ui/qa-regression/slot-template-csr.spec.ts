@@ -311,6 +311,38 @@ test('CSR 模板：calendar cell 模板渲染且 [data-cell-date] 绑定日期�
   expect(r.binder, '模板内 [data-cell-date] 应绑定该格日期数字').toBe(r.expectDay)
 })
 
+test('CSR 模板：date-picker cell 模板渲染且 [data-cell-date] 绑定日期数字', async ({ page }) => {
+  await page.goto('/components/date-picker.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-date-picker')
+  const r = await page.evaluate(async () => {
+    const w = window as any
+    await customElements.whenDefined('oas-date-picker')
+    const el = document.createElement('oas-date-picker')
+    el.setAttribute('value', '2026-08-09')
+    const tpl = w.__addCsrSlot(el, 'cell', '<span class="csr-dp-cell">📅<span data-cell-date></span></span>')
+    document.body.appendChild(el)
+    await w.__frame()
+    const trigger = el.shadowRoot!.querySelector<HTMLElement>('[part="trigger"]')!
+    trigger.click()
+    await w.__frame()
+    const days = [...el.shadowRoot!.querySelectorAll('.grid .day')] as HTMLElement[]
+    const first = days[0]
+    const iso = first?.dataset.date ?? ''
+    return {
+      shape: { content: tpl.content.childNodes.length, own: tpl.childNodes.length },
+      total: days.length,
+      bound: days.filter((d) => d.querySelector('.csr-dp-cell')).length,
+      binder: first?.querySelector('[data-cell-date]')?.textContent ?? null,
+      // data-date 为本地 ISO yyyy-MM-dd，取末两位还原日数字（与组件 String(getDate()) 同口径）
+      expectDay: iso ? String(Number(iso.slice(8, 10))) : null,
+    }
+  })
+  expect(r.shape, '测试须造出 CSR 形态').toEqual({ content: 0, own: 1 })
+  expect(r.total, '选择面板渲染整月网格').toBe(42)
+  expect(r.bound, '每个日格都应渲染模板节点（CSR 直插形态不再空白）').toBe(r.total)
+  expect(r.binder, '模板内 [data-cell-date] 应绑定该格日期数字').toBe(r.expectDay)
+})
+
 test('CSR 模板：checkbox checked-icon 模板在选中态渲染', async ({ page }) => {
   await page.goto('/components/checkbox.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-checkbox')

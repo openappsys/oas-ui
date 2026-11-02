@@ -821,6 +821,29 @@ describe('面板能力', () => {
     expect(aug1.querySelector('.cell-dot')).toBeNull()
     expect(aug1.textContent!.trim()).toBe('1')
   })
+
+  it('cell 模板双形态：CSR 直插形态（子节点在元素 childNodes、content 为空）同样克隆进单元格', () => {
+    const el = mount({ value: '2026-08-09' })
+    // happy-dom 会把 appendChild/insertBefore 重定向到 template.content，造不出真实 CSR 形态
+    // （见 shared/slot-template.test.ts 同口径说明）→ 用最小替身覆盖「content 空、childNodes 有内容」
+    // 这一分支，真实引擎形态由 qa-regression/slot-template-csr.spec.ts 的 date-picker 用例锁定。
+    const fake = {
+      content: document.createDocumentFragment(),
+      childNodes: [
+        Object.assign(document.createElement('span'), { className: 'cell-csr-dot' }),
+        Object.assign(document.createElement('span'), { className: 'cell-csr-binder' }),
+      ],
+    } as unknown as HTMLTemplateElement
+    const origQuery = el.querySelector.bind(el)
+    el.querySelector = ((selector: string) =>
+      selector === 'template[slot="cell"]' ? fake : origQuery(selector)) as typeof el.querySelector
+    open(el)
+    const aug1 = day(el, '2026-08-01')
+    expect(aug1.querySelectorAll('.cell-csr-dot').length, 'CSR 形态模板内容被克隆进日格').toBe(1)
+    expect(aug1.querySelectorAll('.cell-csr-binder').length).toBe(1)
+    // 双形态克隆非破坏性：宿主模板节点仍在
+    expect(fake.childNodes.length, '源节点不被搬走').toBe(2)
+  })
 })
 
 // ---- 手输通道（单值类型：date / month / year / week / datetime） ----

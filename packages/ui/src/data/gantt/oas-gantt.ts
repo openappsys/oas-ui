@@ -137,12 +137,16 @@ const STYLE = `
 }
 /* 行 hover 底色（hover 属性，默认开；hover="false" 经 --_row-hover-bg 置透明关闭，不改写本规则）。
    与斑马纹独立 token（--oas-gantt-row-hover-bg），可分别自定义；定义在斑马纹之后、selected 之前
-   （同特异性后者胜）→ 优先级序：条纹 < hover < 选中 */
+   （同特异性后者胜）→ 优先级序：条纹 < hover < 选中。
+   媒体守卫与 JS 侧 pointerType=touch 守卫配套：触屏（hover: none）上原生 :hover 会粘住，
+   造成「左侧行名高亮、时间轴却不出装饰层」的左右不一致 → 仅在真实悬停设备上声明。 */
 :host([hover='false']) {
   --_row-hover-bg: transparent;
 }
-.row-name:hover {
-  background: var(--_row-hover-bg, var(--oas-gantt-row-hover-bg, var(--oas-color-bg-hover)));
+@media (hover: hover) {
+  .row-name:hover {
+    background: var(--_row-hover-bg, var(--oas-gantt-row-hover-bg, var(--oas-color-bg-hover)));
+  }
 }
 .row-name.selected {
   background: color-mix(in srgb, var(--oas-color-primary) 18%, transparent);
@@ -3269,6 +3273,9 @@ export class OASGantt extends OASElement {
       this.sideBody?.removeEventListener('pointerleave', this.onHoverPointerLeave)
       this.tbody?.removeEventListener('pointerover', this.onTbodyPointerOver)
       this.tbody?.removeEventListener('pointerleave', this.onHoverPointerLeave)
+      // 断开即摘除装饰层节点：重连不重建 shadow，只置空引用会让旧层永久留在画布上（假高亮，
+      // 且下次 hover 再建一个 → 同时两个层；回归见 oas-gantt.test.ts「④ 断开重连」）
+      this.hoverEl?.remove()
       this.hoverKey = null
       this.hoverEl = null
       this.resizeObs?.disconnect()
@@ -6712,9 +6719,13 @@ export class OASGantt extends OASElement {
       el = document.createElement('div')
       el.className = 'row-hover'
       el.setAttribute('aria-hidden', 'true')
-      inner.insertBefore(el, this.gridEl)
       this.hoverEl = el
     }
+    // 绘制序自愈：同为 absolute 无 z-index → DOM 序即绘制序，契约是「条纹 < hover < 周末/假日列」。
+    // 层必须**紧贴 .grid-canvas 之前**，且不能依赖创建时机——运行期开 stripe 时条纹容器会插到
+    // .grid-canvas 之前（落在已存在的层之后），若这里只按创建时插一次，条纹就会压住 hover 层
+    // （自定义 --oas-gantt-row-hover-bg 时奇数行 hover 静默失效；回归见「⑤ 运行期开启 stripe」）
+    if (el.nextSibling !== this.gridEl) inner.insertBefore(el, this.gridEl)
     el.style.top = `${this.absRowTop(idx)}px`
     el.style.height = `${this.rowHeightPx()}px`
     el.style.width = `${this.canvasW}px`

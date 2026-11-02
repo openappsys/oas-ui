@@ -515,6 +515,68 @@ describe('OASGantt 行 hover（hover 属性，默认开；hover="false" 关闭�
     firePointer(sr2.querySelector<HTMLElement>('.bars .bar')!, 'pointerover')
     expect(sr2.querySelector('.row-hover'), 'hover=false 零装饰层').toBeNull()
   })
+
+  // 回归：断开重连（路由缓存摘挂 / v-if 重挂）时 cleanup 曾只把 hoverEl 引用置空、不移除节点，
+  // 重连后旧层留在 shadow 里（假高亮永挂），下一次 hover 再建一个新层 → 同时两个层。
+  it('④ 断开重连：旧装饰层不残留，再 hover 另一行仍只有一个层且指到该行', () => {
+    const el = mount({ tasks: JSON.stringify(hoverTasks(4)) })
+    const sr = shadowOf(el)
+    firePointer(sr.querySelector<HTMLElement>('.side-body .row-name[data-key="t1"]')!, 'pointerover')
+    expect(sr.querySelectorAll('.row-hover').length, '前置：hover 行 1 已建层').toBe(1)
+
+    el.remove() // 断开：cleanup 应连同节点一起摘除
+    expect(sr.querySelectorAll('.row-hover').length, '断开即移除装饰层节点（不留幽灵层）').toBe(0)
+
+    document.body.appendChild(el) // 重连：render 不重建，shadow 结构原样保留
+    firePointer(sr.querySelector<HTMLElement>('.side-body .row-name[data-key="t3"]')!, 'pointerover')
+    const layers = [...sr.querySelectorAll<HTMLElement>('.row-hover')]
+    expect(layers.length, '重连后再 hover 不得叠出第二个层').toBe(1)
+    expect(layers[0]!.style.top, '唯一层指向新 hover 行（行 3）').toBe(`${3 * 36}px`)
+  })
+
+  // 回归：绘制序（同为 absolute 无 z-index → DOM 序即绘制序）必须是 条纹 < hover < 周末/假日列。
+  // 运行期开 stripe 时条纹容器会插入到 .grid-canvas 之前（可能在已存在的 hover 层之后），
+  // 曾把不透明的条纹压到 hover 之上 → 自定义 --oas-gantt-row-hover-bg 时奇数行 hover 静默失效。
+  it('⑤ 运行期开启 stripe：条纹层仍排在 hover 层之前（任何创建顺序都保持 stripes < hover）', () => {
+    const el = mount({ tasks: JSON.stringify(hoverTasks(4)) })
+    const sr = shadowOf(el)
+    // ① 先 hover 建层，后开 stripe（层已存在，不会重建 → 最容易翻转的顺序）
+    firePointer(sr.querySelector<HTMLElement>('.side-body .row-name[data-key="t1"]')!, 'pointerover')
+    el.setAttribute('stripe', '')
+    const inner = sr.querySelector<HTMLElement>('.inner')!
+    const order = [...inner.children].map((n) => n.className)
+    expect(order.indexOf('stripe-canvas'), `实际顺序：${order.join(',')}`).toBeGreaterThan(-1)
+    expect(order.indexOf('row-hover'), 'hover 层在场').toBeGreaterThan(-1)
+    expect(order.indexOf('stripe-canvas'), '条纹在下（先绘）').toBeLessThan(order.indexOf('row-hover'))
+    expect(order.indexOf('row-hover'), 'hover 层紧贴 .grid-canvas 之前（周末/假日列仍在其上）').toBe(
+      order.indexOf('grid-canvas') - 1,
+    )
+
+    // ② 反向顺序：先开 stripe 再 hover（原正确路径不得回归）
+    const el2 = mount({ tasks: JSON.stringify(hoverTasks(4)), stripe: '' })
+    const sr2 = shadowOf(el2)
+    firePointer(sr2.querySelector<HTMLElement>('.side-body .row-name[data-key="t2"]')!, 'pointerover')
+    const order2 = [...sr2.querySelector<HTMLElement>('.inner')!.children].map((n) => n.className)
+    expect(order2.indexOf('stripe-canvas')).toBeLessThan(order2.indexOf('row-hover'))
+
+    // ③ 关 stripe 再 hover 回来：仍单层且顺序稳定
+    el.removeAttribute('stripe')
+    firePointer(sr.querySelector<HTMLElement>('.side-body .row-name[data-key="t2"]')!, 'pointerover')
+    const order3 = [...inner.children].map((n) => n.className)
+    expect(order3.indexOf('stripe-canvas'), 'stripe 关闭后容器整体移除').toBe(-1)
+    expect(order3.indexOf('row-hover')).toBe(order3.indexOf('grid-canvas') - 1)
+  })
+
+  // 与 JS 的 pointerType=touch 守卫配套：触屏（hover: none）不激活 CSS :hover，避免
+  // 点按后左侧行名粘住高亮、而时间轴不出装饰层（左右不一致）。happy-dom 不解析媒体查询，
+  // 只能锁源码结构：:hover 规则必须落在 @media (hover: hover) 内。
+  it('⑥ CSS：行名 :hover 底色仅在 (hover: hover) 媒体查询内声明（触屏不粘住）', () => {
+    const el = mount({ tasks: JSON.stringify(BASE_TASKS) })
+    const css = shadowOf(el).querySelector('style')!.textContent ?? ''
+    const media = css.match(/@media \(hover: hover\) \{([\s\S]*?)\n\}/)?.[1] ?? ''
+    expect(media, '@media (hover: hover) 块存在').toContain('.row-name:hover')
+    expect(media).toMatch(/\.row-name:hover\s*\{[^}]*var\(--_row-hover-bg/)
+  })
 })
 
 describe('OASGantt 刻度六档', () => {

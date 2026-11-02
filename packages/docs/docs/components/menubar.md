@@ -26,6 +26,10 @@
 
 **全局快捷键语义**：`shortcut` 与 `accessKey`（Alt 访问键）都是**文档级**绑定，作用于整个页面而非仅菜单栏聚焦时。为避免劫持输入，焦点位于可编辑控件（`input` / `textarea` / `select` / `contenteditable`）时：**带 Ctrl / Cmd 的已定义 shortcut 与 F1–F24 单键 shortcut 仍然生效**（编辑器内保存/新建等核心动作必须可达），其余按键（普通可打印字符、方向键/编辑键、Alt 访问键、输入法组合中的任何按键）一律让路，由控件与浏览器自行处理；未命中任何 shortcut 的组合键不会 `preventDefault`，编辑器自身快捷键不受影响；命中的快捷键也不会把焦点抢到菜单栏，编辑器光标留在原处。菜单栏自身的键盘导航（方向键 / Tab 焦点陷阱）只在其内部焦点上生效，不受此守卫影响。同一快捷键应在页面内保持唯一，冲突时以先匹配到的菜单项为准。
 
+::: warning 不要给文本编辑键绑定菜单动作
+上述放行是有意为之（保证编辑器内 `Ctrl+S` 保存可达），代价是**可编辑焦点内「已定义」的 Ctrl / Cmd + 字母 shortcut 仍会触发菜单动作并 `preventDefault`**。因此**请勿**在 `shortcut` 里使用 `Ctrl+C` / `Ctrl+V` / `Ctrl+X` / `Ctrl+A` / `Ctrl+Z` / `Ctrl+Y`（以及对应 Cmd 形式）——它们在输入框里会劫持复制 / 粘贴 / 剪切 / 全选 / 撤销，且没有组件级开关可以关闭。需要在菜单里展示这些提示时，请只在宿主层自行处理按键（组件不绑定），或改用 `kind: "action"` + 宿主自己的 document 监听。
+:::
+
 <DemoBlock title="快捷键（shortcut）">
   <oas-menubar id="menubar-shortcut" onoas-select="menubarShortcutLog(event)" items='[{"label":"文件","value":"file","accessKey":"f","children":[{"label":"新建","value":"new","shortcut":"Ctrl+N"},{"label":"打开","value":"open","shortcut":"Ctrl+O"},{"type":"divider"},{"label":"保存","value":"save","shortcut":"Ctrl+S","kind":"action"}]}]'></oas-menubar>
   <oas-tag id="menubar-shortcut-result" type="info">按 Ctrl+N / Ctrl+O / Ctrl+S 试试</oas-tag>

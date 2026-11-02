@@ -4294,4 +4294,16 @@ describe('OASResource 泳道行 hover（hover 属性，默认开；hover="false"
       /:host\(\[hover='false'\]\) \.row\.lane:hover \.name\s*\{[^}]*background:\s*var\(--oas-color-bg\)/,
     )
   })
+
+  it('③ CSS：泳道 :hover 规则整体落在 @media (hover: hover) 内（触屏点按不粘住行底色）', () => {
+    const el = mount({ resources: JSON.stringify(RES), tasks: '[]' })
+    const css = shadowOf(el).querySelector('style')!.textContent ?? ''
+    const media = css.match(/@media \(hover: hover\) \{([\s\S]*?)\n\}/)?.[1] ?? ''
+    expect(media, '@media (hover: hover) 块存在').toContain('.row.lane:hover')
+    // 两条正相关规则（行底色 + 行头同步）都必须在守卫内
+    expect(media).toMatch(/\.row\.lane:hover\s*\{/)
+    expect(media).toMatch(/\.row\.lane:hover \.name\s*\{/)
+    // 关闭态规则同样在守卫内（与正相关规则同块，避免只在触屏生效的错序）
+    expect(media).toMatch(/:host\(\[hover='false'\]\) \.row\.lane:hover\s*\{/)
+  })
 })

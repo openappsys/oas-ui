@@ -29,6 +29,8 @@ import '../../feedback/bottom-sheet/index.js'
 import type { OASBottomSheet } from '../../feedback/bottom-sheet/index.js'
 import { watchMobileSheetMode } from '../../shared/mobile-sheet.js'
 import { devWarn } from '../../shared/dev-warn.js'
+// slot 模板双形态克隆（静态 HTML 在 template.content；Vue 等 CSR 直插元素 childNodes）
+import { cloneSlotContent } from '../../shared/slot-template.js'
 
 type PickerType =
   | 'date'
@@ -2279,13 +2281,16 @@ export class OASDatePicker extends OASFormElement {
     const tpl = this.querySelector<HTMLTemplateElement>('template[slot="cell"]')
     // 模板可能为空：宿主写了 <template slot="cell"> 但内容被上层编译器吞掉（Vue 在 dev 下会吞），
     // 此时不要清空日格，保留组件写入的日期数字，避免整月数字消失。
-    const hasTpl = !!tpl && tpl.content.childNodes.length > 0
+    // 双形态判定：静态 HTML / SSR 快照在 template.content；框架 CSR 直插落在元素自身 childNodes
+    // （与 oas-calendar 同构，见 shared/slot-template.ts）。
+    const hasTpl = !!tpl && (tpl.content.childNodes.length > 0 || tpl.childNodes.length > 0)
     for (const btn of grid.querySelectorAll<HTMLButtonElement>('.day')) {
       const date = parseISODate(btn.dataset.date ?? '')
       if (!date) continue
       if (hasTpl) {
         btn.textContent = ''
-        btn.appendChild(tpl!.content.cloneNode(true))
+        // 双形态克隆：静态 HTML 取 template.content，框架 CSR 直插取元素 childNodes
+        btn.appendChild(cloneSlotContent(tpl!))
         const binder = btn.querySelector<HTMLElement>('[data-cell-date]')
         if (binder) binder.textContent = String(date.getDate())
       }

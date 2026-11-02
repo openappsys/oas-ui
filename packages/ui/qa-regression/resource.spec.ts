@@ -2540,7 +2540,8 @@ test('resource show-cost 成本合计：默认关零节点、开启按费率行�
 })
 
 // 泳道行 hover（hover 属性，默认开）：真实鼠标 hover 泳道 → 整行底色（含 sticky 行头 .name）激活；
-// hover="false" → 行底色与行头均不变；暗色下 token 暗色变体仍生效；console 零告警。
+// hover="false" → 行底色与行头均不变；行底色通道与条 hover 通道互不串色；暗色下 token 暗色变体仍生效；
+// console 零告警。
 test('resource 泳道行 hover：整行（含行头）底色激活 + hover="false" 关闭 + 暗色 + console 零告警', async ({ page }) => {
   const errors: string[] = []
   page.on('pageerror', (e) => errors.push(e.message))
@@ -2574,18 +2575,31 @@ test('resource 泳道行 hover：整行（含行头）底色激活 + hover="fals
   const disabled = await readRowBg()
   expect(disabled.lane, 'hover=false 行底色不激活').toBe(before.lane)
   expect(disabled.name, 'hover=false 行头不激活').toBe(before.name)
-  // 条自身 hover 色不受行 hover 开关影响（独立 token）
+
+  // 通道独立（hover 开启态）：行底色走 --oas-resource-row-hover-bg，条 hover 走
+  // --oas-resource-bar-hover-bg —— 改写行 token 只影响行/行头，条保持自身 hover 色。
+  // 注意：hover 条时指针本就落在泳道内，行仍应点亮（几何通道），这不等于「条通道驱动行通道」。
+  await page.evaluate(() => {
+    const el = document.getElementById('res-level')!
+    el.removeAttribute('hover')
+    el.style.setProperty('--oas-resource-row-hover-bg', 'rgb(1, 2, 3)')
+  })
   await res.locator('.row.lane .bar').first().hover()
-  const barHover = await page.evaluate(() => {
+  const channels = await page.evaluate(() => {
     const sr = (document.getElementById('res-level') as HTMLElement & { shadowRoot: ShadowRoot }).shadowRoot
     const lane = sr.querySelector<HTMLElement>('.row.lane')!
-    return getComputedStyle(lane).backgroundColor
+    const bar = lane.querySelector<HTMLElement>('.bar')!
+    const cs = (n: HTMLElement) => getComputedStyle(n).backgroundColor
+    return { lane: cs(lane), bar: cs(bar) }
   })
-  expect(barHover, '条 hover 不点亮行底色（通道独立）').toBe(before.lane)
+  expect(channels.lane, '行底色只认行 token（条 hover 不越界驱动行内其它色）').toBe('rgb(1, 2, 3)')
+  expect(channels.bar, '条 hover 走自己的 token，不被行 hover token 改写').not.toBe('rgb(1, 2, 3)')
 
-  // 移除属性恢复默认开 + 暗色下激活
+  // 移除属性恢复默认开 + 暗色下激活（先清掉临时 token，避免暗色断言命中自定义色）
   await page.evaluate(() => {
-    document.getElementById('res-level')!.removeAttribute('hover')
+    const el = document.getElementById('res-level')!
+    el.removeAttribute('hover')
+    el.style.removeProperty('--oas-resource-row-hover-bg')
     document.documentElement.classList.add('dark')
   })
   await res.locator('.row.lane').first().hover()
