@@ -166,7 +166,11 @@ jobs:
     runs-on: ubuntu-24.04
     env:
       OAS_DOCS_ANALYTICS: 0
-    timeout-minutes: 20
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3]
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -182,12 +186,12 @@ jobs:
           path: ~/.cache/ms-playwright
           key: ${{ runner.os }}-playwright-webkit-${{ hashFiles('pnpm-lock.yaml') }}
       - run: pnpm exec playwright install --with-deps webkit
-      - run: pnpm test:e2e:webkit
+      - run: pnpm test:e2e:webkit --shard=${{ matrix.shard }}/3
       - name: Upload Playwright artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: e2e-webkit
+          name: e2e-webkit-${{ matrix.shard }}
           path: |
             playwright-report/
             test-results/
