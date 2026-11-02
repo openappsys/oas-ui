@@ -47,7 +47,10 @@ const SAMPLE_ATTRS: Partial<Record<WhiteListTag, Record<string, string>>> = {
 }
 
 describe('全白名单快照确定性（穷尽实测）', () => {
-  it('每个白名单 tag 最小渲染两次逐字节一致（175 tag 穷尽）', async () => {
+  // timeout 30s：175 tag × 两次最小渲染是全 CPU 型串行工作，空闲 ~1.4s，但全量套件并发负载下
+  // 5s 阈值反复超时（rehearse 实抓）——本测试断言快照确定性而非性能（性能有 perf 系列门禁），
+  // 阈值只防挂死。
+  it('每个白名单 tag 最小渲染两次逐字节一致（175 tag 穷尽）', { timeout: 30_000 }, async () => {
     const nondeterministic: string[] = []
     for (const tag of WHITELIST) {
       const attrs = SAMPLE_ATTRS[tag] ?? {}
