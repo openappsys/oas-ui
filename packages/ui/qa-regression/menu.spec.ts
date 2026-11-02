@@ -771,14 +771,29 @@ test('menu 水平溢出收纳「···」可见且末项不截断（曾收纳项
     const more = root.querySelector<HTMLElement>('.menu-more')!
     const visible = items.filter((t) => !t.hasAttribute('data-collapsed'))
     const lastVisible = visible[visible.length - 1]
+    const rootRect = root.getBoundingClientRect()
+    // 几何口径的「展示中项」：display:none 的收纳项 offsetWidth = 0；剩下的是真的占了横向空间
+    const shown = items.filter((t) => t.offsetWidth > 0)
+    const overflowing = shown.filter((t) => t.getBoundingClientRect().right > rootRect.right + 1)
     return {
+      total: items.length,
+      shownCount: shown.length,
       collapsedCount: items.length - visible.length,
+      overflowingCount: overflowing.length,
       moreVisible: getComputedStyle(more).display !== 'none' && more.offsetWidth > 0,
       // 末个可见项文本不被截断（scrollWidth 不超过盒宽）
       lastItemClipped: lastVisible ? lastVisible.scrollWidth > lastVisible.offsetWidth + 1 : false,
     }
   })
-  expect(st.collapsedCount, '应有溢出项被收纳').toBe(5)
+  // 收纳数不写死：字体度量差异只改变「收纳几个」，不变量是「被标收纳的项确实不占位、
+  // 仍展示的项不越过容器右缘」——两者同时成立即收纳判定与几何一致（曾现缺陷：收纳项自身
+  // 被算进数据项而隐藏，「···」永不出现，moreVisible 会红）。
+  expect(st.collapsedCount, '标了 data-collapsed 的项数 = 未占位的项数（收纳标记与几何一致）').toBe(
+    st.total - st.shownCount,
+  )
+  expect(st.overflowingCount, '仍展示的项不得越过容器右缘（无横向溢出漏收纳）').toBe(0)
+  expect(st.collapsedCount, '应有溢出项被收纳').toBeGreaterThanOrEqual(1)
+
   expect(st.moreVisible, '「···」收纳项应可见').toBe(true)
   expect(st.lastItemClipped, '末个可见项不应截断').toBe(false)
   // 点击「···」→ 镜像弹层真实可见（elementFromPoint 命中宿主）

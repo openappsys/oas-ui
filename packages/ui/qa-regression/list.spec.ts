@@ -323,7 +323,14 @@ test('list windowed：滚动派发 oas-window-request、回填后绝对行渲染
     body.dispatchEvent(new Event('scroll'))
     await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)))
     const reqs = (window as unknown as { __winReqs: Array<{ start: number; end: number; reason: string }> }).__winReqs
-    return reqs[reqs.length - 1] ?? null
+    // 记录写入后被浏览器接受的滚动位置：后续断言用「真正落到的值」而非复写常数
+    const detail = reqs[reqs.length - 1] ?? null
+    return {
+      start: detail?.start ?? -1,
+      end: detail?.end ?? -1,
+      reason: detail?.reason ?? '',
+      scrollTopAfterSet: body.scrollTop,
+    }
   })
   expect(req!.reason).toBe('scroll')
   expect(req!.start).toBeGreaterThan(100)
@@ -371,10 +378,10 @@ test('list windowed：滚动派发 oas-window-request、回填后绝对行渲染
   // aria-setsize = total；aria-posinset = 绝对行号 + 1
   expect(r.setsize.every((s) => s === '500')).toBe(true)
   expect(r.posinset).toEqual(r.indexes.map((i) => i + 1))
-  // 占位 + 行 = 全量总高（500 × 40），且滚动位置未被重建清回 0
+  // 占位 + 行 = 全量总高（500 × 40），且滚动位置未被重建清回 0（保持写入后浏览器接受的值）
   expect(r.rowH).toBe(40)
   expect(r.topH + r.indexes.length * r.rowH + r.bottomH).toBe(500 * 40)
-  expect(r.scrollTop).toBe(8000)
+  expect(r.scrollTop, '滚动位置保持回填前的落定值（不被重建钳回顶部）').toBe(req!.scrollTopAfterSet)
 })
 
 // ===== a11y 角色归属：role=list 落在 shadow 内行容器，宿主不再承担 list 角色 =====

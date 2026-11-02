@@ -137,11 +137,16 @@ test('top prepend：真实滚动锚点 rect 不变、异步撑高补偿一次、
   const afterPrepend = await page.evaluate(() => {
     const vp = document.getElementById('vp')!
     const anchor = document.querySelector<HTMLElement>('[data-key="0"]')!
-    return { scrollTop: vp.scrollTop, anchorTop: anchor.getBoundingClientRect().top - vp.getBoundingClientRect().top }
+    return {
+      scrollTop: vp.scrollTop,
+      anchorTop: anchor.getBoundingClientRect().top - vp.getBoundingClientRect().top,
+      // 期望补偿量 = 插入块的实际高度（fixture 内联样式给定，DOM 现算；不含按平台校准的数）
+      prependedH: document.querySelector<HTMLElement>('[data-key="pre"]')?.offsetHeight ?? 0,
+    }
   })
-  // 锚点仍是同一行且视口内位置不变（prepend 60px 被 60px scrollTop 补偿抵消）
+  // 锚点仍是同一行且视口内位置不变（插入块高度被等量 scrollTop 补偿抵消）
   expect(afterPrepend.anchorTop).toBeCloseTo(0, 1)
-  expect(afterPrepend.scrollTop).toBeCloseTo(60, 0)
+  expect(afterPrepend.scrollTop, '补偿量 = prepend 块实测高度').toBeCloseTo(afterPrepend.prependedH, 0)
 
   // 异步资源撑高：load 事件后纳入 RO，再变高 40px → 锚点继续保位
   await page.evaluate(() => {
@@ -233,13 +238,17 @@ test('top 加载中替换列表容器（replaceList）：新容器仍补偿且�
     return {
       anchorTop: anchor.getBoundingClientRect().top - vp.getBoundingClientRect().top,
       scrollTop: vp.scrollTop,
+      // 期望补偿量 = 新容器首块（pre）实测高度（DOM 现算）
+      prependedH: document.querySelector<HTMLElement>('[data-key="pre"]')?.offsetHeight ?? 0,
       listId: document.getElementById('list')!.id,
       loads: (window as unknown as { __loads: Array<{ edge: string }> }).__loads.map((l) => l.edge),
     }
   })
-  // 新容器里的稳定 key 被重查命中，控制器补偿 60px；浏览器滚动锚定已关闭
+  // 新容器里的稳定 key 被重查命中，控制器补偿插入块高度；浏览器滚动锚定已关闭
   expect(Math.abs(afterReplace.anchorTop)).toBeLessThanOrEqual(1)
-  expect(Math.abs(afterReplace.scrollTop - 60)).toBeLessThanOrEqual(1)
+  expect(Math.abs(afterReplace.scrollTop - afterReplace.prependedH), '补偿量 = prepend 块实测高度').toBeLessThanOrEqual(
+    1,
+  )
   expect(afterReplace.listId).toBe('list')
   expect(afterReplace.loads).toEqual(['top'])
 
@@ -264,10 +273,13 @@ test('用户滚到顶触发第二次 top 加载：新锚点 delta≈0，不自�
     const w = window as unknown as {
       __fixtureLoad?: (ctx: { edge: string; signal: AbortSignal }) => Promise<unknown>
       __loads: Array<{ edge: string }>
+      __lastPrependH: number
     }
+    w.__lastPrependH = 0
     w.__fixtureLoad = async (ctx: { edge: string; signal: AbortSignal }) => {
       if (ctx.edge !== 'top') return {}
-      // 第 1 次 prepend 60px，第 2 次 50px：两次都换新 key，验证新锚点仍贴视口
+      // 首次 prepend 用 seq=1 → 60px，第二次 seq=0 → 50px（历史行为，保持不动）：
+      // 两次都换新 key，验证新锚点仍贴视口
       const seq = w.__loads.length
       await new Promise((resolve) => setTimeout(resolve, 20))
       if (ctx.signal.aborted) return {}
@@ -278,6 +290,8 @@ test('用户滚到顶触发第二次 top 加载：新锚点 delta≈0，不自�
       pre.style.cssText = `height:${seq === 1 ? 60 : 50}px;box-sizing:border-box`
       pre.textContent = `pre-${seq}`
       list.prepend(pre)
+      // 记录本次插入块的实际高度：补偿量断言对「新插入块」而非固定 key/像素
+      w.__lastPrependH = pre.offsetHeight
       return {}
     }
   })
@@ -323,16 +337,18 @@ test('用户滚到顶触发第二次 top 加载：新锚点 delta≈0，不自�
 
   const result = await page.evaluate(() => {
     const vp = document.getElementById('vp')!
-    // 第二次加载前的新锚点 = 滚到顶后的首个可见项 pre-1
+    // 第二次加载前的新锚点 = 滚到顶后的首个可见项（首次 prepend 的块）
     const anchor = document.querySelector<HTMLElement>('[data-key="pre-1"]')!
     return {
       anchorTop: anchor.getBoundingClientRect().top - vp.getBoundingClientRect().top,
       scrollTop: vp.scrollTop,
+      // 期望补偿量 = fixture 本次实际插入块的高度（在插入现场测量，不依赖 key/像素常数）
+      prependedH: (window as unknown as { __lastPrependH: number }).__lastPrependH,
       loads: (window as unknown as { __loads: Array<{ edge: string }> }).__loads.map((l) => l.edge),
     }
   })
   expect(Math.abs(result.anchorTop)).toBeLessThanOrEqual(1)
-  expect(Math.abs(result.scrollTop - 50)).toBeLessThanOrEqual(1)
+  expect(Math.abs(result.scrollTop - result.prependedH), '补偿量 = 第二次 prepend 块实测高度').toBeLessThanOrEqual(1)
   expect(result.loads).toEqual(['top', 'top'])
 
   // 第二次落地后 scrollTop 已离开顶部：不得再自动续载

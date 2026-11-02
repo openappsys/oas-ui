@@ -230,18 +230,29 @@ test('diff-viewer scrollToChange 定位变更块', async ({ page }) => {
     const el = document.querySelector('#dv-large') as HTMLElement & { scrollToChange(index: number): boolean }
     const ok = el.scrollToChange(1)
     const root = el.shadowRoot!
-    const active = root.querySelector('[part="row"].active')
+    const viewport = root.querySelector<HTMLElement>('[part="viewport"]')!
+    const active = root.querySelector<HTMLElement>('[part="row"].active')
+    const rowH = root.querySelector<HTMLElement>('[part="row"]')?.getBoundingClientRect().height ?? 0
+    const activeIndex = Number(active?.getAttribute('data-index') ?? '-1')
+    // 期望落点由 DOM 现算（不写死像素）：定高模型下 setActive 会取「活动行底贴视口底」的
+    // 滚动量（活动行索引 × 行高 + 行高 − 视口高），并按可滚动范围钳取；行高取实测 rect。
+    const maxTop = Math.max(0, viewport.scrollHeight - viewport.clientHeight)
+    const expectedScrollTop = Math.min(Math.max(0, (activeIndex + 1) * rowH - viewport.clientHeight), maxTop)
     return {
       ok,
       op: active?.getAttribute('data-op'),
-      scrollTop: root.querySelector<HTMLElement>('[part="viewport"]')!.scrollTop,
+      scrollTop: viewport.scrollTop,
+      expectedScrollTop,
       invalid: el.scrollToChange(99),
     }
   })
   expect(result.ok).toBe(true)
   expect(result.invalid).toBe(false)
   expect(result.op).toBe('delete')
-  expect(result.scrollTop).toBe(47797)
+  expect(
+    Math.abs(result.scrollTop - result.expectedScrollTop),
+    `活动行底对齐视口底：scrollTop ${result.scrollTop} ≈ DOM 现算 ${result.expectedScrollTop}`,
+  ).toBeLessThanOrEqual(1)
 })
 
 test('diff-viewer wrap 模式 scrollToChange 与键盘落点可见', async ({ page }) => {
@@ -272,15 +283,32 @@ test('diff-viewer wrap 模式 scrollToChange 与键盘落点可见', async ({ pa
     const active = root.querySelector<HTMLElement>('[part="row"].active')!
     const vp = viewport.getBoundingClientRect()
     const box = active.getBoundingClientRect()
+    // wrap 模式行高由内容折行决定（随字体度量变化）：落点不写死，按 DOM 现算——
+    // 活动行超出视口底时取「行底贴视口底」的滚动量，否则保持原位；再按可滚动范围钳取。
+    const maxTop = Math.max(0, viewport.scrollHeight - viewport.clientHeight)
+    const bottomAligned = active.offsetTop + active.offsetHeight - viewport.clientHeight
+    const expectedScrollTop = Math.min(
+      Math.max(
+        0,
+        active.offsetTop + active.offsetHeight > viewport.scrollTop + viewport.clientHeight
+          ? bottomAligned
+          : viewport.scrollTop,
+      ),
+      maxTop,
+    )
     return {
       visible: box.top >= vp.top - 1 && box.bottom <= vp.bottom + 1,
       activeHeight: box.height,
       scrollTop: viewport.scrollTop,
+      expectedScrollTop,
     }
   })
   expect(result.visible).toBe(true)
   expect(result.activeHeight).toBeGreaterThan(22)
-  expect(result.scrollTop).toBe(2069)
+  expect(
+    Math.abs(result.scrollTop - result.expectedScrollTop),
+    `wrap 落点 = DOM 现算（活动行底贴视口底）：sceneTop ${result.scrollTop} vs ${result.expectedScrollTop}`,
+  ).toBeLessThanOrEqual(1)
 
   // 键盘 End 后活动行仍在视口内
   const end = await page.evaluate(() => {

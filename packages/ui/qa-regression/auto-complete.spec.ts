@@ -117,14 +117,19 @@ test('auto-complete virtual（D3）：千级建议窗口渲染 + 键盘导航跟
     const active = [...vl.shadowRoot!.querySelectorAll<HTMLElement>('[role="option"]')].find((r) =>
       r.classList.contains('active'),
     )
+    const vp = vl.shadowRoot!.querySelector<HTMLElement>('.viewport')!
+    const vRect = vp.getBoundingClientRect()
+    const aRect = active?.getBoundingClientRect()
     return {
       descendant: input.getAttribute('aria-activedescendant'),
       activeIndex: active?.getAttribute('data-index') ?? null,
-      scrollTop: vl.shadowRoot!.querySelector<HTMLElement>('.viewport')!.scrollTop,
+      scrollTop: vp.scrollTop,
+      // 高亮行滚入视口（几何关系；行高随字体度量变化，不写死 scrollTop 像素）
+      activeVisible: !!aRect && aRect.top >= vRect.top - 1 && aRect.bottom <= vRect.bottom + 1,
     }
   })
   expect(keyed.descendant, 'aria-activedescendant 应指向第 25 项').toBe('opt-25')
-  expect(keyed.scrollTop, '窗口应随键盘导航滚动').toBe(696)
+  expect(keyed.activeVisible, '键盘导航后高亮行滚入视口（窗口已随导航滚动）').toBe(true)
   // 窗口重算后高亮行可见（真实浏览器 scroll 事件驱动重渲染）
   await page.waitForFunction(() => {
     const vl = document.querySelector('#ac-virtual')!.shadowRoot!.querySelector('oas-virtual-list')!

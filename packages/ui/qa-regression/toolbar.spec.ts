@@ -13,6 +13,13 @@ test('toolbar 窄容器子项防收缩：项保持固有宽度、溢出触发「
     const more = host.shadowRoot!.querySelector<HTMLElement>('.more')
     const kids = [...host.children].filter((k) => !k.hasAttribute('data-collapsed'))
     const collapsed = [...host.children].filter((k) => k.hasAttribute('data-collapsed'))
+    // 几何口径：被收纳的项不占位（offsetWidth = 0），且仍展示的项不越过宿主 padding box 右缘
+    const hidden = [...host.children].filter((k) => (k as HTMLElement).offsetWidth === 0)
+    const hostRect = host.getBoundingClientRect()
+    const boxRight = hostRect.left + host.clientLeft + host.clientWidth
+    const overflowing = kids.filter((k) => k.getBoundingClientRect().right > boxRight + 1)
+    // 注：不能用 host.scrollWidth > clientWidth——「···」弹层打开后绝对定位面板会撑大 scrollWidth
+    const noOverflow = overflowing.length === 0
     // 至少一个文本按钮未被压扁（宽度 > 按钮内容合理下限）
     const textBtn = kids.find((k) => (k.textContent || '').trim().length >= 2)
     const minW = textBtn ? textBtn.getBoundingClientRect().width : 0
@@ -27,15 +34,22 @@ test('toolbar 窄容器子项防收缩：项保持固有宽度、溢出触发「
     }
     return {
       moreVisible: !!more && !more.hidden,
+      total: host.children.length,
       collapsedCount: collapsed.length,
+      hiddenCount: hidden.length,
+      noOverflow,
       minW: minW | 0,
       panelRoles,
     }
   })
   expect(r.moreVisible, '「···」收纳项应可见').toBe(true)
-  expect(r.collapsedCount, '应有被收纳项').toBe(5)
+  // 收纳数不写死（字体度量只影响收纳几个）：不变量是「标了收纳的项都不占位 + 仍展示的项不溢出」，
+  // 且弹层镜像项数等于收纳项数（曾现缺陷：收纳判定与渲染不一致 → 项被裁但无「···」）。
+  expect(r.collapsedCount, 'collapsedCount = 未占位的子项数（收纳标记与几何一致）').toBe(r.hiddenCount)
+  expect(r.noOverflow, '宿主内容区无横向溢出（该收纳的项都被收纳）').toBe(true)
+  expect(r.collapsedCount, '应有被收纳项').toBeGreaterThanOrEqual(1)
   expect(r.minW, '未收纳按钮不应被压扁（两字中文按钮固有宽约 24px+，压扁态为 ~13px）').toBeGreaterThan(24)
-  expect(r.panelRoles.length, '弹层应有镜像项').toBe(5)
+  expect(r.panelRoles.length, '弹层镜像项数 = 收纳项数').toBe(r.collapsedCount)
   for (const role of r.panelRoles) {
     expect(['menuitem', 'menuitemcheckbox'], '镜像项角色应为 menuitem/menuitemcheckbox').toContain(role)
   }

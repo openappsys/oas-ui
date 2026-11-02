@@ -550,7 +550,16 @@ test('kanban 程序化跳滚：scrollTo 大步跳变后一帧内窗口与视口�
     const cards0 = [...body.querySelectorAll<HTMLElement>('.card[data-index]')]
     const rowH = cards0[1]!.getBoundingClientRect().top - cards0[0]!.getBoundingClientRect().top
     const w0 = cards0.length
-    const read = (): Record<string, unknown> => {
+    const read = (): {
+      count: number
+      first: number
+      last: number
+      contiguous: boolean
+      visFirst: number
+      visCount: number
+      viewportH: number
+      covered: boolean
+    } => {
       const b = bodyOf()
       const cs = [...b.querySelectorAll<HTMLElement>('.card[data-index]')]
       const bRect = b.getBoundingClientRect()
@@ -558,6 +567,7 @@ test('kanban 程序化跳滚：scrollTo 大步跳变后一帧内窗口与视口�
         const r2 = c.getBoundingClientRect()
         return r2.bottom > bRect.top && r2.top < bRect.bottom
       })
+      const visRects = vis.map((c) => c.getBoundingClientRect())
       const idx = cs.map((c) => Number(c.getAttribute('data-index')))
       return {
         count: cs.length,
@@ -566,6 +576,14 @@ test('kanban 程序化跳滚：scrollTo 大步跳变后一帧内窗口与视口�
         contiguous: idx.every((v, i) => i === 0 || v === idx[i - 1]! + 1),
         visFirst: vis.length ? Number(vis[0]!.getAttribute('data-index')) : -1,
         visCount: vis.length,
+        viewportH: bRect.height,
+        // 视口覆盖（语义不变量）：可见卡按测试实测步距 rowH 铺位，首卡顶不高于视口顶 + 一个步距、
+        // 末卡底不低于视口底 − 一个步距 → 视口内不存在整帧空白。缺陷版（窗口落后一帧）vis=0，
+        // 这里必然 false。步距来自首个窗口相邻卡 rect 差（本文件已实测），与字体度量无关。
+        covered:
+          vis.length > 0 &&
+          Math.min(...visRects.map((r) => r.top)) <= bRect.top + rowH &&
+          Math.max(...visRects.map((r) => r.bottom)) >= bRect.bottom - rowH,
       }
     }
     // 一帧后采样：修复后 scroll 事件在本帧 scroll steps 内同步重算，rAF 步采样必已就位；
@@ -587,7 +605,14 @@ test('kanban 程序化跳滚：scrollTo 大步跳变后一帧内窗口与视口�
   expect(r.rowH, '实测步进有效（相邻卡间距 = 45.5px）').toBe(45.5)
   const pred = (target: number): number => Math.round(r.w0 + (target - r.w0 * r.rowH) / 68)
   // --- 跳滚 23400：一帧内窗口与视口一致 ---
-  expect(r.jump.visCount, '视口内有渲染卡（无整帧空白——缺陷版此处为 0）').toBe(7)
+  // 视口非空白用「可见卡并集覆盖视口」表达（OS 无关）；可见卡数下界由 DOM 现算：
+  // 步距 rowH 内必有一张卡的顶边落在视口内 → 可见卡数 ≥ floor(视口高/步距)。
+  const visFloor = (m: { viewportH: number }): number => Math.floor(m.viewportH / r.rowH)
+  expect(r.jump.covered, '跳滚后视口被可见卡连续覆盖（无整帧空白——缺陷版此处为 0 卡）').toBe(true)
+  expect(
+    r.jump.visCount,
+    `跳滚后可见卡数 ${r.jump.visCount} 不低于视口高/步距下界 ${visFloor(r.jump)}`,
+  ).toBeGreaterThanOrEqual(visFloor(r.jump))
   expect(
     Math.abs((r.jump.visFirst as number) - pred(r.TARGET)),
     `视口首卡 ${r.jump.visFirst} 与混合前缀理论 ${pred(r.TARGET)} 一致（容差 ±10：二分边界 ±1 + RO 锚定补偿 ≈7.6 卡）`,
@@ -595,13 +620,21 @@ test('kanban 程序化跳滚：scrollTo 大步跳变后一帧内窗口与视口�
   expect(r.jump.count, '窗口卡数有上界').toBeLessThanOrEqual(60)
   expect(r.jump.contiguous, '窗口 data-index 连续').toBe(true)
   // --- 反向跳变到已测前缀末端：上方全为已测卡（无补偿），窗口精确落位 ---
-  expect(r.back.visCount, '反向跳变视口非空白').toBe(7)
+  expect(r.back.covered, '反向跳变后视口非空白（可见卡覆盖视口）').toBe(true)
+  expect(
+    r.back.visCount,
+    `反向跳变后可见卡数 ${r.back.visCount} 不低于视口高/步距下界 ${visFloor(r.back)}`,
+  ).toBeGreaterThanOrEqual(visFloor(r.back))
   expect(
     Math.abs((r.back.visFirst as number) - pred(r.w0 * r.rowH)),
     `反向跳变首卡 ${r.back.visFirst} 与理论 ${pred(r.w0 * r.rowH)} 一致（已测前缀内 ±3）`,
   ).toBeLessThanOrEqual(3)
   // --- 到底：末卡渲染 ---
-  expect(r.bottom.visCount, '到底后视口非空白').toBe(6)
+  expect(r.bottom.covered, '到底后视口非空白（可见卡覆盖视口）').toBe(true)
+  expect(
+    r.bottom.visCount,
+    `到底后可见卡数 ${r.bottom.visCount} 不低于视口高/步距下界 ${visFloor(r.bottom)}`,
+  ).toBeGreaterThanOrEqual(visFloor(r.bottom))
   expect(r.bottom.last, '到底后窗口末卡 = 全量最后一张（末卡渲染）').toBe(r.TOTAL - 1)
   expect(r.bottom.contiguous, '到底窗口 data-index 连续').toBe(true)
 })

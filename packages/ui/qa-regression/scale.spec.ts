@@ -18,7 +18,7 @@ import type { Page, TestInfo } from '@playwright/test'
 /** evaluate 内的组件探针类型（镜像组件公开面，避免 import 组件源码） */
 interface GanttProbeLike extends HTMLElement {
   tasks: unknown
-  units: Array<{ startMs: number }>
+  units: Array<{ startMs: number; endMs: number }>
   colW(): number
   scrollToDate(d: string): void
   shadowRoot: ShadowRoot
@@ -101,8 +101,16 @@ test('gantt 规模回归：10 年 day 档（≈3660 列）× 1 万行，表头/�
     // 滚到跨度中部（2016..2025 的中点附近）→ scroll 事件 → rAF 帧重建列窗口
     el.scrollToDate('2021-06-15')
     await raf2()
+    // 期望落点由 DOM 现算：scrollToDate 把目标日期列居中（x = 列号+列内比例，横轴映射取
+    // 组件当前 units/colW——与内联样式同源，不含按平台校准的常数）
+    const colW = el.colW()
+    const targetMs = new Date('2021-06-15T00:00:00').getTime()
+    const col = el.units.findIndex((u) => targetMs < u.endMs)
+    const frac = col >= 0 ? (targetMs - el.units[col]!.startMs) / (el.units[col]!.endMs - el.units[col]!.startMs) : 0
+    const expectedScrollLeft = Math.max(0, (col + frac) * colW - tb.clientWidth / 2)
     const after = {
       scrollLeft: tb.scrollLeft,
+      expectedScrollLeft,
       minors: count('.head-minor .unit'),
       bars: count('.bars .bar'),
       sideRows: count('.side-body .row-name'),
@@ -142,7 +150,11 @@ test('gantt 规模回归：10 年 day 档（≈3660 列）× 1 万行，表头/�
   expect(metrics.before.coverage, '未滚动时可视区有刻度覆盖').toBe(true)
 
   // 滚到跨度中部：窗口平移后仍有界 + 可视区仍有刻度覆盖
-  expect(metrics.after.scrollLeft, 'scrollToDate 已滚动（列宽取整跨浏览器 ±1px）').toBeCloseTo(31700, -1)
+  // 落点不写死像素：目标日期列居中（xOf 口径由当前 units/colW 现算，列宽取整跨浏览器差异 ≤1px）
+  expect(
+    Math.abs(metrics.after.scrollLeft - metrics.after.expectedScrollLeft),
+    `scrollToDate 已滚动到目标日期列居中（实得 ${Math.round(metrics.after.scrollLeft)}，现算 ${Math.round(metrics.after.expectedScrollLeft)}）`,
+  ).toBeLessThanOrEqual(1)
   expect(metrics.after.minors, '滚动后表头格数仍有上界').toBeLessThan(300)
   expect(metrics.after.bars, '滚动（横向）后条数仍有上界').toBeLessThan(100)
   expect(metrics.after.sideRows, '滚动（横向）后行名列仍有上界').toBeLessThan(100)
@@ -215,15 +227,19 @@ test('resource 规模回归：3 年 day 档（≈1096 period）× 5000 任务，
       return false
     }
     const lane = sr.querySelectorAll('.row.lane')[0]
+    // 未滚动时的窗口覆盖（先量再滚，否则测得的是滚动后尚未重建的窗口）
+    const coverage = tickAtCenter()
+    // 滚到中部 → scroll 事件 → rAF 帧重算列窗口
+    sc.scrollLeft = Math.floor((sc.scrollWidth - sc.clientWidth) / 2)
     const out = {
       buildMs,
       ticks: sr.querySelectorAll('.ticks .tick').length,
       lane1Bars: lane ? lane.querySelectorAll('.bar').length : 0,
       trackW: (sr.querySelector('.lane .track') as HTMLElement).getBoundingClientRect().width,
-      coverage: tickAtCenter(),
+      coverage,
+      // 浏览器实际接受的中部位置：后续断言与写入值比较（不按本机校准像素常数）
+      midScrollLeft: sc.scrollLeft,
     }
-    // 滚到中部 → scroll 事件 → rAF 帧重算列窗口
-    sc.scrollLeft = Math.floor((sc.scrollWidth - sc.clientWidth) / 2)
     return out
   })
 
@@ -277,7 +293,11 @@ test('resource 规模回归：3 年 day 档（≈1096 period）× 5000 任务，
   expect(before.coverage, '未滚动时可视区有刻度覆盖').toBe(true)
 
   // 滚到中部：窗口平移后仍有界 + 可视区仍有刻度覆盖
-  expect(after.scrollLeft, '已横向滚动到中部').toBe(19549)
+  // 落点不写死像素：与写入时浏览器接受的中部滚动量比较（scrollWidth 由 periods×colW 决定）
+  expect(
+    Math.abs(after.scrollLeft - before.midScrollLeft),
+    `已横向滚动到中部且位置保持（实得 ${after.scrollLeft}，写入值 ${before.midScrollLeft}）`,
+  ).toBeLessThanOrEqual(1)
   expect(after.ticks, '滚动后刻度数仍有上界').toBeLessThan(200)
   expect(after.lane1Bars, '滚动后单泳道条数仍有上界').toBeLessThan(200)
   expect(after.coverage, '滚到中部后可视区仍有刻度覆盖').toBe(true)

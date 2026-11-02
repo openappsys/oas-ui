@@ -9,7 +9,9 @@ test('tabs：dir=rtl 下 ArrowRight 移向上一个 tab', async ({ page }) => {
   await page.goto('/components/tabs.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-tabs')
   const result = await page.evaluate(async () => {
-    const el = document.querySelector('oas-tabs') as HTMLElement & { shadowRoot: ShadowRoot }
+    const el = document.querySelector('oas-tabs') as HTMLElement & {
+      shadowRoot: ShadowRoot
+    }
     // 宿主在运行时把会话/页面切到 RTL：用带 dir 的父容器重新挂载，触发 connectedCallback 重算方向
     const rtlHost = document.createElement('div')
     rtlHost.setAttribute('dir', 'rtl')
@@ -32,6 +34,37 @@ test('tabs：dir=rtl 下 ArrowRight 移向上一个 tab', async ({ page }) => {
   })
   expect(result.rtl, 'tabs 应识别 documentElement 的 dir=rtl').toBe(true)
   expect(result.focused, 'RTL 下 ArrowRight 应向左移动（上一个 tab）').toBe(0)
+})
+
+// 外点关闭通道回归（真浏览器）：RTL / 视觉反转形态下组件必须接管方向键（默认动作被 preventDefault），
+// 且 ArrowRight 的视觉方向 = 值减小。happy-dom 没有原生 range 的默认动作，这条只能在真浏览器验证
+// （chromium 全量 + firefox / webkit 的 qa-regression 抽样都会跑到）。
+test('slider：dir=rtl 下合成 ArrowRight 被组件接管（defaultPrevented）且值减小', async ({ page }) => {
+  await page.goto('/components/slider.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-slider')
+  const r = await page.evaluate(async () => {
+    const el = [...document.querySelectorAll<HTMLElement & { shadowRoot: ShadowRoot }>('oas-slider')].find(
+      (host) =>
+        !host.hasAttribute('range') &&
+        !host.hasAttribute('vertical') &&
+        !host.hasAttribute('reverse') &&
+        !host.hasAttribute('disabled'),
+    )
+    if (!el) return null
+    el.setAttribute('dir', 'rtl')
+    el.setAttribute('value', '50')
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    const input = el.shadowRoot.querySelector<HTMLInputElement>('[data-role="range"]')
+    if (!input) return null
+    input.focus()
+    const before = Number(input.value)
+    const ev = new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true, cancelable: true })
+    const notPrevented = input.dispatchEvent(ev)
+    return { before, after: Number(input.value), prevented: ev.defaultPrevented, notPrevented }
+  })
+  expect(r!.prevented, 'RTL 视觉反转形态下方向键必须由组件接管（不交给原生 range）').toBe(true)
+  expect(r!.notPrevented, 'dispatchEvent 返回 false = preventDefault 已生效').toBe(false)
+  expect(r!.after, 'RTL：ArrowRight 视觉向右 = 值减小').toBe(r!.before - 1)
 })
 
 test('slider：dir=rtl 下 ArrowRight 降低数值（视觉方向一致）', async ({ page }) => {

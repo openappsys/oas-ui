@@ -145,7 +145,14 @@ test('popover virtual：virtual-x/virtual-y 定位 + 锚点元素跟随 + oas-op
   await expect(anchorPanel).toHaveAttribute('aria-hidden', 'false', { timeout: 5000 })
   const anchorBox = (await anchorPanel.boundingBox())!
   const dotBox = (await page.locator('#pop-dot-0').boundingBox())!
-  expect(anchorBox.y + anchorBox.height - dotBox.y).toBeLessThanOrEqual(40) // 气泡底 ≈ 点位顶（8px gap）
+  // 几何关系：placement=top 时气泡底在点位顶上方，间距 = 组件 offset 主轴缺省值（设计常量，8px）。
+  // 断言「间距等于 offset」而不是给一个宽松上界（旧断言在气泡盖住点位时也会通过）。
+  const offsetGap = await page.evaluate(() => {
+    const el = document.querySelector('#pop-anchor')!
+    return Number.parseInt(el.getAttribute('offset') ?? '8', 10)
+  })
+  const gap = dotBox.y - (anchorBox.y + anchorBox.height)
+  expect(Math.abs(gap - offsetGap), `气泡底 ≈ 点位顶（间距 = offset 主轴 ${offsetGap}px）`).toBeLessThanOrEqual(1)
   // 切到点位 1 → 面板跟随
   await page.locator('#pop-dot-1').hover()
   await page.waitForFunction(() => {
@@ -1049,6 +1056,73 @@ test.describe('触屏降级（P3 扩展，iPhone 仿真）：popover hover 回�
     )
     await page.screenshot({ path: test.info().outputPath('fix-popover-coarse-tap.png') })
   })
+})
+
+// 触屏外点关闭通道回归：真机 WebKit 对**非交互目标**（div/文本容器）只派发 pointer 事件、
+// 不合成兼容 click —— 只挂 click 的外点关闭在触屏上整体失效。shared/outside-dismiss 的
+// pointerup 桥接是这条路径的唯一通道，这里用真实触屏 context 锁住它。
+test('触屏外点关闭：面板外 tap 关闭、面板内 tap 不关，且非交互目标上的 pointerup 单独可达', async ({ browser }) => {
+  const context = await browser.newContext({ hasTouch: true, viewport: { width: 900, height: 700 } })
+  const page = await context.newPage()
+  try {
+    await page.goto('/components/popover.html', { waitUntil: 'domcontentloaded' })
+    await up(page, 'oas-popover')
+    // 独立实例 + 显式 trigger="click"：不依赖 demo 的 hover 语义（触屏 coarse 降级在个别引擎的
+    // hasTouch 上下文里不翻转 pointer 媒体查询，hover trigger 的 tap 行为因此不可移植）
+    await page.evaluate(() => {
+      const pop = document.createElement('oas-popover')
+      pop.id = 'pop-touch-dismiss'
+      pop.setAttribute('trigger', 'click')
+      pop.setAttribute('title', '触屏外点')
+      pop.setAttribute('content', '面板外 tap 关闭，面板内 tap 不关')
+      pop.setAttribute('placement', 'bottom')
+      pop.innerHTML = '<button>触屏触发</button>'
+      pop.style.cssText = 'position: fixed; top: 200px; left: 20px; z-index: 9999'
+      document.body.appendChild(pop)
+    })
+    const host = page.locator('#pop-touch-dismiss')
+    const panelAria = () =>
+      page.evaluate(() =>
+        document
+          .querySelector('#pop-touch-dismiss')!
+          .shadowRoot!.querySelector('[part="panel"]')!
+          .getAttribute('aria-hidden'),
+      )
+    const btn = host.locator(':scope > button')
+    await btn.scrollIntoViewIfNeeded()
+    await btn.tap() // 锚点用 locator tap（可操作性检查），外点用坐标 tap 验证命中测试
+    await expect.poll(panelAria, { timeout: 5000 }).toBe('false')
+
+    // 面板内 tap：命中面板自身即不算外点（事件同步处理，tap 解析后即时可读）
+    const panelBox = await page.evaluate(() => {
+      const panel = document
+        .querySelector('#pop-touch-dismiss')!
+        .shadowRoot!.querySelector<HTMLElement>('[part="panel"]')!
+      const r = panel.getBoundingClientRect()
+      return { x: r.x + r.width / 2, y: r.y + r.height / 2 }
+    })
+    await page.touchscreen.tap(panelBox.x, panelBox.y)
+    expect(await panelAria(), '面板内 tap 不得关闭浮层').toBe('false')
+
+    // 通道锁定：非交互目标（body）上只派发 pointerup（pointerType=touch）——不伴随任何 click——
+    // 也必须关闭，证明外点关闭不依赖合成 click
+    await page.evaluate(() => {
+      const target = document.elementFromPoint(4, 4) ?? document.body
+      target.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, composed: true, pointerType: 'touch' }))
+    })
+    await expect.poll(panelAria, { timeout: 5000 }).toBe('true')
+
+    // 桌面鼠标 pointerup 不接管（按下不关、拖动不误关）：再开一次，鼠标 pointerup 后仍开
+    await btn.tap()
+    await expect.poll(panelAria, { timeout: 5000 }).toBe('false')
+    await page.evaluate(() => {
+      const target = document.elementFromPoint(4, 4) ?? document.body
+      target.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, composed: true, pointerType: 'mouse' }))
+    })
+    expect(await panelAria(), '鼠标 pointerup 不走外点关闭通道').toBe('false')
+  } finally {
+    await context.close()
+  }
 })
 
 // ---- 能力缺口 D21：same-width ----

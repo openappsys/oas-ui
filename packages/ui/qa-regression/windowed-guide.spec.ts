@@ -40,10 +40,14 @@ test('guide windowed demo：首屏装载、跳滚换窗、段内滚动零请求�
     const el = document.getElementById('guide-windowed-demo') as HTMLElement & { shadowRoot: ShadowRoot }
     const wrap = el.shadowRoot.querySelector('.table-scroll') as HTMLElement
     wrap.scrollTop = 800000
+    // 浏览器接受的实际跳滚位置（内容总高由行高×总行数决定，含平台字体度量差异；
+    // 后续断言只要求「保留这个落定值」，不写死 800000/700000）
+    const requested = wrap.scrollTop
     wrap.dispatchEvent(new Event('scroll'))
     await new Promise((r) => setTimeout(r, 1200))
     return {
       scrollTop: wrap.scrollTop,
+      requested,
       ws: el.getAttribute('window-start'),
       rows: el.shadowRoot.querySelectorAll('tbody tr[part="row"]').length,
       log: document.getElementById('guide-windowed-demo-log')?.textContent ?? '',
@@ -52,7 +56,10 @@ test('guide windowed demo：首屏装载、跳滚换窗、段内滚动零请求�
   // 下界理由：ws = 跳滚目标所在分段的段起点行号（由 800000px/行高 与分段大小内部换算，无固定值）；
   // >0 锁定「跳滚后窗口已换段」的回归点
   expect(Number(jumped.ws), '跳滚后窗口换到段起点（非 0）').toBeGreaterThanOrEqual(1)
-  expect(jumped.scrollTop, '换窗后 scrollTop 保留（不被钳回 0）').toBeGreaterThan(700000)
+  expect(
+    jumped.scrollTop,
+    `换窗后 scrollTop 保留跳滚落定值（不被钳回 0；实得 ${jumped.scrollTop}，落定值 ${jumped.requested}）`,
+  ).toBeGreaterThanOrEqual(jumped.requested - 1)
   // 下界理由：同首屏（窗口渲染行数随视口变化）
   expect(jumped.rows, '换窗后仍渲染窗口行').toBeGreaterThanOrEqual(1)
   expect(jumped.log, '段取数一次装载两段（400 行）').toContain('已装载 400 行')

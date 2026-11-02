@@ -118,16 +118,30 @@ test('RTL：tail=start 仍贴 inline-start（逻辑属性镜像）且无物理 l
       insetEnd: tail.insetInlineEnd,
       left: tail.left,
       right: tail.right,
+      // 期望值按 DOM 现算：绝对定位伪元素的 used inset-end = 包含块宽 - start 偏移 - 伪元素宽，
+      // 其中包含块 = 气泡 padding box（clientWidth）、宽 = tailSize×0.85、start 偏移 = -tailSize×0.45
+      clientWidth: bubble.clientWidth,
+      tailSize: parseFloat(getComputedStyle(bubble).getPropertyValue('--oas-bubble-tail-size')) || 16,
     }
   })
+  // 尾部偏移由气泡盒宽推导（字体度量决定盒宽，故不得写成跨引擎常数）
+  const expectedEnd = r.clientWidth - r.tailSize * 0.85 + r.tailSize * 0.45
+  const expectedStart = -r.tailSize * 0.45
   expect(Number.parseFloat(r.insetStart)).toBeLessThan(0)
-  // 尾部偏移由气泡盒宽推导，字体度量差异使 Chrome ≈57.5 / Firefox ≈53.7
-  expect(Number.parseFloat(r.insetEnd)).toBeGreaterThanOrEqual(50)
-  expect(Number.parseFloat(r.insetEnd)).toBeLessThanOrEqual(60)
+  expect(
+    Math.abs(Number.parseFloat(r.insetStart) - expectedStart),
+    `inline-start 偏移 ${r.insetStart} ≈ -tailSize×0.45`,
+  ).toBeLessThanOrEqual(1)
+  expect(
+    Math.abs(Number.parseFloat(r.insetEnd) - expectedEnd),
+    `inline-end 偏移 ${r.insetEnd} ≈ 气泡盒宽 ${r.clientWidth} − 0.4×tailSize（clientWidth 取整允许 ≤1.5px）`,
+  ).toBeLessThanOrEqual(1.5)
   // 逻辑偏移换算后物理边相反：RTL 下 start 对应右侧
   expect(Number.parseFloat(r.right)).toBeLessThan(0)
-  expect(Number.parseFloat(r.left)).toBeGreaterThanOrEqual(50)
-  expect(Number.parseFloat(r.left)).toBeLessThanOrEqual(60)
+  expect(
+    Math.abs(Number.parseFloat(r.left) - expectedEnd),
+    'RTL 下 left ≈ inline-end 偏移（逻辑属性镜像后无物理 left 声明，但 used 值与逻辑值一致）',
+  ).toBeLessThanOrEqual(1.5)
 })
 
 test('暗色：尾巴颜色仍取气泡表面（亮/暗背景色不同，尾巴渐变随表面变化）', async ({ page }) => {

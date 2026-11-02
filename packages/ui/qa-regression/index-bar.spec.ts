@@ -96,6 +96,22 @@ test('index-bar 点字母落定：可滚动 fixture 只派发一次；短内容 
         return stable
       })
       .toBe(true)
+    if (fixture.scrollable) {
+      // 可滚动 fixture 的落点信号：目标分节头贴到列表视口顶（不是「scrollTop 恰为某像素」）
+      await expect
+        .poll(
+          () =>
+            page.evaluate((id) => {
+              const host = document.getElementById(id)!
+              const root = host.shadowRoot!
+              const list = root.querySelector('[part="list"]') as HTMLElement
+              const sec = root.querySelectorAll('[part="section"]')[1] as HTMLElement | undefined
+              return sec ? Math.abs(sec.getBoundingClientRect().top - list.getBoundingClientRect().top) : Number.NaN
+            }, fixture.id),
+          { message: `${fixture.id}：可滚动列表应滚到目标分节` },
+        )
+        .toBeLessThanOrEqual(1)
+    }
 
     const state = await page.evaluate((id) => {
       const w = window as unknown as Window & { __ibEvents: Array<{ key: string }> }
@@ -103,13 +119,25 @@ test('index-bar 点字母落定：可滚动 fixture 只派发一次；短内容 
       const root = host.shadowRoot!
       const list = root.querySelector('[part="list"]') as HTMLElement
       const active = root.querySelector('[part="letter"][aria-current="true"]') as HTMLElement | null
-      return { events: w.__ibEvents, active: active?.textContent ?? null, scrollTop: list.scrollTop }
+      const target = root.querySelectorAll('[part="section"]')[1] as HTMLElement | undefined
+      return {
+        events: w.__ibEvents,
+        active: active?.textContent ?? null,
+        scrollTop: list.scrollTop,
+        // 目标分节头相对列表视口顶的偏移（0 = 已滚到该分节；几何关系，与字体度量无关）
+        alignDelta: target ? target.getBoundingClientRect().top - list.getBoundingClientRect().top : Number.NaN,
+      }
     }, fixture.id)
 
     expect(state.events, `${fixture.id}：点击后 500ms 事件仍恰好 1 次（不得回退二次派发）`).toEqual([{ key: 'B' }])
     expect(state.active, `${fixture.id}：aria-current 保持目标 B`).toBe('B')
     if (fixture.scrollable) {
-      expect(state.scrollTop, `${fixture.id}：可滚动列表应真实滚动`).toBe(464)
+      // 不写死 scrollTop 像素（分节高由条目字体度量决定）：不变量是「目标分节头贴到列表视口顶」，
+      // 高亮 + 事件已确定跳转语义，这里锁定落点几何——未滚动或滚动到别处必失败。
+      expect(
+        Math.abs(state.alignDelta),
+        `${fixture.id}：可滚动列表已滚到目标分节（分节头顶对齐视口顶）`,
+      ).toBeLessThanOrEqual(1)
     } else {
       expect(state.scrollTop, `${fixture.id}：短内容 scrollTop 恒 0（目标不可达）`).toBe(0)
     }

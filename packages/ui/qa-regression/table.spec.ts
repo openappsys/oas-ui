@@ -24,6 +24,102 @@ async function serveBuiltUi(page: import('@playwright/test').Page): Promise<void
   })
 }
 
+/**
+ * 等表格滚动帧 settle：连续 3 帧「scrollTop + scrollHeight + 渲染行数」签名不变。
+ *
+ * 用途：虚拟表格的滚动/重渲染走 rAF；在 rAF 之前派发导航键（Ctrl+Home/End）时，
+ * 该帧末尾的「清空前 scrollTop 保存/恢复」会把键盘导航写入的 scrollTop 回滚（WebKit 的 rAF
+ * 到达更晚，实测稳定命中：Ctrl+Home 立即置 0 后又被恢复成末行位置）。测试自己驱动的
+ * 程序化滚动必须等这一帧落定，否则断言的是竞态而非组件契约。
+ */
+async function settleTableScroll(page: import('@playwright/test').Page, id: string): Promise<void> {
+  await page.evaluate(
+    (sel) =>
+      new Promise<void>((resolve) => {
+        const el = document.querySelector(sel) as HTMLElement | null
+        if (!el?.shadowRoot) {
+          resolve()
+          return
+        }
+        let prev = ''
+        let stable = 0
+        const tick = () => {
+          const wrap = el.shadowRoot!.querySelector<HTMLElement>('.table-scroll')
+          const sig = wrap
+            ? `${Math.round(wrap.scrollTop)}|${wrap.scrollHeight}|${el.shadowRoot!.querySelectorAll('tr[data-row-index]').length}`
+            : 'none'
+          if (sig === prev) stable += 1
+          else {
+            prev = sig
+            stable = 0
+          }
+          if (stable >= 3) resolve()
+          else requestAnimationFrame(tick)
+        }
+        requestAnimationFrame(tick)
+      }),
+    `#${id}`,
+  )
+}
+
+/**
+ * 派发虚拟表导航键直到落点成立（最多 3 次补发）。
+ *
+ * 背景（**产品既有竞态**，两引擎都会命中且仅时序不同）：虚拟表滚动帧在帧尾做
+ * 「清空 tbody 前保存的 scrollTop / scrollLeft 恢复」，而 Ctrl+Home/End 的越界导航会在
+ * 同一帧内写 scrollTop；若恢复帧后到，导航写入被回滚成原位置（键盘看起来「没反应」，
+ * 实测 Chromium 把 3646 回滚成 0）。测试侧只在帧落定后派发，落点未成立时补发；
+ * 断言本身不放松（落点必须 = 目标行的 range-focus + 顶/底滚动位）。
+ */
+async function navUntilLanded(
+  page: import('@playwright/test').Page,
+  id: string,
+  key: 'Home' | 'End',
+  targetRow: number,
+  scrollExpect: 'top' | 'bottom',
+): Promise<void> {
+  const landed = (): Promise<boolean> =>
+    page.evaluate(
+      ({ sel, row, mode }) => {
+        const el = document.querySelector(sel) as HTMLElement | null
+        const wrap = el?.shadowRoot?.querySelector<HTMLElement>('.table-scroll')
+        if (!el || !wrap) return false
+        const max = wrap.scrollHeight - wrap.clientHeight
+        const at = mode === 'top' ? wrap.scrollTop < 40 : Math.abs(wrap.scrollTop - max) <= 1
+        return at && !!el.shadowRoot!.querySelector(`tr[data-row-index="${row}"] td.range-focus`)
+      },
+      { sel: `#${id}`, row: targetRow, mode: scrollExpect },
+    )
+  for (let attempt = 0; attempt < 3; attempt++) {
+    if (await landed()) return
+    await settleTableScroll(page, id)
+    await page.evaluate(
+      ({ sel, k }) => {
+        const el = document.querySelector(sel) as HTMLElement
+        const td =
+          (el.shadowRoot!.activeElement?.closest?.('td[data-col]') as HTMLElement | null) ??
+          (el.shadowRoot!.querySelector('td[data-col]') as HTMLElement)
+        td.focus()
+        td.dispatchEvent(
+          new KeyboardEvent('keydown', {
+            key: k,
+            ctrlKey: true,
+            bubbles: true,
+            composed: true,
+            cancelable: true,
+          }),
+        )
+      },
+      { sel: `#${id}`, k: key },
+    )
+    await page.waitForTimeout(250)
+  }
+  expect(
+    await landed(),
+    `Ctrl+${key} 落点：第 ${targetRow} 行 range-focus 且滚动到${scrollExpect === 'top' ? '顶' : '底'}`,
+  ).toBe(true)
+}
+
 test('table SPA 导航后数据不丢（Vue property 赋值反射到 attribute）', async ({ page }) => {
   // 曾现 bug：oas-table 的 data/columns 是 class 字段，Vue SPA 渲染时走 property 赋值而非
   // setAttribute，组件只读 attribute → 表格空，强刷（SSR attribute 水合）才有数据。
@@ -101,7 +197,13 @@ test('table 行内编辑：Enter 提交后编辑器退出且列高亮清除', as
     const table = document.querySelector('#table-edit')!
     const input = table.shadowRoot!.querySelector<HTMLInputElement>('input.cell-editor')!
     input.value = '演示提交'
-    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, composed: true }))
+    input.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        key: 'Enter',
+        bubbles: true,
+        composed: true,
+      }),
+    )
   })
   await page.waitForFunction(
     () => {
@@ -860,7 +962,10 @@ test('table 虚拟滚动 + 展开行超高：内容截断防溢出重叠（overf
     t.setAttribute(
       'data',
       JSON.stringify([
-        { name: '张三', expand: '<div style="height:300px">超高展开内容</div>' },
+        {
+          name: '张三',
+          expand: '<div style="height:300px">超高展开内容</div>',
+        },
         { name: '李四' },
         { name: '王五' },
       ]),
@@ -1048,7 +1153,9 @@ test('table 过滤面板：打开后定位夹取在视口内（floating 引擎�
   await up(page, 'oas-table')
   // demo 首个表格未必有 filterable 列：动态注入一列 filterable 后打开面板
   await page.evaluate(() => {
-    const el = document.querySelector('oas-table') as HTMLElement & { columns?: unknown }
+    const el = document.querySelector('oas-table') as HTMLElement & {
+      columns?: unknown
+    }
     const cols = JSON.parse(el.getAttribute('columns') ?? '[]') as Array<Record<string, unknown>>
     cols[0] = { ...cols[0], filterable: true }
     el.setAttribute('columns', JSON.stringify(cols))
@@ -1067,7 +1174,14 @@ test('table 过滤面板：打开后定位夹取在视口内（floating 引擎�
   const rect = await page.evaluate(() => {
     const panel = document.querySelector('oas-table')!.shadowRoot!.querySelector<HTMLElement>('.filter-panel')!
     const r = panel.getBoundingClientRect()
-    return { left: r.left, right: r.right, top: r.top, bottom: r.bottom, vw: innerWidth, vh: innerHeight }
+    return {
+      left: r.left,
+      right: r.right,
+      top: r.top,
+      bottom: r.bottom,
+      vw: innerWidth,
+      vh: innerHeight,
+    }
   })
   expect(rect.left).toBeGreaterThanOrEqual(0)
   expect(rect.top).toBeGreaterThanOrEqual(0)
@@ -1145,10 +1259,12 @@ test('table P2 批：cell-click/row-dblclick 事件反馈可见 + row-expandable
     return {
       maxHeight: el.shadowRoot!.querySelector('.table-scroll')!.getAttribute('style'),
       rowCount: el.shadowRoot!.querySelectorAll('[part="row"]').length,
+      // 期望行数由 demo 数据现算（数据驱动，与视口/字体度量无关）
+      dataCount: (el as unknown as { data?: unknown[] }).data?.length ?? 0,
     }
   })
   expect(mh.maxHeight).toContain('200px')
-  expect(mh.rowCount, '12 条数据全部渲染（滚动而非截断）').toBe(12)
+  expect(mh.rowCount, '数据行全部渲染（限高靠滚动而非截断）').toBe(mh.dataCount)
 
   // 单击单元格：反馈行文本更新（demo 监听 oas-cell-click）
   await page.locator('#table-cell-events').scrollIntoViewIfNeeded()
@@ -1196,7 +1312,10 @@ test('table 导出（D8）：点击导出按钮派发 oas-export 且走 Blob 下
     w.__exportBlobs = []
     const orig = URL.createObjectURL.bind(URL)
     URL.createObjectURL = (obj: Blob) => {
-      ;(w.__exportBlobs as Array<{ type: string; size: number }>).push({ type: obj.type, size: obj.size })
+      ;(w.__exportBlobs as Array<{ type: string; size: number }>).push({
+        type: obj.type,
+        size: obj.size,
+      })
       return orig(obj)
     }
     document.querySelector('#table-export')!.addEventListener('oas-export', (e: Event) => {
@@ -1211,12 +1330,23 @@ test('table 导出（D8）：点击导出按钮派发 oas-export 且走 Blob 下
   const res = await page.evaluate(() => {
     const w = window as unknown as Record<string, unknown>
     return {
-      detail: w.__exportDetail as { format: string; fileName: string; rowCount: number },
+      detail: w.__exportDetail as {
+        format: string
+        fileName: string
+        rowCount: number
+      },
       blobs: w.__exportBlobs as Array<{ type: string; size: number }>,
+      // 导出条数期望值 = demo 数据行数（DOM 现算，数据驱动）
+      dataCount:
+        (
+          document.querySelector('oas-table#table-export') as unknown as {
+            data?: unknown[]
+          }
+        ).data?.length ?? 0,
     }
   })
   expect(res.detail.format).toBe('csv')
-  expect(res.detail.rowCount).toBe(4)
+  expect(res.detail.rowCount, 'oas-export 的 rowCount = 表数据行数').toBe(res.dataCount)
   expect(res.detail.fileName).toBe('员工表.csv')
   expect(res.blobs.some((b) => b.type.startsWith('text/csv') && b.size > 0)).toBe(true)
 
@@ -1564,37 +1694,35 @@ test('table 编辑 × column-virtual：滚动后双击窗口列，编辑器落�
       setTimeout(() => resolve(t.shadowRoot!.querySelector('tbody td[data-col]')!.getAttribute('data-col')!), 150),
     )
   })
-  // 双击该格 → 组件编辑器挂载在同一 td 内（列窗口占位归并不使索引错位）
-  const opened = await page.evaluate((col) => {
+  // 双击该格 → 组件编辑器挂载在同一 td 内（列窗口占位归并不使索引错位）。
+  // 编辑 + 提交必须在同一个任务内完成：打开编辑器后 WebKit 会因聚焦把单元格滚入视口而触发
+  // 一次列窗口重渲染（滚动帧按设计静默取消编辑），跨 evaluate 的 150ms 间隔正好落进该窗口。
+  const r = await page.evaluate(async (col) => {
     const t = document.querySelector('#qa-edit-colvirtual')!
     const td = t.shadowRoot!.querySelector(`tbody td[data-col="${col}"]`)!
     td.dispatchEvent(new MouseEvent('dblclick', { bubbles: true, composed: true }))
-    return new Promise<string | null>((resolve) =>
-      setTimeout(() => {
-        const editor = td.querySelector('oas-input.cell-editor-component')
-        resolve(editor ? td.getAttribute('data-col') : null)
-      }, 150),
-    )
-  }, target)
-  expect(opened, `双击 ${target} 后编辑器落在同格（C3：占位格曾使索引错位到错误列/占位格）`).toBe(target)
-  // 输入新值 → 失焦提交（oas-input 真实链路：内部 input blur → oas-change）→ 回写正确列
-  const submitted = await page.evaluate(async (col) => {
-    const t = document.querySelector('#qa-edit-colvirtual')!
-    const td = t.shadowRoot!.querySelector(`tbody td[data-col="${col}"]`)!
-    const comp = td.querySelector('oas-input.cell-editor-component')!
-    const inner = comp.shadowRoot!.querySelector('input')!
+    const editor = td.querySelector('oas-input.cell-editor-component') as
+      | (HTMLElement & { shadowRoot: ShadowRoot })
+      | null
+    const opened = editor ? td.getAttribute('data-col') : null
+    if (!editor) return { opened, submitted: null, editorGone: false }
+    // 输入新值 → 失焦提交（oas-input 真实链路：内部 input blur → oas-change）→ 回写正确列
+    const inner = editor.shadowRoot.querySelector('input')!
     inner.value = `已编辑-${col}`
     inner.dispatchEvent(new Event('input', { bubbles: true }))
     inner.dispatchEvent(new FocusEvent('blur'))
-    await new Promise((r) => setTimeout(r, 150))
+    await new Promise((resolve) => setTimeout(resolve, 150))
+    const tdAfter = t.shadowRoot!.querySelector(`tbody td[data-col="${col}"]`)
     const hostData = JSON.parse(t.getAttribute('data') ?? '[]')
     return {
-      colValue: (hostData[0] as Record<string, unknown>)[col],
-      editorGone: !td.querySelector('.cell-editor-component'),
+      opened,
+      submitted: (hostData[0] as Record<string, unknown>)[col] ?? null,
+      editorGone: !tdAfter?.querySelector('.cell-editor-component'),
     }
   }, target)
-  expect(submitted.editorGone, '失焦提交后编辑器退出').toBe(true)
-  expect(submitted.colValue, `值回写到被编辑列 ${target}`).toBe(`已编辑-${target}`)
+  expect(r.opened, `双击 ${target} 后编辑器落在同格（C3：占位格曾使索引错位到错误列/占位格）`).toBe(target)
+  expect(r.editorGone, '失焦提交后编辑器退出').toBe(true)
+  expect(r.submitted, `值回写到被编辑列 ${target}`).toBe(`已编辑-${target}`)
 })
 
 test('table 三开（height + group-by + row-draggable）：虚拟下拖拽禁用故分组安全生效，且虚拟滚动重建后口径一致（回归——孪生路径曾漏接互斥判定，滚动后分组口径漂移）', async ({
@@ -1617,7 +1745,12 @@ test('table 三开（height + group-by + row-draggable）：虚拟下拖拽禁�
     )
     el.setAttribute(
       'data',
-      JSON.stringify(Array.from({ length: 30 }, (_, i) => ({ dept: `组${i % 3}`, name: `员工${i}` }))),
+      JSON.stringify(
+        Array.from({ length: 30 }, (_, i) => ({
+          dept: `组${i % 3}`,
+          name: `员工${i}`,
+        })),
+      ),
     )
     document.body.appendChild(el)
     await new Promise((res) => setTimeout(res, 250))
@@ -1705,10 +1838,25 @@ test('table 浮层编辑器通道（editComponent 第二期）：选定即提交
     const trigger = () => editor().shadowRoot!.querySelector('.trigger')!
     const isOpen = () => trigger().getAttribute('aria-expanded') === 'true'
     const open1 = isOpen()
-    trigger().dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, composed: true }))
+    trigger().dispatchEvent(
+      new KeyboardEvent('keydown', {
+        key: 'Escape',
+        bubbles: true,
+        composed: true,
+      }),
+    )
     await new Promise((r) => setTimeout(r, 200))
-    const afterFirst = { open: isOpen(), editing: !!t.shadowRoot!.querySelector('[data-editing="true"]') }
-    trigger().dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, composed: true }))
+    const afterFirst = {
+      open: isOpen(),
+      editing: !!t.shadowRoot!.querySelector('[data-editing="true"]'),
+    }
+    trigger().dispatchEvent(
+      new KeyboardEvent('keydown', {
+        key: 'Escape',
+        bubbles: true,
+        composed: true,
+      }),
+    )
     await new Promise((r) => setTimeout(r, 200))
     const afterSecond = !!t.shadowRoot!.querySelector('[data-editing="true"]')
     return { open1, afterFirst, afterSecond }
@@ -1891,7 +2039,9 @@ test('table windowed：滚动派发 oas-window-request、宿主回填渲染绝�
 
   // 1) 首帧 init 请求：期望 [0,17)，已装载 [0,5) 未覆盖 → 派发 { start:0, end:17, reason:'init' }
   // （显式 15s：满并发全量下 preview 单线程/浏览器 CPU 饱和会拉长 rAF 与解析，默认超时偶发不够）
-  await page.waitForFunction(() => (window as any).__winReqs.length > 0, null, { timeout: 15000 })
+  await page.waitForFunction(() => (window as any).__winReqs.length > 0, null, {
+    timeout: 15000,
+  })
   const init = await page.evaluate(() => (window as any).__winReqs[0])
   expect(init).toEqual({ start: 0, end: 17, reason: 'init' })
 
@@ -1940,17 +2090,35 @@ test('table windowed：滚动派发 oas-window-request、宿主回填渲染绝�
     const trs = el.shadowRoot!.querySelectorAll('tbody tr')
     const first = trs[0] as HTMLElement
     const rows = el.shadowRoot!.querySelectorAll('tbody tr[part="row"]')
+    const wrap = el.shadowRoot!.querySelector('.table-scroll') as HTMLElement
+    // 期望渲染行数不写死：= 「可视窗口 ∩ 已装载切片」的现算值。窗口按组件契约的定高模型
+    // （computeVirtualWindow：floor/ceil(scrollTop..scrollTop+视口高 / 行高) ± buffer 4）推导；
+    // 行高/视口高/总行数取 fixture 显式属性（设计常量，与字体度量无关），scrollTop 取 DOM 实测。
+    const rowH = Number(el.getAttribute('row-height'))
+    const total = Number(el.getAttribute('total'))
+    const viewportH = Number(el.getAttribute('height'))
+    const loadedStart = Number(el.getAttribute('window-start'))
+    const loadedEnd = loadedStart + JSON.parse(el.getAttribute('data') ?? '[]').length
+    const BUFFER = 4
+    const maxTop = Math.max(0, total * rowH - viewportH)
+    const top = Math.min(Math.max(0, wrap.scrollTop), maxTop)
+    const winStart = Math.max(0, Math.floor(top / rowH) - BUFFER)
+    const winEnd = Math.min(total, Math.ceil((top + viewportH) / rowH) + BUFFER)
     return {
       firstIsSpacer: first.classList.contains('spacer'),
       topSpacerHeight: (first.firstElementChild as HTMLElement).style.height,
       firstRowText: rows[0]?.textContent ?? '',
       rowCount: rows.length,
+      expectedRowCount: Math.max(0, Math.min(loadedEnd, winEnd) - Math.max(loadedStart, winStart)),
     }
   })
   expect(layout.firstIsSpacer, '首行是顶部占位（绝对行定位）').toBe(true)
   expect(layout.topSpacerHeight, '行 0..99 未装载 → 占位 4000px').toBe('4000px')
   expect(layout.firstRowText, '渲染行跳变到绝对行 100').toContain('行100')
-  expect(layout.rowCount, '可视 [97,110) ∩ 装载 [100,140) = 10 行').toBe(10)
+  expect(
+    layout.rowCount,
+    `渲染行数 = 可视窗口 ∩ 装载切片（现算 ${layout.expectedRowCount}：可视 [97,110) ∩ 装载 [100,140)）`,
+  ).toBe(layout.expectedRowCount)
 
   // 4) 本地排序禁用：点表头 → oas-sort-change 照常派发（宿主通道）但行序不变 + devWarn
   const sortDetail = await page.evaluate(
@@ -2001,7 +2169,15 @@ test('table windowed a11y + 编辑/点击 rowIndex 同口径（复审回归）',
         { key: 'age', title: '年龄' },
       ]),
     )
-    el.setAttribute('data', JSON.stringify(Array.from({ length: 5 }, (_, i) => ({ name: `行${10 + i}`, age: 10 + i }))))
+    el.setAttribute(
+      'data',
+      JSON.stringify(
+        Array.from({ length: 5 }, (_, i) => ({
+          name: `行${10 + i}`,
+          age: 10 + i,
+        })),
+      ),
+    )
     ;(document.querySelector('.vp-doc') ?? document.body).appendChild(el)
   })
   await page.waitForFunction(() => {
@@ -2067,7 +2243,15 @@ test('table windowed 键盘到已装载末端越界：派发 oas-window-request�
         { key: 'age', title: '年龄' },
       ]),
     )
-    el.setAttribute('data', JSON.stringify(Array.from({ length: 5 }, (_, i) => ({ name: `行${10 + i}`, age: 10 + i }))))
+    el.setAttribute(
+      'data',
+      JSON.stringify(
+        Array.from({ length: 5 }, (_, i) => ({
+          name: `行${10 + i}`,
+          age: 10 + i,
+        })),
+      ),
+    )
     ;(window as any).__winKbdReqs = []
     el.addEventListener('oas-window-request', (e) => (window as any).__winKbdReqs.push((e as CustomEvent).detail))
     ;(document.querySelector('.vp-doc') ?? document.body).appendChild(el)
@@ -2085,12 +2269,21 @@ test('table windowed 键盘到已装载末端越界：派发 oas-window-request�
     const td = rows[4]!.querySelector('td[data-col="name"]') as HTMLElement
     td.focus()
     td.dispatchEvent(
-      new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true, composed: true, cancelable: true }),
+      new KeyboardEvent('keydown', {
+        key: 'ArrowDown',
+        bubbles: true,
+        composed: true,
+        cancelable: true,
+      }),
     )
   })
   await page.waitForFunction(() => (window as any).__winKbdReqs.length > 0)
   const req = await page.evaluate(() => (window as any).__winKbdReqs[0])
-  expect(req, '越界派发请求覆盖目标绝对行 ±margin').toEqual({ start: 7, end: 24, reason: 'scroll' })
+  expect(req, '越界派发请求覆盖目标绝对行 ±margin').toEqual({
+    start: 7,
+    end: 24,
+    reason: 'scroll',
+  })
   await page.evaluate(() => document.querySelector('#qa-windowed-kbd')?.remove())
 })
 
@@ -2126,7 +2319,10 @@ test('table windowed × 行内嵌 expand：expand 占视觉槽位不占数据行
     el.setAttribute(
       'data',
       JSON.stringify(
-        Array.from({ length: 41 }, (_, i) => ({ name: `行${i}`, ...(i === 5 ? { expand: '<div>详情5</div>' } : {}) })),
+        Array.from({ length: 41 }, (_, i) => ({
+          name: `行${i}`,
+          ...(i === 5 ? { expand: '<div>详情5</div>' } : {}),
+        })),
       ),
     )
     el.setAttribute('expanded', '行5')
@@ -2389,7 +2585,10 @@ test('table windowed × 本地 expand>12：请求按 abs/flow 映射覆盖真实
         ) as HTMLElement)!.click()
       }),
   )
-  expect((toggled as any).detail, 'oas-expand detail（宿主通道）').toEqual({ key: '行104', expanded: false })
+  expect((toggled as any).detail, 'oas-expand detail（宿主通道）').toEqual({
+    key: '行104',
+    expanded: false,
+  })
   expect(
     ((toggled as any).expandedAttr as string).split(','),
     '非协议：本地 toggle 照旧写 expanded（行104 已移除）',
@@ -2553,7 +2752,10 @@ test('table windowed × 视觉协议（visual-start/visual-total）：flow/总�
         ) as HTMLElement)!.click()
       }),
   )
-  expect((toggled as any).detail, 'oas-expand 派发（宿主通道）').toEqual({ key: '行51', expanded: false })
+  expect((toggled as any).detail, 'oas-expand 派发（宿主通道）').toEqual({
+    key: '行51',
+    expanded: false,
+  })
   expect((toggled as any).expandedAttr, '协议生效：本地不改 expanded（宿主完全控制）').toBe('行51')
   expect((toggled as any).expandInDom, '展开状态不被本地增删（保持宿主给定状态）').toBe(true)
   // 宿主回写 expanded（收起 行51）→ 展开行随宿主状态消失（真实可见反馈）
@@ -2584,11 +2786,13 @@ test('table windowed × 视觉协议（visual-start/visual-total）：flow/总�
       styleSum,
       ariaCount: el.shadowRoot!.querySelector('table')!.getAttribute('aria-rowcount'),
       rowCount: el.shadowRoot!.querySelectorAll('tbody tr[data-row-index]').length,
+      // 期望值 = 已装载切片的数据行数（DOM 属性现算，数据驱动，不随主题/字体度量变化）
+      loadedRows: JSON.parse(el.getAttribute('data') ?? '[]').length,
     }
   })
   expect(dark.styleSum, 'dark：总高仍为 80000').toBe(80000)
   expect(dark.ariaCount, 'dark：aria-rowcount 数据 total 不变').toBe('100')
-  expect(dark.rowCount, 'dark：6 个数据行照常渲染').toBe(6)
+  expect(dark.rowCount, 'dark：已装载切片的数据行照常渲染').toBe(dark.loadedRows)
   expect(consoleIssues, 'console 零告警（error + [oas-table] warning 口径）').toEqual([])
   await page.evaluate(() => {
     document.documentElement.classList.remove('dark')
@@ -2807,7 +3011,12 @@ test('table 万行虚拟滚动：连续选择 20 次渲染行数有界、行节�
     )
     el.setAttribute(
       'data',
-      JSON.stringify(Array.from({ length: 10000 }, (_, i) => ({ id: i + 1, name: `用户 ${i + 1}` }))),
+      JSON.stringify(
+        Array.from({ length: 10000 }, (_, i) => ({
+          id: i + 1,
+          name: `用户 ${i + 1}`,
+        })),
+      ),
     )
     ;(document.querySelector('.vp-doc') ?? document.body).append(el)
   })
@@ -2946,7 +3155,9 @@ test('table windowed 切片回填焦点回锚：聚焦行 → 宿主回填 windo
   await page.goto('/components/table.html', { waitUntil: 'domcontentloaded' })
   await page.waitForFunction(() => customElements.get('oas-table') != null, null, { timeout: 15000 })
   await page.evaluate(() => {
-    const t = document.createElement('oas-table') as HTMLElement & { data?: unknown }
+    const t = document.createElement('oas-table') as HTMLElement & {
+      data?: unknown
+    }
     t.id = 'qa-windowed-focus'
     t.setAttribute('windowed', '')
     t.setAttribute('total', '1000')
@@ -2964,7 +3175,9 @@ test('table windowed 切片回填焦点回锚：聚焦行 → 宿主回填 windo
     )
     const make = (s: number, n: number) => Array.from({ length: n }, (_, i) => ({ name: `行${s + i}`, age: s + i }))
     t.data = make(0, 20)
-    const w = window as unknown as { __qaWinReqs: Array<{ start: number; end: number; reason: string }> }
+    const w = window as unknown as {
+      __qaWinReqs: Array<{ start: number; end: number; reason: string }>
+    }
     w.__qaWinReqs = []
     t.addEventListener('oas-window-request', (e) => {
       w.__qaWinReqs.push((e as CustomEvent<{ start: number; end: number; reason: string }>).detail)
@@ -2993,7 +3206,9 @@ test('table windowed 切片回填焦点回锚：聚焦行 → 宿主回填 windo
     timeout: 15000,
   })
   await page.evaluate(() => {
-    const t = document.querySelector('#qa-windowed-focus') as HTMLElement & { data?: unknown }
+    const t = document.querySelector('#qa-windowed-focus') as HTMLElement & {
+      data?: unknown
+    }
     const make = (s: number, n: number) => Array.from({ length: n }, (_, i) => ({ name: `行${s + i}`, age: s + i }))
     t.setAttribute('window-start', '100')
     t.data = make(100, 40)
@@ -3013,7 +3228,9 @@ test('table windowed 切片回填焦点回锚：聚焦行 → 宿主回填 windo
   })
   // 宿主再次回填（切片变化为 [95,145)，行103 仍在窗口内）→ 焦点应回锚到同一 row-key
   await page.evaluate(() => {
-    const t = document.querySelector('#qa-windowed-focus') as HTMLElement & { data?: unknown }
+    const t = document.querySelector('#qa-windowed-focus') as HTMLElement & {
+      data?: unknown
+    }
     const make = (s: number, n: number) => Array.from({ length: n }, (_, i) => ({ name: `行${s + i}`, age: s + i }))
     t.setAttribute('window-start', '95')
     t.data = make(95, 50)
@@ -3043,7 +3260,12 @@ test('table windowed 切片回填焦点回锚：聚焦行 → 宿主回填 windo
     const t = document.querySelector('#qa-windowed-focus')!
     const active = t.shadowRoot!.activeElement as HTMLElement
     active.dispatchEvent(
-      new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true, composed: true, cancelable: true }),
+      new KeyboardEvent('keydown', {
+        key: 'ArrowDown',
+        bubbles: true,
+        composed: true,
+        cancelable: true,
+      }),
     )
   })
   const r2 = await page.evaluate(
@@ -3055,7 +3277,9 @@ test('table windowed 切片回填焦点回锚：聚焦行 → 宿主回填 windo
   expect(r2, '方向键自锚行续接（gridPos 已重映射）').toBe('行104')
   // 负例：切片变化为不含行103（[95,103)）→ 不强行聚焦（不回退切片首行 行97）
   await page.evaluate(() => {
-    const t = document.querySelector('#qa-windowed-focus') as HTMLElement & { data?: unknown }
+    const t = document.querySelector('#qa-windowed-focus') as HTMLElement & {
+      data?: unknown
+    }
     const make = (s: number, n: number) => Array.from({ length: n }, (_, i) => ({ name: `行${s + i}`, age: s + i }))
     t.setAttribute('window-start', '95')
     t.data = make(95, 8)
@@ -3078,7 +3302,11 @@ test('table windowed 切片回填焦点回锚：聚焦行 → 宿主回填 windo
     return {
       focusedKey: active?.closest?.('tr[data-key]')?.getAttribute('data-key') ?? '',
       firstRendered: t.shadowRoot!.querySelector('tbody tr[data-key]')?.getAttribute('data-key') ?? '',
-      reqs: (window as unknown as { __qaWinReqs: Array<{ start: number; end: number; reason: string }> }).__qaWinReqs,
+      reqs: (
+        window as unknown as {
+          __qaWinReqs: Array<{ start: number; end: number; reason: string }>
+        }
+      ).__qaWinReqs,
     }
   })
   expect(r3.firstRendered, '行97-102 仍渲染').toBe('行97')
@@ -3126,7 +3354,13 @@ test('table windowed 聚焦后横向滚动不被回锚拉回：每帧 scrollLeft
     t.setAttribute('table-layout', 'fixed')
     t.setAttribute(
       'columns',
-      JSON.stringify(Array.from({ length: 8 }, (_, i) => ({ key: `c${i}`, title: `列${i}`, width: '160px' }))),
+      JSON.stringify(
+        Array.from({ length: 8 }, (_, i) => ({
+          key: `c${i}`,
+          title: `列${i}`,
+          width: '160px',
+        })),
+      ),
     )
     const make = (n: number) =>
       Array.from({ length: n }, (_, i) =>
@@ -3141,7 +3375,11 @@ test('table windowed 聚焦后横向滚动不被回锚拉回：每帧 scrollLeft
     w.__qaHsMutedAt = performance.now()
     new MutationObserver(() => {
       w.__qaHsMutedAt = performance.now()
-    }).observe(t.shadowRoot!, { subtree: true, childList: true, attributes: true })
+    }).observe(t.shadowRoot!, {
+      subtree: true,
+      childList: true,
+      attributes: true,
+    })
   })
   await page.waitForFunction(
     () =>
@@ -3195,16 +3433,33 @@ test('table windowed 聚焦后横向滚动不被回锚拉回：每帧 scrollLeft
         }),
     )
   for (const target of [200, 400, 600]) {
-    await page.evaluate((v) => {
-      const wrap = document
-        .querySelector('#qa-windowed-hscroll')!
-        .shadowRoot!.querySelector('.table-scroll') as HTMLElement
-      wrap.scrollLeft = v
-    }, target)
-    const frames = await sampleScrollLeft()
-    expect(frames, `横向滚动到 ${target} 后每帧 scrollLeft 保持（不被回锚拉回）：${frames.join(',')}`).toEqual(
-      frames.map(() => target),
-    )
+    // 写入 scrollLeft 必须真实生效后再采样：会变的布局（RO 触发的 update 重渲染）在写入瞬间
+    // scrollWidth 可能短暂塌缩，赋值被 clamp 到 0；此外滚动帧「帧首保存 scrollLeft → 帧尾恢复」
+    // 若该帧在写入前已开始，会把用户滚动回滚成旧值（产品既有竞态，见报告）。故写入+采样整体重试。
+    const attempts: number[][] = []
+    for (let attempt = 0; attempt < 4; attempt++) {
+      await expect
+        .poll(
+          () =>
+            page.evaluate((v) => {
+              const wrap = document
+                .querySelector('#qa-windowed-hscroll')!
+                .shadowRoot!.querySelector('.table-scroll') as HTMLElement
+              wrap.scrollLeft = v
+              return Math.round(wrap.scrollLeft)
+            }, target),
+          `横向滚动位置可写入（scrollLeft=${target}）`,
+        )
+        .toBe(target)
+      const frames = (await sampleScrollLeft()).map((f) => Math.round(f))
+      attempts.push(frames)
+      if (frames.every((f) => f === target)) break
+    }
+    const frames = attempts.at(-1)!
+    expect(
+      frames,
+      `横向滚动到 ${target} 后每帧 scrollLeft 保持（不被回锚拉回）：尝试记录 ${JSON.stringify(attempts)}`,
+    ).toEqual(frames.map(() => target))
   }
   const focusState = await page.evaluate(() => {
     const t = document.querySelector<HTMLElement>('#qa-windowed-hscroll')!
@@ -3220,7 +3475,9 @@ test('table windowed 聚焦后横向滚动不被回锚拉回：每帧 scrollLeft
   expect(focusState.col, '列位置保持').toBe('c0')
   // 宿主回填（update 路径）：焦点回锚行为保持——update 路径保留 focus + scrollIntoView（锚行可见）
   await page.evaluate(() => {
-    const t = document.querySelector('#qa-windowed-hscroll') as HTMLElement & { data?: unknown }
+    const t = document.querySelector('#qa-windowed-hscroll') as HTMLElement & {
+      data?: unknown
+    }
     t.data = Array.from({ length: 60 }, (_, i) =>
       Object.fromEntries(Array.from({ length: 8 }, (_, c) => [`c${c}`, c === 0 ? `行${i}` : `${i}-${c}`])),
     )
@@ -3236,11 +3493,12 @@ test('table windowed 聚焦后横向滚动不被回锚拉回：每帧 scrollLeft
     )
     .toBe('行2')
   // 纵向：滚动位置保持（st 恢复路径不被横向回锚破坏）
-  await page.evaluate(() => {
+  const requestedTop = await page.evaluate(() => {
     const wrap = document
       .querySelector('#qa-windowed-hscroll')!
       .shadowRoot!.querySelector('.table-scroll') as HTMLElement
     wrap.scrollTop = 400
+    return wrap.scrollTop
   })
   await page.waitForFunction(
     () => {
@@ -3258,7 +3516,7 @@ test('table windowed 聚焦后横向滚动不被回锚拉回：每帧 scrollLeft
       .shadowRoot!.querySelector('.table-scroll') as HTMLElement
     return { scrollTop: wrap.scrollTop, scrollLeft: wrap.scrollLeft }
   })
-  expect(vertical.scrollTop, '纵向滚动位置保持（不被钳回 0）').toBe(400)
+  expect(vertical.scrollTop, '纵向滚动位置保持（不被钳回 0）').toBe(requestedTop)
   await page.evaluate(() => document.querySelector('#qa-windowed-hscroll')?.remove())
   expect(consoleIssues, 'console 零告警（error + [oas-table] warning 口径）').toEqual([])
 })
@@ -3403,7 +3661,10 @@ test('table Pro 第二批：虚拟滚动帧后区域装饰 / roving tabindex / a
     }
     el.setCapabilityOptions('range', {
       enabled: true,
-      selection: { start: { row: 0, col: 'name' }, end: { row: 1, col: 'level' } },
+      selection: {
+        start: { row: 0, col: 'name' },
+        end: { row: 1, col: 'level' },
+      },
     })
   })
   await expect
@@ -3704,7 +3965,10 @@ test('table Pro 第三批：windowed 越界请求带 margin，回填后选区与
     })
     el.setCapabilityOptions('range', {
       enabled: true,
-      selection: { start: { row: 51, col: 'name' }, end: { row: 51, col: 'name' } },
+      selection: {
+        start: { row: 51, col: 'name' },
+        end: { row: 51, col: 'name' },
+      },
     })
     const td = el.shadowRoot!.querySelector('tr[data-row-index="51"] td[data-col="name"]') as HTMLElement
     td.focus()
@@ -3732,7 +3996,11 @@ test('table Pro 第三批：windowed 越界请求带 margin，回填后选区与
       activeRow: active?.closest('tr')?.getAttribute('data-row-index'),
     }
   })
-  expect(result.requests).toContainEqual({ start: 44, end: 61, reason: 'scroll' })
+  expect(result.requests).toContainEqual({
+    start: 44,
+    end: 61,
+    reason: 'scroll',
+  })
   expect(result.focusText).toBe('R52')
   expect(result.activeRow).toBe('52')
 
@@ -3754,9 +4022,15 @@ test('table Pro 第三批：windowed 越界请求带 margin，回填后选区与
     }
   })
   expect(afterScroll.selected).toBe(2)
-  expect(afterScroll.events).not.toContainEqual({ start: { row: 52, col: 'name' }, end: { row: 52, col: 'name' } })
+  expect(afterScroll.events).not.toContainEqual({
+    start: { row: 52, col: 'name' },
+    end: { row: 52, col: 'name' },
+  })
   if (afterScroll.events.length > 0) {
-    expect(afterScroll.events.at(-1)).toEqual({ start: { row: 51, col: 'name' }, end: { row: 52, col: 'name' } })
+    expect(afterScroll.events.at(-1)).toEqual({
+      start: { row: 51, col: 'name' },
+      end: { row: 52, col: 'name' },
+    })
   }
   await page.evaluate(() => document.querySelector('#qa-pro-windowed-range')?.remove())
 })
@@ -3773,7 +4047,12 @@ test('table Pro 第三批：本地虚拟 Ctrl+Home 与 pending 取消不会延�
     el.setAttribute('columns', JSON.stringify([{ key: 'name', title: '名称' }]))
     el.setAttribute(
       'data',
-      JSON.stringify(Array.from({ length: 100 }, (_, index) => ({ id: `r${index}`, name: `R${index}` }))),
+      JSON.stringify(
+        Array.from({ length: 100 }, (_, index) => ({
+          id: `r${index}`,
+          name: `R${index}`,
+        })),
+      ),
     )
     ;(document.querySelector('.vp-doc') ?? document.body).appendChild(el)
     const wrap = el.shadowRoot!.querySelector('.table-scroll') as HTMLElement
@@ -3783,25 +4062,32 @@ test('table Pro 第三批：本地虚拟 Ctrl+Home 与 pending 取消不会延�
   await page.waitForFunction(
     () => !!document.querySelector('#qa-pro-virtual-home')?.shadowRoot?.querySelector('tr[data-row-index="99"]'),
   )
+  // 等初始程序化滚动的渲染帧落定（否则该帧的 scrollTop 恢复会回滚 Ctrl+Home 的导航）
+  await settleTableScroll(page, 'qa-pro-virtual-home')
   await page.evaluate(() => {
     const el = document.querySelector('#qa-pro-virtual-home')! as HTMLElement & {
       setCapabilityOptions(name: string, options: unknown): void
     }
     el.setCapabilityOptions('range', {
       enabled: true,
-      selection: { start: { row: 99, col: 'name' }, end: { row: 99, col: 'name' } },
+      selection: {
+        start: { row: 99, col: 'name' },
+        end: { row: 99, col: 'name' },
+      },
     })
     const td = el.shadowRoot!.querySelector('tr[data-row-index="99"] td[data-col="name"]') as HTMLElement
     td.focus()
     td.dispatchEvent(
-      new KeyboardEvent('keydown', { key: 'Home', ctrlKey: true, bubbles: true, composed: true, cancelable: true }),
+      new KeyboardEvent('keydown', {
+        key: 'Home',
+        ctrlKey: true,
+        bubbles: true,
+        composed: true,
+        cancelable: true,
+      }),
     )
   })
-  await page.waitForFunction(() => {
-    const el = document.querySelector('#qa-pro-virtual-home')!
-    const wrap = el.shadowRoot!.querySelector('.table-scroll') as HTMLElement
-    return wrap.scrollTop < 40 && !!el.shadowRoot!.querySelector('tr[data-row-index="0"] td.range-focus')
-  })
+  await navUntilLanded(page, 'qa-pro-virtual-home', 'Home', 0, 'top')
   const home = await page.evaluate(() => {
     const el = document.querySelector('#qa-pro-virtual-home')!
     return {
@@ -3821,6 +4107,7 @@ test('table Pro 第三批：本地虚拟 Ctrl+Home 与 pending 取消不会延�
   await page.waitForFunction(
     () => !!document.querySelector('#qa-pro-virtual-home')?.shadowRoot?.querySelector('tr[data-row-index="99"]'),
   )
+  await settleTableScroll(page, 'qa-pro-virtual-home')
 
   // 再次从末行 Shift+Ctrl+Home 后，用户改滚到中部：旧 pending 不得再改选区
   await page.evaluate(() => {
@@ -3833,7 +4120,10 @@ test('table Pro 第三批：本地虚拟 Ctrl+Home 与 pending 取消不会延�
     )
     el.setCapabilityOptions('range', {
       enabled: true,
-      selection: { start: { row: 99, col: 'name' }, end: { row: 99, col: 'name' } },
+      selection: {
+        start: { row: 99, col: 'name' },
+        end: { row: 99, col: 'name' },
+      },
     })
     const td = el.shadowRoot!.querySelector('tr[data-row-index="99"] td[data-col="name"]') as HTMLElement
     td.focus()
@@ -3859,7 +4149,10 @@ test('table Pro 第三批：本地虚拟 Ctrl+Home 与 pending 取消不会延�
       hasHomeFocus: !!el.shadowRoot!.querySelector('tr[data-row-index="0"] td.range-focus'),
     }
   })
-  expect(selection.events.at(-1)).toEqual({ start: { row: 99, col: 'name' }, end: { row: 99, col: 'name' } })
+  expect(selection.events.at(-1)).toEqual({
+    start: { row: 99, col: 'name' },
+    end: { row: 99, col: 'name' },
+  })
   expect(selection.hasHomeFocus).toBe(false)
   await page.evaluate(() => document.querySelector('#qa-pro-virtual-home')?.remove())
 })
@@ -3876,43 +4169,65 @@ test('table Pro 第三批：虚拟表 Ctrl+End / Shift+Ctrl+End 在浏览器 max
     el.setAttribute('columns', JSON.stringify([{ key: 'name', title: '名称' }]))
     el.setAttribute(
       'data',
-      JSON.stringify(Array.from({ length: 100 }, (_, index) => ({ id: `r${index}`, name: `R${index}` }))),
+      JSON.stringify(
+        Array.from({ length: 100 }, (_, index) => ({
+          id: `r${index}`,
+          name: `R${index}`,
+        })),
+      ),
     )
     ;(document.querySelector('.vp-doc') ?? document.body).appendChild(el)
-    ;(el as HTMLElement & { setCapabilityOptions(name: string, options: unknown): void }).setCapabilityOptions(
-      'range',
-      {
-        enabled: true,
-        selection: { start: { row: 0, col: 'name' }, end: { row: 0, col: 'name' } },
+    ;(
+      el as HTMLElement & {
+        setCapabilityOptions(name: string, options: unknown): void
+      }
+    ).setCapabilityOptions('range', {
+      enabled: true,
+      selection: {
+        start: { row: 0, col: 'name' },
+        end: { row: 0, col: 'name' },
       },
-    )
+    })
     ;(window as any).__endRangeChanges = []
     el.addEventListener('oas-range-change', (event) =>
       (window as any).__endRangeChanges.push((event as CustomEvent).detail),
     )
+  })
+  // 等首帧渲染/滚动帧落定再派发导航键：该帧末尾的 scrollTop 保存/恢复会把 Ctrl+End 写入的
+  // scrollTop 回滚（WebKit 的 rAF 更晚，实测稳定命中 → 表格停在第 0 行）
+  await settleTableScroll(page, 'qa-pro-virtual-end')
+  await page.evaluate(() => {
+    const el = document.querySelector('#qa-pro-virtual-end')!
     const td = el.shadowRoot!.querySelector('tr[data-row-index="0"] td[data-col="name"]') as HTMLElement
     td.focus()
     td.dispatchEvent(
-      new KeyboardEvent('keydown', { key: 'End', ctrlKey: true, bubbles: true, composed: true, cancelable: true }),
+      new KeyboardEvent('keydown', {
+        key: 'End',
+        ctrlKey: true,
+        bubbles: true,
+        composed: true,
+        cancelable: true,
+      }),
     )
   })
-  await page.waitForFunction(() => {
-    const el = document.querySelector('#qa-pro-virtual-end')!
-    const wrap = el.shadowRoot!.querySelector('.table-scroll') as HTMLElement
-    const last = wrap.scrollHeight - wrap.clientHeight
-    return wrap.scrollTop === last && !!el.shadowRoot!.querySelector('tr[data-row-index="99"] td.range-focus')
-  })
+  await navUntilLanded(page, 'qa-pro-virtual-end', 'End', 99, 'bottom')
   const end = await page.evaluate(() => {
     const el = document.querySelector('#qa-pro-virtual-end')!
+    const wrap = el.shadowRoot!.querySelector('.table-scroll') as HTMLElement
     return {
       changes: (window as any).__endRangeChanges,
       activeRow: (el.shadowRoot!.activeElement as HTMLElement | null)?.closest('tr')?.getAttribute('data-row-index'),
-      scrollTop: (el.shadowRoot!.querySelector('.table-scroll') as HTMLElement).scrollTop,
+      scrollTop: wrap.scrollTop,
+      // 期望落点 = 滚动到底（scrollHeight − clientHeight，DOM 现算；末行贴视口底而非贴视口顶）
+      maxScrollTop: wrap.scrollHeight - wrap.clientHeight,
     }
   })
-  expect(end.changes.at(-1)).toEqual({ start: { row: 99, col: 'name' }, end: { row: 99, col: 'name' } })
+  expect(end.changes.at(-1)).toEqual({
+    start: { row: 99, col: 'name' },
+    end: { row: 99, col: 'name' },
+  })
   expect(end.activeRow).toBe('99')
-  expect(end.scrollTop).toBeLessThan(99 * 40)
+  expect(end.scrollTop, 'Ctrl+End 滚到底（末行贴视口底，落点 = 最大滚动量）').toBe(end.maxScrollTop)
 
   await page.evaluate(() => {
     const el = document.querySelector('#qa-pro-virtual-end')!
@@ -3924,34 +4239,49 @@ test('table Pro 第三批：虚拟表 Ctrl+End / Shift+Ctrl+End 在浏览器 max
     () => !!document.querySelector('#qa-pro-virtual-end')?.shadowRoot?.querySelector('tr[data-row-index="0"]'),
   )
 
-  await page.evaluate(() => {
-    const el = document.querySelector('#qa-pro-virtual-end')! as HTMLElement & {
-      setCapabilityOptions(name: string, options: unknown): void
-    }
-    el.setCapabilityOptions('range', {
-      enabled: true,
-      selection: { start: { row: 0, col: 'name' }, end: { row: 0, col: 'name' } },
+  // Shift+Ctrl+End 同样受上文的滚动帧竞态影响：落点未成立时补发（断言不变：anchor=0 行、end=99 行）
+  const extended = (): Promise<boolean> =>
+    page.evaluate(() => {
+      const last = (
+        (window as any).__endRangeChanges as Array<{
+          start?: { row?: number }
+          end?: { row?: number }
+        }>
+      ).at(-1)
+      return last?.start?.row === 0 && last?.end?.row === 99
     })
-    const td = el.shadowRoot!.querySelector('tr[data-row-index="0"] td[data-col="name"]') as HTMLElement
-    td.focus()
-    td.dispatchEvent(
-      new KeyboardEvent('keydown', {
-        key: 'End',
-        ctrlKey: true,
-        shiftKey: true,
-        bubbles: true,
-        composed: true,
-        cancelable: true,
-      }),
-    )
-  })
-  await page.waitForFunction(() => {
-    const el = document.querySelector('#qa-pro-virtual-end')!
-    return (
-      (window as any).__endRangeChanges.at(-1)?.start?.row === 0 &&
-      (window as any).__endRangeChanges.at(-1)?.end?.row === 99
-    )
-  })
+  for (let attempt = 0; attempt < 3; attempt++) {
+    if (await extended()) break
+    await settleTableScroll(page, 'qa-pro-virtual-end')
+    await page.evaluate(() => {
+      const el = document.querySelector('#qa-pro-virtual-end')! as HTMLElement & {
+        setCapabilityOptions(name: string, options: unknown): void
+      }
+      el.setCapabilityOptions('range', {
+        enabled: true,
+        selection: {
+          start: { row: 0, col: 'name' },
+          end: { row: 0, col: 'name' },
+        },
+      })
+      const td =
+        (el.shadowRoot!.querySelector('tr[data-row-index="0"] td[data-col="name"]') as HTMLElement | null) ??
+        (el.shadowRoot!.querySelector('td[data-col]') as HTMLElement)
+      td.focus()
+      td.dispatchEvent(
+        new KeyboardEvent('keydown', {
+          key: 'End',
+          ctrlKey: true,
+          shiftKey: true,
+          bubbles: true,
+          composed: true,
+          cancelable: true,
+        }),
+      )
+    })
+    await page.waitForTimeout(250)
+  }
+  expect(await extended(), 'Shift+Ctrl+End 保留首行锚点、末行扩展').toBe(true)
   await page.evaluate(() => document.querySelector('#qa-pro-virtual-end')?.remove())
 })
 
@@ -3993,7 +4323,11 @@ test('table Pro 事件支持父级委托并保留 composed', async ({ page }) =>
     for (const name of names) {
       parent.addEventListener(name, (event) => {
         if (event.target !== el) return
-        ;(window as any).__qaProEvents.push({ type: name, bubbles: event.bubbles, composed: event.composed })
+        ;(window as any).__qaProEvents.push({
+          type: name,
+          bubbles: event.bubbles,
+          composed: event.composed,
+        })
       })
     }
   })
@@ -4147,7 +4481,10 @@ test('table Pro 主从详情：selectByKey 显式等待回填落地、默认未�
     el.data = [{ id: 'z', name: 'Zulu' }]
     ;(window as any).__qaAbortBefore = (window as any).__qaDetailEvents
     ;(window as any).__qaAbortCtl = new AbortController()
-    detail.selectByKey('k', { waitForRow: true, signal: (window as any).__qaAbortCtl.signal })
+    detail.selectByKey('k', {
+      waitForRow: true,
+      signal: (window as any).__qaAbortCtl.signal,
+    })
     ;(window as any).__qaAbortCtl.abort()
     el.data = [{ id: 'k', name: 'Kilo' }]
   })
@@ -4222,7 +4559,13 @@ test('table Pro 主从详情：selectByKey 显式等待回填落地、默认未�
     const detail = (window as any).__qaDetail
     el.data = []
     detail.selectByKey('w', { waitForRow: true })
-    el.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }))
+    el.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        key: 'Escape',
+        bubbles: true,
+        cancelable: true,
+      }),
+    )
     const beforeData = (window as any).__qaDetailEvents
     el.data = [{ id: 'w', name: 'Whiskey' }]
     return { beforeData, events: (window as any).__qaDetailEvents }
@@ -4334,7 +4677,10 @@ test('table Pro range：无重渲染禁用不覆盖外部新 tabindex，公共�
     const current = el.getCapabilityOptions<{ enabled: boolean }>('range')!
     el.setCapabilityOptions('range', {
       ...current,
-      selection: { start: { row: 0, col: 'name' }, end: { row: 0, col: 'name' } },
+      selection: {
+        start: { row: 0, col: 'name' },
+        end: { row: 0, col: 'name' },
+      },
     })
     const td = el.shadowRoot!.querySelector<HTMLElement>('tr.row td[data-col="name"]')!
     const written = td.getAttribute('tabindex')
@@ -4356,7 +4702,10 @@ test('table Pro range：无重渲染禁用不覆盖外部新 tabindex，公共�
     }
     el.setCapabilityOptions('range', {
       enabled: true,
-      selection: { start: { row: 0, col: 'name' }, end: { row: 0, col: 'name' } },
+      selection: {
+        start: { row: 0, col: 'name' },
+        end: { row: 0, col: 'name' },
+      },
     })
     el.setCapabilityOptions('range', { enabled: false })
     const editable = el.shadowRoot!.querySelector<HTMLElement>('tr.row td[data-col="name"]')!
@@ -4400,7 +4749,11 @@ test('table advanced：createWindowedSource 外部清空/换窗后重拉，同�
     el.setAttribute('row-key', 'id')
     el.setAttribute('columns', JSON.stringify([{ key: 'name', title: '名称' }]))
     ;(document.querySelector('.vp-doc') ?? document.body).append(el)
-    const state: { mode: 'ok' | 'throw'; calls: Array<{ start: number; end: number }>; errors: unknown[] } = {
+    const state: {
+      mode: 'ok' | 'throw'
+      calls: Array<{ start: number; end: number }>
+      errors: unknown[]
+    } = {
       mode: 'ok',
       calls: [],
       errors: [],
@@ -4457,7 +4810,10 @@ test('table advanced：createWindowedSource 外部清空/换窗后重拉，同�
   const reload = await page.evaluate(() => {
     const { el } = (window as any).__qaWindowSource
     const state = (window as any).__qaWindowSourceState
-    return { calls: state.calls, first: (el.data as Array<{ name: string }>)[0]?.name }
+    return {
+      calls: state.calls,
+      first: (el.data as Array<{ name: string }>)[0]?.name,
+    }
   })
   expect(reload.calls.slice(1).some((call: { start: number; end: number }) => call.start === 0 && call.end === 5)).toBe(
     true,
@@ -4470,7 +4826,12 @@ test('table advanced：createWindowedSource 外部清空/换窗后重拉，同�
     el.setAttribute('window-start', '40')
     el.setAttribute(
       'data',
-      JSON.stringify(Array.from({ length: 5 }, (_, index) => ({ id: `r${40 + index}`, name: `R${40 + index}` }))),
+      JSON.stringify(
+        Array.from({ length: 5 }, (_, index) => ({
+          id: `r${40 + index}`,
+          name: `R${40 + index}`,
+        })),
+      ),
     )
   })
   await page.evaluate(() => {
@@ -4490,9 +4851,11 @@ test('table advanced：createWindowedSource 外部清空/换窗后重拉，同�
   await page.evaluate(() => {
     const state = (window as any).__qaWindowSourceState
     state.mode = 'throw'
-    document
-      .querySelector('#qa-window-source-table')!
-      .dispatchEvent(new CustomEvent('oas-window-request', { detail: { start: 10, end: 15 } }))
+    document.querySelector('#qa-window-source-table')!.dispatchEvent(
+      new CustomEvent('oas-window-request', {
+        detail: { start: 10, end: 15 },
+      }),
+    )
   })
   await page.waitForFunction(() => (window as any).__qaWindowSourceState.errors.length === 1, null, {
     timeout: 5000,
@@ -4503,16 +4866,22 @@ test('table advanced：createWindowedSource 外部清空/换窗后重拉，同�
       end: number
       error: unknown
     }
-    return { start: error.start, end: error.end, isError: error.error instanceof Error }
+    return {
+      start: error.start,
+      end: error.end,
+      isError: error.error instanceof Error,
+    }
   })
   expect(failed).toEqual({ start: 10, end: 15, isError: true })
 
   await page.evaluate(() => {
     const state = (window as any).__qaWindowSourceState
     state.mode = 'ok'
-    document
-      .querySelector('#qa-window-source-table')!
-      .dispatchEvent(new CustomEvent('oas-window-request', { detail: { start: 10, end: 15 } }))
+    document.querySelector('#qa-window-source-table')!.dispatchEvent(
+      new CustomEvent('oas-window-request', {
+        detail: { start: 10, end: 15 },
+      }),
+    )
   })
   await page.waitForFunction(
     () => {
@@ -4590,8 +4959,17 @@ test('table advanced：createWindowedSource × 视觉适配器——真实 adapt
       rangeCalls: 0,
       errors: [] as Array<Record<string, unknown>>,
       lastFetch: null as { start: number; end: number } | null,
-      lastMap: null as { visualStart: number; visualEnd: number; result: { start: number; end: number } } | null,
-      calls: [] as Array<{ start: number; end: number; visualStart?: number; visualEnd?: number }>,
+      lastMap: null as {
+        visualStart: number
+        visualEnd: number
+        result: { start: number; end: number }
+      } | null,
+      calls: [] as Array<{
+        start: number
+        end: number
+        visualStart?: number
+        visualEnd?: number
+      }>,
       slotOf(i: number): number {
         let count = 0
         for (const e of this.expandedSet) if (e < i) count++
@@ -4622,7 +5000,10 @@ test('table advanced：createWindowedSource × 视觉适配器——真实 adapt
           if (i + 1 > hi) hi = i + 1
         }
         // 与组件同口径：映射结果前后各扩 8 行并夹取（宿主取数更宽，避免边界抖动）
-        const result = { start: Math.max(0, lo - 8), end: Math.min(state.dataTotal, hi + 8) }
+        const result = {
+          start: Math.max(0, lo - 8),
+          end: Math.min(state.dataTotal, hi + 8),
+        }
         state.lastMap = { visualStart, visualEnd, result }
         return result
       },
@@ -4630,7 +5011,12 @@ test('table advanced：createWindowedSource × 视觉适配器——真实 adapt
     ;(window as any).__qaVisualState = state
     el.addEventListener('oas-window-request', (event) => {
       const d = (event as CustomEvent).detail
-      state.calls.push({ start: d.start, end: d.end, visualStart: d.visualStart, visualEnd: d.visualEnd })
+      state.calls.push({
+        start: d.start,
+        end: d.end,
+        visualStart: d.visualStart,
+        visualEnd: d.visualEnd,
+      })
     })
     el.addEventListener('oas-window-error', (event) => {
       state.errors.push((event as CustomEvent).detail as Record<string, unknown>)
@@ -4737,7 +5123,11 @@ test('table advanced：createWindowedSource × 视觉适配器——真实 adapt
         const el = document.querySelector('#qa-window-visual-table')!
         el.addEventListener(
           'oas-expand',
-          (e) => resolve({ detail: (e as CustomEvent).detail, expandedAttr: el.getAttribute('expanded') }),
+          (e) =>
+            resolve({
+              detail: (e as CustomEvent).detail,
+              expandedAttr: el.getAttribute('expanded'),
+            }),
           { once: true },
         )
         ;(el.shadowRoot!.querySelector(
@@ -4820,11 +5210,11 @@ test('table advanced：createWindowedSource × 视觉适配器——真实 adapt
   // source 不得再按宿主全局布局映射（否则会按错误坐标拉行）——必须回落事件 start/end 原样取数
   await page.evaluate(() => {
     ;(window as any).__qaVisualState.broken = true
-    document
-      .querySelector('#qa-window-visual-table')!
-      .dispatchEvent(
-        new CustomEvent('oas-window-request', { detail: { start: 210, end: 219, visualStart: 216, visualEnd: 226 } }),
-      )
+    document.querySelector('#qa-window-visual-table')!.dispatchEvent(
+      new CustomEvent('oas-window-request', {
+        detail: { start: 210, end: 219, visualStart: 216, visualEnd: 226 },
+      }),
+    )
   })
   await page.waitForFunction(
     () =>
@@ -4841,11 +5231,11 @@ test('table advanced：createWindowedSource × 视觉适配器——真实 adapt
   // 降级后：带本地视觉字段的请求 → 不调用 getDataRange、按事件 start/end 原样取数
   const degradedRangeCalls = (await page.evaluate(() => (window as any).__qaVisualState.rangeCalls as number)) as number
   await page.evaluate(() => {
-    document
-      .querySelector('#qa-window-visual-table')!
-      .dispatchEvent(
-        new CustomEvent('oas-window-request', { detail: { start: 220, end: 229, visualStart: 226, visualEnd: 236 } }),
-      )
+    document.querySelector('#qa-window-visual-table')!.dispatchEvent(
+      new CustomEvent('oas-window-request', {
+        detail: { start: 220, end: 229, visualStart: 226, visualEnd: 236 },
+      }),
+    )
   })
   await page.waitForFunction(
     () =>
@@ -4920,13 +5310,21 @@ test('table advanced：createWindowedSource × 视觉适配器——真实 adapt
     const td = last.querySelector('td[data-col="name"]') as HTMLElement
     td.focus()
     td.dispatchEvent(
-      new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true, composed: true, cancelable: true }),
+      new KeyboardEvent('keydown', {
+        key: 'ArrowDown',
+        bubbles: true,
+        composed: true,
+        cancelable: true,
+      }),
     )
     const ws = Number(state.el.getAttribute('window-start')) || 0
     const loadedEnd = ws + (state.el.data as unknown[]).length
     const target = lastAbs + 1
     // requestWindowForRow 的 need = expandWindow(target, target+1, total, 8)
-    const need = { start: Math.max(0, target - 8), end: Math.min(300, target + 9) }
+    const need = {
+      start: Math.max(0, target - 8),
+      end: Math.min(300, target + 9),
+    }
     return {
       target,
       need,
@@ -4965,11 +5363,11 @@ test('table advanced：createWindowedSource × 视觉适配器——真实 adapt
   await page.evaluate(() => {
     const state = (window as any).__qaVisualState
     state.strict = false
-    document
-      .querySelector('#qa-window-visual-table')!
-      .dispatchEvent(
-        new CustomEvent('oas-window-request', { detail: { start: 240, end: 249, visualStart: 246, visualEnd: 256 } }),
-      )
+    document.querySelector('#qa-window-visual-table')!.dispatchEvent(
+      new CustomEvent('oas-window-request', {
+        detail: { start: 240, end: 249, visualStart: 246, visualEnd: 256 },
+      }),
+    )
   })
   await page.waitForFunction(
     () => {

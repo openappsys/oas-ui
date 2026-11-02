@@ -217,6 +217,37 @@ test('splitter：拖拽手柄在强制色下有 outline 兜底，且面板几何
   expect(await geom(), '兜底后手柄与面板几何与常态一致').toEqual(forced)
 })
 
+test('sidebar / drawer：resize 拖拽指示条（rail::after）在强制色下有 outline 兜底', async ({ page }) => {
+  await page.emulateMedia({ forcedColors: 'active' })
+  // rail::after 的拖拽指示靠 background: var(--oas-color-primary)；强制色下 background 被 UA 剥掉
+  // （实测透明）→ 指示条完全不可见。兜底用系统色实线 outline（不参与布局）。
+  const edgeOf = (hostSel: string) =>
+    page.evaluate((sel) => {
+      const rail = document.querySelector(sel)?.shadowRoot?.querySelector<HTMLElement>('[part="rail"]')
+      if (!rail) return null
+      const cs = getComputedStyle(rail, '::after')
+      return { outlineWidth: cs.outlineWidth, outlineStyle: cs.outlineStyle, outlineColor: cs.outlineColor }
+    }, hostSel)
+
+  await page.goto('/components/sidebar.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#sidebar-resizable')
+  expectVisibleEdge(await edgeOf('#sidebar-resizable'), 'sidebar rail::after')
+
+  await page.goto('/components/drawer.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#drawer-resize')
+  // 打开抽屉（rail 在面板内；关闭态 [hidden] 下伪元素不参与渲染）
+  await page.evaluate(() => document.querySelector('#drawer-resize')!.setAttribute('visible', ''))
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () =>
+          !document.querySelector('#drawer-resize')!.shadowRoot!.querySelector<HTMLElement>('[part="rail"]')!.hidden,
+      ),
+    )
+    .toBe(true)
+  expectVisibleEdge(await edgeOf('#drawer-resize'), 'drawer rail::after')
+})
+
 test('avatar：dot 角标在强制色下有可计算的前景兜底', async ({ page }) => {
   await page.emulateMedia({ forcedColors: 'active' })
   await page.goto('/components/avatar.html', { waitUntil: 'domcontentloaded' })
@@ -249,4 +280,172 @@ test('calendar / tool-call：日程点与状态点在强制色下有可计算的
   await page.goto('/components/tool-call.html', { waitUntil: 'domcontentloaded' })
   await up(page, '#tool-call-running')
   expectVisibleEdge(await shadowEdge(page, '#tool-call-running', '.status'), 'tool-call status dot')
+})
+
+// ===== 焦点环（focus-ring）兜底 =====
+// 全库焦点环统一为 `outline: none` + `box-shadow: var(--oas-focus-ring)`；强制色模式下 UA
+// 会弃用 box-shadow，焦点指示随之完全消失（键盘用户失去可见焦点，WCAG 2.4.7）。
+// 各组件样式末尾的 `@media (forced-colors: active)` 块把原焦点选择器复用为
+// `outline: 1px solid CanvasText`（系统色，必有对比）+ `box-shadow: none`。
+// 断言口径：强制色下计算 outline 宽度 > 0、线型非 none、颜色非 transparent；
+// 反向断言：非强制色下同一选择器 outline 仍为 none（媒体查询未外溢，box-shadow 环保持原样）。
+
+interface FocusRingSample {
+  label: string
+  url: string
+  host: string
+  /** 聚焦落点（shadow 内选择器）；null = 聚焦宿主自身（宿主可聚焦组件） */
+  focus: string | null
+  /** 焦点环绘制元素（shadow 内选择器） */
+  probe: string
+}
+
+const FOCUS_RING_SAMPLES: FocusRingSample[] = [
+  {
+    label: 'button',
+    url: '/components/button.html',
+    host: '#btn-active-toggle',
+    focus: 'button[part="button"]',
+    probe: 'button[part="button"]',
+  },
+  { label: 'input', url: '/components/input.html', host: '#input-label', focus: 'input', probe: 'input' },
+  {
+    label: 'select',
+    url: '/components/select.html',
+    host: '#select-label-fallback',
+    focus: '[part="trigger"]',
+    probe: '[part="trigger"]',
+  },
+  { label: 'tag', url: '/components/tag.html', host: 'oas-tag[clickable]', focus: null, probe: '.tag' },
+  { label: 'card', url: '/components/card.html', host: 'oas-card[clickable]', focus: null, probe: '.card' },
+  { label: 'upload', url: '/components/upload.html', host: '#upload-drag', focus: '.zone', probe: '.zone' },
+  {
+    label: 'menubar',
+    url: '/components/menubar.html',
+    host: '#menubar-groups',
+    focus: '.top-item',
+    probe: '.top-item',
+  },
+  // 索引栏字母钮：曾经把 box-shadow 值写进 outline（非法声明被 UA 丢弃）→ 常规模式无焦点环
+  { label: 'index-bar', url: '/components/index-bar.html', host: '#ib-basic', focus: '.letter', probe: '.letter' },
+]
+
+interface FocusRingState {
+  focusVisible: boolean
+  outlineWidth: string
+  outlineStyle: string
+  outlineColor: string
+  boxShadow: string
+  probeWidth: number
+  probeHeight: number
+}
+
+/** 打开样本页并把焦点移到样本元素，返回绘制焦点环元素的计算样式与尺寸 */
+async function focusRingState(page: Page, sample: FocusRingSample): Promise<FocusRingState> {
+  await page.goto(sample.url, { waitUntil: 'domcontentloaded' })
+  await up(page, sample.host)
+  return page.evaluate(
+    ({ host, focus, probe }) => {
+      const hostEl = document.querySelector<HTMLElement>(host)!
+      const root = hostEl.shadowRoot!
+      const target = (focus ? root.querySelector<HTMLElement>(focus) : hostEl)!
+      const ringEl = root.querySelector<HTMLElement>(probe)!
+      target.focus()
+      const cs = getComputedStyle(ringEl)
+      const rect = ringEl.getBoundingClientRect()
+      return {
+        focusVisible: target.matches(':focus-visible'),
+        outlineWidth: cs.outlineWidth,
+        outlineStyle: cs.outlineStyle,
+        outlineColor: cs.outlineColor,
+        boxShadow: cs.boxShadow,
+        probeWidth: rect.width,
+        probeHeight: rect.height,
+      }
+    },
+    { host: sample.host, focus: sample.focus, probe: sample.probe },
+  )
+}
+
+/** outlineColor 是否透明（transparent / alpha 0；强制色下落到系统色，应不透明） */
+function isTransparentColor(color: string): boolean {
+  if (color === 'transparent') return true
+  const rgba = color.match(/rgba?\(([^)]+)\)/)
+  if (rgba) {
+    const parts = rgba[1]!.split(/[ ,/]+/).filter(Boolean)
+    if (parts.length === 4) return Number(parts[3]) === 0
+    return false
+  }
+  // 现代色彩函数（oklab/color(...)）：无斜杠即不透明
+  return /\/\s*0(?:\.0+)?\s*\)/.test(color)
+}
+
+test('强制色：代表性组件的焦点环回退为系统色实线 outline', async ({ page }) => {
+  await page.emulateMedia({ forcedColors: 'active' })
+  for (const sample of FOCUS_RING_SAMPLES) {
+    const state = await focusRingState(page, sample)
+    expect(state.focusVisible, `${sample.label}：焦点态为 :focus-visible（键盘可见）`).toBe(true)
+    // 兜底规则固定 1px 实线（强制色下 UA 也把 outline 宽度归一为 1/2px 两档）
+    expect(state.outlineWidth, `${sample.label}：outline 宽度为 1px`).toBe('1px')
+    expect(state.outlineStyle, `${sample.label}：outline 线型非 none`).not.toBe('none')
+    expect(isTransparentColor(state.outlineColor), `${sample.label}：outline 颜色非透明`).toBe(false)
+    // 被 UA 弃用的 box-shadow 显式清零：焦点指示只依赖 outline，避免半残余阴影干扰
+    expect(state.boxShadow, `${sample.label}：强制色下 box-shadow 被弃用`).toBe('none')
+  }
+})
+
+test('非强制色：forced-colors 兜底不外溢（outline 仍为 none，box-shadow 焦点环保持）', async ({ page }) => {
+  await page.emulateMedia({ forcedColors: 'none' })
+  for (const sample of FOCUS_RING_SAMPLES) {
+    const state = await focusRingState(page, sample)
+    // 常态下 outline 线型必须是 none（宽度是 UA 默认值的占位，不构成可见环）
+    expect(state.outlineStyle, `${sample.label}：非强制色 outline 仍为 none`).toBe('none')
+    // 焦点环仍由 box-shadow 绘制：等过渡收敛后应为非零 spread 的 --oas-focus-ring
+    await expect
+      .poll(
+        async () =>
+          page.evaluate(
+            ({ host, probe }) => {
+              const root = document.querySelector(host)?.shadowRoot
+              return root ? getComputedStyle(root.querySelector(probe)!).boxShadow : ''
+            },
+            { host: sample.host, probe: sample.probe },
+          ),
+        { message: `${sample.label}：box-shadow 焦点环保持`, timeout: 3000 },
+      )
+      .toMatch(/0px 0px 0px [1-9]/)
+  }
+})
+
+test('强制色：box-shadow 被弃用后组件仍可键盘操作（存在性 + Enter 触发）', async ({ page }) => {
+  await page.emulateMedia({ forcedColors: 'active' })
+  await page.goto('/components/button.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#btn-active-toggle')
+  const state = await page.evaluate(() => {
+    const hostEl = document.querySelector<HTMLElement>('#btn-active-toggle')!
+    const btn = hostEl.shadowRoot!.querySelector<HTMLButtonElement>('button[part="button"]')!
+    btn.focus()
+    const cs = getComputedStyle(btn)
+    const rect = btn.getBoundingClientRect()
+    return {
+      boxShadow: cs.boxShadow,
+      outlineWidth: cs.outlineWidth,
+      disabled: btn.disabled,
+      width: rect.width,
+      height: rect.height,
+    }
+  })
+  expect(state.boxShadow, '强制色下阴影被弃用').toBe('none')
+  expect(state.outlineWidth, '焦点仍可见（outline 兜底为 1px）').toBe('1px')
+  expect(state.disabled, '按钮未被禁用').toBe(false)
+  // 存在性：按钮仍占据可点击尺寸（不只 0×0 的幽灵节点）
+  expect(state.width, '按钮宽仍为可点击尺寸').toBeGreaterThan(20)
+  expect(state.height, '按钮高仍为可点击尺寸').toBeGreaterThan(20)
+  // 键盘 Enter 仍触发 oas-click（demo 回写 active 状态）——强制色不影响可操作性
+  await page.keyboard.press('Enter')
+  await page.waitForFunction(
+    () => document.querySelector('#btn-active-out')?.textContent === 'active: true',
+    undefined,
+    { timeout: 5000 },
+  )
 })

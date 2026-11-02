@@ -34,8 +34,35 @@ function shadowLayers(boxShadow: string): Array<{ color: string; spread: number;
     })
 }
 
+/**
+ * 日期跨度 → period 数（UTC 算术，无 DST 影响；纯日历推导，与字体度量/平台无关）。
+ * day：含首尾的日历天数（组件 buildPeriods 以本地零点为锚，逐日累加）。
+ */
+function daySpanCount(start: string, end: string): number {
+  const startMs = Date.parse(`${start}T00:00:00Z`)
+  const endMs = Date.parse(`${end}T00:00:00Z`)
+  return Math.round((endMs - startMs) / 86_400_000) + 1
+}
+
+/**
+ * week 档 period 数：从起点所在周的周起点（周一，与默认 weekStart=1 一致）起，
+ * 每 7 天一档，统计覆盖 [start, end] 的档数（组件 buildPeriods 同口径的日历推导）。
+ */
+function weekPeriodCount(start: string, end: string): number {
+  const day = 86_400_000
+  const startMs = Date.parse(`${start}T00:00:00Z`)
+  const endMs = Date.parse(`${end}T00:00:00Z`) + day // 半开区间上界 = 末日次日
+  // getUTCDay：周日 0 … 周六 6；周一对齐 = 回退 (day + 6) % 7 天
+  const anchor = startMs - ((new Date(startMs).getUTCDay() + 6) % 7) * day
+  let count = 0
+  for (let cursor = anchor; cursor < endMs; cursor += 7 * day) count++
+  return count
+}
+
 test('resource 热力图 + 技能矩阵 demo：热力格/图例/勾选渲染', async ({ page }) => {
-  await page.goto('/components/resource.html', { waitUntil: 'domcontentloaded' })
+  await page.goto('/components/resource.html', {
+    waitUntil: 'domcontentloaded',
+  })
   const heat = page.locator('#res-heatmap')
   await expect(heat.locator('.heat-cell').first()).toBeVisible()
   await expect(heat.locator('.heat-cell.over').first()).toBeVisible()
@@ -55,7 +82,9 @@ test('resource 浏览器回归：泳道 + 负载超载 + 一键平衡（回写�
   page.on('console', (m) => {
     if (m.type() === 'error') errors.push(m.text())
   })
-  await page.goto('/components/resource.html', { waitUntil: 'domcontentloaded' })
+  await page.goto('/components/resource.html', {
+    waitUntil: 'domcontentloaded',
+  })
   await waitResource(page, 'res-level')
 
   const host = page.locator('#res-level')
@@ -80,7 +109,9 @@ test('resource 浏览器回归：泳道 + 负载超载 + 一键平衡（回写�
 })
 
 test('resource 容量日历：holiday 当天容量 0，直方图真实超载并可读', async ({ page }) => {
-  await page.goto('/components/resource.html', { waitUntil: 'domcontentloaded' })
+  await page.goto('/components/resource.html', {
+    waitUntil: 'domcontentloaded',
+  })
   const r = await page.evaluate(async () => {
     await customElements.whenDefined('oas-resource')
     const el = document.createElement('oas-resource')
@@ -88,7 +119,15 @@ test('resource 容量日历：holiday 当天容量 0，直方图真实超载并�
     el.setAttribute('resources', JSON.stringify([{ id: 'r1', name: 'A', capacity: 1, holidays: ['2026-03-02'] }]))
     el.setAttribute(
       'tasks',
-      JSON.stringify([{ id: 't1', name: 'Holiday task', start: '2026-03-02', end: '2026-03-02', resources: ['r1'] }]),
+      JSON.stringify([
+        {
+          id: 't1',
+          name: 'Holiday task',
+          start: '2026-03-02',
+          end: '2026-03-02',
+          resources: ['r1'],
+        },
+      ]),
     )
     let capacity: number | null = null
     const overload = new Promise<void>((resolve) => {
@@ -129,7 +168,9 @@ test('resource 暗色：超载高亮与泳道可见、console 零告警', async 
   page.on('console', (m) => {
     if (m.type() === 'error') errors.push(m.text())
   })
-  await page.goto('/components/resource.html', { waitUntil: 'domcontentloaded' })
+  await page.goto('/components/resource.html', {
+    waitUntil: 'domcontentloaded',
+  })
   await waitResource(page, 'res-basic')
   await page.evaluate(() => document.documentElement.setAttribute('data-theme', 'dark'))
   const host = page.locator('#res-basic')
@@ -139,7 +180,9 @@ test('resource 暗色：超载高亮与泳道可见、console 零告警', async 
 })
 
 test('resource demo 初始反馈：挂载后立即反映超载态（不依赖后挂 listener 收到挂载期事件）', async ({ page }) => {
-  await page.goto('/components/resource.html', { waitUntil: 'domcontentloaded' })
+  await page.goto('/components/resource.html', {
+    waitUntil: 'domcontentloaded',
+  })
   await waitResource(page, 'res-basic')
   await expect(page.locator('#res-basic-output')).toContainText('检测到超载档')
   await waitResource(page, 'res-level')
@@ -180,13 +223,17 @@ function expectAligned(g: Awaited<ReturnType<typeof geometry>>): void {
 }
 
 test('resource LTR 对齐：刻度 / 泳道列 / 直方图列同左缘同宽', async ({ page }) => {
-  await page.goto('/components/resource.html', { waitUntil: 'domcontentloaded' })
+  await page.goto('/components/resource.html', {
+    waitUntil: 'domcontentloaded',
+  })
   await waitResource(page, 'res-basic')
   expectAligned(await geometry(page, 'res-basic'))
 })
 
 test('resource RTL 对齐：刻度 / 泳道列 / 直方图列同左缘同宽（镜像不整体偏移）', async ({ page }) => {
-  await page.goto('/components/resource.html', { waitUntil: 'domcontentloaded' })
+  await page.goto('/components/resource.html', {
+    waitUntil: 'domcontentloaded',
+  })
   await waitResource(page, 'res-basic')
   const host = page.locator('#res-basic')
   // 注入 RTL：给组件宿主设 dir=rtl（就近祖先 [dir] 生效）→ requestUpdate 重算镜像布局
@@ -199,7 +246,9 @@ test('resource RTL 对齐：刻度 / 泳道列 / 直方图列同左缘同宽（�
 })
 
 test('resource 横向溢出：滚到中部表头行仍覆盖可视区', async ({ page }) => {
-  await page.goto('/components/resource.html', { waitUntil: 'domcontentloaded' })
+  await page.goto('/components/resource.html', {
+    waitUntil: 'domcontentloaded',
+  })
   await waitResource(page, 'res-basic')
   await page.evaluate(() => {
     const el = document.createElement('oas-resource') as HTMLElement
@@ -209,7 +258,15 @@ test('resource 横向溢出：滚到中部表头行仍覆盖可视区', async ({
     el.setAttribute('resources', JSON.stringify([{ id: 'r1', name: 'A' }]))
     el.setAttribute(
       'tasks',
-      JSON.stringify([{ id: 'w1', name: '长', start: '2026-01-01', end: '2026-06-30', resources: ['r1'] }]),
+      JSON.stringify([
+        {
+          id: 'w1',
+          name: '长',
+          start: '2026-01-01',
+          end: '2026-06-30',
+          resources: ['r1'],
+        },
+      ]),
     )
     document.body.appendChild(el)
   })
@@ -252,7 +309,9 @@ test('resource 横向溢出：滚到中部表头行仍覆盖可视区', async ({
 })
 
 test('resource 重叠任务条：点第一条中心命中第一条（oas-task-click id 正确）', async ({ page }) => {
-  await page.goto('/components/resource.html', { waitUntil: 'domcontentloaded' })
+  await page.goto('/components/resource.html', {
+    waitUntil: 'domcontentloaded',
+  })
   await waitResource(page, 'res-basic')
   await page.evaluate(() => {
     // 固定顶层容器：隔离页面浮层/侧栏遮挡，使「点第一条条心」的命中判定只反映泳道内条间遮挡
@@ -267,8 +326,20 @@ test('resource 重叠任务条：点第一条中心命中第一条（oas-task-cl
     el.setAttribute(
       'tasks',
       JSON.stringify([
-        { id: 'x1', name: 'first', start: '2026-03-02', end: '2026-03-05', resources: ['r1'] },
-        { id: 'x2', name: 'second', start: '2026-03-03', end: '2026-03-06', resources: ['r1'] },
+        {
+          id: 'x1',
+          name: 'first',
+          start: '2026-03-02',
+          end: '2026-03-05',
+          resources: ['r1'],
+        },
+        {
+          id: 'x2',
+          name: 'second',
+          start: '2026-03-03',
+          end: '2026-03-06',
+          resources: ['r1'],
+        },
       ]),
     )
     ;(window as unknown as { __hit: string | null }).__hit = null
@@ -324,11 +395,21 @@ async function waitShadowReady(page: Page, id: string): Promise<void> {
 
 test('resource height 三通道：token 500 / height 属性 480 / 宿主 CSS 400（真浏览器几何）', async ({ page }) => {
   const errors = collectErrors(page)
-  await page.goto('/components/resource.html', { waitUntil: 'domcontentloaded' })
+  await page.goto('/components/resource.html', {
+    waitUntil: 'domcontentloaded',
+  })
   await page.evaluate(() => {
     const data = {
       resources: JSON.stringify([{ id: 'r1', name: 'A' }]),
-      tasks: JSON.stringify([{ id: 't1', name: 'T', start: '2026-03-02', end: '2026-03-04', resources: ['r1'] }]),
+      tasks: JSON.stringify([
+        {
+          id: 't1',
+          name: 'T',
+          start: '2026-03-02',
+          end: '2026-03-04',
+          resources: ['r1'],
+        },
+      ]),
     }
     const mk = (id: string, apply: (el: HTMLElement) => void): void => {
       const el = document.createElement('oas-resource')
@@ -362,7 +443,11 @@ test('resource height 三通道：token 500 / height 属性 480 / 宿主 CSS 400
         wrapInline: (sr.querySelector('.wrap') as HTMLElement).style.height,
       }
     }
-    return { token: measure('res-h-token'), attr: measure('res-h-attr'), css: measure('res-h-css') }
+    return {
+      token: measure('res-h-token'),
+      attr: measure('res-h-attr'),
+      css: measure('res-h-css'),
+    }
   })
   // ① token：.wrap 高 500（此前内联 320 恒压死 token → 死 token）
   expect(heights.token.host, 'token 通道宿主高 500').toBeCloseTo(500, 0)
@@ -384,7 +469,9 @@ test('resource height 三通道：token 500 / height 属性 480 / 宿主 CSS 400
 
 test('resource 段堆叠几何：3 重叠 → 轨道高 == segs*barH+(segs+1)*gap，各条在轨道内', async ({ page }) => {
   const errors = collectErrors(page)
-  await page.goto('/components/resource.html', { waitUntil: 'domcontentloaded' })
+  await page.goto('/components/resource.html', {
+    waitUntil: 'domcontentloaded',
+  })
   await page.evaluate(() => {
     const wrap = document.createElement('div')
     wrap.id = 'res-stack-wrap'
@@ -397,9 +484,27 @@ test('resource 段堆叠几何：3 重叠 → 轨道高 == segs*barH+(segs+1)*ga
     el.setAttribute(
       'tasks',
       JSON.stringify([
-        { id: 's1', name: '一', start: '2026-03-02', end: '2026-03-08', resources: ['r1'] },
-        { id: 's2', name: '二', start: '2026-03-03', end: '2026-03-09', resources: ['r1'] },
-        { id: 's3', name: '三', start: '2026-03-04', end: '2026-03-10', resources: ['r1'] },
+        {
+          id: 's1',
+          name: '一',
+          start: '2026-03-02',
+          end: '2026-03-08',
+          resources: ['r1'],
+        },
+        {
+          id: 's2',
+          name: '二',
+          start: '2026-03-03',
+          end: '2026-03-09',
+          resources: ['r1'],
+        },
+        {
+          id: 's3',
+          name: '三',
+          start: '2026-03-04',
+          end: '2026-03-10',
+          resources: ['r1'],
+        },
       ]),
     )
     wrap.appendChild(el)
@@ -429,11 +534,21 @@ test('resource 段堆叠几何：3 重叠 → 轨道高 == segs*barH+(segs+1)*ga
 
 test('resource 自定义 bar-height/row-height：单段轨道高 == row-height；负 gap 钳 0 不外溢', async ({ page }) => {
   const errors = collectErrors(page)
-  await page.goto('/components/resource.html', { waitUntil: 'domcontentloaded' })
+  await page.goto('/components/resource.html', {
+    waitUntil: 'domcontentloaded',
+  })
   await page.evaluate(() => {
     const data = {
       resources: JSON.stringify([{ id: 'r1', name: 'A' }]),
-      tasks: JSON.stringify([{ id: 't1', name: 'T', start: '2026-03-02', end: '2026-03-04', resources: ['r1'] }]),
+      tasks: JSON.stringify([
+        {
+          id: 't1',
+          name: 'T',
+          start: '2026-03-02',
+          end: '2026-03-04',
+          resources: ['r1'],
+        },
+      ]),
     }
     const mk = (id: string, vars: string): void => {
       const el = document.createElement('oas-resource')
@@ -476,28 +591,50 @@ test('resource 自定义 bar-height/row-height：单段轨道高 == row-height�
 
 test('resource oas-tasks-change：程序写 tasks 派发一次，detail.tasks 为公开拷贝', async ({ page }) => {
   const errors = collectErrors(page)
-  await page.goto('/components/resource.html', { waitUntil: 'domcontentloaded' })
+  await page.goto('/components/resource.html', {
+    waitUntil: 'domcontentloaded',
+  })
   await page.evaluate(() => {
     const el = document.createElement('oas-resource')
     el.id = 'res-tc'
     el.style.cssText = 'display:block;width:600px;margin:12px;position:relative;z-index:1'
     el.setAttribute('resources', JSON.stringify([{ id: 'r1', name: 'A' }]))
-    const w = window as unknown as { __tc: Array<{ count: number; firstId: string | undefined }> }
+    const w = window as unknown as {
+      __tc: Array<{ count: number; firstId: string | undefined }>
+    }
     w.__tc = []
     el.addEventListener('oas-tasks-change', ((e: CustomEvent<{ tasks: Array<{ id: string }> }>) => {
-      w.__tc.push({ count: e.detail.tasks.length, firstId: e.detail.tasks[0]?.id })
+      w.__tc.push({
+        count: e.detail.tasks.length,
+        firstId: e.detail.tasks[0]?.id,
+      })
     }) as EventListener)
     document.body.appendChild(el)
   })
   // 等元素升级完成再走 property 写通道：未升级时 el.tasks 只是普通 JS 属性，不触发 setter
   await page.waitForFunction(() => !!document.getElementById('res-tc')?.shadowRoot, undefined, { timeout: 15000 })
   await page.evaluate(() => {
-    const el = document.getElementById('res-tc') as HTMLElement & { tasks: unknown }
-    el.tasks = [{ id: 'tc1', name: 'T', start: '2026-03-02', end: '2026-03-04', resources: ['r1'] }]
+    const el = document.getElementById('res-tc') as HTMLElement & {
+      tasks: unknown
+    }
+    el.tasks = [
+      {
+        id: 'tc1',
+        name: 'T',
+        start: '2026-03-02',
+        end: '2026-03-04',
+        resources: ['r1'],
+      },
+    ]
   })
   await waitShadowReady(page, 'res-tc')
   const fired = await page.evaluate(
-    () => (window as unknown as { __tc: Array<{ count: number; firstId: string | undefined }> }).__tc,
+    () =>
+      (
+        window as unknown as {
+          __tc: Array<{ count: number; firstId: string | undefined }>
+        }
+      ).__tc,
   )
   expect(fired, '恰好派发一次且 detail 携带任务').toEqual([{ count: 1, firstId: 'tc1' }])
   await page.evaluate(() => document.getElementById('res-tc')?.remove())
@@ -506,11 +643,21 @@ test('resource oas-tasks-change：程序写 tasks 派发一次，detail.tasks �
 
 test('resource RTL sticky 名列贴右 / LTR 贴左（横向滚动到中部）', async ({ page }) => {
   const errors = collectErrors(page)
-  await page.goto('/components/resource.html', { waitUntil: 'domcontentloaded' })
+  await page.goto('/components/resource.html', {
+    waitUntil: 'domcontentloaded',
+  })
   await page.evaluate(() => {
     const data = {
       resources: JSON.stringify([{ id: 'r1', name: '资源甲' }]),
-      tasks: JSON.stringify([{ id: 't1', name: '长', start: '2026-01-01', end: '2026-06-30', resources: ['r1'] }]),
+      tasks: JSON.stringify([
+        {
+          id: 't1',
+          name: '长',
+          start: '2026-01-01',
+          end: '2026-06-30',
+          resources: ['r1'],
+        },
+      ]),
     }
     const mk = (id: string, rtl: boolean): void => {
       const el = document.createElement('oas-resource')
@@ -558,7 +705,9 @@ test('resource RTL sticky 名列贴右 / LTR 贴左（横向滚动到中部）',
 
 test('resource scrollToDate 端到端：调用后目标条滚入可视区且按剩余区居中', async ({ page }) => {
   const errors = collectErrors(page)
-  await page.goto('/components/resource.html', { waitUntil: 'domcontentloaded' })
+  await page.goto('/components/resource.html', {
+    waitUntil: 'domcontentloaded',
+  })
   await page.evaluate(() => {
     const el = document.createElement('oas-resource')
     el.id = 'res-scrollto'
@@ -568,15 +717,29 @@ test('resource scrollToDate 端到端：调用后目标条滚入可视区且按�
     el.setAttribute(
       'tasks',
       JSON.stringify([
-        { id: 'head', name: '头', start: '2026-01-01', end: '2026-01-05', resources: ['r1'] },
-        { id: 'mid', name: '中', start: '2026-04-01', end: '2026-04-05', resources: ['r1'] },
+        {
+          id: 'head',
+          name: '头',
+          start: '2026-01-01',
+          end: '2026-01-05',
+          resources: ['r1'],
+        },
+        {
+          id: 'mid',
+          name: '中',
+          start: '2026-04-01',
+          end: '2026-04-05',
+          resources: ['r1'],
+        },
       ]),
     )
     document.body.appendChild(el)
   })
   await waitShadowReady(page, 'res-scrollto')
   const res = await page.evaluate(() => {
-    const el = document.getElementById('res-scrollto') as HTMLElement & { scrollToDate(d: string): void }
+    const el = document.getElementById('res-scrollto') as HTMLElement & {
+      scrollToDate(d: string): void
+    }
     const sr = el.shadowRoot!
     const sc = sr.querySelector('.scroller') as HTMLElement
     el.scrollToDate('2026-04-01')
@@ -587,7 +750,11 @@ test('resource scrollToDate 端到端：调用后目标条滚入可视区且按�
     const days = Math.round((Date.UTC(2026, 3, 1) - Date.UTC(2026, 0, 1)) / 86_400_000)
     const nameW = (sr.querySelector('.name') as HTMLElement).offsetWidth
     const expected = Math.max(0, days * colW - Math.max(0, sc.clientWidth - nameW) / 2)
-    return { sl: sc.scrollLeft, expected, inView: mid.left >= scr.left - 1 && mid.right <= scr.right + 1 }
+    return {
+      sl: sc.scrollLeft,
+      expected,
+      inView: mid.left >= scr.left - 1 && mid.right <= scr.right + 1,
+    }
   })
   expect(Math.abs(res.sl - res.expected), 'scrollLeft 等于居中期望值').toBeLessThanOrEqual(1)
   expect(res.inView, '目标任务条滚入可视区').toBe(true)
@@ -597,7 +764,9 @@ test('resource scrollToDate 端到端：调用后目标条滚入可视区且按�
 
 test('resource month 档月末步进：01-31 后移 → 02-28（真浏览器 levelResources）', async ({ page }) => {
   const errors = collectErrors(page)
-  await page.goto('/components/resource.html', { waitUntil: 'domcontentloaded' })
+  await page.goto('/components/resource.html', {
+    waitUntil: 'domcontentloaded',
+  })
   await page.waitForFunction(
     () => typeof (window as unknown as { levelResources?: unknown }).levelResources === 'function',
     undefined,
@@ -618,8 +787,20 @@ test('resource month 档月末步进：01-31 后移 → 02-28（真浏览器 lev
     return levelResources(
       [{ id: 'r1', name: 'A', capacity: 1 }],
       [
-        { id: 'e1', name: '锚', start: '2026-01-31', end: '2026-01-31', resources: ['r1'] },
-        { id: 'e2', name: '受害', start: '2026-01-31', end: '2026-01-31', resources: ['r1'] },
+        {
+          id: 'e1',
+          name: '锚',
+          start: '2026-01-31',
+          end: '2026-01-31',
+          resources: ['r1'],
+        },
+        {
+          id: 'e2',
+          name: '受害',
+          start: '2026-01-31',
+          end: '2026-01-31',
+          resources: ['r1'],
+        },
       ],
       { scale: 'month' },
     )
@@ -636,12 +817,24 @@ test('resource lane-gap 宿主可覆盖：内联 / 宿主元素级 class 规则�
   page,
 }) => {
   const errors = collectErrors(page)
-  await page.goto('/components/resource.html', { waitUntil: 'domcontentloaded' })
+  await page.goto('/components/resource.html', {
+    waitUntil: 'domcontentloaded',
+  })
   // 宿主元素级 class 规则（文档样式表命中宿主）：验证「元素级 class 亦可覆盖 :host 声明」
-  await page.addStyleTag({ content: '.res-gap-cls { --oas-resource-lane-gap: 4px }' })
+  await page.addStyleTag({
+    content: '.res-gap-cls { --oas-resource-lane-gap: 4px }',
+  })
   await page.evaluate(() => {
     const resources = JSON.stringify([{ id: 'r1', name: 'A' }])
-    const tasks = JSON.stringify([{ id: 't1', name: 'T', start: '2026-03-02', end: '2026-03-04', resources: ['r1'] }])
+    const tasks = JSON.stringify([
+      {
+        id: 't1',
+        name: 'T',
+        start: '2026-03-02',
+        end: '2026-03-04',
+        resources: ['r1'],
+      },
+    ])
     const mk = (id: string, extra: string, cls: string | null): void => {
       const el = document.createElement('oas-resource')
       el.id = id
@@ -668,7 +861,11 @@ test('resource lane-gap 宿主可覆盖：内联 / 宿主元素级 class 规则�
         gap: getComputedStyle(track).getPropertyValue('--oas-resource-lane-gap').trim(),
       }
     }
-    return { def: measure('res-gap-def'), over: measure('res-gap-over'), cls: measure('res-gap-cls') }
+    return {
+      def: measure('res-gap-def'),
+      over: measure('res-gap-over'),
+      cls: measure('res-gap-cls'),
+    }
   })
   // 默认：barH=20/rowH=36 → gap=8 → 单段轨道高 = 20 + 2*8 = 36
   // （自定义属性计算值保留未求值的 max() token 流，故只断言它是派生式而非字面量）
@@ -690,7 +887,9 @@ test('resource lane-gap 宿主可覆盖：内联 / 宿主元素级 class 规则�
 
 test('resource 轨道不裁剪：.lane .track 计算 overflow=visible，贴边（left=0）最早条可聚焦', async ({ page }) => {
   const errors = collectErrors(page)
-  await page.goto('/components/resource.html', { waitUntil: 'domcontentloaded' })
+  await page.goto('/components/resource.html', {
+    waitUntil: 'domcontentloaded',
+  })
   await page.evaluate(() => {
     const el = document.createElement('oas-resource')
     el.id = 'res-edge'
@@ -699,7 +898,15 @@ test('resource 轨道不裁剪：.lane .track 计算 overflow=visible，贴边�
     el.setAttribute('resources', JSON.stringify([{ id: 'r1', name: 'A' }]))
     el.setAttribute(
       'tasks',
-      JSON.stringify([{ id: 'edge', name: '最早', start: '2026-03-02', end: '2026-03-02', resources: ['r1'] }]),
+      JSON.stringify([
+        {
+          id: 'edge',
+          name: '最早',
+          start: '2026-03-02',
+          end: '2026-03-02',
+          resources: ['r1'],
+        },
+      ]),
     )
     document.body.appendChild(el)
   })
@@ -729,7 +936,9 @@ test('resource 轨道不裁剪：.lane .track 计算 overflow=visible，贴边�
 
 test('resource en-US demo：点击「滚动到 03-15」有可见反馈 + 周日起始刻度（MM-dd）', async ({ page }) => {
   const errors = collectErrors(page)
-  await page.goto('/components/resource.html', { waitUntil: 'domcontentloaded' })
+  await page.goto('/components/resource.html', {
+    waitUntil: 'domcontentloaded',
+  })
   await waitShadowReady(page, 'res-locale')
   const btn = page.locator('#res-scroll-btn')
   await expect(btn).toBeVisible()
@@ -751,11 +960,21 @@ test('resource F1b DSD 高度：组件自写自定义属性不被误当宿主内
   page,
 }) => {
   const errors = collectErrors(page)
-  await page.goto('/components/resource.html', { waitUntil: 'domcontentloaded' })
+  await page.goto('/components/resource.html', {
+    waitUntil: 'domcontentloaded',
+  })
   await page.waitForFunction(() => !!customElements.get('oas-resource'), undefined, { timeout: 15000 })
   await page.evaluate(() => {
     const resources = JSON.stringify([{ id: 'r1', name: 'A' }])
-    const tasks = JSON.stringify([{ id: 't1', name: 'T', start: '2026-03-02', end: '2026-03-04', resources: ['r1'] }])
+    const tasks = JSON.stringify([
+      {
+        id: 't1',
+        name: 'T',
+        start: '2026-03-02',
+        end: '2026-03-04',
+        resources: ['r1'],
+      },
+    ])
     // 参考实例：取一份 shadow HTML 模拟 SSR 快照内容（同 renderToString 的序列化物）
     const ref = document.createElement('oas-resource')
     ref.setAttribute('scale', 'day')
@@ -781,7 +1000,9 @@ test('resource F1b DSD 高度：组件自写自定义属性不被误当宿主内
   })
   await waitShadowReady(page, 'res-dsd')
   const res = await page.evaluate(() => {
-    const el = document.getElementById('res-dsd') as HTMLElement & { requestUpdate(): void }
+    const el = document.getElementById('res-dsd') as HTMLElement & {
+      requestUpdate(): void
+    }
     const beforeVar = el.style.getPropertyValue('--oas-resource-height')
     const beforeH = el.getBoundingClientRect().height
     el.removeAttribute('height')
@@ -806,11 +1027,21 @@ test('resource F1b DSD 高度：组件自写自定义属性不被误当宿主内
 
 test('resource F1b CSR：宿主真内联 480px + height="480" → 移除属性后宿主内联 480px 不被吞', async ({ page }) => {
   const errors = collectErrors(page)
-  await page.goto('/components/resource.html', { waitUntil: 'domcontentloaded' })
+  await page.goto('/components/resource.html', {
+    waitUntil: 'domcontentloaded',
+  })
   await page.waitForFunction(() => !!customElements.get('oas-resource'), undefined, { timeout: 15000 })
   await page.evaluate(() => {
     const resources = JSON.stringify([{ id: 'r1', name: 'A' }])
-    const tasks = JSON.stringify([{ id: 't1', name: 'T', start: '2026-03-02', end: '2026-03-04', resources: ['r1'] }])
+    const tasks = JSON.stringify([
+      {
+        id: 't1',
+        name: 'T',
+        start: '2026-03-02',
+        end: '2026-03-04',
+        resources: ['r1'],
+      },
+    ])
     const mk = (id: string): HTMLElement => {
       const el = document.createElement('oas-resource')
       el.id = id
@@ -828,14 +1059,18 @@ test('resource F1b CSR：宿主真内联 480px + height="480" → 移除属性�
   await waitShadowReady(page, 'res-csr-h')
   await waitShadowReady(page, 'res-csr-bad')
   const res = await page.evaluate(() => {
-    const h = document.getElementById('res-csr-h') as HTMLElement & { requestUpdate(): void }
+    const h = document.getElementById('res-csr-h') as HTMLElement & {
+      requestUpdate(): void
+    }
     h.setAttribute('height', '480')
     const hVar = h.style.getPropertyValue('--oas-resource-height')
     const hBefore = h.getBoundingClientRect().height
     h.removeAttribute('height')
     h.requestUpdate()
 
-    const bad = document.getElementById('res-csr-bad') as HTMLElement & { requestUpdate(): void }
+    const bad = document.getElementById('res-csr-bad') as HTMLElement & {
+      requestUpdate(): void
+    }
     bad.style.height = '320px'
     bad.setAttribute('height', 'bad')
     const badVar = bad.style.getPropertyValue('--oas-resource-height')
@@ -869,10 +1104,20 @@ test('resource F1b CSR：宿主真内联 480px + height="480" → 移除属性�
 
 test('resource F2 条不越界：month 档末档单日任务 bar 恒在轨道内（LTR+RTL 真几何）', async ({ page }) => {
   const errors = collectErrors(page)
-  await page.goto('/components/resource.html', { waitUntil: 'domcontentloaded' })
+  await page.goto('/components/resource.html', {
+    waitUntil: 'domcontentloaded',
+  })
   await page.evaluate(() => {
     const resources = JSON.stringify([{ id: 'r1', name: 'A' }])
-    const tasks = JSON.stringify([{ id: 't1', name: 'T', start: '2026-03-31', end: '2026-03-31', resources: ['r1'] }])
+    const tasks = JSON.stringify([
+      {
+        id: 't1',
+        name: 'T',
+        start: '2026-03-31',
+        end: '2026-03-31',
+        resources: ['r1'],
+      },
+    ])
     const mk = (id: string, rtl: boolean): void => {
       const el = document.createElement('oas-resource')
       el.id = id
@@ -893,9 +1138,18 @@ test('resource F2 条不越界：month 档末档单日任务 bar 恒在轨道内
       const sr = (document.getElementById(id) as HTMLElement).shadowRoot!
       const tr = (sr.querySelector('.lane .track') as HTMLElement).getBoundingClientRect()
       const br = (sr.querySelector('.lane .bar') as HTMLElement).getBoundingClientRect()
-      return { trackL: tr.left, trackR: tr.right, barL: br.left, barR: br.right, w: br.width }
+      return {
+        trackL: tr.left,
+        trackR: tr.right,
+        barL: br.left,
+        barR: br.right,
+        w: br.width,
+      }
     }
-    return { ltr: measure('res-edge-month'), rtl: measure('res-edge-month-rtl') }
+    return {
+      ltr: measure('res-edge-month'),
+      rtl: measure('res-edge-month-rtl'),
+    }
   })
   // 反证旧实现：比例内插 w≈3.55 被 CSS min-width:8 顶宽，右缘越出轨道 ~4.4px（RTL 对称）
   for (const g of [geo.ltr, geo.rtl]) {
@@ -914,7 +1168,9 @@ test('resource F3 贴边条焦点环：纯 inset 双层环（primary 2px 贴条�
   page,
 }) => {
   const errors = collectErrors(page)
-  await page.goto('/components/resource.html', { waitUntil: 'domcontentloaded' })
+  await page.goto('/components/resource.html', {
+    waitUntil: 'domcontentloaded',
+  })
   await page.evaluate(() => {
     // 固定顶层容器：隔离页面浮层/侧栏遮挡，使命中判定只反映组件内部层叠（同 res-overlap 用例模式）
     const wrap = document.createElement('div')
@@ -927,7 +1183,15 @@ test('resource F3 贴边条焦点环：纯 inset 双层环（primary 2px 贴条�
     el.setAttribute('resources', JSON.stringify([{ id: 'r1', name: 'A' }]))
     el.setAttribute(
       'tasks',
-      JSON.stringify([{ id: 'edge', name: '最早', start: '2026-03-02', end: '2026-03-02', resources: ['r1'] }]),
+      JSON.stringify([
+        {
+          id: 'edge',
+          name: '最早',
+          start: '2026-03-02',
+          end: '2026-03-02',
+          resources: ['r1'],
+        },
+      ]),
     )
     wrap.appendChild(el)
     document.body.appendChild(wrap)
@@ -997,7 +1261,9 @@ test('resource F3 贴边条焦点环：纯 inset 双层环（primary 2px 贴条�
 
 test('resource G3 8px 窄条聚焦：环带每侧 3px → 仍留 ≥2px 填充可见 + 环带处命中 bar', async ({ page }) => {
   const errors = collectErrors(page)
-  await page.goto('/components/resource.html', { waitUntil: 'domcontentloaded' })
+  await page.goto('/components/resource.html', {
+    waitUntil: 'domcontentloaded',
+  })
   await page.evaluate(() => {
     // 固定顶层容器隔离页面遮挡（同 res-focus 用例模式）
     const wrap = document.createElement('div')
@@ -1010,7 +1276,15 @@ test('resource G3 8px 窄条聚焦：环带每侧 3px → 仍留 ≥2px 填充�
     el.setAttribute('resources', JSON.stringify([{ id: 'r1', name: 'A' }]))
     el.setAttribute(
       'tasks',
-      JSON.stringify([{ id: 'n8', name: '窄', start: '2026-03-31', end: '2026-03-31', resources: ['r1'] }]),
+      JSON.stringify([
+        {
+          id: 'n8',
+          name: '窄',
+          start: '2026-03-31',
+          end: '2026-03-31',
+          resources: ['r1'],
+        },
+      ]),
     )
     wrap.appendChild(el)
     document.body.appendChild(wrap)
@@ -1072,9 +1346,13 @@ test('resource G3 8px 窄条聚焦：环带每侧 3px → 仍留 ≥2px 填充�
 
 test('resource G4 height class 通道：class 规则 500px → height 属性接管 480 → 移除回落 500', async ({ page }) => {
   const errors = collectErrors(page)
-  await page.goto('/components/resource.html', { waitUntil: 'domcontentloaded' })
+  await page.goto('/components/resource.html', {
+    waitUntil: 'domcontentloaded',
+  })
   // 宿主元素级 class 规则设置 --oas-resource-height（无 height 属性 → 组件不写该变量）
-  await page.addStyleTag({ content: '.res-h-cls { --oas-resource-height: 500px }' })
+  await page.addStyleTag({
+    content: '.res-h-cls { --oas-resource-height: 500px }',
+  })
   await page.evaluate(() => {
     const el = document.createElement('oas-resource')
     el.id = 'res-h-class'
@@ -1084,7 +1362,15 @@ test('resource G4 height class 通道：class 规则 500px → height 属性接�
     el.setAttribute('resources', JSON.stringify([{ id: 'r1', name: 'A' }]))
     el.setAttribute(
       'tasks',
-      JSON.stringify([{ id: 't1', name: 'T', start: '2026-03-02', end: '2026-03-04', resources: ['r1'] }]),
+      JSON.stringify([
+        {
+          id: 't1',
+          name: 'T',
+          start: '2026-03-02',
+          end: '2026-03-04',
+          resources: ['r1'],
+        },
+      ]),
     )
     document.body.appendChild(el)
   })
@@ -1111,7 +1397,9 @@ test('resource G4 height class 通道：class 规则 500px → height 属性接�
 
 test('resource 横向虚拟化：长跨度 day 档刻度数有上界、滚到中部可视区仍有刻度、滚动长度不变', async ({ page }) => {
   const errors = collectErrors(page)
-  await page.goto('/components/resource.html', { waitUntil: 'domcontentloaded' })
+  await page.goto('/components/resource.html', {
+    waitUntil: 'domcontentloaded',
+  })
   await page.evaluate(() => {
     const el = document.createElement('oas-resource')
     el.id = 'res-virt'
@@ -1120,13 +1408,26 @@ test('resource 横向虚拟化：长跨度 day 档刻度数有上界、滚到中
     el.setAttribute('resources', JSON.stringify([{ id: 'r1', name: 'A' }]))
     el.setAttribute(
       'tasks',
-      JSON.stringify([{ id: 'long', name: '三年', start: '2026-01-01', end: '2028-12-31', resources: ['r1'] }]),
+      JSON.stringify([
+        {
+          id: 'long',
+          name: '三年',
+          start: '2026-01-01',
+          end: '2028-12-31',
+          resources: ['r1'],
+        },
+      ]),
     )
     document.body.appendChild(el)
   })
   await waitShadowReady(page, 'res-virt')
 
-  const measure = (): Promise<{ tickCount: number; scrollWidth: number; trackW: number; tickAtCenter: boolean }> =>
+  const measure = (): Promise<{
+    tickCount: number
+    scrollWidth: number
+    trackW: number
+    tickAtCenter: boolean
+  }> =>
     page.evaluate(() => {
       const sr = (document.getElementById('res-virt') as HTMLElement).shadowRoot!
       const sc = sr.querySelector('.scroller') as HTMLElement
@@ -1177,14 +1478,22 @@ test('resource 横向虚拟化：长跨度 day 档刻度数有上界、滚到中
 
 /** 长跨度 day 档任务 JSON（1096 period，锚点 2026-01-01，colW=36） */
 const LONG_TASKS_JSON = JSON.stringify([
-  { id: 'long', name: '三年', start: '2026-01-01', end: '2028-12-31', resources: ['r1'] },
+  {
+    id: 'long',
+    name: '三年',
+    start: '2026-01-01',
+    end: '2028-12-31',
+    resources: ['r1'],
+  },
 ])
 
 test('resource F1 容器尺寸变化：ResizeObserver 重算列窗口，变宽后刻度覆盖新右缘（无 scroll/无数据变更）', async ({
   page,
 }) => {
   const errors = collectErrors(page)
-  await page.goto('/components/resource.html', { waitUntil: 'domcontentloaded' })
+  await page.goto('/components/resource.html', {
+    waitUntil: 'domcontentloaded',
+  })
   await page.evaluate((tasks) => {
     const el = document.createElement('oas-resource')
     el.id = 'res-resize'
@@ -1195,7 +1504,12 @@ test('resource F1 容器尺寸变化：ResizeObserver 重算列窗口，变宽�
     document.body.appendChild(el)
   }, LONG_TASKS_JSON)
   await waitShadowReady(page, 'res-resize')
-  const measure = (): Promise<{ ticks: number; covered: boolean; maxTickRight: number; scRight: number }> =>
+  const measure = (): Promise<{
+    ticks: number
+    covered: boolean
+    maxTickRight: number
+    scRight: number
+  }> =>
     page.evaluate(() => {
       const sr = (document.getElementById('res-resize') as HTMLElement).shadowRoot!
       const sc = sr.querySelector('.scroller') as HTMLElement
@@ -1206,7 +1520,12 @@ test('resource F1 容器尺寸变化：ResizeObserver 重算列窗口，变宽�
         const b = t.getBoundingClientRect()
         if (b.right > maxTickRight) maxTickRight = b.right
       }
-      return { ticks: ticks.length, covered: maxTickRight >= scr.right - 2, maxTickRight, scRight: scr.right }
+      return {
+        ticks: ticks.length,
+        covered: maxTickRight >= scr.right - 2,
+        maxTickRight,
+        scRight: scr.right,
+      }
     })
   const before = await measure()
   expect(before.ticks, '480px 视口下已窗口化（远少于 1096）').toBeLessThan(300)
@@ -1233,7 +1552,9 @@ test('resource F1 容器尺寸变化：ResizeObserver 重算列窗口，变宽�
 
 test('resource F1 隐藏挂载 → 显示：ResizeObserver 修正，刻度不再永久全量', async ({ page }) => {
   const errors = collectErrors(page)
-  await page.goto('/components/resource.html', { waitUntil: 'domcontentloaded' })
+  await page.goto('/components/resource.html', {
+    waitUntil: 'domcontentloaded',
+  })
   await page.evaluate((tasks) => {
     const box = document.createElement('div')
     box.id = 'res-hidden-box'
@@ -1256,7 +1577,11 @@ test('resource F1 隐藏挂载 → 显示：ResizeObserver 修正，刻度不再
     page.evaluate(
       () => (document.getElementById('res-hidden') as HTMLElement).shadowRoot!.querySelectorAll('.ticks .tick').length,
     )
-  expect(await tickCount(), '隐藏/0 宽挂载回落全量（1096 条）').toBe(1096)
+  // 隐藏/0 宽挂载时组件回落全量 period：期望值由 fixture 的任务日期跨度现算
+  // （2026-01-01..2028-12-31 含首尾 = 1096 天，纯日历推导，与字体度量无关）
+  expect(await tickCount(), '隐藏/0 宽挂载回落全量（任务跨度内的全部 day period）').toBe(
+    daySpanCount('2026-01-01', '2028-12-31'),
+  )
   // 显示容器 → ResizeObserver 触发 → 切回窗口渲染（反证「无 RO」实现：永久停留 1096 条）
   await page.evaluate(() => {
     ;(document.getElementById('res-hidden-box') as HTMLElement).style.display = 'block'
@@ -1274,7 +1599,9 @@ test('resource F1 隐藏挂载 → 显示：ResizeObserver 修正，刻度不再
 
 test('resource F2 横向滚动复用条节点：聚焦条滚动后仍在 DOM、焦点保持（不因整段重建丢焦点）', async ({ page }) => {
   const errors = collectErrors(page)
-  await page.goto('/components/resource.html', { waitUntil: 'domcontentloaded' })
+  await page.goto('/components/resource.html', {
+    waitUntil: 'domcontentloaded',
+  })
   await page.evaluate(
     (tasks) => {
       const el = document.createElement('oas-resource')
@@ -1287,8 +1614,20 @@ test('resource F2 横向滚动复用条节点：聚焦条滚动后仍在 DOM、�
       document.body.appendChild(el)
     },
     JSON.stringify([
-      { id: 'long', name: '三年', start: '2026-01-01', end: '2028-12-31', resources: ['r1'] },
-      { id: 'mid', name: '中', start: '2026-01-11', end: '2026-01-11', resources: ['r1'] },
+      {
+        id: 'long',
+        name: '三年',
+        start: '2026-01-01',
+        end: '2028-12-31',
+        resources: ['r1'],
+      },
+      {
+        id: 'mid',
+        name: '中',
+        start: '2026-01-11',
+        end: '2026-01-11',
+        resources: ['r1'],
+      },
     ]),
   )
   await page.waitForFunction(
@@ -1338,11 +1677,16 @@ test('resource 行虚拟化：500 资源行数有上界、滚动总高不变、�
   page,
 }) => {
   const errors = collectErrors(page)
-  await page.goto('/components/resource.html', { waitUntil: 'domcontentloaded' })
+  await page.goto('/components/resource.html', {
+    waitUntil: 'domcontentloaded',
+  })
   await page.waitForFunction(() => !!customElements.get('oas-resource'), undefined, { timeout: 15000 })
   await page.evaluate(() => {
     const N = 500
-    const resources = Array.from({ length: N }, (_, i) => ({ id: `r${i}`, name: `R${i}` }))
+    const resources = Array.from({ length: N }, (_, i) => ({
+      id: `r${i}`,
+      name: `R${i}`,
+    }))
     const el = document.createElement('oas-resource')
     el.id = 'res-rowvirt'
     el.style.cssText = 'display:block;width:600px;height:360px;margin:12px;position:relative;z-index:1'
@@ -1351,7 +1695,13 @@ test('resource 行虚拟化：500 资源行数有上界、滚动总高不变、�
     el.setAttribute(
       'tasks',
       JSON.stringify([
-        { id: 't0', name: 'T', start: '2026-03-02', end: '2026-03-02', resources: resources.map((r) => r.id) },
+        {
+          id: 't0',
+          name: 'T',
+          start: '2026-03-02',
+          end: '2026-03-02',
+          resources: resources.map((r) => r.id),
+        },
       ]),
     )
     ;(window as unknown as { __rowvirtHits: string[] }).__rowvirtHits = []
@@ -1460,7 +1810,9 @@ test('resource 行虚拟化：500 资源行数有上界、滚动总高不变、�
 
 test('resource 行虚拟化资源 0 个零异常 + 行/列窗口正交（纵向滚动不变列窗口）+ console 零告警', async ({ page }) => {
   const errors = collectErrors(page)
-  await page.goto('/components/resource.html', { waitUntil: 'domcontentloaded' })
+  await page.goto('/components/resource.html', {
+    waitUntil: 'domcontentloaded',
+  })
   await page.waitForFunction(() => !!customElements.get('oas-resource'), undefined, { timeout: 15000 })
   await page.evaluate(() => {
     // ① 资源 0 个：挂载 + requestUpdate 不抛、无行无 spacer
@@ -1472,7 +1824,10 @@ test('resource 行虚拟化资源 0 个零异常 + 行/列窗口正交（纵向�
     document.body.appendChild(empty)
     // ② 行/列正交：三年 day 档（1096 列）× 300 资源
     const M = 300
-    const resources = Array.from({ length: M }, (_, i) => ({ id: `r${i}`, name: `R${i}` }))
+    const resources = Array.from({ length: M }, (_, i) => ({
+      id: `r${i}`,
+      name: `R${i}`,
+    }))
     const el = document.createElement('oas-resource')
     el.id = 'res-rowvirt-ortho'
     el.style.cssText = 'display:block;width:520px;height:320px;margin:12px;position:relative;z-index:1'
@@ -1544,11 +1899,16 @@ test('resource 行虚拟化资源 0 个零异常 + 行/列窗口正交（纵向�
 
 test('resource 行虚拟化焦点保持：纵向滚动窗口平移，窗口内存活行的聚焦条不丢焦点、节点不重建', async ({ page }) => {
   const errors = collectErrors(page)
-  await page.goto('/components/resource.html', { waitUntil: 'domcontentloaded' })
+  await page.goto('/components/resource.html', {
+    waitUntil: 'domcontentloaded',
+  })
   await page.waitForFunction(() => !!customElements.get('oas-resource'), undefined, { timeout: 15000 })
   await page.evaluate(() => {
     const M = 200
-    const resources = Array.from({ length: M }, (_, i) => ({ id: `r${i}`, name: `R${i}` }))
+    const resources = Array.from({ length: M }, (_, i) => ({
+      id: `r${i}`,
+      name: `R${i}`,
+    }))
     const el = document.createElement('oas-resource')
     el.id = 'res-rowfocus'
     el.style.cssText = 'display:block;width:600px;height:280px;margin:12px;position:relative;z-index:1'
@@ -1557,7 +1917,13 @@ test('resource 行虚拟化焦点保持：纵向滚动窗口平移，窗口内�
     el.setAttribute(
       'tasks',
       JSON.stringify([
-        { id: 't0', name: 'T', start: '2026-03-02', end: '2026-03-02', resources: resources.map((r) => r.id) },
+        {
+          id: 't0',
+          name: 'T',
+          start: '2026-03-02',
+          end: '2026-03-02',
+          resources: resources.map((r) => r.id),
+        },
       ]),
     )
     document.body.appendChild(el)
@@ -1636,7 +2002,10 @@ async function injectWindowedFixture(page: Page, o: WinFixture): Promise<void> {
     el.setAttribute(
       'resources',
       JSON.stringify(
-        Array.from({ length: opt.loaded }, (_, i) => ({ id: `r${opt.start + i}`, name: `R${opt.start + i}` })),
+        Array.from({ length: opt.loaded }, (_, i) => ({
+          id: `r${opt.start + i}`,
+          name: `R${opt.start + i}`,
+        })),
       ),
     )
     el.setAttribute(
@@ -1653,7 +2022,10 @@ async function injectWindowedFixture(page: Page, o: WinFixture): Promise<void> {
           : [],
       ),
     )
-    const w = window as unknown as { __resRows: unknown[]; __resRanges: unknown[] }
+    const w = window as unknown as {
+      __resRows: unknown[]
+      __resRanges: unknown[]
+    }
     w.__resRows = []
     w.__resRanges = []
     el.addEventListener('oas-window-request', (e) => {
@@ -1676,13 +2048,26 @@ test('resource windowed 行窗口：滚动派发 oas-window-request、宿主回�
   page,
 }) => {
   const errors = collectErrors(page)
-  await page.goto('/components/resource.html', { waitUntil: 'domcontentloaded' })
-  await injectWindowedFixture(page, { id: 'res-win-abs', total: 500, start: 0, loaded: 5, withTasks: false })
+  await page.goto('/components/resource.html', {
+    waitUntil: 'domcontentloaded',
+  })
+  await injectWindowedFixture(page, {
+    id: 'res-win-abs',
+    total: 500,
+    start: 0,
+    loaded: 5,
+    withTasks: false,
+  })
 
   // 1) 首帧 init：已装载切片 [0,5) 不覆盖期望区间（可视行窗 ± margin 8）
   await page.waitForFunction(() => (window as unknown as { __resRows: unknown[] }).__resRows.length > 0)
   const init = await page.evaluate(
-    () => (window as unknown as { __resRows: Array<Record<string, number | string>> }).__resRows[0]!,
+    () =>
+      (
+        window as unknown as {
+          __resRows: Array<Record<string, number | string>>
+        }
+      ).__resRows[0]!,
   )
   expect(init['reason'], 'reason=init').toBe('init')
   expect(init['start'], '期望区间自绝对行 0 起').toBe(0)
@@ -1696,7 +2081,12 @@ test('resource windowed 行窗口：滚动派发 oas-window-request、宿主回�
     w.__resRows.length = 0
     el.setAttribute(
       'resources',
-      JSON.stringify(Array.from({ length: 40 }, (_, i) => ({ id: `r${200 + i}`, name: `R${200 + i}` }))),
+      JSON.stringify(
+        Array.from({ length: 40 }, (_, i) => ({
+          id: `r${200 + i}`,
+          name: `R${200 + i}`,
+        })),
+      ),
     )
     el.setAttribute('window-start', '200')
     const sc = el.shadowRoot!.querySelector('.scroller') as HTMLElement
@@ -1775,8 +2165,16 @@ test('resource 轴托管 range-start/range-end：period 按轴生成、轴头/�
   page,
 }) => {
   const errors = collectErrors(page)
-  await page.goto('/components/resource.html', { waitUntil: 'domcontentloaded' })
-  await injectWindowedFixture(page, { id: 'res-win-range', total: 500, start: 0, loaded: 30, withTasks: true })
+  await page.goto('/components/resource.html', {
+    waitUntil: 'domcontentloaded',
+  })
+  await injectWindowedFixture(page, {
+    id: 'res-win-range',
+    total: 500,
+    start: 0,
+    loaded: 30,
+    withTasks: true,
+  })
 
   // 1) 轴托管：时间轴按 range-* 生成（2 年 day 档 = 730 列），而非按已装载任务推断
   const ticksW = await page.evaluate(
@@ -1787,7 +2185,12 @@ test('resource 轴托管 range-start/range-end：period 按轴生成、轴头/�
   // 首帧 init 范围请求：need 前扩越出轴头（可视列窗 ±1 个视口宽）
   await page.waitForFunction(() => (window as unknown as { __resRanges: unknown[] }).__resRanges.length > 0)
   const init = await page.evaluate(
-    () => (window as unknown as { __resRanges: Array<Record<string, number | string>> }).__resRanges[0]!,
+    () =>
+      (
+        window as unknown as {
+          __resRanges: Array<Record<string, number | string>>
+        }
+      ).__resRanges[0]!,
   )
   const axis = await page.evaluate(() => ({
     start: new Date(2026, 0, 1).getTime(),
@@ -1826,7 +2229,12 @@ test('resource 轴托管 range-start/range-end：period 按轴生成、轴头/�
     { timeout: 15000 },
   )
   const last = await page.evaluate(
-    () => (window as unknown as { __resRanges: Array<{ reason: string; endMs: number }> }).__resRanges.at(-1)!,
+    () =>
+      (
+        window as unknown as {
+          __resRanges: Array<{ reason: string; endMs: number }>
+        }
+      ).__resRanges.at(-1)!,
   )
   expect(last.reason, '轴尾请求 reason=scroll').toBe('scroll')
   expect(last.endMs, '轴尾 need 越过轴末（2028-01-01）').toBeGreaterThan(axis.end)
@@ -1841,8 +2249,16 @@ test('resource windowed × RTL：行网格角色/aria-rowcount=total/aria-rowind
   page,
 }) => {
   const errors = collectErrors(page)
-  await page.goto('/components/resource.html', { waitUntil: 'domcontentloaded' })
-  await injectWindowedFixture(page, { id: 'res-win-mir-ltr', total: 500, start: 0, loaded: 40, withTasks: true })
+  await page.goto('/components/resource.html', {
+    waitUntil: 'domcontentloaded',
+  })
+  await injectWindowedFixture(page, {
+    id: 'res-win-mir-ltr',
+    total: 500,
+    start: 0,
+    loaded: 40,
+    withTasks: true,
+  })
   await injectWindowedFixture(page, {
     id: 'res-win-mir-rtl',
     total: 500,
@@ -1921,7 +2337,9 @@ test('resource windowed × RTL：行网格角色/aria-rowcount=total/aria-rowind
 
   // 负值 scrollLeft（RTL 规范模型）下范围请求机制同 LTR：轴中 need ⊆ 轴不派、轴尾越界再派
   const ranges = await page.evaluate(async () => {
-    const w = window as unknown as { __resRanges: Array<{ reason: string; startMs: number; endMs: number }> }
+    const w = window as unknown as {
+      __resRanges: Array<{ reason: string; startMs: number; endMs: number }>
+    }
     const el = document.getElementById('res-win-mir-rtl')!
     const sc = el.shadowRoot!.querySelector('.scroller') as HTMLElement
     const before = w.__resRanges.length
@@ -1932,7 +2350,12 @@ test('resource windowed × RTL：行网格角色/aria-rowcount=total/aria-rowind
     sc.scrollLeft = -999999 // 夹到最负 = 轴尾
     sc.dispatchEvent(new Event('scroll'))
     await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(() => r(null))))
-    return { before, afterMid, after: w.__resRanges.length, last: w.__resRanges.at(-1) ?? null }
+    return {
+      before,
+      afterMid,
+      after: w.__resRanges.length,
+      last: w.__resRanges.at(-1) ?? null,
+    }
   })
   expect(ranges.afterMid, '轴中部 need ⊆ 轴 → 不派范围请求').toBe(ranges.before)
   expect(ranges.after, '轴尾 need 越界 → 再派（去重复位）').toBeGreaterThan(ranges.afterMid)
@@ -1951,7 +2374,9 @@ test('resource windowed × RTL 绝对行号：window-start=100 回填后首行 a
   page,
 }) => {
   const errors = collectErrors(page)
-  await page.goto('/components/resource.html', { waitUntil: 'domcontentloaded' })
+  await page.goto('/components/resource.html', {
+    waitUntil: 'domcontentloaded',
+  })
   await injectWindowedFixture(page, {
     id: 'res-win-rtl-abs',
     total: 500,
@@ -1966,7 +2391,12 @@ test('resource windowed × RTL 绝对行号：window-start=100 回填后首行 a
     const el = document.getElementById('res-win-rtl-abs')!
     el.setAttribute(
       'resources',
-      JSON.stringify(Array.from({ length: 40 }, (_, i) => ({ id: `r${100 + i}`, name: `R${100 + i}` }))),
+      JSON.stringify(
+        Array.from({ length: 40 }, (_, i) => ({
+          id: `r${100 + i}`,
+          name: `R${100 + i}`,
+        })),
+      ),
     )
     el.setAttribute('window-start', '100')
     const sc = el.shadowRoot!.querySelector('.scroller') as HTMLElement
@@ -1984,7 +2414,11 @@ test('resource windowed × RTL 绝对行号：window-start=100 回填后首行 a
     const sr = el.shadowRoot!
     const rows = [...sr.querySelectorAll<HTMLElement>('.lanes .row.lane')]
     const spacers = [...sr.querySelectorAll('.lanes > .row-spacer')] as HTMLElement[]
-    const reqs = (window as unknown as { __resRows: Array<{ reason: string; start: number }> }).__resRows
+    const reqs = (
+      window as unknown as {
+        __resRows: Array<{ reason: string; start: number }>
+      }
+    ).__resRows
     return {
       rtl: el.hasAttribute('data-rtl'),
       role: (sr.querySelector('.lanes') as HTMLElement).getAttribute('role'),
@@ -2026,7 +2460,9 @@ test('resource 可读性三开关：开启后渲染负载值数字/超载徽标/
   page,
 }) => {
   const errors = collectErrors(page)
-  await page.goto('/components/resource.html', { waitUntil: 'domcontentloaded' })
+  await page.goto('/components/resource.html', {
+    waitUntil: 'domcontentloaded',
+  })
   await page.evaluate(() => {
     // r1 必超载（03-02 load 2 > cap 1）；r2 恒正常
     const resources = JSON.stringify([
@@ -2034,9 +2470,27 @@ test('resource 可读性三开关：开启后渲染负载值数字/超载徽标/
       { id: 'r2', name: '资源乙', capacity: 5 },
     ])
     const tasks = JSON.stringify([
-      { id: 'a', name: '任务A', start: '2026-03-02', end: '2026-03-02', resources: ['r1'] },
-      { id: 'b', name: '任务B', start: '2026-03-02', end: '2026-03-04', resources: ['r1'] },
-      { id: 'c', name: '任务C', start: '2026-03-02', end: '2026-03-02', resources: ['r2'] },
+      {
+        id: 'a',
+        name: '任务A',
+        start: '2026-03-02',
+        end: '2026-03-02',
+        resources: ['r1'],
+      },
+      {
+        id: 'b',
+        name: '任务B',
+        start: '2026-03-02',
+        end: '2026-03-04',
+        resources: ['r1'],
+      },
+      {
+        id: 'c',
+        name: '任务C',
+        start: '2026-03-02',
+        end: '2026-03-02',
+        resources: ['r2'],
+      },
     ])
     const wrap = document.createElement('div')
     wrap.id = 'res-readable-wrap'
@@ -2113,9 +2567,13 @@ test('resource 可读性三开关：开启后渲染负载值数字/超载徽标/
 
   // 视觉截图（light + dark）：数字位置/徽标形态/条内标签可读性留档供人工/识图复核
   const target = page.locator('#res-readable-wrap')
-  await target.screenshot({ path: 'test-results/visual-review/resource-readable-light.png' })
+  await target.screenshot({
+    path: 'test-results/visual-review/resource-readable-light.png',
+  })
   await page.evaluate(() => document.documentElement.setAttribute('data-theme', 'dark'))
-  await target.screenshot({ path: 'test-results/visual-review/resource-readable-dark.png' })
+  await target.screenshot({
+    path: 'test-results/visual-review/resource-readable-dark.png',
+  })
   await page.evaluate(() => {
     document.documentElement.removeAttribute('data-theme')
     document.getElementById('res-readable-wrap')?.remove()
@@ -2127,13 +2585,23 @@ test('resource 日刻度抽稀：day 档文案数有界（≈ceil(n/2)）、blan
   page,
 }) => {
   const errors = collectErrors(page)
-  await page.goto('/components/resource.html', { waitUntil: 'domcontentloaded' })
+  await page.goto('/components/resource.html', {
+    waitUntil: 'domcontentloaded',
+  })
   await page.evaluate(() => {
     const wrap = document.createElement('div')
     wrap.id = 'res-thin-wrap'
     wrap.style.cssText = 'position:fixed;inset:0;z-index:2147483647;background:var(--oas-color-bg,#fff);padding:24px'
     const resources = JSON.stringify([{ id: 'r1', name: 'A' }])
-    const tasks = JSON.stringify([{ id: 't1', name: 'T', start: '2026-03-01', end: '2026-03-14', resources: ['r1'] }])
+    const tasks = JSON.stringify([
+      {
+        id: 't1',
+        name: 'T',
+        start: '2026-03-01',
+        end: '2026-03-14',
+        resources: ['r1'],
+      },
+    ])
     const mk = (id: string, scale: string): void => {
       const el = document.createElement('oas-resource')
       el.id = id
@@ -2168,16 +2636,21 @@ test('resource 日刻度抽稀：day 档文案数有界（≈ceil(n/2)）、blan
     }
     return { day: info('res-thin-day'), week: info('res-thin-week') }
   })
-  // day 档 3/1..3/14 = 14 个 period，36px 列 → step 2：文案 ≈ ceil(14/2) = 7（有界），blank 7 个
-  expect(res.day.tickCount, 'tick 元素数不变（抽稀只清文案，网格线不丢）').toBe(14)
-  expect(res.day.textCount, 'day 文案数 = ceil(14/2) = 7').toBe(7)
-  expect(res.day.blankCount, 'blank 刻度数 = 7').toBe(7)
+  // day 档 3/1..3/14 = 14 个 day period；抽稀 step 由 day 列宽（CSS 设计常量 36px）与
+  // 固定字符估宽（32.5 + 6 余量）推导：ceil(38.5 / 36) = 2 —— 与系统字体度量无关。
+  // 因此文案例 = ceil(14/2)、blank 数 = 14 − 文案数（网格线不丢），期望值全部现算。
+  const DAYS = daySpanCount('2026-03-01', '2026-03-14')
+  const DAY_THIN_STEP = Math.ceil(38.5 / 36)
+  const dayTextCount = Math.ceil(DAYS / DAY_THIN_STEP)
+  expect(res.day.tickCount, 'tick 元素数 = 任务跨度内 day period 数（抽稀只清文案，网格线不丢）').toBe(DAYS)
+  expect(res.day.textCount, `day 文案数 = ceil(${DAYS}/${DAY_THIN_STEP})`).toBe(dayTextCount)
+  expect(res.day.blankCount, 'blank 刻度数 = 无文案的 tick 数').toBe(DAYS - dayTextCount)
   expect(res.day.firstText, '首刻度（全局索引 0）恒有文案').toBe('03-01')
   // 画布/刻度容器宽不变（对齐不破）
   expect(res.day.ticksWidth, '刻度容器宽仍 = canvasW').toBe(res.day.trackWidth)
-  // week 档（90px 列）不抽稀：14 天 = 3 个周 period，全文案、无 blank
-  expect(res.week.tickCount, 'week period 数').toBe(3)
-  expect(res.week.textCount, 'week 全文案').toBe(3)
+  // week 档（90px 列）不抽稀：3/1..3/14 覆盖 3 个周 period（周一对齐，日历推导），全文案、无 blank
+  expect(res.week.tickCount, 'week period 数 = 跨度覆盖的周档数').toBe(weekPeriodCount('2026-03-01', '2026-03-14'))
+  expect(res.week.textCount, 'week 全文案').toBe(res.week.tickCount)
   expect(res.week.blankCount, 'week 无 blank').toBe(0)
   await page.evaluate(() => document.getElementById('res-thin-wrap')?.remove())
   expect(errors).toEqual([])
@@ -2186,7 +2659,9 @@ test('resource 日刻度抽稀：day 档文案数有界（≈ceil(n/2)）、blan
 // 表头纵向吸顶：滚动泳道后周刻度仍贴在滚动容器顶部；角落名列在横向滚动后仍贴边（LTR/RTL）。
 test('resource 表头吸顶：纵向滚动周刻度保持可见，横向滚动角落名列贴边（LTR/RTL）', async ({ page }) => {
   const errors = collectErrors(page)
-  await page.goto('/components/resource.html', { waitUntil: 'domcontentloaded' })
+  await page.goto('/components/resource.html', {
+    waitUntil: 'domcontentloaded',
+  })
   await waitResource(page, 'res-basic')
   const out = await page.evaluate(async () => {
     const mount = async (rtl: boolean) => {
@@ -2197,7 +2672,12 @@ test('resource 表头吸顶：纵向滚动周刻度保持可见，横向滚动�
       el.style.cssText = 'display:block;width:640px;height:240px;margin:12px'
       el.setAttribute(
         'resources',
-        JSON.stringify(Array.from({ length: 40 }, (_, i) => ({ id: `m${i}`, name: `资源 ${i + 1}` }))),
+        JSON.stringify(
+          Array.from({ length: 40 }, (_, i) => ({
+            id: `m${i}`,
+            name: `资源 ${i + 1}`,
+          })),
+        ),
       )
       el.setAttribute(
         'tasks',
@@ -2266,7 +2746,12 @@ test('resource 表头吸顶：纵向滚动周刻度保持可见，横向滚动�
     offEl.style.cssText = 'display:block;width:640px;height:240px;margin:12px'
     offEl.setAttribute(
       'resources',
-      JSON.stringify(Array.from({ length: 40 }, (_, i) => ({ id: `o${i}`, name: `资源 ${i + 1}` }))),
+      JSON.stringify(
+        Array.from({ length: 40 }, (_, i) => ({
+          id: `o${i}`,
+          name: `资源 ${i + 1}`,
+        })),
+      ),
     )
     offEl.setAttribute(
       'tasks',
@@ -2321,7 +2806,9 @@ test('resource 滚动容器键盘可达：windowed 空视口 scroller 可聚焦�
   page.on('console', (m) => {
     if (m.type() === 'error') errors.push(m.text())
   })
-  await page.goto('/components/resource.html', { waitUntil: 'domcontentloaded' })
+  await page.goto('/components/resource.html', {
+    waitUntil: 'domcontentloaded',
+  })
   // 等组件 bundle 升级完成（借既有 demo 的泳道条）
   await waitResource(page, 'res-basic')
 
@@ -2350,7 +2837,11 @@ test('resource 滚动容器键盘可达：windowed 空视口 scroller 可聚焦�
     .toBe('0')
   const metrics = await probe.evaluate((host) => {
     const sc = host.shadowRoot!.querySelector('.scroller') as HTMLElement
-    return { scrollH: sc.scrollHeight, clientH: sc.clientHeight, hidden: sc.hidden }
+    return {
+      scrollH: sc.scrollHeight,
+      clientH: sc.clientHeight,
+      hidden: sc.hidden,
+    }
   })
   expect(metrics.hidden, 'windowed 空视口不显示空态覆盖层（scroller 可见）').toBe(false)
   expect(metrics.scrollH, 'spacer 撑起全量行高 → scroller 确实可滚动').toBeGreaterThan(metrics.clientH + 1)
@@ -2369,8 +2860,10 @@ test('resource 滚动容器键盘可达：windowed 空视口 scroller 可聚焦�
   expect(errors, 'console 零告警').toEqual([])
 })
 
-test('resource 资源名与任务条标签文字可选中复制', async ({ page }) => {
-  await page.goto('/components/resource.html', { waitUntil: 'domcontentloaded' })
+test('resource 资源名与任务条标签文字可选中复制', async ({ page, browserName }) => {
+  await page.goto('/components/resource.html', {
+    waitUntil: 'domcontentloaded',
+  })
   await waitResource(page, 'res-readable')
 
   const r = await page.evaluate(() => {
@@ -2383,7 +2876,8 @@ test('resource 资源名与任务条标签文字可选中复制', async ({ page 
       const sel = window.getSelection()!
       sel.removeAllRanges()
       sel.addRange(range)
-      return sel.toString()
+      // Range.toString()：WebKit（Playwright 构建）的 window.getSelection() 不反映 shadow 内选区
+      return range.toString()
     }
     return {
       nameUserSelect: getComputedStyle(name).userSelect,
@@ -2398,24 +2892,30 @@ test('resource 资源名与任务条标签文字可选中复制', async ({ page 
   expect(r.nameText.length, '资源名文本可选中（非空）').toBeGreaterThanOrEqual(1)
   expect(r.barText.length, '任务条标签文本可选中（非空）').toBeGreaterThanOrEqual(1)
 
-  // 真实鼠标拖选（不是只读 computedStyle）：资源名文本可被用户划选复制
-  const name = page.locator('#res-readable .row.lane .name').first()
-  await name.scrollIntoViewIfNeeded()
-  const box = await name.boundingBox()
-  if (box) {
-    await page.evaluate(() => window.getSelection()?.removeAllRanges())
-    await page.mouse.move(box.x + 2, box.y + box.height / 2)
-    await page.mouse.down()
-    await page.mouse.move(box.x + Math.min(box.width - 2, 80), box.y + box.height / 2, { steps: 5 })
-    await page.mouse.up()
-    const selected = await page.evaluate(() => window.getSelection()?.toString() ?? '')
-    // 下界理由：拖选命中的字符数由渲染字宽与拖动距离决定（无固定值）；>0 锁定「真实拖选产生选区」
-    expect(selected.length, '真实拖选应产生文本选区').toBeGreaterThanOrEqual(1)
+  // 真实鼠标拖选（不是只读 computedStyle）：资源名文本可被用户划选复制。
+  // 引擎能力缺口：WebKit（Playwright 构建）不把 shadow 树内选区暴露给 window.getSelection()，
+  // 也无 ShadowRoot.getSelection()——拖选结果无读取通道（程序性 Range.toString() 已锁定可选中）
+  if (browserName !== 'webkit') {
+    const name = page.locator('#res-readable .row.lane .name').first()
+    await name.scrollIntoViewIfNeeded()
+    const box = await name.boundingBox()
+    if (box) {
+      await page.evaluate(() => window.getSelection()?.removeAllRanges())
+      await page.mouse.move(box.x + 2, box.y + box.height / 2)
+      await page.mouse.down()
+      await page.mouse.move(box.x + Math.min(box.width - 2, 80), box.y + box.height / 2, { steps: 5 })
+      await page.mouse.up()
+      const selected = await page.evaluate(() => window.getSelection()?.toString() ?? '')
+      // 下界理由：拖选命中的字符数由渲染字宽与拖动距离决定（无固定值）；>0 锁定「真实拖选产生选区」
+      expect(selected.length, '真实拖选应产生文本选区').toBeGreaterThanOrEqual(1)
+    }
   }
 })
 
 test('resource 负载直方图区上方有分隔线（最后泳道不丢下边框）', async ({ page }) => {
-  await page.goto('/components/resource.html', { waitUntil: 'domcontentloaded' })
+  await page.goto('/components/resource.html', {
+    waitUntil: 'domcontentloaded',
+  })
   await waitResource(page, 'res-basic')
   const r = await page.evaluate(() => {
     const host = document.getElementById('res-basic') as HTMLElement
@@ -2439,7 +2939,9 @@ test('resource 浏览器回归：一键均载（reassign）改派资源、日期
   page.on('console', (m) => {
     if (m.type() === 'error') errors.push(m.text())
   })
-  await page.goto('/components/resource.html', { waitUntil: 'domcontentloaded' })
+  await page.goto('/components/resource.html', {
+    waitUntil: 'domcontentloaded',
+  })
   await waitResource(page, 'res-level')
   const host = page.locator('#res-level')
   await expect(host.locator('.pillar.over').first()).toBeVisible()
@@ -2447,9 +2949,21 @@ test('resource 浏览器回归：一键均载（reassign）改派资源、日期
   const snapshot = () =>
     host.evaluate((el) => {
       const tasks = (
-        el as HTMLElement & { tasks: Array<{ id: string; start: string; end: string; resources?: string[] }> }
+        el as HTMLElement & {
+          tasks: Array<{
+            id: string
+            start: string
+            end: string
+            resources?: string[]
+          }>
+        }
       ).tasks
-      return tasks.map((t) => ({ id: t.id, start: t.start, end: t.end, resources: [...(t.resources ?? [])].sort() }))
+      return tasks.map((t) => ({
+        id: t.id,
+        start: t.start,
+        end: t.end,
+        resources: [...(t.resources ?? [])].sort(),
+      }))
     })
   const before = await snapshot()
 
@@ -2473,13 +2987,21 @@ test('resource show-cost 成本合计：默认关零节点、开启按费率行�
   page.on('console', (m) => {
     if (m.type() === 'error') errors.push(m.text())
   })
-  await page.goto('/components/resource.html', { waitUntil: 'domcontentloaded' })
+  await page.goto('/components/resource.html', {
+    waitUntil: 'domcontentloaded',
+  })
   const RESOURCES = JSON.stringify([
     { id: 'r1', name: '资深（100/h）', costRate: 100 },
     { id: 'r2', name: '初级（未填费率）' },
   ])
   const TASKS = JSON.stringify([
-    { id: 'tc1', name: '任务（5 天）', start: '2026-03-02', end: '2026-03-06', resources: ['r1', 'r2'] },
+    {
+      id: 'tc1',
+      name: '任务（5 天）',
+      start: '2026-03-02',
+      end: '2026-03-06',
+      resources: ['r1', 'r2'],
+    },
   ])
   const RANGE = { 'range-start': '2026-03-01', 'range-end': '2026-03-31' }
   const mount = (id: string, attrs: Record<string, string>) =>
@@ -2504,7 +3026,12 @@ test('resource show-cost 成本合计：默认关零节点、开启按费率行�
   )
   await expect(page.locator('#res-cost-off .lane-cost')).toHaveCount(0)
   // 开启：r1（5 天 × 8h × 100 = 4000）行头「成本 4000.00」；r2 无费率不显示
-  await mount('res-cost-on', { resources: RESOURCES, tasks: TASKS, 'show-cost': '', ...RANGE })
+  await mount('res-cost-on', {
+    resources: RESOURCES,
+    tasks: TASKS,
+    'show-cost': '',
+    ...RANGE,
+  })
   await page.waitForFunction(
     (target) => {
       const el = document.getElementById(target) as (HTMLElement & { shadowRoot?: ShadowRoot | null }) | null
@@ -2530,7 +3057,15 @@ test('resource show-cost 成本合计：默认关零节点、开启按费率行�
       shadowRoot: ShadowRoot
       set tasks(v: unknown)
     }
-    el.tasks = [{ id: 'tc1', name: '任务（1 天）', start: '2026-03-06', end: '2026-03-06', resources: ['r1'] }]
+    el.tasks = [
+      {
+        id: 'tc1',
+        name: '任务（1 天）',
+        start: '2026-03-06',
+        end: '2026-03-06',
+        resources: ['r1'],
+      },
+    ]
   })
   await expect(laneOf('r1').locator('.lane-cost')).toHaveText('成本 800.00')
   // 暗色存在性
@@ -2548,13 +3083,19 @@ test('resource 泳道行 hover：整行（含行头）底色激活 + hover="fals
   page.on('console', (m) => {
     if (m.type() === 'error') errors.push(m.text())
   })
-  await page.goto('/components/resource.html', { waitUntil: 'domcontentloaded' })
+  await page.goto('/components/resource.html', {
+    waitUntil: 'domcontentloaded',
+  })
   await waitResource(page, 'res-level')
   const res = page.locator('#res-level')
 
   const readRowBg = () =>
     page.evaluate(() => {
-      const sr = (document.getElementById('res-level') as HTMLElement & { shadowRoot: ShadowRoot }).shadowRoot
+      const sr = (
+        document.getElementById('res-level') as HTMLElement & {
+          shadowRoot: ShadowRoot
+        }
+      ).shadowRoot
       const lane = sr.querySelector<HTMLElement>('.row.lane')!
       const name = lane.querySelector<HTMLElement>('.name')!
       const track = lane.querySelector<HTMLElement>('.track')!
@@ -2586,7 +3127,11 @@ test('resource 泳道行 hover：整行（含行头）底色激活 + hover="fals
   })
   await res.locator('.row.lane .bar').first().hover()
   const channels = await page.evaluate(() => {
-    const sr = (document.getElementById('res-level') as HTMLElement & { shadowRoot: ShadowRoot }).shadowRoot
+    const sr = (
+      document.getElementById('res-level') as HTMLElement & {
+        shadowRoot: ShadowRoot
+      }
+    ).shadowRoot
     const lane = sr.querySelector<HTMLElement>('.row.lane')!
     const bar = lane.querySelector<HTMLElement>('.bar')!
     const cs = (n: HTMLElement) => getComputedStyle(n).backgroundColor

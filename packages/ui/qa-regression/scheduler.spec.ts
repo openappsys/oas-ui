@@ -764,15 +764,17 @@ test('scheduler 资源视图默认限高：宿主 height=600px + 500 资源内�
   expect(before.rows, '窗口行铺满视口（≥ ceil(640/37) = 18）').toBeGreaterThanOrEqual(18)
 
   // 中部滚动：行窗口平移覆盖可视区；spacer 守恒总高（scrollHeight 不随窗口重建缩水）
-  await host.evaluate((h) => {
+  // 记录写入后浏览器接受的滚动位置：断言「位置保持」而非复写像素常数
+  const requestedTop = await host.evaluate((h) => {
     const view = h.shadowRoot!.querySelector('[part="resource"]') as HTMLElement
     view.scrollTop = 250 * 37
     view.dispatchEvent(new Event('scroll'))
+    return view.scrollTop
   })
   await expect(host.locator('.res-row[data-resource="r250"]')).toHaveCount(1)
   await expect(host.locator('.res-row[data-resource="r0"]')).toHaveCount(0)
   const after = await read()
-  expect(after.scrollTop, '窗口平移重建后 scrollTop 保持（不跳回顶部）').toBe(250 * 37)
+  expect(after.scrollTop, '窗口平移重建后 scrollTop 保持（不跳回顶部）').toBe(requestedTop)
   expect(Math.abs(after.scrollH - before.scrollH), 'scrollHeight 守恒（spacer 撑起全量总高）').toBeLessThanOrEqual(1)
   // 同上：滚动中部上下 buffer 均不被裁剪，26 为精确上界（实测 26，原 ≤24 未算双 buffer）
   expect(after.rows, '窗口行数仍有界').toBeLessThanOrEqual(26)
@@ -902,6 +904,8 @@ test('scheduler windowed 资源切片 + 打印样式：绝对行号、窗口请�
       req: unknown
       printCss: boolean
       scrollTop: number
+      rowH: number
+      windowStart: number
     }>((resolve) => {
       setTimeout(() => {
         const root = el.shadowRoot!
@@ -911,12 +915,17 @@ test('scheduler windowed 资源切片 + 打印样式：绝对行号、窗口请�
           req,
           printCss: (root.querySelector('style')?.textContent ?? '').includes('@media print'),
           scrollTop: root.querySelector('[part="resource"]')?.scrollTop ?? 0,
+          // 行高实测 + 切片起点（属性）：期望首屏滚动量 = 切片起点 × 行高，均为 DOM/属性现算
+          rowH: root.querySelector<HTMLElement>('.res-row')?.getBoundingClientRect().height ?? 0,
+          windowStart: Number(el.getAttribute('window-start') ?? '0'),
         })
       }, 400)
     })
   })
   expect(r.rowCount).toBe('100')
-  expect(r.scrollTop, '首屏应锚定到切片首行（37px/行 × 40）').toBeGreaterThanOrEqual(40 * 37)
+  expect(r.scrollTop, `首屏应锚定到切片首行（切片起点 ${r.windowStart} × 实测行高 ${r.rowH}）`).toBeGreaterThanOrEqual(
+    r.windowStart * r.rowH,
+  )
   expect(r.firstIndex).toBe('41')
   // 精确契约：窗口请求必须覆盖当前切片 [40, 60)，且 reason=init（null 时下面的对象直接不等）
   const winReq = r.req as { start: number; end: number; reason: string } | null

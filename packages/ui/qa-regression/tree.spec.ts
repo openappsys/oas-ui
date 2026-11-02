@@ -101,21 +101,21 @@ test('tree 虚拟列表滚轮增量滚动正常（overflow-anchor 回归）', as
       const vlist = tree.shadowRoot!.querySelector('oas-virtual-list')!
       return vlist.shadowRoot!.querySelector('[part=viewport]')!.scrollTop
     })
+  const s0 = await scrollTop()
   await page.mouse.wheel(0, 120)
-  // 滚轮增量落定的真实信号：scrollTop 达到本档增量下限（scroll 事件异步到达）
-  await expect.poll(scrollTop).toBeGreaterThanOrEqual(100)
+  // 滚轮增量落定的真实信号：scrollTop 相对滚轮前位置前移（scroll 事件异步到达）。
+  // 不写死像素下限——轮增量折算成滚动像素由浏览器/系统决定，语义不变量是「确实滚动了」。
+  await expect.poll(scrollTop).toBeGreaterThan(s0)
   const s1 = await scrollTop()
   await page.mouse.wheel(0, 120)
-  await expect.poll(scrollTop).toBeGreaterThanOrEqual(s1 + 100)
+  // 同口径（见上）：每格滚轮的真实信号是「相对上一位置继续前移」，不写死折算像素
+  await expect.poll(scrollTop).toBeGreaterThan(s1)
   const s2 = await scrollTop()
   await page.mouse.wheel(0, 120)
-  await expect.poll(scrollTop).toBeGreaterThanOrEqual(s2 + 100)
+  await expect.poll(scrollTop).toBeGreaterThan(s2)
   const s3 = await scrollTop()
-  expect(s1).toBeGreaterThanOrEqual(100)
-  expect(s2 - s1).toBeGreaterThanOrEqual(100)
-  expect(s3 - s2).toBeGreaterThanOrEqual(100)
-  expect(s2 - s1).toBeLessThanOrEqual(240)
-  expect(s3 - s2).toBeLessThanOrEqual(240)
+  expect(s2, '第二格滚轮继续下移（差值语义，不按本机像素校准）').toBeGreaterThan(s1)
+  expect(s3, '第三格滚轮继续下移（差值语义，不按本机像素校准）').toBeGreaterThan(s2)
 })
 
 test('tree 自定义节点模板 + oas-node-render 渲染真实内容且 ARIA 保持', async ({ page }) => {
@@ -407,8 +407,14 @@ test('tree motion 开关：容器挂 motion 类、展开入场/收起离场行�
     { timeout: 15000 },
   )
   expect(await countEnter()).toBeGreaterThanOrEqual(2)
-  // g1 + 其直接子级 2 行 + g2 = 4 行（更深的 g1-1 子级默认收起）
-  expect(await countRows()).toBe(4)
+  // 期望行数由 demo 数据现算：顶层节点全部可见 + 刚展开的顶层组 g1 的直接子级数
+  // （更深子级默认收起）——数据驱动，与视口/字体度量无关。
+  const expectedRows = await page.evaluate(() => {
+    const tree = document.querySelector('#tree-motion')!
+    const data = JSON.parse(tree.getAttribute('data') ?? '[]') as Array<{ children?: unknown[] }>
+    return data.length + (data[0]?.children?.length ?? 0)
+  })
+  expect(await countRows(), '顶层行 + 已展开组 g1 的直接子级行').toBe(expectedRows)
   // 收起分组 1：先离场（行仍在 + oas-row-leave），动画后再移除
   await page.locator('#tree-motion [part="toggle"]').first().click()
   await page.waitForFunction(

@@ -306,6 +306,15 @@ test('json-viewer 滚动复用行 DOM：同窗口保留节点，跨窗口/键盘
     viewport.scrollTop = base + delta
     viewport.dispatchEvent(new Event('scroll'))
     const after = root.querySelector('[part="row"]')
+    // 期望行数由 DOM 现算：组件窗口 = [floor(scrollTop/行高)-buffer, ceil((scrollTop+视口高)/行高)+buffer)，
+    // buffer 8 为组件契约常量；行高取实测行高、总行数取 inner 总高/行高、视口高取 clientHeight——
+    // 全部来自渲染结果，不含按平台校准的常数。
+    const innerH = root.querySelector<HTMLElement>('[part="inner"]')?.getBoundingClientRect().height ?? 0
+    const totalRows = rowH > 0 ? Math.round(innerH / rowH) : 0
+    const BUFFER = 8
+    const scrollTop = viewport.scrollTop
+    const winStart = Math.max(0, Math.floor(scrollTop / rowH) - BUFFER)
+    const winEnd = Math.min(totalRows, Math.ceil((scrollTop + viewportH) / rowH) + BUFFER)
     return {
       sameNode: first !== null && first === after,
       stablePaths:
@@ -313,9 +322,12 @@ test('json-viewer 滚动复用行 DOM：同窗口保留节点，跨窗口/键盘
         JSON.stringify([...root.querySelectorAll('[part="row"]')].map((node) => node.getAttribute('data-path'))),
       rowCount: paths.length,
       delta,
+      expectedRowCount: Math.max(0, winEnd - winStart),
     }
   })
-  expect(sameWindow.rowCount).toBe(28)
+  expect(sameWindow.rowCount, '渲染行数 = 视口窗口行数（DOM 现算：视口高/行高 + 上下 buffer）').toBe(
+    sameWindow.expectedRowCount,
+  )
   expect(sameWindow.stablePaths, '同窗口滚动内容应完全一致').toBe(true)
   expect(sameWindow.sameNode, `同窗口滚动 delta=${sameWindow.delta}px 应保留行 DOM 节点`).toBe(true)
 
@@ -326,13 +338,22 @@ test('json-viewer 滚动复用行 DOM：同窗口保留节点，跨窗口/键盘
     viewport.scrollTop = viewport.scrollHeight / 2
     viewport.dispatchEvent(new Event('scroll'))
     const activeId = viewport.getAttribute('aria-activedescendant')
+    const rowH = root.querySelector<HTMLElement>('[part="row"]')?.getBoundingClientRect().height ?? 0
+    const viewportH = viewport.clientHeight
+    const innerH = root.querySelector<HTMLElement>('[part="inner"]')?.getBoundingClientRect().height ?? 0
+    const totalRows = rowH > 0 ? Math.round(innerH / rowH) : 0
+    const BUFFER = 8
+    const scrollTop = viewport.scrollTop
+    const winStart = Math.max(0, Math.floor(scrollTop / rowH) - BUFFER)
+    const winEnd = Math.min(totalRows, Math.ceil((scrollTop + viewportH) / rowH) + BUFFER)
     return {
       first: root.querySelector('[part="row"]')?.getAttribute('data-path'),
       rows: root.querySelectorAll('[part="row"]').length,
+      expectedRows: Math.max(0, winEnd - winStart),
       activePointerValid: activeId == null || root.getElementById(activeId) != null,
     }
   })
-  expect(crossWindow.rows).toBe(28)
+  expect(crossWindow.rows, '换窗后渲染行数 = 视口窗口行数（DOM 现算）').toBe(crossWindow.expectedRows)
   expect(crossWindow.first).not.toBe('$')
   expect(crossWindow.activePointerValid).toBe(true)
 

@@ -15,7 +15,11 @@ import { up } from './helpers'
 const builtCdn = fileURLToPath(new URL('../dist/cdn.js', import.meta.url))
 
 type ConsolePage = import('@playwright/test').Page & { __oasConsole: string[] }
-type PanelEl = HTMLElement & { show(): void; close(): boolean; bringToFront(): void }
+type PanelEl = HTMLElement & {
+  show(): void
+  close(): boolean
+  bringToFront(): void
+}
 
 test.beforeEach(async ({ page }) => {
   const p = page as ConsolePage
@@ -30,7 +34,9 @@ test.beforeEach(async ({ page }) => {
 /** 打开页面并只保留指定面板（其余 demo 面板关闭，避免抢 Esc / 焦点） */
 async function gotoPage(page: import('@playwright/test').Page, keep: string | string[] = '#fp-basic') {
   const keepIds = Array.isArray(keep) ? keep : [keep]
-  await page.goto('/components/floating-panel.html', { waitUntil: 'domcontentloaded' })
+  await page.goto('/components/floating-panel.html', {
+    waitUntil: 'domcontentloaded',
+  })
   await up(page, keepIds[0]!)
   await page.evaluate((ids) => {
     for (const el of document.querySelectorAll<PanelEl>('oas-floating-panel')) {
@@ -179,7 +185,9 @@ test('title 插槽动态清空 / 填回：labelledby 与 aria-label 正确切换
     document.getElementById('fp-slot')!.querySelector('[slot="title"]')!.remove()
   })
   await expect
-    .poll(async () => (await nameState(page, 'fp-slot')).labelledby, { message: '清空后不保留 labelledby' })
+    .poll(async () => (await nameState(page, 'fp-slot')).labelledby, {
+      message: '清空后不保留 labelledby',
+    })
     .toBeNull()
   expect((await nameState(page, 'fp-slot')).label, '清空后回落 i18n 名称').toBe('悬浮面板')
 
@@ -193,7 +201,9 @@ test('title 插槽动态清空 / 填回：labelledby 与 aria-label 正确切换
     host.appendChild(span)
   })
   await expect
-    .poll(async () => (await nameState(page, 'fp-slot')).labelledbyResolves, { message: '填回后 labelledby 生效' })
+    .poll(async () => (await nameState(page, 'fp-slot')).labelledbyResolves, {
+      message: '填回后 labelledby 生效',
+    })
     .toBe(true)
   expect((await nameState(page, 'fp-slot')).label).toBeNull()
 })
@@ -246,7 +256,9 @@ test('富标题 48px：上侧/上角手柄带可命中，顶边拖拽可缩放',
           // token 必须精确等于标题栏实测内容高，且标题栏确实比默认 36px 高（富标题生效）
           return Number.isFinite(token) && token === barContentH && barContentH > 40
         }),
-      { message: 'token === 标题栏实测内容高且 > 默认 36（真实值比较，非阈值）' },
+      {
+        message: 'token === 标题栏实测内容高且 > 默认 36（真实值比较，非阈值）',
+      },
     )
     .toBe(true)
 
@@ -458,6 +470,9 @@ test('断开期间改 open：不残留幽灵 Esc 层，Esc 仍关闭可见面板
 
 test('键盘等价路径：方向键移动 / Shift+方向键缩放 / RTL 镜像', async ({ page }) => {
   await gotoPage(page, ['#fp-key', '#fp-rtl'])
+  // 把面板滚到视口中央：demo 页里面板原本贴视口底部，向上缩放会被 viewport 边界夹住
+  // （字体度量差异让两个引擎的初始底缘离视口底差几十像素，高度增量在贴边时被夹成 0）
+  await page.evaluate(() => document.getElementById('fp-key')!.scrollIntoView({ block: 'center' }))
   // 首帧即打开不抢焦点；关闭后 show 走 opened 边沿 → initial-focus 生效
   await page.evaluate(() => {
     const el = document.getElementById('fp-key') as PanelEl
@@ -466,22 +481,70 @@ test('键盘等价路径：方向键移动 / Shift+方向键缩放 / RTL 镜像'
   })
   await expect.poll(() => page.evaluate(() => document.activeElement?.id ?? '')).toBe('fp-key-target')
 
+  const panelRect = async (id: string) => {
+    const raw = (await rectAttr(page, id)) ?? ''
+    const [left, top, width, height] = raw.split(',').map((v) => Number(v.trim()))
+    return {
+      left: Number(left),
+      top: Number(top),
+      width: Number(width),
+      height: Number(height),
+    }
+  }
+  // 基线直接读面板框的内联几何（组件写 px 的位置真源；demo 的 rect 反射属性要到首次移动后才写）
+  const baseKey = await (async () => {
+    // 归一化：首次方向键把「测量位置」落成内联几何（Chromium 初始已有内联 top，WebKit 至首次
+    // 移动才写；直接拿初始值比对会得到布局初值 vs 真实位置的假差值）。归一化之后再取基线。
+    await page.evaluate(() =>
+      (document.getElementById('fp-key')!.shadowRoot!.querySelector('[part="frame"]') as HTMLElement).focus(),
+    )
+    await page.keyboard.press('ArrowRight')
+    await expect
+      .poll(
+        async () => ((await rectAttr(page, 'fp-key')) ?? '').split(',').length,
+        '首次移动后 demo 回写 rect（四段几何）',
+      )
+      .toBe(4)
+    return panelRect('fp-key')
+  })()
+
   // 聚焦面板框体后方向键移动
-  await page.evaluate(() =>
-    (document.getElementById('fp-key')!.shadowRoot!.querySelector('[part="frame"]') as HTMLElement).focus(),
-  )
   await page.keyboard.press('ArrowRight')
-  await expect.poll(() => rectAttr(page, 'fp-key')).toBe('8,0,340,190')
+  await expect.poll(async () => (await panelRect('fp-key')).left, 'ArrowRight 使 x 增大').toBeGreaterThan(baseKey.left)
   await expect(page.locator('#fp-key-out')).toContainText('oas-move（keyboard）')
+  const moved = await panelRect('fp-key')
+  // 未被操作的方向允许 ≤1px 亚像素取整（定位按测量值回写，WebKit 有 0/-1 级取整差）
+  expect(Math.abs(moved.top - baseKey.top), '水平移动不改 y（±1px 取整）').toBeLessThanOrEqual(1)
+  expect(Math.abs(moved.width - baseKey.width), '水平移动不改宽').toBeLessThanOrEqual(0.5)
+  expect(Math.abs(moved.height - baseKey.height), '水平移动不改高').toBeLessThanOrEqual(0.5)
+  // 反向按一次回到起点（步长对称，不写死 8px）
+  await page.keyboard.press('ArrowLeft')
+  await expect
+    .poll(async () => Math.abs((await panelRect('fp-key')).left - baseKey.left), 'ArrowLeft 回到基线 x')
+    .toBeLessThanOrEqual(1)
+  // Shift+ArrowDown 增高（top 不变、x 不变）
   await page.keyboard.press('Shift+ArrowDown')
-  await expect.poll(() => rectAttr(page, 'fp-key')).toBe('8,0,340,198')
+  await expect
+    .poll(async () => (await panelRect('fp-key')).height, 'Shift+ArrowDown 使高度增大')
+    .toBeGreaterThan(baseKey.height)
+  const grown = await panelRect('fp-key')
+  expect(Math.abs(grown.left - baseKey.left), '缩放不改 x（±1px 取整）').toBeLessThanOrEqual(1)
+  expect(Math.abs(grown.top - baseKey.top), '向下缩放不改 y（±1px 取整）').toBeLessThanOrEqual(1)
 
   // RTL：ArrowRight 朝书写前进方向（x 减小）
+  await page.evaluate(() => document.getElementById('fp-rtl')!.scrollIntoView({ block: 'center' }))
   await page.evaluate(() =>
     (document.getElementById('fp-rtl')!.shadowRoot!.querySelector('[part="frame"]') as HTMLElement).focus(),
   )
+  await page.keyboard.press('ArrowRight') // 归一化（同 fp-key 口径）
+  const baseRtl = await panelRect('fp-rtl')
   await page.keyboard.press('ArrowRight')
-  await expect.poll(() => rectAttr(page, 'fp-rtl')).toBe('-8,0,320,170')
+  await expect
+    .poll(async () => (await panelRect('fp-rtl')).left, 'RTL 下 ArrowRight 使 x 减小')
+    .toBeLessThan(baseRtl.left)
+  const rtlMoved = await panelRect('fp-rtl')
+  expect(Math.abs(rtlMoved.top - baseRtl.top), 'RTL 水平移动不改 y（±1px 取整）').toBeLessThanOrEqual(1)
+  expect(Math.abs(rtlMoved.width - baseRtl.width), 'RTL 水平移动不改宽').toBeLessThanOrEqual(0.5)
 })
 
 test('边界夹取：拖出虚线框仍停在边界内（boundary + padding）', async ({ page }) => {
@@ -527,7 +590,10 @@ test('dark 主题 + reduced-motion + console 零告警', async ({ page }) => {
   expect((page as ConsolePage).__oasConsole).toEqual([])
 })
 
-test('forced-colors：框体与关闭钮焦点环真实可见（outline 兜底）', async ({ page }) => {
+test('forced-colors：框体与关闭钮焦点环真实可见（outline 兜底）', async ({ page, browserName }) => {
+  // 引擎能力缺口：page.emulateMedia({ forcedColors }) 只有 Chromium 实现——WebKit 不接受该模拟
+  //（调用不生效：box-shadow 仍按常规主题生效，强行色语境断言必然假失败）
+  test.skip(browserName !== 'chromium', 'forced-colors 媒体模拟仅 Chromium 支持（WebKit 无此能力）')
   await gotoPage(page, '#fp-basic')
   await page.emulateMedia({ forcedColors: 'active' })
   await page.evaluate(() => {
@@ -688,11 +754,15 @@ test('内容溢出：滚动区可 Tab 聚焦并键盘滚动；不溢出时无 Ta
     ctrl.appendChild(block)
   })
   await expect
-    .poll(async () => (await contentState('fp-ctrl')).tabindex, { message: '内容变高后补 tabindex' })
+    .poll(async () => (await contentState('fp-ctrl')).tabindex, {
+      message: '内容变高后补 tabindex',
+    })
     .toBe('0')
   await page.evaluate(() => document.getElementById('fp-ctrl-extra')!.remove())
   await expect
-    .poll(async () => (await contentState('fp-ctrl')).tabindex, { message: '内容移除后撤 tabindex' })
+    .poll(async () => (await contentState('fp-ctrl')).tabindex, {
+      message: '内容移除后撤 tabindex',
+    })
     .toBeNull()
 
   const overflowing = await contentState('fp-scroll')
@@ -713,7 +783,10 @@ test('内容溢出：滚动区可 Tab 聚焦并键盘滚动；不溢出时无 Ta
   const focused = await page.evaluate(() => {
     let active: Element | null = document.activeElement
     while (active?.shadowRoot?.activeElement) active = active.shadowRoot.activeElement
-    return { part: active?.getAttribute('part') ?? null, ring: active ? getComputedStyle(active).boxShadow : 'none' }
+    return {
+      part: active?.getAttribute('part') ?? null,
+      ring: active ? getComputedStyle(active).boxShadow : 'none',
+    }
   })
   expect(focused.part, '键盘 Tab 落到内容滚动区').toBe('content')
   expect(focused.ring, '焦点环可见（复用 --oas-focus-ring，不新增颜色）').not.toBe('none')
@@ -721,13 +794,17 @@ test('内容溢出：滚动区可 Tab 聚焦并键盘滚动；不溢出时无 Ta
   const before = (await contentState('fp-scroll')).scrollTop
   await page.keyboard.press('PageDown')
   await expect
-    .poll(async () => (await contentState('fp-scroll')).scrollTop, { message: '键盘可直接滚动内容区' })
+    .poll(async () => (await contentState('fp-scroll')).scrollTop, {
+      message: '键盘可直接滚动内容区',
+    })
     .toBeGreaterThan(before)
 
   // 放大到内容不再溢出：tabindex 移除（不留下永久 Tab 停靠点）
   await page.evaluate(() => document.getElementById('fp-scroll')!.setAttribute('rect', '0,0,320,420'))
   await expect
-    .poll(async () => (await contentState('fp-scroll')).tabindex, { message: '不再溢出时移除 tabindex' })
+    .poll(async () => (await contentState('fp-scroll')).tabindex, {
+      message: '不再溢出时移除 tabindex',
+    })
     .toBeNull()
   expect((await contentState('fp-scroll')).scrollHeight).toBeLessThanOrEqual(
     (await contentState('fp-scroll')).clientHeight + 1,
@@ -736,16 +813,24 @@ test('内容溢出：滚动区可 Tab 聚焦并键盘滚动；不溢出时无 Ta
   // 缩回溢出尺寸：tabindex 重新补上（判定随布局变化）
   await page.evaluate(() => document.getElementById('fp-scroll')!.setAttribute('rect', '0,0,320,200'))
   await expect
-    .poll(async () => (await contentState('fp-scroll')).tabindex, { message: '再次溢出时补回 tabindex' })
+    .poll(async () => (await contentState('fp-scroll')).tabindex, {
+      message: '再次溢出时补回 tabindex',
+    })
     .toBe('0')
 
   // 关闭态：不可见滚动区不留 Tab 停靠点；重开按实测复判
   await page.evaluate(() => document.getElementById('fp-scroll')!.removeAttribute('open'))
   await expect
-    .poll(async () => (await contentState('fp-scroll')).tabindex, { message: '关闭时移除 tabindex' })
+    .poll(async () => (await contentState('fp-scroll')).tabindex, {
+      message: '关闭时移除 tabindex',
+    })
     .toBeNull()
   await page.evaluate(() => document.getElementById('fp-scroll')!.setAttribute('open', ''))
-  await expect.poll(async () => (await contentState('fp-scroll')).tabindex, { message: '重开复判（仍溢出）' }).toBe('0')
+  await expect
+    .poll(async () => (await contentState('fp-scroll')).tabindex, {
+      message: '重开复判（仍溢出）',
+    })
+    .toBe('0')
 })
 
 test.describe('coarse 指针热区', () => {
@@ -760,7 +845,10 @@ test.describe('coarse 指针热区', () => {
       const close = root.querySelector<HTMLElement>('[part="close"]')!
       const hr = handle.getBoundingClientRect()
       const cr = close.getBoundingClientRect()
-      return { handle: { w: hr.width, h: hr.height }, close: { w: cr.width, h: cr.height } }
+      return {
+        handle: { w: hr.width, h: hr.height },
+        close: { w: cr.width, h: cr.height },
+      }
     })
     expect(sizes.handle.w).toBeGreaterThanOrEqual(44)
     expect(sizes.handle.h).toBeGreaterThanOrEqual(44)
@@ -779,7 +867,10 @@ test.describe('coarse 指针热区', () => {
       const br = bar.getBoundingClientRect()
       const cr = close.getBoundingClientRect()
       const barPoint = { x: br.left + br.width / 2, y: br.top + br.height / 2 }
-      const closePoint = { x: cr.left + cr.width / 2, y: cr.top + cr.height / 2 }
+      const closePoint = {
+        x: cr.left + cr.width / 2,
+        y: cr.top + cr.height / 2,
+      }
       const hit = (point: { x: number; y: number }) => {
         const el = root.elementFromPoint(point.x, point.y) as HTMLElement | null
         return {
@@ -788,7 +879,12 @@ test.describe('coarse 指针热区', () => {
           edge: el?.closest<HTMLElement>('[part="handle"]')?.dataset.edge ?? null,
         }
       }
-      return { barPoint, closePoint, bar: hit(barPoint), close: hit(closePoint) }
+      return {
+        barPoint,
+        closePoint,
+        bar: hit(barPoint),
+        close: hit(closePoint),
+      }
     })
     expect(probe.bar.edge, `标题栏中心不得命中手柄（命中 ${JSON.stringify(probe.bar)}）`).toBeNull()
     expect(probe.bar.part).not.toBe('handle')
@@ -809,7 +905,10 @@ test.describe('coarse 指针热区', () => {
       })
       await page.evaluate(() => new Promise<void>((r) => requestAnimationFrame(() => requestAnimationFrame(() => r()))))
     }
-    await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] })
+    await cdp.send('Input.dispatchTouchEvent', {
+      type: 'touchEnd',
+      touchPoints: [],
+    })
     await expect.poll(() => rectAttr(page, 'fp-basic'), '触摸拖动提交 oas-move').toBe('60,40,380,230')
     await expect(page.locator('#fp-basic-out')).toContainText('oas-move')
 
@@ -825,7 +924,10 @@ test.describe('coarse 指针热区', () => {
       type: 'touchStart',
       touchPoints: [{ x: closePoint.x, y: closePoint.y, id: 2 }],
     })
-    await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] })
+    await cdp.send('Input.dispatchTouchEvent', {
+      type: 'touchEnd',
+      touchPoints: [],
+    })
     await expect.poll(() => panelOpen(page, 'fp-basic'), '触摸点关闭钮可关闭').toBe(false)
   })
 })

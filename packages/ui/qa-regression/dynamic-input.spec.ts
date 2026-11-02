@@ -152,7 +152,7 @@ test('dynamic-input min=2：不足自动补足行数、达 min 删除按钮禁�
       removeDisabled: rows.map((r) => (r.querySelector<HTMLButtonElement>('.remove') as HTMLButtonElement).disabled),
     }
   })
-  expect(grown.rowCount).toBe(3)
+  expect(grown.rowCount, '添加一行后 = 初始行数 + 1').toBe(init.rowCount + 1)
   expect(grown.removeDisabled, '超过 min 后删除按钮全部可用').toEqual([false, false, false])
 })
 

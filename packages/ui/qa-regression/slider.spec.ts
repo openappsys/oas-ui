@@ -234,11 +234,18 @@ test('slider range：pointerdown 提升 input z-index 后蓝色填充仍可见�
     const webkitTrackBg = getComputedStyle(maxInput, '::-webkit-slider-runnable-track').backgroundColor
     const mozTrackBg = getComputedStyle(maxInput, '::-moz-range-track').backgroundColor
     const trackBg = webkitTrackBg || mozTrackBg
+    // 兜底证据链：WebKit 对 UA 伪元素的 getComputedStyle 返回空声明（实测 style len=0），
+    // 且 shadow root 的 styleSheets 在该引擎为空——改读组件注入的 <style> 文本中轨道伪元素的声明
+    // （同一契约的结构化证据：灰轨道下沉到底层伪元素后原生轨道必须声明 transparent）
+    const styleText = Array.from(sr.querySelectorAll('style'))
+      .map((s) => s.textContent ?? '')
+      .join('\n')
     return {
       fillWidth: fr.width,
       fillBg: fillCs.backgroundColor,
       fillVisible: fillCs.display !== 'none' && fillCs.visibility !== 'hidden',
       trackBg,
+      styleText,
       raisedZ: maxInput.style.zIndex,
     }
   })
@@ -247,7 +254,23 @@ test('slider range：pointerdown 提升 input z-index 后蓝色填充仍可见�
   expect(r.fillBg, 'fill 应为 primary 填充色').not.toMatch(/transparent|rgba\(0, 0, 0, 0\)/)
   expect(r.raisedZ, 'pointerdown 后 z-index 提升逻辑仍应生效').toBe('2')
   // 视觉遮挡根因锁定：原生轨道背景必须透明，否则 z-index 提升后灰轨道盖住 fill
-  expect(r.trackBg, '原生轨道背景应透明（灰轨道由底层伪元素承担）').toMatch(/transparent|rgba\(0, 0, 0, 0\)/)
+  if (r.trackBg) {
+    expect(r.trackBg, '原生轨道背景应透明（灰轨道由底层伪元素承担）').toMatch(/transparent|rgba\(0, 0, 0, 0\)/)
+  } else {
+    // 读不到伪元素 computed 样式的引擎（WebKit）：退化为「声明必须透明」的同一契约检查
+    // （双伪元素分引擎书写，任一条命中即可；两侧都必须声明 transparent 才不遮挡）
+    const declared = [...r.styleText.matchAll(/(-webkit-slider-runnable-track|-moz-range-track)\s*\{([^}]*)\}/g)]
+    // 两侧伪元素都必须有透明声明（WebKit/Firefox 各一条；缺一条则该引擎的灰轨道会盖住 fill）
+    expect(declared.map(([, selector]) => selector).sort(), '双引擎轨道伪元素声明齐全（否则断言空转）').toEqual([
+      '-moz-range-track',
+      '-webkit-slider-runnable-track',
+    ])
+    for (const [, selector, body] of declared) {
+      expect(body, `${selector} 的背景必须声明 transparent`).toMatch(
+        /background[^;]*:\s*(transparent|rgba\(0,\s*0,\s*0,\s*0\))/,
+      )
+    }
+  }
 })
 
 test('slider vertical：data-vertical 镜像、orient/aria-orientation 同步、填充换 top 轴', async ({ page }) => {
@@ -322,7 +345,11 @@ test('slider step="mark"：拖动值吸附最近刻度（marks 外连续值不�
     const input = el.shadowRoot!.querySelector<HTMLInputElement>('[data-role="range"]')!
     input.value = '45'
     input.dispatchEvent(new Event('input', { bubbles: true }))
-    return { value: Number(input.value), attr: el.getAttribute('value'), step: input.step }
+    return {
+      value: Number(input.value),
+      attr: el.getAttribute('value'),
+      step: input.step,
+    }
   })
   expect(r.value).toBe(30)
   expect(r.attr).toBe('30')
@@ -399,7 +426,11 @@ test('slider 键盘大步进：PageUp 按默认 10×step 跳进并派发事件',
     let changeEvents = 0
     el.addEventListener('oas-input', () => inputEvents++)
     el.addEventListener('oas-change', () => changeEvents++)
-    const e = new KeyboardEvent('keydown', { key: 'PageUp', bubbles: true, cancelable: true })
+    const e = new KeyboardEvent('keydown', {
+      key: 'PageUp',
+      bubbles: true,
+      cancelable: true,
+    })
     input.dispatchEvent(e)
     return {
       value: Number(input.value),
@@ -603,7 +634,11 @@ test('slider 纵向拇指 hover 放大：桌面生效、readonly 不放大、触
   expect(await scaleOf(), 'readonly 纵向拇指 hover 不应放大').toBe(roBase)
 
   // 触屏仿真：无 hover 能力 → (hover: hover) 守卫使放大规则整体不生效
-  const ctx = await browser.newContext({ viewport: { width: 375, height: 667 }, hasTouch: true, isMobile: true })
+  const ctx = await browser.newContext({
+    viewport: { width: 375, height: 667 },
+    hasTouch: true,
+    isMobile: true,
+  })
   const p2 = await ctx.newPage()
   try {
     await p2.goto('/components/slider.html', { waitUntil: 'domcontentloaded' })
@@ -718,14 +753,22 @@ test('slider scrub：真拖读数框按 4px 计步（Shift 无关路径）+ 双�
   const box = await el.evaluate((node) => {
     const num = node.shadowRoot!.querySelector<HTMLInputElement>('[data-role="num"]')!
     const r = num.getBoundingClientRect()
-    return { x: r.left + r.width / 2, y: r.top + r.height / 2, v0: Number(node.getAttribute('value')) }
+    return {
+      x: r.left + r.width / 2,
+      y: r.top + r.height / 2,
+      v0: Number(node.getAttribute('value')),
+    }
   })
   // 真拖 +16px = +4 步（step=1）
   await page.mouse.move(box.x, box.y)
   await page.mouse.down()
   await page.mouse.move(box.x + 16, box.y, { steps: 4 })
   await page.mouse.up()
-  await expect.poll(() => el.evaluate((node) => Number(node.getAttribute('value'))), { timeout: 3000 }).toBe(box.v0 + 4)
+  await expect
+    .poll(() => el.evaluate((node) => Number(node.getAttribute('value'))), {
+      timeout: 3000,
+    })
+    .toBe(box.v0 + 4)
   // 拖动反馈行有内容（oas-input/oas-change 可见反馈）
   await expect(page.locator('#slider-scrub-out')).toContainText(String(box.v0 + 4))
   // 双击轨道复位到 reset-value=50
@@ -735,7 +778,11 @@ test('slider scrub：真拖读数框按 4px 计步（Shift 无关路径）+ 双�
     return { x: r.left + r.width / 2, y: r.top + r.height / 2 }
   })
   await page.mouse.dblclick(track.x, track.y)
-  await expect.poll(() => el.evaluate((node) => Number(node.getAttribute('value'))), { timeout: 3000 }).toBe(50)
+  await expect
+    .poll(() => el.evaluate((node) => Number(node.getAttribute('value'))), {
+      timeout: 3000,
+    })
+    .toBe(50)
 })
 
 test('slider scrub：step="mark" 真拖读数框值吸附最近刻度（value 属性无档位外脏值）', async ({ page }) => {
@@ -773,7 +820,11 @@ test('slider scrub：小数步长（step=0.1）无 precision 真拖后值通道�
   const box = await el.evaluate((node) => {
     const num = node.shadowRoot!.querySelector<HTMLInputElement>('[data-role="num"]')!
     const r = num.getBoundingClientRect()
-    return { x: r.left + r.width / 2, y: r.top + r.height / 2, v0: Number(node.getAttribute('value')) }
+    return {
+      x: r.left + r.width / 2,
+      y: r.top + r.height / 2,
+      v0: Number(node.getAttribute('value')),
+    }
   })
   // 真拖 +12px = +3 步 × 0.1 → 0.2 + 0.3 = 0.5（数学期望；脏实现会给 0.500000000000000x）
   await page.mouse.move(box.x, box.y)
@@ -895,7 +946,10 @@ test('slider track：色轨真实渲染（伪元素 background-image 为渐变�
         fillDisplay: fill.display,
       }
     }
-    return { hue: rail('oas-slider[track="hue"]'), sat: rail('oas-slider[track="saturation"]') }
+    return {
+      hue: rail('oas-slider[track="hue"]'),
+      sat: rail('oas-slider[track="saturation"]'),
+    }
   })
   // 色轨激活：轨道伪元素渲染 CSS 渐变，单色填充退场
   expect(r.hue.colorTrack, 'hue 应镜像 data-color-track').toBe(true)
@@ -927,7 +981,11 @@ test('slider scrub：Shift 精调真拖比无修饰更细（同一像素位移�
       return { x: r.left + r.width / 2, y: r.top + r.height / 2 }
     })
     await page.mouse.dblclick(track.x, track.y)
-    await expect.poll(() => el.evaluate((node) => Number(node.getAttribute('value'))), { timeout: 3000 }).toBe(50)
+    await expect
+      .poll(() => el.evaluate((node) => Number(node.getAttribute('value'))), {
+        timeout: 3000,
+      })
+      .toBe(50)
   }
   await reset()
 

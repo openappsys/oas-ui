@@ -218,13 +218,15 @@ test('swipe-cell RTL 镜像：向 inline-start（右滑）开、偏移为正、a
     const actions = host.shadowRoot!.querySelector('[part="actions"]') as HTMLElement
     return {
       open: host.hasAttribute('open'),
-      offset: host.style.getPropertyValue('--oas-swipe-cell-offset'),
+      offset: parseFloat(host.style.getPropertyValue('--oas-swipe-cell-offset')),
+      // 期望偏移 = actions 面板实测宽度（组件取面板宽作为吸附位移，宽度由面板 CSS 决定）
+      actionsWidth: actions.getBoundingClientRect().width,
       contentLeft: content.getBoundingClientRect().left,
       actionsLeft: actions.getBoundingClientRect().left,
     }
   })
   expect(state.open).toBe(true)
-  expect(parseFloat(state.offset), 'RTL 偏移为正').toBe(80)
+  expect(state.offset, 'RTL 偏移 = actions 面板实测宽度（方向为正）').toBeCloseTo(state.actionsWidth, 0)
   // 过渡动画期间几何在移动，等吸附完成后再核对方向（RTL：actions 在左、内容层右移，contentLeft > actionsLeft）
   await expect
     .poll(() =>
@@ -232,10 +234,14 @@ test('swipe-cell RTL 镜像：向 inline-start（右滑）开、偏移为正、a
         const host = document.querySelector('#swipe-rtl-probe') as HTMLElement
         const content = host.shadowRoot!.querySelector('[part="content"]') as HTMLElement
         const actions = host.shadowRoot!.querySelector('[part="actions"]') as HTMLElement
-        return content.getBoundingClientRect().left - actions.getBoundingClientRect().left
+        const c = content.getBoundingClientRect()
+        const a = actions.getBoundingClientRect()
+        // 吸附量 = actions 面板实测宽度（组件按面板宽取偏移；宽度由面板 CSS 决定，非字体度量）。
+        // RTL 方向：内容层右移、面板在左 → left 差值为正，等式两边同号即方向正确。
+        return Math.abs(c.left - a.left - a.width)
       }),
     )
-    .toBe(80)
+    .toBeLessThanOrEqual(1)
 })
 
 test.describe('移动仿真（触屏真手势）', () => {
@@ -350,21 +356,27 @@ test.describe('swipe-cell 双侧滑动', () => {
       return {
         open: host.hasAttribute('open'),
         offset: parseFloat(host.style.getPropertyValue('--oas-swipe-cell-offset')),
+        // 期望偏移 = start 侧面板实测宽度（组件取面板宽作为吸附位移）
+        startWidth: start.getBoundingClientRect().width,
         delta: content.getBoundingClientRect().left - start.getBoundingClientRect().left,
       }
     })
     expect(state.open).toBe(true)
-    expect(state.offset, 'LTR start 侧偏移为正').toBe(62)
+    expect(state.offset, 'LTR start 侧偏移为正且 = start 面板实测宽度').toBeCloseTo(state.startWidth, 0)
     await expect
       .poll(() =>
         page.evaluate(() => {
           const host = document.querySelector('#swipe-dual') as HTMLElement
           const content = host.shadowRoot!.querySelector('[part="content"]') as HTMLElement
           const start = host.shadowRoot!.querySelector('[part="actions-start"]') as HTMLElement
-          return content.getBoundingClientRect().left - start.getBoundingClientRect().left
+          const c = content.getBoundingClientRect()
+          const s = start.getBoundingClientRect()
+          // 吸附量 = start 侧面板实测宽度（组件按面板宽取偏移）；LTR start 侧内容层左移 → 差值为负、
+          // 面板宽为正，绝对值相等即方向正确。
+          return Math.abs(Math.abs(c.left - s.left) - s.width)
         }),
       )
-      .toBe(62)
+      .toBeLessThanOrEqual(1)
   })
 
   test('左滑开 end 侧（删除）：open-side=end、偏移为负', async ({ page }) => {

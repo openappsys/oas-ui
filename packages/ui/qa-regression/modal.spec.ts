@@ -310,14 +310,19 @@ test('modal no-mask 非模态：遮罩隐藏 + 打开不抢焦点（页面其余
   const r = await page.evaluate(() => {
     const m = document.querySelector('#modal-nonmask')!
     const mask = m.shadowRoot!.querySelector<HTMLElement>('.mask')
+    const dialog = m.shadowRoot!.querySelector<HTMLElement>('.dialog')
+    const shadowActive = m.shadowRoot!.activeElement as HTMLElement | null
     return {
       maskHidden: mask?.hidden === true || mask == null,
       activeTag: (document.activeElement as HTMLElement | null)?.tagName ?? '',
+      focusInDialog: !!(shadowActive && dialog?.contains(shadowActive)),
     }
   })
   expect(r.maskHidden).toBe(true)
-  // 打开不抢焦点：焦点仍留在触发按钮（oas-button 宿主）
-  expect(r.activeTag.toLowerCase()).toContain('oas-button')
+  // 打开不抢焦点（引擎无关口径）：WebKit 点击按钮不把焦点给按钮（焦点留在 body），Chromium 会
+  // 聚焦被点按钮——两种都算「焦点留在触发侧」。不变量是：焦点不进入对话框、不被 modal 吸收。
+  expect(r.focusInDialog, '非模态打开不得把焦点移入对话框').toBe(false)
+  expect(['BODY', 'OAS-BUTTON'], '焦点留在触发侧（WebKit 不聚焦按钮时仍在 body）').toContain(r.activeTag)
 })
 
 test('modal size 预设：sm=400px / lg=720px（内联宽度生效）', async ({ page }) => {
@@ -386,7 +391,10 @@ test('modal shake 防误关：取消类关闭被拦截时抖动 + 对话框保�
     const m = document.querySelector('#modal-shake')!
     ;(m.shadowRoot!.querySelector('[part="cancel"]') as HTMLElement).click()
     const dialog = m.shadowRoot!.querySelector<HTMLElement>('.dialog')!
-    return { shaking: dialog.classList.contains('oas-shake'), visible: m.hasAttribute('visible') }
+    return {
+      shaking: dialog.classList.contains('oas-shake'),
+      visible: m.hasAttribute('visible'),
+    }
   })
   expect(r.visible).toBe(true)
   expect(r.shaking).toBe(true)
@@ -512,7 +520,10 @@ test('modal 拖拽钳制：大幅拖出视口后对话框仍完整留在视口�
 test('modal no-footer 底角圆角（overflow hidden 裁切回归：body 直角背景不得盖掉 dialog 下圆角）', async ({ page }) => {
   // 曾漏检：.dialog 有 border-radius 无 overflow hidden，no-footer 时 body 直角背景盖住下圆角（用户截图报缺陷）
   await page.goto('/components/modal.html', { waitUntil: 'domcontentloaded' })
-  await page.waitForSelector('#modal-nofooter', { state: 'attached', timeout: 15000 })
+  await page.waitForSelector('#modal-nofooter', {
+    state: 'attached',
+    timeout: 15000,
+  })
   await up(page, '#modal-nofooter')
   await page.evaluate(() => document.querySelector('#modal-nofooter')?.setAttribute('visible', ''))
   await page.waitForFunction(
@@ -565,7 +576,9 @@ test('modal 对话框内点击不透传遮罩：document 根委托可达、dialo
       const d = document.querySelector('#modal-ctrl')!.shadowRoot!.querySelector<HTMLElement>('[part="body"]')!
       d.click()
     })
-    await page.waitForFunction(() => (window as any).__docClicks >= 1, null, { timeout: 5000 })
+    await page.waitForFunction(() => (window as any).__docClicks >= 1, null, {
+      timeout: 5000,
+    })
     const stillOpen = await page.evaluate(() => document.querySelector('#modal-ctrl')?.hasAttribute('visible'))
     expect(stillOpen, '点对话框空白不得触发遮罩关闭').toBe(true)
     // 点 ✕：委托同样收到，关闭路径照常 + visible 回写
@@ -655,7 +668,9 @@ test('modal maximizable：最大化/还原切换 data-fullscreen + oas-maximize 
     { timeout: 5000 },
   )
   const r = await page.evaluate(async () => {
-    const el = document.querySelector('#modal-max')! as HTMLElement & { shadowRoot: ShadowRoot }
+    const el = document.querySelector('#modal-max')! as HTMLElement & {
+      shadowRoot: ShadowRoot
+    }
     const dialog = el.shadowRoot.querySelector('.dialog')! as HTMLElement
     const btn = el.shadowRoot.querySelector('[part="maximize"]')! as HTMLButtonElement
     const events: boolean[] = []

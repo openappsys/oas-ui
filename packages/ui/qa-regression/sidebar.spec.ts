@@ -6,7 +6,9 @@ import { test, expect } from '@playwright/test'
 // 现为公开方法：外部调用等价于点击内置触发按钮 / 遮罩，必须产生真实可见反馈（面板滑入滑出，
 // 非只改属性）。此处量 computed visibility 与面板实际 x 坐标（真实视觉），不是只查 drawer-open 属性。
 test('sidebar 公开方法：外部调用 openDrawer/closeDrawer 开合移动抽屉（真实视觉反馈）', async ({ page }) => {
-  await page.goto('/components/sidebar.html', { waitUntil: 'domcontentloaded' })
+  await page.goto('/components/sidebar.html', {
+    waitUntil: 'domcontentloaded',
+  })
   await page.waitForFunction(() => document.querySelector('#sidebar-drawer')?.shadowRoot != null, undefined, {
     timeout: 15000,
   })
@@ -61,7 +63,9 @@ test('sidebar 公开方法：外部调用 openDrawer/closeDrawer 开合移动抽
 })
 
 test('sidebar resizable：拖拽 rail 边缘宽度实时跟随并写回 width 属性（内置 rail）', async ({ page }) => {
-  await page.goto('/components/sidebar.html', { waitUntil: 'domcontentloaded' })
+  await page.goto('/components/sidebar.html', {
+    waitUntil: 'domcontentloaded',
+  })
   await page.waitForFunction(() => document.querySelector('#sidebar-resizable')?.shadowRoot != null, undefined, {
     timeout: 15000,
   })
@@ -74,14 +78,33 @@ test('sidebar resizable：拖拽 rail 边缘宽度实时跟随并写回 width �
     const cx = rect.x + rect.width / 2
     const cy = rect.y + rect.height / 2
     const w0 = Math.round(sb.getBoundingClientRect().width)
-    rail.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, clientX: cx, clientY: cy, button: 0 }))
+    rail.dispatchEvent(
+      new PointerEvent('pointerdown', {
+        bubbles: true,
+        clientX: cx,
+        clientY: cy,
+        button: 0,
+      }),
+    )
     const widths: number[] = []
     for (let i = 1; i <= 3; i++) {
-      document.dispatchEvent(new PointerEvent('pointermove', { bubbles: true, clientX: cx + i * 30, clientY: cy }))
+      document.dispatchEvent(
+        new PointerEvent('pointermove', {
+          bubbles: true,
+          clientX: cx + i * 30,
+          clientY: cy,
+        }),
+      )
       await new Promise((res) => setTimeout(res, 60))
       widths.push(Math.round(sb.getBoundingClientRect().width))
     }
-    document.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, clientX: cx + 90, clientY: cy }))
+    document.dispatchEvent(
+      new PointerEvent('pointerup', {
+        bubbles: true,
+        clientX: cx + 90,
+        clientY: cy,
+      }),
+    )
     await new Promise((res) => setTimeout(res, 200))
     return {
       w0,
@@ -105,7 +128,9 @@ test('sidebar resizable：拖拽 rail 边缘宽度实时跟随并写回 width �
 //（实测子 label 比父 label 左 3px），层级错乱。修复：嵌套无图标项保留图标占位（24px），
 // 子项 label 缩进父项 label 右侧。本断言真布局测量 label x 坐标。
 test('sidebar 嵌套子菜单：无图标子项 label 缩进父项 label 右侧（层级不错乱）', async ({ page }) => {
-  await page.goto('/components/sidebar.html', { waitUntil: 'domcontentloaded' })
+  await page.goto('/components/sidebar.html', {
+    waitUntil: 'domcontentloaded',
+  })
   await page.waitForFunction(
     () => document.querySelector('oas-sidebar[active="users"]')?.shadowRoot != null,
     undefined,
@@ -132,7 +157,9 @@ test('sidebar 嵌套子菜单：无图标子项 label 缩进父项 label 右侧�
   expect(r.indent, '子项 label 应缩进父项 label 右侧（不得齐平/更靠左）').toBe(21)
 })
 test('sidebar 嵌套头像子项：空图标不占布局，普通无图标子项仍保留缩进', async ({ page }) => {
-  await page.goto('/components/sidebar.html', { waitUntil: 'domcontentloaded' })
+  await page.goto('/components/sidebar.html', {
+    waitUntil: 'domcontentloaded',
+  })
   await page.waitForFunction(() => !!customElements.get('oas-sidebar'))
   const r = await page.evaluate(() => {
     const el = document.createElement('oas-sidebar')
@@ -144,7 +171,12 @@ test('sidebar 嵌套头像子项：空图标不占布局，普通无图标子项
           value: 'members',
           icon: 'user',
           children: [
-            { label: '张伟', value: 'u1', avatarText: '张', avatarColor: '#e11d48' },
+            {
+              label: '张伟',
+              value: 'u1',
+              avatarText: '张',
+              avatarColor: '#e11d48',
+            },
             { label: '未分配', value: 'unassigned' },
           ],
         },
@@ -183,7 +215,9 @@ test('sidebar 嵌套父项点击折叠子菜单：hidden 真实隐藏（grid 0fr
   // 历史根因：.submenu{display:flex} 作者级规则压过 UA [hidden]{display:none}（只改属性不改渲染）；
   // 现行机制：grid-template-rows 0fr/1fr 平滑过渡 + visibility 联动（收起时出渲染树防聚焦）。
   // 本断言量 computed visibility 与高度（真实视觉），不是只查 hidden 属性。
-  await page.goto('/components/sidebar.html', { waitUntil: 'domcontentloaded' })
+  await page.goto('/components/sidebar.html', {
+    waitUntil: 'domcontentloaded',
+  })
   await page.waitForFunction(() => document.querySelector('#sidebar-decl')?.shadowRoot != null, undefined, {
     timeout: 15000,
   })
@@ -204,7 +238,11 @@ test('sidebar 嵌套父项点击折叠子菜单：hidden 真实隐藏（grid 0fr
         await new Promise((res) => requestAnimationFrame(res))
       }
     }
-    const before = { aria: getBiz().getAttribute('aria-expanded'), visibility: visibility(), rectH: rectH() }
+    const before = {
+      aria: getBiz().getAttribute('aria-expanded'),
+      visibility: visibility(),
+      rectH: rectH(),
+    }
     getBiz().click()
     await settle(() => getBiz().getAttribute('aria-expanded') === 'false')
     await settle(() => visibility() === 'hidden' && rectH() === 0)
@@ -243,7 +281,9 @@ test('sidebar 嵌套父项点击折叠子菜单：hidden 真实隐藏（grid 0fr
 test('sidebar 折叠态树形父项点击开 flyout：面板在 rail 右侧视口内 + 子项文字可见 + 子项点击派发 select 关面板', async ({
   page,
 }) => {
-  await page.goto('/components/sidebar.html', { waitUntil: 'domcontentloaded' })
+  await page.goto('/components/sidebar.html', {
+    waitUntil: 'domcontentloaded',
+  })
   // 找一个含嵌套的 sidebar demo，切到折叠态
   await page.evaluate(async () => {
     const blk = [...document.querySelectorAll('.demo-block')].find((b) => (b.textContent || '').includes('嵌套'))
@@ -261,12 +301,17 @@ test('sidebar 折叠态树形父项点击开 flyout：面板在 rail 右侧视�
       }),
     )
     .toBe(true)
-  const r1 = await page.evaluate(async () => {
+  // 交互用 Playwright locator（pierce open shadow DOM）+ 可操作性等待：程序化 click 在满负载下
+  // 可能与重渲染竞争（点到的节点已被替换 → 打开的是游离 flyout），改用真实指针点击 + 可见性断言
+  const sidebar = page.locator('oas-sidebar[collapsed]').first()
+  const flyout = sidebar.locator('[part="flyout"]').first()
+  await sidebar.locator('[part="item"][aria-haspopup="true"]').first().click()
+  // flyout 打开的真实信号：面板可见（hidden 落定，不用固定 dwell）
+  await expect(flyout).toBeVisible({ timeout: 10000 })
+  const r1 = await page.evaluate(() => {
     const sb = [...document.querySelectorAll('oas-sidebar')].find((s) => s.hasAttribute('collapsed'))!
     const btn = sb.shadowRoot!.querySelector<HTMLElement>('[part="item"][aria-haspopup="true"]')!
     const btnR = btn.getBoundingClientRect()
-    btn.click()
-    await new Promise((res) => setTimeout(res, 250))
     const flyout = sb.shadowRoot!.querySelector<HTMLElement>('[part="flyout"]')!
     const fR = flyout.getBoundingClientRect()
     const firstChild = flyout.querySelector<HTMLElement>('[part="item"]')!
@@ -296,27 +341,39 @@ test('sidebar 折叠态树形父项点击开 flyout：面板在 rail 右侧视�
   expect(r1.childPaddingInline, 'flyout 子项水平内边距非零（不被折叠态 padding-inline:0 压过）').not.toBe('0px')
   expect(r1.childCount, 'flyout 内渲染全部子项').toBe(5)
 
-  // 叶子子项点击 → oas-select + 关面板
-  const r2 = await page.evaluate(async () => {
+  // 叶子子项点击 → oas-select + 关面板（真实指针点击 + 可见性等待）
+  const leafValue = await page.evaluate(() => {
     const sb = [...document.querySelectorAll('oas-sidebar')].find((s) => s.hasAttribute('collapsed'))!
-    const flyout = sb.shadowRoot!.querySelector<HTMLElement>('[part="flyout"]')!
-    let detail: unknown = null
-    sb.addEventListener('oas-select', (e) => (detail = (e as CustomEvent).detail))
-    const leaf = [...flyout.querySelectorAll<HTMLElement>('[part="item"]')].find((el) => !el.querySelector('.chevron'))!
-    const leafValue = leaf.dataset.value
-    leaf.click()
-    await new Promise((res) => setTimeout(res, 250))
-    return { detail: detail as { value?: string } | null, leafValue, closed: flyout.hidden }
+    const fly = sb.shadowRoot!.querySelector<HTMLElement>('[part="flyout"]')!
+    return [...fly.querySelectorAll<HTMLElement>('[part="item"]')].find((el) => !el.querySelector('.chevron'))!.dataset
+      .value
   })
-  expect(r2.detail?.value, '叶子点击派发 oas-select 且值为叶子 value').toBe(r2.leafValue)
-  expect(r2.closed, '选中后面板关闭').toBe(true)
+  await page.evaluate(() => {
+    const sb = [...document.querySelectorAll('oas-sidebar')].find((s) => s.hasAttribute('collapsed'))!
+    ;(window as unknown as { __oasSelect: unknown }).__oasSelect = null
+    sb.addEventListener('oas-select', (e) => {
+      ;(window as unknown as { __oasSelect: unknown }).__oasSelect = (e as CustomEvent).detail
+    })
+  })
+  const leaf = flyout
+    .locator('[part="item"]')
+    .filter({ hasNot: page.locator('.chevron') })
+    .first()
+  await leaf.click()
+  await expect(flyout).toBeHidden({ timeout: 10000 })
+  const detail = await page.evaluate(
+    () => (window as unknown as { __oasSelect: { value?: string } | null }).__oasSelect,
+  )
+  expect(detail?.value, '叶子点击派发 oas-select 且值为叶子 value').toBe(leafValue)
 })
 
 // —— 缺陷回归（实抓）：hover 打开的 flyout 在指针进入面板后 300ms 被误关 ——
 // 根因：btn↔flyout 的定位 gap 穿越触发 block pointerleave（启动 300ms 关闭计时），flyout 自身
 // 无 pointerenter 处理器取消计时。真实鼠标轨迹：hover btn 打开 → 移入面板驻留 >400ms → 面板仍开。
 test('sidebar flyout hover 链路：hover 父项打开，移入面板驻留不自动关闭', async ({ page }) => {
-  await page.goto('/components/sidebar.html', { waitUntil: 'domcontentloaded' })
+  await page.goto('/components/sidebar.html', {
+    waitUntil: 'domcontentloaded',
+  })
   // CI 冷启动/并行下组件包可能晚于 domcontentloaded 注册；先等升级完成再取 shadowRoot
   await page.waitForFunction(
     () => [...document.querySelectorAll('oas-sidebar')].some((s) => !!s.shadowRoot),
@@ -353,7 +410,11 @@ test('sidebar flyout hover 链路：hover 父项打开，移入面板驻留不�
     const sb = [...document.querySelectorAll('oas-sidebar')].find((s) => s.hasAttribute('collapsed'))!
     const btn = sb.shadowRoot!.querySelector<HTMLElement>('[part="item"][aria-haspopup="true"]')!
     const r = btn.getBoundingClientRect()
-    return { x: r.left + r.width / 2, y: r.top + r.height / 2, value: btn.dataset.value }
+    return {
+      x: r.left + r.width / 2,
+      y: r.top + r.height / 2,
+      value: btn.dataset.value,
+    }
   })
   await page.mouse.move(target.x, target.y)
   // hover 延迟展开完成的真实信号：flyout 打开（FLYOUT_OPEN_DELAY 150ms，即断言条件本身）
@@ -386,15 +447,27 @@ test('sidebar flyout hover 链路：hover 父项打开，移入面板驻留不�
 
 // 行首头像：真实布局（18px 圆 / 行序 / 图片可见）+ RTL 自动镜像 + 装饰性不进无障碍树。
 test('sidebar 行首头像：首字母圆与图片真实渲染，RTL 镜像，装饰性节点不可见', async ({ page }) => {
-  await page.goto('/components/sidebar.html', { waitUntil: 'domcontentloaded' })
+  await page.goto('/components/sidebar.html', {
+    waitUntil: 'domcontentloaded',
+  })
   await page.waitForFunction(() => !!customElements.get('oas-sidebar'))
   const r = await page.evaluate(async () => {
     const el = document.createElement('oas-sidebar')
     el.setAttribute(
       'items',
       JSON.stringify([
-        { label: '张伟', value: 'u1', avatarText: '张', avatarColor: '#e11d48' },
-        { label: '李娜', value: 'u2', avatarText: '李', avatarColor: '#fef08a' },
+        {
+          label: '张伟',
+          value: 'u1',
+          avatarText: '张',
+          avatarColor: '#e11d48',
+        },
+        {
+          label: '李娜',
+          value: 'u2',
+          avatarText: '李',
+          avatarColor: '#fef08a',
+        },
         { label: '产品组', value: 'g1', avatar: '/favicon.svg' },
         { label: '收件箱', value: 'inbox', icon: 'star' },
       ]),
@@ -409,7 +482,10 @@ test('sidebar 行首头像：首字母圆与图片真实渲染，RTL 镜像，�
     const read = () => {
       const img = avatar('g1')!.querySelector('img') as HTMLImageElement
       return {
-        circle: { w: Math.round(rect(avatar('u1')!).width), h: Math.round(rect(avatar('u1')!).height) },
+        circle: {
+          w: Math.round(rect(avatar('u1')!).width),
+          h: Math.round(rect(avatar('u1')!).height),
+        },
         beforeLabel: rect(avatar('u1')!).left < rect(row('u1').querySelector('.label')!).left,
         hidden: avatar('u1')!.getAttribute('aria-hidden'),
         text: avatar('u1')!.textContent,
@@ -423,7 +499,9 @@ test('sidebar 行首头像：首字母圆与图片真实渲染，RTL 镜像，�
     const ltr = read()
     el.setAttribute('dir', 'rtl')
     await frame()
-    const rtl = { beforeLabel: rect(avatar('u1')!).left > rect(row('u1').querySelector('.label')!).left }
+    const rtl = {
+      beforeLabel: rect(avatar('u1')!).left > rect(row('u1').querySelector('.label')!).left,
+    }
     el.remove()
     return { ltr, rtl }
   })
@@ -438,7 +516,9 @@ test('sidebar 行首头像：首字母圆与图片真实渲染，RTL 镜像，�
 })
 // 分组独立高亮：各组互不影响；同组多选数组可 toggle；aria 语义（pressed vs current）正确。
 test('sidebar 分组独立高亮：active-by-group 单选/多选、aria-pressed 与 aria-current 分离', async ({ page }) => {
-  await page.goto('/components/sidebar.html', { waitUntil: 'domcontentloaded' })
+  await page.goto('/components/sidebar.html', {
+    waitUntil: 'domcontentloaded',
+  })
   await page.waitForFunction(() => !!customElements.get('oas-sidebar'))
   const r = await page.evaluate(async () => {
     type Detail = { value: string; label: string; group?: string }
@@ -496,7 +576,9 @@ test('sidebar 分组独立高亮：active-by-group 单选/多选、aria-pressed 
 
 // 文档 demo 的宿主配方真实可用：点「时间线」加入「视图」多选，日志同步。
 test('sidebar 文档 demo：分组独立高亮 + 同组多选可点，宿主写回状态生效', async ({ page }) => {
-  await page.goto('/components/sidebar.html', { waitUntil: 'domcontentloaded' })
+  await page.goto('/components/sidebar.html', {
+    waitUntil: 'domcontentloaded',
+  })
   await page.waitForFunction(() => !!document.getElementById('sidebar-by-group')?.shadowRoot)
   const r = await page.evaluate(async () => {
     const el = document.getElementById('sidebar-by-group')
@@ -508,7 +590,11 @@ test('sidebar 文档 demo：分组独立高亮 + 同组多选可点，宿主写�
     const before = active()
     root.querySelector<HTMLElement>('[data-value="v3"]')!.click()
     await new Promise((res) => requestAnimationFrame(() => res(null)))
-    return { before, after: active(), log: document.getElementById('sidebar-by-group-log')?.textContent ?? '' }
+    return {
+      before,
+      after: active(),
+      log: document.getElementById('sidebar-by-group-log')?.textContent ?? '',
+    }
   })
   expect(r!.before).toEqual(expect.arrayContaining(['p1', 'v1', 'v2', 'doing']))
   expect(r!.after).toContain('v3')
@@ -516,7 +602,9 @@ test('sidebar 文档 demo：分组独立高亮 + 同组多选可点，宿主写�
 })
 
 test('sidebar renderLabel：demo 双行富内容挂载且不反射 attribute', async ({ page }) => {
-  await page.goto('/components/sidebar.html', { waitUntil: 'domcontentloaded' })
+  await page.goto('/components/sidebar.html', {
+    waitUntil: 'domcontentloaded',
+  })
   await page.waitForFunction(() => !!document.getElementById('sidebar-render-label')?.shadowRoot, undefined, {
     timeout: 15000,
   })
@@ -544,7 +632,9 @@ test('sidebar renderLabel：demo 双行富内容挂载且不反射 attribute', a
 
 // hide-toggle + 空 header 槽：头部塌陷（不留 24px 死缝）；有 header 内容或移动抽屉打开时保留。
 test('sidebar hide-toggle + 空 header：头部塌陷与恢复（真实几何）', async ({ page }) => {
-  await page.goto('/components/sidebar.html', { waitUntil: 'domcontentloaded' })
+  await page.goto('/components/sidebar.html', {
+    waitUntil: 'domcontentloaded',
+  })
   await page.waitForFunction(() => !!customElements.get('oas-sidebar'))
   const r = await page.evaluate(async () => {
     const el = document.createElement('oas-sidebar')
@@ -587,7 +677,9 @@ test('sidebar hide-toggle + 空 header：头部塌陷与恢复（真实几何）
 
 // 移动抽屉打开时关闭按钮需要头部容器：hide-toggle + 空 header 也不能塌陷。
 test('sidebar hide-toggle + 空 header：移动抽屉打开时头部保留、关闭后收起', async ({ page }) => {
-  await page.goto('/components/sidebar.html', { waitUntil: 'domcontentloaded' })
+  await page.goto('/components/sidebar.html', {
+    waitUntil: 'domcontentloaded',
+  })
   await page.waitForFunction(() => !!customElements.get('oas-sidebar'))
   const r = await page.evaluate(async () => {
     const el = document.createElement('oas-sidebar') as HTMLElement & {
@@ -619,7 +711,9 @@ test('sidebar hide-toggle + 空 header：移动抽屉打开时头部保留、关
 
 // 折叠态头像：成员行保留、叶子项 tooltip、头像父项走 flyout（子项可达，父项不派 select）
 test('sidebar 折叠态头像：成员行保留 + tooltip；头像父项开 flyout 不派父项 select', async ({ page }) => {
-  await page.goto('/components/sidebar.html', { waitUntil: 'domcontentloaded' })
+  await page.goto('/components/sidebar.html', {
+    waitUntil: 'domcontentloaded',
+  })
   await page.waitForFunction(() => !!customElements.get('oas-sidebar'))
   const r = await page.evaluate(async () => {
     const el = document.createElement('oas-sidebar')
@@ -627,8 +721,18 @@ test('sidebar 折叠态头像：成员行保留 + tooltip；头像父项开 flyo
     el.setAttribute(
       'items',
       JSON.stringify([
-        { label: '张伟', value: 'u1', avatarText: '张', avatarColor: '#e11d48' },
-        { label: '带队人', value: 'lead', avatarText: '带', children: [{ label: '成员', value: 'member' }] },
+        {
+          label: '张伟',
+          value: 'u1',
+          avatarText: '张',
+          avatarColor: '#e11d48',
+        },
+        {
+          label: '带队人',
+          value: 'lead',
+          avatarText: '带',
+          children: [{ label: '成员', value: 'member' }],
+        },
         { label: '纯文字', value: 'plain' },
       ]),
     )
@@ -661,12 +765,17 @@ test('sidebar 折叠态头像：成员行保留 + tooltip；头像父项开 flyo
   expect(r.tooltip, '折叠态头像叶子项带 label tooltip').toBe(true)
   expect(r.flyoutOpen, '头像父项点击打开 flyout').toBe(true)
   expect(r.parentDetail, '父项不派发 select').toBeUndefined()
-  expect(r.childDetail, 'flyout 内子项可选中').toEqual({ value: 'member', label: '成员' })
+  expect(r.childDetail, 'flyout 内子项可选中').toEqual({
+    value: 'member',
+    label: '成员',
+  })
 })
 
 // 桌面 RTL：面板必须是流内布局，不能被抽屉用的 translateX(100%) 移出宿主
 test('sidebar 桌面 RTL：展开与折叠态面板都在宿主范围内', async ({ page }) => {
-  await page.goto('/components/sidebar.html', { waitUntil: 'domcontentloaded' })
+  await page.goto('/components/sidebar.html', {
+    waitUntil: 'domcontentloaded',
+  })
   await page.waitForFunction(() => !!customElements.get('oas-sidebar'))
   const r = await page.evaluate(async () => {
     const el = document.createElement('oas-sidebar')
@@ -708,7 +817,9 @@ test('sidebar 桌面 RTL：展开与折叠态面板都在宿主范围内', async
 
 // expand-on-hover：悬停靠 CSS 展开出 label，键盘 focus 不触发展开，必须仍能弹出 tooltip
 test('sidebar expand-on-hover：键盘 focus 折叠项仍弹出 label tooltip', async ({ page }) => {
-  await page.goto('/components/sidebar.html', { waitUntil: 'domcontentloaded' })
+  await page.goto('/components/sidebar.html', {
+    waitUntil: 'domcontentloaded',
+  })
   await page.waitForFunction(() => !!customElements.get('oas-sidebar'))
   const r = await page.evaluate(async () => {
     const el = document.createElement('oas-sidebar')
@@ -727,7 +838,10 @@ test('sidebar expand-on-hover：键盘 focus 折叠项仍弹出 label tooltip', 
     row.focus()
     await new Promise((res) => setTimeout(res, 400))
     const tip = el.shadowRoot!.querySelector('oas-tooltip[content="张伟"]')
-    const out = { trigger: tip?.getAttribute('trigger') ?? '', open: !!tip?.hasAttribute('open') }
+    const out = {
+      trigger: tip?.getAttribute('trigger') ?? '',
+      open: !!tip?.hasAttribute('open'),
+    }
     el.remove()
     return out
   })
@@ -738,7 +852,9 @@ test('sidebar expand-on-hover：键盘 focus 折叠项仍弹出 label tooltip', 
 // ===== 反馈 #5：移动抽屉打开不入焦 / 关闭不回焦 / 无焦点约束 / aria-hidden 吞焦点 =====
 test('sidebar 移动抽屉：打开入焦 + role=dialog/aria-modal + Tab 约束 + Esc 关闭回焦触发器', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 800 })
-  await page.goto('/components/sidebar.html', { waitUntil: 'domcontentloaded' })
+  await page.goto('/components/sidebar.html', {
+    waitUntil: 'domcontentloaded',
+  })
   await page.waitForFunction(() => !!customElements.get('oas-sidebar'))
   await page.evaluate(() => {
     document.getElementById('e2e-sidebar-mobile')?.remove()
@@ -788,7 +904,10 @@ test('sidebar 移动抽屉：打开入焦 + role=dialog/aria-modal + Tab 约束 
     const el = document.querySelector('oas-sidebar#e2e-sidebar-mobile') as HTMLElement & { shadowRoot: ShadowRoot }
     const panel = el.shadowRoot.querySelector('.panel') as HTMLElement
     const active = el.shadowRoot.activeElement as HTMLElement | null
-    return { inPanel: !!active && panel.contains(active), activeTag: active?.tagName ?? null }
+    return {
+      inPanel: !!active && panel.contains(active),
+      activeTag: active?.tagName ?? null,
+    }
   })
   expect(trapped.inPanel, 'Tab 不得逃逸出抽屉').toBe(true)
 
@@ -814,10 +933,14 @@ test('sidebar 移动抽屉：打开入焦 + role=dialog/aria-modal + Tab 约束 
 
 test('sidebar 移动抽屉：slotted footer 输入框之间 Tab / Shift+Tab 顺序正确', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 800 })
-  await page.goto('/components/sidebar.html', { waitUntil: 'domcontentloaded' })
+  await page.goto('/components/sidebar.html', {
+    waitUntil: 'domcontentloaded',
+  })
   await page.waitForFunction(() => !!customElements.get('oas-sidebar'))
   await page.evaluate(() => {
-    const el = document.createElement('oas-sidebar') as HTMLElement & { openDrawer(): void }
+    const el = document.createElement('oas-sidebar') as HTMLElement & {
+      openDrawer(): void
+    }
     el.id = 'qa-sidebar-slotted-focus'
     el.setAttribute('items', JSON.stringify([{ label: '收件箱', value: 'inbox' }]))
     const first = document.createElement('input')
@@ -845,10 +968,14 @@ test('sidebar 移动抽屉：slotted footer 输入框之间 Tab / Shift+Tab 顺�
 
 test('sidebar 移动抽屉：复合 slotted 输入组件与同步入焦不被抢回', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 800 })
-  await page.goto('/components/sidebar.html', { waitUntil: 'domcontentloaded' })
+  await page.goto('/components/sidebar.html', {
+    waitUntil: 'domcontentloaded',
+  })
   await page.waitForFunction(() => !!customElements.get('oas-sidebar') && !!customElements.get('oas-input'))
   await page.evaluate(() => {
-    const el = document.createElement('oas-sidebar') as HTMLElement & { openDrawer(): void }
+    const el = document.createElement('oas-sidebar') as HTMLElement & {
+      openDrawer(): void
+    }
     el.id = 'qa-sidebar-composite-focus'
     el.setAttribute('items', JSON.stringify([{ label: '收件箱', value: 'inbox' }]))
     const custom = document.createElement('oas-input')
@@ -875,7 +1002,9 @@ test('sidebar 移动抽屉：复合 slotted 输入组件与同步入焦不被抢
 
 // footer 常驻：sticky 在 .panel 滚动容器内钉底；空 footer 不占位；移动抽屉同样生效
 test('sidebar footer：桌面滚动全程钉底，空 footer 不占位', async ({ page }) => {
-  await page.goto('/components/sidebar.html', { waitUntil: 'domcontentloaded' })
+  await page.goto('/components/sidebar.html', {
+    waitUntil: 'domcontentloaded',
+  })
   await page.waitForFunction(() => !!customElements.get('oas-sidebar'))
   const r = await page.evaluate(async () => {
     const make = (withFooter: boolean) => {
@@ -884,7 +1013,11 @@ test('sidebar footer：桌面滚动全程钉底，空 footer 不占位', async (
       el.setAttribute(
         'items',
         JSON.stringify(
-          Array.from({ length: 30 }, (_, i) => ({ label: `菜单 ${i + 1}`, value: `m${i + 1}`, icon: 'star' })),
+          Array.from({ length: 30 }, (_, i) => ({
+            label: `菜单 ${i + 1}`,
+            value: `m${i + 1}`,
+            icon: 'star',
+          })),
         ),
       )
       if (withFooter) {
@@ -922,12 +1055,19 @@ test('sidebar footer：桌面滚动全程钉底，空 footer 不占位', async (
     const empty = make(false)
     await frame()
     const emptyFoot = empty.shadowRoot!.querySelector<HTMLElement>('[part="foot"]')!
-    const emptyInfo = { hidden: emptyFoot.hidden, display: getComputedStyle(emptyFoot).display }
+    const emptyInfo = {
+      hidden: emptyFoot.hidden,
+      display: getComputedStyle(emptyFoot).display,
+    }
     empty.remove()
     el.remove()
     return { top, mid, end, empty: emptyInfo }
   })
-  for (const [pos, v] of Object.entries({ top: r.top, mid: r.mid, end: r.end })) {
+  for (const [pos, v] of Object.entries({
+    top: r.top,
+    mid: r.mid,
+    end: r.end,
+  })) {
     expect(v.visible, `${pos}: footer 可见`).toBe(true)
     expect(v.pinned, `${pos}: footer 钉在 panel 底边`).toBe(true)
     expect(v.inside, `${pos}: footer 在 panel 内（移动抽屉同构）`).toBe(true)
@@ -938,7 +1078,9 @@ test('sidebar footer：桌面滚动全程钉底，空 footer 不占位', async (
 
 test('sidebar footer：移动抽屉滚动时仍钉底且在抽屉内', async ({ page }) => {
   await page.setViewportSize({ width: 500, height: 700 })
-  await page.goto('/components/sidebar.html', { waitUntil: 'domcontentloaded' })
+  await page.goto('/components/sidebar.html', {
+    waitUntil: 'domcontentloaded',
+  })
   await page.waitForFunction(() => !!customElements.get('oas-sidebar'))
   const r = await page.evaluate(async () => {
     const el = document.createElement('oas-sidebar') as HTMLElement & {
@@ -948,7 +1090,11 @@ test('sidebar footer：移动抽屉滚动时仍钉底且在抽屉内', async ({ 
     el.setAttribute(
       'items',
       JSON.stringify(
-        Array.from({ length: 30 }, (_, i) => ({ label: `菜单 ${i + 1}`, value: `m${i + 1}`, icon: 'star' })),
+        Array.from({ length: 30 }, (_, i) => ({
+          label: `菜单 ${i + 1}`,
+          value: `m${i + 1}`,
+          icon: 'star',
+        })),
       ),
     )
     const footer = document.createElement('div')
@@ -986,7 +1132,11 @@ test('sidebar footer：移动抽屉滚动时仍钉底且在抽屉内', async ({ 
     return { top, mid, end }
   })
   expect(r.top.mobile && r.top.drawerOpen, '移动抽屉已打开').toBe(true)
-  for (const [pos, v] of Object.entries({ top: r.top, mid: r.mid, end: r.end })) {
+  for (const [pos, v] of Object.entries({
+    top: r.top,
+    mid: r.mid,
+    end: r.end,
+  })) {
     expect(v.visible, `${pos}: footer 可见`).toBe(true)
     expect(v.pinned, `${pos}: footer 钉在抽屉底边`).toBe(true)
     expect(v.inside, `${pos}: footer 在抽屉内`).toBe(true)

@@ -112,13 +112,16 @@ export default defineConfig({
       timeout: 120_000,
       retries: 2,
     },
-    // WebKit 抽样：只跑代表性页面 smoke（CSS 引擎差异主要在布局/浮层/虚拟滚动），
-    // 不全量复制 Chromium 套件；失败仍按真实失败处理。
+    // WebKit 全量组件回归：qa-regression 全部 spec + 代表性页面 smoke + 跨引擎 DSD 最小 smoke。
+    // 历史只跑 9 条 smoke，释放后集中暴露 WebKit 的 CSS 引擎/事件/度量差异——断言一律按语义
+    // 不变量写（元素关系/前后差值/DOM 现算期望值），不按 WebKit 数值校准常数。
     {
       name: 'webkit',
       use: { browserName: 'webkit' },
-      // WebKit 只跑代表性页面 smoke + 跨引擎 DSD 最小 smoke（不全量复制 Chromium 套件）
-      testMatch: [/webkit\.spec\.ts/, /ssr-dsd-cross-engine\.spec\.ts/],
+      testMatch: [/webkit\.spec\.ts/, /qa-regression\/.*\.spec\.ts/, /ssr-dsd-cross-engine\.spec\.ts/],
+      // forced-colors 依赖 page.emulateMedia({ forcedColors })——WebKit 不支持该模拟（会 throw），
+      // 引擎能力缺口，故在项目层排除（spec 内另有 browserName 守卫兜底）。
+      testIgnore: /forced-colors\.spec\.ts/,
       timeout: 120_000,
       retries: 1,
     },

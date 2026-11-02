@@ -201,14 +201,20 @@ test('notification collapsible：超阈值折叠 + "+N" 徽章点击展开', asy
   await page.waitForFunction(() => document.querySelector('.oas-notification-stack .stack-badge') != null, null, {
     timeout: 5000,
   })
-  const collapsedCount = await page.evaluate(() => {
+  const collapsed = await page.evaluate(() => {
     const stack = document.querySelector('.oas-notification-stack.stack-collapsible')!
-    return [...stack.querySelectorAll('oas-notification')].filter((el) =>
-      el.classList.contains('oas-notification-collapsed'),
-    ).length
+    const all = [...stack.querySelectorAll('oas-notification')]
+    return {
+      total: all.length,
+      collapsedCount: all.filter((el) => el.classList.contains('oas-notification-collapsed')).length,
+    }
   })
-  expect(collapsedCount).toBe(4) // 5 条、留最新 1 条
+  // 不写死条数：demo 连发 N 条，折叠契约是「只留最新 1 条」，期望值由 DOM 现算（N − 1）。
+  expect(collapsed.collapsedCount, `共 ${collapsed.total} 条、只留最新 1 条 → 折叠数 = 总数 − 1`).toBe(
+    collapsed.total - 1,
+  )
   await page.locator('.stack-badge').click()
+
   const expandedCount = await page.evaluate(() => {
     const stack = document.querySelector('.oas-notification-stack.stack-collapsible')!
     return [...stack.querySelectorAll('oas-notification')].filter((el) =>

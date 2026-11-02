@@ -282,16 +282,20 @@ test('select virtual：键盘导航高亮项滚动进视口且 aria-activedescen
     const vp = vlist.shadowRoot!.querySelector<HTMLElement>('.viewport')!
     const desc = trigger.getAttribute('aria-activedescendant')
     const activeRow = vlist.shadowRoot!.querySelector<HTMLElement>('.option.active')
+    const vRect = vp.getBoundingClientRect()
+    const aRect = activeRow?.getBoundingClientRect()
     return {
       desc,
       descId: desc ? (document.getElementById(desc)?.tagName ?? null) : null,
       activeIndex: activeRow?.getAttribute('data-index') ?? null,
       scrollTop: vp.scrollTop,
+      // 高亮行滚入视口（几何关系；不写死 scrollTop 像素——行高由字体度量决定）
+      activeVisible: !!aRect && aRect.top >= vRect.top - 1 && aRect.bottom <= vRect.bottom + 1,
     }
   })
   expect(r.desc).toBe('opt-20')
   expect(r.activeIndex).toBe('20')
-  expect(r.scrollTop).toBe(516) // 窗口已滚动
+  expect(r.activeVisible, '键盘导航后高亮行滚入视口（窗口已滚动）').toBe(true)
 })
 
 test('select 自定义选项渲染：demo 里图标 + 文本进入选项行与标签', async ({ page }) => {
