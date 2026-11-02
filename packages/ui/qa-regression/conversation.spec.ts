@@ -507,7 +507,18 @@ test('message-scroller track-visible：滚动后 oas-visible-change 更新可见
     return host.visibleMessageIds
   })
   expect(Array.isArray(ids)).toBe(true)
-  expect(ids.length).toBe(4)
+  // 事件文案先于属性落定（demo 监听同步写文案，属性经渲染帧刷新）——轮询到稳定值再精确断言
+  await expect
+    .poll(
+      () =>
+        page.evaluate(
+          () =>
+            (document.querySelector('#msc-visible') as HTMLElement & { visibleMessageIds: string[] }).visibleMessageIds
+              .length,
+        ),
+      { timeout: 5000 },
+    )
+    .toBe(4)
 })
 
 test('attachment-group：横向溢出反射边缘可滚 + 滚动到端改变 data-scrollable', async ({ page }) => {
