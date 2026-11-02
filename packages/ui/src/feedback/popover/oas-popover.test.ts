@@ -68,7 +68,10 @@ function stubRect(el: HTMLElement, r: { left: number; top: number; width: number
 /** 固定视口尺寸（定位越界/翻转断言依赖确定性的 viewport） */
 function setViewport(w: number, h: number): void {
   Object.defineProperty(window, 'innerWidth', { value: w, configurable: true })
-  Object.defineProperty(window, 'innerHeight', { value: h, configurable: true })
+  Object.defineProperty(window, 'innerHeight', {
+    value: h,
+    configurable: true,
+  })
 }
 
 /** 模拟页面纵向滚动（scrollY 变化——滞留 scroll 事件防御按 scrollY 比对，真实滚动必然变值） */
@@ -120,6 +123,43 @@ describe('OASPopover', () => {
     expect(el.hasAttribute('open')).toBe(false)
     await sleep(220) // 退场动画（fade/scale）结束后才落 aria-hidden
     expect(el.shadowRoot!.querySelector('[part="panel"]')!.getAttribute('aria-hidden')).toBe('true')
+  })
+
+  // WebKit 对非交互目标上的 tap 不合成兼容 click（只有 pointer 事件）——外点关闭必须同时
+  // 挂 pointerup（触屏/笔）通道，否则触屏上浮层只能靠 Esc 关闭（真机 WebKit 实测）
+  it('触屏外点：pointerup（pointerType=touch）关闭面板（WebKit 无兼容 click 的路径）', async () => {
+    const el = mount({ open: '', title: 'x' })
+    await Promise.resolve()
+    document.body.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, pointerType: 'touch' }))
+    expect(el.hasAttribute('open'), '触屏抬手（pointerup）即外点关闭').toBe(false)
+  })
+
+  it('鼠标 pointerup 不接管外点关闭（桌面仍按 click 语义，避免按下即关）', async () => {
+    const el = mount({ open: '', title: 'x' })
+    await Promise.resolve()
+    document.body.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, pointerType: 'mouse' }))
+    expect(el.hasAttribute('open'), '鼠标 pointerup 不得关闭（click 通道负责）').toBe(true)
+  })
+
+  it('面板内 pointerup（触屏）不关闭：命中检测与 click 通道同口径', async () => {
+    const el = mount({ open: '', title: 'x' })
+    await Promise.resolve()
+    const panel = el.shadowRoot!.querySelector('[part="panel"]')!
+    panel.dispatchEvent(
+      new PointerEvent('pointerup', {
+        bubbles: true,
+        composed: true,
+        pointerType: 'touch',
+      }),
+    )
+    expect(el.hasAttribute('open')).toBe(true)
+  })
+
+  it('close-on-outside="false"：pointerup 通道同样不关闭', async () => {
+    const el = mount({ open: '', title: 'x', 'close-on-outside': 'false' })
+    await Promise.resolve()
+    document.body.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, pointerType: 'touch' }))
+    expect(el.hasAttribute('open')).toBe(true)
   })
 
   describe('嵌套浮层（nested）', () => {
@@ -198,7 +238,11 @@ describe('OASPopover', () => {
       const dot = document.createElement('div')
       dot.id = 'pop-dot-test'
       document.body.appendChild(dot)
-      const el = mount({ open: '', virtual: '', 'virtual-anchor': '#pop-dot-test' })
+      const el = mount({
+        open: '',
+        virtual: '',
+        'virtual-anchor': '#pop-dot-test',
+      })
       const p = panelOf(el)
       expect(p.getAttribute('aria-hidden')).toBe('false')
       expect(p.getAttribute('data-placement')).toMatch(/^(top|bottom|left|right)(-(start|end))?$/)
@@ -206,7 +250,12 @@ describe('OASPopover', () => {
     })
 
     it('virtual 坐标精确定位：placement=right → left=x+8、top=y-h/2（不依赖真实布局）', () => {
-      const el = mount({ virtual: '', 'virtual-x': '160', 'virtual-y': '90', placement: 'right' })
+      const el = mount({
+        virtual: '',
+        'virtual-x': '160',
+        'virtual-y': '90',
+        placement: 'right',
+      })
       const p = panelOf(el)
       // happy-dom 无布局引擎：stub 面板尺寸，computePosition 用该尺寸计算
       stubPanelRect(p, 200, 60)
@@ -219,7 +268,12 @@ describe('OASPopover', () => {
     })
 
     it('virtual 坐标更新（宿主移动鼠标）→ 面板重新定位', () => {
-      const el = mount({ virtual: '', 'virtual-x': '100', 'virtual-y': '100', placement: 'top' })
+      const el = mount({
+        virtual: '',
+        'virtual-x': '100',
+        'virtual-y': '100',
+        placement: 'top',
+      })
       const p = panelOf(el)
       stubPanelRect(p, 200, 60)
       setViewport(1280, 800)
@@ -231,7 +285,12 @@ describe('OASPopover', () => {
     })
 
     it('点位贴视口顶：placement=top 自动翻转到 bottom 且不越界', () => {
-      const el = mount({ virtual: '', 'virtual-x': '300', 'virtual-y': '0', placement: 'top' })
+      const el = mount({
+        virtual: '',
+        'virtual-x': '300',
+        'virtual-y': '0',
+        placement: 'top',
+      })
       const p = panelOf(el)
       stubPanelRect(p, 200, 60)
       setViewport(1280, 800)
@@ -242,7 +301,12 @@ describe('OASPopover', () => {
     })
 
     it('点位贴视口右缘：placement=right 自动翻转到 left 并避让不越界', () => {
-      const el = mount({ virtual: '', 'virtual-x': '1260', 'virtual-y': '200', placement: 'right' })
+      const el = mount({
+        virtual: '',
+        'virtual-x': '1260',
+        'virtual-y': '200',
+        placement: 'right',
+      })
       const p = panelOf(el)
       stubPanelRect(p, 200, 60)
       setViewport(1280, 800)
@@ -368,10 +432,22 @@ describe('OASPopover', () => {
     // 旋转 45° 后 border-top/right/bottom/left 依次对应菱形右上/右下/左下/左上边，
     //   「汇于尖端」的两条外露边需带 1px 边框色与面板描边衔接。
     const cases = {
-      bottom: { edge: 'top', borders: ['border-top-width', 'border-left-width'] },
-      top: { edge: 'bottom', borders: ['border-right-width', 'border-bottom-width'] },
-      left: { edge: 'right', borders: ['border-top-width', 'border-right-width'] },
-      right: { edge: 'left', borders: ['border-left-width', 'border-bottom-width'] },
+      bottom: {
+        edge: 'top',
+        borders: ['border-top-width', 'border-left-width'],
+      },
+      top: {
+        edge: 'bottom',
+        borders: ['border-right-width', 'border-bottom-width'],
+      },
+      left: {
+        edge: 'right',
+        borders: ['border-top-width', 'border-right-width'],
+      },
+      right: {
+        edge: 'left',
+        borders: ['border-left-width', 'border-bottom-width'],
+      },
     } as const
     for (const p of ['top', 'bottom', 'left', 'right'] as const) {
       const el = mount({
@@ -465,7 +541,11 @@ describe('OASPopover', () => {
   })
 
   it('auto-adjust-overflow="false"：空间不足不翻转，保持声明 placement', () => {
-    const el = mount({ open: '', placement: 'bottom', 'auto-adjust-overflow': 'false' })
+    const el = mount({
+      open: '',
+      placement: 'bottom',
+      'auto-adjust-overflow': 'false',
+    })
     const p = panelOf(el)
     stubPanelRect(p, 240, 60)
     const btn = el.querySelector('button')!
@@ -485,7 +565,12 @@ function sleep(ms: number): Promise<void> {
 /** 中段坐标四向均不翻转的基准：锚点 {400,300,80,32}，面板 {350,332,200,100}，视口 1280x800 */
 function mountOpen(attrs: Record<string, string>): OASPopover {
   const el = mount(attrs)
-  stubRect(el.querySelector('button')!, { left: 400, top: 300, width: 80, height: 32 })
+  stubRect(el.querySelector('button')!, {
+    left: 400,
+    top: 300,
+    width: 80,
+    height: 32,
+  })
   stubPanelRect(panelOf(el), 200, 100)
   setViewport(1280, 800)
   el.setAttribute('open', '')
@@ -506,7 +591,11 @@ describe('OASPopover 触发方式（trigger）', () => {
   })
 
   it('trigger="hover"：悬停开、移出关（hover-delay=0 立即）', async () => {
-    const el = mount({ trigger: 'hover', 'hover-delay': '0', 'hover-hide-delay': '0' })
+    const el = mount({
+      trigger: 'hover',
+      'hover-delay': '0',
+      'hover-hide-delay': '0',
+    })
     el.dispatchEvent(new MouseEvent('mouseenter'))
     await sleep(20)
     expect(el.hasAttribute('open')).toBe(true)
@@ -516,7 +605,11 @@ describe('OASPopover 触发方式（trigger）', () => {
   })
 
   it('hover 悬停到浮层面板不关闭（悬停区域 = 宿主 + 面板）', async () => {
-    const el = mount({ trigger: 'hover', 'hover-delay': '0', 'hover-hide-delay': '0' })
+    const el = mount({
+      trigger: 'hover',
+      'hover-delay': '0',
+      'hover-hide-delay': '0',
+    })
     el.dispatchEvent(new MouseEvent('mouseenter'))
     await sleep(20)
     el.dispatchEvent(new MouseEvent('mouseleave', { relatedTarget: panelOf(el) }))
@@ -525,7 +618,11 @@ describe('OASPopover 触发方式（trigger）', () => {
   })
 
   it('hover-delay / hover-hide-delay：开合防抖延时生效', async () => {
-    const el = mount({ trigger: 'hover', 'hover-delay': '60', 'hover-hide-delay': '60' })
+    const el = mount({
+      trigger: 'hover',
+      'hover-delay': '60',
+      'hover-hide-delay': '60',
+    })
     el.dispatchEvent(new MouseEvent('mouseenter'))
     expect(el.hasAttribute('open')).toBe(false) // 开延时未到不开
     await sleep(90)
@@ -540,12 +637,21 @@ describe('OASPopover 触发方式（trigger）', () => {
     const el = mount({ trigger: 'focus' })
     el.dispatchEvent(new FocusEvent('focusin', { bubbles: true }))
     expect(el.hasAttribute('open')).toBe(true)
-    el.dispatchEvent(new FocusEvent('focusout', { bubbles: true, relatedTarget: document.body }))
+    el.dispatchEvent(
+      new FocusEvent('focusout', {
+        bubbles: true,
+        relatedTarget: document.body,
+      }),
+    )
     expect(el.hasAttribute('open')).toBe(false)
   })
 
   it('trigger 多选 "click hover"：click 切换与 hover 开合共存', async () => {
-    const el = mount({ trigger: 'click hover', 'hover-delay': '0', 'hover-hide-delay': '0' })
+    const el = mount({
+      trigger: 'click hover',
+      'hover-delay': '0',
+      'hover-hide-delay': '0',
+    })
     ;(el.querySelector('button') as HTMLElement).click()
     expect(el.hasAttribute('open')).toBe(true)
     el.dispatchEvent(new MouseEvent('mouseleave'))
@@ -662,7 +768,12 @@ describe('OASPopover 12 向 placement', () => {
 
   it('翻转保留对齐后缀：bottom-start 空间不足 → top-start（不回落为无对齐 top）', () => {
     const el = mount({ placement: 'bottom-start' })
-    stubRect(el.querySelector('button')!, { left: 400, top: 700, width: 80, height: 32 })
+    stubRect(el.querySelector('button')!, {
+      left: 400,
+      top: 700,
+      width: 80,
+      height: 32,
+    })
     stubPanelRect(panelOf(el), 200, 100)
     setViewport(1280, 800)
     el.setAttribute('open', '')
@@ -673,7 +784,12 @@ describe('OASPopover 12 向 placement', () => {
 
   it('对齐后再视口夹取：bottom-start 靠视口右缘不越界', () => {
     const el = mount({ placement: 'bottom-start' })
-    stubRect(el.querySelector('button')!, { left: 1200, top: 300, width: 80, height: 32 })
+    stubRect(el.querySelector('button')!, {
+      left: 1200,
+      top: 300,
+      width: 80,
+      height: 32,
+    })
     stubPanelRect(panelOf(el), 200, 100)
     setViewport(1280, 800)
     el.setAttribute('open', '')
@@ -681,8 +797,16 @@ describe('OASPopover 12 向 placement', () => {
   })
 
   it('auto-adjust-overflow=false：bottom-start 严格保持不翻转不避让', () => {
-    const el = mount({ placement: 'bottom-start', 'auto-adjust-overflow': 'false' })
-    stubRect(el.querySelector('button')!, { left: 400, top: 700, width: 80, height: 32 })
+    const el = mount({
+      placement: 'bottom-start',
+      'auto-adjust-overflow': 'false',
+    })
+    stubRect(el.querySelector('button')!, {
+      left: 400,
+      top: 700,
+      width: 80,
+      height: 32,
+    })
     stubPanelRect(panelOf(el), 200, 100)
     setViewport(1280, 800)
     el.setAttribute('open', '')
@@ -692,7 +816,12 @@ describe('OASPopover 12 向 placement', () => {
 
   it('非法 placement 回落 top', () => {
     const el = mount({ placement: 'diagonal' })
-    stubRect(el.querySelector('button')!, { left: 400, top: 300, width: 80, height: 32 })
+    stubRect(el.querySelector('button')!, {
+      left: 400,
+      top: 300,
+      width: 80,
+      height: 32,
+    })
     stubPanelRect(panelOf(el), 200, 100)
     setViewport(1280, 800)
     el.setAttribute('open', '')
@@ -755,7 +884,12 @@ describe('OASPopover 12 向箭头对准锚点（-start/-end 贴向对齐端部�
 
   it('锚点中心投影越出面板边时箭头夹取（clamp 到面板内不越界）', () => {
     const el = mount({ placement: 'bottom-start' })
-    stubRect(el.querySelector('button')!, { left: 400, top: 300, width: 400, height: 32 }) // 锚点比面板宽
+    stubRect(el.querySelector('button')!, {
+      left: 400,
+      top: 300,
+      width: 400,
+      height: 32,
+    }) // 锚点比面板宽
     stubPanelRect(panelOf(el), 200, 100)
     setViewport(1280, 800)
     el.setAttribute('open', '')
@@ -773,7 +907,12 @@ describe('OASPopover 12 向箭头对准锚点（-start/-end 贴向对齐端部�
   })
 
   it('virtual 坐标点：箭头指向虚拟锚点坐标（P6 定夺：箭头对准点本身）', () => {
-    const el = mount({ virtual: '', 'virtual-x': '160', 'virtual-y': '90', placement: 'right' })
+    const el = mount({
+      virtual: '',
+      'virtual-x': '160',
+      'virtual-y': '90',
+      placement: 'right',
+    })
     const p = panelOf(el)
     stubPanelRect(p, 200, 60)
     setViewport(1280, 800)
@@ -791,7 +930,12 @@ describe('OASPopover 12 向箭头对准锚点（-start/-end 贴向对齐端部�
   })
 
   it('virtual 点近视口缘翻转后：箭头仍指向虚拟点（避让偏移不失准）', () => {
-    const el = mount({ virtual: '', 'virtual-x': '1200', 'virtual-y': '200', placement: 'right' })
+    const el = mount({
+      virtual: '',
+      'virtual-x': '1200',
+      'virtual-y': '200',
+      placement: 'right',
+    })
     const p = panelOf(el)
     stubPanelRect(p, 200, 60)
     setViewport(1280, 800)
@@ -885,8 +1029,17 @@ describe('OASPopover 宽度（width）与偏移（offset 双轴）', () => {
   })
 
   it('offset="16"：主轴间距 16（默认 8）', () => {
-    const el = mount({ placement: 'bottom', 'auto-adjust-overflow': 'false', offset: '16' })
-    stubRect(el.querySelector('button')!, { left: 400, top: 300, width: 80, height: 32 })
+    const el = mount({
+      placement: 'bottom',
+      'auto-adjust-overflow': 'false',
+      offset: '16',
+    })
+    stubRect(el.querySelector('button')!, {
+      left: 400,
+      top: 300,
+      width: 80,
+      height: 32,
+    })
     stubPanelRect(panelOf(el), 200, 100)
     setViewport(1280, 800)
     el.setAttribute('open', '')
@@ -894,8 +1047,17 @@ describe('OASPopover 宽度（width）与偏移（offset 双轴）', () => {
   })
 
   it('offset="12, 20"：主轴 12 + 交叉轴 skid 20（bottom → 面板右移 20）', () => {
-    const el = mount({ placement: 'bottom', 'auto-adjust-overflow': 'false', offset: '12, 20' })
-    stubRect(el.querySelector('button')!, { left: 400, top: 300, width: 80, height: 32 })
+    const el = mount({
+      placement: 'bottom',
+      'auto-adjust-overflow': 'false',
+      offset: '12, 20',
+    })
+    stubRect(el.querySelector('button')!, {
+      left: 400,
+      top: 300,
+      width: 80,
+      height: 32,
+    })
     stubPanelRect(panelOf(el), 200, 100)
     setViewport(1280, 800)
     el.setAttribute('open', '')
@@ -904,8 +1066,17 @@ describe('OASPopover 宽度（width）与偏移（offset 双轴）', () => {
   })
 
   it('offset="12, 20"：right placement 交叉轴 skid 向下', () => {
-    const el = mount({ placement: 'right', 'auto-adjust-overflow': 'false', offset: '12, 20' })
-    stubRect(el.querySelector('button')!, { left: 400, top: 300, width: 80, height: 32 })
+    const el = mount({
+      placement: 'right',
+      'auto-adjust-overflow': 'false',
+      offset: '12, 20',
+    })
+    stubRect(el.querySelector('button')!, {
+      left: 400,
+      top: 300,
+      width: 80,
+      height: 32,
+    })
     stubPanelRect(panelOf(el), 200, 100)
     setViewport(1280, 800)
     el.setAttribute('open', '')
@@ -978,7 +1149,10 @@ describe('OASPopover 初始焦点（initial-focus）', () => {
   afterEach(() => unmountAll())
 
   it('initial-focus：打开时焦点移入指定选择器元素（优先于 focus-on-open）', () => {
-    const el = mount({ 'focus-on-open': '', 'initial-focus': '#pop-focus-target' })
+    const el = mount({
+      'focus-on-open': '',
+      'initial-focus': '#pop-focus-target',
+    })
     const target = document.createElement('button')
     target.id = 'pop-focus-target'
     target.setAttribute('slot', 'content')
@@ -988,7 +1162,10 @@ describe('OASPopover 初始焦点（initial-focus）', () => {
   })
 
   it('initial-focus 解析不到时回落 focus-on-open 首个可聚焦', () => {
-    const el = mount({ 'focus-on-open': '', 'initial-focus': '#pop-nonexistent' })
+    const el = mount({
+      'focus-on-open': '',
+      'initial-focus': '#pop-nonexistent',
+    })
     const inner = document.createElement('button')
     inner.setAttribute('slot', 'content')
     el.appendChild(inner)
@@ -1110,7 +1287,11 @@ describe('OASPopover 碰撞细调（collision-padding / fallback-placements / hi
   afterEach(() => unmountAll())
 
   it('collision-padding：视口夹取边距可配（默认 4）', () => {
-    const el = mount({ open: '', placement: 'bottom', 'collision-padding': '20' })
+    const el = mount({
+      open: '',
+      placement: 'bottom',
+      'collision-padding': '20',
+    })
     const p = panelOf(el)
     stubPanelRect(p, 200, 60)
     const btn = el.querySelector('button')!
@@ -1152,7 +1333,11 @@ describe('OASPopover 碰撞细调（collision-padding / fallback-placements / hi
   })
 
   it('hide-when-detached：锚点完全脱离视口时面板隐藏', () => {
-    const el = mount({ open: '', 'hide-when-detached': '', placement: 'bottom' })
+    const el = mount({
+      open: '',
+      'hide-when-detached': '',
+      placement: 'bottom',
+    })
     const p = panelOf(el)
     stubPanelRect(p, 200, 60)
     const btn = el.querySelector('button')!
@@ -1163,7 +1348,11 @@ describe('OASPopover 碰撞细调（collision-padding / fallback-placements / hi
   })
 
   it('hide-when-detached：锚点在视口内正常显示', () => {
-    const el = mount({ open: '', 'hide-when-detached': '', placement: 'bottom' })
+    const el = mount({
+      open: '',
+      'hide-when-detached': '',
+      placement: 'bottom',
+    })
     const p = panelOf(el)
     stubPanelRect(p, 200, 60)
     const btn = el.querySelector('button')!
@@ -1307,7 +1496,13 @@ describe('OASPopover modal 化', () => {
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }))
     expect(document.activeElement).toBe(a)
     a.focus()
-    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', shiftKey: true, bubbles: true }))
+    document.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        key: 'Tab',
+        shiftKey: true,
+        bubbles: true,
+      }),
+    )
     expect(document.activeElement).toBe(b)
   })
 
@@ -1410,7 +1605,11 @@ describe('OASPopover fresh / auto-close / arrow-merge', () => {
   }
 
   it('arrow-merge：面板写 data-arrow-merge，center placement 不触发贴角规则（仅 -start/-end 生效）', () => {
-    const el = mount({ open: '', placement: 'bottom-start', 'arrow-merge': '' })
+    const el = mount({
+      open: '',
+      placement: 'bottom-start',
+      'arrow-merge': '',
+    })
     expect(panelOf(el).hasAttribute('data-arrow-merge')).toBe(true)
     const css = mergeCss(el)
     expect(css).toMatch(/\[data-placement='bottom-start'\]\[data-arrow-merge\]/)
@@ -1504,7 +1703,14 @@ describe('OASPopover fresh / auto-close / arrow-merge', () => {
     // 每向：clip-path 顶点（盒内 8×8 百分比坐标）→ 面板角点位于盒的哪个角 + 三角朝向
     // corner: 面板角点在箭头盒内的位置；edge: 贴边腿顶点相对角点的位移（沿面板边向内 8px，
     // 该腿与面板真实边段共边）；tip: 尖端相对角点的正交位移 8px（指向锚点侧）
-    const geom: Record<string, { corner: [number, number]; edge: [number, number]; tip: [number, number] }> = {
+    const geom: Record<
+      string,
+      {
+        corner: [number, number]
+        edge: [number, number]
+        tip: [number, number]
+      }
+    > = {
       // bottom 系：盒悬顶边上方 → 角点在盒底边；start 贴左（贴边腿向右）、end 贴右（向左）；尖端朝上
       'bottom-start': { corner: [0, 8], edge: [8, 0], tip: [0, -8] },
       'bottom-end': { corner: [8, 8], edge: [-8, 0], tip: [0, -8] },
@@ -1850,17 +2056,41 @@ describe('OASPopover P2 trigger-keys 默认 Enter/Space', () => {
   it('未设置 trigger-keys：div 锚点 Enter / Space 默认切换开合', () => {
     const el = mountDivAnchor()
     const div = el.querySelector('div')!
-    div.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }))
+    div.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        key: 'Enter',
+        bubbles: true,
+        cancelable: true,
+      }),
+    )
     expect(el.hasAttribute('open')).toBe(true)
-    div.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }))
+    div.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        key: 'Enter',
+        bubbles: true,
+        cancelable: true,
+      }),
+    )
     expect(el.hasAttribute('open')).toBe(false)
-    div.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', bubbles: true, cancelable: true }))
+    div.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        key: ' ',
+        bubbles: true,
+        cancelable: true,
+      }),
+    )
     expect(el.hasAttribute('open')).toBe(true)
   })
 
   it('未设置 trigger-keys：非 Enter/Space 按键不响应', () => {
     const el = mountDivAnchor()
-    el.querySelector('div')!.dispatchEvent(new KeyboardEvent('keydown', { key: 'a', bubbles: true, cancelable: true }))
+    el.querySelector('div')!.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        key: 'a',
+        bubbles: true,
+        cancelable: true,
+      }),
+    )
     expect(el.hasAttribute('open')).toBe(false)
   })
 
@@ -1869,12 +2099,24 @@ describe('OASPopover P2 trigger-keys 默认 Enter/Space', () => {
     const btn = el.querySelector('button')!
     // 模拟浏览器对 button Enter 的完整派发序列：keydown（preventDefault + toggle）→ 合成 click。
     // 守卫：keydown 已切换（open=true），随后同一次按键的合成 click 在时间窗内被吞没，不闪断
-    btn.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }))
+    btn.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        key: 'Enter',
+        bubbles: true,
+        cancelable: true,
+      }),
+    )
     expect(el.hasAttribute('open')).toBe(true)
     btn.click() // 同一次按键的合成 click → 吞没
     expect(el.hasAttribute('open')).toBe(true)
     // 第二轮：关闭方向同样单次切换
-    btn.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }))
+    btn.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        key: 'Enter',
+        bubbles: true,
+        cancelable: true,
+      }),
+    )
     expect(el.hasAttribute('open')).toBe(false)
     btn.click()
     expect(el.hasAttribute('open')).toBe(false)
@@ -1883,7 +2125,13 @@ describe('OASPopover P2 trigger-keys 默认 Enter/Space', () => {
   it('幂等守卫：Space 在 button 上同样单次切换（合成 click 吞没）', () => {
     const el = mount()
     const btn = el.querySelector('button')!
-    btn.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', bubbles: true, cancelable: true }))
+    btn.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        key: ' ',
+        bubbles: true,
+        cancelable: true,
+      }),
+    )
     expect(el.hasAttribute('open')).toBe(true)
     btn.click()
     expect(el.hasAttribute('open')).toBe(true)
@@ -1892,7 +2140,13 @@ describe('OASPopover P2 trigger-keys 默认 Enter/Space', () => {
   it('时间窗外的独立 click 正常切换（守卫不误伤）', () => {
     const el = mount()
     const btn = el.querySelector('button')!
-    btn.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }))
+    btn.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        key: 'Enter',
+        bubbles: true,
+        cancelable: true,
+      }),
+    )
     expect(el.hasAttribute('open')).toBe(true)
     // 模拟时间窗外的一次全新 click（真实用户隔 350ms+ 的再次点击）
     ;(el as unknown as Record<string, number>).lastKeydownToggle = -1e6
@@ -1904,29 +2158,67 @@ describe('OASPopover P2 trigger-keys 默认 Enter/Space', () => {
     const el = mount({ trigger: 'manual' })
     // trigger=manual：鼠标路径全关，但 trigger-keys 键盘路径仍可用（与现状语义一致）
     const btn = el.querySelector('button')!
-    btn.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }))
+    btn.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        key: 'Enter',
+        bubbles: true,
+        cancelable: true,
+      }),
+    )
     expect(el.hasAttribute('open')).toBe(true)
   })
 
   it('按键重复（e.repeat）不重复触发', () => {
     const el = mountDivAnchor()
     const div = el.querySelector('div')!
-    div.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true, repeat: true }))
+    div.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        key: 'Enter',
+        bubbles: true,
+        cancelable: true,
+        repeat: true,
+      }),
+    )
     // repeat 的第一次 keydown 视为持续按住的重复事件，不触发
     expect(el.hasAttribute('open')).toBe(false)
-    div.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }))
+    div.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        key: 'Enter',
+        bubbles: true,
+        cancelable: true,
+      }),
+    )
     expect(el.hasAttribute('open')).toBe(true)
     // 按住不放的后续 repeat 不把面板关掉
-    div.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true, repeat: true }))
+    div.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        key: 'Enter',
+        bubbles: true,
+        cancelable: true,
+        repeat: true,
+      }),
+    )
     expect(el.hasAttribute('open')).toBe(true)
   })
 
   it('trigger-keys 可覆盖默认（设置后只响应指定键）', () => {
     const el = mountDivAnchor({ 'trigger-keys': 'F2' })
     const div = el.querySelector('div')!
-    div.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }))
+    div.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        key: 'Enter',
+        bubbles: true,
+        cancelable: true,
+      }),
+    )
     expect(el.hasAttribute('open')).toBe(false)
-    div.dispatchEvent(new KeyboardEvent('keydown', { key: 'F2', bubbles: true, cancelable: true }))
+    div.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        key: 'F2',
+        bubbles: true,
+        cancelable: true,
+      }),
+    )
     expect(el.hasAttribute('open')).toBe(true)
   })
 })
@@ -1950,7 +2242,13 @@ describe('OASPopover P3 trap-focus 独立开关', () => {
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }))
     expect(document.activeElement).toBe(a)
     a.focus()
-    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', shiftKey: true, bubbles: true }))
+    document.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        key: 'Tab',
+        shiftKey: true,
+        bubbles: true,
+      }),
+    )
     expect(document.activeElement).toBe(b)
     expect(el.shadowRoot!.querySelector('.backdrop')!.classList.contains('oas-show')).toBe(false)
   })
@@ -2212,7 +2510,12 @@ describe('OASPopover P9 available-height / P10 scrollable', () => {
     const el = mount({ open: '', 'available-height': '', placement: 'bottom' })
     const p = panelOf(el)
     stubPanelRect(p, 200, 60)
-    stubRect(el.querySelector('button')!, { left: 400, top: 300, width: 80, height: 32 })
+    stubRect(el.querySelector('button')!, {
+      left: 400,
+      top: 300,
+      width: 80,
+      height: 32,
+    })
     setViewport(1280, 800)
     el.setAttribute('content', 'x')
     // 底部剩余：800 - (300+32) - 8(gap) - 4(pad) = 456
@@ -2223,7 +2526,12 @@ describe('OASPopover P9 available-height / P10 scrollable', () => {
     const el = mount({ open: '', 'available-height': '', placement: 'top' })
     const p = panelOf(el)
     stubPanelRect(p, 200, 60)
-    stubRect(el.querySelector('button')!, { left: 400, top: 300, width: 80, height: 32 })
+    stubRect(el.querySelector('button')!, {
+      left: 400,
+      top: 300,
+      width: 80,
+      height: 32,
+    })
     setViewport(1280, 800)
     el.setAttribute('content', 'x')
     // 上方剩余：300 - 8 - 4 = 288
@@ -2234,7 +2542,12 @@ describe('OASPopover P9 available-height / P10 scrollable', () => {
     const el = mount({ open: '', placement: 'bottom' })
     const p = panelOf(el)
     stubPanelRect(p, 200, 60)
-    stubRect(el.querySelector('button')!, { left: 400, top: 300, width: 80, height: 32 })
+    stubRect(el.querySelector('button')!, {
+      left: 400,
+      top: 300,
+      width: 80,
+      height: 32,
+    })
     setViewport(1280, 800)
     el.setAttribute('content', 'x')
     expect(p.style.maxHeight).toBe('')
@@ -2252,7 +2565,12 @@ describe('OASPopover P9 available-height / P10 scrollable', () => {
     const el = mount({ open: '', scrollable: '', placement: 'bottom' })
     const p = panelOf(el)
     stubPanelRect(p, 200, 60)
-    stubRect(el.querySelector('button')!, { left: 400, top: 300, width: 80, height: 32 })
+    stubRect(el.querySelector('button')!, {
+      left: 400,
+      top: 300,
+      width: 80,
+      height: 32,
+    })
     setViewport(1280, 800)
     el.setAttribute('content', 'x')
     expect(p.style.maxHeight).toBe('456px')
@@ -2352,7 +2670,12 @@ describe('OASPopover P14 close-on-scroll', () => {
     const el = mount({ open: '', 'close-on-scroll': '', placement: 'bottom' })
     const p = panelOf(el)
     stubPanelRect(p, 200, 60)
-    stubRect(el.querySelector('button')!, { left: 400, top: 300, width: 80, height: 32 })
+    stubRect(el.querySelector('button')!, {
+      left: 400,
+      top: 300,
+      width: 80,
+      height: 32,
+    })
     setViewport(1280, 800)
     el.setAttribute('content', 'x')
     setScrollY(300)
@@ -2365,7 +2688,12 @@ describe('OASPopover P14 close-on-scroll', () => {
     const el = mount({ open: '', placement: 'bottom' })
     const p = panelOf(el)
     stubPanelRect(p, 200, 60)
-    stubRect(el.querySelector('button')!, { left: 400, top: 300, width: 80, height: 32 })
+    stubRect(el.querySelector('button')!, {
+      left: 400,
+      top: 300,
+      width: 80,
+      height: 32,
+    })
     setViewport(1280, 800)
     el.setAttribute('content', 'x')
     setScrollY(300)
@@ -2422,11 +2750,21 @@ describe('OASPopover P18 sticky（关闭位粘滞三档）', () => {
     const el = mount({ open: '', placement: 'bottom' })
     const p = panelOf(el)
     stubPanelRect(p, 200, 60)
-    stubRect(el.querySelector('button')!, { left: 400, top: 300, width: 80, height: 32 })
+    stubRect(el.querySelector('button')!, {
+      left: 400,
+      top: 300,
+      width: 80,
+      height: 32,
+    })
     setViewport(1280, 800)
     el.setAttribute('content', 'x')
     expect(p.style.top).toBe('340px')
-    stubRect(el.querySelector('button')!, { left: 400, top: 250, width: 80, height: 32 })
+    stubRect(el.querySelector('button')!, {
+      left: 400,
+      top: 250,
+      width: 80,
+      height: 32,
+    })
     setScrollY(300)
     window.dispatchEvent(new Event('scroll'))
     await new Promise((resolve) => requestAnimationFrame(() => resolve(undefined)))
@@ -2437,11 +2775,21 @@ describe('OASPopover P18 sticky（关闭位粘滞三档）', () => {
     const el = mount({ open: '', sticky: 'off', placement: 'bottom' })
     const p = panelOf(el)
     stubPanelRect(p, 200, 60)
-    stubRect(el.querySelector('button')!, { left: 400, top: 300, width: 80, height: 32 })
+    stubRect(el.querySelector('button')!, {
+      left: 400,
+      top: 300,
+      width: 80,
+      height: 32,
+    })
     setViewport(1280, 800)
     el.setAttribute('content', 'x')
     expect(p.style.top).toBe('340px')
-    stubRect(el.querySelector('button')!, { left: 400, top: 250, width: 80, height: 32 })
+    stubRect(el.querySelector('button')!, {
+      left: 400,
+      top: 250,
+      width: 80,
+      height: 32,
+    })
     setScrollY(300)
     window.dispatchEvent(new Event('scroll'))
     await new Promise((resolve) => requestAnimationFrame(() => resolve(undefined)))
@@ -2452,12 +2800,22 @@ describe('OASPopover P18 sticky（关闭位粘滞三档）', () => {
     const el = mount({ open: '', sticky: 'always', placement: 'bottom' })
     const p = panelOf(el)
     stubPanelRect(p, 200, 60)
-    stubRect(el.querySelector('button')!, { left: 400, top: 300, width: 80, height: 32 })
+    stubRect(el.querySelector('button')!, {
+      left: 400,
+      top: 300,
+      width: 80,
+      height: 32,
+    })
     setViewport(1280, 800)
     el.setAttribute('content', 'x')
     expect(p.style.top).toBe('340px')
     // 锚点滚出视口底：面板贴视口（clamp 到 800-60-4=736 内）
-    stubRect(el.querySelector('button')!, { left: 400, top: 900, width: 80, height: 32 })
+    stubRect(el.querySelector('button')!, {
+      left: 400,
+      top: 900,
+      width: 80,
+      height: 32,
+    })
     setScrollY(300)
     window.dispatchEvent(new Event('scroll'))
     await new Promise((resolve) => requestAnimationFrame(() => resolve(undefined)))
@@ -2466,13 +2824,28 @@ describe('OASPopover P18 sticky（关闭位粘滞三档）', () => {
   })
 
   it('sticky="always" + hide-when-detached：always 优先，锚点滚出不隐藏', async () => {
-    const el = mount({ open: '', sticky: 'always', 'hide-when-detached': '', placement: 'bottom' })
+    const el = mount({
+      open: '',
+      sticky: 'always',
+      'hide-when-detached': '',
+      placement: 'bottom',
+    })
     const p = panelOf(el)
     stubPanelRect(p, 200, 60)
-    stubRect(el.querySelector('button')!, { left: 400, top: 300, width: 80, height: 32 })
+    stubRect(el.querySelector('button')!, {
+      left: 400,
+      top: 300,
+      width: 80,
+      height: 32,
+    })
     setViewport(1280, 800)
     el.setAttribute('content', 'x')
-    stubRect(el.querySelector('button')!, { left: 400, top: 900, width: 80, height: 32 })
+    stubRect(el.querySelector('button')!, {
+      left: 400,
+      top: 900,
+      width: 80,
+      height: 32,
+    })
     setScrollY(300)
     window.dispatchEvent(new Event('scroll'))
     await new Promise((resolve) => requestAnimationFrame(() => resolve(undefined)))
@@ -2483,7 +2856,12 @@ describe('OASPopover P18 sticky（关闭位粘滞三档）', () => {
     const el = mount({ sticky: 'always', placement: 'bottom' })
     const p = panelOf(el)
     stubPanelRect(p, 200, 60)
-    stubRect(el.querySelector('button')!, { left: 400, top: 900, width: 80, height: 32 })
+    stubRect(el.querySelector('button')!, {
+      left: 400,
+      top: 900,
+      width: 80,
+      height: 32,
+    })
     setViewport(1280, 800)
     el.setAttribute('open', '')
     expect(p.hidden).toBe(false)
@@ -2501,7 +2879,12 @@ describe('OASPopover P20 contextmenu 光标定位 + 触屏长按', () => {
     const el = mount({ trigger: 'contextmenu', placement: 'right' })
     const p = panelOf(el)
     stubPanelRect(p, 200, 60)
-    stubRect(el.querySelector('button')!, { left: 400, top: 300, width: 80, height: 32 })
+    stubRect(el.querySelector('button')!, {
+      left: 400,
+      top: 300,
+      width: 80,
+      height: 32,
+    })
     setViewport(1280, 800)
     el.querySelector('button')!.dispatchEvent(
       new MouseEvent('contextmenu', {
@@ -2547,7 +2930,12 @@ describe('OASPopover P20 contextmenu 光标定位 + 触屏长按', () => {
     const el = mount({ placement: 'right' })
     const p = panelOf(el)
     stubPanelRect(p, 200, 60)
-    stubRect(el.querySelector('button')!, { left: 400, top: 300, width: 80, height: 32 })
+    stubRect(el.querySelector('button')!, {
+      left: 400,
+      top: 300,
+      width: 80,
+      height: 32,
+    })
     setViewport(1280, 800)
     el.querySelector('button')!.click()
     expect(p.style.left).toBe('488px')
@@ -2560,7 +2948,12 @@ describe('OASPopover P20 contextmenu 光标定位 + 触屏长按', () => {
     const el = mount({ trigger: 'contextmenu', placement: 'right' })
     const p = panelOf(el)
     stubPanelRect(p, 200, 60)
-    stubRect(el.querySelector('button')!, { left: 400, top: 300, width: 80, height: 32 })
+    stubRect(el.querySelector('button')!, {
+      left: 400,
+      top: 300,
+      width: 80,
+      height: 32,
+    })
     setViewport(1280, 800)
     el.querySelector('button')!.dispatchEvent(
       new MouseEvent('contextmenu', {
@@ -2582,7 +2975,12 @@ describe('OASPopover P20 contextmenu 光标定位 + 触屏长按', () => {
     const el = mount({ trigger: 'contextmenu', placement: 'right' })
     const p = panelOf(el)
     stubPanelRect(p, 200, 60)
-    stubRect(el.querySelector('button')!, { left: 400, top: 300, width: 80, height: 32 })
+    stubRect(el.querySelector('button')!, {
+      left: 400,
+      top: 300,
+      width: 80,
+      height: 32,
+    })
     setViewport(1280, 800)
     const btn = el.querySelector('button')!
     btn.dispatchEvent(touchEvent('touchstart', [{ clientX: 300, clientY: 120 }]))
@@ -2672,13 +3070,23 @@ describe('OASPopover P21 dismiss-on-select', () => {
   })
 
   it('dismiss-on-select：面板 shadow 内点击（含关闭按钮）也走 dismiss 汇聚', () => {
-    const el = mount({ open: '', 'dismiss-on-select': '', closable: '', title: 'x' })
+    const el = mount({
+      open: '',
+      'dismiss-on-select': '',
+      closable: '',
+      title: 'x',
+    })
     el.shadowRoot!.querySelector<HTMLButtonElement>('[part="close"]')!.click()
     expect(el.hasAttribute('open')).toBe(false)
   })
 
   it('关闭按钮在 dismiss-on-select 下照常关闭（幂等）', () => {
-    const el = mount({ open: '', 'dismiss-on-select': '', closable: '', title: 'x' })
+    const el = mount({
+      open: '',
+      'dismiss-on-select': '',
+      closable: '',
+      title: 'x',
+    })
     el.shadowRoot!.querySelector<HTMLButtonElement>('[part="close"]')!.click()
     expect(el.hasAttribute('open')).toBe(false)
   })
@@ -2708,7 +3116,11 @@ describe('OASPopover P22 destroy-on-hide（关闭后销毁内容）', () => {
   })
 
   it('重开后内容重新挂载（slot 分配恢复、content 属性文本重写）', async () => {
-    const el = mount({ 'destroy-on-hide': '', title: 'T', content: '文本内容' })
+    const el = mount({
+      'destroy-on-hide': '',
+      title: 'T',
+      content: '文本内容',
+    })
     const inner = document.createElement('button')
     inner.setAttribute('slot', 'content')
     inner.textContent = '面板按钮'
@@ -2741,7 +3153,12 @@ describe('OASPopover P23 breakpoints（断点响应）', () => {
     const el = mount({ open: '', placement: 'bottom md:right' })
     const p = panelOf(el)
     stubPanelRect(p, 200, 60)
-    stubRect(el.querySelector('button')!, { left: 400, top: 300, width: 80, height: 32 })
+    stubRect(el.querySelector('button')!, {
+      left: 400,
+      top: 300,
+      width: 80,
+      height: 32,
+    })
     setViewport(700, 800) // < 768
     el.setAttribute('content', 'x')
     expect(p.getAttribute('data-placement')).toBe('bottom')
@@ -2754,7 +3171,12 @@ describe('OASPopover P23 breakpoints（断点响应）', () => {
     const el = mount({ open: '', placement: 'bottom sm:right xl:top' })
     const p = panelOf(el)
     stubPanelRect(p, 200, 60)
-    stubRect(el.querySelector('button')!, { left: 400, top: 300, width: 80, height: 32 })
+    stubRect(el.querySelector('button')!, {
+      left: 400,
+      top: 300,
+      width: 80,
+      height: 32,
+    })
     setViewport(700, 800) // 命中 sm
     el.setAttribute('content', 'x')
     expect(p.getAttribute('data-placement')).toBe('right')
@@ -2777,7 +3199,12 @@ describe('OASPopover P23 breakpoints（断点响应）', () => {
     const el = mount({ open: '', placement: 'bottom xx:right' })
     const p = panelOf(el)
     stubPanelRect(p, 200, 60)
-    stubRect(el.querySelector('button')!, { left: 400, top: 300, width: 80, height: 32 })
+    stubRect(el.querySelector('button')!, {
+      left: 400,
+      top: 300,
+      width: 80,
+      height: 32,
+    })
     setViewport(1400, 800)
     el.setAttribute('content', 'x')
     expect(p.getAttribute('data-placement')).toBe('bottom')
@@ -2849,7 +3276,11 @@ describe('OASPopover P25 render-panel（无触发纯面板）', () => {
     document.body.appendChild(el)
     mounted.push(el)
     el.querySelector('button')!.dispatchEvent(
-      new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }),
+      new KeyboardEvent('keydown', {
+        key: 'Enter',
+        bubbles: true,
+        cancelable: true,
+      }),
     )
     expect(el.hasAttribute('open')).toBe(false)
   })
@@ -2886,7 +3317,12 @@ describe('触屏降级（P3）：coarse pointer 下 trigger 含 hover 回落 tap
   /** mock 触屏环境（pointer: coarse；addEventListener 兜底防 contextmenu 能力断点监听炸） */
   function mockCoarsePointer(): void {
     vi.spyOn(window, 'matchMedia').mockImplementation(
-      () => ({ matches: true, addEventListener() {}, removeEventListener() {} }) as unknown as MediaQueryList,
+      () =>
+        ({
+          matches: true,
+          addEventListener() {},
+          removeEventListener() {},
+        }) as unknown as MediaQueryList,
     )
   }
 
@@ -2944,7 +3380,11 @@ describe('触屏降级（P3）：coarse pointer 下 trigger 含 hover 回落 tap
 
   it('coarse：触屏长按（long-press-delay）打开后抬手的 click 不立即关闭', async () => {
     mockCoarsePointer()
-    const el = mount({ trigger: 'contextmenu hover', 'long-press-delay': '20', title: 'x' })
+    const el = mount({
+      trigger: 'contextmenu hover',
+      'long-press-delay': '20',
+      title: 'x',
+    })
     const btn = el.querySelector('button')!
     btn.dispatchEvent(touchEvent('touchstart', [{ clientX: 100, clientY: 100 }]))
     await sleep(60) // 超过 long-press-delay=20，长按到点打开
@@ -3070,9 +3510,19 @@ describe('OASPopover 断开重连（打开态）', () => {
   })
 
   it('重连后滚动跟随重挂（close-on-scroll 仍能关闭）', async () => {
-    const el = mount({ open: '', 'close-on-scroll': '', title: 'x', placement: 'bottom' })
+    const el = mount({
+      open: '',
+      'close-on-scroll': '',
+      title: 'x',
+      placement: 'bottom',
+    })
     stubPanelRect(panelOf(el), 200, 60)
-    stubRect(el.querySelector('button')!, { left: 400, top: 300, width: 80, height: 32 })
+    stubRect(el.querySelector('button')!, {
+      left: 400,
+      top: 300,
+      width: 80,
+      height: 32,
+    })
     setViewport(1280, 800)
     el.remove()
     document.body.appendChild(el)
@@ -3092,7 +3542,11 @@ describe('OASPopover 断开重连（打开态）', () => {
     el.remove()
     document.body.appendChild(el)
     outside.focus()
-    const ev = new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true })
+    const ev = new KeyboardEvent('keydown', {
+      key: 'Tab',
+      bubbles: true,
+      cancelable: true,
+    })
     document.dispatchEvent(ev)
     const inner = el.querySelector<HTMLElement>('#pop-trap-in')!
     expect(ev.defaultPrevented, '焦点在面板外时 Tab 应被拦截').toBe(true)

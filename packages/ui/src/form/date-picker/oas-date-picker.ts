@@ -717,6 +717,16 @@ const STYLE = `
 .picker .trigger.has-suffix {
   padding-inline-end: calc(var(--oas-space-8, 40px) + var(--oas-space-4));
 }
+
+@media (forced-colors: active) {
+  /* 强制色下 box-shadow 被 UA 弃用：焦点环回退系统色实线 outline（WCAG 2.4.7） */
+  .trigger:focus-visible,
+  .clear-btn:focus-visible {
+    outline: 1px solid CanvasText;
+    outline-offset: 1px;
+    box-shadow: none;
+  }
+}
 `
 
 interface RangeState {
@@ -1445,7 +1455,9 @@ export class OASDatePicker extends OASFormElement {
     i.readOnly = disabled || readonly || !this.isEditableType()
     const placeholder = this.getAttr('placeholder', this.t('datePicker.placeholder'))
     i.placeholder = placeholder
-    i.setAttribute('aria-label', placeholder)
+    // 内建命名回退（placeholder，缺省 = locale 的 datePicker.placeholder）：走基类通道，
+    // 外部 <label for> 已转发名称时让位（value property 赋值 / locale 切换都直调 update()）
+    this.setFallbackInnerLabel(placeholder)
     if (!this.typing) i.value = this.displayText()
     const clearBtn = this.shadow.querySelector<HTMLElement>('[part="clear"]')
     if (clearBtn) {

@@ -215,7 +215,12 @@ describe('OASSlider', () => {
     it('输入数字：防抖 300ms 后驱动滑块并夹取范围，输入框归一化', () => {
       vi.useFakeTimers()
       try {
-        const el = mount({ 'show-input': '', min: '0', max: '100', value: '20' })
+        const el = mount({
+          'show-input': '',
+          min: '0',
+          max: '100',
+          value: '20',
+        })
         const num = byRole(el, 'num')
         num.value = '120' // 越界
         num.dispatchEvent(new Event('input'))
@@ -335,7 +340,13 @@ describe('OASSlider', () => {
     it('范围输入越界：min 超过 max 时推着 max 走（约束范围）', () => {
       vi.useFakeTimers()
       try {
-        const el = mount({ range: '', 'show-input': '', min: '0', max: '100', value: '[20, 80]' })
+        const el = mount({
+          range: '',
+          'show-input': '',
+          min: '0',
+          max: '100',
+          value: '[20, 80]',
+        })
         const numMin = byRole(el, 'num-min')
         numMin.value = '120'
         numMin.dispatchEvent(new Event('input'))
@@ -385,7 +396,13 @@ describe('OASSlider', () => {
     })
 
     it('范围模式填充区镜像：左端为 hi 的位置', () => {
-      const el = mount({ range: '', reverse: '', value: '[20, 80]', min: '0', max: '100' })
+      const el = mount({
+        range: '',
+        reverse: '',
+        value: '[20, 80]',
+        min: '0',
+        max: '100',
+      })
       expect(fillEl(el).style.left).toBe('20%') // 100 - pct(hi=80)
       expect(fillEl(el).style.width).toBe('60%')
     })
@@ -612,7 +629,10 @@ describe('OASSlider', () => {
     }
 
     function pointer(wrap: HTMLElement, type: string, pointerId: number, clientY: number): PointerEvent {
-      const e = new Event(type, { cancelable: true, bubbles: true }) as PointerEvent
+      const e = new Event(type, {
+        cancelable: true,
+        bubbles: true,
+      }) as PointerEvent
       Object.assign(e, { pointerId, clientY })
       wrap.dispatchEvent(e)
       return e
@@ -718,7 +738,11 @@ describe('OASSlider', () => {
     }
 
     it('format 模板串：${value} 占位替换进气泡与 aria-valuetext', () => {
-      const el = mount({ 'show-tooltip': '', format: '${value}%', value: '40' })
+      const el = mount({
+        'show-tooltip': '',
+        format: '${value}%',
+        value: '40',
+      })
       expect(tipOf(el, 'value').textContent).toBe('40%')
       expect(range(el).getAttribute('aria-valuetext')).toBe('40%')
     })
@@ -736,7 +760,11 @@ describe('OASSlider', () => {
     })
 
     it('formatTooltip 优先于 format 模板串；置 null 清除回落裸数字', () => {
-      const el = mount({ 'show-tooltip': '', format: '${value}%', value: '40' })
+      const el = mount({
+        'show-tooltip': '',
+        format: '${value}%',
+        value: '40',
+      })
       el.formatTooltip = (v) => `${v} 元`
       expect(tipOf(el, 'value').textContent).toBe('40 元')
       el.formatTooltip = null
@@ -802,7 +830,11 @@ describe('OASSlider', () => {
 
   describe('step="mark" 仅刻度值约束', () => {
     it('原生 input step 设为 any（吸附由组件接管）', () => {
-      const el = mount({ step: 'mark', marks: JSON.stringify([0, 26, 60]), value: '26' })
+      const el = mount({
+        step: 'mark',
+        marks: JSON.stringify([0, 26, 60]),
+        value: '26',
+      })
       expect(range(el).step).toBe('any')
     })
 
@@ -868,9 +900,21 @@ describe('OASSlider', () => {
         value: '26',
       })
       const input = range(el)
-      input.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true, cancelable: true }))
+      input.dispatchEvent(
+        new KeyboardEvent('keydown', {
+          key: 'ArrowRight',
+          bubbles: true,
+          cancelable: true,
+        }),
+      )
       expect(Number(input.value)).toBe(60)
-      input.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true, cancelable: true }))
+      input.dispatchEvent(
+        new KeyboardEvent('keydown', {
+          key: 'ArrowLeft',
+          bubbles: true,
+          cancelable: true,
+        }),
+      )
       expect(Number(input.value)).toBe(26)
     })
 
@@ -883,16 +927,34 @@ describe('OASSlider', () => {
         value: '26',
       })
       const input = range(el)
-      input.dispatchEvent(new KeyboardEvent('keydown', { key: 'End', bubbles: true, cancelable: true }))
+      input.dispatchEvent(
+        new KeyboardEvent('keydown', {
+          key: 'End',
+          bubbles: true,
+          cancelable: true,
+        }),
+      )
       expect(Number(input.value)).toBe(100)
-      input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Home', bubbles: true, cancelable: true }))
+      input.dispatchEvent(
+        new KeyboardEvent('keydown', {
+          key: 'Home',
+          bubbles: true,
+          cancelable: true,
+        }),
+      )
       expect(Number(input.value)).toBe(0)
     })
   })
 
   describe('show-stops 刻度点', () => {
     it('按 step 渲染刻度点（无标签节点）', () => {
-      const el = mount({ 'show-stops': '', min: '0', max: '100', step: '20', value: '50' })
+      const el = mount({
+        'show-stops': '',
+        min: '0',
+        max: '100',
+        step: '20',
+        value: '50',
+      })
       expect(marksEl(el).hidden).toBe(false)
       const items = markItems(el)
       expect(items).toHaveLength(6)
@@ -901,7 +963,13 @@ describe('OASSlider', () => {
     })
 
     it('stops 点经过高亮跟随当前值', () => {
-      const el = mount({ 'show-stops': '', min: '0', max: '100', step: '25', value: '30' })
+      const el = mount({
+        'show-stops': '',
+        min: '0',
+        max: '100',
+        step: '25',
+        value: '30',
+      })
       expect(markItems(el).map((n) => n.getAttribute('data-passed'))).toEqual([
         'true',
         'true',
@@ -934,28 +1002,49 @@ describe('OASSlider', () => {
     })
 
     it('vertical 模式 stops 换 top 轴（min 在下 → 0 刻度在底部）', () => {
-      const el = mount({ vertical: '', 'show-stops': '', min: '0', max: '100', step: '50' })
+      const el = mount({
+        vertical: '',
+        'show-stops': '',
+        min: '0',
+        max: '100',
+        step: '50',
+      })
       expect(markItems(el).map((n) => n.style.top)).toEqual(['100%', '50%', '0%'])
     })
   })
 
   describe('start-point 填充起点', () => {
     it('单值填充从起点向当前值延伸（温度计中点起）', () => {
-      const el = mount({ 'start-point': '0', min: '-100', max: '100', value: '40' })
+      const el = mount({
+        'start-point': '0',
+        min: '-100',
+        max: '100',
+        value: '40',
+      })
       const fill = fillEl(el)
       expect(fill.style.left).toBe('50%')
       expect(fill.style.width).toBe('20%')
     })
 
     it('值小于起点时向左延伸', () => {
-      const el = mount({ 'start-point': '0', min: '-100', max: '100', value: '-40' })
+      const el = mount({
+        'start-point': '0',
+        min: '-100',
+        max: '100',
+        value: '-40',
+      })
       const fill = fillEl(el)
       expect(fill.style.left).toBe('30%')
       expect(fill.style.width).toBe('20%')
     })
 
     it('start-point 越界夹取到 [min, max]', () => {
-      const el = mount({ 'start-point': '500', min: '0', max: '100', value: '40' })
+      const el = mount({
+        'start-point': '500',
+        min: '0',
+        max: '100',
+        value: '40',
+      })
       expect(fillEl(el).style.left).toBe('40%')
       expect(fillEl(el).style.width).toBe('60%')
     })
@@ -985,7 +1074,12 @@ describe('OASSlider', () => {
     })
 
     it('非法 start-point 视为未设置（从 min 填充）', () => {
-      const el = mount({ 'start-point': 'abc', min: '0', max: '100', value: '40' })
+      const el = mount({
+        'start-point': 'abc',
+        min: '0',
+        max: '100',
+        value: '40',
+      })
       expect(fillEl(el).style.left).toBe('0%')
       expect(fillEl(el).style.width).toBe('40%')
     })
@@ -1063,7 +1157,11 @@ describe('OASSlider', () => {
       let events = 0
       el.addEventListener('oas-input', () => events++)
       el.addEventListener('oas-change', () => events++)
-      const e = new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true, cancelable: true })
+      const e = new KeyboardEvent('keydown', {
+        key: 'ArrowRight',
+        bubbles: true,
+        cancelable: true,
+      })
       input.dispatchEvent(e)
       expect(e.defaultPrevented).toBe(true)
       expect(Number(input.value)).toBe(40)
@@ -1084,7 +1182,11 @@ describe('OASSlider', () => {
 
   describe('键盘大步进', () => {
     function pressKey(el: OASSlider, role: string, init: KeyboardEventInit): KeyboardEvent {
-      const e = new KeyboardEvent('keydown', { bubbles: true, cancelable: true, ...init })
+      const e = new KeyboardEvent('keydown', {
+        bubbles: true,
+        cancelable: true,
+        ...init,
+      })
       byRole(el, role).dispatchEvent(e)
       return e
     }
@@ -1112,7 +1214,12 @@ describe('OASSlider', () => {
     })
 
     it('large-step 显式覆盖大步量', () => {
-      const el = mount({ value: '20', 'large-step': '25', min: '0', max: '100' })
+      const el = mount({
+        value: '20',
+        'large-step': '25',
+        min: '0',
+        max: '100',
+      })
       pressKey(el, 'range', { key: 'PageUp' })
       expect(Number(range(el).value)).toBe(45)
     })
@@ -1129,6 +1236,66 @@ describe('OASSlider', () => {
       const el = mount({ value: '50', min: '0', max: '100' })
       expect(pressKey(el, 'range', { key: 'ArrowRight' }).defaultPrevented).toBe(false)
       expect(pressKey(el, 'range', { key: 'Home' }).defaultPrevented).toBe(false)
+    })
+
+    // 回归（WebKit 实抓）：原生 range 在 dir=rtl 下不镜像方向键（ArrowRight 仍增值），
+    // Chromium/Gecko 镜像。视觉反转型（RTL / reverse）下普通箭头必须由组件接管，
+    // 否则同一组件在不同引擎给出相反的值方向。
+    it('dir=rtl 下普通 ArrowRight 由组件接管并向低值方向（视觉方向一致，跨引擎一致）', () => {
+      const el = mount({ dir: 'rtl', value: '50', min: '0', max: '100' })
+      const res = pressKey(el, 'range', { key: 'ArrowRight' })
+      expect(res.defaultPrevented, '视觉反转形态下普通方向键不再交给原生').toBe(true)
+      expect(Number(range(el).value), 'RTL：ArrowRight 视觉向右 = 值减小').toBe(49)
+      pressKey(el, 'range', { key: 'ArrowLeft' })
+      expect(Number(range(el).value), 'RTL：ArrowLeft 视觉向左 = 值增大').toBe(50)
+    })
+
+    it('reverse 属性下普通 ArrowRight 同样由组件接管（单向镜像）', () => {
+      const el = mount({ reverse: '', value: '50', min: '0', max: '100' })
+      expect(pressKey(el, 'range', { key: 'ArrowRight' }).defaultPrevented).toBe(true)
+      expect(Number(range(el).value)).toBe(49)
+      pressKey(el, 'range', { key: 'ArrowLeft' })
+      expect(Number(range(el).value)).toBe(50)
+    })
+
+    // 回归：视觉反转型曾把**所有** Arrow* 都取反，导致 Up/Down 在 RTL / reverse 下反向。
+    // 原生 range 三引擎约定：Up 恒增、Down 恒减（与书写方向无关），只有 Left/Right 随视觉镜像。
+    it('视觉反转型（RTL / reverse）下 Up 恒增、Down 恒减，只有 Left/Right 镜像', () => {
+      const rtl = mount({ dir: 'rtl', value: '50', min: '0', max: '100' })
+      expect(pressKey(rtl, 'range', { key: 'ArrowUp' }).defaultPrevented, '翻转形态由组件接管方向键').toBe(true)
+      expect(Number(range(rtl).value), 'RTL：ArrowUp 仍为增值').toBe(51)
+      pressKey(rtl, 'range', { key: 'ArrowDown' })
+      expect(Number(range(rtl).value), 'RTL：ArrowDown 仍为减值').toBe(50)
+
+      const rev = mount({ reverse: '', value: '50', min: '0', max: '100' })
+      pressKey(rev, 'range', { key: 'ArrowUp' })
+      expect(Number(range(rev).value), 'reverse：ArrowUp 仍为增值').toBe(51)
+      pressKey(rev, 'range', { key: 'ArrowDown' })
+      expect(Number(range(rev).value), 'reverse：ArrowDown 仍为减值').toBe(50)
+      pressKey(rev, 'range', { key: 'ArrowRight' })
+      expect(Number(range(rev).value), 'reverse：ArrowRight 镜像为减值').toBe(49)
+      pressKey(rev, 'range', { key: 'ArrowLeft' })
+      expect(Number(range(rev).value), 'reverse：ArrowLeft 镜像为增值').toBe(50)
+    })
+
+    it('vertical + reverse 下 Up/Down 保持值语义（PageUp/Down 也不随视觉翻转）', () => {
+      const el = mount({ vertical: '', reverse: '', value: '50', min: '0', max: '100' })
+      pressKey(el, 'range', { key: 'ArrowUp', shiftKey: true })
+      expect(Number(range(el).value), 'Up 大步恒增').toBe(60)
+      pressKey(el, 'range', { key: 'ArrowDown', shiftKey: true })
+      expect(Number(range(el).value), 'Down 大步恒减').toBe(50)
+      pressKey(el, 'range', { key: 'PageUp' })
+      expect(Number(range(el).value), 'PageUp 恒增').toBe(60)
+      pressKey(el, 'range', { key: 'PageDown' })
+      expect(Number(range(el).value), 'PageDown 恒减').toBe(50)
+    })
+
+    it('非翻转形态四个方向键全部保留原生（不 preventDefault 不改值）', () => {
+      const el = mount({ value: '50', min: '0', max: '100' })
+      for (const key of ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight']) {
+        expect(pressKey(el, 'range', { key }).defaultPrevented, `${key} 未反转形态交还原生`).toBe(false)
+      }
+      expect(Number(range(el).value), 'happy-dom 无原生步进，值保持不变（机制断言）').toBe(50)
     })
 
     it('reverse（rtl）下 ArrowRight 大步为减值', () => {
@@ -1179,20 +1346,38 @@ describe('OASSlider', () => {
 
     it('dir=rtl 时键盘大步方向镜像（Shift+ArrowRight 大步为减值），vertical 不受 RTL 影响', async () => {
       const press = (slider: OASSlider, role: string, init: KeyboardEventInit): void => {
-        byRole(slider, role).dispatchEvent(new KeyboardEvent('keydown', { bubbles: true, cancelable: true, ...init }))
+        byRole(slider, role).dispatchEvent(
+          new KeyboardEvent('keydown', {
+            bubbles: true,
+            cancelable: true,
+            ...init,
+          }),
+        )
       }
       const el = mount({ dir: 'rtl', value: '50', min: '0', max: '100' })
       await Promise.resolve()
       press(el, 'range', { key: 'ArrowRight', shiftKey: true })
       expect(Number(range(el).value)).toBe(40)
-      const v = mount({ dir: 'rtl', vertical: '', value: '50', min: '0', max: '100' })
+      const v = mount({
+        dir: 'rtl',
+        vertical: '',
+        value: '50',
+        min: '0',
+        max: '100',
+      })
       await Promise.resolve()
       press(v, 'range', { key: 'ArrowUp', shiftKey: true })
       expect(Number(range(v).value)).toBe(60)
     })
 
     it('marks 视觉位置随 RTL 镜像（值 0 的刻度在视觉右端 100%）', async () => {
-      const el = mount({ dir: 'rtl', value: '50', min: '0', max: '100', marks: JSON.stringify([0, 50, 100]) })
+      const el = mount({
+        dir: 'rtl',
+        value: '50',
+        min: '0',
+        max: '100',
+        marks: JSON.stringify([0, 50, 100]),
+      })
       await Promise.resolve()
       expect(markItems(el).map((n) => n.style.left)).toEqual(['100%', '50%', '0%'])
     })
@@ -1200,7 +1385,9 @@ describe('OASSlider', () => {
 
   describe('表单序列化（range 双值）', () => {
     it('oas-form 内拖动提交后，字段值为合法 JSON 数组字符串', () => {
-      const form = document.createElement('oas-form') as Element & { shadowRoot: ShadowRoot }
+      const form = document.createElement('oas-form') as Element & {
+        shadowRoot: ShadowRoot
+      }
       form.innerHTML = '<oas-slider name="price" range min="0" max="100" value="[20, 80]"></oas-slider>'
       document.body.appendChild(form)
       const slider = form.querySelector('oas-slider')!
@@ -1348,11 +1535,20 @@ describe('OASSlider 多滑块泛化（D26）', () => {
   })
 
   it('键盘作用于聚焦把手（PageUp 大步只改该把手并派发数组 detail）', () => {
-    const el = mount({ value: '[10,50,90]', 'large-step': '10', min: '0', max: '100' })
+    const el = mount({
+      value: '[10,50,90]',
+      'large-step': '10',
+      min: '0',
+      max: '100',
+    })
     const details: unknown[] = []
     el.addEventListener('oas-change', (e: Event) => details.push((e as CustomEvent).detail))
     byRole(el, 'thumb-1').dispatchEvent(
-      new KeyboardEvent('keydown', { key: 'PageUp', bubbles: true, cancelable: true }),
+      new KeyboardEvent('keydown', {
+        key: 'PageUp',
+        bubbles: true,
+        cancelable: true,
+      }),
     )
     expect(thumbValues(el)).toEqual([10, 60, 90])
     expect(details[0]).toEqual({ value: [10, 60, 90] })
@@ -1361,7 +1557,12 @@ describe('OASSlider 多滑块泛化（D26）', () => {
   it('show-input 多值：num-0/1/2 输入框 + 分隔符，提交驱动对应把手', () => {
     vi.useFakeTimers()
     try {
-      const el = mount({ value: '[10,30,70]', 'show-input': '', min: '0', max: '100' })
+      const el = mount({
+        value: '[10,30,70]',
+        'show-input': '',
+        min: '0',
+        max: '100',
+      })
       expect(el.shadowRoot!.querySelectorAll('[data-role^="num-"]')).toHaveLength(3)
       expect(byRole(el, 'num-1').value).toBe('30')
       expect(el.shadowRoot!.querySelectorAll('.input-sep')).toHaveLength(2)
@@ -1375,7 +1576,12 @@ describe('OASSlider 多滑块泛化（D26）', () => {
   })
 
   it('数值输入越界推着相邻把手走（保持升序）', () => {
-    const el = mount({ value: '[10,30,70]', 'show-input': '', min: '0', max: '100' })
+    const el = mount({
+      value: '[10,30,70]',
+      'show-input': '',
+      min: '0',
+      max: '100',
+    })
     const num0 = byRole(el, 'num-0')
     num0.value = '80'
     num0.dispatchEvent(new Event('change'))
@@ -1384,7 +1590,12 @@ describe('OASSlider 多滑块泛化（D26）', () => {
   })
 
   it('逐把手 aria-label：label-1/label-2/label-3 属性优先', () => {
-    const el = mount({ value: '[10,30,70]', 'label-1': '低', 'label-2': '中', 'label-3': '高' })
+    const el = mount({
+      value: '[10,30,70]',
+      'label-1': '低',
+      'label-2': '中',
+      'label-3': '高',
+    })
     expect(byRole(el, 'thumb-0').getAttribute('aria-label')).toBe('低')
     expect(byRole(el, 'thumb-1').getAttribute('aria-label')).toBe('中')
     expect(byRole(el, 'thumb-2').getAttribute('aria-label')).toBe('高')
@@ -1427,7 +1638,9 @@ describe('OASSlider 多滑块泛化（D26）', () => {
   })
 
   it('表单序列化：多把手拖动提交后字段为合法 JSON 数组', () => {
-    const form = document.createElement('oas-form') as Element & { shadowRoot: ShadowRoot }
+    const form = document.createElement('oas-form') as Element & {
+      shadowRoot: ShadowRoot
+    }
     form.innerHTML = '<oas-slider name="levels" min="0" max="100" value="[10,30,70]"></oas-slider>'
     document.body.appendChild(form)
     const slider = form.querySelector('oas-slider')!
@@ -1566,7 +1779,13 @@ describe('OASSlider 数值 scrub（读数区像素锚定计步）', () => {
   }
 
   it('横移每 4px 计一步：拖 +16px（step=1）→ 值 +4，过程派发 oas-input', () => {
-    const el = mount({ value: '10', min: '0', max: '100', step: '1', 'show-input': '' })
+    const el = mount({
+      value: '10',
+      min: '0',
+      max: '100',
+      step: '1',
+      'show-input': '',
+    })
     const inputs: number[] = []
     el.addEventListener('oas-input', (e) => inputs.push((e as CustomEvent).detail.value))
     numInput(el).dispatchEvent(pointer('pointerdown', 100))
@@ -1629,7 +1848,13 @@ describe('OASSlider 数值 scrub（读数区像素锚定计步）', () => {
   })
 
   it('无 precision 时浮点尾巴自动收敛：step=0.1 拖 3 步值通道干净（0.3 而非 0.30000000000000004）', () => {
-    const el = mount({ value: '0', min: '0', max: '1', step: '0.1', 'show-input': '' })
+    const el = mount({
+      value: '0',
+      min: '0',
+      max: '1',
+      step: '0.1',
+      'show-input': '',
+    })
     const changes: number[] = []
     el.addEventListener('oas-change', (e) => changes.push((e as CustomEvent).detail.value as number))
     numInput(el).dispatchEvent(pointer('pointerdown', 100))
@@ -1685,7 +1910,13 @@ describe('OASSlider 数值 scrub（读数区像素锚定计步）', () => {
   })
 
   it('多把手（range）scrub 各读数框独立生效', () => {
-    const el = mount({ range: '', value: '[20, 80]', min: '0', max: '100', 'show-input': '' })
+    const el = mount({
+      range: '',
+      value: '[20, 80]',
+      min: '0',
+      max: '100',
+      'show-input': '',
+    })
     const minNum = el.shadowRoot!.querySelector<HTMLInputElement>('[data-role="num-min"]')!
     minNum.dispatchEvent(pointer('pointerdown', 100))
     window.dispatchEvent(pointer('pointermove', 116))
@@ -1724,7 +1955,12 @@ describe('OASSlider 双击复位（reset-value）', () => {
   }
 
   it('双击轨道复位到 reset-value，派发 oas-input + oas-change', () => {
-    const el = mount({ value: '70', min: '0', max: '100', 'reset-value': '25' })
+    const el = mount({
+      value: '70',
+      min: '0',
+      max: '100',
+      'reset-value': '25',
+    })
     const events: string[] = []
     el.addEventListener('oas-input', () => events.push('input'))
     el.addEventListener('oas-change', () => events.push('change'))
@@ -1776,14 +2012,23 @@ describe('OASSlider 专业属性（precision / value-width / accent-color / show
   })
 
   it('precision：无 format 通道时气泡与 aria-valuetext 按精度修约显示', () => {
-    const el = mount({ value: '0.30000000000000004', precision: '2', 'show-tooltip': '' })
+    const el = mount({
+      value: '0.30000000000000004',
+      precision: '2',
+      'show-tooltip': '',
+    })
     const tip = el.shadowRoot!.querySelector<HTMLElement>('.thumb-tip')!
     expect(tip.textContent).toBe('0.3')
     expect(range(el).getAttribute('aria-valuetext')).toBe('0.3')
   })
 
   it('precision 不覆盖 format 模板串（format 优先）', () => {
-    const el = mount({ value: '0.30000000000000004', precision: '2', format: '${value}%', 'show-tooltip': '' })
+    const el = mount({
+      value: '0.30000000000000004',
+      precision: '2',
+      format: '${value}%',
+      'show-tooltip': '',
+    })
     const tip = el.shadowRoot!.querySelector<HTMLElement>('.thumb-tip')!
     expect(tip.textContent).toBe('0.30000000000000004%')
   })
@@ -1937,7 +2182,11 @@ describe('OASSlider 立体声电平表（levels）', () => {
   })
 
   it('多拇指/range 不渲染电平表（levels 单值语义，避免每把手一副重复电平）', () => {
-    const el = mount({ value: '[20,60]', thumb: 'round', levels: '{"left":0.8,"right":0.4}' })
+    const el = mount({
+      value: '[20,60]',
+      thumb: 'round',
+      levels: '{"left":0.8,"right":0.4}',
+    })
     const meters = el.shadowRoot!.querySelectorAll<HTMLElement>('.levels')
     expect(meters.length, 'range 每把手一副电平表').toBe(2)
     for (const m of meters) expect(m.hidden, '每个把手的电平表都隐藏').toBe(true)
@@ -1958,7 +2207,11 @@ describe('OASSlider 立体声电平表（levels）', () => {
   })
 
   it('pointer 形态不渲染电平表（电平表仅属圆推子）', () => {
-    const el = mount({ value: '50', thumb: 'pointer', levels: '{"left":0.9,"right":0.1}' })
+    const el = mount({
+      value: '50',
+      thumb: 'pointer',
+      levels: '{"left":0.9,"right":0.1}',
+    })
     expect(levelsOf(el).hidden).toBe(true)
   })
 
@@ -1982,7 +2235,11 @@ describe('OASSlider 立体声电平表（levels）', () => {
   })
 
   it('vertical 下电平表同样渲染（定位轴由 CSS 切换）', () => {
-    const el = mount({ vertical: '', value: '50', levels: '{"left":0.3,"right":0.7}' })
+    const el = mount({
+      vertical: '',
+      value: '50',
+      levels: '{"left":0.3,"right":0.7}',
+    })
     expect(levelsOf(el).hidden).toBe(false)
     expect(el.hasAttribute('data-vertical')).toBe(true)
   })

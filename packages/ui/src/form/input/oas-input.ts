@@ -74,7 +74,10 @@ function parseMaskTokens(mask: string): MaskToken[] {
   for (const ch of Array.from(mask)) {
     if (ch === '#') tokens.push({ kind: 'editable', test: (c) => c >= '0' && c <= '9' })
     else if (ch === 'A')
-      tokens.push({ kind: 'editable', test: (c) => (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') })
+      tokens.push({
+        kind: 'editable',
+        test: (c) => (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z'),
+      })
     else if (ch === '*')
       tokens.push({
         kind: 'editable',
@@ -785,6 +788,17 @@ input:disabled:hover {
   min-width: var(--oas-input-auto-min, 72px);
   max-width: var(--oas-input-auto-max, 100%);
 }
+
+@media (forced-colors: active) {
+  /* 强制色下 box-shadow 被 UA 弃用：焦点环回退系统色实线 outline（WCAG 2.4.7） */
+  input:focus,
+  .clear-btn:focus-visible,
+  .eye-btn:focus-visible {
+    outline: 1px solid CanvasText;
+    outline-offset: 1px;
+    box-shadow: none;
+  }
+}
 `
 
 export class OASInput extends OASFormElement {
@@ -1234,8 +1248,9 @@ export class OASInput extends OASFormElement {
       if (v == null) i.removeAttribute(attr)
       else i.setAttribute(attr, v)
     }
-    // 内置文案走 locale registry（label/placeholder 属性优先，setLocale 切换自动刷新）
-    i.setAttribute('aria-label', this.getAttr('label', placeholder) || this.t('input.defaultLabel'))
+    // 内置文案走 locale registry（label/placeholder 属性优先，setLocale 切换自动刷新）。
+    // 走外部 label 感知的回退写入口：外部 `<label for>` 已转发名称时不得被默认名覆盖
+    this.setFallbackInnerLabel(this.getAttr('label', placeholder) || this.t('input.defaultLabel'))
     // hint 静态提示（输入框下方，独立于校验错误）：有则显示并经 aria-describedby 关联，无则解除
     this.syncHint()
     // 清除按钮显隐策略（默认 always 不写标记，CSS 无规则即常显）

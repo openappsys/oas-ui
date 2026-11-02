@@ -264,6 +264,16 @@ ${OPTION_STYLE}
   color: var(--oas-color-text-secondary);
   font-size: var(--oas-font-size-sm);
 }
+
+@media (forced-colors: active) {
+  /* 强制色下 box-shadow 被 UA 弃用：焦点环回退系统色实线 outline（WCAG 2.4.7） */
+  input:focus,
+  .clear-btn:focus-visible {
+    outline: 1px solid CanvasText;
+    outline-offset: 1px;
+    box-shadow: none;
+  }
+}
 `
 
 export class OASAutoComplete extends OASFormElement {
@@ -475,7 +485,7 @@ export class OASAutoComplete extends OASFormElement {
       this.input.removeAttribute('aria-label')
     } else {
       this.input.removeAttribute('aria-labelledby')
-      this.input.setAttribute('aria-label', placeholder || this.t('autoComplete.defaultLabel'))
+      this.setFallbackInnerLabel(placeholder || this.t('autoComplete.defaultLabel'))
     }
     this.input.disabled = disabled
     this.input.readOnly = this.hasAttr('readonly')

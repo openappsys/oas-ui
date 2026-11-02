@@ -1,4 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
+import { setLocale } from '@oas-ui/i18n'
+import en from '@oas-ui/i18n/en'
+import '@oas-ui/i18n'
 import { registerIcon } from '@oas-ui/icons/runtime'
 import { OASSelect } from './index.js'
 import '../../framework/config-provider/index.js'
@@ -2718,5 +2721,43 @@ describe('OASSelect Option.dot / avatarText 子元素通道（oas-option）', ()
       (trigger(el).querySelector<HTMLElement>('.chip-dot')?.getAttribute('style') ?? '').toLowerCase(),
       '运行时改写 dot 同步刷新',
     ).toContain('#00ff00')
+  })
+})
+
+// 回归：内建命名回退必须走基类 setFallbackInnerLabel——外部 <label for> 已转发名称时让位。
+// 关键路径是 update() 直调：value property setter / locale translator 回调都不经
+// runUpdateAndNotify 的尾部 re-sync，直写 setAttribute('aria-label') 会踩掉外部名。
+describe('外部 label 命名优先级（update 直调路径）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  it('外部 <label for> + value property + locale 切换都不踩外部名，解除后恢复回退名', async () => {
+    const el = mount()
+    el.id = 'select-fa-target'
+    const label = document.createElement('label')
+    label.htmlFor = 'select-fa-target'
+    label.textContent = '城市'
+    document.body.append(label)
+    await new Promise((r) => setTimeout(r, 0))
+    expect(trigger(el).getAttribute('aria-label'), '外部 label 已转发').toBe('城市')
+
+    el.value = 'banana' // property setter → 显式 this.update() 直调（无尾部 re-sync）
+    expect(trigger(el).getAttribute('aria-label'), 'value property 赋值不得踩外部名').toBe('城市')
+
+    setLocale(en) // translator 变更 → this.update() 直调
+    expect(trigger(el).getAttribute('aria-label'), 'locale 切换不得踩外部名').toBe('城市')
+
+    setLocale('zh-CN')
+    label.remove()
+    await new Promise((r) => setTimeout(r, 0))
+    el.value = 'orange'
+    expect(trigger(el).getAttribute('aria-label'), '外部 label 解除后恢复内建回退名').toBe('请选择')
   })
 })

@@ -1,5 +1,6 @@
 import { OASElement } from '@oas-ui/core'
 import { bindCoarseTap, clickIgnorable } from '../../shared/coarse-tap.js'
+import { addOutsideDismiss, removeOutsideDismiss } from '../../shared/outside-dismiss.js'
 import { getViewport } from '../../overlay/floating/index.js'
 import { isRtl } from '../../shared/direction.js'
 
@@ -422,7 +423,7 @@ export class OASHoverCard extends OASElement {
       this.unregisterGroup()
       this.destroyPortal()
       this.stopScrollWatch()
-      document.removeEventListener('click', this.handleOutsideClick, true)
+      removeOutsideDismiss(this.handleOutsideClick)
     })
   }
 
@@ -499,8 +500,8 @@ export class OASHoverCard extends OASElement {
   /** 外点关闭监听随开合同步（仅 coarse 形态启用；fine pointer 行为不变） */
   private syncOutsideDismiss(open: boolean): void {
     const engage = open && this.isCoarsePointer()
-    if (engage) document.addEventListener('click', this.handleOutsideClick, true)
-    else document.removeEventListener('click', this.handleOutsideClick, true)
+    if (engage) addOutsideDismiss(this.handleOutsideClick)
+    else removeOutsideDismiss(this.handleOutsideClick)
   }
 
   private onAnchorEnter(): void {
@@ -1044,7 +1045,10 @@ export class OASHoverCard extends OASElement {
     const track = on && this.getAttr('sticky', 'partial') !== 'off'
     if (track && !this.scrollWatchOn) {
       this.scrollWatchOn = true
-      window.addEventListener('scroll', this.onViewportScroll, { capture: true, passive: true })
+      window.addEventListener('scroll', this.onViewportScroll, {
+        capture: true,
+        passive: true,
+      })
       window.addEventListener('resize', this.onViewportScroll)
     } else if (!track && this.scrollWatchOn) {
       this.stopScrollWatch()
@@ -1054,7 +1058,9 @@ export class OASHoverCard extends OASElement {
   private stopScrollWatch(): void {
     if (!this.scrollWatchOn) return
     this.scrollWatchOn = false
-    window.removeEventListener('scroll', this.onViewportScroll, { capture: true })
+    window.removeEventListener('scroll', this.onViewportScroll, {
+      capture: true,
+    })
     window.removeEventListener('resize', this.onViewportScroll)
   }
 

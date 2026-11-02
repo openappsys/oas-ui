@@ -28,7 +28,11 @@ function normalizeChoice(raw: string, fallback: string, valid: readonly string[]
  * 与 CSS token 对应：small=--oas-space-1(4px)×2、medium=--oas-space-2(8px)×2、large=--oas-space-3(12px)×2。
  * 仅作为 getComputedStyle 读不到时的回退（happy-dom/SSR 环境不解析 var()）。
  */
-const PADDING_V_BY_SIZE: Record<string, number> = { small: 8, medium: 16, large: 24 }
+const PADDING_V_BY_SIZE: Record<string, number> = {
+  small: 8,
+  medium: 16,
+  large: 24,
+}
 
 const STYLE = `
 :host {
@@ -258,6 +262,16 @@ textarea:disabled:hover {
   text-align: center;
   color: var(--oas-color-text-secondary);
   font-size: var(--oas-font-size-sm);
+}
+
+@media (forced-colors: active) {
+  /* 强制色下 box-shadow 被 UA 弃用：焦点环回退系统色实线 outline（WCAG 2.4.7） */
+  textarea:focus,
+  .clear-btn:focus-visible {
+    outline: 1px solid CanvasText;
+    outline-offset: 1px;
+    box-shadow: none;
+  }
 }
 `
 
@@ -493,7 +507,7 @@ export class OASMentions extends OASFormElement {
     if (readonly) t.setAttribute('aria-readonly', 'true')
     else t.removeAttribute('aria-readonly')
     // 内置文案走 locale registry（label/placeholder 属性优先，setLocale 切换自动刷新）
-    t.setAttribute('aria-label', this.getAttr('label', placeholder) || this.t('mentions.defaultLabel'))
+    this.setFallbackInnerLabel(this.getAttr('label', placeholder) || this.t('mentions.defaultLabel'))
 
     // autosize：高度由 min-rows/max-rows 约束；关闭时清内联高度还交 CSS。
     // 单行形态（type=input）恒锁高，autosize 对单行无意义——单行时 rows 固定 1，
@@ -947,7 +961,12 @@ export class OASMentions extends OASFormElement {
     if (pos <= 0) return false
     const head = t.value.slice(0, pos)
     const prefixes = this.prefixes()
-    let best: { start: number; label: string; option: Option; prefix: string } | null = null
+    let best: {
+      start: number
+      label: string
+      option: Option
+      prefix: string
+    } | null = null
     for (const prefix of prefixes) {
       for (const option of this._options) {
         const label = String(option.label ?? '')

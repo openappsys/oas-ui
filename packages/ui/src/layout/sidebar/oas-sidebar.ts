@@ -677,6 +677,14 @@ aside {
     min-height: var(--oas-control-height-xl, 48px);
   }
 }
+/* 强对比模式下 background 被 UA 剥掉（实测透明）→ 拖拽指示条不可见；以系统色实线 outline 代替
+   （outline 不参与布局，指示条位置/宽度与常模一致；对齐 splitter 的既有兜底口径） */
+@media (forced-colors: active) {
+  [part='rail']::after {
+    outline: 1px solid;
+    outline-offset: -1px;
+  }
+}
 `
 
 /**
@@ -835,6 +843,9 @@ export class OASSidebar extends OASElement {
     this.releaseDrawerEscape()
     // onReconnect 重挂的 document/window/mq 监听不再有 cleanup 兜底，组件自身幂等再摘一次
     this.detachGlobalListeners()
+    // open 边沿状态复位：断连期间对 drawer-open 的增删不走 update 的边沿判定；不复位的话重连后
+    // 首帧会把「已开」当成「此前已开过」，打开边沿失效 → 不再重新入焦（见 ensureDrawerFocus 注释）
+    this.drawerPrevOpen = false
     super.disconnectedCallback()
   }
 
@@ -934,7 +945,9 @@ export class OASSidebar extends OASElement {
    * 同步 focus 之后再补一个微任务检查——焦点仍在面板外才重新入焦（已入焦不重复）。
    */
   private ensureDrawerFocus(): void {
-    if (!this.mq?.matches || !this.hasAttr('drawer-open')) return
+    // 微任务可能在断开连接之后执行（宿主已从文档移除）：shadow.activeElement 在断连态不稳定，
+    // 直接跳过——重连后的打开态由 update 的打开边沿重新入焦
+    if (!this.isConnected || !this.mq?.matches || !this.hasAttr('drawer-open')) return
     const panel = this.shadow.querySelector<HTMLElement>('.panel')
     const active = (this.shadow.activeElement ?? document.activeElement) as HTMLElement | null
     // slotted 节点的 DOM 父级是宿主而非 panel；自定义输入宿主被 retarget 时也应视为抽屉内焦点
@@ -942,12 +955,16 @@ export class OASSidebar extends OASElement {
     this.focusDrawerInitial()
   }
 
-  /** 抽屉关闭回焦：优先归还打开前焦点，兜底触发钮（必须在设置 aria-hidden 之前调用） */
+  /** 抽屉关闭回焦：优先归还打开前焦点，兜底触发钮（必须在设置 aria-hidden 之前调用）。
+   *  「打开前焦点」不可归还时（body/documentElement——WebKit 点击按钮不移动焦点，鼠标用户的
+   *  焦点从未进过触发器）回落到触发钮：键盘用户按 Esc 关闭后焦点必须停在一个可继续 Tab 的
+   *  位置，而不是丢回 body。 */
   private restoreDrawerFocus(): void {
     const target = this.drawerReturnFocus
     this.drawerReturnFocus = null
     const trigger = this.shadow.querySelector<HTMLElement>('[part="trigger"]')
-    const next = target && target.isConnected ? target : trigger
+    const restorable = !!target?.isConnected && target !== document.body && target !== document.documentElement
+    const next = restorable ? target : trigger
     next?.focus({ preventScroll: true })
   }
 
@@ -1458,7 +1475,11 @@ export class OASSidebar extends OASElement {
       })
     } else if (!flyoutMode) {
       btn.addEventListener('click', () => {
-        this.emit('select', { value: item.value, label: item.label, group: item.group })
+        this.emit('select', {
+          value: item.value,
+          label: item.label,
+          group: item.group,
+        })
         if (this.hasAttr('drawer-open')) this.closeDrawer()
       })
     }
@@ -1477,7 +1498,11 @@ export class OASSidebar extends OASElement {
         else actionBtn.textContent = action.label
         actionBtn.addEventListener('click', (e) => {
           e.stopPropagation()
-          this.emit('action', { value: item.value, action: action.value, label: action.label })
+          this.emit('action', {
+            value: item.value,
+            action: action.value,
+            label: action.label,
+          })
         })
         actions.appendChild(actionBtn)
       }

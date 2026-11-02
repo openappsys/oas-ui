@@ -562,6 +562,22 @@ input:disabled {
   color: var(--oas-color-text-secondary);
   user-select: none;
 }
+
+@media (forced-colors: active) {
+  /* 强制色下 box-shadow 被 UA 弃用：焦点环回退系统色实线 outline（WCAG 2.4.7） */
+  .inputs input:focus {
+    outline: 1px solid CanvasText;
+    outline-offset: 1px;
+    box-shadow: none;
+  }
+  /* 原生 input 压掉 UA outline、焦点环画在 thumb 伪元素上（强制色下被弃用）：
+     回退为输入框整体实线 outline（自定义 thumb 模式同样受益） */
+  input:focus-visible {
+    outline: 1px solid CanvasText;
+    outline-offset: 1px;
+    box-shadow: none;
+  }
+}
 `
 
 export class OASSlider extends OASElement {
@@ -1062,7 +1078,10 @@ export class OASSlider extends OASElement {
     const l = Number(o.left)
     const r = Number(o.right)
     if (!Number.isFinite(l) && !Number.isFinite(r)) return null
-    return { left: clampNum(Number.isFinite(l) ? l : 0, 0, 1), right: clampNum(Number.isFinite(r) ? r : 0, 0, 1) }
+    return {
+      left: clampNum(Number.isFinite(l) ? l : 0, 0, 1),
+      right: clampNum(Number.isFinite(r) ? r : 0, 0, 1),
+    }
   }
 
   /** labels JSON 数组（多把手可访问名），非法/非数组返回 null */
@@ -1402,7 +1421,20 @@ export class OASSlider extends OASElement {
       this.moveMarkStep(input, key, isLarge)
       return
     }
-    if (!isLarge) return
+    if (!isLarge) {
+      // 普通方向键在「视觉反转」形态（reverse 属性 / RTL 书写方向）下由组件接管：
+      // WebKit 的原生 range 不镜像 RTL 的方向键（ArrowRight 仍增值），Chromium/Gecko 镜像——
+      // 同一组件在不同引擎给出相反的值方向（a11y 语义不一致）。统一按「箭头视觉方向 = 值方向」
+      // 用组件步进，未反转形态保留原生行为不变。镜像只作用于 Left/Right（Up 恒增 / Down 恒减
+      // 是原生 range 的跨引擎约定，与书写方向无关，见 keySign）。
+      if (!isArrow) return
+      const flipped = this.hasAttr('vertical') ? this.hasAttr('reverse') : this.horizontalReverse()
+      if (!flipped) return
+      e.preventDefault()
+      const step = Number(this.getAttr('step', '1')) || 1
+      this.applyKeyboardValue(input, (Number(input.value) || 0) + this.keySign(key) * step)
+      return
+    }
     e.preventDefault()
     const step = Number(this.getAttr('step', '1')) || 1
     const largeRaw = this.getAttr('large-step', '')
@@ -1411,13 +1443,15 @@ export class OASSlider extends OASElement {
     this.applyKeyboardValue(input, (Number(input.value) || 0) + sign * large)
   }
 
-  /** 键 → 值方向：箭头键受视觉镜像反转（值增长方向与箭头视觉方向一致），页键保持值语义。
+  /** 键 → 值方向：只有 Left/Right 受视觉镜像反转（箭头视觉方向 = 值方向）；Up/Down 与页键
+   *  保持原生值语义——原生 range 在三引擎都是 Up/PageUp 增、Down/PageDown 减，与书写方向无关，
+   *  把 Up/Down 一并翻转会让竖直键在 RTL / reverse 下反向（实测反直觉）。
    *  视觉镜像 = horizontal 有效反转（reverse 属性 XOR RTL 书写方向）；vertical 用 reverse 属性本身 */
   private keySign(key: string): number {
     let sign = 0
     if (key === 'ArrowRight' || key === 'ArrowUp' || key === 'PageUp') sign = 1
     else if (key === 'ArrowLeft' || key === 'ArrowDown' || key === 'PageDown') sign = -1
-    if (sign !== 0 && key.startsWith('Arrow')) {
+    if (sign !== 0 && (key === 'ArrowLeft' || key === 'ArrowRight')) {
       const flipped = this.hasAttr('vertical') ? this.hasAttr('reverse') : this.horizontalReverse()
       if (flipped) sign = -sign
     }
@@ -1605,7 +1639,13 @@ export class OASSlider extends OASElement {
     if (e.pointerType === 'mouse' && e.button !== 0) return
     const base = Number(this.thumbs[i]?.value ?? 0)
     if (!Number.isFinite(base)) return
-    this.numScrub = { id: e.pointerId, anchor: beginScrub(e.clientX, base), index: i, active: false, startValue: base }
+    this.numScrub = {
+      id: e.pointerId,
+      anchor: beginScrub(e.clientX, base),
+      index: i,
+      active: false,
+      startValue: base,
+    }
     window.addEventListener('pointermove', this.onNumScrubMove)
     window.addEventListener('pointerup', this.onNumScrubUp)
     window.addEventListener('pointercancel', this.onNumScrubUp)
@@ -1983,7 +2023,10 @@ export class OASSlider extends OASElement {
           .map((m): MarkEntry | null => {
             if (typeof m === 'number' && Number.isFinite(m)) return { value: m, label: String(m) }
             if (m && typeof m === 'object' && Number.isFinite(m.value)) {
-              return { value: m.value, label: m.label != null ? String(m.label) : String(m.value) }
+              return {
+                value: m.value,
+                label: m.label != null ? String(m.label) : String(m.value),
+              }
             }
             return null
           })

@@ -147,6 +147,16 @@ textarea:disabled:hover {
 .count[hidden] {
   display: none;
 }
+
+@media (forced-colors: active) {
+  /* 强制色下 box-shadow 被 UA 弃用：焦点环回退系统色实线 outline（WCAG 2.4.7） */
+  textarea:focus,
+  .clear-btn:focus-visible {
+    outline: 1px solid CanvasText;
+    outline-offset: 1px;
+    box-shadow: none;
+  }
+}
 `
 
 /**
@@ -154,7 +164,11 @@ textarea:disabled:hover {
  * 与 CSS token 对应：small=--oas-space-1(4px)×2、medium=--oas-space-2(8px)×2、large=--oas-space-3(12px)×2。
  * 仅作为 getComputedStyle 读不到时的回退（happy-dom/SSR 环境不解析 var()）。
  */
-const PADDING_V_BY_SIZE: Record<string, number> = { small: 8, medium: 16, large: 24 }
+const PADDING_V_BY_SIZE: Record<string, number> = {
+  small: 8,
+  medium: 16,
+  large: 24,
+}
 
 export class OASTextarea extends OASFormElement {
   /** 原生表单集成（label for / FormData / reset / fieldset disabled）；沿静态原型链已可继承，显式声明便于阅读与检索 */
@@ -308,7 +322,8 @@ export class OASTextarea extends OASFormElement {
     this.passThrough(t)
 
     // 可访问名称：label 属性 > placeholder > locale 默认文案
-    t.setAttribute('aria-label', this.getAttr('label', placeholder) || this.t('textarea.defaultLabel'))
+    // （外部 `<label for>` 已转发名称时由 core 跳过回退名写入，见 setFallbackInnerLabel）
+    this.setFallbackInnerLabel(this.getAttr('label', placeholder) || this.t('textarea.defaultLabel'))
 
     // 校验态：宿主 data-status 驱动样式；error 同步 textarea aria-invalid（warning/success 语义上非 invalid）
     const status = this.normalizedStatus()

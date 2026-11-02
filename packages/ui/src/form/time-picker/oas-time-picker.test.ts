@@ -1175,3 +1175,41 @@ describe('OASTimePicker 清空按钮键盘可达（I4）', () => {
     expect(el.shadowRoot!.activeElement, '清空后焦点交还 trigger').toBe(trigger(el))
   })
 })
+
+// 回归：内建命名回退（label 属性 / placeholder）必须走基类 setFallbackInnerLabel——外部
+// <label for> 转发的名称优先。value property setter / locale 切换都直调 update()（无
+// runUpdateAndNotify 尾部 re-sync），直写 setAttribute('aria-label') 会踩掉外部名。
+describe('外部 label 命名优先级（update 直调路径）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  it('外部 <label for> + value property + locale 切换都不踩外部名，解除后恢复回退名', async () => {
+    const el = mount()
+    el.id = 'time-picker-fa-target'
+    const label = document.createElement('label')
+    label.htmlFor = 'time-picker-fa-target'
+    label.textContent = '预约时间'
+    document.body.append(label)
+    await new Promise((r) => setTimeout(r, 0))
+    expect(trigger(el).getAttribute('aria-label'), '外部 label 已转发').toBe('预约时间')
+
+    el.value = '10:30' // property setter → this.update() 直调
+    expect(trigger(el).getAttribute('aria-label'), 'value property 赋值不得踩外部名').toBe('预约时间')
+
+    setLocale(en) // translator 变更 → this.update() 直调
+    expect(trigger(el).getAttribute('aria-label'), 'locale 切换不得踩外部名').toBe('预约时间')
+
+    setLocale('zh-CN')
+    label.remove()
+    await new Promise((r) => setTimeout(r, 0))
+    el.value = '11:30'
+    expect(trigger(el).getAttribute('aria-label'), '外部 label 解除后恢复内建回退名').toBe('请选择时间')
+  })
+})

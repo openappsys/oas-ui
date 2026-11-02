@@ -342,12 +342,10 @@ export class OASMarquee extends OASElement {
 
   protected override update(): void {
     if (!this.trackEl) return
-    this.trackEl.style.setProperty('--oas-marquee-speed', String(resolveSpeedPx(this.getAttr('speed', ''))))
-    this.applyLoopLimit()
-    // 书写方向镜像钩子（data-rtl 供 :host([data-rtl]) 水平关键帧镜像消费；dir 变化经 observedAttributes 再入 update）
-    this.toggleAttribute('data-rtl', isRtl(this))
     const vertical = this.isVertical()
     if (this.curVertical !== null && this.curVertical !== vertical) {
+      // 切换前轴（curVertical 随后改写为新轴）：钉名要按**切换前实际生效**的关键帧挑
+      const prevVertical = this.curVertical
       this.curVertical = vertical
       // 滚动轴运行时切换：横向/纵向用不同关键字帧（oas-marquee-x / oas-marquee-y），换轴即换
       // animation-name → 浏览器按「新动画」处理（时钟归零、animationstart 再触发一次），所以本路径
@@ -356,10 +354,39 @@ export class OASMarquee extends OASElement {
       // 同步重测（位移距离/份数/时长——不重测的话纵向动画会拿横向位移距离跑，且要等 RO 回调才修），
       // 再以「新动画 localTime = 0」为基准反解负 delay（restoreShift 的 restart 分支），
       // 使内容不跳回循环起点（最接近无损的方案）。
-      this.preserveShift(() => this.applyMeasure(), true)
+      //
+      // 捕获时序是硬约束（WebKit 实测）：宿主属性一改，旧 animation-name 即失效，任何一次样式
+      // 落定都会让 WebKit 立刻取消旧动画（缓存对象的 currentTime → null）。此时 captureShift 只能
+      // 回退 getAnimations() 拿重启后的 0 时钟 → 相位丢成 0（内容跳回循环起点，实测发生）。
+      // 故捕获前**用内联 animation-name 钉住旧关键帧名**（同名不打断动画连续性，只阻止本次样式
+      // 落定把 name 换成新轴），捕捉到真实旧时钟后再放开，然后才做重测与补偿。
+      const track = this.trackEl
+      // 切换前实际生效的关键帧名：纵向 = -y；水平按书写方向区分（RTL 镜像名见样式
+      // :host([data-rtl]:not([orientation='vertical'])) 规则）。data-rtl 在此断点仍是旧值
+      // （方位无关，toggle 在捕获之后的 :368 执行），可直接判定。钉错名 = 旧动画立即失效，
+      // 相位归零（RTL 页水平→纵向切轴实测发生）。
+      const prevName = prevVertical
+        ? 'oas-marquee-y'
+        : this.hasAttribute('data-rtl')
+          ? 'oas-marquee-x-rtl'
+          : 'oas-marquee-x'
+      track.style.animationName = prevName
+      const cap = this.captureShift()
+      track.style.removeProperty('animation-name')
+      track.style.setProperty('--oas-marquee-speed', String(resolveSpeedPx(this.getAttr('speed', ''))))
+      this.applyLoopLimit()
+      this.toggleAttribute('data-rtl', isRtl(this))
+      this.applyMeasure()
+      this.restoreShift(cap, true)
+      // 换名后旧动画对象已取消：缓存作废，下次捕获重新取新动画对象
+      this.cachedAnim = null
       return
     }
     this.curVertical = vertical
+    this.trackEl.style.setProperty('--oas-marquee-speed', String(resolveSpeedPx(this.getAttr('speed', ''))))
+    this.applyLoopLimit()
+    // 书写方向镜像钩子（data-rtl 供 :host([data-rtl]) 水平关键帧镜像消费；dir 变化经 observedAttributes 再入 update）
+    this.toggleAttribute('data-rtl', isRtl(this))
     // 速度变化即时反映到已测量的时长；时长变化按位移连续补偿（否则进度重映射视觉跳变）
     if (this.measuredShift > 0) this.preserveShift(() => this.writeTiming())
   }
@@ -471,7 +498,9 @@ export class OASMarquee extends OASElement {
   private captureShift(): ShiftBaseline | null {
     try {
       const track = this.trackEl as
-        | (HTMLElement & { getAnimations?: () => Array<{ currentTime: number | null }> })
+        | (HTMLElement & {
+            getAnimations?: () => Array<{ currentTime: number | null }>
+          })
         | null
       if (!track || typeof track.getAnimations !== 'function') return null
       let t: unknown = this.cachedAnim?.currentTime

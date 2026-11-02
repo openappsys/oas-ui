@@ -2,6 +2,7 @@ import { OASElement } from '@oas-ui/core'
 import { resolveDirection } from '../../shared/direction.js'
 import { cssVarPx } from '../../shared/css-var.js'
 import { stableHash36 } from '../../shared/stable-id.js'
+import { addOutsideDismiss, removeOutsideDismiss } from '../../shared/outside-dismiss.js'
 import { alertCirclePath } from '@oas-ui/icons/icons/alert-circle'
 import { warningPath } from '@oas-ui/icons/icons/warning'
 import { computePosition, getViewport, type Placement } from '../../overlay/floating/index.js'
@@ -277,6 +278,15 @@ const STYLE = `
   border-left: 1px solid var(--pop-border);
   border-bottom: 1px solid var(--pop-border);
 }
+
+@media (forced-colors: active) {
+  /* 强制色下 box-shadow 被 UA 弃用：焦点环回退系统色实线 outline（WCAG 2.4.7） */
+  .btn:focus-visible {
+    outline: 1px solid CanvasText;
+    outline-offset: 1px;
+    box-shadow: none;
+  }
+}
 `
 
 // 模块级 Esc 栈：所有打开中的 popconfirm 按打开先后排序（后开者在上），
@@ -477,7 +487,7 @@ export class OASPopconfirm extends OASElement {
     if (this.lifecycleBound) return
     this.lifecycleBound = true
     this.onCleanup(() => unregisterLayer(this))
-    this.onCleanup(() => document.removeEventListener('click', this.handleOutside, true))
+    this.onCleanup(() => removeOutsideDismiss(this.handleOutside))
     this.onCleanup(() => {
       if (this.openTimer) clearTimeout(this.openTimer)
       if (this.closeTimer) clearTimeout(this.closeTimer)
@@ -504,7 +514,7 @@ export class OASPopconfirm extends OASElement {
     this.bindLifecycle()
     if (!this.popoverEl || !this.hasAttr('open')) return
     registerLayer(this)
-    if (!this.isVirtual()) document.addEventListener('click', this.handleOutside, true)
+    if (!this.isVirtual()) addOutsideDismiss(this.handleOutside)
     this.syncScrollFollow(true)
   }
 
@@ -750,7 +760,14 @@ export class OASPopconfirm extends OASElement {
     const x = parseFloat(this.getAttr('virtual-x'))
     const y = parseFloat(this.getAttr('virtual-y'))
     if (Number.isFinite(x) && Number.isFinite(y)) {
-      return { left: x, top: y, right: x, bottom: y, width: 0, height: 0 } as DOMRect
+      return {
+        left: x,
+        top: y,
+        right: x,
+        bottom: y,
+        width: 0,
+        height: 0,
+      } as DOMRect
     }
     const sel = this.getAttr('virtual-anchor')
     if (sel) {
@@ -893,7 +910,10 @@ export class OASPopconfirm extends OASElement {
     const track = open && !hasPoint
     if (track && !this.scrollFollow) {
       this.scrollFollow = true
-      window.addEventListener('scroll', this.onScroll, { capture: true, passive: true })
+      window.addEventListener('scroll', this.onScroll, {
+        capture: true,
+        passive: true,
+      })
       window.addEventListener('resize', this.onScroll)
     } else if (!track && this.scrollFollow) {
       this.scrollFollow = false
@@ -1038,8 +1058,8 @@ export class OASPopconfirm extends OASElement {
         this.applyInitialFocus()
       }
       // virtual 模式下生命周期由宿主控制，不注册外部点击关闭
-      if (!this.isVirtual()) document.addEventListener('click', this.handleOutside, true)
-      else document.removeEventListener('click', this.handleOutside, true)
+      if (!this.isVirtual()) addOutsideDismiss(this.handleOutside)
+      else removeOutsideDismiss(this.handleOutside)
       this.syncWidth()
       this.placePanel()
       this.syncScrollFollow(true)
@@ -1052,7 +1072,7 @@ export class OASPopconfirm extends OASElement {
       }
       this.popoverEl.setAttribute('aria-hidden', 'true')
       unregisterLayer(this)
-      document.removeEventListener('click', this.handleOutside, true)
+      removeOutsideDismiss(this.handleOutside)
       this.syncScrollFollow(false)
     }
     this.wasOpen = open

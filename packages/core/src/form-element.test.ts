@@ -39,6 +39,33 @@ class FixtureInput extends OASFormElement {
 
 customElements.define('oas-form-fixture', FixtureInput)
 
+/** 回退名通道 fixture：update 里写内建回退名（与 input/textarea/mentions/input-number/auto-complete 同口径） */
+class FixtureFallbackLabelInput extends OASFormElement {
+  static override get observedAttributes(): string[] {
+    return ['value']
+  }
+
+  private inner: HTMLInputElement | null = null
+
+  protected override render(): void {
+    this.shadow.innerHTML = '<input />'
+    this.inner = this.shadow.querySelector('input')
+  }
+
+  protected override update(): void {
+    if (!this.inner) return
+    this.setFallbackInnerLabel('输入框')
+  }
+
+  protected getFormValue(): string | null {
+    return null
+  }
+
+  protected resetFormValue(): void {}
+}
+
+customElements.define('oas-form-fallback-fixture', FixtureFallbackLabelInput)
+
 function mount(attrs: Record<string, string> = {}): FixtureInput {
   const el = document.createElement('oas-form-fixture') as FixtureInput
   for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v)
@@ -54,7 +81,12 @@ type FakeInternals = {
 }
 
 function fakeInternals(el: FixtureInput): FakeInternals {
-  const fake: FakeInternals = { setFormValue: vi.fn(), setValidity: vi.fn(), labels: null, form: null }
+  const fake: FakeInternals = {
+    setFormValue: vi.fn(),
+    setValidity: vi.fn(),
+    labels: null,
+    form: null,
+  }
   ;(el as unknown as { internals_: unknown }).internals_ = fake
   return fake
 }
@@ -124,7 +156,11 @@ describe('OASFormElement（form-associated 公共机制）', () => {
     }
     ;(el as unknown as { internals_: unknown }).internals_ = fake
     const setValidity = (flags: ValidityStateFlags, message?: string): void =>
-      (el as unknown as { setValidity(f: ValidityStateFlags, m?: string): void }).setValidity(flags, message)
+      (
+        el as unknown as {
+          setValidity(f: ValidityStateFlags, m?: string): void
+        }
+      ).setValidity(flags, message)
 
     setValidity({ valueMissing: true })
     expect(fake.setValidity).toHaveBeenLastCalledWith({ valueMissing: true })
@@ -246,6 +282,39 @@ describe('OASFormElement 外部 label 动态刷新（共享 observer，覆盖文
     form.remove()
   })
 
+  // 回归（WebKit 实抓）：组件 update() 里写内建回退名（label/placeholder/locale 默认名）时，
+  // 若外部 label 已转发名称，直接 setAttribute('aria-label') 会把外部名踩掉——WebKit 加载时序
+  // 稳定命中（外部 <label for> 的「姓名」被组件默认名「输入框」覆盖）。回退写必须走
+  // setFallbackInnerLabel（data-fa-label 在场即让位）。
+  it('组件写内建回退名时不覆盖外部 label 转发名（update 晚于转发执行的路径）', async () => {
+    const el = document.createElement('oas-form-fallback-fixture') as HTMLElement & { shadowRoot: ShadowRoot }
+    el.id = 'fallback-target'
+    const label = document.createElement('label')
+    label.htmlFor = 'fallback-target'
+    label.textContent = '姓名'
+    document.body.append(label, el)
+    await settle()
+    const inner = el.shadowRoot.querySelector('input')!
+    expect(inner.getAttribute('aria-label'), '外部 label 优先').toBe('姓名')
+
+    // 再跑一次 update（属性变更 = 组件重渲染路径）：回退名不得踩掉外部名
+    el.setAttribute('value', 'x')
+    expect(inner.getAttribute('aria-label'), '回退名不得覆盖已转发的外部名').toBe('姓名')
+    expect(inner.hasAttribute('data-fa-label')).toBe(true)
+
+    // 直调 update()（value property setter / locale translator 回调的真实路径——不经
+    // runUpdateAndNotify 尾部的 syncInnerLabelledBy，stomp 只在这条路径上暴露）
+    ;(el as unknown as { update(): void }).update()
+    expect(inner.getAttribute('aria-label'), 'update() 直调路径也不得踩外部名').toBe('姓名')
+    expect(inner.hasAttribute('data-fa-label'), '直调后转发标记仍在').toBe(true)
+
+    // 外部 label 解除 → 回退名恢复
+    label.remove()
+    await settle()
+    el.setAttribute('value', 'y')
+    expect(inner.getAttribute('aria-label'), '外部名解除后写回内建回退名').toBe('输入框')
+  })
+
   it('label for 改指向：旧控件清理自己写入的名字，新控件立即接管', async () => {
     const { label, inner, form } = labelledFixture('字段标签')
     const other = mount({ name: 'other' })
@@ -327,7 +396,10 @@ describe('OASFormElement 外部 label 动态刷新（共享 observer，覆盖文
     const { label, inner, el, form } = labelledFixture('旧标签')
     expect(inner.getAttribute('aria-label')).toBe('旧标签')
     // Firefox 实测：label.for 改指向后同一任务内 internals.labels 仍是旧节点
-    ;(el as unknown as { internals_: unknown }).internals_ = { labels: [label], setFormValue: vi.fn() }
+    ;(el as unknown as { internals_: unknown }).internals_ = {
+      labels: [label],
+      setFormValue: vi.fn(),
+    }
     label.htmlFor = 'another-field'
     el.setAttribute('value', 'after-retarget')
     expect(inner.hasAttribute('aria-label'), '陈旧 internals.labels 不得让已解除关联的旧名称残留').toBe(false)

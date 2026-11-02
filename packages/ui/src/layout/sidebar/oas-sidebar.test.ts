@@ -216,9 +216,51 @@ describe('OASSidebar（可折叠侧栏）', () => {
     expect(el.hasAttribute('drawer-open')).toBe(false)
   })
 
+  // 回归（WebKit 实抓）：点击触发钮不移动焦点（焦点停在 body）时，打开前焦点「不可归还」——
+  // 关闭必须回落到触发钮，否则键盘用户 Esc 关闭后焦点丢回 body（读屏/后续 Tab 断链）。
+  it('移动端：关闭回焦——打开前焦点在 body 时回落到触发钮', () => {
+    stubMatchMedia(true)
+    const el = mount()
+    const trigger = el.shadowRoot!.querySelector<HTMLElement>('[part="trigger"]')!
+    // 模拟 WebKit：click 不把焦点给按钮（body 保持焦点）
+    ;(document.activeElement as HTMLElement | null)?.blur()
+    el.openDrawer()
+    el.closeDrawer()
+    expect(el.shadowRoot!.activeElement, '关闭后焦点必须回到触发钮').toBe(trigger)
+  })
+
+  // 回归：断连期间 open 边沿状态必须复位——否则重连后首帧把「已开」当成「此前已开过」，
+  // drawerJustOpened 为 false，打开态不再重新入焦（断连前入焦的状态在重连后也不保证保留）。
+  it('移动端：断连复位打开边沿——重连后仍为打开态会重新入焦', () => {
+    stubMatchMedia(true)
+    const focusSpy = vi.spyOn(OASSidebar.prototype as unknown as { focusDrawerInitial(): void }, 'focusDrawerInitial')
+    const el = mount({ items: JSON.stringify([{ label: '首页', value: 'home' }]) })
+    el.openDrawer()
+    expect(focusSpy, '打开边沿入焦一次').toHaveBeenCalledTimes(1)
+
+    el.remove() // disconnectedCallback 复位 drawerPrevOpen
+    document.body.appendChild(el) // 重连：update 首帧应判定为打开边沿
+    expect(el.hasAttribute('drawer-open'), '重连后仍是打开态').toBe(true)
+    expect(focusSpy, '重连后打开边沿必须重新入焦').toHaveBeenCalledTimes(2)
+    focusSpy.mockRestore()
+  })
+
+  it('移动端：关闭回焦——打开前焦点在其它元素时归还该元素（优先于触发钮）', () => {
+    stubMatchMedia(true)
+    const outside = document.createElement('button')
+    document.body.appendChild(outside)
+    outside.focus()
+    const el = mount()
+    el.openDrawer()
+    el.closeDrawer()
+    expect(document.activeElement, '打开前焦点可归还时归还它').toBe(outside)
+  })
+
   it('移动端：选中菜单项后抽屉自动收起', () => {
     stubMatchMedia(true)
-    const el = mount({ items: JSON.stringify([{ label: '首页', value: 'home', icon: '🏠' }]) })
+    const el = mount({
+      items: JSON.stringify([{ label: '首页', value: 'home', icon: '🏠' }]),
+    })
     el.shadowRoot!.querySelector<HTMLElement>('[part="trigger"]')!.click()
     expect(el.hasAttribute('drawer-open')).toBe(true)
     el.shadowRoot!.querySelector<HTMLElement>('[part="item"]')!.click()
@@ -299,7 +341,12 @@ describe('OASSidebar（可折叠侧栏）', () => {
     let lastMedia = ''
     vi.stubGlobal('matchMedia', (media: string) => {
       lastMedia = media
-      return { matches: false, media, addEventListener: () => {}, removeEventListener: () => {} }
+      return {
+        matches: false,
+        media,
+        addEventListener: () => {},
+        removeEventListener: () => {},
+      }
     })
     mount({ 'mobile-breakpoint': '600' })
     expect(lastMedia).toBe('(max-width: 600px)')
@@ -399,7 +446,9 @@ describe('OASSidebar 分组（items.group）', () => {
 
   it('items 无 group 字段：平铺、无组标题（向后兼容）', () => {
     stubMatchMedia(false)
-    const el = mount({ items: '[{"label":"首页","value":"home"},{"label":"设置","value":"s"}]' })
+    const el = mount({
+      items: '[{"label":"首页","value":"home"},{"label":"设置","value":"s"}]',
+    })
     expect(el.shadowRoot!.querySelectorAll('[part="group"]').length).toBe(0)
     expect(el.shadowRoot!.querySelectorAll('[part="item"]').length).toBe(2)
   })
@@ -529,7 +578,13 @@ describe('OASSidebar 能力补齐批（嵌套/徽标/操作/分隔线/骨架/快
         label: 'L1',
         value: 'l1',
         icon: 'star',
-        children: [{ label: 'L2', value: 'l2', children: [{ label: 'L3', value: 'l3' }] }],
+        children: [
+          {
+            label: 'L2',
+            value: 'l2',
+            children: [{ label: 'L3', value: 'l3' }],
+          },
+        ],
       },
     ]
     const el = mount({ items: JSON.stringify(deep) })
@@ -694,12 +749,18 @@ describe('OASSidebar 能力补齐批（嵌套/徽标/操作/分隔线/骨架/快
     click('v1')
     click('inbox')
     expect(details[0]).toEqual({ value: 'v1', label: 'V1', group: '视图' })
-    expect(details[1]).toEqual({ value: 'inbox', label: '收件箱', group: undefined })
+    expect(details[1]).toEqual({
+      value: 'inbox',
+      label: '收件箱',
+      group: undefined,
+    })
   })
 
   it('徽标：item.badge 渲染 part="badge" 计数徽标', () => {
     stubMatchMedia(false)
-    const el = mount({ items: '[{"label":"收件箱","value":"inbox","badge":"12"}]' })
+    const el = mount({
+      items: '[{"label":"收件箱","value":"inbox","badge":"12"}]',
+    })
     const badge = el.shadowRoot!.querySelector('[part="badge"]')!
     expect(badge.textContent).toBe('12')
     expect(badge.classList.contains('item-badge')).toBe(true)
@@ -752,8 +813,15 @@ describe('OASSidebar 能力补齐批（嵌套/徽标/操作/分隔线/骨架/快
       <oas-sidebar-item value="u1" avatar-text="李" avatar-color="#fef08a">李娜</oas-sidebar-item>
       <oas-sidebar-item value="u2" avatar="https://example.com/b.png">王强</oas-sidebar-item>
     `)
-    const model = (el as unknown as { _items: Array<{ avatar?: string; avatarText?: string; avatarColor?: string }> })
-      ._items
+    const model = (
+      el as unknown as {
+        _items: Array<{
+          avatar?: string
+          avatarText?: string
+          avatarColor?: string
+        }>
+      }
+    )._items
     expect(model[0]!.avatarText).toBe('李')
     expect(model[0]!.avatarColor).toBe('#fef08a')
     expect(model[1]!.avatar).toBe('https://example.com/b.png')
@@ -768,7 +836,12 @@ describe('OASSidebar 能力补齐批（嵌套/徽标/操作/分隔线/骨架/快
     const el = mount({
       collapsed: '',
       items: JSON.stringify([
-        { label: '张伟', value: 'u1', avatarText: '张', avatarColor: '#e11d48' },
+        {
+          label: '张伟',
+          value: 'u1',
+          avatarText: '张',
+          avatarColor: '#e11d48',
+        },
         { label: '李娜', value: 'u2', avatar: '/favicon.svg' },
         { label: '仅色', value: 'tint', avatarColor: '#0ea5e9' },
         { label: '纯文字', value: 'plain' },
@@ -798,7 +871,10 @@ describe('OASSidebar 能力补齐批（嵌套/徽标/操作/分隔线/骨架/快
     expect(flyout.hidden, '点击头像父项打开 flyout').toBe(false)
     expect(detail, '父项不派发 select').toBeUndefined()
     flyout.querySelector<HTMLElement>('[data-value="member"]')!.click()
-    expect(detail, 'flyout 内子项可选中').toEqual({ value: 'member', label: '成员' })
+    expect(detail, 'flyout 内子项可选中').toEqual({
+      value: 'member',
+      label: '成员',
+    })
   })
 
   it('折叠态嵌套父项点击打开子菜单 flyout（父项不是页面，不再派发父项 select；子项可点击派发 select）', () => {
@@ -821,7 +897,10 @@ describe('OASSidebar 能力补齐批（嵌套/徽标/操作/分隔线/骨架/快
     // flyout 内子项可点
     const child = flyout!.querySelector<HTMLElement>('[part="item"][data-value="users"]')!
     child.click()
-    expect(detail, '子项点击派发 select').toEqual({ value: 'users', label: '用户' })
+    expect(detail, '子项点击派发 select').toEqual({
+      value: 'users',
+      label: '用户',
+    })
     expect(flyout!.hidden, '选中后 flyout 关闭').toBe(true)
     // 展开态对照不受影响：chevron 仍在、点击只展开不派发 select
     const el2 = mount({
@@ -848,7 +927,13 @@ describe('OASSidebar 能力补齐批（嵌套/徽标/操作/分隔线/骨架/快
     expect(flyouts[0]!.hidden, '单开互斥：开第二个时第一个应关闭').toBe(true)
     expect(flyouts[1]!.hidden).toBe(false)
     // Esc 关闭 + 回焦父项
-    el.shadowRoot!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, composed: true }))
+    el.shadowRoot!.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        key: 'Escape',
+        bubbles: true,
+        composed: true,
+      }),
+    )
     expect(flyouts[1]!.hidden, 'Esc 应关闭 flyout').toBe(true)
     expect(parents[1]!.getAttribute('aria-expanded')).toBe('false')
     // 点击外部关闭
@@ -976,7 +1061,11 @@ describe('OASSidebar 能力补齐批（嵌套/徽标/操作/分隔线/骨架/快
     el.addEventListener('oas-action', (e) => (actionDetail = (e as CustomEvent).detail))
     el.addEventListener('oas-select', () => selectCount++)
     actionBtn.click()
-    expect(actionDetail).toEqual({ value: 'proj', action: 'edit', label: '编辑' })
+    expect(actionDetail).toEqual({
+      value: 'proj',
+      action: 'edit',
+      label: '编辑',
+    })
     expect(selectCount, '操作按钮不触发 select').toBe(0)
   })
 
@@ -993,7 +1082,10 @@ describe('OASSidebar 能力补齐批（嵌套/徽标/操作/分隔线/骨架/快
 
   it('loading 骨架屏：渲染 part="skeleton" 骨架行、不渲染菜单项', () => {
     stubMatchMedia(false)
-    const el = mount({ loading: '', items: '[{"label":"首页","value":"home"}]' })
+    const el = mount({
+      loading: '',
+      items: '[{"label":"首页","value":"home"}]',
+    })
     expect(el.shadowRoot!.querySelectorAll('[part="skeleton"]').length).toBe(4)
     expect(el.shadowRoot!.querySelectorAll('[part="item"]').length).toBe(0)
     el.setAttribute('loading', '6')
@@ -1107,7 +1199,12 @@ describe('OASSidebar 能力补齐批（嵌套/徽标/操作/分隔线/骨架/快
           value: 'members',
           icon: 'user',
           children: [
-            { label: '张伟', value: 'u1', avatarText: '张', avatarColor: '#e11d48' },
+            {
+              label: '张伟',
+              value: 'u1',
+              avatarText: '张',
+              avatarColor: '#e11d48',
+            },
             { label: '未分配', value: 'unassigned' },
           ],
         },
@@ -1189,7 +1286,13 @@ describe('OASSidebar 能力补齐批（嵌套/徽标/操作/分隔线/骨架/快
     const rail = el.shadowRoot!.querySelector<HTMLElement>('[part="rail"]')!
     let detail: unknown
     el.addEventListener('oas-resize', (e) => (detail = (e as CustomEvent).detail))
-    rail.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, clientX: 100, button: 0 }))
+    rail.dispatchEvent(
+      new PointerEvent('pointerdown', {
+        bubbles: true,
+        clientX: 100,
+        button: 0,
+      }),
+    )
     document.dispatchEvent(new PointerEvent('pointermove', { bubbles: true, clientX: 160 }))
     expect(el.getAttribute('width')).toBe('300px')
     document.dispatchEvent(new PointerEvent('pointermove', { bubbles: true, clientX: 40 }))
@@ -1224,7 +1327,13 @@ describe('OASSidebar 能力补齐批（嵌套/徽标/操作/分隔线/骨架/快
       configurable: true,
     })
     const rail = el.shadowRoot!.querySelector<HTMLElement>('[part="rail"]')!
-    rail.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, clientX: 100, button: 0 }))
+    rail.dispatchEvent(
+      new PointerEvent('pointerdown', {
+        bubbles: true,
+        clientX: 100,
+        button: 0,
+      }),
+    )
     document.dispatchEvent(new PointerEvent('pointermove', { bubbles: true, clientX: 40 }))
     expect(el.getAttribute('width')).toBe('300px')
     document.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, clientX: 40 }))
@@ -1232,7 +1341,12 @@ describe('OASSidebar 能力补齐批（嵌套/徽标/操作/分隔线/骨架/快
 
   it('resizable：方向键微调宽度（±8）+ Home/End 跳 min/max + resize-min/max 生效', () => {
     stubMatchMedia(false)
-    const el = mount({ resizable: '', width: '240px', 'resize-min': '200', 'resize-max': '300' })
+    const el = mount({
+      resizable: '',
+      width: '240px',
+      'resize-min': '200',
+      'resize-max': '300',
+    })
     Object.defineProperty(el, 'getBoundingClientRect', {
       value: () => ({
         width: 240,
@@ -1532,7 +1646,9 @@ describe('OASSidebar 图标通道与着色', () => {
   it('同名覆盖：registerIcon 与内置同名时 sidebar 用自定义版（customIcons 优先）', () => {
     stubMatchMedia(false)
     registerIcon('check', '<path d="M2 2 L14 14"/>') // 与内置 check 同名 → 自定义版覆盖
-    const el = mount({ items: JSON.stringify([{ label: '完成', value: 'done', icon: 'check' }]) })
+    const el = mount({
+      items: JSON.stringify([{ label: '完成', value: 'done', icon: 'check' }]),
+    })
     const svg = el.shadowRoot!.querySelector<SVGSVGElement>('.icon svg')
     expect(svg!.tagName.toLowerCase(), '自定义图标覆盖同名内置').toBe('svg')
     expect(svg!.querySelector('path')!.getAttribute('d')).toBe('M2 2 L14 14')
@@ -1773,7 +1889,12 @@ describe('OASSidebar 属性-方法撞名回归', () => {
   })
 
   it('property 写入 resizeMin / resizeMax 后 rail Home/End 调整不抛错', () => {
-    const el = mount({ resizable: '', width: '240px', 'resize-min': '200', 'resize-max': '300' })
+    const el = mount({
+      resizable: '',
+      width: '240px',
+      'resize-min': '200',
+      'resize-max': '300',
+    })
     const rec = el as unknown as Record<string, unknown>
     rec.resizeMin = 1
     rec.resizeMax = 1
@@ -1881,7 +2002,13 @@ describe('OASSidebar 二次断连全局监听清理', () => {
     el.remove()
     document.body.appendChild(el)
     el.remove()
-    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'b', ctrlKey: true, cancelable: true }))
+    document.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        key: 'b',
+        ctrlKey: true,
+        cancelable: true,
+      }),
+    )
     expect(el.hasAttribute('collapsed'), '残留监听会切换折叠').toBe(false)
   })
 })

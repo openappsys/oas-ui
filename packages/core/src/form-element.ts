@@ -222,6 +222,23 @@ export abstract class OASFormElement extends OASElement {
   }
 
   /**
+   * 组件内建命名回退（`label` 属性 / placeholder / locale 默认名）写入内层控件的 `aria-label`。
+   *
+   * 外部 label 已转发时（`data-fa-label` 在场）**必须跳过**：外部名优先于内建回退名，而
+   * `update()` 会在 label 转发之后再次执行（属性变更 / 尺寸变化 / locale 刷新 / 宿主框架
+   * 属性回写），直接写回退名会把已转发的外部名踩掉——WebKit 加载时序稳定触发该路径
+   * （实测：外部 `<label for>` 的「姓名」被组件默认名「输入框」覆盖，读屏播报错误名称）。
+   * 外部 label 解除后 syncInnerLabelledBy 会清掉 `data-fa-label`，下一次 update 自然写回回退名。
+   */
+  protected setFallbackInnerLabel(text: string): void {
+    const inner = this.innerControl
+    if (!inner || !text) return
+    if (inner.hasAttribute('data-fa-label')) return
+    if (inner.getAttribute('aria-label') === text) return
+    inner.setAttribute('aria-label', text)
+  }
+
+  /**
    * 关联 label 解析：以**控件自身所在的树作用域**内 `for` 指向 + 祖先包裹为准（DOM 查询即时一致）。
    *
    * 不读 `internals.labels` 做命名：Firefox 的 live list 在 `label.for` 改指向后同一任务内仍是旧值，

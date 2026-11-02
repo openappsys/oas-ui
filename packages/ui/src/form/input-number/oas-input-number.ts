@@ -462,6 +462,17 @@ input[data-scrubbing] {
 :host([data-align='right']) input {
   text-align: end;
 }
+
+@media (forced-colors: active) {
+  /* 强制色下 box-shadow 被 UA 弃用：焦点环回退系统色实线 outline（WCAG 2.4.7） */
+  input:focus,
+  .clear-btn:focus-visible,
+  .controls button:focus-visible {
+    outline: 1px solid CanvasText;
+    outline-offset: 1px;
+    box-shadow: none;
+  }
+}
 `
 
 export class OASInputNumber extends OASFormElement {
@@ -621,7 +632,9 @@ export class OASInputNumber extends OASFormElement {
     // 数字 scrub（像素锚定计步）：按下记录锚点，横移 ≥ 一个计步单位激活
     this.input?.addEventListener('pointerdown', (e) => this.beginPointerScrub(e as PointerEvent))
     // 滚轮步进（wheel 属性显式开启 + 聚焦时；preventDefault 需非 passive）
-    this.input?.addEventListener('wheel', (e) => this.onWheel(e), { passive: false })
+    this.input?.addEventListener('wheel', (e) => this.onWheel(e), {
+      passive: false,
+    })
 
     // 步进按钮：click 覆盖键盘激活与快速点击；pointerdown 启动长按连击
     this.upBtn?.addEventListener('click', () => this.stepBy(1))
@@ -733,8 +746,7 @@ export class OASInputNumber extends OASFormElement {
     if (max !== '') i.setAttribute('aria-valuemax', max)
     else i.removeAttribute('aria-valuemax')
     // 内置文案走 locale registry（label 属性 > placeholder > 内置文案，setLocale 切换自动刷新）
-    i.setAttribute(
-      'aria-label',
+    this.setFallbackInnerLabel(
       this.getAttr('label', '') || this.getAttr('placeholder', '') || this.t('inputNumber.defaultLabel'),
     )
     this.upBtn?.setAttribute('aria-label', this.t('inputNumber.increase'))
@@ -1031,7 +1043,12 @@ export class OASInputNumber extends OASFormElement {
     const minRaw = this.getAttr('min', '')
     const base =
       parsed !== null && !Number.isNaN(parsed) ? parsed : (committed ?? (minRaw !== '' ? Number(minRaw) || 0 : 0))
-    this.scrubState = { id: e.pointerId, anchor: beginScrub(e.clientX, base), active: false, startValue: committed }
+    this.scrubState = {
+      id: e.pointerId,
+      anchor: beginScrub(e.clientX, base),
+      active: false,
+      startValue: committed,
+    }
     window.addEventListener('pointermove', this.onScrubMove)
     window.addEventListener('pointerup', this.onScrubUp)
     window.addEventListener('pointercancel', this.onScrubUp)

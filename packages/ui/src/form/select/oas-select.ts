@@ -679,6 +679,17 @@ ${OPTION_STYLE}
    只进 select 自身 shadow——虚拟模式行高由 vlist 布局数学固定（item-height），
    不在 vlist 注入，避免行高与定位数学打架 */
 ${TOUCH_TARGET_CSS}
+
+@media (forced-colors: active) {
+  /* 强制色下 box-shadow 被 UA 弃用：焦点环回退系统色实线 outline（WCAG 2.4.7） */
+  .trigger:focus-visible,
+  .clear-btn:focus-visible,
+  .search-input:focus {
+    outline: 1px solid CanvasText;
+    outline-offset: 1px;
+    box-shadow: none;
+  }
+}
 `
 
 export class OASSelect extends OASFormElement {
@@ -1941,8 +1952,9 @@ export class OASSelect extends OASFormElement {
 
     this.triggerEl.disabled = disabled
     // aria-label：label 属性（表单标签，对齐 oas-input 契约）> placeholder 回退；
-    // 外部 <label for> 关联命名由基类 syncInnerLabelledBy 在 update 后覆盖（外部 label 优先）
-    this.triggerEl.setAttribute('aria-label', this.getAttr('label', '') || placeholder)
+    // 走基类通道——外部 <label for> 已转发名称时让位（value property 赋值 / locale 切换
+    // 都会直调 update()，不经 runUpdateAndNotify 的尾部 re-sync，直写会踩掉外部名）
+    this.setFallbackInnerLabel(this.getAttr('label', '') || placeholder)
     if (readonly) this.triggerEl.setAttribute('aria-readonly', 'true')
     else this.triggerEl.removeAttribute('aria-readonly')
 

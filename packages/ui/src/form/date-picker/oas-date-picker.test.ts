@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { setLocale } from '@oas-ui/i18n'
+import en from '@oas-ui/i18n/en'
 import '@oas-ui/i18n'
 import { computePosition } from '../../overlay/floating/index.js'
 import { OASDatePicker } from './index.js'
@@ -1991,5 +1992,43 @@ describe('OASDatePicker 清空按钮键盘可达（I4）', () => {
     clearBtn.click()
     expect(el.getAttribute('value')).toBeNull()
     expect(el.shadowRoot!.activeElement, '清空后焦点交还 trigger').toBe(input(el))
+  })
+})
+
+// 回归：内建命名回退（placeholder）必须走基类 setFallbackInnerLabel——外部 <label for> 转发的
+// 名称优先。value property setter / locale 切换都直调 update()（无 runUpdateAndNotify 尾部
+// re-sync），直写 setAttribute('aria-label') 会踩掉外部名。
+describe('外部 label 命名优先级（update 直调路径）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  it('外部 <label for> + value property + locale 切换都不踩外部名，解除后恢复回退名', async () => {
+    const el = mount()
+    el.id = 'date-picker-fa-target'
+    const label = document.createElement('label')
+    label.htmlFor = 'date-picker-fa-target'
+    label.textContent = '出生日期'
+    document.body.append(label)
+    await new Promise((r) => setTimeout(r, 0))
+    expect(trigger(el).getAttribute('aria-label'), '外部 label 已转发').toBe('出生日期')
+
+    el.value = '2026-01-01' // property setter → this.update() 直调
+    expect(trigger(el).getAttribute('aria-label'), 'value property 赋值不得踩外部名').toBe('出生日期')
+
+    setLocale(en) // translator 变更 → this.update() 直调
+    expect(trigger(el).getAttribute('aria-label'), 'locale 切换不得踩外部名').toBe('出生日期')
+
+    setLocale('zh-CN')
+    label.remove()
+    await new Promise((r) => setTimeout(r, 0))
+    el.value = '2026-02-01'
+    expect(trigger(el).getAttribute('aria-label'), '外部 label 解除后恢复内建回退名').toBe('请选择日期')
   })
 })

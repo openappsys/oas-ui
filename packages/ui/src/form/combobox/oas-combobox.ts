@@ -393,6 +393,17 @@ ${OPTION_STYLE}
   color: var(--oas-color-text-secondary);
   font-size: var(--oas-font-size-sm);
 }
+
+@media (forced-colors: active) {
+  /* 强制色下 box-shadow 被 UA 弃用：焦点环回退系统色实线 outline（WCAG 2.4.7） */
+  input:focus,
+  .chip button:focus-visible,
+  .clear-btn:focus-visible {
+    outline: 1px solid CanvasText;
+    outline-offset: 1px;
+    box-shadow: none;
+  }
+}
 `
 
 export class OASCombobox extends OASFormElement {
@@ -646,7 +657,10 @@ export class OASCombobox extends OASFormElement {
     // autocomplete 透传：宿主显式值原样镜像；缺省回落 off（浏览器自动补全默认关闭）
     const autocomplete = this.getAttribute('autocomplete')
     i.setAttribute('autocomplete', autocomplete != null && autocomplete !== '' ? autocomplete : 'off')
-    i.setAttribute('aria-label', placeholder)
+    // 内建命名回退（placeholder，缺省 = locale 的 select.placeholder）：走基类通道，
+    // 外部 <label for> 已转发名称时让位（property 赋值 / locale 回落都会直调 update()，
+    // 直写 setAttribute 会踩掉外部名）
+    this.setFallbackInnerLabel(placeholder)
     if (status === 'error') i.setAttribute('aria-invalid', 'true')
     else i.removeAttribute('aria-invalid')
     // 受控 value 外部变化回填 label：仅单选、未展开且未输入时覆盖（避免打断正在输入/过滤；

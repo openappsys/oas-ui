@@ -1,5 +1,6 @@
 import { OASElement } from '@oas-ui/core'
 import { bindCoarseTap, clickIgnorable } from '../../shared/coarse-tap.js'
+import { addOutsideDismiss, removeOutsideDismiss } from '../../shared/outside-dismiss.js'
 import { resolveDirection } from '../../shared/direction.js'
 import { cssVarPx } from '../../shared/css-var.js'
 import { normalizeSizeStrict, ALL_SIZES } from '../../shared/size.js'
@@ -222,6 +223,15 @@ const STYLE = `
   border-left: 1px solid var(--oas-color-border);
   border-bottom: 1px solid var(--oas-color-border);
 }
+
+@media (forced-colors: active) {
+  /* 强制色下 box-shadow 被 UA 弃用：焦点环回退系统色实线 outline（WCAG 2.4.7） */
+  .arrow-btn:focus-visible {
+    outline: 1px solid CanvasText;
+    outline-offset: 1px;
+    box-shadow: none;
+  }
+}
 `
 
 /** 非法 size 告警：归一化回落 medium 后转发；dev 下 console.warn 一次（同值去重，同 tabs/button 惯例） */
@@ -381,7 +391,7 @@ export class OASDropdown extends OASElement {
       this.releaseEscapeLayer?.()
       this.releaseEscapeLayer = null
     })
-    this.onCleanup(() => document.removeEventListener('click', this.handleOutside, true))
+    this.onCleanup(() => removeOutsideDismiss(this.handleOutside))
     // 滚动/尺寸变化重定位监听（scroll 用 capture 捕获嵌套容器滚动，同 tooltip 的 virtual 跟随）
     this.onCleanup(() => {
       window.removeEventListener('scroll', this.onScroll, { capture: true })
@@ -440,7 +450,7 @@ export class OASDropdown extends OASElement {
 
   /** 幂等摘除 document/window 全局监听（onCleanup 与 disconnectedCallback 共用，重复调用无副作用） */
   private detachGlobalListeners(): void {
-    document.removeEventListener('click', this.handleOutside, true)
+    removeOutsideDismiss(this.handleOutside)
     this.syncScrollFollow(false)
     if (this.scrollRaf) {
       if (typeof cancelAnimationFrame === 'function') cancelAnimationFrame(this.scrollRaf)
@@ -801,7 +811,7 @@ export class OASDropdown extends OASElement {
       this.menuEl.setAttribute('value', this.getAttr('value', ''))
       this.anchorEl.hidden = false
       this.anchorEl.classList.remove('oas-closing')
-      document.addEventListener('click', this.handleOutside, true)
+      addOutsideDismiss(this.handleOutside)
       this.position()
       this.syncScrollFollow(true)
       // 打开瞬间：压入共享 Esc 层（后进先出，避免一次 Esc 连带关闭其他浮层）
@@ -824,7 +834,7 @@ export class OASDropdown extends OASElement {
       } else {
         this.anchorEl.hidden = true
       }
-      document.removeEventListener('click', this.handleOutside, true)
+      removeOutsideDismiss(this.handleOutside)
       this.syncScrollFollow(false)
       // 收起内层菜单残留的级联展开态，避免重开时子菜单直接可见；
       // SSR/Node 渲染环境无 MouseEvent，跳过（SSR 快照本就是关闭态）
@@ -898,12 +908,18 @@ export class OASDropdown extends OASElement {
           top: anchorRect.top - panelRect.height - offset,
           left: anchorCenterX - panelRect.width / 2,
         },
-        bottom: { top: anchorRect.bottom + offset, left: anchorCenterX - panelRect.width / 2 },
+        bottom: {
+          top: anchorRect.bottom + offset,
+          left: anchorCenterX - panelRect.width / 2,
+        },
         left: {
           left: anchorRect.left - panelRect.width - offset,
           top: anchorCenterY - panelRect.height / 2,
         },
-        right: { left: anchorRect.right + offset, top: anchorCenterY - panelRect.height / 2 },
+        right: {
+          left: anchorRect.right + offset,
+          top: anchorCenterY - panelRect.height / 2,
+        },
       }
       const p = raw[base]
       top = p.top
@@ -1006,7 +1022,10 @@ export class OASDropdown extends OASElement {
     if (typeof window === 'undefined') return
     if (open && !this.scrollFollow) {
       this.scrollFollow = true
-      window.addEventListener('scroll', this.onScroll, { capture: true, passive: true })
+      window.addEventListener('scroll', this.onScroll, {
+        capture: true,
+        passive: true,
+      })
       window.addEventListener('resize', this.onScroll)
     } else if (!open && this.scrollFollow) {
       this.scrollFollow = false
@@ -1097,7 +1116,10 @@ export class OASDropdown extends OASElement {
 
   /** 单个 <oas-dropdown-group> → 分组项（label/value 属性 + 子元素平铺 children） */
   private childToGroup(el: Element): MenuItem {
-    const item: MenuItem = { type: 'group', label: el.getAttribute('label') ?? '' }
+    const item: MenuItem = {
+      type: 'group',
+      label: el.getAttribute('label') ?? '',
+    }
     const value = el.getAttribute('value')
     if (value) item.value = value
     const children = this.parseChildLevel(el.children)

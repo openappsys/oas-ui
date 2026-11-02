@@ -7,6 +7,7 @@ import { computePosition, getViewport, type Placement } from '../../overlay/floa
 import { registeredPopoverCapabilities, onPopoverCapabilityRegistered } from './oas-popover-capability.js'
 import { devWarn } from '../../shared/dev-warn.js'
 import { isSsrRuntime } from '../../shared/ssr-runtime.js'
+import { addOutsideDismiss, removeOutsideDismiss } from '../../shared/outside-dismiss.js'
 
 /** 面板与触发器的默认间距（offset 主轴缺省值，与 computePosition 的 GAP 一致） */
 const GAP = 8
@@ -424,6 +425,15 @@ const STYLE = `
 .backdrop.oas-show {
   display: block;
 }
+
+@media (forced-colors: active) {
+  /* 强制色下 box-shadow 被 UA 弃用：焦点环回退系统色实线 outline（WCAG 2.4.7） */
+  .close-btn:focus-visible {
+    outline: 1px solid CanvasText;
+    outline-offset: 1px;
+    box-shadow: none;
+  }
+}
 `
 
 /**
@@ -449,8 +459,12 @@ function preventModalScrollKeydown(e: KeyboardEvent): void {
 function lockModalScroll(): void {
   if (modalScrollCount === 0) {
     window.addEventListener('wheel', preventModalScroll, { passive: false })
-    window.addEventListener('touchmove', preventModalScroll, { passive: false })
-    window.addEventListener('keydown', preventModalScrollKeydown, { passive: false })
+    window.addEventListener('touchmove', preventModalScroll, {
+      passive: false,
+    })
+    window.addEventListener('keydown', preventModalScrollKeydown, {
+      passive: false,
+    })
   }
   modalScrollCount++
 }
@@ -742,7 +756,7 @@ export class OASPopover extends OASElement {
     this.bindLifecycle()
     if (!this.panel || !this.hasAttr('open')) return
     registerLayer(this)
-    if (!this.hasAttr('virtual')) document.addEventListener('click', this.handleOutside, true)
+    if (!this.hasAttr('virtual')) this.bindOutside()
     this.syncScrollFollow(true)
   }
 
@@ -925,7 +939,7 @@ export class OASPopover extends OASElement {
     this.lifecycleBound = true
     // 外部点击关闭（面板移入 body 后 composedPath 仍含面板自身，见 handleOutside）+ Esc 栈
     this.onCleanup(() => unregisterLayer(this))
-    this.onCleanup(() => document.removeEventListener('click', this.handleOutside, true))
+    this.onCleanup(() => this.unbindOutside())
     // 计时器统一清理（hover 防抖 + 通用延迟 + 退场隐藏 + auto-close），断开连接无孤儿。
     // （contextmenu 能力的触屏长按计时器由该 controller 自管：hostDisconnected 清理）
     this.onCleanup(() => {
@@ -1016,7 +1030,14 @@ export class OASPopover extends OASElement {
    * contextmenu 能力包调用；无能力包时 contextmenu 右键回落锚点定位打开。
    */
   public openAtPoint(x: number, y: number): void {
-    this.cursorRect = { left: x, top: y, right: x, bottom: y, width: 0, height: 0 } as DOMRect
+    this.cursorRect = {
+      left: x,
+      top: y,
+      right: x,
+      bottom: y,
+      width: 0,
+      height: 0,
+    } as DOMRect
     // 记录指针坐标打开时刻：触屏长按抬手的合成 click 在收尾守卫窗口内跳过 tap 切换
     this.lastPointerOpenAt = Date.now()
     this.requestOpen()
@@ -1210,6 +1231,22 @@ export class OASPopover extends OASElement {
   }
 
   /**
+   * 外点关闭监听挂接（与虚锚点互斥：virtual 由宿主控制生命周期）。
+   *
+   * 除 document 级 click 外补一条 **pointerup（触屏/笔）** 通道：WebKit 对非交互目标上的
+   * tap 只派发 pointer 事件、不合成兼容 click（真机实测：tap 在 div 上只有 pointerdown/
+   * pointerup），移动端 Safari 同源行为使 document 级 click 外点关闭失效——共享
+   * shared/outside-dismiss 的既有口径（pointer 事件在触屏路径始终可达）。
+   */
+  private bindOutside(): void {
+    addOutsideDismiss(this.handleOutside)
+  }
+
+  private unbindOutside(): void {
+    removeOutsideDismiss(this.handleOutside)
+  }
+
+  /**
    * Esc 关闭后焦点还原到触发元素（公开：模块级 Esc 处理器与宿主均可调用）。
    * P13 final-focus：归还目标可配——finalFocusEl property > final-focus 选择器 > 触发元素。
    * virtual 模式无真实锚点，跳过（宿主自行管理焦点；配置了 final-focus/finalFocusEl 仍生效）。
@@ -1246,7 +1283,14 @@ export class OASPopover extends OASElement {
     const x = parseFloat(this.getAttr('virtual-x'))
     const y = parseFloat(this.getAttr('virtual-y'))
     if (Number.isFinite(x) && Number.isFinite(y)) {
-      return { left: x, top: y, right: x, bottom: y, width: 0, height: 0 } as DOMRect
+      return {
+        left: x,
+        top: y,
+        right: x,
+        bottom: y,
+        width: 0,
+        height: 0,
+      } as DOMRect
     }
     const sel = this.getAttr('virtual-anchor')
     if (sel) {
@@ -1385,7 +1429,14 @@ export class OASPopover extends OASElement {
     const h = Math.min(r.height, viewport.height - pad * 2)
     const left = Math.max(pad, Math.min(r.left, viewport.width - pad - w))
     const top = Math.max(pad, Math.min(r.top, viewport.height - pad - h))
-    return { left, top, right: left + w, bottom: top + h, width: w, height: h } as DOMRect
+    return {
+      left,
+      top,
+      right: left + w,
+      bottom: top + h,
+      width: w,
+      height: h,
+    } as DOMRect
   }
 
   /**
@@ -1906,7 +1957,10 @@ export class OASPopover extends OASElement {
     const track = open && !this.hasVirtualPoint() && this.getAttr('sticky', 'partial') !== 'off'
     if (track && !this.scrollFollow) {
       this.scrollFollow = true
-      window.addEventListener('scroll', this.onScroll, { capture: true, passive: true })
+      window.addEventListener('scroll', this.onScroll, {
+        capture: true,
+        passive: true,
+      })
       window.addEventListener('resize', this.onScroll)
     } else if (!track && this.scrollFollow) {
       this.scrollFollow = false
@@ -2012,8 +2066,8 @@ export class OASPopover extends OASElement {
         this.openScrollY = typeof window !== 'undefined' ? window.scrollY : Number.NaN
       }
       // virtual 模式下生命周期由宿主控制，不注册外部点击关闭
-      if (!this.hasAttr('virtual')) document.addEventListener('click', this.handleOutside, true)
-      else document.removeEventListener('click', this.handleOutside, true)
+      if (!this.hasAttr('virtual')) this.bindOutside()
+      else this.unbindOutside()
       this.panel.classList.remove('oas-closing')
       this.panel.setAttribute('aria-hidden', String(!showPanel))
       this.syncWidth()
@@ -2052,7 +2106,7 @@ export class OASPopover extends OASElement {
       }
       if (this.wasOpen) this.closeNested()
       unregisterLayer(this)
-      document.removeEventListener('click', this.handleOutside, true)
+      this.unbindOutside()
       this.syncPortal(false)
       this.syncModal(false)
       this.syncScrollFollow(false)

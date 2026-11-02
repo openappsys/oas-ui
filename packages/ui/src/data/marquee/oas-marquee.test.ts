@@ -309,8 +309,14 @@ describe('OASMarquee', () => {
    * 若实现回退到 border box 口径，`repeat` 会多一份，断言必挂（防「mock 变成空断言」）。
    */
   function mockRects(el: OASMarquee, containerW = 300, contentW = 100, borderBoxW = containerW): void {
-    Object.defineProperty(el, 'clientWidth', { value: containerW, configurable: true })
-    Object.defineProperty(el, 'clientHeight', { value: 40, configurable: true })
+    Object.defineProperty(el, 'clientWidth', {
+      value: containerW,
+      configurable: true,
+    })
+    Object.defineProperty(el, 'clientHeight', {
+      value: 40,
+      configurable: true,
+    })
     vi.spyOn(el, 'getBoundingClientRect').mockReturnValue({
       width: borderBoxW,
       height: 40,
@@ -432,8 +438,11 @@ describe('OASMarquee', () => {
     const oldAnim = { currentTime: durOld * 0.3 }
     const newAnim = { currentTime: 0 }
     let switched = false
-    ;(track(el) as unknown as { getAnimations: () => Array<{ currentTime: number | null }> }).getAnimations = () =>
-      switched ? [newAnim] : [oldAnim]
+    ;(
+      track(el) as unknown as {
+        getAnimations: () => Array<{ currentTime: number | null }>
+      }
+    ).getAnimations = () => (switched ? [newAnim] : [oldAnim])
     fire() // 首次测量：无 timing 可补偿，但会缓存当时的动画对象
     expect(track(el).style.animationDelay, '首次测量无相位可补偿').toBe('')
     switched = true
@@ -463,8 +472,11 @@ describe('OASMarquee', () => {
     const oldAnim = { currentTime: durOld * 0.5 }
     const newAnim = { currentTime: 0 }
     let switched = false
-    ;(track(el) as unknown as { getAnimations: () => Array<{ currentTime: number | null }> }).getAnimations = () =>
-      switched ? [newAnim] : [oldAnim]
+    ;(
+      track(el) as unknown as {
+        getAnimations: () => Array<{ currentTime: number | null }>
+      }
+    ).getAnimations = () => (switched ? [newAnim] : [oldAnim])
     fire()
     switched = true
     el.setAttribute('orientation', 'vertical')
@@ -475,15 +487,92 @@ describe('OASMarquee', () => {
     expect(phaseAfter, `缓存通道必须保住切换前相位 0.5（实际 ${phaseAfter.toFixed(4)}）`).toBeCloseTo(0.5, 2)
   })
 
+  it('WebKit 式「换轴即取消旧动画」：捕获前用内联 animation-name 钉住旧关键帧，仍读到切换前相位', () => {
+    const { fire } = installRo()
+    const el = mount()
+    mockRects(el)
+    const durOld = (100 / 48) * 1000
+    const oldAnim = { currentTime: durOld * 0.4 }
+    const newAnim = { currentTime: 0 }
+    const trackEl = track(el)
+    // 模拟 WebKit：宿主属性一改，旧动画对象立刻失效（currentTime 读成 null）；只有把旧关键帧名
+    // 内联钉住（轨道 style.animationName 仍是旧轴）时 getAnimations 才会继续返回旧动画。
+    const deadAnim = {
+      get currentTime(): number | null {
+        return null
+      },
+    }
+    let attrSwitched = false
+    ;(
+      trackEl as unknown as {
+        getAnimations: () => Array<{ currentTime: number | null }>
+      }
+    ).getAnimations = () => {
+      if (!attrSwitched) return [oldAnim]
+      return trackEl.style.animationName === 'oas-marquee-x' ? [oldAnim] : [newAnim]
+    }
+    fire()
+    // 缓存对象在换轴后失效（真机 WebKit：currentTime → null）
+    ;(el as unknown as { cachedAnim: unknown }).cachedAnim = deadAnim
+    attrSwitched = true
+    el.setAttribute('orientation', 'vertical')
+    const durNew = (40 / 48) * 1000
+    const delay = parseFloat(trackEl.style.animationDelay)
+    const phaseAfter = ((((0 - delay) % durNew) + durNew) % durNew) / durNew
+    expect(phaseAfter, `切轴前相位 0.4 必须保住（实际 ${phaseAfter.toFixed(4)}；0 = 跳回循环起点）`).toBeCloseTo(0.4, 2)
+    expect(trackEl.style.animationName, '捕获完成后放开内联钉住（切轴走纵向关键帧）').toBe('')
+  })
+
+  it('RTL 页水平→纵向切轴：钉住镜像关键帧 oas-marquee-x-rtl（钉错名 = 旧动画失效、相位归零）', () => {
+    const { fire } = installRo()
+    const el = mount({ dir: 'rtl' })
+    mockRects(el)
+    const durOld = (100 / 48) * 1000
+    const oldAnim = { currentTime: durOld * 0.4 }
+    const newAnim = { currentTime: 0 }
+    const trackEl = track(el)
+    // 同 WebKit 实测形态：宿主属性一改，旧 animation-name 即失效；只有内联钉住**切换前实际生效的
+    // 关键帧名**（RTL 水平 = oas-marquee-x-rtl）时旧动画才继续可读。钉成 LTR 的 oas-marquee-x
+    // 会让 WebKit 立刻取消旧动画 → 只能拿到新动画 0 时钟 → 相位丢成 0（内容跳回循环起点）。
+    const deadAnim = {
+      get currentTime(): number | null {
+        return null
+      },
+    }
+    let attrSwitched = false
+    ;(
+      trackEl as unknown as {
+        getAnimations: () => Array<{ currentTime: number | null }>
+      }
+    ).getAnimations = () => {
+      if (!attrSwitched) return [oldAnim]
+      return trackEl.style.animationName === 'oas-marquee-x-rtl' ? [oldAnim] : [newAnim]
+    }
+    fire()
+    ;(el as unknown as { cachedAnim: unknown }).cachedAnim = deadAnim
+    attrSwitched = true
+    expect(el.hasAttribute('data-rtl'), 'RTL 页已挂 data-rtl 镜像钩子').toBe(true)
+    el.setAttribute('orientation', 'vertical')
+    const durNew = (40 / 48) * 1000
+    const delay = parseFloat(trackEl.style.animationDelay)
+    const phaseAfter = ((((0 - delay) % durNew) + durNew) % durNew) / durNew
+    expect(phaseAfter, `切轴前相位 0.4 必须保住（实际 ${phaseAfter.toFixed(4)}；0 = 跳回循环起点）`).toBeCloseTo(0.4, 2)
+    expect(trackEl.style.animationName, '捕获完成后放开内联钉住（切轴走纵向关键帧）').toBe('')
+  })
+
   it('orientation 切轴后缓存作废：下一次捕获走 getAnimations 取新动画对象（不残留失效对象）', () => {
     const { fire } = installRo()
     const el = mount()
     mockRects(el)
     const durOld = (100 / 48) * 1000
-    const oldAnim: { currentTime: number | null } = { currentTime: durOld * 0.3 }
+    const oldAnim: { currentTime: number | null } = {
+      currentTime: durOld * 0.3,
+    }
     const newAnim: { currentTime: number | null } = { currentTime: 0 }
     let switched = false
-    const t = track(el) as unknown as { getAnimations: () => Array<{ currentTime: number | null }> }
+    const t = track(el) as unknown as {
+      getAnimations: () => Array<{ currentTime: number | null }>
+    }
     t.getAnimations = () => (switched ? [newAnim] : [oldAnim])
     fire()
     switched = true

@@ -309,6 +309,16 @@ const STYLE = `
   background: var(--oas-color-bg-hover);
   color: var(--oas-color-primary-hover);
 }
+
+@media (forced-colors: active) {
+  /* 强制色下 box-shadow 被 UA 弃用：焦点环回退系统色实线 outline（WCAG 2.4.7） */
+  .trigger:focus-visible,
+  .clear-btn:focus-visible {
+    outline: 1px solid CanvasText;
+    outline-offset: 1px;
+    box-shadow: none;
+  }
+}
 `
 
 type TimeUnit = 'h' | 'm' | 's'
@@ -1233,8 +1243,9 @@ export class OASTimePicker extends OASFormElement {
     const placeholder = this.getAttr('placeholder', this.t('timePicker.placeholder'))
     i.placeholder = placeholder
     // 可访问命名：label 属性（表单标签，对齐 oas-select 契约）> placeholder 回退；
-    // 外部 <label for> 关联命名由基类 syncInnerLabelledBy 在 update 后覆盖（外部 label 优先）
-    i.setAttribute('aria-label', this.getAttr('label', '') || placeholder)
+    // 走基类通道——外部 <label for> 已转发名称时让位（value property 赋值 / locale 切换都会
+    // 直调 update()，不经 runUpdateAndNotify 的尾部 re-sync，直写会踩掉外部名）
+    this.setFallbackInnerLabel(this.getAttr('label', '') || placeholder)
     if (!this.typing) i.value = this.displayText()
     const nowBtn = this.shadow.querySelector<HTMLElement>('[part="now"]')
     if (nowBtn) nowBtn.textContent = this.t('calendar.today')

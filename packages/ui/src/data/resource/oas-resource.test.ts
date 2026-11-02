@@ -1582,6 +1582,7 @@ describe('OASResource period 截断告警（M2）', () => {
     document.body.innerHTML = ''
   })
 
+  // 生成 5000 个 period 节点：默认 5000ms 超时在全量并发负载下偶发（单跑必绿），显式放宽
   it('超过 MAX_PERIODS → period 数封顶到 5000 且 devWarn 一次', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     try {
@@ -1594,7 +1595,7 @@ describe('OASResource period 截断告警（M2）', () => {
     } finally {
       warn.mockRestore()
     }
-  })
+  }, 15000)
 
   it('截断告警为实例级：第二个实例（同进程、模块级去重已被前例消费）仍各告警一次', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})

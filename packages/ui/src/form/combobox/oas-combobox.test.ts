@@ -1,4 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
+import { setLocale } from '@oas-ui/i18n'
+import en from '@oas-ui/i18n/en'
+import '@oas-ui/i18n'
 import { OASCombobox } from './index.js'
 
 const OPTIONS = JSON.stringify([
@@ -1148,5 +1151,44 @@ describe('OASCombobox multiple 多选（对齐 oas-select 多选语义）', () =
     const e = new MouseEvent('mousedown', { cancelable: true, bubbles: true })
     rm.dispatchEvent(e)
     expect(e.defaultPrevented).toBe(true)
+  })
+})
+
+// 回归：内建命名回退（placeholder）必须走基类 setFallbackInnerLabel——外部 <label for> 转发的
+// 名称优先。locale 切换由 translator 回调直调 update()（无 runUpdateAndNotify 尾部 re-sync），
+// 直写 setAttribute('aria-label') 会踩掉外部名。
+describe('外部 label 命名优先级（update 直调路径）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  it('外部 <label for> + value property + locale 切换都不踩外部名，解除后恢复回退名', async () => {
+    const el = mount()
+    el.id = 'combobox-fa-target'
+    const label = document.createElement('label')
+    label.htmlFor = 'combobox-fa-target'
+    label.textContent = '水果'
+    document.body.append(label)
+    await new Promise((r) => setTimeout(r, 0))
+    const input = el.shadowRoot!.querySelector('input')!
+    expect(input.getAttribute('aria-label'), '外部 label 已转发').toBe('水果')
+
+    el.value = 'apple'
+    expect(input.getAttribute('aria-label'), 'value property 赋值不得踩外部名').toBe('水果')
+
+    setLocale(en) // translator 变更 → this.update() 直调
+    expect(input.getAttribute('aria-label'), 'locale 切换不得踩外部名').toBe('水果')
+
+    setLocale('zh-CN')
+    label.remove()
+    await new Promise((r) => setTimeout(r, 0))
+    el.value = 'banana'
+    expect(input.getAttribute('aria-label'), '外部 label 解除后恢复内建回退名').toBe('请选择')
   })
 })
