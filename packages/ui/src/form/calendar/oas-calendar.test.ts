@@ -979,3 +979,26 @@ describe('OASCalendar 属性-方法撞名回归', () => {
     expect(el.shadowRoot!.querySelector('[part="title"]')!.textContent).toBe(expected)
   })
 })
+
+// 高对比（forced-colors: active）兜底契约：日格标记点 / 日程点只凭底色表达「当日有事项」，
+// 系统强制 background 后 4~5px 圆点整体消失，必须在 forced-colors 媒体查询内有 outline 兜底。
+describe('OASCalendar forced-colors 高对比兜底', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  it('cell-dot / ev-dot outline 兜底（事件浮层行内圆点有标题文字，不处理）', () => {
+    const css = mount({ value: '2026-08-09' }).shadowRoot!.querySelector('style')!.textContent!
+    const start = css.indexOf('@media (forced-colors: active)')
+    expect(start, '存在 forced-colors 回退块').toBeGreaterThan(-1)
+    const block = css.slice(start)
+    expect(block, 'cell-dot outline 兜底').toMatch(/\[part='grid'\] \.day \.cell-dot[^}]*outline:\s*1px solid/)
+    expect(block, 'ev-dot outline 兜底').toMatch(/\[part='grid'\] \.day \.ev-dot[^}]*outline:\s*1px solid/)
+  })
+})

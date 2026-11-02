@@ -335,6 +335,15 @@ const STYLE = `
     min-height: var(--oas-touch-target-min, 44px);
   }
 }
+/* 高对比模式（forced-colors: active）兜底：日格标记点 / 日程点只凭底色表达「当日有事项」，
+   强制色覆盖 background 后 4~5px 圆点整体消失 → 1px outline 找回轮廓（不占布局，
+   点位与 7 列几何不变）；事件浮层行内圆点旁有标题文字，无需处理 */
+@media (forced-colors: active) {
+  [part='grid'] .day .cell-dot,
+  [part='grid'] .day .ev-dot {
+    outline: 1px solid;
+  }
+}
 `
 
 /** 面板层级：days 日网格 / months 12 月网格 / years decade 年网格（内部导航态） */

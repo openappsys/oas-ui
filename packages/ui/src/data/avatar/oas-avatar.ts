@@ -226,6 +226,14 @@ img {
   inset-inline-end: 0;
   transform: translate(50%, 50%);
 }
+/* 高对比模式（forced-colors: active）兜底：dot 角标只凭底色表达「存在状态」，
+   强制色覆盖 background 后 8px 圆点整体消失 → 1px outline 找回轮廓（不占布局，
+   圆点尺寸与贴边定位不变）；带文字的角标文字在强制色下仍可读，无需处理 */
+@media (forced-colors: active) {
+  .badge.dot {
+    outline: 1px solid;
+  }
+}
 `
 
 /**

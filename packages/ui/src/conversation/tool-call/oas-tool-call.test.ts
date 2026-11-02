@@ -62,3 +62,19 @@ describe('oas-tool-call', () => {
     expect(el.shadowRoot!.querySelector('[part="result"]')!.textContent).toBe('<b>bad</b>')
   })
 })
+
+// 高对比（forced-colors: active）兜底契约：状态点只凭底色区分 running / success / error，
+// 系统强制 background 后 8px 圆点整体消失，必须在 forced-colors 媒体查询内有 outline 兜底。
+describe('OASToolCall forced-colors 高对比兜底', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('状态点 outline 兜底（右侧 status-text 文字仍可读）', () => {
+    const el = mount({ name: 'tool', status: 'running' })
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    const start = css.indexOf('@media (forced-colors: active)')
+    expect(start, '存在 forced-colors 回退块').toBeGreaterThan(-1)
+    expect(css.slice(start)).toMatch(/\.status\s*\{[^}]*outline:\s*1px solid/)
+  })
+})

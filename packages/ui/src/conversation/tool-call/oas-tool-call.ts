@@ -129,6 +129,14 @@ pre {
     transition: none;
   }
 }
+/* 高对比模式（forced-colors: active）兜底：状态点只凭底色区分 running / success / error，
+   强制色覆盖 background 后 8px 圆点整体消失 → 1px outline 找回轮廓（不占布局，
+   状态点几何与头部排版不变；右侧 .status-text 文字仍可读，兜底只保住视觉锚点） */
+@media (forced-colors: active) {
+  .status {
+    outline: 1px solid;
+  }
+}
 `
 
 /**

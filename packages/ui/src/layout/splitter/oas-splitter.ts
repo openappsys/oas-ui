@@ -124,6 +124,15 @@ const STYLE = `
 .collapse-btn svg {
   display: block;
 }
+/* 高对比模式（forced-colors: active）兜底：拖拽手柄只凭 --oas-color-border 底色表达，
+   强制色覆盖 background 后 6px 手柄带整体消失（无边框、无文本）→ 内缩 1px outline 找回
+   手柄轮廓（outline 不参与布局，面板宽度与拖拽命中区零漂移） */
+@media (forced-colors: active) {
+  .splitter {
+    outline: 1px solid;
+    outline-offset: -1px;
+  }
+}
 `
 
 type SplitterMode = 'legacy' | 'multi'

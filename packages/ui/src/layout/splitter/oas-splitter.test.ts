@@ -1490,3 +1490,17 @@ describe('OASSplitter multi 删栏收敛（M9 回归）', () => {
     expect(snap.sizes, '快照 sizes 按新面板数').toEqual([50, 50])
   })
 })
+
+// 高对比（forced-colors: active）兜底契约：拖拽手柄只凭 --oas-color-border 底色表达，
+// 系统强制 background 后 6px 手柄带整体消失（无边框、无文本），必须在 forced-colors
+// 媒体查询内有 outline 兜底；且必须内缩（不占布局），否则面板几何与拖拽命中区会漂移。
+describe('OASSplitter forced-colors 高对比兜底', () => {
+  it('拖拽手柄内缩 outline 兜底（outline 不占布局，面板几何零漂移）', () => {
+    const css = mount().shadowRoot!.querySelector('style')!.textContent!
+    const start = css.indexOf('@media (forced-colors: active)')
+    expect(start, '存在 forced-colors 回退块').toBeGreaterThan(-1)
+    const block = css.slice(start)
+    expect(block, '手柄 outline 兜底').toMatch(/\.splitter\s*\{[^}]*outline:\s*1px solid/)
+    expect(block, '内缩 outline（不用 border，避免手柄/面板位移）').toMatch(/outline-offset:\s*-1px/)
+  })
+})

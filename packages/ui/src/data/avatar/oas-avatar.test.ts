@@ -695,3 +695,25 @@ describe('OASAvatar srcset 透传（内层 img）', () => {
     expect(img.hasAttribute('srcset')).toBe(false)
   })
 })
+
+// 高对比（forced-colors: active）兜底契约：dot 角标只凭底色表达「存在状态」，
+// 系统强制 background 后 8px 圆点整体消失，必须在 forced-colors 媒体查询内有 outline 兜底。
+describe('OASAvatar forced-colors 高对比兜底', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('badge dot outline 兜底（带文字角标文字仍可读，不处理）', () => {
+    const el = new OASAvatar()
+    el.setAttribute('badge-dot', '')
+    document.body.appendChild(el)
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    const start = css.indexOf('@media (forced-colors: active)')
+    expect(start, '存在 forced-colors 回退块').toBeGreaterThan(-1)
+    expect(css.slice(start)).toMatch(/\.badge\.dot\s*\{[^}]*outline:\s*1px solid/)
+  })
+})

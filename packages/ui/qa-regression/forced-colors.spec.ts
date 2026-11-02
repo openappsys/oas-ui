@@ -185,3 +185,68 @@ test('badge / progress：dot 徽标与进度轨道在强制色下有可计算的
   expect(Number.parseFloat(trackEdge!.borderTopWidth), 'track border 宽度').toBe(1)
   expect(trackEdge!.borderStyle).not.toBe('none')
 })
+
+test('splitter：拖拽手柄在强制色下有 outline 兜底，且面板几何与常态一致', async ({ page }) => {
+  await page.emulateMedia({ forcedColors: 'active' })
+  await page.goto('/components/splitter.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-splitter')
+  expectVisibleEdge(await shadowEdge(page, 'oas-splitter', '.splitter'), 'splitter handle')
+
+  // 兜底只用 outline（不参与布局）：强制色态与常态下的手柄带宽 / 面板宽必须逐项一致
+  const geom = (): Promise<{ hostWidth: number; sepWidth: number; panes: number[] }> =>
+    page.evaluate(() => {
+      const host = document.querySelector('oas-splitter')!
+      const root = host.shadowRoot!
+      const r2 = (n: number): number => Math.round(n * 100) / 100
+      const sep = root.querySelector<HTMLElement>('.sep')!
+      return {
+        hostWidth: r2(host.getBoundingClientRect().width),
+        sepWidth: r2(sep.getBoundingClientRect().width),
+        panes: [...root.querySelectorAll<HTMLElement>('.pane')].map((p) => r2(p.getBoundingClientRect().width)),
+      }
+    })
+  const forced = await geom()
+  expect(forced.sepWidth, '手柄带宽度未被兜底改变（6px）').toBe(6)
+  expect(forced.panes.length, 'legacy 两面板').toBe(2)
+  const panesSum = forced.panes.reduce((a, b) => a + b, 0)
+  expect(Math.abs(panesSum + forced.sepWidth - forced.hostWidth), '面板 + 手柄 = 容器宽').toBeLessThanOrEqual(0.5)
+
+  await page.emulateMedia({ forcedColors: 'none' })
+  // 等一帧让常态样式重新计算后再量
+  await page.evaluate(() => new Promise<void>((resolve) => requestAnimationFrame(() => resolve())))
+  expect(await geom(), '兜底后手柄与面板几何与常态一致').toEqual(forced)
+})
+
+test('avatar：dot 角标在强制色下有可计算的前景兜底', async ({ page }) => {
+  await page.emulateMedia({ forcedColors: 'active' })
+  await page.goto('/components/avatar.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-avatar[badge-dot]')
+  expectVisibleEdge(await shadowEdge(page, 'oas-avatar[badge-dot]', '.badge.dot'), 'avatar badge dot')
+})
+
+test('calendar / tool-call：日程点与状态点在强制色下有可计算的前景兜底', async ({ page }) => {
+  await page.emulateMedia({ forcedColors: 'active' })
+  await page.goto('/components/calendar.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#calendar-events')
+  // events 通道的排期点（声明式属性，首渲染即存在）
+  await page.waitForFunction(() => !!document.querySelector('#calendar-events')?.shadowRoot?.querySelector('.ev-dot'))
+  expectVisibleEdge(await shadowEdge(page, '#calendar-events', '[part="grid"] .ev-dot'), 'calendar ev-dot')
+
+  // cell-dot 由宿主在 oas-cell-render 里追加（demo 的监听挂在 mounted 之后，首渲染可能已过）：
+  // 按文档契约直接补一个标记点，断言组件自有样式对该宿主标记生效
+  await up(page, '#calendar-cell-render')
+  await page.evaluate(() => {
+    const root = document.querySelector('#calendar-cell-render')?.shadowRoot
+    if (!root || root.querySelector('.cell-dot')) return
+    const day = root.querySelector<HTMLElement>('[part="grid"] .day:not(.outside)')
+    if (!day) return
+    const dot = document.createElement('span')
+    dot.className = 'cell-dot'
+    day.appendChild(dot)
+  })
+  expectVisibleEdge(await shadowEdge(page, '#calendar-cell-render', '[part="grid"] .cell-dot'), 'calendar cell-dot')
+
+  await page.goto('/components/tool-call.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#tool-call-running')
+  expectVisibleEdge(await shadowEdge(page, '#tool-call-running', '.status'), 'tool-call status dot')
+})
