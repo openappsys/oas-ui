@@ -280,6 +280,5 @@
 - **属性通道边界修复（v2.6.2 已交付）**：card `shadow` 属性与基类 ShadowRoot 字段分通道（字符串写 attribute、`null`/`undefined` 回缺省、异型忽略并告警一次）；select / swipe-cell 布尔 `open` 的 presence 语义（空串视为打开）；`collision-guard` 撞名检查合并基类实例成员并识别原型 `defineProperty` 遮蔽。
 - 语言包扩展：10 种内置（v2.5.2）后按社区真实需求增补
 - 专业域纵深：scheduler 与 gantt 已立项（见 PRD v2.6.2 段）；媒体读数井不做
-- avatar 名字哈希自动配色：已决定不做（属业务逻辑，且与「颜色显式指定」原则冲突）
 
 > 历史 backlog 已全部落地并随版本归档：SSR/DSD 全阶段（v1.9）、grid 栅格表单（v1.9）、API 表格自动化（v1.8）、全量 RTL 视觉审计静态+交互态（v2.5.7 批次）、形状化二维码体积压缩（v2.5.7 批次）；能力缺口 P1/P2 清单（v2.5.7）与后续能力清单（2026-10 批次）亦已清零，详见上方版本表。
