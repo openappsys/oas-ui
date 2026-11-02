@@ -5,6 +5,34 @@
 
 ---
 
+## v2.6.6：menubar 可编辑焦点 shortcut 开关（editable-shortcuts）
+
+### 功能定义
+
+`oas-menubar` 新增 `editable-shortcuts` 属性：控制可编辑焦点（`input` / `textarea` / `select` / `contenteditable`）内已定义 shortcut 的放行粒度。v2.6.6 修复「可编辑焦点下快捷键全部失效」时把放行策略定为「Ctrl/Cmd 组合与 F 功能键全放行」，下游编辑器应用若给 Ctrl+C/V/X/A/Z/Y 绑定菜单动作会劫持原生编辑键；本开关提供组件级收口，默认行为不变（向后兼容）。
+
+### 属性契约（三态）
+
+- **缺省 / `all`（默认）**：现行行为——带 Ctrl/Cmd 的已定义 shortcut 与 F1–F24 单键全部放行（编辑器内 Ctrl+S 保存可达）。
+- **`safe`**：放行除**编辑键**外的 shortcut——编辑键 = `Ctrl/Cmd + C/V/X/A/Z/Y`（大小写不敏感），让路给浏览器原生复制/粘贴/剪切/全选/撤销/重做；`Ctrl+S`、`Ctrl+N`、F 功能键等其余形态照常放行（即「Ctrl+S 可用、Ctrl+C 让路」）。
+- **`none`**：可编辑焦点内一律不放行——所有已定义 shortcut（含 Ctrl/Cmd 组合与 F 功能键）都让路给控件。
+- **非法值**：回落 `all` 并在开发环境 `devWarn` 恰一次（同实例同值去重，对齐仓库 warnOnce 惯例）。
+- 属性进入 `observedAttributes`，运行时切换即时生效；放行判定在既有调用链（editable 守卫 → matchShortcut → preventDefault）内完成，未放行的 shortcut 不 `preventDefault`（原生编辑链路不受影响）。
+
+### 非目标
+
+- 不改变焦点不在可编辑控件时的任何行为；不改变 Alt 访问键 / AltGr / IME 组合让路规则。
+- `safe` 档不做逐键自定义（编辑键清单固定为 C/V/X/A/Z/Y 六键）；不做宿主回调或 `oas-shortcut-blocked` 类事件。
+- 不新增事件、方法、插槽、CSS token。
+
+### 验收
+
+- 单测：menubar「输入上下文守卫」组扩展 8 条（safe 下 Ctrl+S 触发且 Ctrl+C/Cmd+C 不触发且不 `preventDefault`、大小写不敏感、F9 不受影响；none 全让路；非法值回落 all + 告警恰一次；all→safe→none 运行时逐态切换；既有默认/all 回归全保），`pnpm vitest run packages/ui/src/navigation/menubar` ×2 全绿。
+- 门禁：`pnpm test` 全量、`pnpm build` + `pnpm api:check`、`pnpm typecheck`、`pnpm qa:audit:check`、`pnpm format:check`、`pnpm lint:md`、`llms:gen` + `llms:check`、`check-trace` 0 命中。
+- 文档：中英 menubar.md warning 块改写为三态说明（表格 + 编辑键清单 + 示例，保留风险说明）；API 表与描述文案经 api:scan/api:gen 同步。
+
+---
+
 ## v2.6.6：gantt / resource 二期核心扩展（4 项 opt-in）
 
 ### 功能定义

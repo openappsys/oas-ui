@@ -1682,4 +1682,142 @@ describe('OASMenubar 输入上下文守卫', () => {
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'e', altKey: true, cancelable: true }))
     expect(openSubmenus(el).length).toBe(1)
   })
+
+  // ===== editable-shortcuts 属性：可编辑焦点内 shortcut 行为三态开关 =====
+  // 缺省 / "all"：现行行为（Ctrl/Cmd 全放行）；"safe"：编辑键（Ctrl/Cmd + C/V/X/A/Z/Y）让路；
+  // "none"：可编辑焦点内一律不放行；非法值回落 all + devWarn 一次。
+
+  const EDIT_KEYS_ITEMS = JSON.stringify([
+    {
+      label: '文件',
+      value: 'file',
+      children: [
+        { label: '保存', value: 'save', shortcut: 'Ctrl+S', kind: 'action' },
+        { label: '复制', value: 'copy', shortcut: 'Ctrl+C', kind: 'action' },
+      ],
+    },
+  ])
+
+  it('editable-shortcuts="safe"：input 内 Ctrl+S 触发菜单动作（保存可达）', () => {
+    const el = mount({ items: EDIT_KEYS_ITEMS, 'editable-shortcuts': 'safe' })
+    const count: string[] = []
+    el.addEventListener('oas-select', (e: Event) => count.push(String((e as CustomEvent).detail?.value)))
+    const input = mountInput()
+    const ev = new KeyboardEvent('keydown', { key: 's', ctrlKey: true, bubbles: true, cancelable: true })
+    input.focus()
+    input.dispatchEvent(ev)
+    expect(count, 'safe 档 Ctrl+S 非编辑键，应触发已定义 shortcut').toEqual(['save'])
+    expect(ev.defaultPrevented, '命中的 shortcut 应 preventDefault').toBe(true)
+    expect(document.activeElement, '触发后焦点应留在输入框').toBe(input)
+  })
+
+  it('editable-shortcuts="safe"：input 内 Ctrl+C 不触发且不 preventDefault（原生 copy 链路不被劫持）', () => {
+    const el = mount({ items: EDIT_KEYS_ITEMS, 'editable-shortcuts': 'safe' })
+    const count: string[] = []
+    el.addEventListener('oas-select', (e: Event) => count.push(String((e as CustomEvent).detail?.value)))
+    const input = mountInput()
+    const copies: Event[] = []
+    input.addEventListener('copy', (e: Event) => copies.push(e))
+    const ev = new KeyboardEvent('keydown', { key: 'c', ctrlKey: true, bubbles: true, cancelable: true })
+    input.dispatchEvent(ev)
+    expect(count, 'safe 档编辑键 Ctrl+C 应让路，不触发菜单动作').toEqual([])
+    expect(ev.defaultPrevented, '编辑键 keydown 不被拦截，浏览器默认复制链路得以继续').toBe(false)
+    // keydown 未被拦截时浏览器才会继续生成原生 copy——模拟该默认行为，断言事件仍到达 input
+    input.dispatchEvent(new Event('copy', { bubbles: true, cancelable: true }))
+    expect(copies.length, '原生 copy 事件仍到达 input').toBe(1)
+  })
+
+  it('editable-shortcuts="safe"：Cmd+C 同样让路（macOS 编辑键形态）', () => {
+    const el = mount({ items: EDIT_KEYS_ITEMS, 'editable-shortcuts': 'safe' })
+    const count: string[] = []
+    el.addEventListener('oas-select', (e: Event) => count.push(String((e as CustomEvent).detail?.value)))
+    const input = mountInput()
+    const ev = new KeyboardEvent('keydown', { key: 'c', metaKey: true, bubbles: true, cancelable: true })
+    input.dispatchEvent(ev)
+    expect(count, 'safe 档 Cmd+C 编辑键让路').toEqual([])
+    expect(ev.defaultPrevented, 'Cmd+C keydown 不被拦截').toBe(false)
+  })
+
+  it('editable-shortcuts="safe"：编辑键判定大小写不敏感（key="C" 同样让路）', () => {
+    const el = mount({ items: EDIT_KEYS_ITEMS, 'editable-shortcuts': 'safe' })
+    const count: string[] = []
+    el.addEventListener('oas-select', (e: Event) => count.push(String((e as CustomEvent).detail?.value)))
+    const input = mountInput()
+    const ev = new KeyboardEvent('keydown', { key: 'C', ctrlKey: true, bubbles: true, cancelable: true })
+    input.dispatchEvent(ev)
+    expect(count, '大写 key="C" 命中同一条 Ctrl+C 绑定并让路').toEqual([])
+    expect(ev.defaultPrevented).toBe(false)
+  })
+
+  it('editable-shortcuts="safe"：F9 单键功能键仍触发（非编辑键形态不受影响）', () => {
+    const el = mount({
+      items: JSON.stringify([{ label: '刷新', value: 'refresh', shortcut: 'F9' }]),
+      'editable-shortcuts': 'safe',
+    })
+    const count: string[] = []
+    el.addEventListener('oas-select', (e: Event) => count.push(String((e as CustomEvent).detail?.value)))
+    const input = mountInput()
+    const f9 = new KeyboardEvent('keydown', { key: 'F9', bubbles: true, cancelable: true })
+    input.dispatchEvent(f9)
+    expect(count, 'safe 档 F 功能键照常放行').toEqual(['refresh'])
+    expect(f9.defaultPrevented).toBe(true)
+  })
+
+  it('editable-shortcuts="none"：input 内 Ctrl+S / F9 一律不触发且不 preventDefault', () => {
+    const el = mount({ items: EDIT_KEYS_ITEMS, 'editable-shortcuts': 'none' })
+    const count: string[] = []
+    el.addEventListener('oas-select', (e: Event) => count.push(String((e as CustomEvent).detail?.value)))
+    const input = mountInput()
+    const save = new KeyboardEvent('keydown', { key: 's', ctrlKey: true, bubbles: true, cancelable: true })
+    input.dispatchEvent(save)
+    const f9 = new KeyboardEvent('keydown', { key: 'F9', bubbles: true, cancelable: true })
+    input.dispatchEvent(f9)
+    expect(count, 'none 档可编辑焦点内一律不放行').toEqual([])
+    expect(save.defaultPrevented, '未放行的 shortcut 不拦截默认行为').toBe(false)
+    expect(f9.defaultPrevented).toBe(false)
+  })
+
+  it('非法 editable-shortcuts 回落 all + devWarn 恰一次（同值不重复告警）', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    try {
+      const el = mount({ items: EDIT_KEYS_ITEMS, 'editable-shortcuts': 'oops' })
+      const count: string[] = []
+      el.addEventListener('oas-select', (e: Event) => count.push(String((e as CustomEvent).detail?.value)))
+      const input = mountInput()
+      input.dispatchEvent(new KeyboardEvent('keydown', { key: 's', ctrlKey: true, bubbles: true, cancelable: true }))
+      input.dispatchEvent(new KeyboardEvent('keydown', { key: 'c', ctrlKey: true, bubbles: true, cancelable: true }))
+      expect(count, '非法值回落 all：Ctrl+S / Ctrl+C 均照常触发（现行行为）').toEqual(['save', 'copy'])
+      expect(
+        warn.mock.calls.filter((c) => String(c[0]).includes('editable-shortcuts')).length,
+        '同实例同非法值只告警一次',
+      ).toBe(1)
+    } finally {
+      warn.mockRestore()
+    }
+  })
+
+  it('editable-shortcuts attribute 运行时切换 all → safe → none 逐态生效', () => {
+    const el = mount({ items: EDIT_KEYS_ITEMS })
+    const count: string[] = []
+    el.addEventListener('oas-select', (e: Event) => count.push(String((e as CustomEvent).detail?.value)))
+    const input = mountInput()
+    const pressSave = () =>
+      input.dispatchEvent(new KeyboardEvent('keydown', { key: 's', ctrlKey: true, bubbles: true, cancelable: true }))
+    const pressCopy = () =>
+      input.dispatchEvent(new KeyboardEvent('keydown', { key: 'c', ctrlKey: true, bubbles: true, cancelable: true }))
+    // 缺省（all）：Ctrl+C / Ctrl+S 均触发
+    pressCopy()
+    pressSave()
+    expect(count, '缺省 all 档与现行行为一致').toEqual(['copy', 'save'])
+    // 切 safe：Ctrl+C 让路、Ctrl+S 仍触发
+    el.setAttribute('editable-shortcuts', 'safe')
+    pressCopy()
+    pressSave()
+    expect(count, 'safe 档运行时生效：Ctrl+C 让路、Ctrl+S 触发').toEqual(['copy', 'save', 'save'])
+    // 切 none：Ctrl+S 也不触发
+    el.setAttribute('editable-shortcuts', 'none')
+    pressCopy()
+    pressSave()
+    expect(count, 'none 档运行时生效：可编辑焦点内不再触发').toEqual(['copy', 'save', 'save'])
+  })
 })

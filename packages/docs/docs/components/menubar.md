@@ -24,10 +24,27 @@
 
 `shortcut` 字段（如 `"Ctrl+N"`）：右侧渲染快捷键提示，并自动绑定 `document` 级 keydown——命中即触发对应项选择（`preventDefault` 拦截浏览器默认行为）。绑定规则：`修饰键+键` 直接绑定；单键仅限功能键（F1–F12）可绑定，其余单键（字母/数字/Delete 等）仅作展示不绑定。
 
-**全局快捷键语义**：`shortcut` 与 `accessKey`（Alt 访问键）都是**文档级**绑定，作用于整个页面而非仅菜单栏聚焦时。为避免劫持输入，焦点位于可编辑控件（`input` / `textarea` / `select` / `contenteditable`）时：**带 Ctrl / Cmd 的已定义 shortcut 与 F1–F24 单键 shortcut 仍然生效**（编辑器内保存/新建等核心动作必须可达），其余按键（普通可打印字符、方向键/编辑键、Alt 访问键、输入法组合中的任何按键）一律让路，由控件与浏览器自行处理；未命中任何 shortcut 的组合键不会 `preventDefault`，编辑器自身快捷键不受影响；命中的快捷键也不会把焦点抢到菜单栏，编辑器光标留在原处。菜单栏自身的键盘导航（方向键 / Tab 焦点陷阱）只在其内部焦点上生效，不受此守卫影响。同一快捷键应在页面内保持唯一，冲突时以先匹配到的菜单项为准。
+**全局快捷键语义**：`shortcut` 与 `accessKey`（Alt 访问键）都是**文档级**绑定，作用于整个页面而非仅菜单栏聚焦时。为避免劫持输入，焦点位于可编辑控件（`input` / `textarea` / `select` / `contenteditable`）时：**带 Ctrl / Cmd 的已定义 shortcut 与 F1–F24 单键 shortcut 仍然生效**（编辑器内保存/新建等核心动作必须可达），其余按键（普通可打印字符、方向键/编辑键、Alt 访问键、输入法组合中的任何按键）一律让路，由控件与浏览器自行处理；未命中任何 shortcut 的组合键不会 `preventDefault`，编辑器自身快捷键不受影响；命中的快捷键也不会把焦点抢到菜单栏，编辑器光标留在原处。菜单栏自身的键盘导航（方向键 / Tab 焦点陷阱）只在其内部焦点上生效，不受此守卫影响。同一快捷键应在页面内保持唯一，冲突时以先匹配到的菜单项为准。放行粒度由 `editable-shortcuts` 属性控制（见下）。
 
-::: warning 不要给文本编辑键绑定菜单动作
-上述放行是有意为之（保证编辑器内 `Ctrl+S` 保存可达），代价是**可编辑焦点内「已定义」的 Ctrl / Cmd + 字母 shortcut 仍会触发菜单动作并 `preventDefault`**。因此**请勿**在 `shortcut` 里使用 `Ctrl+C` / `Ctrl+V` / `Ctrl+X` / `Ctrl+A` / `Ctrl+Z` / `Ctrl+Y`（以及对应 Cmd 形式）——它们在输入框里会劫持复制 / 粘贴 / 剪切 / 全选 / 撤销，且没有组件级开关可以关闭。需要在菜单里展示这些提示时，请只在宿主层自行处理按键（组件不绑定），或改用 `kind: "action"` + 宿主自己的 document 监听。
+### 可编辑焦点内的放行粒度（editable-shortcuts）
+
+`editable-shortcuts` 控制可编辑焦点内已定义 shortcut 的放行粒度，运行时切换即时生效：
+
+| 值 | 行为 |
+| --- | --- |
+| 缺省 / `all`（默认） | 现行行为：带 Ctrl / Cmd 的已定义 shortcut 与 F1–F24 单键**全部放行**——编辑器内 `Ctrl+S` 保存可达；代价见下方风险说明 |
+| `safe` | 放行除**编辑键**外的 shortcut。编辑键 = `Ctrl/Cmd + C / V / X / A / Z / Y`（大小写不敏感），让路给浏览器原生复制 / 粘贴 / 剪切 / 全选 / 撤销 / 重做；`Ctrl+S`、`Ctrl+N`、F 功能键等其余形态照常放行 |
+| `none` | 可编辑焦点内**一律不放行**：所有已定义 shortcut（含 Ctrl/Cmd 组合与 F 功能键）都让路给控件 |
+
+非法值回落 `all` 并在开发环境告警一次。示例：
+
+```html
+<!-- 编辑器场景：Ctrl+S 触发保存菜单项，Ctrl+C/V/X/A/Z/Y 交给浏览器原生编辑行为 -->
+<oas-menubar editable-shortcuts="safe" items='...'></oas-menubar>
+```
+
+::: warning 编辑键绑定的风险（`all` 默认档仍存在）
+默认 `all` 下**已定义**的 Ctrl / Cmd + 编辑键 shortcut（`Ctrl+C` / `Ctrl+V` / `Ctrl+X` / `Ctrl+A` / `Ctrl+Z` / `Ctrl+Y` 及对应 Cmd 形式）会在输入框里触发菜单动作并 `preventDefault`，劫持复制 / 粘贴 / 剪切 / 全选 / 撤销。下游编辑器应用请设 `editable-shortcuts="safe"`（编辑键让路、保存类组合保留）或 `"none"`（可编辑焦点内全让路）；不设置该属性时，请勿把编辑键绑定到菜单动作——需要在菜单里展示这些提示时，只在宿主层自行处理按键（组件不绑定），或改用 `kind: "action"` + 宿主自己的 document 监听。
 :::
 
 <DemoBlock title="快捷键（shortcut）">
@@ -356,6 +373,7 @@ onMounted(() => {
 | `breakpoint` | 移动端断点（px，如 `600`）：视口宽度 ≤ 断点时 bar 折叠为汉堡按钮 + 弹出菜单（窄宽收纳） | `string` | — |
 | `close-on-select` | 选中叶子项后是否收起展开的子菜单，缺省 `true`（桌面菜单栏共识）；`close-on-select="false"` 保持展开（连选场景）；`kind:"checkbox"` 项勾选切换永不收起 | `string` | — |
 | `disabled` | 整栏禁用：顶级项/子项点击、键盘导航、shortcut 快捷键、Alt 访问键全部拦截，视觉降饱和 | `boolean` | — |
+| `editable-shortcuts` | 可编辑焦点内 shortcut 放行粒度：缺省 / `all`（默认——带 Ctrl/Cmd 的已定义 shortcut 与 F 功能键全部放行）/ `safe`（编辑键 Ctrl/Cmd + C/V/X/A/Z/Y 让路给浏览器原生编辑，其余照常放行）/ `none`（可编辑焦点内一律不放行）；非法值回落 all 并在开发环境告警一次，运行时切换即时生效 | `string` | — |
 | `items` | 顶级菜单项 JSON（含子菜单 children） | `string` | `[]` |
 | `loop` | 方向键循环导航开关，缺省 `true`（边界循环）；显式 `loop="false"` 时边界停止 | `string` | — |
 | `offset` | 一级下拉与触发器间距（px，缺省 4） | `string` | — |

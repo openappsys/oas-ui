@@ -2,6 +2,12 @@
 
 版本遵循 SemVer。v1.0.0 为首个正式发布。每个版本 = 一个可独立交付/可试用的里程碑。
 
+## v2.6.6（menubar 可编辑焦点 shortcut 开关）
+
+| 范围 | 内容 | 状态 |
+| --- | --- | --- |
+| **`oas-menubar` 可编辑焦点 shortcut 开关（`editable-shortcuts`）** | 新属性控制可编辑焦点（`input` / `textarea` / `select` / `contenteditable`）内已定义 shortcut 放行粒度：缺省 / `all`（默认，现行行为不变——Ctrl/Cmd 组合与 F 功能键全放行，向后兼容）/ `safe`（编辑键 `Ctrl/Cmd + C/V/X/A/Z/Y` 大小写不敏感让路给原生编辑，「Ctrl+S 可用、Ctrl+C 让路」，其余照常）/ `none`（可编辑焦点内一律不放行）；非法值回落 `all` + devWarn 恰一次（同值去重）；`observedAttributes` 运行时切换即时生效；未放行不 `preventDefault`。menubar 单测「输入上下文守卫」组扩展 8 条（safe/none/非法值/逐态切换/既有回归全保）+ 中英文档三态说明改写（保留风险说明）+ API 生成物同步 | ✅ 已完成（v2.6.6） |
+
 ## v2.6.6（gantt / resource 二期核心扩展批）
 
 | 范围 | 内容 | 状态 |

@@ -2089,7 +2089,8 @@
       "show-arrow": "显示弹出层指向触发器的视觉箭头",
       "close-on-select": "选中叶子项后是否收起展开的子菜单，缺省 `true`（桌面菜单栏共识）；`close-on-select=\"false\"` 保持展开（连选场景）；`kind:\"checkbox\"` 项勾选切换永不收起",
       "orientation": "排列方向：`horizontal`（缺省）/ `vertical`（竖排：bar 纵向、一级下拉缺省向右弹、键盘上下移动顶级）",
-      "breakpoint": "移动端断点（px，如 `600`）：视口宽度 ≤ 断点时 bar 折叠为汉堡按钮 + 弹出菜单（窄宽收纳）"
+      "breakpoint": "移动端断点（px，如 `600`）：视口宽度 ≤ 断点时 bar 折叠为汉堡按钮 + 弹出菜单（窄宽收纳）",
+      "editable-shortcuts": "可编辑焦点内 shortcut 放行粒度：缺省 / `all`（默认——带 Ctrl/Cmd 的已定义 shortcut 与 F 功能键全部放行）/ `safe`（编辑键 Ctrl/Cmd + C/V/X/A/Z/Y 让路给浏览器原生编辑，其余照常放行）/ `none`（可编辑焦点内一律不放行）；非法值回落 all 并在开发环境告警一次，运行时切换即时生效"
     },
     "events": {
       "oas-select": "选择某项，`detail: { value, kind?, checked? }`。`kind` 仅动作项（`kind: \"action\"`）出现，值为 `\"action\"`；checkbox 项带 `checked`（切换后勾选态）；radio 项 `detail.kind` 不出现",

@@ -24,10 +24,27 @@ Leaves with `kind: "action"` render as plain actions (`menuitem`): no checkmark,
 
 The `shortcut` field (e.g. `"Ctrl+N"`): renders a key hint on the right, and auto-binds a `document`-level keydown — pressing the combo selects that item (`preventDefault` blocks the browser default). Binding rules: `modifier+key` combos bind directly; single keys bind only for function keys (F1–F12) — any other single key (letters/digits/Delete etc.) is display-only and not bound.
 
-**Global shortcut semantics**: both `shortcut` and `accessKey` (Alt access keys) are document-level bindings, acting on the whole page rather than only when the menubar is focused. To avoid hijacking input, when focus is inside an editable control (`input` / `textarea` / `select` / `contenteditable`): **defined shortcuts with Ctrl / Cmd, and single-key F1–F24 shortcuts, still fire** (so save/new-file actions remain reachable in editors); all other keys (plain printable characters, arrow/editing keys, Alt access keys, and any key during IME composition) yield to the control and the browser; a modifier combination that matches no shortcut is not `preventDefault`ed, so the editor's own shortcuts keep working; a matched shortcut does not move focus to the menubar, so the editor caret stays where it was. The menubar's own keyboard navigation (arrow keys / Tab focus trap) only acts on its internal focus and is unaffected by this guard. Keep each shortcut unique within the page; conflicts resolve to the first matched menu item.
+**Global shortcut semantics**: both `shortcut` and `accessKey` (Alt access keys) are document-level bindings, acting on the whole page rather than only when the menubar is focused. To avoid hijacking input, when focus is inside an editable control (`input` / `textarea` / `select` / `contenteditable`): **defined shortcuts with Ctrl / Cmd, and single-key F1–F24 shortcuts, still fire** (so save/new-file actions remain reachable in editors); all other keys (plain printable characters, arrow/editing keys, Alt access keys, and any key during IME composition) yield to the control and the browser; a modifier combination that matches no shortcut is not `preventDefault`ed, so the editor's own shortcuts keep working; a matched shortcut does not move focus to the menubar, so the editor caret stays where it was. The menubar's own keyboard navigation (arrow keys / Tab focus trap) only acts on its internal focus and is unaffected by this guard. Keep each shortcut unique within the page; conflicts resolve to the first matched menu item. The pass-through granularity is controlled by the `editable-shortcuts` attribute (see below).
 
-::: warning Do not bind text-editing keys to menu actions
-The Ctrl / Cmd pass-through is intentional (so `Ctrl+S` stays reachable inside editors). The cost: **any defined Ctrl / Cmd + letter shortcut still fires the menu action and calls `preventDefault` while focus is in an editable control**. So do **not** use `Ctrl+C` / `Ctrl+V` / `Ctrl+X` / `Ctrl+A` / `Ctrl+Z` / `Ctrl+Y` (or their Cmd forms) as `shortcut` values — inside inputs they hijack copy / paste / cut / select-all / undo, and there is no component-level opt-out. If you need to display those hints, handle the key yourself at the host level (leave the component unbound), or use `kind: "action"` with your own document listener.
+### Pass-through granularity inside editable focus (editable-shortcuts)
+
+The `editable-shortcuts` attribute controls how defined shortcuts pass through while focus is inside an editable control; runtime changes take effect immediately:
+
+| Value | Behavior |
+| --- | --- |
+| Default / `all` | Current behavior: defined shortcuts with Ctrl / Cmd, and single-key F1–F24 shortcuts, **all pass through** — `Ctrl+S` save stays reachable inside editors; the trade-off is described in the warning below |
+| `safe` | All shortcuts pass through **except editing keys**. Editing keys = `Ctrl/Cmd + C / V / X / A / Z / Y` (case-insensitive), which yield to the browser's native copy / paste / cut / select-all / undo / redo; other shapes such as `Ctrl+S`, `Ctrl+N` and F-keys still pass through |
+| `none` | **Nothing passes through** while focus is in an editable control: every defined shortcut (Ctrl/Cmd combos and F-keys alike) yields to the control |
+
+Invalid values fall back to `all` with a one-time development-mode warning. Example:
+
+```html
+<!-- Editor scenario: Ctrl+S triggers the save menu item; Ctrl+C/V/X/A/Z/Y go to native editing -->
+<oas-menubar editable-shortcuts="safe" items='...'></oas-menubar>
+```
+
+::: warning Editing-key bindings are still risky under the default `all`
+Under the default `all`, **defined** Ctrl / Cmd + editing-key shortcuts (`Ctrl+C` / `Ctrl+V` / `Ctrl+X` / `Ctrl+A` / `Ctrl+Z` / `Ctrl+Y` and their Cmd forms) fire the menu action and call `preventDefault` inside inputs, hijacking copy / paste / cut / select-all / undo. Editor-style applications should set `editable-shortcuts="safe"` (editing keys yield, save-style combos stay) or `"none"` (everything yields inside editable focus); without the attribute, do **not** bind editing keys to menu actions — to display those hints, handle the key yourself at the host level (leave the component unbound), or use `kind: "action"` with your own document listener.
 :::
 
 <DemoBlock title="Shortcuts">
@@ -353,6 +370,7 @@ onMounted(() => {
 | `breakpoint` | Mobile breakpoint (px, e.g. `600`): when the viewport width is ≤ the breakpoint the bar collapses into a hamburger button + popup menu (narrow-width folding) | `string` | — |
 | `close-on-select` | Whether selecting a leaf closes the open submenu, default `true` (desktop menubar convention); `close-on-select="false"` keeps it open (multi-select scenario); `kind:"checkbox"` items never close on toggle | `string` | — |
 | `disabled` | Disable the whole bar: top-level/sub-item clicks, keyboard navigation, shortcut hotkeys and Alt access keys are all blocked; visually desaturated | `boolean` | — |
+| `editable-shortcuts` | Pass-through granularity of shortcuts while focus is in an editable control: default / `all` (defined Ctrl/Cmd shortcuts and F-keys all pass through — the default) / `safe` (editing keys Ctrl/Cmd + C/V/X/A/Z/Y yield to native browser editing, everything else still passes through) / `none` (nothing passes through inside editable focus); invalid values fall back to `all` with a one-time development-mode warning; runtime changes take effect immediately | `string` | — |
 | `items` | Top-level menu items JSON (with submenu `children`) | `string` | `[]` |
 | `loop` | Arrow-key wrap-around toggle, default `true` (loops at edges); explicit `loop="false"` stops at the edges | `string` | — |
 | `offset` | Gap between the first-level popup and its trigger (px, default 4) | `string` | — |

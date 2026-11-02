@@ -6,6 +6,7 @@ import type { MenuItem, MenuItemKind } from '../menu/index.js'
 import { lookupIcon } from '@oas-ui/icons/runtime'
 import { menuPath } from '@oas-ui/icons/icons/menu'
 import { isRtl } from '../../shared/direction.js'
+import { devWarn } from '../../shared/dev-warn.js'
 
 export interface MenubarItem extends MenuItem {
   /** Alt 访问键（可选，单字符）；缺省时取 label 首个 ASCII 字母或数字 */
@@ -20,6 +21,12 @@ function firstAscii(label?: string): string | undefined {
   const m = label?.match(/[a-zA-Z0-9]/)
   return m?.[0]
 }
+
+/**
+ * editable-shortcuts="safe" 档让路的编辑键清单（Ctrl/Cmd + 键，e.key 小写比对，大小写不敏感）：
+ * 复制 / 粘贴 / 剪切 / 全选 / 撤销 / 重做——编辑器内这些组合必须交给浏览器原生编辑行为。
+ */
+const EDITABLE_EDIT_KEYS = new Set(['c', 'v', 'x', 'a', 'z', 'y'])
 
 const STYLE = `
 :host {
@@ -555,6 +562,8 @@ export class OASMenubar extends OASElement {
       'close-on-select',
       'orientation',
       'breakpoint',
+      // 可编辑焦点内 shortcut 行为三态开关：缺省/"all"（现行全放行）/"safe"（编辑键让路）/"none"（一律不放行）
+      'editable-shortcuts',
       // 书写方向：dir 变化触发重算 data-rtl（弹出侧/开口方向/翻转判定随方向重同步）
       'dir',
     ]
@@ -583,6 +592,8 @@ export class OASMenubar extends OASElement {
   private mobileMqQuery = ''
   /** 上一次顶级打开值（null = 未初始化，首帧不派发 oas-open-change，同 tooltip/popover/dropdown） */
   private prevOpenValue: string | null = null
+  /** 上一次非法 editable-shortcuts 值（同实例同值只 devWarn 一次，对齐仓库 warnOnce 惯例） */
+  private lastInvalidEditableShortcuts: string | null = null
   /** typeahead 字符缓冲（连续输入定位匹配项）+ 超时定时器 */
   private typeaheadBuffer = ''
   private typeaheadTimer: ReturnType<typeof setTimeout> | null = null
@@ -2191,14 +2202,46 @@ export class OASMenubar extends OASElement {
   }
 
   /**
-   * 可编辑焦点内仍可触发的 shortcut 形态：
+   * editable-shortcuts 属性归一（三态开关，运行时切换即时生效）：
+   * - 缺省 / "all"：现行行为——带 Ctrl/Cmd 的已定义 shortcut 与 F1–F24 单键在可编辑焦点内照常触发
+   *   （默认不变，向后兼容）；
+   * - "safe"：编辑键让路——编辑键 = Ctrl/Cmd + C/V/X/A/Z/Y（大小写不敏感），即「Ctrl+S 保存可达、
+   *   Ctrl+C 让路给浏览器原生复制」；其余形态照旧；
+   * - "none"：可编辑焦点内一律不放行（所有已定义 shortcut 让路给控件）。
+   * 非法值回落 "all" 并 devWarn 一次（同实例同值只告警一次，避免每次按键刷屏）。
+   */
+  private editableShortcutsMode(): 'all' | 'safe' | 'none' {
+    const raw = this.getAttr('editable-shortcuts', '')
+    if (raw === 'safe') return 'safe'
+    if (raw === 'none') return 'none'
+    if (raw !== '' && raw !== 'all' && this.lastInvalidEditableShortcuts !== raw) {
+      this.lastInvalidEditableShortcuts = raw
+      devWarn(`[oas-menubar] 非法 editable-shortcuts "${raw}"，已回落 all；合法值：all/safe/none`)
+    }
+    return 'all'
+  }
+
+  /**
+   * 可编辑焦点内仍可触发的 shortcut 形态（行为由 editable-shortcuts 属性控制，三态见
+   * editableShortcutsMode）：
    * - Ctrl / Cmd 组合（Ctrl+S / Cmd+N 等编辑器核心动作；AltGr 带 altKey，不会命中 Ctrl-only 绑定）
    * - F1–F24 单键功能键（不产生文本、不移动光标）
    * 其余（普通字符、方向/编辑键、Alt 访问键）一律让路。
+   * "safe" 档下编辑键（Ctrl/Cmd + C/V/X/A/Z/Y）额外让路；"none" 档下一律不放行。
    */
   private shortcutAllowedInEditable(e: KeyboardEvent): boolean {
+    const mode = this.editableShortcutsMode()
+    if (mode === 'none') return false
+    const isFuncKey = /^f\d{1,2}$/.test(e.key.toLowerCase())
+    if (mode === 'safe') {
+      // safe 档：F 功能键照常；Ctrl/Cmd 组合中编辑键（C/V/X/A/Z/Y，大小写不敏感）让路
+      if (isFuncKey) return true
+      if (e.ctrlKey || e.metaKey) return !EDITABLE_EDIT_KEYS.has(e.key.toLowerCase())
+      return false
+    }
+    // all 档（缺省）：Ctrl/Cmd 组合全放行，F 功能键放行
     if (e.ctrlKey || e.metaKey) return true
-    return /^f\d{1,2}$/.test(e.key.toLowerCase())
+    return isFuncKey
   }
 
   /** 文档级键盘：shortcut 快捷键 + Alt 访问键 + Alt 聚焦 + 子菜单 Tab 焦点陷阱 */
@@ -2211,6 +2254,7 @@ export class OASMenubar extends OASElement {
     // 可编辑上下文守卫（2026-11-01 下游编辑器需求）：带 Ctrl/Meta 的组合键与 F1–F24 单键
     // 仍生效（编辑器内 Ctrl+S 保存必须可达）；普通可打印字符、方向/编辑键、Alt 访问键与
     // AltGr 组合继续让路，不劫持输入与光标。
+    // 放行粒度由 editable-shortcuts 属性控制（三态：all / safe / none，见 shortcutAllowedInEditable）。
     const shortcutItem = this.matchShortcut(e)
     if (shortcutItem) {
       if (editable && !this.shortcutAllowedInEditable(e)) return

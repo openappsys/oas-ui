@@ -2169,7 +2169,8 @@
       "show-arrow": "Show a visual arrow on the popup pointing at the trigger",
       "close-on-select": "Whether selecting a leaf closes the open submenu, default `true` (desktop menubar convention); `close-on-select=\"false\"` keeps it open (multi-select scenario); `kind:\"checkbox\"` items never close on toggle",
       "orientation": "Arrangement direction: `horizontal` (default) / `vertical` (bar stacks vertically, first-level popups default to the right, arrow keys move top-level items up/down)",
-      "breakpoint": "Mobile breakpoint (px, e.g. `600`): when the viewport width is ≤ the breakpoint the bar collapses into a hamburger button + popup menu (narrow-width folding)"
+      "breakpoint": "Mobile breakpoint (px, e.g. `600`): when the viewport width is ≤ the breakpoint the bar collapses into a hamburger button + popup menu (narrow-width folding)",
+      "editable-shortcuts": "Pass-through granularity of shortcuts while focus is in an editable control: default / `all` (defined Ctrl/Cmd shortcuts and F-keys all pass through — the default) / `safe` (editing keys Ctrl/Cmd + C/V/X/A/Z/Y yield to native browser editing, everything else still passes through) / `none` (nothing passes through inside editable focus); invalid values fall back to `all` with a one-time development-mode warning; runtime changes take effect immediately"
     },
     "events": {
       "oas-select": "An item was selected, `detail: { value, kind?, checked? }`. `kind` only appears for action items (`kind: \"action\"`); checkbox items carry `checked` (new checked state); radio items omit `detail.kind`",
