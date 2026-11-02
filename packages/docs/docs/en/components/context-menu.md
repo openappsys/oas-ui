@@ -101,6 +101,18 @@ Besides the `items` JSON, you can declare the menu with `<oas-context-menu-item>
   <oas-tag id="cm-decl-result" type="info">Nothing selected</oas-tag>
 </DemoBlock>
 
+<DemoBlock title="Declarative multi-select checkbox items (notification preferences)">
+  <oas-context-menu id="cm-decl-check" :value="JSON.stringify(cmPrefs)" onoas-select="cmDeclCheckLog(event)">
+    <div style="width: 260px; height: 100px; border: 1px dashed var(--oas-color-border); border-radius: var(--oas-radius-md); display: flex; align-items: center; justify-content: center; color: var(--oas-color-text-secondary)">Right-click to set notification preferences (multi-select)</div>
+    <oas-context-menu-item kind="checkbox" value="email">Email</oas-context-menu-item>
+    <oas-context-menu-item kind="checkbox" value="sms">SMS</oas-context-menu-item>
+    <oas-context-menu-item kind="checkbox" value="push">Push</oas-context-menu-item>
+  </oas-context-menu>
+  <oas-tag type="info">{{ cmPrefsLabel }}</oas-tag>
+</DemoBlock>
+
+`kind="checkbox"` items are multi-select checkable entries: click, or focus and press `Enter` / `Space` to toggle (arrow keys move between items); toggling never collapses the menu, so several can be checked in a row. Each item renders as `role="menuitemcheckbox"` with a synced `aria-checked`, so screen readers announce the check state; the `oas-select` detail is `{ value, checked }` (`checked` is that item's state after the toggle) and the host `value` attribute always holds the checked-set JSON array — the example stores that set in page state from the event and writes it back through the `value` binding, so host-side UI (the badge below, or your own layout) can react.
+
 <DemoBlock title="Dynamic add/remove (MutationObserver auto refresh)">
   <oas-space size="small" style="margin-bottom: 8px">
     <oas-button size="small" onclick="cmDeclAdd()">Append an item</oas-button>
@@ -113,7 +125,14 @@ Besides the `items` JSON, you can declare the menu with `<oas-context-menu-item>
 </DemoBlock>
 
 <script setup>
-import { onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
+// Page-side checked set of the declarative multi-select demo: the value attribute (JSON array) is the source of
+// truth; toggles are synced back through oas-select
+const cmPrefLabels = { email: 'Email', sms: 'SMS', push: 'Push' }
+const cmPrefs = ref(['email', 'push'])
+const cmPrefsLabel = computed(() =>
+  cmPrefs.value.length ? `Enabled: ${cmPrefs.value.map((v) => cmPrefLabels[v] ?? v).join(', ')}` : 'All disabled',
+)
 onMounted(() => {
   window.cmLog = (e) => {
     const tag = document.getElementById('cm-result')
@@ -148,6 +167,15 @@ onMounted(() => {
       item.textContent = `Dynamic item ${n}`
       declDyn.appendChild(item)
     }
+  }
+  // Declarative multi-select checkbox items: detail is { value, checked } (checked = state after the toggle);
+  // toggling never collapses the menu, so several can be checked in a row — update reactive state here and
+  // let the value binding write it back to the host
+  window.cmDeclCheckLog = (e) => {
+    const next = new Set(cmPrefs.value)
+    if (e.detail.checked) next.add(e.detail.value)
+    else next.delete(e.detail.value)
+    cmPrefs.value = [...next]
   }
   // kind demo: check state and action feedback
   window.cmKindLog = (e) => {

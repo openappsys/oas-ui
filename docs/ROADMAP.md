@@ -2,6 +2,15 @@
 
 版本遵循 SemVer。v1.0.0 为首个正式发布。每个版本 = 一个可独立交付/可试用的里程碑。
 
+## 未发布（再捞清零批）
+
+| 范围 | 内容 | 状态 |
+| --- | --- | --- |
+| **WebKit 全量 e2e + 6 处跨引擎缺陷修复** | webkit project 放开为全量 qa-regression（1276 用例）；修复：外点关闭触屏 pointerup 通道（popover/dropdown/hover-card/popconfirm）、表单回退名让位外部 label（core + 5 组件）、slider RTL/reverse 方向键接管、sidebar 抽屉回焦回落触发钮、marquee 切轴相位钉名；每处单测 + 三引擎 e2e 回归；CI e2e-webkit 3 分片 | 🚧 进行中（未发布） |
+| **forced-colors 焦点环库级批** | 88 组件 `@media (forced-colors: active)` 焦点兜底（CanvasText 1px outline，inset 用 -1px），常规渲染零变化；forced-colors.spec.ts 计算样式断言（chromium） | 🚧 进行中（未发布） |
+| **i18n 8 语言补译 + placeholder 守卫** | jsonViewer/diffViewer/gantt/resource 30 key 英文残留补译（ja/ko/de/fr/es/pt/ru/ar）+ 11 条错译校正；completeness 新增 placeholder token 序列守卫 | 🚧 进行中（未发布） |
+| **测试机制批（断言 lint / WSL 通道 / soak / gantt 审计）** | qa:audit 新增 os-absolute-assertions 维度（存量 79→40，CI 增量上限）；`release:rehearse:wsl`（WSL Linux 重放，SKIP 语义）；`test:soak`（N 轮重复 + flaky 矩阵）；gantt 链归因审计（无冗余，扩展前置解除） | 🚧 进行中（未发布） |
+
 ## 未发布（select chip 形态）
 
 | 范围 | 内容 | 状态 |

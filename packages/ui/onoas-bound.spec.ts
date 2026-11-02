@@ -31,7 +31,7 @@ for (const page of PAGES) {
     })
     expect(bound.total, `${page} 应有 onoas-* 元素`).toBe(
       {
-        'context-menu': 3,
+        'context-menu': 4,
         tour: 4,
         alert: 2,
         'back-top': 2,

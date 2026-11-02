@@ -7,6 +7,24 @@
 ### 新增
 
 - **`oas-select` chip 形态（`variant="chip"`）+ Option 首元素字段（`dot` / `avatarText`）**：属性面板编辑模式组件化——`variant` 新增第 4 值 `chip`，触发器换成紧凑胶囊（高 24px 走 `--oas-select-chip-height` token、弱底 hover 微强调、无边框框选感、宽度随内容收缩，size/status/multiple 可组合）；`Option` 接口新增 `dot`（选项色点，8px 圆点，CSS 颜色值支持 token 名/var()/hex，清洗后内联写 background）与 `avatarText`（迷你头像，16px 取首字符，缺省 primary 底 + on-primary 字色），选项行首与 chip 触发器首按 `dot > avatarText > icon` 优先级渲染首元素槽（同时给时 dot 优先）；子元素通道 `<oas-option dot="…" avatar-text="…">` 同款映射，运行时改写即时刷新；单选点选即派发 `oas-change`（detail 不变）、空值走 placeholder、键盘全等价、非法值静默清洗。中英文档「属性面板模式」节 + workflow 状态色点 demo；API 生成物同步。
+- **强制对比度（forced-colors）模式焦点可见**：88 个组件补 `@media (forced-colors: active)` 焦点兜底——焦点环从 `box-shadow` 切为 `1px solid CanvasText` 实线 outline（`outline-offset: 1px`，inset 环组件用 `-1px` 防容器裁切），Windows 高对比主题等强制配色环境下键盘焦点不再失明；非强制配色渲染零变化（媒体查询外一行未动）；`forced-colors.spec.ts` 焦点环计算样式断言（chromium，含反向断言防外溢）+ 既有非焦点兜底用例保留。
+
+### 文档
+
+- **context-menu 声明式多选勾选项 demo**：补齐 `kind="checkbox"` 场景（3 个通知偏好项，勾选态切换 + 已选项徽标反馈，勾选不收起菜单）；`role="menuitemcheckbox"` / `aria-checked` / 键盘 Space 切换均有单测与 e2e 三引擎断言。
+
+### 修复
+
+- **WebKit 全量回归暴露的跨引擎缺陷（5 类，全部含单测 + 三引擎 e2e 回归）**：① 外点关闭触屏失效——WebKit 对非交互目标上的 tap 只派发 pointer 事件不合成 `click`，统一外点关闭通道（`shared/outside-dismiss.ts`）补 coarse `pointerup`（`pointerType=mouse` 不接管），`oas-popover` / `oas-dropdown` / `oas-hover-card` / `oas-popconfirm` 同根修复；② 表单外部 `<label for>` 名称被内建回退名覆盖（core `setFallbackInnerLabel` 入口检查 `data-fa-label` 让位，`oas-input` / `oas-textarea` / `oas-mentions` / `oas-input-number` / `oas-auto-complete` 5 处调用点同改）；③ `oas-slider` 视觉反转形态（`reverse` XOR RTL）下普通方向键由组件接管，统一「箭头视觉方向 = 值方向」（此前 WebKit 原生 range 不镜像 RTL 方向键，跨引擎行为不一致）；④ `oas-sidebar` 抽屉 Esc 关闭后焦点丢回 body 时回落到触发钮（此前焦点丢失）；⑤ `oas-marquee` 运行时切轴相位丢失（WebKit 样式落定即取消旧动画）——捕获相位前用内联 `animation-name` 钉住旧关键帧名，切轴不再跳回循环起点。
+- **i18n 8 语言翻译补全与校正**（ja / ko / de / fr / es / pt / ru / ar）：jsonViewer（15 key）/ diffViewer（12 key）/ gantt.effort / gantt.effortValue / resource.cost 共 30 key 的英文残留全部补译（新组件落地时漏译，切语言仍见英文）；ja / ko / de / fr / ru 单独错译修正 11 条（日语「浮時」中文直搬、韩语导出误译为「发送」（应为导出专用表述）、德语 sidebar 术语不一致、法语单位缩写、俄语悬空形容词等）。新增 placeholder token 守卫测试（各语言 `{token}` 名序列与 zh-CN 完全一致，含重复计数）。
+- **e2e 断言 OS 绝对量 lint 上线（基线 82）**：36 条 scroll/rect/计数绝对量断言改写为按构造即 OS 无关的语义不变量（DOM 现算期望值 / 写入值回读 / 视口覆盖关系 / 日历推导），0 条例外登记；`qa:audit` 新增 `os-absolute-assertions` 维度（scroll 偏移 / rect 绝对坐标 / 计数常数），计数维度覆盖命名 count、`.length`、`.count()` 三种形态——实测存量 **82** = 数据驱动计数 78 条（demo 数据条数、固定配置项数、文档页数，与字体度量/视口无关）+ px 固定布局窗口计数 4 条，以 82 为增量上限（CI 强制，阈值 = 实测存量零余量）。
+
+### 工程
+
+- **WebKit e2e 放开为全量**：`webkit` project 从代表性 smoke 扩为全量 qa-regression 套件（1276 用例），`forced-colors.spec.ts` 项目级排除（引擎不支持模拟）；CI `e2e-webkit` job 改 3 分片（`--shard=N/3`，timeout 45 分钟）。
+- **WSL rehearse 通道**：`pnpm release:rehearse:wsl [--with-e2e --with-ssr-e2e]` 把同一套发布门禁搬进 WSL Linux 发行版重放（OS 差异维度本地可验；无 WSL / 缺工具链时打印安装指引后 SKIP，exit 0；证据文件与 verify-rehearsal 协议完全兼容）。脚本 `scripts/release/rehearse-wsl.mjs`（发行版探测 / 路径换算 / HEAD 一致性校验 / 实时日志透传）。
+- **长稳 soak**：`pnpm test:soak`（`scripts/e2e/soak.mjs`）对 flake 高发 spec（交互浮层/虚拟滚动/动画时序，8 个默认）重复跑 N 轮（默认 3 轮、retries=0、每轮独立端口与 `--output`），输出轮次×用例矩阵与 flaky 清单到 `test-results/soak/`，任一轮失败或出现 flaky 即非零退出。
+- **gantt 链 P2 式归因审计存档**（2026-11-02）：18 模块 221.0 KB raw / 63.6 KB gzip，构成 = 本体 56.7% + core 22.6%（其中 form-element + escape 共 5.8 KB 系 core barrel 再导出上界带入，真实 bundler 可摇除至约 57.9 KB）+ 虚拟滚动 8.5% + i18n 6.1% + 日期引擎 4.3% + shared 1.8%；**无冗余**——export / evm / alap / recurring 四 helper 零依赖真剥离（主链零引用）、0 死文件、CSS 无死类名；较上基线 +2.2 KB 全部来自其后 6 次 gantt feature/fix 提交。下次扩展可直接进行。
 
 ## [2.6.6] - 2026-11-01
 

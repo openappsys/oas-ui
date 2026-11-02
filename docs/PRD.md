@@ -5,6 +5,26 @@
 
 ---
 
+## 未发布：再捞清零批（WebKit 全量回归 / forced-colors 焦点环 / i18n 补译 / 测试机制）
+
+### 功能定义
+
+四项内容，共用「全部落地、manifest/三引擎实测实证」收口标准：
+
+1. **WebKit 全量 e2e**：webkit project 从代表性 smoke 放开为全量 qa-regression 套件；暴露 5 类跨引擎产品缺陷并全部修复（外点关闭触屏 pointerup 通道、表单回退名让位外部 label、slider RTL/reverse 方向键、sidebar 抽屉回焦回落、marquee 切轴相位钉名）；CI e2e-webkit 改 3 分片。
+2. **forced-colors 焦点环批**：88 组件 `@media (forced-colors: active)` 焦点兜底（CanvasText 1px 实线 outline），强制配色环境键盘焦点可见，常规渲染零变化；e2e 计算样式断言（chromium + 反向防外溢）。
+3. **i18n 8 语言补译**：jsonViewer / diffViewer / gantt / resource 共 30 key 英文残留补译 + 11 条错译校正 + placeholder token 守卫测试。
+4. **测试机制**：e2e 断言 OS 绝对量维度（79→40，CI 增量上限 40）；WSL rehearse 通道（`release:rehearse:wsl`，SKIP 语义）；长稳 soak（`test:soak`，N 轮重复 + flaky 矩阵）；gantt 链归因审计存档（无冗余，扩展前置条件解除）。
+
+### 验收标准
+
+- WebKit 全量 1276 passed / 0 failed；chromium + firefox 回归不破；5 类产品修复各带单测 + 三引擎 e2e。
+- forced-colors 焦点环 e2e（chromium）+ 非强制色反向断言 + `pnpm build` scoped CSS 零语法错误。
+- i18n completeness + placeholder token 守卫全绿；8 语言 demo 渲染无溢出（抽查 ja / ar）。
+- `qa:audit:check` 四维度全过（弱断言 0 / OS 绝对量 ≤40）；soak `--dry` 与沙盒编排自检通过；rehearse-wsl `--probe` 实测 SKIP 路径。
+
+---
+
 ## 未发布：select chip 形态（属性面板编辑模式组件化，E 需求）
 
 ### 功能定义

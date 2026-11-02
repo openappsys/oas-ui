@@ -101,6 +101,18 @@
   <oas-tag id="cm-decl-result" type="info">尚未选择</oas-tag>
 </DemoBlock>
 
+<DemoBlock title="声明式多选勾选项（通知偏好）">
+  <oas-context-menu id="cm-decl-check" :value="JSON.stringify(cmPrefs)" onoas-select="cmDeclCheckLog(event)">
+    <div style="width: 260px; height: 100px; border: 1px dashed var(--oas-color-border); border-radius: var(--oas-radius-md); display: flex; align-items: center; justify-content: center; color: var(--oas-color-text-secondary)">右键设置通知偏好（可多选）</div>
+    <oas-context-menu-item kind="checkbox" value="email">邮件通知</oas-context-menu-item>
+    <oas-context-menu-item kind="checkbox" value="sms">短信通知</oas-context-menu-item>
+    <oas-context-menu-item kind="checkbox" value="push">推送通知</oas-context-menu-item>
+  </oas-context-menu>
+  <oas-tag type="info">{{ cmPrefsLabel }}</oas-tag>
+</DemoBlock>
+
+`kind="checkbox"` 的项是多选勾选项：点击，或聚焦后按 `Enter` / `Space` 切换（方向键在项间移动），勾选切换不会收起菜单，可连续勾选多项。每项渲染为 `role="menuitemcheckbox"` 并同步 `aria-checked`，读屏能直接播报勾选态；`oas-select` 的 `detail` 为 `{ value, checked }`（`checked` 是该项切换后的状态），宿主 `value` 属性始终承载勾选集 JSON 数组——示例据事件把勾选集存入页面响应式状态，再由 `value` 绑定写回宿主（徽标、宿主侧联动均可据此渲染）。
+
 <DemoBlock title="动态增删（MutationObserver 自动刷新）">
   <oas-space size="small" style="margin-bottom: 8px">
     <oas-button size="small" onclick="cmDeclAdd()">追加一项</oas-button>
@@ -113,7 +125,13 @@
 </DemoBlock>
 
 <script setup>
-import { onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
+// 声明式多选勾选项的页面侧勾选集：value 属性（JSON 数组）为数据源，勾选切换经 oas-select 回写同步
+const cmPrefLabels = { email: '邮件', sms: '短信', push: '推送' }
+const cmPrefs = ref(['email', 'push'])
+const cmPrefsLabel = computed(() =>
+  cmPrefs.value.length ? `已开启：${cmPrefs.value.map((v) => cmPrefLabels[v] ?? v).join('、')}` : '已全部关闭',
+)
 onMounted(() => {
   window.cmLog = (e) => {
     const tag = document.getElementById('cm-result')
@@ -148,6 +166,14 @@ onMounted(() => {
       item.textContent = `动态项 ${n}`
       declDyn.appendChild(item)
     }
+  }
+  // 声明式多选勾选项：detail 为 { value, checked }（checked = 该项切换后的状态），
+  // 勾选切换不收起菜单，可连续勾选——据 detail 更新响应式状态，再经 value 绑定回写宿主
+  window.cmDeclCheckLog = (e) => {
+    const next = new Set(cmPrefs.value)
+    if (e.detail.checked) next.add(e.detail.value)
+    else next.delete(e.detail.value)
+    cmPrefs.value = [...next]
   }
   // kind demo：勾选态与动作项反馈
   window.cmKindLog = (e) => {

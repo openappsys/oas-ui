@@ -22,13 +22,17 @@
 
 **废弃 API 台账**：`docs/deprecations.json` 是别名/事件双发/已移除墓碑的唯一机器可读来源；`pnpm deprecations:gen` 生成 `docs/deprecations.md`，`pnpm deprecations:check` 校验 `normalizeLegacyAlias` 调用、canonical 存在性与 removeIn 版本纪律。移除版本由用户定，AI 不擅自填写或执行移除。removeIn 默认必须是高于当前版本的 major；**唯一豁免**是 `package-export` 面经用户批准携带 `minorException`（必填非空 approvedBy 与 reason）的「经批准的非 major 提升」——仅限同 major 且严格高于当前版本的合法 x.y.z（兼容 patch 与 minor 提升；先例：DEP-EXPORT-0001 `data/table/core` 于 2.6.5 删除）；组件 API 面的 minor/patch 移除一律拒绝，判定规则自测 `pnpm deprecations:test`（已接入 CI）。
 
-**断言质量审计**：`pnpm qa:audit` 输出无 `expect` 文件、无条件 `test.skip(true)`、固定 `waitForTimeout`、弱断言与事件只断 length 的分布；`pnpm qa:audit:check` 以当前基线为上限，新增假绿或等待膨胀会红灯。三个维度各自独立设限（`--max-wait` / `--max-weak` / `--max-event-len`，默认 440 / 1967 / 105，2026-10-29 历史债快照）。**阈值是防增量，不是要求清零**——wait/weak 阈值等于实测存量（不再预留余量），任何新增即红灯；eventLen 仍保留余量（实测 96 / 阈值 105）；确属合理新增才调阈值，并在提交说明写清理由，**不得每批静默抬阈值**（存量收口作为 deferred 记在 Task 13 / 维护批）。它不是覆盖率替代品，只负责让“测了但没断言”可见。
+**断言质量审计**：`pnpm qa:audit` 输出无 `expect` 文件、无条件 `test.skip(true)`、固定 `waitForTimeout`、弱断言、事件只断 length 与 **OS 派生绝对量断言**（scroll 偏移/rect 绝对坐标/计数常数——跨 OS 失配实发教训，2026-11-02 新增维度）的分布；`pnpm qa:audit:check` 以当前基线为上限，新增假绿或等待膨胀会红灯。各维度独立设限（`--max-wait` / `--max-weak` / `--max-event-len` / `--max-os-absolute`，默认 28 / 0 / 105 / 82，2026-11-02 收口后口径；计数维度已覆盖 `.length` / `.count()` 形态，82 = 数据驱动计数 78 + px 固定布局窗口计数 4，均与字体度量无关）。**阈值是防增量，不是要求清零**——wait/osAbsolute 阈值等于实测存量（零余量），任何新增即红灯；eventLen 仍保留余量；确属合理新增才调阈值，并在提交说明写清理由，**不得每批静默抬阈值**。它不是覆盖率替代品，只负责让“测了但没断言”可见。
 
 **Vitest 运行模式**：默认逐文件隔离（Vitest 5 + happy-dom，每文件独立环境）。**关闭隔离不可用（2026-09 尝试已回退）**：`poolOptions` 在 Vitest 4 已移除（曾被误设为 `poolOptions.forks.isolate=false`——死配置，全量仍逐文件建环境）；改顶层 `isolate: false` 真正关闭后，跨文件模块状态共享直接击穿 18 条测试（capability 注册表 late-join 污染 / vi.mock 的 computePositionMock 泄漏 / hover-card 计时态等）——本套件大量用例依赖「每文件全新模块图」（vi.mock 模块替换、能力注册表、locale 全局态、matchMedia 桩），为 ~15% 的 wall 节省逐个扶正不值得，已回退为默认隔离。后续若确需提速，先按「模块级全局态清单」（capability 注册表 / vi.mock / setLocale / 桩）逐类做环境自清理，再评估开关。
 
-**跨浏览器抽样**：全量 e2e 只在 chromium 跑；firefox 按抽样子集跑 `visual` / `smoke` / `qa-regression` 三个 spec，圈定逻辑在 `playwright.config.ts` 的 firefox project `testMatch`（`/qa-regression\//` 匹配整个 `qa-regression/` 目录）。抽样目的：暴露浏览器专有渲染/兼容问题（如 slider `::-webkit-slider-runnable-track` 在 Firefox 失效导致轨道不可见的历史缺陷），全量在 Firefox 上跑会翻倍耗时、不值得；交互密集或时序敏感的 spec（interaction/a11y/demo/onoas 等）不纳入——Firefox headless 时序差异可能引入 flaky，宁少勿滥。新增浏览器相关回归断言优先放进 `qa-regression/` 对应组件文件，会自动纳入 firefox 抽样。
+**跨浏览器覆盖**：全量 e2e 在 chromium 与 webkit 双引擎全量跑（webkit 覆盖 = 全部 qa-regression + 代表性页面 smoke + 跨引擎 DSD smoke，`forced-colors.spec.ts` 项目级排除——引擎不支持 forced-colors 模拟）；firefox 按抽样子集跑 `visual` / `smoke` / `qa-regression` 三个 spec，圈定逻辑在 `playwright.config.ts` 的 firefox project `testMatch`。抽样目的：暴露浏览器专有渲染/兼容问题，全量在 Firefox 上跑会翻倍耗时、不值得；交互密集或时序敏感的 spec（interaction/a11y/demo/onoas 等）不纳入——Firefox headless 时序差异可能引入 flaky，宁少勿滥。**所有新增 e2e 断言必须按语义不变量写**（元素关系、前后差值、DOM 现算期望值），不得写本机校准过的像素/计数常数，也不得以某引擎的数值反推容差（OS/引擎双维度的实发教训）。新增浏览器相关回归断言优先放进 `qa-regression/` 对应组件文件，自动纳入 firefox 抽样与 webkit 全量。
 
-**WebKit 与失败产物**：WebKit 只有 `webkit.spec.ts` 抽样（8 页 smoke + prompt-input 键盘交互），在独立 `e2e-webkit` job 中安装并运行，不混入 Chromium/Firefox 分片；否则未安装 WebKit 的 runner 会让整个 shard 失败。CI 的 e2e job 在 `CI` 下启用 `trace: on-first-retry`、`screenshot: only-on-failure`，并上传 `playwright-report/`、`test-results/`（排除体积大的 `test-results/visual/**`），保留 7 天；本地默认关闭这些产物。
+**长稳 soak**：`pnpm test:soak`（`scripts/e2e/soak.mjs`）对 flake 高发 spec（交互浮层/虚拟滚动/动画时序，默认 8 个）重复跑 N 轮（默认 3 轮、`--retries=0`、每轮独立端口与 `--output`），汇总轮次×用例矩阵与 flaky 清单到 `test-results/soak/`，任一轮失败或出现 flaky 即非零退出——单次 e2e 抓不到的时序/负载 flake 靠重复暴露。
+
+**WebKit 已知引擎差异清单**（新增断言/交互时对照）：WebKit 不为非交互目标上的 tap 合成 `click`（依赖 document click 的交互需 pointerup 通道，外点关闭已统一）；`window.getSelection()` 不反映 shadow 树内选区且无 `ShadowRoot.getSelection()`；`getComputedStyle(el, pseudo)` 返回空声明；`page.emulateMedia({forcedColors})` 不支持；Tab 不遍历 `<a href>`；CDP 触屏与 forced-GC 类模拟不可用（既有 skip 门控）。
+
+**WebKit 与失败产物**：WebKit 全量套件在独立 `e2e-webkit` job 中安装并运行（3 分片），不混入 Chromium/Firefox 分片；否则未安装 WebKit 的 runner 会让整个 shard 失败。WebKit 全量在本地全并发（12 workers）下对 rAF 采样类用例（marquee）更敏感，偶发假失败重试即过；CI 4 workers 下风险显著更低。CI 的 e2e job 在 `CI` 下启用 `trace: on-first-retry`、`screenshot: only-on-failure`，并上传 `playwright-report/`、`test-results/`（排除体积大的 `test-results/visual/**`），保留 7 天；本地默认关闭这些产物。
 
 **厂商前缀样式通道：机制进 CI，引擎层不进 CI**：需要厂商前缀的样式（当前只有 backdrop 的模糊）一律走「**内联自定义属性 + 样式表标准/`-webkit-` 双规则**」形态，不写内联 vendor 属性——SSR 运行时 DOM 会丢弃内联 `-webkit-*`，只写内联标准+前缀属性会让 DSD 快照在**禁 JS 首帧**的老版本 Safari 上没有模糊。**覆盖边界**：单测锁**机制**（样式表含标准与 `-webkit-` 两条规则且同走 `var(--<组件>-*)` 变量通道、内联只写变量、不再写内联前缀属性）；**引擎层（前缀是否真被引擎接受）不在 CI 覆盖**——Chromium 已移除该前缀属性（前缀通道对它恒不生效），WebKit 在 Windows CI 上不可靠，为一条默认值不受影响的降级通道引入平台依赖不划算。**手工验证方法**（改这条通道前后各跑一次）：本地 WebKit（`npx playwright install webkit`）打开 backdrop 的**禁 JS 快照**（DSD 产物；或禁 JS 加载页面），在 `getComputedStyle(scrim)` 里核对 `-webkit-backdrop-filter` 的 computed 值 === 写入 `--oas-backdrop-blur` 的值；对照组不设置该变量时应为 `none`——正反两面都过才说明前缀通道真的通，只测正面会把「变量写了但前缀通道没生效」漏掉。
 
@@ -53,7 +57,9 @@
 
 - 测试：`pnpm test`（单测+行为）；单文件 `pnpm vitest run packages/ui/src/basic/button/oas-button.test.ts`
 - 类型：`pnpm typecheck`
-- 构建：`pnpm build`（构建后自动跑 `pnpm exports:check`）；e2e：`pnpm test:e2e`
+- 构建：`pnpm build`（构建后自动跑 `pnpm exports:check`）；e2e：`pnpm test:e2e`（chromium + webkit 全量 + firefox 抽样）
+- 长稳 soak：`pnpm test:soak`（flake 高发 spec N 轮重复，flaky 矩阵报告，详见 §2）
+- WSL 重放：`pnpm release:rehearse:wsl [--with-e2e --with-ssr-e2e]`（发布门禁的 Linux 重放通道，详见 §5 第 2 层补充）
 - **裸导入门禁**：`pnpm exports:check` 扫描 `packages/*/src` 里的 `@oas-ui/*` 导入，按各包 `package.json#exports` 精确/通配映射到构建产物并校验目标存在；新增公开入口或改 exports 映射后必须通过。`pnpm build` 已串联该检查，CI/发布不会漏检。
 - 演示：`pnpm dev`（predev 先跑 ui build 保证 dist 完整，再并行起 core/i18n/icons/ui 的 watch 构建 + Vitepress dev，固定 5175 端口 strictPort，被占即报错不自增；dev 与生产共用 `packages/*/dist`，改组件源码 → watch 构建更新 dist → dev server 自动 full reload，无需重启/清缓存）
 - **提交纪律**：涉及组件/样式/Shadow DOM 的改动，提交前必跑 `pnpm build`（happy-dom 与 vue-tsc 均抓不到 scoped CSS 语法错误，只有真实构建能抓）
@@ -171,6 +177,16 @@
 
 - `pnpm lint:md`（文档有改动时；`qa:audit` 的阈值模式已在上方第 5 步）
 - `node .opencode/check-trace.mjs --all`（全历史 message 扫描，0 命中）
+
+### 第 2 层补充：WSL Linux 通道（可选增强层）
+
+`pnpm release:rehearse` 只在 Windows 上重放，OS 差异这一维结构性缺失——出现过「本地 rehearse 全绿、CI（Ubuntu）连红」的实发事故，根因是字体/排版这类只在 Linux 渲染栈下才暴露的差异。需要时用 `pnpm release:rehearse:wsl [--with-e2e --with-ssr-e2e]` 把同一套门禁搬进 WSL 发行版再跑一遍（内部执行 `pnpm release:rehearse <args>`，参数原样透传；脚本 `scripts/release/rehearse-wsl.mjs`）。
+
+- **定位**：可选增强层，不进发布必跑清单。未安装 WSL / 没有发行版 / 发行版缺 Linux 原生 node+pnpm → 打印一次性安装指引后 exit 0（SKIP：缺环境是「没测到」，不记为失败，Windows 侧结果仍作数）。
+- **证据协议不变**：WSL 经 `/mnt/<盘>/…` 写的是同一个 `<git-dir>/oas-release-rehearsal.json`，与 Windows 侧同文件、同格式；`verify-rehearsal` 只看「SHA 一致 + 三层 ok:true」，不区分证据来源，pre-push 无需任何改动。WSL 侧失败同样把该层记 `ok:false` 并覆盖 Windows 的全绿记录——有意的 fail closed：任一侧红都不放行。
+- **何时必须跑**：① 出现「本地全绿 / CI-only 红」时，先用它复现定位；② 本批改动了渲染、布局、字体、行尾、路径大小写敏感相关的代码或依赖；③ 发版前想补一层 OS 差异保险。
+- **前置守卫**：仅 Windows 可跑（需 `wsl.exe`）；工作树必须干净（与 rehearse 同口径，无绕过开关）；自动从 `git rev-parse --show-toplevel` 换算 `/mnt/...`，并校验 WSL 内 toplevel 与 HEAD 与 Windows 侧一致（防 `/mnt` 指向别的检出、把证据挂错树）。`--probe` 只探测环境（发行版 / 工具链 / 路径 / HEAD），不执行门禁。
+- **副作用**：跑的是同一份工作树，rehearse 里的 `pnpm install` 会重写共享 `node_modules`（Linux 原生二进制替换 Windows 的）——跑完回 Windows 侧重跑一次 `pnpm install`；`/mnt` 走 drvfs，全量 e2e 明显更慢属正常现象。
 
 ### 第 3 层：e2e 三套
 

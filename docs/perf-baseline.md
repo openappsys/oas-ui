@@ -24,13 +24,13 @@
 <!-- BEGIN:generated:perf-baseline:packages -->
 | 包 | 文件数 | raw | gzip | brotli |
 | --- | --- | --- | --- | --- |
-| @oas-ui/ui（dist 总大小，含 map/d.ts） | — | 39.04 MB | — | — |
-| @oas-ui/ui（浏览器可加载 JS） | 471 | 10261.7 KB | 2464.4 KB | — |
-| @oas-ui/ui（全量入口链 `import '@oas-ui/ui'`） | 498 | 3636.6 KB | 992.6 KB | — |
-| @oas-ui/ui（dist/cdn.js 单文件全量 bundle） | 1 | 3012.4 KB | 661.3 KB | 453.9 KB |
+| @oas-ui/ui（dist 总大小，含 map/d.ts） | — | 39.50 MB | — | — |
+| @oas-ui/ui（浏览器可加载 JS） | 472 | 10406.0 KB | 2491.4 KB | — |
+| @oas-ui/ui（全量入口链 `import '@oas-ui/ui'`） | 499 | 3686.6 KB | 1003.4 KB | — |
+| @oas-ui/ui（dist/cdn.js 单文件全量 bundle） | 1 | 3057.5 KB | 669.2 KB | 457.9 KB |
 | @oas-ui/theme（index.css） | 1 | 7.8 KB | 1.9 KB | — |
-| @oas-ui/core | 7 | 40.6 KB | 16.8 KB | — |
-| @oas-ui/i18n | 32 | 216.6 KB | 65.2 KB | — |
+| @oas-ui/core | 8 | 43.2 KB | 18.1 KB | — |
+| @oas-ui/i18n | 33 | 220.8 KB | 66.0 KB | — |
 | @oas-ui/icons | 52 | 24.8 KB | 13.1 KB | — |
 | @oas-ui/ssr | 3 | 45.9 KB | 14.7 KB | — |
 <!-- END:generated:perf-baseline:packages -->
@@ -40,9 +40,9 @@
 <!-- BEGIN:generated:perf-baseline:components -->
 | 组件链 | 入口 | 文件数 | raw | gzip |
 | --- | --- | --- | --- | --- |
-| button | `@oas-ui/ui/basic/button` | 14 | 79.0 KB | 24.7 KB |
-| table | `@oas-ui/ui/data/table` | 30 | 211.4 KB | 64.7 KB |
-| tableEdit | `@oas-ui/ui/data/table/edit` | 45 | 297.2 KB | 87.9 KB |
+| button | `@oas-ui/ui/basic/button` | 14 | 80.2 KB | 25.1 KB |
+| table | `@oas-ui/ui/data/table` | 30 | 213.1 KB | 65.1 KB |
+| tableEdit | `@oas-ui/ui/data/table/edit` | 45 | 303.2 KB | 89.1 KB |
 | tableAdvanced | `@oas-ui/ui/data/table/advanced` | 8 | 19.9 KB | 7.8 KB |
 | tableFormat | `@oas-ui/ui/data/table/format` | 5 | 11.7 KB | 4.6 KB |
 | tableView | `@oas-ui/ui/data/table/view` | 1 | 2.4 KB | 1.0 KB |
@@ -56,10 +56,10 @@
 | ganttRecurring | `@oas-ui/ui/data/gantt/recurring` | 1 | 3.5 KB | 1.5 KB |
 | resourceCost | `@oas-ui/ui/data/resource/cost` | 1 | 2.0 KB | 0.9 KB |
 | resourcePool | `@oas-ui/ui/data/resource/pool` | 1 | 1.4 KB | 0.6 KB |
-| form | `@oas-ui/ui/form/form` | 10 | 62.3 KB | 22.4 KB |
-| gantt | `@oas-ui/ui/data/gantt` | 18 | 209.3 KB | 61.4 KB |
-| jsonViewer | `@oas-ui/ui/data/json-viewer` | 13 | 83.4 KB | 28.7 KB |
-| diffViewer | `@oas-ui/ui/data/diff-viewer` | 11 | 77.1 KB | 27.1 KB |
+| form | `@oas-ui/ui/form/form` | 10 | 63.3 KB | 22.8 KB |
+| gantt | `@oas-ui/ui/data/gantt` | 18 | 222.2 KB | 63.9 KB |
+| jsonViewer | `@oas-ui/ui/data/json-viewer` | 13 | 84.6 KB | 29.0 KB |
+| diffViewer | `@oas-ui/ui/data/diff-viewer` | 11 | 78.7 KB | 27.5 KB |
 <!-- END:generated:perf-baseline:components -->
 
 **tree-shaking 叙事成立（2026-10-08 图标库 opt-in 后增强）**：按需引入单组件链 gzip 仅为全量入口链的约 **2.5~6%**（逐版数据见上方生成表与 JSON `fileList`）；且**不再背整套图标**——单组件链只含其自身所需的少量图标 path（全量入口仍内含整套图标，开箱即用不变）。
@@ -126,15 +126,15 @@
 <!-- BEGIN:generated:perf-baseline:budgets -->
 | 预算项 | 实测 gzip | 预算（制式） | 依据 |
 | --- | --- | --- | --- |
-| dist/cdn.js gzip | 661.3 KB | 770.0 KB（天花板） | 天花板制：实测 gzip 665.4 KB（并入 workbench 构件族后；含 gantt/barcode/chart 扩展/glass/图标 opt-in），上浮约 15% 定档 770 KB；前档 730 KB 定档于 2026-10-07（628.7 KB 实测），再前档 700 KB 定档于 2026-10-05（608.5 KB 实测） |
-| @oas-ui/ui 全量入口链 gzip | 992.6 KB | 1140.0 KB（天花板） | 天花板制：实测 gzip 984.6 KB（并入 workbench 构件族后），上浮约 15% 定档 1140 KB；前档 1080 KB 定档于 2026-10-07（917.7 KB 实测），再前档 1024 KB 定档于 2026-10-05（890.9 KB 实测） |
-| @oas-ui/ui/basic/button 链 gzip | 24.7 KB | 30.0 KB（绝对值） | 实测 gzip 26.7 KB（2026-10-12：dev-warn 统一告警通道（101 处 console.warn 迁移，含模块本体）+ 当批行为修复增量；此前 25.0 KB 为图标库 opt-in 后口径），上浮约 12% 定档 30 KB；前档 29 KB 定档于 2026-10-08（25.0 KB 实测），再前档 39 KB 定档于 2026-10-05（33.5 KB 实测，含全量图标注册表） |
-| @oas-ui/ui/data/table 链 gzip | 64.7 KB | 74.0 KB（绝对值） | 实测 gzip 66.2 KB（v2.6.4 默认入口 = 基础表格，不含 edit；链含 core 骨架 + virtual-list + i18n + pagination + 列设置/导出/移动降级与展示集快照，不含编辑器族），上浮约 12% 定档 74 KB；前档 108 KB 为默认入口含 edit 口径 |
-| @oas-ui/ui/data/table/edit 链 gzip | 87.9 KB | 104.0 KB（绝对值） | 实测 gzip 89.7 KB / 43 文件（首次独立计量：链含 edit 控制器 + 编辑器族 + select/switch 浮层编辑通道 + i18n；edit 链大于默认 table 链是「编辑器族依赖浮层组件」的合理结果，也正是默认入口不含 edit 的原因）；上浮约 16% 定档 104 KB（89.7×1.16≈104，取整） |
-| @oas-ui/ui/form/form 链 gzip | 22.4 KB | 29.0 KB（绝对值） | 实测 gzip 29692 B / 预算 29696 B（余量仅 4 B，全库最危险档；链含 core + i18n；四批合并后 25.6 KB 上浮约 15% 定档 29 KB，前档 28 KB 定档于 2026-10-05 24.8 KB 实测）。预算上限不抬高：2026-10-29 新增外部 label 动态 observer 后已饱和，后续 form 链任何扩展前必须先评估/瘦身或按流程重新定档，禁止把余量当常量 |
-| @oas-ui/ui/data/gantt 链 gzip | 61.4 KB | 70.0 KB（绝对值） | v2.6.2 重定档：实测 gzip 61.1 KB（gantt 任务管理/依赖编辑/约束/工作日日历/列虚拟化/多选等能力增量，链含 core + i18n + virtual-list）；上浮约 15% 定档 70 KB。前一档 46 KB 定档于 2026-10-07（实测 39.6 KB） |
-| @oas-ui/ui/data/json-viewer 链 gzip | 28.7 KB | 35.0 KB（绝对值） | 实测 gzip 31.5 KB（链含 core + i18n + 树模型/虚拟窗口/工具栏/搜索/复制/复制浮层；无第三方运行时、无图标全量注册），上浮约 10% 定档 35 KB；PRD 目标 ≤32 KB。 |
-| @oas-ui/ui/data/diff-viewer 链 gzip | 27.1 KB | 34.0 KB（绝对值） | 实测 gzip 30.6 KB（链含 core + i18n + 自研 Myers 行级差异/词级高亮/折叠/并排/虚拟窗口；无第三方 diff 依赖、无图标全量注册），上浮约 11% 定档 34 KB；PRD 目标 ≤32 KB。 |
+| dist/cdn.js gzip | 669.2 KB | 770.0 KB（天花板） | 天花板制：实测 gzip 665.4 KB（并入 workbench 构件族后；含 gantt/barcode/chart 扩展/glass/图标 opt-in），上浮约 15% 定档 770 KB；前档 730 KB 定档于 2026-10-07（628.7 KB 实测），再前档 700 KB 定档于 2026-10-05（608.5 KB 实测） |
+| @oas-ui/ui 全量入口链 gzip | 1003.4 KB | 1140.0 KB（天花板） | 天花板制：实测 gzip 984.6 KB（并入 workbench 构件族后），上浮约 15% 定档 1140 KB；前档 1080 KB 定档于 2026-10-07（917.7 KB 实测），再前档 1024 KB 定档于 2026-10-05（890.9 KB 实测） |
+| @oas-ui/ui/basic/button 链 gzip | 25.1 KB | 30.0 KB（绝对值） | 实测 gzip 26.7 KB（2026-10-12：dev-warn 统一告警通道（101 处 console.warn 迁移，含模块本体）+ 当批行为修复增量；此前 25.0 KB 为图标库 opt-in 后口径），上浮约 12% 定档 30 KB；前档 29 KB 定档于 2026-10-08（25.0 KB 实测），再前档 39 KB 定档于 2026-10-05（33.5 KB 实测，含全量图标注册表） |
+| @oas-ui/ui/data/table 链 gzip | 65.1 KB | 74.0 KB（绝对值） | 实测 gzip 66.2 KB（v2.6.4 默认入口 = 基础表格，不含 edit；链含 core 骨架 + virtual-list + i18n + pagination + 列设置/导出/移动降级与展示集快照，不含编辑器族），上浮约 12% 定档 74 KB；前档 108 KB 为默认入口含 edit 口径 |
+| @oas-ui/ui/data/table/edit 链 gzip | 89.1 KB | 104.0 KB（绝对值） | 实测 gzip 89.7 KB / 43 文件（首次独立计量：链含 edit 控制器 + 编辑器族 + select/switch 浮层编辑通道 + i18n；edit 链大于默认 table 链是「编辑器族依赖浮层组件」的合理结果，也正是默认入口不含 edit 的原因）；上浮约 16% 定档 104 KB（89.7×1.16≈104，取整） |
+| @oas-ui/ui/form/form 链 gzip | 22.8 KB | 29.0 KB（绝对值） | 实测 gzip 29692 B / 预算 29696 B（余量仅 4 B，全库最危险档；链含 core + i18n；四批合并后 25.6 KB 上浮约 15% 定档 29 KB，前档 28 KB 定档于 2026-10-05 24.8 KB 实测）。预算上限不抬高：2026-10-29 新增外部 label 动态 observer 后已饱和，后续 form 链任何扩展前必须先评估/瘦身或按流程重新定档，禁止把余量当常量 |
+| @oas-ui/ui/data/gantt 链 gzip | 63.9 KB | 70.0 KB（绝对值） | v2.6.2 重定档：实测 gzip 61.1 KB（gantt 任务管理/依赖编辑/约束/工作日日历/列虚拟化/多选等能力增量，链含 core + i18n + virtual-list）；上浮约 15% 定档 70 KB。前一档 46 KB 定档于 2026-10-07（实测 39.6 KB） |
+| @oas-ui/ui/data/json-viewer 链 gzip | 29.0 KB | 35.0 KB（绝对值） | 实测 gzip 31.5 KB（链含 core + i18n + 树模型/虚拟窗口/工具栏/搜索/复制/复制浮层；无第三方运行时、无图标全量注册），上浮约 10% 定档 35 KB；PRD 目标 ≤32 KB。 |
+| @oas-ui/ui/data/diff-viewer 链 gzip | 27.5 KB | 34.0 KB（绝对值） | 实测 gzip 30.6 KB（链含 core + i18n + 自研 Myers 行级差异/词级高亮/折叠/并排/虚拟窗口；无第三方 diff 依赖、无图标全量注册），上浮约 11% 定档 34 KB；PRD 目标 ≤32 KB。 |
 | @oas-ui/theme index.css gzip | 1.9 KB | 4.0 KB（绝对值） | 实测 gzip 3.52 KB（skins 皮肤层变量族 + 阴影双层精修后），上浮约 15%；前档 3.5 KB 定档于 2026-09-15（3.0 KB 实测） |
 | @oas-ui/theme glass-fluid.js gzip | 8.1 KB | 9.5 KB（绝对值） | 实测 gzip 8.0 KB（B 档 + 修复批：注册表 + 注入样式表并入运行时——ui 包相应减少同量玻璃规则体；高光层改「surface 背景之上、文字之下」，补 .box 基态/命中成对、isolation:isolate、z-index:-1、禁用守卫（含链接形态 aria-disabled，且同时 background/box-shadow:none）、实心按钮 hover 高光 + 按压边缘内描边（:where 归零特异性）、全根观察 + 帧内 prune 防泄漏）。2026-10-31 复核：把派生式生成器烘焙成静态字面量实测只省 108 B（不值得牺牲「派生防漂移」），无操作三元 7 B、HIT_SELECTORS 函数包装 0 B —— 无冗余可清；前档 8.5 KB 时利用率 95.1%、×1.10 档会让实测距预警线只差 16 B，故按实测上浮 17.5% 重定档 9.5 KB（利用率 85.1%，预警线恢复有效）。再次加功能前先做包体评估。前档 4.5 / 4 KB 首次定档于 2026-10-07（3.6 / 2.97 KB 实测）（指针镜面高光运行时：监听/命中/坐标/rAF/守卫/清理） |
 | @oas-ui/theme glass.css gzip | 3.4 KB | 6.0 KB（绝对值） | 本次实测 gzip 3516 B（2026-10-29；玻璃静态层新增 switch 轨道加深 token 后复核：surface 半透明 token + 折光边 + 阴影 + switch mix；独立可选，不进 union），保留 6 KB 上限 |
