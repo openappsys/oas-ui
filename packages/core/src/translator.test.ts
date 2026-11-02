@@ -84,6 +84,23 @@ describe('translator 钩子', () => {
       expect(getLocaleTranslator('__no-such-locale__')).toBeNull()
     })
 
+    it('locale 名按 BCP 47 大小写/分隔符归一（下划线、大小写均可命中）', () => {
+      const fn = (key: string) => `tw:${key}`
+      registerLocaleTranslator('zh_TW', fn)
+      expect(getLocaleTranslator('zh-TW')).toBe(fn)
+      expect(getLocaleTranslator('ZH-tw')).toBe(fn)
+    })
+
+    it('locale 查询可剥离扩展段（私有段不剥离）', () => {
+      const fn = (key: string) => `ext:${key}`
+      registerLocaleTranslator('zh-Hant', fn)
+      registerLocaleTranslator('en', (key) => `en:${key}`)
+      expect(getLocaleTranslator('zh-Hant-u-nu-latn')).toBe(fn)
+      // en 已注册：若错误剥离私有段会命中 en；这里必须为 null
+      expect(getLocaleTranslator('en-x-foo')).toBeNull()
+      expect(getLocaleTranslator('x-u-foo')).toBeNull()
+    })
+
     it('同名重复注册后者覆盖前者', () => {
       registerLocaleTranslator('__test-locale-2__', (key) => `v1:${key}`)
       registerLocaleTranslator('__test-locale-2__', (key) => `v2:${key}`)

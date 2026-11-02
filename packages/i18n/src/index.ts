@@ -36,6 +36,7 @@ registerDefaultMessages(layoutMessages)
 registerDefaultMessages(navigationMessages)
 registerDefaultMessages(workbenchMessages)
 
+export { canonicalizeLocale, normalizeLocaleTag } from './locale-name.js'
 export {
   registerDefaultMessages,
   registerLocale,

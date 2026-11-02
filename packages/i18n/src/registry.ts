@@ -17,6 +17,8 @@
  * 「已注册的部分默认文案」（整包入口下即全集）。
  */
 import { setTranslator, registerLocaleTranslator } from '@oas-ui/core/translator'
+import { canonicalizeLocale, localeAliases } from './locale-name.js'
+export { canonicalizeLocale } from './locale-name.js'
 import type { Locale, LocaleKey, LocaleMessages, LocaleName, LocaleParams } from './types.js'
 
 interface RegistryState {
@@ -80,8 +82,14 @@ function translateIn(messages: LocaleMessages, key: string, params?: LocaleParam
 
 /** 注册语言包（同名覆盖），并登记"按 locale 名"的翻译器供 config-provider 注入 */
 export function registerLocale(locale: Locale): void {
-  state.locales.set(locale.name, locale)
-  registerLocaleTranslator(locale.name, (key, params) => translateIn(locale.messages, key, params))
+  const name = canonicalizeLocale(locale.name)
+  // 不修改调用方对象；注册表内存归一后的副本（pt → pt-BR 等别名收敛到 canonical）
+  const normalized: Locale = name === locale.name ? locale : { ...locale, name }
+  state.locales.set(name, normalized)
+  const translate = (key: string, params?: LocaleParams) => translateIn(normalized.messages, key, params)
+  registerLocaleTranslator(name, translate)
+  // 常见别名也登记同一翻译器：config-provider locale="zh-TW" / "en_US" 等无需调用方先归一
+  for (const alias of localeAliases(name)) registerLocaleTranslator(alias, translate)
 }
 
 /**
@@ -92,14 +100,18 @@ export function registerLocale(locale: Locale): void {
  */
 export function setLocale(nameOrLocale: string | Locale): string {
   if (typeof nameOrLocale === 'string') {
-    const found = state.locales.get(nameOrLocale)
+    const name = canonicalizeLocale(nameOrLocale)
+    const found = state.locales.get(name)
     if (!found) {
-      throw new Error(`[oas-ui/i18n] 未注册的 locale「${nameOrLocale}」，请先 registerLocale() 或直接传入语言包对象`)
+      throw new Error(
+        `[oas-ui/i18n] 未注册的 locale「${nameOrLocale}」${name !== nameOrLocale ? `（归一为「${name}」）` : ''}，请先 registerLocale() 或直接传入语言包对象`,
+      )
     }
     state.current = found
   } else {
     registerLocale(nameOrLocale)
-    state.current = nameOrLocale
+    const name = canonicalizeLocale(nameOrLocale.name)
+    state.current = state.locales.get(name) ?? { ...nameOrLocale, name }
   }
   syncTranslator()
   const current = state.current ?? defaultLocale
@@ -124,7 +136,7 @@ export function getLocaleName(): string {
 export function getDirection(nameOrLocale?: string | Locale): 'ltr' | 'rtl' {
   const locale =
     typeof nameOrLocale === 'string'
-      ? state.locales.get(nameOrLocale)
+      ? state.locales.get(canonicalizeLocale(nameOrLocale))
       : (nameOrLocale ?? state.current ?? defaultLocale)
   return locale?.dir === 'rtl' ? 'rtl' : 'ltr'
 }
@@ -136,13 +148,15 @@ export function getDirection(nameOrLocale?: string | Locale): 'ltr' | 'rtl' {
  */
 const loaders: Record<LocaleName, () => Promise<{ default: Locale }>> = {
   'zh-CN': () => import('./zh-CN.js'),
+  'zh-Hant': () => import('./zh-Hant.js'),
   en: () => import('./en.js'),
   ja: () => import('./ja.js'),
   ko: () => import('./ko.js'),
   de: () => import('./de.js'),
   fr: () => import('./fr.js'),
   es: () => import('./es.js'),
-  pt: () => import('./pt.js'),
+  pt: () => import('./pt-BR.js'), // 兼容别名：历史 pt 文案即巴西葡语
+  'pt-BR': () => import('./pt-BR.js'),
   ru: () => import('./ru.js'),
   ar: () => import('./ar.js'),
 }
@@ -157,22 +171,24 @@ const loaders: Record<LocaleName, () => Promise<{ default: Locale }>> = {
  * - 用户已 registerLocale 覆盖同名 'zh-CN' → 按用户注册优先，直接返回用户对象，不装载整包
  *   （与「已注册则早退」契约一致）。
  */
-export async function loadLocale(name: LocaleName): Promise<Locale> {
-  const registered = state.locales.get(name)
-  if (name === defaultLocale.name && registered === defaultLocale) {
-    const mod = await loaders[name]()
+export async function loadLocale(name: LocaleName | (string & {})): Promise<Locale> {
+  const canonical = canonicalizeLocale(name)
+  const registered = state.locales.get(canonical)
+  if (canonical === defaultLocale.name && registered === defaultLocale) {
+    const mod = await loaders[canonical as LocaleName]()
     Object.assign(defaultLocale.messages, mod.default.messages)
     return defaultLocale
   }
   if (registered) return registered
-  const loader = loaders[name]
+  const loader = loaders[canonical as LocaleName]
   if (!loader) {
-    throw new Error(`[oas-ui/i18n] 不支持按需加载的 locale「${name}」；内置：${Object.keys(loaders).join(', ')}`)
+    throw new Error(
+      `[oas-ui/i18n] 不支持按需加载的 locale「${name}」${canonical !== name ? `（归一为「${canonical}」）` : ''}；内置：${Object.keys(loaders).join(', ')}`,
+    )
   }
   const mod = await loader()
-  const locale = mod.default
-  registerLocale(locale)
-  return locale
+  registerLocale(mod.default)
+  return state.locales.get(canonical) ?? mod.default
 }
 
 /**

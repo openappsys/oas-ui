@@ -176,6 +176,28 @@ describe('@oas-ui/ssr renderToString', () => {
     expect(html).not.toContain('No data')
   })
 
+  it('locale：别名与地区变体按 BCP 47 归一（zh-TW → zh-Hant、pt → pt-BR、en_US → en）', async () => {
+    const tw = await renderToString('oas-empty', {}, '', { locale: 'zh-TW' })
+    expect(tw).toContain('暫無資料')
+    const br = await renderToString('oas-empty', {}, '', { locale: 'pt' })
+    expect(br).toContain('Sem dados')
+    const us = await renderToString('oas-empty', {}, '', { locale: 'en_US' })
+    expect(us).toContain('No data')
+  })
+
+  it('locale：宿主注册的别名自定义包优先于内置包（registered-first，不被 SSR 装载覆盖）', async () => {
+    const es = (await import('@oas-ui/i18n/es')).default
+    // 先渲染一次安装 shim + registry，再按文档注册自定义别名包
+    await renderToString('oas-empty', {}, '', { locale: 'en' })
+    const { registerLocale } = await import('@oas-ui/i18n')
+    registerLocale({ name: 'es-419', messages: { ...es.messages, 'empty.noData': 'CUSTOM-ES' } })
+    const html = await renderToString('oas-empty', {}, '', { locale: 'es-419' })
+    expect(html).toContain('CUSTOM-ES')
+    expect(html).not.toContain('Sin datos')
+    // 恢复内置 es，避免影响后续用例
+    registerLocale(es)
+  })
+
   it('locale：未注册 locale 显式 devWarn 一次并回退内置 en（不静默借用全局 locale）', async () => {
     const warnings: unknown[][] = []
     const spy = vi.spyOn(console, 'warn').mockImplementation((...args: unknown[]) => {

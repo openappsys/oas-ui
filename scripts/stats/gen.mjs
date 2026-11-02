@@ -3,7 +3,7 @@
  * 官网首页统计数字生成（spec §5）。数据源全部为 git 内文件/目录，不依赖构建产物：
  *   - components：packages/ui/src/<group>/<component> 组件目录数（口径：组目录下含 index.ts 的直接子目录）
  *   - cdnGzipKB：docs/perf-baseline.json 的 size.packages['@oas-ui/ui'].cdn.gzipBytes（perf:size 产出）
- *   - locales：packages/i18n/src 下语言包文件（zh-CN.ts / en.ts 等，排除 index/types/registry*）
+ *   - locales：packages/i18n/src/locales 下的 canonical 语言包文件（zh-CN.ts / zh-Hant.ts / en.ts 等，排除测试；根目录 pt.ts 为兼容别名入口，不计入）
  *   - tests：packages/ 下全部 *.spec.ts（e2e）与 *.test.ts（单测，排除 node_modules/dist）中 it(/test( 声明计数（近似口径）
  *   - version：packages/ui/package.json 的 version
  * 产物：packages/docs/docs/.vitepress/generated/stats.json（进 git）。
@@ -35,10 +35,10 @@ const baseline = JSON.parse(readFileSync(join(ROOT, 'docs/perf-baseline.json'), 
 const cdnGzipBytes = baseline.size.packages['@oas-ui/ui'].cdn.gzipBytes
 const cdnGzipKB = Math.round(cdnGzipBytes / 102.4) / 10 // 一位小数
 
-// 3) 语言包数（文件名形如 zh-CN.ts / en.ts；排除 index/types/registry*）
-const I18N_SRC = join(ROOT, 'packages/i18n/src')
-const LOCALE_RE = /^[a-z]{2,3}(-[A-Za-z0-9]{2,8})?\.ts$/
-const locales = readdirSync(I18N_SRC).filter((f) => LOCALE_RE.test(f)).length
+// 3) 语言包数（canonical 语言包目录；不把兼容别名入口 pt.ts 计入）
+const I18N_LOCALES = join(ROOT, 'packages/i18n/src/locales')
+const LOCALE_FILE_RE = /^[a-z]{2,3}(-[A-Za-z0-9]{2,8})*\.ts$/
+const locales = readdirSync(I18N_LOCALES).filter((f) => LOCALE_FILE_RE.test(f)).length
 
 // 4) 测试用例数（单测 *.test.ts + e2e *.spec.ts；it(/test( 行首声明，it.each 等模板写法不计，近似口径可接受）
 function collectSpecs(dir, out) {

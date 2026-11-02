@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { registerLocale } from '@oas-ui/i18n'
 import en from '@oas-ui/i18n/en'
+import zhHant from '@oas-ui/i18n/zh-Hant'
 import '@oas-ui/i18n'
 import './index.js'
 import '../../feedback/empty/index.js'
@@ -35,6 +36,30 @@ describe('oas-config-provider', () => {
 
     const desc = empty.shadowRoot!.querySelector<HTMLElement>('[part="description"]')!
     expect(desc.textContent).toBe('No data')
+  })
+
+  it('locale 接受 BCP 47 别名（zh-TW → zh-Hant），包裹内即时用繁体文案', () => {
+    registerLocale(zhHant)
+    const cp = document.createElement('oas-config-provider')
+    cp.setAttribute('locale', 'zh-TW')
+    const empty = document.createElement('oas-empty')
+    cp.appendChild(empty)
+    document.body.appendChild(cp)
+
+    const desc = empty.shadowRoot!.querySelector<HTMLElement>('[part="description"]')!
+    expect(desc.textContent).toBe('暫無資料')
+  })
+
+  it('locale 扩展段按基础标签回退（zh-Hant-u-nu-latn → zh-Hant）', () => {
+    registerLocale(zhHant)
+    const cp = document.createElement('oas-config-provider')
+    cp.setAttribute('locale', 'zh-Hant-u-nu-latn')
+    const empty = document.createElement('oas-empty')
+    cp.appendChild(empty)
+    document.body.appendChild(cp)
+
+    const desc = empty.shadowRoot!.querySelector<HTMLElement>('[part="description"]')!
+    expect(desc.textContent).toBe('暫無資料')
   })
 
   it('无 config-provider 时回退全局 locale', () => {

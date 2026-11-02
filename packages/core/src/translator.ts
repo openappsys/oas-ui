@@ -1,3 +1,5 @@
+import { normalizeLocaleTag, stripLocaleExtensions } from './locale-tag.js'
+
 /**
  * 翻译函数钩子 —— core 不依赖任何 i18n 实现（避免 core ↔ i18n 循环依赖）。
  *
@@ -51,14 +53,19 @@ export function getTranslator(): Translator | null {
   return state.translator
 }
 
-/** 注册某个 locale 名对应的翻译函数（i18n 包在 registerLocale 时调用） */
+/** 注册某个 locale 名对应的翻译函数（i18n 包在 registerLocale 时调用）；名称按 BCP 47 大小写归一 */
 export function registerLocaleTranslator(name: string, fn: Translator): void {
-  state.localeTranslators.set(name, fn)
+  state.localeTranslators.set(normalizeLocaleTag(name), fn)
 }
 
-/** 读取某个 locale 名的翻译函数，未注册返回 null */
+/** 读取某个 locale 名的翻译函数，未注册返回 null；查询名按 BCP 47 归一，扩展段可回退到基础标签（en_US / en-US-u-ca-gregory 均可命中） */
 export function getLocaleTranslator(name: string): Translator | null {
-  return state.localeTranslators.get(name) ?? null
+  const normalized = normalizeLocaleTag(name)
+  const direct = state.localeTranslators.get(normalized)
+  if (direct) return direct
+  const stripped = stripLocaleExtensions(normalized)
+  if (stripped !== normalized) return state.localeTranslators.get(stripped) ?? null
+  return null
 }
 
 /** 订阅 translator 变化（locale 切换），返回取消订阅函数 */

@@ -6,12 +6,25 @@ import { ko } from './ko.js'
 import { de } from './de.js'
 import { fr } from './fr.js'
 import { es } from './es.js'
-import { pt } from './pt.js'
+import { ptBR } from './pt-BR.js'
 import { ru } from './ru.js'
 import { ar } from './ar.js'
+import { zhHant } from './zh-Hant.js'
 import arEntry from '../ar.js'
 
-const packs: Record<string, Record<string, string>> = { 'zh-CN': zhCN, en, ja, ko, de, fr, es, pt, ru, ar }
+const packs: Record<string, Record<string, string>> = {
+  'zh-CN': zhCN,
+  'zh-Hant': zhHant,
+  en,
+  ja,
+  ko,
+  de,
+  fr,
+  es,
+  'pt-BR': ptBR,
+  ru,
+  ar,
+}
 const zhKeys = Object.keys(zhCN)
 const packNames = Object.keys(packs)
 /** zh-CN 的宽松视图（`as const` 字面量类型不便按动态 key 索引） */

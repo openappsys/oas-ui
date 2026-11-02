@@ -2,13 +2,14 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import '@oas-ui/i18n'
 import { setLocale, type Locale } from '@oas-ui/i18n'
 import zhCN from '@oas-ui/i18n/zh-CN'
+import zhHant from '@oas-ui/i18n/zh-Hant'
 import en from '@oas-ui/i18n/en'
 import ja from '@oas-ui/i18n/ja'
 import ko from '@oas-ui/i18n/ko'
 import de from '@oas-ui/i18n/de'
 import fr from '@oas-ui/i18n/fr'
 import es from '@oas-ui/i18n/es'
-import pt from '@oas-ui/i18n/pt'
+import ptBR from '@oas-ui/i18n/pt-BR'
 import ru from '@oas-ui/i18n/ru'
 import ar from '@oas-ui/i18n/ar'
 import '../config-provider/index.js'
@@ -852,8 +853,8 @@ describe('OASThemeEditor light/dark 双套编辑', () => {
     expect(input.value).toBe('')
   })
 
-  it('10 个 locale 的编辑桶选择器均有翻译，不暴露 raw locale key', () => {
-    const packs: Locale[] = [zhCN, en, ja, ko, de, fr, es, pt, ru, ar]
+  it('11 个 locale 的编辑桶选择器均有翻译，不暴露 raw locale key', () => {
+    const packs: Locale[] = [zhCN, zhHant, en, ja, ko, de, fr, es, ptBR, ru, ar]
     for (const pack of packs) {
       setLocale(pack)
       const el = mount({ token: '["--oas-color-primary"]' })

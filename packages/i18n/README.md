@@ -2,7 +2,7 @@
 
 ## <a id="zh"></a> 中文 | [English](#en)
 
-OAS-UI 国际化包 —— 框架无关的 locale registry：`setLocale` / `registerLocale` / `t` 接口。内置 10 种语言包：**zh-CN（默认）/ en / ja / ko / de / fr / es / pt / ru / ar（RTL）**，tree-shakable，支持按需加载。
+OAS-UI 国际化包 —— 框架无关的 locale registry：`setLocale` / `registerLocale` / `t` 接口。内置 11 种语言包：**zh-CN（默认）/ zh-Hant / en / ja / ko / de / fr / es / pt-BR / ru / ar（RTL）**，另保留 `pt` 兼容别名；语言名按 BCP 47 归一，tree-shakable，支持按需加载。
 
 ### 安装
 
@@ -35,7 +35,7 @@ setLocale('ja')
 
 > **用 `link:` / workspace 引用 `@oas-ui/ui` 时**：ui 与宿主可能各解析一份 `@oas-ui/i18n`。locale registry 与 core translator 已挂到 `globalThis` 版本化 `Symbol.for` 键，同一进程的副本共享状态，`setLocale()` 无需改 import；仍建议在 Vite 配 `resolve.dedupe: ['@oas-ui/i18n', '@oas-ui/core']`（或 pnpm `overrides`）减少重复包体。发布态同版本 registry 包无此问题。
 
-### 自定义语言包（内置 10 种之外）
+### 自定义语言包（内置 11 种之外）
 
 以 `zh-CN` 为模板逐步落地（`zh-CN` 是 key 全集的单一事实源，以下每一步都有编译期或运行时护栏）：
 
@@ -63,9 +63,10 @@ setLocale('vi') // 或一步：setLocale(vi)（传对象自动注册并切换）
 
 要点：
 
-- **key 全集**：`packages/i18n/src/locales/zh-CN.ts`（约 290 个 key）——逐 key 翻译，组件内置文案全部走这些 key
+- **key 全集**：`packages/i18n/src/locales/zh-CN.ts`（438 个 key）——逐 key 翻译，组件内置文案全部走这些 key
 - **类型约束**：`LocaleMessages = { [K in LocaleKey]: string }`——`messages` 标注为 `Locale` 的 `messages` 后缺 key 编译期报错（`...zhCN.messages` spread 提供全量 key，逐 key 覆盖即得新语言）
-- **按需分包**：自定义语言包走宿主自己的动态 `import()`（`loadLocale()` 只认内置 10 种的包名映射）；注册后 `setLocale(name)` 照常生效
+- **按需分包**：自定义语言包走宿主自己的动态 `import()`（`loadLocale()` 内置包名之外需先 `registerLocale`）；注册后 `setLocale(name)` 照常生效
+- **命名避开内置别名**：`registerLocale({ name })` 会先做 BCP 47 归一（`en-GB` → `en`、`zh-TW` → `zh-Hant` 等），命中别名会覆盖内置同名语言包；自定义包请用独立名（如 `vi`、`en-XA`），不要复用内置别名。
 - **运行时护栏**：`setLocale('未注册名')` 抛错并提示先注册；`getDirection()` 对 RTL 包返回 `'rtl'`
 
 ### 相关包
@@ -76,7 +77,7 @@ setLocale('vi') // 或一步：setLocale(vi)（传对象自动注册并切换）
 
 ## <a id="en"></a> [中文](#zh) | English
 
-`@oas-ui/i18n` — the internationalization package of OAS-UI. A framework-agnostic locale registry with `setLocale` / `registerLocale` / `t`. Built-in locale packs in **10 languages: zh-CN (default) / en / ja / ko / de / fr / es / pt / ru / ar (RTL)**, tree-shakable, with on-demand loading.
+`@oas-ui/i18n` — the internationalization package of OAS-UI. A framework-agnostic locale registry with `setLocale` / `registerLocale` / `t`. Built-in locale packs in **11 languages: zh-CN (default) / zh-Hant / en / ja / ko / de / fr / es / pt-BR / ru / ar (RTL)**, plus the `pt` compatibility alias; language tags are normalized as BCP 47, tree-shakable, with on-demand loading.
 
 ### Install
 
@@ -137,9 +138,10 @@ setLocale('vi') // or one step: setLocale(vi) (passing the object auto-registers
 
 Notes:
 
-- **Full key set**: `packages/i18n/src/locales/zh-CN.ts` (~290 keys) — every built-in component text goes through these keys
+- **Full key set**: `packages/i18n/src/locales/zh-CN.ts` (438 keys) — every built-in component text goes through these keys
 - **Type constraint**: `LocaleMessages = { [K in LocaleKey]: string }` — tag `messages` as a `Locale`'s `messages` to fail at compile time on missing keys (the `...zhCN.messages` spread supplies every key; override each to build the new locale)
-- **Code splitting**: ship custom packs with your own dynamic `import()` (`loadLocale()` only maps the 10 built-in names); after `registerLocale`, `setLocale(name)` works as usual
+- **Code splitting**: ship custom packs with your own dynamic `import()` (`loadLocale()` covers the built-in names; register custom packs first); after `registerLocale`, `setLocale(name)` works as usual
+- **Avoid built-in aliases as custom names**: `registerLocale({ name })` normalizes BCP 47 first (`en-GB` → `en`, `zh-TW` → `zh-Hant`, etc.), so a name that matches an alias overwrites the built-in pack; use a distinct name (e.g. `vi`, `en-XA`) for custom packs.
 - **Runtime guardrails**: `setLocale('unregistered-name')` throws with a hint; `getDirection()` returns `'rtl'` for RTL packs
 
 ### Related packages

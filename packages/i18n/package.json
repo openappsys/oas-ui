@@ -35,6 +35,10 @@
       "types": "./dist/zh-CN.d.ts",
       "default": "./dist/zh-CN.js"
     },
+    "./zh-Hant": {
+      "types": "./dist/zh-Hant.d.ts",
+      "default": "./dist/zh-Hant.js"
+    },
     "./en": {
       "types": "./dist/en.d.ts",
       "default": "./dist/en.js"
@@ -62,6 +66,10 @@
     "./pt": {
       "types": "./dist/pt.d.ts",
       "default": "./dist/pt.js"
+    },
+    "./pt-BR": {
+      "types": "./dist/pt-BR.d.ts",
+      "default": "./dist/pt-BR.js"
     },
     "./ru": {
       "types": "./dist/ru.d.ts",

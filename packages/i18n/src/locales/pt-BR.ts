@@ -1,10 +1,10 @@
 import type { LocaleMessages } from '../types.js'
 
 /**
- * Português 语言包 —— key 全集与 zh-CN 完全一致。
+ * Português (Brasil) 语言包 —— key 全集与 zh-CN 完全一致。
  * 标注 LocaleMessages 保证缺 key 编译期报错（locale-completeness 测试再加运行时兜底）。
  */
-export const pt: LocaleMessages = {
+export const ptBR: LocaleMessages = {
   // badge (distintivo)
   'badge.notifications': '{count} notificações não lidas',
   // modal (diálogo)

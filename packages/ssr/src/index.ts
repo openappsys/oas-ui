@@ -311,7 +311,7 @@ export type WhiteListTag = (typeof WHITELIST)[number]
  * 显式传入时渲染器按需装载对应语言包并注册到 i18n registry；
  * 未列出的名字视为「未注册 locale」：devWarn 一次并回退内置 `en`（见 renderToString 文档）。
  */
-export type RenderLocale = 'zh-CN' | 'en' | 'ja' | 'ko' | 'de' | 'fr' | 'es' | 'pt' | 'ru' | 'ar'
+export type RenderLocale = 'zh-CN' | 'zh-Hant' | 'en' | 'ja' | 'ko' | 'de' | 'fr' | 'es' | 'pt' | 'pt-BR' | 'ru' | 'ar'
 
 export interface RenderToStringOptions {
   /**
@@ -329,13 +329,15 @@ export interface RenderToStringOptions {
 /** 内置语言包的装载器：zh-CN / en 静态引入（默认路径），其余按需动态引入。 */
 const LOCALE_LOADERS: Record<RenderLocale, () => Promise<{ default: Locale }>> = {
   'zh-CN': async () => ({ default: zhCN }),
+  'zh-Hant': () => import('@oas-ui/i18n/zh-Hant'),
   en: async () => ({ default: en }),
   ja: () => import('@oas-ui/i18n/ja'),
   ko: () => import('@oas-ui/i18n/ko'),
   de: () => import('@oas-ui/i18n/de'),
   fr: () => import('@oas-ui/i18n/fr'),
   es: () => import('@oas-ui/i18n/es'),
-  pt: () => import('@oas-ui/i18n/pt'),
+  pt: () => import('@oas-ui/i18n/pt-BR'), // 兼容别名：历史 pt 文案即巴西葡语
+  'pt-BR': () => import('@oas-ui/i18n/pt-BR'),
   ru: () => import('@oas-ui/i18n/ru'),
   ar: () => import('@oas-ui/i18n/ar'),
 }
@@ -621,7 +623,19 @@ function ensureLocalePack(locale: RenderLocale): Promise<void> {
   if (cached) return cached
   const loading = (async () => {
     const api = await ensureI18nReady()
+    // registered-first（与 i18n loadLocale 契约一致）：宿主已注册同名/同 canonical 的自定义包时
+    // 不覆盖它。zh-CN 例外——默认 registry 可能只注册了切片，SSR 需要整包补全。
+    if (locale !== 'zh-CN') {
+      const { getLocaleTranslator } = await import('@oas-ui/core')
+      if (getLocaleTranslator(locale)) return
+    }
     const pack = await LOCALE_LOADERS[locale]()
+    // loader 等待期间宿主可能已注册自定义包：resolve 后再做一次 registered-first 检查，
+    // 且检查与 registerLocale 之间不能再有 await（避免新的竞态窗口）。
+    if (locale !== 'zh-CN') {
+      const { getLocaleTranslator } = await import('@oas-ui/core')
+      if (getLocaleTranslator(locale)) return
+    }
     api.registerLocale(pack.default)
   })().catch((error) => {
     localeReady.delete(locale)
@@ -643,18 +657,21 @@ const warnedLocales = new Set<string>()
  * @returns 实际写入临时 `<oas-config-provider locale>` 的名字
  */
 async function resolveRenderLocale(locale: string): Promise<string> {
-  if (isRenderLocale(locale)) {
-    await ensureLocalePack(locale)
-    return locale
+  // 与 i18n registry 使用同一套 BCP 47 归一/别名（zh-TW → zh-Hant、pt → pt-BR、en_US → en）
+  const { canonicalizeLocale } = await import('@oas-ui/i18n/registry')
+  const canonical = canonicalizeLocale(locale)
+  if (isRenderLocale(canonical)) {
+    await ensureLocalePack(canonical)
+    return canonical
   }
   await ensureI18nReady()
   // core 的动态 import 在 shim + i18n 之后：core 主入口同样求值 `class extends HTMLElement`
   const { getLocaleTranslator } = await import('@oas-ui/core')
-  if (getLocaleTranslator(locale)) return locale
+  if (getLocaleTranslator(canonical)) return canonical
   if (!warnedLocales.has(locale)) {
     warnedLocales.add(locale)
     devWarn(
-      `[oas-ui/ssr] 未注册的 locale「${locale}」：已回退内置 en。可用内置语言：${RENDER_LOCALES.join(' / ')}；` +
+      `[oas-ui/ssr] 未注册的 locale「${locale}」${canonical !== locale ? `（归一为「${canonical}」）` : ''}：已回退内置 en。可用内置语言：${RENDER_LOCALES.join(' / ')}；` +
         '自定义 locale 请先调用 @oas-ui/i18n 的 registerLocale() 注册。',
     )
   }

@@ -14,6 +14,10 @@ import type { LocaleMessages } from './types.js'
 import { zhCN } from './locales/zh-CN.js'
 import { en } from './locales/en.js'
 import arLocale from './ar.js'
+import zhHant from './zh-Hant.js'
+import ptBR from './pt-BR.js'
+import { canonicalizeLocale } from './locale-name.js'
+import { getLocaleTranslator } from '@oas-ui/core'
 import { basicMessages } from './slices/basic.js'
 import { workbenchMessages } from './slices/workbench.js'
 
@@ -58,6 +62,55 @@ describe('locale registry', () => {
 
   it('setLocale 未注册的名字抛错', () => {
     expect(() => setLocale('fr-FR')).toThrow()
+  })
+
+  it('canonicalizeLocale：BCP 47 大小写/分隔符 + 内置别名归一', () => {
+    expect(canonicalizeLocale('en_US')).toBe('en')
+    expect(canonicalizeLocale('EN-us')).toBe('en')
+    expect(canonicalizeLocale('pt')).toBe('pt-BR')
+    expect(canonicalizeLocale('pt_br')).toBe('pt-BR')
+    expect(canonicalizeLocale('zh-Hans')).toBe('zh-CN')
+    expect(canonicalizeLocale('zh_CN')).toBe('zh-CN')
+    expect(canonicalizeLocale('zh-TW')).toBe('zh-Hant')
+    expect(canonicalizeLocale('zh-hk')).toBe('zh-Hant')
+    expect(canonicalizeLocale('zh-Hant-MO')).toBe('zh-Hant')
+    expect(canonicalizeLocale('zh-Hans-MY')).toBe('zh-CN')
+    // 未映射的变体保持归一后的原值：不把欧洲葡语误当巴西葡语，也不吞掉私有伪语言
+    expect(canonicalizeLocale('pt-PT')).toBe('pt-PT')
+    expect(canonicalizeLocale('en-XA')).toBe('en-XA')
+    // BCP 47 扩展段可剥离后回落到基础 pack；私有段不剥离（不吞自定义伪语言）
+    expect(canonicalizeLocale('en-US-u-ca-gregory')).toBe('en')
+    expect(canonicalizeLocale('zh-Hant-u-nu-latn')).toBe('zh-Hant')
+    expect(canonicalizeLocale('en-x-foo')).toBe('en-x-foo')
+  })
+
+  it('别名可切换已注册语言包：pt → pt-BR、zh-TW → zh-Hant', () => {
+    registerLocale(ptBR)
+    expect(setLocale('pt')).toBe('pt-BR')
+    expect(t('empty.noData')).toBe('Sem dados')
+
+    registerLocale(zhHant)
+    expect(setLocale('zh-TW')).toBe('zh-Hant')
+    expect(t('empty.noData')).toBe('暫無資料')
+    // 别名与 canonical 共享同一翻译器（config-provider locale="zh-TW" 也能就近命中）
+    expect(getLocaleTranslator('zh-TW')).not.toBeNull()
+    expect(getLocaleTranslator('zh_Hant')?.('empty.noData')).toBe('暫無資料')
+  })
+
+  it('loadLocale 接受别名并加载 canonical 语言包', async () => {
+    const tw = await loadLocale('zh-TW')
+    expect(tw.name).toBe('zh-Hant')
+    expect(tw.messages['empty.noData']).toBe('暫無資料')
+    const br = await loadLocale('pt')
+    expect(br.name).toBe('pt-BR')
+    expect(br.messages['empty.noData']).toBe('Sem dados')
+  })
+
+  it('getDirection 接受地区变体（ar-EG → ar，rtl）', async () => {
+    await loadLocale('ar')
+    expect(getDirection('ar-EG')).toBe('rtl')
+    expect(getDirection('ar_SA')).toBe('rtl')
+    expect(getDirection('en-US')).toBe('ltr')
   })
 
   it('registerLocale 注册自定义包后可按名切换', () => {

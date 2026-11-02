@@ -126,7 +126,7 @@ compile-time errors). `oas-config-provider` supports local injection (the `local
 attribute): components inside it prefer the injected locale for built-in texts
 without any global setup.
 
-For languages beyond the built-in 10: use the `zh-CN` pack's messages as a template → spread `...zhCN.messages` to inherit all keys and replace them one by one → tag `messages` as a `Locale` (type guardrail: missing keys fail at compile time) → mark `dir: 'rtl'` for RTL languages → `registerLocale` → `setLocale`. See the `@oas-ui/i18n` package README, "Custom locale packs" section, for the full step-by-step example. Ship custom packs with your own dynamic `import()` for code splitting (`loadLocale()` only maps the 10 built-in names).
+For languages beyond the built-in 11 (plus the `pt` alias): use the `zh-CN` pack's messages as a template → spread `...zhCN.messages` to inherit all keys and replace them one by one → tag `messages` as a `Locale` (type guardrail: missing keys fail at compile time) → mark `dir: 'rtl'` for RTL languages → `registerLocale` → `setLocale`. See the `@oas-ui/i18n` package README, "Custom locale packs" section, for the full step-by-step example. Ship custom packs with your own dynamic `import()` for code splitting (`loadLocale()` covers the built-in names; register custom packs first).
 
 ### Why isn't `getLocale().messages` the full set when I only import components?
 
@@ -157,8 +157,8 @@ In a published setup (ui and i18n are same-version registry packages) there is n
 
 ### Which languages are built in? Can they be loaded on demand?
 
-Ten locales ship built in: `zh-CN` (default), `en`, `ja`, `ko`, `de`, `fr`, `es`,
-`pt`, `ru`, `ar` (RTL). The main entry only carries `zh-CN`; the rest are loaded
+Eleven locales ship built in (plus the `pt` alias for `pt-BR`): `zh-CN` (default),
+`zh-Hant`, `en`, `ja`, `ko`, `de`, `fr`, `es`, `pt-BR`, `ru`, `ar` (RTL). The main entry only carries `zh-CN`; the rest are loaded
 **on demand** and never enter the initial bundle:
 
 ```ts
@@ -166,6 +166,9 @@ import { loadLocale, setLocale } from "@oas-ui/i18n";
 await loadLocale("ja"); // dynamic import('@oas-ui/i18n/ja'), a separate chunk
 setLocale("ja");
 ```
+
+Language tags are normalized as BCP 47, so common aliases work directly:
+`pt` → `pt-BR`, `zh-TW` / `zh-HK` → `zh-Hant`, `zh-Hans` → `zh-CN`, `en_US` → `en`; tags with BCP 47 extensions fall back to the base language (`en-US-u-ca-gregory` → `en`), while private-use segments (`en-XA` / `en-x-foo`) are never stripped.
 
 You can also import a pack statically (tree-shaking: only what you use ships):
 
