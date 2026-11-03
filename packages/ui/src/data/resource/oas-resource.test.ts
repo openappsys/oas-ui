@@ -4277,22 +4277,31 @@ describe('OASResource 泳道行 hover（hover 属性，默认开；hover="false"
     document.body.innerHTML = ''
   })
 
-  it('① CSS：.row.lane:hover 底色走 --oas-resource-row-hover-bg（回落 bg-hover），行头 .name 同步变色', () => {
+  it('① CSS：.row.lane:hover 与直方图行 .row.load:hover 底色走 --oas-resource-row-hover-bg（回落 bg-hover），行头 .name 同步变色', () => {
     const el = mount({ resources: JSON.stringify(RES), tasks: '[]' })
     const css = shadowOf(el).querySelector('style')!.textContent ?? ''
     expect(css).toMatch(/\.row\.lane:hover\s*\{[^}]*var\(--oas-resource-row-hover-bg,\s*var\(--oas-color-bg-hover\)\)/)
     expect(css).toMatch(
       /\.row\.lane:hover \.name\s*\{[^}]*var\(--oas-resource-row-hover-bg,\s*var\(--oas-color-bg-hover\)\)/,
     )
+    // 直方图行（.row.load，只读汇总区）同口径 hover——行头列与泳道行头同为 sticky 自底色，同步变色
+    expect(css).toMatch(/\.row\.load:hover\s*\{[^}]*var\(--oas-resource-row-hover-bg,\s*var\(--oas-color-bg-hover\)\)/)
+    expect(css).toMatch(
+      /\.row\.load:hover \.name\s*\{[^}]*var\(--oas-resource-row-hover-bg,\s*var\(--oas-color-bg-hover\)\)/,
+    )
     expect(OASResource.observedAttributes, 'hover 进 observedAttributes 支持运行时切换').toContain('hover')
   })
 
-  it('② hover="false"：逐元素还原基础底色（行透明 / 行头 --oas-color-bg），视觉与未 hover 一致', () => {
+  it('② hover="false"：泳道行与直方图行逐元素还原基础底色（行透明 / 行头 --oas-color-bg），视觉与未 hover 一致', () => {
     const el = mount({ resources: JSON.stringify(RES), tasks: '[]', hover: 'false' })
     const css = shadowOf(el).querySelector('style')!.textContent ?? ''
     expect(css).toMatch(/:host\(\[hover='false'\]\) \.row\.lane:hover\s*\{[^}]*background:\s*transparent/)
     expect(css).toMatch(
       /:host\(\[hover='false'\]\) \.row\.lane:hover \.name\s*\{[^}]*background:\s*var\(--oas-color-bg\)/,
+    )
+    expect(css).toMatch(/:host\(\[hover='false'\]\) \.row\.load:hover\s*\{[^}]*background:\s*transparent/)
+    expect(css).toMatch(
+      /:host\(\[hover='false'\]\) \.row\.load:hover \.name\s*\{[^}]*background:\s*var\(--oas-color-bg\)/,
     )
   })
 

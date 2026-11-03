@@ -5110,7 +5110,7 @@
       "heatmap": "Load heatmap (boolean, off by default): colors cells by load/capacity with low/mid/high/over; the histogram header renders a legend and each cell title shows date + load/capacity",
       "skill-matrix": "Skill matrix view (boolean, off by default): rows = resources, columns = skill union, check = owned; not virtualized",
       "show-cost": "Lane cost total (boolean, off by default): the lane header shows \"Cost Σ(task days × 8h × costRate)\" with two decimals (no currency symbol — the unit is up to the host CSS/copy); days are counted as the calendar-day intersection between each task and the **intersection window** — with managed range-start/range-end the managed axis endpoints are used (cost does not drift across scale modes), otherwise the task-derived axis applies; lanes without a valid costRate show nothing. The total is recomputed in update() when tasks/date windows change; scrolling the visible column window does not retrigger",
-      "hover": "Lane row hover background switch (on by default): hovering a lane lights up the whole row (including the name cell). Color via `--oas-resource-row-hover-bg` (defaults to `--oas-color-bg-hover`, independent of the bar hover color); `\"false\"` disables"
+      "hover": "Lane and load-histogram row hover background switch (on by default): hovering a lane or histogram row lights up the whole row (including the name cell). Color via `--oas-resource-row-hover-bg` (defaults to `--oas-color-bg-hover`, independent of the bar hover color); `\"false\"` disables"
     },
     "events": {
       "oas-task-click": "Dispatched when a task bar in a resource swimlane is clicked, detail: { id, task, resourceId }",

@@ -150,6 +150,19 @@ const STYLE = `
   :host([hover='false']) .row.lane:hover .name {
     background: var(--oas-color-bg);
   }
+  /* 直方图行（.row.load，只读汇总区）同口径 hover：行头列与泳道行头同为 sticky 自底色，同步变色 */
+  .row.load:hover {
+    background: var(--oas-resource-row-hover-bg, var(--oas-color-bg-hover));
+  }
+  .row.load:hover .name {
+    background: var(--oas-resource-row-hover-bg, var(--oas-color-bg-hover));
+  }
+  :host([hover='false']) .row.load:hover {
+    background: transparent;
+  }
+  :host([hover='false']) .row.load:hover .name {
+    background: var(--oas-color-bg);
+  }
 }
 .track {
   position: relative;

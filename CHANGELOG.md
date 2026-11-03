@@ -26,6 +26,7 @@
 
 ### 修复
 
+- **`oas-resource` 负载直方图行补 hover（与泳道行同口径）**：此前行 hover 只覆盖泳道行（`.row.lane`），直方图行（`.row.load`）无 hover 反馈、上下两区观感不一致；现直方图行行底色与 sticky 行头列同 token 链（`--oas-resource-row-hover-bg`）点亮，`hover="false"` 逐元素还原基础底色，同样收进 `@media (hover: hover)`（触屏不粘住）。单测（CSS 规则）+ e2e（真实 hover 行/行头激活、关闭态、console 零告警）固化。
 - **负荷面板滚动性能**：`syncHeaderOffset` 负荷段读写交错导致 O(资源行数) forced reflow/滚动事件——改循环外一次读算 dx、循环内纯写（spy 实测每次 sync 读次数 82→3，与行数无关）。
 - **负荷面板高度上限**：资源行多无上限撑破宿主布局——`.load-body` max-height token（240px 缺省）+ 纵向滚动 + 数据不截断。
 - **暗色全站代码块对比度**：guide 页 axe 全零 below-60（组件页基线同款口径）；`--vp-c-danger-1` 双主题分段（首轮单写 `:root` 在暗色泄漏成 12.5 分的教训已注释固化）。

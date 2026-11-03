@@ -3104,18 +3104,44 @@ test('resource 泳道行 hover：整行（含行头）底色激活 + hover="fals
     })
 
   const before = await readRowBg()
+  // 直方图行（.row.load，只读汇总区）同口径 hover 的基线读数（尚未 hover 任何行）
+  const readLoadBg = () =>
+    page.evaluate(() => {
+      const sr = (
+        document.getElementById('res-level') as HTMLElement & {
+          shadowRoot: ShadowRoot
+        }
+      ).shadowRoot
+      const load = sr.querySelector<HTMLElement>('.row.load')!
+      const name = load.querySelector<HTMLElement>('.name')!
+      const cs = (n: HTMLElement) => getComputedStyle(n).backgroundColor
+      return { row: cs(load), name: cs(name) }
+    })
+  const loadBefore = await readLoadBg()
   await res.locator('.row.lane').first().hover()
   const hovered = await readRowBg()
   expect(hovered.lane, '泳道行底色激活').not.toBe(before.lane)
   expect(hovered.name, 'sticky 行头同步变色（整行贯通）').not.toBe(before.name)
   expect(hovered.name).toBe(hovered.lane)
 
-  // hover="false"：行与行头底色回到初始
+  // 直方图行 hover：行底色与行头列同步点亮（与泳道行同 token 链）
+  await res.locator('.row.load').first().hover()
+  const loadHovered = await readLoadBg()
+  expect(loadHovered.row, '直方图行底色激活').not.toBe(loadBefore.row)
+  expect(loadHovered.name, '直方图行头同步变色（整行贯通）').not.toBe(loadBefore.name)
+  expect(loadHovered.name).toBe(loadHovered.row)
+
+  // hover="false"：泳道行与直方图行均不激活
+  await res.locator('.row.lane').first().hover()
   await page.evaluate(() => document.getElementById('res-level')!.setAttribute('hover', 'false'))
   await res.locator('.row.lane').first().hover()
   const disabled = await readRowBg()
   expect(disabled.lane, 'hover=false 行底色不激活').toBe(before.lane)
   expect(disabled.name, 'hover=false 行头不激活').toBe(before.name)
+  await res.locator('.row.load').first().hover()
+  const loadDisabled = await readLoadBg()
+  expect(loadDisabled.row, 'hover=false 直方图行底色不激活').toBe(loadBefore.row)
+  expect(loadDisabled.name, 'hover=false 直方图行头不激活').toBe(loadBefore.name)
 
   // 通道独立（hover 开启态）：行底色走 --oas-resource-row-hover-bg，条 hover 走
   // --oas-resource-bar-hover-bg —— 改写行 token 只影响行/行头，条保持自身 hover 色。
