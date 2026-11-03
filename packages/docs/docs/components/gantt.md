@@ -892,7 +892,7 @@ expanded.forEach((t) => ganttEl.addTask(t)) // 喂回组件前按需自行合并
 | `--oas-gantt-bar-progress-bg` | — | `var(--oas-gantt-bar-color, var(--oas-color-primary))` |
 | `--oas-gantt-baseline-color` | 基线条颜色（默认半透明次要文字色） | `color-mix(in srgb, var(--oas-color-text-secondary-strong) 55%, transparent)` |
 | `--oas-gantt-baseline-progress-color` | — | `var(--oas-color-text-secondary-strong)` |
-| `--oas-gantt-conflict-color` | 违约（负总时差）行名/条高亮色（默认危险文字色，斑马纹底上满足 WCAG AA） | `var(--oas-color-danger-text)` |
+| `--oas-gantt-conflict-color` | 违约（负总时差）高亮色（默认 --oas-color-danger） | `var(--oas-color-danger-text)` |
 | `--oas-gantt-critical-color` | 关键路径高亮色（默认 --oas-color-danger） | `var(--oas-color-danger)` |
 | `--oas-gantt-deadline-color` | 截止日标记颜色（默认 --oas-color-danger） | `var(--oas-color-danger)` |
 | `--oas-gantt-effort-width` | 工时列宽（show-effort，默认 56px；表头与行内单元格共用） | `56px` |

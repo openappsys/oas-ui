@@ -26,6 +26,19 @@
 - **长稳 soak**：`pnpm test:soak`（`scripts/e2e/soak.mjs`）对 flake 高发 spec（交互浮层/虚拟滚动/动画时序，8 个默认）重复跑 N 轮（默认 3 轮、retries=0、每轮独立端口与 `--output`），输出轮次×用例矩阵与 flaky 清单到 `test-results/soak/`，任一轮失败或出现 flaky 即非零退出。
 - **gantt 链 P2 式归因审计存档**（2026-11-02）：18 模块 221.0 KB raw / 63.6 KB gzip，构成 = 本体 56.7% + core 22.6%（其中 form-element + escape 共 5.8 KB 系 core barrel 再导出上界带入，真实 bundler 可摇除至约 57.9 KB）+ 虚拟滚动 8.5% + i18n 6.1% + 日期引擎 4.3% + shared 1.8%；**无冗余**——export / evm / alap / recurring 四 helper 零依赖真剥离（主链零引用）、0 死文件、CSS 无死类名；较上基线 +2.2 KB 全部来自其后 6 次 gantt feature/fix 提交。下次扩展可直接进行。
 
+### 修复
+
+- **外点关闭统一通道全库迁移（19 组件）**：`shared/outside-dismiss`（click + coarse pointerup 双通道）从 4 个浮层组件扩展到 select / combobox / date-picker / time-picker / cascader / tree-select / mentions / auto-complete / color-picker / avatar-group / kanban / breadcrumb / context-menu / speed-dial / float-button / tabs（more + 右键）/ tabs-manager / table 过滤面板 / overlay 共享管理器——WebKit 触屏点非交互区不合成 click 的失效面全清（触屏行为锁 hasTouch e2e：table 过滤面板 / color-picker / popover 通用通道）；`conventions.test.ts` 静态守卫禁裸 document 捕获 click（实参级解析，防回流）；tabs-manager 右键菜单补「打开手势免疫」（长按抬起不闪关）；overlay 公开 `onOutside` 加手势去重（触屏同一次 tap 双通道只回调一次）。
+- **`oas-table` 滚动位保存/恢复竞态**：真实根因是浏览器把焦点 reveal 滚动延迟 1~2 帧落地、覆盖同帧键盘导航写入——新增滚动写入版本戳（同帧主动写入优先于恢复值）+ 意图守卫（浏览器内部位移落回保存位时写回意图位，wheel/touch/pointer/key 手势即解除）+ 组件内 focus 统一 `preventScroll`（显式 scrollIntoView 承担滚动）；e2e 固化「滚动帧内 Ctrl+Home/End 不回滚」三引擎回归。
+- **`oas-gantt` 冲突行名对比度默认值**：`--oas-gantt-conflict-color` 缺省从 `--oas-color-danger`（条纹底 4.39 < 4.5）改为 `--oas-color-danger-text`（light 4.54 / dark 8.59，WCAG AA 达标）；e2e 亮暗双主题对比度断言。
+- **core 表单外部 label 移除后名称空窗**：解除 `<label for>` 后回退名立即写回（原需等下一次 update 才有可访问名）；回退名清空后不复活旧名。
+
+### 工程
+
+- **gantt 链预算再定档 70 → 75 KB**：P2 式归因审计证无冗余（+2.2 KB 全为后续 feature 提交；真实 bundler 可摇除至约 57.9 KB），按预警机制「再定档」出口上浮，预警线 67.5 KB；依据文案存档审计结论。
+- **`packages/i18n` 包级 vitest 配置**：补 `vitest.config.ts`（happy-dom + setupFiles + icons alias），包内裸跑 `vitest run` 与根跑同集同绿（原 2 个既有 suite 报 HTMLElement undefined）。
+- **CI `e2e-webkit` job 3 分片**（全量套件墙钟超原 20 分钟上限）。
+
 ## [2.6.6] - 2026-11-01
 
 ### 新增

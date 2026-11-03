@@ -893,7 +893,7 @@ Enabled by default: hovering a name row in the left column highlights the matchi
 | `--oas-gantt-bar-progress-bg` | — | `var(--oas-gantt-bar-color, var(--oas-color-primary))` |
 | `--oas-gantt-baseline-color` | Baseline bar color (default translucent secondary text) | `color-mix(in srgb, var(--oas-color-text-secondary-strong) 55%, transparent)` |
 | `--oas-gantt-baseline-progress-color` | — | `var(--oas-color-text-secondary-strong)` |
-| `--oas-gantt-conflict-color` | Conflict (negative-float) row-name/bar highlight color (default danger text, WCAG AA on striped rows) | `var(--oas-color-danger-text)` |
+| `--oas-gantt-conflict-color` | Conflict (negative-float) highlight color (default --oas-color-danger) | `var(--oas-color-danger-text)` |
 | `--oas-gantt-critical-color` | Critical-path highlight color (default --oas-color-danger) | `var(--oas-color-danger)` |
 | `--oas-gantt-deadline-color` | Deadline marker color (default --oas-color-danger) | `var(--oas-color-danger)` |
 | `--oas-gantt-effort-width` | Effort column width (show-effort, default 56px; shared by the header and row cells) | `56px` |

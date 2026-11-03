@@ -2,6 +2,15 @@
 
 版本遵循 SemVer。v1.0.0 为首个正式发布。每个版本 = 一个可独立交付/可试用的里程碑。
 
+## 未发布（决策批：再捞待决项按原则清零）
+
+| 范围 | 内容 | 状态 |
+| --- | --- | --- |
+| **外点关闭统一通道全库迁移** | shared/outside-dismiss 双通道（click + coarse pointerup）扩到 19 组件（表单浮层 9 + data/nav/workbench 余部 + overlay 管理器）；tabs-manager 打开手势免疫；overlay onOutside 手势去重；conventions 静态守卫防回流；hasTouch e2e 锁行为 | ✅ 已完成（未发布） |
+| **table 滚动竞态修复** | 真实根因=浏览器焦点 reveal 延迟覆盖同帧键盘写入；滚动写入版本戳 + 意图守卫（手势即解除）+ focus preventScroll；三引擎 e2e「滚动帧内 Ctrl+Home/End 不回滚」 | ✅ 已完成（未发布） |
+| **gantt 冲突行对比度 + 预算再定档** | conflict 默认色 danger→danger-text（light 4.54 / dark 8.59 AA 达标，亮暗 e2e 断言）；链预算 70→75 KB（P2 审计无冗余，预警机制再定档出口） | ✅ 已完成（未发布） |
+| **小额债清零** | core 表单 label 移除后回退名立即写回（空窗消除）；packages/i18n 包级 vitest.config（裸跑与根跑同绿） | ✅ 已完成（未发布） |
+
 ## 未发布（再捞清零批）
 
 | 范围 | 内容 | 状态 |

@@ -12,7 +12,8 @@
 四项内容，共用「全部落地、manifest/三引擎实测实证」收口标准：
 
 1. **WebKit 全量 e2e**：webkit project 从代表性 smoke 放开为全量 qa-regression 套件；暴露 5 类跨引擎产品缺陷并全部修复（外点关闭触屏 pointerup 通道、表单回退名让位外部 label、slider RTL/reverse 方向键、sidebar 抽屉回焦回落、marquee 切轴相位钉名）；CI e2e-webkit 改 3 分片。
-2. **forced-colors 焦点环批**：88 组件 `@media (forced-colors: active)` 焦点兜底（CanvasText 1px 实线 outline），强制配色环境键盘焦点可见，常规渲染零变化；e2e 计算样式断言（chromium + 反向防外溢）。
+2. **决策批（再捞待决项按原则清零）**：外点关闭统一通道迁移 19 组件（触屏失效面全清）+ tabs-manager 打开手势免疫 + overlay onOutside 去重；table 滚动竞态修复（写入版本戳 + 意图守卫 + preventScroll）；gantt 冲突行对比度默认值改 danger-text（AA 达标，亮暗 e2e 断言）；gantt 链预算再定档 75 KB（审计无冗余）；core 表单 label 移除名称空窗修复；i18n 包级 vitest 配置补齐。
+3. **forced-colors 焦点环批**：88 组件 `@media (forced-colors: active)` 焦点兜底（CanvasText 1px 实线 outline），强制配色环境键盘焦点可见，常规渲染零变化；e2e 计算样式断言（chromium + 反向防外溢）。
 3. **i18n 8 语言补译**：jsonViewer / diffViewer / gantt / resource 共 30 key 英文残留补译 + 11 条错译校正 + placeholder token 守卫测试。
 4. **测试机制**：e2e 断言 OS 绝对量维度（79→40，CI 增量上限 40）；WSL rehearse 通道（`release:rehearse:wsl`，SKIP 语义）；长稳 soak（`test:soak`，N 轮重复 + flaky 矩阵）；gantt 链归因审计存档（无冗余，扩展前置条件解除）。
 
