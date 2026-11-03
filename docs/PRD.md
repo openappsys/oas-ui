@@ -54,6 +54,26 @@
 
 ---
 
+## 未发布：交互补全与框架集成指南
+
+### 功能定义
+
+① `oas-resource` 负载直方图行补 hover（用户反馈：直方图区与泳道区 hover 观感不一致）；② 框架集成指南（guide/frameworks，zh/en）补强与七框架覆盖。
+
+### 详细需求
+
+- 直方图行（`.row.load`）与泳道行同口径 hover：行底色 + sticky 行头列同 token 链（`--oas-resource-row-hover-bg`）；`hover="false"` 逐元素还原基础底色（行透明 / 行头 `--oas-color-bg`）；同在 `@media (hover: hover)` 内（触屏不粘住）。
+- 框架指南新增「全局属性劫持（`title`）」小节：React 把 `title={...}` 当原生 property 赋值不落 attribute，走 attribute 通道的组件收不到，ref + `setAttribute` 兜底（`lang` / `dir` 等撞名属性同口径）。
+- `@oas-ui/react` 定位更新为公开口径：两个 hook 降级为参考出处（约 100 行可 vendor 进项目），官方不发布该 npm 包、不做任何框架 wrapper/桥接包。
+- 补齐 Svelte / Angular / Astro 三小节，「先选路径」表覆盖 React / Vue / Svelte / Angular / Astro / Next / Nuxt 七框架 + SolidJS 等兜底行；内容均为各框架官方公开机制（Svelte 5 事件属性大小写敏感语义经官方文档核实），不做未实测的互操作断言。
+
+### 验收
+
+- CSS 单测 + Chromium e2e（真实 hover 直方图行/行头激活、`hover="false"` 关闭态、console 零告警）。
+- 指南构建产物双语渲染 + 页内锚点（含全角括号转连字符形态）验证；`llms:gen + llms:check` 通过。
+
+---
+
 ## 未发布：select chip 形态（属性面板编辑模式组件化，E 需求）
 
 ### 功能定义

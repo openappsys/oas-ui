@@ -37,6 +37,13 @@
 | **i18n 8 语言补译 + placeholder 守卫** | jsonViewer/diffViewer/gantt/resource 30 key 英文残留补译（ja/ko/de/fr/es/pt/ru/ar）+ 11 条错译校正；completeness 新增 placeholder token 序列守卫 | 🚧 进行中（未发布） |
 | **测试机制批（断言 lint / WSL 通道 / soak / gantt 审计）** | qa:audit 新增 os-absolute-assertions 维度（存量 79→40，CI 增量上限）；`release:rehearse:wsl`（WSL Linux 重放，SKIP 语义）；`test:soak`（N 轮重复 + flaky 矩阵）；gantt 链归因审计（无冗余，扩展前置解除） | 🚧 进行中（未发布） |
 
+## 未发布（交互补全与文档批）
+
+| 范围 | 内容 | 状态 |
+| --- | --- | --- |
+| **resource 直方图行 hover 补齐** | `.row.load` 与泳道行同口径 hover（用户反馈驱动：直方图区与泳道区观感不一致）；行/行头同 `--oas-resource-row-hover-bg` token 链，`hover="false"` 逐元素还原，收进 `@media (hover: hover)`；单测 + e2e | ✅ 已完成（未发布） |
+| **框架集成指南补强（guide/frameworks，zh/en）** | 新增「全局属性劫持（`title`）」小节（React property 不落 attribute → ref + setAttribute 兜底）；`packages/react` 定位公开口径（参考出处可 vendor、不发布 npm、不做框架 wrapper）；补齐 Svelte（事件属性大小写敏感，Svelte 5 官方文档核实）/ Angular（CUSTOM_ELEMENTS_SCHEMA）/ Astro（零特殊处理）三小节，「先选路径」覆盖七框架 | ✅ 已完成（未发布） |
+
 ## 未发布（select chip 形态）
 
 | 范围 | 内容 | 状态 |
