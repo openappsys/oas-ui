@@ -11,8 +11,9 @@ is the passing standard:
 pnpm test:e2e
 ```
 
-The audits cover the `wcag2a` / `wcag2aa` / `wcag21aa` rule sets and only check
-the component demo area (`.demo-block`).
+The audits cover the `wcag2a` / `wcag2aa` / `wcag21aa` rule sets: component pages
+check the demo area (`.demo-block`), guide pages check the page body (`.vp-doc`,
+including prose, code blocks, and recipe demos).
 
 ## Keyboard flow regression matrix
 

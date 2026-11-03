@@ -262,6 +262,8 @@ export class OASCheckbox extends OASFormElement {
       'data-limit-blocked',
       // 表级 size 下发通道（oas-form[size] 注入）
       'data-form-size',
+      // 可访问名镜像通道（宿主 aria-label → 内层 input，见 update）
+      'aria-label',
     ]
   }
 
@@ -486,6 +488,13 @@ export class OASCheckbox extends OASFormElement {
 
     input.id = this.inputId
     if (this.labelEl) this.labelEl.setAttribute('for', this.inputId)
+
+    // 可访问名称便捷通道（对齐 oas-switch）：宿主直设 aria-label 时镜像给内层 input。
+    // 缺省可访问名来自 label 包裹的 slot 文字（implicit label）；宿主显式 aria 优先——
+    // 空 slot 的纯勾选格（表格/分配矩阵场景）靠宿主 aria-label 提供名称（axe: label）。
+    const ariaLabel = this.getAttribute('aria-label')
+    if (ariaLabel != null && ariaLabel !== '') input.setAttribute('aria-label', ariaLabel)
+    else input.removeAttribute('aria-label')
 
     this.syncNamedSlots()
   }

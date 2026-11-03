@@ -50,12 +50,49 @@ const PAGE_NODE_EXEMPTIONS: Record<string, NodeRuleExemption[]> = {
     },
   ],
 }
-const PAGES = readdirSync(resolve(import.meta.dirname, '../docs/docs/components'))
-  .filter((f) => f.endsWith('.md') && f !== 'index.md')
-  .map((f) => `${basename(f, '.md')}.html`)
-  .filter((html) => !EXCLUDE_PAGES.has(html))
-  .sort()
-  .map((html) => `/components/${html}`)
+const PAGES = [
+  ...readdirSync(resolve(import.meta.dirname, '../docs/docs/components'))
+    .filter((f) => f.endsWith('.md') && f !== 'index.md')
+    .map((f) => `${basename(f, '.md')}.html`)
+    .filter((html) => !EXCLUDE_PAGES.has(html))
+    .sort()
+    .map((html) => `/components/${html}`),
+  // guide 页全量纳入（zh + en 同构，readdirSync 自动收集——新 guide 页默认进 axe 审计，与组件页同机制）：
+  // guide 正文就是用户可达的产品文档（安装/主题/配方/FAQ），只扫组件页不扫 guide 是覆盖缺口。
+  // 两者是不同目录源：en/guide 与 zh/guide 逐文件同构（同标签同名），违规面与修法完全一致，
+  // 纳入成本仅扫描时长，防止「只修中文漏英文」。
+  ...['guide', 'en/guide'].flatMap((dir) =>
+    readdirSync(resolve(import.meta.dirname, '../docs/docs', dir))
+      .filter((f) => f.endsWith('.md') && f !== 'index.md')
+      .map((f) => `${basename(f, '.md')}.html`)
+      .filter((html) => !EXCLUDE_PAGES.has(html))
+      .sort()
+      .map((html) => `/${dir}/${html}`),
+  ),
+]
+
+/**
+ * 页面扫描区域：组件页只扫 demo 区（正文为 VitePress 主题产物，不在组件审计范围）；
+ * guide 页扫 `.vp-doc` 页面主体——guide 的「内容」就是正文本身（标题/段落/链接/行内 code/
+ * 围栏代码块/表格/DemoBlock 配方 demo 全覆盖），缺它 axe 就扫不到任何东西（多数 guide 页没有
+ * .demo-block，include 区域为空 = 假绿）。`.vp-doc` 之外是导航/侧栏/页脚等全站共享 chrome，
+ * 不属于单页内容，不在逐页扫描范围。
+ */
+function scopeFor(page: string): string {
+  return page.includes('/guide/') ? '.vp-doc' : '.demo-block'
+}
+
+/**
+ * 基线 / 容差表 key：组件页沿用历史 basename（如 `stepper.html`，171 条既有基线不动）；
+ * guide 页 zh（`/guide/x.html`）与 en（`/en/guide/x.html`）的 basename 相同——必须带目录段
+ * 消歧（`guide/x.html` / `en/guide/x.html`），否则基线登记相互覆盖、totals 与逐页求和脱节
+ * （实测：en 覆盖 zh 后 mismatch = zh 各页计数，生成自校验直接红灯）。
+ */
+function baselineKey(page: string): string {
+  const base = basename(page)
+  if (!page.includes('/guide/')) return base
+  return page.startsWith('/en/') ? `en/${base}` : `guide/${base}`
+}
 
 // ---------- 感知对比度：度量函数（公式真源 packages/theme/oklab.ts，与派生规则/守卫同源） ----------
 // 量级 0-100+，带符号：正值=深字浅底，负值=浅字深底；门禁按绝对值分档（30 / 45 / 60）。
@@ -270,9 +307,9 @@ function collectContrast(
   return { samples, counts }
 }
 
-function runAxe(page: Page, exemptions: string[] = []) {
+function runAxe(page: Page, exemptions: string[] = [], scope = '.demo-block') {
   return new AxeBuilder({ page })
-    .include('.demo-block')
+    .include(scope)
     .withTags(['wcag2a', 'wcag2aa', 'wcag21aa'])
     .disableRules(exemptions)
     .analyze()
@@ -471,6 +508,7 @@ test.describe('无障碍审计（axe，零严重违规）', () => {
         'color-contrast 不得进节点级豁免',
       ).not.toContain('color-contrast')
       const baseline = loadBaseline().pages
+      const pageKey = baselineKey(page)
       const tol = PAGE_TOLERANCE[name] ?? CONTRAST_TOLERANCE
 
       // light / dark 双主题都过门禁：暗色是另一套 token，必须同等看守（不放行「抽查」）
@@ -479,17 +517,17 @@ test.describe('无障碍审计（axe，零严重违规）', () => {
           await p.evaluate(() => document.documentElement.classList.add('dark'))
           await waitForStableDom(p)
         }
-        const results = (await runAxe(p, exemptions)) as unknown as AxeResultsLike
+        const results = (await runAxe(p, exemptions, scopeFor(page))) as unknown as AxeResultsLike
 
         // 节点级豁免：规则保持启用，只剔除已证明为工具误报的指定节点；其余违规照常判红
         const split = splitNodeExemptions(results.violations as unknown as AxeViolation[], nodeExemptions)
         if (nodeExemptions.length > 0) {
           expect(
             split.applied.length,
-            `${name} [${theme}]：节点级豁免必须实际命中（陈旧豁免会静默放行其它违规，须同步删除）`,
+            `${pageKey} [${theme}]：节点级豁免必须实际命中（陈旧豁免会静默放行其它违规，须同步删除）`,
           ).toBe(1)
           const exemptionIssues = await verifyExemptedAriaControls(p, split.applied)
-          expect(exemptionIssues, `${name} [${theme}]：节点级豁免必须对应真实的跨 shadow 引用`).toEqual([])
+          expect(exemptionIssues, `${pageKey} [${theme}]：节点级豁免必须对应真实的跨 shadow 引用`).toEqual([])
         }
 
         // 语义/键盘/ARIA 断言（两主题都查）
@@ -510,35 +548,38 @@ test.describe('无障碍审计（axe，零严重违规）', () => {
             }))
           appendFileSync(NODES_FILE, JSON.stringify({ page, theme, violations: detail }) + '\n')
         }
-        expect(serious, `${name} [${theme}]`).toEqual([])
+        expect(serious, `${pageKey} [${theme}]`).toEqual([])
 
         // 感知对比度：硬闸 <60 零容忍 + 比值法 ratchet
         const disabledFg = await disabledTextColor(p)
-        expect(disabledFg, `${name} [${theme}]：主题必须定义 --oas-color-text-disabled（禁用态豁免依赖它）`).not.toBe(
-          DISABLED_COLOR_MISSING,
-        )
+        expect(
+          disabledFg,
+          `${pageKey} [${theme}]：主题必须定义 --oas-color-text-disabled（禁用态豁免依赖它）`,
+        ).not.toBe(DISABLED_COLOR_MISSING)
         const { samples, counts } = collectContrast(name, results, disabledFg)
         for (const s of samples.filter((v) => v.score < 60)) {
           appendFileSync(CONTRAST_FILE, JSON.stringify({ ...s, theme }) + '\n')
         }
-        const b = baseline[theme === 'dark' ? `${name}::dark` : name] ?? ZERO_COUNTS
+        const b = baseline[theme === 'dark' ? `${pageKey}::dark` : pageKey] ?? ZERO_COUNTS
         const worst = samples
           .filter((s) => s.score < 60)
           .sort((a, b2) => a.score - b2.score)
           .slice(0, 5)
           .map((s) => `${s.score}（${s.fg} on ${s.bg}, ${s.target.slice(0, 60)}）`)
           .join('；')
-        expect(counts.below60, `${name} [${theme}]：感知对比度 <60 的节点不得存在（当前热点：${worst || '无'}）`).toBe(
-          0,
-        )
-        expect(counts.ratio, `${name} [${theme}]：axe 比值违规数不得高于基线`).toBeLessThanOrEqual(b.ratio + tol)
+        expect(
+          counts.below60,
+          `${pageKey} [${theme}]：感知对比度 <60 的节点不得存在（当前热点：${worst || '无'}）`,
+        ).toBe(0)
+        expect(counts.ratio, `${pageKey} [${theme}]：axe 比值违规数不得高于基线`).toBeLessThanOrEqual(b.ratio + tol)
         // 豁免/无法评分数同走 ratchet：防止「把低对比文字刷成禁用色」或「改成 rgba/渐变」绕过硬闸
-        expect(counts.exempt, `${name} [${theme}]：禁用态豁免节点数不得高于基线（防刷禁用色绕闸）`).toBeLessThanOrEqual(
-          b.exempt + tol,
-        )
+        expect(
+          counts.exempt,
+          `${pageKey} [${theme}]：禁用态豁免节点数不得高于基线（防刷禁用色绕闸）`,
+        ).toBeLessThanOrEqual(b.exempt + tol)
         expect(
           counts.skipped,
-          `${name} [${theme}]：无法评分节点数不得高于基线（防改 rgba/渐变绕闸）`,
+          `${pageKey} [${theme}]：无法评分节点数不得高于基线（防改 rgba/渐变绕闸）`,
         ).toBeLessThanOrEqual(b.skipped + tol)
       }
     })
@@ -627,6 +668,7 @@ test('生成对比度基线（CONTRAST_BASELINE=update --workers=1 -g 生成对�
   for (const page of PAGES) {
     await p.emulateMedia({ reducedMotion: 'reduce' })
     const key0 = basename(page)
+    const pageKey = baselineKey(page)
     // 与正常审计路径同机制：冻结定时追加型 demo，保证基线与门禁两侧测量一致
     if (TIMER_FROZEN_PAGES.has(key0)) await hookTimers(p)
     await p.goto(page, { waitUntil: 'networkidle' })
@@ -637,13 +679,13 @@ test('生成对比度基线（CONTRAST_BASELINE=update --workers=1 -g 生成对�
         await p.evaluate(() => document.documentElement.classList.add('dark'))
         await waitForStableDom(p)
       }
-      const results = (await runAxe(p, PAGE_RULE_EXEMPTIONS[key0] ?? [])) as unknown as AxeResultsLike
+      const results = (await runAxe(p, PAGE_RULE_EXEMPTIONS[key0] ?? [], scopeFor(page))) as unknown as AxeResultsLike
       const disabledFg = await disabledTextColor(p)
-      expect(disabledFg, `${key0} [${theme}]：主题必须定义 --oas-color-text-disabled（禁用态豁免依赖它）`).not.toBe(
+      expect(disabledFg, `${pageKey} [${theme}]：主题必须定义 --oas-color-text-disabled（禁用态豁免依赖它）`).not.toBe(
         DISABLED_COLOR_MISSING,
       )
       const { samples, counts } = collectContrast(key0, results, disabledFg)
-      const key = theme === 'dark' ? `${key0}::dark` : key0
+      const key = theme === 'dark' ? `${pageKey}::dark` : pageKey
       totals.sampled += samples.length
       totals.below30 += counts.below30
       totals.below45 += counts.below45
@@ -675,7 +717,7 @@ test('生成对比度基线（CONTRAST_BASELINE=update --workers=1 -g 生成对�
   // 生成后立刻校验求和不变量：totals 与逐页必须严格一致（结构性保证，防生成逻辑漂移）
   const mismatch = totalsMismatch(JSON.parse(readFileSync(BASELINE_FILE, 'utf8')))
   expect(mismatch, `新生成的基线 totals 与 pages 求和不一致：${mismatch.join('；')}`).toEqual([])
-  expect(Object.keys(pages).length).toBe(171)
+  expect(Object.keys(pages).length).toBe(207)
 })
 
 // ---------- totals 求和不变量门禁 ----------
@@ -686,7 +728,7 @@ test('a11y 基线 totals 求和不变量：六项计数等于逐页求和（samp
     totals: Record<string, number>
     pages: Record<string, Record<string, number>>
   }
-  expect(Object.keys(baseline.pages ?? {}).length, '基线应包含逐页条目（空基线 = 门禁空转）').toBe(171)
+  expect(Object.keys(baseline.pages ?? {}).length, '基线应包含逐页条目（空基线 = 门禁空转）').toBe(207)
   const mismatch = totalsMismatch(baseline)
   expect(
     mismatch,

@@ -92,6 +92,15 @@ export default defineConfig({
   description: '框架无关的 Web Components UI 组件库',
   lang: 'zh-CN',
   cleanUrls: CLEAN_URLS,
+  // markdown 围栏代码块双主题：暗色从 github-dark 换 github-dark-high-contrast。
+  // 缺陷：github-dark 的 comment(#818e99)/keyword(#F97583)/entity(#B392F0) 压暗色代码底
+  // （--vp-code-block-bg #161618）感知分仅 39.8/49.8/51.5，低于 a11y 门禁 60 分线——guide 页
+  // 正文代码块纳入 axe 审计后整块红灯。high-contrast 主题全部常规 token 在 #161618/#27272a 上
+  // ≥60（comment #bdc4cc=69.5、字符串 #addcff=80.9、关键字紫 #dbb7ff=71.0），离线按
+  // packages/theme/oklab.ts 同公式逐色复核；theme/index.css 侧无感（文档站 token 不依赖 shiki）。
+  markdown: {
+    theme: { light: 'github-light', dark: 'github-dark-high-contrast' },
+  },
   // 生成 sitemap.xml；VitePress 会按 locale 分组自动补 <xhtml:link rel="alternate"> hreflang
   sitemap: {
     hostname: SITE_URL,

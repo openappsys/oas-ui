@@ -115,6 +115,7 @@
                   v-if="tk.type === 'color'"
                   type="color"
                   class="ts-editor-ctrl"
+                  :aria-label="(isEn ? 'Edit token ' : '编辑 token ') + tk.name"
                   :value="colorInputValue(tk)"
                   @input="applyToken(tk, ($event.target as HTMLInputElement).value)"
                 />
@@ -122,6 +123,7 @@
                   v-else
                   type="number"
                   class="ts-editor-ctrl"
+                  :aria-label="(isEn ? 'Edit token ' : '编辑 token ') + tk.name"
                   :value="currentNumber(tk)"
                   @input="applyNumber(tk, ($event.target as HTMLInputElement).value)"
                 />
@@ -521,6 +523,13 @@ const codeSnippet = computed(() =>
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+/* light 主题下编辑器行底（--oas-color-bg-hover=#f4f4f5）上的次要文字踩 WCAG 4.5 线
+   （#71717a 压 #f4f4f5 = 4.39，a11y 门禁 ratio ratchet 实抓）——加深一档到 #52525b
+   （压 #f4f4f5 wcag 6.4 / 感知分 80.4）。dark 侧次要文字（#c6c6ce 压暗底）默认达标不动。 */
+html:not(.dark) .ts-editor-name,
+html:not(.dark) .ts-editor-cur {
+  color: #52525b;
 }
 .ts-editor-ctrl {
   width: 72px;

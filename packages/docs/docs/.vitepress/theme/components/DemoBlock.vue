@@ -77,9 +77,10 @@ function toggle(): void {
 
 /**
  * 用 Shiki 把示例代码按 HTML 语法高亮；script prop 的 JS/TS 部分单独按 TS 高亮后拼接。
- * 双主题（github-light / github-dark）：token 色由行内 --shiki-light/--shiki-dark
- * 变量承载，暗色切换走 CSS（见全局 <style> 块），无需重渲染。
- * 动态 import：shiki 拆成懒加载 chunk；失败时保持纯文本，不阻断复制。
+ * 双主题（github-light / github-dark-high-contrast，与 vitepress markdown.theme 同一套——
+ * 暗色用高对比主题，github-dark 的低分 token 会踩感知对比度 60 分线，见 config.ts markdown 注释）：
+ * token 色由行内 --shiki-light/--shiki-dark 变量承载，暗色切换走 CSS（见全局 <style> 块），
+ * 无需重渲染。动态 import：shiki 拆成懒加载 chunk；失败时保持纯文本，不阻断复制。
  */
 async function renderHighlight(): Promise<void> {
   if (highlightedHtml.value || !code.value) return
@@ -90,29 +91,29 @@ async function renderHighlight(): Promise<void> {
       htmlLang,
       tsLang,
       githubLight,
-      githubDark,
+      githubDarkHC,
     ] = await Promise.all([
       import('shiki/core'),
       import('shiki/engine/javascript'),
       import('shiki/langs/html.mjs'),
       import('shiki/langs/typescript.mjs'),
       import('shiki/themes/github-light.mjs'),
-      import('shiki/themes/github-dark.mjs'),
+      import('shiki/themes/github-dark-high-contrast.mjs'),
     ])
     const highlighter = await createHighlighterCore({
-      themes: [githubLight.default, githubDark.default],
+      themes: [githubLight.default, githubDarkHC.default],
       langs: [htmlLang.default, tsLang.default],
       // JS 正则引擎，浏览器端无需加载 wasm
       engine: createJavaScriptRegexEngine(),
     })
     const htmlPart = await highlighter.codeToHtml(templateCode.value, {
       lang: 'html',
-      themes: { light: 'github-light', dark: 'github-dark' },
+      themes: { light: 'github-light', dark: 'github-dark-high-contrast' },
     })
     const jsPart = scriptCode.value
       ? await highlighter.codeToHtml(scriptCode.value, {
           lang: 'ts',
-          themes: { light: 'github-light', dark: 'github-dark' },
+          themes: { light: 'github-light', dark: 'github-dark-high-contrast' },
         })
       : ''
     highlightedHtml.value = jsPart + htmlPart

@@ -1,13 +1,13 @@
 {
   "note": "感知对比度 ratchet 基线（只许降不许升）：逐页记录 <30/<45/<60 档节点数、axe 比值违规数、禁用态豁免数（exempt）与无法评分数（skipped，非纯色 fg/bg）；未登记的页必须为零。更新方式见 a11y.spec.ts 顶部说明。",
   "totals": {
-    "sampled": 34170,
+    "sampled": 51358,
     "below30": 0,
     "below45": 0,
     "below60": 0,
-    "ratio": 266,
-    "exempt": 652,
-    "skipped": 3250
+    "ratio": 286,
+    "exempt": 692,
+    "skipped": 3730
   },
   "topPairs": [],
   "pages": {
@@ -184,7 +184,7 @@
       "below45": 0,
       "below60": 0,
       "ratio": 0,
-      "exempt": 219,
+      "exempt": 217,
       "skipped": 0
     },
     "calendar.html::dark": {
@@ -192,7 +192,7 @@
       "below45": 0,
       "below60": 0,
       "ratio": 0,
-      "exempt": 219,
+      "exempt": 217,
       "skipped": 0
     },
     "card.html": {
@@ -305,7 +305,7 @@
       "below60": 0,
       "ratio": 3,
       "exempt": 0,
-      "skipped": 20
+      "skipped": 22
     },
     "command.html::dark": {
       "below30": 0,
@@ -313,7 +313,7 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 20
+      "skipped": 22
     },
     "comment.html": {
       "below30": 0,
@@ -369,7 +369,7 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 11
+      "skipped": 12
     },
     "context-menu.html::dark": {
       "below30": 0,
@@ -377,7 +377,7 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 11
+      "skipped": 12
     },
     "descriptions.html": {
       "below30": 0,
@@ -515,6 +515,22 @@
       "exempt": 0,
       "skipped": 7
     },
+    "floating-panel.html": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": 12
+    },
+    "floating-panel.html::dark": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": 12
+    },
     "form.html": {
       "below30": 0,
       "below45": 0,
@@ -611,6 +627,22 @@
       "exempt": 0,
       "skipped": 4
     },
+    "json-viewer.html": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": 1
+    },
+    "json-viewer.html::dark": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": 1
+    },
     "kanban.html": {
       "below30": 0,
       "below45": 0,
@@ -695,7 +727,7 @@
       "below30": 0,
       "below45": 0,
       "below60": 0,
-      "ratio": 4,
+      "ratio": 6,
       "exempt": 0,
       "skipped": 179
     },
@@ -993,7 +1025,7 @@
       "below60": 0,
       "ratio": 3,
       "exempt": 0,
-      "skipped": 67
+      "skipped": 70
     },
     "select.html::dark": {
       "below30": 0,
@@ -1001,7 +1033,7 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 67
+      "skipped": 70
     },
     "sidebar.html": {
       "below30": 0,
@@ -1289,7 +1321,7 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 3,
-      "skipped": 7
+      "skipped": 6
     },
     "tree.html::dark": {
       "below30": 0,
@@ -1297,7 +1329,7 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 3,
-      "skipped": 7
+      "skipped": 6
     },
     "typography.html": {
       "below30": 0,
@@ -1321,7 +1353,7 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 24
+      "skipped": 27
     },
     "upload.html::dark": {
       "below30": 0,
@@ -1329,7 +1361,7 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 24
+      "skipped": 27
     },
     "virtual-list.html": {
       "below30": 0,
@@ -1337,7 +1369,7 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 42
+      "skipped": 44
     },
     "virtual-list.html::dark": {
       "below30": 0,
@@ -1345,7 +1377,7 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 42
+      "skipped": 44
     },
     "watermark.html": {
       "below30": 0,
@@ -1363,7 +1395,39 @@
       "exempt": 0,
       "skipped": 6
     },
-    "floating-panel.html": {
+    "guide/frameworks.html": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": 1
+    },
+    "guide/frameworks.html::dark": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": 1
+    },
+    "guide/getting-started.html": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": 1
+    },
+    "guide/getting-started.html::dark": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": 1
+    },
+    "guide/glass.html": {
       "below30": 0,
       "below45": 0,
       "below60": 0,
@@ -1371,13 +1435,237 @@
       "exempt": 0,
       "skipped": 12
     },
-    "floating-panel.html::dark": {
+    "guide/glass.html::dark": {
       "below30": 0,
       "below45": 0,
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
       "skipped": 12
+    },
+    "guide/recipes.html": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 4,
+      "exempt": 11,
+      "skipped": 8
+    },
+    "guide/recipes.html::dark": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 11,
+      "skipped": 8
+    },
+    "guide/ssr.html": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": 43
+    },
+    "guide/ssr.html::dark": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": 43
+    },
+    "guide/theming.html": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": 31
+    },
+    "guide/theming.html::dark": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": 31
+    },
+    "guide/tokens.html": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 5,
+      "exempt": 0,
+      "skipped": 0
+    },
+    "guide/windowed-data.html": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": 12
+    },
+    "guide/windowed-data.html::dark": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": 12
+    },
+    "en/ai-chat.html": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": 1
+    },
+    "en/ai-chat.html::dark": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": 1
+    },
+    "en/frameworks.html": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": 1
+    },
+    "en/frameworks.html::dark": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": 1
+    },
+    "en/getting-started.html": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": 4
+    },
+    "en/getting-started.html::dark": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": 4
+    },
+    "en/glass.html": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": 12
+    },
+    "en/glass.html::dark": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": 12
+    },
+    "en/recipes.html": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 4,
+      "exempt": 11,
+      "skipped": 9
+    },
+    "en/recipes.html::dark": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 11,
+      "skipped": 9
+    },
+    "en/resource-management.html": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": 1
+    },
+    "en/resource-management.html::dark": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": 1
+    },
+    "en/ssr.html": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": 46
+    },
+    "en/ssr.html::dark": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": 46
+    },
+    "en/theming.html": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": 32
+    },
+    "en/theming.html::dark": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": 32
+    },
+    "en/tokens.html": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 5,
+      "exempt": 0,
+      "skipped": 0
+    },
+    "en/windowed-data.html": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": 15
+    },
+    "en/windowed-data.html::dark": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": 15
     }
   }
 }

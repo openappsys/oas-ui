@@ -346,7 +346,7 @@ const leveled = levelResources(resources, resourceTasks, { projectOrder: [`A`, `
 
 **Pattern notes**:
 
-1. The token overrides live only on the `.recipe-term` container — nothing else on the page is affected; the override set covers exactly the variables the subtree components actually reference (bg / bg-hover / text / border)
+1. The token overrides live only on the `.recipe-term` container — nothing else on the page is affected; the override set covers exactly the variables the subtree components actually reference (bg / bg-hover / text / border, plus the semantic `-text` set referenced by log rows and the tag badge — semantic rows on a black background need dark-background safe shades, otherwise they inherit the site theme's light-theme dark shades and become unreadable)
 2. Output lines and their semantics live in two parallel arrays (`lines` / `levels`, index-aligned): command echo at `info`, success output at `success`, unknown commands at `error` — the log maps levels to semantic tokens (colors adjust automatically in dark mode)
 3. Clearing has two equivalent paths (toolbar button / the `clear` command), both via the data channel `lines = []` — once empty, the log's built-in empty state appears
 4. Empty commands are ignored outright (no blank lines); clearing the input after submit goes through the controlled `value` channel (no event emitted)
@@ -394,10 +394,18 @@ const leveled = levelResources(resources, resourceTasks, { projectOrder: [`A`, `
   --oas-color-bg: #0b0f14;
   --oas-color-bg-hover: #141a22;
   --oas-color-text-primary: #d6dee8;
-  --oas-color-text-secondary: #8b98a9;
+  --oas-color-text-secondary: #b0bdd0;
   --oas-color-text-disabled: #5d6b7d;
   --oas-color-border: #263140;
   --oas-color-border-strong: #3a465a;
+  /* Semantic -text colors referenced by log rows and the tag badge: without overrides they
+     inherit the light-theme dark shades from the site theme (e.g. success-text #11813a),
+     which scores ~26 on a black background — override with dark-background safe shades
+     (68~73 on black, verified offline with the same formula as packages/theme/oklab.ts). */
+  --oas-color-success-text: #4ade80;
+  --oas-color-warning-text: #fbbf24;
+  --oas-color-danger-text: #fbb2b2;
+  --oas-color-info-text: #23d3ef;
   display: flex;
   flex-direction: column;
   gap: var(--oas-space-2);

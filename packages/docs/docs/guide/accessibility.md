@@ -10,7 +10,7 @@ Playwright + axe-core 对每个组件 demo 页执行审计，零严重违规为�
 pnpm test:e2e
 ```
 
-审计范围覆盖 `wcag2a` / `wcag2aa` / `wcag21aa` 规则集，仅检查组件 demo 区域（`.demo-block`）。
+审计范围覆盖 `wcag2a` / `wcag2aa` / `wcag21aa` 规则集：组件页检查 demo 区域（`.demo-block`），guide 页检查页面主体（`.vp-doc`，含正文、代码块与配方 demo）。
 
 ## 键盘流回归矩阵
 

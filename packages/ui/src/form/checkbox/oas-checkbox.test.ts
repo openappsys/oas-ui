@@ -982,6 +982,38 @@ describe('OASCheckbox tabindex 透传', () => {
   })
 })
 
+describe('OASCheckbox 可访问名镜像（aria-label）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('宿主 aria-label 镜像给内层 input（空 slot 纯勾选格场景的可访问名）', () => {
+    const el = mountCheckbox({ 'aria-label': '任务 · 张三' })
+    expect(native(el).getAttribute('aria-label')).toBe('任务 · 张三')
+  })
+
+  it('运行时设置 aria-label：内层即时跟随', () => {
+    const el = mountCheckbox()
+    expect(native(el).hasAttribute('aria-label')).toBe(false)
+    el.setAttribute('aria-label', '勾选该项')
+    expect(native(el).getAttribute('aria-label')).toBe('勾选该项')
+  })
+
+  it('运行时移除 aria-label：内层同步摘除（回落 label 包裹的 slot 文字）', () => {
+    const el = mountCheckbox({ 'aria-label': '临时名' })
+    el.removeAttribute('aria-label')
+    expect(native(el).hasAttribute('aria-label')).toBe(false)
+  })
+
+  it('空 aria-label 不镜像（不产生空名）', () => {
+    const el = mountCheckbox({ 'aria-label': '' })
+    expect(native(el).hasAttribute('aria-label')).toBe(false)
+  })
+})
+
 describe('OASCheckboxGroup value property（get/set）', () => {
   beforeEach(() => {
     document.body.innerHTML = ''

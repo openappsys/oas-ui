@@ -346,7 +346,7 @@ const leveled = levelResources(resources, resourceTasks, { projectOrder: [`A`, `
 
 **模式要点**：
 
-1. token 覆写只写在配方容器 `.recipe-term` 上，页面其他区域不受影响；覆写集只挑子树组件实际引用的变量（bg / bg-hover / text / border）
+1. token 覆写只写在配方容器 `.recipe-term` 上，页面其他区域不受影响；覆写集只挑子树组件实际引用的变量（bg / bg-hover / text / border / log 与 tag 引用的语义色 `-text` 四件——黑底上语义行必须用暗底安全档，否则继承站点主题的 light 深色档会不可读）
 2. 输出行与语义色用两个数组（`lines` / `levels` 索引对齐）维护：命令回显落 `info`，成功输出落 `success`，未知命令落 `error`——语义色由 log 映射 token（暗色自动换色）
 3. 清屏有两条同效路径（工具行按钮 / `clear` 命令），都走数据通道 `lines = []`——清空后 log 内置空态自然浮现
 4. 空命令直接忽略，不产生空行；提交后清空输入框走受控 `value` 通道（不派发事件）
@@ -394,10 +394,17 @@ const leveled = levelResources(resources, resourceTasks, { projectOrder: [`A`, `
   --oas-color-bg: #0b0f14;
   --oas-color-bg-hover: #141a22;
   --oas-color-text-primary: #d6dee8;
-  --oas-color-text-secondary: #8b98a9;
+  --oas-color-text-secondary: #b0bdd0;
   --oas-color-text-disabled: #5d6b7d;
   --oas-color-border: #263140;
   --oas-color-border-strong: #3a465a;
+  /* log 语义行与 tag 状态徽章引用的语义色 -text：不覆写会继承站点主题的 light 深色档
+     （如 success-text #11813a），压黑底感知分仅 ~26——覆写为暗底安全档（黑底上 68~73，
+     离线按 packages/theme/oklab.ts 同公式逐色复核）。 */
+  --oas-color-success-text: #4ade80;
+  --oas-color-warning-text: #fbbf24;
+  --oas-color-danger-text: #fbb2b2;
+  --oas-color-info-text: #23d3ef;
   display: flex;
   flex-direction: column;
   gap: var(--oas-space-2);

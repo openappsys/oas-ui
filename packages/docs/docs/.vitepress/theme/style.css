@@ -168,6 +168,64 @@ html.dark .vp-doc blockquote {
   color: var(--oas-color-text-secondary);
 }
 
+/* ===== 暗色正文表格表头（guide 页纳入 a11y 门禁后补齐） ===== */
+/* 缺陷：Vitepress 默认表头文字走 --vp-c-text-2（dark 合成 ≈#98989f），压表头底
+   --vp-c-bg-soft（#202127）感知分 44.6 不达标。与 blockquote 同修法：次要文字 token
+   （dark=#c6c6ce 压 #202127 感知分 70.2；light 侧默认达标不动）。 */
+html.dark .vp-doc th {
+  color: var(--oas-color-text-secondary);
+}
+
+/* ===== 暗色代码块右上角语言角标 ===== */
+/* 缺陷：Vitepress 默认 --vp-code-lang-color（dark ≈#98989f）压代码底 #161618 感知分
+   46.0 不达标（guide 页每个代码块一个角标，纳入 a11y 门禁后成片红灯）。次要文字 token
+   压 #161618 感知分 71.5；light 侧默认达标不动。 */
+html.dark {
+  --vp-code-lang-color: var(--oas-color-text-secondary);
+}
+
+/* ===== danger 容器 code/链接文字安全档（light / dark 双主题分段） ===== */
+/* 缺陷：Vitepress 默认 `.custom-block.danger code/a` 走 --vp-c-danger-1（= --vp-c-red-1）：
+   light=#b8272c 压容器内 code 底 #fccdd5 感知分 57.2 / wcag 4.40 双踩线；dark=#f66f81 压
+   容器底 #5b2632 感知分仅 41.2（guide 页 ssr 的 danger 容器纳入 a11y 门禁后暴露）。
+   修法必须**双主题分段显式声明**：dark 段若不重声明，会继承 :root 的 light 深红值压暗底
+   （#9f1d23 on #3e2129 感知分 12.5，比不修还糟——首轮实测实抓）。
+   light → #9f1d23（压 #fccdd5 感知分 63.3，色相不变只压亮度）；
+   dark → #ffb3ba（压 #5b2632 感知分 65.4 / 压 code 底 #3e2129 感知分 68.9）。
+   容器正文文字走 --vp-custom-block-danger-text（默认 = text-1，双主题达标），不动。 */
+:root {
+  --vp-c-danger-1: #9f1d23;
+}
+html.dark {
+  --vp-c-danger-1: #ffb3ba;
+}
+
+/* ===== tip 容器 code/链接文字安全档（dark） ===== */
+/* 缺陷：Vitepress 默认 `.custom-block.tip code/a` 走 --vp-c-tip-1（= --vp-c-brand-1）：
+   dark=#a8b1ff 压容器内 code 底 --vp-c-tip-soft（#303361）感知分 56.0 擦线（guide 页 ssr
+   的 tip 容器纳入 a11y 门禁后暴露，11 个节点）。
+   dark → #bcbffe（压 #303361 感知分 63.7 / 压 #313a5e 62.4，紫系色相不变）。
+   light 侧默认达标不动；--vp-c-brand-1 本体不动（品牌色被导航/链接等大量引用，只收窄
+   覆盖 tip 档 token，影响面 = tip 容器 a/code + badge-tip 文字）。 */
+html.dark {
+  --vp-c-tip-1: #bcbffe;
+}
+
+/* ===== 暗色代码块「模板串插值」标点提亮（github-dark-high-contrast 共享色值统一提亮） ===== */
+/* 缺陷：github-dark-high-contrast 的 punctuation.section.embedded（${} 花括号，
+   --shiki-dark:#ff9492）压 demo 代码区底 --oas-color-bg-hover（dark=#27272a）感知分
+   57.7 擦线。shiki 把 token 色写进 span 行内 style（行内声明优先级高于任何选择器），
+   故变量覆盖必须 !important；属性选择器按**色值**命中，不是按 scope 命中。
+   注意该色值并非该 scope 独有：同主题下 punctuation.section.embedded / keyword / storage
+   等 scope 共用同一 #ff9492，因此这条规则把它们**一并提亮**（实际效果比「只动一个 token」
+   更完整）。对其余已达标 token 无副作用——提亮只增不减，且本规则只命中这一个红系色值。
+   提亮为 #ffa6a2（压 #27272a=64.0 / #161618=66.4，红系色相不变）。
+   依赖的色值来自 shiki@4 静态主题资产——shiki 大版本升级若变更 token 色，本规则
+   失效即 a11y 门禁红灯暴露（不会静默漏检）。 */
+html.dark span[style*='--shiki-dark:#ff9492' i] {
+  --shiki-dark: #ffa6a2 !important;
+}
+
 /* ===== 窄屏移动端：demo 内容超宽兜底（右锚定浮层出屏修复） ===== *//* 缺陷：message/notification/toast/transfer 等页 demo 的一排 oas-button 走 oas-space，
    其默认 nowrap（组件写宿主内联样式），窄屏下撑宽布局视口（scrollWidth 达 536~920px），
    右锚定的 toast/notification 钉在扩张后布局视口右缘 → 375/320 视口下被裁出屏。
