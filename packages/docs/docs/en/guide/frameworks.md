@@ -74,21 +74,22 @@ return <oas-table ref={tableRef} />
 - Boolean attributes use presence semantics: `<oas-ellipsis expanded>` means expanded; remove the attribute (or follow the component docs for `false`) to collapse.
 - To use `oas-*` tags directly in TypeScript, augment `JSX.IntrinsicElements`; see the `@oas-ui/react` README for an example.
 
-### Global-attribute hijacking (`title`)
+### Global attributes and the property channel (`title`, verified)
 
-`title` exists as a native property on `HTMLElement`: React assigns `title={...}` as a **property, not an attribute** — components that read the title through the attribute channel (drawer/modal) receive nothing. Bypass JSX and set the attribute explicitly through a `ref`:
+React 19 assigns **existing property names** on Custom Elements (`title` / `dir` / `lang` …) as properties (`el.title = v`) instead of `setAttribute`. For `title` specifically — a *reflecting* HTMLElement property — the assignment synchronously reflects into the same-named attribute, so the component's attribute channel is triggered as usual.
+
+Verified in Chromium (2026-11-04): **`oas-modal` / `oas-drawer` receive `title` through both channels; in React just write `<oas-modal title="…">` — no workaround needed.** One easily-misread detail: these two components *consume* `title` — after rendering it into the internal title bar they **remove the attribute** (to avoid the browser's native tooltip), so not seeing a `title` attribute left in the DOM is expected behavior, not a failure. Judge by the rendered title bar.
 
 ```tsx
-const ref = useRef<HTMLElement | null>(null)
-useEffect(() => {
-  if (title !== undefined) ref.current?.setAttribute('title', title)
-  else ref.current?.removeAttribute('title')
-}, [title])
-
-return <oas-modal ref={ref} />
+// Just write it (property → reflected attribute → consumed by the component)
+<oas-modal title="Details" />
 ```
 
-Apply the same fallback whenever a component attribute collides with a native `HTMLElement` member (`title`, and other global attributes like `lang` / `dir`) and the component reads the attribute channel.
+Three scenarios that genuinely need attention:
+
+- **How to verify**: judge `title` by the rendered title bar, not by whether the attribute remains (consuming components remove it).
+- **When authoring your own custom elements**: avoid names colliding with **read-only properties or methods** of `Element` / `HTMLElement` (e.g. `prefix` vs read-only `Element.prefix`, `blur` vs the method); shadow them with property accessors when necessary — see the collision section in [Integration FAQ](/en/guide/faq) for how this library normalizes `prefix` / `suffix` / `blur`.
+- **Plain elements that don't consume `title`**: a `title` attribute triggers the browser's native tooltip (framework-independent).
 
 ## Vue 3
 
@@ -203,7 +204,7 @@ For interactive components inside islands (React / Vue / Svelte), follow the mat
 3. **Boolean empty strings**: Vue writes `''` for static `<oas-ellipsis expanded>`; components treat presence as true. Do not use `expanded="false"` to disable; follow the component docs.
 4. **Register before hydration**: do not assign properties to an unupgraded element; wait for `customElements.whenDefined('oas-*')` or use a framework integration package.
 5. **`::part()` cannot be chained with pseudo-classes**: `::part(item):hover` does not work; use `::part(item)` plus the component's internal state attributes.
-6. **Global-attribute collisions**: native `HTMLElement` properties such as `title` are set as properties (not attributes) under React, so components never receive them — see [Global-attribute hijacking](#global-attribute-hijacking-title) above.
+6. **Global attributes and the property channel**: React assigns native property names such as `title` as properties, but `title` is a reflecting property (the assignment becomes an attribute synchronously) — `oas-modal` / `oas-drawer` receive it through both channels and *consume* it (the attribute is removed after rendering; not seeing it left in the DOM is expected). See [Global attributes and the property channel](#global-attributes-and-the-property-channel-title-verified) above.
 
 ## Related
 

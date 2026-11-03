@@ -74,21 +74,22 @@ return <oas-table ref={tableRef} />
 - 布尔属性用 presence 语义：`<oas-ellipsis expanded>` 展开；需要关闭时移除属性或显式 `expanded={false}`（按组件文档）。
 - TypeScript 若直接使用 `oas-*` 标签，需要补充 `JSX.IntrinsicElements`；示例见 `@oas-ui/react` 的 README。
 
-### 全局属性劫持（`title`）
+### 全局属性与 property 通道（`title` 的实测行为）
 
-`title` 在 `HTMLElement` 上有原生 property：React 会把 `title={...}` 当 property 赋值，**不落 attribute**——走 attribute 通道读标题的组件（drawer/modal 等）会收不到。绕过 JSX，用 `ref` 显式写 attribute：
+React 19 对 Custom Element 上**已存在的 property 名**（`title` / `dir` / `lang` 等）按 property 赋值（`el.title = v`）而非 `setAttribute`。其中 `title` 是 HTMLElement 的**反射型** property——赋值会同步反射成同名 attribute，组件的 attribute 通道照常被触发。
+
+实测结论（Chromium 验证，2026-11-04）：**`oas-modal` / `oas-drawer` 两个通道都正常收到 `title`，React 里直接 `<oas-modal title="…">` 即可，无需任何绕过写法**。一个容易误会的细节：这两个组件会**消费** title——渲染进内部标题栏后**移除 attribute**（避免浏览器原生 tooltip 干扰），所以你在 DOM 里看不到 title 属性残留是正常行为，不是没生效；判断依据是标题栏渲染结果。
 
 ```tsx
-const ref = useRef<HTMLElement | null>(null)
-useEffect(() => {
-  if (title !== undefined) ref.current?.setAttribute('title', title)
-  else ref.current?.removeAttribute('title')
-}, [title])
-
-return <oas-modal ref={ref} />
+// 直接写即可（property → 反射 attribute → 组件消费）
+<oas-modal title="详情" />
 ```
 
-凡组件属性名与 `HTMLElement` 原生成员撞名（`title` 之外还有 `lang` / `dir` 等全局属性），且组件读的是 attribute 通道时，都按这个方式兜底。
+真正需要留意的三种场景：
+
+- **验证方式**：判 title 是否生效看标题栏渲染，不要以 attribute 是否残留为准（消费型组件会移除它）。
+- **自行封装自定义组件**时：避免与 `Element` / `HTMLElement` 的**只读属性或方法**撞名（如 `prefix` 撞只读 `Element.prefix`、`blur` 撞方法），必要时用属性访问器遮蔽——库内 `prefix` / `suffix` / `blur` 的规范化处理见 [集成 FAQ](/guide/faq) 的撞名一节。
+- **不消费 title 的普通元素**：title 落在 attribute 上会触发浏览器原生 tooltip（这在任何框架下都一样）。
 
 ## Vue 3
 
@@ -203,7 +204,7 @@ Astro 是 HTML 优先的 MPA / 群岛架构，**零特殊处理**：`.astro` 文
 3. **布尔空串**：Vue 静态 `<oas-ellipsis expanded>` 会写 `''`，组件按 presence 语义视为开启；不要用 `expanded="false"` 这种字符串关闭，按组件文档移除属性或写 `false`。
 4. **SSR 先注册再水合**：不要在未升级元素上写 property；需要等待 `customElements.whenDefined('oas-*')` 或使用框架集成包。
 5. **`::part()` 不能链伪类**：`::part(item):hover` 无效，用 `::part(item)` + 组件内部状态属性。
-6. **全局属性撞名**：`title` 等 `HTMLElement` 原生属性在 React 下走 property 不落 attribute，组件收不到——见上文 [全局属性劫持](#全局属性劫持-title) 节。
+6. **全局属性与 property 通道**：React 对 `title` 等原生 property 名走 property 赋值，但 `title` 是反射型 property（赋值同步成 attribute），`oas-modal` / `oas-drawer` 双通道都正常收到并**消费**（渲染后移除 attribute，DOM 里看不到残留是正常行为）——见上文 [全局属性与 property 通道](#全局属性与-property-通道-title-的实测行为) 节。
 
 ## 相关页面
 

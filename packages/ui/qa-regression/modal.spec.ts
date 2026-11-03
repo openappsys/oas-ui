@@ -764,3 +764,41 @@ test('modal sticky-footer：正文限高内滚动 + 页脚吸底贴近对话框�
   expect(r.footerHeight).toBeLessThanOrEqual(66)
   expect(r.footerToDialogBottom, '页脚吸底贴近对话框底边（不随正文滚走）').toBeLessThanOrEqual(2)
 })
+
+// title 双通道消费契约（React 19 property 通道事实来源：frameworks 指南「全局属性与 property 通道」节）：
+// ① property 赋值（React `title={...}` 实际路径）经反射型 IDL 同步成 attribute → 组件消费；
+// ② setAttribute 通道同效；③ 组件渲染进标题栏后**移除 attribute**（防原生 tooltip），
+// 因此 DOM 无残留是正常行为——判生效看标题栏渲染。三形态固化，防回归。
+test('modal title：property/setAttribute/插入前赋值三通道均消费（attribute 即删，标题栏渲染）', async ({ page }) => {
+  await page.goto('/components/modal.html', { waitUntil: 'domcontentloaded' })
+  await page.waitForFunction(() => !!document.querySelector('oas-modal')?.shadowRoot)
+  const r = await page.evaluate(async () => {
+    await customElements.whenDefined('oas-modal')
+    const read = (m: HTMLElement) => ({
+      attr: m.getAttribute('title'),
+      bar: m.shadowRoot?.querySelector<HTMLElement>('.title, [part="title"]')?.textContent ?? null,
+    })
+    // ① 已连接后 property 赋值（React 19 对 title 的路径：el.title = v → 反射 attribute → 消费）
+    const a = document.createElement('oas-modal')
+    document.body.appendChild(a)
+    a.title = '属性通道'
+    const afterProp = read(a)
+    // ② attribute 通道
+    a.setAttribute('title', 'attribute 通道')
+    const afterAttr = read(a)
+    // ③ 插入前赋值（React 渲染：props 先于 DOM 插入设置）
+    const b = document.createElement('oas-modal')
+    b.title = '插入前赋值'
+    document.body.appendChild(b)
+    const beforeInsert = read(b)
+    a.remove()
+    b.remove()
+    return { afterProp, afterAttr, beforeInsert }
+  })
+  expect(r.afterProp.bar, 'property 赋值 → 标题栏消费').toBe('属性通道')
+  expect(r.afterProp.attr, '消费后 attribute 即删（防原生 tooltip）').toBeNull()
+  expect(r.afterAttr.bar, 'setAttribute → 标题栏消费').toBe('attribute 通道')
+  expect(r.afterAttr.attr, '消费后 attribute 即删').toBeNull()
+  expect(r.beforeInsert.bar, '插入前 property 赋值 → 连接时消费').toBe('插入前赋值')
+  expect(r.beforeInsert.attr, '消费后 attribute 即删').toBeNull()
+})
