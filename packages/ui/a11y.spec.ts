@@ -140,6 +140,25 @@ if (UPDATE_BASELINE) {
 const LEVELS = [30, 45, 60] as const
 const ZERO_COUNTS: PageCounts = { below30: 0, below45: 0, below60: 0, ratio: 0, exempt: 0, skipped: 0 }
 
+// ---------- 无法评分（skipped）基线：双环境口径（本地 / CI） ----------
+// skipped = 「文字压在渐变/半透明/复杂底」这类 axe 给不出纯色 fg/bg 的节点。它的数量取决于
+// **文本排版**（换行点、行数、文字块重叠）——排版由 OS 字体决定（Windows Segoe UI vs Ubuntu
+// DejaVu/Noto），同一提交两侧实测系统性偏离（实测 guide/ssr 本地 43 vs CI 60，en/ssr 46 vs 63）。
+// 绝对量只能同 OS 比：故 skipped 存双值 `{ local, ci }`，按 `process.env.CI` 选边
+// （GitHub Actions 恒为 'true'；本地跑即取 local 侧）。
+// ci 侧 = CI 实测 Received + 4 余量：留出 Ubuntu 字体版本微漂的余量，不按单次采样卡死
+// （采集口径与逐页数值见基线文件；余量写在数值里，不在运行时再加一层）。
+//
+// 防绕闸语义不变：ratchet 只放行「跨 OS 的排版差」，仍拦「把纯色文字改成 rgba/渐变」这类
+// 绕闸——那是整块文字节点一次性变成不可评分，数量级跳变远超上述余量；且 <60 硬闸、
+// ratio/exempt 两项 ratchet 对两侧同样生效（它们不受排版影响，仍是单值）。
+// 交叉校验：若某页 CI 实测反而低于本地，取 max(本地, CI) 作为 ci 侧（基线永远取两侧较大值，
+// 保证两侧都不误红），见基线条目结构自检用例。
+const SKIP_ENVS = ['local', 'ci'] as const
+type SkipEnv = (typeof SKIP_ENVS)[number]
+/** 运行环境对应的基线边：CI 取 ci 侧，其余取 local 侧 */
+const A11Y_ENV: SkipEnv = process.env.CI ? 'ci' : 'local'
+
 interface ContrastSample {
   page: string
   target: string
@@ -156,6 +175,13 @@ interface PageCounts {
   exempt: number
   skipped: number
 }
+/** 双环境计数字段（skipped 专用；其余五项与 OS 无关，保持单值） */
+interface EnvCounts {
+  local: number
+  ci: number
+}
+/** 基线文件里的逐页条目：skipped 是双环境对象 */
+type BaselineCounts = Omit<PageCounts, 'skipped'> & { skipped: EnvCounts }
 interface AxeNodeLike {
   target: unknown
   any: Array<{ data?: Record<string, unknown> }>
@@ -170,31 +196,66 @@ interface AxeResultsLike {
   incomplete: AxeRuleLike[]
 }
 
-function loadBaseline(): { pages: Record<string, PageCounts> } {
+function loadBaseline(): { pages: Record<string, BaselineCounts>; totals: Record<string, number | EnvCounts> } {
   try {
-    return JSON.parse(readFileSync(BASELINE_FILE, 'utf8')) as { pages: Record<string, PageCounts> }
+    return JSON.parse(readFileSync(BASELINE_FILE, 'utf8')) as unknown as {
+      pages: Record<string, BaselineCounts>
+      totals: Record<string, number | EnvCounts>
+    }
   } catch {
-    return { pages: {} }
+    return { pages: {}, totals: {} }
   }
 }
 
+/**
+ * 取指定环境的 skipped 基线值。
+ * 兼容旧格式（纯数字）：两侧同值——迁移期不会静默变 0（变 0 等于放开 ratchet）。
+ */
+function pickSkip(skipped: number | EnvCounts | undefined, env: SkipEnv): number {
+  if (skipped == null) return 0
+  if (typeof skipped === 'number') return skipped
+  return skipped[env] ?? 0
+}
+
+/** 当前环境下的 skipped 基线（断言用） */
+function skipBaseline(counts: BaselineCounts | PageCounts | undefined): number {
+  return pickSkip(counts?.skipped, A11Y_ENV)
+}
+
 // ---------- 基线 totals 求和不变量 ----------
-// totals 六项计数（below30/45/60、ratio、exempt、skipped）必须等于逐页（pages）求和：
+// totals 五项单值计数（below30/45/60、ratio、exempt）+ skipped 双环境两侧都必须等于逐页（pages）求和：
 // 防手改 totals 与逐页脱节、防基线残留已删页面的陈旧条目（陈旧页会让求和偏离 totals 即红）。
+// 两侧都校验（不只校验当前运行环境那侧）：本地跑不会掩盖 ci 侧的手改错误。
 // `sampled` 不按同一规则：它是含 ≥60 分样本的总采样数，pages 条目本就不记录 sampled。
-const TOTAL_KEYS = ['below30', 'below45', 'below60', 'ratio', 'exempt', 'skipped'] as const
+const TOTAL_KEYS = ['below30', 'below45', 'below60', 'ratio', 'exempt'] as const
 
 function totalsMismatch(baseline: {
-  totals: Record<string, number>
-  pages: Record<string, Record<string, number>>
+  totals: Record<string, unknown>
+  pages: Record<string, Record<string, unknown>>
 }): string[] {
   const sum: Record<string, number> = Object.fromEntries(TOTAL_KEYS.map((k) => [k, 0]))
+  for (const env of SKIP_ENVS) sum[`skipped.${env}`] = 0
   for (const counts of Object.values(baseline.pages ?? {})) {
-    for (const k of TOTAL_KEYS) sum[k]! += counts[k] ?? 0
+    for (const k of TOTAL_KEYS) sum[k]! += Number(counts[k] ?? 0)
+    for (const env of SKIP_ENVS)
+      sum[`skipped.${env}`]! += pickSkip(counts.skipped as number | EnvCounts | undefined, env)
   }
-  return TOTAL_KEYS.filter((k) => (baseline.totals?.[k] ?? 0) !== sum[k]).map(
+  const issues = TOTAL_KEYS.filter((k) => (baseline.totals?.[k] ?? 0) !== sum[k]).map(
     (k) => `${k}: totals=${baseline.totals?.[k] ?? 0} vs pages 求和=${sum[k]}`,
   )
+  const skipTotals = baseline.totals?.skipped
+  if (typeof skipTotals !== 'object' || skipTotals === null) {
+    issues.push(
+      `skipped: totals 必须是 {local, ci} 双环境对象（当前=${JSON.stringify(skipTotals)}），` +
+        '否则 CI 侧口径失去校验',
+    )
+  } else {
+    for (const env of SKIP_ENVS) {
+      const t = (skipTotals as EnvCounts)[env]
+      if (t !== sum[`skipped.${env}`]) issues.push(`skipped.${env}: totals=${t} vs pages 求和=${sum[`skipped.${env}`]}`)
+    }
+  }
+  return issues
 }
 
 /** 禁用色 token 取不到/格式不合法时的哨兵：调用方必须红灯，禁止静默当「无豁免」或「全豁免」 */
@@ -579,8 +640,8 @@ test.describe('无障碍审计（axe，零严重违规）', () => {
         ).toBeLessThanOrEqual(b.exempt + tol)
         expect(
           counts.skipped,
-          `${pageKey} [${theme}]：无法评分节点数不得高于基线（防改 rgba/渐变绕闸）`,
-        ).toBeLessThanOrEqual(b.skipped + tol)
+          `${pageKey} [${theme}]：无法评分节点数不得高于基线（防改 rgba/渐变绕闸；基线口径 ${A11Y_ENV}）`,
+        ).toBeLessThanOrEqual(skipBaseline(b) + tol)
       }
     })
   }
@@ -662,9 +723,14 @@ test('节点级豁免自检：stepper 页注入其它非法 ARIA 取值必须被
 test('生成对比度基线（CONTRAST_BASELINE=update --workers=1 -g 生成对比度基线）', async ({ page: p }) => {
   test.skip(!UPDATE_BASELINE, '仅在显式更新基线时运行')
   test.setTimeout(30 * 60_000)
-  const pages: Record<string, PageCounts> = {}
-  const totals = { sampled: 0, below30: 0, below45: 0, below60: 0, ratio: 0, exempt: 0, skipped: 0 }
+  // 生成也要产出双环境结构：local 侧 = 本次实测；ci 侧 = max(本次实测, 旧基线 ci 侧)。
+  // ci 侧只能在 CI 机上测（排版由 OS 字体决定），本地重生成**不得下调**它——下调等于把
+  // CI 口径退回本地值，跨 OS 误红立刻复发；要下调 ci 侧须在 CI 上以 CONTRAST_BASELINE=update 跑。
+  const prevPages = loadBaseline().pages
+  const pages: Record<string, BaselineCounts> = {}
+  const totals = { sampled: 0, below30: 0, below45: 0, below60: 0, ratio: 0, exempt: 0, skipped: { local: 0, ci: 0 } }
   const pairHistogram = new Map<string, number>()
+  const ciRaised: string[] = []
   for (const page of PAGES) {
     await p.emulateMedia({ reducedMotion: 'reduce' })
     const key0 = basename(page)
@@ -692,7 +758,7 @@ test('生成对比度基线（CONTRAST_BASELINE=update --workers=1 -g 生成对�
       totals.below60 += counts.below60
       totals.ratio += counts.ratio
       totals.exempt += counts.exempt
-      totals.skipped += counts.skipped
+      totals.skipped.local += counts.skipped
       for (const s of samples.filter((v) => v.score < 60)) {
         const pairKey = `${s.fg} on ${s.bg}`
         pairHistogram.set(pairKey, (pairHistogram.get(pairKey) ?? 0) + 1)
@@ -700,15 +766,27 @@ test('生成对比度基线（CONTRAST_BASELINE=update --workers=1 -g 生成对�
       }
       // 任一字段非零即登记进基线（含 exempt/skipped）：只记 ratio 会让「豁免多但无比值违规」的页
       // 落到 ZERO_COUNTS，存量豁免直接误红或 ratchet 失效
-      if (counts.below60 > 0 || counts.ratio > 0 || counts.exempt > 0 || counts.skipped > 0) pages[key] = counts
+      if (counts.below60 > 0 || counts.ratio > 0 || counts.exempt > 0 || counts.skipped > 0) {
+        const prevCi = pickSkip(prevPages[key]?.skipped, 'ci')
+        const ci = Math.max(counts.skipped, prevCi)
+        if (counts.skipped > prevCi) ciRaised.push(key)
+        totals.skipped.ci += ci
+        pages[key] = { ...counts, skipped: { local: counts.skipped, ci } }
+      }
     }
+  }
+  if (ciRaised.length > 0) {
+    console.warn(
+      `⚠️ [a11y.spec] 以下页的 skipped.ci 被本次本地实测抬高（旧 ci 侧更低）：${ciRaised.join('、')}。` +
+        '本地无法测 CI 排版，需在 CI 上以 CONTRAST_BASELINE=update 重测才能回落。',
+    )
   }
   const pairs = [...pairHistogram.entries()]
     .sort((a, b) => b[1] - a[1])
     .slice(0, 40)
     .map(([pair, n]) => ({ pair, n }))
   const out = {
-    note: '感知对比度 ratchet 基线（只许降不许升）：逐页记录 <30/<45/<60 档节点数、axe 比值违规数、禁用态豁免数（exempt）与无法评分数（skipped，非纯色 fg/bg）；未登记的页必须为零。更新方式见 a11y.spec.ts 顶部说明。',
+    note: '感知对比度 ratchet 基线（只许降不许升）：逐页记录 <30/<45/<60 档节点数、axe 比值违规数、禁用态豁免数（exempt）与无法评分数（skipped，非纯色 fg/bg，双环境 {local, ci}：CI 取 ci 侧、本地取 local 侧）；未登记的页必须为零。更新方式见 a11y.spec.ts 顶部说明。',
     totals,
     topPairs: pairs,
     pages,
@@ -721,13 +799,10 @@ test('生成对比度基线（CONTRAST_BASELINE=update --workers=1 -g 生成对�
 })
 
 // ---------- totals 求和不变量门禁 ----------
-// 门禁本体：已提交基线的六项计数必须等于逐页求和。手改 totals / 基线残留已删页面的陈旧条目 /
-// 生成逻辑漂移都会让两侧脱节，这里显式红灯而不是静默放行。
-test('a11y 基线 totals 求和不变量：六项计数等于逐页求和（sampled 不按同一规则）', () => {
-  const baseline = loadBaseline() as unknown as {
-    totals: Record<string, number>
-    pages: Record<string, Record<string, number>>
-  }
+// 门禁本体：已提交基线的五项单值计数 + skipped 双环境两侧都必须等于逐页求和。手改 totals /
+// 基线残留已删页面的陈旧条目 / 生成逻辑漂移都会让两侧脱节，这里显式红灯而不是静默放行。
+test('a11y 基线 totals 求和不变量：各项计数等于逐页求和（skipped 双环境、sampled 不按同一规则）', () => {
+  const baseline = loadBaseline()
   expect(Object.keys(baseline.pages ?? {}).length, '基线应包含逐页条目（空基线 = 门禁空转）').toBe(207)
   const mismatch = totalsMismatch(baseline)
   expect(
@@ -737,14 +812,41 @@ test('a11y 基线 totals 求和不变量：六项计数等于逐页求和（samp
   ).toEqual([])
 })
 
+// 双环境口径自检：结构（每条 skipped 都是 {local, ci}）+ 取值（CI 选 ci 侧、本地选 local 侧）+
+// 兜底（旧格式纯数字两侧同值，不会静默变 0 放开 ratchet）。
+test('a11y 双环境基线口径自检：skipped 必须是 {local, ci}，CI 取 ci 侧、本地取 local 侧', () => {
+  const baseline = loadBaseline()
+  // ① 结构：全部条目迁移成双环境对象。混用数字会让 CI 侧静默退回本地值 → 跨 OS 误红复发。
+  const malformed = Object.entries(baseline.pages)
+    .filter(([, c]) => {
+      const s = c.skipped as unknown
+      return typeof s !== 'object' || s === null || !SKIP_ENVS.every((env) => Number.isFinite((s as EnvCounts)[env]))
+    })
+    .map(([k]) => k)
+  expect(malformed, '基线每条 skipped 必须是 {local, ci} 双环境对象').toEqual([])
+  // ② 单调性：ci 侧不得低于 local 侧。跨 OS 采集缺失时按 max(本地, CI) 兜底——反向即说明
+  // 采集把某一侧写成了另一侧、或漏了余量，让 CI 口径比本地还紧（会误红）。
+  const inverted = Object.entries(baseline.pages)
+    .filter(([, c]) => (c.skipped as EnvCounts).ci < (c.skipped as EnvCounts).local)
+    .map(([k]) => k)
+  expect(inverted, 'skipped.ci 不得低于 skipped.local（基线取两侧较大值）').toEqual([])
+  // ③ 口径选择：两侧互不串味
+  expect(pickSkip({ local: 3, ci: 11 }, 'ci'), 'CI 环境必须取 ci 侧').toBe(11)
+  expect(pickSkip({ local: 3, ci: 11 }, 'local'), '本地环境必须取 local 侧').toBe(3)
+  // ④ 旧格式兜底：纯数字两侧同值；缺省为 0（未登记页），不会因结构迁移变 undefined/NaN
+  expect(pickSkip(7, 'ci')).toBe(7)
+  expect(pickSkip(7, 'local')).toBe(7)
+  expect(pickSkip(undefined, 'local')).toBe(0)
+})
+
 // 反证自测：篡改 totals 必须被上面的不变量判红——证明门禁真的会咬人，不是恒真检查。
 test('a11y 基线不变量自检：篡改 totals 必须被判红（checker 反证）', () => {
-  const baseline = loadBaseline() as unknown as {
-    totals: Record<string, number>
-    pages: Record<string, Record<string, number>>
-  }
+  const baseline = loadBaseline()
   // ① 抬高 totals.below60 → 求和校验必须发现
-  const inflated = { ...baseline, totals: { ...baseline.totals, below60: (baseline.totals.below60 ?? 0) + 7 } }
+  const inflated = {
+    ...baseline,
+    totals: { ...baseline.totals, below60: ((baseline.totals.below60 as number) ?? 0) + 7 },
+  }
   const m1 = totalsMismatch(inflated)
   expect(
     m1.some((m) => m.startsWith('below60:')),
@@ -753,8 +855,29 @@ test('a11y 基线不变量自检：篡改 totals 必须被判红（checker 反�
   // ② 删除一个有计数的页（模拟残留清理后忘了同步 totals）→ 求和变小必须被发现
   const withCount = Object.entries(baseline.pages).find(([, c]) => (c.ratio ?? 0) > 0)
   expect(withCount![0], '基线里应存在 ratio>0 的页（否则本反证选样失效）').toBe('affix.html')
-  const removed: Record<string, Record<string, number>> = { ...baseline.pages }
+  const removed: Record<string, BaselineCounts> = { ...baseline.pages }
   delete removed[withCount![0]!]
   const m2 = totalsMismatch({ totals: baseline.totals, pages: removed })
   expect(m2.length, '删除有计数的页后 totals 不再等于求和，必须报不一致').toBe(1)
+  // ③ 只改 ci 侧 → 本地跑也必须报（两侧都校验，不在本地掩盖 ci 侧手改）
+  const ciDrift = {
+    ...baseline,
+    totals: {
+      ...baseline.totals,
+      skipped: {
+        local: (baseline.totals.skipped as EnvCounts).local,
+        ci: (baseline.totals.skipped as EnvCounts).ci + 5,
+      },
+    },
+  }
+  expect(
+    totalsMismatch(ciDrift).some((m) => m.startsWith('skipped.ci:')),
+    '手改 totals.skipped.ci 必须在本地口径也判红',
+  ).toBe(true)
+  // ④ totals.skipped 退回单值数字（结构退化）必须判红
+  const flat = { ...baseline, totals: { ...baseline.totals, skipped: 3730 } }
+  expect(
+    totalsMismatch(flat).some((m) => m.startsWith('skipped:')),
+    'totals.skipped 必须是双环境对象',
+  ).toBe(true)
 })

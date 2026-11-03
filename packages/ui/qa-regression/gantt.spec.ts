@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import type { Page } from '@playwright/test'
+import type { Locator, Page } from '@playwright/test'
 
 // 冷启动竞态对策：等到自定义元素**升级并首帧渲染**（而非 waitForSelector 默认的「可见」——
 // 未升级的 <oas-gantt> 是 0 尺寸空盒子，高并发下升级被 CPU 抢占推迟 → 「可见」假失败）。
@@ -13,6 +13,70 @@ async function waitGantt(page: Page, id: string): Promise<void> {
     id,
     { timeout: 30000 },
   )
+}
+
+interface Rect {
+  x: number
+  y: number
+  width: number
+  height: number
+}
+
+/**
+ * 等页面滚动落定：连续两次 scrollY 一致（`scrollIntoView` 触发的滚动结束后几何才可用）。
+ * 用 JS 滚动而不是 `locator.scrollIntoViewIfNeeded()`：后者要求元素句柄在「等稳定 → 滚动」
+ * 全程有效，见 stableRect 的说明。
+ */
+async function waitPageScrollSettled(page: Page): Promise<void> {
+  let prev: number | null = null
+  await expect
+    .poll(async () => {
+      const y = await page.evaluate(() => window.scrollY)
+      const stable = prev !== null && y === prev
+      prev = y
+      return stable
+    })
+    .toBe(true)
+}
+
+/**
+ * 取「连续两次量到同一矩形」的稳定几何。
+ *
+ * 存在理由：gantt 的行名/条在**窗口重建时逐帧替换**（滚动、尺寸变化、数据回填都走
+ * onScroll → flushScrollWindow → renderWindow），旧节点会被摘出 DOM。Playwright 的
+ * `locator.scrollIntoViewIfNeeded()` 会先「等元素连续两帧几何稳定」再滚动，一旦节点在这段
+ * 期间被重建，句柄失效 → 直接抛 `Element is not attached to the DOM`（该错误不重试）——
+ * 冷启动未落定时尤其容易命中。这是「虚拟列表 + 元素句柄」的固有冲突，不是产品缺陷。
+ *
+ * 故这里每次**重新解析 locator**（拿到当前存活节点）、量不到就继续轮询，量到几何静止才返回：
+ * 语义等价于「等重新附着」，与引擎/OS/机器核数无关（不按某个时间常数校准）。
+ */
+async function stableRect(locator: Locator, timeout = 15_000): Promise<Rect> {
+  let prev: string | null = null
+  // 用持有对象而不是裸变量：poll 回调里赋值、回调外读取，对象属性不会被 TS 收窄成 null
+  const holder: { rect: Rect | null } = { rect: null }
+  await expect
+    .poll(
+      async () => {
+        let box: Rect | null = null
+        try {
+          box = await locator.boundingBox()
+        } catch {
+          box = null // 节点被重建摘出：下一轮重新解析 locator
+        }
+        const sig = box ? [box.x, box.y, box.width, box.height].map((n) => Math.round(n)).join('|') : null
+        if (box && sig !== null && sig === prev) {
+          holder.rect = box
+          return true
+        }
+        prev = sig
+        return false
+      },
+      { timeout, intervals: [50], message: '虚拟窗口持续重建，元素几何未静止（无法取拖拽起点）' },
+    )
+    .toBe(true)
+  if (!holder.rect) throw new Error('stableRect：轮询判真却没有记录矩形（不应发生）')
+  return holder.rect
 }
 
 // gantt 浏览器回归：渲染/刻度/行树折叠/依赖连线/今日线/拖拽改期真指针操作/console 零告警/暗色
@@ -83,16 +147,8 @@ test('gantt 浏览器回归：渲染 + 刻度切换 + 折叠 + 拖拽改期 + co
   // 拖拽改期（真实指针）：t1 右拖 72px（2 格）→ oas-task-change 派发 + 数据写回
   // mouse 事件不自动滚动：先滚进视口
   await basic.evaluate((el) => el.scrollIntoView({ block: 'center' }))
-  // 滚动静默的真实信号：连续两次 scrollY 一致（smooth 滚动结束后几何才可用）
-  let prevGY: number | null = null
-  await expect
-    .poll(async () => {
-      const y = await page.evaluate(() => window.scrollY)
-      const stable = prevGY !== null && y === prevGY
-      prevGY = y
-      return stable
-    })
-    .toBe(true)
+  // 滚动静默的真实信号：连续两次 scrollY 一致（滚动结束后几何才可用）
+  await waitPageScrollSettled(page)
   const before = await basic.evaluate(
     (el) => (el as unknown as { tasks: Array<{ id: string; start: string }> }).tasks.find((t) => t.id === 't1')?.start,
   )
@@ -394,10 +450,19 @@ test('gantt 拖拽到视口下缘自动滚动', async ({ page }) => {
   await page.goto('/components/gantt.html', { waitUntil: 'domcontentloaded' })
   await waitGantt(page, 'gantt-virtual')
   const host = page.locator('#gantt-virtual')
+  const tbody = host.locator('.tbody')
+  // 滚入页面视口走 evaluate（宿主节点稳定，不参与窗口重建），随后等滚动落定；
+  // 不用 `bar.scrollIntoViewIfNeeded()`——虚拟窗口重建会换掉条节点，句柄失效即硬失败（见 stableRect）
+  await host.evaluate((el) => el.scrollIntoView({ block: 'center' }))
+  await waitPageScrollSettled(page)
+  // 容器置顶：直接写 scrollTop（引擎无关），保证首条落在 .tbody 可视区顶部
+  await tbody.evaluate((el) => {
+    el.scrollTop = 0
+  })
+  // 几何静止后再取坐标（稳态下 .tbody 不滚动，窗口不再重建）
   const bar = host.locator('.bar').first()
-  await bar.scrollIntoViewIfNeeded()
-  const bb = (await bar.boundingBox())!
-  const tbBox = (await host.locator('.tbody').boundingBox())!
+  const bb = await stableRect(bar)
+  const tbBox = await stableRect(tbody)
   await page.mouse.move(bb.x + bb.width / 2, bb.y + bb.height / 2)
   await page.mouse.down()
   await page.mouse.move(bb.x + bb.width / 2, tbBox.y + tbBox.height - 4, {
@@ -2265,7 +2330,10 @@ test('gantt DST 日轴：America/New_York 回拨周 minor 标签不重复（日�
     await page.goto('/components/gantt.html', {
       waitUntil: 'domcontentloaded',
     })
-    await page.waitForSelector('oas-gantt', { timeout: 15000 })
+    // 就绪判定走 waitGantt（升级 + 首帧渲染，30s）：`page.waitForSelector('oas-gantt')` 默认等
+    // **可见**，而页面上 38 个 <oas-gantt> 是 markdown 里的原始标签——bundle 未加载/未升级时
+    // 首个实例是 0 尺寸空盒子，「可见」会一直判否（CI 2 核 + 冷上下文实抓：15s 超时而元素早就在）
+    await waitGantt(page, 'gantt-basic')
     const labels = await page.evaluate(() => {
       const el = document.createElement('oas-gantt')
       el.setAttribute('scale', 'day')

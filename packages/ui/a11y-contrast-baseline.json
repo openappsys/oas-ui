@@ -1,5 +1,5 @@
 {
-  "note": "感知对比度 ratchet 基线（只许降不许升）：逐页记录 <30/<45/<60 档节点数、axe 比值违规数、禁用态豁免数（exempt）与无法评分数（skipped，非纯色 fg/bg）；未登记的页必须为零。更新方式见 a11y.spec.ts 顶部说明。",
+  "note": "感知对比度 ratchet 基线（只许降不许升）：逐页记录 <30/<45/<60 档节点数、axe 比值违规数、禁用态豁免数（exempt）与无法评分数（skipped，非纯色 fg/bg）。skipped 是双环境对象 {local, ci}：它的数量取决于文本排版（OS 字体），CI（Ubuntu）与本地（Windows）系统性偏离，按 process.env.CI 选边，ci 侧 = CI 实测 + 4 余量。未登记的页必须为零。更新方式见 a11y.spec.ts 顶部说明。",
   "totals": {
     "sampled": 51358,
     "below30": 0,
@@ -7,7 +7,10 @@
     "below60": 0,
     "ratio": 286,
     "exempt": 692,
-    "skipped": 3730
+    "skipped": {
+      "local": 3730,
+      "ci": 3861
+    }
   },
   "topPairs": [],
   "pages": {
@@ -17,7 +20,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 3
+      "skipped": {
+        "local": 3,
+        "ci": 3
+      }
     },
     "action-bar.html::dark": {
       "below30": 0,
@@ -25,7 +31,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 3
+      "skipped": {
+        "local": 3,
+        "ci": 3
+      }
     },
     "affix.html": {
       "below30": 0,
@@ -33,7 +42,10 @@
       "below60": 0,
       "ratio": 2,
       "exempt": 0,
-      "skipped": 0
+      "skipped": {
+        "local": 0,
+        "ci": 0
+      }
     },
     "alert.html": {
       "below30": 0,
@@ -41,7 +53,10 @@
       "below60": 0,
       "ratio": 26,
       "exempt": 0,
-      "skipped": 10
+      "skipped": {
+        "local": 10,
+        "ci": 10
+      }
     },
     "alert.html::dark": {
       "below30": 0,
@@ -49,7 +64,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 10
+      "skipped": {
+        "local": 10,
+        "ci": 10
+      }
     },
     "anchor.html": {
       "below30": 0,
@@ -57,7 +75,10 @@
       "below60": 0,
       "ratio": 1,
       "exempt": 0,
-      "skipped": 25
+      "skipped": {
+        "local": 25,
+        "ci": 25
+      }
     },
     "anchor.html::dark": {
       "below30": 0,
@@ -65,7 +86,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 25
+      "skipped": {
+        "local": 25,
+        "ci": 25
+      }
     },
     "app-bar.html": {
       "below30": 0,
@@ -73,7 +97,10 @@
       "below60": 0,
       "ratio": 1,
       "exempt": 0,
-      "skipped": 0
+      "skipped": {
+        "local": 0,
+        "ci": 0
+      }
     },
     "app.html": {
       "below30": 0,
@@ -81,7 +108,10 @@
       "below60": 0,
       "ratio": 1,
       "exempt": 0,
-      "skipped": 0
+      "skipped": {
+        "local": 0,
+        "ci": 0
+      }
     },
     "aspect-ratio.html": {
       "below30": 0,
@@ -89,7 +119,10 @@
       "below60": 0,
       "ratio": 15,
       "exempt": 0,
-      "skipped": 0
+      "skipped": {
+        "local": 0,
+        "ci": 0
+      }
     },
     "back-top.html": {
       "below30": 0,
@@ -97,7 +130,10 @@
       "below60": 0,
       "ratio": 6,
       "exempt": 0,
-      "skipped": 1
+      "skipped": {
+        "local": 1,
+        "ci": 1
+      }
     },
     "back-top.html::dark": {
       "below30": 0,
@@ -105,7 +141,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 1
+      "skipped": {
+        "local": 1,
+        "ci": 1
+      }
     },
     "badge.html": {
       "below30": 0,
@@ -113,7 +152,10 @@
       "below60": 0,
       "ratio": 3,
       "exempt": 0,
-      "skipped": 30
+      "skipped": {
+        "local": 30,
+        "ci": 30
+      }
     },
     "badge.html::dark": {
       "below30": 0,
@@ -121,7 +163,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 30
+      "skipped": {
+        "local": 30,
+        "ci": 30
+      }
     },
     "barcode.html": {
       "below30": 0,
@@ -129,7 +174,10 @@
       "below60": 0,
       "ratio": 1,
       "exempt": 0,
-      "skipped": 40
+      "skipped": {
+        "local": 40,
+        "ci": 40
+      }
     },
     "barcode.html::dark": {
       "below30": 0,
@@ -137,7 +185,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 40
+      "skipped": {
+        "local": 40,
+        "ci": 40
+      }
     },
     "breadcrumb.html": {
       "below30": 0,
@@ -145,7 +196,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 2
+      "skipped": {
+        "local": 2,
+        "ci": 2
+      }
     },
     "breadcrumb.html::dark": {
       "below30": 0,
@@ -153,7 +207,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 2
+      "skipped": {
+        "local": 2,
+        "ci": 2
+      }
     },
     "button-group.html": {
       "below30": 0,
@@ -161,7 +218,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 3
+      "skipped": {
+        "local": 3,
+        "ci": 3
+      }
     },
     "button-group.html::dark": {
       "below30": 0,
@@ -169,7 +229,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 3
+      "skipped": {
+        "local": 3,
+        "ci": 3
+      }
     },
     "button.html": {
       "below30": 0,
@@ -177,7 +240,10 @@
       "below60": 0,
       "ratio": 3,
       "exempt": 0,
-      "skipped": 0
+      "skipped": {
+        "local": 0,
+        "ci": 0
+      }
     },
     "calendar.html": {
       "below30": 0,
@@ -185,7 +251,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 217,
-      "skipped": 0
+      "skipped": {
+        "local": 0,
+        "ci": 0
+      }
     },
     "calendar.html::dark": {
       "below30": 0,
@@ -193,7 +262,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 217,
-      "skipped": 0
+      "skipped": {
+        "local": 0,
+        "ci": 0
+      }
     },
     "card.html": {
       "below30": 0,
@@ -201,7 +273,10 @@
       "below60": 0,
       "ratio": 1,
       "exempt": 0,
-      "skipped": 2
+      "skipped": {
+        "local": 2,
+        "ci": 2
+      }
     },
     "card.html::dark": {
       "below30": 0,
@@ -209,7 +284,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 2
+      "skipped": {
+        "local": 2,
+        "ci": 2
+      }
     },
     "carousel.html": {
       "below30": 0,
@@ -217,7 +295,10 @@
       "below60": 0,
       "ratio": 5,
       "exempt": 0,
-      "skipped": 2
+      "skipped": {
+        "local": 2,
+        "ci": 2
+      }
     },
     "carousel.html::dark": {
       "below30": 0,
@@ -225,7 +306,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 2
+      "skipped": {
+        "local": 2,
+        "ci": 2
+      }
     },
     "cascader.html": {
       "below30": 0,
@@ -233,7 +317,10 @@
       "below60": 0,
       "ratio": 1,
       "exempt": 0,
-      "skipped": 38
+      "skipped": {
+        "local": 38,
+        "ci": 38
+      }
     },
     "cascader.html::dark": {
       "below30": 0,
@@ -241,7 +328,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 38
+      "skipped": {
+        "local": 38,
+        "ci": 38
+      }
     },
     "chart.html": {
       "below30": 0,
@@ -249,7 +339,10 @@
       "below60": 0,
       "ratio": 1,
       "exempt": 0,
-      "skipped": 129
+      "skipped": {
+        "local": 129,
+        "ci": 129
+      }
     },
     "chart.html::dark": {
       "below30": 0,
@@ -257,7 +350,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 129
+      "skipped": {
+        "local": 129,
+        "ci": 129
+      }
     },
     "checkbox.html": {
       "below30": 0,
@@ -265,7 +361,10 @@
       "below60": 0,
       "ratio": 1,
       "exempt": 1,
-      "skipped": 2
+      "skipped": {
+        "local": 2,
+        "ci": 2
+      }
     },
     "checkbox.html::dark": {
       "below30": 0,
@@ -273,7 +372,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 1,
-      "skipped": 2
+      "skipped": {
+        "local": 2,
+        "ci": 2
+      }
     },
     "code.html": {
       "below30": 0,
@@ -281,7 +383,10 @@
       "below60": 0,
       "ratio": 3,
       "exempt": 0,
-      "skipped": 0
+      "skipped": {
+        "local": 0,
+        "ci": 0
+      }
     },
     "color-picker.html": {
       "below30": 0,
@@ -289,7 +394,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 100
+      "skipped": {
+        "local": 100,
+        "ci": 100
+      }
     },
     "color-picker.html::dark": {
       "below30": 0,
@@ -297,7 +405,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 100
+      "skipped": {
+        "local": 100,
+        "ci": 100
+      }
     },
     "command.html": {
       "below30": 0,
@@ -305,7 +416,10 @@
       "below60": 0,
       "ratio": 3,
       "exempt": 0,
-      "skipped": 22
+      "skipped": {
+        "local": 22,
+        "ci": 22
+      }
     },
     "command.html::dark": {
       "below30": 0,
@@ -313,7 +427,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 22
+      "skipped": {
+        "local": 22,
+        "ci": 22
+      }
     },
     "comment.html": {
       "below30": 0,
@@ -321,7 +438,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 1
+      "skipped": {
+        "local": 1,
+        "ci": 1
+      }
     },
     "comment.html::dark": {
       "below30": 0,
@@ -329,7 +449,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 1
+      "skipped": {
+        "local": 1,
+        "ci": 1
+      }
     },
     "config-provider.html": {
       "below30": 0,
@@ -337,7 +460,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 2
+      "skipped": {
+        "local": 2,
+        "ci": 2
+      }
     },
     "config-provider.html::dark": {
       "below30": 0,
@@ -345,7 +471,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 2
+      "skipped": {
+        "local": 2,
+        "ci": 2
+      }
     },
     "container.html": {
       "below30": 0,
@@ -353,7 +482,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 1
+      "skipped": {
+        "local": 1,
+        "ci": 1
+      }
     },
     "container.html::dark": {
       "below30": 0,
@@ -361,7 +493,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 1
+      "skipped": {
+        "local": 1,
+        "ci": 1
+      }
     },
     "context-menu.html": {
       "below30": 0,
@@ -369,7 +504,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 12
+      "skipped": {
+        "local": 12,
+        "ci": 12
+      }
     },
     "context-menu.html::dark": {
       "below30": 0,
@@ -377,7 +515,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 12
+      "skipped": {
+        "local": 12,
+        "ci": 12
+      }
     },
     "descriptions.html": {
       "below30": 0,
@@ -385,7 +526,10 @@
       "below60": 0,
       "ratio": 3,
       "exempt": 0,
-      "skipped": 0
+      "skipped": {
+        "local": 0,
+        "ci": 0
+      }
     },
     "diff-viewer.html": {
       "below30": 0,
@@ -393,7 +537,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 12
+      "skipped": {
+        "local": 12,
+        "ci": 12
+      }
     },
     "diff-viewer.html::dark": {
       "below30": 0,
@@ -401,7 +548,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 12
+      "skipped": {
+        "local": 12,
+        "ci": 12
+      }
     },
     "drawer.html": {
       "below30": 0,
@@ -409,7 +559,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 4
+      "skipped": {
+        "local": 4,
+        "ci": 4
+      }
     },
     "drawer.html::dark": {
       "below30": 0,
@@ -417,7 +570,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 4
+      "skipped": {
+        "local": 4,
+        "ci": 4
+      }
     },
     "dropdown.html": {
       "below30": 0,
@@ -425,7 +581,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 49
+      "skipped": {
+        "local": 49,
+        "ci": 49
+      }
     },
     "dropdown.html::dark": {
       "below30": 0,
@@ -433,7 +592,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 49
+      "skipped": {
+        "local": 49,
+        "ci": 49
+      }
     },
     "dynamic-tags.html": {
       "below30": 0,
@@ -441,7 +603,10 @@
       "below60": 0,
       "ratio": 1,
       "exempt": 0,
-      "skipped": 2
+      "skipped": {
+        "local": 2,
+        "ci": 2
+      }
     },
     "dynamic-tags.html::dark": {
       "below30": 0,
@@ -449,7 +614,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 2
+      "skipped": {
+        "local": 2,
+        "ci": 2
+      }
     },
     "editable.html": {
       "below30": 0,
@@ -457,7 +625,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 20
+      "skipped": {
+        "local": 20,
+        "ci": 20
+      }
     },
     "editable.html::dark": {
       "below30": 0,
@@ -465,7 +636,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 20
+      "skipped": {
+        "local": 20,
+        "ci": 20
+      }
     },
     "empty.html": {
       "below30": 0,
@@ -473,7 +647,10 @@
       "below60": 0,
       "ratio": 1,
       "exempt": 0,
-      "skipped": 0
+      "skipped": {
+        "local": 0,
+        "ci": 0
+      }
     },
     "equation.html": {
       "below30": 0,
@@ -481,7 +658,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 3
+      "skipped": {
+        "local": 3,
+        "ci": 3
+      }
     },
     "equation.html::dark": {
       "below30": 0,
@@ -489,7 +669,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 3
+      "skipped": {
+        "local": 3,
+        "ci": 3
+      }
     },
     "flex.html": {
       "below30": 0,
@@ -497,7 +680,10 @@
       "below60": 0,
       "ratio": 4,
       "exempt": 0,
-      "skipped": 0
+      "skipped": {
+        "local": 0,
+        "ci": 0
+      }
     },
     "float-button.html": {
       "below30": 0,
@@ -505,7 +691,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 7
+      "skipped": {
+        "local": 7,
+        "ci": 7
+      }
     },
     "float-button.html::dark": {
       "below30": 0,
@@ -513,7 +702,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 7
+      "skipped": {
+        "local": 7,
+        "ci": 7
+      }
     },
     "floating-panel.html": {
       "below30": 0,
@@ -521,7 +713,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 12
+      "skipped": {
+        "local": 12,
+        "ci": 12
+      }
     },
     "floating-panel.html::dark": {
       "below30": 0,
@@ -529,7 +724,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 12
+      "skipped": {
+        "local": 12,
+        "ci": 12
+      }
     },
     "form.html": {
       "below30": 0,
@@ -537,7 +735,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 3
+      "skipped": {
+        "local": 3,
+        "ci": 3
+      }
     },
     "form.html::dark": {
       "below30": 0,
@@ -545,7 +746,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 3
+      "skipped": {
+        "local": 3,
+        "ci": 3
+      }
     },
     "gantt.html": {
       "below30": 0,
@@ -553,7 +757,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 17
+      "skipped": {
+        "local": 17,
+        "ci": 17
+      }
     },
     "gantt.html::dark": {
       "below30": 0,
@@ -561,7 +768,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 17
+      "skipped": {
+        "local": 17,
+        "ci": 17
+      }
     },
     "gradient-text.html": {
       "below30": 0,
@@ -569,7 +779,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 20
+      "skipped": {
+        "local": 20,
+        "ci": 20
+      }
     },
     "gradient-text.html::dark": {
       "below30": 0,
@@ -577,7 +790,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 20
+      "skipped": {
+        "local": 20,
+        "ci": 20
+      }
     },
     "grid.html": {
       "below30": 0,
@@ -585,7 +801,10 @@
       "below60": 0,
       "ratio": 18,
       "exempt": 0,
-      "skipped": 0
+      "skipped": {
+        "local": 0,
+        "ci": 0
+      }
     },
     "image.html": {
       "below30": 0,
@@ -593,7 +812,10 @@
       "below60": 0,
       "ratio": 16,
       "exempt": 0,
-      "skipped": 0
+      "skipped": {
+        "local": 0,
+        "ci": 0
+      }
     },
     "input.html": {
       "below30": 0,
@@ -601,7 +823,10 @@
       "below60": 0,
       "ratio": 4,
       "exempt": 0,
-      "skipped": 1
+      "skipped": {
+        "local": 1,
+        "ci": 1
+      }
     },
     "input.html::dark": {
       "below30": 0,
@@ -609,7 +834,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 1
+      "skipped": {
+        "local": 1,
+        "ci": 1
+      }
     },
     "inspector.html": {
       "below30": 0,
@@ -617,7 +845,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 4
+      "skipped": {
+        "local": 4,
+        "ci": 4
+      }
     },
     "inspector.html::dark": {
       "below30": 0,
@@ -625,7 +856,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 4
+      "skipped": {
+        "local": 4,
+        "ci": 4
+      }
     },
     "json-viewer.html": {
       "below30": 0,
@@ -633,7 +867,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 1
+      "skipped": {
+        "local": 1,
+        "ci": 1
+      }
     },
     "json-viewer.html::dark": {
       "below30": 0,
@@ -641,7 +878,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 1
+      "skipped": {
+        "local": 1,
+        "ci": 1
+      }
     },
     "kanban.html": {
       "below30": 0,
@@ -649,7 +889,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 2
+      "skipped": {
+        "local": 2,
+        "ci": 2
+      }
     },
     "kanban.html::dark": {
       "below30": 0,
@@ -657,7 +900,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 2
+      "skipped": {
+        "local": 2,
+        "ci": 2
+      }
     },
     "kbd.html": {
       "below30": 0,
@@ -665,7 +911,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 40
+      "skipped": {
+        "local": 40,
+        "ci": 40
+      }
     },
     "kbd.html::dark": {
       "below30": 0,
@@ -673,7 +922,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 40
+      "skipped": {
+        "local": 40,
+        "ci": 40
+      }
     },
     "label.html": {
       "below30": 0,
@@ -681,7 +933,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 1,
-      "skipped": 0
+      "skipped": {
+        "local": 0,
+        "ci": 0
+      }
     },
     "label.html::dark": {
       "below30": 0,
@@ -689,7 +944,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 1,
-      "skipped": 0
+      "skipped": {
+        "local": 0,
+        "ci": 0
+      }
     },
     "layout.html": {
       "below30": 0,
@@ -697,7 +955,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 15
+      "skipped": {
+        "local": 15,
+        "ci": 15
+      }
     },
     "layout.html::dark": {
       "below30": 0,
@@ -705,7 +966,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 15
+      "skipped": {
+        "local": 15,
+        "ci": 15
+      }
     },
     "list.html": {
       "below30": 0,
@@ -713,7 +977,10 @@
       "below60": 0,
       "ratio": 15,
       "exempt": 0,
-      "skipped": 4
+      "skipped": {
+        "local": 4,
+        "ci": 4
+      }
     },
     "list.html::dark": {
       "below30": 0,
@@ -721,7 +988,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 4
+      "skipped": {
+        "local": 4,
+        "ci": 4
+      }
     },
     "log.html": {
       "below30": 0,
@@ -729,7 +999,10 @@
       "below60": 0,
       "ratio": 6,
       "exempt": 0,
-      "skipped": 179
+      "skipped": {
+        "local": 179,
+        "ci": 179
+      }
     },
     "log.html::dark": {
       "below30": 0,
@@ -737,7 +1010,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 179
+      "skipped": {
+        "local": 179,
+        "ci": 179
+      }
     },
     "marquee.html": {
       "below30": 0,
@@ -745,7 +1021,10 @@
       "below60": 0,
       "ratio": 1,
       "exempt": 0,
-      "skipped": 12
+      "skipped": {
+        "local": 12,
+        "ci": 12
+      }
     },
     "marquee.html::dark": {
       "below30": 0,
@@ -753,7 +1032,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 12
+      "skipped": {
+        "local": 12,
+        "ci": 12
+      }
     },
     "menu.html": {
       "below30": 0,
@@ -761,7 +1043,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 3,
-      "skipped": 42
+      "skipped": {
+        "local": 42,
+        "ci": 42
+      }
     },
     "menu.html::dark": {
       "below30": 0,
@@ -769,7 +1054,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 3,
-      "skipped": 42
+      "skipped": {
+        "local": 42,
+        "ci": 42
+      }
     },
     "message-scroller.html": {
       "below30": 0,
@@ -777,7 +1065,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 48
+      "skipped": {
+        "local": 48,
+        "ci": 48
+      }
     },
     "message-scroller.html::dark": {
       "below30": 0,
@@ -785,7 +1076,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 48
+      "skipped": {
+        "local": 48,
+        "ci": 48
+      }
     },
     "message.html": {
       "below30": 0,
@@ -793,7 +1087,10 @@
       "below60": 0,
       "ratio": 1,
       "exempt": 0,
-      "skipped": 4
+      "skipped": {
+        "local": 4,
+        "ci": 4
+      }
     },
     "message.html::dark": {
       "below30": 0,
@@ -801,7 +1098,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 4
+      "skipped": {
+        "local": 4,
+        "ci": 4
+      }
     },
     "modal.html": {
       "below30": 0,
@@ -809,7 +1109,10 @@
       "below60": 0,
       "ratio": 1,
       "exempt": 0,
-      "skipped": 2
+      "skipped": {
+        "local": 2,
+        "ci": 2
+      }
     },
     "modal.html::dark": {
       "below30": 0,
@@ -817,7 +1120,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 2
+      "skipped": {
+        "local": 2,
+        "ci": 2
+      }
     },
     "navigation-menu.html": {
       "below30": 0,
@@ -825,7 +1131,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 2
+      "skipped": {
+        "local": 2,
+        "ci": 2
+      }
     },
     "navigation-menu.html::dark": {
       "below30": 0,
@@ -833,7 +1142,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 2
+      "skipped": {
+        "local": 2,
+        "ci": 2
+      }
     },
     "notification.html": {
       "below30": 0,
@@ -841,7 +1153,10 @@
       "below60": 0,
       "ratio": 2,
       "exempt": 0,
-      "skipped": 0
+      "skipped": {
+        "local": 0,
+        "ci": 0
+      }
     },
     "page-header.html": {
       "below30": 0,
@@ -849,7 +1164,10 @@
       "below60": 0,
       "ratio": 1,
       "exempt": 0,
-      "skipped": 0
+      "skipped": {
+        "local": 0,
+        "ci": 0
+      }
     },
     "pagination.html": {
       "below30": 0,
@@ -857,7 +1175,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 2
+      "skipped": {
+        "local": 2,
+        "ci": 2
+      }
     },
     "pagination.html::dark": {
       "below30": 0,
@@ -865,7 +1186,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 2
+      "skipped": {
+        "local": 2,
+        "ci": 2
+      }
     },
     "pin-input.html": {
       "below30": 0,
@@ -873,7 +1197,10 @@
       "below60": 0,
       "ratio": 3,
       "exempt": 0,
-      "skipped": 0
+      "skipped": {
+        "local": 0,
+        "ci": 0
+      }
     },
     "popconfirm.html": {
       "below30": 0,
@@ -881,7 +1208,10 @@
       "below60": 0,
       "ratio": 2,
       "exempt": 0,
-      "skipped": 0
+      "skipped": {
+        "local": 0,
+        "ci": 0
+      }
     },
     "popover.html": {
       "below30": 0,
@@ -889,7 +1219,10 @@
       "below60": 0,
       "ratio": 2,
       "exempt": 0,
-      "skipped": 4
+      "skipped": {
+        "local": 4,
+        "ci": 4
+      }
     },
     "popover.html::dark": {
       "below30": 0,
@@ -897,7 +1230,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 4
+      "skipped": {
+        "local": 4,
+        "ci": 4
+      }
     },
     "progress.html": {
       "below30": 0,
@@ -905,7 +1241,10 @@
       "below60": 0,
       "ratio": 1,
       "exempt": 0,
-      "skipped": 18
+      "skipped": {
+        "local": 18,
+        "ci": 18
+      }
     },
     "progress.html::dark": {
       "below30": 0,
@@ -913,7 +1252,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 18
+      "skipped": {
+        "local": 18,
+        "ci": 18
+      }
     },
     "pull-refresh.html": {
       "below30": 0,
@@ -921,7 +1263,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 9
+      "skipped": {
+        "local": 9,
+        "ci": 9
+      }
     },
     "pull-refresh.html::dark": {
       "below30": 0,
@@ -929,7 +1274,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 9
+      "skipped": {
+        "local": 9,
+        "ci": 9
+      }
     },
     "qrcode.html": {
       "below30": 0,
@@ -937,7 +1285,10 @@
       "below60": 0,
       "ratio": 1,
       "exempt": 0,
-      "skipped": 0
+      "skipped": {
+        "local": 0,
+        "ci": 0
+      }
     },
     "questionnaire.html": {
       "below30": 0,
@@ -945,7 +1296,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 21
+      "skipped": {
+        "local": 21,
+        "ci": 21
+      }
     },
     "questionnaire.html::dark": {
       "below30": 0,
@@ -953,7 +1307,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 21
+      "skipped": {
+        "local": 21,
+        "ci": 21
+      }
     },
     "radio.html": {
       "below30": 0,
@@ -961,7 +1318,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 3
+      "skipped": {
+        "local": 3,
+        "ci": 3
+      }
     },
     "radio.html::dark": {
       "below30": 0,
@@ -969,7 +1329,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 3
+      "skipped": {
+        "local": 3,
+        "ci": 3
+      }
     },
     "rate.html": {
       "below30": 0,
@@ -977,7 +1340,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 12
+      "skipped": {
+        "local": 12,
+        "ci": 12
+      }
     },
     "rate.html::dark": {
       "below30": 0,
@@ -985,7 +1351,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 12
+      "skipped": {
+        "local": 12,
+        "ci": 12
+      }
     },
     "scheduler.html": {
       "below30": 0,
@@ -993,7 +1362,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 88,
-      "skipped": 9
+      "skipped": {
+        "local": 9,
+        "ci": 9
+      }
     },
     "scheduler.html::dark": {
       "below30": 0,
@@ -1001,7 +1373,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 88,
-      "skipped": 9
+      "skipped": {
+        "local": 9,
+        "ci": 9
+      }
     },
     "scroll-area.html": {
       "below30": 0,
@@ -1009,7 +1384,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 17
+      "skipped": {
+        "local": 17,
+        "ci": 17
+      }
     },
     "scroll-area.html::dark": {
       "below30": 0,
@@ -1017,7 +1395,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 17
+      "skipped": {
+        "local": 17,
+        "ci": 17
+      }
     },
     "select.html": {
       "below30": 0,
@@ -1025,7 +1406,10 @@
       "below60": 0,
       "ratio": 3,
       "exempt": 0,
-      "skipped": 70
+      "skipped": {
+        "local": 70,
+        "ci": 70
+      }
     },
     "select.html::dark": {
       "below30": 0,
@@ -1033,7 +1417,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 70
+      "skipped": {
+        "local": 70,
+        "ci": 70
+      }
     },
     "sidebar.html": {
       "below30": 0,
@@ -1041,7 +1428,10 @@
       "below60": 0,
       "ratio": 8,
       "exempt": 0,
-      "skipped": 6
+      "skipped": {
+        "local": 6,
+        "ci": 6
+      }
     },
     "sidebar.html::dark": {
       "below30": 0,
@@ -1049,7 +1439,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 6
+      "skipped": {
+        "local": 6,
+        "ci": 6
+      }
     },
     "slider.html": {
       "below30": 0,
@@ -1057,7 +1450,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 108
+      "skipped": {
+        "local": 108,
+        "ci": 108
+      }
     },
     "slider.html::dark": {
       "below30": 0,
@@ -1065,7 +1461,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 108
+      "skipped": {
+        "local": 108,
+        "ci": 108
+      }
     },
     "space.html": {
       "below30": 0,
@@ -1073,7 +1472,10 @@
       "below60": 0,
       "ratio": 3,
       "exempt": 0,
-      "skipped": 1
+      "skipped": {
+        "local": 1,
+        "ci": 1
+      }
     },
     "space.html::dark": {
       "below30": 0,
@@ -1081,7 +1483,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 1
+      "skipped": {
+        "local": 1,
+        "ci": 1
+      }
     },
     "spin.html": {
       "below30": 0,
@@ -1089,7 +1494,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 4
+      "skipped": {
+        "local": 4,
+        "ci": 4
+      }
     },
     "spin.html::dark": {
       "below30": 0,
@@ -1097,7 +1505,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 4
+      "skipped": {
+        "local": 4,
+        "ci": 4
+      }
     },
     "statusbar.html": {
       "below30": 0,
@@ -1105,7 +1516,10 @@
       "below60": 0,
       "ratio": 1,
       "exempt": 0,
-      "skipped": 0
+      "skipped": {
+        "local": 0,
+        "ci": 0
+      }
     },
     "stepper.html": {
       "below30": 0,
@@ -1113,7 +1527,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 78
+      "skipped": {
+        "local": 78,
+        "ci": 78
+      }
     },
     "stepper.html::dark": {
       "below30": 0,
@@ -1121,7 +1538,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 78
+      "skipped": {
+        "local": 78,
+        "ci": 78
+      }
     },
     "steps.html": {
       "below30": 0,
@@ -1129,7 +1549,10 @@
       "below60": 0,
       "ratio": 12,
       "exempt": 5,
-      "skipped": 81
+      "skipped": {
+        "local": 81,
+        "ci": 81
+      }
     },
     "steps.html::dark": {
       "below30": 0,
@@ -1137,7 +1560,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 5,
-      "skipped": 81
+      "skipped": {
+        "local": 81,
+        "ci": 81
+      }
     },
     "swipe-cell.html": {
       "below30": 0,
@@ -1145,7 +1571,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 10
+      "skipped": {
+        "local": 10,
+        "ci": 10
+      }
     },
     "swipe-cell.html::dark": {
       "below30": 0,
@@ -1153,7 +1582,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 10
+      "skipped": {
+        "local": 10,
+        "ci": 10
+      }
     },
     "table.html": {
       "below30": 0,
@@ -1161,7 +1593,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 17
+      "skipped": {
+        "local": 17,
+        "ci": 17
+      }
     },
     "table.html::dark": {
       "below30": 0,
@@ -1169,7 +1604,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 17
+      "skipped": {
+        "local": 17,
+        "ci": 17
+      }
     },
     "tabs.html": {
       "below30": 0,
@@ -1177,7 +1615,10 @@
       "below60": 0,
       "ratio": 1,
       "exempt": 0,
-      "skipped": 70
+      "skipped": {
+        "local": 70,
+        "ci": 70
+      }
     },
     "tabs.html::dark": {
       "below30": 0,
@@ -1185,7 +1626,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 70
+      "skipped": {
+        "local": 70,
+        "ci": 70
+      }
     },
     "tag.html": {
       "below30": 0,
@@ -1193,7 +1637,10 @@
       "below60": 0,
       "ratio": 31,
       "exempt": 0,
-      "skipped": 1
+      "skipped": {
+        "local": 1,
+        "ci": 1
+      }
     },
     "tag.html::dark": {
       "below30": 0,
@@ -1201,7 +1648,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 1
+      "skipped": {
+        "local": 1,
+        "ci": 1
+      }
     },
     "timeline.html": {
       "below30": 0,
@@ -1209,7 +1659,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 1
+      "skipped": {
+        "local": 1,
+        "ci": 1
+      }
     },
     "timeline.html::dark": {
       "below30": 0,
@@ -1217,7 +1670,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 1
+      "skipped": {
+        "local": 1,
+        "ci": 1
+      }
     },
     "titlebar.html": {
       "below30": 0,
@@ -1225,7 +1681,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 8
+      "skipped": {
+        "local": 8,
+        "ci": 8
+      }
     },
     "titlebar.html::dark": {
       "below30": 0,
@@ -1233,7 +1692,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 8
+      "skipped": {
+        "local": 8,
+        "ci": 8
+      }
     },
     "toast.html": {
       "below30": 0,
@@ -1241,7 +1703,10 @@
       "below60": 0,
       "ratio": 1,
       "exempt": 0,
-      "skipped": 1
+      "skipped": {
+        "local": 1,
+        "ci": 1
+      }
     },
     "toast.html::dark": {
       "below30": 0,
@@ -1249,7 +1714,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 1
+      "skipped": {
+        "local": 1,
+        "ci": 1
+      }
     },
     "toggle-button.html": {
       "below30": 0,
@@ -1257,7 +1725,10 @@
       "below60": 0,
       "ratio": 1,
       "exempt": 0,
-      "skipped": 0
+      "skipped": {
+        "local": 0,
+        "ci": 0
+      }
     },
     "tool-call.html": {
       "below30": 0,
@@ -1265,7 +1736,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 2
+      "skipped": {
+        "local": 2,
+        "ci": 2
+      }
     },
     "tool-call.html::dark": {
       "below30": 0,
@@ -1273,7 +1747,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 2
+      "skipped": {
+        "local": 2,
+        "ci": 2
+      }
     },
     "tooltip.html": {
       "below30": 0,
@@ -1281,7 +1758,10 @@
       "below60": 0,
       "ratio": 1,
       "exempt": 0,
-      "skipped": 0
+      "skipped": {
+        "local": 0,
+        "ci": 0
+      }
     },
     "transfer.html": {
       "below30": 0,
@@ -1289,7 +1769,10 @@
       "below60": 0,
       "ratio": 48,
       "exempt": 4,
-      "skipped": 24
+      "skipped": {
+        "local": 24,
+        "ci": 24
+      }
     },
     "transfer.html::dark": {
       "below30": 0,
@@ -1297,7 +1780,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 4,
-      "skipped": 24
+      "skipped": {
+        "local": 24,
+        "ci": 24
+      }
     },
     "tree-select.html": {
       "below30": 0,
@@ -1305,7 +1791,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 44
+      "skipped": {
+        "local": 44,
+        "ci": 44
+      }
     },
     "tree-select.html::dark": {
       "below30": 0,
@@ -1313,7 +1802,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 44
+      "skipped": {
+        "local": 44,
+        "ci": 44
+      }
     },
     "tree.html": {
       "below30": 0,
@@ -1321,7 +1813,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 3,
-      "skipped": 6
+      "skipped": {
+        "local": 6,
+        "ci": 6
+      }
     },
     "tree.html::dark": {
       "below30": 0,
@@ -1329,7 +1824,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 3,
-      "skipped": 6
+      "skipped": {
+        "local": 6,
+        "ci": 6
+      }
     },
     "typography.html": {
       "below30": 0,
@@ -1337,7 +1835,10 @@
       "below60": 0,
       "ratio": 1,
       "exempt": 2,
-      "skipped": 2
+      "skipped": {
+        "local": 2,
+        "ci": 2
+      }
     },
     "typography.html::dark": {
       "below30": 0,
@@ -1345,7 +1846,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 2,
-      "skipped": 2
+      "skipped": {
+        "local": 2,
+        "ci": 2
+      }
     },
     "upload.html": {
       "below30": 0,
@@ -1353,7 +1857,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 27
+      "skipped": {
+        "local": 27,
+        "ci": 27
+      }
     },
     "upload.html::dark": {
       "below30": 0,
@@ -1361,7 +1868,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 27
+      "skipped": {
+        "local": 27,
+        "ci": 27
+      }
     },
     "virtual-list.html": {
       "below30": 0,
@@ -1369,7 +1879,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 44
+      "skipped": {
+        "local": 44,
+        "ci": 44
+      }
     },
     "virtual-list.html::dark": {
       "below30": 0,
@@ -1377,7 +1890,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 44
+      "skipped": {
+        "local": 44,
+        "ci": 44
+      }
     },
     "watermark.html": {
       "below30": 0,
@@ -1385,7 +1901,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 6
+      "skipped": {
+        "local": 6,
+        "ci": 6
+      }
     },
     "watermark.html::dark": {
       "below30": 0,
@@ -1393,7 +1912,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 6
+      "skipped": {
+        "local": 6,
+        "ci": 6
+      }
     },
     "guide/frameworks.html": {
       "below30": 0,
@@ -1401,7 +1923,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 1
+      "skipped": {
+        "local": 1,
+        "ci": 1
+      }
     },
     "guide/frameworks.html::dark": {
       "below30": 0,
@@ -1409,7 +1934,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 1
+      "skipped": {
+        "local": 1,
+        "ci": 1
+      }
     },
     "guide/getting-started.html": {
       "below30": 0,
@@ -1417,7 +1945,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 1
+      "skipped": {
+        "local": 1,
+        "ci": 10
+      }
     },
     "guide/getting-started.html::dark": {
       "below30": 0,
@@ -1425,7 +1956,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 1
+      "skipped": {
+        "local": 1,
+        "ci": 1
+      }
     },
     "guide/glass.html": {
       "below30": 0,
@@ -1433,7 +1967,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 12
+      "skipped": {
+        "local": 12,
+        "ci": 12
+      }
     },
     "guide/glass.html::dark": {
       "below30": 0,
@@ -1441,7 +1978,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 12
+      "skipped": {
+        "local": 12,
+        "ci": 12
+      }
     },
     "guide/recipes.html": {
       "below30": 0,
@@ -1449,7 +1989,10 @@
       "below60": 0,
       "ratio": 4,
       "exempt": 11,
-      "skipped": 8
+      "skipped": {
+        "local": 8,
+        "ci": 17
+      }
     },
     "guide/recipes.html::dark": {
       "below30": 0,
@@ -1457,7 +2000,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 11,
-      "skipped": 8
+      "skipped": {
+        "local": 8,
+        "ci": 8
+      }
     },
     "guide/ssr.html": {
       "below30": 0,
@@ -1465,7 +2011,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 43
+      "skipped": {
+        "local": 43,
+        "ci": 64
+      }
     },
     "guide/ssr.html::dark": {
       "below30": 0,
@@ -1473,7 +2022,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 43
+      "skipped": {
+        "local": 43,
+        "ci": 43
+      }
     },
     "guide/theming.html": {
       "below30": 0,
@@ -1481,7 +2033,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 31
+      "skipped": {
+        "local": 31,
+        "ci": 44
+      }
     },
     "guide/theming.html::dark": {
       "below30": 0,
@@ -1489,7 +2044,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 31
+      "skipped": {
+        "local": 31,
+        "ci": 31
+      }
     },
     "guide/tokens.html": {
       "below30": 0,
@@ -1497,7 +2055,10 @@
       "below60": 0,
       "ratio": 5,
       "exempt": 0,
-      "skipped": 0
+      "skipped": {
+        "local": 0,
+        "ci": 0
+      }
     },
     "guide/windowed-data.html": {
       "below30": 0,
@@ -1505,7 +2066,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 12
+      "skipped": {
+        "local": 12,
+        "ci": 24
+      }
     },
     "guide/windowed-data.html::dark": {
       "below30": 0,
@@ -1513,7 +2077,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 12
+      "skipped": {
+        "local": 12,
+        "ci": 12
+      }
     },
     "en/ai-chat.html": {
       "below30": 0,
@@ -1521,7 +2088,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 1
+      "skipped": {
+        "local": 1,
+        "ci": 1
+      }
     },
     "en/ai-chat.html::dark": {
       "below30": 0,
@@ -1529,7 +2099,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 1
+      "skipped": {
+        "local": 1,
+        "ci": 1
+      }
     },
     "en/frameworks.html": {
       "below30": 0,
@@ -1537,7 +2110,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 1
+      "skipped": {
+        "local": 1,
+        "ci": 1
+      }
     },
     "en/frameworks.html::dark": {
       "below30": 0,
@@ -1545,7 +2121,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 1
+      "skipped": {
+        "local": 1,
+        "ci": 1
+      }
     },
     "en/getting-started.html": {
       "below30": 0,
@@ -1553,7 +2132,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 4
+      "skipped": {
+        "local": 4,
+        "ci": 13
+      }
     },
     "en/getting-started.html::dark": {
       "below30": 0,
@@ -1561,7 +2143,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 4
+      "skipped": {
+        "local": 4,
+        "ci": 4
+      }
     },
     "en/glass.html": {
       "below30": 0,
@@ -1569,7 +2154,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 12
+      "skipped": {
+        "local": 12,
+        "ci": 12
+      }
     },
     "en/glass.html::dark": {
       "below30": 0,
@@ -1577,7 +2165,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 12
+      "skipped": {
+        "local": 12,
+        "ci": 12
+      }
     },
     "en/recipes.html": {
       "below30": 0,
@@ -1585,7 +2176,10 @@
       "below60": 0,
       "ratio": 4,
       "exempt": 11,
-      "skipped": 9
+      "skipped": {
+        "local": 9,
+        "ci": 20
+      }
     },
     "en/recipes.html::dark": {
       "below30": 0,
@@ -1593,7 +2187,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 11,
-      "skipped": 9
+      "skipped": {
+        "local": 9,
+        "ci": 9
+      }
     },
     "en/resource-management.html": {
       "below30": 0,
@@ -1601,7 +2198,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 1
+      "skipped": {
+        "local": 1,
+        "ci": 1
+      }
     },
     "en/resource-management.html::dark": {
       "below30": 0,
@@ -1609,7 +2209,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 1
+      "skipped": {
+        "local": 1,
+        "ci": 1
+      }
     },
     "en/ssr.html": {
       "below30": 0,
@@ -1617,7 +2220,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 46
+      "skipped": {
+        "local": 46,
+        "ci": 67
+      }
     },
     "en/ssr.html::dark": {
       "below30": 0,
@@ -1625,7 +2231,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 46
+      "skipped": {
+        "local": 46,
+        "ci": 46
+      }
     },
     "en/theming.html": {
       "below30": 0,
@@ -1633,7 +2242,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 32
+      "skipped": {
+        "local": 32,
+        "ci": 46
+      }
     },
     "en/theming.html::dark": {
       "below30": 0,
@@ -1641,7 +2253,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 32
+      "skipped": {
+        "local": 32,
+        "ci": 32
+      }
     },
     "en/tokens.html": {
       "below30": 0,
@@ -1649,7 +2264,10 @@
       "below60": 0,
       "ratio": 5,
       "exempt": 0,
-      "skipped": 0
+      "skipped": {
+        "local": 0,
+        "ci": 0
+      }
     },
     "en/windowed-data.html": {
       "below30": 0,
@@ -1657,7 +2275,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 15
+      "skipped": {
+        "local": 15,
+        "ci": 27
+      }
     },
     "en/windowed-data.html::dark": {
       "below30": 0,
@@ -1665,7 +2286,10 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 15
+      "skipped": {
+        "local": 15,
+        "ci": 15
+      }
     }
   }
 }
