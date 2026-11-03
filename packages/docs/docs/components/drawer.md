@@ -190,11 +190,11 @@
 
 ## 标题区 / 关闭按钮 / Esc 开关
 
-`no-header` 隐藏整个标题区、`no-close-btn` 隐藏 ✕、`no-esc-close` 禁用 Esc 关闭——把关闭入口的控制权交给宿主。
+`no-header` 隐藏整个标题区、`no-close-btn` 隐藏 ✕、`no-esc-close` 禁用 Esc 关闭——把关闭入口的控制权交给宿主。无标题时可读名由 `label` 承担（转发为面板 `aria-label`；否则读屏只播报「对话框」）。
 
 <DemoBlock title="入口开关">
   <oas-button type="primary" onclick="document.querySelector('#drawer-bare').setAttribute('visible','')">打开极简抽屉</oas-button>
-  <oas-drawer id="drawer-bare" no-header no-close-btn no-esc-close>
+  <oas-drawer id="drawer-bare" label="极简抽屉（无标题）" no-header no-close-btn no-esc-close>
     <p>无标题、无 ✕、Esc 不关——只能通过下方按钮或遮罩点击关闭（遮罩点击仍有效）。</p>
     <oas-button onclick="document.querySelector('#drawer-bare').removeAttribute('visible')">关闭</oas-button>
   </oas-drawer>
@@ -403,6 +403,7 @@ onMounted(async () => {
 | `destroy-on-close` | 关闭动画完成后清空宿主子内容（下次打开重新渲染） | `boolean` | — |
 | `height` | 纵向抽屉（placement=top/bottom）显式高度，优先于 width/size；左右抽屉忽略 | — | — |
 | `initial-focus` | 打开时聚焦指定选择器元素（面板内优先，其次宿主 light DOM）；未设置回落 ✕ 关闭按钮/首个可聚焦元素 | — | — |
+| `label` | 可访问名（转发为面板 aria-label）：有可见标题文本时 aria-labelledby 优先、label 作兜底；`no-header` / 标题为空时由它承担名称（否则读屏只播报「对话框」） | `string` | — |
 | `loading` | 内容加载态：主体隐藏并显示骨架占位，确定/取消按钮同时禁用 | `boolean` | — |
 | `no-close-btn` | 隐藏标题栏 ✕ 关闭按钮 | `boolean` | — |
 | `no-esc-close` | 禁用 Esc 关闭 | `boolean` | — |

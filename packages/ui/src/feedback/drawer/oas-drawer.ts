@@ -434,6 +434,7 @@ export class OASDrawer extends OASElement {
     return [
       'visible',
       'title',
+      'label',
       'placement',
       'no-footer',
       'no-mask-close',
@@ -1205,9 +1206,18 @@ export class OASDrawer extends OASElement {
     }
     // 标题区可整体隐藏
     if (this.header) this.header.hidden = this.hasAttr('no-header')
-    // aria-labelledby：无标题区时移除可访问名关联（防止指向 hidden 元素）
-    if (this.hasAttr('no-header')) panel.removeAttribute('aria-labelledby')
-    else if (!panel.hasAttribute('aria-labelledby')) panel.setAttribute('aria-labelledby', 'oas-drawer-title')
+    // 可访问名：有标题文本时 aria-labelledby 优先（label 属性作兜底）；无标题区或无标题文本时
+    // 没有可引用的标题元素——移除 aria-labelledby（防指向 hidden 元素），改由 label 转发
+    // aria-label 承担名称，避免 no-header 抽屉成为无名 dialog（no-mask + no-header 的
+    // 动作面板场景需要宿主显式命名）。
+    const label = this.getAttr('label', '')
+    const hasTitle = this.hasAttr('no-header')
+      ? false
+      : !!this.titleCache?.trim() || (this.titleSlot ? this.hasSlotContent(this.titleSlot) : false)
+    if (hasTitle) panel.setAttribute('aria-labelledby', 'oas-drawer-title')
+    else panel.removeAttribute('aria-labelledby')
+    if (label) panel.setAttribute('aria-label', label)
+    else panel.removeAttribute('aria-label')
 
     // 确定/取消文案（ok-text/cancel-text 覆盖 locale）与 loading 态
     const loading = this.hasAttr('loading')

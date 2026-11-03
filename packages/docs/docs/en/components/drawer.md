@@ -190,11 +190,11 @@ Stacked drawers get automatic stack management: later openers sit on top (increm
 
 ## Header / close button / Esc switches
 
-`no-header` hides the whole header, `no-close-btn` hides ✕, `no-esc-close` disables Esc closing — giving the host full control over close entries.
+`no-header` hides the whole header, `no-close-btn` hides ✕, `no-esc-close` disables Esc closing — giving the host full control over close entries. With `no-header` there is no visible title, so `label` carries the accessible name (forwarded as the panel `aria-label`; otherwise screen readers announce only "dialog").
 
 <DemoBlock title="Close entries">
   <oas-button type="primary" onclick="document.querySelector('#drawer-bare').setAttribute('visible','')">Open bare drawer</oas-button>
-  <oas-drawer id="drawer-bare" no-header no-close-btn no-esc-close>
+  <oas-drawer id="drawer-bare" label="Bare drawer (no header)" no-header no-close-btn no-esc-close>
     <p>No header, no ✕, no Esc — close via the button below or the mask (mask click still works).</p>
     <oas-button onclick="document.querySelector('#drawer-bare').removeAttribute('visible')">Close</oas-button>
   </oas-drawer>
@@ -403,6 +403,7 @@ onMounted(async () => {
 | `destroy-on-close` | Clear the host children after the close animation finishes (re-rendered on next open) | `boolean` | — |
 | `height` | Explicit height for vertical drawers (placement top/bottom), overriding width/size; ignored by left/right | — | — |
 | `initial-focus` | Focus the element matching this selector on open (panel first, then host light DOM); falls back to the ✕ button / first focusable | — | — |
+| `label` | Accessible name (forwarded as the panel's aria-label): aria-labelledby wins when a visible title is present, label acts as the fallback; with `no-header` or an empty title it supplies the name (otherwise screen readers only announce "dialog") | `string` | — |
 | `loading` | Body loading state: content hidden with a skeleton placeholder; OK/Cancel buttons disabled too | `boolean` | — |
 | `no-close-btn` | Hide the ✕ close button in the title bar | `boolean` | — |
 | `no-esc-close` | Disable closing with Esc | `boolean` | — |

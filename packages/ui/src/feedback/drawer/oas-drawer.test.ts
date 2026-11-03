@@ -637,6 +637,22 @@ describe('OASDrawer', () => {
     expect(panel(el).getAttribute('role')).toBe('dialog')
   })
 
+  it('label 属性：no-header 时转发为 panel aria-label（dismissible dialog 不无名）', () => {
+    const el = mount({ visible: '', 'no-header': '', label: '操作选项' })
+    const p = panel(el)
+    expect(p.hasAttribute('aria-labelledby')).toBe(false)
+    expect(p.getAttribute('aria-label')).toBe('操作选项')
+    // 有标题区时 aria-labelledby 优先：标题元素可引用，aria-label 仅作兜底不变更语义
+    el.removeAttribute('no-header')
+    el.setAttribute('title', '设置')
+    expect(p.getAttribute('aria-label')).toBe('操作选项')
+    expect(p.getAttribute('aria-labelledby')).toBe('oas-drawer-title')
+    // 移除 label：无 header 时不再保留 aria-label（不残留旧名）
+    el.setAttribute('no-header', '')
+    el.removeAttribute('label')
+    expect(p.hasAttribute('aria-label')).toBe(false)
+  })
+
   it('hidden 兜底：.header 声明 display:flex 压过 UA [hidden]，必须有显式 .header[hidden] 补回', () => {
     // 回归：no-header 时 header.hidden=true，但 .header{display:flex} 覆盖 UA 的
     // [hidden]{display:none}，标题区（含分隔线）仍照画（同 header-actions/footer-actions 先例）
