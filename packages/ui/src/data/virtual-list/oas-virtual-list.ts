@@ -159,6 +159,10 @@ export class OASVirtualList extends OASElement {
   private resizeObserver: ResizeObserver | null = null
   /** items 属性（attribute JSON 通道）上次解析原文：内容不变则不重置高度缓存 */
   private lastItemsRaw: string | null = null
+  /** 数据版本：items 变化即自增，参与窗口渲染签名（跳过冗余重建） */
+  private dataVersion = 0
+  /** 最近一次定高窗口渲染签名：窗口/数据/行高未变时不重建行 DOM */
+  private renderSig = ''
 
   /**
    * 视口是否可 Tab 聚焦（默认 true）。内嵌消费方（如 tree，行自带 roving tabindex）
@@ -206,6 +210,7 @@ export class OASVirtualList extends OASElement {
     // 非法 JSON / 非数组回落空数组（同 gantt/resource 的 setter 口径），不抛异常。
     this.data = parseJsonArray<unknown>(value as unknown).slice()
     this.itemsFromProperty = true
+    this.dataVersion++
     this.heightCache.configure(this.data.length, this.estimatedHeight())
     if (this.isConnected) this.update()
   }
@@ -472,6 +477,7 @@ export class OASVirtualList extends OASElement {
       const parsed: unknown = JSON.parse(raw)
       if (Array.isArray(parsed)) {
         this.data = parsed
+        this.dataVersion++
         this.heightCache.configure(this.data.length, this.estimatedHeight())
       }
     } catch {
@@ -525,6 +531,8 @@ export class OASVirtualList extends OASElement {
       if (this.paddingBottom) {
         this.paddingBottom.style.height = `${total - this.heightCache.offsetOf(win.end)}px`
       }
+      // 动态行高窗口随实测高度持续修正：退出跳过逻辑，下一次定高渲染必须重建
+      this.renderSig = ''
       this.renderItems()
       return
     }
@@ -537,6 +545,12 @@ export class OASVirtualList extends OASElement {
     if (this.inner) this.inner.style.height = `${count * ih}px`
     if (this.paddingTop) this.paddingTop.style.height = `${win.start * ih}px`
     if (this.paddingBottom) this.paddingBottom.style.height = `${(count - win.end) * ih}px`
+    // 定高模式：窗口签名未变时不重建行 DOM（同窗口内滚动、程序化 scrollTop 后的尾随 scroll 事件）。
+    // 重建会销毁宿主放在行内的当前焦点——如 oas-tree 键盘跨窗口定位刚聚焦的行会被尾随帧清掉，
+    // 表现为「End 滚到末行但焦点丢失」。内容变化由 dataVersion（items/属性通道）驱动重建。
+    const sig = `${this.dataVersion}:${win.start}:${win.end}:${ih}:${this.itemRole}`
+    if (sig === this.renderSig && itemsEl.firstChild) return
+    this.renderSig = sig
     this.renderItems()
   }
 

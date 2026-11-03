@@ -90,7 +90,18 @@
       "observed": true
     },
     {
+      "name": "virtual",
+      "type": "boolean",
+      "observed": true
+    },
+    {
       "name": "height",
+      "type": "string",
+      "default": "360",
+      "observed": true
+    },
+    {
+      "name": "item-height",
       "type": "string",
       "default": "",
       "observed": true
@@ -98,7 +109,7 @@
     {
       "name": "row-height",
       "type": "string",
-      "default": "32",
+      "default": "",
       "observed": true
     },
     {

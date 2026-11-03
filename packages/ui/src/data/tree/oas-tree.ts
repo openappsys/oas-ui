@@ -392,6 +392,27 @@ function normalizeKeyValue(v: unknown): string {
   return ''
 }
 
+/** 虚拟滚动缺省行高（px）：`--oas-tree-row-height` token 开口，缺省/非法回落 32 */
+function defaultRowHeight(el: HTMLElement): number {
+  try {
+    const raw = getComputedStyle(el).getPropertyValue('--oas-tree-row-height').trim()
+    if (raw !== '') {
+      // 只认「数值 + 可选 px」：rem/em/% 等无法直接参与像素窗口计算，按非法回落
+      const m = /^([\d.]+)(?:px)?$/i.exec(raw)
+      if (m) {
+        const n = Number.parseFloat(m[1]!)
+        if (Number.isFinite(n) && n > 0) return n
+      }
+    }
+  } catch {
+    /* 不解析自定义属性的环境（部分测试环境）→ 回落 32 */
+  }
+  return 32
+}
+
+/** 非法 item-height 告警去重（同值一次，同 size 惯例） */
+const warnedItemHeights = new Set<string>()
+
 /** 按字段别名构造共享访问器（TreeNode 经 record 索引读取原始数据） */
 function makeTreeAccessors(fields: ResolvedFields): TreeAccessors<TreeNode> {
   const read = (n: TreeNode): Record<string, unknown> => n as unknown as Record<string, unknown>
@@ -453,7 +474,9 @@ function warnInvalidTreeSize(raw: string): void {
  *   半选回显（input.indeterminate），`check-strictly` 解耦，`check-strategy` 控制导出值；
  * - 字段别名 `field-names`（key/label/children/disabled/isLeaf/loaded）在数据入口归一化。
  *
- * 虚拟化（可选）：设置 `height`（视口高度 px）后经内嵌 oas-virtual-list 仅渲染窗口行。
+ * 虚拟化（客户端，可选）：`virtual` 布尔属性开启（视口 `height` 缺省 360），行高 `item-height`
+ * （缺省 32，`row-height` 为旧名，均可用 `--oas-tree-row-height` token 覆盖缺省）；开启后经内嵌
+ * oas-virtual-list 仅渲染可见窗口行，展开/收起与数据变更时窗口重算且保持滚动位置。
  *
  * windowed（服务端根节点窗口协议，可选）：`windowed` + `total`（全量根节点数）+
  * `window-start`（`data[0]` 的绝对根下标）三属性齐全（total 为正数）时生效。
@@ -482,7 +505,14 @@ export class OASTree extends OASElement {
       'filter-highlight',
       'field-names',
       'tree-lines',
+      // 客户端虚拟滚动开关（布尔）：与 height / item-height 配合，缺省视口高 360、行高 32；
+      // 历史用法「仅设 height」仍开启虚拟化（向后兼容）
+      'virtual',
+      // 虚拟滚动视口高度（px）；与 virtual 同用，缺省 360
       'height',
+      // 虚拟滚动行高（px，默认 32，可用 --oas-tree-row-height token 覆盖缺省）
+      'item-height',
+      // 虚拟滚动行高旧名：等同 item-height（两者同时在场时 item-height 优先）
       'row-height',
       'lazy',
       'draggable',
@@ -560,6 +590,13 @@ export class OASTree extends OASElement {
   private windowResizeObserver: ResizeObserver | null = null
   /** 可见行 → 切片内根序映射（DFS 前序归属；windowed 反推根区间用，update 时重建） */
   private visibleRootIndex: number[] = []
+  /**
+   * 虚拟路径行渲染的批量上下文（每次 update 计算一次）：窗口内每行共享 checked/expanded/selected，
+   * 避免逐行重算（级联闭包是 O(全量节点)，万级数据下逐行重算会让滚动窗口重建变慢）。
+   */
+  private virtualRenderCtx: { checked: Set<string>; expanded: Set<string>; selected: string[] } | null = null
+  /** token 缺省行高缓存（update 起始失效；滚动帧内不重复读 computed style，避免样式重算抖动） */
+  private rowHeightToken = 0
   /** 每节点 aria-setsize/posinset 元数据（根用全量口径、子用同级已装载数；update 时重建） */
   private ariaMeta = new Map<string, { setsize: number; posinset: number }>()
   /** Shift 范围选择的锚点 key（多选下最近一次普通/Ctrl 点选；外部清空 selected 后失效自动回退） */
@@ -638,7 +675,8 @@ export class OASTree extends OASElement {
     ) => {
       const detail = e.detail
       if (detail && detail.item && detail.element) {
-        this.renderRow(detail.item, detail.element)
+        // 虚拟路径共享本批次 checked/expanded/selected（见 virtualRenderCtx）
+        this.renderRow(detail.item, detail.element, this.virtualRenderCtx ?? undefined)
       }
     }) as EventListener)
     // windowed：vlist 滚动上报（rAF 节流）→ 记 scrollTop 并反推可见根区间按需请求（reason=scroll）
@@ -767,6 +805,47 @@ export class OASTree extends OASElement {
     return this.injectDisabled()
   }
 
+  // ---------- 虚拟滚动（客户端）----------
+
+  /**
+   * 虚拟滚动开关：`virtual` 布尔属性显式开启；历史用法「仅设 height」同样开启（向后兼容，
+   * 避免既有宿主因新属性缺席而退回全量渲染）。
+   */
+  private virtualEnabled(): boolean {
+    return this.hasAttr('virtual') || this.getAttr('height', '') !== ''
+  }
+
+  /** 虚拟视口高度（px）：height 为合法正数时用之，否则缺省 360 */
+  private viewportHeight(): number {
+    const n = Number.parseFloat(this.getAttr('height', '360'))
+    return Number.isFinite(n) && n > 0 ? n : 360
+  }
+
+  /**
+   * 虚拟行高（px）：`item-height`（新名，优先）→ `row-height`（旧名）→ `--oas-tree-row-height`
+   * token → 32；显式值非法时告警一次并回落 32（与 vlist 定高模型共用同一数值，防窗口与行高错位）。
+   */
+  private resolveItemHeight(): number {
+    const raw = this.getAttr('item-height', '') || this.getAttr('row-height', '')
+    if (raw !== '') {
+      const n = Number.parseFloat(raw)
+      if (Number.isFinite(n) && n > 0) return n
+      if (!warnedItemHeights.has(raw)) {
+        warnedItemHeights.add(raw)
+        devWarn(`[oas-tree] 非法 item-height "${raw}"，已回落 32；合法值：正数像素值（如 32）`)
+      }
+      return 32
+    }
+    return this.rowHeightTokenValue()
+  }
+
+  /** token 缺省行高（带缓存，见 rowHeightToken） */
+  private rowHeightTokenValue(): number {
+    if (this.rowHeightToken > 0) return this.rowHeightToken
+    this.rowHeightToken = defaultRowHeight(this)
+    return this.rowHeightToken
+  }
+
   private filtering(): boolean {
     // windowed：本地过滤禁用（组件只持有已装载切片，切片上过滤结果会错漏）——filter 属性
     // 忽略不应用（dev 告警一次见 update），全量过滤由宿主负责（对齐 table 同口径）
@@ -804,7 +883,15 @@ export class OASTree extends OASElement {
     return s === 'parent' || s === 'child' ? s : 'all'
   }
 
+  /**
+   * 当前勾选集合（checked 闭包展开：父勾选 = 子树全选、子全选 = 父半选）。
+   *
+   * 非 checkable 树 early-exit 返回空集：勾选态只驱动复选框视觉与级联（renderRow 的 box.checked /
+   * box.indeterminate、toggleCheckByKey、check-all），非勾选树没有消费者；而闭包展开要全树 walk
+   * （O(全量)），10k 节点非勾选树首帧与每次 update 都会白付这份成本。
+   */
   private internalChecked(): Set<string> {
+    if (!this.hasAttr('checkable')) return new Set()
     if (this.checkStrictlyOn()) return new Set(parseIdList(this.getAttr('checked', '')))
     return closureFromValues({ model: this.model, acc: this.acc }, parseIdList(this.getAttr('checked', '')))
   }
@@ -903,6 +990,8 @@ export class OASTree extends OASElement {
   // ---------- update / 渲染入口 ----------
 
   protected override update(): void {
+    // 每轮 update 重新读取行高 token（主题切换/宿主变量变更后收敛），滚动帧内走缓存
+    this.rowHeightToken = 0
     // RTL 判定（data-rtl 供 CSS 镜像展开箭头；dir 属性变化经 observedAttributes 再入 update）
     this.toggleAttribute('data-rtl', isRtl(this))
     this.parseFieldNames()
@@ -956,7 +1045,7 @@ export class OASTree extends OASElement {
       this.rename = null
       this.renameFocusPending = false
     }
-    const virtual = this.getAttr('height', '') !== ''
+    const virtual = this.virtualEnabled()
     const wrap = this.shadow.querySelector<HTMLElement>('.tree')
     const emptyEl = this.shadow.querySelector<HTMLElement>('.empty')
     if (!wrap || !emptyEl) return
@@ -976,6 +1065,7 @@ export class OASTree extends OASElement {
     wrap.classList.toggle('motion', this.hasAttr('motion'))
 
     if (this.visible.length === 0) {
+      this.virtualRenderCtx = null
       if (this.vlist) this.vlist.hidden = true
       wrap.innerHTML = ''
       emptyEl.hidden = false
@@ -1001,8 +1091,14 @@ export class OASTree extends OASElement {
       this.vlist.setAttribute('items-role', 'tree')
       this.vlist.setAttribute('item-role', 'presentation')
       this.vlist.setAttribute('aria-label', this.t('tree.select'))
-      this.vlist.setAttribute('height', this.getAttr('height', '360'))
-      this.vlist.setAttribute('item-height', this.getAttr('row-height', '32'))
+      this.vlist.setAttribute('height', String(this.viewportHeight()))
+      this.vlist.setAttribute('item-height', String(this.resolveItemHeight()))
+      // 行渲染上下文一次算好（checked 级联闭包 O(全量)，逐行重算会在滚动重建窗口时变成 O(窗口×全量)）
+      this.virtualRenderCtx = {
+        checked: this.internalChecked(),
+        expanded: this.expandedSet(),
+        selected: this.currentSelected(),
+      }
       this.vlist.items = this.visible
       this.syncVirtualTreeAria(true)
       this.syncRoving()
@@ -1010,6 +1106,7 @@ export class OASTree extends OASElement {
       this.syncWindowRequest()
       return
     }
+    this.virtualRenderCtx = null
     if (this.vlist) {
       this.vlist.hidden = true
       this.vlist.removeAttribute('items-role')
@@ -1120,7 +1217,7 @@ export class OASTree extends OASElement {
    */
   private captureWindowAnchor(prevMode: ReturnType<typeof readWindowedMode>): void {
     const mode = this.winMode
-    const virtual = this.getAttr('height', '') !== ''
+    const virtual = this.virtualEnabled()
     if (!mode.windowed || !prevMode.windowed || !virtual) {
       this.prevWinSig = null
       return
@@ -1131,7 +1228,7 @@ export class OASTree extends OASElement {
     if (this.winAnchorQueued) return
     if (this.lastScrollTop <= 0) return
     if (this.visible.length === 0 || this.visibleRootIndex.length === 0) return
-    const ih = Number(this.getAttr('row-height', '32')) || 32
+    const ih = this.resolveItemHeight()
     const top = Math.min(Math.max(0, Math.floor(this.lastScrollTop / ih)), this.visible.length - 1)
     this.winAnchor = {
       key: this.acc.idOf(this.visible[top]!.node),
@@ -1152,7 +1249,7 @@ export class OASTree extends OASElement {
   private applyWindowAnchor(a: { key: string; absRoot: number; oldWs: number; scrollTop: number }): void {
     const vlist = this.vlist
     if (!vlist || vlist.hidden || !this.isConnected) return
-    if (!this.winMode.windowed || this.getAttr('height', '') === '') return
+    if (!this.winMode.windowed || !this.virtualEnabled()) return
     if (this.visible.length === 0 || this.visibleRootIndex.length === 0) return
     // ① 同 key 锚定：视口首行仍在切片内 → 新本地序滚回视口顶部
     const keyIdx = this.visibleKeys().indexOf(a.key)
@@ -1170,7 +1267,7 @@ export class OASTree extends OASElement {
       }
     }
     // ③ 兜底：按窗口位移 × 行高补偿（内容随 ws 前移而相对上移，scrollTop 反向补），夹到有效区间
-    const ih = Number(this.getAttr('row-height', '32')) || 32
+    const ih = this.resolveItemHeight()
     const target = a.scrollTop + (a.oldWs - this.winMode.windowStart) * ih
     const rowIdx = Math.min(this.visible.length - 1, Math.max(0, Math.round(target / ih)))
     vlist.scrollToIndex(rowIdx, { align: 'start' })
@@ -1209,7 +1306,7 @@ export class OASTree extends OASElement {
   private requestWindowIfNeeded(reason: WindowRequestReason): void {
     const mode = this.winMode
     if (!mode.windowed) return
-    if (this.getAttr('height', '') === '') return
+    if (!this.virtualEnabled()) return
     const need = this.expectedRootWindow(this.visibleRowWindow())
     if (windowCovered(need, mode.loaded)) {
       this.winReq = null
@@ -1223,8 +1320,8 @@ export class OASTree extends OASElement {
 
   /** 可见行窗口（相对已装载切片展平后的 visible 行序）：按 vlist 同款定高模型自算（同 buffer 默认） */
   private visibleRowWindow(): { start: number; end: number } {
-    const vh = Number(this.getAttr('height', '360')) || 360
-    const ih = Number(this.getAttr('row-height', '32')) || 32
+    const vh = this.viewportHeight()
+    const ih = this.resolveItemHeight()
     return computeVirtualWindow(this.lastScrollTop, vh, ih, this.visible.length)
   }
 
@@ -1256,14 +1353,14 @@ export class OASTree extends OASElement {
    * 若 vlist 默认值调整需同步此处，保证 init 请求量与首帧实际渲染窗口一致。
    */
   private estimateViewportCapacity(): number {
-    const vh = Number(this.getAttr('height', '360')) || 360
-    const ih = Number(this.getAttr('row-height', '32')) || 32
+    const vh = this.viewportHeight()
+    const ih = this.resolveItemHeight()
     return Math.ceil(vh / ih) + 4
   }
 
   /** windowed：视口尺寸变化 → 可见行数变化 → 按需请求（reason=resize）；observer 只挂一次 */
   private setupWindowResize(): void {
-    if (this.windowResizeObserver || !this.winMode.windowed || this.getAttr('height', '') === '') return
+    if (this.windowResizeObserver || !this.winMode.windowed || !this.virtualEnabled()) return
     if (typeof ResizeObserver === 'undefined') return
     const target = this.vlist
     if (!target) return
@@ -1284,11 +1381,11 @@ export class OASTree extends OASElement {
   private renderRow(
     flat: FlatRow<TreeNode>,
     container: HTMLElement,
-    ctx?: { checked: Set<string>; expanded: Set<string> },
+    ctx?: { checked: Set<string>; expanded: Set<string>; selected?: string[] },
   ): void {
     const { node, depth } = flat
     const id = this.acc.idOf(node)
-    const selected = this.currentSelected()
+    const selected = ctx?.selected ?? this.currentSelected()
     const isSelected = selected.includes(id)
     const checkable = this.hasAttr('checkable')
     const expanded = ctx?.expanded ?? this.expandedSet()
@@ -1884,7 +1981,7 @@ export class OASTree extends OASElement {
   /** 展开落库后播放入场过渡：常规模式行高 0→自然（max-height 过渡），虚拟模式 fade 降级 */
   private animateRowsIn(keys: string[]): void {
     if (!this.motionEnabled()) return
-    const virtual = this.getAttr('height', '') !== ''
+    const virtual = this.virtualEnabled()
     for (const key of keys) {
       const row = this.rowElByKey(key)
       if (!row) continue
@@ -1922,7 +2019,7 @@ export class OASTree extends OASElement {
 
   /** 收起离场：子行高度 → 0（max-height 过渡），结束后真正落库收起 */
   private animateRowsOut(rows: HTMLElement[], done: () => void): void {
-    const virtual = this.getAttr('height', '') !== ''
+    const virtual = this.virtualEnabled()
     if (virtual || rows.length === 0) {
       done()
       return
@@ -2050,7 +2147,7 @@ export class OASTree extends OASElement {
       const vis = this.visibleRows()
       const idx = vis.findIndex((r) => this.acc.idOf(r.node) === key)
       if (idx < 0) return
-      const virtual = this.getAttr('height', '') !== ''
+      const virtual = this.virtualEnabled()
       if (virtual && this.vlist) {
         // 最小滚动定位（align auto：已可见不动），不直查 vlist 内部 DOM
         this.vlist.scrollToIndex(idx, { align: 'auto' })
@@ -2272,12 +2369,22 @@ export class OASTree extends OASElement {
       row.focus(options)
       return
     }
-    // 虚拟模式目标行未渲染（越出窗口）→ 最小滚动进视口后下一帧聚焦
+    // 虚拟模式目标行未渲染（越出窗口）→ 最小滚动进视口后聚焦。定高模型下 scrollToIndex
+    // 同步重建窗口（目标行此刻已在 DOM），立即聚焦并补落 roving tabindex——不再等下一帧，
+    // 避免「等帧期间焦点悬空 / 被后续窗口重建清掉」。动态行高等延迟渲染路径留 rAF 兜底。
     const keys = this.visibleKeys()
     const idx = keys.indexOf(key)
     if (idx < 0 || !this.vlist || this.vlist.hidden) return
     this.vlist.scrollToIndex(idx, { align: 'auto' })
+    const rendered = this.rowElByKey(key)
+    if (rendered) {
+      // 新渲染的行由 renderRow 统一给 tabindex=-1，roving 需在渲染后重落一次
+      this.applyRovingTabIndex()
+      rendered.focus(options)
+      return
+    }
     requestAnimationFrame(() => {
+      this.applyRovingTabIndex()
       this.rowElByKey(key)?.focus(options)
     })
   }

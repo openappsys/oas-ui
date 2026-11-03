@@ -187,11 +187,22 @@ tree.allowDrag = (node) => node.key !== 'item-1' // this node cannot be dragged
 
 <DemoBlock title="Virtual scroll with 10k nodes">
   <div style="width: 100%">
-    <oas-tree id="tree-virtual" height="360" row-height="32" expanded='["n0"]'></oas-tree>
+    <oas-tree id="tree-virtual" virtual height="360" item-height="32" expanded='["n0"]'></oas-tree>
+    <div style="margin-top: var(--oas-space-2); display: flex; gap: var(--oas-space-2); align-items: center">
+      <oas-button size="small" id="tree-virtual-generate">Generate 10,000 nodes</oas-button>
+      <span id="tree-virtual-status" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)"></span>
+    </div>
   </div>
 </DemoBlock>
 
-Setting `height` enables virtualization (with a fixed `row-height`): the tree reuses `oas-virtual-list` to render only the nodes in the visible window. The expanded state is kept in the `expanded` attribute and survives scrolling and re-renders; keyboard navigation and `scrollTo()` keep the window in sync.
+`virtual` turns on client-side virtual scrolling: the tree flattens the currently expanded, visible nodes into a linear list and renders only the slice that fits the viewport (reusing `oas-virtual-list`). With tens of thousands of nodes the DOM holds only "viewport rows + top/bottom buffer", and scrolling just recomputes the window.
+
+- `height`: viewport height (px, default `360`); `item-height`: row height (px, default `32`; the default can be overridden with the `--oas-tree-row-height` token, `row-height` is the legacy name and `item-height` wins when both are present).
+- Expanding / collapsing / data changes recompute the window immediately and keep the scroll position (no jump back to the top). The expanded state still lives in the `expanded` attribute and survives scrolling and re-renders.
+- Keyboard navigation (↑↓ / Home / End / →←) and `scrollTo()` work against the **full flattened list**: when the target row is outside the window it is scrolled into view and then focused, so moving across windows never stalls.
+- ARIA keeps full-data semantics: each row's `aria-posinset` / `aria-setsize` reflect its position in the whole hierarchy, not in the rendered slice.
+
+> Compatibility: the previous usage with only `height` (no `virtual`) still enables virtual scrolling, unchanged.
 
 ## Custom Node Rendering
 
@@ -385,22 +396,35 @@ onMounted(() => {
     })
   }
 
-  // Virtual scroll demo: 5000 root nodes, every 100th has 20 children
+  // Virtual scroll demo: 10,000 root nodes (every 100th has 20 children); the button regenerates and shows the cost
   const virtual = document.querySelector('#tree-virtual')
   if (virtual) {
-    const nodes = Array.from({ length: 5000 }, (_, i) => ({
-      key: `n${i}`,
-      label: `Node ${i}`,
-      ...(i % 100 === 0
-        ? {
-            children: Array.from({ length: 20 }, (_, j) => ({
-              key: `n${i}-${j}`,
-              label: `Child ${i}-${j}`,
-            })),
-          }
-        : {}),
-    }))
-    virtual.setAttribute('data', JSON.stringify(nodes))
+    const status = document.querySelector('#tree-virtual-status')
+    const generate = () => {
+      const t0 = performance.now()
+      const count = 10000
+      const nodes = Array.from({ length: count }, (_, i) => ({
+        key: `n${i}`,
+        label: `Node ${i}`,
+        ...(i % 100 === 0
+          ? {
+              children: Array.from({ length: 20 }, (_, j) => ({
+                key: `n${i}-${j}`,
+                label: `Child ${i}-${j}`,
+              })),
+            }
+          : {}),
+      }))
+      virtual.setAttribute('data', JSON.stringify(nodes))
+      // Visible feedback: node count + elapsed time (virtual scrolling keeps only window rows in the DOM)
+      const vroot = virtual.shadowRoot?.querySelector('oas-virtual-list')?.shadowRoot
+      const rowsText = vroot ? ` · ${vroot.querySelectorAll('[part="item"]').length} rows rendered` : ''
+      if (status) {
+        status.textContent = `Generated ${count.toLocaleString()} nodes · ${Math.round(performance.now() - t0)} ms${rowsText}`
+      }
+    }
+    generate()
+    document.querySelector('#tree-virtual-generate')?.addEventListener('click', generate)
   }
 
   // Custom node demo: oas-node-render writes the task-count badge (element is the node label container)
@@ -735,16 +759,18 @@ The insertion line and inner-drop highlight can be themed with CSS variables (th
 | `field-names` | Field-alias JSON (e.g. `{"label":"name","value":"id","children":"subs"}`; data is not copy-mapped — node-render receives your original objects) | `string` | — |
 | `filter` | In-tree search filter (keyword input; pair with filter-highlight and el.filterNode) | `string` | — |
 | `filter-highlight` | Highlight matched fragments (mark tag) | `boolean` | — |
-| `height` | Virtual scroll viewport height (px); setting it enables virtualized rendering for large data | `string` | — |
+| `height` | Virtual scroll viewport height (px), default 360; works with virtual (the legacy usage with only height still enables virtual scrolling) | `string` | `360` |
+| `item-height` | Virtual row height (px), default 32; the default can be overridden with the `--oas-tree-row-height` token (`row-height` is the legacy name and `item-height` wins when both are present) | `string` | — |
 | `lazy` | Lazy loading: nodes without `children` and not marked `isLeaf` / `loaded` trigger loading on expand | `boolean` | — |
 | `motion` | Expand/collapse height transition animation (off by default): non-virtual mode transitions row-container max-height on expand/collapse, virtual-scroll mode degrades to a fade-in on expand with instant collapse; duration/easing follow `--oas-transition-*`, disabled under `prefers-reduced-motion` | `boolean` | — |
 | `multiple` | Click multi-select (Ctrl/⌘ toggles, Shift-click/Shift+↑↓ range selection/extension, Ctrl/⌘+Shift adds; selected is a JSON array) | `boolean` | — |
-| `row-height` | Fixed row height when virtualized (px) | `string` | `32` |
+| `row-height` | Fixed row height when virtualized (px); legacy name, same as `item-height` (default 32) | `string` | — |
 | `selectable` | Whole-tree selection switch; `"false"` stops click/keyboard selection while expand/check keep working | `string` | `true` |
 | `selected` | Key of the selected node | `string` | — |
 | `size` | Five-tier tree font/padding scale (xs~xl, aliases accepted, invalid falls back to medium) | `string` | `medium` |
 | `total` | Full root-node count in windowed mode; 0 or invalid disables windowed (falls back to normal mode) | `string` | — |
 | `tree-lines` | Tree indentation guide lines | `boolean` | — |
+| `virtual` | Client-side virtual scrolling (boolean, off by default): flattens the currently expanded visible nodes and renders only the viewport slice (reuses oas-virtual-list); expansion/data changes recompute the window and keep the scroll position, and keyboard navigation / ARIA use the full flattened list | `boolean` | — |
 | `window-start` | Absolute root index (within the full dataset) of the first root node in the slice (windowed mode) | `string` | `0` |
 | `windowed` | Server-side root-node window mode (boolean, off by default): with total / window-start, data carries only the root-node slice (children travel with their root; lazy loading unchanged); when the expected root window is not covered, oas-window-request is emitted for the host to refill. Non-windowed behavior unchanged | `boolean` | — |
 

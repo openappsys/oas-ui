@@ -184,15 +184,26 @@ tree.allowDrop = ({ dragKey, dropKey, position }) => dropKey !== 'grp-1' // 不�
 tree.allowDrag = (node) => node.key !== 'item-1' // 该节点不可被拖动
 ```
 
-## 大数据量（虚拟滚动）
+## 虚拟滚动（万级节点）
 
-<DemoBlock title="万级节点虚拟滚动">
+<DemoBlock title="万级节点虚拟滚动（10,000 节点）">
   <div style="width: 100%">
-    <oas-tree id="tree-virtual" height="360" row-height="32" expanded='["n0"]'></oas-tree>
+    <oas-tree id="tree-virtual" virtual height="360" item-height="32" expanded='["n0"]'></oas-tree>
+    <div style="margin-top: var(--oas-space-2); display: flex; gap: var(--oas-space-2); align-items: center">
+      <oas-button size="small" id="tree-virtual-generate">生成 1 万节点</oas-button>
+      <span id="tree-virtual-status" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)"></span>
+    </div>
   </div>
 </DemoBlock>
 
-设置 `height` 开启虚拟化（搭配 `row-height` 定高）：树复用 `oas-virtual-list` 只渲染可见窗口内的节点，展开状态保存在 `expanded` 属性中，滚动与重渲染均不丢失；键盘导航与 `scrollTo()` 会联动滚动窗口。
+`virtual` 开启客户端虚拟滚动：树把「当前展开可见的节点」拍平成线性列表，再按视口切片渲染（复用 `oas-virtual-list`），万级节点下实际行数只有「视口行数 + 上下 buffer」，滚动时只重算窗口。
+
+- `height`：视口高度（px，缺省 `360`）；`item-height`：行高（px，缺省 `32`，行高缺省可用 `--oas-tree-row-height` token 覆盖，`row-height` 为旧名，两者同时在场时以 `item-height` 为准）。
+- 展开 / 收起 / 数据增删后窗口立即重算，滚动位置保持（不会跳回顶部）；展开状态仍保存在 `expanded` 属性中，滚动与重渲染均不丢失。
+- 键盘导航（↑↓ / Home / End / →←）与 `scrollTo()` 按**全量拍平列表**定位：目标行不在窗口内时先滚入视口再聚焦，跨窗口移动不中断。
+- ARIA 保持全量口径：行的 `aria-posinset` / `aria-setsize` 反映它在全量层级中的位置，不因窗口切片而变。
+
+> 兼容：既有用法只设 `height`（不写 `virtual`）同样开启虚拟滚动，行为不变。
 
 ## 自定义节点渲染
 
@@ -386,22 +397,35 @@ onMounted(() => {
     })
   }
 
-  // 大数据量虚拟滚动 demo：5000 根节点，每 100 个带 20 个子节点
+  // 虚拟滚动 demo：10,000 根节点（每 100 个带 20 个子节点），生成按钮可重新生成并显示耗时
   const virtual = document.querySelector('#tree-virtual')
   if (virtual) {
-    const nodes = Array.from({ length: 5000 }, (_, i) => ({
-      key: `n${i}`,
-      label: `节点 ${i}`,
-      ...(i % 100 === 0
-        ? {
-            children: Array.from({ length: 20 }, (_, j) => ({
-              key: `n${i}-${j}`,
-              label: `子节点 ${i}-${j}`,
-            })),
-          }
-        : {}),
-    }))
-    virtual.setAttribute('data', JSON.stringify(nodes))
+    const status = document.querySelector('#tree-virtual-status')
+    const generate = () => {
+      const t0 = performance.now()
+      const count = 10000
+      const nodes = Array.from({ length: count }, (_, i) => ({
+        key: `n${i}`,
+        label: `节点 ${i}`,
+        ...(i % 100 === 0
+          ? {
+              children: Array.from({ length: 20 }, (_, j) => ({
+                key: `n${i}-${j}`,
+                label: `子节点 ${i}-${j}`,
+              })),
+            }
+          : {}),
+      }))
+      virtual.setAttribute('data', JSON.stringify(nodes))
+      // 可见反馈：生成数量 + 总耗时（虚拟滚动下 DOM 仍只有窗口行）
+      const vroot = virtual.shadowRoot?.querySelector('oas-virtual-list')?.shadowRoot
+      const rowsText = vroot ? ` · 实际渲染 ${vroot.querySelectorAll('[part="item"]').length} 行` : ''
+      if (status) {
+        status.textContent = `已生成 ${count.toLocaleString()} 节点 · ${Math.round(performance.now() - t0)} ms${rowsText}`
+      }
+    }
+    generate()
+    document.querySelector('#tree-virtual-generate')?.addEventListener('click', generate)
   }
 
   // 自定义节点 demo：oas-node-render 写入子任务数徽标（element 为节点 label 容器）
@@ -733,16 +757,18 @@ windowed 的本地能力边界：**本地 `filter` 与顶部全选（`check-all`
 | `field-names` | 字段别名 JSON（如 `{"label":"name","value":"id","children":"subs"}`；原始数据不拷贝映射，node-render 拿到宿主原对象） | `string` | — |
 | `filter` | 树内搜索过滤（输入关键词；配 filter-highlight 高亮与 el.filterNode 自定义） | `string` | — |
 | `filter-highlight` | 搜索命中片段高亮（mark 标记） | `boolean` | — |
-| `height` | 虚拟滚动视口高度（px）；设置后开启大数据量虚拟化渲染 | `string` | — |
+| `height` | 虚拟滚动视口高度（px），默认 360；与 virtual 配合（历史用法只设 height 也仍开启虚拟滚动） | `string` | `360` |
+| `item-height` | 虚拟滚动行高（px），默认 32；缺省可用 `--oas-tree-row-height` token 覆盖（`row-height` 为旧名，两者同时在场时以 item-height 为准） | `string` | — |
 | `lazy` | 懒加载：无 `children` 且未标记 `isLeaf` / `loaded` 的节点，展开时触发加载 | `boolean` | — |
 | `motion` | 展开/收起高度过渡动画（默认关）：非虚拟模式行容器 max-height 过渡展开/收起，虚拟滚动模式入场降级为淡入、收起即时；时长/缓动走 `--oas-transition-*`，`prefers-reduced-motion` 下停用 | `boolean` | — |
 | `multiple` | 点选多选（Ctrl/⌘ 切换、Shift 点击/Shift+↑↓ 范围选择与扩选、Ctrl/⌘+Shift 并入；selected 为 JSON 数组） | `boolean` | — |
-| `row-height` | 虚拟化时每行固定高度（px） | `string` | `32` |
+| `row-height` | 虚拟化时每行固定高度（px），旧名，等同 `item-height`（缺省 32） | `string` | — |
 | `selectable` | 整树点选开关，`"false"` 时点击/键盘不选中不派发 oas-select（展开/勾选不受影响） | `string` | `true` |
 | `selected` | 选中节点 key | `string` | — |
 | `size` | 整树字号与行距五档（xs~xl，别名等价，非法回落 medium） | `string` | `medium` |
 | `total` | windowed 模式下的全量根节点数；为 0 或非法时 windowed 不生效（回落普通模式） | `string` | — |
 | `tree-lines` | 树线缩进引导线 | `boolean` | — |
+| `virtual` | 客户端虚拟滚动（布尔，默认关）：把当前展开可见的节点拍平为线性列表，只渲染视口切片（复用 oas-virtual-list）；展开/数据变更时窗口重算且保持滚动位置，键盘导航与 ARIA 均按全量拍平列表 | `boolean` | — |
 | `window-start` | windowed 模式下切片首个根节点的绝对根序号（相对全量根节点） | `string` | `0` |
 | `windowed` | 服务端根节点窗口模式（布尔，默认关）：与 total / window-start 配合，data 只承载根节点切片（子节点随根完整携带；懒加载不变），期望根区间未被已装载覆盖时派发 oas-window-request 由宿主回填；非 windowed 行为不变 | `boolean` | — |
 
