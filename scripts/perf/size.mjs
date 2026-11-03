@@ -732,9 +732,9 @@ const BUDGETS = [
     kind: 'absolute',
     componentId: 'gantt',
     get: () => componentMeasures.gantt.gzipBytes,
-    limit: 70 * 1024, // 70 KB（v2.6.2 重定档：任务管理/约束/日历/列虚拟化等能力增量）
+    limit: 75 * 1024, // 75 KB（2026-11-03 再定档：P2 式归因审计证无冗余，增长全为真实能力）
     basis:
-      'v2.6.2 重定档：实测 gzip 61.1 KB（gantt 任务管理/依赖编辑/约束/工作日日历/列虚拟化/多选等能力增量，链含 core + i18n + virtual-list）；上浮约 15% 定档 70 KB。前一档 46 KB 定档于 2026-10-07（实测 39.6 KB）',
+      'v2.6.2 定档 70 KB（实测 gzip 61.1 KB 上浮约 15%）。2026-11-02 P2 式归因审计：18 模块 63.6 KB 无冗余（较 61.4 基线 +2.2 KB 全为其后 6 次 feature/fix 提交；export/evm/alap/recurring 四 helper 零依赖真剥离；core barrel 再导出带入的 form-element+escape 共 5.8 KB 为静态闭包上界口径产物，真实 bundler 按 sideEffects:false 摇除后约 57.9 KB）。2026-11-03 按预警机制「再定档」出口上浮至 75 KB（约 +18%），预警线 67.5 KB；下次扩展仍须先归因评估',
   },
   {
     name: '@oas-ui/ui/data/json-viewer 链 gzip',
