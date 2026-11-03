@@ -19,6 +19,11 @@ import {
   type SummaryType,
   type SummaryConfig,
   type EditOption,
+  type TableStructuralRenderers,
+  type TableStructuralBodyRowCtx,
+  type TableStructuralBodyCellCtx,
+  type TableStructuralHeaderRowCtx,
+  type TableStructuralHeaderCellCtx,
 } from './oas-table.js'
 import { createColumnSettingsController } from './oas-table-column-settings.js'
 import { registerTableCapability, registeredTableCapabilities, hasTableCapability } from './oas-table-capability.js'
@@ -73,4 +78,9 @@ export {
   type SummaryType,
   type SummaryConfig,
   type EditOption,
+  type TableStructuralRenderers,
+  type TableStructuralBodyRowCtx,
+  type TableStructuralBodyCellCtx,
+  type TableStructuralHeaderRowCtx,
+  type TableStructuralHeaderCellCtx,
 }

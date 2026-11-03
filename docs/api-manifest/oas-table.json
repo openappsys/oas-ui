@@ -279,6 +279,10 @@
       "type": "TableRowClass | null"
     },
     {
+      "name": "structuralRenderers",
+      "type": "TableStructuralRenderers | null"
+    },
+    {
       "name": "rowExpandable",
       "type": "TableRowExpandable | null"
     },

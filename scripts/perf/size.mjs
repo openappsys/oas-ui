@@ -623,6 +623,11 @@ const COMPONENT_ENTRIES = [
   // table/edit：注册型 L3（import 即注册编辑能力）；v2.6.4 起默认 table 不含 edit，
   // L1/CDN 显式包含——独立计量是「默认不含 edit/Pro」叙事的量化前提（L3 登记表驱动）
   { id: 'tableEdit', entry: 'data/table/edit', spec: '@oas-ui/ui/data/table/edit' },
+  {
+    id: 'tableStructuralRender',
+    entry: 'data/table/structural-render',
+    spec: '@oas-ui/ui/data/table/structural-render',
+  },
   { id: 'tableAdvanced', entry: 'data/table/advanced', spec: '@oas-ui/ui/data/table/advanced' },
   { id: 'tableFormat', entry: 'data/table/format', spec: '@oas-ui/ui/data/table/format' },
   { id: 'tableView', entry: 'data/table/view', spec: '@oas-ui/ui/data/table/view' },
@@ -722,6 +727,17 @@ const BUDGETS = [
     limit: 104 * 1024, // 104 KB（2026-10-28 首次独立定档：实测 89.7 KB 上浮约 16% 取整）
     basis:
       '实测 gzip 89.7 KB / 43 文件（首次独立计量：链含 edit 控制器 + 编辑器族 + select/switch 浮层编辑通道 + i18n；edit 链大于默认 table 链是「编辑器族依赖浮层组件」的合理结果，也正是默认入口不含 edit 的原因）；上浮约 16% 定档 104 KB（89.7×1.16≈104，取整）',
+  },
+  {
+    // table/structural-render：注册型 L3（L1/CDN data 族含、默认 table 不含）。轻量委托能力——
+    // 只引能力注册表不引 table 本体（host 由注册表工厂注入），链 ≈ 注册表 + 委托模块。
+    name: '@oas-ui/ui/data/table/structural-render 链 gzip',
+    kind: 'absolute',
+    componentId: 'tableStructuralRender',
+    get: () => componentMeasures.tableStructuralRender.gzipBytes,
+    limit: 1.2 * 1024,
+    basis:
+      '注册型 L3（结构级渲染四槽委托：headerRow/headerCell/bodyRow/bodyCell），按需引入；首档 2026-11-04：实测 gzip 649 B / 2 文件（能力注册表 + 委托控制器，零生命周期、零组件依赖——table 本体由消费方自带），上浮约 40% 取整定档 1.2 KB',
   },
   {
     name: '@oas-ui/ui/form/form 链 gzip',

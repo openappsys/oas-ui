@@ -442,6 +442,7 @@ import './data/tree/index.js'
 // 能力包必须先于组件注册（同上）
 import './data/table/edit/index.js'
 import './data/table/index.js'
+import './data/table/structural-render/index.js'
 import './data/virtual-list/index.js'
 import './data/json-viewer/index.js'
 import './data/diff-viewer/index.js'

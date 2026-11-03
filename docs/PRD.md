@@ -95,6 +95,27 @@
 
 ---
 
+## 未发布：D1 table 结构级渲染能力（structural-render，注册型 L3）
+
+### 功能定义
+
+为 `oas-table` 增加结构级渲染钩子：列定义 `render` 只能定制单元格**内容**，本能力接管**结构**（td/tr/th 本体）——「内容级 render 管不了结构」的补位通道。形态定案：依赖框架协调器的「组件整体替换」方案不可直译；headless 表格「渲染全权归宿主」为方向；渲染器实例生命周期（init/refresh/destroy）是重 DOM 复用时代的细粒度优化，本库 tr/td 随窗口化重建，以「默认装配后调用 + 每轮现读 property」的粗粒度模型等价覆盖。
+
+### 详细需求
+
+- 注册型 L3 `@oas-ui/ui/data/table/structural-render`：import 即注册（能力注册表 + 委托控制器，零生命周期）；默认 table 链零增量，全量入口与 CDN data 族含；L3 登记表 + 预算档（实测 0.6 KB / 档 1.2 KB）。
+- `table.structuralRenderers = { bodyRow?, bodyCell?, headerRow?, headerCell? }` property 通道：函数不落 attribute、非函数槽静默忽略、赋值即重渲染；多级表头仅叶子格（组列不进 v1）。
+- 契约：钩子在元素默认装配完成后调用（默认内容/行事件/edit·format·range 装饰链在内，结构在外）；tr/td 随窗口化重建、监听随元素销毁；每轮渲染现读 property（运行时替换即时生效，无闭包缓存）；`rowIndex` 与 `data-row-index` 同口径（windowed 绝对行号）；替换模式不得移除 role/tabindex（gridcell 语义）。
+
+### 验收
+
+- 单测 6 条：四槽调用与 ctx 字段 / 包裹结构 / 零 property 零调用 / 运行时替换无闭包缓存 / 非函数槽防御 / windowed rowIndex 口径。
+- Chromium qa：demo 三槽可见效果真实生效（色点包裹/表头提示/行点击徽标 toggle；headerRow 由单测⑦覆盖）+ 未设 hooks 零开销 + console 零告警。
+- 单测补 ⑦-⑪：四槽 parentElement 可用性 / 钩子抛错守卫（不白屏、同错去重、修复后自动恢复）/ paintCell 恢复重跑 bodyCell / merge 列同值判定前置快照（宿主改写实测合并不乱）/ 能力晚注册通知循环隔离。
+- `perf:size` 全 PASS（零泄漏 + L1 包含 + 独立预算）；中英文档节 + demo（数据走 attribute、property 用 whenDefined 守卫防 expando 遮蔽——demo 书写遵循 prop-write-timing 纪律）。
+
+---
+
 ## 未发布：select chip 形态（属性面板编辑模式组件化，E 需求）
 
 ### 功能定义

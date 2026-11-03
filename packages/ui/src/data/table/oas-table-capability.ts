@@ -21,7 +21,15 @@ const lateJoinListeners = new Set<() => void>()
 export function registerTableCapability(name: string, factory: TableCapabilityFactory): void {
   if (capabilityRegistry.has(name)) return
   capabilityRegistry.set(name, factory)
-  for (const cb of [...lateJoinListeners]) cb()
+  // 通知循环逐个隔离：某个宿主的 attach 抛错不得中断其余实例的注入（也不穿出模块顶层——
+  // ESM 对模块求值错误做 memoize，一次 reject 会永久失败且晚加入实例永远收不到后续通知）
+  for (const cb of [...lateJoinListeners]) {
+    try {
+      cb()
+    } catch {
+      // 静默跳过：宿主 attach 错误由其自身渲染路径的告警/白屏暴露，注册表不做级联放大
+    }
+  }
 }
 
 /**

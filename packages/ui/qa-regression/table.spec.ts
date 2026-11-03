@@ -5586,3 +5586,59 @@ test('table 过滤面板触屏：面板内 tap 不关，外部非交互区 tap�
     await ctx.close()
   }
 })
+// 结构级渲染（structural-render L3）demo 真实浏览器回归：注册能力 + property 四槽生效——
+// 状态列色点包裹（bodyCell）、表头提示（headerCell）、点击行徽标（bodyRow，行重建监听随销毁）；
+// 未设 structuralRenderers 的新表格零开销零异常；console 零告警。
+// （「能力未注册」路径由单测挂接点判空 + perf:size 零泄漏断言覆盖——文档站全量入口恒注册。）
+test('table structural-render：demo 三槽真实生效 + 未设 hooks 零开销 + console 零告警', async ({ page }) => {
+  const errors: string[] = []
+  page.on('pageerror', (e) => errors.push(e.message))
+  page.on('console', (m) => {
+    if (m.type() === 'error') errors.push(m.text())
+  })
+  await page.goto('/components/table.html', { waitUntil: 'domcontentloaded' })
+  await page.waitForFunction(() => {
+    const el = document.getElementById('table-structural') as
+      | (HTMLElement & {
+          shadowRoot?: ShadowRoot | null
+        })
+      | null
+    return !!el?.shadowRoot?.querySelector('td[data-col="status"] i')
+  })
+  const t = page.locator('#table-structural')
+
+  // ① bodyCell：状态列每个 td 有色点包裹且默认文字保留
+  const dots = t.locator('td[data-col="status"] i')
+  await expect(dots).toHaveCount(4)
+  await expect(t.locator('td[data-col="status"]').first()).toContainText('ok')
+  // ② headerCell：三个表头叶子格都有提示
+  await expect(t.locator('thead th[data-key] span')).toHaveCount(3)
+  // ③ bodyRow：点击数据行首格出现徽标（tbody 首行是虚拟滚动 spacer，数据行 tr.row 才是目标）
+  const firstDataRow = t.locator('tbody tr.row').first()
+  await firstDataRow.locator('td').first().click()
+  await expect(firstDataRow.locator('td').first().locator('oas-tag.row-badge')).toHaveCount(1)
+  // 再点移除（demo 逻辑 toggle）
+  await firstDataRow.locator('td').first().click()
+  await expect(firstDataRow.locator('td').first().locator('oas-tag.row-badge')).toHaveCount(0)
+
+  // ④ 未设 structuralRenderers 的新表格：渲染照常、无异常（零 property 零开销路径；
+  //    「能力未注册」路径由单测 + perf:size 零泄漏断言覆盖——文档站全量入口恒注册）
+  const inert = await page.evaluate(() => {
+    const el = document.createElement('oas-table') as HTMLElement & {
+      shadowRoot: ShadowRoot
+      columns: unknown
+      data: unknown
+    }
+    el.columns = [{ key: 'a', title: 'A' }]
+    el.data = [{ a: 1 }]
+    document.body.appendChild(el)
+    const rows = el.shadowRoot.querySelectorAll('tbody tr.row').length
+    const cells = el.shadowRoot.querySelectorAll('td[data-col]').length
+    el.remove()
+    return { rows, cells }
+  })
+  expect(inert.rows, '未设 hooks 的表格渲染不受影响').toBe(1)
+  expect(inert.cells, '无结构件残留').toBe(1)
+
+  expect(errors, 'console 零 error').toEqual([])
+})

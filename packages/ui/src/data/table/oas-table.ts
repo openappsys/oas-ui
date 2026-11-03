@@ -185,6 +185,47 @@ export interface TableEditCapability {
   settleEdit(): void
 }
 
+/** 结构级渲染钩子集合（structuralRenderers property 通道）：接管表头行/表头单元格/正文行/
+    正文单元格四个结构槽的「包裹/增强/替换」。钩子在某元素**默认装配完成后**调用——默认内容、
+    事件与能力装饰（edit/format/range 装饰链在内层）已全部就位，宿主可包 wrapper、加 class、
+    挂监听，或清空 el 后全自定义（替换模式自担 a11y：不得移除 role/tabindex）。
+    元素随窗口化滚动重建：监听随元素销毁，跨元素状态宿主自管；每轮渲染现读 property，无闭包缓存。
+    需 import `@oas-ui/ui/data/table/structural-render` 注册能力后生效（默认 table 链零增量） */
+export interface TableStructuralRenderers {
+  /** 正文数据行（tbody tr）：默认装配（勾选/拖拽/展开/单元格/行事件）完成后调用 */
+  bodyRow?: (ctx: TableStructuralBodyRowCtx) => void
+  /** 正文数据单元格（td）：默认内容与装饰链完成后调用（装饰在内、结构在外） */
+  bodyCell?: (ctx: TableStructuralBodyCellCtx) => void
+  /** 表头行（thead tr，扁平/多级表头每一行都调用） */
+  headerRow?: (ctx: TableStructuralHeaderRowCtx) => void
+  /** 表头叶子单元格（th；多级表头仅叶子列，组列不进 v1） */
+  headerCell?: (ctx: TableStructuralHeaderCellCtx) => void
+}
+
+/** 正文行结构槽上下文：rowIndex 与 tr[data-row-index] 同口径（windowed 为绝对数据行号） */
+export interface TableStructuralBodyRowCtx {
+  el: HTMLTableRowElement
+  row: Record<string, unknown>
+  rowIndex: number
+}
+
+export interface TableStructuralBodyCellCtx {
+  el: HTMLTableCellElement
+  row: Record<string, unknown>
+  /** 与 data-row-index 同口径（windowed 为绝对数据行号） */
+  rowIndex: number
+  column: TableColumn
+}
+
+export interface TableStructuralHeaderRowCtx {
+  el: HTMLTableRowElement
+}
+
+export interface TableStructuralHeaderCellCtx {
+  el: HTMLTableCellElement
+  column: TableColumn
+}
+
 export type SortOrder = '' | 'asc' | 'desc'
 
 /** 参与排序的单个列状态（多列排序时按数组顺序决定优先级） */
@@ -227,6 +268,10 @@ export type TableSpanMethod = (
 /** 非法 size 告警：回落 medium 并在 dev 下 console.warn 一次（同值去重，同控件惯例）；
     sm/md/lg 别名由 shared/size 静默映射，不告警 */
 const warnedSizes = new Set<string>()
+
+/** merge 列 td 的原始显示值快照：buildRow 内结构钩子改写 td 内容**之前**登记（WeakMap 不留 DOM 属性），
+    applyRowMerge 的同值分组判定以此为准——宿主把合并列渲染成图标/加包裹后 textContent 已不可信 */
+const MERGE_VALUE = new WeakMap<HTMLTableCellElement, string>()
 function warnInvalidSize(raw: string): void {
   if (warnedSizes.has(raw)) return
   warnedSizes.add(raw)
@@ -1289,6 +1334,10 @@ export class OASTableBase extends OASElement {
   private _expandable = false
   /** 行内编辑能力 controller（经能力注册表注入；无则编辑相关渲染挂接跳过 + dev 告警） */
   private editCap: TableEditCapability | null = null
+  /** structural-render 能力控制器（注册型 L3；未 import 时恒 null，渲染挂接点判空跳过零开销） */
+  private structuralCap: TableStructuralRenderers | null = null
+  /** 结构槽异常守卫的去重台账：同槽同错只 devWarn 一次（key = slot + 错误文本） */
+  private warnedStructuralErrors = new Set<string>()
   /** 按 decorateOrder 排序的单元格装饰链（edit / format / range 等能力） */
   private cellDecorators: TableCellDecorator[] = []
   /** 通用能力选项（Pro 能力通过 setCapabilityOptions 注入规则/配置，触发重渲染） */
@@ -1409,6 +1458,28 @@ export class OASTableBase extends OASElement {
     super.disconnectedCallback()
   }
 
+  /**
+   * 结构槽异常守卫：宿主钩子抛错只跳过该槽（表格渲染继续，不白屏），同槽同错 devWarn 一次；
+   * 宿主修复钩子后下一轮渲染自动恢复（无需清台账也可——新错误文本会再告警一次）。
+   */
+  private runStructuralSlot(slot: string, run: () => void): void {
+    try {
+      run()
+    } catch (err) {
+      const msg = String(err)
+      const key = `${slot}:${msg}`
+      if (!this.warnedStructuralErrors.has(key)) {
+        this.warnedStructuralErrors.add(key)
+        devWarn(`[oas-table] structural ${slot} 钩子抛错已跳过（表格渲染继续）：${msg}`)
+      }
+    }
+  }
+
+  /** 数据行结构槽统一出口：行挂入 tbody 后调用（宿主钩子里 parentElement 可用） */
+  private structuralBodyRow(tr: HTMLTableRowElement, row: Record<string, unknown>, rowIndex: number): void {
+    this.runStructuralSlot('bodyRow', () => this.structuralCap?.bodyRow?.({ el: tr, row, rowIndex }))
+  }
+
   /** 幂等注入：按 name 去重，已注入的能力不重复 addController */
   private attachCapabilities(): void {
     let attached = false
@@ -1418,6 +1489,7 @@ export class OASTableBase extends OASElement {
       const controller = factory(this)
       this.addController(controller)
       if (name === 'edit') this.editCap = controller as unknown as TableEditCapability
+      if (name === 'structural-render') this.structuralCap = controller as unknown as TableStructuralRenderers
       const decorator = controller as unknown as TableCellDecorator
       if (typeof decorator.decorateCell === 'function') {
         this.cellDecorators.push(decorator)
@@ -1511,6 +1583,31 @@ export class OASTableBase extends OASElement {
   }
   set rowClass(fn: TableRowClass | null) {
     this._rowClass = typeof fn === 'function' ? fn : null
+    this.markRenderDirty()
+    this.runUpdateAndNotify()
+  }
+
+  private _structuralRenderers: TableStructuralRenderers | null = null
+
+  /** 结构级渲染钩子（property 通道）：表头行/表头单元格/正文行/正文单元格四槽的结构接管。
+      需 import `@oas-ui/ui/data/table/structural-render` 注册能力后回调才会真正执行——但赋值**随时有效**：
+      setter 存值 + 能力晚注册后自动生效（controller 每轮现读 property）；非函数槽位静默忽略。
+      函数不可序列化：不进 observedAttributes / SSR 快照 */
+  get structuralRenderers(): TableStructuralRenderers | null {
+    return this._structuralRenderers
+  }
+  set structuralRenderers(v: TableStructuralRenderers | null) {
+    if (v === null || typeof v !== 'object') {
+      this._structuralRenderers = null
+    } else {
+      const pick = <T>(fn: unknown): T | undefined => (typeof fn === 'function' ? (fn as T) : undefined)
+      this._structuralRenderers = {
+        bodyRow: pick<(ctx: TableStructuralBodyRowCtx) => void>(v.bodyRow),
+        bodyCell: pick<(ctx: TableStructuralBodyCellCtx) => void>(v.bodyCell),
+        headerRow: pick<(ctx: TableStructuralHeaderRowCtx) => void>(v.headerRow),
+        headerCell: pick<(ctx: TableStructuralHeaderCellCtx) => void>(v.headerCell),
+      }
+    }
     this.markRenderDirty()
     this.runUpdateAndNotify()
   }
@@ -2247,6 +2344,10 @@ export class OASTableBase extends OASElement {
             th.textContent = cell.col.title
           }
           row.appendChild(th)
+          // 表头叶子单元格结构槽（组列不进 v1）：append 后调用——宿主钩子里 parentElement 可用
+          if (cell.isLeaf) {
+            this.runStructuralSlot('headerCell', () => this.structuralCap?.headerCell?.({ el: th, column: cell.col }))
+          }
         }
         if (r === 0 && this._expandable) {
           const th = document.createElement('th')
@@ -2255,6 +2356,8 @@ export class OASTableBase extends OASElement {
           row.appendChild(th)
         }
         head.appendChild(row)
+        // 表头行结构槽：多级表头每一行都调用（append 后）
+        this.runStructuralSlot('headerRow', () => this.structuralCap?.headerRow?.({ el: row }))
       }
     } else if (showHeader) {
       // 扁平表头（单行，向后兼容）；column-virtual 时走窗口序列（占位 colSpan 归并窗口外列）
@@ -2277,6 +2380,8 @@ export class OASTableBase extends OASElement {
         this.fillHeaderCell(th, col)
         if (col.width) th.style.width = col.width
         tr.appendChild(th)
+        // 表头叶子单元格结构槽：append 后调用（宿主钩子里 parentElement 可用）
+        this.runStructuralSlot('headerCell', () => this.structuralCap?.headerCell?.({ el: th, column: col }))
       }
       if (this._expandable) {
         const th = document.createElement('th')
@@ -2284,6 +2389,7 @@ export class OASTableBase extends OASElement {
         tr.appendChild(th)
       }
       head.appendChild(tr)
+      this.runStructuralSlot('headerRow', () => this.structuralCap?.headerRow?.({ el: tr }))
     }
 
     if (this.hasAttr('loading')) {
@@ -2343,9 +2449,17 @@ export class OASTableBase extends OASElement {
             : f.kind === 'group'
               ? this.buildGroupRow(f)
               : this.buildRow(f, i, rowKey, selected, expanded, layout, dataIndex)
-        if (f.kind === 'data') dataIndex++
-        rowInfos.push({ tr, kind: f.kind })
-        body.appendChild(tr)
+        if (f.kind === 'data') {
+          const idx = dataIndex
+          dataIndex++
+          rowInfos.push({ tr, kind: f.kind })
+          body.appendChild(tr)
+          // 数据行结构槽：行挂入 tbody 后调用（宿主钩子里 parentElement 可用）
+          this.structuralBodyRow(tr, f.row, idx)
+        } else {
+          rowInfos.push({ tr, kind: f.kind })
+          body.appendChild(tr)
+        }
       }
       // 合并单元格：对 merge 列后处理连续相同值行（虚拟模式不合并；windowed 切片同样跳过——
       // 跨界 rowspan 会与占位行相互腐蚀，见 WINDOWED_SPAN_HINT）
@@ -2685,6 +2799,13 @@ export class OASTableBase extends OASElement {
       // 能力内部自行判定是否命中；未 import 对应能力时链为空，零开销
       tr.appendChild(td)
       for (const decorator of this.cellDecorators) decorator.decorateCell(td, col, row, index)
+      // 合并列：在结构钩子改写 td 内容**之前**登记原始显示值——applyRowMerge 的同值判定以此为准
+      //（宿主把合并列渲染成图标/包裹文字时 textContent 已不可信，避免静默错合并）
+      if (col.merge) MERGE_VALUE.set(td, this.cellText(col, row))
+      // 结构槽在最外层（装饰在内、结构在外）：默认内容 + 能力装饰就位后交给宿主包裹/增强
+      this.runStructuralSlot('bodyCell', () =>
+        this.structuralCap?.bodyCell?.({ el: td, row, rowIndex: dataIndex, column: col }),
+      )
     }
     if (this._expandable) {
       // 可展开行：行尾展开/收起按钮。rowExpandable 谓词（property 函数通道）返回 false 的行
@@ -2758,7 +2879,7 @@ export class OASTableBase extends OASElement {
           flush()
           continue
         }
-        const value = td.textContent ?? ''
+        const value = MERGE_VALUE.get(td) ?? td.textContent ?? ''
         if (group.length > 0 && group[0]!.value === value) {
           group.push({ td, value })
         } else {
@@ -2827,6 +2948,7 @@ export class OASTableBase extends OASElement {
         const tr = this.buildVirtualRow(f, i, rowKey, selected, expanded, layout, ordinals[i]!)
         tr.style.height = `${this.rowHeightPx()}px`
         body.appendChild(tr)
+        if (f.kind === 'data') this.structuralBodyRow(tr, f.row, ordinals[i]!)
       }
       windowStart = Math.max(win.start, stickyEnd)
     }
@@ -2844,6 +2966,7 @@ export class OASTableBase extends OASElement {
       const tr = this.buildVirtualRow(f, i, rowKey, selected, expanded, layout, ordinals[i]!)
       tr.style.height = `${this.rowHeightPx()}px`
       body.appendChild(tr)
+      if (f.kind === 'data') this.structuralBodyRow(tr, f.row, ordinals[i]!)
     }
 
     const bottomSpacer = document.createElement('tr')
@@ -2953,7 +3076,12 @@ export class OASTableBase extends OASElement {
     // 已装载 display 中的 expand 数)×行高——windowed 只知道当前切片内容行，未装载区域是否
     // 展开不可知（不发明全量展开状态推导）。无 expand 且无协议时与旧公式逐值等价。
     const contentH = visualTotal * ih
-    const rendered: HTMLTableRowElement[] = []
+    const rendered: {
+      tr: HTMLTableRowElement
+      row: Record<string, unknown>
+      abs: number
+      kind: string
+    }[] = []
     let firstY = -1
     let lastFlowEnd = 0
     for (const item of items) {
@@ -2965,7 +3093,7 @@ export class OASTableBase extends OASElement {
           ? this.buildExpandRow(item.f)
           : this.buildRow(item.f, item.abs, rowKey, selected, expanded, layout, item.abs)
       tr.style.height = `${ih}px`
-      rendered.push(tr)
+      rendered.push({ tr, row: item.f.row, abs: item.abs, kind: item.f.kind })
       lastFlowEnd = y + ih
     }
     const topHeight = firstY >= 0 ? firstY : Math.min(winTop, contentH)
@@ -2977,7 +3105,12 @@ export class OASTableBase extends OASElement {
     topTd.style.height = `${topHeight}px`
     topSpacer.appendChild(topTd)
     body.appendChild(topSpacer)
-    for (const tr of rendered) body.appendChild(tr)
+    for (const { tr, row, abs, kind } of rendered) {
+      body.appendChild(tr)
+      // 结构槽只作用于数据行：windowed 切片的行内嵌 expand 内容行同样不进钩子
+      //（expand 行的 abs 记为下一数据行行号，rowIndex/row 会错配——负面清单契约一致）
+      if (kind === 'data') this.structuralBodyRow(tr, row, abs)
+    }
     const bottomSpacer = document.createElement('tr')
     bottomSpacer.className = 'spacer'
     const bottomTd = document.createElement('td')
@@ -3043,11 +3176,15 @@ export class OASTableBase extends OASElement {
   }
 
   /** 重绘单元格为常规展示内容：清空后按 cellNode 挂载（尊重 render/cellTemplate 富内容）。
-      编辑退出/取消后还原单元格用；与 buildRow 的常规渲染路径一致。 */
+      编辑退出/取消后还原单元格用；与 buildRow 的常规渲染路径一致（含结构槽重跑——
+      编辑期间 td 被清空、宿主结构装饰被销毁，恢复默认内容后必须重跑 bodyCell 钩子，
+      否则提交未变更/取消路径下结构装饰持久丢失）。 */
   paintCell(td: HTMLTableCellElement, col: TableColumn, row: Record<string, unknown>): void {
     td.textContent = ''
     const node = this.cellNode(col, row)
     if (node) td.appendChild(node)
+    const rowIndex = Number(td.closest('tr')?.getAttribute('data-row-index') ?? 0)
+    this.runStructuralSlot('bodyCell', () => this.structuralCap?.bodyCell?.({ el: td, row, rowIndex, column: col }))
   }
 
   /** 派发编辑结果事件（提交/取消；detail 由 edit 能力组好）。事件名以字面量书写在此，

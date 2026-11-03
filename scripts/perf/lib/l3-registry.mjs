@@ -38,6 +38,13 @@
 export const L3_REGISTRY = [
   // —— table 家族（独立计量 + 独立预算档） ——
   { id: 'tableEdit', entry: 'data/table/edit', family: 'data', kind: 'capability', measured: true },
+  {
+    id: 'tableStructuralRender',
+    entry: 'data/table/structural-render',
+    family: 'data',
+    kind: 'capability',
+    measured: true,
+  },
   { id: 'tableAdvanced', entry: 'data/table/advanced', family: 'data', kind: 'helper', measured: true },
   { id: 'tableFormat', entry: 'data/table/format', family: 'data', kind: 'helper', measured: true },
   { id: 'tableView', entry: 'data/table/view', family: 'data', kind: 'helper', measured: true },

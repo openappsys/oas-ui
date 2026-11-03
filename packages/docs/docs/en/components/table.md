@@ -533,6 +533,70 @@ import { applyViewState, captureViewState, loadViewState, saveViewState } from '
 import { addRangeSelection, applyRangePaste, copyRange, cutRange, enableRangeSelection, fillRange, setRangeSelection } from '@oas-ui/ui/data/table/range'
 import { disableHistory, enableHistory, redo, undo } from '@oas-ui/ui/data/table/history'
 import { createMasterDetail } from '@oas-ui/ui/data/table/detail'
+import '@oas-ui/ui/data/table/structural-render'
+
+// Structural rendering demo: the registered L3 is activated by the import above;
+// wire the four-slot hooks onto #table-structural
+const STRUCTURAL_STATUS_COLOR = {
+  ok: 'var(--oas-color-success)',
+  pending: 'var(--oas-color-warning)',
+  off: 'var(--oas-color-text-tertiary)',
+}
+onMounted(() => {
+  const t = document.getElementById('table-structural')
+  if (!t) return
+  // Data goes through attributes (pre-upgrade safe); structuralRenderers is a property channel,
+  // guarded by whenDefined against expando shadowing on unupgraded elements (prop-write-timing rule)
+  t.setAttribute(
+    'columns',
+    JSON.stringify([
+      { key: 'name', title: 'Task' },
+      { key: 'owner', title: 'Owner' },
+      { key: 'status', title: 'Status' },
+    ]),
+  )
+  t.setAttribute(
+    'data',
+    JSON.stringify([
+      { name: 'Release prep', owner: 'Alice', status: 'ok' },
+      { name: 'Review queue', owner: 'Bob', status: 'pending' },
+      { name: 'Archived', owner: 'Carol', status: 'off' },
+      { name: 'Regression passed', owner: 'Dave', status: 'ok' },
+    ]),
+  )
+  void customElements.whenDefined('oas-table').then(() => {
+    t.structuralRenderers = {
+      bodyCell({ el: td, column, row }) {
+        if (column.key !== 'status') return
+        const dot = document.createElement('i')
+        dot.style.cssText = `display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;background:${STRUCTURAL_STATUS_COLOR[row.status] ?? 'currentColor'}`
+        td.prepend(dot)
+      },
+      headerCell({ el: th }) {
+        const hint = document.createElement('span')
+        hint.textContent = ' ⇅'
+        hint.style.opacity = '0.45'
+        th.append(hint)
+      },
+      bodyRow({ el: tr }) {
+        tr.addEventListener('click', () => {
+          const cell = tr.querySelector('td')
+          if (!cell) return
+          const old = cell.querySelector('.row-badge')
+          if (old) {
+            old.remove()
+            return
+          }
+          const badge = document.createElement('oas-tag')
+          badge.className = 'row-badge'
+          badge.setAttribute('size', 'small')
+          badge.textContent = '✓'
+          cell.prepend(badge)
+        })
+      },
+    }
+  })
+})
 
 // column-virtual demo: 60 metric columns × 40 rows (client-side injection for large data)
 onMounted(() => {
@@ -1565,6 +1629,90 @@ const source = createWindowedSource(table, {
 Timing contract: `getGeometry(dataStart)` is re-invoked at init and on **every response refill** (if the host changed the expansion layout between request and response, the refill-time snapshot wins); the refill writes `window-start` + `visual-start` + `data` atomically inside the writing window and `total` + `visual-total` after it — one snapshot per response, with echo suppression and no self-fetching. When the request event carries valid `visualStart` / `visualEnd`, the fetch range is the **union** of the `getDataRange` mapping and the event's data range (the event `start` / `end` always carries the keyboard target row and the viewport margin and is never clipped by the mapping or swallowed by coverage; without visual fields or when the protocol is inactive it falls back to the event's `start` / `end`). Once the protocol is active, expansion is fully host-controlled: listen to `oas-expand` and write back `expanded` / `data` / visual attributes (the local toggle only emits the event and does not modify `expanded`); never double-write.
 
 Failure semantics: an invalid mapping (non-finite / end ≤ start / a synchronous `getDataRange` throw) fetches nothing, leaves no in-flight marker, and emits `oas-window-error` once (`detail: { start, end, visualStart, visualEnd, error }`, carrying the visual range and the original data range); invalid geometry (non-finite, start<0, total≤0, start>total, total< data total — the total compared after the same truncation the table uses) writes no wrong visual attributes (stale `visual-start` / `visual-total` are removed and the table falls back to the current model), the data is still refilled, and the same failure event fires — after the fallback the table's requests carry local-scope visual fields only, and the helper stops mapping (fetching by the event's `start` / `end` verbatim instead of pulling wrong rows against the host's global layout). Both failures share the same recovery semantics: a **new-window** event retries; for the **same window** call `source.refresh()` to force a refetch (the table's winReq same-window dedupe and the loaded-coverage check may swallow a same-window retry). An invalid initial configuration throws to the caller (no attributes written, no listener attached). Without `visual`, no visual attributes are ever written — existing behavior is unchanged value for value.
+
+## Structural rendering (structural-render entry, registered L3)
+
+`@oas-ui/ui/data/table/structural-render` provides **structural** cell/row render hooks — the column-level `render` only customizes cell **content**, while this capability takes over the **structure** (the td/tr/th elements themselves): wrap, add classes, attach listeners, or clear and fully customize — the complement to content-level `render` that takes over structure (rationale at the end of the contract). Import on demand to register; the default `table` chain stays untouched:
+
+```ts
+import '@oas-ui/ui/data/table/structural-render'
+// Then attach hooks to any oas-table instance (property channel, functions never become attributes):
+table.structuralRenderers = {
+  bodyCell: ({ el: td, row, column }) => { /* called after default content: wrap / enhance */ },
+  bodyRow: ({ el: tr, row, rowIndex }) => { /* called after the row is fully assembled */ },
+  headerCell: ({ el: th, column }) => { /* header leaf cells; multi-level group cells not in v1 */ },
+  headerRow: ({ el: tr }) => { /* every thead row (flat and multi-level) */ },
+}
+```
+
+**Contract discipline**: hooks run **after the element''s default assembly** (default content, row events, and the edit/format/range decorator chain are all in place 鈥?decorators inside, structure outside; grid semantics/ARIA are finalized at the end of the render pass 鈥?reading `role=gridcell` etc. inside a hook returns empty, which is expected; hooks are invoked after the element is attached to thead/tbody, so `el.parentElement` is available); tr/td are **recreated** as the window scrolls 鈥?listeners die with their element, keep cross-element state yourself; the property is re-read every render pass, so replacing hooks at runtime takes effect next pass (values assigned before the capability is registered activate automatically once it registers 鈥?no need to re-assign); in replace mode (clear `el` and render your own) you must **not remove `role` / `tabindex`** (gridcell semantics); `rowIndex` follows the `data-row-index` convention (absolute data row number under windowed).
+
+**Coverage boundary (negative list)**: `bodyRow` applies to data rows only 鈥?group section headers (group-by), expand content rows, summary, empty/loading/spacer rows are not called; `bodyCell` applies to data-column td only 鈥?the check column, drag-handle column, trailing expand-toggle column, column-virtual placeholder cells, and cells covered by span-method are not called (serial number / actions / tree-toggle first column / merged cells are called); `headerCell` covers leaf columns only (multi-level group cells, drag/check-all/expand th are not called); `headerRow` covers every thead row.
+
+**Interaction notes**: (1) Merged columns 鈥?bodyCell runs before merge swallows covered cells (decorations on swallowed tds are discarded), and same-value grouping is judged by the original display value captured before hooks rewrite the td (host decorations do not affect grouping); (2) editing 鈥?entering edit clears the td; commit-unchanged / cancel restore via paintCell, which re-runs bodyCell afterwards (structural decorations come back automatically); (3) selection patch 鈥?patchSelection only updates `data-selected` in place and does not re-run hooks (reading state from `el` is fresh; state baked into host-built DOM is not refreshed by the patch path); (4) header sort delegation 鈥?thead clicks go straight to the built-in sort, so clickable controls injected by hooks co-fire with it; build your own sort UI with `stopPropagation`; (5) exception policy 鈥?a throwing hook is caught by a guard, devWarns once (deduped per slot+message), and is skipped; rendering continues (no white screen) and recovers automatically on the next pass once fixed. Shape rationale: framework-reconciler "replace the whole component" approaches don''t translate to imperative DOM; the headless-table "host owns rendering" direction is the trend; renderer instance lifecycles are a fine-grained optimization from the heavy-DOM-reuse era 鈥?this library''s tr/td are rebuilt with windowing anyway, and the coarse "call after default assembly + re-read each pass" model covers it equivalently.
+<DemoBlock title="Structural rendering: status dot + header hint + row-click badge (import structural-render first to register the capability)">
+  <oas-table id="table-structural" height="220" row-height="32" bordered></oas-table>
+</DemoBlock>
+
+```ts
+// Registered L3: a static import activates it (top-level in your page script)
+import '@oas-ui/ui/data/table/structural-render'
+
+const STATUS_COLOR = { ok: 'var(--oas-color-success)', pending: 'var(--oas-color-warning)', off: 'var(--oas-color-text-tertiary)' }
+
+// Actual wiring lives in the page's <script setup> onMounted (excerpted here). Data goes through
+// attributes (pre-upgrade safe); structuralRenderers is a property channel — guard with
+// whenDefined against expando shadowing on unupgraded elements:
+const t = document.getElementById('table-structural')
+t.setAttribute('columns', JSON.stringify([
+  { key: 'name', title: 'Task' },
+  { key: 'owner', title: 'Owner' },
+  { key: 'status', title: 'Status' },
+]))
+t.setAttribute('data', JSON.stringify([
+  { name: 'Release prep', owner: 'Alice', status: 'ok' },
+  { name: 'Review queue', owner: 'Bob', status: 'pending' },
+  { name: 'Archived', owner: 'Carol', status: 'off' },
+  { name: 'Regression passed', owner: 'Dave', status: 'ok' },
+]))
+customElements.whenDefined('oas-table').then(() => {
+  t.structuralRenderers = {
+  // Structural: wrap the status td with "dot + text" (a td-level wrap content-level render cannot do)
+  bodyCell({ el: td, column, row }) {
+    if (column.key !== 'status') return
+    const dot = document.createElement('i')
+    dot.style.cssText = `display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;background:${STATUS_COLOR[row.status] ?? 'currentColor'}`
+    td.prepend(dot)
+  },
+  // Header leaf cells get a sort hint
+  headerCell({ el: th }) {
+    const hint = document.createElement('span')
+    hint.textContent = ' ⇅'
+    hint.style.opacity = '0.45'
+    th.append(hint)
+  },
+  // Row level: click the first cell to stamp a badge (listener example; the listener dies with the old tr on rebuild)
+  bodyRow({ el: tr }) {
+    tr.addEventListener('click', () => {
+      const cell = tr.querySelector('td')
+      if (!cell) return
+      const old = cell.querySelector('.row-badge')
+      if (old) {
+        old.remove()
+        return
+      }
+      const badge = document.createElement('oas-tag')
+      badge.className = 'row-badge'
+      badge.setAttribute('size', 'small')
+      badge.textContent = '✓'
+      cell.prepend(badge)
+    })
+  },
+  }
+})
+```
+
+> Listeners dying with the rebuilt tr is part of the contract (don't expect listeners to survive virtual scrolling); cross-row / cross-render state belongs in table events (`oas-row-click` etc.) or your framework layer.
 
 ## Pro helpers (on-demand)
 

@@ -533,6 +533,69 @@ import { applyViewState, captureViewState, loadViewState, saveViewState } from '
 import { addRangeSelection, applyRangePaste, copyRange, cutRange, enableRangeSelection, fillRange, setRangeSelection } from '@oas-ui/ui/data/table/range'
 import { disableHistory, enableHistory, redo, undo } from '@oas-ui/ui/data/table/history'
 import { createMasterDetail } from '@oas-ui/ui/data/table/detail'
+import '@oas-ui/ui/data/table/structural-render'
+
+// 结构级渲染 demo：注册型 L3 已在上方 import 激活；给 #table-structural 挂四槽 hooks
+const STRUCTURAL_STATUS_COLOR = {
+  ok: 'var(--oas-color-success)',
+  pending: 'var(--oas-color-warning)',
+  off: 'var(--oas-color-text-tertiary)',
+}
+onMounted(() => {
+  const t = document.getElementById('table-structural')
+  if (!t) return
+  // 数据走 attribute（pre-upgrade 安全）；structuralRenderers 是 property 通道，
+  // whenDefined 守卫防「未升级元素 expando 遮蔽」（prop-write-timing 纪律）
+  t.setAttribute(
+    'columns',
+    JSON.stringify([
+      { key: 'name', title: '任务' },
+      { key: 'owner', title: '负责人' },
+      { key: 'status', title: '状态' },
+    ]),
+  )
+  t.setAttribute(
+    'data',
+    JSON.stringify([
+      { name: '发布准备', owner: '张三', status: 'ok' },
+      { name: '评审排队', owner: '李四', status: 'pending' },
+      { name: '已归档', owner: '王五', status: 'off' },
+      { name: '回归通过', owner: '赵六', status: 'ok' },
+    ]),
+  )
+  void customElements.whenDefined('oas-table').then(() => {
+    t.structuralRenderers = {
+      bodyCell({ el: td, column, row }) {
+        if (column.key !== 'status') return
+        const dot = document.createElement('i')
+        dot.style.cssText = `display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;background:${STRUCTURAL_STATUS_COLOR[row.status] ?? 'currentColor'}`
+        td.prepend(dot)
+      },
+      headerCell({ el: th }) {
+        const hint = document.createElement('span')
+        hint.textContent = ' ⇅'
+        hint.style.opacity = '0.45'
+        th.append(hint)
+      },
+      bodyRow({ el: tr }) {
+        tr.addEventListener('click', () => {
+          const cell = tr.querySelector('td')
+          if (!cell) return
+          const old = cell.querySelector('.row-badge')
+          if (old) {
+            old.remove()
+            return
+          }
+          const badge = document.createElement('oas-tag')
+          badge.className = 'row-badge'
+          badge.setAttribute('size', 'small')
+          badge.textContent = '✓'
+          cell.prepend(badge)
+        })
+      },
+    }
+  })
+})
 
 // column-virtual demo：60 列指标 × 40 行（数据量大走客户端注入，SSR 输出空表壳）
 onMounted(() => {
@@ -1554,6 +1617,90 @@ const source = createWindowedSource(table, {
 时序契约：初始化与**每次响应回填**都重新调用 `getGeometry(dataStart)`（请求与响应之间宿主改变展开布局时用回填时最新快照），回填在 `writing` 内原子写 `window-start` + `visual-start` + `data`、其外写 `total` + `visual-total`——与本次响应同一快照，回声抑制不自拉取。请求事件带有效 `visualStart` / `visualEnd` 时按 `getDataRange` 映射，映射结果与事件数据区间取**并集**（事件 `start` / `end` 永远携带键盘目标行与视口缓冲 margin，不被映射裁剪或覆盖吞掉；无视觉字段或协议未生效时回落事件 `start` / `end`）。协议生效后展开由宿主完全控制：监听 `oas-expand` 回写 `expanded` / `data` / 视觉属性（本地点击展开钮只派发事件，不修改 `expanded`），禁止双写。
 
 失败语义：映射非法（非有限 / end ≤ start / `getDataRange` 同步抛错）不 fetch、不残留在途标记、派发一次 `oas-window-error`（detail `{ start, end, visualStart, visualEnd, error }`，含视觉区间与原始数据区间）；geometry 非法（非有限、start<0、total≤0、start>total、total<数据 total，total 按表格同口径截断后比较）不写错误视觉属性（陈旧 `visual-start` / `visual-total` 移除、表格整体回落当前模型），数据照常回填并走同一失败事件——降级后表格请求携带的是本地口径视觉字段，助手不再映射（按事件 `start` / `end` 原样取数，不按宿主全局布局拉错行）。两种失败的恢复语义相同：**新窗口**事件可重试；**同窗口**推荐调用 `source.refresh()` 强制重拉（表格 winReq 同窗口去重与已装载覆盖判定可能吞掉同窗口重试）；初始同步配置错误直接抛给调用方（不写任何属性、不挂监听）。不传 `visual` 不写任何视觉属性，既有行为逐值不变。
+
+## 结构级渲染（structural-render 入口，注册型 L3）
+
+`@oas-ui/ui/data/table/structural-render` 提供**结构级**单元格/行渲染钩子——列定义的 `render` 只能定制单元格**内容**，本能力接管**结构**（td/tr/th 本体）：包 wrapper、加 class、挂监听、清空后全自定义——「内容级 render 管不了结构」的补位通道（形态取舍见契约段末）。按需 import 注册，默认 table 链零增量：
+
+```ts
+import '@oas-ui/ui/data/table/structural-render'
+// 之后给任意 oas-table 实例挂 hooks（property 通道，函数不落 attribute）：
+table.structuralRenderers = {
+  bodyCell: ({ el: td, row, column }) => { /* 默认内容渲染后调用：包裹/增强 */ },
+  bodyRow: ({ el: tr, row, rowIndex }) => { /* 行装配完成后调用 */ },
+  headerCell: ({ el: th, column }) => { /* 表头叶子单元格；多级表头组列不进 v1 */ },
+  headerRow: ({ el: tr }) => { /* thead 每一行（扁平/多级） */ },
+}
+```
+
+**契约纪律**：钩子在元素**默认装配完成后**调用（默认内容、行事件、edit/format/range 装饰链全部就位，装饰在内、结构在外；grid 语义/ARIA 收尾在整轮渲染末统一补齐——钩子里读 `role=gridcell` 等属性拿到空属正常，统一在 thead/tbody 挂载后调用，`el.parentElement` 可用）；tr/td 随窗口化滚动**重建**，监听随元素销毁——跨元素状态宿主自管；每轮渲染现读 property，运行时替换 hooks 下一轮即生效（能力晚注册前已赋的值自动生效，无需重赋）；替换模式（清空 `el` 自渲染）**不得移除 `role` / `tabindex`**（gridcell 网格语义）；`rowIndex` 与 `data-row-index` 同口径（windowed 为绝对数据行号）。
+
+**覆盖边界（负面清单）**：`bodyRow` 只作用于数据行——分节头（group-by）、展开内容、合计、空态/loading/占位行不调；`bodyCell` 只作用于数据列 td——勾选列、拖拽列、行尾展开钮列、列虚拟化占位格、被 span-method 声明覆盖的格不调（序号列/操作列/树形 toggle 首列/合并格照调）；`headerCell` 只叶子列（多级组列、拖拽/全选/展开 th 不调）；`headerRow` 为 thead 每一行。
+
+**交互注意**：① 合并列——bodyCell 在合并删格前调用，被吞 td 上的包裹白做；同值合并判定用钩子改写前的原始显示值（宿主把合并列渲染成图标/加包裹不影响合并分组）；② 编辑——进编辑清空 td、提交未变更/取消走 paintCell 局部恢复，恢复默认内容后 bodyCell 自动重跑（结构装饰自动回来）；③ 选择补丁——patchSelection 只就地更新 `data-selected` 不重跑钩子（从 `el` 读状态是最新的；把选中态烘进自建 DOM 的状态补丁路径不刷新）；④ 表头排序委托——thead 点击直通内置排序，钩子注入可点控件会与内置排序同发，自建排序 UI 需自行 `stopPropagation`；⑤ 异常策略——钩子抛错被守卫捕获、devWarn 一次（同槽同错去重）并跳过该槽，表格渲染继续不白屏，修复后下一轮自动恢复。形态取舍：依赖框架协调器的「组件整体替换」方案不可直译为命令式 DOM；headless 表格「渲染全权归宿主」是趋势方向；渲染器实例生命周期是重 DOM 复用时代的细粒度优化——本库 tr/td 随窗口重建，「默认装配后调用 + 每轮现读」的粗粒度模型等价覆盖。
+
+<DemoBlock title="结构级渲染：状态列包色点 + 表头追加提示 + 行点击徽标（先 import structural-render 注册能力）">
+  <oas-table id="table-structural" height="220" row-height="32" bordered></oas-table>
+</DemoBlock>
+
+```ts
+// 注册型 L3：静态 import 即激活（页面脚本顶层；按需项目显式 import 同一子路径）
+import '@oas-ui/ui/data/table/structural-render'
+
+const STATUS_COLOR = { ok: 'var(--oas-color-success)', pending: 'var(--oas-color-warning)', off: 'var(--oas-color-text-tertiary)' }
+
+// 实际接线在页面 <script setup> 的 onMounted 里（此处为节选）。数据走 attribute（pre-upgrade 安全）；
+// structuralRenderers 是 property 通道，用 whenDefined 守卫防「未升级元素 expando 遮蔽」：
+const t = document.getElementById('table-structural')
+t.setAttribute('columns', JSON.stringify([
+  { key: 'name', title: '任务' },
+  { key: 'owner', title: '负责人' },
+  { key: 'status', title: '状态' },
+]))
+t.setAttribute('data', JSON.stringify([
+  { name: '发布准备', owner: '张三', status: 'ok' },
+  { name: '评审排队', owner: '李四', status: 'pending' },
+  { name: '已归档', owner: '王五', status: 'off' },
+  { name: '回归通过', owner: '赵六', status: 'ok' },
+]))
+customElements.whenDefined('oas-table').then(() => {
+  t.structuralRenderers = {
+  // 结构级：状态列 td 包「色点 + 文字」（内容级 render 做不到的 td 本体包裹）
+  bodyCell({ el: td, column, row }) {
+    if (column.key !== 'status') return
+    const dot = document.createElement('i')
+    dot.style.cssText = `display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;background:${STATUS_COLOR[row.status] ?? 'currentColor'}`
+    td.prepend(dot)
+  },
+  // 表头叶子单元格追加排序提示
+  headerCell({ el: th }) {
+    const hint = document.createElement('span')
+    hint.textContent = ' ⇅'
+    hint.style.opacity = '0.45'
+    th.append(hint)
+  },
+  // 行级：点击行首格打徽标（结构挂监听示例；行重建后监听随旧 tr 销毁）
+  bodyRow({ el: tr }) {
+    tr.addEventListener('click', () => {
+      const cell = tr.querySelector('td')
+      if (!cell) return
+      const old = cell.querySelector('.row-badge')
+      if (old) {
+        old.remove()
+        return
+      }
+      const badge = document.createElement('oas-tag')
+      badge.className = 'row-badge'
+      badge.setAttribute('size', 'small')
+      badge.textContent = '✓'
+      cell.prepend(badge)
+    })
+  },
+  }
+})
+```
+
+> 行重建监听随旧 tr 销毁是契约的一部分（虚拟滚动下不要指望监听常驻）；跨行/跨渲染状态请挂在表格事件（`oas-row-click` 等）或宿主框架层。
 
 ## Pro helper（按需引入）
 
