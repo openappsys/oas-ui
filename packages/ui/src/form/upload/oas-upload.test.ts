@@ -2139,3 +2139,125 @@ describe('OASUpload 表单集成（oas-form 控件）', () => {
     }
   })
 })
+
+// ---------- oas-form.reset()：表单基线能还原 upload 的 File 体（元数据 JSON 无法承载文件） ----------
+describe('OASUpload × oas-form.reset()（基线恢复）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  function mountForm(inner: string): OASForm {
+    const form = new OASForm()
+    form.innerHTML = inner
+    document.body.appendChild(form)
+    return form
+  }
+
+  function uploadOf(form: OASForm): OASUpload {
+    return form.querySelector<OASUpload>('oas-upload')!
+  }
+
+  it('property 预置的 File 列表在 reset 后按原 File 体恢复（不被 writer 清空）', () => {
+    const form = mountForm('<oas-upload name="attachments" multiple></oas-upload>')
+    const upload = uploadOf(form)
+    const preset = makeFile('preset.txt', 'text/plain', 2048)
+    upload.files = [preset]
+    // 用户交互追加（置脏）后 reset：基线仍是预置列表
+    pick(upload, [makeFile('extra.txt')])
+    expect(upload.files.map((f) => f.name)).toEqual(['preset.txt', 'extra.txt'])
+
+    let events = 0
+    form.addEventListener('oas-change', () => events++)
+    form.addEventListener('oas-values-change', () => events++)
+
+    form.reset()
+    const files = upload.files
+    expect(files.length, 'reset 恢复预置的 1 个文件').toBe(1)
+    expect(files[0], '恢复的是原 File 引用（文件体/可提交性不能丢）').toBe(preset)
+    expect((files[0] as File).name).toBe('preset.txt')
+    expect((files[0] as File).size).toBe(2048)
+    expect(form.getValues(), '表单值同口径回到基线元数据').toEqual({
+      attachments: JSON.stringify([{ name: 'preset.txt', size: 2048, type: 'text/plain' }]),
+    })
+    expect(events, 'reset 不派发 change / values-change').toBe(0)
+  })
+
+  it('无预置文件时 reset 保持空列表（空态不抛错）', () => {
+    const form = mountForm('<oas-upload name="attachments"></oas-upload>')
+    const upload = uploadOf(form)
+    pick(upload, [makeFile('a.txt')])
+    form.reset()
+    expect(upload.files).toEqual([])
+    expect(form.getValues()).toEqual({ attachments: '' })
+  })
+
+  it('连续 reset 幂等：列表与 File 引用都不漂移', () => {
+    const form = mountForm('<oas-upload name="attachments" multiple></oas-upload>')
+    const upload = uploadOf(form)
+    const preset = makeFile('preset.txt')
+    upload.files = [preset]
+    pick(upload, [makeFile('extra.txt')])
+
+    form.reset()
+    const first = upload.files
+    form.reset()
+    const second = upload.files
+    expect(second.map((f) => f.name)).toEqual(first.map((f) => f.name))
+    expect(second[0]).toBe(preset)
+    expect(upload.files.length).toBe(1)
+  })
+
+  it('initial-values 回显记录（无 File 体）reset 后形态不变（仍是 {name,url,size} 记录）', () => {
+    const form = mountForm('<oas-upload name="attachments" multiple></oas-upload>')
+    form.initialValues = {
+      attachments: [{ name: 'logo.png', url: 'https://cdn.example.com/logo.png', size: 120 }],
+    }
+    const upload = uploadOf(form)
+    pick(upload, [makeFile('a.txt')])
+    form.reset()
+    expect(upload.files).toEqual([{ name: 'logo.png', url: 'https://cdn.example.com/logo.png', size: 120 }])
+    expect(upload.files[0]).not.toBeInstanceOf(File)
+  })
+
+  it('property 预置的回显记录（无 File 体）reset 后同样不变形（委托通道不重建对象）', () => {
+    const form = mountForm('<oas-upload name="attachments" multiple></oas-upload>')
+    const upload = uploadOf(form)
+    upload.files = [{ name: 'logo.png', url: 'https://cdn.example.com/logo.png', size: 120 }]
+    pick(upload, [makeFile('a.txt')])
+    form.reset()
+    expect(upload.files).toEqual([{ name: 'logo.png', url: 'https://cdn.example.com/logo.png', size: 120 }])
+  })
+
+  it('initial-values 显式基线优先：交互后 reset 回 initial-values 而非字段自身基线', () => {
+    const form = mountForm('<oas-upload name="attachments" multiple></oas-upload>')
+    const upload = uploadOf(form)
+    upload.files = [makeFile('preset.txt')]
+    pick(upload, [makeFile('extra.txt')])
+    // 置脏后再下发 initial-values：表单级基线（回显记录）是 reset 的权威来源
+    form.initialValues = {
+      attachments: [{ name: 'logo.png', url: 'https://cdn.example.com/logo.png' }],
+    }
+    form.reset()
+    const expected = [{ name: 'logo.png', url: 'https://cdn.example.com/logo.png', size: undefined }]
+    expect(upload.files).toEqual(expected)
+    pick(upload, [makeFile('later.txt')])
+    form.reset()
+    expect(upload.files, '连续 reset 仍回显记录基线').toEqual(expected)
+  })
+
+  it('upload 不在 form 内：form.reset() 不触碰其文件列表', () => {
+    const upload = document.createElement('oas-upload') as OASUpload
+    upload.setAttribute('name', 'attachments')
+    document.body.appendChild(upload)
+    const preset = makeFile('outside.txt')
+    upload.files = [preset]
+
+    const form = mountForm('<oas-input name="name"></oas-input>')
+    form.reset()
+    expect(upload.files.length).toBe(1)
+    expect(upload.files[0]).toBe(preset)
+  })
+})

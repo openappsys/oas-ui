@@ -29,6 +29,19 @@ const FORM_CONTROL_CHANNELS = new Map<string, ValueChannel>()
  */
 const NO_WRITEBACK_CONTROLS = new Set(['oas-upload'])
 
+/**
+ * reset 时改走字段自身 form-associated 基线（`formResetCallback`）的控件。
+ *
+ * upload 的列表条目是 File 对象，文件体无法序列化进表单值 JSON（读取器只给
+ * `[{name,size,type}]` 元数据）；reset 经 writer 通道回写时，「无 url 的元数据记录」
+ * 会被 writer 过滤丢弃——挂载后用 `files` property 预置的列表因此被清空，而不是
+ * 恢复基线（文件体在表单值里本就没有）。字段自身已维护 reset 基线（`initialFiles`：初始渲染/受控写入
+ * 跟随刷新、用户交互置脏后冻结），委托即保留原始 File 引用，且与原生 reset 同语义。
+ * 表单有显式 initial-values 覆盖时不走委托：表单级基线优先，且回显记录
+ * （{name,url}）本就可 JSON 还原——两种形态各自恢复到正确形态。
+ */
+const RESET_VIA_FORM_CALLBACK = new Set(['oas-upload'])
+
 /** 值安全归一：`[`/`{` 前缀（数组/对象 JSON）重新 stringify，保持合法 JSON */
 function normalizeValue(raw: string): string {
   if (raw === '') return ''
@@ -1008,12 +1021,36 @@ export class OASForm extends OASElement {
     // 同提交：作废在途字段级异步校验（clear 覆盖全部，含移除/改名字段），避免其延迟结果在重置后再写回（幽灵错误态）
     this.fieldValidateSeq.clear()
     for (const { name, element } of fields) {
-      this.writeValue(element, this._initialSnapshot[name] ?? '')
+      this.resetField(name, element)
     }
     this.errors = Object.create(null)
     for (const { element } of fields) {
       element.removeAttribute('aria-invalid')
       this.syncErrorText(element, null)
     }
+  }
+
+  /**
+   * 单字段恢复基线：
+   * - 对象体控件（upload）且表单未显式给 initial-values 时，委托字段自身 form-associated
+   *   基线（保留 File 引用，见 RESET_VIA_FORM_CALLBACK 注释）；
+   * - 其余情况走 writer 通道回写基线字符串（字符串/JSON 均可还原）。
+   */
+  private resetField(name: string, element: Element): void {
+    if (RESET_VIA_FORM_CALLBACK.has(element.tagName.toLowerCase()) && !this.hasExplicitInitial(name)) {
+      const field = element as { formResetCallback?: () => void }
+      if (typeof field.formResetCallback === 'function') {
+        field.formResetCallback()
+        return
+      }
+    }
+    this.writeValue(element, this._initialSnapshot[name] ?? '')
+  }
+
+  /** 字段是否有显式 initial-values 覆盖（表单级基线优先于字段自身基线；保留键路径按无覆盖处理） */
+  private hasExplicitInitial(name: string): boolean {
+    const path = parseNamePath(name)
+    if (path === null) return false
+    return readPath(this._initialValues, path) !== undefined
   }
 }
