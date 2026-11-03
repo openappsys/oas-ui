@@ -67,7 +67,7 @@ describe('OASSelect', () => {
     const d = el.shadowRoot!.querySelector<HTMLElement>('.dropdown')!
     expect(typeof d.style.top).toBe('string')
     expect(typeof d.style.left).toBe('string')
-    expect(d.style.width).not.toBe('')
+    expect(d.style.minWidth).not.toBe('')
   })
 
   it('选择选项后更新 value 并关闭下拉，派发 oas-change', () => {

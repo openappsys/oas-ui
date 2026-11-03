@@ -1258,7 +1258,9 @@ export class OASSelect extends OASFormElement {
     const anchorRect = this.triggerEl.getBoundingClientRect()
     // 先按 trigger 宽度撑开面板，再测量/定位：dropdown 是 auto 宽度（固有宽度=选项文字宽，远小于
     // trigger），若在撑开前测量，对齐会按塌缩宽度算 left → 首次展开偏右；再次展开因内联宽度仍在才对齐。
-    this.dropdown.style.width = `${anchorRect.width}px`
+    // min-width 而非 width：面板 ≥ trigger 宽，同时随最长选项增宽——chip 变体 trigger 按内容收缩
+    // （远窄于选项文案），width=trigger 宽会让选项文字换行（pm 详情抽屉实测）
+    this.dropdown.style.minWidth = `${anchorRect.width}px`
     const panelRect = this.dropdown.getBoundingClientRect()
     const raw = this.getAttr('placement', 'auto')
     const forced = raw === 'top' || raw === 'bottom'
