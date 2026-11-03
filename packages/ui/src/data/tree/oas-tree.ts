@@ -684,6 +684,11 @@ export class OASTree extends OASElement {
       const detail = e.detail
       if (!detail || !Number.isFinite(detail.scrollTop)) return
       this.lastScrollTop = detail.scrollTop
+      // 滚动 rAF 里的窗口重建会销毁焦点行 DOM（vlist 不感知宿主行焦点）——焦点在树内且
+      // roving 行仍在窗口内时补回，否则键盘链路静默断链（慢机上聚焦 buffer 行触发的居中
+      // 滚动先于下一次按键完成重建，End 打到 body 实抓）。preventScroll 防补焦点再触发
+      // 居中滚动 → 重建回环。
+      this.restoreRovingFocus()
       this.requestWindowIfNeeded('scroll')
     }) as EventListener)
     // 根容器拖放：拖到空白处视为移入根（dropKey 为空字符串、position 'inner'）
@@ -2200,6 +2205,42 @@ export class OASTree extends OASElement {
     const active = this.shadow.activeElement ?? document.activeElement
     if (!active) return false
     return active instanceof Element && !!active.closest('[part="row"]')
+  }
+
+  /** 当前 DOM 焦点（穿嵌套 shadow 走到最内层实焦点；vlist 内行焦点不宿主重定向），无焦点回落 body */
+  private deepActiveElement(): Element | null {
+    // happy-dom 无焦点节点时读 shadow.activeElement 会抛，与 vlist.shadowActiveElement 同口径兜底
+    let active: Element | null
+    try {
+      active = this.shadow.activeElement ?? document.activeElement
+    } catch {
+      return null
+    }
+    while (active instanceof HTMLElement && active.shadowRoot?.activeElement) {
+      active = active.shadowRoot.activeElement
+    }
+    return active
+  }
+
+  /**
+   * oas-scroll（滚动 rAF 窗口重建）后补回 roving 行的 DOM 焦点。
+   *
+   * vlist 的 renderWindow 重建会移除窗口内旧行——若被移除的行正持有焦点，焦点掉 body，
+   * 键盘导航静默断链（快机上重建排在下一次按键之后被 renderSig 跳过，慢机上先到，故只在
+   * 慢机暴露）。补回条件：焦点在树内（focusOut 微任务尚未判定掉，掉焦正是本轮重建所致）
+   * 且 roving 行仍在重建后的窗口内（滚出窗口的内容无从落焦，不强拉）。
+   * 重命名编辑中走 syncRenameFocus 归还行内输入框（编辑态优先于行焦点）。
+   */
+  private restoreRovingFocus(): void {
+    if (!this.focusInside || this.rovingKey === null) return
+    const active = this.deepActiveElement()
+    if (active instanceof Element && active.isConnected && active.closest('[part="row"]')) return
+    if (this.rename && this.rename.key === this.rovingKey) {
+      this.renameFocusPending = true
+      this.syncRenameFocus()
+      return
+    }
+    this.rowElByKey(this.rovingKey)?.focus({ preventScroll: true })
   }
 
   private rowFromEvent(e: Event): HTMLElement | null {

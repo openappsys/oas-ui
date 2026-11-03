@@ -216,6 +216,34 @@ describe('OASTree 客户端虚拟滚动（virtual / item-height）', () => {
     expect(virtualRowByKey(el, 'n0')!.tabIndex).toBe(0)
   })
 
+  it('滚动重建窗口不吞行焦点：焦点行仍在窗口内时 DOM 焦点补回（慢机 End 键断链根因回归）', async () => {
+    // 真实缺陷序列（e2e tree-virtual End 跨窗口在慢机 CI 连续红的机制根因）：
+    // 聚焦视口上方 buffer 行 → 浏览器 focus 居中滚动 → rAF 里窗口变化重建行 DOM →
+    // 焦点行被销毁、焦点掉 body → 后续键盘事件打不到行处理器，键盘链路静默断链。
+    // 不变量：oas-scroll 重建后，若焦点在树内且 roving 行仍在窗口内，DOM 焦点必须回到该行。
+    const el = mount({ virtual: '', height: '100', data: JSON.stringify(mkRoots(500)) })
+    const vp = viewportOf(el)
+    vp.scrollTop = 1600
+    vp.dispatchEvent(new Event('scroll'))
+    await flushRaf()
+    // 窗口 [n46..n57]：n50 起可见，n46 是视口上方的 buffer 行（聚焦它会触发浏览器居中滚动）
+    const bufferRow = virtualRowByKey(el, 'n46')!
+    bufferRow.focus()
+    expect(vlistOf(el).shadowRoot!.activeElement, '前置：焦点已落在行上').toBe(bufferRow)
+    // 聚焦触发的滚动（等价浏览器居中滚动）：窗口 [n46..n57] → [n40..n51]，n46 仍在窗口内
+    vp.scrollTop = 1408
+    vp.dispatchEvent(new Event('scroll'))
+    await flushRaf()
+    expect(itemKeys(el)[0], '窗口已随滚动重建').toBe('n40')
+    expect(itemKeys(el), 'n46 行仍在重建后的窗口内').toContain('n46')
+    const restored = virtualRowByKey(el, 'n46')!
+    expect(vlistOf(el).shadowRoot!.activeElement, '重建后 DOM 焦点补回同 key 行（不再掉 body）').toBe(restored)
+    // 焦点补回后键盘链路可用：End 跨窗口直达末行
+    pressKey(restored, 'End')
+    await flushRaf()
+    expect(virtualRowByKey(el, 'n499')!.tabIndex, 'End 仍可达末行（roving 焦点）').toBe(0)
+  })
+
   it('虚拟模式 oas-expand 事件语义不变（detail 含 key/expanded/node）', () => {
     const events: Array<{ key: string; expanded: boolean; label: string }> = []
     const el = new OASTree()
