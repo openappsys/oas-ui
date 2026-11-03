@@ -3,6 +3,7 @@ import { lookupIcon } from '@oas-ui/icons/runtime'
 import { getViewport } from '../../overlay/floating/index.js'
 import { isRtl } from '../../shared/direction.js'
 import { safeUrl } from '../../shared/safe-url.js'
+import { addOutsideDismiss, removeOutsideDismiss } from '../../shared/outside-dismiss.js'
 
 export interface BreadcrumbItem {
   label: string
@@ -405,7 +406,7 @@ export class OASBreadcrumb extends OASElement {
   /** 缓存节点引用 + 绑定事件（render 与水合路径共用；面包屑项事件在 update 重建时绑定） */
   private bind(): void {
     // 组件断开时清理下拉的 document 点击监听（连接期间打开/关闭反复 add/remove，此处兜底移除）
-    this.onCleanup(() => document.removeEventListener('click', this.handleOutsideClick, true))
+    this.onCleanup(() => removeOutsideDismiss(this.handleOutsideClick))
     // 键盘方向键导航：焦点在可聚焦项上时 ArrowLeft/Right/Up/Down/Home/End 循环移动
     this.shadow.querySelector('nav')?.addEventListener('keydown', this.handleNavKeydown)
   }
@@ -987,9 +988,9 @@ export class OASBreadcrumb extends OASElement {
       if (open) this.placePanel(c.panel, c.btn)
     }
     if (this.openDropdowns.size > 0) {
-      document.addEventListener('click', this.handleOutsideClick, true)
+      addOutsideDismiss(this.handleOutsideClick)
     } else {
-      document.removeEventListener('click', this.handleOutsideClick, true)
+      removeOutsideDismiss(this.handleOutsideClick)
     }
   }
 

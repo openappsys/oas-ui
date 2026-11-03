@@ -52,6 +52,27 @@ describe('overlay 管理器', () => {
     expect(outside).toBe(0)
   })
 
+  it('触屏同一次 tap 双通道到达：pointerup 后紧跟合成 click 只回调一次', async () => {
+    let outside = 0
+    const el = document.createElement('div')
+    createOverlay(el, { onOutside: () => outside++ })
+    await Promise.resolve()
+    document.body.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, composed: true, pointerType: 'touch' }))
+    document.body.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    expect(outside, '同一次 tap 的第二次通道到达被去重').toBe(1)
+  })
+
+  it('间隔 >500ms 的两次真实外点各回调一次（去重不吞后续手势）', async () => {
+    let outside = 0
+    const el = document.createElement('div')
+    createOverlay(el, { onOutside: () => outside++ })
+    await Promise.resolve()
+    document.body.click()
+    await new Promise((resolve) => setTimeout(resolve, 520))
+    document.body.click()
+    expect(outside).toBe(2)
+  })
+
   it('destroyOverlay 清空容器', () => {
     createOverlay(document.createElement('div'))
     destroyOverlay()

@@ -28,6 +28,7 @@ import { resolveDirection, isRtl } from '../../shared/direction.js'
 import '../../feedback/bottom-sheet/index.js'
 import type { OASBottomSheet } from '../../feedback/bottom-sheet/index.js'
 import { watchMobileSheetMode } from '../../shared/mobile-sheet.js'
+import { addOutsideDismiss, removeOutsideDismiss } from '../../shared/outside-dismiss.js'
 import { devWarn } from '../../shared/dev-warn.js'
 // slot 模板双形态克隆（静态 HTML 在 template.content；Vue 等 CSR 直插元素 childNodes）
 import { cloneSlotContent } from '../../shared/slot-template.js'
@@ -1014,7 +1015,7 @@ export class OASDatePicker extends OASFormElement {
       this.focusWithin = false
       this.emit('blur')
     })
-    this.onCleanup(() => document.removeEventListener('click', this.handleOutsideClick, true))
+    this.onCleanup(() => removeOutsideDismiss(this.handleOutsideClick))
     // 视口 resize / 祖先滚动时重定位（仅展开态有意义）；capture 捕获滚动以覆盖任何可滚动祖先
     window.addEventListener('resize', this.repositionOnViewportChange)
     this.onCleanup(() => window.removeEventListener('resize', this.repositionOnViewportChange))
@@ -1139,7 +1140,7 @@ export class OASDatePicker extends OASFormElement {
     this.dropdown.classList.toggle('open', this.openState)
     this.triggerEl.setAttribute('aria-expanded', String(this.openState))
     if (this.openState) {
-      document.addEventListener('click', this.handleOutsideClick, true)
+      addOutsideDismiss(this.handleOutsideClick)
       // 移动形态：bottom-sheet 承载容器（设置 open 展开底部抽屉）；PC 形态：移除 open 回落自身 fixed 定位
       if (this.isMobileSheet()) {
         this.sheetEl?.setAttribute('open', '')
@@ -1148,7 +1149,7 @@ export class OASDatePicker extends OASFormElement {
       }
     } else {
       this.sheetEl?.removeAttribute('open')
-      document.removeEventListener('click', this.handleOutsideClick, true)
+      removeOutsideDismiss(this.handleOutsideClick)
     }
   }
 

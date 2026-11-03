@@ -1,5 +1,6 @@
 import { OASElement } from '@oas-ui/core'
 import { resolveDirection } from '../../shared/direction.js'
+import { addOutsideDismiss, removeOutsideDismiss } from '../../shared/outside-dismiss.js'
 import { computePosition, getViewport, type Placement } from '../../overlay/floating/index.js'
 import { parseColor, formatColor, formatSwatch, type RGBA } from './color.js'
 import { registeredColorPickerCapabilities, onColorPickerCapabilityRegistered } from './oas-color-picker-capability.js'
@@ -836,7 +837,7 @@ export class OASColorPicker extends OASElement {
       if ((e as KeyboardEvent).key === 'Escape' && this.hasAttr('open')) this.closeByKeyboard()
     })
 
-    this.onCleanup(() => document.removeEventListener('click', this.handleOutsideClick, true))
+    this.onCleanup(() => removeOutsideDismiss(this.handleOutsideClick))
     window.addEventListener('resize', this.repositionOnViewportChange)
     this.onCleanup(() => window.removeEventListener('resize', this.repositionOnViewportChange))
     window.addEventListener('scroll', this.repositionOnViewportChange, true)
@@ -1166,8 +1167,8 @@ export class OASColorPicker extends OASElement {
     if (!this.panel || !this.triggerEl) return
     this.panel.classList.toggle('open', open)
     this.triggerEl.setAttribute('aria-expanded', String(open))
-    if (open) document.addEventListener('click', this.handleOutsideClick, true)
-    else document.removeEventListener('click', this.handleOutsideClick, true)
+    if (open) addOutsideDismiss(this.handleOutsideClick)
+    else removeOutsideDismiss(this.handleOutsideClick)
   }
 
   private handleOutsideClick = (e: MouseEvent): void => {

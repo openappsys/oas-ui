@@ -1,5 +1,6 @@
 import { OASElement } from '@oas-ui/core'
 import { isRtl } from '../../shared/direction.js'
+import { addOutsideDismiss, removeOutsideDismiss } from '../../shared/outside-dismiss.js'
 import { HeightCache, computeDynamicWindow } from '../virtual-list/dynamic-height.js'
 
 /** 列定义：`columns` 属性（JSON）元素结构 */
@@ -756,13 +757,13 @@ export class OASKanban extends OASElement {
   private bindMenuDocument(): void {
     if (this.menuDocBound) return
     this.menuDocBound = true
-    document.addEventListener('click', this.handleOutsideClick, true)
+    addOutsideDismiss(this.handleOutsideClick)
     document.addEventListener('scroll', this.handleDocumentScroll, true)
   }
   private unbindMenuDocument(): void {
     if (!this.menuDocBound) return
     this.menuDocBound = false
-    document.removeEventListener('click', this.handleOutsideClick, true)
+    removeOutsideDismiss(this.handleOutsideClick)
     document.removeEventListener('scroll', this.handleDocumentScroll, true)
   }
 

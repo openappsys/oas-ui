@@ -6,6 +6,7 @@ import type { OASVirtualList } from '../../data/virtual-list/index.js'
 import '../../feedback/bottom-sheet/index.js'
 import type { OASBottomSheet } from '../../feedback/bottom-sheet/index.js'
 import { watchMobileSheetMode } from '../../shared/mobile-sheet.js'
+import { addOutsideDismiss, removeOutsideDismiss } from '../../shared/outside-dismiss.js'
 import { computePosition, getViewport } from '../../overlay/floating/index.js'
 import { resolveDirection } from '../../shared/direction.js'
 import { TOUCH_TARGET_CSS } from '../../shared/touch-target.js'
@@ -799,7 +800,7 @@ export class OASTreeSelect extends OASFormElement {
         this.createNodeRow(detail.item, detail.index, detail.element)
       }
     }) as EventListener)
-    this.onCleanup(() => document.removeEventListener('click', this.handleOutsideClick, true))
+    this.onCleanup(() => removeOutsideDismiss(this.handleOutsideClick))
     // 视口/指针形态变化（缩放/横竖屏/设备仿真）时重判定移动/PC 形态（不强刷）
     this.onCleanup(watchMobileSheetMode(() => this.resyncMobileMode()))
   }
@@ -1095,7 +1096,7 @@ export class OASTreeSelect extends OASFormElement {
       }
     }
     if (this.openState) {
-      document.addEventListener('click', this.handleOutsideClick, true)
+      addOutsideDismiss(this.handleOutsideClick)
       // 移动形态：bottom-sheet 承载容器（设置 open 展开底部抽屉）；PC 形态：computePosition 锚定 trigger
       if (this.isMobileSheet()) {
         this.sheetEl?.setAttribute('open', '')
@@ -1115,7 +1116,7 @@ export class OASTreeSelect extends OASFormElement {
       this.syncActive()
     } else {
       this.sheetEl?.removeAttribute('open')
-      document.removeEventListener('click', this.handleOutsideClick, true)
+      removeOutsideDismiss(this.handleOutsideClick)
       this.syncAriaActiveDescendant()
     }
   }

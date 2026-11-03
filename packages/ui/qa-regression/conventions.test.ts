@@ -336,3 +336,132 @@ describe('英文 API 文案语言守卫', () => {
     ).toEqual([])
   })
 })
+
+// ---------- 外点关闭统一通道守卫 ----------
+// 背景：WebKit 对非交互目标上的 tap 只派发 pointer 事件、不合成 click，裸 document 级 click
+// 外点关闭在触屏整体失效。统一原语 shared/outside-dismiss 同时挂 click + coarse pointerup。
+// 守卫口径：组件源码里不得再出现「document/window 级捕获 click 监听」——外点关闭/外点提交
+// 一律走 addOutsideDismiss/removeOutsideDismiss（非捕获的普通 click 不受限，如画布空白点选）。
+//
+// 扫描按「同一 addEventListener 调用的括号对」解析实参（旧正则按字符窗口匹配，既会跨语句
+// 误伤下一行的 `, true)`，也会漏掉对象式 `{ capture: true }` / 数字 `1` / window 宿主）。
+function splitTopLevelArgs(argsText: string): string[] {
+  const parts: string[] = []
+  let depth = 0
+  let quote: string | null = null
+  let start = 0
+  for (let i = 0; i < argsText.length; i++) {
+    const ch = argsText[i]!
+    if (quote) {
+      if (ch === '\\') i++
+      else if (ch === quote) quote = null
+      continue
+    }
+    if (ch === "'" || ch === '"' || ch === '`') {
+      quote = ch
+      continue
+    }
+    if (ch === '(' || ch === '[' || ch === '{') depth++
+    else if (ch === ')' || ch === ']' || ch === '}') depth--
+    else if (ch === ',' && depth === 0) {
+      parts.push(argsText.slice(start, i))
+      start = i + 1
+    }
+  }
+  parts.push(argsText.slice(start))
+  return parts.filter((p) => p.trim() !== '')
+}
+
+/** 找出「捕获阶段 click 监听」调用的行号（1-based）；只解析调用自身的括号对内实参 */
+function findCaptureClickListeners(text: string): number[] {
+  const lines: number[] = []
+  const callRe = /(?:document|window)\s*\.\s*addEventListener\s*\(/g
+  for (const m of text.matchAll(callRe)) {
+    const open = (m.index ?? 0) + m[0].length - 1
+    let depth = 0
+    let quote: string | null = null
+    let close = -1
+    for (let i = open; i < text.length; i++) {
+      const ch = text[i]!
+      if (quote) {
+        if (ch === '\\') i++
+        else if (ch === quote) quote = null
+        continue
+      }
+      if (ch === "'" || ch === '"' || ch === '`') {
+        quote = ch
+        continue
+      }
+      if (ch === '/' && text[i + 1] === '/') {
+        const nl = text.indexOf('\n', i)
+        i = nl === -1 ? text.length : nl
+        continue
+      }
+      if (ch === '/' && text[i + 1] === '*') {
+        const end = text.indexOf('*/', i + 2)
+        i = end === -1 ? text.length : end + 1
+        continue
+      }
+      if (ch === '(') depth++
+      else if (ch === ')') {
+        depth--
+        if (depth === 0) {
+          close = i
+          break
+        }
+      }
+    }
+    if (close === -1) continue
+    const args = splitTopLevelArgs(text.slice(open + 1, close))
+    if (args.length < 2 || !/^['"`]click['"`]$/.test(args[0]!.trim())) continue
+    const third = args[2]?.trim() ?? ''
+    const capture = third === 'true' || third === '1' || /^\{[\s\S]*\bcapture\s*:\s*true\b[\s\S]*\}$/.test(third)
+    if (!capture) continue
+    lines.push(text.slice(0, m.index).split('\n').length)
+  }
+  return lines
+}
+
+describe('外点关闭统一通道守卫', () => {
+  it('components 源码无裸 document/window 捕获 click 监听（true / 1 / 对象式 capture）', () => {
+    const srcDir = join(ROOT, 'packages', 'ui', 'src')
+    const self = join(srcDir, 'shared', 'outside-dismiss.ts')
+    const bad: string[] = []
+    for (const f of walk(srcDir).filter((p) => p.endsWith('.ts') && !p.endsWith('.test.ts') && p !== self)) {
+      const text = readFileSync(f, 'utf8')
+      for (const line of findCaptureClickListeners(text)) {
+        bad.push(`${f.replace(ROOT + '\\', '').replace(ROOT + '/', '')}:${line}`)
+      }
+    }
+    expect(
+      bad,
+      `外点关闭请用 shared/outside-dismiss 的 addOutsideDismiss/removeOutsideDismiss（click + 触屏 pointerup 双通道）：\n${bad.join('\n')}`,
+    ).toEqual([])
+  })
+
+  it('扫描器自测：误伤反例（跨语句 , true)）不命中', () => {
+    const src = ["document.addEventListener('click', onClick)", 'const done = (value, true)'].join('\n')
+    expect(findCaptureClickListeners(src)).toEqual([])
+  })
+
+  it('扫描器自测：逃逸形态（对象式 capture / 数字 1 / window 宿主 / 多行）命中', () => {
+    const cases = [
+      "document.addEventListener('click', onClick, { capture: true })",
+      "document.addEventListener('click', onClick, 1)",
+      "window.addEventListener('click', onClick, true)",
+      "window.addEventListener(\n  'click',\n  onClick,\n  { passive: true, capture: true },\n)",
+    ]
+    for (const src of cases) expect(findCaptureClickListeners(src), src).toHaveLength(1)
+  })
+
+  it('扫描器自测：合法形态（冒泡 click / capture:false / removeEventListener / addOutsideDismiss）不命中', () => {
+    const cases = [
+      "document.addEventListener('click', onClick)",
+      "document.addEventListener('click', onClick, { capture: false })",
+      "document.addEventListener('click', onClick, { passive: true })",
+      "document.removeEventListener('click', onClick, true)",
+      'addOutsideDismiss(onDocClick)',
+    ]
+    for (const src of cases) expect(findCaptureClickListeners(src), src).toEqual([])
+  })
+})

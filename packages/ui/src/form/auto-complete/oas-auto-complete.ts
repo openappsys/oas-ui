@@ -1,6 +1,7 @@
 import { OASFormElement } from '@oas-ui/core'
 import { computePosition, getViewport, type Placement } from '../../overlay/floating/index.js'
 import { resolveDirection } from '../../shared/direction.js'
+import { addOutsideDismiss, removeOutsideDismiss } from '../../shared/outside-dismiss.js'
 import { cloneSlotContent } from '../../shared/slot-template.js'
 // 注册 oas-virtual-list（OASVirtualList 仅作类型用，需裸 import 保住注册副作用）
 import '../../data/virtual-list/index.js'
@@ -432,7 +433,7 @@ export class OASAutoComplete extends OASFormElement {
       queueMicrotask(() => this.input?.focus())
     }
     this.onCleanup(() => {
-      document.removeEventListener('click', this.handleOutsideClick, true)
+      removeOutsideDismiss(this.handleOutsideClick)
       this.clearDebounce()
     })
   }
@@ -717,7 +718,7 @@ export class OASAutoComplete extends OASFormElement {
       this.dropdown.classList.remove('open')
       this.input.setAttribute('aria-expanded', 'false')
       this.input.removeAttribute('aria-activedescendant')
-      document.removeEventListener('click', this.handleOutsideClick, true)
+      removeOutsideDismiss(this.handleOutsideClick)
       return
     }
     this.syncPanelSlots()
@@ -811,7 +812,7 @@ export class OASAutoComplete extends OASFormElement {
     this.input.setAttribute('aria-expanded', 'true')
     this.syncActive()
     this.positionDropdown()
-    document.addEventListener('click', this.handleOutsideClick, true)
+    addOutsideDismiss(this.handleOutsideClick)
   }
 
   /** 构建选项行：角色/aria/高亮/自定义渲染模板；非虚拟点击走 dropdown 委托，mousemove 走增量同步 */

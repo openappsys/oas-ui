@@ -4,6 +4,7 @@ import { isRtl } from '../../shared/direction.js'
 import { normalizeSizeStrict, ALL_SIZES } from '../../shared/size.js'
 import { devWarn } from '../../shared/dev-warn.js'
 import { safeUrl } from '../../shared/safe-url.js'
+import { addOutsideDismiss, removeOutsideDismiss } from '../../shared/outside-dismiss.js'
 
 /** 尺寸档位：xs/small/medium/large/xl 全称（默认 large，对应 48px 常规 FAB 观感）；sm/md/lg 为等价别名 */
 /** 非法 size 告警：回落 large 并在 dev 下 console.warn 一次（同值去重）；sm/md/lg 别名由 shared/size 静默映射，不告警 */
@@ -863,7 +864,7 @@ export class OASFloatButton extends OASElement {
     panel?.addEventListener('mouseleave', this.onPanelLeave)
     // 文档级监听由 syncExpanded 按展开态挂载/移除；此处兜底断开连接时的清理
     this.onCleanup(() => {
-      document.removeEventListener('click', this.handleDocClick, true)
+      removeOutsideDismiss(this.handleDocClick)
       document.removeEventListener('keydown', this.handleDocKeydown)
       this.clearHoverHide()
     })
@@ -1145,14 +1146,14 @@ export class OASFloatButton extends OASElement {
     this.btn?.setAttribute('aria-haspopup', mode === 'menu' ? 'menu' : 'true')
     if (open) {
       // 展开时挂载文档级监听（收起/断开连接时移除，无孤儿监听）
-      document.addEventListener('click', this.handleDocClick, true)
+      addOutsideDismiss(this.handleDocClick)
       document.addEventListener('keydown', this.handleDocKeydown)
       // 键盘可达：仅在「收起 → 展开」的状态迁移帧自动聚焦首个动作（hover 触发展开不抢焦点）。
       // 用字段而非 classList 判定迁移：模板会按 expanded 预渲染 open 类，首次同步时类已在
       // 展开态下的其他属性变化/子钮增减不重复抢焦（否则会把用户焦点强行拉回首项）
       if (!this.wasExpanded && !this.skipFocusOnOpen) this.actionFocusables()[0]?.focus()
     } else {
-      document.removeEventListener('click', this.handleDocClick, true)
+      removeOutsideDismiss(this.handleDocClick)
       document.removeEventListener('keydown', this.handleDocKeydown)
     }
     this.wasExpanded = open

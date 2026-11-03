@@ -5,6 +5,7 @@ import { devWarn } from '../../shared/dev-warn.js'
 import '../../feedback/bottom-sheet/index.js'
 import type { OASBottomSheet } from '../../feedback/bottom-sheet/index.js'
 import { watchMobileSheetMode } from '../../shared/mobile-sheet.js'
+import { addOutsideDismiss, removeOutsideDismiss } from '../../shared/outside-dismiss.js'
 import { computePosition, getViewport, type Placement } from '../../overlay/floating/index.js'
 import { TOUCH_TARGET_CSS } from '../../shared/touch-target.js'
 import { cloneSlotContent } from '../../shared/slot-template.js'
@@ -802,7 +803,7 @@ export class OASCascader extends OASElement {
       this.emit('blur', { value: this.isMultiple() ? this.currentPaths() : this.currentPath() })
     })
     this.onCleanup(() => {
-      document.removeEventListener('click', this.handleOutsideClick, true)
+      removeOutsideDismiss(this.handleOutsideClick)
       this.cancelHover()
     })
     // 视口/指针形态变化（缩放/横竖屏/设备仿真）时重判定移动/PC 形态（不强刷）
@@ -1214,10 +1215,10 @@ export class OASCascader extends OASElement {
       else dropdown.focus()
     }
     if (open) {
-      document.addEventListener('click', this.handleOutsideClick, true)
+      addOutsideDismiss(this.handleOutsideClick)
       this.ensureRootLazyLoad()
     } else {
-      document.removeEventListener('click', this.handleOutsideClick, true)
+      removeOutsideDismiss(this.handleOutsideClick)
       this.cancelHover()
     }
     if (open && !transitioned) this.renderPanels()

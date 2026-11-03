@@ -5,6 +5,7 @@ import type { OASVirtualList } from '../../data/virtual-list/index.js'
 import '../../feedback/bottom-sheet/index.js'
 import type { OASBottomSheet } from '../../feedback/bottom-sheet/index.js'
 import { watchMobileSheetMode } from '../../shared/mobile-sheet.js'
+import { addOutsideDismiss, removeOutsideDismiss } from '../../shared/outside-dismiss.js'
 import { computePosition, getViewport, type Placement } from '../../overlay/floating/index.js'
 import { resolveDirection } from '../../shared/direction.js'
 import { measureMaxTextWidth } from '../../shared/measure-text.js'
@@ -956,7 +957,7 @@ export class OASSelect extends OASFormElement {
         this.createOptionRow(detail.item, detail.index, this.currentValues(), detail.element)
       }
     }) as EventListener)
-    this.onCleanup(() => document.removeEventListener('click', this.handleOutsideClick, true))
+    this.onCleanup(() => removeOutsideDismiss(this.handleOutsideClick))
     this.onCleanup(() => {
       if (this.inputTimer !== null) window.clearTimeout(this.inputTimer)
     })
@@ -1211,7 +1212,7 @@ export class OASSelect extends OASFormElement {
     }
     const mobile = this.isMobileSheet()
     if (this.openState) {
-      document.addEventListener('click', this.handleOutsideClick, true)
+      addOutsideDismiss(this.handleOutsideClick)
       // 移动形态：bottom-sheet 承载容器（设置 open 展开底部抽屉）；PC 形态：computePosition 锚定 trigger
       if (mobile) {
         this.sheetEl?.setAttribute('open', '')
@@ -1235,7 +1236,7 @@ export class OASSelect extends OASFormElement {
       }
     } else {
       this.sheetEl?.removeAttribute('open')
-      document.removeEventListener('click', this.handleOutsideClick, true)
+      removeOutsideDismiss(this.handleOutsideClick)
       this.syncAriaActiveDescendant()
     }
   }

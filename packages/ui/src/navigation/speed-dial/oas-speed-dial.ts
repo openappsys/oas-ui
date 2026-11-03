@@ -2,6 +2,7 @@ import { OASElement } from '@oas-ui/core'
 import { lookupIcon } from '@oas-ui/icons/runtime'
 import { isRtl } from '../../shared/direction.js'
 import { devWarn } from '../../shared/dev-warn.js'
+import { addOutsideDismiss, removeOutsideDismiss } from '../../shared/outside-dismiss.js'
 
 export interface SpeedDialAction {
   label: string
@@ -378,7 +379,7 @@ export class OASSpeedDial extends OASElement {
     // 方向键导航：焦点在子动作上时 keydown 冒泡到 actions 容器
     this.actionsEl?.addEventListener('keydown', this.handleActionsKeydown)
     this.onCleanup(() => {
-      document.removeEventListener('click', this.handleOutsideClick, true)
+      removeOutsideDismiss(this.handleOutsideClick)
       document.removeEventListener('keydown', this.handleDocKeydown)
       if (this.hoverHideTimer) {
         clearTimeout(this.hoverHideTimer)
@@ -587,14 +588,14 @@ export class OASSpeedDial extends OASElement {
     this.fab?.setAttribute('aria-label', this.t('speedDial.actions'))
     if (open) {
       // 展开时挂载文档级监听（收起/断开时移除，无孤儿监听）
-      document.addEventListener('click', this.handleOutsideClick, true)
+      addOutsideDismiss(this.handleOutsideClick)
       document.addEventListener('keydown', this.handleDocKeydown)
       // 键盘可达：展开自动聚焦第一个子动作（hover 触发展开不抢焦点）
       if (!this.skipFocusOnOpen) {
         this.actionsEl?.querySelector<HTMLButtonElement>('.action')?.focus()
       }
     } else {
-      document.removeEventListener('click', this.handleOutsideClick, true)
+      removeOutsideDismiss(this.handleOutsideClick)
       document.removeEventListener('keydown', this.handleDocKeydown)
     }
     this.skipFocusOnOpen = false

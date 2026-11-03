@@ -159,6 +159,22 @@ describe('OASTabs', () => {
     expect(menu.hasAttribute('hidden')).toBe(true)
   })
 
+  it('context-menu 触屏长按：打开手势的 pointerup 不收起菜单，下一次外部 pointerup 才收起', () => {
+    const el = mountMany(['a', 'b'], { 'context-menu': '' })
+    const tab = el.shadowRoot!.querySelector<HTMLElement>('[role="tab"][data-value="b"]')!
+    // 触屏长按：pointerdown(touch) → contextmenu（手指未抬起）
+    tab.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, composed: true, pointerType: 'touch' }))
+    tab.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, composed: true, clientX: 200, clientY: 100 }))
+    const menu = el.shadowRoot!.querySelector('.ctx-menu') as HTMLElement
+    expect(menu.hidden, '长按弹出菜单').toBe(false)
+    // 同一次手势抬手：pointerup 落在标签上（composed 到 document），不得当成外点
+    tab.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, composed: true, pointerType: 'touch' }))
+    expect(menu.hidden, '打开手势的抬手不能关掉刚打开的菜单').toBe(false)
+    // 再来一次外部 pointerup（下一次真实外点）→ 收起
+    document.body.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, composed: true, pointerType: 'touch' }))
+    expect(menu.hasAttribute('hidden'), '后续真实外点照常收起').toBe(true)
+  })
+
   // ===== oas-tab-contextmenu（宿主自建右键菜单的原生事件通道，2026-09-26 下游需求） =====
 
   it('右键标签派发 oas-tab-contextmenu：detail { value, index, clientX, clientY, originalEvent }（无 context-menu 属性也派发）', () => {

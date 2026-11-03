@@ -5,6 +5,7 @@ import { resolveTimezone, wallClockIn } from '../date-picker/timezone.js'
 import '../../feedback/bottom-sheet/index.js'
 import type { OASBottomSheet } from '../../feedback/bottom-sheet/index.js'
 import { watchMobileSheetMode } from '../../shared/mobile-sheet.js'
+import { addOutsideDismiss, removeOutsideDismiss } from '../../shared/outside-dismiss.js'
 import { computePosition, getViewport, type Placement } from '../../overlay/floating/index.js'
 import { resolveDirection } from '../../shared/direction.js'
 import { devWarn } from '../../shared/dev-warn.js'
@@ -606,7 +607,7 @@ export class OASTimePicker extends OASFormElement {
       this.focusWithin = false
       this.emit('blur')
     })
-    this.onCleanup(() => document.removeEventListener('click', this.handleOutsideClick, true))
+    this.onCleanup(() => removeOutsideDismiss(this.handleOutsideClick))
     // 视口 resize / 祖先滚动时重定位（仅展开态）
     window.addEventListener('resize', this.repositionOnViewportChange)
     this.onCleanup(() => window.removeEventListener('resize', this.repositionOnViewportChange))
@@ -751,7 +752,7 @@ export class OASTimePicker extends OASFormElement {
     this.dropdown.classList.toggle('open', this.openState)
     this.triggerEl.setAttribute('aria-expanded', String(this.openState))
     if (this.openState) {
-      document.addEventListener('click', this.handleOutsideClick, true)
+      addOutsideDismiss(this.handleOutsideClick)
       // 移动形态：bottom-sheet 承载容器（设置 open 展开底部抽屉）；PC 形态：computePosition 锚定 trigger
       if (this.isMobileSheet()) {
         this.sheetEl?.setAttribute('open', '')
@@ -767,7 +768,7 @@ export class OASTimePicker extends OASFormElement {
     } else {
       this.sheetEl?.removeAttribute('open')
       this.dropdownGrowObserver?.disconnect()
-      document.removeEventListener('click', this.handleOutsideClick, true)
+      removeOutsideDismiss(this.handleOutsideClick)
     }
   }
 

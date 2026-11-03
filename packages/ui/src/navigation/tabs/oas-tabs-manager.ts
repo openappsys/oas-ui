@@ -1,6 +1,7 @@
 import type { ReactiveController } from '@oas-ui/core'
 import type { OASTabPanel } from './oas-tab-panel.js'
 import type { TabsManagerCapability } from './oas-tabs.js'
+import { addOutsideDismiss, removeOutsideDismiss } from '../../shared/outside-dismiss.js'
 
 /**
  * tabs manager 能力包（manager）：把「editable 双击重命名 + contextmenu 右键菜单 + sortable 拖拽排序」
@@ -140,6 +141,13 @@ export class TabsManagerController implements ReactiveController, TabsManagerCap
   private ctxMenuEl: HTMLElement | null = null
   /** 右键菜单当前作用标签 value */
   private ctxMenuValue = ''
+  /** 最近一次按下标签的指针类型：区分桌面右键（mouse）与触屏长按（touch/pen） */
+  private lastPointerType = ''
+  /** 打开手势免疫（触屏）：长按 contextmenu 在手指未抬起时触发，同一次抬手的 pointerup（及紧随
+      的合成 click）属于打开手势本身，不能当成外点关掉刚打开的菜单。一次性消费，桌面 mouse 不布防。 */
+  private ctxOpenGuard = false
+  /** 被免疫的 pointerup 时刻：同一手势紧随的合成 click 也一并免疫 */
+  private ctxSwallowedUpAt = 0
   /** 已绑定稳定 tablist / 文档级监听的标志（重连幂等） */
   private bound = false
 
@@ -178,8 +186,9 @@ export class TabsManagerController implements ReactiveController, TabsManagerCap
     this.bound = true
     tablist.addEventListener('dblclick', this.onTablistDblClick)
     tablist.addEventListener('contextmenu', this.onTablistContextMenu)
+    tablist.addEventListener('pointerdown', this.onTablistPointerDown)
     // context-menu 弹层外部点击 / Escape 关闭（宿主 document 级，composed 跨 shadow）
-    document.addEventListener('click', this.onDocClick, true)
+    addOutsideDismiss(this.onDocClick)
     document.addEventListener('keydown', this.onDocKey)
   }
 
@@ -189,7 +198,8 @@ export class TabsManagerController implements ReactiveController, TabsManagerCap
     const tablist = this.host.shadowRoot?.querySelector('.tablist') as HTMLElement | null
     tablist?.removeEventListener('dblclick', this.onTablistDblClick)
     tablist?.removeEventListener('contextmenu', this.onTablistContextMenu)
-    document.removeEventListener('click', this.onDocClick, true)
+    tablist?.removeEventListener('pointerdown', this.onTablistPointerDown)
+    removeOutsideDismiss(this.onDocClick)
     document.removeEventListener('keydown', this.onDocKey)
   }
 
@@ -310,6 +320,11 @@ export class TabsManagerController implements ReactiveController, TabsManagerCap
 
   // ==================== contextmenu 右键菜单 ====================
 
+  /** 记录按下标签的指针类型（contextmenu 本身不携带 pointerType） */
+  private onTablistPointerDown = (e: PointerEvent): void => {
+    this.lastPointerType = e.pointerType
+  }
+
   /** 右键标签：弹批量关闭菜单（新建/关闭/关闭其他/关闭左侧所有/关闭右侧所有/关闭全部） */
   private onTablistContextMenu = (e: MouseEvent): void => {
     if (!this.host.hasAttribute('context-menu')) return
@@ -325,6 +340,10 @@ export class TabsManagerController implements ReactiveController, TabsManagerCap
   /** 构建/定位右键菜单（懒创建复用） */
   private showContextMenu(value: string, x: number, y: number): void {
     this.ctxMenuValue = value
+    // 打开手势免疫：触屏长按在手指未抬起时触发 contextmenu，同一次抬手的 pointerup 会命中外点
+    // 关闭把菜单立刻收起。桌面鼠标右键（pointerType=mouse）不布防，行为不变。
+    this.ctxOpenGuard = this.lastPointerType !== 'mouse'
+    this.ctxSwallowedUpAt = 0
     const root = this.host.shadowRoot
     if (!root) return
     if (!this.ctxMenuEl) {
@@ -417,6 +436,8 @@ export class TabsManagerController implements ReactiveController, TabsManagerCap
   }
 
   private hideContextMenu(): void {
+    this.ctxOpenGuard = false
+    this.ctxSwallowedUpAt = 0
     if (this.ctxMenuEl) this.ctxMenuEl.hidden = true
   }
 
@@ -424,7 +445,19 @@ export class TabsManagerController implements ReactiveController, TabsManagerCap
     const menu = this.ctxMenuEl
     if (!menu || menu.hidden) return
     const path = (e as MouseEvent).composedPath()
-    if (!path.includes(menu)) this.hideContextMenu()
+    if (path.includes(menu)) return
+    // 触屏同一次 tap 双通道到达：长按打开菜单后，抬手的 pointerup（及紧随的合成 click）属于
+    // 打开手势本身，不是「外部点击」——消费一次后忽略；下一次真实外点照常收起。
+    if (e.type === 'pointerup' && this.ctxOpenGuard) {
+      this.ctxOpenGuard = false
+      this.ctxSwallowedUpAt = performance.now()
+      return
+    }
+    if (e.type === 'click' && this.ctxSwallowedUpAt && performance.now() - this.ctxSwallowedUpAt < 500) {
+      this.ctxSwallowedUpAt = 0
+      return
+    }
+    this.hideContextMenu()
   }
 
   private onDocKey = (e: KeyboardEvent): void => {

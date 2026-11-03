@@ -14,6 +14,7 @@ import { normalizeSizeStrict, ALL_SIZES } from '../../shared/size.js'
 import type { OASTabPanel } from './oas-tab-panel.js'
 import { registeredTabsCapabilities, onTabsCapabilityRegistered } from './oas-tabs-capability.js'
 import { devWarn } from '../../shared/dev-warn.js'
+import { addOutsideDismiss, removeOutsideDismiss } from '../../shared/outside-dismiss.js'
 
 export type TabsSize = 'xs' | 'small' | 'medium' | 'large' | 'xl'
 
@@ -1462,7 +1463,7 @@ export class OASTabs extends OASElement {
   /** 断开重连重绑（core onReconnect 钩子）：document click 外点收起监听 cleanup 摘除后恢复
       （类字段引用，重挂不叠）；more 溢出下拉的外点收起交互不失效 */
   protected override onReconnect(): void {
-    document.addEventListener('click', this.handleMoreDocClick, true)
+    addOutsideDismiss(this.handleMoreDocClick)
     // 面板 MutationObserver 重建（cleanup 已 disconnect **且置 null**——null 守卫重建生效）
     if (!this.observer) {
       this.observer = new MutationObserver((mutations) => {
@@ -1533,8 +1534,8 @@ export class OASTabs extends OASElement {
       }
     })
     // 外部点击收起（宿主 document 级，composed 跨 shadow）——类字段监听（bindMore 链挂载）
-    document.addEventListener('click', this.handleMoreDocClick, true)
-    this.onCleanup(() => document.removeEventListener('click', this.handleMoreDocClick, true))
+    addOutsideDismiss(this.handleMoreDocClick)
+    this.onCleanup(() => removeOutsideDismiss(this.handleMoreDocClick))
     // 搜索框输入实时过滤收起项；键盘 ArrowDown 进入列表项、Escape 收起
     const search = this.shadow.querySelector('.more-search') as HTMLInputElement | null
     search?.addEventListener('input', () => this.renderMoreDropdown())

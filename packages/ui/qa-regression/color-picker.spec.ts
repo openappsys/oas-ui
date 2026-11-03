@@ -560,3 +560,63 @@ test('color-picker 未连接写 value 不崩（React 19 属性先写时序回归
   expect(r.attr).toBe('#ff0000')
   expect(r.text, '连接后触发器显示新值').toContain('ff0000')
 })
+
+// —— 触屏外点关闭（hasTouch 真实触摸）：取色面板 ——
+// 迁移回归：外点关闭统一走 shared/outside-dismiss。面板内 tap 不得关闭、hue 区可调；
+// 面板外非交互区 tap（WebKit 只派发 pointer 事件）必须关闭面板。
+test('color-picker 触屏：面板内 hue tap 不关且可调，外部非交互区 tap 关面板', async ({ browser }) => {
+  const ctx = await browser.newContext({ hasTouch: true, viewport: { width: 1280, height: 800 } })
+  const page = await ctx.newPage()
+  try {
+    await page.goto('/components/color-picker.html', { waitUntil: 'domcontentloaded' })
+    await up(page, '#cp-2d')
+    await page.evaluate(() => {
+      const el = document.querySelector('#cp-2d')!
+      el.scrollIntoView({ block: 'center' })
+      // 外部非交互区：纯 div（无 click 语义）
+      const blank = document.createElement('div')
+      blank.id = 'qa-cp-blank'
+      blank.style.cssText = 'position:fixed;right:8px;bottom:8px;width:160px;height:80px;z-index:9999;'
+      document.body.appendChild(blank)
+    })
+    await page.evaluate(() => {
+      ;(document.querySelector('#cp-2d')!.shadowRoot!.querySelector('[part="trigger"]') as HTMLElement).click()
+    })
+    await page.waitForFunction(
+      () =>
+        document.querySelector('#cp-2d')?.shadowRoot?.querySelector('[part="panel"]')?.classList.contains('open') ===
+        true,
+      null,
+      { timeout: 5000 },
+    )
+    const before = await page.evaluate(() => document.querySelector('#cp-2d-output')?.textContent ?? '')
+    const huePoint = await page.evaluate(() => {
+      const hue = document.querySelector('#cp-2d')!.shadowRoot!.querySelector<HTMLElement>('.hue')!
+      const r = hue.getBoundingClientRect()
+      return { x: r.left + r.width / 2, y: r.top + r.height * 0.8 }
+    })
+    // 面板内 hue tap：面板保持打开且颜色改变（有可见反馈）
+    await page.touchscreen.tap(huePoint.x, huePoint.y)
+    const inside = await page.evaluate(() => ({
+      open: document.querySelector('#cp-2d')!.shadowRoot!.querySelector('[part="panel"]')!.classList.contains('open'),
+      feedback: document.querySelector('#cp-2d-output')?.textContent ?? '',
+    }))
+    expect(inside.open, '面板内 hue tap 不关').toBe(true)
+    expect(inside.feedback, 'hue tap 改变颜色（demo 可见反馈）').not.toBe(before)
+    // 面板外非交互区 tap：关闭（pointerup 通道）
+    const blankPoint = await page.evaluate(() => {
+      const r = document.querySelector('#qa-cp-blank')!.getBoundingClientRect()
+      return { x: r.left + r.width / 2, y: r.top + r.height / 2 }
+    })
+    await page.touchscreen.tap(blankPoint.x, blankPoint.y)
+    await page.waitForFunction(
+      () =>
+        document.querySelector('#cp-2d')?.shadowRoot?.querySelector('[part="panel"]')?.classList.contains('open') ===
+        false,
+      null,
+      { timeout: 5000 },
+    )
+  } finally {
+    await ctx.close()
+  }
+})

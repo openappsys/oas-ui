@@ -1,6 +1,7 @@
 import { OASElement } from '@oas-ui/core'
 import { getViewport } from '../../overlay/floating/index.js'
 import { pushEscapeLayer } from '../../shared/overlay-stack.js'
+import { addOutsideDismiss, removeOutsideDismiss } from '../../shared/outside-dismiss.js'
 import '../menu/index.js' // 副作用：确保 oas-menu 已注册
 import { OASMenuItem } from '../menu/index.js'
 import type { OASMenu } from '../menu/index.js'
@@ -103,7 +104,7 @@ export class OASContextMenu extends OASElement {
 
   /** 幂等摘除 document/window 全局监听（onCleanup 与 disconnectedCallback 共用，重复调用无副作用） */
   private detachGlobalListeners(): void {
-    document.removeEventListener('click', this.handleOutside, true)
+    removeOutsideDismiss(this.handleOutside)
     document.removeEventListener('contextmenu', this.handleDocContext)
     window.removeEventListener('scroll', this.handleScroll, true)
   }
@@ -243,7 +244,7 @@ export class OASContextMenu extends OASElement {
       if (!this.wasOpen) {
         // 打开瞬间：用缓存的触发坐标定位（无坐标则不定位，保持快照/上次位置）
         if (this.hasPending) this.positionAt(this.pendingX, this.pendingY)
-        document.addEventListener('click', this.handleOutside, true)
+        addOutsideDismiss(this.handleOutside)
         document.addEventListener('contextmenu', this.handleDocContext)
         if (this.closeOnScrollOn()) window.addEventListener('scroll', this.handleScroll, true)
         this.armEscapeLayer()
@@ -257,7 +258,7 @@ export class OASContextMenu extends OASElement {
         const target = this.contextTarget
         if (target && target.isConnected) target.focus({ preventScroll: true })
       }
-      document.removeEventListener('click', this.handleOutside, true)
+      removeOutsideDismiss(this.handleOutside)
       document.removeEventListener('contextmenu', this.handleDocContext)
       window.removeEventListener('scroll', this.handleScroll, true)
       this.releaseEscapeLayer?.()

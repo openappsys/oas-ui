@@ -5,6 +5,7 @@ import type { OASVirtualList } from '../../data/virtual-list/index.js'
 import '../../feedback/bottom-sheet/index.js'
 import type { OASBottomSheet } from '../../feedback/bottom-sheet/index.js'
 import { watchMobileSheetMode } from '../../shared/mobile-sheet.js'
+import { addOutsideDismiss, removeOutsideDismiss } from '../../shared/outside-dismiss.js'
 import { computePosition, getViewport, type Placement } from '../../overlay/floating/index.js'
 import { resolveDirection } from '../../shared/direction.js'
 import { OASFormElement } from '@oas-ui/core'
@@ -571,7 +572,7 @@ export class OASCombobox extends OASFormElement {
         this.createOptionRow(detail.item, detail.index, this.currentValues(), detail.element)
       }
     }) as EventListener)
-    this.onCleanup(() => document.removeEventListener('click', this.handleOutsideClick, true))
+    this.onCleanup(() => removeOutsideDismiss(this.handleOutsideClick))
     // 视口/指针形态变化（缩放/横竖屏/设备仿真）时重判定移动/PC 形态（不强刷）
     this.onCleanup(watchMobileSheetMode(() => this.resyncMobileMode()))
   }
@@ -687,7 +688,7 @@ export class OASCombobox extends OASFormElement {
       this.activeIndex = Math.max(idx, 0)
       this.renderListbox()
       if (opening) this.scrollActiveIntoView()
-      document.addEventListener('click', this.handleOutsideClick, true)
+      addOutsideDismiss(this.handleOutsideClick)
       // 移动形态：bottom-sheet 承载容器（设置 open 展开底部抽屉）；PC 形态：computePosition 锚定 input
       if (this.isMobileSheet()) {
         this.sheetEl?.setAttribute('open', '')
@@ -697,7 +698,7 @@ export class OASCombobox extends OASFormElement {
       }
     } else {
       this.sheetEl?.removeAttribute('open')
-      document.removeEventListener('click', this.handleOutsideClick, true)
+      removeOutsideDismiss(this.handleOutsideClick)
       i.removeAttribute('aria-activedescendant')
     }
 

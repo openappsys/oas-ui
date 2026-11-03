@@ -1,6 +1,7 @@
 import { OASElement } from '@oas-ui/core'
 import { resolveDirection } from '../../shared/direction.js'
 import { stableHash36 } from '../../shared/stable-id.js'
+import { addOutsideDismiss, removeOutsideDismiss } from '../../shared/outside-dismiss.js'
 import { computePosition, getViewport } from '../../overlay/floating/index.js'
 
 /** 浮层与触发元素的默认间距（与 computePosition 的 GAP 一致） */
@@ -243,7 +244,7 @@ export class OASAvatarGroup extends OASElement {
 
     // 清理：Esc 栈 / 外点监听 / 计时器 / 滚动跟随（断开连接无孤儿）
     this.onCleanup(() => unregisterLayer(this))
-    this.onCleanup(() => document.removeEventListener('click', this.handleOutside, true))
+    this.onCleanup(() => removeOutsideDismiss(this.handleOutside))
     this.onCleanup(() => {
       this.clearTimers()
       this.syncScrollFollow(false)
@@ -332,7 +333,7 @@ export class OASAvatarGroup extends OASElement {
     this.panelEl?.setAttribute('aria-hidden', 'false')
     this.syncCountAria()
     registerLayer(this)
-    document.addEventListener('click', this.handleOutside, true)
+    addOutsideDismiss(this.handleOutside)
     this.syncScrollFollow(true)
     this.positionOverflow()
   }
@@ -345,7 +346,7 @@ export class OASAvatarGroup extends OASElement {
     this.panelEl?.setAttribute('aria-hidden', 'true')
     this.syncCountAria()
     unregisterLayer(this)
-    document.removeEventListener('click', this.handleOutside, true)
+    removeOutsideDismiss(this.handleOutside)
     this.syncScrollFollow(false)
     if (refocus && this.countEl) {
       this.refocusing = true

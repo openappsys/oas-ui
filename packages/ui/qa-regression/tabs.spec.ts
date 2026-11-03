@@ -685,3 +685,30 @@ test('tabs 宿主 aria-label 转发到内部 tablist、运行时更新生效、a
     '宿主命名转发不应引入 axe 违规',
   ).toEqual([])
 })
+
+// —— 触屏打开手势免疫的桌面回归：鼠标右键（pointerType=mouse）行为不变 ——
+// 触屏长按会在手指未抬起时派发 contextmenu，同一次抬手不得收起刚打开的菜单（单测锁 C1）；
+// 桌面鼠标右键没有 pointerup 桥接（pointerType=mouse 已过滤），抬手不收起、左键外点照常收起。
+test('tabs 右键菜单：鼠标抬手不收起菜单，左键外点才收起（触屏免疫不影响桌面）', async ({ page }) => {
+  await page.goto('/components/tabs.html', { waitUntil: 'domcontentloaded' })
+  await page.waitForFunction(() => document.getElementById('tabs-contextmenu')?.shadowRoot != null, undefined, {
+    timeout: 15000,
+  })
+  const r = await page.evaluate(() => {
+    const el = document.getElementById('tabs-contextmenu')!
+    const tab = el.shadowRoot!.querySelector<HTMLElement>('[role="tab"][data-value="b"]')!
+    tab.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, composed: true, pointerType: 'mouse' }))
+    tab.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true, clientX: 320, clientY: 120 }))
+    const menu = el.shadowRoot!.querySelector<HTMLElement>('.ctx-menu')!
+    const opened = !menu.hidden
+    // 同一次鼠标手势抬手：pointerup(mouse) 被外点桥接过滤，菜单保持
+    tab.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, composed: true, pointerType: 'mouse' }))
+    const afterPointerUp = !menu.hidden
+    // 左键点外部 → 收起
+    document.body.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    return { opened, afterPointerUp, closedByClick: menu.hidden }
+  })
+  expect(r.opened, '鼠标右键打开菜单').toBe(true)
+  expect(r.afterPointerUp, '鼠标抬手不收起（桌面语义不变）').toBe(true)
+  expect(r.closedByClick, '左键外点收起').toBe(true)
+})

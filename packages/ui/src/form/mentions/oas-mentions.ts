@@ -1,6 +1,7 @@
 import { OASFormElement } from '@oas-ui/core'
 import { computePosition, getViewport, type Placement } from '../../overlay/floating/index.js'
 import { resolveDirection } from '../../shared/direction.js'
+import { addOutsideDismiss, removeOutsideDismiss } from '../../shared/outside-dismiss.js'
 import { cloneSlotContent } from '../../shared/slot-template.js'
 
 export interface Option {
@@ -425,7 +426,7 @@ export class OASMentions extends OASFormElement {
     this.panel?.addEventListener('click', (e: MouseEvent) => this.handlePanelClick(e))
     this.clearBtn?.addEventListener('mousedown', (e: MouseEvent) => e.preventDefault())
     this.clearBtn?.addEventListener('click', () => this.clearValue())
-    this.onCleanup(() => document.removeEventListener('click', this.handleOutsideClick, true))
+    this.onCleanup(() => removeOutsideDismiss(this.handleOutsideClick))
   }
 
   protected override render(): void {
@@ -628,7 +629,7 @@ export class OASMentions extends OASFormElement {
   private open(): void {
     if (!this.openState) {
       this.openState = true
-      document.addEventListener('click', this.handleOutsideClick, true)
+      addOutsideDismiss(this.handleOutsideClick)
     }
     this.renderPanel()
   }
@@ -637,7 +638,7 @@ export class OASMentions extends OASFormElement {
     if (!this.openState) return
     this.openState = false
     this.syncOpen()
-    document.removeEventListener('click', this.handleOutsideClick, true)
+    removeOutsideDismiss(this.handleOutsideClick)
     this.activeTrigger = null
     this.queryStart = -1
     this.queryText = ''
