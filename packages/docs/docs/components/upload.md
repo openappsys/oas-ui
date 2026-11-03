@@ -86,6 +86,20 @@
 
 文档站没有真实上传端点，`/api/upload` 返回 404，正好演示**失败态**：列表行转红色并出现重试按钮（⟳），点击重试重新发起请求；上传中可点 × 取消（派发 `oas-cancel`）。成功时派发 `oas-success`（`detail: { file, response }`，`response` 为解析后的 JSON 或原文），失败派发 `oas-error`（`detail: { file, response, status }`）。
 
+## 错误汇总与批量重试
+
+列表顶部条件渲染**错误摘要条**：`N 个文件上传失败` + `重试全部` + `清除错误`（任何 `list-type` 一致，`role="status"` 供读屏播报）。
+
+- `重试全部`：对每个失败文件走**既有逐文件上传通道**（各派发一次 `oas-retry`，随后是常规的 `oas-upload` / `oas-success` / `oas-error` 序列）
+- `清除错误`：把失败文件从列表移除（逐条派发 `oas-remove`，末尾一次 `oas-change`）——失败条目没有可恢复的数据，保留只会一直显示红色失败态
+- 脚本同通道：`retryAll()` / `clearErrors()` 公开方法（宿主自绘操作区时直接调用）
+
+<DemoBlock title="失败汇总（错误摘要条 + 重试全部）">
+  <oas-upload id="upload-summary" action="/api/upload" multiple auto-upload></oas-upload>
+</DemoBlock>
+
+本 demo 同样打到不存在的 `/api/upload`：选择文件后出现摘要条，点「重试全部」会重新发起请求（文档站仍失败，摘要条保留），点「清除错误」把失败项移出列表。
+
 ## 自定义请求通道（custom-request）
 
 分片上传、对象存储直传、WebSocket 等非标通道用 `custom-request` 函数 property 接管（组件不管请求策略）：
@@ -210,6 +224,22 @@ el.customRequest = ({ file, name, action, onProgress, onSuccess, onError }) => {
     </template>
   </oas-upload>
 </DemoBlock>
+
+## 文件列表持久化（storage-key）
+
+`storage-key` 开启**文件列表元数据持久化**（opt-in，默认完全零变化）：写入 `localStorage` 的是 `{ name, size, type, status, url? }` 这类元数据，**文件内容不持久化**（File 体可能数十 MB，存储装不下也无意义）——刷新后列表原地回显，但真正上传需要重新选择文件。
+
+- `done` 条目回显为已完成（`value` 为空、不可重传、无重试钮），hover 有「已持久化」提示；上传成功响应里带 `url`（或 `data.url`）时缩略图/预览可继续用服务端地址
+- `error` / 待处理条目恢复为**待处理态**并派发一次 `oas-change`（刷新后文件体已丢失，不静默复活成「已完成」是安全默认；宿主据此引导用户重新选择）
+- 改 `storage-key` 即时从新键重载列表；移除 `storage-key` 只停止写入（已恢复/已选列表保持不动）
+- 容错：坏 JSON、版本不符（`v` 不匹配）、整体形状不符一律静默忽略；隐私模式/配额满时写入失败静默降级，内存列表照常可用
+
+<DemoBlock title="持久化文件列表（storage-key）">
+  <oas-upload id="upload-persist" storage-key="oas-upload-demo" multiple></oas-upload>
+  <oas-button size="small" id="upload-persist-clear" style="margin-top: var(--oas-space-2)">清除已保存列表</oas-button>
+</DemoBlock>
+
+选择 1-2 个文件后**刷新页面**，列表仍在（文件名/大小来自元数据）；点「清除已保存列表」同时清空列表与本地存储。
 
 ## 事件
 
@@ -416,6 +446,47 @@ onMounted(async () => {
       }
     })
   }
+
+  // 持久化（storage-key）：清除已保存列表
+  const persistClear = document.getElementById('upload-persist-clear')
+  persistClear?.addEventListener('click', () => {
+    const persist = document.getElementById('upload-persist')
+    if (persist) persist.files = []
+    window.localStorage.removeItem('oas-upload-demo')
+    message.info('已清除持久化的文件列表')
+  })
+
+  // 错误汇总：重试全部的可感知反馈（文档站端点仍 404，摘要条保留）
+  const summary = document.getElementById('upload-summary')
+  summary?.addEventListener('oas-retry', (e) => {
+    message.info(`重试 ${e.detail.file.name}…`)
+  })
+
+  // 表单内全局校验：必填 + 数量 + 单文件大小（规则读 upload 的元数据 JSON）
+  const uploadForm = document.getElementById('upload-form')
+  if (uploadForm) {
+    uploadForm.rules = {
+      attachments: [
+        { required: true, message: '请至少上传 1 个文件' },
+        {
+          validator: (value) => {
+            const files = JSON.parse(value || '[]')
+            if (files.length > 2) return '最多上传 2 个文件'
+            if (files.some((file) => file.size > 100 * 1024)) return '单个文件不能超过 100KiB'
+            return true
+          },
+        },
+      ],
+    }
+    document.getElementById('upload-form-submit')?.addEventListener('click', () => uploadForm.submit())
+    uploadForm.addEventListener('oas-submit', (e) => {
+      const files = JSON.parse(e.detail.values.attachments || '[]')
+      message.success(`校验通过：${files.length} 个文件`)
+    })
+    uploadForm.addEventListener('oas-validate-fail', (e) => {
+      message.warning(e.detail.errors.attachments)
+    })
+  }
 })
 </script>
 
@@ -428,6 +499,54 @@ onMounted(async () => {
 `required` 驱动原生校验链（form-associated）：未填时 `checkValidity()` 为 false（`valueMissing`），原生表单提交被阻止；填写后自动恢复 `:valid`。
 
 当前表单值可经公开 `value` property 读/写：`el.value` 返回可提交的 `File` 数组（`{name,url}` 回显记录无文件体、不计入），无文件时为空数组；`el.value = [file]` 整体替换文件列表（走 `files` property 同款受控通道，不派发事件）。
+
+## 表单内全局校验
+
+upload 是 `oas-form` 的**一等公民控件**：`oas-form` 的 `rules` 按 `name` 匹配到 upload 时，读到的字段值是**可提交文件的元数据 JSON**（`[{ name, size, type }]`，空列表为 `''`，与 `value` 的 File-only 语义一致），因此 `required` 与原生 `valueMissing` 判定完全一致；数量/大小这类复合规则用 `validator` 在同一个 JSON 上判断即可。校验失败时错误文案进 `oas-form-item` 错误位（`aria-invalid` 同步到控件），`scroll-to-first-error` 会聚焦并滚动到 upload 触发区。
+
+内置 `max` / `max-size` 是**入列前拒绝**（派发 `oas-exceed-limit`）；如果要让超限表现为**表单级错误**（与其它字段一起校验、一起定位），把限制写进规则里——下例即用规则校验数量与单文件大小。
+
+<DemoBlock title="表单内全局校验（必填 + 数量 + 大小）">
+  <div style="max-height: 240px; overflow: auto; border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); padding: var(--oas-space-3); width: 380px">
+    <oas-form id="upload-form" scroll-to-first-error>
+      <oas-space direction="vertical" style="width: 100%">
+        <oas-input name="title" placeholder="标题（可选）"></oas-input>
+        <oas-input name="desc" placeholder="说明（可选）"></oas-input>
+        <oas-form-item label="附件（必填，1-2 个，单个 ≤ 100KiB）">
+          <oas-upload name="attachments" multiple tip="拖入第 3 个文件或超过 100KiB 的文件后提交，观察表单级错误"></oas-upload>
+        </oas-form-item>
+      </oas-space>
+    </oas-form>
+  </div>
+  <div style="margin-top: var(--oas-space-3)">
+    <oas-button type="primary" id="upload-form-submit">提交（滚动到首个错误）</oas-button>
+  </div>
+</DemoBlock>
+
+```js
+form.rules = {
+  attachments: [
+    { required: true, message: '请至少上传 1 个文件' },
+    {
+      validator: (value) => {
+        const files = JSON.parse(value || '[]')
+        if (files.length > 2) return '最多上传 2 个文件'
+        if (files.some((file) => file.size > 100 * 1024)) return '单个文件不能超过 100KiB'
+        return true
+      },
+    },
+  ],
+}
+```
+
+## 表单集成注意
+
+以下四条都是当前行为（不是待修缺陷），集成 hub 前先对齐预期：
+
+- **`oas-form` 的 `oas-values-change` 不覆盖 upload**：表单该事件由控件 `oas-change` 的 `detail.value` 派生，而 upload 的 `oas-change` detail 只有 `{ files }`（无 `value` 键），所以表单不会为 upload 字段派发 `oas-values-change`。需要文件变化通知时直接监听 upload 自己的 `oas-change`。
+- **`clearErrors()` 的 `oas-remove` index 是删除前快照下标**：逐条派发时 index 取调用开始时的列表位置（不是移除过程中的实时下标），批量处理请以 `detail.file` 为准。
+- **表单读写不对称**：getter 只输出可提交的 `File` 条目（元数据 JSON 不含 `url`）；writer（`value` property / `initial-values` / `reset` 基线）要求 `[{ name, url, size? }]` 回显记录。把表单值原样回读再写回 `initial-values` 时不要把 upload 字段带进去（缺 `url` 的记录会被丢弃）；需要回显时在宿主侧维护带 `url` 的记录再传入。
+- **恢复（storage-key）的两条路径**：全部条目为 `done` 时恢复（刷新回显）**零事件**——不派发 `oas-change` / `oas-upload`，只回显列表并给条目加「已保存」title 提示；存在 `pending` / `error` 条目的恢复会统一回落为 `pending`（percent 0）并派发**一次** `oas-change`，且**不自动开始上传**，需要宿主调用 `startUpload()` / `submit()`。
 
 ## API
 
@@ -456,6 +575,7 @@ onMounted(async () => {
 | `replace` | max-count=1 时替换语义（新文件替换旧文件而非拒绝） | `boolean` | — |
 | `required` | 必填标记（驱动原生校验链 valueMissing；不透传内层控件） | `boolean` | — |
 | `show-file-list` | 文件列表显隐（`"false"` 隐藏，仅保留拖拽区） | `string` | `true` |
+| `storage-key` | 文件列表元数据持久化键（opt-in）：写入 localStorage（`{ name, size, type, status, url? }`，**不含文件内容**）；刷新后回显——done 恢复为已完成（不可重传、hover 提示已持久化），error/待处理恢复为待处理并派发一次 oas-change；改键即时重载、移除即停止写入；坏 JSON/版本不符静默忽略 | `string` | — |
 | `tip` | 拖拽区提示文案（同 `template[slot="tip"]` 富内容） | `string` | — |
 | `with-credentials` | 跨域携带凭证 | `boolean` | — |
 
@@ -473,6 +593,8 @@ onMounted(async () => {
 | `startUpload` | `startUpload(): void` | 上传入口：真实通道（action XHR / custom-request）逐文件发起；无通道回落模拟进度。 |
 | `submit` | `submit(): void` | 手动上传入口别名（对齐主流「提交」心智） |
 | `abort` | `abort(entry?: File): void` | 取消上传：传入条目取消单个；无参取消全部进行中的上传 |
+| `retryAll` | `retryAll(): void` | 重试全部失败文件：逐文件走既有上传通道（`oas-retry` → 进度/成功/失败事件）；无真实通道时空操作 |
+| `clearErrors` | `clearErrors(): void` | 清除错误：把全部失败条目从列表移除（逐条 `oas-remove`，末尾一次 `oas-change`），成功/待处理条目保留 |
 
 #### 事件
 

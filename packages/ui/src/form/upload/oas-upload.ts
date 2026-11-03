@@ -1,6 +1,7 @@
 import { OASFormElement } from '@oas-ui/core'
 import { formatByte } from '@oas-ui/core/format-byte'
 import { devWarn } from '../../shared/dev-warn.js'
+import { isSsrRuntime } from '../../shared/ssr-runtime.js'
 import { cloneSlotContent } from '../../shared/slot-template.js'
 
 /**
@@ -38,6 +39,31 @@ interface FileStatus {
   percent: number
   status: 'pending' | 'uploading' | 'done' | 'error'
 }
+
+/**
+ * storage-key 持久化的单条文件元数据。
+ * ⚠️ 只持久化展示/校验所需的元数据——**文件内容不持久化**（File 体可能数百 MB，
+ * localStorage 装不下也无意义）：刷新后列表可回显，但需重新选择文件才能真正上传。
+ */
+interface PersistedUploadFile {
+  name: string
+  size?: number
+  type?: string
+  status: 'pending' | 'done' | 'error'
+  /** 服务端成功响应里的文件地址（`response.url` / `response.data.url`），有则回显缩略图/预览可用 */
+  url?: string
+}
+
+interface UploadSnapshot {
+  v: number
+  files: PersistedUploadFile[]
+}
+
+/** 持久化快照版本：形状变化时递增，版本不符整体忽略（安全降级） */
+const STORAGE_VERSION = 1
+
+/** 单键最多持久化条数：异常数据（被手工塞爆的存储）不得拖垮渲染 */
+const STORAGE_MAX_FILES = 500
 
 type ListType = 'list' | 'picture' | 'picture-card'
 
@@ -129,6 +155,54 @@ const STYLE = `
 }
 .list[hidden] {
   display: none;
+}
+/* 错误摘要条：列表顶部条件渲染（N 个失败 + 重试全部 + 清除错误），tab 序在文件行之前 */
+.error-bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--oas-space-2);
+  padding: var(--oas-space-2) var(--oas-space-3);
+  border: 1px solid var(--oas-color-danger);
+  border-radius: var(--oas-radius-sm);
+  background: color-mix(in srgb, var(--oas-color-danger) 8%, transparent);
+  color: var(--oas-color-danger);
+  font-size: var(--oas-font-size-sm);
+  line-height: 1.4;
+}
+/* hidden 必须显式覆盖 display：class 选择器优先级高于 UA 的 [hidden] 规则（同预览浮层） */
+.error-bar[hidden] {
+  display: none;
+}
+.error-bar-text {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.error-bar-btn {
+  appearance: none;
+  flex: none;
+  min-height: var(--oas-control-height-sm);
+  padding: 0 var(--oas-space-2);
+  border: 1px solid currentColor;
+  border-radius: var(--oas-radius-sm);
+  background: transparent;
+  color: inherit;
+  font-family: inherit;
+  font-size: var(--oas-font-size-sm);
+  cursor: pointer;
+}
+.error-bar-btn:hover {
+  background: color-mix(in srgb, var(--oas-color-danger) 12%, transparent);
+}
+.error-bar-btn:focus-visible {
+  outline: none;
+  box-shadow: var(--oas-focus-ring);
+}
+.error-bar-btn[disabled] {
+  cursor: not-allowed;
+  color: var(--oas-color-text-disabled);
+  border-color: var(--oas-color-border);
 }
 .item {
   display: flex;
@@ -664,7 +738,8 @@ const STYLE = `
   .preview-close:focus-visible,
   .crop-frame:focus-visible,
   .crop-zoom-btn:focus-visible,
-  .crop-btn:focus-visible {
+  .crop-btn:focus-visible,
+  .error-bar-btn:focus-visible {
     outline: 1px solid CanvasText;
     outline-offset: 1px;
     box-shadow: none;
@@ -699,6 +774,22 @@ function nameOf(entry: UploadEntry): string {
 
 function sizeOf(entry: UploadEntry): number {
   return entry instanceof File ? entry.size : (entry.size ?? 0)
+}
+
+/**
+ * 上传响应里的服务端文件地址：`{ url }` 或 `{ data: { url } }`（主流接口两种形态），
+ * 非字符串/空串一律视为没有——持久化后刷新可凭它回显缩略图与预览。
+ */
+function responseUrl(response: unknown): string {
+  if (typeof response !== 'object' || response === null) return ''
+  const rec = response as Record<string, unknown>
+  if (typeof rec.url === 'string' && rec.url !== '') return rec.url
+  const data = rec.data
+  if (typeof data === 'object' && data !== null) {
+    const inner = (data as Record<string, unknown>).url
+    if (typeof inner === 'string' && inner !== '') return inner
+  }
+  return ''
 }
 
 /** 裁剪舞台物理尺寸（与 canvas 绘制缓冲 1:1；轻量内建对话框的固定基准） */
@@ -772,12 +863,18 @@ export class OASUpload extends OASFormElement {
       'crop-aspect',
       // 表单关联通道：required 驱动原生校验链（valueMissing）
       'required',
+      // 文件列表元数据持久化（opt-in；localStorage）
+      'storage-key',
     ]
   }
 
   private input: HTMLInputElement | null = null
   private zone: HTMLElement | null = null
   private list: HTMLElement | null = null
+  private errorBar: HTMLElement | null = null
+  private errorBarText: HTMLElement | null = null
+  private retryAllBtn: HTMLButtonElement | null = null
+  private clearErrorsBtn: HTMLButtonElement | null = null
   private previewMask: HTMLElement | null = null
   private previewBody: HTMLElement | null = null
   private previewCloseBtn: HTMLButtonElement | null = null
@@ -794,6 +891,17 @@ export class OASUpload extends OASFormElement {
   private filesDirty = false
   private _customRequest: UploadCustomRequest | null = null
   private _beforeUpload: UploadBeforeUpload | null = null
+
+  // ---- 文件列表持久化（storage-key，opt-in）----
+  /** 上次生效的 storage-key（变更检测：改 key 即时重载，移除即停止写） */
+  private lastStorageKey = ''
+  /** 最近一次写入的 key 与序列化快照（同值不重复写） */
+  private lastWrittenKey = ''
+  private lastWrittenSnapshot = ''
+  /** 恢复自持久化的条目（hover 提示「已持久化」，且不参与真实上传） */
+  private persistedEntries = new Set<UploadEntry>()
+  /** 上传成功响应里的服务端地址（持久化时随元数据写入；预览仍走对象 URL） */
+  private serverUrls = new Map<UploadEntry, string>()
 
   // ---- 裁剪（crop）通道状态 ----
   private cropMask: HTMLElement | null = null
@@ -906,6 +1014,13 @@ export class OASUpload extends OASFormElement {
         <div class="trigger-tpl" part="trigger-tpl" hidden></div>
       </div>
       <div class="tip" part="tip" hidden></div>
+      <!-- 错误摘要条：文案节点独享 role=status（活区只含播报文本），操作按钮在活区外——
+           否则读屏把「重试全部 / 清除错误」当状态更新的一部分反复播报 -->
+      <div class="error-bar" part="error-bar" hidden>
+        <span class="error-bar-text" role="status"></span>
+        <button type="button" class="error-bar-btn retry-all"></button>
+        <button type="button" class="error-bar-btn clear-errors"></button>
+      </div>
       <div class="list" part="list"></div>
       <div class="preview-mask" part="preview" hidden>
         <div class="preview-dialog" role="dialog" aria-modal="true">
@@ -940,6 +1055,14 @@ export class OASUpload extends OASFormElement {
     this.input = this.shadow.querySelector('.file-input')
     this.zone = this.shadow.querySelector('.zone')
     this.list = this.shadow.querySelector('.list')
+    this.errorBar = this.shadow.querySelector('.error-bar')
+    this.errorBarText = this.shadow.querySelector('.error-bar-text')
+    this.retryAllBtn = this.shadow.querySelector('.error-bar .retry-all')
+    this.clearErrorsBtn = this.shadow.querySelector('.error-bar .clear-errors')
+    // 摘要条是常驻节点（不随 renderList 重建）：只在失败数变化时改写文案，避免
+    // role=status 在每次进度刷新时重复播报
+    this.retryAllBtn?.addEventListener('click', () => this.retryAll())
+    this.clearErrorsBtn?.addEventListener('click', () => this.clearErrors())
     this.previewMask = this.shadow.querySelector('.preview-mask')
     this.previewBody = this.shadow.querySelector('.preview-body')
     this.previewCloseBtn = this.shadow.querySelector('.preview-close')
@@ -1032,6 +1155,28 @@ export class OASUpload extends OASFormElement {
       this.releaseCropImage()
       document.removeEventListener('keydown', this.handleCropEsc)
       this.cropMask?.setAttribute('hidden', '')
+    })
+  }
+
+  /**
+   * 首连后按 storage-key 恢复持久化列表。
+   * 延到微任务：宿主在挂载后同步写入的 `files` / `defaultFiles` 属受控初值，优先于存储；
+   * 也让 SSR/DSD 水合的同步首帧与快照零差异（恢复结果在微任务里再渲染一次）。
+   */
+  override connectedCallback(): void {
+    const firstConnect = !this.hasRendered
+    // 采集必须在 super（首渲染 → update → syncStorageKey）之前：首帧不得把「首次读取」当作 key 变更
+    this.lastStorageKey = this.storageKeyValue()
+    super.connectedCallback()
+    if (!firstConnect) return
+    const key = this.lastStorageKey
+    if (key === '' || isSsrRuntime()) return
+    queueMicrotask(() => {
+      if (!this.isConnected) return
+      // 微任务前改过 key / 宿主写了受控初值：放弃本次恢复（改 key 由 syncStorageKey 同步重载）
+      if (this.storageKeyValue() !== key) return
+      if (this._files.length > 0) return
+      this.restoreFromStorage(key, false)
     })
   }
 
@@ -1180,6 +1325,8 @@ export class OASUpload extends OASFormElement {
     const input = this.input
     const zone = this.zone
     if (!input || !zone) return
+    // storage-key 变更/移除：即时重载新键 / 停止持久化（首次由 connectedCallback 采集，不在此触发）
+    this.syncStorageKey()
     const disabled = this.injectDisabled()
     input.accept = this.getAttr('accept', '')
     input.multiple = this.hasAttr('multiple')
@@ -1674,6 +1821,7 @@ export class OASUpload extends OASFormElement {
     // 值变化点同步原生表单数据 + 校验链（文件选择/替换）
     this.syncFormValue()
     this.syncValidity()
+    this.persistList()
     if (this.hasAttr('auto-upload')) this.startUpload()
   }
 
@@ -1771,11 +1919,15 @@ export class OASUpload extends OASFormElement {
         if (!cur || cur.status !== 'uploading') return
         cur.status = 'done'
         cur.percent = 100
+        // 服务端返回的地址随元数据持久化（刷新后凭它回显缩略图/预览）
+        const url = responseUrl(response)
+        if (url) this.serverUrls.set(file, url)
         this.uploadControllers.delete(file)
         this.emit('success', { file, response })
         this.emit('upload', { file, percent: 100, status: 'done' })
         this.emit('progress', { file, percent: 100 })
         this.renderList()
+        this.persistList()
       },
       onError: (err) => {
         const cur = this.statusMap.get(file)
@@ -1784,6 +1936,7 @@ export class OASUpload extends OASFormElement {
         this.uploadControllers.delete(file)
         this.emit('error', { file, response: err?.response, status: err?.status })
         this.renderList()
+        this.persistList()
       },
     }
     const ctrl = typeof this._customRequest === 'function' ? this._customRequest(opts) : this.xhrUpload(opts)
@@ -1837,6 +1990,7 @@ export class OASUpload extends OASFormElement {
       }
       this.emit('cancel', { file: opts.file })
       this.renderList()
+      this.persistList()
     }
     xhr.send(form)
     return handle
@@ -1856,6 +2010,7 @@ export class OASUpload extends OASFormElement {
     }
     this.emit('cancel', { file })
     this.renderList()
+    this.persistList()
   }
 
   private retryEntry(file: File): void {
@@ -1900,6 +2055,7 @@ export class OASUpload extends OASFormElement {
       }
       this.renderList()
       if (done || this._files.every((f) => this.statusMap.get(f)?.status === 'done')) {
+        this.persistList()
         if (this.timer) clearInterval(this.timer)
         this.timer = null
       }
@@ -1921,6 +2077,8 @@ export class OASUpload extends OASFormElement {
     this.filesDirty = true
     this._files.splice(index, 1)
     this.statusMap.delete(entry)
+    this.persistedEntries.delete(entry)
+    this.serverUrls.delete(entry)
     this.revokeUrl(entry)
     this.renderList()
     this.emit('remove', { file: entry, index })
@@ -1928,6 +2086,7 @@ export class OASUpload extends OASFormElement {
     // 值变化点同步原生表单数据 + 校验链（文件移除）
     this.syncFormValue()
     this.syncValidity()
+    this.persistList()
   }
 
   /** 初值/受控重置：File → pending；{name,url} 回显记录 → done(100) */
@@ -1938,6 +2097,11 @@ export class OASUpload extends OASFormElement {
       this.timer = null
     }
     this.revokeAllUrls()
+    // 恢复标记随列表整体替换失效；服务端地址映射只保留仍在新列表中的条目
+    this.persistedEntries.clear()
+    for (const entry of [...this.serverUrls.keys()]) {
+      if (!list.includes(entry)) this.serverUrls.delete(entry)
+    }
     // 文件列表被整体重置（受控写入/表单 reset）：进行中的裁剪流程随之作废
     this.cropQueue.length = 0
     if (this.cropping) {
@@ -1972,6 +2136,7 @@ export class OASUpload extends OASFormElement {
     // 值变化点同步原生表单数据 + 校验链（初值/受控写入/清空，均不派发事件）
     this.syncFormValue()
     this.syncValidity()
+    this.persistList()
   }
 
   private urlFor(entry: UploadEntry): string {
@@ -1997,13 +2162,163 @@ export class OASUpload extends OASFormElement {
     this.urlMap.clear()
   }
 
+  // ---------- 文件列表持久化（storage-key，opt-in） ----------
+
+  /** 当前持久化键（空串 = 不启用） */
+  private storageKeyValue(): string {
+    return this.getAttr('storage-key', '')
+  }
+
+  /**
+   * key 变更检测：改 key 即时从新键重载列表；移除 key 只停止写入（已恢复/已选列表保持不动）。
+   * 首帧不触发（lastStorageKey 在 connectedCallback 里先采集，恢复走微任务）。
+   */
+  private syncStorageKey(): void {
+    const key = this.storageKeyValue()
+    if (key === this.lastStorageKey) return
+    this.lastStorageKey = key
+    this.lastWrittenKey = ''
+    this.lastWrittenSnapshot = ''
+    if (!this.hasRendered || !this.isConnected || key === '') return
+    this.restoreFromStorage(key, true)
+  }
+
+  /** 快照：条目元数据 + 状态（done/error/pending 归一为三态；uploading 落盘按 pending 记） */
+  private buildSnapshot(): UploadSnapshot {
+    const files: PersistedUploadFile[] = []
+    for (const entry of this._files) {
+      const st = this.statusOf(entry)
+      const item: PersistedUploadFile = {
+        name: nameOf(entry),
+        status: st.status === 'done' ? 'done' : st.status === 'error' ? 'error' : 'pending',
+      }
+      const size = sizeOf(entry)
+      if (size > 0) item.size = size
+      const type = entry instanceof File ? entry.type : ''
+      if (type) item.type = type
+      const url = entry instanceof File ? (this.serverUrls.get(entry) ?? '') : entry.url
+      if (url) item.url = url
+      files.push(item)
+    }
+    return { v: STORAGE_VERSION, files }
+  }
+
+  /**
+   * 列表变化点落盘（opt-in；无 key / SSR / 存储不可用均静默跳过）。
+   * 同 key 同内容不重复写：批量重试的每个成功回调不会各写一遍同样的快照。
+   */
+  private persistList(): void {
+    const key = this.storageKeyValue()
+    if (key === '' || isSsrRuntime()) return
+    let raw: string
+    try {
+      raw = JSON.stringify(this.buildSnapshot())
+    } catch {
+      return
+    }
+    if (key === this.lastWrittenKey && raw === this.lastWrittenSnapshot) return
+    try {
+      window.localStorage.setItem(key, raw)
+      this.lastWrittenKey = key
+      this.lastWrittenSnapshot = raw
+    } catch {
+      // 隐私模式 / 配额满 / 存储被禁用：静默降级，内存列表照常可用
+    }
+  }
+
+  /** 解析/校验快照：版本或整体形状不符返回 null（安全降级）；单条非法项跳过 */
+  private parseSnapshot(raw: string | null): UploadSnapshot | null {
+    if (!raw) return null
+    let parsed: unknown
+    try {
+      parsed = JSON.parse(raw)
+    } catch {
+      return null
+    }
+    if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) return null
+    const data = parsed as Record<string, unknown>
+    if (data.v !== STORAGE_VERSION || !Array.isArray(data.files)) return null
+    const files: PersistedUploadFile[] = []
+    for (const item of data.files.slice(0, STORAGE_MAX_FILES)) {
+      if (typeof item !== 'object' || item === null || Array.isArray(item)) continue
+      const rec = item as Record<string, unknown>
+      if (typeof rec.name !== 'string' || rec.name === '') continue
+      const status = rec.status === 'done' ? 'done' : rec.status === 'error' ? 'error' : 'pending'
+      const file: PersistedUploadFile = { name: rec.name, status }
+      if (typeof rec.size === 'number' && Number.isFinite(rec.size) && rec.size >= 0) file.size = rec.size
+      if (typeof rec.type === 'string' && rec.type !== '') file.type = rec.type
+      if (typeof rec.url === 'string' && rec.url !== '') file.url = rec.url
+      files.push(file)
+    }
+    return { v: STORAGE_VERSION, files }
+  }
+
+  /**
+   * 从存储恢复列表（元数据回显，**不含文件内容**）：
+   * - `done` → 已完成回显（无文件体、不可重传，缩略图/预览仅在有服务端 url 时可用）
+   * - `error` / `pending` → 回退为待处理态（percent 0），并派发一次 `oas-change` 让宿主知情
+   *   （刷新后原文件体已丢失，需要宿主引导用户重新选择；不静默复活成"已完成"是安全默认）
+   * - `replace=false`（首连）要求当前列表为空；`true`（改 key）连带收尾在途上传/裁剪后整体替换
+   */
+  private restoreFromStorage(key: string, replace: boolean): void {
+    let raw: string | null = null
+    try {
+      raw = window.localStorage.getItem(key)
+    } catch {
+      return
+    }
+    const snapshot = this.parseSnapshot(raw)
+    if (!snapshot || snapshot.files.length === 0) return
+    if (!replace && this._files.length > 0) return
+    if (replace) {
+      this.abortAllQuiet()
+      if (this.timer) {
+        clearInterval(this.timer)
+        this.timer = null
+      }
+      this.cropQueue.length = 0
+      if (this.cropping) {
+        this.cropping = null
+        this.closeCropDialog()
+      }
+    }
+    this.revokeAllUrls()
+    this.serverUrls.clear()
+    this.persistedEntries.clear()
+    this.statusMap.clear()
+    const entries: UploadEntry[] = []
+    let pendingCount = 0
+    for (const file of snapshot.files) {
+      // 回显记录无文件体：url 缺省留空串——缩略图/预览据此回落为文件图标，不渲染破图
+      const entry: UploadEchoFile = { name: file.name, url: file.url ?? '' }
+      if (file.size !== undefined) entry.size = file.size
+      entries.push(entry)
+      this.persistedEntries.add(entry)
+      if (file.status === 'done') this.statusMap.set(entry, { percent: 100, status: 'done' })
+      else {
+        this.statusMap.set(entry, { percent: 0, status: 'pending' })
+        pendingCount++
+      }
+    }
+    this._files = entries
+    // 基线跟随恢复结果：原生 form.reset() 回到「刷新后看到的列表」，而不是空列表
+    if (!this.filesDirty) this.initialFiles = [...entries]
+    this.lastWrittenKey = key
+    this.lastWrittenSnapshot = JSON.stringify(this.buildSnapshot())
+    this.renderList()
+    this.syncFormValue()
+    this.syncValidity()
+    if (pendingCount > 0) this.emit('change', { files: this.files })
+  }
+
   private openPreview(entry: UploadEntry): void {
     if (this.injectDisabled()) return
     this.previousFocus = document.activeElement as HTMLElement | null
     if (!this.previewBody || !this.previewMask) return
     this.previewBody.innerHTML = ''
     const url = this.urlFor(entry)
-    if (isImageEntry(entry)) {
+    // 恢复自持久化的条目没有文件内容：无服务端 url 时按非图片展示（不渲染破图）
+    if (isImageEntry(entry) && url) {
       const img = document.createElement('img')
       img.src = url
       img.alt = nameOf(entry)
@@ -2038,6 +2353,8 @@ export class OASUpload extends OASFormElement {
   private renderList(): void {
     const list = this.list
     if (!list) return
+    // 摘要条先同步：失败数变化与列表重建同帧生效（节点常驻，不随 innerHTML 重建）
+    this.syncErrorBar()
     list.hidden = !this.listVisible()
     if (!this.listVisible()) return
     list.innerHTML = ''
@@ -2064,6 +2381,76 @@ export class OASUpload extends OASFormElement {
 
   private statusOf(entry: UploadEntry): FileStatus {
     return this.statusMap.get(entry) ?? { percent: 0, status: 'pending' }
+  }
+
+  /**
+   * 错误摘要条同步（常驻节点，条件显隐）：失败数 0 或列表整体隐藏时收起。
+   * 只在显示内容变化时写 DOM——`role=status` 的重复写会被读屏反复播报。
+   */
+  private syncErrorBar(): void {
+    const bar = this.errorBar
+    if (!bar) return
+    const failed = this._files.filter((entry) => this.statusOf(entry).status === 'error').length
+    const visible = failed > 0 && this.listVisible()
+    if (bar.hidden !== !visible) bar.hidden = !visible
+    if (!visible) return
+    const text = this.t('upload.errorSummary', { count: failed })
+    if (this.errorBarText && this.errorBarText.textContent !== text) this.errorBarText.textContent = text
+    const disabled = this.injectDisabled()
+    const retryLabel = this.t('upload.retryAll')
+    const clearLabel = this.t('upload.clearErrors')
+    if (this.retryAllBtn) {
+      if (this.retryAllBtn.textContent !== retryLabel) this.retryAllBtn.textContent = retryLabel
+      if (this.retryAllBtn.disabled !== disabled) this.retryAllBtn.disabled = disabled
+    }
+    if (this.clearErrorsBtn) {
+      if (this.clearErrorsBtn.textContent !== clearLabel) this.clearErrorsBtn.textContent = clearLabel
+      if (this.clearErrorsBtn.disabled !== disabled) this.clearErrorsBtn.disabled = disabled
+    }
+  }
+
+  /**
+   * 重试全部失败文件：逐文件走既有上传通道（`oas-retry` → 上传进度/成功/失败事件）。
+   * 无真实通道（action / custom-request）时无可重试对象，安全空操作。
+   */
+  retryAll(): void {
+    if (this.injectDisabled()) return
+    const failed = this._files.filter(
+      (entry): entry is File => entry instanceof File && this.statusOf(entry).status === 'error',
+    )
+    for (const file of failed) this.retryEntry(file)
+  }
+
+  /**
+   * 清除错误：把全部失败条目从列表移除（逐条派发 `oas-remove`，末尾一次 `oas-change`）。
+   * 成功/等待中的文件保留——失败条目没有可恢复的数据，保留只会一直显示红色失败态。
+   */
+  clearErrors(): void {
+    const failed = this._files.filter((entry) => this.statusOf(entry).status === 'error')
+    if (failed.length === 0) return
+    const failedSet = new Set(failed)
+    const removed: Array<{ entry: UploadEntry; index: number }> = []
+    const next: UploadEntry[] = []
+    this._files.forEach((entry, index) => {
+      if (!failedSet.has(entry)) {
+        next.push(entry)
+        return
+      }
+      removed.push({ entry, index })
+      this.statusMap.delete(entry)
+      this.persistedEntries.delete(entry)
+      this.serverUrls.delete(entry)
+      this.revokeUrl(entry)
+    })
+    // 用户交互置脏：清除失败项属用户对值的人工修改（reset 不再复活被清掉的条目）
+    this.filesDirty = true
+    this._files = next
+    this.renderList()
+    for (const { entry, index } of removed) this.emit('remove', { file: entry, index })
+    this.emit('change', { files: this.files })
+    this.syncFormValue()
+    this.syncValidity()
+    this.persistList()
   }
 
   /** 行内容区：template[slot="item"] 双形态克隆（[data-item-name]/[data-item-size] 绑定），缺省回落默认布局 */
@@ -2110,6 +2497,12 @@ export class OASUpload extends OASFormElement {
     return icon
   }
 
+  /** 恢复自持久化的条目：hover 提示「已持久化」（不含文件内容）——非恢复条目不加提示 */
+  private markPersisted(el: HTMLElement, entry: UploadEntry): void {
+    if (!this.persistedEntries.has(entry)) return
+    el.setAttribute('title', this.t('upload.persisted'))
+  }
+
   /** 行内 retry/cancel 操作按钮（真实通道专有态：error → retry；uploading 且可中止 → cancel） */
   private makeActInline(kind: 'retry' | 'cancel', entry: UploadEntry): HTMLButtonElement {
     const b = document.createElement('button')
@@ -2148,6 +2541,7 @@ export class OASUpload extends OASFormElement {
       item.className = 'item'
       if (st.status === 'error') item.classList.add('is-error')
       item.setAttribute('part', 'item')
+      this.markPersisted(item, entry)
       item.append(this.makeItemMeta(entry), this.makeProgress(st))
       if (st.status === 'error') item.appendChild(this.makeActInline('retry', entry))
       if (st.status === 'uploading' && entry instanceof File && this.uploadControllers.has(entry)) {
@@ -2170,7 +2564,7 @@ export class OASUpload extends OASFormElement {
 
       const thumb = document.createElement('div')
       thumb.className = 'item-thumb'
-      if (isImageEntry(entry)) {
+      if (isImageEntry(entry) && this.urlFor(entry)) {
         const img = document.createElement('img')
         img.src = this.urlFor(entry)
         img.alt = nameOf(entry)
@@ -2179,6 +2573,7 @@ export class OASUpload extends OASFormElement {
         thumb.appendChild(this.makeIcon('upload', '20'))
       }
 
+      this.markPersisted(item, entry)
       item.append(thumb, this.makeItemMeta(entry), this.makeProgress(st))
       if (st.status === 'error') item.appendChild(this.makeActInline('retry', entry))
       if (st.status === 'uploading' && entry instanceof File && this.uploadControllers.has(entry)) {
@@ -2200,10 +2595,11 @@ export class OASUpload extends OASFormElement {
       // 上传中态类名：触屏（coarse）下操作遮罩常显的定位锚
       if (st.status === 'uploading') card.classList.add('is-uploading')
       card.setAttribute('part', 'item')
+      this.markPersisted(card, entry)
 
       const thumb = document.createElement('div')
       thumb.className = 'thumb'
-      if (isImageEntry(entry)) {
+      if (isImageEntry(entry) && this.urlFor(entry)) {
         const img = document.createElement('img')
         img.src = this.urlFor(entry)
         img.alt = nameOf(entry)

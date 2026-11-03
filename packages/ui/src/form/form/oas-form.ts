@@ -164,6 +164,46 @@ register(
   (el) => (el.hasAttribute('checked') ? 'true' : 'false'),
   (el, v) => el.toggleAttribute('checked', v === 'true'),
 )
+/**
+ * upload：表单值 = 可提交文件的元数据 JSON（`[{ name, size, type }]`，空列表为 `''`）。
+ * 依据组件 `value` 的既有语义（仅 File 条目可提交，`{name,url}` 回显记录无文件体不计入），
+ * 因此 required 规则与原生 ElementInternals 的 valueMissing 判定完全一致；文件体走组件
+ * 自身的原生 FormData 提交通道，不进 JSON 值。
+ * 写通道（initial-values / reset 基线）接受回显记录 `[{ name, url, size? }]`：File 条目
+ * 无法从 JSON 还原文件体，写回时按「清空 / 显示既有回显」处理。
+ */
+register(
+  ['oas-upload'],
+  (el) => {
+    const files = (el as unknown as { files?: unknown }).files
+    if (!Array.isArray(files)) return ''
+    const meta: Array<{ name: string; size: number; type: string }> = []
+    for (const entry of files) {
+      if (entry instanceof File) {
+        meta.push({ name: entry.webkitRelativePath || entry.name, size: entry.size, type: entry.type })
+      }
+    }
+    return meta.length === 0 ? '' : JSON.stringify(meta)
+  },
+  (el, v) => {
+    let records: Array<{ name: string; url: string; size?: number }> = []
+    try {
+      const parsed: unknown = JSON.parse(v === '' ? '[]' : v)
+      if (Array.isArray(parsed)) {
+        records = parsed.filter(
+          (item): item is { name: string; url: string; size?: number } =>
+            typeof item === 'object' &&
+            item !== null &&
+            typeof (item as { name?: unknown }).name === 'string' &&
+            typeof (item as { url?: unknown }).url === 'string',
+        )
+      }
+    } catch {
+      records = []
+    }
+    ;(el as unknown as { files: unknown }).files = records
+  },
+)
 
 /** 注册额外的表单控件（供自定义/未内置控件被 collectFields 收集）；返回注销函数 */
 export function registerFormControl(

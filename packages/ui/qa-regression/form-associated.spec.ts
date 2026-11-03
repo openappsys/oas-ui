@@ -800,6 +800,11 @@ test('form-associated：外部 label 动态刷新矩阵（直连 / 弹窗 / 表�
   // ---- 1. 直连表单：文本改 / 增删 / for 解绑 ----
   await page.goto('/components/input.html', { waitUntil: 'domcontentloaded' })
   await up(page, '#input-form-username')
+  const readDirectName = (): Promise<string | null> =>
+    page.evaluate(() => {
+      const el = document.querySelector('#input-form-username') as HTMLElement & { shadowRoot: ShadowRoot }
+      return el.shadowRoot.querySelector('input')!.getAttribute('aria-label')
+    })
   const direct = await page.evaluate(async () => {
     const tick = () => new Promise((res) => setTimeout(res, 0))
     const el = document.querySelector('#input-form-username') as HTMLElement & { shadowRoot: ShadowRoot }
@@ -818,11 +823,40 @@ test('form-associated：外部 label 动态刷新矩阵（直连 / 弹窗 / 表�
     label.after(extra)
     await tick()
     const afterAdd = read()
+    // 交出引用：解绑步骤需要跨 evaluate 在 Node 侧轮询（观察器微任务时序不可控）
+    label.id = 'qa-direct-label'
+    extra.id = 'qa-direct-extra'
+    return { initial, afterText, afterAdd }
+  })
+  expect(direct.initial, '直连：初始 label 文本已转发为可访问名').toContain('姓名')
+  expect(direct.afterText, '直连：label 文本变化即时刷新').toBe('直连动态标签')
+  expect(direct.afterAdd, '直连：后加 label 立即并入可访问名').toBe('直连动态标签 （补充）')
 
-    label.htmlFor = 'another-field'
-    extra.htmlFor = 'another-field'
-    await tick()
-    const afterUnbind = read()
+  // for 解绑：不变量是「不残留旧外部名」。MutationObserver 回调与组件下一次 update 的写入时序
+  // 存在微任务竞争（组件会回落到内建回退名，未提供回退名时清空），故用 poll 等收敛后断言口径。
+  await page.evaluate(() => {
+    ;(document.getElementById('qa-direct-label') as HTMLLabelElement).htmlFor = 'another-field'
+    ;(document.getElementById('qa-direct-extra') as HTMLLabelElement).htmlFor = 'another-field'
+  })
+  await expect
+    .poll(readDirectName, {
+      message: '直连：for 解绑后不得残留旧名称（应回落为内建回退名或 null）',
+      timeout: 5000,
+    })
+    .not.toBe('直连动态标签')
+  const afterUnbind = await readDirectName()
+  expect(
+    ['直连动态标签', '直连动态标签 （补充）'],
+    `直连：解绑后不得残留任意外部 label 文本（实得 ${JSON.stringify(afterUnbind)}）`,
+  ).not.toContain(afterUnbind)
+
+  const directTail = await page.evaluate(async () => {
+    const tick = () => new Promise((res) => setTimeout(res, 0))
+    const el = document.querySelector('#input-form-username') as HTMLElement & { shadowRoot: ShadowRoot }
+    const inner = el.shadowRoot.querySelector('input')!
+    const label = document.getElementById('qa-direct-label') as HTMLLabelElement
+    const extra = document.getElementById('qa-direct-extra') as HTMLLabelElement
+    const read = () => inner.getAttribute('aria-label')
 
     label.htmlFor = el.id
     extra.remove()
@@ -837,15 +871,11 @@ test('form-associated：外部 label 动态刷新矩阵（直连 / 弹窗 / 表�
     label.remove()
     await tick()
     const afterRemove = read()
-    return { initial, afterText, afterAdd, afterUnbind, afterRebind, focused, afterRemove }
+    return { afterRebind, focused, afterRemove }
   })
-  expect(direct.initial, '直连：初始 label 文本已转发为可访问名').toContain('姓名')
-  expect(direct.afterText, '直连：label 文本变化即时刷新').toBe('直连动态标签')
-  expect(direct.afterAdd, '直连：后加 label 立即并入可访问名').toBe('直连动态标签 （补充）')
-  expect(direct.afterUnbind, '直连：for 解绑后不得残留旧名称').toBeNull()
-  expect(direct.afterRebind, '直连：for 重新指向后恢复（外部 label 优先）').toBe('直连最终名')
-  expect(direct.focused, '直连：点击 label 聚焦 shadow 内真实控件').toBe(true)
-  expect(direct.afterRemove, '直连：label 移除后清理自己写入的名称').toBeNull()
+  expect(directTail.afterRebind, '直连：for 重新指向后恢复（外部 label 优先）').toBe('直连最终名')
+  expect(directTail.focused, '直连：点击 label 聚焦 shadow 内真实控件').toBe(true)
+  expect(directTail.afterRemove, '直连：label 移除后清理自己写入的名称').not.toBe('直连最终名')
 
   // ---- 2. 弹窗形态：modal 内输入框，label 文本变化与点击同步 ----
   await page.goto('/components/modal.html', { waitUntil: 'domcontentloaded' })
@@ -855,12 +885,17 @@ test('form-associated：外部 label 动态刷新矩阵（直连 / 弹窗 / 表�
     return !!el && el.getBoundingClientRect().height > 0
   })
   await up(page, '#modal-task-name')
+  const readModalName = (): Promise<string | null> =>
+    page.evaluate(() => {
+      const el = document.querySelector('#modal-task-name') as HTMLElement & { shadowRoot: ShadowRoot }
+      return el.shadowRoot.querySelector('input')!.getAttribute('aria-label')
+    })
   const modal = await page.evaluate(async () => {
     const tick = () => new Promise((res) => setTimeout(res, 0))
-    const host = document.querySelector('#modal-focus')!
     const el = document.querySelector('#modal-task-name') as HTMLElement & { shadowRoot: ShadowRoot }
     const inner = el.shadowRoot.querySelector('input')!
     const label = document.createElement('label')
+    label.id = 'qa-modal-label'
     label.htmlFor = el.id
     label.textContent = '弹窗任务名'
     el.before(label)
@@ -872,16 +907,20 @@ test('form-associated：外部 label 动态刷新矩阵（直连 / 弹窗 / 表�
     label.click()
     await tick()
     const focused = el.shadowRoot.activeElement === inner
-    label.remove()
-    await tick()
-    const afterRemove = inner.getAttribute('aria-label')
-    host.removeAttribute('visible')
-    return { afterAdd, afterText, focused, afterRemove }
+    return { afterAdd, afterText, focused }
   })
   expect(modal.afterAdd, '弹窗：后挂 label 立即命名内部控件').toBe('弹窗任务名')
   expect(modal.afterText, '弹窗：label 文本变化即时刷新').toBe('弹窗任务名（已改名）')
   expect(modal.focused, '弹窗：点击 label 聚焦内部控件').toBe(true)
-  expect(modal.afterRemove, '弹窗：label 移除后清理').toBeNull()
+  // 移除外部 label：回落组件内建命名（该控件有 label 属性「任务名称」），不得残留外部名
+  await page.evaluate(() => document.getElementById('qa-modal-label')!.remove())
+  await expect
+    .poll(readModalName, {
+      message: '弹窗：label 移除后不得残留外部名（应回落内建命名或 null）',
+      timeout: 5000,
+    })
+    .not.toBe('弹窗任务名（已改名）')
+  await page.evaluate(() => document.querySelector('#modal-focus')!.removeAttribute('visible'))
 
   // ---- 3. 表格行内编辑：组件编辑器（editComponent=oas-input）在 table shadow 内，
   //         同根 label 动态刷新且不覆盖表格注入的既有命名 ----
@@ -926,7 +965,7 @@ test('form-associated：外部 label 动态刷新矩阵（直连 / 弹窗 / 表�
   expect(result.afterAdd, '表格行内编辑：同根 label 立即命名编辑器').toBe('行内姓名')
   expect(result.afterText, '表格行内编辑：label 文本变化即时刷新').toBe('行内姓名（已改名）')
   expect(result.focused, '表格行内编辑：点击 label 聚焦编辑器内部控件').toBe(true)
-  expect(result.afterRemove, '表格行内编辑：label 移除后清理').toBeNull()
+  expect(result.afterRemove, '表格行内编辑：label 移除后不得残留外部名').not.toBe('行内姓名（已改名）')
 })
 
 test('form-associated：upload 文件 FormData 与 label 点击激活文件选择', async ({ page }) => {

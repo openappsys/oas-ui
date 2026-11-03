@@ -1,5 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { OASUpload } from './index.js'
+import { OASForm } from '../form/index.js'
+import '../form-item/index.js'
 
 function mount(attrs: Record<string, string> = {}): OASUpload {
   const el = new OASUpload()
@@ -1496,5 +1498,468 @@ describe('OASUpload value property（公开读/写通道）', () => {
     expect(typeof desc!.set).toBe('function')
     el.value = [makeFile('a.txt')]
     expect(Object.hasOwn(el, 'value')).toBe(false)
+  })
+})
+
+// ---------- storage-key：opt-in 文件列表元数据持久化 ----------
+interface StoredFile {
+  name: string
+  size?: number
+  type?: string
+  status: string
+  url?: string
+}
+interface StoredSnapshot {
+  v: number
+  files: StoredFile[]
+}
+
+describe('OASUpload storage-key（opt-in 文件列表持久化）', () => {
+  const KEY = 'oas-upload-test'
+  const ALT = 'oas-upload-test-alt'
+
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    window.localStorage.clear()
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+    window.localStorage.clear()
+  })
+
+  function stored(key = KEY): StoredSnapshot | null {
+    const raw = window.localStorage.getItem(key)
+    return raw ? (JSON.parse(raw) as StoredSnapshot) : null
+  }
+
+  function namesOf(el: OASUpload): string[] {
+    return el.files.map((entry) => (entry instanceof File ? entry.name : entry.name))
+  }
+
+  function itemsOf(el: OASUpload): HTMLElement[] {
+    return [...el.shadowRoot!.querySelectorAll<HTMLElement>('.item')]
+  }
+
+  it('storage-key 进 observedAttributes；无 key 时不读写存储（opt-in 默认零变化）', async () => {
+    expect(OASUpload.observedAttributes).toContain('storage-key')
+    const get = vi.spyOn(window.localStorage, 'getItem')
+    const set = vi.spyOn(window.localStorage, 'setItem')
+    try {
+      const el = mount()
+      pick(el, [makeFile('a.txt')])
+      await Promise.resolve()
+      expect(get).not.toHaveBeenCalled()
+      expect(set).not.toHaveBeenCalled()
+    } finally {
+      get.mockRestore()
+      set.mockRestore()
+    }
+  })
+
+  it('选择文件后写入元数据快照（v / name / size / type / status），不含文件内容', () => {
+    const el = mount({ 'storage-key': KEY })
+    pick(el, [makeFile('a.txt', 'text/plain', 2048)])
+    expect(stored()).toEqual({
+      v: 1,
+      files: [{ name: 'a.txt', size: 2048, type: 'text/plain', status: 'pending' }],
+    })
+  })
+
+  it('真实通道：成功写 status=done + 服务端 url，失败写 status=error', () => {
+    vi.stubGlobal('XMLHttpRequest', FakeUploadXHR)
+    FakeUploadXHR.reset()
+    try {
+      const el = mount({ 'storage-key': KEY, action: '/upload', 'auto-upload': '', multiple: '' })
+      pick(el, [makeFile('a.txt'), makeFile('b.txt')])
+      FakeUploadXHR.instances[0]!.respond(200, '{"url":"https://cdn.example.com/a.txt"}')
+      FakeUploadXHR.instances[1]!.respond(500, 'boom')
+      expect(stored()).toEqual({
+        v: 1,
+        files: [
+          { name: 'a.txt', size: 1024, type: 'text/plain', status: 'done', url: 'https://cdn.example.com/a.txt' },
+          { name: 'b.txt', size: 1024, type: 'text/plain', status: 'error' },
+        ],
+      })
+    } finally {
+      vi.unstubAllGlobals()
+    }
+  })
+
+  it('刷新恢复：done 回显为已完成（无文件体不可提交、无重试钮），hover 有「已持久化」提示', async () => {
+    window.localStorage.setItem(
+      KEY,
+      JSON.stringify({
+        v: 1,
+        files: [{ name: 'a.png', size: 2048, type: 'image/png', status: 'done', url: 'https://cdn.example.com/a.png' }],
+      }),
+    )
+    const el = mount({ 'storage-key': KEY, name: 'files' })
+    await Promise.resolve()
+    expect(namesOf(el)).toEqual(['a.png'])
+    expect(el.value, '恢复条目无文件体（不可提交）').toEqual([])
+    const item = itemsOf(el)[0]!
+    expect(item.textContent).toContain('a.png')
+    expect(item.textContent).toContain('2.0 KiB')
+    expect(item.getAttribute('title')).toContain('已持久化')
+    expect(item.classList.contains('is-error')).toBe(false)
+    expect(item.querySelector('.act-inline.retry'), 'done 恢复条目不可重传').toBeNull()
+    expect(el.shadowRoot!.querySelector('[part="progress"]')!.getAttribute('percent')).toBe('100')
+  })
+
+  it('刷新恢复：error / ready 回退为待处理态，并派发一次 oas-change 让宿主知情', async () => {
+    window.localStorage.setItem(
+      KEY,
+      JSON.stringify({
+        v: 1,
+        files: [
+          { name: 'a.txt', size: 10, status: 'error' },
+          { name: 'b.txt', size: 20, status: 'pending' },
+          { name: 'c.txt', size: 30, status: 'done' },
+        ],
+      }),
+    )
+    const el = mount({ 'storage-key': KEY })
+    const changes: unknown[] = []
+    el.addEventListener('oas-change', (e: Event) => changes.push((e as CustomEvent).detail))
+    await Promise.resolve()
+    expect(changes.length).toBe(1)
+    expect(namesOf(el)).toEqual(['a.txt', 'b.txt', 'c.txt'])
+    const items = itemsOf(el)
+    expect(items.map((item) => item.classList.contains('is-error'))).toEqual([false, false, false])
+    const percents = [...el.shadowRoot!.querySelectorAll('[part="progress"]')].map((p) => p.getAttribute('percent'))
+    expect(percents).toEqual(['0', '0', '100'])
+  })
+
+  it('仅 done 恢复不派发 oas-change（无待处理项）；恢复后 submit 不发起上传（不可重传）', async () => {
+    vi.useFakeTimers()
+    try {
+      window.localStorage.setItem(KEY, JSON.stringify({ v: 1, files: [{ name: 'a.txt', size: 10, status: 'done' }] }))
+      const el = mount({ 'storage-key': KEY, 'auto-upload': '' })
+      const changes: unknown[] = []
+      const uploads: unknown[] = []
+      el.addEventListener('oas-change', (e: Event) => changes.push((e as CustomEvent).detail))
+      el.addEventListener('oas-upload', (e: Event) => uploads.push((e as CustomEvent).detail))
+      await Promise.resolve()
+      el.submit()
+      vi.advanceTimersByTime(120 * 5 + 50)
+      expect(changes.length).toBe(0)
+      expect(uploads.length).toBe(0)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('坏 JSON / 版本不符 / 形状不符：静默忽略（不崩溃、不覆盖既有列表）', async () => {
+    window.localStorage.setItem(KEY, '{oops')
+    const broken = mount({ 'storage-key': KEY })
+    await Promise.resolve()
+    expect(broken.files).toEqual([])
+    expect(broken.shadowRoot!.textContent).toContain('暂无文件')
+
+    window.localStorage.clear()
+    window.localStorage.setItem(KEY, JSON.stringify({ v: 9, files: [{ name: 'x.txt', status: 'done' }] }))
+    const wrongVersion = mount({ 'storage-key': KEY })
+    await Promise.resolve()
+    expect(wrongVersion.files).toEqual([])
+
+    window.localStorage.clear()
+    window.localStorage.setItem(KEY, JSON.stringify(['not-an-object']))
+    const wrongShape = mount({ 'storage-key': KEY })
+    await Promise.resolve()
+    expect(wrongShape.files).toEqual([])
+  })
+
+  it('storage-key 变更即时重载新键；移除后停止持久化', async () => {
+    window.localStorage.setItem(ALT, JSON.stringify({ v: 1, files: [{ name: 'saved.txt', size: 5, status: 'done' }] }))
+    const el = mount({ 'storage-key': KEY, multiple: '' })
+    pick(el, [makeFile('a.txt')])
+    expect(stored()?.files.map((f) => f.name)).toEqual(['a.txt'])
+
+    el.setAttribute('storage-key', ALT)
+    expect(namesOf(el), '改 key 即时重载新键内容').toEqual(['saved.txt'])
+    expect(itemsOf(el).length).toBe(1)
+
+    el.removeAttribute('storage-key')
+    pick(el, [makeFile('b.txt')])
+    expect(
+      stored(ALT)?.files.map((f) => f.name),
+      '移除 key 后不再写入',
+    ).toEqual(['saved.txt'])
+    expect(namesOf(el)).toEqual(['saved.txt', 'b.txt'])
+  })
+
+  it('移除恢复条目后快照同步（持久化列表跟随删除）', async () => {
+    window.localStorage.setItem(KEY, JSON.stringify({ v: 1, files: [{ name: 'a.txt', size: 10, status: 'done' }] }))
+    const el = mount({ 'storage-key': KEY })
+    await Promise.resolve()
+    el.shadowRoot!.querySelector<HTMLButtonElement>('.remove')!.click()
+    expect(el.files).toEqual([])
+    expect(stored()?.files).toEqual([])
+  })
+
+  it('恢复的图片条目无服务端 url 时缩略图回落图标（不渲染破图）；有 url 时仍渲染缩略图', async () => {
+    window.localStorage.setItem(
+      KEY,
+      JSON.stringify({
+        v: 1,
+        files: [
+          { name: 'no-url.png', size: 10, type: 'image/png', status: 'done' },
+          { name: 'with-url.png', size: 20, type: 'image/png', status: 'done', url: 'https://cdn.example.com/x.png' },
+        ],
+      }),
+    )
+    const el = mount({ 'storage-key': KEY, 'list-type': 'picture' })
+    await Promise.resolve()
+    const thumbs = [...el.shadowRoot!.querySelectorAll('.item-thumb')]
+    expect(thumbs.length).toBe(2)
+    expect(thumbs[0]!.querySelector('img')).toBeNull()
+    expect(thumbs[0]!.querySelector('oas-icon')).toBeInstanceOf(HTMLElement)
+    expect(thumbs[1]!.querySelector('img')!.getAttribute('src')).toBe('https://cdn.example.com/x.png')
+  })
+
+  it('SSR 运行时不读写存储（shim 阶段跳过持久化通道）', async () => {
+    const w = window as Window & { __OAS_SSR__?: boolean }
+    w.__OAS_SSR__ = true
+    try {
+      window.localStorage.setItem(KEY, JSON.stringify({ v: 1, files: [{ name: 'srv.txt', size: 1, status: 'done' }] }))
+      const el = mount({ 'storage-key': KEY })
+      await Promise.resolve()
+      expect(el.files, 'SSR 阶段不恢复').toEqual([])
+      pick(el, [makeFile('a.txt')])
+      expect(
+        stored()?.files.map((f) => f.name),
+        'SSR 阶段不写入',
+      ).toEqual(['srv.txt'])
+    } finally {
+      delete w.__OAS_SSR__
+    }
+  })
+})
+
+// ---------- 错误汇总：失败摘要条 + 批量重试 / 清除 ----------
+describe('OASUpload 错误汇总（失败摘要条）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  /** 第 1 次尝试失败、第 2 次起成功（驱动「重试全部」的可观测结果） */
+  function failOnceThenSucceed(el: OASUpload): Map<string, number> {
+    const attempts = new Map<string, number>()
+    el.customRequest = ({ file, onSuccess, onError }) => {
+      const attempt = (attempts.get(file.name) ?? 0) + 1
+      attempts.set(file.name, attempt)
+      if (attempt === 1) onError({ status: 500 })
+      else onSuccess({ url: `https://cdn.example.com/${file.name}` })
+    }
+    return attempts
+  }
+
+  function barOf(el: OASUpload): HTMLElement | null {
+    return el.shadowRoot!.querySelector<HTMLElement>('.error-bar')
+  }
+
+  /** 摘要条是常驻节点：可见性 = 无 hidden 属性 */
+  function barVisible(el: OASUpload): boolean {
+    const bar = barOf(el)
+    return bar !== null && !bar.hasAttribute('hidden')
+  }
+
+  it('无失败文件时不渲染摘要条；有失败时渲染 N 个失败 + 重试全部 + 清除错误', () => {
+    const el = mount({ 'auto-upload': '', multiple: '' })
+    pick(el, [makeFile('ok.txt')])
+    expect(barVisible(el), '全部成功时摘要条收起').toBe(false)
+
+    failOnceThenSucceed(el)
+    pick(el, [makeFile('a.txt'), makeFile('b.txt')])
+    expect(barVisible(el)).toBe(true)
+    const bar = barOf(el)!
+    // 活区只包文案节点：role=status 落 .error-bar-text，摘要条容器与两个按钮都在活区外
+    //（否则「重试全部 / 清除错误」会被当成状态文本一起播报）
+    expect(bar.hasAttribute('role'), '摘要条容器不再是活区').toBe(false)
+    const status = bar.querySelector<HTMLElement>('.error-bar-text')!
+    expect(status.getAttribute('role'), '文案节点独享 role=status').toBe('status')
+    expect(status.textContent).toContain('2 个文件上传失败')
+    const buttons = [...bar.querySelectorAll('button')]
+    expect(
+      buttons.every((b) => !b.closest('[role="status"]')),
+      '操作按钮在活区外',
+    ).toBe(true)
+    expect(buttons.map((b) => b.textContent)).toEqual(['重试全部', '清除错误'])
+  })
+
+  it('重试全部：逐文件走既有上传通道（各派发一次 oas-retry），全部成功后摘要条消失', () => {
+    const el = mount({ 'auto-upload': '', multiple: '' })
+    const attempts = failOnceThenSucceed(el)
+    pick(el, [makeFile('a.txt'), makeFile('b.txt')])
+    const retries: string[] = []
+    el.addEventListener('oas-retry', (e: Event) => retries.push((e as CustomEvent).detail.file.name))
+    expect(barVisible(el)).toBe(true)
+    el.shadowRoot!.querySelector<HTMLButtonElement>('.error-bar .retry-all')!.click()
+    expect(retries).toEqual(['a.txt', 'b.txt'])
+    expect([...attempts.entries()]).toEqual([
+      ['a.txt', 2],
+      ['b.txt', 2],
+    ])
+    expect(barVisible(el), '全部成功后摘要条收起').toBe(false)
+    expect(el.shadowRoot!.querySelectorAll('.item.is-error').length).toBe(0)
+  })
+
+  it('清除错误：移除失败条目（逐条 oas-remove + 一次 oas-change），成功条目保留', () => {
+    const el = mount({ 'auto-upload': '', multiple: '' })
+    const attempts = new Map<string, number>()
+    el.customRequest = ({ file, onSuccess, onError }) => {
+      if (file.name === 'bad.txt') onError({ status: 500 })
+      else onSuccess({ url: `https://cdn.example.com/${file.name}` })
+      attempts.set(file.name, (attempts.get(file.name) ?? 0) + 1)
+    }
+    pick(el, [makeFile('bad.txt'), makeFile('good.txt')])
+    const removed: Array<{ name: string; index: number }> = []
+    const changes: unknown[] = []
+    el.addEventListener('oas-remove', (e: Event) => {
+      const detail = (e as CustomEvent).detail as { file: File; index: number }
+      removed.push({ name: detail.file.name, index: detail.index })
+    })
+    el.addEventListener('oas-change', (e: Event) => changes.push((e as CustomEvent).detail))
+    el.shadowRoot!.querySelector<HTMLButtonElement>('.error-bar .clear-errors')!.click()
+    expect(removed).toEqual([{ name: 'bad.txt', index: 0 }])
+    expect(changes).toEqual([{ files: [expect.any(File)] }])
+    expect(el.files.map((f) => (f instanceof File ? f.name : f.name))).toEqual(['good.txt'])
+    expect(barVisible(el), '失败项清空后摘要条收起').toBe(false)
+  })
+
+  it('公开方法 retryAll / clearErrors 可用（按钮与宿主脚本同通道）', () => {
+    const el = mount({ 'auto-upload': '', multiple: '' })
+    expect(typeof el.retryAll).toBe('function')
+    expect(typeof el.clearErrors).toBe('function')
+    const attempts = failOnceThenSucceed(el)
+    pick(el, [makeFile('a.txt')])
+    el.retryAll()
+    expect(attempts.get('a.txt')).toBe(2)
+    el.customRequest = ({ onError }) => onError({ status: 502 })
+    pick(el, [makeFile('c.txt')])
+    el.clearErrors()
+    expect(el.files.map((f) => f.name)).toEqual(['a.txt'])
+  })
+
+  it('picture-card 形态同样渲染摘要条（列表上方常驻节点，条件显隐）', () => {
+    const el = mount({ 'auto-upload': '', 'list-type': 'picture-card' })
+    el.customRequest = ({ onError }) => onError({ status: 500 })
+    pick(el, [makeFile('a.png', 'image/png')])
+    const bar = el.shadowRoot!.querySelector('.error-bar')!
+    expect(bar.hasAttribute('hidden')).toBe(false)
+    expect(bar.textContent).toContain('1 个文件上传失败')
+    expect(el.shadowRoot!.querySelector('.card.is-error')).not.toBe(null)
+  })
+
+  it('show-file-list="false" 时摘要条随列表一并隐藏（只留触发区）', () => {
+    const el = mount({ 'auto-upload': '', 'show-file-list': 'false' })
+    el.customRequest = ({ onError }) => onError({ status: 500 })
+    pick(el, [makeFile('a.txt')])
+    expect(el.files.map((f) => (f instanceof File ? f.name : f.name))).toEqual(['a.txt'])
+    expect(el.shadowRoot!.querySelector('.error-bar')!.hasAttribute('hidden')).toBe(true)
+  })
+})
+
+// ---------- 表单集成：upload 作为 oas-form 的一等公民控件 ----------
+describe('OASUpload 表单集成（oas-form 控件）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  function mountForm(inner: string): OASForm {
+    const form = new OASForm()
+    form.innerHTML = inner
+    document.body.appendChild(form)
+    return form
+  }
+
+  function uploadOf(form: OASForm): OASUpload {
+    return form.querySelector<OASUpload>('oas-upload')!
+  }
+
+  it('getValues：upload 值为可提交文件元数据 JSON（name / size / type）', () => {
+    const form = mountForm('<oas-upload name="attachments" multiple></oas-upload>')
+    const upload = uploadOf(form)
+    pick(upload, [makeFile('a.txt', 'text/plain', 2048), makeFile('b.png', 'image/png', 4096)])
+    expect(form.getValues()).toEqual({
+      attachments: JSON.stringify([
+        { name: 'a.txt', size: 2048, type: 'text/plain' },
+        { name: 'b.png', size: 4096, type: 'image/png' },
+      ]),
+    })
+    upload.files = []
+    expect(form.getValues(), '空列表值为空串（required 规则判空依据）').toEqual({ attachments: '' })
+  })
+
+  it('required 规则：无文件表单级错误，选文件后提交通过并携带元数据 values', () => {
+    const form = mountForm('<oas-upload name="attachments"></oas-upload>')
+    const upload = uploadOf(form)
+    form.rules = { attachments: [{ required: true, message: '请上传附件' }] }
+    const fails: Array<{ errors: Record<string, string>; values: Record<string, unknown> }> = []
+    const submits: Array<{ values: Record<string, unknown> }> = []
+    form.addEventListener('oas-validate-fail', (e: Event) => fails.push((e as CustomEvent).detail))
+    form.addEventListener('oas-submit', (e: Event) => submits.push((e as CustomEvent).detail))
+    form.submit()
+    expect(fails[0]!.errors).toEqual({ attachments: '请上传附件' })
+    expect(upload.hasAttribute('aria-invalid')).toBe(true)
+
+    pick(upload, [makeFile('a.txt')])
+    form.submit()
+    expect(fails.length).toBe(1)
+    expect(submits[0]!.values).toEqual({
+      attachments: JSON.stringify([{ name: 'a.txt', size: 1024, type: 'text/plain' }]),
+    })
+    expect(upload.hasAttribute('aria-invalid')).toBe(false)
+  })
+
+  it('validator 校验数量与大小：违规即表单级错误并写入 form-item 错误位', () => {
+    const form = mountForm(
+      '<oas-form-item label="附件"><oas-upload name="attachments" multiple></oas-upload></oas-form-item>',
+    )
+    const upload = uploadOf(form)
+    form.rules = {
+      attachments: [
+        {
+          validator: (raw) => {
+            const list = JSON.parse(raw || '[]') as Array<{ size: number }>
+            if (list.length > 2) return '最多 2 个文件'
+            if (list.some((item) => item.size > 4096)) return '单个文件不超过 4KiB'
+            return true
+          },
+        },
+      ],
+    }
+    pick(upload, [makeFile('a.txt'), makeFile('b.txt'), makeFile('c.txt')])
+    let error = ''
+    form.addEventListener('oas-validate-fail', (e: Event) => {
+      error = (e as CustomEvent<{ errors: Record<string, string> }>).detail.errors.attachments!
+    })
+    form.submit()
+    expect(error).toBe('最多 2 个文件')
+    const item = form.querySelector('oas-form-item')!
+    const errorText = item.shadowRoot!.querySelector('.error-text')!
+    expect(errorText.hasAttribute('hidden')).toBe(false)
+    expect(errorText.textContent).toContain('最多 2 个文件')
+    expect(upload.hasAttribute('aria-invalid')).toBe(true)
+  })
+
+  it('initial-values / reset：回显记录（name + url）经写通道生效并作为 reset 基线', () => {
+    const form = mountForm('<oas-upload name="attachments" multiple></oas-upload>')
+    form.initialValues = {
+      attachments: [{ name: 'logo.png', url: 'https://cdn.example.com/logo.png', size: 120 }],
+    }
+    const upload = uploadOf(form)
+    expect(upload.files.map((f) => (f instanceof File ? f.name : f.name))).toEqual(['logo.png'])
+
+    pick(upload, [makeFile('a.txt')])
+    expect(upload.files.map((f) => (f instanceof File ? f.name : f.name))).toEqual(['logo.png', 'a.txt'])
+    form.reset()
+    expect(upload.files.map((f) => (f instanceof File ? f.name : f.name))).toEqual(['logo.png'])
   })
 })

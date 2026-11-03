@@ -510,3 +510,161 @@ test('upload crop：取消（cancel 按钮）不入列；Esc 同效', async ({ p
   expect(cards2, 'Esc 取消同样不入列').toBe(0)
   await page.evaluate(() => document.querySelector('#crop-cancel-probe')!.remove())
 })
+
+// —— 错误摘要条：失败 → 重试仍失败 → 清除错误（R2-M12） ——
+
+test('upload 错误摘要条：404 失败 → 重试全部仍失败 → 清除错误只移除失败行（保留成功行）', async ({ page }) => {
+  // 真实 XHR 通道 + 路由拦截模拟 404：bad.txt 恒失败、good.txt 成功
+  let badHits = 0
+  await page.route('**/api/upload', async (route) => {
+    const body = route.request().postDataBuffer()?.toString('latin1') ?? ''
+    if (body.includes('bad.txt')) {
+      badHits += 1
+      await route.fulfill({ status: 404, contentType: 'text/plain', body: 'not found' })
+      return
+    }
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ url: 'https://cdn.example.com/good.txt' }),
+    })
+  })
+  await page.goto('/components/upload.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#upload-summary')
+
+  const snapshot = () =>
+    page.evaluate(() => {
+      const el = document.querySelector('#upload-summary')!
+      const bar = el.shadowRoot!.querySelector<HTMLElement>('.error-bar')!
+      const status = bar.querySelector<HTMLElement>('.error-bar-text')!
+      return {
+        barVisible: !bar.hasAttribute('hidden'),
+        statusRole: status.getAttribute('role'),
+        statusText: status.textContent ?? '',
+        buttonsInLiveRegion: [...bar.querySelectorAll('button')].some((b) => b.closest('[role="status"]') !== null),
+        rows: [...el.shadowRoot!.querySelectorAll<HTMLElement>('.item')].map((it) => ({
+          name: it.querySelector('.name')?.textContent ?? '',
+          error: it.classList.contains('is-error'),
+          retry: it.querySelector('button.act-retry, button.retry') !== null,
+        })),
+      }
+    })
+
+  await page.evaluate(() => {
+    const el = document.querySelector('#upload-summary')!
+    const dt = new DataTransfer()
+    dt.items.add(new File(['bad'], 'bad.txt', { type: 'text/plain' }))
+    dt.items.add(new File(['good'], 'good.txt', { type: 'text/plain' }))
+    const input = el.shadowRoot!.querySelector<HTMLInputElement>('input[type="file"]')!
+    input.files = dt.files
+    input.dispatchEvent(new Event('change', { bubbles: true }))
+  })
+
+  await expect.poll(async () => (await snapshot()).rows.length, { timeout: 10000 }).toBe(2)
+  await expect.poll(async () => (await snapshot()).barVisible, { timeout: 10000 }).toBe(true)
+  const failed = await snapshot()
+  expect(failed.statusText, '摘要条文案给出失败数').toContain('1 个文件上传失败')
+  expect(failed.statusRole, '活区落在文案节点').toBe('status')
+  expect(failed.buttonsInLiveRegion, '两个按钮在活区外').toBe(false)
+  expect(
+    failed.rows.filter((r) => r.error).map((r) => r.name),
+    '失败行标红',
+  ).toEqual(['bad.txt'])
+  expect(
+    failed.rows.filter((r) => r.retry).map((r) => r.name),
+    '失败行才有重试钮',
+  ).toEqual(['bad.txt'])
+
+  // 重试全部：仍走同一通道 → 再次 404，摘要条保留
+  const beforeRetry = badHits
+  await page.evaluate(() =>
+    document.querySelector('#upload-summary')!.shadowRoot!.querySelector<HTMLElement>('.error-bar .retry-all')!.click(),
+  )
+  await expect.poll(() => badHits, { timeout: 10000 }).toBeGreaterThan(beforeRetry)
+  await expect.poll(async () => (await snapshot()).rows.find((r) => r.error)?.name, { timeout: 10000 }).toBe('bad.txt')
+  expect((await snapshot()).barVisible, '重试仍失败时摘要条不消失').toBe(true)
+
+  // 清除错误：失败行移除，成功行保留，摘要条收起
+  await page.evaluate(() =>
+    document
+      .querySelector('#upload-summary')!
+      .shadowRoot!.querySelector<HTMLElement>('.error-bar .clear-errors')!
+      .click(),
+  )
+  await expect.poll(async () => (await snapshot()).rows.map((r) => r.name), { timeout: 10000 }).toEqual(['good.txt'])
+  const cleared = await snapshot()
+  expect(cleared.barVisible, '失败行清空后摘要条收起').toBe(false)
+  expect(
+    cleared.rows.some((r) => r.error),
+    '成功行不带错误态',
+  ).toBe(false)
+})
+
+// —— storage-key：刷新后恢复（R2-M12） ——
+
+test('upload storage-key：刷新后 done 条目回显（title 提示 + 无重试钮 + 列表零变化）', async ({ page }) => {
+  await page.goto('/components/upload.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#upload-persist')
+  await page.evaluate(() => window.localStorage.removeItem('oas-upload-demo'))
+
+  // 选择两个文件 → 手动走模拟上传通道到 done → 落盘
+  await page.evaluate(() => {
+    const el = document.querySelector('#upload-persist')!
+    const dt = new DataTransfer()
+    dt.items.add(new File(['a'], 'keep-a.txt', { type: 'text/plain' }))
+    dt.items.add(new File(['bb'], 'keep-b.txt', { type: 'text/plain' }))
+    const input = el.shadowRoot!.querySelector<HTMLInputElement>('input[type="file"]')!
+    input.files = dt.files
+    input.dispatchEvent(new Event('change', { bubbles: true }))
+  })
+  const rowCount = () =>
+    page.evaluate(() => document.querySelector('#upload-persist')!.shadowRoot!.querySelectorAll('.item').length)
+  await expect.poll(rowCount, { timeout: 10000 }).toBe(2)
+  await page.evaluate(() => (document.querySelector('#upload-persist') as HTMLElement & { submit(): void }).submit())
+  await page.waitForFunction(
+    () => {
+      const el = document.querySelector('#upload-persist')!
+      const rows = [...el.shadowRoot!.querySelectorAll('.item')]
+      return rows.length === 2 && rows.every((r) => r.querySelector('oas-progress')?.getAttribute('percent') === '100')
+    },
+    null,
+    { timeout: 15000 },
+  )
+  await page.waitForFunction(() => {
+    const raw = window.localStorage.getItem('oas-upload-demo')
+    if (!raw) return false
+    const parsed = JSON.parse(raw) as { files?: Array<{ status?: string }> }
+    return (parsed.files ?? []).length === 2 && (parsed.files ?? []).every((f) => f.status === 'done')
+  })
+
+  // 刷新：列表从 localStorage 回显（仅元数据）
+  await page.reload({ waitUntil: 'domcontentloaded' })
+  await up(page, '#upload-persist')
+  await expect.poll(rowCount, { timeout: 10000 }).toBe(2)
+  const restored = await page.evaluate(() => {
+    const el = document.querySelector('#upload-persist')!
+    const bar = el.shadowRoot!.querySelector<HTMLElement>('.error-bar')!
+    const rows = [...el.shadowRoot!.querySelectorAll<HTMLElement>('.item')]
+    return {
+      names: rows.map((r) => r.querySelector('.name')?.textContent ?? ''),
+      titles: rows.map((r) => r.getAttribute('title') ?? ''),
+      percents: rows.map((r) => r.querySelector('oas-progress')?.getAttribute('percent') ?? ''),
+      rowRetry: rows.some((r) => r.querySelector('button.act-retry, button.retry') !== null),
+      barVisible: !bar.hasAttribute('hidden'),
+    }
+  })
+  expect(restored.names, 'done 条目按原顺序回显').toEqual(['keep-a.txt', 'keep-b.txt'])
+  expect(restored.percents, 'done 条目回显为 100%').toEqual(['100', '100'])
+  expect(restored.titles, '恢复条目带「已持久化」title 提示').toEqual([
+    '已持久化：刷新后仍在列表中（不含文件内容）',
+    '已持久化：刷新后仍在列表中（不含文件内容）',
+  ])
+  expect(restored.rowRetry, 'done 条目无行内重试钮').toBe(false)
+  expect(restored.barVisible, '无失败文件 → 错误摘要条收起').toBe(false)
+
+  // 收尾：清掉持久化，避免污染其它用例/页面
+  await page.evaluate(() => {
+    ;(document.querySelector('#upload-persist') as HTMLElement & { files: unknown[] }).files = []
+    window.localStorage.removeItem('oas-upload-demo')
+  })
+})

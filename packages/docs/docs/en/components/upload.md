@@ -86,6 +86,20 @@ With `action` set, the built-in XHR channel is used: `name` (form file field, de
 
 The docs site has no real upload endpoint — `/api/upload` returns 404, which conveniently demonstrates the **failure state**: the row turns red with a retry button (⟳); clicking retry re-sends the request; while uploading you can click × to cancel (emits `oas-cancel`). Success emits `oas-success` (`detail: { file, response }`, where `response` is parsed JSON or raw text); failure emits `oas-error` (`detail: { file, response, status }`).
 
+## Error Summary & Batch Retry
+
+An **error summary bar** renders conditionally above the list: `N files failed to upload` + `Retry all` + `Clear errors` (identical for every `list-type`; `role="status"` so screen readers announce it).
+
+- `Retry all`: each failed file goes through the **existing per-file upload channel** (one `oas-retry` per file, followed by the usual `oas-upload` / `oas-success` / `oas-error` sequence)
+- `Clear errors`: removes the failed files from the list (one `oas-remove` per file, a single `oas-change` at the end) — failed entries carry no recoverable data, so keeping them only leaves a red failure state
+- Script parity: the `retryAll()` / `clearErrors()` public methods (for hosts that draw their own action area)
+
+<DemoBlock title="Failure summary (error bar + retry all)">
+  <oas-upload id="upload-summary" action="/api/upload" multiple auto-upload></oas-upload>
+</DemoBlock>
+
+This demo also targets the missing `/api/upload`: picking files shows the summary bar; "Retry all" re-sends the requests (the docs site still fails, so the bar stays); "Clear errors" drops the failed rows.
+
 ## Custom Request Channel (custom-request)
 
 Chunked uploads, object-storage direct upload, WebSocket and other non-standard channels are taken over by the `custom-request` function property (the component does not care about request strategy):
@@ -210,6 +224,22 @@ With `replace`, exceeding the count limit no longer rejects: the oldest file is 
     </template>
   </oas-upload>
 </DemoBlock>
+
+## File List Persistence (storage-key)
+
+`storage-key` turns on **file list metadata persistence** (opt-in, zero change by default): what goes into `localStorage` is metadata only (`{ name, size, type, status, url? }`) — **file content is not persisted** (a File body can be tens of MB; storage neither fits nor needs it). After a reload the list is restored in place, but a real upload still needs the file to be picked again.
+
+- `done` entries come back as completed (`value` is empty, no re-upload, no retry button) with a "persisted" hover hint; when the upload response carries `url` (or `data.url`), thumbnails/previews keep using the server address
+- `error` / pending entries are restored as **pending** and one `oas-change` is dispatched (the file body is gone after a reload; silently resurrecting them as "done" would be unsafe — the host can guide the user to pick again)
+- Changing `storage-key` reloads the list from the new key immediately; removing `storage-key` only stops writing (the restored/picked list stays as is)
+- Robustness: broken JSON, wrong version (`v` mismatch) or wrong overall shape are silently ignored; when storage is unavailable (private mode / quota) writes degrade silently and the in-memory list keeps working
+
+<DemoBlock title="Persisted file list (storage-key)">
+  <oas-upload id="upload-persist" storage-key="oas-upload-demo" multiple></oas-upload>
+  <oas-button size="small" id="upload-persist-clear" style="margin-top: var(--oas-space-2)">Clear saved list</oas-button>
+</DemoBlock>
+
+Pick one or two files and **reload the page**: the list is still there (file names/sizes come from the metadata); "Clear saved list" wipes both the list and the local storage entry.
 
 ## Events
 
@@ -417,6 +447,47 @@ onMounted(async () => {
       }
     })
   }
+
+  // persistence (storage-key): clear the saved list
+  const persistClear = document.getElementById('upload-persist-clear')
+  persistClear?.addEventListener('click', () => {
+    const persist = document.getElementById('upload-persist')
+    if (persist) persist.files = []
+    window.localStorage.removeItem('oas-upload-demo')
+    message.info('Saved file list cleared')
+  })
+
+  // error summary: perceivable feedback for retry all (the docs endpoint still 404s, so the bar stays)
+  const summary = document.getElementById('upload-summary')
+  summary?.addEventListener('oas-retry', (e) => {
+    message.info(`Retrying ${e.detail.file.name}…`)
+  })
+
+  // form-wide validation: required + count + per-file size (rules read upload's metadata JSON)
+  const uploadForm = document.getElementById('upload-form')
+  if (uploadForm) {
+    uploadForm.rules = {
+      attachments: [
+        { required: true, message: 'Please upload at least 1 file' },
+        {
+          validator: (value) => {
+            const files = JSON.parse(value || '[]')
+            if (files.length > 2) return 'At most 2 files'
+            if (files.some((file) => file.size > 100 * 1024)) return 'Each file must be ≤ 100KiB'
+            return true
+          },
+        },
+      ],
+    }
+    document.getElementById('upload-form-submit')?.addEventListener('click', () => uploadForm.submit())
+    uploadForm.addEventListener('oas-submit', (e) => {
+      const files = JSON.parse(e.detail.values.attachments || '[]')
+      message.success(`Validation passed: ${files.length} file(s)`)
+    })
+    uploadForm.addEventListener('oas-validate-fail', (e) => {
+      message.warning(e.detail.errors.attachments)
+    })
+  }
 })
 </script>
 
@@ -429,6 +500,54 @@ onMounted(async () => {
 `required` drives the native validation chain (form-associated): when unfilled, `checkValidity()` returns false (`valueMissing`) and native form submission is blocked; it recovers to `:valid` once filled.
 
 The current form value is available through the public `value` property for read/write: `el.value` returns the submittable `File` array (`{name,url}` echo records carry no file body and are not included; an empty array when there are no files); `el.value = [file]` replaces the whole file list (same controlled channel as the `files` property, no events dispatched).
+
+## Form-wide Validation
+
+upload is a **first-class `oas-form` control**: when a `rules` entry matches the upload's `name`, the field value read by the form is the **metadata JSON of submittable files** (`[{ name, size, type }]`; `''` for an empty list, matching the File-only semantics of `value`). So `required` agrees exactly with the native `valueMissing` check, and composite rules such as count/size can inspect the same JSON in a `validator`. On failure the message lands in the `oas-form-item` error slot (`aria-invalid` is synced onto the control), and `scroll-to-first-error` focuses and scrolls to the upload trigger.
+
+The built-in `max` / `max-size` reject files **before they enter the list** (firing `oas-exceed-limit`). To surface an over-limit condition as a **form-wide error** (validated together with the other fields and located together), put the limit in a rule — the demo below validates count and per-file size that way.
+
+<DemoBlock title="Form-wide validation (required + count + size)">
+  <div style="max-height: 240px; overflow: auto; border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); padding: var(--oas-space-3); width: 380px">
+    <oas-form id="upload-form" scroll-to-first-error>
+      <oas-space direction="vertical" style="width: 100%">
+        <oas-input name="title" placeholder="Title (optional)"></oas-input>
+        <oas-input name="desc" placeholder="Description (optional)"></oas-input>
+        <oas-form-item label="Attachments (required, 1-2 files, ≤ 100KiB each)">
+          <oas-upload name="attachments" multiple tip="Drop a 3rd file or a file above 100KiB, then submit to see the form-level error"></oas-upload>
+        </oas-form-item>
+      </oas-space>
+    </oas-form>
+  </div>
+  <div style="margin-top: var(--oas-space-3)">
+    <oas-button type="primary" id="upload-form-submit">Submit (scroll to first error)</oas-button>
+  </div>
+</DemoBlock>
+
+```js
+form.rules = {
+  attachments: [
+    { required: true, message: 'Please upload at least 1 file' },
+    {
+      validator: (value) => {
+        const files = JSON.parse(value || '[]')
+        if (files.length > 2) return 'At most 2 files'
+        if (files.some((file) => file.size > 100 * 1024)) return 'Each file must be ≤ 100KiB'
+        return true
+      },
+    },
+  ],
+}
+```
+
+## Form Integration Notes
+
+These four behaviors are current by design (not pending fixes) — align expectations before integrating:
+
+- **`oas-form`'s `oas-values-change` does not cover upload**: the form derives that event from `detail.value` on the control's `oas-change`, while upload's `oas-change` detail is `{ files }` only (no `value` key), so no `oas-values-change` fires for an upload field. To observe file changes, listen to upload's own `oas-change`.
+- **`clearErrors()` reports pre-removal snapshot indices in `oas-remove`**: each event's `index` is the list position at call start (not a live index during removal); for batch handling rely on `detail.file`.
+- **Form read/write asymmetry**: the getter emits submittable `File` entries only (the metadata JSON has no `url`); the writer (`value` property / `initial-values` / the `reset` baseline) expects echo records `[{ name, url, size? }]`. When reading the form value back into `initial-values`, do not include the upload field (records without `url` are dropped); maintain records with `url` on the host side if you need echo-back.
+- **Two restore paths (storage-key)**: restoring an all-`done` list (reload echo) fires **no events** — no `oas-change` / `oas-upload`, only the list echo plus a "saved" title hint per entry; restoring with any `pending` / `error` entry downgrades them all to `pending` (percent 0), fires **one** `oas-change`, and **does not start uploading** — call `startUpload()` / `submit()` from the host if needed.
 
 ## API
 
@@ -457,6 +576,7 @@ The current form value is available through the public `value` property for read
 | `replace` | Replace semantics at max-count=1 (new file replaces the old instead of being rejected) | `boolean` | — |
 | `required` | Required marker (drives the native valueMissing validation chain; not passed through to the inner control) | `boolean` | — |
 | `show-file-list` | File list visibility (`"false"` hides it, keeping only the drop zone) | `string` | `true` |
+| `storage-key` | Persistence key for file list metadata (opt-in): stores name/size/type/status/url in localStorage (**no file content**); restores after reload — done entries come back completed (no re-upload, persisted hover hint), error/pending come back as pending with one `oas-change`; changing the key reloads immediately, removing it stops writing; broken JSON or a version mismatch is ignored | `string` | — |
 | `tip` | Drop-zone tip text (same as `template[slot="tip"]` for rich content) | `string` | — |
 | `with-credentials` | Cross-origin credentials | `boolean` | — |
 
@@ -474,6 +594,8 @@ The current form value is available through the public `value` property for read
 | `startUpload` | `startUpload(): void` | Upload entry: the real channel (action XHR / custom-request) is used per file; with no channel it falls back to simulated progress |
 | `submit` | `submit(): void` | Alias of the manual upload entry (matching the common "submit" mental model) |
 | `abort` | `abort(entry?: File): void` | Cancel uploads: passing an entry cancels that one; omitting it cancels all in-flight uploads |
+| `retryAll` | `retryAll(): void` | Retries every failed file through the existing per-file upload channel (one `oas-retry` per file, then the usual progress/success/error events); a no-op when there is no real channel |
+| `clearErrors` | `clearErrors(): void` | Removes all failed entries from the list (one `oas-remove` per file, a single `oas-change` at the end); successful/pending entries are kept |
 
 #### Events
 
