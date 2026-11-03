@@ -544,7 +544,7 @@ form.rules = {
 
 These four behaviors are current by design (not pending fixes) — align expectations before integrating:
 
-- **`oas-form`'s `oas-values-change` does not cover upload**: the form derives that event from `detail.value` on the control's `oas-change`, while upload's `oas-change` detail is `{ files }` only (no `value` key), so no `oas-values-change` fires for an upload field. To observe file changes, listen to upload's own `oas-change`.
+- **`oas-form`'s `oas-values-change` covers upload (with the field value)**: upload's `oas-change` detail carries `value` alongside `files` — the submittable file metadata JSON (`[{ name, size, type }]`, `''` for an empty list), byte-identical to `form.getValues()[name]`. The form derives `oas-values-change` from it (`detail.value` and `detail.values[name]` are that string); picking a file, removing one, or a storage restore each fire it once. That `value` is a derived read-only summary (file bodies cannot be rebuilt from metadata), so the form does not write it back; listen to upload's own `oas-change` when you need per-`File` detail.
 - **`clearErrors()` reports pre-removal snapshot indices in `oas-remove`**: each event's `index` is the list position at call start (not a live index during removal); for batch handling rely on `detail.file`.
 - **Form read/write asymmetry**: the getter emits submittable `File` entries only (the metadata JSON has no `url`); the writer (`value` property / `initial-values` / the `reset` baseline) expects echo records `[{ name, url, size? }]`. When reading the form value back into `initial-values`, do not include the upload field (records without `url` are dropped); maintain records with `url` on the host side if you need echo-back.
 - **Two restore paths (storage-key)**: restoring an all-`done` list (reload echo) fires **no events** — no `oas-change` / `oas-upload`, only the list echo plus a "saved" title hint per entry; restoring with any `pending` / `error` entry downgrades them all to `pending` (percent 0), fires **one** `oas-change`, and **does not start uploading** — call `startUpload()` / `submit()` from the host if needed.
@@ -602,7 +602,7 @@ These four behaviors are current by design (not pending fixes) — align expecta
 | Event | Description |
 | --- | --- |
 | `oas-cancel` | Upload cancelled, `detail: { file }` (cancel button on the item) |
-| `oas-change` | File list change, `detail: { files }` |
+| `oas-change` | File list change, `detail: { files, value }` (`files` is the entry snapshot; `value` is the submittable file metadata JSON `[{ name, size, type }]`, `''` for an empty list, from which oas-form derives oas-values-change) |
 | `oas-crop` | Crop confirmed, `detail: { file, blob }` (file = original file, blob = offscreen canvas result) |
 | `oas-error` | Upload failed, `detail: { file, response?, status? }` (retry button appears) |
 | `oas-exceed` | [Compat alias] Same as oas-exceed-limit; will be removed later, `detail: { files: rejected, max, total: next.length } \| { files: sizeRejected, type: 'size', maxSize, total: next.length }` |

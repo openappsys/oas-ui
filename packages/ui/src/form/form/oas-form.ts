@@ -19,6 +19,16 @@ type ValueChannel = 'value' | 'model-value'
 
 const FORM_CONTROL_CHANNELS = new Map<string, ValueChannel>()
 
+/**
+ * 事件回写豁免控件：这些控件的 `oas-change detail.value` 是「由列表派生的只读汇总」，
+ * 写回无意义且有害——
+ * - upload：`value` 是 `[{ name, size, type }]` 元数据（无法还原 File），`value` 属性也不是它的
+ *   受控通道。回写只会在宿主上留下失效快照；一旦将来组件侧监听 value 属性，还会经写通道把
+ *   列表按「缺 url 的记录」清空（反噬文件列表）。故只派 `oas-values-change`，不回写。
+ * 其余控件（input/select/transfer…）语义不变，仍走 `writeBackFieldValue` 的属性回写。
+ */
+const NO_WRITEBACK_CONTROLS = new Set(['oas-upload'])
+
 /** 值安全归一：`[`/`{` 前缀（数组/对象 JSON）重新 stringify，保持合法 JSON */
 function normalizeValue(raw: string): string {
   if (raw === '') return ''
@@ -631,7 +641,10 @@ export class OASForm extends OASElement {
 
   /** 字段事件回写：model-value 通道控件写 model-value，其余写 value（写错属性会被组件忽略，值静默丢失） */
   private writeBackFieldValue(element: Element, written: string): void {
-    if (FORM_CONTROL_CHANNELS.get(element.tagName.toLowerCase()) === 'model-value') {
+    const tag = element.tagName.toLowerCase()
+    // 派生只读值控件（upload）跳过回写，只派 values-change（见 NO_WRITEBACK_CONTROLS 注释）
+    if (NO_WRITEBACK_CONTROLS.has(tag)) return
+    if (FORM_CONTROL_CHANNELS.get(tag) === 'model-value') {
       this.writeValue(element, written)
       return
     }

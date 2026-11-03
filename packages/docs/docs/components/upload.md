@@ -543,7 +543,7 @@ form.rules = {
 
 以下四条都是当前行为（不是待修缺陷），集成 hub 前先对齐预期：
 
-- **`oas-form` 的 `oas-values-change` 不覆盖 upload**：表单该事件由控件 `oas-change` 的 `detail.value` 派生，而 upload 的 `oas-change` detail 只有 `{ files }`（无 `value` 键），所以表单不会为 upload 字段派发 `oas-values-change`。需要文件变化通知时直接监听 upload 自己的 `oas-change`。
+- **`oas-form` 的 `oas-values-change` 覆盖 upload（含字段值）**：upload 的 `oas-change` detail 除 `files` 外还带 `value`——可提交文件元数据 JSON（`[{ name, size, type }]`，空列表为 `''`），与 `form.getValues()[name]` 严格同串。表单据此派发 `oas-values-change`（`detail.value` 与 `detail.values[name]` 即该串），选文件 / 移除 / 持久化恢复都会触发一次。该 `value` 是派生只读汇总（元数据无法还原文件体），表单不回写它；需要 `File` 级明细时仍监听 upload 自己的 `oas-change`。
 - **`clearErrors()` 的 `oas-remove` index 是删除前快照下标**：逐条派发时 index 取调用开始时的列表位置（不是移除过程中的实时下标），批量处理请以 `detail.file` 为准。
 - **表单读写不对称**：getter 只输出可提交的 `File` 条目（元数据 JSON 不含 `url`）；writer（`value` property / `initial-values` / `reset` 基线）要求 `[{ name, url, size? }]` 回显记录。把表单值原样回读再写回 `initial-values` 时不要把 upload 字段带进去（缺 `url` 的记录会被丢弃）；需要回显时在宿主侧维护带 `url` 的记录再传入。
 - **恢复（storage-key）的两条路径**：全部条目为 `done` 时恢复（刷新回显）**零事件**——不派发 `oas-change` / `oas-upload`，只回显列表并给条目加「已保存」title 提示；存在 `pending` / `error` 条目的恢复会统一回落为 `pending`（percent 0）并派发**一次** `oas-change`，且**不自动开始上传**，需要宿主调用 `startUpload()` / `submit()`。
@@ -601,7 +601,7 @@ form.rules = {
 | 事件 | 说明 |
 | --- | --- |
 | `oas-cancel` | 取消上传，`detail: { file }`（行/卡片 cancel 按钮） |
-| `oas-change` | 文件列表变化，`detail: { files }` |
+| `oas-change` | 文件列表变化，`detail: { files, value }`（`files` 为条目快照；`value` 为可提交文件元数据 JSON `[{ name, size, type }]`，空列表为 `''`，供 oas-form 派生 oas-values-change） |
 | `oas-crop` | 裁剪确认时派发，`detail: { file, blob }`（file 原文件，blob 裁剪结果） |
 | `oas-error` | 上传失败，`detail: { file, response?, status? }`（行/卡片出重试按钮） |
 | `oas-exceed` | 【兼容别名】等价 oas-exceed-limit；后续版本移除，`detail: { files: rejected, max, total: next.length } \| { files: sizeRejected, type: 'size', maxSize, total: next.length }` |

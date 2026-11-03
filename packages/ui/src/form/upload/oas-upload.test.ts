@@ -70,7 +70,11 @@ describe('OASUpload', () => {
     el.addEventListener('oas-change', (e: Event) => (detail = (e as CustomEvent).detail))
     pick(el, [makeFile('a.txt')])
     expect(el.files.length).toBe(1)
-    expect(detail).toEqual({ files: [expect.any(File)] })
+    // 加法口径：files 语义不变，另带可提交元数据 value（与 oas-form 的 upload 读取器同串）
+    expect(detail).toEqual({
+      files: [expect.any(File)],
+      value: JSON.stringify([{ name: 'a.txt', size: 1024, type: 'text/plain' }]),
+    })
   })
 
   it('max 限制文件数量', () => {
@@ -104,7 +108,7 @@ describe('OASUpload', () => {
     rm.click()
     expect(el.files.length).toBe(0)
     expect(remove).toEqual({ file: expect.any(File), index: 0 })
-    expect(change).toEqual({ files: [] })
+    expect(change).toEqual({ files: [], value: '' })
   })
 
   it('auto-upload：添加文件后自动模拟上传并派发 oas-upload（done）', () => {
@@ -1825,7 +1829,12 @@ describe('OASUpload 错误汇总（失败摘要条）', () => {
     el.addEventListener('oas-change', (e: Event) => changes.push((e as CustomEvent).detail))
     el.shadowRoot!.querySelector<HTMLButtonElement>('.error-bar .clear-errors')!.click()
     expect(removed).toEqual([{ name: 'bad.txt', index: 0 }])
-    expect(changes).toEqual([{ files: [expect.any(File)] }])
+    expect(changes).toEqual([
+      {
+        files: [expect.any(File)],
+        value: JSON.stringify([{ name: 'good.txt', size: 1024, type: 'text/plain' }]),
+      },
+    ])
     expect(el.files.map((f) => (f instanceof File ? f.name : f.name))).toEqual(['good.txt'])
     expect(barVisible(el), '失败项清空后摘要条收起').toBe(false)
   })
@@ -1860,6 +1869,83 @@ describe('OASUpload 错误汇总（失败摘要条）', () => {
     pick(el, [makeFile('a.txt')])
     expect(el.files.map((f) => (f instanceof File ? f.name : f.name))).toEqual(['a.txt'])
     expect(el.shadowRoot!.querySelector('.error-bar')!.hasAttribute('hidden')).toBe(true)
+  })
+})
+
+// ---------- oas-change detail.value：可提交文件元数据（表单级 values-change 的前提） ----------
+describe('OASUpload oas-change detail.value（表单值口径）', () => {
+  const KEY = 'oas-upload-value-key'
+
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    window.localStorage.clear()
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+    window.localStorage.clear()
+  })
+
+  /** 元数据 JSON 口径：仅 File 条目、name 取 webkitRelativePath（与 oas-form 读取器一致） */
+  function metaJSON(list: Array<{ name: string; size: number; type: string }>): string {
+    return JSON.stringify(list)
+  }
+
+  it('多文件：value 是 [{name,size,type}] 序列化，files 键保持原样', () => {
+    const el = mount({ multiple: '' })
+    let detail: { files: unknown[]; value: string } | null = null
+    el.addEventListener('oas-change', (e: Event) => {
+      detail = (e as CustomEvent).detail as { files: unknown[]; value: string }
+    })
+    pick(el, [makeFile('a.txt', 'text/plain', 2048), makeFile('b.png', 'image/png', 4096)])
+    expect(detail!.files.length).toBe(2)
+    expect(detail!.files.every((f) => f instanceof File)).toBe(true)
+    expect(detail!.value).toBe(
+      metaJSON([
+        { name: 'a.txt', size: 2048, type: 'text/plain' },
+        { name: 'b.png', size: 4096, type: 'image/png' },
+      ]),
+    )
+  })
+
+  it('清空列表：value 为空串（与 form 读取器的空值口径一致）', () => {
+    const el = mount()
+    pick(el, [makeFile('a.txt')])
+    const values: string[] = []
+    el.addEventListener('oas-change', (e: Event) => values.push((e as CustomEvent).detail.value as string))
+    el.shadowRoot!.querySelector<HTMLButtonElement>('.remove')!.click()
+    expect(values).toEqual([''])
+  })
+
+  it('value 与 form 读取器同口径：目录上传取 webkitRelativePath', () => {
+    const el = mount({ directory: '' })
+    const file = makeFile('a.txt')
+    Object.defineProperty(file, 'webkitRelativePath', { value: 'photos/a.txt', configurable: true })
+    let detail: { value: string } | null = null
+    el.addEventListener('oas-change', (e: Event) => (detail = (e as CustomEvent).detail as { value: string }))
+    pick(el, [file])
+    expect(detail!.value).toBe(metaJSON([{ name: 'photos/a.txt', size: 1024, type: 'text/plain' }]))
+  })
+
+  it('持久化恢复（pending/error）：恰一次 oas-change 且带 value 键（回显记录无文件体 → 空串）', async () => {
+    window.localStorage.setItem(KEY, JSON.stringify({ v: 1, files: [{ name: 'a.txt', size: 10, status: 'error' }] }))
+    const el = mount({ 'storage-key': KEY })
+    const changes: Array<{ files: unknown[]; value?: string }> = []
+    el.addEventListener('oas-change', (e: Event) => changes.push((e as CustomEvent).detail))
+    await Promise.resolve()
+    expect(el.files.map((f) => f.name)).toEqual(['a.txt'])
+    expect(changes.length, '恢复恰一次 oas-change').toBe(1)
+    expect('value' in changes[0]!, '恢复路径同样带 value 键').toBe(true)
+    expect(changes[0]!.value, '回显记录不是 File → 空串').toBe('')
+  })
+
+  it('仅 done 恢复仍零事件（value 键不改变既有静默语义）', async () => {
+    window.localStorage.setItem(KEY, JSON.stringify({ v: 1, files: [{ name: 'a.txt', size: 10, status: 'done' }] }))
+    const el = mount({ 'storage-key': KEY })
+    const changes: unknown[] = []
+    el.addEventListener('oas-change', (e: Event) => changes.push((e as CustomEvent).detail))
+    await Promise.resolve()
+    expect(changes.length).toBe(0)
   })
 })
 
@@ -1961,5 +2047,95 @@ describe('OASUpload 表单集成（oas-form 控件）', () => {
     expect(upload.files.map((f) => (f instanceof File ? f.name : f.name))).toEqual(['logo.png', 'a.txt'])
     form.reset()
     expect(upload.files.map((f) => (f instanceof File ? f.name : f.name))).toEqual(['logo.png'])
+  })
+
+  it('oas-values-change：选文件后派发，detail 的 name / value / values 与表单读取同口径', () => {
+    const form = mountForm('<oas-upload name="attachments" multiple></oas-upload>')
+    const upload = uploadOf(form)
+    const changes: Array<{ name: string; value: string; values: Record<string, unknown> }> = []
+    form.addEventListener('oas-values-change', (e: Event) => {
+      changes.push((e as CustomEvent).detail as { name: string; value: string; values: Record<string, unknown> })
+    })
+    pick(upload, [makeFile('a.txt', 'text/plain', 2048)])
+
+    const expected = JSON.stringify([{ name: 'a.txt', size: 2048, type: 'text/plain' }])
+    expect(changes.length, '表单级 values-change 派发一次').toBe(1)
+    expect(changes[0]!.name).toBe('attachments')
+    expect(changes[0]!.value).toBe(expected)
+    expect(changes[0]!.values).toEqual({ attachments: expected })
+    expect(form.getValues(), 'detail.value 与表单取值同串').toEqual({ attachments: expected })
+  })
+
+  it('oas-values-change：清除文件后 value 为空串', () => {
+    const form = mountForm('<oas-upload name="attachments"></oas-upload>')
+    const upload = uploadOf(form)
+    pick(upload, [makeFile('a.txt')])
+    const changes: Array<{ value: string; values: Record<string, unknown> }> = []
+    form.addEventListener('oas-values-change', (e: Event) => {
+      changes.push((e as CustomEvent).detail as { value: string; values: Record<string, unknown> })
+    })
+    upload.shadowRoot!.querySelector<HTMLButtonElement>('.remove')!.click()
+    expect(changes.length).toBe(1)
+    expect(changes[0]!.value).toBe('')
+    expect(changes[0]!.values).toEqual({ attachments: '' })
+  })
+
+  it('无回环：单次变化只派一次 upload oas-change，列表不被回写清空，宿主不留 value 属性', () => {
+    const form = mountForm('<oas-upload name="attachments" multiple></oas-upload>')
+    const upload = uploadOf(form)
+    let rawChanges = 0
+    let valuesChanges = 0
+    upload.addEventListener('oas-change', () => rawChanges++)
+    form.addEventListener('oas-values-change', () => valuesChanges++)
+
+    pick(upload, [makeFile('a.txt'), makeFile('b.png', 'image/png')])
+
+    expect(rawChanges, 'upload 自身 oas-change 只派一次（无自写回环）').toBe(1)
+    expect(valuesChanges, '表单级 values-change 也只派一次').toBe(1)
+    expect(upload.files.length, '表单回写通道不消费 upload 的派生值（元数据无 url，写回会清空列表）').toBe(2)
+    expect(upload.hasAttribute('value'), '派生只读值不回写宿主 value 属性').toBe(false)
+  })
+
+  it('回显记录（{name,url}）不计入 detail.value：只有 File 条目可提交', () => {
+    const form = mountForm('<oas-upload name="attachments" multiple></oas-upload>')
+    form.initialValues = {
+      attachments: [{ name: 'logo.png', url: 'https://cdn.example.com/logo.png', size: 120 }],
+    }
+    const upload = uploadOf(form)
+    const changes: Array<{ value: string; values: Record<string, unknown> }> = []
+    form.addEventListener('oas-values-change', (e: Event) => {
+      changes.push((e as CustomEvent).detail as { value: string; values: Record<string, unknown> })
+    })
+    pick(upload, [makeFile('a.txt')])
+
+    const expected = JSON.stringify([{ name: 'a.txt', size: 1024, type: 'text/plain' }])
+    expect(upload.files.length, '列表里回显记录 + 新选文件共存').toBe(2)
+    expect(changes[0]!.value).toBe(expected)
+    expect(changes[0]!.values).toEqual({ attachments: expected })
+  })
+
+  it('持久化恢复（pending）：恰一次 oas-change，且表单同样派发一次 values-change（无回环）', async () => {
+    const key = 'oas-upload-form-restore'
+    window.localStorage.setItem(key, JSON.stringify({ v: 1, files: [{ name: 'a.txt', size: 10, status: 'error' }] }))
+    try {
+      const form = mountForm(`<oas-upload name="attachments" storage-key="${key}"></oas-upload>`)
+      const upload = uploadOf(form)
+      const raw: Array<{ files: unknown[]; value?: string }> = []
+      const values: Array<{ name: string; value: string }> = []
+      upload.addEventListener('oas-change', (e: Event) => raw.push((e as CustomEvent).detail))
+      form.addEventListener('oas-values-change', (e: Event) => {
+        values.push((e as CustomEvent).detail as { name: string; value: string })
+      })
+      await Promise.resolve()
+
+      expect(upload.files.map((f) => f.name)).toEqual(['a.txt'])
+      expect(raw.length, '恢复恰一次 upload oas-change').toBe(1)
+      expect(raw[0]!.value, '回显记录无文件体 → 空串').toBe('')
+      expect(values.length, '表单级 values-change 也恰一次').toBe(1)
+      expect(values[0]!.name).toBe('attachments')
+      expect(values[0]!.value).toBe('')
+    } finally {
+      window.localStorage.clear()
+    }
   })
 })

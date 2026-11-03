@@ -1817,7 +1817,7 @@ export class OASUpload extends OASFormElement {
       this.emit('exceed', { files: sizeRejected, type: 'size', maxSize, total: next.length })
       this.emit('exceed-limit', { files: sizeRejected, type: 'size', maxSize, total: next.length })
     }
-    this.emit('change', { files: this.files })
+    this.emitChange()
     // 值变化点同步原生表单数据 + 校验链（文件选择/替换）
     this.syncFormValue()
     this.syncValidity()
@@ -2082,7 +2082,7 @@ export class OASUpload extends OASFormElement {
     this.revokeUrl(entry)
     this.renderList()
     this.emit('remove', { file: entry, index })
-    this.emit('change', { files: this.files })
+    this.emitChange()
     // 值变化点同步原生表单数据 + 校验链（文件移除）
     this.syncFormValue()
     this.syncValidity()
@@ -2308,7 +2308,7 @@ export class OASUpload extends OASFormElement {
     this.renderList()
     this.syncFormValue()
     this.syncValidity()
-    if (pendingCount > 0) this.emit('change', { files: this.files })
+    if (pendingCount > 0) this.emitChange()
   }
 
   private openPreview(entry: UploadEntry): void {
@@ -2447,7 +2447,7 @@ export class OASUpload extends OASFormElement {
     this._files = next
     this.renderList()
     for (const { entry, index } of removed) this.emit('remove', { file: entry, index })
-    this.emit('change', { files: this.files })
+    this.emitChange()
     this.syncFormValue()
     this.syncValidity()
     this.persistList()
@@ -2675,6 +2675,29 @@ export class OASUpload extends OASFormElement {
 
       list.appendChild(card)
     }
+  }
+
+  /**
+   * `oas-change` 统一出口：`files` 保留完整条目快照（File / 回显记录，语义不变）；
+   * `value` 是**表单口径**的可提交元数据 JSON（与 `oas-form` 的 upload 读取器严格同串），
+   * 供表单把字段变化转成 `oas-values-change`。两个键都是派生快照，互不覆盖语义。
+   */
+  private emitChange(): void {
+    this.emit('change', { files: this.files, value: this.formValueJSON() })
+  }
+
+  /**
+   * 可提交文件元数据 JSON：`[{ name, size, type }]`，空列表为 `''`。
+   * 口径与 `oas-form` 里 upload 读取器逐字一致（仅 File 条目；name 取 webkitRelativePath，
+   * 目录上传保留相对路径）——单测断言 `detail.value === form.getValues()[name]`，
+   * 改动任一序列化口径都会同时红，必须两侧同步。
+   */
+  private formValueJSON(): string {
+    const meta: Array<{ name: string; size: number; type: string }> = []
+    for (const file of this.value) {
+      meta.push({ name: file.webkitRelativePath || file.name, size: file.size, type: file.type })
+    }
+    return meta.length === 0 ? '' : JSON.stringify(meta)
   }
 
   /**
