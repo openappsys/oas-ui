@@ -71,6 +71,7 @@ WIP 限制为提示语义（`data-over-limit` 标记），强制阻断由宿主�
 
 <script setup>
 import { onMounted } from 'vue'
+import { whenTagDefined } from '../.vitepress/theme/when-defined'
 
 onMounted(() => {
   // ① 记录编辑表单：行点击 → 动态建字段 → form.submit() 校验 → oas-submit 回写
@@ -189,6 +190,93 @@ onMounted(() => {
         e.detail.element.title = dayEvents.map((ev) => ev.name).join('、')
       })
     }
+
+    // ④ Action Sheet：drawer（bottom + no-mask）+ list 动作项，点项关抽屉并更新反馈徽章
+    const sheet = document.querySelector('#recipe-sheet')
+    const sheetOpen = document.querySelector('#recipe-sheet-open')
+    const sheetAction = document.querySelector('#recipe-sheet-action')
+    if (sheet && sheetOpen && sheetAction) {
+      sheetOpen.addEventListener('oas-click', () => sheet.setAttribute('visible', ''))
+      const sheetPick = (label) => {
+        sheetAction.textContent = label
+        sheet.removeAttribute('visible')
+      }
+      for (const item of sheet.querySelectorAll('oas-list-item[data-action]')) {
+        item.addEventListener('oas-click', () => sheetPick(item.getAttribute('data-action')))
+      }
+      document.querySelector('#recipe-sheet-cancel')?.addEventListener('oas-click', () => sheet.removeAttribute('visible'))
+    }
+
+    // ⑤ 终端面板：黑底配方（token 覆写）+ 命令行回显（whenDefined 防升级前 expando 遮蔽 lines/value setter）
+    whenTagDefined('oas-log', () => {
+      const termLog = document.querySelector('#recipe-term-log')
+      const termInput = document.querySelector('#recipe-term-input')
+      const termClear = document.querySelector('#recipe-term-clear')
+      if (!termLog || !termInput || !termClear) return
+      const termLines = ['OAS 终端就绪。输入 help 查看可用命令。']
+      const termLevels = ['']
+      const termEcho = (text, level = '') => {
+        termLines.push(text)
+        termLevels.push(level)
+      }
+      const termFlush = () => {
+        termLog.lines = [...termLines]
+        // levels 只有 attribute 通道（无 property setter），必须走 setAttribute
+        termLog.setAttribute('levels', JSON.stringify(termLevels))
+      }
+      termFlush()
+      termInput.addEventListener('oas-enter', (e) => {
+        const raw = (e.detail?.value ?? '').trim()
+        if (!raw) return
+        if (raw === 'clear') {
+          termLines.length = 0
+          termLevels.length = 0
+        } else {
+          termEcho(`$ ${raw}`, 'info')
+          if (raw === 'help') termEcho('可用命令：help / date / echo <文本> / clear', 'success')
+          else if (raw === 'date') termEcho(new Date().toLocaleString(), 'success')
+          else if (raw.startsWith('echo')) termEcho(raw.slice(4).trim() || '（空）', '')
+          else termEcho(`command not found: ${raw}（输入 help 查看可用命令）`, 'error')
+        }
+        termFlush()
+        termInput.value = ''
+      })
+      termClear.addEventListener('oas-click', () => {
+        termLines.length = 0
+        termLevels.length = 0
+        termFlush()
+      })
+    })
+
+    // ⑥ JSON 格式化对照：同一数据两种读法（树形 vs 文本），数据只存一份对象
+    const jsonTree = document.querySelector('#recipe-json-tree')
+    const jsonDiff = document.querySelector('#recipe-json-diff')
+    const jsonMode = document.querySelector('#recipe-json-mode')
+    if (jsonTree && jsonDiff && jsonMode) {
+      const recipeJsonData = {
+        order: 'SO-2026-1103',
+        status: 'shipped',
+        items: [
+          { sku: 'OAS-CORE-01', name: 'Core 运行时', qty: 2, price: 0 },
+          { sku: 'OAS-ICN-24', name: '图标包 24px', qty: 1, price: 12 },
+        ],
+        shipping: { carrier: 'SF', tracking: 'SF3100110024', eta: '2026-11-05' },
+        tags: ['priority', 'b2b'],
+      }
+      const prettyJson = JSON.stringify(recipeJsonData, null, 2)
+      const compactJson = JSON.stringify(recipeJsonData)
+      const applyJsonMode = (mode) => {
+        const pretty = mode !== 'compact'
+        jsonTree.setAttribute('text', pretty ? prettyJson : compactJson)
+        jsonDiff.setAttribute('old-text', pretty ? compactJson : prettyJson)
+        jsonDiff.setAttribute('new-text', pretty ? prettyJson : compactJson)
+        jsonDiff.setAttribute('old-label', pretty ? '压缩原文' : '格式化')
+        jsonDiff.setAttribute('new-label', pretty ? '格式化' : '压缩后')
+        jsonMode.setAttribute('value', pretty ? 'pretty' : 'compact')
+      }
+      applyJsonMode('pretty')
+      jsonMode.addEventListener('oas-change', (e) => applyJsonMode(e.detail.value))
+    }
 })
 </script>
 
@@ -207,3 +295,155 @@ const leveled = levelResources(resources, resourceTasks, { projectOrder: [`A`, `
 
 - 项目根只负责分组/汇总，依赖写在叶子任务上；跨项目依赖与普通依赖同构。
 - 资源均载仍按 `projectOrder` 排序，靠后项目先让位；不会修改 gantt 的项目根日期。
+
+## Action Sheet：移动端动作菜单
+
+**场景**：移动端「更多操作」——从底部滑出一组动作，危险动作单独标红，取消独立成组。`oas-drawer`（`placement="bottom"` + `no-mask`）装 `oas-list` 动作项即可拼装，不需要新增一个「动作面板」组件：滑入动画、外点/Esc 关闭与滚动锁定是抽屉内置能力（`no-mask` 为非模态形态，不提供焦点陷阱）；动作项的可聚焦、Enter/Space 触发与 `oas-click` 回传是列表内置能力。
+
+<DemoBlock title="打开 Action Sheet（点项有反馈，外点 / Esc / 取消均可关闭）">
+  <div style="width: 100%; display: flex; flex-wrap: wrap; align-items: center; gap: var(--oas-space-3)">
+    <oas-button id="recipe-sheet-open" type="primary">打开 Action Sheet</oas-button>
+    <p role="status" style="margin: 0; font-size: var(--oas-font-size-sm); color: var(--oas-color-text-secondary)">
+      最近动作：<oas-tag id="recipe-sheet-action" type="default">未选择</oas-tag>
+    </p>
+  </div>
+  <oas-drawer id="recipe-sheet" class="recipe-sheet" placement="bottom" no-mask no-header no-footer height="256" label="操作选项">
+    <div style="display: flex; flex-direction: column; gap: var(--oas-space-2)">
+      <oas-list split size="lg">
+        <oas-list-item clickable data-action="拍照"><span slot="title">拍照</span></oas-list-item>
+        <oas-list-item clickable data-action="从相册选择"><span slot="title">从相册选择</span></oas-list-item>
+        <oas-list-item clickable data-action="删除"><span slot="title" style="color: var(--oas-color-danger)">删除</span></oas-list-item>
+      </oas-list>
+      <oas-list split size="lg">
+        <oas-list-item clickable id="recipe-sheet-cancel"><span slot="title">取消</span></oas-list-item>
+      </oas-list>
+    </div>
+  </oas-drawer>
+</DemoBlock>
+
+**模式要点**：
+
+1. `no-mask` 不渲染遮罩但保留「点击外部关闭」的取消语义；Esc 关闭由抽屉内置（滚动锁定也是内置，`no-mask` 为非模态抽屉、无焦点陷阱），关闭来源可从 `oas-close` 的 `detail.source` 区分（`esc` / `mask`）
+2. **危险项不是组件属性**——列表项没有 danger 通道，宿主给 `slot="title"` 落 `var(--oas-color-danger)` 即得语义色；这正是组合的可塑之处
+3. 取消独立成组（视觉分隔 + 语义分离）；动作项点击后宿主关闭抽屉并更新反馈徽章（`role="status"` 行，读屏可感知）；`no-header` + `no-mask` 的抽屉没有可见标题，用 `label="操作选项"` 提供 `aria-label` 可访问名（否则读屏只听得到「对话框」）
+4. 圆角顶部是页面级 `::part(panel)` 覆写（见本页底部样式）——抽屉面板不自带圆角，这类「最后一公里」留给配方；纵向抽屉高度必须显式声明（`height` 只接受具体长度，缺省 320px）
+
+## 终端面板：黑底日志 + 命令行
+
+**场景**：部署 / 构建控制台——黑底、等宽、带行号的输出流，顶部状态与清屏，底部命令行。全部用现有组件拼装：`oas-log`（行号、语义色、空态）+ `oas-tag`（运行状态）+ `oas-button`（清屏）+ `oas-input`（回车派发 `oas-enter`）。黑底靠**容器级 token 覆写**：在配方容器上覆写一组颜色 token，CSS 自定义属性穿透 shadow，子树里所有组件自动换肤——终端配色是场景固定色（不随明暗主题翻转），这正是「配方」与「组件」的分工。
+
+<DemoBlock title="终端模拟（help / date / echo 文本 / clear）">
+  <div class="recipe-term">
+    <div class="recipe-term__bar">
+      <oas-tag id="recipe-term-status" type="success">运行中</oas-tag>
+      <span class="recipe-term__title">deploy@oas-ui:~/app</span>
+      <oas-button id="recipe-term-clear" size="small">清屏</oas-button>
+    </div>
+    <oas-log id="recipe-term-log" line-number style="height: 220px; width: 100%"></oas-log>
+    <oas-input id="recipe-term-input" placeholder="输入命令后回车（help / date / echo 文本 / clear）" style="width: 100%"></oas-input>
+  </div>
+</DemoBlock>
+
+**模式要点**：
+
+1. token 覆写只写在配方容器 `.recipe-term` 上，页面其他区域不受影响；覆写集只挑子树组件实际引用的变量（bg / bg-hover / text / border）
+2. 输出行与语义色用两个数组（`lines` / `levels` 索引对齐）维护：命令回显落 `info`，成功输出落 `success`，未知命令落 `error`——语义色由 log 映射 token（暗色自动换色）
+3. 清屏有两条同效路径（工具行按钮 / `clear` 命令），都走数据通道 `lines = []`——清空后 log 内置空态自然浮现
+4. 空命令直接忽略，不产生空行；提交后清空输入框走受控 `value` 通道（不派发事件）
+
+## JSON 格式化对照：树形 vs 文本两种读法
+
+**场景**：排查接口数据时，同一份数据有两种读法——**树形读法**看结构（展开、搜索、复制子树），**文本读法**看字节（原文长什么样、格式化动了什么）。左 `oas-json-viewer`（树形）、右 `oas-diff-viewer`（压缩原文 ↔ 格式化文本对照）。数据只存一份对象，两种形态都是 `JSON.stringify` 的投影——不要维护两份文本。
+
+<DemoBlock title="同一数据的两种读法（可切换格式化 / 压缩视图）">
+  <div style="width: 100%; display: flex; flex-direction: column; gap: var(--oas-space-3)">
+    <oas-segmented
+      id="recipe-json-mode"
+      options='[{"label":"格式化视图","value":"pretty"},{"label":"压缩视图","value":"compact"}]'
+      value="pretty"
+      aria-label="切换 JSON 视图"
+    ></oas-segmented>
+    <div class="recipe-json-panes">
+      <div class="recipe-json-pane">
+        <p>树形读法（结构）</p>
+        <oas-json-viewer id="recipe-json-tree" height="320" default-expand-depth="2" aria-label="订单数据 JSON 树"></oas-json-viewer>
+      </div>
+      <div class="recipe-json-pane">
+        <p>文本读法（字节）</p>
+        <oas-diff-viewer id="recipe-json-diff" mode="split" wrap height="320" old-label="压缩原文" new-label="格式化"></oas-diff-viewer>
+      </div>
+    </div>
+  </div>
+</DemoBlock>
+
+**模式要点**：
+
+1. 分段器切换两种视图：**格式化**看「压缩 → 格式化」的 diff（格式化加了什么）；**压缩**方向翻转（格式化 → 压缩，看压缩去了什么）
+2. 树形面板的 `text` 也随视图切换（喂压缩串或格式化串）——两种视图下树完全一致，直观证明「结构读法与空白无关」
+3. diff 面板 `mode="split"`（窄容器自动降级 unified，组件内置响应式）+ `wrap` 保长行可读；列头用 `old-label` / `new-label` 写清语义
+4. 树形面板配套能力随取随用：搜索框（工具栏内置）、`expandAll()` / `collapseAll()`、`copyJson()` 复制子树
+
+<style>
+/* —— Action Sheet：底部圆角顶部（抽屉面板不自带圆角，配方在页面级补） —— */
+.recipe-sheet::part(panel) {
+  border-radius: var(--oas-radius-lg) var(--oas-radius-lg) 0 0;
+}
+
+/* —— 终端面板：黑底配方（容器级 token 覆写穿透 shadow；终端配色固定，不随主题翻转） —— */
+.recipe-term {
+  --oas-color-bg: #0b0f14;
+  --oas-color-bg-hover: #141a22;
+  --oas-color-text-primary: #d6dee8;
+  --oas-color-text-secondary: #8b98a9;
+  --oas-color-text-disabled: #5d6b7d;
+  --oas-color-border: #263140;
+  --oas-color-border-strong: #3a465a;
+  display: flex;
+  flex-direction: column;
+  gap: var(--oas-space-2);
+  width: 100%;
+  padding: var(--oas-space-3);
+  background: var(--oas-color-bg);
+  border: 1px solid var(--oas-color-border);
+  border-radius: var(--oas-radius-lg);
+  font-family: ui-monospace, SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
+}
+.recipe-term__bar {
+  display: flex;
+  align-items: center;
+  gap: var(--oas-space-3);
+}
+.recipe-term__title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--oas-font-size-sm);
+  color: var(--oas-color-text-secondary);
+}
+
+/* —— JSON 对照：左右分栏（窄屏叠放） —— */
+.recipe-json-panes {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--oas-space-3);
+  min-width: 0;
+}
+.recipe-json-pane {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--oas-space-2);
+}
+.recipe-json-pane > p {
+  margin: 0;
+  font-size: var(--oas-font-size-sm);
+  color: var(--oas-color-text-secondary);
+}
+@media (max-width: 720px) {
+  .recipe-json-panes {
+    grid-template-columns: 1fr;
+  }
+}
+</style>
