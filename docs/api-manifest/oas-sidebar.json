@@ -122,11 +122,11 @@
     },
     {
       "name": "oas-select",
-      "detail": "{ value: item.value, label: item.label, group: item.group }"
+      "detail": "{ value: item.value, label: item.label, group: item.group, }"
     },
     {
       "name": "oas-action",
-      "detail": "{ value: item.value, action: action.value, label: action.label }"
+      "detail": "{ value: item.value, action: action.value, label: action.label, }"
     },
     {
       "name": "oas-collapse",
