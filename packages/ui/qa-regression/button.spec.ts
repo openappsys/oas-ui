@@ -399,3 +399,35 @@ test('button active/active-tint：选中视觉与 button-group 同挂点（aria-
   expect(after.bg, '点击后选中视觉变化（淡底出现）').not.toBe(restBg)
   expect(after.out, 'demo 反馈文本显示 active: true').toContain('true')
 })
+
+// 回归：loading spinner 旋转时不得整体位移。
+// 曾现 bug：spinner 用 transform: translate(-50%,-50%) 绝对居中，而旋转 keyframes 只写
+// transform: rotate(360deg)，动画覆盖掉 translate，圆环每 0.8s 从居中斜移到左上再回位。
+test('button loading spinner：旋转动画期间中心位置稳定（不斜移）', async ({ page }) => {
+  await page.goto('/components/button.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-button[loading]')
+  const r = await page.evaluate(async () => {
+    const btn = [...document.querySelectorAll('oas-button')].find((el) => el.textContent.includes('内置 spinner'))
+    if (!btn) return null
+    btn.scrollIntoView({ block: 'center' })
+    const spinner = btn.shadowRoot!.querySelector<HTMLElement>('.spinner')!
+    const samples: Array<{ cx: number; cy: number }> = []
+    for (let i = 0; i < 8; i++) {
+      const b = spinner.getBoundingClientRect()
+      samples.push({ cx: b.x + b.width / 2, cy: b.y + b.height / 2 })
+      await new Promise((resolve) => setTimeout(resolve, 120))
+    }
+    return {
+      samples,
+      translate: getComputedStyle(spinner).translate,
+      animation: getComputedStyle(spinner).animationName,
+    }
+  })
+  expect(r, '页面应存在内置 spinner 的 loading 按钮').not.toBeNull()
+  expect(r!.animation, '内置 spinner 应仍在旋转').not.toBe('none')
+  expect(r!.translate, '居中用独立 translate 属性，不参与旋转动画').not.toBe('none')
+  const xs = r!.samples.map((s) => s.cx)
+  const ys = r!.samples.map((s) => s.cy)
+  expect(Math.max(...xs) - Math.min(...xs), 'spinner 水平中心漂移应 < 1px').toBeLessThan(1)
+  expect(Math.max(...ys) - Math.min(...ys), 'spinner 垂直中心漂移应 < 1px').toBeLessThan(1)
+})

@@ -629,7 +629,8 @@ button.loading .spinner {
   position: absolute;
   top: 50%;
   left: 50%;
-  transform: translate(-50%, -50%);
+  /* 用独立 translate 属性居中：transform 留给旋转动画，避免 keyframes 覆盖 translate 导致斜移 */
+  translate: -50% -50%;
 }
 button.loading slot:not([name='loading-icon']),
 button.loading .icon {
@@ -642,6 +643,7 @@ button.loading-with-text .icon {
 button.loading-with-text .spinner {
   position: static;
   transform: none;
+  translate: none;
 }
 .spinner {
   width: 1em;
