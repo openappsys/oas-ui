@@ -1,4 +1,4 @@
-import { OASFormElement } from '@oas-ui/core'
+import { OASFormElement } from '@oas-ui/core/form-element'
 // 注册 oas-virtual-list（OASVirtualList 仅作类型用，需裸 import 保住注册副作用）
 import '../../data/virtual-list/index.js'
 import type { OASVirtualList } from '../../data/virtual-list/index.js'

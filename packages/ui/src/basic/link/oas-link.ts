@@ -1,4 +1,4 @@
-import { OASElement } from '@oas-ui/core'
+import { OASElement } from '@oas-ui/core/oas-element'
 import { lookupIcon } from '@oas-ui/icons/runtime'
 import { safeUrl } from '../../shared/safe-url.js'
 import { normalizeSizeStrict, THREE_SIZES } from '../../shared/size.js'

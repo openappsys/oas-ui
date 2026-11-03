@@ -1,4 +1,4 @@
-import { OASFormElement } from '@oas-ui/core'
+import { OASFormElement } from '@oas-ui/core/form-element'
 
 const STYLE = `
 :host {

@@ -1,4 +1,4 @@
-import { OASElement } from '@oas-ui/core'
+import { OASElement } from '@oas-ui/core/oas-element'
 import { pickOnColor as pickOnColorBase } from '../../shared/on-color.js'
 import { lookupIcon } from '@oas-ui/icons/runtime'
 import { isRtl } from '../../shared/direction.js'

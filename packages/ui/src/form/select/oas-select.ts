@@ -14,7 +14,7 @@ import { TOUCH_TARGET_CSS } from '../../shared/touch-target.js'
 import { lookupIcon } from '@oas-ui/icons/runtime'
 import { hintUnresolvedIcon } from '../../shared/icon-hint.js'
 import { cloneSlotContent } from '../../shared/slot-template.js'
-import { OASFormElement } from '@oas-ui/core'
+import { OASFormElement } from '@oas-ui/core/form-element'
 
 export interface Option {
   label: string

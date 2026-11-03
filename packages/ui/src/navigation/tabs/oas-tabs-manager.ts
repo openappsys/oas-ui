@@ -1,4 +1,4 @@
-import type { ReactiveController } from '@oas-ui/core'
+import type { ReactiveController } from '@oas-ui/core/oas-element'
 import type { OASTabPanel } from './oas-tab-panel.js'
 import type { TabsManagerCapability } from './oas-tabs.js'
 import { addOutsideDismiss, removeOutsideDismiss } from '../../shared/outside-dismiss.js'

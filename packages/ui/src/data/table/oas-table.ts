@@ -1,4 +1,4 @@
-import { OASElement } from '@oas-ui/core'
+import { OASElement } from '@oas-ui/core/oas-element'
 import { downloadPath } from '@oas-ui/icons/icons/download'
 import { resolveDirection } from '../../shared/direction.js'
 import { addOutsideDismiss, removeOutsideDismiss } from '../../shared/outside-dismiss.js'

@@ -1,4 +1,4 @@
-import { OASElement } from '@oas-ui/core'
+import { OASElement } from '@oas-ui/core/oas-element'
 // 图标走 @oas-ui/icons 运行时查表（registerIcon 自定义优先、内置集兜底），
 // 不经 oas-icon 组件模块——避免把整个 <oas-icon> 拉进 message 按需链
 import { registerIcon, lookupIcon } from '@oas-ui/icons/runtime'

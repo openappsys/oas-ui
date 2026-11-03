@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest'
-import type { OASElement } from '@oas-ui/core'
+import type { OASElement } from '@oas-ui/core/oas-element'
 import { OASCard } from './card/index.js'
 import { OASAvatar } from './avatar/index.js'
 import { OASAvatarGroup } from './avatar-group/index.js'

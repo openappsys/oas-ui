@@ -1,4 +1,4 @@
-import type { ReactiveController } from '@oas-ui/core'
+import type { ReactiveController } from '@oas-ui/core/oas-element'
 
 /**
  * color-picker 能力注册表（能力级按需分包的基础设施，对齐 table 能力包先例）。

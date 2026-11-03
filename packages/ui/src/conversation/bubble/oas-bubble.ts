@@ -1,4 +1,4 @@
-import { OASElement } from '@oas-ui/core'
+import { OASElement } from '@oas-ui/core/oas-element'
 
 /** 气泡语义变体（default=中性浅底；ghost 无底无框且放开宽度上限） */
 export type BubbleVariant = 'default' | 'secondary' | 'muted' | 'outline' | 'ghost' | 'destructive'

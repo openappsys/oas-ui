@@ -1,7 +1,7 @@
 // 注册 oas-virtual-list（OASVirtualList 仅作类型用，需裸 import 保住注册副作用）
 import '../../data/virtual-list/index.js'
 import type { OASVirtualList } from '../../data/virtual-list/index.js'
-import { OASElement } from '@oas-ui/core'
+import { OASElement } from '@oas-ui/core/oas-element'
 import { isRtl } from '../../shared/direction.js'
 import { cloneSlotContent } from '../../shared/slot-template.js'
 // 注册 oas-icon（穿梭按钮内嵌 oas-icon 组件，复用图标集/自定义注册/currentColor 着色）

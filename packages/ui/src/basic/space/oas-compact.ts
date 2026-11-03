@@ -1,4 +1,4 @@
-import { OASElement } from '@oas-ui/core'
+import { OASElement } from '@oas-ui/core/oas-element'
 import { isRtl } from '../../shared/direction.js'
 
 /** 参与贴合合并的表单控件（相邻 -1px 重叠 + 首尾圆角合并协议） */

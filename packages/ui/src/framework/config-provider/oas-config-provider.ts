@@ -1,4 +1,5 @@
-import { OASElement, notifyConfigProviders } from '@oas-ui/core'
+import { notifyConfigProviders } from '@oas-ui/core/config-context'
+import { OASElement } from '@oas-ui/core/oas-element'
 import { devWarn } from '../../shared/dev-warn.js'
 import { isSsrRuntime } from '../../shared/ssr-runtime.js'
 

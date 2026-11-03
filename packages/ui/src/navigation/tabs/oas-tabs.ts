@@ -1,4 +1,4 @@
-import { OASElement } from '@oas-ui/core'
+import { OASElement } from '@oas-ui/core/oas-element'
 import { lookupIcon } from '@oas-ui/icons/runtime'
 import { chevronDownPath } from '@oas-ui/icons/icons/chevron-down'
 import { chevronLeftPath } from '@oas-ui/icons/icons/chevron-left'

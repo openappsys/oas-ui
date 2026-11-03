@@ -1,4 +1,4 @@
-import { OASElement } from '@oas-ui/core'
+import { OASElement } from '@oas-ui/core/oas-element'
 import { resolveLocale } from '../../form/calendar/date-grid.js'
 
 const STYLE = `

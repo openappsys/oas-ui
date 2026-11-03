@@ -1,4 +1,4 @@
-import { OASElement } from '@oas-ui/core'
+import { OASElement } from '@oas-ui/core/oas-element'
 import { lookupIcon } from '@oas-ui/icons/runtime'
 import { getViewport } from '../../overlay/floating/index.js'
 import { isRtl } from '../../shared/direction.js'

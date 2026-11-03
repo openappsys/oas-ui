@@ -1,4 +1,4 @@
-import { OASElement } from '@oas-ui/core'
+import { OASElement } from '@oas-ui/core/oas-element'
 
 /**
  * 时长 token 格式化：DD/D（天）、HH/H（小时）、mm/m（分）、ss/s（秒）、SSS（毫秒，3 位补零）。

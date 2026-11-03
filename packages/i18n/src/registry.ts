@@ -16,7 +16,7 @@
  * `loadLocale('zh-CN')` 仍可整包装载（见函数注释）。`getLocale().messages` 语义为
  * 「已注册的部分默认文案」（整包入口下即全集）。
  */
-import { setTranslator, registerLocaleTranslator } from '@oas-ui/core'
+import { setTranslator, registerLocaleTranslator } from '@oas-ui/core/translator'
 import type { Locale, LocaleKey, LocaleMessages, LocaleName, LocaleParams } from './types.js'
 
 interface RegistryState {

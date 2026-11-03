@@ -1,4 +1,4 @@
-import { OASElement } from '@oas-ui/core'
+import { OASElement } from '@oas-ui/core/oas-element'
 import { normalizeSize, ALL_SIZES } from '../../shared/size.js'
 import type { OASTimelineItem } from './oas-timeline-item.js'
 

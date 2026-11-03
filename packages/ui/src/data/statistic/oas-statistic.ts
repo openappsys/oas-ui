@@ -1,4 +1,4 @@
-import { OASElement } from '@oas-ui/core'
+import { OASElement } from '@oas-ui/core/oas-element'
 import { arrowDownPath } from '@oas-ui/icons/icons/arrow-down'
 import { arrowUpPath } from '@oas-ui/icons/icons/arrow-up'
 import { resolveLocale } from '../../form/calendar/date-grid.js'

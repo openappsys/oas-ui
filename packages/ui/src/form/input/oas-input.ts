@@ -1,4 +1,4 @@
-import { OASFormElement } from '@oas-ui/core'
+import { OASFormElement } from '@oas-ui/core/form-element'
 import { lookupIcon } from '@oas-ui/icons/runtime'
 import { eyePath } from '@oas-ui/icons/icons/eye'
 import { isRtl } from '../../shared/direction.js'

@@ -1,4 +1,5 @@
-import { OASFormElement, escapeHtml } from '@oas-ui/core'
+import { escapeHtml } from '@oas-ui/core/escape'
+import { OASFormElement } from '@oas-ui/core/form-element'
 import {
   resolveLocale,
   startOfDay,

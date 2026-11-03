@@ -691,7 +691,7 @@ const BUDGETS = [
     get: () => fullEntry.gzipBytes,
     limit: 1140 * 1024, // 1140 KB（≈1.11 MB）天花板（2026-10-08 重定档：workbench 批并入后实测 984.6 KB 触前档 90%）
     basis:
-      '天花板制：实测 gzip 984.6 KB（并入 workbench 构件族后），上浮约 15% 定档 1140 KB；前档 1080 KB 定档于 2026-10-07（917.7 KB 实测），再前档 1024 KB 定档于 2026-10-05（890.9 KB 实测）',
+      '天花板制：实测 gzip 984.6 KB（并入 workbench 构件族后），上浮约 15% 定档 1140 KB；前档 1080 KB 定档于 2026-10-07（917.7 KB 实测），再前档 1024 KB 定档于 2026-10-05（890.9 KB 实测）；2026-11-03 core 子路径导入批后实测 1015.4 KB（逐文件上界口径随子路径拆分的文件数微涨 +0.7 KB 属求和特性；真实 bundler 打包下非表单链普遍 -5.9~-6.7 KB）',
   },
   {
     name: '@oas-ui/ui/basic/button 链 gzip',
@@ -700,7 +700,7 @@ const BUDGETS = [
     get: () => componentMeasures.button.gzipBytes,
     limit: 30 * 1024, // 30 KB（2026-10-12 重定档：dev-warn 统一告警通道入链，实测 26.7 KB）
     basis:
-      '实测 gzip 26.7 KB（2026-10-12：dev-warn 统一告警通道（101 处 console.warn 迁移，含模块本体）+ 当批行为修复增量；此前 25.0 KB 为图标库 opt-in 后口径），上浮约 12% 定档 30 KB；前档 29 KB 定档于 2026-10-08（25.0 KB 实测），再前档 39 KB 定档于 2026-10-05（33.5 KB 实测，含全量图标注册表）',
+      '实测 gzip 26.7 KB（2026-10-12：dev-warn 统一告警通道（101 处 console.warn 迁移，含模块本体）+ 当批行为修复增量；此前 25.0 KB 为图标库 opt-in 后口径），上浮约 12% 定档 30 KB；前档 29 KB 定档于 2026-10-08（25.0 KB 实测），再前档 39 KB 定档于 2026-10-05（33.5 KB 实测，含全量图标注册表）；2026-11-03 core 子路径导入批后实测 19.5 KB（内部源码改走 core 模块子路径绕开 barrel，button 值链只携带 oas-element/escape/config-context）',
   },
   {
     name: '@oas-ui/ui/data/table 链 gzip',
@@ -709,7 +709,7 @@ const BUDGETS = [
     get: () => componentMeasures.table.gzipBytes,
     limit: 74 * 1024, // 74 KB（2026-10-25：默认入口不含 edit，实测 65.0 KB）
     basis:
-      '实测 gzip 66.2 KB（v2.6.4 默认入口 = 基础表格，不含 edit；链含 core 骨架 + virtual-list + i18n + pagination + 列设置/导出/移动降级与展示集快照，不含编辑器族），上浮约 12% 定档 74 KB；前档 108 KB 为默认入口含 edit 口径',
+      '实测 gzip 66.2 KB（v2.6.4 默认入口 = 基础表格，不含 edit；链含 core 骨架 + virtual-list + i18n + pagination + 列设置/导出/移动降级与展示集快照，不含编辑器族），上浮约 12% 定档 74 KB；前档 108 KB 为默认入口含 edit 口径；2026-11-03 core 子路径导入批后实测 60.7 KB（绕开 barrel 不再连带 form-element+escape 虚重，回落至预警线以下）',
   },
   {
     // table/edit：注册型 L3（L1/CDN 含、默认 table 不含）。2026-10-28 首次独立定档：
@@ -730,7 +730,7 @@ const BUDGETS = [
     get: () => componentMeasures.form.gzipBytes,
     limit: 29 * 1024, // 29 KB（2026-10-07 重定档；2026-10-29 动态 label observer 后实测 29692 B / 上限 29696 B，余量 4 B——全库最危险预算）
     basis:
-      '实测 gzip 29692 B / 预算 29696 B（余量仅 4 B，全库最危险档；链含 core + i18n；四批合并后 25.6 KB 上浮约 15% 定档 29 KB，前档 28 KB 定档于 2026-10-05 24.8 KB 实测）。预算上限不抬高：2026-10-29 新增外部 label 动态 observer 后已饱和，后续 form 链任何扩展前必须先评估/瘦身或按流程重新定档，禁止把余量当常量',
+      '实测 gzip 29692 B / 预算 29696 B（余量仅 4 B，全库最危险档；链含 core + i18n；四批合并后 25.6 KB 上浮约 15% 定档 29 KB，前档 28 KB 定档于 2026-10-05 24.8 KB 实测）。预算上限不抬高：2026-10-29 新增外部 label 动态 observer 后已饱和，后续 form 链任何扩展前必须先评估/瘦身或按流程重新定档，禁止把余量当常量；2026-11-03 core 子路径导入批后实测 16.8 KB（绕开 barrel，余量恢复充裕，但预算上限仍按上述纪律不自行抬高）',
   },
   {
     name: '@oas-ui/ui/data/gantt 链 gzip',
@@ -739,7 +739,7 @@ const BUDGETS = [
     get: () => componentMeasures.gantt.gzipBytes,
     limit: 80 * 1024, // 80 KB（2026-11-03 再定档：pool 超配检测 + 资源负荷视图两个 opt-in 特性增量）
     basis:
-      'v2.6.2 定档 70 KB → 2026-11-03 定档 75 KB（P2 审计无冗余）→ 2026-11-03 定档 80 KB：其后增量全部已归因真实特性——pool 超配检测 +2.2 KB（静态引 resourcePool + 检测/事件/tooltip）、show-resource-load 负荷面板 +2.9 KB（shared 实现本体 1.74 + 渲染/CSS 1 + i18n 3 键 0.15，@oas-ui/ui/data/resource/load helper 档独立计量 1.8 KB）；2026-11-02 P2 式归因审计结论继续有效（无冗余、core barrel 上界口径产物真实可摇除）。预警线 72 KB；下次扩展仍须先归因评估',
+      'v2.6.2 定档 70 KB → 2026-11-03 定档 75 KB（P2 审计无冗余）→ 2026-11-03 定档 80 KB：其后增量全部已归因真实特性——pool 超配检测 +2.2 KB（静态引 resourcePool + 检测/事件/tooltip）、show-resource-load 负荷面板 +2.9 KB（shared 实现本体 1.74 + 渲染/CSS 1 + i18n 3 键 0.15，@oas-ui/ui/data/resource/load helper 档独立计量 1.8 KB）；2026-11-02 P2 式归因审计结论继续有效（无冗余）；2026-11-03 core 子路径导入批后实测 62.3 KB——此前「core barrel 上界口径产物真实可摇除」已由「内部源码直走 core 模块子路径绕开 barrel」取代，非表单链实测普遍 -5.9~-6.7 KB。预警线 72 KB；下次扩展仍须先归因评估',
   },
   {
     name: '@oas-ui/ui/data/json-viewer 链 gzip',
@@ -748,7 +748,7 @@ const BUDGETS = [
     get: () => componentMeasures.jsonViewer.gzipBytes,
     limit: 35 * 1024, // 35 KB：实测 gzip 31.5 KB（core + i18n + 组件，无第三方运行时），上浮约 10%
     basis:
-      '实测 gzip 31.5 KB（链含 core + i18n + 树模型/虚拟窗口/工具栏/搜索/复制/复制浮层；无第三方运行时、无图标全量注册），上浮约 10% 定档 35 KB；PRD 目标 ≤32 KB。',
+      '实测 gzip 31.5 KB（链含 core + i18n + 树模型/虚拟窗口/工具栏/搜索/复制/复制浮层；无第三方运行时、无图标全量注册），上浮约 10% 定档 35 KB；PRD 目标 ≤32 KB；2026-11-03 core 子路径导入批后实测 22.8 KB（绕开 barrel）',
   },
   {
     name: '@oas-ui/ui/data/diff-viewer 链 gzip',
@@ -757,7 +757,7 @@ const BUDGETS = [
     get: () => componentMeasures.diffViewer.gzipBytes,
     limit: 34 * 1024, // 34 KB：实测 gzip 29.9 KB（core + i18n + 自研 Myers/折叠/并排），上浮约 14%
     basis:
-      '实测 gzip 30.6 KB（链含 core + i18n + 自研 Myers 行级差异/词级高亮/折叠/并排/虚拟窗口；无第三方 diff 依赖、无图标全量注册），上浮约 11% 定档 34 KB；PRD 目标 ≤32 KB。',
+      '实测 gzip 30.6 KB（链含 core + i18n + 自研 Myers 行级差异/词级高亮/折叠/并排/虚拟窗口；无第三方 diff 依赖、无图标全量注册），上浮约 11% 定档 34 KB；PRD 目标 ≤32 KB；2026-11-03 core 子路径导入批后实测 21.3 KB（绕开 barrel）',
   },
   {
     name: '@oas-ui/theme index.css gzip',
@@ -1101,7 +1101,7 @@ if (process.argv.includes('--update-baseline')) {
   writeSection('size', {
     generatedAt: today(),
     method:
-      'gzip = zlib gzipSync；brotli = zlib.brotliCompressSync q11；单组件链 = 静态 import 图遍历 + 逐文件压缩求和（上界估计）',
+      'gzip = zlib gzipSync；brotli = zlib.brotliCompressSync q11；单组件链 = 静态 import 图遍历 + 逐文件压缩求和（上界估计；2026-11-03 起 core 内部消费走模块子路径，barrel 不再连带入链——非表单链因此普遍 -5.9~-6.7 KB，而子路径拆分使逐文件求和口径微涨属正常）',
     packages: {
       '@oas-ui/ui': {
         distTotalBytes: uiDistTotal,

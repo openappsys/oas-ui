@@ -1,4 +1,4 @@
-import { OASElement } from '@oas-ui/core'
+import { OASElement } from '@oas-ui/core/oas-element'
 import { closeCirclePath } from '@oas-ui/icons/icons/close-circle'
 import { isRtl } from '../../shared/direction.js'
 

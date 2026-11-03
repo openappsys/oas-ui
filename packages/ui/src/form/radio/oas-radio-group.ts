@@ -1,4 +1,4 @@
-import { OASFormElement } from '@oas-ui/core'
+import { OASFormElement } from '@oas-ui/core/form-element'
 import { isRtl } from '../../shared/direction.js'
 import { isSsrRuntime } from '../../shared/ssr-runtime.js'
 // options 数据通道渲染 oas-radio 需保证自定义元素已定义（运行时副作用导入）

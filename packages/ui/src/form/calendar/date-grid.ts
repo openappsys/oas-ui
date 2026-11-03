@@ -9,7 +9,7 @@
  *
  * 约定：全部使用本地时区（组件 value 存 ISO 字符串，展示用本地 Date）。
  */
-import { findConfigProvider } from '@oas-ui/core'
+import { findConfigProvider } from '@oas-ui/core/config-context'
 import { getLocaleName } from '@oas-ui/i18n/registry'
 
 export interface GridCell {

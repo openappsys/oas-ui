@@ -1,4 +1,4 @@
-import { OASElement } from '@oas-ui/core'
+import { OASElement } from '@oas-ui/core/oas-element'
 import { getViewport } from '../../overlay/floating/index.js'
 import { pushEscapeLayer } from '../../shared/overlay-stack.js'
 import { addOutsideDismiss, removeOutsideDismiss } from '../../shared/outside-dismiss.js'

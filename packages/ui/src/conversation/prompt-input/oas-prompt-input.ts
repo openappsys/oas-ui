@@ -1,4 +1,4 @@
-import { OASElement } from '@oas-ui/core'
+import { OASElement } from '@oas-ui/core/oas-element'
 
 /** 提示词建议项；字符串等价于 { label: value, value } */
 export type PromptInputSuggestion = string | { label?: string; value: string }

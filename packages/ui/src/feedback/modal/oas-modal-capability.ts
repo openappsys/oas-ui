@@ -1,4 +1,4 @@
-import type { ReactiveController } from '@oas-ui/core'
+import type { ReactiveController } from '@oas-ui/core/oas-element'
 
 /**
  * modal 能力注册表（能力级按需分包的基础设施，镜像 table 的 oas-table-capability）。

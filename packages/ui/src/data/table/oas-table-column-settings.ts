@@ -1,4 +1,4 @@
-import type { ReactiveController } from '@oas-ui/core'
+import type { ReactiveController } from '@oas-ui/core/oas-element'
 import type { TableColumn } from './oas-table.js'
 
 /**

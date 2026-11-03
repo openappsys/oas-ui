@@ -7,9 +7,30 @@ import { resolve } from 'node:path'
 export default defineConfig({
   resolve: {
     alias: [
+      // core 公开子路径逐条映射（新增 core exports 时同步补）；包名映射必须排在其后
       {
         find: '@oas-ui/core/format-byte',
         replacement: resolve(import.meta.dirname, 'packages/core/src/format-byte.ts'),
+      },
+      {
+        find: '@oas-ui/core/oas-element',
+        replacement: resolve(import.meta.dirname, 'packages/core/src/oas-element.ts'),
+      },
+      {
+        find: '@oas-ui/core/form-element',
+        replacement: resolve(import.meta.dirname, 'packages/core/src/form-element.ts'),
+      },
+      {
+        find: '@oas-ui/core/escape',
+        replacement: resolve(import.meta.dirname, 'packages/core/src/escape.ts'),
+      },
+      {
+        find: '@oas-ui/core/config-context',
+        replacement: resolve(import.meta.dirname, 'packages/core/src/config-context.ts'),
+      },
+      {
+        find: '@oas-ui/core/translator',
+        replacement: resolve(import.meta.dirname, 'packages/core/src/translator.ts'),
       },
       { find: '@oas-ui/ui', replacement: resolve(import.meta.dirname, 'packages/ui/src/index.ts') },
       { find: '@oas-ui/core', replacement: resolve(import.meta.dirname, 'packages/core/src/index.ts') },

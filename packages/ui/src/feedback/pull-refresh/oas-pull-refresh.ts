@@ -1,4 +1,4 @@
-import { OASElement } from '@oas-ui/core'
+import { OASElement } from '@oas-ui/core/oas-element'
 
 /**
  * oas-pull-refresh —— 下拉刷新（feedback 族，移动原生形态批）。

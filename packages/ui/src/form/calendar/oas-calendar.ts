@@ -1,4 +1,5 @@
-import { OASElement, getLocaleTranslator } from '@oas-ui/core'
+import { OASElement } from '@oas-ui/core/oas-element'
+import { getLocaleTranslator } from '@oas-ui/core/translator'
 import { parseJsonArray } from '../../shared/json-array.js'
 import {
   resolveLocale,

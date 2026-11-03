@@ -1,4 +1,5 @@
-import { escapeAttr, OASFormElement } from '@oas-ui/core'
+import { escapeAttr } from '@oas-ui/core/escape'
+import { OASFormElement } from '@oas-ui/core/form-element'
 import { pickOnColor as pickOnColorBase } from '../../shared/on-color.js'
 import { lookupIcon } from '@oas-ui/icons/runtime'
 import { isRtl } from '../../shared/direction.js'

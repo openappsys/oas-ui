@@ -15,7 +15,7 @@
  *   CSS 用 `:host([data-rtl])` 写镜像规则（chevron 翻转、缩进反向等）——
  *   不用 `:host-context`（跨浏览器支持不齐），data 属性方案 shadow 内稳定可用
  */
-import { findConfigProvider } from '@oas-ui/core'
+import { findConfigProvider } from '@oas-ui/core/config-context'
 import { getDirection } from '@oas-ui/i18n/registry'
 
 const RTL = 'rtl'

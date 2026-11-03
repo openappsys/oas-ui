@@ -1,4 +1,4 @@
-import { OASElement } from '@oas-ui/core'
+import { OASElement } from '@oas-ui/core/oas-element'
 import '../image/index.js'
 import type { OASImage } from '../image/oas-image.js'
 import { isSsrRuntime } from '../../shared/ssr-runtime.js'

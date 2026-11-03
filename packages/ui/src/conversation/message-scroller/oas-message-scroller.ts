@@ -1,4 +1,4 @@
-import { OASElement } from '@oas-ui/core'
+import { OASElement } from '@oas-ui/core/oas-element'
 
 /**
  * 打开位置：start=顶部；end=底部（缺省；非法回退 end）；

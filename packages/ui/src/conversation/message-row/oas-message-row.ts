@@ -1,4 +1,4 @@
-import { OASElement } from '@oas-ui/core'
+import { OASElement } from '@oas-ui/core/oas-element'
 
 /** 发送状态（IM 惯例五态；非法值/缺省不渲染状态区） */
 export type MessageRowStatus = 'sending' | 'sent' | 'delivered' | 'read' | 'error'

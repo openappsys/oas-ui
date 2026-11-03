@@ -1,4 +1,5 @@
-import { OASFormElement, escapeHtml } from '@oas-ui/core'
+import { escapeHtml } from '@oas-ui/core/escape'
+import { OASFormElement } from '@oas-ui/core/form-element'
 import { formatToken, resolveLocale } from '../calendar/date-grid.js'
 import { resolveTimezone, wallClockIn } from '../date-picker/timezone.js'
 // 注册 oas-bottom-sheet（移动端底部抽屉承载件，需裸 import 保住注册副作用）

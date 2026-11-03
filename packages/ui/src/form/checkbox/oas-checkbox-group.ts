@@ -1,4 +1,4 @@
-import { OASElement } from '@oas-ui/core'
+import { OASElement } from '@oas-ui/core/oas-element'
 // options 数据通道渲染 oas-checkbox 需保证自定义元素已定义（运行时副作用导入）
 import './oas-checkbox.js'
 import type { OASCheckbox } from './oas-checkbox.js'

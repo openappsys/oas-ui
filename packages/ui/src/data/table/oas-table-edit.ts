@@ -1,4 +1,4 @@
-import type { ReactiveController } from '@oas-ui/core'
+import type { ReactiveController } from '@oas-ui/core/oas-element'
 import { editPath } from '@oas-ui/icons/icons/edit'
 import type { EditOption, TableColumn, TableEditCapability } from './oas-table.js'
 import { isTruthyCell } from './oas-table.js'

@@ -1,4 +1,4 @@
-import { OASFormElement } from '@oas-ui/core'
+import { OASFormElement } from '@oas-ui/core/form-element'
 import { stableHash36 } from '../../shared/stable-id.js'
 
 /**

@@ -1,4 +1,4 @@
-import { OASElement } from '@oas-ui/core'
+import { OASElement } from '@oas-ui/core/oas-element'
 import { isRtl } from '../../shared/direction.js'
 
 /** status 合法值：语义色档（warning/error 用底色醒目属最后手段，info/progress 只着文字） */

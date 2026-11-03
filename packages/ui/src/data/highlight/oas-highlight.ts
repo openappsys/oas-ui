@@ -1,4 +1,4 @@
-import { OASElement } from '@oas-ui/core'
+import { OASElement } from '@oas-ui/core/oas-element'
 
 /**
  * oas-highlight —— 文本命中高亮（data 族，D1）。

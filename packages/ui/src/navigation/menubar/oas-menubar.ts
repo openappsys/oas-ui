@@ -1,4 +1,5 @@
-import { escapeAttr, OASElement } from '@oas-ui/core'
+import { escapeAttr } from '@oas-ui/core/escape'
+import { OASElement } from '@oas-ui/core/oas-element'
 import { safeUrl } from '../../shared/safe-url.js'
 import type { MenuItem, MenuItemKind } from '../menu/index.js'
 // 图标查表走 @oas-ui/icons 运行时（registerIcon 自定义优先、内置集兜底，与 oas-icon 同源）；

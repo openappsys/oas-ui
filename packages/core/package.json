@@ -30,6 +30,26 @@
     "./format-byte": {
       "types": "./dist/format-byte.d.ts",
       "default": "./dist/format-byte.js"
+    },
+    "./oas-element": {
+      "types": "./dist/oas-element.d.ts",
+      "default": "./dist/oas-element.js"
+    },
+    "./form-element": {
+      "types": "./dist/form-element.d.ts",
+      "default": "./dist/form-element.js"
+    },
+    "./escape": {
+      "types": "./dist/escape.d.ts",
+      "default": "./dist/escape.js"
+    },
+    "./config-context": {
+      "types": "./dist/config-context.d.ts",
+      "default": "./dist/config-context.js"
+    },
+    "./translator": {
+      "types": "./dist/translator.d.ts",
+      "default": "./dist/translator.js"
     }
   },
   "sideEffects": false,

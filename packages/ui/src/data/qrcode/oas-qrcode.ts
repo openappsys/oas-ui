@@ -1,4 +1,4 @@
-import { OASElement } from '@oas-ui/core'
+import { OASElement } from '@oas-ui/core/oas-element'
 // slot 模板双形态克隆（静态 HTML 在 template.content；Vue 等 CSR 直插元素 childNodes）
 import { cloneSlotContent, slotContentSignature } from '../../shared/slot-template.js'
 import { encodeQR, QR_TOO_LONG_ERROR, type QrErrorCorrection } from './qr.js'

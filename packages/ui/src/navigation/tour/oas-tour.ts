@@ -1,4 +1,4 @@
-import { OASElement } from '@oas-ui/core'
+import { OASElement } from '@oas-ui/core/oas-element'
 import { resolveDirection } from '../../shared/direction.js'
 import { lockBodyScroll, pushEscapeLayer } from '../../shared/overlay-stack.js'
 import { computePosition, getViewport, type Placement } from '../../overlay/floating/index.js'

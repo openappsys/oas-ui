@@ -1,4 +1,4 @@
-import { OASElement } from '@oas-ui/core'
+import { OASElement } from '@oas-ui/core/oas-element'
 import { resolveDirection } from '../../shared/direction.js'
 
 const MIN_THUMB = 24

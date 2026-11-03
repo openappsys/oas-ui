@@ -1,4 +1,4 @@
-import { OASElement } from '@oas-ui/core'
+import { OASElement } from '@oas-ui/core/oas-element'
 import { parseJsonArray } from '../../shared/json-array.js'
 import {
   formatToken,

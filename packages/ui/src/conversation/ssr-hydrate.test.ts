@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest'
-import type { OASElement } from '@oas-ui/core'
+import type { OASElement } from '@oas-ui/core/oas-element'
 import { OASMessageActions } from './message-actions/index.js'
 import { OASToolCall } from './tool-call/index.js'
 

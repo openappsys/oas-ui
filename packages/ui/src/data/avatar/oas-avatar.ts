@@ -1,4 +1,4 @@
-import { OASElement } from '@oas-ui/core'
+import { OASElement } from '@oas-ui/core/oas-element'
 import { pickOnColor as pickOnColorBase } from '../../shared/on-color.js'
 
 /** 相机图标（trigger 遮罩默认内容，原创 SVG；stroke=currentColor 随遮罩文字色） */

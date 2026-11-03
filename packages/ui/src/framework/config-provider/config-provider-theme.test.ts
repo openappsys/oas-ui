@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { subscribeConfigProvider } from '@oas-ui/core'
+import { subscribeConfigProvider } from '@oas-ui/core/config-context'
 import './index.js'
 
 interface SystemMediaStub {

@@ -1,4 +1,4 @@
-import { OASElement } from '@oas-ui/core'
+import { OASElement } from '@oas-ui/core/oas-element'
 import { resolveDirection } from '../../shared/direction.js'
 import { stableHash36 } from '../../shared/stable-id.js'
 import { addOutsideDismiss, removeOutsideDismiss } from '../../shared/outside-dismiss.js'

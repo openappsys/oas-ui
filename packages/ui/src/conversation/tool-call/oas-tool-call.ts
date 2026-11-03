@@ -1,4 +1,4 @@
-import { OASElement } from '@oas-ui/core'
+import { OASElement } from '@oas-ui/core/oas-element'
 
 export type ToolCallStatus = 'running' | 'success' | 'error'
 export interface ToolCallToggleDetail {

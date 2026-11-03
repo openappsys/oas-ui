@@ -1,4 +1,4 @@
-import { OASElement } from '@oas-ui/core'
+import { OASElement } from '@oas-ui/core/oas-element'
 import { isRtl } from '../../shared/direction.js'
 import { parseJsonArray } from '../../shared/json-array.js'
 import { devWarn } from '../../shared/dev-warn.js'

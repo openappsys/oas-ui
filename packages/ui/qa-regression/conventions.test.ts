@@ -465,3 +465,35 @@ describe('外点关闭统一通道守卫', () => {
     for (const src of cases) expect(findCaptureClickListeners(src), src).toEqual([])
   })
 })
+
+// ---------- core 子路径导入守卫：内部源码禁走 barrel ----------
+// 背景（测量诚实化）：`from '@oas-ui/core'` 裸 barrel 会把 form-element 与 escape 连进
+// 一切消费链——非表单组件被迫携带表单基类 + 转义工具的虚重（gzip 上界 ~6.6 KB），
+// 体积链值被 barrel 连带拖高、归因失真。
+// core 已开放按模块子路径：./oas-element / ./form-element / ./escape / ./config-context /
+// ./translator（./format-byte 早已存在）；内部源码一律按符号走子路径。
+// 只约束 workspace 内部源码（packages/*/src 与 next/nuxt 适配层）；外部消费者不受限，
+// barrel 仍是公开入口（README 示例保持不变）。
+describe('core 子路径导入守卫（内部源码禁走 barrel）', () => {
+  it('packages/*/src 与 next/nuxt 源码无 `from "@oas-ui/core"` 裸 barrel import', () => {
+    const packagesDir = join(ROOT, 'packages')
+    const bad: string[] = []
+    for (const name of readdirSync(packagesDir)) {
+      const src = join(packagesDir, name, 'src')
+      if (!existsSync(src)) continue
+      for (const f of walk(src).filter((p) => p.endsWith('.ts'))) {
+        readFileSync(f, 'utf8')
+          .split('\n')
+          .forEach((line, i) => {
+            if (/from\s+['"]@oas-ui\/core['"]/.test(line))
+              bad.push(`${f.slice(ROOT.length + 1).replace(/\\/g, '/')}:${i + 1}`)
+          })
+      }
+    }
+    expect(
+      bad,
+      `内部源码禁走 @oas-ui/core barrel（会把 form-element + escape 连进一切消费链，虚重 ~6.6 KB）：\n${bad.join('\n')}\n\n` +
+        '按符号改走子路径：@oas-ui/core/{oas-element,form-element,escape,config-context,translator}',
+    ).toEqual([])
+  })
+})

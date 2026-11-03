@@ -1,4 +1,4 @@
-import { OASElement } from '@oas-ui/core'
+import { OASElement } from '@oas-ui/core/oas-element'
 import { stableHash36 } from '../../shared/stable-id.js'
 import '../../data/virtual-list/index.js'
 import type { OASVirtualList } from '../../data/virtual-list/index.js'

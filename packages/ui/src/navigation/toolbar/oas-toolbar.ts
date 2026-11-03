@@ -1,4 +1,4 @@
-import { OASElement } from '@oas-ui/core'
+import { OASElement } from '@oas-ui/core/oas-element'
 import { isRtl } from '../../shared/direction.js'
 import { OASToolbarToggle } from './oas-toolbar-toggle.js'
 

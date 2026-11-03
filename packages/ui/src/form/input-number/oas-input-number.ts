@@ -1,4 +1,4 @@
-import { OASFormElement } from '@oas-ui/core'
+import { OASFormElement } from '@oas-ui/core/form-element'
 import { beginScrub, scrubValueAt, SCRUB_PX_PER_STEP } from '../../shared/scrub.js'
 import { devWarn } from '../../shared/dev-warn.js'
 

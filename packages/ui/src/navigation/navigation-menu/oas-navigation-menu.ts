@@ -1,4 +1,5 @@
-import { escapeAttr, OASElement } from '@oas-ui/core'
+import { escapeAttr } from '@oas-ui/core/escape'
+import { OASElement } from '@oas-ui/core/oas-element'
 import { safeUrl } from '../../shared/safe-url.js'
 import { getViewport } from '../../overlay/floating/index.js'
 import type { MenuItem } from '../menu/index.js'

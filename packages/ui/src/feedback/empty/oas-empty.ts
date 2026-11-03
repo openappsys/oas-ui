@@ -1,4 +1,5 @@
-import { OASElement, escapeAttr } from '@oas-ui/core'
+import { escapeAttr } from '@oas-ui/core/escape'
+import { OASElement } from '@oas-ui/core/oas-element'
 import { lookupIcon } from '@oas-ui/icons/runtime'
 import { normalizeSizeStrict, normalizeSize, THREE_SIZES } from '../../shared/size.js'
 import { devWarn } from '../../shared/dev-warn.js'

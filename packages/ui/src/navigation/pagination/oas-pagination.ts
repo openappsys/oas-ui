@@ -1,4 +1,5 @@
-import { OASElement, escapeText } from '@oas-ui/core'
+import { escapeText } from '@oas-ui/core/escape'
+import { OASElement } from '@oas-ui/core/oas-element'
 import { normalizeSizeStrict, ALL_SIZES, type OasSize } from '../../shared/size.js'
 import { isRtl } from '../../shared/direction.js'
 import { devWarn } from '../../shared/dev-warn.js'

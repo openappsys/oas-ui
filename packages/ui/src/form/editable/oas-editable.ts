@@ -1,4 +1,4 @@
-import { OASElement } from '@oas-ui/core'
+import { OASElement } from '@oas-ui/core/oas-element'
 import { onMeasurable, type MeasureDisposer } from '../../shared/measure-when-visible.js'
 import { cloneSlotContent } from '../../shared/slot-template.js'
 

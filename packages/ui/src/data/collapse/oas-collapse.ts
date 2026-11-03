@@ -1,4 +1,4 @@
-import { OASElement } from '@oas-ui/core'
+import { OASElement } from '@oas-ui/core/oas-element'
 import type { OASCollapseItem } from './oas-collapse-item.js'
 
 const STYLE = `

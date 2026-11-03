@@ -1,4 +1,4 @@
-import { OASElement } from '@oas-ui/core'
+import { OASElement } from '@oas-ui/core/oas-element'
 import { safeUrl } from '../../shared/safe-url.js'
 
 /** 附件状态机（独立于 oas-upload 词表：upload 用 pending/uploading/done/error，本组件初始态为 idle、另多 processing 中间态） */

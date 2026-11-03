@@ -1,4 +1,4 @@
-import { OASElement } from '@oas-ui/core'
+import { OASElement } from '@oas-ui/core/oas-element'
 
 /**
  * 离场动画默认时长（JS 按此延迟 remove 与 CSS 动画保持同步）。

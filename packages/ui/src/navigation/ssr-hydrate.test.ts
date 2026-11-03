@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import type { OASElement } from '@oas-ui/core'
+import type { OASElement } from '@oas-ui/core/oas-element'
 import { OASTabs, OASTabPanel } from './tabs/index.js'
 import { OASBottomNavigation } from '../navigation/bottom-navigation/index.js'
 import { OASPagination } from './pagination/index.js'

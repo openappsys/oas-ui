@@ -1,4 +1,4 @@
-import { OASElement } from '@oas-ui/core'
+import { OASElement } from '@oas-ui/core/oas-element'
 // 图标查表走 @oas-ui/icons 运行时（不经 oas-icon 组件模块，避免拉进 stepper 按需链）
 import { lookupIcon } from '@oas-ui/icons/runtime'
 import { isRtl } from '../../shared/direction.js'

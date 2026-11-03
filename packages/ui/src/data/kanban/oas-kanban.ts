@@ -1,4 +1,4 @@
-import { OASElement } from '@oas-ui/core'
+import { OASElement } from '@oas-ui/core/oas-element'
 import { isRtl } from '../../shared/direction.js'
 import { addOutsideDismiss, removeOutsideDismiss } from '../../shared/outside-dismiss.js'
 import { HeightCache, computeDynamicWindow } from '../virtual-list/dynamic-height.js'

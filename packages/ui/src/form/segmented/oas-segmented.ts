@@ -1,4 +1,5 @@
-import { escapeAttr, OASElement } from '@oas-ui/core'
+import { escapeAttr } from '@oas-ui/core/escape'
+import { OASElement } from '@oas-ui/core/oas-element'
 import { lookupIcon } from '@oas-ui/icons/runtime'
 import { isRtl } from '../../shared/direction.js'
 import { cloneSlotContent } from '../../shared/slot-template.js'

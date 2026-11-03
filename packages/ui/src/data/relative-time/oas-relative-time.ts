@@ -1,4 +1,5 @@
-import { OASElement, findConfigProvider } from '@oas-ui/core'
+import { findConfigProvider } from '@oas-ui/core/config-context'
+import { OASElement } from '@oas-ui/core/oas-element'
 import { getLocaleName } from '@oas-ui/i18n/registry'
 import {
   formatRelativeTime,

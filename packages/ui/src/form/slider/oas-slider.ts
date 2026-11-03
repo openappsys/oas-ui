@@ -1,4 +1,4 @@
-import { OASElement } from '@oas-ui/core'
+import { OASElement } from '@oas-ui/core/oas-element'
 import { isRtl } from '../../shared/direction.js'
 import { beginScrub, scrubValueAt, roundToPrecision, type ScrubAnchor, SCRUB_PX_PER_STEP } from '../../shared/scrub.js'
 import { cloneSlotContent, slotContentSignature } from '../../shared/slot-template.js'

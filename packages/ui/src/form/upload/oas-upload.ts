@@ -1,4 +1,4 @@
-import { OASFormElement } from '@oas-ui/core'
+import { OASFormElement } from '@oas-ui/core/form-element'
 import { formatByte } from '@oas-ui/core/format-byte'
 import { devWarn } from '../../shared/dev-warn.js'
 import { isSsrRuntime } from '../../shared/ssr-runtime.js'

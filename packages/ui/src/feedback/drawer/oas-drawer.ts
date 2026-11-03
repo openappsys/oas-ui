@@ -1,4 +1,4 @@
-import { OASElement } from '@oas-ui/core'
+import { OASElement } from '@oas-ui/core/oas-element'
 import { lockBodyScroll, pushEscapeLayer } from '../../shared/overlay-stack.js'
 
 /** 滑出方向（横向管宽、纵向管高） */

@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest'
-import type { OASElement } from '@oas-ui/core'
+import type { OASElement } from '@oas-ui/core/oas-element'
 import { OASInput } from './input/index.js'
 import { OASTextarea } from './textarea/index.js'
 import { OASCheckbox, OASCheckboxGroup } from './checkbox/index.js'

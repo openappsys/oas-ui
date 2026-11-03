@@ -1,4 +1,4 @@
-import { OASElement } from '@oas-ui/core'
+import { OASElement } from '@oas-ui/core/oas-element'
 import { lookupIcon } from '@oas-ui/icons/runtime'
 
 /** 预设色板名（映射 --oas-preset-* token，color/track-color 属性支持按名引用；非法名按普通色值处理） */

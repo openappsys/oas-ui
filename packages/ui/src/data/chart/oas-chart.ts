@@ -1,4 +1,6 @@
-import { OASElement, escapeText, escapeAttr, findConfigProvider } from '@oas-ui/core'
+import { findConfigProvider } from '@oas-ui/core/config-context'
+import { escapeText, escapeAttr } from '@oas-ui/core/escape'
+import { OASElement } from '@oas-ui/core/oas-element'
 import { getLocaleName } from '@oas-ui/i18n/registry'
 import { formatTick, niceTicks, type ChartTicks } from './ticks.js'
 

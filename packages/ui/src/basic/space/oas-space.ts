@@ -1,4 +1,4 @@
-import { OASElement } from '@oas-ui/core'
+import { OASElement } from '@oas-ui/core/oas-element'
 import { normalizeSizeStrict, ALL_SIZES } from '../../shared/size.js'
 import { devWarn } from '../../shared/dev-warn.js'
 

@@ -1,4 +1,4 @@
-import { OASElement } from '@oas-ui/core'
+import { OASElement } from '@oas-ui/core/oas-element'
 import { pickOnColor as pickOnColorBase } from '../../shared/on-color.js'
 import { bindCoarseTap, clickIgnorable } from '../../shared/coarse-tap.js'
 import { resolveDirection } from '../../shared/direction.js'

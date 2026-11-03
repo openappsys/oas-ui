@@ -1,4 +1,4 @@
-import { OASElement } from '@oas-ui/core'
+import { OASElement } from '@oas-ui/core/oas-element'
 import { bindCoarseTap, clickIgnorable } from '../../shared/coarse-tap.js'
 import { addOutsideDismiss, removeOutsideDismiss } from '../../shared/outside-dismiss.js'
 import { resolveDirection } from '../../shared/direction.js'

@@ -1,4 +1,4 @@
-import { OASElement } from '@oas-ui/core'
+import { OASElement } from '@oas-ui/core/oas-element'
 import { isRtl } from '../../shared/direction.js'
 import { lookupIcon } from '@oas-ui/icons/runtime'
 import { devWarn } from '../../shared/dev-warn.js'

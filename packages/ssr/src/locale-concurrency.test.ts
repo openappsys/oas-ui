@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import enPack from '@oas-ui/i18n/en'
 import { getLocaleName, onLocaleChange, setLocale } from '@oas-ui/i18n'
-import { onTranslatorChange } from '@oas-ui/core'
+import { onTranslatorChange } from '@oas-ui/core/translator'
 import { renderToString } from './index.js'
 import { ensureShim } from './shim.js'
 

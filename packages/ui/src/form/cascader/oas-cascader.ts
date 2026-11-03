@@ -1,4 +1,4 @@
-import { OASElement } from '@oas-ui/core'
+import { OASElement } from '@oas-ui/core/oas-element'
 import { resolveDirection } from '../../shared/direction.js'
 import { devWarn } from '../../shared/dev-warn.js'
 // 注册 oas-bottom-sheet（移动端底部抽屉承载件，需裸 import 保住注册副作用）

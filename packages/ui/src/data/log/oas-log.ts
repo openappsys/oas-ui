@@ -1,4 +1,4 @@
-import { OASElement } from '@oas-ui/core'
+import { OASElement } from '@oas-ui/core/oas-element'
 import { parseJsonArray } from '../../shared/json-array.js'
 
 /** 视为"贴底"的滚动剩余距离阈值（px），小于等于该值判定用户停在底部 */

@@ -1,4 +1,4 @@
-import { OASElement } from '@oas-ui/core'
+import { OASElement } from '@oas-ui/core/oas-element'
 import { cloneSlotContent } from '../../shared/slot-template.js'
 
 /**

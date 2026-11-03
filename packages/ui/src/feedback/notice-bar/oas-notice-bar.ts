@@ -1,4 +1,4 @@
-import { OASElement } from '@oas-ui/core'
+import { OASElement } from '@oas-ui/core/oas-element'
 import { lookupIcon } from '@oas-ui/icons/runtime'
 import { checkCirclePath } from '@oas-ui/icons/icons/check-circle'
 import { closePath } from '@oas-ui/icons/icons/close'

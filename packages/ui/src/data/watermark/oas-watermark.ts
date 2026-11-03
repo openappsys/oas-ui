@@ -1,4 +1,5 @@
-import { OASElement, escapeHtml } from '@oas-ui/core'
+import { escapeHtml } from '@oas-ui/core/escape'
+import { OASElement } from '@oas-ui/core/oas-element'
 
 const STYLE = `
 :host {

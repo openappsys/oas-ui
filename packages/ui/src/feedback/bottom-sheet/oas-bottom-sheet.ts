@@ -1,4 +1,4 @@
-import { OASElement } from '@oas-ui/core'
+import { OASElement } from '@oas-ui/core/oas-element'
 
 /**
  * oas-bottom-sheet —— 移动端底部抽屉容器（浮层组件移动形态的统一承载件）。

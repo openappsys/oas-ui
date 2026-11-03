@@ -1,4 +1,4 @@
-import { OASElement } from '@oas-ui/core'
+import { OASElement } from '@oas-ui/core/oas-element'
 import { isRtl } from '../../shared/direction.js'
 // 复用 oas-tooltip 作为逐星提示浮层（浅集成：virtual 点定位，确保其已注册）
 import '../../feedback/tooltip/index.js'

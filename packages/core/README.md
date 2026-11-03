@@ -10,6 +10,16 @@ OAS-UI 组件运行时基础包 —— 提供 `OASElement` 组件基类（Shadow
 import { OASElement } from '@oas-ui/core'
 ```
 
+对体积敏感的场景可按模块子路径导入（barrel 仍是完整公开入口，两者随时可混用）：
+
+```ts
+import { OASElement } from '@oas-ui/core/oas-element'
+import { OASFormElement } from '@oas-ui/core/form-element'
+import { escapeAttr } from '@oas-ui/core/escape'
+import { findConfigProvider } from '@oas-ui/core/config-context'
+import { setTranslator } from '@oas-ui/core/translator'
+```
+
 ### 提供的能力
 
 - `render()` / `updating()` 生命周期模板
@@ -46,6 +56,16 @@ You normally don't need to use it directly — only when authoring custom compon
 
 ```ts
 import { OASElement } from '@oas-ui/core'
+```
+
+For bundle-size-sensitive setups, import via module subpaths (the barrel remains the full public entry; both styles mix freely):
+
+```ts
+import { OASElement } from '@oas-ui/core/oas-element'
+import { OASFormElement } from '@oas-ui/core/form-element'
+import { escapeAttr } from '@oas-ui/core/escape'
+import { findConfigProvider } from '@oas-ui/core/config-context'
+import { setTranslator } from '@oas-ui/core/translator'
 ```
 
 ### What it provides

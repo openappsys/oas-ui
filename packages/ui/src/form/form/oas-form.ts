@@ -1,4 +1,4 @@
-import { OASElement } from '@oas-ui/core'
+import { OASElement } from '@oas-ui/core/oas-element'
 
 /** 表单控件读取器：返回该控件的表单值（字符串形态；复杂控件返回 JSON 字符串） */
 type FormControlReader = (el: Element) => string

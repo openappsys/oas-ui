@@ -1,4 +1,5 @@
-import { escapeAttr, OASElement } from '@oas-ui/core'
+import { escapeAttr } from '@oas-ui/core/escape'
+import { OASElement } from '@oas-ui/core/oas-element'
 import { safeUrl } from '../../shared/safe-url.js'
 // 图标走 @oas-ui/icons 运行时查表（registerIcon 自定义注册优先、内置集兜底，与 oas-icon 同源）——
 // 不经 oas-icon 组件模块，避免把整个 <oas-icon> 拉进 menu 按需链

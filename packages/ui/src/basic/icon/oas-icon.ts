@@ -1,4 +1,4 @@
-import { OASElement } from '@oas-ui/core'
+import { OASElement } from '@oas-ui/core/oas-element'
 import { getIconLibrary, lookupIcon, resolveIconAlias } from '@oas-ui/icons/runtime'
 import { hintUnresolvedIcon } from '../../shared/icon-hint.js'
 

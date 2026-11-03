@@ -1,4 +1,6 @@
-import { escapeAttr, OASElement, readConfigValue } from '@oas-ui/core'
+import { readConfigValue } from '@oas-ui/core/config-context'
+import { escapeAttr } from '@oas-ui/core/escape'
+import { OASElement } from '@oas-ui/core/oas-element'
 import { safeUrl } from '../../shared/safe-url.js'
 import { pickOnColor as pickOnColorBase } from '../../shared/on-color.js'
 import { normalizeSizeStrict, ALL_SIZES } from '../../shared/size.js'

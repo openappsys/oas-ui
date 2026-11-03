@@ -1,4 +1,4 @@
-import { OASElement } from '@oas-ui/core'
+import { OASElement } from '@oas-ui/core/oas-element'
 import { isRtl } from '../../shared/direction.js'
 import { normalizeSizeStrict, ALL_SIZES } from '../../shared/size.js'
 // 注册 oas-virtual-list（OASVirtualList 仅作类型用，需裸 import 保住注册副作用）

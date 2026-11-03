@@ -1,4 +1,4 @@
-import { OASElement } from '@oas-ui/core'
+import { OASElement } from '@oas-ui/core/oas-element'
 import { isRtl } from '../../shared/direction.js'
 
 /** 窗口操作动作（与 oas-titlebar 的 window-actions 同一契约） */

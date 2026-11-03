@@ -1,4 +1,4 @@
-import type { ReactiveController } from '@oas-ui/core'
+import type { ReactiveController } from '@oas-ui/core/oas-element'
 import type { PopoverContextmenuCapability } from './oas-popover.js'
 
 /** 触屏长按触发时长（ms，trigger 含 contextmenu 时生效，移动端无右键的替代） */

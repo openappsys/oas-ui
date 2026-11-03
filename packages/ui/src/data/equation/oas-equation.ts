@@ -1,4 +1,5 @@
-import { OASElement, escapeText } from '@oas-ui/core'
+import { escapeText } from '@oas-ui/core/escape'
+import { OASElement } from '@oas-ui/core/oas-element'
 
 /** 希腊字母映射（LaTeX 命令 → Unicode 字符） */
 const GREEK: Record<string, string> = {
