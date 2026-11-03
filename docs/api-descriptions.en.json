@@ -838,7 +838,7 @@
   },
   "oas-command": {
     "attrs": {
-      "items": "Command items JSON (root page; sub-pages via `item.page`, supports `icon` / `shortcut` / `description` / `page` / `view` / `forceMount` / `separator` fields)",
+      "items": "Command items JSON (root page; sub-pages via `item.page`, nested levels via `item.children`, supports `icon` / `shortcut` / `description` / `children` / `page` / `view` / `forceMount` / `separator` fields; `children: []` + `levelLoader` marks a dynamic-level placeholder)",
       "open": "Whether open (controlled; auto-removed after selection / Esc; fires `oas-open-change` on open and close)",
       "value": "Search query (controlled; two-way via `oas-input` echo-back)",
       "selected": "Active item value (controlled; arrow keys / hover fire `oas-active` for the host to echo back)",
@@ -861,12 +861,16 @@
       "oas-active": "Active item changed, `detail: { value }` (basis for controlled `selected` echo-back)",
       "oas-change": "Multi-select toggle, `detail: { values }`",
       "oas-page-change": "Sub-page pushed/popped, `detail: { title, depth, direction }` (`direction: push|pop`)",
+      "oas-navigate": "Nested-level navigation via `children` (enter / go back / breadcrumb jump), `detail: { path, level }` — `path` is the level key (value) path, `level` is the current depth (root = 0); `oas-select` is not fired",
       "oas-view-change": "View entered/exited, `detail: { view, title }` (exiting sends `view: ''`)"
     },
     "slots": {
       "empty": "Custom empty state (read the current query via `el.query`, e.g. a \"create xyz\" entry)",
       "footer": "Custom footer bar (defaults to `↑↓ navigate / ↵ select / esc close` hints)",
       "view-${view}": "Per-view override of the selected content (host writes `<div slot=\"view-deploy\">` …; `view` is the view field value)"
+    },
+    "props": {
+      "levelLoader": "Dynamic-level loader (property function channel, `(ctx: { path: string[], index: number }) => CommandItem[] | Promise<CommandItem[]>`): declarative `children` takes precedence; items with `children: []` invoke it by path on entry (results cached per path — the same path never loads twice; swapping the loader clears the cache); while the Promise is pending the current level shows a loading state; a throw or non-array result shows an error row with retry"
     }
   },
   "oas-comment": {
@@ -1015,6 +1019,7 @@
       "placeholder": "Placeholder text",
       "placement": "Popup placement, 12 directions: `top`/`bottom`/`left`/`right` × `-start`/`-end` (default `bottom-start`); auto right-aligns near the viewport right edge, flips upward when space below is insufficient, and clamps into the viewport",
       "readonly": "Readonly: the panel can be opened and browsed (cells keyboard-navigable), but no interaction commits",
+      "ranges": "Quick range presets (JSON [{ label, start, end }], absent by default; range types only): buttons render into the shortcut bar (shortcuts-position picks horizontal/left column); clicking applies the whole range, emits oas-change and closes. Invalid JSON ignores the whole attribute; items missing label or with unparsable start/end are dropped with a single devWarn; reversed endpoints swap automatically; presets whose endpoints hit min/max/disabled-date render grayed out (built-ins follow the same rule); when present, overrides the shortcuts property and built-ins",
       "shortcuts-position": "Shortcut placement: `bottom` (default, horizontal on top) / `left` (vertical sidebar)",
       "show-week-number": "Show an ISO week-number column (built-in for `type=week`)",
       "size": "Size: `small` / `medium` / `large` (reads the nearest config-provider injection)",
@@ -1034,7 +1039,7 @@
       "oas-cell-render": "Emitted per day cell on rebuild, `detail: { date, element }` (listeners must be idempotent)",
       "oas-change": "Value change, `detail: { value }` (string array for ranges and multiple)",
       "oas-clear": "Clear, `detail: { value }` is the previous value",
-      "oas-confirm": "Emitted when datetime/datetimerange submits via the confirm button (alongside `oas-change`)",
+      "oas-confirm": "Emitted when datetime/datetimerange submits via the confirm button (alongside `oas-change`); for datetimerange the detail carries start / end alongside the value array",
       "oas-blur": "The component as a whole loses focus (internal moves do not fire)",
       "oas-focus": "The component as a whole gains focus",
       "oas-open-change": "Open state change, `detail: { open }`; host-written `open` attributes do not echo back (avoids two-way binding loops)"
@@ -1103,6 +1108,7 @@
       "placement": "Slide direction",
       "size": "Preset size or a concrete value: `small` (256px) / `medium` (378px) / `large` (736px), or write directly like `512px`, `40%`",
       "title": "Title text (rendered into the visible title region; absorbed from the host on read so no native hover tooltip remains; pass an empty string to clear); use the \"title\" slot for rich content",
+      "label": "Accessible name (forwarded as the panel's aria-label): aria-labelledby wins when a visible title is present, label acts as the fallback; with `no-header` or an empty title it supplies the name (otherwise screen readers only announce \"dialog\")",
       "visible": "Whether shown",
       "width": "Drawer width (px or percentage), takes precedence over `size`",
       "append-to": "Portal mount point: moves the mask and panel into an isolated shadow inside the target container (`body` or CSS selector, styles stay scoped), escaping host overflow clipping; moved back to the host shadow when the attribute is removed or unmatched",
@@ -4105,9 +4111,11 @@
       "directory": "Directory mode: nodes with `children` (or not yet loaded under lazy) show a folder icon, nodes with `isLeaf` / no `children` show a file icon; the folder icon switches on expand / collapse",
       "draggable": "Nodes can be dragged to reorder / reparent; drop shows insertion line / highlight; release emits `oas-node-drop`",
       "expanded": "Set of expanded node keys (JSON string array, e.g. `'[\"a\"]'`; the pre-v2.5 comma string is deprecated and falls back to an empty set with a warning)",
-      "height": "Virtual scroll viewport height (px); setting it enables virtualized rendering for large data",
+      "height": "Virtual scroll viewport height (px), default 360; works with virtual (the legacy usage with only height still enables virtual scrolling)",
+      "virtual": "Client-side virtual scrolling (boolean, off by default): flattens the currently expanded visible nodes and renders only the viewport slice (reuses oas-virtual-list); expansion/data changes recompute the window and keep the scroll position, and keyboard navigation / ARIA use the full flattened list",
+      "item-height": "Virtual row height (px), default 32; the default can be overridden with the `--oas-tree-row-height` token (`row-height` is the legacy name and `item-height` wins when both are present)",
       "lazy": "Lazy loading: nodes without `children` and not marked `isLeaf` / `loaded` trigger loading on expand",
-      "row-height": "Fixed row height when virtualized (px)",
+      "row-height": "Fixed row height when virtualized (px); legacy name, same as `item-height` (default 32)",
       "selected": "Key of the selected node",
       "multiple": "Click multi-select (Ctrl/⌘ toggles, Shift-click/Shift+↑↓ range selection/extension, Ctrl/⌘+Shift adds; selected is a JSON array)",
       "check-strategy": "Check export strategy: `all` (default) / `parent` / `child` (with checkable cascading)",
@@ -4247,7 +4255,8 @@
       "tip": "Drop-zone tip text (same as `template[slot=\"tip\"]` for rich content)",
       "required": "Required marker (drives the native valueMissing validation chain; not passed through to the inner control)",
       "crop": "Pre-upload image cropping (picture/picture-card + image accept): picked images open the built-in crop dialog first; the canvas crop result is queued on confirm",
-      "crop-aspect": "Fixed crop aspect ratio (e.g. `1:1`, `16:9`); invalid/missing = free ratio"
+      "crop-aspect": "Fixed crop aspect ratio (e.g. `1:1`, `16:9`); invalid/missing = free ratio",
+      "storage-key": "Persistence key for file list metadata (opt-in): stores name/size/type/status/url in localStorage (**no file content**); restores after reload — done entries come back completed (no re-upload, persisted hover hint), error/pending come back as pending with one `oas-change`; changing the key reloads immediately, removing it stops writing; broken JSON or a version mismatch is ignored"
     },
     "events": {
       "oas-change": "File list change, `detail: { files }`",
@@ -4276,7 +4285,9 @@
     "methods": {
       "startUpload": "Upload entry: the real channel (action XHR / custom-request) is used per file; with no channel it falls back to simulated progress",
       "submit": "Alias of the manual upload entry (matching the common \"submit\" mental model)",
-      "abort": "Cancel uploads: passing an entry cancels that one; omitting it cancels all in-flight uploads"
+      "abort": "Cancel uploads: passing an entry cancels that one; omitting it cancels all in-flight uploads",
+      "retryAll": "Retries every failed file through the existing per-file upload channel (one `oas-retry` per file, then the usual progress/success/error events); a no-op when there is no real channel",
+      "clearErrors": "Removes all failed entries from the list (one `oas-remove` per file, a single `oas-change` at the end); successful/pending entries are kept"
     }
   },
   "oas-virtual-list": {
@@ -4686,7 +4697,8 @@
       "show-status-line": "Status line + planned-progress ticks (boolean, off by default): (1) renders a vertical progress line at status-date on the timeline (token --oas-gantt-status-line-color, falls back to the warning color family; status-date is not parsed while the switch is off — zero added cost on the default path); (2) inside each task bar draws a narrow tick at the planned ratio and writes data-plan-ratio (0-1, two decimals) — the planned ratio uses **inclusive day granularity**: calendar-day difference between status-day and start (status day counted, start day = 1), clamped to the duration (same formula as computeEvm's planned); milestones use the binary ratio (0 before / 1 after), summaries draw none; the tick is display-only — no coloring, no warnings",
       "status-date": "Status date ('YYYY-MM-DD', hour scale may carry a time): the reference date for show-status-line; invalid/missing falls back to today (server-side today under SSR — pass it explicitly when snapshot determinism matters)",
       "baseline-id": "Multi-baseline selector (with GanttTask.baselines): picks which baseline is rendered/measured; defaults to baselines[0]; an unknown id falls back to the first baseline and devWarns once. The single baseline field is equivalent to [{ id: 'default', ... }] (normalized in the sanitize layer)",
-      "hover": "Row hover background switch (on by default): hovering a row name or task bar lights up the whole row (name + timeline share the same background). Color via `--oas-gantt-row-hover-bg` (defaults to `--oas-color-bg-hover`, independent of the zebra stripe); `\"false\"` disables"
+      "hover": "Row hover background switch (on by default): hovering a row name or task bar lights up the whole row (name + timeline share the same background). Color via `--oas-gantt-row-hover-bg` (defaults to `--oas-color-bg-hover`, independent of the zebra stripe); `\"false\"` disables",
+      "pool": "Resource pool mode (boolean, default off): task resources reference the shared resource pool (getSharedResourcePool() from @oas-ui/ui/data/resource/pool) — hovering a bar shows pool resource names and rates (costRate; unregistered ids ignored); plus cross-task over-allocation detection for the same resource: tasks whose time ranges overlap (half-open, touching edges excluded; milestones treated as points, summaries excluded) get .conflict on bar and row name, conflict pairs emitted via oas-resource-conflict. Pool changes do not notify the component automatically — retrigger a recalc (e.g. re-assign tasks) after registering; detection is skipped in windowed mode with a devWarn; no resource histogram/swimlane and no auto-schedule avoidance"
     },
     "events": {
       "oas-reschedule": "Dispatched when auto-scheduling moved successor tasks (auto-schedule on), detail: { ids } (ids of the rescheduled tasks)",
@@ -4704,7 +4716,8 @@
       "oas-selection-change": "Dispatched when the multi-select set changes (click / keyboard / property write), detail: { ids } (selected task ids)",
       "oas-window-request": "Emitted in windowed mode when the expected row window is not covered by the loaded range; detail: { start, end, reason } (half-open, absolute row indices; reason is init / scroll / resize / data). The same expected window is not emitted twice",
       "oas-range-request": "Emitted when the time axis is host-managed (range-start/range-end) and the visible time window approaches an axis edge; detail: { startMs, endMs, reason } (the neighbouring range requested). The same expected range is not emitted twice",
-      "oas-history-change": "With history enabled, dispatched after each undoable commit/undo/redo/clear, detail: { canUndo, canRedo, action } (change/undo/redo/clear)"
+      "oas-history-change": "With history enabled, dispatched after each undoable commit/undo/redo/clear, detail: { canUndo, canRedo, action } (change/undo/redo/clear)",
+      "oas-resource-conflict": "Emitted with pool enabled when the over-allocation result is computed (idempotent: not re-emitted for the same snapshot; re-emitted after data/pool changes, empty array on resolution), detail: { conflicts } ([{ taskA, taskB, resourceId, overlapStart, overlapEnd }], taskA precedes taskB in input order, overlap dates are inclusive day-precision)"
     },
     "slots": {
       "template[slot=\"empty\"]": "Empty-state content (defaults to \"No tasks\")",
@@ -5085,6 +5098,7 @@
       "range-end": "Host-managed time-axis end (ISO date YYYY-MM-DD, inclusive); pair with range-start. If only one is given, reversed or invalid, the axis is not host-managed and a devWarn is emitted",
       "show-load-values": "Show the load value above each histogram bar (boolean, off by default): only for load > 0; overload values use text-on-primary (white in light / dark in dark) for contrast on the danger bar. The number is visual redundancy (aria-hidden); screen readers still get the column load description",
       "show-overload-badge": "Show an \"Overloaded ×N\" badge in the lane header (boolean, off by default): only for resources with overloaded periods; text comes from the i18n key resource.overBadge",
+      "show-skills": "Skill chips next to the lane row-header name (boolean, off by default): renders ResourceItem.skills as muted rounded tags (sanitized: non-array = absent, non-string/blank items dropped, deduplicated, trimmed); at most 8 render so a long list cannot blow up the header — the full list stays on the container title hover (data layer keeps everything; reassign matching is unaffected); single-line ellipsis keeps row height stable, RTL mirrors automatically via direction",
       "bar-label": "Show the task name inside the bar (boolean, off by default): single line with ellipsis, clipped on narrow bars; aria-label and click/drag hit-testing are unchanged",
       "header-sticky": "Lane header sticks to the top while scrolling lanes (on by default): week/day ticks stay visible; `header-sticky=\"false\"` disables it (the header scrolls with content). The corner name column always stays pinned on horizontal scroll (LTR/RTL)",
       "heatmap": "Load heatmap (boolean, off by default): colors cells by load/capacity with low/mid/high/over; the histogram header renders a legend and each cell title shows date + load/capacity",

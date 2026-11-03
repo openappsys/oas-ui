@@ -101,6 +101,12 @@
       "observed": true
     },
     {
+      "name": "show-skills",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
       "name": "hover",
       "observed": true
     }

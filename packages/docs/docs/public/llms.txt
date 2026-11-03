@@ -124,7 +124,7 @@
 - [BackTop 回到顶部](https://oas-ui.dev/components/back-top): 固定于视口角落的回到顶部按钮：滚动超过阈值自动出现，点击平滑滚回顶部。
 - [BottomNavigation 底部导航](https://oas-ui.dev/components/bottom-navigation): 移动端底部导航栏：role="navigation" + 当前项 aria-current="page" 同步（视图导航，不伪装成无 panel 的 tablist），全部可用项 Tab 可达、方向键/Home/End 为增强焦点移动、Enter/Space 选中，激活项主色 + 图标，顶部细分隔线。
 - [Breadcrumb 面包屑](https://oas-ui.dev/components/breadcrumb): 展示页面层级路径。
-- [Command 命令面板](https://oas-ui.dev/components/command): 命令面板（⌘K 唤起，快捷键可配置）——搜索过滤、匹配打分排序、键盘选择、Enter 执行、嵌套子页导航、最近使用、多选批量执行。open 受控：可由外部设置，也可用全局快捷键或 Esc 关闭（打开/关闭各派发一次 oas-open-change）。
+- [Command 命令面板](https://oas-ui.dev/components/command): 命令面板（⌘K 唤起，快捷键可配置）——搜索过滤、匹配打分排序、键盘选择、Enter 执行、嵌套子页导航、children 多级导航（声明式子级 + levelLoader 动态子级）、最近使用、多选批量执行。open 受控：可由外部设置，也可用全局快捷键或 Esc 关闭（打开/关闭各派发一次 oas-open-change）。
 - [ContextMenu 右键菜单](https://oas-ui.dev/components/context-menu): 在包裹区域内右键弹出菜单，菜单定位在鼠标位置。
 - [Dropdown 下拉菜单](https://oas-ui.dev/components/dropdown): 点击触发器展开菜单，浮层定位到触发元素旁。
 - [FloatButton 悬浮按钮](https://oas-ui.dev/components/float-button): 默认固定于页面右下角的圆形操作按钮，常用于「新建」「反馈」等快捷操作，支持角标、自定义图标、扩展文字与链接化。

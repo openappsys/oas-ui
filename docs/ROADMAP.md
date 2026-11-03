@@ -2,6 +2,18 @@
 
 版本遵循 SemVer。v1.0.0 为首个正式发布。每个版本 = 一个可独立交付/可试用的里程碑。
 
+## 未发布（T 批：demands 编号立项）
+
+| 范围 | 内容 | 状态 |
+| --- | --- | --- |
+| **T5 tree 虚拟滚动** | `virtual`/`item-height` + 1 万节点验证；连带修 checked 闭包 O(n²) 与 vlist 尾随帧重建 bug | ✅ 已完成（未发布） |
+| **T6 upload 三件套** | `storage-key` 持久化 + form 一等公民 + 错误摘要条（4 key ×10 语言） | ✅ 已完成（未发布） |
+| **T8+T12 范围预设与技能** | date-picker `ranges` + 倒置交换 + confirm start/end；resource `skills` + `show-skills` chips | ✅ 已完成（未发布） |
+| **T10 gantt 资源池** | `pool` 超配检测 + `oas-resource-conflict` 幂等事件 + `computeResourceConflicts` 导出 | ✅ 已完成（未发布） |
+| **T11 table 三 L3** | pivot/value-format/query 按需子路径（61 单测 + 3 预算档）；resourcePool 转 capability 口径 | ✅ 已完成（未发布） |
+| **T15 组合配方** | recipes：Action Sheet / 终端 / JSON 对照（零组件改动） | ✅ 已完成（未发布） |
+| **T4 command 多级导航** | `children` + `levelLoader`、面包屑、Esc/→/← 逐级、`oas-navigate` | ✅ 已完成（未发布） |
+
 ## 未发布（决策批：再捞待决项按原则清零）
 
 | 范围 | 内容 | 状态 |

@@ -114,6 +114,12 @@
       "name": "required",
       "type": "boolean",
       "observed": true
+    },
+    {
+      "name": "storage-key",
+      "type": "string",
+      "default": "",
+      "observed": true
     }
   ],
   "props": [
@@ -158,6 +164,16 @@
       "name": "abort",
       "signature": "abort(entry?: File): void",
       "description": "取消上传：传入条目取消单个；无参取消全部进行中的上传"
+    },
+    {
+      "name": "retryAll",
+      "signature": "retryAll(): void",
+      "description": "重试全部失败文件：逐文件走既有上传通道（`oas-retry` → 上传进度/成功/失败事件）。"
+    },
+    {
+      "name": "clearErrors",
+      "signature": "clearErrors(): void",
+      "description": "清除错误：把全部失败条目从列表移除（逐条派发 `oas-remove`，末尾一次 `oas-change`）。"
     }
   ],
   "events": [

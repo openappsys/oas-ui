@@ -165,6 +165,12 @@
       "observed": true
     },
     {
+      "name": "pool",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
       "name": "show-effort",
       "type": "string",
       "default": "",
@@ -351,6 +357,10 @@
     {
       "name": "oas-range-request",
       "detail": "{ startMs: need.startMs, endMs: need.endMs, reason } satisfies RangeRequestDetail"
+    },
+    {
+      "name": "oas-resource-conflict",
+      "detail": "{ conflicts: this.resourceConflicts.map((c) => ({ ...c })), } satisfies GanttResourceConflictDetail"
     },
     {
       "name": "oas-scale-change",

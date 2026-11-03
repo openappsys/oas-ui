@@ -94,6 +94,11 @@
       "default": "[]"
     },
     {
+      "name": "levelLoader",
+      "type": "CommandLevelLoader | null",
+      "api": true
+    },
+    {
       "name": "filter",
       "type": "((query: string, items: CommandItem[]) => CommandItem[]) | null"
     },
@@ -123,7 +128,11 @@
     },
     {
       "name": "oas-page-change",
-      "detail": "{ title: item.label, depth: this.pages.length, direction: 'push' } | { title: page.title, depth: this.pages.length, direction: 'pop' }"
+      "detail": "{ title: item.label, depth: this.pages.length, direction: 'push' } | { title: popped.title, depth: this.pages.length, direction: 'pop' } | { title: lastPopped.title, depth: this.pages.length, direction: 'pop' }"
+    },
+    {
+      "name": "oas-navigate",
+      "detail": "{ path: [...this.activePath], level: this.activePath.length }"
     },
     {
       "name": "oas-view-change",

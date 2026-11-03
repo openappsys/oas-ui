@@ -805,7 +805,7 @@
   },
   "oas-command": {
     "attrs": {
-      "items": "命令项 JSON（根页；子页由 item.page 提供，含 icon / shortcut / description / page / view / forceMount / separator 字段）",
+      "items": "命令项 JSON（根页；子页由 item.page 提供，声明式多级由 item.children 提供，含 icon / shortcut / description / children / page / view / forceMount / separator 字段；children: [] + levelLoader 组合为动态子级占位）",
       "open": "是否打开（受控；选择 / Esc 后自动移除，打开/关闭各派发一次 `oas-open-change`）",
       "value": "搜索词（受控；宿主监听 `oas-input` 回写实现双向）",
       "selected": "当前高亮项 value（受控；方向键/悬停派发 `oas-active`，宿主回写生效）",
@@ -828,12 +828,16 @@
       "oas-active": "高亮项变化，`detail: { value }`（受控 selected 的回写依据）",
       "oas-change": "多选勾选变化，`detail: { values }`",
       "oas-page-change": "子页推入/回退，`detail: { title, depth, direction }`（`direction: push|pop`）",
+      "oas-navigate": "children 多级导航（进入/返回/面包屑跳转），`detail: { path, level }`——path 为层级 key（value）路径，level 为当前级深度（根为 0）；不派发 `oas-select`",
       "oas-view-change": "视图进出，`detail: { view, title }`（退出时 `view: ''`）"
     },
     "slots": {
       "empty": "空结果自定义渲染（组件内用 `el.query` 读当前搜索词，如「创建 xyz」入口）",
       "footer": "底部自定义条（默认显示 `↑↓ 选择 / ↵ 执行 / esc 关闭` 提示）",
       "view-${view}": "按视图名覆盖该视图的选中内容（宿主写 `<div slot=\"view-deploy\">` …，`view` 为视图字段的值）"
+    },
+    "props": {
+      "levelLoader": "动态子级加载器（property 函数通道，`(ctx: { path: string[], index: number }) => CommandItem[] | Promise<CommandItem[]>`）：声明式 children 优先；`children: []` 的项进入时按路径调用（结果按路径缓存，同 path 不重复调用，换 loader 自动清空）；Promise 期间当前级显示加载态，抛错/返回非数组显示错误行 + 重试"
     }
   },
   "oas-comment": {
@@ -975,6 +979,7 @@
       "placeholder": "占位提示",
       "placement": "浮层位置，12 向：`top`/`bottom`/`left`/`right` × `-start`/`-end`（默认 `bottom-start`）；触发器贴近视口右缘时自动右对齐翻转、下方空间不足时上翻，并夹取到视口内",
       "readonly": "只读：面板可展开浏览（单元格可键盘导航），点选/快捷/清除/手输均不提交",
+      "ranges": "范围快捷区间预设（JSON [{ label, start, end }]，默认无；仅范围类型生效）：按钮渲染进快捷栏（shortcuts-position 控制横排/左侧栏），点击应用整个区间、派发 oas-change 并关闭；非法 JSON 整体忽略，缺 label 或 start/end 不可解析的项逐项丢弃并 devWarn 一次；起止倒置自动交换；端点命中 min/max/disabled-date 的预设置灰不可点（内置默认预设同口径）；在场时覆盖 shortcuts property 与内置预设",
       "shortcuts-position": "快捷预设位置：`bottom`（默认，顶部横排）/ `left`（左侧纵栏）",
       "show-week-number": "显示 ISO 周号列（`type=week` 自带）",
       "size": "尺寸档：`small` / `medium` / `large`（就近读取 config-provider 注入）",
@@ -994,7 +999,7 @@
       "oas-cell-render": "日格重建时逐格派发，`detail: { date, element }`（标记点/徽标场景，监听须幂等）",
       "oas-change": "值变化，`detail: { value }`（范围/multiple 为字符串数组）",
       "oas-clear": "清除，`detail: { value }` 为清空前的值",
-      "oas-confirm": "datetime / datetimerange 点确定提交时派发（与 `oas-change` 并行）",
+      "oas-confirm": "datetime / datetimerange 点确定提交时派发（与 `oas-change` 并行）；datetimerange 的 detail 除 value 数组外同时携带 start / end（宿主免解数组）",
       "oas-blur": "组件整体失焦（组件内转移不误报）",
       "oas-focus": "组件整体获焦",
       "oas-open-change": "开合变化，`detail: { open }`；宿主直接写 open 属性吸收状态不回派（防双向绑定回环）"
@@ -1063,6 +1068,7 @@
       "placement": "滑出方向",
       "size": "预设尺寸档位或具体值：`small`（256px）/ `medium`（378px）/ `large`（736px），或直接写如 `512px`、`40%`",
       "title": "标题文案（渲染进可见标题区；读取后即从宿主移除，不残留原生悬浮提示；清空传空串）；富内容用 slot=\"title\"",
+      "label": "可访问名（转发为面板 aria-label）：有可见标题文本时 aria-labelledby 优先、label 作兜底；`no-header` / 标题为空时由它承担名称（否则读屏只播报「对话框」）",
       "visible": "是否显示",
       "width": "抽屉宽度（px 或百分比），优先级高于 `size`",
       "append-to": "portal 挂载点：把遮罩与面板移入目标容器（`body` 或 CSS 选择器）内的独立 shadow（样式作用域保真），脱离宿主 overflow 裁剪；属性移除/无匹配时移回宿主 shadow",
@@ -3923,9 +3929,11 @@
       "directory": "目录模式：有 `children`（或懒加载下未加载）的节点显示文件夹图标，`isLeaf` / 无 `children` 的节点显示文件图标，文件夹按展开 / 收起切换图标",
       "draggable": "节点可拖拽换序 / 换父，落点显示插入线 / 高亮，松手派发 `oas-node-drop`",
       "expanded": "展开节点 key 集合（JSON 字符串数组，如 `'[\"a\"]'`；v2.5 前的旧逗号串已废弃，解析失败按空集合回落并告警）",
-      "height": "虚拟滚动视口高度（px）；设置后开启大数据量虚拟化渲染",
+      "height": "虚拟滚动视口高度（px），默认 360；与 virtual 配合（历史用法只设 height 也仍开启虚拟滚动）",
+      "virtual": "客户端虚拟滚动（布尔，默认关）：把当前展开可见的节点拍平为线性列表，只渲染视口切片（复用 oas-virtual-list）；展开/数据变更时窗口重算且保持滚动位置，键盘导航与 ARIA 均按全量拍平列表",
+      "item-height": "虚拟滚动行高（px），默认 32；缺省可用 `--oas-tree-row-height` token 覆盖（`row-height` 为旧名，两者同时在场时以 item-height 为准）",
       "lazy": "懒加载：无 `children` 且未标记 `isLeaf` / `loaded` 的节点，展开时触发加载",
-      "row-height": "虚拟化时每行固定高度（px）",
+      "row-height": "虚拟化时每行固定高度（px），旧名，等同 `item-height`（缺省 32）",
       "selected": "选中节点 key",
       "multiple": "点选多选（Ctrl/⌘ 切换、Shift 点击/Shift+↑↓ 范围选择与扩选、Ctrl/⌘+Shift 并入；selected 为 JSON 数组）",
       "check-strategy": "勾选导出策略：`all`（默认）/ `parent` / `child`（checkable 级联时生效）",
@@ -4055,7 +4063,8 @@
       "tip": "拖拽区提示文案（同 `template[slot=\"tip\"]` 富内容）",
       "required": "必填标记（驱动原生校验链 valueMissing；不透传内层控件）",
       "crop": "图片上传前裁剪（picture/picture-card + accept 含图片时生效）：选择后弹内建裁剪对话框，确认以 canvas 裁剪结果入列",
-      "crop-aspect": "裁剪固定宽高比（如 `1:1`、`16:9`）；非法/缺省为自由比例"
+      "crop-aspect": "裁剪固定宽高比（如 `1:1`、`16:9`）；非法/缺省为自由比例",
+      "storage-key": "文件列表元数据持久化键（opt-in）：写入 localStorage（`{ name, size, type, status, url? }`，**不含文件内容**）；刷新后回显——done 恢复为已完成（不可重传、hover 提示已持久化），error/待处理恢复为待处理并派发一次 oas-change；改键即时重载、移除即停止写入；坏 JSON/版本不符静默忽略"
     },
     "events": {
       "oas-change": "文件列表变化，`detail: { files }`",
@@ -4080,6 +4089,10 @@
     "props": {
       "files": "受控文件列表（property 通道，写回即同步渲染）",
       "value": "当前值：可提交的 `File[]`（仅文件体条目；回显记录不含文件体、不计入）"
+    },
+    "methods": {
+      "retryAll": "重试全部失败文件：逐文件走既有上传通道（`oas-retry` → 进度/成功/失败事件）；无真实通道时空操作",
+      "clearErrors": "清除错误：把全部失败条目从列表移除（逐条 `oas-remove`，末尾一次 `oas-change`），成功/待处理条目保留"
     }
   },
   "oas-virtual-list": {
@@ -4459,7 +4472,8 @@
       "show-status-line": "状态线 + 计划进度刻度（布尔，默认关）：① 时间轴上按 status-date 渲染竖直进度线（token --oas-gantt-status-line-color，缺省 warning 色族；关闭态不解析 status-date——默认路径零新增开销）；② 每个任务条内按计划进度画窄竖刻度并写 data-plan-ratio（0-1 两位精度）——计划进度为**含端日粒度**口径：status 日与 start 的日历日差含当日、clamp 到工期（与 computeEvm 的 planned 同构）；里程碑按二值（未到 0/已到 1），summary 不画；只画刻度，不染色不告警",
       "status-date": "状态基准日（'YYYY-MM-DD'，hour 档可带时刻）：show-status-line 的取数基准；非法/缺省回落当天（SSR 下为服务器当天，需快照确定性的宿主请显式传值）",
       "baseline-id": "多基线选择（配合 GanttTask.baselines）：指定渲染/差异取哪条基线；缺省取 baselines[0]；未命中回落第一条并 devWarn 一次。单 baseline 字段等价 [{ id: 'default', ... }]（清洗层归一）",
-      "hover": "行 hover 底色开关（默认开）：鼠标移入行名或任务条时整行点亮（行名 + 时间轴同底色），颜色走 `--oas-gantt-row-hover-bg`（缺省 `--oas-color-bg-hover`，与斑马纹独立）；`\"false\"` 关闭"
+      "hover": "行 hover 底色开关（默认开）：鼠标移入行名或任务条时整行点亮（行名 + 时间轴同底色），颜色走 `--oas-gantt-row-hover-bg`（缺省 `--oas-color-bg-hover`，与斑马纹独立）；`\"false\"` 关闭",
+      "pool": "资源池模式（布尔，默认关）：开启后任务 resources 引用共享资源池（@oas-ui/ui/data/resource/pool 的 getSharedResourcePool()）——tooltip 悬停条追加池内资源名称与费率（costRate，池外 id 忽略）；并对同资源任务做跨任务超配检测：时间区间交叠（半开区间相切不算；里程碑按点处理、summary 不参与）的任务条与左侧行名加 .conflict 标记，冲突对经 oas-resource-conflict 事件派发。池登记变化不自动通知组件——宿主改池后须触发重算（如重写 tasks）；windowed 切片上跳过检测并 devWarn；不做资源负荷直方图/泳道视图与自动排程避让"
     },
     "events": {
       "oas-reschedule": "依赖联动排程改动了后继任务时派发（auto-schedule 开启），detail: { ids }（被联动改动的任务 id）",
@@ -4477,7 +4491,8 @@
       "oas-selection-change": "多选集合变化（点击 / 键盘 / property 写入）时派发，detail: { ids }（选中的任务 id 数组）",
       "oas-window-request": "windowed 模式下期望行窗口未被已装载区间覆盖时派发，detail: { start, end, reason }（半开区间、绝对行号；reason 为 init / scroll / resize / data）；同一期望区间不重复派发",
       "oas-range-request": "宿主托管时间范围（range-start/range-end）且可视时间窗接近轴端点时派发，detail: { startMs, endMs, reason }（期望的相邻范围）；同一期望范围不重复派发",
-      "oas-history-change": "history 开启后，每次可撤销提交/撤销/重做/清空时派发，detail: { canUndo, canRedo, action }（action: change/undo/redo/clear）"
+      "oas-history-change": "history 开启后，每次可撤销提交/撤销/重做/清空时派发，detail: { canUndo, canRedo, action }（action: change/undo/redo/clear）",
+      "oas-resource-conflict": "pool 开启时资源超配检测结果派发（幂等：同一快照不重复派发，数据/池变化重算后签名变化才发，消解发空数组），detail: { conflicts }（[{ taskA, taskB, resourceId, overlapStart, overlapEnd }]，taskA 在 tasks 输入序在前，交叠区间为日精度含端日期）"
     },
     "slots": {
       "template[slot=\"empty\"]": "空数据态内容（缺省「暂无任务」）",
@@ -4828,6 +4843,7 @@
       "range-end": "宿主托管时间轴终点（ISO 日期 YYYY-MM-DD，含当日）：与 range-start 成对使用；只有其一 / 颠倒 / 非法时忽略托管并 devWarn",
       "show-load-values": "负载直方图柱顶显示该档负载数字（布尔，默认关）：仅 load > 0 显示，超载档数字用 `text-on-primary`（浅色主题白字/暗色主题深字，压在 danger 柱身上保证对比）；数字为视觉冗余（aria-hidden），读屏仍读列的负载描述",
       "show-overload-badge": "泳道行头显示「超载 N 档」徽标（布尔，默认关）：仅该资源存在超载档时显示，文案走 i18n resource.overBadge",
+      "show-skills": "泳道行头名称旁技能 chip（布尔，默认关）：以弱底圆角小标签展示 ResourceItem.skills（清洗：非数组未声明、非字符串/空白项丢弃、去重、trim）；渲染上限 8 个防挤占行头，全量经容器 title 悬浮可见（数据层保全量，reassign 匹配不受影响）；单行省略不撑行高，RTL 视觉镜像随 direction 自动翻转",
       "bar-label": "任务条内显示任务名（布尔，默认关）：单行省略，窄条自动裁切；不改变 aria-label 与点击/拖拽命中",
       "header-sticky": "泳道表头纵向吸顶（默认开）：滚动泳道时周/日刻度保持可见；`header-sticky=\"false\"` 关闭（表头随内容滚动）。角落名列在横向滚动时始终贴边（LTR/RTL）",
       "heatmap": "负载热力图（布尔，默认关）：按 load/capacity 渲染低/中/高/超载热力格，表头显示图例，每格 title 为日期与 load/capacity",

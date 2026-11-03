@@ -8,36 +8,39 @@
 
 - **`oas-select` chip 形态（`variant="chip"`）+ Option 首元素字段（`dot` / `avatarText`）**：属性面板编辑模式组件化——`variant` 新增第 4 值 `chip`，触发器换成紧凑胶囊（高 24px 走 `--oas-select-chip-height` token、弱底 hover 微强调、无边框框选感、宽度随内容收缩，size/status/multiple 可组合）；`Option` 接口新增 `dot`（选项色点，8px 圆点，CSS 颜色值支持 token 名/var()/hex，清洗后内联写 background）与 `avatarText`（迷你头像，16px 取首字符，缺省 primary 底 + on-primary 字色），选项行首与 chip 触发器首按 `dot > avatarText > icon` 优先级渲染首元素槽（同时给时 dot 优先）；子元素通道 `<oas-option dot="…" avatar-text="…">` 同款映射，运行时改写即时刷新；单选点选即派发 `oas-change`（detail 不变）、空值走 placeholder、键盘全等价、非法值静默清洗。中英文档「属性面板模式」节 + workflow 状态色点 demo；API 生成物同步。
 - **强制对比度（forced-colors）模式焦点可见**：88 个组件补 `@media (forced-colors: active)` 焦点兜底——焦点环从 `box-shadow` 切为 `1px solid CanvasText` 实线 outline（`outline-offset: 1px`，inset 环组件用 `-1px` 防容器裁切），Windows 高对比主题等强制配色环境下键盘焦点不再失明；非强制配色渲染零变化（媒体查询外一行未动）；`forced-colors.spec.ts` 焦点环计算样式断言（chromium，含反向断言防外溢）+ 既有非焦点兜底用例保留。
+- **`oas-tree` 客户端虚拟滚动（万级节点）**：`virtual`（存在即开启，与 select/combobox 同口径）+ `item-height`（旧名 `row-height` 保留，新增 `--oas-tree-row-height` token 开口，非法值回落 32 并告警）——1 万节点渲染行数有界（≈视口/行高 + margin），键盘跨窗口定位/ARIA 全量序（`aria-setsize/posinset` 按拍平列表）不破；顺带修复两个性能缺陷：勾选闭包由「每行 × O(全量)」改为每 update 一次共享上下文（10k 渲染 ~50ms→~24ms）、非 checkable 树跳过闭包构造；`oas-virtual-list` 新增窗口渲染签名——窗口未变时跳过行 DOM 重建（修复尾随 scroll 帧重建销毁聚焦行的键盘导航 bug）。1 万节点 demo + qa-regression 结构回归（行数有界/窗口滑移/快速滚动宽下界）。
+- **`oas-upload` 表单全局校验三件套（全部 opt-in）**：① `storage-key`——文件列表元数据持久化 localStorage（**不含文件内容**；坏 JSON/版本不符静默忽略，上限 500 条；done 条目刷新回显不可重传、error/pending 回落待处理并恰一次 `oas-change`）；② 表单一等公民——`oas-form` 注册读写通道（读 = 可提交文件元数据，required 走 ElementInternals 与原生 `valueMissing` 等价）；③ 错误摘要条——文案 `role="status"` + 重试全部/清除错误按钮（清除为移除失败项语义），i18n 4 key ×10 语言。api 语料补 `retryAll`/`clearErrors` 方法。
+- **`oas-date-picker` 范围模式完备化**：`ranges` 快捷预设区间（JSON，项级清洗、倒置自动交换、disabled-date/min-max 交集置灰、属性优先于 shortcuts property、缓存随 `type` 失效）；手输起止倒置由「回退」改「自动交换提交」；`oas-confirm` detail 补 `start`/`end` 命名字段。
+- **`oas-gantt` 资源池与超配检测（`pool`，opt-in）**：任务 `resources` 与 `getSharedResourcePool()` 联动——tooltip 资源行（名称 + 费率）、跨任务同资源时间重叠检测（相切不算、日精度含端、里程碑/summary 跳过、池外 id 忽略）、超配复用 conflict 视觉通道、**`oas-resource-conflict` 幂等事件**（签名比对同快照不重发、消解派空数组、>2 并发 devWarn 一次）；windowed 模式跳过检测。导出纯函数 `computeResourceConflicts`。gantt 链 65.8/75 KB。
+- **table Pro helper 三件（L3 按需子路径）**：`@oas-ui/ui/data/table/pivot`（`pivotMatrix(rows, spec)`——行×列维度聚合矩阵，sum/count/avg/min/max、多指标展列、行列合计、缺组合 null，与 advanced 的 `pivotTable` 区分：矩阵变换层 vs 组件内注册能力）；`@oas-ui/ui/data/table/value-format`（`createFormatter(spec)`——数字千分位/精度/百分比/前后缀、日期 pattern（越界不回绕）、文本截断、自定义函数）；`@oas-ui/ui/data/table/query`（`createQueryState` + `applyQuery`——13 算子过滤含嵌套 and/or 组、稳定排序（空值恒末尾）、分页越界返回 []，不可变状态更新）。61 条单测 + 3 个独立预算档（实测 1.2-1.9 KB）。
+- **`oas-command` 多级导航**：`CommandItem.children` 声明式多级（递归清洗、深度上限 8）+ `levelLoader` JS property 动态子级（异步加载态/错误行+重试、同路径缓存、children 优先）——进入派 `oas-navigate`（不派 select），面包屑可点跳转、Esc/← 逐级返回（顶层 Esc 关闭不变）、→ 进入、每级独立过滤；`aria-label` 带层级路径、`aria-busy`、`aria-keyshortcuts`。i18n 补 loadError/retry ×10 语言。
 
 ### 文档
 
 - **context-menu 声明式多选勾选项 demo**：补齐 `kind="checkbox"` 场景（3 个通知偏好项，勾选态切换 + 已选项徽标反馈，勾选不收起菜单）；`role="menuitemcheckbox"` / `aria-checked` / 键盘 Space 切换均有单测与 e2e 三引擎断言。
+- **组合配方（guide/recipes，不新增组件）**：Action Sheet（drawer bottom + no-mask + list 动作项）、终端面板（log 黑底 token 覆写 + 命令行回显）、JSON 格式化对照（segmented 切视图 + json-viewer/diff-viewer 并排）。
 
 ### 修复
 
 - **WebKit 全量回归暴露的跨引擎缺陷（5 类，全部含单测 + 三引擎 e2e 回归）**：① 外点关闭触屏失效——WebKit 对非交互目标上的 tap 只派发 pointer 事件不合成 `click`，统一外点关闭通道（`shared/outside-dismiss.ts`）补 coarse `pointerup`（`pointerType=mouse` 不接管），`oas-popover` / `oas-dropdown` / `oas-hover-card` / `oas-popconfirm` 同根修复；② 表单外部 `<label for>` 名称被内建回退名覆盖（core `setFallbackInnerLabel` 入口检查 `data-fa-label` 让位，`oas-input` / `oas-textarea` / `oas-mentions` / `oas-input-number` / `oas-auto-complete` 5 处调用点同改）；③ `oas-slider` 视觉反转形态（`reverse` XOR RTL）下普通方向键由组件接管，统一「箭头视觉方向 = 值方向」（此前 WebKit 原生 range 不镜像 RTL 方向键，跨引擎行为不一致）；④ `oas-sidebar` 抽屉 Esc 关闭后焦点丢回 body 时回落到触发钮（此前焦点丢失）；⑤ `oas-marquee` 运行时切轴相位丢失（WebKit 样式落定即取消旧动画）——捕获相位前用内联 `animation-name` 钉住旧关键帧名，切轴不再跳回循环起点。
 - **i18n 8 语言翻译补全与校正**（ja / ko / de / fr / es / pt / ru / ar）：jsonViewer（15 key）/ diffViewer（12 key）/ gantt.effort / gantt.effortValue / resource.cost 共 30 key 的英文残留全部补译（新组件落地时漏译，切语言仍见英文）；ja / ko / de / fr / ru 单独错译修正 11 条（日语「浮時」中文直搬、韩语导出误译为「发送」（应为导出专用表述）、德语 sidebar 术语不一致、法语单位缩写、俄语悬空形容词等）。新增 placeholder token 守卫测试（各语言 `{token}` 名序列与 zh-CN 完全一致，含重复计数）。
 - **e2e 断言 OS 绝对量 lint 上线（基线 82）**：36 条 scroll/rect/计数绝对量断言改写为按构造即 OS 无关的语义不变量（DOM 现算期望值 / 写入值回读 / 视口覆盖关系 / 日历推导），0 条例外登记；`qa:audit` 新增 `os-absolute-assertions` 维度（scroll 偏移 / rect 绝对坐标 / 计数常数），计数维度覆盖命名 count、`.length`、`.count()` 三种形态——实测存量 **82** = 数据驱动计数 78 条（demo 数据条数、固定配置项数、文档页数，与字体度量/视口无关）+ px 固定布局窗口计数 4 条，以 82 为增量上限（CI 强制，阈值 = 实测存量零余量）。
+- **外点关闭统一通道全库迁移（19 组件）**：`shared/outside-dismiss`（click + coarse pointerup 双通道）从 4 个浮层组件扩展到 select / combobox / date-picker / time-picker / cascader / tree-select / mentions / auto-complete / color-picker / avatar-group / kanban / breadcrumb / context-menu / speed-dial / float-button / tabs（more + 右键）/ tabs-manager / table 过滤面板 / overlay 共享管理器——WebKit 触屏点非交互区不合成 click 的失效面全清（触屏行为锁 hasTouch e2e）；`conventions.test.ts` 静态守卫禁裸 document 捕获 click（实参级解析，防回流）；tabs-manager 右键菜单补「打开手势免疫」；overlay 公开 `onOutside` 手势去重。
+- **`oas-table` 滚动位保存/恢复竞态**：真实根因是浏览器把焦点 reveal 滚动延迟 1~2 帧落地、覆盖同帧键盘导航写入——滚动写入版本戳（同帧主动写入优先）+ 意图守卫（浏览器内部位移落回保存位时写回意图位，wheel/touch/pointer/key 手势即解除）+ focus 统一 `preventScroll`；e2e 三引擎固化。
+- **`oas-gantt` 冲突行名对比度默认值**：`--oas-gantt-conflict-color` 缺省改 `--oas-color-danger-text`（light 4.54 / dark 8.59 WCAG AA）；e2e 亮暗双主题断言。
+- **core 表单外部 label 移除后名称空窗**：解除 `<label for>` 后回退名立即写回；回退名清空后不复活旧名。
+- **`oas-drawer` 可访问名通道**：新增 `label` 属性——有标题时 `aria-labelledby` 优先、label 兜底；`no-header`/标题为空时由 `aria-label` 承担命名（此前无通道，读屏只报"对话框"）。
+- **小项一组**：`oas-virtual-list` 窗口渲染签名（同窗口跳过行重建）；resource 技能 chips 真省略号（block + nowrap + inline-block，不裁半）；date-picker `ranges` 缓存随 `type` 失效；upload 摘要条按钮移出 `role="status"` 活区；gantt pool demo 事件监听时序（同步派发须先挂监听，文档已注明）。
 
 ### 工程
 
-- **WebKit e2e 放开为全量**：`webkit` project 从代表性 smoke 扩为全量 qa-regression 套件（1276 用例），`forced-colors.spec.ts` 项目级排除（引擎不支持模拟）；CI `e2e-webkit` job 改 3 分片（`--shard=N/3`，timeout 45 分钟）。
-- **WSL rehearse 通道**：`pnpm release:rehearse:wsl [--with-e2e --with-ssr-e2e]` 把同一套发布门禁搬进 WSL Linux 发行版重放（OS 差异维度本地可验；无 WSL / 缺工具链时打印安装指引后 SKIP，exit 0；证据文件与 verify-rehearsal 协议完全兼容）。脚本 `scripts/release/rehearse-wsl.mjs`（发行版探测 / 路径换算 / HEAD 一致性校验 / 实时日志透传）。
-- **长稳 soak**：`pnpm test:soak`（`scripts/e2e/soak.mjs`）对 flake 高发 spec（交互浮层/虚拟滚动/动画时序，8 个默认）重复跑 N 轮（默认 3 轮、retries=0、每轮独立端口与 `--output`），输出轮次×用例矩阵与 flaky 清单到 `test-results/soak/`，任一轮失败或出现 flaky 即非零退出。
-- **gantt 链 P2 式归因审计存档**（2026-11-02）：18 模块 221.0 KB raw / 63.6 KB gzip，构成 = 本体 56.7% + core 22.6%（其中 form-element + escape 共 5.8 KB 系 core barrel 再导出上界带入，真实 bundler 可摇除至约 57.9 KB）+ 虚拟滚动 8.5% + i18n 6.1% + 日期引擎 4.3% + shared 1.8%；**无冗余**——export / evm / alap / recurring 四 helper 零依赖真剥离（主链零引用）、0 死文件、CSS 无死类名；较上基线 +2.2 KB 全部来自其后 6 次 gantt feature/fix 提交。下次扩展可直接进行。
-
-### 修复
-
-- **外点关闭统一通道全库迁移（19 组件）**：`shared/outside-dismiss`（click + coarse pointerup 双通道）从 4 个浮层组件扩展到 select / combobox / date-picker / time-picker / cascader / tree-select / mentions / auto-complete / color-picker / avatar-group / kanban / breadcrumb / context-menu / speed-dial / float-button / tabs（more + 右键）/ tabs-manager / table 过滤面板 / overlay 共享管理器——WebKit 触屏点非交互区不合成 click 的失效面全清（触屏行为锁 hasTouch e2e：table 过滤面板 / color-picker / popover 通用通道）；`conventions.test.ts` 静态守卫禁裸 document 捕获 click（实参级解析，防回流）；tabs-manager 右键菜单补「打开手势免疫」（长按抬起不闪关）；overlay 公开 `onOutside` 加手势去重（触屏同一次 tap 双通道只回调一次）。
-- **`oas-table` 滚动位保存/恢复竞态**：真实根因是浏览器把焦点 reveal 滚动延迟 1~2 帧落地、覆盖同帧键盘导航写入——新增滚动写入版本戳（同帧主动写入优先于恢复值）+ 意图守卫（浏览器内部位移落回保存位时写回意图位，wheel/touch/pointer/key 手势即解除）+ 组件内 focus 统一 `preventScroll`（显式 scrollIntoView 承担滚动）；e2e 固化「滚动帧内 Ctrl+Home/End 不回滚」三引擎回归。
-- **`oas-gantt` 冲突行名对比度默认值**：`--oas-gantt-conflict-color` 缺省从 `--oas-color-danger`（条纹底 4.39 < 4.5）改为 `--oas-color-danger-text`（light 4.54 / dark 8.59，WCAG AA 达标）；e2e 亮暗双主题对比度断言。
-- **core 表单外部 label 移除后名称空窗**：解除 `<label for>` 后回退名立即写回（原需等下一次 update 才有可访问名）；回退名清空后不复活旧名。
-
-### 工程
-
-- **gantt 链预算再定档 70 → 75 KB**：P2 式归因审计证无冗余（+2.2 KB 全为后续 feature 提交；真实 bundler 可摇除至约 57.9 KB），按预警机制「再定档」出口上浮，预警线 67.5 KB；依据文案存档审计结论。
-- **`packages/i18n` 包级 vitest 配置**：补 `vitest.config.ts`（happy-dom + setupFiles + icons alias），包内裸跑 `vitest run` 与根跑同集同绿（原 2 个既有 suite 报 HTMLElement undefined）。
-- **CI `e2e-webkit` job 3 分片**（全量套件墙钟超原 20 分钟上限）。
+- **WebKit e2e 放开为全量**：`webkit` project 从代表性 smoke 扩为全量 qa-regression 套件（1276 用例），`forced-colors.spec.ts` 项目级排除；CI `e2e-webkit` job 改 3 分片（timeout 45 分钟）。
+- **WSL rehearse 通道**：`pnpm release:rehearse:wsl` 把发布门禁搬进 WSL Linux 发行版重放（OS 差异维度本地可验；SKIP 语义；证据协议兼容）。
+- **长稳 soak**：`pnpm test:soak`（flake 高发 spec N 轮重复 + flaky 矩阵）。
+- **gantt 链 P2 式归因审计存档**（2026-11-02）：18 模块 63.6 KB 无冗余（四 helper 零依赖真剥离；core barrel 上界口径产物 5.8 KB 真实可摇除至约 57.9 KB）；较基线 +2.2 KB 全为后续 feature 提交。下次扩展可直接进行。
+- **gantt 链预算再定档 70 → 75 KB**：P2 审计证无冗余，按预警机制「再定档」出口上浮，预警线 67.5 KB。
+- **`packages/i18n` 包级 vitest 配置**：happy-dom + setupFiles + icons alias，包内裸跑与根跑同绿。
+- **L3 登记表口径修正**：`data/resource/pool` 自 gantt `pool` 起为运行时依赖（capability 口径，须在 L1/族包），helper 清单补三件 table L3；architecture.md / l3-registry 头 / perf-baseline 同步；pool 预算档 basis 改运行时依赖口径。
 
 ## [2.6.6] - 2026-11-01
 

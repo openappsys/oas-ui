@@ -5,6 +5,29 @@
 
 ---
 
+## 未发布：T 批（T4/T5/T6/T8/T10/T11/T12/T15 立项交付）
+
+### 功能定义
+
+按 demands 编号立项的八项，共用「全部落地、单测 + 三引擎实测实证」收口标准：
+
+1. **T5 tree 虚拟滚动**：`virtual` / `item-height`（`--oas-tree-row-height` token）——1 万节点渲染行数有界，键盘/ARIA 全量序不破；连带修 checked 闭包 O(n²) 与 vlist 尾随帧重建销毁聚焦行。
+2. **T6 upload 三件套**：`storage-key` 元数据持久化（不含内容）+ `oas-form` 一等公民注册 + 错误摘要条（retryAll/clearErrors），i18n 4 key ×10 语言。
+3. **T8 date-picker 范围完备**：`ranges` 快捷预设（置灰/交换/缓存随 type）+ 倒置自动交换 + confirm 带 start/end。
+4. **T10 gantt 资源池**：`pool` 联动共享池 + `computeResourceConflicts` 超配检测 + `oas-resource-conflict` 幂等事件。
+5. **T11 table 三 L3**：`pivot`（pivotMatrix）/ `value-format`（createFormatter）/ `query`（applyQuery + createQueryState），按需子路径 + 独立预算档。
+6. **T12 resource 技能**：`skills` 字段 + `show-skills` chips（显式 false 口径，真省略号）。
+7. **T15 组合配方**：recipes 页 Action Sheet / 终端 / JSON 对照三配方（不加组件）。
+8. **T4 command 多级导航**：`children` 声明式 + `levelLoader` 动态子级，面包屑/Esc 逐级/每级过滤，`oas-navigate` 事件。
+
+### 验收标准
+
+- 单测 +136（全量 12197 绿）；新 e2e：tree-virtual 结构回归、upload 错误条/持久化恢复、date-picker 交换契约、form-associated 解绑轮询口径。
+- review 2 轮 × 2 模型：0 Critical；C1（gantt demo 监听时序）+ 19 项修复全闭环。
+- perf:size 全 PASS（gantt 65.8/75、三新 L3 档、resourcePool capability 口径）；api/llms/stats 生成物同步。
+
+---
+
 ## 未发布：再捞清零批（WebKit 全量回归 / forced-colors 焦点环 / i18n 补译 / 测试机制）
 
 ### 功能定义

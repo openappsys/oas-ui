@@ -107,6 +107,12 @@
       "observed": true
     },
     {
+      "name": "ranges",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
       "name": "show-week-number",
       "type": "boolean",
       "observed": true
@@ -184,7 +190,7 @@
     },
     {
       "name": "oas-confirm",
-      "detail": "{ value }"
+      "detail": "{ value } | { value, start: s, end: e }"
     },
     {
       "name": "oas-calendar-change",
