@@ -188,6 +188,8 @@
 - **前置守卫**：仅 Windows 可跑（需 `wsl.exe`）；工作树必须干净（与 rehearse 同口径，无绕过开关）；自动从 `git rev-parse --show-toplevel` 换算 `/mnt/...`，并校验 WSL 内 toplevel 与 HEAD 与 Windows 侧一致（防 `/mnt` 指向别的检出、把证据挂错树）。`--probe` 只探测环境（发行版 / 工具链 / 路径 / HEAD），不执行门禁。
 - **副作用**：跑的是同一份工作树，rehearse 里的 `pnpm install` 会重写共享 `node_modules`（Linux 原生二进制替换 Windows 的）——跑完回 Windows 侧重跑一次 `pnpm install`；`/mnt` 走 drvfs，全量 e2e 明显更慢属正常现象。
 
+**容器模式（`--container`，2026-11-03 实测可用）**：`pnpm release:rehearse:wsl --container` 走 WSL 自带 OCI 容器 CLI（wslc，需 WSL ≥ 2.9.3）起一次性环境——镜像按 `.nvmrc` 推导（= CI 同款 Node，比发行版模式更对齐 CI 口径）、零发行版污染。全量验证推荐 **wslc 命名卷姿势**（原生 ext4，实测 19 步全链 94 秒）：`wslc volume create` → 双挂载容器 `cp -a` 播种 + install → 单容器（**须自带 `npm i -g pnpm`**——全局安装不跨 `--rm` 容器存活）显式 `--cpus 16 --memory 24G` 跑 `release:rehearse` → 证据 JSON 拷回 `.git/` → `volume remove`。三纪律：重播种前必须重建卷（`cp -a` 不清理残留，会触发干净树守卫）；调查辅助脚本勿放仓库目录；**必须显式给资源**——默认限额下全量 vitest 随机超时（step-5 三红、满资源全绿的实抓对照）。对照实证：同树 /mnt/d 挂载全量 14 红（13 条 wall-clock 伪影），原生卷全绿——OS 逻辑差异 vs 磁盘速度伪影的判别方法就是把盘换成原生 ext4。
+
 ### 第 3 层：e2e 三套
 
 - `pnpm release:rehearse --with-e2e`：e2e 层 ← ci.yml `e2e` + `e2e-webkit` 两个 job 合并本地跑（= `pnpm test:e2e`，chromium + firefox + webkit 全量；CI 分 6 片，本地合并一次跑完）
