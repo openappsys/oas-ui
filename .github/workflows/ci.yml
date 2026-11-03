@@ -166,11 +166,15 @@ jobs:
     runs-on: ubuntu-24.04
     env:
       OAS_DOCS_ANALYTICS: 0
+      # 2 核 runner 上 4 workers 抢 CPU 导致动画/虚拟滚动/时序族用例持续饥饿 flake
+      # （三轮 CI 实证：marquee/scale/slot-template/select/slider/table/conversation 轮换复现，
+      #  连续两次尝试同败）——降到 2 workers，用 4 分片补偿墙钟。
+      E2E_WORKERS: 2
     timeout-minutes: 45
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2, 3]
+        shard: [1, 2, 3, 4]
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -186,7 +190,7 @@ jobs:
           path: ~/.cache/ms-playwright
           key: ${{ runner.os }}-playwright-webkit-${{ hashFiles('pnpm-lock.yaml') }}
       - run: pnpm exec playwright install --with-deps webkit
-      - run: pnpm test:e2e:webkit --shard=${{ matrix.shard }}/3
+      - run: pnpm test:e2e:webkit --shard=${{ matrix.shard }}/4
       - name: Upload Playwright artifacts
         if: always()
         uses: actions/upload-artifact@v4
