@@ -1,5 +1,5 @@
 {
-  "note": "感知对比度 ratchet 基线（只许降不许升）：逐页记录 <30/<45/<60 档节点数、axe 比值违规数、禁用态豁免数（exempt）与无法评分数（skipped，非纯色 fg/bg）。skipped 是双环境对象 {local, ci}：它的数量取决于文本排版（OS 字体），CI（Ubuntu）与本地（Windows）系统性偏离，按 process.env.CI 选边，ci 侧 = CI 实测 + 4 余量。未登记的页必须为零。更新方式见 a11y.spec.ts 顶部说明。",
+  "note": "感知对比度 ratchet 基线（只许降不许升）：逐页记录 <30/<45/<60 档节点数、axe 比值违规数、禁用态豁免数（exempt）与无法评分数（skipped，非纯色 fg/bg）。skipped 是双环境对象 {local, ci}：它的数量取决于文本排版（OS 字体），CI（Ubuntu）与本地（Windows）系统性偏离，按 process.env.CI 选边，ci 侧 = CI 实测 + 4 余量。未登记的页必须为零。更新方式见 a11y.spec.ts 顶部说明。；2026-11-03 二轮采样：dark 主题 ci 值补齐（首轮只采了 light），ci = 跨主题 max(采样)+4。",
   "totals": {
     "sampled": 51358,
     "below30": 0,
@@ -9,7 +9,7 @@
     "exempt": 692,
     "skipped": {
       "local": 3730,
-      "ci": 3861
+      "ci": 3992
     }
   },
   "topPairs": [],
@@ -1958,7 +1958,7 @@
       "exempt": 0,
       "skipped": {
         "local": 1,
-        "ci": 1
+        "ci": 10
       }
     },
     "guide/glass.html": {
@@ -2002,7 +2002,7 @@
       "exempt": 11,
       "skipped": {
         "local": 8,
-        "ci": 8
+        "ci": 17
       }
     },
     "guide/ssr.html": {
@@ -2024,7 +2024,7 @@
       "exempt": 0,
       "skipped": {
         "local": 43,
-        "ci": 43
+        "ci": 64
       }
     },
     "guide/theming.html": {
@@ -2046,7 +2046,7 @@
       "exempt": 0,
       "skipped": {
         "local": 31,
-        "ci": 31
+        "ci": 44
       }
     },
     "guide/tokens.html": {
@@ -2079,7 +2079,7 @@
       "exempt": 0,
       "skipped": {
         "local": 12,
-        "ci": 12
+        "ci": 24
       }
     },
     "en/ai-chat.html": {
@@ -2145,7 +2145,7 @@
       "exempt": 0,
       "skipped": {
         "local": 4,
-        "ci": 4
+        "ci": 13
       }
     },
     "en/glass.html": {
@@ -2189,7 +2189,7 @@
       "exempt": 11,
       "skipped": {
         "local": 9,
-        "ci": 9
+        "ci": 20
       }
     },
     "en/resource-management.html": {
@@ -2233,7 +2233,7 @@
       "exempt": 0,
       "skipped": {
         "local": 46,
-        "ci": 46
+        "ci": 67
       }
     },
     "en/theming.html": {
@@ -2255,7 +2255,7 @@
       "exempt": 0,
       "skipped": {
         "local": 32,
-        "ci": 32
+        "ci": 46
       }
     },
     "en/tokens.html": {
@@ -2288,7 +2288,7 @@
       "exempt": 0,
       "skipped": {
         "local": 15,
-        "ci": 15
+        "ci": 27
       }
     }
   }
