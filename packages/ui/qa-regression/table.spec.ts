@@ -1788,45 +1788,72 @@ test('table 浮层编辑器通道（editComponent 第二期）：选定即提交
   await page.goto('/components/table.html', { waitUntil: 'domcontentloaded' })
   await up(page, '#table-edit-overlay')
   // 1. 双击部门列 → oas-select 挂载 + 浮层自动展开
-  const opened = await page.evaluate(() => {
+  await page.evaluate(() => {
     const t = document.querySelector('#table-edit-overlay')!
     const td = t.shadowRoot!.querySelector('tbody td[data-col="dept"]') as HTMLElement
     td.dispatchEvent(new MouseEvent('dblclick', { bubbles: true, composed: true }))
-    return new Promise((r) =>
-      setTimeout(() => {
-        const editor = td.querySelector('.cell-editor-component')
-        r({
-          tag: editor?.tagName.toLowerCase() ?? null,
-          open: editor?.shadowRoot!.querySelector('.trigger')?.getAttribute('aria-expanded') === 'true',
-          options: editor?.shadowRoot!.querySelectorAll('.option, [role="option"]').length,
-        })
-      }, 300),
-    )
   })
-  expect((opened as { tag: string }).tag, 'oas-select 挂载').toBe('oas-select')
-  expect((opened as { open: boolean }).open, '浮层自动展开').toBe(true)
+  // 就绪等待用轮询而非固定 sleep：CI 2 核 runner 上挂载/展开/选项渲染都可能晚于任意常数，
+  // 固定等待会让后续交互落在「还没接线」的列表上（曾致选定值未提交的失败：期望 be 实收旧值 fe）
+  await expect
+    .poll(
+      () =>
+        page.evaluate(() => {
+          const t = document.querySelector('#table-edit-overlay')!
+          const editor = t.shadowRoot!.querySelector('tbody td[data-col="dept"] .cell-editor-component')
+          return editor?.shadowRoot?.querySelectorAll('.option, [role="option"]').length ?? 0
+        }),
+      { timeout: 10_000 },
+    )
+    .toBeGreaterThanOrEqual(3)
+  const opened = await page.evaluate(() => {
+    const t = document.querySelector('#table-edit-overlay')!
+    const editor = t.shadowRoot!.querySelector('tbody td[data-col="dept"] .cell-editor-component')
+    return {
+      tag: editor?.tagName.toLowerCase() ?? null,
+      open: editor?.shadowRoot!.querySelector('.trigger')?.getAttribute('aria-expanded') === 'true',
+      options: editor?.shadowRoot!.querySelectorAll('.option, [role="option"]').length ?? 0,
+    }
+  })
+  expect(opened.tag, 'oas-select 挂载').toBe('oas-select')
+  expect(opened.open, '浮层自动展开').toBe(true)
   // dept 列 editOptions 固定 3 项（前端部/后端部/测试部）——精确值
-  expect((opened as { options: number }).options, '选项渲染').toBe(3)
+  expect(opened.options, '选项渲染').toBe(3)
 
   // 2. 选定选项 → 提交并回写（浮层关闭 + 编辑退出）
+  // 真实点击（pointerdown → mousedown → mouseup → click 完整链路 + 可见/稳定/可命中动作等待），
+  // 替代「合成 click + 固定 sleep」的时序假设：真实指针链路会走编辑器的指针抑制窗口，
+  // 与用户操作同路径；动作等待保证落点在已就绪的选项上。
+  await page
+    .locator('#table-edit-overlay tbody td[data-col="dept"] .option')
+    .filter({ hasText: '后端部' })
+    .first()
+    .click()
+  // 提交是「选定即提交」（oas-change）——轮询等待回写落定，仍按精确值断言（不等同放宽）
+  await expect
+    .poll(
+      () =>
+        page.evaluate(
+          () =>
+            (
+              JSON.parse(document.querySelector('#table-edit-overlay')!.getAttribute('data') ?? '[]') as Array<
+                Record<string, unknown>
+              >
+            )[0]?.dept,
+        ),
+      { timeout: 5_000 },
+    )
+    .toBe('be')
   const submitted = await page.evaluate(() => {
     const t = document.querySelector('#table-edit-overlay')!
-    const editor = t.shadowRoot!.querySelector('.cell-editor-component')!
-    const opts = [...editor.shadowRoot!.querySelectorAll<HTMLElement>('.option, [role="option"]')]
-    const target = opts.find((o) => /后端/.test(o.textContent ?? '')) ?? opts[1]!
-    target.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }))
-    return new Promise((r) =>
-      setTimeout(() => {
-        const data = JSON.parse(t.getAttribute('data') ?? '[]')
-        r({
-          dept: (data[0] as Record<string, unknown>).dept,
-          editing: !!t.shadowRoot!.querySelector('[data-editing="true"]'),
-        })
-      }, 250),
-    )
+    const data = JSON.parse(t.getAttribute('data') ?? '[]') as Array<Record<string, unknown>>
+    return {
+      dept: String(data[0]?.dept ?? ''),
+      editing: !!t.shadowRoot!.querySelector('[data-editing="true"]'),
+    }
   })
-  expect((submitted as { dept: string }).dept, '选定提交回写').toBe('be')
-  expect((submitted as { editing: boolean }).editing, '提交后退出编辑态').toBe(false)
+  expect(submitted.dept, '选定提交回写').toBe('be')
+  expect(submitted.editing, '提交后退出编辑态').toBe(false)
 
   // 3. Esc 双层级：第一层关浮层（编辑不取消），第二层取消编辑
   const escFlow = await page.evaluate(async () => {

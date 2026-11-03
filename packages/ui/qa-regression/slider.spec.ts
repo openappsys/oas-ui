@@ -230,6 +230,20 @@ test('slider range：pointerdown 提升 input z-index 后蓝色填充仍可见�
     const fill = sr.querySelector<HTMLElement>('.fill')!
     const fr = fill.getBoundingClientRect()
     const fillCs = getComputedStyle(fill)
+    // 期望填充宽的现算口径（与组件像素换算同源、与引擎无关）：填充区跨「值区间两端 thumb 中心」，
+    // 即 值区间比例 × (轨道长 − thumb 直径)。轨道长取输入框 clientWidth（组件同源），
+    // thumb 直径取 CSS 变量（各尺寸档与组件常量表成对维护）。
+    const thumbSizeRaw = Number.parseFloat(getComputedStyle(el).getPropertyValue('--oas-slider-thumb-size'))
+    const thumbSize = Number.isFinite(thumbSizeRaw) && thumbSizeRaw > 0 ? thumbSizeRaw : 14
+    const rawValue = el.getAttribute('value') ?? ''
+    // 值源同组件解析口径：JSON 数组（规范形态）或逗号分隔旧形态
+    const rangeVal = (rawValue.trim().startsWith('[') ? JSON.parse(rawValue) : rawValue.split(',')) as number[]
+    const lo = Number(rangeVal[0] ?? 0)
+    const hi = Number(rangeVal[rangeVal.length - 1] ?? 0)
+    const min = Number(el.getAttribute('min') ?? 0)
+    const max = Number(el.getAttribute('max') ?? 100)
+    const travel = Math.max(maxInput.clientWidth - thumbSize, 0)
+    const expectedFillWidth = ((hi - lo) / (max - min || 1)) * travel
     // 伪元素按引擎取：Firefox 无 webkit 伪（返回空），取 ::-moz-range-track；组件双侧均已声明透明
     const webkitTrackBg = getComputedStyle(maxInput, '::-webkit-slider-runnable-track').backgroundColor
     const mozTrackBg = getComputedStyle(maxInput, '::-moz-range-track').backgroundColor
@@ -242,6 +256,7 @@ test('slider range：pointerdown 提升 input z-index 后蓝色填充仍可见�
       .join('\n')
     return {
       fillWidth: fr.width,
+      expectedFillWidth,
       fillBg: fillCs.backgroundColor,
       fillVisible: fillCs.display !== 'none' && fillCs.visibility !== 'hidden',
       trackBg,
@@ -249,7 +264,15 @@ test('slider range：pointerdown 提升 input z-index 后蓝色填充仍可见�
       raisedZ: maxInput.style.zIndex,
     }
   })
-  expect(r.fillWidth, 'fill 应有宽度').toBeCloseTo(103.8, 1)
+  // 语义不变量：fill 宽 = 值区间对应的 thumb 中心跨距（DOM 现算，非按引擎校准的常数）。
+  // 容差理由：组件按像素换算，但各引擎对行内文本度量/亚像素取整的处理不同——WebKit Linux
+  // 的 show-input 区域宽与 Chromium 差 ~1px，fill 宽随之差 ~0.6px；故比较「按值比例现算的
+  // 跨距」并按 ±1%（不小于 2px）容差，既守住「填充确实按值铺满区间」的语义，又不锁死引擎像素。
+  const fillTolerance = Math.max(r.expectedFillWidth * 0.01, 2)
+  expect(
+    Math.abs(r.fillWidth - r.expectedFillWidth),
+    `fill 宽应等于值区间对应的 thumb 中心跨距（实得 ${r.fillWidth.toFixed(1)}px，按值现算 ${r.expectedFillWidth.toFixed(1)}px）`,
+  ).toBeLessThanOrEqual(fillTolerance)
   expect(r.fillVisible, 'fill 应可见').toBe(true)
   expect(r.fillBg, 'fill 应为 primary 填充色').not.toMatch(/transparent|rgba\(0, 0, 0, 0\)/)
   expect(r.raisedZ, 'pointerdown 后 z-index 提升逻辑仍应生效').toBe('2')
