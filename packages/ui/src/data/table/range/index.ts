@@ -143,6 +143,8 @@ interface RangeHost extends HTMLElement {
   effectiveColumns?(): TableColumn[]
   getDisplaySnapshot?(): TableDisplaySnapshot | null
   translateText?(key: string, params?: Record<string, string | number>): string
+  /** 主机统一滚动写入（记主动写入代次/意图位）：滚动帧的旧位置恢复不得覆盖键盘导航写入 */
+  writeScrollPosition?(top: number, left?: number): void
   getCapabilityOptions<T = unknown>(name: string): T | undefined
   setCapabilityOptions(name: string, options: unknown): void
 }
@@ -603,7 +605,8 @@ class RangeSelectionController {
       const td = this.cellOf(this.keys.focus.key, this.keys.focus.col)
       if (td) {
         this.suppressFocus = true
-        td.focus()
+        // preventScroll：滚动交给紧邻的 scrollIntoView（隐式 reveal 会与主动滚动写入竞争）
+        td.focus({ preventScroll: true })
         this.suppressFocus = false
         if (typeof td.scrollIntoView === 'function') {
           try {
@@ -966,7 +969,11 @@ class RangeSelectionController {
     const wrap = this.host.shadowRoot.querySelector<HTMLElement>('.table-scroll')
     const rowHeight = Number(this.host.getAttribute('row-height') ?? 40) || 40
     // 非 windowed 的分组头/展开内容也占扁平条目：滚动位置必须与数据行号分开计算
-    if (wrap) wrap.scrollTop = scrollIndex * rowHeight
+    // 走主机统一写入入口（缺省回落直写）：主动写入位在滚动帧窗口内不被旧值回滚
+    if (wrap) {
+      if (this.host.writeScrollPosition) this.host.writeScrollPosition(scrollIndex * rowHeight)
+      else wrap.scrollTop = scrollIndex * rowHeight
+    }
     if (windowed) {
       const need = expandWindow(targetRow, targetRow + 1, total, WINDOW_MARGIN)
       if (!windowCovered(need, loadedRange(loadedStart, this.host.data?.length ?? 0))) {

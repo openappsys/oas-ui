@@ -4285,6 +4285,102 @@ test('table Pro 第三批：虚拟表 Ctrl+End / Shift+Ctrl+End 在浏览器 max
   await page.evaluate(() => document.querySelector('#qa-pro-virtual-end')?.remove())
 })
 
+test('table Pro 虚拟表：滚动帧窗口内的键盘导航不被旧滚动位回滚（Ctrl+Home/End 不倒退）', async ({ page }) => {
+  // 缺陷固化：用户「滚动后立刻按 Ctrl+Home/End」时，滚动帧的 tbody 清空/重建与键盘导航的写入落在
+  // 同一帧窗口内——帧尾恢复旧 scrollTop、以及浏览器内部的焦点 reveal 位移，都会把导航写入的
+  // 滚动位覆盖回原位置（表格停在第 99 行/第 0 行，键盘看起来「按了没反应」）。
+  // 修复后：组件主动写入的滚动位在该窗口内是权威值，落回旧位置的位移被写回，末态落在目标行。
+  await page.goto('/components/table.html', { waitUntil: 'domcontentloaded' })
+  await page.waitForFunction(() => customElements.get('oas-table') != null, null, { timeout: 15000 })
+
+  /**
+   * 一个方向：先滚到 fromTop（程序化写 + 派发 scroll 与滚轮同语义，组件排一帧重建窗口），
+   * 渲染落定后**不 settle**，聚焦当前行并立刻按 Ctrl+key，逐帧采样滚动位。
+   * 刻意不 settle：滚动帧（清空 tbody → 重建 → 帧尾恢复）与键盘导航必须落在同一帧窗口内。
+   */
+  const runRace = (id: string, fromTop: number, fromRow: number, key: 'Home' | 'End') =>
+    page.evaluate(
+      async ({ id, fromTop, fromRow, key }) => {
+        const el = document.createElement('oas-table') as HTMLElement & {
+          setCapabilityOptions(name: string, options: unknown): void
+        }
+        el.id = id
+        el.setAttribute('height', '80')
+        el.setAttribute('row-height', '40')
+        el.setAttribute('row-key', 'id')
+        el.setAttribute('columns', JSON.stringify([{ key: 'name', title: '名称' }]))
+        el.setAttribute(
+          'data',
+          JSON.stringify(Array.from({ length: 100 }, (_, index) => ({ id: `r${index}`, name: `R${index}` }))),
+        )
+        ;(document.querySelector('.vp-doc') ?? document.body).appendChild(el)
+        el.scrollIntoView({ block: 'center' })
+        const wrap = el.shadowRoot!.querySelector('.table-scroll') as HTMLElement
+        wrap.scrollTop = fromTop
+        wrap.dispatchEvent(new Event('scroll'))
+        // 目标行渲染完成即进入竞态窗口（不等帧稳定）
+        await new Promise<void>((resolve) => {
+          const started = performance.now()
+          const poll = (): void => {
+            if (el.shadowRoot!.querySelector(`tr[data-row-index="${fromRow}"]`) || performance.now() - started > 3000)
+              resolve()
+            else requestAnimationFrame(poll)
+          }
+          poll()
+        })
+        el.setCapabilityOptions('range', {
+          enabled: true,
+          selection: { start: { row: fromRow, col: 'name' }, end: { row: fromRow, col: 'name' } },
+        })
+        const td = el.shadowRoot!.querySelector(`tr[data-row-index="${fromRow}"] td[data-col="name"]`) as HTMLElement
+        // 用户当前焦点在该行（滚动不会取消焦点）；紧随其后按 Ctrl+Home / Ctrl+End
+        td.focus()
+        td.dispatchEvent(
+          new KeyboardEvent('keydown', {
+            key,
+            ctrlKey: true,
+            bubbles: true,
+            composed: true,
+            cancelable: true,
+          }),
+        )
+        const tops: number[] = []
+        for (let i = 0; i < 12; i++) {
+          await new Promise((resolve) => setTimeout(resolve, 20))
+          tops.push(Math.round(wrap.scrollTop))
+        }
+        const active = el.shadowRoot!.activeElement as HTMLElement | null
+        const result = {
+          tops,
+          max: Math.round(wrap.scrollHeight - wrap.clientHeight),
+          rowHeight: Number(el.getAttribute('row-height')),
+          activeRow: active?.closest?.('tr')?.getAttribute('data-row-index') ?? null,
+          targetFocused: !!el.shadowRoot!.querySelector('tr[data-row-index="0"] td.range-focus'),
+          lastFocused: !!el.shadowRoot!.querySelector('tr[data-row-index="99"] td.range-focus'),
+        }
+        el.remove()
+        return result
+      },
+      { id, fromTop, fromRow, key },
+    )
+
+  // ① 滚到底后按 Ctrl+Home：末态停在首行（修复前 WebKit/Chromium 实测回滚到 maxScroll、焦点留末行）
+  const home = await runRace('qa-nav-race-home', 99 * 40, 99, 'Home')
+  expect(home.max, '构造前提：表格至少有了一行高的可滚动区间').toBeGreaterThanOrEqual(home.rowHeight)
+  expect(home.tops.at(-1), 'Ctrl+Home 末态停在顶部（未被回滚到末尾）').toBeLessThan(home.rowHeight)
+  expect(home.activeRow, '焦点落在第 0 行（不是回滚后的第 99 行）').toBe('0')
+  expect(home.targetFocused, '选区落在第 0 行').toBe(true)
+  // 不反复：落定后连续采样不得再回到末尾（禁止「回滚 → 修正 → 再回滚」的抖动）
+  for (const top of home.tops.slice(-4)) expect(top).toBeLessThan(home.rowHeight)
+
+  // ② 滚到顶后按 Ctrl+End：末态停在末尾行（反向同一条竞态路径）
+  const end = await runRace('qa-nav-race-end', 0, 0, 'End')
+  expect(end.tops.at(-1), 'Ctrl+End 末态停在末尾（未被回滚到顶部）').toBeGreaterThanOrEqual(end.max - end.rowHeight)
+  expect(end.activeRow, '焦点落在第 99 行（不是回滚后的第 0 行）').toBe('99')
+  expect(end.lastFocused, '选区落在第 99 行').toBe(true)
+  for (const top of end.tops.slice(-4)) expect(top).toBeGreaterThanOrEqual(end.max - end.rowHeight)
+})
+
 test('table advanced：pivotTable data 别名驱动可见透视结果', async ({ page }) => {
   await page.goto('/components/table.html', { waitUntil: 'domcontentloaded' })
   await up(page, '#table-advanced-pivot')
@@ -5388,4 +5484,78 @@ test('table advanced：createWindowedSource × 视觉适配器——真实 adapt
     ;(window as any).__qaVisualSource.source.destroy()
     document.querySelector('#qa-window-visual-table')?.remove()
   })
+})
+
+// —— 触屏外点关闭（hasTouch 真实触摸）：过滤面板 ——
+// 迁移回归：外点关闭统一走 shared/outside-dismiss（click + coarse pointerup 双通道）。
+// WebKit 对非交互目标上的 tap 只派发 pointer 事件、不合成 click——只挂 click 会整体失效。
+test('table 过滤面板触屏：面板内 tap 不关，外部非交互区 tap（pointerup 通道）关', async ({ browser }) => {
+  const ctx = await browser.newContext({ hasTouch: true, viewport: { width: 1280, height: 800 } })
+  const page = await ctx.newPage()
+  try {
+    await page.goto('/components/table.html', { waitUntil: 'domcontentloaded' })
+    await page.waitForFunction(() => customElements.get('oas-table') != null, null, { timeout: 15000 })
+    await page.evaluate(() => {
+      const el = document.createElement('oas-table') as HTMLElement
+      el.id = 'qa-touch-filter'
+      el.setAttribute('columns', JSON.stringify([{ key: 'name', title: '名称', filterable: true }]))
+      el.setAttribute('row-key', 'id')
+      el.setAttribute(
+        'data',
+        JSON.stringify([
+          { id: 'a', name: '甲' },
+          { id: 'b', name: '乙' },
+        ]),
+      )
+      el.style.display = 'block'
+      el.style.margin = '32px 16px'
+      ;(document.querySelector('.vp-doc') ?? document.body).appendChild(el)
+      el.scrollIntoView({ block: 'center' })
+      // 外部非交互区：纯 div（无 click 语义），WebKit 触屏 tap 只到 pointerup
+      const blank = document.createElement('div')
+      blank.id = 'qa-touch-blank'
+      blank.style.cssText = 'position:fixed;right:8px;bottom:8px;width:160px;height:80px;z-index:9999;'
+      document.body.appendChild(blank)
+    })
+    await page.waitForFunction(
+      () => !!document.querySelector('#qa-touch-filter')?.shadowRoot?.querySelector('th[data-key] .filter-btn'),
+      null,
+      { timeout: 15000 },
+    )
+    await page.evaluate(() => {
+      const btn = document
+        .querySelector('#qa-touch-filter')!
+        .shadowRoot!.querySelector<HTMLElement>('th[data-key] .filter-btn')!
+      btn.click()
+    })
+    await page.waitForFunction(
+      () => !!document.querySelector('#qa-touch-filter')?.shadowRoot?.querySelector('.filter-panel'),
+      null,
+      { timeout: 5000 },
+    )
+    const panelPoint = await page.evaluate(() => {
+      const panel = document.querySelector('#qa-touch-filter')!.shadowRoot!.querySelector<HTMLElement>('.filter-panel')!
+      const r = panel.getBoundingClientRect()
+      return { x: r.left + r.width / 2, y: r.top + 10 }
+    })
+    // 面板内 tap（标题区，非按钮）：不得关闭
+    await page.touchscreen.tap(panelPoint.x, panelPoint.y)
+    const openAfterInside = await page.evaluate(
+      () => !!document.querySelector('#qa-touch-filter')?.shadowRoot?.querySelector('.filter-panel'),
+    )
+    expect(openAfterInside, '面板内 tap 不关').toBe(true)
+    // 面板外非交互区 tap：关闭（真实触摸 → 至少 pointerup 通道可达）
+    const blankPoint = await page.evaluate(() => {
+      const r = document.querySelector('#qa-touch-blank')!.getBoundingClientRect()
+      return { x: r.left + r.width / 2, y: r.top + r.height / 2 }
+    })
+    await page.touchscreen.tap(blankPoint.x, blankPoint.y)
+    await page.waitForFunction(
+      () => !document.querySelector('#qa-touch-filter')!.shadowRoot!.querySelector('.filter-panel'),
+      null,
+      { timeout: 5000 },
+    )
+  } finally {
+    await ctx.close()
+  }
 })

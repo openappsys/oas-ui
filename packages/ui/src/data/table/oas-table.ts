@@ -1,6 +1,7 @@
 import { OASElement } from '@oas-ui/core'
 import { downloadPath } from '@oas-ui/icons/icons/download'
 import { resolveDirection } from '../../shared/direction.js'
+import { addOutsideDismiss, removeOutsideDismiss } from '../../shared/outside-dismiss.js'
 import { normalizeSizeStrict, THREE_SIZES } from '../../shared/size.js'
 import { computeVirtualWindow } from '../virtual-list/oas-virtual-list.js'
 import { HeightCache, computeDynamicWindow } from '../virtual-list/dynamic-height.js'
@@ -1151,6 +1152,9 @@ tr.group-header .toggle {
 
 const CHECK_CELL_WIDTH = 40
 const EXPAND_CELL_WIDTH = 40
+/** 主动滚动写入的守卫帧数：滚动帧清空/重建后的浏览器内部位移（焦点 reveal、滚动锚定、
+    内容收缩钳制）在 1~2 帧内到达，3 帧后交还给正常滚动处理 */
+const SCROLL_INTENT_FRAMES = 3
 /** 行拖拽手柄列宽度（px；固定列 sticky 偏移的占位，与手写 CSS 宽度同步） */
 const DRAG_CELL_WIDTH = 40
 const FILTER_ICON =
@@ -1253,6 +1257,15 @@ export class OASTableBase extends OASElement {
   private scrollRaf = 0
   /** 恢复 scrollTop 触发的下一次 scroll 事件需忽略，防止重入死循环 */
   private ignoreNextScroll = false
+  /** 主动滚动写入代次：键盘导航 / 程序化滚动 / 帧尾恢复每写一次 +1。帧尾恢复只在代次未变时
+      回写（同帧「先滚动、后按 Ctrl+End」时，更新的写入优先于帧首保存的旧值） */
+  private scrollWriteSeq = 0
+  /** 主动写入的滚动意图位（位置 + 代次 + 剩余守卫帧）：见 guardScrollIntent */
+  private scrollIntent: { top: number; left: number; seq: number; frames: number } | null = null
+  /** 意图守卫的帧推进句柄 */
+  private scrollIntentRaf = 0
+  /** 最近一次渲染保存的（清空/重建前的）滚动位与当时的写入代次——「落回旧位置」判定基准 */
+  private savedScroll: { top: number; left: number; seq: number } | null = null
   private wrap: HTMLElement | null = null
   /** column-virtual：非固定列（middle 段）的列宽前缀缓存（复用 virtual-list 的 HeightCache，横向换轴复用） */
   private colWidthCache: HeightCache | null = null
@@ -1389,6 +1402,10 @@ export class OASTableBase extends OASElement {
   override disconnectedCallback(): void {
     this.unsubCaps?.()
     this.unsubCaps = undefined
+    // 主动滚动写入的意图状态随断开复位：重连后不继承上一次连接的保存位/代次/吞事件标志
+    this.savedScroll = null
+    this.scrollWriteSeq = 0
+    this.ignoreNextScroll = false
     super.disconnectedCallback()
   }
 
@@ -1680,6 +1697,12 @@ export class OASTableBase extends OASElement {
     this.ensureChildColumnsObserver()
     this.shadow.querySelector('thead')?.addEventListener('click', this.onTheadSortClick)
     this.wrap?.addEventListener('scroll', this.handleScroll, { passive: true })
+    // 用户手势取消主动写入守卫（滚轮 / 触摸 / 按下滚动条 / 键盘滚动永远优先于组件写入）
+    this.wrap?.addEventListener('wheel', this.cancelScrollIntent, { passive: true })
+    this.wrap?.addEventListener('touchstart', this.cancelScrollIntent, { passive: true })
+    this.wrap?.addEventListener('pointerdown', this.cancelScrollIntent, { passive: true })
+    // 键盘滚动取消（须先于下方网格导航注册：导航写入后布的新意图不被清掉）
+    this.wrap?.addEventListener('keydown', this.cancelScrollIntentOnKey)
     // column-virtual：容器尺寸变化（视口宽 → 可见列数）重算列窗口；windowed：视口高变化
     // → 可见行数变化重算行窗口（与 scroll 同一 rAF 节流口径，回调统一走 onWrapResize）
     if (typeof ResizeObserver !== 'undefined' && this.wrap) {
@@ -1708,6 +1731,15 @@ export class OASTableBase extends OASElement {
     document.addEventListener('scroll', this.handleDocumentScrollForTooltip, true)
     this.onCleanup(() => {
       this.wrap?.removeEventListener('scroll', this.handleScroll)
+      this.wrap?.removeEventListener('wheel', this.cancelScrollIntent)
+      this.wrap?.removeEventListener('touchstart', this.cancelScrollIntent)
+      this.wrap?.removeEventListener('pointerdown', this.cancelScrollIntent)
+      this.wrap?.removeEventListener('keydown', this.cancelScrollIntentOnKey)
+      this.scrollIntent = null
+      if (this.scrollIntentRaf) {
+        cancelAnimationFrame(this.scrollIntentRaf)
+        this.scrollIntentRaf = 0
+      }
       document.removeEventListener('scroll', this.handleDocumentScrollForTooltip, true)
       // filter panel 的 document 关闭监听兜底摘（一次性注册——bind 重入（onReconnect）也不累积闭包）
       this.unbindFilterPanelClose()
@@ -2180,7 +2212,9 @@ export class OASTableBase extends OASElement {
 
     // I3：windowed 重渲染前捕获焦点锚点（下方清空 tbody 会连带拆掉聚焦单元格）
     this.captureWindowedFocusAnchor()
+    const seqAtSave = this.scrollWriteSeq
     const st = this.wrap ? this.wrap.scrollTop : 0
+    this.saveScrollPosition(st, this.wrap ? this.wrap.scrollLeft : 0)
     head.innerHTML = ''
     body.innerHTML = ''
     this.renderPagination(paginationOn, total, pageSize, current)
@@ -2332,10 +2366,8 @@ export class OASTableBase extends OASElement {
     // 非滚动帧（宿主回填 update）路径：保留 focus + scrollIntoView，保证锚行可见
     this.restoreWindowedFocusAnchor(false)
     // innerHTML 清空曾触发浏览器把 scrollTop 钳回 0；内容（含占位）已铺满后恢复原滚动位置
-    if (this.wrap && this.wrap.scrollTop !== st) {
-      this.ignoreNextScroll = true
-      this.wrap.scrollTop = st
-    }
+    // 帧内若有更新的主动写入（键盘导航 / 程序化滚动），新写入优先——旧值不回写
+    if (this.wrap) this.restoreScrollPosition(seqAtSave, st, this.wrap.scrollLeft)
     // 全量渲染完成：落定渲染状态（此后仅 selected 变化可走局部补丁快路径）
     this.settleRenderState()
   }
@@ -3348,14 +3380,14 @@ export class OASTableBase extends OASElement {
   private bindFilterPanelClose(): void {
     if (this.filterPanelCloseBound) return
     this.filterPanelCloseBound = true
-    document.addEventListener('click', this.onFilterDocClick, true)
+    addOutsideDismiss(this.onFilterDocClick)
     document.addEventListener('keydown', this.onFilterKey)
   }
 
   private unbindFilterPanelClose(): void {
     if (!this.filterPanelCloseBound) return
     this.filterPanelCloseBound = false
-    document.removeEventListener('click', this.onFilterDocClick, true)
+    removeOutsideDismiss(this.onFilterDocClick)
     document.removeEventListener('keydown', this.onFilterKey)
   }
 
@@ -4261,7 +4293,9 @@ export class OASTableBase extends OASElement {
         if (scrollFrame) {
           td.focus({ preventScroll: true })
         } else {
-          td.focus()
+          // preventScroll：隐式滚动交给下面的显式 scrollCellIntoView——焦点 reveal 若由浏览器
+          // 延迟补上，会与随后的主动滚动写入竞争（同帧竞态：导航位被 reveal 拉回）
+          td.focus({ preventScroll: true })
           this.scrollCellIntoView(td)
         }
       }
@@ -4352,7 +4386,8 @@ export class OASTableBase extends OASElement {
         // 重查活节点并归还单元格焦点，保证「激活后仍停在原格」（展开/勾选后键盘可继续漫游）
         const fresh = this.gridCellAt(cur.row, cur.col)
         if (fresh) {
-          fresh.focus()
+          // preventScroll：滚动交给下面的 scrollCellIntoView，浏览器延迟补的 reveal 不参与竞争
+          fresh.focus({ preventScroll: true })
           this.gridPos = cur
           this.scrollCellIntoView(fresh)
         }
@@ -4435,7 +4470,8 @@ export class OASTableBase extends OASElement {
   private focusGridCell(row: number, col: number): void {
     const td = this.gridCellAt(row, col)
     if (!td) return
-    td.focus()
+    // preventScroll：显式 scrollCellIntoView 才算滚动意图（隐式 reveal 会与主动写入竞争）
+    td.focus({ preventScroll: true })
     this.gridPos = { row, col }
     this.scrollCellIntoView(td)
   }
@@ -4621,11 +4657,119 @@ export class OASTableBase extends OASElement {
     }
   }
 
+  // ==================== 主动滚动写入：意图记账 / 守卫 / 帧尾恢复 ====================
+
+  /**
+   * 主动写回容器滚动位置（键盘导航 / 程序化滚动 / 帧尾恢复的统一入口）。
+   *
+   * 记一笔写入代次 + 意图位，供两条同帧竞态路径判定：
+   * 1. 帧尾恢复（`handleScroll` 的 rAF 与 `update`）——代次在帧内变过说明已有更新的
+   *    主动写入，不得再用帧首保存的旧值回写（「先滚动、后立刻按 Ctrl+End」曾被拉回原位置）；
+   * 2. 意图守卫（`guardScrollIntent`）——写入后若干帧内，浏览器内部的非用户位移
+   *    （滚动帧清空 tbody 后的焦点 reveal、滚动锚定、内容收缩钳制）可能把位置落回旧值，
+   *    命中则写回意图位，键盘导航不被「回滚」。
+   *
+   * @internal 兼作 range 能力（键盘越界导航）的写入入口
+   */
+  writeScrollPosition(top: number, left?: number): void {
+    const wrap = this.wrap
+    if (!wrap) return
+    const targetLeft = left ?? wrap.scrollLeft
+    this.scrollWriteSeq += 1
+    this.armScrollIntent(top, targetLeft)
+    wrap.scrollTop = top
+    wrap.scrollLeft = targetLeft
+  }
+
+  /** 记录渲染保存前的滚动位与当时的写入代次：守卫据此区分「浏览器落回旧位置」与宿主另写的其它位置 */
+  private saveScrollPosition(top: number, left: number): void {
+    this.savedScroll = { top, left, seq: this.scrollWriteSeq }
+  }
+
+  /**
+   * 帧尾恢复滚动位：代次在帧内变过（键盘导航 / 程序化滚动已写入新位置）时放弃旧值——
+   * 主动写永远优先于恢复值，避免同帧写入被旧位置覆盖。
+   */
+  private restoreScrollPosition(seqAtSave: number, top: number, left: number): void {
+    const wrap = this.wrap
+    if (!wrap) return
+    if (this.scrollWriteSeq !== seqAtSave) return
+    if (wrap.scrollTop === top && wrap.scrollLeft === left) return
+    this.ignoreNextScroll = true
+    this.writeScrollPosition(top, left)
+  }
+
+  /** 布防意图：写入位在 SCROLL_INTENT_FRAMES 帧内是权威位（用户手势立即解除） */
+  private armScrollIntent(top: number, left: number): void {
+    this.scrollIntent = { top, left, seq: this.scrollWriteSeq, frames: SCROLL_INTENT_FRAMES }
+    if (this.scrollIntentRaf) return
+    const tick = (): void => {
+      this.scrollIntentRaf = 0
+      const intent = this.scrollIntent
+      if (!intent) return
+      intent.frames -= 1
+      if (intent.frames <= 0) {
+        this.scrollIntent = null
+        return
+      }
+      this.scrollIntentRaf = requestAnimationFrame(tick)
+    }
+    this.scrollIntentRaf = requestAnimationFrame(tick)
+  }
+
+  /** 用户手势（滚轮 / 触摸 / 按下滚动条）取消意图守卫：用户滚动永远优先于组件写入 */
+  private cancelScrollIntent = (): void => {
+    this.scrollIntent = null
+  }
+
+  /** 键盘滚动（Arrow/Page/Home/End）取消意图守卫：焦点在滚动容器/单元格时按键滚动优先于组件写入。
+      注册在网格导航之前——导航自身的写入随后布新的意图，不会被本监听反向清掉。 */
+  private cancelScrollIntentOnKey = (e: KeyboardEvent): void => {
+    const k = e.key
+    if (k.startsWith('Arrow') || k === 'PageUp' || k === 'PageDown' || k === 'Home' || k === 'End') {
+      this.scrollIntent = null
+    }
+  }
+
+  /**
+   * 意图守卫：组件刚写下的滚动位在若干帧内是权威值。
+   *
+   * 滚动帧清空 tbody 会连带拆掉聚焦单元格，浏览器会在随后的一两帧里把「聚焦元素 reveal」
+   * 的位移补上（WebKit 实测：Ctrl+Home 写入 0 之后位置又被挪回末行 3966）；滚动锚定与
+   * 内容收缩钳制同属这类非用户位移。它们落回的是**本帧保存的旧位置**附近——只有这种位移
+   * 让位于主动写入；宿主另行写入的其它位置照常接受（不误伤程序化滚动）。
+   */
+  private guardScrollIntent(): void {
+    const wrap = this.wrap
+    const intent = this.scrollIntent
+    const saved = this.savedScroll
+    if (!wrap || !intent || !saved) return
+    // 意图不比本帧保存的更新：没有同帧竞态，按普通滚动处理
+    if (intent.seq <= saved.seq) return
+    const top = wrap.scrollTop
+    const left = wrap.scrollLeft
+    // 意图已生效（浏览器报告的就是写入位）：不必拦
+    if (Math.abs(top - intent.top) <= 1 && Math.abs(left - intent.left) <= 1) return
+    // 落回本帧保存的旧位置：浏览器内部位移（焦点 reveal / 滚动锚定 / 内容收缩钳制）在
+    // WebKit 实测可落在保存位 ±1 行内（Ctrl+Home 3960→末行 3966；Ctrl+End 0→区块内 26），
+    // 故容差保留一行高。**用户滚动不会走到这里**：滚轮 / 触摸 / 按下 / 键盘（Arrow/Page/Home/End）
+    // 都先经 cancelScrollIntent 摘掉意图（bind 里注册），40px 的原生键盘滚动因此不会被吞。
+    const nearSaved = Math.abs(top - saved.top) <= this.rowHeightPx() && Math.abs(left - saved.left) <= 1
+    this.scrollIntent = null
+    if (!nearSaved) return
+    // 落回旧位置：写回主动写入位，并吞掉这次位移触发的 scroll 事件（窗口按意图位重建）
+    this.ignoreNextScroll = true
+    wrap.scrollTop = intent.top
+    wrap.scrollLeft = intent.left
+  }
+
   private handleScroll = (): void => {
     if (this.ignoreNextScroll) {
       this.ignoreNextScroll = false
       return
     }
+    // 同帧竞态：浏览器内部位移（焦点 reveal / 锚定）落回旧位置时让位于主动写入
+    this.guardScrollIntent()
     // 滚动即隐藏溢出提示浮层（锚定格可能滚出视口，无孤儿浮层）
     this.hideCellTooltip()
     // 横向虚拟（column-virtual）：非行虚拟时也要按 scrollLeft 重算列窗口。
@@ -4658,9 +4802,11 @@ export class OASTableBase extends OASElement {
         this.update()
         return
       }
+      const seqAtSave = this.scrollWriteSeq
       const st = this.wrap!.scrollTop
       // I-1：横向滚动位置同样帧前保存——清空 tbody + 回锚 focus 曾把 scrollLeft 拉回锚格处
       const sl = this.wrap!.scrollLeft
+      this.saveScrollPosition(st, sl)
       const rowKey = this.getAttr('row-key', 'key')
       const selected = this.getAttr('selected', '').split(',').filter(Boolean)
       const expanded = new Set(this.getAttr('expanded', '').split(',').filter(Boolean))
@@ -4693,11 +4839,8 @@ export class OASTableBase extends OASElement {
       this.restoreWindowedFocusAnchor(true)
       // 清空曾把 scrollTop 钳回 0、回锚 focus 曾改写 scrollLeft：内容铺满后一并恢复
       //（窗口按 st 算，纵向视觉不跳；横向停在用户滚到的位置，不被锚点拉回）
-      if (this.wrap!.scrollTop !== st || this.wrap!.scrollLeft !== sl) {
-        this.ignoreNextScroll = true
-        this.wrap!.scrollTop = st
-        this.wrap!.scrollLeft = sl
-      }
+      // 帧内若有更新的主动写入（键盘导航 / 程序化滚动），新写入优先——旧值不回写
+      this.restoreScrollPosition(seqAtSave, st, sl)
       // windowed：滚动事件 detail 的窗口按全量行数计（绝对行下标；与 oas-window-request 同坐标系）
       const win = computeVirtualWindow(
         st,

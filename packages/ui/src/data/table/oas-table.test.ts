@@ -3655,6 +3655,124 @@ describe('OASTable 属性-方法撞名回归', () => {
   })
 })
 
+// ===== 主动滚动写入：同帧竞态（键盘导航 vs 旧滚动位恢复 / 浏览器内部位移） =====
+// 缺陷背景：虚拟表滚动帧在帧首保存 scrollTop、帧尾 rAF 恢复；同一帧窗口内的键盘导航
+// （Ctrl+Home/End → 主动写 scrollTop）会被旧值回滚，用户在滚动后立刻按键会看到一次倒退。
+describe('table 主动滚动写入：帧内写入优先于旧滚动位', () => {
+  const mountVirtual = (): OASTable => {
+    const el = new OASTable()
+    el.setAttribute('height', '80')
+    el.setAttribute('row-height', '40')
+    el.setAttribute('row-key', 'id')
+    el.setAttribute('columns', JSON.stringify([{ key: 'name', title: '名称' }]))
+    el.setAttribute('data', BIG_DATA)
+    document.body.appendChild(el)
+    return el
+  }
+  /** 渲染并落定一个滚动帧：帧首保存 scrollTop = top（模拟「用户刚滚到某处」的一帧） */
+  const frameAt = async (el: OASTable, top: number): Promise<HTMLElement> => {
+    const wrap = scrollWrap(el)
+    wrap.scrollTop = top
+    wrap.dispatchEvent(new Event('scroll'))
+    await flushRaf()
+    return wrap
+  }
+  const internals = (el: OASTable): Record<string, any> => el as unknown as Record<string, any>
+
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  it('帧尾恢复：帧内出现更新的主动写入（写入代次变化）→ 不回写旧滚动位', () => {
+    const el = mountVirtual()
+    const wrap = scrollWrap(el)
+    const seqAtSave = internals(el).scrollWriteSeq // 帧首保存时的代次
+    el.writeScrollPosition(1960) // 帧内：键盘导航写入新位置（range 键盘越界导航同口径）
+    expect(wrap.scrollTop).toBe(1960)
+    internals(el).restoreScrollPosition(seqAtSave, 400, 0) // 帧尾：按帧首旧值恢复
+    expect(wrap.scrollTop, '旧恢复值不得覆盖帧内主动写入').toBe(1960)
+  })
+
+  it('帧尾恢复：代次未变时照常恢复（内容清空把 scrollTop 钳回 0 的既有保护不放松）', () => {
+    const el = mountVirtual()
+    const wrap = scrollWrap(el)
+    wrap.scrollTop = 0 // 模拟清空 tbody 后的钳制
+    internals(el).restoreScrollPosition(internals(el).scrollWriteSeq, 400, 0)
+    expect(wrap.scrollTop, '无更新的写入时仍恢复保存值').toBe(400)
+  })
+
+  it('意图守卫：主动写入后浏览器内部位移落回旧位置 → 写回主动写入位（不计为回滚）', async () => {
+    const el = mountVirtual()
+    const wrap = await frameAt(el, 400)
+    el.writeScrollPosition(1960) // 键盘导航写入
+    // 浏览器内部位移（滚动帧清空 tbody 后的焦点 reveal / 滚动锚定）落回本帧保存位置附近
+    wrap.scrollTop = 400
+    wrap.dispatchEvent(new Event('scroll'))
+    expect(wrap.scrollTop, '落回旧位置的位移被写回主动写入位').toBe(1960)
+    // 窗口按主动写入位重建（不是按被回滚的旧位置）
+    await flushRaf()
+    expect(rows(el).some((row) => row.textContent?.includes('行49'))).toBe(true)
+  })
+
+  it('意图守卫只拦「落回旧位置」：宿主另写的其它位置照常接受', async () => {
+    const el = mountVirtual()
+    const wrap = await frameAt(el, 400)
+    el.writeScrollPosition(1960)
+    wrap.scrollTop = 600 // 与本帧保存位置（400）相距 > 一行高：不是浏览器回锚
+    wrap.dispatchEvent(new Event('scroll'))
+    expect(wrap.scrollTop, '宿主程序化写到其它位置不回写').toBe(600)
+  })
+
+  it('用户手势（滚轮）取消意图守卫：用户滚动永远优先', async () => {
+    const el = mountVirtual()
+    const wrap = await frameAt(el, 400)
+    el.writeScrollPosition(1960)
+    wrap.dispatchEvent(new Event('wheel'))
+    wrap.scrollTop = 400
+    wrap.dispatchEvent(new Event('scroll'))
+    expect(wrap.scrollTop, '滚轮后落回旧位置也不回写').toBe(400)
+  })
+
+  it('键盘滚动取消意图守卫：守卫窗口内 ArrowDown 的 40px 位移不被写回（keydown 先摘意图）', async () => {
+    const el = mountVirtual()
+    const wrap = await frameAt(el, 400)
+    el.writeScrollPosition(1960)
+    // 用户按 ArrowDown：keydown 先到（bubbles 到 .table-scroll），守卫被摘掉；
+    // 随后容器原生滚动一行（row-height = 40）——不得被当成浏览器回锚写回 1960
+    wrap.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }))
+    wrap.scrollTop = 440
+    wrap.dispatchEvent(new Event('scroll'))
+    expect(wrap.scrollTop, '一行高的键盘滚动属于用户意图，不得被写回').toBe(440)
+  })
+
+  it('断开复位意图状态：savedScroll / scrollWriteSeq / ignoreNextScroll 不跨连接遗留', async () => {
+    const el = mountVirtual()
+    const internalsOf = internals(el)
+    el.writeScrollPosition(320)
+    internalsOf.savedScroll = { top: 400, left: 0, seq: 1 }
+    internalsOf.ignoreNextScroll = true
+    el.remove()
+    expect(internalsOf.savedScroll).toBeNull()
+    expect(internalsOf.scrollWriteSeq).toBe(0)
+    expect(internalsOf.ignoreNextScroll).toBe(false)
+  })
+
+  it('意图守卫有窗口期：写入 3 帧后不再拦回旧位置的位移', async () => {
+    const el = mountVirtual()
+    const wrap = await frameAt(el, 400)
+    el.writeScrollPosition(1960)
+    for (let i = 0; i < 4; i++) await flushRaf()
+    wrap.scrollTop = 400
+    wrap.dispatchEvent(new Event('scroll'))
+    expect(wrap.scrollTop, '窗口期过后按普通滚动处理').toBe(400)
+  })
+})
+
 // ===== 宿主可访问名转发（宿主 aria-label → 内部 table） =====
 // table 没有 caption 机制（内部 table 由组件渲染，宿主无法写 caption 子元素），grid 语义下
 // 也没有其它名称来源；宿主 aria-label 是唯一命名通道（原生 table 与 role=grid 均支持命名）。
