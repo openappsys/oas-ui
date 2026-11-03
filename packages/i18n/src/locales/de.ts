@@ -333,6 +333,10 @@ export const de: LocaleMessages = {
   'upload.preview': 'Vorschau von {name}',
   'upload.previewDialog': 'Dateivorschau',
   'upload.closePreview': 'Vorschau schließen',
+  'upload.errorSummary': '{count} Dateien konnten nicht hochgeladen werden',
+  'upload.retryAll': 'Alle erneut versuchen',
+  'upload.clearErrors': 'Fehler löschen',
+  'upload.persisted': 'Gespeichert – bleibt nach dem Neuladen in der Liste (Dateiinhalt wird nicht gespeichert)',
   // transfer (Transfer)
   'transfer.source': 'Quellliste',
   'transfer.target': 'Ausgewählte Liste',
@@ -421,6 +425,8 @@ export const de: LocaleMessages = {
   'command.footer.select': 'Auswählen',
   'command.footer.close': 'Schließen',
   'command.multiRun': '{n} ausführen',
+  'command.loadError': 'Laden fehlgeschlagen',
+  'command.retry': 'Erneut versuchen',
   // menubar (Anwendungsmenüleiste)
   'menubar.label': 'Menüleiste',
   'menubar.menu': 'Menü',

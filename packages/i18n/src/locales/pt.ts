@@ -333,6 +333,10 @@ export const pt: LocaleMessages = {
   'upload.preview': 'Visualizar {name}',
   'upload.previewDialog': 'Visualização de arquivo',
   'upload.closePreview': 'Fechar visualização',
+  'upload.errorSummary': 'Falha ao enviar {count} arquivo(s)',
+  'upload.retryAll': 'Tentar tudo novamente',
+  'upload.clearErrors': 'Limpar erros',
+  'upload.persisted': 'Salvo: permanece na lista após recarregar (sem o conteúdo do arquivo)',
   // transfer (transferência)
   'transfer.source': 'Lista de origem',
   'transfer.target': 'Lista selecionada',
@@ -421,6 +425,8 @@ export const pt: LocaleMessages = {
   'command.footer.select': 'Selecionar',
   'command.footer.close': 'Fechar',
   'command.multiRun': 'Executar {n}',
+  'command.loadError': 'Falha ao carregar',
+  'command.retry': 'Tentar novamente',
   // menubar (barra de menus do aplicativo)
   'menubar.label': 'Barra de menus',
   'menubar.menu': 'Menu',

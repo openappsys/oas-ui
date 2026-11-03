@@ -333,6 +333,10 @@ export const ar: LocaleMessages = {
   'upload.preview': 'معاينة {name}',
   'upload.previewDialog': 'معاينة الملف',
   'upload.closePreview': 'إغلاق المعاينة',
+  'upload.errorSummary': 'فشل رفع {count} ملف/ملفات',
+  'upload.retryAll': 'إعادة المحاولة للكل',
+  'upload.clearErrors': 'مسح الأخطاء',
+  'upload.persisted': 'تم الحفظ: يبقى في القائمة بعد إعادة التحميل (بدون محتوى الملف)',
   // transfer (نقل بين قائمتين)
   'transfer.source': 'قائمة المصدر',
   'transfer.target': 'قائمة العناصر المحددة',
@@ -421,6 +425,8 @@ export const ar: LocaleMessages = {
   'command.footer.select': 'تحديد',
   'command.footer.close': 'إغلاق',
   'command.multiRun': 'تنفيذ {n}',
+  'command.loadError': 'فشل التحميل',
+  'command.retry': 'إعادة المحاولة',
   // menubar (شريط قوائم التطبيق)
   'menubar.label': 'شريط القوائم',
   'menubar.menu': 'القائمة',

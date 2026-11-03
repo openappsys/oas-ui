@@ -333,6 +333,10 @@ export const ja: LocaleMessages = {
   'upload.preview': '{name} をプレビュー',
   'upload.previewDialog': 'ファイルプレビュー',
   'upload.closePreview': 'プレビューを閉じる',
+  'upload.errorSummary': '{count} 件のファイルのアップロードに失敗しました',
+  'upload.retryAll': 'すべて再試行',
+  'upload.clearErrors': 'エラーをクリア',
+  'upload.persisted': '保存済み：再読み込み後も一覧に残ります（ファイル本体は保存されません）',
   // transfer（トランスファー）
   'transfer.source': '選択元リスト',
   'transfer.target': '選択済みリスト',
@@ -421,6 +425,8 @@ export const ja: LocaleMessages = {
   'command.footer.select': '実行',
   'command.footer.close': '閉じる',
   'command.multiRun': '{n} 件を実行',
+  'command.loadError': '読み込みに失敗しました',
+  'command.retry': '再試行',
   // menubar（アプリメニューバー）
   'menubar.label': 'メニューバー',
   'menubar.menu': 'メニュー',

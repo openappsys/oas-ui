@@ -333,6 +333,10 @@ export const ko: LocaleMessages = {
   'upload.preview': '{name} 미리보기',
   'upload.previewDialog': '파일 미리보기',
   'upload.closePreview': '미리보기 닫기',
+  'upload.errorSummary': '{count}개 파일 업로드에 실패했습니다',
+  'upload.retryAll': '모두 다시 시도',
+  'upload.clearErrors': '오류 지우기',
+  'upload.persisted': '저장됨: 새로고침 후에도 목록에 남습니다(파일 내용은 저장되지 않음)',
   // transfer（트랜스퍼）
   'transfer.source': '원본 목록',
   'transfer.target': '선택한 목록',
@@ -421,6 +425,8 @@ export const ko: LocaleMessages = {
   'command.footer.select': '실행',
   'command.footer.close': '닫기',
   'command.multiRun': '{n}개 실행',
+  'command.loadError': '불러오기 실패',
+  'command.retry': '다시 시도',
   // menubar（앱 메뉴 모음）
   'menubar.label': '메뉴 모음',
   'menubar.menu': '메뉴',

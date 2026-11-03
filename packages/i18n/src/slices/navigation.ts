@@ -72,6 +72,8 @@ export const navigationMessages: Partial<LocaleMessages> = {
   'command.footer.select': '执行',
   'command.footer.close': '关闭',
   'command.multiRun': '执行 {n} 项',
+  'command.loadError': '加载失败',
+  'command.retry': '重试',
   'menubar.label': '菜单栏',
   'menubar.menu': '菜单',
   'menubar.more': '更多菜单项',

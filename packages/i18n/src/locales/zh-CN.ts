@@ -333,6 +333,10 @@ export const zhCN = {
   'upload.preview': '预览 {name}',
   'upload.previewDialog': '文件预览',
   'upload.closePreview': '关闭预览',
+  'upload.errorSummary': '{count} 个文件上传失败',
+  'upload.retryAll': '重试全部',
+  'upload.clearErrors': '清除错误',
+  'upload.persisted': '已持久化：刷新后仍在列表中（不含文件内容）',
   // transfer（穿梭框）
   'transfer.source': '源列表',
   'transfer.target': '已选列表',
@@ -421,6 +425,8 @@ export const zhCN = {
   'command.footer.select': '执行',
   'command.footer.close': '关闭',
   'command.multiRun': '执行 {n} 项',
+  'command.loadError': '加载失败',
+  'command.retry': '重试',
   // menubar（应用菜单栏）
   'menubar.label': '菜单栏',
   'menubar.menu': '菜单',

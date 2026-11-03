@@ -333,6 +333,10 @@ export const fr: LocaleMessages = {
   'upload.preview': 'Aperçu de {name}',
   'upload.previewDialog': 'Aperçu du fichier',
   'upload.closePreview': 'Fermer l’aperçu',
+  'upload.errorSummary': 'Échec du téléversement de {count} fichier(s)',
+  'upload.retryAll': 'Tout réessayer',
+  'upload.clearErrors': 'Effacer les erreurs',
+  'upload.persisted': 'Enregistré — reste dans la liste après rechargement (contenu du fichier non conservé)',
   // transfer (transfert)
   'transfer.source': 'Liste source',
   'transfer.target': 'Liste sélectionnée',
@@ -421,6 +425,8 @@ export const fr: LocaleMessages = {
   'command.footer.select': 'Exécuter',
   'command.footer.close': 'Fermer',
   'command.multiRun': 'Exécuter {n}',
+  'command.loadError': 'Échec du chargement',
+  'command.retry': 'Réessayer',
   // menubar (barre de menus d’application)
   'menubar.label': 'Barre de menus',
   'menubar.menu': 'Menu',

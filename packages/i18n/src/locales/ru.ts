@@ -333,6 +333,10 @@ export const ru: LocaleMessages = {
   'upload.preview': 'Просмотр {name}',
   'upload.previewDialog': 'Просмотр файла',
   'upload.closePreview': 'Закрыть просмотр',
+  'upload.errorSummary': 'Не удалось загрузить {count} файл(ов)',
+  'upload.retryAll': 'Повторить все',
+  'upload.clearErrors': 'Очистить ошибки',
+  'upload.persisted': 'Сохранено: остаётся в списке после перезагрузки (без содержимого файла)',
   // transfer (перенос списков)
   'transfer.source': 'Исходный список',
   'transfer.target': 'Список выбранных',
@@ -421,6 +425,8 @@ export const ru: LocaleMessages = {
   'command.footer.select': 'Выбор',
   'command.footer.close': 'Закрыть',
   'command.multiRun': 'Выполнить {n}',
+  'command.loadError': 'Не удалось загрузить',
+  'command.retry': 'Повторить',
   // menubar (строка меню приложения)
   'menubar.label': 'Строка меню',
   'menubar.menu': 'Меню',
