@@ -1,6 +1,7 @@
 import { OASFormElement } from '@oas-ui/core/form-element'
 import { stableHash36 } from '../../shared/stable-id.js'
 import { cloneSlotContent } from '../../shared/slot-template.js'
+import { normalizeChoice } from '../../shared/choice.js'
 
 /** size 尺寸档（与 checkbox 同批对齐：圆点 14/16/18px + 字号联动） */
 const VALID_SIZES = ['small', 'medium', 'large'] as const
@@ -10,10 +11,6 @@ const VALID_STATUSES = ['error', 'warning', 'success'] as const
 const VALID_VARIANTS = ['default', 'card'] as const
 
 /** 枚举归一化：合法值原样返回，空/非法值静默回落默认（非法值不告警，保持输出干净） */
-function normalizeChoice(raw: string, fallback: string, valid: readonly string[]): string {
-  if (raw === '') return fallback
-  return (valid as readonly string[]).includes(raw) ? raw : fallback
-}
 
 const STYLE = `
 :host {

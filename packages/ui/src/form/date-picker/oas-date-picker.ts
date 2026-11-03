@@ -33,6 +33,7 @@ import { addOutsideDismiss, removeOutsideDismiss } from '../../shared/outside-di
 import { devWarn } from '../../shared/dev-warn.js'
 // slot 模板双形态克隆（静态 HTML 在 template.content；Vue 等 CSR 直插元素 childNodes）
 import { cloneSlotContent } from '../../shared/slot-template.js'
+import { normalizeChoice } from '../../shared/choice.js'
 
 type PickerType =
   | 'date'
@@ -80,10 +81,6 @@ const RANGE_TYPES: ReadonlySet<PickerType> = new Set(['daterange', 'datetimerang
 
 const VALID_SIZES = ['small', 'medium', 'large'] as const
 const VALID_STATUSES = ['error', 'warning', 'success'] as const
-
-function normalizeChoice(raw: string, fallback: string, valid: readonly string[]): string {
-  return valid.includes(raw) ? raw : fallback
-}
 
 function pad(v: number): string {
   return String(v).padStart(2, '0')

@@ -4,6 +4,7 @@ import { lookupIcon } from '@oas-ui/icons/runtime'
 import { isRtl } from '../../shared/direction.js'
 import { TOUCH_TARGET_CSS } from '../../shared/touch-target.js'
 import { normalizeSize, THREE_SIZES } from '../../shared/size.js'
+import { normalizeChoice } from '../../shared/choice.js'
 
 export interface ToggleItem {
   /** 按钮文案（icon-only 项可省略，可访问名兜底走图标名/ariaLabel） */
@@ -36,10 +37,6 @@ const PRESET_COLORS: readonly string[] = [
   'geekblue',
   'purple',
 ]
-
-function normalizeChoice(raw: string, fallback: string, valid: readonly string[]): string {
-  return (valid as readonly string[]).includes(raw) ? raw : fallback
-}
 
 /**
  * 多选 value property 归一（框架把静态 JSON attribute 写成 property 的 SPA 场景）：

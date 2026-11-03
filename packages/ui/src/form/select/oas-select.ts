@@ -15,6 +15,7 @@ import { lookupIcon } from '@oas-ui/icons/runtime'
 import { hintUnresolvedIcon } from '../../shared/icon-hint.js'
 import { cloneSlotContent } from '../../shared/slot-template.js'
 import { OASFormElement } from '@oas-ui/core/form-element'
+import { normalizeChoice } from '../../shared/choice.js'
 
 export interface Option {
   label: string
@@ -45,10 +46,6 @@ const VALID_VARIANTS = ['outlined', 'filled', 'borderless', 'chip'] as const
 const VALID_STATUSES = ['error', 'warning', 'success'] as const
 
 /** 枚举归一化：合法值原样返回，空/非法值静默回落默认（非法值不告警，保持输出干净） */
-function normalizeChoice(raw: string, fallback: string, valid: readonly string[]): string {
-  if (raw === '') return fallback
-  return (valid as readonly string[]).includes(raw) ? raw : fallback
-}
 
 /**
  * Option.dot 清洗：仅保留可安全内联进 style.background 的颜色值字符串。

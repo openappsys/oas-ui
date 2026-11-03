@@ -3,6 +3,7 @@ import { computePosition, getViewport, type Placement } from '../../overlay/floa
 import { resolveDirection } from '../../shared/direction.js'
 import { addOutsideDismiss, removeOutsideDismiss } from '../../shared/outside-dismiss.js'
 import { cloneSlotContent } from '../../shared/slot-template.js'
+import { normalizeChoice } from '../../shared/choice.js'
 
 export interface Option {
   label: string
@@ -19,10 +20,6 @@ const VALID_VARIANTS = ['outlined', 'filled', 'borderless'] as const
 const VALID_TYPES = ['textarea', 'input'] as const
 
 /** 枚举归一化：合法值原样返回，空/非法值静默回落默认 */
-function normalizeChoice(raw: string, fallback: string, valid: readonly string[]): string {
-  if (raw === '') return fallback
-  return (valid as readonly string[]).includes(raw) ? raw : fallback
-}
 
 /**
  * size 档位 → 上下内边距合计（px）。

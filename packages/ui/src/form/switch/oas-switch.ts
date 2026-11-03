@@ -6,6 +6,7 @@ import { isRtl } from '../../shared/direction.js'
 import { normalizeSizeStrict, ALL_SIZES } from '../../shared/size.js'
 import { devWarn } from '../../shared/dev-warn.js'
 import { stableHash36 } from '../../shared/stable-id.js'
+import { normalizeChoice } from '../../shared/choice.js'
 
 export type SwitchSize = 'xs' | 'small' | 'medium' | 'large' | 'xl'
 
@@ -21,10 +22,6 @@ function warnInvalidSize(raw: string): void {
 }
 
 /** 枚举归一化：合法值原样返回，空/非法值静默回落默认（非法值不告警，保持输出干净） */
-function normalizeChoice(raw: string, fallback: string, valid: readonly string[]): string {
-  if (raw === '') return fallback
-  return valid.includes(raw) ? raw : fallback
-}
 
 /** 图标名是否可渲染（未注册名不渲染，与 tag 的 icon 通道一致） */
 function isValidIcon(name: string): boolean {

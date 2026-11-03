@@ -2,15 +2,11 @@ import { OASElement } from '@oas-ui/core/oas-element'
 // options 数据通道渲染 oas-checkbox 需保证自定义元素已定义（运行时副作用导入）
 import './oas-checkbox.js'
 import type { OASCheckbox } from './oas-checkbox.js'
+import { normalizeChoice } from '../../shared/choice.js'
 
 /** size/status 归一化白名单（与单项侧一致，非法值不下发） */
 const VALID_SIZES = ['small', 'medium', 'large'] as const
 const VALID_STATUSES = ['error', 'warning', 'success'] as const
-
-function normalizeChoice(raw: string, valid: readonly string[]): string {
-  if (raw === '') return ''
-  return (valid as readonly string[]).includes(raw) ? raw : ''
-}
 
 /** 组 options 数据通道的选项模型（与子元素声明式通道等价收敛） */
 export interface CheckboxOption {
@@ -204,8 +200,8 @@ export class OASCheckboxGroup extends OASElement {
     const values = this.parseValue()
     const groupDisabled = this.hasAttr('disabled')
     const groupReadonly = this.hasAttr('readonly')
-    const groupSize = normalizeChoice(this.getAttr('size', ''), VALID_SIZES)
-    const groupStatus = normalizeChoice(this.getAttr('status', ''), VALID_STATUSES)
+    const groupSize = normalizeChoice(this.getAttr('size', ''), '', VALID_SIZES)
+    const groupStatus = normalizeChoice(this.getAttr('status', ''), '', VALID_STATUSES)
     this.items = this.collectItems()
     for (const cb of this.items) {
       const isAll = cb.hasAttribute('check-all')

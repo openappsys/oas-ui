@@ -4,15 +4,11 @@ import { isSsrRuntime } from '../../shared/ssr-runtime.js'
 // options 数据通道渲染 oas-radio 需保证自定义元素已定义（运行时副作用导入）
 import './oas-radio.js'
 import type { OASRadio } from './oas-radio.js'
+import { normalizeChoice } from '../../shared/choice.js'
 
 /** size/status 归一化白名单（与单项侧一致，非法值不下发） */
 const VALID_SIZES = ['small', 'medium', 'large'] as const
 const VALID_STATUSES = ['error', 'warning', 'success'] as const
-
-function normalizeChoice(raw: string, valid: readonly string[]): string {
-  if (raw === '') return ''
-  return (valid as readonly string[]).includes(raw) ? raw : ''
-}
 
 /** 组 options 数据通道的选项模型（与子元素声明式通道等价收敛） */
 export interface RadioOption {
@@ -202,8 +198,8 @@ export class OASRadioGroup extends OASFormElement {
     const groupReadonly = this.hasAttr('readonly')
     // 组级尺寸：自身 size > 表级下发（data-form-size，injectValue 通道）> provider 注入 > 缺省
     // （options 通道子项渲染在组 shadow 内，form 的 querySelectorAll 穿不透——必须组自身消费）
-    const groupSize = normalizeChoice(this.injectValue('size', ''), VALID_SIZES)
-    const groupStatus = normalizeChoice(this.getAttr('status', ''), VALID_STATUSES)
+    const groupSize = normalizeChoice(this.injectValue('size', ''), '', VALID_SIZES)
+    const groupStatus = normalizeChoice(this.getAttr('status', ''), '', VALID_STATUSES)
     this.items = this.collectItems()
     for (const r of this.items) {
       // 互斥 name 不进 SSR 快照（groupName 为运行时自增唯一值，写进快照会让同属性两次渲染

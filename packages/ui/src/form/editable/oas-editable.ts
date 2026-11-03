@@ -1,6 +1,7 @@
 import { OASElement } from '@oas-ui/core/oas-element'
 import { onMeasurable, type MeasureDisposer } from '../../shared/measure-when-visible.js'
 import { cloneSlotContent } from '../../shared/slot-template.js'
+import { normalizeChoice } from '../../shared/choice.js'
 
 /** size 尺寸档（对齐 oas-input：small/medium/large，控高走 --oas-control-height-* token） */
 const VALID_SIZES = ['small', 'medium', 'large'] as const
@@ -15,10 +16,6 @@ function isTextarea(el: HTMLInputElement | HTMLTextAreaElement): el is HTMLTextA
 }
 
 /** 枚举归一化：合法值原样返回，空/非法值静默回落默认（非法值不告警，保持输出干净） */
-function normalizeChoice(raw: string, fallback: string, valid: readonly string[]): string {
-  if (raw === '') return fallback
-  return (valid as readonly string[]).includes(raw) ? raw : fallback
-}
 
 /** 输入法组合态判定：isComposing 或旧浏览器 keyCode 229 均视为组合中（选词 Enter 不触发提交） */
 function isComposing(e: KeyboardEvent): boolean {

@@ -10,6 +10,7 @@ import { addOutsideDismiss, removeOutsideDismiss } from '../../shared/outside-di
 import { computePosition, getViewport, type Placement } from '../../overlay/floating/index.js'
 import { resolveDirection } from '../../shared/direction.js'
 import { devWarn } from '../../shared/dev-warn.js'
+import { normalizeChoice } from '../../shared/choice.js'
 
 const STYLE = `
  :host {
@@ -356,10 +357,6 @@ const VALID_PLACEMENTS: readonly Placement[] = [
 
 const VALID_SIZES = ['small', 'medium', 'large'] as const
 const VALID_STATUSES = ['error', 'warning', 'success'] as const
-
-function normalizeChoice(raw: string, fallback: string, valid: readonly string[]): string {
-  return valid.includes(raw) ? raw : fallback
-}
 
 function pad(v: number): string {
   return String(v).padStart(2, '0')

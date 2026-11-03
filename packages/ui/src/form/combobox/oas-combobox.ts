@@ -9,6 +9,7 @@ import { addOutsideDismiss, removeOutsideDismiss } from '../../shared/outside-di
 import { computePosition, getViewport, type Placement } from '../../overlay/floating/index.js'
 import { resolveDirection } from '../../shared/direction.js'
 import { OASFormElement } from '@oas-ui/core/form-element'
+import { normalizeChoice } from '../../shared/choice.js'
 
 interface Option {
   label: string
@@ -22,10 +23,6 @@ const VALID_SIZES = ['small', 'medium', 'large'] as const
 const VALID_STATUSES = ['error', 'warning', 'success'] as const
 
 /** 枚举归一化：合法值原样返回，空/非法值静默回落默认 */
-function normalizeChoice(raw: string, fallback: string, valid: readonly string[]): string {
-  if (raw === '') return fallback
-  return (valid as readonly string[]).includes(raw) ? raw : fallback
-}
 
 /**
  * 多选 value property 归一（框架把静态 JSON attribute 写成 property 的 SPA 场景）：

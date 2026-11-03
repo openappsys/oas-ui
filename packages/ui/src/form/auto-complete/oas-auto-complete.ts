@@ -6,6 +6,7 @@ import { cloneSlotContent } from '../../shared/slot-template.js'
 // 注册 oas-virtual-list（OASVirtualList 仅作类型用，需裸 import 保住注册副作用）
 import '../../data/virtual-list/index.js'
 import type { OASVirtualList } from '../../data/virtual-list/index.js'
+import { normalizeChoice } from '../../shared/choice.js'
 
 interface Option {
   label: string
@@ -21,10 +22,6 @@ const VALID_STATUSES = ['error', 'warning', 'success'] as const
 const VALID_VARIANTS = ['outlined', 'filled', 'borderless'] as const
 
 /** 枚举归一化：合法值原样返回，空/非法值静默回落默认 */
-function normalizeChoice(raw: string, fallback: string, valid: readonly string[]): string {
-  if (raw === '') return fallback
-  return (valid as readonly string[]).includes(raw) ? raw : fallback
-}
 
 /** 12 向 placement 词表校验（对齐 dropdown/浮层引擎：基向 + -start/-end 逻辑对齐后缀）；非法回落 bottom-start */
 function normalizePlacement(raw: string): Placement {

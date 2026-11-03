@@ -1,6 +1,7 @@
 import { OASElement } from '@oas-ui/core/oas-element'
 import { cloneSlotContent } from '../../shared/slot-template.js'
 import '../input/index.js'
+import { normalizeChoice } from '../../shared/choice.js'
 
 /** pair 预设的键值对行值 */
 export interface DynamicInputPair {
@@ -19,10 +20,6 @@ const VALID_STATUSES = ['error', 'warning', 'success'] as const
 const VALID_PRESETS = ['input', 'pair'] as const
 
 /** 枚举归一化：合法值原样返回，空/非法值静默回落默认（非法值不告警，保持输出干净） */
-function normalizeChoice(raw: string, fallback: string, valid: readonly string[]): string {
-  if (raw === '') return fallback
-  return (valid as readonly string[]).includes(raw) ? raw : fallback
-}
 
 /** 行值归一化：string 原样；对象取 key/value 字符串化；其余 String() 兜底 */
 function normalizeRowValue(v: unknown): DynamicInputRowValue {

@@ -3,6 +3,7 @@ import { OASElement } from '@oas-ui/core/oas-element'
 import { lookupIcon } from '@oas-ui/icons/runtime'
 import { isRtl } from '../../shared/direction.js'
 import { cloneSlotContent } from '../../shared/slot-template.js'
+import { normalizeChoice } from '../../shared/choice.js'
 
 export interface SegmentedOption {
   label: string
@@ -16,10 +17,6 @@ export interface SegmentedOption {
 const VALID_SIZES = ['small', 'medium', 'large'] as const
 
 /** 枚举归一化：合法值原样返回，空/非法值静默回落默认（非法值不告警，保持输出干净） */
-function normalizeChoice(raw: string, fallback: string, valid: readonly string[]): string {
-  if (raw === '') return fallback
-  return valid.includes(raw) ? raw : fallback
-}
 
 /** 图标名是否可渲染（未注册名不渲染，与 tag 的 icon 通道一致） */
 function isValidIcon(name: string): boolean {

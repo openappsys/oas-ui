@@ -41,6 +41,7 @@
 
 | 范围 | 内容 | 状态 |
 | --- | --- | --- |
+| **D2：L1 主链归因审计批** | 全量入口 / table 默认 / form / 9 族包逐模块归因 + 四类冗余扫描（复制 gantt 链方法论）：零真死文件、族包重复源 0；双实现 `normalizeChoice` ×17 收敛为 `shared/choice.ts` 单一实现（15 直改 + 2 空 fallback 等价改写；input/input-number 4-arg warn 变体保留本地）；全量单测 12257 + Chromium e2e 2566 绿；收益为维护性（gzip 持平如实记录）。扩展前置解除，结论入 perf-baseline.md | ✅ 已完成（未发布） |
 | **resource 直方图行 hover 补齐** | `.row.load` 与泳道行同口径 hover（用户反馈驱动：直方图区与泳道区观感不一致）；行/行头同 `--oas-resource-row-hover-bg` token 链，`hover="false"` 逐元素还原，收进 `@media (hover: hover)`；单测 + e2e | ✅ 已完成（未发布） |
 | **框架集成指南补强（guide/frameworks，zh/en）** | 新增「全局属性劫持（`title`）」小节（React property 不落 attribute → ref + setAttribute 兜底）；`packages/react` 定位公开口径（参考出处可 vendor、不发布 npm、不做框架 wrapper）；补齐 Svelte（事件属性大小写敏感，Svelte 5 官方文档核实）/ Angular（CUSTOM_ELEMENTS_SCHEMA）/ Astro（零特殊处理）三小节，「先选路径」覆盖七框架 | ✅ 已完成（未发布） |
 

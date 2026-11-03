@@ -2,6 +2,7 @@ import { OASElement } from '@oas-ui/core/oas-element'
 import { pickOnColor as pickOnColorBase } from '../../shared/on-color.js'
 import { lookupIcon } from '@oas-ui/icons/runtime'
 import { normalizeSize, THREE_SIZES } from '../../shared/size.js'
+import { normalizeChoice } from '../../shared/choice.js'
 
 export type ToggleButtonSize = 'small' | 'medium' | 'large'
 export type ToggleButtonStatus = 'success' | 'warning' | 'error'
@@ -23,10 +24,6 @@ const PRESET_COLORS: readonly string[] = [
   'geekblue',
   'purple',
 ]
-
-function normalizeChoice(raw: string, fallback: string, valid: readonly string[]): string {
-  return (valid as readonly string[]).includes(raw) ? raw : fallback
-}
 
 /**
  * 自定义选中色的实底文字色：按 WCAG 对比度（token 候选回落亮度启发式）取深/浅，保证对比可读（共享实现见 `shared/on-color`）。

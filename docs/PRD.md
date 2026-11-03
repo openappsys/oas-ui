@@ -63,14 +63,35 @@
 ### 详细需求
 
 - 直方图行（`.row.load`）与泳道行同口径 hover：行底色 + sticky 行头列同 token 链（`--oas-resource-row-hover-bg`）；`hover="false"` 逐元素还原基础底色（行透明 / 行头 `--oas-color-bg`）；同在 `@media (hover: hover)` 内（触屏不粘住）。
-- 框架指南新增「全局属性劫持（`title`）」小节：React 把 `title={...}` 当原生 property 赋值不落 attribute，走 attribute 通道的组件收不到，ref + `setAttribute` 兜底（`lang` / `dir` 等撞名属性同口径）。
+- 框架指南新增「全局属性与 property 通道（`title` 的实测行为）」小节：React 19 对原生 property 名走 property 赋值；`title` 是反射型 property（赋值同步成 attribute），Chromium 实测 `oas-modal` / `oas-drawer` 双通道均收到并**消费**（渲染进标题栏后移除 attribute 防原生 tooltip）——**正文与常见坑第 6 条经当日实测修正**（早前版本据过时备注误称「不落 attribute、组件收不到」）；faq 撞名节同步补消费语义并互链；modal e2e 三形态回归固化（property / setAttribute / 插入前赋值）。
 - `@oas-ui/react` 定位更新为公开口径：两个 hook 降级为参考出处（约 100 行可 vendor 进项目），官方不发布该 npm 包、不做任何框架 wrapper/桥接包。
 - 补齐 Svelte / Angular / Astro 三小节，「先选路径」表覆盖 React / Vue / Svelte / Angular / Astro / Next / Nuxt 七框架 + SolidJS 等兜底行；内容均为各框架官方公开机制（Svelte 5 事件属性大小写敏感语义经官方文档核实），不做未实测的互操作断言。
 
 ### 验收
 
 - CSS 单测 + Chromium e2e（真实 hover 直方图行/行头激活、`hover="false"` 关闭态、console 零告警）。
-- 指南构建产物双语渲染 + 页内锚点（含全角括号转连字符形态）验证；`llms:gen + llms:check` 通过。
+- 指南构建产物双语渲染 + 页内锚点（含全角括号/空格转连字符形态）验证；`llms:gen + llms:check` 通过。
+- `title` 消费契约经 Chromium 实测裁决（property 反射 → attribute → 消费即删），modal e2e 三形态断言固化。
+
+---
+
+## 未发布：D2 L1 主链归因审计批
+
+### 功能定义
+
+把 gantt 链审计（2026-11-02 存档）方法论复制到全量入口链 / table 默认链 / form 链 / 9 个 CDN 族包：逐模块 gzip 归因 + 死文件 / 双实现 / 未用导出 / 族包重复源扫描，目标 = 冗余清零或修复、解除扩展前置。
+
+### 详细需求
+
+- 遍历规则与 `scripts/perf/size.mjs` 一致（静态 import 闭包，不跟动态 import）；审计报告存档 `.opencode/tmp/archive-2026-11-04/`。
+- 死文件扫描核实「不在全量入口闭包」的 34 个文件全部按设计（24 helper 型 L3 + 4 纯核入口 + ssr 子路径 + 5 仅 barrel 无消费者），零真死文件。
+- 双实现逐字比对：`normalizeChoice` ×17（15 个 3-arg 逐字相同 + 2 个 2-arg 等价变体）收敛为 `packages/ui/src/shared/choice.ts` 单一实现；input/input-number 的 4-arg warn 集成变体保留本地（告警策略与清洗耦合）。其余命中为同名撞车（`valueOf`/`warnOnce`）或 <120B 低于阈值，记录不修。
+- 未用导出扫描的 barrel 命中（icons/i18n/core）为 re-export 链误报，记录为扫描器限制。
+
+### 验收
+
+- 全量单测 12257 绿；全量 Chromium e2e 2566 passed / 0 failed；`perf:size` 全 PASS。
+- 量化结果诚实记录：逐文件 gzip 口径修复前后持平（维护性收益为主），bundled 口径被同日并行批次增量盖过无法隔离测量。
 
 ---
 
