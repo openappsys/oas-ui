@@ -2616,3 +2616,62 @@ test('gantt baselines 多基线：baseline-id 选中条几何、未命中回落�
   await expect(bl).toBeVisible()
   expect(errors).toEqual([])
 })
+
+// 回归：违约行名（.row-name.conflict）落在斑马纹行底上必须仍达 WCAG AA 4.5:1。
+// 旧缺省 --oas-color-danger（#dc2626）在 --oas-color-bg-hover（#f4f4f5）条纹底上实测 4.42 < 4.5；
+// 缺省改 --oas-color-danger-text（危险文字色，暗色另有变体）后达标。
+// 断言口径：用真实计算色（getComputedStyle）算 WCAG 相对亮度对比，不锁具体 token 值。
+/** 量测违约行名在斑马纹行底上的 WCAG 对比度（dark 时切 html.dark 后重新量测） */
+async function measureConflictContrast(page: Page, dark: boolean): Promise<{ ratio: number; fg: string; bg: string }> {
+  await page.goto('/components/gantt.html', { waitUntil: 'domcontentloaded' })
+  return page.evaluate(async (darkMode: boolean) => {
+    await customElements.whenDefined('oas-gantt')
+    if (darkMode) document.documentElement.classList.add('dark')
+    const tasks = JSON.stringify([
+      { id: 'ok', name: '按期', start: '2026-03-02', end: '2026-03-04' },
+      // 结束晚于截止日 → 违约（.conflict）；绝对行号 1 = 斑马纹行
+      { id: 'late', name: '违约', start: '2026-03-02', end: '2026-03-04', deadline: '2026-03-03' },
+    ])
+    const el = document.createElement('oas-gantt')
+    el.id = 'gantt-conflict-contrast'
+    el.setAttribute('stripe', '')
+    el.setAttribute('tasks', tasks)
+    el.setAttribute('range-start', '2026-03-01')
+    el.setAttribute('range-end', '2026-03-31')
+    el.style.width = '900px'
+    document.body.appendChild(el)
+    await new Promise<void>((done) => requestAnimationFrame(() => requestAnimationFrame(() => done())))
+    const row = el.shadowRoot?.querySelector<HTMLElement>('.row-name.conflict[data-stripe]')
+    if (!row) return { ratio: -1, fg: '', bg: '' }
+    const parse = (css: string): [number, number, number] => {
+      const m = css.match(/rgba?\(([^)]+)\)/)
+      if (!m) return [0, 0, 0]
+      const parts = m[1]!.split(',').map((v) => Number.parseFloat(v))
+      return [parts[0] ?? 0, parts[1] ?? 0, parts[2] ?? 0]
+    }
+    const lum = ([r, g, b]: [number, number, number]): number => {
+      const lin = (c: number): number => {
+        const s = c / 255
+        return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4
+      }
+      return 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b)
+    }
+    const cs = getComputedStyle(row)
+    const fg = parse(cs.color)
+    const bg = parse(cs.backgroundColor)
+    const l1 = lum(fg)
+    const l2 = lum(bg)
+    const ratio = (Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05)
+    return { ratio, fg: cs.color, bg: cs.backgroundColor }
+  }, dark)
+}
+
+test('gantt 违约行名在斑马纹底上对比度 ≥ 4.5（WCAG AA，亮色）', async ({ page }) => {
+  const result = await measureConflictContrast(page, false)
+  expect(result.ratio, `违约行名 ${result.fg} 落在条纹底 ${result.bg} 上应 ≥ 4.5:1`).toBeGreaterThanOrEqual(4.5)
+})
+
+test('gantt 违约行名在斑马纹底上对比度 ≥ 4.5（WCAG AA，暗色）', async ({ page }) => {
+  const result = await measureConflictContrast(page, true)
+  expect(result.ratio, `暗色违约行名 ${result.fg} 落在条纹底 ${result.bg} 上应 ≥ 4.5:1`).toBeGreaterThanOrEqual(4.5)
+})

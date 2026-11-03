@@ -46,6 +46,8 @@ class FixtureFallbackLabelInput extends OASFormElement {
   }
 
   private inner: HTMLInputElement | null = null
+  /** 组件 update 计数（回归用：外部 label 解除后回退名恢复不得依赖 update） */
+  updates = 0
 
   protected override render(): void {
     this.shadow.innerHTML = '<input />'
@@ -54,6 +56,7 @@ class FixtureFallbackLabelInput extends OASFormElement {
 
   protected override update(): void {
     if (!this.inner) return
+    this.updates++
     this.setFallbackInnerLabel('输入框')
   }
 
@@ -65,6 +68,33 @@ class FixtureFallbackLabelInput extends OASFormElement {
 }
 
 customElements.define('oas-form-fallback-fixture', FixtureFallbackLabelInput)
+
+/** 动态回退名 fixture：回退名取 fallback 属性（可变为空），验「回退名清空后旧名不复活」 */
+class FixtureDynamicFallbackInput extends OASFormElement {
+  static override get observedAttributes(): string[] {
+    return ['fallback']
+  }
+
+  private inner: HTMLInputElement | null = null
+
+  protected override render(): void {
+    this.shadow.innerHTML = '<input />'
+    this.inner = this.shadow.querySelector('input')
+  }
+
+  protected override update(): void {
+    if (!this.inner) return
+    this.setFallbackInnerLabel(this.getAttribute('fallback') ?? '')
+  }
+
+  protected getFormValue(): string | null {
+    return null
+  }
+
+  protected resetFormValue(): void {}
+}
+
+customElements.define('oas-form-dynamic-fallback-fixture', FixtureDynamicFallbackInput)
 
 function mount(attrs: Record<string, string> = {}): FixtureInput {
   const el = document.createElement('oas-form-fixture') as FixtureInput
@@ -313,6 +343,48 @@ describe('OASFormElement 外部 label 动态刷新（共享 observer，覆盖文
     await settle()
     el.setAttribute('value', 'y')
     expect(inner.getAttribute('aria-label'), '外部名解除后写回内建回退名').toBe('输入框')
+  })
+
+  it('外部 label 移除后立即恢复回退名（不依赖下一次组件 update，无观察期空名）', async () => {
+    const el = document.createElement('oas-form-fallback-fixture') as HTMLElement & {
+      shadowRoot: ShadowRoot
+      updates: number
+    }
+    el.id = 'fallback-gap-target'
+    const label = document.createElement('label')
+    label.htmlFor = 'fallback-gap-target'
+    label.textContent = '邮箱'
+    document.body.append(label, el)
+    await settle()
+    const inner = el.shadowRoot.querySelector('input')!
+    expect(inner.getAttribute('aria-label'), '外部 label 优先').toBe('邮箱')
+
+    const before = el.updates
+    label.remove()
+    await settle()
+    expect(el.updates, '解除外部 label 不应触发组件 update（只走 label 重算）').toBe(before)
+    expect(inner.hasAttribute('data-fa-label'), '转发标记已清').toBe(false)
+    expect(inner.getAttribute('aria-label'), '观察器路径直接写回组件回退名').toBe('输入框')
+  })
+
+  it('回退名被清空后再移出外部 label：旧回退名不得复活', async () => {
+    const el = document.createElement('oas-form-dynamic-fallback-fixture') as HTMLElement & { shadowRoot: ShadowRoot }
+    el.id = 'fallback-empty-target'
+    el.setAttribute('fallback', '旧回退名')
+    const label = document.createElement('label')
+    label.htmlFor = 'fallback-empty-target'
+    label.textContent = '外部名'
+    document.body.append(label, el)
+    await settle()
+    const inner = el.shadowRoot.querySelector('input')!
+    expect(inner.getAttribute('aria-label')).toBe('外部名')
+
+    el.setAttribute('fallback', '') // 组件 update 直调路径：回退名变空
+    expect(inner.getAttribute('aria-label'), '外部 label 仍优先').toBe('外部名')
+
+    label.remove()
+    await settle()
+    expect(inner.hasAttribute('aria-label'), '回退名已清空 → 观察器不得恢复旧回退名').toBe(false)
   })
 
   it('label for 改指向：旧控件清理自己写入的名字，新控件立即接管', async () => {

@@ -50,6 +50,15 @@ export abstract class OASFormElement extends OASElement {
   /** 本控件当前登记在哪个树作用域的观察器（断开时精确注销，防重连/换根残留） */
   private labelWatchRoot: LabelTreeRoot | null = null
 
+  /**
+   * 最近一次由组件提供的内建回退名（`setFallbackInnerLabel` 的入参）。
+   *
+   * 外部 label 转发期间组件 update() 仍会调用 `setFallbackInnerLabel`（被 data-fa-label 守卫挡下），
+   * 这里同步记住入参——外部 label 解除时观察器可直接写回该文本，无需等下一次组件 update，
+   * 消除「移除外部 label 到下次 update 之间读屏名称为空」的观察期。
+   */
+  private fallbackLabelText = ''
+
   constructor() {
     super()
     try {
@@ -219,6 +228,9 @@ export abstract class OASFormElement extends OASElement {
     if (!inner.hasAttribute('data-fa-label')) return
     inner.removeAttribute('aria-label')
     inner.removeAttribute('data-fa-label')
+    // 外部 label 刚解除：立即写回组件内建回退名（若组件提供过），不等下一次 update——
+    // 否则这段观察期内内层控件无名（读屏/axe 判为无标签）。只重算 label 路径，不触发全量 update。
+    if (this.fallbackLabelText) inner.setAttribute('aria-label', this.fallbackLabelText)
   }
 
   /**
@@ -232,7 +244,10 @@ export abstract class OASFormElement extends OASElement {
    */
   protected setFallbackInnerLabel(text: string): void {
     const inner = this.innerControl
-    if (!inner || !text) return
+    if (!inner) return
+    // 记住回退名（含空串）：外部 label 解除时观察器按此写回/不写，避免旧回退名在回退名已清空后复活
+    this.fallbackLabelText = text
+    if (!text) return
     if (inner.hasAttribute('data-fa-label')) return
     if (inner.getAttribute('aria-label') === text) return
     inner.setAttribute('aria-label', text)

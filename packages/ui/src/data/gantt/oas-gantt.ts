@@ -162,7 +162,7 @@ const STYLE = `
 }
 /* 违约行名（总时差为负 = 已违反后继约束）：虚线强调色 */
 .row-name.conflict {
-  color: var(--oas-gantt-conflict-color, var(--oas-color-danger));
+  color: var(--oas-gantt-conflict-color, var(--oas-color-danger-text));
   text-decoration: underline dashed;
 }
 /* 行重排手柄：任务名可选中后，拖拽改由右侧手柄承载；
