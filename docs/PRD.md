@@ -19,6 +19,11 @@
 6. **T12 resource 技能**：`skills` 字段 + `show-skills` chips（显式 false 口径，真省略号）。
 7. **T15 组合配方**：recipes 页 Action Sheet / 终端 / JSON 对照三配方（不加组件）。
 8. **T4 command 多级导航**：`children` 声明式 + `levelLoader` 动态子级，面包屑/Esc 逐级/每级过滤，`oas-navigate` 事件。
+9. **T10 资源负荷视图**：`show-resource-load` 面板（轴对齐桶条、>100% danger、aria 摘要 + 可聚焦滚动区、max-height token）+ `computeResourceLoad` L3 helper；gantt 链再定档 80 KB。review 修复：滚动路径 forced reflow（读 82→3）+ 高度上限。
+10. **T11 values-change 补齐**：upload `oas-change` detail 加 `value` 键（与 form 读取器同串），NO_WRITEBACK 防回环。
+11. **T12 axe 扩 guide**：26 页全扫，9 组违规全修（暗色代码主题/5 段对比度/checkbox aria-label 镜像组件级修复/终端配方），baselineKey 目录段消歧。
+12. **T13 form 链审计**：无安全冗余可清；「余量 4 B」系过时数据（实际 80.7%）；core 子路径导出列为架构级候选项。
+13. **T14 WSL 容器模式**：`--container`（wslc）镜像按 .nvmrc 推导、证据协议兼容；发行版模式 Ubuntu 升 Node 24.22.2（=.nvmrc）+ pnpm 12.5.1；首次真跑实证 /mnt/d 全量 Wall-clock 伪影形态。
 
 ### 验收标准
 

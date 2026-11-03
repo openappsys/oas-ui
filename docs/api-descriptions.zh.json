@@ -645,7 +645,8 @@
       "required": "必填标记（驱动原生校验链 valueMissing；不透传内层 input）",
       "true-value": "勾选映射值：oas-change 的 detail.value 与 value getter 返回该值，FormData 提交该值（checkbox-group 内不生效）",
       "false-value": "取消勾选映射值（detail.value / value getter 通道；照原生「关不提交」不进 FormData；checkbox-group 内不生效）",
-      "tabindex": "透传内层原生 checkbox（`-1` 移出 Tab 序）"
+      "tabindex": "透传内层原生 checkbox（`-1` 移出 Tab 序）",
+      "aria-label": "可访问名镜像：宿主直设时镜像给内层原生 checkbox（显式 aria 优先于 label 包裹的标签文字；空 slot 纯勾选格场景必备，移除后同步回落）"
     },
     "events": {
       "oas-change": "勾选变化，`detail: { checked, value }`",
@@ -4067,7 +4068,7 @@
       "storage-key": "文件列表元数据持久化键（opt-in）：写入 localStorage（`{ name, size, type, status, url? }`，**不含文件内容**）；刷新后回显——done 恢复为已完成（不可重传、hover 提示已持久化），error/待处理恢复为待处理并派发一次 oas-change；改键即时重载、移除即停止写入；坏 JSON/版本不符静默忽略"
     },
     "events": {
-      "oas-change": "文件列表变化，`detail: { files }`",
+      "oas-change": "文件列表变化，`detail: { files, value }`（`files` 为条目快照；`value` 为可提交文件元数据 JSON `[{ name, size, type }]`，空列表为 `''`，供 oas-form 派生 oas-values-change）",
       "oas-exceed": "【兼容别名】等价 oas-exceed-limit；后续版本移除",
       "oas-preview": "打开预览浮层，`detail: { file, url }`",
       "oas-remove": "移除文件，`detail: { file, index }`",
@@ -4473,7 +4474,8 @@
       "status-date": "状态基准日（'YYYY-MM-DD'，hour 档可带时刻）：show-status-line 的取数基准；非法/缺省回落当天（SSR 下为服务器当天，需快照确定性的宿主请显式传值）",
       "baseline-id": "多基线选择（配合 GanttTask.baselines）：指定渲染/差异取哪条基线；缺省取 baselines[0]；未命中回落第一条并 devWarn 一次。单 baseline 字段等价 [{ id: 'default', ... }]（清洗层归一）",
       "hover": "行 hover 底色开关（默认开）：鼠标移入行名或任务条时整行点亮（行名 + 时间轴同底色），颜色走 `--oas-gantt-row-hover-bg`（缺省 `--oas-color-bg-hover`，与斑马纹独立）；`\"false\"` 关闭",
-      "pool": "资源池模式（布尔，默认关）：开启后任务 resources 引用共享资源池（@oas-ui/ui/data/resource/pool 的 getSharedResourcePool()）——tooltip 悬停条追加池内资源名称与费率（costRate，池外 id 忽略）；并对同资源任务做跨任务超配检测：时间区间交叠（半开区间相切不算；里程碑按点处理、summary 不参与）的任务条与左侧行名加 .conflict 标记，冲突对经 oas-resource-conflict 事件派发。池登记变化不自动通知组件——宿主改池后须触发重算（如重写 tasks）；windowed 切片上跳过检测并 devWarn；不做资源负荷直方图/泳道视图与自动排程避让"
+      "pool": "资源池模式（布尔，默认关）：开启后任务 resources 引用共享资源池（@oas-ui/ui/data/resource/pool 的 getSharedResourcePool()）——tooltip 悬停条追加池内资源名称与费率（costRate，池外 id 忽略）；并对同资源任务做跨任务超配检测：时间区间交叠（半开区间相切不算；里程碑按点处理、summary 不参与）的任务条与左侧行名加 .conflict 标记，冲突对经 oas-resource-conflict 事件派发。池登记变化不自动通知组件——宿主改池后须触发重算（如重写 tasks）；windowed 切片上跳过检测并 devWarn；负荷可视化见 show-resource-load（负荷% >100% 与本检测同语义）；不做泳道视图与自动排程避让",
+      "show-resource-load": "资源负荷面板（布尔，默认关）：图表下方渲染按时间轴对齐的负荷桶条（每资源一行，行高 token --oas-gantt-load-row-height；行名列宽与左侧列表同 token --oas-gantt-list-width）。负荷口径：桶内覆盖日数逐任务累计（任务∩桶求交，日精度含端；里程碑按点计 0 天、summary 不参与），负荷% = 覆盖日数/桶天数，>100%（同资源任务交叠超配）走 danger 通道 --oas-gantt-load-over-bg，≤100% 走 primary 族 --oas-gantt-load-bg（暗色变体随 token）。粒度随 scale 映射（hour/day→日桶、week→周桶（锚定周起始）、month/quarter/year→月桶），与图表时间轴同步缩放/平移（复用 update 时轴参数不重算；滚动平移经 syncHeaderOffset 同款 rect 差公式，RTL 同式）。负荷基于全量数据签名缓存（数据/轴/池变化重算，虚拟行窗口不影响）；空数据/无资源引用走 i18n 空态。ARIA：面板 role=\"img\" + aria-label 摘要（资源数 · 峰值最高的资源与百分比），不进 Tab 序。pool 开启时行名取池名称、关时取 id。windowed 切片上跳过渲染并 devWarn（全量统计口径）。纯函数实现见 shared/resource-load.ts（data/resource/load helper 入口共用）"
     },
     "events": {
       "oas-reschedule": "依赖联动排程改动了后继任务时派发（auto-schedule 开启），detail: { ids }（被联动改动的任务 id）",
@@ -4510,7 +4512,11 @@
       "--oas-gantt-conflict-color": "违约（负总时差）高亮色（默认 --oas-color-danger）",
       "--oas-gantt-deadline-color": "截止日标记颜色（默认 --oas-color-danger）",
       "--oas-gantt-effort-width": "工时列宽（show-effort，默认 56px；表头与行内单元格共用）",
-      "--oas-gantt-status-line-color": "状态线/计划进度刻度颜色（show-status-line，默认 --oas-color-warning）"
+      "--oas-gantt-status-line-color": "状态线/计划进度刻度颜色（show-status-line，默认 --oas-color-warning）",
+      "--oas-gantt-load-row-height": "负荷面板行高（show-resource-load，默认 24px）",
+      "--oas-gantt-load-max-height": "负荷面板行区最大高度（show-resource-load，超出纵向滚动；默认 240px，数据不截断）",
+      "--oas-gantt-load-bg": "负荷桶条底色（≤100%，缺省 primary 45% 混底色；暗色变体随 token）",
+      "--oas-gantt-load-over-bg": "负荷桶条超配色（>100%，缺省 danger；暗色变体随 token）"
     }
   },
   "oas-picker": {

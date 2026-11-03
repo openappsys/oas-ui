@@ -19,9 +19,16 @@
 
 - **context-menu 声明式多选勾选项 demo**：补齐 `kind="checkbox"` 场景（3 个通知偏好项，勾选态切换 + 已选项徽标反馈，勾选不收起菜单）；`role="menuitemcheckbox"` / `aria-checked` / 键盘 Space 切换均有单测与 e2e 三引擎断言。
 - **组合配方（guide/recipes，不新增组件）**：Action Sheet（drawer bottom + no-mask + list 动作项）、终端面板（log 黑底 token 覆写 + 命令行回显）、JSON 格式化对照（segmented 切视图 + json-viewer/diff-viewer 并排）。
+- **`oas-gantt` 资源负荷视图（`show-resource-load`，opt-in）**：图表下方负荷面板——每资源一行、桶条与时间轴逐列对齐（复用轴参数与 RTL 镜像，粒度随 scale：hour/day→日桶、week→周桶、month+→月桶）；负荷 = 桶内覆盖日数逐任务累计（与 pool 超配检测同口径），>100% 走 danger 通道、≤100% primary 族（双 token 开口）；面板 `role="img"` aria 摘要 + 滚动区可聚焦（WCAG 2.1.1），`--oas-gantt-load-max-height`（缺省 240px）上限防撑破宿主布局；新 L3 helper `@oas-ui/ui/data/resource/load`（`computeResourceLoad` 纯函数，19 单测，独立预算档）；签名缓存随数据/轴/池版本重算，windowed 跳过。gantt 链再定档 75→80 KB（增量全归因：pool 2.2 + 负荷 2.9）。
+- **`oas-upload` 表单 values-change 补齐**：`oas-change` detail 增加 `value` 键（= 与 form 读取器逐字同串的可提交元数据 JSON，`files` 键不变），upload 字段变化现在正常触发 `oas-values-change`；form 侧 `NO_WRITEBACK_CONTROLS` 防回环（不回写宿主、不反噬文件列表）。upload.md「表单集成注意」第一条转已支持。
+- **axe 无障碍审计扩到 guide 页（zh/en 26 页）**：a11y.spec 扫描面从组件页扩到指南页 `.vp-doc`，新违规 9 组全修——暗色代码主题换 github-dark-high-contrast + 5 段 token 对比度覆盖（插值/角标/表头/danger/tip，全部 oklab 复核 ≥60）；**`oas-checkbox` 组件级修复：宿主 `aria-label` 镜像进 shadow input**（对齐 oas-switch 惯例，四通道命名优先级矩阵不破）；recipes 终端配方黑底语义行对比度补齐；基线 baselineKey 加目录段消歧（zh/en 同名页不再互覆盖）；a11y-contrast-baseline 重生成（207 条，totals 自校验一致）。
+- **WSL rehearse 容器模式（`--container`）**：WSL 自带 OCI 容器 CLI（wslc）一键起一次性 Linux 环境跑发布门禁——镜像默认按 `.nvmrc` 推导（`node:24-bookworm` = CI 同款 Node），pnpm 版本取 `packageManager` 字段，挂载 rw 同写证据文件（verify-rehearsal 协议兼容，fail closed）；发行版模式零变化。lib 层 35 单测。
 
 ### 修复
 
+- **负荷面板滚动性能**：`syncHeaderOffset` 负荷段读写交错导致 O(资源行数) forced reflow/滚动事件——改循环外一次读算 dx、循环内纯写（spy 实测每次 sync 读次数 82→3，与行数无关）。
+- **负荷面板高度上限**：资源行多无上限撑破宿主布局——`.load-body` max-height token（240px 缺省）+ 纵向滚动 + 数据不截断。
+- **暗色全站代码块对比度**：guide 页 axe 全零 below-60（组件页基线同款口径）；`--vp-c-danger-1` 双主题分段（首轮单写 `:root` 在暗色泄漏成 12.5 分的教训已注释固化）。
 - **WebKit 全量回归暴露的跨引擎缺陷（5 类，全部含单测 + 三引擎 e2e 回归）**：① 外点关闭触屏失效——WebKit 对非交互目标上的 tap 只派发 pointer 事件不合成 `click`，统一外点关闭通道（`shared/outside-dismiss.ts`）补 coarse `pointerup`（`pointerType=mouse` 不接管），`oas-popover` / `oas-dropdown` / `oas-hover-card` / `oas-popconfirm` 同根修复；② 表单外部 `<label for>` 名称被内建回退名覆盖（core `setFallbackInnerLabel` 入口检查 `data-fa-label` 让位，`oas-input` / `oas-textarea` / `oas-mentions` / `oas-input-number` / `oas-auto-complete` 5 处调用点同改）；③ `oas-slider` 视觉反转形态（`reverse` XOR RTL）下普通方向键由组件接管，统一「箭头视觉方向 = 值方向」（此前 WebKit 原生 range 不镜像 RTL 方向键，跨引擎行为不一致）；④ `oas-sidebar` 抽屉 Esc 关闭后焦点丢回 body 时回落到触发钮（此前焦点丢失）；⑤ `oas-marquee` 运行时切轴相位丢失（WebKit 样式落定即取消旧动画）——捕获相位前用内联 `animation-name` 钉住旧关键帧名，切轴不再跳回循环起点。
 - **i18n 8 语言翻译补全与校正**（ja / ko / de / fr / es / pt / ru / ar）：jsonViewer（15 key）/ diffViewer（12 key）/ gantt.effort / gantt.effortValue / resource.cost 共 30 key 的英文残留全部补译（新组件落地时漏译，切语言仍见英文）；ja / ko / de / fr / ru 单独错译修正 11 条（日语「浮時」中文直搬、韩语导出误译为「发送」（应为导出专用表述）、德语 sidebar 术语不一致、法语单位缩写、俄语悬空形容词等）。新增 placeholder token 守卫测试（各语言 `{token}` 名序列与 zh-CN 完全一致，含重复计数）。
 - **e2e 断言 OS 绝对量 lint 上线（基线 82）**：36 条 scroll/rect/计数绝对量断言改写为按构造即 OS 无关的语义不变量（DOM 现算期望值 / 写入值回读 / 视口覆盖关系 / 日历推导），0 条例外登记；`qa:audit` 新增 `os-absolute-assertions` 维度（scroll 偏移 / rect 绝对坐标 / 计数常数），计数维度覆盖命名 count、`.length`、`.count()` 三种形态——实测存量 **82** = 数据驱动计数 78 条（demo 数据条数、固定配置项数、文档页数，与字体度量/视口无关）+ px 固定布局窗口计数 4 条，以 82 为增量上限（CI 强制，阈值 = 实测存量零余量）。

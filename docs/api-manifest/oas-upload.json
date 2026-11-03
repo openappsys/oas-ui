@@ -194,10 +194,6 @@
       "detail": "{ files: rejected, max, total: next.length } | { files: sizeRejected, type: 'size', maxSize, total: next.length }"
     },
     {
-      "name": "oas-change",
-      "detail": "{ files: this.files }"
-    },
-    {
       "name": "oas-upload",
       "detail": "{ file, percent: cur.percent, status: 'uploading' } | { file, percent: 100, status: 'done' } | { file: f, percent: st.percent, status: st.percent >= 100 ? 'done' : 'uploading', }"
     },
@@ -224,6 +220,10 @@
     {
       "name": "oas-preview",
       "detail": "{ file: entry, url }"
+    },
+    {
+      "name": "oas-change",
+      "detail": "{ files: this.files, value: this.formValueJSON() }"
     }
   ],
   "slots": [

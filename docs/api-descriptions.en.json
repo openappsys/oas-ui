@@ -663,7 +663,8 @@
       "required": "Required marker (drives the native valueMissing validation chain; not passed through to the inner input)",
       "true-value": "Mapped value when checked: drives detail.value, the value getter and FormData submission (not effective inside a checkbox-group)",
       "false-value": "Mapped value when unchecked (detail.value / value getter; not added to FormData per native unchecked semantics; not effective inside a checkbox-group)",
-      "tabindex": "Forwarded to the inner native checkbox (`-1` removes it from the tab order)"
+      "tabindex": "Forwarded to the inner native checkbox (`-1` removes it from the tab order)",
+      "aria-label": "Accessible name mirror: when set on the host it is mirrored to the inner native checkbox (explicit aria wins over the label-wrapped text; essential for bare check cells with no slot text, removed state falls back cleanly)"
     },
     "events": {
       "oas-change": "Checked change, `detail: { checked, value }`",
@@ -4259,7 +4260,7 @@
       "storage-key": "Persistence key for file list metadata (opt-in): stores name/size/type/status/url in localStorage (**no file content**); restores after reload — done entries come back completed (no re-upload, persisted hover hint), error/pending come back as pending with one `oas-change`; changing the key reloads immediately, removing it stops writing; broken JSON or a version mismatch is ignored"
     },
     "events": {
-      "oas-change": "File list change, `detail: { files }`",
+      "oas-change": "File list change, `detail: { files, value }` (`files` is the entry snapshot; `value` is the submittable file metadata JSON `[{ name, size, type }]`, `''` for an empty list, from which oas-form derives oas-values-change)",
       "oas-exceed": "[Compat alias] Same as oas-exceed-limit; will be removed later",
       "oas-preview": "Preview overlay opened, `detail: { file, url }`",
       "oas-remove": "File removed, `detail: { file, index }`",
@@ -4698,7 +4699,8 @@
       "status-date": "Status date ('YYYY-MM-DD', hour scale may carry a time): the reference date for show-status-line; invalid/missing falls back to today (server-side today under SSR — pass it explicitly when snapshot determinism matters)",
       "baseline-id": "Multi-baseline selector (with GanttTask.baselines): picks which baseline is rendered/measured; defaults to baselines[0]; an unknown id falls back to the first baseline and devWarns once. The single baseline field is equivalent to [{ id: 'default', ... }] (normalized in the sanitize layer)",
       "hover": "Row hover background switch (on by default): hovering a row name or task bar lights up the whole row (name + timeline share the same background). Color via `--oas-gantt-row-hover-bg` (defaults to `--oas-color-bg-hover`, independent of the zebra stripe); `\"false\"` disables",
-      "pool": "Resource pool mode (boolean, default off): task resources reference the shared resource pool (getSharedResourcePool() from @oas-ui/ui/data/resource/pool) — hovering a bar shows pool resource names and rates (costRate; unregistered ids ignored); plus cross-task over-allocation detection for the same resource: tasks whose time ranges overlap (half-open, touching edges excluded; milestones treated as points, summaries excluded) get .conflict on bar and row name, conflict pairs emitted via oas-resource-conflict. Pool changes do not notify the component automatically — retrigger a recalc (e.g. re-assign tasks) after registering; detection is skipped in windowed mode with a devWarn; no resource histogram/swimlane and no auto-schedule avoidance"
+      "pool": "Resource pool mode (boolean, default off): task resources reference the shared resource pool (getSharedResourcePool() from @oas-ui/ui/data/resource/pool) — hovering a bar shows pool resource names and rates (costRate; unregistered ids ignored); plus cross-task over-allocation detection for the same resource: tasks whose time ranges overlap (half-open, touching edges excluded; milestones treated as points, summaries excluded) get .conflict on bar and row name, conflict pairs emitted via oas-resource-conflict. Pool changes do not notify the component automatically — retrigger a recalc (e.g. re-assign tasks) after registering; detection is skipped in windowed mode with a devWarn; load visualization lives in show-resource-load (load% >100% shares this semantics); no swimlane view and no auto-schedule avoidance",
+      "show-resource-load": "Resource load panel (boolean, default off): renders time-axis-aligned load buckets below the chart (one row per resource, row height token --oas-gantt-load-row-height; name column shares the side list token --oas-gantt-list-width). Load semantics: covered days accumulate per task (task∩bucket intersection, day-precision inclusive ends; milestones count 0 days as points, summaries excluded); load% = covered days / bucket days, >100% (same-resource overlapping over-allocation) takes the danger channel --oas-gantt-load-over-bg, ≤100% the primary family --oas-gantt-load-bg (dark variants via tokens). Granularity maps from scale (hour/day→day buckets, week→week buckets anchored on week start, month/quarter/year→month buckets), zooms/pans in sync with the chart timeline (reuses update-time axis params without recomputation; pan follows syncHeaderOffset rect-diff, same formula in RTL). Load is computed once per signature over full data (tasks/axis/pool changes recompute; virtual row window does not affect it); empty data / no resource refs fall back to the i18n empty state. ARIA: panel role=\"img\" + aria-label summary (resource count · peak resource and percentage), not in tab order. With pool on, row names come from the pool; otherwise ids. Skipped in windowed mode with a devWarn (full-data semantics). Pure implementation in shared/resource-load.ts (shared with the data/resource/load helper entry)"
     },
     "events": {
       "oas-reschedule": "Dispatched when auto-scheduling moved successor tasks (auto-schedule on), detail: { ids } (ids of the rescheduled tasks)",
@@ -4735,7 +4737,11 @@
       "--oas-gantt-conflict-color": "Conflict (negative-float) highlight color (default --oas-color-danger)",
       "--oas-gantt-deadline-color": "Deadline marker color (default --oas-color-danger)",
       "--oas-gantt-effort-width": "Effort column width (show-effort, default 56px; shared by the header and row cells)",
-      "--oas-gantt-status-line-color": "Status line / planned-progress tick color (show-status-line, default --oas-color-warning)"
+      "--oas-gantt-status-line-color": "Status line / planned-progress tick color (show-status-line, default --oas-color-warning)",
+      "--oas-gantt-load-row-height": "Load panel row height (show-resource-load, default 24px)",
+      "--oas-gantt-load-max-height": "Load panel body max height (show-resource-load, scrolls vertically beyond it; default 240px, data is not truncated)",
+      "--oas-gantt-load-bg": "Load bucket bar color (≤100%, default primary 45% mixed over bg; dark variants via tokens)",
+      "--oas-gantt-load-over-bg": "Load bucket bar over-allocation color (>100%, default danger; dark variants via tokens)"
     },
     "methods": {
       "updateTask": "Incrementally update a single task by id (shallow-merges the patch, then runs sanitize; returns false when the id is missing or the patch is invalid)",

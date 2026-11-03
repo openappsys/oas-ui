@@ -195,6 +195,12 @@
       "observed": true
     },
     {
+      "name": "show-resource-load",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
       "name": "windowed",
       "type": "boolean",
       "observed": true
@@ -517,6 +523,22 @@
     {
       "name": "--oas-gantt-status-line-color",
       "default": "var(--oas-color-warning)"
+    },
+    {
+      "name": "--oas-gantt-load-max-height",
+      "default": "240px"
+    },
+    {
+      "name": "--oas-gantt-load-row-height",
+      "default": "24px"
+    },
+    {
+      "name": "--oas-gantt-load-bg",
+      "default": "color-mix(in srgb, var(--oas-color-primary) 45%, var(--oas-color-bg))"
+    },
+    {
+      "name": "--oas-gantt-load-over-bg",
+      "default": "var(--oas-color-danger)"
     }
   ],
   "unresolved": []

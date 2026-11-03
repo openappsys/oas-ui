@@ -13,6 +13,11 @@
 | **T11 table 三 L3** | pivot/value-format/query 按需子路径（61 单测 + 3 预算档）；resourcePool 转 capability 口径 | ✅ 已完成（未发布） |
 | **T15 组合配方** | recipes：Action Sheet / 终端 / JSON 对照（零组件改动） | ✅ 已完成（未发布） |
 | **T4 command 多级导航** | `children` + `levelLoader`、面包屑、Esc/→/← 逐级、`oas-navigate` | ✅ 已完成（未发布） |
+| **T10 负荷视图** | `show-resource-load` 面板 + `computeResourceLoad` L3（19 单测 + 预算档）；review 修 reflow/高度上限 | ✅ 已完成（未发布） |
+| **T11 values-change** | upload detail 加 value 键 + NO_WRITEBACK 防回环（9 单测含无回环证据） | ✅ 已完成（未发布） |
+| **T12 axe 扩 guide** | 26 页全扫 9 组修复（含 checkbox 组件级 aria-label 镜像）；baselineKey 消歧 | ✅ 已完成（未发布） |
+| **T13 form 链审计** | 无安全冗余；core 子路径导出=架构级候选；form 行文案待版本刷新 | ✅ 已完成（未发布） |
+| **T14 WSL 容器模式** | `--container` wslc 模式（.nvmrc 推导镜像）+ Ubuntu Node 24.22.2/pnpm 12.5.1 就位 | ✅ 已完成（未发布） |
 
 ## 未发布（决策批：再捞待决项按原则清零）
 
