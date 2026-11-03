@@ -423,11 +423,12 @@ test('button loading spinner：旋转动画期间中心位置稳定（不斜移�
       animation: getComputedStyle(spinner).animationName,
     }
   })
-  expect(r, '页面应存在内置 spinner 的 loading 按钮').not.toBeNull()
-  expect(r!.animation, '内置 spinner 应仍在旋转').not.toBe('none')
-  expect(r!.translate, '居中用独立 translate 属性，不参与旋转动画').not.toBe('none')
-  const xs = r!.samples.map((s) => s.cx)
-  const ys = r!.samples.map((s) => s.cy)
+  if (!r) throw new Error('页面应存在内置 spinner 的 loading 按钮（evaluate 未返回采样）')
+  expect(r.samples.length, '应采集 8 个旋转样本（采样循环恒为 8 次）').toBe(8)
+  expect(r.animation, '内置 spinner 应仍在旋转').not.toBe('none')
+  expect(r.translate, '居中用独立 translate 属性，不参与旋转动画').not.toBe('none')
+  const xs = r.samples.map((s) => s.cx)
+  const ys = r.samples.map((s) => s.cy)
   expect(Math.max(...xs) - Math.min(...xs), 'spinner 水平中心漂移应 < 1px').toBeLessThan(1)
   expect(Math.max(...ys) - Math.min(...ys), 'spinner 垂直中心漂移应 < 1px').toBeLessThan(1)
 })

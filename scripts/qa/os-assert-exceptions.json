@@ -1,4 +1,11 @@
 {
   "$comment": "OS 派生绝对量断言的登记例外。每条必须写 reason（为什么这条断言与 OS / 字体度量无关）。匹配顺序：有 snippet 时按 file+rule+片段包含匹配（行号漂移安全），否则按 file+rule+line 精确匹配。例外不再命中会打印「陈旧例外」提示，请及时删除。",
-  "exceptions": []
+  "exceptions": [
+    {
+      "file": "packages/ui/qa-regression/button.spec.ts",
+      "rule": "count-literal",
+      "snippet": "heights.length",
+      "reason": "button 文档页声明式 demo 的按钮总数（99）——数据驱动计数，与字体度量/视口布局无关；coarse 触屏仿真的 44px 高度下界由后续逐条断言承担，本计数只证明「页面按钮全部渲染（无 0 高被 filter）」。"
+    }
+  ]
 }
