@@ -7,12 +7,16 @@
  * - `kind: 'capability'`（注册型）：import 即把能力写入组件能力注册表，组件属性/HTML
  *   即可触发（含迟到自愈）。若缺席 L1/CDN，「一把梭」消费者声明对应属性时能力静默失效——
  *   **必须含于 L1**。当前实例：`table/edit`、`tabs/manager`、`modal/prompt`、
- *   `popover/contextmenu`、`color-picker/designer`。
+ *   `popover/contextmenu`、`color-picker/designer`，以及 `data/resource/pool`
+ *   （无能力注册动作，但 gantt 的 `pool` 属性静态 import 它——属运行时依赖，
+ *   缺席族包即 gantt 运行时断链，故按 capability 口径要求含于族包）。
  * - `kind: 'helper'`（纯函数/宿主侧 helper 型）：**激活唯一入口是导出函数，必须由宿主
  *   代码显式调用才能生效；可含 import 期惰性注册，但没有 HTML/属性触发面**（CDN 无 JS
  *   的消费方式调不到这些函数），进 L1/CDN union 即死重——**不得进入 L1/CDN**，按需显式
  *   import。当前实例：table 家族 Pro 能力 `advanced / format / view / range / history /
- *   detail`，以及 layout 家族的 `scroll-area/infinite`（无限滚动 headless 控制器）。
+ *   detail / pivot / value-format / query`，layout 家族的 `scroll-area/infinite`
+ *   （无限滚动 headless 控制器），以及 gantt/resource 数据加工子路径
+ *   `export / evm / alap / recurring / cost`。
  *   注：`format` / `range` 内部虽调用 `registerTableCapability`，宿主不调用
  *   导出函数则注册表项无效果，故按 helper 归类。
  *
@@ -40,6 +44,11 @@ export const L3_REGISTRY = [
   { id: 'tableRange', entry: 'data/table/range', family: 'data', kind: 'helper', measured: true },
   { id: 'tableHistory', entry: 'data/table/history', family: 'data', kind: 'helper', measured: true },
   { id: 'tableDetail', entry: 'data/table/detail', family: 'data', kind: 'helper', measured: true },
+  // table 数据加工 helper 型 L3（细分职责拆包）：透视 / 值格式化 / 查询。
+  // 激活唯一入口是显式 import 纯函数，无 HTML/属性触发面；进 L1/data 族包即死重。
+  { id: 'tablePivot', entry: 'data/table/pivot', family: 'data', kind: 'helper', measured: true },
+  { id: 'tableValueFormat', entry: 'data/table/value-format', family: 'data', kind: 'helper', measured: true },
+  { id: 'tableQuery', entry: 'data/table/query', family: 'data', kind: 'helper', measured: true },
   // —— 非 table 注册型 L3（只做 L1/族包包含断言；不立独立预算档） ——
   { id: 'tabsManager', entry: 'navigation/tabs/manager', family: 'navigation', kind: 'capability', measured: false },
   { id: 'modalPrompt', entry: 'feedback/modal/prompt', family: 'feedback', kind: 'capability', measured: false },
@@ -75,7 +84,10 @@ export const L3_REGISTRY = [
   { id: 'ganttAlap', entry: 'data/gantt/alap', family: 'data', kind: 'helper', measured: true },
   { id: 'ganttRecurring', entry: 'data/gantt/recurring', family: 'data', kind: 'helper', measured: true },
   { id: 'resourceCost', entry: 'data/resource/cost', family: 'data', kind: 'helper', measured: true },
-  { id: 'resourcePool', entry: 'data/resource/pool', family: 'data', kind: 'helper', measured: true },
+  // 2026-11-03 T10 批起 gantt `pool` 属性静态依赖本模块（运行时随 gantt 进链/进族包，缺失即 gantt 运行时 import 断链）——
+  // 不再符合 helper 型「无 HTML/属性触发面、进 L1/CDN 即死重」的判定前提，改归 capability 口径（族包必填）。
+  // 无能力注册动作，纯数据模块；独立按需链计量仍保留（宿主仍可显式按需 import）。
+  { id: 'resourcePool', entry: 'data/resource/pool', family: 'data', kind: 'capability', measured: true },
 ]
 
 const normalize = (file) => file.replaceAll('\\', '/')

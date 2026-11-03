@@ -526,6 +526,9 @@ Listen to `oas-sort-change`, then set `loading` and re-request remote paginated/
 import { onBeforeUnmount, onMounted } from 'vue'
 import { filterRows, formulaColumn, pivotTable } from '@oas-ui/ui/data/table/advanced'
 import { setConditionalFormat } from '@oas-ui/ui/data/table/format'
+import { pivotMatrix } from '@oas-ui/ui/data/table/pivot'
+import { createFormatter } from '@oas-ui/ui/data/table/value-format'
+import { applyQuery, createQueryState } from '@oas-ui/ui/data/table/query'
 import { applyViewState, captureViewState, loadViewState, saveViewState } from '@oas-ui/ui/data/table/view'
 import { addRangeSelection, applyRangePaste, copyRange, cutRange, enableRangeSelection, fillRange, setRangeSelection } from '@oas-ui/ui/data/table/range'
 import { disableHistory, enableHistory, redo, undo } from '@oas-ui/ui/data/table/history'
@@ -1015,6 +1018,142 @@ onMounted(() => {
     if (proTable) disableHistory(proTable)
   })
 })
+
+// —— Pro helper subpaths: pivot matrix / value formatting / query state ——
+const PIVOT_SALES = [
+  { region: 'East', product: 'Phone', amount: 1200 },
+  { region: 'East', product: 'Earbuds', amount: 320 },
+  { region: 'North', product: 'Phone', amount: 980 },
+  { region: 'North', product: 'Earbuds', amount: 260 },
+  { region: 'South', product: 'Phone', amount: 640 },
+  { region: 'South', product: 'Tablet', amount: 1500 },
+]
+
+onMounted(() => {
+  const table = document.querySelector('#table-pivot-helper')
+  if (!table) return
+  // Empty values / missing combinations become null in the matrix; this demo only renders it
+  const matrix = pivotMatrix(PIVOT_SALES, {
+    rows: ['region'],
+    columns: ['product'],
+    values: [{ field: 'amount', aggregate: 'sum', alias: 'Sales' }],
+    totals: true,
+  })
+  const columns = [
+    { key: 'row', title: 'Region' },
+    ...matrix.columnHeaders.map((header, index) => ({
+      key: `pivot-${index}`,
+      title: header.join(' / '),
+      align: 'right',
+    })),
+    { key: 'row-total', title: 'Total', align: 'right' },
+  ]
+  const data = matrix.rowHeaders.map((header, rowIndex) => {
+    const row = { row: header.join(' / ') }
+    matrix.cells[rowIndex]?.forEach((value, colIndex) => {
+      row[`pivot-${colIndex}`] = value == null ? '—' : String(value)
+    })
+    row['row-total'] = matrix.grandColumn?.[rowIndex]?.[0] ?? '—'
+    return row
+  })
+  if (matrix.grandRow) {
+    const total = { row: 'Total' }
+    matrix.grandRow.forEach((value, colIndex) => {
+      total[`pivot-${colIndex}`] = value == null ? '—' : String(value)
+    })
+    total['row-total'] = matrix.grandTotal?.[0] ?? '—'
+    data.push(total)
+  }
+  table.setAttribute('columns', JSON.stringify(columns))
+  table.setAttribute('data', JSON.stringify(data))
+})
+
+onMounted(() => {
+  const table = document.querySelector('#table-value-format')
+  if (!table) return
+  const money = createFormatter({ type: 'number', precision: 2, group: true, prefix: '$' })
+  const percent = createFormatter({ type: 'number', percent: true, precision: 1 })
+  const date = createFormatter({ type: 'date', pattern: 'YYYY-MM-DD' })
+  const note = createFormatter({ type: 'text', ellipsis: 12 })
+  const columns = [
+    { key: 'name', title: 'Project' },
+    { key: 'budget', title: 'Budget', align: 'right', render: (row) => money(row.budget) },
+    { key: 'rate', title: 'Progress', align: 'right', render: (row) => percent(row.rate) },
+    { key: 'due', title: 'Due', render: (row) => date(row.due) },
+    { key: 'note', title: 'Note', render: (row) => note(row.note) },
+  ]
+  const data = [
+    { name: 'Site redesign', budget: 128000, rate: 0.62, due: '2026-03-18', note: 'Includes responsive work and visual QA' },
+    { name: 'Analytics board', budget: 45600, rate: 0.35, due: '2026-04-02', note: 'Metric definitions pending sign-off' },
+    { name: 'Permission hub', budget: 98700.5, rate: 0.9, due: '2026-02-27', note: 'Rollout completed' },
+  ]
+  // render is a function, so it must go through the property channel; wait for registration to avoid shadowing accessors
+  customElements.whenDefined('oas-table').then(() => {
+    table.columns = columns
+    table.data = data
+  })
+})
+
+onMounted(() => {
+  const table = document.querySelector('#table-query-helper')
+  const status = document.querySelector('#table-query-status')
+  if (!table) return
+  const ORDERS = [
+    { id: 'A-1001', customer: 'Nova Tech', amount: 1280, due: '2026-03-12' },
+    { id: 'A-1002', customer: 'Cedar Data', amount: 96, due: '2026-03-02' },
+    { id: 'A-1003', customer: 'Longwind Mfg', amount: 540, due: '2026-03-21' },
+    { id: 'A-1004', customer: 'Northshore Design', amount: 88, due: '2026-02-26' },
+    { id: 'A-1005', customer: 'Greenfield Agri', amount: 320, due: '2026-03-08' },
+    { id: 'A-1006', customer: 'Farhill Logistics', amount: 1750, due: '2026-04-01' },
+    { id: 'A-1007', customer: 'Sunbeam Media', amount: 210, due: '2026-03-15' },
+  ]
+  const PAGE_SIZE = 3
+  let state = createQueryState({ page: { current: 1, pageSize: PAGE_SIZE } })
+  const totalOf = () => applyQuery(ORDERS, { filter: state.query.filter, sort: state.query.sort }).length
+  const render = () => {
+    const rows = applyQuery(ORDERS, state.query)
+    table.setAttribute('data', JSON.stringify(rows))
+    if (status) {
+      const current = state.page?.current ?? 1
+      status.textContent = `Page ${current} · ${totalOf()} rows (${rows.length} shown)`
+    }
+  }
+  table.setAttribute(
+    'columns',
+    JSON.stringify([
+      { key: 'id', title: 'Order' },
+      { key: 'customer', title: 'Customer' },
+      { key: 'amount', title: 'Amount', align: 'right' },
+      { key: 'due', title: 'Due' },
+    ]),
+  )
+  render()
+
+  const highButton = document.querySelector('#table-query-high')
+  highButton?.addEventListener('click', () => {
+    const pressed = highButton.getAttribute('aria-pressed') === 'true'
+    highButton.setAttribute('aria-pressed', String(!pressed))
+    state = pressed
+      ? state.setFilter(null)
+      : state.setFilter({ combinator: 'and', filters: [{ field: 'amount', op: 'gte', value: 300 }] })
+    state = state.setPage({ current: 1 })
+    render()
+  })
+  const sortButton = document.querySelector('#table-query-sort')
+  sortButton?.addEventListener('click', () => {
+    const desc = sortButton.getAttribute('aria-pressed') === 'true'
+    sortButton.setAttribute('aria-pressed', String(!desc))
+    state = state.addSort('due', desc ? 'asc' : 'desc')
+    render()
+  })
+  const nextButton = document.querySelector('#table-query-next')
+  nextButton?.addEventListener('click', () => {
+    const pages = Math.max(1, Math.ceil(totalOf() / PAGE_SIZE))
+    const current = state.page?.current ?? 1
+    state = state.setPage({ current: (current % pages) + 1 })
+    render()
+  })
+})
 </script>
 
 ## Header visibility
@@ -1184,7 +1323,7 @@ The full endpoint URLs far exceed the column width (long unbreakable strings): h
 
 `@oas-ui/ui/data/table/advanced` is an optional entry with pure helpers / column factories. It registers no custom elements and pulls in no editing or form controls; combine it with `@oas-ui/ui/data/table/edit` when editing is needed. It currently provides:
 
-- **Pivot**: `pivot()` returns a pivot matrix; `pivotTable()` returns `columns` / `data` ready for `oas-table`
+- **Pivot**: `pivot()` returns a pivot matrix; this entry's `pivotTable()` returns `columns` / `data` ready for `oas-table` (distinct from the pure `pivotMatrix()` helper in the Pro section below — see "Choosing between these and `advanced`")
 - **Formula columns**: `formulaColumn()` / `compileFormula()` parse a safe expression language (fields, arithmetic, comparison, logic, `IF` / `ROUND` / `MIN` / `MAX` / `SUM` / `CONCAT`, etc.) without `eval` / `Function`
 - **Query builder**: `compileQuery()` / `filterRows()` with nested `and` / `or` and operators such as `eq` / `contains` / `in` / `between` / `exists`
 - **TSV**: `toTsv()` / `parseTsv()` for exporting and pasting table regions
@@ -1426,6 +1565,77 @@ const source = createWindowedSource(table, {
 Timing contract: `getGeometry(dataStart)` is re-invoked at init and on **every response refill** (if the host changed the expansion layout between request and response, the refill-time snapshot wins); the refill writes `window-start` + `visual-start` + `data` atomically inside the writing window and `total` + `visual-total` after it — one snapshot per response, with echo suppression and no self-fetching. When the request event carries valid `visualStart` / `visualEnd`, the fetch range is the **union** of the `getDataRange` mapping and the event's data range (the event `start` / `end` always carries the keyboard target row and the viewport margin and is never clipped by the mapping or swallowed by coverage; without visual fields or when the protocol is inactive it falls back to the event's `start` / `end`). Once the protocol is active, expansion is fully host-controlled: listen to `oas-expand` and write back `expanded` / `data` / visual attributes (the local toggle only emits the event and does not modify `expanded`); never double-write.
 
 Failure semantics: an invalid mapping (non-finite / end ≤ start / a synchronous `getDataRange` throw) fetches nothing, leaves no in-flight marker, and emits `oas-window-error` once (`detail: { start, end, visualStart, visualEnd, error }`, carrying the visual range and the original data range); invalid geometry (non-finite, start<0, total≤0, start>total, total< data total — the total compared after the same truncation the table uses) writes no wrong visual attributes (stale `visual-start` / `visual-total` are removed and the table falls back to the current model), the data is still refilled, and the same failure event fires — after the fallback the table's requests carry local-scope visual fields only, and the helper stops mapping (fetching by the event's `start` / `end` verbatim instead of pulling wrong rows against the host's global layout). Both failures share the same recovery semantics: a **new-window** event retries; for the **same window** call `source.refresh()` to force a refetch (the table's winReq same-window dedupe and the loaded-coverage check may swallow a same-window retry). An invalid initial configuration throws to the caller (no attributes written, no listener attached). Without `visual`, no visual attributes are ever written — existing behavior is unchanged value for value.
+
+## Pro helpers (on-demand)
+
+The table's data-processing capabilities also ship as **3 pure-function helper subpaths**: imported on demand, with a runtime closure that contains no component runtime, no core and no i18n, excluded from the L1 / CDN bundles (the default `table` entry and the component itself stay untouched). They only enter your bundle when you import them.
+
+```ts
+// Pivot: row/column grouping + aggregation + optional totals
+import { pivotMatrix } from '@oas-ui/ui/data/table/pivot'
+// Value formatting: number / date / text / custom
+import { createFormatter } from '@oas-ui/ui/data/table/value-format'
+// Query: filter tree + stable sort + pagination + immutable query state
+import { applyQuery, createQueryState } from '@oas-ui/ui/data/table/query'
+```
+
+**Choosing between these and `@oas-ui/ui/data/table/advanced`**: `advanced` holds **capabilities registered for the component** (column factories, query builders, formula columns that work alongside `oas-table`); the three helpers above are a **pure-function host-side transform layer** — they never touch a component instance, take plain arrays and return plain data, which suits processing before the data reaches the table (or rendering into charts / exports). They do not depend on each other; import only the layer you need.
+
+**`pivotMatrix(rows, spec, options?)`** returns a UI-agnostic matrix `{ rowHeaders, columnHeaders, cells, valueLabels, grandRow?, grandColumn?, grandTotal? }`. `spec.rows` / `spec.columns` are field-path arrays (dotted `a.b` paths supported, layered in array order); each `spec.values` entry is `{ field, aggregate: 'sum' | 'count' | 'avg' | 'min' | 'max', alias? }`. `totals: true` (`spec.totals` or the third `options.totals`) adds the grand-total row `grandRow` (per leaf column), the grand-total column `grandColumn[rowGroup][valueIndex]` and the overall total `grandTotal[valueIndex]`. A `null` in `cells[rowGroup][leafColumn]` means the combination has no valid data; empty values (`null` / `undefined` / `''`) are ignored by every aggregate, `count` counts non-empty values (including non-numeric strings), and the other aggregates only use finite numbers. Passing `[]` for `rows` / `columns` degenerates that axis (one row group / one summary column). Row and column groups follow first-seen order, value metrics follow `values` order, and neither the input rows nor the spec are mutated.
+
+```ts
+const matrix = pivotMatrix(sales, {
+  rows: ['region'],
+  columns: ['product'],
+  values: [
+    { field: 'amount', aggregate: 'sum', alias: 'Sales' },
+    { field: 'amount', aggregate: 'count', alias: 'Orders' },
+  ],
+  totals: true,
+})
+// leaf columns = column combos × metrics (column combos expand first); headers = column field levels + metric level
+```
+
+<DemoBlock title="pivot: region × product with total row / column">
+  <oas-table id="table-pivot-helper" row-height="32" bordered></oas-table>
+</DemoBlock>
+
+**`createFormatter(spec)`** returns `(value, row?) => string`; `spec` is one of:
+
+- `{ type: 'number', precision?, group?, percent?, prefix?, suffix? }`: `precision` fraction digits (0-20, natural precision when omitted), `group` thousands separators, `percent` multiplies by 100 and appends `%` by default
+- `{ type: 'date', pattern? }`: preset `YYYY-MM-DD` (default) / `datetime` / `time`, or a token template (`YYYY` `YY` `MM` `DD` `HH` `mm` `ss`, plus `yyyy` / `yy` / `dd`), local time zone; accepts `Date` / epoch milliseconds / ISO strings
+- `{ type: 'text', ellipsis? }`: truncates by code point and appends `…`
+- `{ type: 'custom', format: (value, row) => string }`: build the text yourself with access to the whole row
+
+Empty values (`null` / `undefined`) always render as an empty string; invalid numbers / dates fall back to `String(value)`; an invalid spec (unknown `type`, wrongly typed options) falls back to `String(value)` with a one-time `devWarn`, and a throwing `custom` formatter warns once per instance and falls back.
+
+<DemoBlock title="value-format: column render integration (money / percent / date / text ellipsis)">
+  <oas-table id="table-value-format" row-height="34" bordered></oas-table>
+</DemoBlock>
+
+**`applyQuery(rows, query)` / `createQueryState(init?)`**: `query = { filter?, sort?, page? }`, applied in **filter → sort → page** order, returning a new array. `filter` is a recursive `{ combinator: 'and' | 'or', filters }` group; leaf conditions are `{ field, op, value?, caseSensitive? }` with the operators `eq` / `neq` / `contains` / `startsWith` / `endsWith` / `gt` / `gte` / `lt` / `lte` / `in` / `between` / `empty` / `notEmpty` (text matching is case-insensitive by default, numeric comparison never treats `null` as `0`, array fields match when any element matches); an empty `and` group is always true and an empty `or` group is always false. `sort` is `{ field, dir }[]` with explicitly stable ordering and empty values always last. `page = { current, pageSize }`: `current` below 1 is treated as 1, a non-positive `pageSize` disables paging, and out-of-range pages return an empty array. `createQueryState()` provides immutable update helpers (`setFilter` / `addSort` / `setPage`, each returning a new object), and the `state.query` snapshot can be passed straight to `applyQuery`.
+
+```ts
+let state = createQueryState({ page: { current: 1, pageSize: 10 } })
+state = state
+  .setFilter({ combinator: 'and', filters: [{ field: 'amount', op: 'gte', value: 100 }] })
+  .addSort('due', 'desc')
+const visible = applyQuery(orders, state.query)
+```
+
+<DemoBlock title="query: local filter / sort / pagination (applyQuery + createQueryState)">
+  <div style="width: 100%">
+    <div style="display:flex;gap:var(--oas-space-2);flex-wrap:wrap;align-items:center;margin-bottom:var(--oas-space-2)">
+      <oas-button id="table-query-high" size="small" aria-pressed="false">Amount ≥ 300</oas-button>
+      <oas-button id="table-query-sort" size="small" aria-pressed="false">Due date desc</oas-button>
+      <oas-button id="table-query-next" size="small">Next page</oas-button>
+      <span id="table-query-status" role="status" aria-live="polite" style="color:var(--oas-color-text-secondary);font-size:var(--oas-font-size-sm)">—</span>
+    </div>
+    <oas-table id="table-query-helper" row-height="32" bordered></oas-table>
+  </div>
+</DemoBlock>
+
+> All three helpers are pure functions (no DOM access, no custom-element registration) and can run in SSR / Node directly. They are independent from the `advanced` entry's `pivot()` / `compileQuery()`: the advanced versions produce `oas-table` `columns` / `data` and the table's internal filter channel, while these subpaths output a matrix, display text and query state respectively. Size (gzip, first band measured 2026-11-03): pivot 1276 B / value-format 1899 B / query 1818 B.
 
 ## API
 

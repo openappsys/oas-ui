@@ -629,6 +629,10 @@ const COMPONENT_ENTRIES = [
   { id: 'tableRange', entry: 'data/table/range', spec: '@oas-ui/ui/data/table/range' },
   { id: 'tableHistory', entry: 'data/table/history', spec: '@oas-ui/ui/data/table/history' },
   { id: 'tableDetail', entry: 'data/table/detail', spec: '@oas-ui/ui/data/table/detail' },
+  // table 数据加工 helper 型 L3（细分职责拆包）：透视 / 值格式化 / 查询纯函数子路径
+  { id: 'tablePivot', entry: 'data/table/pivot', spec: '@oas-ui/ui/data/table/pivot' },
+  { id: 'tableValueFormat', entry: 'data/table/value-format', spec: '@oas-ui/ui/data/table/value-format' },
+  { id: 'tableQuery', entry: 'data/table/query', spec: '@oas-ui/ui/data/table/query' },
   // layout 家族 helper 型 L3：无限滚动 headless 控制器（不进 L1/layout 族包）
   {
     id: 'infiniteScroll',
@@ -837,6 +841,34 @@ const BUDGETS = [
     basis:
       '实测 gzip 3805 B（detail/index 2882 / interactive 626 / row-key 297，无未用导出虚高）。2026-10-31 复核：唯一重复实现是 isInputTarget 与 isInteractiveEvent（排除清单已含 input/select/textarea/[contenteditable]），实测仅 60 B；其余（内联 findIndex / activeEscapeClose 冗余状态）合计 ≤25 B。无冗余可清，按实测上浮 18% 重定档 4.5 KB（利用率 82.6%）',
   },
+  // —— table 数据加工 helper 型 L3（细分职责拆包）：透视 / 值格式化 / 查询 ——
+  {
+    name: '@oas-ui/ui/data/table/pivot 链 gzip',
+    kind: 'absolute',
+    componentId: 'tablePivot',
+    get: () => componentMeasures.tablePivot.gzipBytes,
+    limit: 1.75 * 1024,
+    basis:
+      'helper 纯函数子路径，按需引入；首档 2026-11-03：实测 gzip 1276 B / 1 文件（二维透视矩阵：行列分组 + 5 种聚合 + 多值指标展列 + 可选合计行/列/全表，单文件零依赖），上浮约 40% 取整定档 1.75 KB',
+  },
+  {
+    name: '@oas-ui/ui/data/table/value-format 链 gzip',
+    kind: 'absolute',
+    componentId: 'tableValueFormat',
+    get: () => componentMeasures.tableValueFormat.gzipBytes,
+    limit: 2.5 * 1024,
+    basis:
+      'helper 纯函数子路径，按需引入；首档 2026-11-03：实测 gzip 1899 B / 2 文件（格式化器本体 1651 + 统一 dev-warn 248；数值/日期/文本/自定义四类 spec + 本地时区 ISO 子集 token + 非法 spec 告警回落），上浮约 35% 取整定档 2.5 KB',
+  },
+  {
+    name: '@oas-ui/ui/data/table/query 链 gzip',
+    kind: 'absolute',
+    componentId: 'tableQuery',
+    get: () => componentMeasures.tableQuery.gzipBytes,
+    limit: 2.5 * 1024,
+    basis:
+      'helper 纯函数子路径，按需引入；首档 2026-11-03：实测 gzip 1818 B / 1 文件（查询状态 + 过滤树 13 种算子 + 稳定排序 + 分页，纯函数零依赖），上浮约 41% 取整定档 2.5 KB',
+  },
   {
     // layout 家族 helper 型 L3（不进 L1/layout 族包）：无限滚动 headless 控制器。
     // 独立档的意义：证明「消费 scroll-area 但不把控制器塞进组件/族包」的按需叙事。
@@ -902,7 +934,7 @@ const BUDGETS = [
     get: () => componentMeasures.resourcePool.gzipBytes,
     limit: 0.75 * 1024, // 0.75 KB（2026-11-01 首档：实测 490 B 上浮 ~30% 取整）
     basis:
-      'helper 纯函数子路径，按需引入；首档 2026-11-01：实测 gzip 490 B / 1 文件（ResourcePool id 去重登记表 + version 变更计数 + globalThis Symbol.for 共享单例，单文件零依赖），上浮约 30% 取整定档 0.75 KB',
+      '运行时依赖（gantt pool 静态引入）+ 可独立按需 import；实测 gzip 490 B / 1 文件（ResourcePool id 去重登记表 + version 变更计数 + globalThis Symbol.for 共享单例，单文件零依赖），上浮约 30% 取整定档 0.75 KB',
   },
 ]
 

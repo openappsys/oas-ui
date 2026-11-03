@@ -526,6 +526,9 @@ windowed 模式下**本地排序 / 筛选 / 分组 / 分页 / 树形展开 / 合
 import { onBeforeUnmount, onMounted } from 'vue'
 import { filterRows, formulaColumn, pivotTable } from '@oas-ui/ui/data/table/advanced'
 import { setConditionalFormat } from '@oas-ui/ui/data/table/format'
+import { pivotMatrix } from '@oas-ui/ui/data/table/pivot'
+import { createFormatter } from '@oas-ui/ui/data/table/value-format'
+import { applyQuery, createQueryState } from '@oas-ui/ui/data/table/query'
 import { applyViewState, captureViewState, loadViewState, saveViewState } from '@oas-ui/ui/data/table/view'
 import { addRangeSelection, applyRangePaste, copyRange, cutRange, enableRangeSelection, fillRange, setRangeSelection } from '@oas-ui/ui/data/table/range'
 import { disableHistory, enableHistory, redo, undo } from '@oas-ui/ui/data/table/history'
@@ -1004,6 +1007,142 @@ onMounted(() => {
     if (proTable) disableHistory(proTable)
   })
 })
+
+// —— Pro helper 按需子路径：透视矩阵 / 值格式化 / 查询状态 ——
+const PIVOT_SALES = [
+  { region: '华东', product: '手机', amount: 1200 },
+  { region: '华东', product: '耳机', amount: 320 },
+  { region: '华北', product: '手机', amount: 980 },
+  { region: '华北', product: '耳机', amount: 260 },
+  { region: '华南', product: '手机', amount: 640 },
+  { region: '华南', product: '平板', amount: 1500 },
+]
+
+onMounted(() => {
+  const table = document.querySelector('#table-pivot-helper')
+  if (!table) return
+  // 空值 / 缺失组合由 helper 归一为 null，这里只负责渲染
+  const matrix = pivotMatrix(PIVOT_SALES, {
+    rows: ['region'],
+    columns: ['product'],
+    values: [{ field: 'amount', aggregate: 'sum', alias: '销售额' }],
+    totals: true,
+  })
+  const columns = [
+    { key: 'row', title: '区域' },
+    ...matrix.columnHeaders.map((header, index) => ({
+      key: `pivot-${index}`,
+      title: header.join(' / '),
+      align: 'right',
+    })),
+    { key: 'row-total', title: '合计', align: 'right' },
+  ]
+  const data = matrix.rowHeaders.map((header, rowIndex) => {
+    const row = { row: header.join(' / ') }
+    matrix.cells[rowIndex]?.forEach((value, colIndex) => {
+      row[`pivot-${colIndex}`] = value == null ? '—' : String(value)
+    })
+    row['row-total'] = matrix.grandColumn?.[rowIndex]?.[0] ?? '—'
+    return row
+  })
+  if (matrix.grandRow) {
+    const total = { row: '合计' }
+    matrix.grandRow.forEach((value, colIndex) => {
+      total[`pivot-${colIndex}`] = value == null ? '—' : String(value)
+    })
+    total['row-total'] = matrix.grandTotal?.[0] ?? '—'
+    data.push(total)
+  }
+  table.setAttribute('columns', JSON.stringify(columns))
+  table.setAttribute('data', JSON.stringify(data))
+})
+
+onMounted(() => {
+  const table = document.querySelector('#table-value-format')
+  if (!table) return
+  const money = createFormatter({ type: 'number', precision: 2, group: true, prefix: '¥' })
+  const percent = createFormatter({ type: 'number', percent: true, precision: 1 })
+  const date = createFormatter({ type: 'date', pattern: 'YYYY-MM-DD' })
+  const note = createFormatter({ type: 'text', ellipsis: 8 })
+  const columns = [
+    { key: 'name', title: '项目' },
+    { key: 'budget', title: '预算', align: 'right', render: (row) => money(row.budget) },
+    { key: 'rate', title: '完成率', align: 'right', render: (row) => percent(row.rate) },
+    { key: 'due', title: '交付日', render: (row) => date(row.due) },
+    { key: 'note', title: '备注', render: (row) => note(row.note) },
+  ]
+  const data = [
+    { name: '站点改版', budget: 128000, rate: 0.62, due: '2026-03-18', note: '含移动端适配与视觉走查' },
+    { name: '数据看板', budget: 45600, rate: 0.35, due: '2026-04-02', note: '指标口径待与业务确认' },
+    { name: '权限中心', budget: 98700.5, rate: 0.9, due: '2026-02-27', note: '灰度已完成' },
+  ]
+  // render 是函数，只能走 property 通道；等组件注册完成再赋值，避免 expando 遮蔽访问器
+  customElements.whenDefined('oas-table').then(() => {
+    table.columns = columns
+    table.data = data
+  })
+})
+
+onMounted(() => {
+  const table = document.querySelector('#table-query-helper')
+  const status = document.querySelector('#table-query-status')
+  if (!table) return
+  const ORDERS = [
+    { id: 'A-1001', customer: '星海科技', amount: 1280, due: '2026-03-12' },
+    { id: 'A-1002', customer: '云杉数据', amount: 96, due: '2026-03-02' },
+    { id: 'A-1003', customer: '长风制造', amount: 540, due: '2026-03-21' },
+    { id: 'A-1004', customer: '北岸设计', amount: 88, due: '2026-02-26' },
+    { id: 'A-1005', customer: '青禾农业', amount: 320, due: '2026-03-08' },
+    { id: 'A-1006', customer: '远山物流', amount: 1750, due: '2026-04-01' },
+    { id: 'A-1007', customer: '沐光传媒', amount: 210, due: '2026-03-15' },
+  ]
+  const PAGE_SIZE = 3
+  let state = createQueryState({ page: { current: 1, pageSize: PAGE_SIZE } })
+  const totalOf = () => applyQuery(ORDERS, { filter: state.query.filter, sort: state.query.sort }).length
+  const render = () => {
+    const rows = applyQuery(ORDERS, state.query)
+    table.setAttribute('data', JSON.stringify(rows))
+    if (status) {
+      const current = state.page?.current ?? 1
+      status.textContent = `第 ${current} 页 · 共 ${totalOf()} 条（当前显示 ${rows.length} 条）`
+    }
+  }
+  table.setAttribute(
+    'columns',
+    JSON.stringify([
+      { key: 'id', title: '订单号' },
+      { key: 'customer', title: '客户' },
+      { key: 'amount', title: '金额', align: 'right' },
+      { key: 'due', title: '到期日' },
+    ]),
+  )
+  render()
+
+  const highButton = document.querySelector('#table-query-high')
+  highButton?.addEventListener('click', () => {
+    const pressed = highButton.getAttribute('aria-pressed') === 'true'
+    highButton.setAttribute('aria-pressed', String(!pressed))
+    state = pressed
+      ? state.setFilter(null)
+      : state.setFilter({ combinator: 'and', filters: [{ field: 'amount', op: 'gte', value: 300 }] })
+    state = state.setPage({ current: 1 })
+    render()
+  })
+  const sortButton = document.querySelector('#table-query-sort')
+  sortButton?.addEventListener('click', () => {
+    const desc = sortButton.getAttribute('aria-pressed') === 'true'
+    sortButton.setAttribute('aria-pressed', String(!desc))
+    state = state.addSort('due', desc ? 'asc' : 'desc')
+    render()
+  })
+  const nextButton = document.querySelector('#table-query-next')
+  nextButton?.addEventListener('click', () => {
+    const pages = Math.max(1, Math.ceil(totalOf() / PAGE_SIZE))
+    const current = state.page?.current ?? 1
+    state = state.setPage({ current: (current % pages) + 1 })
+    render()
+  })
+})
 </script>
 
 ## 表头显隐
@@ -1173,7 +1312,7 @@ onMounted(() => {
 
 `@oas-ui/ui/data/table/advanced` 是独立可选入口，提供纯函数 / 列工厂，不注册自定义元素、不引入编辑与表单控件；需要编辑时再组合 `@oas-ui/ui/data/table/edit`。当前包含：
 
-- **透视**：`pivot()` 生成透视矩阵，`pivotTable()` 直接产出可喂给 `oas-table` 的 `columns` / `data`
+- **透视**：`pivot()` 生成透视矩阵，本入口的 `pivotTable()` 直接产出可喂给 `oas-table` 的 `columns` / `data`（与下节 Pro helper 的纯函数 `pivotMatrix()` 分工不同，见「与 advanced 的取舍」）
 - **公式列**：`formulaColumn()` / `compileFormula()`，安全表达式解析（字段、四则、比较、逻辑、`IF` / `ROUND` / `MIN` / `MAX` / `SUM` / `CONCAT` 等），不使用 `eval` / `Function`
 - **查询构建器**：`compileQuery()` / `filterRows()`，支持 `and` / `or` 任意嵌套与 `eq` / `contains` / `in` / `between` / `exists` 等算子
 - **TSV**：`toTsv()` / `parseTsv()`，用于表格区域导出与粘贴
@@ -1415,6 +1554,77 @@ const source = createWindowedSource(table, {
 时序契约：初始化与**每次响应回填**都重新调用 `getGeometry(dataStart)`（请求与响应之间宿主改变展开布局时用回填时最新快照），回填在 `writing` 内原子写 `window-start` + `visual-start` + `data`、其外写 `total` + `visual-total`——与本次响应同一快照，回声抑制不自拉取。请求事件带有效 `visualStart` / `visualEnd` 时按 `getDataRange` 映射，映射结果与事件数据区间取**并集**（事件 `start` / `end` 永远携带键盘目标行与视口缓冲 margin，不被映射裁剪或覆盖吞掉；无视觉字段或协议未生效时回落事件 `start` / `end`）。协议生效后展开由宿主完全控制：监听 `oas-expand` 回写 `expanded` / `data` / 视觉属性（本地点击展开钮只派发事件，不修改 `expanded`），禁止双写。
 
 失败语义：映射非法（非有限 / end ≤ start / `getDataRange` 同步抛错）不 fetch、不残留在途标记、派发一次 `oas-window-error`（detail `{ start, end, visualStart, visualEnd, error }`，含视觉区间与原始数据区间）；geometry 非法（非有限、start<0、total≤0、start>total、total<数据 total，total 按表格同口径截断后比较）不写错误视觉属性（陈旧 `visual-start` / `visual-total` 移除、表格整体回落当前模型），数据照常回填并走同一失败事件——降级后表格请求携带的是本地口径视觉字段，助手不再映射（按事件 `start` / `end` 原样取数，不按宿主全局布局拉错行）。两种失败的恢复语义相同：**新窗口**事件可重试；**同窗口**推荐调用 `source.refresh()` 强制重拉（表格 winReq 同窗口去重与已装载覆盖判定可能吞掉同窗口重试）；初始同步配置错误直接抛给调用方（不写任何属性、不挂监听）。不传 `visual` 不写任何视觉属性，既有行为逐值不变。
+
+## Pro helper（按需引入）
+
+table 的数据加工能力另有 3 个 **纯函数 helper 子路径**：与组件分开按需引入，运行闭包零组件运行时、零 core、零 i18n，不进 L1 / CDN 分包（`table` 默认入口与组件本体一行不动），显式 import 才进入构建产物。
+
+```ts
+// 透视：行列分组 + 聚合 + 可选合计
+import { pivotMatrix } from '@oas-ui/ui/data/table/pivot'
+// 值格式化：数值 / 日期 / 文本 / 自定义
+import { createFormatter } from '@oas-ui/ui/data/table/value-format'
+// 查询：过滤树 + 稳定排序 + 分页 + 不可变查询状态
+import { applyQuery, createQueryState } from '@oas-ui/ui/data/table/query'
+```
+
+**与 `@oas-ui/ui/data/table/advanced` 的取舍**：`advanced` 是**组件内注册能力**（`oas-table` 的列工厂 / 查询构建 / 公式列等，随表格一起工作）；上面这三件是**纯函数宿主侧变换层**——不接触组件实例，输入普通数组、输出普通数据，适合在数据进入表格前自行加工（或渲染到图表 / 导出）。两者互不依赖，按需只引所需的那一层。
+
+**`pivotMatrix(rows, spec, options?)`**：输出与 UI 无关的二维矩阵 `{ rowHeaders, columnHeaders, cells, valueLabels, grandRow?, grandColumn?, grandTotal? }`。`spec.rows` / `spec.columns` 为字段路径数组（支持 `a.b` 点号路径，按数组顺序分层），`spec.values` 每项 `{ field, aggregate: 'sum' | 'count' | 'avg' | 'min' | 'max', alias? }`；`totals: true`（`spec.totals` 或第三参 `options.totals`）追加合计行 `grandRow`（逐叶子列）、合计列 `grandColumn[行分组][指标序号]` 与全表合计 `grandTotal[指标序号]`。`cells[行分组][叶子列]` 中的 `null` 表示该组合无有效数据；空值（`null` / `undefined` / `''`）不参与任何聚合，`count` 统计非空值（含非数值字符串），其余聚合只用有限数值；`rows` / `columns` 传空数组时对应轴退化（单行分组 / 单列汇总）。行分组、列分组按首次出现顺序，值指标按 `values` 顺序，输入行与 spec 不被修改。
+
+```ts
+const matrix = pivotMatrix(sales, {
+  rows: ['region'],
+  columns: ['product'],
+  values: [
+    { field: 'amount', aggregate: 'sum', alias: '销售额' },
+    { field: 'amount', aggregate: 'count', alias: '订单数' },
+  ],
+  totals: true,
+})
+// 叶子列 = 列组合 × 指标，按列组合优先展开；列头 = columns 字段层级 + 指标层
+```
+
+<DemoBlock title="pivot：区域 × 产品透视（含合计行 / 合计列）">
+  <oas-table id="table-pivot-helper" row-height="32" bordered></oas-table>
+</DemoBlock>
+
+**`createFormatter(spec)`**：返回 `(value, row?) => string`，`spec` 四选一：
+
+- `{ type: 'number', precision?, group?, percent?, prefix?, suffix? }`：`precision` 小数位（0-20，缺省保留原精度）、`group` 千分位、`percent` 乘 100 并默认补 `%`
+- `{ type: 'date', pattern? }`：预设 `YYYY-MM-DD`（缺省）/ `datetime` / `time`，或 token 模板（`YYYY` `YY` `MM` `DD` `HH` `mm` `ss`，兼容 `yyyy` / `yy` / `dd`），本地时区；接受 `Date` / epoch 毫秒 / ISO 字符串
+- `{ type: 'text', ellipsis? }`：按码点截断并追加 `…`
+- `{ type: 'custom', format: (value, row) => string }`：自行拼文本，可用整行数据
+
+空值（`null` / `undefined`）统一输出空串；数值 / 日期非法时回落 `String(value)`；非法 spec（未知 `type`、类型不符的选项）回落 `String(value)` 并 `devWarn` 一次，`custom` 抛错时同一实例只告警一次并回落。
+
+<DemoBlock title="value-format：列渲染联动（金额 / 百分比 / 日期 / 文本省略）">
+  <oas-table id="table-value-format" row-height="34" bordered></oas-table>
+</DemoBlock>
+
+**`applyQuery(rows, query)` / `createQueryState(init?)`**：`query = { filter?, sort?, page? }`，按 **filter → sort → page** 顺序处理并返回新数组。`filter` 为 `{ combinator: 'and' | 'or', filters }` 递归组，叶条件 `{ field, op, value?, caseSensitive? }`，算子 `eq` / `neq` / `contains` / `startsWith` / `endsWith` / `gt` / `gte` / `lt` / `lte` / `in` / `between` / `empty` / `notEmpty`（文本默认不区分大小写，数值比较不做 `null` → `0` 误判，数组字段按任一元素命中）；空 `and` 组恒真、空 `or` 组恒假。`sort` 为 `{ field, dir }[]`，显式稳定排序、空值恒排末尾。`page = { current, pageSize }`，`current` 小于 1 按 1、`pageSize` 非正数视为不分页、越界返回空数组。`createQueryState()` 提供不可变 update helper（`setFilter` / `addSort` / `setPage`，均返回新对象），`state.query` 聚合快照可直接喂给 `applyQuery`。
+
+```ts
+let state = createQueryState({ page: { current: 1, pageSize: 10 } })
+state = state
+  .setFilter({ combinator: 'and', filters: [{ field: 'amount', op: 'gte', value: 100 }] })
+  .addSort('due', 'desc')
+const visible = applyQuery(orders, state.query)
+```
+
+<DemoBlock title="query：本地过滤 / 排序 / 分页（applyQuery + createQueryState）">
+  <div style="width: 100%">
+    <div style="display:flex;gap:var(--oas-space-2);flex-wrap:wrap;align-items:center;margin-bottom:var(--oas-space-2)">
+      <oas-button id="table-query-high" size="small" aria-pressed="false">金额 ≥ 300</oas-button>
+      <oas-button id="table-query-sort" size="small" aria-pressed="false">到期日倒序</oas-button>
+      <oas-button id="table-query-next" size="small">下一页</oas-button>
+      <span id="table-query-status" role="status" aria-live="polite" style="color:var(--oas-color-text-secondary);font-size:var(--oas-font-size-sm)">—</span>
+    </div>
+    <oas-table id="table-query-helper" row-height="32" bordered></oas-table>
+  </div>
+</DemoBlock>
+
+> 三个 helper 都是纯函数（不读写 DOM、不注册自定义元素），可在 SSR / Node 里直接调用；与 `advanced` 入口的 `pivot()` / `compileQuery()` 互不依赖：advanced 版直接产出 `oas-table` 的 `columns` / `data` 与表格内部过滤通道，这三个子路径分别输出矩阵、展示文本与查询状态。体积（gzip，2026-11-03 首档实测）：pivot 1276 B / value-format 1899 B / query 1818 B。
 
 ## API
 

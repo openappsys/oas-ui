@@ -163,8 +163,8 @@ oas-ui/
 - 包含关系：L1 ⊇ L2；**注册型 L3 必须含于 L1**（否则 CDN 一把梭消费者声明对应属性时能力静默失效），**纯函数/宿主侧 helper 型 L3 不进 L1/CDN**（无 HTML 触发面，进 union 即死重，按需显式 import）；L2 **不默认含 L3**（v2.6.4 起）。过渡别名 `/core` 已于 v2.6.5 删除（未发布）。
 - 注册语义：注册型 L3 import 即注册、晚加入自愈（已挂载元素自动补齐）；helper 型 L3 的**激活唯一入口是导出函数**（可含 import 期惰性注册，但没有 HTML/属性触发面），宿主不调用导出函数则无效果（`format` / `range` 内部虽调用能力注册表，仍属 helper 类）。
 - L3 现有实例（登记表 = `scripts/perf/lib/l3-registry.mjs`，单一登记源驱动 `perf:size` 结构门禁）：
-  - **注册型（含于 L1/CDN）**：`table/edit`、`tabs/manager`、`modal/prompt`、`popover/contextmenu`、`color-picker/designer`；
-  - **helper 型（不进 L1/CDN）**：`table/advanced`（透视/公式/查询/条件格式/TSV/历史栈/windowed 纯函数）、`table/format`（条件格式）、`table/view`（视图状态）、`table/range`（区域选择）、`table/history`（撤销重做）、`table/detail`（主从详情宿主侧 helper）、`layout/scroll-area/infinite`（无限滚动 headless 控制器 `createInfiniteScroll` / `InfiniteScrollController`）、gantt/resource 数据加工子路径 `data/gantt/export`（CSV 导出）/`data/gantt/evm`（挣值管理）/`data/gantt/alap`（后向 CPM 最晚日期反推）/`data/gantt/recurring`（周期任务展开）/`data/resource/cost`（任务成本核算）/`data/resource/pool`（共享资源池，含 `getSharedResourcePool` 单例）。
+  - **注册型（含于 L1/CDN）**：`table/edit`、`tabs/manager`、`modal/prompt`、`popover/contextmenu`、`color-picker/designer`、`data/resource/pool`（无能力注册动作，但 gantt 的 `pool` 属性**静态 import** 它——属运行时依赖，缺席族包即 gantt 运行时断链，故按注册型口径要求含于 L1/CDN；同时保留独立按需 import 通道）；
+  - **helper 型（不进 L1/CDN）**：`table/advanced`（透视/公式/查询/条件格式/TSV/历史栈/windowed 纯函数）、`table/format`（条件格式）、`table/view`（视图状态）、`table/range`（区域选择）、`table/history`（撤销重做）、`table/detail`（主从详情宿主侧 helper）、`table/pivot`（透视矩阵纯函数）、`table/value-format`（单元格值格式化）、`table/query`（查询状态/过滤排序分页）、`layout/scroll-area/infinite`（无限滚动 headless 控制器 `createInfiniteScroll` / `InfiniteScrollController`）、gantt/resource 数据加工子路径 `data/gantt/export`（CSV 导出）/`data/gantt/evm`（挣值管理）/`data/gantt/alap`（后向 CPM 最晚日期反推）/`data/gantt/recurring`（周期任务展开）/`data/resource/cost`（任务成本核算）。
   - **量化决策（2026-10-24，v2.6.4）**：默认入口 `data/table` 改为基础表格，编辑能力外置为 `table/edit`；全量入口 `@oas-ui/ui` 显式补 edit。旧 `table/core` 保留为 deprecated 别名一个版本，v2.6.5 删除。
   - **单点例外（2026-10-28，v2.6.5，用户批准）**：`table/core` 删除落在 minor（2.6.5）而非下一个 major。理由：它是默认入口的**等价别名**（re-export 同一构造器，非独立 API 面），且 v2.6.4 发布时已随默认入口语义切换预告移除。此例外已登记 `docs/deprecations.json` DEP-EXPORT-0001（`minorException` 字段；该条 `state=removed` 且 `removeIn` 指向未发布版本，表示代码已删、将随 2.6.5 发布生效），`deprecations:check` 仅对 `package-export` 面放行该豁免，且仅限「同 major、严格高于当前版本的合法 x.y.z」的非 major 提升（patch 或 minor 提升均可）——**组件 API 面（attribute/prop/event/method/css-var/export）的 minor/patch 移除一律拒绝**，本例外不构成先例。
   - **历史决策（2026-10-08）**：v2.5.0 曾定「L2 主路径默认含能力、`/core` 为纯核」；该结论已被 v2.6.4 的按需模型替代。
@@ -187,8 +187,8 @@ oas-ui/
 | `@oas-ui/theme/glass.css`       | 否               | 无玻璃材质（回落基础样式）            | 无                     | 材质皮肤消费者   |
 | `@oas-ui/theme/glass-fluid.js`  | 否               | 无指针高光（其余玻璃层不受影响）      | 无                     | 动态材质消费者   |
 | `@oas-ui/theme/skins.css`       | 否               | 无预设皮肤                            | 无                     | 皮肤消费者       |
-| 注册型 L3（`table/edit` 等 5 个） | **是**（含于 L1/CDN 族包） | 默认入口不含；显式 import 才启用 | `warnEditNotImported`  | 按需能力消费者   |
-| helper 型 L3（table 6 个 Pro 子路径 + gantt/resource 6 个数据加工子路径 + `layout/scroll-area/infinite`） | 否（无 HTML 触发面，进 union 即死重） | 默认入口不含；宿主显式 import 并调用导出函数 | 无 | 按需能力消费者   |
+| 注册型 L3（`table/edit` 等 5 个 + `data/resource/pool`） | **是**（含于 L1/CDN 族包） | 默认入口不含；显式 import 才启用 | `warnEditNotImported`  | 按需能力消费者   |
+| helper 型 L3（table 9 个 Pro 子路径 + gantt/resource 5 个数据加工子路径 + `layout/scroll-area/infinite`） | 否（无 HTML 触发面，进 union 即死重） | 默认入口不含；宿主显式 import 并调用导出函数 | 无 | 按需能力消费者   |
 
 > 原则：**整包级可选层**（材质/皮肤/运行时，独立文件）不进 union；**注册型 L3** 必须含于 L1（否则 CDN 一把梭消费者用不到该能力）；**helper 型 L3** 不进 union（宿主代码显式调用，CDN 无 JS 场景本就调不到）。三类"可选"不可混同。
 
