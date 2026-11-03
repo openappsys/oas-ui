@@ -311,7 +311,24 @@ export type WhiteListTag = (typeof WHITELIST)[number]
  * 显式传入时渲染器按需装载对应语言包并注册到 i18n registry；
  * 未列出的名字视为「未注册 locale」：devWarn 一次并回退内置 `en`（见 renderToString 文档）。
  */
-export type RenderLocale = 'zh-CN' | 'zh-Hant' | 'en' | 'ja' | 'ko' | 'de' | 'fr' | 'es' | 'pt' | 'pt-BR' | 'ru' | 'ar'
+export type RenderLocale =
+  | 'zh-CN'
+  | 'zh-Hant'
+  | 'en'
+  | 'ja'
+  | 'ko'
+  | 'de'
+  | 'fr'
+  | 'es'
+  | 'pt'
+  | 'pt-BR'
+  | 'ru'
+  | 'ar'
+  | 'hi'
+  | 'th'
+  | 'uk'
+  | 'he'
+  | 'fa'
 
 export interface RenderToStringOptions {
   /**
@@ -340,6 +357,11 @@ const LOCALE_LOADERS: Record<RenderLocale, () => Promise<{ default: Locale }>> =
   'pt-BR': () => import('@oas-ui/i18n/pt-BR'),
   ru: () => import('@oas-ui/i18n/ru'),
   ar: () => import('@oas-ui/i18n/ar'),
+  hi: () => import('@oas-ui/i18n/hi'),
+  th: () => import('@oas-ui/i18n/th'),
+  uk: () => import('@oas-ui/i18n/uk'),
+  he: () => import('@oas-ui/i18n/he'),
+  fa: () => import('@oas-ui/i18n/fa'),
 }
 
 const RENDER_LOCALES = Object.keys(LOCALE_LOADERS) as RenderLocale[]

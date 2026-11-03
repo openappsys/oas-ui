@@ -77,6 +77,17 @@ const ALIASES: Record<string, string> = {
   'ar-sy': 'ar',
   'ar-ye': 'ar',
   'ar-bh': 'ar',
+  hi: 'hi',
+  'hi-in': 'hi',
+  th: 'th',
+  'th-th': 'th',
+  uk: 'uk',
+  'uk-ua': 'uk',
+  he: 'he',
+  'he-il': 'he',
+  iw: 'he', // 希伯来语旧 ISO 639 代码
+  fa: 'fa',
+  'fa-ir': 'fa',
 }
 
 /**

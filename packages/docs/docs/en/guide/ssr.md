@@ -176,7 +176,7 @@ for the rendering itself.
 >
 > **`locale` values**: `RenderLocale` is the built-in subset `zh-CN` / `zh-Hant` /
 > `en` / `ja` / `ko` / `de` / `fr` / `es` / `pt` (alias of `pt-BR`) / `pt-BR` /
-> `ru` / `ar` (`ar` is RTL); BCP 47 aliases are accepted (`zh-TW` → `zh-Hant`,
+> `ru` / `ar` / `hi` / `th` / `uk` / `he` / `fa` (`ar` / `he` / `fa` are RTL); BCP 47 aliases are accepted (`zh-TW` → `zh-Hant`,
 > `en_US` → `en`, `zh-Hans` → `zh-CN`). The
 > renderer loads and registers the matching language pack on demand, so hosts do
 > not need to call `registerLocale` manually. The `locale` type is

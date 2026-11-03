@@ -31,7 +31,7 @@
 - **`oas-gantt` 资源池与超配检测（`pool`，opt-in）**：任务 `resources` 与 `getSharedResourcePool()` 联动——tooltip 资源行（名称 + 费率）、跨任务同资源时间重叠检测（相切不算、日精度含端、里程碑/summary 跳过、池外 id 忽略）、超配复用 conflict 视觉通道、**`oas-resource-conflict` 幂等事件**（签名比对同快照不重发、消解派空数组、>2 并发 devWarn 一次）；windowed 模式跳过检测。导出纯函数 `computeResourceConflicts`。gantt 链 65.8/75 KB。
 - **table Pro helper 三件（L3 按需子路径）**：`@oas-ui/ui/data/table/pivot`（`pivotMatrix(rows, spec)`——行×列维度聚合矩阵，sum/count/avg/min/max、多指标展列、行列合计、缺组合 null，与 advanced 的 `pivotTable` 区分：矩阵变换层 vs 组件内注册能力）；`@oas-ui/ui/data/table/value-format`（`createFormatter(spec)`——数字千分位/精度/百分比/前后缀、日期 pattern（越界不回绕）、文本截断、自定义函数）；`@oas-ui/ui/data/table/query`（`createQueryState` + `applyQuery`——13 算子过滤含嵌套 and/or 组、稳定排序（空值恒末尾）、分页越界返回 []，不可变状态更新）。61 条单测 + 3 个独立预算档（实测 1.2-1.9 KB）。
 - **`oas-command` 多级导航**：`CommandItem.children` 声明式多级（递归清洗、深度上限 8）+ `levelLoader` JS property 动态子级（异步加载态/错误行+重试、同路径缓存、children 优先）——进入派 `oas-navigate`（不派 select），面包屑可点跳转、Esc/← 逐级返回（顶层 Esc 关闭不变）、→ 进入、每级独立过滤；`aria-label` 带层级路径、`aria-busy`、`aria-keyshortcuts`。i18n 补 loadError/retry ×10 语言。
-- **i18n 语言代码 BCP 47 归一 + 繁体中文 / 巴西葡语**：新增 core `normalizeLocaleTag`（语言小写、Script 首字母大写、地区大写、扩展小写、下划线转连字符）并用于按 locale 名的翻译器查找；i18n 新增 `canonicalizeLocale` 别名层，`zh-TW` / `zh-HK` / `zh-MO` → `zh-Hant`，`zh` / `zh-Hans` / `zh-CN` / `zh-SG` → `zh-CN`，`pt` → `pt-BR`，`en-US` / `en-GB` → `en`，`es-419` → `es`，`ar-EG` → `ar` 等常见写法可直接传给 `setLocale` / `loadLocale` / `config-provider locale` / SSR；`pt-PT` 不误映射为巴西葡语。带 BCP 47 扩展段的标签（如 `en-US-u-ca-gregory`）会剥离扩展后回退基础语言；私有段（`en-XA` / `en-x-foo`）不剥离，避免吞掉自定义伪语言。新增 `@oas-ui/i18n/zh-Hant`（繁体 + 台湾术语）与 `@oas-ui/i18n/pt-BR` 入口，`pt` 保留兼容别名（入口与传参均可用；canonical 名变为 `pt-BR`，`getLocaleName()` / `onLocaleChange` 回调返回 `pt-BR`）；SSR `RenderLocale` 增加 `zh-Hant` / `pt-BR`。默认语言仍为 `zh-CN`，不改变 `zh-CN` canonical。
+- **i18n 语言代码 BCP 47 归一 + 多语言扩充（16 种）**：新增 core `normalizeLocaleTag` / `stripLocaleExtensions`（语言小写、Script 首字母大写、地区大写、扩展小写、下划线转连字符；扩展段可剥离回退基础标签，私有段不剥离）并用于按 locale 名的翻译器查找；i18n 新增 `canonicalizeLocale` 别名层，`zh-TW` / `zh-HK` / `zh-MO` → `zh-Hant`，`zh` / `zh-Hans` / `zh-CN` / `zh-SG` → `zh-CN`，`pt` → `pt-BR`，`en-US` / `en-GB` → `en`，`es-419` → `es`，`ar-EG` → `ar`，`hi-IN` → `hi`，`th-TH` → `th`，`uk-UA` → `uk`，`he-IL` / `iw` → `he`，`fa-IR` → `fa` 等常见写法可直接传给 `setLocale` / `loadLocale` / `config-provider locale` / SSR；`pt-PT` 不误映射为巴西葡语。新增 `@oas-ui/i18n/zh-Hant`（繁体 + 台湾术语）、`pt-BR`（`pt` 保留兼容别名，canonical 名变为 `pt-BR`，`getLocaleName()` / `onLocaleChange` 回调返回 `pt-BR`）、`hi` / `th` / `uk` / `he` / `fa`（he/fa 为 RTL），内置语言包由 11 扩到 16；SSR `RenderLocale` 同步扩展。默认语言仍为 `zh-CN`，不改变 `zh-CN` canonical。
 
 ### 文档
 
@@ -80,6 +80,7 @@
 - **gantt 链预算再定档 70 → 75 KB**：P2 审计证无冗余，按预警机制「再定档」出口上浮，预警线 67.5 KB。
 - **`packages/i18n` 包级 vitest 配置**：happy-dom + setupFiles + icons alias，包内裸跑与根跑同绿。
 - **L3 登记表口径修正**：`data/resource/pool` 自 gantt `pool` 起为运行时依赖（capability 口径，须在 L1/族包），helper 清单补三件 table L3；architecture.md / l3-registry 头 / perf-baseline 同步；pool 预算档 basis 改运行时依赖口径。
+
 
 ## [2.6.6] - 2026-11-01
 

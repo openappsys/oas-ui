@@ -159,6 +159,11 @@ const loaders: Record<LocaleName, () => Promise<{ default: Locale }>> = {
   'pt-BR': () => import('./pt-BR.js'),
   ru: () => import('./ru.js'),
   ar: () => import('./ar.js'),
+  hi: () => import('./hi.js'),
+  th: () => import('./th.js'),
+  uk: () => import('./uk.js'),
+  he: () => import('./he.js'),
+  fa: () => import('./fa.js'),
 }
 
 /**

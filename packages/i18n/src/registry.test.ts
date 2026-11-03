@@ -82,6 +82,12 @@ describe('locale registry', () => {
     expect(canonicalizeLocale('en-US-u-ca-gregory')).toBe('en')
     expect(canonicalizeLocale('zh-Hant-u-nu-latn')).toBe('zh-Hant')
     expect(canonicalizeLocale('en-x-foo')).toBe('en-x-foo')
+    expect(canonicalizeLocale('hi-IN')).toBe('hi')
+    expect(canonicalizeLocale('th_TH')).toBe('th')
+    expect(canonicalizeLocale('uk-UA')).toBe('uk')
+    expect(canonicalizeLocale('he-IL')).toBe('he')
+    expect(canonicalizeLocale('iw')).toBe('he')
+    expect(canonicalizeLocale('fa-IR')).toBe('fa')
   })
 
   it('别名可切换已注册语言包：pt → pt-BR、zh-TW → zh-Hant', () => {
@@ -106,11 +112,23 @@ describe('locale registry', () => {
     expect(br.messages['empty.noData']).toBe('Sem dados')
   })
 
+  it('loadLocale 加载 P1 语言包（hi / th / uk / he / fa）', async () => {
+    for (const code of ['hi', 'th', 'uk', 'he', 'fa'] as const) {
+      const pack = await loadLocale(code)
+      expect(pack.name).toBe(code)
+      expect(Object.keys(pack.messages)).toHaveLength(Object.keys(zhCN).length)
+    }
+  })
+
   it('getDirection 接受地区变体（ar-EG → ar，rtl）', async () => {
     await loadLocale('ar')
     expect(getDirection('ar-EG')).toBe('rtl')
     expect(getDirection('ar_SA')).toBe('rtl')
     expect(getDirection('en-US')).toBe('ltr')
+    await loadLocale('he')
+    expect(getDirection('he-IL')).toBe('rtl')
+    await loadLocale('fa')
+    expect(getDirection('fa-IR')).toBe('rtl')
   })
 
   it('registerLocale 注册自定义包后可按名切换', () => {

@@ -528,28 +528,28 @@ helper 不进 L1、不进 CDN 族包（`perf:size` 新增 6 条 L3 登记 + 独�
 - `node scripts/i18n/gen-slices.mjs --check` 防漂移通过。
 - `perf:size` 全绿（按需链预算 + `[CDN 默认文案]` 断言）。
 
-## 未发布：i18n 语言代码归一 + 繁体中文/巴西葡语
+## 未发布：i18n 语言代码归一 + 多语言扩充（繁体/巴西葡语 + P1）
 
 ### 功能定义
 
-补齐最明显的两个语言缺口（繁体中文、巴西葡语正名），并建立 BCP 47 语言标签归一/别名层，让 `zh-TW` / `pt` / `en_US` 等常见写法可直接用于 `setLocale` / `loadLocale` / `config-provider locale` / SSR。
+补齐明显语言缺口（繁体中文、巴西葡语正名，以及 P1 的印地语、泰语、乌克兰语、希伯来语、波斯语），并建立 BCP 47 语言标签归一/别名层，让 `zh-TW` / `pt` / `en_US` / `he-IL` 等常见写法可直接用于 `setLocale` / `loadLocale` / `config-provider locale` / SSR。`he` / `fa` 新增 RTL 语言包，RTL 覆盖从单一 `ar` 扩到 3 种。
 
 ### 详细需求
 
-- **canonical 语言名**：`zh-CN`（默认）/ `zh-Hant`（新增）/ `en` / `ja` / `ko` / `de` / `fr` / `es` / `pt-BR`（新增 canonical）/ `ru` / `ar`；`pt` 保留为 `pt-BR` 兼容别名（历史 `pt` 文案即巴西葡语）。
-- **归一化**：BCP 47 大小写 + 下划线转连字符（`zh_hant_tw` → `zh-Hant-TW`）；内置别名表覆盖 `zh` / `zh-Hans` / `zh-CN` / `zh-SG` → `zh-CN`，`zh-TW` / `zh-HK` / `zh-MO` / `zh-Hant` → `zh-Hant`，`pt` / `pt-BR` → `pt-BR`，语言级语言包接受常见地区变体（`en-US` / `en-GB` → `en`、`es-419` → `es`、`ar-EG` → `ar` 等）；`pt-PT` 不映射到 `pt-BR`（不把巴西葡语当欧洲葡语），未识别标签保持归一后的原值。
+- **canonical 语言名**：`zh-CN`（默认）/ `zh-Hant` / `en` / `ja` / `ko` / `de` / `fr` / `es` / `pt-BR` / `ru` / `ar` / `hi` / `th` / `uk` / `he` / `fa`；`pt` 保留为 `pt-BR` 兼容别名（历史 `pt` 文案即巴西葡语）。
+- **归一化**：BCP 47 大小写 + 下划线转连字符（`zh_hant_tw` → `zh-Hant-TW`）；内置别名表覆盖 `zh` / `zh-Hans` / `zh-CN` / `zh-SG` → `zh-CN`，`zh-TW` / `zh-HK` / `zh-MO` / `zh-Hant` → `zh-Hant`，`pt` / `pt-BR` → `pt-BR`，语言级语言包接受常见地区变体（`en-US` / `en-GB` → `en`、`es-419` → `es`、`ar-EG` → `ar`、`hi-IN` → `hi`、`th-TH` → `th`、`uk-UA` → `uk`、`he-IL` / `iw` → `he`、`fa-IR` → `fa` 等）；`pt-PT` 不映射到 `pt-BR`（不把巴西葡语当欧洲葡语），未识别标签保持归一后的原值；扩展段可剥离回退基础标签、私有段不剥离。
 - **作用面**：`setLocale(name)`、`loadLocale(name)`、`getDirection(name)`、`registerLocale({ name })`、core 的按 locale 名翻译器查找、SSR `RenderToStringOptions.locale` 统一走同一套归一；config-provider 的 `locale` 属性经 core 归一即可命中。
-- **繁体中文内容**：`zh-Hant` 以 zh-CN 全量 key 为基（438 keys），做繁体转换 + 台湾术语校正（軟體/資訊/預設/資料/檔案/儲存/網路/搜尋/設定/載入 等），completeness 测试兜底。
-- **入口**：`@oas-ui/i18n/zh-Hant`、`@oas-ui/i18n/pt-BR` 新增；`@oas-ui/i18n/pt` 保留并指向 `pt-BR`。
+- **语言内容**：`zh-Hant`（繁体 + 台湾术语）、`pt-BR`、`hi`、`th`、`uk`、`he`、`fa` 均以 zh-CN 的 438 keys 为基，completeness 测试兜底；`he` / `fa` 标注 `dir: 'rtl'`。
+- **入口**：新增 `@oas-ui/i18n/zh-Hant`、`pt-BR`、`hi`、`th`、`uk`、`he`、`fa` 子路径；`@oas-ui/i18n/pt` 保留并指向 `pt-BR`。
 
 ### 非目标
 
-不新增其他语言（it/nl/pl/tr/vi/id 等按后续批次）；不拆分 `pt-PT` / `es-419` / `en-GB` 独立语言包；不改默认语言（仍 zh-CN）；不改 `zh-CN` canonical（避免 breaking）。
+不新增 `it` / `nl` / `pl` / `tr` / `vi` / `id` 等其他语言（后续批次）；不拆分 `pt-PT` / `es-419` / `en-GB` 独立语言包；不改默认语言（仍 zh-CN）；不改 `zh-CN` canonical（避免 breaking）。
 
 ### 验收
 
-- core `normalizeLocaleTag` 单测（大小写/脚本/地区/扩展/空串）；i18n registry 单测（别名归一、`setLocale('pt')` → `pt-BR`、`setLocale('zh-TW')` → `zh-Hant`、`loadLocale` 别名、`getDirection('ar-EG')`）；SSR 单测（`zh-TW` / `pt` / `en_US` 渲染出对应文案）；completeness 覆盖 11 个语言包。
-- `typecheck` / `build` / `api:check` / `llms:check` / `format:check` 全绿；中英文 FAQ / SSR / 根 README / i18n README 同步。
+- core `normalizeLocaleTag` / `stripLocaleExtensions` 单测（大小写/脚本/地区/扩展/私有段/空串）；i18n registry 单测（别名归一、`setLocale('pt')` → `pt-BR`、`setLocale('zh-TW')` → `zh-Hant`、`loadLocale` 别名、`getDirection('ar-EG')` / `he-IL` / `fa-IR`、扩展段回退）；SSR 单测（`zh-TW` / `pt` / `en_US` / 自定义别名包 / 冷加载竞态 / `he` RTL）；completeness 覆盖 16 个语言包。
+- `typecheck` / `build` / `api:check` / `llms:check` / `format:check` 全绿；中英文 FAQ / SSR / 根 README / i18n README 同步；亮/暗与 RTL 抽检通过。
 
 ---
 

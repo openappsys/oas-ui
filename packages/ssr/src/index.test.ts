@@ -185,6 +185,13 @@ describe('@oas-ui/ssr renderToString', () => {
     expect(us).toContain('No data')
   })
 
+  it('locale：希伯来语（RTL）可按别名 he-IL 渲染', async () => {
+    const he = (await import('@oas-ui/i18n/he')).default
+    const html = await renderToString('oas-empty', {}, '', { locale: 'he-IL' })
+    expect(html).toContain(he.messages['empty.noData'])
+    expect(html).not.toContain('No data')
+  })
+
   it('locale：宿主注册的别名自定义包优先于内置包（registered-first，不被 SSR 装载覆盖）', async () => {
     const es = (await import('@oas-ui/i18n/es')).default
     // 先渲染一次安装 shim + registry，再按文档注册自定义别名包

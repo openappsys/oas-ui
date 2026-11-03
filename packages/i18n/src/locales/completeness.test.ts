@@ -10,7 +10,14 @@ import { ptBR } from './pt-BR.js'
 import { ru } from './ru.js'
 import { ar } from './ar.js'
 import { zhHant } from './zh-Hant.js'
+import { hi } from './hi.js'
+import { th } from './th.js'
+import { uk } from './uk.js'
+import { he } from './he.js'
+import { fa } from './fa.js'
 import arEntry from '../ar.js'
+import heEntry from '../he.js'
+import faEntry from '../fa.js'
 
 const packs: Record<string, Record<string, string>> = {
   'zh-CN': zhCN,
@@ -24,6 +31,11 @@ const packs: Record<string, Record<string, string>> = {
   'pt-BR': ptBR,
   ru,
   ar,
+  hi,
+  th,
+  uk,
+  he,
+  fa,
 }
 const zhKeys = Object.keys(zhCN)
 const packNames = Object.keys(packs)
@@ -61,6 +73,17 @@ describe('locale-completeness（语言包完整性）', () => {
     }
   })
 
+  it('插值占位符集合与 zh-CN 完全一致（{count} / {label} 等不丢失、不新增）', () => {
+    const placeholders = (text: string): string[] => (text.match(/\{(\w+)\}/g) ?? []).sort()
+    for (const name of packNames) {
+      const pack = packs[name]!
+      for (const key of zhKeys) {
+        const zhText = (zhCN as Record<string, string>)[key]!
+        expect(placeholders(pack[key]!), `${name}.${key} 占位符不一致`).toEqual(placeholders(zhText))
+      }
+    }
+  })
+
   it('翻译不只由插值占位符组成（必须含实义文案）', () => {
     const strip = (s: string): string => s.replace(/\{\w+\}/g, '').trim()
     for (const name of packNames) {
@@ -79,7 +102,7 @@ describe('locale-completeness（语言包完整性）', () => {
     expect(zhKeys.filter((k) => tokensOf(zhBase[k]!).length > 0).length).toBeGreaterThan(20)
   })
 
-  it('每个 key 的占位符 token 序列与 zh-CN 完全一致（8 语言全检，缺/多/改名/数量不符都报错）', () => {
+  it('每个 key 的占位符 token 序列与 zh-CN 完全一致（16 语言全检，缺/多/改名/数量不符都报错）', () => {
     for (const name of packNames) {
       const pack = packs[name]!
       for (const key of zhKeys) {
@@ -92,7 +115,9 @@ describe('locale-completeness（语言包完整性）', () => {
     }
   })
 
-  it('ar 语言包标注 dir: rtl（RTL 书写方向）', () => {
+  it('ar / he / fa 语言包标注 dir: rtl（RTL 书写方向）', () => {
     expect(arEntry.dir).toBe('rtl')
+    expect(heEntry.dir).toBe('rtl')
+    expect(faEntry.dir).toBe('rtl')
   })
 })

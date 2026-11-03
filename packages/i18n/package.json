@@ -79,6 +79,26 @@
       "types": "./dist/ar.d.ts",
       "default": "./dist/ar.js"
     },
+    "./hi": {
+      "types": "./dist/hi.d.ts",
+      "default": "./dist/hi.js"
+    },
+    "./th": {
+      "types": "./dist/th.d.ts",
+      "default": "./dist/th.js"
+    },
+    "./uk": {
+      "types": "./dist/uk.d.ts",
+      "default": "./dist/uk.js"
+    },
+    "./he": {
+      "types": "./dist/he.d.ts",
+      "default": "./dist/he.js"
+    },
+    "./fa": {
+      "types": "./dist/fa.d.ts",
+      "default": "./dist/fa.js"
+    },
     "./registry": {
       "types": "./dist/registry.d.ts",
       "default": "./dist/registry.js"

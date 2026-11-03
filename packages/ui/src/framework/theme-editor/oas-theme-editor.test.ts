@@ -12,6 +12,11 @@ import es from '@oas-ui/i18n/es'
 import ptBR from '@oas-ui/i18n/pt-BR'
 import ru from '@oas-ui/i18n/ru'
 import ar from '@oas-ui/i18n/ar'
+import hi from '@oas-ui/i18n/hi'
+import th from '@oas-ui/i18n/th'
+import uk from '@oas-ui/i18n/uk'
+import he from '@oas-ui/i18n/he'
+import fa from '@oas-ui/i18n/fa'
 import '../config-provider/index.js'
 import { OASThemeEditor } from './index.js'
 import { parseCssColorToHex } from './oas-theme-editor.js'
@@ -853,8 +858,8 @@ describe('OASThemeEditor light/dark 双套编辑', () => {
     expect(input.value).toBe('')
   })
 
-  it('11 个 locale 的编辑桶选择器均有翻译，不暴露 raw locale key', () => {
-    const packs: Locale[] = [zhCN, zhHant, en, ja, ko, de, fr, es, ptBR, ru, ar]
+  it('16 个 locale 的编辑桶选择器均有翻译，不暴露 raw locale key', () => {
+    const packs: Locale[] = [zhCN, zhHant, en, ja, ko, de, fr, es, ptBR, ru, ar, hi, th, uk, he, fa]
     for (const pack of packs) {
       setLocale(pack)
       const el = mount({ token: '["--oas-color-primary"]' })

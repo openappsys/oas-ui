@@ -2,7 +2,7 @@
 
 ## <a id="zh"></a> 中文 | [English](#en)
 
-OAS-UI 国际化包 —— 框架无关的 locale registry：`setLocale` / `registerLocale` / `t` 接口。内置 11 种语言包：**zh-CN（默认）/ zh-Hant / en / ja / ko / de / fr / es / pt-BR / ru / ar（RTL）**，另保留 `pt` 兼容别名；语言名按 BCP 47 归一，tree-shakable，支持按需加载。
+OAS-UI 国际化包 —— 框架无关的 locale registry：`setLocale` / `registerLocale` / `t` 接口。内置 16 种语言包：**zh-CN（默认）/ zh-Hant / en / ja / ko / de / fr / es / pt-BR / ru / ar / hi / th / uk / he / fa**（ar/he/fa 为 RTL），另保留 `pt` 兼容别名；语言名按 BCP 47 归一，tree-shakable，支持按需加载。
 
 ### 安装
 
@@ -35,7 +35,7 @@ setLocale('ja')
 
 > **用 `link:` / workspace 引用 `@oas-ui/ui` 时**：ui 与宿主可能各解析一份 `@oas-ui/i18n`。locale registry 与 core translator 已挂到 `globalThis` 版本化 `Symbol.for` 键，同一进程的副本共享状态，`setLocale()` 无需改 import；仍建议在 Vite 配 `resolve.dedupe: ['@oas-ui/i18n', '@oas-ui/core']`（或 pnpm `overrides`）减少重复包体。发布态同版本 registry 包无此问题。
 
-### 自定义语言包（内置 11 种之外）
+### 自定义语言包（内置 16 种之外）
 
 以 `zh-CN` 为模板逐步落地（`zh-CN` 是 key 全集的单一事实源，以下每一步都有编译期或运行时护栏）：
 
@@ -77,7 +77,7 @@ setLocale('vi') // 或一步：setLocale(vi)（传对象自动注册并切换）
 
 ## <a id="en"></a> [中文](#zh) | English
 
-`@oas-ui/i18n` — the internationalization package of OAS-UI. A framework-agnostic locale registry with `setLocale` / `registerLocale` / `t`. Built-in locale packs in **11 languages: zh-CN (default) / zh-Hant / en / ja / ko / de / fr / es / pt-BR / ru / ar (RTL)**, plus the `pt` compatibility alias; language tags are normalized as BCP 47, tree-shakable, with on-demand loading.
+`@oas-ui/i18n` — the internationalization package of OAS-UI. A framework-agnostic locale registry with `setLocale` / `registerLocale` / `t`. Built-in locale packs in **16 languages: zh-CN (default) / zh-Hant / en / ja / ko / de / fr / es / pt-BR / ru / ar / hi / th / uk / he / fa** (ar/he/fa are RTL), plus the `pt` compatibility alias; language tags are normalized as BCP 47, tree-shakable, with on-demand loading.
 
 ### Install
 
@@ -110,7 +110,7 @@ Built-in component texts (confirm buttons, validation messages, etc.) switch glo
 
 > **When ui is linked via `link:` / workspace**: the host and `@oas-ui/ui` may resolve two copies of `@oas-ui/i18n`. The locale registry and core translator now live on `globalThis` under versioned `Symbol.for` keys, so copies in the same process share state and `setLocale()` works without changing imports. Deduplicating via Vite `resolve.dedupe: ['@oas-ui/i18n', '@oas-ui/core']` (or pnpm `overrides`) is still recommended to avoid duplicate bundle weight. Same-version registry packages have a single instance, so this only affects linked/workspace setups.
 
-### Custom locale packs (beyond the built-in 10)
+### Custom locale packs (beyond the built-in 16)
 
 Use `zh-CN` as the template — it is the single source of truth for the full key set, and every step below has a compile-time or runtime guardrail:
 

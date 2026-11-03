@@ -15,7 +15,24 @@ export type LocaleMessages = { [K in LocaleKey]: string }
 export type LocaleParams = Record<string, string | number>
 
 /** 可按需加载（子路径 import / loadLocale()）的内置语言包名（`pt` 为兼容别名，canonical 为 `pt-BR`） */
-export type LocaleName = 'zh-CN' | 'zh-Hant' | 'en' | 'ja' | 'ko' | 'de' | 'fr' | 'es' | 'pt' | 'pt-BR' | 'ru' | 'ar'
+export type LocaleName =
+  | 'zh-CN'
+  | 'zh-Hant'
+  | 'en'
+  | 'ja'
+  | 'ko'
+  | 'de'
+  | 'fr'
+  | 'es'
+  | 'pt'
+  | 'pt-BR'
+  | 'ru'
+  | 'ar'
+  | 'hi'
+  | 'th'
+  | 'uk'
+  | 'he'
+  | 'fa'
 
 /** 语言包：name 唯一标识 + 消息表 + 书写方向（RTL 语言包标注 dir: 'rtl'，缺省 ltr） */
 export interface Locale {

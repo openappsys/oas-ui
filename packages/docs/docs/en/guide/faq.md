@@ -126,7 +126,7 @@ compile-time errors). `oas-config-provider` supports local injection (the `local
 attribute): components inside it prefer the injected locale for built-in texts
 without any global setup.
 
-For languages beyond the built-in 11 (plus the `pt` alias): use the `zh-CN` pack's messages as a template → spread `...zhCN.messages` to inherit all keys and replace them one by one → tag `messages` as a `Locale` (type guardrail: missing keys fail at compile time) → mark `dir: 'rtl'` for RTL languages → `registerLocale` → `setLocale`. See the `@oas-ui/i18n` package README, "Custom locale packs" section, for the full step-by-step example. Ship custom packs with your own dynamic `import()` for code splitting (`loadLocale()` covers the built-in names; register custom packs first).
+For languages beyond the built-in 16 (plus the `pt` alias): use the `zh-CN` pack's messages as a template → spread `...zhCN.messages` to inherit all keys and replace them one by one → tag `messages` as a `Locale` (type guardrail: missing keys fail at compile time) → mark `dir: 'rtl'` for RTL languages → `registerLocale` → `setLocale`. See the `@oas-ui/i18n` package README, "Custom locale packs" section, for the full step-by-step example. Ship custom packs with your own dynamic `import()` for code splitting (`loadLocale()` covers the built-in names; register custom packs first).
 
 ### Why isn't `getLocale().messages` the full set when I only import components?
 
@@ -157,8 +157,8 @@ In a published setup (ui and i18n are same-version registry packages) there is n
 
 ### Which languages are built in? Can they be loaded on demand?
 
-Eleven locales ship built in (plus the `pt` alias for `pt-BR`): `zh-CN` (default),
-`zh-Hant`, `en`, `ja`, `ko`, `de`, `fr`, `es`, `pt-BR`, `ru`, `ar` (RTL). The main entry only carries `zh-CN`; the rest are loaded
+Sixteen locales ship built in (plus the `pt` alias for `pt-BR`): `zh-CN` (default),
+`zh-Hant`, `en`, `ja`, `ko`, `de`, `fr`, `es`, `pt-BR`, `ru`, `ar`, `hi`, `th`, `uk`, `he`, `fa` (ar/he/fa are RTL). The main entry only carries `zh-CN`; the rest are loaded
 **on demand** and never enter the initial bundle:
 
 ```ts
@@ -184,7 +184,7 @@ locale too (Monday for European/Chinese, Sunday for Japanese/Korean/English/Arab
 
 ### How are RTL locales handled?
 
-The `ar` pack is tagged `dir: 'rtl'`, so switching to `ar` mirrors floating-layer
+The `ar` / `he` / `fa` packs are tagged `dir: 'rtl'`, so switching to them mirrors floating-layer
 positioning automatically (select / combobox / auto-complete / tree-select /
 date-picker / time-picker / mentions, …); you can also enable it explicitly or
 locally with `oas-config-provider direction="rtl"`. Direction is resolved as

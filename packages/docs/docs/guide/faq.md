@@ -87,9 +87,9 @@ CSS 规范限制：`::part()` 伪元素后**只能接伪类**（`:hover` / `:foc
 
 `@oas-ui/i18n` 提供全局 locale registry：`registerLocale(locale)` 注册自定义语言包、`setLocale(name)` 全局切换；语言包结构对齐内置 `zh-CN`（key 全集类型化，缺 key 编译期报错）。`oas-config-provider` 支持就近注入（`locale` 属性），包裹内组件优先用注入的 locale 翻译内置文案，无需全局设置。
 
-内置 11 种（另含 `pt` 兼容别名）：`zh-CN`（默认）/ `zh-Hant`（繁体）/ `en` / `ja` / `ko` / `de` / `fr` / `es` / `pt-BR` / `ru` / `ar`（RTL）。语言代码按 BCP 47 归一：`pt` → `pt-BR`、`zh-TW` / `zh-HK` → `zh-Hant`、`zh-Hans` → `zh-CN`、`en_US` → `en` 等常见别名可直接传给 `setLocale` / `loadLocale` / `config-provider locale`。
+内置 16 种（另含 `pt` 兼容别名）：`zh-CN`（默认）/ `zh-Hant`（繁体）/ `en` / `ja` / `ko` / `de` / `fr` / `es` / `pt-BR` / `ru` / `ar` / `hi` / `th` / `uk` / `he` / `fa`（ar/he/fa 为 RTL）。语言代码按 BCP 47 归一：`pt` → `pt-BR`、`zh-TW` / `zh-HK` → `zh-Hant`、`zh-Hans` → `zh-CN`、`en_US` → `en` 等常见别名可直接传给 `setLocale` / `loadLocale` / `config-provider locale`。
 
-内置 11 种之外的新语言：以 `zh-CN` 语言包的消息为模板 → `...zhCN.messages` 全量继承后逐 key 替换 → 把 `messages` 标注为 `Locale`（类型护栏：缺 key 编译期报错）→ RTL 语言标 `dir: 'rtl'` → `registerLocale` 注册 → `setLocale` 切换。**完整 step-by-step 示例见 `@oas-ui/i18n` 包 README「自定义语言包」节**。自定义包的按需分包走宿主自己的动态 `import()`（`loadLocale()` 内置包名之外需先 `registerLocale`）。
+内置 16 种之外的新语言：以 `zh-CN` 语言包的消息为模板 → `...zhCN.messages` 全量继承后逐 key 替换 → 把 `messages` 标注为 `Locale`（类型护栏：缺 key 编译期报错）→ RTL 语言标 `dir: 'rtl'` → `registerLocale` 注册 → `setLocale` 切换。**完整 step-by-step 示例见 `@oas-ui/i18n` 包 README「自定义语言包」节**。自定义包的按需分包走宿主自己的动态 `import()`（`loadLocale()` 内置包名之外需先 `registerLocale`）。
 
 ### 为什么只引入组件时 `getLocale().messages` 不是全集？
 
@@ -120,7 +120,7 @@ export default defineConfig({
 
 ### 内置支持哪些语言？可以按需加载吗？
 
-内置 11 种（另含 `pt` 兼容别名）：`zh-CN`（默认）/ `zh-Hant`（繁体）/ `en` / `ja` / `ko` / `de` / `fr` / `es` / `pt-BR` / `ru` / `ar`（RTL）。主入口只带 `zh-CN`，其余**按需加载**，不会进首屏：
+内置 16 种（另含 `pt` 兼容别名）：`zh-CN`（默认）/ `zh-Hant`（繁体）/ `en` / `ja` / `ko` / `de` / `fr` / `es` / `pt-BR` / `ru` / `ar` / `hi` / `th` / `uk` / `he` / `fa`（ar/he/fa 为 RTL）。主入口只带 `zh-CN`，其余**按需加载**，不会进首屏：
 
 ```ts
 import { loadLocale, setLocale } from "@oas-ui/i18n";
@@ -141,7 +141,7 @@ setLocale(ja);
 
 ### RTL 方向语言怎么处理？
 
-`ar` 语言包标注 `dir: 'rtl'`，切到 `ar` 后浮层定位自动镜像（select / combobox / auto-complete / tree-select / date-picker / time-picker / mentions 等）；也可用 `oas-config-provider direction="rtl"` 显式或局部开启，组件按「config-provider > 祖先 `dir` > `document.dir` > 当前 locale」解析方向。
+`ar` / `he` / `fa` 语言包标注 `dir: 'rtl'`，切到这些语言后浮层定位自动镜像（select / combobox / auto-complete / tree-select / date-picker / time-picker / mentions 等）；也可用 `oas-config-provider direction="rtl"` 显式或局部开启，组件按「config-provider > 祖先 `dir` > `document.dir` > 当前 locale」解析方向。
 
 ## 主题
 
