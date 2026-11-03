@@ -9,6 +9,10 @@
 | React 19 | 原生 `<oas-*>`，事件用 `on` + 全小写事件名（`onoas-submit`） |
 | React 17/18，或需要 camelCase 事件 | 把仓库内 `@oas-ui/react` 的两个 hook vendor 进项目（约 100 行，官方不发布 npm 包，见下） |
 | Vue 3 | 配置 `compilerOptions.isCustomElement`，模板里直接写 `<oas-*>`，`@oas-*` 绑事件 |
+| Svelte 5 | 事件属性 `onoas-click={...}`（**大小写敏感**，kebab-case 原名保留）；Svelte 4 用 `on:oas-click`（legacy） |
+| Angular | `schemas: [CUSTOM_ELEMENTS_SCHEMA]`；事件 `(oas-click)`、属性 `[options]` 模板直绑 |
+| Astro | 零特殊处理：HTML 里直接写，页面 `<script>` 注册即可（群岛按各框架小节） |
+| 其他（SolidJS 等） | 无需特殊处理，注册后直接使用；互操作细节待真实消费场景再补专节 |
 | Next.js App Router | 用 `@oas-ui/next` 的 RSC/DSD 集成（见 [SSR 边界策略](/guide/ssr)） |
 | Nuxt 3 | 用 `@oas-ui/nuxt` module（自动 `isCustomElement` + theme CSS + SSR helper） |
 
@@ -122,6 +126,69 @@ export default defineNuxtConfig({
   modules: ['@oas-ui/nuxt'],
 })
 ```
+
+## Svelte
+
+Svelte 5 用**事件属性**（event attributes）监听，且**大小写敏感**——`onoas-click` 按原名监听 `oas-click`（kebab-case 保留；写成 `onoasclick` 会监听另一个事件 `oasclick`，收不到组件派发）：
+
+```svelte
+<oas-button type="primary" onoas-click={(e) => console.log(e.detail)}>保存</oas-button>
+```
+
+- Svelte 4 的 `on:oas-click` 指令仍可用，但 Svelte 5 已列为 legacy，新代码用事件属性写法。
+- 复杂数据（数组/对象）：属性表达式会被字符串化写进 attribute，用 `bind:this` 取到元素后在 `$effect` 里赋 property：
+
+```svelte
+<script>
+  let el = $state(null)
+  $effect(() => {
+    if (el) el.columns = columns
+  })
+</script>
+
+<oas-table bind:this={el} />
+```
+
+- `bind:value` **不会**与组件同步：Svelte 的绑定靠 `input` / `change` 事件回写，组件派发的是 `oas-change`——用 `onoas-change` 手动同步（与 Vue 的 `v-model` 限制同口径）。
+
+## Angular
+
+关键一处配置——standalone 组件（Angular 17+ 默认）或 NgModule 的 `schemas` 加 `CUSTOM_ELEMENTS_SCHEMA`，模板即可直接写 `<oas-*>`：
+
+```ts
+import { CUSTOM_ELEMENTS_SCHEMA, Component } from '@angular/core'
+
+@Component({
+  selector: 'app-root',
+  standalone: true,
+  schemas: [CUSTOM_ELEMENTS_SCHEMA],
+  template: `<oas-button type="primary" (oas-click)="onClick($event)">保存</oas-button>`,
+})
+export class AppComponent {
+  onClick(e: Event) {
+    console.log((e as CustomEvent).detail)
+  }
+}
+```
+
+- 事件：`(oas-click)="handler($event)"` 模板绑定原生可用（`$event` 即 CustomEvent，`.detail` 取数据）。
+- 数据绑定：`[options]="rows"` 优先写 DOM property（存在时），对象/数组直接绑，无需序列化。
+- `ngModel` 不适用（无 ControlValueAccessor 桥接）：用 `[value]` + `(oas-change)` 手动同步。
+
+## Astro
+
+Astro 是 HTML 优先的 MPA / 群岛架构，**零特殊处理**：`.astro` 文件里直接写 `<oas-*>`，页面 `<script>` 里注册组件（Astro 打包脚本且默认全页只执行一次）：
+
+```astro
+<oas-button type="primary">保存</oas-button>
+
+<script>
+  import '@oas-ui/theme'
+  import '@oas-ui/ui/basic/button'
+</script>
+```
+
+群岛（islands）里的交互组件按各自框架的小节接法处理（React 岛看 React 节，Vue 岛看 Vue 节）。SolidJS 等其他框架同样无需特殊处理，注册后直接使用。
 
 ## SSR / DSD
 

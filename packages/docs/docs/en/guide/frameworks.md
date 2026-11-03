@@ -9,6 +9,10 @@
 | React 19 | Native `<oas-*>`; bind events with `on` + all-lowercase event name (`onoas-submit`) |
 | React 17/18, or camelCase event names | Vendor the two hooks from the in-repo `@oas-ui/react` (~100 lines; not published to npm, see below) |
 | Vue 3 | Set `compilerOptions.isCustomElement`, use `<oas-*>` directly, bind `@oas-*` events |
+| Svelte 5 | Event attributes, e.g. `onoas-click={...}` (**case-sensitive**; kebab-case preserved); Svelte 4 uses `on:oas-click` (legacy) |
+| Angular | `schemas: [CUSTOM_ELEMENTS_SCHEMA]`; events `(oas-click)` and properties `[options]` bind directly |
+| Astro | Zero special handling: write tags in HTML, register in a page `<script>` (islands follow each framework's section) |
+| Others (SolidJS, etc.) | No special handling needed; framework-specific interop sections are added when real usage appears |
 | Next.js App Router | Use the RSC/DSD integration in `@oas-ui/next` (see [SSR strategy](/en/guide/ssr)) |
 | Nuxt 3 | Use the `@oas-ui/nuxt` module (auto `isCustomElement` + theme CSS + SSR helpers) |
 
@@ -122,6 +126,69 @@ export default defineNuxtConfig({
   modules: ['@oas-ui/nuxt'],
 })
 ```
+
+## Svelte
+
+Svelte 5 listens through **event attributes**, which are **case-sensitive** — `onoas-click` listens to `oas-click` as-is (kebab-case preserved; spelling it `onoasclick` would listen to a different event, `oasclick`, and never receive what the component dispatches):
+
+```svelte
+<oas-button type="primary" onoas-click={(e) => console.log(e.detail)}>Save</oas-button>
+```
+
+- Svelte 4's `on:oas-click` directive still works but is listed as legacy in Svelte 5; new code should use event attributes.
+- Complex data (arrays/objects): attribute expressions are stringified into attributes — take the element with `bind:this` and assign the property in a `$effect`:
+
+```svelte
+<script>
+  let el = $state(null)
+  $effect(() => {
+    if (el) el.columns = columns
+  })
+</script>
+
+<oas-table bind:this={el} />
+```
+
+- `bind:value` does **not** sync with the component: Svelte's binding writes back via `input` / `change`, while the component dispatches `oas-change` — sync manually with `onoas-change` (same caveat as Vue's `v-model`).
+
+## Angular
+
+The one required setting: add `CUSTOM_ELEMENTS_SCHEMA` to the `schemas` of a standalone component (the Angular 17+ default) or an NgModule, then write `<oas-*>` directly in templates:
+
+```ts
+import { CUSTOM_ELEMENTS_SCHEMA, Component } from '@angular/core'
+
+@Component({
+  selector: 'app-root',
+  standalone: true,
+  schemas: [CUSTOM_ELEMENTS_SCHEMA],
+  template: `<oas-button type="primary" (oas-click)="onClick($event)">Save</oas-button>`,
+})
+export class AppComponent {
+  onClick(e: Event) {
+    console.log((e as CustomEvent).detail)
+  }
+}
+```
+
+- Events: `(oas-click)="handler($event)"` works natively (`$event` is the CustomEvent; read data via `.detail`).
+- Data binding: `[options]="rows"` writes the DOM property when it exists — bind objects/arrays directly without serializing.
+- `ngModel` does not apply (no ControlValueAccessor bridge): sync manually with `[value]` + `(oas-change)`.
+
+## Astro
+
+Astro is an HTML-first MPA with islands — **zero special handling**: write `<oas-*>` directly in `.astro` files and register components in a page `<script>` (Astro bundles the script and runs it once per page by default):
+
+```astro
+<oas-button type="primary">Save</oas-button>
+
+<script>
+  import '@oas-ui/theme'
+  import '@oas-ui/ui/basic/button'
+</script>
+```
+
+For interactive components inside islands (React / Vue / Svelte), follow the matching framework section above. SolidJS and other frameworks likewise need no special handling — register and use directly.
 
 ## SSR / DSD
 
