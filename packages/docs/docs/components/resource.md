@@ -124,6 +124,21 @@ levelResources(resources, tasks, { scale: 'week', projectOrder: ['portal'] })
 
 三个可读性能力均为 **opt-in**（默认全关、零新增节点）：`show-load-values` 在每个 load > 0 的负载柱顶显示该档并行任务数（装饰性数字，`aria-hidden`；超载档加 `.over` 走 `--oas-color-danger`）；`show-overload-badge` 在超载资源的泳道行头显示「超载 N 档」徽标（可见信息，不 `aria-hidden`，文案随全局 locale 即时切换）；`bar-label` 在任务条内显示任务名（纯文本渲染防注入，条窄时单行裁切；不影响 aria-label 与点击命中）。
 
+## 行头技能标签（show-skills）
+
+<DemoBlock title="show-skills：泳道行头名称旁以 chip 展示 ResourceItem.skills（单行省略 + title 悬浮全量）">
+  <oas-resource id="res-skill-chips" show-skills scale="day" height="240" capacity="1"
+    resources='[{"id":"a","name":"张三","skills":["frontend","design","vue"]},{"id":"b","name":"李四","skills":["backend","devops","k8s","grpc","redis","mysql","rabbitmq","kafka","flink"]},{"id":"c","name":"王五"}]'
+    tasks='[{"id":"s1","name":"页面开发","start":"2026-03-02","end":"2026-03-06","resources":["a"]},{"id":"s2","name":"服务开发","start":"2026-03-03","end":"2026-03-08","resources":["b"]}]'></oas-resource>
+</DemoBlock>
+
+`show-skills`（默认关）开启后，带 `ResourceItem.skills` 的资源在泳道行头名称旁以 **chip**（弱底圆角小标签，颜色走 token、暗色自动跟随）展示：
+
+- 清洗复用数据层规则：非数组按未声明处理、非字符串 / 空白项丢弃、去重、trim；
+- **渲染上限 8 个**（防超长技能列表挤占行头），超出部分经 chips 容器 `title` 悬浮可见（数据层保全量，`levelResources` reassign 的 `requiredSkills` 硬匹配不受截断影响）；
+- 单行省略（不换行）——行高不因 chips 数量变化；与「超载徽标」「成本合计」同开时按 名字 → chips → 徽标 → 成本 排布；
+- RTL 下 DOM 顺序不变，视觉镜像由 flex 行向随 `direction` 自动翻转。
+
 ## 本地化与时间定位
 
 <DemoBlock title="locale=&quot;en-US&quot;（周日起始）+ scale=&quot;week&quot;：刻度文案与周起始按 en-US 口径；scrollToDate 把时间轴滚动定位到指定日期">
@@ -241,6 +256,7 @@ if (pool.version !== lastSeen) {
 | `show-cost` | 泳道成本合计（布尔，默认关）：行头显示「成本 Σ(任务天数 × 8h × costRate)」两位小数（无货币符号，单位由宿主 CSS/文案自定）；天数按任务与**求交窗口**的相交日历日数计——有 range-start/range-end 托管时用轴端点（成本不随刻度档漂移），否则用任务推导轴全域；costRate 缺失/非法的 lane 不显示。合计随数据/日期窗口在 update 时重算，滚动可视列窗口不触发 | `string` | — |
 | `show-load-values` | 负载直方图柱顶显示该档负载数字（布尔，默认关）：仅 load > 0 显示，超载档数字用 `text-on-primary`（浅色主题白字/暗色主题深字，压在 danger 柱身上保证对比）；数字为视觉冗余（aria-hidden），读屏仍读列的负载描述 | `boolean` | — |
 | `show-overload-badge` | 泳道行头显示「超载 N 档」徽标（布尔，默认关）：仅该资源存在超载档时显示，文案走 i18n resource.overBadge | `boolean` | — |
+| `show-skills` | 泳道行头名称旁技能 chip（布尔，默认关）：以弱底圆角小标签展示 ResourceItem.skills（清洗：非数组未声明、非字符串/空白项丢弃、去重、trim）；渲染上限 8 个防挤占行头，全量经容器 title 悬浮可见（数据层保全量，reassign 匹配不受影响）；单行省略不撑行高，RTL 视觉镜像随 direction 自动翻转 | `string` | — |
 | `skill-matrix` | 技能矩阵视图（布尔，默认关）：行=资源、列=技能并集，✓ 表示具备；无虚拟化 | `boolean` | — |
 | `tasks` | 资源任务（JSON [{ id, name, start, end, resources?, priority?, requiredSkills?, project? }]）；start/end 仅日精度 YYYY-MM-DD（end 含当日；带时刻输入按当日处理），resources 为分配的资源 id 数组（指向不存在资源的分配忽略）。priority 数值越小越优先；requiredSkills 在 reassign 时要求目标资源全部具备；project 配合 levelResources({ projectOrder }) 做跨项目优先级 | `ResourceTask[]` | `[]` |
 | `total` | windowed 模式下的全量资源行数；为 0 或非法时 windowed 不生效（回落本地模式） | `string` | — |

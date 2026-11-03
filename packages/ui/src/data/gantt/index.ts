@@ -8,6 +8,7 @@ if (!customElements.get('oas-gantt')) {
 }
 
 export { OASGantt, computeVariance }
+export { computeResourceConflicts } from './oas-gantt.js'
 export type {
   GanttTask,
   GanttResource,
@@ -28,4 +29,6 @@ export type {
   GanttSelectionChangeDetail,
   GanttTaskAddDetail,
   GanttRescheduleDetail,
+  GanttResourceConflict,
+  GanttResourceConflictDetail,
 } from './oas-gantt.js'

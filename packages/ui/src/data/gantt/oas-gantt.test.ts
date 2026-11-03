@@ -2,8 +2,13 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { OASGantt, computeVariance } from './index.js'
 import { pickVisibleLabels, ganttRenderDiag } from './oas-gantt.js'
 import { computeEvm } from './evm/index.js'
-import type { GanttTask, GanttBaselineVariance, GanttReparentDetail } from './index.js'
+import { getSharedResourcePool } from '../resource/pool/index.js'
+import { computeResourceConflicts } from './oas-gantt.js'
+import type { GanttTask, GanttBaselineVariance, GanttReparentDetail, GanttResourceConflictDetail } from './index.js'
 import type { GanttTaskAddDetail } from './oas-gantt.js'
+
+/** 测试内任务类型别名（组件清洗后的任务：id 必有）——与组件源码 TG 同构 */
+type TG = GanttTask & { id: string }
 
 function mount(attrs: Record<string, string> = {}): OASGantt {
   const el = new OASGantt()
@@ -8600,5 +8605,277 @@ describe('OASGantt forced-colors 高对比兜底', () => {
     const block = forcedBlock(el)
     expect(block, '任务条本体 border 兜底').toMatch(/\.bar:not\(\.milestone\)\s*\{[^}]*border:\s*1px solid/)
     expect(block, '进度前沿兜底').toMatch(/\.bar-progress\s*\{[^}]*border-inline-end:\s*2px solid/)
+  })
+})
+
+describe('OASGantt 资源池接入与跨任务超配检测（pool）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    getSharedResourcePool().clear()
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+    getSharedResourcePool().clear()
+    vi.restoreAllMocks()
+  })
+
+  /** 池登记 alice/bob（costRate 供 tooltip 费率展示断言） */
+  function registerPool(): void {
+    getSharedResourcePool().register([
+      { id: 'alice', name: '张三', costRate: 120 },
+      { id: 'bob', name: '李四', costRate: 90 },
+    ])
+  }
+
+  /** 事件收集器：**挂载前**挂监听（首帧事件在 connectedCallback 同步派发，事后挂监听会漏） */
+  function mountListening(attrs: Record<string, string>): { el: OASGantt; seen: GanttResourceConflictDetail[] } {
+    const el = new OASGantt()
+    for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v)
+    const seen: GanttResourceConflictDetail[] = []
+    el.addEventListener('oas-resource-conflict', (e) =>
+      seen.push((e as CustomEvent<GanttResourceConflictDetail>).detail),
+    )
+    document.body.appendChild(el)
+    return { el, seen }
+  }
+
+  it('纯函数：区间相切不算超配（日精度含端——A 末日 < B 首日才相切）', () => {
+    const conflicts = computeResourceConflicts(
+      [
+        { id: 'a', name: 'A', start: '2026-03-02', end: '2026-03-03', resources: ['alice'] } as TG,
+        { id: 'b', name: 'B', start: '2026-03-04', end: '2026-03-06', resources: ['alice'] } as TG,
+      ],
+      new Set(['alice']),
+    )
+    expect(conflicts).toEqual([])
+  })
+
+  it('纯函数：日精度含端——共享一天即超配（A 3-02..3-04 与 B 3-04..3-06 同占 3-04）', () => {
+    const conflicts = computeResourceConflicts(
+      [
+        { id: 'a', name: 'A', start: '2026-03-02', end: '2026-03-04', resources: ['alice'] } as TG,
+        { id: 'b', name: 'B', start: '2026-03-04', end: '2026-03-06', resources: ['alice'] } as TG,
+      ],
+      new Set(['alice']),
+    )
+    expect(conflicts).toEqual([
+      { taskA: 'a', taskB: 'b', resourceId: 'alice', overlapStart: '2026-03-04', overlapEnd: '2026-03-04' },
+    ])
+  })
+
+  it('纯函数：嵌套区间触发，交叠区间 = 内层区间（overlapStart/End 为含端日期）', () => {
+    const conflicts = computeResourceConflicts(
+      [
+        { id: 'outer', name: '外', start: '2026-03-02', end: '2026-03-10', resources: ['alice'] } as TG,
+        { id: 'inner', name: '内', start: '2026-03-05', end: '2026-03-07', resources: ['alice'] } as TG,
+      ],
+      new Set(['alice']),
+    )
+    expect(conflicts).toEqual([
+      { taskA: 'outer', taskB: 'inner', resourceId: 'alice', overlapStart: '2026-03-05', overlapEnd: '2026-03-07' },
+    ])
+  })
+
+  it('纯函数：里程碑不触发（同资源同点双里程碑 / 里程碑与任务同区间均不产出）', () => {
+    const conflicts = computeResourceConflicts(
+      [
+        { id: 'm1', name: '甲', start: '2026-03-05', resources: ['alice'] } as TG,
+        { id: 'm2', name: '乙', start: '2026-03-05', resources: ['alice'] } as TG,
+        { id: 't1', name: '丙', start: '2026-03-05', end: '2026-03-08', resources: ['alice'] } as TG,
+      ],
+      new Set(['alice']),
+    )
+    expect(conflicts).toEqual([])
+  })
+
+  it('纯函数：summary 不触发（parent 指针聚合区间与子任务同资源重叠）', () => {
+    const conflicts = computeResourceConflicts(
+      [
+        { id: 'sum', name: '汇总', start: '2026-03-02', end: '2026-03-12', resources: ['alice'] } as TG,
+        { id: 'w1', name: '子一', start: '2026-03-03', end: '2026-03-06', parent: 'sum', resources: ['alice'] } as TG,
+      ],
+      new Set(['alice']),
+    )
+    expect(conflicts).toEqual([])
+  })
+
+  it('纯函数：池未注册的资源忽略（registeredIds 不含则不产出冲突）', () => {
+    const conflicts = computeResourceConflicts(
+      [
+        { id: 'a', name: 'A', start: '2026-03-02', end: '2026-03-05', resources: ['ghost'] } as TG,
+        { id: 'b', name: 'B', start: '2026-03-03', end: '2026-03-06', resources: ['ghost'] } as TG,
+      ],
+      new Set(['alice']),
+    )
+    expect(conflicts).toEqual([])
+  })
+
+  it('纯函数：输出确定性（资源按首次出现序、pair 按输入序 i<j）', () => {
+    const conflicts = computeResourceConflicts(
+      [
+        { id: 'a', name: 'A', start: '2026-03-02', end: '2026-03-08', resources: ['bob', 'alice'] } as TG,
+        { id: 'b', name: 'B', start: '2026-03-03', end: '2026-03-06', resources: ['alice'] } as TG,
+        { id: 'c', name: 'C', start: '2026-03-04', end: '2026-03-07', resources: ['bob'] } as TG,
+      ],
+      new Set(['alice', 'bob']),
+    )
+    // bob 先在任务 a 中出现 → bob 组在前；组内 pair 按输入序
+    expect(conflicts.map((c) => [c.resourceId, c.taskA, c.taskB])).toEqual([
+      ['bob', 'a', 'c'],
+      ['alice', 'a', 'b'],
+    ])
+  })
+
+  it('组件：pool 开启 + 同资源交叠 → 条与行名都打 .conflict；未冲突任务不打', () => {
+    registerPool()
+    const el = mount({
+      pool: '',
+      tasks: JSON.stringify([
+        { id: 'a', name: '设计', start: '2026-03-02', end: '2026-03-06', resources: ['alice'] },
+        { id: 'b', name: '评审', start: '2026-03-05', end: '2026-03-09', resources: ['alice'] },
+        { id: 'c', name: '独立', start: '2026-03-02', end: '2026-03-06', resources: ['bob'] },
+      ]),
+    })
+    expect(barOf(el, 'a').classList.contains('conflict')).toBe(true)
+    expect(barOf(el, 'b').classList.contains('conflict')).toBe(true)
+    expect(barOf(el, 'c').classList.contains('conflict')).toBe(false)
+    const rowA = shadowOf(el).querySelector<HTMLElement>('.row-name[data-key="a"]')!
+    const rowB = shadowOf(el).querySelector<HTMLElement>('.row-name[data-key="b"]')!
+    expect(rowA.classList.contains('conflict')).toBe(true)
+    expect(rowB.classList.contains('conflict')).toBe(true)
+  })
+
+  it('组件：pool 关闭（缺省）时同数据零 conflict、零事件（opt-in 默认关）', () => {
+    registerPool()
+    const { el, seen } = mountListening({
+      tasks: JSON.stringify([
+        { id: 'a', name: '设计', start: '2026-03-02', end: '2026-03-06', resources: ['alice'] },
+        { id: 'b', name: '评审', start: '2026-03-05', end: '2026-03-09', resources: ['alice'] },
+      ]),
+    })
+    expect(barOf(el, 'a').classList.contains('conflict')).toBe(false)
+    expect(barOf(el, 'b').classList.contains('conflict')).toBe(false)
+    expect(seen).toEqual([])
+  })
+
+  it('事件：detail 结构 + 同一快照不重复派发；数据变化重算后重发（消解发空数组）', () => {
+    registerPool()
+    const { el, seen } = mountListening({
+      pool: '',
+      tasks: JSON.stringify([
+        { id: 'a', name: '设计', start: '2026-03-02', end: '2026-03-06', resources: ['alice'] },
+        { id: 'b', name: '评审', start: '2026-03-05', end: '2026-03-09', resources: ['alice'] },
+      ]),
+    })
+    expect(seen.length).toBe(1)
+    expect(seen[0]).toEqual({
+      conflicts: [
+        { taskA: 'a', taskB: 'b', resourceId: 'alice', overlapStart: '2026-03-05', overlapEnd: '2026-03-06' },
+      ],
+    })
+    // 同一快照（语义相同回写）：不重复派发
+    el.tasks = el.tasks
+    expect(seen.length).toBe(1)
+    // 数据变化 → 消解：重发一次空数组
+    el.updateTask('b', { start: '2026-03-07', end: '2026-03-10' })
+    expect(seen.length).toBe(2)
+    expect(seen[1]).toEqual({ conflicts: [] })
+  })
+
+  it('事件：池登记变化后宿主触发重算才生效（池变化不自动通知组件）', () => {
+    const { el, seen } = mountListening({
+      pool: '',
+      tasks: JSON.stringify([
+        { id: 'a', name: '设计', start: '2026-03-02', end: '2026-03-06', resources: ['late'] },
+        { id: 'b', name: '评审', start: '2026-03-04', end: '2026-03-08', resources: ['late'] },
+      ]),
+    })
+    // 池未登记 late：不产出
+    expect(seen.at(-1)).toEqual({ conflicts: [] })
+    // 登记后宿主重写 tasks 触发重算（池变化本身不通知组件，文档口径）
+    getSharedResourcePool().register([{ id: 'late', name: '王五' }])
+    el.tasks = el.tasks
+    expect(seen.at(-1)?.conflicts).toHaveLength(1)
+    expect(seen.at(-1)?.conflicts[0]).toMatchObject({ taskA: 'a', taskB: 'b', resourceId: 'late' })
+  })
+
+  it('dev 告警：>2 任务同资源同时段并发超限 devWarn 一次（实例级去重）', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    registerPool()
+    const el = mount({
+      pool: '',
+      tasks: JSON.stringify([
+        { id: 'a', name: '一', start: '2026-03-02', end: '2026-03-08', resources: ['alice'] },
+        { id: 'b', name: '二', start: '2026-03-03', end: '2026-03-07', resources: ['alice'] },
+        { id: 'c', name: '三', start: '2026-03-04', end: '2026-03-09', resources: ['alice'] },
+      ]),
+    })
+    const hits = warn.mock.calls.filter((args) => String(args[0]).includes('alice') && String(args[0]).includes('超配'))
+    expect(hits.length).toBe(1)
+    // 同实例后续 update 不再重复告警
+    el.tasks = el.tasks
+    expect(warn.mock.calls.filter((args) => String(args[0]).includes('超配')).length).toBe(1)
+  })
+
+  it('清洗：非法 resources 条目丢弃（非字符串 / 空串 / 空白），合法条目 trim + 去重保留', () => {
+    const el = mount({
+      pool: '',
+      tasks: JSON.stringify([
+        { id: 'a', name: 'A', start: '2026-03-02', resources: [123, '', '  ', null, ' alice ', 'alice'] },
+      ]),
+    })
+    expect(el.tasks[0]!.resources).toEqual(['alice'])
+  })
+
+  it('hour 档：带时刻区间相交触发（同日交叠按 ms 判定）', () => {
+    registerPool()
+    const el = mount({
+      pool: '',
+      scale: 'hour',
+      tasks: JSON.stringify([
+        { id: 'h1', name: '上午', start: '2026-03-02 09:00', end: '2026-03-02 12:00', resources: ['bob'] },
+        { id: 'h2', name: '中午', start: '2026-03-02 11:00', end: '2026-03-02 13:00', resources: ['bob'] },
+      ]),
+    })
+    expect(barOf(el, 'h1').classList.contains('conflict')).toBe(true)
+    expect(barOf(el, 'h2').classList.contains('conflict')).toBe(true)
+  })
+
+  it('tooltip：pool 开启时 hover 条追加池资源行（名称 + 费率）；池未注册资源忽略', () => {
+    registerPool()
+    const el = mount({
+      pool: '',
+      tasks: JSON.stringify([
+        { id: 'a', name: '设计', start: '2026-03-02', end: '2026-03-06', resources: ['alice', 'ghost'] },
+      ]),
+    })
+    barOf(el, 'a').dispatchEvent(new Event('mouseenter'))
+    const tip = shadowOf(el).querySelector<HTMLElement>('.tooltip')!
+    expect(tip.hidden).toBe(false)
+    expect(tip.textContent).toContain('张三')
+    expect(tip.textContent).toContain('120/h')
+    expect(tip.textContent).not.toContain('ghost')
+    // pool 关闭时不追加资源行
+    el.removeAttribute('pool')
+    barOf(el, 'a').dispatchEvent(new Event('mouseenter'))
+    expect(tip.textContent).not.toContain('张三')
+  })
+
+  it('windowed：切片上跳过超配检测（零 conflict、零事件）', () => {
+    registerPool()
+    const { el, seen } = mountListening({
+      pool: '',
+      windowed: '',
+      total: '2',
+      'window-start': '0',
+      'range-start': '2026-03-01',
+      'range-end': '2026-03-31',
+      tasks: JSON.stringify([
+        { id: 'a', name: '设计', start: '2026-03-02', end: '2026-03-06', resources: ['alice'] },
+        { id: 'b', name: '评审', start: '2026-03-05', end: '2026-03-09', resources: ['alice'] },
+      ]),
+    })
+    expect(barOf(el, 'a').classList.contains('conflict')).toBe(false)
+    expect(seen.every((d) => d.conflicts.length === 0)).toBe(true)
   })
 })

@@ -383,6 +383,32 @@ computeVariance(el.tasks, 'plan-b')
 // [{ id, startDelta, endDelta, durationDelta, progressDelta }]
 ```
 
+## 资源池与超配检测（pool）
+
+<DemoBlock title="pool 开启：同资源交叠任务条与行名标 .conflict + oas-resource-conflict 事件徽章">
+  <oas-gantt id="gantt-pool-demo" pool range-start="2026-03-01" range-end="2026-03-31" height="200"
+    tasks='[{"id":"pa","name":"设计（张三）","start":"2026-03-02","end":"2026-03-06","progress":60,"resources":["alice"]},{"id":"pb","name":"评审（张三，交叠）","start":"2026-03-05","end":"2026-03-09","progress":30,"resources":["alice"]},{"id":"pc","name":"开发（李四，独立）","start":"2026-03-05","end":"2026-03-09","progress":40,"resources":["bob"]}]'></oas-gantt>
+  <div id="gantt-pool-out" style="margin-top:var(--oas-space-2);font-size:var(--oas-font-size-sm);color:var(--oas-color-text-secondary)">检测中…</div>
+</DemoBlock>
+
+`pool` 属性（opt-in，默认关）把任务的 `resources` 资源引用接到**共享资源池**（`@oas-ui/ui/data/resource/pool` 的 `getSharedResourcePool()`，与 `oas-resource` 组件共享同一份登记状态）：
+
+- **池驱动展示**：悬停任务条时 tooltip 追加池内资源名称与费率（`costRate`，形如「张三 120/h」）；池里未登记的 id 忽略。也可在自定义 tooltip 模板里用 `[data-task-resources]` 绑定点取同一文本。
+- **跨任务超配检测**：update 时对**同资源**的任务做时间区间重叠检测——区间求交 >0 即超配（半开区间，**相切不算**；日精度 end 含端，共享一天即算交叠）；里程碑按点处理不触发、summary 不参与；只检测**池内已登记**的资源（池外 id 视为宿主遗留数据）。超配任务条与左侧行名加 `.conflict`（复用违约视觉通道 `--oas-gantt-conflict-color`）。
+- **`oas-resource-conflict` 事件**：`detail: { conflicts }`，每项 `{ taskA, taskB, resourceId, overlapStart, overlapEnd }`（交叠区间日精度含端）。**幂等**——同一快照不重复派发，数据/池变化重算后签名变化才发，消解时发空数组。事件在**数据/池变更的 `update` 中同步派发**：宿主须先挂监听再写数据（如先 `addEventListener` 再写 `tasks`），否则首轮结果到达不了监听器。同一资源同时段被 >2 个任务并发占用时 dev 控制台告警一次。
+- **池登记变化不自动通知组件**：宿主改池后须触发重算（如重写 `tasks`）。windowed 切片上跳过检测并 devWarn（全量判定才正确）。
+
+```ts
+import { getSharedResourcePool } from '@oas-ui/ui/data/resource/pool'
+
+const pool = getSharedResourcePool()
+pool.register([{ id: 'alice', name: '张三', costRate: 120 }])
+// 改池后触发重算（池变化不自动通知组件）：
+ganttEl.tasks = ganttEl.tasks
+```
+
+> 本批不做：资源负荷直方图 / 资源泳道视图（留后续批）、超配自动排程避让——`pool` 只做检测与视觉标注，不移动任何任务。
+
 ## 行虚拟滚动（万级任务）
 
 <DemoBlock title="height + row-height 启用视口窗口渲染（演示 300 行；只渲染可视窗口 + buffer）">
@@ -470,6 +496,7 @@ windowed 下的约定：**切片须为扁平行**（含 `parent`/`children` 的�
 
 <script setup>
 import { onMounted } from 'vue'
+import { getSharedResourcePool } from '@oas-ui/ui/data/resource/pool'
 onMounted(async () => {
   await customElements.whenDefined('oas-gantt')
   const out = document.getElementById('gantt-output')
@@ -709,6 +736,27 @@ onMounted(async () => {
       { id: 'w2', name: '开发', start: '2026-03-09', end: '2026-03-13', dependencies: [{ id: 'w1', lag: 2 }] },
     ]
   }
+
+  // 资源池超配 demo：登记池 → 触发重算（池变化不自动通知组件）→ 事件徽章
+  const poolDemo = document.getElementById('gantt-pool-demo')
+  const poolOut = document.getElementById('gantt-pool-out')
+  if (poolDemo && poolOut) {
+    getSharedResourcePool().register([
+      { id: 'alice', name: '张三', costRate: 120 },
+      { id: 'bob', name: '李四', costRate: 90 },
+    ])
+    // 事件在数据/池变更的 update 中同步派发：监听必须先挂，再写数据触发重算
+    poolDemo.addEventListener('oas-resource-conflict', (e) => {
+      const { conflicts } = e.detail
+      poolOut.textContent =
+        conflicts.length === 0
+          ? '当前无资源超配'
+          : `超配 ${conflicts.length} 对：${conflicts
+              .map((c) => `${c.taskA} × ${c.taskB}（${c.resourceId}，${c.overlapStart} ~ ${c.overlapEnd}）`)
+              .join('；')}`
+    })
+    poolDemo.tasks = poolDemo.tasks // 登记晚于组件首帧：重写 tasks 触发一次超配重算
+  }
 })
 </script>
 
@@ -799,6 +847,7 @@ expanded.forEach((t) => ganttEl.addTask(t)) // 喂回组件前按需自行合并
 | `hover` | 行 hover 底色开关（默认开）：鼠标移入行名或任务条时整行点亮（行名 + 时间轴同底色），颜色走 `--oas-gantt-row-hover-bg`（缺省 `--oas-color-bg-hover`，与斑马纹独立）；`"false"` 关闭 | `string` | — |
 | `label-position` | 任务条标签位置：inside 条内 / right 条旁 / left 条左；缺省 none（行名列已承载名称，条旁不再重复渲染）；非法值回落 none | `string` | — |
 | `locale` | 本地化（覆盖 config-provider 注入与全局 locale） | `string` | — |
+| `pool` | 资源池模式（布尔，默认关）：开启后任务 resources 引用共享资源池（@oas-ui/ui/data/resource/pool 的 getSharedResourcePool()）——tooltip 悬停条追加池内资源名称与费率（costRate，池外 id 忽略）；并对同资源任务做跨任务超配检测：时间区间交叠（半开区间相切不算；里程碑按点处理、summary 不参与）的任务条与左侧行名加 .conflict 标记，冲突对经 oas-resource-conflict 事件派发。池登记变化不自动通知组件——宿主改池后须触发重算（如重写 tasks）；windowed 切片上跳过检测并 devWarn；不做资源负荷直方图/泳道视图与自动排程避让 | `string` | — |
 | `progress-readonly` | 禁改进度（改期仍可拖） | `boolean` | — |
 | `range-end` | 宿主托管时间轴终点（ISO 日期 YYYY-MM-DD，含当日）：与 range-start 成对使用 | `string` | — |
 | `range-start` | 宿主托管时间轴起点（ISO 日期 YYYY-MM-DD）：提供后轴范围不再由数据推导，配合 range-end 支撑窗口化（切片不含完整日期跨度） | `string` | — |
@@ -864,6 +913,7 @@ expanded.forEach((t) => ganttEl.addTask(t)) // 喂回组件前按需自行合并
 | `oas-range-request` | 宿主托管时间范围（range-start/range-end）且可视时间窗接近轴端点时派发，detail: { startMs, endMs, reason }（期望的相邻范围）；同一期望范围不重复派发 |
 | `oas-reparent` | 行拖拽改父子 / 重排收口时派发，detail: { id, parent, index }（parent 为 null 表示根级，index 为同级序号） |
 | `oas-reschedule` | 依赖联动排程改动了后继任务时派发（auto-schedule 开启），detail: { ids }（被联动改动的任务 id） |
+| `oas-resource-conflict` | pool 开启时资源超配检测结果派发（幂等：同一快照不重复派发，数据/池变化重算后签名变化才发，消解发空数组），detail: { conflicts }（[{ taskA, taskB, resourceId, overlapStart, overlapEnd }]，taskA 在 tasks 输入序在前，交叠区间为日精度含端日期） |
 | `oas-scale-change` | scale 属性变化时派发，detail: { scale }；首次吸收不派发 |
 | `oas-selection-change` | 多选集合变化（点击 / 键盘 / property 写入）时派发，detail: { ids }（选中的任务 id 数组） |
 | `oas-task-add` | 命令式新增任务后派发（addTask / duplicateTask / creatable 行内新建），detail: { id, task }（id 为新任务 id） |

@@ -30,6 +30,9 @@ import { isRtl } from '../../shared/direction.js'
 import { devWarn } from '../../shared/dev-warn.js'
 // slot 模板双形态克隆（静态 HTML 在 template.content；Vue 等 CSR 直插元素 childNodes）
 import { cloneSlotContent } from '../../shared/slot-template.js'
+// 共享资源池（pool 属性 opt-in 时消费）：运行时 import 只带进 pool 纯数据结构模块（零组件/零 i18n），
+// 与 oas-resource 的 helper 子路径共享同一份 globalThis 状态（写入互见）
+import { getSharedResourcePool } from '../resource/pool/index.js'
 
 /** 编译期一致性：emit 用的字面量（拼 `oas-` 前缀）须与共享契约常量一致 */
 const _ROW_WINDOW_EVENT_CHECK: typeof ROW_WINDOW_EVENT = 'oas-window-request'
@@ -1018,6 +1021,32 @@ export interface GanttRescheduleDetail {
   ids: string[]
 }
 
+/**
+ * 资源超配冲突对（pool 属性 opt-in 检测产物）：同资源两个任务的时间区间交叠 >0。
+ * taskA / taskB 按任务在 tasks 输入序（taskA 在前）；交叠区间按日精度含端日期表达
+ * （hour 档任务同样按日期输出——秒级精度交叠对甘特视图无展示意义）。
+ *
+ * 本通道只做**检测与视觉标注**（.conflict 复用违约视觉通道 + oas-resource-conflict 事件）；
+ * 不做：资源负荷直方图 / 资源泳道视图（留后续批）、自动排程避让（超配不触发重排）。
+ */
+export interface GanttResourceConflict {
+  /** 任务 A id（tasks 输入序在前） */
+  taskA: string
+  /** 任务 B id（tasks 输入序在后） */
+  taskB: string
+  /** 冲突资源 id（池内已登记） */
+  resourceId: string
+  /** 交叠首日 'YYYY-MM-DD'（含） */
+  overlapStart: string
+  /** 交叠末日 'YYYY-MM-DD'（含端） */
+  overlapEnd: string
+}
+
+/** resource-conflict 事件载荷：conflicts 为全量冲突对快照（消解时为空数组） */
+export interface GanttResourceConflictDetail {
+  conflicts: GanttResourceConflict[]
+}
+
 type TG = GanttTask & { id: string }
 
 interface GanttRow {
@@ -1670,6 +1699,88 @@ function formatEffortCell(v: unknown): string {
   return rounded >= 1e12 || s.length > 13 ? rounded.toExponential(2) : s
 }
 
+/**
+ * 资源池超配检测（pool 属性 opt-in 纯函数，亦导出供宿主/测试复用）：
+ * - 同资源两两任务区间求交（半开 [start, end)，**相切不算**）；
+ * - 里程碑按点处理不触发（无时长不占用产能）；summary（被 parent 指向）不触发（聚合形态无资源语义）；
+ * - registeredIds = 池内已登记资源 id 集：任务引用池外资源一律忽略（pool 模式下池是唯一权威，
+ *   未登记 id 视为宿主遗留数据）；池登记变化不会自动通知组件——宿主改池后须触发重算（如重写 tasks）；
+ * - 输出确定性：资源按首次出现序分组（Map 插入序），组内按输入序 i<j 双循环；
+ * - onOverCapacity：某资源最大并发 >2（任一时刻 ≥3 任务同时活跃）时逐资源回调一次，
+ *   供组件侧 devWarn。扫描线统计：同刻先处理结束（-1）后处理开始（+1），相切不累计并发。
+ * - 交叠区间按日精度含端日期输出（hour 档同样按日期表达）；判定本身按 ms 精度。
+ */
+export function computeResourceConflicts(
+  tasks: TG[],
+  registeredIds: Set<string>,
+  onOverCapacity?: (resourceId: string, peak: number) => void,
+): GanttResourceConflict[] {
+  // summary 判定与 unschedulableIds 同源：被 parent 指向即有子级（清洗层已拍平嵌套）
+  const hasChildren = new Set<string>()
+  for (const t of tasks) if (t.parent) hasChildren.add(t.parent)
+  // 资源 → 区间列表分组（只收池内已注册 id；里程碑 / summary 不参与）
+  const byResource = new Map<string, Array<{ task: TG; startMs: number; endMs: number }>>()
+  for (const t of tasks) {
+    if (hasChildren.has(t.id)) continue
+    if (t.type === 'milestone' || !t.end) continue
+    if (!Array.isArray(t.resources)) continue
+    const s = parseTaskDate(t.start)
+    if (!s) continue
+    const e = parseTaskDate(t.end)
+    if (!e) continue
+    const startMs = s.getTime()
+    // 日精度 end 含端 → 次日本地零点（与 endMsOfTask 渲染口径一致）；时间精度按绝对 ms
+    const endMs = t.end.length > 10 ? e.getTime() : addLocalDays(e.getTime(), 1)
+    if (endMs <= startMs) continue
+    for (const rid of t.resources) {
+      if (!registeredIds.has(rid)) continue
+      let list = byResource.get(rid)
+      if (!list) {
+        list = []
+        byResource.set(rid, list)
+      }
+      list.push({ task: t, startMs, endMs })
+    }
+  }
+  const out: GanttResourceConflict[] = []
+  for (const [resourceId, list] of byResource) {
+    for (let i = 0; i < list.length; i++) {
+      for (let j = i + 1; j < list.length; j++) {
+        const a = list[i]!
+        const b = list[j]!
+        if (a.startMs < b.endMs && b.startMs < a.endMs) {
+          const ovStart = Math.max(a.startMs, b.startMs)
+          const ovEndEx = Math.min(a.endMs, b.endMs) // 半开右缘
+          out.push({
+            taskA: a.task.id,
+            taskB: b.task.id,
+            resourceId,
+            overlapStart: toISODate(new Date(ovStart)),
+            overlapEnd: toISODate(new Date(ovEndEx - 1)), // 含端末日
+          })
+        }
+      }
+    }
+    if (onOverCapacity) {
+      // 最大并发扫描线：>2 即超限（3 个任务任一时刻同时活跃）
+      const events: Array<[number, number]> = []
+      for (const item of list) {
+        events.push([item.startMs, 1], [item.endMs, -1])
+      }
+      // 同刻先 -1 后 +1（相切不累计）；delta 升序使 -1 排前
+      events.sort((x, y) => x[0] - y[0] || x[1] - y[1])
+      let cur = 0
+      let peak = 0
+      for (const [, delta] of events) {
+        cur += delta
+        if (cur > peak) peak = cur
+      }
+      if (peak > 2) onOverCapacity(resourceId, peak)
+    }
+  }
+  return out
+}
+
 export class OASGantt extends OASElement {
   static override get observedAttributes(): string[] {
     return [
@@ -1703,6 +1814,8 @@ export class OASGantt extends OASElement {
       'hover',
       'group-by-project',
       'group-by-resource',
+      // 资源池模式（opt-in，默认关）：池驱动资源展示（tooltip 名称/费率）+ 跨任务超配检测
+      'pool',
       // 二期 opt-in 扩展（全部默认关：show-effort 工时列 / show-status-line 进度线 +
       // status-date 基准日 / baseline-id 多基线选择——数据通道 baselines 无属性默认取第一条）
       'show-effort',
@@ -1769,6 +1882,14 @@ export class OASGantt extends OASElement {
   /** 关键路径任务 id 集合（show-critical-path 开启时计算；关闭为空集，渲染零影响） */
   private criticalIds = new Set<string>()
   private conflictIds = new Set<string>()
+  /** pool 模式资源超配冲突对（update 重算；并入 conflictIds 走 .conflict 视觉通道） */
+  private resourceConflicts: GanttResourceConflict[] = []
+  /** oas-resource-conflict 幂等签名（上次派发的 stableStringify；null = 从未派发）——同一快照不重复派发 */
+  private lastConflictSig: string | null = null
+  /** windowed 下超配检测跳过告警（实例级一次） */
+  private warnedPoolWindowed = false
+  /** 资源并发超限（>2 任务同资源同时段）devWarn（实例级一次，不逐资源/逐 update 刷屏） */
+  private warnedPoolOverCapacity = false
   /** show-float 开启时的总浮时/自由浮时（ms，仅叶子/里程碑；摘要不参与 CPM） */
   private totalFloatMs = new Map<string, number>()
   private freeFloatMs = new Map<string, number>()
@@ -2374,6 +2495,11 @@ export class OASGantt extends OASElement {
   /** 工时列开关（opt-in 缺省关；显式 "false" 视作关，同 stripe） */
   private effortOn(): boolean {
     return this.hasAttr('show-effort') && this.getAttr('show-effort', '') !== 'false'
+  }
+
+  /** 资源池开关（opt-in 缺省关；显式 "false" 视作关，同 stripe）：池驱动资源展示 + 跨任务超配检测 */
+  private poolOn(): boolean {
+    return this.hasAttr('pool') && this.getAttr('pool', '') !== 'false'
   }
 
   /** 状态线开关（opt-in 缺省关）：开启后渲染状态竖线 + 条内计划进度刻度（G2 两渲染共用一个开关） */
@@ -3619,6 +3745,52 @@ export class OASGantt extends OASElement {
       ])
       this.totalFloatMs = floatOn && cp ? cp.totalFloat : new Map()
       this.freeFloatMs = floatOn && cp ? cp.freeFloat : new Map()
+    }
+    // 资源池超配检测（pool opt-in，默认关零开销）：windowed 下组件只持有已装载切片，跨任务
+    // 全量判定会漏报/误报 → 跳过并 devWarn 一次（对齐关键路径/违约的 windowed 口径）；
+    // 检测只对池内已登记资源生效，冲突对并入 conflictIds 复用 .conflict 视觉通道。
+    const poolOn = this.poolOn()
+    if (poolOn && this._winMode.windowed) {
+      if (!this.warnedPoolWindowed) {
+        this.warnedPoolWindowed = true
+        devWarn(
+          '[oas-gantt] windowed 模式下资源超配检测需要全量数据，已跳过（切片上判定会漏报）；请宿主在全量数据上自行判定',
+        )
+      }
+      this.resourceConflicts = []
+    } else if (poolOn) {
+      const registeredIds = new Set<string>()
+      for (const r of getSharedResourcePool().list()) {
+        if (typeof r.id === 'string' && r.id !== '') registeredIds.add(r.id)
+      }
+      this.resourceConflicts = computeResourceConflicts(this._tasks, registeredIds, (resourceId, peak) => {
+        // 并发超限 >2：dev 告警一次（实例级去重；事件通道仍逐快照携带全量冲突对）
+        if (this.warnedPoolOverCapacity) return
+        this.warnedPoolOverCapacity = true
+        devWarn(
+          `[oas-gantt] 资源池超配：资源 "${resourceId}" 同时段被 ${peak} 个任务并发占用（>2），建议拆分或错峰排期`,
+        )
+      })
+    } else {
+      this.resourceConflicts = []
+    }
+    for (const c of this.resourceConflicts) {
+      this.conflictIds.add(c.taskA)
+      this.conflictIds.add(c.taskB)
+    }
+    // oas-resource-conflict（幂等）：同一快照不重复派发；数据/池变化重算后签名变化才发
+    //（含消解发空数组——宿主据此清徽章）。pool 关闭不派发任何事件（opt-in 零副作用）且重置
+    // 签名——重新开启时按新快照重发首帧。
+    if (!poolOn) {
+      this.lastConflictSig = null
+    } else {
+      const conflictSig = stableStringify(this.resourceConflicts)
+      if (conflictSig !== this.lastConflictSig) {
+        this.lastConflictSig = conflictSig
+        this.emit('resource-conflict', {
+          conflicts: this.resourceConflicts.map((c) => ({ ...c })),
+        } satisfies GanttResourceConflictDetail)
+      }
     }
     const scale = this.scaleMode()
     if (this.lastScale === '') {
@@ -6835,6 +7007,26 @@ export class OASGantt extends OASElement {
 
   // ===== tooltip（单例浮层：名称 + 区间 + 进度；template[slot=tooltip] 覆盖内容）=====
 
+  /**
+   * pool 模式 tooltip 资源行文本：任务 resources 逐 id 从共享池取名称（costRate 有限正值附
+   * 「N/h」费率）；池未登记 id 忽略。纯取数不看开关——poolOn 判断在调用侧。
+   */
+  private poolResourceText(t: TG): string {
+    if (!Array.isArray(t.resources) || t.resources.length === 0) return ''
+    const pool = getSharedResourcePool()
+    const parts: string[] = []
+    for (const rid of t.resources) {
+      const item = pool.get(rid)
+      if (!item) continue
+      parts.push(
+        typeof item.costRate === 'number' && Number.isFinite(item.costRate) && item.costRate > 0
+          ? `${item.name} ${item.costRate}/h`
+          : item.name,
+      )
+    }
+    return parts.join(' · ')
+  }
+
   private showTooltip(row: GanttRow, bar: HTMLElement): void {
     const tip = this.tooltipEl
     if (!tip) return
@@ -6848,6 +7040,9 @@ export class OASGantt extends OASElement {
       if (rangeEl) rangeEl.textContent = this.rangeText(row)
       const progEl = tip.querySelector<HTMLElement>('[data-task-progress]')
       if (progEl) progEl.textContent = this.t('gantt.tooltipProgress', { progress: row.progress })
+      // 资源池绑定点（pool opt-in）：模板内 [data-task-resources] 填池资源文本；关闭时清空防残留
+      const resEl = tip.querySelector<HTMLElement>('[data-task-resources]')
+      if (resEl) resEl.textContent = this.poolOn() ? this.poolResourceText(row.task) : ''
     } else {
       tip.innerHTML = ''
       const name = document.createElement('div')
@@ -6865,6 +7060,14 @@ export class OASGantt extends OASElement {
         prog.className = 'tip-line'
         prog.textContent = this.t('gantt.tooltipProgress', { progress: row.progress })
         tip.appendChild(prog)
+      }
+      // 资源池展示行（pool opt-in，默认关零节点）：池内取名称/费率；池未登记 id 忽略（与超配检测同口径）
+      const resText = this.poolResourceText(row.task)
+      if (this.poolOn() && resText !== '') {
+        const res = document.createElement('div')
+        res.className = 'tip-line'
+        res.textContent = resText
+        tip.appendChild(res)
       }
     }
     tip.hidden = false

@@ -4308,3 +4308,139 @@ describe('OASResource 泳道行 hover（hover 属性，默认开；hover="false"
     expect(media).toMatch(/:host\(\[hover='false'\]\) \.row\.lane:hover\s*\{/)
   })
 })
+
+// ===== T12：行头技能 chip（show-skills opt-in，默认关，默认视觉零变化）=====
+
+describe('OASResource show-skills 行头技能标签（opt-in）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  const RES_SKILLS = JSON.stringify([
+    { id: 'r1', name: '张三', skills: ['frontend', 'design', 'frontend', '  ', 'vue'] },
+    { id: 'r2', name: '李四', skills: 'not-an-array' },
+    { id: 'r3', name: '王五' },
+  ])
+  const TASKS = JSON.stringify([
+    { id: 't1', name: '任务一', start: '2026-03-02', end: '2026-03-04', resources: ['r1'] },
+  ])
+
+  function chipsOf(el: OASResource, resourceId: string): HTMLElement[] {
+    return [...shadowOf(el).querySelectorAll<HTMLElement>(`.lane[data-resource-id="${resourceId}"] .skill-chip`)]
+  }
+
+  it('默认关：show-skills 不在场 → 无 .skill-chip / .skill-chips 节点（默认形态零变化）', () => {
+    const el = mount({ resources: RES_SKILLS, tasks: TASKS })
+    expect(shadowOf(el).querySelectorAll('.skill-chip, .skill-chips').length).toBe(0)
+    expect(laneOf(el, 'r1').querySelector<HTMLElement>('.name')!.textContent).toBe('张三')
+    expect(OASResource.observedAttributes, 'show-skills 进 observedAttributes 支持运行时切换').toContain('show-skills')
+  })
+
+  it('显式 false：show-skills="false" 与 show-cost 同口径视为关闭', () => {
+    const el = mount({ resources: RES_SKILLS, tasks: TASKS, 'show-skills': 'false' })
+    expect(shadowOf(el).querySelectorAll('.skill-chip, .skill-chips').length).toBe(0)
+    el.setAttribute('show-skills', '')
+    expect(chipsOf(el, 'r1').length).toBe(3)
+  })
+
+  it('开启：名称旁渲染 chip（顺序/文本随清洗后数据；重复与空白项丢弃、去重、trim）', () => {
+    const el = mount({ resources: RES_SKILLS, tasks: TASKS, 'show-skills': '' })
+    const chips = chipsOf(el, 'r1')
+    // 'frontend' 去重、'  ' 空白丢弃 → frontend / design / vue（保持首现顺序）
+    expect(chips.map((c) => c.textContent)).toEqual(['frontend', 'design', 'vue'])
+    // 名字移入 .name-text 承接 ellipsis，chips 紧随其后
+    expect(laneOf(el, 'r1').querySelector<HTMLElement>('.name .name-text')!.textContent).toBe('张三')
+    expect(laneOf(el, 'r1').querySelectorAll('.name .skill-chips').length).toBe(1)
+  })
+
+  it('清洗边界：skills 非数组 → 无 chip 走默认路径；无 skills 字段 → 同样默认路径；全空清洗后同理', () => {
+    const el = mount({ resources: RES_SKILLS, tasks: TASKS, 'show-skills': '' })
+    // r2 skills 非数组（清洗为未声明）→ 默认路径（纯 textContent）
+    expect(laneOf(el, 'r2').querySelectorAll('.skill-chip').length).toBe(0)
+    expect(laneOf(el, 'r2').querySelector<HTMLElement>('.name')!.textContent).toBe('李四')
+    // r3 无 skills 字段
+    expect(laneOf(el, 'r3').querySelectorAll('.skill-chip').length).toBe(0)
+  })
+
+  it('上限 8：9 个技能只渲染 8 个 chip；容器 title 携全量（截断只影响展示）', () => {
+    const many = JSON.stringify([
+      {
+        id: 'r1',
+        name: '甲',
+        skills: ['s1', 's2', 's3', 's4', 's5', 's6', 's7', 's8', 's9'],
+      },
+    ])
+    const el = mount({ resources: many, tasks: TASKS, 'show-skills': '' })
+    const chips = chipsOf(el, 'r1')
+    expect(chips.length).toBe(8)
+    expect(chips[7]!.textContent).toBe('s8')
+    const container = laneOf(el, 'r1').querySelector<HTMLElement>('.skill-chips')!
+    expect(container.title).toBe('s1, s2, s3, s4, s5, s6, s7, s8, s9')
+    // 数据层保全量：property 读回 9 个（reassign 匹配不受渲染截断影响）
+    expect(el.resources[0]!.skills?.length).toBe(9)
+  })
+
+  it('数据变化随 update 重算：resources 属性替换后 chips 换新（旧标签清掉）', () => {
+    const el = mount({ resources: RES_SKILLS, tasks: TASKS, 'show-skills': '' })
+    expect(chipsOf(el, 'r1').map((c) => c.textContent)).toEqual(['frontend', 'design', 'vue'])
+    el.resources = [{ id: 'r1', name: '张三', skills: ['backend'] }]
+    expect(chipsOf(el, 'r1').map((c) => c.textContent)).toEqual(['backend'])
+    // 技能清空 → 回默认路径
+    el.resources = [{ id: 'r1', name: '张三' }]
+    expect(laneOf(el, 'r1').querySelectorAll('.skill-chip').length).toBe(0)
+    expect(laneOf(el, 'r1').querySelector<HTMLElement>('.name')!.textContent).toBe('张三')
+  })
+
+  it('RTL：dir=rtl 下 DOM 顺序不变（视觉镜像由 flex 行向随 direction 自动翻转，无 JS 反转）', () => {
+    const el = mount({ resources: RES_SKILLS, tasks: TASKS, 'show-skills': '' })
+    el.setAttribute('dir', 'rtl')
+    expect(chipsOf(el, 'r1').map((c) => c.textContent)).toEqual(['frontend', 'design', 'vue'])
+    // CSS 不含 JS 式反转痕迹：chips 容器/片无 direction 覆写（继承宿主方向）
+    const css = shadowOf(el).querySelector('style')!.textContent ?? ''
+    expect(css).toMatch(/\.name \.skill-chips \{[^}]*text-overflow: ellipsis/)
+    expect(css).not.toContain('direction:')
+  })
+
+  it('chips 与徽标/成本并存：三 opt-in 同开时节点齐备、序为 名字 → chips → 徽标 → 成本', () => {
+    const resources = JSON.stringify([
+      { id: 'r1', name: '张三', skills: ['frontend', 'backend'], costRate: 100 },
+      { id: 'r2', name: '李四', capacity: 1 },
+    ])
+    // r1 双任务同档 → 超载 1 档（capacity 缺省 1）
+    const tasks = JSON.stringify([
+      { id: 't1', name: '任务一', start: '2026-03-02', end: '2026-03-04', resources: ['r1'] },
+      { id: 't2', name: '任务二', start: '2026-03-02', end: '2026-03-04', resources: ['r1'] },
+    ])
+    const el = mount({
+      resources,
+      tasks,
+      'show-skills': '',
+      'show-overload-badge': '',
+      'show-cost': '',
+      'range-start': '2026-03-01',
+      'range-end': '2026-03-31',
+    })
+    const name = laneOf(el, 'r1').querySelector<HTMLElement>('.name')!
+    expect(name.querySelector<HTMLElement>('.name-text')!.textContent).toBe('张三')
+    expect(name.querySelectorAll('.skill-chip').length).toBe(2)
+    expect(name.querySelector<HTMLElement>('.over-badge')!.textContent).toContain('超载')
+    expect(name.querySelector<HTMLElement>('.lane-cost')!.textContent).toMatch(/^成本 \d/)
+    // 序：name-text → skill-chips → over-badge → lane-cost
+    const order = [...name.children].map((c) => c.className)
+    expect(order).toEqual(['name-text', 'skill-chips', 'over-badge', 'lane-cost'])
+  })
+
+  it('CSS：chip 弱底圆角小标签走 token（无硬编码色值），单行裁切不撑行高', () => {
+    const el = mount({ resources: RES_SKILLS, tasks: TASKS, 'show-skills': '' })
+    const css = shadowOf(el).querySelector('style')!.textContent ?? ''
+    expect(css).toMatch(/\.name \.skill-chip \{[^}]*background: var\(--oas-color-bg-hover\)/)
+    expect(css).toMatch(/\.name \.skill-chip \{[^}]*border-radius: var\(--oas-radius-sm\)/)
+    expect(css).toMatch(/\.name \.skill-chip \{[^}]*color: var\(--oas-color-text-secondary-strong\)/)
+    // 容器单行省略（不换行 → 行高不因 chips 变化）
+    expect(css).toMatch(/\.name \.skill-chips \{[^}]*white-space: nowrap/)
+    expect(css).toMatch(/\.name \.skill-chips \{[^}]*text-overflow: ellipsis/)
+  })
+})

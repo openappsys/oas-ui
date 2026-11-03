@@ -391,6 +391,43 @@ const STYLE = `
   pointer-events: auto;
   user-select: text;
 }
+/* ===== 行头技能 chip（show-skills opt-in，默认无节点，默认视觉零变化） =====
+   chips 容器为块级 flex 项：单行裁切（overflow:hidden + white-space:nowrap + text-overflow:ellipsis）
+   ——行高不因 chips 换行（**选单行省略而非 2 行封顶**：少一份行高状态、与名字 ellipsis 行为一致），
+   全量技能（含被 8 个上限截断的部分）经容器 title 悬浮展示。DOM 顺序恒为数据顺序，
+   RTL 视觉镜像由 .name 的 flex 行向随 direction 自动翻转（无 JS 反转）。
+   宽度策略：容器 flex:1 1 0（basis 0）只吸收名字之后的剩余空间并自己承担省略号——
+   名字先取自然宽（不被 chips 挤没），超长时名字自己 ellipsis；chip 用 inline-block + flex:none，
+   裁切边界落在 chip 之间（inline-flex 自带格式化上下文，收缩时末片会被拦腰截断且盖住省略号）。
+   颜色只走 token（弱底 = bg-hover、文字 = 次级强调色，暗色变体随 token 自动切换），无硬编码色值 */
+.name .skill-chips {
+  display: block;
+  flex: 1 1 0;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  margin-inline-start: var(--oas-space-1);
+}
+.name .skill-chip {
+  display: inline-block;
+  /* 非 flex 项时无效果，作为容器被宿主样式改成 flex 时的防御：chip 不被压缩裁半 */
+  flex: none;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: middle;
+  padding: 1px 6px;
+  border-radius: var(--oas-radius-sm);
+  background: var(--oas-color-bg-hover);
+  color: var(--oas-color-text-secondary-strong);
+  font-size: 11px;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+.name .skill-chip + .skill-chip {
+  margin-inline-start: var(--oas-space-1);
+}
 .empty {
   position: absolute;
   inset: 0;
@@ -468,7 +505,11 @@ export interface ResourceItem {
    * 可写小数（如 0.5），但任务负载按整日计数，0.5 日无法容纳整日任务。
    */
   capacityOverrides?: Record<string, number>
-  /** 资源技能标签（reassign 时用于 requiredSkills 硬匹配） */
+  /**
+   * 资源技能标签（清洗：非数组→未声明、非字符串/空串项丢弃、去重、trim）。
+   * reassign 时用于 requiredSkills 硬匹配（全量）；`show-skills` 开启时行头以 chip 展示
+   * （展示截断 8 个防炸行高，全量经悬浮提示可见——截断只影响展示，不影响匹配）。
+   */
   skills?: string[]
   /**
    * 小时费率（纯展示数据，不参与排程/负载计算）：`show-cost` 开启时参与泳道行头成本合计
@@ -653,6 +694,12 @@ const ROW_BUFFER = 4
 const DAY_MS = 86_400_000
 /** 成本合计的每日工时（show-cost：Σ(天数 × 8h × costRate)；固定 8h，单位由宿主文案承载） */
 const COST_HOURS_PER_DAY = 8
+/**
+ * 行头技能 chip 渲染上限（show-skills）：超出部分不渲染（防超长技能列表挤占行头），
+ * 全量列表经 chips 容器 title 悬浮可见。只截断**展示**——RS.skills 数据层保全量，
+ * reassign 的 requiredSkills 硬匹配不受影响（第 9 个技能仍可参与匹配，只是不显示 chip）。
+ */
+const MAX_SKILL_CHIPS = 8
 /** period 构建护栏（防脏数据撑爆循环） */
 const MAX_PERIODS = 5000
 /** levelResources 缺省迭代上限 */
@@ -1618,6 +1665,8 @@ export class OASResource extends OASElement {
       'header-sticky',
       // 成本合计（opt-in，默认关）：泳道行头按 costRate 显示已装载周期内成本合计
       'show-cost',
+      // 行头技能 chip（opt-in，默认关）：ResourceItem.skills 以弱底小标签渲染在名称旁
+      'show-skills',
       // 泳道行 hover 底色（默认开；hover="false" 关闭）
       'hover',
     ]
@@ -2868,6 +2917,24 @@ export class OASResource extends OASElement {
     return `${this.t('resource.cost')} ${cost.toFixed(2)}`
   }
 
+  /**
+   * 行头技能 chips（show-skills opt-in）：最多渲染 MAX_SKILL_CHIPS 个（防超长列表挤占行头），
+   * 全量技能（含被截断部分）经容器 title 悬浮展示；textContent 纯文本防注入。
+   * 数据层 RS.skills 保全量——截断只影响展示，reassign 的 requiredSkills 硬匹配不受影响。
+   */
+  private buildSkillChips(skills: string[]): HTMLElement {
+    const chips = document.createElement('span')
+    chips.className = 'skill-chips'
+    chips.title = skills.join(', ')
+    for (const skill of skills.slice(0, MAX_SKILL_CHIPS)) {
+      const chip = document.createElement('span')
+      chip.className = 'skill-chip'
+      chip.textContent = skill
+      chips.appendChild(chip)
+    }
+    return chips
+  }
+
   private renderLanes(): void {
     if (!this.lanesEl) return
     this.laneCullVisits = 0
@@ -2884,6 +2951,9 @@ export class OASResource extends OASElement {
     // 开关关闭时不读缓存（默认路径零开销，行头逐节点与旧实现一致）
     const costOn = this.hasAttr('show-cost') && this.getAttr('show-cost', '') !== 'false'
     const laneCosts = costOn ? this.laneCosts : null
+    // show-skills（opt-in）：行头名称旁技能 chip（开关关闭时不读 skills，默认路径零开销）；
+    // 显式 false（`show-skills="false"`）与 show-cost 同口径视为关闭（布尔属性常见写法）
+    const skillsOn = this.hasAttr('show-skills') && this.getAttr('show-skills', '') !== 'false'
     // 列窗口像素范围（两侧各多留 1 列 overscan，避免边缘条被误裁）；cull 在画布坐标系进行（RTL 同）
     const winLeft = this.winColStart * colW - colW
     const winRight = this.winColEnd * colW + colW
@@ -2987,39 +3057,33 @@ export class OASResource extends OASElement {
       name.setAttribute('role', 'rowheader')
       const overCount = overCounts?.get(r.id) ?? 0
       const laneCost = laneCosts?.get(r.id)
-      if (badgeOn && overCount > 0) {
-        // 徽标路径：名字移入 .name-text 承接 ellipsis（flex 容器自身不吃 text-overflow），
-        // 徽标为可见信息（不 aria-hidden）；文案走 i18n（locale 切换经 update() 即时刷新）
+      // show-skills（opt-in）：行头名称旁技能 chip。清洗后的 RS.skills 已去重/trim；
+      // 渲染截断 MAX_SKILL_CHIPS（数据层保全量，reassign 匹配不受影响），全量经容器 title 悬浮
+      const skills = skillsOn && r.skills && r.skills.length > 0 ? r.skills : null
+      if ((badgeOn && overCount > 0) || laneCost !== undefined || skills) {
+        // 有任一右缀（徽标/成本/chips）：名字移入 .name-text 承接 ellipsis（flex 容器自身不吃 text-overflow）。
+        // 徽标为可见信息（不 aria-hidden）；成本/徽标文案走 i18n（locale 切换经 update() 即时刷新）
         name.textContent = ''
         const nameText = document.createElement('span')
         nameText.className = 'name-text'
         nameText.textContent = r.name
         name.appendChild(nameText)
-        const badge = document.createElement('span')
-        badge.className = 'over-badge'
-        badge.textContent = this.t('resource.overBadge', { count: overCount })
-        name.appendChild(badge)
-        // 徽标与成本并存（两个 opt-in 同开）：成本缀在徽标后，同一次 update 数据源
+        // chips 紧跟名字（「名称旁」），其后才是徽标/成本
+        if (skills) name.appendChild(this.buildSkillChips(skills))
+        if (badgeOn && overCount > 0) {
+          const badge = document.createElement('span')
+          badge.className = 'over-badge'
+          badge.textContent = this.t('resource.overBadge', { count: overCount })
+          name.appendChild(badge)
+        }
         if (laneCost !== undefined) {
           const costEl = document.createElement('span')
           costEl.className = 'lane-cost'
           costEl.textContent = this.laneCostText(laneCost)
           name.appendChild(costEl)
         }
-      } else if (laneCost !== undefined) {
-        // 成本路径（show-cost + 费率有效 + 合计 > 0）：名字移入 .name-text 承接 ellipsis，
-        // 成本合计右缀（i18n 标签 + 两位小数，无货币符号——单位由宿主 CSS/文案自定）
-        name.textContent = ''
-        const nameText = document.createElement('span')
-        nameText.className = 'name-text'
-        nameText.textContent = r.name
-        name.appendChild(nameText)
-        const costEl = document.createElement('span')
-        costEl.className = 'lane-cost'
-        costEl.textContent = this.laneCostText(laneCost)
-        name.appendChild(costEl)
       } else {
-        // 默认路径（关闭徽标 / 无超载 / 无成本）：与旧实现逐节点一致（纯 textContent，清掉复用行的旧徽标结构）
+        // 默认路径（关闭徽标 / 无超载 / 无成本 / 无 chips）：与旧实现逐节点一致（纯 textContent，清掉复用行的旧结构）
         name.textContent = r.name
       }
       const track = row.lastElementChild as HTMLElement

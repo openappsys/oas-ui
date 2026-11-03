@@ -109,6 +109,21 @@ levelResources(resources, tasks, { scale: 'week', projectOrder: ['portal'] })
 
 All three readability capabilities are **opt-in** (off by default, zero extra nodes): `show-load-values` displays the parallel task count on top of every load > 0 pillar (decorative numbers, `aria-hidden`; overloaded pillars get `.over` using `--oas-color-danger`); `show-overload-badge` shows an "Overloaded N periods" badge on the swimlane row header of overloaded resources (visible information, not `aria-hidden`, copy follows the global locale instantly); `bar-label` shows the task name inside the bar (rendered as plain text against injection, single-line clipped on narrow bars; does not affect aria-label or click hit-testing).
 
+## Row-header Skill Chips (show-skills)
+
+<DemoBlock title="show-skills: row-header chips for ResourceItem.skills next to the name (single-line ellipsis + title with the full list)">
+  <oas-resource id="res-skill-chips" show-skills scale="day" height="240" capacity="1"
+    resources='[{"id":"a","name":"Alice","skills":["frontend","design","vue"]},{"id":"b","name":"Bob","skills":["backend","devops","k8s","grpc","redis","mysql","rabbitmq","kafka","flink"]},{"id":"c","name":"Cara"}]'
+    tasks='[{"id":"s1","name":"Pages","start":"2026-03-02","end":"2026-03-06","resources":["a"]},{"id":"s2","name":"Services","start":"2026-03-03","end":"2026-03-08","resources":["b"]}]'></oas-resource>
+</DemoBlock>
+
+With `show-skills` (off by default), resources carrying `ResourceItem.skills` show **chips** (muted rounded tags; colors from tokens, dark theme follows automatically) next to the name in the swimlane row header:
+
+- Sanitization reuses the data-layer rules: non-array counts as absent, non-string / blank items dropped, deduplicated, trimmed;
+- **At most 8 chips render** (so a long skill list cannot blow up the row header); the rest stay visible via the container's `title` hover (the data layer keeps the full list — `levelResources` reassign `requiredSkills` matching is unaffected by the display cap);
+- Single-line ellipsis (no wrapping) — row height does not change with chip count; when combined with the overload badge / cost total the header order is name → chips → badge → cost;
+- Under RTL the DOM order is unchanged; visual mirroring follows `direction` automatically through the flex row.
+
 ## Lane Cost Totals (show-cost)
 
 <DemoBlock title="show-cost on: resources with a costRate show a loaded-window cost total in the row header (two decimals, no currency symbol)">
@@ -241,6 +256,7 @@ if (pool.version !== lastSeen) {
 | `show-cost` | Lane cost total (boolean, off by default): the lane header shows "Cost Σ(task days × 8h × costRate)" with two decimals (no currency symbol — the unit is up to the host CSS/copy); days are counted as the calendar-day intersection between each task and the **intersection window** — with managed range-start/range-end the managed axis endpoints are used (cost does not drift across scale modes), otherwise the task-derived axis applies; lanes without a valid costRate show nothing. The total is recomputed in update() when tasks/date windows change; scrolling the visible column window does not retrigger | `string` | — |
 | `show-load-values` | Show the load value above each histogram bar (boolean, off by default): only for load > 0; overload values use text-on-primary (white in light / dark in dark) for contrast on the danger bar. The number is visual redundancy (aria-hidden); screen readers still get the column load description | `boolean` | — |
 | `show-overload-badge` | Show an "Overloaded ×N" badge in the lane header (boolean, off by default): only for resources with overloaded periods; text comes from the i18n key resource.overBadge | `boolean` | — |
+| `show-skills` | Skill chips next to the lane row-header name (boolean, off by default): renders ResourceItem.skills as muted rounded tags (sanitized: non-array = absent, non-string/blank items dropped, deduplicated, trimmed); at most 8 render so a long list cannot blow up the header — the full list stays on the container title hover (data layer keeps everything; reassign matching is unaffected); single-line ellipsis keeps row height stable, RTL mirrors automatically via direction | `string` | — |
 | `skill-matrix` | Skill matrix view (boolean, off by default): rows = resources, columns = skill union, check = owned; not virtualized | `boolean` | — |
 | `tasks` | Resource tasks (JSON [{ id, name, start, end, resources?, priority?, requiredSkills?, project? }]); start/end are day precision YYYY-MM-DD only (end inclusive; time-bearing input is treated as that day), resources is the assigned resource id array (assignments to unknown resources are ignored). priority: lower is more important; requiredSkills: every reassign target must have all tags; project works with levelResources({ projectOrder }) for cross-project priority | `ResourceTask[]` | `[]` |
 | `total` | Full resource row count in windowed mode; 0 or invalid disables windowed (falls back to local mode) | `string` | — |

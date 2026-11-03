@@ -382,6 +382,32 @@ computeVariance(el.tasks, 'plan-b')
 // [{ id, startDelta, endDelta, durationDelta, progressDelta }]
 ```
 
+## Resource Pool & Over-allocation Detection (pool)
+
+<DemoBlock title="pool enabled: overlapping tasks on the same resource get .conflict on bar & row name + oas-resource-conflict badge">
+  <oas-gantt id="gantt-pool-demo" pool range-start="2026-03-01" range-end="2026-03-31" height="200"
+    tasks='[{"id":"pa","name":"Design (Alice)","start":"2026-03-02","end":"2026-03-06","progress":60,"resources":["alice"]},{"id":"pb","name":"Review (Alice, overlapping)","start":"2026-03-05","end":"2026-03-09","progress":30,"resources":["alice"]},{"id":"pc","name":"Dev (Bob, independent)","start":"2026-03-05","end":"2026-03-09","progress":40,"resources":["bob"]}]'></oas-gantt>
+  <div id="gantt-pool-out" style="margin-top:var(--oas-space-2);font-size:var(--oas-font-size-sm);color:var(--oas-color-text-secondary)">detecting…</div>
+</DemoBlock>
+
+The `pool` attribute (opt-in, default off) connects the task `resources` ids to the **shared resource pool** (`getSharedResourcePool()` from `@oas-ui/ui/data/resource/pool`, sharing the same registry state as the `oas-resource` component):
+
+- **Pool-driven display**: hovering a bar appends pool resource names and rates to the tooltip (`costRate`, e.g. "Alice 120/h"); ids missing from the pool are ignored. The custom tooltip template can bind the same text via `[data-task-resources]`.
+- **Cross-task over-allocation detection**: on update, tasks sharing a resource are checked for time-range overlap — any intersection > 0 is an over-allocation (half-open ranges, **touching edges excluded**; day-precision ends are inclusive, so sharing one day counts); milestones are treated as points and never trigger, summaries are excluded; only **registered** pool resources are checked (unregistered ids are treated as host legacy data). Over-allocated bars and row names get `.conflict` (reusing the violation visual channel `--oas-gantt-conflict-color`).
+- **`oas-resource-conflict` event**: `detail: { conflicts }`, each `{ taskA, taskB, resourceId, overlapStart, overlapEnd }` (inclusive day-precision dates). **Idempotent** — not re-emitted for the same snapshot; re-emitted after data/pool changes when the signature differs; an empty array is emitted on resolution. The event is emitted **synchronously from the `update` caused by data/pool changes**: attach the listener before writing the data (e.g. `addEventListener` first, then assign `tasks`), otherwise the first result never reaches the listener. A resource with > 2 concurrent tasks in the same window triggers one dev console warning.
+- **Pool changes do not notify the component**: retrigger a recalc after registering (e.g. re-assign `tasks`). Detection is skipped in windowed mode with a devWarn (full data required for a correct verdict).
+
+```ts
+import { getSharedResourcePool } from '@oas-ui/ui/data/resource/pool'
+
+const pool = getSharedResourcePool()
+pool.register([{ id: 'alice', name: 'Alice', costRate: 120 }])
+// Retrigger a recalc after pool changes (the pool does not notify the component):
+ganttEl.tasks = ganttEl.tasks
+```
+
+> Not in this batch: resource load histogram / swimlane view (future batch), automatic schedule avoidance — `pool` only detects and marks, it never moves tasks.
+
 ## Row Virtualization (10k-scale tasks)
 
 <DemoBlock title="height + row-height enable viewport windowing (300 rows demoed; only the visible window + buffer renders)">
@@ -469,6 +495,7 @@ Conventions in windowed mode: **the slice must be flat** (a hierarchical slice w
 
 <script setup>
 import { onMounted } from 'vue'
+import { getSharedResourcePool } from '@oas-ui/ui/data/resource/pool'
 onMounted(async () => {
   await customElements.whenDefined('oas-gantt')
   const out = document.getElementById('gantt-output')
@@ -710,6 +737,28 @@ onMounted(async () => {
       { id: 'w2', name: 'Build', start: '2026-03-09', end: '2026-03-13', dependencies: [{ id: 'w1', lag: 2 }] },
     ]
   }
+
+  // Resource pool over-allocation demo: register pool → retrigger recalc → event badge
+  const poolDemo = document.getElementById('gantt-pool-demo')
+  const poolOut = document.getElementById('gantt-pool-out')
+  if (poolDemo && poolOut) {
+    getSharedResourcePool().register([
+      { id: 'alice', name: 'Alice', costRate: 120 },
+      { id: 'bob', name: 'Bob', costRate: 90 },
+    ])
+    // The event is emitted synchronously from the update caused by data/pool changes:
+    // attach the listener first, then write the data that triggers the recalc
+    poolDemo.addEventListener('oas-resource-conflict', (e) => {
+      const { conflicts } = e.detail
+      poolOut.textContent =
+        conflicts.length === 0
+          ? 'No over-allocation'
+          : `${conflicts.length} conflict pair(s): ${conflicts
+              .map((c) => `${c.taskA} × ${c.taskB} (${c.resourceId}, ${c.overlapStart} ~ ${c.overlapEnd})`)
+              .join('; ')}`
+    })
+    poolDemo.tasks = poolDemo.tasks // registration happens after the first frame: re-assign tasks to trigger a recalc
+  }
 })
 </script>
 
@@ -800,6 +849,7 @@ Enabled by default: hovering a name row in the left column highlights the matchi
 | `hover` | Row hover background switch (on by default): hovering a row name or task bar lights up the whole row (name + timeline share the same background). Color via `--oas-gantt-row-hover-bg` (defaults to `--oas-color-bg-hover`, independent of the zebra stripe); `"false"` disables | `string` | — |
 | `label-position` | Bar label position: inside / right / left; default `none` (the row-name column already shows the name, so the bar does not repeat it); invalid values fall back to `none` | `string` | — |
 | `locale` | Localization (overrides config-provider injection and the global locale) | `string` | — |
+| `pool` | Resource pool mode (boolean, default off): task resources reference the shared resource pool (getSharedResourcePool() from @oas-ui/ui/data/resource/pool) — hovering a bar shows pool resource names and rates (costRate; unregistered ids ignored); plus cross-task over-allocation detection for the same resource: tasks whose time ranges overlap (half-open, touching edges excluded; milestones treated as points, summaries excluded) get .conflict on bar and row name, conflict pairs emitted via oas-resource-conflict. Pool changes do not notify the component automatically — retrigger a recalc (e.g. re-assign tasks) after registering; detection is skipped in windowed mode with a devWarn; no resource histogram/swimlane and no auto-schedule avoidance | `string` | — |
 | `progress-readonly` | No progress dragging (dates still draggable) | `boolean` | — |
 | `range-end` | Host-managed time-axis end (ISO date YYYY-MM-DD, inclusive); pair with range-start | `string` | — |
 | `range-start` | Host-managed time-axis start (ISO date YYYY-MM-DD): when provided the axis extent is no longer derived from data; use with range-end to support windowed mode (the slice may not span the full date range) | `string` | — |
@@ -865,6 +915,7 @@ Enabled by default: hovering a name row in the left column highlights the matchi
 | `oas-range-request` | Emitted when the time axis is host-managed (range-start/range-end) and the visible time window approaches an axis edge; detail: { startMs, endMs, reason } (the neighbouring range requested). The same expected range is not emitted twice |
 | `oas-reparent` | Dispatched when a row drag reparent/reorder settles, detail: { id, parent, index } (parent null means root level; index is the sibling position) |
 | `oas-reschedule` | Dispatched when auto-scheduling moved successor tasks (auto-schedule on), detail: { ids } (ids of the rescheduled tasks) |
+| `oas-resource-conflict` | Emitted with pool enabled when the over-allocation result is computed (idempotent: not re-emitted for the same snapshot; re-emitted after data/pool changes, empty array on resolution), detail: { conflicts } ([{ taskA, taskB, resourceId, overlapStart, overlapEnd }], taskA precedes taskB in input order, overlap dates are inclusive day-precision) |
 | `oas-scale-change` | Dispatched when the scale attribute changes, detail: { scale }; not dispatched on initial absorption |
 | `oas-selection-change` | Dispatched when the multi-select set changes (click / keyboard / property write), detail: { ids } (selected task ids) |
 | `oas-task-add` | Dispatched after imperative creation (addTask / duplicateTask / creatable inline create), detail: { id, task } (id is the new task id) |
