@@ -7,7 +7,7 @@
 | Scenario | Recommended approach |
 | --- | --- |
 | React 19 | Native `<oas-*>`; bind events with `on` + all-lowercase event name (`onoas-submit`) |
-| React 17/18, or camelCase events / TS hints | Use `useOasEvent` / `useOasEvents` from the in-repo `@oas-ui/react` (not published to npm) |
+| React 17/18, or camelCase event names | Vendor the two hooks from the in-repo `@oas-ui/react` (~100 lines; not published to npm, see below) |
 | Vue 3 | Set `compilerOptions.isCustomElement`, use `<oas-*>` directly, bind `@oas-*` events |
 | Next.js App Router | Use the RSC/DSD integration in `@oas-ui/next` (see [SSR strategy](/en/guide/ssr)) |
 | Nuxt 3 | Use the `@oas-ui/nuxt` module (auto `isCustomElement` + theme CSS + SSR helpers) |
@@ -40,7 +40,7 @@ React 19 maps Custom Element events only for the "`on` + all-lowercase literal" 
 
 CamelCase `onOasSubmit` is **not** mapped to `oas-submit`; do not rely on it.
 
-React 17/18 requires manual `addEventListener`. The in-repo `@oas-ui/react` package provides hooks:
+React 17/18 requires manual `addEventListener`. The repo's `packages/react` holds a reference implementation of `useOasEvent` / `useOasEvents` (two hooks, ~100 lines, MIT/Apache-2.0) — **it is not published to npm, and there is no plan for any framework wrapper / bridge package** (assessment: React's native custom-element support keeps improving; a bridge is a shrinking interop gap and not worth an official dependency). When you need the camelCase spelling, copy the two hooks into your project:
 
 ```tsx
 import { useRef } from 'react'
@@ -69,6 +69,22 @@ return <oas-table ref={tableRef} />
 
 - Boolean attributes use presence semantics: `<oas-ellipsis expanded>` means expanded; remove the attribute (or follow the component docs for `false`) to collapse.
 - To use `oas-*` tags directly in TypeScript, augment `JSX.IntrinsicElements`; see the `@oas-ui/react` README for an example.
+
+### Global-attribute hijacking (`title`)
+
+`title` exists as a native property on `HTMLElement`: React assigns `title={...}` as a **property, not an attribute** — components that read the title through the attribute channel (drawer/modal) receive nothing. Bypass JSX and set the attribute explicitly through a `ref`:
+
+```tsx
+const ref = useRef<HTMLElement | null>(null)
+useEffect(() => {
+  if (title !== undefined) ref.current?.setAttribute('title', title)
+  else ref.current?.removeAttribute('title')
+}, [title])
+
+return <oas-modal ref={ref} />
+```
+
+Apply the same fallback whenever a component attribute collides with a native `HTMLElement` member (`title`, and other global attributes like `lang` / `dir`) and the component reads the attribute channel.
 
 ## Vue 3
 
@@ -120,6 +136,7 @@ export default defineNuxtConfig({
 3. **Boolean empty strings**: Vue writes `''` for static `<oas-ellipsis expanded>`; components treat presence as true. Do not use `expanded="false"` to disable; follow the component docs.
 4. **Register before hydration**: do not assign properties to an unupgraded element; wait for `customElements.whenDefined('oas-*')` or use a framework integration package.
 5. **`::part()` cannot be chained with pseudo-classes**: `::part(item):hover` does not work; use `::part(item)` plus the component's internal state attributes.
+6. **Global-attribute collisions**: native `HTMLElement` properties such as `title` are set as properties (not attributes) under React, so components never receive them — see [Global-attribute hijacking](#global-attribute-hijacking-title) above.
 
 ## Related
 

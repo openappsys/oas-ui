@@ -17,6 +17,7 @@
 
 ### 文档
 
+- **框架集成指南（guide/frameworks，zh/en）补强与口径更新**：新增「全局属性劫持（`title`）」小节——React 把 `title={...}` 当原生 property 赋值不落 attribute，drawer/modal 等走 attribute 通道的组件收不到，用 ref + `setAttribute` 兜底（`lang` / `dir` 等撞名属性同口径）；「常见坑」补第 6 条。「先选路径」表与 React 事件节措辞更新为正式裁定：`packages/react` 的两个 hook 降级为**参考出处**（约 100 行可 vendor 进项目），官方不发布该 npm 包、不做任何框架 wrapper/桥接包（D10 决策公开口径）。
 - **context-menu 声明式多选勾选项 demo**：补齐 `kind="checkbox"` 场景（3 个通知偏好项，勾选态切换 + 已选项徽标反馈，勾选不收起菜单）；`role="menuitemcheckbox"` / `aria-checked` / 键盘 Space 切换均有单测与 e2e 三引擎断言。
 - **组合配方（guide/recipes，不新增组件）**：Action Sheet（drawer bottom + no-mask + list 动作项）、终端面板（log 黑底 token 覆写 + 命令行回显）、JSON 格式化对照（segmented 切视图 + json-viewer/diff-viewer 并排）。
 - **`oas-gantt` 资源负荷视图（`show-resource-load`，opt-in）**：图表下方负荷面板——每资源一行、桶条与时间轴逐列对齐（复用轴参数与 RTL 镜像，粒度随 scale：hour/day→日桶、week→周桶、month+→月桶）；负荷 = 桶内覆盖日数逐任务累计（与 pool 超配检测同口径），>100% 走 danger 通道、≤100% primary 族（双 token 开口）；面板 `role="img"` aria 摘要 + 滚动区可聚焦（WCAG 2.1.1），`--oas-gantt-load-max-height`（缺省 240px）上限防撑破宿主布局；新 L3 helper `@oas-ui/ui/data/resource/load`（`computeResourceLoad` 纯函数，19 单测，独立预算档）；签名缓存随数据/轴/池版本重算，windowed 跳过。gantt 链再定档 75→80 KB（增量全归因：pool 2.2 + 负荷 2.9）。
