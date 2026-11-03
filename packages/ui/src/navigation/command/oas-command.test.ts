@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import '@oas-ui/i18n'
-import { OASCommand } from './index.js'
+import { OASCommand, type CommandItem } from './index.js'
 
 const ITEMS = JSON.stringify([
   { label: '新建文件', value: 'new-file', keywords: ['create', 'file'] },
@@ -1277,5 +1277,501 @@ describe('OASCommand 属性-方法撞名回归', () => {
     ;(el as unknown as Record<string, unknown>).recentStorageKey = 'x'
     expect(() => el.setAttribute('recent', '')).not.toThrow()
     expect(options(el).length, '默认 4 个命令选项').toBe(4)
+  })
+})
+
+// ===== 多级导航（children 声明式 + levelLoader 动态子级） =====
+//
+// 契约：children 声明式多级（选中进入下一级，不派发 oas-select，派发 oas-navigate
+// { path, level }）；levelLoader 命令式动态子级（声明式优先；Promise 显示加载态；
+// 抛错/非法返回 → 错误行 + 重试；同 path 缓存不重复调）；面包屑各级可点跳转；
+// Esc 逐级返回（顶层 Esc 关闭不变）；Right/Left 进入/返回。
+// 向后兼容：现有 items 无 children 行为一字不变（page/view/select 全链路）。
+
+/** flush microtask + timer（loader Promise 与 setTimeout 混用场景） */
+function flush(): Promise<void> {
+  return new Promise<void>((r) => setTimeout(r, 0))
+}
+
+describe('OASCommand 多级导航', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    try {
+      localStorage.clear()
+    } catch {
+      /* 忽略不可用环境 */
+    }
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  /** 三级树：项目 → Alpha → 打开主页；Beta 为叶子命令 */
+  const TREE = JSON.stringify([
+    {
+      label: '项目',
+      value: 'projects',
+      children: [
+        {
+          label: 'Alpha',
+          value: 'alpha',
+          children: [{ label: '打开主页', value: 'alpha-home' }],
+        },
+        { label: 'Beta', value: 'beta' },
+      ],
+    },
+    { label: '打开设置', value: 'settings' },
+  ])
+
+  /** loader 系列树：项目（声明式子级）→ Alpha（children:[] 动态占位，进入触发 loader）；Beta 叶子 */
+  const LOADER_TREE = JSON.stringify([
+    {
+      label: '项目',
+      value: 'projects',
+      children: [
+        { label: 'Alpha', value: 'alpha', children: [] },
+        { label: 'Beta', value: 'beta' },
+      ],
+    },
+    { label: '打开设置', value: 'settings' },
+  ])
+
+  /** 进入 Alpha 的 loader 级：Enter 项目（声明式第 1 级，Alpha 初始高亮）→ Enter Alpha */
+  function enterAlpha(el: OASCommand): void {
+    arrow(el, 'Enter') // 项目
+    arrow(el, 'Enter') // Alpha
+  }
+
+  function navigateEvents(el: OASCommand): Array<{ path: string[]; level: number }> {
+    const out: Array<{ path: string[]; level: number }> = []
+    el.addEventListener('oas-navigate', (e: Event) => out.push((e as CustomEvent).detail))
+    return out
+  }
+
+  function crumbs(el: OASCommand): HTMLElement[] {
+    return [...el.shadowRoot!.querySelectorAll<HTMLElement>('.crumb')]
+  }
+
+  function crumbButtons(el: OASCommand): HTMLButtonElement[] {
+    return [...el.shadowRoot!.querySelectorAll<HTMLButtonElement>('button.crumb')]
+  }
+
+  it('children 声明式：Enter 进入子级渲染子项，不派发 oas-select、派发 oas-navigate { path, level }', () => {
+    const el = mount({ open: '', items: TREE })
+    const selects: unknown[] = []
+    el.addEventListener('oas-select', (e: Event) => selects.push((e as CustomEvent).detail))
+    const nav = navigateEvents(el)
+    arrow(el, 'Enter') // 项目
+    expect(options(el).map((o) => o.textContent)).toEqual(['Alpha', 'Beta'])
+    expect(selects.length).toBe(0)
+    expect(nav).toEqual([{ path: ['projects'], level: 1 }])
+    expect(q(el, '.breadcrumb')!.hidden).toBe(false)
+  })
+
+  it('路径累积：三级导航 path 逐步累积；Esc 逐级回退且 oas-navigate 跟随，顶层 Esc 才关闭', () => {
+    const el = mount({ open: '', items: TREE, 'close-on-select': 'false' })
+    const nav = navigateEvents(el)
+    arrow(el, 'Enter') // → 第 1 级
+    arrow(el, 'Enter') // Alpha → 第 2 级
+    expect(options(el).map((o) => o.textContent)).toEqual(['打开主页'])
+    expect(nav[1]).toEqual({ path: ['projects', 'alpha'], level: 2 })
+    // 第三级项是叶子：Enter 执行（select 而非 navigate）
+    const selects: unknown[] = []
+    el.addEventListener('oas-select', (e: Event) => selects.push((e as CustomEvent).detail))
+    arrow(el, 'Enter')
+    expect(selects.length).toBe(1)
+    esc() // 回到第 1 级（oas-navigate 跟随返回后的层级路径）
+    expect(nav[2]).toEqual({ path: ['projects'], level: 1 })
+    esc() // 回到根
+    expect(nav[3]).toEqual({ path: [], level: 0 })
+    expect(q(el, '.breadcrumb')!.hidden).toBe(true)
+    esc() // 根层关闭
+    expect(el.hasAttribute('open')).toBe(false)
+  })
+
+  it('children 清洗：非法项丢弃（label/value 非字符串），合法子级保留', () => {
+    const el = mount({
+      open: '',
+      items: JSON.stringify([
+        {
+          label: '父级',
+          value: 'parent',
+          children: [{ label: '合法', value: 'ok' }, { value: 'no-label' }, { label: 'no-value' }, null, 'str', 42],
+        },
+      ]),
+    })
+    arrow(el, 'Enter')
+    expect(options(el).map((o) => o.textContent)).toEqual(['合法'])
+  })
+
+  it('children 深度上限 8 层：第 8 层可达，更深层截断（截断项为普通命令）', () => {
+    // 构造 10 层链：L1(根，第 0 层) → L2(第 1 层) → … → L9(第 8 层) → L10(第 9 层，应截断)
+    let item: Record<string, unknown> = { label: 'L10', value: 'l10' }
+    for (let i = 9; i >= 1; i--) item = { label: `L${i}`, value: `l${i}`, children: [item] }
+    const el = mount({ open: '', items: JSON.stringify([item]) })
+    // 逐级进入 8 次：到达第 8 层（L9 所在级）
+    for (let level = 1; level <= 8; level++) arrow(el, 'Enter')
+    expect(options(el).map((o) => o.textContent)).toEqual(['L9'])
+    const selects: unknown[] = []
+    el.addEventListener('oas-select', (e: Event) => selects.push((e as CustomEvent).detail))
+    arrow(el, 'Enter') // L9 的 children（第 9 层）被截断 → 普通命令执行
+    expect(selects.length).toBe(1)
+    expect(el.hasAttribute('open')).toBe(false)
+  })
+
+  it('面包屑各级标题可点击跳转（第 2 级 crumb 点击回第 1 级），当前级为 aria-current 非交互 span', () => {
+    const el = mount({ open: '', items: TREE })
+    arrow(el, 'Enter')
+    arrow(el, 'Enter') // 第 2 级
+    const list = crumbs(el)
+    expect(list.length).toBe(2)
+    // 第 1 级 crumb 是可点按钮；当前级是 aria-current span
+    expect(crumbButtons(el).length).toBe(1)
+    expect(list[1]!.getAttribute('aria-current')).toBe('location')
+    crumbButtons(el)[0]!.click()
+    expect(options(el).map((o) => o.textContent)).toEqual(['Alpha', 'Beta'])
+    expect(q(el, '.breadcrumb')!.hidden).toBe(false)
+  })
+
+  it('面包屑首层图标：入口项 icon 渲染；无 icon 显示内置根图标；次层无 icon 不显示', () => {
+    const el = mount({
+      open: '',
+      items: JSON.stringify([
+        {
+          label: '工作区',
+          value: 'ws',
+          icon: 'M4 4h16v16H4z',
+          children: [{ label: '深一层', value: 'deep', children: [{ label: '末梢', value: 'leaf' }] }],
+        },
+      ]),
+    })
+    arrow(el, 'Enter')
+    let icons = el.shadowRoot!.querySelectorAll<SVGElement>('.crumb svg')
+    expect(icons.length).toBe(1)
+    expect(icons[0]!.querySelector('path')?.getAttribute('d')).toBe('M4 4h16v16H4z')
+    arrow(el, 'Enter')
+    icons = el.shadowRoot!.querySelectorAll<SVGElement>('.crumb svg')
+    // 第 2 级 crumb（deep 无 icon）不新增图标；首层图标保留
+    expect(icons.length).toBe(1)
+    expect(icons[0]!.querySelector('path')?.getAttribute('d')).toBe('M4 4h16v16H4z')
+    // 无 icon 入口：首层显示内置根图标（svg 存在）
+    const el2 = mount({ open: '', items: TREE })
+    arrow(el2, 'Enter')
+    expect(el2.shadowRoot!.querySelectorAll('.crumb svg').length).toBe(1)
+  })
+
+  it('面包屑 nav 语义 + 面板 aria-label 带层级路径；返回根层恢复基础 label', () => {
+    const el = mount({ open: '', items: TREE })
+    const panel = q(el, '.panel')!
+    expect(panel.getAttribute('aria-label')).toBe('命令面板')
+    arrow(el, 'Enter')
+    const bc = q(el, '.breadcrumb')!
+    expect(bc.getAttribute('role')).toBe('navigation')
+    expect(panel.getAttribute('aria-label')).toBe('命令面板 — 项目')
+    arrow(el, 'Enter')
+    expect(panel.getAttribute('aria-label')).toBe('命令面板 — 项目 / Alpha')
+    esc()
+    expect(panel.getAttribute('aria-label')).toBe('命令面板 — 项目')
+  })
+
+  it('ArrowRight 进入子级 / ArrowLeft 返回上级（有子级时才接管，叶子不动光标）', () => {
+    const el = mount({ open: '', items: TREE })
+    // 叶子项（打开设置高亮中）ArrowRight 不接管
+    arrow(el, 'ArrowDown') // 移到 打开设置
+    search(el).dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight' }))
+    expect(q(el, '.breadcrumb')!.hidden).toBe(true)
+    // ArrowRight 进入
+    arrow(el, 'ArrowUp')
+    search(el).dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight' }))
+    expect(options(el).map((o) => o.textContent)).toEqual(['Alpha', 'Beta'])
+    // ArrowLeft 返回
+    search(el).dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft' }))
+    expect(options(el).map((o) => o.textContent)).toEqual(['项目', '打开设置'])
+  })
+
+  it('search aria-keyshortcuts 标注键盘操作', () => {
+    const el = mount({ open: '', items: TREE })
+    const keys = search(el).getAttribute('aria-keyshortcuts') ?? ''
+    for (const k of ['ArrowDown', 'ArrowUp', 'Enter', 'ArrowRight', 'ArrowLeft', 'Escape', 'Backspace']) {
+      expect(keys).toContain(k)
+    }
+  })
+
+  it('每级独立过滤：子级搜索只过滤当前级，返回后搜索词清空且父级列表完整', () => {
+    const el = mount({ open: '', items: TREE })
+    arrow(el, 'Enter')
+    fireInput(el, 'alpha')
+    expect(options(el).map((o) => o.textContent)).toEqual(['Alpha'])
+    arrow(el, 'Enter')
+    expect(options(el).map((o) => o.textContent)).toEqual(['打开主页'])
+    fireInput(el, '主页')
+    expect(options(el).map((o) => o.textContent)).toEqual(['打开主页'])
+    arrow(el, 'Backspace') // 有搜索词：Backspace 不回退，列表保持过滤
+    expect(options(el).map((o) => o.textContent)).toEqual(['打开主页'])
+    // 清空后返回：搜索词复位，父级列表完整
+    fireInput(el, '')
+    arrow(el, 'Backspace')
+    expect(options(el).map((o) => o.textContent)).toEqual(['Alpha', 'Beta'])
+    expect(search(el).value).toBe('')
+  })
+
+  it('子级空结果显示「返回上级」行，点击回退；根层空态无该行', () => {
+    const el = mount({ open: '', items: TREE })
+    arrow(el, 'Enter')
+    fireInput(el, 'zzz')
+    const backRow = q(el, '[part="empty-back"]')!
+    expect(backRow.hidden).toBe(false)
+    expect(backRow.textContent).toBe('返回上一级')
+    backRow.click()
+    expect(options(el).map((o) => o.textContent)).toEqual(['项目', '打开设置'])
+    // 根层空态：无返回行
+    fireInput(el, 'zzz')
+    expect(q(el, '[part="empty-back"]')!.hidden).toBe(true)
+  })
+
+  it('空 children（[]）无 loader：视为普通命令正常执行（向后兼容）', () => {
+    const el = mount({
+      open: '',
+      items: JSON.stringify([{ label: '占位', value: 'placeholder', children: [] }]),
+    })
+    const selects: unknown[] = []
+    el.addEventListener('oas-select', (e: Event) => selects.push((e as CustomEvent).detail))
+    arrow(el, 'Enter')
+    expect(selects.length).toBe(1)
+    expect(q(el, '.breadcrumb')!.hidden).toBe(true)
+  })
+
+  it('空 children（[]）+ levelLoader：进入动态子级（loader 按路径调用）', async () => {
+    const el = mount({
+      open: '',
+      items: JSON.stringify([{ label: '动态', value: 'dyn', children: [] }]),
+    }) as OASCommand & { levelLoader: unknown }
+    const calls: Array<{ path: string[]; index: number }> = []
+    el.levelLoader = (ctx: { path: string[]; index: number }) => {
+      calls.push({ path: ctx.path, index: ctx.index })
+      return [{ label: '动态子项', value: 'dyn-child' }]
+    }
+    const nav = navigateEvents(el)
+    arrow(el, 'Enter')
+    await flush()
+    expect(calls).toEqual([{ path: ['dyn'], index: 0 }])
+    expect(options(el).map((o) => o.textContent)).toEqual(['动态子项'])
+    expect(nav).toEqual([{ path: ['dyn'], level: 1 }])
+  })
+
+  it('loader 同步返回：直接渲染子级，不显示加载行', async () => {
+    const el = mount({ open: '', items: LOADER_TREE }) as OASCommand & { levelLoader: unknown }
+    el.levelLoader = () => [{ label: '同步子项', value: 's1' }]
+    enterAlpha(el)
+    await flush()
+    expect(options(el).map((o) => o.textContent)).toEqual(['同步子项'])
+    expect(q(el, '.loading-row')).toBeNull()
+  })
+
+  it('loader Promise：先显示加载行 + aria-busy，resolve 后渲染子级', async () => {
+    const el = mount({ open: '', items: LOADER_TREE }) as OASCommand & { levelLoader: unknown }
+    let resolve!: (v: CommandItem[]) => void
+    el.levelLoader = () =>
+      new Promise<CommandItem[]>((r) => {
+        resolve = r
+      })
+    enterAlpha(el)
+    await flush() // loader 已被调用（Promise pending）
+    expect(q(el, '[part="loading"]')?.textContent).toContain('正在加载命令…')
+    expect(q(el, '.list')!.getAttribute('aria-busy')).toBe('true')
+    resolve([{ label: '异步子项', value: 'a1' }])
+    await flush()
+    expect(options(el).map((o) => o.textContent)).toEqual(['异步子项'])
+    expect(q(el, '.list')!.hasAttribute('aria-busy')).toBe(false)
+  })
+
+  it('loader 缓存：同 path 退出再进只调用一次；换 loader 自动清缓存', async () => {
+    const el = mount({ open: '', items: LOADER_TREE }) as OASCommand & { levelLoader: unknown }
+    let calls = 0
+    el.levelLoader = () => {
+      calls++
+      return [{ label: `子项 ${calls}`, value: 'c1' }]
+    }
+    enterAlpha(el)
+    await flush()
+    esc() // 回到第 1 级（Alpha 初始高亮）
+    await flush()
+    arrow(el, 'Enter') // 再进 Alpha：缓存命中，loader 不再调用
+    await flush()
+    expect(calls).toBe(1)
+    expect(options(el).map((o) => o.textContent)).toEqual(['子项 1'])
+    // 换 loader：缓存清空，同 path 重新调用
+    el.levelLoader = () => [{ label: '新 loader', value: 'c2' }]
+    esc() // 回到第 1 级
+    await flush()
+    arrow(el, 'Enter') // Alpha：cache miss → 新 loader
+    await flush()
+    expect(options(el).map((o) => o.textContent)).toEqual(['新 loader'])
+  })
+
+  it('loader reject：错误行 + 重试按钮（i18n 文案），重试成功后渲染子级', async () => {
+    const el = mount({ open: '', items: LOADER_TREE }) as OASCommand & { levelLoader: unknown }
+    let fail = true
+    el.levelLoader = () =>
+      fail ? Promise.reject(new Error('boom')) : Promise.resolve([{ label: '重试成功', value: 'r1' }])
+    enterAlpha(el)
+    await flush()
+    expect(q(el, '[part="error-row"]')?.textContent).toContain('加载失败')
+    const retry = el.shadowRoot!.querySelector<HTMLButtonElement>('[part="retry"]')!
+    expect(retry.textContent).toBe('重试')
+    fail = false
+    retry.click()
+    await flush()
+    expect(options(el).map((o) => o.textContent)).toEqual(['重试成功'])
+  })
+
+  it('loader 返回非数组：错误行（不进缓存）', async () => {
+    const el = mount({ open: '', items: LOADER_TREE }) as OASCommand & { levelLoader: unknown }
+    let calls = 0
+    el.levelLoader = (() => {
+      calls++
+      return 'not-an-array'
+    }) as unknown as () => CommandItem[]
+    enterAlpha(el)
+    await flush()
+    expect(q(el, '[part="error-row"]')?.textContent).toContain('加载失败')
+    // 非法结果不缓存：重试再次调用
+    ;(el as unknown as { levelLoader: () => unknown }).levelLoader = () => {
+      calls++
+      return [{ label: '第二次成功', value: 'ok' }]
+    }
+    el.shadowRoot!.querySelector<HTMLButtonElement>('[part="retry"]')!.click()
+    await flush()
+    expect(options(el).map((o) => o.textContent)).toEqual(['第二次成功'])
+    expect(calls).toBe(2)
+  })
+
+  it('loader 结果清洗：非法项丢弃，合法项渲染', async () => {
+    const el = mount({ open: '', items: LOADER_TREE }) as OASCommand & { levelLoader: unknown }
+    el.levelLoader = () =>
+      Promise.resolve([{ label: '好', value: 'good' }, { value: 'bad' }, 3, undefined] as unknown as CommandItem[])
+    enterAlpha(el)
+    await flush()
+    expect(options(el).map((o) => o.textContent)).toEqual(['好'])
+  })
+
+  it('loader pending 期间返回上级：过期结果不应用、不写缓存（再进重新调用）', async () => {
+    const el = mount({ open: '', items: LOADER_TREE }) as OASCommand & { levelLoader: unknown }
+    let calls = 0
+    let resolve!: (v: CommandItem[]) => void
+    el.levelLoader = () =>
+      new Promise<CommandItem[]>((r) => {
+        calls++
+        resolve = r
+      })
+    enterAlpha(el) // Alpha pending
+    await flush() // loader 已被调用
+    esc() // pending 中返回第 1 级
+    resolve([{ label: '过期结果', value: 'stale' }])
+    await flush()
+    // 第 1 级列表不受过期结果影响
+    expect(options(el).map((o) => o.textContent)).toEqual(['Alpha', 'Beta'])
+    arrow(el, 'Enter') // 再进 Alpha：过期结果未写缓存 → 第二次调用
+    await flush()
+    expect(calls).toBe(2)
+    expect(q(el, '[part="loading"]')?.textContent).toContain('正在加载命令…')
+    resolve([{ label: '新鲜结果', value: 'fresh' }])
+    await flush()
+    expect(options(el).map((o) => o.textContent)).toEqual(['新鲜结果'])
+  })
+
+  it('children 与 page 同存：children 优先（进入派 oas-navigate 而非 oas-page-change）', () => {
+    const el = mount({
+      open: '',
+      items: JSON.stringify([
+        {
+          label: '双通道',
+          value: 'both',
+          page: [{ label: 'page 子项', value: 'p1' }],
+          children: [{ label: 'children 子项', value: 'c1' }],
+        },
+      ]),
+    })
+    const pages: unknown[] = []
+    el.addEventListener('oas-page-change', (e: Event) => pages.push((e as CustomEvent).detail))
+    const nav = navigateEvents(el)
+    arrow(el, 'Enter')
+    expect(options(el).map((o) => o.textContent)).toEqual(['children 子项'])
+    expect(nav.length).toBe(1)
+    expect(pages.length).toBe(0)
+  })
+
+  it('page 通道行为不变：进出仍派发 oas-page-change（面包屑与 Esc 回退不受 children 改造影响）', () => {
+    const el = mount({
+      open: '',
+      items: JSON.stringify([
+        { label: '更改主题', value: 'theme', page: [{ label: '浅色', value: 'light' }] },
+        { label: '打开', value: 'open' },
+      ]),
+    })
+    const pages: unknown[] = []
+    el.addEventListener('oas-page-change', (e: Event) => pages.push((e as CustomEvent).detail))
+    const nav = navigateEvents(el)
+    arrow(el, 'Enter')
+    expect(pages).toEqual([{ title: '更改主题', depth: 1, direction: 'push' }])
+    expect(nav.length).toBe(0)
+    esc()
+    expect(pages[1]).toEqual({ title: '更改主题', depth: 0, direction: 'pop' })
+    expect(options(el).map((o) => o.textContent)).toEqual(['更改主题', '打开'])
+  })
+
+  it('面包屑跳转跨多级（第 3 级点第 1 级 crumb 一次回两级），事件统一派发一次', () => {
+    const el = mount({
+      open: '',
+      items: JSON.stringify([
+        {
+          label: '一级',
+          value: 'l1',
+          children: [
+            {
+              label: '二级',
+              value: 'l2',
+              children: [{ label: '三级', value: 'l3', children: [{ label: '末梢', value: 'leaf' }] }],
+            },
+          ],
+        },
+      ]),
+    })
+    const nav = navigateEvents(el)
+    arrow(el, 'Enter') // 第 1 级
+    arrow(el, 'Enter') // 第 2 级
+    arrow(el, 'Enter') // 第 3 级
+    expect(options(el).map((o) => o.textContent)).toEqual(['末梢'])
+    // crumb = [一级(btn), 二级(btn), 三级(current)]
+    expect(crumbs(el).length).toBe(3)
+    expect(crumbButtons(el).length).toBe(2)
+    crumbButtons(el)[0]!.click() // 一级 → 回两级
+    expect(options(el).map((o) => o.textContent)).toEqual(['二级'])
+    // 3 次进入 + 1 次跳转（统一一次事件，不逐级派发）
+    expect(nav.length).toBe(4)
+    expect(nav[3]).toEqual({ path: ['l1'], level: 1 })
+  })
+
+  it('view 页 crumb 为当前级非交互（不可点跳回已离开视图），children 级内 view 正常进出', () => {
+    const el = mount({
+      open: '',
+      items: JSON.stringify([
+        {
+          label: '项目',
+          value: 'projects',
+          children: [{ label: '部署', value: 'deploy', view: 'deploy' }],
+        },
+      ]),
+    })
+    el.innerHTML = '<div slot="view-deploy">部署表单</div>'
+    arrow(el, 'Enter') // children 级
+    expect(options(el).map((o) => o.textContent)).toEqual(['部署'])
+    arrow(el, 'Enter') // 进入 view
+    const views = el.shadowRoot!.querySelectorAll<HTMLElement>('.crumb')
+    expect(views.length).toBe(2)
+    expect(crumbButtons(el).length).toBe(1) // 仅第 1 级可点
+    esc() // 退出 view 回 children 级
+    expect(options(el).map((o) => o.textContent)).toEqual(['部署'])
   })
 })

@@ -1,6 +1,6 @@
 # Command 命令面板
 
-命令面板（⌘K 唤起，快捷键可配置）——搜索过滤、匹配打分排序、键盘选择、Enter 执行、嵌套子页导航、最近使用、多选批量执行。`open` 受控：可由外部设置，也可用全局快捷键或 Esc 关闭（打开/关闭各派发一次 `oas-open-change`）。
+命令面板（⌘K 唤起，快捷键可配置）——搜索过滤、匹配打分排序、键盘选择、Enter 执行、嵌套子页导航、children 多级导航（声明式子级 + levelLoader 动态子级）、最近使用、多选批量执行。`open` 受控：可由外部设置，也可用全局快捷键或 Esc 关闭（打开/关闭各派发一次 `oas-open-change`）。
 
 ## 基础用法
 
@@ -114,6 +114,31 @@
   <oas-space size="small">
     <oas-button id="command-pages-btn" type="primary">打开（选「更改主题」进子页）</oas-button>
     <oas-tag id="command-pages-result" type="info">尚未选择</oas-tag>
+  </oas-space>
+</DemoBlock>
+
+## 多级导航（children 声明式）
+
+项级字段 `children`（命令数组）定义声明式多级：选中进入下一级（**不派发 `oas-select`**，改派 `oas-navigate { path, level }`——`path` 为层级 key（value）路径，`level` 为当前级深度，根为 0）。顶部面包屑各级标题可点击跳转（首层带图标，当前级加粗高亮），`Esc` 逐级返回（顶层 `Esc` 关闭面板），`→` / `←` 进入/返回，子级无结果显示「返回上级」行；每级搜索过滤只作用于当前级。与 `page` 子页通道并存，同时存在时 `children` 优先。`children` 递归清洗：非法项丢弃、深度上限 8 层。
+
+<DemoBlock title="声明式 children（三级导航：项目 → Alpha → 命令）">
+  <oas-command id="command-children" hotkey="false" items='[{"label":"项目","value":"projects","children":[{"label":"Alpha","value":"alpha","children":[{"label":"打开主页","value":"alpha-home"},{"label":"查看日志","value":"alpha-logs","shortcut":"ctrl+l"}]},{"label":"Beta","value":"beta","children":[{"label":"打开仓库","value":"beta-repo"}]}]},{"label":"打开设置","value":"settings"}]'></oas-command>
+  <oas-space size="small">
+    <oas-button id="command-children-btn" type="primary">打开（选「项目」逐级进入，看面包屑）</oas-button>
+    <oas-tag id="command-children-result" type="info">尚未导航</oas-tag>
+  </oas-space>
+</DemoBlock>
+
+## 多级导航（levelLoader 动态子级）
+
+`levelLoader`（JS property，函数通道）按路径动态拉取子级：`children: []` 的项进入时调用 `(ctx: { path, index }) => CommandItem[] | Promise<CommandItem[]>`，Promise 期间当前级显示加载占位（spinner + `aria-busy`），抛错/返回非法时显示错误行 + 重试按钮；结果按路径缓存（同 path 不重复调用，换 loader 自动清空）。声明式 `children` 优先于 loader。适合项目 → Issue 这类层级数据源（进入某级再拉取下级）。
+
+<DemoBlock title="levelLoader（模拟异步项目 → Issue 两级）">
+  <oas-command id="command-loader" hotkey="false" items='[{"label":"项目","value":"projects","children":[{"label":"project-alpha","value":"alpha","children":[]},{"label":"project-beta","value":"beta","children":[]}]},{"label":"打开设置","value":"settings"}]'></oas-command>
+  <oas-space size="small">
+    <oas-button id="command-loader-btn" type="primary">打开（进「项目」→ 选 issue，看加载态与面包屑）</oas-button>
+    <oas-button id="command-loader-fail" type="default">模拟 loader 失败</oas-button>
+    <oas-tag id="command-loader-result" type="info">尚未导航</oas-tag>
   </oas-space>
 </DemoBlock>
 
@@ -258,6 +283,7 @@
 
 <script setup>
 import { onMounted } from 'vue'
+import { whenTagDefined } from '../.vitepress/theme/when-defined'
 onMounted(() => {
   window.commandLog = (e) => {
     const tag = document.getElementById('command-result')
@@ -382,6 +408,63 @@ onMounted(() => {
     const tag = document.getElementById('command-pages-result')
     if (tag) tag.textContent = `已选择：${e.detail.value}`
   })
+
+  // 多级导航（children 声明式）：oas-navigate 反馈层级路径
+  const childrenEl = document.getElementById('command-children')
+  document.getElementById('command-children-btn')?.addEventListener('click', () => {
+    childrenEl?.setAttribute('open', '')
+  })
+  childrenEl?.addEventListener('oas-navigate', (e) => {
+    const tag = document.getElementById('command-children-result')
+    if (tag) tag.textContent = `层级 ${e.detail.level}：${e.detail.path.join(' → ') || '(根)'}（面包屑可点跳转，Esc 逐级返回）`
+  })
+  childrenEl?.addEventListener('oas-select', (e) => {
+    const tag = document.getElementById('command-children-result')
+    if (tag) tag.textContent = `已选择：${e.detail.value}`
+  })
+
+  // 多级导航（levelLoader 动态子级）：模拟异步项目 → Issue 两级
+  const loaderEl = document.getElementById('command-loader')
+  const LOADER_ISSUES = {
+    alpha: [
+      { label: '修复登录超时', value: 'alpha-1', description: 'P1 · bug' },
+      { label: '优化首屏加载', value: 'alpha-2', description: 'P2 · perf' },
+    ],
+    beta: [
+      { label: '补充单元测试', value: 'beta-1', description: 'P3 · chore' },
+    ],
+  }
+  if (loaderEl) {
+    let failMode = false
+    document.getElementById('command-loader-fail')?.addEventListener('click', () => {
+      failMode = !failMode
+      const tag = document.getElementById('command-loader-result')
+      if (tag) tag.textContent = failMode ? 'loader 将失败（进 issue 看错误行 + 重试）' : 'loader 已恢复'
+    })
+    // 升级守卫：升级前写 levelLoader 会产生自有属性遮蔽 setter（动态子级静默失效）
+    whenTagDefined('oas-command', () => {
+      loaderEl.levelLoader = ({ path }) => {
+        if (failMode) return Promise.reject(new Error('network down'))
+        const key = path[path.length - 1]
+        const issues = LOADER_ISSUES[key] ?? []
+        // 模拟 700ms 网络延迟：Promise 期间当前级显示加载占位
+        return new Promise((resolve) => {
+          window.setTimeout(() => resolve(issues), 700)
+        })
+      }
+    })
+    document.getElementById('command-loader-btn')?.addEventListener('click', () => {
+      loaderEl.setAttribute('open', '')
+    })
+    loaderEl.addEventListener('oas-navigate', (e) => {
+      const tag = document.getElementById('command-loader-result')
+      if (tag) tag.textContent = `层级 ${e.detail.level}：${e.detail.path.join(' → ') || '(根)'}`
+    })
+    loaderEl.addEventListener('oas-select', (e) => {
+      const tag = document.getElementById('command-loader-result')
+      if (tag) tag.textContent = `已选择：${e.detail.value}`
+    })
+  }
 
   // 子元素声明式通道：打开 + 动态追加（MutationObserver 自动刷新）
   const declEl = document.getElementById('command-decl')
@@ -535,7 +618,7 @@ onMounted(() => {
 | `close-on-select` | 选中后是否关闭面板（默认 true；`false` 支持连续执行） | `string` | — |
 | `hotkey` | 唤起快捷键组合，如 `ctrl+k` / `meta+shift+p`（逗号分隔多组，支持 mod/meta/ctrl/alt/shift）；`false` 关闭内置监听（默认 `mod+k`） | `string` | `mod+k` |
 | `item-height` | 虚拟滚动行高（默认 `36`） | `string` | `36` |
-| `items` | 命令项 JSON（根页；子页由 item.page 提供，含 icon / shortcut / description / page / view / forceMount / separator 字段） | `CommandItem[] \| string` | `[]` |
+| `items` | 命令项 JSON（根页；子页由 item.page 提供，声明式多级由 item.children 提供，含 icon / shortcut / description / children / page / view / forceMount / separator 字段；children: [] + levelLoader 组合为动态子级占位） | `CommandItem[] \| string` | `[]` |
 | `limit` | 渲染条数上限（默认 `50`；虚拟滚动不受限） | `string` | `50` |
 | `loading` | 异步加载占位态（列表显示加载行 + `aria-busy`） | `boolean` | — |
 | `multiple` | 多选命令模式（勾选切换 + footer 批量执行） | `boolean` | — |
@@ -547,6 +630,12 @@ onMounted(() => {
 | `value` | 搜索词（受控；宿主监听 `oas-input` 回写实现双向） | `string` | — |
 | `virtual` | 虚拟滚动（大数据量窗口渲染，复用 oas-virtual-list） | `boolean` | — |
 
+#### Property（JS property；是否写回 attribute 见各行说明）
+
+| Property | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| `levelLoader` | 动态子级加载器（property 函数通道，`(ctx: { path: string[], index: number }) => CommandItem[] \| Promise<CommandItem[]>`）：声明式 children 优先；`children: []` 的项进入时按路径调用（结果按路径缓存，同 path 不重复调用，换 loader 自动清空）；Promise 期间当前级显示加载态，抛错/返回非数组显示错误行 + 重试 | `CommandLevelLoader \| null` | — |
+
 #### 事件
 
 | 事件 | 说明 |
@@ -554,6 +643,7 @@ onMounted(() => {
 | `oas-active` | 高亮项变化，`detail: { value }`（受控 selected 的回写依据） |
 | `oas-change` | 多选勾选变化，`detail: { values }` |
 | `oas-input` | 搜索词输入，`detail: { value }`（`should-filter=false` 外部过滤的请求通道） |
+| `oas-navigate` | children 多级导航（进入/返回/面包屑跳转），`detail: { path, level }`——path 为层级 key（value）路径，level 为当前级深度（根为 0）；不派发 `oas-select` |
 | `oas-open-change` | 面板打开/关闭，`detail: { open }` |
 | `oas-page-change` | 子页推入/回退，`detail: { title, depth, direction }`（`direction: push\|pop`） |
 | `oas-select` | 执行某项，`detail: { value }`；多选确认 `detail: { values }` |
@@ -603,8 +693,9 @@ onMounted(() => {
 | `shortcut` | 快捷键标注（右对齐 kbd 展示），如 `"meta+p"` / `"ctrl+shift+s"` | `string` |
 | `description` | 副标题描述文本 | `string` |
 | `page` | 子页命令（嵌套页面）：选中进入子页，Esc / 空搜索词 Backspace 回退 | `CommandItem[]` |
+| `children` | 声明式多级子级：选中进入下一级（不派发 `oas-select`，派发 `oas-navigate { path, level }`）；与 `page` 并存时 children 优先；`children: []` + `levelLoader` 组合为动态子级占位；递归清洗（非法项丢弃、深度上限 8 层） | `CommandItem[]` |
 | `view` | 视图插槽名：选中进入 `<slot name="view-{view}">`（面板内嵌视图） | `string` |
 | `forceMount` | 忽略过滤强制显示（创建型入口） | `boolean` |
 | `separator` | 渲染为分隔行（不可导航/不可选中） | `boolean` |
 
-键盘：`↑`/`↓` 移动高亮（跳过 disabled），`Enter` 执行并关闭（多选模式切换勾选），`Esc` 关闭（有子页时先回退子页），空搜索词 `Backspace` 回退子页，`Tab` 在搜索框与选项间循环（焦点陷阱）；打开时自动聚焦搜索框，关闭后焦点归还来源元素。全局快捷键默认 `⌘K` / `Ctrl+K`（`hotkey` 可配置或关闭）。
+键盘：`↑`/`↓` 移动高亮（跳过 disabled），`Enter` 执行并关闭（多选模式切换勾选；带 `children` 的项进入下一级），`Esc` 关闭（有子页/子级时先逐级回退），`→` 进入子级、`←` 返回上级（aria-keyshortcuts 标注），空搜索词 `Backspace` 回退子页，`Tab` 在搜索框与选项间循环（焦点陷阱）；打开时自动聚焦搜索框，关闭后焦点归还来源元素。全局快捷键默认 `⌘K` / `Ctrl+K`（`hotkey` 可配置或关闭）。

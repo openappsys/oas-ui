@@ -19,6 +19,12 @@ export interface CommandItem {
   shortcut?: string
   /** 副标题（description） */
   description?: string
+  /**
+   * 声明式多级子级：选中进入下一级（不派发 oas-select，派发 oas-navigate { path, level }）。
+   * 与 page 子页通道并存，同时存在时 children 优先；清洗递归（非法项丢弃、深度上限 8 层）。
+   * 空数组 + levelLoader 组合为动态子级占位（loader 按路径拉取）；空数组无 loader 视为普通命令。
+   */
+  children?: CommandItem[]
   /** 子页命令（嵌套页面）：选中进入子页，Esc/空搜索词 Backspace 面包屑回退 */
   page?: CommandItem[]
   /** 视图插槽名：选中进入 `<slot name="view-{view}">`（面板内嵌表单/视图） */
@@ -29,18 +35,40 @@ export interface CommandItem {
   separator?: boolean
 }
 
+/** levelLoader 上下文：path 为从根到当前项的层级 key（value）路径，index 为当前项在其所在层级的可见索引 */
+export interface CommandLevelContext {
+  path: string[]
+  index: number
+}
+
+/** 动态子级加载器：声明式 children 优先；返回数组（同步或 Promise），结果按路径缓存 */
+export type CommandLevelLoader = (ctx: CommandLevelContext) => CommandItem[] | Promise<CommandItem[]>
+
+interface PageEntry {
+  title: string
+  view: string | null
+  items: CommandItem[]
+  /** 本级 key 路径（children 多级导航用；根为 []；page/view 通道恒 []） */
+  path: string[]
+  /** children 多级页标记（pop/面包屑跳转时事件分流：oas-navigate vs oas-page-change） */
+  kind?: 'children'
+  /** 入口项图标（面包屑各级显示；首层无 icon 时回落内置根图标） */
+  icon?: string
+}
+
+/** 当前级动态拉取状态（children loader 通道） */
+interface LevelRequest {
+  path: string[]
+  item: CommandItem
+  index: number
+}
+
 interface RecentEntry {
   value: string
   label: string
   icon?: string
   shortcut?: string
   description?: string
-}
-
-interface PageEntry {
-  title: string
-  view: string | null
-  items: CommandItem[]
 }
 
 interface ScoredItem {
@@ -79,6 +107,15 @@ const SHORTCUT_SYMBOLS: Record<string, string> = {
 }
 
 const MAX_RECENTS = 10
+
+/**
+ * children 多级深度上限（第 8 层可达，更深层截断）：
+ * 声明式数据可能超深甚至循环引用（property 通道传对象引用），递归清洗按深度截断防栈炸。
+ */
+const MAX_LEVEL_DEPTH = 8
+
+/** 面包屑首层默认图标（入口项无 icon 时标示根级；path 以 currentColor 描边，颜色走 token） */
+const ROOT_BREADCRUMB_ICON = 'M3 10.5 12 3l9 7.5M5.5 9.5V20h13V9.5M9.5 20v-5.5h5V20'
 
 const STYLE = `
 :host {
@@ -193,6 +230,49 @@ const STYLE = `
   content: '/';
   margin-inline-end: var(--oas-space-1);
   color: var(--oas-color-text-disabled);
+}
+.crumb {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--oas-space-1);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* 中间级：可点按钮（跳转到该级） */
+button.crumb {
+  padding: 2px var(--oas-space-1);
+  border: none;
+  border-radius: var(--oas-radius-sm);
+  background: transparent;
+  color: var(--oas-color-text-secondary);
+  font-family: inherit;
+  font-size: var(--oas-font-size-sm);
+  cursor: pointer;
+}
+button.crumb:hover {
+  background: var(--oas-color-bg-hover);
+  color: var(--oas-color-text-primary);
+}
+button.crumb:focus-visible {
+  box-shadow: var(--oas-focus-ring);
+  outline: none;
+}
+/* 当前级：非交互强调 */
+.crumb-current {
+  color: var(--oas-color-text-primary);
+  font-weight: 600;
+}
+.crumb-icon {
+  display: inline-flex;
+  align-items: center;
+  flex: none;
+}
+.crumb-icon svg {
+  width: 12px;
+  height: 12px;
+  display: block;
 }
 .search {
   box-sizing: border-box;
@@ -370,6 +450,33 @@ mark.hl {
     transform: rotate(360deg);
   }
 }
+/* children loader 错误态：错误文案 + 重试按钮 */
+.error-row {
+  display: flex;
+  align-items: center;
+  gap: var(--oas-space-2);
+  padding: var(--oas-space-4) var(--oas-space-3);
+  color: var(--oas-color-text-secondary);
+  font-size: var(--oas-font-size-sm);
+}
+.retry {
+  flex: none;
+  border: 1px solid var(--oas-color-border-strong);
+  border-radius: var(--oas-radius-sm);
+  background: transparent;
+  color: var(--oas-color-text-primary);
+  padding: 2px var(--oas-space-2);
+  font-family: inherit;
+  font-size: var(--oas-font-size-xs);
+  cursor: pointer;
+}
+.retry:hover {
+  background: var(--oas-color-bg-hover);
+}
+.retry:focus-visible {
+  box-shadow: var(--oas-focus-ring);
+  outline: none;
+}
 .empty {
   padding: var(--oas-space-5);
   text-align: center;
@@ -379,10 +486,38 @@ mark.hl {
 .empty[hidden] {
   display: none;
 }
+/* 子级空结果的「返回上级」行 */
+.empty-back {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--oas-space-1);
+  margin-top: var(--oas-space-2);
+  padding: var(--oas-space-1) var(--oas-space-3);
+  border: 1px solid var(--oas-color-border);
+  border-radius: var(--oas-radius-sm);
+  background: transparent;
+  color: var(--oas-color-text-primary);
+  font-family: inherit;
+  font-size: var(--oas-font-size-sm);
+  cursor: pointer;
+}
+.empty-back:hover {
+  background: var(--oas-color-bg-hover);
+}
+.empty-back:focus-visible {
+  box-shadow: var(--oas-focus-ring);
+  outline: none;
+}
+.empty-back[hidden] {
+  display: none;
+}
 /* ===== 移动端触摸目标：coarse pointer 下选项行/返回钮最小高度抬到 --oas-touch-target-min ===== */
 @media (pointer: coarse) {
   .option,
-  .back {
+  .back,
+  button.crumb,
+  .retry,
+  .empty-back {
     min-height: var(--oas-touch-target-min, 44px);
   }
 }
@@ -452,6 +587,9 @@ mark.hl {
 @media (forced-colors: active) {
   /* 强制色下 box-shadow 被 UA 弃用：焦点环回退系统色实线 outline（WCAG 2.4.7） */
   .back:focus-visible,
+  button.crumb:focus-visible,
+  .retry:focus-visible,
+  .empty-back:focus-visible,
   .confirm:focus-visible {
     outline: 1px solid CanvasText;
     outline-offset: 1px;
@@ -488,8 +626,10 @@ export class OASCommand extends OASElement {
   }
 
   private itemsList: CommandItem[] = []
-  /** 当前页可见项（根 = items 属性，子页 = item.page 快照） */
+  /** 当前页可见项（根 = items 属性，子页 = item.page 快照，children 级 = 声明子级或 loader 结果） */
   private activeItems: CommandItem[] = []
+  /** 当前级 key 路径（根为 []；children 进入累积，返回/跳转恢复） */
+  private activePath: string[] = []
   private overlayEl: HTMLElement | null = null
   private panelEl: HTMLElement | null = null
   private listEl: HTMLElement | null = null
@@ -527,6 +667,18 @@ export class OASCommand extends OASElement {
   private recentsLoaded = false
   private multiValues: string[] = []
   private _filter: ((query: string, items: CommandItem[]) => CommandItem[]) | null = null
+  /** levelLoader property 通道（声明式 children 优先；结果按路径缓存） */
+  private _levelLoader: CommandLevelLoader | null = null
+  /** loader 结果缓存（key = path 串接；实例级；换 loader 清空） */
+  private levelCache = new Map<string, CommandItem[]>()
+  /** 当前级 loader 拉取态（null = 无拉取） */
+  private levelPending: LevelRequest | null = null
+  /** 当前级 loader 错误态（null = 无错误；重试按钮消费） */
+  private levelError: LevelRequest | null = null
+  /** 拉取序号（竞态守卫：pending 期间离开该级后，过期 resolve 不应用不写缓存） */
+  private levelSeq = 0
+  /** 子级空结果的「返回上级」行 */
+  private emptyBackEl: HTMLButtonElement | null = null
   /** append-to：portal host 容器（目标容器内 div + 独立 shadow + STYLE 注入 + 插槽桥接） */
   private portalHost: HTMLElement | null = null
   /** listbox 容器 id（由 value 身份派生、实例内不变；同 value 实例共享 id，shadow 内解析无串扰；aria-controls 指向） */
@@ -544,7 +696,27 @@ export class OASCommand extends OASElement {
     return this.itemsList
   }
   set items(value: CommandItem[] | string) {
-    this.setAttribute('items', typeof value === 'string' ? value : JSON.stringify(value))
+    try {
+      this.setAttribute('items', typeof value === 'string' ? value : JSON.stringify(value))
+    } catch {
+      /* 序列化失败（如循环引用 children）静默保留旧值；解析侧清洗另有深度截断防炸 */
+    }
+  }
+
+  /**
+   * @apiProperty 动态子级加载器（property 函数通道，回调无法用 attribute 表达）：
+   * `(ctx: { path: string[], index: number }) => CommandItem[] | Promise<CommandItem[]>`。
+   * 声明式 `children` 优先；`children: []` 的项进入时按路径调用 loader（结果按路径缓存，
+   * 同 path 不重复调用，换 loader 自动清空）；Promise 期间当前级显示加载态（spinner + aria-busy），
+   * 抛错/返回非数组显示错误行 + 重试。
+   */
+  get levelLoader(): CommandLevelLoader | null {
+    return this._levelLoader
+  }
+  set levelLoader(fn: CommandLevelLoader | null) {
+    this._levelLoader = typeof fn === 'function' ? fn : null
+    this.levelCache.clear()
+    if (this.isConnected) this.renderList()
   }
 
   /** 自定义过滤函数通道（property 赋值；should-filter=false 时忽略，过滤交给宿主） */
@@ -572,13 +744,15 @@ export class OASCommand extends OASElement {
             <div class="crumbs" part="crumbs"></div>
           </div>
           <input class="search" part="search" type="text" role="combobox"
-            aria-autocomplete="list" aria-expanded="true" />
+            aria-autocomplete="list" aria-expanded="true"
+            aria-keyshortcuts="ArrowDown ArrowUp Enter ArrowRight ArrowLeft Escape Backspace" />
           <div class="body" part="body">
             <div class="list" part="list" role="listbox"></div>
             <oas-virtual-list class="vlist" part="virtual-list" hidden></oas-virtual-list>
             <div class="view" part="view" hidden></div>
             <div class="empty" part="empty" hidden>
               <span class="empty-text" part="empty-text"></span>
+              <button class="empty-back" part="empty-back" type="button" hidden></button>
               <slot name="empty"></slot>
             </div>
           </div>
@@ -609,6 +783,7 @@ export class OASCommand extends OASElement {
     this.emptyEl = this.shadow.querySelector('.empty')
     this.emptyTextEl = this.shadow.querySelector('.empty-text')
     this.emptySlotEl = this.shadow.querySelector('slot[name="empty"]')
+    this.emptyBackEl = this.shadow.querySelector('.empty-back')
     this.confirmEl = this.shadow.querySelector('.confirm')
     // aria-controls：listbox / 虚拟列表容器 id 由 value 身份派生（FNV-1a base36）——
     // bind 在 SSR 渲染路径同样执行（id 进快照），自增序号会让快照不可复现；
@@ -642,6 +817,7 @@ export class OASCommand extends OASElement {
       if ((e.target as HTMLElement).classList.contains('overlay')) this.close()
     })
     this.backBtn?.addEventListener('click', () => this.popPage())
+    this.emptyBackEl?.addEventListener('click', () => this.popPage())
     this.confirmEl?.addEventListener('click', () => this.confirmMulti())
     // 虚拟滚动：复用 oas-virtual-list 的窗口计算，把每个可见项渲染为选项行
     this.vlist?.addEventListener('oas-item', ((
@@ -751,10 +927,13 @@ export class OASCommand extends OASElement {
   private onOpen(): void {
     this.wasOpen = true
     this.previousFocus = document.activeElement as HTMLElement
-    // 每次打开从根页开始（嵌套页面/视图/多选状态复位）
+    // 每次打开从根页开始（嵌套页面/视图/多选状态复位；loader 结果缓存保留——同 path 不重复调）
     this.pages = []
+    this.activePath = []
     this.activeView = null
     this.multiValues = []
+    this.levelPending = null
+    this.levelError = null
     // 受控 value：不重置（保留宿主值）；非受控：清空搜索词
     if (this.hasAttr('value')) {
       this.searchQuery = this.getAttr('value', '')
@@ -773,7 +952,10 @@ export class OASCommand extends OASElement {
     this.previousFocus?.focus()
     this.previousFocus = null
     this.pages = []
+    this.activePath = []
     this.activeView = null
+    this.levelPending = null
+    this.levelError = null
     this.emit('open-change', { open: false })
   }
 
@@ -790,13 +972,8 @@ export class OASCommand extends OASElement {
     // 双通道：items 属性显式设置时数据驱动优先；否则解析子元素收敛到同一 items 模型渲染
     if (this.hasAttribute('items')) {
       try {
-        const parsed = JSON.parse(this.getAttr('items', '[]'))
-        this.itemsList = Array.isArray(parsed)
-          ? parsed.filter(
-              (i): i is CommandItem =>
-                !!i && typeof i === 'object' && typeof i.label === 'string' && typeof i.value === 'string',
-            )
-          : []
+        const parsed: unknown = JSON.parse(this.getAttr('items', '[]'))
+        this.itemsList = this.cleanItems(parsed, 0)
       } catch {
         this.itemsList = []
       }
@@ -804,6 +981,49 @@ export class OASCommand extends OASElement {
       this.itemsList = this.parseChildItems()
     }
     this.activeItems = this.itemsList
+  }
+
+  // ==================== children 多级清洗 ====================
+
+  /**
+   * items 树递归清洗：非法项丢弃（label/value 非字符串）、children 深度上限 8 层截断
+   * （超深/循环引用防栈炸）。children 清洗后保留字段（含空数组——levelLoader 动态子级占位）；
+   * page 子页通道同步浅清洗（与既有 pushPage 进入时的逐层 filter 条件一致，行为不变）。
+   */
+  private cleanItems(items: unknown, depth: number): CommandItem[] {
+    if (!Array.isArray(items) || depth > MAX_LEVEL_DEPTH) return []
+    const out: CommandItem[] = []
+    for (const raw of items) {
+      if (!isCommandItemLike(raw)) continue
+      out.push(this.cleanItem(raw, depth))
+    }
+    return out
+  }
+
+  private cleanItem(src: CommandItem, depth: number): CommandItem {
+    const item: CommandItem = { label: src.label, value: src.value }
+    if (typeof src.group === 'string') item.group = src.group
+    if (src.disabled === true) item.disabled = true
+    if (typeof src.icon === 'string') item.icon = src.icon
+    if (typeof src.shortcut === 'string') item.shortcut = src.shortcut
+    if (typeof src.description === 'string') item.description = src.description
+    if (typeof src.view === 'string') item.view = src.view
+    if (src.forceMount === true) item.forceMount = true
+    if (src.separator === true) item.separator = true
+    if (Array.isArray(src.keywords)) {
+      const kws = src.keywords.filter((k): k is string => typeof k === 'string' && k.length > 0)
+      if (kws.length > 0) item.keywords = kws
+    }
+    // children：声明式多级（第 8 层之后的子级截断；空数组保留 = loader 动态占位）
+    if (Array.isArray(src.children) && depth < MAX_LEVEL_DEPTH) {
+      item.children = this.cleanItems(src.children, depth + 1)
+    }
+    // page：既有子页通道（不限深，逐层清洗条件与 pushPage 一致，行为不变）
+    if (Array.isArray(src.page)) {
+      const page = this.cleanItems(src.page, depth + 1)
+      if (page.length > 0) item.page = page
+    }
+    return item
   }
 
   // ==================== 子元素声明式通道 ====================
@@ -985,6 +1205,19 @@ export class OASCommand extends OASElement {
       // 视图模式：Enter 交给插槽内的表单，不接管
       if (this.activeView) return
       this.selectActive()
+    } else if (e.key === 'ArrowRight') {
+      // 进入子级：仅当前项可达下一级（声明式 children 或 children:[] + loader）时接管，否则保留光标移动
+      if (this.activeView || this.hasAttr('multiple')) return
+      const item = this.visibleItems[this.activeIndex]
+      if (item && this.canEnterLevel(item)) {
+        e.preventDefault()
+        this.select(item, this.activeIndex)
+      }
+    } else if (e.key === 'ArrowLeft') {
+      // 返回上级：有上级才接管；视图/搜索输入场景保留光标移动
+      if (this.activeView || this.pages.length === 0) return
+      e.preventDefault()
+      this.popPage()
     } else if (e.key === 'Backspace' && this.searchQuery === '' && this.pages.length > 0) {
       // 空搜索词 Backspace 回退子页（分页模式）
       e.preventDefault()
@@ -1016,15 +1249,26 @@ export class OASCommand extends OASElement {
 
   private selectActive(): void {
     const item = this.visibleItems[this.activeIndex]
-    if (item) this.select(item)
+    if (item) this.select(item, this.activeIndex)
   }
 
-  private select(item: CommandItem): void {
+  /** 当前项是否可进入下一级：声明式 children 非空，或 children:[] + loader（动态子级占位） */
+  private canEnterLevel(item: CommandItem): boolean {
+    if (!Array.isArray(item.children)) return false
+    return item.children.length > 0 || !!this._levelLoader
+  }
+
+  private select(item: CommandItem, index = this.activeIndex): void {
     if (!item || item.disabled || item.separator) return
     if (this.activeView) return
     // 多选模式：Enter/点击只切换勾选，批量执行走 footer 确认
     if (this.hasAttr('multiple')) {
       this.toggleMulti(item)
+      return
+    }
+    // children 多级：导航不派发 oas-select，派发 oas-navigate { path, level }
+    if (this.canEnterLevel(item)) {
+      this.enterLevel(item, index)
       return
     }
     // 嵌套页面 / 视图：导航不派发 oas-select
@@ -1049,7 +1293,13 @@ export class OASCommand extends OASElement {
 
   private pushPage(item: CommandItem): void {
     if (!item.page || item.page.length === 0) return
-    this.pages.push({ title: item.label, view: null, items: this.activeItems })
+    this.pages.push({
+      title: item.label,
+      view: null,
+      items: this.activeItems,
+      path: [...this.activePath],
+      icon: item.icon,
+    })
     this.activeItems = item.page.filter(
       (i): i is CommandItem => !!i && typeof i.label === 'string' && typeof i.value === 'string',
     )
@@ -1062,10 +1312,108 @@ export class OASCommand extends OASElement {
     this.emit('page-change', { title: item.label, depth: this.pages.length, direction: 'push' })
   }
 
+  /**
+   * children 多级进入：选中带可达子级的项（声明式 children 或 children:[] + loader）。
+   * 导航动作即派发 oas-navigate（宿主感知层级路径变化）；loader 结果异步后到时只更新数据不重派事件。
+   */
+  private enterLevel(item: CommandItem, index: number): void {
+    this.pages.push({
+      title: item.label,
+      view: null,
+      items: this.activeItems,
+      path: [...this.activePath],
+      kind: 'children',
+      icon: item.icon,
+    })
+    this.activePath = [...this.activePath, item.value]
+    this.searchQuery = ''
+    if (this.searchEl) this.searchEl.value = ''
+    this.activeIndex = 0
+    this.emit('navigate', { path: [...this.activePath], level: this.activePath.length })
+    const hasStatic = Array.isArray(item.children) && item.children.length > 0
+    if (hasStatic) {
+      this.activeItems = item.children as CommandItem[]
+      this.levelPending = null
+      this.levelError = null
+      this.syncBreadcrumb()
+      this.renderList()
+      return
+    }
+    // 动态子级：loader 拉取（缓存命中直接渲染，否则 loading 态 → 数据/错误行）
+    this.activeItems = []
+    this.startLevelLoad(item, index)
+  }
+
+  /** 动态子级拉取：缓存命中直接应用；否则 pending 渲染加载行，Promise 就绪后应用或转错误态 */
+  private startLevelLoad(item: CommandItem, index: number): void {
+    const loader = this._levelLoader
+    const path = [...this.activePath]
+    const key = path.join('\u0000')
+    const cached = this.levelCache.get(key)
+    if (cached) {
+      this.activeItems = cached
+      this.levelPending = null
+      this.levelError = null
+      this.syncBreadcrumb()
+      this.renderList()
+      return
+    }
+    const seq = ++this.levelSeq
+    this.levelPending = { path, item, index }
+    this.levelError = null
+    this.syncBreadcrumb()
+    this.renderList()
+    if (!loader) return // 防御：select 已保证可达才进入；无 loader 时静置加载行（外部可换 loader 补数据）
+    Promise.resolve()
+      .then(() => loader({ path: [...path], index }))
+      .then((result) => {
+        if (seq !== this.levelSeq || this.levelPending?.path.join('\u0000') !== key) return
+        // 返回非数组视为非法 → 错误行（不写缓存，重试重新调用）
+        if (!Array.isArray(result)) {
+          this.showLevelError(path, item, index)
+          return
+        }
+        // loader 结果同构清洗：非法项丢弃；children 深度按当前层号折算（累计不超过 8 层）
+        const cleaned = this.cleanItems(result, path.length)
+        this.levelCache.set(key, cleaned)
+        this.levelPending = null
+        this.activeItems = cleaned
+        this.activeIndex = 0
+        this.syncBreadcrumb()
+        this.renderList()
+      })
+      .catch(() => {
+        if (seq !== this.levelSeq || this.levelPending?.path.join('\u0000') !== key) return
+        this.showLevelError(path, item, index)
+      })
+  }
+
+  /** loader 错误态：pending → error（错误行 + 重试按钮） */
+  private showLevelError(path: string[], item: CommandItem, index: number): void {
+    this.levelPending = null
+    this.levelError = { path, item, index }
+    this.syncBreadcrumb()
+    this.renderList()
+  }
+
+  /** 重试当前级 loader：错误不缓存，重试必然重新调用 */
+  private retryLevel(): void {
+    const err = this.levelError
+    if (!err) return
+    this.activeItems = []
+    this.startLevelLoad(err.item, err.index)
+  }
+
   private pushView(item: CommandItem): void {
     const view = item.view
     if (!view) return
-    this.pages.push({ title: item.label, view, items: this.activeItems })
+    this.pages.push({
+      title: item.label,
+      view,
+      items: this.activeItems,
+      path: [...this.activePath],
+      icon: item.icon,
+    })
     this.activeView = view
     this.searchQuery = ''
     if (this.searchEl) this.searchEl.value = ''
@@ -1077,8 +1425,26 @@ export class OASCommand extends OASElement {
   }
 
   private popPage(): void {
+    const popped = this.popPageCore()
+    if (!popped) return
+    // 事件分流：children 多级页 → oas-navigate（层级路径语义）；page/view 通道 → 既有 oas-page-change
+    if (popped.kind === 'children') {
+      this.emit('navigate', { path: [...this.activePath], level: this.activePath.length })
+    } else {
+      this.emit('page-change', { title: popped.title, depth: this.pages.length, direction: 'pop' })
+    }
+  }
+
+  /**
+   * 弹出一级（无导航事件）：恢复栈顶快照 + 搜索词/高亮/loader 态复位。
+   * popPage 与面包屑跳转共用；返回被弹页（空栈返回 null）。
+   */
+  private popPageCore(): PageEntry | null {
     const page = this.pages.pop()
-    if (!page) return
+    if (!page) return null
+    this.levelPending = null
+    this.levelError = null
+    this.activePath = [...page.path]
     if (page.view) {
       this.activeView = null
       if (this.viewSlotEl) {
@@ -1096,7 +1462,27 @@ export class OASCommand extends OASElement {
     if (this.pages.length === 0) this.parseItems()
     this.syncBreadcrumb()
     this.renderList()
-    this.emit('page-change', { title: page.title, depth: this.pages.length, direction: 'pop' })
+    return page
+  }
+
+  /** 面包屑跳转：点击第 i 级 crumb → 逐级弹出恢复到该级；导航事件统一派发一次 */
+  private jumpToCrumb(crumbIndex: number): void {
+    const targetLen = crumbIndex + 1
+    if (this.pages.length <= targetLen) return
+    let lastPopped: PageEntry | null = null
+    let sawChildren = false
+    while (this.pages.length > targetLen) {
+      const p = this.popPageCore()
+      if (!p) break
+      lastPopped = p
+      if (p.kind === 'children') sawChildren = true
+    }
+    if (!lastPopped) return
+    if (sawChildren) {
+      this.emit('navigate', { path: [...this.activePath], level: this.activePath.length })
+    } else {
+      this.emit('page-change', { title: lastPopped.title, depth: this.pages.length, direction: 'pop' })
+    }
   }
 
   private syncBreadcrumb(): void {
@@ -1106,15 +1492,47 @@ export class OASCommand extends OASElement {
     if (!bc || !back || !crumbs) return
     const n = this.pages.length
     bc.hidden = n === 0
-    if (n === 0) return
+    if (n === 0) {
+      // 根层：恢复面板基础 label
+      this.panelEl?.setAttribute('aria-label', this.t('command.label'))
+      return
+    }
+    // nav 地标语义（面包屑导航区）
+    bc.setAttribute('role', 'navigation')
+    bc.setAttribute('aria-label', this.t('command.label'))
+    // 面板 aria-label 带层级路径（读屏可感知当前所在层级）
+    const titles = this.pages.map((p) => p.title)
+    this.panelEl?.setAttribute('aria-label', `${this.t('command.label')} — ${titles.join(' / ')}`)
     back.textContent = '‹'
     back.setAttribute('aria-label', this.t('command.back'))
     crumbs.replaceChildren()
-    for (const p of this.pages) {
-      const span = document.createElement('span')
-      span.className = 'crumb'
-      span.textContent = p.title
-      crumbs.appendChild(span)
+    for (let i = 0; i < n; i++) {
+      const p = this.pages[i]!
+      const current = i === n - 1
+      let el: HTMLElement
+      if (current) {
+        el = document.createElement('span')
+        el.setAttribute('aria-current', 'location')
+      } else {
+        const btn = document.createElement('button')
+        btn.type = 'button'
+        // 面包屑各级标题可点击跳转（逐级弹出恢复到该级）
+        btn.addEventListener('click', () => this.jumpToCrumb(i))
+        el = btn
+      }
+      el.className = `crumb ${current ? 'crumb-current' : 'crumb-link'}`
+      el.setAttribute('part', current ? 'crumb-current' : 'crumb')
+      // 各级图标：入口项 icon；首层无 icon 回落内置根图标（标示层级起点）
+      const icon = p.icon ?? (i === 0 ? ROOT_BREADCRUMB_ICON : null)
+      if (icon) {
+        const ic = document.createElement('span')
+        ic.className = 'crumb-icon'
+        ic.setAttribute('aria-hidden', 'true')
+        ic.innerHTML = this.iconMarkup(icon)
+        el.appendChild(ic)
+      }
+      el.appendChild(document.createTextNode(p.title))
+      crumbs.appendChild(el)
     }
   }
 
@@ -1324,6 +1742,45 @@ export class OASCommand extends OASElement {
 
     const q0 = this.searchQuery.trim()
 
+    // children loader 拉取态（当前级）：复用 loading 占位形态 + aria-busy
+    if (this.levelPending) {
+      this.visibleSig = ''
+      listEl.hidden = false
+      if (vlist) vlist.hidden = true
+      emptyEl.hidden = true
+      listEl.setAttribute('aria-busy', 'true')
+      listEl.innerHTML = ''
+      listEl.appendChild(this.buildLoadingRow())
+      this.searchEl?.removeAttribute('aria-activedescendant')
+      return
+    }
+    // children loader 错误态（当前级）：错误文案 + 重试按钮
+    if (this.levelError) {
+      this.visibleSig = ''
+      listEl.hidden = false
+      if (vlist) vlist.hidden = true
+      emptyEl.hidden = true
+      listEl.removeAttribute('aria-busy')
+      listEl.innerHTML = ''
+      const row = document.createElement('div')
+      row.className = 'error-row'
+      row.setAttribute('part', 'error-row')
+      row.setAttribute('role', 'alert')
+      const text = document.createElement('span')
+      text.textContent = this.t('command.loadError')
+      const retry = document.createElement('button')
+      retry.type = 'button'
+      retry.className = 'retry'
+      retry.setAttribute('part', 'retry')
+      retry.textContent = this.t('command.retry')
+      retry.addEventListener('click', () => this.retryLevel())
+      row.append(text, retry)
+      listEl.appendChild(row)
+      this.searchEl?.removeAttribute('aria-activedescendant')
+      return
+    }
+    listEl.removeAttribute('aria-busy')
+
     // loading 态：占位行 + aria-busy
     if (this.hasAttr('loading')) {
       this.visibleSig = ''
@@ -1332,16 +1789,7 @@ export class OASCommand extends OASElement {
       emptyEl.hidden = true
       listEl.setAttribute('aria-busy', 'true')
       listEl.innerHTML = ''
-      const row = document.createElement('div')
-      row.className = 'loading-row'
-      row.setAttribute('part', 'loading')
-      const spinner = document.createElement('span')
-      spinner.className = 'spinner'
-      spinner.setAttribute('aria-hidden', 'true')
-      const text = document.createElement('span')
-      text.textContent = this.t('command.loading')
-      row.append(spinner, text)
-      listEl.appendChild(row)
+      listEl.appendChild(this.buildLoadingRow())
       this.searchEl?.removeAttribute('aria-activedescendant')
       return
     }
@@ -1442,6 +1890,20 @@ export class OASCommand extends OASElement {
     this.syncActive()
   }
 
+  /** 加载占位行（外部 loading 属性与 children loader pending 共用形态） */
+  private buildLoadingRow(): HTMLElement {
+    const row = document.createElement('div')
+    row.className = 'loading-row'
+    row.setAttribute('part', 'loading')
+    const spinner = document.createElement('span')
+    spinner.className = 'spinner'
+    spinner.setAttribute('aria-hidden', 'true')
+    const text = document.createElement('span')
+    text.textContent = this.t('command.loading')
+    row.append(spinner, text)
+    return row
+  }
+
   private showEmpty(q: string): void {
     const emptyEl = this.emptyEl
     const emptyTextEl = this.emptyTextEl
@@ -1451,9 +1913,14 @@ export class OASCommand extends OASElement {
     if (listEl) listEl.hidden = true
     if (vlist) vlist.hidden = true
     emptyEl.hidden = false
-    // 空态插槽：slot="empty" 有内容时隐藏默认文案
+    // 空态插槽：slot="empty" 有内容时隐藏默认文案与返回行（宿主接管整个空态渲染）
     const hasSlot = (this.emptySlotEl?.assignedNodes().length ?? 0) > 0
     emptyTextEl.hidden = hasSlot
+    // 子级空结果：显示「返回上级」行（根层无该行）
+    if (this.emptyBackEl) {
+      this.emptyBackEl.hidden = hasSlot || this.pages.length === 0
+      this.emptyBackEl.textContent = this.t('command.back')
+    }
     emptyTextEl.textContent = q
       ? this.t('command.noResults', { query: this.searchQuery.trim() })
       : this.t('command.empty')
@@ -1541,7 +2008,7 @@ export class OASCommand extends OASElement {
       ck.hidden = !this.multiValues.includes(item.value)
       row.appendChild(ck)
     }
-    row.addEventListener('click', () => this.select(item))
+    row.addEventListener('click', () => this.select(item, shownIndex))
     row.addEventListener('mousemove', () => {
       if (item.disabled || shownIndex === this.activeIndex) return
       this.activeIndex = shownIndex
@@ -1725,6 +2192,14 @@ export class OASCommand extends OASElement {
       ...this.renderedOptionRows().filter((r) => r.getAttribute('aria-disabled') !== 'true'),
     ]
     if (this.pages.length > 0 && this.backBtn) focusable.push(this.backBtn)
+    // 面包屑中间级可点按钮一并进循环
+    if (this.crumbsEl) focusable.push(...this.crumbsEl.querySelectorAll<HTMLButtonElement>('button.crumb'))
+    if (this.levelError && this.listEl) {
+      focusable.push(...this.listEl.querySelectorAll<HTMLButtonElement>('button.retry'))
+    }
+    if (this.emptyEl && !this.emptyEl.hidden && this.emptyBackEl && !this.emptyBackEl.hidden) {
+      focusable.push(this.emptyBackEl)
+    }
     if (this.confirmEl && !this.confirmEl.hidden) focusable.push(this.confirmEl)
     const list = focusable.filter((el): el is HTMLElement => el !== null)
     if (list.length === 0) return
@@ -1747,4 +2222,14 @@ function isMacPlatform(): boolean {
   } catch {
     return false
   }
+}
+
+/** 命令项形态判定（清洗丢弃非法项：label/value 必须为字符串） */
+function isCommandItemLike(v: unknown): v is CommandItem {
+  return (
+    !!v &&
+    typeof v === 'object' &&
+    typeof (v as CommandItem).label === 'string' &&
+    typeof (v as CommandItem).value === 'string'
+  )
 }

@@ -1,6 +1,6 @@
 # Command
 
-A command palette (⌘K to invoke, hotkey configurable) — search filtering, score-based ranking, keyboard selection, Enter to execute, nested sub-pages, recent history and multi-select batch run. `open` is controlled: it can be set externally, and the configurable global shortcut or Esc closes it (each open/close fires one `oas-open-change`).
+A command palette (⌘K to invoke, hotkey configurable) — search filtering, score-based ranking, keyboard selection, Enter to execute, nested sub-pages, nested-level navigation (declarative `children` + `levelLoader` dynamic levels), recent history and multi-select batch run. `open` is controlled: it can be set externally, and the configurable global shortcut or Esc closes it (each open/close fires one `oas-open-change`).
 
 ## Basic usage
 
@@ -114,6 +114,31 @@ The item field `page` (array of commands) defines a sub-page: selecting it enter
   <oas-space size="small">
     <oas-button id="command-pages-btn" type="primary">Open (select "Change theme" to enter the sub-page)</oas-button>
     <oas-tag id="command-pages-result" type="info">Nothing selected</oas-tag>
+  </oas-space>
+</DemoBlock>
+
+## Nested-level navigation (declarative `children`)
+
+The item field `children` (array of commands) declares nested levels: selecting it enters the next level (**without firing `oas-select`**; instead it fires `oas-navigate { path, level }` — `path` is the level key (value) path, `level` is the current depth, root = 0). Every breadcrumb title is clickable to jump to that level (the first level carries an icon; the current level is bold), `Esc` pops back level by level (at the root `Esc` closes the panel), `→` / `←` enter/go back, and an empty child level shows a "go back" row; per-level search filtering only applies to the current level. It coexists with the `page` sub-page channel — when both are present `children` wins. `children` are cleaned recursively: invalid items are dropped, with a depth cap of 8 levels.
+
+<DemoBlock title="Declarative children (three-level navigation: Projects → Alpha → commands)">
+  <oas-command id="command-children" hotkey="false" items='[{"label":"Projects","value":"projects","children":[{"label":"Alpha","value":"alpha","children":[{"label":"Open homepage","value":"alpha-home"},{"label":"View logs","value":"alpha-logs","shortcut":"ctrl+l"}]},{"label":"Beta","value":"beta","children":[{"label":"Open repository","value":"beta-repo"}]}]},{"label":"Open settings","value":"settings"}]'></oas-command>
+  <oas-space size="small">
+    <oas-button id="command-children-btn" type="primary">Open (select "Projects" and drill in; watch the breadcrumb)</oas-button>
+    <oas-tag id="command-children-result" type="info">No navigation yet</oas-tag>
+  </oas-space>
+</DemoBlock>
+
+## Nested-level navigation (`levelLoader` dynamic levels)
+
+`levelLoader` (a JS property, function channel) fetches child levels by path: items with `children: []` invoke `(ctx: { path, index }) => CommandItem[] | Promise<CommandItem[]>` on entry; while the Promise is pending the current level shows a loading placeholder (spinner + `aria-busy`); on throw / invalid return an error row with a retry button appears; results are cached per path (the same path never loads twice; swapping the loader clears the cache). Declarative `children` takes precedence over the loader. Suits Project → Issue style hierarchical data sources (fetch the next level on demand).
+
+<DemoBlock title="levelLoader (simulated async Projects → Issues, two levels)">
+  <oas-command id="command-loader" hotkey="false" items='[{"label":"Projects","value":"projects","children":[{"label":"project-alpha","value":"alpha","children":[]},{"label":"project-beta","value":"beta","children":[]}]},{"label":"Open settings","value":"settings"}]'></oas-command>
+  <oas-space size="small">
+    <oas-button id="command-loader-btn" type="primary">Open (enter "Projects" → pick an issue; watch the loading state and breadcrumb)</oas-button>
+    <oas-button id="command-loader-fail" type="default">Simulate loader failure</oas-button>
+    <oas-tag id="command-loader-result" type="info">No navigation yet</oas-tag>
   </oas-space>
 </DemoBlock>
 
@@ -258,6 +283,7 @@ The item field `view` defines a view: selecting it renders the form/panel carrie
 
 <script setup>
 import { onMounted } from 'vue'
+import { whenTagDefined } from '../../.vitepress/theme/when-defined'
 onMounted(() => {
   window.commandLog = (e) => {
     const tag = document.getElementById('command-result')
@@ -384,6 +410,63 @@ onMounted(() => {
     const tag = document.getElementById('command-pages-result')
     if (tag) tag.textContent = `Selected: ${e.detail.value}`
   })
+
+  // Nested-level navigation (declarative children): oas-navigate feedback
+  const childrenEl = document.getElementById('command-children')
+  document.getElementById('command-children-btn')?.addEventListener('click', () => {
+    childrenEl?.setAttribute('open', '')
+  })
+  childrenEl?.addEventListener('oas-navigate', (e) => {
+    const tag = document.getElementById('command-children-result')
+    if (tag) tag.textContent = `Level ${e.detail.level}: ${e.detail.path.join(' → ') || '(root)'} (breadcrumb titles are clickable; Esc pops back)`
+  })
+  childrenEl?.addEventListener('oas-select', (e) => {
+    const tag = document.getElementById('command-children-result')
+    if (tag) tag.textContent = `Selected: ${e.detail.value}`
+  })
+
+  // Nested-level navigation (levelLoader): simulated async Projects → Issues
+  const loaderEl = document.getElementById('command-loader')
+  const LOADER_ISSUES = {
+    alpha: [
+      { label: 'Fix login timeout', value: 'alpha-1', description: 'P1 · bug' },
+      { label: 'Optimize first paint', value: 'alpha-2', description: 'P2 · perf' },
+    ],
+    beta: [
+      { label: 'Add unit tests', value: 'beta-1', description: 'P3 · chore' },
+    ],
+  }
+  if (loaderEl) {
+    let failMode = false
+    document.getElementById('command-loader-fail')?.addEventListener('click', () => {
+      failMode = !failMode
+      const tag = document.getElementById('command-loader-result')
+      if (tag) tag.textContent = failMode ? 'The loader will fail now (enter an issue to see the error row + retry)' : 'The loader is restored'
+    })
+    // Upgrade guard: writing levelLoader before upgrade creates an own property shadowing the setter (dynamic levels silently break)
+    whenTagDefined('oas-command', () => {
+      loaderEl.levelLoader = ({ path }) => {
+        if (failMode) return Promise.reject(new Error('network down'))
+        const key = path[path.length - 1]
+        const issues = LOADER_ISSUES[key] ?? []
+        // Simulate 700ms network latency: while pending, the current level shows the loading placeholder
+        return new Promise((resolve) => {
+          window.setTimeout(() => resolve(issues), 700)
+        })
+      }
+    })
+    document.getElementById('command-loader-btn')?.addEventListener('click', () => {
+      loaderEl.setAttribute('open', '')
+    })
+    loaderEl.addEventListener('oas-navigate', (e) => {
+      const tag = document.getElementById('command-loader-result')
+      if (tag) tag.textContent = `Level ${e.detail.level}: ${e.detail.path.join(' → ') || '(root)'}`
+    })
+    loaderEl.addEventListener('oas-select', (e) => {
+      const tag = document.getElementById('command-loader-result')
+      if (tag) tag.textContent = `Selected: ${e.detail.value}`
+    })
+  }
 
   // Declarative child channel: open + dynamic append (MutationObserver auto-refresh)
   const declEl = document.getElementById('command-decl')
@@ -537,7 +620,7 @@ onMounted(() => {
 | `close-on-select` | Close the panel after selecting (default true; `false` keeps it open for consecutive actions) | `string` | — |
 | `hotkey` | Invocation shortcut combos, e.g. `ctrl+k` / `meta+shift+p` (comma-separated for multiple; supports mod/meta/ctrl/alt/shift); `false` disables the built-in listener (default `mod+k`) | `string` | `mod+k` |
 | `item-height` | Virtual row height (default `36`) | `string` | `36` |
-| `items` | Command items JSON (root page; sub-pages via `item.page`, supports `icon` / `shortcut` / `description` / `page` / `view` / `forceMount` / `separator` fields) | `CommandItem[] \| string` | `[]` |
+| `items` | Command items JSON (root page; sub-pages via `item.page`, nested levels via `item.children`, supports `icon` / `shortcut` / `description` / `children` / `page` / `view` / `forceMount` / `separator` fields; `children: []` + `levelLoader` marks a dynamic-level placeholder) | `CommandItem[] \| string` | `[]` |
 | `limit` | Max rendered items (default `50`; not applied in virtual mode) | `string` | `50` |
 | `loading` | Async loading placeholder (loading row in the list + `aria-busy`) | `boolean` | — |
 | `multiple` | Multiple-select mode (toggle checks + batch run via the footer confirm button) | `boolean` | — |
@@ -549,6 +632,12 @@ onMounted(() => {
 | `value` | Search query (controlled; two-way via `oas-input` echo-back) | `string` | — |
 | `virtual` | Virtual scrolling for large datasets (reuses oas-virtual-list) | `boolean` | — |
 
+#### Property (JS property; see each row for attribute reflection)
+
+| Property | Description | Type | Default |
+| --- | --- | --- | --- |
+| `levelLoader` | Dynamic-level loader (property function channel, `(ctx: { path: string[], index: number }) => CommandItem[] \| Promise<CommandItem[]>`): declarative `children` takes precedence; items with `children: []` invoke it by path on entry (results cached per path — the same path never loads twice; swapping the loader clears the cache); while the Promise is pending the current level shows a loading state; a throw or non-array result shows an error row with retry | `CommandLevelLoader \| null` | — |
+
 #### Events
 
 | Event | Description |
@@ -556,6 +645,7 @@ onMounted(() => {
 | `oas-active` | Active item changed, `detail: { value }` (basis for controlled `selected` echo-back) |
 | `oas-change` | Multi-select toggle, `detail: { values }` |
 | `oas-input` | Search input, `detail: { value }` (request channel for `should-filter=false` external filtering) |
+| `oas-navigate` | Nested-level navigation via `children` (enter / go back / breadcrumb jump), `detail: { path, level }` — `path` is the level key (value) path, `level` is the current depth (root = 0); `oas-select` is not fired |
 | `oas-open-change` | Panel opened/closed, `detail: { open }` |
 | `oas-page-change` | Sub-page pushed/popped, `detail: { title, depth, direction }` (`direction: push\|pop`) |
 | `oas-select` | A command was executed, `detail: { value }`; multi-select confirm `detail: { values }` |
@@ -605,8 +695,9 @@ onMounted(() => {
 | `shortcut` | Shortcut annotation (rendered as a right-aligned kbd), e.g. `"meta+p"` / `"ctrl+shift+s"` | `string` |
 | `description` | Subtitle description text | `string` |
 | `page` | Sub-page commands (nested page): selecting enters the sub-page; Esc / Backspace with an empty query pops back | `CommandItem[]` |
+| `children` | Declarative nested levels: selecting enters the next level (without firing `oas-select`; fires `oas-navigate { path, level }`); when both `page` and `children` are present `children` wins; `children: []` + `levelLoader` marks a dynamic-level placeholder; cleaned recursively (invalid items dropped, depth capped at 8 levels) | `CommandItem[]` |
 | `view` | View slot name: selecting enters `<slot name="view-{view}">` (in-panel view) | `string` |
 | `forceMount` | Ignores filtering and always shows (create-style entry) | `boolean` |
 | `separator` | Renders as a separator row (not navigable / not selectable) | `boolean` |
 
-Keyboard: `↑`/`↓` move the highlight (skipping disabled items), `Enter` executes and closes (multi-select toggles checks), `Esc` closes (sub-pages pop first), `Backspace` with an empty query pops a sub-page, `Tab` cycles between the search input and the options (focus trap); on open the search input is focused, and on close focus returns to the source element. The global shortcut defaults to `⌘K` / `Ctrl+K` (`hotkey` is configurable or can be disabled).
+Keyboard: `↑`/`↓` move the highlight (skipping disabled items), `Enter` executes and closes (multi-select toggles checks; items with `children` enter the next level), `Esc` closes (sub-pages / nested levels pop first), `→` enters a child level and `←` pops back (annotated via aria-keyshortcuts), `Backspace` with an empty query pops a sub-page, `Tab` cycles between the search input and the options (focus trap); on open the search input is focused, and on close focus returns to the source element. The global shortcut defaults to `⌘K` / `Ctrl+K` (`hotkey` is configurable or can be disabled).
