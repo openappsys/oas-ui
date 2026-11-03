@@ -661,9 +661,16 @@ const STYLE = `
     border-color var(--oas-transition-fast) var(--oas-ease-out),
     background var(--oas-transition-fast) var(--oas-ease-out);
 }
-[part='panel'] .shortcut:hover {
+[part='panel'] .shortcut:hover:not(:disabled) {
   border-color: var(--oas-color-primary);
   color: var(--oas-color-primary);
+}
+/* 范围预设端点命中 min/max/disabled-date：置灰不可点（跟随 disabled 属性渲染；token 链带暗色变体） */
+[part='panel'] .shortcut:disabled {
+  color: var(--oas-color-text-disabled);
+  border-color: var(--oas-color-border);
+  background: var(--oas-color-bg-disabled);
+  cursor: not-allowed;
 }
 [part='panel'] .shortcut:focus-visible {
   outline: 2px solid var(--oas-color-primary);
@@ -767,6 +774,8 @@ export class OASDatePicker extends OASFormElement {
       'unlink-panels',
       'default-value',
       'shortcuts-position',
+      // 范围快捷区间预设（声明式 JSON 通道，opt-in；仅范围类型生效，见 rangePresetItems）
+      'ranges',
       'show-week-number',
       'first-day-of-week',
       // 面板标题形态：buttons（默认，标题按钮切月面板）/ dropdown（月/年下拉快速跳转，dob 场景）
@@ -798,6 +807,12 @@ export class OASDatePicker extends OASFormElement {
   private previewEnd: Date | null = null
   private _shortcuts: ShortcutItem[] | null = null
   private _disabledDate: ((d: Date) => boolean) | null = null
+  /** ranges 属性解析缓存键：属性串 + 端点类型（type 运行时切换后按新精度重解析） */
+  private rangesCacheKey: string | null = null
+  /** ranges 解析结果（undefined = 当前键尚未解析；null = 属性非法或清洗后为空，回落既有预设通道） */
+  private rangesCache: ShortcutItem[] | null | undefined = undefined
+  /** ranges 非法告警去重（实例级，只提示一次防 update 刷屏） */
+  private rangesWarned = false
   /** 非法 placement 仅告警一次（滚动/resize 重定位不重复刷屏） */
   private placementWarned = false
   /** 非法 timezone 仅告警一次 */
@@ -1390,7 +1405,9 @@ export class OASDatePicker extends OASFormElement {
 
   /**
    * 范围手输解析：按 separator（或常见 `~` / `～` / `—` / `至` / `to`）拆成两端，
-   * 分别按范围端点类型解析；起止倒置、越界、disabledDate 均返回 null。
+   * 分别按范围端点类型解析；起止倒置自动交换提交，越界、disabledDate、任一端解析失败
+   * 返回 null（整体回退，不污染另一端）。两端编辑在同一输入框内原子提交——
+   * 「各自可编辑、解析失败不互相污染」由单输入原子性达成。
    * datetimerange 只键入日期时用 default-time 补齐时刻（与面板提交一致）。
    */
   private parseRangeInputValue(text: string): [Date, Date] | null {
@@ -1420,7 +1437,9 @@ export class OASDatePicker extends OASFormElement {
     }
     const start = one(parts[0], 0)
     const end = one(parts[1], 1)
-    if (!start || !end || start.getTime() > end.getTime()) return null
+    if (!start || !end) return null
+    // 起止倒置自动交换（与 ranges/property 预设端点对调同口径；同刻边界原样通过，不算倒置）
+    if (start.getTime() > end.getTime()) return [end, start]
     return [start, end]
   }
 
@@ -2403,9 +2422,91 @@ export class OASDatePicker extends OASFormElement {
 
   // ---- 交互 ----
 
-  /** 生效的快捷预设：用户 property 优先，未设置时用内置默认（label 走 locale） */
+  /**
+   * 生效的快捷预设：范围类型下 `ranges` 属性（声明式通道）优先，其次用户 property，
+   * 未设置时用内置默认（label 走 locale）。非范围类型不消费 ranges（区间预设对单值无意义）。
+   */
   private shortcutItems(): ShortcutItem[] {
+    if (this.isRangeType()) {
+      const presets = this.rangePresetItems()
+      if (presets) return presets
+    }
     return this._shortcuts ?? this.defaultShortcuts()
+  }
+
+  /**
+   * ranges 属性（声明式范围快捷预设，opt-in）：JSON 数组 `[{ label, start, end }]`。
+   * - 非法 JSON / 非数组 → 整体忽略（回落既有预设通道）并 devWarn 一次；
+   * - 项级清洗：非对象 / label 非非空串 / start、end 按范围端点类型解析失败 → 丢弃该项（其余保留）；
+   *   丢弃计数汇总 devWarn 一次（update 高频重入，不逐项刷屏）；
+   * - 起止倒置自动交换（与手输 / property 预设同口径）；
+   * - 端点命中 min/max/disabled-date 的项**不在此清洗**：保留渲染但按钮置灰不可点
+   *   （用户能看到「为什么这个预设不可用」，与网格可选性同口径，见 shortcutsMarkup）；
+   * - label 为纯字符串（库内无 i18n 键前缀约定，不做键展开）。
+   * 解析结果按「端点类型 + 属性串」缓存：日期为闭包捕获的解析产物（静态语义），同串不重复解析；
+   * 缓存键并入端点类型——`type` 运行时切换（daterange ↔ monthrange 等）后按新精度重解析，
+   * 否则旧类型的解析结果会让新类型下的预设整批解析失败/消失。
+   */
+  private rangePresetItems(): ShortcutItem[] | null {
+    const raw = this.getAttr('ranges', '')
+    if (raw.trim() === '') return null
+    const cacheKey = `${this.rangeEndpointType()}|${raw}`
+    if (this.rangesCacheKey === cacheKey && this.rangesCache !== undefined) return this.rangesCache
+    this.rangesCacheKey = cacheKey
+    this.rangesCache = this.parseRangePresets(raw)
+    return this.rangesCache
+  }
+
+  /** ranges 属性解析与清洗（实现体，调用方保证已缓存键控） */
+  private parseRangePresets(raw: string): ShortcutItem[] | null {
+    let arr: unknown
+    try {
+      arr = JSON.parse(raw)
+    } catch {
+      arr = null
+    }
+    if (!Array.isArray(arr)) {
+      this.warnRangesOnce('[oas-date-picker] ranges 属性非法（应为 [{ label, start, end }] JSON 数组），已忽略')
+      return null
+    }
+    const type = this.rangeEndpointType()
+    const out: ShortcutItem[] = []
+    let dropped = 0
+    for (const item of arr) {
+      if (typeof item !== 'object' || item === null) {
+        dropped++
+        continue
+      }
+      const rec = item as Record<string, unknown>
+      const label = rec.label
+      if (typeof label !== 'string' || label.trim() === '') {
+        dropped++
+        continue
+      }
+      const start = this.parseInputValue(String(rec.start ?? ''), type)
+      const end = this.parseInputValue(String(rec.end ?? ''), type)
+      if (!start || !end) {
+        dropped++
+        continue
+      }
+      const [s, e] = start.getTime() <= end.getTime() ? [start, end] : [end, start]
+      // 走 getValue 通道携带 Date 对：formatWithType 的字符串形态对 yearrange（裸 yyyy）无法被
+      // resolveShortcutEndpoints 的 parseISODate 回读，Date 通道全类型无损
+      out.push({ label, getValue: () => [s, e] as [Date, Date] })
+    }
+    if (dropped > 0) {
+      this.warnRangesOnce(
+        `[oas-date-picker] ranges 属性含 ${dropped} 个非法项（缺 label 或 start/end 不可解析），已丢弃`,
+      )
+    }
+    return out.length > 0 ? out : null
+  }
+
+  /** ranges 告警去重（实例级一次） */
+  private warnRangesOnce(message: string): void {
+    if (this.rangesWarned) return
+    this.rangesWarned = true
+    devWarn(message)
   }
 
   private defaultShortcuts(): ShortcutItem[] {
@@ -2479,11 +2580,16 @@ export class OASDatePicker extends OASFormElement {
   private shortcutsMarkup(): string {
     const items = this.shortcutItems()
     if (!items.length) return ''
+    // 范围类型：端点命中 min/max/disabled-date 的预设渲染为禁用置灰（与网格可选性同口径，
+    // 用户能看到「预设存在但当前不可用」）；单值类型维持原样（默认零变化）
+    const grey = this.isRangeType()
     const labels = items
-      .map(
-        (it, i) =>
-          `<button type="button" class="shortcut" part="shortcut" data-index="${i}">${escapeHtml(it.label)}</button>`,
-      )
+      .map((it, i) => {
+        const disabled = grey && this.resolveShortcutRange(it) === null
+        return `<button type="button" class="shortcut" part="shortcut" data-index="${i}"${
+          disabled ? ' disabled aria-disabled="true"' : ''
+        }>${escapeHtml(it.label)}</button>`
+      })
       .join('')
     return `<div class="shortcuts" part="shortcuts">${labels}</div>`
   }
@@ -2554,8 +2660,8 @@ export class OASDatePicker extends OASFormElement {
     return s
   }
 
-  /** 解析范围快捷预设（端点早于起点时自动对调），命中禁用日期返回 null */
-  private resolveShortcutRange(item: ShortcutItem): { start: Date; end: Date } | null {
+  /** 解析范围预设端点（getValue 或静态 value 对；倒置自动交换），不校验可选性 */
+  private resolveShortcutEndpoints(item: ShortcutItem): { start: Date; end: Date } | null {
     let start: Date | null = null
     let end: Date | null = null
     if (item.getValue) {
@@ -2574,8 +2680,17 @@ export class OASDatePicker extends OASFormElement {
       start = end
       end = tmp
     }
-    if (this._disabledDate && (this._disabledDate(start) || this._disabledDate(end))) return null
     return { start, end }
+  }
+
+  /**
+   * 解析范围快捷预设：端点解析失败返回 null；端点不可选（min/max/disabled-date 任一端命中，
+   * 与网格 isAcceptableDate 同口径）返回 null（不应用）。渲染置灰与点击拦截共用本判定（单一事实源）。
+   */
+  private resolveShortcutRange(item: ShortcutItem): { start: Date; end: Date } | null {
+    const r = this.resolveShortcutEndpoints(item)
+    if (!r) return null
+    return this.isAcceptableDate(r.start) && this.isAcceptableDate(r.end) ? r : null
   }
 
   private todayRange(): [Date, Date] {
@@ -2663,7 +2778,8 @@ export class OASDatePicker extends OASFormElement {
     this.valueDirty = true // 用户交互置脏：冻结 reset 基线
     this.setAttribute('value', JSON.stringify(value))
     this.emit('change', { value })
-    this.emit('confirm', { value })
+    // detail 除 value 数组外同时携带命名 start/end（宿主免解数组；与 value 两端同串）
+    this.emit('confirm', { value, start: s, end: e })
     this.requestOpen(false)
   }
 

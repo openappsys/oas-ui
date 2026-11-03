@@ -514,7 +514,11 @@ describe('type 面板族补齐', () => {
     el.shadowRoot!.querySelector<HTMLElement>('[part="confirm"]')!.click()
     expect(el.getAttribute('value')).toBe('["2026-08-05T08:00:00","2026-08-15T20:00:00"]')
     expect(change).toEqual({ value: ['2026-08-05T08:00:00', '2026-08-15T20:00:00'] })
-    expect(confirm).toEqual({ value: ['2026-08-05T08:00:00', '2026-08-15T20:00:00'] })
+    expect(confirm).toEqual({
+      value: ['2026-08-05T08:00:00', '2026-08-15T20:00:00'],
+      start: '2026-08-05T08:00:00',
+      end: '2026-08-15T20:00:00',
+    })
     expect(expanded(el)).toBe('false')
   })
 })
@@ -952,16 +956,17 @@ describe('手输通道', () => {
     expect(input(custom).value).toBe('2026-09-03 至 2026-09-12')
   })
 
-  it('daterange 手输倒置/越界/非法时回退，不提交', () => {
+  it('daterange 手输起止倒置自动交换提交；越界/非法时回退，不提交', () => {
     const el = mount({ type: 'daterange', value: '["2026-09-01","2026-09-10"]' })
     type(el, '2026-09-12 ~ 2026-09-03')
     blurInput(el)
-    expect(el.getAttribute('value')).toBe('["2026-09-01","2026-09-10"]')
-    expect(input(el).value).toBe('2026-09-01 ~ 2026-09-10')
+    // 倒置自动交换（含显示），不回退
+    expect(el.getAttribute('value')).toBe('["2026-09-03","2026-09-12"]')
+    expect(input(el).value).toBe('2026-09-03 ~ 2026-09-12')
 
     type(el, 'not-a-date ~ 2026-09-03')
     blurInput(el)
-    expect(el.getAttribute('value')).toBe('["2026-09-01","2026-09-10"]')
+    expect(el.getAttribute('value')).toBe('["2026-09-03","2026-09-12"]')
 
     const bounded = mount({ type: 'daterange', min: '2026-09-05' })
     type(bounded, '2026-09-01 ~ 2026-09-10')
@@ -2030,5 +2035,225 @@ describe('外部 label 命名优先级（update 直调路径）', () => {
     await new Promise((r) => setTimeout(r, 0))
     el.value = '2026-02-01'
     expect(trigger(el).getAttribute('aria-label'), '外部 label 解除后恢复内建回退名').toBe('请选择日期')
+  })
+})
+
+// ---- T8：ranges 快捷区间预设 + 范围联动细节 ----
+
+describe('OASDatePicker ranges 快捷区间预设（声明式 JSON 通道）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  function shortcutsOf(el: OASDatePicker): HTMLButtonElement[] {
+    return [...el.shadowRoot!.querySelectorAll<HTMLButtonElement>('.shortcut')]
+  }
+
+  it('ranges：合法 JSON 渲染预设按钮，点击应用值 + 派发 oas-change + 关闭；倒置端点自动交换', () => {
+    const el = mount({
+      type: 'daterange',
+      ranges:
+        '[{"label":"上旬","start":"2026-08-01","end":"2026-08-10"},{"label":"倒置","start":"2026-08-20","end":"2026-08-12"}]',
+    })
+    open(el)
+    const btns = shortcutsOf(el)
+    expect(btns.map((b) => b.textContent)).toEqual(['上旬', '倒置'])
+    let detail: unknown
+    el.addEventListener('oas-change', (e: Event) => (detail = (e as CustomEvent).detail))
+    btns[0]!.click()
+    expect(el.getAttribute('value')).toBe('["2026-08-01","2026-08-10"]')
+    expect(detail).toEqual({ value: ['2026-08-01', '2026-08-10'] })
+    expect(expanded(el)).toBe('false')
+    // 倒置项：端点对调后应用
+    open(el)
+    btns[1]!.click()
+    expect(el.getAttribute('value')).toBe('["2026-08-12","2026-08-20"]')
+  })
+
+  it('ranges：非法 JSON / 非数组整体忽略，回落内置预设并仅告警一次', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const bad = mount({ type: 'daterange', ranges: 'not-json' })
+    open(bad)
+    const labels = shortcutsOf(bad).map((b) => b.textContent)
+    expect(labels).toContain('今天')
+    expect(labels).toContain('本周')
+    const nonArray = mount({ type: 'daterange', ranges: '{"label":"x"}' })
+    open(nonArray)
+    expect(shortcutsOf(nonArray).map((b) => b.textContent)).toContain('今天')
+    expect(warn).toHaveBeenCalledTimes(2) // 两个实例各一次（实例级去重）
+    expect(String(warn.mock.calls[0]![0])).toContain('ranges')
+    warn.mockRestore()
+  })
+
+  it('ranges：非法项清洗（缺 label / 缺 start / 日期不可解析逐项丢弃，合法项保留）', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const el = mount({
+      type: 'daterange',
+      ranges:
+        '[{"label":"好","start":"2026-08-01","end":"2026-08-10"},{"start":"2026-08-01","end":"2026-08-10"},{"label":"缺起","end":"2026-08-10"},{"label":"坏日期","start":"abc","end":"2026-08-10"},["not","an","object"]]',
+    })
+    open(el)
+    expect(shortcutsOf(el).map((b) => b.textContent)).toEqual(['好'])
+    expect(warn).toHaveBeenCalledTimes(1)
+    expect(String(warn.mock.calls[0]![0])).toContain('4 个非法项')
+    warn.mockRestore()
+  })
+
+  it('ranges：非范围类型忽略（区间预设对单值无意义，date 仍渲染内置「今天」）', () => {
+    const el = mount({ type: 'date', ranges: '[{"label":"区间","start":"2026-08-01","end":"2026-08-10"}]' })
+    open(el)
+    const labels = shortcutsOf(el).map((b) => b.textContent)
+    expect(labels).toContain('今天')
+    expect(labels).not.toContain('区间')
+  })
+
+  it('ranges：monthrange / yearrange 端点按各自类型解析提交', () => {
+    const month = mount({ type: 'monthrange', ranges: '[{"label":"上半年","start":"2026-01","end":"2026-06"}]' })
+    open(month)
+    shortcutsOf(month)[0]!.click()
+    expect(month.getAttribute('value')).toBe('["2026-01","2026-06"]')
+
+    const year = mount({ type: 'yearrange', ranges: '[{"label":"三年","start":"2024","end":"2026"}]' })
+    open(year)
+    shortcutsOf(year)[0]!.click()
+    expect(year.getAttribute('value')).toBe('["2024","2026"]')
+  })
+
+  it('ranges：端点宽容解析（2026/8/5 形式）归一为 value 契约格式', () => {
+    const el = mount({ type: 'daterange', ranges: '[{"label":"宽容","start":"2026/8/5","end":"2026-08-15"}]' })
+    open(el)
+    shortcutsOf(el)[0]!.click()
+    expect(el.getAttribute('value')).toBe('["2026-08-05","2026-08-15"]')
+  })
+
+  it('ranges：端点命中 disabled-date → 预设置灰不可点；未命中可点', () => {
+    const el = mount({
+      type: 'daterange',
+      ranges:
+        '[{"label":"撞禁用","start":"2026-08-10","end":"2026-08-15"},{"label":"干净","start":"2026-08-01","end":"2026-08-05"}]',
+    })
+    el.disabledDate = (d) => d.getDate() === 10
+    open(el)
+    const btns = shortcutsOf(el)
+    expect(btns[0]!.disabled).toBe(true)
+    expect(btns[0]!.getAttribute('aria-disabled')).toBe('true')
+    expect(btns[1]!.disabled).toBe(false)
+    let detail: unknown
+    el.addEventListener('oas-change', (e: Event) => (detail = (e as CustomEvent).detail))
+    btns[0]!.click()
+    expect(detail).toBeUndefined()
+    expect(el.hasAttribute('value')).toBe(false)
+    btns[1]!.click()
+    expect(el.getAttribute('value')).toBe('["2026-08-01","2026-08-05"]')
+  })
+
+  it('ranges：端点越 min/max 边界 → 预设置灰（与网格可选性同口径）', () => {
+    const el = mount({
+      type: 'daterange',
+      min: '2026-08-05',
+      max: '2026-08-25',
+      ranges:
+        '[{"label":"越界","start":"2026-08-01","end":"2026-08-10"},{"label":"界内","start":"2026-08-06","end":"2026-08-20"}]',
+    })
+    open(el)
+    const btns = shortcutsOf(el)
+    expect(btns[0]!.disabled).toBe(true)
+    expect(btns[1]!.disabled).toBe(false)
+  })
+
+  it('ranges：内置默认预设同样受 min/max 置灰约束（无 min/max 时全部可点）', () => {
+    const plain = mount({ type: 'daterange' })
+    open(plain)
+    expect(shortcutsOf(plain).every((b) => !b.disabled)).toBe(true)
+    const bounded = mount({ type: 'daterange', max: '2026-01-01' })
+    open(bounded)
+    expect(shortcutsOf(bounded).some((b) => b.disabled)).toBe(true)
+  })
+
+  it('ranges：声明式属性优先于 shortcuts property（同场时 attribute 赢）', () => {
+    const el = mount({ type: 'daterange', ranges: '[{"label":"属性通道","start":"2026-08-01","end":"2026-08-10"}]' })
+    el.shortcuts = [{ label: 'property 通道', value: ['2026-09-01', '2026-09-10'] }]
+    open(el)
+    const btns = shortcutsOf(el)
+    expect(btns.map((b) => b.textContent)).toEqual(['属性通道'])
+    btns[0]!.click()
+    expect(el.getAttribute('value')).toBe('["2026-08-01","2026-08-10"]')
+  })
+
+  it('ranges：动态改属性（展开态）即时重渲预设', () => {
+    const el = mount({ type: 'daterange', ranges: '[{"label":"A","start":"2026-08-01","end":"2026-08-05"}]' })
+    open(el)
+    expect(shortcutsOf(el).map((b) => b.textContent)).toEqual(['A'])
+    el.setAttribute('ranges', '[{"label":"B","start":"2026-09-01","end":"2026-09-10"}]')
+    expect(shortcutsOf(el).map((b) => b.textContent)).toEqual(['B'])
+  })
+
+  it('ranges：type 运行时切换后按新端点精度重解析（缓存键含端点类型，预设不消失）', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    // 月精度端点串（'2026-01'）在 date 精度下不可解析 → 初轮整批丢弃，回落内置预设
+    const el = mount({ type: 'daterange', ranges: '[{"label":"上半年","start":"2026-01","end":"2026-06"}]' })
+    open(el)
+    expect(shortcutsOf(el).map((b) => b.textContent)).not.toContain('上半年')
+    // 运行时切成 monthrange：端点类型变为 month，必须重解析而不是复用旧缓存（旧实现返回 null → 预设消失）
+    el.setAttribute('type', 'monthrange')
+    expect(shortcutsOf(el).map((b) => b.textContent)).toContain('上半年')
+    warn.mockRestore()
+  })
+
+  it('手输同刻边界（起 = 止）合法提交', () => {
+    const el = mount({ type: 'daterange' })
+    type(el, '2026-09-05 ~ 2026-09-05')
+    blurInput(el)
+    expect(el.getAttribute('value')).toBe('["2026-09-05","2026-09-05"]')
+    expect(input(el).value).toBe('2026-09-05 ~ 2026-09-05')
+  })
+
+  it('clearable：范围一键双清（value 移除 + oas-clear 携清空前的双端 + oas-change 空值）', () => {
+    const el = mount({ type: 'daterange', clearable: '', value: '["2026-08-05","2026-08-15"]' })
+    const events: string[] = []
+    let clearDetail: unknown
+    let changeDetail: unknown
+    el.addEventListener('oas-clear', (e: Event) => {
+      events.push('clear')
+      clearDetail = (e as CustomEvent).detail
+    })
+    el.addEventListener('oas-change', (e: Event) => {
+      events.push('change')
+      changeDetail = (e as CustomEvent).detail
+    })
+    el.shadowRoot!.querySelector<HTMLElement>('[part="clear"]')!.click()
+    expect(el.hasAttribute('value')).toBe(false)
+    expect(input(el).value).toBe('')
+    expect(events).toEqual(['clear', 'change'])
+    expect(clearDetail).toEqual({ value: ['2026-08-05', '2026-08-15'] })
+    expect(changeDetail).toEqual({ value: '' })
+  })
+
+  it('预设与手动混用后预设不高亮（无 selected/active/aria-pressed 残留）', () => {
+    const el = mount({ type: 'daterange', ranges: '[{"label":"上旬","start":"2026-08-01","end":"2026-08-10"}]' })
+    open(el)
+    shortcutsOf(el)[0]!.click() // 预设应用并关闭
+    open(el)
+    // 手动改值（面板内点选起点 + 终点）
+    day(el, '2026-08-05').click()
+    day(el, '2026-08-20', 0).click()
+    const btns = shortcutsOf(el)
+    expect(btns.length).toBe(1)
+    expect(btns[0]!.classList.contains('selected')).toBe(false)
+    expect(btns[0]!.classList.contains('active')).toBe(false)
+    expect(btns[0]!.getAttribute('aria-pressed')).toBeNull()
+  })
+
+  it('CSS：预设置灰规则（disabled 选择器 + token 链）存在', () => {
+    const el = mount({ type: 'daterange' })
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    expect(css).toContain('.shortcut:disabled')
+    expect(css).toContain('--oas-color-bg-disabled')
   })
 })

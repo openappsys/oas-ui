@@ -122,6 +122,18 @@ datetime 选日期与时分秒后点「确定」提交；datetimerange 双月 + 
 
 预设较多时可用 `shortcuts-position="left"` 将快捷栏改为面板左侧纵栏。
 
+## 快捷预设与范围选择
+
+<DemoBlock title="ranges 快捷区间预设（daterange，声明式 JSON，左侧栏）">
+  <oas-date-picker id="date-picker-ranges" type="daterange" shortcuts-position="left" clearable
+    ranges='[{"label":"最近 7 天","start":"2026-08-10","end":"2026-08-16"},{"label":"8 月上旬","start":"2026-08-01","end":"2026-08-10"},{"label":"整月倒置","start":"2026-08-31","end":"2026-08-01"}]'></oas-date-picker>
+  <span id="date-picker-ranges-output" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)"></span>
+</DemoBlock>
+
+`ranges`（JSON 属性 `[{ label, start, end }]`，默认无）为范围类型（`daterange` / `datetimerange` / `monthrange` / `yearrange`）提供**声明式快捷区间预设**：按钮渲染进快捷栏（`shortcuts-position` 控制顶部横排 / 左侧纵栏），点击即应用整个区间（`value` 写 JSON 数组）、派发 `oas-change` 并关闭面板。清洗规则：非法 JSON / 非数组整体忽略（回落既有预设）；缺 `label` 或 `start` / `end` 不可解析的项逐项丢弃并 devWarn 一次；起止倒置自动交换；端点支持宽容格式（如 `2026/8/5`）。端点落在 `min` / `max` / `disabled-date` 禁用区间的预设自动**置灰不可点**（与网格可选性同口径，内置默认预设同样受约束）。属性在场时覆盖 `shortcuts` property 与内置预设；`label` 为纯字符串。点选预设后仍可手输/面板改值，预设不保留高亮态。
+
+范围联动细节：触发器为单输入框**原子提交**——起止在一处编辑（`separator` 分隔），任一端解析失败整体回退、不污染另一端；手输起止倒置（`2026-09-12 ~ 2026-09-03`）**自动交换**提交；同刻边界（起 = 止）合法；`oas-confirm`（datetimerange 确定提交）`detail` 除 `value` 数组外同时携带 `start` / `end`；`clearable` 一键清除整个区间。
+
 ## 时区（timezone）
 
 <DemoBlock title="timezone 时区锚点：纽约 vs 本地">
@@ -302,6 +314,7 @@ readonly 下面板可展开浏览、单元格可键盘导航，但点选 / 快�
 | `open` | 受控开合：在场=展开、移除=收起；手势只派发 `oas-open-change` 由宿主回写；移动形态（触屏/窄视口 <768px）下展开态由 oas-bottom-sheet 底部抽屉承载（下滑/遮罩/Esc 收起），PC 为浮层下拉 | — | — |
 | `placeholder` | 占位提示 | — | — |
 | `placement` | 浮层位置，12 向：`top`/`bottom`/`left`/`right` × `-start`/`-end`（默认 `bottom-start`）；触发器贴近视口右缘时自动右对齐翻转、下方空间不足时上翻，并夹取到视口内 | `string` | `bottom-start` |
+| `ranges` | 范围快捷区间预设（JSON [{ label, start, end }]，默认无；仅范围类型生效）：按钮渲染进快捷栏（shortcuts-position 控制横排/左侧栏），点击应用整个区间、派发 oas-change 并关闭；非法 JSON 整体忽略，缺 label 或 start/end 不可解析的项逐项丢弃并 devWarn 一次；起止倒置自动交换；端点命中 min/max/disabled-date 的预设置灰不可点（内置默认预设同口径）；在场时覆盖 shortcuts property 与内置预设 | `string` | — |
 | `readonly` | 只读：面板可展开浏览（单元格可键盘导航），点选/快捷/清除/手输均不提交 | `boolean` | — |
 | `required` | 必填标记（驱动原生校验链 valueMissing；不透传内层控件） | `boolean` | — |
 | `separator` | 范围类型触发器内起止值分隔符（同时用于范围手输拆分；value 契约不变） | `string` | — |
@@ -331,7 +344,7 @@ readonly 下面板可展开浏览、单元格可键盘导航，但点选 / 快�
 | `oas-cell-render` | 日格重建时逐格派发，`detail: { date, element }`（标记点/徽标场景，监听须幂等） |
 | `oas-change` | 值变化，`detail: { value }`（范围/multiple 为字符串数组） |
 | `oas-clear` | 清除，`detail: { value }` 为清空前的值 |
-| `oas-confirm` | datetime / datetimerange 点确定提交时派发（与 `oas-change` 并行），`detail: { value }` |
+| `oas-confirm` | datetime / datetimerange 点确定提交时派发（与 `oas-change` 并行）；datetimerange 的 detail 除 value 数组外同时携带 start / end（宿主免解数组） |
 | `oas-focus` | 组件整体获焦 |
 | `oas-open-change` | 开合变化，`detail: { open }`；宿主直接写 open 属性吸收状态不回派（防双向绑定回环） |
 
@@ -402,6 +415,17 @@ onMounted(() => {
       },
       { label: '固定 2026-08-10', value: '2026-08-10' },
     ]
+  })
+
+  // ranges 快捷区间预设（声明式 JSON 通道）：回显提交值
+  const rg = document.getElementById('date-picker-ranges')
+  const rgOut = document.getElementById('date-picker-ranges-output')
+  rg?.addEventListener('oas-change', (e) => {
+    const v = e.detail.value
+    rgOut.textContent = Array.isArray(v) ? `oas-change: ${v[0]} ~ ${v[1]}` : `oas-change: ${v}`
+  })
+  rg?.addEventListener('oas-clear', () => {
+    rgOut.textContent = '已清空'
   })
 
   // 禁用过去日期（disabled-date 走 property）

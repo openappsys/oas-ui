@@ -122,6 +122,18 @@ Out-of-range dates are not selectable, and navigation buttons gray out at the `m
 
 With many presets, use `shortcuts-position="left"` to move the shortcut bar to a vertical column on the panel's left side.
 
+## Range Shortcuts & Selection
+
+<DemoBlock title="ranges quick range presets (daterange, declarative JSON, sidebar)">
+  <oas-date-picker id="date-picker-ranges" type="daterange" shortcuts-position="left" clearable
+    ranges='[{"label":"Last 7 days","start":"2026-08-10","end":"2026-08-16"},{"label":"Early August","start":"2026-08-01","end":"2026-08-10"},{"label":"Whole month reversed","start":"2026-08-31","end":"2026-08-01"}]'></oas-date-picker>
+  <span id="date-picker-ranges-output" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)"></span>
+</DemoBlock>
+
+`ranges` (JSON attribute `[{ label, start, end }]`, absent by default) provides **declarative quick range presets** for range types (`daterange` / `datetimerange` / `monthrange` / `yearrange`): buttons render into the shortcut bar (`shortcuts-position` picks the top row / left column), and clicking applies the whole range (writes `value` as a JSON array), emits `oas-change`, and closes the panel. Sanitization: invalid JSON / non-array ignores the whole attribute (existing presets remain); items missing `label` or with unparsable `start` / `end` are dropped one by one with a single devWarn; reversed endpoints are swapped automatically; lenient endpoint formats (e.g. `2026/8/5`) are accepted. Presets whose endpoints fall inside the `min` / `max` / `disabled-date` forbidden set render **grayed out and unclickable** (same rule as grid availability; built-in default presets are constrained too). When present, the attribute overrides the `shortcuts` property and built-ins; `label` is a plain string. After picking a preset you can still edit manually — presets keep no highlight state.
+
+Range interaction details: the trigger is a single input with **atomic commit** — both endpoints are edited in one field (split by `separator`); a parse failure on either end reverts the whole input without corrupting the other. Typing a reversed range (`2026-09-12 ~ 2026-09-03`) is **auto-swapped** on commit; same-day boundaries (start = end) are valid; `oas-confirm` (datetimerange OK commit) carries `start` / `end` in `detail` alongside the `value` array; `clearable` clears the whole range at once.
+
 ## Timezone (timezone)
 
 <DemoBlock title="timezone anchor: New York vs local">
@@ -302,6 +314,7 @@ Programmatic read/write of the current value goes through the public `value` pro
 | `open` | Controlled open: present = open, removed = closed; gestures only emit `oas-open-change` for the host to write back; in the mobile form (touch / viewport <768px) the open panel is hosted by an oas-bottom-sheet bottom sheet (swipe-down/backdrop/Esc to close); desktop keeps the floating dropdown | — | — |
 | `placeholder` | Placeholder text | — | — |
 | `placement` | Popup placement, 12 directions: `top`/`bottom`/`left`/`right` × `-start`/`-end` (default `bottom-start`); auto right-aligns near the viewport right edge, flips upward when space below is insufficient, and clamps into the viewport | `string` | `bottom-start` |
+| `ranges` | Quick range presets (JSON [{ label, start, end }], absent by default; range types only): buttons render into the shortcut bar (shortcuts-position picks horizontal/left column); clicking applies the whole range, emits oas-change and closes. Invalid JSON ignores the whole attribute; items missing label or with unparsable start/end are dropped with a single devWarn; reversed endpoints swap automatically; presets whose endpoints hit min/max/disabled-date render grayed out (built-ins follow the same rule); when present, overrides the shortcuts property and built-ins | `string` | — |
 | `readonly` | Readonly: the panel can be opened and browsed (cells keyboard-navigable), but no interaction commits | `boolean` | — |
 | `required` | Required marker (drives the native valueMissing validation chain; not passed through to the inner control) | `boolean` | — |
 | `separator` | Custom separator between start/end values in the trigger for range types; also splits typed ranges | `string` | — |
@@ -331,7 +344,7 @@ Programmatic read/write of the current value goes through the public `value` pro
 | `oas-cell-render` | Emitted per day cell on rebuild, `detail: { date, element }` (listeners must be idempotent) |
 | `oas-change` | Value change, `detail: { value }` (string array for ranges and multiple) |
 | `oas-clear` | Clear, `detail: { value }` is the previous value |
-| `oas-confirm` | Emitted when datetime/datetimerange submits via the confirm button (alongside `oas-change`), `detail: { value }` |
+| `oas-confirm` | Emitted when datetime/datetimerange submits via the confirm button (alongside `oas-change`); for datetimerange the detail carries start / end alongside the value array |
 | `oas-focus` | The component as a whole gains focus |
 | `oas-open-change` | Open state change, `detail: { open }`; host-written `open` attributes do not echo back (avoids two-way binding loops) |
 
@@ -399,6 +412,17 @@ onMounted(() => {
       },
       { label: 'Fixed 2026-08-10', value: '2026-08-10' },
     ]
+  })
+
+  // ranges quick range presets (declarative JSON channel): echo the committed value
+  const rg = document.getElementById('date-picker-ranges')
+  const rgOut = document.getElementById('date-picker-ranges-output')
+  rg?.addEventListener('oas-change', (e) => {
+    const v = e.detail.value
+    rgOut.textContent = Array.isArray(v) ? `oas-change: ${v[0]} ~ ${v[1]}` : `oas-change: ${v}`
+  })
+  rg?.addEventListener('oas-clear', () => {
+    rgOut.textContent = 'Cleared'
   })
 
   const dd = document.getElementById('date-picker-disabled-date')

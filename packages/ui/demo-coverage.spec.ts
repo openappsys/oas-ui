@@ -367,7 +367,11 @@ const COMPONENT_STEPS: Record<string, Array<[string, string, string?]>> = {
     ['oas-date-picker [part="grid"] .day', 'click', '选日 → oas-change'],
     ['oas-date-picker[type="daterange"]:not([disabled]) [part="trigger"]', 'click', '展开范围面板'],
     ['oas-date-picker[type="daterange"] [part="grid"] .day', 'click', '范围起点落选 → oas-calendar-change'],
-    ['oas-date-picker[clearable] [part="clear"]', 'click', '清空钮（校验态 demo 带 value）→ oas-clear'],
+    [
+      'oas-date-picker[clearable] [part="clear"]:not([hidden])',
+      'click',
+      '清空钮（校验态 demo 带 value）→ oas-clear：只点可见钮，避开 clearable 但无值（按钮 hidden）的实例',
+    ],
     ['oas-date-picker[type="datetime"]:not([disabled]) [part="trigger"]', 'click', '展开 datetime 面板'],
     ['oas-date-picker[type="datetime"] [part="confirm"]', 'click', '点「确定」→ oas-confirm'],
   ],
@@ -595,6 +599,12 @@ const COMPONENT_STEPS: Record<string, Array<[string, string, string?]>> = {
     ['#command-pages [part="back"]', 'domclick', '面包屑回退 → oas-page-change(pop)'],
     ['#command-filter [part="search"]', 'fill:o', '外部过滤输入 → oas-input'],
     ['#command-views [part="option"]', 'domclick', '进视图 → oas-view-change'],
+    ['#command-children', 'open', '展开 children 多级 demo（受控 open 属性：前面的选中关闭可能已收起该面板）'],
+    [
+      '#command-children [part="option"]',
+      'domclick',
+      '点首项「项目」（带 children）→ 进入下一级 → oas-navigate { path, level }',
+    ],
   ],
   'hover-card': [
     // 受控按钮（宿主写 open 属性）按统一口径静默；事件探针改走内部 hover 通道。

@@ -45,7 +45,7 @@ test('date-picker / time-picker 面板贴输入框下方（:host 为定位祖先
   }
 })
 
-test('date-picker 范围手输：separator 拆分、提交 JSON、非法回退', async ({ page }) => {
+test('date-picker 范围手输：separator 拆分、提交 JSON、倒置自动交换、非法回退', async ({ page }) => {
   await page.goto('/components/date-picker.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-date-picker')
   const host = page.locator('oas-date-picker[type="daterange"]').first()
@@ -57,11 +57,17 @@ test('date-picker 范围手输：separator 拆分、提交 JSON、非法回退',
   await expect.poll(() => host.getAttribute('value')).toBe('["2026-09-01","2026-09-10"]')
   await expect(trigger).toHaveValue('2026-09-01 ~ 2026-09-10')
 
-  // 倒置不提交，显示回退到当前值
+  // 倒置自动交换提交（与 ranges/property 预设端点对调同口径）
   await trigger.fill('2026-09-12 ~ 2026-09-03')
   await trigger.press('Tab')
-  await expect(host).toHaveAttribute('value', '["2026-09-01","2026-09-10"]')
-  await expect(trigger).toHaveValue('2026-09-01 ~ 2026-09-10')
+  await expect.poll(() => host.getAttribute('value')).toBe('["2026-09-03","2026-09-12"]')
+  await expect(trigger).toHaveValue('2026-09-03 ~ 2026-09-12')
+
+  // 真非法（不存在的日期）整体回退到当前值，不污染另一端
+  await trigger.fill('2026-09-32 ~ 2026-10-05')
+  await trigger.press('Tab')
+  await expect.poll(() => host.getAttribute('value')).toBe('["2026-09-03","2026-09-12"]')
+  await expect(trigger).toHaveValue('2026-09-03 ~ 2026-09-12')
 })
 
 // 移动端专项：bottom-sheet 底部抽屉承载（data-mobile-sheet 标记 + sheet open + dropdown 静态化 + oas-close 同步收起）
