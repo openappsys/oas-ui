@@ -397,6 +397,7 @@ computeVariance(el.tasks, 'plan-b')
 - **跨任务超配检测**：update 时对**同资源**的任务做时间区间重叠检测——区间求交 >0 即超配（半开区间，**相切不算**；日精度 end 含端，共享一天即算交叠）；里程碑按点处理不触发、summary 不参与；只检测**池内已登记**的资源（池外 id 视为宿主遗留数据）。超配任务条与左侧行名加 `.conflict`（复用违约视觉通道 `--oas-gantt-conflict-color`）。
 - **`oas-resource-conflict` 事件**：`detail: { conflicts }`，每项 `{ taskA, taskB, resourceId, overlapStart, overlapEnd }`（交叠区间日精度含端）。**幂等**——同一快照不重复派发，数据/池变化重算后签名变化才发，消解时发空数组。事件在**数据/池变更的 `update` 中同步派发**：宿主须先挂监听再写数据（如先 `addEventListener` 再写 `tasks`），否则首轮结果到达不了监听器。同一资源同时段被 >2 个任务并发占用时 dev 控制台告警一次。
 - **池登记变化不自动通知组件**：宿主改池后须触发重算（如重写 `tasks`）。windowed 切片上跳过检测并 devWarn（全量判定才正确）。
+- **量级边界**：超配检测每 update 全量重算（每资源内两两求交，O(n²)）。任务量级在数百级（项目排程常态）无感；若单资源密集到千级以上且 update 频繁，先实测帧耗时再考虑增量检测（未做，注释留档）。
 
 ```ts
 import { getSharedResourcePool } from '@oas-ui/ui/data/resource/pool'
@@ -407,7 +408,36 @@ pool.register([{ id: 'alice', name: '张三', costRate: 120 }])
 ganttEl.tasks = ganttEl.tasks
 ```
 
-> 本批不做：资源负荷直方图 / 资源泳道视图（留后续批）、超配自动排程避让——`pool` 只做检测与视觉标注，不移动任何任务。
+> 负荷可视化（负荷桶条、>100% 超配通道）已由 `show-resource-load` 承载，见下一节；仍不做：资源泳道视图（留后续批）、超配自动排程避让——`pool` 只做检测与视觉标注，不移动任何任务。
+
+## 资源负荷视图（show-resource-load）
+
+<DemoBlock title="show-resource-load 资源负荷：张三双任务交叠（03-05..03-06 桶 200%，danger 通道）、李四正常（≤100% primary）">
+  <oas-gantt id="gantt-load-demo" pool show-resource-load range-start="2026-03-01" range-end="2026-03-31" height="200"
+    tasks='[{"id":"la","name":"设计（张三）","start":"2026-03-02","end":"2026-03-06","progress":60,"resources":["alice"]},{"id":"lb","name":"评审（张三，交叠）","start":"2026-03-05","end":"2026-03-09","progress":30,"resources":["alice"]},{"id":"lc","name":"开发（李四）","start":"2026-03-02","end":"2026-03-06","progress":40,"resources":["bob"]}]'></oas-gantt>
+</DemoBlock>
+
+`show-resource-load` 属性（opt-in，默认关；显式 `"false"` 关闭）在图表下方渲染**资源负荷面板**：每资源一行，行内按时间轴对齐的负荷桶条。
+
+- **负荷口径**（与 pool 超配检测同语义，只是按桶聚合并可视化）：每桶负荷 = 该资源每条任务与桶求交的覆盖日数**逐任务累计**（日精度含端）——同资源任务在桶内交叠时累计算出 **>100%**（上例张三 03-05..03-06 双任务同占 → 200%），桶条走 danger 通道 `--oas-gantt-load-over-bg`；≤100% 走 primary 族 `--oas-gantt-load-bg`（暗色变体随 token）。里程碑按点计 0 天、summary 不参与；池外资源 id 一样列出（负荷视图不要求登记池）。
+- **粒度随 scale 映射**：hour/day → 日桶、week → 周桶（锚定周起始日）、month/quarter/year → 月桶。面板行名列宽与左侧列表同 token（`--oas-gantt-list-width`），桶条与图表时间轴逐列对齐，**缩放/平移同步**（复用 update 时的轴参数不重算；横向滚动跟随内容层平移，RTL 同式）。行高 token `--oas-gantt-load-row-height`（缺省 24px）。
+- **行名**：`pool` 开启时取池内名称（上例「张三」「李四」），关闭时取资源 id。
+- **ARIA**：面板 `role="img"` + aria-label 摘要（资源数 · 峰值最高的资源与百分比），纯可视化不进 Tab 序——读屏走摘要，不逐桶播报。桶条原生 `title` 显示负荷百分比（悬停可见）。
+- **性能**：负荷基于全量数据一次计算并按签名缓存（数据/轴区间/粒度/池变化才重算；虚拟行窗口只裁渲染不裁统计）。空数据/无资源引用时走 i18n 空态。windowed 切片上跳过渲染并 devWarn（切片上统计会少算，对齐 pool 检测口径）。
+
+```ts
+// 同一份口径的纯函数（零运行时依赖），宿主可独立调用做自己的负荷视图：
+import { computeResourceLoad } from '@oas-ui/ui/data/resource/load'
+
+const r = computeResourceLoad(tasks, {
+  unit: 'week', // 'day'（缺省）| 'week' | 'month'
+  from: '2026-03-01',
+  to: '2026-03-31',
+  pool: getSharedResourcePool().list(), // 可选：命中时行 name 取池名称
+})
+// r: { resources: [{ id, name?, buckets, peak }], bucketStart, bucketDays, unit }
+// 负荷% = buckets[i] / bucketDays[i]，>100% 即桶内交叠超配
+```
 
 ## 行虚拟滚动（万级任务）
 
@@ -757,6 +787,10 @@ onMounted(async () => {
     })
     poolDemo.tasks = poolDemo.tasks // 登记晚于组件首帧：重写 tasks 触发一次超配重算
   }
+
+  // 资源负荷面板 demo：池登记晚于组件首帧 → 重写 tasks 触发一次负荷重算（行名取池名称）
+  const loadDemo = document.getElementById('gantt-load-demo')
+  if (loadDemo) loadDemo.tasks = loadDemo.tasks
 })
 </script>
 
@@ -847,7 +881,7 @@ expanded.forEach((t) => ganttEl.addTask(t)) // 喂回组件前按需自行合并
 | `hover` | 行 hover 底色开关（默认开）：鼠标移入行名或任务条时整行点亮（行名 + 时间轴同底色），颜色走 `--oas-gantt-row-hover-bg`（缺省 `--oas-color-bg-hover`，与斑马纹独立）；`"false"` 关闭 | `string` | — |
 | `label-position` | 任务条标签位置：inside 条内 / right 条旁 / left 条左；缺省 none（行名列已承载名称，条旁不再重复渲染）；非法值回落 none | `string` | — |
 | `locale` | 本地化（覆盖 config-provider 注入与全局 locale） | `string` | — |
-| `pool` | 资源池模式（布尔，默认关）：开启后任务 resources 引用共享资源池（@oas-ui/ui/data/resource/pool 的 getSharedResourcePool()）——tooltip 悬停条追加池内资源名称与费率（costRate，池外 id 忽略）；并对同资源任务做跨任务超配检测：时间区间交叠（半开区间相切不算；里程碑按点处理、summary 不参与）的任务条与左侧行名加 .conflict 标记，冲突对经 oas-resource-conflict 事件派发。池登记变化不自动通知组件——宿主改池后须触发重算（如重写 tasks）；windowed 切片上跳过检测并 devWarn；不做资源负荷直方图/泳道视图与自动排程避让 | `string` | — |
+| `pool` | 资源池模式（布尔，默认关）：开启后任务 resources 引用共享资源池（@oas-ui/ui/data/resource/pool 的 getSharedResourcePool()）——tooltip 悬停条追加池内资源名称与费率（costRate，池外 id 忽略）；并对同资源任务做跨任务超配检测：时间区间交叠（半开区间相切不算；里程碑按点处理、summary 不参与）的任务条与左侧行名加 .conflict 标记，冲突对经 oas-resource-conflict 事件派发。池登记变化不自动通知组件——宿主改池后须触发重算（如重写 tasks）；windowed 切片上跳过检测并 devWarn；负荷可视化见 show-resource-load（负荷% >100% 与本检测同语义）；不做泳道视图与自动排程避让 | `string` | — |
 | `progress-readonly` | 禁改进度（改期仍可拖） | `boolean` | — |
 | `range-end` | 宿主托管时间轴终点（ISO 日期 YYYY-MM-DD，含当日）：与 range-start 成对使用 | `string` | — |
 | `range-start` | 宿主托管时间轴起点（ISO 日期 YYYY-MM-DD）：提供后轴范围不再由数据推导，配合 range-end 支撑窗口化（切片不含完整日期跨度） | `string` | — |
@@ -859,6 +893,7 @@ expanded.forEach((t) => ganttEl.addTask(t)) // 喂回组件前按需自行合并
 | `show-critical-path` | 关键路径（布尔，默认关）：在依赖图与工期上算总时差，时差为 0 的任务加 .critical 高亮（颜色走 --oas-gantt-critical-color）；只读展示不改数据 | `string` | — |
 | `show-effort` | 工时列（布尔，默认关）：行标签区变两列（名称 \| 工时），工时右对齐、列头 i18n gantt.effort；单元格可读名 i18n gantt.effortValue（「工时 N 天」带单位文案）。GanttTask.effort 缺失/负数/非有限显示空（清洗层与 costRate 同口径丢弃），超大值转科学计数。列宽 token --oas-gantt-effort-width（缺省 56px）；关闭时不出节点，单列形态不变 | `string` | — |
 | `show-float` | 显示总浮时/自由浮时（布尔，默认关）：仅在依赖图完整时计算，条上显示「总浮时/自由浮时」标签并写入 data-total-float/data-free-float（单位为天）；摘要不参与，windowed 模式跳过并 devWarn | `string` | — |
+| `show-resource-load` | 资源负荷面板（布尔，默认关）：图表下方渲染按时间轴对齐的负荷桶条（每资源一行，行高 token --oas-gantt-load-row-height；行名列宽与左侧列表同 token --oas-gantt-list-width）。负荷口径：桶内覆盖日数逐任务累计（任务∩桶求交，日精度含端；里程碑按点计 0 天、summary 不参与），负荷% = 覆盖日数/桶天数，>100%（同资源任务交叠超配）走 danger 通道 --oas-gantt-load-over-bg，≤100% 走 primary 族 --oas-gantt-load-bg（暗色变体随 token）。粒度随 scale 映射（hour/day→日桶、week→周桶（锚定周起始）、month/quarter/year→月桶），与图表时间轴同步缩放/平移（复用 update 时轴参数不重算；滚动平移经 syncHeaderOffset 同款 rect 差公式，RTL 同式）。负荷基于全量数据签名缓存（数据/轴/池变化重算，虚拟行窗口不影响）；空数据/无资源引用走 i18n 空态。ARIA：面板 role="img" + aria-label 摘要（资源数 · 峰值最高的资源与百分比），不进 Tab 序。pool 开启时行名取池名称、关时取 id。windowed 切片上跳过渲染并 devWarn（全量统计口径）。纯函数实现见 shared/resource-load.ts（data/resource/load helper 入口共用） | `string` | — |
 | `show-status-line` | 状态线 + 计划进度刻度（布尔，默认关）：① 时间轴上按 status-date 渲染竖直进度线（token --oas-gantt-status-line-color，缺省 warning 色族；关闭态不解析 status-date——默认路径零新增开销）；② 每个任务条内按计划进度画窄竖刻度并写 data-plan-ratio（0-1 两位精度）——计划进度为**含端日粒度**口径：status 日与 start 的日历日差含当日、clamp 到工期（与 computeEvm 的 planned 同构）；里程碑按二值（未到 0/已到 1），summary 不画；只画刻度，不染色不告警 | `string` | — |
 | `show-today` | 今日线（默认开；false 关闭） | `string` | — |
 | `show-variance` | 任务带 baseline 时在行名后显示 Δ±Nd 偏差徽标，并写入 data-start-delta/data-end-delta/data-duration-delta/data-progress-delta；正值标红、负值标绿 | `string` | — |
@@ -953,6 +988,10 @@ expanded.forEach((t) => ganttEl.addTask(t)) // 喂回组件前按需自行合并
 | `--oas-gantt-holiday-bg` | — | `color-mix(in srgb, var(--oas-color-warning) 12%, var(--oas-color-bg))` |
 | `--oas-gantt-link-color` | — | `var(--oas-color-primary)` |
 | `--oas-gantt-list-width` | — | `220px` |
+| `--oas-gantt-load-bg` | 负荷桶条底色（≤100%，缺省 primary 45% 混底色；暗色变体随 token） | `color-mix(in srgb, var(--oas-color-primary) 45%, var(--oas-color-bg))` |
+| `--oas-gantt-load-max-height` | 负荷面板行区最大高度（show-resource-load，超出纵向滚动；默认 240px，数据不截断） | `240px` |
+| `--oas-gantt-load-over-bg` | 负荷桶条超配色（>100%，缺省 danger；暗色变体随 token） | `var(--oas-color-danger)` |
+| `--oas-gantt-load-row-height` | 负荷面板行高（show-resource-load，默认 24px） | `24px` |
 | `--oas-gantt-milestone-color` | — | `var(--oas-color-warning)` |
 | `--oas-gantt-row-height` | — | `36px` |
 | `--oas-gantt-row-hover-bg` | — | `var(--oas-color-bg-hover)` |

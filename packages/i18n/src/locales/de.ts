@@ -222,6 +222,9 @@ export const de: LocaleMessages = {
   'gantt.newTask': 'Neue Aufgabe',
   'gantt.effort': 'Aufwand',
   'gantt.effortValue': 'Aufwand {value} T',
+  'gantt.resourceLoad': 'Ressourcenauslastung',
+  'gantt.resourceLoadAria': 'Ressourcenauslastung: {count} Ressourcen, Spitzenwert {name} bei {percent} %',
+  'gantt.resourceLoadEmpty': 'Keine Ressourcenauslastungsdaten',
   // resource (Ressourcenauslastung / Schwimmbahn-Ansicht)
   'resource.label': 'Ressourcenauslastung',
   'resource.empty': 'Keine Ressourcenaufgaben',

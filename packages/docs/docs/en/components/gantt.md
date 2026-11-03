@@ -396,6 +396,7 @@ The `pool` attribute (opt-in, default off) connects the task `resources` ids to 
 - **Cross-task over-allocation detection**: on update, tasks sharing a resource are checked for time-range overlap — any intersection > 0 is an over-allocation (half-open ranges, **touching edges excluded**; day-precision ends are inclusive, so sharing one day counts); milestones are treated as points and never trigger, summaries are excluded; only **registered** pool resources are checked (unregistered ids are treated as host legacy data). Over-allocated bars and row names get `.conflict` (reusing the violation visual channel `--oas-gantt-conflict-color`).
 - **`oas-resource-conflict` event**: `detail: { conflicts }`, each `{ taskA, taskB, resourceId, overlapStart, overlapEnd }` (inclusive day-precision dates). **Idempotent** — not re-emitted for the same snapshot; re-emitted after data/pool changes when the signature differs; an empty array is emitted on resolution. The event is emitted **synchronously from the `update` caused by data/pool changes**: attach the listener before writing the data (e.g. `addEventListener` first, then assign `tasks`), otherwise the first result never reaches the listener. A resource with > 2 concurrent tasks in the same window triggers one dev console warning.
 - **Pool changes do not notify the component**: retrigger a recalc after registering (e.g. re-assign `tasks`). Detection is skipped in windowed mode with a devWarn (full data required for a correct verdict).
+- **Scale limit**: conflict detection re-runs on every update with an O(n²) pairwise scan per resource. Hundreds of tasks (normal project planning) are fine; if a single resource grows to thousands of dense tasks with frequent updates, measure frame time first before considering incremental detection (not implemented, noted for the record).
 
 ```ts
 import { getSharedResourcePool } from '@oas-ui/ui/data/resource/pool'
@@ -406,7 +407,36 @@ pool.register([{ id: 'alice', name: 'Alice', costRate: 120 }])
 ganttEl.tasks = ganttEl.tasks
 ```
 
-> Not in this batch: resource load histogram / swimlane view (future batch), automatic schedule avoidance — `pool` only detects and marks, it never moves tasks.
+> Load visualization (load buckets, >100% over-allocation channel) is delivered by `show-resource-load`, see the next section; still not in scope: resource swimlane view (future batch), automatic schedule avoidance — `pool` only detects and marks, it never moves tasks.
+
+## Resource Load View (show-resource-load)
+
+<DemoBlock title="show-resource-load resource load: Alice's two tasks overlap (03-05..03-06 buckets at 200%, danger channel), Bob stays normal (≤100% primary)">
+  <oas-gantt id="gantt-load-demo" pool show-resource-load range-start="2026-03-01" range-end="2026-03-31" height="200"
+    tasks='[{"id":"la","name":"Design (Alice)","start":"2026-03-02","end":"2026-03-06","progress":60,"resources":["alice"]},{"id":"lb","name":"Review (Alice, overlapping)","start":"2026-03-05","end":"2026-03-09","progress":30,"resources":["alice"]},{"id":"lc","name":"Dev (Bob)","start":"2026-03-02","end":"2026-03-06","progress":40,"resources":["bob"]}]'></oas-gantt>
+</DemoBlock>
+
+The `show-resource-load` attribute (opt-in, default off; explicit `"false"` disables) renders a **resource load panel** below the chart: one row per resource, with load buckets aligned to the time axis.
+
+- **Load semantics** (same meaning as the pool over-allocation detection, aggregated per bucket and visualized): each bucket's load = covered days of every task assigned to that resource intersected with the bucket, **accumulated per task** (day-precision, inclusive ends) — overlapping tasks on the same resource accumulate past **100%** (Alice's 03-05..03-06 in the example → 200%); such buckets take the danger channel `--oas-gantt-load-over-bg`, ≤100% takes the primary family `--oas-gantt-load-bg` (dark variants via tokens). Milestones count 0 days as points, summaries are excluded; ids outside the pool are listed too (the load view does not require pool registration).
+- **Granularity maps from scale**: hour/day → day buckets, week → week buckets (anchored on week start), month/quarter/year → month buckets. The panel's name column shares the side-list token (`--oas-gantt-list-width`) so buckets align column-by-column with the chart timeline, and **zoom/pan stay in sync** (reuses update-time axis params without recomputation; horizontal panning follows the content layer, same formula in RTL). Row height token `--oas-gantt-load-row-height` (default 24px).
+- **Row names**: with `pool` on they come from the pool ("Alice", "Bob" above); with it off, resource ids.
+- **ARIA**: the panel is `role="img"` with an aria-label summary (resource count · peak resource and percentage); purely visual, not in tab order — screen readers get the summary, not a bucket-by-bucket narration. Buckets carry a native `title` with the load percentage (visible on hover).
+- **Performance**: load is computed once over the full data and cached by signature (tasks/axis range/granularity/pool changes recompute; the virtual row window only trims rendering, not statistics). Empty data / no resource refs fall back to the i18n empty state. Skipped in windowed mode with a devWarn (slices would undercount; aligned with the pool detection stance).
+
+```ts
+// The same semantics as a pure function (zero runtime deps) — call it independently for your own load views:
+import { computeResourceLoad } from '@oas-ui/ui/data/resource/load'
+
+const r = computeResourceLoad(tasks, {
+  unit: 'week', // 'day' (default) | 'week' | 'month'
+  from: '2026-03-01',
+  to: '2026-03-31',
+  pool: getSharedResourcePool().list(), // optional: matching rows take the pool name
+})
+// r: { resources: [{ id, name?, buckets, peak }], bucketStart, bucketDays, unit }
+// load% = buckets[i] / bucketDays[i]; >100% means overlapping over-allocation inside the bucket
+```
 
 ## Row Virtualization (10k-scale tasks)
 
@@ -759,6 +789,10 @@ onMounted(async () => {
     })
     poolDemo.tasks = poolDemo.tasks // registration happens after the first frame: re-assign tasks to trigger a recalc
   }
+
+  // Resource load panel demo: pool registration happens after the first frame → re-assign tasks to trigger a load recalc (row names take pool names)
+  const loadDemo = document.getElementById('gantt-load-demo')
+  if (loadDemo) loadDemo.tasks = loadDemo.tasks
 })
 </script>
 
@@ -849,7 +883,7 @@ Enabled by default: hovering a name row in the left column highlights the matchi
 | `hover` | Row hover background switch (on by default): hovering a row name or task bar lights up the whole row (name + timeline share the same background). Color via `--oas-gantt-row-hover-bg` (defaults to `--oas-color-bg-hover`, independent of the zebra stripe); `"false"` disables | `string` | — |
 | `label-position` | Bar label position: inside / right / left; default `none` (the row-name column already shows the name, so the bar does not repeat it); invalid values fall back to `none` | `string` | — |
 | `locale` | Localization (overrides config-provider injection and the global locale) | `string` | — |
-| `pool` | Resource pool mode (boolean, default off): task resources reference the shared resource pool (getSharedResourcePool() from @oas-ui/ui/data/resource/pool) — hovering a bar shows pool resource names and rates (costRate; unregistered ids ignored); plus cross-task over-allocation detection for the same resource: tasks whose time ranges overlap (half-open, touching edges excluded; milestones treated as points, summaries excluded) get .conflict on bar and row name, conflict pairs emitted via oas-resource-conflict. Pool changes do not notify the component automatically — retrigger a recalc (e.g. re-assign tasks) after registering; detection is skipped in windowed mode with a devWarn; no resource histogram/swimlane and no auto-schedule avoidance | `string` | — |
+| `pool` | Resource pool mode (boolean, default off): task resources reference the shared resource pool (getSharedResourcePool() from @oas-ui/ui/data/resource/pool) — hovering a bar shows pool resource names and rates (costRate; unregistered ids ignored); plus cross-task over-allocation detection for the same resource: tasks whose time ranges overlap (half-open, touching edges excluded; milestones treated as points, summaries excluded) get .conflict on bar and row name, conflict pairs emitted via oas-resource-conflict. Pool changes do not notify the component automatically — retrigger a recalc (e.g. re-assign tasks) after registering; detection is skipped in windowed mode with a devWarn; load visualization lives in show-resource-load (load% >100% shares this semantics); no swimlane view and no auto-schedule avoidance | `string` | — |
 | `progress-readonly` | No progress dragging (dates still draggable) | `boolean` | — |
 | `range-end` | Host-managed time-axis end (ISO date YYYY-MM-DD, inclusive); pair with range-start | `string` | — |
 | `range-start` | Host-managed time-axis start (ISO date YYYY-MM-DD): when provided the axis extent is no longer derived from data; use with range-end to support windowed mode (the slice may not span the full date range) | `string` | — |
@@ -861,6 +895,7 @@ Enabled by default: hovering a name row in the left column highlights the matchi
 | `show-critical-path` | Critical path (boolean, off by default): runs a CPM pass over the dependency graph + durations to compute total float and adds a .critical highlight to zero-float tasks (color via --oas-gantt-critical-color); read-only | `string` | — |
 | `show-effort` | Effort column (boolean, off by default): the label area becomes two columns (name \| effort); effort is right-aligned, header from i18n gantt.effort; cells get an accessible name from i18n gantt.effortValue ("Effort {value}d" unit copy). Missing/negative/non-finite GanttTask.effort renders empty (sanitize drops them, same policy as costRate); huge values switch to scientific notation. Column width token --oas-gantt-effort-width (default 56px); off state renders no nodes and keeps the single-column layout unchanged | `string` | — |
 | `show-float` | Show total/free float (boolean, off by default): computed only on a complete dependency graph; the bar gets a total/free float label plus data-total-float/data-free-float in days. Summaries are excluded; windowed mode skips it with a devWarn. | `string` | — |
+| `show-resource-load` | Resource load panel (boolean, default off): renders time-axis-aligned load buckets below the chart (one row per resource, row height token --oas-gantt-load-row-height; name column shares the side list token --oas-gantt-list-width). Load semantics: covered days accumulate per task (task∩bucket intersection, day-precision inclusive ends; milestones count 0 days as points, summaries excluded); load% = covered days / bucket days, >100% (same-resource overlapping over-allocation) takes the danger channel --oas-gantt-load-over-bg, ≤100% the primary family --oas-gantt-load-bg (dark variants via tokens). Granularity maps from scale (hour/day→day buckets, week→week buckets anchored on week start, month/quarter/year→month buckets), zooms/pans in sync with the chart timeline (reuses update-time axis params without recomputation; pan follows syncHeaderOffset rect-diff, same formula in RTL). Load is computed once per signature over full data (tasks/axis/pool changes recompute; virtual row window does not affect it); empty data / no resource refs fall back to the i18n empty state. ARIA: panel role="img" + aria-label summary (resource count · peak resource and percentage), not in tab order. With pool on, row names come from the pool; otherwise ids. Skipped in windowed mode with a devWarn (full-data semantics). Pure implementation in shared/resource-load.ts (shared with the data/resource/load helper entry) | `string` | — |
 | `show-status-line` | Status line + planned-progress ticks (boolean, off by default): (1) renders a vertical progress line at status-date on the timeline (token --oas-gantt-status-line-color, falls back to the warning color family; status-date is not parsed while the switch is off — zero added cost on the default path); (2) inside each task bar draws a narrow tick at the planned ratio and writes data-plan-ratio (0-1, two decimals) — the planned ratio uses **inclusive day granularity**: calendar-day difference between status-day and start (status day counted, start day = 1), clamped to the duration (same formula as computeEvm's planned); milestones use the binary ratio (0 before / 1 after), summaries draw none; the tick is display-only — no coloring, no warnings | `string` | — |
 | `show-today` | Today line (on by default; false to disable) | `string` | — |
 | `show-variance` | Render a Δ±Nd variance badge after the row name when a baseline exists; exposes data-start-delta/data-end-delta/data-duration-delta/data-progress-delta | `string` | — |
@@ -955,6 +990,10 @@ Enabled by default: hovering a name row in the left column highlights the matchi
 | `--oas-gantt-holiday-bg` | — | `color-mix(in srgb, var(--oas-color-warning) 12%, var(--oas-color-bg))` |
 | `--oas-gantt-link-color` | — | `var(--oas-color-primary)` |
 | `--oas-gantt-list-width` | — | `220px` |
+| `--oas-gantt-load-bg` | Load bucket bar color (≤100%, default primary 45% mixed over bg; dark variants via tokens) | `color-mix(in srgb, var(--oas-color-primary) 45%, var(--oas-color-bg))` |
+| `--oas-gantt-load-max-height` | Load panel body max height (show-resource-load, scrolls vertically beyond it; default 240px, data is not truncated) | `240px` |
+| `--oas-gantt-load-over-bg` | Load bucket bar over-allocation color (>100%, default danger; dark variants via tokens) | `var(--oas-color-danger)` |
+| `--oas-gantt-load-row-height` | Load panel row height (show-resource-load, default 24px) | `24px` |
 | `--oas-gantt-milestone-color` | — | `var(--oas-color-warning)` |
 | `--oas-gantt-row-height` | — | `36px` |
 | `--oas-gantt-row-hover-bg` | — | `var(--oas-color-bg-hover)` |

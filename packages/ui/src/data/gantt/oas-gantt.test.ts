@@ -8879,3 +8879,233 @@ describe('OASGantt 资源池接入与跨任务超配检测（pool）', () => {
     expect(seen.every((d) => d.conflicts.length === 0)).toBe(true)
   })
 })
+
+describe('OASGantt 资源负荷面板（show-resource-load，opt-in）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    getSharedResourcePool().clear()
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+    getSharedResourcePool().clear()
+    vi.restoreAllMocks()
+  })
+
+  /** 有资源引用的任务集：alice 一条 5 天任务（03-02..03-06，周一到周五） */
+  const LOAD_TASKS = [{ id: 'a', name: '设计', start: '2026-03-02', end: '2026-03-06', resources: ['alice'] }]
+
+  function panelOf(el: OASGantt): HTMLElement {
+    return shadowOf(el).querySelector<HTMLElement>('.load-panel')!
+  }
+
+  function loadRows(el: OASGantt): HTMLElement[] {
+    return [...shadowOf(el).querySelectorAll<HTMLElement>('.load-panel .load-row')]
+  }
+
+  it('默认关：面板不渲染（hidden，无行，opt-in 零副作用）', () => {
+    const el = mount({ tasks: JSON.stringify(LOAD_TASKS) })
+    const panel = panelOf(el)
+    expect(panel.hidden).toBe(true)
+    expect(loadRows(el).length).toBe(0)
+  })
+
+  it('show-resource-load="false" 显式关闭（防宿主布尔绑定意外开启，同 stripe 口径）', () => {
+    const el = mount({ tasks: JSON.stringify(LOAD_TASKS), 'show-resource-load': 'false' })
+    expect(panelOf(el).hidden).toBe(true)
+  })
+
+  it('开启：每资源一行，行名 = 资源 id（pool 关）；桶条只画有覆盖的桶', () => {
+    const el = mount({
+      'show-resource-load': '',
+      tasks: JSON.stringify([
+        ...LOAD_TASKS,
+        { id: 'b', name: '评审', start: '2026-03-05', end: '2026-03-09', resources: ['bob'] },
+      ]),
+    })
+    const panel = panelOf(el)
+    expect(panel.hidden).toBe(false)
+    expect(panel.getAttribute('role')).toBe('img')
+    const rows = loadRows(el)
+    expect(rows.map((r) => r.querySelector<HTMLElement>('.load-name')!.textContent)).toEqual(['alice', 'bob'])
+    // alice 覆盖 03-02..03-06（5 天桶），bob 覆盖 03-05..03-09（5 天桶）
+    expect(rows[0]!.querySelectorAll('.load-cell').length).toBe(5)
+    expect(rows[1]!.querySelectorAll('.load-cell').length).toBe(5)
+  })
+
+  it('>100% 超配桶走 .over（danger 通道）；几何高度封顶 100%；不超配资源不打', () => {
+    const el = mount({
+      'show-resource-load': '',
+      tasks: JSON.stringify([
+        { id: 'a', name: 'A', start: '2026-03-02', end: '2026-03-06', resources: ['alice'] },
+        { id: 'b', name: 'B', start: '2026-03-05', end: '2026-03-09', resources: ['alice'] },
+        { id: 'c', name: 'C', start: '2026-03-02', end: '2026-03-06', resources: ['bob'] },
+      ]),
+    })
+    const rows = loadRows(el)
+    const alice = rows.find((r) => r.querySelector('.load-name')!.textContent === 'alice')!
+    const bob = rows.find((r) => r.querySelector('.load-name')!.textContent === 'bob')!
+    // alice 03-05/03-06 两天被两任务同时覆盖（200%）
+    const overs = [...alice.querySelectorAll<HTMLElement>('.load-cell.over')]
+    expect(overs.length).toBe(2)
+    expect(overs[0]!.style.height).toBe('100%')
+    expect(bob.querySelectorAll('.load-cell.over').length).toBe(0)
+  })
+
+  it('空态：任务无 resources 引用时面板空态（i18n 文案，不回退 raw key）', () => {
+    const el = mount({ 'show-resource-load': '', tasks: JSON.stringify(BASE_TASKS) })
+    const panel = panelOf(el)
+    expect(panel.hidden).toBe(false)
+    expect(panel.querySelector('.load-empty')!.textContent).toBe('暂无资源负荷数据')
+    expect(panel.textContent).not.toContain('gantt.resourceLoad')
+    expect(loadRows(el).length).toBe(0)
+  })
+
+  it('轴同步缩放重算：scale day → week 后桶条按周桶重算（5 日桶 → 1 周桶）', () => {
+    const el = mount({ 'show-resource-load': '', tasks: JSON.stringify(LOAD_TASKS) })
+    expect(loadRows(el)[0]!.querySelectorAll('.load-cell').length).toBe(5)
+    el.setAttribute('scale', 'week')
+    expect(loadRows(el)[0]!.querySelectorAll('.load-cell').length).toBe(1)
+    // 桶宽随轴参数变化（同一 xOf 映射：周桶宽 > 日桶宽）
+    const weekCell = loadRows(el)[0]!.querySelector<HTMLElement>('.load-cell')!
+    expect(Number.parseFloat(weekCell.style.width)).toBeGreaterThan(36)
+  })
+
+  it('ARIA：面板 role="img" + aria-label 摘要（资源数 · 峰值资源与百分比）；不进 Tab 序', () => {
+    const el = mount({ 'show-resource-load': '', tasks: JSON.stringify(LOAD_TASKS) })
+    const panel = panelOf(el)
+    expect(panel.getAttribute('role')).toBe('img')
+    // alice 单任务日桶：峰值 1/1 = 100%
+    expect(panel.getAttribute('aria-label')).toBe('资源负荷：1 个资源，峰值最高 alice 100%')
+    // 纯可视化摘要：面板自身不进 Tab 序；唯一可聚焦的是溢出滚动区（.load-body，
+    // WCAG 2.1.1 scrollable-region-focusable——真实溢出时键盘用户可滚动浏览），无其它聚焦点
+    expect(panel.querySelectorAll('button, [tabindex], input, a').length).toBe(1)
+    expect(panel.querySelector('.load-body')!.getAttribute('tabindex')).toBe('0')
+    expect(panel.hasAttribute('tabindex')).toBe(false)
+  })
+
+  it('pool 开：行名取池名称；pool 关：行名取 id（对照）', () => {
+    getSharedResourcePool().register([{ id: 'alice', name: '张三', costRate: 120 }])
+    const on = mount({ pool: '', 'show-resource-load': '', tasks: JSON.stringify(LOAD_TASKS) })
+    expect(loadRows(on)[0]!.querySelector('.load-name')!.textContent).toBe('张三')
+    const off = mount({ 'show-resource-load': '', tasks: JSON.stringify(LOAD_TASKS) })
+    expect(loadRows(off)[0]!.querySelector('.load-name')!.textContent).toBe('alice')
+  })
+
+  it('windowed：切片上跳过负荷渲染（面板 hidden）+ devWarn 一次', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const el = mount({
+      'show-resource-load': '',
+      windowed: '',
+      total: '1',
+      'window-start': '0',
+      'range-start': '2026-03-01',
+      'range-end': '2026-03-31',
+      tasks: JSON.stringify(LOAD_TASKS),
+    })
+    expect(panelOf(el).hidden).toBe(true)
+    expect(warn.mock.calls.some((args) => String(args[0]).includes('资源负荷需要全量数据'))).toBe(true)
+    // 再次 update 不重复告警（实例级一次）
+    el.setAttribute('tasks', el.getAttribute('tasks')!)
+    expect(warn.mock.calls.filter((args) => String(args[0]).includes('资源负荷需要全量数据')).length).toBe(1)
+  })
+
+  it('样式纪律：负荷桶条颜色全走 token（primary 族底色 + danger 超配通道 + 行高/行名 token 开口）', () => {
+    const el = mount({ 'show-resource-load': '', tasks: JSON.stringify(LOAD_TASKS) })
+    const css = shadowOf(el).querySelector('style')!.textContent ?? ''
+    expect(css).toMatch(/\.load-cell \{[^}]*--oas-gantt-load-bg/)
+    expect(css).toMatch(/\.load-cell \{[^}]*--oas-color-primary/)
+    expect(css).toMatch(/\.load-cell\.over \{[^}]*--oas-gantt-load-over-bg/)
+    expect(css).toMatch(/\.load-cell\.over \{[^}]*--oas-color-danger/)
+    expect(css).toMatch(/\.load-row \{[^}]*--oas-gantt-load-row-height/)
+    expect(css).toMatch(/\.load-row \.load-name \{[^}]*--oas-gantt-list-width/)
+  })
+
+  /** N 个资源各带一条 5 天任务（03-02..03-06，日桶 → 每行 5 个桶条） */
+  function loadTasks(n: number): string {
+    return JSON.stringify(
+      Array.from({ length: n }, (_, i) => ({
+        id: `t${i}`,
+        name: `T${i}`,
+        start: '2026-03-02',
+        end: '2026-03-06',
+        resources: [`r${i}`],
+      })),
+    )
+  }
+
+  /** 直接调私有对齐方法（照 onScroll 的调用点：scroll 事件里同步执行，不跑 rAF） */
+  function syncOffset(el: OASGantt): void {
+    ;(el as unknown as { syncHeaderOffset: () => void }).syncHeaderOffset.call(el)
+  }
+
+  it('负荷桶层对齐零 forced reflow：getBoundingClientRect 次数为常量，不随资源行数增长', () => {
+    // 回归：旧实现循环内「逐行读 rect ×2 → 写 transform」，写脏 layout 后下一行读强制同步布局，
+    // 每次 scroll（onScroll 同步执行）都是 O(资源行数) forced reflow。
+    const countPerSync = (n: number): number => {
+      const el = mount({ 'show-resource-load': '', tasks: loadTasks(n) })
+      expect(loadRows(el).length, `${n} 个资源应渲染 ${n} 行`).toBe(n)
+      const spy = vi.spyOn(Element.prototype, 'getBoundingClientRect')
+      try {
+        syncOffset(el)
+        const first = spy.mock.calls.length
+        spy.mockClear()
+        // 第二次调用：transform 已是同值（组件里滚动路径即反复调用同一方法）
+        syncOffset(el)
+        const second = spy.mock.calls.length
+        expect(second, '连续两次同步的读次数应一致').toBe(first)
+        return second
+      } finally {
+        spy.mockRestore()
+      }
+    }
+    const small = countPerSync(2)
+    const large = countPerSync(40)
+    expect(large, '40 行与 2 行的读次数必须相同（常量）').toBe(small)
+    // 常量上界：内容层 1 + 表头 1 + 一个参照 track 1（旧实现为 2 + 2×行数，40 行 = 82）
+    expect(large).toBeLessThanOrEqual(3)
+  })
+
+  it('负荷桶层对齐行为不变：所有行共用同一 dx（参照 rect 差），表头同源平移', () => {
+    const el = mount({ 'show-resource-load': '', tasks: loadTasks(3) })
+    const rect = (left: number) =>
+      ({
+        left,
+        right: left + 4000,
+        top: 0,
+        bottom: 200,
+        width: 4000,
+        height: 200,
+        x: left,
+        y: 0,
+        toJSON: () => ({}),
+      }) as DOMRect
+    shadowOf(el).querySelector<HTMLElement>('.inner')!.getBoundingClientRect = () => rect(100)
+    shadowOf(el).querySelector<HTMLElement>('.thead')!.getBoundingClientRect = () => rect(60)
+    // 参照 track 左缘 130 → dxTrack = 100 - 130 = -30（内容层在 track 左侧 30px）
+    shadowOf(el).querySelector<HTMLElement>('.load-track')!.getBoundingClientRect = () => rect(130)
+    syncOffset(el)
+    const inners = [...shadowOf(el).querySelectorAll<HTMLElement>('.load-panel .load-inner')]
+    expect(inners.length).toBe(3)
+    for (const inner of inners) expect(inner.style.transform).toBe('translateX(-30px)')
+    // 表头仍走内容层与表头的 rect 差（100 - 60 = 40），与负荷段互不干扰
+    const head = shadowOf(el).querySelector<HTMLElement>('.head-major')!
+    expect(head.style.transform).toBe('translateX(40px)')
+  })
+
+  it('行数超上限不截断数据：DOM 仍全量渲染，纵向滚动由 .load-body 承载（max-height token 开口）', () => {
+    const n = 40
+    const el = mount({ 'show-resource-load': '', tasks: loadTasks(n) })
+    const panel = panelOf(el)
+    const body = panel.querySelector<HTMLElement>('.load-body')!
+    expect(body.parentElement, '负荷行必须包在 .load-body 滚动容器里').toBe(panel)
+    // 全量 DOM：40 行全在滚动容器内 × 每行 5 个日桶桶条，一行不少（滚动只裁剪视口，不是丢数据）
+    expect(body.querySelectorAll('.load-row').length).toBe(n)
+    expect(body.querySelectorAll('.load-cell').length).toBe(n * 5)
+    expect(loadRows(el)[n - 1]!.querySelector('.load-name')!.textContent).toBe(`r${n - 1}`)
+    const css = shadowOf(el).querySelector('style')!.textContent ?? ''
+    expect(css, '高度上限走 token 开口（缺省 240px）').toMatch(
+      /\.load-body \{[^}]*max-height: var\(--oas-gantt-load-max-height, 240px\)/,
+    )
+    expect(css, '超限靠纵向滚动').toMatch(/\.load-body \{[^}]*overflow-y: auto/)
+  })
+})

@@ -222,6 +222,9 @@ export const ja: LocaleMessages = {
   'gantt.newTask': '新しいタスク',
   'gantt.effort': '工数',
   'gantt.effortValue': '工数 {value} 日',
+  'gantt.resourceLoad': 'リソース負荷',
+  'gantt.resourceLoadAria': 'リソース負荷：{count} リソース、ピークは {name} {percent}%',
+  'gantt.resourceLoadEmpty': 'リソース負荷データはありません',
   // resource（リソース負荷/スイムレーンビュー）
   'resource.label': 'リソース負荷',
   'resource.empty': 'リソースタスクがありません',

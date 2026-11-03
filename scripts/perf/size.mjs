@@ -646,6 +646,7 @@ const COMPONENT_ENTRIES = [
   { id: 'ganttRecurring', entry: 'data/gantt/recurring', spec: '@oas-ui/ui/data/gantt/recurring' },
   { id: 'resourceCost', entry: 'data/resource/cost', spec: '@oas-ui/ui/data/resource/cost' },
   { id: 'resourcePool', entry: 'data/resource/pool', spec: '@oas-ui/ui/data/resource/pool' },
+  { id: 'resourceLoad', entry: 'data/resource/load', spec: '@oas-ui/ui/data/resource/load' },
   { id: 'form', entry: 'form/form', spec: '@oas-ui/ui/form/form' },
   { id: 'gantt', entry: 'data/gantt', spec: '@oas-ui/ui/data/gantt' },
   { id: 'jsonViewer', entry: 'data/json-viewer', spec: '@oas-ui/ui/data/json-viewer' },
@@ -736,9 +737,9 @@ const BUDGETS = [
     kind: 'absolute',
     componentId: 'gantt',
     get: () => componentMeasures.gantt.gzipBytes,
-    limit: 75 * 1024, // 75 KB（2026-11-03 再定档：P2 式归因审计证无冗余，增长全为真实能力）
+    limit: 80 * 1024, // 80 KB（2026-11-03 再定档：pool 超配检测 + 资源负荷视图两个 opt-in 特性增量）
     basis:
-      'v2.6.2 定档 70 KB（实测 gzip 61.1 KB 上浮约 15%）。2026-11-02 P2 式归因审计：18 模块 63.6 KB 无冗余（较 61.4 基线 +2.2 KB 全为其后 6 次 feature/fix 提交；export/evm/alap/recurring 四 helper 零依赖真剥离；core barrel 再导出带入的 form-element+escape 共 5.8 KB 为静态闭包上界口径产物，真实 bundler 按 sideEffects:false 摇除后约 57.9 KB）。2026-11-03 按预警机制「再定档」出口上浮至 75 KB（约 +18%），预警线 67.5 KB；下次扩展仍须先归因评估',
+      'v2.6.2 定档 70 KB → 2026-11-03 定档 75 KB（P2 审计无冗余）→ 2026-11-03 定档 80 KB：其后增量全部已归因真实特性——pool 超配检测 +2.2 KB（静态引 resourcePool + 检测/事件/tooltip）、show-resource-load 负荷面板 +2.9 KB（shared 实现本体 1.74 + 渲染/CSS 1 + i18n 3 键 0.15，@oas-ui/ui/data/resource/load helper 档独立计量 1.8 KB）；2026-11-02 P2 式归因审计结论继续有效（无冗余、core barrel 上界口径产物真实可摇除）。预警线 72 KB；下次扩展仍须先归因评估',
   },
   {
     name: '@oas-ui/ui/data/json-viewer 链 gzip',
@@ -935,6 +936,15 @@ const BUDGETS = [
     limit: 0.75 * 1024, // 0.75 KB（2026-11-01 首档：实测 490 B 上浮 ~30% 取整）
     basis:
       '运行时依赖（gantt pool 静态引入）+ 可独立按需 import；实测 gzip 490 B / 1 文件（ResourcePool id 去重登记表 + version 变更计数 + globalThis Symbol.for 共享单例，单文件零依赖），上浮约 30% 取整定档 0.75 KB',
+  },
+  {
+    name: '@oas-ui/ui/data/resource/load 链 gzip',
+    kind: 'absolute',
+    componentId: 'resourceLoad',
+    get: () => componentMeasures.resourceLoad.gzipBytes,
+    limit: 2.5 * 1024, // 2.5 KB（2026-11-03 首档：实测 1822 B 上浮 ~37% 取整）
+    basis:
+      'helper 纯函数子路径，按需引入；首档 2026-11-03：实测 gzip 1822 B / 2 文件（shared/resource-load 实现本体 1740（day/week/month 三粒度 + 周锚定/部分桶/超配累计 + gantt 清洗最小子集；本体与 gantt show-resource-load 属性共用，随组件链进 L1/族包，helper 入口路径不进）+ 入口转发 82），上浮约 37% 取整定档 2.5 KB',
   },
 ]
 

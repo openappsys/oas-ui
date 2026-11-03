@@ -222,6 +222,9 @@ export const es: LocaleMessages = {
   'gantt.newTask': 'Nueva tarea',
   'gantt.effort': 'Esfuerzo',
   'gantt.effortValue': 'Esfuerzo {value} d',
+  'gantt.resourceLoad': 'Carga de recursos',
+  'gantt.resourceLoadAria': 'Carga de recursos: {count} recursos, pico {name} al {percent} %',
+  'gantt.resourceLoadEmpty': 'Sin datos de carga de recursos',
   // resource (carga de recursos / vista de carriles)
   'resource.label': 'Carga de recursos',
   'resource.empty': 'No hay tareas de recursos',

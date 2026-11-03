@@ -185,6 +185,9 @@ export const en: LocaleMessages = {
   'gantt.newTask': 'New task',
   'gantt.effort': 'Effort',
   'gantt.effortValue': 'Effort {value}d',
+  'gantt.resourceLoad': 'Resource load',
+  'gantt.resourceLoadAria': 'Resource load: {count} resources, peak {name} at {percent}%',
+  'gantt.resourceLoadEmpty': 'No resource load data',
   // resource（resource load / swimlane view）
   'resource.label': 'Resource load',
   'resource.empty': 'No resource tasks',

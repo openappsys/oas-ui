@@ -222,6 +222,9 @@ export const fr: LocaleMessages = {
   'gantt.newTask': 'Nouvelle tâche',
   'gantt.effort': 'Charge',
   'gantt.effortValue': 'Charge {value} j',
+  'gantt.resourceLoad': 'Charge des ressources',
+  'gantt.resourceLoadAria': 'Charge des ressources : {count} ressources, pic {name} à {percent} %',
+  'gantt.resourceLoadEmpty': 'Aucune donnée de charge des ressources',
   // resource (charge des ressources / vue couloirs)
   'resource.label': 'Charge des ressources',
   'resource.empty': 'Aucune tâche de ressource',

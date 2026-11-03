@@ -88,6 +88,12 @@ export const L3_REGISTRY = [
   // 不再符合 helper 型「无 HTML/属性触发面、进 L1/CDN 即死重」的判定前提，改归 capability 口径（族包必填）。
   // 无能力注册动作，纯数据模块；独立按需链计量仍保留（宿主仍可显式按需 import）。
   { id: 'resourcePool', entry: 'data/resource/pool', family: 'data', kind: 'capability', measured: true },
+  // 资源负荷统计（gantt `show-resource-load` 属性与宿主按需 import 共用）：helper 型——
+  // 入口路径 `data/resource/load` 本体只有 re-export（实现居 `src/shared/resource-load.ts`，
+  // 组件属性**静态**消费同一份实现，实现随组件链进 L1/data 族包——resourcePool capability 同款
+  // 判定「属性触发属运行时需求」）。入口路径自身无属性触发面，不进 L1/族包（路径标记
+  // `/data/resource/load/` 只匹配入口，不匹配 `src/shared/` 实现——两层口径互不干扰）。
+  { id: 'resourceLoad', entry: 'data/resource/load', family: 'data', kind: 'helper', measured: true },
 ]
 
 const normalize = (file) => file.replaceAll('\\', '/')

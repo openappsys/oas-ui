@@ -222,6 +222,9 @@ export const zhCN = {
   'gantt.newTask': '新任务',
   'gantt.effort': '工时',
   'gantt.effortValue': '工时 {value} 天',
+  'gantt.resourceLoad': '资源负荷',
+  'gantt.resourceLoadAria': '资源负荷：{count} 个资源，峰值最高 {name} {percent}%',
+  'gantt.resourceLoadEmpty': '暂无资源负荷数据',
   // resource（资源负载/泳道视图）
   'resource.label': '资源负载',
   'resource.empty': '暂无资源任务',

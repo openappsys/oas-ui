@@ -33,6 +33,10 @@ import { cloneSlotContent } from '../../shared/slot-template.js'
 // 共享资源池（pool 属性 opt-in 时消费）：运行时 import 只带进 pool 纯数据结构模块（零组件/零 i18n），
 // 与 oas-resource 的 helper 子路径共享同一份 globalThis 状态（写入互见）
 import { getSharedResourcePool } from '../resource/pool/index.js'
+// 资源负荷计算（show-resource-load 属性 opt-in 时消费）：本体居 shared/（纯函数零依赖），
+// 与 `data/resource/load` Pro helper 入口共用同一份实现（见 shared/resource-load.ts 头注释）
+import { computeResourceLoad } from '../../shared/resource-load.js'
+import type { ResourceLoadResult } from '../../shared/resource-load.js'
 
 /** 编译期一致性：emit 用的字面量（拼 `oas-` 前缀）须与共享契约常量一致 */
 const _ROW_WINDOW_EVENT_CHECK: typeof ROW_WINDOW_EVENT = 'oas-window-request'
@@ -777,6 +781,95 @@ svg.links .temp-link {
 .empty[hidden] {
   display: none !important;
 }
+/* ===== 资源负荷面板（show-resource-load，opt-in 默认关） =====
+   图表下方按同一时间轴对齐的负荷桶条：每资源一行，桶高 ∝ 负荷%（桶内覆盖天数/桶天数），
+   同资源任务在桶内重叠时逐任务累计 → >100% 走 danger 通道（与 pool 超配检测同语义）。
+   纯可视化摘要：面板 role="img" + i18n aria-label 摘要，不进 Tab 序（读屏走摘要）；
+   横向平移跟随图表内容层（syncHeaderOffset 同一 rect 差公式，RTL/任意滚动模型一致），
+   缩放/平移复用 update() 时的轴参数（xOf/units/colW），不重算负荷。
+   行名列宽与左侧列表同 token（--oas-gantt-list-width）→ 桶条与图表时间轴逐列对齐。
+   .load-body 有高度上限（--oas-gantt-load-max-height，缺省 240px）+ 纵向滚动：资源行多时不撑高宿主布局，
+   数据不截断（全量 DOM，滚动只裁剪视口）。 */
+.load-panel {
+  border: 1px solid var(--oas-color-border);
+  border-top: 0;
+  border-radius: 0 0 var(--oas-radius-md) var(--oas-radius-md);
+  background: var(--oas-color-bg);
+  color: var(--oas-color-text-primary);
+  overflow: hidden;
+}
+.load-panel[hidden] {
+  display: none !important;
+}
+.load-head {
+  height: 28px;
+  display: flex;
+  align-items: center;
+  padding-inline: var(--oas-space-2);
+  font-size: var(--oas-font-size-xs);
+  color: var(--oas-color-text-secondary-strong);
+  border-bottom: 1px solid var(--oas-gantt-grid-line-color, var(--oas-color-border));
+  background: var(--oas-gantt-header-bg, var(--oas-color-bg));
+}
+/* 资源行数无上限：按 24px/行随资源数无限撑高会挤坏宿主布局（面板是图表下方的摘要块，不是主区）
+   → 纵向滚动承载，高度上限 token 开口（缺省 240px = 10 行）。数据不做截断：DOM 仍全量渲染，
+   滚动只是视口裁剪（本面板不做虚拟滚动，行数级另有 windowed 口径，见 renderResourceLoad）。
+   横向不滚动（.load-track 为 flex:1 + min-width:0，桶层超宽由 track 自身 overflow:hidden 裁），
+   行名列因此天然常驻可见——纵向滚动不改变列位置，sticky 左列在此无意义（留待将来支持横向滚动再补）。 */
+.load-body {
+  max-height: var(--oas-gantt-load-max-height, 240px);
+  overflow-y: auto;
+}
+.load-row {
+  display: flex;
+  align-items: stretch;
+  height: var(--oas-gantt-load-row-height, 24px);
+  font-size: var(--oas-font-size-xs);
+}
+.load-row .load-name {
+  flex: none;
+  width: var(--oas-gantt-list-width, 220px);
+  display: flex;
+  align-items: center;
+  padding-inline: var(--oas-space-2);
+  box-sizing: border-box;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--oas-color-text-primary);
+  border-inline-end: 1px solid var(--oas-gantt-grid-line-color, var(--oas-color-border));
+  background: var(--oas-gantt-header-bg, var(--oas-color-bg));
+}
+.load-row .load-track {
+  flex: 1;
+  min-width: 0;
+  position: relative;
+  overflow: hidden;
+}
+.load-row .load-inner {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  /* 物理左锚定（非 inset-inline-start）：桶条 left 已由 mirrorCellLeft 按物理坐标镜像（与表头/网格格同款），
+     内层画布必须与图表内容层同锚（syncHeaderOffset 按 rect 差 translateX 对齐，RTL 同式成立） */
+  left: 0;
+}
+.load-cell {
+  position: absolute;
+  bottom: 0;
+  min-width: 2px;
+  background: var(--oas-gantt-load-bg, color-mix(in srgb, var(--oas-color-primary) 45%, var(--oas-color-bg)));
+  border-radius: 1px;
+}
+/* 超配桶（覆盖日数 > 桶天数）：danger 通道（暗色变体随 token 自动切换） */
+.load-cell.over {
+  background: var(--oas-gantt-load-over-bg, var(--oas-color-danger));
+}
+.load-empty {
+  padding: var(--oas-space-2);
+  font-size: var(--oas-font-size-xs);
+  color: var(--oas-color-text-secondary-strong);
+}
 /* ===== 高对比模式（forced-colors: active）兜底 =====
    系统强制色会覆盖 background、禁用 box-shadow：凡「只凭底色/阴影」传达信息的元素
    （今日线/状态线/进度刻度、周末与假日列、基线条、行选中态、任务条本体、进度填充、
@@ -808,6 +901,10 @@ svg.links .temp-link {
      里程碑条透明底、靠菱形表达，排除以免长框被误读为普通条 */
   .bar:not(.milestone) {
     border: 1px solid;
+  }
+  /* 负荷桶条：只凭底色传达信息 → 1px 描边找回轮廓（常态样式不动，颜色由强制色接管） */
+  .load-cell {
+    outline: 1px solid;
   }
   /* 进度填充：进度只凭填充色 → 条内右缘 2px 描边标出进度前沿（RTL 走逻辑属性自动镜像） */
   .bar-progress {
@@ -1027,7 +1124,8 @@ export interface GanttRescheduleDetail {
  * （hour 档任务同样按日期输出——秒级精度交叠对甘特视图无展示意义）。
  *
  * 本通道只做**检测与视觉标注**（.conflict 复用违约视觉通道 + oas-resource-conflict 事件）；
- * 不做：资源负荷直方图 / 资源泳道视图（留后续批）、自动排程避让（超配不触发重排）。
+ * 不做：资源泳道视图（留后续批）、自动排程避让（超配不触发重排）。负荷可视化（负荷桶条）
+ * 由 `show-resource-load` 属性承载（shared/resource-load.ts 同一份日桶口径，>100% 即交叠超配）。
  */
 export interface GanttResourceConflict {
   /** 任务 A id（tasks 输入序在前） */
@@ -1822,6 +1920,8 @@ export class OASGantt extends OASElement {
       'show-status-line',
       'status-date',
       'baseline-id',
+      // 资源负荷面板（opt-in，默认关）：图表下方按时间轴对齐的负荷桶条（>100% 走 danger 通道）
+      'show-resource-load',
       // windowed（服务端行窗口模式）+ 宿主托管时间范围（契约见 shared/window-data.ts）
       'windowed',
       'total',
@@ -1982,6 +2082,12 @@ export class OASGantt extends OASElement {
   private statusLineEl: HTMLElement | null = null
   private tooltipEl: HTMLElement | null = null
   private emptyEl: HTMLElement | null = null
+  /** 资源负荷面板（show-resource-load opt-in；模板常驻 + hidden 控制，开关切换不重建 shadow） */
+  private loadPanelEl: HTMLElement | null = null
+  /** 负荷计算缓存（签名 = tasks JSON + 粒度/周起/轴区间/池开关与版本）：数据/轴/池变化才重算 */
+  private loadCache: { sig: string; result: ResourceLoadResult } | null = null
+  /** windowed 下负荷渲染跳过告警（实例级一次；对齐 pool 超配检测的 windowed 口径） */
+  private warnedLoadWindowed = false
   private winStart = 0
   private winEnd = 0
   /** 横向列窗口 [winColStart, winColEnd)（时间轴列虚拟化，全局列索引；由 computeColWindow 维护） */
@@ -2410,6 +2516,7 @@ export class OASGantt extends OASElement {
     this.computeColWindow()
     this.renderHeader()
     this.renderWindow()
+    this.renderResourceLoad()
     this.requestWindowIfNeeded('resize')
     this.requestRangeIfNeeded('resize')
   }
@@ -2500,6 +2607,11 @@ export class OASGantt extends OASElement {
   /** 资源池开关（opt-in 缺省关；显式 "false" 视作关，同 stripe）：池驱动资源展示 + 跨任务超配检测 */
   private poolOn(): boolean {
     return this.hasAttr('pool') && this.getAttr('pool', '') !== 'false'
+  }
+
+  /** 资源负荷面板开关（opt-in 缺省关；显式 "false" 视作关，同 stripe） */
+  private showResourceLoadOn(): boolean {
+    return this.hasAttr('show-resource-load') && this.getAttr('show-resource-load', '') !== 'false'
   }
 
   /** 状态线开关（opt-in 缺省关）：开启后渲染状态竖线 + 条内计划进度刻度（G2 两渲染共用一个开关） */
@@ -3373,6 +3485,7 @@ export class OASGantt extends OASElement {
     this.statusLineEl = this.shadow.querySelector('.status-line')
     this.tooltipEl = this.shadow.querySelector('.tooltip')
     this.emptyEl = this.shadow.querySelector('.empty')
+    this.loadPanelEl = this.shadow.querySelector('.load-panel')
     this.tbody?.addEventListener('scroll', this.onScroll, { passive: true })
     // 空白拖拽（框选 / 建任务）：左侧列表与时间轴各一个落点入口
     this.sideBody?.addEventListener('pointerdown', this.onSidePointerDown)
@@ -3474,9 +3587,25 @@ export class OASGantt extends OASElement {
    */
   private syncHeaderOffset(): void {
     if (!this.theadEl || !this.innerEl) return
-    const dx = this.innerEl.getBoundingClientRect().left - this.theadEl.getBoundingClientRect().left
+    // 读相位：所有 getBoundingClientRect 一次取完，之后才进入写相位。
+    // scroll 事件里同步调用（不跑 rAF），读写交错会让每次写脏掉 layout、下一次读强制同步布局。
+    const innerLeft = this.innerEl.getBoundingClientRect().left
+    const dx = innerLeft - this.theadEl.getBoundingClientRect().left
+    const tracks = this.shadow.querySelectorAll<HTMLElement>('.load-track')
+    // 资源负荷面板桶层与图表内容层同源平移（同一 rect 差公式，RTL/任意滚动模型一致）；
+    // 各 .load-row 结构完全一致（同 flex 模板 + 同行名列宽、同行高），.load-track 左缘逐行同值
+    // → 只读一次参照 rect 求 dxTrack，循环内纯写 transform（旧写法逐行读 rect ×2 交错写，
+    // 每次 scroll 都是 O(资源行数) forced reflow）。
+    const dxTrack = tracks.length > 0 ? innerLeft - tracks[0]!.getBoundingClientRect().left : 0
+    // 写相位
     for (const h of this.shadow.querySelectorAll<HTMLElement>('.head-major, .head-minor')) {
       h.style.transform = `translateX(${dx}px)`
+    }
+    // 面板自身重建（renderResourceLoad）末尾也会调本方法自同步
+    for (const track of tracks) {
+      const inner = track.querySelector<HTMLElement>('.load-inner')
+      if (!inner) continue
+      inner.style.transform = `translateX(${dxTrack}px)`
     }
   }
 
@@ -3589,6 +3718,7 @@ export class OASGantt extends OASElement {
         <div class="tooltip" hidden></div>
         <div class="empty" hidden></div>
       </div>
+      <div class="load-panel" part="load-panel" role="img" hidden></div>
     `
     this.bind()
     this.update()
@@ -3840,6 +3970,7 @@ export class OASGantt extends OASElement {
     this.renderWindow()
     this.renderToday()
     this.renderStatusLine()
+    this.renderResourceLoad()
     this.syncHeaderOffset()
     // 数据重写后收敛出的选中变化统一在此补发（property/attribute 两通道一致）
     if (prunedSel) this.emitSelectionChange()
@@ -4022,6 +4153,165 @@ export class OASGantt extends OASElement {
     )
     this.winColStart = win.start
     this.winColEnd = win.end
+  }
+
+  // ===== 资源负荷面板（show-resource-load，opt-in 默认关） =====
+
+  /** 图表 scale → 负荷桶粒度映射：hour/day → day、week → week、month/quarter/year → month */
+  private loadUnit(): 'day' | 'week' | 'month' {
+    const scale = this.scaleMode()
+    if (scale === 'week') return 'week'
+    if (scale === 'month' || scale === 'quarter' || scale === 'year') return 'month'
+    return 'day'
+  }
+
+  /**
+   * 负荷计算（签名缓存）：基于全量 `this._tasks` 一次计算（虚拟行窗口不影响——行窗口只裁渲染，
+   * 不裁统计口径）。签名含 tasks JSON / 粒度 / 周起始 / 轴区间（取 buildUnits 产物，from/to 与
+   * 时间轴两端对齐）/ pool 开关与版本——数据或轴变化才重算。
+   */
+  private loadResult(): ResourceLoadResult | null {
+    const units = this.units
+    if (units.length === 0) return null
+    const unit = this.loadUnit()
+    const weekStart = this.weekStart()
+    const poolOn = this.poolOn()
+    const poolVersion = poolOn ? getSharedResourcePool().version : 0
+    const from = toISODate(new Date(units[0]!.startMs))
+    const to = toISODate(new Date(units[units.length - 1]!.endMs - 1))
+    const sig = `${JSON.stringify(this._tasks)}\u0000${unit}\u0000${weekStart}\u0000${from}\u0000${to}\u0000${poolOn}:${poolVersion}`
+    const cached = this.loadCache
+    if (cached && cached.sig === sig) return cached.result
+    const result = computeResourceLoad(this._tasks, {
+      unit,
+      from,
+      to,
+      weekStart,
+      pool: poolOn ? getSharedResourcePool().list() : undefined,
+    })
+    this.loadCache = { sig, result }
+    return result
+  }
+
+  /** 负荷桶 i 的起始本地零点 ms（与 xOf 同一 local 时区坐标系）：day/week 按日历日推进、month 按月历推进 */
+  private loadBucketStartMs(result: ResourceLoadResult, i: number): number {
+    const d = parseTaskDate(result.bucketStart)
+    if (!d) return 0
+    if (result.unit === 'month') return new Date(d.getFullYear(), d.getMonth() + i, 1).getTime()
+    const step = result.unit === 'week' ? i * 7 : i
+    return new Date(d.getFullYear(), d.getMonth(), d.getDate() + step).getTime()
+  }
+
+  /**
+   * 渲染负荷面板（update / 视口 resize 时调用；滚动路径只走 syncHeaderOffset 平移，不重建）：
+   * - 行名列宽 = 左侧列表 token（--oas-gantt-list-width）→ 桶条与图表时间轴逐列对齐；
+   * - 桶条定位/宽度走 xOf（复用 update() 时的 units/colW 轴参数，不重算），RTL 经 mirrorCellLeft 镜像；
+   * - 桶高 ∝ 负荷%（覆盖日数/桶天数，≤100%；>100% 加 .over 走 danger 通道）；
+   * - 空态（无任务/无 resources 引用）走 i18n 空态文案；windowed 跳过并 devWarn 一次。
+   */
+  private renderResourceLoad(): void {
+    const panel = this.loadPanelEl
+    if (!panel) return
+    if (!this.showResourceLoadOn()) {
+      panel.hidden = true
+      panel.innerHTML = ''
+      return
+    }
+    // windowed：组件只持有已装载切片，负荷统计在切片上会少算 → 不渲染 + devWarn 一次
+    //（对齐 pool 超配检测 / 关键路径的 windowed 口径：跨全量能力不在部分数据上给错误结论）
+    if (this._winMode.windowed) {
+      if (!this.warnedLoadWindowed) {
+        this.warnedLoadWindowed = true
+        devWarn(
+          '[oas-gantt] windowed 模式下资源负荷需要全量数据，已跳过渲染（切片上统计会少算）；请宿主在全量数据上计算后自行展示',
+        )
+      }
+      panel.hidden = true
+      panel.innerHTML = ''
+      return
+    }
+    const result = this.loadResult()
+    const rows = result?.resources ?? []
+    panel.hidden = false
+    panel.innerHTML = ''
+    const head = document.createElement('div')
+    head.className = 'load-head'
+    head.textContent = this.t('gantt.resourceLoad')
+    panel.appendChild(head)
+    if (!result || rows.length === 0 || result.bucketDays.length === 0) {
+      const empty = document.createElement('div')
+      empty.className = 'load-empty'
+      empty.textContent = this.t('gantt.resourceLoadEmpty')
+      panel.appendChild(empty)
+      panel.setAttribute('aria-label', this.t('gantt.resourceLoad'))
+      return
+    }
+    // aria 摘要（读屏走摘要，面板不进 Tab 序）：N 个资源 · 峰值最高的资源与百分比（同 % 取首个）
+    let peakRow = rows[0]!
+    let peakPct = -1
+    for (const row of rows) {
+      const peakIdx = row.buckets.indexOf(row.peak)
+      const days = result.bucketDays[peakIdx] ?? 0
+      const pct = days > 0 ? (row.peak / days) * 100 : 0
+      if (pct > peakPct) {
+        peakPct = pct
+        peakRow = row
+      }
+    }
+    panel.setAttribute(
+      'aria-label',
+      this.t('gantt.resourceLoadAria', {
+        count: rows.length,
+        name: peakRow.name ?? peakRow.id,
+        percent: Math.round(peakPct),
+      }),
+    )
+    const body = document.createElement('div')
+    body.className = 'load-body'
+    // 溢出时可键盘滚动（WCAG 2.1.1 scrollable-region-focusable）：可聚焦的是滚动区本身，
+    // 面板摘要仍由 role="img" 的 aria-label 承担；仅真实溢出时聚焦才有意义，但 tabindex 常驻无害。
+    body.tabIndex = 0
+    body.setAttribute('role', 'region')
+    body.setAttribute('aria-label', this.t('gantt.resourceLoad'))
+    for (const row of rows) {
+      const rowEl = document.createElement('div')
+      rowEl.className = 'load-row'
+      rowEl.setAttribute('part', 'load-row')
+      const name = document.createElement('span')
+      name.className = 'load-name'
+      name.textContent = row.name ?? row.id
+      rowEl.appendChild(name)
+      const track = document.createElement('div')
+      track.className = 'load-track'
+      const inner = document.createElement('div')
+      inner.className = 'load-inner'
+      inner.style.width = `${this.canvasW}px`
+      for (let i = 0; i < row.buckets.length; i++) {
+        const load = row.buckets[i]!
+        if (load <= 0) continue
+        const days = result.bucketDays[i] ?? 0
+        if (days <= 0) continue
+        const startMs = this.loadBucketStartMs(result, i)
+        const endMs = this.loadBucketStartMs(result, i + 1)
+        const x = this.xOf(startMs)
+        const width = Math.max(this.xOf(endMs) - x, 0)
+        const pct = (load / days) * 100
+        const cell = document.createElement('span')
+        cell.className = 'load-cell'
+        if (load > days) cell.classList.add('over')
+        cell.style.left = `${this.mirrorCellLeft(x, width)}px`
+        cell.style.width = `${width}px`
+        // 高 ∝ 负荷%：封顶 100%（超配信息由 .over 颜色通道 + title 数值承载，不改几何上限）
+        cell.style.height = `${Math.min(100, Math.round(pct))}%`
+        cell.title = `${Math.round(pct)}%`
+        inner.appendChild(cell)
+      }
+      track.appendChild(inner)
+      rowEl.appendChild(track)
+      body.appendChild(rowEl)
+    }
+    panel.appendChild(body)
+    this.syncHeaderOffset()
   }
 
   /**
