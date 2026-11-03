@@ -6,12 +6,24 @@ import {
   buildContainerRepoCheckScript,
   buildContainerScript,
   buildToolchainProbeScript,
+  buildVolumeCopyEvidenceArgs,
+  buildVolumeCreateArgs,
+  buildVolumeHeadCheckArgs,
+  buildVolumeRemoveArgs,
+  buildVolumeRunArgs,
+  buildVolumeSeedArgs,
+  buildVolumeSeedScript,
   CONTAINER_PNPM_VERSION,
   decodeWslList,
   DEFAULT_CONTAINER_IMAGE,
+  DEFAULT_VOLUME_CPUS,
+  DEFAULT_VOLUME_MEMORY,
+  DEFAULT_VOLUME_SHM_SIZE,
   defaultContainerImageFromNvmrc,
   findImage,
   normalizeImageRef,
+  REHEARSE_VOLUME_NAME,
+  VOLUME_EVIDENCE_REL_PATH,
   parseArgs,
   parseContainerToolchain,
   parseImageList,
@@ -104,8 +116,11 @@ const EMPTY_ARGS = {
   help: false,
   probeOnly: false,
   container: false,
+  volume: false,
   distro: null,
   image: null,
+  cpus: null,
+  memory: null,
   passthrough: [],
   error: null,
 }
@@ -135,10 +150,10 @@ test('parseArgs：容器模式 --container / --image 两种写法，透传顺序
   assert.equal(parseArgs(['--container', '--image=node:24-bookworm', '--list']).image, 'node:24-bookworm')
 })
 
-test('parseArgs：--distro 与 --container 互斥、--image 必须配 --container', () => {
+test('parseArgs：--distro 与 --container 互斥、--image 必须配 --container 或 --volume', () => {
   assert.match(parseArgs(['--container', '--distro', 'Ubuntu']).error, /互斥/)
   assert.match(parseArgs(['--container', '--distro=Ubuntu']).error, /互斥/)
-  assert.match(parseArgs(['--image', 'node:26-bookworm']).error, /只在 --container 模式下有效/)
+  assert.match(parseArgs(['--image', 'node:26-bookworm']).error, /--container \/ --volume/)
   assert.match(parseArgs(['--image=node:26-bookworm', '--probe']).error, /--container/)
 })
 
@@ -316,6 +331,17 @@ test('--help 输出含共享 node_modules 副作用提示（回 Windows 需重�
   assert.match(helpBlock, /pnpm install/, '--help 应提示回 Windows 需重跑 pnpm install')
 })
 
+test('--help 输出含三模式对比与卷模式说明（固定卷名单实例 + 9P 墙钟伪影 + 不碰 node_modules）', () => {
+  const source = readFileSync(new URL('./rehearse-wsl.mjs', import.meta.url), 'utf8')
+  const from = source.indexOf('if (args.help)')
+  const to = source.indexOf('const probeOnly')
+  const helpBlock = source.slice(from, to)
+  assert.match(helpBlock, /--volume/, '--help 应含卷模式入口')
+  assert.match(helpBlock, /oas-rehearse/, '--help 应注明固定卷名（单实例语义）')
+  assert.match(helpBlock, /9P/, '--help 应说明为何选卷（9P wall-clock 伪影）')
+  assert.match(helpBlock, /src:ro/, '--help 应说明卷模式只读挂载工作树')
+})
+
 test('buildToolchainProbeScript：node 与 git 版本各一行（&& 保证 node 缺失时不继续）', () => {
   assert.equal(buildToolchainProbeScript(), 'node -v && git --version')
 })
@@ -359,4 +385,147 @@ test('pnpmVersionFromPackageJson：取 packageManager 的 pnpm 版本，取不�
   assert.equal(pnpmVersionFromPackageJson('not json'), CONTAINER_PNPM_VERSION)
   assert.equal(pnpmVersionFromPackageJson('{"packageManager":"npm@10.0.0"}'), CONTAINER_PNPM_VERSION)
   assert.equal(pnpmVersionFromPackageJson(null), CONTAINER_PNPM_VERSION)
+})
+
+/* ------------------------------ 卷模式（wslc volume） ------------------------------ */
+
+test('parseArgs：--volume 模式解析；distro/container/volume 三模式两两互斥', () => {
+  assert.deepEqual(parseArgs(['--volume', '--with-e2e']), {
+    ...EMPTY_ARGS,
+    volume: true,
+    passthrough: ['--with-e2e'],
+  })
+  assert.match(parseArgs(['--volume', '--distro', 'Ubuntu']).error, /互斥/)
+  assert.match(parseArgs(['--volume', '--distro=Ubuntu']).error, /互斥/)
+  assert.match(parseArgs(['--volume', '--container']).error, /互斥/)
+  // 原有 container+distro 互斥保持不变
+  assert.match(parseArgs(['--container', '--distro', 'Ubuntu']).error, /互斥/)
+})
+
+test('parseArgs：--image / --cpus / --memory 对 --volume 生效（含 = 写法）', () => {
+  const spaced = parseArgs(['--volume', '--image', 'node:26-bookworm', '--cpus', '4', '--memory', '8G'])
+  assert.equal(spaced.volume, true)
+  assert.equal(spaced.image, 'node:26-bookworm')
+  assert.equal(spaced.cpus, '4')
+  assert.equal(spaced.memory, '8G')
+  assert.equal(spaced.error, null)
+  const eq = parseArgs(['--volume', '--cpus=2', '--memory=512M'])
+  assert.equal(eq.cpus, '2')
+  assert.equal(eq.memory, '512M')
+  // --image 同时认 container 与 volume
+  assert.equal(parseArgs(['--volume', '--image=node:26-bookworm']).image, 'node:26-bookworm')
+  assert.equal(parseArgs(['--container', '--image=node:26-bookworm']).image, 'node:26-bookworm')
+})
+
+test('parseArgs：--cpus/--memory 只在 --volume 下有效；值形状校验；缺值报错', () => {
+  assert.match(parseArgs(['--cpus', '4']).error, /只在 --volume/)
+  assert.match(parseArgs(['--memory', '8G']).error, /只在 --volume/)
+  assert.match(parseArgs(['--container', '--cpus', '4']).error, /只在 --volume/)
+  assert.match(parseArgs(['--volume', '--cpus', '0']).error, /正整数/)
+  assert.match(parseArgs(['--volume', '--cpus', 'abc']).error, /正整数/)
+  assert.match(parseArgs(['--volume', '--cpus', '2.5']).error, /正整数/)
+  assert.match(parseArgs(['--volume', '--memory', '12liters']).error, /--memory/)
+  assert.match(parseArgs(['--volume', '--cpus']).error, /--cpus 需要跟/)
+  assert.match(parseArgs(['--volume', '--memory']).error, /--memory 需要跟/)
+  assert.equal(parseArgs(['--volume', '--cpus', '8', '--memory', '12G']).error, null)
+  assert.equal(parseArgs(['--volume', '--memory', '1073741824']).error, null)
+})
+
+test('buildVolumeCreateArgs / buildVolumeRemoveArgs：卷名固定（单实例语义），先删后建', () => {
+  assert.equal(REHEARSE_VOLUME_NAME, 'oas-rehearse')
+  assert.deepEqual(buildVolumeCreateArgs(), ['volume', 'create', 'oas-rehearse'])
+  assert.deepEqual(buildVolumeRemoveArgs(), ['volume', 'remove', 'oas-rehearse'])
+  // 传自定义卷名也可（保留扩展位，脚本固定用默认值）
+  assert.deepEqual(buildVolumeCreateArgs('other'), ['volume', 'create', 'other'])
+})
+
+test('buildVolumeSeedArgs：播种双挂载——工作树只读（/src:ro）+ 卷可写（/repo）', () => {
+  const args = buildVolumeSeedArgs({
+    image: 'node:26-bookworm',
+    script: 'cp -a /src/. /repo/',
+    winTop: `${DRIVE}:\\dev\\repo`,
+  })
+  assert.deepEqual(args, [
+    'run',
+    '--rm',
+    '-v',
+    `${DRIVE}:\\dev\\repo:/src:ro`, // ro 标记：播种源绝不反写工作树
+    '-v',
+    'oas-rehearse:/repo',
+    'node:26-bookworm',
+    'bash',
+    '-lc',
+    'cp -a /src/. /repo/',
+  ])
+})
+
+test('buildVolumeSeedArgs：去掉挂载源尾部斜杠', () => {
+  const args = buildVolumeSeedArgs({ image: 'i', script: 'true', winTop: `${DRIVE}:\\dev\\repo\\` })
+  assert.equal(args[3], `${DRIVE}:\\dev\\repo:/src:ro`)
+})
+
+test('buildVolumeSeedScript：tar 拷贝（排除 node_modules）+ 现装 pnpm + --frozen-lockfile 安装', () => {
+  assert.equal(
+    buildVolumeSeedScript(),
+    `tar -C /src --exclude=node_modules -cf - . | tar -C /repo -xf - && npm i -g pnpm@${CONTAINER_PNPM_VERSION} --no-audit --no-fund && cd /repo && pnpm install --frozen-lockfile`,
+  )
+  assert.equal(
+    buildVolumeSeedScript({ pnpmVersion: '12.9.9' }),
+    'tar -C /src --exclude=node_modules -cf - . | tar -C /repo -xf - && npm i -g pnpm@12.9.9 --no-audit --no-fund && cd /repo && pnpm install --frozen-lockfile',
+  )
+})
+
+test('buildVolumeRunArgs：默认资源旗标显式（默认限额下全量 vitest 随机超时）+ 卷挂载 + -w /repo', () => {
+  assert.equal(DEFAULT_VOLUME_CPUS, 8)
+  assert.equal(DEFAULT_VOLUME_MEMORY, '12G')
+  assert.equal(DEFAULT_VOLUME_SHM_SIZE, '2G')
+  const args = buildVolumeRunArgs({ image: 'node:26-bookworm', script: 'pnpm release:rehearse' })
+  assert.deepEqual(args, [
+    'run',
+    '--rm',
+    '--cpus',
+    '8',
+    '--memory',
+    '12G',
+    '--shm-size',
+    '2G',
+    '-v',
+    'oas-rehearse:/repo',
+    '-w',
+    '/repo',
+    'node:26-bookworm',
+    'bash',
+    '-lc',
+    'pnpm release:rehearse',
+  ])
+})
+
+test('buildVolumeRunArgs：--cpus/--memory 覆盖生效（shm-size 固定不暴露覆盖位）', () => {
+  const args = buildVolumeRunArgs({ image: 'node:26-bookworm', script: 'true', cpus: 4, memory: '8G' })
+  assert.deepEqual(args.slice(2, 8), ['--cpus', '4', '--memory', '8G', '--shm-size', '2G'])
+})
+
+test('buildVolumeHeadCheckArgs：挂卷探针（非 login shell）+ 复用容器 repo 校验脚本', () => {
+  const args = buildVolumeHeadCheckArgs({ image: 'node:26-bookworm' })
+  assert.deepEqual(args, [
+    'run',
+    '--rm',
+    '-v',
+    'oas-rehearse:/repo',
+    'node:26-bookworm',
+    'bash',
+    '-c',
+    buildContainerRepoCheckScript(),
+  ])
+})
+
+test('buildVolumeCopyEvidenceArgs：辅助容器把卷内证据拷回真仓 .git/（落点可写，无 ro）', () => {
+  assert.equal(VOLUME_EVIDENCE_REL_PATH, '.git/oas-release-rehearsal.json')
+  const args = buildVolumeCopyEvidenceArgs({ image: 'node:26-bookworm', winTop: `${DRIVE}:\\dev\\repo` })
+  assert.equal(
+    args[args.length - 1],
+    'cp -f /repo/.git/oas-release-rehearsal.json /src/.git/oas-release-rehearsal.json',
+  )
+  const mounts = args.flatMap((a, i) => (args[i - 1] === '-v' ? [a] : []))
+  assert.deepEqual(mounts, ['oas-rehearse:/repo', `${DRIVE}:\\dev\\repo:/src`])
 })

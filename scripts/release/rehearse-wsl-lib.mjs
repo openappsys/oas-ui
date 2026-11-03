@@ -120,8 +120,11 @@ const PASSTHROUGH = new Set(PASSTHROUGH_FLAGS)
  *   help: boolean,
  *   probeOnly: boolean,
  *   container: boolean,
+ *   volume: boolean,
  *   distro: string|null,
  *   image: string|null,
+ *   cpus: string|null,
+ *   memory: string|null,
  *   passthrough: string[],
  *   error: string|null,
  * }}
@@ -131,8 +134,11 @@ export function parseArgs(argv) {
     help: false,
     probeOnly: false,
     container: false,
+    volume: false,
     distro: null,
     image: null,
+    cpus: null,
+    memory: null,
     passthrough: [],
     error: null,
   }
@@ -151,6 +157,8 @@ export function parseArgs(argv) {
       out.probeOnly = true
     } else if (arg === '--container') {
       out.container = true
+    } else if (arg === '--volume') {
+      out.volume = true
     } else if (arg === '--distro') {
       const value = argv[++i]
       if (!value) return withError('--distro 需要跟一个发行版名（用 wsl -l -q 查看）')
@@ -167,22 +175,54 @@ export function parseArgs(argv) {
       const value = arg.slice('--image='.length)
       if (!value) return withError('--image= 后面需要镜像名（如 node:24-bookworm）')
       out.image = value
+    } else if (arg === '--cpus') {
+      const value = argv[++i]
+      if (!value) return withError('--cpus 需要跟一个正整数（如 8）')
+      out.cpus = value
+    } else if (arg.startsWith('--cpus=')) {
+      const value = arg.slice('--cpus='.length)
+      if (!value) return withError('--cpus= 后面需要正整数（如 8）')
+      out.cpus = value
+    } else if (arg === '--memory') {
+      const value = argv[++i]
+      if (!value) return withError('--memory 需要跟内存限额（如 12G / 512M / 纯数字字节）')
+      out.memory = value
+    } else if (arg.startsWith('--memory=')) {
+      const value = arg.slice('--memory='.length)
+      if (!value) return withError('--memory= 后面需要内存限额（如 12G / 512M）')
+      out.memory = value
     } else if (PASSTHROUGH.has(arg)) {
       out.passthrough.push(arg)
     } else {
       return withError(
-        `未知参数「${arg}」——只接受 --probe / --distro <名> / --container / --image <名:tag> / ` +
-          '--with-e2e / --with-ssr-e2e / --quiet / --list',
+        `未知参数「${arg}」——只接受 --probe / --distro <名> / --container / --volume / --image <名:tag> / ` +
+          '--cpus <N> / --memory <M> / --with-e2e / --with-ssr-e2e / --quiet / --list',
       )
     }
   }
 
-  // 两种模式互斥：容器模式跑 OCI 容器，不涉及发行版；--image 也只有容器模式认得
+  // 三种执行环境互斥（--distro / --container / --volume 三合一只留一个）
   if (out.container && out.distro) {
     return withError('--distro 与 --container 互斥：容器模式在 OCI 容器里跑，不用发行版（去掉 --distro）')
   }
-  if (out.image !== null && !out.container) {
-    return withError('--image 只在 --container 模式下有效（镜像属于容器模式）')
+  if (out.volume && out.distro) {
+    return withError('--distro 与 --volume 互斥：卷模式在一次性 ext4 卷里跑，不用发行版（去掉 --distro）')
+  }
+  if (out.volume && out.container) {
+    return withError('--container 与 --volume 互斥：三合一只留一个（挂载共享工作树与拷贝进 ext4 卷，二选一）')
+  }
+  if (out.image !== null && !out.container && !out.volume) {
+    return withError('--image 只在 --container / --volume 模式下有效（镜像属于容器通道）')
+  }
+  // 资源旗标是卷模式的（容器模式不做资源限额，发行版模式没有容器可限）
+  if ((out.cpus !== null || out.memory !== null) && !out.volume) {
+    return withError('--cpus/--memory 只在 --volume 模式下有效（资源限额属于卷模式）')
+  }
+  if (out.cpus !== null && (!/^\d+$/.test(out.cpus) || Number(out.cpus) <= 0)) {
+    return withError(`--cpus 须为正整数（如 --cpus 8），得到「${out.cpus}」`)
+  }
+  if (out.memory !== null && !/^\d+[kmbg]?$/i.test(out.memory)) {
+    return withError(`--memory 须为带单位限额（如 12G / 512M / 纯数字字节），得到「${out.memory}」`)
   }
   return out
 }
@@ -354,4 +394,157 @@ export function pnpmVersionFromPackageJson(json) {
     // 忽略：退回默认版本
   }
   return CONTAINER_PNPM_VERSION
+}
+
+/* ------------------------------ 卷模式（wslc volume） ------------------------------ */
+
+/**
+ * 卷模式常量。
+ *
+ * - 卷名固定：脚本单实例语义——每次跑先删后建同一个卷（拷贝只覆盖不清残留，上轮垃圾会
+ *   触发内层 rehearse 的干净树守卫），同机不能并行两个卷模式实例。
+ * - 资源必须显式：默认限额下全量 vitest 随机超时（已实测），真跑容器显式给足资源；
+ *   `--cpus` / `--memory` 可覆盖 CPU 与内存，shm 固定（node:24 镜像跑 playwright 够用）。
+ * - 播种源只读挂载（`/src:ro`）：卷模式绝不反写 Windows 工作树，共享 node_modules 不被重写。
+ */
+export const REHEARSE_VOLUME_NAME = 'oas-rehearse'
+export const VOLUME_SRC_PATH = '/src'
+export const VOLUME_EVIDENCE_REL_PATH = '.git/oas-release-rehearsal.json'
+export const DEFAULT_VOLUME_CPUS = 8
+export const DEFAULT_VOLUME_MEMORY = '12G'
+export const DEFAULT_VOLUME_SHM_SIZE = '2G'
+
+/** `wslc volume create <名>`——建空卷（播种前必须先有卷） */
+export function buildVolumeCreateArgs(volume = REHEARSE_VOLUME_NAME) {
+  return ['volume', 'create', volume]
+}
+
+/** `wslc volume remove <名>`——先删后建的「删」：卷可能不存在（首次运行），失败由调用方容忍 */
+export function buildVolumeRemoveArgs(volume = REHEARSE_VOLUME_NAME) {
+  return ['volume', 'remove', volume]
+}
+
+/**
+ * 播种容器参数：单容器双挂载——Windows 工作树只读挂 `${VOLUME_SRC_PATH}:ro`（拷贝源，绝不
+ * 反写工作树）、卷挂 `${CONTAINER_REPO_PATH}`（rw，真正的工作区）。cp -a 到原生 ext4，
+ * 绕开 9P/drvfs 慢 I/O（挂载姿势的 wall-clock 伪影）。
+ *
+ * 产物形如：
+ *   wslc run --rm -v <winTop>:/src:ro -v <vol>:/repo <image> bash -lc '<script>'
+ *
+ * @param {{ image: string, script: string, winTop: string, volume?: string }} opts
+ * @returns {string[]}
+ */
+export function buildVolumeSeedArgs({ image, script, winTop, volume = REHEARSE_VOLUME_NAME }) {
+  const mountSource = String(winTop).replace(/[\\/]+$/, '')
+  return [
+    'run',
+    '--rm',
+    '-v',
+    `${mountSource}:${VOLUME_SRC_PATH}:ro`,
+    '-v',
+    `${volume}:${CONTAINER_REPO_PATH}`,
+    image,
+    'bash',
+    '-lc',
+    script,
+  ]
+}
+
+/**
+ * 播种脚本：tar 全量拷贝工作树（含 .git，排除 node_modules）→ 现装 pnpm → 原生 ext4 上
+ * frozen install。
+ *
+ * 为何 tar 而不是 `cp -a`（实测教训）：
+ * - pnpm 的 node_modules 是 junction/symlink 森林，drvfs 把 Windows junction 暴露成 symlink
+ *   但 readlink 返回 EPERM——`cp -a` 拷到它直接炸（cannot read symbolic link … Operation
+ *   not permitted），且几 GB 的依赖拷进卷毫无意义：卷内 install 本来就会原生重建。
+ * - git 跟踪的文件里没有 symlink（构建期校验过为 0），排除 node_modules 后 tar 不会碰任何
+ *   链接；`--exclude=node_modules` 匹配任意层级（根 / packages/* / docs 的依赖全排除）。
+ *
+ * @param {{ pnpmVersion?: string }} [opts]
+ * @returns {string}
+ */
+export function buildVolumeSeedScript({ pnpmVersion = CONTAINER_PNPM_VERSION } = {}) {
+  const install = `npm i -g pnpm@${pnpmVersion} --no-audit --no-fund`
+  const copy = `tar -C ${VOLUME_SRC_PATH} --exclude=node_modules -cf - . | tar -C ${CONTAINER_REPO_PATH} -xf -`
+  return `${copy} && ${install} && cd ${CONTAINER_REPO_PATH} && pnpm install --frozen-lockfile`
+}
+
+/**
+ * 真跑容器参数：新容器必须自带 pnpm（全局安装不跨 `--rm` 容器存活，脚本由调用方用
+ * buildContainerScript 组装）；资源显式给足（默认限额下全量 vitest 随机超时）。
+ *
+ * 产物形如：
+ *   wslc run --rm --cpus 8 --memory 12G --shm-size 2G -v <vol>:/repo -w /repo <image> bash -lc '<script>'
+ *
+ * @param {{ image: string, script: string, volume?: string, cpus?: number|string, memory?: string, shmSize?: string }} opts
+ * @returns {string[]}
+ */
+export function buildVolumeRunArgs({
+  image,
+  script,
+  volume = REHEARSE_VOLUME_NAME,
+  cpus = DEFAULT_VOLUME_CPUS,
+  memory = DEFAULT_VOLUME_MEMORY,
+  shmSize = DEFAULT_VOLUME_SHM_SIZE,
+}) {
+  return [
+    'run',
+    '--rm',
+    '--cpus',
+    String(cpus),
+    '--memory',
+    memory,
+    '--shm-size',
+    shmSize,
+    '-v',
+    `${volume}:${CONTAINER_REPO_PATH}`,
+    '-w',
+    CONTAINER_REPO_PATH,
+    image,
+    'bash',
+    '-lc',
+    script,
+  ]
+}
+
+/**
+ * 卷内 HEAD 一致性探针参数：挂卷（无 -w，脚本自带 cd）非 login shell，复用容器模式的
+ * repo 校验脚本（cd + toplevel + HEAD 的 key=value 输出）。
+ *
+ * @param {{ image: string, volume?: string }} opts
+ * @returns {string[]}
+ */
+export function buildVolumeHeadCheckArgs({ image, volume = REHEARSE_VOLUME_NAME }) {
+  return ['run', '--rm', '-v', `${volume}:${CONTAINER_REPO_PATH}`, image, 'bash', '-c', buildContainerRepoCheckScript()]
+}
+
+/**
+ * 证据拷回容器参数：辅助容器同时挂卷（证据源）与真仓（落点，可写、无 ro），
+ * 把卷内 `<git-dir>/oas-release-rehearsal.json` 拷回 Windows 侧 .git/——落回与另两模式
+ * 同一个物理文件，verify-rehearsal / pre-push 核验语义不变。
+ *
+ * @param {{ image: string, winTop: string, volume?: string, evidenceRelPath?: string }} opts
+ * @returns {string[]}
+ */
+export function buildVolumeCopyEvidenceArgs({
+  image,
+  winTop,
+  volume = REHEARSE_VOLUME_NAME,
+  evidenceRelPath = VOLUME_EVIDENCE_REL_PATH,
+}) {
+  const mountSource = String(winTop).replace(/[\\/]+$/, '')
+  return [
+    'run',
+    '--rm',
+    '-v',
+    `${volume}:${CONTAINER_REPO_PATH}`,
+    '-v',
+    `${mountSource}:${VOLUME_SRC_PATH}`,
+    image,
+    'bash',
+    '-c',
+    `cp -f ${CONTAINER_REPO_PATH}/${evidenceRelPath} ${VOLUME_SRC_PATH}/${evidenceRelPath}`,
+  ]
 }

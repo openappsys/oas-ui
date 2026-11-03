@@ -8,42 +8,60 @@
  * 本脚本不重复实现门禁逻辑，只做「环境搬运」：探测环境 → 校验工具链与路径 →
  * 在 Linux 侧执行 `pnpm release:rehearse <args>`（即 scripts/release/rehearse.mjs）。
  *
- * 两种模式（同一套门禁、同一份证据，只是执行环境不同）：
+ * 三种模式（同一套门禁、同一份证据，只是执行环境不同；--distro / --container / --volume 三合一只留一个）：
  *
- * | 维度             | 发行版模式（默认）              | 容器模式（--container）                      |
- * | ---------------- | ------------------------------- | -------------------------------------------- |
- * | 执行环境         | WSL 里已装好的 Linux 发行版     | WSL 自带 OCI 容器（wslc），一次性           |
- * | 验证的是         | 真实 Linux 用户环境（含发行版差异） | Node 版本对齐 CI 口径 + 干净基础镜像       |
- * | 工具链来源       | 发行版自带（需自己装 node+pnpm） | 镜像自带 node/git/npm，pnpm 容器内现装       |
- * | 环境污染         | 跑完留在发行版里                | 容器 --rm 即弃；只剩共享工作树的 node_modules |
- * | 前置条件         | 装了 WSL + 发行版 + node/pnpm   | WSL 2.9.3+（带 wslc）+ 能拉到镜像             |
- * | 典型用途         | 怀疑「只在 Linux 发行版/字体栈暴露」| 怀疑「Node/工具链版本口径不一致」，或不想装发行版 |
+ * | 维度         | 发行版模式（默认）                  | 容器模式（--container）                | 卷模式（--volume）                          |
+ * | ------------ | ----------------------------------- | -------------------------------------- | ------------------------------------------- |
+ * | 执行环境     | WSL 里已装好的 Linux 发行版         | WSL 自带 OCI 容器（wslc），一次性      | 一次性 ext4 卷 + OCI 容器（wslc volume）    |
+ * | 验证的是     | 真实 Linux 用户环境（含发行版差异） | Node 版本对齐 CI 口径 + 干净基础镜像   | 同容器口径 + 原生文件系统计时               |
+ * | 工具链来源   | 发行版自带（需自己装 node+pnpm）    | 镜像自带 node/git/npm，pnpm 容器内现装 | 同容器                                      |
+ * | 工作树访问   | /mnt/<盘>/…（drvfs）                | -v 挂载共享工作树（9P/drvfs 慢 I/O）   | 只读挂载（/src:ro）拷进卷，绝不反写工作树   |
+ * | 墙钟可信度   | drvfs 慢 I/O                        | 9P 慢 I/O：install/vitest 慢数倍、随机超时 | 原生 ext4，计时与 CI 同量级             |
+ * | 环境污染     | 跑完留在发行版里                    | 容器 --rm 即弃；共享 node_modules 被重写 | 卷先删后建即弃；不碰 node_modules         |
+ * | 前置条件     | 装了 WSL + 发行版 + node/pnpm       | WSL 2.9.3+（带 wslc）+ 能拉到镜像      | 同容器（volume 子命令随 wslc 提供）         |
+ * | 典型用途     | 怀疑「只在 Linux 发行版/字体栈暴露」 | 怀疑「Node/工具链版本口径不一致」      | 要容器口径的「墙钟可信」结果（e2e/耗时敏感） |
+ *
+ * 为何选卷：容器模式的 -v 挂载走 9P/drvfs，全量 vitest 的 wall-clock 被慢 I/O 拖长（实测
+ * pnpm install / vitest 比原生 ext4 慢数倍且随机超时）——计时是伪影不是信号；卷模式把仓库
+ * 拷进原生 ext4 再跑，计时与 CI 同量级，是容器通道里唯一墙钟可信的姿势。
+ *
+ * 卷模式流程（--volume）：守卫 → wslc/镜像/工具链探测 → 卷重建（`volume remove` + `create`，
+ * 先删后建：拷贝只覆盖不清残留，上轮垃圾会触发内层干净树守卫）→ 播种（单容器：工作树只读
+ * 挂 /src:ro，tar 排除 node_modules 拷进卷——pnpm junction 在 drvfs 下 readlink EPERM，且
+ * 依赖会在卷内原生重建——再 pnpm install --frozen-lockfile）→ HEAD 一致性校验
+ * （卷内 git rev-parse == Windows）→ 真跑（新容器自带 pnpm——全局安装不跨 --rm 容器存活；
+ * 资源显式 --cpus 8 --memory 12G --shm-size 2G，默认限额下全量 vitest 随机超时）→ 证据拷回
+ * 真仓 .git/。卷名固定 oas-rehearse（单实例语义：同机不可并行两个卷模式实例）。
  *
  * 定位：**可选增强层**，不是发布必经步骤。
- * - 缺环境（未装 WSL / 没有发行版 / 发行版缺 Linux 原生 node+pnpm / 没有 wslc / 镜像拉不到）
- *   → 打印一次性安装指引后 exit 0（SKIP 语义，不红：缺环境是「没测到」，不是「测出问题」）。
- *   `--image <名:tag>` 显式指定的镜像拉取失败属于「写错了名字」，按失败处理（exit 1）。
+ * - 缺环境（未装 WSL / 没有发行版 / 发行版缺 Linux 原生 node+pnpm / 没有 wslc / 镜像拉不到 /
+ *   volume create 失败）→ 打印一次性安装指引后 exit 0（SKIP 语义，不红：缺环境是「没测到」，
+ *   不是「测出问题」）。`--image <名:tag>` 显式指定的镜像拉取失败属于「写错了名字」，按失败
+ *   处理（exit 1）。
  * - 真正跑起来后与 rehearse.mjs 完全同门禁、同顺序；非零退出 → exit 1 并贴该环境侧日志尾部。
  *
  * 证据文件协议（与 rehearse.mjs 完全一致）：
- * - rehearse 写 `<git-dir>/oas-release-rehearsal.json`。两种模式访问的都是**同一个物理文件**
- *   （发行版经 /mnt/<盘>/...；容器经 -v 挂载到 /repo），所以 WSL 层证据与 Windows 本地证据
- *   **同格式、同文件**：同一 SHA 内按层累积、成功层刷新为该次执行记录、失败层写 ok:false。
+ * - rehearse 写 `<git-dir>/oas-release-rehearsal.json`。发行版/容器模式访问的都是**同一个物理
+ *   文件**（发行版经 /mnt/<盘>/...；容器经 -v 挂载到 /repo），所以 WSL 层证据与 Windows 本地
+ *   证据**同格式、同文件**：同一 SHA 内按层累积、成功层刷新为该次执行记录、失败层写 ok:false。
+ * - 卷模式的证据写在卷的 `<git-dir>/oas-release-rehearsal.json`，跑完由辅助容器拷回真仓 .git/
+ *   （落回同一个物理文件），verify-rehearsal / pre-push 核验语义与另两模式完全一致。
  * - scripts/release/verify-rehearsal.mjs 的判定只看「sha 一致 + testJob/e2e/ssrE2e 三层 ok:true」，
  *   不关心证据由哪一侧产生——WSL 跑出的证据**无需任何改动即可被 pre-push 核验**。
  * - 两侧互为加强，也是有意的 fail closed：WSL 侧跑红同样把该层记 ok:false，覆盖 Windows 侧的
  *   全绿记录——任一侧红都不该放行。
  *
- * ⚠️ 共享工作树的副作用（两种模式都适用，必读）：
+ * ⚠️ 共享工作树的副作用（发行版/容器模式适用，必读；卷模式只读挂载不在此列）：
  * - 跑的是同一份工作树，rehearse 里的 `pnpm install --frozen-lockfile` 会重写共享的
  *   node_modules——Linux 原生二进制（esbuild / rollup / playwright…）会替换掉 Windows 的。
  *   跑完回 Windows 侧建议重跑一次 `pnpm install` 恢复。
  * - 也正因为是同一工作树，git HEAD / 工作树状态与 Windows 侧天然一致，证据才对得上同一棵树。
- * - 发行版模式的 /mnt 走 drvfs、容器模式的挂载同理，I/O 比 Linux 原生文件系统慢，
- *   全量 e2e 会明显更久（正常现象）。
+ *   卷模式靠「播种自 Windows 工作树 + 卷内 HEAD 一致性校验」保证同一棵树。
+ * - 发行版模式的 /mnt 走 drvfs、容器模式的挂载走 9P/drvfs，I/O 比 Linux 原生文件系统慢，
+ *   全量 e2e 会明显更久（正常现象）；要墙钟可信的结果用 --volume。
  *
  * 用法：
- *   node scripts/release/rehearse-wsl.mjs --probe                   # 只探测：发行版 + 工具链 + 路径 + HEAD 比对
+ *   node scripts/release/rehearse-wsl.mjs --probe                   # 只探测：环境 + 工具链 + 路径 + HEAD 比对
  *   node scripts/release/rehearse-wsl.mjs                           # testJob 层（同 rehearse.mjs 默认）
  *   node scripts/release/rehearse-wsl.mjs --with-e2e                # 追加 e2e 层
  *   node scripts/release/rehearse-wsl.mjs --with-e2e --with-ssr-e2e # 三层
@@ -51,6 +69,9 @@
  *   node scripts/release/rehearse-wsl.mjs --container                # 容器模式（默认镜像 node:24-bookworm）
  *   node scripts/release/rehearse-wsl.mjs --container --probe        # 只探测容器镜像 + 工具链 + HEAD
  *   node scripts/release/rehearse-wsl.mjs --container --image node:24-bookworm --with-e2e
+ *   node scripts/release/rehearse-wsl.mjs --volume --probe           # 卷模式：只探测 + 打印计划，不建卷不播种
+ *   node scripts/release/rehearse-wsl.mjs --volume                   # 卷模式（原生 ext4 墙钟，全链约 2 分钟）
+ *   node scripts/release/rehearse-wsl.mjs --volume --cpus 4 --memory 8G  # 卷模式资源覆盖
  *   pnpm release:rehearse:wsl --with-e2e                            # 接线后的推荐入口
  *
  * 前置守卫（fail closed）：
@@ -59,6 +80,8 @@
  * - 发行版模式：Windows 仓库路径必须能换算成 /mnt/... 且 WSL 内 cd 可达、git toplevel 与 HEAD
  *   与 Windows 侧一致（防止 /mnt 映射到另一个检出，让证据挂到错的树上）。
  * - 容器模式：挂载点固定 /repo，容器内 git toplevel 必须是 /repo、HEAD 必须与 Windows 一致。
+ * - 卷模式：仓库根须为本地盘符（播种源/证据落点都要挂进容器）；播种后卷内 HEAD 必须与
+ *   Windows 一致（防拷贝损坏/挂错树）。
  * - 本仓库禁止 `pnpm <script> -- --arg`（pnpm 12 会把 `--` 传给脚本）：这里显式拒绝 `--`。
  */
 import { execFileSync, spawn, spawnSync } from 'node:child_process'
@@ -70,7 +93,17 @@ import {
   buildContainerRepoCheckScript,
   buildContainerScript,
   buildToolchainProbeScript,
+  buildVolumeCopyEvidenceArgs,
+  buildVolumeCreateArgs,
+  buildVolumeHeadCheckArgs,
+  buildVolumeRemoveArgs,
+  buildVolumeRunArgs,
+  buildVolumeSeedArgs,
+  buildVolumeSeedScript,
   CONTAINER_REPO_PATH,
+  DEFAULT_VOLUME_CPUS,
+  DEFAULT_VOLUME_MEMORY,
+  DEFAULT_VOLUME_SHM_SIZE,
   decodeWslList,
   defaultContainerImageFromNvmrc,
   findImage,
@@ -79,7 +112,10 @@ import {
   parseImageList,
   parseKv,
   pnpmVersionFromPackageJson,
+  REHEARSE_VOLUME_NAME,
   sanitizeDistros,
+  VOLUME_EVIDENCE_REL_PATH,
+  VOLUME_SRC_PATH,
   winToWslPath,
 } from './rehearse-wsl-lib.mjs'
 
@@ -112,19 +148,28 @@ if (args.help) {
   console.log(
     [
       '用法：node scripts/release/rehearse-wsl.mjs [--probe] [--distro <名>] [--container [--image <名:tag>]]',
+      '                                       [--volume [--image <名:tag>] [--cpus <N>] [--memory <M>]]',
       '                                       [--with-e2e] [--with-ssr-e2e] [--quiet] [--list]',
       '',
-      '  --probe        只探测环境（发行版/镜像 + 工具链 + 路径 + HEAD 比对），不执行 rehearse，不做工作树守卫',
+      '  --probe        只探测环境（镜像 + 工具链 + 计划），不执行 rehearse，不做工作树守卫',
       '  --distro X     发行版模式：指定发行版（默认取 wsl -l -q 里首个工具链齐备者）',
       '  --container    容器模式：在 WSL 自带 OCI 容器（wslc）里跑，一次性环境、不污染发行版',
-      `  --image X      容器模式的镜像（默认 ${defaultContainerImageFromNvmrc(readNvmrc())}——按 .nvmrc 推导；slim 镜像不带 git，不能用）`,
+      `  --image X      容器/卷模式的镜像（默认 ${defaultContainerImageFromNvmrc(readNvmrc())}——按 .nvmrc 推导；slim 镜像不带 git，不能用）`,
+      '  --volume       卷模式：仓库拷进一次性原生 ext4 卷跑（容器口径 + 原生文件系统计时）',
+      `  --cpus N       卷模式的 CPU 数（默认 ${DEFAULT_VOLUME_CPUS}）`,
+      `  --memory M     卷模式的内存限额（默认 ${DEFAULT_VOLUME_MEMORY}；如 8G / 512M / 纯数字字节）`,
       '  其余参数原样透传给内部 pnpm release:rehearse',
       '',
-      '两种模式对比：',
+      '三种模式对比（--distro / --container / --volume 三合一，只留一个）：',
       '  发行版模式 —— 验证「真实 Linux 用户环境」，需要发行版自带 Linux 原生 node + pnpm；',
-      '  容器模式   —— 验证「CI 口径的 Node + 干净基础镜像」，容器 --rm 即弃，不往发行版装任何东西。',
+      '  容器模式   —— 验证「CI 口径的 Node + 干净基础镜像」，-v 挂载共享工作树，容器 --rm 即弃；',
+      '  卷模式     —— 同容器口径，但仓库拷进原生 ext4 卷跑。为何不用挂载？-v 挂 Windows 目录走 9P/drvfs，',
+      '               全量 vitest 的 wall-clock 被慢 I/O 拖长（实测 install/vitest 慢数倍且随机超时）',
+      '               ——计时是伪影；卷模式跑在 ext4 上，计时与 CI 同量级。',
       '',
-      '⚠ 两种模式都在同一份工作树上跑 pnpm install：共享 node_modules 会被 Linux 原生二进制',
+      '⚠ 卷模式单实例：卷名固定 oas-rehearse，每次跑先删后建（同机不可并行两个卷模式实例）；',
+      '  工作树只读挂载（/src:ro），不重写共享 node_modules，跑完无需回 Windows 重装依赖。',
+      '⚠ 发行版/容器模式在同一份工作树上跑 pnpm install：共享 node_modules 会被 Linux 原生二进制',
       '  （esbuild / rollup / playwright…）重写，跑完回 Windows 侧需重跑一次 pnpm install。',
     ].join('\n'),
   )
@@ -133,6 +178,7 @@ if (args.help) {
 
 const probeOnly = args.probeOnly
 const containerMode = args.container
+const volumeMode = args.volume
 const passthrough = args.passthrough
 const listOnly = passthrough.includes('--list')
 const requestedLayers = [
@@ -241,6 +287,27 @@ function localPnpmVersion() {
   } catch {
     return undefined
   }
+}
+
+/** 卷模式的缺失环境指引（wslc 不存在 / volume create 失败 / 镜像拉不到 / 镜像缺工具链） */
+function volumeGuide(reason) {
+  return [
+    `SKIP ${reason}`,
+    '',
+    '  为什么需要这一层：卷模式把仓库拷进 WSL 原生 ext4 卷再跑同一套门禁——容器口径 + 原生文件系统',
+    '  计时（-v 挂载 Windows 目录走 9P/drvfs，wall-clock 被慢 I/O 拖长，计时是伪影）。',
+    '',
+    '  1) 把 WSL 升级到 2.9.3+（wslc 与 volume 子命令随 WSL 提供，管理员 PowerShell）：',
+    '       wsl --update',
+    '       wsl --version          # 确认版本 ≥ 2.9.3',
+    '  2) 复核容器 CLI 与卷命令：',
+    '       wslc --version',
+    '       wslc volume list',
+    '  3) 验证镜像与工具链（slim 镜像不带 git，必须用 node:24-bookworm 这类全量镜像）：',
+    "       wslc run --rm node:24-bookworm bash -c 'node -v && git --version'",
+    '  4) 真跑（默认 testJob 层，全链约 2 分钟）：',
+    '       pnpm release:rehearse:wsl --volume',
+  ]
 }
 
 /** `wslc image ls` 清单（优先 --format json，老版本 CLI 回退表格） */
@@ -460,6 +527,210 @@ async function runContainerMode() {
 
 if (containerMode) {
   await runContainerMode()
+  process.exit(0)
+}
+
+// ---------- 2b. 卷模式（wslc volume）：容器口径 + 原生 ext4 计时 ----------
+
+/**
+ * 卷模式全流程：探测（复用容器模式）→ 卷重建（先删后建）→ 播种（工作树只读挂 /src:ro 拷进
+ * 卷 + frozen install）→ HEAD 一致性校验 → 真跑（资源显式）→ 证据拷回真仓 .git/。
+ * 环境缺失走 SKIP（缺环境是「没测到」）；播种/校验/真跑/拷回失败一律 exit 1（fail closed）。
+ */
+async function runVolumeMode() {
+  const image = args.image ?? defaultContainerImageFromNvmrc(readNvmrc())
+  const imageOrigin = args.image ? '--image 指定' : '默认'
+  const volume = REHEARSE_VOLUME_NAME
+  const cpus = args.cpus ?? DEFAULT_VOLUME_CPUS
+  const memory = args.memory ?? DEFAULT_VOLUME_MEMORY
+
+  // 播种源与证据落点都要挂进容器：UNC / 网络路径不挂（与容器模式同口径）
+  if (/^[\\/]{2}/.test(winToplevel)) {
+    fail(`仓库根「${winToplevel}」是 UNC/网络路径，容器挂载不可靠（-v 只认本地盘符路径）；请先检出到本地盘`)
+  }
+
+  // 1. wslc 存在性（与容器模式同口径）
+  const version = spawnSync('wslc', ['--version'], { encoding: 'utf8', windowsHide: true })
+  if (version.error) {
+    const code = version.error.code
+    skip(
+      volumeGuide(
+        code === 'ENOENT'
+          ? '未找到 wslc——本机 WSL 版本低于 2.9.3（或未启用容器功能）'
+          : `无法调用 wslc（${String(version.error.message)}）`,
+      ),
+    )
+  }
+  const wslcVer = (version.stdout || version.stderr || '').trim().split(/\r?\n/)[0] ?? ''
+  if (version.status !== 0) {
+    skip(volumeGuide(`wslc --version 退出码 ${version.status}${wslcVer ? `（${wslcVer}）` : ''}`))
+  }
+  console.log(`${LABEL} 容器 CLI：${wslcVer || '（版本输出为空，继续尝试）'}`)
+
+  // 2. 镜像本地存在性（缺则拉取；--probe 也探测，与容器模式同哲学）
+  const imageState = ensureImage(image)
+  if (!imageState.ok) {
+    // 显式 --image 拉不到 = 名字/网络问题，按失败处理；默认镜像拉不到 = 环境缺失，SKIP
+    if (args.image) fail(`${imageState.reason}（--image 显式指定的镜像必须可用）`)
+    skip(volumeGuide(imageState.reason))
+  }
+
+  // 3. 容器内工具链（node + git）
+  const toolchain = probeContainerToolchain(image)
+  if (!toolchain.ok) skip(volumeGuide(`${image} 工具链不可用：${toolchain.reason}`))
+  console.log(`${LABEL} 探测 ${image} … ✓ node ${toolchain.nodeVer}、git ${toolchain.gitVer}（容器内）`)
+
+  // 4. --probe：打印计划，不建卷、不播种、不执行
+  if (probeOnly) {
+    console.log(`${LABEL} 选用镜像：${image}（${imageOrigin}）`)
+    console.log(`${LABEL} 卷：${volume}（固定卷名，先删后建——单实例语义，同机不可并行）`)
+    console.log(
+      `${LABEL} 资源：--cpus ${cpus} --memory ${memory} --shm-size ${DEFAULT_VOLUME_SHM_SIZE}（显式给足：默认限额下全量 vitest 随机超时）`,
+    )
+    console.log(`${LABEL} 内部将执行：${innerRehearse}（层：${requestedLayers.join(' + ')}）`)
+    console.log(
+      `${LABEL} 探针结束（--probe 只读：不建卷、不播种、不执行门禁、不写证据）。真跑：pnpm release:rehearse:wsl --volume`,
+    )
+    process.exit(0)
+  }
+
+  // 5. 卷重建：先删后建（拷贝只覆盖不清残留，上轮垃圾会触发内层干净树守卫）
+  const removed = spawnSync('wslc', buildVolumeRemoveArgs(volume), { encoding: 'utf8', windowsHide: true })
+  if (removed.status !== 0) {
+    console.log(
+      `${LABEL} 旧卷 ${volume} 不存在（或删除失败，首次运行为正常现象），继续创建：${describeExit(removed) || `退出码 ${removed.status}`}`,
+    )
+  }
+  const created = spawnSync('wslc', buildVolumeCreateArgs(volume), { encoding: 'utf8', windowsHide: true })
+  if (created.error) {
+    skip(volumeGuide(`无法调用 wslc volume create（${String(created.error.message)}）`))
+  }
+  if (created.status !== 0) {
+    skip(volumeGuide(`wslc volume create ${volume} 失败：${describeExit(created) || `退出码 ${created.status}`}`))
+  }
+  console.log(`${LABEL} 卷就绪：${volume}（已先删后建，干净卷）`)
+
+  // 6. 播种：单容器把 Windows 工作树拷进卷 + 原生 ext4 上 frozen install（实测约 25 秒）
+  const seedScript = buildVolumeSeedScript({ pnpmVersion: localPnpmVersion() })
+  const seedArgs = buildVolumeSeedArgs({ image, script: seedScript, winTop: winToplevel, volume })
+  console.log('')
+  console.log(`${LABEL} ▶ 播种：${winToplevel}（/src:ro，只读）→ 卷 ${volume}（/repo）+ pnpm install --frozen-lockfile`)
+  console.log('')
+  const seedRun = await runStreaming('wslc', seedArgs)
+  if (seedRun.code !== 0) {
+    console.log('')
+    console.error(`${LABEL} ✗ 播种失败（exit ${seedRun.code}${seedRun.signal ? `，signal ${seedRun.signal}` : ''}）`)
+    if (seedRun.tail) {
+      console.error(`${LABEL} ---- 播种容器日志尾部（最近 120 行）----`)
+      console.error(seedRun.tail)
+      console.error(`${LABEL} ---- 日志尾部结束（完整输出见上方）----`)
+    }
+    console.error(`${LABEL} 复跑前先清卷：wslc volume remove ${volume}`)
+    process.exit(1)
+  }
+
+  // 7. HEAD 一致性校验：卷内 git toplevel/HEAD 必须与 Windows 一致（防拷贝损坏/挂错树）
+  const headCheck = spawnSync('wslc', buildVolumeHeadCheckArgs({ image, volume }), {
+    encoding: 'utf8',
+    windowsHide: true,
+    maxBuffer: 8 * 1024 * 1024,
+  })
+  if (headCheck.error) fail(`卷内校验调用失败（${String(headCheck.error.message)}）`)
+  if (headCheck.status !== 0) fail(`卷内校验命令退出码 ${headCheck.status}${describeExit(headCheck)}`)
+  const volumeKv = parseKv(headCheck.stdout)
+  if (volumeKv.cd_fail) fail(`卷内无法 cd 到 ${CONTAINER_REPO_PATH}（播种退出码为 0 但仓库不可用？）——fail closed`)
+  const headInVolume = volumeKv.head ?? ''
+  if (!/^[0-9a-f]{40}$/i.test(headInVolume)) {
+    fail(`卷内 HEAD 形状非法（${headInVolume || '无输出'}）——fail closed`)
+  }
+  if (headInVolume.toLowerCase() !== headSha.toLowerCase()) {
+    fail(
+      `卷内 HEAD=${headInVolume.slice(0, 9)} ≠ Windows 侧 ${headSha.slice(0, 9)}（卷内不是本机提交树，证据会挂错树）`,
+    )
+  }
+  console.log(`${LABEL} 卷内 HEAD ${headInVolume.slice(0, 9)} 与 Windows 一致`)
+
+  // 8. 真跑：新容器自带 pnpm（全局安装不跨 --rm 容器存活），资源显式给足
+  const script = buildContainerScript({ passthrough, pnpmVersion: localPnpmVersion() })
+  const runArgs = buildVolumeRunArgs({ image, script, volume, cpus, memory })
+  const repro = `wslc ${runArgs.map((a) => (a.includes(' ') || a.includes("'") ? shellQuote(a) : a)).join(' ')}`
+
+  console.log('')
+  console.log(`${LABEL} ▶ 在卷 ${volume}（node ${toolchain.nodeVer} / git ${toolchain.gitVer}）内执行：`)
+  console.log(`${LABEL}   ${script}`)
+  console.log(`${LABEL}   资源：--cpus ${cpus} --memory ${memory} --shm-size ${DEFAULT_VOLUME_SHM_SIZE}`)
+  console.log(`${LABEL}   证据：卷内 ${CONTAINER_REPO_PATH}/${VOLUME_EVIDENCE_REL_PATH} → 跑完拷回真仓 .git/`)
+  console.log(`${LABEL}   注意：卷模式只读挂载工作树（/src:ro），不重写共享 node_modules`)
+  console.log('')
+
+  const result = await runStreaming('wslc', runArgs)
+
+  if (result.code !== 0) {
+    console.log('')
+    console.error(
+      `${LABEL} ✗ 卷侧 rehearse 失败（exit ${result.code}${result.signal ? `，signal ${result.signal}` : ''}）`,
+    )
+    if (result.tail) {
+      console.error(`${LABEL} ---- 卷侧日志尾部（最近 120 行）----`)
+      console.error(result.tail)
+      console.error(`${LABEL} ---- 日志尾部结束（完整输出见上方）----`)
+    }
+    console.error(`${LABEL} 该层在证据文件里已记 ok:false（fail closed：任一侧红都不放行；证据在卷内，拷回前可复核）。`)
+    console.error(
+      `${LABEL} 修复后重跑：pnpm release:rehearse:wsl --volume${passthrough.length ? ` ${passthrough.join(' ')}` : ''}；` +
+        `本机复现单步：${repro}`,
+    )
+    console.error(`${LABEL} 复跑前先清卷：wslc volume remove ${volume}`)
+    process.exit(1)
+  }
+
+  console.log('')
+  if (listOnly) {
+    console.log(`${LABEL} ✓ 卷侧 --list 已打印步骤（不执行门禁、不写证据）。去掉 --list 才会真跑`)
+    process.exit(0)
+  }
+
+  // 9. 证据拷回真仓 .git/（verify-rehearsal / pre-push 在 Windows 侧读真仓 git-dir）
+  const copyArgs = buildVolumeCopyEvidenceArgs({ image, winTop: winToplevel, volume })
+  const copyRun = await runStreaming('wslc', copyArgs)
+  if (copyRun.code !== 0) {
+    console.error(
+      `${LABEL} ✗ 证据拷回失败（exit ${copyRun.code}）——证据仍在卷内：${volume}:${CONTAINER_REPO_PATH}/${VOLUME_EVIDENCE_REL_PATH}`,
+    )
+    console.error(
+      `${LABEL} 手动拷回：wslc run --rm -v ${volume}:${CONTAINER_REPO_PATH} -v ${winToplevel}:${VOLUME_SRC_PATH} ` +
+        `${image} bash -c 'cp -f ${CONTAINER_REPO_PATH}/${VOLUME_EVIDENCE_REL_PATH} ${VOLUME_SRC_PATH}/${VOLUME_EVIDENCE_REL_PATH}'`,
+    )
+    process.exit(1)
+  }
+
+  // 10. 拷回后轻量核对：证据 JSON 可读、sha 与 Windows HEAD 一致（fail closed，防静默丢证据）
+  const evidencePath = join(winToplevel, '.git', 'oas-release-rehearsal.json')
+  let evidence
+  try {
+    evidence = JSON.parse(readFileSync(evidencePath, 'utf8'))
+  } catch (err) {
+    fail(`拷回的证据不可读（${evidencePath}）：${String(err.message).split('\n')[0]}——fail closed`)
+  }
+  if (String(evidence.sha ?? '').toLowerCase() !== headSha.toLowerCase()) {
+    fail(`拷回的证据 sha=${evidence.sha} ≠ Windows HEAD ${headSha}——fail closed`)
+  }
+  const layerSummary = requestedLayers
+    .map((layer) => `${layer}=${evidence[layer]?.ok === true ? 'ok' : 'not-ok'}`)
+    .join('、')
+
+  console.log(`${LABEL} ✓ 卷侧 rehearse 通过（层：${requestedLayers.join(' + ')}）`)
+  console.log(`${LABEL} ✓ 证据已拷回真仓 ${evidencePath}（sha ${String(evidence.sha).slice(0, 9)}；${layerSummary}）`)
+  console.log(
+    `${LABEL} 核验：node scripts/release/verify-rehearsal.mjs <版本 x.y.z> HEAD（同格式同文件，pre-push 可直接核）`,
+  )
+  console.log(`${LABEL} 清理：wslc volume remove ${volume}（下次跑会先删后建，不删也只占少量卷空间）`)
+  console.log(`${LABEL} 提示：卷模式未触碰 Windows 侧 node_modules（工作树只读挂载），无需重跑 pnpm install`)
+  process.exit(0)
+}
+
+if (volumeMode) {
+  await runVolumeMode()
   process.exit(0)
 }
 
