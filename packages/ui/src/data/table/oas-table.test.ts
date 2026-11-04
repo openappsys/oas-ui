@@ -484,6 +484,71 @@ describe('OASTable 虚拟滚动', () => {
     expect(el.shadowRoot!.querySelectorAll('[part="loading-row"]').length).toBe(1)
     expect(rows(el).length).toBe(0)
   })
+
+  it('虚拟滚动 × merge 列：不合并 + devWarn 一次（对齐 windowed 先例；曾完全静默）', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const el = mount({
+      height: '200',
+      'row-height': '40',
+      columns: JSON.stringify([
+        { key: 'name', title: '姓名', merge: true },
+        { key: 'age', title: '年龄' },
+      ]),
+      data: JSON.stringify([
+        { name: '同', age: 1 },
+        { name: '同', age: 2 },
+        { name: '异', age: 3 },
+      ]),
+    })
+    // 合并被跳过：三行各自渲染 name 单元格（合并会把第 2 个 td 删掉）
+    const tds = el.shadowRoot!.querySelectorAll('tbody td[data-col="name"]')
+    expect(tds.length).toBe(3)
+    expect(warn).toHaveBeenCalledTimes(1)
+    expect(warn.mock.calls[0]![0]).toContain('merge')
+    warn.mockRestore()
+  })
+
+  it('虚拟滚动 × span-method：不合并 + devWarn 一次（span 覆盖格不生成）', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const el = mount({
+      height: '200',
+      'row-height': '40',
+      columns: JSON.stringify([
+        { key: 'name', title: '姓名' },
+        { key: 'age', title: '年龄' },
+      ]),
+      data: JSON.stringify([
+        { name: '甲', age: 1 },
+        { name: '乙', age: 2 },
+      ]),
+    })
+    el.spanMethod = () => ({ rowspan: 2, colspan: 1 })
+    // span-method 不生效：两行两个 name 单元格都在
+    const tds = el.shadowRoot!.querySelectorAll('tbody td[data-col="name"]')
+    expect(tds.length).toBe(2)
+    expect(warn).toHaveBeenCalledTimes(1)
+    expect(warn.mock.calls[0]![0]).toContain('虚拟滚动')
+    warn.mockRestore()
+  })
+
+  it('非虚拟 × merge 列：合并不告警（既有行为零变化）', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const el = mount({
+      columns: JSON.stringify([
+        { key: 'name', title: '姓名', merge: true },
+        { key: 'age', title: '年龄' },
+      ]),
+      data: JSON.stringify([
+        { name: '同', age: 1 },
+        { name: '同', age: 2 },
+      ]),
+    })
+    const tds = el.shadowRoot!.querySelectorAll('tbody td[data-col="name"]')
+    expect(tds.length).toBe(1)
+    expect(tds[0]!.getAttribute('rowspan')).toBe('2')
+    expect(warn).not.toHaveBeenCalled()
+    warn.mockRestore()
+  })
 })
 
 describe('OASTable 属性/attribute 声明式通道', () => {

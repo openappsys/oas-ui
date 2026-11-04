@@ -333,6 +333,14 @@ const WINDOWED_SPAN_HINT =
   '[oas-table] windowed 模式下 merge 列 / span-method 由宿主负责（跨切片边界的合并会与占位行相互腐蚀）：已跳过本地合并，需要合并请关闭 windowed 或由宿主提供已合并的数据'
 
 /**
+ * 本地虚拟模式下 merge 列 / span-method 被跳过的告警文案（实例级去重一次）。
+ * 与 windowed 同因（窗口占位与跨行合并相互腐蚀，见 WINDOWED_SPAN_HINT），属既有边界——
+ * 修复「虚拟静默 vs windowed 告警」的旧账不一致：配置在场即显式提示，不渲染任何变化。
+ */
+const VIRTUAL_SPAN_HINT =
+  '[oas-table] 虚拟滚动模式下 merge 列 / span-method 不生效（窗口占位与跨行合并相互腐蚀，与 windowed 同因）：已跳过本地合并，需要合并请关闭虚拟滚动（不设 height 属性）'
+
+/**
  * 可选视觉协议（visual-total / visual-start）配置无效/不完整的告警文案（实例级去重一次）。
  * 两属性必须同时有效才启用（缺失一个 / 非法值 / visual-total 小于数据 total 均视为无效），
  * 整体回落当前数据窗口模型——不部分生效，防宿主误以为视觉坐标已被组件采纳。
@@ -1455,6 +1463,8 @@ export class OASTableBase extends OASElement {
   private winOpsWarned = false
   /** windowed × merge/span-method 禁用告警去重（实例级一次） */
   private winSpanWarned = false
+  /** 本地虚拟 × merge/span-method 禁用告警去重（实例级一次；对齐 windowed 先例补的旧账） */
+  private virtualSpanWarned = false
   /** windowed 切片越界（window-start + data.length > total）告警去重（实例级一次） */
   private winSliceWarned = false
   /** 可选视觉协议解析结果（parse 时刷新；null = 未生效，回落当前数据窗口模型）：
@@ -2300,6 +2310,11 @@ export class OASTableBase extends OASElement {
       // 切片越界（window-start + 已装载行数 > total）：宿主给的切片超出全量范围时曾完全静默，
       // 宿主会误以为切片全部生效——显式提示一次（对齐 resource 同款契约，不改变渲染行为）。
       this.warnWindowedSliceOnce()
+    }
+    // 本地虚拟 × merge 列 / span-method：跳过合并与 windowed 同因（占位行与跨界合并相互腐蚀）——
+    // 对齐 windowed 告警先例补旧账（曾完全静默）；仅提示，渲染路径零变化
+    if (virtual && !this.windowedOn() && (this._spanMethod !== null || this.effectiveColumns().some((c) => c.merge))) {
+      this.warnVirtualSpanOnce()
     }
     // table-layout：fixed/auto 透传 table 元素（列宽定宽场景配 fixed；缺省/非法不写——浏览器 auto 基线）
     const tableLayout = this.getAttr('table-layout', '')
@@ -3993,6 +4008,13 @@ export class OASTableBase extends OASElement {
     if (this.winSpanWarned) return
     this.winSpanWarned = true
     devWarn(WINDOWED_SPAN_HINT)
+  }
+
+  /** 本地虚拟下 merge 列 / span-method 跳过告警（实例级去重一次） */
+  private warnVirtualSpanOnce(): void {
+    if (this.virtualSpanWarned) return
+    this.virtualSpanWarned = true
+    devWarn(VIRTUAL_SPAN_HINT)
   }
 
   /**
