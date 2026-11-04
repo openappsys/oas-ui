@@ -489,7 +489,7 @@ Touch adaptation: HTML5 drag-and-drop (dragstart) does not work on touch screens
   </div>
 </DemoBlock>
 
-A column with `serialNumber: true` renders the row number (starting from 1, not reading a data field); a column with `ellipsis: true` truncates overflowing content to a single line with an ellipsis (hover `title` shows the full text).
+A column with `serialNumber: true` renders the row number (starting from 1, not reading a data field); a column with `ellipsis: true` truncates overflowing content to a single line with an ellipsis (hover `title` shows the full text); the three-state `wrap` semantics are covered in the "Multi-line Cells" section above.
 
 ## Grouped header
 
@@ -2093,7 +2093,7 @@ const visible = applyQuery(orders, state.query)
 | `getDisplaySnapshot` | `getDisplaySnapshot(): TableDisplaySnapshot \| null` | Readonly display-set snapshot for range capabilities: maps row keys to absolute data-row and flat scroll indices (windowed offsets included), with a structural fingerprint and keysByIndex. Built lazily and shared; callers must not mutate the returned maps |
 | `translateText` | `translateText(key: string, params?: Record<string, string \| number>): string` | Translate built-in copy (nearest config-provider / locale; the capability controller and external custom templates look up text here) |
 | `paintCell` | `paintCell(td: HTMLTableCellElement, col: TableColumn, row: Record<string, unknown>): void` | Repaint the cell as regular display content: clears it and mounts cellNode (respecting rich content from render/cellTemplate) |
-| `scrollToRow` | `scrollToRow(key: string): boolean` | `scrollToRow(key: string): boolean`: scroll to the given row (virtual / windowed viewports only; returns false otherwise; non-windowed virtual supports flat data only). Host-recipe anchor for windowed tree lazy-loading: call it after a total-changing refeed to restore the viewport (emits one reason=scroll oas-window-request, which is expected) |
+| `scrollToRow` | `scrollToRow(key: string): boolean` | `scrollToRow(key: string): boolean`: scroll to the given row (virtual / windowed viewports only; returns false otherwise; non-windowed virtual supports flat data only). Host-recipe anchor for windowed tree lazy-loading: call it after a total-changing refeed to restore the viewport (the anchoring scroll goes through the scroll channel and may emit a reason='scroll' oas-window-request - same semantics as scroll-driven window refills) |
 | `notifyEdit` | `notifyEdit(kind: 'edit' \| 'edit-cancel' \| 'edit-invalid', detail: TableEditDetail): void` | Dispatch the edit result event (commit/cancel; detail is assembled by the edit capability). The event name is written as a literal here |
 | `setColumnOrder` | `setColumnOrder(keys: string[]): void` | Update the column display order (writes back column-keys and re-renders; dispatches oas-column-order so the host can persist it) |
 | `setColumnWidth` | `setColumnWidth(key: string, width: number): void` | Update the given column width (writes back the matching width in columns and re-renders; dispatches oas-column-resize). When the property column definitions contain functions, updates the in-memory definition |
@@ -2152,7 +2152,6 @@ const visible = applyQuery(orders, state.query)
 | `editable` | Column editable (double-click a cell to edit) | — | — |
 | `editor` | Editor type/configuration (select/input etc.) | — | — |
 | `ellipsis` | Single-line truncation with ellipsis for overflowing content (full text on hover title) | — | — |
-| `wrap` | Three-state cell wrapping: true=allow wrapping (row height still capped by row-height under virtual scroll); false=force single-line ellipsis truncation (no title); unset=natural wrapping non-virtual, single-line truncation under virtual scroll | — | — |
 | `filterable` | Column filterable (filter trigger rendered in the header) | — | — |
 | `filters` | Column filter options configuration | — | — |
 | `fixed` | Column fixed (left/right pinning) | — | — |

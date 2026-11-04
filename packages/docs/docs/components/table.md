@@ -489,7 +489,7 @@ table.addEventListener('oas-edit', (e) => {
   </div>
 </DemoBlock>
 
-`serialNumber: true` 的列渲染行序号（从 1 递增，不取数据字段值）；`ellipsis: true` 的列内容超出列宽时单行截断显示省略号（悬停 `title` 查看全文）。
+`serialNumber: true` 的列渲染行序号（从 1 递增，不取数据字段值）；`ellipsis: true` 的列内容超出列宽时单行截断显示省略号（悬停 `title` 查看全文）；`wrap` 的三态换行语义见上方「多行单元格」节。
 
 ## 多级表头
 
@@ -2080,7 +2080,7 @@ const visible = applyQuery(orders, state.query)
 | `getDisplaySnapshot` | `getDisplaySnapshot(): TableDisplaySnapshot \| null` | 展示集只读快照：供 range 等能力按行键解析离窗坐标与扁平滚动位置；map 复用缓存，调用方不得修改 |
 | `translateText` | `translateText(key: string, params?: Record<string, string \| number>): string` | 翻译内置文案（就近 config-provider / locale；能力 controller 与外部自定义模板经此取词）。 |
 | `paintCell` | `paintCell(td: HTMLTableCellElement, col: TableColumn, row: Record<string, unknown>): void` | 重绘单元格为常规展示内容：清空后按 cellNode 挂载（尊重 render/cellTemplate 富内容）。 |
-| `scrollToRow` | `scrollToRow(key: string): boolean` | `scrollToRow(key: string): boolean`：滚动到指定行（virtual / windowed 视口生效，其余形态返回 false；virtual 非 windowed 仅支持扁平数据）。windowed 树形懒装载收起锚定的宿主配方底座：回填 total 突变后调它复位视口（会触发一次 reason=scroll 的 oas-window-request，属预期） |
+| `scrollToRow` | `scrollToRow(key: string): boolean` | `scrollToRow(key: string): boolean`：滚动到指定行（virtual / windowed 视口生效，其余形态返回 false；virtual 非 windowed 仅支持扁平数据）。windowed 树形懒装载收起锚定的宿主配方底座：回填 total 突变后调它复位视口（锚定滚动走 scroll 通道，可能派发 reason=scroll 的 oas-window-request——与滚动驱动的窗口回填同语义） |
 | `notifyEdit` | `notifyEdit(kind: 'edit' \| 'edit-cancel' \| 'edit-invalid', detail: TableEditDetail): void` | 派发编辑结果事件（提交/取消/校验拒绝；detail 由 edit 能力组好）。事件名以字面量书写在此， |
 | `setColumnOrder` | `setColumnOrder(keys: string[]): void` | 更新列显示顺序（写回 column-keys 并重渲染；派发 oas-column-order，宿主可做持久化） |
 | `setColumnWidth` | `setColumnWidth(key: string, width: number): void` | 更新指定列宽（写回 columns 对应列 width 并重渲染；派发 oas-column-resize）。property 列定义含函数时改内存 |
@@ -2139,7 +2139,6 @@ const visible = applyQuery(orders, state.query)
 | `editable` | 列可编辑（双击单元格进编辑态） | — | — |
 | `editor` | 编辑器类型/配置（select/input 等） | — | — |
 | `ellipsis` | 列内容超宽单行截断省略号（悬停 title 看全文） | — | — |
-| `wrap` | 多行换行三态：true=允许换行（虚拟滚动下行高仍受 row-height 限制）；false=强制单行省略截断（无 title）；缺省=非虚拟自然换行、虚拟滚动单行截断 | — | — |
 | `filterable` | 列可过滤（表头渲染筛选触发器） | — | — |
 | `filters` | 列筛选项配置 | — | — |
 | `fixed` | 列固定（left/right 吸附） | — | — |
