@@ -127,6 +127,7 @@
 - **图标全量注册表零进入按需链（结构断言）**：`packages/icons/dist/registry.js` 不得出现在**已测单组件链**闭包（全量入口链内含有属预期——它经 `@oas-ui/icons/register` 注册全量集以开箱即用）。
 - **L3 分层门禁（结构断言，2026-10-28 起）**：登记表驱动——注册型 L3 必须含于 L1、helper 型 L3 不得混入 L1、默认 table 链零 L3（含 edit）、table 家族 L3 独立计量且各有独立预算档（见 `scripts/perf/lib/l3-registry.mjs`）。
 - **L1 主链归因审计（2026-11-04，复制 gantt 链 2026-11-02 方法论）**：全量入口 / table 默认 / form / 9 个 CDN 族包逐模块归因 + 死文件 / 双实现 / 族包重复源扫描——结论：**零真死文件**（34 个「不在全量入口闭包」文件全部按设计：24 个 helper 型 L3 + 4 个纯核入口 + ssr 子路径 + 5 个仅 barrel 无消费者）、**族包重复源 0**、双实现模式级项 `normalizeChoice` ×17 已收敛为 `shared/choice.ts` 单一实现（收益为维护性；逐文件 gzip 口径持平，bundled 口径被同日并行批次盖过无法隔离测量，如实记录）。**四条链扩展前置解除**（同 gantt 链口径）。审计报告存档 `.opencode/tmp/archive-2026-11-04/l1-chain-audit.md`；遗留观察项（不修）：4 个无消费者 barrel（删除收益≈0）、<120B 逐字双实现 5 组、input 系 4-arg `normalizeChoice` warn 集成变体。
+- **D2 扫尾审计（2026-11-04 第二批，同日）**：cdn.js union（500 模块重复源 0）+ button/tableEdit/jsonViewer/diffViewer/infinite/gantt/select 七链归因 + core/icons/i18n/ssr 包级死文件 + 全组件目录逐字双实现严判（**清零**）——真修复仅一项：core dist 陈旧残留 `perceptual-contrast.js`（src 已删、exports 无、零引用；tsc 直出无 clean 步骤所致）已删并重建验证；i18n `all-register`（测试消费者）/ ssr `not-ssr`（脚本消费者）为扫描口径误报，记录不修。未用导出扫描补 re-export 追踪后剩余命中（i18n registry/core translator 等）为**动态 import + 命名空间消费不可见**类，非真实冗余；扫描器若固化 CI 需补这两类追踪或该维度降 WARN。**D2 全部入口审计至此覆盖完毕**。报告存档 `.opencode/tmp/archive-2026-11-04/l1-chain-audit-sweep.md`。
 
 <!-- BEGIN:generated:perf-baseline:budgets -->
 | 预算项 | 实测 gzip | 预算（制式） | 依据 |
