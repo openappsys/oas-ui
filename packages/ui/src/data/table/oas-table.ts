@@ -5,6 +5,7 @@ import { addOutsideDismiss, removeOutsideDismiss } from '../../shared/outside-di
 import { normalizeSizeStrict, THREE_SIZES } from '../../shared/size.js'
 import { computeVirtualWindow } from '../virtual-list/oas-virtual-list.js'
 import { HeightCache, computeDynamicWindow } from '../virtual-list/dynamic-height.js'
+import { locateAnchor, restoreAnchor, type RowAnchor } from './auto-height/geometry.js'
 import { computePosition, getViewport } from '../../overlay/floating/index.js'
 import { registeredTableCapabilities, onTableCapabilityRegistered } from './oas-table-capability.js'
 // 行内交互宿主排除清单（行点击/双击编辑共用的单一事实来源，含维护纪律注释）
@@ -191,6 +192,25 @@ export interface TableEditCapability {
   settleEdit(): void
 }
 
+/**
+ * 逐行动态行高几何提供者（`row-auto-height` 属性 + `@oas-ui/ui/data/table/auto-height`
+ * 注册能力后生效）。坐标口径 = 展示序行下标（expand/group 条目计入，与渲染窗口同口径）。
+ * 核心只通过本接口消费几何：窗口计算 / 行顶偏移 / 行高 / 总高——实现侧维护测量与前缀和。
+ */
+export interface TableAutoHeightCapability {
+  /** 渲染前配置展示集行数与预估行高（行数变 = 高度表重置重测；同值调用幂等廉价） */
+  configure(count: number, estimated: number): void
+  /** 行 i 实测回填（ResizeObserver 通道）；返回 true = 前缀和变化、需要 tbody 重建 + 锚定补偿 */
+  measure(i: number, h: number): boolean
+  /** 行顶偏移前缀数组（长度 count+1，只读视图；调用前已增量重算） */
+  offsets(): number[]
+  offsetOf(i: number): number
+  heightAt(i: number): number
+  total(): number
+  /** 可视窗口：首可见行 = 行底严格越过 scrollTop 的行（与 computeDynamicWindow 同口径） */
+  window(scrollTop: number, viewport: number): { start: number; end: number }
+}
+
 /** 结构级渲染钩子集合（structuralRenderers property 通道）：接管表头行/表头单元格/正文行/
     正文单元格四个结构槽的「包裹/增强/替换」。钩子在某元素**默认装配完成后**调用——默认内容、
     事件与能力装饰（edit/format/range 装饰链在内层）已全部就位，宿主可包 wrapper、加 class、
@@ -344,6 +364,16 @@ const WINDOWED_SPAN_HINT =
 const VIRTUAL_SPAN_HINT =
   '[oas-table] 虚拟滚动模式下 merge 列 / span-method 不生效（窗口占位与跨行合并相互腐蚀，与 windowed 同因）：已跳过本地合并，需要合并请关闭虚拟滚动（不设 height 属性）'
 
+/** row-auto-height 属性在场但 auto-height 能力未注册的告警文案（实例级去重一次）。
+ *  对齐 EDIT_CAPABILITY 先例：opt-in 请求了未注册的能力——静默按定高渲染有欺骗性。 */
+const AUTO_HEIGHT_CAPABILITY_HINT =
+  '[oas-table] 检测到 row-auto-height 属性，但 @oas-ui/ui/data/table/auto-height 能力未注册（未 import）：动态行高未生效，按定高渲染。import 该子路径一次即可激活'
+
+/** row-auto-height × windowed 的版本范围告警文案（实例级去重一次）。
+ *  windowed 逐行动态行高依赖 windowed flow 几何改造（随该批交付）：当前按定高渲染，不静默忽略。 */
+const AUTO_HEIGHT_WINDOWED_HINT =
+  '[oas-table] row-auto-height 当前仅支持本地虚拟模式（windowed 逐行动态行高随 windowed 几何改造交付）：windowed 下按定高渲染'
+
 /**
  * 可选视觉协议（visual-total / visual-start）配置无效/不完整的告警文案（实例级去重一次）。
  * 两属性必须同时有效才启用（缺失一个 / 非法值 / visual-total 小于数据 total 均视为无效），
@@ -428,6 +458,10 @@ const STYLE = `
 }
 .table-scroll {
   overflow: auto;
+  /* 动态行高（row-auto-height）下 spacer 高度与内容变化频繁：禁浏览器滚动锚定——
+     它会与组件自身的身份锚定补偿（auto-height 模块）双重补偿、视口抖动（virtual-list
+     同款事故有注释记载） */
+  overflow-anchor: none;
 }
 table {
   width: 100%;
@@ -1316,6 +1350,7 @@ export class OASTableBase extends OASElement {
       'loading',
       'height',
       'row-height',
+      'row-auto-height',
       'stripe',
       'bordered',
       'expanded',
@@ -1409,6 +1444,12 @@ export class OASTableBase extends OASElement {
   private _expandable = false
   /** 行内编辑能力 controller（经能力注册表注入；无则编辑相关渲染挂接跳过 + dev 告警） */
   private editCap: TableEditCapability | null = null
+  /** 动态行高几何提供者（'auto-height' 能力注入；row-auto-height 属性在场且非 windowed 时消费） */
+  private autoHeightCap: TableAutoHeightCapability | null = null
+  /** 上次渲染态的锚点缓存（身份+行内偏移 + 捕获时的 scrollTop/写入序）：
+      测量在两次渲染之间就已改动前缀和，同步时必须用「测量前几何」捕获的锚点——
+      渲染时顺手缓存，scrollTop/写入序未变则直接复用（见 requestAutoHeightSync） */
+  private autoAnchor: { anchor: RowAnchor; scrollTop: number; seq: number } | null = null
   /** structural-render 能力控制器（注册型 L3；未 import 时恒 null，渲染挂接点判空跳过零开销） */
   private structuralCap: TableStructuralRenderers | null = null
   /** 结构槽异常守卫的去重台账：同槽同错只 devWarn 一次（key = slot + 错误文本） */
@@ -1494,6 +1535,10 @@ export class OASTableBase extends OASElement {
   private winSpanWarned = false
   /** 本地虚拟 × merge/span-method 禁用告警去重（实例级一次；对齐 windowed 先例补的旧账） */
   private virtualSpanWarned = false
+  /** row-auto-height 能力未注册告警去重（实例级一次） */
+  private autoHeightCapWarned = false
+  /** row-auto-height × windowed 版本范围告警去重（实例级一次） */
+  private autoHeightWindowedWarned = false
   /** windowed 切片越界（window-start + data.length > total）告警去重（实例级一次） */
   private winSliceWarned = false
   /** 可选视觉协议解析结果（parse 时刷新；null = 未生效，回落当前数据窗口模型）：
@@ -1571,6 +1616,7 @@ export class OASTableBase extends OASElement {
       this.addController(controller)
       if (name === 'edit') this.editCap = controller as unknown as TableEditCapability
       if (name === 'structural-render') this.structuralCap = controller as unknown as TableStructuralRenderers
+      if (name === 'auto-height') this.autoHeightCap = controller as unknown as TableAutoHeightCapability
       const decorator = controller as unknown as TableCellDecorator
       if (typeof decorator.decorateCell === 'function') {
         this.cellDecorators.push(decorator)
@@ -2345,6 +2391,8 @@ export class OASTableBase extends OASElement {
     if (virtual && !this.windowedOn() && (this._spanMethod !== null || this.effectiveColumns().some((c) => c.merge))) {
       this.warnVirtualSpanOnce()
     }
+    // row-auto-height：能力未注册 / windowed 范围外 → 显式提示（opt-in 请求不静默忽略）
+    this.warnAutoHeightConfigOnce()
     // table-layout：fixed/auto 透传 table 元素（列宽定宽场景配 fixed；缺省/非法不写——浏览器 auto 基线）
     const tableLayout = this.getAttr('table-layout', '')
     const tableEl = this.shadow.querySelector('table')
@@ -3037,8 +3085,21 @@ export class OASTableBase extends OASElement {
     scrollTop = this.wrap ? this.wrap.scrollTop : 0,
     dataOrdinal?: number[],
   ): void {
-    const win = computeVirtualWindow(scrollTop, this.tableHeight(), this.rowHeightPx(), display.length)
+    // row-auto-height：渲染前配置展示集行数与预估行高（同值幂等；行数变化由能力侧重置重测）
+    if (this.autoHeightOn() && this.autoHeightCap) {
+      this.autoHeightCap.configure(display.length, this.rowHeightPx())
+      // 渲染态锚点缓存：此刻前缀和是「测量前几何」，正是同步补偿要参照的用户视角
+      this.autoAnchor = {
+        anchor: locateAnchor(this.autoHeightCap.offsets(), scrollTop),
+        scrollTop,
+        seq: this.scrollWriteSeq,
+      }
+    }
+    const win = this.rowWindow(scrollTop, this.tableHeight(), display.length)
     const colSpan = this.columnCount()
+    // 动态行高模式下给渲染行打点展示序下标（measure 回填映射用；data-row-index 是数据行号，
+    // expand/group 条目使其与展示序不一致——不能用）——仅动态模式打点，定红线路径零变化
+    const stampDisplayIdx = this.autoHeightOn()
     // 数据行序前缀（不含 expand/group 行）：虚拟窗口行的 rowIndex（cell-click / edit / ARIA）
     // 须与全量展示集同口径。缓存未携带时（外部直调兜底）就地补扫一次
     const ordinals = dataOrdinal ?? this.computeOrdinals(display).ordinals
@@ -3050,7 +3111,8 @@ export class OASTableBase extends OASElement {
       for (let i = 0; i < stickyEnd; i++) {
         const f = display[i]!
         const tr = this.buildVirtualRow(f, i, rowKey, selected, expanded, layout, ordinals[i]!)
-        tr.style.height = `${this.rowHeightPx()}px`
+        tr.style.height = `${this.rowHeightAt(i)}px`
+        if (stampDisplayIdx) tr.dataset.oasDisplayIdx = String(i)
         body.appendChild(tr)
         if (f.kind === 'data') this.structuralBodyRow(tr, f.row, ordinals[i]!)
       }
@@ -3061,14 +3123,15 @@ export class OASTableBase extends OASElement {
     topSpacer.className = 'spacer'
     const topTd = document.createElement('td')
     topTd.colSpan = colSpan
-    topTd.style.height = `${(windowStart - stickyEnd) * this.rowHeightPx()}px`
+    topTd.style.height = `${this.rowTopOffset(windowStart) - this.rowTopOffset(stickyEnd)}px`
     topSpacer.appendChild(topTd)
     body.appendChild(topSpacer)
 
     for (let i = windowStart; i < win.end; i++) {
       const f = display[i]!
       const tr = this.buildVirtualRow(f, i, rowKey, selected, expanded, layout, ordinals[i]!)
-      tr.style.height = `${this.rowHeightPx()}px`
+      tr.style.height = `${this.rowHeightAt(i)}px`
+      if (stampDisplayIdx) tr.dataset.oasDisplayIdx = String(i)
       body.appendChild(tr)
       if (f.kind === 'data') this.structuralBodyRow(tr, f.row, ordinals[i]!)
     }
@@ -3077,7 +3140,7 @@ export class OASTableBase extends OASElement {
     bottomSpacer.className = 'spacer'
     const bottomTd = document.createElement('td')
     bottomTd.colSpan = colSpan
-    bottomTd.style.height = `${(display.length - win.end) * this.rowHeightPx()}px`
+    bottomTd.style.height = `${this.rowTopOffset(display.length) - this.rowTopOffset(win.end)}px`
     bottomSpacer.appendChild(bottomTd)
     body.appendChild(bottomSpacer)
   }
@@ -4059,6 +4122,22 @@ export class OASTableBase extends OASElement {
     devWarn(VIRTUAL_SPAN_HINT)
   }
 
+  /** row-auto-height 能力未注册 / windowed 版本范围外告警（各自实例级去重一次） */
+  private warnAutoHeightConfigOnce(): void {
+    if (!this.hasAttr('row-auto-height')) return
+    if (this.autoHeightCap === null) {
+      if (this.autoHeightCapWarned) return
+      this.autoHeightCapWarned = true
+      devWarn(AUTO_HEIGHT_CAPABILITY_HINT)
+      return
+    }
+    if (this.windowedOn()) {
+      if (this.autoHeightWindowedWarned) return
+      this.autoHeightWindowedWarned = true
+      devWarn(AUTO_HEIGHT_WINDOWED_HINT)
+    }
+  }
+
   /**
    * windowed 切片越界告警（window-start + 已装载行数 > total；实例级去重一次，对齐 resource 口径）。
    * 仅提示不改行为：虚拟路径按 total 夹取（越界行不进渲染窗口），非虚拟路径以「已装载行即视口内容」
@@ -4758,6 +4837,83 @@ export class OASTableBase extends OASElement {
     return Math.max(1, Math.floor(viewport / this.rowHeightPx()))
   }
 
+  // ==================== row-auto-height：逐行动态行高几何接缝 ====================
+  // 定高路径全部走原 computeVirtualWindow / rowHeightPx 口径，逐字节不变（零变化红线）；
+  // 动态路径只在 autoHeightOn() 为真时切换，几何由注册能力（HeightCache 前缀和）提供。
+
+  /** 动态行高是否生效：属性在场 + 能力已注册 + 本地虚拟 */
+  private autoHeightOn(): boolean {
+    return this.hasAttr('row-auto-height') && this.autoHeightCap !== null && this.isVirtual() && !this.windowedOn()
+  }
+
+  /** 动态路径视口高：真实 clientHeight（tableHeight 不含横滚条、会被 sticky 表头覆盖——定高路径保持零变化） */
+  private dynamicViewport(): number {
+    return this.wrap?.clientHeight ?? this.tableHeight()
+  }
+
+  /** 可视行窗口：定高走共享 computeVirtualWindow；动态走能力的前缀和二分 */
+  private rowWindow(scrollTop: number, viewport: number, count: number): { start: number; end: number } {
+    const cap = this.autoHeightCap
+    if (this.autoHeightOn() && cap) return cap.window(scrollTop, this.dynamicViewport())
+    return computeVirtualWindow(scrollTop, viewport, this.rowHeightPx(), count)
+  }
+
+  /** 行 i 顶偏移（spacer 高度用）：定高 i×rowH；动态前缀和查询 */
+  private rowTopOffset(i: number): number {
+    const cap = this.autoHeightCap
+    if (this.autoHeightOn() && cap) return cap.offsetOf(i)
+    return i * this.rowHeightPx()
+  }
+
+  /** 行 i 渲染高（tr 内联定高）：定高 rowHeightPx；动态取缓存/预估值（tr 高在表格布局里是
+      min 语义——只增不减，内容变矮须由能力侧先复位重测，见 auto-height 模块） */
+  private rowHeightAt(i: number): number {
+    const cap = this.autoHeightCap
+    if (this.autoHeightOn() && cap) return cap.heightAt(i)
+    return this.rowHeightPx()
+  }
+
+  /**
+   * auto-height 能力回调：测量回填改变前缀和后，身份锚定 + tbody-only 重建。
+   * 不走 update()（update 按像素恢复滚动、且 settleEdit 会取消编辑——编辑中的行本轮跳过，
+   * 缓存已更新，编辑结束后的下一次同步自然带上）。锚点 =（行身份, 行内偏移），见 geometry.ts。
+   */
+  requestAutoHeightSync(): void {
+    const cap = this.autoHeightCap
+    const body = this.shadow.querySelector('tbody')
+    if (!cap || !this.wrap || !body || !this.autoHeightOn()) return
+    if (body.querySelector('td.editing')) return
+    // 锚点来源：渲染态缓存（scrollTop/写入序未变 = 用户视角未动，且缓存捕获于测量前几何）；
+    // 否则现场捕获——此刻几何即上次渲染态（测量已应用的重绘会把缓存刷新到新渲染态）
+    const stored = this.autoAnchor
+    const anchor =
+      stored && stored.scrollTop === this.wrap.scrollTop && stored.seq === this.scrollWriteSeq
+        ? stored.anchor
+        : locateAnchor(cap.offsets(), this.wrap.scrollTop)
+    // 先按新前缀和解析恢复位，再以恢复位重建窗口——重建直接落在最终视口位置，
+    // 避免「按旧位重建 + 事后写 scrollTop」造成窗口与视口错位一节（内容铺满后写位）
+    const top = restoreAnchor(cap.offsets(), anchor)
+    this.rebuildVirtualBody(body, top)
+    if (Math.abs(top - this.wrap.scrollTop) > 0.5) {
+      this.ignoreNextScroll = true
+      this.wrap.scrollTop = top
+    }
+  }
+
+  /** tbody-only 重建（与滚动帧同源的数据口径；不 settleEdit、不请求窗口；st 显式传最终视口位） */
+  private rebuildVirtualBody(body: HTMLElement, st = this.wrap ? this.wrap.scrollTop : 0): void {
+    const rowKey = this.getAttr('row-key', 'key')
+    const selected = this.getAttr('selected', '').split(',').filter(Boolean)
+    const expanded = new Set(this.getAttr('expanded', '').split(',').filter(Boolean))
+    const vis = this.displayWithCache(this.resolveSorts(), rowKey, this.groupByEffective(), expanded)
+    this._logicalRowCount = vis.logicalRows
+    body.innerHTML = ''
+    this.renderVirtualBody(body, vis.display, rowKey, selected, expanded, this.computeLayout(), st, vis.ordinals)
+    this.applyGridSemantics()
+    this.applyRowAriaSemantics()
+    this.applyStickyRows()
+  }
+
   /** 聚焦网格单元格：直接 focus + 滚入视口 + 记忆坐标（Tab 再次进入续用） */
   private focusGridCell(row: number, col: number): void {
     const td = this.gridCellAt(row, col)
@@ -5134,12 +5290,10 @@ export class OASTableBase extends OASElement {
       // 帧内若有更新的主动写入（键盘导航 / 程序化滚动），新写入优先——旧值不回写
       this.restoreScrollPosition(seqAtSave, st, sl)
       // windowed：滚动事件 detail 的窗口按全量行数计（绝对行下标；与 oas-window-request 同坐标系）
-      const win = computeVirtualWindow(
-        st,
-        this.tableHeight(),
-        this.rowHeightPx(),
-        this.windowedOn() ? this._winMode.total : display.length,
-      )
+      // row-auto-height（本地虚拟）：窗口走动态几何前缀和，坐标仍按展示序行号——一行=一视觉行，仅像素不同
+      const win = this.windowedOn()
+        ? computeVirtualWindow(st, this.tableHeight(), this.rowHeightPx(), this._winMode.total)
+        : this.rowWindow(st, this.tableHeight(), display.length)
       this.emit('scroll', { scrollTop: st, start: win.start, end: win.end })
     })
   }
