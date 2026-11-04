@@ -79,6 +79,15 @@ export class HeightCache {
     return this.offsetOf(this.count)
   }
 
+  /** 显式失效：清空实测高表与前缀和（下次查询整体回退预估重算）。
+      展示结构变化（排序/过滤/翻页/同数量数据替换）时行数不变、configure 不会自清——
+      由消费方在结构签名变化时调用（row-auto-height 的 invalidate 通道） */
+  reset(): void {
+    this.heights.clear()
+    this.prefix = new Array(this.count + 1).fill(0)
+    this.dirtyFrom = 0
+  }
+
   /** 行偏移前缀视图（长度 count+1，调用方只读；增量维护，不逐帧复制） */
   offsets(): number[] {
     this.sync()

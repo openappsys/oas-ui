@@ -23,6 +23,9 @@ class StubAutoHeight implements TableAutoHeightCapability {
   measure(i: number, h: number): boolean {
     return this.cache.measure(i, h)
   }
+  invalidate(): void {
+    this.cache.reset()
+  }
   offsets(): number[] {
     return this.cache.offsets()
   }
@@ -274,5 +277,50 @@ describe('oas-table row-auto-height 接缝（几何消费 + 身份锚定）', ()
     )
     expect(tr3, '行 3 在渲染窗口内').toBeDefined()
     expect(tr3!.style.height).toBe('120px')
+  })
+
+  it('I-3：同数量数据替换（行数不变的结构变化）触发失效——旧实测高不驻留', () => {
+    ensureRegistered()
+    const { el } = mountAuto({
+      'row-auto-height': '',
+      height: '200',
+      'row-height': '40',
+      columns: JSON.stringify([{ key: 'name', title: '名称' }]),
+      data: rows100(),
+    })
+    const stub = lastStub!
+    // 行 0 实测 100px 并同步生效
+    stub.measure(0, 100)
+    ;(el as unknown as { requestAutoHeightSync(): void }).requestAutoHeightSync()
+    expect(stub.heightAt(0)).toBe(100)
+    // 同数量数据整体替换（宿主常见操作）：展示结构签名变化 → invalidate → 回退预估
+    el.setAttribute('data', JSON.stringify(Array.from({ length: 100 }, (_, i) => ({ name: `新${i}` }))))
+    expect(stub.heightAt(0), '同数量替换后旧实测高被清除').toBe(40)
+    // 渲染行高也回到预估档
+    const tr0 = el.shadowRoot!.querySelector('tbody tr[part="row"]') as HTMLElement
+    expect(tr0.style.height).toBe('40px')
+  })
+
+  it('I-1：expand/group 行不打测量下标（维持定高契约，防前缀和两套坐标污染）', () => {
+    ensureRegistered()
+    const { el } = mountAuto({
+      'row-auto-height': '',
+      height: '200',
+      'row-height': '40',
+      'row-key': 'name',
+      columns: JSON.stringify([{ key: 'name', title: '名称' }]),
+      data: JSON.stringify([
+        { name: '甲', expand: '<div>展开内容</div>' },
+        ...Array.from({ length: 50 }, (_, i) => ({ name: `行${i}` })),
+      ]),
+      expanded: '甲',
+    })
+    // 首个数据行带 expand 内容行紧随其后：expand 行无 data-oas-display-idx，数据行有
+    const expandTr = el.shadowRoot!.querySelector('tbody tr.expand-row') as HTMLElement
+    expect(expandTr, 'expand 行存在').not.toBeNull()
+    expect(expandTr.dataset.oasDisplayIdx, 'expand 行不打测量下标').toBeUndefined()
+    const stamped = [...el.shadowRoot!.querySelectorAll<HTMLElement>('tbody tr[data-oas-display-idx]')]
+    expect(stamped.length).toBeGreaterThan(0)
+    expect(stamped.every((tr) => tr.className.includes('row'))).toBe(true)
   })
 })

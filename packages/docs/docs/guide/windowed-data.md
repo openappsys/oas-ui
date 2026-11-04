@@ -5,7 +5,7 @@
 ## 契约
 
 - 属性：`windowed`（开启）+ `total`（全量行数）+ `window-start`（`data[0]` 的绝对行号）；`data` 只承载 `[window-start, window-start + data.length)`。
-- 事件：`oas-window-request`，`detail: { start, end, reason, visualStart?, visualEnd? }`（半开区间、绝对行号；`reason` = `init` / `scroll` / `resize` / `data`）。**同一期望区间不重复派发**；被覆盖后复位。`start` / `end` 永远是数据坐标；切片含行内嵌展开行（或视觉协议生效）时附带可选 `visualStart` / `visualEnd`——当前可视窗口的视觉坐标，区间已按视觉槽位映射回数据坐标。
+- 事件：`oas-window-request`，`detail: { start, end, reason, visualStart?, visualEnd? }`（半开区间、绝对行号；`reason` = `init` / `scroll` / `resize` / `data`）。**同一期望区间不重复派发**；被覆盖后复位。`start` / `end` 永远是数据坐标；切片含行内嵌展开行（或视觉协议生效）时附带可选 `visualStart` / `visualEnd`——当前可视窗口的视觉坐标，区间已按视觉槽位映射回数据坐标。**时序**：滚动帧内请求先于 tbody 重建派发（滚动位置权威位直传，防清空瞬间的钳制误算）——监听里同步读 DOM 看到的是上一帧渲染，回填经属性变更驱动重渲染。
 - 前提：必须有可测滚动视口（`height` 或可测 `max-height`），否则组件不派发请求（`devWarn` 一次）。表格 windowed 的切片须为**扁平行**（不递归 `children`）。
 
 ## 四步配方

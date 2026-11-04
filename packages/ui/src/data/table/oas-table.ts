@@ -212,6 +212,9 @@ export interface TableAutoHeightCapability {
   window(scrollTop: number, viewport: number): { start: number; end: number }
   /** 每次 tbody 重建后调用（动态模式）：观测新渲染的行、回收旧观察（L3 的 RO 生命周期钩子） */
   afterRender?(body: HTMLElement): void
+  /** 展示结构失效（排序/过滤/翻页/同数量数据替换/模式切换：行数不变但行身份已变）：
+      清实测高回退预估——HeightCache 只在行数变化时自清，结构变化须显式失效 */
+  invalidate?(): void
 }
 
 /** 结构级渲染钩子集合（structuralRenderers property 通道）：接管表头行/表头单元格/正文行/
@@ -1450,6 +1453,11 @@ export class OASTableBase extends OASElement {
   private autoAnchor: { anchor: RowAnchor; scrollTop: number; seq: number } | null = null
   /** 动态行高最近渲染窗口大小（gridPageStep 的「一页」口径；渲染时刷新） */
   private autoLastWindow = 0
+  /** 动态行高展示结构签名（排序/过滤/翻页/数据替换/模式切换检测——行数不变时 HeightCache
+      不会自清，旧实测高按旧下标驻留会错高；签名变化显式 invalidate） */
+  private autoHeightSig = ''
+  /** 测量同步触发的 update 标记：此时焦点回锚禁用 scrollIntoView（防每帧测量把视口/页面拉回焦点格） */
+  private autoSyncUpdate = false
   /** structural-render 能力控制器（注册型 L3；未 import 时恒 null，渲染挂接点判空跳过零开销） */
   private structuralCap: TableStructuralRenderers | null = null
   /** 结构槽异常守卫的去重台账：同槽同错只 devWarn 一次（key = slot + 错误文本） */
@@ -2618,8 +2626,10 @@ export class OASTableBase extends OASElement {
     // 吸顶行：为前 N 行写入 data-sticky 与 top 偏移（依赖已铺好的表头/行测量高度）
     this.applyStickyRows()
     // I3：windowed 切片重渲染后按锚点恢复焦点（行仍在窗口内才恢复，不回退切片首行）；
-    // 非滚动帧（宿主回填 update）路径：保留 focus + scrollIntoView，保证锚行可见
-    this.restoreWindowedFocusAnchor(false)
+    // 非滚动帧（宿主回填 update）路径：保留 focus + scrollIntoView，保证锚行可见。
+    // 测量同步触发的 update 用滚动帧口径（preventScroll）：scrollIntoView 会把视口/页面
+    // 拉回焦点格，与刚恢复的锚定 scrollTop 互相打架（二轮交叉审 I-4）
+    this.restoreWindowedFocusAnchor(this.autoSyncUpdate)
     // innerHTML 清空曾触发浏览器把 scrollTop 钳回 0；内容（含占位）已铺满后恢复原滚动位置
     // 帧内若有更新的主动写入（键盘导航 / 程序化滚动），新写入优先——旧值不回写
     if (this.wrap) this.restoreScrollPosition(seqAtSave, st, this.wrap.scrollLeft)
@@ -3091,8 +3101,21 @@ export class OASTableBase extends OASElement {
     scrollTop = this.wrap ? this.wrap.scrollTop : 0,
     dataOrdinal?: number[],
   ): void {
-    // row-auto-height：渲染前配置展示集行数与预估行高（同值幂等；行数变化由能力侧重置重测）
+    // row-auto-height：渲染前配置展示集行数与预估行高（同值幂等；行数变化由能力侧重置重测）。
+    // 展示结构签名（flatCacheSignature 覆盖 data/排序/过滤/分页/展开）：行数不变的结构变化
+    //（排序/同数量数据替换/模式切换）HeightCache 不会自清——签名变化显式 invalidate，
+    // 清实测高回退预估 + 锚定兜底（错高驻留的根治，二轮交叉审 I-3/M-4）
     if (this.autoHeightOn() && this.autoHeightCap) {
+      // 展示结构签名：行数不变的结构变化（排序/同数量数据替换/模式切换）HeightCache 不会
+      // 自清——签名变化显式 invalidate，清实测高回退预估 + 锚定兜底（二轮交叉审 I-3/M-4）。
+      // 用 flatCacheSignature 但剥除末位 propChannelVersion（能力 attach 时一次性 bump，
+      // 非展示结构变化；与字段序耦合，flatCacheSignature 变更时需同步此处）
+      const raw = this.flatCacheSignature(this.groupByEffective())
+      const sig = `V:${raw.slice(0, raw.lastIndexOf(String.fromCharCode(3)))}`
+      if (sig !== this.autoHeightSig) {
+        this.autoHeightSig = sig
+        this.autoHeightCap.invalidate?.()
+      }
       this.autoHeightCap.configure(display.length, this.rowHeightPx())
       // 渲染态锚点缓存：此刻前缀和是「测量前几何」，正是同步补偿要参照的用户视角
       this.autoAnchor = {
@@ -3119,7 +3142,7 @@ export class OASTableBase extends OASElement {
         const f = display[i]!
         const tr = this.buildVirtualRow(f, i, rowKey, selected, expanded, layout, ordinals[i]!)
         tr.style.height = `${this.rowHeightAt(i)}px`
-        if (stampDisplayIdx) tr.dataset.oasDisplayIdx = String(i)
+        if (stampDisplayIdx && f.kind === 'data') tr.dataset.oasDisplayIdx = String(i)
         body.appendChild(tr)
         if (f.kind === 'data') this.structuralBodyRow(tr, f.row, ordinals[i]!)
       }
@@ -3138,7 +3161,7 @@ export class OASTableBase extends OASElement {
       const f = display[i]!
       const tr = this.buildVirtualRow(f, i, rowKey, selected, expanded, layout, ordinals[i]!)
       tr.style.height = `${this.rowHeightAt(i)}px`
-      if (stampDisplayIdx) tr.dataset.oasDisplayIdx = String(i)
+      if (stampDisplayIdx && f.kind === 'data') tr.dataset.oasDisplayIdx = String(i)
       body.appendChild(tr)
       if (f.kind === 'data') this.structuralBodyRow(tr, f.row, ordinals[i]!)
     }
@@ -3222,7 +3245,17 @@ export class OASTableBase extends OASElement {
     // row-auto-height（windowed 混合模型）：前缀和按绝对视觉条目下标记账——切片内行可实测
     //（RO 回填到绝对下标）、切片外行与未装载区保持 row-height 预估（估计与真值拼接）。
     // visualTotal 变化触发 HeightCache 重置重测（一次全量回退估计 + 锚定兜底，可接受）
-    if (dynamic && cap) cap.configure(visualTotal, ih)
+    if (dynamic && cap) {
+      // 展示结构签名：W = windowed（window-start/total/切片长——同区间回填保留实测高是特性：
+      // 回访已测窗口高度仍准；宿主同位换内容属宿主契约外的边缘，错高在被渲染时自愈）。
+      // 行数不变的结构变化 HeightCache 不会自清——签名变化显式失效（二轮交叉审 I-3/M-4）
+      const sig = `W:${this._winMode.windowStart}:${this._winMode.total}:${display.length}`
+      if (sig !== this.autoHeightSig) {
+        this.autoHeightSig = sig
+        cap.invalidate?.()
+      }
+      cap.configure(visualTotal, ih)
+    }
     const items: Array<{ f: FlatRow; kind: FlatRow['kind']; abs: number; flowY: number; v: number }> = []
     let abs = this._winMode.windowStart
     // flow 基准：协议生效从 visual-start×行高 起（切片前已有展开的宿主场景）；
@@ -3318,7 +3351,10 @@ export class OASTableBase extends OASElement {
           ? this.buildExpandRow(item.f)
           : this.buildRow(item.f, item.abs, rowKey, selected, expanded, layout, item.abs)
       tr.style.height = `${h}px`
-      if (dynamic) tr.dataset.oasDisplayIdx = String(item.v)
+      // 只给数据行打测量下标：expand/group 行维持定高（winItemHeight 对 expand 恒返回
+      // row-height——若被打点，RO 会把富内容真实高写进缓存，前缀和与 flowY 记账两套
+      // 坐标互相污染：滚动条虚长空白 / 末行漏渲染（二轮交叉审实抓）
+      if (dynamic && item.f.kind === 'data') tr.dataset.oasDisplayIdx = String(item.v)
       rendered.push({ tr, row: item.f.row, abs: item.abs, kind: item.f.kind })
       lastFlowEnd = y + h
     }
@@ -4958,8 +4994,15 @@ export class OASTableBase extends OASElement {
       this.ignoreNextScroll = true
       this.wrap.scrollTop = top
     }
-    this.markRenderDirty()
-    this.runUpdateAndNotify()
+    // 标记 update 由测量同步触发：焦点回锚禁用 scrollIntoView——否则每帧测量都可能把
+    // 视口/页面滚回焦点格（sync-via-update 与 update 焦点恢复路径的相互作用，二轮审 I-4）
+    this.autoSyncUpdate = true
+    try {
+      this.markRenderDirty()
+      this.runUpdateAndNotify()
+    } finally {
+      this.autoSyncUpdate = false
+    }
   }
 
   /** 聚焦网格单元格：直接 focus + 滚入视口 + 记忆坐标（Tab 再次进入续用） */
