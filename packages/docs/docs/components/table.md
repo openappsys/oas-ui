@@ -348,6 +348,13 @@ table.addEventListener('oas-edit', (e) => {
 - **编辑中的行**不参与测量重建（避免每敲一字编辑被取消）；编辑结束后的下一次同步自然带上。
 - **限制**：merge / span-method 虚拟模式下本就不生效（见「多行单元格」上方约束）；windowed 下 expand 行维持定高（auto-height 只作用数据行）；体积为注册型 L3——不 import 时默认 table 链仅亚 KB 判空钩子。
 
+<DemoBlock title="逐行动态行高（row-auto-height + wrap 列：长备注行自动撑高，滚动几何随测量收敛）">
+  <oas-table height="220" row-height="40" row-auto-height stripe style="width: 100%"
+    columns='[{"key":"name","title":"任务","width":"140px"},{"key":"note","title":"备注","wrap":true}]'
+    data='[{"name":"需求评审","note":"短备注"},{"name":"视觉走查","note":"这是一段足够长的备注文本：走查覆盖了亮暗双主题下的对比度、焦点环可见性与密度档位切换，问题清单已同步到协作平台，等待设计侧确认后进入修复排期。"},{"name":"接口联调","note":"短"},{"name":"性能基线","note":"另一条长备注：本次采样了首屏可交互、长列表滚动帧率与内存占用三项指标，滚动帧率在低端机上稳定在 55fps 以上，达标。"},{"name":"回归测试","note":"短"}]'
+    row-key="name"></oas-table>
+</DemoBlock>
+
 ## 斑马纹与边框
 
 <DemoBlock title="斑马纹（stripe）">

@@ -348,6 +348,13 @@ Virtual scrolling (`height`) keeps a uniform row height across the table (the `r
 - **Rows being edited** are excluded from measurement rebuilds (so typing is never cancelled); the next sync after editing settles picks them up.
 - **Limits**: merge / span-method are already inert under virtual scrolling (see the constraints above); expand rows stay fixed-height under windowed (auto-height applies to data rows only); the module is a registered L3 — without the import the default table chain only pays a sub-KB hook constant.
 
+<DemoBlock title="Auto row height (row-auto-height + wrap column: long-note rows grow automatically, scroll geometry converges with measurement)">
+  <oas-table height="220" row-height="40" row-auto-height stripe style="width: 100%"
+    columns='[{"key":"name","title":"Task","width":"140px"},{"key":"note","title":"Note","wrap":true}]'
+    data='[{"name":"Kickoff","note":"Short note"},{"name":"Design review","note":"A long enough note: the review covered contrast, focus-ring visibility and density-tier switching under both light and dark themes. The issue list is synced to the collaboration board and queued for fix scheduling once design confirms."},{"name":"API integration","note":"Short"},{"name":"Perf baseline","note":"Another long note: this sampling captured first-screen interactivity, long-list scroll frame rate and memory usage. Scroll frame rate stays above 55fps on low-end devices — target met."},{"name":"Regression","note":"Short"}]'
+    row-key="name"></oas-table>
+</DemoBlock>
+
 ## Stripes and Borders
 
 <DemoBlock title="Striped rows (stripe)">
