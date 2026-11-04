@@ -128,7 +128,8 @@ describe('OASTable structural-render 能力（注册型 L3）', () => {
       headerRow: ({ el: tr }) => parents.push(tr.parentElement?.tagName ?? 'null'),
       headerCell: ({ el: th }) => parents.push(th.parentElement?.tagName ?? 'null'),
     }
-    expect(parents.length).toBeGreaterThan(0)
+    // 四槽共 9 次调用：bodyRow×2（2 行）+ bodyCell×4（2 行 × 2 列）+ headerRow×1 + headerCell×2
+    expect(parents).toHaveLength(9)
     expect(new Set(parents), '四槽调用时 parentElement 均已就绪').toEqual(new Set(['TBODY', 'TR', 'THEAD']))
   })
 
@@ -146,7 +147,8 @@ describe('OASTable structural-render 能力（注册型 L3）', () => {
       }
       // 表格照常渲染（bodyCell 抛错被跳过，bodyRow 不受影响）
       expect(el.shadowRoot!.querySelectorAll('tbody tr.row')).toHaveLength(2)
-      expect(el.shadowRoot!.querySelector('tr.row[data-ok]')).toBeTruthy()
+      // bodyRow 渲染器对 2 行都打标：被抛错槽不影响
+      expect(el.shadowRoot!.querySelectorAll('tr.row[data-ok]')).toHaveLength(2)
       // 同错只告警一次
       el.structuralRenderers = {
         bodyCell: () => {
@@ -154,9 +156,9 @@ describe('OASTable structural-render 能力（注册型 L3）', () => {
         },
       }
       expect(errors.filter((e) => e.includes('boom-cell')).length, '同错去重').toBe(1)
-      // 宿主修复后下一轮渲染自动恢复
+      // 宿主修复后下一轮渲染自动恢复：2 行 × 2 列的 bodyCell 全部补上 data-fixed
       el.structuralRenderers = { bodyCell: ({ el: td }) => td.setAttribute('data-fixed', '1') }
-      expect(el.shadowRoot!.querySelector('td[data-fixed]')).toBeTruthy()
+      expect(el.shadowRoot!.querySelectorAll('td[data-fixed]')).toHaveLength(4)
     } finally {
       console.warn = origWarn
     }
@@ -173,7 +175,7 @@ describe('OASTable structural-render 能力（注册型 L3）', () => {
       },
     }
     const td = el.shadowRoot!.querySelector<HTMLElement>('td[data-col="status"]')!
-    expect(td.querySelector('i.status-dot')).toBeTruthy()
+    expect(td.querySelectorAll('i.status-dot')).toHaveLength(1)
     // 模拟编辑进出：清空 td（enterEdit 行为）→ paintCell 恢复（exitEdit/cancel 行为）
     td.textContent = ''
     expect(td.querySelector('i.status-dot'), '编辑清空后结构装饰随内容销毁').toBeNull()
@@ -182,10 +184,8 @@ describe('OASTable structural-render 能力（注册型 L3）', () => {
       { key: 'status', title: '状态' },
       { name: '甲', status: 'ok' },
     )
-    expect(
-      el.shadowRoot!.querySelector('td[data-col="status"] i.status-dot'),
-      'paintCell 恢复默认内容后 bodyCell 重跑，结构装饰回来',
-    ).toBeTruthy()
+    // paintCell 只恢复传入的 td：该 td 内恰好 1 个装饰（另一行 status td 不受影响）
+    expect(td.querySelectorAll('i.status-dot'), 'paintCell 恢复默认内容后 bodyCell 重跑，结构装饰回来').toHaveLength(1)
   })
 
   it('⑩ merge 列同值判定不受宿主结构改写影响（WeakMap 前置快照）', () => {

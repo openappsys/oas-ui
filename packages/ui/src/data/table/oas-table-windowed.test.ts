@@ -1369,7 +1369,8 @@ describe('windowed × 树形懒加载（hasChildren 契约）', () => {
     expect(wrap.scrollTop).toBe(0)
     const ok = (el as unknown as { scrollToRow(key: string): boolean }).scrollToRow('行4')
     expect(ok).toBe(true)
-    expect(wrap.scrollTop).toBeGreaterThan(0)
+    // 与 T6b 同口径：scrollTop = absIndex × row-height = 4 × 32 = 128
+    expect(wrap.scrollTop).toBe(4 * 32)
     expect(
       (el as unknown as { scrollToRow(key: string): boolean }).scrollToRow('不存在'),
       '未知行返回 false 不抛错',

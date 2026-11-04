@@ -5770,11 +5770,17 @@ test('table wintree：懒展开宿主闭环（expand 事件 → 回填子孙 →
     wrap.scrollTop = wrap.scrollHeight
     wrap.dispatchEvent(new Event('scroll'))
   })
+  // 滚到底 = 到达最大滚动位（scrollTop 钳制在 scrollHeight - clientHeight，二者均 DOM 现算）
   await expect
-    .poll(() => t.evaluate((el) => el.shadowRoot!.querySelector<HTMLElement>('.table-scroll')!.scrollTop), {
-      timeout: 5000,
-    })
-    .toBeGreaterThan(0)
+    .poll(
+      () =>
+        t.evaluate((el) => {
+          const wrap = el.shadowRoot!.querySelector<HTMLElement>('.table-scroll')!
+          return wrap.scrollTop - (wrap.scrollHeight - wrap.clientHeight)
+        }),
+      { timeout: 5000 },
+    )
+    .toBe(0)
   await t.locator('tr[data-key="研发部"] button.toggle').click()
   await expect(engToggle).toHaveAttribute('aria-expanded', 'false')
   await expectRows(3)
@@ -5843,7 +5849,8 @@ test('table 虚拟截断 + wrap 三态：定高不被长文本撑破、wrap 列�
     }
   })
   // 修复前：长文本行换行撑高（实测 64px）与短行 40px 不等 → 滚动窗口错位
-  expect(geom.heights.length, '窗口内有渲染行').toBeGreaterThan(0)
+  // 窗口渲染 ≥ 可见行数（height 200 / row-height 40 = 5），渲染行数与 heights 数组同源
+  expect(geom.heights.length, '窗口内有渲染行').toBeGreaterThanOrEqual(200 / 40)
   expect(Math.max(...geom.heights), '行高不超 row-height+边框口径').toBeLessThanOrEqual(41)
   expect(Math.min(...geom.heights), '行高不低于 row-height 口径').toBeGreaterThanOrEqual(40)
   expect(new Set(geom.heights).size, '长文本行与短行 boundingBox 高度全等（定高几何不破）').toBe(1)
@@ -6021,11 +6028,13 @@ test('table auto-height windowed：混合模型测量回填 + 请求闭环 + con
     wrap.dispatchEvent(new Event('scroll'))
   })
   await expect.poll(async () => t.getAttribute('window-start'), { timeout: 10_000 }).not.toBe('0')
-  // 回填后行渲染正常（无错位：data-row-index 存在且连续递增）
+  // 回填后行渲染正确铺位（无错位）：首渲染行绝对行号 = window-start（属性↔DOM 往返，
+  // 空渲染时 idx[0] 为 undefined 同样精确失败——递增断言因此非平凡），后续行连续递增
+  const winStart = Number(await t.getAttribute('window-start'))
   const idx = await t
     .locator('tbody tr[data-row-index]')
     .evaluateAll((trs) => trs.map((tr) => Number(tr.getAttribute('data-row-index'))))
-  expect(idx.length).toBeGreaterThan(0)
+  expect(idx[0], '回填窗口首渲染行 = window-start 绝对行号').toBe(winStart)
   expect(idx.every((v, i) => i === 0 || v > idx[i - 1]!)).toBe(true)
   expect(errors, 'console 零 error').toEqual([])
 })

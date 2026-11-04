@@ -774,6 +774,12 @@ const COMPONENT_STEPS: Record<string, Array<[string, string, string?]>> = {
     ['#table-filter .filter-option', 'click', '点选项应用过滤 → oas-filter-change'],
     ['#table-col-setting th[data-key]', 'dragmock', '拖列头重排 → oas-column-order'],
     ['#table-col-setting th[data-key]', 'resizecol', '列宽热区拖拽 → oas-column-resize'],
+    // validate demo（#table-edit-validate）：amount 列 property 通道 validate 要求正数——
+    // 双击金额格进编辑 → 填负数 → Enter 提交被拦截 → oas-edit-invalid（validate 是函数通道，
+    // attribute JSON 声明式表无法演示，只能走这个专用 demo 的 property 注入列）
+    ['#table-edit-validate tbody tr td:nth-child(2)', 'dblclick', '双击金额单元格进编辑（validate 列）'],
+    ['#table-edit-validate input.cell-editor', 'fill:-5', '填非法负数（金额必须为正数）'],
+    ['#table-edit-validate input.cell-editor', 'press:Enter', 'Enter 提交被 validate 拦截 → oas-edit-invalid'],
   ],
   'page-header': [['oas-page-header[back] [part="back"]', 'domclick', '返回钮 → oas-back（真实点击会被下方元素拦截）']],
   splitter: [['oas-splitter [part="splitter"]', 'drag', '拖拽分隔条 → oas-resize']],

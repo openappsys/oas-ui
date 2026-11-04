@@ -108,7 +108,11 @@ describe('oas-table row-auto-height 接缝（几何消费 + 身份锚定）', ()
       data: rows100(),
     })
     const trs = [...el.shadowRoot!.querySelectorAll<HTMLElement>('tbody tr[part="row"]')]
-    expect(trs.length).toBeGreaterThan(0)
+    // 窗口化不变量：渲染窗口非空且从行 0 起（scrollTop=0）、不越出 100 行数据
+    //（happy-dom 视口高为 0，窗口 = buffer 尺寸，不按可见行数 5 设下界）
+    expect(trs.length).toBeGreaterThanOrEqual(1)
+    expect(trs.length).toBeLessThanOrEqual(100)
+    expect(trs[0]!.getAttribute('data-row-index')).toBe('0')
     expect(trs.every((tr) => tr.style.height === '40px')).toBe(true)
     // 展示序下标打点（measure 映射通道）
     expect(trs[0]!.dataset.oasDisplayIdx).toBeDefined()
@@ -166,7 +170,8 @@ describe('oas-table row-auto-height 接缝（几何消费 + 身份锚定）', ()
     // 窗口含上方 buffer 4 行：首「可见」行是行 10，首「渲染」行是行 6
     const first = el.shadowRoot!.querySelector('tbody tr[part="row"]') as HTMLElement
     expect(first.getAttribute('data-row-index')).toBe('6')
-    expect(el.shadowRoot!.querySelector('tbody tr[data-row-index="10"]')).not.toBeNull()
+    // 行 10 已进渲染窗口：data-row-index 往返精确等值
+    expect(el.shadowRoot!.querySelector('tbody tr[data-row-index="10"]')?.getAttribute('data-row-index')).toBe('10')
     // 顶 spacer = 窗口起点行 6 的新顶 = 100+100+4×40 = 360
     const topSpacer = el.shadowRoot!.querySelector('tbody tr.spacer td') as HTMLElement
     expect(Number.parseInt(topSpacer.style.height)).toBe(360)
@@ -204,10 +209,10 @@ describe('oas-table row-auto-height 接缝（几何消费 + 身份锚定）', ()
       data: rows100(),
     })
     expect(warn.mock.calls.some((c) => String(c[0]).includes('仅支持本地虚拟'))).toBe(false)
-    // windowed 混合模型渲染：绝对行号铺位照常（动态模式打点视觉下标）
+    // windowed 混合模型渲染：绝对行号铺位照常——首渲染行下标从 window-start=0 起铺
+    //（tr 为 null 时可选链得 undefined ≠ '0'，同样精确失败）
     const tr = el.shadowRoot!.querySelector('tbody tr[part="row"]') as HTMLElement
-    expect(tr).not.toBeNull()
-    expect(tr.dataset.oasDisplayIdx).toBeDefined()
+    expect(tr?.dataset.oasDisplayIdx).toBe('0')
     warn.mockRestore()
   })
 
@@ -248,8 +253,12 @@ describe('oas-table row-auto-height 接缝（几何消费 + 身份锚定）', ()
     // 断言已证明同步走了 update 重渲染（spacer/行高全部反映新前缀和）
     // 总高 = 拼接前缀和：100+100+998×40 = 40120（scrollHeight 口径经 spacer 表达）
     const bottom = el.shadowRoot!.querySelector('tbody tr.spacer:last-child td') as HTMLElement
+    // 窗口末像素 = 渲染条目前缀和：行 0/1 实测各 100、其余渲染行预估 40（行数以 DOM 现算为准，
+    // happy-dom 与真实浏览器窗口尺寸不同不影响等值成立）
+    const winTrs = [...el.shadowRoot!.querySelectorAll<HTMLElement>('tbody tr[part="row"]')]
+    const expectedWinEnd = winTrs.reduce((sum, _tr, i) => sum + (i < 2 ? 100 : 40), 0)
     const winEndPx = stub.total() - Number.parseInt(bottom.style.height)
-    expect(winEndPx).toBeGreaterThan(0)
+    expect(winEndPx).toBe(expectedWinEnd)
     expect(stub.total()).toBe(40120)
   })
 
@@ -316,12 +325,18 @@ describe('oas-table row-auto-height 接缝（几何消费 + 身份锚定）', ()
       expanded: '甲',
     })
     // 首个数据行带 expand 内容行紧随其后：expand 行无 data-oas-display-idx，数据行有
+    // 展开态唯一 expand 行：恰 1 条
+    expect(el.shadowRoot!.querySelectorAll('tbody tr.expand-row')).toHaveLength(1)
     const expandTr = el.shadowRoot!.querySelector('tbody tr.expand-row') as HTMLElement
-    expect(expandTr, 'expand 行存在').not.toBeNull()
     expect(expandTr.dataset.oasDisplayIdx, 'expand 行不打测量下标').toBeUndefined()
-    // 打点集 = 渲染数据行（stamped 均为 part="row" 的 tr；expand 行已由上条强断言覆盖）
+    // 打点集 = 渲染数据行：tbody 全部行 = 打点数据行 + 唯一 expand 行（总账互斥）；
+    // 上界不越出 51 个数据行（happy-dom 视口高为 0，窗口 = buffer 尺寸，不按可见行数设下界）
     const stamped = [...el.shadowRoot!.querySelectorAll<HTMLElement>('tbody tr[data-oas-display-idx]')]
-    expect(stamped.length).toBeGreaterThan(0)
+    expect(stamped.length).toBeGreaterThanOrEqual(1)
+    expect(stamped.length).toBeLessThanOrEqual(51)
+    // tbody 总账 = 打点数据行 + 唯一 expand 行 + 上下 2 条 spacer
+    expect(el.shadowRoot!.querySelectorAll('tbody tr.spacer')).toHaveLength(2)
+    expect(el.shadowRoot!.querySelectorAll('tbody tr')).toHaveLength(stamped.length + 3)
     expect(stamped.every((tr) => tr.getAttribute('part') === 'row')).toBe(true)
   })
 })
