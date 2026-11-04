@@ -5884,3 +5884,80 @@ test('table 虚拟截断 + wrap 三态：定高不被长文本撑破、wrap 列�
 
   expect(errors, 'console 零 error').toEqual([])
 })
+
+// row-auto-height 真实浏览器回归：RO 测量回填 → 行随内容撑高 + 前缀和几何（spacer/滚动总高）收敛
+test('table auto-height：测量回填行撑高 + 滚动几何收敛 + console 零告警', async ({ page }) => {
+  const errors: string[] = []
+  page.on('pageerror', (e) => errors.push(e.message))
+  page.on('console', (m) => {
+    if (m.type() === 'error') errors.push(m.text())
+  })
+  await page.goto('/components/table.html', { waitUntil: 'domcontentloaded' })
+  await page.waitForFunction(() => !!document.querySelector('oas-table')?.shadowRoot)
+  await page.evaluate(() => {
+    const el = document.createElement('oas-table')
+    el.id = 'table-autoheight-e2e'
+    el.style.width = '420px'
+    el.setAttribute('height', '240')
+    el.setAttribute('row-height', '40')
+    el.setAttribute('row-auto-height', '')
+    el.setAttribute(
+      'columns',
+      JSON.stringify([
+        { key: 'name', title: '名称', width: '100px' },
+        { key: 'note', title: '备注', width: '280px', wrap: true },
+      ]),
+    )
+    const rows = []
+    for (let i = 0; i < 60; i++)
+      rows.push({
+        name: `行${i}`,
+        note:
+          i === 2 ? '这是一段足够长的备注文本，用来把第二行撑到远高于 40px 的档位以验证测量回填与几何收敛' : `短${i}`,
+      })
+    el.setAttribute('data', JSON.stringify(rows))
+    document.body.prepend(el)
+  })
+  const t = page.locator('#table-autoheight-e2e')
+  // RO 测量 + 回填 + 重建是异步的：轮询到行 2 被撑高（定高 40 → 实测更高）
+  await expect
+    .poll(
+      async () => {
+        const heights = await t
+          .locator('tbody tr[part="row"]')
+          .evaluateAll((trs) => trs.map((tr) => Math.round(tr.getBoundingClientRect().height)))
+        return Math.max(...heights)
+      },
+      { timeout: 15_000 },
+    )
+    .toBeGreaterThan(56)
+  // 短行仍 40px（测量只改长行），行 2 显著高于短行
+  const row2 = await t
+    .locator('tbody tr[data-row-index="2"]')
+    .evaluate((tr) => Math.round(tr.getBoundingClientRect().height))
+  expect(row2).toBeGreaterThan(56)
+  // 滚动总高收敛：> 60×40=2400（长行贡献真高）——滚动条长度反映前缀和
+  const scrollH = await t.evaluate((el) => el.shadowRoot!.querySelector('.table-scroll')!.scrollHeight)
+  expect(scrollH).toBeGreaterThan(2400)
+  // 滚动到中部再回顶：data-row-index 连续、不错位
+  await t.evaluate((el) => {
+    const wrap = el.shadowRoot!.querySelector('.table-scroll')!
+    wrap.scrollTop = 1200
+    wrap.dispatchEvent(new Event('scroll'))
+  })
+  await expect
+    .poll(async () => {
+      const idx = await t
+        .locator('tbody tr[data-row-index]')
+        .evaluateAll((trs) => trs.map((tr) => Number(tr.getAttribute('data-row-index'))))
+      return idx.every((v, i) => i === 0 || v > idx[i - 1]!)
+    })
+    .toBe(true)
+  await t.evaluate((el) => {
+    const wrap = el.shadowRoot!.querySelector('.table-scroll')!
+    wrap.scrollTop = 0
+    wrap.dispatchEvent(new Event('scroll'))
+  })
+  await expect(t.locator('tbody tr[data-row-index="0"]')).toBeAttached()
+  expect(errors, 'console 零 error').toEqual([])
+})

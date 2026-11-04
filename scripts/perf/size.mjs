@@ -639,6 +639,7 @@ const COMPONENT_ENTRIES = [
   { id: 'tableAudit', entry: 'data/table/audit', spec: '@oas-ui/ui/data/table/audit' },
   { id: 'tableValueFormat', entry: 'data/table/value-format', spec: '@oas-ui/ui/data/table/value-format' },
   { id: 'tableQuery', entry: 'data/table/query', spec: '@oas-ui/ui/data/table/query' },
+  { id: 'tableAutoHeight', entry: 'data/table/auto-height', spec: '@oas-ui/ui/data/table/auto-height' },
   // layout 家族 helper 型 L3：无限滚动 headless 控制器（不进 L1/layout 族包）
   {
     id: 'infiniteScroll',
@@ -728,6 +729,17 @@ const BUDGETS = [
     limit: 104 * 1024, // 104 KB（2026-10-28 首次独立定档：实测 89.7 KB 上浮约 16% 取整）
     basis:
       '实测 gzip 89.7 KB / 43 文件（首次独立计量：链含 edit 控制器 + 编辑器族 + select/switch 浮层编辑通道 + i18n；edit 链大于默认 table 链是「编辑器族依赖浮层组件」的合理结果，也正是默认入口不含 edit 的原因）；上浮约 16% 定档 104 KB（89.7×1.16≈104，取整）',
+  },
+  {
+    // table/auto-height：注册型 L3（row-auto-height 逐行动态行高）。首档 2026-11-04：
+    // 运行时仅依赖能力注册表 + dynamic-height 几何模块（core/oas-table 类型导入编译期擦除）。
+    name: '@oas-ui/ui/data/table/auto-height 链 gzip',
+    kind: 'absolute',
+    componentId: 'tableAutoHeight',
+    get: () => componentMeasures.tableAutoHeight.gzipBytes,
+    limit: 2.8 * 1024, // 2.8 KB（2026-11-04 首档：实测 2.0 KB，上浮约 40% 取整）
+    basis:
+      '注册型 L3（逐行动态行高：HeightCache 前缀和几何 + RO 生命周期 + 收缩轮询），按需引入；首档 2026-11-04：实测 gzip 2.0 KB / 1.8 KB brotli / 3 文件（能力注册表 + dynamic-height 几何 + 本模块；core/oas-table 为类型导入编译期擦除——table 本体消费方自带），上浮约 40% 定档 2.8 KB；核心判空钩子（row-geometry 锚定数学 + 几何接缝）随默认 table 链计亚 KB 常数',
   },
   {
     // table/structural-render：注册型 L3（L1/CDN data 族含、默认 table 不含）。轻量委托能力——

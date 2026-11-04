@@ -337,6 +337,16 @@ table.addEventListener('oas-edit', (e) => {
 
 **行内多行备注配方**：虚拟滚动 + `wrap: true` 列 + 放大 `row-height` 档位（如 64 / 96），单元格在定高内显示多行备注文本，超高部分裁剪不撑行。
 
+## 逐行动态行高（row-auto-height）
+
+虚拟滚动（`height`）默认全表统一行高（`row-height` 档）。需要**行随内容自动撑高**（长备注、消息流式数据）时，import `@oas-ui/ui/data/table/auto-height` 注册能力 + 属性 `row-auto-height`：
+
+- **测量模型**：挂载后 ResizeObserver 逐行测真值；未测行按 `row-height` 预估——滚动条长度先按估计、随测量收敛（跳远端时定位以估计为暂值，落定后精确）。列 `wrap: true` 参与多行测量；非 wrap 列恒单行高（测量面收窄）。
+- **锚定**：任何高度修正（测量回填 / 数据变更）按（行身份, 行内偏移）补偿滚动位置——视口内容不跳（Excel auto-fit 同款行为）。
+- **收缩**：tr 内联高在表格布局里是 min 语义（只增不减，这消灭了振荡）；内容变矮的行经逐帧轮询放行重测，数帧内收敛。
+- **编辑中的行**不参与测量重建（避免每敲一字编辑被取消）；编辑结束后的下一次同步自然带上。
+- **限制**：仅本地虚拟模式（windowed 逐行动态行高随 windowed 几何改造交付，组合在场有 dev 提示）；merge / span-method 虚拟模式下本就不生效（见「多行单元格」上方约束）；体积为注册型 L3——不 import 时默认 table 链仅亚 KB 判空钩子。
+
 ## 斑马纹与边框
 
 <DemoBlock title="斑马纹（stripe）">
@@ -648,6 +658,7 @@ table.addEventListener('oas-expand', async (e) => {
 
 <script setup>
 import { onBeforeUnmount, onMounted } from 'vue'
+import '@oas-ui/ui/data/table/auto-height'
 import { filterRows, formulaColumn, pivotTable } from '@oas-ui/ui/data/table/advanced'
 import { setConditionalFormat } from '@oas-ui/ui/data/table/format'
 import { pivotMatrix } from '@oas-ui/ui/data/table/pivot'

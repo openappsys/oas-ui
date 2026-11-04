@@ -337,6 +337,16 @@ The `wrap` column field controls cell wrapping in three states:
 
 **Recipe for multi-line notes**: virtual scrolling + a `wrap: true` column + a larger `row-height` tier (e.g. 64 / 96) — the cell shows multi-line note text within the fixed height; overflow is clipped without stretching the row.
 
+## Auto row height (row-auto-height)
+
+Virtual scrolling (`height`) keeps a uniform row height across the table (the `row-height` step) by default. When rows should **grow with their content** (long notes, message-style data), import `@oas-ui/ui/data/table/auto-height` once and set the `row-auto-height` attribute:
+
+- **Measurement model**: ResizeObserver measures each rendered row; unmeasured rows use the `row-height` estimate — the scrollbar length starts estimated and converges as measurements arrive (jumping to a remote region positions by estimate until it settles).
+- **Anchoring**: any height correction (measurement backfill / data change) compensates the scroll position by (row identity, in-row offset) — the viewport content never jumps (same behavior as spreadsheet auto-fit).
+- **Shrinking**: the tr inline height acts as a minimum in table layout (grow-only, which eliminates oscillation); rows whose content got shorter are re-measured via a per-frame round-robin probe and converge within a few frames.
+- **Rows being edited** are excluded from measurement rebuilds (so typing is never cancelled); the next sync after editing settles picks them up.
+- **Limits**: local virtual mode only (windowed auto row height ships with the windowed geometry rework — the combination warns in dev for now); merge / span-method are already inert under virtual scrolling (see the constraints above); the module is a registered L3 — without the import the default table chain only pays a sub-KB hook constant.
+
 ## Stripes and Borders
 
 <DemoBlock title="Striped rows (stripe)">
@@ -648,6 +658,7 @@ Listen to `oas-sort-change`, then set `loading` and re-request remote paginated/
 
 <script setup>
 import { onBeforeUnmount, onMounted } from 'vue'
+import '@oas-ui/ui/data/table/auto-height'
 import { filterRows, formulaColumn, pivotTable } from '@oas-ui/ui/data/table/advanced'
 import { setConditionalFormat } from '@oas-ui/ui/data/table/format'
 import { pivotMatrix } from '@oas-ui/ui/data/table/pivot'

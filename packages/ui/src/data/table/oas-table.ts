@@ -5,7 +5,7 @@ import { addOutsideDismiss, removeOutsideDismiss } from '../../shared/outside-di
 import { normalizeSizeStrict, THREE_SIZES } from '../../shared/size.js'
 import { computeVirtualWindow } from '../virtual-list/oas-virtual-list.js'
 import { HeightCache, computeDynamicWindow } from '../virtual-list/dynamic-height.js'
-import { locateAnchor, restoreAnchor, type RowAnchor } from './auto-height/geometry.js'
+import { locateAnchor, restoreAnchor, type RowAnchor } from './row-geometry.js'
 import { computePosition, getViewport } from '../../overlay/floating/index.js'
 import { registeredTableCapabilities, onTableCapabilityRegistered } from './oas-table-capability.js'
 // 行内交互宿主排除清单（行点击/双击编辑共用的单一事实来源，含维护纪律注释）
@@ -209,6 +209,8 @@ export interface TableAutoHeightCapability {
   total(): number
   /** 可视窗口：首可见行 = 行底严格越过 scrollTop 的行（与 computeDynamicWindow 同口径） */
   window(scrollTop: number, viewport: number): { start: number; end: number }
+  /** 每次 tbody 重建后调用（动态模式）：观测新渲染的行、回收旧观察（L3 的 RO 生命周期钩子） */
+  afterRender?(body: HTMLElement): void
 }
 
 /** 结构级渲染钩子集合（structuralRenderers property 通道）：接管表头行/表头单元格/正文行/
@@ -1450,6 +1452,8 @@ export class OASTableBase extends OASElement {
       测量在两次渲染之间就已改动前缀和，同步时必须用「测量前几何」捕获的锚点——
       渲染时顺手缓存，scrollTop/写入序未变则直接复用（见 requestAutoHeightSync） */
   private autoAnchor: { anchor: RowAnchor; scrollTop: number; seq: number } | null = null
+  /** 动态行高最近渲染窗口大小（gridPageStep 的「一页」口径；渲染时刷新） */
+  private autoLastWindow = 0
   /** structural-render 能力控制器（注册型 L3；未 import 时恒 null，渲染挂接点判空跳过零开销） */
   private structuralCap: TableStructuralRenderers | null = null
   /** 结构槽异常守卫的去重台账：同槽同错只 devWarn 一次（key = slot + 错误文本） */
@@ -2938,8 +2942,9 @@ export class OASTableBase extends OASElement {
       if (col.wrap === true) {
         td.classList.add('cell-wrap')
         // 虚拟模式下内联定高：display:block 化（见 cell-wrap 规则注释）后 height 才真正钳制
-        // 行高，值随 row-height 同源（换行内容超出部分被裁，滚动几何不被撑破）
-        if (this.wrap?.getAttribute('data-virtual') === 'true') {
+        // 行高，值随 row-height 同源（换行内容超出部分被裁，滚动几何不被撑破）——
+        // 但 row-auto-height 模式下恰恰要让内容驱动行高（RO 测量回填的前提），定高豁免
+        if (this.wrap?.getAttribute('data-virtual') === 'true' && !this.autoHeightOn()) {
           td.style.height = `${this.rowHeightPx()}px`
         }
       } else if (col.wrap === false) {
@@ -3096,6 +3101,7 @@ export class OASTableBase extends OASElement {
       }
     }
     const win = this.rowWindow(scrollTop, this.tableHeight(), display.length)
+    if (this.autoHeightOn()) this.autoLastWindow = Math.max(1, win.end - win.start)
     const colSpan = this.columnCount()
     // 动态行高模式下给渲染行打点展示序下标（measure 回填映射用；data-row-index 是数据行号，
     // expand/group 条目使其与展示序不一致——不能用）——仅动态模式打点，定红线路径零变化
@@ -3143,6 +3149,8 @@ export class OASTableBase extends OASElement {
     bottomTd.style.height = `${this.rowTopOffset(display.length) - this.rowTopOffset(win.end)}px`
     bottomSpacer.appendChild(bottomTd)
     body.appendChild(bottomSpacer)
+    // 动态行高：tbody 重建完成通知能力（重新观测渲染行——滚动帧整帧重建，观察须随帧刷新）
+    if (stampDisplayIdx && this.autoHeightCap?.afterRender) this.autoHeightCap.afterRender(body)
   }
 
   /** 虚拟窗口行的统一分派：数据行 / 展开内容行 / 分节头行 */
@@ -3373,7 +3381,8 @@ export class OASTableBase extends OASElement {
     const idx = this._data.findIndex((r) => String(rowKeyValue(r, rowKey)) === String(key))
     if (idx < 0) return false
     const abs = this.windowedOn() ? this._winMode.windowStart + idx : idx
-    const top = abs * this.rowHeightPx()
+    // 动态行高：行顶 = 前缀和查询（定高路径 rowTopOffset 逐位等价 i×rowH）
+    const top = this.rowTopOffset(abs)
     // 有布局环境按 scrollHeight 上界夹取；无布局（happy-dom scrollHeight=0）直写——
     // 真实浏览器的 scrollTop setter 本就会自行钳制，双环境语义一致。
     // 锚定写scrollTop 前先清「程序写滚动」吞事件守卫：同 update 周期内 restoreScrollPosition
@@ -4829,9 +4838,11 @@ export class OASTableBase extends OASElement {
     }
   }
 
-  /** PageUp/Down 步进：分页时为一页行数；否则为可视区行数（虚拟 height / 实时容器高） */
+  /** PageUp/Down 步进：分页时为一页行数；动态行高取最近渲染窗口大小（变高下「一页」= 当前可见行数）；
+      否则为可视区行数（虚拟 height / 实时容器高） */
   private gridPageStep(): number {
     if (this.hasAttr('pagination')) return Math.max(1, Number(this.getAttr('page-size', '10')) || 10)
+    if (this.autoHeightOn() && this.autoLastWindow > 0) return this.autoLastWindow
     const viewport = this.wrap?.clientHeight || (this.isVirtual() ? this.tableHeight() : 0)
     if (viewport <= 0) return 1
     return Math.max(1, Math.floor(viewport / this.rowHeightPx()))

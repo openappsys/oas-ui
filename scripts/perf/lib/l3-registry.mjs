@@ -63,6 +63,14 @@ export const L3_REGISTRY = [
   },
   { id: 'tableValueFormat', entry: 'data/table/value-format', family: 'data', kind: 'helper', measured: true },
   { id: 'tableQuery', entry: 'data/table/query', family: 'data', kind: 'helper', measured: true },
+  // 逐行动态行高（row-auto-height 注册型 capability L3；核心接缝为亚 KB 常数判空钩子）
+  {
+    id: 'tableAutoHeight',
+    entry: 'data/table/auto-height',
+    family: 'data',
+    kind: 'capability',
+    measured: true,
+  },
   // —— 非 table 注册型 L3（只做 L1/族包包含断言；不立独立预算档） ——
   { id: 'tabsManager', entry: 'navigation/tabs/manager', family: 'navigation', kind: 'capability', measured: false },
   { id: 'modalPrompt', entry: 'feedback/modal/prompt', family: 'feedback', kind: 'capability', measured: false },
